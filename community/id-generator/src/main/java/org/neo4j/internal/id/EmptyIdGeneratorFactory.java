@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static java.util.Collections.emptyList;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -35,163 +35,152 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
-import static java.util.Collections.emptyList;
-
-public class EmptyIdGeneratorFactory implements IdGeneratorFactory
-{
+public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
     public static final IdGeneratorFactory EMPTY_ID_GENERATOR_FACTORY = new EmptyIdGeneratorFactory();
 
-    private EmptyIdGeneratorFactory()
-    {
-    }
+    private EmptyIdGeneratorFactory() {}
 
     @Override
-    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
-    {
+    public IdGenerator open(
+            PageCache pageCache,
+            Path filename,
+            IdType idType,
+            LongSupplier highIdScanner,
+            long maxId,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution)
+            throws IOException {
         return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
 
     @Override
-    public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
-            IdSlotDistribution slotDistribution ) throws IOException
-    {
+    public IdGenerator create(
+            PageCache pageCache,
+            Path filename,
+            IdType idType,
+            long highId,
+            boolean throwIfFileExists,
+            long maxId,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution)
+            throws IOException {
         return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
 
     @Override
-    public IdGenerator get( IdType idType )
-    {
+    public IdGenerator get(IdType idType) {
         return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
 
     @Override
-    public void visit( Consumer<IdGenerator> visitor )
-    {
+    public void visit(Consumer<IdGenerator> visitor) {
         // nothing
     }
 
     @Override
-    public void clearCache( CursorContext cursorContext )
-    {
+    public void clearCache(CursorContext cursorContext) {
         // nothing
     }
 
     @Override
-    public Collection<Path> listIdFiles()
-    {
+    public Collection<Path> listIdFiles() {
         return emptyList();
     }
 
-    private static class EmptyIdGenerator implements IdGenerator
-    {
+    private static class EmptyIdGenerator implements IdGenerator {
         private static final EmptyIdGenerator EMPTY_ID_GENERATOR = new EmptyIdGenerator();
         private static final int EMPTY_ID = -1;
 
-        private EmptyIdGenerator()
-        {
-        }
+        private EmptyIdGenerator() {}
 
         @Override
-        public void setHighId( long id )
-        {
+        public void setHighId(long id) {
             // nothing
         }
 
         @Override
-        public void markHighestWrittenAtHighId()
-        {
+        public void markHighestWrittenAtHighId() {
             // nothing
         }
 
         @Override
-        public long getHighestWritten()
-        {
+        public long getHighestWritten() {
             return EMPTY_ID;
         }
 
         @Override
-        public long getHighId()
-        {
+        public long getHighId() {
             return EMPTY_ID;
         }
 
         @Override
-        public long getHighestPossibleIdInUse()
-        {
+        public long getHighestPossibleIdInUse() {
             return EMPTY_ID;
         }
 
         @Override
-        public Marker marker( CursorContext cursorContext )
-        {
+        public Marker marker(CursorContext cursorContext) {
             return NOOP_MARKER;
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             // nothing
         }
 
         @Override
-        public long getNumberOfIdsInUse()
-        {
+        public long getNumberOfIdsInUse() {
             return -1;
         }
 
         @Override
-        public long getDefragCount()
-        {
+        public long getDefragCount() {
             return -1;
         }
 
         @Override
-        public void checkpoint( CursorContext cursorContext )
-        {
+        public void checkpoint(CursorContext cursorContext) {
             // nothing
         }
 
         @Override
-        public void maintenance( CursorContext cursorContext )
-        {
+        public void maintenance(CursorContext cursorContext) {
             // nothing
         }
 
         @Override
-        public void start( FreeIds freeIdsForRebuild, CursorContext cursorContext ) throws IOException
-        {
+        public void start(FreeIds freeIdsForRebuild, CursorContext cursorContext) throws IOException {
             // nothing
         }
 
         @Override
-        public void clearCache( CursorContext cursorContext )
-        {
+        public void clearCache(CursorContext cursorContext) {
             // nothing
         }
 
         @Override
-        public IdType idType()
-        {
+        public IdType idType() {
             return null;
         }
 
         @Override
-        public long nextId( CursorContext cursorContext )
-        {
+        public long nextId(CursorContext cursorContext) {
             return EMPTY_ID;
         }
 
         @Override
-        public long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext )
-        {
+        public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
             return EMPTY_ID;
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-        {
+        public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
             return true;
         }
     }

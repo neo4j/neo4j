@@ -22,11 +22,8 @@ package org.neo4j.dbms.archive.printer;
 /**
  * Print progress of progress in load and dump command.
  */
-public interface OutputProgressPrinter
-{
-    void print( String message );
+public interface OutputProgressPrinter {
+    void print(String message);
 
-    default void complete()
-    {
-    }
+    default void complete() {}
 }

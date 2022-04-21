@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.jupiter.api.Test;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -29,35 +30,27 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.neo4j.logging.LogAssertions.assertThat;
-
-class DiagnosticsLoggingTest
-{
+class DiagnosticsLoggingTest {
     @Test
-    void shouldSeeExpectedDiagnostics()
-    {
+    void shouldSeeExpectedDiagnostics() {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .setInternalLogProvider( logProvider )
+                .setInternalLogProvider(logProvider)
                 .impermanent()
-                .setConfig( GraphDatabaseInternalSettings.dump_configuration, true )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 4 ) )
-                .setConfig( GraphDatabaseInternalSettings.dump_diagnostics, true )
+                .setConfig(GraphDatabaseInternalSettings.dump_configuration, true)
+                .setConfig(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(4))
+                .setConfig(GraphDatabaseInternalSettings.dump_diagnostics, true)
                 .build();
-        try
-        {
+        try {
             // THEN we should have logged
-            assertThat( logProvider ).containsMessages( "Network information", "Local timezone", "Page cache: 4.00MiB" );
+            assertThat(logProvider).containsMessages("Network information", "Local timezone", "Page cache: 4.00MiB");
             // neostore records
-            for ( MetaDataStore.Position position : MetaDataStore.Position.values() )
-            {
-                assertThat( logProvider ).containsMessages( position.name() );
+            for (MetaDataStore.Position position : MetaDataStore.Position.values()) {
+                assertThat(logProvider).containsMessages(position.name());
             }
             // transaction log info
-            assertThat( logProvider ).containsMessages( "Transaction log", "TimeZone version: " );
-        }
-        finally
-        {
+            assertThat(logProvider).containsMessages("Transaction log", "TimeZone version: ");
+        } finally {
             managementService.shutdown();
         }
     }

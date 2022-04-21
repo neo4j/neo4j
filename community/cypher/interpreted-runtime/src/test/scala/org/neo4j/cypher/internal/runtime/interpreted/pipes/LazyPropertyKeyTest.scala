@@ -41,7 +41,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
     val context = mock[ReadTokenContext]
     when(table.id(PROPERTY_KEY_NAME)).thenReturn(Some(PROPERTY_KEY_ID))
 
-    //WHEN
+    // WHEN
     val id = LazyPropertyKey(PROPERTY_KEY_NAME).id(context)
 
     // THEN

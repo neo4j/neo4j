@@ -19,18 +19,17 @@
  */
 package org.neo4j.shell;
 
+import static java.lang.System.getProperty;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import static java.lang.System.getProperty;
-
 /**
  * An object which keeps a record of past commands
  */
-public interface Historian
-{
+public interface Historian {
     Historian empty = new EmptyHistory();
 
     /**
@@ -45,29 +44,22 @@ public interface Historian
 
     void clear() throws IOException;
 
-    static File defaultHistoryFile()
-    {
+    static File defaultHistoryFile() {
         // Storing in same directory as driver uses
-        File dir = new File( getProperty( "user.home" ), ".neo4j" );
-        return new File( dir, ".cypher_shell_history" );
+        File dir = new File(getProperty("user.home"), ".neo4j");
+        return new File(dir, ".cypher_shell_history");
     }
 
-    class EmptyHistory implements Historian
-    {
+    class EmptyHistory implements Historian {
         @Override
-        public List<String> getHistory()
-        {
+        public List<String> getHistory() {
             return Collections.emptyList();
         }
 
         @Override
-        public void flushHistory() throws IOException
-        {
-        }
+        public void flushHistory() throws IOException {}
 
         @Override
-        public void clear() throws IOException
-        {
-        }
+        public void clear() throws IOException {}
     }
 }

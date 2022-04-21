@@ -24,10 +24,13 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class CachePropertiesPipe(source: Pipe, properties: Array[Expression])
-                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class CachePropertiesPipe(source: Pipe, properties: Array[Expression])(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.map {
       ctx =>
         var i = 0
@@ -40,5 +43,3 @@ case class CachePropertiesPipe(source: Pipe, properties: Array[Expression])
     }
   }
 }
-
-

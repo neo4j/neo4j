@@ -19,63 +19,50 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public class RelTypeSegment implements Segment
-{
+public class RelTypeSegment implements Segment {
     private final String relType;
 
-    public RelTypeSegment( String relType )
-    {
+    public RelTypeSegment(String relType) {
         this.relType = relType;
     }
 
-    public String getRelType()
-    {
+    public String getRelType() {
         return relType;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return relType.hashCode();
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
 
-        if ( obj instanceof RelTypeSegment other )
-        {
-            if ( this.relType == null )
-            {
+        if (obj instanceof RelTypeSegment other) {
+            if (this.relType == null) {
                 return other.relType == null;
-            }
-            else
-            {
-                return this.relType.equals( other.getRelType() );
+            } else {
+                return this.relType.equals(other.getRelType());
             }
         }
         return false;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "RELATIONSHIP %s", relType == null ? "*" : relType );
+    public String toString() {
+        return String.format("RELATIONSHIP %s", relType == null ? "*" : relType);
     }
 
     @Override
-    public boolean satisfies( Segment segment )
-    {
-        if ( segment instanceof RelTypeSegment other )
-        {
-            return relType == null || relType.equals( other.relType );
+    public boolean satisfies(Segment segment) {
+        if (segment instanceof RelTypeSegment other) {
+            return relType == null || relType.equals(other.relType);
         }
         return false;
     }
 
-    public static final RelTypeSegment ALL = new RelTypeSegment( null );
+    public static final RelTypeSegment ALL = new RelTypeSegment(null);
 }

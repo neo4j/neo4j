@@ -40,9 +40,35 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
     result match {
       // Rewrite to approximately `SHOW DATABASES YIELD * WHERE name STARTS WITH 's'` but because we didn't have a YIELD * in the original
       // query the columns are brief and not verbose so it's not exactly the same
-      case ShowDatabase(_, Some(Left((Yield(ReturnItems(returnStar, _, Some(columns)), None, None, None, Some(Where(StartsWith(Variable("name"),StringLiteral("s"))))), None))), _)  if returnStar =>
-        columns shouldBe List("name", "aliases", "access", "address", "role", "requestedStatus", "currentStatus", "error", "default", "home")
-      case _ => fail(s"\n$originalQuery\nshould be rewritten to:\nSHOW DATABASES YIELD * WHERE name STARTS WITH 's'\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
+      case ShowDatabase(
+          _,
+          Some(Left((
+            Yield(
+              ReturnItems(returnStar, _, Some(columns)),
+              None,
+              None,
+              None,
+              Some(Where(StartsWith(Variable("name"), StringLiteral("s"))))
+            ),
+            None
+          ))),
+          _
+        ) if returnStar =>
+        columns shouldBe List(
+          "name",
+          "aliases",
+          "access",
+          "address",
+          "role",
+          "requestedStatus",
+          "currentStatus",
+          "error",
+          "default",
+          "home"
+        )
+      case _ => fail(
+          s"\n$originalQuery\nshould be rewritten to:\nSHOW DATABASES YIELD * WHERE name STARTS WITH 's'\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
+        )
     }
   }
 
@@ -86,7 +112,11 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
     )
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String, expectedDefaultColumns: List[String]): Unit = {
+  private def assertRewrite(
+    originalQuery: String,
+    expectedQuery: String,
+    expectedDefaultColumns: List[String]
+  ): Unit = {
     val (expected, result) = getRewrite(originalQuery, expectedQuery)
 
     val updatedYield = expected.asInstanceOf[ReadAdministrationCommand].yieldOrWhere.map {
@@ -96,6 +126,9 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
     }
     val updatedExpected = expected.asInstanceOf[ReadAdministrationCommand].withYieldOrWhere(updatedYield)
 
-    assert(result === updatedExpected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
+    assert(
+      result === updatedExpected,
+      s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
+    )
   }
 }

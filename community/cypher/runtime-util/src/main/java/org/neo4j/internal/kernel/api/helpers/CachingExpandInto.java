@@ -19,12 +19,16 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.storageengine.api.RelationshipSelection.selection;
+
+import java.util.Iterator;
 import org.eclipse.collections.api.block.function.primitive.IntFunction0;
 import org.eclipse.collections.api.map.primitive.MutableLongIntMap;
 import org.github.jamm.Unmetered;
-
-import java.util.Iterator;
-
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingUnifiedMap;
@@ -44,12 +48,6 @@ import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 
-import static org.neo4j.graphdb.Direction.BOTH;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
-import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.storageengine.api.RelationshipSelection.selection;
-
 /**
  * Utility for performing Expand(Into)
  *
@@ -57,15 +55,14 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
  * This is often a computationally heavy operation so that given direction and types an instance of this class can be reused
  * and previously found connections will be cached and can significantly speed up traversals.
  */
-@SuppressWarnings( {"unused", "UnnecessaryLocalVariable"} )
-public class CachingExpandInto extends DefaultCloseListenable
-{
+@SuppressWarnings({"unused", "UnnecessaryLocalVariable"})
+public class CachingExpandInto extends DefaultCloseListenable {
     static final long CACHING_EXPAND_INTO_SHALLOW_SIZE =
-            shallowSizeOfInstance( CachingExpandInto.class )
-            + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+            shallowSizeOfInstance(CachingExpandInto.class) + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 
-    static final long EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE = shallowSizeOfInstance( ExpandIntoSelectionCursor.class );
-    static final long FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE = shallowSizeOfInstance( FromCachedSelectionCursor.class );
+    static final long EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE =
+            shallowSizeOfInstance(ExpandIntoSelectionCursor.class);
+    static final long FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE = shallowSizeOfInstance(FromCachedSelectionCursor.class);
 
     private static final int EXPENSIVE_DEGREE = -1;
 
@@ -74,35 +71,32 @@ public class CachingExpandInto extends DefaultCloseListenable
 
     @Unmetered
     private final Read read;
+
     @Unmetered
     private final Direction direction;
 
     private final MemoryTracker scopedMemoryTracker;
 
-    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker )
-    {
-        this( read, direction, memoryTracker, DEFAULT_CAPACITY );
+    public CachingExpandInto(Read read, Direction direction, MemoryTracker memoryTracker) {
+        this(read, direction, memoryTracker, DEFAULT_CAPACITY);
     }
 
-    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, int capacity )
-    {
+    public CachingExpandInto(Read read, Direction direction, MemoryTracker memoryTracker, int capacity) {
         this.scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
-        this.scopedMemoryTracker.allocateHeap( CACHING_EXPAND_INTO_SHALLOW_SIZE );
+        this.scopedMemoryTracker.allocateHeap(CACHING_EXPAND_INTO_SHALLOW_SIZE);
         this.read = read;
         this.direction = direction;
-        this.relationshipCache = new RelationshipCache( capacity, scopedMemoryTracker );
-        this.degreeCache = new NodeDegreeCache( capacity, scopedMemoryTracker );
+        this.relationshipCache = new RelationshipCache(capacity, scopedMemoryTracker);
+        this.degreeCache = new NodeDegreeCache(capacity, scopedMemoryTracker);
     }
 
     @Override
-    public void closeInternal()
-    {
+    public void closeInternal() {
         scopedMemoryTracker.close();
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return false;
     }
 
@@ -129,82 +123,77 @@ public class CachingExpandInto extends DefaultCloseListenable
             RelationshipTraversalCursor traversalCursor,
             long firstNode,
             int[] types,
-            long secondNode )
-    {
+            long secondNode) {
         // First of all check if the cursor can do this efficiently itself and if so make use of that faster path
-        if ( nodeCursor.supportsFastRelationshipsTo() )
-        {
-            if ( singleNode( read, nodeCursor, firstNode ) )
-            {
-                nodeCursor.relationshipsTo( traversalCursor, selection( types, direction ), secondNode );
+        if (nodeCursor.supportsFastRelationshipsTo()) {
+            if (singleNode(read, nodeCursor, firstNode)) {
+                nodeCursor.relationshipsTo(traversalCursor, selection(types, direction), secondNode);
             }
             return traversalCursor;
         }
 
-        //Check if we've already done this before for these two nodes in this query
-        Iterator<Relationship> connections = relationshipCache.get( firstNode, secondNode, direction );
-        if ( connections != null )
-        {
-            return new FromCachedSelectionCursor( connections, read, firstNode, secondNode );
+        // Check if we've already done this before for these two nodes in this query
+        Iterator<Relationship> connections = relationshipCache.get(firstNode, secondNode, direction);
+        if (connections != null) {
+            return new FromCachedSelectionCursor(connections, read, firstNode, secondNode);
         }
         Direction reverseDirection = direction.reverse();
-        //Check secondNode, will position nodeCursor at secondNode
-        int secondDegree = degreeCache.getIfAbsentPut( secondNode,
-                () -> calculateTotalDegreeIfCheap( read, secondNode, nodeCursor, reverseDirection, types ));
+        // Check secondNode, will position nodeCursor at secondNode
+        int secondDegree = degreeCache.getIfAbsentPut(
+                secondNode, () -> calculateTotalDegreeIfCheap(read, secondNode, nodeCursor, reverseDirection, types));
 
-        if ( secondDegree == 0 )
-        {
-            return Cursors.emptyTraversalCursor( read );
+        if (secondDegree == 0) {
+            return Cursors.emptyTraversalCursor(read);
         }
         boolean secondNodeHasCheapDegrees = secondDegree != EXPENSIVE_DEGREE;
 
-        //Check firstNode, note that nodeCursor is now pointing at firstNode
-        if ( !singleNode( read, nodeCursor, firstNode ) )
-        {
-            return Cursors.emptyTraversalCursor( read );
+        // Check firstNode, note that nodeCursor is now pointing at firstNode
+        if (!singleNode(read, nodeCursor, firstNode)) {
+            return Cursors.emptyTraversalCursor(read);
         }
         boolean firstNodeHasCheapDegrees = nodeCursor.supportsFastDegreeLookup();
 
-        //Both can determine degree cheaply, start with the one with the lesser degree
-        if ( firstNodeHasCheapDegrees && secondNodeHasCheapDegrees )
-        {
-            //Note that we have already position the cursor at firstNode
-            int firstDegree = degreeCache.getIfAbsentPut( firstNode, () -> calculateTotalDegree( nodeCursor, direction, types ));
+        // Both can determine degree cheaply, start with the one with the lesser degree
+        if (firstNodeHasCheapDegrees && secondNodeHasCheapDegrees) {
+            // Note that we have already position the cursor at firstNode
+            int firstDegree =
+                    degreeCache.getIfAbsentPut(firstNode, () -> calculateTotalDegree(nodeCursor, direction, types));
             long toNode;
             Direction relDirection;
-            if ( firstDegree < secondDegree )
-            {
+            if (firstDegree < secondDegree) {
                 // Everything is correctly positioned
                 toNode = secondNode;
                 relDirection = direction;
-            }
-            else
-            {
-                //cursor is already pointing at firstNode
-                singleNode( read, nodeCursor, secondNode );
+            } else {
+                // cursor is already pointing at firstNode
+                singleNode(read, nodeCursor, secondNode);
                 toNode = firstNode;
                 relDirection = reverseDirection;
             }
 
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, relDirection ), toNode, firstNode, secondNode );
-        }
-        else if ( secondNodeHasCheapDegrees )
-        {
+            return connectingRelationshipsCursor(
+                    relationshipsCursor(traversalCursor, nodeCursor, types, relDirection),
+                    toNode,
+                    firstNode,
+                    secondNode);
+        } else if (secondNodeHasCheapDegrees) {
             long toNode = secondNode;
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode, firstNode, secondNode );
-        }
-        else if ( firstNodeHasCheapDegrees )
-        {
-            //must move to secondNode
-            singleNode( read, nodeCursor, secondNode );
+            return connectingRelationshipsCursor(
+                    relationshipsCursor(traversalCursor, nodeCursor, types, direction), toNode, firstNode, secondNode);
+        } else if (firstNodeHasCheapDegrees) {
+            // must move to secondNode
+            singleNode(read, nodeCursor, secondNode);
             long toNode = firstNode;
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, reverseDirection ), toNode, firstNode, secondNode );
-        }
-        else
-        {
-            //Both are sparse
+            return connectingRelationshipsCursor(
+                    relationshipsCursor(traversalCursor, nodeCursor, types, reverseDirection),
+                    toNode,
+                    firstNode,
+                    secondNode);
+        } else {
+            // Both are sparse
             long toNode = secondNode;
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode, firstNode, secondNode );
+            return connectingRelationshipsCursor(
+                    relationshipsCursor(traversalCursor, nodeCursor, types, direction), toNode, firstNode, secondNode);
         }
     }
 
@@ -214,33 +203,28 @@ public class CachingExpandInto extends DefaultCloseListenable
             long fromNode,
             int[] types,
             long toNode,
-            CursorContext cursorContext )
-    {
-        return connectingRelationships( nodeCursor, cursors.allocateRelationshipTraversalCursor( cursorContext ), fromNode, types, toNode );
+            CursorContext cursorContext) {
+        return connectingRelationships(
+                nodeCursor, cursors.allocateRelationshipTraversalCursor(cursorContext), fromNode, types, toNode);
     }
 
-    private static int calculateTotalDegreeIfCheap( Read read, long node, NodeCursor nodeCursor, Direction direction,
-            int[] types )
-    {
-        if ( !singleNode( read, nodeCursor, node ) )
-        {
+    private static int calculateTotalDegreeIfCheap(
+            Read read, long node, NodeCursor nodeCursor, Direction direction, int[] types) {
+        if (!singleNode(read, nodeCursor, node)) {
             return 0;
         }
-        if ( !nodeCursor.supportsFastDegreeLookup() )
-        {
+        if (!nodeCursor.supportsFastDegreeLookup()) {
             return EXPENSIVE_DEGREE;
         }
-        return calculateTotalDegree( nodeCursor, direction, types );
+        return calculateTotalDegree(nodeCursor, direction, types);
     }
 
-    private static int calculateTotalDegree( NodeCursor nodeCursor, Direction direction, int[] types )
-    {
-        return nodeCursor.degree( selection( types, direction ) );
+    private static int calculateTotalDegree(NodeCursor nodeCursor, Direction direction, int[] types) {
+        return nodeCursor.degree(selection(types, direction));
     }
 
-    private static boolean singleNode( Read read, NodeCursor nodeCursor, long node )
-    {
-        read.singleNode( node, nodeCursor );
+    private static boolean singleNode(Read read, NodeCursor nodeCursor, long node) {
+        read.singleNode(node, nodeCursor);
         return nodeCursor.next();
     }
 
@@ -248,174 +232,148 @@ public class CachingExpandInto extends DefaultCloseListenable
             final RelationshipTraversalCursor allRelationships,
             final long toNode,
             final long firstNode,
-            final long secondNode )
-    {
-        return new ExpandIntoSelectionCursor( allRelationships, scopedMemoryTracker, toNode, firstNode, secondNode );
+            final long secondNode) {
+        return new ExpandIntoSelectionCursor(allRelationships, scopedMemoryTracker, toNode, firstNode, secondNode);
     }
 
-    private class FromCachedSelectionCursor implements RelationshipTraversalCursor
-    {
+    private class FromCachedSelectionCursor implements RelationshipTraversalCursor {
         @Unmetered
         private Iterator<Relationship> relationships;
+
         private Relationship currentRelationship;
+
         @Unmetered
         private final Read read;
+
         private int token;
 
         private final long firstNode;
         private final long secondNode;
 
-        FromCachedSelectionCursor( Iterator<Relationship> relationships, Read read, long firstNode, long secondNode )
-        {
+        FromCachedSelectionCursor(Iterator<Relationship> relationships, Read read, long firstNode, long secondNode) {
             this.relationships = relationships;
             this.read = read;
             this.firstNode = firstNode;
             this.secondNode = secondNode;
-            scopedMemoryTracker.allocateHeap( FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE );
+            scopedMemoryTracker.allocateHeap(FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE);
         }
 
         @Override
-        public boolean next()
-        {
-            if ( relationships != null && relationships.hasNext() )
-            {
+        public boolean next() {
+            if (relationships != null && relationships.hasNext()) {
                 this.currentRelationship = relationships.next();
                 return true;
-            }
-            else
-            {
+            } else {
                 close();
                 return false;
             }
         }
 
         @Override
-        public void removeTracer()
-        {
+        public void removeTracer() {}
+
+        @Override
+        public void otherNode(NodeCursor cursor) {
+            read.singleNode(otherNodeReference(), cursor);
         }
 
         @Override
-        public void otherNode( NodeCursor cursor )
-        {
-            read.singleNode( otherNodeReference(), cursor );
-        }
-
-        @Override
-        public long originNodeReference()
-        {
+        public long originNodeReference() {
             return firstNode;
         }
 
         @Override
-        public void setTracer( KernelReadTracer tracer )
-        {
-            //these are cached no need to trace anything
+        public void setTracer(KernelReadTracer tracer) {
+            // these are cached no need to trace anything
         }
 
         @Override
-        public void close()
-        {
-            if ( relationships != null )
-            {
+        public void close() {
+            if (relationships != null) {
                 relationships = null;
-                scopedMemoryTracker.releaseHeap( FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE );
+                scopedMemoryTracker.releaseHeap(FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE);
             }
         }
 
         @Override
-        public void closeInternal()
-        {
-            //nothing to close
+        public void closeInternal() {
+            // nothing to close
         }
 
         @Override
-        public boolean isClosed()
-        {
+        public boolean isClosed() {
             return false;
         }
 
         @Override
-        public void setCloseListener( CloseListener closeListener )
-        {
-            //nothing close, just hand ourselves back to the closeListener so that
-            //any tracking of this resource can be removed.
-            if ( closeListener != null )
-            {
-                closeListener.onClosed( this );
+        public void setCloseListener(CloseListener closeListener) {
+            // nothing close, just hand ourselves back to the closeListener so that
+            // any tracking of this resource can be removed.
+            if (closeListener != null) {
+                closeListener.onClosed(this);
             }
         }
 
         @Override
-        public void setToken( int token )
-        {
+        public void setToken(int token) {
             this.token = token;
         }
 
         @Override
-        public int getToken()
-        {
+        public int getToken() {
             return token;
         }
 
         @Override
-        public long relationshipReference()
-        {
+        public long relationshipReference() {
             return currentRelationship.id;
         }
 
         @Override
-        public int type()
-        {
+        public int type() {
             return currentRelationship.type;
         }
 
         @Override
-        public long otherNodeReference()
-        {
+        public long otherNodeReference() {
             return secondNode;
         }
 
         @Override
-        public long sourceNodeReference()
-        {
+        public long sourceNodeReference() {
             return currentRelationship.from;
         }
 
         @Override
-        public long targetNodeReference()
-        {
+        public long targetNodeReference() {
             return currentRelationship.to;
         }
 
         @Override
-        public Reference propertiesReference()
-        {
+        public Reference propertiesReference() {
             return currentRelationship.properties;
         }
 
         @Override
-        public void properties( PropertyCursor cursor, PropertySelection selection )
-        {
-            read.relationshipProperties( currentRelationship.id, currentRelationship.properties, selection, cursor );
+        public void properties(PropertyCursor cursor, PropertySelection selection) {
+            read.relationshipProperties(currentRelationship.id, currentRelationship.properties, selection, cursor);
         }
 
         @Override
-        public void source( NodeCursor nodeCursor )
-        {
-            read.singleNode( sourceNodeReference(), nodeCursor );
+        public void source(NodeCursor nodeCursor) {
+            read.singleNode(sourceNodeReference(), nodeCursor);
         }
 
         @Override
-        public void target( NodeCursor nodeCursor )
-        {
-            read.singleNode( targetNodeReference(), nodeCursor );
+        public void target(NodeCursor nodeCursor) {
+            read.singleNode(targetNodeReference(), nodeCursor);
         }
     }
 
-    private class ExpandIntoSelectionCursor extends DefaultCloseListenable implements RelationshipTraversalCursor
-    {
+    private class ExpandIntoSelectionCursor extends DefaultCloseListenable implements RelationshipTraversalCursor {
         @Unmetered
         private final RelationshipTraversalCursor allRelationships;
+
         private final long otherNode;
 
         private final long firstNode;
@@ -429,281 +387,239 @@ public class CachingExpandInto extends DefaultCloseListenable
          * @param firstNode the first node given to connectingRelationships
          * @param secondNode the second node given to connectingRelationships
          */
-        ExpandIntoSelectionCursor( RelationshipTraversalCursor allRelationships,
-                                   MemoryTracker outerMemoryTracker,
-                                   long otherNode,
-                                   long firstNode,
-                                   long secondNode )
-        {
+        ExpandIntoSelectionCursor(
+                RelationshipTraversalCursor allRelationships,
+                MemoryTracker outerMemoryTracker,
+                long otherNode,
+                long firstNode,
+                long secondNode) {
             this.allRelationships = allRelationships;
             this.otherNode = otherNode;
             this.firstNode = firstNode;
             this.secondNode = secondNode;
-            this.innerMemoryTracker = new ScopedMemoryTracker( outerMemoryTracker );
-            this.connections = HeapTrackingArrayList.newArrayList( innerMemoryTracker );
-            innerMemoryTracker.allocateHeap( EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
+            this.innerMemoryTracker = new ScopedMemoryTracker(outerMemoryTracker);
+            this.connections = HeapTrackingArrayList.newArrayList(innerMemoryTracker);
+            innerMemoryTracker.allocateHeap(
+                    EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
         }
 
         @Override
-        public void otherNode( NodeCursor cursor )
-        {
-            allRelationships.otherNode( cursor );
+        public void otherNode(NodeCursor cursor) {
+            allRelationships.otherNode(cursor);
         }
 
         @Override
-        public long originNodeReference()
-        {
+        public long originNodeReference() {
             return firstNode;
         }
 
         @Override
-        public void removeTracer()
-        {
+        public void removeTracer() {
             allRelationships.removeTracer();
         }
 
         @Override
-        public void closeInternal()
-        {
+        public void closeInternal() {
             connections = null;
             innerMemoryTracker.close();
         }
 
         @Override
-        public long relationshipReference()
-        {
+        public long relationshipReference() {
             return allRelationships.relationshipReference();
         }
 
         @Override
-        public int type()
-        {
+        public int type() {
             return allRelationships.type();
         }
 
         @Override
-        public long otherNodeReference()
-        {
+        public long otherNodeReference() {
             return secondNode;
         }
 
         @Override
-        public long sourceNodeReference()
-        {
+        public long sourceNodeReference() {
             return allRelationships.sourceNodeReference();
         }
 
         @Override
-        public long targetNodeReference()
-        {
+        public long targetNodeReference() {
             return allRelationships.targetNodeReference();
         }
 
         @Override
-        public boolean next()
-        {
-            while ( allRelationships.next() )
-            {
-                if ( allRelationships.otherNodeReference() == otherNode )
-                {
-                    innerMemoryTracker.allocateHeap( Relationship.RELATIONSHIP_SHALLOW_SIZE );
-                    connections.add( relationship( allRelationships ) );
+        public boolean next() {
+            while (allRelationships.next()) {
+                if (allRelationships.otherNodeReference() == otherNode) {
+                    innerMemoryTracker.allocateHeap(Relationship.RELATIONSHIP_SHALLOW_SIZE);
+                    connections.add(relationship(allRelationships));
 
                     return true;
                 }
             }
 
-            if ( connections == null )
-            {
+            if (connections == null) {
                 // This cursor is already closed
                 return false;
             }
 
-            // We hand over both the inner memory tracker (via connections) and the connection to the cache. Only the shallow size of this cursor is discarded.
+            // We hand over both the inner memory tracker (via connections) and the connection to the cache. Only the
+            // shallow size of this cursor is discarded.
             long diff = innerMemoryTracker.estimatedHeapMemory() - EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE;
-            relationshipCache.add( firstNode, secondNode, direction, connections, diff );
+            relationshipCache.add(firstNode, secondNode, direction, connections, diff);
             close();
             return false;
         }
 
         @Override
-        public Reference propertiesReference()
-        {
+        public Reference propertiesReference() {
             return allRelationships.propertiesReference();
         }
 
         @Override
-        public void properties( PropertyCursor cursor, PropertySelection selection )
-        {
-            allRelationships.properties( cursor, selection );
+        public void properties(PropertyCursor cursor, PropertySelection selection) {
+            allRelationships.properties(cursor, selection);
         }
 
         @Override
-        public void setTracer( KernelReadTracer tracer )
-        {
-            allRelationships.setTracer( tracer );
+        public void setTracer(KernelReadTracer tracer) {
+            allRelationships.setTracer(tracer);
         }
 
         @Override
-        public void source( NodeCursor nodeCursor )
-        {
-            allRelationships.source( nodeCursor );
+        public void source(NodeCursor nodeCursor) {
+            allRelationships.source(nodeCursor);
         }
 
         @Override
-        public void target( NodeCursor nodeCursor )
-        {
-            allRelationships.target( nodeCursor );
+        public void target(NodeCursor nodeCursor) {
+            allRelationships.target(nodeCursor);
         }
 
         @Override
-        public boolean isClosed()
-        {
+        public boolean isClosed() {
             return connections == null;
         }
     }
 
     private static final int DEFAULT_CAPACITY = 100000;
 
-    static class NodeDegreeCache
-    {
-        static final long DEGREE_CACHE_SHALLOW_SIZE = shallowSizeOfInstance( NodeDegreeCache.class );
+    static class NodeDegreeCache {
+        static final long DEGREE_CACHE_SHALLOW_SIZE = shallowSizeOfInstance(NodeDegreeCache.class);
 
         private final int capacity;
         private final MutableLongIntMap degreeCache;
 
-        NodeDegreeCache( MemoryTracker memoryTracker )
-        {
-            this( DEFAULT_CAPACITY, memoryTracker );
+        NodeDegreeCache(MemoryTracker memoryTracker) {
+            this(DEFAULT_CAPACITY, memoryTracker);
         }
 
-        NodeDegreeCache( int capacity, MemoryTracker memoryTracker )
-        {
+        NodeDegreeCache(int capacity, MemoryTracker memoryTracker) {
             this.capacity = capacity;
-            memoryTracker.allocateHeap( DEGREE_CACHE_SHALLOW_SIZE );
-            this.degreeCache = HeapTrackingCollections.newLongIntMap( memoryTracker );
+            memoryTracker.allocateHeap(DEGREE_CACHE_SHALLOW_SIZE);
+            this.degreeCache = HeapTrackingCollections.newLongIntMap(memoryTracker);
         }
 
-        public int getIfAbsentPut( long node, IntFunction0 update )
-        {
-            //cache is full, but must check if node has already been cached
-            if ( degreeCache.size() >= capacity )
-            {
-                if ( degreeCache.containsKey( node ) )
-                {
-                    return degreeCache.get( node );
-                }
-                else
-                {
+        public int getIfAbsentPut(long node, IntFunction0 update) {
+            // cache is full, but must check if node has already been cached
+            if (degreeCache.size() >= capacity) {
+                if (degreeCache.containsKey(node)) {
+                    return degreeCache.get(node);
+                } else {
                     return update.getAsInt();
                 }
-            }
-            else
-            {
-                if ( degreeCache.containsKey( node ) )
-                {
-                    return degreeCache.get( node );
-                }
-                else
-                {
+            } else {
+                if (degreeCache.containsKey(node)) {
+                    return degreeCache.get(node);
+                } else {
                     int value = update.getAsInt();
-                    degreeCache.put( node, value );
+                    degreeCache.put(node, value);
                     return value;
                 }
             }
         }
     }
 
-    static class RelationshipCache
-    {
-        static final long REL_CACHE_SHALLOW_SIZE = shallowSizeOfInstance( RelationshipCache.class );
+    static class RelationshipCache {
+        static final long REL_CACHE_SHALLOW_SIZE = shallowSizeOfInstance(RelationshipCache.class);
 
-        private final HeapTrackingUnifiedMap<Key,HeapTrackingArrayList<Relationship>> map;
+        private final HeapTrackingUnifiedMap<Key, HeapTrackingArrayList<Relationship>> map;
         private final int capacity;
         private final MemoryTracker memoryTracker;
 
-        RelationshipCache( int capacity, MemoryTracker memoryTracker )
-        {
+        RelationshipCache(int capacity, MemoryTracker memoryTracker) {
             this.capacity = capacity;
             this.memoryTracker = memoryTracker;
-            this.memoryTracker.allocateHeap( REL_CACHE_SHALLOW_SIZE );
-            this.map = HeapTrackingCollections.newMap( memoryTracker );
+            this.memoryTracker.allocateHeap(REL_CACHE_SHALLOW_SIZE);
+            this.map = HeapTrackingCollections.newMap(memoryTracker);
         }
 
-        public void add( long start, long end, Direction direction, HeapTrackingArrayList<Relationship> relationships, long heapSizeOfRelationships )
-        {
-            if ( map.size() < capacity )
-            {
-                map.put( key( start, end, direction ), relationships );
-                memoryTracker.allocateHeap( heapSizeOfRelationships );
-                memoryTracker.allocateHeap( Key.KEY_SHALLOW_SIZE );
+        public void add(
+                long start,
+                long end,
+                Direction direction,
+                HeapTrackingArrayList<Relationship> relationships,
+                long heapSizeOfRelationships) {
+            if (map.size() < capacity) {
+                map.put(key(start, end, direction), relationships);
+                memoryTracker.allocateHeap(heapSizeOfRelationships);
+                memoryTracker.allocateHeap(Key.KEY_SHALLOW_SIZE);
             }
         }
 
         /**
          * Read the relationships from the cache. Returns `null` if not cached.
          */
-        public Iterator<Relationship> get( long start, long end, Direction direction )
-        {
-            HeapTrackingArrayList<Relationship> cachedValue = map.get( key( start, end, direction ) );
+        public Iterator<Relationship> get(long start, long end, Direction direction) {
+            HeapTrackingArrayList<Relationship> cachedValue = map.get(key(start, end, direction));
             return cachedValue == null ? null : cachedValue.iterator();
         }
 
-        public static Key key( long startNode, long endNode, Direction direction )
-        {
+        public static Key key(long startNode, long endNode, Direction direction) {
             long a, b;
             // if direction is BOTH than we keep the key sorted, otherwise direction is
             // important and we keep key as is
-            if ( direction == BOTH && startNode > endNode )
-            {
+            if (direction == BOTH && startNode > endNode) {
                 a = endNode;
                 b = startNode;
-            }
-            else
-            {
+            } else {
                 a = startNode;
                 b = endNode;
             }
-            return new Key( a, b );
+            return new Key(a, b);
         }
 
-        static class Key
-        {
+        static class Key {
             static final long KEY_SHALLOW_SIZE = shallowSizeOfInstance(Key.class);
 
             private final long a, b;
 
-            Key( long a, long b )
-            {
+            Key(long a, long b) {
                 this.a = a;
                 this.b = b;
             }
 
             @Override
-            public boolean equals( Object o )
-            {
-                if ( this == o )
-                {
+            public boolean equals(Object o) {
+                if (this == o) {
                     return true;
                 }
-                if ( o == null || getClass() != o.getClass() )
-                {
+                if (o == null || getClass() != o.getClass()) {
                     return false;
                 }
 
                 Key key = (Key) o;
 
-                if ( a != key.a )
-                {
+                if (a != key.a) {
                     return false;
                 }
                 return b == key.b;
-
             }
 
             @Override
-            public int hashCode()
-            {
+            public int hashCode() {
                 int result = (int) (a ^ (a >>> 32));
                 result = 31 * result + (int) (b ^ (b >>> 32));
                 return result;
@@ -711,26 +627,23 @@ public class CachingExpandInto extends DefaultCloseListenable
         }
     }
 
-    private static Relationship relationship( RelationshipTraversalCursor allRelationships )
-    {
+    private static Relationship relationship(RelationshipTraversalCursor allRelationships) {
         return new Relationship(
                 allRelationships.relationshipReference(),
                 allRelationships.sourceNodeReference(),
                 allRelationships.targetNodeReference(),
                 allRelationships.propertiesReference(),
-                allRelationships.type() );
+                allRelationships.type());
     }
 
-    private static class Relationship
-    {
-        static final long RELATIONSHIP_SHALLOW_SIZE = shallowSizeOfInstance( Relationship.class );
+    private static class Relationship {
+        static final long RELATIONSHIP_SHALLOW_SIZE = shallowSizeOfInstance(Relationship.class);
 
         private final long id, from, to;
         private final int type;
         private final Reference properties;
 
-        private Relationship( long id, long from, long to, Reference properties, int type )
-        {
+        private Relationship(long id, long from, long to, Reference properties, int type) {
             this.id = id;
             this.from = from;
             this.to = to;

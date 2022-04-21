@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 
 abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
-                                                                           edition: Edition[CONTEXT],
-                                                                           runtime: CypherRuntime[CONTEXT]
-                                                                         ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
   private val actualSize = 11
 
   test("should get count for single label node") {
@@ -196,10 +196,10 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
       .build()
     val plan = buildPlan(logicalQuery, runtime)
 
-    //then count should be 0
+    // then count should be 0
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
 
-    //when we later create nodes with the label
+    // when we later create nodes with the label
     val nodes = given { nodeGraph(actualSize, "NotThereYet") }
 
     // then we should get the correct count

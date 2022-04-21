@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.annotations.service.Service;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 
@@ -37,8 +36,7 @@ import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
  * It should never be used directly by user code.
  */
 @Service
-public interface PageSwapperFactory
-{
+public interface PageSwapperFactory {
     /**
      * Create a PageSwapper for the given file.
      *
@@ -60,7 +58,14 @@ public interface PageSwapperFactory
      * instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
      * false.
      */
-    PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
-            boolean preallocateStoreFiles, IOController ioController, SwapperSet swappers ) throws IOException;
-
+    PageSwapper createPageSwapper(
+            Path path,
+            int filePageSize,
+            PageEvictionCallback onEviction,
+            boolean createIfNotExist,
+            boolean useDirectIO,
+            boolean preallocateStoreFiles,
+            IOController ioController,
+            SwapperSet swappers)
+            throws IOException;
 }

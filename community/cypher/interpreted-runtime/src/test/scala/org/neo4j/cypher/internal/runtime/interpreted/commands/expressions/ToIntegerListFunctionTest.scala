@@ -79,25 +79,35 @@ class ToIntegerListFunctionTest extends CypherFunSuite with ScalaCheckDrivenProp
   }
 
   test("should convert a list with a large number to a list of integers") {
-    assert(toIntegerList(Seq("1", "10508455564958384115", "8589934592.0")) == VirtualValues.list(longValue(1), NO_VALUE, longValue(8589934592L)))
+    assert(toIntegerList(Seq("1", "10508455564958384115", "8589934592.0")) == VirtualValues.list(
+      longValue(1),
+      NO_VALUE,
+      longValue(8589934592L)
+    ))
   }
 
   test("should not throw an exception if the list argument contains an object which cannot be converted to integer") {
-    assert(toIntegerList(Seq("1234", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))) === VirtualValues.list(longValue(1234), NO_VALUE))
+    assert(toIntegerList(
+      Seq("1234", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))
+    ) === VirtualValues.list(longValue(1234), NO_VALUE))
   }
 
   test("should throw an exception if the list argument contains a non-list") {
     val caughtException = the[CypherTypeException] thrownBy toIntegerList("foo")
-    caughtException.getMessage should equal("""Invalid input for function 'toIntegerList()': Expected a List, got: String("foo")""")
+    caughtException.getMessage should equal(
+      """Invalid input for function 'toIntegerList()': Expected a List, got: String("foo")"""
+    )
   }
 
   test("should not throw an exception for any value in the list") {
     val generator: Gen[List[Any]] = Gen.listOf(Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double]))
-    forAll(generator) { s => {
-      import scala.jdk.CollectionConverters.IterableHasAsScala
-      val result = toIntegerList(s)
-      Inspectors.forAll(result.asInstanceOf[ListValue].asScala) {  _ should (be (a [LongValue]) or equal(NO_VALUE)) }
-    }}
+    forAll(generator) { s =>
+      {
+        import scala.jdk.CollectionConverters.IterableHasAsScala
+        val result = toIntegerList(s)
+        Inspectors.forAll(result.asInstanceOf[ListValue].asScala) { _ should (be(a[LongValue]) or equal(NO_VALUE)) }
+      }
+    }
   }
 
   private def toIntegerList(orig: Any) = {

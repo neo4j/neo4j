@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -32,40 +31,40 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public class ExecutingQueryFactory
-{
+public class ExecutingQueryFactory {
     private static final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AtomicBoolean trackQueryAllocations;
 
-    public ExecutingQueryFactory( SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, Config config )
-    {
+    public ExecutingQueryFactory(SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, Config config) {
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
-        this.trackQueryAllocations = new AtomicBoolean( config.get( GraphDatabaseSettings.track_query_allocation ) );
-        config.addListener( GraphDatabaseSettings.track_query_allocation,
-                            ( before, after ) -> trackQueryAllocations.set( after ) );
-
+        this.trackQueryAllocations = new AtomicBoolean(config.get(GraphDatabaseSettings.track_query_allocation));
+        config.addListener(
+                GraphDatabaseSettings.track_query_allocation, (before, after) -> trackQueryAllocations.set(after));
     }
 
-    public ExecutingQuery createForStatement( KernelStatement statement, String queryText, MapValue queryParameters )
-    {
+    public ExecutingQuery createForStatement(KernelStatement statement, String queryText, MapValue queryParameters) {
         KernelTransactionImplementation transaction = statement.getTransaction();
-        ExecutingQuery executingQuery = createUnbound( queryText,
-                                                       queryParameters,
-                                                       transaction.clientInfo(),
-                                                       statement.executingUser(),
-                                                       statement.authenticatedUser(),
-                                                       transaction.getMetaData() );
-        bindToStatement( executingQuery, statement );
+        ExecutingQuery executingQuery = createUnbound(
+                queryText,
+                queryParameters,
+                transaction.clientInfo(),
+                statement.executingUser(),
+                statement.authenticatedUser(),
+                transaction.getMetaData());
+        bindToStatement(executingQuery, statement);
         return executingQuery;
     }
 
-    public ExecutingQuery createUnbound( String queryText, MapValue queryParameters,
-                                         ClientConnectionInfo clientConnectionInfo, String executingUser, String authenticatedUser,
-                                         Map<String,Object> transactionMetaData )
-    {
+    public ExecutingQuery createUnbound(
+            String queryText,
+            MapValue queryParameters,
+            ClientConnectionInfo clientConnectionInfo,
+            String executingUser,
+            String authenticatedUser,
+            Map<String, Object> transactionMetaData) {
         Thread thread = Thread.currentThread();
         return new ExecutingQuery(
                 lastQueryId.incrementAndGet(),
@@ -79,23 +78,19 @@ public class ExecutingQueryFactory
                 thread.getName(),
                 clock,
                 cpuClockRef.get(),
-                trackQueryAllocations.get() );
+                trackQueryAllocations.get());
     }
 
-    public static void bindToStatement( ExecutingQuery executingQuery, KernelStatement statement )
-    {
-        executingQuery.onTransactionBound( new ExecutingQuery.TransactionBinding(
+    public static void bindToStatement(ExecutingQuery executingQuery, KernelStatement statement) {
+        executingQuery.onTransactionBound(new ExecutingQuery.TransactionBinding(
                 statement.namedDatabaseId(),
                 statement::getHits,
                 statement::getFaults,
                 () -> statement.locks().activeLockCount(),
-                statement.getTransaction().getUserTransactionId()
-        ) );
+                statement.getTransaction().getUserTransactionId()));
     }
 
-    public static void unbindFromTransaction( ExecutingQuery executingQuery, long userTransactionId )
-    {
-        executingQuery.onTransactionUnbound( userTransactionId );
+    public static void unbindFromTransaction(ExecutingQuery executingQuery, long userTransactionId) {
+        executingQuery.onTransactionUnbound(userTransactionId);
     }
 }
-

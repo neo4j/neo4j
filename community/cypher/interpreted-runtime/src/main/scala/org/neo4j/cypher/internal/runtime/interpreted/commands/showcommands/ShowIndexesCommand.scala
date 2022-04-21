@@ -59,7 +59,9 @@ import scala.collection.immutable.ListMap
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 // SHOW [ALL|FULLTEXT|LOOKUP|POINT|RANGE|TEXT] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
-case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
+case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, columns: List[ShowColumn])
+    extends Command(columns) {
+
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val ctx = state.query
     ctx.assertShowIndexAllowed()
@@ -88,7 +90,8 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         }
     }
 
-    val sortedRelevantIndexes: ListMap[IndexDescriptor, IndexInfo] = ListMap(relevantIndexes.toSeq.sortBy(_._1.getName): _*)
+    val sortedRelevantIndexes: ListMap[IndexDescriptor, IndexInfo] =
+      ListMap(relevantIndexes.toSeq.sortBy(_._1.getName): _*)
     val rows = sortedRelevantIndexes.map {
       case (indexDescriptor: IndexDescriptor, indexInfo: IndexInfo) =>
         val indexStatus = indexInfo.indexStatus
@@ -102,10 +105,12 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         val labelsOrTypes = indexInfo.labelsOrTypes
         val properties = indexInfo.properties
         val providerName = indexDescriptor.getIndexProvider.name
-        val labelsOrTypesValue = if (isLookupIndex) Values.NO_VALUE
-                                 else VirtualValues.fromList(labelsOrTypes.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava)
-        val propertiesValue = if (isLookupIndex) Values.NO_VALUE
-                              else VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava)
+        val labelsOrTypesValue =
+          if (isLookupIndex) Values.NO_VALUE
+          else VirtualValues.fromList(labelsOrTypes.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava)
+        val propertiesValue =
+          if (isLookupIndex) Values.NO_VALUE
+          else VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava)
 
         val briefResult = Map(
           // The id of the index
@@ -136,7 +141,17 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
             "options" -> optionsValue,
             "failureMessage" -> Values.stringValue(indexStatus.failureMessage),
             "createStatement" -> Values.stringValue(
-              createIndexStatement(name, indexType, entityType, labelsOrTypes, properties, providerName, indexConfig, indexStatus.maybeConstraint))
+              createIndexStatement(
+                name,
+                indexType,
+                entityType,
+                labelsOrTypes,
+                properties,
+                providerName,
+                indexConfig,
+                indexStatus.maybeConstraint
+              )
+            )
           )
         } else {
           briefResult
@@ -151,25 +166,32 @@ object ShowIndexesCommand {
   sealed trait Uniqueness
 
   case object Unique extends Uniqueness {
-    override final val toString: String = "UNIQUE"
+    final override val toString: String = "UNIQUE"
   }
 
   case object Nonunique extends Uniqueness {
-    override final val toString: String = "NONUNIQUE"
+    final override val toString: String = "NONUNIQUE"
   }
 
-  private def createIndexStatement(name: String,
-                                   indexType: IndexType,
-                                   entityType: EntityType,
-                                   labelsOrTypes: List[String],
-                                   properties: List[String],
-                                   providerName: String,
-                                   indexConfig: IndexConfig,
-                                   maybeConstraint: Option[ConstraintDescriptor]): String = {
+  private def createIndexStatement(
+    name: String,
+    indexType: IndexType,
+    entityType: EntityType,
+    labelsOrTypes: List[String],
+    properties: List[String],
+    providerName: String,
+    indexConfig: IndexConfig,
+    maybeConstraint: Option[ConstraintDescriptor]
+  ): String = {
 
     val escapedName = s"`${escapeBackticks(name)}`"
 
-    def constraintCommand(labelsOrTypesWithColons: String, escapedNodeProperties: String, predicate: String, options: String): String =
+    def constraintCommand(
+      labelsOrTypesWithColons: String,
+      escapedNodeProperties: String,
+      predicate: String,
+      options: String
+    ): String =
       s"CREATE CONSTRAINT $escapedName FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedNodeProperties) $predicate OPTIONS $options"
 
     indexType match {
@@ -186,7 +208,9 @@ object ShowIndexesCommand {
             val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
             constraintCommand(labelsOrTypesWithColons, escapedNodeProperties, "IS NODE KEY", optionsString)
           case Some(_) =>
-            throw new IllegalArgumentException("Expected an index or index backed constraint, found another constraint.")
+            throw new IllegalArgumentException(
+              "Expected an index or index backed constraint, found another constraint."
+            )
           case None =>
             entityType match {
               case EntityType.NODE =>
@@ -253,7 +277,7 @@ object ShowIndexesCommand {
   private def fullTextConfigValueAsString(configValue: Value): String = {
     configValue match {
       case booleanValue: BooleanValue => booleanValue.booleanValue().toString
-      case stringValue: StringValue =>"'" + stringValue.stringValue() + "'"
+      case stringValue: StringValue   => "'" + stringValue.stringValue() + "'"
       case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
     }
   }

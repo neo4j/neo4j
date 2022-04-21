@@ -26,21 +26,14 @@ import java.io.IOException;
  * Interface defining simple encoders for each defined
  * Bolt response message.
  */
-public interface BoltResponseMessageWriter extends BoltRecordConsumer, Closeable
-{
-    void write( ResponseMessage message ) throws IOException;
+public interface BoltResponseMessageWriter extends BoltRecordConsumer, Closeable {
+    void write(ResponseMessage message) throws IOException;
 
     void flush() throws IOException;
 
-    default void keepAlive() throws IOException
-    {
-    }
+    default void keepAlive() throws IOException {}
 
-    default void flushBufferOrSendKeepAlive() throws IOException
-    {
-    }
+    default void flushBufferOrSendKeepAlive() throws IOException {}
 
-    default void initKeepAliveTimer()
-    {
-    }
+    default void initKeepAliveTimer() {}
 }

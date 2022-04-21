@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 
-class ToStringTest extends FunctionTestBase("toString")  {
+class ToStringTest extends FunctionTestBase("toString") {
 
   test("should accept correct types or types that could be correct at runtime") {
     testValidTypes(CTString)(CTString)

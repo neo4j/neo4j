@@ -29,12 +29,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
  * for each transaction.
  */
 @FunctionalInterface
-public interface LogEntryWriterFactory
-{
-    <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel );
+public interface LogEntryWriterFactory {
+    <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(T channel);
 
-    default <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, KernelVersion version )
-    {
-        return version == null ? createEntryWriter( channel ) : new LogEntryWriter<>( channel, version );
+    default <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(T channel, KernelVersion version) {
+        return version == null ? createEntryWriter(channel) : new LogEntryWriter<>(channel, version);
     }
 }

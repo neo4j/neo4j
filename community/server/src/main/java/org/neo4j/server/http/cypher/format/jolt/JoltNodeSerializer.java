@@ -22,46 +22,39 @@ package org.neo4j.server.http.cypher.format.jolt;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 
-final class JoltNodeSerializer extends StdSerializer<Node>
-{
-    JoltNodeSerializer()
-    {
-        super( Node.class );
+final class JoltNodeSerializer extends StdSerializer<Node> {
+    JoltNodeSerializer() {
+        super(Node.class);
     }
 
     @Override
-    public void serialize( Node node, JsonGenerator generator, SerializerProvider provider ) throws IOException
-    {
-        generator.writeStartObject( node );
-        generator.writeFieldName( Sigil.NODE.getValue() );
+    public void serialize(Node node, JsonGenerator generator, SerializerProvider provider) throws IOException {
+        generator.writeStartObject(node);
+        generator.writeFieldName(Sigil.NODE.getValue());
 
         generator.writeStartArray();
 
-        generator.writeNumber( node.getId() );
+        generator.writeNumber(node.getId());
 
         generator.writeStartArray();
-        for ( Label label : node.getLabels() )
-        {
-            generator.writeString( label.name() );
+        for (Label label : node.getLabels()) {
+            generator.writeString(label.name());
         }
         generator.writeEndArray();
 
-        var properties = Optional.ofNullable( node.getAllProperties() ).orElseGet( Collections::emptyMap );
+        var properties = Optional.ofNullable(node.getAllProperties()).orElseGet(Collections::emptyMap);
 
         generator.writeStartObject();
 
-        for ( var entry : properties.entrySet() )
-        {
-            generator.writeFieldName( entry.getKey() );
-            generator.writeObject( entry.getValue() );
+        for (var entry : properties.entrySet()) {
+            generator.writeFieldName(entry.getKey());
+            generator.writeObject(entry.getValue());
         }
 
         generator.writeEndObject();

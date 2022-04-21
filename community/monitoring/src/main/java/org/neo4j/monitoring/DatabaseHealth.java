@@ -20,23 +20,20 @@
 package org.neo4j.monitoring;
 
 import java.util.Objects;
-
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 
-public class DatabaseHealth extends LifecycleAdapter implements Health
-{
-    private static final String panicMessage = "The database has encountered a critical error, " +
-            "and needs to be restarted. Please see database logs for more details.";
+public class DatabaseHealth extends LifecycleAdapter implements Health {
+    private static final String panicMessage = "The database has encountered a critical error, "
+            + "and needs to be restarted. Please see database logs for more details.";
 
     private volatile boolean healthy = true;
     private final PanicEventGenerator panicEventGenerator;
     private final InternalLog log;
     private volatile Throwable causeOfPanic;
 
-    public DatabaseHealth( PanicEventGenerator panicEventGenerator, InternalLog log )
-    {
+    public DatabaseHealth(PanicEventGenerator panicEventGenerator, InternalLog log) {
         this.panicEventGenerator = panicEventGenerator;
         this.log = log;
     }
@@ -49,42 +46,34 @@ public class DatabaseHealth extends LifecycleAdapter implements Health
      * @throws EXCEPTION exception type to wrap cause in.
      */
     @Override
-    public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
-    {
-        if ( !healthy )
-        {
-            throw Exceptions.disguiseException( panicDisguise, panicMessage, causeOfPanic );
+    public <EXCEPTION extends Throwable> void assertHealthy(Class<EXCEPTION> panicDisguise) throws EXCEPTION {
+        if (!healthy) {
+            throw Exceptions.disguiseException(panicDisguise, panicMessage, causeOfPanic);
         }
     }
 
     @Override
-    public synchronized void panic( Throwable cause )
-    {
-        if ( !healthy )
-        {
+    public synchronized void panic(Throwable cause) {
+        if (!healthy) {
             return;
         }
 
-        Objects.requireNonNull( cause, "Must provide a non null cause for the database panic" );
+        Objects.requireNonNull(cause, "Must provide a non null cause for the database panic");
         this.causeOfPanic = cause;
         this.healthy = false;
-        log.error( "Database panic: " + panicMessage, cause );
-        if ( panicEventGenerator != null )
-        {
-            panicEventGenerator.panic( cause );
+        log.error("Database panic: " + panicMessage, cause);
+        if (panicEventGenerator != null) {
+            panicEventGenerator.panic(cause);
         }
     }
 
     @Override
-    public boolean isHealthy()
-    {
+    public boolean isHealthy() {
         return healthy;
     }
 
     @Override
-    public Throwable cause()
-    {
+    public Throwable cause() {
         return causeOfPanic;
     }
-
 }

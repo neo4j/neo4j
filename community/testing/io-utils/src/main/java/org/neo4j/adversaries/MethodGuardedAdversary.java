@@ -19,37 +19,32 @@
  */
 package org.neo4j.adversaries;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.lang.StackWalker.StackFrame;
 import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toSet;
-
 /**
  * An adversary that delegates failure injection only when invoked through certain methods.
  */
-public class MethodGuardedAdversary extends StackTraceElementGuardedAdversary
-{
-    public MethodGuardedAdversary( Adversary delegate, Method... victimMethodSet )
-    {
-        super( delegate, new MethodsFramePredicate( victimMethodSet ) );
+public class MethodGuardedAdversary extends StackTraceElementGuardedAdversary {
+    public MethodGuardedAdversary(Adversary delegate, Method... victimMethodSet) {
+        super(delegate, new MethodsFramePredicate(victimMethodSet));
     }
 
-    private static class MethodsFramePredicate implements Predicate<StackFrame>
-    {
+    private static class MethodsFramePredicate implements Predicate<StackFrame> {
         private final Set<String> victimMethods;
 
-        MethodsFramePredicate( Method... victimMethodSet )
-        {
-            victimMethods = Stream.of( victimMethodSet ).map( Method::getName ).collect( toSet() );
+        MethodsFramePredicate(Method... victimMethodSet) {
+            victimMethods = Stream.of(victimMethodSet).map(Method::getName).collect(toSet());
         }
 
         @Override
-        public boolean test( StackFrame stackFrame )
-        {
-            return victimMethods.contains( stackFrame.getMethodName() );
+        public boolean test(StackFrame stackFrame) {
+            return victimMethods.contains(stackFrame.getMethodName());
         }
     }
 }

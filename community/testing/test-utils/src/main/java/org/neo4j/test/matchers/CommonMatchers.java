@@ -19,69 +19,52 @@
  */
 package org.neo4j.test.matchers;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-public final class CommonMatchers
-{
-    private CommonMatchers()
-    {
-    }
+public final class CommonMatchers {
+    private CommonMatchers() {}
 
     /**
      * Checks that an iterable of T contains items that each match one and only one of the provided matchers and
      * and that each matchers matches exactly one and only one of the items from the iterable.
      */
     @SafeVarargs
-    public static <T> Matcher<? super Iterable<T>> matchesOneToOneInAnyOrder( Matcher<? super T>... expectedMatchers )
-    {
-        return new MatchesOneToOneInAnyOrder<>( expectedMatchers );
+    public static <T> Matcher<? super Iterable<T>> matchesOneToOneInAnyOrder(Matcher<? super T>... expectedMatchers) {
+        return new MatchesOneToOneInAnyOrder<>(expectedMatchers);
     }
 
-    private static class MatchesOneToOneInAnyOrder<T> extends TypeSafeMatcher<Iterable<T>>
-    {
+    private static class MatchesOneToOneInAnyOrder<T> extends TypeSafeMatcher<Iterable<T>> {
         private final Matcher<? super T>[] expectedMatchers;
 
         @SafeVarargs
-        MatchesOneToOneInAnyOrder( Matcher<? super T>... expectedMatchers )
-        {
+        MatchesOneToOneInAnyOrder(Matcher<? super T>... expectedMatchers) {
             this.expectedMatchers = expectedMatchers;
         }
 
         @Override
-        protected boolean matchesSafely( Iterable<T> items )
-        {
+        protected boolean matchesSafely(Iterable<T> items) {
             Set<Matcher<? super T>> matchers = uniqueMatchers();
 
-            for ( T item : items )
-            {
+            for (T item : items) {
                 Matcher<? super T> matcherFound = null;
-                for ( Matcher<? super T> matcherConsidered : matchers )
-                {
-                    if ( matcherConsidered.matches( item ) )
-                    {
-                        if ( matcherFound == null )
-                        {
+                for (Matcher<? super T> matcherConsidered : matchers) {
+                    if (matcherConsidered.matches(item)) {
+                        if (matcherFound == null) {
                             matcherFound = matcherConsidered;
-                        }
-                        else
-                        {
+                        } else {
                             return false;
                         }
                     }
                 }
-                if ( matcherFound == null )
-                {
+                if (matcherFound == null) {
                     return false;
-                }
-                else
-                {
-                    matchers.remove( matcherFound );
+                } else {
+                    matchers.remove(matcherFound);
                 }
             }
 
@@ -89,19 +72,17 @@ public final class CommonMatchers
         }
 
         @Override
-        public void describeTo( Description description )
-        {
+        public void describeTo(Description description) {
             Set<Matcher<? super T>> matchers = uniqueMatchers();
 
-            description.appendText( "items that each match exactly one of " );
-            description.appendList( "{ ", ", ", " }", matchers );
-            description.appendText( " and exactly as many items as matchers" );
+            description.appendText("items that each match exactly one of ");
+            description.appendList("{ ", ", ", " }", matchers);
+            description.appendText(" and exactly as many items as matchers");
         }
 
-        private Set<Matcher<? super T>> uniqueMatchers()
-        {
+        private Set<Matcher<? super T>> uniqueMatchers() {
             Set<Matcher<? super T>> matchers = new HashSet<>();
-            Collections.addAll( matchers, expectedMatchers );
+            Collections.addAll(matchers, expectedMatchers);
             return matchers;
         }
     }

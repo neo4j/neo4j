@@ -20,11 +20,9 @@
 package org.neo4j.token;
 
 import java.util.function.IntPredicate;
-
 import org.neo4j.exceptions.KernelException;
 
-public interface TokenCreator
-{
+public interface TokenCreator {
     /**
      * Create a token by the given name and return the newly allocated id for this token.
      * <p>
@@ -35,7 +33,7 @@ public interface TokenCreator
      * @return The id of the allocated token name.
      * @throws KernelException If the inner transaction used to allocate the token encountered a problem.
      */
-    int createToken( String name, boolean internal ) throws KernelException;
+    int createToken(String name, boolean internal) throws KernelException;
 
     /**
      * Create the tokens by the given names, and store their ids in the corresponding entry in the {@code ids} array,
@@ -47,13 +45,11 @@ public interface TokenCreator
      * @param indexFilter A filter for the array indexes for which a token needs an id.
      * @throws KernelException If the inner transaction used to allocate the tokens encountered a problem.
      */
-    default void createTokens( String[] names, int[] ids, boolean internal, IntPredicate indexFilter ) throws KernelException
-    {
-        for ( int i = 0; i < ids.length; i++ )
-        {
-            if ( indexFilter.test( i ) )
-            {
-                ids[i] = createToken( names[i], internal );
+    default void createTokens(String[] names, int[] ids, boolean internal, IntPredicate indexFilter)
+            throws KernelException {
+        for (int i = 0; i < ids.length; i++) {
+            if (indexFilter.test(i)) {
+                ids[i] = createToken(names[i], internal);
             }
         }
     }

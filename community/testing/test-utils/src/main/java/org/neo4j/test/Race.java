@@ -19,6 +19,11 @@
  */
 package org.neo4j.test;
 
+import static java.lang.Long.max;
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,42 +36,33 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
-import static java.lang.Long.max;
-import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 /**
  * Simple race scenario, a utility for executing multiple threads coordinated to start at the same time.
  * Add contestants with {@link #addContestant(Runnable)} and then when all have been added, start them
  * simultaneously using {@link #go()}, which will block until all contestants have completed.
  * Any errors from contestants are propagated out from {@link #go()}.
  */
-public class Race
-{
+public class Race {
     private static final int UNLIMITED = 0;
 
-    public interface ThrowingRunnable
-    {
+    public interface ThrowingRunnable {
         void run() throws Throwable;
     }
 
     private final List<Contestant> contestants = new ArrayList<>();
     private volatile CountDownLatch readySet;
-    private final CountDownLatch go = new CountDownLatch( 1 );
+    private final CountDownLatch go = new CountDownLatch(1);
     private volatile int baseStartDelay;
     private volatile int maxRandomStartDelay;
     private volatile BooleanSupplier endCondition;
     private volatile boolean failure;
     private Consumer<Throwable> failureAction = f -> {};
 
-    public Race withRandomStartDelays()
-    {
-        return withRandomStartDelays( 10, 100 );
+    public Race withRandomStartDelays() {
+        return withRandomStartDelays(10, 100);
     }
 
-    public Race withRandomStartDelays( int base, int random )
-    {
+    public Race withRandomStartDelays(int base, int random) {
         this.baseStartDelay = base;
         this.maxRandomStartDelay = random;
         return this;
@@ -80,11 +76,9 @@ public class Race
      * signals that the race should end.
      * @return this {@link Race} instance.
      */
-    public Race withEndCondition( BooleanSupplier... endConditions )
-    {
-        for ( BooleanSupplier endCondition : endConditions )
-        {
-            this.endCondition = mergeEndCondition( endCondition );
+    public Race withEndCondition(BooleanSupplier... endConditions) {
+        for (BooleanSupplier endCondition : endConditions) {
+            this.endCondition = mergeEndCondition(endCondition);
         }
         return this;
     }
@@ -97,24 +91,22 @@ public class Race
      * @param unit unit of time in {@link TimeUnit}.
      * @return this {@link Race} instance.
      */
-    public Race withMaxDuration( long time, TimeUnit unit )
-    {
-        long endTimeNano = nanoTime() + unit.toNanos( time );
-        this.endCondition = mergeEndCondition( () -> nanoTime() >= endTimeNano );
+    public Race withMaxDuration(long time, TimeUnit unit) {
+        long endTimeNano = nanoTime() + unit.toNanos(time);
+        this.endCondition = mergeEndCondition(() -> nanoTime() >= endTimeNano);
         return this;
     }
 
-    public Race withFailureAction( Consumer<Throwable> failureAction )
-    {
+    public Race withFailureAction(Consumer<Throwable> failureAction) {
         this.failureAction = failureAction;
         return this;
     }
 
-    private BooleanSupplier mergeEndCondition( BooleanSupplier additionalEndCondition )
-    {
+    private BooleanSupplier mergeEndCondition(BooleanSupplier additionalEndCondition) {
         BooleanSupplier existingEndCondition = endCondition;
-        return existingEndCondition == null ? additionalEndCondition :
-            () -> existingEndCondition.getAsBoolean() || additionalEndCondition.getAsBoolean();
+        return existingEndCondition == null
+                ? additionalEndCondition
+                : () -> existingEndCondition.getAsBoolean() || additionalEndCondition.getAsBoolean();
     }
 
     /**
@@ -124,65 +116,51 @@ public class Race
      * @param runnable actual contestant.
      * @return contestant wrapped in a try-catch (and re-throw as unchecked exception).
      */
-    public static Runnable throwing( ThrowingRunnable runnable )
-    {
-        return () ->
-        {
-            try
-            {
+    public static Runnable throwing(ThrowingRunnable runnable) {
+        return () -> {
+            try {
                 runnable.run();
-            }
-            catch ( Throwable e )
-            {
-                throw new RuntimeException( e );
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
             }
         };
     }
 
-    public void addContestants( int count, Runnable contestant )
-    {
-        addContestants( count, contestant, UNLIMITED );
+    public void addContestants(int count, Runnable contestant) {
+        addContestants(count, contestant, UNLIMITED);
     }
 
-    public void addContestants( int count, Runnable contestant, int maxNumberOfRuns )
-    {
-        addContestants( count, i -> contestant, maxNumberOfRuns );
+    public void addContestants(int count, Runnable contestant, int maxNumberOfRuns) {
+        addContestants(count, i -> contestant, maxNumberOfRuns);
     }
 
-    public void addContestants( int count, IntFunction<Runnable> contestantSupplier )
-    {
-        addContestants( count, contestantSupplier, UNLIMITED );
+    public void addContestants(int count, IntFunction<Runnable> contestantSupplier) {
+        addContestants(count, contestantSupplier, UNLIMITED);
     }
 
-    public void addContestants( int count, IntFunction<Runnable> contestantSupplier, int maxNumberOfRuns )
-    {
-        for ( int i = 0; i < count; i++ )
-        {
-            addContestant( contestantSupplier.apply( i ), maxNumberOfRuns );
+    public void addContestants(int count, IntFunction<Runnable> contestantSupplier, int maxNumberOfRuns) {
+        for (int i = 0; i < count; i++) {
+            addContestant(contestantSupplier.apply(i), maxNumberOfRuns);
         }
     }
 
-    public void addContestant( Runnable contestant )
-    {
-        addContestant( contestant, UNLIMITED );
+    public void addContestant(Runnable contestant) {
+        addContestant(contestant, UNLIMITED);
     }
 
-    public void addContestant( Runnable contestant, int maxNumberOfRuns )
-    {
-        contestants.add( new Contestant( contestant, contestants.size(), maxNumberOfRuns ) );
+    public void addContestant(Runnable contestant, int maxNumberOfRuns) {
+        contestants.add(new Contestant(contestant, contestants.size(), maxNumberOfRuns));
     }
 
-    public void shuffleContestants()
-    {
-        Collections.shuffle( contestants );
+    public void shuffleContestants() {
+        Collections.shuffle(contestants);
     }
 
     /**
      * Starts the race and returns without waiting for contestants to complete.
      * @return Async instance for awaiting and get exceptions for the race.
      */
-    public Async goAsync()
-    {
+    public Async goAsync() {
         return startRace();
     }
 
@@ -191,9 +169,8 @@ public class Race
      *
      * @throws Throwable on any exception thrown from any contestant.
      */
-    public void go() throws Throwable
-    {
-        startRace().await( 0, TimeUnit.MILLISECONDS );
+    public void go() throws Throwable {
+        startRace().await(0, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -201,27 +178,20 @@ public class Race
      *
      * @throws Throwable on any exception thrown from any contestant.
      */
-    public void go( long maxWaitTime, TimeUnit unit ) throws Throwable
-    {
-        startRace().await( maxWaitTime, unit );
+    public void go(long maxWaitTime, TimeUnit unit) throws Throwable {
+        startRace().await(maxWaitTime, unit);
     }
 
     /**
      * Like go, but wraps any exception in {@link RuntimeException}.
      */
-    public void goUnchecked()
-    {
-        try
-        {
+    public void goUnchecked() {
+        try {
             go();
-        }
-        catch ( RuntimeException e )
-        {
+        } catch (RuntimeException e) {
             throw e;
-        }
-        catch ( Throwable t )
-        {
-            throw new RuntimeException( t );
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
         }
     }
 
@@ -230,74 +200,56 @@ public class Race
      *
      * @return Async instance for awaiting and get exceptions for the race.
      */
-    private Async startRace()
-    {
-        if ( endCondition == null )
-        {
+    private Async startRace() {
+        if (endCondition == null) {
             endCondition = () -> true;
         }
 
-        readySet = new CountDownLatch( contestants.size() );
-        for ( Contestant contestant : contestants )
-        {
+        readySet = new CountDownLatch(contestants.size());
+        for (Contestant contestant : contestants) {
             contestant.start();
         }
-        try
-        {
+        try {
             readySet.await();
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException( "Race couldn't start since race was interrupted while awaiting all contestants to start" );
+            throw new RuntimeException(
+                    "Race couldn't start since race was interrupted while awaiting all contestants to start");
         }
         go.countDown();
 
-        return ( maxWaitTime, unit ) ->
-        {
+        return (maxWaitTime, unit) -> {
             int errorCount = 0;
-            long maxWaitTimeMillis = MILLISECONDS.convert( maxWaitTime, unit );
+            long maxWaitTimeMillis = MILLISECONDS.convert(maxWaitTime, unit);
             long waitedSoFar = 0;
-            for ( Contestant contestant : contestants )
-            {
-                if ( maxWaitTime == 0 )
-                {
+            for (Contestant contestant : contestants) {
+                if (maxWaitTime == 0) {
                     contestant.join();
-                }
-                else
-                {
+                } else {
                     long timeNanoStart = nanoTime();
-                    contestant.join( max( 1, maxWaitTimeMillis - waitedSoFar ) );
-                    waitedSoFar += NANOSECONDS.toMillis( nanoTime() - timeNanoStart );
-                    if ( waitedSoFar >= maxWaitTimeMillis && contestant.isAlive() )
-                    {
-                        throw new TimeoutException( "Didn't complete after " + maxWaitTime + " " + unit );
+                    contestant.join(max(1, maxWaitTimeMillis - waitedSoFar));
+                    waitedSoFar += NANOSECONDS.toMillis(nanoTime() - timeNanoStart);
+                    if (waitedSoFar >= maxWaitTimeMillis && contestant.isAlive()) {
+                        throw new TimeoutException("Didn't complete after " + maxWaitTime + " " + unit);
                     }
                 }
-                if ( contestant.error != null )
-                {
+                if (contestant.error != null) {
                     errorCount++;
                 }
             }
 
-            if ( errorCount > 1 )
-            {
-                Throwable errors = new Throwable( "Multiple errors found" );
-                for ( Contestant contestant : contestants )
-                {
-                    if ( contestant.error != null )
-                    {
-                        errors.addSuppressed( contestant.error );
+            if (errorCount > 1) {
+                Throwable errors = new Throwable("Multiple errors found");
+                for (Contestant contestant : contestants) {
+                    if (contestant.error != null) {
+                        errors.addSuppressed(contestant.error);
                     }
                 }
                 throw errors;
             }
-            if ( errorCount == 1 )
-            {
-                for ( Contestant contestant : contestants )
-                {
-                    if ( contestant.error != null )
-                    {
+            if (errorCount == 1) {
+                for (Contestant contestant : contestants) {
+                    if (contestant.error != null) {
                         throw contestant.error;
                     }
                 }
@@ -305,76 +257,59 @@ public class Race
         };
     }
 
-    public boolean hasFailed()
-    {
+    public boolean hasFailed() {
         return failure;
     }
 
-    private class Contestant extends Thread
-    {
+    private class Contestant extends Thread {
         private volatile Throwable error;
         private final int maxNumberOfRuns;
         private int runs;
 
-        Contestant( Runnable code, int nr, int maxNumberOfRuns )
-        {
-            super( code, "Contestant#" + nr );
+        Contestant(Runnable code, int nr, int maxNumberOfRuns) {
+            super(code, "Contestant#" + nr);
             this.maxNumberOfRuns = maxNumberOfRuns;
-            this.setUncaughtExceptionHandler( ( thread, error ) ->
-            {
-            } );
+            this.setUncaughtExceptionHandler((thread, error) -> {});
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             readySet.countDown();
-            try
-            {
+            try {
                 go.await();
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 error = e;
                 interrupt();
                 return;
             }
 
-            if ( baseStartDelay > 0 || maxRandomStartDelay > 0 )
-            {
+            if (baseStartDelay > 0 || maxRandomStartDelay > 0) {
                 randomlyDelaySlightly();
             }
 
-            try
-            {
-                while ( !failure )
-                {
+            try {
+                while (!failure) {
                     super.run();
-                    if ( (maxNumberOfRuns != UNLIMITED && ++runs == maxNumberOfRuns) || endCondition.getAsBoolean() )
-                    {
+                    if ((maxNumberOfRuns != UNLIMITED && ++runs == maxNumberOfRuns) || endCondition.getAsBoolean()) {
                         break;
                     }
                 }
-            }
-            catch ( Throwable e )
-            {
+            } catch (Throwable e) {
                 e.printStackTrace();
                 error = e;
                 failure = true; // <-- global flag
-                failureAction.accept( e );
+                failureAction.accept(e);
                 throw e;
             }
         }
 
-        private void randomlyDelaySlightly()
-        {
-            int millis = ThreadLocalRandom.current().nextInt( maxRandomStartDelay );
-            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( baseStartDelay + millis ) );
+        private void randomlyDelaySlightly() {
+            int millis = ThreadLocalRandom.current().nextInt(maxRandomStartDelay);
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(baseStartDelay + millis));
         }
     }
 
-    public interface Async
-    {
-        void await( long waitTime, TimeUnit unit ) throws Throwable;
+    public interface Async {
+        void await(long waitTime, TimeUnit unit) throws Throwable;
     }
 }

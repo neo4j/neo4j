@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
+import static org.neo4j.util.Preconditions.checkArgument;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -41,7 +43,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
-
+import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -76,18 +79,12 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
-import static org.neo4j.util.Preconditions.checkArgument;
-
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
  */
-public class TransactionLogFile extends LifecycleAdapter implements LogFile
-{
+public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private static final String TRANSACTION_LOG_FILE_ROTATION_TAG = "transactionLogFileRotation";
-    private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
+    private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>(ThreadLink.END);
     private final Lock forceLock = new ReentrantLock();
     private final AtomicLong rotateAtSize;
     private final TransactionLogFilesHelper fileHelper;
@@ -107,69 +104,65 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     private LogVersionRepository logVersionRepository;
     private final LogHeaderCache logHeaderCache;
     private final FileSystemAbstraction fileSystem;
-    private final ConcurrentMap<Long,List<StoreChannel>> externalFileReaders = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, List<StoreChannel>> externalFileReaders = new ConcurrentHashMap<>();
     private TransactionLogWriter transactionLogWriter;
 
-    TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context, String baseName )
-    {
+    TransactionLogFile(LogFiles logFiles, TransactionLogFilesContext context, String baseName) {
         this.logFiles = logFiles;
         this.baseName = baseName;
         this.context = context;
         this.rotateAtSize = context.getRotationThreshold();
         this.fileSystem = context.getFileSystem();
         this.databaseHealth = context.getDatabaseHealth();
-        this.fileHelper = new TransactionLogFilesHelper( fileSystem, logFiles.logFilesDirectory(), baseName );
-        this.logHeaderCache = new LogHeaderCache( 1000 );
-        this.logFileInformation = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
-        this.channelAllocator = new TransactionLogChannelAllocator( context, fileHelper, logHeaderCache,
-                new LogFileChannelNativeAccessor( fileSystem, context ) );
-        this.readerLogVersionBridge = new ReaderLogVersionBridge( this );
+        this.fileHelper = new TransactionLogFilesHelper(fileSystem, logFiles.logFilesDirectory(), baseName);
+        this.logHeaderCache = new LogHeaderCache(1000);
+        this.logFileInformation = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
+        this.channelAllocator = new TransactionLogChannelAllocator(
+                context, fileHelper, logHeaderCache, new LogFileChannelNativeAccessor(fileSystem, context));
+        this.readerLogVersionBridge = new ReaderLogVersionBridge(this);
         this.pageCacheTracer = context.getDatabaseTracers().getPageCacheTracer();
-        this.logRotation = transactionLogRotation( this, context.getClock(), databaseHealth, context.getMonitors().newMonitor( LogRotationMonitor.class ) );
+        this.logRotation = transactionLogRotation(
+                this, context.getClock(), databaseHealth, context.getMonitors().newMonitor(LogRotationMonitor.class));
         this.memoryTracker = context.getMemoryTracker();
     }
 
     @Override
-    public void init() throws IOException
-    {
-        logVersionRepository = context.getLogVersionRepositoryProvider().logVersionRepository( logFiles );
+    public void init() throws IOException {
+        logVersionRepository = context.getLogVersionRepositoryProvider().logVersionRepository(logFiles);
     }
 
     @Override
-    public void start() throws IOException
-    {
+    public void start() throws IOException {
         long currentLogVersion = logVersionRepository.getCurrentLogVersion();
-        channel = createLogChannelForVersion( currentLogVersion,
-                () -> context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( logFiles ) );
-        context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), currentLogVersion );
+        channel = createLogChannelForVersion(currentLogVersion, () -> context.getLastCommittedTransactionIdProvider()
+                .getLastCommittedTransactionId(logFiles));
+        context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), currentLogVersion);
 
-        //try to set position
-        seekChannelPosition( currentLogVersion );
+        // try to set position
+        seekChannelPosition(currentLogVersion);
 
-        writer = new PositionAwarePhysicalFlushableChecksumChannel( channel,
-                new NativeScopedBuffer( context.getConfig().get( transaction_log_buffer_size ), memoryTracker ) );
-        transactionLogWriter = new TransactionLogWriter( writer, new DbmsLogEntryWriterFactory( context.getKernelVersionProvider() ) );
+        writer = new PositionAwarePhysicalFlushableChecksumChannel(
+                channel, new NativeScopedBuffer(context.getConfig().get(transaction_log_buffer_size), memoryTracker));
+        transactionLogWriter =
+                new TransactionLogWriter(writer, new DbmsLogEntryWriterFactory(context.getKernelVersionProvider()));
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence
     // we will close channel and writer only during shutdown phase when all pending changes (like last
     // checkpoint) are already in
     @Override
-    public void shutdown() throws IOException
-    {
-        IOUtils.closeAll( writer );
+    public void shutdown() throws IOException {
+        IOUtils.closeAll(writer);
     }
 
     @Override
-    public PhysicalLogVersionedStoreChannel openForVersion( long version ) throws IOException
-    {
-        return openForVersion( version, false );
+    public PhysicalLogVersionedStoreChannel openForVersion(long version) throws IOException {
+        return openForVersion(version, false);
     }
 
     @Override
-    public PhysicalLogVersionedStoreChannel openForVersion( long version, boolean raw ) throws IOException
-    {
-        return channelAllocator.openLogChannel( version, raw );
+    public PhysicalLogVersionedStoreChannel openForVersion(long version, boolean raw) throws IOException {
+        return channelAllocator.openLogChannel(version, raw);
     }
 
     /**
@@ -184,272 +177,231 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
      * @throws IOException if there's any I/O related error.
      */
     @Override
-    public PhysicalLogVersionedStoreChannel createLogChannelForVersion( long version, LongSupplier lastTransactionIdSupplier ) throws IOException
-    {
-        return channelAllocator.createLogChannel( version, lastTransactionIdSupplier );
+    public PhysicalLogVersionedStoreChannel createLogChannelForVersion(
+            long version, LongSupplier lastTransactionIdSupplier) throws IOException {
+        return channelAllocator.createLogChannel(version, lastTransactionIdSupplier);
     }
 
     @Override
-    public boolean rotationNeeded() throws IOException
-    {
+    public boolean rotationNeeded() throws IOException {
         return writer.getCurrentPosition().getByteOffset() >= rotateAtSize.get();
     }
 
     @Override
-    public void truncate() throws IOException
-    {
-        truncate( writer.getCurrentPosition() );
+    public void truncate() throws IOException {
+        truncate(writer.getCurrentPosition());
     }
 
     @Override
-    public synchronized void truncate( LogPosition targetPosition ) throws IOException
-    {
+    public synchronized void truncate(LogPosition targetPosition) throws IOException {
         long currentVersion = writer.getCurrentPosition().getLogVersion();
         long targetVersion = targetPosition.getLogVersion();
-        if ( currentVersion < targetVersion )
-        {
-            throw new IllegalArgumentException( "Log position requested for restore points to the log file that is higher than " +
-                    "existing available highest log file. Requested restore position: " + targetPosition + ", " +
-                    "current log file version: " + currentVersion + "." );
+        if (currentVersion < targetVersion) {
+            throw new IllegalArgumentException(
+                    "Log position requested for restore points to the log file that is higher than "
+                            + "existing available highest log file. Requested restore position: "
+                            + targetPosition + ", " + "current log file version: "
+                            + currentVersion + ".");
         }
 
-        LogPosition lastClosed = context.getLastClosedTransactionPositionProvider().lastClosedPosition( logFiles );
-        if ( isCoveredByCommittedTransaction( targetPosition, targetVersion, lastClosed ) )
-        {
-            throw new IllegalArgumentException( "Log position requested to be used for restore belongs to the log file that " +
-                    "was already appended by transaction and cannot be restored. " +
-                    "Last closed position: " + lastClosed + ", requested restore: " + targetPosition );
+        LogPosition lastClosed =
+                context.getLastClosedTransactionPositionProvider().lastClosedPosition(logFiles);
+        if (isCoveredByCommittedTransaction(targetPosition, targetVersion, lastClosed)) {
+            throw new IllegalArgumentException(
+                    "Log position requested to be used for restore belongs to the log file that "
+                            + "was already appended by transaction and cannot be restored. "
+                            + "Last closed position: "
+                            + lastClosed + ", requested restore: " + targetPosition);
         }
 
         writer.prepareForFlush().flush();
-        if ( currentVersion != targetVersion )
-        {
+        if (currentVersion != targetVersion) {
             var oldChannel = channel;
-            channel = createLogChannelForVersion( targetVersion, context::committingTransactionId );
-            writer.setChannel( channel );
+            channel = createLogChannelForVersion(targetVersion, context::committingTransactionId);
+            writer.setChannel(channel);
             oldChannel.close();
 
             // delete newer files
-            for ( long i = currentVersion; i > targetVersion; i-- )
-            {
-                fileSystem.deleteFile( fileHelper.getLogFileForVersion( i ) );
+            for (long i = currentVersion; i > targetVersion; i--) {
+                fileSystem.deleteFile(fileHelper.getLogFileForVersion(i));
             }
         }
 
-        //truncate current file
-        channel.truncate( targetPosition.getByteOffset() );
-        channel.position( channel.size() );
+        // truncate current file
+        channel.truncate(targetPosition.getByteOffset());
+        channel.position(channel.size());
     }
 
     @Override
-    public synchronized LogPosition append( ByteBuffer byteBuffer, OptionalLong transactionId ) throws IOException
-    {
-        checkArgument( byteBuffer.isDirect(), "Its is required for byte buffer to be direct." );
+    public synchronized LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId) throws IOException {
+        checkArgument(byteBuffer.isDirect(), "Its is required for byte buffer to be direct.");
         var transactionLogWriter = getTransactionLogWriter();
 
-        try ( var logAppend = context.getDatabaseTracers().getDatabaseTracer().logAppend() )
-        {
-            if ( transactionId.isPresent() )
-            {
-                logRotation.batchedRotateLogIfNeeded( logAppend, transactionId.getAsLong() - 1 );
+        try (var logAppend = context.getDatabaseTracers().getDatabaseTracer().logAppend()) {
+            if (transactionId.isPresent()) {
+                logRotation.batchedRotateLogIfNeeded(logAppend, transactionId.getAsLong() - 1);
             }
             var logPositionBefore = transactionLogWriter.getCurrentPosition();
-            transactionLogWriter.append( byteBuffer );
+            transactionLogWriter.append(byteBuffer);
             var logPositionAfter = transactionLogWriter.getCurrentPosition();
-            logAppend.appendToLogFile( logPositionBefore, logPositionAfter );
+            logAppend.appendToLogFile(logPositionBefore, logPositionAfter);
             return logPositionBefore;
         }
     }
 
     @Override
-    public synchronized Path rotate() throws IOException
-    {
-        return rotate( context::committingTransactionId );
+    public synchronized Path rotate() throws IOException {
+        return rotate(context::committingTransactionId);
     }
 
-    public synchronized Path rotate( long lastTransactionId ) throws IOException
-    {
-        return rotate( () -> lastTransactionId );
+    public synchronized Path rotate(long lastTransactionId) throws IOException {
+        return rotate(() -> lastTransactionId);
     }
 
     @Override
-    public LogRotation getLogRotation()
-    {
+    public LogRotation getLogRotation() {
         return logRotation;
     }
 
     @Override
-    public TransactionLogWriter getTransactionLogWriter()
-    {
+    public TransactionLogWriter getTransactionLogWriter() {
         return transactionLogWriter;
     }
 
     @Override
-    public void flush() throws IOException
-    {
+    public void flush() throws IOException {
         writer.prepareForFlush().flush();
     }
 
     @Override
-    public ReadableLogChannel getReader( LogPosition position ) throws IOException
-    {
-        return getReader( position, readerLogVersionBridge );
+    public ReadableLogChannel getReader(LogPosition position) throws IOException {
+        return getReader(position, readerLogVersionBridge);
     }
 
     @Override
-    public ReadableLogChannel getRawReader( LogPosition position ) throws IOException
-    {
-        return getReader( position, readerLogVersionBridge, true );
+    public ReadableLogChannel getRawReader(LogPosition position) throws IOException {
+        return getReader(position, readerLogVersionBridge, true);
     }
 
     @Override
-    public ReadableLogChannel getReader( LogPosition position, LogVersionBridge logVersionBridge ) throws IOException
-    {
-        return getReader( position, logVersionBridge, false );
+    public ReadableLogChannel getReader(LogPosition position, LogVersionBridge logVersionBridge) throws IOException {
+        return getReader(position, logVersionBridge, false);
     }
 
-    private ReadableLogChannel getReader( LogPosition position, LogVersionBridge logVersionBridge, boolean raw ) throws IOException
-    {
-        PhysicalLogVersionedStoreChannel logChannel = openForVersion( position.getLogVersion(), raw );
-        logChannel.position( position.getByteOffset() );
-        return new ReadAheadLogChannel( logChannel, logVersionBridge, memoryTracker, raw );
+    private ReadableLogChannel getReader(LogPosition position, LogVersionBridge logVersionBridge, boolean raw)
+            throws IOException {
+        PhysicalLogVersionedStoreChannel logChannel = openForVersion(position.getLogVersion(), raw);
+        logChannel.position(position.getByteOffset());
+        return new ReadAheadLogChannel(logChannel, logVersionBridge, memoryTracker, raw);
     }
 
     @Override
-    public void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException
-    {
-        try ( ReadableLogChannel reader = getReader( startingFromPosition ) )
-        {
-            visitor.visit( reader );
+    public void accept(LogFileVisitor visitor, LogPosition startingFromPosition) throws IOException {
+        try (ReadableLogChannel reader = getReader(startingFromPosition)) {
+            visitor.visit(reader);
         }
     }
 
     @Override
-    public TransactionLogFileInformation getLogFileInformation()
-    {
+    public TransactionLogFileInformation getLogFileInformation() {
         return logFileInformation;
     }
 
     @Override
-    public long getLogVersion( Path file )
-    {
-        return TransactionLogFilesHelper.getLogVersion( file );
+    public long getLogVersion(Path file) {
+        return TransactionLogFilesHelper.getLogVersion(file);
     }
 
     @Override
-    public Path getLogFileForVersion( long version )
-    {
-        return fileHelper.getLogFileForVersion( version );
+    public Path getLogFileForVersion(long version) {
+        return fileHelper.getLogFileForVersion(version);
     }
 
     @Override
-    public Path getHighestLogFile()
-    {
-        return getLogFileForVersion( getHighestLogVersion() );
+    public Path getHighestLogFile() {
+        return getLogFileForVersion(getHighestLogVersion());
     }
 
     @Override
-    public boolean versionExists( long version )
-    {
-        return fileSystem.fileExists( getLogFileForVersion( version ) );
+    public boolean versionExists(long version) {
+        return fileSystem.fileExists(getLogFileForVersion(version));
     }
 
     @Override
-    public LogHeader extractHeader( long version ) throws IOException
-    {
-        return extractHeader( version, true );
+    public LogHeader extractHeader(long version) throws IOException {
+        return extractHeader(version, true);
     }
 
     @Override
-    public boolean hasAnyEntries( long version )
-    {
-        try
-        {
-            Path logFile = getLogFileForVersion( version );
-            var logHeader = extractHeader( version, false );
-            if ( logHeader == null )
-            {
+    public boolean hasAnyEntries(long version) {
+        try {
+            Path logFile = getLogFileForVersion(version);
+            var logHeader = extractHeader(version, false);
+            if (logHeader == null) {
                 return false;
             }
-            int headerSize = Math.toIntExact( logHeader.getStartPosition().getByteOffset() );
-            if ( fileSystem.getFileSize( logFile ) <= headerSize )
-            {
+            int headerSize = Math.toIntExact(logHeader.getStartPosition().getByteOffset());
+            if (fileSystem.getFileSize(logFile) <= headerSize) {
                 return false;
             }
-            try ( StoreChannel channel = fileSystem.read( logFile ) )
-            {
-                try ( var scopedBuffer = new HeapScopedBuffer( headerSize + 1, context.getMemoryTracker() ) )
-                {
+            try (StoreChannel channel = fileSystem.read(logFile)) {
+                try (var scopedBuffer = new HeapScopedBuffer(headerSize + 1, context.getMemoryTracker())) {
                     var buffer = scopedBuffer.getBuffer();
-                    channel.readAll( buffer );
+                    channel.readAll(buffer);
                     buffer.flip();
-                    return buffer.get( headerSize ) != 0;
+                    return buffer.get(headerSize) != 0;
                 }
             }
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             return false;
         }
     }
 
     @Override
-    public long getCurrentLogVersion()
-    {
-        if ( logVersionRepository != null )
-        {
+    public long getCurrentLogVersion() {
+        if (logVersionRepository != null) {
             return logVersionRepository.getCurrentLogVersion();
         }
         return getHighestLogVersion();
     }
 
     @Override
-    public long getHighestLogVersion()
-    {
+    public long getHighestLogVersion() {
         RangeLogVersionVisitor visitor = new RangeLogVersionVisitor();
-        accept( visitor );
+        accept(visitor);
         return visitor.getHighestVersion();
     }
 
     @Override
-    public long getLowestLogVersion()
-    {
+    public long getLowestLogVersion() {
         RangeLogVersionVisitor visitor = new RangeLogVersionVisitor();
-        accept( visitor );
+        accept(visitor);
         return visitor.getLowestVersion();
     }
 
     @Override
-    public void accept( LogVersionVisitor visitor )
-    {
-        try
-        {
-            for ( Path file : fileHelper.getMatchedFiles() )
-            {
-                visitor.visit( file, getLogVersion( file ) );
+    public void accept(LogVersionVisitor visitor) {
+        try {
+            for (Path file : fileHelper.getMatchedFiles()) {
+                visitor.visit(file, getLogVersion(file));
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void accept( LogHeaderVisitor visitor ) throws IOException
-    {
+    public void accept(LogHeaderVisitor visitor) throws IOException {
         // Start from the where we're currently at and go backwards in time (versions)
         long logVersion = getHighestLogVersion();
-        long highTransactionId = context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( logFiles );
-        while ( versionExists( logVersion ) )
-        {
-            LogHeader logHeader = extractHeader( logVersion, false );
-            if ( logHeader != null )
-            {
+        long highTransactionId =
+                context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles);
+        while (versionExists(logVersion)) {
+            LogHeader logHeader = extractHeader(logVersion, false);
+            if (logHeader != null) {
                 long lowTransactionId = logHeader.getLastCommittedTxId() + 1;
                 LogPosition position = logHeader.getStartPosition();
-                if ( !visitor.visit( logHeader, position, lowTransactionId, highTransactionId ) )
-                {
+                if (!visitor.visit(logHeader, position, lowTransactionId, highTransactionId)) {
                     break;
                 }
                 highTransactionId = logHeader.getLastCommittedTxId();
@@ -459,26 +411,22 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public Path[] getMatchedFiles() throws IOException
-    {
+    public Path[] getMatchedFiles() throws IOException {
         return fileHelper.getMatchedFiles();
     }
 
     @Override
-    public void combine( Path additionalLogFilesDirectory ) throws IOException
-    {
+    public void combine(Path additionalLogFilesDirectory) throws IOException {
         long highestLogVersion = getHighestLogVersion();
-        var logHelper = new TransactionLogFilesHelper( fileSystem, additionalLogFilesDirectory, baseName );
-        for ( Path matchedFile : logHelper.getMatchedFiles() )
-        {
+        var logHelper = new TransactionLogFilesHelper(fileSystem, additionalLogFilesDirectory, baseName);
+        for (Path matchedFile : logHelper.getMatchedFiles()) {
             long newFileVersion = ++highestLogVersion;
-            Path newFileName = fileHelper.getLogFileForVersion( newFileVersion );
-            fileSystem.renameFile( matchedFile, newFileName );
-            try ( StoreChannel channel = fileSystem.write( newFileName ) )
-            {
-                LogHeader logHeader = readLogHeader( fileSystem, newFileName, memoryTracker );
-                LogHeader writeHeader = new LogHeader( logHeader, newFileVersion );
-                LogHeaderWriter.writeLogHeader( channel, writeHeader, memoryTracker );
+            Path newFileName = fileHelper.getLogFileForVersion(newFileVersion);
+            fileSystem.renameFile(matchedFile, newFileName);
+            try (StoreChannel channel = fileSystem.write(newFileName)) {
+                LogHeader logHeader = readLogHeader(fileSystem, newFileName, memoryTracker);
+                LogHeader writeHeader = new LogHeader(logHeader, newFileVersion);
+                LogHeaderWriter.writeLogHeader(channel, writeHeader, memoryTracker);
             }
         }
     }
@@ -490,28 +438,21 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
      * @return {@code true} if we got lucky and were the ones forcing the log.
      */
     @Override
-    public boolean forceAfterAppend( LogForceEvents logForceEvents ) throws IOException
-    {
+    public boolean forceAfterAppend(LogForceEvents logForceEvents) throws IOException {
         // There's a benign race here, where we add our link before we update our next pointer.
         // This is okay, however, because unparkAll() spins when it sees a null next pointer.
-        ThreadLink threadLink = new ThreadLink( Thread.currentThread() );
-        threadLink.next = threadLinkHead.getAndSet( threadLink );
+        ThreadLink threadLink = new ThreadLink(Thread.currentThread());
+        threadLink.next = threadLinkHead.getAndSet(threadLink);
         boolean attemptedForce = false;
 
-        try ( LogForceWaitEvent logForceWaitEvent = logForceEvents.beginLogForceWait() )
-        {
-            do
-            {
-                if ( forceLock.tryLock() )
-                {
+        try (LogForceWaitEvent logForceWaitEvent = logForceEvents.beginLogForceWait()) {
+            do {
+                if (forceLock.tryLock()) {
                     attemptedForce = true;
-                    try
-                    {
-                        forceLog( logForceEvents );
+                    try {
+                        forceLog(logForceEvents);
                         // In the event of any failure a database panic will be raised and thrown here
-                    }
-                    finally
-                    {
+                    } finally {
                         forceLock.unlock();
 
                         // We've released the lock, so unpark anyone who might have decided park while we were working.
@@ -521,84 +462,68 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
                         ThreadLink nextWaiter = threadLinkHead.get();
                         nextWaiter.unpark();
                     }
-                }
-                else
-                {
+                } else {
                     waitForLogForce();
                 }
-            }
-            while ( !threadLink.done );
+            } while (!threadLink.done);
 
             // If there were many threads committing simultaneously and I wasn't the lucky one
             // actually doing the forcing (where failure would throw panic exception) I need to
             // explicitly check if everything is OK before considering this transaction committed.
-            if ( !attemptedForce )
-            {
-                databaseHealth.assertHealthy( IOException.class );
+            if (!attemptedForce) {
+                databaseHealth.assertHealthy(IOException.class);
             }
         }
         return attemptedForce;
     }
 
     @Override
-    public void locklessForce( LogForceEvents logForceEvents ) throws IOException
-    {
-        try ( LogForceEvent logForceEvent = logForceEvents.beginLogForce() )
-        {
+    public void locklessForce(LogForceEvents logForceEvents) throws IOException {
+        try (LogForceEvent logForceEvent = logForceEvents.beginLogForce()) {
             flush();
-        }
-        catch ( final Throwable panic )
-        {
-            databaseHealth.panic( panic );
+        } catch (final Throwable panic) {
+            databaseHealth.panic(panic);
             throw panic;
         }
     }
 
     @Override
-    public void registerExternalReaders( LongObjectMap<StoreChannel> internalChannels )
-    {
-        internalChannels.forEachKeyValue( (LongObjectProcedure<StoreChannel>) ( version, channel ) ->
-                        externalFileReaders.computeIfAbsent( version, any -> new CopyOnWriteArrayList<>() ).add( channel ) );
+    public void registerExternalReaders(LongObjectMap<StoreChannel> internalChannels) {
+        internalChannels.forEachKeyValue((LongObjectProcedure<StoreChannel>) (version, channel) -> externalFileReaders
+                .computeIfAbsent(version, any -> new CopyOnWriteArrayList<>())
+                .add(channel));
     }
 
     @Override
-    public void unregisterExternalReader( long version, StoreChannel channel )
-    {
-        externalFileReaders.computeIfPresent( version, ( aLong, storeChannels ) ->
-        {
-            storeChannels.remove( channel );
-            if ( storeChannels.isEmpty() )
-            {
+    public void unregisterExternalReader(long version, StoreChannel channel) {
+        externalFileReaders.computeIfPresent(version, (aLong, storeChannels) -> {
+            storeChannels.remove(channel);
+            if (storeChannels.isEmpty()) {
                 return null;
             }
             return storeChannels;
-        } );
+        });
     }
 
     @Override
-    public void terminateExternalReaders( long maxDeletedVersion )
-    {
-        externalFileReaders.entrySet().removeIf( entry ->
-        {
-            if ( entry.getKey() <= maxDeletedVersion )
-            {
-                IOUtils.closeAllSilently( entry.getValue() );
+    public void terminateExternalReaders(long maxDeletedVersion) {
+        externalFileReaders.entrySet().removeIf(entry -> {
+            if (entry.getKey() <= maxDeletedVersion) {
+                IOUtils.closeAllSilently(entry.getValue());
                 return true;
             }
             return false;
-        } );
+        });
     }
 
     @VisibleForTesting
-    public ConcurrentMap<Long,List<StoreChannel>> getExternalFileReaders()
-    {
+    public ConcurrentMap<Long, List<StoreChannel>> getExternalFileReaders() {
         return externalFileReaders;
     }
 
-    private synchronized Path rotate( LongSupplier committedTransactIdSupplier ) throws IOException
-    {
-        channel = rotate( channel, committedTransactIdSupplier );
-        writer.setChannel( channel );
+    private synchronized Path rotate(LongSupplier committedTransactIdSupplier) throws IOException {
+        channel = rotate(channel, committedTransactIdSupplier);
+        writer.setChannel(channel);
         return channel.getPath();
     }
 
@@ -644,9 +569,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
      * @return the channel of the newly opened/created log file.
      * @throws IOException if an error regarding closing or opening log files occur.
      */
-    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog, LongSupplier lastTransactionIdSupplier )
-            throws IOException
-    {
+    private PhysicalLogVersionedStoreChannel rotate(
+            LogVersionedStoreChannel currentLog, LongSupplier lastTransactionIdSupplier) throws IOException {
         /*
          * The store is now flushed. If we fail now the recovery code will open the
          * current log file and replay everything. That's unnecessary but totally ok.
@@ -660,7 +584,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
          * transaction complete in the log we're rotating away. Awesome.
          */
         writer.prepareForFlush().flush();
-        currentLog.truncate( currentLog.position() );
+        currentLog.truncate(currentLog.position());
 
         /*
          * The log version is now in the store, flushed and persistent. If we crash
@@ -671,160 +595,129 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
          * we can have transactions that are not yet published as committed but were already stored
          * into transaction log that was just rotated.
          */
-        PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion( newLogVersion, lastTransactionIdSupplier );
+        PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(newLogVersion, lastTransactionIdSupplier);
         currentLog.close();
         return newLog;
     }
 
-    private static boolean isCoveredByCommittedTransaction( LogPosition targetPosition, long targetVersion, LogPosition lastClosed )
-    {
-        return lastClosed.getLogVersion() > targetVersion ||
-                lastClosed.getLogVersion() == targetVersion && lastClosed.getByteOffset() > targetPosition.getByteOffset();
+    private static boolean isCoveredByCommittedTransaction(
+            LogPosition targetPosition, long targetVersion, LogPosition lastClosed) {
+        return lastClosed.getLogVersion() > targetVersion
+                || lastClosed.getLogVersion() == targetVersion
+                        && lastClosed.getByteOffset() > targetPosition.getByteOffset();
     }
 
-    private void seekChannelPosition( long currentLogVersion ) throws IOException
-    {
-        jumpToTheLastClosedTxPosition( currentLogVersion );
+    private void seekChannelPosition(long currentLogVersion) throws IOException {
+        jumpToTheLastClosedTxPosition(currentLogVersion);
         LogPosition position;
-        try
-        {
+        try {
             position = scanToEndOfLastLogEntry();
-        }
-        catch ( Exception e )
-        {
-            // If we can't read the log, it could be that the last-closed-transaction position in the meta-data store is wrong.
+        } catch (Exception e) {
+            // If we can't read the log, it could be that the last-closed-transaction position in the meta-data store is
+            // wrong.
             // We can try again by scanning the log file from the start.
-            jumpToLogStart( currentLogVersion );
-            try
-            {
+            jumpToLogStart(currentLogVersion);
+            try {
                 position = scanToEndOfLastLogEntry();
-            }
-            catch ( Exception exception )
-            {
-                exception.addSuppressed( e );
+            } catch (Exception exception) {
+                exception.addSuppressed(e);
                 throw exception;
             }
         }
-        channel.position( position.getByteOffset() );
+        channel.position(position.getByteOffset());
     }
 
-    private LogPosition scanToEndOfLastLogEntry() throws IOException
-    {
+    private LogPosition scanToEndOfLastLogEntry() throws IOException {
         // scroll all over possible checkpoints
-        try ( ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( new UnclosableChannel( channel ), memoryTracker ) )
-        {
-            LogEntryReader logEntryReader = new VersionAwareLogEntryReader( context.getCommandReaderFactory() );
+        try (ReadAheadLogChannel readAheadLogChannel =
+                new ReadAheadLogChannel(new UnclosableChannel(channel), memoryTracker)) {
+            LogEntryReader logEntryReader = new VersionAwareLogEntryReader(context.getCommandReaderFactory());
             LogEntry entry;
-            do
-            {
+            do {
                 // seek to the end the records.
-                entry = logEntryReader.readLogEntry( readAheadLogChannel );
-            }
-            while ( entry != null );
+                entry = logEntryReader.readLogEntry(readAheadLogChannel);
+            } while (entry != null);
             return logEntryReader.lastPosition();
         }
     }
 
-    private void jumpToTheLastClosedTxPosition( long currentLogVersion ) throws IOException
-    {
-        LogPosition logPosition = context.getLastClosedTransactionPositionProvider().lastClosedPosition( logFiles );
+    private void jumpToTheLastClosedTxPosition(long currentLogVersion) throws IOException {
+        LogPosition logPosition =
+                context.getLastClosedTransactionPositionProvider().lastClosedPosition(logFiles);
         long lastTxOffset = logPosition.getByteOffset();
         long lastTxLogVersion = logPosition.getLogVersion();
-        long headerSize = extractHeader( currentLogVersion ).getStartPosition().getByteOffset();
-        if ( lastTxOffset < headerSize || channel.size() < lastTxOffset )
-        {
+        long headerSize = extractHeader(currentLogVersion).getStartPosition().getByteOffset();
+        if (lastTxOffset < headerSize || channel.size() < lastTxOffset) {
             return;
         }
-        if ( lastTxLogVersion == currentLogVersion )
-        {
-            channel.position( lastTxOffset );
+        if (lastTxLogVersion == currentLogVersion) {
+            channel.position(lastTxOffset);
         }
     }
 
-    private void jumpToLogStart( long currentLogVersion ) throws IOException
-    {
-        long headerSize = extractHeader( currentLogVersion ).getStartPosition().getByteOffset();
-        channel.position( headerSize );
+    private void jumpToLogStart(long currentLogVersion) throws IOException {
+        long headerSize = extractHeader(currentLogVersion).getStartPosition().getByteOffset();
+        channel.position(headerSize);
     }
 
-    private LogHeader extractHeader( long version, boolean strict ) throws IOException
-    {
-        LogHeader logHeader = logHeaderCache.getLogHeader( version );
-        if ( logHeader == null )
-        {
-            logHeader = readLogHeader( fileSystem, getLogFileForVersion( version ), strict, context.getMemoryTracker() );
-            if ( !strict && logHeader == null )
-            {
+    private LogHeader extractHeader(long version, boolean strict) throws IOException {
+        LogHeader logHeader = logHeaderCache.getLogHeader(version);
+        if (logHeader == null) {
+            logHeader = readLogHeader(fileSystem, getLogFileForVersion(version), strict, context.getMemoryTracker());
+            if (!strict && logHeader == null) {
                 return null;
             }
-            logHeaderCache.putHeader( version, logHeader );
+            logHeaderCache.putHeader(version, logHeader);
         }
 
         return logHeader;
     }
 
-    private void forceLog( LogForceEvents logForceEvents ) throws IOException
-    {
-        ThreadLink links = threadLinkHead.getAndSet( ThreadLink.END );
-        try ( LogForceEvent logForceEvent = logForceEvents.beginLogForce() )
-        {
+    private void forceLog(LogForceEvents logForceEvents) throws IOException {
+        ThreadLink links = threadLinkHead.getAndSet(ThreadLink.END);
+        try (LogForceEvent logForceEvent = logForceEvents.beginLogForce()) {
             force();
-        }
-        catch ( final Throwable panic )
-        {
-            databaseHealth.panic( panic );
+        } catch (final Throwable panic) {
+            databaseHealth.panic(panic);
             throw panic;
-        }
-        finally
-        {
-            unparkAll( links );
+        } finally {
+            unparkAll(links);
         }
     }
 
-    private static void unparkAll( ThreadLink links )
-    {
-        do
-        {
+    private static void unparkAll(ThreadLink links) {
+        do {
             links.done = true;
             links.unpark();
             ThreadLink tmp;
-            do
-            {
+            do {
                 // Spin because of the race:y update when consing.
                 tmp = links.next;
-            }
-            while ( tmp == null );
+            } while (tmp == null);
             links = tmp;
-        }
-        while ( links != ThreadLink.END );
+        } while (links != ThreadLink.END);
     }
 
-    private void waitForLogForce()
-    {
-        long parkTime = TimeUnit.MILLISECONDS.toNanos( 100 );
-        LockSupport.parkNanos( this, parkTime );
+    private void waitForLogForce() {
+        long parkTime = TimeUnit.MILLISECONDS.toNanos(100);
+        LockSupport.parkNanos(this, parkTime);
     }
 
-    private void force() throws IOException
-    {
+    private void force() throws IOException {
         // Empty buffer into writer. We want to synchronize with appenders somehow so that they
         // don't append while we're doing that. The way rotation is coordinated we can't synchronize
         // on logFile because it would cause deadlocks. Synchronizing on writer assumes that appenders
         // also synchronize on writer.
         Flushable flushable;
-        synchronized ( this )
-        {
-            databaseHealth.assertHealthy( IOException.class );
+        synchronized (this) {
+            databaseHealth.assertHealthy(IOException.class);
             flushable = writer.prepareForFlush();
         }
         // Force the writer outside of the lock.
         // This allows other threads access to the buffer while the writer is being forced.
-        try
-        {
+        try {
             flushable.flush();
-        }
-        catch ( ClosedChannelException ignored )
-        {
+        } catch (ClosedChannelException ignored) {
             // This is ok, we were already successful in emptying the buffer, so the channel being closed here means
             // that some other thread is rotating the log and has closed the underlying channel. But since we were
             // successful in emptying the buffer *UNDER THE LOCK* we know that the rotating thread included the changes

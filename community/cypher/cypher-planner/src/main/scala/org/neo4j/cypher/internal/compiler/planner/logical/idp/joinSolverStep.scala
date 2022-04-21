@@ -33,11 +33,16 @@ object joinSolverStep {
   val VERBOSE = false
 }
 
-case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Boolean = false) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Boolean = false)
+    extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
   // IGNORE_EXPAND_SOLUTIONS_FOR_TEST can be used to force expandStillPossible to be false if needed
 
-
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(
+    registry: IdRegistry[PatternRelationship],
+    goal: Goal,
+    table: IDPCache[LogicalPlan],
+    context: LogicalPlanningContext
+  ): Iterator[LogicalPlan] = {
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
@@ -54,7 +59,8 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
     def registered: Int => Boolean = nbr => registry.lookup(nbr).isDefined
     val goalIsEntirelyCompacted = !goal.exists(registered)
     val allPlansHaveBeenCompacted = !table.plans.exists(p => p._1._1.exists(registered))
-    val expandStillPossible = !(goalIsEntirelyCompacted || allPlansHaveBeenCompacted || IGNORE_EXPAND_SOLUTIONS_FOR_TEST)
+    val expandStillPossible =
+      !(goalIsEntirelyCompacted || allPlansHaveBeenCompacted || IGNORE_EXPAND_SOLUTIONS_FOR_TEST)
 
     val argumentsToRemove =
       if (expandStillPossible) {
@@ -71,38 +77,52 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
       leftSize <- 1.until(goalSize)
       leftGoal <- goal.subGoals(leftSize)
       rightSize <- 1.until(goalSize)
-      rightGoal <- goal.subGoals(rightSize) if (leftGoal != rightGoal) && (Goal(leftGoal.bitSet | rightGoal.bitSet) == goal)
+      rightGoal <- goal.subGoals(rightSize)
+      if (leftGoal != rightGoal) && (Goal(leftGoal.bitSet | rightGoal.bitSet) == goal)
       lhs <- table(leftGoal).iterator
       rhs <- table(rightGoal).iterator
     } {
-        val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, argumentsToRemove)
-        if (overlappingNodes.nonEmpty) {
-          val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
-          // If the overlapping symbols contain more than the overlapping nodes, that means
-          // We have solved the same relationship on both LHS and RHS. Joining this is plan
-          // would not be optimal, but we have to consider it, if expanding is not longer possible due to compaction
-          if (expandStillPossible && overlappingNodes == overlappingSymbols ||
-            !expandStillPossible && overlappingNodes.subsetOf(overlappingSymbols)) {
-            if (VERBOSE) {
-              println(s"${show(leftGoal, nodes(lhs, context.planningAttributes.solveds))} overlap ${show(rightGoal, nodes(rhs, context.planningAttributes.solveds))} on ${showNames(overlappingNodes)}")
-            }
-            // This loop is designed to find both LHS and RHS plans, so no need to generate them swapped here
-            val matchingHints = qg.joinHints.filter(_.coveredBy(overlappingNodes))
-            builder += planProducer.planNodeHashJoin(overlappingNodes, lhs, rhs, matchingHints, context)
+      val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, argumentsToRemove)
+      if (overlappingNodes.nonEmpty) {
+        val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
+        // If the overlapping symbols contain more than the overlapping nodes, that means
+        // We have solved the same relationship on both LHS and RHS. Joining this is plan
+        // would not be optimal, but we have to consider it, if expanding is not longer possible due to compaction
+        if (
+          expandStillPossible && overlappingNodes == overlappingSymbols ||
+          !expandStillPossible && overlappingNodes.subsetOf(overlappingSymbols)
+        ) {
+          if (VERBOSE) {
+            println(
+              s"${show(leftGoal, nodes(lhs, context.planningAttributes.solveds))} overlap ${show(rightGoal, nodes(rhs, context.planningAttributes.solveds))} on ${showNames(overlappingNodes)}"
+            )
           }
+          // This loop is designed to find both LHS and RHS plans, so no need to generate them swapped here
+          val matchingHints = qg.joinHints.filter(_.coveredBy(overlappingNodes))
+          builder += planProducer.planNodeHashJoin(overlappingNodes, lhs, rhs, matchingHints, context)
         }
       }
+    }
 
     builder.result().iterator
   }
 
-  private def computeOverlappingNodes(lhs: LogicalPlan, rhs: LogicalPlan, solveds: Solveds, argumentsToRemove: Set[String]): Set[String] = {
+  private def computeOverlappingNodes(
+    lhs: LogicalPlan,
+    rhs: LogicalPlan,
+    solveds: Solveds,
+    argumentsToRemove: Set[String]
+  ): Set[String] = {
     val leftNodes = nodes(lhs, solveds)
     val rightNodes = nodes(rhs, solveds)
     (leftNodes intersect rightNodes) -- argumentsToRemove
   }
 
-  private def computeOverlappingSymbols(lhs: LogicalPlan, rhs: LogicalPlan, argumentsToRemove: Set[String]): Set[String] = {
+  private def computeOverlappingSymbols(
+    lhs: LogicalPlan,
+    rhs: LogicalPlan,
+    argumentsToRemove: Set[String]
+  ): Set[String] = {
     val leftSymbols = lhs.availableSymbols
     val rightSymbols = rhs.availableSymbols
     (leftSymbols intersect rightSymbols) -- argumentsToRemove

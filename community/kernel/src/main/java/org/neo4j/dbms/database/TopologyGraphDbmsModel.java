@@ -24,90 +24,78 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public interface TopologyGraphDbmsModel
-{
-    enum HostedOnMode
-    {
-        raft( 1, GraphDatabaseSettings.Mode.CORE ),
-        replica( 2, GraphDatabaseSettings.Mode.READ_REPLICA ),
-        single( 0, GraphDatabaseSettings.Mode.SINGLE );
+public interface TopologyGraphDbmsModel {
+    enum HostedOnMode {
+        raft(1, GraphDatabaseSettings.Mode.CORE),
+        replica(2, GraphDatabaseSettings.Mode.READ_REPLICA),
+        single(0, GraphDatabaseSettings.Mode.SINGLE);
 
         private final GraphDatabaseSettings.Mode instanceMode;
         private final byte code;
 
-        HostedOnMode( int code, GraphDatabaseSettings.Mode instanceMode )
-        {
+        HostedOnMode(int code, GraphDatabaseSettings.Mode instanceMode) {
             this.code = (byte) code;
             this.instanceMode = instanceMode;
         }
 
-        public GraphDatabaseSettings.Mode instanceMode()
-        {
+        public GraphDatabaseSettings.Mode instanceMode() {
             return instanceMode;
         }
 
-        public byte code()
-        {
+        public byte code() {
             return code;
         }
 
-        public static HostedOnMode from( GraphDatabaseSettings.Mode instanceMode )
-        {
-            for ( HostedOnMode mode : values() )
-            {
-                if ( mode.instanceMode == instanceMode )
-                {
+        public static HostedOnMode from(GraphDatabaseSettings.Mode instanceMode) {
+            for (HostedOnMode mode : values()) {
+                if (mode.instanceMode == instanceMode) {
                     return mode;
                 }
             }
-            throw new IllegalArgumentException( "Invalid instance mode found: " + instanceMode );
+            throw new IllegalArgumentException("Invalid instance mode found: " + instanceMode);
         }
 
-        public static HostedOnMode forCode( byte code )
-        {
-            return Arrays.stream( values() )
-                         .filter( value -> value.code == code )
-                         .findFirst()
-                         .orElseThrow( () -> new IllegalArgumentException( "Invalid hosted on mode: " + code ) );
+        public static HostedOnMode forCode(byte code) {
+            return Arrays.stream(values())
+                    .filter(value -> value.code == code)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid hosted on mode: " + code));
         }
     }
 
-    enum DatabaseStatus
-    {
-        online,offline
+    enum DatabaseStatus {
+        online,
+        offline
     }
 
-    enum DatabaseAccess
-    {
-        READ_ONLY( "read-only" ), READ_WRITE( "read-write" );
+    enum DatabaseAccess {
+        READ_ONLY("read-only"),
+        READ_WRITE("read-write");
 
         private final String stringRepr;
 
-        DatabaseAccess( String stringRepr )
-        {
+        DatabaseAccess(String stringRepr) {
             this.stringRepr = stringRepr;
         }
 
-        public String getStringRepr()
-        {
+        public String getStringRepr() {
             return stringRepr;
         }
     }
 
-    enum InstanceStatus
-    {
-        active,draining
+    enum InstanceStatus {
+        active,
+        draining
     }
 
-    Label DATABASE_LABEL = Label.label( "Database" );
+    Label DATABASE_LABEL = Label.label("Database");
     String DATABASE = DATABASE_LABEL.name();
-    Label DELETED_DATABASE_LABEL = Label.label( "DeletedDatabase" );
+    Label DELETED_DATABASE_LABEL = Label.label("DeletedDatabase");
     String DATABASE_UUID_PROPERTY = "uuid";
     String DATABASE_NAME_PROPERTY = "name";
     String DATABASE_STATUS_PROPERTY = "status";
@@ -129,21 +117,23 @@ public interface TopologyGraphDbmsModel
 
     @Deprecated
     String DATABASE_INITIAL_SERVERS_PROPERTY = "initial_members";
+
     @Deprecated
     String DATABASE_STORE_CREATION_TIME_PROPERTY = "store_creation_time";
+
     @Deprecated
     String DATABASE_STORE_VERSION_PROPERTY = "store_version";
 
-    Label DATABASE_NAME_LABEL = Label.label( "DatabaseName" );
+    Label DATABASE_NAME_LABEL = Label.label("DatabaseName");
     String DATABASE_NAME = DATABASE_NAME_LABEL.name();
     String DATABASE_NAME_LABEL_DESCRIPTION = "Database alias";
     String NAME_PROPERTY = "name";
-    RelationshipType TARGETS_RELATIONSHIP = RelationshipType.withName( "TARGETS" );
+    RelationshipType TARGETS_RELATIONSHIP = RelationshipType.withName("TARGETS");
     String TARGETS = TARGETS_RELATIONSHIP.name();
     String PRIMARY_PROPERTY = "primary";
 
-    Label INSTANCE_LABEL = Label.label( "Instance" );
-    Label REMOVED_INSTANCE_LABEL = Label.label( "RemovedInstance" );
+    Label INSTANCE_LABEL = Label.label("Instance");
+    Label REMOVED_INSTANCE_LABEL = Label.label("RemovedInstance");
     String INSTANCE_UUID_PROPERTY = "uuid";
     String INSTANCE_STATUS_PROPERTY = "status";
     String INSTANCE_DISCOVERED_AT_PROPERTY = "discovered_at";
@@ -151,14 +141,14 @@ public interface TopologyGraphDbmsModel
     String REMOVED_INSTANCE_REMOVED_AT_PROPERTY = "removed_at";
     String REMOVED_INSTANCE_ALIASES_PROPERTY = "aliases";
 
-    RelationshipType HOSTED_ON_RELATIONSHIP = RelationshipType.withName( "HOSTED_ON" );
-    RelationshipType WAS_HOSTED_ON_RELATIONSHIP = RelationshipType.withName( "WAS_HOSTED_ON" );
+    RelationshipType HOSTED_ON_RELATIONSHIP = RelationshipType.withName("HOSTED_ON");
+    RelationshipType WAS_HOSTED_ON_RELATIONSHIP = RelationshipType.withName("WAS_HOSTED_ON");
     String HOSTED_ON_INSTALLED_AT_PROPERTY = "installed_at";
     String HOSTED_ON_BOOTSTRAPPER_PROPERTY = "bootstrapper";
     String HOSTED_ON_MODE_PROPERTY = "mode";
     String WAS_HOSTED_ON_REMOVED_AT_PROPERTY = "removed_at";
 
-    Label TOPOLOGY_GRAPH_SETTINGS_LABEL = Label.label( "TopologyGraphSettings" );
+    Label TOPOLOGY_GRAPH_SETTINGS_LABEL = Label.label("TopologyGraphSettings");
     String TOPOLOGY_GRAPH_SETTINGS_ALLOCATOR_PROPERTY = "allocator";
 
     Set<NamedDatabaseId> getAllDatabaseIds();
@@ -171,7 +161,7 @@ public interface TopologyGraphDbmsModel
      * @param databaseName the database alias to resolve a {@link NamedDatabaseId} for.
      * @return the corresponding {@link NamedDatabaseId}
      */
-    Optional<NamedDatabaseId> getDatabaseIdByAlias( String databaseName );
+    Optional<NamedDatabaseId> getDatabaseIdByAlias(String databaseName);
 
     /**
      * Fetches the {@link NamedDatabaseId} corresponding to the provided id, if one exists in this DBMS.
@@ -179,12 +169,12 @@ public interface TopologyGraphDbmsModel
      * @param uuid the uuid to resolve a {@link NamedDatabaseId} for.
      * @return the corresponding {@link NamedDatabaseId}
      */
-    Optional<NamedDatabaseId> getDatabaseIdByUUID( UUID uuid );
+    Optional<NamedDatabaseId> getDatabaseIdByUUID(UUID uuid);
 
     /**
      * Fetches all known database aliases in the DBMS, along with their associated {@link NamedDatabaseId}s.
      *
      * @return the aliases and associated ids
      */
-    Map<String,NamedDatabaseId> getAllDatabaseAliases();
+    Map<String, NamedDatabaseId> getAllDatabaseAliases();
 }

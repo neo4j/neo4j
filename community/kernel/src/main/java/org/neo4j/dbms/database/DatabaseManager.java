@@ -21,7 +21,6 @@ package org.neo4j.dbms.database;
 
 import java.util.Optional;
 import java.util.SortedMap;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -30,15 +29,13 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
-{
+public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle {
     /**
      * Creates the system database. This must be created and started before
      * any other databases can be created. If the system database is already
      * initialised, nothing happens
      */
-    default void initialiseSystemDatabase()
-    {
+    default void initialiseSystemDatabase() {
         // no-op
     }
 
@@ -47,8 +44,7 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * as per the system {@link Config}. If default databases are already
      * initialised, nothing happens
      */
-    default void initialiseDefaultDatabase()
-    {
+    default void initialiseDefaultDatabase() {
         // no-op
     }
 
@@ -58,7 +54,7 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * @param namedDatabaseId the ID of the database to be returned
      * @return optionally, the database context instance with ID databaseId
      */
-    Optional<DB> getDatabaseContext( NamedDatabaseId namedDatabaseId );
+    Optional<DB> getDatabaseContext(NamedDatabaseId namedDatabaseId);
 
     /**
      * Returns a given {@link DatabaseContext} object by name, or `Optional.empty()` if the database does not exist
@@ -66,9 +62,8 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * @param databaseName the name of the database to be returned
      * @return optionally, the database context instance with name databaseName
      */
-    default Optional<DB> getDatabaseContext( String databaseName )
-    {
-        return databaseIdRepository().getByName( databaseName ).flatMap( this::getDatabaseContext );
+    default Optional<DB> getDatabaseContext(String databaseName) {
+        return databaseIdRepository().getByName(databaseName).flatMap(this::getDatabaseContext);
     }
 
     /**
@@ -77,9 +72,8 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * @param databaseId the identifier of the database to be returned
      * @return optionally, the database context instance with identifier databaseId
      */
-    default Optional<DB> getDatabaseContext( DatabaseId databaseId )
-    {
-        return databaseIdRepository().getById( databaseId ).flatMap( this::getDatabaseContext );
+    default Optional<DB> getDatabaseContext(DatabaseId databaseId) {
+        return databaseIdRepository().getById(databaseId).flatMap(this::getDatabaseContext);
     }
 
     /**
@@ -90,7 +84,7 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * @throws DatabaseManagementException if database with specified name already exists, or the limited number of databases has been reached.
      * @return database context for newly created database
      */
-    DB createDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseManagementException;
+    DB createDatabase(NamedDatabaseId namedDatabaseId) throws DatabaseManagementException;
 
     /**
      * Drop database with specified name.
@@ -98,21 +92,21 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * If database with requested name does not exist exception will be thrown.
      * @param namedDatabaseId ID of database to drop.
      */
-    void dropDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException;
+    void dropDatabase(NamedDatabaseId namedDatabaseId) throws DatabaseNotFoundException;
 
     /**
      * Stop database with specified name.
      * Stopping already stopped database does not have any effect.
      * @param namedDatabaseId database ID to stop
      */
-    void stopDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException;
+    void stopDatabase(NamedDatabaseId namedDatabaseId) throws DatabaseNotFoundException;
 
     /**
      * Start database with specified name.
      * Starting already started database does not have any effect.
      * @param namedDatabaseId database ID to start
      */
-    void startDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException;
+    void startDatabase(NamedDatabaseId namedDatabaseId) throws DatabaseNotFoundException;
 
     /**
      * Return all {@link DatabaseContext} instances created by this service, associated with their database names.
@@ -121,7 +115,7 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      *
      * @return a Map from database names to database objects.
      */
-    SortedMap<NamedDatabaseId,DB> registeredDatabases();
+    SortedMap<NamedDatabaseId, DB> registeredDatabases();
 
     /**
      * Return the {@link DatabaseIdRepository.Caching} constructed with this database manager. Use this to retrieve a

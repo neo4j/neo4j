@@ -19,68 +19,54 @@
  */
 package org.neo4j.internal.kernel.api;
 
-public abstract class DefaultCloseListenable implements AutoCloseablePlus
-{
+public abstract class DefaultCloseListenable implements AutoCloseablePlus {
     protected CloseListener closeListener;
     private int token;
 
     @Override
-    public final void setCloseListener( CloseListener closeListener )
-    {
+    public final void setCloseListener(CloseListener closeListener) {
         this.closeListener = closeListener;
     }
 
-    public final CloseListener getCloseListener()
-    {
+    public final CloseListener getCloseListener() {
         return this.closeListener;
     }
 
     @Override
-    public final void close()
-    {
+    public final void close() {
         closeInternal();
         var listener = closeListener;
-        if ( listener != null )
-        {
-            listener.onClosed( this );
+        if (listener != null) {
+            listener.onClosed(this);
         }
     }
 
     @Override
-    public final void setToken( int token )
-    {
+    public final void setToken(int token) {
         this.token = token;
     }
 
     @Override
-    public final int getToken()
-    {
+    public final int getToken() {
         return token;
     }
 
-    public static DefaultCloseListenable wrap( AutoCloseable c )
-    {
-        return new DefaultCloseListenable()
-        {
+    public static DefaultCloseListenable wrap(AutoCloseable c) {
+        return new DefaultCloseListenable() {
             private boolean closed;
 
             @Override
-            public void closeInternal()
-            {
-                try
-                {
+            public void closeInternal() {
+                try {
                     c.close();
                     closed = true;
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
 
             @Override
-            public boolean isClosed()
-            {
+            public boolean isClosed() {
                 return closed;
             }
         };

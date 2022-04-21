@@ -19,8 +19,9 @@
  */
 package org.neo4j.server.rest.domain;
 
-import java.util.Map;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
+import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -30,48 +31,37 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
-
-public class GraphDbHelper
-{
+public class GraphDbHelper {
     private final GraphDatabaseAPI databaseService;
 
-    public GraphDbHelper( GraphDatabaseService databaseService )
-    {
+    public GraphDbHelper(GraphDatabaseService databaseService) {
         this.databaseService = (GraphDatabaseAPI) databaseService;
     }
 
-    public long createNode( Label... labels )
-    {
-        try ( Transaction tx = databaseService.beginTransaction( IMPLICIT, AnonymousContext.writeToken() ) )
-        {
-            Node node = tx.createNode( labels );
+    public long createNode(Label... labels) {
+        try (Transaction tx = databaseService.beginTransaction(IMPLICIT, AnonymousContext.writeToken())) {
+            Node node = tx.createNode(labels);
             tx.commit();
             return node.getId();
         }
     }
 
-    public long createNode( Map<String, Object> properties, Label... labels )
-    {
-        try ( Transaction tx = databaseService.beginTransaction( IMPLICIT, AnonymousContext.writeToken() ) )
-        {
-            Node node = tx.createNode( labels );
-            for ( Map.Entry<String, Object> entry : properties.entrySet() )
-            {
-                node.setProperty( entry.getKey(), entry.getValue() );
+    public long createNode(Map<String, Object> properties, Label... labels) {
+        try (Transaction tx = databaseService.beginTransaction(IMPLICIT, AnonymousContext.writeToken())) {
+            Node node = tx.createNode(labels);
+            for (Map.Entry<String, Object> entry : properties.entrySet()) {
+                node.setProperty(entry.getKey(), entry.getValue());
             }
             tx.commit();
             return node.getId();
         }
     }
 
-    public long createRelationship( String type, long startNodeId, long endNodeId )
-    {
-        try ( Transaction tx = databaseService.beginTransaction( IMPLICIT, AnonymousContext.writeToken() ) )
-        {
-            Node startNode = tx.getNodeById( startNodeId );
-            Node endNode = tx.getNodeById( endNodeId );
-            Relationship relationship = startNode.createRelationshipTo( endNode, RelationshipType.withName( type ) );
+    public long createRelationship(String type, long startNodeId, long endNodeId) {
+        try (Transaction tx = databaseService.beginTransaction(IMPLICIT, AnonymousContext.writeToken())) {
+            Node startNode = tx.getNodeById(startNodeId);
+            Node endNode = tx.getNodeById(endNodeId);
+            Relationship relationship = startNode.createRelationshipTo(endNode, RelationshipType.withName(type));
             tx.commit();
             return relationship.getId();
         }

@@ -19,6 +19,4 @@
  */
 package org.neo4j.codegen;
 
-public class Binding
-{
-}
+public class Binding {}

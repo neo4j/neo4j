@@ -29,15 +29,22 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
-class SystemUpdateCountingQueryContext(override val inner: QueryContext, val contextVars: MapValue, val systemUpdates: Counter)
-  extends DelegatingQueryContext(inner) with CountingQueryContext {
+class SystemUpdateCountingQueryContext(
+  override val inner: QueryContext,
+  val contextVars: MapValue,
+  val systemUpdates: Counter
+) extends DelegatingQueryContext(inner) with CountingQueryContext {
 
   val kernelTransactionalContext: TransactionalContext = inner match {
     case ctx: ExceptionTranslatingQueryContext => ctx.inner match {
-      case tqc: TransactionBoundQueryContext => tqc.transactionalContext.kernelTransactionalContext
-      case _ => throw new IllegalStateException("System updating query context can only contain a transaction bound query context")
-    }
-    case _ => throw new IllegalStateException("System updating query context can only contain an exception translating query context")
+        case tqc: TransactionBoundQueryContext => tqc.transactionalContext.kernelTransactionalContext
+        case _ => throw new IllegalStateException(
+            "System updating query context can only contain a transaction bound query context"
+          )
+      }
+    case _ => throw new IllegalStateException(
+        "System updating query context can only contain an exception translating query context"
+      )
   }
 
   def getTrackedStatistics: QueryStatistics = QueryStatistics(systemUpdates = systemUpdates.count)
@@ -48,7 +55,7 @@ class SystemUpdateCountingQueryContext(override val inner: QueryContext, val con
   }
 
   def withContextVars(newVars: MapValue): SystemUpdateCountingQueryContext = {
-    if(newVars.size() > 0) new SystemUpdateCountingQueryContext(inner, contextVars.updatedWith(newVars), systemUpdates)
+    if (newVars.size() > 0) new SystemUpdateCountingQueryContext(inner, contextVars.updatedWith(newVars), systemUpdates)
     else this
   }
 
@@ -57,8 +64,9 @@ class SystemUpdateCountingQueryContext(override val inner: QueryContext, val con
 }
 
 object SystemUpdateCountingQueryContext {
+
   def from(ctx: QueryContext): SystemUpdateCountingQueryContext = ctx match {
     case c: SystemUpdateCountingQueryContext => c
-    case c => new SystemUpdateCountingQueryContext(c, MapValue.EMPTY, new Counter())
+    case c                                   => new SystemUpdateCountingQueryContext(c, MapValue.EMPTY, new Counter())
   }
 }

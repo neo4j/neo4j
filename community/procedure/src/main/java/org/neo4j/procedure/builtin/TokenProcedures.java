@@ -19,6 +19,8 @@
  */
 package org.neo4j.procedure.builtin;
 
+import static org.neo4j.procedure.Mode.WRITE;
+
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.procedure.Context;
@@ -26,31 +28,25 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.procedure.Mode.WRITE;
-
-public class TokenProcedures
-{
+public class TokenProcedures {
     @Context
     public KernelTransaction tx;
 
-    @Description( "Create a label" )
-    @Procedure( name = "db.createLabel", mode = WRITE )
-    public void createLabel( @Name( "newLabel" ) String newLabel ) throws KernelException
-    {
-        tx.tokenWrite().labelGetOrCreateForName( newLabel );
+    @Description("Create a label")
+    @Procedure(name = "db.createLabel", mode = WRITE)
+    public void createLabel(@Name("newLabel") String newLabel) throws KernelException {
+        tx.tokenWrite().labelGetOrCreateForName(newLabel);
     }
 
-    @Description( "Create a RelationshipType" )
-    @Procedure( name = "db.createRelationshipType", mode = WRITE )
-    public void createRelationshipType( @Name( "newRelationshipType" ) String newRelationshipType ) throws KernelException
-    {
-        tx.tokenWrite().relationshipTypeGetOrCreateForName( newRelationshipType );
+    @Description("Create a RelationshipType")
+    @Procedure(name = "db.createRelationshipType", mode = WRITE)
+    public void createRelationshipType(@Name("newRelationshipType") String newRelationshipType) throws KernelException {
+        tx.tokenWrite().relationshipTypeGetOrCreateForName(newRelationshipType);
     }
 
-    @Description( "Create a Property" )
-    @Procedure( name = "db.createProperty", mode = WRITE )
-    public void createProperty( @Name( "newProperty" ) String newProperty ) throws KernelException
-    {
-        tx.tokenWrite().propertyKeyGetOrCreateForName( newProperty );
+    @Description("Create a Property")
+    @Procedure(name = "db.createProperty", mode = WRITE)
+    public void createProperty(@Name("newProperty") String newProperty) throws KernelException {
+        tx.tokenWrite().propertyKeyGetOrCreateForName(newProperty);
     }
 }

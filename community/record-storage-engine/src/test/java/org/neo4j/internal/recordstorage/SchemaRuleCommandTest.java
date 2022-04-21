@@ -19,13 +19,23 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.common.Subject.SYSTEM;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -46,198 +56,185 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.common.Subject.SYSTEM;
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
-
-class SchemaRuleCommandTest
-{
+class SchemaRuleCommandTest {
     private final int labelId = 2;
     private final int propertyKey = 8;
     private final long id = 0;
     private final long txId = 1337L;
-    private final NeoStores neoStores = mock( NeoStores.class );
-    private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
-    private final SchemaStore schemaStore = mock( SchemaStore.class );
-    private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
+    private final NeoStores neoStores = mock(NeoStores.class);
+    private final MetaDataStore metaDataStore = mock(MetaDataStore.class);
+    private final SchemaStore schemaStore = mock(SchemaStore.class);
+    private final IndexUpdateListener indexUpdateListener = mock(IndexUpdateListener.class);
     private NeoStoreTransactionApplierFactory storeApplier;
-    private final IndexTransactionApplierFactory indexApplier = new IndexTransactionApplierFactory( indexUpdateListener );
+    private final IndexTransactionApplierFactory indexApplier = new IndexTransactionApplierFactory(indexUpdateListener);
     private final LogCommandSerialization serialization = RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
-    private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptors.forLabel( labelId, propertyKey ) ).withName( "index" ).materialise( id );
+    private final IndexDescriptor rule = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyKey))
+            .withName("index")
+            .materialise(id);
 
     @BeforeEach
-    void setup()
-    {
+    void setup() {
         IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
-        Stream.of( RecordIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( mock( IdGenerator.class ) ) );
-        storeApplier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
+        Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(mock(IdGenerator.class)));
+        storeApplier = new NeoStoreTransactionApplierFactory(
+                INTERNAL, neoStores, mock(CacheAccessBackDoor.class), LockService.NO_LOCK_SERVICE);
     }
 
     @Test
-    void shouldWriteCreatedSchemaRuleToStore() throws Exception
-    {
+    void shouldWriteCreatedSchemaRuleToStore() throws Exception {
         // GIVEN
-        SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
-        SchemaRecord after = new SchemaRecord( id ).initialize( true, 42 );
+        SchemaRecord before = new SchemaRecord(id).initialize(false, NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(id).initialize(true, 42);
 
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        when(neoStores.getSchemaStore()).thenReturn(schemaStore);
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
+        visitSchemaRuleCommand(storeApplier, new SchemaRuleCommand(serialization, before, after, rule));
 
         // THEN
-        verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
+        verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
     }
 
     @Test
-    void shouldCreateIndexForCreatedSchemaRule() throws Exception
-    {
+    void shouldCreateIndexForCreatedSchemaRule() throws Exception {
         // GIVEN
-        SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
-        SchemaRecord after = new SchemaRecord( id ).initialize( true, 42 );
+        SchemaRecord before = new SchemaRecord(id).initialize(false, NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(id).initialize(true, 42);
         after.setCreated();
 
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        when(neoStores.getSchemaStore()).thenReturn(schemaStore);
 
         // WHEN
-        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
+        visitSchemaRuleCommand(indexApplier, new SchemaRuleCommand(serialization, before, after, rule));
 
         // THEN
-        verify( indexUpdateListener ).createIndexes( SYSTEM , rule );
+        verify(indexUpdateListener).createIndexes(SYSTEM, rule);
     }
 
     @Test
-    void shouldSetLatestConstraintRule() throws Exception
-    {
+    void shouldSetLatestConstraintRule() throws Exception {
         // Given
-        SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
+        SchemaRecord before = new SchemaRecord(id).initialize(true, 42);
         before.setCreated();
-        SchemaRecord after = new SchemaRecord( id ).initialize( true, 42 );
-        after.setConstraint( true );
+        SchemaRecord after = new SchemaRecord(id).initialize(true, 42);
+        after.setConstraint(true);
 
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
-        when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
+        when(neoStores.getSchemaStore()).thenReturn(schemaStore);
+        when(neoStores.getMetaDataStore()).thenReturn(metaDataStore);
 
-        ConstraintDescriptor schemaRule = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey ).withId( id ).withOwnedIndexId( 0 );
+        ConstraintDescriptor schemaRule = ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyKey)
+                .withId(id)
+                .withOwnedIndexId(0);
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( serialization, before, after, schemaRule ) );
+        visitSchemaRuleCommand(storeApplier, new SchemaRuleCommand(serialization, before, after, schemaRule));
 
         // THEN
-        verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( txId );
+        verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
+        verify(metaDataStore).setLatestConstraintIntroducingTx(txId);
     }
 
     @Test
-    void shouldDropSchemaRuleFromStore() throws Exception
-    {
+    void shouldDropSchemaRuleFromStore() throws Exception {
         // GIVEN
-        SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
+        SchemaRecord before = new SchemaRecord(id).initialize(true, 42);
         before.setCreated();
-        SchemaRecord after = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = new SchemaRecord(id).initialize(false, NO_NEXT_PROPERTY.longValue());
 
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        when(neoStores.getSchemaStore()).thenReturn(schemaStore);
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
+        visitSchemaRuleCommand(storeApplier, new SchemaRuleCommand(serialization, before, after, rule));
 
         // THEN
-        verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
+        verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
     }
 
     @Test
-    void shouldDropSchemaRuleFromIndex() throws Exception
-    {
+    void shouldDropSchemaRuleFromIndex() throws Exception {
         // GIVEN
-        SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
+        SchemaRecord before = new SchemaRecord(id).initialize(true, 42);
         before.setCreated();
-        SchemaRecord after = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = new SchemaRecord(id).initialize(false, NO_NEXT_PROPERTY.longValue());
 
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        when(neoStores.getSchemaStore()).thenReturn(schemaStore);
 
         // WHEN
-        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
+        visitSchemaRuleCommand(indexApplier, new SchemaRuleCommand(serialization, before, after, rule));
 
         // THEN
-        verify( indexUpdateListener ).dropIndex( rule );
+        verify(indexUpdateListener).dropIndex(rule);
     }
 
     @Test
-    void shouldWriteSchemaRuleToLog() throws Exception
-    {
+    void shouldWriteSchemaRuleToLog() throws Exception {
         // GIVEN
-        SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
-        SchemaRecord after = new SchemaRecord( id ).initialize( true, 42 );
+        SchemaRecord before = new SchemaRecord(id).initialize(false, NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(id).initialize(true, 42);
         after.setCreated();
 
-        SchemaRuleCommand command = new SchemaRuleCommand( serialization, before, after, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand(serialization, before, after, rule);
         InMemoryClosableChannel buffer = new InMemoryClosableChannel();
 
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        when(neoStores.getSchemaStore()).thenReturn(schemaStore);
 
         // WHEN
-        command.serialize( buffer );
-        Command readCommand = serialization.read( buffer );
+        command.serialize(buffer);
+        Command readCommand = serialization.read(buffer);
 
         // THEN
-        assertThat( readCommand ).isInstanceOf( SchemaRuleCommand.class );
+        assertThat(readCommand).isInstanceOf(SchemaRuleCommand.class);
 
-        assertSchemaRule( (SchemaRuleCommand)readCommand );
+        assertSchemaRule((SchemaRuleCommand) readCommand);
     }
 
     @Test
-    void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception
-    {
+    void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception {
         // GIVEN
-        SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
+        SchemaRecord before = new SchemaRecord(id).initialize(true, 42);
         before.setCreated();
-        SchemaRecord after = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = new SchemaRecord(id).initialize(false, NO_NEXT_PROPERTY.longValue());
 
-        SchemaRuleCommand command = new SchemaRuleCommand( serialization, before, after, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand(serialization, before, after, rule);
         InMemoryClosableChannel buffer = new InMemoryClosableChannel();
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        when(neoStores.getSchemaStore()).thenReturn(schemaStore);
 
         // WHEN
-        command.serialize( buffer );
-        Command readCommand = serialization.read( buffer );
+        command.serialize(buffer);
+        Command readCommand = serialization.read(buffer);
 
         // THEN
-        assertThat( readCommand ).isInstanceOf( SchemaRuleCommand.class );
+        assertThat(readCommand).isInstanceOf(SchemaRuleCommand.class);
 
-        assertSchemaRule( (SchemaRuleCommand) readCommand );
+        assertSchemaRule((SchemaRuleCommand) readCommand);
     }
 
-    @SuppressWarnings( "OptionalGetWithoutIsPresent" )
-    @RepeatedTest( 1000 )
-    void writeAndReadOfArbitrarySchemaRules() throws Exception
-    {
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    @RepeatedTest(1000)
+    void writeAndReadOfArbitrarySchemaRules() throws Exception {
         RandomSchema randomSchema = new RandomSchema();
-        SchemaRule rule = randomSchema.schemaRules().filter( indexBackedConstraintsWithoutIndexes() ).findFirst().get();
+        SchemaRule rule = randomSchema
+                .schemaRules()
+                .filter(indexBackedConstraintsWithoutIndexes())
+                .findFirst()
+                .get();
         long ruleId = rule.getId();
 
-        SchemaRecord before = new SchemaRecord( ruleId ).initialize( false, NO_NEXT_PROPERTY.longValue() );
-        SchemaRecord after = new SchemaRecord( ruleId ).initialize( true, 42 );
+        SchemaRecord before = new SchemaRecord(ruleId).initialize(false, NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(ruleId).initialize(true, 42);
         after.setCreated();
 
-        SchemaRuleCommand command = new SchemaRuleCommand( serialization, before, after, rule );
-        InMemoryClosableChannel buffer = new InMemoryClosableChannel( (int) ByteUnit.kibiBytes( 5 ) );
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        SchemaRuleCommand command = new SchemaRuleCommand(serialization, before, after, rule);
+        InMemoryClosableChannel buffer = new InMemoryClosableChannel((int) ByteUnit.kibiBytes(5));
+        when(neoStores.getSchemaStore()).thenReturn(schemaStore);
 
         // WHEN
-        command.serialize( buffer );
-        SchemaRuleCommand readCommand = (SchemaRuleCommand) serialization.read( buffer );
+        command.serialize(buffer);
+        SchemaRuleCommand readCommand = (SchemaRuleCommand) serialization.read(buffer);
 
         // THEN
-        assertEquals( ruleId, readCommand.getKey() );
-        assertThat( readCommand.getSchemaRule() ).isEqualTo( rule );
+        assertEquals(ruleId, readCommand.getKey());
+        assertThat(readCommand.getSchemaRule()).isEqualTo(rule);
     }
 
     /**
@@ -245,27 +242,23 @@ class SchemaRuleCommandTest
      * to an index that it owns. However, the {@link RandomSchema} might generate such {@link ConstraintDescriptor ConstraintDescriptors},
      * so we have to filter them out.
      */
-    private static Predicate<? super SchemaRule> indexBackedConstraintsWithoutIndexes()
-    {
-        return r ->
-        {
-            if ( r instanceof ConstraintDescriptor constraint )
-            {
-                return constraint.isIndexBackedConstraint() && constraint.asIndexBackedConstraint().hasOwnedIndexId();
+    private static Predicate<? super SchemaRule> indexBackedConstraintsWithoutIndexes() {
+        return r -> {
+            if (r instanceof ConstraintDescriptor constraint) {
+                return constraint.isIndexBackedConstraint()
+                        && constraint.asIndexBackedConstraint().hasOwnedIndexId();
             }
             return true;
         };
     }
 
-    private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )
-    {
-        assertEquals( id, readSchemaCommand.getKey() );
-        assertTrue( SchemaDescriptorPredicates.hasLabel( readSchemaCommand.getSchemaRule(), labelId ) );
-        assertTrue( SchemaDescriptorPredicates.hasProperty( readSchemaCommand.getSchemaRule(), propertyKey ) );
+    private void assertSchemaRule(SchemaRuleCommand readSchemaCommand) {
+        assertEquals(id, readSchemaCommand.getKey());
+        assertTrue(SchemaDescriptorPredicates.hasLabel(readSchemaCommand.getSchemaRule(), labelId));
+        assertTrue(SchemaDescriptorPredicates.hasProperty(readSchemaCommand.getSchemaRule(), propertyKey));
     }
 
-    private void visitSchemaRuleCommand( TransactionApplierFactory applier, SchemaRuleCommand command ) throws Exception
-    {
-        CommandHandlerContract.apply( applier, new GroupOfCommands( txId, StoreCursors.NULL, command ) );
+    private void visitSchemaRuleCommand(TransactionApplierFactory applier, SchemaRuleCommand command) throws Exception {
+        CommandHandlerContract.apply(applier, new GroupOfCommands(txId, StoreCursors.NULL, command));
     }
 }

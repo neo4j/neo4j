@@ -21,44 +21,37 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
-
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-class QueueTransactionAppender extends LifecycleAdapter implements TransactionAppender
-{
+class QueueTransactionAppender extends LifecycleAdapter implements TransactionAppender {
     private final TransactionLogQueue transactionLogQueue;
 
-    QueueTransactionAppender( TransactionLogQueue transactionLogQueue )
-    {
+    QueueTransactionAppender(TransactionLogQueue transactionLogQueue) {
         this.transactionLogQueue = transactionLogQueue;
     }
 
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         transactionLogQueue.start();
     }
 
     @Override
-    public void shutdown() throws Exception
-    {
+    public void shutdown() throws Exception {
         transactionLogQueue.shutdown();
     }
 
     @Override
-    public long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException, ExecutionException, InterruptedException
-    {
-        long committedTxId = transactionLogQueue.submit( batch, logAppendEvent ).getCommittedTxId();
-        publishAsCommitted( batch );
+    public long append(TransactionToApply batch, LogAppendEvent logAppendEvent)
+            throws IOException, ExecutionException, InterruptedException {
+        long committedTxId = transactionLogQueue.submit(batch, logAppendEvent).getCommittedTxId();
+        publishAsCommitted(batch);
         return committedTxId;
     }
 
-    private static void publishAsCommitted( TransactionToApply batch )
-    {
-        while ( batch != null )
-        {
+    private static void publishAsCommitted(TransactionToApply batch) {
+        while (batch != null) {
             batch.publishAsCommitted();
             batch = batch.next();
         }

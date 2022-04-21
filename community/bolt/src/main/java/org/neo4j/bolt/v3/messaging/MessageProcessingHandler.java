@@ -19,10 +19,11 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
+import static org.neo4j.bolt.v3.messaging.response.IgnoredMessage.IGNORED_MESSAGE;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.PackOutputClosedException;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -38,13 +39,10 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
-import static org.neo4j.bolt.v3.messaging.response.IgnoredMessage.IGNORED_MESSAGE;
-
-public class MessageProcessingHandler implements BoltResponseHandler
-{
+public class MessageProcessingHandler implements BoltResponseHandler {
     // Errors that are expected when the client disconnects mid-operation
     private static final Set<Status> CLIENT_MID_OP_DISCONNECT_ERRORS =
-            new HashSet<>( Arrays.asList( Status.Transaction.Terminated, Status.Transaction.LockClientStopped ) );
+            new HashSet<>(Arrays.asList(Status.Transaction.Terminated, Status.Transaction.LockClientStopped));
     private final MapValueBuilder metadata = new MapValueBuilder();
 
     protected final InternalLog log;
@@ -54,123 +52,97 @@ public class MessageProcessingHandler implements BoltResponseHandler
     private Neo4jError error;
     private boolean ignored;
 
-    public MessageProcessingHandler( BoltResponseMessageWriter messageWriter, BoltConnection connection, InternalLog logger )
-    {
+    public MessageProcessingHandler(
+            BoltResponseMessageWriter messageWriter, BoltConnection connection, InternalLog logger) {
         this.messageWriter = messageWriter;
         this.connection = connection;
         this.log = logger;
     }
 
     @Override
-    public boolean onPullRecords( BoltResult result, long size ) throws Throwable
-    {
+    public boolean onPullRecords(BoltResult result, long size) throws Throwable {
         return false;
     }
 
     @Override
-    public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
-    {
+    public boolean onDiscardRecords(BoltResult result, long size) throws Throwable {
         return false;
     }
 
     @Override
-    public void onMetadata( String key, AnyValue value )
-    {
-        metadata.add( key, value );
+    public void onMetadata(String key, AnyValue value) {
+        metadata.add(key, value);
     }
 
     @Override
-    public void markIgnored()
-    {
+    public void markIgnored() {
         this.ignored = true;
     }
 
     @Override
-    public void markFailed( Neo4jError error )
-    {
+    public void markFailed(Neo4jError error) {
         this.error = error;
     }
 
     @Override
-    public void onFinish()
-    {
-        try
-        {
-            if ( ignored )
-            {
-                messageWriter.write( IGNORED_MESSAGE );
+    public void onFinish() {
+        try {
+            if (ignored) {
+                messageWriter.write(IGNORED_MESSAGE);
+            } else if (error != null) {
+                publishError(messageWriter, error);
+            } else {
+                messageWriter.write(new SuccessMessage(getMetadata()));
             }
-            else if ( error != null )
-            {
-                publishError( messageWriter, error );
-            }
-            else
-            {
-                messageWriter.write( new SuccessMessage( getMetadata() ) );
-            }
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             connection.stop();
-            log.error( "Failed to write response to driver", e );
-        }
-        finally
-        {
+            log.error("Failed to write response to driver", e);
+        } finally {
             clearState();
         }
     }
 
-    private MapValue getMetadata()
-    {
+    private MapValue getMetadata() {
         return metadata.build();
     }
 
-    private void clearState()
-    {
+    private void clearState() {
         error = null;
         ignored = false;
         metadata.clear();
     }
 
-    private void publishError( BoltResponseMessageWriter messageWriter, Neo4jError error )
-    {
-        try
-        {
-            if ( error.isFatal() )
-            {
-                messageWriter.write( new FatalFailureMessage( error.status(), error.message() ) );
+    private void publishError(BoltResponseMessageWriter messageWriter, Neo4jError error) {
+        try {
+            if (error.isFatal()) {
+                messageWriter.write(new FatalFailureMessage(error.status(), error.message()));
+            } else {
+                messageWriter.write(new FailureMessage(error.status(), error.message()));
             }
-            else
-            {
-                messageWriter.write( new FailureMessage( error.status(), error.message() ) );
-            }
-        }
-        catch ( PackOutputClosedException e )
-        {
+        } catch (PackOutputClosedException e) {
             // Can't write error to the client, because the connection is closed.
             // Very likely our error is related to the connection being closed.
 
             // If the error is that the transaction was terminated, then the error is a side-effect of
             // us cleaning up stuff that was running when the client disconnected. Log a warning without
             // stack trace to highlight clients are disconnecting while stuff is running:
-            if ( CLIENT_MID_OP_DISCONNECT_ERRORS.contains( error.status() ) )
-            {
-                log.warn( "Client %s disconnected while query was running. Session has been cleaned up. " +
-                        "This can be caused by temporary network problems, but if you see this often, " +
-                        "ensure your applications are properly waiting for operations to complete before exiting.", e.clientAddress() );
+            if (CLIENT_MID_OP_DISCONNECT_ERRORS.contains(error.status())) {
+                log.warn(
+                        "Client %s disconnected while query was running. Session has been cleaned up. "
+                                + "This can be caused by temporary network problems, but if you see this often, "
+                                + "ensure your applications are properly waiting for operations to complete before exiting.",
+                        e.clientAddress());
                 return;
             }
 
             // If the error isn't that the tx was terminated, log it to the console for debugging. It's likely
             // there are other "ok" errors that we can whitelist into the conditional above over time.
-            log.warn( "Unable to send error back to the client. " + e.getMessage(), error.cause() );
-        }
-        catch ( Throwable t )
-        {
+            log.warn("Unable to send error back to the client. " + e.getMessage(), error.cause());
+        } catch (Throwable t) {
             // some unexpected error happened while writing exception back to the client
             // log it together with the original error being suppressed
-            t.addSuppressed( error.cause() );
-            log.error( "Unable to send error back to the client", t );
+            t.addSuppressed(error.cause());
+            log.error("Unable to send error back to the client", t);
         }
     }
 }

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class DistinctPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
+
   test("should not use eager plans for distinct") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (n) RETURN DISTINCT n.name")

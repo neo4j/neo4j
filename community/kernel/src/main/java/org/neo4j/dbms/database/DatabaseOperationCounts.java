@@ -24,8 +24,7 @@ import java.util.concurrent.atomic.LongAdder;
 /**
  * This interface and it's embedded implementation is there to track database operation in Enterprise Editions via Global Metrics.
  */
-public interface DatabaseOperationCounts
-{
+public interface DatabaseOperationCounts {
     long startCount();
 
     long createCount();
@@ -38,8 +37,7 @@ public interface DatabaseOperationCounts
 
     long recoveredCount();
 
-    class Counter implements  DatabaseOperationCounts
-    {
+    class Counter implements DatabaseOperationCounts {
         private final LongAdder createCount = new LongAdder();
         private final LongAdder startCount = new LongAdder();
         private final LongAdder stopCount = new LongAdder();
@@ -48,68 +46,56 @@ public interface DatabaseOperationCounts
         private final LongAdder recoveredCount = new LongAdder();
 
         @Override
-        public long startCount()
-        {
+        public long startCount() {
             return startCount.sum();
         }
 
         @Override
-        public long createCount()
-        {
+        public long createCount() {
             return createCount.sum();
         }
 
         @Override
-        public long stopCount()
-        {
+        public long stopCount() {
             return stopCount.sum();
         }
 
         @Override
-        public long dropCount()
-        {
+        public long dropCount() {
             return dropCount.sum();
         }
 
         @Override
-        public long failedCount()
-        {
+        public long failedCount() {
             return failedCount.sum();
         }
 
         @Override
-        public long recoveredCount()
-        {
+        public long recoveredCount() {
             return recoveredCount.sum();
         }
 
-        public void increaseCreateCount()
-        {
+        public void increaseCreateCount() {
             createCount.increment();
         }
 
-        public void increaseStartCount()
-        {
+        public void increaseStartCount() {
             startCount.increment();
         }
 
-        public void increaseStopCount()
-        {
+        public void increaseStopCount() {
             stopCount.increment();
         }
 
-        public void increaseDropCount()
-        {
+        public void increaseDropCount() {
             dropCount.increment();
         }
 
-        public void increaseFailedCount()
-        {
+        public void increaseFailedCount() {
             failedCount.increment();
         }
 
-        public void increaseRecoveredCount()
-        {
+        public void increaseRecoveredCount() {
             recoveredCount.increment();
         }
     }

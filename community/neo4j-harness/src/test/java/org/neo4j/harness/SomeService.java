@@ -19,10 +19,8 @@
  */
 package org.neo4j.harness;
 
-public class SomeService
-{
-    public String hello()
-    {
+public class SomeService {
+    public String hello() {
         return "world";
     }
 }

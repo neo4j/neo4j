@@ -21,23 +21,19 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 
-class RangeKeyStateFormatTest extends GenericKeyStateFormatTest<RangeKey>
-{
+class RangeKeyStateFormatTest extends GenericKeyStateFormatTest<RangeKey> {
     @Override
-    protected String zipName()
-    {
+    protected String zipName() {
         return "current-range-key-state-format.zip";
     }
 
     @Override
-    protected String storeFileName()
-    {
+    protected String storeFileName() {
         return "range-key-state-store";
     }
 
     @Override
-    Layout<RangeKey,?> getLayout()
-    {
-        return new RangeLayout( NUMBER_OF_SLOTS );
+    Layout<RangeKey, ?> getLayout() {
+        return new RangeLayout(NUMBER_OF_SLOTS);
     }
 }

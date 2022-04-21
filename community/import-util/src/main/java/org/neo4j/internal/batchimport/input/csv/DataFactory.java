@@ -25,7 +25,6 @@ import org.neo4j.internal.batchimport.input.Input;
 /**
  * Factory for the {@link Data data} provided by an {@link Input}.
  */
-public interface DataFactory
-{
-    Data create( Configuration config );
+public interface DataFactory {
+    Data create(Configuration config);
 }

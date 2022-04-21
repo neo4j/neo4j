@@ -19,15 +19,19 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.PageCachedNumberArrayFactory;
@@ -42,24 +46,15 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @PageCacheExtension
-class StringCollisionValuesTest
-{
+class StringCollisionValuesTest {
     @RegisterExtension
-    static final RandomExtension randomExtension = new RandomExtension( new RandomValues.Default()
-    {
+    static final RandomExtension randomExtension = new RandomExtension(new RandomValues.Default() {
         @Override
-        public int stringMaxLength()
-        {
+        public int stringMaxLength() {
             return (1 << Short.SIZE) - 1;
         }
-    } );
+    });
 
     @Inject
     private RandomSupport random;
@@ -70,63 +65,62 @@ class StringCollisionValuesTest
     @Inject
     private PageCache pageCache;
 
-    private static Stream<BiFunction<PageCache,Path,NumberArrayFactory>> data()
-    {
+    private static Stream<BiFunction<PageCache, Path, NumberArrayFactory>> data() {
         return Stream.of(
-                ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.HEAP,
-                ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.OFF_HEAP,
-                ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
-                ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.CHUNKED_FIXED_SIZE,
-                ( PageCache pageCache, Path homePath ) -> new PageCachedNumberArrayFactory( pageCache, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                        homePath, NullLog.getInstance(), DEFAULT_DATABASE_NAME ) );
+                (PageCache pageCache, Path homePath) -> NumberArrayFactories.HEAP,
+                (PageCache pageCache, Path homePath) -> NumberArrayFactories.OFF_HEAP,
+                (PageCache pageCache, Path homePath) -> NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
+                (PageCache pageCache, Path homePath) -> NumberArrayFactories.CHUNKED_FIXED_SIZE,
+                (PageCache pageCache, Path homePath) -> new PageCachedNumberArrayFactory(
+                        pageCache,
+                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        homePath,
+                        NullLog.getInstance(),
+                        DEFAULT_DATABASE_NAME));
     }
 
     @ParameterizedTest
-    @MethodSource( "data" )
-    void shouldStoreAndLoadStrings( BiFunction<PageCache,Path,NumberArrayFactory> factory )
-    {
+    @MethodSource("data")
+    void shouldStoreAndLoadStrings(BiFunction<PageCache, Path, NumberArrayFactory> factory) {
         // given
-        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( pageCache, testDirectory.homePath() ), 10_000, INSTANCE ) )
-        {
+        try (StringCollisionValues values =
+                new StringCollisionValues(factory.apply(pageCache, testDirectory.homePath()), 10_000, INSTANCE)) {
             // when
             long[] offsets = new long[100];
             String[] strings = new String[offsets.length];
-            for ( int i = 0; i < offsets.length; i++ )
-            {
+            for (int i = 0; i < offsets.length; i++) {
                 String string = random.nextAlphaNumericString();
-                offsets[i] = values.add( string );
+                offsets[i] = values.add(string);
                 strings[i] = string;
             }
 
             // then
-            for ( int i = 0; i < offsets.length; i++ )
-            {
-                assertEquals( strings[i], values.get( offsets[i] ) );
+            for (int i = 0; i < offsets.length; i++) {
+                assertEquals(strings[i], values.get(offsets[i]));
             }
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "data" )
-    void shouldMoveOverToNextChunkOnNearEnd( BiFunction<PageCache,Path,NumberArrayFactory> factory )
-    {
+    @MethodSource("data")
+    void shouldMoveOverToNextChunkOnNearEnd(BiFunction<PageCache, Path, NumberArrayFactory> factory) {
         // given
-        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( pageCache, testDirectory.homePath() ), 10_000, INSTANCE ) )
-        {
+        try (StringCollisionValues values =
+                new StringCollisionValues(factory.apply(pageCache, testDirectory.homePath()), 10_000, INSTANCE)) {
             char[] chars = new char[PAGE_SIZE - 3];
-            Arrays.fill( chars, 'a' );
+            Arrays.fill(chars, 'a');
 
             // when
-            String string = String.valueOf( chars );
-            long offset = values.add( string );
+            String string = String.valueOf(chars);
+            long offset = values.add(string);
             String secondString = "abcdef";
-            long secondOffset = values.add( secondString );
+            long secondOffset = values.add(secondString);
 
             // then
-            String readString = (String) values.get( offset );
-            assertEquals( string, readString );
-            String readSecondString = (String) values.get( secondOffset );
-            assertEquals( secondString, readSecondString );
+            String readString = (String) values.get(offset);
+            assertEquals(string, readString);
+            String readSecondString = (String) values.get(secondOffset);
+            assertEquals(secondString, readSecondString);
         }
     }
 }

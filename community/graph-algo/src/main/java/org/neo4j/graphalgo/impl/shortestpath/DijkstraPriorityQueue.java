@@ -27,21 +27,20 @@ import org.neo4j.graphdb.Node;
  * @param <CostType>
  *            The datatype the path weights are represented by.
  */
-public interface DijkstraPriorityQueue<CostType>
-{
+public interface DijkstraPriorityQueue<CostType> {
     /**
      * Used to insert a new value into the queue.
      * @param node
      * @param value
      */
-    void insertValue( Node node, CostType value );
+    void insertValue(Node node, CostType value);
 
     /**
      * Used to update a value in the queue (or insert it).
      * @param node
      * @param newValue
      */
-    void decreaseValue( Node node, CostType newValue );
+    void decreaseValue(Node node, CostType newValue);
 
     /**
      * Retrieve and remove the node with the most optimal value.

@@ -22,22 +22,19 @@ package org.neo4j.server.http.cypher.format;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
-public enum DefaultJsonFactory
-{
-    INSTANCE( new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM ) );
+public enum DefaultJsonFactory {
+    INSTANCE(new JsonFactory().disable(JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM));
 
     private final JsonFactory value;
 
-    DefaultJsonFactory( JsonFactory value )
-    {
+    DefaultJsonFactory(JsonFactory value) {
         this.value = value;
     }
 
     /**
      * @return A blueprint of the {@link JsonFactory} to be used by both the JSON input and output.
      */
-    public JsonFactory get()
-    {
+    public JsonFactory get() {
         return value;
     }
 }

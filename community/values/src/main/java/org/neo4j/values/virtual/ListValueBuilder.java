@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,19 +30,14 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ValueRepresentation;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-
-public abstract class ListValueBuilder
-{
+public abstract class ListValueBuilder {
     /**
      * @return a collector for {@link ListValue}s
      */
-    public static Collector<AnyValue,?,ListValue> collector()
-    {
+    public static Collector<AnyValue, ?, ListValue> collector() {
         return LIST_VALUE_COLLECTOR;
     }
 
@@ -49,125 +46,107 @@ public abstract class ListValueBuilder
      * @param size the final size of the list
      * @return a new builder
      */
-    public static ListValueBuilder newListBuilder( int size )
-    {
-        return new FixedSizeListValueBuilder( size );
+    public static ListValueBuilder newListBuilder(int size) {
+        return new FixedSizeListValueBuilder(size);
     }
 
     /**
      * Start building a list of unknown size
      * @return a new builder
      */
-    public static ListValueBuilder newListBuilder()
-    {
+    public static ListValueBuilder newListBuilder() {
         return new UnknownSizeListValueBuilder();
     }
 
-    protected ListValueBuilder()
-    {
+    protected ListValueBuilder() {
         valueRepresentation = ValueRepresentation.ANYTHING;
     }
 
     protected long estimatedHeapSize;
     protected ValueRepresentation valueRepresentation;
 
-    public final void add( AnyValue value )
-    {
+    public final void add(AnyValue value) {
         estimatedHeapSize += value.estimatedHeapUsage();
-        valueRepresentation = valueRepresentation.coerce( value.valueRepresentation() );
-        internalAdd( value );
+        valueRepresentation = valueRepresentation.coerce(value.valueRepresentation());
+        internalAdd(value);
     }
 
     public abstract ListValue build();
 
-    protected abstract void internalAdd( AnyValue value );
+    protected abstract void internalAdd(AnyValue value);
 
-    private static class FixedSizeListValueBuilder extends ListValueBuilder
-    {
+    private static class FixedSizeListValueBuilder extends ListValueBuilder {
         private final AnyValue[] values;
         private int index;
 
-        private FixedSizeListValueBuilder( int size )
-        {
+        private FixedSizeListValueBuilder(int size) {
             super();
             this.values = new AnyValue[size];
         }
 
         @Override
-        public ListValue build()
-        {
-            return new ListValue.ArrayListValue( values, estimatedHeapSize, valueRepresentation );
+        public ListValue build() {
+            return new ListValue.ArrayListValue(values, estimatedHeapSize, valueRepresentation);
         }
 
         @Override
-        public void internalAdd( AnyValue value )
-        {
+        public void internalAdd(AnyValue value) {
             values[index++] = value;
         }
     }
 
-    private static final long ARRAY_LIST_SHALLOW_SIZE = shallowSizeOfInstance( ArrayList.class );
-    private static class UnknownSizeListValueBuilder extends ListValueBuilder
-    {
+    private static final long ARRAY_LIST_SHALLOW_SIZE = shallowSizeOfInstance(ArrayList.class);
+
+    private static class UnknownSizeListValueBuilder extends ListValueBuilder {
         private final List<AnyValue> values = new ArrayList<>();
 
-        UnknownSizeListValueBuilder()
-        {
+        UnknownSizeListValueBuilder() {
             super();
             estimatedHeapSize += ARRAY_LIST_SHALLOW_SIZE;
         }
 
-        public UnknownSizeListValueBuilder combine( UnknownSizeListValueBuilder rhs )
-        {
-            values.addAll( rhs.values );
+        public UnknownSizeListValueBuilder combine(UnknownSizeListValueBuilder rhs) {
+            values.addAll(rhs.values);
             estimatedHeapSize += rhs.estimatedHeapSize;
             return this;
         }
 
         @Override
-        public ListValue build()
-        {
-            return new ListValue.JavaListListValue( values, estimatedHeapSize, valueRepresentation );
+        public ListValue build() {
+            return new ListValue.JavaListListValue(values, estimatedHeapSize, valueRepresentation);
         }
 
         @Override
-        public void internalAdd( AnyValue value )
-        {
-            values.add( value );
+        public void internalAdd(AnyValue value) {
+            values.add(value);
         }
     }
 
-    private static final Collector<AnyValue,UnknownSizeListValueBuilder,ListValue> LIST_VALUE_COLLECTOR = new Collector<>()
-    {
-        @Override
-        public Supplier<UnknownSizeListValueBuilder> supplier()
-        {
-            return UnknownSizeListValueBuilder::new;
-        }
+    private static final Collector<AnyValue, UnknownSizeListValueBuilder, ListValue> LIST_VALUE_COLLECTOR =
+            new Collector<>() {
+                @Override
+                public Supplier<UnknownSizeListValueBuilder> supplier() {
+                    return UnknownSizeListValueBuilder::new;
+                }
 
-        @Override
-        public BiConsumer<UnknownSizeListValueBuilder,AnyValue> accumulator()
-        {
-            return ListValueBuilder::add;
-        }
+                @Override
+                public BiConsumer<UnknownSizeListValueBuilder, AnyValue> accumulator() {
+                    return ListValueBuilder::add;
+                }
 
-        @Override
-        public BinaryOperator<UnknownSizeListValueBuilder> combiner()
-        {
-            return UnknownSizeListValueBuilder::combine;
-        }
+                @Override
+                public BinaryOperator<UnknownSizeListValueBuilder> combiner() {
+                    return UnknownSizeListValueBuilder::combine;
+                }
 
-        @Override
-        public Function<UnknownSizeListValueBuilder,ListValue> finisher()
-        {
-            return UnknownSizeListValueBuilder::build;
-        }
+                @Override
+                public Function<UnknownSizeListValueBuilder, ListValue> finisher() {
+                    return UnknownSizeListValueBuilder::build;
+                }
 
-        @Override
-        public Set<Characteristics> characteristics()
-        {
-            return Collections.emptySet();
-        }
-    };
+                @Override
+                public Set<Characteristics> characteristics() {
+                    return Collections.emptySet();
+                }
+            };
 }
-

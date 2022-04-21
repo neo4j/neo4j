@@ -29,13 +29,17 @@ trait NotificationChecker {
 }
 
 object LogicalPlanNotifications {
-  def checkForNotifications(logicalPlan: LogicalPlan,
-                            planContext: PlanContext,
-                            config: CypherPlannerConfiguration): Seq[InternalNotification] = {
+
+  def checkForNotifications(
+    logicalPlan: LogicalPlan,
+    planContext: PlanContext,
+    config: CypherPlannerConfiguration
+  ): Seq[InternalNotification] = {
     val notificationCheckers = Seq(
       checkForEagerLoadCsv,
-      checkForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
+      checkForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold)
+    )
 
-    notificationCheckers.flatMap(_ (logicalPlan))
+    notificationCheckers.flatMap(_(logicalPlan))
   }
 }

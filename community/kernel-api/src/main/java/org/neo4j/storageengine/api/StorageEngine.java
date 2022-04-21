@@ -19,14 +19,12 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.factory.Sets;
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.List;
-
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -49,30 +47,29 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
  */
-public interface StorageEngine extends Lifecycle
-{
+public interface StorageEngine extends Lifecycle {
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
      * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, long,
      * TxStateVisitor.Decorator, CursorContext, StoreCursors, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
-    CommandCreationContext newCommandCreationContext( MemoryTracker memoryTracker );
+    CommandCreationContext newCommandCreationContext(MemoryTracker memoryTracker);
 
     /**
      * Provide access level for underlying store cursors
      * @param initialContext cursor context to use for store cursors before reset call
      */
-    StoreCursors createStorageCursors( CursorContext initialContext );
+    StoreCursors createStorageCursors(CursorContext initialContext);
 
-    StorageLocks createStorageLocks( ResourceLocker locker );
+    StorageLocks createStorageLocks(ResourceLocker locker);
 
     /**
      * Adds an {@link IndexUpdateListener} which will receive streams of index updates from changes that gets
      * {@link #apply(CommandsToApply, TransactionApplicationMode) applied} to this storage engine.
      * @param indexUpdateListener {@link IndexUpdateListener} to add.
      */
-    void addIndexUpdateListener( IndexUpdateListener indexUpdateListener );
+    void addIndexUpdateListener(IndexUpdateListener indexUpdateListener);
 
     /**
      * Generates a list of {@link StorageCommand commands} representing the changes in the given transaction state
@@ -110,7 +107,7 @@ public interface StorageEngine extends Lifecycle
             TxStateVisitor.Decorator additionalTxStateVisitor,
             CursorContext cursorContext,
             StoreCursors storeCursors,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker)
             throws KernelException;
 
     /**
@@ -120,7 +117,8 @@ public interface StorageEngine extends Lifecycle
      * @param injectedNLIUpgradeCallback callback for token indexes upgrade commands
      * @return commands for making an upgrade to the desired {@link KernelVersion}.
      */
-    List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo, InjectedNLIUpgradeCallback injectedNLIUpgradeCallback );
+    List<StorageCommand> createUpgradeCommands(
+            KernelVersion versionToUpgradeTo, InjectedNLIUpgradeCallback injectedNLIUpgradeCallback);
 
     /**
      * Claims exclusive locks for some records whilst performing recovery.
@@ -131,7 +129,8 @@ public interface StorageEngine extends Lifecycle
      * @param lockGroup collection of acquired locks
      * @param mode used in this case to distinguish between RECOVERY and REVERSE_RECOVERY
      */
-    void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode );
+    void lockRecoveryCommands(
+            CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode);
 
     /**
      * Apply a batch of groups of commands to this storage.
@@ -140,7 +139,7 @@ public interface StorageEngine extends Lifecycle
      * @param mode {@link TransactionApplicationMode} when applying.
      * @throws Exception if an error occurs during application.
      */
-    void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception;
+    void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception;
 
     /**
      * Flushes and forces all changes down to underlying storage. This is a blocking call and when it returns
@@ -149,7 +148,7 @@ public interface StorageEngine extends Lifecycle
      * @param cursorContext underlying page cursor context
      * @throws IOException on I/O error.
      */
-    void flushAndForce( CursorContext cursorContext ) throws IOException;
+    void flushAndForce(CursorContext cursorContext) throws IOException;
 
     /**
      * Dump diagnostics about the storage.
@@ -157,7 +156,7 @@ public interface StorageEngine extends Lifecycle
      * @param errorLog to which to log error messages.
      * @param diagnosticsLog to which to log diagnostics messages.
      */
-    void dumpDiagnostics( InternalLog errorLog, DiagnosticsLogger diagnosticsLog );
+    void dumpDiagnostics(InternalLog errorLog, DiagnosticsLogger diagnosticsLog);
 
     /**
      * Close all opened resources. This may be called during startup if there's a failure
@@ -171,7 +170,7 @@ public interface StorageEngine extends Lifecycle
      * @param atomic will contain files that must be copied under a lock where no checkpoint can happen concurrently.
      * @param replayable will contain files not sensitive to the checkpoint constraint of those in the {@code atomic} collection.
      */
-    void listStorageFiles( Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable );
+    void listStorageFiles(Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable);
 
     /**
      * @return the {@link LegacyStoreId} of the underlying store.
@@ -207,8 +206,7 @@ public interface StorageEngine extends Lifecycle
     /**
      * @return specific behaviour of transaction state that is optimal for this storage engine.
      */
-    default TransactionStateBehaviour transactionStateBehaviour()
-    {
+    default TransactionStateBehaviour transactionStateBehaviour() {
         return TransactionStateBehaviour.DEFAULT_BEHAVIOUR;
     }
 
@@ -217,14 +215,14 @@ public interface StorageEngine extends Lifecycle
      * @param nodeId the node ID to encode.
      * @return the encoded node ID.
      */
-    byte[] encodeNodeId( long nodeId );
+    byte[] encodeNodeId(long nodeId);
 
     /**
      * Encodes a relationship ID as part of an element ID.
      * @param relationshipId the relationship ID to encode.
      * @return the encoded relationship ID.
      */
-    byte[] encodeRelationshipId( long relationshipId );
+    byte[] encodeRelationshipId(long relationshipId);
 
     /**
      * Decodes a node ID from an element ID.
@@ -232,7 +230,7 @@ public interface StorageEngine extends Lifecycle
      * @param offset offset into array to start to decode from.
      * @return the node ID from the decoded element ID.
      */
-    long decodeNodeId( byte[] from, int offset );
+    long decodeNodeId(byte[] from, int offset);
 
     /**
      * Decodes a relationship ID from an element ID.
@@ -240,14 +238,13 @@ public interface StorageEngine extends Lifecycle
      * @param offset offset into array to start to decode from.
      * @return the relationship ID from the decoded element ID.
      */
-    long decodeRelationshipId( byte[] from, int offset );
+    long decodeRelationshipId(byte[] from, int offset);
 
     /**
      * Open options used for related store files and to be used for other files managed outside of StorageEngine but related to the same database
      * @return set of open options
      */
-    default ImmutableSet<OpenOption> getOpenOptions()
-    {
+    default ImmutableSet<OpenOption> getOpenOptions() {
         return Sets.immutable.empty();
     }
 }

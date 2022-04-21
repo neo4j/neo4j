@@ -19,50 +19,46 @@
  */
 package org.neo4j.bolt.v41.messaging;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class RoutingContextTest
-{
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+class RoutingContextTest {
 
     @Test
-    void shouldCompareTwoEqualContexts()
-    {
-        Map<String,String> parametersA = new HashMap<>();
-        parametersA.put( "policy", "europe" );
-        parametersA.put( "speed", "fast" );
-        RoutingContext contextA = new RoutingContext( true,  parametersA );
+    void shouldCompareTwoEqualContexts() {
+        Map<String, String> parametersA = new HashMap<>();
+        parametersA.put("policy", "europe");
+        parametersA.put("speed", "fast");
+        RoutingContext contextA = new RoutingContext(true, parametersA);
 
-        Map<String,String> parametersB = new HashMap<>();
-        parametersB.put( "policy", "europe" );
-        parametersB.put( "speed", "fast" );
-        RoutingContext contextB = new RoutingContext( true,  parametersB );
+        Map<String, String> parametersB = new HashMap<>();
+        parametersB.put("policy", "europe");
+        parametersB.put("speed", "fast");
+        RoutingContext contextB = new RoutingContext(true, parametersB);
 
-        assertTrue( contextA.equals( contextB ) );
-        assertEquals( contextA.hashCode(), contextB.hashCode() );
+        assertTrue(contextA.equals(contextB));
+        assertEquals(contextA.hashCode(), contextB.hashCode());
     }
 
     @Test
-    void shouldCompareTwoDifferentContexts()
-    {
-        Map<String,String> parametersA = new HashMap<>();
-        parametersA.put( "policy", "europe" );
-        parametersA.put( "speed", "fast" );
-        RoutingContext contextA = new RoutingContext( true,  parametersA );
+    void shouldCompareTwoDifferentContexts() {
+        Map<String, String> parametersA = new HashMap<>();
+        parametersA.put("policy", "europe");
+        parametersA.put("speed", "fast");
+        RoutingContext contextA = new RoutingContext(true, parametersA);
 
-        Map<String,String> parametersB = new HashMap<>();
-        parametersB.put( "policy", "asia" );
-        parametersB.put( "speed", "fast" );
-        RoutingContext contextB = new RoutingContext( true,  parametersB );
+        Map<String, String> parametersB = new HashMap<>();
+        parametersB.put("policy", "asia");
+        parametersB.put("speed", "fast");
+        RoutingContext contextB = new RoutingContext(true, parametersB);
 
-        assertFalse( contextA.equals( contextB ) );
-        assertNotEquals( contextA.hashCode(), contextB.hashCode() );
+        assertFalse(contextA.equals(contextB));
+        assertNotEquals(contextA.hashCode(), contextB.hashCode());
     }
 }

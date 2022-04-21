@@ -26,10 +26,8 @@ import java.nio.file.Path;
  * Thrown when accessing a {@link org.neo4j.io.pagecache.PageCursor} of a {@link org.neo4j.io.pagecache.PagedFile} that
  * has been closed.
  */
-public class FileIsNotMappedException extends IOException
-{
-    public FileIsNotMappedException( Path file )
-    {
-        super( "File has been unmapped: " + file );
+public class FileIsNotMappedException extends IOException {
+    public FileIsNotMappedException(Path file) {
+        super("File has been unmapped: " + file);
     }
 }

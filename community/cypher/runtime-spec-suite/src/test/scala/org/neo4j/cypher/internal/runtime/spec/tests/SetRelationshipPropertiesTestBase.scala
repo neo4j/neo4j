@@ -29,10 +29,10 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 
 abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should set relationship properties") {
     // given a single relationship
@@ -150,7 +150,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
       .setRelationshipProperties("r", ("p1", "oldP1 + 1"), ("p2", "oldP2 + 1"))
       .filter("oldP1 < 5", "oldP2 < 5")
       .projection("r.p1 as oldP1", "r.p2 as oldP2")
-      .directedRelationshipByIdSeek("r", "a", "b", Set.empty, rs.map(_.getId) : _*)
+      .directedRelationshipByIdSeek("r", "a", "b", Set.empty, rs.map(_.getId): _*)
       .build(readOnly = false)
 
     // then
@@ -182,7 +182,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
       .|.filter("oldP1 < 5", "oldP2 < 5")
       .|.argument("oldP1", "oldP2")
       .projection("r.p1 as oldP1", "r.p2 as oldP2")
-      .directedRelationshipByIdSeek("r", "a", "b", Set.empty, rs.map(_.getId) : _*)
+      .directedRelationshipByIdSeek("r", "a", "b", Set.empty, rs.map(_.getId): _*)
       .build(readOnly = false)
 
     // then
@@ -213,7 +213,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
       .limit(3)
       .filter("oldP1 < 5", "oldP2 < 5")
       .projection("r.p1 as oldP1", "r.p2 as oldP2")
-      .directedRelationshipByIdSeek("r", "a", "b", Set.empty, rs.map(_.getId) : _*)
+      .directedRelationshipByIdSeek("r", "a", "b", Set.empty, rs.map(_.getId): _*)
       .build(readOnly = false)
 
     // then
@@ -245,7 +245,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
       .|.filter("oldP1 < 5", "oldP2 < 5")
       .|.argument("oldP1", "oldP2")
       .projection("r.p1 as oldP1", "r.p2 as oldP2")
-      .directedRelationshipByIdSeek("r", "a", "b", Set.empty, rs.map(_.getId) : _*)
+      .directedRelationshipByIdSeek("r", "a", "b", Set.empty, rs.map(_.getId): _*)
       .build(readOnly = false)
 
     // then
@@ -324,7 +324,9 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, input)
     consume(runtimeResult)
-    runtimeResult should beColumns("p1", "p2").withRows(Seq(Array(3, 3), Array(null, null))).withStatistics(propertiesSet = 2)
+    runtimeResult should beColumns("p1", "p2").withRows(Seq(Array(3, 3), Array(null, null))).withStatistics(
+      propertiesSet = 2
+    )
   }
 
   test("should set relationship properties from expression that requires null check") {

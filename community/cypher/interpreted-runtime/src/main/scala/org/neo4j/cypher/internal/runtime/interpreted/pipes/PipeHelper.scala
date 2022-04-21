@@ -25,6 +25,7 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.storable.FloatingPointValue
 
 object PipeHelper {
+
   /**
    * Evaluate a statically known expressions. Assert that it is a long value.
    *
@@ -35,12 +36,13 @@ object PipeHelper {
    * @param suffix   a suffix for error messages
    * @return the number
    */
-  def evaluateStaticLongOrThrow(exp: Expression,
-                                validate: Long => Boolean,
-                                state: QueryState,
-                                prefix: String,
-                                suffix: String
-                               ): Long = {
+  def evaluateStaticLongOrThrow(
+    exp: Expression,
+    validate: Long => Boolean,
+    state: QueryState,
+    prefix: String,
+    suffix: String
+  ): Long = {
     def fail(n: Any): Unit = {
       throw new InvalidArgumentException(s"$prefix: Invalid input. '$n' is not a valid value.$suffix")
     }

@@ -19,57 +19,53 @@
  */
 package org.neo4j.server.http.cypher.format.output.json;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Collections;
-import java.util.Map;
-
-import org.neo4j.server.http.cypher.format.api.RecordEvent;
-import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
-import org.neo4j.server.rest.domain.JsonParseException;
-
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 
-class RestRepresentationWriterTest
-{
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Collections;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.http.cypher.format.api.RecordEvent;
+import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
+import org.neo4j.server.rest.domain.JsonParseException;
+
+class RestRepresentationWriterTest {
     @Test
-    void shouldWriteNestedMaps() throws Exception
-    {
+    void shouldWriteNestedMaps() throws Exception {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new Neo4jJsonCodec().createGenerator( out );
+        JsonGenerator json = new Neo4jJsonCodec().createGenerator(out);
 
-        JsonNode rest = serialize( out, json, new RestRepresentationWriter( URI.create( "localhost" ) ) );
+        JsonNode rest = serialize(out, json, new RestRepresentationWriter(URI.create("localhost")));
 
-        assertThat( rest.size() ).isEqualTo( 1 );
+        assertThat(rest.size()).isEqualTo(1);
 
-        JsonNode firstCell = rest.get( 0 );
-        assertThat( firstCell.get( "one" ).get( "two" ).size() ).isEqualTo( 2 );
-        assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean() ).isEqualTo( true );
-        assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt() ).isEqualTo( 42 );
+        JsonNode firstCell = rest.get(0);
+        assertThat(firstCell.get("one").get("two").size()).isEqualTo(2);
+        assertThat(firstCell.get("one").get("two").get(0).asBoolean()).isEqualTo(true);
+        assertThat(firstCell.get("one").get("two").get(1).get("three").asInt()).isEqualTo(42);
     }
 
-    private static JsonNode serialize( ByteArrayOutputStream out, JsonGenerator json, ResultDataContentWriter
-            resultDataContentWriter ) throws IOException, JsonParseException
-    {
-        Map<String, Object> data = map( "the column", map( "one", map( "two", asList( true, map( "three", 42 ) ) ) ) );
-        RecordEvent recordEvent = new RecordEvent( Collections.singletonList( "the column" ), data::get );
+    private static JsonNode serialize(
+            ByteArrayOutputStream out, JsonGenerator json, ResultDataContentWriter resultDataContentWriter)
+            throws IOException, JsonParseException {
+        Map<String, Object> data = map("the column", map("one", map("two", asList(true, map("three", 42)))));
+        RecordEvent recordEvent = new RecordEvent(Collections.singletonList("the column"), data::get);
 
         json.writeStartObject();
         // RETURN {one:{two:[true, {three: 42}]}}
-        resultDataContentWriter.write( json, recordEvent );
+        resultDataContentWriter.write(json, recordEvent);
         json.writeEndObject();
         json.flush();
         json.close();
 
         String jsonAsString = out.toString();
-        return jsonNode( jsonAsString ).get( "rest" );
+        return jsonNode(jsonAsString).get("rest");
     }
 }

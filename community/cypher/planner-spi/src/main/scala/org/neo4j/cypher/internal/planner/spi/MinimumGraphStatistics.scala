@@ -53,7 +53,7 @@ class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphS
 
   override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = index.entityType match {
     case IndexDescriptor.EntityType.Node(label) =>
-      delegate.indexPropertyIsNotNullSelectivity(index).map {actualSelectivity =>
+      delegate.indexPropertyIsNotNullSelectivity(index).map { actualSelectivity =>
         nodesWithLabelCardinality(Some(label)) match {
           case MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY =>
             Seq(actualSelectivity, MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY).max
@@ -62,7 +62,7 @@ class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphS
       }
 
     case IndexDescriptor.EntityType.Relationship(relType) =>
-      delegate.indexPropertyIsNotNullSelectivity(index).map {actualSelectivity =>
+      delegate.indexPropertyIsNotNullSelectivity(index).map { actualSelectivity =>
         patternStepCardinality(None, Some(relType), None) match {
           case MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY =>
             Seq(actualSelectivity, MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY).max
@@ -71,7 +71,11 @@ class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphS
       }
   }
 
-  override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
+  override def patternStepCardinality(
+    fromLabel: Option[LabelId],
+    relTypeId: Option[RelTypeId],
+    toLabel: Option[LabelId]
+  ): Cardinality = {
     val emulatedCompleteCardinality =
       (fromLabel, toLabel) match {
         case (Some(_), Some(_)) =>

@@ -21,9 +21,12 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 
 object OpenCypherExceptionFactory {
 
-  class ArithmeticException private[OpenCypherExceptionFactory](message: String, cause: Throwable = null) extends CypherException(message, cause)
+  class ArithmeticException private[OpenCypherExceptionFactory] (message: String, cause: Throwable = null)
+      extends CypherException(message, cause)
 
-  class SyntaxException private[OpenCypherExceptionFactory](message: String, val pos: InputPosition) extends CypherException(message) {
+  class SyntaxException private[OpenCypherExceptionFactory] (message: String, val pos: InputPosition)
+      extends CypherException(message) {
+
     override def getMessage: String = {
       s"$message ($pos)"
     }
@@ -32,7 +35,8 @@ object OpenCypherExceptionFactory {
 
 case class OpenCypherExceptionFactory(preParserOffset: Option[InputPosition]) extends CypherExceptionFactory {
 
-  override def arithmeticException(message: String, cause: Exception): CypherException = new ArithmeticException(message, cause)
+  override def arithmeticException(message: String, cause: Exception): CypherException =
+    new ArithmeticException(message, cause)
 
   override def syntaxException(message: String, pos: InputPosition): CypherException = {
     val adjustedPosition = pos.withOffset(preParserOffset)

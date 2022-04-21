@@ -22,45 +22,40 @@ package org.neo4j.kernel.api.query;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RelationshipTypeIndexUsage extends IndexUsage
-{
+public class RelationshipTypeIndexUsage extends IndexUsage {
     private final String relType;
     private final String[] propertyKeys;
     private final int[] propertyKeyIds;
     private final int relTypeId;
 
-    public RelationshipTypeIndexUsage( String identifier, int relTypeId, String relType, int[] propertyKeyIds, String[] propertyKeys )
-    {
-        super( identifier );
+    public RelationshipTypeIndexUsage(
+            String identifier, int relTypeId, String relType, int[] propertyKeyIds, String[] propertyKeys) {
+        super(identifier);
         this.relType = relType;
         this.relTypeId = relTypeId;
         this.propertyKeys = propertyKeys;
         this.propertyKeyIds = propertyKeyIds;
     }
 
-    public int getRelationshipTypeId()
-    {
+    public int getRelationshipTypeId() {
         return relTypeId;
     }
 
-    public int[] getPropertyKeyIds()
-    {
+    public int[] getPropertyKeyIds() {
         return propertyKeyIds;
     }
 
     @Override
-    public Map<String,String> asMap()
-    {
-        Map<String,String> map = new HashMap<>();
-        map.put( "indexType", "SCHEMA INDEX" );
-        map.put( "entityType", "RELATIONSHIP" );
-        map.put( "identifier", identifier );
-        map.put( "relationshipType", relType );
-        map.put( "relationshipTypeId", String.valueOf( relTypeId ) );
-        for ( int i = 0; i < propertyKeys.length; i++ )
-        {
+    public Map<String, String> asMap() {
+        Map<String, String> map = new HashMap<>();
+        map.put("indexType", "SCHEMA INDEX");
+        map.put("entityType", "RELATIONSHIP");
+        map.put("identifier", identifier);
+        map.put("relationshipType", relType);
+        map.put("relationshipTypeId", String.valueOf(relTypeId));
+        for (int i = 0; i < propertyKeys.length; i++) {
             String key = (propertyKeys.length > 1) ? "propertyKey_" + i : "propertyKey";
-            map.put( key, propertyKeys[i] );
+            map.put(key, propertyKeys[i]);
         }
         return map;
     }

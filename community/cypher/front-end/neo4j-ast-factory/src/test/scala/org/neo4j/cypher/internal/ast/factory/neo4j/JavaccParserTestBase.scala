@@ -47,7 +47,7 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
     }
 
     def shouldGive(expected: InputPosition => J): Unit = {
-      shouldGive(expected(InputPosition(0,0,0)))
+      shouldGive(expected(InputPosition(0, 0, 0)))
     }
 
     def shouldMatch(expected: PartialFunction[J, Unit]): Unit = {
@@ -65,7 +65,8 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
 
   def parsing(s: String)(implicit p: JavaccRule[T]): ResultCheck = convertResult(parseRule(p, s), None, s)
 
-  def parsingWith(s: String, extra: Extra)(implicit p: JavaccRule[T]): ResultCheck = convertResult(parseRule(p, s), Some(extra), s)
+  def parsingWith(s: String, extra: Extra)(implicit p: JavaccRule[T]): ResultCheck =
+    convertResult(parseRule(p, s), Some(extra), s)
 
   def partiallyParsing(s: String)(implicit p: JavaccRule[T]): ResultCheck = convertResult(parseRule(p, s), None, s)
 
@@ -104,7 +105,7 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
   private def fixLineSeparator(message: String): String = {
     // This is needed because current version of scala seems to produce \n from multi line strings
     // This produces a problem with windows line endings \r\n
-    if(message.contains(System.lineSeparator()))
+    if (message.contains(System.lineSeparator()))
       message
     else
       message.replaceAll("\n", System.lineSeparator())
@@ -115,7 +116,7 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
   private def convertResult(r: Try[T], extra: Option[Extra], input: String) = r match {
     case Success(t) =>
       val converted = extra match {
-        case None => convert(t)
+        case None    => convert(t)
         case Some(e) => convert(t, e)
       }
       ResultCheck(Seq(converted), input)
@@ -126,16 +127,17 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
   private def generateErrorMessage(input: String, exception: Throwable): String = {
     val defaultMessage = s"'$input' failed with: $exception"
     exception match {
-      case e: ParseException => if (input.contains("\n")) {
-        defaultMessage
-      } else {
-        val pos = e.currentToken.beginOffset
-        val indentation = " ".repeat(pos)
-        s"""
-           |'$input'
-           | $indentation^
-           |failed with $exception""".stripMargin
-      }
+      case e: ParseException =>
+        if (input.contains("\n")) {
+          defaultMessage
+        } else {
+          val pos = e.currentToken.beginOffset
+          val indentation = " ".repeat(pos)
+          s"""
+             |'$input'
+             | $indentation^
+             |failed with $exception""".stripMargin
+        }
       case _ => defaultMessage
     }
   }

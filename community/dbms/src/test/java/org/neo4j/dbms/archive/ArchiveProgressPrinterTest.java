@@ -19,87 +19,85 @@
  */
 package org.neo4j.dbms.archive;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.dbms.archive.printer.ProgressPrinters.printStreamPrinter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.dbms.archive.printer.ProgressPrinters.printStreamPrinter;
-
-class ArchiveProgressPrinterTest
-{
+class ArchiveProgressPrinterTest {
     @Test
-    void printProgressStreamOutput()
-    {
+    void printProgressStreamOutput() {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( bout );
-        OutputProgressPrinter outputPrinter = printStreamPrinter( printStream );
+        PrintStream printStream = new PrintStream(bout);
+        OutputProgressPrinter outputPrinter = printStreamPrinter(printStream);
 
-        executeSomeWork( outputPrinter );
+        executeSomeWork(outputPrinter);
 
         printStream.flush();
         String output = bout.toString();
-        assertEquals( output,
-                "\nFiles: 1/10, data: " + String.format( "%4.1f%%",  0.5 ) +
-                "\nFiles: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) +
-                "\nFiles: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) +
-                "\nFiles: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) +
-                "\nFiles: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) +
-                "\nDone: 3 files, 305B processed." +
-                        System.lineSeparator()
-        );
+        assertEquals(
+                output,
+                "\nFiles: 1/10, data: " + String.format("%4.1f%%", 0.5) + "\nFiles: 2/10, data: "
+                        + String.format("%4.1f%%", 20.5) + "\nFiles: 2/10, data: "
+                        + String.format("%4.1f%%", 20.5) + "\nFiles: 3/10, data: "
+                        + String.format("%4.1f%%", 30.5) + "\nFiles: 3/10, data: "
+                        + String.format("%4.1f%%", 30.5) + "\nDone: 3 files, 305B processed."
+                        + System.lineSeparator());
     }
 
     @Test
-    void printProgressEmptyReporter()
-    {
+    void printProgressEmptyReporter() {
         OutputProgressPrinter outputPrinter = ProgressPrinters.emptyPrinter();
-        assertDoesNotThrow( () -> executeSomeWork( outputPrinter ) );
+        assertDoesNotThrow(() -> executeSomeWork(outputPrinter));
     }
 
     @Test
-    void printProgressLogger()
-    {
+    void printProgressLogger() {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        InternalLog providerLog = logProvider.getLog( ArchiveProgressPrinterTest.class );
-        OutputProgressPrinter outputPrinter = ProgressPrinters.logProviderPrinter( providerLog );
+        InternalLog providerLog = logProvider.getLog(ArchiveProgressPrinterTest.class);
+        OutputProgressPrinter outputPrinter = ProgressPrinters.logProviderPrinter(providerLog);
 
-        executeSomeWork( outputPrinter );
+        executeSomeWork(outputPrinter);
 
-        assertEquals( logProvider.serialize(),
-            "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 1/10, data: " + String.format( "%4.1f%%",  0.5 ) + "\n" +
-                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) + "\n" +
-                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) + "\n" +
-                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) + "\n" +
-                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) + "\n" +
-                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Done: 3 files, 305B processed.\n" );
+        assertEquals(
+                logProvider.serialize(),
+                "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 1/10, data: "
+                        + String.format("%4.1f%%", 0.5) + "\n"
+                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 2/10, data: "
+                        + String.format("%4.1f%%", 20.5) + "\n"
+                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 2/10, data: "
+                        + String.format("%4.1f%%", 20.5) + "\n"
+                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 3/10, data: "
+                        + String.format("%4.1f%%", 30.5) + "\n"
+                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 3/10, data: "
+                        + String.format("%4.1f%%", 30.5) + "\n"
+                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Done: 3 files, 305B processed.\n");
     }
 
-    private static void executeSomeWork( OutputProgressPrinter outputPrinter )
-    {
-        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter( outputPrinter );
+    private static void executeSomeWork(OutputProgressPrinter outputPrinter) {
+        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter(outputPrinter);
         progressPrinter.maxBytes = 1000;
         progressPrinter.maxFiles = 10;
 
         progressPrinter.beginFile();
-        progressPrinter.addBytes( 5 );
+        progressPrinter.addBytes(5);
         progressPrinter.endFile();
         progressPrinter.beginFile();
-        progressPrinter.addBytes( 50 );
-        progressPrinter.addBytes( 50 );
+        progressPrinter.addBytes(50);
+        progressPrinter.addBytes(50);
         progressPrinter.printOnNextUpdate();
-        progressPrinter.addBytes( 100 );
+        progressPrinter.addBytes(100);
         progressPrinter.endFile();
         progressPrinter.beginFile();
         progressPrinter.printOnNextUpdate();
-        progressPrinter.addBytes( 100 );
+        progressPrinter.addBytes(100);
         progressPrinter.endFile();
         progressPrinter.done();
         progressPrinter.printProgress();

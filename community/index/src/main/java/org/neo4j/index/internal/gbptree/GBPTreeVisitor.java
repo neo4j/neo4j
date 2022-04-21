@@ -20,102 +20,71 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
-
 import org.neo4j.util.VisibleForTesting;
 
 @VisibleForTesting
-public interface GBPTreeVisitor<KEY,VALUE> extends IdProvider.IdProviderVisitor
-{
-    void meta( Meta meta );
+public interface GBPTreeVisitor<KEY, VALUE> extends IdProvider.IdProviderVisitor {
+    void meta(Meta meta);
 
-    void treeState( Pair<TreeState,TreeState> statePair );
+    void treeState(Pair<TreeState, TreeState> statePair);
 
-    void beginLevel( int level );
+    void beginLevel(int level);
 
-    void beginNode( long pageId, boolean isLeaf, long generation, int keyCount );
+    void beginNode(long pageId, boolean isLeaf, long generation, int keyCount);
 
-    void key( KEY key, boolean isLeaf, long offloadId );
+    void key(KEY key, boolean isLeaf, long offloadId);
 
-    void value( VALUE value );
+    void value(VALUE value);
 
-    void child( long child );
+    void child(long child);
 
-    void position( int i );
+    void position(int i);
 
-    void endNode( long pageId );
+    void endNode(long pageId);
 
-    void endLevel( int level );
+    void endLevel(int level);
 
-    class Adaptor<KEY,VALUE> implements GBPTreeVisitor<KEY,VALUE>
-    {
+    class Adaptor<KEY, VALUE> implements GBPTreeVisitor<KEY, VALUE> {
         @Override
-        public void meta( Meta meta )
-        {
-        }
+        public void meta(Meta meta) {}
 
         @Override
-        public void treeState( Pair<TreeState,TreeState> statePair )
-        {
-        }
+        public void treeState(Pair<TreeState, TreeState> statePair) {}
 
         @Override
-        public void beginLevel( int level )
-        {
-        }
+        public void beginLevel(int level) {}
 
         @Override
-        public void beginNode( long pageId, boolean isLeaf, long generation, int keyCount )
-        {
-        }
+        public void beginNode(long pageId, boolean isLeaf, long generation, int keyCount) {}
 
         @Override
-        public void key( KEY key, boolean isLeaf, long offloadId )
-        {
-        }
+        public void key(KEY key, boolean isLeaf, long offloadId) {}
 
         @Override
-        public void value( VALUE value )
-        {
-        }
+        public void value(VALUE value) {}
 
         @Override
-        public void child( long child )
-        {
-        }
+        public void child(long child) {}
 
         @Override
-        public void position( int i )
-        {
-        }
+        public void position(int i) {}
 
         @Override
-        public void endNode( long pageId )
-        {
-        }
+        public void endNode(long pageId) {}
 
         @Override
-        public void endLevel( int level )
-        {
-        }
+        public void endLevel(int level) {}
 
         @Override
-        public void beginFreelistPage( long pageId )
-        {
-        }
+        public void beginFreelistPage(long pageId) {}
 
         @Override
-        public void endFreelistPage( long pageId )
-        {
-        }
+        public void endFreelistPage(long pageId) {}
 
         @Override
-        public void freelistEntry( long pageId, long generation, int pos )
-        {
-        }
+        public void freelistEntry(long pageId, long generation, int pos) {}
 
         @Override
-        public void freelistEntryFromReleaseCache( long pageId )
-        {
-        }
+        public void freelistEntryFromReleaseCache(long pageId) {}
     }
 }

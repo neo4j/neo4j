@@ -21,77 +21,66 @@ package org.neo4j.server.startup;
 
 import static org.neo4j.server.startup.ProcessManager.behaviour;
 
-abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction
-{
-    AbstractUnixBootloaderOs( BootloaderContext ctx )
-    {
-        super( ctx );
+abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
+    AbstractUnixBootloaderOs(BootloaderContext ctx) {
+        super(ctx);
     }
 
     @Override
-    long start()
-    {
-        return ctx.processManager().run( buildStandardStartArguments(), behaviour().redirectToUserLog().storePid() );
+    long start() {
+        return ctx.processManager()
+                .run(
+                        buildStandardStartArguments(),
+                        behaviour().redirectToUserLog().storePid());
     }
 
     @Override
-    void stop( long pid ) throws BootFailureException
-    {
-        ProcessHandle process = getProcessIfAlive( pid );
-        if ( process != null )
-        {
+    void stop(long pid) throws BootFailureException {
+        ProcessHandle process = getProcessIfAlive(pid);
+        if (process != null) {
             process.destroy();
         }
     }
 
     @Override
-    protected ProcessManager.Behaviour consoleBehaviour()
-    {
+    protected ProcessManager.Behaviour consoleBehaviour() {
         return super.consoleBehaviour().tryStorePid();
     }
 
     @Override
-    void installService() throws BootFailureException
-    {
-        throw new UnsupportedOperationException( "Not supported on this OS" );
+    void installService() throws BootFailureException {
+        throw new UnsupportedOperationException("Not supported on this OS");
     }
 
     @Override
-    void uninstallService() throws BootFailureException
-    {
-        throw new UnsupportedOperationException( "Not supported on this OS" );
+    void uninstallService() throws BootFailureException {
+        throw new UnsupportedOperationException("Not supported on this OS");
     }
 
     @Override
-    void updateService() throws BootFailureException
-    {
-        throw new UnsupportedOperationException( "Not supported on this OS" );
+    void updateService() throws BootFailureException {
+        throw new UnsupportedOperationException("Not supported on this OS");
     }
 
     @Override
-    boolean serviceInstalled()
-    {
-        throw new UnsupportedOperationException( "Not supported on this OS" );
+    boolean serviceInstalled() {
+        throw new UnsupportedOperationException("Not supported on this OS");
     }
 
     @Override
-    Long getPidIfRunning()
-    {
-        ProcessHandle handle = getProcessIfAlive( ctx.processManager().getPidFromFile() );
+    Long getPidIfRunning() {
+        ProcessHandle handle = getProcessIfAlive(ctx.processManager().getPidFromFile());
         return handle != null ? handle.pid() : null;
     }
 
     @Override
-    boolean isRunning( long pid )
-    {
-        return getProcessIfAlive( pid ) != null;
+    boolean isRunning(long pid) {
+        return getProcessIfAlive(pid) != null;
     }
 
-    private ProcessHandle getProcessIfAlive( Long pid )
-    {
-        if ( pid != null )
-        {
-            return ctx.processManager().getProcessHandle( pid );
+    private ProcessHandle getProcessIfAlive(Long pid) {
+        if (pid != null) {
+            return ctx.processManager().getProcessHandle(pid);
         }
         return null;
     }

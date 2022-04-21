@@ -19,11 +19,9 @@
  */
 package org.neo4j.io.fs;
 
-public class EphemeralFileSystemAbstractionInterruptionTest extends FileSystemAbstractionInterruptionTest
-{
+public class EphemeralFileSystemAbstractionInterruptionTest extends FileSystemAbstractionInterruptionTest {
     @Override
-    protected FileSystemAbstraction createFileSystem()
-    {
+    protected FileSystemAbstraction createFileSystem() {
         return new EphemeralFileSystemAbstraction();
     }
 }

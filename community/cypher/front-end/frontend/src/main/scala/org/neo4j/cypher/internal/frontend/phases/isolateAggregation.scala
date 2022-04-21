@@ -60,29 +60,42 @@ import org.neo4j.cypher.internal.util.topDown
  */
 case object isolateAggregation extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
-  override def instance(from: BaseState, context: BaseContext): Rewriter = bottomUp(rewriter(from), _.isInstanceOf[Expression], context.cancellationChecker)
+  override def instance(from: BaseState, context: BaseContext): Rewriter =
+    bottomUp(rewriter(from), _.isInstanceOf[Expression], context.cancellationChecker)
 
   private def rewriter(from: BaseState) = Rewriter.lift {
-    case q@SingleQuery(clauses) =>
-
+    case q @ SingleQuery(clauses) =>
       val newClauses = clauses.flatMap {
         case clause: ProjectionClause if clauseNeedingWork(clause) =>
           val clauseReturnItems = clause.returnItems.items
-          val (withAggregations, others) = clauseReturnItems.map(_.expression).toSet.partition(hasAggregateButIsNotAggregate(_))
+          val (withAggregations, others) =
+            clauseReturnItems.map(_.expression).toSet.partition(hasAggregateButIsNotAggregate(_))
 
           val expressionsToIncludeInWith: Set[Expression] = others ++ extractExpressionsToInclude(withAggregations)
 
           val withReturnItems: Set[ReturnItem] = expressionsToIncludeInWith.map {
             e =>
-              AliasedReturnItem(e, Variable(from.anonymousVariableNameGenerator.nextName)(e.position))(e.position, isAutoAliased = true)
+              AliasedReturnItem(e, Variable(from.anonymousVariableNameGenerator.nextName)(e.position))(
+                e.position,
+                isAutoAliased = true
+              )
           }
           val pos = clause.position
-          val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toIndexedSeq)(pos), None, None, None, None)(pos)
+          val withClause = With(
+            distinct = false,
+            ReturnItems(includeExisting = false, withReturnItems.toIndexedSeq)(pos),
+            None,
+            None,
+            None,
+            None
+          )(pos)
 
           val expressionRewriter = createRewriterFor(withReturnItems)
           val newReturnItems = clauseReturnItems.map {
-            case ri@AliasedReturnItem(expression, _) => ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position, ri.isAutoAliased)
-            case ri@UnaliasedReturnItem(expression, _) => ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position)
+            case ri @ AliasedReturnItem(expression, _) =>
+              ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position, ri.isAutoAliased)
+            case ri @ UnaliasedReturnItem(expression, _) =>
+              ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position)
           }
           val resultClause = clause.withReturnItems(newReturnItems)
 
@@ -98,7 +111,7 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
     def inner = Rewriter.lift {
       case original: Expression =>
         val rewrittenExpression = withReturnItems.collectFirst {
-          case item@AliasedReturnItem(expression, _) if original == expression =>
+          case item @ AliasedReturnItem(expression, _) if original == expression =>
             item.alias.get.copyId
         }
         rewrittenExpression getOrElse original
@@ -108,29 +121,31 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
 
   private def extractExpressionsToInclude(originalExpressions: Set[Expression]): Set[Expression] = {
     val expressionsToGoToWith: Set[Expression] = fixedPoint {
-      expressions: Set[Expression] => expressions.flatMap {
-        case e@ReduceExpression(_, init, coll) if hasAggregateButIsNotAggregate(e) =>
-          Seq(init, coll)
+      expressions: Set[Expression] =>
+        expressions.flatMap {
+          case e @ ReduceExpression(_, init, coll) if hasAggregateButIsNotAggregate(e) =>
+            Seq(init, coll)
 
-        case e@ListComprehension(_, expr) if hasAggregateButIsNotAggregate(e) =>
-          Seq(expr)
+          case e @ ListComprehension(_, expr) if hasAggregateButIsNotAggregate(e) =>
+            Seq(expr)
 
-        case e@DesugaredMapProjection(variable, items, _) if hasAggregateButIsNotAggregate(e) =>
-          items.map(_.exp) :+ variable
+          case e @ DesugaredMapProjection(variable, items, _) if hasAggregateButIsNotAggregate(e) =>
+            items.map(_.exp) :+ variable
 
-        case e: IterablePredicateExpression  if hasAggregateButIsNotAggregate(e) =>
-          val predicate: Expression = e.innerPredicate.getOrElse(throw new IllegalStateException("Should never be empty"))
-          // Weird way of doing it to make scalac happy
-          Set(e.expression) ++ predicate.dependencies - e.variable
+          case e: IterablePredicateExpression if hasAggregateButIsNotAggregate(e) =>
+            val predicate: Expression =
+              e.innerPredicate.getOrElse(throw new IllegalStateException("Should never be empty"))
+            // Weird way of doing it to make scalac happy
+            Set(e.expression) ++ predicate.dependencies - e.variable
 
-        case e if hasAggregateButIsNotAggregate(e) =>
-          e.arguments
+          case e if hasAggregateButIsNotAggregate(e) =>
+            e.arguments
 
-        case e =>
-          Seq(e)
-      }
+          case e =>
+            Seq(e)
+        }
     }(originalExpressions).filter {
-      //Constant expressions should never be isolated
+      // Constant expressions should never be isolated
       expr => IsAggregate(expr) || expr.dependencies.nonEmpty
     }
     expressionsToGoToWith
@@ -149,10 +164,12 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // Can introduces new ambiguous variable names itself.
-    AmbiguousNamesDisambiguated,
+    AmbiguousNamesDisambiguated
   ) ++ SemanticInfoAvailable // Adds a WITH clause with no SemanticInfo
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[BaseContext, BaseState, BaseState] = this
 
 }

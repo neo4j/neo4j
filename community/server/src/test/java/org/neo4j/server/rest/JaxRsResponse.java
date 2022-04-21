@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest;
 
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.net.http.HttpResponse;
@@ -35,186 +37,151 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
-import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-
-public class JaxRsResponse extends Response
-{
+public class JaxRsResponse extends Response {
     private final HttpResponse<String> response;
 
-    public JaxRsResponse( HttpResponse<String> response )
-    {
+    public JaxRsResponse(HttpResponse<String> response) {
         this.response = response;
     }
 
     @Override
-    public String getEntity()
-    {
+    public String getEntity() {
         return response.body();
     }
 
     @Override
-    public <T> T readEntity( Class<T> entityType )
-    {
+    public <T> T readEntity(Class<T> entityType) {
         return null;
     }
 
     @Override
-    public <T> T readEntity( GenericType<T> entityType )
-    {
+    public <T> T readEntity(GenericType<T> entityType) {
         return null;
     }
 
     @Override
-    public <T> T readEntity( Class<T> entityType, Annotation[] annotations )
-    {
+    public <T> T readEntity(Class<T> entityType, Annotation[] annotations) {
         return null;
     }
 
     @Override
-    public <T> T readEntity( GenericType<T> entityType, Annotation[] annotations )
-    {
+    public <T> T readEntity(GenericType<T> entityType, Annotation[] annotations) {
         return null;
     }
 
     @Override
-    public boolean hasEntity()
-    {
+    public boolean hasEntity() {
         return false;
     }
 
     @Override
-    public boolean bufferEntity()
-    {
+    public boolean bufferEntity() {
         return false;
     }
 
     @Override
-    public int getStatus()
-    {
+    public int getStatus() {
         return response.statusCode();
     }
 
     @Override
-    public StatusType getStatusInfo()
-    {
+    public StatusType getStatusInfo() {
         return null;
     }
 
     @Override
-    public MultivaluedMap<String,Object> getMetadata()
-    {
-        var metadata = new MultivaluedHashMap<String,Object>();
-        for ( var entry : response.headers().map().entrySet() )
-        {
-            metadata.addAll( entry.getKey(), entry.getValue() );
+    public MultivaluedMap<String, Object> getMetadata() {
+        var metadata = new MultivaluedHashMap<String, Object>();
+        for (var entry : response.headers().map().entrySet()) {
+            metadata.addAll(entry.getKey(), entry.getValue());
         }
         return metadata;
     }
 
     @Override
-    public MultivaluedMap<String,Object> getHeaders()
-    {
+    public MultivaluedMap<String, Object> getHeaders() {
         return getMetadata();
     }
 
     @Override
-    public MultivaluedMap<String,String> getStringHeaders()
-    {
+    public MultivaluedMap<String, String> getStringHeaders() {
         return null;
     }
 
     @Override
-    public String getHeaderString( String name )
-    {
-        return response.headers().firstValue( name ).orElseThrow();
+    public String getHeaderString(String name) {
+        return response.headers().firstValue(name).orElseThrow();
     }
 
     @Override
-    public URI getLocation()
-    {
+    public URI getLocation() {
         return response.uri();
     }
 
     @Override
-    public Set<Link> getLinks()
-    {
+    public Set<Link> getLinks() {
         return null;
     }
 
     @Override
-    public boolean hasLink( String relation )
-    {
+    public boolean hasLink(String relation) {
         return false;
     }
 
     @Override
-    public Link getLink( String relation )
-    {
+    public Link getLink(String relation) {
         return null;
     }
 
     @Override
-    public Link.Builder getLinkBuilder( String relation )
-    {
+    public Link.Builder getLinkBuilder(String relation) {
         return null;
     }
 
     @Override
-    public void close()
-    {
-
-    }
+    public void close() {}
 
     @Override
-    public MediaType getMediaType()
-    {
+    public MediaType getMediaType() {
         return null;
     }
 
     @Override
-    public Locale getLanguage()
-    {
+    public Locale getLanguage() {
         return null;
     }
 
     @Override
-    public int getLength()
-    {
+    public int getLength() {
         return 0;
     }
 
     @Override
-    public Set<String> getAllowedMethods()
-    {
+    public Set<String> getAllowedMethods() {
         return null;
     }
 
     @Override
-    public Map<String,NewCookie> getCookies()
-    {
+    public Map<String, NewCookie> getCookies() {
         return null;
     }
 
     @Override
-    public EntityTag getEntityTag()
-    {
+    public EntityTag getEntityTag() {
         return null;
     }
 
     @Override
-    public Date getDate()
-    {
+    public Date getDate() {
         return null;
     }
 
     @Override
-    public Date getLastModified()
-    {
+    public Date getLastModified() {
         return null;
     }
 
-    public MediaType getType()
-    {
-        return MediaType.valueOf( getHeaderString( CONTENT_TYPE ) );
+    public MediaType getType() {
+        return MediaType.valueOf(getHeaderString(CONTENT_TYPE));
     }
 }

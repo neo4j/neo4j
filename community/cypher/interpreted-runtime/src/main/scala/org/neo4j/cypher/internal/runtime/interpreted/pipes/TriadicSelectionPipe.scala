@@ -31,11 +31,20 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import scala.collection.Iterator
 import scala.collection.mutable.ListBuffer
 
-case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: String, seen: String, target: String, right: Pipe)
-                               (val id: Id = Id.INVALID_ID)
-extends PipeWithSource(left) {
+case class TriadicSelectionPipe(
+  positivePredicate: Boolean,
+  left: Pipe,
+  source: String,
+  seen: String,
+  target: String,
+  right: Pipe
+)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(left) {
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     var triadicState: LongHashSet = null
     // 1. Build
     new LazyGroupingIterator[CypherRow](input) {
@@ -43,13 +52,13 @@ extends PipeWithSource(left) {
 
       override def getValue(row: CypherRow): Option[Long] = row.getByName(seen) match {
         case n: VirtualNodeValue => Some(n.id())
-        case IsNoValue() => None
-        case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
+        case IsNoValue()         => None
+        case x                   => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
 
       override def setState(triadicSet: LongHashSet): Unit = triadicState = triadicSet
 
-    // 2. pass through 'right'
+      // 2. pass through 'right'
     }.flatMap { outerContext =>
       val innerState = state.withInitialContext(outerContext)
       right.createResults(innerState)
@@ -57,14 +66,16 @@ extends PipeWithSource(left) {
     // 3. Probe
     }.filter { ctx =>
       ctx.getByName(target) match {
-        case n: VirtualNodeValue => if(positivePredicate) triadicState.contains(n.id()) else !triadicState.contains(n.id())
+        case n: VirtualNodeValue =>
+          if (positivePredicate) triadicState.contains(n.id()) else !triadicState.contains(n.id())
         case _ => false
       }
     }
   }
 }
 
-abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: ClosingIterator[ROW]) extends ClosingIterator[ROW] {
+abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: ClosingIterator[ROW])
+    extends ClosingIterator[ROW] {
   def setState(state: LongHashSet): Unit
   def getKey(row: ROW): Any
   def getValue(row: ROW): Option[Long]
@@ -72,25 +83,25 @@ abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: ClosingIte
   var current: Iterator[ROW] = _
   var nextRow: ROW = _
 
-  override def next(): ROW = if(hasNext) current.next() else Iterator.empty.next()
+  override def next(): ROW = if (hasNext) current.next() else Iterator.empty.next()
 
   override protected[this] def innerHasNext: Boolean = {
     if (current != null && current.hasNext)
       true
     else {
-      val firstRow = if(nextRow != null) {
-        val row = nextRow
-        nextRow = null
-        row
-      } else if(input.hasNext) {
-        input.next()
-      } else null
+      val firstRow =
+        if (nextRow != null) {
+          val row = nextRow
+          nextRow = null
+          row
+        } else if (input.hasNext) {
+          input.next()
+        } else null
       if (firstRow == null) {
         current = null
         setState(null)
         false
-      }
-      else {
+      } else {
         val buffer = new ListBuffer[ROW]
         val valueSet = new LongHashSet()
         setState(valueSet)

@@ -36,71 +36,129 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
     ("REVOKE", "FROM", revokeGraphPrivilege: resourcePrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, func: resourcePrivilegeFunc) =>
-
       Seq(
         ("SET", SetLabelAction),
         ("REMOVE", RemoveLabelAction)
       ).foreach {
         case (setOrRemove, action) =>
-
           test(s"$verb $setOrRemove LABEL label ON GRAPH foo $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+              labelResource,
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           // Multiple labels should be allowed
 
           test(s"$verb $setOrRemove LABEL * ON GRAPH foo $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), AllLabelResource()(_), List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+              AllLabelResource()(_),
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $setOrRemove LABEL label1, label2 ON GRAPH foo $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), ast.LabelsResource(Seq("label1", "label2"))(_), List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+              ast.LabelsResource(Seq("label1", "label2"))(_),
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           // Multiple graphs should be allowed
 
           test(s"$verb $setOrRemove LABEL label ON GRAPHS * $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(ast.AllGraphsScope()(_)))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.AllGraphsScope()(_)))(_),
+              labelResource,
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $setOrRemove LABEL label ON GRAPHS foo,baz $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo, graphScopeBaz))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(graphScopeFoo, graphScopeBaz))(_),
+              labelResource,
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           // Home graph should be allowed
 
           test(s"$verb $setOrRemove LABEL label ON HOME GRAPH $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+              labelResource,
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $setOrRemove LABEL * ON HOME GRAPH $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), ast.AllLabelResource()(_), List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+              ast.AllLabelResource()(_),
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           // Default graph should be allowed
 
           test(s"$verb $setOrRemove LABEL label ON DEFAULT GRAPH $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+              labelResource,
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $setOrRemove LABEL * ON DEFAULT GRAPH $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), ast.AllLabelResource()(_), List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+              ast.AllLabelResource()(_),
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           // Multiple roles should be allowed
 
           test(s"$verb $setOrRemove LABEL label ON GRAPHS foo $preposition role1, role2") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(literalRole1, literalRole2)))
+            yields(func(
+              ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+              labelResource,
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole1, literalRole2)
+            ))
           }
 
           // Parameter values
 
           test(s"$verb $setOrRemove LABEL label ON GRAPH $$foo $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeParamFoo))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(graphScopeParamFoo))(_),
+              labelResource,
+              List(ast.LabelAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $setOrRemove LABEL label ON GRAPH foo $preposition $$role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(paramRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+              labelResource,
+              List(ast.LabelAllQualifier()(_)),
+              Seq(paramRole)
+            ))
           }
 
           // TODO: should this one be supported?

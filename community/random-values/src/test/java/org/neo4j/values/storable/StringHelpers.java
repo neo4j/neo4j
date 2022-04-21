@@ -19,51 +19,47 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
-final class StringHelpers
-{
-    private StringHelpers()
-    {
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
+final class StringHelpers {
+    private StringHelpers() {
         throw new UnsupportedOperationException();
     }
 
-    static <T> void assertConsistent( String string, Function<TextValue,T> test )
-    {
-        TextValue textValue = stringValue( string );
-        TextValue utf8Value = utf8Value( string.getBytes( UTF_8 ) );
-        T a = test.apply( textValue );
-        T b = test.apply( utf8Value );
+    static <T> void assertConsistent(String string, Function<TextValue, T> test) {
+        TextValue textValue = stringValue(string);
+        TextValue utf8Value = utf8Value(string.getBytes(UTF_8));
+        T a = test.apply(textValue);
+        T b = test.apply(utf8Value);
 
-        String errorMsg = format( "operation not consistent for %s", string );
-        assertThat( a ).as( errorMsg ).isEqualTo( b );
-        assertThat( b ).as( errorMsg ).isEqualTo( a );
+        String errorMsg = format("operation not consistent for %s", string);
+        assertThat(a).as(errorMsg).isEqualTo(b);
+        assertThat(b).as(errorMsg).isEqualTo(a);
     }
 
-    static <T> void assertConsistent( String string1, String string2, BiFunction<TextValue,TextValue,T> test )
-    {
-        TextValue textValue1 = stringValue( string1 );
-        TextValue textValue2 = stringValue( string2 );
-        TextValue utf8Value1 = utf8Value( string1.getBytes( UTF_8 ) );
-        TextValue utf8Value2 = utf8Value( string2.getBytes( UTF_8 ) );
-        T a = test.apply( textValue1, textValue2 );
-        T x = test.apply( textValue1, utf8Value2 );
-        T y = test.apply( utf8Value1, textValue2 );
-        T z = test.apply( utf8Value1, utf8Value2 );
+    static <T> void assertConsistent(String string1, String string2, BiFunction<TextValue, TextValue, T> test) {
+        TextValue textValue1 = stringValue(string1);
+        TextValue textValue2 = stringValue(string2);
+        TextValue utf8Value1 = utf8Value(string1.getBytes(UTF_8));
+        TextValue utf8Value2 = utf8Value(string2.getBytes(UTF_8));
+        T a = test.apply(textValue1, textValue2);
+        T x = test.apply(textValue1, utf8Value2);
+        T y = test.apply(utf8Value1, textValue2);
+        T z = test.apply(utf8Value1, utf8Value2);
 
-        String errorMsg = format( "operation not consistent for `%s` and `%s`", string1, string2 );
-        assertThat( a ).as( errorMsg ).isEqualTo( x );
-        assertThat( x ).as( errorMsg ).isEqualTo( a );
-        assertThat( a ).as( errorMsg ).isEqualTo( y );
-        assertThat( y ).as( errorMsg ).isEqualTo( a );
-        assertThat( a ).as( errorMsg ).isEqualTo( z );
-        assertThat( z ).as( errorMsg ).isEqualTo( a );
+        String errorMsg = format("operation not consistent for `%s` and `%s`", string1, string2);
+        assertThat(a).as(errorMsg).isEqualTo(x);
+        assertThat(x).as(errorMsg).isEqualTo(a);
+        assertThat(a).as(errorMsg).isEqualTo(y);
+        assertThat(y).as(errorMsg).isEqualTo(a);
+        assertThat(a).as(errorMsg).isEqualTo(z);
+        assertThat(z).as(errorMsg).isEqualTo(a);
     }
 }

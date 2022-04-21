@@ -19,102 +19,87 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import static org.apache.lucene.document.Field.Store.NO;
+
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-
 import org.neo4j.values.storable.Value;
-
-import static org.apache.lucene.document.Field.Store.NO;
 
 /**
  * Enumeration representing all possible property types with corresponding encodings and query structures for Lucene
  * schema indexes.
  */
-public enum ValueEncoding
-{
-    String
-            {
-                @Override
-                public String key()
-                {
-                    return "string";
-                }
+public enum ValueEncoding {
+    String {
+        @Override
+        public String key() {
+            return "string";
+        }
 
-                @Override
-                boolean canEncode( Value value )
-                {
-                    // Any other type can be safely serialised as a string
-                    return true;
-                }
+        @Override
+        boolean canEncode(Value value) {
+            // Any other type can be safely serialised as a string
+            return true;
+        }
 
-                @Override
-                Field encodeField( String name, Value value )
-                {
-                    return stringField( name, value.asObject().toString() );
-                }
+        @Override
+        Field encodeField(String name, Value value) {
+            return stringField(name, value.asObject().toString());
+        }
 
-                @Override
-                void setFieldValue( Value value, Field field )
-                {
-                    field.setStringValue( value.asObject().toString() );
-                }
+        @Override
+        void setFieldValue(Value value, Field field) {
+            field.setStringValue(value.asObject().toString());
+        }
 
-                @Override
-                Query encodeQuery( Value value, int propertyNumber )
-                {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key( propertyNumber ), value.asObject().toString() ) ) );
-                }
-            };
+        @Override
+        Query encodeQuery(Value value, int propertyNumber) {
+            return new ConstantScoreQuery(
+                    new TermQuery(new Term(key(propertyNumber), value.asObject().toString())));
+        }
+    };
 
     private static final ValueEncoding[] AllEncodings = values();
 
     public abstract String key();
 
-    public String key( int propertyNumber )
-    {
-        if ( propertyNumber == 0 )
-        {
+    public String key(int propertyNumber) {
+        if (propertyNumber == 0) {
             return key();
         }
         return propertyNumber + key();
     }
 
-    static int fieldPropertyNumber( String fieldName )
-    {
+    static int fieldPropertyNumber(String fieldName) {
         int index = 0;
-        for ( int i = 0; i < fieldName.length() && Character.isDigit( fieldName.charAt( i ) ); i++ )
-        {
+        for (int i = 0; i < fieldName.length() && Character.isDigit(fieldName.charAt(i)); i++) {
             index++;
         }
-        return index == 0 ? 0 : Integer.parseInt( fieldName.substring( 0, index ) );
+        return index == 0 ? 0 : Integer.parseInt(fieldName.substring(0, index));
     }
 
-    abstract boolean canEncode( Value value );
+    abstract boolean canEncode(Value value);
 
-    abstract Field encodeField( String name, Value value );
+    abstract Field encodeField(String name, Value value);
 
-    abstract void setFieldValue( Value value, Field field );
+    abstract void setFieldValue(Value value, Field field);
 
-    abstract Query encodeQuery( Value value, int propertyNumber );
+    abstract Query encodeQuery(Value value, int propertyNumber);
 
-    public static ValueEncoding forValue( Value value )
-    {
-        for ( ValueEncoding encoding : AllEncodings )
-        {
-            if ( encoding.canEncode( value ) )
-            {
+    public static ValueEncoding forValue(Value value) {
+        for (ValueEncoding encoding : AllEncodings) {
+            if (encoding.canEncode(value)) {
                 return encoding;
             }
         }
-        throw new IllegalStateException( "Unable to encode the value " + value );
+        throw new IllegalStateException("Unable to encode the value " + value);
     }
 
-    private static Field stringField( String identifier, String value )
-    {
-        return new StringField( identifier, value, NO );
+    private static Field stringField(String identifier, String value) {
+        return new StringField(identifier, value, NO);
     }
 }

@@ -36,46 +36,124 @@ abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   override val availableSymbols: Set[String] = Set.empty
 }
 
-case class CreateNodeKeyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateNodeKeyConstraint(
+  source: Option[DoNothingIfExistsForConstraint],
+  node: String,
+  label: LabelName,
+  props: Seq[Property],
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
-case class CreateUniquePropertyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+
+case class CreateUniquePropertyConstraint(
+  source: Option[DoNothingIfExistsForConstraint],
+  node: String,
+  label: LabelName,
+  props: Seq[Property],
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
-case class CreateNodePropertyExistenceConstraint(source: Option[DoNothingIfExistsForConstraint], label: LabelName, prop: Property, name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+
+case class CreateNodePropertyExistenceConstraint(
+  source: Option[DoNothingIfExistsForConstraint],
+  label: LabelName,
+  prop: Property,
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
-case class CreateRelationshipPropertyExistenceConstraint(source: Option[DoNothingIfExistsForConstraint], typeName: RelTypeName, prop: Property, name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+
+case class CreateRelationshipPropertyExistenceConstraint(
+  source: Option[DoNothingIfExistsForConstraint],
+  typeName: RelTypeName,
+  prop: Property,
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class CreateRangeIndex(source: Option[DoNothingIfExistsForIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateRangeIndex(
+  source: Option[DoNothingIfExistsForIndex],
+  entityName: Either[LabelName, RelTypeName],
+  propertyKeyNames: List[PropertyKeyName],
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 
-case class CreateLookupIndex(source: Option[DoNothingIfExistsForLookupIndex], entityType: EntityType, name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateLookupIndex(
+  source: Option[DoNothingIfExistsForLookupIndex],
+  entityType: EntityType,
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 
-case class CreateFulltextIndex(source: Option[DoNothingIfExistsForFulltextIndex], entityNames: Either[List[LabelName], List[RelTypeName]], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateFulltextIndex(
+  source: Option[DoNothingIfExistsForFulltextIndex],
+  entityNames: Either[List[LabelName], List[RelTypeName]],
+  propertyKeyNames: List[PropertyKeyName],
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 
-case class CreateTextIndex(source: Option[DoNothingIfExistsForIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateTextIndex(
+  source: Option[DoNothingIfExistsForIndex],
+  entityName: Either[LabelName, RelTypeName],
+  propertyKeyNames: List[PropertyKeyName],
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 
-case class CreatePointIndex(source: Option[DoNothingIfExistsForIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreatePointIndex(
+  source: Option[DoNothingIfExistsForIndex],
+  entityName: Either[LabelName, RelTypeName],
+  propertyKeyNames: List[PropertyKeyName],
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class DoNothingIfExistsForIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], indexType: IndexType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
-case class DoNothingIfExistsForLookupIndex(entityType: EntityType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
-case class DoNothingIfExistsForFulltextIndex(entityNames: Either[List[LabelName], List[RelTypeName]], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
-case class DoNothingIfExistsForConstraint(entity: String, entityName: Either[LabelName, RelTypeName], props: Seq[Property], assertion: ConstraintType, name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DoNothingIfExistsForIndex(
+  entityName: Either[LabelName, RelTypeName],
+  propertyKeyNames: List[PropertyKeyName],
+  indexType: IndexType,
+  name: Option[String]
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+
+case class DoNothingIfExistsForLookupIndex(entityType: EntityType, name: Option[String])(implicit idGen: IdGen)
+    extends SchemaLogicalPlan(idGen)
+
+case class DoNothingIfExistsForFulltextIndex(
+  entityNames: Either[List[LabelName], List[RelTypeName]],
+  propertyKeyNames: List[PropertyKeyName],
+  name: Option[String]
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+
+case class DoNothingIfExistsForConstraint(
+  entity: String,
+  entityName: Either[LabelName, RelTypeName],
+  props: Seq[Property],
+  assertion: ConstraintType,
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 sealed trait ConstraintType
 case object NodeKey extends ConstraintType

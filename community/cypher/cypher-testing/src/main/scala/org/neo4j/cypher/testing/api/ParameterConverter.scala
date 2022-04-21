@@ -22,6 +22,7 @@ package org.neo4j.cypher.testing.api
 import java.util
 
 trait ParameterConverter {
+
   def convertParameters(scalaMap: Map[String, Any]): util.Map[String, AnyRef] = {
     val javaMap = new util.HashMap[String, AnyRef]
     scalaMap.foreach { case (key, value) => javaMap.put(key, convertParameterValue(value)) }

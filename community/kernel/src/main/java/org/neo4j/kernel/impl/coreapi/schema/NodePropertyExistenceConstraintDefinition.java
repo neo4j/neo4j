@@ -19,38 +19,34 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import static java.lang.String.format;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-import static java.lang.String.format;
-
-public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDefinition
-{
-    public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, Label label, String[] propertyKeys )
-    {
-        super( actions, constraint, label, propertyKeys );
+public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDefinition {
+    public NodePropertyExistenceConstraintDefinition(
+            InternalSchemaActions actions, ConstraintDescriptor constraint, Label label, String[] propertyKeys) {
+        super(actions, constraint, label, propertyKeys);
     }
 
     @Override
-    public ConstraintType getConstraintType()
-    {
+    public ConstraintType getConstraintType() {
         assertInUnterminatedTransaction();
         return ConstraintType.NODE_PROPERTY_EXISTENCE;
     }
 
     @Override
-    public String toString()
-    {
-        if ( propertyKeys.length == 1 )
-        {
-            return format( "ON (%1$s:%2$s) ASSERT (%3$s) IS NOT NULL",
-                    label.name().toLowerCase(), label.name(), propertyText() );
-        }
-        else
-        {
-            return format( "ON (%1$s:%2$s) ASSERT %3$s IS COMPOSITE KEY",
-                    label.name().toLowerCase(), label.name(), propertyText() );
+    public String toString() {
+        if (propertyKeys.length == 1) {
+            return format(
+                    "ON (%1$s:%2$s) ASSERT (%3$s) IS NOT NULL",
+                    label.name().toLowerCase(), label.name(), propertyText());
+        } else {
+            return format(
+                    "ON (%1$s:%2$s) ASSERT %3$s IS COMPOSITE KEY",
+                    label.name().toLowerCase(), label.name(), propertyText());
         }
     }
 }

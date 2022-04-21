@@ -20,21 +20,19 @@
 package org.neo4j.bolt.runtime.statemachine;
 
 import java.util.Map;
-
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 
-public interface BoltStateMachineSPI
-{
+public interface BoltStateMachineSPI {
     TransactionStateMachineSPIProvider transactionStateMachineSPIProvider();
 
-    void reportError( Neo4jError err );
+    void reportError(Neo4jError err);
 
-    AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException;
+    AuthenticationResult authenticate(Map<String, Object> authToken) throws AuthenticationException;
 
-    LoginContext impersonate( LoginContext context, String userToImpersonate ) throws AuthenticationException;
+    LoginContext impersonate(LoginContext context, String userToImpersonate) throws AuthenticationException;
 
     String version();
 }

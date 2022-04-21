@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.Stage;
@@ -33,13 +32,14 @@ import org.neo4j.kernel.impl.store.NeoStores;
  * detected, i.e. also duplicate imported nodes. This stage makes one pass over those duplicate node ids
  * and deletes from from the store(s).
  */
-public class DeleteDuplicateNodesStage extends Stage
-{
-    public DeleteDuplicateNodesStage( Configuration config, LongIterator duplicateNodeIds,
-            NeoStores neoStore, DataImporter.Monitor storeMonitor, CursorContextFactory contextFactory )
-    {
-        super( "DEDUP", null, config, 0 );
-        add( new DeleteDuplicateNodesStep( control(), config, duplicateNodeIds, neoStore,
-                storeMonitor, contextFactory ) );
+public class DeleteDuplicateNodesStage extends Stage {
+    public DeleteDuplicateNodesStage(
+            Configuration config,
+            LongIterator duplicateNodeIds,
+            NeoStores neoStore,
+            DataImporter.Monitor storeMonitor,
+            CursorContextFactory contextFactory) {
+        super("DEDUP", null, config, 0);
+        add(new DeleteDuplicateNodesStep(control(), config, duplicateNodeIds, neoStore, storeMonitor, contextFactory));
     }
 }

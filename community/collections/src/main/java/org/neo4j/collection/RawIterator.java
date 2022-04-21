@@ -21,7 +21,6 @@ package org.neo4j.collection;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.collection.Iterators;
 
@@ -32,42 +31,34 @@ import org.neo4j.internal.helpers.collection.Iterators;
  * @param <T> type of items in this iterator.
  * @param <EXCEPTION> type of exception thrown from {@link #hasNext()} and {@link #next()}.
  */
-public interface RawIterator<T,EXCEPTION extends Exception>
-{
+public interface RawIterator<T, EXCEPTION extends Exception> {
     boolean hasNext() throws EXCEPTION;
 
     T next() throws EXCEPTION;
 
-    default void remove()
-    {
+    default void remove() {
         throw new UnsupportedOperationException();
     }
 
-    RawIterator<Object,Exception> EMPTY_ITERATOR = RawIterator.of();
+    RawIterator<Object, Exception> EMPTY_ITERATOR = RawIterator.of();
 
-    @SuppressWarnings( "unchecked" )
-    static <T, EXCEPTION extends Exception> RawIterator<T,EXCEPTION> empty()
-    {
-        return (RawIterator<T,EXCEPTION>) EMPTY_ITERATOR;
+    @SuppressWarnings("unchecked")
+    static <T, EXCEPTION extends Exception> RawIterator<T, EXCEPTION> empty() {
+        return (RawIterator<T, EXCEPTION>) EMPTY_ITERATOR;
     }
 
-    static <T, EX extends Exception> RawIterator<T, EX> of( T ... values )
-    {
-        return new RawIterator<>()
-        {
+    static <T, EX extends Exception> RawIterator<T, EX> of(T... values) {
+        return new RawIterator<>() {
             private int position;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return position < values.length;
             }
 
             @Override
-            public T next() throws EX
-            {
-                if ( hasNext() )
-                {
+            public T next() throws EX {
+                if (hasNext()) {
                     return values[position++];
                 }
                 throw new NoSuchElementException();
@@ -79,13 +70,10 @@ public interface RawIterator<T,EXCEPTION extends Exception>
      * Create a raw iterator from the provided {@link ThrowingSupplier} - the iterator will end
      * when the supplier returns null.
      */
-    static <T, EX extends Exception> RawIterator<T, EX> from( ThrowingSupplier<T, EX> supplier )
-    {
-        return new AbstractPrefetchingRawIterator<>()
-        {
+    static <T, EX extends Exception> RawIterator<T, EX> from(ThrowingSupplier<T, EX> supplier) {
+        return new AbstractPrefetchingRawIterator<>() {
             @Override
-            protected T fetchNextOrNull() throws EX
-            {
+            protected T fetchNextOrNull() throws EX {
                 return supplier.get();
             }
         };
@@ -94,8 +82,7 @@ public interface RawIterator<T,EXCEPTION extends Exception>
     /**
      * Create a raw iterator from a regular iterator, assuming no exceptions are being thrown
      */
-    static <T, EX extends Exception> RawIterator<T, EX> wrap( final Iterator<T> iterator )
-    {
-        return Iterators.asRawIterator( iterator );
+    static <T, EX extends Exception> RawIterator<T, EX> wrap(final Iterator<T> iterator) {
+        return Iterators.asRawIterator(iterator);
     }
 }

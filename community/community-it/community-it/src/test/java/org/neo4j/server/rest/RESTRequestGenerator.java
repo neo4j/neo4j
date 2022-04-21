@@ -19,6 +19,15 @@
  */
 package org.neo4j.server.rest;
 
+import static java.net.http.HttpClient.newHttpClient;
+import static java.net.http.HttpRequest.BodyPublishers.noBody;
+import static java.net.http.HttpRequest.BodyPublishers.ofString;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -31,34 +40,22 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import javax.ws.rs.core.MediaType;
-
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.test.TestData.Producer;
 
-import static java.net.http.HttpClient.newHttpClient;
-import static java.net.http.HttpRequest.BodyPublishers.noBody;
-import static java.net.http.HttpRequest.BodyPublishers.ofString;
-import static javax.ws.rs.core.HttpHeaders.ACCEPT;
-import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-public class RESTRequestGenerator
-{
-    public static final Producer<RESTRequestGenerator> PRODUCER = ( graph, title, documentation ) -> new RESTRequestGenerator();
+public class RESTRequestGenerator {
+    public static final Producer<RESTRequestGenerator> PRODUCER =
+            (graph, title, documentation) -> new RESTRequestGenerator();
 
     private int expectedResponseStatus = -1;
-    private MediaType expectedMediaType = MediaType.valueOf( "application/json; charset=UTF-8" );
+    private MediaType expectedMediaType = MediaType.valueOf("application/json; charset=UTF-8");
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
-    private final List<Pair<String,Predicate<String>>> expectedHeaderFields = new ArrayList<>();
+    private final List<Pair<String, Predicate<String>>> expectedHeaderFields = new ArrayList<>();
     private String payload;
     private final Map<String, String> addedRequestHeaders = new TreeMap<>();
 
-    private RESTRequestGenerator()
-    {
-    }
+    private RESTRequestGenerator() {}
 
     /**
      * Set the expected status of the response. The test will fail if the
@@ -66,8 +63,7 @@ public class RESTRequestGenerator
      *
      * @param expectedResponseStatus the expected response status
      */
-    public RESTRequestGenerator expectedStatus( final int expectedResponseStatus )
-    {
+    public RESTRequestGenerator expectedStatus(final int expectedResponseStatus) {
         this.expectedResponseStatus = expectedResponseStatus;
         return this;
     }
@@ -78,8 +74,7 @@ public class RESTRequestGenerator
      *
      * @param expectedMediaType the expected media type
      */
-    public RESTRequestGenerator expectedType( final MediaType expectedMediaType )
-    {
+    public RESTRequestGenerator expectedType(final MediaType expectedMediaType) {
         this.expectedMediaType = expectedMediaType;
         return this;
     }
@@ -89,8 +84,7 @@ public class RESTRequestGenerator
      *
      * @param payloadMediaType the media type to use
      */
-    public RESTRequestGenerator payloadType( final MediaType payloadMediaType )
-    {
+    public RESTRequestGenerator payloadType(final MediaType payloadMediaType) {
         this.payloadMediaType = payloadMediaType;
         return this;
     }
@@ -101,9 +95,8 @@ public class RESTRequestGenerator
      * @param key header key
      * @param value header value
      */
-    public RESTRequestGenerator withHeader( final String key, final String value )
-    {
-        this.addedRequestHeaders.put(key,value);
+    public RESTRequestGenerator withHeader(final String key, final String value) {
+        this.addedRequestHeaders.put(key, value);
         return this;
     }
 
@@ -112,8 +105,7 @@ public class RESTRequestGenerator
      *
      * @param payload the payload
      */
-    public RESTRequestGenerator payload( final String payload )
-    {
+    public RESTRequestGenerator payload(final String payload) {
         this.payload = payload;
         return this;
     }
@@ -125,9 +117,8 @@ public class RESTRequestGenerator
      *
      * @param expectedHeaderField the expected header
      */
-    public RESTRequestGenerator expectedHeader( final String expectedHeaderField )
-    {
-        this.expectedHeaderFields.add( Pair.of(expectedHeaderField, Predicates.notNull()) );
+    public RESTRequestGenerator expectedHeader(final String expectedHeaderField) {
+        this.expectedHeaderFields.add(Pair.of(expectedHeaderField, Predicates.notNull()));
         return this;
     }
 
@@ -139,9 +130,8 @@ public class RESTRequestGenerator
      * @param expectedHeaderField the expected header
      * @param expectedValue the expected header value
      */
-    public RESTRequestGenerator expectedHeader( final String expectedHeaderField, String expectedValue )
-    {
-        this.expectedHeaderFields.add( Pair.of(expectedHeaderField, Predicate.isEqual( expectedValue )) );
+    public RESTRequestGenerator expectedHeader(final String expectedHeaderField, String expectedValue) {
+        this.expectedHeaderFields.add(Pair.of(expectedHeaderField, Predicate.isEqual(expectedValue)));
         return this;
     }
 
@@ -150,10 +140,8 @@ public class RESTRequestGenerator
      *
      * @param uri the URI to use.
      */
-    public ResponseEntity get( final String uri )
-    {
-        return retrieveResponseFromRequest( "GET", uri, expectedResponseStatus, expectedMediaType,
-                expectedHeaderFields );
+    public ResponseEntity get(final String uri) {
+        return retrieveResponseFromRequest("GET", uri, expectedResponseStatus, expectedMediaType, expectedHeaderFields);
     }
 
     /**
@@ -161,10 +149,15 @@ public class RESTRequestGenerator
      *
      * @param uri the URI to use.
      */
-    public ResponseEntity post( final String uri )
-    {
-        return retrieveResponseFromRequest( "POST", uri, payload, payloadMediaType,
-                expectedResponseStatus, expectedMediaType, expectedHeaderFields );
+    public ResponseEntity post(final String uri) {
+        return retrieveResponseFromRequest(
+                "POST",
+                uri,
+                payload,
+                payloadMediaType,
+                expectedResponseStatus,
+                expectedMediaType,
+                expectedHeaderFields);
     }
 
     /**
@@ -172,10 +165,9 @@ public class RESTRequestGenerator
      *
      * @param uri the URI to use.
      */
-    public ResponseEntity put( final String uri )
-    {
-        return retrieveResponseFromRequest( "PUT", uri, payload, payloadMediaType,
-                expectedResponseStatus, expectedMediaType, expectedHeaderFields );
+    public ResponseEntity put(final String uri) {
+        return retrieveResponseFromRequest(
+                "PUT", uri, payload, payloadMediaType, expectedResponseStatus, expectedMediaType, expectedHeaderFields);
     }
 
     /**
@@ -183,58 +175,65 @@ public class RESTRequestGenerator
      *
      * @param uri the URI to use.
      */
-    public ResponseEntity delete( final String uri )
-    {
-        return retrieveResponseFromRequest( "DELETE", uri, payload, payloadMediaType,
-                expectedResponseStatus, expectedMediaType, expectedHeaderFields );
+    public ResponseEntity delete(final String uri) {
+        return retrieveResponseFromRequest(
+                "DELETE",
+                uri,
+                payload,
+                payloadMediaType,
+                expectedResponseStatus,
+                expectedMediaType,
+                expectedHeaderFields);
     }
 
     /**
      * Send a request with no payload.
      */
-    private ResponseEntity retrieveResponseFromRequest( final String method, final String uri, final int responseCode,
-            final MediaType accept, final List<Pair<String,Predicate<String>>> headerFields )
-    {
-        var request = newRequestBuilder( uri )
-                .method( method, noBody() )
-                .header( ACCEPT, accept.toString() )
+    private ResponseEntity retrieveResponseFromRequest(
+            final String method,
+            final String uri,
+            final int responseCode,
+            final MediaType accept,
+            final List<Pair<String, Predicate<String>>> headerFields) {
+        var request = newRequestBuilder(uri)
+                .method(method, noBody())
+                .header(ACCEPT, accept.toString())
                 .build();
 
-        return retrieveResponse( responseCode, accept, headerFields, request );
+        return retrieveResponse(responseCode, accept, headerFields, request);
     }
 
     /**
      * Send a request with payload.
      */
-    private ResponseEntity retrieveResponseFromRequest( final String method, final String uri, final String payload,
-            final MediaType payloadType, final int responseCode, final MediaType accept,
-            final List<Pair<String,Predicate<String>>> headerFields )
-    {
+    private ResponseEntity retrieveResponseFromRequest(
+            final String method,
+            final String uri,
+            final String payload,
+            final MediaType payloadType,
+            final int responseCode,
+            final MediaType accept,
+            final List<Pair<String, Predicate<String>>> headerFields) {
         HttpRequest request;
-        if ( payload != null )
-        {
-            request = newRequestBuilder( uri )
-                    .method( method, ofString( payload ) )
-                    .header( CONTENT_TYPE, payloadType.toString() )
-                    .header( ACCEPT, accept.toString() )
+        if (payload != null) {
+            request = newRequestBuilder(uri)
+                    .method(method, ofString(payload))
+                    .header(CONTENT_TYPE, payloadType.toString())
+                    .header(ACCEPT, accept.toString())
+                    .build();
+        } else {
+            request = newRequestBuilder(uri)
+                    .method(method, noBody())
+                    .header(ACCEPT, accept.toString())
                     .build();
         }
-        else
-        {
-            request = newRequestBuilder( uri )
-                    .method( method, noBody() )
-                    .header( ACCEPT, accept.toString() )
-                    .build();
-        }
-        return retrieveResponse( responseCode, accept, headerFields, request );
+        return retrieveResponse(responseCode, accept, headerFields, request);
     }
 
-    private HttpRequest.Builder newRequestBuilder( String uri )
-    {
-        var builder = HttpRequest.newBuilder( URI.create( uri ) );
-        for ( var entry : addedRequestHeaders.entrySet() )
-        {
-            builder.header( entry.getKey(), entry.getValue() );
+    private HttpRequest.Builder newRequestBuilder(String uri) {
+        var builder = HttpRequest.newBuilder(URI.create(uri));
+        for (var entry : addedRequestHeaders.entrySet()) {
+            builder.header(entry.getKey(), entry.getValue());
         }
         return builder;
     }
@@ -242,57 +241,53 @@ public class RESTRequestGenerator
     /**
      * Send the request and create the documentation.
      */
-    private static ResponseEntity retrieveResponse( final int responseCode, final MediaType type,
-            final List<Pair<String,Predicate<String>>> headerFields, final HttpRequest request )
-    {
-        try
-        {
-            var response = newHttpClient().send( request, BodyHandlers.ofString() );
+    private static ResponseEntity retrieveResponse(
+            final int responseCode,
+            final MediaType type,
+            final List<Pair<String, Predicate<String>>> headerFields,
+            final HttpRequest request) {
+        try {
+            var response = newHttpClient().send(request, BodyHandlers.ofString());
 
-            var responseContentType = response.headers().firstValue( CONTENT_TYPE );
-            responseContentType.ifPresent( responseType -> assertThat( responseType ).isEqualToIgnoringCase( type.toString() ) );
+            var responseContentType = response.headers().firstValue(CONTENT_TYPE);
+            responseContentType.ifPresent(
+                    responseType -> assertThat(responseType).isEqualToIgnoringCase(type.toString()));
 
             var responseHeaders = response.headers();
-            for ( var headerField : headerFields )
-            {
+            for (var headerField : headerFields) {
                 var name = headerField.first();
                 var verifier = headerField.other();
-                assertTrue( verifier.test( responseHeaders.firstValue( name ).orElseThrow() ), "Wrong headers: " + responseHeaders );
+                assertTrue(
+                        verifier.test(responseHeaders.firstValue(name).orElseThrow()),
+                        "Wrong headers: " + responseHeaders);
             }
 
-            assertEquals( responseCode, response.statusCode() );
-            return new ResponseEntity( response );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-        catch ( InterruptedException e )
-        {
+            assertEquals(responseCode, response.statusCode());
+            return new ResponseEntity(response);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException( e );
+            throw new RuntimeException(e);
         }
     }
 
     /**
      * Wraps a response, to give access to the response entity as well.
      */
-    public static class ResponseEntity
-    {
+    public static class ResponseEntity {
         private final String entity;
         private final JaxRsResponse response;
 
-        ResponseEntity( HttpResponse<String> response )
-        {
-            this.response = new JaxRsResponse( response );
+        ResponseEntity(HttpResponse<String> response) {
+            this.response = new JaxRsResponse(response);
             this.entity = response.body();
         }
 
         /**
          * The response entity as a String.
          */
-        public String entity()
-        {
+        public String entity() {
             return entity;
         }
 
@@ -300,8 +295,7 @@ public class RESTRequestGenerator
          * Note that the response object returned does not give access to the
          * response entity.
          */
-        public JaxRsResponse response()
-        {
+        public JaxRsResponse response() {
             return response;
         }
     }

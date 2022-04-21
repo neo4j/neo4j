@@ -20,7 +20,6 @@
 package org.neo4j.shell.commands;
 
 import java.util.List;
-
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
@@ -28,36 +27,30 @@ import org.neo4j.shell.exception.ExitException;
 /**
  * This command starts a transaction.
  */
-public class Begin implements Command
-{
+public class Begin implements Command {
     private static final String COMMAND_NAME = ":begin";
     private final TransactionHandler transactionHandler;
 
-    public Begin( final TransactionHandler transactionHandler )
-    {
+    public Begin(final TransactionHandler transactionHandler) {
         this.transactionHandler = transactionHandler;
     }
 
     @Override
-    public void execute( final List<String> args ) throws ExitException, CommandException
-    {
-        requireArgumentCount( args, 0 );
+    public void execute(final List<String> args) throws ExitException, CommandException {
+        requireArgumentCount(args, 0);
         transactionHandler.beginTransaction();
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
+        public Metadata metadata() {
             var help = "Start a transaction which will remain open until :commit or :rollback is called";
-            return new Metadata( ":begin", "Open a transaction", "", help, List.of() );
+            return new Metadata(":begin", "Open a transaction", "", help, List.of());
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
-            return new Begin( args.cypherShell() );
+        public Command executor(Arguments args) {
+            return new Begin(args.cypherShell());
         }
     }
 }

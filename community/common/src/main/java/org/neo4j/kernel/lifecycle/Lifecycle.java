@@ -35,8 +35,7 @@ package org.neo4j.kernel.lifecycle;
  * Only in start should the component actually do anything with this structure.
  * Stop reverses whatever was done in start, and shutdown finally clears any set-up structure, if necessary.
  */
-public interface Lifecycle
-{
+public interface Lifecycle {
     void init() throws Exception;
 
     void start() throws Exception;
@@ -44,5 +43,4 @@ public interface Lifecycle
     void stop() throws Exception;
 
     void shutdown() throws Exception;
-
 }

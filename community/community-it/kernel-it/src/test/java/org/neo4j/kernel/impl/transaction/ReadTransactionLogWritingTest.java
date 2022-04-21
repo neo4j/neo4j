@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 import java.io.IOException;
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -40,147 +42,125 @@ import org.neo4j.test.LogTestUtils.CountingLogHook;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
-
 /**
  * Asserts that pure read operations does not write records to logical or transaction logs.
  */
 @ImpermanentDbmsExtension
-class ReadTransactionLogWritingTest
-{
+class ReadTransactionLogWritingTest {
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private LogFiles logFiles;
+
     @Inject
     private FileSystemAbstraction fileSystem;
 
-    private final Label label = label( "Test" );
+    private final Label label = label("Test");
     private Node node;
     private Relationship relationship;
     private long logEntriesWrittenBeforeReadOperations;
 
     @BeforeEach
-    void createDataset()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = tx.createNode( label );
-            node.setProperty( "short", 123 );
-            node.setProperty( "long", longString( 300 ) );
-            relationship = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
-            relationship.setProperty( "short", 123 );
-            relationship.setProperty( "long", longString( 300 ) );
+    void createDataset() {
+        try (Transaction tx = db.beginTx()) {
+            node = tx.createNode(label);
+            node.setProperty("short", 123);
+            node.setProperty("long", longString(300));
+            relationship = node.createRelationshipTo(tx.createNode(), MyRelTypes.TEST);
+            relationship.setProperty("short", 123);
+            relationship.setProperty("long", longString(300));
             tx.commit();
         }
         logEntriesWrittenBeforeReadOperations = countLogEntries();
     }
 
     @Test
-    void shouldNotWriteAnyLogCommandInPureReadTransaction()
-    {
+    void shouldNotWriteAnyLogCommandInPureReadTransaction() {
         // WHEN
-        executeTransaction( getRelationships() );
-        executeTransaction( getProperties() );
-        executeTransaction( getById() );
-        executeTransaction( getNodesFromRelationship() );
+        executeTransaction(getRelationships());
+        executeTransaction(getProperties());
+        executeTransaction(getById());
+        executeTransaction(getNodesFromRelationship());
 
         // THEN
         long actualCount = countLogEntries();
-        assertEquals( logEntriesWrittenBeforeReadOperations,
-                actualCount, "There were " + (actualCount - logEntriesWrittenBeforeReadOperations) +
-                                " log entries written during one or more pure read transactions" );
+        assertEquals(
+                logEntriesWrittenBeforeReadOperations,
+                actualCount,
+                "There were " + (actualCount - logEntriesWrittenBeforeReadOperations)
+                        + " log entries written during one or more pure read transactions");
     }
 
-    private long countLogEntries()
-    {
-        try
-        {
+    private long countLogEntries() {
+        try {
             CountingLogHook<LogEntry> logicalLogCounter = new CountingLogHook<>();
-            filterNeostoreLogicalLog( logFiles, fileSystem, logicalLogCounter );
+            filterNeostoreLogicalLog(logFiles, fileSystem, logicalLogCounter);
 
-            long txLogRecordCount = logFiles.getLogFile().getLogFileInformation().getLastEntryId();
+            long txLogRecordCount =
+                    logFiles.getLogFile().getLogFileInformation().getLastEntryId();
 
             return logicalLogCounter.getCount() + txLogRecordCount;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private static String longString( int length )
-    {
+    private static String longString(int length) {
         char[] characters = new char[length];
-        for ( int i = 0; i < length; i++ )
-        {
+        for (int i = 0; i < length; i++) {
             characters[i] = (char) ('a' + i % 10);
         }
-        return new String( characters );
+        return new String(characters);
     }
 
-    private void executeTransaction( Consumer<Transaction> consumer )
-    {
-        executeTransaction( consumer, true );
-        executeTransaction( consumer, false );
+    private void executeTransaction(Consumer<Transaction> consumer) {
+        executeTransaction(consumer, true);
+        executeTransaction(consumer, false);
     }
 
-    private void executeTransaction( Consumer<Transaction> consumer, boolean success )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            consumer.accept( tx );
-            if ( success )
-            {
+    private void executeTransaction(Consumer<Transaction> consumer, boolean success) {
+        try (Transaction tx = db.beginTx()) {
+            consumer.accept(tx);
+            if (success) {
                 tx.commit();
             }
         }
     }
 
-    private Consumer<Transaction> getRelationships()
-    {
-        return tx -> assertEquals( 1, Iterables.count( tx.getNodeById( node.getId() ).getRelationships() ) );
+    private Consumer<Transaction> getRelationships() {
+        return tx ->
+                assertEquals(1, Iterables.count(tx.getNodeById(node.getId()).getRelationships()));
     }
 
-    private Consumer<Transaction> getNodesFromRelationship()
-    {
-        return tx ->
-        {
-            var rel = tx.getRelationshipById( relationship.getId() );
+    private Consumer<Transaction> getNodesFromRelationship() {
+        return tx -> {
+            var rel = tx.getRelationshipById(relationship.getId());
             rel.getEndNode();
             rel.getStartNode();
             rel.getNodes();
-            rel.getOtherNode( node );
+            rel.getOtherNode(node);
         };
     }
 
-    private Consumer<Transaction> getById()
-    {
-        return tx ->
-        {
-            tx.getNodeById( node.getId() );
-            tx.getRelationshipById( relationship.getId() );
+    private Consumer<Transaction> getById() {
+        return tx -> {
+            tx.getNodeById(node.getId());
+            tx.getRelationshipById(relationship.getId());
         };
     }
 
-    private Consumer<Transaction> getProperties()
-    {
-        return new Consumer<>()
-        {
+    private Consumer<Transaction> getProperties() {
+        return new Consumer<>() {
             @Override
-            public void accept( Transaction tx )
-            {
-                getAllProperties( tx.getNodeById( node.getId() ) );
-                getAllProperties( tx.getRelationshipById( relationship.getId() ) );
+            public void accept(Transaction tx) {
+                getAllProperties(tx.getNodeById(node.getId()));
+                getAllProperties(tx.getRelationshipById(relationship.getId()));
             }
 
-            private void getAllProperties( Entity entity )
-            {
-                for ( String key : entity.getPropertyKeys() )
-                {
-                    entity.getProperty( key );
+            private void getAllProperties(Entity entity) {
+                for (String key : entity.getPropertyKeys()) {
+                    entity.getProperty(key);
                 }
             }
         };

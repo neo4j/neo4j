@@ -19,41 +19,36 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.messaging.RequestMessageDecoder;
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v3.messaging.request.GoodbyeMessage;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoderTest.assertOriginalMessageEqualsToDecoded;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 
-class GoodbyeMessageDecoderTest
-{
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final BoltConnection connection = mock( BoltConnection.class );
-    private final RequestMessageDecoder decoder = new GoodbyeMessageDecoder( connection, responseHandler );
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.v3.messaging.request.GoodbyeMessage;
+
+class GoodbyeMessageDecoderTest {
+    private final BoltResponseHandler responseHandler = mock(BoltResponseHandler.class);
+    private final BoltConnection connection = mock(BoltConnection.class);
+    private final RequestMessageDecoder decoder = new GoodbyeMessageDecoder(connection, responseHandler);
 
     @Test
-    void shouldReturnCorrectSignature()
-    {
-        assertEquals( GoodbyeMessage.SIGNATURE, decoder.signature() );
+    void shouldReturnCorrectSignature() {
+        assertEquals(GoodbyeMessage.SIGNATURE, decoder.signature());
     }
 
     @Test
-    void shouldReturnConnectResponseHandler()
-    {
-        assertEquals( responseHandler, decoder.responseHandler() );
+    void shouldReturnConnectResponseHandler() {
+        assertEquals(responseHandler, decoder.responseHandler());
     }
 
     @Test
-    void shouldDecodeGoodbyeMessage() throws Exception
-    {
-        assertOriginalMessageEqualsToDecoded( GOODBYE_MESSAGE, decoder );
-        verify( connection ).stop();
+    void shouldDecodeGoodbyeMessage() throws Exception {
+        assertOriginalMessageEqualsToDecoded(GOODBYE_MESSAGE, decoder);
+        verify(connection).stop();
     }
 }

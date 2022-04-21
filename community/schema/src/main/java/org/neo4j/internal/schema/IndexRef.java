@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
-public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplier
-{
+public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplier {
     /**
      * Returns true if this index is only meant to allow one value per key.
      */
@@ -42,7 +41,7 @@ public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplie
      * @param indexProvider The index provider descriptor used in the new index reference.
      * @return A new index reference with the given index provider.
      */
-    T withIndexProvider( IndexProviderDescriptor indexProvider );
+    T withIndexProvider(IndexProviderDescriptor indexProvider);
 
     /**
      * Produce a new index reference that is the same as this index reference in every way, except it has the given schema descriptor.
@@ -50,7 +49,7 @@ public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplie
      * @param schema The schema descriptor used in the new index reference.
      * @return A new index reference with the given schema descriptor.
      */
-    T withSchemaDescriptor( SchemaDescriptor schema );
+    T withSchemaDescriptor(SchemaDescriptor schema);
 
     /**
      * @return the attached {@link IndexConfig}.
@@ -62,13 +61,12 @@ public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplie
      * @param indexConfig The index config of the new index reference.
      * @return A new index reference with the given index config.
      */
-    T withIndexConfig( IndexConfig indexConfig );
+    T withIndexConfig(IndexConfig indexConfig);
 
     /**
      * @return true if this {@link IndexRef index reference} is a token index, otherwise false.
      */
-    default boolean isTokenIndex()
-    {
+    default boolean isTokenIndex() {
         return schema().isAnyTokenSchemaDescriptor() && getIndexType() == IndexType.LOOKUP;
     }
 }

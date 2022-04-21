@@ -67,12 +67,10 @@ object LogicalPlanToPlanBuilderString {
    */
   def apply(logicalPlan: LogicalPlan): String = render(logicalPlan, None, None)
 
-  def apply(logicalPlan: LogicalPlan,
-            extra: LogicalPlan => String): String = render(logicalPlan, Some(extra), None)
+  def apply(logicalPlan: LogicalPlan, extra: LogicalPlan => String): String = render(logicalPlan, Some(extra), None)
 
-  def apply(logicalPlan: LogicalPlan,
-            extra: LogicalPlan => String,
-            planPrefixDot: LogicalPlan => String): String = render(logicalPlan, Some(extra), Some(planPrefixDot))
+  def apply(logicalPlan: LogicalPlan, extra: LogicalPlan => String, planPrefixDot: LogicalPlan => String): String =
+    render(logicalPlan, Some(extra), Some(planPrefixDot))
 
   /**
    * To be used as parameter `extra` on {LogicalPlanToPlanBuilderString#apply} to print the ids of the plan operators.
@@ -84,19 +82,24 @@ object LogicalPlanToPlanBuilderString {
 
   def expressionStringifierExtension(expression: Expression): String = {
     expression match {
-      case p@CachedHasProperty(_, _, _, NODE_TYPE, false) => s"cacheNHasProperty[${p.propertyAccessString}]"
-      case p@CachedHasProperty(_, _, _, RELATIONSHIP_TYPE, false) => s"cacheRHasProperty[${p.propertyAccessString}]"
-      case p@CachedHasProperty(_, _, _, NODE_TYPE, true) => s"cacheNHasPropertyFromStore[${p.propertyAccessString}]"
-      case p@CachedHasProperty(_, _, _, RELATIONSHIP_TYPE, true) => s"cacheRHasPropertyFromStore[${p.propertyAccessString}]"
-      case p@CachedProperty(_, _, _, NODE_TYPE, false) => s"cacheN[${p.propertyAccessString}]"
-      case p@CachedProperty(_, _, _, RELATIONSHIP_TYPE, false) => s"cacheR[${p.propertyAccessString}]"
-      case p@CachedProperty(_, _, _, NODE_TYPE, true) => s"cacheNFromStore[${p.propertyAccessString}]"
-      case p@CachedProperty(_, _, _, RELATIONSHIP_TYPE, true) => s"cacheRFromStore[${p.propertyAccessString}]"
-      case e => e.asCanonicalStringVal
+      case p @ CachedHasProperty(_, _, _, NODE_TYPE, false)         => s"cacheNHasProperty[${p.propertyAccessString}]"
+      case p @ CachedHasProperty(_, _, _, RELATIONSHIP_TYPE, false) => s"cacheRHasProperty[${p.propertyAccessString}]"
+      case p @ CachedHasProperty(_, _, _, NODE_TYPE, true) => s"cacheNHasPropertyFromStore[${p.propertyAccessString}]"
+      case p @ CachedHasProperty(_, _, _, RELATIONSHIP_TYPE, true) =>
+        s"cacheRHasPropertyFromStore[${p.propertyAccessString}]"
+      case p @ CachedProperty(_, _, _, NODE_TYPE, false)         => s"cacheN[${p.propertyAccessString}]"
+      case p @ CachedProperty(_, _, _, RELATIONSHIP_TYPE, false) => s"cacheR[${p.propertyAccessString}]"
+      case p @ CachedProperty(_, _, _, NODE_TYPE, true)          => s"cacheNFromStore[${p.propertyAccessString}]"
+      case p @ CachedProperty(_, _, _, RELATIONSHIP_TYPE, true)  => s"cacheRFromStore[${p.propertyAccessString}]"
+      case e                                                     => e.asCanonicalStringVal
     }
   }
 
-  private def render(logicalPlan: LogicalPlan, extra: Option[LogicalPlan => String], planPrefixDot: Option[LogicalPlan => String]) = {
+  private def render(
+    logicalPlan: LogicalPlan,
+    extra: Option[LogicalPlan => String],
+    planPrefixDot: Option[LogicalPlan => String]
+  ) = {
     var childrenStack = LevelPlanItem(0, logicalPlan) :: Nil
     val sb = new StringBuilder()
 
@@ -132,42 +135,84 @@ object LogicalPlanToPlanBuilderString {
    */
   private def pre(logicalPlan: LogicalPlan): String = {
     val specialCases: PartialFunction[LogicalPlan, String] = {
-      case _:ProduceResult => "produceResults"
-      case _:AllNodesScan => "allNodeScan"
-      case e:Expand => if(e.mode == ExpandAll) "expandAll" else "expandInto"
-      case _:VarExpand => "expand"
-      case _:BFSPruningVarExpand => "bfsPruningVarExpand"
-      case e:OptionalExpand => if(e.mode == ExpandAll) "optionalExpandAll" else "optionalExpandInto"
-      case _:Selection => "filter"
-      case _:UnwindCollection => "unwind"
-      case _:FindShortestPaths => "shortestPath"
-      case _:NodeIndexScan => "nodeIndexOperator"
-      case _:DirectedRelationshipIndexScan => "relationshipIndexOperator"
-      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _, _) => "pointDistanceNodeIndexSeek"
-      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _,  _, _) => "pointBoundingBoxNodeIndexSeek"
-      case _:NodeIndexSeek => "nodeIndexOperator"
-      case _:NodeUniqueIndexSeek => "nodeIndexOperator"
-      case _:NodeIndexContainsScan => "nodeIndexOperator"
-      case _:NodeIndexEndsWithScan => "nodeIndexOperator"
-      case _:MultiNodeIndexSeek => "multiNodeIndexSeekOperator"
-      case DirectedRelationshipIndexSeek(_, _, _, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _,  _, _) =>
+      case _: ProduceResult                 => "produceResults"
+      case _: AllNodesScan                  => "allNodeScan"
+      case e: Expand                        => if (e.mode == ExpandAll) "expandAll" else "expandInto"
+      case _: VarExpand                     => "expand"
+      case _: BFSPruningVarExpand           => "bfsPruningVarExpand"
+      case e: OptionalExpand                => if (e.mode == ExpandAll) "optionalExpandAll" else "optionalExpandInto"
+      case _: Selection                     => "filter"
+      case _: UnwindCollection              => "unwind"
+      case _: FindShortestPaths             => "shortestPath"
+      case _: NodeIndexScan                 => "nodeIndexOperator"
+      case _: DirectedRelationshipIndexScan => "relationshipIndexOperator"
+      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _, _) =>
+        "pointDistanceNodeIndexSeek"
+      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _, _, _) =>
+        "pointBoundingBoxNodeIndexSeek"
+      case _: NodeIndexSeek         => "nodeIndexOperator"
+      case _: NodeUniqueIndexSeek   => "nodeIndexOperator"
+      case _: NodeIndexContainsScan => "nodeIndexOperator"
+      case _: NodeIndexEndsWithScan => "nodeIndexOperator"
+      case _: MultiNodeIndexSeek    => "multiNodeIndexSeekOperator"
+      case DirectedRelationshipIndexSeek(
+          _,
+          _,
+          _,
+          _,
+          _,
+          RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)),
+          _,
+          _,
+          _
+        ) =>
         "pointBoundingBoxRelationshipIndexSeek"
-      case DirectedRelationshipIndexSeek(_, _, _, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _,  _, _) =>
+      case DirectedRelationshipIndexSeek(
+          _,
+          _,
+          _,
+          _,
+          _,
+          RangeQueryExpression(PointDistanceSeekRangeWrapper(_)),
+          _,
+          _,
+          _
+        ) =>
         "pointDistanceRelationshipIndexSeek"
-      case UndirectedRelationshipIndexSeek(_, _, _, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _,  _, _) =>
+      case UndirectedRelationshipIndexSeek(
+          _,
+          _,
+          _,
+          _,
+          _,
+          RangeQueryExpression(PointDistanceSeekRangeWrapper(_)),
+          _,
+          _,
+          _
+        ) =>
         "pointDistanceRelationshipIndexSeek"
-      case _:DirectedRelationshipIndexSeek => "relationshipIndexOperator"
-      case UndirectedRelationshipIndexSeek(_, _, _, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _,  _, _) =>
+      case _: DirectedRelationshipIndexSeek => "relationshipIndexOperator"
+      case UndirectedRelationshipIndexSeek(
+          _,
+          _,
+          _,
+          _,
+          _,
+          RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)),
+          _,
+          _,
+          _
+        ) =>
         "pointBoundingBoxRelationshipIndexSeek"
-      case _:UndirectedRelationshipIndexSeek => "relationshipIndexOperator"
-      case _:DirectedRelationshipIndexContainsScan => "relationshipIndexOperator"
-      case _:UndirectedRelationshipIndexContainsScan => "relationshipIndexOperator"
-      case _:DirectedRelationshipIndexEndsWithScan => "relationshipIndexOperator"
-      case _:UndirectedRelationshipIndexEndsWithScan => "relationshipIndexOperator"
-      case _:DirectedRelationshipIndexScan => "relationshipIndexOperator"
-      case _:UndirectedRelationshipIndexScan => "relationshipIndexOperator"
-      case _: DirectedRelationshipTypeScan => "relationshipTypeScan"
-      case _: UndirectedRelationshipTypeScan => "relationshipTypeScan"
+      case _: UndirectedRelationshipIndexSeek         => "relationshipIndexOperator"
+      case _: DirectedRelationshipIndexContainsScan   => "relationshipIndexOperator"
+      case _: UndirectedRelationshipIndexContainsScan => "relationshipIndexOperator"
+      case _: DirectedRelationshipIndexEndsWithScan   => "relationshipIndexOperator"
+      case _: UndirectedRelationshipIndexEndsWithScan => "relationshipIndexOperator"
+      case _: DirectedRelationshipIndexScan           => "relationshipIndexOperator"
+      case _: UndirectedRelationshipIndexScan         => "relationshipIndexOperator"
+      case _: DirectedRelationshipTypeScan            => "relationshipTypeScan"
+      case _: UndirectedRelationshipTypeScan          => "relationshipTypeScan"
     }
     specialCases.applyOrElse(logicalPlan, classNameFormat)
   }
@@ -190,7 +235,9 @@ object LogicalPlanToPlanBuilderString {
       case Distinct(_, groupingExpressions) =>
         projectStrs(groupingExpressions)
       case OrderedDistinct(_, groupingExpressions, orderToLeverage) =>
-        s""" Seq(${wrapInQuotationsAndMkString(orderToLeverage.map(expressionStringifier(_)))}), ${projectStrs(groupingExpressions)} """.trim
+        s""" Seq(${wrapInQuotationsAndMkString(orderToLeverage.map(expressionStringifier(_)))}), ${projectStrs(
+          groupingExpressions
+        )} """.trim
       case Projection(_, projectExpressions) =>
         projectStrs(projectExpressions)
       case UnwindCollection(_, variable, expression) =>
@@ -207,14 +254,15 @@ object LogicalPlanToPlanBuilderString {
         s"Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")})"
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
-
         val nodesToCreate = createNodes.map(createNodeToString)
         val relsToCreate = createRelationships.map(createRelationshipToString)
 
         val onMatchString = onMatch.map(mutationToString)
         val onCreateString = onCreate.map(mutationToString)
 
-        s"Seq(${nodesToCreate.mkString(", ")}), Seq(${relsToCreate.mkString(", ")}), Seq(${onMatchString.mkString(", ")}), Seq(${onCreateString.mkString(", ")}), Set(${wrapInQuotationsAndMkString(nodesToLock)})"
+        s"Seq(${nodesToCreate.mkString(", ")}), Seq(${relsToCreate.mkString(", ")}), Seq(${onMatchString.mkString(
+          ", "
+        )}), Seq(${onCreateString.mkString(", ")}), Set(${wrapInQuotationsAndMkString(nodesToLock)})"
 
       case Foreach(_, variable, list, mutations) =>
         s"${wrapInQuotations(variable)}, ${wrapInQuotations(expressionStringifier(list))}, Seq(${mutations.map(mutationToString).mkString(", ")})"
@@ -233,19 +281,25 @@ object LogicalPlanToPlanBuilderString {
         val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")
         s""" "($from)$dirStrA[$relName$typeStr*$lenStr]$dirStrB($to)"$modeStr$pDirStr$nPredStr$rPredStr """.trim
       case FindShortestPaths(_, shortestPath, predicates, withFallBack, disallowSameNode) =>
-        val fbStr = if(withFallBack) ", withFallback = true" else ""
-        val dsnStr = if(!disallowSameNode) ", disallowSameNode = false" else ""
+        val fbStr = if (withFallBack) ", withFallback = true" else ""
+        val dsnStr = if (!disallowSameNode) ", disallowSameNode = false" else ""
         shortestPath match {
-          case ShortestPathPattern(maybePathName, PatternRelationship(relName, (from, to), dir, types, length), single) =>
+          case ShortestPathPattern(
+              maybePathName,
+              PatternRelationship(relName, (from, to), dir, types, length),
+              single
+            ) =>
             val lenStr = length match {
               case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"
-              case SimplePatternLength => ""
+              case SimplePatternLength        => ""
             }
             val (dirStrA, dirStrB) = arrows(dir)
             val typeStr = relTypeStr(types)
             val pNameStr = maybePathName.map(p => s", pathName = Some(${wrapInQuotations(p)})").getOrElse("")
             val allStr = if (single) "" else ", all = true"
-            val predStr = if(predicates.isEmpty) "" else ", predicates = Seq(" + wrapInQuotationsAndMkString(predicates.map(expressionStringifier(_))) +")"
+            val predStr =
+              if (predicates.isEmpty) ""
+              else ", predicates = Seq(" + wrapInQuotationsAndMkString(predicates.map(expressionStringifier(_))) + ")"
             s""" "($from)$dirStrA[$relName$typeStr$lenStr]$dirStrB($to)"$pNameStr$allStr$predStr$fbStr$dsnStr """.trim
         }
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicate, relationshipPredicate) =>
@@ -255,7 +309,17 @@ object LogicalPlanToPlanBuilderString {
         val nPredStr = variablePredicate(nodePredicate, "nodePredicate")
         val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")
         s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr """.trim
-      case BFSPruningVarExpand(_, from, dir, types, to, includeStartNode, maxLength, nodePredicate, relationshipPredicate) =>
+      case BFSPruningVarExpand(
+          _,
+          from,
+          dir,
+          types,
+          to,
+          includeStartNode,
+          maxLength,
+          nodePredicate,
+          relationshipPredicate
+        ) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
         val minLength = if (includeStartNode) 0 else 1
@@ -270,7 +334,9 @@ object LogicalPlanToPlanBuilderString {
       case Skip(_, count) =>
         integerString(count)
       case NodeByLabelScan(idName, label, argumentIds, indexOrder) =>
-        val args = Seq(idName, label.name).map(wrapInQuotations) ++ Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
+        val args = Seq(idName, label.name).map(wrapInQuotations) ++ Seq(objectName(indexOrder)) ++ argumentIds.map(
+          wrapInQuotations
+        )
         args.mkString(", ")
       case Optional(_, protectedSymbols) =>
         wrapInQuotationsAndMkString(protectedSymbols)
@@ -279,22 +345,35 @@ object LogicalPlanToPlanBuilderString {
         val typeStr = relTypeStr(types)
         val predStr = predicate.fold("")(p => s""", Some("${expressionStringifier(p)}")""")
         s""" "($from)$dirStrA[$relName$typeStr]$dirStrB($to)"$predStr""".trim
-      case ProcedureCall(_, ResolvedCall(ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _, _), callArguments, callResults, _, _, yieldAll)) =>
-        val yielding = if (yieldAll) {
-          " YIELD *"
-        } else if (callResults.isEmpty) {
-          ""
-        } else {
-          callResults.map(i => expressionStringifier(i.variable)).mkString(" YIELD ", ",", "")
-        }
-        s""" "${namespace.mkString(".")}.$name(${callArguments.map(expressionStringifier(_)).mkString(", ")})$yielding" """.trim
+      case ProcedureCall(
+          _,
+          ResolvedCall(
+            ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _, _),
+            callArguments,
+            callResults,
+            _,
+            _,
+            yieldAll
+          )
+        ) =>
+        val yielding =
+          if (yieldAll) {
+            " YIELD *"
+          } else if (callResults.isEmpty) {
+            ""
+          } else {
+            callResults.map(i => expressionStringifier(i.variable)).mkString(" YIELD ", ",", "")
+          }
+        s""" "${namespace.mkString(".")}.$name(${callArguments.map(expressionStringifier(_)).mkString(
+          ", "
+        )})$yielding" """.trim
       case ProduceResult(_, columns) =>
         wrapInQuotationsAndMkString(columns.map(escapeIdentifier))
       case ProjectEndpoints(_, relName, start, startInScope, end, endInScope, types, directed, length) =>
         val (dirStrA, dirStrB) = arrows(if (directed) OUTGOING else BOTH)
         val typeStr = relTypeStr(types.getOrElse(Seq.empty))
         val lenStr = length match {
-          case SimplePatternLength => ""
+          case SimplePatternLength        => ""
           case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"
         }
         s""" "($start)$dirStrA[$relName$typeStr$lenStr]$dirStrB($end)", startInScope = $startInScope, endInScope = $endInScope """.trim
@@ -319,7 +398,7 @@ object LogicalPlanToPlanBuilderString {
         val stsStr = sortItemsStr(stillToSortSuffix)
         val ssplStr = skipSortingPrefixLength.map(integerString) match {
           case Some(value) => s", $value"
-          case None => ""
+          case None        => ""
         }
         s""" $asStr, $stsStr$ssplStr """.trim
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit, skipSortingPrefixLength) =>
@@ -328,7 +407,7 @@ object LogicalPlanToPlanBuilderString {
         val lStr = integerString(limit)
         val ssplStr = skipSortingPrefixLength.map(integerString) match {
           case Some(value) => s", $value"
-          case None => ""
+          case None        => ""
         }
         s""" $asStr, $stsStr, $lStr$ssplStr """.trim
       case OrderedUnion(_, _, sortedColumns) =>
@@ -337,12 +416,16 @@ object LogicalPlanToPlanBuilderString {
         // This is by no means complete, but the best we can do.
         s"new ${exception.getClass.getSimpleName}()"
       case Input(nodes, rels, vars, nullable) =>
-        s""" Seq(${wrapInQuotationsAndMkString(nodes)}), Seq(${wrapInQuotationsAndMkString(rels)}), Seq(${wrapInQuotationsAndMkString(vars)}), $nullable  """.trim
+        s""" Seq(${wrapInQuotationsAndMkString(nodes)}), Seq(${wrapInQuotationsAndMkString(
+          rels
+        )}), Seq(${wrapInQuotationsAndMkString(vars)}), $nullable  """.trim
       case RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds) =>
-        val args = if(argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
-        s""" "$idName", ${startLabel.map(l => wrapInQuotations(l.name))}, Seq(${wrapInQuotationsAndMkString(typeNames.map(_.name))}), ${endLabel.map(l => wrapInQuotations(l.name))}$args """.trim
+        val args = if (argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
+        s""" "$idName", ${startLabel.map(l => wrapInQuotations(l.name))}, Seq(${wrapInQuotationsAndMkString(
+          typeNames.map(_.name)
+        )}), ${endLabel.map(l => wrapInQuotations(l.name))}$args """.trim
       case NodeCountFromCountStore(idName, labelNames, argumentIds) =>
-        val args = if(argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
+        val args = if (argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
         val labelStr = labelNames.map(_.map(l => wrapInQuotations(l.name)).toString).mkString(", ")
         s""" "$idName", Seq($labelStr)$args """.trim
       case DetachDeleteNode(_, expression) =>
@@ -381,7 +464,9 @@ object LogicalPlanToPlanBuilderString {
         }.mkString(", ")
         Seq(wrapInQuotations(entity), args).mkString(", ")
       case SetPropertiesFromMap(_, idName, expression, removeOtherProps) =>
-        s""" ${wrapInQuotationsAndMkString(Seq(expressionStringifier(idName), expressionStringifier(expression)))}, $removeOtherProps """.trim
+        s""" ${wrapInQuotationsAndMkString(
+          Seq(expressionStringifier(idName), expressionStringifier(expression))
+        )}, $removeOtherProps """.trim
       case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
         s""" ${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps """.trim
       case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
@@ -389,18 +474,24 @@ object LogicalPlanToPlanBuilderString {
       case Selection(ands, _) =>
         wrapInQuotationsAndMkString(ands.exprs.map(expressionStringifier(_)))
       case SelectOrSemiApply(_, _, predicate) => wrapInQuotations(expressionStringifier(predicate))
-      case LetSelectOrSemiApply(_, _, idName, predicate) => wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))
+      case LetSelectOrSemiApply(_, _, idName, predicate) =>
+        wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))
       case SelectOrAntiSemiApply(_, _, predicate) => wrapInQuotations(expressionStringifier(predicate))
-      case LetSelectOrAntiSemiApply(_, _, idName, predicate) => wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))
+      case LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
+        wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))
       case NodeByIdSeek(idName, ids, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotations(idName)}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim
       case UndirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
-        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim
+        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
+          argumentIds
+        )}), $idsString """.trim
       case DirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
-        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim
+        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
+          argumentIds
+        )}), $idsString """.trim
       case DirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, indexOrder) =>
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
         s""" "($start)-[$idName:${typ.name}]->($end)", ${args.mkString(", ")} """.trim
@@ -409,19 +500,85 @@ object LogicalPlanToPlanBuilderString {
         s""" "($start)-[$idName:${typ.name}]-($end)", ${args.mkString(", ")} """.trim
       case NodeIndexScan(idName, labelToken, properties, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
-        nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = false, propNames.mkString(", "), indexType)
+        nodeIndexOperator(
+          idName,
+          labelToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          unique = false,
+          propNames.mkString(", "),
+          indexType
+        )
       case NodeIndexContainsScan(idName, labelToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
         val propName = property.propertyKeyToken.name
-        nodeIndexOperator(idName, labelToken, Seq(property), argumentIds, indexOrder, unique = false, s"$propName CONTAINS ${expressionStringifier(valueExpr)}", indexType)
+        nodeIndexOperator(
+          idName,
+          labelToken,
+          Seq(property),
+          argumentIds,
+          indexOrder,
+          unique = false,
+          s"$propName CONTAINS ${expressionStringifier(valueExpr)}",
+          indexType
+        )
       case NodeIndexEndsWithScan(idName, labelToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
         val propName = property.propertyKeyToken.name
-        nodeIndexOperator(idName, labelToken, Seq(property), argumentIds, indexOrder, unique = false, s"$propName ENDS WITH ${expressionStringifier(valueExpr)}", indexType)
-      case NodeIndexSeek(idName, labelToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(PointFunction(arg), distance, inclusive))), argumentIds, indexOrder, indexType) =>
-        pointDistanceNodeIndexSeek(idName, labelToken, properties, arg, distance, argumentIds, indexOrder, inclusive = inclusive, indexType)
-      case NodeIndexSeek(idName, labelToken, properties,
-        RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
-          PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight)))), argumentIds, indexOrder, indexType) =>
-        pointBoundingBoxNodeIndexSeek(idName, labelToken, properties, lowerLeft, upperRight, argumentIds, indexOrder, indexType)
+        nodeIndexOperator(
+          idName,
+          labelToken,
+          Seq(property),
+          argumentIds,
+          indexOrder,
+          unique = false,
+          s"$propName ENDS WITH ${expressionStringifier(valueExpr)}",
+          indexType
+        )
+      case NodeIndexSeek(
+          idName,
+          labelToken,
+          properties,
+          RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(
+            PointFunction(arg),
+            distance,
+            inclusive
+          ))),
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
+        pointDistanceNodeIndexSeek(
+          idName,
+          labelToken,
+          properties,
+          arg,
+          distance,
+          argumentIds,
+          indexOrder,
+          inclusive = inclusive,
+          indexType
+        )
+      case NodeIndexSeek(
+          idName,
+          labelToken,
+          properties,
+          RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
+            PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight))
+          )),
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
+        pointBoundingBoxNodeIndexSeek(
+          idName,
+          labelToken,
+          properties,
+          lowerLeft,
+          upperRight,
+          argumentIds,
+          indexOrder,
+          indexType
+        )
       case NodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
@@ -430,52 +587,312 @@ object LogicalPlanToPlanBuilderString {
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
         nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = true, queryStr, indexType)
-      case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
-      PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight)))), argumentIds, indexOrder, indexType) =>
-        pointBoundingBoxRelationshipIndexSeek(idName, start, end, typeToken, properties, lowerLeft, upperRight, argumentIds, indexOrder, indexType, directed = true)
-      case UndirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
-      PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight)))), argumentIds, indexOrder, indexType) =>
-        pointBoundingBoxRelationshipIndexSeek(idName, start, end, typeToken, properties, lowerLeft, upperRight, argumentIds, indexOrder, indexType, directed = false)
-      case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(
-      PointDistanceRange(PointFunction(point), distance, inclusive))), argumentIds, indexOrder, indexType) =>
-        pointDistanceRelationshipIndexSeek(idName, start, end, typeToken, properties, point, distance, argumentIds, indexOrder, indexType, directed = true, inclusive)
-      case UndirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(
-      PointDistanceRange(PointFunction(point), distance, inclusive))), argumentIds, indexOrder, indexType) =>
-        pointDistanceRelationshipIndexSeek(idName, start, end, typeToken, properties, point, distance, argumentIds, indexOrder, indexType, directed = false, inclusive)
-      case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
+      case DirectedRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
+            PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight))
+          )),
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
+        pointBoundingBoxRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          lowerLeft,
+          upperRight,
+          argumentIds,
+          indexOrder,
+          indexType,
+          directed = true
+        )
+      case UndirectedRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
+            PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight))
+          )),
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
+        pointBoundingBoxRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          lowerLeft,
+          upperRight,
+          argumentIds,
+          indexOrder,
+          indexType,
+          directed = false
+        )
+      case DirectedRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          RangeQueryExpression(PointDistanceSeekRangeWrapper(
+            PointDistanceRange(PointFunction(point), distance, inclusive)
+          )),
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
+        pointDistanceRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          point,
+          distance,
+          argumentIds,
+          indexOrder,
+          indexType,
+          directed = true,
+          inclusive
+        )
+      case UndirectedRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          RangeQueryExpression(PointDistanceSeekRangeWrapper(
+            PointDistanceRange(PointFunction(point), distance, inclusive)
+          )),
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
+        pointDistanceRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          point,
+          distance,
+          argumentIds,
+          indexOrder,
+          indexType,
+          directed = false,
+          inclusive
+        )
+      case DirectedRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
-        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = true, queryStr, indexType)
-      case UndirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          directed = true,
+          queryStr,
+          indexType
+        )
+      case UndirectedRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
-        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = false, queryStr, indexType)
-      case DirectedRelationshipIndexScan(idName, start, end, typeToken, properties, argumentIds, indexOrder, indexType) =>
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          directed = false,
+          queryStr,
+          indexType
+        )
+      case DirectedRelationshipIndexScan(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
         val propNames = properties.map(_.propertyKeyToken.name)
-        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = true, propNames.mkString(", "), indexType)
-      case UndirectedRelationshipIndexScan(idName, start, end, typeToken, properties, argumentIds, indexOrder, indexType) =>
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          directed = true,
+          propNames.mkString(", "),
+          indexType
+        )
+      case UndirectedRelationshipIndexScan(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
         val propNames = properties.map(_.propertyKeyToken.name)
-        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = false, propNames.mkString(", "), indexType)
-      case DirectedRelationshipIndexContainsScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          directed = false,
+          propNames.mkString(", "),
+          indexType
+        )
+      case DirectedRelationshipIndexContainsScan(
+          idName,
+          start,
+          end,
+          typeToken,
+          property,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
         val propName = property.propertyKeyToken.name
-        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = true,s"$propName CONTAINS ${expressionStringifier(valueExpr)}", indexType)
-      case UndirectedRelationshipIndexContainsScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          Seq(property),
+          argumentIds,
+          indexOrder,
+          directed = true,
+          s"$propName CONTAINS ${expressionStringifier(valueExpr)}",
+          indexType
+        )
+      case UndirectedRelationshipIndexContainsScan(
+          idName,
+          start,
+          end,
+          typeToken,
+          property,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
         val propName = property.propertyKeyToken.name
-        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = false,s"$propName CONTAINS ${expressionStringifier(valueExpr)}", indexType)
-      case DirectedRelationshipIndexEndsWithScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          Seq(property),
+          argumentIds,
+          indexOrder,
+          directed = false,
+          s"$propName CONTAINS ${expressionStringifier(valueExpr)}",
+          indexType
+        )
+      case DirectedRelationshipIndexEndsWithScan(
+          idName,
+          start,
+          end,
+          typeToken,
+          property,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
         val propName = property.propertyKeyToken.name
-        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = true,s"$propName ENDS WITH ${expressionStringifier(valueExpr)}", indexType)
-      case UndirectedRelationshipIndexEndsWithScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          Seq(property),
+          argumentIds,
+          indexOrder,
+          directed = true,
+          s"$propName ENDS WITH ${expressionStringifier(valueExpr)}",
+          indexType
+        )
+      case UndirectedRelationshipIndexEndsWithScan(
+          idName,
+          start,
+          end,
+          typeToken,
+          property,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
         val propName = property.propertyKeyToken.name
-        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = false,s"$propName ENDS WITH ${expressionStringifier(valueExpr)}", indexType)
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          Seq(property),
+          argumentIds,
+          indexOrder,
+          directed = false,
+          s"$propName ENDS WITH ${expressionStringifier(valueExpr)}",
+          indexType
+        )
       case RollUpApply(_, _, collectionName, variableToCollect) =>
         s"""${wrapInQuotations(collectionName)}, ${wrapInQuotations(variableToCollect)}"""
       case ForeachApply(_, _, variable, expression) =>
         Seq(variable, expressionStringifier(expression)).map(wrapInQuotations).mkString(", ")
-      case ConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
+      case ConditionalApply(_, _, items)     => wrapInQuotationsAndMkString(items)
       case AntiConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
-      case LetSemiApply(_, _, idName) => wrapInQuotations(idName)
-      case LetAntiSemiApply(_, _, idName) => wrapInQuotations(idName)
+      case LetSemiApply(_, _, idName)        => wrapInQuotations(idName)
+      case LetAntiSemiApply(_, _, idName)    => wrapInQuotations(idName)
       case TriadicSelection(_, _, positivePredicate, sourceId, seenId, targetId) =>
         s"$positivePredicate, ${wrapInQuotationsAndMkString(Seq(sourceId, seenId, targetId))}"
       case TriadicBuild(_, sourceId, seenId, triadicSelectionId) =>
@@ -484,16 +901,22 @@ object LogicalPlanToPlanBuilderString {
         s"${triadicSelectionId.value.x}, $positivePredicate, ${wrapInQuotationsAndMkString(Seq(sourceId, targetId))}"
       case AssertSameNode(idName, _, _) =>
         wrapInQuotations(idName)
-      case Prober(_, _) => "Prober.NoopProbe" // We do not preserve the object reference through the string transformation
+      case Prober(_, _) =>
+        "Prober.NoopProbe" // We do not preserve the object reference through the string transformation
       case RemoveLabels(_, idName, labelNames) => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name))
-      case SetLabels(_, idName, labelNames) => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name))
+      case SetLabels(_, idName, labelNames)    => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name))
       case LoadCSV(_, url, variableName, format, fieldTerminator, _, _) =>
         val fieldTerminatorStr = fieldTerminator.fold("None")(ft => s"Some(${wrapInQuotations(ft)})")
-        Seq(wrapInQuotations(expressionStringifier(url)), wrapInQuotations(variableName), format, fieldTerminatorStr).mkString(", ")
-      case Apply(_, _, fromSubquery) => s"fromSubquery = $fromSubquery"
-      case Eager(_, reasons)  => reasons.map(eagernessReasonStr).mkString("Seq(", ", ", ")")
+        Seq(
+          wrapInQuotations(expressionStringifier(url)),
+          wrapInQuotations(variableName),
+          format,
+          fieldTerminatorStr
+        ).mkString(", ")
+      case Apply(_, _, fromSubquery)           => s"fromSubquery = $fromSubquery"
+      case Eager(_, reasons)                   => reasons.map(eagernessReasonStr).mkString("Seq(", ", ", ")")
       case TransactionForeach(_, _, batchSize) => expressionStringifier(batchSize)
-      case TransactionApply(_, _, batchSize) => expressionStringifier(batchSize)
+      case TransactionApply(_, _, batchSize)   => expressionStringifier(batchSize)
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[NodeIndexSeekLeafPlan]) =>
@@ -502,25 +925,29 @@ object LogicalPlanToPlanBuilderString {
     plansWithContent.orElse(plansWithContent2).applyOrElse(logicalPlan, (_: LogicalPlan) => "")
   }
 
-  private def queryExpressionStr(valueExpr: QueryExpression[Expression],
-                                 propNames: Seq[String]): String = {
+  private def queryExpressionStr(valueExpr: QueryExpression[Expression], propNames: Seq[String]): String = {
     valueExpr match {
-      case SingleQueryExpression(expression)                                     => s"${propNames.head} = ${expressionStringifier(expression)}"
-      case ManyQueryExpression(ListLiteral(expressions))                         => s"${propNames.head} = ${expressions.map(expressionStringifier(_)).mkString(" OR ")}"
-      case ManyQueryExpression(expr)                                             => s"${propNames.head} IN ${expressionStringifier(expr)}"
-      case ExistenceQueryExpression()                                            => propNames.head
-      case RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(expression))) => s"${propNames.head} STARTS WITH ${expressionStringifier(expression)}"
-      case RangeQueryExpression(InequalitySeekRangeWrapper(range))               => rangeStr(range, propNames.head).toString
-      case CompositeQueryExpression(inner)                                       => inner.zip(propNames).map { case (qe, propName) => queryExpressionStr(qe, Seq(propName)) }.mkString(", ")
-      case _                                                                     => ""
+      case SingleQueryExpression(expression) => s"${propNames.head} = ${expressionStringifier(expression)}"
+      case ManyQueryExpression(ListLiteral(expressions)) =>
+        s"${propNames.head} = ${expressions.map(expressionStringifier(_)).mkString(" OR ")}"
+      case ManyQueryExpression(expr)  => s"${propNames.head} IN ${expressionStringifier(expr)}"
+      case ExistenceQueryExpression() => propNames.head
+      case RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(expression))) =>
+        s"${propNames.head} STARTS WITH ${expressionStringifier(expression)}"
+      case RangeQueryExpression(InequalitySeekRangeWrapper(range)) => rangeStr(range, propNames.head).toString
+      case CompositeQueryExpression(inner) => inner.zip(propNames).map { case (qe, propName) =>
+          queryExpressionStr(qe, Seq(propName))
+        }.mkString(", ")
+      case _ => ""
     }
   }
 
   case class RangeStr(pre: Option[(String, String)], expr: String, post: (String, String)) {
+
     override def toString: String = {
       val preStr = pre match {
         case Some((vl, sign)) => s"$vl $sign "
-        case None => ""
+        case None             => ""
       }
       val postStr = s" ${post._1} ${post._2}"
       s"$preStr$expr$postStr"
@@ -529,10 +956,14 @@ object LogicalPlanToPlanBuilderString {
 
   private def rangeStr(range: InequalitySeekRange[Expression], propName: String): RangeStr = {
     range match {
-      case RangeGreaterThan(NonEmptyList(ExclusiveBound(expression))) => RangeStr(None, propName, (">", expressionStringifier(expression)))
-      case RangeGreaterThan(NonEmptyList(InclusiveBound(expression))) => RangeStr(None, propName, (">=", expressionStringifier(expression)))
-      case RangeLessThan(NonEmptyList(ExclusiveBound(expression))) => RangeStr(None, propName, ("<", expressionStringifier(expression)))
-      case RangeLessThan(NonEmptyList(InclusiveBound(expression))) => RangeStr(None, propName, ("<=", expressionStringifier(expression)))
+      case RangeGreaterThan(NonEmptyList(ExclusiveBound(expression))) =>
+        RangeStr(None, propName, (">", expressionStringifier(expression)))
+      case RangeGreaterThan(NonEmptyList(InclusiveBound(expression))) =>
+        RangeStr(None, propName, (">=", expressionStringifier(expression)))
+      case RangeLessThan(NonEmptyList(ExclusiveBound(expression))) =>
+        RangeStr(None, propName, ("<", expressionStringifier(expression)))
+      case RangeLessThan(NonEmptyList(InclusiveBound(expression))) =>
+        RangeStr(None, propName, ("<=", expressionStringifier(expression)))
       case RangeBetween(greaterThan, lessThan) =>
         val gt = rangeStr(greaterThan, propName)
         val lt = rangeStr(lessThan, propName)
@@ -548,14 +979,16 @@ object LogicalPlanToPlanBuilderString {
     case '<' => '>'
   }
 
-  private def nodeIndexOperator(idName: String,
-                                labelToken: LabelToken,
-                                properties: Seq[IndexedProperty],
-                                argumentIds: Set[String],
-                                indexOrder: IndexOrder,
-                                unique: Boolean,
-                                parenthesesContent: String,
-                                indexType: IndexType): String = {
+  private def nodeIndexOperator(
+    idName: String,
+    labelToken: LabelToken,
+    properties: Seq[IndexedProperty],
+    argumentIds: Set[String],
+    indexOrder: IndexOrder,
+    unique: Boolean,
+    parenthesesContent: String,
+    indexType: IndexType
+  ): String = {
     val indexStr = s"$idName:${labelToken.name}($parenthesesContent)"
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
@@ -567,16 +1000,18 @@ object LogicalPlanToPlanBuilderString {
     s""" "$indexStr"$indexOrderStr$argStr$getValueStr$uniqueStr$indexTypeStr """.trim
   }
 
-  private def relationshipIndexOperator(idName: String,
-                                        start: String,
-                                        end: String,
-                                        typeToken: RelationshipTypeToken,
-                                        properties: Seq[IndexedProperty],
-                                        argumentIds: Set[String],
-                                        indexOrder: IndexOrder,
-                                        directed: Boolean,
-                                        parenthesesContent: String,
-                                        indexType: IndexType): String = {
+  private def relationshipIndexOperator(
+    idName: String,
+    start: String,
+    end: String,
+    typeToken: RelationshipTypeToken,
+    properties: Seq[IndexedProperty],
+    argumentIds: Set[String],
+    indexOrder: IndexOrder,
+    directed: Boolean,
+    parenthesesContent: String,
+    indexType: IndexType
+  ): String = {
     val rarrow = if (directed) "->" else "-"
     val indexStr = s"($start)-[$idName:${typeToken.name}($parenthesesContent)]$rarrow($end)"
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
@@ -590,7 +1025,8 @@ object LogicalPlanToPlanBuilderString {
 
   private def indexedPropertyGetValueBehaviors(properties: Seq[IndexedProperty]): String = {
     properties.map {
-      case IndexedProperty(PropertyKeyToken(name, _), getValueBehavior, _) => s"${wrapInQuotations(name)} -> ${objectName(getValueBehavior)}"
+      case IndexedProperty(PropertyKeyToken(name, _), getValueBehavior, _) =>
+        s"${wrapInQuotations(name)} -> ${objectName(getValueBehavior)}"
     }.mkString("Map(", ", ", ")")
   }
 
@@ -601,7 +1037,7 @@ object LogicalPlanToPlanBuilderString {
       s"createNodeWithProperties(${wrapInQuotations(idName)}, Seq(${wrapInQuotationsAndMkString(labels.map(_.name))}), ${wrapInQuotations(expressionStringifier(props))})"
   }
 
-  private def createRelationshipToString(rel: CreateRelationship) =  {
+  private def createRelationshipToString(rel: CreateRelationship) = {
     val propString = rel.properties.map(p => s", Some(${wrapInQuotations(expressionStringifier(p))})").getOrElse("")
     s"createRelationship(${wrapInQuotationsAndMkString(Seq(rel.idName, rel.leftNode, rel.relType.name, rel.rightNode))}, ${rel.direction}$propString)"
   }
@@ -629,15 +1065,17 @@ object LogicalPlanToPlanBuilderString {
       s"setPropertyFromMap(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), expressionStringifier(map)))}, $removeOtherProps)"
   }
 
-  private def pointDistanceNodeIndexSeek(idName: String,
-                                         labelToken: LabelToken,
-                                         properties: Seq[IndexedProperty],
-                                         point: Expression,
-                                         distance: Expression,
-                                         argumentIds: Set[String],
-                                         indexOrder: IndexOrder,
-                                         inclusive: Boolean,
-                                         indexType: IndexType): String = {
+  private def pointDistanceNodeIndexSeek(
+    idName: String,
+    labelToken: LabelToken,
+    properties: Seq[IndexedProperty],
+    point: Expression,
+    distance: Expression,
+    argumentIds: Set[String],
+    indexOrder: IndexOrder,
+    inclusive: Boolean,
+    indexType: IndexType
+  ): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
@@ -647,22 +1085,28 @@ object LogicalPlanToPlanBuilderString {
         if (v1 == v2) {
           v1
         } else {
-          throw new UnsupportedOperationException("Index operators with different getValueFromIndex behaviors not supported.")
+          throw new UnsupportedOperationException(
+            "Index operators with different getValueFromIndex behaviors not supported."
+          )
         }
     }
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
-    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(distance)}$indexOrderStr$argStr$getValueStr$inclusiveStr$indexTypeStr """.trim
+    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(
+      distance
+    )}$indexOrderStr$argStr$getValueStr$inclusiveStr$indexTypeStr """.trim
   }
 
-  private def pointBoundingBoxNodeIndexSeek(idName: String,
-                                            labelToken: LabelToken,
-                                            properties: Seq[IndexedProperty],
-                                            lowerLeft: Expression,
-                                            upperRight: Expression,
-                                            argumentIds: Set[String],
-                                            indexOrder: IndexOrder,
-                                            indexType: IndexType): String = {
+  private def pointBoundingBoxNodeIndexSeek(
+    idName: String,
+    labelToken: LabelToken,
+    properties: Seq[IndexedProperty],
+    lowerLeft: Expression,
+    upperRight: Expression,
+    argumentIds: Set[String],
+    indexOrder: IndexOrder,
+    indexType: IndexType
+  ): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
@@ -671,25 +1115,31 @@ object LogicalPlanToPlanBuilderString {
         if (v1 == v2) {
           v1
         } else {
-          throw new UnsupportedOperationException("Index operators with different getValueFromIndex behaviors not supported.")
+          throw new UnsupportedOperationException(
+            "Index operators with different getValueFromIndex behaviors not supported."
+          )
         }
     }
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
-    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(lowerLeft)}", "${expressionStringifier(upperRight)}"$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
+    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(lowerLeft)}", "${expressionStringifier(
+      upperRight
+    )}"$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
   }
 
-  private def pointBoundingBoxRelationshipIndexSeek(idName: String,
-                                                    start: String,
-                                                    end: String,
-                                                    typeToken: RelationshipTypeToken,
-                                                    properties: Seq[IndexedProperty],
-                                                    lowerLeft: Expression,
-                                                    upperRight: Expression,
-                                                    argumentIds: Set[String],
-                                                    indexOrder: IndexOrder,
-                                                    indexType: IndexType,
-                                                    directed: Boolean): String = {
+  private def pointBoundingBoxRelationshipIndexSeek(
+    idName: String,
+    start: String,
+    end: String,
+    typeToken: RelationshipTypeToken,
+    properties: Seq[IndexedProperty],
+    lowerLeft: Expression,
+    upperRight: Expression,
+    argumentIds: Set[String],
+    indexOrder: IndexOrder,
+    indexType: IndexType,
+    directed: Boolean
+  ): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
@@ -698,27 +1148,33 @@ object LogicalPlanToPlanBuilderString {
         if (v1 == v2) {
           v1
         } else {
-          throw new UnsupportedOperationException("Index operators with different getValueFromIndex behaviors not supported.")
+          throw new UnsupportedOperationException(
+            "Index operators with different getValueFromIndex behaviors not supported."
+          )
         }
     }
     val directedString = s", directed = $directed"
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
-    s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(lowerLeft)}", "${expressionStringifier(upperRight)}"$directedString$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
+    s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(
+      lowerLeft
+    )}", "${expressionStringifier(upperRight)}"$directedString$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
   }
 
-  private def pointDistanceRelationshipIndexSeek(idName: String,
-                                                 start: String,
-                                                 end: String,
-                                                 typeToken: RelationshipTypeToken,
-                                                 properties: Seq[IndexedProperty],
-                                                 point: Expression,
-                                                 distance: Expression,
-                                                 argumentIds: Set[String],
-                                                 indexOrder: IndexOrder,
-                                                 indexType: IndexType,
-                                                 directed: Boolean,
-                                                 inclusive: Boolean): String = {
+  private def pointDistanceRelationshipIndexSeek(
+    idName: String,
+    start: String,
+    end: String,
+    typeToken: RelationshipTypeToken,
+    properties: Seq[IndexedProperty],
+    point: Expression,
+    distance: Expression,
+    argumentIds: Set[String],
+    indexOrder: IndexOrder,
+    indexType: IndexType,
+    directed: Boolean,
+    inclusive: Boolean
+  ): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
@@ -727,19 +1183,25 @@ object LogicalPlanToPlanBuilderString {
         if (v1 == v2) {
           v1
         } else {
-          throw new UnsupportedOperationException("Index operators with different getValueFromIndex behaviors not supported.")
+          throw new UnsupportedOperationException(
+            "Index operators with different getValueFromIndex behaviors not supported."
+          )
         }
     }
     val directedStr = s", directed = $directed"
     val inclusiveStr = s", inclusive = $inclusive"
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
-    s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(distance)}$directedStr$inclusiveStr$getValueStr$indexOrderStr$argStr$indexTypeStr """.trim
+    s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(
+      point
+    )}", ${expressionStringifier(
+      distance
+    )}$directedStr$inclusiveStr$getValueStr$indexOrderStr$argStr$indexTypeStr """.trim
   }
 
   private def idsStr(ids: SeekableArgs) = {
     val idsStr = ids match {
-      case SingleSeekableArg(expr) => expressionStringifier(expr)
+      case SingleSeekableArg(expr)                    => expressionStringifier(expr)
       case ManySeekableArgs(ListLiteral(expressions)) => expressions.map(expressionStringifier(_)).mkString(", ")
       // This will not be working code, but can still be useful during debugging.
       case ManySeekableArgs(expr) => expressionStringifier(expr)
@@ -750,7 +1212,7 @@ object LogicalPlanToPlanBuilderString {
   private def integerString(count: Expression) = {
     count match {
       case SignedDecimalIntegerLiteral(i) => i
-      case _ => "/* " + count + "*/"
+      case _                              => "/* " + count + "*/"
     }
   }
 
@@ -758,27 +1220,32 @@ object LogicalPlanToPlanBuilderString {
     sortItems.map(sortItemStr).mkString("Seq(", ", ", ")")
   }
 
-  private def sortItemStr(si: ColumnOrder): String =  s""" ${si.getClass.getSimpleName}("${si.id}") """.trim
+  private def sortItemStr(si: ColumnOrder): String = s""" ${si.getClass.getSimpleName}("${si.id}") """.trim
 
   private def eagernessReasonStr(reason: Reason): String = {
     val prefix = objectName(EagernessReason)
     val suffix = reason match {
-      case EagernessReason.Unknown => objectName(EagernessReason.Unknown)
+      case EagernessReason.Unknown             => objectName(EagernessReason.Unknown)
       case EagernessReason.UpdateStrategyEager => objectName(EagernessReason.UpdateStrategyEager)
-      case EagernessReason.OverlappingSetLabels(labels) => s"${objectName(EagernessReason.OverlappingSetLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
-      case EagernessReason.OverlappingDeletedLabels(labels) => s"${objectName(EagernessReason.OverlappingDeletedLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
-      case EagernessReason.DeleteOverlap(identifiers) => s"${objectName(EagernessReason.DeleteOverlap)}(Seq(${wrapInQuotationsAndMkString(identifiers)}))"
+      case EagernessReason.OverlappingSetLabels(labels) =>
+        s"${objectName(EagernessReason.OverlappingSetLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
+      case EagernessReason.OverlappingDeletedLabels(labels) =>
+        s"${objectName(EagernessReason.OverlappingDeletedLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
+      case EagernessReason.DeleteOverlap(identifiers) =>
+        s"${objectName(EagernessReason.DeleteOverlap)}(Seq(${wrapInQuotationsAndMkString(identifiers)}))"
     }
     s"$prefix.$suffix"
   }
 
   private def variablePredicate(nodePredicate: Option[VariablePredicate], name: String) = {
-    nodePredicate.map(vp => s""", $name = Predicate("${vp.variable.name}", "${expressionStringifier(vp.predicate)}") """.trim).getOrElse("")
+    nodePredicate.map(vp =>
+      s""", $name = Predicate("${vp.variable.name}", "${expressionStringifier(vp.predicate)}") """.trim
+    ).getOrElse("")
   }
 
   private def relTypeStr(types: Seq[RelTypeName]) = {
     types match {
-      case Seq() => ""
+      case Seq()        => ""
       case head +: tail => s":${head.name}${tail.map(t => s"|${t.name}").mkString("")}"
     }
   }
@@ -793,7 +1260,8 @@ object LogicalPlanToPlanBuilderString {
 
   private def wrapInQuotations(c: String): String = "\"" + c + "\""
 
-  private def wrapInQuotationsAndMkString(strings: Iterable[String]): String = strings.map(wrapInQuotations).mkString(", ")
+  private def wrapInQuotationsAndMkString(strings: Iterable[String]): String =
+    strings.map(wrapInQuotations).mkString(", ")
 
   private def objectName(obj: AnyRef): String = {
     val str = obj.getClass.getSimpleName
@@ -803,7 +1271,7 @@ object LogicalPlanToPlanBuilderString {
   private def arrows(dir: SemanticDirection): (String, String) = dir match {
     case SemanticDirection.OUTGOING => ("-", "->")
     case SemanticDirection.INCOMING => ("<-", "-")
-    case SemanticDirection.BOTH => ("-", "-")
+    case SemanticDirection.BOTH     => ("-", "-")
   }
 
   private def indexTypeToNamedArgumentString(indexType: IndexType): String = {
@@ -815,6 +1283,6 @@ object PointFunction {
 
   def unapply(point: Expression): Option[Expression] = point match {
     case FunctionInvocation(_, FunctionName("point"), _, args) => Some(args.head)
-    case _ => None
+    case _                                                     => None
   }
 }

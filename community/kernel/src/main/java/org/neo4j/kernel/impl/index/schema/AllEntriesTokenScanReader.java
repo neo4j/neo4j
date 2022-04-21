@@ -24,6 +24,4 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 /**
  * Iterates over all token data in a token index.
  */
-public interface AllEntriesTokenScanReader extends BoundedIterable<EntityTokenRange>
-{
-}
+public interface AllEntriesTokenScanReader extends BoundedIterable<EntityTokenRange> {}

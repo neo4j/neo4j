@@ -19,9 +19,16 @@
  */
 package org.neo4j.annotations.service;
 
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.collections.api.multimap.MutableMultimap;
-import org.eclipse.collections.impl.factory.Multimaps;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
+import static javax.tools.Diagnostic.Kind.ERROR;
+import static javax.tools.Diagnostic.Kind.NOTE;
+import static javax.tools.StandardLocation.CLASS_OUTPUT;
+import static org.apache.commons.lang3.StringUtils.substringBefore;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
+import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
+import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -45,212 +52,179 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.FileObject;
-
-import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
-import static javax.tools.Diagnostic.Kind.ERROR;
-import static javax.tools.Diagnostic.Kind.NOTE;
-import static javax.tools.StandardLocation.CLASS_OUTPUT;
-import static org.apache.commons.lang3.StringUtils.substringBefore;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
-import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
-import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.multimap.MutableMultimap;
+import org.eclipse.collections.impl.factory.Multimaps;
 
 /**
  * Handles {@link Service} and {@link ServiceProvider} annotations. For each service type it collects associated service providers and creates
  * corresponding configuration file in {@code /META-INF/services/}.
  */
-public class ServiceAnnotationProcessor extends AbstractProcessor
-{
-    private static final boolean ENABLE_DEBUG = Boolean.getBoolean( "enableAnnotationLogging" );
+public class ServiceAnnotationProcessor extends AbstractProcessor {
+    private static final boolean ENABLE_DEBUG = Boolean.getBoolean("enableAnnotationLogging");
     private final MutableMultimap<TypeElement, TypeElement> serviceProviders = Multimaps.mutable.list.empty();
     private final String newLine;
     private Types typeUtils;
     private Elements elementUtils;
 
-    public ServiceAnnotationProcessor()
-    {
-        this( DEFAULT_NEW_LINE );
+    public ServiceAnnotationProcessor() {
+        this(DEFAULT_NEW_LINE);
     }
 
-    public ServiceAnnotationProcessor( String newLine )
-    {
+    public ServiceAnnotationProcessor(String newLine) {
         this.newLine = newLine;
     }
 
     @Override
-    public synchronized void init( ProcessingEnvironment processingEnv )
-    {
-        super.init( processingEnv );
+    public synchronized void init(ProcessingEnvironment processingEnv) {
+        super.init(processingEnv);
         typeUtils = processingEnv.getTypeUtils();
         elementUtils = processingEnv.getElementUtils();
     }
 
     @Override
-    public Set<String> getSupportedAnnotationTypes()
-    {
-        return newSetWith( ServiceProvider.class.getName() );
+    public Set<String> getSupportedAnnotationTypes() {
+        return newSetWith(ServiceProvider.class.getName());
     }
 
     @Override
-    public SourceVersion getSupportedSourceVersion()
-    {
+    public SourceVersion getSupportedSourceVersion() {
         return SourceVersion.latestSupported();
     }
 
     @Override
-    public boolean process( Set<? extends TypeElement> annotations, RoundEnvironment roundEnv )
-    {
-        try
-        {
-            if ( roundEnv.processingOver() )
-            {
-                if ( !roundEnv.errorRaised() )
-                {
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        try {
+            if (roundEnv.processingOver()) {
+                if (!roundEnv.errorRaised()) {
                     generateConfigs();
                 }
+            } else {
+                scan(roundEnv);
             }
-            else
-            {
-                scan( roundEnv );
-            }
-        }
-        catch ( Exception e )
-        {
-            error( "Service annotation processor failed", e );
+        } catch (Exception e) {
+            error("Service annotation processor failed", e);
         }
         return false;
     }
 
-    private void scan( RoundEnvironment roundEnv )
-    {
-        final Set<TypeElement> elements = roundEnv.getElementsAnnotatedWith( ServiceProvider.class ).stream().map( TypeElement.class::cast ).collect( toSet() );
-        info( "Processing service providers: " + elements.stream().map( Object::toString ).sorted( ).collect( toList() ) );
-        for ( TypeElement serviceProvider : elements )
-        {
-            getImplementedService( serviceProvider ).ifPresent( service ->
-            {
-                info( format( "Service %s provided by %s", service, serviceProvider ) );
-                serviceProviders.put( service, serviceProvider );
-            } );
+    private void scan(RoundEnvironment roundEnv) {
+        final Set<TypeElement> elements = roundEnv.getElementsAnnotatedWith(ServiceProvider.class).stream()
+                .map(TypeElement.class::cast)
+                .collect(toSet());
+        info("Processing service providers: "
+                + elements.stream().map(Object::toString).sorted().collect(toList()));
+        for (TypeElement serviceProvider : elements) {
+            getImplementedService(serviceProvider).ifPresent(service -> {
+                info(format("Service %s provided by %s", service, serviceProvider));
+                serviceProviders.put(service, serviceProvider);
+            });
         }
     }
 
-    private Optional<TypeElement> getImplementedService( TypeElement serviceProvider )
-    {
-        final Set<TypeMirror> types = getTypeWithSupertypes( serviceProvider.asType() );
-        final List<TypeMirror> services = types.stream().filter( this::isService ).collect( toList() );
+    private Optional<TypeElement> getImplementedService(TypeElement serviceProvider) {
+        final Set<TypeMirror> types = getTypeWithSupertypes(serviceProvider.asType());
+        final List<TypeMirror> services = types.stream().filter(this::isService).collect(toList());
 
-        if ( services.isEmpty() )
-        {
-            error( format( "Service provider %s neither has ascendants nor itself annotated with @Service)", serviceProvider ), serviceProvider );
+        if (services.isEmpty()) {
+            error(
+                    format(
+                            "Service provider %s neither has ascendants nor itself annotated with @Service)",
+                            serviceProvider),
+                    serviceProvider);
             return Optional.empty();
         }
 
-        if ( services.size() > 1 )
-        {
-            error( format( "Service provider %s has multiple ascendants annotated with @Service: %s", serviceProvider, services ), serviceProvider );
+        if (services.size() > 1) {
+            error(
+                    format(
+                            "Service provider %s has multiple ascendants annotated with @Service: %s",
+                            serviceProvider, services),
+                    serviceProvider);
             return Optional.empty();
         }
 
-        return Optional.of( (TypeElement) typeUtils.asElement( services.get( 0 ) ) );
+        return Optional.of((TypeElement) typeUtils.asElement(services.get(0)));
     }
 
-    private boolean isService( TypeMirror type )
-    {
-        return typeUtils.asElement( type ).getAnnotation( Service.class ) != null;
+    private boolean isService(TypeMirror type) {
+        return typeUtils.asElement(type).getAnnotation(Service.class) != null;
     }
 
-    private Set<TypeMirror> getTypeWithSupertypes( TypeMirror type )
-    {
+    private Set<TypeMirror> getTypeWithSupertypes(TypeMirror type) {
         final Set<TypeMirror> allTypes = new HashSet<>();
-        allTypes.add( type );
-        final List<? extends TypeMirror> directSupertypes = typeUtils.directSupertypes( type );
-        directSupertypes.forEach( directSupertype -> allTypes.addAll( getTypeWithSupertypes( directSupertype ) ) );
+        allTypes.add(type);
+        final List<? extends TypeMirror> directSupertypes = typeUtils.directSupertypes(type);
+        directSupertypes.forEach(directSupertype -> allTypes.addAll(getTypeWithSupertypes(directSupertype)));
         return allTypes;
     }
 
-    private void generateConfigs() throws IOException
-    {
-        for ( final TypeElement service : serviceProviders.keySet() )
-        {
-            final String path = "META-INF/services/" + elementUtils.getBinaryName( service );
-            info( "Generating service config file: " + path );
+    private void generateConfigs() throws IOException {
+        for (final TypeElement service : serviceProviders.keySet()) {
+            final String path = "META-INF/services/" + elementUtils.getBinaryName(service);
+            info("Generating service config file: " + path);
 
-            final SortedSet<String> oldProviders = loadIfExists( path );
+            final SortedSet<String> oldProviders = loadIfExists(path);
             final SortedSet<String> newProviders = new TreeSet<>();
 
-            serviceProviders.get( service ).forEach( providerType ->
-            {
-                final String providerName = elementUtils.getBinaryName( providerType ).toString();
-                newProviders.add( providerName );
-            } );
+            serviceProviders.get(service).forEach(providerType -> {
+                final String providerName =
+                        elementUtils.getBinaryName(providerType).toString();
+                newProviders.add(providerName);
+            });
 
-            if ( oldProviders.containsAll( newProviders ) )
-            {
-                info( "No new service providers found" );
+            if (oldProviders.containsAll(newProviders)) {
+                info("No new service providers found");
                 return;
             }
-            newProviders.addAll( oldProviders );
+            newProviders.addAll(oldProviders);
 
-            final FileObject file = processingEnv.getFiler().createResource( CLASS_OUTPUT, "", path );
-            try ( BufferedWriter writer = new BufferedWriter( file.openWriter() ) )
-            {
-                info( "Writing service providers: " + newProviders );
-                for ( final String provider : newProviders )
-                {
-                    writer.write( provider );
-                    writer.write( newLine );
+            final FileObject file = processingEnv.getFiler().createResource(CLASS_OUTPUT, "", path);
+            try (BufferedWriter writer = new BufferedWriter(file.openWriter())) {
+                info("Writing service providers: " + newProviders);
+                for (final String provider : newProviders) {
+                    writer.write(provider);
+                    writer.write(newLine);
                 }
             }
         }
     }
 
-    private SortedSet<String> loadIfExists( String path )
-    {
+    private SortedSet<String> loadIfExists(String path) {
         final SortedSet<String> result = new TreeSet<>();
-        try
-        {
-            final FileObject file = processingEnv.getFiler().getResource( CLASS_OUTPUT, "", path );
+        try {
+            final FileObject file = processingEnv.getFiler().getResource(CLASS_OUTPUT, "", path);
             final List<String> lines = new ArrayList<>();
-            try ( BufferedReader in = new BufferedReader( new InputStreamReader( file.openInputStream(), StandardCharsets.UTF_8 ) ) )
-            {
+            try (BufferedReader in =
+                    new BufferedReader(new InputStreamReader(file.openInputStream(), StandardCharsets.UTF_8))) {
                 String line;
-                while ( (line = in.readLine()) != null )
-                {
-                    lines.add( line );
+                while ((line = in.readLine()) != null) {
+                    lines.add(line);
                 }
             }
             lines.stream()
-                    .map( s -> substringBefore( s, "#" ) )
-                    .map( String::trim )
-                    .filter( StringUtils::isNotEmpty )
-                    .forEach( result::add );
-            info( "Loaded existing providers: " + result );
-        }
-        catch ( IOException ignore )
-        {
-            info( "No existing providers loaded" );
+                    .map(s -> substringBefore(s, "#"))
+                    .map(String::trim)
+                    .filter(StringUtils::isNotEmpty)
+                    .forEach(result::add);
+            info("Loaded existing providers: " + result);
+        } catch (IOException ignore) {
+            info("No existing providers loaded");
         }
         return result;
     }
 
-    private void info( String msg )
-    {
-        if ( ENABLE_DEBUG )
-        {
-            processingEnv.getMessager().printMessage( NOTE, msg );
+    private void info(String msg) {
+        if (ENABLE_DEBUG) {
+            processingEnv.getMessager().printMessage(NOTE, msg);
         }
     }
 
-    private void error( String msg, Exception e )
-    {
-        processingEnv.getMessager().printMessage( ERROR, msg + ": " + getStackTrace( e ) );
+    private void error(String msg, Exception e) {
+        processingEnv.getMessager().printMessage(ERROR, msg + ": " + getStackTrace(e));
     }
 
-    private void error( String msg, Element element )
-    {
-        processingEnv.getMessager().printMessage( ERROR, msg, element );
+    private void error(String msg, Element element) {
+        processingEnv.getMessager().printMessage(ERROR, msg, element);
     }
 }

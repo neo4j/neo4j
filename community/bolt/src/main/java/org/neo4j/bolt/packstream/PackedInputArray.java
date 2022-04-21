@@ -23,59 +23,50 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 
-public class PackedInputArray implements PackInput
-{
+public class PackedInputArray implements PackInput {
     private final ByteArrayInputStream bytes;
     private final DataInputStream data;
 
-    public PackedInputArray( byte[] bytes )
-    {
-        this.bytes = new ByteArrayInputStream( bytes );
-        this.data = new DataInputStream( this.bytes );
+    public PackedInputArray(byte[] bytes) {
+        this.bytes = new ByteArrayInputStream(bytes);
+        this.data = new DataInputStream(this.bytes);
     }
 
     @Override
-    public byte readByte() throws IOException
-    {
+    public byte readByte() throws IOException {
         return data.readByte();
     }
 
     @Override
-    public short readShort() throws IOException
-    {
+    public short readShort() throws IOException {
         return data.readShort();
     }
 
     @Override
-    public int readInt() throws IOException
-    {
+    public int readInt() throws IOException {
         return data.readInt();
     }
 
     @Override
-    public long readLong() throws IOException
-    {
+    public long readLong() throws IOException {
         return data.readLong();
     }
 
     @Override
-    public double readDouble() throws IOException
-    {
+    public double readDouble() throws IOException {
         return data.readDouble();
     }
 
     @Override
-    public PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException
-    {
+    public PackInput readBytes(byte[] into, int offset, int toRead) throws IOException {
         // TODO: fix the interface and all implementations - we should probably
         // TODO: return the no of bytes read instead of the instance
-        data.read( into, offset, toRead );
+        data.read(into, offset, toRead);
         return this;
     }
 
     @Override
-    public byte peekByte() throws IOException
-    {
+    public byte peekByte() throws IOException {
         data.mark(1);
         byte value = data.readByte();
         data.reset();
@@ -83,8 +74,7 @@ public class PackedInputArray implements PackInput
     }
 
     @Override
-    public int readableBytes()
-    {
+    public int readableBytes() {
         return bytes.available();
     }
 }

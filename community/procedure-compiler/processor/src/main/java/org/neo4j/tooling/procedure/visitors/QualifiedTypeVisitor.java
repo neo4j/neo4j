@@ -22,12 +22,10 @@ package org.neo4j.tooling.procedure.visitors;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.SimpleElementVisitor8;
 
-public class QualifiedTypeVisitor extends SimpleElementVisitor8<CharSequence, Void>
-{
+public class QualifiedTypeVisitor extends SimpleElementVisitor8<CharSequence, Void> {
 
     @Override
-    public CharSequence visitType( TypeElement type, Void ignored )
-    {
+    public CharSequence visitType(TypeElement type, Void ignored) {
         return type.getQualifiedName();
     }
 }

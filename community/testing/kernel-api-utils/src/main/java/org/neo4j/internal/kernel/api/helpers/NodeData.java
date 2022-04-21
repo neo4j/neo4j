@@ -20,46 +20,36 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Map;
-
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.values.storable.Value;
 
-class NodeData
-{
+class NodeData {
     final long id;
     private final long[] labels;
-    final Map<Integer,Value> properties;
+    final Map<Integer, Value> properties;
 
-    NodeData( long id, long[] labels, Map<Integer,Value> properties )
-    {
+    NodeData(long id, long[] labels, Map<Integer, Value> properties) {
         this.id = id;
         this.labels = labels;
         this.properties = properties;
     }
 
-    TokenSet labelSet()
-    {
-        return new TokenSet()
-        {
+    TokenSet labelSet() {
+        return new TokenSet() {
             @Override
-            public int numberOfTokens()
-            {
+            public int numberOfTokens() {
                 return labels.length;
             }
 
             @Override
-            public int token( int offset )
-            {
+            public int token(int offset) {
                 return (int) labels[offset];
             }
 
             @Override
-            public boolean contains( int token )
-            {
-                for ( long label : labels )
-                {
-                    if ( label == token )
-                    {
+            public boolean contains(int token) {
+                for (long label : labels) {
+                    if (label == token) {
                         return true;
                     }
                 }
@@ -67,8 +57,7 @@ class NodeData
             }
 
             @Override
-            public long[] all()
-            {
+            public long[] all() {
                 return labels;
             }
         };

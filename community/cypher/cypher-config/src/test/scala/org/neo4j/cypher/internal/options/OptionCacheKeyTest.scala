@@ -27,7 +27,7 @@ class OptionCacheKeyTest extends CypherFunSuite {
   case class MyInner(someString: String, anotherString: String)
 
   implicit val cacheKeyInts: OptionCacheKey[Int] = OptionCacheKey.create(value => s"the number $value")
-  implicit val cacheKeyStrings: OptionCacheKey[String] = OptionCacheKey.create(value  => s"text $value")
+  implicit val cacheKeyStrings: OptionCacheKey[String] = OptionCacheKey.create(value => s"text $value")
   implicit val cacheKeyInner: OptionCacheKey[MyInner] = OptionCacheKey.derive[MyInner]
   implicit val cacheKeyOuter: OptionCacheKey[MyOuter] = OptionCacheKey.derive[MyOuter]
 

@@ -25,7 +25,6 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
@@ -33,22 +32,19 @@ import org.neo4j.io.fs.StoreChannel;
  * The class takes a lock on provided file. The lock is valid after a successful call to
  * {@link #checkLock()} until a call to {@link #close()}.
  */
-public class Locker implements Closeable
-{
+public class Locker implements Closeable {
     private final FileSystemAbstraction fileSystemAbstraction;
     private final Path lockFile;
 
     FileLock lockFileLock;
     private StoreChannel lockFileChannel;
 
-    public Locker( FileSystemAbstraction fileSystemAbstraction, Path lockFile )
-    {
+    public Locker(FileSystemAbstraction fileSystemAbstraction, Path lockFile) {
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.lockFile = lockFile;
     }
 
-    public final Path lockFile()
-    {
+    public final Path lockFile() {
         return lockFile;
     }
 
@@ -62,89 +58,71 @@ public class Locker implements Closeable
      *
      * @throws FileLockException if lock could not be acquired
      */
-    public void checkLock()
-    {
-        if ( haveLockAlready() )
-        {
+    public void checkLock() {
+        if (haveLockAlready()) {
             return;
         }
 
-        try
-        {
-            if ( !fileSystemAbstraction.fileExists( lockFile ) )
-            {
-                fileSystemAbstraction.mkdirs( lockFile.getParent() );
+        try {
+            if (!fileSystemAbstraction.fileExists(lockFile)) {
+                fileSystemAbstraction.mkdirs(lockFile.getParent());
             }
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             String message = "Unable to create path for dir: " + lockFile.getParent();
-            throw storeLockException( message, e );
+            throw storeLockException(message, e);
         }
 
-        try
-        {
-            if ( lockFileChannel == null )
-            {
-                lockFileChannel = fileSystemAbstraction.write( lockFile );
+        try {
+            if (lockFileChannel == null) {
+                lockFileChannel = fileSystemAbstraction.write(lockFile);
             }
             lockFileLock = lockFileChannel.tryLock();
-            if ( lockFileLock == null )
-            {
+            if (lockFileLock == null) {
                 String message = "Lock file has been locked by another process: " + lockFile;
-                throw storeLockException( message, null );
+                throw storeLockException(message, null);
             }
-        }
-        catch ( OverlappingFileLockException e )
-        {
+        } catch (OverlappingFileLockException e) {
             throw unableToObtainLockException();
-        }
-        catch ( IOException e )
-        {
-            // This isn't your normal "locked by another process" error, it may be related to permissions or something else,
-            // so in this case try to figure out as much as possible about the state of the file and directory and include that
+        } catch (IOException e) {
+            // This isn't your normal "locked by another process" error, it may be related to permissions or something
+            // else,
+            // so in this case try to figure out as much as possible about the state of the file and directory and
+            // include that
             // in the error message given to the user.
-            throw unableToObtainLockException( tryCollectPermissionInformation(), e );
+            throw unableToObtainLockException(tryCollectPermissionInformation(), e);
         }
     }
 
-    private String tryCollectPermissionInformation()
-    {
-        String processUserName = System.getProperty( "user.name" );
+    private String tryCollectPermissionInformation() {
+        String processUserName = System.getProperty("user.name");
         String additionalInformation = null;
-        if ( processUserName != null )
-        {
+        if (processUserName != null) {
             Path lockPath = lockFile;
-            try
-            {
-                String lockFileOwner = Files.getOwner( lockPath ).getName();
-                if ( !processUserName.equals( lockFileOwner ) )
-                {
+            try {
+                String lockFileOwner = Files.getOwner(lockPath).getName();
+                if (!processUserName.equals(lockFileOwner)) {
                     additionalInformation = String.format(
-                            "Owner of the lock file '%s' and user running this process '%s' differs, which means this could be a file permission problem. " +
-                            "Ensure that the lock file has the same owner, or at least has write access for the user running the Neo4j process " +
-                            "trying to lock it", lockFileOwner, processUserName );
+                            "Owner of the lock file '%s' and user running this process '%s' differs, which means this could be a file permission problem. "
+                                    + "Ensure that the lock file has the same owner, or at least has write access for the user running the Neo4j process "
+                                    + "trying to lock it",
+                            lockFileOwner, processUserName);
                 }
                 // else no useful additional information can be provided
-            }
-            catch ( IOException fe )
-            {
-                // We tried to get the owner of the lock file, but we couldn't. Perhaps we couldn't even create the lock file, let's check the folder
-                try
-                {
-                    String lockDirectoryOwner = Files.getOwner( lockPath.getParent() ).getName();
-                    if ( !processUserName.equals( lockDirectoryOwner ) )
-                    {
+            } catch (IOException fe) {
+                // We tried to get the owner of the lock file, but we couldn't. Perhaps we couldn't even create the lock
+                // file, let's check the folder
+                try {
+                    String lockDirectoryOwner =
+                            Files.getOwner(lockPath.getParent()).getName();
+                    if (!processUserName.equals(lockDirectoryOwner)) {
                         additionalInformation = String.format(
-                                "Owner of the directory of the lock file '%s' and user running this process '%s' differs, which means this could be a " +
-                                "file permission problem. Ensure that the lock file directory (and lock file it it exists) has the same owner, " +
-                                "or at least has write access for the user running the Neo4j process trying to lock it",
-                                lockDirectoryOwner, processUserName );
+                                "Owner of the directory of the lock file '%s' and user running this process '%s' differs, which means this could be a "
+                                        + "file permission problem. Ensure that the lock file directory (and lock file it it exists) has the same owner, "
+                                        + "or at least has write access for the user running the Neo4j process trying to lock it",
+                                lockDirectoryOwner, processUserName);
                     }
                     // else no useful additional information can be provided
-                }
-                catch ( IOException de )
-                {
+                } catch (IOException de) {
                     // We tried to get the owner of the lock directory, but couldn't. There's not much more we can do
                 }
             }
@@ -152,50 +130,43 @@ public class Locker implements Closeable
         return additionalInformation;
     }
 
-    protected boolean haveLockAlready()
-    {
+    protected boolean haveLockAlready() {
         return lockFileLock != null && lockFileChannel != null;
     }
 
-    FileLockException unableToObtainLockException()
-    {
-        return unableToObtainLockException( null, null );
+    FileLockException unableToObtainLockException() {
+        return unableToObtainLockException(null, null);
     }
 
-    FileLockException unableToObtainLockException( String additionalInformation, Exception cause )
-    {
-        String message = String.format( "Unable to obtain lock on file: %s%s", lockFile, additionalInformation != null ? ": " + additionalInformation : "" );
-        return storeLockException( message, cause );
+    FileLockException unableToObtainLockException(String additionalInformation, Exception cause) {
+        String message = String.format(
+                "Unable to obtain lock on file: %s%s",
+                lockFile, additionalInformation != null ? ": " + additionalInformation : "");
+        return storeLockException(message, cause);
     }
 
-    private static FileLockException storeLockException( String message, Exception e )
-    {
-        String help = "Please ensure no other process is using this database, and that the directory is writable " +
-                "(required even for read-only access)";
-        return new FileLockException( message + ". " + help, e );
+    private static FileLockException storeLockException(String message, Exception e) {
+        String help = "Please ensure no other process is using this database, and that the directory is writable "
+                + "(required even for read-only access)";
+        return new FileLockException(message + ". " + help, e);
     }
 
     @Override
-    public void close() throws IOException
-    {
-        if ( lockFileLock != null )
-        {
+    public void close() throws IOException {
+        if (lockFileLock != null) {
             releaseLock();
         }
-        if ( lockFileChannel != null )
-        {
+        if (lockFileChannel != null) {
             releaseChannel();
         }
     }
 
-    private void releaseChannel() throws IOException
-    {
+    private void releaseChannel() throws IOException {
         lockFileChannel.close();
         lockFileChannel = null;
     }
 
-    protected void releaseLock() throws IOException
-    {
+    protected void releaseLock() throws IOException {
         lockFileLock.release();
         lockFileLock = null;
     }

@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.query.clientconnection;
 
+import static org.neo4j.configuration.helpers.SocketAddress.format;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-
-import static org.neo4j.configuration.helpers.SocketAddress.format;
 
 /**
  * @see ClientConnectionInfo Parent class for documentation and tests.
  */
-public class HttpConnectionInfo extends ClientConnectionInfo
-{
+public class HttpConnectionInfo extends ClientConnectionInfo {
     private final String connectionId;
     private final String protocol;
     private final SocketAddress clientAddress;
@@ -42,8 +40,7 @@ public class HttpConnectionInfo extends ClientConnectionInfo
             String protocol,
             SocketAddress clientAddress,
             SocketAddress serverAddress,
-            String requestPath )
-    {
+            String requestPath) {
         this.connectionId = connectionId;
         this.protocol = protocol;
         this.clientAddress = clientAddress;
@@ -52,39 +49,33 @@ public class HttpConnectionInfo extends ClientConnectionInfo
     }
 
     @Override
-    public String asConnectionDetails()
-    {
-        return String.join( "\t", "server-session", protocol, getHostString( clientAddress ), requestPath );
+    public String asConnectionDetails() {
+        return String.join("\t", "server-session", protocol, getHostString(clientAddress), requestPath);
     }
 
     @Override
-    public String protocol()
-    {
+    public String protocol() {
         return protocol;
     }
 
     @Override
-    public String connectionId()
-    {
+    public String connectionId() {
         return connectionId;
     }
 
     @Override
-    public String clientAddress()
-    {
-        return format( clientAddress );
+    public String clientAddress() {
+        return format(clientAddress);
     }
 
     @Override
-    public String requestURI()
-    {
-        return serverAddress == null
-               ? requestPath
-               : protocol + "://" + format( serverAddress ) + requestPath;
+    public String requestURI() {
+        return serverAddress == null ? requestPath : protocol + "://" + format(serverAddress) + requestPath;
     }
 
-    private static String getHostString( SocketAddress address )
-    {
-        return address instanceof InetSocketAddress ? ((InetSocketAddress) address).getHostString() : address.toString();
+    private static String getHostString(SocketAddress address) {
+        return address instanceof InetSocketAddress
+                ? ((InetSocketAddress) address).getHostString()
+                : address.toString();
     }
 }

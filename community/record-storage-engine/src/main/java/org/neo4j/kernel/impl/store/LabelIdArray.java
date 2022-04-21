@@ -19,73 +19,59 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.Arrays;
-
 import static java.lang.System.arraycopy;
 
-public class LabelIdArray
-{
-    private LabelIdArray()
-    {
-    }
+import java.util.Arrays;
 
-    static long[] concatAndSort( long[] existing, long additional )
-    {
-        assertNotContains( existing, additional );
+public class LabelIdArray {
+    private LabelIdArray() {}
+
+    static long[] concatAndSort(long[] existing, long additional) {
+        assertNotContains(existing, additional);
 
         long[] result = new long[existing.length + 1];
-        arraycopy( existing, 0, result, 0, existing.length );
+        arraycopy(existing, 0, result, 0, existing.length);
         result[existing.length] = additional;
-        Arrays.sort( result );
+        Arrays.sort(result);
         return result;
     }
 
-    private static void assertNotContains( long[] existingLabels, long labelId )
-    {
-        if ( Arrays.binarySearch( existingLabels, labelId ) >= 0 )
-        {
-            throw new IllegalStateException( "Label " + labelId + " already exists." );
+    private static void assertNotContains(long[] existingLabels, long labelId) {
+        if (Arrays.binarySearch(existingLabels, labelId) >= 0) {
+            throw new IllegalStateException("Label " + labelId + " already exists.");
         }
     }
 
-    static long[] filter( long[] ids, long excludeId )
-    {
+    static long[] filter(long[] ids, long excludeId) {
         boolean found = false;
-        for ( long id : ids )
-        {
-            if ( id == excludeId )
-            {
+        for (long id : ids) {
+            if (id == excludeId) {
                 found = true;
                 break;
             }
         }
-        if ( !found )
-        {
-            throw new IllegalStateException( "Label " + excludeId + " not found." );
+        if (!found) {
+            throw new IllegalStateException("Label " + excludeId + " not found.");
         }
 
         long[] result = new long[ids.length - 1];
         int writerIndex = 0;
-        for ( long id : ids )
-        {
-            if ( id != excludeId )
-            {
+        for (long id : ids) {
+            if (id != excludeId) {
                 result[writerIndex++] = id;
             }
         }
         return result;
     }
 
-    public static long[] prependNodeId( long nodeId, long[] labelIds )
-    {
-        long[] result = new long[ labelIds.length + 1 ];
-        arraycopy( labelIds, 0, result, 1, labelIds.length );
+    public static long[] prependNodeId(long nodeId, long[] labelIds) {
+        long[] result = new long[labelIds.length + 1];
+        arraycopy(labelIds, 0, result, 1, labelIds.length);
         result[0] = nodeId;
         return result;
     }
 
-    public static long[] stripNodeId( long[] storedLongs )
-    {
-        return Arrays.copyOfRange( storedLongs, 1, storedLongs.length );
+    public static long[] stripNodeId(long[] storedLongs) {
+        return Arrays.copyOfRange(storedLongs, 1, storedLongs.length);
     }
 }

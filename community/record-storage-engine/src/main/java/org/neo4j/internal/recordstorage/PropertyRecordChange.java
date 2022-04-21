@@ -21,8 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
-public interface PropertyRecordChange
-{
+public interface PropertyRecordChange {
     PropertyRecord getBefore();
 
     PropertyRecord getAfter();

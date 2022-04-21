@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
+
   test("Column Order should return correct dependencies when no projections") {
     val columnOrder = Asc(varFor("a"), projections = Map.empty)
 
@@ -58,7 +59,7 @@ class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
       "a2" -> varFor("a1"),
       "b" -> varFor("b1")
     )
-    val columnOrder = Asc(add(literalInt(1), prop("a3", "prop1")) , projections)
+    val columnOrder = Asc(add(literalInt(1), prop("a3", "prop1")), projections)
 
     columnOrder.dependencies shouldBe Set(varFor("a1"))
   }

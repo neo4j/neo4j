@@ -23,28 +23,24 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class DaemonThreadFactory implements ThreadFactory
-{
+public final class DaemonThreadFactory implements ThreadFactory {
     private final String prefix;
     private final AtomicInteger counter = new AtomicInteger();
 
-    public DaemonThreadFactory()
-    {
-        this( "DaemonThread" );
+    public DaemonThreadFactory() {
+        this("DaemonThread");
     }
 
-    public DaemonThreadFactory( String prefix )
-    {
+    public DaemonThreadFactory(String prefix) {
         this.prefix = prefix;
     }
 
     @Override
-    public Thread newThread( Runnable runnable )
-    {
+    public Thread newThread(Runnable runnable) {
         ThreadFactory factory = Executors.defaultThreadFactory();
-        Thread thread = factory.newThread( runnable );
-        thread.setDaemon( true );
-        thread.setName( prefix + counter.getAndIncrement() );
+        Thread thread = factory.newThread(runnable);
+        thread.setDaemon(true);
+        thread.setName(prefix + counter.getAndIncrement());
         return thread;
     }
 }

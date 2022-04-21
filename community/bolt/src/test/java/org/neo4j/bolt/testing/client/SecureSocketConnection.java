@@ -28,33 +28,28 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
-public class SecureSocketConnection extends SocketConnection
-{
+public class SecureSocketConnection extends SocketConnection {
     private final Set<X509Certificate> serverCertificatesSeen = new HashSet<>();
 
-    public SecureSocketConnection()
-    {
-        setSocket( createSecureSocket() );
+    public SecureSocketConnection() {
+        setSocket(createSecureSocket());
     }
 
-    private Socket createSecureSocket()
-    {
-        try
-        {
-            SSLContext context = SSLContext.getInstance( "TLS" );
-            context.init( new KeyManager[0], new TrustManager[]{new NaiveTrustManager( serverCertificatesSeen::add )}, new SecureRandom() );
+    private Socket createSecureSocket() {
+        try {
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(
+                    new KeyManager[0],
+                    new TrustManager[] {new NaiveTrustManager(serverCertificatesSeen::add)},
+                    new SecureRandom());
 
             return context.getSocketFactory().createSocket();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public Set<X509Certificate> getServerCertificatesSeen()
-    {
+    public Set<X509Certificate> getServerCertificatesSeen() {
         return serverCertificatesSeen;
     }
-
 }

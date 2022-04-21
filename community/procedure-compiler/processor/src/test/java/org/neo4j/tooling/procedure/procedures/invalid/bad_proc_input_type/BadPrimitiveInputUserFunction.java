@@ -25,84 +25,70 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
-public class BadPrimitiveInputUserFunction
-{
+public class BadPrimitiveInputUserFunction {
 
     @UserFunction
-    public String doSomething( @Name( "test" ) short unsupportedType )
-    {
+    public String doSomething(@Name("test") short unsupportedType) {
         return "42";
     }
 
     @UserFunction
-    public String works01( @Name( "test" ) String supported )
-    {
+    public String works01(@Name("test") String supported) {
         return "42";
     }
 
     @UserFunction
-    public String works02( @Name( "test" ) Long supported )
-    {
+    public String works02(@Name("test") Long supported) {
         return "42";
     }
 
     @UserFunction
-    public String works03( @Name( "test" ) long supported )
-    {
+    public String works03(@Name("test") long supported) {
         return "42";
     }
 
     @UserFunction
-    public String works04( @Name( "test" ) Double supported )
-    {
+    public String works04(@Name("test") Double supported) {
         return "42";
     }
 
     @UserFunction
-    public String works05( @Name( "test" ) double supported )
-    {
+    public String works05(@Name("test") double supported) {
         return "42";
     }
 
     @UserFunction
-    public String works06( @Name( "test" ) Number supported )
-    {
+    public String works06(@Name("test") Number supported) {
         return "42";
     }
 
     @UserFunction
-    public String works07( @Name( "test" ) Boolean supported )
-    {
+    public String works07(@Name("test") Boolean supported) {
         return "42";
     }
 
     @UserFunction
-    public String works08( @Name( "test" ) boolean supported )
-    {
+    public String works08(@Name("test") boolean supported) {
         return "42";
     }
 
     @UserFunction
-    public String works09( @Name( "test" ) Object supported )
-    {
+    public String works09(@Name("test") Object supported) {
         return "42";
     }
 
     @UserFunction
-    public String works10( @Name( "test" ) Node supported )
-    {
+    public String works10(@Name("test") Node supported) {
         return "42";
     }
 
     @UserFunction
-    public String works11( @Name( "test" ) Relationship supported )
-    {
+    public String works11(@Name("test") Relationship supported) {
         return "42";
     }
 
     @UserFunction
-    public String works12( @Name( "test" ) Path supported )
-    {
+    public String works12(@Name("test") Path supported) {
         return "42";
     }
 }

@@ -19,41 +19,33 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.jupiter.params.provider.Arguments;
-
 import java.util.Map;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.params.provider.Arguments;
 import org.neo4j.test.server.HTTP;
 
-public abstract class ParameterizedTransactionEndpointsTestBase extends AbstractRestFunctionalTestBase
-{
-    protected final HTTP.Builder http = HTTP.withBaseUri( container().getBaseUri() );
+public abstract class ParameterizedTransactionEndpointsTestBase extends AbstractRestFunctionalTestBase {
+    protected final HTTP.Builder http = HTTP.withBaseUri(container().getBaseUri());
     private static final String LEGACY_TX_ENDPOINT = "db/data/transaction";
     protected static final String TX_ENDPOINT = "db/neo4j/tx";
 
-    protected static Stream<Arguments> argumentsProvider()
-    {
-        return Stream.of( Arguments.of( LEGACY_TX_ENDPOINT ), Arguments.of( TX_ENDPOINT ) );
+    protected static Stream<Arguments> argumentsProvider() {
+        return Stream.of(Arguments.of(LEGACY_TX_ENDPOINT), Arguments.of(TX_ENDPOINT));
     }
 
-    public HTTP.Response POST( String uri )
-    {
-        return http.request( "POST", uri );
+    public HTTP.Response POST(String uri) {
+        return http.request("POST", uri);
     }
 
-    public HTTP.Response POST( String uri, HTTP.RawPayload payload )
-    {
-        return http.request( "POST", uri, payload );
+    public HTTP.Response POST(String uri, HTTP.RawPayload payload) {
+        return http.request("POST", uri, payload);
     }
 
-    public HTTP.Response POST( String uri, HTTP.RawPayload payload, Map<String,String> headers )
-    {
-        return http.request( "POST", uri, payload, headers );
+    public HTTP.Response POST(String uri, HTTP.RawPayload payload, Map<String, String> headers) {
+        return http.request("POST", uri, payload, headers);
     }
 
-    public HTTP.Response DELETE( String uri )
-    {
-        return http.request( "DELETE", uri );
+    public HTTP.Response DELETE(String uri) {
+        return http.request("DELETE", uri);
     }
 }

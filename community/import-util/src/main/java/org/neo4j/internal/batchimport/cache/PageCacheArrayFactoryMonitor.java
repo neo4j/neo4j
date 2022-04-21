@@ -19,30 +19,31 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.neo4j.io.pagecache.PageCache;
-
 import static java.lang.String.format;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
-public class PageCacheArrayFactoryMonitor implements NumberArrayFactory.Monitor
-{
-    // This field is designed to allow multiple threads setting it concurrently, where one of those will win and either one is fine
-    // because this monitor mostly revolves around highlighting the fact that the page cache number array is in use at all.
+import java.util.concurrent.atomic.AtomicReference;
+import org.neo4j.io.pagecache.PageCache;
+
+public class PageCacheArrayFactoryMonitor implements NumberArrayFactory.Monitor {
+    // This field is designed to allow multiple threads setting it concurrently, where one of those will win and either
+    // one is fine
+    // because this monitor mostly revolves around highlighting the fact that the page cache number array is in use at
+    // all.
     private final AtomicReference<String> failedFactoriesDescription = new AtomicReference<>();
 
     @Override
-    public void allocationSuccessful( long memory, NumberArrayFactory successfulFactory,
-            Iterable<NumberArrayFactory.AllocationFailure> attemptedAllocationFailures )
-    {
-        if ( successfulFactory instanceof PageCachedNumberArrayFactory )
-        {
-            StringBuilder builder = new StringBuilder( format(
-                    "Memory allocation of %s ended up in page cache, which may impact performance negatively", bytesToString( memory ) ) );
+    public void allocationSuccessful(
+            long memory,
+            NumberArrayFactory successfulFactory,
+            Iterable<NumberArrayFactory.AllocationFailure> attemptedAllocationFailures) {
+        if (successfulFactory instanceof PageCachedNumberArrayFactory) {
+            StringBuilder builder = new StringBuilder(format(
+                    "Memory allocation of %s ended up in page cache, which may impact performance negatively",
+                    bytesToString(memory)));
             attemptedAllocationFailures.forEach(
-                    failure -> builder.append( format( "%n%s: %s", failure.getFactory(), failure.getFailure() ) ) );
-            failedFactoriesDescription.compareAndSet( null, builder.toString() );
+                    failure -> builder.append(format("%n%s: %s", failure.getFactory(), failure.getFailure())));
+            failedFactoriesDescription.compareAndSet(null, builder.toString());
         }
     }
 
@@ -54,12 +55,10 @@ public class PageCacheArrayFactoryMonitor implements NumberArrayFactory.Monitor
      * @return if there have been {@link NumberArrayFactory} allocations backed by the {@link PageCache} since the last call to this method
      * then a description of why it was chosen is returned, otherwise {@code null}.
      */
-    public String pageCacheAllocationOrNull()
-    {
+    public String pageCacheAllocationOrNull() {
         String failure = failedFactoriesDescription.get();
-        if ( failure != null )
-        {
-            failedFactoriesDescription.compareAndSet( failure, null );
+        if (failure != null) {
+            failedFactoriesDescription.compareAndSet(failure, null);
         }
         return failure;
     }

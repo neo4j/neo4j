@@ -21,21 +21,16 @@ package org.neo4j.dbms.database;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public abstract class SystemGraphInitializer extends LifecycleAdapter
-{
+public abstract class SystemGraphInitializer extends LifecycleAdapter {
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         initializeSystemGraph();
     }
 
     protected abstract void initializeSystemGraph() throws Exception;
 
-    public static final SystemGraphInitializer NO_OP = new SystemGraphInitializer()
-    {
+    public static final SystemGraphInitializer NO_OP = new SystemGraphInitializer() {
         @Override
-        public void initializeSystemGraph()
-        {
-        }
+        public void initializeSystemGraph() {}
     };
 }

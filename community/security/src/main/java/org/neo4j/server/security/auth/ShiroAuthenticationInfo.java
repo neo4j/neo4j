@@ -19,100 +19,91 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.apache.shiro.authc.AuthenticationInfo;
-import org.apache.shiro.authc.SimpleAuthenticationInfo;
-import org.apache.shiro.util.ByteSource;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 
-public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
-{
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.shiro.authc.AuthenticationInfo;
+import org.apache.shiro.authc.SimpleAuthenticationInfo;
+import org.apache.shiro.util.ByteSource;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+
+public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
     protected AuthenticationResult authenticationResult;
     private List<Throwable> throwables;
 
-    public ShiroAuthenticationInfo()
-    {
+    public ShiroAuthenticationInfo() {
         super();
         this.authenticationResult = AuthenticationResult.FAILURE;
-        this.throwables = new ArrayList<>( 1 );
+        this.throwables = new ArrayList<>(1);
     }
 
-    public ShiroAuthenticationInfo( Neo4jPrincipal principal, String realmName, AuthenticationResult authenticationResult )
-    {
-        super( principal, null, realmName );
+    public ShiroAuthenticationInfo(
+            Neo4jPrincipal principal, String realmName, AuthenticationResult authenticationResult) {
+        super(principal, null, realmName);
         this.authenticationResult = authenticationResult;
     }
 
-    public ShiroAuthenticationInfo( Neo4jPrincipal principal, Object hashedCredentials, ByteSource credentialsSalt,
-            String realmName, AuthenticationResult authenticationResult )
-    {
-        super( principal, hashedCredentials, credentialsSalt, realmName );
+    public ShiroAuthenticationInfo(
+            Neo4jPrincipal principal,
+            Object hashedCredentials,
+            ByteSource credentialsSalt,
+            String realmName,
+            AuthenticationResult authenticationResult) {
+        super(principal, hashedCredentials, credentialsSalt, realmName);
         this.authenticationResult = authenticationResult;
     }
 
-    public AuthenticationResult getAuthenticationResult()
-    {
+    public AuthenticationResult getAuthenticationResult() {
         return authenticationResult;
     }
 
-    public void setAuthenticationResult( AuthenticationResult result )
-    {
+    public void setAuthenticationResult(AuthenticationResult result) {
         authenticationResult = result;
     }
 
-    public void addThrowable( Throwable t )
-    {
-        throwables.add( t );
+    public void addThrowable(Throwable t) {
+        throwables.add(t);
     }
 
-    public List<Throwable> getThrowables()
-    {
+    public List<Throwable> getThrowables() {
         return throwables;
     }
 
     @Override
-    public void merge( AuthenticationInfo info )
-    {
-        if ( info == null || info.getPrincipals() == null || info.getPrincipals().isEmpty() )
-        {
+    public void merge(AuthenticationInfo info) {
+        if (info == null || info.getPrincipals() == null || info.getPrincipals().isEmpty()) {
             return;
         }
 
-        super.merge( info );
+        super.merge(info);
 
-        if ( info instanceof ShiroAuthenticationInfo )
-        {
-            authenticationResult = mergeAuthenticationResult( authenticationResult,
-                    ((ShiroAuthenticationInfo) info).getAuthenticationResult() );
-        }
-        else
-        {
+        if (info instanceof ShiroAuthenticationInfo) {
+            authenticationResult = mergeAuthenticationResult(
+                    authenticationResult, ((ShiroAuthenticationInfo) info).getAuthenticationResult());
+        } else {
             // If we get here (which means no AuthenticationException or UnknownAccountException was thrown)
             // it means the realm that provided the info was able to authenticate the subject,
             // so we claim the result to be an implicit success
-            authenticationResult = mergeAuthenticationResult( authenticationResult, AuthenticationResult.SUCCESS );
+            authenticationResult = mergeAuthenticationResult(authenticationResult, AuthenticationResult.SUCCESS);
         }
     }
 
     private static final AuthenticationResult[][] MERGE_MATRIX = {
         /* v result | new res >   SUCCESS,                  FAILURE,                  TOO_MANY_ATTEMPTS,        PASSWORD_CHANGE_REQUIRED */
-        /* SUCCESS           */ { SUCCESS,                  SUCCESS,                  SUCCESS          ,        PASSWORD_CHANGE_REQUIRED },
-        /* FAILURE           */ { SUCCESS,                  FAILURE,                  TOO_MANY_ATTEMPTS,        PASSWORD_CHANGE_REQUIRED },
-        /* TOO_MANY_ATTEMPTS */ { SUCCESS,                  TOO_MANY_ATTEMPTS,        TOO_MANY_ATTEMPTS,        PASSWORD_CHANGE_REQUIRED },
-        /* PASSWORD_CHANGE.. */ { PASSWORD_CHANGE_REQUIRED, PASSWORD_CHANGE_REQUIRED, PASSWORD_CHANGE_REQUIRED, PASSWORD_CHANGE_REQUIRED }
+        /* SUCCESS           */ {SUCCESS, SUCCESS, SUCCESS, PASSWORD_CHANGE_REQUIRED},
+        /* FAILURE           */ {SUCCESS, FAILURE, TOO_MANY_ATTEMPTS, PASSWORD_CHANGE_REQUIRED},
+        /* TOO_MANY_ATTEMPTS */ {SUCCESS, TOO_MANY_ATTEMPTS, TOO_MANY_ATTEMPTS, PASSWORD_CHANGE_REQUIRED},
+        /* PASSWORD_CHANGE.. */ {
+            PASSWORD_CHANGE_REQUIRED, PASSWORD_CHANGE_REQUIRED, PASSWORD_CHANGE_REQUIRED, PASSWORD_CHANGE_REQUIRED
+        }
     };
 
     private static AuthenticationResult mergeAuthenticationResult(
-            AuthenticationResult result, AuthenticationResult newResult )
-    {
+            AuthenticationResult result, AuthenticationResult newResult) {
         return MERGE_MATRIX[result.ordinal()][newResult.ordinal()];
     }
 }

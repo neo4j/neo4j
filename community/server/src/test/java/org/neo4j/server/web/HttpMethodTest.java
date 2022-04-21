@@ -19,35 +19,30 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-class HttpMethodTest
-{
+import org.junit.jupiter.api.Test;
+
+class HttpMethodTest {
     @Test
-    void shouldLookupExistingMethodByName()
-    {
-        for ( HttpMethod method : HttpMethod.values() )
-        {
-            assertEquals( method, HttpMethod.valueOfOrNull( method.toString() ) );
+    void shouldLookupExistingMethodByName() {
+        for (HttpMethod method : HttpMethod.values()) {
+            assertEquals(method, HttpMethod.valueOfOrNull(method.toString()));
         }
     }
 
     @Test
-    void shouldLookupNonExistingMethodByName()
-    {
-        assertNull( HttpMethod.valueOfOrNull( "get" ) );
-        assertNull( HttpMethod.valueOfOrNull( "post" ) );
-        assertNull( HttpMethod.valueOfOrNull( "PoSt" ) );
-        assertNull( HttpMethod.valueOfOrNull( "WRONG" ) );
-        assertNull( HttpMethod.valueOfOrNull( "" ) );
+    void shouldLookupNonExistingMethodByName() {
+        assertNull(HttpMethod.valueOfOrNull("get"));
+        assertNull(HttpMethod.valueOfOrNull("post"));
+        assertNull(HttpMethod.valueOfOrNull("PoSt"));
+        assertNull(HttpMethod.valueOfOrNull("WRONG"));
+        assertNull(HttpMethod.valueOfOrNull(""));
     }
 
     @Test
-    void shouldLookupNothingByNull()
-    {
-        assertNull( HttpMethod.valueOfOrNull( null ) );
+    void shouldLookupNothingByNull() {
+        assertNull(HttpMethod.valueOfOrNull(null));
     }
 }

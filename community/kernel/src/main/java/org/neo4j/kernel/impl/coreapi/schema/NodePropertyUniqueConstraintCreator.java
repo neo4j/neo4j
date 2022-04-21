@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
+import static org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl.copyAndAdd;
+
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -29,70 +31,69 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
-import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
-import static org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl.copyAndAdd;
-
-public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator
-{
+public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator {
     private final List<String> propertyKeys;
 
-    NodePropertyUniqueConstraintCreator( InternalSchemaActions internalCreator, String name, Label label, List<String> propertyKeys, IndexType indexType,
-            IndexConfig indexConfig )
-    {
-        super( internalCreator, name, label, indexType, indexConfig );
+    NodePropertyUniqueConstraintCreator(
+            InternalSchemaActions internalCreator,
+            String name,
+            Label label,
+            List<String> propertyKeys,
+            IndexType indexType,
+            IndexConfig indexConfig) {
+        super(internalCreator, name, label, indexType, indexConfig);
         this.propertyKeys = propertyKeys;
     }
 
     @Override
-    public final NodePropertyUniqueConstraintCreator assertPropertyIsUnique( String propertyKey )
-    {
-        return new NodePropertyUniqueConstraintCreator( actions, name, label, copyAndAdd( propertyKeys, propertyKey ), indexType, indexConfig );
+    public final NodePropertyUniqueConstraintCreator assertPropertyIsUnique(String propertyKey) {
+        return new NodePropertyUniqueConstraintCreator(
+                actions, name, label, copyAndAdd(propertyKeys, propertyKey), indexType, indexConfig);
     }
 
     @Override
-    public ConstraintCreator assertPropertyExists( String propertyKey )
-    {
-        List<String> keys = List.of( propertyKey );
-        if ( propertyKeys.equals( keys ) )
-        {
-            return new NodeKeyConstraintCreator( actions, name, label, propertyKeys, indexType, indexConfig );
+    public ConstraintCreator assertPropertyExists(String propertyKey) {
+        List<String> keys = List.of(propertyKey);
+        if (propertyKeys.equals(keys)) {
+            return new NodeKeyConstraintCreator(actions, name, label, propertyKeys, indexType, indexConfig);
         }
         throw new UnsupportedOperationException(
-                "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. " + keys + "." );
+                "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. "
+                        + keys + ".");
     }
 
     @Override
-    public ConstraintCreator assertPropertyIsNodeKey( String propertyKey )
-    {
-        return assertPropertyExists( propertyKey );
+    public ConstraintCreator assertPropertyIsNodeKey(String propertyKey) {
+        return assertPropertyExists(propertyKey);
     }
 
     @Override
-    public ConstraintCreator withName( String name )
-    {
-        return new NodePropertyUniqueConstraintCreator( actions, name, label, propertyKeys, indexType, indexConfig );
+    public ConstraintCreator withName(String name) {
+        return new NodePropertyUniqueConstraintCreator(actions, name, label, propertyKeys, indexType, indexConfig);
     }
 
     @Override
-    public ConstraintCreator withIndexType( IndexType indexType )
-    {
-        return new NodePropertyUniqueConstraintCreator( actions, name, label, propertyKeys, indexType, indexConfig );
+    public ConstraintCreator withIndexType(IndexType indexType) {
+        return new NodePropertyUniqueConstraintCreator(actions, name, label, propertyKeys, indexType, indexConfig);
     }
 
     @Override
-    public ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
-    {
-        return new NodePropertyUniqueConstraintCreator( actions, name, label, propertyKeys, indexType,
-                toIndexConfigFromIndexSettingObjectMap( indexConfiguration ) );
+    public ConstraintCreator withIndexConfiguration(Map<IndexSetting, Object> indexConfiguration) {
+        return new NodePropertyUniqueConstraintCreator(
+                actions,
+                name,
+                label,
+                propertyKeys,
+                indexType,
+                toIndexConfigFromIndexSettingObjectMap(indexConfiguration));
     }
 
     @Override
-    public final ConstraintDefinition create()
-    {
+    public final ConstraintDefinition create() {
         assertInUnterminatedTransaction();
 
         IndexDefinitionImpl definition =
-                new IndexDefinitionImpl( actions, null, new Label[]{label}, propertyKeys.toArray( new String[0] ), true );
-        return actions.createPropertyUniquenessConstraint( definition, name, indexType, indexConfig );
+                new IndexDefinitionImpl(actions, null, new Label[] {label}, propertyKeys.toArray(new String[0]), true);
+        return actions.createPropertyUniquenessConstraint(definition, name, indexType, indexConfig);
     }
 }

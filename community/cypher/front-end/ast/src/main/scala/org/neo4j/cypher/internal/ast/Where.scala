@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 
 case class Where(expression: Expression)(val position: InputPosition)
-  extends ASTNode with SemanticCheckable {
+    extends ASTNode with SemanticCheckable {
 
   def dependencies: Set[LogicalVariable] = expression.dependencies
 
@@ -36,8 +36,12 @@ case class Where(expression: Expression)(val position: InputPosition)
 }
 
 object Where {
+
   def checkExpression(expression: Expression): SemanticCheck =
     SemanticExpressionCheck.simple(expression) chain
-      SemanticPatternCheck.checkValidPropertyKeyNames(expression.folder.findAllByClass[Property].map(prop => prop.propertyKey), expression.position) chain
+      SemanticPatternCheck.checkValidPropertyKeyNames(
+        expression.folder.findAllByClass[Property].map(prop => prop.propertyKey),
+        expression.position
+      ) chain
       SemanticExpressionCheck.expectType(CTBoolean.covariant, expression)
 }

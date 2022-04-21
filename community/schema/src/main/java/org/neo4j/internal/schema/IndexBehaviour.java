@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
-public enum IndexBehaviour
-{
+public enum IndexBehaviour {
     /**
      * The index is <em>eventually consistent</em>, meaning it might not reflect newly committed changes.
      */

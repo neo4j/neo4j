@@ -19,8 +19,16 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,7 +40,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
@@ -49,92 +58,87 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
-
 @EphemeralPageCacheExtension
-class DynamicArrayStoreTest
-{
+class DynamicArrayStoreTest {
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private PageCache pageCache;
-    private final Path storeFile = Path.of( "store" );
-    private final Path idFile = Path.of( "idStore" );
 
-    private static Stream<Supplier<Object>> data()
-    {
-        return Stream.of( () -> new String[]{"a"},
-                () -> new PointValue[]{Values.pointValue( WGS_84, 0, 1 )},
-                () -> new LocalDate[]{LocalDate.MIN},
-                () -> new LocalTime[]{LocalTime.MIDNIGHT},
-                () -> new LocalDateTime[]{LocalDateTime.MIN},
-                () -> new OffsetTime[]{OffsetTime.MIN},
-                () -> new ZonedDateTime[]{ZonedDateTime.now()},
-                () -> new DurationValue[]{DurationValue.MAX_VALUE},
-                () -> new double[]{0,1},
-                () -> new float[]{0,1},
-                () -> new byte[]{0,1},
-                () -> new int[]{0,1} );
+    private final Path storeFile = Path.of("store");
+    private final Path idFile = Path.of("idStore");
+
+    private static Stream<Supplier<Object>> data() {
+        return Stream.of(
+                () -> new String[] {"a"},
+                () -> new PointValue[] {Values.pointValue(WGS_84, 0, 1)},
+                () -> new LocalDate[] {LocalDate.MIN},
+                () -> new LocalTime[] {LocalTime.MIDNIGHT},
+                () -> new LocalDateTime[] {LocalDateTime.MIN},
+                () -> new OffsetTime[] {OffsetTime.MIN},
+                () -> new ZonedDateTime[] {ZonedDateTime.now()},
+                () -> new DurationValue[] {DurationValue.MAX_VALUE},
+                () -> new double[] {0, 1},
+                () -> new float[] {0, 1},
+                () -> new byte[] {0, 1},
+                () -> new int[] {0, 1});
     }
 
     @ParameterizedTest
-    @MethodSource( "data" )
-    void tracePageCacheAccessOnRecordAllocation( Supplier<Object> dataSupplier ) throws IOException
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        try ( var store = dynamicArrayStore() )
-        {
-            tracePageCacheAccessOnAllocation( store, contextFactory, dataSupplier.get() );
+    @MethodSource("data")
+    void tracePageCacheAccessOnRecordAllocation(Supplier<Object> dataSupplier) throws IOException {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        try (var store = dynamicArrayStore()) {
+            tracePageCacheAccessOnAllocation(store, contextFactory, dataSupplier.get());
         }
     }
 
-    private static void tracePageCacheAccessOnAllocation( DynamicArrayStore store, CursorContextFactory contextFactory, Object array )
-    {
-        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnAllocation" ) )
-        {
-            assertZeroCursor( cursorContext );
-            prepareDirtyGenerator( store );
+    private static void tracePageCacheAccessOnAllocation(
+            DynamicArrayStore store, CursorContextFactory contextFactory, Object array) {
+        try (var cursorContext = contextFactory.create("tracePageCacheAccessOnAllocation")) {
+            assertZeroCursor(cursorContext);
+            prepareDirtyGenerator(store);
 
-            store.allocateRecords( new ArrayList<>(), array, cursorContext, INSTANCE );
+            store.allocateRecords(new ArrayList<>(), array, cursorContext, INSTANCE);
 
-            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1 );
+            assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(1);
         }
     }
 
-    private static void prepareDirtyGenerator( DynamicArrayStore store )
-    {
+    private static void prepareDirtyGenerator(DynamicArrayStore store) {
         var idGenerator = store.getIdGenerator();
-        try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
-        {
-            marker.markDeleted( 1L );
+        try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+            marker.markDeleted(1L);
         }
-        idGenerator.clearCache( NULL_CONTEXT );
+        idGenerator.clearCache(NULL_CONTEXT);
     }
 
-    private static void assertZeroCursor( CursorContext cursorContext )
-    {
+    private static void assertZeroCursor(CursorContext cursorContext) {
         var cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.hits() ).isZero();
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat(cursorTracer.hits()).isZero();
+        assertThat(cursorTracer.pins()).isZero();
+        assertThat(cursorTracer.unpins()).isZero();
     }
 
-    private DynamicArrayStore dynamicArrayStore() throws IOException
-    {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
-        DynamicArrayStore store = new DynamicArrayStore( storeFile, idFile, Config.defaults(), RecordIdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
-                NullLogProvider.getInstance(), 1, defaultFormat(), writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
-        store.initialise( true, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
-        store.start( NULL_CONTEXT );
+    private DynamicArrayStore dynamicArrayStore() throws IOException {
+        DefaultIdGeneratorFactory idGeneratorFactory =
+                new DefaultIdGeneratorFactory(fs, immediate(), DEFAULT_DATABASE_NAME);
+        DynamicArrayStore store = new DynamicArrayStore(
+                storeFile,
+                idFile,
+                Config.defaults(),
+                RecordIdType.ARRAY_BLOCK,
+                idGeneratorFactory,
+                pageCache,
+                NullLogProvider.getInstance(),
+                1,
+                defaultFormat(),
+                writable(),
+                DEFAULT_DATABASE_NAME,
+                immutable.empty());
+        store.initialise(true, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+        store.start(NULL_CONTEXT);
         return store;
     }
 }

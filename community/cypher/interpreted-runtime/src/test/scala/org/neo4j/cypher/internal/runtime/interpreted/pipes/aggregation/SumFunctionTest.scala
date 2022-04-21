@@ -40,7 +40,7 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(longValue(1))
 
     result should equal(longValue(1))
-    result shouldBe a [LongValue]
+    result shouldBe a[LongValue]
   }
 
   test("singleValueReturnsThatDuration") {
@@ -55,20 +55,20 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val durationValue2 = DurationValue.duration(0, 0, 1, 1)
     val result = aggregateOn(durationValue, durationValue2)
 
-    result should equal(DurationValue.duration(0,0,1,2))
+    result should equal(DurationValue.duration(0, 0, 1, 2))
   }
 
   test("cantMixDurationAndNumber") {
     val durationValue = DurationValue.duration(0, 0, 0, 1)
     val numberValue = longValue(1)
-    a[CypherTypeException] shouldBe thrownBy{
+    a[CypherTypeException] shouldBe thrownBy {
       aggregateOn(durationValue, numberValue)
     }
   }
 
   test("catches duration overflows") {
     val durationValue = DurationValue.duration(0, 0, Long.MaxValue, 0)
-    an[InvalidArgumentException] shouldBe thrownBy{
+    an[InvalidArgumentException] shouldBe thrownBy {
       aggregateOn(durationValue, durationValue)
     }
   }
@@ -77,35 +77,35 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(doubleValue(1.0d))
 
     result should equal(doubleValue(1.0))
-    result shouldBe a [DoubleValue]
+    result shouldBe a[DoubleValue]
   }
 
   test("mixOfIntAndDoubleYieldsDouble") {
     val result = aggregateOn(intValue(1), doubleValue(1.0d))
 
     result should equal(doubleValue(2.0))
-    result shouldBe a [DoubleValue]
+    result shouldBe a[DoubleValue]
   }
 
   test("mixedLotsOfStuff") {
     val result = aggregateOn(Values.byteValue(1.byteValue()), Values.shortValue(1.shortValue()))
 
     result should equal(longValue(2))
-    result shouldBe a [LongValue]
+    result shouldBe a[LongValue]
   }
 
   test("noNumbersEqualsZero") {
     val result = aggregateOn()
 
     result should equal(longValue(0))
-    result shouldBe a [LongValue]
+    result shouldBe a[LongValue]
   }
 
   test("nullDoesNotChangeTheSum") {
     val result = aggregateOn(intValue(1), NO_VALUE)
 
     result should equal(longValue(1))
-    result shouldBe a [LongValue]
+    result shouldBe a[LongValue]
   }
 
   test("noNumberValuesThrowAnException") {
@@ -113,7 +113,7 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
   }
 
   test("intOverflowTransformsSumToLong") {
-    val halfInt= Int.MaxValue
+    val halfInt = Int.MaxValue
     val result = aggregateOn(intValue(halfInt), intValue(halfInt), intValue(halfInt))
     val expected = 3L * halfInt
     result should equal(longValue(expected))
@@ -124,6 +124,6 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(intValue(thirdOfMaxInt), intValue(thirdOfMaxInt))
     val expected = thirdOfMaxInt + thirdOfMaxInt
     result should equal(longValue(expected))
-    result shouldBe a [LongValue]
+    result shouldBe a[LongValue]
   }
 }

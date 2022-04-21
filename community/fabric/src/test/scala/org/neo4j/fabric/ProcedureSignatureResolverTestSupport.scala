@@ -42,16 +42,29 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 trait ProcedureSignatureResolverTestSupport {
 
   val callableProcedures: Seq[procedure.CallableProcedure] = Seq(
-    mkProcedure(Seq("my", "ns", "myProcedure"), Seq(), Seq("a", "b"))(Seq(Array(Values.intValue(1), Values.intValue(10)))),
-    mkProcedure(Seq("my", "ns", "myProcedure2"), Seq("x"), Seq("a", "b"))(Seq(Array(Values.intValue(1), Values.intValue(10)))),
-    mkProcedure(Seq("my", "ns", "read"), Seq(), Seq("a", "b"), Mode.DEFAULT)(Seq(Array(Values.intValue(1), Values.intValue(10)))),
-    mkProcedure(Seq("my", "ns", "write"), Seq(), Seq("a", "b"), Mode.WRITE)(Seq(Array(Values.intValue(1), Values.intValue(10)))),
-    mkProcedure(Seq("my", "ns", "unitProcedure"), Seq(), Seq(), Mode.WRITE)(Seq.empty),
+    mkProcedure(Seq("my", "ns", "myProcedure"), Seq(), Seq("a", "b"))(Seq(Array(
+      Values.intValue(1),
+      Values.intValue(10)
+    ))),
+    mkProcedure(Seq("my", "ns", "myProcedure2"), Seq("x"), Seq("a", "b"))(Seq(Array(
+      Values.intValue(1),
+      Values.intValue(10)
+    ))),
+    mkProcedure(Seq("my", "ns", "read"), Seq(), Seq("a", "b"), Mode.DEFAULT)(Seq(Array(
+      Values.intValue(1),
+      Values.intValue(10)
+    ))),
+    mkProcedure(Seq("my", "ns", "write"), Seq(), Seq("a", "b"), Mode.WRITE)(Seq(Array(
+      Values.intValue(1),
+      Values.intValue(10)
+    ))),
+    mkProcedure(Seq("my", "ns", "unitProcedure"), Seq(), Seq(), Mode.WRITE)(Seq.empty)
   )
+
   val callableUseFunctions: Seq[procedure.CallableUserFunction] = Seq(
     mkFunction(Seq("const0"), Seq(), "MyCategory")(Values.intValue(0)),
     mkFunction(Seq("const1"), Seq(), "MyOtherCategory")(Values.intValue(1)),
-    mkFunction(Seq("my", "ns", "const0"), Seq("x"), "MyCategory")(Values.intValue(2)),
+    mkFunction(Seq("my", "ns", "const0"), Seq("x"), "MyCategory")(Values.intValue(2))
   )
 
   val signatures: ProcedureSignatureResolver = TestProcedureSignatureResolver(callableProcedures, callableUseFunctions)
@@ -79,7 +92,9 @@ trait ProcedureSignatureResolverTestSupport {
   }
 
   private def mkFunction(
-    name: Seq[String], args: Seq[String], category: String
+    name: Seq[String],
+    args: Seq[String],
+    category: String
   )(
     body: => AnyValue
   ): procedure.CallableUserFunction =
@@ -88,26 +103,46 @@ trait ProcedureSignatureResolverTestSupport {
         new procs.QualifiedName(name.init.toArray, name.last),
         ListBuffer(args: _*).map(inputField(_, procs.Neo4jTypes.NTAny)).asJava,
         procs.Neo4jTypes.NTAny,
-        null, name.last, category, true
+        null,
+        name.last,
+        category,
+        true
       )
     ) {
       override def apply(ctx: procedure.Context, input: Array[AnyValue]): AnyValue = body
     }
 
   private def mkProcedure(
-    name: Seq[String], args: Seq[String], out: Seq[String], mode: Mode = Mode.DEFAULT
+    name: Seq[String],
+    args: Seq[String],
+    out: Seq[String],
+    mode: Mode = Mode.DEFAULT
   )(
     values: => Seq[Array[AnyValue]]
   ): procedure.CallableProcedure = {
-    val outputSignature = if (out.isEmpty) VOID else ListBuffer(out: _*).map(outputField(_, procs.Neo4jTypes.NTAny)).asJava
+    val outputSignature =
+      if (out.isEmpty) VOID else ListBuffer(out: _*).map(outputField(_, procs.Neo4jTypes.NTAny)).asJava
 
     new procedure.CallableProcedure.BasicProcedure(new procs.ProcedureSignature(
       new procs.QualifiedName(name.init.toArray, name.last),
       ListBuffer(args: _*).map(inputField(_, procs.Neo4jTypes.NTAny)).asJava,
       outputSignature,
-      mode, false, null, name.last, null, false, false, false, false, false
+      mode,
+      false,
+      null,
+      name.last,
+      null,
+      false,
+      false,
+      false,
+      false,
+      false
     )) {
-      override def apply(ctx: procedure.Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] =
+      override def apply(
+        ctx: procedure.Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] =
         RawIterator.of(values: _*)
     }
   }

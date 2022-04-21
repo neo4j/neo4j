@@ -54,7 +54,7 @@ case class FabricStitcher(
   queryString: String,
   allowMultiGraph: Boolean,
   fabricContextName: Option[String],
-  pipeline: FabricFrontEnd#Pipeline,
+  pipeline: FabricFrontEnd#Pipeline
 ) {
 
   /**
@@ -73,7 +73,7 @@ case class FabricStitcher(
         asExec(
           Fragment.Init(command.use),
           command.command,
-          command.outputColumns,
+          command.outputColumns
         )
     }
 
@@ -86,7 +86,8 @@ case class FabricStitcher(
     stitched(union)
       .getOrElse(union.copy(
         lhs = convert(union.lhs),
-        rhs = convertChain(union.rhs))(union.pos))
+        rhs = convertChain(union.rhs)
+      )(union.pos))
 
   def convertChain(chain: Fragment.Chain): Fragment.Chain =
     stitched(chain)
@@ -109,9 +110,16 @@ case class FabricStitcher(
 
   def validateNoTransactionalSubquery(fragment: Fragment): Unit = {
     fragment.flatten.foreach {
-      case apply: Fragment.Apply if apply.inTransactionsParameters.isDefined => failFabricTransactionalSubquery(apply.pos)
-      case exec: Fragment.Exec => SubqueryCall.findTransactionalSubquery(exec.query).foreach(subquery => failFabricTransactionalSubquery(subquery.position))
-      case leaf: Fragment.Leaf => leaf.clauses.foreach(c => SubqueryCall.findTransactionalSubquery(c).foreach(subquery => failFabricTransactionalSubquery(subquery.position)))
+      case apply: Fragment.Apply if apply.inTransactionsParameters.isDefined =>
+        failFabricTransactionalSubquery(apply.pos)
+      case exec: Fragment.Exec => SubqueryCall.findTransactionalSubquery(exec.query).foreach(subquery =>
+          failFabricTransactionalSubquery(subquery.position)
+        )
+      case leaf: Fragment.Leaf => leaf.clauses.foreach(c =>
+          SubqueryCall.findTransactionalSubquery(c).foreach(subquery =>
+            failFabricTransactionalSubquery(subquery.position)
+          )
+        )
       case _ => ()
     }
   }
@@ -129,7 +137,7 @@ case class FabricStitcher(
       if (lastInChain)
         Seq.empty
       else
-        Ast.aliasedReturn(leaf.clauses.last, leaf.outputColumns, leaf.clauses.last.position).toSeq,
+        Ast.aliasedReturn(leaf.clauses.last, leaf.outputColumns, leaf.clauses.last.position).toSeq
     ).flatten
 
     asExec(
@@ -145,13 +153,14 @@ case class FabricStitcher(
    */
   def stitched(fragment: Fragment): Option[Fragment.Exec] = {
     val noPos = InputPosition.NONE
-    val stitched = stitcher(fragment,
+    val stitched = stitcher(
+      fragment,
       clauseExpansion = {
         case Outer(init: Fragment.Init) => Ast.paramBindings(init.importColumns, noPos).toSeq
         case Outer(leaf: Fragment.Leaf) => Ast.withoutGraphSelection(leaf.clauses)
         case Inner(leaf: Fragment.Leaf) => Ast.withoutGraphSelection(leaf.clauses)
         case _                          => Seq()
-      },
+      }
     )
 
     val nonStatic = stitched.useAppearances.flatMap(_.nonStatic).headOption
@@ -175,12 +184,12 @@ case class FabricStitcher(
   private def asExec(
     input: Fragment.Chain,
     statement: Statement,
-    outputColumns: Seq[String],
+    outputColumns: Seq[String]
   ): Fragment.Exec = {
 
     val sensitive = statement.folder.treeExists {
       case _: SensitiveParameter => true
-      case _: SensitiveLiteral => true
+      case _: SensitiveLiteral   => true
     }
 
     val local = pipeline.checkAndFinalize.process(statement)
@@ -196,56 +205,68 @@ case class FabricStitcher(
     throw new SyntaxException(
       s"""Dynamic graph lookup not allowed here. This feature is only available in a Fabric database
          |Attempted to access graph ${Use.show(use)}""".stripMargin,
-      queryString, use.position.offset)
+      queryString,
+      use.position.offset
+    )
 
   private def failMultipleGraphs(use: Use): Nothing =
     throw new SyntaxException(
       s"""Multiple graphs in the same query not allowed here. This feature is only available in a Fabric database.
          |Attempted to access graph ${Use.show(use)}""".stripMargin,
-      queryString, use.position.offset)
+      queryString,
+      use.position.offset
+    )
 
   private def failInvalidOverride(use: Use): Nothing =
     throw new SyntaxException(
       s"""Nested subqueries must use the same graph as their parent query.
          |Attempted to access graph ${Use.show(use)}""".stripMargin,
-      queryString, use.position.offset)
+      queryString,
+      use.position.offset
+    )
 
   private def failFabricTransactionalSubquery(pos: InputPosition): Nothing =
     throw new SyntaxException(
       "Transactional subquery is not allowed here. This feature is not supported in a Fabric database.",
-      queryString, pos.offset)
+      queryString,
+      pos.offset
+    )
 
   private case class StitchResult(
     queryPart: QueryPart,
     lastUse: Use,
-    useAppearances: Seq[UseAppearance],
+    useAppearances: Seq[UseAppearance]
   )
 
   private case class StitchChainResult(
     clauses: Seq[Clause],
     lastUse: Use,
-    useAppearances: Seq[UseAppearance],
+    useAppearances: Seq[UseAppearance]
   )
 
-  private sealed trait NestedFragment
-  private final case class Outer(fragment: Fragment) extends NestedFragment
-  private final case class Inner(fragment: Fragment) extends NestedFragment
+  sealed private trait NestedFragment
+  final private case class Outer(fragment: Fragment) extends NestedFragment
+  final private case class Inner(fragment: Fragment) extends NestedFragment
 
-  private sealed trait UseAppearance {
+  sealed private trait UseAppearance {
     def nonStatic: Option[Use] = uses.find(use => !UseEvaluation.isStatic(use.graphSelection))
     def nonEqual: Option[Use] = uses.find(use => use.graphSelection != uses.head.graphSelection)
     def isInvalidOverride: Option[Use] = None
     def uses: Seq[Use]
   }
-  private final case class UnionUse(lhs: Use, rhs: Use) extends UseAppearance {
+
+  final private case class UnionUse(lhs: Use, rhs: Use) extends UseAppearance {
     def uses: Seq[Use] = Seq(lhs, rhs)
   }
-  private final case class ChainUse(outer: Option[Use], inner: Use) extends UseAppearance {
+
+  final private case class ChainUse(outer: Option[Use], inner: Use) extends UseAppearance {
     def uses: Seq[Use] = outer.toSeq :+ inner
+
     override def isInvalidOverride: Option[Use] = outer match {
-      case None        => None
+      case None => None
       case Some(outer) =>
-        def outerIsFabric = UseEvaluation.evaluateStatic(outer.graphSelection).exists(_.parts == fabricContextName.toSeq)
+        def outerIsFabric =
+          UseEvaluation.evaluateStatic(outer.graphSelection).exists(_.parts == fabricContextName.toSeq)
         def same = outer.graphSelection == inner.graphSelection
         if (!outerIsFabric && !same) Some(inner) else None
     }
@@ -253,7 +274,7 @@ case class FabricStitcher(
 
   private def stitcher(
     fragment: Fragment,
-    clauseExpansion: NestedFragment => Seq[Clause],
+    clauseExpansion: NestedFragment => Seq[Clause]
   ): StitchResult = {
 
     def stitch(fragment: Fragment, outermost: Boolean, outerUse: Option[Use]): StitchResult = {
@@ -268,11 +289,12 @@ case class FabricStitcher(
           val rhs = stitchChain(union.rhs, outermost, outerUse)
           val uses = lhs.useAppearances ++ rhs.useAppearances :+ UnionUse(lhs.lastUse, rhs.lastUse)
           val query = SingleQuery(rhs.clauses)(union.rhs.pos)
-          val result = if (union.distinct) {
-            UnionDistinct(lhs.queryPart, query)(union.pos)
-          } else {
-            UnionAll(lhs.queryPart, query)(union.pos)
-          }
+          val result =
+            if (union.distinct) {
+              UnionDistinct(lhs.queryPart, query)(union.pos)
+            } else {
+              UnionAll(lhs.queryPart, query)(union.pos)
+            }
           StitchResult(result, rhs.lastUse, uses)
       }
     }
@@ -297,7 +319,8 @@ case class FabricStitcher(
           val inner = stitch(apply.inner, outermost = false, Some(before.lastUse))
           before.copy(
             clauses = before.clauses :+ SubqueryCall(inner.queryPart, apply.inTransactionsParameters)(apply.pos),
-            useAppearances = before.useAppearances ++ inner.useAppearances)
+            useAppearances = before.useAppearances ++ inner.useAppearances
+          )
 
       }
     }
@@ -319,13 +342,14 @@ private object Ast {
       columns.nonEmpty,
       With(ReturnItems(
         includeExisting = false,
-        items = for {
-          varName <- columns
-          parName = Columns.paramName(varName)
-        } yield AliasedReturnItem(
-          expression = Parameter(parName, CTAny)(pos),
-          variable = variable(varName, pos),
-        )(pos, isAutoAliased = false)
+        items =
+          for {
+            varName <- columns
+            parName = Columns.paramName(varName)
+          } yield AliasedReturnItem(
+            expression = Parameter(parName, CTAny)(pos),
+            variable = variable(varName, pos)
+          )(pos, isAutoAliased = false)
       )(pos))(pos)
     )
 
@@ -348,12 +372,13 @@ private object Ast {
   def aliasedReturn(names: Seq[String], pos: InputPosition): Return =
     Return(ReturnItems(
       includeExisting = false,
-      items = for {
-        name <- names
-      } yield AliasedReturnItem(
-        expression = variable(name, pos),
-        variable = variable(name, pos),
-      )(pos, isAutoAliased = true)
+      items =
+        for {
+          name <- names
+        } yield AliasedReturnItem(
+          expression = variable(name, pos),
+          variable = variable(name, pos)
+        )(pos, isAutoAliased = true)
     )(pos))(pos)
 
   def withoutGraphSelection(clauses: Seq[Clause]): Seq[Clause] =

@@ -19,15 +19,6 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.ExtensionConfigurationException;
-import org.junit.platform.testkit.engine.EngineTestKit;
-import org.junit.platform.testkit.engine.Events;
-
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
@@ -37,63 +28,74 @@ import static org.junit.platform.testkit.engine.EventConditions.finishedWithFail
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
-@ExtendWith( LifeExtension.class )
-class LifeExtensionTest
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionConfigurationException;
+import org.junit.platform.testkit.engine.EngineTestKit;
+import org.junit.platform.testkit.engine.Events;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+@ExtendWith(LifeExtension.class)
+class LifeExtensionTest {
     @Inject
     private LifeSupport lifecycle;
 
     @Test
-    void extensionInjectSupportingLifecycle()
-    {
-        assertNotNull( lifecycle );
+    void extensionInjectSupportingLifecycle() {
+        assertNotNull(lifecycle);
     }
 
     @Test
-    void injectedLifeIsStartedAndStartingAddedComponents()
-    {
+    void injectedLifeIsStartedAndStartingAddedComponents() {
         TestComponent testComponent = new TestComponent();
-        lifecycle.add( testComponent );
-        assertTrue( testComponent.isStarted() );
+        lifecycle.add(testComponent);
+        assertTrue(testComponent.isStarted());
     }
 
     @Test
-    void componentShutdownAfterTest()
-    {
-        Events testEvents = EngineTestKit.engine( ENGINE_ID )
-                .selectors( selectClass( LifeExtensionComponentShutdownCase.class ) ).execute()
+    void componentShutdownAfterTest() {
+        Events testEvents = EngineTestKit.engine(ENGINE_ID)
+                .selectors(selectClass(LifeExtensionComponentShutdownCase.class))
+                .execute()
                 .testEvents();
 
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( RuntimeException.class ),
-                        message( message -> message.contains( "Shutdown exception." ) ) ) ) );
+        testEvents
+                .assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(finishedWithFailure(
+                                instanceOf(RuntimeException.class),
+                                message(message -> message.contains("Shutdown exception.")))));
     }
 
     @Test
-    void incorrectLifeSupportExtensionUsageTest()
-    {
-        Events testEvents = EngineTestKit.engine( ENGINE_ID )
-                .selectors( selectClass( LifeExtensionIncorrectUsage.class ) ).execute()
+    void incorrectLifeSupportExtensionUsageTest() {
+        Events testEvents = EngineTestKit.engine(ENGINE_ID)
+                .selectors(selectClass(LifeExtensionIncorrectUsage.class))
+                .execute()
                 .testEvents();
 
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( ExtensionConfigurationException.class ),
-                        message( message -> message.contains( "Field lifeSupport that is marked for injection" ) ) ) ) );
+        testEvents
+                .assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(finishedWithFailure(
+                                instanceOf(ExtensionConfigurationException.class),
+                                message(message ->
+                                        message.contains("Field lifeSupport that is marked for injection")))));
     }
 
-    private static class TestComponent extends LifecycleAdapter
-    {
+    private static class TestComponent extends LifecycleAdapter {
         private boolean started;
 
         @Override
-        public void start() throws Exception
-        {
+        public void start() throws Exception {
             super.start();
             started = true;
         }
 
-        public boolean isStarted()
-        {
+        public boolean isStarted() {
             return started;
         }
     }

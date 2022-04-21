@@ -28,8 +28,7 @@ import java.util.function.BiFunction;
  * {@link #comparator()} provides a comparator on priority object to be used when ordering paths.
  * {@link #canBeRuledOut(int, Object, Object)}
  */
-public interface PathInterest<P>
-{
+public interface PathInterest<P> {
     /**
      * @return {@link java.util.Comparator} to use when ordering in priority map
      */
@@ -43,7 +42,7 @@ public interface PathInterest<P>
      * @param oldPriority priority of other traversal branch.
      * @return true if traversal branch can be ruled out from further traversal, false otherwise.
      */
-    boolean canBeRuledOut( int numberOfVisits, P pathPriority, P oldPriority );
+    boolean canBeRuledOut(int numberOfVisits, P pathPriority, P oldPriority);
 
     /**
      * Decide if a traversal branch that previously has not been ruled out still is interesting. This would typically
@@ -51,7 +50,7 @@ public interface PathInterest<P>
      * @param numberOfVisits
      * @return true if traversal branch still is of interest
      */
-    boolean stillInteresting( int numberOfVisits );
+    boolean stillInteresting(int numberOfVisits);
 
     /**
      * Should traversal stop when traversed beyond lowest cost?
@@ -59,22 +58,19 @@ public interface PathInterest<P>
      */
     boolean stopAfterLowestCost();
 
-    abstract class PriorityBasedPathInterest<P> implements PathInterest<P>
-    {
+    abstract class PriorityBasedPathInterest<P> implements PathInterest<P> {
         /**
          * @return {@link BiFunction} to be used when deciding if entity can be ruled out or not.
          */
-        abstract BiFunction<P,P,Boolean> interestFunction();
+        abstract BiFunction<P, P, Boolean> interestFunction();
 
         @Override
-        public boolean canBeRuledOut( int numberOfVisits, P pathPriority, P oldPriority )
-        {
-            return !interestFunction().apply( pathPriority, oldPriority );
+        public boolean canBeRuledOut(int numberOfVisits, P pathPriority, P oldPriority) {
+            return !interestFunction().apply(pathPriority, oldPriority);
         }
 
         @Override
-        public boolean stillInteresting( int numberOfVisits )
-        {
+        public boolean stillInteresting(int numberOfVisits) {
             return true;
         }
 
@@ -82,14 +78,12 @@ public interface PathInterest<P>
          * @return true
          */
         @Override
-        public boolean stopAfterLowestCost()
-        {
+        public boolean stopAfterLowestCost() {
             return true;
         }
     }
 
-    abstract class VisitCountBasedPathInterest<P> implements PathInterest<P>
-    {
+    abstract class VisitCountBasedPathInterest<P> implements PathInterest<P> {
         abstract int numberOfWantedPaths();
 
         /**
@@ -101,20 +95,17 @@ public interface PathInterest<P>
          * @return numberOfVisits > {@link #numberOfWantedPaths()}
          */
         @Override
-        public boolean canBeRuledOut( int numberOfVisits, P pathPriority, P oldPriority )
-        {
+        public boolean canBeRuledOut(int numberOfVisits, P pathPriority, P oldPriority) {
             return numberOfVisits > numberOfWantedPaths();
         }
 
         @Override
-        public boolean stillInteresting( int numberOfVisits )
-        {
+        public boolean stillInteresting(int numberOfVisits) {
             return numberOfVisits <= numberOfWantedPaths();
         }
 
         @Override
-        public boolean stopAfterLowestCost()
-        {
+        public boolean stopAfterLowestCost() {
             return false;
         }
     }

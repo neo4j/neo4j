@@ -21,11 +21,9 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.server.config.AuthConfigProvider;
 
-public class CommunityAuthConfigProvider implements AuthConfigProvider
-{
+public class CommunityAuthConfigProvider implements AuthConfigProvider {
     @Override
-    public AuthConfigRepresentation getRepresentation()
-    {
+    public AuthConfigRepresentation getRepresentation() {
         return new AuthConfigRepresentation();
     }
 }

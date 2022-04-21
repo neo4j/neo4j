@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-public class IllegalResourceException extends RuntimeException
-{
-    public IllegalResourceException( String message )
-    {
-        super( message );
+public class IllegalResourceException extends RuntimeException {
+    public IllegalResourceException(String message) {
+        super(message);
     }
 }

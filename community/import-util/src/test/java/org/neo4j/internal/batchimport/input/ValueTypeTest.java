@@ -19,118 +19,103 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.Flushable;
 import java.io.IOException;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @EphemeralTestDirectoryExtension
-class ValueTypeTest
-{
+class ValueTypeTest {
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory directory;
 
     @Test
-    void arraysShouldCalculateCorrectLength() throws IOException
-    {
+    void arraysShouldCalculateCorrectLength() throws IOException {
         // given
         int[] value = new int[3];
-        for ( int i = 0; i < value.length; i++ )
-        {
+        for (int i = 0; i < value.length; i++) {
             value[i] = 100 + i;
         }
-        ValueType valueType = ValueType.typeOf( value );
+        ValueType valueType = ValueType.typeOf(value);
         CountingChannel channel = new CountingChannel();
 
         // when
-        int length = valueType.length( value );
-        valueType.write( value, channel );
+        int length = valueType.length(value);
+        valueType.write(value, channel);
 
         // then
-        int expected =
-                1 +                           // component type
-                Integer.BYTES +               // array length
+        int expected = 1
+                + // component type
+                Integer.BYTES
+                + // array length
                 value.length * Integer.BYTES; // array data
-        assertEquals( expected, length );
-        assertEquals( expected, channel.position() );
+        assertEquals(expected, length);
+        assertEquals(expected, channel.position());
     }
 
-    private static class CountingChannel implements FlushableChannel
-    {
+    private static class CountingChannel implements FlushableChannel {
         private long position;
 
         @Override
-        public Flushable prepareForFlush()
-        {
+        public Flushable prepareForFlush() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public FlushableChannel put( byte value )
-        {
+        public FlushableChannel put(byte value) {
             position += Byte.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putShort( short value )
-        {
+        public FlushableChannel putShort(short value) {
             position += Short.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putInt( int value )
-        {
+        public FlushableChannel putInt(int value) {
             position += Integer.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putLong( long value )
-        {
+        public FlushableChannel putLong(long value) {
             position += Long.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putFloat( float value )
-        {
+        public FlushableChannel putFloat(float value) {
             position += Float.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putDouble( double value )
-        {
+        public FlushableChannel putDouble(double value) {
             position += Double.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel put( byte[] value, int offset, int length )
-        {
+        public FlushableChannel put(byte[] value, int offset, int length) {
             position += length;
             return this;
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
-        long position()
-        {
+        long position() {
             return position;
         }
     }

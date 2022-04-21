@@ -19,22 +19,21 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.exceptions.Status.General.TransactionMemoryLimit;
 
-class MemoryAllocationLimitException extends RuntimeException implements Status.HasStatus
-{
+import org.neo4j.kernel.api.exceptions.Status;
 
-    MemoryAllocationLimitException( long request, long currentlyUsed, long maxMemory )
-    {
-        super( format( "Can't allocate extra %d bytes due to exceeding memory limit; used=%d, max=%d", request, currentlyUsed, maxMemory ) );
+class MemoryAllocationLimitException extends RuntimeException implements Status.HasStatus {
+
+    MemoryAllocationLimitException(long request, long currentlyUsed, long maxMemory) {
+        super(format(
+                "Can't allocate extra %d bytes due to exceeding memory limit; used=%d, max=%d",
+                request, currentlyUsed, maxMemory));
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return TransactionMemoryLimit;
     }
 }

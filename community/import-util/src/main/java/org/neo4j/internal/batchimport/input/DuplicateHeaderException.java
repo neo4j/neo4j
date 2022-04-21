@@ -22,25 +22,22 @@ package org.neo4j.internal.batchimport.input;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 
-public class DuplicateHeaderException extends HeaderException
-{
+public class DuplicateHeaderException extends HeaderException {
     private final Entry first;
     private final Entry other;
 
-    public DuplicateHeaderException( Header.Entry first, Header.Entry other, String sourceDescription )
-    {
-        super( "Duplicate header entries found in " + sourceDescription + ", first " + first + ", other (and conflicting) " + other );
+    public DuplicateHeaderException(Header.Entry first, Header.Entry other, String sourceDescription) {
+        super("Duplicate header entries found in " + sourceDescription + ", first " + first
+                + ", other (and conflicting) " + other);
         this.first = first;
         this.other = other;
     }
 
-    public Entry getFirst()
-    {
+    public Entry getFirst() {
         return first;
     }
 
-    public Entry getOther()
-    {
+    public Entry getOther() {
         return other;
     }
 }

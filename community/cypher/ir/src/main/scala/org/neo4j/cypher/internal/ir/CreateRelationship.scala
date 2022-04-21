@@ -26,12 +26,14 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 /**
  * Create a new relationship with the provided type and properties and assign it to the variable 'idName'.
  */
-case class CreateRelationship(idName: String,
-                              leftNode: String,
-                              relType: RelTypeName,
-                              rightNode: String,
-                              direction: SemanticDirection,
-                              properties: Option[Expression]) extends HasMappableExpressions[CreateRelationship] {
+case class CreateRelationship(
+  idName: String,
+  leftNode: String,
+  relType: RelTypeName,
+  rightNode: String,
+  direction: SemanticDirection,
+  properties: Option[Expression]
+) extends HasMappableExpressions[CreateRelationship] {
 
   val (startNode, endNode) =
     if (direction == SemanticDirection.OUTGOING || direction == SemanticDirection.BOTH) (leftNode, rightNode)

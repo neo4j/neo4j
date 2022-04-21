@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-public interface IdType
-{
+public interface IdType {
     boolean highActivity();
 
     String name();

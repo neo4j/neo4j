@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -29,38 +32,32 @@ import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
-class PopulatingIndexProxyTest
-{
-    private final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withName( "index" ).materialise( 13 );
+class PopulatingIndexProxyTest {
+    private final IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2))
+            .withName("index")
+            .materialise(13);
     private final IndexProxyStrategy indexProxyStrategy =
-            new ValueIndexProxyStrategy( index, mock( IndexStatisticsStore.class ), SchemaTestUtil.SIMPLE_NAME_LOOKUP );
-    private final IndexPopulationJob indexPopulationJob = mock( IndexPopulationJob.class );
-    private final IndexPopulation indexPopulation = mock( IndexPopulation.class );
+            new ValueIndexProxyStrategy(index, mock(IndexStatisticsStore.class), SchemaTestUtil.SIMPLE_NAME_LOOKUP);
+    private final IndexPopulationJob indexPopulationJob = mock(IndexPopulationJob.class);
+    private final IndexPopulation indexPopulation = mock(IndexPopulation.class);
     private PopulatingIndexProxy populatingIndexProxy;
 
     @BeforeEach
-    void setUp()
-    {
-        populatingIndexProxy = new PopulatingIndexProxy( indexProxyStrategy, indexPopulationJob, indexPopulation );
+    void setUp() {
+        populatingIndexProxy = new PopulatingIndexProxy(indexProxyStrategy, indexPopulationJob, indexPopulation);
     }
 
     @Test
-    void stopPopulationJobOnClose()
-    {
-        populatingIndexProxy.close( NULL_CONTEXT );
+    void stopPopulationJobOnClose() {
+        populatingIndexProxy.close(NULL_CONTEXT);
 
-        verify( indexPopulationJob ).stop( indexPopulation, NULL_CONTEXT );
+        verify(indexPopulationJob).stop(indexPopulation, NULL_CONTEXT);
     }
 
     @Test
-    void cancelPopulationJobOnDrop()
-    {
+    void cancelPopulationJobOnDrop() {
         populatingIndexProxy.drop();
 
-        verify( indexPopulationJob ).dropPopulation( indexPopulation );
+        verify(indexPopulationJob).dropPopulation(indexPopulation);
     }
 }

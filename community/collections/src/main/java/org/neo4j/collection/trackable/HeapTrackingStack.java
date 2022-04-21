@@ -21,58 +21,47 @@ package org.neo4j.collection.trackable;
 
 import java.util.EmptyStackException;
 
-public class HeapTrackingStack<T> implements AutoCloseable
-{
+public class HeapTrackingStack<T> implements AutoCloseable {
     private final HeapTrackingArrayList<T> delegate;
 
-    public HeapTrackingStack( HeapTrackingArrayList<T> delegate )
-    {
+    public HeapTrackingStack(HeapTrackingArrayList<T> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         delegate.close();
     }
 
-    public T peek()
-    {
+    public T peek() {
         int size = delegate.size();
-        if ( size == 0 )
-        {
+        if (size == 0) {
             throw new EmptyStackException();
         }
         return delegate.get(size - 1);
     }
 
-    public void push( T item )
-    {
-        delegate.add( item );
+    public void push(T item) {
+        delegate.add(item);
     }
 
-    public T pop()
-    {
+    public T pop() {
         int size = delegate.size();
-        if ( size == 0 )
-        {
+        if (size == 0) {
             throw new EmptyStackException();
         }
-        return delegate.remove( size - 1 );
+        return delegate.remove(size - 1);
     }
 
-    public int size()
-    {
+    public int size() {
         return delegate.size();
     }
 
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return size() == 0;
     }
 
-    public boolean notEmpty()
-    {
+    public boolean notEmpty() {
         return size() != 0;
     }
 }

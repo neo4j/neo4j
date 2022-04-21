@@ -25,8 +25,7 @@ import java.io.IOException;
 /**
  * Represents an infinite channel to write primitive data to.
  */
-public interface WritableChannel extends Closeable
-{
+public interface WritableChannel extends Closeable {
     /**
      * Writes a {@code byte} to this channel.
      *
@@ -34,7 +33,7 @@ public interface WritableChannel extends Closeable
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    WritableChannel put( byte value ) throws IOException;
+    WritableChannel put(byte value) throws IOException;
 
     /**
      * Writes a {@code short} to this channel.
@@ -43,7 +42,7 @@ public interface WritableChannel extends Closeable
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    WritableChannel putShort( short value ) throws IOException;
+    WritableChannel putShort(short value) throws IOException;
 
     /**
      * Writes a {@code int} to this channel.
@@ -52,7 +51,7 @@ public interface WritableChannel extends Closeable
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    WritableChannel putInt( int value ) throws IOException;
+    WritableChannel putInt(int value) throws IOException;
 
     /**
      * Writes a {@code long} to this channel.
@@ -61,7 +60,7 @@ public interface WritableChannel extends Closeable
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    WritableChannel putLong( long value ) throws IOException;
+    WritableChannel putLong(long value) throws IOException;
 
     /**
      * Writes a {@code float} to this channel.
@@ -70,7 +69,7 @@ public interface WritableChannel extends Closeable
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    WritableChannel putFloat( float value ) throws IOException;
+    WritableChannel putFloat(float value) throws IOException;
 
     /**
      * Writes a {@code double} to this channel.
@@ -79,7 +78,7 @@ public interface WritableChannel extends Closeable
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    WritableChannel putDouble( double value ) throws IOException;
+    WritableChannel putDouble(double value) throws IOException;
 
     /**
      * Writes a {@code byte[]} to this channel.
@@ -89,9 +88,8 @@ public interface WritableChannel extends Closeable
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    default WritableChannel put( byte[] value, int length ) throws IOException
-    {
-        return put( value, 0, length );
+    default WritableChannel put(byte[] value, int length) throws IOException {
+        return put(value, 0, length);
     }
 
     /**
@@ -102,5 +100,5 @@ public interface WritableChannel extends Closeable
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    WritableChannel put( byte[] value, int offset, int length ) throws IOException;
+    WritableChannel put(byte[] value, int offset, int length) throws IOException;
 }

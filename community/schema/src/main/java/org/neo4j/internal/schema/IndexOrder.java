@@ -23,7 +23,8 @@ package org.neo4j.internal.schema;
  * Used to specify ordering of index query results, if index is capable of providing that order.
  * {@link #NONE} is used when no ordering is available or required.
  */
-public enum IndexOrder
-{
-    ASCENDING, DESCENDING, NONE
+public enum IndexOrder {
+    ASCENDING,
+    DESCENDING,
+    NONE
 }

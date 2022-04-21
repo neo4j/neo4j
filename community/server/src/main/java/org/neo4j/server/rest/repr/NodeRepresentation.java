@@ -19,165 +19,136 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.util.Collection;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
+import java.util.Collection;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.server.http.cypher.entity.HttpNode;
 
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-
-public final class NodeRepresentation extends ObjectRepresentation implements ExtensibleRepresentation, EntityRepresentation
-{
+public final class NodeRepresentation extends ObjectRepresentation
+        implements ExtensibleRepresentation, EntityRepresentation {
     private final Node node;
 
-    public NodeRepresentation( Node node )
-    {
-        super( RepresentationType.NODE );
+    public NodeRepresentation(Node node) {
+        super(RepresentationType.NODE);
         this.node = node;
     }
 
     @Override
-    public String getIdentity()
-    {
-        return Long.toString( node.getId() );
+    public String getIdentity() {
+        return Long.toString(node.getId());
     }
 
     @Override
-    @Mapping( "self" )
-    public ValueRepresentation selfUri()
-    {
-        return ValueRepresentation.uri( path( "" ) );
+    @Mapping("self")
+    public ValueRepresentation selfUri() {
+        return ValueRepresentation.uri(path(""));
     }
 
-    public long getId()
-    {
+    public long getId() {
         return node.getId();
     }
 
-    private String path( String path )
-    {
+    private String path(String path) {
         return "node/" + node.getId() + path;
     }
 
-    static String path( Node node )
-    {
-        return path( node.getId() );
+    static String path(Node node) {
+        return path(node.getId());
     }
 
-    static String path( long nodeId )
-    {
+    static String path(long nodeId) {
         return "node/" + nodeId;
     }
 
-    @Mapping( "create_relationship" )
-    public ValueRepresentation relationshipCreationUri()
-    {
-        return ValueRepresentation.uri( path( "/relationships" ) );
+    @Mapping("create_relationship")
+    public ValueRepresentation relationshipCreationUri() {
+        return ValueRepresentation.uri(path("/relationships"));
     }
 
-    @Mapping( "all_relationships" )
-    public ValueRepresentation allRelationshipsUri()
-    {
-        return ValueRepresentation.uri( path( "/relationships/all" ) );
+    @Mapping("all_relationships")
+    public ValueRepresentation allRelationshipsUri() {
+        return ValueRepresentation.uri(path("/relationships/all"));
     }
 
-    @Mapping( "incoming_relationships" )
-    public ValueRepresentation incomingRelationshipsUri()
-    {
-        return ValueRepresentation.uri( path( "/relationships/in" ) );
+    @Mapping("incoming_relationships")
+    public ValueRepresentation incomingRelationshipsUri() {
+        return ValueRepresentation.uri(path("/relationships/in"));
     }
 
-    @Mapping( "outgoing_relationships" )
-    public ValueRepresentation outgoingRelationshipsUri()
-    {
-        return ValueRepresentation.uri( path( "/relationships/out" ) );
+    @Mapping("outgoing_relationships")
+    public ValueRepresentation outgoingRelationshipsUri() {
+        return ValueRepresentation.uri(path("/relationships/out"));
     }
 
-    @Mapping( "all_typed_relationships" )
-    public ValueRepresentation allTypedRelationshipsUriTemplate()
-    {
-        return ValueRepresentation.template( path( "/relationships/all/{-list|&|types}" ) );
+    @Mapping("all_typed_relationships")
+    public ValueRepresentation allTypedRelationshipsUriTemplate() {
+        return ValueRepresentation.template(path("/relationships/all/{-list|&|types}"));
     }
 
-    @Mapping( "incoming_typed_relationships" )
-    public ValueRepresentation incomingTypedRelationshipsUriTemplate()
-    {
-        return ValueRepresentation.template( path( "/relationships/in/{-list|&|types}" ) );
+    @Mapping("incoming_typed_relationships")
+    public ValueRepresentation incomingTypedRelationshipsUriTemplate() {
+        return ValueRepresentation.template(path("/relationships/in/{-list|&|types}"));
     }
 
-    @Mapping( "outgoing_typed_relationships" )
-    public ValueRepresentation outgoingTypedRelationshipsUriTemplate()
-    {
-        return ValueRepresentation.template( path( "/relationships/out/{-list|&|types}" ) );
+    @Mapping("outgoing_typed_relationships")
+    public ValueRepresentation outgoingTypedRelationshipsUriTemplate() {
+        return ValueRepresentation.template(path("/relationships/out/{-list|&|types}"));
     }
 
-    @Mapping( "labels" )
-    public ValueRepresentation labelsUriTemplate()
-    {
-        return ValueRepresentation.template( path( "/labels" ) );
+    @Mapping("labels")
+    public ValueRepresentation labelsUriTemplate() {
+        return ValueRepresentation.template(path("/labels"));
     }
 
-    @Mapping( "properties" )
-    public ValueRepresentation propertiesUri()
-    {
-        return ValueRepresentation.uri( path( "/properties" ) );
+    @Mapping("properties")
+    public ValueRepresentation propertiesUri() {
+        return ValueRepresentation.uri(path("/properties"));
     }
 
-    @Mapping( "property" )
-    public ValueRepresentation propertyUriTemplate()
-    {
-        return ValueRepresentation.template( path( "/properties/{key}" ) );
+    @Mapping("property")
+    public ValueRepresentation propertyUriTemplate() {
+        return ValueRepresentation.template(path("/properties/{key}"));
     }
 
-    @Mapping( "traverse" )
-    public ValueRepresentation traverseUriTemplate()
-    {
-        return ValueRepresentation.template( path( "/traverse/{returnType}" ) );
+    @Mapping("traverse")
+    public ValueRepresentation traverseUriTemplate() {
+        return ValueRepresentation.template(path("/traverse/{returnType}"));
     }
 
-    @Mapping( "paged_traverse" )
-    public ValueRepresentation pagedTraverseUriTemplate()
-    {
-        return ValueRepresentation.template( path( "/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );
+    @Mapping("paged_traverse")
+    public ValueRepresentation pagedTraverseUriTemplate() {
+        return ValueRepresentation.template(path("/paged/traverse/{returnType}{?pageSize,leaseTime}"));
     }
 
-    @Mapping( "metadata" )
-    public MapRepresentation metadata()
-    {
-        if ( isDeleted() )
-        {
-            return new MapRepresentation( map( "id", node.getId(), "deleted", Boolean.TRUE ) );
-        }
-        else
-        {
-            Collection<String> labels = Iterables.asCollection( new IterableWrapper<>( node.getLabels() )
-            {
+    @Mapping("metadata")
+    public MapRepresentation metadata() {
+        if (isDeleted()) {
+            return new MapRepresentation(map("id", node.getId(), "deleted", Boolean.TRUE));
+        } else {
+            Collection<String> labels = Iterables.asCollection(new IterableWrapper<>(node.getLabels()) {
                 @Override
-                protected String underlyingObjectToObject( Label label )
-                {
+                protected String underlyingObjectToObject(Label label) {
                     return label.name();
                 }
-            } );
-            return new MapRepresentation( map( "id", node.getId(), "labels", labels ) );
+            });
+            return new MapRepresentation(map("id", node.getId(), "labels", labels));
         }
     }
 
-    private boolean isDeleted()
-    {
+    private boolean isDeleted() {
         return ((HttpNode) node).isDeleted();
     }
 
     @Override
-    public void extraData( MappingSerializer serializer )
-    {
-        if ( !isDeleted() )
-        {
+    public void extraData(MappingSerializer serializer) {
+        if (!isDeleted()) {
             MappingWriter writer = serializer.writer;
-            MappingWriter properties = writer.newMapping( RepresentationType.PROPERTIES, "data" );
-            new PropertiesRepresentation( node ).serialize( properties );
+            MappingWriter properties = writer.newMapping(RepresentationType.PROPERTIES, "data");
+            new PropertiesRepresentation(node).serialize(properties);
             properties.done();
         }
     }

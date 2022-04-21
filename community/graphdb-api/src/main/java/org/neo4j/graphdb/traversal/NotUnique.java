@@ -21,22 +21,18 @@ package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
 
-class NotUnique extends AbstractUniquenessFilter
-{
-    NotUnique()
-    {
-        super( null );
+class NotUnique extends AbstractUniquenessFilter {
+    NotUnique() {
+        super(null);
     }
 
     @Override
-    public boolean check( TraversalBranch source )
-    {
+    public boolean check(TraversalBranch source) {
         return true;
     }
 
     @Override
-    public boolean checkFull( Path path )
-    {
+    public boolean checkFull(Path path) {
         // Where we have no uniqueness, everything is unique.
         return true;
     }

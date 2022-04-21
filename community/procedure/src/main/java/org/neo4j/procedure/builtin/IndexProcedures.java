@@ -19,9 +19,12 @@
  */
 package org.neo4j.procedure.builtin;
 
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildAll;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildUpdated;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.foregroundRebuildUpdated;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -33,115 +36,93 @@ import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 
-import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildAll;
-import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildUpdated;
-import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.foregroundRebuildUpdated;
-
-public class IndexProcedures
-{
+public class IndexProcedures {
     private final KernelTransaction ktx;
     private final IndexingService indexingService;
 
-    public IndexProcedures( KernelTransaction tx, IndexingService indexingService )
-    {
+    public IndexProcedures(KernelTransaction tx, IndexingService indexingService) {
         this.ktx = tx;
         this.indexingService = indexingService;
     }
 
-    void awaitIndexByName( String indexName, long timeout, TimeUnit timeoutUnits )
-            throws ProcedureException
-    {
-        final IndexDescriptor index = getIndex( indexName );
-        waitUntilOnline( index, timeout, timeoutUnits );
+    void awaitIndexByName(String indexName, long timeout, TimeUnit timeoutUnits) throws ProcedureException {
+        final IndexDescriptor index = getIndex(indexName);
+        waitUntilOnline(index, timeout, timeoutUnits);
     }
 
-    void resampleIndex( String indexName ) throws ProcedureException
-    {
-        final IndexDescriptor index = getIndex( indexName );
-        triggerSampling( index );
+    void resampleIndex(String indexName) throws ProcedureException {
+        final IndexDescriptor index = getIndex(indexName);
+        triggerSampling(index);
     }
 
-    void resampleOutdatedIndexes()
-    {
-        indexingService.triggerIndexSampling( backgroundRebuildUpdated() );
+    void resampleOutdatedIndexes() {
+        indexingService.triggerIndexSampling(backgroundRebuildUpdated());
     }
 
-    void resampleOutdatedIndexes( long timeOutSeconds )
-    {
-        long millis = TimeUnit.SECONDS.toMillis( timeOutSeconds );
-        IndexSamplingMode mode = foregroundRebuildUpdated( millis );
-        indexingService.triggerIndexSampling( mode );
+    void resampleOutdatedIndexes(long timeOutSeconds) {
+        long millis = TimeUnit.SECONDS.toMillis(timeOutSeconds);
+        IndexSamplingMode mode = foregroundRebuildUpdated(millis);
+        indexingService.triggerIndexSampling(mode);
     }
 
-    private IndexDescriptor getIndex( String indexName ) throws ProcedureException
-    {
+    private IndexDescriptor getIndex(String indexName) throws ProcedureException {
         // Find index by name.
-        IndexDescriptor indexReference = ktx.schemaRead().indexGetForName( indexName );
+        IndexDescriptor indexReference = ktx.schemaRead().indexGetForName(indexName);
 
-        if ( indexReference == IndexDescriptor.NO_INDEX )
-        {
-            throw new ProcedureException( Status.Schema.IndexNotFound, "No such index '%s'", indexName );
+        if (indexReference == IndexDescriptor.NO_INDEX) {
+            throw new ProcedureException(Status.Schema.IndexNotFound, "No such index '%s'", indexName);
         }
         return indexReference;
     }
 
-    private void waitUntilOnline( IndexDescriptor index, long timeout, TimeUnit timeoutUnits ) throws ProcedureException
-    {
-        try
-        {
-            Predicates.awaitEx( () -> isOnline( index ), timeout, timeoutUnits );
-        }
-        catch ( TimeoutException e )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureTimedOut, "Index on '%s' did not come online within %s %s",
-                    index.userDescription( ktx.tokenRead() ), timeout, timeoutUnits );
+    private void waitUntilOnline(IndexDescriptor index, long timeout, TimeUnit timeoutUnits) throws ProcedureException {
+        try {
+            Predicates.awaitEx(() -> isOnline(index), timeout, timeoutUnits);
+        } catch (TimeoutException e) {
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureTimedOut,
+                    "Index on '%s' did not come online within %s %s",
+                    index.userDescription(ktx.tokenRead()),
+                    timeout,
+                    timeoutUnits);
         }
     }
 
-    private boolean isOnline( IndexDescriptor index ) throws ProcedureException
-    {
-        InternalIndexState state = getState( index );
-        switch ( state )
-        {
+    private boolean isOnline(IndexDescriptor index) throws ProcedureException {
+        InternalIndexState state = getState(index);
+        switch (state) {
             case POPULATING:
                 return false;
             case ONLINE:
                 return true;
             case FAILED:
-                String cause = getFailure( index );
-                throw new ProcedureException( Status.Schema.IndexCreationFailed,
-                        IndexPopulationFailure.appendCauseOfFailure( "Index '%s' is in failed state.", cause ), index.getName() );
+                String cause = getFailure(index);
+                throw new ProcedureException(
+                        Status.Schema.IndexCreationFailed,
+                        IndexPopulationFailure.appendCauseOfFailure("Index '%s' is in failed state.", cause),
+                        index.getName());
             default:
-                throw new IllegalStateException( "Unknown index state " + state );
+                throw new IllegalStateException("Unknown index state " + state);
         }
     }
 
-    private InternalIndexState getState( IndexDescriptor index ) throws ProcedureException
-    {
-        try
-        {
-            return ktx.schemaRead().indexGetState( index );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No such index %s", index.getName() );
+    private InternalIndexState getState(IndexDescriptor index) throws ProcedureException {
+        try {
+            return ktx.schemaRead().indexGetState(index);
+        } catch (IndexNotFoundKernelException e) {
+            throw new ProcedureException(Status.Schema.IndexNotFound, e, "No such index %s", index.getName());
         }
     }
 
-    private String getFailure( IndexDescriptor index ) throws ProcedureException
-    {
-        try
-        {
-            return ktx.schemaRead().indexGetFailure( index );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No such index %s", index.getName() );
+    private String getFailure(IndexDescriptor index) throws ProcedureException {
+        try {
+            return ktx.schemaRead().indexGetFailure(index);
+        } catch (IndexNotFoundKernelException e) {
+            throw new ProcedureException(Status.Schema.IndexNotFound, e, "No such index %s", index.getName());
         }
     }
 
-    private void triggerSampling( IndexDescriptor index )
-    {
-        indexingService.triggerIndexSampling( index, backgroundRebuildAll() );
+    private void triggerSampling(IndexDescriptor index) {
+        indexingService.triggerIndexSampling(index, backgroundRebuildAll());
     }
 }

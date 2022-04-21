@@ -22,12 +22,10 @@ package org.neo4j.commandline.admin.security;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
 
-public interface PasswordCommand
-{
+public interface PasswordCommand {
     SecureHasher secureHasher = new SecureHasher();
 
-    default SystemGraphCredential createCredentialForPassword( byte[] password )
-    {
-        return SystemGraphCredential.createCredentialForPassword( password, secureHasher );
+    default SystemGraphCredential createCredentialForPassword(byte[] password) {
+        return SystemGraphCredential.createCredentialForPassword(password, secureHasher);
     }
 }

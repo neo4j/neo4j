@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class ToIntegerListTest extends FunctionTestBase("toIntegerList")  {
+class ToIntegerListTest extends FunctionTestBase("toIntegerList") {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTList(CTAny))(CTList(CTInteger))
@@ -48,7 +48,6 @@ class ToIntegerListTest extends FunctionTestBase("toIntegerList")  {
       "Type mismatch: expected List<T> but was String"
     )
   }
-
 
   test("shouldFailIfWrongNumberOfArguments") {
     testInvalidApplication()(

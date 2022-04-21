@@ -19,6 +19,12 @@
  */
 package org.neo4j.values.storable;
 
+import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.BeginArray;
+import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.EndArray;
+import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.WriteByteArray;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -28,206 +34,166 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.BeginArray;
-import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.EndArray;
-import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.WriteByteArray;
-
-public class BufferValueWriter implements ValueWriter<RuntimeException>
-{
-    enum SpecialKind
-    {
+public class BufferValueWriter implements ValueWriter<RuntimeException> {
+    enum SpecialKind {
         WriteCharArray,
         WriteByteArray,
         BeginArray,
         EndArray,
     }
 
-    public static class Special
-    {
+    public static class Special {
         final SpecialKind kind;
         final String key;
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( o == null || getClass() != o.getClass() )
-            {
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
 
             Special special = (Special) o;
-            return kind == special.kind && key.equals( special.key );
+            return kind == special.kind && key.equals(special.key);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return 31 * kind.hashCode() + key.hashCode();
         }
 
-        Special( SpecialKind kind, String key )
-        {
+        Special(SpecialKind kind, String key) {
             this.kind = kind;
             this.key = key;
         }
 
-        Special( SpecialKind kind, int key )
-        {
+        Special(SpecialKind kind, int key) {
             this.kind = kind;
-            this.key = Integer.toString( key );
+            this.key = Integer.toString(key);
         }
 
         @Override
-        public String toString()
-        {
-            return format( "Special(%s)", key );
+        public String toString() {
+            return format("Special(%s)", key);
         }
     }
 
     protected List<Object> buffer = new ArrayList<>();
 
-    public void assertBuffer( Object... writeEvents )
-    {
-        assertThat( buffer ).containsExactly( writeEvents );
+    public void assertBuffer(Object... writeEvents) {
+        assertThat(buffer).containsExactly(writeEvents);
     }
 
     @Override
-    public void writeNull()
-    {
-        buffer.add( null );
+    public void writeNull() {
+        buffer.add(null);
     }
 
     @Override
-    public void writeBoolean( boolean value )
-    {
-        buffer.add( value );
+    public void writeBoolean(boolean value) {
+        buffer.add(value);
     }
 
     @Override
-    public void writeInteger( byte value )
-    {
-        buffer.add( value );
+    public void writeInteger(byte value) {
+        buffer.add(value);
     }
 
     @Override
-    public void writeInteger( short value )
-    {
-        buffer.add( value );
+    public void writeInteger(short value) {
+        buffer.add(value);
     }
 
     @Override
-    public void writeInteger( int value )
-    {
-        buffer.add( value );
+    public void writeInteger(int value) {
+        buffer.add(value);
     }
 
     @Override
-    public void writeInteger( long value )
-    {
-        buffer.add( value );
+    public void writeInteger(long value) {
+        buffer.add(value);
     }
 
     @Override
-    public void writeFloatingPoint( float value )
-    {
-        buffer.add( value );
+    public void writeFloatingPoint(float value) {
+        buffer.add(value);
     }
 
     @Override
-    public void writeFloatingPoint( double value )
-    {
-        buffer.add( value );
+    public void writeFloatingPoint(double value) {
+        buffer.add(value);
     }
 
     @Override
-    public void writeString( String value )
-    {
-        buffer.add( value );
+    public void writeString(String value) {
+        buffer.add(value);
     }
 
     @Override
-    public void writeString( char value )
-    {
-        buffer.add( value );
+    public void writeString(char value) {
+        buffer.add(value);
     }
 
     @Override
-    public void beginArray( int size, ArrayType arrayType )
-    {
-        buffer.add( Specials.beginArray( size, arrayType ) );
+    public void beginArray(int size, ArrayType arrayType) {
+        buffer.add(Specials.beginArray(size, arrayType));
     }
 
     @Override
-    public void endArray()
-    {
-        buffer.add( Specials.endArray() );
+    public void endArray() {
+        buffer.add(Specials.endArray());
     }
 
     @Override
-    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
-    {
-        buffer.add( new PointValue( crs, coordinate ) );
+    public void writePoint(CoordinateReferenceSystem crs, double[] coordinate) {
+        buffer.add(new PointValue(crs, coordinate));
     }
 
     @Override
-    public void writeByteArray( byte[] value ) throws RuntimeException
-    {
-        buffer.add( Specials.byteArray( value ) );
+    public void writeByteArray(byte[] value) throws RuntimeException {
+        buffer.add(Specials.byteArray(value));
     }
 
     @Override
-    public void writeDuration( long months, long days, long seconds, int nanos )
-    {
-        buffer.add( DurationValue.duration( months, days, seconds, nanos ) );
+    public void writeDuration(long months, long days, long seconds, int nanos) {
+        buffer.add(DurationValue.duration(months, days, seconds, nanos));
     }
 
     @Override
-    public void writeDate( LocalDate localDate ) throws RuntimeException
-    {
-        buffer.add( DateValue.date( localDate ) );
+    public void writeDate(LocalDate localDate) throws RuntimeException {
+        buffer.add(DateValue.date(localDate));
     }
 
     @Override
-    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
-    {
-        buffer.add( LocalTimeValue.localTime( localTime ) );
+    public void writeLocalTime(LocalTime localTime) throws RuntimeException {
+        buffer.add(LocalTimeValue.localTime(localTime));
     }
 
     @Override
-    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
-    {
-        buffer.add( TimeValue.time( offsetTime ) );
+    public void writeTime(OffsetTime offsetTime) throws RuntimeException {
+        buffer.add(TimeValue.time(offsetTime));
     }
 
     @Override
-    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
-    {
-        buffer.add( LocalDateTimeValue.localDateTime( localDateTime ) );
+    public void writeLocalDateTime(LocalDateTime localDateTime) throws RuntimeException {
+        buffer.add(LocalDateTimeValue.localDateTime(localDateTime));
     }
 
     @Override
-    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
-    {
-        buffer.add( DateTimeValue.datetime( zonedDateTime ) );
+    public void writeDateTime(ZonedDateTime zonedDateTime) throws RuntimeException {
+        buffer.add(DateTimeValue.datetime(zonedDateTime));
     }
 
-    public static class Specials
-    {
-        public static Special byteArray( byte[] value )
-        {
-            return new Special( WriteByteArray, Arrays.hashCode( value ) );
+    public static class Specials {
+        public static Special byteArray(byte[] value) {
+            return new Special(WriteByteArray, Arrays.hashCode(value));
         }
 
-        public static Special beginArray( int size, ArrayType arrayType )
-        {
-            return new Special( BeginArray, size + arrayType.toString() );
+        public static Special beginArray(int size, ArrayType arrayType) {
+            return new Special(BeginArray, size + arrayType.toString());
         }
 
-        public static Special endArray()
-        {
-            return new Special( EndArray, 0 );
+        public static Special endArray() {
+            return new Special(EndArray, 0);
         }
     }
 }

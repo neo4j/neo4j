@@ -26,10 +26,29 @@ case object Round extends Function {
   def name = "round"
 
   override val signatures = Vector(
-    TypeSignature(this, CTFloat, CTFloat, "Returns the value of a number rounded to the nearest integer.", category = Category.NUMERIC),
-    FunctionTypeSignature(function = this, names = Vector("value", "precision"), argumentTypes = Vector(CTFloat, CTNumber), outputType = CTFloat,
-      description = "Returns the value of a number rounded to the specified precision using rounding mode HALF_UP.", category = Category.NUMERIC),
-    FunctionTypeSignature(function = this, names = Vector("value", "precision", "mode"), argumentTypes = Vector(CTFloat, CTNumber, CTString),
-      outputType = CTFloat, description = "Returns the value of a number rounded to the specified precision with the specified rounding mode.", category = Category.NUMERIC)
+    TypeSignature(
+      this,
+      CTFloat,
+      CTFloat,
+      "Returns the value of a number rounded to the nearest integer.",
+      category = Category.NUMERIC
+    ),
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("value", "precision"),
+      argumentTypes = Vector(CTFloat, CTNumber),
+      outputType = CTFloat,
+      description = "Returns the value of a number rounded to the specified precision using rounding mode HALF_UP.",
+      category = Category.NUMERIC
+    ),
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("value", "precision", "mode"),
+      argumentTypes = Vector(CTFloat, CTNumber, CTString),
+      outputType = CTFloat,
+      description =
+        "Returns the value of a number rounded to the specified precision with the specified rounding mode.",
+      category = Category.NUMERIC
+    )
   )
 }

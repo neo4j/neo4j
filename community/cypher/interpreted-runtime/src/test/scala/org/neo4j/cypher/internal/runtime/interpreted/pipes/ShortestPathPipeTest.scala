@@ -43,9 +43,19 @@ import org.neo4j.memory.MemoryTracker
 import java.util.Collections
 
 class ShortestPathPipeTest extends CypherFunSuite {
+
   test("should be lazy") {
-    val shortestPath = ShortestPath(pathName = "p", left = SingleNode("start"), right = SingleNode("end"), relTypes = Seq.empty,
-      dir = SemanticDirection.OUTGOING, allowZeroLength = true, maxDepth = None, single = true, relIterator = None)
+    val shortestPath = ShortestPath(
+      pathName = "p",
+      left = SingleNode("start"),
+      right = SingleNode("end"),
+      relTypes = Seq.empty,
+      dir = SemanticDirection.OUTGOING,
+      allowZeroLength = true,
+      maxDepth = None,
+      single = true,
+      relIterator = None
+    )
     val n1 = mock[Node]
     when(n1.getRelationships).thenReturn(Iterables.emptyResourceIterable[Relationship]())
     val input = new FakePipe(Seq.fill(10)(Map("start" -> n1, "end" -> n1)))
@@ -54,7 +64,15 @@ class ShortestPathPipeTest extends CypherFunSuite {
     val p = mock[Path]
     when(p.nodes()).thenReturn(java.util.List.of[Node](n1))
     when(p.relationships()).thenReturn(Collections.emptyList[Relationship]())
-    when(context.singleShortestPath(anyLong(), anyLong(), anyInt(), any[Expander], any[KernelPredicate[Path]], any[Seq[KernelPredicate[Entity]]], any[MemoryTracker]))
+    when(context.singleShortestPath(
+      anyLong(),
+      anyLong(),
+      anyInt(),
+      any[Expander],
+      any[KernelPredicate[Path]],
+      any[Seq[KernelPredicate[Entity]]],
+      any[MemoryTracker]
+    ))
       .thenReturn(Some(p))
 
     // when

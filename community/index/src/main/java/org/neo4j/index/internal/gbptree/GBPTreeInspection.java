@@ -19,13 +19,19 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.eclipse.collections.api.list.primitive.ImmutableLongList;
-
 import java.util.List;
 import java.util.Map;
+import org.eclipse.collections.api.list.primitive.ImmutableLongList;
 
-public record GBPTreeInspection(ImmutableLongList internalNodes, ImmutableLongList leafNodes, ImmutableLongList allNodes, ImmutableLongList offloadNodes,
-                                Map<Long,Integer> keyCounts, List<ImmutableLongList> nodesPerLevel, List<FreelistEntry> allFreelistEntries,
-                                ImmutableLongList unreleasedFreelistEntries, long rootNode, int lastLevel, TreeState treeState)
-{
-}
+public record GBPTreeInspection(
+        ImmutableLongList internalNodes,
+        ImmutableLongList leafNodes,
+        ImmutableLongList allNodes,
+        ImmutableLongList offloadNodes,
+        Map<Long, Integer> keyCounts,
+        List<ImmutableLongList> nodesPerLevel,
+        List<FreelistEntry> allFreelistEntries,
+        ImmutableLongList unreleasedFreelistEntries,
+        long rootNode,
+        int lastLevel,
+        TreeState treeState) {}

@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.profiling;
 
 import java.util.Arrays;
-
 import org.neo4j.cypher.result.OperatorProfile;
 
-public class ProfilingTracerData implements OperatorProfile
-{
+public class ProfilingTracerData implements OperatorProfile {
     private long time;
     private long dbHits;
     private long rows;
@@ -32,8 +30,8 @@ public class ProfilingTracerData implements OperatorProfile
     private long pageCacheMisses;
     private long maxAllocatedMemory;
 
-    public void update( long time, long dbHits, long rows, long pageCacheHits, long pageCacheMisses, long maxAllocatedMemory )
-    {
+    public void update(
+            long time, long dbHits, long rows, long pageCacheHits, long pageCacheMisses, long maxAllocatedMemory) {
         this.time += time;
         this.dbHits += dbHits;
         this.rows += rows;
@@ -43,103 +41,93 @@ public class ProfilingTracerData implements OperatorProfile
     }
 
     @Override
-    public long time()
-    {
+    public long time() {
         return time;
     }
 
     @Override
-    public long dbHits()
-    {
+    public long dbHits() {
         return dbHits;
     }
 
     @Override
-    public long rows()
-    {
+    public long rows() {
         return rows;
     }
 
     @Override
-    public long pageCacheHits()
-    {
+    public long pageCacheHits() {
         return pageCacheHits;
     }
 
     @Override
-    public long pageCacheMisses()
-    {
+    public long pageCacheMisses() {
         return pageCacheMisses;
     }
 
     @Override
-    public long maxAllocatedMemory()
-    {
+    public long maxAllocatedMemory() {
         return maxAllocatedMemory;
     }
 
-    public void sanitize()
-    {
-        if ( time < OperatorProfile.NO_DATA )
-        {
+    public void sanitize() {
+        if (time < OperatorProfile.NO_DATA) {
             time = OperatorProfile.NO_DATA;
         }
-        if ( dbHits < OperatorProfile.NO_DATA )
-        {
+        if (dbHits < OperatorProfile.NO_DATA) {
             dbHits = OperatorProfile.NO_DATA;
         }
-        if ( rows < OperatorProfile.NO_DATA )
-        {
+        if (rows < OperatorProfile.NO_DATA) {
             rows = OperatorProfile.NO_DATA;
         }
-        if ( pageCacheHits < OperatorProfile.NO_DATA )
-        {
+        if (pageCacheHits < OperatorProfile.NO_DATA) {
             pageCacheHits = OperatorProfile.NO_DATA;
         }
-        if ( pageCacheMisses < OperatorProfile.NO_DATA )
-        {
+        if (pageCacheMisses < OperatorProfile.NO_DATA) {
             pageCacheMisses = OperatorProfile.NO_DATA;
         }
-        if ( maxAllocatedMemory < OperatorProfile.NO_DATA )
-        {
+        if (maxAllocatedMemory < OperatorProfile.NO_DATA) {
             maxAllocatedMemory = OperatorProfile.NO_DATA;
         }
     }
 
     @Override
-    public int hashCode()
-    {
-        return Arrays.hashCode( new long[]{this.time(), this.dbHits(), this.rows(), this.pageCacheHits(), this.pageCacheMisses(), this.maxAllocatedMemory()} );
+    public int hashCode() {
+        return Arrays.hashCode(new long[] {
+            this.time(),
+            this.dbHits(),
+            this.rows(),
+            this.pageCacheHits(),
+            this.pageCacheMisses(),
+            this.maxAllocatedMemory()
+        });
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( !(o instanceof OperatorProfile that) )
-        {
+        if (!(o instanceof OperatorProfile that)) {
             return false;
         }
-        return this.time() == that.time() &&
-               this.dbHits() == that.dbHits() &&
-               this.rows() == that.rows() &&
-               this.pageCacheHits() == that.pageCacheHits() &&
-               this.pageCacheMisses() == that.pageCacheMisses() &&
-               this.maxAllocatedMemory() == that.maxAllocatedMemory();
+        return this.time() == that.time()
+                && this.dbHits() == that.dbHits()
+                && this.rows() == that.rows()
+                && this.pageCacheHits() == that.pageCacheHits()
+                && this.pageCacheMisses() == that.pageCacheMisses()
+                && this.maxAllocatedMemory() == that.maxAllocatedMemory();
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "Operator Profile { time: %d, dbHits: %d, rows: %d, page cache hits: %d, page cache misses: %d, max allocated: %d }",
-                              this.time(),
-                              this.dbHits(),
-                              this.rows(),
-                              this.pageCacheHits(),
-                              this.pageCacheMisses(),
-                              this.maxAllocatedMemory() );
+    public String toString() {
+        return String.format(
+                "Operator Profile { time: %d, dbHits: %d, rows: %d, page cache hits: %d, page cache misses: %d, max allocated: %d }",
+                this.time(),
+                this.dbHits(),
+                this.rows(),
+                this.pageCacheHits(),
+                this.pageCacheMisses(),
+                this.maxAllocatedMemory());
     }
 }

@@ -19,9 +19,10 @@
  */
 package org.neo4j.bolt.v41.runtime;
 
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
+
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.ResourceLock;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
@@ -37,42 +38,34 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
-
-@ResourceLock( "boltStateMachineV41" )
-public class BoltStateMachineV41StateTestBase
-{
+@ResourceLock("boltStateMachineV41")
+public class BoltStateMachineV41StateTestBase {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
-    protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel( "conn-v41-test-boltchannel-id" );
+    protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel("conn-v41-test-boltchannel-id");
     protected static final MemoryTracker MEMORY_TRACKER = EmptyMemoryTracker.INSTANCE;
 
     @RegisterExtension
     static final SessionExtension env = new SessionExtension();
 
-    protected BoltStateMachineV41 newStateMachine()
-    {
-        return (BoltStateMachineV41) env.newMachine( BoltProtocolV41.VERSION, BOLT_CHANNEL, MEMORY_TRACKER );
+    protected BoltStateMachineV41 newStateMachine() {
+        return (BoltStateMachineV41) env.newMachine(BoltProtocolV41.VERSION, BOLT_CHANNEL, MEMORY_TRACKER);
     }
 
-    protected BoltStateMachineV41 newStateMachineAfterAuth() throws BoltConnectionFatality
-    {
-        var machine = (BoltStateMachineV41) env.newMachine( BoltProtocolV41.VERSION, BOLT_CHANNEL, MEMORY_TRACKER );
-        machine.process( BoltV4Messages.hello(), nullResponseHandler() );
+    protected BoltStateMachineV41 newStateMachineAfterAuth() throws BoltConnectionFatality {
+        var machine = (BoltStateMachineV41) env.newMachine(BoltProtocolV41.VERSION, BOLT_CHANNEL, MEMORY_TRACKER);
+        machine.process(BoltV4Messages.hello(), nullResponseHandler());
         return machine;
     }
 
-    protected static RequestMessage newHelloMessage()
-    {
+    protected static RequestMessage newHelloMessage() {
         return BoltV41Messages.hello();
     }
 
-    protected static RequestMessage newPullMessage( long size ) throws BoltIOException
-    {
-        return BoltV41Messages.pull( size );
+    protected static RequestMessage newPullMessage(long size) throws BoltIOException {
+        return BoltV41Messages.pull(size);
     }
 
-    protected static RequestMessage newDiscardMessage( long size ) throws BoltIOException
-    {
-        return BoltV41Messages.discard( size );
+    protected static RequestMessage newDiscardMessage(long size) throws BoltIOException {
+        return BoltV41Messages.discard(size);
     }
 }

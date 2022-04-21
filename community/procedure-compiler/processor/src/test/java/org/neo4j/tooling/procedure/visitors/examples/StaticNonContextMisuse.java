@@ -19,7 +19,6 @@
  */
 package org.neo4j.tooling.procedure.visitors.examples;
 
-public class StaticNonContextMisuse
-{
+public class StaticNonContextMisuse {
     String value;
 }

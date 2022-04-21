@@ -19,20 +19,14 @@
  */
 package org.neo4j.kernel.recovery.facade;
 
-public interface RecoveryFacadeMonitor
-{
-    RecoveryFacadeMonitor EMPTY_MONITOR = new RecoveryFacadeMonitor()
-    {
+public interface RecoveryFacadeMonitor {
+    RecoveryFacadeMonitor EMPTY_MONITOR = new RecoveryFacadeMonitor() {
 
         @Override
-        public void recoveryStarted()
-        {
-        }
+        public void recoveryStarted() {}
 
         @Override
-        public void recoveryCompleted()
-        {
-        }
+        public void recoveryCompleted() {}
     };
 
     void recoveryStarted();

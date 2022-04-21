@@ -19,10 +19,11 @@
  */
 package org.neo4j.values.storable;
 
+import static java.lang.String.format;
+
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.ValueMapper;
@@ -30,106 +31,85 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static java.lang.String.format;
-
-public abstract class StringValue extends TextValue
-{
+public abstract class StringValue extends TextValue {
     abstract String value();
 
     @Override
-    public boolean equals( Value value )
-    {
-        return value.equals( value() );
+    public boolean equals(Value value) {
+        return value.equals(value());
     }
 
     @Override
-    public boolean equals( char x )
-    {
-        return value().length() == 1 && value().charAt( 0 ) == x;
+    public boolean equals(char x) {
+        return value().length() == 1 && value().charAt(0) == x;
     }
 
     @Override
-    public boolean equals( String x )
-    {
-        return value().equals( x );
+    public boolean equals(String x) {
+        return value().equals(x);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeString( value() );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeString(value());
     }
 
     @Override
-    public TextValue toLower()
-    {
-        return new StringWrappingStringValue( value().toLowerCase() );
+    public TextValue toLower() {
+        return new StringWrappingStringValue(value().toLowerCase());
     }
 
     @Override
-    public TextValue toUpper()
-    {
-        return new StringWrappingStringValue( value().toUpperCase() );
+    public TextValue toUpper() {
+        return new StringWrappingStringValue(value().toUpperCase());
     }
 
     @Override
-    public ListValue split( String separator )
-    {
+    public ListValue split(String separator) {
         assert separator != null;
         String asString = value();
-        //Cypher has different semantics for the case where the separator
-        //is exactly the value, in cypher we expect two empty arrays
-        //where as java returns an empty array
-        if ( separator.equals( asString ) )
-        {
+        // Cypher has different semantics for the case where the separator
+        // is exactly the value, in cypher we expect two empty arrays
+        // where as java returns an empty array
+        if (separator.equals(asString)) {
             return EMPTY_SPLIT;
-        }
-        else if ( separator.isEmpty() )
-        {
-            return splitOnEmptySeparator( asString );
+        } else if (separator.isEmpty()) {
+            return splitOnEmptySeparator(asString);
         }
 
-        return splitNonRegex( asString, separator );
+        return splitNonRegex(asString, separator);
     }
 
-    private ListValue splitOnEmptySeparator( String asString )
-    {
+    private ListValue splitOnEmptySeparator(String asString) {
         char[] charArray = asString.toCharArray();
         String[] strArray = new String[charArray.length];
-        for ( int i = 0; i < charArray.length; i++ )
-        {
-            strArray[i] = String.valueOf( charArray[i] );
+        for (int i = 0; i < charArray.length; i++) {
+            strArray[i] = String.valueOf(charArray[i]);
         }
-        return VirtualValues.fromArray( Values.stringArray( strArray ) );
+        return VirtualValues.fromArray(Values.stringArray(strArray));
     }
 
     @Override
-    public ListValue split( List<String> separators )
-    {
+    public ListValue split(List<String> separators) {
         assert separators != null;
         String asString = value();
-        //Cypher has different semantics for the case where the separator
-        //is exactly the value, in cypher we expect two empty arrays
-        //where as java returns an empty array
-        if ( separators.stream().anyMatch( sep -> sep.equals( asString ) ) )
-        {
+        // Cypher has different semantics for the case where the separator
+        // is exactly the value, in cypher we expect two empty arrays
+        // where as java returns an empty array
+        if (separators.stream().anyMatch(sep -> sep.equals(asString))) {
             return EMPTY_SPLIT;
-        }
-        else if ( separators.stream().anyMatch( String::isEmpty ) )
-        {
+        } else if (separators.stream().anyMatch(String::isEmpty)) {
             String reduced = asString;
-            for ( var sep : separators )
-            {
-                if ( sep.isEmpty() )
-                {
+            for (var sep : separators) {
+                if (sep.isEmpty()) {
                     continue;
                 }
-                reduced = reduced.replace( sep, "" );
+                reduced = reduced.replace(sep, "");
             }
-            return VirtualValues.fromArray( Values.charArray( reduced.toCharArray() ) );
+            return VirtualValues.fromArray(Values.charArray(reduced.toCharArray()));
         }
 
-        return splitNonRegex( asString, separators );
+        return splitNonRegex(asString, separators);
     }
 
     /**
@@ -139,18 +119,15 @@ public abstract class StringValue extends TextValue
      * @param delim delimiter, must not be not empty
      * @return the split string as a List of TextValues
      */
-    private static ListValue splitNonRegex( String input, String delim )
-    {
+    private static ListValue splitNonRegex(String input, String delim) {
         ListValueBuilder substrings = ListValueBuilder.newListBuilder();
         int offset = 0;
         int index;
 
-        do
-        {
-            index = input.indexOf( delim, offset );
-            offset = updateSubstringsAndOffset( substrings, offset, input, index, delim );
-        }
-        while ( index != -1 );
+        do {
+            index = input.indexOf(delim, offset);
+            offset = updateSubstringsAndOffset(substrings, offset, input, index, delim);
+        } while (index != -1);
         return substrings.build();
     }
 
@@ -161,18 +138,15 @@ public abstract class StringValue extends TextValue
      * @param delims delimiters, must not be not empty
      * @return the split string as a List of TextValues
      */
-    private static ListValue splitNonRegex( String input, List<String> delims )
-    {
+    private static ListValue splitNonRegex(String input, List<String> delims) {
         ListValueBuilder substrings = ListValueBuilder.newListBuilder();
         int offset = 0;
-        Pair<Integer,String> nextSubstring;
+        Pair<Integer, String> nextSubstring;
 
-        do
-        {
-            nextSubstring = firstIndexOf( input, offset, delims );
-            offset = updateSubstringsAndOffset( substrings, offset, input, nextSubstring.first(), nextSubstring.other() );
-        }
-        while ( nextSubstring.first() != -1 );
+        do {
+            nextSubstring = firstIndexOf(input, offset, delims);
+            offset = updateSubstringsAndOffset(substrings, offset, input, nextSubstring.first(), nextSubstring.other());
+        } while (nextSubstring.first() != -1);
         return substrings.build();
     }
 
@@ -180,17 +154,14 @@ public abstract class StringValue extends TextValue
      * Make decisions based on whether the specified delimiter had been found or not.
      * If found, add a new substring to the collection, and return a new offset after the delimiter.
      */
-    private static int updateSubstringsAndOffset( ListValueBuilder substrings, int offset, String input, int index, String delim )
-    {
-        if ( index == -1 )
-        {
-            String substring = input.substring( offset );
-            substrings.add( Values.stringValue( substring ) );
-        }
-        else
-        {
-            String substring = input.substring( offset, index );
-            substrings.add( Values.stringValue( substring ) );
+    private static int updateSubstringsAndOffset(
+            ListValueBuilder substrings, int offset, String input, int index, String delim) {
+        if (index == -1) {
+            String substring = input.substring(offset);
+            substrings.add(Values.stringValue(substring));
+        } else {
+            String substring = input.substring(offset, index);
+            substrings.add(Values.stringValue(substring));
             offset = index + delim.length();
         }
         return offset;
@@ -200,219 +171,180 @@ public abstract class StringValue extends TextValue
      * Search the input string, starting at the specified offset, for any of the the specified delimiter strings.
      * The first delimiter found will be returned with it's starting index position.
      */
-    private static Pair<Integer,String> firstIndexOf( String input, int offset, List<String> delims )
-    {
+    private static Pair<Integer, String> firstIndexOf(String input, int offset, List<String> delims) {
         int firstIndex = -1;
         String first = null;
-        for ( var delim : delims )
-        {
-            int index = input.indexOf( delim, offset );
-            if ( index != -1 )
-            {
-                if ( first == null || index < firstIndex )
-                {
+        for (var delim : delims) {
+            int index = input.indexOf(delim, offset);
+            if (index != -1) {
+                if (first == null || index < firstIndex) {
                     first = delim;
                     firstIndex = index;
                 }
             }
         }
-        return Pair.of( firstIndex, first );
+        return Pair.of(firstIndex, first);
     }
 
     @Override
-    public TextValue replace( String find, String replace )
-    {
+    public TextValue replace(String find, String replace) {
         assert find != null;
         assert replace != null;
 
-        return Values.stringValue( value().replace( find, replace ) );
+        return Values.stringValue(value().replace(find, replace));
     }
 
     @Override
-    public Object asObjectCopy()
-    {
+    public Object asObjectCopy() {
         return value();
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s(\"%s\")", getTypeName(), value() );
+    public String toString() {
+        return format("%s(\"%s\")", getTypeName(), value());
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "String";
     }
 
     @Override
-    public String stringValue()
-    {
+    public String stringValue() {
         return value();
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return format( "'%s'", value() );
+    public String prettyPrint() {
+        return format("'%s'", value());
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapString( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapString(this);
     }
 
-    //NOTE: this doesn't respect code point order for code points that doesn't fit 16bits
+    // NOTE: this doesn't respect code point order for code points that doesn't fit 16bits
     @Override
-    public int compareTo( TextValue other )
-    {
+    public int compareTo(TextValue other) {
         String thisString = value();
         String thatString = other.stringValue();
-        return thisString.compareTo( thatString );
+        return thisString.compareTo(thatString);
     }
 
     @Override
-    public boolean isSameValueTypeAs( Value value )
-    {
+    public boolean isSameValueTypeAs(Value value) {
         return value instanceof StringValue;
     }
 
-    static final TextValue EMPTY = new StringValue()
-    {
+    static final TextValue EMPTY = new StringValue() {
         @Override
-        protected int computeHashToMemoize()
-        {
+        protected int computeHashToMemoize() {
             return 0;
         }
 
         @Override
-        public long updateHash( HashFunction hashFunction, long hash )
-        {
-            return hashFunction.update( hash, 0 ); // Mix in our length; a single zero.
+        public long updateHash(HashFunction hashFunction, long hash) {
+            return hashFunction.update(hash, 0); // Mix in our length; a single zero.
         }
 
         @Override
-        public int length()
-        {
+        public int length() {
             return 0;
         }
 
         @Override
-        public boolean isEmpty()
-        {
+        public boolean isEmpty() {
             return true;
         }
 
         @Override
-        public TextValue substring( int start, int end )
-        {
+        public TextValue substring(int start, int end) {
             return this;
         }
 
         @Override
-        public TextValue trim()
-        {
+        public TextValue trim() {
             return this;
         }
 
         @Override
-        public TextValue ltrim()
-        {
+        public TextValue ltrim() {
             return this;
         }
 
         @Override
-        public TextValue rtrim()
-        {
+        public TextValue rtrim() {
             return this;
         }
 
         @Override
-        public TextValue reverse()
-        {
+        public TextValue reverse() {
             return this;
         }
 
         @Override
-        public TextValue plus( TextValue other )
-        {
+        public TextValue plus(TextValue other) {
             return other;
         }
 
         @Override
-        public boolean startsWith( TextValue other )
-        {
+        public boolean startsWith(TextValue other) {
             return other.length() == 0;
         }
 
         @Override
-        public boolean endsWith( TextValue other )
-        {
+        public boolean endsWith(TextValue other) {
             return other.length() == 0;
         }
 
         @Override
-        public boolean contains( TextValue other )
-        {
+        public boolean contains(TextValue other) {
             return other.length() == 0;
         }
 
         @Override
-        public TextValue toLower()
-        {
+        public TextValue toLower() {
             return this;
         }
 
         @Override
-        public TextValue toUpper()
-        {
+        public TextValue toUpper() {
             return this;
         }
 
         @Override
-        public TextValue replace( String find, String replace )
-        {
-            if ( find.isEmpty() )
-            {
-                return Values.stringValue( replace );
-            }
-            else
-            {
+        public TextValue replace(String find, String replace) {
+            if (find.isEmpty()) {
+                return Values.stringValue(replace);
+            } else {
                 return this;
             }
         }
 
         @Override
-        public int compareTo( TextValue other )
-        {
+        public int compareTo(TextValue other) {
             return -other.length();
         }
 
         @Override
-        Matcher matcher( Pattern pattern )
-        {
-            return pattern.matcher( "" );
+        Matcher matcher(Pattern pattern) {
+            return pattern.matcher("");
         }
 
         @Override
-        String value()
-        {
+        String value() {
             return "";
         }
 
         @Override
-        public long estimatedHeapUsage()
-        {
+        public long estimatedHeapUsage() {
             return 0;
         }
 
         @Override
-        public ValueRepresentation valueRepresentation()
-        {
+        public ValueRepresentation valueRepresentation() {
             return ValueRepresentation.UTF16_TEXT;
         }
     };
 }
-

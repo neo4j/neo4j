@@ -22,51 +22,50 @@ package org.neo4j.logging;
 /**
  * A log into which various levels of messages can be written
  */
-public interface InternalLog extends Log
-{
+public interface InternalLog extends Log {
     /**
      * @param message The message to be written
      */
-    void debug( Neo4jLogMessage message );
+    void debug(Neo4jLogMessage message);
 
     /**
      * @param supplier The supplier of the message to be written
      */
-    void debug( Neo4jMessageSupplier supplier );
+    void debug(Neo4jMessageSupplier supplier);
 
     /**
      * @param message The message to be written
      */
-    void info( Neo4jLogMessage message );
+    void info(Neo4jLogMessage message);
 
     /**
      * @param supplier The supplier of the message to be written
      */
-    void info( Neo4jMessageSupplier supplier );
+    void info(Neo4jMessageSupplier supplier);
 
     /**
      * @param message The message to be written
      */
-    void warn( Neo4jLogMessage message );
+    void warn(Neo4jLogMessage message);
 
     /**
      * @param supplier The supplier of the message to be written
      */
-    void warn( Neo4jMessageSupplier supplier );
+    void warn(Neo4jMessageSupplier supplier);
 
     /**
      * @param message The message to be written
      */
-    void error( Neo4jLogMessage message );
+    void error(Neo4jLogMessage message);
 
     /**
      * @param supplier The supplier of the message to be written
      */
-    void error( Neo4jMessageSupplier supplier );
+    void error(Neo4jMessageSupplier supplier);
 
     /**
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
-    void error( Neo4jLogMessage message, Throwable throwable );
+    void error(Neo4jLogMessage message, Throwable throwable);
 }

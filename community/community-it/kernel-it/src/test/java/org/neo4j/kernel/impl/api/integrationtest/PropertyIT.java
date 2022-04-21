@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 
 import java.util.Iterator;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -30,27 +32,22 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
-
-class PropertyIT extends KernelIntegrationTest
-{
+class PropertyIT extends KernelIntegrationTest {
     @Test
-    void shouldListAllPropertyKeys() throws Exception
-    {
+    void shouldListAllPropertyKeys() throws Exception {
         // given
         dbWithNoCache();
 
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
-        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
-        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("prop1");
+        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName("prop2");
 
         // when
         Iterator<NamedToken> propIdsBeforeCommit = transaction.tokenRead().propertyKeyGetAllTokens();
 
         // then
-        assertThat( asCollection( propIdsBeforeCommit ) ).contains( new NamedToken( "prop1", prop1 ), new NamedToken( "prop2", prop2 ) );
+        assertThat(asCollection(propIdsBeforeCommit))
+                .contains(new NamedToken("prop1", prop1), new NamedToken("prop2", prop2));
 
         // when
         commit();
@@ -58,58 +55,57 @@ class PropertyIT extends KernelIntegrationTest
         Iterator<NamedToken> propIdsAfterCommit = transaction.tokenRead().propertyKeyGetAllTokens();
 
         // then
-        assertThat( asCollection( propIdsAfterCommit ) ).contains( new NamedToken( "prop1", prop1 ), new NamedToken( "prop2", prop2 ) );
+        assertThat(asCollection(propIdsAfterCommit))
+                .contains(new NamedToken("prop1", prop1), new NamedToken("prop2", prop2));
         commit();
     }
 
     @Test
-    void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
-    {
+    void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
-        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
-        int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "RELATED" );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("prop1");
+        int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName("RELATED");
         long startNodeId = transaction.dataWrite().nodeCreate();
         long endNodeId = transaction.dataWrite().nodeCreate();
-        long rel = transaction.dataWrite().relationshipCreate( startNodeId, type, endNodeId );
+        long rel = transaction.dataWrite().relationshipCreate(startNodeId, type, endNodeId);
 
-        transaction.dataWrite().relationshipSetProperty( rel, prop1, Values.stringValue( "As" ) );
-        transaction.dataWrite().relationshipDelete( rel );
+        transaction.dataWrite().relationshipSetProperty(rel, prop1, Values.stringValue("As"));
+        transaction.dataWrite().relationshipDelete(rel);
 
         // When
-        var e = assertThrows( EntityNotFoundException.class, () -> transaction.dataWrite().relationshipRemoveProperty( rel, prop1 ) );
-        assertThat( e.getMessage() ).isEqualTo( "Unable to load RELATIONSHIP with id " + rel + "." );
+        var e = assertThrows(
+                EntityNotFoundException.class, () -> transaction.dataWrite().relationshipRemoveProperty(rel, prop1));
+        assertThat(e.getMessage()).isEqualTo("Unable to load RELATIONSHIP with id " + rel + ".");
         commit();
     }
 
     @Test
-    void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
-    {
+    void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
-        int prop = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "RELATED" );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+        int prop = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
+        int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName("RELATED");
 
         long startNodeId = transaction.dataWrite().nodeCreate();
         long endNodeId = transaction.dataWrite().nodeCreate();
-        long rel = transaction.dataWrite().relationshipCreate( startNodeId, type, endNodeId );
-        transaction.dataWrite().relationshipSetProperty( rel, prop, Values.of( "bar" ) );
+        long rel = transaction.dataWrite().relationshipCreate(startNodeId, type, endNodeId);
+        transaction.dataWrite().relationshipSetProperty(rel, prop, Values.of("bar"));
 
         commit();
 
         // when
         Write write = dataWriteInNewTransaction();
-        write.relationshipRemoveProperty( rel, prop );
-        write.relationshipSetProperty( rel, prop, Values.of( "bar" ) );
-        write.relationshipRemoveProperty( rel, prop );
-        write.relationshipRemoveProperty( rel, prop );
+        write.relationshipRemoveProperty(rel, prop);
+        write.relationshipSetProperty(rel, prop, Values.of("bar"));
+        write.relationshipRemoveProperty(rel, prop);
+        write.relationshipRemoveProperty(rel, prop);
 
         commit();
 
         // then
         transaction = newTransaction();
-        assertThat( relationshipGetProperty( transaction, rel, prop ) ).isEqualTo( Values.NO_VALUE );
+        assertThat(relationshipGetProperty(transaction, rel, prop)).isEqualTo(Values.NO_VALUE);
         commit();
     }
 }
-

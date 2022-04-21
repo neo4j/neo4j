@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
+import java.io.IOException;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -30,9 +31,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
-
-import java.io.IOException;
-
 import org.neo4j.kernel.api.impl.schema.ValueEncoding;
 
 /**
@@ -44,24 +42,20 @@ import org.neo4j.kernel.api.impl.schema.ValueEncoding;
  * The operations are optimised to be used to query such indexes and perform better
  * than the default Lucene equivalent which are optimised for fuzzy fulltext search.
  */
-class CypherStringQueryFactory
-{
-    static Query stringPrefix( String prefix )
-    {
-        Term term = new Term( ValueEncoding.String.key( 0 ), prefix );
-        return new PrefixMultiTermsQuery( term );
+class CypherStringQueryFactory {
+    static Query stringPrefix(String prefix) {
+        Term term = new Term(ValueEncoding.String.key(0), prefix);
+        return new PrefixMultiTermsQuery(term);
     }
 
-    static Query stringContains( String substring )
-    {
-        Term term = new Term( ValueEncoding.String.key( 0 ), substring );
-        return new ContainsMultiTermsQuery( term );
+    static Query stringContains(String substring) {
+        Term term = new Term(ValueEncoding.String.key(0), substring);
+        return new ContainsMultiTermsQuery(term);
     }
 
-    static Query stringSuffix( String suffix )
-    {
-        Term term = new Term( ValueEncoding.String.key( 0 ), suffix );
-        return new SuffixMultiTermsQuery( term );
+    static Query stringSuffix(String suffix) {
+        Term term = new Term(ValueEncoding.String.key(0), suffix);
+        return new SuffixMultiTermsQuery(term);
     }
 
     /**
@@ -69,9 +63,8 @@ class CypherStringQueryFactory
      * not using automaton. In essence, it is very similar to string prefix search.
      * However we don't currently have a benchmark for this operation.
      */
-    static Query range( String lower, boolean includeLower, String upper, boolean includeUpper )
-    {
-        return TermRangeQuery.newStringRange( ValueEncoding.String.key( 0 ), lower, upper, includeLower, includeUpper );
+    static Query range(String lower, boolean includeLower, String upper, boolean includeUpper) {
+        return TermRangeQuery.newStringRange(ValueEncoding.String.key(0), lower, upper, includeLower, includeUpper);
     }
 
     /**
@@ -80,52 +73,43 @@ class CypherStringQueryFactory
      * It turns out that for the type of indexes we use this for,
      * a simple term seek and iterating over the terms is just much faster.
      */
-    private static class PrefixMultiTermsQuery extends MultiTermQuery
-    {
+    private static class PrefixMultiTermsQuery extends MultiTermQuery {
         private final Term term;
 
-        PrefixMultiTermsQuery( Term term )
-        {
-            super( term.field(), CONSTANT_SCORE_REWRITE );
+        PrefixMultiTermsQuery(Term term) {
+            super(term.field(), CONSTANT_SCORE_REWRITE);
             this.term = term;
         }
 
         @Override
-        protected TermsEnum getTermsEnum( Terms terms, AttributeSource atts ) throws IOException
-        {
-            return term.bytes().length == 0 ? terms.iterator() : new PrefixTermsEnum( terms.iterator(), term.bytes() );
+        protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+            return term.bytes().length == 0 ? terms.iterator() : new PrefixTermsEnum(terms.iterator(), term.bytes());
         }
 
         @Override
-        public String toString( String field )
-        {
+        public String toString(String field) {
             return getClass().getSimpleName() + ", term:" + term + ", field:" + field;
         }
 
         @Override
-        public void visit( QueryVisitor visitor )
-        {
-            if ( visitor.acceptField( term.field() ) )
-            {
-                visitor.consumeTerms( this, term );
+        public void visit(QueryVisitor visitor) {
+            if (visitor.acceptField(term.field())) {
+                visitor.consumeTerms(this, term);
             }
         }
 
-        private static class PrefixTermsEnum extends FilteredTermsEnum
-        {
+        private static class PrefixTermsEnum extends FilteredTermsEnum {
             private final BytesRef prefix;
 
-            PrefixTermsEnum( TermsEnum termEnum, BytesRef prefix )
-            {
-                super( termEnum );
+            PrefixTermsEnum(TermsEnum termEnum, BytesRef prefix) {
+                super(termEnum);
                 this.prefix = prefix;
-                setInitialSeekTerm( this.prefix );
+                setInitialSeekTerm(this.prefix);
             }
 
             @Override
-            protected AcceptStatus accept( BytesRef term )
-            {
-                return StringHelper.startsWith( term, prefix ) ? AcceptStatus.YES : AcceptStatus.END;
+            protected AcceptStatus accept(BytesRef term) {
+                return StringHelper.startsWith(term, prefix) ? AcceptStatus.YES : AcceptStatus.END;
             }
         }
     }
@@ -142,83 +126,67 @@ class CypherStringQueryFactory
      * In order to prevent extremely slow WildcardQueries,
      * a Wildcard term should not start with the wildcard *'
      */
-    private static class ContainsMultiTermsQuery extends MultiTermQuery
-    {
+    private static class ContainsMultiTermsQuery extends MultiTermQuery {
         private final Term term;
 
-        ContainsMultiTermsQuery( Term term )
-        {
-            super( term.field(), CONSTANT_SCORE_REWRITE );
+        ContainsMultiTermsQuery(Term term) {
+            super(term.field(), CONSTANT_SCORE_REWRITE);
             this.term = term;
         }
 
         @Override
-        protected TermsEnum getTermsEnum( Terms terms, AttributeSource atts ) throws IOException
-        {
-            return term.bytes().length == 0 ? terms.iterator() : new ContainsTermsEnum( terms.iterator(), term.bytes() );
+        protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+            return term.bytes().length == 0 ? terms.iterator() : new ContainsTermsEnum(terms.iterator(), term.bytes());
         }
 
         @Override
-        public String toString( String field )
-        {
+        public String toString(String field) {
             return getClass().getSimpleName() + ", term:" + term + ", field:" + field;
         }
 
         @Override
-        public void visit( QueryVisitor visitor )
-        {
-            if ( visitor.acceptField( term.field() ) )
-            {
-                visitor.consumeTerms( this, term );
+        public void visit(QueryVisitor visitor) {
+            if (visitor.acceptField(term.field())) {
+                visitor.consumeTerms(this, term);
             }
         }
 
-        private static class ContainsTermsEnum extends FilteredTermsEnum
-        {
+        private static class ContainsTermsEnum extends FilteredTermsEnum {
             private final BytesRef substring;
 
-            ContainsTermsEnum( TermsEnum termsEnum, BytesRef substring )
-            {
-                super( termsEnum, false );
+            ContainsTermsEnum(TermsEnum termsEnum, BytesRef substring) {
+                super(termsEnum, false);
                 this.substring = substring;
             }
 
             @Override
-            protected AcceptStatus accept( BytesRef term )
-            {
+            protected AcceptStatus accept(BytesRef term) {
                 // the following code would blow up for substring.length == 0,
                 // but we don't create this class for such cases
 
-                if ( substring.length > term.length )
-                {
+                if (substring.length > term.length) {
                     return AcceptStatus.NO;
                 }
 
                 final byte first = substring.bytes[substring.offset];
                 final int max = term.offset + term.length - substring.length;
-                for ( int pos = term.offset; pos <= max; pos++ )
-                {
-                    //find first byte
-                    if ( term.bytes[pos] != first )
-                    {
-                        while ( ++pos <= max && term.bytes[pos] != first )
-                        {
-                            //do nothing
+                for (int pos = term.offset; pos <= max; pos++) {
+                    // find first byte
+                    if (term.bytes[pos] != first) {
+                        while (++pos <= max && term.bytes[pos] != first) {
+                            // do nothing
                         }
                     }
 
-                    //Now we have the first byte match, look at the rest
-                    if ( pos <= max )
-                    {
+                    // Now we have the first byte match, look at the rest
+                    if (pos <= max) {
                         int i = pos + 1;
                         final int end = pos + substring.length;
-                        for ( int j = substring.offset + 1; i < end && term.bytes[i] == substring.bytes[j]; j++, i++ )
-                        {
-                            //do nothing
+                        for (int j = substring.offset + 1; i < end && term.bytes[i] == substring.bytes[j]; j++, i++) {
+                            // do nothing
                         }
 
-                        if ( i == end )
-                        {
+                        if (i == end) {
                             return AcceptStatus.YES;
                         }
                     }
@@ -232,51 +200,42 @@ class CypherStringQueryFactory
      * This is a very similar problem as the one solved by {@link ContainsMultiTermsQuery}
      * and the explanation for that class holds here, too.
      */
-    private static class SuffixMultiTermsQuery extends MultiTermQuery
-    {
+    private static class SuffixMultiTermsQuery extends MultiTermQuery {
         private final Term term;
 
-        SuffixMultiTermsQuery( Term term )
-        {
-            super( term.field(), CONSTANT_SCORE_REWRITE );
+        SuffixMultiTermsQuery(Term term) {
+            super(term.field(), CONSTANT_SCORE_REWRITE);
             this.term = term;
         }
 
         @Override
-        protected TermsEnum getTermsEnum( Terms terms, AttributeSource atts ) throws IOException
-        {
-            return term.bytes().length == 0 ? terms.iterator() : new SuffixTermsEnum( terms.iterator(), term.bytes() );
+        protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+            return term.bytes().length == 0 ? terms.iterator() : new SuffixTermsEnum(terms.iterator(), term.bytes());
         }
 
         @Override
-        public String toString( String field )
-        {
+        public String toString(String field) {
             return getClass().getSimpleName() + ", term:" + term + ", field:" + field;
         }
 
         @Override
-        public void visit( QueryVisitor visitor )
-        {
-            if ( visitor.acceptField( term.field() ) )
-            {
-                visitor.consumeTerms( this, term );
+        public void visit(QueryVisitor visitor) {
+            if (visitor.acceptField(term.field())) {
+                visitor.consumeTerms(this, term);
             }
         }
 
-        private static class SuffixTermsEnum extends FilteredTermsEnum
-        {
+        private static class SuffixTermsEnum extends FilteredTermsEnum {
             private final BytesRef suffix;
 
-            SuffixTermsEnum( TermsEnum termsEnum, BytesRef suffix )
-            {
-                super( termsEnum, false );
+            SuffixTermsEnum(TermsEnum termsEnum, BytesRef suffix) {
+                super(termsEnum, false);
                 this.suffix = suffix;
             }
 
             @Override
-            protected AcceptStatus accept( BytesRef term )
-            {
-                return StringHelper.endsWith( term, suffix ) ? AcceptStatus.YES : AcceptStatus.NO;
+            protected AcceptStatus accept(BytesRef term) {
+                return StringHelper.endsWith(term, suffix) ? AcceptStatus.YES : AcceptStatus.NO;
             }
         }
     }

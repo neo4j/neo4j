@@ -19,104 +19,89 @@
  */
 package org.neo4j.values.storable;
 
-import java.time.ZonedDateTime;
-import java.util.Arrays;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static org.neo4j.memory.HeapEstimator.ZONED_DATE_TIME_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 
-public final class DateTimeArray extends TemporalArray<ZonedDateTime>
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( DateTimeArray.class );
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public final class DateTimeArray extends TemporalArray<ZonedDateTime> {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(DateTimeArray.class);
 
     private final ZonedDateTime[] value;
 
-    DateTimeArray( ZonedDateTime[] value )
-    {
+    DateTimeArray(ZonedDateTime[] value) {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    protected ZonedDateTime[] value()
-    {
+    protected ZonedDateTime[] value() {
         return value;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapDateTimeArray( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapDateTimeArray(this);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+    public boolean equals(Value other) {
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( ZonedDateTime[] x )
-    {
-        return Arrays.equals( value, x );
+    public boolean equals(ZonedDateTime[] x) {
+        return Arrays.equals(value, x);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writeTo( writer, ValueWriter.ArrayType.ZONED_DATE_TIME, value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writeTo(writer, ValueWriter.ArrayType.ZONED_DATE_TIME, value);
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.ZONED_DATE_TIME_ARRAY;
     }
 
     @Override
-    protected int unsafeCompareTo( Value otherValue )
-    {
-        return compareToNonPrimitiveArray( (DateTimeArray) otherValue );
+    protected int unsafeCompareTo(Value otherValue) {
+        return compareToNonPrimitiveArray((DateTimeArray) otherValue);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "DateTimeArray";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOfObjectArray( ZONED_DATE_TIME_SIZE, value.length );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOfObjectArray(ZONED_DATE_TIME_SIZE, value.length);
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof DateTimeValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        ZonedDateTime[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        ZonedDateTime[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = ((DateTimeValue) added).temporal();
-        return new DateTimeArray( newArray );
+        return new DateTimeArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         ZonedDateTime[] newArray = new ZonedDateTime[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
+        System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((DateTimeValue) prepended).temporal();
-        return new DateTimeArray( newArray );
+        return new DateTimeArray(newArray);
     }
 }

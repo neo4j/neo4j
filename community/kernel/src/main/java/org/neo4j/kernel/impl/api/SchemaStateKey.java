@@ -20,36 +20,30 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.internal.schema.SchemaState;
 
 /**
  * Recommended way to create keys for {@link SchemaState}, to guarantee control over equality uniqueness.
  */
-public class SchemaStateKey
-{
+public class SchemaStateKey {
     private static final AtomicLong KEY_ID = new AtomicLong();
-    public static SchemaStateKey newKey()
-    {
-        return new SchemaStateKey( KEY_ID.getAndIncrement() );
+
+    public static SchemaStateKey newKey() {
+        return new SchemaStateKey(KEY_ID.getAndIncrement());
     }
 
     public final long id;
 
-    private SchemaStateKey( long id )
-    {
+    private SchemaStateKey(long id) {
         this.id = id;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         SchemaStateKey that = (SchemaStateKey) o;
@@ -57,14 +51,12 @@ public class SchemaStateKey
     }
 
     @Override
-    public int hashCode()
-    {
-        return Long.hashCode( id );
+    public int hashCode() {
+        return Long.hashCode(id);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "SchemaStateKey(" + id + ")";
     }
 }

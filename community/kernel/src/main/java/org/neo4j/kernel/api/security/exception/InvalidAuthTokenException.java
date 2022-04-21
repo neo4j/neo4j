@@ -21,19 +21,16 @@ package org.neo4j.kernel.api.security.exception;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class InvalidAuthTokenException extends Exception implements Status.HasStatus
-{
+public class InvalidAuthTokenException extends Exception implements Status.HasStatus {
     private final Status status;
 
-    public InvalidAuthTokenException( String message )
-    {
-        super( message );
+    public InvalidAuthTokenException(String message) {
+        super(message);
         this.status = Status.Security.Unauthorized;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 }

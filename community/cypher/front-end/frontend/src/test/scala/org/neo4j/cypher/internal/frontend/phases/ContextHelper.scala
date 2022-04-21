@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.util.devNullLogger
 import org.scalatestplus.mockito.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
+
   def create(): BaseContext = {
     new BaseContext {
       override def tracer: CompilationPhaseTracer = NO_TRACING
@@ -39,7 +40,8 @@ object ContextHelper extends MockitoSugar {
       override def monitors: Monitors = mock[Monitors]
 
       override def errorHandler: Seq[SemanticErrorDef] => Unit =
-        (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
+        (errors: Seq[SemanticErrorDef]) =>
+          errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
 
       override def errorMessageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
 

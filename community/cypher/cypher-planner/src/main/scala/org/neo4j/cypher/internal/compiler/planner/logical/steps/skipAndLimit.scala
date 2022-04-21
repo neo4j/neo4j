@@ -36,13 +36,13 @@ import scala.annotation.tailrec
 
 object skipAndLimit extends PlanTransformer {
 
-    @tailrec
-    def shouldPlanExhaustiveLimit(plan: LogicalPlan): Boolean = plan match {
-      case _: UpdatingPlan => true
-      case _: EagerLogicalPlan => false
-      case p: LogicalBinaryPlan => if (p.hasUpdatingRhs) true else shouldPlanExhaustiveLimit(p.left)
-      case p: LogicalPlan => if (p.lhs.nonEmpty) shouldPlanExhaustiveLimit(p.lhs.get) else false
-    }
+  @tailrec
+  def shouldPlanExhaustiveLimit(plan: LogicalPlan): Boolean = plan match {
+    case _: UpdatingPlan      => true
+    case _: EagerLogicalPlan  => false
+    case p: LogicalBinaryPlan => if (p.hasUpdatingRhs) true else shouldPlanExhaustiveLimit(p.left)
+    case p: LogicalPlan       => if (p.lhs.nonEmpty) shouldPlanExhaustiveLimit(p.lhs.get) else false
+  }
 
   def planLimitOnTopOf(plan: LogicalPlan, count: Expression)(implicit idGen: IdGen): LogicalPlan =
     if (shouldPlanExhaustiveLimit(plan)) ExhaustiveLimit(plan, count)(idGen)
@@ -54,13 +54,26 @@ object skipAndLimit extends PlanTransformer {
         val queryPagination = p.queryPagination
         (queryPagination.skip, queryPagination.limit) match {
           case (Some(skipExpr), Some(limitExpr)) =>
-            context.logicalPlanProducer.planSkipAndLimit(plan, skipExpr, limitExpr, query.interestingOrder, context, shouldPlanExhaustiveLimit(plan))
+            context.logicalPlanProducer.planSkipAndLimit(
+              plan,
+              skipExpr,
+              limitExpr,
+              query.interestingOrder,
+              context,
+              shouldPlanExhaustiveLimit(plan)
+            )
 
           case (Some(skipExpr), _) =>
             context.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)
 
           case (_, Some(limitExpr)) if shouldPlanExhaustiveLimit(plan) =>
-            context.logicalPlanProducer.planExhaustiveLimit(plan, limitExpr, limitExpr, query.interestingOrder, context = context)
+            context.logicalPlanProducer.planExhaustiveLimit(
+              plan,
+              limitExpr,
+              limitExpr,
+              query.interestingOrder,
+              context = context
+            )
 
           case (_, Some(limitExpr)) =>
             context.logicalPlanProducer.planLimit(plan, limitExpr, limitExpr, query.interestingOrder, context = context)

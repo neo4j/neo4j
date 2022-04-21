@@ -21,16 +21,14 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-public class FullAccessRelationshipTraversalCursor extends DefaultRelationshipTraversalCursor
-{
-    FullAccessRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor )
-    {
-        super( pool, storeCursor, null );
+public class FullAccessRelationshipTraversalCursor extends DefaultRelationshipTraversalCursor {
+    FullAccessRelationshipTraversalCursor(
+            CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor) {
+        super(pool, storeCursor, null);
     }
 
     @Override
-    final boolean allowed()
-    {
+    final boolean allowed() {
         return true;
     }
 }

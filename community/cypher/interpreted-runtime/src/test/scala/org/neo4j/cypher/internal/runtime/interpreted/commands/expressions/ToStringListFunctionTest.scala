@@ -70,21 +70,29 @@ class ToStringListFunctionTest extends CypherFunSuite with ScalaCheckDrivenPrope
   }
 
   test("should not throw an exception if the list argument contains an object which cannot be converted to string") {
-    assert(toStringList(Seq("1234", VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_LIST)) === VirtualValues.list(stringValue("1234"), NO_VALUE, NO_VALUE))
+    assert(toStringList(Seq("1234", VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_LIST)) === VirtualValues.list(
+      stringValue("1234"),
+      NO_VALUE,
+      NO_VALUE
+    ))
   }
 
   test("should throw an exception if the list argument contains a non-list") {
     val caughtException = the[CypherTypeException] thrownBy toStringList("foo")
-    caughtException.getMessage should equal("""Invalid input for function 'toStringList()': Expected a List, got: String("foo")""")
+    caughtException.getMessage should equal(
+      """Invalid input for function 'toStringList()': Expected a List, got: String("foo")"""
+    )
   }
 
   test("should not throw an exception for any value in the list") {
     val generator: Gen[List[Any]] = Gen.listOf(Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double]))
-    forAll(generator) { s => {
-      import scala.jdk.CollectionConverters.IterableHasAsScala
-      val result = toStringList(s)
-      Inspectors.forAll(result.asInstanceOf[ListValue].asScala) {  _ should (be (a [TextValue]) or equal(NO_VALUE)) }
-    }}
+    forAll(generator) { s =>
+      {
+        import scala.jdk.CollectionConverters.IterableHasAsScala
+        val result = toStringList(s)
+        Inspectors.forAll(result.asInstanceOf[ListValue].asScala) { _ should (be(a[TextValue]) or equal(NO_VALUE)) }
+      }
+    }
   }
 
   private def toStringList(orig: Any) = {

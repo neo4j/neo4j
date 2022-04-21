@@ -25,27 +25,22 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.procedure.TerminationGuard;
 
-public class TerminationGuardProvider implements ThrowingFunction<Context,TerminationGuard,ProcedureException>
-{
+public class TerminationGuardProvider implements ThrowingFunction<Context, TerminationGuard, ProcedureException> {
     @Override
-    public TerminationGuard apply( Context ctx ) throws ProcedureException
-    {
+    public TerminationGuard apply(Context ctx) throws ProcedureException {
         KernelTransaction ktx = ctx.internalTransaction().kernelTransaction();
-        return new TransactionTerminationGuard( ktx );
+        return new TransactionTerminationGuard(ktx);
     }
 
-    private static class TransactionTerminationGuard implements TerminationGuard
-    {
+    private static class TransactionTerminationGuard implements TerminationGuard {
         private final KernelTransaction ktx;
 
-        TransactionTerminationGuard( KernelTransaction ktx )
-        {
+        TransactionTerminationGuard(KernelTransaction ktx) {
             this.ktx = ktx;
         }
 
         @Override
-        public void check()
-        {
+        public void check() {
             ktx.assertOpen();
         }
     }

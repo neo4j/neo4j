@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.util.concurrent.Runnables.runAll;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -34,9 +36,6 @@ import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.util.concurrent.Runnables.runAll;
 
 /**
  * Not thread safe, except for {@link #count()} which does not support calls concurrent with {@link #add(Object)}.
@@ -52,8 +51,7 @@ import static org.neo4j.util.concurrent.Runnables.runAll;
  * @param <ENTRY> Type of entry we are storing.
  * @param <CURSOR> Cursor type responsible for deserializing what we have stored.
  */
-public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
-{
+public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable {
     static final int TYPE_SIZE = Byte.BYTES;
     static final byte STOP_TYPE = -1;
     private static final byte[] NO_ENTRIES = {STOP_TYPE};
@@ -72,8 +70,12 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
 
     private final AtomicLong count = new AtomicLong();
 
-    SimpleEntryStorage( FileSystemAbstraction fs, Path file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, MemoryTracker memoryTracker )
-    {
+    SimpleEntryStorage(
+            FileSystemAbstraction fs,
+            Path file,
+            ByteBufferFactory.Allocator byteBufferFactory,
+            int blockSize,
+            MemoryTracker memoryTracker) {
         this.fs = fs;
         this.file = file;
         this.byteBufferFactory = byteBufferFactory;
@@ -81,71 +83,56 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         this.memoryTracker = memoryTracker;
     }
 
-    void add( ENTRY entry ) throws IOException
-    {
+    void add(ENTRY entry) throws IOException {
         allocateResources();
-        add( entry, pageCursor );
+        add(entry, pageCursor);
         // a single thread, and the same thread every time, increments this count
         count.incrementAndGet();
     }
 
-    CURSOR reader() throws IOException
-    {
-        if ( !allocated )
-        {
-            return reader( ByteArrayPageCursor.wrap( NO_ENTRIES ) );
+    CURSOR reader() throws IOException {
+        if (!allocated) {
+            return reader(ByteArrayPageCursor.wrap(NO_ENTRIES));
         }
 
         // Reuse the existing buffer because we're not writing while reading anyway
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.read( file ), byteBufferFactory.allocate( blockSize, memoryTracker ) );
-        PageCursor pageCursor = new ReadableChannelPageCursor( channel );
-        return reader( pageCursor );
+        ReadAheadChannel<StoreChannel> channel =
+                new ReadAheadChannel<>(fs.read(file), byteBufferFactory.allocate(blockSize, memoryTracker));
+        PageCursor pageCursor = new ReadableChannelPageCursor(channel);
+        return reader(pageCursor);
     }
 
-    long count()
-    {
+    long count() {
         return count.get();
     }
 
-    void doneAdding() throws IOException
-    {
-        if ( !allocated )
-        {
+    void doneAdding() throws IOException {
+        if (!allocated) {
             return;
         }
-        if ( buffer.remaining() < TYPE_SIZE )
-        {
+        if (buffer.remaining() < TYPE_SIZE) {
             flush();
         }
-        pageCursor.putByte( STOP_TYPE );
+        pageCursor.putByte(STOP_TYPE);
         flush();
     }
 
     @Override
-    public void close() throws IOException
-    {
-        if ( allocated )
-        {
-            runAll( "Failed while trying to close " + getClass().getSimpleName(),
-                    () -> closeAllUnchecked( pageCursor, storeChannel, scopedBuffer ),
-                    () ->
-                    {
-                        try
-                        {
-                            fs.deleteFile( file );
+    public void close() throws IOException {
+        if (allocated) {
+            runAll(
+                    "Failed while trying to close " + getClass().getSimpleName(),
+                    () -> closeAllUnchecked(pageCursor, storeChannel, scopedBuffer),
+                    () -> {
+                        try {
+                            fs.deleteFile(file);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
                         }
-                        catch ( IOException e )
-                        {
-                            throw new UncheckedIOException( e );
-                        }
-                    }
-            );
-        }
-        else
-        {
-            if ( fs.fileExists( file ) )
-            {
-                fs.deleteFile( file );
+                    });
+        } else {
+            if (fs.fileExists(file)) {
+                fs.deleteFile(file);
             }
         }
     }
@@ -154,40 +141,35 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
      * DON'T CALL THIS METHOD DIRECTLY. Instead, use {@link #add(Object)}.
      * Write entry to pageCursor. Implementor of this method is responsible for calling {@link #prepareWrite(int)} before actually start writing.
      */
-    abstract void add( ENTRY entry, PageCursor pageCursor ) throws IOException;
+    abstract void add(ENTRY entry, PageCursor pageCursor) throws IOException;
 
     /**
      * DON'T CALL THIS METHOD DIRECTLY. Instead use {@link #reader()}.
      * Return {@link CURSOR} responsible for deserializing wrapping provided {@link PageCursor}, pointing to head of file.
      */
-    abstract CURSOR reader( PageCursor pageCursor ) throws IOException;
+    abstract CURSOR reader(PageCursor pageCursor) throws IOException;
 
     /**
      * DON'T CALL THIS METHOD DIRECTLY. Only used by subclasses.
      */
-    void prepareWrite( int entrySize ) throws IOException
-    {
-        if ( entrySize > buffer.remaining() )
-        {
+    void prepareWrite(int entrySize) throws IOException {
+        if (entrySize > buffer.remaining()) {
             flush();
         }
     }
 
-    private void flush() throws IOException
-    {
+    private void flush() throws IOException {
         buffer.flip();
-        storeChannel.writeAll( buffer );
+        storeChannel.writeAll(buffer);
         buffer.clear();
     }
 
-    private void allocateResources() throws IOException
-    {
-        if ( !allocated )
-        {
-            this.scopedBuffer = byteBufferFactory.allocate( blockSize, memoryTracker );
+    private void allocateResources() throws IOException {
+        if (!allocated) {
+            this.scopedBuffer = byteBufferFactory.allocate(blockSize, memoryTracker);
             this.buffer = scopedBuffer.getBuffer();
-            this.pageCursor = new ByteArrayPageCursor( buffer );
-            this.storeChannel = fs.write( file );
+            this.pageCursor = new ByteArrayPageCursor(buffer);
+            this.storeChannel = fs.write(file);
             this.allocated = true;
         }
     }

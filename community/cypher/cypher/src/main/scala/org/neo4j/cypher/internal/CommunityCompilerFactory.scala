@@ -38,23 +38,26 @@ import org.neo4j.monitoring
 /**
  * Factory which creates cypher compilers.
  */
-class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
-                               kernelMonitors: monitoring.Monitors,
-                               logProvider: InternalLogProvider,
-                               plannerConfig: CypherPlannerConfiguration,
-                               runtimeConfig: CypherRuntimeConfiguration,
-                               queryCaches: CypherQueryCaches,
-                              ) extends CompilerFactory {
+class CommunityCompilerFactory(
+  graph: GraphDatabaseQueryService,
+  kernelMonitors: monitoring.Monitors,
+  logProvider: InternalLogProvider,
+  plannerConfig: CypherPlannerConfiguration,
+  runtimeConfig: CypherRuntimeConfiguration,
+  queryCaches: CypherQueryCaches
+) extends CompilerFactory {
 
   private val log: InternalLog = logProvider.getLog(getClass)
 
   override def supportsAdministrativeCommands(): Boolean = plannerConfig.planSystemCommands
 
-  override def createCompiler(cypherVersion: CypherVersion,
-                              cypherPlanner: CypherPlannerOption,
-                              cypherRuntime: CypherRuntimeOption,
-                              cypherUpdateStrategy: CypherUpdateStrategy,
-                              executionEngineProvider: () => ExecutionEngine): Compiler = {
+  override def createCompiler(
+    cypherVersion: CypherVersion,
+    cypherPlanner: CypherPlannerOption,
+    cypherRuntime: CypherRuntimeOption,
+    cypherUpdateStrategy: CypherUpdateStrategy,
+    executionEngineProvider: () => ExecutionEngine
+  ): Compiler = {
 
     val compatibilityMode = cypherVersion match {
       case CypherVersion.v3_5 => Compatibility3_5
@@ -71,22 +74,25 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
         queryCaches,
         cypherPlanner,
         cypherUpdateStrategy,
-        compatibilityMode)
+        compatibilityMode
+      )
 
-    val runtime = if (plannerConfig.planSystemCommands)
-      cypherVersion match {
-        case CypherVersion.v3_5 => throw new SyntaxException("Commands towards system database are not supported in this Cypher version.")
-        case _ => CommunityAdministrationCommandRuntime(executionEngineProvider(), graph.getDependencyResolver)
-      }
-    else
-      CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings)
+    val runtime =
+      if (plannerConfig.planSystemCommands)
+        cypherVersion match {
+          case CypherVersion.v3_5 =>
+            throw new SyntaxException("Commands towards system database are not supported in this Cypher version.")
+          case _ => CommunityAdministrationCommandRuntime(executionEngineProvider(), graph.getDependencyResolver)
+        }
+      else
+        CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings)
 
     CypherCurrentCompiler(
       planner,
       runtime,
       CommunityRuntimeContextManager(log, runtimeConfig),
       kernelMonitors,
-      queryCaches,
+      queryCaches
     )
   }
 }

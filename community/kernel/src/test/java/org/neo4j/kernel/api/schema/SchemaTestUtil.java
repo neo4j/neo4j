@@ -19,50 +19,40 @@
  */
 package org.neo4j.kernel.api.schema;
 
-import org.neo4j.common.TokenNameLookup;
-
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public final class SchemaTestUtil
-{
-    private SchemaTestUtil()
-    {
+import org.neo4j.common.TokenNameLookup;
+
+public final class SchemaTestUtil {
+    private SchemaTestUtil() {}
+
+    public static void assertEquality(Object o1, Object o2) {
+        assertEquals(o1, o2, o1.getClass().getSimpleName() + "s are not equal");
+        assertEquals(o1.hashCode(), o2.hashCode(), o1.getClass().getSimpleName() + "s do not have the same hashcode");
     }
 
-    public static void assertEquality( Object o1, Object o2 )
-    {
-        assertEquals( o1, o2, o1.getClass().getSimpleName() + "s are not equal" );
-        assertEquals( o1.hashCode(), o2.hashCode(), o1.getClass().getSimpleName() + "s do not have the same hashcode" );
-    }
-
-    static void assertArray( int[] values, int... expected )
-    {
-        assertThat( values.length ).isEqualTo( expected.length );
-        for ( int i = 0; i < values.length; i++ )
-        {
-            assertEquals( values[i], expected[i], format( "Expected %d, got %d at index %d", expected[i], values[i], i ) );
+    static void assertArray(int[] values, int... expected) {
+        assertThat(values.length).isEqualTo(expected.length);
+        for (int i = 0; i < values.length; i++) {
+            assertEquals(values[i], expected[i], format("Expected %d, got %d at index %d", expected[i], values[i], i));
         }
     }
 
-    public static final TokenNameLookup SIMPLE_NAME_LOOKUP = new TokenNameLookup()
-    {
+    public static final TokenNameLookup SIMPLE_NAME_LOOKUP = new TokenNameLookup() {
         @Override
-        public String labelGetName( int labelId )
-        {
+        public String labelGetName(int labelId) {
             return "Label" + labelId;
         }
 
         @Override
-        public String relationshipTypeGetName( int relationshipTypeId )
-        {
+        public String relationshipTypeGetName(int relationshipTypeId) {
             return "RelType" + relationshipTypeId;
         }
 
         @Override
-        public String propertyKeyGetName( int propertyKeyId )
-        {
+        public String propertyKeyGetName(int propertyKeyId) {
             return "property" + propertyKeyId;
         }
     };

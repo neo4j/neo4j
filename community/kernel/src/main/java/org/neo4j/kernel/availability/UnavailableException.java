@@ -21,16 +21,13 @@ package org.neo4j.kernel.availability;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class UnavailableException extends Exception implements Status.HasStatus
-{
-    public UnavailableException( String message )
-    {
-        super( message );
+public class UnavailableException extends Exception implements Status.HasStatus {
+    public UnavailableException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Database.DatabaseUnavailable;
     }
 }

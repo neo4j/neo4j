@@ -19,34 +19,26 @@
  */
 package org.neo4j.cursor;
 
-public class EmptyIOCursor<M> implements IOCursor<M>
-{
+public class EmptyIOCursor<M> implements IOCursor<M> {
     public static final IOCursor INSTANCE = new EmptyIOCursor<>();
 
-    @SuppressWarnings( "unchecked" )
-    public static <M> IOCursor<M> empty()
-    {
+    @SuppressWarnings("unchecked")
+    public static <M> IOCursor<M> empty() {
         return (IOCursor<M>) INSTANCE;
     }
 
-    private EmptyIOCursor()
-    {
-    }
+    private EmptyIOCursor() {}
 
     @Override
-    public boolean next()
-    {
+    public boolean next() {
         return false;
     }
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 
     @Override
-    public M get()
-    {
+    public M get() {
         return null;
     }
 }

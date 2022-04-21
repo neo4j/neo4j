@@ -19,89 +19,78 @@
  */
 package org.neo4j.memory;
 
-public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements ScopedMemoryPool
-{
+public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements ScopedMemoryPool {
     private final GlobalMemoryGroupTracker parent;
     private final String name;
     private final MemoryTracker memoryTracker;
 
-    DatabaseMemoryGroupTracker( GlobalMemoryGroupTracker parent, String name, long limit, boolean strict, boolean trackingEnabled,
-            String limitSettingName )
-    {
-        super( new MemoryPoolImpl( limit, strict, limitSettingName ) );
+    DatabaseMemoryGroupTracker(
+            GlobalMemoryGroupTracker parent,
+            String name,
+            long limit,
+            boolean strict,
+            boolean trackingEnabled,
+            String limitSettingName) {
+        super(new MemoryPoolImpl(limit, strict, limitSettingName));
         this.parent = parent;
         this.name = name;
-        this.memoryTracker = trackingEnabled ? new MemoryPoolTracker( this ) : EmptyMemoryTracker.INSTANCE;
+        this.memoryTracker = trackingEnabled ? new MemoryPoolTracker(this) : EmptyMemoryTracker.INSTANCE;
     }
 
     @Override
-    public MemoryGroup group()
-    {
+    public MemoryGroup group() {
         return parent.group();
     }
 
     @Override
-    public String databaseName()
-    {
+    public String databaseName() {
         return name;
     }
 
     @Override
-    public void close()
-    {
-        parent.releasePool( this );
-        parent.releaseNative( usedNative() );
-        parent.releaseHeap( usedHeap() );
+    public void close() {
+        parent.releasePool(this);
+        parent.releaseNative(usedNative());
+        parent.releaseHeap(usedHeap());
         memoryTracker.close();
     }
 
     @Override
-    public MemoryTracker getPoolMemoryTracker()
-    {
+    public MemoryTracker getPoolMemoryTracker() {
         return memoryTracker;
     }
 
     @Override
-    public void reserveHeap( long bytes )
-    {
-        parent.reserveHeap( bytes );
-        try
-        {
-            super.reserveHeap( bytes );
-        }
-        catch ( MemoryLimitExceededException e )
-        {
-            parent.releaseHeap( bytes );
+    public void reserveHeap(long bytes) {
+        parent.reserveHeap(bytes);
+        try {
+            super.reserveHeap(bytes);
+        } catch (MemoryLimitExceededException e) {
+            parent.releaseHeap(bytes);
             throw e;
         }
     }
 
     @Override
-    public void releaseHeap( long bytes )
-    {
-        super.releaseHeap( bytes );
-        parent.releaseHeap( bytes );
+    public void releaseHeap(long bytes) {
+        super.releaseHeap(bytes);
+        parent.releaseHeap(bytes);
     }
 
     @Override
-    public void reserveNative( long bytes )
-    {
-        parent.reserveNative( bytes );
-        try
-        {
-            super.reserveNative( bytes );
-        }
-        catch ( MemoryLimitExceededException e )
-        {
-            parent.releaseNative( bytes );
+    public void reserveNative(long bytes) {
+        parent.reserveNative(bytes);
+        try {
+            super.reserveNative(bytes);
+        } catch (MemoryLimitExceededException e) {
+            parent.releaseNative(bytes);
             throw e;
         }
     }
 
     @Override
-    public void releaseNative( long bytes )
-    {
-        super.releaseNative( bytes );
-        parent.releaseNative( bytes );
+    public void releaseNative(long bytes) {
+        super.releaseNative(bytes);
+        parent.releaseNative(bytes);
     }
 }

@@ -19,46 +19,48 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_POPULATING;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_POPULATING;
+public final class NativeIndexes {
+    private NativeIndexes() {}
 
-public final class NativeIndexes
-{
-    private NativeIndexes()
-    {}
-
-    public static InternalIndexState readState( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext,
-                                                ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
+    public static InternalIndexState readState(
+            PageCache pageCache,
+            Path indexFile,
+            String databaseName,
+            CursorContext cursorContext,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions );
-        return switch ( headerReader.state )
-                {
-                    case BYTE_FAILED -> InternalIndexState.FAILED;
-                    case BYTE_ONLINE -> InternalIndexState.ONLINE;
-                    case BYTE_POPULATING -> InternalIndexState.POPULATING;
-                    default -> throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
-                };
+        GBPTree.readHeader(pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions);
+        return switch (headerReader.state) {
+            case BYTE_FAILED -> InternalIndexState.FAILED;
+            case BYTE_ONLINE -> InternalIndexState.ONLINE;
+            case BYTE_POPULATING -> InternalIndexState.POPULATING;
+            default -> throw new IllegalStateException("Unexpected initial state byte value " + headerReader.state);
+        };
     }
 
-    static String readFailureMessage( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext,
-                                      ImmutableSet<OpenOption> openOptions )
-            throws IOException
-    {
+    static String readFailureMessage(
+            PageCache pageCache,
+            Path indexFile,
+            String databaseName,
+            CursorContext cursorContext,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions );
+        GBPTree.readHeader(pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions);
         return headerReader.failureMessage;
     }
 }

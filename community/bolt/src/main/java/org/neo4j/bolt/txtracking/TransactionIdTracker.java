@@ -19,9 +19,13 @@
  */
 package org.neo4j.bolt.txtracking;
 
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.BookmarkTimeout;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+
 import java.time.Duration;
 import java.util.concurrent.locks.LockSupport;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.Database;
@@ -32,25 +36,18 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
-import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.BookmarkTimeout;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
-
 /**
  * Facility to allow a user to run a query on different members of the cluster and ensure that a member is at least as
  * up to date as the state it read or wrote elsewhere.
  */
-public class TransactionIdTracker
-{
+public class TransactionIdTracker {
     private final DatabaseManagementService managementService;
     private final TransactionIdTrackerMonitor monitor;
     private final SystemNanoClock clock;
 
-    public TransactionIdTracker( DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock )
-    {
+    public TransactionIdTracker(DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock) {
         this.managementService = managementService;
-        this.monitor = monitors.newMonitor( TransactionIdTrackerMonitor.class );
+        this.monitor = monitors.newMonitor(TransactionIdTrackerMonitor.class);
         this.clock = clock;
     }
 
@@ -62,19 +59,16 @@ public class TransactionIdTracker
      * @param namedDatabaseId id of the database to find the NET for.
      * @return id of the Newest Encountered Transaction (NET).
      */
-    public long newestTransactionId( NamedDatabaseId namedDatabaseId )
-    {
-        var db = database( namedDatabaseId );
-        try
-        {
+    public long newestTransactionId(NamedDatabaseId namedDatabaseId) {
+        var db = database(namedDatabaseId);
+        try {
             // return the "last committed" because it is the newest id
-            // "last closed" will return the last gap-free id, potentially for some old transaction because there might be other committing transactions
+            // "last closed" will return the last gap-free id, potentially for some old transaction because there might
+            // be other committing transactions
             // "last reconciled" might also return an id lower than the ID of the just committed transaction
-            return transactionIdStore( db ).getLastCommittedTransactionId();
-        }
-        catch ( RuntimeException e )
-        {
-            throw databaseUnavailable( db, e );
+            return transactionIdStore(db).getLastCommittedTransactionId();
+        } catch (RuntimeException e) {
+            throw databaseUnavailable(db, e);
         }
     }
 
@@ -100,113 +94,97 @@ public class TransactionIdTracker
      * continuing work.
      * @param timeout maximum duration to wait for OAT to be applied
      */
-    public void awaitUpToDate( NamedDatabaseId namedDatabaseId, long oldestAcceptableTxId, Duration timeout )
-    {
-        var db = database( namedDatabaseId );
+    public void awaitUpToDate(NamedDatabaseId namedDatabaseId, long oldestAcceptableTxId, Duration timeout) {
+        var db = database(namedDatabaseId);
 
-        if ( oldestAcceptableTxId <= BASE_TX_ID )
-        {
+        if (oldestAcceptableTxId <= BASE_TX_ID) {
             return;
         }
 
         var lastTransactionId = -1L;
-        try
-        {
+        try {
             Stopwatch startTime = clock.startStopWatch();
-            do
-            {
-                if ( isNotAvailable( db ) )
-                {
-                    throw databaseUnavailable( db );
+            do {
+                if (isNotAvailable(db)) {
+                    throw databaseUnavailable(db);
                 }
-                lastTransactionId = currentTransactionId( db );
-                if ( oldestAcceptableTxId <= lastTransactionId )
-                {
+                lastTransactionId = currentTransactionId(db);
+                if (oldestAcceptableTxId <= lastTransactionId) {
                     return;
                 }
                 waitWhenNotUpToDate();
-            } while ( !startTime.hasTimedOut( timeout ) );
+            } while (!startTime.hasTimedOut(timeout));
 
-            throw unreachableDatabaseVersion( db, lastTransactionId, oldestAcceptableTxId );
-        }
-        catch ( RuntimeException e )
-        {
-            if ( isNotAvailable( db ) )
-            {
-                throw databaseUnavailable( db, e );
+            throw unreachableDatabaseVersion(db, lastTransactionId, oldestAcceptableTxId);
+        } catch (RuntimeException e) {
+            if (isNotAvailable(db)) {
+                throw databaseUnavailable(db, e);
             }
-            throw unreachableDatabaseVersion( db, lastTransactionId, oldestAcceptableTxId, e );
+            throw unreachableDatabaseVersion(db, lastTransactionId, oldestAcceptableTxId, e);
         }
     }
 
-    private void waitWhenNotUpToDate()
-    {
+    private void waitWhenNotUpToDate() {
         monitor.onWaitWhenNotUpToDate();
-        LockSupport.parkNanos( 100 );
+        LockSupport.parkNanos(100);
     }
 
-    private static long currentTransactionId( Database db )
-    {
+    private static long currentTransactionId(Database db) {
         // await for the last closed transaction id to to have at least the expected value
-        // it has to be "last closed" and not "last committed" because all transactions before the expected one should also be committed
-        return transactionIdStore( db ).getLastClosedTransactionId();
+        // it has to be "last closed" and not "last committed" because all transactions before the expected one should
+        // also be committed
+        return transactionIdStore(db).getLastClosedTransactionId();
     }
 
-    private static TransactionIdStore transactionIdStore( Database db )
-    {
+    private static TransactionIdStore transactionIdStore(Database db) {
         // We need to resolve this as late as possible in case the database has been restarted as part of store copy.
         // This causes TransactionIdStore staleness and we could get a MetaDataStore closed exception.
         // Ideally we'd fix this with some life cycle wizardry but not going to do that for now.
-        return db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        return db.getDependencyResolver().resolveDependency(TransactionIdStore.class);
     }
 
-    private Database database( NamedDatabaseId namedDatabaseId )
-    {
-        try
-        {
-            var dbApi = (GraphDatabaseAPI) managementService.database( namedDatabaseId.name() );
-            var db = dbApi.getDependencyResolver().resolveDependency( Database.class );
-            if ( isNotAvailable( db ) )
-            {
-                throw databaseUnavailable( db );
+    private Database database(NamedDatabaseId namedDatabaseId) {
+        try {
+            var dbApi = (GraphDatabaseAPI) managementService.database(namedDatabaseId.name());
+            var db = dbApi.getDependencyResolver().resolveDependency(Database.class);
+            if (isNotAvailable(db)) {
+                throw databaseUnavailable(db);
             }
             return db;
-        }
-        catch ( DatabaseNotFoundException e )
-        {
-            throw databaseNotFound( namedDatabaseId );
+        } catch (DatabaseNotFoundException e) {
+            throw databaseNotFound(namedDatabaseId);
         }
     }
 
-    private static boolean isNotAvailable( Database db )
-    {
+    private static boolean isNotAvailable(Database db) {
         return !db.getDatabaseAvailabilityGuard().isAvailable();
     }
 
-    private static TransactionIdTrackerException databaseNotFound( NamedDatabaseId namedDatabaseId )
-    {
-        return new TransactionIdTrackerException( DatabaseNotFound, "Database '" + namedDatabaseId.name() + "' does not exist" );
+    private static TransactionIdTrackerException databaseNotFound(NamedDatabaseId namedDatabaseId) {
+        return new TransactionIdTrackerException(
+                DatabaseNotFound, "Database '" + namedDatabaseId.name() + "' does not exist");
     }
 
-    private static TransactionIdTrackerException databaseUnavailable( Database db )
-    {
-        return databaseUnavailable( db, null );
+    private static TransactionIdTrackerException databaseUnavailable(Database db) {
+        return databaseUnavailable(db, null);
     }
 
-    private static TransactionIdTrackerException databaseUnavailable( Database db, Throwable cause )
-    {
-        return new TransactionIdTrackerException( DatabaseUnavailable, "Database '" + db.getNamedDatabaseId().name() + "' unavailable", cause );
+    private static TransactionIdTrackerException databaseUnavailable(Database db, Throwable cause) {
+        return new TransactionIdTrackerException(
+                DatabaseUnavailable, "Database '" + db.getNamedDatabaseId().name() + "' unavailable", cause);
     }
 
-    private static TransactionIdTrackerException unreachableDatabaseVersion( Database db, long lastTransactionId, long oldestAcceptableTxId )
-    {
-        return unreachableDatabaseVersion( db, lastTransactionId, oldestAcceptableTxId, null );
+    private static TransactionIdTrackerException unreachableDatabaseVersion(
+            Database db, long lastTransactionId, long oldestAcceptableTxId) {
+        return unreachableDatabaseVersion(db, lastTransactionId, oldestAcceptableTxId, null);
     }
 
-    private static TransactionIdTrackerException unreachableDatabaseVersion( Database db, long lastTransactionId, long oldestAcceptableTxId, Throwable cause )
-    {
-        return new TransactionIdTrackerException( BookmarkTimeout,
-                "Database '" + db.getNamedDatabaseId().name() + "' not up to the requested version: " + oldestAcceptableTxId + ". " +
-                "Latest database version is " + lastTransactionId, cause );
+    private static TransactionIdTrackerException unreachableDatabaseVersion(
+            Database db, long lastTransactionId, long oldestAcceptableTxId, Throwable cause) {
+        return new TransactionIdTrackerException(
+                BookmarkTimeout,
+                "Database '" + db.getNamedDatabaseId().name() + "' not up to the requested version: "
+                        + oldestAcceptableTxId + ". " + "Latest database version is " + lastTransactionId,
+                cause);
     }
 }

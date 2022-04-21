@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,8 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  * {@link DiagnosticsOfflineReportProvider#init(FileSystemAbstraction, String, Config, Path)} method.
  */
 @Service
-public abstract class DiagnosticsOfflineReportProvider
-{
+public abstract class DiagnosticsOfflineReportProvider {
     private final Set<String> filterClassifiers;
 
     /**
@@ -47,10 +45,9 @@ public abstract class DiagnosticsOfflineReportProvider
      * @param classifier one
      * @param classifiers or more classifiers have to be provided.
      */
-    protected DiagnosticsOfflineReportProvider( String classifier, String... classifiers )
-    {
-        filterClassifiers = new HashSet<>( Arrays.asList( classifiers ) );
-        filterClassifiers.add( classifier );
+    protected DiagnosticsOfflineReportProvider(String classifier, String... classifiers) {
+        filterClassifiers = new HashSet<>(Arrays.asList(classifiers));
+        filterClassifiers.add(classifier);
     }
 
     /**
@@ -60,7 +57,7 @@ public abstract class DiagnosticsOfflineReportProvider
      * @param config configuration file in use.
      * @param storeDirectory directory of the database files.
      */
-    public abstract void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory );
+    public abstract void init(FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory);
 
     /**
      * Returns a list of source that matches the given classifiers.
@@ -68,22 +65,17 @@ public abstract class DiagnosticsOfflineReportProvider
      * @param classifiers a set of classifiers to filter on.
      * @return a list of sources, empty if nothing matches.
      */
-    protected abstract List<DiagnosticsReportSource> provideSources( Set<String> classifiers );
+    protected abstract List<DiagnosticsReportSource> provideSources(Set<String> classifiers);
 
-    final Set<String> getFilterClassifiers()
-    {
+    final Set<String> getFilterClassifiers() {
         return filterClassifiers;
     }
 
-    final List<DiagnosticsReportSource> getDiagnosticsSources( Set<String> classifiers )
-    {
-        if ( classifiers.contains( "all" ) )
-        {
-            return provideSources( filterClassifiers );
-        }
-        else
-        {
-            return provideSources( classifiers );
+    final List<DiagnosticsReportSource> getDiagnosticsSources(Set<String> classifiers) {
+        if (classifiers.contains("all")) {
+            return provideSources(filterClassifiers);
+        } else {
+            return provideSources(classifiers);
         }
     }
 }

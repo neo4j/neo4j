@@ -19,96 +19,81 @@
  */
 package org.neo4j.values.storable;
 
-import org.neo4j.values.ValueMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public final class ShortValue extends IntegralValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ShortValue.class );
+import org.neo4j.values.ValueMapper;
+
+public final class ShortValue extends IntegralValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(ShortValue.class);
 
     private final short value;
 
-    ShortValue( short value )
-    {
+    ShortValue(short value) {
         this.value = value;
     }
 
-    public short value()
-    {
+    public short value() {
         return value;
     }
 
     @Override
-    public long longValue()
-    {
+    public long longValue() {
         return value;
     }
 
     @Override
-    public int intValue()
-    {
+    public int intValue() {
         return value;
     }
 
     @Override
-    public short shortValue()
-    {
+    public short shortValue() {
         return value;
     }
 
     @Override
-    public byte byteValue()
-    {
-        throw new IllegalStateException( "A 16 bit integer doesn't fit in a 8 bit value" );
+    public byte byteValue() {
+        throw new IllegalStateException("A 16 bit integer doesn't fit in a 8 bit value");
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeInteger( value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeInteger(value);
     }
 
     @Override
-    public Short asObjectCopy()
-    {
+    public Short asObjectCopy() {
         return value;
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return Short.toString( value );
+    public String prettyPrint() {
+        return Short.toString(value);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s(%d)", getTypeName(), value );
+    public String toString() {
+        return format("%s(%d)", getTypeName(), value);
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapShort( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapShort(this);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Short";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return SHALLOW_SIZE;
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.INT16;
     }
 }

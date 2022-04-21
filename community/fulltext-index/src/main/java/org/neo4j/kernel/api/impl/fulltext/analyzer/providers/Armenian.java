@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.hy.ArmenianAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Armenian extends AnalyzerProvider
-{
-    public Armenian()
-    {
-        super( "armenian" );
+public class Armenian extends AnalyzerProvider {
+    public Armenian() {
+        super("armenian");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new ArmenianAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Armenian analyzer with stemming and stop word filtering.";
     }
 }

@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class MergeBooleanOperatorsTest extends CypherFunSuite {
 
-
   test("Simplify AND of identical value") {
     // and(eq($n, 2), eq($n, 2)) => eq($n, 2)
     assertRewrittenMatches("$n = 2 AND $n = 2", { case Equals(_, _) => () })
@@ -89,27 +88,33 @@ class MergeBooleanOperatorsTest extends CypherFunSuite {
     val position = InputPosition(0, 0, 0)
     // AST for $n = 2 OR $n = 3
     val ast = Ors(Seq(
-      Equals(ExplicitParameter("n", CTAny)(position), AutoExtractedParameter("AUTOINT0", CTInteger, SignedDecimalIntegerLiteral("2")(position))(position))(position),
-      Equals(ExplicitParameter("n", CTAny)(position), AutoExtractedParameter("AUTOINT1", CTInteger, SignedDecimalIntegerLiteral("3")(position))(position))(position)
+      Equals(
+        ExplicitParameter("n", CTAny)(position),
+        AutoExtractedParameter("AUTOINT0", CTInteger, SignedDecimalIntegerLiteral("2")(position))(position)
+      )(position),
+      Equals(
+        ExplicitParameter("n", CTAny)(position),
+        AutoExtractedParameter("AUTOINT1", CTInteger, SignedDecimalIntegerLiteral("3")(position))(position)
+      )(position)
     ))(position)
     val rewriter = mergeDuplicateBooleanOperatorsRewriter(SemanticState.clean)
     val result = ast.rewrite(rewriter)
     ast should equal(result)
   }
 
-
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
+
   private def assertRewrittenMatches(originalQuery: String, matcher: PartialFunction[Any, Unit]): Unit = {
-    val original = JavaCCParser.parse("RETURN " +  originalQuery, exceptionFactory, new AnonymousVariableNameGenerator())
+    val original = JavaCCParser.parse("RETURN " + originalQuery, exceptionFactory, new AnonymousVariableNameGenerator())
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = mergeDuplicateBooleanOperatorsRewriter(checkResult.state)
     val result = original.endoRewrite(rewriter)
-    val maybeReturnExp = result.folder.treeFind ({
+    val maybeReturnExp = result.folder.treeFind({
       case UnaliasedReturnItem(expression, _) => {
         assert(matcher.isDefinedAt(expression), expression)
         true
       }
-    } : PartialFunction[AnyRef, Boolean])
+    }: PartialFunction[AnyRef, Boolean])
     assert(maybeReturnExp.isDefined, "Could not find return in parsed query!")
   }
 

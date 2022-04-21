@@ -25,8 +25,7 @@ import org.neo4j.annotations.api.PublicApi;
  * Provide the basic operation that one could perform on a set of configurations.
  */
 @PublicApi
-public interface Configuration
-{
+public interface Configuration {
     /**
      * Retrieve the value of a configuration {@link Setting}.
      *
@@ -35,16 +34,14 @@ public interface Configuration
      * @return The value of the configuration property if the property is found, otherwise, return the default value
      * of the given property.
      */
-    <T> T get( Setting<T> setting );
+    <T> T get(Setting<T> setting);
 
     /**
      * Empty configuration without any settings.
      */
-    Configuration EMPTY = new Configuration()
-    {
+    Configuration EMPTY = new Configuration() {
         @Override
-        public <T> T get( Setting<T> setting )
-        {
+        public <T> T get(Setting<T> setting) {
             return null;
         }
     };

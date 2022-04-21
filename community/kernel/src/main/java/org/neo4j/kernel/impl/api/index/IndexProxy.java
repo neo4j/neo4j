@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -58,16 +57,15 @@ import org.neo4j.values.storable.Value;
  *
  * @see ContractCheckingIndexProxy
  */
-public interface IndexProxy extends MinimalIndexAccessor
-{
+public interface IndexProxy extends MinimalIndexAccessor {
     void start();
 
-    IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel );
+    IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel);
 
     /**
      * Close this index context.
      */
-    void close( CursorContext cursorContext ) throws IOException;
+    void close(CursorContext cursorContext) throws IOException;
 
     IndexDescriptor getDescriptor();
 
@@ -75,9 +73,8 @@ public interface IndexProxy extends MinimalIndexAccessor
      * Change the index descriptor connected to this proxy.
      * This should only be done if the index descriptors describe the same physical index.
      */
-    default void changeIdentity( IndexDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Identity of this proxy is immutable" );
+    default void changeIdentity(IndexDescriptor descriptor) {
+        throw new UnsupportedOperationException("Identity of this proxy is immutable");
     }
 
     InternalIndexState getState();
@@ -89,7 +86,7 @@ public interface IndexProxy extends MinimalIndexAccessor
 
     PopulationProgress getIndexPopulationProgress();
 
-    void force( CursorContext cursorContext ) throws IOException;
+    void force(CursorContext cursorContext) throws IOException;
 
     void refresh() throws IOException;
 
@@ -110,7 +107,8 @@ public interface IndexProxy extends MinimalIndexAccessor
      * @param unit unit of time to wait.
      * @return {@code true} if the call waited, {@code false} if the condition was already reached.
      */
-    boolean awaitStoreScanCompleted( long time, TimeUnit unit ) throws IndexPopulationFailedKernelException, InterruptedException;
+    boolean awaitStoreScanCompleted(long time, TimeUnit unit)
+            throws IndexPopulationFailedKernelException, InterruptedException;
 
     void activate() throws IndexActivationFailedKernelException;
 
@@ -123,7 +121,7 @@ public interface IndexProxy extends MinimalIndexAccessor
      * @param tuple {@link Value value tuple} to validate.
      * @param entityId id of the entity being validated
      */
-    void validateBeforeCommit( Value[] tuple, long entityId );
+    void validateBeforeCommit(Value[] tuple, long entityId);
 
     ResourceIterator<Path> snapshotFiles() throws IOException;
 }

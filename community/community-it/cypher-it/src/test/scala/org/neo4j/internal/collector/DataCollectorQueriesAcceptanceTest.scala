@@ -30,6 +30,7 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
 import java.nio.file.Files
+
 import scala.collection.mutable.ArrayBuffer
 
 class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
@@ -297,7 +298,9 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
   test("should fail on incorrect maxInvocations") {
     execute("CALL db.stats.retrieve('QUERIES', {})").toList // missing maxInvocations argument is fine
     execute("CALL db.stats.retrieve('QUERIES', {maxIndications: -1})").toList // non-related arguments is fine
-    assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: 'non-integer'})") // non-integer is not fine
+    assertInvalidArgument(
+      "CALL db.stats.retrieve('QUERIES', {maxInvocations: 'non-integer'})"
+    ) // non-integer is not fine
     assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: -1})") // negative integer is not fine
   }
 
@@ -401,7 +404,8 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
         |WITH node, relationship
         |MATCH path=()-->()
         |RETURN node, relationship, path
-      """.stripMargin).single
+      """.stripMargin
+    ).single
 
     val node = entities("node").asInstanceOf[Node].getId
     val relationship = entities("relationship").asInstanceOf[Relationship].getId
@@ -410,7 +414,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     val longString: String = "".padTo(200, 'x')
     val query = "RETURN $param"
     execute(query, params = Map("param" -> longString))
-    execute(query, params = Map("param" -> List(1,2,3)))
+    execute(query, params = Map("param" -> List(1, 2, 3)))
     execute(query, params = Map("param" -> Map("x" -> 1)))
     execute(query, params = Map("param" -> node))
     execute(query, params = Map("param" -> relationship))
@@ -441,8 +445,8 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
   test("should limit the collected query parameter key length") {
     // given
     val MAX_PARAM_NAME_LENGTH = 1000
-    val longParamName: String = "".padTo(MAX_PARAM_NAME_LENGTH+3, 'x')
-    val query = "RETURN $"+longParamName
+    val longParamName: String = "".padTo(MAX_PARAM_NAME_LENGTH + 3, 'x')
+    val query = "RETURN $" + longParamName
     execute(query, params = Map(longParamName -> 2))
 
     // when
@@ -557,7 +561,9 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     val urlLength = url.length
     res.toList should beListWithoutOrder(
       querySection(s"LOAD CSV FROM 'string[$urlLength]' AS var0 CREATE ({UNKNOWN0: var0[0]})"),
-      querySection(s"LOAD CSV FROM 'string[$urlLength]' AS var0 CALL { WITH var0 CREATE ({UNKNOWN0: var0[0]}) } IN TRANSACTIONS OF 30 ROWS")
+      querySection(
+        s"LOAD CSV FROM 'string[$urlLength]' AS var0 CALL { WITH var0 CREATE ({UNKNOWN0: var0[0]}) } IN TRANSACTIONS OF 30 ROWS"
+      )
     )
   }
 
@@ -625,7 +631,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
           "invocations" -> beInvocationsInOrder(
             "4ac156c0", // Map("user" -> "BrassLeg", "name" -> "George")
             "b439d06c", // Map("user" -> 2, "name" -> "Glinda")
-            "8e2eb26e"  // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
+            "8e2eb26e" // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
           )
         )
       ),
@@ -650,16 +656,20 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     )
 
   case class QueryWithInvocationSummary(expectedQuery: String) extends Matcher[AnyRef] {
+
     override def apply(left: AnyRef): MatchResult = {
       left match {
         case m: Map[String, AnyRef] =>
           val query = m("query")
           if (query != expectedQuery)
-            return MatchResult(matches = false,
+            return MatchResult(
+              matches = false,
               s"""Expected query
                  |  $expectedQuery
                  |got
-                 |  $query""".stripMargin, "")
+                 |  $query""".stripMargin,
+              ""
+            )
 
           val invocations = m("invocations").asInstanceOf[Seq[Map[String, AnyRef]]]
           val compileTimes = invocations.map(inv => inv("elapsedCompileTimeInUs").asInstanceOf[Long])
@@ -695,7 +705,6 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
       val errors = new ArrayBuffer[String]
       left match {
         case values: Seq[AnyRef] =>
-
           var previousInvocationTime = 0L
 
           for (i <- expectedParams.indices) {
@@ -732,7 +741,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
       }
       MatchResult(
         matches = errors.isEmpty,
-        rawFailureMessage = "Encountered a bunch of errors: " + errors.map("  "+_).mkString("\n", "\n", "\n"),
+        rawFailureMessage = "Encountered a bunch of errors: " + errors.map("  " + _).mkString("\n", "\n", "\n"),
         rawNegatedFailureMessage = "BAH"
       )
     }

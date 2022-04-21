@@ -36,31 +36,31 @@ class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling with 
     SemanticExpressionCheck.semanticCheckFallback =
       (ctx, e) =>
         e match {
-          case x:DummyExpression =>
+          case x: DummyExpression =>
             specifyType(x.possibleTypes, x)
 
-          case x:ErrorExpression =>
+          case x: ErrorExpression =>
             s => SemanticCheckResult.error(s, x.error)
 
-          case x:CustomExpression =>
+          case x: CustomExpression =>
             x.semanticCheck(ctx, x)
 
-          case x:Expression =>
+          case x: Expression =>
             SemanticExpressionCheck.crashOnUnknownExpression(ctx, x)
         }
   }
 
-  def literal(x:String) = StringLiteral(x)(pos)
-  def literal(x:Double) = DecimalDoubleLiteral(x.toString)(pos)
-  def literal(x:Int) = SignedDecimalIntegerLiteral(x.toString)(pos)
+  def literal(x: String) = StringLiteral(x)(pos)
+  def literal(x: Double) = DecimalDoubleLiteral(x.toString)(pos)
+  def literal(x: Int) = SignedDecimalIntegerLiteral(x.toString)(pos)
 
-  def unsignedDecimal(str:String) = UnsignedDecimalIntegerLiteral(str)(pos)
-  def signedDecimal(str:String) = SignedDecimalIntegerLiteral(str)(pos)
-  def decimalDouble(str:String) = DecimalDoubleLiteral(str)(pos)
-  def signedOctal(str:String) = SignedOctalIntegerLiteral(str)(pos)
-  def signedHex(str:String) = SignedHexIntegerLiteral(str)(pos)
+  def unsignedDecimal(str: String) = UnsignedDecimalIntegerLiteral(str)(pos)
+  def signedDecimal(str: String) = SignedDecimalIntegerLiteral(str)(pos)
+  def decimalDouble(str: String) = DecimalDoubleLiteral(str)(pos)
+  def signedOctal(str: String) = SignedOctalIntegerLiteral(str)(pos)
+  def signedHex(str: String) = SignedHexIntegerLiteral(str)(pos)
 
   def variable(name: String): Variable = Variable(name)(pos)
   def propertyKeyName(name: String) = PropertyKeyName("prop")(pos)
-  def property(variable:Variable, keyName:PropertyKeyName) = Property(variable, keyName)(pos)
+  def property(variable: Variable, keyName: PropertyKeyName) = Property(variable, keyName)(pos)
 }

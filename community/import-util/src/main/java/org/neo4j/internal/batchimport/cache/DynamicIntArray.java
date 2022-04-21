@@ -27,34 +27,29 @@ import org.neo4j.memory.MemoryTracker;
  *
  * @see NumberArrayFactory#newDynamicIntArray(long, int, org.neo4j.memory.MemoryTracker)
  */
-public class DynamicIntArray extends DynamicNumberArray<IntArray> implements IntArray
-{
+public class DynamicIntArray extends DynamicNumberArray<IntArray> implements IntArray {
     private final int defaultValue;
     private final MemoryTracker memoryTracker;
 
-    public DynamicIntArray( NumberArrayFactory factory, long chunkSize, int defaultValue, MemoryTracker memoryTracker )
-    {
-        super( factory, chunkSize, new IntArray[0] );
+    public DynamicIntArray(NumberArrayFactory factory, long chunkSize, int defaultValue, MemoryTracker memoryTracker) {
+        super(factory, chunkSize, new IntArray[0]);
         this.defaultValue = defaultValue;
         this.memoryTracker = memoryTracker;
     }
 
     @Override
-    public int get( long index )
-    {
-        IntArray chunk = chunkOrNullAt( index );
-        return chunk != null ? chunk.get( index ) : defaultValue;
+    public int get(long index) {
+        IntArray chunk = chunkOrNullAt(index);
+        return chunk != null ? chunk.get(index) : defaultValue;
     }
 
     @Override
-    public void set( long index, int value )
-    {
-        at( index ).set( index, value );
+    public void set(long index, int value) {
+        at(index).set(index, value);
     }
 
     @Override
-    protected IntArray addChunk( long chunkSize, long base )
-    {
-        return factory.newIntArray( chunkSize, defaultValue, base, memoryTracker );
+    protected IntArray addChunk(long chunkSize, long base) {
+        return factory.newIntArray(chunkSize, defaultValue, base, memoryTracker);
     }
 }

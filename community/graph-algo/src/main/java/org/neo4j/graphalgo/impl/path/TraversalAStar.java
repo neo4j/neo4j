@@ -19,6 +19,10 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
+import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
+import static org.neo4j.internal.helpers.MathUtil.DEFAULT_EPSILON;
+
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.EvaluationContext;
@@ -39,16 +43,11 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
-import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
-import static org.neo4j.internal.helpers.MathUtil.DEFAULT_EPSILON;
-
 /**
  * Implementation of A* algorithm, see {@link AStar}, but using the traversal
  * framework. It's still in an experimental state.
  */
-public class TraversalAStar<T>  implements PathFinder<WeightedPath>
-{
+public class TraversalAStar<T> implements PathFinder<WeightedPath> {
     private final EvaluationContext context;
     private final CostEvaluator<Double> costEvaluator;
     private final PathExpander<T> expander;
@@ -58,23 +57,31 @@ public class TraversalAStar<T>  implements PathFinder<WeightedPath>
     private final EstimateEvaluator<Double> estimateEvaluator;
     private final boolean stopAfterLowestWeight;
 
-    @SuppressWarnings( "unchecked" )
-    public TraversalAStar( EvaluationContext context, PathExpander<T> expander,
-            CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator )
-    {
-        this( context, expander, (InitialBranchState<T>)NO_STATE, costEvaluator, estimateEvaluator, true );
+    @SuppressWarnings("unchecked")
+    public TraversalAStar(
+            EvaluationContext context,
+            PathExpander<T> expander,
+            CostEvaluator<Double> costEvaluator,
+            EstimateEvaluator<Double> estimateEvaluator) {
+        this(context, expander, (InitialBranchState<T>) NO_STATE, costEvaluator, estimateEvaluator, true);
     }
 
-    public TraversalAStar( EvaluationContext context, PathExpander<T> expander, InitialBranchState<T> initialState,
-            CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator )
-    {
-        this( context, expander, initialState, costEvaluator, estimateEvaluator, true );
+    public TraversalAStar(
+            EvaluationContext context,
+            PathExpander<T> expander,
+            InitialBranchState<T> initialState,
+            CostEvaluator<Double> costEvaluator,
+            EstimateEvaluator<Double> estimateEvaluator) {
+        this(context, expander, initialState, costEvaluator, estimateEvaluator, true);
     }
 
-    private TraversalAStar( EvaluationContext context, PathExpander<T> expander, InitialBranchState<T> initialState,
-            CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator,
-            boolean stopAfterLowestWeight )
-    {
+    private TraversalAStar(
+            EvaluationContext context,
+            PathExpander<T> expander,
+            InitialBranchState<T> initialState,
+            CostEvaluator<Double> costEvaluator,
+            EstimateEvaluator<Double> estimateEvaluator,
+            boolean stopAfterLowestWeight) {
         this.context = context;
         this.costEvaluator = costEvaluator;
         this.estimateEvaluator = estimateEvaluator;
@@ -84,103 +91,88 @@ public class TraversalAStar<T>  implements PathFinder<WeightedPath>
     }
 
     @Override
-    public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
-    {
-        return Iterables.asIterable( findSinglePath( start, end ) );
+    public Iterable<WeightedPath> findAllPaths(Node start, final Node end) {
+        return Iterables.asIterable(findSinglePath(start, end));
     }
 
     @Override
-    public WeightedPath findSinglePath( Node start, Node end )
-    {
-        return Iterables.firstOrNull( findPaths( start, end, false ) );
+    public WeightedPath findSinglePath(Node start, Node end) {
+        return Iterables.firstOrNull(findPaths(start, end, false));
     }
 
-    private Iterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )
-    {
+    private Iterable<WeightedPath> findPaths(Node start, Node end, boolean multiplePaths) {
         PathInterest<PositionData> interest;
-        if ( multiplePaths )
-        {
-            interest = (PathInterest<PositionData>) (stopAfterLowestWeight ? PathInterestFactory.allShortest() : PathInterestFactory.all() );
-        }
-        else
-        {
+        if (multiplePaths) {
+            interest = (PathInterest<PositionData>)
+                    (stopAfterLowestWeight ? PathInterestFactory.allShortest() : PathInterestFactory.all());
+        } else {
             interest = (PathInterest<PositionData>) PathInterestFactory.single();
         }
 
-        TraversalDescription traversalDescription = context.transaction().traversalDescription().uniqueness( Uniqueness.NONE )
-                .expand( expander, initialState );
+        TraversalDescription traversalDescription = context.transaction()
+                .traversalDescription()
+                .uniqueness(Uniqueness.NONE)
+                .expand(expander, initialState);
 
-        lastTraverser = traversalDescription.order(
-                new SelectorFactory( end, interest ) )
-                .evaluator( includeWhereEndNodeIs( end ) )
-                .traverse( start );
-        return () -> new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, DEFAULT_EPSILON, stopAfterLowestWeight );
+        lastTraverser = traversalDescription
+                .order(new SelectorFactory(end, interest))
+                .evaluator(includeWhereEndNodeIs(end))
+                .traverse(start);
+        return () -> new WeightedPathIterator(
+                lastTraverser.iterator(), costEvaluator, DEFAULT_EPSILON, stopAfterLowestWeight);
     }
 
     @Override
-    public TraversalMetadata metadata()
-    {
+    public TraversalMetadata metadata() {
         return lastTraverser.metadata();
     }
 
-    private static class PositionData implements Comparable<PositionData>
-    {
+    private static class PositionData implements Comparable<PositionData> {
         private final double wayLengthG;
         private final double estimateH;
 
-        PositionData( double wayLengthG, double estimateH )
-        {
+        PositionData(double wayLengthG, double estimateH) {
             this.wayLengthG = wayLengthG;
             this.estimateH = estimateH;
         }
 
-        Double f()
-        {
+        Double f() {
             return this.estimateH + this.wayLengthG;
         }
 
         @Override
-        public int compareTo( PositionData o )
-        {
-            return f().compareTo( o.f() );
+        public int compareTo(PositionData o) {
+            return f().compareTo(o.f());
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "g:" + wayLengthG + ", h:" + estimateH;
         }
     }
 
-    private class SelectorFactory extends BestFirstSelectorFactory<PositionData, Double>
-    {
+    private class SelectorFactory extends BestFirstSelectorFactory<PositionData, Double> {
         private final Node end;
 
-        SelectorFactory( Node end, PathInterest<PositionData> interest )
-        {
-            super( interest );
+        SelectorFactory(Node end, PathInterest<PositionData> interest) {
+            super(interest);
             this.end = end;
         }
 
         @Override
-        protected PositionData addPriority( TraversalBranch source,
-                PositionData currentAggregatedValue, Double value )
-        {
-            return new PositionData( currentAggregatedValue.wayLengthG + value,
-                    estimateEvaluator.getCost( source.endNode(), end ) );
+        protected PositionData addPriority(TraversalBranch source, PositionData currentAggregatedValue, Double value) {
+            return new PositionData(
+                    currentAggregatedValue.wayLengthG + value, estimateEvaluator.getCost(source.endNode(), end));
         }
 
         @Override
-        protected Double calculateValue( TraversalBranch next )
-        {
-            return next.length() == 0 ? 0d :
-                costEvaluator.getCost( next.lastRelationship(), Direction.OUTGOING );
+        protected Double calculateValue(TraversalBranch next) {
+            return next.length() == 0 ? 0d : costEvaluator.getCost(next.lastRelationship(), Direction.OUTGOING);
         }
 
         @Override
-        protected PositionData getStartData()
-        {
-            return new PositionData( 0, 0 );
+        protected PositionData getStartData() {
+            return new PositionData(0, 0);
         }
     }
 }

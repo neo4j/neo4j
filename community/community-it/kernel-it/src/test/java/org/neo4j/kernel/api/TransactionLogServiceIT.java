@@ -19,7 +19,20 @@
  */
 package org.neo4j.kernel.api;
 
-import org.junit.jupiter.api.Test;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.OptionalLong.empty;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,7 +43,7 @@ import java.util.OptionalLong;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
@@ -60,102 +73,86 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.OptionalLong.empty;
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@DbmsExtension( configurationCallback = "configure" )
-class TransactionLogServiceIT
-{
-    private static final long THRESHOLD = kibiBytes( 128 );
+@DbmsExtension(configurationCallback = "configure")
+class TransactionLogServiceIT {
+    private static final long THRESHOLD = kibiBytes(128);
 
     @Inject
     private GraphDatabaseAPI databaseAPI;
+
     @Inject
     private DatabaseManagementService managementService;
+
     @Inject
     private TransactionLogService logService;
+
     @Inject
     private LogFiles logFiles;
+
     @Inject
     private CheckPointer checkPointer;
+
     @Inject
     private LogicalTransactionStore transactionStore;
+
     @Inject
     private MetadataProvider metadataProvider;
+
     @Inject
     private DatabaseAvailabilityGuard availabilityGuard;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, THRESHOLD )
-               .setConfig( GraphDatabaseSettings.keep_logical_logs, "1 files" );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.logical_log_rotation_threshold, THRESHOLD)
+                .setConfig(GraphDatabaseSettings.keep_logical_logs, "1 files");
     }
 
     @Test
-    void rotationDuringTransactionLogReadingKeepNonAffectedChannelsOpen() throws IOException
-    {
-        var propertyValue = randomAscii( (int) THRESHOLD );
+    void rotationDuringTransactionLogReadingKeepNonAffectedChannelsOpen() throws IOException {
+        var propertyValue = randomAscii((int) THRESHOLD);
 
         // execute test transaction to create any tokens to avoid tx ids tricks
-        executeTransaction( "any" );
+        executeTransaction("any");
         int numberOfTransactions = 30;
         long lastCommittedBeforeWorkload = metadataProvider.getLastCommittedTransactionId();
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            executeTransaction( propertyValue );
+        for (int i = 0; i < numberOfTransactions; i++) {
+            executeTransaction(propertyValue);
         }
 
-        try ( TransactionLogChannels logReaders = logService.logFilesChannels( lastCommittedBeforeWorkload + 29 ) )
-        {
+        try (TransactionLogChannels logReaders = logService.logFilesChannels(lastCommittedBeforeWorkload + 29)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
-            assertThat( logFileChannels ).hasSize( 2 );
-            assertThat( logFiles.logFiles() ).hasSizeGreaterThanOrEqualTo( numberOfTransactions );
+            assertThat(logFileChannels).hasSize(2);
+            assertThat(logFiles.logFiles()).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
 
-            checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Test checkpoint" ) );
+            checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test checkpoint"));
 
-            // 1 desired, 1 checkpoint  + 2 (see how ThresholdBasedPruneStrategy is working - keeping additional 2 files)
-            assertThat( logFiles.logFiles() ).hasSize( 4 );
+            // 1 desired, 1 checkpoint  + 2 (see how ThresholdBasedPruneStrategy is working - keeping additional 2
+            // files)
+            assertThat(logFiles.logFiles()).hasSize(4);
 
-            for ( LogChannel logChannel : logFileChannels )
-            {
+            for (LogChannel logChannel : logFileChannels) {
                 StoreChannel channel = logChannel.getChannel();
-                assertTrue( channel.isOpen() );
-                assertDoesNotThrow( channel::size );
+                assertTrue(channel.isOpen());
+                assertDoesNotThrow(channel::size);
             }
         }
     }
 
     @Test
-    void rotationDuringTransactionLogReading() throws IOException
-    {
-        var propertyValue = randomAscii( (int) THRESHOLD );
+    void rotationDuringTransactionLogReading() throws IOException {
+        var propertyValue = randomAscii((int) THRESHOLD);
 
         int numberOfTransactions = 30;
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            executeTransaction( propertyValue );
+        for (int i = 0; i < numberOfTransactions; i++) {
+            executeTransaction(propertyValue);
         }
 
-        try ( TransactionLogChannels logReaders = logService.logFilesChannels( 2 ) )
-        {
+        try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
-            assertThat( logFileChannels ).hasSizeGreaterThanOrEqualTo( numberOfTransactions );
-            assertThat( logFiles.logFiles() ).hasSizeGreaterThanOrEqualTo( numberOfTransactions );
+            assertThat(logFileChannels).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
+            assertThat(logFiles.logFiles()).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
 
-            checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Test checkpoint" ) );
+            checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test checkpoint"));
 
             // 1 desired, 1 checkpoint + 2 (see how ThresholdBasedPruneStrategy is working - keeping additional 2 files)
             int txLogsAfterCheckpoint = 3;
@@ -163,562 +160,502 @@ class TransactionLogServiceIT
             var visibleTxLogsAfterCheckpoints = txLogsAfterCheckpoint - 1;
             int checkpointLogs = 1;
 
-            assertThat( logFiles.logFiles() ).hasSize( txLogsAfterCheckpoint + checkpointLogs );
+            assertThat(logFiles.logFiles()).hasSize(txLogsAfterCheckpoint + checkpointLogs);
 
-            var closedChannels = logFileChannels.subList( 0, logFileChannels.size() - visibleTxLogsAfterCheckpoints );
-            var openChannels = logFileChannels.subList( logFileChannels.size() - visibleTxLogsAfterCheckpoints, logFileChannels.size() );
-            assertEquals( closedChannels.size() + openChannels.size(), logFileChannels.size() );
+            var closedChannels = logFileChannels.subList(0, logFileChannels.size() - visibleTxLogsAfterCheckpoints);
+            var openChannels = logFileChannels.subList(
+                    logFileChannels.size() - visibleTxLogsAfterCheckpoints, logFileChannels.size());
+            assertEquals(closedChannels.size() + openChannels.size(), logFileChannels.size());
 
-            for ( LogChannel logChannel : closedChannels )
-            {
+            for (LogChannel logChannel : closedChannels) {
                 StoreChannel channel = logChannel.getChannel();
-                assertFalse( channel.isOpen() );
-                assertThrows( ClosedChannelException.class, channel::size );
+                assertFalse(channel.isOpen());
+                assertThrows(ClosedChannelException.class, channel::size);
             }
-            for ( LogChannel logChannel : openChannels )
-            {
+            for (LogChannel logChannel : openChannels) {
                 StoreChannel channel = logChannel.getChannel();
-                assertTrue( channel.isOpen() );
-                assertDoesNotThrow( channel::size );
+                assertTrue(channel.isOpen());
+                assertDoesNotThrow(channel::size);
             }
         }
     }
 
     @Test
-    void closingReadersDoesAutomaticCleanup() throws Exception
-    {
-        var propertyValue = randomAscii( (int) THRESHOLD );
+    void closingReadersDoesAutomaticCleanup() throws Exception {
+        var propertyValue = randomAscii((int) THRESHOLD);
 
         int numberOfTransactions = 30;
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            executeTransaction( propertyValue );
+        for (int i = 0; i < numberOfTransactions; i++) {
+            executeTransaction(propertyValue);
         }
 
-        try ( TransactionLogChannels logReaders = logService.logFilesChannels( 2 ) )
-        {
+        try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
-            assertThat( logFileChannels ).hasSizeGreaterThanOrEqualTo( numberOfTransactions );
-            assertThat( logFiles.logFiles() ).hasSizeGreaterThanOrEqualTo( numberOfTransactions );
+            assertThat(logFileChannels).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
+            assertThat(logFiles.logFiles()).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
 
-            assertThat( ((TransactionLogFile) logFiles.getLogFile()).getExternalFileReaders() ).isNotEmpty();
+            assertThat(((TransactionLogFile) logFiles.getLogFile()).getExternalFileReaders())
+                    .isNotEmpty();
         }
 
-        assertThat( ((TransactionLogFile) logFiles.getLogFile()).getExternalFileReaders() ).isEmpty();
+        assertThat(((TransactionLogFile) logFiles.getLogFile()).getExternalFileReaders())
+                .isEmpty();
     }
 
     @Test
-    void requestLogFileChannelsOfInvalidTransactions()
-    {
-        assertThrows( IllegalArgumentException.class, () -> logService.logFilesChannels( -1 ) );
-        assertThrows( IllegalArgumentException.class, () -> logService.logFilesChannels( 100 ) );
+    void requestLogFileChannelsOfInvalidTransactions() {
+        assertThrows(IllegalArgumentException.class, () -> logService.logFilesChannels(-1));
+        assertThrows(IllegalArgumentException.class, () -> logService.logFilesChannels(100));
     }
 
     @Test
-    void requireDirectByteBufferForLogFileAppending()
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void requireDirectByteBufferForLogFileAppending() {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        assertThrows( IllegalArgumentException.class, () -> logService.append( ByteBuffer.allocate( 5 ), empty()  ) );
+        assertThrows(IllegalArgumentException.class, () -> logService.append(ByteBuffer.allocate(5), empty()));
     }
 
     @Test
-    void logFileChannelsAreNonWritable() throws IOException
-    {
-        executeTransaction( "a" );
-        executeTransaction( "b" );
-        executeTransaction( "c" );
+    void logFileChannelsAreNonWritable() throws IOException {
+        executeTransaction("a");
+        executeTransaction("b");
+        executeTransaction("c");
 
-        try ( TransactionLogChannels logReaders = logService.logFilesChannels( 2 ) )
-        {
+        try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
-            assertThat( logFileChannels ).hasSize( 1 );
+            assertThat(logFileChannels).hasSize(1);
 
-            LogChannel channel = logFileChannels.get( 0 );
-            assertEquals( 2, channel.getStartTxId() );
+            LogChannel channel = logFileChannels.get(0);
+            assertEquals(2, channel.getStartTxId());
 
             StoreChannel storeChannel = channel.getChannel();
-            assertThrows( UnsupportedOperationException.class, () -> storeChannel.writeAll( ByteBuffers.allocate( 1, INSTANCE ) ) );
-            assertThrows( UnsupportedOperationException.class, () -> storeChannel.writeAll( ByteBuffers.allocate( 1, INSTANCE ), 1 ) );
-            assertThrows( UnsupportedOperationException.class, () -> storeChannel.truncate( 1 ) );
-            assertThrows( UnsupportedOperationException.class, () -> storeChannel.write( ByteBuffers.allocate( 1, INSTANCE ) ) );
-            assertThrows( UnsupportedOperationException.class, () -> storeChannel.write( new ByteBuffer[]{}, 1, 1 ) );
-            assertThrows( UnsupportedOperationException.class, () -> storeChannel.write( new ByteBuffer[]{} ) );
+            assertThrows(
+                    UnsupportedOperationException.class,
+                    () -> storeChannel.writeAll(ByteBuffers.allocate(1, INSTANCE)));
+            assertThrows(
+                    UnsupportedOperationException.class,
+                    () -> storeChannel.writeAll(ByteBuffers.allocate(1, INSTANCE), 1));
+            assertThrows(UnsupportedOperationException.class, () -> storeChannel.truncate(1));
+            assertThrows(
+                    UnsupportedOperationException.class, () -> storeChannel.write(ByteBuffers.allocate(1, INSTANCE)));
+            assertThrows(UnsupportedOperationException.class, () -> storeChannel.write(new ByteBuffer[] {}, 1, 1));
+            assertThrows(UnsupportedOperationException.class, () -> storeChannel.write(new ByteBuffer[] {}));
         }
     }
 
     @Test
-    void setsStartingTransactionIdCorrectlyForAllFiles() throws IOException
-    {
-        var propertyValue = randomAscii( (int) THRESHOLD / 2 );
+    void setsStartingTransactionIdCorrectlyForAllFiles() throws IOException {
+        var propertyValue = randomAscii((int) THRESHOLD / 2);
 
         int numberOfTransactions = 40;
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            executeTransaction( propertyValue );
+        for (int i = 0; i < numberOfTransactions; i++) {
+            executeTransaction(propertyValue);
         }
 
         int initialTxId = 17;
-        try ( TransactionLogChannels logReaders = logService.logFilesChannels( initialTxId ) )
-        {
+        try (TransactionLogChannels logReaders = logService.logFilesChannels(initialTxId)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
-            assertThat( logFileChannels ).hasSize( 14 );
+            assertThat(logFileChannels).hasSize(14);
 
             var channelIterator = logFileChannels.iterator();
-            assertEquals( initialTxId, channelIterator.next().getStartTxId() );
+            assertEquals(initialTxId, channelIterator.next().getStartTxId());
             int subsequentTxId = 19;
-            while ( channelIterator.hasNext() )
-            {
-                assertEquals( subsequentTxId, channelIterator.next().getStartTxId() );
+            while (channelIterator.hasNext()) {
+                assertEquals(subsequentTxId, channelIterator.next().getStartTxId());
                 subsequentTxId += 2;
             }
         }
     }
 
     @Test
-    void setsLastTransactionIdCorrectlyForAllFiles() throws IOException
-    {
-        var propertyValue = randomAscii( (int) THRESHOLD / 2 );
+    void setsLastTransactionIdCorrectlyForAllFiles() throws IOException {
+        var propertyValue = randomAscii((int) THRESHOLD / 2);
 
         int numberOfTransactions = 40;
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            executeTransaction( propertyValue );
+        for (int i = 0; i < numberOfTransactions; i++) {
+            executeTransaction(propertyValue);
         }
 
         int initialTxId = 17;
-        try ( TransactionLogChannels logReaders = logService.logFilesChannels( initialTxId ) )
-        {
+        try (TransactionLogChannels logReaders = logService.logFilesChannels(initialTxId)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
-            assertThat( logFileChannels ).hasSize( 14 );
+            assertThat(logFileChannels).hasSize(14);
 
             var channelIterator = logFileChannels.iterator();
-            assertEquals( initialTxId + 1, channelIterator.next().getLastTxId() );
+            assertEquals(initialTxId + 1, channelIterator.next().getLastTxId());
             int subsequentLastTxId = 20;
-            while ( channelIterator.hasNext() )
-            {
-                assertEquals( subsequentLastTxId, channelIterator.next().getLastTxId() );
+            while (channelIterator.hasNext()) {
+                assertEquals(subsequentLastTxId, channelIterator.next().getLastTxId());
                 subsequentLastTxId += 2;
             }
         }
     }
 
     @Test
-    void endOffsetPositionedToEndOfFileOrLastClosedTransaction() throws IOException
-    {
-        var propertyValue = randomAscii( (int) THRESHOLD );
+    void endOffsetPositionedToEndOfFileOrLastClosedTransaction() throws IOException {
+        var propertyValue = randomAscii((int) THRESHOLD);
 
         int numberOfTransactions = 30;
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            executeTransaction( propertyValue );
+        for (int i = 0; i < numberOfTransactions; i++) {
+            executeTransaction(propertyValue);
         }
 
-        try ( TransactionLogChannels logReaders = logService.logFilesChannels( 2 ) )
-        {
+        try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
 
             var channels = logReaders.getChannels();
-            var fullChannels = channels.subList( 0, channels.size() - 1 );
+            var fullChannels = channels.subList(0, channels.size() - 1);
 
-            for ( LogChannel fullChannel : fullChannels )
-            {
-                assertThat( fullChannel.getEndOffset() ).isEqualTo( fullChannel.getChannel().size() );
+            for (LogChannel fullChannel : fullChannels) {
+                assertThat(fullChannel.getEndOffset())
+                        .isEqualTo(fullChannel.getChannel().size());
             }
 
-            var lastChannel = channels.get( channels.size() - 1 );
+            var lastChannel = channels.get(channels.size() - 1);
             var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-            assertThat( lastChannel.getEndOffset() ).isEqualTo( lastClosedTransaction.logPosition().getByteOffset() );
+            assertThat(lastChannel.getEndOffset())
+                    .isEqualTo(lastClosedTransaction.logPosition().getByteOffset());
         }
     }
 
     @Test
-    void firstLogChannelIsProperlyPositionedToInitialTransaction() throws IOException
-    {
+    void firstLogChannelIsProperlyPositionedToInitialTransaction() throws IOException {
         int numberOfTransactions = 20;
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            executeTransaction( "abc" );
+        for (int i = 0; i < numberOfTransactions; i++) {
+            executeTransaction("abc");
         }
 
-        verifyReportedPositions( 2, getTxOffset( 2 ) );
-        verifyReportedPositions( 3, getTxOffset( 3 ) );
-        verifyReportedPositions( 4, getTxOffset( 4 ) );
-        verifyReportedPositions( 5, getTxOffset( 5 ) );
-        verifyReportedPositions( 15, getTxOffset( 15 ) );
+        verifyReportedPositions(2, getTxOffset(2));
+        verifyReportedPositions(3, getTxOffset(3));
+        verifyReportedPositions(4, getTxOffset(4));
+        verifyReportedPositions(5, getTxOffset(5));
+        verifyReportedPositions(15, getTxOffset(15));
     }
 
     @Test
-    void failBulkAppendOnNonAvailableDatabase()
-    {
-        assertThrows( IllegalStateException.class, () -> logService.append( ByteBuffer.wrap( new byte[]{1, 2, 3, 4, 5} ), empty() ) );
+    void failBulkAppendOnNonAvailableDatabase() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> logService.append(ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5}), empty()));
     }
 
     @Test
-    void bulkAppendToTransactionLogsDoesNotChangeLastCommittedTransactionOffset() throws IOException
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void bulkAppendToTransactionLogsDoesNotChangeLastCommittedTransactionOffset() throws IOException {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
         var metadataBefore = metadataProvider.getLastClosedTransaction();
-        var buffer = createBuffer().put( new byte[]{1, 2, 3, 4, 5} );
-        try
-        {
-            for ( int i = 0; i < 100; i++ )
-            {
+        var buffer = createBuffer().put(new byte[] {1, 2, 3, 4, 5});
+        try {
+            for (int i = 0; i < 100; i++) {
                 buffer.rewind();
-                logService.append( buffer, empty() );
+                logService.append(buffer, empty());
             }
-        }
-        finally
-        {
-            ByteBuffers.releaseBuffer( buffer, INSTANCE );
+        } finally {
+            ByteBuffers.releaseBuffer(buffer, INSTANCE);
         }
 
-        assertEquals( metadataBefore, metadataProvider.getLastClosedTransaction() );
+        assertEquals(metadataBefore, metadataProvider.getLastClosedTransaction());
     }
 
     @Test
-    void bulkAppendWithRotationDoesNotChangeLastClosedMetadata() throws IOException
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void bulkAppendWithRotationDoesNotChangeLastClosedMetadata() throws IOException {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
         var metadataBefore = metadataProvider.getLastClosedTransaction();
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
         int appendIterations = 100;
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
-        try
-        {
-            for ( int i = 0; i < appendIterations; i++ )
-            {
-                logService.append( appendData, OptionalLong.of( i ) );
+        var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
+        try {
+            for (int i = 0; i < appendIterations; i++) {
+                logService.append(appendData, OptionalLong.of(i));
                 appendData.rewind();
             }
-        }
-        finally
-        {
-            ByteBuffers.releaseBuffer( appendData, INSTANCE );
+        } finally {
+            ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
 
-        assertEquals( metadataBefore, metadataProvider.getLastClosedTransaction() );
+        assertEquals(metadataBefore, metadataProvider.getLastClosedTransaction());
 
         // pruning is also not here since metadata store is not upgraded
         Path[] matchedFiles = logFiles.getLogFile().getMatchedFiles();
-        assertThat( matchedFiles ).hasSize( (int) (logVersionBefore + appendIterations) );
+        assertThat(matchedFiles).hasSize((int) (logVersionBefore + appendIterations));
     }
 
     @Test
-    void bulkAppendWithRotationUpdatesMetadataProviderLogVersion() throws IOException
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void bulkAppendWithRotationUpdatesMetadataProviderLogVersion() throws IOException {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
         int appendIterations = 100;
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
-        try
-        {
-            for ( int i = 0; i < appendIterations; i++ )
-            {
-                logService.append( appendData, OptionalLong.of( i ) );
+        var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
+        try {
+            for (int i = 0; i < appendIterations; i++) {
+                logService.append(appendData, OptionalLong.of(i));
                 appendData.rewind();
             }
-        }
-        finally
-        {
-            ByteBuffers.releaseBuffer( appendData, INSTANCE );
+        } finally {
+            ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
 
         var logVersionAfter = metadataProvider.getCurrentLogVersion();
-        assertThat( logVersionAfter ).isEqualTo( logVersionBefore + appendIterations - 1 )
-                                     .isNotEqualTo( logVersionBefore );
+        assertThat(logVersionAfter)
+                .isEqualTo(logVersionBefore + appendIterations - 1)
+                .isNotEqualTo(logVersionBefore);
     }
 
     @Test
-    void bulkAppendRotatedLogFilesHaveCorrectSupplierTransactionsFromHeader() throws IOException
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void bulkAppendRotatedLogFilesHaveCorrectSupplierTransactionsFromHeader() throws IOException {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
         int appendIterations = 100;
         int transactionalShift = 10;
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
-        try
-        {
-            for ( int i = 0; i < appendIterations; i++ )
-            {
-                logService.append( appendData, OptionalLong.of( transactionalShift + i ) );
+        var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
+        try {
+            for (int i = 0; i < appendIterations; i++) {
+                logService.append(appendData, OptionalLong.of(transactionalShift + i));
                 appendData.rewind();
             }
-        }
-        finally
-        {
-            ByteBuffers.releaseBuffer( appendData, INSTANCE );
+        } finally {
+            ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
 
         LogFile logFile = logFiles.getLogFile();
         var logFileInformation = logFile.getLogFileInformation();
-        for ( int version = (int) logVersionBefore + 1; version < logVersionBefore + appendIterations; version++ )
-        {
-            assertEquals( transactionalShift + version, logFileInformation.getFirstEntryId( version ) );
+        for (int version = (int) logVersionBefore + 1; version < logVersionBefore + appendIterations; version++) {
+            assertEquals(transactionalShift + version, logFileInformation.getFirstEntryId(version));
         }
     }
 
     @Test
-    void replayTransactionAfterBulkAppendOnNextRestart() throws IOException
-    {
+    void replayTransactionAfterBulkAppendOnNextRestart() throws IOException {
         // so we will write data to system db and will mimic catchup by transfer in bulk logs from system db to test db
-        var systemDatabase = (GraphDatabaseAPI) managementService.database( SYSTEM_DATABASE_NAME );
-        var systemMetadata = systemDatabase.getDependencyResolver().resolveDependency( MetadataProvider.class );
-        var positionBeforeTransaction = systemMetadata.getLastClosedTransaction().logPosition();
-        for ( int i = 0; i < 3; i++ )
-        {
-            try ( var transaction = systemDatabase.beginTx() )
-            {
+        var systemDatabase = (GraphDatabaseAPI) managementService.database(SYSTEM_DATABASE_NAME);
+        var systemMetadata = systemDatabase.getDependencyResolver().resolveDependency(MetadataProvider.class);
+        var positionBeforeTransaction =
+                systemMetadata.getLastClosedTransaction().logPosition();
+        for (int i = 0; i < 3; i++) {
+            try (var transaction = systemDatabase.beginTx()) {
                 transaction.createNode();
                 transaction.commit();
             }
         }
         var positionAfterTransaction = systemMetadata.getLastClosedTransaction().logPosition();
         long systemLastClosedTransactionId = systemMetadata.getLastClosedTransactionId();
-        var buffer = readTransactionIntoBuffer( systemDatabase, positionBeforeTransaction, positionAfterTransaction );
+        var buffer = readTransactionIntoBuffer(systemDatabase, positionBeforeTransaction, positionAfterTransaction);
         LogPosition positionBeforeRecovery = null;
-        try
-        {
-            availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
-            long lastTransactionBeforeBufferAppend = metadataProvider.getLastClosedTransaction().transactionId();
+        try {
+            availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
+            long lastTransactionBeforeBufferAppend =
+                    metadataProvider.getLastClosedTransaction().transactionId();
 
             positionBeforeRecovery = metadataProvider.getLastClosedTransaction().logPosition();
 
-            for ( int i = 0; i < 3; i++ )
-            {
-                logService.append( buffer, OptionalLong.of( lastTransactionBeforeBufferAppend + i + 1 ) );
+            for (int i = 0; i < 3; i++) {
+                logService.append(buffer, OptionalLong.of(lastTransactionBeforeBufferAppend + i + 1));
                 buffer.rewind();
             }
-        }
-        finally
-        {
-            ByteBuffers.releaseBuffer( buffer, INSTANCE );
+        } finally {
+            ByteBuffers.releaseBuffer(buffer, INSTANCE);
         }
 
         // restart db and trigger shutdown checkpoint and recovery
-        Database database = databaseAPI.getDependencyResolver().resolveDependency( Database.class );
+        Database database = databaseAPI.getDependencyResolver().resolveDependency(Database.class);
         database.stop();
         database.start();
 
-        var restartedProvider = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
-        assertEquals( systemLastClosedTransactionId, restartedProvider.getLastClosedTransactionId() );
-        assertNotEquals( positionBeforeRecovery, restartedProvider.getLastClosedTransaction().logPosition() );
+        var restartedProvider = database.getDependencyResolver().resolveDependency(MetadataProvider.class);
+        assertEquals(systemLastClosedTransactionId, restartedProvider.getLastClosedTransactionId());
+        assertNotEquals(
+                positionBeforeRecovery,
+                restartedProvider.getLastClosedTransaction().logPosition());
     }
 
     @Test
-    void bulkAppendRotatedLogFilesMonitorEvents() throws IOException
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void bulkAppendRotatedLogFilesMonitorEvents() throws IOException {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
         BulkAppendLogRotationMonitor monitorListener = new BulkAppendLogRotationMonitor();
-        databaseAPI.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener( monitorListener );
+        databaseAPI.getDependencyResolver().resolveDependency(Monitors.class).addMonitorListener(monitorListener);
 
         int appendIterations = 100;
         int transactionalShift = 10;
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
-        try
-        {
-            for ( int i = 0; i < appendIterations; i++ )
-            {
-                logService.append( appendData, OptionalLong.of( transactionalShift + i ) );
+        var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
+        try {
+            for (int i = 0; i < appendIterations; i++) {
+                logService.append(appendData, OptionalLong.of(transactionalShift + i));
                 appendData.rewind();
             }
-        }
-        finally
-        {
-            ByteBuffers.releaseBuffer( appendData, INSTANCE );
+        } finally {
+            ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
 
         List<Long> observedVersions = monitorListener.getObservedVersions();
-        assertThat( observedVersions ).hasSize( 99 ).containsExactlyElementsOf( LongStream.range( 0, 99 ).boxed().collect( Collectors.toList() ) );
+        assertThat(observedVersions)
+                .hasSize(99)
+                .containsExactlyElementsOf(LongStream.range(0, 99).boxed().collect(Collectors.toList()));
     }
 
     @Test
-    void bulkAppendRotatedLogFilesTracingEvents() throws IOException
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void bulkAppendRotatedLogFilesTracingEvents() throws IOException {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        DatabaseTracers databaseTracers = databaseAPI.getDependencyResolver().resolveDependency( DatabaseTracers.class );
-        assertEquals( 0, databaseTracers.getDatabaseTracer().numberOfLogRotations() );
+        DatabaseTracers databaseTracers = databaseAPI.getDependencyResolver().resolveDependency(DatabaseTracers.class);
+        assertEquals(0, databaseTracers.getDatabaseTracer().numberOfLogRotations());
 
         int appendIterations = 100;
         int transactionalShift = 10;
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
-        try
-        {
-            for ( int i = 0; i < appendIterations; i++ )
-            {
-                logService.append( appendData, OptionalLong.of( transactionalShift + i ) );
+        var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
+        try {
+            for (int i = 0; i < appendIterations; i++) {
+                logService.append(appendData, OptionalLong.of(transactionalShift + i));
                 appendData.rewind();
             }
-        }
-        finally
-        {
-            ByteBuffers.releaseBuffer( appendData, INSTANCE );
+        } finally {
+            ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
 
         // first append is not rotated
         var expectedRotations = appendIterations - 1;
-        assertEquals( expectedRotations, databaseTracers.getDatabaseTracer().numberOfLogRotations() );
+        assertEquals(expectedRotations, databaseTracers.getDatabaseTracer().numberOfLogRotations());
     }
 
     @Test
-    void restoreRequireNonAvailableDatabase()
-    {
-        assertThrows( IllegalStateException.class, () -> logService.restore( LogPosition.UNSPECIFIED ) );
+    void restoreRequireNonAvailableDatabase() {
+        assertThrows(IllegalStateException.class, () -> logService.restore(LogPosition.UNSPECIFIED));
     }
 
     @Test
-    void failToRestoreWithLogPositionInHigherLogFile()
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void failToRestoreWithLogPositionInHigherLogFile() {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        assertThatThrownBy( () -> logService.restore( new LogPosition( metadataProvider.getCurrentLogVersion() + 5, 100 ) ) )
-                .isInstanceOf( IllegalArgumentException.class )
-                .hasMessage( "Log position requested for restore points to the log file that is higher than existing available highest log file. " +
-                        "Requested restore position: LogPosition{logVersion=5, byteOffset=100}, current log file version: 0." );
+        assertThatThrownBy(() -> logService.restore(new LogPosition(metadataProvider.getCurrentLogVersion() + 5, 100)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "Log position requested for restore points to the log file that is higher than existing available highest log file. "
+                                + "Requested restore position: LogPosition{logVersion=5, byteOffset=100}, current log file version: 0.");
     }
 
     @Test
-    void failToRestoreWithLogPositionInCommittedFile()
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void failToRestoreWithLogPositionInCommittedFile() {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        assertThatThrownBy( () -> logService.restore( new LogPosition( metadataProvider.getCurrentLogVersion() - 1, 100 ) ) )
-                .isInstanceOf( IllegalArgumentException.class ).hasMessage(
-                        "Log position requested to be used for restore belongs to the log file that was already appended by " +
-                        "transaction and cannot be restored. " +
-                        "Last closed position: LogPosition{logVersion=0, byteOffset=3398}, requested restore: LogPosition{logVersion=-1, byteOffset=100}" );
+        assertThatThrownBy(() -> logService.restore(new LogPosition(metadataProvider.getCurrentLogVersion() - 1, 100)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "Log position requested to be used for restore belongs to the log file that was already appended by "
+                                + "transaction and cannot be restored. "
+                                + "Last closed position: LogPosition{logVersion=0, byteOffset=3398}, requested restore: LogPosition{logVersion=-1, byteOffset=100}");
     }
 
     @Test
-    void restoreOnCurrentLogVersion() throws IOException
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void restoreOnCurrentLogVersion() throws IOException {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
         int appendIterations = 100;
         LogPosition previousPosition = null;
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
-        try
-        {
-            for ( int i = 0; i < appendIterations; i++ )
-            {
-                var position = logService.append( appendData, OptionalLong.empty() );
-                if ( previousPosition != null )
-                {
-                    assertEquals( previousPosition, position );
+        var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
+        try {
+            for (int i = 0; i < appendIterations; i++) {
+                var position = logService.append(appendData, OptionalLong.empty());
+                if (previousPosition != null) {
+                    assertEquals(previousPosition, position);
                 }
-                logService.restore( position );
+                logService.restore(position);
                 previousPosition = position;
                 appendData.rewind();
             }
-        }
-        finally
-        {
-            ByteBuffers.releaseBuffer( appendData, INSTANCE );
+        } finally {
+            ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
 
-        assertEquals( logVersionBefore, logFiles.getLogFile().getHighestLogVersion() );
+        assertEquals(logVersionBefore, logFiles.getLogFile().getHighestLogVersion());
     }
 
     @Test
-    void restoreInitialLogVersionAndAppend() throws IOException
-    {
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+    void restoreInitialLogVersionAndAppend() throws IOException {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
-        try
-        {
+        var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
+        try {
             int appendIterations = 100;
             LogPosition firstPosition = null;
-            for ( int i = 0; i < appendIterations; i++ )
-            {
-                var position = logService.append( appendData, OptionalLong.of( i + 5 ) );
-                if ( firstPosition == null )
-                {
+            for (int i = 0; i < appendIterations; i++) {
+                var position = logService.append(appendData, OptionalLong.of(i + 5));
+                if (firstPosition == null) {
                     firstPosition = position;
                 }
                 appendData.rewind();
             }
-            assertThat( logFiles.getLogFile().getHighestLogVersion() ).isGreaterThanOrEqualTo( firstPosition.getLogVersion() );
-            logService.restore( firstPosition );
+            assertThat(logFiles.getLogFile().getHighestLogVersion())
+                    .isGreaterThanOrEqualTo(firstPosition.getLogVersion());
+            logService.restore(firstPosition);
 
-            assertEquals( firstPosition, logService.append( appendData, OptionalLong.of( 5 ) ) );
-            assertEquals( logVersionBefore, logFiles.getLogFile().getHighestLogVersion() );
-        }
-        finally
-        {
-            ByteBuffers.releaseBuffer( appendData, INSTANCE );
+            assertEquals(firstPosition, logService.append(appendData, OptionalLong.of(5)));
+            assertEquals(logVersionBefore, logFiles.getLogFile().getHighestLogVersion());
+        } finally {
+            ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
     }
 
-    private ByteBuffer readTransactionIntoBuffer( GraphDatabaseAPI db, LogPosition positionBeforeTransaction, LogPosition positionAfterTransaction )
-            throws IOException
-    {
+    private ByteBuffer readTransactionIntoBuffer(
+            GraphDatabaseAPI db, LogPosition positionBeforeTransaction, LogPosition positionAfterTransaction)
+            throws IOException {
         int length = (int) (positionAfterTransaction.getByteOffset() - positionBeforeTransaction.getByteOffset());
         var data = new byte[length];
-        LogFiles systemLogFiles = db.getDependencyResolver().resolveDependency( LogFiles.class );
-        try ( ReadableLogChannel reader = systemLogFiles.getLogFile().getReader( positionBeforeTransaction ) )
-        {
-            reader.get( data, length );
+        LogFiles systemLogFiles = db.getDependencyResolver().resolveDependency(LogFiles.class);
+        try (ReadableLogChannel reader = systemLogFiles.getLogFile().getReader(positionBeforeTransaction)) {
+            reader.get(data, length);
         }
-        return createBuffer( length ).put( data );
+        return createBuffer(length).put(data);
     }
 
-    private long getTxOffset( int txId ) throws IOException
-    {
-        return transactionStore.getTransactions( txId ).position().getByteOffset();
+    private long getTxOffset(int txId) throws IOException {
+        return transactionStore.getTransactions(txId).position().getByteOffset();
     }
 
-    private void verifyReportedPositions( int txId, long expectedOffset ) throws IOException
-    {
-        try ( TransactionLogChannels logReaders = logService.logFilesChannels( txId ) )
-        {
+    private void verifyReportedPositions(int txId, long expectedOffset) throws IOException {
+        try (TransactionLogChannels logReaders = logService.logFilesChannels(txId)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
-            assertThat( logFileChannels ).hasSize( 1 );
-            assertEquals( expectedOffset, logFileChannels.get( 0 ).getChannel().position() );
+            assertThat(logFileChannels).hasSize(1);
+            assertEquals(expectedOffset, logFileChannels.get(0).getChannel().position());
         }
     }
 
-    private void executeTransaction( String propertyValue )
-    {
-        try ( var tx = databaseAPI.beginTx() )
-        {
+    private void executeTransaction(String propertyValue) {
+        try (var tx = databaseAPI.beginTx()) {
             Node node = tx.createNode();
-            node.setProperty( "a", propertyValue );
+            node.setProperty("a", propertyValue);
             tx.commit();
         }
     }
 
-    private static ByteBuffer createBuffer( int length )
-    {
-        return ByteBuffers.allocateDirect( length, INSTANCE );
+    private static ByteBuffer createBuffer(int length) {
+        return ByteBuffers.allocateDirect(length, INSTANCE);
     }
 
-    private static ByteBuffer createBuffer()
-    {
-        return ByteBuffers.allocateDirect( (int) (THRESHOLD << 1), INSTANCE );
+    private static ByteBuffer createBuffer() {
+        return ByteBuffers.allocateDirect((int) (THRESHOLD << 1), INSTANCE);
     }
 
-    private static class BulkAppendLogRotationMonitor extends LogRotationMonitorAdapter
-    {
+    private static class BulkAppendLogRotationMonitor extends LogRotationMonitorAdapter {
         private final List<Long> versions = new CopyOnWriteArrayList<>();
+
         @Override
-        public void finishLogRotation( Path logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation )
-        {
-            versions.add( logVersion );
+        public void finishLogRotation(
+                Path logFile,
+                long logVersion,
+                long lastTransactionId,
+                long rotationMillis,
+                long millisSinceLastRotation) {
+            versions.add(logVersion);
         }
 
-        public List<Long> getObservedVersions()
-        {
+        public List<Long> getObservedVersions() {
             return versions;
         }
     }

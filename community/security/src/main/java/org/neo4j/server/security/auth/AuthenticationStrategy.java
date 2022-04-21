@@ -25,10 +25,9 @@ import org.neo4j.kernel.impl.security.User;
 /**
  * Strategy for determining if the credentials presented by a user are valid
  */
-public interface AuthenticationStrategy
-{
+public interface AuthenticationStrategy {
     /**
      * Verify a user by password
      */
-    AuthenticationResult authenticate( User user, byte[] password );
+    AuthenticationResult authenticate(User user, byte[] password);
 }

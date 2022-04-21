@@ -39,7 +39,8 @@ object NameValidator {
     if (!usernamePattern.matcher(name).matches)
       throw new InvalidArgumentException(
         s"""Username '$name' contains illegal characters.
-           |Use ascii characters that are not ',', ':' or whitespaces.""".stripMargin)
+           |Use ascii characters that are not ',', ':' or whitespaces.""".stripMargin
+      )
     true
   }
 
@@ -49,7 +50,8 @@ object NameValidator {
     if (!roleNamePattern.matcher(name).matches)
       throw new InvalidArgumentException(
         s"""Role name '$name' contains illegal characters.
-           |Use simple ascii characters, numbers and underscores.""".stripMargin)
+           |Use simple ascii characters, numbers and underscores.""".stripMargin
+      )
     true
   }
 
@@ -68,7 +70,9 @@ object NameValidator {
     if (reservedRoleName.equals(name)) {
       throw new InvalidArgumentException(s"Failed to $verb the specified role '$name': '$name' is a reserved role.")
     } else if (newName.isDefined && reservedRoleName.equals(newName.get)) {
-      throw new InvalidArgumentException(s"Failed to $verb the specified role '$name' to '${newName.get}': '${newName.get}' is a reserved role.")
+      throw new InvalidArgumentException(
+        s"Failed to $verb the specified role '$name' to '${newName.get}': '${newName.get}' is a reserved role."
+      )
     } else {
       true
     }

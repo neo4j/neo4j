@@ -88,7 +88,6 @@ class CoerceToTest extends CypherFunSuite {
       .forRemainingTypes { typ => _.notTo(typ) }
   }
 
-
   test("BOOLEAN") {
     testedTypes
       .coerce(TRUE)
@@ -129,8 +128,15 @@ class CoerceToTest extends CypherFunSuite {
 
   test("RELATIONSHIP") {
     testedTypes
-      .coerce(relationshipValue(11L, "r", null, nodeValue(11L, "n1", null, stringArray("L"), EMPTY_MAP), nodeValue(12L, "n2", null, stringArray("L"), EMPTY_MAP),
-        stringValue("T"), EMPTY_MAP))
+      .coerce(relationshipValue(
+        11L,
+        "r",
+        null,
+        nodeValue(11L, "n1", null, stringArray("L"), EMPTY_MAP),
+        nodeValue(12L, "n2", null, stringArray("L"), EMPTY_MAP),
+        stringValue("T"),
+        EMPTY_MAP
+      ))
       .to(CTAny).unchanged
       .to(CTRelationship).unchanged
       // TODO: IsCollection/IsMap behaviour - Discuss

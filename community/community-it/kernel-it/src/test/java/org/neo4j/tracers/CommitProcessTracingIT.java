@@ -19,11 +19,19 @@
  */
 package org.neo4j.tracers;
 
-import org.junit.jupiter.api.Test;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
+import static org.neo4j.lock.ResourceLocker.IGNORE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
+import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -49,93 +57,86 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
-import static org.neo4j.lock.ResourceLocker.IGNORE;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
-import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
-
-@DbmsExtension( configurationCallback = "configure" )
-public class CommitProcessTracingIT
-{
+@DbmsExtension(configurationCallback = "configure")
+public class CommitProcessTracingIT {
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private TransactionCommitProcess commitProcess;
+
     @Inject
     private StorageEngine storageEngine;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
+    void configure(TestDatabaseManagementServiceBuilder builder) {
         // Disable the additional lock verification since this tests really only uses the raw storage engine
-        builder.setConfig( GraphDatabaseInternalSettings.additional_lock_verification, false );
+        builder.setConfig(GraphDatabaseInternalSettings.additional_lock_verification, false);
     }
 
     @Test
-    void tracePageCacheAccessOnCommandCreation() throws KernelException
-    {
+    void tracePageCacheAccessOnCommandCreation() throws KernelException {
         long sourceId;
-        try ( Transaction transaction = database.beginTx() )
-        {
-            sourceId = transaction.createNode( Label.label( "a" ) ).getId();
+        try (Transaction transaction = database.beginTx()) {
+            sourceId = transaction.createNode(Label.label("a")).getId();
             transaction.commit();
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnCommandCreation" );
-              var reader = storageEngine.newReader() )
-        {
-            assertZeroCursor( cursorContext );
-            try ( CommandCreationContext context = storageEngine.newCommandCreationContext( INSTANCE );
-                  var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL_CONTEXT ) )
-            {
-                context.initialize( cursorContext, storeCursors );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        try (var cursorContext = contextFactory.create("tracePageCacheAccessOnCommandCreation");
+                var reader = storageEngine.newReader()) {
+            assertZeroCursor(cursorContext);
+            try (CommandCreationContext context = storageEngine.newCommandCreationContext(INSTANCE);
+                    var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
+                context.initialize(cursorContext, storeCursors);
                 List<StorageCommand> commands = new ArrayList<>();
                 var txState = new TxState();
-                txState.nodeDoAddLabel( 1, sourceId );
+                txState.nodeDoAddLabel(1, sourceId);
 
-                storageEngine.createCommands( commands, txState, reader, context, IGNORE, LockTracer.NONE, 0, NO_DECORATION, cursorContext, storeCursors,
-                        INSTANCE );
+                storageEngine.createCommands(
+                        commands,
+                        txState,
+                        reader,
+                        context,
+                        IGNORE,
+                        LockTracer.NONE,
+                        0,
+                        NO_DECORATION,
+                        cursorContext,
+                        storeCursors,
+                        INSTANCE);
             }
-            assertCursor( cursorContext, 1 );
+            assertCursor(cursorContext, 1);
         }
     }
 
     @Test
-    void tracePageCacheAccessOnTransactionApply() throws TransactionFailureException
-    {
-        var transaction = new PhysicalTransactionRepresentation( List.of( new Command.NodeCountsCommand( 1, 2 ) ), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS );
+    void tracePageCacheAccessOnTransactionApply() throws TransactionFailureException {
+        var transaction = new PhysicalTransactionRepresentation(
+                List.of(new Command.NodeCountsCommand(1, 2)), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnTransactionApply" ) )
-        {
-            assertZeroCursor( cursorContext );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        try (var cursorContext = contextFactory.create("tracePageCacheAccessOnTransactionApply")) {
+            assertZeroCursor(cursorContext);
 
-            commitProcess.commit( new TransactionToApply( transaction, cursorContext, StoreCursors.NULL ), NULL, EXTERNAL );
+            commitProcess.commit(new TransactionToApply(transaction, cursorContext, StoreCursors.NULL), NULL, EXTERNAL);
 
-            assertCursor( cursorContext, 1 );
+            assertCursor(cursorContext, 1);
         }
     }
 
-    private static void assertCursor( CursorContext cursorContext, int expected )
-    {
+    private static void assertCursor(CursorContext cursorContext, int expected) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isEqualTo( expected );
-        assertThat( cursorTracer.unpins() ).isEqualTo( expected );
-        assertThat( cursorTracer.hits() ).isEqualTo( expected );
+        assertThat(cursorTracer.pins()).isEqualTo(expected);
+        assertThat(cursorTracer.unpins()).isEqualTo(expected);
+        assertThat(cursorTracer.hits()).isEqualTo(expected);
     }
 
-    private static void assertZeroCursor( CursorContext cursorContext )
-    {
+    private static void assertZeroCursor(CursorContext cursorContext) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
-        assertThat( cursorTracer.hits() ).isZero();
+        assertThat(cursorTracer.pins()).isZero();
+        assertThat(cursorTracer.unpins()).isZero();
+        assertThat(cursorTracer.hits()).isZero();
     }
 }

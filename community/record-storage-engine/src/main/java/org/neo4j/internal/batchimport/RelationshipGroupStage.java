@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Function;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 
+import java.util.function.Function;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
@@ -32,21 +33,29 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
-
 /**
  * Takes information about relationship groups in the {@link NodeRelationshipCache}, which is produced
  * as a side-effect of linking relationships together, and writes them out into {@link RelationshipGroupStore}.
  */
-public class RelationshipGroupStage extends Stage
-{
+public class RelationshipGroupStage extends Stage {
     public static final String NAME = "RelationshipGroup";
 
-    RelationshipGroupStage( String topic, Configuration config, RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache,
-            CursorContextFactory contextFactory, Function<CursorContext,StoreCursors> storeCursorsCreator )
-    {
-        super( NAME, topic, config, Step.RECYCLE_BATCHES );
-        add( new ReadGroupRecordsByCacheStep( control(), config, store, cache, contextFactory ) );
-        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence(), contextFactory, storeCursorsCreator, GROUP_CURSOR ) );
+    RelationshipGroupStage(
+            String topic,
+            Configuration config,
+            RecordStore<RelationshipGroupRecord> store,
+            NodeRelationshipCache cache,
+            CursorContextFactory contextFactory,
+            Function<CursorContext, StoreCursors> storeCursorsCreator) {
+        super(NAME, topic, config, Step.RECYCLE_BATCHES);
+        add(new ReadGroupRecordsByCacheStep(control(), config, store, cache, contextFactory));
+        add(new UpdateRecordsStep<>(
+                control(),
+                config,
+                store,
+                new StorePrepareIdSequence(),
+                contextFactory,
+                storeCursorsCreator,
+                GROUP_CURSOR));
     }
 }

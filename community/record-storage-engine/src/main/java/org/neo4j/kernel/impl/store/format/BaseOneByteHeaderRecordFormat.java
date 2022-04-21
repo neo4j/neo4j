@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.format;
 
 import java.util.function.Function;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -32,29 +31,30 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  *
  * @param <RECORD> type of record.
  */
-public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseRecord> extends BaseRecordFormat<RECORD>
-{
+public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseRecord>
+        extends BaseRecordFormat<RECORD> {
     protected static final int HEADER_SIZE = 1;
     private final int inUseBitMaskForFirstByte;
 
-    protected BaseOneByteHeaderRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize,
-            int inUseBitMaskForFirstByte, int idBits, boolean pageAligned )
-    {
-        super( recordSize, recordHeaderSize, idBits, pageAligned );
+    protected BaseOneByteHeaderRecordFormat(
+            Function<StoreHeader, Integer> recordSize,
+            int recordHeaderSize,
+            int inUseBitMaskForFirstByte,
+            int idBits,
+            boolean pageAligned) {
+        super(recordSize, recordHeaderSize, idBits, pageAligned);
         this.inUseBitMaskForFirstByte = inUseBitMaskForFirstByte;
     }
 
-    protected void markAsUnused( PageCursor cursor )
-    {
-        byte inUseByte = cursor.getByte( cursor.getOffset() );
+    protected void markAsUnused(PageCursor cursor) {
+        byte inUseByte = cursor.getByte(cursor.getOffset());
         inUseByte &= ~inUseBitMaskForFirstByte;
-        cursor.putByte( inUseByte );
+        cursor.putByte(inUseByte);
     }
 
     @Override
-    public boolean isInUse( PageCursor cursor )
-    {
-        return isInUse( cursor.getByte( cursor.getOffset() ) );
+    public boolean isInUse(PageCursor cursor) {
+        return isInUse(cursor.getByte(cursor.getOffset()));
     }
 
     /**
@@ -64,9 +64,8 @@ public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseR
      * @param headerByte header byte of a record (the first byte) which contains the inUse bit we're interested in.
      * @return whether or not this header byte has the specific bit saying that it's in use.
      */
-    protected boolean isInUse( byte headerByte )
-    {
-        return has( headerByte, inUseBitMaskForFirstByte );
+    protected boolean isInUse(byte headerByte) {
+        return has(headerByte, inUseBitMaskForFirstByte);
     }
 
     /**
@@ -78,8 +77,7 @@ public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseR
      * @param bitMask mask for the bit to check, such as 0x1, 0x2 and 0x4.
      * @return whether or not that bit is set.
      */
-    protected static boolean has( long headerByte, int bitMask )
-    {
+    protected static boolean has(long headerByte, int bitMask) {
         return (headerByte & bitMask) != 0;
     }
 
@@ -91,8 +89,7 @@ public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseR
      * @param value {@code true} means setting the bits specified by the bit mask, {@code false} means clearing.
      * @return the {@code headerByte} with the changes incorporated.
      */
-    protected static byte set( byte headerByte, int bitMask, boolean value )
-    {
+    protected static byte set(byte headerByte, int bitMask, boolean value) {
         return (byte) (value ? headerByte | bitMask : headerByte);
     }
 }

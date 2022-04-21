@@ -19,33 +19,6 @@
  */
 package org.neo4j.internal.counts;
 
-import org.eclipse.collections.api.factory.Sets;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Path;
-
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore.Updater;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.RelationshipDirection;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.utils.TestDirectory;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,12 +37,35 @@ import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Path;
+import org.eclipse.collections.api.factory.Sets;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore.Updater;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 @PageCacheExtension
-class GBPTreeRelationshipGroupDegreesStoreTest
-{
+class GBPTreeRelationshipGroupDegreesStoreTest {
     private static final long GROUP_ID_1 = 1;
     private static final long GROUP_ID_2 = 2;
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
     @Inject
     private TestDirectory directory;
@@ -83,61 +79,54 @@ class GBPTreeRelationshipGroupDegreesStoreTest
     private GBPTreeRelationshipGroupDegreesStore countsStore;
 
     @BeforeEach
-    void openCountsStore() throws Exception
-    {
-        openCountsStore( EMPTY_REBUILD );
+    void openCountsStore() throws Exception {
+        openCountsStore(EMPTY_REBUILD);
     }
 
     @AfterEach
-    void closeCountsStore()
-    {
+    void closeCountsStore() {
         countsStore.close();
     }
 
     @Test
-    void shouldUpdateAndReadSomeCounts() throws IOException
-    {
+    void shouldUpdateAndReadSomeCounts() throws IOException {
         // given
         long txId = BASE_TX_ID;
-        try ( Updater updater = countsStore.apply( ++txId, NULL_CONTEXT ) )
-        {
-            updater.increment( GROUP_ID_1, OUTGOING, 10 );
-            updater.increment( GROUP_ID_1, INCOMING, 3 );
-            updater.increment( GROUP_ID_2, OUTGOING, 7 );
-            updater.increment( GROUP_ID_2, LOOP, 14 );
+        try (Updater updater = countsStore.apply(++txId, NULL_CONTEXT)) {
+            updater.increment(GROUP_ID_1, OUTGOING, 10);
+            updater.increment(GROUP_ID_1, INCOMING, 3);
+            updater.increment(GROUP_ID_2, OUTGOING, 7);
+            updater.increment(GROUP_ID_2, LOOP, 14);
         }
-        try ( Updater updater = countsStore.apply( ++txId, NULL_CONTEXT ) )
-        {
-            updater.increment( GROUP_ID_1, OUTGOING, 5 ); // now at 15
-            updater.increment( GROUP_ID_1, INCOMING, 2 ); // now at 5
+        try (Updater updater = countsStore.apply(++txId, NULL_CONTEXT)) {
+            updater.increment(GROUP_ID_1, OUTGOING, 5); // now at 15
+            updater.increment(GROUP_ID_1, INCOMING, 2); // now at 5
         }
 
-        countsStore.checkpoint( NULL_CONTEXT );
+        countsStore.checkpoint(NULL_CONTEXT);
 
         // when/then
-        assertEquals( 15, countsStore.degree( GROUP_ID_1, OUTGOING, NULL_CONTEXT ) );
-        assertEquals( 5, countsStore.degree( GROUP_ID_1, INCOMING, NULL_CONTEXT ) );
-        assertEquals( 7, countsStore.degree( GROUP_ID_2, OUTGOING, NULL_CONTEXT ) );
-        assertEquals( 14, countsStore.degree( GROUP_ID_2, LOOP, NULL_CONTEXT ) );
+        assertEquals(15, countsStore.degree(GROUP_ID_1, OUTGOING, NULL_CONTEXT));
+        assertEquals(5, countsStore.degree(GROUP_ID_1, INCOMING, NULL_CONTEXT));
+        assertEquals(7, countsStore.degree(GROUP_ID_2, OUTGOING, NULL_CONTEXT));
+        assertEquals(14, countsStore.degree(GROUP_ID_2, LOOP, NULL_CONTEXT));
 
         // and when
-        try ( Updater updater = countsStore.apply( ++txId, NULL_CONTEXT ) )
-        {
-            updater.increment( GROUP_ID_1, OUTGOING, -7 );
-            updater.increment( GROUP_ID_1, INCOMING, -5 );
-            updater.increment( GROUP_ID_2, OUTGOING, -2 );
+        try (Updater updater = countsStore.apply(++txId, NULL_CONTEXT)) {
+            updater.increment(GROUP_ID_1, OUTGOING, -7);
+            updater.increment(GROUP_ID_1, INCOMING, -5);
+            updater.increment(GROUP_ID_2, OUTGOING, -2);
         }
 
         // then
-        assertEquals( 8, countsStore.degree( GROUP_ID_1, OUTGOING, NULL_CONTEXT ) );
-        assertEquals( 0, countsStore.degree( GROUP_ID_1, INCOMING, NULL_CONTEXT ) );
-        assertEquals( 5, countsStore.degree( GROUP_ID_2, OUTGOING, NULL_CONTEXT ) );
-        assertEquals( 14, countsStore.degree( GROUP_ID_2, LOOP, NULL_CONTEXT ) );
+        assertEquals(8, countsStore.degree(GROUP_ID_1, OUTGOING, NULL_CONTEXT));
+        assertEquals(0, countsStore.degree(GROUP_ID_1, INCOMING, NULL_CONTEXT));
+        assertEquals(5, countsStore.degree(GROUP_ID_2, OUTGOING, NULL_CONTEXT));
+        assertEquals(14, countsStore.degree(GROUP_ID_2, LOOP, NULL_CONTEXT));
     }
 
     @Test
-    void shouldUseCountsBuilderOnCreation() throws Exception
-    {
+    void shouldUseCountsBuilderOnCreation() throws Exception {
         // given
         long rebuiltAtTransactionId = 5;
         long groupId1 = 3;
@@ -146,126 +135,123 @@ class GBPTreeRelationshipGroupDegreesStoreTest
         deleteCountsStore();
 
         // when
-        TestableCountsBuilder builder = new TestableCountsBuilder( rebuiltAtTransactionId )
-        {
+        TestableCountsBuilder builder = new TestableCountsBuilder(rebuiltAtTransactionId) {
             @Override
-            public void rebuild( Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-            {
-                super.rebuild( updater, cursorContext, memoryTracker );
-                updater.increment( groupId1, OUTGOING, 10 );
-                updater.increment( groupId2, INCOMING, 14 );
+            public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+                super.rebuild(updater, cursorContext, memoryTracker);
+                updater.increment(groupId1, OUTGOING, 10);
+                updater.increment(groupId2, INCOMING, 14);
             }
         };
-        openCountsStore( builder );
-        assertTrue( builder.lastCommittedTxIdCalled );
-        assertTrue( builder.rebuildCalled );
-        assertEquals( 10, countsStore.degree( groupId1, OUTGOING, NULL_CONTEXT ) );
-        assertEquals( 14, countsStore.degree( groupId2, INCOMING, NULL_CONTEXT ) );
-        assertEquals( 0, countsStore.degree( groupId1, INCOMING, NULL_CONTEXT ) );
+        openCountsStore(builder);
+        assertTrue(builder.lastCommittedTxIdCalled);
+        assertTrue(builder.rebuildCalled);
+        assertEquals(10, countsStore.degree(groupId1, OUTGOING, NULL_CONTEXT));
+        assertEquals(14, countsStore.degree(groupId2, INCOMING, NULL_CONTEXT));
+        assertEquals(0, countsStore.degree(groupId1, INCOMING, NULL_CONTEXT));
 
         // and when
         checkpointAndRestartCountsStore();
         // Re-applying a txId below or equal to the "rebuild transaction id" should not apply it
-        increment( rebuiltAtTransactionId - 1, groupId1, OUTGOING, 100 );
-        assertEquals( 10, countsStore.degree( groupId1, OUTGOING, NULL_CONTEXT ) );
-        increment( rebuiltAtTransactionId, groupId1, OUTGOING, 100 );
-        assertEquals( 10, countsStore.degree( groupId1, OUTGOING, NULL_CONTEXT ) );
+        increment(rebuiltAtTransactionId - 1, groupId1, OUTGOING, 100);
+        assertEquals(10, countsStore.degree(groupId1, OUTGOING, NULL_CONTEXT));
+        increment(rebuiltAtTransactionId, groupId1, OUTGOING, 100);
+        assertEquals(10, countsStore.degree(groupId1, OUTGOING, NULL_CONTEXT));
 
         // then
-        increment( rebuiltAtTransactionId + 1, groupId1, OUTGOING, 100 );
-        assertEquals( 110, countsStore.degree( groupId1, OUTGOING, NULL_CONTEXT ) );
+        increment(rebuiltAtTransactionId + 1, groupId1, OUTGOING, 100);
+        assertEquals(110, countsStore.degree(groupId1, OUTGOING, NULL_CONTEXT));
     }
 
     @Test
-    void shouldDumpCountsStore() throws IOException
-    {
+    void shouldDumpCountsStore() throws IOException {
         // given
         long txId = BASE_TX_ID + 1;
-        try ( Updater updater = countsStore.apply( txId, NULL_CONTEXT ) )
-        {
-            updater.increment( GROUP_ID_1, OUTGOING, 10 );
-            updater.increment( GROUP_ID_1, INCOMING, 3 );
-            updater.increment( GROUP_ID_2, LOOP, 7 );
+        try (Updater updater = countsStore.apply(txId, NULL_CONTEXT)) {
+            updater.increment(GROUP_ID_1, OUTGOING, 10);
+            updater.increment(GROUP_ID_1, INCOMING, 3);
+            updater.increment(GROUP_ID_2, LOOP, 7);
         }
-        countsStore.checkpoint( NULL_CONTEXT );
+        countsStore.checkpoint(NULL_CONTEXT);
         closeCountsStore();
 
         // when
-        ByteArrayOutputStream out = new ByteArrayOutputStream( 1024 );
-        GBPTreeRelationshipGroupDegreesStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), CONTEXT_FACTORY,
-                                                   immutable.empty() );
+        ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
+        GBPTreeRelationshipGroupDegreesStore.dump(
+                pageCache, countsStoreFile(), new PrintStream(out), CONTEXT_FACTORY, immutable.empty());
 
         // then
         String dump = out.toString();
-        assertThat( dump ).contains( keyToString( degreeKey( GROUP_ID_1, OUTGOING ) ) + " = 10" );
-        assertThat( dump ).contains( keyToString( degreeKey( GROUP_ID_1, INCOMING ) ) + " = 3" );
-        assertThat( dump ).contains( keyToString( degreeKey( GROUP_ID_2, LOOP ) ) + " = 7" );
-        assertThat( dump ).contains( "Highest gap-free txId: " + txId );
+        assertThat(dump).contains(keyToString(degreeKey(GROUP_ID_1, OUTGOING)) + " = 10");
+        assertThat(dump).contains(keyToString(degreeKey(GROUP_ID_1, INCOMING)) + " = 3");
+        assertThat(dump).contains(keyToString(degreeKey(GROUP_ID_2, LOOP)) + " = 7");
+        assertThat(dump).contains("Highest gap-free txId: " + txId);
     }
 
-    private void increment( long txId, long groupId, RelationshipDirection direction, int delta )
-    {
-        try ( Updater updater = countsStore.apply( txId, NULL_CONTEXT ) )
-        {
-            updater.increment( groupId, direction, delta );
+    private void increment(long txId, long groupId, RelationshipDirection direction, int delta) {
+        try (Updater updater = countsStore.apply(txId, NULL_CONTEXT)) {
+            updater.increment(groupId, direction, delta);
         }
     }
 
-    private void checkpointAndRestartCountsStore() throws Exception
-    {
-        countsStore.checkpoint( NULL_CONTEXT );
+    private void checkpointAndRestartCountsStore() throws Exception {
+        countsStore.checkpoint(NULL_CONTEXT);
         closeCountsStore();
         openCountsStore();
     }
 
-    private void deleteCountsStore() throws IOException
-    {
-        directory.getFileSystem().deleteFile( countsStoreFile() );
+    private void deleteCountsStore() throws IOException {
+        directory.getFileSystem().deleteFile(countsStoreFile());
     }
 
-    private Path countsStoreFile()
-    {
-        return directory.file( "counts.db" );
+    private Path countsStoreFile() {
+        return directory.file("counts.db");
     }
 
-    private void openCountsStore( DegreesRebuilder builder ) throws IOException
-    {
-        instantiateCountsStore( builder, writable(), NO_MONITOR );
-        countsStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
+    private void openCountsStore(DegreesRebuilder builder) throws IOException {
+        instantiateCountsStore(builder, writable(), NO_MONITOR);
+        countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
     }
 
-    private void instantiateCountsStore( DegreesRebuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor )
-            throws IOException
-    {
-        countsStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker,
-                                                                monitor, DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), CONTEXT_FACTORY,
-                                                                Sets.immutable.empty() );
+    private void instantiateCountsStore(
+            DegreesRebuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor)
+            throws IOException {
+        countsStore = new GBPTreeRelationshipGroupDegreesStore(
+                pageCache,
+                countsStoreFile(),
+                fs,
+                immediate(),
+                builder,
+                readOnlyChecker,
+                monitor,
+                DEFAULT_DATABASE_NAME,
+                10,
+                NullLogProvider.getInstance(),
+                CONTEXT_FACTORY,
+                Sets.immutable.empty());
     }
 
-    private static class TestableCountsBuilder implements DegreesRebuilder
-    {
+    private static class TestableCountsBuilder implements DegreesRebuilder {
         private final long rebuiltAtTransactionId;
         boolean lastCommittedTxIdCalled;
         boolean rebuildCalled;
 
-        TestableCountsBuilder( long rebuiltAtTransactionId )
-        {
+        TestableCountsBuilder(long rebuiltAtTransactionId) {
             this.rebuiltAtTransactionId = rebuiltAtTransactionId;
         }
 
         @Override
-        public void rebuild( Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-        {
+        public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
             rebuildCalled = true;
         }
 
         @Override
-        public long lastCommittedTxId()
-        {
+        public long lastCommittedTxId() {
             lastCommittedTxIdCalled = true;
             return rebuiltAtTransactionId;
         }
     }
 
-    private static final DegreesRebuilder EMPTY_REBUILD = new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder( BASE_TX_ID );
+    private static final DegreesRebuilder EMPTY_REBUILD =
+            new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder(BASE_TX_ID);
 }

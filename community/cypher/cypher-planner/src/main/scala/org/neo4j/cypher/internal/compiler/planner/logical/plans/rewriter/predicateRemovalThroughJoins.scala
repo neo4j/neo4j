@@ -39,19 +39,25 @@ also be applied to the output of the join. This means that evaluating the same p
 This rewriter finds predicates on the join variables, and removes any predicates on the RHS that already
 exist on the LHS.
  */
-case class predicateRemovalThroughJoins(solveds: Solveds, cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
+case class predicateRemovalThroughJoins(
+  solveds: Solveds,
+  cardinalities: Cardinalities,
+  attributes: Attributes[LogicalPlan]
+) extends Rewriter {
 
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case n@NodeHashJoin(nodeIds, lhs, rhs@Selection(Ands(rhsPredicates), rhsLeaf)) =>
-      val lhsPredicates = predicatesDependingOnTheJoinIds(solveds.get(lhs.id).asSinglePlannerQuery.lastQueryGraph, nodeIds)
+    case n @ NodeHashJoin(nodeIds, lhs, rhs @ Selection(Ands(rhsPredicates), rhsLeaf)) =>
+      val lhsPredicates =
+        predicatesDependingOnTheJoinIds(solveds.get(lhs.id).asSinglePlannerQuery.lastQueryGraph, nodeIds)
       val newPredicate = rhsPredicates.filterNot(lhsPredicates)
 
       if (newPredicate.isEmpty) {
         NodeHashJoin(nodeIds, lhs, rhsLeaf)(SameId(n.id))
       } else {
-        val newRhsPlannerQuery = solveds.get(rhsLeaf.id).asSinglePlannerQuery.amendQueryGraph(_.addPredicates(newPredicate.toArray: _*))
+        val newRhsPlannerQuery =
+          solveds.get(rhsLeaf.id).asSinglePlannerQuery.amendQueryGraph(_.addPredicates(newPredicate.toArray: _*))
         val newSelection = Selection(Ands(newPredicate)(newPredicate.head.position), rhsLeaf)(attributes.copy(rhs.id))
         solveds.set(newSelection.id, newRhsPlannerQuery)
         // NOTE: This overestimates cardinality of the new Selection, because it has fewer predicates than the original Selection.

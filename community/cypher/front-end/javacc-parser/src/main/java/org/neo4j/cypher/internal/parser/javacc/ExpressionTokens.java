@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher.internal.parser.javacc;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DECIMAL_DOUBLE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DOLLAR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IDENTIFIER;
@@ -37,9 +33,12 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNSIGNED_D
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNSIGNED_HEX_INTEGER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNSIGNED_OCTAL_INTEGER;
 
-public class ExpressionTokens
-{
-    private static final Set<Integer> expressions = new HashSet<>( Arrays.asList(
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+public class ExpressionTokens {
+    private static final Set<Integer> expressions = new HashSet<>(Arrays.asList(
             DECIMAL_DOUBLE,
             DOLLAR,
             IDENTIFIER,
@@ -52,11 +51,9 @@ public class ExpressionTokens
             STRING_LITERAL2,
             UNSIGNED_DECIMAL_INTEGER,
             UNSIGNED_HEX_INTEGER,
-            UNSIGNED_OCTAL_INTEGER
-    ) );
+            UNSIGNED_OCTAL_INTEGER));
 
-    public static Set<Integer> getExpressionTokens()
-    {
+    public static Set<Integer> getExpressionTokens() {
         return expressions;
     }
 }

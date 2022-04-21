@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.index.sampler;
 
 import java.util.List;
-
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -31,46 +30,38 @@ import org.neo4j.kernel.api.index.IndexSampler;
  * Index sampler implementation that provide total sampling result of multiple provided samples, by aggregating their
  * internal independent samples.
  */
-public class AggregatingIndexSampler implements IndexSampler
-{
+public class AggregatingIndexSampler implements IndexSampler {
     private final List<IndexSampler> indexSamplers;
 
-    public AggregatingIndexSampler( List<IndexSampler> indexSamplers )
-    {
+    public AggregatingIndexSampler(List<IndexSampler> indexSamplers) {
         this.indexSamplers = indexSamplers;
     }
 
     @Override
-    public IndexSample sampleIndex( CursorContext cursorContext )
-    {
-        return indexSamplers.parallelStream().map( sampler -> sampleIndex( sampler, cursorContext ) )
-                .reduce( AggregatingIndexSampler::combine )
+    public IndexSample sampleIndex(CursorContext cursorContext) {
+        return indexSamplers.parallelStream()
+                .map(sampler -> sampleIndex(sampler, cursorContext))
+                .reduce(AggregatingIndexSampler::combine)
                 .get();
     }
 
-    private static IndexSample sampleIndex( IndexSampler sampler, CursorContext cursorContext )
-    {
-        try
-        {
-            return sampler.sampleIndex( cursorContext );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new RuntimeException( e );
+    private static IndexSample sampleIndex(IndexSampler sampler, CursorContext cursorContext) {
+        try {
+            return sampler.sampleIndex(cursorContext);
+        } catch (IndexNotFoundKernelException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public static IndexSample combine( IndexSample sample1, IndexSample sample2 )
-    {
-        long indexSize = Math.addExact( sample1.indexSize(), sample2.indexSize() );
-        long uniqueValues = Math.addExact( sample1.uniqueValues(), sample2.uniqueValues() );
-        long sampleSize = Math.addExact( sample1.sampleSize(), sample2.sampleSize() );
-        return new IndexSample( indexSize, uniqueValues, sampleSize );
+    public static IndexSample combine(IndexSample sample1, IndexSample sample2) {
+        long indexSize = Math.addExact(sample1.indexSize(), sample2.indexSize());
+        long uniqueValues = Math.addExact(sample1.uniqueValues(), sample2.uniqueValues());
+        long sampleSize = Math.addExact(sample1.sampleSize(), sample2.sampleSize());
+        return new IndexSample(indexSize, uniqueValues, sampleSize);
     }
 
     @Override
-    public void close()
-    {
-        IOUtils.closeAllSilently( indexSamplers );
+    public void close() {
+        IOUtils.closeAllSilently(indexSamplers);
     }
 }

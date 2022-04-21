@@ -22,51 +22,38 @@ package org.neo4j.kernel.impl.transaction.tracing;
 /**
  * A trace event that represents a transaction with the database, and its lifetime.
  */
-public interface TransactionEvent extends AutoCloseable
-{
-    TransactionEvent NULL = new TransactionEvent()
-    {
+public interface TransactionEvent extends AutoCloseable {
+    TransactionEvent NULL = new TransactionEvent() {
         @Override
-        public void setSuccess( boolean success )
-        {
-        }
+        public void setSuccess(boolean success) {}
 
         @Override
-        public void setFailure( boolean failure )
-        {
-        }
+        public void setFailure(boolean failure) {}
 
         @Override
-        public CommitEvent beginCommitEvent()
-        {
+        public CommitEvent beginCommitEvent() {
             return CommitEvent.NULL;
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public void setTransactionWriteState( String transactionWriteState )
-        {
-        }
+        public void setTransactionWriteState(String transactionWriteState) {}
 
         @Override
-        public void setReadOnly( boolean wasReadOnly )
-        {
-        }
+        public void setReadOnly(boolean wasReadOnly) {}
     };
 
     /**
      * The transaction was marked as successful.
      */
-    void setSuccess( boolean success );
+    void setSuccess(boolean success);
 
     /**
      * The transaction was marked as failed.
      */
-    void setFailure( boolean failure );
+    void setFailure(boolean failure);
 
     /**
      * Begin the process of committing the transaction.
@@ -82,10 +69,10 @@ public interface TransactionEvent extends AutoCloseable
     /**
      * Set write state of the transaction
      */
-    void setTransactionWriteState( String transactionWriteState );
+    void setTransactionWriteState(String transactionWriteState);
 
     /**
      * Specify that the transaction was read-only.
      */
-    void setReadOnly( boolean wasReadOnly );
+    void setReadOnly(boolean wasReadOnly);
 }

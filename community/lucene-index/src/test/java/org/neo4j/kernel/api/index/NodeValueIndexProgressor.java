@@ -22,24 +22,19 @@ package org.neo4j.kernel.api.index;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.values.storable.Value;
 
-public class NodeValueIndexProgressor implements IndexProgressor
-{
+public class NodeValueIndexProgressor implements IndexProgressor {
     private final PrimitiveLongResourceIterator ids;
     private final EntityValueClient client;
 
-    public NodeValueIndexProgressor( PrimitiveLongResourceIterator ids, EntityValueClient client )
-    {
+    public NodeValueIndexProgressor(PrimitiveLongResourceIterator ids, EntityValueClient client) {
         this.ids = ids;
         this.client = client;
     }
 
     @Override
-    public boolean next()
-    {
-        while ( ids.hasNext() )
-        {
-            if ( client.acceptEntity( ids.next(), Float.NaN, (Value[]) null ) )
-            {
+    public boolean next() {
+        while (ids.hasNext()) {
+            if (client.acceptEntity(ids.next(), Float.NaN, (Value[]) null)) {
                 return true;
             }
         }
@@ -47,10 +42,8 @@ public class NodeValueIndexProgressor implements IndexProgressor
     }
 
     @Override
-    public void close()
-    {
-        if ( ids != null )
-        {
+    public void close() {
+        if (ids != null) {
             ids.close();
         }
     }

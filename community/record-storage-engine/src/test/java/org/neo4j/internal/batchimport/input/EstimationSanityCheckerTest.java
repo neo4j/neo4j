@@ -19,65 +19,74 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.batchimport.Monitor;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
-class EstimationSanityCheckerTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+
+class EstimationSanityCheckerTest {
     @Test
-    void shouldWarnAboutCountGettingCloseToCapacity()
-    {
+    void shouldWarnAboutCountGettingCloseToCapacity() {
         // given
         RecordFormats formats = defaultFormat();
-        Monitor monitor = mock( Monitor.class );
-        Input.Estimates estimates = Input.knownEstimates( formats.node().getMaxId() - 1000, formats.relationship().getMaxId() - 1000,
-                0, 0, 0, 0, 0 ); // we don't care about the rest of the estimates in this checking
+        Monitor monitor = mock(Monitor.class);
+        Input.Estimates estimates = Input.knownEstimates(
+                formats.node().getMaxId() - 1000,
+                formats.relationship().getMaxId() - 1000,
+                0,
+                0,
+                0,
+                0,
+                0); // we don't care about the rest of the estimates in this checking
 
         // when
-        new EstimationSanityChecker( formats, monitor ).sanityCheck( estimates );
+        new EstimationSanityChecker(formats, monitor).sanityCheck(estimates);
 
         // then
-        verify( monitor ).mayExceedNodeIdCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
-        verify( monitor ).mayExceedRelationshipIdCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
+        verify(monitor).mayExceedNodeIdCapacity(formats.node().getMaxId(), estimates.numberOfNodes());
+        verify(monitor)
+                .mayExceedRelationshipIdCapacity(formats.relationship().getMaxId(), estimates.numberOfRelationships());
     }
 
     @Test
-    void shouldWarnAboutCountHigherThanCapacity()
-    {
+    void shouldWarnAboutCountHigherThanCapacity() {
         // given
         RecordFormats formats = defaultFormat();
-        Monitor monitor = mock( Monitor.class );
-        Input.Estimates estimates = Input.knownEstimates( formats.node().getMaxId() * 2, formats.relationship().getMaxId() * 2,
-                0, 0, 0, 0, 0 ); // we don't care about the rest of the estimates in this checking
+        Monitor monitor = mock(Monitor.class);
+        Input.Estimates estimates = Input.knownEstimates(
+                formats.node().getMaxId() * 2,
+                formats.relationship().getMaxId() * 2,
+                0,
+                0,
+                0,
+                0,
+                0); // we don't care about the rest of the estimates in this checking
 
         // when
-        new EstimationSanityChecker( formats, monitor ).sanityCheck( estimates );
+        new EstimationSanityChecker(formats, monitor).sanityCheck(estimates);
 
         // then
-        verify( monitor ).mayExceedNodeIdCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
-        verify( monitor ).mayExceedRelationshipIdCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
+        verify(monitor).mayExceedNodeIdCapacity(formats.node().getMaxId(), estimates.numberOfNodes());
+        verify(monitor)
+                .mayExceedRelationshipIdCapacity(formats.relationship().getMaxId(), estimates.numberOfRelationships());
     }
 
     @Test
-    void shouldNotWantIfCountWayLowerThanCapacity()
-    {
+    void shouldNotWantIfCountWayLowerThanCapacity() {
         // given
         RecordFormats formats = defaultFormat();
-        Monitor monitor = mock( Monitor.class );
-        Input.Estimates estimates = Input.knownEstimates( 1000, 1000,
-                0, 0, 0, 0, 0 ); // we don't care about the rest of the estimates in this checking
+        Monitor monitor = mock(Monitor.class);
+        Input.Estimates estimates = Input.knownEstimates(
+                1000, 1000, 0, 0, 0, 0, 0); // we don't care about the rest of the estimates in this checking
 
         // when
-        new EstimationSanityChecker( formats, monitor ).sanityCheck( estimates );
+        new EstimationSanityChecker(formats, monitor).sanityCheck(estimates);
 
         // then
-        verifyNoMoreInteractions( monitor );
+        verifyNoMoreInteractions(monitor);
     }
 }

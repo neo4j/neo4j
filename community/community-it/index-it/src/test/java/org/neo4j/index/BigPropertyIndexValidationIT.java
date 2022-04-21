@@ -19,12 +19,13 @@
  */
 package org.neo4j.index;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -34,12 +35,8 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ImpermanentDbmsExtension
-class BigPropertyIndexValidationIT
-{
+class BigPropertyIndexValidationIT {
     @Inject
     private GraphDatabaseService db;
 
@@ -48,98 +45,87 @@ class BigPropertyIndexValidationIT
     private String propertyKey;
 
     @BeforeEach
-    void setup()
-    {
-        LABEL = Label.label( "LABEL" );
+    void setup() {
+        LABEL = Label.label("LABEL");
         char[] chars = new char[1 << 15];
-        Arrays.fill( chars, 'c' );
-        longString = new String( chars );
+        Arrays.fill(chars, 'c');
+        longString = new String(chars);
         propertyKey = "name";
     }
 
     @Test
-    void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation()
-    {
+    void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation() {
         // GIVEN
-        createIndex( db, LABEL, propertyKey );
+        createIndex(db, LABEL, propertyKey);
 
-        //We expect this transaction to fail due to the huge property
-        assertThrows( TransactionFailureException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                assertThrows( IllegalArgumentException.class, () -> tx.execute( "CREATE (n:" + LABEL + " {name: \"" + longString + "\"})" ) );
+        // We expect this transaction to fail due to the huge property
+        assertThrows(TransactionFailureException.class, () -> {
+            try (Transaction tx = db.beginTx()) {
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> tx.execute("CREATE (n:" + LABEL + " {name: \"" + longString + "\"})"));
                 tx.commit();
             }
-            //Check that the database is empty.
-            try ( Transaction tx = db.beginTx();
-                  ResourceIterable<Node> allNodes = tx.getAllNodes() )
-            {
-                assertThat( allNodes ).hasSize( 0 );
+            // Check that the database is empty.
+            try (Transaction tx = db.beginTx();
+                    ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+                assertThat(allNodes).hasSize(0);
             }
-        } );
+        });
     }
 
     @Test
-    void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation()
-    {
+    void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation() {
         // GIVEN
-        createIndex( db, LABEL, propertyKey );
+        createIndex(db, LABEL, propertyKey);
 
-        //We expect this transaction to fail due to the huge property
-        assertThrows( TransactionFailureException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( "CREATE (n:" + LABEL + ")" );
-                assertThrows( IllegalArgumentException.class, () -> tx.execute( "match (n:" + LABEL + ")set n.name= \"" + longString + "\"" ) );
+        // We expect this transaction to fail due to the huge property
+        assertThrows(TransactionFailureException.class, () -> {
+            try (Transaction tx = db.beginTx()) {
+                tx.execute("CREATE (n:" + LABEL + ")");
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> tx.execute("match (n:" + LABEL + ")set n.name= \"" + longString + "\""));
                 tx.commit();
             }
-            //Check that the database is empty.
-            try ( Transaction tx = db.beginTx();
-                  ResourceIterable<Node> allNodes = tx.getAllNodes() )
-            {
-                assertThat( allNodes ).hasSize( 0 );
+            // Check that the database is empty.
+            try (Transaction tx = db.beginTx();
+                    ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+                assertThat(allNodes).hasSize(0);
             }
-        } );
+        });
     }
 
     @Test
-    void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd()
-    {
+    void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd() {
         // GIVEN
-        createIndex( db, LABEL, propertyKey );
+        createIndex(db, LABEL, propertyKey);
 
-        //We expect this transaction to fail due to the huge property
-        assertThrows( TransactionFailureException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
+        // We expect this transaction to fail due to the huge property
+        assertThrows(TransactionFailureException.class, () -> {
+            try (Transaction tx = db.beginTx()) {
                 String otherLabel = "SomethingElse";
-                tx.execute( "CREATE (n:" + otherLabel + " {name: \"" + longString + "\"})" );
-                assertThrows( IllegalArgumentException.class, () -> tx.execute( "match (n:" + otherLabel + ")set n:" + LABEL ) );
+                tx.execute("CREATE (n:" + otherLabel + " {name: \"" + longString + "\"})");
+                assertThrows(
+                        IllegalArgumentException.class, () -> tx.execute("match (n:" + otherLabel + ")set n:" + LABEL));
                 tx.commit();
             }
-            //Check that the database is empty.
-            try ( Transaction tx = db.beginTx();
-                  ResourceIterable<Node> allNodes = tx.getAllNodes() )
-            {
-                assertThat( allNodes ).hasSize( 0 );
+            // Check that the database is empty.
+            try (Transaction tx = db.beginTx();
+                    ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+                assertThat(allNodes).hasSize(0);
             }
-        } );
+        });
     }
 
-    private static void createIndex( GraphDatabaseService gds, Label label, String propKey )
-    {
-        try ( Transaction tx = gds.beginTx() )
-        {
-            tx.schema().indexFor( label ).on( propKey ).create();
+    private static void createIndex(GraphDatabaseService gds, Label label, String propKey) {
+        try (Transaction tx = gds.beginTx()) {
+            tx.schema().indexFor(label).on(propKey).create();
             tx.commit();
         }
 
-        try ( Transaction tx = gds.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = gds.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
     }

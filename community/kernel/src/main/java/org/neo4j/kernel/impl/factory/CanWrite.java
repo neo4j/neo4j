@@ -19,17 +19,13 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-public class CanWrite implements AccessCapability
-{
+public class CanWrite implements AccessCapability {
     public static final CanWrite INSTANCE = new CanWrite();
 
-    private CanWrite()
-    {
-    }
+    private CanWrite() {}
 
     @Override
-    public void assertCanWrite()
-    {
+    public void assertCanWrite() {
         // no exception to throw as writes are permitted
     }
 }

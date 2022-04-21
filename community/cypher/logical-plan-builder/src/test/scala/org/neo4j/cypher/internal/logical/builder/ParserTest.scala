@@ -52,20 +52,34 @@ class ParserTest extends CypherFunSuite with TestName {
 
   // Finds cached property
   test("cache[n.prop] AS b") {
-    Parser.parseProjections(testName) should be(Map("b" -> CachedProperty("n", Variable("n")(pos), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)))
+    Parser.parseProjections(testName) should be(Map("b" -> CachedProperty(
+      "n",
+      Variable("n")(pos),
+      PropertyKeyName("prop")(pos),
+      NODE_TYPE
+    )(pos)))
   }
 
   test("b.foo + 5 AS abc09") {
-    Parser.parseProjections(testName) should be(Map("abc09" -> Add(Property(Variable("b")(pos), PropertyKeyName("foo")(pos))(pos), SignedDecimalIntegerLiteral("5")(pos))(pos)))
+    Parser.parseProjections(testName) should be(Map("abc09" -> Add(
+      Property(Variable("b")(pos), PropertyKeyName("foo")(pos))(pos),
+      SignedDecimalIntegerLiteral("5")(pos)
+    )(pos)))
   }
 
   // Finds nested cached property
   test("cache[b.foo] + 5 AS abc09") {
-    Parser.parseProjections(testName) should be(Map("abc09" -> Add(CachedProperty("b", Variable("b")(pos), PropertyKeyName("foo")(pos), NODE_TYPE)(pos), SignedDecimalIntegerLiteral("5")(pos))(pos)))
+    Parser.parseProjections(testName) should be(Map("abc09" -> Add(
+      CachedProperty("b", Variable("b")(pos), PropertyKeyName("foo")(pos), NODE_TYPE)(pos),
+      SignedDecimalIntegerLiteral("5")(pos)
+    )(pos)))
   }
 
   test("n:Label") {
-    Parser.parseExpression(testName) should be(HasLabelsOrTypes(Variable("n")(pos), Seq(LabelOrRelTypeName("Label")(pos)))(pos))
+    Parser.parseExpression(testName) should be(HasLabelsOrTypes(
+      Variable("n")(pos),
+      Seq(LabelOrRelTypeName("Label")(pos))
+    )(pos))
   }
 
   test("`  n@31`") {
@@ -78,10 +92,23 @@ class ParserTest extends CypherFunSuite with TestName {
         FilterScope(
           Variable("rel")(pos),
           Some(NotEquals(
-            FunctionInvocation(Namespace(List())(pos), FunctionName("id")(pos), distinct = false, IndexedSeq(Variable("rel")(pos)))(pos),
-            SignedDecimalIntegerLiteral("5")(pos))(pos)))(pos),
-        FunctionInvocation(Namespace(List())(pos), FunctionName("relationships")(pos), distinct = false, IndexedSeq(Variable("path")(pos)))(pos)
-      )(pos))
+            FunctionInvocation(
+              Namespace(List())(pos),
+              FunctionName("id")(pos),
+              distinct = false,
+              IndexedSeq(Variable("rel")(pos))
+            )(pos),
+            SignedDecimalIntegerLiteral("5")(pos)
+          )(pos))
+        )(pos),
+        FunctionInvocation(
+          Namespace(List())(pos),
+          FunctionName("relationships")(pos),
+          distinct = false,
+          IndexedSeq(Variable("path")(pos))
+        )(pos)
+      )(pos)
+    )
   }
 
   test("CALL") {

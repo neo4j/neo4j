@@ -35,14 +35,16 @@ import org.neo4j.cypher.internal.util.InputPosition
 object QueryRenderer {
 
   private object clauseExtension extends Prettifier.ClausePrettifier {
+
     override def asString(ctx: Prettifier.QueryPrettifier): PartialFunction[Clause, String] = {
       case rc: ResolvedCall => ctx.asString(rc.asUnresolvedCall)
     }
   }
 
   private object exprExtension extends ExpressionStringifier.Extension {
+
     override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
-      case p: ParameterFromSlot           => ctx.apply(Parameter(p.name, p.parameterType)(p.position))
+      case p: ParameterFromSlot => ctx.apply(Parameter(p.name, p.parameterType)(p.position))
     }
   }
 
@@ -51,6 +53,7 @@ object QueryRenderer {
     extension = clauseExtension,
     useInCommands = false
   )
+
   private val renderPretty = renderStrict.copy(
     expr = stringifier(pretty = true),
     useInCommands = true

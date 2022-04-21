@@ -65,10 +65,11 @@ class ParameterLiteralExtractorTest extends CypherFunSuite {
     extractor.value should equal(VirtualValues.list(
       stringValue("1"),
       VirtualValues.list(doubleValue(2.0), longValue(3)),
-      NO_VALUE))
+      NO_VALUE
+    ))
   }
 
-  private def extract(writer :ParameterLiteralExtractor => Unit) = {
+  private def extract(writer: ParameterLiteralExtractor => Unit) = {
     val extractor = new ParameterLiteralExtractor
     writer(extractor)
     extractor.value

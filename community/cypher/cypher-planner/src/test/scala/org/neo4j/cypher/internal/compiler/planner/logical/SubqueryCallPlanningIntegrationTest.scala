@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SubqueryCallPlanningIntegrationTest
-  extends CypherFunSuite
+    extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport
     with LogicalPlanningAttributesTestSupport {
@@ -416,7 +416,6 @@ class SubqueryCallPlanningIntegrationTest
         .build())
   }
 
-
   test("Query ending with unit subquery CALL") {
     val query = "UNWIND [1, 2] AS x CALL { CREATE (n:N) }"
 
@@ -506,7 +505,8 @@ class SubqueryCallPlanningIntegrationTest
   }
 
   test("nested correlated subqueries") {
-    val query = "WITH 1 AS a CALL { WITH a CALL { WITH a CALL { WITH a RETURN a AS b } RETURN b AS c } RETURN c AS d } RETURN d"
+    val query =
+      "WITH 1 AS a CALL { WITH a CALL { WITH a CALL { WITH a RETURN a AS b } RETURN b AS c } RETURN c AS d } RETURN d"
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("d")
@@ -622,7 +622,7 @@ class SubqueryCallPlanningIntegrationTest
       new LogicalPlanBuilder()
         .produceResults("x", "y", "ymax")
         .apply(fromSubquery = true)
-        .|.orderedAggregation(Seq("y AS y"), Seq("max(y) AS ymax"), Seq("y") )
+        .|.orderedAggregation(Seq("y AS y"), Seq("max(y) AS ymax"), Seq("y"))
         .|.sort(Seq(Ascending("y")))
         .|.projection("x AS y")
         .|.argument("x")

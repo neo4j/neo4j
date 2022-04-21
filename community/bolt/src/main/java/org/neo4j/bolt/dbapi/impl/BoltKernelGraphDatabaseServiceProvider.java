@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.dbapi.BookmarkMetadata;
@@ -45,9 +44,9 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
-public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabaseServiceSPI
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltKernelGraphDatabaseServiceProvider.class );
+public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabaseServiceSPI {
+    public static final long SHALLOW_SIZE =
+            HeapEstimator.shallowSizeOfInstance(BoltKernelGraphDatabaseServiceProvider.class);
 
     private final TransactionIdTracker transactionIdTracker;
     private final GraphDatabaseAPI databaseAPI;
@@ -57,105 +56,112 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     private final Duration perBookmarkTimeout;
     private final MemoryTracker memoryTracker;
 
-    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, TransactionIdTracker transactionIdTracker, Duration perBookmarkTimeout,
-                                                   MemoryTracker memoryTracker )
-    {
+    public BoltKernelGraphDatabaseServiceProvider(
+            GraphDatabaseAPI databaseAPI,
+            TransactionIdTracker transactionIdTracker,
+            Duration perBookmarkTimeout,
+            MemoryTracker memoryTracker) {
         this.databaseAPI = databaseAPI;
-        this.queryExecutionEngine = resolveDependency( databaseAPI, QueryExecutionEngine.class );
+        this.queryExecutionEngine = resolveDependency(databaseAPI, QueryExecutionEngine.class);
         this.transactionIdTracker = transactionIdTracker;
-        this.transactionalContextFactory = newTransactionalContextFactory( databaseAPI );
-        this.namedDatabaseId = resolveDependency( databaseAPI, Database.class ).getNamedDatabaseId();
+        this.transactionalContextFactory = newTransactionalContextFactory(databaseAPI);
+        this.namedDatabaseId = resolveDependency(databaseAPI, Database.class).getNamedDatabaseId();
         this.perBookmarkTimeout = perBookmarkTimeout;
         this.memoryTracker = memoryTracker.getScopedMemoryTracker();
     }
 
-    private static <T> T resolveDependency( GraphDatabaseAPI databaseContext, Class<T> clazz )
-    {
-        return databaseContext.getDependencyResolver().resolveDependency( clazz );
+    private static <T> T resolveDependency(GraphDatabaseAPI databaseContext, Class<T> clazz) {
+        return databaseContext.getDependencyResolver().resolveDependency(clazz);
     }
 
-    private static TransactionalContextFactory newTransactionalContextFactory( GraphDatabaseAPI databaseContext )
-    {
-        GraphDatabaseQueryService queryService = resolveDependency( databaseContext, GraphDatabaseQueryService.class );
-        return Neo4jTransactionalContextFactory.create( queryService );
+    private static TransactionalContextFactory newTransactionalContextFactory(GraphDatabaseAPI databaseContext) {
+        GraphDatabaseQueryService queryService = resolveDependency(databaseContext, GraphDatabaseQueryService.class);
+        return Neo4jTransactionalContextFactory.create(queryService);
     }
 
-    private void awaitUpToDate( List<Bookmark> bookmarks )
-    {
-        for ( var bookmark : bookmarks )
-        {
-            var databaseId = databaseIdFromBookmarkOrCurrent( bookmark );
-            transactionIdTracker.awaitUpToDate( databaseId, bookmark.txId(), perBookmarkTimeout );
+    private void awaitUpToDate(List<Bookmark> bookmarks) {
+        for (var bookmark : bookmarks) {
+            var databaseId = databaseIdFromBookmarkOrCurrent(bookmark);
+            transactionIdTracker.awaitUpToDate(databaseId, bookmark.txId(), perBookmarkTimeout);
         }
     }
 
-    private BookmarkMetadata bookmarkWithTxId()
-    {
-        return new BookmarkMetadata( transactionIdTracker.newestTransactionId( namedDatabaseId ), namedDatabaseId );
+    private BookmarkMetadata bookmarkWithTxId() {
+        return new BookmarkMetadata(transactionIdTracker.newestTransactionId(namedDatabaseId), namedDatabaseId);
     }
 
     @Override
-    public BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, List<Bookmark> bookmarks,
-            Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext )
-    {
-        awaitUpToDate( bookmarks );
-        InternalTransaction topLevelInternalTransaction = beginInternalTransaction( type, loginContext, clientInfo, txTimeout, txMetadata );
+    public BoltTransaction beginTransaction(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo clientInfo,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            RoutingContext routingContext) {
+        awaitUpToDate(bookmarks);
+        InternalTransaction topLevelInternalTransaction =
+                beginInternalTransaction(type, loginContext, clientInfo, txTimeout, txMetadata);
         KernelTransaction kernelTransaction = topLevelInternalTransaction.kernelTransaction();
-        if ( KernelTransaction.Type.IMPLICIT == type )
-        {
-            memoryTracker.allocateHeap( PeriodicBoltKernelTransaction.SHALLOW_SIZE );
+        if (KernelTransaction.Type.IMPLICIT == type) {
+            memoryTracker.allocateHeap(PeriodicBoltKernelTransaction.SHALLOW_SIZE);
 
-            return new PeriodicBoltKernelTransaction( queryExecutionEngine, transactionalContextFactory,
-                    topLevelInternalTransaction, this::bookmarkWithTxId );
+            return new PeriodicBoltKernelTransaction(
+                    queryExecutionEngine,
+                    transactionalContextFactory,
+                    topLevelInternalTransaction,
+                    this::bookmarkWithTxId);
         }
 
-        memoryTracker.allocateHeap( BoltKernelTransaction.SHALLOW_SIZE );
+        memoryTracker.allocateHeap(BoltKernelTransaction.SHALLOW_SIZE);
 
-        return new BoltKernelTransaction( queryExecutionEngine, transactionalContextFactory, kernelTransaction, topLevelInternalTransaction,
-                this::bookmarkWithTxId );
+        return new BoltKernelTransaction(
+                queryExecutionEngine,
+                transactionalContextFactory,
+                kernelTransaction,
+                topLevelInternalTransaction,
+                this::bookmarkWithTxId);
     }
 
     @Override
-    public NamedDatabaseId getNamedDatabaseId()
-    {
+    public NamedDatabaseId getNamedDatabaseId() {
         return namedDatabaseId;
     }
 
-    private InternalTransaction beginInternalTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo,
-            Duration txTimeout, Map<String,Object> txMetadata )
-    {
+    private InternalTransaction beginInternalTransaction(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo clientInfo,
+            Duration txTimeout,
+            Map<String, Object> txMetadata) {
         InternalTransaction internalTransaction;
-        if ( txTimeout == null )
-        {
-            internalTransaction = databaseAPI.beginTransaction( type, loginContext, clientInfo );
-        }
-        else
-        {
-            internalTransaction = databaseAPI.beginTransaction( type, loginContext, clientInfo, txTimeout.toMillis(), TimeUnit.MILLISECONDS );
+        if (txTimeout == null) {
+            internalTransaction = databaseAPI.beginTransaction(type, loginContext, clientInfo);
+        } else {
+            internalTransaction = databaseAPI.beginTransaction(
+                    type, loginContext, clientInfo, txTimeout.toMillis(), TimeUnit.MILLISECONDS);
         }
 
-        if ( txMetadata != null )
-        {
-            internalTransaction.setMetaData( txMetadata );
+        if (txMetadata != null) {
+            internalTransaction.setMetaData(txMetadata);
         }
 
         return internalTransaction;
     }
 
-    private NamedDatabaseId databaseIdFromBookmarkOrCurrent( Bookmark bookmark )
-    {
+    private NamedDatabaseId databaseIdFromBookmarkOrCurrent(Bookmark bookmark) {
         var specifiedDatabaseId = bookmark.databaseId();
-        if ( specifiedDatabaseId == null )
-        {
-            // bookmark does not contain a database ID so it's an old bookmark and the current database ID should be used
+        if (specifiedDatabaseId == null) {
+            // bookmark does not contain a database ID so it's an old bookmark and the current database ID should be
+            // used
             return namedDatabaseId;
         }
         return specifiedDatabaseId;
     }
 
     @Override
-    public void freeTransaction()
-    {
+    public void freeTransaction() {
         memoryTracker.reset();
     }
 }

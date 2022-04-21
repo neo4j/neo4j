@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.LongIterable;
-import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import static java.lang.String.format;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.common.Subject.SYSTEM;
+import static org.neo4j.internal.helpers.collection.Iterables.asList;
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -40,7 +43,14 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-
+import org.eclipse.collections.api.LongIterable;
+import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
@@ -80,18 +90,6 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
-import static java.lang.String.format;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.common.Subject.SYSTEM;
-import static org.neo4j.internal.helpers.collection.Iterables.asList;
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
-import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
-import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-
 /**
  * Manages neo4j indexes. Each index has an {@link IndexDescriptor}, which it uses to filter
  * changes that come into the database. Changes that apply to the the rule are indexed. This way, "normal" changes to
@@ -106,8 +104,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * If, however, it is {@link InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */
-public class IndexingService extends LifecycleAdapter implements IndexUpdateListener, IndexingProvidersService
-{
+public class IndexingService extends LifecycleAdapter implements IndexUpdateListener, IndexingProvidersService {
     private static final String INDEX_SERVICE_INDEX_CLOSING_TAG = "indexServiceIndexClosing";
     private static final String INIT_TAG = "Initialize IndexingService";
     private static final String START_TAG = "Start index population";
@@ -133,8 +130,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexPopulationJobController populationJobController;
     private final IndexStoreView storeView;
 
-    enum State
-    {
+    enum State {
         NOT_STARTED,
         STARTING,
         RUNNING,
@@ -143,25 +139,25 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private volatile State state = State.NOT_STARTED;
 
-    IndexingService( IndexProxyCreator indexProxyCreator,
-                     IndexProviderMap providerMap,
-                     IndexMapReference indexMapRef,
-                     IndexStoreViewFactory indexStoreViewFactory,
-                     Iterable<IndexDescriptor> indexDescriptors,
-                     IndexSamplingController samplingController,
-                     TokenNameLookup tokenNameLookup,
-                     JobScheduler scheduler,
-                     SchemaState schemaState,
-                     InternalLogProvider internalLogProvider,
-                     IndexMonitor monitor,
-                     IndexStatisticsStore indexStatisticsStore,
-                     CursorContextFactory contextFactory,
-                     MemoryTracker memoryTracker,
-                     String databaseName,
-                     DatabaseReadOnlyChecker readOnlyChecker,
-                     Config config,
-                     ImmutableSet<OpenOption> openOptions )
-    {
+    IndexingService(
+            IndexProxyCreator indexProxyCreator,
+            IndexProviderMap providerMap,
+            IndexMapReference indexMapRef,
+            IndexStoreViewFactory indexStoreViewFactory,
+            Iterable<IndexDescriptor> indexDescriptors,
+            IndexSamplingController samplingController,
+            TokenNameLookup tokenNameLookup,
+            JobScheduler scheduler,
+            SchemaState schemaState,
+            InternalLogProvider internalLogProvider,
+            IndexMonitor monitor,
+            IndexStatisticsStore indexStatisticsStore,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker,
+            String databaseName,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            ImmutableSet<OpenOption> openOptions) {
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
         this.indexMapRef = indexMapRef;
@@ -172,8 +168,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.schemaState = schemaState;
         this.internalLogProvider = internalLogProvider;
         this.monitor = monitor;
-        this.populationJobController = new IndexPopulationJobController( scheduler );
-        this.internalLog = internalLogProvider.getLog( getClass() );
+        this.populationJobController = new IndexPopulationJobController(scheduler);
+        this.internalLog = internalLogProvider.getLog(getClass());
         this.indexStatisticsStore = indexStatisticsStore;
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
@@ -181,117 +177,114 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.readOnlyChecker = readOnlyChecker;
         this.config = config;
         this.openOptions = openOptions;
-        this.storeView = indexStoreViewFactory.createTokenIndexStoreView( descriptor -> indexMapRef.getIndexProxy( descriptor.getId() ) );
+        this.storeView = indexStoreViewFactory.createTokenIndexStoreView(
+                descriptor -> indexMapRef.getIndexProxy(descriptor.getId()));
     }
 
     /**
      * Called while the database starts up, before recovery.
      */
     @Override
-    public void init() throws IOException
-    {
+    public void init() throws IOException {
         validateDefaultProviderExisting();
 
-        try ( var cursorContext = contextFactory.create( INIT_TAG ) )
-        {
-            indexMapRef.modify( indexMap ->
-            {
-                Map<InternalIndexState,List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
-                for ( IndexDescriptor descriptor : indexDescriptors )
-                {
+        try (var cursorContext = contextFactory.create(INIT_TAG)) {
+            indexMapRef.modify(indexMap -> {
+                Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>(InternalIndexState.class);
+                for (IndexDescriptor descriptor : indexDescriptors) {
                     // No index (except NLI) is allowed to have the name generated for NLI.
-                    if ( descriptor.getName().equals( IndexDescriptor.NLI_GENERATED_NAME ) &&
-                         !(descriptor.schema().isAnyTokenSchemaDescriptor() && descriptor.schema().entityType() == NODE) )
-                    {
-                        throw new IllegalStateException( "Index '" + descriptor.userDescription( tokenNameLookup ) + "' is using a reserved name: '" +
-                                                         IndexDescriptor.NLI_GENERATED_NAME + "'. This index must be removed on an earlier version " +
-                                                         "to be able to use binaries for version 4.3 or newer." );
+                    if (descriptor.getName().equals(IndexDescriptor.NLI_GENERATED_NAME)
+                            && !(descriptor.schema().isAnyTokenSchemaDescriptor()
+                                    && descriptor.schema().entityType() == NODE)) {
+                        throw new IllegalStateException("Index '" + descriptor.userDescription(tokenNameLookup)
+                                + "' is using a reserved name: '" + IndexDescriptor.NLI_GENERATED_NAME
+                                + "'. This index must be removed on an earlier version "
+                                + "to be able to use binaries for version 4.3 or newer.");
                     }
 
                     IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
-                    IndexProvider provider = providerMap.lookup( providerDescriptor );
-                    InternalIndexState initialState = provider.getInitialState( descriptor, cursorContext, openOptions );
+                    IndexProvider provider = providerMap.lookup(providerDescriptor);
+                    InternalIndexState initialState = provider.getInitialState(descriptor, cursorContext, openOptions);
 
-                    indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( descriptor ) );
+                    indexStates
+                            .computeIfAbsent(initialState, internalIndexState -> new ArrayList<>())
+                            .add(new IndexLogRecord(descriptor));
 
-                    internalLog.debug( indexStateInfo( "init", initialState, descriptor ) );
-                    IndexProxy indexProxy = switch ( initialState )
-                            {
+                    internalLog.debug(indexStateInfo("init", initialState, descriptor));
+                    IndexProxy indexProxy =
+                            switch (initialState) {
                                 case ONLINE -> {
-                                    monitor.initialState( databaseName, descriptor, ONLINE );
-                                    yield indexProxyCreator.createOnlineIndexProxy( descriptor );
+                                    monitor.initialState(databaseName, descriptor, ONLINE);
+                                    yield indexProxyCreator.createOnlineIndexProxy(descriptor);
                                 }
                                 case POPULATING -> {
-                                    // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                                    monitor.initialState( databaseName, descriptor, POPULATING );
-                                    yield indexProxyCreator.createRecoveringIndexProxy( descriptor );
+                                    // The database was shut down during population, or a crash has occurred, or some
+                                    // other sad thing.
+                                    monitor.initialState(databaseName, descriptor, POPULATING);
+                                    yield indexProxyCreator.createRecoveringIndexProxy(descriptor);
                                 }
                                 case FAILED -> {
-                                    monitor.initialState( databaseName, descriptor, FAILED );
-                                    IndexPopulationFailure failure = failure( provider.getPopulationFailure( descriptor, cursorContext, openOptions ) );
-                                    yield indexProxyCreator.createFailedIndexProxy( descriptor, failure );
+                                    monitor.initialState(databaseName, descriptor, FAILED);
+                                    IndexPopulationFailure failure = failure(
+                                            provider.getPopulationFailure(descriptor, cursorContext, openOptions));
+                                    yield indexProxyCreator.createFailedIndexProxy(descriptor, failure);
                                 }
                             };
-                    indexMap.putIndexProxy( indexProxy );
+                    indexMap.putIndexProxy(indexProxy);
                 }
-                logIndexStateSummary( "init", indexStates );
+                logIndexStateSummary("init", indexStates);
                 return indexMap;
-            } );
+            });
         }
     }
 
-    private void validateDefaultProviderExisting()
-    {
-        if ( providerMap == null || providerMap.getDefaultProvider() == null )
-        {
-            throw new IllegalStateException( "You cannot run the database without an index provider, " +
-                    "please make sure that a valid provider (subclass of " + IndexProvider.class.getName() +
-                    ") is on your classpath." );
+    private void validateDefaultProviderExisting() {
+        if (providerMap == null || providerMap.getDefaultProvider() == null) {
+            throw new IllegalStateException("You cannot run the database without an index provider, "
+                    + "please make sure that a valid provider (subclass of "
+                    + IndexProvider.class.getName() + ") is on your classpath.");
         }
     }
 
     // Recovery semantics: This is to be called after init, and after the database has run recovery.
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         state = State.STARTING;
         // Recovery will not do refresh (update read views) while applying recovered transactions and instead
         // do it at one point after recovery... i.e. here
-        indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "refresh", IndexProxy::refresh ) );
+        indexMapRef.indexMapSnapshot().forEachIndexProxy(indexProxyOperation("refresh", IndexProxy::refresh));
 
         final MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors = new LongObjectHashMap<>();
-        indexMapRef.modify( indexMap ->
-        {
-            Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
+        indexMapRef.modify(indexMap -> {
+            Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>(InternalIndexState.class);
 
             // Find all indexes that are not already online, do not require rebuilding, and create them
-            indexMap.forEachIndexProxy( ( indexId, proxy ) ->
-            {
+            indexMap.forEachIndexProxy((indexId, proxy) -> {
                 InternalIndexState state = proxy.getState();
                 IndexDescriptor descriptor = proxy.getDescriptor();
-                IndexLogRecord indexLogRecord = new IndexLogRecord( descriptor );
-                indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() )
-                        .add( indexLogRecord );
-                internalLog.debug( indexStateInfo( "start", state, descriptor ) );
-                switch ( state )
-                {
-                case ONLINE, FAILED -> proxy.start();
-                case POPULATING ->
-                        // Remember for rebuilding right below in this method
-                        rebuildingDescriptors.put( indexId, descriptor );
-                default -> throw new IllegalStateException( "Unknown state: " + state );
+                IndexLogRecord indexLogRecord = new IndexLogRecord(descriptor);
+                indexStates
+                        .computeIfAbsent(state, internalIndexState -> new ArrayList<>())
+                        .add(indexLogRecord);
+                internalLog.debug(indexStateInfo("start", state, descriptor));
+                switch (state) {
+                    case ONLINE, FAILED -> proxy.start();
+                    case POPULATING ->
+                    // Remember for rebuilding right below in this method
+                    rebuildingDescriptors.put(indexId, descriptor);
+                    default -> throw new IllegalStateException("Unknown state: " + state);
                 }
-            } );
-            logIndexStateSummary( "start", indexStates );
+            });
+            logIndexStateSummary("start", indexStates);
 
-            dontRebuildIndexesInReadOnlyMode( rebuildingDescriptors );
+            dontRebuildIndexesInReadOnlyMode(rebuildingDescriptors);
             // Drop placeholder proxies for indexes that need to be rebuilt
-            dropRecoveringIndexes( indexMap, rebuildingDescriptors.keySet() );
+            dropRecoveringIndexes(indexMap, rebuildingDescriptors.keySet());
             // Rebuild indexes by recreating and repopulating them
-            populateIndexesOfAllTypes( rebuildingDescriptors, indexMap );
+            populateIndexesOfAllTypes(rebuildingDescriptors, indexMap);
 
             return indexMap;
-        } );
+        });
 
         samplingController.recoverIndexSamples();
         samplingController.start();
@@ -300,79 +293,75 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         // Indexes backing uniqueness constraints are normally built within the transaction creating the constraint
         // and so we shouldn't leave such indexes in a populating state after recovery.
         // This is why we now go and wait for those indexes to be fully populated.
-        rebuildingDescriptors.forEachKeyValue( ( indexId, index ) ->
-                {
-                    if ( !index.isUnique() )
-                    {
-                        // It's not a uniqueness constraint, so don't wait for it to be rebuilt
-                        return;
-                    }
+        rebuildingDescriptors.forEachKeyValue((indexId, index) -> {
+            if (!index.isUnique()) {
+                // It's not a uniqueness constraint, so don't wait for it to be rebuilt
+                return;
+            }
 
-                    IndexProxy proxy;
-                    try
-                    {
-                        proxy = getIndexProxy( index );
-                    }
-                    catch ( IndexNotFoundKernelException e )
-                    {
-                        throw new IllegalStateException( "What? This index was seen during recovery just now, why isn't it available now?", e );
-                    }
+            IndexProxy proxy;
+            try {
+                proxy = getIndexProxy(index);
+            } catch (IndexNotFoundKernelException e) {
+                throw new IllegalStateException(
+                        "What? This index was seen during recovery just now, why isn't it available now?", e);
+            }
 
-                    if ( proxy.getDescriptor().getOwningConstraintId().isEmpty() )
-                    {
-                        // Even though this is an index backing a uniqueness constraint, the uniqueness constraint wasn't created
-                        // so there's no gain in waiting for this index.
-                        return;
-                    }
+            if (proxy.getDescriptor().getOwningConstraintId().isEmpty()) {
+                // Even though this is an index backing a uniqueness constraint, the uniqueness constraint wasn't
+                // created
+                // so there's no gain in waiting for this index.
+                return;
+            }
 
-                    monitor.awaitingPopulationOfRecoveredIndex( index );
-                    awaitOnlineAfterRecovery( proxy );
-                } );
+            monitor.awaitingPopulationOfRecoveredIndex(index);
+            awaitOnlineAfterRecovery(proxy);
+        });
 
         state = State.RUNNING;
     }
 
-    private void dontRebuildIndexesInReadOnlyMode( MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors )
-    {
-        if ( readOnlyChecker.isReadOnly() && rebuildingDescriptors.notEmpty() )
-        {
+    private void dontRebuildIndexesInReadOnlyMode(MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors) {
+        if (readOnlyChecker.isReadOnly() && rebuildingDescriptors.notEmpty()) {
             String indexString = rebuildingDescriptors.values().stream()
-                    .map( String::valueOf )
-                    .collect( Collectors.joining( ", ", "{", "}" ) );
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(", ", "{", "}"));
             throw new IllegalStateException(
-                    "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in writable mode to rebuild indexes. " +
-                            "Indexes needing rebuild: " + indexString );
+                    "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in writable mode to rebuild indexes. "
+                            + "Indexes needing rebuild: " + indexString);
         }
     }
 
-    private void populateIndexesOfAllTypes( MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors, IndexMap indexMap )
-    {
-        Map<EntityType,MutableLongObjectMap<IndexDescriptor>> rebuildingDescriptorsByType = new EnumMap<>( EntityType.class );
-        for ( IndexDescriptor descriptor : rebuildingDescriptors )
-        {
-            rebuildingDescriptorsByType.computeIfAbsent( descriptor.schema().entityType(), type -> new LongObjectHashMap<>() )
-                    .put( descriptor.getId(), descriptor );
+    private void populateIndexesOfAllTypes(
+            MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors, IndexMap indexMap) {
+        Map<EntityType, MutableLongObjectMap<IndexDescriptor>> rebuildingDescriptorsByType =
+                new EnumMap<>(EntityType.class);
+        for (IndexDescriptor descriptor : rebuildingDescriptors) {
+            rebuildingDescriptorsByType
+                    .computeIfAbsent(descriptor.schema().entityType(), type -> new LongObjectHashMap<>())
+                    .put(descriptor.getId(), descriptor);
         }
 
-        for ( Map.Entry<EntityType,MutableLongObjectMap<IndexDescriptor>> descriptorToPopulate : rebuildingDescriptorsByType.entrySet() )
-        {
-            IndexPopulationJob populationJob = newIndexPopulationJob( descriptorToPopulate.getKey(), SYSTEM );
-            populate( descriptorToPopulate.getValue(), indexMap, populationJob );
+        for (Map.Entry<EntityType, MutableLongObjectMap<IndexDescriptor>> descriptorToPopulate :
+                rebuildingDescriptorsByType.entrySet()) {
+            IndexPopulationJob populationJob = newIndexPopulationJob(descriptorToPopulate.getKey(), SYSTEM);
+            populate(descriptorToPopulate.getValue(), indexMap, populationJob);
         }
     }
 
-    private void populate( MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors, IndexMap indexMap, IndexPopulationJob populationJob )
-    {
-        rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
-        {
+    private void populate(
+            MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors,
+            IndexMap indexMap,
+            IndexPopulationJob populationJob) {
+        rebuildingDescriptors.forEachKeyValue((indexId, descriptor) -> {
             boolean flipToTentative = false; // Never pass through a tentative online state during recovery.
-            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor, populationJob );
+            IndexProxy proxy =
+                    indexProxyCreator.createPopulatingIndexProxy(descriptor, flipToTentative, monitor, populationJob);
             proxy.start();
-            indexMap.putIndexProxy( proxy );
-        } );
-        try ( var cursorContext = contextFactory.create( START_TAG ) )
-        {
-            startIndexPopulation( populationJob, cursorContext );
+            indexMap.putIndexProxy(proxy);
+        });
+        try (var cursorContext = contextFactory.create(START_TAG)) {
+            startIndexPopulation(populationJob, cursorContext);
         }
     }
 
@@ -383,37 +372,34 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * This method is only called during startup, and might be called as part of recovery. If we threw an exception here, it could
      * render the database unrecoverable. That's why we only log a message about failed indexes.
      */
-    private void awaitOnlineAfterRecovery( IndexProxy proxy )
-    {
-        while ( true )
-        {
-            switch ( proxy.getState() )
-            {
-            case ONLINE:
-                return;
-            case FAILED:
-                String message =
-                        String.format( "Index %s entered %s state while recovery waited for it to be fully populated.", proxy.getDescriptor(), FAILED );
-                IndexPopulationFailure populationFailure = proxy.getPopulationFailure();
-                String causeOfFailure = populationFailure.asString();
-                // Log as INFO because at this point we don't know if the constraint index was ever bound to a constraint or not.
-                // If it was really bound to a constraint, then we actually ought to log as WARN or ERROR, I suppose.
-                // But by far the most likely scenario is that the constraint itself was never created.
-                internalLog.info( IndexPopulationFailure.appendCauseOfFailure( message, causeOfFailure ) );
-                return;
-            case POPULATING:
-                // Sleep a short while and look at state again the next loop iteration
-                try
-                {
-                    Thread.sleep( 10 );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new IllegalStateException( "Waiting for index to become ONLINE was interrupted", e );
-                }
-                break;
-            default:
-                throw new IllegalStateException( proxy.getState().name() );
+    private void awaitOnlineAfterRecovery(IndexProxy proxy) {
+        while (true) {
+            switch (proxy.getState()) {
+                case ONLINE:
+                    return;
+                case FAILED:
+                    String message = String.format(
+                            "Index %s entered %s state while recovery waited for it to be fully populated.",
+                            proxy.getDescriptor(), FAILED);
+                    IndexPopulationFailure populationFailure = proxy.getPopulationFailure();
+                    String causeOfFailure = populationFailure.asString();
+                    // Log as INFO because at this point we don't know if the constraint index was ever bound to a
+                    // constraint or not.
+                    // If it was really bound to a constraint, then we actually ought to log as WARN or ERROR, I
+                    // suppose.
+                    // But by far the most likely scenario is that the constraint itself was never created.
+                    internalLog.info(IndexPopulationFailure.appendCauseOfFailure(message, causeOfFailure));
+                    return;
+                case POPULATING:
+                    // Sleep a short while and look at state again the next loop iteration
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        throw new IllegalStateException("Waiting for index to become ONLINE was interrupted", e);
+                    }
+                    break;
+                default:
+                    throw new IllegalStateException(proxy.getState().name());
             }
         }
     }
@@ -421,8 +407,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     // while indexes will be closed on shutdown we need to stop ongoing jobs before we will start shutdown to prevent
     // races between checkpoint flush and index jobs
     @Override
-    public void stop() throws Exception
-    {
+    public void stop() throws Exception {
         samplingController.stop();
         populationJobController.stop();
     }
@@ -430,77 +415,65 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     // We need to stop indexing service on shutdown since we can have transactions that are ongoing/finishing
     // after we start stopping components and those transactions should be able to finish successfully
     @Override
-    public void shutdown() throws IOException
-    {
+    public void shutdown() throws IOException {
         state = State.STOPPED;
         closeAllIndexes();
     }
 
     @Override
-    public void validateBeforeCommit( IndexDescriptor index, Value[] tuple, long entityId )
-    {
-        indexMapRef.validateBeforeCommit( index, tuple, entityId );
+    public void validateBeforeCommit(IndexDescriptor index, Value[] tuple, long entityId) {
+        indexMapRef.validateBeforeCommit(index, tuple, entityId);
     }
 
     @Override
-    public void validateIndexPrototype( IndexPrototype prototype )
-    {
-        IndexProvider provider = providerMap.lookup( prototype.getIndexProvider() );
-        provider.validatePrototype( prototype );
+    public void validateIndexPrototype(IndexPrototype prototype) {
+        IndexProvider provider = providerMap.lookup(prototype.getIndexProvider());
+        provider.validatePrototype(prototype);
     }
 
     @Override
-    public IndexProviderDescriptor getDefaultProvider()
-    {
+    public IndexProviderDescriptor getDefaultProvider() {
         return providerMap.getDefaultProvider().getProviderDescriptor();
     }
 
     @Override
-    public IndexProviderDescriptor getFulltextProvider()
-    {
+    public IndexProviderDescriptor getFulltextProvider() {
         return providerMap.getFulltextProvider().getProviderDescriptor();
     }
 
     @Override
-    public IndexProviderDescriptor getTokenIndexProvider()
-    {
+    public IndexProviderDescriptor getTokenIndexProvider() {
         return providerMap.getTokenIndexProvider().getProviderDescriptor();
     }
 
     @Override
-    public IndexProviderDescriptor getTextIndexProvider()
-    {
+    public IndexProviderDescriptor getTextIndexProvider() {
         return providerMap.getTextIndexProvider().getProviderDescriptor();
     }
 
     @Override
-    public IndexProviderDescriptor getBtreeIndexProvider()
-    {
+    public IndexProviderDescriptor getBtreeIndexProvider() {
         return providerMap.getBtreeIndexProvider().getProviderDescriptor();
     }
 
     @Override
-    public IndexProviderDescriptor getPointIndexProvider()
-    {
+    public IndexProviderDescriptor getPointIndexProvider() {
         return providerMap.getPointIndexProvider().getProviderDescriptor();
     }
 
     @Override
-    public IndexDescriptor completeConfiguration( IndexDescriptor index )
-    {
-        return providerMap.completeConfiguration( index );
+    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+        return providerMap.completeConfiguration(index);
     }
 
     @Override
-    public IndexProviderDescriptor indexProviderByName( String providerName )
-    {
-        return providerMap.lookup( providerName ).getProviderDescriptor();
+    public IndexProviderDescriptor indexProviderByName(String providerName) {
+        return providerMap.lookup(providerName).getProviderDescriptor();
     }
 
     @Override
-    public IndexType indexTypeByProviderName( String providerName )
-    {
-        return providerMap.lookup( providerName ).getIndexType();
+    public IndexType indexTypeByProviderName(String providerName) {
+        return providerMap.lookup(providerName).getIndexType();
     }
 
     /**
@@ -511,33 +484,30 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * @throws KernelException potentially thrown from index updating.
      */
     @Override
-    public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel ) throws KernelException
-    {
-        if ( state == State.NOT_STARTED )
-        {
+    public void applyUpdates(
+            Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel)
+            throws KernelException {
+        if (state == State.NOT_STARTED) {
             // We're in recovery, which means we'll be telling indexes to apply with additional care for making
             // idempotent changes.
-            apply( updates, IndexUpdateMode.RECOVERY, cursorContext, parallel );
-        }
-        else if ( state == State.RUNNING || state == State.STARTING )
-        {
-            apply( updates, IndexUpdateMode.ONLINE, cursorContext, parallel );
-        }
-        else
-        {
+            apply(updates, IndexUpdateMode.RECOVERY, cursorContext, parallel);
+        } else if (state == State.RUNNING || state == State.STARTING) {
+            apply(updates, IndexUpdateMode.ONLINE, cursorContext, parallel);
+        } else {
             throw new IllegalStateException(
-                    "Can't apply index updates " + asList( updates ) + " while indexing service is " + state );
+                    "Can't apply index updates " + asList(updates) + " while indexing service is " + state);
         }
     }
 
-    private void apply( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, IndexUpdateMode updateMode, CursorContext cursorContext, boolean parallel )
-            throws KernelException
-    {
-        try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode, parallel ) )
-        {
-            for ( IndexEntryUpdate<IndexDescriptor> indexUpdate : updates )
-            {
-                processUpdate( updaterMap, indexUpdate, cursorContext );
+    private void apply(
+            Iterable<IndexEntryUpdate<IndexDescriptor>> updates,
+            IndexUpdateMode updateMode,
+            CursorContext cursorContext,
+            boolean parallel)
+            throws KernelException {
+        try (IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap(updateMode, parallel)) {
+            for (IndexEntryUpdate<IndexDescriptor> indexUpdate : updates) {
+                processUpdate(updaterMap, indexUpdate, cursorContext);
             }
         }
     }
@@ -553,11 +523,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * This is used for monitoring purposes, so work related to index creation and population can be linked to its originator.
      */
     @Override
-    public void createIndexes( Subject subject, IndexDescriptor... rules )
-    {
-        IndexDescriptor[] newlyCreated = filterOutAndHandleInjectedTokenIndex( rules );
-        IndexPopulationStarter populationStarter = new IndexPopulationStarter( subject, newlyCreated );
-        indexMapRef.modify( populationStarter );
+    public void createIndexes(Subject subject, IndexDescriptor... rules) {
+        IndexDescriptor[] newlyCreated = filterOutAndHandleInjectedTokenIndex(rules);
+        IndexPopulationStarter populationStarter = new IndexPopulationStarter(subject, newlyCreated);
+        indexMapRef.modify(populationStarter);
         populationStarter.startPopulation();
     }
 
@@ -583,378 +552,317 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * The reason why the elaborate migration was introduced is not to interrupt any ongoing operations
      * against the index by keeping the file/accessor of the injected label index open.
      */
-    private IndexDescriptor[] filterOutAndHandleInjectedTokenIndex( IndexDescriptor[] rules )
-    {
-        IndexProxy nli = indexMapRef.indexMapSnapshot().getIndexProxy( IndexDescriptor.INJECTED_NLI_ID );
-        if ( nli == null )
-        {
+    private IndexDescriptor[] filterOutAndHandleInjectedTokenIndex(IndexDescriptor[] rules) {
+        IndexProxy nli = indexMapRef.indexMapSnapshot().getIndexProxy(IndexDescriptor.INJECTED_NLI_ID);
+        if (nli == null) {
             return rules;
         }
 
         List<IndexDescriptor> filteredRules = new ArrayList<>();
-        for ( IndexDescriptor rule : rules )
-        {
-            if ( rule.schema().isAnyTokenSchemaDescriptor() && rule.schema().entityType() == NODE )
-            {
-                nli.changeIdentity( rule );
+        for (IndexDescriptor rule : rules) {
+            if (rule.schema().isAnyTokenSchemaDescriptor() && rule.schema().entityType() == NODE) {
+                nli.changeIdentity(rule);
 
-                indexMapRef.modify( indexMap ->
-                {
-                    indexMap.putIndexProxy( nli );
-                    indexMap.removeIndexProxy( IndexDescriptor.INJECTED_NLI_ID );
+                indexMapRef.modify(indexMap -> {
+                    indexMap.putIndexProxy(nli);
+                    indexMap.removeIndexProxy(IndexDescriptor.INJECTED_NLI_ID);
                     return indexMap;
-                } );
+                });
                 schemaState.clear();
-            }
-            else
-            {
-                filteredRules.add( rule );
+            } else {
+                filteredRules.add(rule);
             }
         }
-        return filteredRules.toArray( IndexDescriptor[]::new );
+        return filteredRules.toArray(IndexDescriptor[]::new);
     }
 
-    private static void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<IndexDescriptor> indexUpdate,
-            CursorContext cursorContext ) throws IndexEntryConflictException
-    {
-        IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey(), cursorContext );
-        if ( updater != null )
-        {
-            updater.process( indexUpdate );
+    private static void processUpdate(
+            IndexUpdaterMap updaterMap, IndexEntryUpdate<IndexDescriptor> indexUpdate, CursorContext cursorContext)
+            throws IndexEntryConflictException {
+        IndexUpdater updater = updaterMap.getUpdater(indexUpdate.indexKey(), cursorContext);
+        if (updater != null) {
+            updater.process(indexUpdate);
         }
     }
 
     @Override
-    public void dropIndex( IndexDescriptor rule )
-    {
-        Preconditions.checkState( state == State.RUNNING || state == State.NOT_STARTED, "Dropping index in unexpected state %s", state.name() );
-        indexMapRef.modify( indexMap ->
-        {
+    public void dropIndex(IndexDescriptor rule) {
+        Preconditions.checkState(
+                state == State.RUNNING || state == State.NOT_STARTED,
+                "Dropping index in unexpected state %s",
+                state.name());
+        indexMapRef.modify(indexMap -> {
             long indexId = rule.getId();
-            IndexProxy index = indexMap.removeIndexProxy( indexId );
+            IndexProxy index = indexMap.removeIndexProxy(indexId);
 
-            if ( state == State.RUNNING )
-            {
-                Preconditions.checkState( index != null, "Index %s doesn't exists", rule );
+            if (state == State.RUNNING) {
+                Preconditions.checkState(index != null, "Index %s doesn't exists", rule);
                 index.drop();
-            }
-            else if ( index != null )
-            {
-                try
-                {
+            } else if (index != null) {
+                try {
                     index.drop();
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     // This is OK to get during recovery because the underlying index can be in any unknown state
                     // while we're recovering. Let's just move on to closing it instead.
-                    try ( var cursorContext = contextFactory.create( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
-                    {
-                        index.close( cursorContext );
-                    }
-                    catch ( IOException closeException )
-                    {
+                    try (var cursorContext = contextFactory.create(INDEX_SERVICE_INDEX_CLOSING_TAG)) {
+                        index.close(cursorContext);
+                    } catch (IOException closeException) {
                         // This is OK for the same reason as above
                     }
                 }
             }
             return indexMap;
-        } );
+        });
     }
 
-    public void triggerIndexSampling( IndexSamplingMode mode )
-    {
-        internalLog.info( "Manual trigger for sampling all indexes [" + mode + "]" );
-        monitor.indexSamplingTriggered( mode );
-        samplingController.sampleIndexes( mode );
+    public void triggerIndexSampling(IndexSamplingMode mode) {
+        internalLog.info("Manual trigger for sampling all indexes [" + mode + "]");
+        monitor.indexSamplingTriggered(mode);
+        samplingController.sampleIndexes(mode);
     }
 
-    public void triggerIndexSampling( IndexDescriptor index, IndexSamplingMode mode )
-    {
-        String description = index.userDescription( tokenNameLookup );
-        internalLog.info( "Manual trigger for sampling index " + description + " [" + mode + "]" );
-        samplingController.sampleIndex( index.getId(), mode );
+    public void triggerIndexSampling(IndexDescriptor index, IndexSamplingMode mode) {
+        String description = index.userDescription(tokenNameLookup);
+        internalLog.info("Manual trigger for sampling index " + description + " [" + mode + "]");
+        samplingController.sampleIndex(index.getId(), mode);
     }
 
-    private static void dropRecoveringIndexes( IndexMap indexMap, LongIterable indexesToRebuild )
-    {
-        indexesToRebuild.forEach( idx ->
-        {
-            IndexProxy indexProxy = indexMap.removeIndexProxy( idx );
+    private static void dropRecoveringIndexes(IndexMap indexMap, LongIterable indexesToRebuild) {
+        indexesToRebuild.forEach(idx -> {
+            IndexProxy indexProxy = indexMap.removeIndexProxy(idx);
             assert indexProxy != null;
             indexProxy.drop();
-        } );
+        });
     }
 
     @Override
-    public void activateIndex( IndexDescriptor descriptor ) throws
-            IndexNotFoundKernelException, IndexActivationFailedKernelException, IndexPopulationFailedKernelException
-    {
-        try
-        {
-            if ( state == State.RUNNING ) // don't do this during recovery.
+    public void activateIndex(IndexDescriptor descriptor)
+            throws IndexNotFoundKernelException, IndexActivationFailedKernelException,
+                    IndexPopulationFailedKernelException {
+        try {
+            if (state == State.RUNNING) // don't do this during recovery.
             {
-                IndexProxy index = getIndexProxy( descriptor );
-                index.awaitStoreScanCompleted( 0, TimeUnit.MILLISECONDS );
+                IndexProxy index = getIndexProxy(descriptor);
+                index.awaitStoreScanCompleted(0, TimeUnit.MILLISECONDS);
                 index.activate();
-                internalLog.info( "Constraint %s is %s.", index.getDescriptor(), ONLINE.name() );
+                internalLog.info("Constraint %s is %s.", index.getDescriptor(), ONLINE.name());
             }
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.interrupted();
-            throw new IndexActivationFailedKernelException( e, "Unable to activate index, thread was interrupted." );
+            throw new IndexActivationFailedKernelException(e, "Unable to activate index, thread was interrupted.");
         }
     }
 
-    public IndexProxy getIndexProxy( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        return indexMapRef.getIndexProxy( index.getId() );
+    public IndexProxy getIndexProxy(IndexDescriptor index) throws IndexNotFoundKernelException {
+        return indexMapRef.getIndexProxy(index.getId());
     }
 
     @Deprecated
-    public IndexProxy getIndexProxy( long indexId ) throws IndexNotFoundKernelException
-    {
-        return indexMapRef.getIndexProxy( indexId );
+    public IndexProxy getIndexProxy(long indexId) throws IndexNotFoundKernelException {
+        return indexMapRef.getIndexProxy(indexId);
     }
 
     @Override
-    public void validateIndex( long indexId )
+    public void validateIndex(long indexId)
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException,
-            UniquePropertyValueValidationException
-    {
-        indexMapRef.getIndexProxy( indexId ).validate();
+                    UniquePropertyValueValidationException {
+        indexMapRef.getIndexProxy(indexId).validate();
     }
 
-    public void forceAll( CursorContext cursorContext ) throws IOException
-    {
-        indexStatisticsStore.checkpoint( cursorContext );
-        indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "force", proxy -> proxy.force( cursorContext ) ) );
+    public void forceAll(CursorContext cursorContext) throws IOException {
+        indexStatisticsStore.checkpoint(cursorContext);
+        indexMapRef
+                .indexMapSnapshot()
+                .forEachIndexProxy(indexProxyOperation("force", proxy -> proxy.force(cursorContext)));
     }
 
-    private LongObjectProcedure<IndexProxy> indexProxyOperation( String name, ThrowingConsumer<IndexProxy, Exception> operation )
-    {
-        return ( id, indexProxy ) ->
-        {
-            try
-            {
-                operation.accept( indexProxy );
-            }
-            catch ( Exception e )
-            {
-                try
-                {
-                    IndexProxy proxy = indexMapRef.getIndexProxy( id );
-                    throw new UnderlyingStorageException( "Unable to " + name + " " + proxy, e );
-                }
-                catch ( IndexNotFoundKernelException infe )
-                {
+    private LongObjectProcedure<IndexProxy> indexProxyOperation(
+            String name, ThrowingConsumer<IndexProxy, Exception> operation) {
+        return (id, indexProxy) -> {
+            try {
+                operation.accept(indexProxy);
+            } catch (Exception e) {
+                try {
+                    IndexProxy proxy = indexMapRef.getIndexProxy(id);
+                    throw new UnderlyingStorageException("Unable to " + name + " " + proxy, e);
+                } catch (IndexNotFoundKernelException infe) {
                     // index was dropped while trying to operate on it, we can continue to other indexes
                 }
             }
         };
     }
 
-    private void closeAllIndexes()
-    {
-        try ( var cursorContext = contextFactory.create( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
-        {
-            indexMapRef.modify( indexMap ->
-            {
+    private void closeAllIndexes() {
+        try (var cursorContext = contextFactory.create(INDEX_SERVICE_INDEX_CLOSING_TAG)) {
+            indexMapRef.modify(indexMap -> {
                 Iterable<IndexProxy> indexesToStop = indexMap.getAllIndexProxies();
-                for ( IndexProxy index : indexesToStop )
-                {
-                    try
-                    {
-                        index.close( cursorContext );
-                    }
-                    catch ( Exception e )
-                    {
-                        internalLog.error( "Unable to close index", e );
+                for (IndexProxy index : indexesToStop) {
+                    try {
+                        index.close(cursorContext);
+                    } catch (Exception e) {
+                        internalLog.error("Unable to close index", e);
                     }
                 }
                 // Effectively clearing it
                 return new IndexMap();
-            } );
+            });
         }
     }
 
-    public LongSet getIndexIds()
-    {
+    public LongSet getIndexIds() {
         Iterable<IndexProxy> indexProxies = indexMapRef.getAllIndexProxies();
         MutableLongSet indexIds = new LongHashSet();
-        for ( IndexProxy indexProxy : indexProxies )
-        {
-            indexIds.add( indexProxy.getDescriptor().getId() );
+        for (IndexProxy indexProxy : indexProxies) {
+            indexIds.add(indexProxy.getDescriptor().getId());
         }
         return indexIds;
     }
 
-    public ResourceIterator<Path> snapshotIndexFiles() throws IOException
-    {
+    public ResourceIterator<Path> snapshotIndexFiles() throws IOException {
         Collection<ResourceIterator<Path>> snapshots = new ArrayList<>();
-        snapshots.add( asResourceIterator( iterator( indexStatisticsStore.storeFile() ) ) );
-        for ( IndexProxy indexProxy : indexMapRef.getAllIndexProxies() )
-        {
-            snapshots.add( indexProxy.snapshotFiles() );
+        snapshots.add(asResourceIterator(iterator(indexStatisticsStore.storeFile())));
+        for (IndexProxy indexProxy : indexMapRef.getAllIndexProxies()) {
+            snapshots.add(indexProxy.snapshotFiles());
         }
-        return Iterators.concatResourceIterators( snapshots.iterator() );
+        return Iterators.concatResourceIterators(snapshots.iterator());
     }
 
-    public IndexMonitor getMonitor()
-    {
+    public IndexMonitor getMonitor() {
         return monitor;
     }
 
-    private IndexPopulationJob newIndexPopulationJob( EntityType type, Subject subject )
-    {
-        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState,
-                jobScheduler, tokenNameLookup, contextFactory, memoryTracker, databaseName, subject, config );
-        return new IndexPopulationJob( multiPopulator, monitor, contextFactory, memoryTracker, databaseName, subject, NODE, config );
+    private IndexPopulationJob newIndexPopulationJob(EntityType type, Subject subject) {
+        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator(
+                storeView,
+                internalLogProvider,
+                type,
+                schemaState,
+                jobScheduler,
+                tokenNameLookup,
+                contextFactory,
+                memoryTracker,
+                databaseName,
+                subject,
+                config);
+        return new IndexPopulationJob(
+                multiPopulator, monitor, contextFactory, memoryTracker, databaseName, subject, NODE, config);
     }
 
-    private void startIndexPopulation( IndexPopulationJob job, CursorContext cursorContext )
-    {
-        if ( storeView.isEmpty( cursorContext ) )
-        {
-            // Creating indexes and constraints on an empty database, before ingesting data doesn't need to do unnecessary scheduling juggling,
+    private void startIndexPopulation(IndexPopulationJob job, CursorContext cursorContext) {
+        if (storeView.isEmpty(cursorContext)) {
+            // Creating indexes and constraints on an empty database, before ingesting data doesn't need to do
+            // unnecessary scheduling juggling,
             // instead just run it on the caller thread.
             job.run();
-        }
-        else
-        {
-            populationJobController.startIndexPopulation( job );
+        } else {
+            populationJobController.startIndexPopulation(job);
         }
     }
 
-    private String indexStateInfo( String tag, InternalIndexState state, IndexDescriptor descriptor )
-    {
-        return format( "IndexingService.%s: index %d on %s is %s", tag, descriptor.getId(),
-                descriptor.schema().userDescription( tokenNameLookup ), state.name() );
+    private String indexStateInfo(String tag, InternalIndexState state, IndexDescriptor descriptor) {
+        return format(
+                "IndexingService.%s: index %d on %s is %s",
+                tag, descriptor.getId(), descriptor.schema().userDescription(tokenNameLookup), state.name());
     }
 
-    private void logIndexStateSummary( String method, Map<InternalIndexState,List<IndexLogRecord>> indexStates )
-    {
-        if ( indexStates.isEmpty() )
-        {
+    private void logIndexStateSummary(String method, Map<InternalIndexState, List<IndexLogRecord>> indexStates) {
+        if (indexStates.isEmpty()) {
             return;
         }
         int mostPopularStateCount = Integer.MIN_VALUE;
         InternalIndexState mostPopularState = null;
-        for ( Map.Entry<InternalIndexState,List<IndexLogRecord>> indexStateEntry : indexStates.entrySet() )
-        {
-            if ( indexStateEntry.getValue().size() > mostPopularStateCount )
-            {
+        for (Map.Entry<InternalIndexState, List<IndexLogRecord>> indexStateEntry : indexStates.entrySet()) {
+            if (indexStateEntry.getValue().size() > mostPopularStateCount) {
                 mostPopularState = indexStateEntry.getKey();
                 mostPopularStateCount = indexStateEntry.getValue().size();
             }
         }
-        indexStates.remove( mostPopularState );
-        for ( Map.Entry<InternalIndexState,List<IndexLogRecord>> indexStateEntry : indexStates.entrySet() )
-        {
+        indexStates.remove(mostPopularState);
+        for (Map.Entry<InternalIndexState, List<IndexLogRecord>> indexStateEntry : indexStates.entrySet()) {
             InternalIndexState state = indexStateEntry.getKey();
             List<IndexLogRecord> logRecords = indexStateEntry.getValue();
-            for ( IndexLogRecord logRecord : logRecords )
-            {
-                internalLog.info( indexStateInfo( method, state, logRecord.getDescriptor() ) );
+            for (IndexLogRecord logRecord : logRecords) {
+                internalLog.info(indexStateInfo(method, state, logRecord.getDescriptor()));
             }
         }
-        internalLog.info( format( "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostPopularState ) );
+        internalLog.info(format(
+                "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostPopularState));
     }
 
-    private final class IndexPopulationStarter implements UnaryOperator<IndexMap>
-    {
+    private final class IndexPopulationStarter implements UnaryOperator<IndexMap> {
         private final Subject subject;
         private final IndexDescriptor[] descriptors;
         private IndexPopulationJob nodePopulationJob;
         private IndexPopulationJob relationshipPopulationJob;
 
-        IndexPopulationStarter( Subject subject, IndexDescriptor[] descriptors )
-        {
+        IndexPopulationStarter(Subject subject, IndexDescriptor[] descriptors) {
             this.subject = subject;
             this.descriptors = descriptors;
         }
 
         @Override
-        public IndexMap apply( IndexMap indexMap )
-        {
-            for ( IndexDescriptor descriptor : descriptors )
-            {
-                IndexProxy index = indexMap.getIndexProxy( descriptor );
-                if ( index != null && state == State.NOT_STARTED )
-                {
+        public IndexMap apply(IndexMap indexMap) {
+            for (IndexDescriptor descriptor : descriptors) {
+                IndexProxy index = indexMap.getIndexProxy(descriptor);
+                if (index != null && state == State.NOT_STARTED) {
                     // This index already has a proxy. No need to build another.
                     continue;
                 }
                 boolean flipToTentative = descriptor.isUnique();
-                if ( state == State.RUNNING )
-                {
-                    if ( descriptor.schema().entityType() == NODE )
-                    {
+                if (state == State.RUNNING) {
+                    if (descriptor.schema().entityType() == NODE) {
                         nodePopulationJob =
-                                nodePopulationJob == null ? newIndexPopulationJob( NODE, subject ) : nodePopulationJob;
-                        index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
-                                nodePopulationJob );
+                                nodePopulationJob == null ? newIndexPopulationJob(NODE, subject) : nodePopulationJob;
+                        index = indexProxyCreator.createPopulatingIndexProxy(
+                                descriptor, flipToTentative, monitor, nodePopulationJob);
+                        index.start();
+                    } else {
+                        relationshipPopulationJob = relationshipPopulationJob == null
+                                ? newIndexPopulationJob(RELATIONSHIP, subject)
+                                : relationshipPopulationJob;
+                        index = indexProxyCreator.createPopulatingIndexProxy(
+                                descriptor, flipToTentative, monitor, relationshipPopulationJob);
                         index.start();
                     }
-                    else
-                    {
-                        relationshipPopulationJob = relationshipPopulationJob == null ? newIndexPopulationJob( RELATIONSHIP, subject )
-                                                                                      : relationshipPopulationJob;
-                        index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
-                                relationshipPopulationJob );
-                        index.start();
-                    }
-                }
-                else
-                {
-                    index = indexProxyCreator.createRecoveringIndexProxy( descriptor );
+                } else {
+                    index = indexProxyCreator.createRecoveringIndexProxy(descriptor);
                 }
 
-                indexMap.putIndexProxy( index );
+                indexMap.putIndexProxy(index);
             }
             return indexMap;
         }
 
-        void startPopulation()
-        {
-            try ( var cursorContext = contextFactory.create( START_TAG ) )
-            {
-                if ( nodePopulationJob != null )
-                {
-                    startIndexPopulation( nodePopulationJob, cursorContext );
+        void startPopulation() {
+            try (var cursorContext = contextFactory.create(START_TAG)) {
+                if (nodePopulationJob != null) {
+                    startIndexPopulation(nodePopulationJob, cursorContext);
                 }
-                if ( relationshipPopulationJob != null )
-                {
-                    startIndexPopulation( relationshipPopulationJob, cursorContext );
+                if (relationshipPopulationJob != null) {
+                    startIndexPopulation(relationshipPopulationJob, cursorContext);
                 }
             }
         }
     }
 
-    private static final class IndexLogRecord
-    {
+    private static final class IndexLogRecord {
         private final IndexDescriptor descriptor;
 
-        IndexLogRecord( IndexDescriptor descriptor )
-        {
+        IndexLogRecord(IndexDescriptor descriptor) {
             this.descriptor = descriptor;
         }
 
-        public long getIndexId()
-        {
+        public long getIndexId() {
             return descriptor.getId();
         }
 
-        public IndexDescriptor getDescriptor()
-        {
+        public IndexDescriptor getDescriptor() {
             return descriptor;
         }
     }
 
     @FunctionalInterface
-    public interface IndexProxyProvider
-    {
-        IndexProxy getIndexProxy( IndexDescriptor indexDescriptor ) throws IndexNotFoundKernelException;
+    public interface IndexProxyProvider {
+        IndexProxy getIndexProxy(IndexDescriptor indexDescriptor) throws IndexNotFoundKernelException;
     }
 }

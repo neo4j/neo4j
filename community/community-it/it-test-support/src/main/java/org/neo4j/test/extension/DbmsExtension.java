@@ -19,15 +19,13 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -59,12 +57,11 @@ import org.neo4j.test.utils.TestDirectory;
  * the configuration for that method. The other test methods will not be affected by this.
  */
 @Inherited
-@Target( {ElementType.TYPE, ElementType.METHOD} )
-@Retention( RetentionPolicy.RUNTIME )
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
 @Neo4jLayoutExtension
-@ExtendWith( DbmsSupportExtension.class )
-public @interface DbmsExtension
-{
+@ExtendWith(DbmsSupportExtension.class)
+public @interface DbmsExtension {
 
     /**
      * Name of a void method that takes a {@link TestDatabaseManagementServiceBuilder} as parameter. The method

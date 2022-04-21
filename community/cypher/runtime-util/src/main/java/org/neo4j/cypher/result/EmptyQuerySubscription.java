@@ -23,33 +23,28 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.QuerySubscription;
 
-public abstract class EmptyQuerySubscription implements QuerySubscription
-{
+public abstract class EmptyQuerySubscription implements QuerySubscription {
     private final QuerySubscriber subscriber;
 
     public abstract QueryStatistics queryStatistics();
 
-    public EmptyQuerySubscription( QuerySubscriber subscriber )
-    {
+    public EmptyQuerySubscription(QuerySubscriber subscriber) {
         this.subscriber = subscriber;
     }
 
     @Override
-    public void request( long numberOfRecords ) throws Exception
-    {
-        subscriber.onResult( 0 );
-        subscriber.onResultCompleted( queryStatistics() );
+    public void request(long numberOfRecords) throws Exception {
+        subscriber.onResult(0);
+        subscriber.onResultCompleted(queryStatistics());
     }
 
     @Override
-    public void cancel()
-    {
-        //do nothing
+    public void cancel() {
+        // do nothing
     }
 
     @Override
-    public boolean await()
-    {
+    public boolean await() {
         return false;
     }
 }

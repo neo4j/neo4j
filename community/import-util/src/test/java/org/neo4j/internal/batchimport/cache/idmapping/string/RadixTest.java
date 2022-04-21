@@ -19,59 +19,51 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.LongStream;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@ExtendWith( RandomExtension.class )
-class RadixTest
-{
+@ExtendWith(RandomExtension.class)
+class RadixTest {
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldHandleCountsLargerThanInt()
-    {
+    void shouldHandleCountsLargerThanInt() {
         // when
         Radix radix = Radix.LONG.newInstance();
-        long value = random.nextLong( 0xFFFFFFFFFFFFL );
+        long value = random.nextLong(0xFFFFFFFFFFFFL);
         long count = 0x100000000L;
-        for ( long i = 0; i < count; i++ )
-        {
-            radix.registerRadixOf( value );
+        for (long i = 0; i < count; i++) {
+            radix.registerRadixOf(value);
         }
 
         // then
-        assertThat( LongStream.of( radix.radixIndexCount ).sum() ).isEqualTo( count );
+        assertThat(LongStream.of(radix.radixIndexCount).sum()).isEqualTo(count);
     }
 
     @Test
-    void shouldKeepNullValuesInSeparateCounter()
-    {
+    void shouldKeepNullValuesInSeparateCounter() {
         // given
         Radix radix = Radix.LONG.newInstance();
         long nullValue = EncodingIdMapper.GAP_VALUE;
 
         // when
         int expectedNumNullValues = 0;
-        for ( int i = 0; i < 100; i++ )
-        {
+        for (int i = 0; i < 100; i++) {
             boolean realValue = random.nextBoolean();
-            radix.registerRadixOf( realValue ? random.nextLong( 1, 10_000 ) : nullValue );
-            if ( !realValue )
-            {
+            radix.registerRadixOf(realValue ? random.nextLong(1, 10_000) : nullValue);
+            if (!realValue) {
                 expectedNumNullValues++;
             }
         }
 
         // then
-        assertThat( radix.getNullCount() ).isEqualTo( expectedNumNullValues );
+        assertThat(radix.getNullCount()).isEqualTo(expectedNumNullValues);
     }
 }

@@ -24,11 +24,13 @@ sealed abstract class IndexOperation extends AbstractQuery {
 }
 
 // TODO use label: LabelValue?
-final case class CreateIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
+final case class CreateIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty)
+    extends IndexOperation {
   def setQueryText(t: String): CreateIndex = copy(queryString = QueryString(t))
 }
 
-final case class DropIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
+final case class DropIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty)
+    extends IndexOperation {
   def setQueryText(t: String): DropIndex = copy(queryString = QueryString(t))
 }
 
@@ -46,32 +48,62 @@ sealed abstract class RelationshipPropertyConstraintOperation extends PropertyCo
   def relType: String
 }
 
-final case class CreateUniqueConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
-                                        queryString: QueryString = QueryString.empty) extends NodePropertyConstraintOperation {
+final case class CreateUniqueConstraint(
+  id: String,
+  label: String,
+  idForProperty: String,
+  propertyKey: String,
+  queryString: QueryString = QueryString.empty
+) extends NodePropertyConstraintOperation {
   def setQueryText(t: String): CreateUniqueConstraint = copy(queryString = QueryString(t))
 }
 
-final case class DropUniqueConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
-                                      queryString: QueryString = QueryString.empty) extends NodePropertyConstraintOperation {
+final case class DropUniqueConstraint(
+  id: String,
+  label: String,
+  idForProperty: String,
+  propertyKey: String,
+  queryString: QueryString = QueryString.empty
+) extends NodePropertyConstraintOperation {
   def setQueryText(t: String): DropUniqueConstraint = copy(queryString = QueryString(t))
 }
 
-final case class CreateNodePropertyExistenceConstraint(id: String, label: String, idForProperty: String,
-                                                       propertyKey: String, queryString: QueryString = QueryString.empty) extends NodePropertyConstraintOperation {
+final case class CreateNodePropertyExistenceConstraint(
+  id: String,
+  label: String,
+  idForProperty: String,
+  propertyKey: String,
+  queryString: QueryString = QueryString.empty
+) extends NodePropertyConstraintOperation {
   def setQueryText(t: String): CreateNodePropertyExistenceConstraint = copy(queryString = QueryString(t))
 }
 
-final case class DropNodePropertyExistenceConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
-                                                     queryString: QueryString = QueryString.empty) extends NodePropertyConstraintOperation {
+final case class DropNodePropertyExistenceConstraint(
+  id: String,
+  label: String,
+  idForProperty: String,
+  propertyKey: String,
+  queryString: QueryString = QueryString.empty
+) extends NodePropertyConstraintOperation {
   def setQueryText(t: String): DropNodePropertyExistenceConstraint = copy(queryString = QueryString(t))
 }
 
-final case class CreateRelationshipPropertyExistenceConstraint(id: String, relType: String, idForProperty: String,
-                                                               propertyKey: String, queryString: QueryString = QueryString.empty) extends RelationshipPropertyConstraintOperation {
+final case class CreateRelationshipPropertyExistenceConstraint(
+  id: String,
+  relType: String,
+  idForProperty: String,
+  propertyKey: String,
+  queryString: QueryString = QueryString.empty
+) extends RelationshipPropertyConstraintOperation {
   def setQueryText(t: String): CreateRelationshipPropertyExistenceConstraint = copy(queryString = QueryString(t))
 }
 
-final case class DropRelationshipPropertyExistenceConstraint(id: String, relType: String, idForProperty: String, propertyKey: String,
-                                                             queryString: QueryString = QueryString.empty) extends RelationshipPropertyConstraintOperation {
+final case class DropRelationshipPropertyExistenceConstraint(
+  id: String,
+  relType: String,
+  idForProperty: String,
+  propertyKey: String,
+  queryString: QueryString = QueryString.empty
+) extends RelationshipPropertyConstraintOperation {
   def setQueryText(t: String): DropRelationshipPropertyExistenceConstraint = copy(queryString = QueryString(t))
 }

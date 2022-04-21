@@ -19,24 +19,20 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-public class InvalidArgumentsException extends Exception implements Status.HasStatus
-{
+public class InvalidArgumentsException extends Exception implements Status.HasStatus {
     private final Status status;
 
-    public InvalidArgumentsException( String message )
-    {
-        this( message, null );
+    public InvalidArgumentsException(String message) {
+        this(message, null);
     }
 
-    public InvalidArgumentsException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public InvalidArgumentsException(String message, Throwable cause) {
+        super(message, cause);
         this.status = Status.General.InvalidArguments;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 }

@@ -25,117 +25,98 @@ import org.neo4j.io.pagecache.context.CursorContext;
 /**
  * An {@link IdGenerator} that knows only about a highId and is read-only
  */
-class ReadOnlyHighIdGenerator implements IdGenerator
-{
+class ReadOnlyHighIdGenerator implements IdGenerator {
     private final long highId;
     private final IdType idType;
 
-    ReadOnlyHighIdGenerator( long highId, IdType idType )
-    {
+    ReadOnlyHighIdGenerator(long highId, IdType idType) {
         this.highId = highId;
         this.idType = idType;
     }
 
     @Override
-    public void setHighId( long id )
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
+    public void setHighId(long id) {
+        throw new UnsupportedOperationException("Should not be required");
     }
 
     @Override
-    public void markHighestWrittenAtHighId()
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
+    public void markHighestWrittenAtHighId() {
+        throw new UnsupportedOperationException("Should not be required");
     }
 
     @Override
-    public long getHighestWritten()
-    {
+    public long getHighestWritten() {
         return highId;
     }
 
     @Override
-    public long getHighId()
-    {
+    public long getHighId() {
         return highId;
     }
 
     @Override
-    public long getHighestPossibleIdInUse()
-    {
+    public long getHighestPossibleIdInUse() {
         return highId - 1;
     }
 
     @Override
-    public Marker marker( CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
+    public Marker marker(CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Should not be required");
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         // It's fine, there's nothing to close
     }
 
     @Override
-    public long getNumberOfIdsInUse()
-    {
+    public long getNumberOfIdsInUse() {
         return getHighId();
     }
 
     @Override
-    public long getDefragCount()
-    {
+    public long getDefragCount() {
         // Doesn't quite matter actually, not for the intended use case anyway
         return 0;
     }
 
     @Override
-    public void checkpoint( CursorContext cursorContext )
-    {
+    public void checkpoint(CursorContext cursorContext) {
         // no-op
     }
 
     @Override
-    public void maintenance( CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
+    public void maintenance(CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Should not be required");
     }
 
     @Override
-    public void start( FreeIds freeIdsForRebuild, CursorContext cursorContext )
-    {
+    public void start(FreeIds freeIdsForRebuild, CursorContext cursorContext) {
         // no-op
     }
 
     @Override
-    public long nextId( CursorContext ignored )
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
+    public long nextId(CursorContext ignored) {
+        throw new UnsupportedOperationException("Should not be required");
     }
 
     @Override
-    public long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
+    public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Should not be required");
     }
 
     @Override
-    public void clearCache( CursorContext cursorContext )
-    {
+    public void clearCache(CursorContext cursorContext) {
         // no-op
     }
 
     @Override
-    public IdType idType()
-    {
+    public IdType idType() {
         return idType;
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-    {
+    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
         return true;
     }
 }

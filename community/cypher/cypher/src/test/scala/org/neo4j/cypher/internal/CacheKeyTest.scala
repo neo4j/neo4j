@@ -40,14 +40,14 @@ class CacheKeyTest extends CypherFunSuite {
     val options = CypherQueryOptions.default
 
     options.cacheKey
-           .shouldEqual(CypherVersion.default.name)
+      .shouldEqual(CypherVersion.default.name)
   }
 
   test("EXPLAIN does not appear in cache key") {
     val options = CypherQueryOptions.default.copy(executionMode = CypherExecutionMode.explain)
 
     options.cacheKey
-           .shouldEqual(CypherVersion.default.name)
+      .shouldEqual(CypherVersion.default.name)
   }
 
   test("All non-default options should be part of cache key, except replan") {
@@ -66,6 +66,8 @@ class CacheKeyTest extends CypherFunSuite {
     )
 
     options.cacheKey
-      .shouldEqual("3.5 PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring")
+      .shouldEqual(
+        "3.5 PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring"
+      )
   }
 }

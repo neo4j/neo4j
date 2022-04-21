@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class TokenTest extends TokenTestBase<WriteTestSupport>
-{
+public class TokenTest extends TokenTestBase<WriteTestSupport> {
     @Override
-    public WriteTestSupport newTestSupport()
-    {
+    public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();
     }
 }

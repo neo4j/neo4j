@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -39,24 +38,20 @@ import org.neo4j.storageengine.api.StorageCommand;
  * }
  * </pre>
  */
-public interface TransactionApplier extends Visitor<StorageCommand,IOException>, CommandVisitor, AutoCloseable
-{
+public interface TransactionApplier extends Visitor<StorageCommand, IOException>, CommandVisitor, AutoCloseable {
     /**
      * Delegates to individual visit methods (see {@link CommandVisitor}) which need to be implemented, as well as
      * {@link #close()} if applicable.
      */
-    class Adapter extends CommandVisitor.Adapter implements TransactionApplier
-    {
+    class Adapter extends CommandVisitor.Adapter implements TransactionApplier {
         @Override
-        public void close() throws Exception
-        {
+        public void close() throws Exception {
             // Do nothing
         }
 
         @Override
-        public boolean visit( StorageCommand element ) throws IOException
-        {
-            return ((Command)element).handle( this );
+        public boolean visit(StorageCommand element) throws IOException {
+            return ((Command) element).handle(this);
         }
     }
 }

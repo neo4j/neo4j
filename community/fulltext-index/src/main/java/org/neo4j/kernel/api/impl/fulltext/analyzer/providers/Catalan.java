@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.ca.CatalanAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Catalan extends AnalyzerProvider
-{
-    public Catalan()
-    {
-        super( "catalan" );
+public class Catalan extends AnalyzerProvider {
+    public Catalan() {
+        super("catalan");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new CatalanAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Catalan analyzer with stemming and stop word filtering.";
     }
 }

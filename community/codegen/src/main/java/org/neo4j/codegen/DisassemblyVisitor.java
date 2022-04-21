@@ -19,33 +19,28 @@
  */
 package org.neo4j.codegen;
 
+import static org.neo4j.codegen.ByteCodeVisitor.printer;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 
-import static org.neo4j.codegen.ByteCodeVisitor.printer;
-
-public abstract class DisassemblyVisitor implements ByteCodeVisitor, CodeGeneratorOption
-{
+public abstract class DisassemblyVisitor implements ByteCodeVisitor, CodeGeneratorOption {
     @Override
-    public final void applyTo( Object target )
-    {
-        if ( target instanceof ByteCodeVisitor.Configurable )
-        {
-            ((Configurable) target).addByteCodeVisitor( this );
+    public final void applyTo(Object target) {
+        if (target instanceof ByteCodeVisitor.Configurable) {
+            ((Configurable) target).addByteCodeVisitor(this);
         }
     }
 
     @Override
-    public final void visitByteCode( String name, ByteBuffer bytes )
-    {
+    public final void visitByteCode(String name, ByteBuffer bytes) {
         StringWriter target = new StringWriter();
-        try ( PrintWriter writer = new PrintWriter( target ) )
-        {
-            printer( writer ).visitByteCode( name, bytes );
+        try (PrintWriter writer = new PrintWriter(target)) {
+            printer(writer).visitByteCode(name, bytes);
         }
-        visitDisassembly( name, target.getBuffer() );
+        visitDisassembly(name, target.getBuffer());
     }
 
-    protected abstract void visitDisassembly( String className, CharSequence disassembly );
+    protected abstract void visitDisassembly(String className, CharSequence disassembly);
 }

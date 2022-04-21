@@ -32,19 +32,17 @@ import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
  * The versions should be on the format [component]Version_[versionNbr]_[neo4jRelease].
  * The version schemes are described in {@link ComponentVersion}.
  */
-public abstract class KnownSystemComponentVersion
-{
+public abstract class KnownSystemComponentVersion {
     public static final int UNKNOWN_VERSION = -1;
 
-    private final Label versionLabel = Label.label( "Version" );
+    private final Label versionLabel = Label.label("Version");
     private final ComponentVersion componentVersion;
     protected final String componentVersionProperty;
     public final int version;
     public final String description;
     protected final AbstractSecurityLog securityLog;
 
-    protected KnownSystemComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog securityLog )
-    {
+    protected KnownSystemComponentVersion(ComponentVersion componentVersion, AbstractSecurityLog securityLog) {
         this.componentVersion = componentVersion;
         this.componentVersionProperty = componentVersion.getComponentName();
         this.version = componentVersion.getVersion();
@@ -52,96 +50,77 @@ public abstract class KnownSystemComponentVersion
         this.securityLog = securityLog;
     }
 
-    public boolean isCurrent()
-    {
+    public boolean isCurrent() {
         return componentVersion.isCurrent();
     }
 
-    public boolean migrationSupported()
-    {
+    public boolean migrationSupported() {
         return componentVersion.migrationSupported();
     }
 
-    public boolean runtimeSupported()
-    {
+    public boolean runtimeSupported() {
         return componentVersion.runtimeSupported();
     }
 
-    protected Integer getVersion( Transaction tx )
-    {
-        return SystemGraphComponent.getVersionNumber( tx, componentVersionProperty );
+    protected Integer getVersion(Transaction tx) {
+        return SystemGraphComponent.getVersionNumber(tx, componentVersionProperty);
     }
 
-    public boolean detected( Transaction tx )
-    {
-        Integer version = getVersion( tx );
+    public boolean detected(Transaction tx) {
+        Integer version = getVersion(tx);
         return version != null && version == this.version;
     }
 
-    public UnsupportedOperationException unsupported()
-    {
-        String message = String.format( "System graph version %d for component '%s' in '%s' is not supported", version, componentVersionProperty, description );
-        securityLog.error( message );
-        return new UnsupportedOperationException( message );
+    public UnsupportedOperationException unsupported() {
+        String message = String.format(
+                "System graph version %d for component '%s' in '%s' is not supported",
+                version, componentVersionProperty, description);
+        securityLog.error(message);
+        return new UnsupportedOperationException(message);
     }
 
-    public SystemGraphComponent.Status getStatus()
-    {
-        if ( this.version == UNKNOWN_VERSION )
-        {
+    public SystemGraphComponent.Status getStatus() {
+        if (this.version == UNKNOWN_VERSION) {
             return SystemGraphComponent.Status.UNINITIALIZED;
-        }
-        else if ( this.isCurrent() )
-        {
+        } else if (this.isCurrent()) {
             return SystemGraphComponent.Status.CURRENT;
-        }
-        else if ( this.migrationSupported() )
-        {
-            return this.runtimeSupported() ? SystemGraphComponent.Status.REQUIRES_UPGRADE : SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE;
-        }
-        else
-        {
+        } else if (this.migrationSupported()) {
+            return this.runtimeSupported()
+                    ? SystemGraphComponent.Status.REQUIRES_UPGRADE
+                    : SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE;
+        } else {
             return SystemGraphComponent.Status.UNSUPPORTED;
         }
     }
 
-    protected static boolean nodesWithLabelExist( Transaction tx, Label label )
-    {
-        try ( ResourceIterator<Node> nodes = tx.findNodes( label ) )
-        {
+    protected static boolean nodesWithLabelExist(Transaction tx, Label label) {
+        try (ResourceIterator<Node> nodes = tx.findNodes(label)) {
             return nodes.hasNext();
         }
     }
 
-    public void setVersionProperty( Transaction tx, int newVersion )
-    {
-        Node versionNode = findOrCreateVersionNode( tx );
-        var oldVersion = versionNode.getProperty( componentVersionProperty, null );
-        if ( oldVersion != null )
-        {
-            securityLog.info( String.format( "Upgrading '%s' version property from %s to %d", componentVersionProperty, oldVersion, newVersion ) );
+    public void setVersionProperty(Transaction tx, int newVersion) {
+        Node versionNode = findOrCreateVersionNode(tx);
+        var oldVersion = versionNode.getProperty(componentVersionProperty, null);
+        if (oldVersion != null) {
+            securityLog.info(String.format(
+                    "Upgrading '%s' version property from %s to %d", componentVersionProperty, oldVersion, newVersion));
+        } else {
+            securityLog.info(String.format("Setting version for '%s' to %d", componentVersionProperty, newVersion));
         }
-        else
-        {
-            securityLog.info( String.format( "Setting version for '%s' to %d", componentVersionProperty, newVersion ) );
-        }
-        versionNode.setProperty( componentVersionProperty, newVersion );
+        versionNode.setProperty(componentVersionProperty, newVersion);
     }
 
-    private Node findOrCreateVersionNode( Transaction tx )
-    {
-        try ( ResourceIterator<Node> nodes = tx.findNodes( versionLabel ) )
-        {
-            if ( nodes.hasNext() )
-            {
+    private Node findOrCreateVersionNode(Transaction tx) {
+        try (ResourceIterator<Node> nodes = tx.findNodes(versionLabel)) {
+            if (nodes.hasNext()) {
                 Node node = nodes.next();
-                if ( nodes.hasNext() )
-                {
-                    throw new IllegalStateException( "More than one Version node exists" );
+                if (nodes.hasNext()) {
+                    throw new IllegalStateException("More than one Version node exists");
                 }
                 return node;
             }
         }
-        return tx.createNode( versionLabel );
+        return tx.createNode(versionLabel);
     }
 }

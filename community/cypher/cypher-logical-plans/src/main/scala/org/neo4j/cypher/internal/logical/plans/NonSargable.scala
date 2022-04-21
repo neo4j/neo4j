@@ -36,8 +36,9 @@ import org.neo4j.cypher.internal.expressions.Variable
 
 // This is when dynamic properties are used
 object AsDynamicPropertyNonSeekable {
+
   def unapply(v: Any) = v match {
-    case WithSeekableArgs(prop@ContainerIndex(variable: Variable, _), _) =>
+    case WithSeekableArgs(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
     case _ =>
       None
@@ -46,6 +47,7 @@ object AsDynamicPropertyNonSeekable {
 
 // This is when dynamic properties are used
 object AsDynamicPropertyNonScannable {
+
   def unapply(v: Any) = v match {
 
     case IsNotNull(ContainerIndex(variable: Variable, _)) =>
@@ -57,7 +59,7 @@ object AsDynamicPropertyNonScannable {
     case expr: InequalityExpression =>
       expr.lhs match {
         case ContainerIndex(variable: Variable, _) => Some(variable)
-        case _ => None
+        case _                                     => None
       }
 
     case StartsWith(ContainerIndex(variable: Variable, _), _) =>
@@ -82,12 +84,13 @@ object AsDynamicPropertyNonScannable {
 
 // This is when dynamic properties are used
 object AsStringRangeNonSeekable {
+
   def unapply(v: Any) = v match {
-    case StartsWith(prop@ContainerIndex(variable: Variable, _), _) =>
+    case StartsWith(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case Contains(prop@ContainerIndex(variable: Variable, _), _) =>
+    case Contains(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case EndsWith(prop@ContainerIndex(variable: Variable, _), _) =>
+    case EndsWith(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
     case _ =>
       None
@@ -96,25 +99,26 @@ object AsStringRangeNonSeekable {
 
 // This is when dynamic properties are used
 object AsValueRangeNonSeekable {
+
   def unapply(v: Any) = v match {
-    case GreaterThan(prop@ContainerIndex(variable: Variable, _), _) =>
+    case GreaterThan(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case GreaterThan(_, prop@ContainerIndex(variable: Variable, _)) =>
-      Some(variable)
-
-    case GreaterThanOrEqual(prop@ContainerIndex(variable: Variable, _), _) =>
-      Some(variable)
-    case GreaterThanOrEqual(_, prop@ContainerIndex(variable: Variable, _)) =>
+    case GreaterThan(_, prop @ ContainerIndex(variable: Variable, _)) =>
       Some(variable)
 
-    case LessThan(prop@ContainerIndex(variable: Variable, _), _) =>
+    case GreaterThanOrEqual(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case LessThan(_, prop@ContainerIndex(variable: Variable, _)) =>
+    case GreaterThanOrEqual(_, prop @ ContainerIndex(variable: Variable, _)) =>
       Some(variable)
 
-    case LessThanOrEqual(prop@ContainerIndex(variable: Variable, _), _) =>
+    case LessThan(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case LessThanOrEqual(_, prop@ContainerIndex(variable: Variable, _)) =>
+    case LessThan(_, prop @ ContainerIndex(variable: Variable, _)) =>
+      Some(variable)
+
+    case LessThanOrEqual(prop @ ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
+    case LessThanOrEqual(_, prop @ ContainerIndex(variable: Variable, _)) =>
       Some(variable)
 
     case _ =>

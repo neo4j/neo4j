@@ -19,15 +19,12 @@
  */
 package org.neo4j.exceptions;
 
-public class IncomparableValuesException extends CypherTypeException
-{
-    public IncomparableValuesException( String lhs, String rhs )
-    {
-        super( msg( lhs, rhs ) );
+public class IncomparableValuesException extends CypherTypeException {
+    public IncomparableValuesException(String lhs, String rhs) {
+        super(msg(lhs, rhs));
     }
 
-    private static String msg( String lhs, String rhs )
-    {
-        return String.format( "Don't know how to compare that. Left: %s; Right: %s", lhs, rhs );
+    private static String msg(String lhs, String rhs) {
+        return String.format("Don't know how to compare that. Left: %s; Right: %s", lhs, rhs);
     }
 }

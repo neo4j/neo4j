@@ -19,69 +19,61 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.List;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
+import static org.neo4j.shell.log.Logger.setupLogging;
 
+import java.util.List;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
 
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.joining;
-import static org.neo4j.shell.log.Logger.setupLogging;
-
 /**
  * Enable logging.
  */
-public record Log( CypherShell shell ) implements Command
-{
+public record Log(CypherShell shell) implements Command {
     @Override
-    public void execute( final List<String> args ) throws ExitException, CommandException
-    {
-        requireArgumentCount( args, 0, 1 );
+    public void execute(final List<String> args) throws ExitException, CommandException {
+        requireArgumentCount(args, 0, 1);
 
-        var level = args.size() == 0 ? Logger.Level.defaultActiveLevel() : parse( args.get( 0 ) );
-        setLevel( level );
+        var level = args.size() == 0 ? Logger.Level.defaultActiveLevel() : parse(args.get(0));
+        setLevel(level);
     }
 
-    private void setLevel( Logger.Level level ) throws CommandException
-    {
-        setupLogging( level.javaLevel() );
-        if ( shell.isConnected() )
-        {
+    private void setLevel(Logger.Level level) throws CommandException {
+        setupLogging(level.javaLevel());
+        if (shell.isConnected()) {
             // We need to re-connect in order to propagate the new logging level to driver.
             shell.reconnect();
         }
     }
 
-    private Logger.Level parse( String input ) throws CommandException
-    {
-        try
-        {
-            return Logger.Level.from( input );
-        }
-        catch ( Exception e )
-        {
-            throw new CommandException( "Failed to parse " + input + "\n" + metadata().usage() );
+    private Logger.Level parse(String input) throws CommandException {
+        try {
+            return Logger.Level.from(input);
+        } catch (Exception e) {
+            throw new CommandException(
+                    "Failed to parse " + input + "\n" + metadata().usage());
         }
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
+        public Metadata metadata() {
             var help = "Enables or disables logging to the standard error output stream.";
-            var levels = stream( Logger.Level.values() ).map( l -> l.name().toLowerCase() ).collect( joining( ", " ) );
-            var usage = "<level>\n\nwhere <level> is one of " + levels + ". Defaults to debug if level is not specified.";
+            var levels = stream(Logger.Level.values())
+                    .map(l -> l.name().toLowerCase())
+                    .collect(joining(", "));
+            var usage =
+                    "<level>\n\nwhere <level> is one of " + levels + ". Defaults to debug if level is not specified.";
 
-            return new Metadata( ":log", "Enable logging", usage, help, List.of() );
+            return new Metadata(":log", "Enable logging", usage, help, List.of());
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
-            return new Log( args.cypherShell() );
+        public Command executor(Arguments args) {
+            return new Log(args.cypherShell());
         }
     }
 }

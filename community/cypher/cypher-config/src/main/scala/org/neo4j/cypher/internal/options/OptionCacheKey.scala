@@ -24,7 +24,6 @@ import magnolia.Magnolia
 
 import scala.language.experimental.macros
 
-
 /**
  * Creates cache key strings from values
  */
@@ -47,10 +46,11 @@ object OptionCacheKey {
    * that combines smaller cache keys into a space-separated string
    */
   def combine[T](caseClass: CaseClass[OptionCacheKey, T]): OptionCacheKey[T] =
-    (value: T) => caseClass.parameters
-                           .map(param => param.typeclass.cacheKey(param.dereference(value)))
-                           .filterNot(_.isBlank)
-                           .mkString(" ")
+    (value: T) =>
+      caseClass.parameters
+        .map(param => param.typeclass.cacheKey(param.dereference(value)))
+        .filterNot(_.isBlank)
+        .mkString(" ")
 
   def derive[T]: OptionCacheKey[T] = macro Magnolia.gen[T]
 }

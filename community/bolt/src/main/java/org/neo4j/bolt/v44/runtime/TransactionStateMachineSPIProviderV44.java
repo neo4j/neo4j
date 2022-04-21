@@ -29,22 +29,24 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 
-public class TransactionStateMachineSPIProviderV44 extends TransactionStateMachineSPIProviderV4
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionStateMachineV44SPI.class );
+public class TransactionStateMachineSPIProviderV44 extends TransactionStateMachineSPIProviderV4 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionStateMachineV44SPI.class);
 
-    public TransactionStateMachineSPIProviderV44( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-                                                  BoltChannel boltChannel, SystemNanoClock clock,
-                                                  MemoryTracker memoryTracker )
-    {
-        super( boltGraphDatabaseManagementServiceSPI, boltChannel, clock, memoryTracker );
+    public TransactionStateMachineSPIProviderV44(
+            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
+            BoltChannel boltChannel,
+            SystemNanoClock clock,
+            MemoryTracker memoryTracker) {
+        super(boltGraphDatabaseManagementServiceSPI, boltChannel, clock, memoryTracker);
     }
 
     @Override
-    protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
-                                                                        StatementProcessorReleaseManager resourceReleaseManager, String transactionId )
-    {
-        memoryTracker.allocateHeap( TransactionStateMachineV44SPI.SHALLOW_SIZE );
-        return new TransactionStateMachineV44SPI( activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId );
+    protected TransactionStateMachineSPI newTransactionStateMachineSPI(
+            BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
+            StatementProcessorReleaseManager resourceReleaseManager,
+            String transactionId) {
+        memoryTracker.allocateHeap(TransactionStateMachineV44SPI.SHALLOW_SIZE);
+        return new TransactionStateMachineV44SPI(
+                activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId);
     }
 }

@@ -19,6 +19,10 @@
  */
 package org.neo4j.bolt.transport.pipeline;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
@@ -28,61 +32,63 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.bolt.transport.DiscoveryResponseHandler;
 import org.neo4j.server.config.AuthConfigProvider;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-public class DiscoveryResponseHandlerTest
-{
+public class DiscoveryResponseHandlerTest {
     @Test
-    void shouldRespondWithHttpResponse()
-    {
-        var authConfigMock = mock( AuthConfigProvider.class );
-        when( authConfigMock.getRepresentationAsBytes() ).thenReturn( new byte[0] );
+    void shouldRespondWithHttpResponse() {
+        var authConfigMock = mock(AuthConfigProvider.class);
+        when(authConfigMock.getRepresentationAsBytes()).thenReturn(new byte[0]);
 
-        var payload = new DefaultFullHttpRequest( HttpVersion.HTTP_1_1, HttpMethod.GET, "http://blah.com" );
+        var payload = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "http://blah.com");
 
-        var channel = new EmbeddedChannel( new DiscoveryResponseHandler( authConfigMock ) );
+        var channel = new EmbeddedChannel(new DiscoveryResponseHandler(authConfigMock));
 
-        channel.writeInbound( payload );
+        channel.writeInbound(payload);
 
         var discoveryResponse = (FullHttpResponse) channel.readOutbound();
 
-        assertThat( discoveryResponse.status() ).isEqualTo( HttpResponseStatus.OK );
-        assertThat( discoveryResponse.protocolVersion() ).isEqualTo( HttpVersion.HTTP_1_1 );
-        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON, false ) ).isTrue();
-        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*", false ) ).isTrue();
-        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.VARY, "Accept", false ) ).isTrue();
-        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.CONTENT_LENGTH, String.valueOf( discoveryResponse.content().readableBytes() ),
-                                                          false ) ).isTrue();
-        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.DATE ) ).isTrue();
+        assertThat(discoveryResponse.status()).isEqualTo(HttpResponseStatus.OK);
+        assertThat(discoveryResponse.protocolVersion()).isEqualTo(HttpVersion.HTTP_1_1);
+        assertThat(discoveryResponse
+                        .headers()
+                        .contains(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON, false))
+                .isTrue();
+        assertThat(discoveryResponse.headers().contains(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*", false))
+                .isTrue();
+        assertThat(discoveryResponse.headers().contains(HttpHeaderNames.VARY, "Accept", false))
+                .isTrue();
+        assertThat(discoveryResponse
+                        .headers()
+                        .contains(
+                                HttpHeaderNames.CONTENT_LENGTH,
+                                String.valueOf(discoveryResponse.content().readableBytes()),
+                                false))
+                .isTrue();
+        assertThat(discoveryResponse.headers().contains(HttpHeaderNames.DATE)).isTrue();
 
-        assertThat( channel.pipeline().get( DiscoveryResponseHandler.class ) ).isNull();
+        assertThat(channel.pipeline().get(DiscoveryResponseHandler.class)).isNull();
     }
 
     @Test
-    void shouldNotRespondWhenWebsocketRequest()
-    {
-        var authConfigMock = mock( AuthConfigProvider.class );
-        when( authConfigMock.getRepresentationAsBytes() ).thenReturn( new byte[0] );
+    void shouldNotRespondWhenWebsocketRequest() {
+        var authConfigMock = mock(AuthConfigProvider.class);
+        when(authConfigMock.getRepresentationAsBytes()).thenReturn(new byte[0]);
 
-        var payload = new DefaultFullHttpRequest( HttpVersion.HTTP_1_1, HttpMethod.GET, "https://blah.com" );
-        payload.headers().add( HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE );
-        payload.headers().add( HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET );
+        var payload = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "https://blah.com");
+        payload.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE);
+        payload.headers().add(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET);
 
-        var channel = new EmbeddedChannel( new DiscoveryResponseHandler( authConfigMock ) );
-        channel.writeInbound( payload );
+        var channel = new EmbeddedChannel(new DiscoveryResponseHandler(authConfigMock));
+        channel.writeInbound(payload);
 
         var out = channel.readOutbound();
 
         // the handler produces nothing
-        assertThat( out ).isNull();
+        assertThat(out).isNull();
 
         // and removes itself from the pipeline
-        assertThat( channel.pipeline().get( DiscoveryResponseHandler.class ) ).isNull();
+        assertThat(channel.pipeline().get(DiscoveryResponseHandler.class)).isNull();
     }
 }

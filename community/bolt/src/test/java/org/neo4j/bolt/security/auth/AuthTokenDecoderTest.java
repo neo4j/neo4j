@@ -19,38 +19,31 @@
  */
 package org.neo4j.bolt.security.auth;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-
-import org.neo4j.kernel.api.security.AuthToken;
-
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
-public abstract class AuthTokenDecoderTest
-{
-    protected abstract void testShouldDecodeAuthToken( Map<String,Object> authToken ) throws Exception;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.security.AuthToken;
+
+public abstract class AuthTokenDecoderTest {
+    protected abstract void testShouldDecodeAuthToken(Map<String, Object> authToken) throws Exception;
 
     @Test
-    void shouldDecodeAuthTokenWithStringCredentials() throws Exception
-    {
-        testShouldDecodeAuthToken( authTokenMapWithCredential( "password" ) );
+    void shouldDecodeAuthTokenWithStringCredentials() throws Exception {
+        testShouldDecodeAuthToken(authTokenMapWithCredential("password"));
     }
 
     @Test
-    void shouldDecodeAuthTokenWithEmptyStringCredentials() throws Exception
-    {
-        testShouldDecodeAuthToken( authTokenMapWithCredential( "" ) );
+    void shouldDecodeAuthTokenWithEmptyStringCredentials() throws Exception {
+        testShouldDecodeAuthToken(authTokenMapWithCredential(""));
     }
 
     @Test
-    void shouldDecodeAuthTokenWithNullCredentials() throws Exception
-    {
-        testShouldDecodeAuthToken( authTokenMapWithCredential( null ) );
+    void shouldDecodeAuthTokenWithNullCredentials() throws Exception {
+        testShouldDecodeAuthToken(authTokenMapWithCredential(null));
     }
 
-    private static Map<String,Object> authTokenMapWithCredential( String pwd )
-    {
-        return map( AuthToken.PRINCIPAL, "neo4j", AuthToken.CREDENTIALS, pwd );
+    private static Map<String, Object> authTokenMapWithCredential(String pwd) {
+        return map(AuthToken.PRINCIPAL, "neo4j", AuthToken.CREDENTIALS, pwd);
     }
 }

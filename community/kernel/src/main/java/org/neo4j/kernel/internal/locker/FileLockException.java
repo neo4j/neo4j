@@ -22,10 +22,8 @@ package org.neo4j.kernel.internal.locker;
 /**
  * Signals a failure to lock the dbms or database lock file
  */
-public class FileLockException extends RuntimeException
-{
-    public FileLockException( String msg, Throwable t )
-    {
-        super( msg, t );
+public class FileLockException extends RuntimeException {
+    public FileLockException(String msg, Throwable t) {
+        super(msg, t);
     }
 }

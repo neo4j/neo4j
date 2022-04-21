@@ -33,7 +33,8 @@ case object aggregationsAreIsolated extends ValidatingCondition {
   override def name: String = productPrefix
 }
 
-object hasAggregateButIsNotAggregate extends (Expression => Boolean)  {
+object hasAggregateButIsNotAggregate extends (Expression => Boolean) {
+
   def apply(expression: Expression): Boolean = expression match {
     case IsAggregate(_) => false
     case e: Expression  => containsAggregate(e)

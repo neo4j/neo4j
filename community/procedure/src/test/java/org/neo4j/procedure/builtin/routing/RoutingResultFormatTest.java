@@ -19,65 +19,57 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.values.AnyValue;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class RoutingResultFormatTest
-{
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.values.AnyValue;
+
+class RoutingResultFormatTest {
     @Test
-    void shouldSerializeToAndFromRecordFormat()
-    {
+    void shouldSerializeToAndFromRecordFormat() {
         // given
-        List<SocketAddress> writers = asList(
-                new SocketAddress( "write", 1 ),
-                new SocketAddress( "write", 2 ),
-                new SocketAddress( "write", 3 ) );
+        List<SocketAddress> writers =
+                asList(new SocketAddress("write", 1), new SocketAddress("write", 2), new SocketAddress("write", 3));
         List<SocketAddress> readers = asList(
-                new SocketAddress( "read", 4 ),
-                new SocketAddress( "read", 5 ),
-                new SocketAddress( "read", 6 ),
-                new SocketAddress( "read", 7 ) );
-        List<SocketAddress> routers = singletonList(
-                new SocketAddress( "route", 8 ) );
+                new SocketAddress("read", 4),
+                new SocketAddress("read", 5),
+                new SocketAddress("read", 6),
+                new SocketAddress("read", 7));
+        List<SocketAddress> routers = singletonList(new SocketAddress("route", 8));
 
         long ttlSeconds = 5;
-        RoutingResult original = new RoutingResult( routers, writers, readers, ttlSeconds * 1000 );
+        RoutingResult original = new RoutingResult(routers, writers, readers, ttlSeconds * 1000);
 
         // when
-        AnyValue[] record = RoutingResultFormat.build( original );
+        AnyValue[] record = RoutingResultFormat.build(original);
 
         // then
-        RoutingResult parsed = RoutingResultFormat.parse( record );
+        RoutingResult parsed = RoutingResultFormat.parse(record);
 
-        assertEquals( original, parsed );
+        assertEquals(original, parsed);
     }
 
     @Test
-    void shouldSerializeToAndFromRecordFormatWithNoEntries()
-    {
+    void shouldSerializeToAndFromRecordFormatWithNoEntries() {
         // given
         List<SocketAddress> writers = emptyList();
         List<SocketAddress> readers = emptyList();
         List<SocketAddress> routers = emptyList();
 
         long ttlSeconds = 0;
-        RoutingResult original = new RoutingResult( routers, writers, readers, ttlSeconds * 1000 );
+        RoutingResult original = new RoutingResult(routers, writers, readers, ttlSeconds * 1000);
 
         // when
-        AnyValue[] record = RoutingResultFormat.build( original );
+        AnyValue[] record = RoutingResultFormat.build(original);
 
         // then
-        RoutingResult parsed = RoutingResultFormat.parse( record );
+        RoutingResult parsed = RoutingResultFormat.parse(record);
 
-        assertEquals( original, parsed );
+        assertEquals(original, parsed);
     }
 }

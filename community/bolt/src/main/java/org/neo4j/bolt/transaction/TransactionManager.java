@@ -22,7 +22,6 @@ package org.neo4j.bolt.transaction;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
@@ -35,8 +34,7 @@ import org.neo4j.values.virtual.MapValue;
  * Interface defines transaction management capabilities and the boundary between the bolt/http servers
  * and the lower level components of the server.
  */
-public interface TransactionManager
-{
+public interface TransactionManager {
     /**
      * Begin a new transaction.
      *
@@ -52,8 +50,14 @@ public interface TransactionManager
      * @deprecated currently requires {@code connectionId} which will be replaced with {@link #begin(String, List, boolean, Map, Duration, LoginContext)}.
      */
     @Deprecated
-    String begin( LoginContext loginContext, String defaultDb, List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> transactionMetadata,
-                  Duration transactionTimeout, String connectionId )
+    String begin(
+            LoginContext loginContext,
+            String defaultDb,
+            List<Bookmark> bookmarks,
+            boolean isReadOnly,
+            Map<String, Object> transactionMetadata,
+            Duration transactionTimeout,
+            String connectionId)
             throws KernelException;
 
     /**
@@ -68,10 +72,15 @@ public interface TransactionManager
      * @return the id that uniquely identifies the transaction.
      * @throws KernelException General error that can occur during transaction creation.
      */
-    default String begin( LoginContext loginContext, String defaultDb, List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> transactionMetadata,
-                          Duration transactionTimeout ) throws KernelException
-    {
-        throw new UnsupportedOperationException( "Not Implemented" );
+    default String begin(
+            LoginContext loginContext,
+            String defaultDb,
+            List<Bookmark> bookmarks,
+            boolean isReadOnly,
+            Map<String, Object> transactionMetadata,
+            Duration transactionTimeout)
+            throws KernelException {
+        throw new UnsupportedOperationException("Not Implemented");
     }
 
     /**
@@ -82,7 +91,7 @@ public interface TransactionManager
      * @throws KernelException A general error which can occur on committing the transaction.
      * @throws TransactionNotFoundException thrown if a transaction cannot be found in this transaction manager with the identifier provided.
      */
-    Bookmark commit( String txId ) throws KernelException, TransactionNotFoundException;
+    Bookmark commit(String txId) throws KernelException, TransactionNotFoundException;
 
     /**
      * Run a "Cypher Program" outside of transactional context.
@@ -104,9 +113,18 @@ public interface TransactionManager
      * with details of program that are known at execution time.
      * @throws KernelException A general error which can occur on running a query within a transaction.
      */
-    ProgramResultReference runProgram( String programId, LoginContext loginContext, String defaultDb, String cypherProgram, MapValue params,
-                                       List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> programMetadata, Duration programTimeout,
-                                       String connectionId ) throws KernelException;
+    ProgramResultReference runProgram(
+            String programId,
+            LoginContext loginContext,
+            String defaultDb,
+            String cypherProgram,
+            MapValue params,
+            List<Bookmark> bookmarks,
+            boolean isReadOnly,
+            Map<String, Object> programMetadata,
+            Duration programTimeout,
+            String connectionId)
+            throws KernelException;
 
     /**
      * Rollback a transaction.
@@ -114,7 +132,7 @@ public interface TransactionManager
      * @param txId the identifier of the transaction to be rolled back.
      * @throws TransactionNotFoundException thrown if a transaction cannot be found in this transaction manager with the identifier provided.
      */
-    void rollback( String txId ) throws TransactionNotFoundException;
+    void rollback(String txId) throws TransactionNotFoundException;
 
     /**
      * Run a query within a transactional context.
@@ -126,7 +144,8 @@ public interface TransactionManager
      * @throws KernelException A general error which can occur on running a query within a transaction.
      * @throws TransactionNotFoundException thrown if a transaction cannot be found in this transaction manager with the identifier provided.
      */
-    StatementMetadata runQuery( String txId, String cypherQuery, MapValue params ) throws KernelException, TransactionNotFoundException;//todo statementMetadata
+    StatementMetadata runQuery(String txId, String cypherQuery, MapValue params)
+            throws KernelException, TransactionNotFoundException; // todo statementMetadata
 
     /**
      * Process up to {@code numberToPull} items from a previously executed query and return them asynchronously to a consumer.
@@ -140,9 +159,9 @@ public interface TransactionManager
      * @throws AuthorizationExpiredException thrown when required authorization info has expired in the Neo4j auth cache.
      * @throws TransactionNotFoundException thrown if a transaction cannot be found in this transaction manager with the identifier provided.
      */
-    Bookmark pullData( String txId, int statementId, long numberToPull, ResultConsumer consumer ) throws ResultNotFoundException, //todo Replace ResultConsumer
-                                                                                                     AuthorizationExpiredException,
-                                                                                                     TransactionNotFoundException;
+    Bookmark pullData(String txId, int statementId, long numberToPull, ResultConsumer consumer)
+            throws ResultNotFoundException, // todo Replace ResultConsumer
+                    AuthorizationExpiredException, TransactionNotFoundException;
 
     /**
      * Process up to {@code numberToDiscard} items from a previously executed query and discard them. //todo replace consumer .Used here for `hasMore` callback.
@@ -156,9 +175,8 @@ public interface TransactionManager
      * @throws AuthorizationExpiredException thrown when required authorization info has expired in the Neo4j auth cache.
      * @throws TransactionNotFoundException thrown if a transaction cannot be found in this transaction manager with the identifier provided.
      */
-    Bookmark discardData( String txId, int statementId, long numberToDiscard, ResultConsumer consumer ) throws ResultNotFoundException,
-                                                                                                           AuthorizationExpiredException,
-                                                                                                           TransactionNotFoundException;
+    Bookmark discardData(String txId, int statementId, long numberToDiscard, ResultConsumer consumer)
+            throws ResultNotFoundException, AuthorizationExpiredException, TransactionNotFoundException;
 
     /**
      * Cancel all remaining data for a previously executed query.
@@ -168,28 +186,28 @@ public interface TransactionManager
      * @throws ResultNotFoundException thrown if the provided statementId for this transaction was not found.
      * @throws TransactionNotFoundException thrown if a transaction cannot be found in this transaction manager with the identifier provided.
      */
-    void cancelData( String txId, int statementId ) throws ResultNotFoundException, TransactionNotFoundException;
+    void cancelData(String txId, int statementId) throws ResultNotFoundException, TransactionNotFoundException;
 
     /**
      * Mark a transaction for termination.
      *
      * @param txId the transaction identifier to interrupt.
      */
-    void interrupt( String txId );
+    void interrupt(String txId);
 
     /**
      * Return the status of a transaction.
      *
      * @return the current state of the transaction. See {@link TransactionStatus} for possible values.
      */
-    TransactionStatus transactionStatus( String txId );
+    TransactionStatus transactionStatus(String txId);
 
     /**
      * Initialized a resource to use in this Transaction Manager.
      *
      * @param initializeContext context containing resources to be added.
      */
-    void initialize( InitializeContext initializeContext );
+    void initialize(InitializeContext initializeContext);
 
     /**
      * Clean up connection resources for this Transaction Manager.
@@ -199,13 +217,12 @@ public interface TransactionManager
      * longer needed.
      */
     @Deprecated
-    void cleanUp( CleanUpConnectionContext cleanUpConnectionContext );
+    void cleanUp(CleanUpConnectionContext cleanUpConnectionContext);
 
     /**
      * Clean up transaction resources for this Transaction Manager.
      *
      * @param cleanUpTransactionContext context containing the transactionId which needs to be cleaned up.
      */
-    void cleanUp( CleanUpTransactionContext cleanUpTransactionContext );
-
+    void cleanUp(CleanUpTransactionContext cleanUpTransactionContext);
 }

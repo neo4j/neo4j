@@ -19,19 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.lock.LockTracer;
-import org.neo4j.resources.CpuClock;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -41,50 +28,61 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
-class StatementLifecycleTest
-{
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.resources.CpuClock;
+
+class StatementLifecycleTest {
     @Test
-    void shouldReleaseStoreStatementOnlyWhenReferenceCountDownToZero()
-    {
+    void shouldReleaseStoreStatementOnlyWhenReferenceCountDownToZero() {
         // given
-        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        KernelStatement statement = createStatement( transaction );
+        KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
+        KernelStatement statement = createStatement(transaction);
         statement.acquire();
         statement.acquire();
 
         // when
         statement.close();
-        verify( transaction, never() ).releaseStatementResources();
+        verify(transaction, never()).releaseStatementResources();
 
         // then
         statement.close();
-        verify( transaction ).releaseStatementResources();
+        verify(transaction).releaseStatementResources();
     }
 
     @Test
-    void shouldReleaseStoreStatementWhenForceClosingStatements()
-    {
+    void shouldReleaseStoreStatementWhenForceClosingStatements() {
         // given
-        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.isSuccess() ).thenReturn( true );
-        KernelStatement statement = createStatement( transaction );
+        KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
+        when(transaction.isSuccess()).thenReturn(true);
+        KernelStatement statement = createStatement(transaction);
         statement.acquire();
 
         // when
-        assertThrows( KernelStatement.StatementNotClosedException.class, statement::forceClose );
+        assertThrows(KernelStatement.StatementNotClosedException.class, statement::forceClose);
 
         // then
-        verify( transaction ).releaseStatementResources();
+        verify(transaction).releaseStatementResources();
     }
 
-    private static KernelStatement createStatement( KernelTransactionImplementation transaction )
-    {
-        var statement = new KernelStatement( transaction, LockTracer.NONE, new ClockContext(),
-                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
-                Config.defaults( GraphDatabaseInternalSettings.track_tx_statement_close, true ) );
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        var cursorContext = contextFactory.create( "test" );
-        statement.initialize( mock( Locks.Client.class ), cursorContext, 1 );
+    private static KernelStatement createStatement(KernelTransactionImplementation transaction) {
+        var statement = new KernelStatement(
+                transaction,
+                LockTracer.NONE,
+                new ClockContext(),
+                new AtomicReference<>(CpuClock.NOT_AVAILABLE),
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                Config.defaults(GraphDatabaseInternalSettings.track_tx_statement_close, true));
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var cursorContext = contextFactory.create("test");
+        statement.initialize(mock(Locks.Client.class), cursorContext, 1);
         return statement;
     }
 }

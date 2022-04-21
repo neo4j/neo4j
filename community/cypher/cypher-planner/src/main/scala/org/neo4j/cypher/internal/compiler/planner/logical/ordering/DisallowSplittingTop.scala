@@ -26,7 +26,11 @@ import scala.annotation.tailrec
 
 object DisallowSplittingTop {
 
-  def demoteRequiredOrderToInterestingOrder(query: SinglePlannerQuery, isHorizon: Boolean, disallowSplittingTop: Boolean): Boolean = {
+  def demoteRequiredOrderToInterestingOrder(
+    query: SinglePlannerQuery,
+    isHorizon: Boolean,
+    disallowSplittingTop: Boolean
+  ): Boolean = {
     if (disallowSplittingTop) {
       requiredOrderOrigin(query) match {
         case Some(SelfOrderByLimit) if !isHorizon => true // Don't plan Sort in QG if it splits a later Top candidate
@@ -54,13 +58,13 @@ object DisallowSplittingTop {
       }
       (inTail, hasOrderBy, hasLimit) match {
         case (false, true, true)  => Some(SelfOrderByLimit)
-        case (true, true, true)  => Some(TailOrderByLimit)
+        case (true, true, true)   => Some(TailOrderByLimit)
         case (false, true, false) => Some(SelfOrderBy)
-        case (true, true, false) => Some(TailOrderBy)
-        case (_, false, _)    => query.tail match {
-          case Some(tail) => recurse(tail, inTail = true)
-          case None       => None
-        }
+        case (true, true, false)  => Some(TailOrderBy)
+        case (_, false, _) => query.tail match {
+            case Some(tail) => recurse(tail, inTail = true)
+            case None       => None
+          }
       }
     }
     recurse(query, inTail = false)

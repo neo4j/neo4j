@@ -19,195 +19,177 @@
  */
 package org.neo4j.internal.helpers;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
-class ArrayUtilTest
-{
+import org.junit.jupiter.api.Test;
+
+class ArrayUtilTest {
     @Test
-    void shouldProduceUnionOfTwoArrays()
-    {
+    void shouldProduceUnionOfTwoArrays() {
         // GIVEN
         String[] first = {"one", "three"};
         String[] other = {"two", "four", "five"};
 
         // WHEN
-        String[] union = ArrayUtil.union( first, other );
+        String[] union = ArrayUtil.union(first, other);
 
         // THEN
-        assertEquals( asSet( "one", "two", "three", "four", "five" ),
-                      asSet( union ) );
+        assertEquals(asSet("one", "two", "three", "four", "five"), asSet(union));
     }
 
     @Test
-    void shouldProduceUnionWhereFirstIsNull()
-    {
+    void shouldProduceUnionWhereFirstIsNull() {
         // GIVEN
         String[] first = null;
         String[] other = {"one", "two"};
 
         // WHEN
-        String[] union = ArrayUtil.union( first, other );
+        String[] union = ArrayUtil.union(first, other);
 
         // THEN
-        assertEquals( asSet( "one", "two" ), asSet( union ) );
+        assertEquals(asSet("one", "two"), asSet(union));
     }
 
     @Test
-    void shouldProduceUnionWhereOtherIsNull()
-    {
+    void shouldProduceUnionWhereOtherIsNull() {
         // GIVEN
         String[] first = {"one", "two"};
         String[] other = null;
 
         // WHEN
-        String[] union = ArrayUtil.union( first, other );
+        String[] union = ArrayUtil.union(first, other);
 
         // THEN
-        assertEquals( asSet( "one", "two" ), asSet( union ) );
+        assertEquals(asSet("one", "two"), asSet(union));
     }
 
     @Test
-    void shouldCheckNullSafeEqual()
-    {
+    void shouldCheckNullSafeEqual() {
         // WHEN/THEN
-        assertTrue( ArrayUtil.nullSafeEquals( null, null ) );
-        assertFalse( ArrayUtil.nullSafeEquals( "1", null ) );
-        assertFalse( ArrayUtil.nullSafeEquals( null, "1" ) );
-        assertTrue( ArrayUtil.nullSafeEquals( "1", "1" ) );
+        assertTrue(ArrayUtil.nullSafeEquals(null, null));
+        assertFalse(ArrayUtil.nullSafeEquals("1", null));
+        assertFalse(ArrayUtil.nullSafeEquals(null, "1"));
+        assertTrue(ArrayUtil.nullSafeEquals("1", "1"));
     }
 
     @Test
-    void shouldConcatOneAndMany()
-    {
+    void shouldConcatOneAndMany() {
         // WHEN
-        Integer[] result = ArrayUtil.concat( 0, 1, 2, 3, 4 );
+        Integer[] result = ArrayUtil.concat(0, 1, 2, 3, 4);
 
         // THEN
-        for ( int i = 0; i < 5; i++ )
-        {
-            assertEquals( (Integer)i, result[i] );
+        for (int i = 0; i < 5; i++) {
+            assertEquals((Integer) i, result[i]);
         }
     }
 
     @Test
-    void shouldConcatSeveralArrays()
-    {
+    void shouldConcatSeveralArrays() {
         // GIVEN
         Integer[] a = {0, 1, 2};
         Integer[] b = {3, 4};
         Integer[] c = {5, 6, 7, 8};
 
         // WHEN
-        Integer[] result = ArrayUtil.concatArrays( a, b, c );
+        Integer[] result = ArrayUtil.concatArrays(a, b, c);
 
         // THEN
-        assertEquals( a.length + b.length + c.length, result.length );
+        assertEquals(a.length + b.length + c.length, result.length);
 
-        for ( int i = 0; i < result.length; i++ )
-        {
-            assertEquals( (Integer) i, result[i] );
+        for (int i = 0; i < result.length; i++) {
+            assertEquals((Integer) i, result[i]);
         }
     }
 
     @Test
-    void shouldFindIndexOf()
-    {
+    void shouldFindIndexOf() {
         // GIVEN
-        Integer[] numbers = ArrayUtil.concat( 0, 1, 2, 3, 4, 5 );
+        Integer[] numbers = ArrayUtil.concat(0, 1, 2, 3, 4, 5);
 
         // WHEN/THEN
-        for ( int i = 0; i < 6; i++ )
-        {
-            assertEquals( i, ArrayUtil.indexOf( numbers, i ) );
+        for (int i = 0; i < 6; i++) {
+            assertEquals(i, ArrayUtil.indexOf(numbers, i));
         }
     }
 
     @Test
-    void shouldFindLastOf()
-    {
+    void shouldFindLastOf() {
         // GIVEN
-        Integer[] numbers = new Integer[]{0, 100, 4, 5, 6, 3};
+        Integer[] numbers = new Integer[] {0, 100, 4, 5, 6, 3};
 
         // WHEN/THEN
-        assertEquals( 3, (int) ArrayUtil.lastOf( numbers ) );
+        assertEquals(3, (int) ArrayUtil.lastOf(numbers));
     }
 
     @Test
-    void shouldRemoveItems()
-    {
+    void shouldRemoveItems() {
         // GIVEN
-        Integer[] numbers = ArrayUtil.concat( 0, 1, 2, 3, 4, 5 );
+        Integer[] numbers = ArrayUtil.concat(0, 1, 2, 3, 4, 5);
 
         // WHEN
-        Integer[] trimmed = ArrayUtil.without( numbers, 2 );
-        trimmed = ArrayUtil.without( trimmed, 5 );
-        trimmed = ArrayUtil.without( trimmed, 0 );
+        Integer[] trimmed = ArrayUtil.without(numbers, 2);
+        trimmed = ArrayUtil.without(trimmed, 5);
+        trimmed = ArrayUtil.without(trimmed, 0);
 
         // THEN
-        assertEquals( 3, trimmed.length );
-        assertFalse( ArrayUtil.contains( trimmed, 0 ) );
-        assertTrue( ArrayUtil.contains( trimmed, 1 ) );
-        assertFalse( ArrayUtil.contains( trimmed, 2 ) );
-        assertTrue( ArrayUtil.contains( trimmed, 3 ) );
-        assertTrue( ArrayUtil.contains( trimmed, 4 ) );
-        assertFalse( ArrayUtil.contains( trimmed, 5 ) );
+        assertEquals(3, trimmed.length);
+        assertFalse(ArrayUtil.contains(trimmed, 0));
+        assertTrue(ArrayUtil.contains(trimmed, 1));
+        assertFalse(ArrayUtil.contains(trimmed, 2));
+        assertTrue(ArrayUtil.contains(trimmed, 3));
+        assertTrue(ArrayUtil.contains(trimmed, 4));
+        assertFalse(ArrayUtil.contains(trimmed, 5));
     }
 
     @Test
-    void shouldConcatArrays()
-    {
+    void shouldConcatArrays() {
         // GIVEN
         Integer[] initial = new Integer[] {0, 1, 2};
 
         // WHEN
-        Integer[] all = ArrayUtil.concat( initial, 3, 4, 5 );
+        Integer[] all = ArrayUtil.concat(initial, 3, 4, 5);
 
         // THEN
-        assertArrayEquals( new Integer[] {0, 1, 2, 3, 4, 5}, all );
+        assertArrayEquals(new Integer[] {0, 1, 2, 3, 4, 5}, all);
     }
 
     @Test
-    void shouldReverseEvenCount()
-    {
+    void shouldReverseEvenCount() {
         // given
         Integer[] array = new Integer[] {0, 1, 2, 3, 4, 5};
 
         // when
-        ArrayUtil.reverse( array );
+        ArrayUtil.reverse(array);
 
         // then
-        assertArrayEquals( new Integer[] {5, 4, 3, 2, 1, 0}, array );
+        assertArrayEquals(new Integer[] {5, 4, 3, 2, 1, 0}, array);
     }
 
     @Test
-    void shouldReverseUnevenCount()
-    {
+    void shouldReverseUnevenCount() {
         // given
         Integer[] array = new Integer[] {0, 1, 2, 3, 4};
 
         // when
-        ArrayUtil.reverse( array );
+        ArrayUtil.reverse(array);
 
         // then
-        assertArrayEquals( new Integer[] {4, 3, 2, 1, 0}, array );
+        assertArrayEquals(new Integer[] {4, 3, 2, 1, 0}, array);
     }
 
     @Test
-    void shouldReverseEmptyArray()
-    {
+    void shouldReverseEmptyArray() {
         // given
         Integer[] array = new Integer[] {};
 
         // when
-        ArrayUtil.reverse( array );
+        ArrayUtil.reverse(array);
 
         // then
-        assertArrayEquals( new Integer[] {}, array );
+        assertArrayEquals(new Integer[] {}, array);
     }
 }

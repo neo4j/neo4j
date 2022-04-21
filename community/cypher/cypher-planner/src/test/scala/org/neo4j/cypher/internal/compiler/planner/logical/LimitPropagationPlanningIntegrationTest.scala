@@ -33,9 +33,9 @@ import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Assertion
 
 class LimitPropagationPlanningIntegrationTest
-  extends CypherFunSuite
-  with LogicalPlanningIntegrationTestSupport
-  with AstConstructionTestSupport {
+    extends CypherFunSuite
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   private def statisticsForLimitPropagationTests(plannerBuilder: StatisticsBackedLogicalPlanningConfigurationBuilder) =
     plannerBuilder
@@ -53,13 +53,28 @@ class LimitPropagationPlanningIntegrationTest
       .setRelationshipCardinality("()-[:REL_CB]->()", 10000)
       .addNodeIndex("A", Seq("id"), 0.5, 1.0 / 111.0, providesOrder = IndexOrderCapability.ASC)
       .addNodeIndex("C", Seq("id"), 0.5, 1.0 / 2222.0, providesOrder = IndexOrderCapability.ASC)
-      .addRelationshipIndex("REL_CB", Seq("id"), 0.5, 1.0 / 10000, providesOrder = IndexOrderCapability.ASC, indexType = IndexType.RANGE)
-      .addRelationshipIndex("REL_CB", Seq("id"), 0.5, 1.0 / 10000, providesOrder = IndexOrderCapability.ASC, indexType = IndexType.TEXT)
+      .addRelationshipIndex(
+        "REL_CB",
+        Seq("id"),
+        0.5,
+        1.0 / 10000,
+        providesOrder = IndexOrderCapability.ASC,
+        indexType = IndexType.RANGE
+      )
+      .addRelationshipIndex(
+        "REL_CB",
+        Seq("id"),
+        0.5,
+        1.0 / 10000,
+        providesOrder = IndexOrderCapability.ASC,
+        indexType = IndexType.TEXT
+      )
       .build()
 
-  private def assertExpectedPlanForQueryGivenStatistics(queryString: String,
-                                                        buildStats: StatisticsBackedLogicalPlanningConfigurationBuilder => StatisticsBackedLogicalPlanningConfiguration)
-                                                       (buildExpectedPlan: LogicalPlanBuilder => LogicalPlan): Assertion = {
+  private def assertExpectedPlanForQueryGivenStatistics(
+    queryString: String,
+    buildStats: StatisticsBackedLogicalPlanningConfigurationBuilder => StatisticsBackedLogicalPlanningConfiguration
+  )(buildExpectedPlan: LogicalPlanBuilder => LogicalPlan): Assertion = {
     val cfg = buildStats(plannerBuilder())
     val plan = cfg.plan(queryString)
     plan shouldEqual buildExpectedPlan(cfg.planBuilder())
@@ -73,16 +88,17 @@ class LimitPropagationPlanningIntegrationTest
          |RETURN a, c ORDER BY c.id LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(10)
-      .nodeHashJoin("b")
-      .|.expandAll("(c)-[cb:REL_CB]->(b)")
-      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(10)
+        .nodeHashJoin("b")
+        .|.expandAll("(c)-[cb:REL_CB]->(b)")
+        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -94,16 +110,21 @@ class LimitPropagationPlanningIntegrationTest
          |RETURN a, c ORDER BY cb.id LIMIT 1
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(1)
-      .nodeHashJoin("b")
-      .|.filterExpression(hasLabels("c", "C"))
-      .|.relationshipIndexOperator("(c)-[cb:REL_CB(id)]->(b)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filterExpression(hasLabels("b", "B"))
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(1)
+        .nodeHashJoin("b")
+        .|.filterExpression(hasLabels("c", "C"))
+        .|.relationshipIndexOperator(
+          "(c)-[cb:REL_CB(id)]->(b)",
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
+        .filterExpression(hasLabels("b", "B"))
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -115,16 +136,21 @@ class LimitPropagationPlanningIntegrationTest
          |RETURN a, c ORDER BY cb.id LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(10)
-      .nodeHashJoin("b")
-      .|.filterExpression(hasLabels("c", "C"))
-      .|.relationshipIndexOperator("(c)-[cb:REL_CB(id CONTAINS 'sub')]->(b)", indexOrder = IndexOrderAscending, indexType = IndexType.TEXT)
-      .filterExpression(hasLabels("b", "B"))
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(10)
+        .nodeHashJoin("b")
+        .|.filterExpression(hasLabels("c", "C"))
+        .|.relationshipIndexOperator(
+          "(c)-[cb:REL_CB(id CONTAINS 'sub')]->(b)",
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.TEXT
+        )
+        .filterExpression(hasLabels("b", "B"))
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -136,19 +162,23 @@ class LimitPropagationPlanningIntegrationTest
          |RETURN a, c ORDER BY cb.id LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(10)
-      .nodeHashJoin("b")
-      .|.filterExpression(hasLabels("c", "C"))
-      .|.relationshipIndexOperator("(c)-[cb:REL_CB(id ENDS WITH 'suff')]->(b)", indexOrder = IndexOrderAscending, indexType = IndexType.TEXT)
-      .filterExpression(hasLabels("b", "B"))
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(10)
+        .nodeHashJoin("b")
+        .|.filterExpression(hasLabels("c", "C"))
+        .|.relationshipIndexOperator(
+          "(c)-[cb:REL_CB(id ENDS WITH 'suff')]->(b)",
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.TEXT
+        )
+        .filterExpression(hasLabels("b", "B"))
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
-
 
   test("should plan lazy relationship index seek instead of sort when under limit") {
     val query =
@@ -158,16 +188,21 @@ class LimitPropagationPlanningIntegrationTest
         |RETURN a, c ORDER BY cb.id LIMIT 1
         |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(1)
-      .nodeHashJoin("b")
-      .|.filterExpression(hasLabels("c", "C"))
-      .|.relationshipIndexOperator("(c)-[cb:REL_CB(id > 123)]->(b)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filterExpression(hasLabels("b", "B"))
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(1)
+        .nodeHashJoin("b")
+        .|.filterExpression(hasLabels("c", "C"))
+        .|.relationshipIndexOperator(
+          "(c)-[cb:REL_CB(id > 123)]->(b)",
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
+        .filterExpression(hasLabels("b", "B"))
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -179,16 +214,17 @@ class LimitPropagationPlanningIntegrationTest
          |RETURN a, c ORDER BY c.id LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(10)
-      .nodeHashJoin("b")
-      .|.expandAll("(c)-[cb:REL_CB]->(b)")
-      .|.nodeIndexOperator("c:C(id)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(10)
+        .nodeHashJoin("b")
+        .|.expandAll("(c)-[cb:REL_CB]->(b)")
+        .|.nodeIndexOperator("c:C(id)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -201,16 +237,17 @@ class LimitPropagationPlanningIntegrationTest
          |RETURN a, c LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(10)
-      .nodeHashJoin("b")
-      .|.expandAll("(c)-[cb:REL_CB]->(b)")
-      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(10)
+        .nodeHashJoin("b")
+        .|.expandAll("(c)-[cb:REL_CB]->(b)")
+        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -223,21 +260,24 @@ class LimitPropagationPlanningIntegrationTest
          |RETURN a, c ORDER BY c.id LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(10)
-      .distinct("a AS a", "c AS c")
-      .nodeHashJoin("b")
-      .|.expandAll("(c)-[cb:REL_CB]->(b)")
-      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(10)
+        .distinct("a AS a", "c AS c")
+        .nodeHashJoin("b")
+        .|.expandAll("(c)-[cb:REL_CB]->(b)")
+        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
-  test("should plan lazy index seek instead of sort when sort and limit are in a different query part with many horizons inbetween") {
+  test(
+    "should plan lazy index seek instead of sort when sort and limit are in a different query part with many horizons inbetween"
+  ) {
     val query =
       s"""
          |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
@@ -251,19 +291,20 @@ class LimitPropagationPlanningIntegrationTest
          |RETURN a, c ORDER BY c.id LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(10)
-      .projection("a AS aaa")
-      .projection("1 AS foo")
-      .distinct("a AS a", "c AS c")
-      .nodeHashJoin("b")
-      .|.expandAll("(c)-[cb:REL_CB]->(b)")
-      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(10)
+        .projection("a AS aaa")
+        .projection("1 AS foo")
+        .distinct("a AS a", "c AS c")
+        .nodeHashJoin("b")
+        .|.expandAll("(c)-[cb:REL_CB]->(b)")
+        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -276,17 +317,18 @@ class LimitPropagationPlanningIntegrationTest
          |RETURN count(*) AS count
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("count")
-      .aggregation(Seq.empty, Seq("count(*) AS count"))
-      .limit(10)
-      .nodeHashJoin("b")
-      .|.expandAll("(c)-[cb:REL_CB]->(b)")
-      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .limit(10)
+        .nodeHashJoin("b")
+        .|.expandAll("(c)-[cb:REL_CB]->(b)")
+        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -299,17 +341,18 @@ class LimitPropagationPlanningIntegrationTest
          |SKIP 7 LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .skip(7)
-      .limit(add(literalInt(10), literalInt(7)))
-      .nodeHashJoin("b")
-      .|.expandAll("(c)-[cb:REL_CB]->(b)")
-      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .skip(7)
+        .limit(add(literalInt(10), literalInt(7)))
+        .nodeHashJoin("b")
+        .|.expandAll("(c)-[cb:REL_CB]->(b)")
+        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -322,17 +365,18 @@ class LimitPropagationPlanningIntegrationTest
          |SKIP 100000 LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .skip(100000)
-      .top(Seq(Ascending("c.id")), add(literalInt(10), literalInt(100000)))
-      .projection("cache[c.id] AS `c.id`")
-      .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
-      .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .skip(100000)
+        .top(Seq(Ascending("c.id")), add(literalInt(10), literalInt(100000)))
+        .projection("cache[c.id] AS `c.id`")
+        .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
+        .expandAll("(b)<-[cb:REL_CB]-(c)")
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -345,19 +389,21 @@ class LimitPropagationPlanningIntegrationTest
          |SKIP 100000 LIMIT 1
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .skip(100000)
-      .top(Seq(Ascending("cb.id")), add(literalInt(1), literalInt(100000)))
-      .projection("cacheR[cb.id] AS `cb.id`")
-      .filterExpression(
-        hasLabels("c", "C"),
-        isNotNull(cachedRelPropFromStore("cb", "id")))
-      .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filterExpression(hasLabels("b", "B"))
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .skip(100000)
+        .top(Seq(Ascending("cb.id")), add(literalInt(1), literalInt(100000)))
+        .projection("cacheR[cb.id] AS `cb.id`")
+        .filterExpression(
+          hasLabels("c", "C"),
+          isNotNull(cachedRelPropFromStore("cb", "id"))
+        )
+        .expandAll("(b)<-[cb:REL_CB]-(c)")
+        .filterExpression(hasLabels("b", "B"))
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -371,17 +417,18 @@ class LimitPropagationPlanningIntegrationTest
          |LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .top(Seq(Ascending("c.id")), 10)
-      .projection("cache[c.id] AS `c.id`")
-      .setNodeProperty("b", "prop", "5")
-      .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
-      .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .top(Seq(Ascending("c.id")), 10)
+        .projection("cache[c.id] AS `c.id`")
+        .setNodeProperty("b", "prop", "5")
+        .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
+        .expandAll("(b)<-[cb:REL_CB]-(c)")
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -395,18 +442,19 @@ class LimitPropagationPlanningIntegrationTest
          |SKIP 7 LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .skip(7)
-      .limit(add(literalInt(10), literalInt(7)))
-      .distinct("a AS a", "c AS c")
-      .nodeHashJoin("b")
-      .|.expandAll("(c)-[cb:REL_CB]->(b)")
-      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .skip(7)
+        .limit(add(literalInt(10), literalInt(7)))
+        .distinct("a AS a", "c AS c")
+        .nodeHashJoin("b")
+        .|.expandAll("(c)-[cb:REL_CB]->(b)")
+        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
@@ -420,22 +468,25 @@ class LimitPropagationPlanningIntegrationTest
          |SKIP 100000 LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .skip(100000)
-      .top(Seq(Ascending("c.id")), add(literalInt(10), literalInt(100000)))
-      .projection("cache[c.id] AS `c.id`")
-      .distinct("a AS a", "c AS c")
-      .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
-      .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .skip(100000)
+        .top(Seq(Ascending("c.id")), add(literalInt(10), literalInt(100000)))
+        .projection("cache[c.id] AS `c.id`")
+        .distinct("a AS a", "c AS c")
+        .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
+        .expandAll("(b)<-[cb:REL_CB]-(c)")
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
-  test("should plan lazy index seek instead of sort when under small skip in same query part and limit and in the next query part") {
+  test(
+    "should plan lazy index seek instead of sort when under small skip in same query part and limit and in the next query part"
+  ) {
     val query =
       s"""
          |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
@@ -446,22 +497,25 @@ class LimitPropagationPlanningIntegrationTest
          |LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .limit(10)
-      .skip(7)
-      .distinct("a AS a", "c AS c")
-      .nodeHashJoin("b")
-      .|.expandAll("(c)-[cb:REL_CB]->(b)")
-      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .limit(10)
+        .skip(7)
+        .distinct("a AS a", "c AS c")
+        .nodeHashJoin("b")
+        .|.expandAll("(c)-[cb:REL_CB]->(b)")
+        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 
-  test("should not plan lazy index seek instead of sort when under large skip in same query part and limit in the next query part") {
+  test(
+    "should not plan lazy index seek instead of sort when under large skip in same query part and limit in the next query part"
+  ) {
     val query =
       s"""
          |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
@@ -472,18 +526,19 @@ class LimitPropagationPlanningIntegrationTest
          |LIMIT 10
          |""".stripMargin
 
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
-      .produceResults("a", "c")
-      .top(Seq(Ascending("c.id")), 10)
-      .projection("cache[c.id] AS `c.id`")
-      .skip(100000)
-      .distinct("a AS a", "c AS c")
-      .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
-      .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filter("b:B")
-      .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-      .build()
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
+      planBuilder
+        .produceResults("a", "c")
+        .top(Seq(Ascending("c.id")), 10)
+        .projection("cache[c.id] AS `c.id`")
+        .skip(100000)
+        .distinct("a AS a", "c AS c")
+        .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
+        .expandAll("(b)<-[cb:REL_CB]-(c)")
+        .filter("b:B")
+        .expandAll("(a)-[ab:REL_AB]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .build()
     }
   }
 }

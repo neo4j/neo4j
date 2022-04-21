@@ -69,10 +69,12 @@ object EntityIndexLeafPlanner {
   /**
    * Creates IS NOT NULL-predicates of the given variable to the given properties that are inferred from the context rather than read from the query.
    */
-  private[index] def implicitIsNotNullPredicates(variable: LogicalVariable,
-                                                 aggregatingProperties: Set[PropertyAccess],
-                                                 constrainedPropNames: Set[String],
-                                                 explicitCompatiblePredicates: Set[IndexCompatiblePredicate]): Set[IndexCompatiblePredicate] = {
+  private[index] def implicitIsNotNullPredicates(
+    variable: LogicalVariable,
+    aggregatingProperties: Set[PropertyAccess],
+    constrainedPropNames: Set[String],
+    explicitCompatiblePredicates: Set[IndexCompatiblePredicate]
+  ): Set[IndexCompatiblePredicate] = {
     // Can't currently handle aggregation on more than one variable
     val aggregatedPropNames: Set[String] =
       if (aggregatingProperties.forall(prop => prop.variableName.equals(variable.name))) {
@@ -82,7 +84,8 @@ object EntityIndexLeafPlanner {
       }
 
     //  Can't currently handle aggregation on more than one property
-    val propNames = if (aggregatedPropNames.size == 1) constrainedPropNames.union(aggregatedPropNames) else constrainedPropNames
+    val propNames =
+      if (aggregatedPropNames.size == 1) constrainedPropNames.union(aggregatedPropNames) else constrainedPropNames
 
     for {
       propertyName <- propNames
@@ -107,12 +110,13 @@ object EntityIndexLeafPlanner {
   /**
    * Find and group all predicates, where one PredicatesForIndex contains one predicate for each indexed property, in the right order.
    */
-  private[index] def predicatesForIndex(indexDescriptor: IndexDescriptor,
-                                        predicates: Set[IndexCompatiblePredicate],
-                                        interestingOrderConfig: InterestingOrderConfig,
-                                        semanticTable: SemanticTable,
-                                        providedOrderFactory: ProvidedOrderFactory
-                                       ): Set[PredicatesForIndex] = {
+  private[index] def predicatesForIndex(
+    indexDescriptor: IndexDescriptor,
+    predicates: Set[IndexCompatiblePredicate],
+    interestingOrderConfig: InterestingOrderConfig,
+    semanticTable: SemanticTable,
+    providedOrderFactory: ProvidedOrderFactory
+  ): Set[PredicatesForIndex] = {
 
     // Group predicates by which property they include
     val predicatesByProperty = predicates
@@ -131,13 +135,22 @@ object EntityIndexLeafPlanner {
     val matchingPredicateCombinations = SeqCombiner.combine(predicatesByIndexedProperty).toSet
 
     matchingPredicateCombinations
-      .map(matchingPredicates => matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrderConfig, providedOrderFactory))
+      .map(matchingPredicates =>
+        matchPredicateWithIndexDescriptorAndInterestingOrder(
+          matchingPredicates,
+          indexDescriptor,
+          interestingOrderConfig,
+          providedOrderFactory
+        )
+      )
   }
 
-  private def matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates: Seq[IndexCompatiblePredicate],
-                                                                   indexDescriptor: IndexDescriptor,
-                                                                   interestingOrderConfig: InterestingOrderConfig,
-                                                                   providedOrderFactory: ProvidedOrderFactory): PredicatesForIndex = {
+  private def matchPredicateWithIndexDescriptorAndInterestingOrder(
+    matchingPredicates: Seq[IndexCompatiblePredicate],
+    indexDescriptor: IndexDescriptor,
+    interestingOrderConfig: InterestingOrderConfig,
+    providedOrderFactory: ProvidedOrderFactory
+  ): PredicatesForIndex = {
     val types = matchingPredicates.map(mp => mp.propertyType)
 
     // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
@@ -147,7 +160,13 @@ object EntityIndexLeafPlanner {
     })
 
     val (providedOrder, indexOrder) =
-      ResultOrdering.providedOrderForIndexOperator(interestingOrderConfig.orderToSolve, indexPropertiesAndPredicateTypes, types, indexDescriptor.orderCapability, providedOrderFactory)
+      ResultOrdering.providedOrderForIndexOperator(
+        interestingOrderConfig.orderToSolve,
+        indexPropertiesAndPredicateTypes,
+        types,
+        indexDescriptor.orderCapability,
+        providedOrderFactory
+      )
 
     PredicatesForIndex(matchingPredicates, providedOrder, indexOrder)
   }
@@ -169,24 +188,24 @@ object EntityIndexLeafPlanner {
    * @param compatibleIndexTypes Index types which can solve this predicate
    */
   case class IndexCompatiblePredicate(
-                                       variable: LogicalVariable,
-                                       property: LogicalProperty,
-                                       predicate: Expression,
-                                       queryExpression: QueryExpression[Expression],
-                                       propertyType: CypherType,
-                                       predicateExactness: PredicateExactness,
-                                       solvedPredicate: Option[Expression],
-                                       dependencies: Set[LogicalVariable],
-                                       isImplicit: Boolean = false,
-                                       compatibleIndexTypes: Set[IndexType],
-                                     ) {
+    variable: LogicalVariable,
+    property: LogicalProperty,
+    predicate: Expression,
+    queryExpression: QueryExpression[Expression],
+    propertyType: CypherType,
+    predicateExactness: PredicateExactness,
+    solvedPredicate: Option[Expression],
+    dependencies: Set[LogicalVariable],
+    isImplicit: Boolean = false,
+    compatibleIndexTypes: Set[IndexType]
+  ) {
     def name: String = variable.name
 
     def propertyKeyName: PropertyKeyName = property.propertyKey
 
     def isExists: Boolean = queryExpression match {
       case _: ExistenceQueryExpression[Expression] => true
-      case _ => false
+      case _                                       => false
     }
 
     def convertToScannable: IndexCompatiblePredicate = queryExpression match {
@@ -194,10 +213,10 @@ object EntityIndexLeafPlanner {
         throw new IllegalStateException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
 
       case _ => copy(
-        queryExpression = ExistenceQueryExpression(),
-        predicateExactness = NotExactPredicate,
-        solvedPredicate = solvedPredicate.map(convertToScannablePredicate),
-      )
+          queryExpression = ExistenceQueryExpression(),
+          predicateExactness = NotExactPredicate,
+          solvedPredicate = solvedPredicate.map(convertToScannablePredicate)
+        )
     }
 
     private def convertToScannablePredicate(expr: Expression) = {
@@ -217,22 +236,27 @@ object EntityIndexLeafPlanner {
     }
   }
 
-  private[index] def getValueBehaviors(indexDescriptor: IndexDescriptor,
-                                       propertyPredicates: Seq[IndexCompatiblePredicate],
-                                       exactPredicatesCanGetValue: Boolean): Seq[GetValueFromIndexBehavior] = {
+  private[index] def getValueBehaviors(
+    indexDescriptor: IndexDescriptor,
+    propertyPredicates: Seq[IndexCompatiblePredicate],
+    exactPredicatesCanGetValue: Boolean
+  ): Seq[GetValueFromIndexBehavior] = {
     // Ask the index for its value capabilities for the types of all properties.
     // We might override some of these later if they value is known in an equality predicate
     val types = propertyPredicates.map(mp => mp.propertyType)
     val propertyBehaviorFromIndex = indexDescriptor.valueCapability(types)
 
     propertyBehaviorFromIndex.zip(propertyPredicates).map {
-      case (_, predicate)
-        if predicate.predicateExactness.isExact && exactPredicatesCanGetValue => CanGetValue
-      case (behavior, _)                                                      => behavior
+      case (_, predicate) if predicate.predicateExactness.isExact && exactPredicatesCanGetValue => CanGetValue
+      case (behavior, _)                                                                        => behavior
     }
   }
 
-  case class PredicatesForIndex(predicatesInOrder: Seq[IndexCompatiblePredicate], providedOrder: ProvidedOrder, indexOrder: IndexOrder)
+  case class PredicatesForIndex(
+    predicatesInOrder: Seq[IndexCompatiblePredicate],
+    providedOrder: ProvidedOrder,
+    indexOrder: IndexOrder
+  )
 
   sealed abstract class PredicateExactness(val isExact: Boolean, val isSeekable: Boolean)
   case object SingleExactPredicate extends PredicateExactness(true, true)
@@ -266,30 +290,41 @@ trait PredicateSet {
   def allSolvedPredicates: Seq[Expression] =
     propertyPredicates.flatMap(_.solvedPredicate)
 
-  def indexedProperties(context: LogicalPlanningContext): Seq[IndexedProperty] = propertyPredicates.zip(getValueBehaviors).map {
-    case (predicate, behavior) =>
-      val propertyName = predicate.propertyKeyName
-      val getValue = behavior
-      IndexedProperty(PropertyKeyToken(propertyName, context.semanticTable.id(propertyName).head), getValue, getEntityType)
-  }
+  def indexedProperties(context: LogicalPlanningContext): Seq[IndexedProperty] =
+    propertyPredicates.zip(getValueBehaviors).map {
+      case (predicate, behavior) =>
+        val propertyName = predicate.propertyKeyName
+        val getValue = behavior
+        IndexedProperty(
+          PropertyKeyToken(propertyName, context.semanticTable.id(propertyName).head),
+          getValue,
+          getEntityType
+        )
+    }
 
   private def matchingHints(hints: Set[Hint]): Set[UsingIndexHint] = {
     val propertyNames = propertyPredicates.map(_.propertyKeyName.name)
     val localVariableName = variableName
     val entityTypeName = symbolicName.name
     hints.collect {
-      case hint@UsingIndexHint(Variable(`localVariableName`), LabelOrRelTypeName(`entityTypeName`), propertyKeyNames, _, _)
-        if propertyKeyNames.map(_.name) == propertyNames => hint
+      case hint @ UsingIndexHint(
+          Variable(`localVariableName`),
+          LabelOrRelTypeName(`entityTypeName`),
+          propertyKeyNames,
+          _,
+          _
+        ) if propertyKeyNames.map(_.name) == propertyNames => hint
     }
   }
 
-  private def fulfilledByIndexType(indexType: IndexType)(hint: UsingIndexHint): Boolean = (hint.indexType, indexType) match {
-    case (UsingAnyIndexType, _)                 => true
-    case (UsingTextIndexType, IndexType.Text)   => true
-    case (UsingRangeIndexType, IndexType.Range) => true
-    case (UsingPointIndexType, IndexType.Point) => true
-    case _                                      => false
-  }
+  private def fulfilledByIndexType(indexType: IndexType)(hint: UsingIndexHint): Boolean =
+    (hint.indexType, indexType) match {
+      case (UsingAnyIndexType, _)                 => true
+      case (UsingTextIndexType, IndexType.Text)   => true
+      case (UsingRangeIndexType, IndexType.Range) => true
+      case (UsingPointIndexType, IndexType.Point) => true
+      case _                                      => false
+    }
 
   def fulfilledHints(allHints: Set[Hint], indexType: IndexType, planIsScan: Boolean): Set[UsingIndexHint] =
     matchingHints(allHints)

@@ -19,26 +19,24 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.utils.PageCacheConfig;
 
-import static org.neo4j.io.ByteUnit.mebiBytes;
-
-public class GBPTreeLargeDynamicKeys4MIT extends GBPTreeLargeDynamicKeysITBase
-{
+public class GBPTreeLargeDynamicKeys4MIT extends GBPTreeLargeDynamicKeysITBase {
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension =
-            new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( (int) mebiBytes( 4 ) ).withMemory( "128MiB" ) );
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension(
+            PageCacheConfig.config().withPageSize((int) mebiBytes(4)).withMemory("128MiB"));
+
     @Inject
     private PageCache pageCache;
 
     @Override
-    protected PageCache getPageCache()
-    {
+    protected PageCache getPageCache() {
         return pageCache;
     }
 }

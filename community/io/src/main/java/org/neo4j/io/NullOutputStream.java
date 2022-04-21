@@ -21,29 +21,23 @@ package org.neo4j.io;
 
 import java.io.OutputStream;
 
-public final class NullOutputStream extends OutputStream
-{
+public final class NullOutputStream extends OutputStream {
     public static final OutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
 
-    private NullOutputStream()
-    {
-    }
+    private NullOutputStream() {}
 
     @Override
-    public void write( int b )
-    {
-        //nothing
-    }
-
-    @Override
-    public void write( byte[] b )
-    {
+    public void write(int b) {
         // nothing
     }
 
     @Override
-    public void write( byte[] b, int off, int len )
-    {
+    public void write(byte[] b) {
+        // nothing
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) {
         // nothing
     }
 }

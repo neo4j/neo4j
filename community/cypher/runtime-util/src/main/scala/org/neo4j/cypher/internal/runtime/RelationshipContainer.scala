@@ -27,6 +27,7 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
  * Utility class that has constant time `append`, `contains`, and `size` methods
  */
 case class RelationshipContainer(asList: ListValue, size: Int, set: Set[Long]) {
+
   def append(rel: VirtualRelationshipValue): RelationshipContainer = {
     RelationshipContainer(asList.append(rel), size + 1, set + rel.id())
   }

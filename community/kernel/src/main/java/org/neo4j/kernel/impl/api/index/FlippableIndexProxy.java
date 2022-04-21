@@ -26,7 +26,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -46,10 +45,9 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.values.storable.Value;
 
-public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
-{
+public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
     private volatile boolean closed;
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
     private volatile IndexProxyFactory flipTarget;
     // This variable below is volatile because it can be changed in flip or flipTo
     // and even though it may look like acquiring the read lock, when using this variable
@@ -59,64 +57,49 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     private volatile IndexProxy delegate;
     private boolean started;
 
-    public FlippableIndexProxy()
-    {
-        this( null );
+    public FlippableIndexProxy() {
+        this(null);
     }
 
-    FlippableIndexProxy( IndexProxy originalDelegate )
-    {
+    FlippableIndexProxy(IndexProxy originalDelegate) {
         this.delegate = originalDelegate;
     }
 
     @Override
-    public IndexProxy getDelegate()
-    {
+    public IndexProxy getDelegate() {
         return delegate;
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         lock.readLock().lock();
-        try
-        {
+        try {
             delegate.start();
             started = true;
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
+    public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
         // Making use of reentrant locks to ensure that the delegate's constructor is called under lock protection
         // while still retaining the lock until a call to close on the returned IndexUpdater
         lock.readLock().lock();
-        try
-        {
-            return new LockingIndexUpdater( delegate.newUpdater( mode, cursorContext, parallel ) );
-        }
-        finally
-        {
+        try {
+            return new LockingIndexUpdater(delegate.newUpdater(mode, cursorContext, parallel));
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public void drop()
-    {
+    public void drop() {
         lock.readLock().lock();
-        try
-        {
+        try {
             closed = true;
             delegate.drop();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
@@ -133,29 +116,21 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
      * we don't care about waiting threads, only about whether the exclusive lock is held or not.
      */
     @Override
-    public void force( CursorContext cursorContext ) throws IOException
-    {
-        barge( lock.readLock() ); // see javadoc of this method (above) for rationale on why we use barge(...) here
-        try
-        {
-            delegate.force( cursorContext );
-        }
-        finally
-        {
+    public void force(CursorContext cursorContext) throws IOException {
+        barge(lock.readLock()); // see javadoc of this method (above) for rationale on why we use barge(...) here
+        try {
+            delegate.force(cursorContext);
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public void refresh() throws IOException
-    {
+    public void refresh() throws IOException {
         lock.readLock();
-        try
-        {
+        try {
             delegate.refresh();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
@@ -192,314 +167,234 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
      *
      * @param lock a {@link java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock}
      */
-    private static void barge( ReentrantReadWriteLock.ReadLock lock )
-    {
+    private static void barge(ReentrantReadWriteLock.ReadLock lock) {
         boolean interrupted = false;
         // exponential retry back-off, no more than 1 second
-        for ( long timeout = 10; !lock.tryLock(); timeout = Math.min( 1000, timeout * 2 ) )
-        {
-            try
-            {
-                if ( lock.tryLock( timeout, TimeUnit.MILLISECONDS ) )
-                {
+        for (long timeout = 10; !lock.tryLock(); timeout = Math.min(1000, timeout * 2)) {
+            try {
+                if (lock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
                     return;
                 }
             }
             // the barge()-method is uninterruptable, but implemented based on the interruptible tryLock()-method
-            catch ( InterruptedException e )
-            {
+            catch (InterruptedException e) {
                 Thread.interrupted(); // ensure the interrupt flag is cleared
                 interrupted = true; // remember to set interrupt flag before we exit
             }
         }
-        if ( interrupted )
-        {
+        if (interrupted) {
             Thread.currentThread().interrupt(); // reset the interrupt flag
         }
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
-    {
+    public IndexDescriptor getDescriptor() {
         lock.readLock().lock();
-        try
-        {
+        try {
             return delegate.getDescriptor();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public InternalIndexState getState()
-    {
+    public InternalIndexState getState() {
         lock.readLock().lock();
-        try
-        {
+        try {
             return delegate.getState();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public void close( CursorContext cursorContext ) throws IOException
-    {
+    public void close(CursorContext cursorContext) throws IOException {
         lock.readLock().lock();
-        try
-        {
+        try {
             closed = true;
-            delegate.close( cursorContext );
-        }
-        finally
-        {
+            delegate.close(cursorContext);
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public ValueIndexReader newValueReader() throws IndexNotFoundKernelException
-    {
+    public ValueIndexReader newValueReader() throws IndexNotFoundKernelException {
         lock.readLock().lock();
-        try
-        {
+        try {
             return delegate.newValueReader();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public TokenIndexReader newTokenReader() throws IndexNotFoundKernelException
-    {
+    public TokenIndexReader newTokenReader() throws IndexNotFoundKernelException {
         lock.readLock().lock();
-        try
-        {
+        try {
             return delegate.newTokenReader();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public boolean awaitStoreScanCompleted( long time, TimeUnit unit ) throws IndexPopulationFailedKernelException, InterruptedException
-    {
+    public boolean awaitStoreScanCompleted(long time, TimeUnit unit)
+            throws IndexPopulationFailedKernelException, InterruptedException {
         IndexProxy proxy;
         lock.readLock().lock();
         proxy = delegate;
         lock.readLock().unlock();
-        if ( closed )
-        {
+        if (closed) {
             return false;
         }
-        boolean stillGoing = proxy.awaitStoreScanCompleted( time, unit );
-        if ( !stillGoing )
-        {
-            // The waiting has ended. However we're not done because say that the delegate typically is a populating proxy, when the wait is over
-            // the populating proxy flips into something else, and if that is a failed proxy then that failure should propagate out from this call.
+        boolean stillGoing = proxy.awaitStoreScanCompleted(time, unit);
+        if (!stillGoing) {
+            // The waiting has ended. However we're not done because say that the delegate typically is a populating
+            // proxy, when the wait is over
+            // the populating proxy flips into something else, and if that is a failed proxy then that failure should
+            // propagate out from this call.
             lock.readLock().lock();
             proxy = delegate;
             lock.readLock().unlock();
-            proxy.awaitStoreScanCompleted( time, unit );
+            proxy.awaitStoreScanCompleted(time, unit);
         }
         return stillGoing;
     }
 
     @Override
-    public void activate() throws IndexActivationFailedKernelException
-    {
+    public void activate() throws IndexActivationFailedKernelException {
         // use write lock, since activate() might call flip*() which acquires a write lock itself.
         lock.writeLock().lock();
-        try
-        {
+        try {
             delegate.activate();
-        }
-        finally
-        {
+        } finally {
             lock.writeLock().unlock();
         }
     }
 
     @Override
-    public void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException
-    {
+    public void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException {
         lock.readLock().lock();
-        try
-        {
+        try {
             delegate.validate();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple, long entityId )
-    {
+    public void validateBeforeCommit(Value[] tuple, long entityId) {
         lock.readLock().lock();
-        try
-        {
-            delegate.validateBeforeCommit( tuple, entityId );
-        }
-        finally
-        {
+        try {
+            delegate.validateBeforeCommit(tuple, entityId);
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public ResourceIterator<Path> snapshotFiles() throws IOException
-    {
+    public ResourceIterator<Path> snapshotFiles() throws IOException {
         lock.readLock().lock();
-        try
-        {
+        try {
             return delegate.snapshotFiles();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
+    public Map<String, Value> indexConfig() {
         lock.readLock().lock();
-        try
-        {
+        try {
             return delegate.indexConfig();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
-    {
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException {
         lock.readLock().lock();
-        try
-        {
+        try {
             return delegate.getPopulationFailure();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
     @Override
-    public PopulationProgress getIndexPopulationProgress()
-    {
+    public PopulationProgress getIndexPopulationProgress() {
         lock.readLock().lock();
-        try
-        {
+        try {
             return delegate.getIndexPopulationProgress();
-        }
-        finally
-        {
+        } finally {
             lock.readLock().unlock();
         }
     }
 
-    void setFlipTarget( IndexProxyFactory flipTarget )
-    {
+    void setFlipTarget(IndexProxyFactory flipTarget) {
         lock.writeLock().lock();
-        try
-        {
+        try {
             this.flipTarget = flipTarget;
-        }
-        finally
-        {
+        } finally {
             lock.writeLock().unlock();
         }
     }
 
-    void flipTo( IndexProxy targetDelegate )
-    {
+    void flipTo(IndexProxy targetDelegate) {
         lock.writeLock().lock();
-        try
-        {
+        try {
             this.delegate = targetDelegate;
-        }
-        finally
-        {
+        } finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void flip( Callable<Boolean> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
-            throws FlipFailedKernelException
-    {
+    public void flip(Callable<Boolean> actionDuringFlip, FailedIndexProxyFactory failureDelegate)
+            throws FlipFailedKernelException {
         lock.writeLock().lock();
-        try
-        {
+        try {
             assertOpen();
-            try
-            {
-                if ( actionDuringFlip.call() )
-                {
+            try {
+                if (actionDuringFlip.call()) {
                     this.delegate = flipTarget.create();
 
-                    if ( started )
-                    {
+                    if (started) {
                         this.delegate.start();
                     }
                 }
+            } catch (Exception e) {
+                this.delegate = failureDelegate.create(e);
+                throw new ExceptionDuringFlipKernelException(e);
             }
-            catch ( Exception e )
-            {
-                this.delegate = failureDelegate.create( e );
-                throw new ExceptionDuringFlipKernelException( e );
-            }
-        }
-        finally
-        {
+        } finally {
             lock.writeLock().unlock();
         }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + " -> " + delegate + "[target:" + flipTarget + "]";
     }
 
-    private void assertOpen() throws IndexProxyAlreadyClosedKernelException
-    {
-        if ( closed )
-        {
-            throw new IndexProxyAlreadyClosedKernelException( this.getClass() );
+    private void assertOpen() throws IndexProxyAlreadyClosedKernelException {
+        if (closed) {
+            throw new IndexProxyAlreadyClosedKernelException(this.getClass());
         }
     }
 
-    private class LockingIndexUpdater extends DelegatingIndexUpdater
-    {
-        private LockingIndexUpdater( IndexUpdater delegate )
-        {
-            super( delegate );
+    private class LockingIndexUpdater extends DelegatingIndexUpdater {
+        private LockingIndexUpdater(IndexUpdater delegate) {
+            super(delegate);
             lock.readLock().lock();
         }
 
         @Override
-        public void close() throws IndexEntryConflictException
-        {
-            try
-            {
+        public void close() throws IndexEntryConflictException {
+            try {
                 delegate.close();
-            }
-            finally
-            {
+            } finally {
                 lock.readLock().unlock();
             }
         }

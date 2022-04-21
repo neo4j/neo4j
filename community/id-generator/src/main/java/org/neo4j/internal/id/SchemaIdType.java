@@ -19,16 +19,14 @@
  */
 package org.neo4j.internal.id;
 
-public enum SchemaIdType implements IdType
-{
+public enum SchemaIdType implements IdType {
     PROPERTY_KEY_TOKEN,
     LABEL_TOKEN,
     RELATIONSHIP_TYPE_TOKEN,
     SCHEMA;
 
     @Override
-    public boolean highActivity()
-    {
+    public boolean highActivity() {
         return false;
     }
 }

@@ -19,80 +19,68 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.io.pagecache.PageCursor;
-
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.get3BInt;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.getUnsignedShort;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.put3BInt;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
+
+import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Depending on page size {@link TreeNodeDynamicSize} need a various number of bytes to encode the offsets
  * in offset array and for the various meta-data in the header.
  * This class describe the different formats.
  */
-enum DynamicSizeOffsetFormat
-{
-    OFFSET_2B( 2 )
-            {
-                @Override
-                void putOffset( PageCursor cursor, int offsetValue )
-                {
-                    putUnsignedShort( cursor, offsetValue );
-                }
+enum DynamicSizeOffsetFormat {
+    OFFSET_2B(2) {
+        @Override
+        void putOffset(PageCursor cursor, int offsetValue) {
+            putUnsignedShort(cursor, offsetValue);
+        }
 
-                @Override
-                void putOffset( PageCursor cursor, int offset, int offsetValue )
-                {
-                    putUnsignedShort( cursor, offset, offsetValue );
-                }
+        @Override
+        void putOffset(PageCursor cursor, int offset, int offsetValue) {
+            putUnsignedShort(cursor, offset, offsetValue);
+        }
 
-                @Override
-                int getOffset( PageCursor cursor )
-                {
-                    return getUnsignedShort( cursor );
-                }
+        @Override
+        int getOffset(PageCursor cursor) {
+            return getUnsignedShort(cursor);
+        }
 
-                @Override
-                int getOffset( PageCursor cursor, int atOffset )
-                {
-                    return getUnsignedShort( cursor, atOffset );
-                }
-            },
-    OFFSET_3B( 3 )
-            {
-                @Override
-                void putOffset( PageCursor cursor, int offsetValue )
-                {
-                    put3BInt( cursor, offsetValue );
-                }
+        @Override
+        int getOffset(PageCursor cursor, int atOffset) {
+            return getUnsignedShort(cursor, atOffset);
+        }
+    },
+    OFFSET_3B(3) {
+        @Override
+        void putOffset(PageCursor cursor, int offsetValue) {
+            put3BInt(cursor, offsetValue);
+        }
 
-                @Override
-                void putOffset( PageCursor cursor, int offset, int offsetValue )
-                {
-                    put3BInt( cursor, offset, offsetValue );
-                }
+        @Override
+        void putOffset(PageCursor cursor, int offset, int offsetValue) {
+            put3BInt(cursor, offset, offsetValue);
+        }
 
-                @Override
-                int getOffset( PageCursor cursor )
-                {
-                    return get3BInt( cursor );
-                }
+        @Override
+        int getOffset(PageCursor cursor) {
+            return get3BInt(cursor);
+        }
 
-                @Override
-                int getOffset( PageCursor cursor, int atOffset )
-                {
-                    return PageCursorUtil.get3BInt( cursor, atOffset );
-                }
-            };
+        @Override
+        int getOffset(PageCursor cursor, int atOffset) {
+            return PageCursorUtil.get3BInt(cursor, atOffset);
+        }
+    };
 
     private final int offsetSize;
     private final int bytePosAllocOffset;
     private final int bytePosDeadSpace;
     private final int headerLengthDynamic;
 
-    DynamicSizeOffsetFormat( int offsetSize )
-    {
+    DynamicSizeOffsetFormat(int offsetSize) {
         this.offsetSize = offsetSize;
         this.bytePosAllocOffset = TreeNode.BASE_HEADER_LENGTH;
         this.bytePosDeadSpace = bytePosAllocOffset + offsetSize;
@@ -102,52 +90,48 @@ enum DynamicSizeOffsetFormat
     /**
      * Put offset value at current position.
      */
-    abstract void putOffset( PageCursor cursor, int offsetValue );
+    abstract void putOffset(PageCursor cursor, int offsetValue);
 
     /**
      * Put offset value at given offset.
      */
-    abstract void putOffset( PageCursor cursor, int offset, int offsetValue );
+    abstract void putOffset(PageCursor cursor, int offset, int offsetValue);
 
     /**
      * Read encoded offset at current position.
      */
-    abstract int getOffset( PageCursor cursor );
+    abstract int getOffset(PageCursor cursor);
 
     /**
      * Read encoded offset at given offset.
      */
-    abstract int getOffset( PageCursor cursor, int atOffset );
+    abstract int getOffset(PageCursor cursor, int atOffset);
 
     /**
      * Number of bytes used to encode an offset.
      */
-    int offsetSize()
-    {
+    int offsetSize() {
         return offsetSize;
     }
 
     /**
      * Byte position for the allocOffset header field.
      */
-    int getBytePosAllocOffset()
-    {
+    int getBytePosAllocOffset() {
         return bytePosAllocOffset;
     }
 
     /**
      * Byte position for the deadSpace header field.
      */
-    int getBytePosDeadSpace()
-    {
+    int getBytePosDeadSpace() {
         return bytePosDeadSpace;
     }
 
     /**
      * Total length of header and also starting offset for data-section.
      */
-    int getHeaderLength()
-    {
+    int getHeaderLength() {
         return headerLengthDynamic;
     }
 }

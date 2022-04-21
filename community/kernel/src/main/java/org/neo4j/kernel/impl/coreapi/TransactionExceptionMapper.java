@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.coreapi;
 
 @FunctionalInterface
-public interface TransactionExceptionMapper
-{
-    RuntimeException mapException( Exception e );
+public interface TransactionExceptionMapper {
+    RuntimeException mapException(Exception e);
 }

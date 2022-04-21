@@ -21,34 +21,24 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-public class ReachedThreshold extends AbstractCheckPointThreshold
-{
-    ReachedThreshold( String description )
-    {
-        super( description );
+public class ReachedThreshold extends AbstractCheckPointThreshold {
+    ReachedThreshold(String description) {
+        super(description);
     }
 
     @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId, LogPosition logPosition )
-    {
+    protected boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition) {
         return true;
     }
 
     @Override
-    public void initialize( long transactionId, LogPosition logPosition )
-    {
-
-    }
+    public void initialize(long transactionId, LogPosition logPosition) {}
 
     @Override
-    public void checkPointHappened( long transactionId, LogPosition logPosition )
-    {
-
-    }
+    public void checkPointHappened(long transactionId, LogPosition logPosition) {}
 
     @Override
-    public long checkFrequencyMillis()
-    {
+    public long checkFrequencyMillis() {
         return 0;
     }
 }

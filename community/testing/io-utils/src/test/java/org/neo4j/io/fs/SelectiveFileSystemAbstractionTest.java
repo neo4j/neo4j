@@ -19,91 +19,82 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-
-import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.io.fs.watcher.resource.WatchedResource;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class SelectiveFileSystemAbstractionTest
-{
+import java.io.IOException;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.fs.watcher.resource.WatchedResource;
+
+class SelectiveFileSystemAbstractionTest {
     @Test
-    void shouldUseCorrectFileSystemForChosenFile() throws Exception
-    {
+    void shouldUseCorrectFileSystemForChosenFile() throws Exception {
         // given
-        Path specialFile = Path.of( "special" );
-        FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
-        FileSystemAbstraction special = mock( FileSystemAbstraction.class );
+        Path specialFile = Path.of("special");
+        FileSystemAbstraction normal = mock(FileSystemAbstraction.class);
+        FileSystemAbstraction special = mock(FileSystemAbstraction.class);
 
         // when
-        try ( SelectiveFileSystemAbstraction systemAbstraction = new SelectiveFileSystemAbstraction( specialFile,
-                special, normal ) )
-        {
-            systemAbstraction.read( specialFile );
+        try (SelectiveFileSystemAbstraction systemAbstraction =
+                new SelectiveFileSystemAbstraction(specialFile, special, normal)) {
+            systemAbstraction.read(specialFile);
 
             // then
-            verify( special ).read( specialFile );
-            verifyNoMoreInteractions( special );
-            verifyNoMoreInteractions( normal );
+            verify(special).read(specialFile);
+            verifyNoMoreInteractions(special);
+            verifyNoMoreInteractions(normal);
         }
     }
 
     @Test
-    void shouldUseDefaultFileSystemForOtherFiles() throws Exception
-    {
+    void shouldUseDefaultFileSystemForOtherFiles() throws Exception {
         // given
-        Path specialFile = Path.of( "special" );
-        Path otherFile = Path.of( "other" );
+        Path specialFile = Path.of("special");
+        Path otherFile = Path.of("other");
 
-        FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
-        FileSystemAbstraction special = mock( FileSystemAbstraction.class );
+        FileSystemAbstraction normal = mock(FileSystemAbstraction.class);
+        FileSystemAbstraction special = mock(FileSystemAbstraction.class);
 
         // when
-        try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile, special, normal ) )
-        {
-            fs.write( otherFile );
-            fs.read( otherFile );
+        try (SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction(specialFile, special, normal)) {
+            fs.write(otherFile);
+            fs.read(otherFile);
 
             // then
-            verify( normal ).write( otherFile );
-            verify( normal ).read( otherFile );
-            verifyNoMoreInteractions( special );
-            verifyNoMoreInteractions( normal );
+            verify(normal).write(otherFile);
+            verify(normal).read(otherFile);
+            verifyNoMoreInteractions(special);
+            verifyNoMoreInteractions(normal);
         }
     }
 
     @Test
-    void provideSelectiveWatcher() throws IOException
-    {
-        Path specialFile = Path.of( "special" );
-        Path otherFile = Path.of( "other" );
+    void provideSelectiveWatcher() throws IOException {
+        Path specialFile = Path.of("special");
+        Path otherFile = Path.of("other");
 
-        FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
-        FileSystemAbstraction special = mock( FileSystemAbstraction.class );
+        FileSystemAbstraction normal = mock(FileSystemAbstraction.class);
+        FileSystemAbstraction special = mock(FileSystemAbstraction.class);
 
-        FileWatcher specialWatcher = mock( FileWatcher.class );
-        FileWatcher normalWatcher = mock( FileWatcher.class );
-        WatchedResource specialResource = mock( WatchedResource.class );
-        WatchedResource normalResource = mock( WatchedResource.class );
+        FileWatcher specialWatcher = mock(FileWatcher.class);
+        FileWatcher normalWatcher = mock(FileWatcher.class);
+        WatchedResource specialResource = mock(WatchedResource.class);
+        WatchedResource normalResource = mock(WatchedResource.class);
 
-        when( special.fileWatcher() ).thenReturn( specialWatcher );
-        when( normal.fileWatcher() ).thenReturn( normalWatcher );
-        when( specialWatcher.watch( specialFile ) ).thenReturn( specialResource );
-        when( normalWatcher.watch( otherFile ) ).thenReturn( normalResource );
+        when(special.fileWatcher()).thenReturn(specialWatcher);
+        when(normal.fileWatcher()).thenReturn(normalWatcher);
+        when(specialWatcher.watch(specialFile)).thenReturn(specialResource);
+        when(normalWatcher.watch(otherFile)).thenReturn(normalResource);
 
-        try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile, special, normal ) )
-        {
+        try (SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction(specialFile, special, normal)) {
             FileWatcher fileWatcher = fs.fileWatcher();
-            assertSame( specialResource, fileWatcher.watch( specialFile ) );
-            assertSame( normalResource, fileWatcher.watch( otherFile ) );
+            assertSame(specialResource, fileWatcher.watch(specialFile));
+            assertSame(normalResource, fileWatcher.watch(otherFile));
         }
     }
 }

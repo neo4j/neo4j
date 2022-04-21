@@ -33,8 +33,7 @@ import org.neo4j.values.storable.Values;
 /**
  * Defines the graph read operations of the Kernel.
  */
-public interface Read
-{
+public interface Read {
     long NO_ID = -1;
 
     /**
@@ -44,7 +43,7 @@ public interface Read
      * @throws UnsupportedOperationException for non applicable index type
      * @return the IndexReadSession.
      */
-    IndexReadSession indexReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexReadSession indexReadSession(IndexDescriptor index) throws IndexNotFoundKernelException;
 
     /**
      * Ensure there is an TokenReadSession for the given token index bound to this transaction, and return it. Not Thread-safe.
@@ -53,7 +52,7 @@ public interface Read
      * @throws UnsupportedOperationException for non applicable index type
      * @return the TokenReadSession.
      */
-    TokenReadSession tokenReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    TokenReadSession tokenReadSession(IndexDescriptor index) throws IndexNotFoundKernelException;
 
     /**
      * Seek all nodes matching the provided index query in an index.
@@ -63,8 +62,13 @@ public interface Read
      * together with node ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
      */
-    void nodeIndexSeek( QueryContext queryContext, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints,
-            PropertyIndexQuery... query ) throws KernelException;
+    void nodeIndexSeek(
+            QueryContext queryContext,
+            IndexReadSession index,
+            NodeValueIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query)
+            throws KernelException;
 
     /**
      * Seek all nodes matching the provided index query in an index. NOTE! This is not thread-safe for transaction state.
@@ -73,8 +77,11 @@ public interface Read
      * @param queryContext the underlying contexts for the thread doing the partitioning.
      * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
      */
-    PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
-                                                         QueryContext queryContext, PropertyIndexQuery... query )
+    PartitionedScan<NodeValueIndexCursor> nodeIndexSeek(
+            IndexReadSession index,
+            int desiredNumberOfPartitions,
+            QueryContext queryContext,
+            PropertyIndexQuery... query)
             throws KernelException;
 
     /**
@@ -85,8 +92,13 @@ public interface Read
      * together with relationship ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
      */
-    void relationshipIndexSeek( QueryContext queryContext, IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
-            PropertyIndexQuery... query ) throws KernelException;
+    void relationshipIndexSeek(
+            QueryContext queryContext,
+            IndexReadSession index,
+            RelationshipValueIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query)
+            throws KernelException;
 
     /**
      * Seek all relationships matching the provided index query in an index. NOTE! This is not thread-safe for transaction state.
@@ -95,8 +107,11 @@ public interface Read
      * @param queryContext the underlying contexts for the thread doing the partitioning.
      * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
      */
-    PartitionedScan<RelationshipValueIndexCursor> relationshipIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
-                                                                         QueryContext queryContext, PropertyIndexQuery... query )
+    PartitionedScan<RelationshipValueIndexCursor> relationshipIndexSeek(
+            IndexReadSession index,
+            int desiredNumberOfPartitions,
+            QueryContext queryContext,
+            PropertyIndexQuery... query)
             throws KernelException;
 
     /**
@@ -113,9 +128,8 @@ public interface Read
      * @param cursor cursor to use for performing the index seek
      * @param predicates Combination of {@link PropertyIndexQuery.ExactPredicate index queries} to run against referenced index.
      */
-    long lockingNodeUniqueIndexSeek( IndexDescriptor index,
-                                     NodeValueIndexCursor cursor,
-                                     PropertyIndexQuery.ExactPredicate... predicates )
+    long lockingNodeUniqueIndexSeek(
+            IndexDescriptor index, NodeValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates)
             throws KernelException;
 
     /**
@@ -126,7 +140,8 @@ public interface Read
      * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
      * together with node ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      */
-    void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException;
+    void nodeIndexScan(IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints)
+            throws KernelException;
 
     /**
      * Scan all values in an index. NOTE! This is not thread-safe for transaction state.
@@ -134,8 +149,8 @@ public interface Read
      * @param desiredNumberOfPartitions the desired number of partitions for this scan
      * @param queryContext the underlying contexts for the thread doing the partition.
      */
-    PartitionedScan<NodeValueIndexCursor> nodeIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
-            throws KernelException;
+    PartitionedScan<NodeValueIndexCursor> nodeIndexScan(
+            IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext) throws KernelException;
 
     /**
      * Scan all values in an index.
@@ -145,7 +160,9 @@ public interface Read
      * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
      * together with relationship ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      */
-    void relationshipIndexScan( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException;
+    void relationshipIndexScan(
+            IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints)
+            throws KernelException;
 
     /**
      * Scan all values in an index. NOTE! This is not thread-safe for transaction state.
@@ -153,10 +170,10 @@ public interface Read
      * @param desiredNumberOfPartitions the desired number of partitions for this scan
      * @param queryContext the underlying contexts for the thread doing the partitioning.
      */
-    PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
-            throws KernelException;
+    PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan(
+            IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext) throws KernelException;
 
-    Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
+    Scan<NodeLabelIndexCursor> nodeLabelScan(int label);
 
     /**
      * Scan node label index in partitions.
@@ -168,8 +185,8 @@ public interface Read
      * @param query the query to run against index
      * @return {@link PartitionedScan} over the query
      */
-    PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, int desiredNumberOfPartitions,
-                                                         CursorContext cursorContext, TokenPredicate query )
+    PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
+            TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
             throws KernelException;
 
     /**
@@ -180,15 +197,20 @@ public interface Read
      *                    The constraints must be satisfiable given the capabilities of the index.
      * @param query the query to run against index
      */
-    void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
-            CursorContext cursorContext ) throws KernelException;
+    void nodeLabelScan(
+            TokenReadSession session,
+            NodeLabelIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            CursorContext cursorContext)
+            throws KernelException;
 
     /**
      * Return all nodes in the graph.
      *
      * @param cursor Cursor to initialize for scanning.
      */
-    void allNodesScan( NodeCursor cursor );
+    void allNodesScan(NodeCursor cursor);
 
     Scan<NodeCursor> allNodesScan();
 
@@ -199,7 +221,7 @@ public interface Read
      * {@link RelationshipIndexCursor#sourceNodeReference()}, or {@link RelationshipIndexCursor#targetNodeReference()}.
      * @param cursor the cursor to use for consuming the results.
      */
-    void singleNode( long reference, NodeCursor cursor );
+    void singleNode(long reference, NodeCursor cursor);
 
     /**
      * Checks if a node exists in the database
@@ -207,7 +229,7 @@ public interface Read
      * @param reference The reference of the node to check
      * @return {@code true} if the node exists, otherwise {@code false}
      */
-    boolean nodeExists( long reference );
+    boolean nodeExists(long reference);
 
     /**
      * The number of nodes in the graph, including anything changed in the transaction state.
@@ -221,7 +243,7 @@ public interface Read
      * @param labelId the label to get the count for, or {@link TokenRead#ANY_LABEL} to get the total number of nodes.
      * @return the number of matching nodes in the graph.
      */
-    long countsForNode( int labelId );
+    long countsForNode(int labelId);
 
     /**
      * The number of nodes in the graph, without taking into account anything in the transaction state.
@@ -235,7 +257,7 @@ public interface Read
      * @param labelId the label to get the count for, or {@link TokenRead#ANY_LABEL} to get the total number of nodes.
      * @return the number of matching nodes in the graph.
      */
-    long countsForNodeWithoutTxState( int labelId );
+    long countsForNodeWithoutTxState(int labelId);
 
     /**
      * The number of relationships in the graph, including anything changed in the transaction state.
@@ -281,7 +303,7 @@ public interface Read
      * @param endLabelId   the label of the end node of relationships to get the count for, or {@link TokenRead#ANY_LABEL}.
      * @return the number of matching relationships in the graph.
      */
-    long countsForRelationship( int startLabelId, int typeId, int endLabelId );
+    long countsForRelationship(int startLabelId, int typeId, int endLabelId);
 
     /**
      * The number of relationships in the graph, without taking into account anything in the transaction state.
@@ -327,21 +349,21 @@ public interface Read
      * @param endLabelId   the label of the end node of relationships to get the count for, or {@link TokenRead#ANY_LABEL}.
      * @return the number of matching relationships in the graph.
      */
-    long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
+    long countsForRelationshipWithoutTxState(int startLabelId, int typeId, int endLabelId);
 
     /**
      * Count of the total number of nodes in the database including changes in the current transaction.
      *
      * @return the total number of nodes in the database
      */
-    long nodesGetCount( );
+    long nodesGetCount();
 
     /**
      * Count of the total number of relationships in the database including changes in the current transaction.
      *
      * @return the total number of relationships in the database
      */
-    long relationshipsGetCount( );
+    long relationshipsGetCount();
 
     /**
      * @param reference
@@ -349,7 +371,7 @@ public interface Read
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void singleRelationship( long reference, RelationshipScanCursor cursor );
+    void singleRelationship(long reference, RelationshipScanCursor cursor);
 
     /**
      * Looks up a single relationship by its reference together with its meta data.
@@ -360,7 +382,12 @@ public interface Read
      * @param targetNodeReference the target node reference of the relationship.
      * @param cursor the cursor to use for consuming the results.
      */
-    void singleRelationship( long reference, long sourceNodeReference, int type, long targetNodeReference, RelationshipScanCursor cursor );
+    void singleRelationship(
+            long reference,
+            long sourceNodeReference,
+            int type,
+            long targetNodeReference,
+            RelationshipScanCursor cursor);
 
     /**
      * Checks if a relationship exists in the database
@@ -368,9 +395,9 @@ public interface Read
      * @param reference The reference of the relationship to check
      * @return <tt>true</tt> if the relationship exists, otherwise <tt>false</tt>
      */
-    boolean relationshipExists( long reference );
+    boolean relationshipExists(long reference);
 
-    void allRelationshipsScan( RelationshipScanCursor cursor );
+    void allRelationshipsScan(RelationshipScanCursor cursor);
 
     Scan<RelationshipScanCursor> allRelationshipsScan();
 
@@ -384,8 +411,8 @@ public interface Read
      * @param query the query to run against index
      * @return {@link PartitionedScan} over the query
      */
-    PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, int desiredNumberOfPartitions,
-                                                                       CursorContext cursorContext, TokenPredicate query )
+    PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
+            TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
             throws KernelException;
 
     /**
@@ -396,8 +423,13 @@ public interface Read
      *                    The constraints must be satisfiable given the capabilities of the index.
      * @param query the query to run against index
      */
-    void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
-            CursorContext cursorContext ) throws KernelException;
+    void relationshipTypeScan(
+            TokenReadSession session,
+            RelationshipTypeIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            CursorContext cursorContext)
+            throws KernelException;
 
     /**
      * @param nodeReference
@@ -410,7 +442,8 @@ public interface Read
      *         the cursor to use for consuming the results.
      */
     // Used by APOC.
-    void relationships( long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor );
+    void relationships(
+            long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor);
 
     /**
      * @param nodeReference
@@ -421,7 +454,7 @@ public interface Read
      * @param cursor
      */
     // Used by APOC and GDS.
-    void nodeProperties( long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor );
+    void nodeProperties(long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor);
 
     /**
      * @param relationshipReference
@@ -431,21 +464,22 @@ public interface Read
      * @param selection
      * @param cursor
      */
-    void relationshipProperties( long relationshipReference, Reference reference, PropertySelection selection, PropertyCursor cursor );
+    void relationshipProperties(
+            long relationshipReference, Reference reference, PropertySelection selection, PropertyCursor cursor);
 
     /**
      * Checks if a node was deleted in the current transaction
      * @param node the node to check
      * @return <code>true</code> if the node was deleted otherwise <code>false</code>
      */
-    boolean nodeDeletedInTransaction( long node );
+    boolean nodeDeletedInTransaction(long node);
 
     /**
      * Checks if a relationship was deleted in the current transaction
      * @param relationship the relationship to check
      * @return <code>true</code> if the relationship was deleted otherwise <code>false</code>
      */
-    boolean relationshipDeletedInTransaction( long relationship );
+    boolean relationshipDeletedInTransaction(long relationship);
 
     /**
      * Returns the value of a node property if set in this transaction.
@@ -454,7 +488,7 @@ public interface Read
      * @return <code>null</code> if the property has not been changed for the node in this transaction. Otherwise returns
      *         the new property value, or {@link Values#NO_VALUE} if the property has been removed in this transaction.
      */
-    Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId );
+    Value nodePropertyChangeInTransactionOrNull(long node, int propertyKeyId);
 
     /**
      * Returns the value of a relationship property if set in this transaction.
@@ -463,7 +497,7 @@ public interface Read
      * @return <code>null</code> if the property has not been changed for the relationship in this transaction. Otherwise returns
      *         the new property value, or {@link Values#NO_VALUE} if the property has been removed in this transaction.
      */
-    Value relationshipPropertyChangeInTransactionOrNull( long relationship, int propertyKeyId );
+    Value relationshipPropertyChangeInTransactionOrNull(long relationship, int propertyKeyId);
 
     /**
      * @return whether there are changes in the transaction state.

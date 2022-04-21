@@ -22,32 +22,29 @@ package org.neo4j.fabric.transaction;
 /**
  * An indication of a type of a statement and what types of statement might be coming later in the same transaction.
  */
-public enum TransactionMode
-{
+public enum TransactionMode {
     /**
      * The current statement is a read, but a write statement might be coming later.
      */
-    MAYBE_WRITE( true ),
+    MAYBE_WRITE(true),
 
     /**
      * The current statement is a write.
      */
-    DEFINITELY_WRITE( true ),
+    DEFINITELY_WRITE(true),
 
     /**
      * The current statement is a read and no write statement will follow.
      */
-    DEFINITELY_READ( false );
+    DEFINITELY_READ(false);
 
     private final boolean requiresWrite;
 
-    TransactionMode( boolean requiresWrite )
-    {
+    TransactionMode(boolean requiresWrite) {
         this.requiresWrite = requiresWrite;
     }
 
-    public boolean requiresWrite()
-    {
+    public boolean requiresWrite() {
         return requiresWrite;
     }
 }

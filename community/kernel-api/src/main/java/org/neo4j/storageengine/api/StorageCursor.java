@@ -22,8 +22,7 @@ package org.neo4j.storageengine.api;
 /**
  * Base interface for a cursor accessing and reading data as part of {@link StorageReader}.
  */
-public interface StorageCursor extends AutoCloseable
-{
+public interface StorageCursor extends AutoCloseable {
     /**
      * Positions this cursor and reads the next item that it has been designated to read.
      * @return {@code true} if the item was read and in use, otherwise {@code false}.
@@ -37,13 +36,9 @@ public interface StorageCursor extends AutoCloseable
      */
     void reset();
 
-    default void setTracer( ReadTracer tracer )
-    {
-    }
+    default void setTracer(ReadTracer tracer) {}
 
-    default void removeTracer()
-    {
-    }
+    default void removeTracer() {}
 
     /**
      * Force loading of the data and ignore errors, even when the datums are unavailable (like not-in-use records) or cannot be properly loaded or decoded.

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
-
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 
@@ -29,25 +28,19 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
  * {@link LogVersionBridge} naturally transitioning from one {@link LogVersionedStoreChannel} to the next,
  * i.e. to log version with one higher version than the current.
  */
-public class ReaderLogVersionBridge implements LogVersionBridge
-{
+public class ReaderLogVersionBridge implements LogVersionBridge {
     private final LogFile logFile;
 
-    public ReaderLogVersionBridge( LogFile logFile )
-    {
+    public ReaderLogVersionBridge(LogFile logFile) {
         this.logFile = logFile;
     }
 
     @Override
-    public LogVersionedStoreChannel next( LogVersionedStoreChannel channel, boolean raw ) throws IOException
-    {
+    public LogVersionedStoreChannel next(LogVersionedStoreChannel channel, boolean raw) throws IOException {
         PhysicalLogVersionedStoreChannel nextChannel;
-        try
-        {
-            nextChannel = logFile.openForVersion( channel.getVersion() + 1, raw );
-        }
-        catch ( NoSuchFileException | IncompleteLogHeaderException e )
-        {
+        try {
+            nextChannel = logFile.openForVersion(channel.getVersion() + 1, raw);
+        } catch (NoSuchFileException | IncompleteLogHeaderException e) {
             // See PhysicalLogFile#rotate() for description as to why these exceptions are OK
             return channel;
         }

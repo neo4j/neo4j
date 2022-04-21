@@ -52,7 +52,6 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
         |SET n.x = x + 1
         |REMOVE n._LOCK_""".stripMargin
 
-
     // When
     race(query)
 
@@ -72,7 +71,6 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
         |SET n.x = x + 1
         |REMOVE n._LOCK_""".stripMargin
 
-
     // When
     race(query)
 
@@ -91,7 +89,6 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
         |WITH n, n.x AS x
         |SET n.x = x + 1
         |REMOVE n._LOCK_""".stripMargin
-
 
     // When
     race(query)
@@ -114,12 +111,13 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
                 retry = false
               } catch {
                 case e: DeadlockDetectedException => e
-                case t: Throwable => throw new RuntimeException(t)
+                case t: Throwable                 => throw new RuntimeException(t)
               }
             }
           }
-        }})
-      }
+        }
+      })
+    }
 
     try {
       futures.foreach(_.get())
@@ -127,9 +125,9 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
   }
 
   private def nodeGetProperty(node: Node, property: String): Long = {
-    graph.withTx( tx => {
+    graph.withTx(tx => {
       tx.getNodeById(node.getId).getProperty(property).asInstanceOf[Long]
-    } )
+    })
   }
 
 }

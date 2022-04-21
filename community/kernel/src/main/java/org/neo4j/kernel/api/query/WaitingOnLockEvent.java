@@ -31,8 +31,7 @@ import org.neo4j.lock.ResourceType;
  * {@linkplain LockTracer#waitForLock(LockType, ResourceType, long, long...)} the event of waiting
  * on a lock}) and the event object used to {@linkplain LockWaitEvent#close() signal the end of the wait}.
  */
-class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
-{
+class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent {
     private final ExecutingQueryStatus previous;
     private final ExecutingQuery executingQuery;
 
@@ -43,27 +42,23 @@ class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
             long[] resourceIds,
             ExecutingQuery executingQuery,
             long currentTimeNanos,
-            ExecutingQueryStatus previous )
-    {
-        super( lockType, resourceType, transactionId, resourceIds, currentTimeNanos );
+            ExecutingQueryStatus previous) {
+        super(lockType, resourceType, transactionId, resourceIds, currentTimeNanos);
         this.executingQuery = executingQuery;
         this.previous = previous;
     }
 
-    ExecutingQueryStatus previousStatus()
-    {
+    ExecutingQueryStatus previousStatus() {
         return previous;
     }
 
     @Override
-    public void close()
-    {
-        executingQuery.doneWaitingOnLock( this );
+    public void close() {
+        executingQuery.doneWaitingOnLock(this);
     }
 
     @Override
-    boolean isParsingOrPlanning()
-    {
+    boolean isParsingOrPlanning() {
         return previous.isParsingOrPlanning();
     }
 }

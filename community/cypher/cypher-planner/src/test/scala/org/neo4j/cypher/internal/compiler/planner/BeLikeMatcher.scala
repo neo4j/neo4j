@@ -25,6 +25,7 @@ import org.scalatest.matchers.Matcher
 object BeLikeMatcher extends BeLikeMatcher
 
 trait BeLikeMatcher {
+
   class BeLike(pf: PartialFunction[Object, Unit]) extends Matcher[Object] {
 
     def apply(left: Object): MatchResult = {

@@ -33,14 +33,17 @@ object LabelToken {
 final case class LabelToken(name: String, nameId: LabelId) extends NameToken[LabelId]
 
 object RelationshipTypeToken {
-  def apply(symbolicName: RelTypeName, nameId: RelTypeId): RelationshipTypeToken = RelationshipTypeToken(symbolicName.name, nameId)
+
+  def apply(symbolicName: RelTypeName, nameId: RelTypeId): RelationshipTypeToken =
+    RelationshipTypeToken(symbolicName.name, nameId)
 }
 
 final case class RelationshipTypeToken(name: String, nameId: RelTypeId) extends NameToken[RelTypeId]
 
 object PropertyKeyToken {
-  def apply(symbolicName: PropertyKeyName, nameId: PropertyKeyId): PropertyKeyToken = PropertyKeyToken(symbolicName.name, nameId)
+
+  def apply(symbolicName: PropertyKeyName, nameId: PropertyKeyId): PropertyKeyToken =
+    PropertyKeyToken(symbolicName.name, nameId)
 }
 
 final case class PropertyKeyToken(name: String, nameId: PropertyKeyId) extends NameToken[PropertyKeyId]
-

@@ -19,19 +19,6 @@
  */
 package org.neo4j.server;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.List;
-
-import org.neo4j.server.helpers.TestWebContainer;
-import org.neo4j.server.helpers.WebContainerHelper;
-import org.neo4j.test.server.ExclusiveWebContainerTestBase;
-
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
@@ -39,54 +26,60 @@ import static javax.ws.rs.core.HttpHeaders.LOCATION;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class RedirectToBrowserTestIT extends ExclusiveWebContainerTestBase
-{
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.List;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.helpers.TestWebContainer;
+import org.neo4j.server.helpers.WebContainerHelper;
+import org.neo4j.test.server.ExclusiveWebContainerTestBase;
+
+class RedirectToBrowserTestIT extends ExclusiveWebContainerTestBase {
     private static TestWebContainer webContainer;
 
     @BeforeAll
-    static void startServer() throws Exception
-    {
+    static void startServer() throws Exception {
         webContainer = WebContainerHelper.createNonPersistentContainer();
     }
 
     @AfterAll
-    static void stopServer()
-    {
-        if ( webContainer != null )
-        {
+    static void stopServer() {
+        if (webContainer != null) {
             webContainer.shutdown();
         }
     }
 
     @Test
-    void shouldRedirectToBrowser() throws Exception
-    {
-        var response = sendGetRequest( ACCEPT, TEXT_HTML );
+    void shouldRedirectToBrowser() throws Exception {
+        var response = sendGetRequest(ACCEPT, TEXT_HTML);
 
-        assertEquals( 303, response.statusCode() );
-        assertEquals( List.of( webContainer.getBaseUri() + "browser/" ), response.headers().allValues( LOCATION ) );
+        assertEquals(303, response.statusCode());
+        assertEquals(
+                List.of(webContainer.getBaseUri() + "browser/"),
+                response.headers().allValues(LOCATION));
     }
 
     @Test
-    void shouldRedirectToBrowserUsingXForwardedHeaders() throws Exception
-    {
-        var response = sendGetRequest( ACCEPT, TEXT_HTML, "X-Forwarded-Host", "foo.bar:8734", "X-Forwarded-Proto", "https" );
+    void shouldRedirectToBrowserUsingXForwardedHeaders() throws Exception {
+        var response =
+                sendGetRequest(ACCEPT, TEXT_HTML, "X-Forwarded-Host", "foo.bar:8734", "X-Forwarded-Proto", "https");
 
-        assertEquals( 303, response.statusCode() );
-        assertEquals( List.of( "https://foo.bar:8734/browser/" ), response.headers().allValues( LOCATION ) );
+        assertEquals(303, response.statusCode());
+        assertEquals(
+                List.of("https://foo.bar:8734/browser/"), response.headers().allValues(LOCATION));
     }
 
-    private static HttpResponse<Void> sendGetRequest( String... headers ) throws Exception
-    {
-        var request = HttpRequest.newBuilder( webContainer.getBaseUri() )
-                .headers( headers )
+    private static HttpResponse<Void> sendGetRequest(String... headers) throws Exception {
+        var request = HttpRequest.newBuilder(webContainer.getBaseUri())
+                .headers(headers)
                 .GET()
                 .build();
 
-        var client = HttpClient.newBuilder()
-                .followRedirects( NEVER )
-                .build();
+        var client = HttpClient.newBuilder().followRedirects(NEVER).build();
 
-        return client.send( request, discarding() );
+        return client.send(request, discarding());
     }
 }

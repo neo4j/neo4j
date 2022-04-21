@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSupport  {
+class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("leafs") {
     Leaf(Map("string" -> 42)) should equal(Leaf(Map("string" -> 42)))
     Leaf(Map("string" -> 42)) should not equal Leaf(Map("string" -> 1337))
@@ -37,38 +38,62 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("branching trees") {
-    //Identical
+    // Identical
     Binary(
       Binary(
         Unary(Leaf("left"), "left"),
-        Unary(Unary(Leaf("left"), "left"), "left"), "branch1"),
-      Unary(Leaf("right"), "right"), "branch2") should equal(Binary(
+        Unary(Unary(Leaf("left"), "left"), "left"),
+        "branch1"
+      ),
+      Unary(Leaf("right"), "right"),
+      "branch2"
+    ) should equal(Binary(
       Binary(
         Unary(Leaf("left"), "left"),
-        Unary(Unary(Leaf("left"), "left"), "left"), "branch1"),
-      Unary(Leaf("right"), "right"), "branch2"))
+        Unary(Unary(Leaf("left"), "left"), "left"),
+        "branch1"
+      ),
+      Unary(Leaf("right"), "right"),
+      "branch2"
+    ))
 
-    //Flip a branch
+    // Flip a branch
     Binary(
       Binary(
         Unary(Leaf("left"), "left"),
-        Unary(Unary(Leaf("left"), "left"), "left"), "branch1"),
-      Unary(Leaf("right"), "right"), "branch2") should not equal Binary(
+        Unary(Unary(Leaf("left"), "left"), "left"),
+        "branch1"
+      ),
+      Unary(Leaf("right"), "right"),
+      "branch2"
+    ) should not equal Binary(
       Binary(
         Unary(Unary(Leaf("left"), "left"), "left"),
-        Unary(Leaf("left"), "left"), "branch1"),
-      Unary(Leaf("right"), "right"), "branch2")
+        Unary(Leaf("left"), "left"),
+        "branch1"
+      ),
+      Unary(Leaf("right"), "right"),
+      "branch2"
+    )
 
-    //Change a leaf
+    // Change a leaf
     Binary(
       Binary(
         Unary(Leaf("left"), "left"),
-        Unary(Unary(Leaf("left"), "left"), "left"), "branch1"),
-      Unary(Leaf("right"), "right"), "branch2") should not equal Binary(
+        Unary(Unary(Leaf("left"), "left"), "left"),
+        "branch1"
+      ),
+      Unary(Leaf("right"), "right"),
+      "branch2"
+    ) should not equal Binary(
       Binary(
         Unary(Leaf("left"), "left"),
-        Unary(Unary(Leaf("DIFFERENT!!"), "left"), "left"), "branch1"),
-      Unary(Leaf("right"), "right"), "branch2")
+        Unary(Unary(Leaf("DIFFERENT!!"), "left"), "left"),
+        "branch1"
+      ),
+      Unary(Leaf("right"), "right"),
+      "branch2"
+    )
   }
 
   case class Binary(left: LogicalPlan, right: LogicalPlan, value: Any) extends LogicalPlan(new SequentialIdGen) {

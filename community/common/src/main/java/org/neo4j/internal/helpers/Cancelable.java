@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.helpers;
 
-public interface Cancelable
-{
+public interface Cancelable {
     void cancel();
 }

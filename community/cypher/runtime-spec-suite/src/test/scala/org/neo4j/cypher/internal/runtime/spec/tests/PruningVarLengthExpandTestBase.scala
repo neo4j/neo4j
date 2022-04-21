@@ -35,8 +35,6 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-
-
   test("var-length-expand with no relationships") {
     // given
     given { nodeGraph(sizeHint) }
@@ -93,7 +91,8 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val expected =
       Array(
         Array(n1),
-        Array(n2))
+        Array(n2)
+      )
 
     runtimeResult should beColumns("y").withRows(expected)
   }
@@ -368,13 +367,12 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val input = inputValues(Array(Array[Any](null)):_*)
+    val input = inputValues(Array(Array[Any](null)): _*)
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     runtimeResult should beColumns("y").withNoRows()
   }
-
 
   // EXPANSION FILTERING, DIRECTION
 
@@ -513,7 +511,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
       .distinct("y AS y")
-      .pruningVarExpand("(x)-[*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> "+g.middle.getId))
+      .pruningVarExpand("(x)-[*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> " + g.middle.getId))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -537,7 +535,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
       .distinct("y AS y")
-      .pruningVarExpand("(x)-[*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> "+g.start.getId))
+      .pruningVarExpand("(x)-[*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> " + g.start.getId))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -555,7 +553,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
       .distinct("y AS y")
-      .pruningVarExpand("(X)-[*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> "+g.start.getId))
+      .pruningVarExpand("(X)-[*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> " + g.start.getId))
       .projection("x AS X")
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -574,7 +572,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
       .distinct("y AS y")
-      .pruningVarExpand("(x)-[*1..2]->(y)", relationshipPredicate = Predicate("r", "id(r) <> "+g.startMiddle.getId))
+      .pruningVarExpand("(x)-[*1..2]->(y)", relationshipPredicate = Predicate("r", "id(r) <> " + g.startMiddle.getId))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -597,9 +595,11 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
       .distinct("y AS y")
-      .pruningVarExpand("(x)-[*2..2]-(y)",
-        nodePredicate = Predicate("n", "id(n) <> "+g.sa1.getId),
-        relationshipPredicate = Predicate("r", "id(r) <> "+g.startMiddle.getId))
+      .pruningVarExpand(
+        "(x)-[*2..2]-(y)",
+        nodePredicate = Predicate("n", "id(n) <> " + g.sa1.getId),
+        relationshipPredicate = Predicate("r", "id(r) <> " + g.startMiddle.getId)
+      )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -613,7 +613,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing start node") {
-    //TODO: flaky due to pruningVarExpand
+    // TODO: flaky due to pruningVarExpand
     assume(!(isParallel && runOnlySafeScenarios))
 
     // given
@@ -628,7 +628,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val input = inputColumns(4, n / 4, i => paths(i).startNode, i => paths(i).endNode())
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
@@ -641,7 +641,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing start node including start node") {
-    //TODO: flaky due to pruningVarExpand
+    // TODO: flaky due to pruningVarExpand
     assume(!(isParallel && runOnlySafeScenarios))
 
     // given
@@ -656,7 +656,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val input = inputColumns(4, n / 4, i => paths(i).startNode, i => paths(i).endNode())
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
@@ -682,7 +682,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val input = inputColumns(4, n / 4, i => paths(i).startNode, i => paths(i).endNode())
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
@@ -708,7 +708,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val input = inputColumns(4, n / 4, i => paths(i).startNode, i => paths(i).endNode())
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
@@ -734,7 +734,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "other"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val input = inputColumns(4, n / 4, i => paths(i).startNode, i => paths(i).endNode())
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
@@ -760,7 +760,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "other"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val input = inputColumns(4, n / 4, i => paths(i).startNode, i => paths(i).endNode())
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then

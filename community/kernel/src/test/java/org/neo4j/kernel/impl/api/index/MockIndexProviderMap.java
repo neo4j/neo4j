@@ -20,93 +20,76 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.function.Consumer;
-
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class MockIndexProviderMap extends LifecycleAdapter implements IndexProviderMap
-{
+public class MockIndexProviderMap extends LifecycleAdapter implements IndexProviderMap {
     private final IndexProvider indexProvider;
 
-    public MockIndexProviderMap( IndexProvider indexProvider )
-    {
+    public MockIndexProviderMap(IndexProvider indexProvider) {
         this.indexProvider = indexProvider;
     }
 
     @Override
-    public void init()
-    {
-    }
+    public void init() {}
 
     @Override
-    public IndexProvider getDefaultProvider()
-    {
+    public IndexProvider getDefaultProvider() {
         return indexProvider;
     }
 
     @Override
-    public IndexProvider getFulltextProvider()
-    {
+    public IndexProvider getFulltextProvider() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IndexProvider getTokenIndexProvider()
-    {
+    public IndexProvider getTokenIndexProvider() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IndexProvider getTextIndexProvider()
-    {
+    public IndexProvider getTextIndexProvider() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IndexProvider getBtreeIndexProvider()
-    {
+    public IndexProvider getBtreeIndexProvider() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IndexProvider getPointIndexProvider()
-    {
+    public IndexProvider getPointIndexProvider() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IndexProvider lookup( IndexProviderDescriptor providerDescriptor )
-    {
-        if ( indexProvider.getProviderDescriptor().equals( providerDescriptor ) )
-        {
+    public IndexProvider lookup(IndexProviderDescriptor providerDescriptor) {
+        if (indexProvider.getProviderDescriptor().equals(providerDescriptor)) {
             return indexProvider;
         }
-        throw new IndexProviderNotFoundException( "lookup by descriptor failed" );
+        throw new IndexProviderNotFoundException("lookup by descriptor failed");
     }
 
     @Override
-    public IndexProvider lookup( String providerDescriptorName )
-    {
-        if ( indexProvider.getProviderDescriptor().name().equals( providerDescriptorName ) )
-        {
+    public IndexProvider lookup(String providerDescriptorName) {
+        if (indexProvider.getProviderDescriptor().name().equals(providerDescriptorName)) {
             return indexProvider;
         }
-        throw new IndexProviderNotFoundException( "lookup by descriptor name failed" );
+        throw new IndexProviderNotFoundException("lookup by descriptor name failed");
     }
 
     @Override
-    public void accept( Consumer<IndexProvider> visitor )
-    {
+    public void accept(Consumer<IndexProvider> visitor) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IndexDescriptor completeConfiguration( IndexDescriptor index )
-    {
+    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
         IndexProviderDescriptor providerDescriptor = index.getIndexProvider();
-        IndexProvider provider = lookup( providerDescriptor );
-        return provider.completeConfiguration( index );
+        IndexProvider provider = lookup(providerDescriptor);
+        return provider.completeConfiguration(index);
     }
 }

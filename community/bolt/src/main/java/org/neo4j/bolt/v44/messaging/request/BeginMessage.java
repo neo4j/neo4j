@@ -23,53 +23,49 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 
-public class BeginMessage extends org.neo4j.bolt.v4.messaging.BeginMessage
-{
+public class BeginMessage extends org.neo4j.bolt.v4.messaging.BeginMessage {
     private final String impersonatedUser;
 
-    public BeginMessage()
-    {
+    public BeginMessage() {
         this.impersonatedUser = null; // no impersonation
     }
 
-    public BeginMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
-                         AccessMode accessMode, Map<String,Object> txMetadata, String databaseName, String impersonatedUser )
-    {
-        super( meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName );
+    public BeginMessage(
+            MapValue meta,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            String databaseName,
+            String impersonatedUser) {
+        super(meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName);
         this.impersonatedUser = impersonatedUser;
     }
 
-    public String impersonatedUser()
-    {
+    public String impersonatedUser() {
         return impersonatedUser;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( !(o instanceof BeginMessage that) )
-        {
+        if (!(o instanceof BeginMessage that)) {
             return false;
         }
-        if ( !super.equals( o ) )
-        {
+        if (!super.equals(o)) {
             return false;
         }
-        return Objects.equals( impersonatedUser, that.impersonatedUser );
+        return Objects.equals(impersonatedUser, that.impersonatedUser);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( super.hashCode(), impersonatedUser );
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), impersonatedUser);
     }
 }

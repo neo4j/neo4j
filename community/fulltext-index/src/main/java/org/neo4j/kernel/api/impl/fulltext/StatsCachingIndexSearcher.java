@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import java.io.IOException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermStatistics;
-
-import java.io.IOException;
 
 /**
  * An index searcher implementation delegates to the given {@link StatsCollector} for computing its term and collection statistics.
@@ -32,25 +31,21 @@ import java.io.IOException;
  * Aggregating the statistics is useful when a full-text index spans multiple partitions, or when transaction state needs to be taken into account as well.
  * Without the aggregate statistics, the scores computed from each search in the individual partitions, will not be comparable.
  */
-class StatsCachingIndexSearcher extends IndexSearcher
-{
+class StatsCachingIndexSearcher extends IndexSearcher {
     private final StatsCollector collector;
 
-    StatsCachingIndexSearcher( PreparedSearch search, StatsCollector collector )
-    {
-        super( search.searcher().getTopReaderContext(), search.searcher().getExecutor() );
+    StatsCachingIndexSearcher(PreparedSearch search, StatsCollector collector) {
+        super(search.searcher().getTopReaderContext(), search.searcher().getExecutor());
         this.collector = collector;
     }
 
     @Override
-    public TermStatistics termStatistics( Term term, int docFreq, long totalTermFreq ) throws IOException
-    {
-        return collector.termStatistics( term );
+    public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+        return collector.termStatistics(term);
     }
 
     @Override
-    public CollectionStatistics collectionStatistics( String field )
-    {
-        return collector.collectionStatistics( field );
+    public CollectionStatistics collectionStatistics(String field) {
+        return collector.collectionStatistics(field);
     }
 }

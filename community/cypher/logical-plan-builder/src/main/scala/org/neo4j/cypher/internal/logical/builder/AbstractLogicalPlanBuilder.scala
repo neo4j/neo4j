@@ -224,6 +224,7 @@ import scala.collection.mutable.ArrayBuffer
  * Used by [[AbstractLogicalPlanBuilder]] to resolve tokens and procedures
  */
 trait Resolver {
+
   /**
    * Obtain the token of a label by name.
    */
@@ -242,25 +243,32 @@ trait Resolver {
  * Test help utility for hand-writing objects needing logical plans.
  * @param wholePlan Validate that we are creating a whole plan
  */
-abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](protected val resolver: Resolver, wholePlan: Boolean = true) {
+abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](
+  protected val resolver: Resolver,
+  wholePlan: Boolean = true
+) {
 
   self: IMPL =>
 
   val patternParser = new PatternParser
   protected var semanticTable = new SemanticTable()
 
-  protected sealed trait OperatorBuilder
-  protected case class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder{
+  sealed protected trait OperatorBuilder
+
+  protected case class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
     def planConstructor(): LogicalPlan = planToIdConstructor(SameId(id))
   }
+
   protected case class UnaryOperator(planToIdConstructor: LogicalPlan => IdGen => LogicalPlan) extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
     def planConstructor: LogicalPlan => LogicalPlan = planToIdConstructor(_)(SameId(id))
   }
-  protected case class BinaryOperator(planToIdConstructor: (LogicalPlan, LogicalPlan) => IdGen => LogicalPlan) extends OperatorBuilder {
+
+  protected case class BinaryOperator(planToIdConstructor: (LogicalPlan, LogicalPlan) => IdGen => LogicalPlan)
+      extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
     def planConstructor: (LogicalPlan, LogicalPlan) => LogicalPlan = planToIdConstructor(_, _)(SameId(id))
@@ -271,9 +279,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     private var _right: Option[Tree] = None
 
     def left: Option[Tree] = _left
+
     def left_=(newVal: Option[Tree]): Unit = {
       operator match {
-        case _:LeafOperator =>
+        case _: LeafOperator =>
           throw new IllegalArgumentException(s"Cannot attach a LHS to a leaf plan.")
         case _ =>
       }
@@ -281,11 +290,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
 
     def right: Option[Tree] = _right
+
     def right_=(newVal: Option[Tree]): Unit = {
       operator match {
-        case _:LeafOperator =>
+        case _: LeafOperator =>
           throw new IllegalArgumentException(s"Cannot attach a RHS to a leaf plan.")
-        case _:UnaryOperator =>
+        case _: UnaryOperator =>
           throw new IllegalArgumentException(s"Cannot attach a RHS to a unary plan.")
         case _ =>
       }
@@ -294,11 +304,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
     def build(): LogicalPlan = {
       operator match {
-        case o:LeafOperator =>
+        case o: LeafOperator =>
           o.planConstructor()
-        case o:UnaryOperator =>
+        case o: UnaryOperator =>
           o.planConstructor(left.get.build())
-        case o:BinaryOperator =>
+        case o: BinaryOperator =>
           o.planConstructor(left.get.build(), right.get.build())
       }
     }
@@ -339,7 +349,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val resolvedCall =
         ResolvedCall(resolver.procedureSignature)(unresolvedCall)
           .coerceArguments
-      val rewrittenResolvedCall = if (withFakedFullDeclarations) resolvedCall.withFakedFullDeclarations else resolvedCall
+      val rewrittenResolvedCall =
+        if (withFakedFullDeclarations) resolvedCall.withFakedFullDeclarations else resolvedCall
       ProcedureCall(lp, rewrittenResolvedCall)(_)
     }))
     self
@@ -381,11 +392,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def expand(pattern: String,
-             expandMode: ExpansionMode = ExpandAll,
-             projectedDir: SemanticDirection = OUTGOING,
-             nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
-             relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
+  def expand(
+    pattern: String,
+    expandMode: ExpansionMode = ExpandAll,
+    projectedDir: SemanticDirection = OUTGOING,
+    nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
+    relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE
+  ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
     if (expandMode == ExpandAll) {
@@ -394,100 +407,134 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
     p.length match {
       case SimplePatternLength =>
-        appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode)(_)))
+        appendAtCurrentIndent(UnaryOperator(lp =>
+          Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode)(_)
+        ))
       case varPatternLength: VarPatternLength =>
-        appendAtCurrentIndent(UnaryOperator(lp => VarExpand(lp,
-                                                            p.from,
-                                                            p.dir,
-                                                            projectedDir,
-                                                            p.relTypes,
-                                                            p.to,
-                                                            p.relName,
-                                                            varPatternLength,
-                                                            expandMode,
-                                                            nodePredicate.asVariablePredicate,
-                                                            relationshipPredicate.asVariablePredicate
-                                                           )(_)))
+        appendAtCurrentIndent(UnaryOperator(lp =>
+          VarExpand(
+            lp,
+            p.from,
+            p.dir,
+            projectedDir,
+            p.relTypes,
+            p.to,
+            p.relName,
+            varPatternLength,
+            expandMode,
+            nodePredicate.asVariablePredicate,
+            relationshipPredicate.asVariablePredicate
+          )(_)
+        ))
     }
     self
   }
 
-  def shortestPath(pattern: String,
-                   pathName: Option[String] = None,
-                   all: Boolean = false,
-                   predicates: Seq[String] = Seq.empty,
-                   withFallback: Boolean = false,
-                   disallowSameNode: Boolean = true): IMPL = {
+  def shortestPath(
+    pattern: String,
+    pathName: Option[String] = None,
+    all: Boolean = false,
+    predicates: Seq[String] = Seq.empty,
+    withFallback: Boolean = false,
+    disallowSameNode: Boolean = true
+  ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
 
     val length = p.length match {
       case SimplePatternLength => None
-      case VarPatternLength(min, max) => Some(Some(Range(Some(UnsignedDecimalIntegerLiteral(min.toString)(pos)), max.map(i => UnsignedDecimalIntegerLiteral(i.toString)(pos)))(pos)))
+      case VarPatternLength(min, max) => Some(Some(Range(
+          Some(UnsignedDecimalIntegerLiteral(min.toString)(pos)),
+          max.map(i => UnsignedDecimalIntegerLiteral(i.toString)(pos))
+        )(pos)))
     }
 
-    appendAtCurrentIndent(UnaryOperator(lp => FindShortestPaths(lp,
-      ShortestPathPattern(pathName, PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length), !all)
-      (ShortestPaths(RelationshipChain(
-        NodePattern(Some(varFor(p.from)), None, None, None)(pos), // labels, properties and predicates are not used at runtime
-        RelationshipPattern(Some(varFor(p.relName)),
-          p.relTypes,
-          length,
-          None, // properties are not used at runtime
-          None,
-          p.dir
-        )(pos),
-        NodePattern(Some(varFor(p.to)), None, None, None)(pos) // labels, properties and predicates are not used at runtime
-      )(pos), !all)(pos)),
-      predicates.map(parseExpression),
-      withFallback,
-      disallowSameNode
-    )(_)))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      FindShortestPaths(
+        lp,
+        ShortestPathPattern(
+          pathName,
+          PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length),
+          !all
+        )(ShortestPaths(
+          RelationshipChain(
+            NodePattern(Some(varFor(p.from)), None, None, None)(
+              pos
+            ), // labels, properties and predicates are not used at runtime
+            RelationshipPattern(
+              Some(varFor(p.relName)),
+              p.relTypes,
+              length,
+              None, // properties are not used at runtime
+              None,
+              p.dir
+            )(pos),
+            NodePattern(Some(varFor(p.to)), None, None, None)(
+              pos
+            ) // labels, properties and predicates are not used at runtime
+          )(pos),
+          !all
+        )(pos)),
+        predicates.map(parseExpression),
+        withFallback,
+        disallowSameNode
+      )(_)
+    ))
   }
 
-  def pruningVarExpand(pattern: String,
-                       nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
-                       relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
+  def pruningVarExpand(
+    pattern: String,
+    nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
+    relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE
+  ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
     newNode(varFor(p.to))
     p.length match {
       case VarPatternLength(min, Some(max)) =>
-        appendAtCurrentIndent(UnaryOperator(lp => PruningVarExpand(lp,
-          p.from,
-          p.dir,
-          p.relTypes,
-          p.to,
-          min,
-          max,
-          nodePredicate.asVariablePredicate,
-          relationshipPredicate.asVariablePredicate
-        )(_)))
+        appendAtCurrentIndent(UnaryOperator(lp =>
+          PruningVarExpand(
+            lp,
+            p.from,
+            p.dir,
+            p.relTypes,
+            p.to,
+            min,
+            max,
+            nodePredicate.asVariablePredicate,
+            relationshipPredicate.asVariablePredicate
+          )(_)
+        ))
       case _ =>
         throw new IllegalArgumentException("This pattern is not compatible with pruning var expand")
     }
     self
   }
 
-  def bfsPruningVarExpand(pattern: String,
-                          nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
-                          relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
+  def bfsPruningVarExpand(
+    pattern: String,
+    nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
+    relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE
+  ): IMPL = {
     val p = patternParser.parse(pattern)
     require(p.dir != SemanticDirection.BOTH, "BFSPruningVarExpand only supports directed patterns")
     newRelationship(varFor(p.relName))
     newNode(varFor(p.to))
     p.length match {
       case VarPatternLength(min, Some(max)) if min <= 1 =>
-        appendAtCurrentIndent(UnaryOperator(lp => BFSPruningVarExpand(lp,
-          p.from,
-          p.dir,
-          p.relTypes,
-          p.to,
-          min == 0,
-          max,
-          nodePredicate.asVariablePredicate,
-          relationshipPredicate.asVariablePredicate
-        )(_)))
+        appendAtCurrentIndent(UnaryOperator(lp =>
+          BFSPruningVarExpand(
+            lp,
+            p.from,
+            p.dir,
+            p.relTypes,
+            p.to,
+            min == 0,
+            max,
+            nodePredicate.asVariablePredicate,
+            relationshipPredicate.asVariablePredicate
+          )(_)
+        ))
       case _ =>
         throw new IllegalArgumentException("This pattern is not compatible with a bfs pruning var expand")
     }
@@ -496,15 +543,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)
 
-  def optionalExpandAll(pattern: String,
-                        predicate: Option[String] = None): IMPL =
+  def optionalExpandAll(pattern: String, predicate: Option[String] = None): IMPL =
     optionalExpandAll(
       patternParser.parse(pattern),
-      predicate.map(parseExpression).map(p => Ands(Seq(p))(p.position)),
+      predicate.map(parseExpression).map(p => Ands(Seq(p))(p.position))
     )
 
-  private def optionalExpandAll(pattern: PatternParser.Pattern,
-                                predicate: Option[Expression]): IMPL = {
+  private def optionalExpandAll(pattern: PatternParser.Pattern, predicate: Option[Expression]): IMPL = {
     val nodes = Set(pattern.from, pattern.to)
     val rewrittenPredicate = predicate.map(_.endoRewrite(topDown(Rewriter.lift {
       case p @ HasLabelsOrTypes(v: Variable, labelsOrTypes) if nodes.contains(v.name) =>
@@ -515,7 +560,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     pattern.length match {
       case SimplePatternLength =>
         appendAtCurrentIndent(UnaryOperator(lp =>
-          OptionalExpand(lp, pattern.from, pattern.dir, pattern.relTypes, pattern.to, pattern.relName, ExpandAll, rewrittenPredicate)(_)))
+          OptionalExpand(
+            lp,
+            pattern.from,
+            pattern.dir,
+            pattern.relTypes,
+            pattern.to,
+            pattern.relName,
+            ExpandAll,
+            rewrittenPredicate
+          )(_)
+        ))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
     }
@@ -527,7 +582,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     p.length match {
       case SimplePatternLength =>
         val pred = predicate.map(parseExpression).map(p => Ands(Seq(p))(p.position))
-        appendAtCurrentIndent(UnaryOperator(lp => OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto, pred)(_)))
+        appendAtCurrentIndent(UnaryOperator(lp =>
+          OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto, pred)(_)
+        ))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
     }
@@ -538,12 +595,25 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val p = patternParser.parse(pattern)
     val relTypesAsNonEmptyOption = if (p.relTypes.isEmpty) None else Some(p.relTypes)
     val directed = p.dir match {
-      case SemanticDirection.INCOMING => throw new IllegalArgumentException("Please turn your pattern around. ProjectEndpoints does not accept INCOMING.")
+      case SemanticDirection.INCOMING => throw new IllegalArgumentException(
+          "Please turn your pattern around. ProjectEndpoints does not accept INCOMING."
+        )
       case SemanticDirection.OUTGOING => true
-      case SemanticDirection.BOTH => false
+      case SemanticDirection.BOTH     => false
     }
-    appendAtCurrentIndent(UnaryOperator(lp => ProjectEndpoints(lp, p.relName, p.from, startInScope, p.to, endInScope,
-                                                               relTypesAsNonEmptyOption, directed, p.length)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      ProjectEndpoints(
+        lp,
+        p.relName,
+        p.from,
+        startInScope,
+        p.to,
+        endInScope,
+        relTypesAsNonEmptyOption,
+        directed,
+        p.length
+      )(_)
+    ))
   }
 
   def partialSort(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder]): IMPL = {
@@ -551,8 +621,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def partialSort(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], skipSortingPrefixLength: Long): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => PartialSort(lp, alreadySortedPrefix, stillToSortSuffix, Some(literalInt(skipSortingPrefixLength)))(_)))
+  def partialSort(
+    alreadySortedPrefix: Seq[ColumnOrder],
+    stillToSortSuffix: Seq[ColumnOrder],
+    skipSortingPrefixLength: Long
+  ): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      PartialSort(lp, alreadySortedPrefix, stillToSortSuffix, Some(literalInt(skipSortingPrefixLength)))(_)
+    ))
     self
   }
 
@@ -575,19 +651,34 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def partialTop(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], limit: Long): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, literalInt(limit), None)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, literalInt(limit), None)(_)
+    ))
     self
   }
 
-  def partialTop(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], limit: Long, skipSortingPrefixLength: Long): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, literalInt(limit), Some(literalInt(skipSortingPrefixLength)))(_)))
+  def partialTop(
+    alreadySortedPrefix: Seq[ColumnOrder],
+    stillToSortSuffix: Seq[ColumnOrder],
+    limit: Long,
+    skipSortingPrefixLength: Long
+  ): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      PartialTop(
+        lp,
+        alreadySortedPrefix,
+        stillToSortSuffix,
+        literalInt(limit),
+        Some(literalInt(skipSortingPrefixLength))
+      )(_)
+    ))
     self
   }
+
   def eager(reasons: Seq[EagernessReason.Reason] = Seq(EagernessReason.Unknown)): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Eager(lp, reasons)(_)))
     self
   }
-
 
   def emptyResult(): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => EmptyResult(lp)(_)))
@@ -629,7 +720,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def setLabels(nodeVariable:String, labels: String*): IMPL = {
+  def setLabels(nodeVariable: String, labels: String*): IMPL = {
     val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE))
     appendAtCurrentIndent(UnaryOperator(lp => SetLabels(lp, nodeVariable, labelNames)(_)))
   }
@@ -687,46 +778,63 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nodeByLabelScan(node: String, label: String, indexOrder: IndexOrder, args: String*): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
-    appendAtCurrentIndent(LeafOperator(NodeByLabelScan(n, labelName(label), args.map(VariableParser.unescaped).toSet, indexOrder)(_)))
+    appendAtCurrentIndent(LeafOperator(NodeByLabelScan(
+      n,
+      labelName(label),
+      args.map(VariableParser.unescaped).toSet,
+      indexOrder
+    )(_)))
   }
 
   def nodeByIdSeek(node: String, args: Set[String], ids: Any*): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     val idExpressions = ids.map {
-      case x: Expression => x
-      case x: String => Parser.parseExpression(x)
-      case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
-      case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
-      case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
+      case x: Expression              => x
+      case x: String                  => Parser.parseExpression(x)
+      case x @ (_: Long | _: Int)     => SignedDecimalIntegerLiteral(x.toString)(pos)
+      case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
+      case x                          => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
     val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
     appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, args)(_)))
   }
 
-  def directedRelationshipByIdSeek(relationship: String, from: String, to: String, args: Set[String], ids: AnyVal*): IMPL = {
+  def directedRelationshipByIdSeek(
+    relationship: String,
+    from: String,
+    to: String,
+    args: Set[String],
+    ids: AnyVal*
+  ): IMPL = {
     newRelationship(varFor(relationship))
     newNode(varFor(from))
     newNode(varFor(to))
     val idExpressions = ids.map {
-      case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
-      case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
-      case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
+      case x @ (_: Long | _: Int)     => SignedDecimalIntegerLiteral(x.toString)(pos)
+      case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
+      case x                          => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
     val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
     appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
   }
 
-  def undirectedRelationshipByIdSeek(relationship: String, from: String, to: String, args: Set[String], ids: AnyVal*): IMPL = {
+  def undirectedRelationshipByIdSeek(
+    relationship: String,
+    from: String,
+    to: String,
+    args: Set[String],
+    ids: AnyVal*
+  ): IMPL = {
     newRelationship(varFor(relationship))
     newNode(varFor(from))
     newNode(varFor(to))
     val idExpressions = ids.map {
-      case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
-      case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
-      case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
+      case x @ (_: Long | _: Int)     => SignedDecimalIntegerLiteral(x.toString)(pos)
+      case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
+      case x                          => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
     val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
@@ -743,94 +851,177 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNode(varFor(p.from))
     newNode(varFor(p.to))
     if (!p.length.isSimple) throw new UnsupportedOperationException("Cannot do a scan from a variable pattern")
-    val typ = if (p.relTypes.size == 1) p.relTypes.head else throw new UnsupportedOperationException("Cannot do a scan with multiple types")
+    val typ =
+      if (p.relTypes.size == 1) p.relTypes.head
+      else throw new UnsupportedOperationException("Cannot do a scan with multiple types")
 
     p.dir match {
       case SemanticDirection.OUTGOING =>
-        appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(p.relName, p.from, typ, p.to, args.toSet, indexOrder)(_)))
+        appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(
+          p.relName,
+          p.from,
+          typ,
+          p.to,
+          args.toSet,
+          indexOrder
+        )(_)))
       case SemanticDirection.INCOMING =>
-        appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(p.relName, p.to, typ, p.from, args.toSet, indexOrder)(_)))
+        appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(
+          p.relName,
+          p.to,
+          typ,
+          p.from,
+          args.toSet,
+          indexOrder
+        )(_)))
       case SemanticDirection.BOTH =>
-        appendAtCurrentIndent(LeafOperator(UndirectedRelationshipTypeScan(p.relName, p.from, typ, p.to, args.toSet, indexOrder)(_)))
+        appendAtCurrentIndent(LeafOperator(UndirectedRelationshipTypeScan(
+          p.relName,
+          p.from,
+          typ,
+          p.to,
+          args.toSet,
+          indexOrder
+        )(_)))
     }
   }
 
   def nodeCountFromCountStore(node: String, labels: Seq[Option[String]], args: String*): IMPL = {
     val labelNames = labels.map(maybeLabel => maybeLabel.map(labelName)).toList
-    appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(node, labelNames, args.map(VariableParser.unescaped).toSet)(_)))
+    appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(
+      node,
+      labelNames,
+      args.map(VariableParser.unescaped).toSet
+    )(_)))
   }
 
-  def relationshipCountFromCountStore(name: String, maybeStartLabel: Option[String], relTypes: Seq[String], maybeEndLabel: Option[String], args: String*): IMPL = {
+  def relationshipCountFromCountStore(
+    name: String,
+    maybeStartLabel: Option[String],
+    relTypes: Seq[String],
+    maybeEndLabel: Option[String],
+    args: String*
+  ): IMPL = {
     val startLabel = maybeStartLabel.map(labelName)
     val relTypeNames = relTypes.map(relTypeName)
     val endLabel = maybeEndLabel.map(labelName)
-    appendAtCurrentIndent(LeafOperator(RelationshipCountFromCountStore(name, startLabel, relTypeNames, endLabel, args.map(VariableParser.unescaped).toSet)(_)))
+    appendAtCurrentIndent(LeafOperator(RelationshipCountFromCountStore(
+      name,
+      startLabel,
+      relTypeNames,
+      endLabel,
+      args.map(VariableParser.unescaped).toSet
+    )(_)))
   }
 
-  def nodeIndexOperator(indexSeekString: String,
-                        getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-                        indexOrder: IndexOrder = IndexOrderNone,
-                        paramExpr: IterableOnce[Expression] = None,
-                        argumentIds: Set[String] = Set.empty,
-                        unique: Boolean = false,
-                        customQueryExpression: Option[QueryExpression[Expression]] = None,
-                        indexType: IndexType = IndexType.RANGE): IMPL = {
+  def nodeIndexOperator(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    paramExpr: IterableOnce[Expression] = None,
+    argumentIds: Set[String] = Set.empty,
+    unique: Boolean = false,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  ): IMPL = {
     val planBuilder = (idGen: IdGen) => {
-      val plan = nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr.iterator.toSeq, argumentIds, unique, customQueryExpression, indexType)(idGen)
+      val plan = nodeIndexSeek(
+        indexSeekString,
+        getValue,
+        indexOrder,
+        paramExpr.iterator.toSeq,
+        argumentIds,
+        unique,
+        customQueryExpression,
+        indexType
+      )(idGen)
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def relationshipIndexOperator(indexSeekString: String,
-                                getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-                                indexOrder: IndexOrder = IndexOrderNone,
-                                paramExpr: Iterable[Expression] = Seq.empty,
-                                argumentIds: Set[String] = Set.empty,
-                                customQueryExpression: Option[QueryExpression[Expression]] = None,
-                                indexType: IndexType = IndexType.RANGE): IMPL = {
+  def relationshipIndexOperator(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  ): IMPL = {
     val planBuilder = (idGen: IdGen) => {
-      val plan = relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, customQueryExpression, indexType)(idGen)
+      val plan = relationshipIndexSeek(
+        indexSeekString,
+        getValue,
+        indexOrder,
+        paramExpr,
+        argumentIds,
+        customQueryExpression,
+        indexType
+      )(idGen)
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def nodeIndexSeek(indexSeekString: String,
-                    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-                    indexOrder: IndexOrder = IndexOrderNone,
-                    paramExpr: Iterable[Expression] = Seq.empty,
-                    argumentIds: Set[String] = Set.empty,
-                    unique: Boolean = false,
-                    customQueryExpression: Option[QueryExpression[Expression]] = None,
-                    indexType: IndexType = IndexType.RANGE): IdGen => NodeIndexLeafPlan = {
+  def nodeIndexSeek(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    unique: Boolean = false,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  ): IdGen => NodeIndexLeafPlan = {
     val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
     val propIds: PartialFunction[String, Int] = {
       case x => resolver.getPropertyKeyId(x)
     }
     val planBuilder = (idGen: IdGen) => {
-      val plan = IndexSeek.nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique,
-        customQueryExpression, indexType)(idGen)
+      val plan = IndexSeek.nodeIndexSeek(
+        indexSeekString,
+        getValue,
+        indexOrder,
+        paramExpr,
+        argumentIds,
+        Some(propIds),
+        label,
+        unique,
+        customQueryExpression,
+        indexType
+      )(idGen)
       newNode(varFor(plan.idName))
       plan
     }
     planBuilder
   }
 
-  def relationshipIndexSeek(indexSeekString: String,
-                            getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-                            indexOrder: IndexOrder = IndexOrderNone,
-                            paramExpr: Iterable[Expression] = Seq.empty,
-                            argumentIds: Set[String] = Set.empty,
-                            customQueryExpression: Option[QueryExpression[Expression]] = None,
-                            indexType: IndexType = IndexType.RANGE): IdGen => RelationshipIndexLeafPlan = {
+  def relationshipIndexSeek(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  ): IdGen => RelationshipIndexLeafPlan = {
     val relType = resolver.getRelTypeId(IndexSeek.relTypeFromIndexSeekString(indexSeekString))
     val propIds: PartialFunction[String, Int] = {
       case x => resolver.getPropertyKeyId(x)
     }
     val planBuilder = (idGen: IdGen) => {
-      val plan = IndexSeek.relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), relType,
-        customQueryExpression, indexType)(idGen)
+      val plan = IndexSeek.relationshipIndexSeek(
+        indexSeekString,
+        getValue,
+        indexOrder,
+        paramExpr,
+        argumentIds,
+        Some(propIds),
+        relType,
+        customQueryExpression,
+        indexType
+      )(idGen)
       newRelationship(varFor(plan.idName))
       newNode(varFor(plan.leftNode))
       newNode(varFor(plan.rightNode))
@@ -846,41 +1037,68 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def pointDistanceNodeIndexSeek(node: String,
-                                 labelName: String,
-                                 property: String,
-                                 point: String,
-                                 distance: Double,
-                                 getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                                 indexOrder: IndexOrder = IndexOrderNone,
-                                 inclusive: Boolean = false,
-                                 argumentIds: Set[String] = Set.empty,
-                                 indexType: IndexType = IndexType.POINT): IMPL = {
-    pointDistanceNodeIndexSeekExpr(node, labelName, property, point, literalFloat(distance), getValue, indexOrder, inclusive, argumentIds, indexType)
+  def pointDistanceNodeIndexSeek(
+    node: String,
+    labelName: String,
+    property: String,
+    point: String,
+    distance: Double,
+    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    inclusive: Boolean = false,
+    argumentIds: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.POINT
+  ): IMPL = {
+    pointDistanceNodeIndexSeekExpr(
+      node,
+      labelName,
+      property,
+      point,
+      literalFloat(distance),
+      getValue,
+      indexOrder,
+      inclusive,
+      argumentIds,
+      indexType
+    )
   }
 
-  def pointBoundingBoxNodeIndexSeek(node: String,
-                                    labelName: String,
-                                    property: String,
-                                    lowerLeft: String,
-                                    upperRight: String,
-                                    getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                                    indexOrder: IndexOrder = IndexOrderNone,
-                                    argumentIds: Set[String] = Set.empty,
-                                    indexType: IndexType = IndexType.POINT): IMPL = {
-    pointBoundingBoxNodeIndexSeekExpr(node, labelName, property, lowerLeft, upperRight, getValue, indexOrder, argumentIds, indexType)
+  def pointBoundingBoxNodeIndexSeek(
+    node: String,
+    labelName: String,
+    property: String,
+    lowerLeft: String,
+    upperRight: String,
+    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    argumentIds: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.POINT
+  ): IMPL = {
+    pointBoundingBoxNodeIndexSeekExpr(
+      node,
+      labelName,
+      property,
+      lowerLeft,
+      upperRight,
+      getValue,
+      indexOrder,
+      argumentIds,
+      indexType
+    )
   }
 
-  def pointDistanceNodeIndexSeekExpr(node: String,
-                                     labelName: String,
-                                     property: String,
-                                     point: String,
-                                     distanceExpr: Expression,
-                                     getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                                     indexOrder: IndexOrder = IndexOrderNone,
-                                     inclusive: Boolean = false,
-                                     argumentIds: Set[String] = Set.empty,
-                                     indexType: IndexType = IndexType.POINT): IMPL = {
+  def pointDistanceNodeIndexSeekExpr(
+    node: String,
+    labelName: String,
+    property: String,
+    point: String,
+    distanceExpr: Expression,
+    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    inclusive: Boolean = false,
+    argumentIds: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.POINT
+  ): IMPL = {
     val label = resolver.getLabelId(labelName)
 
     val propId = resolver.getPropertyKeyId(property)
@@ -890,29 +1108,26 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val indexedProperty = IndexedProperty(propToken, getValue, NODE_TYPE)
       val e =
         RangeQueryExpression(PointDistanceSeekRangeWrapper(
-          PointDistanceRange(function("point", parseExpression(point)), distanceExpr, inclusive))(NONE))
-      val plan = NodeIndexSeek(node,
-                               labelToken,
-                               Seq(indexedProperty),
-                               e,
-                               argumentIds,
-                               indexOrder,
-                               indexType)(idGen)
+          PointDistanceRange(function("point", parseExpression(point)), distanceExpr, inclusive)
+        )(NONE))
+      val plan = NodeIndexSeek(node, labelToken, Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
       newNode(varFor(plan.idName))
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def pointBoundingBoxNodeIndexSeekExpr(node: String,
-                                        labelName: String,
-                                        property: String,
-                                        lowerLeft: String,
-                                        upperRight: String,
-                                        getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                                        indexOrder: IndexOrder = IndexOrderNone,
-                                        argumentIds: Set[String] = Set.empty,
-                                        indexType: IndexType = IndexType.POINT): IMPL = {
+  def pointBoundingBoxNodeIndexSeekExpr(
+    node: String,
+    labelName: String,
+    property: String,
+    lowerLeft: String,
+    upperRight: String,
+    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    argumentIds: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.POINT
+  ): IMPL = {
     val label = resolver.getLabelId(labelName)
 
     val propId = resolver.getPropertyKeyId(property)
@@ -922,49 +1137,65 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val indexedProperty = IndexedProperty(propToken, getValue, NODE_TYPE)
       val e =
         RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
-          PointBoundingBoxRange(function("point", parseExpression(lowerLeft)), function("point", parseExpression(upperRight))))(NONE))
-      val plan = NodeIndexSeek(node,
-        labelToken,
-        Seq(indexedProperty),
-        e,
-        argumentIds,
-        indexOrder,
-        indexType)(idGen)
+          PointBoundingBoxRange(
+            function("point", parseExpression(lowerLeft)),
+            function("point", parseExpression(upperRight))
+          )
+        )(NONE))
+      val plan = NodeIndexSeek(node, labelToken, Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
       newNode(varFor(plan.idName))
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def pointDistanceRelationshipIndexSeek(rel: String,
-                                         start: String,
-                                         end: String,
-                                         typeName: String,
-                                         property: String,
-                                         point: String,
-                                         distance: Double,
-                                         directed: Boolean = true,
-                                         inclusive: Boolean = false,
-                                         getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                                         indexOrder: IndexOrder = IndexOrderNone,
-                                         argumentIds: Set[String] = Set.empty,
-                                         indexType: IndexType = IndexType.POINT): IMPL = {
-    pointDistanceRelationshipIndexSeekExpr(rel, start, end, typeName, property, point, literalFloat(distance), directed, inclusive, getValue, indexOrder, argumentIds, indexType)
+  def pointDistanceRelationshipIndexSeek(
+    rel: String,
+    start: String,
+    end: String,
+    typeName: String,
+    property: String,
+    point: String,
+    distance: Double,
+    directed: Boolean = true,
+    inclusive: Boolean = false,
+    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    argumentIds: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.POINT
+  ): IMPL = {
+    pointDistanceRelationshipIndexSeekExpr(
+      rel,
+      start,
+      end,
+      typeName,
+      property,
+      point,
+      literalFloat(distance),
+      directed,
+      inclusive,
+      getValue,
+      indexOrder,
+      argumentIds,
+      indexType
+    )
   }
 
-  def pointDistanceRelationshipIndexSeekExpr(relationship: String,
-                                             startNode: String,
-                                             endNode: String,
-                                             typeName: String,
-                                             property: String,
-                                             point: String,
-                                             distanceExpr: Expression,
-                                             directed: Boolean = true,
-                                             inclusive: Boolean = false,
-                                             getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                                             indexOrder: IndexOrder = IndexOrderNone,
-                                             argumentIds: Set[String] = Set.empty,
-                                             indexType: IndexType = IndexType.POINT): IMPL = {
+  def pointDistanceRelationshipIndexSeekExpr(
+    relationship: String,
+    startNode: String,
+    endNode: String,
+    typeName: String,
+    property: String,
+    point: String,
+    distanceExpr: Expression,
+    directed: Boolean = true,
+    inclusive: Boolean = false,
+    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    argumentIds: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.POINT
+  ): IMPL = {
     val typ = resolver.getRelTypeId(typeName)
 
     val propId = resolver.getPropertyKeyId(property)
@@ -974,46 +1205,84 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val indexedProperty = IndexedProperty(propToken, getValue, RELATIONSHIP_TYPE)
       val e =
         RangeQueryExpression(PointDistanceSeekRangeWrapper(
-          PointDistanceRange(function("point", parseExpression(point)), distanceExpr, inclusive))(NONE))
+          PointDistanceRange(function("point", parseExpression(point)), distanceExpr, inclusive)
+        )(NONE))
 
       val plan =
         if (directed) {
-          DirectedRelationshipIndexSeek(relationship,  startNode, endNode, typeToken,  Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
+          DirectedRelationshipIndexSeek(
+            relationship,
+            startNode,
+            endNode,
+            typeToken,
+            Seq(indexedProperty),
+            e,
+            argumentIds,
+            indexOrder,
+            indexType
+          )(idGen)
         } else {
-          UndirectedRelationshipIndexSeek(relationship,  startNode, endNode, typeToken,  Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
+          UndirectedRelationshipIndexSeek(
+            relationship,
+            startNode,
+            endNode,
+            typeToken,
+            Seq(indexedProperty),
+            e,
+            argumentIds,
+            indexOrder,
+            indexType
+          )(idGen)
         }
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def pointBoundingBoxRelationshipIndexSeek(rel: String,
-                                            start: String,
-                                            end: String,
-                                            typeName: String,
-                                            property: String,
-                                            lowerLeft: String,
-                                            upperRight: String,
-                                            directed: Boolean = true,
-                                            getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                                            indexOrder: IndexOrder = IndexOrderNone,
-                                            argumentIds: Set[String] = Set.empty,
-                                            indexType: IndexType = IndexType.POINT): IMPL = {
-    pointBoundingBoxRelationshipIndexSeekExpr(rel, start, end, typeName, property, lowerLeft, upperRight, directed, getValue, indexOrder, argumentIds, indexType)
+  def pointBoundingBoxRelationshipIndexSeek(
+    rel: String,
+    start: String,
+    end: String,
+    typeName: String,
+    property: String,
+    lowerLeft: String,
+    upperRight: String,
+    directed: Boolean = true,
+    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    argumentIds: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.POINT
+  ): IMPL = {
+    pointBoundingBoxRelationshipIndexSeekExpr(
+      rel,
+      start,
+      end,
+      typeName,
+      property,
+      lowerLeft,
+      upperRight,
+      directed,
+      getValue,
+      indexOrder,
+      argumentIds,
+      indexType
+    )
   }
 
-  def pointBoundingBoxRelationshipIndexSeekExpr(relationship: String,
-                                                startNode: String,
-                                                endNode: String,
-                                                typeName: String,
-                                                property: String,
-                                                lowerLeft: String,
-                                                upperRight: String,
-                                                directed: Boolean = true,
-                                                getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                                                indexOrder: IndexOrder = IndexOrderNone,
-                                                argumentIds: Set[String] = Set.empty,
-                                                indexType: IndexType = IndexType.POINT): IMPL = {
+  def pointBoundingBoxRelationshipIndexSeekExpr(
+    relationship: String,
+    startNode: String,
+    endNode: String,
+    typeName: String,
+    property: String,
+    lowerLeft: String,
+    upperRight: String,
+    directed: Boolean = true,
+    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    argumentIds: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.POINT
+  ): IMPL = {
     val typ = resolver.getRelTypeId(typeName)
 
     val propId = resolver.getPropertyKeyId(property)
@@ -1023,21 +1292,44 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val indexedProperty = IndexedProperty(propToken, getValue, RELATIONSHIP_TYPE)
       val e =
         RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
-          PointBoundingBoxRange(function("point", parseExpression(lowerLeft)), function("point", parseExpression(upperRight))))(NONE))
+          PointBoundingBoxRange(
+            function("point", parseExpression(lowerLeft)),
+            function("point", parseExpression(upperRight))
+          )
+        )(NONE))
 
       val plan =
         if (directed) {
-          DirectedRelationshipIndexSeek(relationship,  startNode, endNode, typeToken,  Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
+          DirectedRelationshipIndexSeek(
+            relationship,
+            startNode,
+            endNode,
+            typeToken,
+            Seq(indexedProperty),
+            e,
+            argumentIds,
+            indexOrder,
+            indexType
+          )(idGen)
         } else {
-          UndirectedRelationshipIndexSeek(relationship,  startNode, endNode, typeToken,  Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
+          UndirectedRelationshipIndexSeek(
+            relationship,
+            startNode,
+            endNode,
+            typeToken,
+            Seq(indexedProperty),
+            e,
+            argumentIds,
+            indexOrder,
+            indexType
+          )(idGen)
         }
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def aggregation(groupingExpressions: Seq[String],
-                  aggregationExpression: Seq[String]): IMPL = {
+  def aggregation(groupingExpressions: Seq[String], aggregationExpression: Seq[String]): IMPL = {
     val expressions = Parser.parseProjections(aggregationExpression: _*).view.mapValues {
       case f: FunctionInvocation if f.needsToBeResolved =>
         ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
@@ -1045,19 +1337,24 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }.toMap
 
     appendAtCurrentIndent(UnaryOperator(lp => {
-      Aggregation(lp,
-        Parser.parseProjections(groupingExpressions: _*), expressions)(_)
+      Aggregation(lp, Parser.parseProjections(groupingExpressions: _*), expressions)(_)
     }))
   }
 
-  def orderedAggregation(groupingExpressions: Seq[String],
-                         aggregationExpression: Seq[String],
-                         orderToLeverage: Seq[String]): IMPL = {
+  def orderedAggregation(
+    groupingExpressions: Seq[String],
+    aggregationExpression: Seq[String],
+    orderToLeverage: Seq[String]
+  ): IMPL = {
     val order = orderToLeverage.map(parseExpression)
-    appendAtCurrentIndent(UnaryOperator(lp => OrderedAggregation(lp,
-      Parser.parseProjections(groupingExpressions: _*),
-      Parser.parseProjections(aggregationExpression: _*),
-      order)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      OrderedAggregation(
+        lp,
+        Parser.parseProjections(groupingExpressions: _*),
+        Parser.parseProjections(aggregationExpression: _*),
+        order
+      )(_)
+    ))
   }
 
   def apply(fromSubquery: Boolean = false): IMPL =
@@ -1091,17 +1388,22 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrAntiSemiApply(lhs, rhs, parseExpression(predicate))(_)))
 
   def letSelectOrSemiApply(idName: String, predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrSemiApply(lhs, rhs, idName, parseExpression(predicate))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      LetSelectOrSemiApply(lhs, rhs, idName, parseExpression(predicate))(_)
+    ))
 
   def letSelectOrAntiSemiApply(idName: String, predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrAntiSemiApply(lhs, rhs, idName, parseExpression(predicate))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      LetSelectOrAntiSemiApply(lhs, rhs, idName, parseExpression(predicate))(_)
+    ))
 
-  def rollUpApply(collectionName: String,
-                  variableToCollect: String): IMPL =
+  def rollUpApply(collectionName: String, variableToCollect: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect)(_)))
 
   def foreachApply(variable: String, expression: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ForeachApply(lhs, rhs, variable, parseExpression(expression))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      ForeachApply(lhs, rhs, variable, parseExpression(expression))(_)
+    ))
 
   def foreach(variable: String, expression: String, mutations: Seq[SimpleMutatingPattern]): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => Foreach(lp, variable, parseExpression(expression), mutations)(_)))
@@ -1141,46 +1443,72 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def setProperty(entity: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetProperty(source, parseExpression(entity), PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetProperty(source, parseExpression(entity), PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
+    ))
   }
 
   def setNodeProperty(node: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
+    ))
   }
 
   def setRelationshipProperty(relationship: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
+    ))
   }
 
   def setProperties(entity: String, items: (String, String)*): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetProperties(source, parseExpression(entity), items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2))))(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetProperties(
+        source,
+        parseExpression(entity),
+        items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2)))
+      )(_)
+    ))
   }
 
   def setNodeProperties(node: String, items: (String, String)*): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetNodeProperties(source, node, items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2))))(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetNodeProperties(source, node, items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2))))(_)
+    ))
   }
 
   def setRelationshipProperties(node: String, items: (String, String)*): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperties(source, node, items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2))))(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetRelationshipProperties(
+        source,
+        node,
+        items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2)))
+      )(_)
+    ))
   }
 
   def setPropertiesFromMap(entity: String, map: String, removeOtherProps: Boolean): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetPropertiesFromMap(source, parseExpression(entity), parseExpression(map), removeOtherProps)(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetPropertiesFromMap(source, parseExpression(entity), parseExpression(map), removeOtherProps)(_)
+    ))
   }
 
   def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetNodePropertiesFromMap(source, node, parseExpression(map), removeOtherProps)(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetNodePropertiesFromMap(source, node, parseExpression(map), removeOtherProps)(_)
+    ))
   }
 
   def setRelationshipPropertiesFromMap(relationship: String, map: String, removeOtherProps: Boolean): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipPropertiesFromMap(source, relationship, parseExpression(map), removeOtherProps)(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetRelationshipPropertiesFromMap(source, relationship, parseExpression(map), removeOtherProps)(_)
+    ))
   }
 
   def create(nodes: CreateNode*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, Seq.empty)(_)))
   }
 
-  def create(nodes :Seq[CreateNode], relationships: Seq[CreateRelationship]): IMPL = {
+  def create(nodes: Seq[CreateNode], relationships: Seq[CreateRelationship]): IMPL = {
     nodes.foreach(node => {
       newNode(varFor(VariableParser.unescaped(node.idName)))
     })
@@ -1192,11 +1520,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, relationships)(_)))
   }
 
-  def merge(nodes: Seq[CreateNode] = Seq.empty,
-            relationships: Seq[CreateRelationship] = Seq.empty,
-            onMatch: Seq[SetMutatingPattern] = Seq.empty,
-            onCreate : Seq[SetMutatingPattern] = Seq.empty,
-            lockNodes: Set[String] = Set.empty): IMPL = {
+  def merge(
+    nodes: Seq[CreateNode] = Seq.empty,
+    relationships: Seq[CreateRelationship] = Seq.empty,
+    onMatch: Seq[SetMutatingPattern] = Seq.empty,
+    onCreate: Seq[SetMutatingPattern] = Seq.empty,
+    lockNodes: Set[String] = Set.empty
+  ): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => Merge(source, nodes, relationships, onMatch, onCreate, lockNodes)(_)))
   }
 
@@ -1221,14 +1551,26 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
   }
 
-  def input(nodes: Seq[String] = Seq.empty, relationships: Seq[String] = Seq.empty, variables: Seq[String] = Seq.empty, nullable: Boolean = true): IMPL = {
+  def input(
+    nodes: Seq[String] = Seq.empty,
+    relationships: Seq[String] = Seq.empty,
+    variables: Seq[String] = Seq.empty,
+    nullable: Boolean = true
+  ): IMPL = {
     if (indent != 0) {
       throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
     }
-    if (nodes.toSet.size < nodes.size || relationships.toSet.size < relationships.size || variables.toSet.size < variables.size) {
+    if (
+      nodes.toSet.size < nodes.size || relationships.toSet.size < relationships.size || variables.toSet.size < variables.size
+    ) {
       throw new IllegalArgumentException("Input must create unique variables")
     }
-    appendAtCurrentIndent(LeafOperator(Input(newNodes(nodes), newRelationships(relationships), newVariables(variables), nullable)(_)))
+    appendAtCurrentIndent(LeafOperator(Input(
+      newNodes(nodes),
+      newRelationships(relationships),
+      newVariables(variables),
+      nullable
+    )(_)))
   }
 
   def injectCompilationError(): IMPL = {
@@ -1255,36 +1597,43 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def nestedPlanCollectExpressionProjection(resultList: String, resultPart: String): IMPL = {
     val inner = parseExpression(resultPart)
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanCollectExpression(rhs, inner, "collect(...)")(NONE)))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      Projection(lhs, Map(resultList -> NestedPlanCollectExpression(rhs, inner, "collect(...)")(NONE)))(_)
+    ))
   }
 
   def nestedPlanExistsExpressionProjection(resultList: String): IMPL = {
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      Projection(lhs, Map(resultList -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)
+    ))
   }
 
   def triadicSelection(positivePredicate: Boolean, sourceId: String, seenId: String, targetId: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TriadicSelection(lhs, rhs, positivePredicate, sourceId, seenId, targetId)(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      TriadicSelection(lhs, rhs, positivePredicate, sourceId, seenId, targetId)(_)
+    ))
 
   def triadicBuild(triadicSelectionId: Int, sourceId: String, seenId: String): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => TriadicBuild(lp, sourceId, seenId, Some(Id(triadicSelectionId)))(_)))
 
   def triadicFilter(triadicSelectionId: Int, positivePredicate: Boolean, sourceId: String, targetId: String): IMPL =
-    appendAtCurrentIndent(UnaryOperator(lp => TriadicFilter(lp, positivePredicate, sourceId, targetId, Some(Id(triadicSelectionId)))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      TriadicFilter(lp, positivePredicate, sourceId, targetId, Some(Id(triadicSelectionId)))(_)
+    ))
 
-  def loadCSV(url: String,
-              variableName: String,
-              format: CSVFormat,
-              fieldTerminator: Option[String] = None): IMPL = {
+  def loadCSV(url: String, variableName: String, format: CSVFormat, fieldTerminator: Option[String] = None): IMPL = {
     val urlExpr = parseExpression(url)
-    appendAtCurrentIndent(UnaryOperator(lp => LoadCSV(
-      lp,
-      urlExpr,
-      variableName,
-      format,
-      fieldTerminator,
-      legacyCsvQuoteEscaping = GraphDatabaseSettings.csv_legacy_quote_escaping.defaultValue(),
-      csvBufferSize = GraphDatabaseSettings.csv_buffer_size.defaultValue().toInt
-    )(_)))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      LoadCSV(
+        lp,
+        urlExpr,
+        variableName,
+        format,
+        fieldTerminator,
+        legacyCsvQuoteEscaping = GraphDatabaseSettings.csv_legacy_quote_escaping.defaultValue(),
+        csvBufferSize = GraphDatabaseSettings.csv_buffer_size.defaultValue().toInt
+      )(_)
+    ))
   }
 
   def injectValue(variable: String, value: String): IMPL = {
@@ -1338,7 +1687,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   private def findTypeIgnoringPosition(expr: Expression) =
     semanticTable.types.iterator
-      .map{ case (k, v) => (k.node, v) } //unwrap nodes to discard position
+      .map { case (k, v) => (k.node, v) } // unwrap nodes to discard position
       .collectFirst { case (`expr`, t) => t }
 
   protected def newNodes(nodes: Seq[String]): Seq[String] = {
@@ -1417,11 +1766,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   protected def varFor(name: String): Variable = Variable(name)(pos)
   private def labelName(s: String): LabelName = LabelName(s)(pos)
   private def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
+
   private def literalInt(value: Long): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(value.toString)(pos)
+
   private def literalFloat(value: Double): DecimalDoubleLiteral =
     DecimalDoubleLiteral(value.toString)(pos)
   def literalString(str: String): StringLiteral = StringLiteral(str)(pos)
+
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 }
@@ -1431,6 +1783,7 @@ object AbstractLogicalPlanBuilder {
   val NO_PREDICATE: Predicate = Predicate("", "")
 
   case class Predicate(entity: String, predicate: String) {
+
     def asVariablePredicate: Option[VariablePredicate] = {
       if (entity == "") {
         None
@@ -1440,8 +1793,10 @@ object AbstractLogicalPlanBuilder {
     }
   }
 
-  def createPattern(nodes: Seq[CreateNode] = Seq.empty,
-                    relationships: Seq[CreateRelationship] = Seq.empty): CreatePattern = {
+  def createPattern(
+    nodes: Seq[CreateNode] = Seq.empty,
+    relationships: Seq[CreateRelationship] = Seq.empty
+  ): CreatePattern = {
     CreatePattern(nodes, relationships)
   }
 
@@ -1451,37 +1806,67 @@ object AbstractLogicalPlanBuilder {
   def createNodeWithProperties(node: String, labels: Seq[String], properties: String): CreateNode =
     CreateNode(node, labels.map(LabelName(_)(pos)), Some(Parser.parseExpression(properties)))
 
-  def createRelationship(relationship: String,
-                         left: String,
-                         typ: String,
-                         right: String,
-                         direction: SemanticDirection = OUTGOING,
-                         properties: Option[String] = None): CreateRelationship =
-    CreateRelationship(relationship, left, RelTypeName(typ)(pos), right, direction, properties.map(Parser.parseExpression))
+  def createRelationship(
+    relationship: String,
+    left: String,
+    typ: String,
+    right: String,
+    direction: SemanticDirection = OUTGOING,
+    properties: Option[String] = None
+  ): CreateRelationship =
+    CreateRelationship(
+      relationship,
+      left,
+      RelTypeName(typ)(pos),
+      right,
+      direction,
+      properties.map(Parser.parseExpression)
+    )
 
   def setNodeProperty(node: String, key: String, value: String): SetMutatingPattern =
     SetNodePropertyPattern(node, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
 
   def setNodeProperties(node: String, items: (String, String)*): SetMutatingPattern =
-    SetNodePropertiesPattern(node, items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2))))
+    SetNodePropertiesPattern(
+      node,
+      items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2)))
+    )
 
   def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
     SetNodePropertiesFromMapPattern(node, Parser.parseExpression(map), removeOtherProps)
 
   def setRelationshipProperty(relationship: String, key: String, value: String): SetMutatingPattern =
-    SetRelationshipPropertyPattern(relationship, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
+    SetRelationshipPropertyPattern(
+      relationship,
+      PropertyKeyName(key)(InputPosition.NONE),
+      Parser.parseExpression(value)
+    )
 
   def setRelationshipProperties(rel: String, items: (String, String)*): SetMutatingPattern =
-    SetRelationshipPropertiesPattern(rel, items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2))))
+    SetRelationshipPropertiesPattern(
+      rel,
+      items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2)))
+    )
 
-  def setRelationshipPropertiesFromMap(node: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
+  def setRelationshipPropertiesFromMap(
+    node: String,
+    map: String,
+    removeOtherProps: Boolean = true
+  ): SetMutatingPattern =
     SetRelationshipPropertiesFromMapPattern(node, Parser.parseExpression(map), removeOtherProps)
 
   def setProperty(entity: String, key: String, value: String): SetMutatingPattern =
-    SetPropertyPattern(Parser.parseExpression(entity), PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
+    SetPropertyPattern(
+      Parser.parseExpression(entity),
+      PropertyKeyName(key)(InputPosition.NONE),
+      Parser.parseExpression(value)
+    )
 
   def setProperties(entity: String, items: (String, String)*): SetMutatingPattern =
-    SetPropertiesPattern(Parser.parseExpression(entity), items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2))))
+    SetPropertiesPattern(
+      Parser.parseExpression(entity),
+      items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2)))
+    )
 
   def setPropertyFromMap(entity: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
     SetPropertiesFromMapPattern(Parser.parseExpression(entity), Parser.parseExpression(map), removeOtherProps)

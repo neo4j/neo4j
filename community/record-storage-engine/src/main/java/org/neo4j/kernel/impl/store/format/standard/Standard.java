@@ -25,11 +25,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 /**
  * This is a utility class always pointing to the latest Standard record format.
  */
-public class Standard
-{
-    private Standard()
-    {
-    }
+public class Standard {
+    private Standard() {}
 
     public static final String LATEST_STORE_VERSION = StandardV5_0.STORE_VERSION;
     public static final RecordFormats LATEST_RECORD_FORMATS = StandardV5_0.RECORD_FORMATS;

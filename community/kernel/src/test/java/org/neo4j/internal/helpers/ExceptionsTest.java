@@ -19,91 +19,79 @@
  */
 package org.neo4j.internal.helpers;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ExceptionsTest
-{
+import org.junit.jupiter.api.Test;
+
+class ExceptionsTest {
     @Test
-    void shouldDetectContainsOneOfSome()
-    {
+    void shouldDetectContainsOneOfSome() {
         // GIVEN
-        var cause = new ARuntimeException( new AnotherRuntimeException( new NullPointerException( "Some words" ) ) );
+        var cause = new ARuntimeException(new AnotherRuntimeException(new NullPointerException("Some words")));
 
         // THEN
-        assertTrue( Exceptions.contains( cause, "words", NullPointerException.class ) );
-        assertFalse( Exceptions.contains( cause, "not", NullPointerException.class ) );
+        assertTrue(Exceptions.contains(cause, "words", NullPointerException.class));
+        assertFalse(Exceptions.contains(cause, "not", NullPointerException.class));
     }
 
     @Test
-    void shouldChainExceptionsWhenInitialExceptionIsNull()
-    {
+    void shouldChainExceptionsWhenInitialExceptionIsNull() {
         var exception = new RuntimeException();
 
-        var chainedException = Exceptions.chain( null, exception );
+        var chainedException = Exceptions.chain(null, exception);
 
-        assertSame( exception, chainedException );
+        assertSame(exception, chainedException);
     }
 
     @Test
-    void shouldChainExceptionsWhenCurrentExceptionIsNull()
-    {
+    void shouldChainExceptionsWhenCurrentExceptionIsNull() {
         var exception = new RuntimeException();
 
-        var chainedException = Exceptions.chain( exception, null );
+        var chainedException = Exceptions.chain(exception, null);
 
-        assertSame( exception, chainedException );
-        assertThat( chainedException.getSuppressed() ).isEmpty();
+        assertSame(exception, chainedException);
+        assertThat(chainedException.getSuppressed()).isEmpty();
     }
 
     @Test
-    void shouldChainExceptions()
-    {
+    void shouldChainExceptions() {
         var exception1 = new RuntimeException();
         var exception2 = new RuntimeException();
 
-        var chainedException = Exceptions.chain( exception1, exception2 );
+        var chainedException = Exceptions.chain(exception1, exception2);
 
-        assertSame( exception1, chainedException );
-        assertThat( chainedException.getSuppressed() ).containsExactly( exception2 );
+        assertSame(exception1, chainedException);
+        assertThat(chainedException.getSuppressed()).containsExactly(exception2);
     }
 
     @Test
-    void shouldNotChainSameException()
-    {
+    void shouldNotChainSameException() {
         var exception = new RuntimeException();
 
-        var chainedException = Exceptions.chain( exception, exception );
+        var chainedException = Exceptions.chain(exception, exception);
 
-        assertSame( exception, chainedException );
-        assertThat( chainedException.getSuppressed() ).isEmpty();
+        assertSame(exception, chainedException);
+        assertThat(chainedException.getSuppressed()).isEmpty();
     }
 
-    private static class LevelOneException extends Exception
-    {
-        LevelOneException( String message )
-        {
-            super( message );
+    private static class LevelOneException extends Exception {
+        LevelOneException(String message) {
+            super(message);
         }
     }
 
-    private static class ARuntimeException extends RuntimeException
-    {
-        ARuntimeException( Throwable cause )
-        {
-            super( cause );
+    private static class ARuntimeException extends RuntimeException {
+        ARuntimeException(Throwable cause) {
+            super(cause);
         }
     }
 
-    private static class AnotherRuntimeException extends RuntimeException
-    {
-        AnotherRuntimeException( Throwable cause )
-        {
-            super( cause );
+    private static class AnotherRuntimeException extends RuntimeException {
+        AnotherRuntimeException(Throwable cause) {
+            super(cause);
         }
     }
 }

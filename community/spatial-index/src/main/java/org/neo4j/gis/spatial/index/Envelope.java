@@ -21,8 +21,7 @@ package org.neo4j.gis.spatial.index;
 
 import java.util.Arrays;
 
-public class Envelope
-{
+public class Envelope {
     static final double MAXIMAL_ENVELOPE_SIDE_RATIO = 100_000;
 
     protected final double[] min;
@@ -31,99 +30,82 @@ public class Envelope
     /**
      * Copy constructor
      */
-    public Envelope( Envelope e )
-    {
-        this( e.min, e.max );
+    public Envelope(Envelope e) {
+        this(e.min, e.max);
     }
 
     /**
      * General constructor for the n-dimensional case
      */
-    public Envelope( double[] min, double[] max )
-    {
-        this.min = Arrays.copyOf( min, min.length );
-        this.max = Arrays.copyOf( max, max.length );
-        if ( !isValid( min, max ) )
-        {
-            throw new IllegalArgumentException( "Invalid envelope created " + toString() );
+    public Envelope(double[] min, double[] max) {
+        this.min = Arrays.copyOf(min, min.length);
+        this.max = Arrays.copyOf(max, max.length);
+        if (!isValid(min, max)) {
+            throw new IllegalArgumentException("Invalid envelope created " + toString());
         }
     }
 
     /**
      * Special constructor for the 2D case
      */
-    public Envelope( double xmin, double xmax, double ymin, double ymax )
-    {
-        this( new double[] { xmin, ymin }, new double[] { xmax, ymax } );
+    public Envelope(double xmin, double xmax, double ymin, double ymax) {
+        this(new double[] {xmin, ymin}, new double[] {xmax, ymax});
     }
 
     /**
      * @return a copy of the envelope where the ratio of smallest to largest side is not more than 1:100
      */
-    public Envelope withSideRatioNotTooSmall( )
-    {
-        double[] from = Arrays.copyOf( this.min, min.length );
-        double[] to = Arrays.copyOf( this.max, max.length );
+    public Envelope withSideRatioNotTooSmall() {
+        double[] from = Arrays.copyOf(this.min, min.length);
+        double[] to = Arrays.copyOf(this.max, max.length);
         double highestDiff = -Double.MAX_VALUE;
         double[] diffs = new double[from.length];
-        for ( int i = 0; i < from.length; i++ )
-        {
+        for (int i = 0; i < from.length; i++) {
             diffs[i] = to[i] - from[i];
-            highestDiff = Math.max( highestDiff, diffs[i] );
+            highestDiff = Math.max(highestDiff, diffs[i]);
         }
         final double mindiff = highestDiff / MAXIMAL_ENVELOPE_SIDE_RATIO;
-        for ( int i = 0; i < from.length; i++ )
-        {
-            if ( diffs[i] < mindiff )
-            {
+        for (int i = 0; i < from.length; i++) {
+            if (diffs[i] < mindiff) {
                 to[i] = from[i] + mindiff;
             }
         }
-        return new Envelope( from, to );
+        return new Envelope(from, to);
     }
 
-    public double[] getMin()
-    {
+    public double[] getMin() {
         return min;
     }
 
-    public double[] getMax()
-    {
+    public double[] getMax() {
         return max;
     }
 
-    public double getMin( int dimension )
-    {
+    public double getMin(int dimension) {
         return min[dimension];
     }
 
-    public double getMax( int dimension )
-    {
+    public double getMax(int dimension) {
         return max[dimension];
     }
 
-    public double getMinX()
-    {
+    public double getMinX() {
         return getMin(0);
     }
 
-    public double getMaxX()
-    {
+    public double getMaxX() {
         return getMax(0);
     }
 
-    public double getMinY()
-    {
+    public double getMinY() {
         return getMin(1);
     }
 
-    public double getMaxY()
-    {
+    public double getMaxY() {
         return getMax(1);
     }
 
-    public int getDimension()
-    {
+    public int getDimension() {
         return min.length;
     }
 
@@ -131,47 +113,36 @@ public class Envelope
      * Note that this doesn't exclude the envelope boundary.
      * See JTS Envelope.
      */
-    public boolean contains( Envelope other )
-    {
+    public boolean contains(Envelope other) {
         return covers(other);
     }
 
-    public boolean covers( Envelope other )
-    {
+    public boolean covers(Envelope other) {
         boolean covers = getDimension() == other.getDimension();
-        for ( int i = 0; i < min.length && covers; i++ )
-        {
+        for (int i = 0; i < min.length && covers; i++) {
             covers = other.min[i] >= min[i] && other.max[i] <= max[i];
         }
         return covers;
     }
 
-    public boolean intersects( Envelope other )
-    {
+    public boolean intersects(Envelope other) {
         boolean intersects = getDimension() == other.getDimension();
-        for ( int i = 0; i < min.length && intersects; i++ )
-        {
+        for (int i = 0; i < min.length && intersects; i++) {
             intersects = other.min[i] <= max[i] && other.max[i] >= min[i];
         }
         return intersects;
     }
 
-    public void expandToInclude( Envelope other )
-    {
-        if ( getDimension() != other.getDimension() )
-        {
-            throw new IllegalArgumentException( "Cannot join Envelopes with different dimensions: " + this.getDimension() + " != " + other.getDimension() );
-        }
-        else
-        {
-            for ( int i = 0; i < min.length; i++ )
-            {
-                if ( other.min[i] < min[i] )
-                {
+    public void expandToInclude(Envelope other) {
+        if (getDimension() != other.getDimension()) {
+            throw new IllegalArgumentException("Cannot join Envelopes with different dimensions: " + this.getDimension()
+                    + " != " + other.getDimension());
+        } else {
+            for (int i = 0; i < min.length; i++) {
+                if (other.min[i] < min[i]) {
                     min[i] = other.min[i];
                 }
-                if ( other.max[i] > max[i] )
-                {
+                if (other.max[i] > max[i]) {
                     max[i] = other.max[i];
                 }
             }
@@ -179,41 +150,31 @@ public class Envelope
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( obj instanceof Envelope other )
-        {
-            if ( this.getDimension() != other.getDimension() )
-            {
+    public boolean equals(Object obj) {
+        if (obj instanceof Envelope other) {
+            if (this.getDimension() != other.getDimension()) {
                 return false;
             }
-            for ( int i = 0; i < getDimension(); i++ )
-            {
-                if ( this.min[i] != other.getMin( i ) || this.max[i] != other.getMax( i ) )
-                {
+            for (int i = 0; i < getDimension(); i++) {
+                if (this.min[i] != other.getMin(i) || this.max[i] != other.getMax(i)) {
                     return false;
                 }
             }
             return true;
-        }
-        else
-        {
+        } else {
             return false;
         }
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = 1;
-        for ( double element : min )
-        {
-            long bits = Double.doubleToLongBits( element );
+        for (double element : min) {
+            long bits = Double.doubleToLongBits(element);
             result = 31 * result + (int) (bits ^ (bits >>> 32));
         }
-        for ( double element : max )
-        {
-            long bits = Double.doubleToLongBits( element );
+        for (double element : max) {
+            long bits = Double.doubleToLongBits(element);
             result = 31 * result + (int) (bits ^ (bits >>> 32));
         }
         return result;
@@ -223,14 +184,10 @@ public class Envelope
      * Return the distance between the two envelopes on one dimension. This can return negative values if the envelopes intersect on this dimension.
      * @return distance between envelopes
      */
-    public double distance( Envelope other, int dimension )
-    {
-        if ( min[dimension] < other.min[dimension] )
-        {
+    public double distance(Envelope other, int dimension) {
+        if (min[dimension] < other.min[dimension]) {
             return other.min[dimension] - max[dimension];
-        }
-        else
-        {
+        } else {
             return min[dimension] - other.max[dimension];
         }
     }
@@ -238,19 +195,15 @@ public class Envelope
     /**
      * Find the pythagorean distance between two envelopes
      */
-    public double distance( Envelope other )
-    {
-        if ( intersects(other) )
-        {
+    public double distance(Envelope other) {
+        if (intersects(other)) {
             return 0;
         }
 
         double distance = 0.0;
-        for ( int i = 0; i < min.length; i++ )
-        {
+        for (int i = 0; i < min.length; i++) {
             double dist = distance(other, i);
-            if ( dist > 0 )
-            {
+            if (dist > 0) {
                 distance += dist * dist;
             }
         }
@@ -260,8 +213,7 @@ public class Envelope
     /**
      * @return getWidth(0) for special 2D case with the first dimension being x (width)
      */
-    public double getWidth()
-    {
+    public double getWidth() {
         return getWidth(0);
     }
 
@@ -269,8 +221,7 @@ public class Envelope
      * Return the width of the envelope at the specified dimension
      * @return with of that dimension, ie. max[d] - min[d]
      */
-    public double getWidth( int dimension )
-    {
+    public double getWidth(int dimension) {
         return max[dimension] - min[dimension];
     }
 
@@ -280,116 +231,89 @@ public class Envelope
      * @param divisor the number of segments to divide by (a 2D envelope will be divided into quadrants using 2)
      * @return double array of widths, ie. max[d] - min[d]
      */
-    public double[] getWidths( int divisor )
-    {
+    public double[] getWidths(int divisor) {
         double[] widths = Arrays.copyOf(max, max.length);
-        for ( int d = 0; d < max.length; d++ )
-        {
+        for (int d = 0; d < max.length; d++) {
             widths[d] -= min[d];
             widths[d] /= divisor;
         }
         return widths;
     }
 
-    public double getArea()
-    {
+    public double getArea() {
         double area = 1.0;
-        for ( int i = 0; i < min.length; i++ )
-        {
+        for (int i = 0; i < min.length; i++) {
             area *= max[i] - min[i];
         }
         return area;
     }
 
-    public double overlap( Envelope other )
-    {
+    public double overlap(Envelope other) {
         Envelope smallest = this.getArea() < other.getArea() ? this : other;
         Envelope intersection = this.intersection(other);
         return intersection == null ? 0.0 : smallest.isPoint() ? 1.0 : intersection.getArea() / smallest.getArea();
     }
 
-    public boolean isPoint()
-    {
+    public boolean isPoint() {
         boolean ans = true;
-        for ( int i = 0; i < min.length && ans; i++ )
-        {
+        for (int i = 0; i < min.length && ans; i++) {
             ans = min[i] == max[i];
         }
         return ans;
     }
 
-    private static boolean isValid( double[] min, double[] max )
-    {
+    private static boolean isValid(double[] min, double[] max) {
         boolean valid = min != null && max != null && min.length == max.length;
-        for ( int i = 0; valid && i < min.length; i++ )
-        {
+        for (int i = 0; valid && i < min.length; i++) {
             valid = min[i] <= max[i];
         }
         return valid;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "Envelope: min=" + makeString(min) + ", max=" + makeString(max);
     }
 
-    private static String makeString( double[] vals )
-    {
+    private static String makeString(double[] vals) {
         StringBuilder sb = new StringBuilder();
-        if ( vals == null )
-        {
+        if (vals == null) {
             sb.append("null");
-        }
-        else
-        {
-            for ( double val : vals )
-            {
-                if ( sb.length() > 0 )
-                {
-                    sb.append( ',' );
+        } else {
+            for (double val : vals) {
+                if (sb.length() > 0) {
+                    sb.append(',');
+                } else {
+                    sb.append('(');
                 }
-                else
-                {
-                    sb.append( '(' );
-                }
-                sb.append( val );
+                sb.append(val);
             }
-            if ( sb.length() > 0 )
-            {
-                sb.append( ')' );
+            if (sb.length() > 0) {
+                sb.append(')');
             }
         }
         return sb.toString();
     }
 
-    public Envelope intersection( Envelope other )
-    {
-        if ( getDimension() == other.getDimension() )
-        {
+    public Envelope intersection(Envelope other) {
+        if (getDimension() == other.getDimension()) {
             double[] iMin = new double[this.min.length];
             double[] iMax = new double[this.min.length];
             Arrays.fill(iMin, Double.NaN);
             Arrays.fill(iMax, Double.NaN);
             boolean result = true;
-            for ( int i = 0; i < min.length; i++ )
-            {
-                if ( other.min[i] <= this.max[i] && other.max[i] >= this.min[i] )
-                {
+            for (int i = 0; i < min.length; i++) {
+                if (other.min[i] <= this.max[i] && other.max[i] >= this.min[i]) {
                     iMin[i] = Math.max(this.min[i], other.min[i]);
                     iMax[i] = Math.min(this.max[i], other.max[i]);
-                }
-                else
-                {
+                } else {
                     result = false;
                 }
             }
-            return result ? new Envelope( iMin, iMax ) : null;
-        }
-        else
-        {
-            throw new IllegalArgumentException(
-                    "Cannot calculate intersection of Envelopes with different dimensions: " + this.getDimension() + " != " + other.getDimension() );
+            return result ? new Envelope(iMin, iMax) : null;
+        } else {
+            throw new IllegalArgumentException("Cannot calculate intersection of Envelopes with different dimensions: "
+                    + this.getDimension() + " != " + other.getDimension());
         }
     }
 }

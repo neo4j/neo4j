@@ -19,104 +19,93 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import org.neo4j.internal.batchimport.cache.ByteArray;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_BYTES;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_SLOT_BITS;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_SLOT_VALUE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@ExtendWith( RandomExtension.class )
-class ByteArrayBitsManipulatorTest
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.internal.batchimport.cache.ByteArray;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+
+@ExtendWith(RandomExtension.class)
+class ByteArrayBitsManipulatorTest {
     @Inject
     protected RandomSupport random;
 
     @Test
-    void shouldHandleMaxSlotSize()
-    {
+    void shouldHandleMaxSlotSize() {
         // given
-        ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator( MAX_SLOT_BITS, 1 );
+        ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator(MAX_SLOT_BITS, 1);
         long[][] actual = new long[1_000][];
-        try ( ByteArray array = NumberArrayFactories.HEAP.newByteArray( actual.length, new byte[MAX_BYTES], INSTANCE ) )
-        {
+        try (ByteArray array = NumberArrayFactories.HEAP.newByteArray(actual.length, new byte[MAX_BYTES], INSTANCE)) {
             // when
-            for ( int i = 0; i < actual.length; i++ )
-            {
-                actual[i] = new long[] {random.nextLong( MAX_SLOT_VALUE + 1 ), random.nextBoolean() ? -1 : 0};
-                put( manipulator, array, i, actual[i] );
+            for (int i = 0; i < actual.length; i++) {
+                actual[i] = new long[] {random.nextLong(MAX_SLOT_VALUE + 1), random.nextBoolean() ? -1 : 0};
+                put(manipulator, array, i, actual[i]);
             }
 
-            for ( int i = 0; i < actual.length; i++ )
-            {
-                verify( manipulator, array, i, actual[i] );
+            for (int i = 0; i < actual.length; i++) {
+                verify(manipulator, array, i, actual[i]);
             }
         }
     }
 
     @Test
-    void shouldHandleTwoMaxSlotsAndSomeBooleans()
-    {
+    void shouldHandleTwoMaxSlotsAndSomeBooleans() {
         // given
-        ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator( MAX_SLOT_BITS, MAX_SLOT_BITS, 1, 1, 1, 1 );
+        ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator(MAX_SLOT_BITS, MAX_SLOT_BITS, 1, 1, 1, 1);
         long[][] actual = new long[1_000][];
-        try ( ByteArray array = NumberArrayFactories.HEAP.newByteArray( actual.length, new byte[MAX_BYTES], INSTANCE ) )
-        {
+        try (ByteArray array = NumberArrayFactories.HEAP.newByteArray(actual.length, new byte[MAX_BYTES], INSTANCE)) {
             // when
-            for ( int i = 0; i < actual.length; i++ )
-            {
+            for (int i = 0; i < actual.length; i++) {
                 actual[i] = new long[] {
-                        random.nextLong( MAX_SLOT_VALUE + 1 ), random.nextLong( MAX_SLOT_VALUE + 1 ),
-                        random.nextBoolean() ? -1 : 0, random.nextBoolean() ? -1 : 0, random.nextBoolean() ? -1 : 0, random.nextBoolean() ? -1 : 0};
-                put( manipulator, array, i, actual[i] );
+                    random.nextLong(MAX_SLOT_VALUE + 1),
+                    random.nextLong(MAX_SLOT_VALUE + 1),
+                    random.nextBoolean() ? -1 : 0,
+                    random.nextBoolean() ? -1 : 0,
+                    random.nextBoolean() ? -1 : 0,
+                    random.nextBoolean() ? -1 : 0
+                };
+                put(manipulator, array, i, actual[i]);
             }
 
             // then
-            for ( int i = 0; i < actual.length; i++ )
-            {
-                verify( manipulator, array, i, actual[i] );
+            for (int i = 0; i < actual.length; i++) {
+                verify(manipulator, array, i, actual[i]);
             }
         }
     }
 
     @Test
-    void shouldHandleMinusOne()
-    {
+    void shouldHandleMinusOne() {
         // given
-        ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator( MAX_SLOT_BITS, 1 );
-        try ( ByteArray array = NumberArrayFactories.HEAP.newByteArray( 2, new byte[MAX_BYTES], INSTANCE ) )
-        {
+        ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator(MAX_SLOT_BITS, 1);
+        try (ByteArray array = NumberArrayFactories.HEAP.newByteArray(2, new byte[MAX_BYTES], INSTANCE)) {
             // when
-            put( manipulator, array, 0, -1, 0 );
-            put( manipulator, array, 1, -1, -1 );
+            put(manipulator, array, 0, -1, 0);
+            put(manipulator, array, 1, -1, -1);
 
             // then
-            verify( manipulator, array, 0, -1, 0 );
-            verify( manipulator, array, 1, -1, -1 );
+            verify(manipulator, array, 0, -1, 0);
+            verify(manipulator, array, 1, -1, -1);
         }
     }
 
-    private static void verify( ByteArrayBitsManipulator manipulator, ByteArray array, long index, long... values )
-    {
-        for ( int i = 0; i < values.length; i++ )
-        {
-            assertEquals( values[i], manipulator.get( array, index, i ) );
+    private static void verify(ByteArrayBitsManipulator manipulator, ByteArray array, long index, long... values) {
+        for (int i = 0; i < values.length; i++) {
+            assertEquals(values[i], manipulator.get(array, index, i));
         }
     }
 
-    private static void put( ByteArrayBitsManipulator manipulator, ByteArray array, long index, long... values )
-    {
-        for ( int i = 0; i < values.length; i++ )
-        {
-            manipulator.set( array, index, i, values[i] );
+    private static void put(ByteArrayBitsManipulator manipulator, ByteArray array, long index, long... values) {
+        for (int i = 0; i < values.length; i++) {
+            manipulator.set(array, index, i, values[i]);
         }
     }
 }

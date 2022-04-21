@@ -19,31 +19,29 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
-import org.neo4j.io.pagecache.PageCursor;
-
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
-public class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong,MutableLong>
-{
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.neo4j.io.pagecache.PageCursor;
+
+public class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong, MutableLong> {
     private final SimpleLongLayout layout = longLayout().build();
 
     @Override
-    protected TestLayout<MutableLong,MutableLong> getLayout()
-    {
+    protected TestLayout<MutableLong, MutableLong> getLayout() {
         return layout;
     }
 
     @Override
-    protected TreeNode<MutableLong,MutableLong> getNode( int pageSize, Layout<MutableLong,MutableLong> layout,
-            OffloadStore<MutableLong,MutableLong> offloadStore )
-    {
-        return new TreeNodeFixedSize<>( pageSize, layout );
+    protected TreeNode<MutableLong, MutableLong> getNode(
+            int pageSize,
+            Layout<MutableLong, MutableLong> layout,
+            OffloadStore<MutableLong, MutableLong> offloadStore) {
+        return new TreeNodeFixedSize<>(pageSize, layout);
     }
 
     @Override
-    void assertAdditionalHeader( PageCursor cursor, TreeNode<MutableLong,MutableLong> node, int pageSize )
-    {   // no addition header
+    void assertAdditionalHeader(
+            PageCursor cursor, TreeNode<MutableLong, MutableLong> node, int pageSize) { // no addition header
     }
 }

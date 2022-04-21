@@ -37,6 +37,7 @@ trait UsingMatcher {
    * logicalPlan shouldBe using[NodeByLabelScan]
    */
   def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
+
     override def apply(actual: LogicalPlan): MatchResult = {
       val matches = actual.folder.treeFold(false) {
         case lp if tag.runtimeClass.isInstance(lp) => acc => SkipChildren(true)
@@ -44,7 +45,8 @@ trait UsingMatcher {
       MatchResult(
         matches = matches,
         rawFailureMessage = s"Plan should use ${tag.runtimeClass.getSimpleName}",
-        rawNegatedFailureMessage = s"Plan should not use ${tag.runtimeClass.getSimpleName}")
+        rawNegatedFailureMessage = s"Plan should not use ${tag.runtimeClass.getSimpleName}"
+      )
     }
   }
 }

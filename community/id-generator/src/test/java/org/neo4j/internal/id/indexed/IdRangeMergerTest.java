@@ -19,47 +19,44 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-class IdRangeMergerTest
-{
-    private static final IdRangeKey K = new IdRangeKey( 1 );
+import org.junit.jupiter.api.Test;
+
+class IdRangeMergerTest {
+    private static final IdRangeKey K = new IdRangeKey(1);
 
     @Test
-    void normalizeInNormalMode()
-    {
-        final var v1 = spy( new IdRange( 1 ) );
-        final var v2 = spy( new IdRange( 1 ) );
-        v1.setGeneration( 1 );
-        v2.setGeneration( 1 );
+    void normalizeInNormalMode() {
+        final var v1 = spy(new IdRange(1));
+        final var v2 = spy(new IdRange(1));
+        v1.setGeneration(1);
+        v2.setGeneration(1);
 
-        IdRangeMerger.DEFAULT.merge( K, K, v1, v2 );
-        verify( v1, never() ).normalize();
+        IdRangeMerger.DEFAULT.merge(K, K, v1, v2);
+        verify(v1, never()).normalize();
 
-        v2.setGeneration( 2 );
-        IdRangeMerger.DEFAULT.merge( K, K, v1, v2 );
-        verify( v1 ).normalize();
-        assertEquals( 2, v1.getGeneration() );
+        v2.setGeneration(2);
+        IdRangeMerger.DEFAULT.merge(K, K, v1, v2);
+        verify(v1).normalize();
+        assertEquals(2, v1.getGeneration());
     }
 
     @Test
-    void doNotNormalizeInRecoveryMode()
-    {
-        final var v1 = spy( new IdRange( 1 ) );
-        final var v2 = spy( new IdRange( 1 ) );
-        v1.setGeneration( 1 );
-        v2.setGeneration( 1 );
+    void doNotNormalizeInRecoveryMode() {
+        final var v1 = spy(new IdRange(1));
+        final var v2 = spy(new IdRange(1));
+        v1.setGeneration(1);
+        v2.setGeneration(1);
 
-        IdRangeMerger.RECOVERY.merge( K, K, v1, v2 );
+        IdRangeMerger.RECOVERY.merge(K, K, v1, v2);
 
-        v2.setGeneration( 2 );
-        IdRangeMerger.RECOVERY.merge( K, K, v1, v2 );
+        v2.setGeneration(2);
+        IdRangeMerger.RECOVERY.merge(K, K, v1, v2);
 
-        verify( v1, never() ).normalize();
+        verify(v1, never()).normalize();
     }
 }

@@ -24,8 +24,7 @@ package org.neo4j.io.pagecache.tracing;
  * allowed to introduce new failure modes. Thus, this interface overrides
  * the AutoCloseable#close method to not throw any checked exceptions.
  */
-public interface AutoCloseablePageCacheTracerEvent extends AutoCloseable
-{
+public interface AutoCloseablePageCacheTracerEvent extends AutoCloseable {
     @Override
     void close();
 }

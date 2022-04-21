@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index.backup;
 
+import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collection;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -26,25 +31,15 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Collection;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterables;
-
-import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 
 /**
  * Create iterators over Lucene index files for a particular {@link IndexCommit index commit}.
  * Applicable only to a single Lucene index partition.
  */
-public final class LuceneIndexSnapshots
-{
-    private LuceneIndexSnapshots()
-    {
-    }
+public final class LuceneIndexSnapshots {
+    private LuceneIndexSnapshots() {}
 
     /**
      * Create index snapshot iterator for a writable index.
@@ -53,21 +48,17 @@ public final class LuceneIndexSnapshots
      * @return index file name iterator
      * @throws IOException
      */
-    public static ResourceIterator<Path> forIndex( Path indexFolder, IndexWriter indexWriter ) throws IOException
-    {
+    public static ResourceIterator<Path> forIndex(Path indexFolder, IndexWriter indexWriter) throws IOException {
         IndexDeletionPolicy deletionPolicy = indexWriter.getConfig().getIndexDeletionPolicy();
-        if ( deletionPolicy instanceof SnapshotDeletionPolicy policy )
-        {
-            return hasCommits( indexWriter )
-                   ? new WritableIndexSnapshotFileIterator( indexFolder, policy )
-                   : emptyResourceIterator();
-        }
-        else
-        {
-            throw new UnsupportedIndexDeletionPolicy( "Can't perform index snapshot with specified index deletion " +
-                                                      "policy: " + deletionPolicy.getClass().getName() + ". " +
-                                                      "Only " + SnapshotDeletionPolicy.class.getName() + " is " +
-                                                      "supported" );
+        if (deletionPolicy instanceof SnapshotDeletionPolicy policy) {
+            return hasCommits(indexWriter)
+                    ? new WritableIndexSnapshotFileIterator(indexFolder, policy)
+                    : emptyResourceIterator();
+        } else {
+            throw new UnsupportedIndexDeletionPolicy(
+                    "Can't perform index snapshot with specified index deletion " + "policy: "
+                            + deletionPolicy.getClass().getName() + ". " + "Only "
+                            + SnapshotDeletionPolicy.class.getName() + " is " + "supported");
         }
     }
 
@@ -78,25 +69,21 @@ public final class LuceneIndexSnapshots
      * @return index file name resource iterator
      * @throws IOException
      */
-    public static ResourceIterator<Path> forIndex( Path indexFolder, Directory directory ) throws IOException
-    {
-        if ( !hasCommits( directory ) )
-        {
+    public static ResourceIterator<Path> forIndex(Path indexFolder, Directory directory) throws IOException {
+        if (!hasCommits(directory)) {
             return emptyResourceIterator();
         }
-        Collection<IndexCommit> indexCommits = DirectoryReader.listCommits( directory );
-        IndexCommit indexCommit = Iterables.last( indexCommits );
-        return new ReadOnlyIndexSnapshotFileIterator( indexFolder, indexCommit );
+        Collection<IndexCommit> indexCommits = DirectoryReader.listCommits(directory);
+        IndexCommit indexCommit = Iterables.last(indexCommits);
+        return new ReadOnlyIndexSnapshotFileIterator(indexFolder, indexCommit);
     }
 
-    private static boolean hasCommits( IndexWriter indexWriter ) throws IOException
-    {
+    private static boolean hasCommits(IndexWriter indexWriter) throws IOException {
         Directory directory = indexWriter.getDirectory();
-        return hasCommits( directory );
+        return hasCommits(directory);
     }
 
-    private static boolean hasCommits( Directory directory ) throws IOException
-    {
-        return DirectoryReader.indexExists( directory ) && SegmentInfos.readLatestCommit( directory ) != null;
+    private static boolean hasCommits(Directory directory) throws IOException {
+        return DirectoryReader.indexExists(directory) && SegmentInfos.readLatestCommit(directory) != null;
     }
 }

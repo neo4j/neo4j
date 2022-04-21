@@ -19,12 +19,13 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.mock;
 
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -34,18 +35,15 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.mock;
-
-class QueryStatusResultTest
-{
-    private final AtomicReference<CpuClock> cpuClockRef = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
+class QueryStatusResultTest {
+    private final AtomicReference<CpuClock> cpuClockRef = new AtomicReference<>(CpuClock.NOT_AVAILABLE);
 
     @Test
-    void testQueryWithoutTransaction()
-    {
-        var queryFactory = new ExecutingQueryFactory( Clocks.nanoClock(), cpuClockRef, Config.defaults() );
-        ExecutingQuery query = queryFactory.createUnbound( "test1", MapValue.EMPTY, mock( ClientConnectionInfo.class ), "user", "user", Map.of() );
-        assertDoesNotThrow( () -> new QueryStatusResult( query, mock( TransactionalEntityFactory.class ), ZoneId.systemDefault(), "database" ) );
+    void testQueryWithoutTransaction() {
+        var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef, Config.defaults());
+        ExecutingQuery query = queryFactory.createUnbound(
+                "test1", MapValue.EMPTY, mock(ClientConnectionInfo.class), "user", "user", Map.of());
+        assertDoesNotThrow(() -> new QueryStatusResult(
+                query, mock(TransactionalEntityFactory.class), ZoneId.systemDefault(), "database"));
     }
 }

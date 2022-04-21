@@ -19,8 +19,18 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.array_block_size;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.label_block_size;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.string_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
+import static org.neo4j.configuration.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
+import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -36,195 +46,161 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.array_block_size;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.label_block_size;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.string_block_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
-import static org.neo4j.configuration.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
-import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-
-class RecordFormatPropertyConfiguratorTest
-{
+class RecordFormatPropertyConfiguratorTest {
     @Test
-    void keepUserDefinedFormatConfig()
-    {
-        Config config = Config.defaults( string_block_size, 36 );
+    void keepUserDefinedFormatConfig() {
+        Config config = Config.defaults(string_block_size, 36);
         RecordFormats recordFormats = defaultFormat();
-        configureRecordFormat( recordFormats, config );
-        assertEquals( 36, config.get( string_block_size ).intValue(), "Should keep used specified value" );
+        configureRecordFormat(recordFormats, config);
+        assertEquals(36, config.get(string_block_size).intValue(), "Should keep used specified value");
     }
 
     @Test
-    void overrideDefaultValuesForCurrentFormat()
-    {
+    void overrideDefaultValuesForCurrentFormat() {
         Config config = Config.defaults();
         int testHeaderSize = 17;
-        ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
+        ResizableRecordFormats recordFormats = new ResizableRecordFormats(testHeaderSize);
 
-        configureRecordFormat( recordFormats, config );
+        configureRecordFormat(recordFormats, config);
 
-        assertEquals( DEFAULT_BLOCK_SIZE - testHeaderSize, config.get( string_block_size ).intValue() );
-        assertEquals( DEFAULT_BLOCK_SIZE - testHeaderSize, config.get( array_block_size ).intValue() );
-        assertEquals( DEFAULT_LABEL_BLOCK_SIZE - testHeaderSize, config.get( label_block_size ).intValue() );
+        assertEquals(
+                DEFAULT_BLOCK_SIZE - testHeaderSize,
+                config.get(string_block_size).intValue());
+        assertEquals(
+                DEFAULT_BLOCK_SIZE - testHeaderSize,
+                config.get(array_block_size).intValue());
+        assertEquals(
+                DEFAULT_LABEL_BLOCK_SIZE - testHeaderSize,
+                config.get(label_block_size).intValue());
     }
 
     @Test
-    void checkForMinimumBlockSize()
-    {
+    void checkForMinimumBlockSize() {
         Config config = Config.defaults();
         int testHeaderSize = 60;
-        ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
+        ResizableRecordFormats recordFormats = new ResizableRecordFormats(testHeaderSize);
 
-        var e = assertThrows( IllegalArgumentException.class, () -> configureRecordFormat( recordFormats, config ) );
-        assertEquals( e.getMessage(), "Block size should be bigger then " + MINIMAL_BLOCK_SIZE );
+        var e = assertThrows(IllegalArgumentException.class, () -> configureRecordFormat(recordFormats, config));
+        assertEquals(e.getMessage(), "Block size should be bigger then " + MINIMAL_BLOCK_SIZE);
     }
 
-    private class ResizableRecordFormats implements RecordFormats
-    {
+    private class ResizableRecordFormats implements RecordFormats {
         private final int dynamicRecordHeaderSize;
 
-        ResizableRecordFormats( int dynamicRecordHeaderSize )
-        {
+        ResizableRecordFormats(int dynamicRecordHeaderSize) {
             this.dynamicRecordHeaderSize = dynamicRecordHeaderSize;
         }
 
         @Override
-        public String storeVersion()
-        {
+        public String storeVersion() {
             return null;
         }
 
         @Override
-        public String introductionVersion()
-        {
+        public String introductionVersion() {
             return null;
         }
 
         @Override
-        public int majorVersion()
-        {
+        public int majorVersion() {
             return NO_GENERATION;
         }
 
         @Override
-        public int minorVersion()
-        {
+        public int minorVersion() {
             return NO_GENERATION;
         }
 
         @Override
-        public RecordFormat<NodeRecord> node()
-        {
+        public RecordFormat<NodeRecord> node() {
             return null;
         }
 
         @Override
-        public RecordFormat<RelationshipGroupRecord> relationshipGroup()
-        {
+        public RecordFormat<RelationshipGroupRecord> relationshipGroup() {
             return null;
         }
 
         @Override
-        public RecordFormat<RelationshipRecord> relationship()
-        {
+        public RecordFormat<RelationshipRecord> relationship() {
             return null;
         }
 
         @Override
-        public RecordFormat<PropertyRecord> property()
-        {
+        public RecordFormat<PropertyRecord> property() {
             return null;
         }
 
         @Override
-        public RecordFormat<SchemaRecord> schema()
-        {
+        public RecordFormat<SchemaRecord> schema() {
             return null;
         }
 
         @Override
-        public RecordFormat<LabelTokenRecord> labelToken()
-        {
+        public RecordFormat<LabelTokenRecord> labelToken() {
             return null;
         }
 
         @Override
-        public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
-        {
+        public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken() {
             return null;
         }
 
         @Override
-        public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
-        {
+        public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken() {
             return null;
         }
 
         @Override
-        public RecordFormat<DynamicRecord> dynamic()
-        {
-            return new ResizableRecordFormat( dynamicRecordHeaderSize );
+        public RecordFormat<DynamicRecord> dynamic() {
+            return new ResizableRecordFormat(dynamicRecordHeaderSize);
         }
 
         @Override
-        public RecordFormat<MetaDataRecord> metaData()
-        {
+        public RecordFormat<MetaDataRecord> metaData() {
             return null;
         }
 
         @Override
-        public Capability[] capabilities()
-        {
+        public Capability[] capabilities() {
             return new Capability[0];
         }
 
         @Override
-        public boolean hasCapability( Capability capability )
-        {
+        public boolean hasCapability(Capability capability) {
             return false;
         }
 
         @Override
-        public FormatFamily getFormatFamily()
-        {
+        public FormatFamily getFormatFamily() {
             return FormatFamily.standard;
         }
 
         @Override
-        public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
-        {
+        public boolean hasCompatibleCapabilities(RecordFormats other, CapabilityType type) {
             return false;
         }
 
         @Override
-        public String name()
-        {
+        public String name() {
             return getClass().getName();
         }
 
         @Override
-        public boolean onlyForMigration()
-        {
+        public boolean onlyForMigration() {
             return false;
         }
     }
 
-    private static class ResizableRecordFormat extends NoRecordFormat<DynamicRecord>
-    {
+    private static class ResizableRecordFormat extends NoRecordFormat<DynamicRecord> {
         private final int headerSize;
 
-        ResizableRecordFormat( int headerSize )
-        {
+        ResizableRecordFormat(int headerSize) {
             this.headerSize = headerSize;
         }
 
         @Override
-        public int getRecordHeaderSize()
-        {
+        public int getRecordHeaderSize() {
             return headerSize;
         }
     }

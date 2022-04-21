@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class DeepRelationshipTraversalCursorTest extends DeepRelationshipTraversalCursorTestBase<ReadTestSupport>
-{
+public class DeepRelationshipTraversalCursorTest extends DeepRelationshipTraversalCursorTestBase<ReadTestSupport> {
     @Override
-    public ReadTestSupport newTestSupport()
-    {
+    public ReadTestSupport newTestSupport() {
         return new ReadTestSupport();
     }
 }

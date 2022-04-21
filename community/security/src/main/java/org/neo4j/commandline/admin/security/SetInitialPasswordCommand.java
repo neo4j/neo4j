@@ -19,9 +19,13 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
+import static picocli.CommandLine.Parameters;
+
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
@@ -35,72 +39,61 @@ import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.string.UTF8;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
-import static picocli.CommandLine.Parameters;
-
 @Command(
         name = "set-initial-password",
-        description = "Sets the initial password of the initial admin user ('" + INITIAL_USER_NAME + "'). " +
-                      "And removes the requirement to change password on first login. " +
-                      "IMPORTANT: this change will only take effect if performed before the database is started for the first time."
-)
-public class SetInitialPasswordCommand extends AbstractCommand implements PasswordCommand
-{
-    @Option( names = "--require-password-change", defaultValue = "false",
-            description = "Require the user to change their password on first login." )
+        description =
+                "Sets the initial password of the initial admin user ('" + INITIAL_USER_NAME + "'). "
+                        + "And removes the requirement to change password on first login. "
+                        + "IMPORTANT: this change will only take effect if performed before the database is started for the first time.")
+public class SetInitialPasswordCommand extends AbstractCommand implements PasswordCommand {
+    @Option(
+            names = "--require-password-change",
+            defaultValue = "false",
+            description = "Require the user to change their password on first login.")
     private boolean changeRequired;
 
     @Parameters
     private String password;
 
-    public SetInitialPasswordCommand( ExecutionContext ctx )
-    {
-        super( ctx );
+    public SetInitialPasswordCommand(ExecutionContext ctx) {
+        super(ctx);
     }
 
     @Override
-    public void execute() throws IOException
-    {
+    public void execute() throws IOException {
         Config config = loadNeo4jConfig();
         FileSystemAbstraction fileSystem = ctx.fs();
 
-        Path file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
-        if ( fileSystem.fileExists( file ) )
-        {
-            fileSystem.deleteFile( file );
+        Path file = CommunitySecurityModule.getInitialUserRepositoryFile(config);
+        if (fileSystem.fileExists(file)) {
+            fileSystem.deleteFile(file);
         }
 
-        FileUserRepository userRepository =
-                new FileUserRepository( fileSystem, file, NullLogProvider.getInstance() );
-        try
-        {
+        FileUserRepository userRepository = new FileUserRepository(fileSystem, file, NullLogProvider.getInstance());
+        try {
             userRepository.start();
             userRepository.create(
-                    new User.Builder( INITIAL_USER_NAME, createCredentialForPassword( UTF8.encode( password ) ) )
-                            .withRequiredPasswordChange( changeRequired )
-                            .build()
-            );
+                    new User.Builder(INITIAL_USER_NAME, createCredentialForPassword(UTF8.encode(password)))
+                            .withRequiredPasswordChange(changeRequired)
+                            .build());
             userRepository.shutdown();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-        ctx.out().println( "Changed password for user '" + INITIAL_USER_NAME + "'. " +
-                           "IMPORTANT: this change will only take effect if performed before the database is started for the first time." );
+        ctx.out()
+                .println(
+                        "Changed password for user '" + INITIAL_USER_NAME + "'. "
+                                + "IMPORTANT: this change will only take effect if performed before the database is started for the first time.");
     }
 
     @VisibleForTesting
-    Config loadNeo4jConfig()
-    {
+    Config loadNeo4jConfig() {
         Config cfg = Config.newBuilder()
-                           .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
-                           .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                           .commandExpansion( allowCommandExpansion )
-                           .build();
-        ConfigUtils.disableAllConnectors( cfg );
+                .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath())
+                .fromFileNoThrow(ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME))
+                .commandExpansion(allowCommandExpansion)
+                .build();
+        ConfigUtils.disableAllConnectors(cfg);
         return cfg;
     }
 }

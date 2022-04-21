@@ -26,30 +26,24 @@ import org.neo4j.graphdb.PathExpander;
  * the most natural ordering in a depth first search, see
  * http://en.wikipedia.org/wiki/Depth-first_search
  */
-class PreorderDepthFirstSelector implements BranchSelector
-{
+class PreorderDepthFirstSelector implements BranchSelector {
     private TraversalBranch current;
     private final PathExpander expander;
 
-    PreorderDepthFirstSelector( TraversalBranch startSource, PathExpander expander )
-    {
+    PreorderDepthFirstSelector(TraversalBranch startSource, PathExpander expander) {
         this.current = startSource;
         this.expander = expander;
     }
 
     @Override
-    public TraversalBranch next( TraversalContext metadata )
-    {
+    public TraversalBranch next(TraversalContext metadata) {
         TraversalBranch result = null;
-        while ( result == null )
-        {
-            if ( current == null )
-            {
+        while (result == null) {
+            if (current == null) {
                 return null;
             }
-            TraversalBranch next = current.next( expander, metadata );
-            if ( next == null )
-            {
+            TraversalBranch next = current.next(expander, metadata);
+            if (next == null) {
                 current = current.parent();
                 continue;
             }

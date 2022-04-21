@@ -20,18 +20,16 @@
 package org.neo4j.io.pagecache.impl;
 
 import java.io.IOException;
-
 import org.neo4j.io.fs.StoreChannel;
 
-sealed interface BlockSwapper permits UnsafeBlockSwapper, FallbackBlockSwapper
-{
+sealed interface BlockSwapper permits UnsafeBlockSwapper, FallbackBlockSwapper {
     /**
      * Reads from channel to specified location in memory
      */
-    int swapIn( StoreChannel channel, long bufferAddress, long fileOffset, int bufferSize ) throws IOException;
+    int swapIn(StoreChannel channel, long bufferAddress, long fileOffset, int bufferSize) throws IOException;
 
     /**
      * Writes to channel from specified location in memory
      */
-    void swapOut( StoreChannel channel, long bufferAddress, long fileOffset, int bufferLength ) throws IOException;
+    void swapOut(StoreChannel channel, long bufferAddress, long fileOffset, int bufferLength) throws IOException;
 }

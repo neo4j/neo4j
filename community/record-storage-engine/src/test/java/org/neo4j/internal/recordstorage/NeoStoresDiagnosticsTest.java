@@ -19,43 +19,40 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.InternalLog;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-class NeoStoresDiagnosticsTest
-{
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.diagnostics.DiagnosticsManager;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.InternalLog;
+
+class NeoStoresDiagnosticsTest {
     private AssertableLogProvider logProvider;
     private InternalLog logger;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         logProvider = new AssertableLogProvider();
-        logger = logProvider.getLog( DiagnosticsManager.class );
+        logger = logProvider.getLog(DiagnosticsManager.class);
     }
 
     @Test
-    void mustInfoLogIfIdGeneratorsAreUninitialisedAndDebugLoggingIsOff()
-    {
-        NeoStores neoStores = mock( NeoStores.class );
-        NeoStoresDiagnostics.NeoStoreIdUsage idUsage = new NeoStoresDiagnostics.NeoStoreIdUsage( neoStores );
+    void mustInfoLogIfIdGeneratorsAreUninitialisedAndDebugLoggingIsOff() {
+        NeoStores neoStores = mock(NeoStores.class);
+        NeoStoresDiagnostics.NeoStoreIdUsage idUsage = new NeoStoresDiagnostics.NeoStoreIdUsage(neoStores);
         String errorMessage = "IdGenerator is not initialized";
 
-        doThrow( new IllegalStateException( errorMessage ) ).when( neoStores ).logIdUsage( any() );
+        doThrow(new IllegalStateException(errorMessage)).when(neoStores).logIdUsage(any());
 
-        idUsage.dump( logger::info );
+        idUsage.dump(logger::info);
 
-        assertThat( logProvider ).containsMessages( "Diagnostics not available", errorMessage )
-                                 .doesNotContainMessage( "Exception" );
+        assertThat(logProvider)
+                .containsMessages("Diagnostics not available", errorMessage)
+                .doesNotContainMessage("Exception");
     }
 }

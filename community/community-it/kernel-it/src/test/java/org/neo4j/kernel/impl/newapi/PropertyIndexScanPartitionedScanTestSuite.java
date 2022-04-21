@@ -21,60 +21,49 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
-
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.kernel.impl.newapi.PropertyIndexScanPartitionedScanTestSuite.PropertyKeyScanQuery;
 
 abstract class PropertyIndexScanPartitionedScanTestSuite<CURSOR extends Cursor>
-        extends PropertyIndexPartitionedScanTestSuite<PropertyKeyScanQuery,CURSOR>
-{
-    PropertyIndexScanPartitionedScanTestSuite( TestIndexType index )
-    {
-        super( index );
+        extends PropertyIndexPartitionedScanTestSuite<PropertyKeyScanQuery, CURSOR> {
+    PropertyIndexScanPartitionedScanTestSuite(TestIndexType index) {
+        super(index);
     }
 
     abstract static class WithoutData<CURSOR extends Cursor>
-            extends PropertyIndexPartitionedScanTestSuite.WithoutData<PropertyKeyScanQuery,CURSOR>
-    {
-        WithoutData( PropertyIndexScanPartitionedScanTestSuite<CURSOR> testSuite )
-        {
-            super( testSuite );
+            extends PropertyIndexPartitionedScanTestSuite.WithoutData<PropertyKeyScanQuery, CURSOR> {
+        WithoutData(PropertyIndexScanPartitionedScanTestSuite<CURSOR> testSuite) {
+            super(testSuite);
         }
 
-        protected Queries<PropertyKeyScanQuery> emptyQueries( int tokenId, int[] propKeyIds )
-        {
-            final var empty = Stream.concat( Arrays.stream( propKeyIds ).mapToObj( propKeyId -> factory.getIndexName( tokenId, propKeyId ) ),
-                                             Stream.of( factory.getIndexName( tokenId, propKeyIds ) ) )
-                                    .map( PropertyKeyScanQuery::new )
-                                    .collect( EntityIdsMatchingQuery.collector() );
+        protected Queries<PropertyKeyScanQuery> emptyQueries(int tokenId, int[] propKeyIds) {
+            final var empty = Stream.concat(
+                            Arrays.stream(propKeyIds).mapToObj(propKeyId -> factory.getIndexName(tokenId, propKeyId)),
+                            Stream.of(factory.getIndexName(tokenId, propKeyIds)))
+                    .map(PropertyKeyScanQuery::new)
+                    .collect(EntityIdsMatchingQuery.collector());
 
-            return new Queries<>( empty );
+            return new Queries<>(empty);
         }
     }
 
     abstract static class WithData<CURSOR extends Cursor>
-            extends PropertyIndexPartitionedScanTestSuite.WithData<PropertyKeyScanQuery,CURSOR>
-    {
-        WithData( PropertyIndexScanPartitionedScanTestSuite<CURSOR> testSuite )
-        {
-            super( testSuite );
+            extends PropertyIndexPartitionedScanTestSuite.WithData<PropertyKeyScanQuery, CURSOR> {
+        WithData(PropertyIndexScanPartitionedScanTestSuite<CURSOR> testSuite) {
+            super(testSuite);
         }
     }
 
-    protected record PropertyKeyScanQuery(String indexName)
-            implements Query<Void>
-    {
+    protected record PropertyKeyScanQuery(String indexName) implements Query<Void> {
         @Override
-        public Void get()
-        {
+        public Void get() {
             return null;
         }
 
         @Override
-        public String toString()
-        {
-            return String.format( "%s[index='%s']", getClass().getSimpleName(), indexName );
+        public String toString() {
+            return String.format("%s[index='%s']", getClass().getSimpleName(), indexName);
         }
     }
 }

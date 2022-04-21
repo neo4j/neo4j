@@ -19,54 +19,47 @@
  */
 package org.neo4j.io.memory;
 
-import java.nio.ByteBuffer;
-
-import org.neo4j.io.ByteUnit;
-import org.neo4j.memory.MemoryTracker;
-
 import static java.lang.Math.toIntExact;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.nio.ByteBuffer;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.memory.MemoryTracker;
+
 /**
  * Autocloseable container for heap byte buffer that will release memory from memory tracker on close.
  */
-public final class HeapScopedBuffer implements ScopedBuffer
-{
-    public static final HeapScopedBuffer EMPTY_BUFFER = new HeapScopedBuffer( allocate( 0, INSTANCE ).asReadOnlyBuffer(), INSTANCE );
+public final class HeapScopedBuffer implements ScopedBuffer {
+    public static final HeapScopedBuffer EMPTY_BUFFER =
+            new HeapScopedBuffer(allocate(0, INSTANCE).asReadOnlyBuffer(), INSTANCE);
     private final ByteBuffer buffer;
     private final MemoryTracker memoryTracker;
     private boolean closed;
 
-    public HeapScopedBuffer( int capacity, MemoryTracker memoryTracker )
-    {
-        this( allocate( capacity, memoryTracker ), memoryTracker );
+    public HeapScopedBuffer(int capacity, MemoryTracker memoryTracker) {
+        this(allocate(capacity, memoryTracker), memoryTracker);
     }
 
-    public HeapScopedBuffer( int capacity, ByteUnit byteUnit, MemoryTracker memoryTracker )
-    {
-        this( allocate( toIntExact( byteUnit.toBytes( capacity ) ), memoryTracker ), memoryTracker );
+    public HeapScopedBuffer(int capacity, ByteUnit byteUnit, MemoryTracker memoryTracker) {
+        this(allocate(toIntExact(byteUnit.toBytes(capacity)), memoryTracker), memoryTracker);
     }
 
-    private HeapScopedBuffer( ByteBuffer buffer, MemoryTracker memoryTracker )
-    {
+    private HeapScopedBuffer(ByteBuffer buffer, MemoryTracker memoryTracker) {
         this.buffer = buffer;
         this.memoryTracker = memoryTracker;
     }
 
     @Override
-    public ByteBuffer getBuffer()
-    {
+    public ByteBuffer getBuffer() {
         return buffer;
     }
 
     @Override
-    public void close()
-    {
-        if ( !closed )
-        {
-            releaseBuffer( buffer, memoryTracker );
+    public void close() {
+        if (!closed) {
+            releaseBuffer(buffer, memoryTracker);
             closed = true;
         }
     }

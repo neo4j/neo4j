@@ -19,10 +19,6 @@
  */
 package org.neo4j.bolt.testing.client;
 
-import org.bouncycastle.cert.ocsp.BasicOCSPResp;
-import org.bouncycastle.cert.ocsp.OCSPException;
-import org.bouncycastle.cert.ocsp.OCSPResp;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.security.KeyStore;
@@ -38,69 +34,60 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
+import org.bouncycastle.cert.ocsp.BasicOCSPResp;
+import org.bouncycastle.cert.ocsp.OCSPException;
+import org.bouncycastle.cert.ocsp.OCSPResp;
 
-public class CertConfiguredSecureSocketConnection extends SecureSocketConnection
-{
+public class CertConfiguredSecureSocketConnection extends SecureSocketConnection {
     private final X509Certificate rootCert;
 
-    public CertConfiguredSecureSocketConnection( X509Certificate trustedRootCertificate )
-    {
+    public CertConfiguredSecureSocketConnection(X509Certificate trustedRootCertificate) {
         this.rootCert = trustedRootCertificate;
-        setSocket( createTrustedCertSocket() );
+        setSocket(createTrustedCertSocket());
     }
 
-    private Socket createTrustedCertSocket()
-    {
-        try
-        {
-            SSLContext context = SSLContext.getInstance( "TLS" );
+    private Socket createTrustedCertSocket() {
+        try {
+            SSLContext context = SSLContext.getInstance("TLS");
 
-            KeyStore ks = KeyStore.getInstance( KeyStore.getDefaultType() );
-            ks.load( null, "".toCharArray() );
-            ks.setCertificateEntry( "rootCert", rootCert );
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            ks.load(null, "".toCharArray());
+            ks.setCertificateEntry("rootCert", rootCert);
 
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance( KeyManagerFactory.getDefaultAlgorithm() );
-            kmf.init( ks, new char[]{} );
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            kmf.init(ks, new char[] {});
 
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-            tmf.init( ks );
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(ks);
 
-            context.init( kmf.getKeyManagers(), tmf.getTrustManagers(), null );
+            context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
             return context.getSocketFactory().createSocket();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Failed to create security context", e );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create security context", e);
         }
     }
 
     @Override
-    public Set<X509Certificate> getServerCertificatesSeen()
-    {
-        try
-        {
-            return Arrays.stream( ((SSLSocket) getSocket()).getSession().getPeerCertificates() )
-                         .map( cert -> (X509Certificate) cert )
-                         .collect( Collectors.toSet() );
-        }
-        catch ( SSLPeerUnverifiedException e )
-        {
-            throw new RuntimeException( "Failed retrieving client-seen certificates", e );
+    public Set<X509Certificate> getServerCertificatesSeen() {
+        try {
+            return Arrays.stream(((SSLSocket) getSocket()).getSession().getPeerCertificates())
+                    .map(cert -> (X509Certificate) cert)
+                    .collect(Collectors.toSet());
+        } catch (SSLPeerUnverifiedException e) {
+            throw new RuntimeException("Failed retrieving client-seen certificates", e);
         }
     }
 
-    public Set<BasicOCSPResp> getSeenOcspResponses() throws IOException, OCSPException
-    {
+    public Set<BasicOCSPResp> getSeenOcspResponses() throws IOException, OCSPException {
         Set<BasicOCSPResp> ocspResponses = new HashSet<>();
 
-        List<byte[]> binaryStatusResponses = ((ExtendedSSLSession) ((SSLSocket) getSocket()).getSession()).getStatusResponses();
+        List<byte[]> binaryStatusResponses =
+                ((ExtendedSSLSession) ((SSLSocket) getSocket()).getSession()).getStatusResponses();
 
-        for ( byte[] bResp : binaryStatusResponses )
-        {
-            if ( bResp.length > 0 )
-            {
-                OCSPResp ocspResp = new OCSPResp( bResp );
-                ocspResponses.add( (BasicOCSPResp) ocspResp.getResponseObject() );
+        for (byte[] bResp : binaryStatusResponses) {
+            if (bResp.length > 0) {
+                OCSPResp ocspResp = new OCSPResp(bResp);
+                ocspResponses.add((BasicOCSPResp) ocspResp.getResponseObject());
             }
         }
 

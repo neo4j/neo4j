@@ -41,7 +41,7 @@ case object replaceLiteralDynamicPropertyLookups extends Rewriter with Step with
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
   private val instance = bottomUp(Rewriter.lift {
@@ -51,8 +51,10 @@ case object replaceLiteralDynamicPropertyLookups extends Rewriter with Step with
 
   override def apply(v: AnyRef): AnyRef = instance(v)
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = instance
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
 }

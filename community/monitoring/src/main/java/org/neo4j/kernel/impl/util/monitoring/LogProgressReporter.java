@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.util.monitoring;
 
+import static java.lang.String.format;
+
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.InternalLog;
-
-import static java.lang.String.format;
 
 /**
  * Progress reporter that reports its progress into provided log.
  * Progress measured in percents (from 0 till 100) where just started reporter is at 0 percents and
  * completed is at 100. Progress reporter each 10 percents.
  */
-public class LogProgressReporter implements ProgressReporter
-{
+public class LogProgressReporter implements ProgressReporter {
     private static final int STRIDE = 10;
     private static final int HUNDRED = 100;
 
@@ -40,44 +39,36 @@ public class LogProgressReporter implements ProgressReporter
     private int currentPercent;
     private long max;
 
-    public LogProgressReporter( InternalLog log )
-    {
+    public LogProgressReporter(InternalLog log) {
         this.log = log;
     }
 
     @Override
-    public void progress( long add )
-    {
+    public void progress(long add) {
         current += add;
-        int percent = max == 0 ? HUNDRED : Math.min( HUNDRED, (int) ((current * HUNDRED) / max) );
-        ensurePercentReported( percent );
+        int percent = max == 0 ? HUNDRED : Math.min(HUNDRED, (int) ((current * HUNDRED) / max));
+        ensurePercentReported(percent);
     }
 
-    private void ensurePercentReported( int percent )
-    {
-        while ( currentPercent < percent )
-        {
-            reportPercent( ++currentPercent );
+    private void ensurePercentReported(int percent) {
+        while (currentPercent < percent) {
+            reportPercent(++currentPercent);
         }
     }
 
-    private void reportPercent( int percent )
-    {
-        if ( percent % STRIDE == 0 )
-        {
-            log.info( format( "  %d%% completed", percent ) );
+    private void reportPercent(int percent) {
+        if (percent % STRIDE == 0) {
+            log.info(format("  %d%% completed", percent));
         }
     }
 
     @Override
-    public void start( long max )
-    {
+    public void start(long max) {
         this.max = max;
     }
 
     @Override
-    public void completed()
-    {
-        ensurePercentReported( HUNDRED );
+    public void completed() {
+        ensurePercentReported(HUNDRED);
     }
 }

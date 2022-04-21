@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PredicateHelperTest extends CypherFunSuite with AstConstructionTestSupport{
+class PredicateHelperTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("isPredicate tests") {
     isPredicate(HasLabels(varFor("n"), Seq(LabelName("L")(pos)))(pos)) shouldBe true

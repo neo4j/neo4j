@@ -29,17 +29,15 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.NamedToken;
 
-public class CacheInvalidationTransactionApplier extends TransactionApplier.Adapter
-{
+public class CacheInvalidationTransactionApplier extends TransactionApplier.Adapter {
     private final CacheAccessBackDoor cacheAccess;
     private final RelationshipTypeTokenStore relationshipTypeTokenStore;
     private final LabelTokenStore labelTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final StoreCursors storeCursors;
 
-    public CacheInvalidationTransactionApplier( NeoStores neoStores,
-                                                CacheAccessBackDoor cacheAccess, StoreCursors storeCursors )
-    {
+    public CacheInvalidationTransactionApplier(
+            NeoStores neoStores, CacheAccessBackDoor cacheAccess, StoreCursors storeCursors) {
         this.cacheAccess = cacheAccess;
         this.relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         this.labelTokenStore = neoStores.getLabelTokenStore();
@@ -48,35 +46,31 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     }
 
     @Override
-    public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command )
-    {
-        NamedToken type = relationshipTypeTokenStore.getToken( command.tokenId(), storeCursors );
-        cacheAccess.addRelationshipTypeToken( type );
+    public boolean visitRelationshipTypeTokenCommand(RelationshipTypeTokenCommand command) {
+        NamedToken type = relationshipTypeTokenStore.getToken(command.tokenId(), storeCursors);
+        cacheAccess.addRelationshipTypeToken(type);
 
         return false;
     }
 
     @Override
-    public boolean visitLabelTokenCommand( LabelTokenCommand command )
-    {
-        NamedToken labelId = labelTokenStore.getToken( command.tokenId(), storeCursors );
-        cacheAccess.addLabelToken( labelId );
+    public boolean visitLabelTokenCommand(LabelTokenCommand command) {
+        NamedToken labelId = labelTokenStore.getToken(command.tokenId(), storeCursors);
+        cacheAccess.addLabelToken(labelId);
 
         return false;
     }
 
     @Override
-    public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command )
-    {
-        NamedToken index = propertyKeyTokenStore.getToken( command.tokenId(), storeCursors );
-        cacheAccess.addPropertyKeyToken( index );
+    public boolean visitPropertyKeyTokenCommand(PropertyKeyTokenCommand command) {
+        NamedToken index = propertyKeyTokenStore.getToken(command.tokenId(), storeCursors);
+        cacheAccess.addPropertyKeyToken(index);
 
         return false;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         // Nothing to close
     }
 }

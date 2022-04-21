@@ -115,9 +115,9 @@ class DefaultIdRegistryTest extends CypherFunSuite {
     val idsToExplode = originalIDs + newId4
     r.explode(idsToExplode) should equal(
       compact1.flatMap(r.lookup) ++
-      compact2.flatMap(r.lookup) ++
-      compact3.flatMap(r.lookup) ++
-      compact4.flatMap(r.lookup) ++
+        compact2.flatMap(r.lookup) ++
+        compact3.flatMap(r.lookup) ++
+        compact4.flatMap(r.lookup) ++
         originalIDs.flatMap(r.lookup)
     )
     r.exlodedBitSet(idsToExplode) should equal(compact1 ++ compact2 ++ compact3 - newId1 ++ originalIDs)

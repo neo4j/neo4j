@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.AnyValue
@@ -39,32 +39,45 @@ import scala.util.Success
 import scala.util.Try
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
-  extends Expression with Product with Serializable
-{
+    extends Expression with Product with Serializable {
+
   def apply(row: ReadableRow, state: QueryState): AnyValue = mapExpr(row, state) match {
     case IsNoValue() => Values.NO_VALUE
     case n: VirtualNodeValue =>
       propertyKey.getOptId(state.query) match {
         case None => Values.NO_VALUE
-        case Some(propId) => state.query.nodeReadOps.getProperty(n.id(), propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = true)
+        case Some(propId) => state.query.nodeReadOps.getProperty(
+            n.id(),
+            propId,
+            state.cursors.nodeCursor,
+            state.cursors.propertyCursor,
+            throwOnDeleted = true
+          )
       }
     case r: VirtualRelationshipValue =>
       propertyKey.getOptId(state.query) match {
         case None => Values.NO_VALUE
         case Some(propId) =>
-          state.query.relationshipReadOps.getProperty(r.id(), propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, throwOnDeleted = true)
+          state.query.relationshipReadOps.getProperty(
+            r.id(),
+            propId,
+            state.cursors.relationshipScanCursor,
+            state.cursors.propertyCursor,
+            throwOnDeleted = true
+          )
       }
-    case IsMap(mapFunc) => mapFunc(state).get(propertyKey.name)
-    case t: TemporalValue[_,_] => t.get(propertyKey.name)
-    case d: DurationValue => d.get(propertyKey.name)
+    case IsMap(mapFunc)         => mapFunc(state).get(propertyKey.name)
+    case t: TemporalValue[_, _] => t.get(propertyKey.name)
+    case d: DurationValue       => d.get(propertyKey.name)
     case p: PointValue => Try(p.get(propertyKey.name)) match {
-      case Success(v) => v
-      case Failure(e) => throw new InvalidArgumentException(e.getMessage, e)
-    }
+        case Success(v) => v
+        case Failure(e) => throw new InvalidArgumentException(e.getMessage, e)
+      }
     case other => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")
   }
 
-  override def rewrite(f: Expression => Expression): Expression = f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
 
   override def children = Seq(mapExpr, propertyKey)
 

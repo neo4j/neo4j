@@ -140,23 +140,28 @@ object ClauseConverters {
    * @param nextClause the next clause, if there is any
    * @return the updated PlannerQueryBuilder
    */
-  def addToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Clause, nextClause: Option[Clause], anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = clause match {
-    case c: Return => addReturnToLogicalPlanInput(acc, c)
-    case c: Match => addMatchToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
-    case c: With => addWithToLogicalPlanInput(acc, c, nextClause)
-    case c: Unwind => addUnwindToLogicalPlanInput(acc, c)
-    case c: ResolvedCall => addCallToLogicalPlanInput(acc, c)
-    case c: Create => addCreateToLogicalPlanInput(acc, c)
-    case c: SetClause => addSetClauseToLogicalPlanInput(acc, c)
-    case c: Delete => addDeleteToLogicalPlanInput(acc, c)
-    case c: Remove => addRemoveToLogicalPlanInput(acc, c)
-    case c: Merge => addMergeToLogicalPlanInput(acc, c)
-    case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
-    case c: Foreach => addForeachToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
+  def addToLogicalPlanInput(
+    acc: PlannerQueryBuilder,
+    clause: Clause,
+    nextClause: Option[Clause],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): PlannerQueryBuilder = clause match {
+    case c: Return          => addReturnToLogicalPlanInput(acc, c)
+    case c: Match           => addMatchToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
+    case c: With            => addWithToLogicalPlanInput(acc, c, nextClause)
+    case c: Unwind          => addUnwindToLogicalPlanInput(acc, c)
+    case c: ResolvedCall    => addCallToLogicalPlanInput(acc, c)
+    case c: Create          => addCreateToLogicalPlanInput(acc, c)
+    case c: SetClause       => addSetClauseToLogicalPlanInput(acc, c)
+    case c: Delete          => addDeleteToLogicalPlanInput(acc, c)
+    case c: Remove          => addRemoveToLogicalPlanInput(acc, c)
+    case c: Merge           => addMergeToLogicalPlanInput(acc, c)
+    case c: LoadCSV         => addLoadCSVToLogicalPlanInput(acc, c)
+    case c: Foreach         => addForeachToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
     case c: InputDataStream => addInputDataStreamToLogicalPlanInput(acc, c)
     case c: SubqueryCall    => addCallSubqueryToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
     case c: CommandClause   => addCommandClauseToLogicalPlanInput(acc, c)
-    case c: Yield => addYieldToLogicalPlanInput(acc, c)
+    case c: Yield           => addYieldToLogicalPlanInput(acc, c)
 
     case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
     case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
@@ -168,15 +173,18 @@ object ClauseConverters {
         variable = clause.variable.name,
         url = clause.urlString,
         format = if (clause.withHeaders) HasHeaders else NoHeaders,
-        clause.fieldTerminator)
+        clause.fieldTerminator
+      )
     ).withTail(SinglePlannerQuery.empty)
 
-  private def addInputDataStreamToLogicalPlanInput(acc: PlannerQueryBuilder, clause: InputDataStream): PlannerQueryBuilder =
+  private def addInputDataStreamToLogicalPlanInput(
+    acc: PlannerQueryBuilder,
+    clause: InputDataStream
+  ): PlannerQueryBuilder =
     acc.withQueryInput(clause.variables.map(_.name))
 
-  private def asSelections(optWhere: Option[Where]) = Selections(optWhere.
-    map(_.expression.asPredicates).
-    getOrElse(Set.empty))
+  private def asSelections(optWhere: Option[Where]) =
+    Selections(optWhere.map(_.expression.asPredicates).getOrElse(Set.empty))
 
   private def asQueryProjection(distinct: Boolean, items: Seq[ReturnItem]): QueryProjection = {
     val (aggregatingItems: Seq[ReturnItem], groupingKeys: Seq[ReturnItem]) =
@@ -198,26 +206,25 @@ object ClauseConverters {
       RegularQueryProjection(projections = projectionMap)
   }
 
-  private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder,
-                                          clause: Return): PlannerQueryBuilder = clause match {
-    case Return(distinct, ReturnItems(star, items, _), optOrderBy, skip, limit, _) if !star =>
+  private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Return): PlannerQueryBuilder =
+    clause match {
+      case Return(distinct, ReturnItems(star, items, _), optOrderBy, skip, limit, _) if !star =>
+        val queryPagination = QueryPagination().withSkip(skip).withLimit(limit)
 
-      val queryPagination = QueryPagination().withSkip(skip).withLimit(limit)
+        val projection = asQueryProjection(distinct, items).withPagination(queryPagination)
+        val requiredOrder = findRequiredOrder(projection, optOrderBy)
 
-      val projection = asQueryProjection(distinct, items).withPagination(queryPagination)
-      val requiredOrder = findRequiredOrder(projection, optOrderBy)
-
-      acc
-        .withHorizon(projection)
-        .withInterestingOrder(requiredOrder)
-        .withPropagatedTailInterestingOrder()
-    case _ =>
-      throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
-  }
+        acc
+          .withHorizon(projection)
+          .withInterestingOrder(requiredOrder)
+          .withPropagatedTailInterestingOrder()
+      case _ =>
+        throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
+    }
 
   def findRequiredOrder(horizon: QueryHorizon, optOrderBy: Option[OrderBy]): InterestingOrder = {
 
-    val sortItems = if(optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
+    val sortItems = if (optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
     val (requiredOrderCandidate, interestingOrderCandidates: Seq[InterestingOrderCandidate]) = horizon match {
       case RegularQueryProjection(projections, _, _) =>
         val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, projections)
@@ -239,18 +246,23 @@ object ClauseConverters {
     InterestingOrder(requiredOrderCandidate, interestingOrderCandidates)
   }
 
-  private def interestingOrderCandidateForMinOrMax(groupingExpressions: Map[String, Expression], aggregationExpressions: Map[String, Expression]): Option[InterestingOrderCandidate] = {
+  private def interestingOrderCandidateForMinOrMax(
+    groupingExpressions: Map[String, Expression],
+    aggregationExpressions: Map[String, Expression]
+  ): Option[InterestingOrderCandidate] = {
     if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
       // just checked that there is only one key
       val value = aggregationExpressions(aggregationExpressions.keys.head)
-      val columns: Seq[ColumnOrder] = AggregationHelper.checkMinOrMax(value, e => Seq(Asc(e)), e => Seq(Desc(e)), Seq.empty)
+      val columns: Seq[ColumnOrder] =
+        AggregationHelper.checkMinOrMax(value, e => Seq(Asc(e)), e => Seq(Desc(e)), Seq.empty)
       Some(InterestingOrderCandidate(columns))
     } else {
       None
     }
   }
 
-  private def interestingOrderCandidatesForGroupingExpressions(groupingExpressions: Map[String, Expression]): Seq[InterestingOrderCandidate] = {
+  private def interestingOrderCandidatesForGroupingExpressions(groupingExpressions: Map[String, Expression])
+    : Seq[InterestingOrderCandidate] = {
     val propsAndVars = groupingExpressions.values.collect {
       case e: Property => e
       case v: Variable => v
@@ -263,30 +275,33 @@ object ClauseConverters {
     } yield InterestingOrderCandidate(Seq(indexOrder(prop)))
   }
 
-  private def extractColumnOrderFromOrderBy(sortItems: Seq[SortItem], projections: Map[String, Expression]): RequiredOrderCandidate = {
+  private def extractColumnOrderFromOrderBy(
+    sortItems: Seq[SortItem],
+    projections: Map[String, Expression]
+  ): RequiredOrderCandidate = {
     val columns = sortItems.map {
       // RETURN a AS b ORDER BY b.prop
-      case AscSortItem(e@Property(LogicalVariable(varName), _)) =>
+      case AscSortItem(e @ Property(LogicalVariable(varName), _)) =>
         projections.get(varName) match {
           case Some(expression) => Asc(e, Map(varName -> expression))
-          case None => Asc(e)
+          case None             => Asc(e)
         }
-      case DescSortItem(e@Property(LogicalVariable(varName), _)) =>
+      case DescSortItem(e @ Property(LogicalVariable(varName), _)) =>
         projections.get(varName) match {
           case Some(expression) => Desc(e, Map(varName -> expression))
-          case None => Desc(e)
+          case None             => Desc(e)
         }
 
       // RETURN n.prop as foo ORDER BY foo
-      case AscSortItem(e@LogicalVariable(name)) =>
+      case AscSortItem(e @ LogicalVariable(name)) =>
         projections.get(name) match {
           case Some(expression) => Asc(e, Map(name -> expression))
-          case None => Asc(e)
+          case None             => Asc(e)
         }
-      case DescSortItem(e@LogicalVariable(name)) =>
+      case DescSortItem(e @ LogicalVariable(name)) =>
         projections.get(name) match {
           case Some(expression) => Desc(e, Map(name -> expression))
-          case None => Desc(e)
+          case None             => Desc(e)
         }
 
       //  RETURN n.prop AS foo ORDER BY foo * 2
@@ -321,31 +336,31 @@ object ClauseConverters {
     seenPatternNodes ++= builder.allSeenPatternNodes
 
     clause.pattern.patternParts.foreach {
-      //CREATE (n :L1:L2 {prop: 42})
+      // CREATE (n :L1:L2 {prop: 42})
       case EveryPath(NodePattern(Some(id), labelExpression, props, None)) =>
         val labels = getLabelNameSeq(labelExpression)
         nodes += CreateNode(id.name, labels, props)
         seenPatternNodes += id.name
         ()
 
-      //CREATE (n)-[r: R]->(m)
+      // CREATE (n)-[r: R]->(m)
       case EveryPath(pattern: RelationshipChain) =>
-
         val (currentNodes, currentRelationships) = allCreatePatterns(pattern)
 
-        //remove duplicates from loops, (a:L)-[:ER1]->(a)
+        // remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(currentNodes)
 
-        //create nodes that are not already matched or created
+        // create nodes that are not already matched or created
         val (nodesCreatedBefore, nodesToCreate) = dedupedNodes.partition {
           case CreateNodeCommand(pattern, _) => seenPatternNodes(pattern.idName)
         }
 
-        //we must check that we are not trying to set a pattern or label on any already created nodes
+        // we must check that we are not trying to set a pattern or label on any already created nodes
         nodesCreatedBefore.collectFirst {
           case CreateNodeCommand(c, _) if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
-              s"Can't create node `${c.idName}` with labels or properties here. The variable is already declared in this context")
+              s"Can't create node `${c.idName}` with labels or properties here. The variable is already declared in this context"
+            )
         }
 
         nodes ++= nodesToCreate.map(_.create)
@@ -361,9 +376,9 @@ object ClauseConverters {
 
   private def getLabelNameSeq(labelExpression: Option[LabelExpression]): Seq[LabelName] = {
     labelExpression match {
-      case Some(Label(labelName)) => Seq(labelName)
+      case Some(Label(labelName))           => Seq(labelName)
       case Some(ColonConjunction(lhs, rhs)) => getLabelNameSeq(Some(lhs)) ++ getLabelNameSeq(Some(rhs))
-      case None => Seq.empty
+      case None                             => Seq.empty
     }
   }
 
@@ -371,12 +386,14 @@ object ClauseConverters {
     val seen = mutable.Set.empty[String]
     val result = mutable.ListBuffer.empty[CreateNodeCommand]
     nodePatterns.foreach {
-      case c@CreateNodeCommand(pattern, _) =>
+      case c @ CreateNodeCommand(pattern, _) =>
         if (!seen(pattern.idName)) {
           result += c
         } else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
-          //reused patterns must be pure variable
-          throw new SyntaxException(s"Can't create node `${pattern.idName}` with labels or properties here. The variable is already declared in this context")
+          // reused patterns must be pure variable
+          throw new SyntaxException(
+            s"Can't create node `${pattern.idName}` with labels or properties here. The variable is already declared in this context"
+          )
         }
         seen.add(pattern.idName)
     }
@@ -386,33 +403,54 @@ object ClauseConverters {
   private case class CreateNodeCommand(create: CreateNode, variable: LogicalVariable)
   private case class CreateRelCommand(create: CreateRelationship, variable: LogicalVariable)
 
-  private def createNodeCommand(pattern: NodePattern): CreateNodeCommand =  pattern match {
-    case NodePattern(Some(variable), labelExpression, props, None) => CreateNodeCommand(CreateNode(variable.name, getLabelNameSeq(labelExpression), props), variable)
+  private def createNodeCommand(pattern: NodePattern): CreateNodeCommand = pattern match {
+    case NodePattern(Some(variable), labelExpression, props, None) =>
+      CreateNodeCommand(CreateNode(variable.name, getLabelNameSeq(labelExpression), props), variable)
     case _ => throw new InternalException("All nodes must be named at this instance")
   }
 
-  private def allCreatePatterns(element: PatternElement): (Vector[CreateNodeCommand], Vector[CreateRelCommand]) = element match {
-    //CREATE ()
-    case np:NodePattern => (Vector(createNodeCommand(np)), Vector.empty)
+  private def allCreatePatterns(element: PatternElement): (Vector[CreateNodeCommand], Vector[CreateRelCommand]) =
+    element match {
+      // CREATE ()
+      case np: NodePattern => (Vector(createNodeCommand(np)), Vector.empty)
 
-    //CREATE ()-[:R]->()
-    //Semantic checking enforces types.size == 1
-    case RelationshipChain(leftNode@NodePattern(Some(leftVar), _, _, _), RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
-      (Vector(
-        createNodeCommand(leftNode),
-        createNodeCommand(rightNode)
-      ), Vector(
-        CreateRelCommand(CreateRelationship(relVar.name, leftVar.name, relType, rightVar.name, direction, properties), relVar)
-      ))
+      // CREATE ()-[:R]->()
+      // Semantic checking enforces types.size == 1
+      case RelationshipChain(
+          leftNode @ NodePattern(Some(leftVar), _, _, _),
+          RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _),
+          rightNode @ NodePattern(Some(rightVar), _, _, _)
+        ) =>
+        (
+          Vector(
+            createNodeCommand(leftNode),
+            createNodeCommand(rightNode)
+          ),
+          Vector(
+            CreateRelCommand(
+              CreateRelationship(relVar.name, leftVar.name, relType, rightVar.name, direction, properties),
+              relVar
+            )
+          )
+        )
 
-    //CREATE ()->[:R]->()-[:R]->...->()
-    case RelationshipChain(left, RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
-      val (nodes, rels) = allCreatePatterns(left)
-      (nodes :+
-        createNodeCommand(rightNode)
-        , rels :+
-        CreateRelCommand(CreateRelationship(relVar.name, nodes.last.create.idName, relType, rightVar.name, direction, properties), relVar))
-  }
+      // CREATE ()->[:R]->()-[:R]->...->()
+      case RelationshipChain(
+          left,
+          RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _),
+          rightNode @ NodePattern(Some(rightVar), _, _, _)
+        ) =>
+        val (nodes, rels) = allCreatePatterns(left)
+        (
+          nodes :+
+            createNodeCommand(rightNode),
+          rels :+
+            CreateRelCommand(
+              CreateRelationship(relVar.name, nodes.last.create.idName, relType, rightVar.name, direction, properties),
+              relVar
+            )
+        )
+    }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
     acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced))))
@@ -427,13 +465,18 @@ object ClauseConverters {
       Seq.empty
   }
 
-  private def addMatchToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Match, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
+  private def addMatchToLogicalPlanInput(
+    acc: PlannerQueryBuilder,
+    clause: Match,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): PlannerQueryBuilder = {
     val patternContent = clause.pattern.destructed(anonymousVariableNameGenerator)
 
     val selections = asSelections(clause.where)
 
     if (clause.optional) {
-      acc.amendQueryGraph { qg => qg.withAddedOptionalMatch(
+      acc.amendQueryGraph { qg =>
+        qg.withAddedOptionalMatch(
           // When adding QueryGraphs for optional matches, we always start with a new one.
           // It's either all or nothing per match clause.
           QueryGraph(
@@ -442,27 +485,37 @@ object ClauseConverters {
             patternRelationships = patternContent.rels.toSet,
             hints = clause.hints.toSet,
             shortestPathPatterns = patternContent.shortestPaths.toSet
-          ))
-        }
+          )
+        )
+      }
     } else {
       acc.amendQueryGraph {
-        qg => qg
-          .addSelections(selections)
-          .addPatternNodes(patternContent.nodeIds: _*)
-          .addPatternRelationships(patternContent.rels)
-          .addHints(clause.hints)
-          .addShortestPaths(patternContent.shortestPaths: _*)
+        qg =>
+          qg
+            .addSelections(selections)
+            .addPatternNodes(patternContent.nodeIds: _*)
+            .addPatternRelationships(patternContent.rels)
+            .addHints(clause.hints)
+            .addShortestPaths(patternContent.shortestPaths: _*)
       }
     }
   }
 
-  private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubqueryCall, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
+  private def addCallSubqueryToLogicalPlanInput(
+    acc: PlannerQueryBuilder,
+    clause: SubqueryCall,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): PlannerQueryBuilder = {
     val subquery = clause.part
-    val callSubquery = StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable, anonymousVariableNameGenerator)
+    val callSubquery =
+      StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable, anonymousVariableNameGenerator)
     acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isYielding, clause.inTransactionsParameters)
   }
 
-  private def addCommandClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: CommandClause): PlannerQueryBuilder = {
+  private def addCommandClauseToLogicalPlanInput(
+    acc: PlannerQueryBuilder,
+    clause: CommandClause
+  ): PlannerQueryBuilder = {
     acc
       .withHorizon(CommandProjection(clause))
       .withTail(SinglePlannerQuery.empty)
@@ -475,27 +528,25 @@ object ClauseConverters {
     val queryPagination = QueryPagination().withLimit(`yield`.limit).withSkip(`yield`.skip)
 
     val queryProjection =
-      asQueryProjection(distinct = false, returnItems).
-        withPagination(queryPagination).
-        withSelection(selections)
+      asQueryProjection(distinct = false, returnItems).withPagination(queryPagination).withSelection(selections)
 
     val requiredOrder = findRequiredOrder(queryProjection, `yield`.orderBy)
 
-    builder.
-      withHorizon(queryProjection).
-      withInterestingOrder(requiredOrder).
-      withTail(RegularSinglePlannerQuery(QueryGraph()))
+    builder.withHorizon(queryProjection).withInterestingOrder(requiredOrder).withTail(RegularSinglePlannerQuery(
+      QueryGraph()
+    ))
   }
 
   private def toPropertyMap(expr: Option[Expression]): Map[PropertyKeyName, Expression] = expr match {
-    case None => Map.empty
+    case None                       => Map.empty
     case Some(MapExpression(items)) => items.toMap
-    case e => throw new InternalException(s"Expected MapExpression, got $e")
+    case e                          => throw new InternalException(s"Expected MapExpression, got $e")
   }
 
-  private def toPropertySelection(identifier: LogicalVariable,  map:Map[PropertyKeyName, Expression]): Seq[Expression] = map.map {
-    case (k, e) => In(Property(identifier, k)(k.position), ListLiteral(Seq(e))(e.position))(identifier.position)
-  }.toIndexedSeq
+  private def toPropertySelection(identifier: LogicalVariable, map: Map[PropertyKeyName, Expression]): Seq[Expression] =
+    map.map {
+      case (k, e) => In(Property(identifier, k)(k.position), ListLiteral(Seq(e))(e.position))(identifier.position)
+    }.toIndexedSeq
 
   private def toSetPattern(semanticTable: SemanticTable)(setItem: SetItem): SetMutatingPattern = setItem match {
     case SetLabelItem(id, labels) => SetLabelPattern(id.name, labels)
@@ -547,7 +598,7 @@ object ClauseConverters {
     }.flatten
 
     clause.pattern match {
-      //MERGE (n :L1:L2 {prop: 42})
+      // MERGE (n :L1:L2 {prop: 42})
       case EveryPath(NodePattern(Some(id), labelExpression, props, _)) =>
         val labels = getLabelNameSeq(labelExpression)
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
@@ -571,18 +622,18 @@ object ClauseConverters {
           .withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds)))
           .withTail(RegularSinglePlannerQuery())
 
-      //MERGE (n)-[r: R]->(m)
+      // MERGE (n)-[r: R]->(m)
       case EveryPath(pattern: RelationshipChain) =>
         val (nodes, rels) = allCreatePatterns(pattern)
-        //remove duplicates from loops, (a:L)-[:ER1]->(a)
+        // remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)
 
         val seenPatternNodes = builder.allSeenPatternNodes
-        //create nodes that are not already matched or created
+        // create nodes that are not already matched or created
         val nodesToCreate = dedupedNodes.filterNot {
           case CreateNodeCommand(pattern, _) => seenPatternNodes(pattern.idName)
         }
-        //we must check that we are not trying to set a pattern or label on any already created nodes
+        // we must check that we are not trying to set a pattern or label on any already created nodes
         val nodesCreatedBefore = dedupedNodes.filter {
           case CreateNodeCommand(pattern, _) => seenPatternNodes(pattern.idName)
         }.toSet
@@ -590,7 +641,8 @@ object ClauseConverters {
         nodesCreatedBefore.collectFirst {
           case CreateNodeCommand(c, _) if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
-              s"Can't create node `${c.idName}` with labels or properties here. The variable is already declared in this context")
+              s"Can't create node `${c.idName}` with labels or properties here. The variable is already declared in this context"
+            )
         }
 
         val selections = asSelections(clause.where)
@@ -611,8 +663,8 @@ object ClauseConverters {
         val matchGraph = QueryGraph(
           patternNodes = nodes.map(_.create.idName).toSet,
           patternRelationships = rels.map {
-            case CreateRelCommand(r, _) => PatternRelationship(r.idName, (r.leftNode, r.rightNode),
-              r.direction, Seq(r.relType), SimplePatternLength)
+            case CreateRelCommand(r, _) =>
+              PatternRelationship(r.idName, (r.leftNode, r.rightNode), r.direction, Seq(r.relType), SimplePatternLength)
           }.toSet,
           selections = selections ++ Selections.from(hasLabels ++ hasProps),
           argumentIds = builder.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.create.idName)
@@ -620,36 +672,47 @@ object ClauseConverters {
 
         val queryGraph = QueryGraph.empty
           .withArgumentIds(matchGraph.argumentIds)
-          .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate.map(_.create), rels.map(_.create), matchGraph, onCreate, onMatch))
+          .addMutatingPatterns(MergeRelationshipPattern(
+            nodesToCreate.map(_.create),
+            rels.map(_.create),
+            matchGraph,
+            onCreate,
+            onMatch
+          ))
 
-        builder.
-          withHorizon(PassthroughAllHorizon()).
-          withTail(RegularSinglePlannerQuery(queryGraph = queryGraph)).
-          withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds))).
-          withTail(RegularSinglePlannerQuery())
+        builder.withHorizon(PassthroughAllHorizon()).withTail(
+          RegularSinglePlannerQuery(queryGraph = queryGraph)
+        ).withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds))).withTail(
+          RegularSinglePlannerQuery()
+        )
 
       case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
     }
   }
 
-  private def addWithToLogicalPlanInput(builder: PlannerQueryBuilder,
-                                        clause: With,
-                                        nextClause: Option[Clause]): PlannerQueryBuilder = {
+  private def addWithToLogicalPlanInput(
+    builder: PlannerQueryBuilder,
+    clause: With,
+    nextClause: Option[Clause]
+  ): PlannerQueryBuilder = {
+
     /**
      * If we have OPTIONAL MATCHes, we can only keep building the same PlannerQuery, if the next clause is also an OPTIONAL MATCH
      * and the WITH clause has no WHERE sub-clause.
      */
     def optionalMatchesOK(where: Option[Where]): Boolean = {
       !builder.currentQueryGraph.hasOptionalPatterns || (where.isEmpty && (nextClause match {
-        case Some(m:Match) if m.optional => true
-        case _ => false
+        case Some(m: Match) if m.optional => true
+        case _                            => false
       }))
     }
+
     /**
      * If there are updates, we need to keep the order between read and write parts correct.
      */
     def noUpdates: Boolean = !builder.currentQueryGraph.containsUpdates && builder.readOnly
     def noShortestPaths: Boolean = builder.currentQueryGraph.shortestPathPatterns.isEmpty
+
     /**
      * If there are projections or aggregations, we have to continue in a new PlannerQuery.
      */
@@ -659,7 +722,6 @@ object ClauseConverters {
         case _ => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
       }
     }
-
 
     clause match {
 
@@ -692,9 +754,7 @@ object ClauseConverters {
         val queryPagination = QueryPagination().withLimit(limit).withSkip(skip)
 
         val queryProjection =
-          asQueryProjection(distinct, returnItems).
-            withPagination(queryPagination).
-            withSelection(selections)
+          asQueryProjection(distinct, returnItems).withPagination(queryPagination).withSelection(selections)
 
         val requiredOrder = findRequiredOrder(queryProjection, orderBy)
 
@@ -710,13 +770,12 @@ object ClauseConverters {
   }
 
   private def addUnwindToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Unwind): PlannerQueryBuilder =
-    builder.
-      withHorizon(
-        UnwindProjection(
-          variable = clause.variable.name,
-          exp = clause.expression)
-      ).
-      withTail(SinglePlannerQuery.empty)
+    builder.withHorizon(
+      UnwindProjection(
+        variable = clause.variable.name,
+        exp = clause.expression
+      )
+    ).withTail(SinglePlannerQuery.empty)
 
   private def addCallToLogicalPlanInput(builder: PlannerQueryBuilder, call: ResolvedCall): PlannerQueryBuilder = {
     builder
@@ -724,7 +783,11 @@ object ClauseConverters {
       .withTail(SinglePlannerQuery.empty)
   }
 
-  private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
+  private def addForeachToLogicalPlanInput(
+    builder: PlannerQueryBuilder,
+    clause: Foreach,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): PlannerQueryBuilder = {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables
 
     val foreachVariable = clause.variable
@@ -733,12 +796,17 @@ object ClauseConverters {
       .amendQueryGraph(_.addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(PassthroughAllHorizon())
 
-    val innerPlannerQuery = StatementConverters.addClausesToPlannerQueryBuilder(clause.updates, innerBuilder, anonymousVariableNameGenerator).build()
+    val innerPlannerQuery = StatementConverters.addClausesToPlannerQueryBuilder(
+      clause.updates,
+      innerBuilder,
+      anonymousVariableNameGenerator
+    ).build()
 
     val foreachPattern = ForeachPattern(
       variable = clause.variable.name,
       expression = clause.expression,
-      innerUpdates = innerPlannerQuery)
+      innerUpdates = innerPlannerQuery
+    )
 
     val foreachGraph = QueryGraph(
       argumentIds = currentlyAvailableVariables,
@@ -761,13 +829,15 @@ object ClauseConverters {
         builder.amendQueryGraph(_.addMutatingPatterns(RemoveLabelPattern(variable.name, labelNames)))
 
       // REMOVE n.prop
-      case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) if acc.semanticTable.isNode(variable) =>
+      case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey)))
+        if acc.semanticTable.isNode(variable) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
-          SetNodePropertyPattern(variable.name,propertyKey, Null()(propertyKey.position))
+          SetNodePropertyPattern(variable.name, propertyKey, Null()(propertyKey.position))
         ))
 
       // REMOVE rel.prop
-      case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) if acc.semanticTable.isRelationship(variable) =>
+      case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey)))
+        if acc.semanticTable.isRelationship(variable) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
           SetRelationshipPropertyPattern(variable.name, propertyKey, Null()(propertyKey.position))
         ))

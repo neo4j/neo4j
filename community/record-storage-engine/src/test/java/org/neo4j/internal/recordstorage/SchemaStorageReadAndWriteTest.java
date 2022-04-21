@@ -19,13 +19,20 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.TestInstance;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.schema.SchemaRule;
@@ -50,35 +57,26 @@ import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@TestInstance( TestInstance.Lifecycle.PER_CLASS )
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
-class SchemaStorageReadAndWriteTest
-{
+class SchemaStorageReadAndWriteTest {
     @Inject
     private PageCache pageCache;
+
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private final RandomSchema randomSchema = new RandomSchema()
-    {
+    private final RandomSchema randomSchema = new RandomSchema() {
         @Override
-        public int nextRuleId()
-        {
-            return (int) storage.newRuleId( NULL_CONTEXT );
+        public int nextRuleId() {
+            return (int) storage.newRuleId(NULL_CONTEXT);
         }
     };
 
@@ -87,40 +85,52 @@ class SchemaStorageReadAndWriteTest
     private CachedStoreCursors storeCursors;
 
     @BeforeAll
-    void before() throws Exception
-    {
-        testDirectory.prepareDirectory( getClass(), "test" );
-        var storeFactory =
-                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache, fs, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), EMPTY_LOG_TAIL );
-        neoStores = storeFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN,
-                StoreType.RELATIONSHIP_TYPE_TOKEN );
+    void before() throws Exception {
+        testDirectory.prepareDirectory(getClass(), "test");
+        var storeFactory = new StoreFactory(
+                databaseLayout,
+                Config.defaults(),
+                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                writable(),
+                EMPTY_LOG_TAIL);
+        neoStores = storeFactory.openNeoStores(
+                true,
+                StoreType.SCHEMA,
+                StoreType.PROPERTY_KEY_TOKEN,
+                StoreType.LABEL_TOKEN,
+                StoreType.RELATIONSHIP_TYPE_TOKEN);
         AtomicInteger tokenIdCounter = new AtomicInteger();
-        TokenCreator tokenCreator = ( name, internal ) -> tokenIdCounter.incrementAndGet();
-        TokenHolders tokens = new TokenHolders( new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
-        tokens.setInitialTokens( StoreTokens.allTokens( neoStores ), storeCursors );
-        tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.propertyKeyTokens().size() ) );
-        tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.labelTokens().size() ) );
-        tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.relationshipTypeTokens().size() ) );
-        storage = new SchemaStorage( neoStores.getSchemaStore(), tokens, KernelVersionRepository.LATEST );
+        TokenCreator tokenCreator = (name, internal) -> tokenIdCounter.incrementAndGet();
+        TokenHolders tokens = new TokenHolders(
+                new DelegatingTokenHolder(tokenCreator, TokenHolder.TYPE_PROPERTY_KEY),
+                new DelegatingTokenHolder(tokenCreator, TokenHolder.TYPE_LABEL),
+                new DelegatingTokenHolder(tokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE));
+        storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
+        tokens.setInitialTokens(StoreTokens.allTokens(neoStores), storeCursors);
+        tokenIdCounter.set(
+                Math.max(tokenIdCounter.get(), tokens.propertyKeyTokens().size()));
+        tokenIdCounter.set(Math.max(tokenIdCounter.get(), tokens.labelTokens().size()));
+        tokenIdCounter.set(
+                Math.max(tokenIdCounter.get(), tokens.relationshipTypeTokens().size()));
+        storage = new SchemaStorage(neoStores.getSchemaStore(), tokens, KernelVersionRepository.LATEST);
     }
 
     @AfterAll
-    void after()
-    {
-        closeAllUnchecked( storeCursors, neoStores );
+    void after() {
+        closeAllUnchecked(storeCursors, neoStores);
     }
 
-    @RepeatedTest( 2000 )
-    void shouldPerfectlyPreserveSchemaRules() throws Exception
-    {
+    @RepeatedTest(2000)
+    void shouldPerfectlyPreserveSchemaRules() throws Exception {
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
-        storage.writeSchemaRule( schemaRule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, storeCursors );
-        SchemaRule returnedRule = storage.loadSingleSchemaRule( schemaRule.getId(), storeCursors );
-        assertTrue( RandomSchema.schemaDeepEquals( returnedRule, schemaRule ),
-                () -> "\n" + returnedRule + "\nwas not equal to\n" + schemaRule );
+        storage.writeSchemaRule(schemaRule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, storeCursors);
+        SchemaRule returnedRule = storage.loadSingleSchemaRule(schemaRule.getId(), storeCursors);
+        assertTrue(
+                RandomSchema.schemaDeepEquals(returnedRule, schemaRule),
+                () -> "\n" + returnedRule + "\nwas not equal to\n" + schemaRule);
     }
 }

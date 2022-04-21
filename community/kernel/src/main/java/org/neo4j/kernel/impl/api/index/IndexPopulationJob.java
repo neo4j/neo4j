@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_populator_block_size;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.configuration.Config;
@@ -42,16 +43,13 @@ import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.concurrent.Runnables;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_populator_block_size;
-
 /**
  * A background job for initially populating one or more index over existing data in the database.
  * Use provided store view to scan store. Participating {@link IndexPopulator} are added with
  * {@link #addPopulator(IndexPopulator, IndexProxyStrategy, FlippableIndexProxy, FailedIndexProxyFactory)}
  * before {@link #run() running} this job.
  */
-public class IndexPopulationJob implements Runnable
-{
+public class IndexPopulationJob implements Runnable {
     private static final String INDEX_POPULATION_TAG = "indexPopulationJob";
     private final IndexMonitor monitor;
     private final CursorContextFactory contextFactory;
@@ -59,7 +57,7 @@ public class IndexPopulationJob implements Runnable
     private final ByteBufferFactory bufferFactory;
     private final ThreadSafePeakMemoryTracker memoryAllocationTracker;
     private final MultipleIndexPopulator multiPopulator;
-    private final CountDownLatch doneSignal = new CountDownLatch( 1 );
+    private final CountDownLatch doneSignal = new CountDownLatch(1);
     private final String databaseName;
     private final Subject subject;
     private final EntityType populatedEntityType;
@@ -77,16 +75,23 @@ public class IndexPopulationJob implements Runnable
      */
     private volatile JobHandle<?> jobHandle;
 
-    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexMonitor monitor,
-            CursorContextFactory contextFactory, MemoryTracker memoryTracker, String databaseName, Subject subject, EntityType populatedEntityType,
-            Config config )
-    {
+    public IndexPopulationJob(
+            MultipleIndexPopulator multiPopulator,
+            IndexMonitor monitor,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker,
+            String databaseName,
+            Subject subject,
+            EntityType populatedEntityType,
+            Config config) {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
         this.memoryAllocationTracker = new ThreadSafePeakMemoryTracker();
-        this.bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, config.get( index_populator_block_size ).intValue() );
+        this.bufferFactory = new ByteBufferFactory(
+                UnsafeDirectByteBufferAllocator::new,
+                config.get(index_populator_block_size).intValue());
         this.databaseName = databaseName;
         this.subject = subject;
         this.populatedEntityType = populatedEntityType;
@@ -100,12 +105,14 @@ public class IndexPopulationJob implements Runnable
      * @param flipper {@link FlippableIndexProxy} to call after a successful population.
      * @param failedIndexProxyFactory {@link FailedIndexProxyFactory} to use after an unsuccessful population.
      */
-    MultipleIndexPopulator.IndexPopulation addPopulator( IndexPopulator populator, IndexProxyStrategy indexProxyStrategy,
-            FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory )
-    {
+    MultipleIndexPopulator.IndexPopulation addPopulator(
+            IndexPopulator populator,
+            IndexProxyStrategy indexProxyStrategy,
+            FlippableIndexProxy flipper,
+            FailedIndexProxyFactory failedIndexProxyFactory) {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        populatedIndexes.add( indexProxyStrategy );
-        return this.multiPopulator.addPopulator( populator, indexProxyStrategy, flipper, failedIndexProxyFactory );
+        populatedIndexes.add(indexProxyStrategy);
+        return this.multiPopulator.addPopulator(populator, indexProxyStrategy, flipper, failedIndexProxyFactory);
     }
 
     /**
@@ -114,66 +121,54 @@ public class IndexPopulationJob implements Runnable
      * The scan continues as long as there's at least one non-failed populator.
      */
     @Override
-    public void run()
-    {
-        try ( var cursorContext = contextFactory.create( INDEX_POPULATION_TAG ) )
-        {
-            if ( !multiPopulator.hasPopulators() )
-            {
+    public void run() {
+        try (var cursorContext = contextFactory.create(INDEX_POPULATION_TAG)) {
+            if (!multiPopulator.hasPopulators()) {
                 return;
             }
-            if ( storeScan != null )
-            {
-                throw new IllegalStateException( "Population already started." );
+            if (storeScan != null) {
+                throw new IllegalStateException("Population already started.");
             }
 
-            try
-            {
-                multiPopulator.create( cursorContext );
-                multiPopulator.resetIndexCounts( cursorContext );
+            try {
+                multiPopulator.create(cursorContext);
+                multiPopulator.resetIndexCounts(cursorContext);
 
                 monitor.indexPopulationScanStarting();
-                indexAllEntities( contextFactory );
+                indexAllEntities(contextFactory);
                 monitor.indexPopulationScanComplete();
-                if ( stopped )
-                {
-                    multiPopulator.stop( cursorContext );
+                if (stopped) {
+                    multiPopulator.stop(cursorContext);
                     // We remain in POPULATING state
                     return;
                 }
-                multiPopulator.flipAfterStoreScan( cursorContext );
+                multiPopulator.flipAfterStoreScan(cursorContext);
+            } catch (Throwable t) {
+                multiPopulator.cancel(t, cursorContext);
             }
-            catch ( Throwable t )
-            {
-                multiPopulator.cancel( t, cursorContext );
-            }
-        }
-        finally
-        {
+        } finally {
             // will only close "additional" resources, not the actual populators, since that's managed by flip
-            Runnables.runAll( "Failed to close resources in IndexPopulationJob",
+            Runnables.runAll(
+                    "Failed to close resources in IndexPopulationJob",
                     multiPopulator::close,
                     bufferFactory::close,
-                    () -> monitor.populationJobCompleted( memoryAllocationTracker.peakMemoryUsage() ),
-                    doneSignal::countDown );
+                    () -> monitor.populationJobCompleted(memoryAllocationTracker.peakMemoryUsage()),
+                    doneSignal::countDown);
         }
     }
 
-    private void indexAllEntities( CursorContextFactory contextFactory )
-    {
-        storeScan = multiPopulator.createStoreScan( contextFactory );
-        storeScan.run( multiPopulator );
+    private void indexAllEntities(CursorContextFactory contextFactory) {
+        storeScan = multiPopulator.createStoreScan(contextFactory);
+        storeScan.run(multiPopulator);
     }
 
-    PopulationProgress getPopulationProgress( MultipleIndexPopulator.IndexPopulation indexPopulation )
-    {
-        if ( storeScan == null )
-        {
+    PopulationProgress getPopulationProgress(MultipleIndexPopulator.IndexPopulation indexPopulation) {
+        if (storeScan == null) {
             // indexing hasn't begun yet
             return PopulationProgress.NONE;
         }
         PopulationProgress storeScanProgress = storeScan.getProgress();
-        return indexPopulation.progress( storeScanProgress );
+        return indexPopulation.progress(storeScanProgress);
     }
 
     /**
@@ -181,11 +176,9 @@ public class IndexPopulationJob implements Runnable
      * All populating indexes will remain in {@link InternalIndexState#POPULATING populating state} to be rebuilt on next db start up.
      * Asynchronous call, need to {@link #awaitCompletion(long, TimeUnit) await completion}.
      */
-    public void stop()
-    {
+    public void stop() {
         // Stop the population
-        if ( storeScan != null )
-        {
+        if (storeScan != null) {
             stopped = true;
             storeScan.stop();
             jobHandle.cancel();
@@ -197,18 +190,16 @@ public class IndexPopulationJob implements Runnable
      * Stop population of specific index. Index will remain in {@link InternalIndexState#POPULATING populating state} to be rebuilt on next db start up.
      * @param population {@link MultipleIndexPopulator.IndexPopulation} to be stopped.
      */
-    void stop( MultipleIndexPopulator.IndexPopulation population, CursorContext cursorContext )
-    {
-        multiPopulator.stop( population, cursorContext );
+    void stop(MultipleIndexPopulator.IndexPopulation population, CursorContext cursorContext) {
+        multiPopulator.stop(population, cursorContext);
     }
 
     /**
      * Stop population of specific index and drop it.
      * @param population {@link MultipleIndexPopulator.IndexPopulation} to be dropped.
      */
-    void dropPopulation( MultipleIndexPopulator.IndexPopulation population )
-    {
-        multiPopulator.dropIndexPopulation( population );
+    void dropPopulation(MultipleIndexPopulator.IndexPopulation population) {
+        multiPopulator.dropIndexPopulation(population);
     }
 
     /**
@@ -217,14 +208,12 @@ public class IndexPopulationJob implements Runnable
      *
      * @param update {@link IndexEntryUpdate} to queue.
      */
-    public void update( IndexEntryUpdate<?> update )
-    {
-        multiPopulator.queueConcurrentUpdate( update );
+    public void update(IndexEntryUpdate<?> update) {
+        multiPopulator.queueConcurrentUpdate(update);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + "[populator:" + multiPopulator + "]";
     }
 
@@ -236,14 +225,12 @@ public class IndexPopulationJob implements Runnable
      * @return {@code true} if the job is still running when leaving this method, otherwise {@code false} meaning that the job is completed.
      * @throws InterruptedException if the wait got interrupted.
      */
-    public boolean awaitCompletion( long time, TimeUnit unit ) throws InterruptedException
-    {
-        if ( time == 0 )
-        {
+    public boolean awaitCompletion(long time, TimeUnit unit) throws InterruptedException {
+        if (time == 0) {
             doneSignal.await();
             return false;
         }
-        boolean completed = doneSignal.await( time, unit );
+        boolean completed = doneSignal.await(time, unit);
         return !completed;
     }
 
@@ -252,78 +239,66 @@ public class IndexPopulationJob implements Runnable
      * This makes it possible to {@link JobHandle#cancel() cancel} the scheduled index population,
      * making it never start, through {@link IndexPopulationJob#stop()}.
      */
-    public void setHandle( JobHandle handle )
-    {
+    public void setHandle(JobHandle handle) {
         this.jobHandle = handle;
     }
 
-    public ByteBufferFactory bufferFactory()
-    {
+    public ByteBufferFactory bufferFactory() {
         return bufferFactory;
     }
 
-    public MemoryTracker getMemoryTracker()
-    {
+    public MemoryTracker getMemoryTracker() {
         return memoryTracker;
     }
 
-    public JobMonitoringParams getMonitoringParams()
-    {
-        return new JobMonitoringParams( subject, databaseName, getMonitoringDescription(), () ->
-        {
+    public JobMonitoringParams getMonitoringParams() {
+        return new JobMonitoringParams(subject, databaseName, getMonitoringDescription(), () -> {
             var stateDescriptionBuilder = new StringBuilder();
             // Print index names only if there is more than 1,
             // because if there is only one, its name will already be in the job description
-            if ( populatedIndexes.size() > 1 )
-            {
-                stateDescriptionBuilder.append( "Population of indexes " );
+            if (populatedIndexes.size() > 1) {
+                stateDescriptionBuilder.append("Population of indexes ");
                 boolean first = true;
 
-                for ( var index : populatedIndexes )
-                {
-                    if ( first )
-                    {
+                for (var index : populatedIndexes) {
+                    if (first) {
                         first = false;
-                    }
-                    else
-                    {
-                        stateDescriptionBuilder.append( "," );
+                    } else {
+                        stateDescriptionBuilder.append(",");
                     }
 
-                    stateDescriptionBuilder.append( "'" )
-                                           .append( index.getIndexDescriptor().getName() )
-                                           .append( "'" );
+                    stateDescriptionBuilder
+                            .append("'")
+                            .append(index.getIndexDescriptor().getName())
+                            .append("'");
                 }
 
-                stateDescriptionBuilder.append( "; " );
+                stateDescriptionBuilder.append("; ");
             }
 
             PopulationProgress populationProgress = PopulationProgress.NONE;
-            if ( storeScan != null )
-            {
+            if (storeScan != null) {
                 populationProgress = storeScan.getProgress();
             }
 
-            stateDescriptionBuilder.append( "Total progress: " )
-                                   .append( populationProgress.toIndexPopulationProgress().getCompletedPercentage() )
-                                   .append( "%" );
+            stateDescriptionBuilder
+                    .append("Total progress: ")
+                    .append(populationProgress.toIndexPopulationProgress().getCompletedPercentage())
+                    .append("%");
 
             return stateDescriptionBuilder.toString();
-        } );
+        });
     }
 
-    private String getMonitoringDescription()
-    {
-        if ( populatedIndexes.isEmpty() )
-        {
+    private String getMonitoringDescription() {
+        if (populatedIndexes.isEmpty()) {
             // this should not happen
             // but it is better to show this over throwing an exception.
             return "Empty index population";
         }
 
-        if ( populatedIndexes.size() == 1 )
-        {
-            var index = populatedIndexes.get( 0 );
+        if (populatedIndexes.size() == 1) {
+            var index = populatedIndexes.get(0);
             return "Population of index '" + index.getIndexDescriptor().getName() + "'";
         }
 

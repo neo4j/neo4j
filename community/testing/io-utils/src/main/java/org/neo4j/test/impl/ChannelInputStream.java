@@ -19,42 +19,36 @@
  */
 package org.neo4j.test.impl;
 
+import static org.neo4j.io.ByteUnit.KibiByte;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.io.ByteUnit.KibiByte;
-
-public class ChannelInputStream extends InputStream
-{
+public class ChannelInputStream extends InputStream {
     private final StoreChannel channel;
     private final ScopedBuffer scopedBuffer;
     private final ByteBuffer buffer;
     private int position;
 
-    public ChannelInputStream( StoreChannel channel, MemoryTracker memoryTracker )
-    {
+    public ChannelInputStream(StoreChannel channel, MemoryTracker memoryTracker) {
         this.channel = channel;
-        this.scopedBuffer = new HeapScopedBuffer( 8, KibiByte, memoryTracker );
+        this.scopedBuffer = new HeapScopedBuffer(8, KibiByte, memoryTracker);
         this.buffer = scopedBuffer.getBuffer();
     }
 
     @Override
-    public int read() throws IOException
-    {
+    public int read() throws IOException {
         buffer.clear();
-        buffer.limit( 1 );
-        while ( buffer.hasRemaining() )
-        {
-            int read = channel.read( buffer );
+        buffer.limit(1);
+        while (buffer.hasRemaining()) {
+            int read = channel.read(buffer);
 
-            if ( read == -1 )
-            {
+            if (read == -1) {
                 return -1;
             }
         }
@@ -65,14 +59,12 @@ public class ChannelInputStream extends InputStream
     }
 
     @Override
-    public int available() throws IOException
-    {
+    public int available() throws IOException {
         return (int) (position - channel.size());
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         scopedBuffer.close();
         channel.close();
     }

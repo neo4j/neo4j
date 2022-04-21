@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
-
-import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.storageengine.api.StorageEngine;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -34,27 +26,36 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
-class CommunityCommitProcessFactoryTest
-{
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.storageengine.api.StorageEngine;
+
+class CommunityCommitProcessFactoryTest {
     @Test
-    void createRegularCommitProcessWhenWritable()
-    {
+    void createRegularCommitProcessWhenWritable() {
         var factory = new CommunityCommitProcessFactory();
 
-        var commitProcess =
-                factory.create( mock( TransactionAppender.class ), mock( StorageEngine.class ), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), writable() );
+        var commitProcess = factory.create(
+                mock(TransactionAppender.class),
+                mock(StorageEngine.class),
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                writable());
 
-        assertThat( commitProcess ).isInstanceOf( DatabaseTransactionCommitProcess.class );
+        assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
     }
 
     @Test
-    void createRegularCommitProcessWhenDynamicallyReadOnly()
-    {
+    void createRegularCommitProcessWhenDynamicallyReadOnly() {
         var factory = new CommunityCommitProcessFactory();
 
-        var commitProcess =
-                factory.create( mock( TransactionAppender.class ), mock( StorageEngine.class ), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), readOnly() );
+        var commitProcess = factory.create(
+                mock(TransactionAppender.class),
+                mock(StorageEngine.class),
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                readOnly());
 
-        assertThat( commitProcess ).isInstanceOf( DatabaseTransactionCommitProcess.class );
+        assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
     }
 }

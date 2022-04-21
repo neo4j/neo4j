@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.web;
 
-public class JettyThreadCalculator
-{
+public class JettyThreadCalculator {
     // Any higher and maxCapacity will overflow
     public static final int MAX_THREADS = 44738;
 
@@ -30,76 +29,60 @@ public class JettyThreadCalculator
     private int maxThreads;
     private int maxCapacity;
 
-    public JettyThreadCalculator( int jettyMaxThreads )
-    {
-        if ( jettyMaxThreads < 1 )
-        {
-            throw new IllegalArgumentException( "Max threads can't be less than 1" );
-        }
-        else if ( jettyMaxThreads > MAX_THREADS )
-        {
-            throw new IllegalArgumentException( String.format( "Max threads can't exceed %d", MAX_THREADS ) );
+    public JettyThreadCalculator(int jettyMaxThreads) {
+        if (jettyMaxThreads < 1) {
+            throw new IllegalArgumentException("Max threads can't be less than 1");
+        } else if (jettyMaxThreads > MAX_THREADS) {
+            throw new IllegalArgumentException(String.format("Max threads can't exceed %d", MAX_THREADS));
         }
         // transactionThreads = N / 5
         int transactionThreads = jettyMaxThreads / 5;
         // acceptors = N / 15
-        acceptors = Math.max( 1, transactionThreads / 3 );
+        acceptors = Math.max(1, transactionThreads / 3);
         // selectors = N * 2 / 15
-        selectors = Math.max( 1, transactionThreads - acceptors );
-        if ( jettyMaxThreads < 4 )
-        {
+        selectors = Math.max(1, transactionThreads - acceptors);
+        if (jettyMaxThreads < 4) {
             acceptors = 1;
             selectors = 1;
-        }
-        else if ( jettyMaxThreads == 4 )
-        {
+        } else if (jettyMaxThreads == 4) {
             acceptors = 1;
             selectors = 2;
-        }
-        else if ( jettyMaxThreads <= 8 )
-        {
+        } else if (jettyMaxThreads <= 8) {
             acceptors = 2;
             selectors = 3;
-        }
-        else if ( jettyMaxThreads <= 16 )
-        {
+        } else if (jettyMaxThreads <= 16) {
             transactionThreads = jettyMaxThreads / 4;
-            acceptors = Math.max( 2, transactionThreads / 3 );
-            selectors = Math.max( 3, transactionThreads - acceptors );
+            acceptors = Math.max(2, transactionThreads / 3);
+            selectors = Math.max(3, transactionThreads - acceptors);
         }
         // minThreads = N / 5 + 2 * N / 5
         // max safe value for this = 5 / 3 * INT.MAX = INT.MAX
-        minThreads = Math.max( 2, transactionThreads ) + (acceptors + selectors) * 2;
+        minThreads = Math.max(2, transactionThreads) + (acceptors + selectors) * 2;
         // maxThreads = N + N / 5
         // max Safe value for this = 6 / 5 * INT.MAX = INT.MAX
-        maxThreads = Math.max( jettyMaxThreads - selectors - acceptors, 8 ) + (acceptors + selectors) * 2;
+        maxThreads = Math.max(jettyMaxThreads - selectors - acceptors, 8) + (acceptors + selectors) * 2;
         // maxCapacity = (N - N / 5) * 60_000
         // max safe value = 44738
         maxCapacity = (maxThreads - (selectors + acceptors) * 2) * 1000 * 60; // threads * 1000 req/s * 60 s
     }
 
-    public int getAcceptors()
-    {
+    public int getAcceptors() {
         return acceptors;
     }
 
-    public int getSelectors()
-    {
+    public int getSelectors() {
         return selectors;
     }
 
-    public int getMinThreads()
-    {
+    public int getMinThreads() {
         return minThreads;
     }
 
-    public int getMaxThreads()
-    {
+    public int getMaxThreads() {
         return maxThreads;
     }
 
-    public int getMaxCapacity()
-    {
+    public int getMaxCapacity() {
         return maxCapacity;
     }
 }

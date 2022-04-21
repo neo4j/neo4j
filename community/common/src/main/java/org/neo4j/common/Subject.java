@@ -24,29 +24,24 @@ package org.neo4j.common;
  * This is currently used only for monitoring purposes
  * to be able to associate a unit of work with its originator.
  */
-public class Subject
-{
+public class Subject {
     /**
      * Used for actions which are not triggered by end users.
      * Typically background maintenance work triggered by the DBMS itself.
      */
-    public static final Subject SYSTEM = new Subject( null )
-    {
+    public static final Subject SYSTEM = new Subject(null) {
         @Override
-        public String getUsername()
-        {
-            throw new IllegalStateException( "Getting a username is not supported for System subject" );
+        public String getUsername() {
+            throw new IllegalStateException("Getting a username is not supported for System subject");
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "SYSTEM";
         }
 
         @Override
-        public String describe()
-        {
+        public String describe() {
             return "";
         }
     };
@@ -55,57 +50,47 @@ public class Subject
      * A representation of an end user when authentication is disabled.
      * This representation is also used when an interface that does not require authentication (typically embedded API) is used.
      */
-    public static final Subject AUTH_DISABLED = new Subject( null )
-    {
+    public static final Subject AUTH_DISABLED = new Subject(null) {
         @Override
-        public String getUsername()
-        {
-            throw new IllegalStateException( "Getting a username is not supported when authentication is disabled" );
+        public String getUsername() {
+            throw new IllegalStateException("Getting a username is not supported when authentication is disabled");
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "AUTH_DISABLED";
         }
 
         @Override
-        public String describe()
-        {
+        public String describe() {
             return "";
         }
     };
 
-    public static final Subject ANONYMOUS = new Subject( null )
-    {
+    public static final Subject ANONYMOUS = new Subject(null) {
         @Override
-        public String getUsername()
-        {
-            throw new IllegalStateException( "Getting a username is not supported for anonymous subject" );
+        public String getUsername() {
+            throw new IllegalStateException("Getting a username is not supported for anonymous subject");
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "ANONYMOUS";
         }
 
         @Override
-        public String describe()
-        {
+        public String describe() {
             return "";
         }
     };
 
     private final String username;
 
-    public Subject( String username )
-    {
+    public Subject(String username) {
         this.username = username;
     }
 
-    public String getUsername()
-    {
+    public String getUsername() {
         return username;
     }
 
@@ -116,8 +101,7 @@ public class Subject
      * when displaying the subject for instance
      * in the result of administration commands and functions.
      */
-    public String describe()
-    {
+    public String describe() {
         return username;
     }
 }

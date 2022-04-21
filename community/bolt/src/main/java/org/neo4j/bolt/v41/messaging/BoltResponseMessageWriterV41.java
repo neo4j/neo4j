@@ -21,7 +21,6 @@ package org.neo4j.bolt.v41.messaging;
 
 import java.io.IOException;
 import java.time.Duration;
-
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.packstream.Neo4jPack;
@@ -38,9 +37,8 @@ import org.neo4j.values.AnyValue;
  * All methods need to be synchronized because both bolt worker threads and also bolt keep-alive thread could try
  * to write to the output at the same time.
  */
-public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltResponseMessageWriterV41.class );
+public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BoltResponseMessageWriterV41.class);
 
     private final BoltResponseMessageWriterV3 delegator;
     private final MessageWriterTimer timer;
@@ -48,42 +46,39 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
     private boolean shouldFlushAfterRecord;
     private boolean closed;
 
-    public BoltResponseMessageWriterV41( PackProvider packerProvider, PackOutput output, LogService logService,
-            SystemNanoClock clock, Duration keepAliveInterval )
-    {
-        this( new BoltResponseMessageWriterV3( packerProvider, output, logService ),
-                new MessageWriterTimer( clock, keepAliveInterval ) );
+    public BoltResponseMessageWriterV41(
+            PackProvider packerProvider,
+            PackOutput output,
+            LogService logService,
+            SystemNanoClock clock,
+            Duration keepAliveInterval) {
+        this(
+                new BoltResponseMessageWriterV3(packerProvider, output, logService),
+                new MessageWriterTimer(clock, keepAliveInterval));
     }
 
-    BoltResponseMessageWriterV41( BoltResponseMessageWriterV3 writer, MessageWriterTimer timer )
-    {
+    BoltResponseMessageWriterV41(BoltResponseMessageWriterV3 writer, MessageWriterTimer timer) {
         this.delegator = writer;
         this.timer = timer;
     }
 
     @Override
-    public synchronized void write( ResponseMessage message ) throws IOException
-    {
-        delegator.write( message );
+    public synchronized void write(ResponseMessage message) throws IOException {
+        delegator.write(message);
     }
 
     @Override
-    public synchronized void flush() throws IOException
-    {
+    public synchronized void flush() throws IOException {
         timer.reset();
         delegator.flush();
     }
 
     @Override
-    public void keepAlive() throws IOException
-    {
+    public void keepAlive() throws IOException {
         // Double-check locking. The timeout variable inside timer is volatile.
-        if ( !this.closed && timer.isTimedOut() )
-        {
-            synchronized ( this )
-            {
-                if ( !this.closed && timer.isTimedOut() )
-                {
+        if (!this.closed && timer.isTimedOut()) {
+            synchronized (this) {
+                if (!this.closed && timer.isTimedOut()) {
                     flushBufferOrSendKeepAlive();
                 }
             }
@@ -91,72 +86,59 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
     }
 
     @Override
-    public synchronized void initKeepAliveTimer()
-    {
+    public synchronized void initKeepAliveTimer() {
         timer.reset();
     }
 
     @Override
-    public synchronized void beginRecord( int numberOfFields ) throws IOException
-    {
+    public synchronized void beginRecord(int numberOfFields) throws IOException {
         beforeRecord();
-        delegator.beginRecord( numberOfFields );
+        delegator.beginRecord(numberOfFields);
     }
 
     @Override
-    public synchronized void consumeField( AnyValue value ) throws IOException
-    {
-        delegator.consumeField( value );
+    public synchronized void consumeField(AnyValue value) throws IOException {
+        delegator.consumeField(value);
     }
 
     @Override
-    public synchronized void endRecord() throws IOException
-    {
+    public synchronized void endRecord() throws IOException {
         delegator.endRecord();
         afterRecord();
     }
 
     @Override
-    public synchronized void onError() throws IOException
-    {
+    public synchronized void onError() throws IOException {
         delegator.onError();
         afterRecord();
     }
 
     @Override
-    public synchronized void close() throws IOException
-    {
+    public synchronized void close() throws IOException {
         this.closed = true;
         delegator.close();
     }
 
-    private void beforeRecord()
-    {
+    private void beforeRecord() {
         inRecord = true;
     }
 
-    private void afterRecord() throws IOException
-    {
+    private void afterRecord() throws IOException {
         inRecord = false;
-        if ( shouldFlushAfterRecord )
-        {
+        if (shouldFlushAfterRecord) {
             flush();
         }
     }
 
     @Override
-    public void flushBufferOrSendKeepAlive() throws IOException
-    {
-        synchronized ( this )
-        {
+    public void flushBufferOrSendKeepAlive() throws IOException {
+        synchronized (this) {
             this.doFlushBufferOrSendKeepAlive();
         }
     }
 
-    private void doFlushBufferOrSendKeepAlive() throws IOException
-    {
-        if ( inRecord )
-        {
+    private void doFlushBufferOrSendKeepAlive() throws IOException {
+        if (inRecord) {
             shouldFlushAfterRecord = true;
             return;
         }
@@ -165,16 +147,12 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
         flush();
     }
 
-    private void writeNoop() throws IOException
-    {
-        try
-        {
+    private void writeNoop() throws IOException {
+        try {
             delegator.output().beginMessage();
             delegator.output().messageSucceeded();
-        }
-        catch ( Throwable e )
-        {
-            delegator.log().error( "Failed to write NOOP", e );
+        } catch (Throwable e) {
+            delegator.log().error("Failed to write NOOP", e);
             throw e;
         }
     }

@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
+import static org.neo4j.configuration.SettingConstraints.size;
+import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
+import static org.neo4j.configuration.SettingValueParsers.listOf;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.GroupSetting;
 import org.neo4j.configuration.GroupSettingHelper;
@@ -31,13 +34,8 @@ import org.neo4j.configuration.SettingValueParser;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-import static org.neo4j.configuration.SettingConstraints.size;
-import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
-import static org.neo4j.configuration.SettingValueParsers.listOf;
-
 @ServiceProvider
-public class CrsConfig implements GroupSetting
-{
+public class CrsConfig implements GroupSetting {
     private static final String PREFIX = "internal.dbms.db.spatial.crs";
 
     public final Setting<List<Double>> min;
@@ -45,22 +43,25 @@ public class CrsConfig implements GroupSetting
     public final CoordinateReferenceSystem crs;
     private final String name;
 
-    public static CrsConfig group( CoordinateReferenceSystem crs )
-    {
-        return new CrsConfig( crs.getName() );
+    public static CrsConfig group(CoordinateReferenceSystem crs) {
+        return new CrsConfig(crs.getName());
     }
 
-    private CrsConfig( String name )
-    {
+    private CrsConfig(String name) {
         this.name = name;
-        crs = CoordinateReferenceSystem.byName( name );
-        List<Double> defaultValue = new ArrayList<>( Collections.nCopies( crs.getDimension(), Double.NaN ) );
-        min = getBuilder( "min", listOf( DOUBLE ), defaultValue ).internal().addConstraint( size( crs.getDimension() ) ).build();
-        max = getBuilder( "max", listOf( DOUBLE ), defaultValue ).internal().addConstraint( size( crs.getDimension() ) ).build();
+        crs = CoordinateReferenceSystem.byName(name);
+        List<Double> defaultValue = new ArrayList<>(Collections.nCopies(crs.getDimension(), Double.NaN));
+        min = getBuilder("min", listOf(DOUBLE), defaultValue)
+                .internal()
+                .addConstraint(size(crs.getDimension()))
+                .build();
+        max = getBuilder("max", listOf(DOUBLE), defaultValue)
+                .internal()
+                .addConstraint(size(crs.getDimension()))
+                .build();
     }
 
-    public CrsConfig()
-    {
+    public CrsConfig() {
         name = null;
         min = null;
         max = null;
@@ -68,19 +69,16 @@ public class CrsConfig implements GroupSetting
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return name;
     }
 
     @Override
-    public String getPrefix()
-    {
+    public String getPrefix() {
         return PREFIX;
     }
 
-    private <T> SettingBuilder<T> getBuilder( String suffix, SettingValueParser<T> parser, T defaultValue )
-    {
-        return GroupSettingHelper.getBuilder( getPrefix(), name(), suffix , parser, defaultValue );
+    private <T> SettingBuilder<T> getBuilder(String suffix, SettingValueParser<T> parser, T defaultValue) {
+        return GroupSettingHelper.getBuilder(getPrefix(), name(), suffix, parser, defaultValue);
     }
 }

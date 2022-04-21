@@ -19,18 +19,17 @@
  */
 package org.neo4j.configuration.pagecache;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.io.pagecache.buffer.NativeIOBuffer;
-import org.neo4j.memory.MemoryTracker;
-
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.internal.unsafe.UnsafeUtil.allocateMemory;
 import static org.neo4j.internal.unsafe.UnsafeUtil.free;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 
-public class ConfigurableIOBuffer implements NativeIOBuffer
-{
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.io.pagecache.buffer.NativeIOBuffer;
+import org.neo4j.memory.MemoryTracker;
+
+public class ConfigurableIOBuffer implements NativeIOBuffer {
     private static final long NOT_INITIALIZED = 0;
     private final boolean enabled;
     private final MemoryTracker memoryTracker;
@@ -40,21 +39,16 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
     private final long allocatedBytes;
     private boolean closed;
 
-    public ConfigurableIOBuffer( Config config, MemoryTracker memoryTracker )
-    {
+    public ConfigurableIOBuffer(Config config, MemoryTracker memoryTracker) {
         this.memoryTracker = memoryTracker;
-        this.bufferSize = PAGE_SIZE * config.get( pagecache_flush_buffer_size_in_pages );
+        this.bufferSize = PAGE_SIZE * config.get(pagecache_flush_buffer_size_in_pages);
         this.allocatedBytes = bufferSize + PAGE_SIZE;
         boolean ioBufferEnabled = true;
         long address = NOT_INITIALIZED;
-        try
-        {
-            address = allocateMemory( allocatedBytes, memoryTracker );
-        }
-        catch ( Throwable t )
-        {
-            if ( config.get( GraphDatabaseInternalSettings.print_page_buffer_allocation_trace ) )
-            {
+        try {
+            address = allocateMemory(allocatedBytes, memoryTracker);
+        } catch (Throwable t) {
+            if (config.get(GraphDatabaseInternalSettings.print_page_buffer_allocation_trace)) {
                 t.printStackTrace();
             }
             ioBufferEnabled = false;
@@ -65,33 +59,27 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
     }
 
     @Override
-    public boolean isEnabled()
-    {
+    public boolean isEnabled() {
         return enabled;
     }
 
     @Override
-    public boolean hasMoreCapacity( int used, int requestSize )
-    {
-        if ( !enabled )
-        {
+    public boolean hasMoreCapacity(int used, int requestSize) {
+        if (!enabled) {
             return false;
         }
         return used + requestSize <= bufferSize;
     }
 
     @Override
-    public long getAddress()
-    {
+    public long getAddress() {
         return alignedAddress;
     }
 
     @Override
-    public void close()
-    {
-        if ( enabled && !closed )
-        {
-            free( bufferAddress, allocatedBytes, memoryTracker );
+    public void close() {
+        if (enabled && !closed) {
+            free(bufferAddress, allocatedBytes, memoryTracker);
             closed = true;
         }
     }

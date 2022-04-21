@@ -19,113 +19,107 @@
  */
 package org.neo4j.metatest;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
-
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.test.extension.EphemeralFileSystemExtension;
-import org.neo4j.test.extension.Inject;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@ExtendWith( EphemeralFileSystemExtension.class )
-class TestEphemeralFileChannel
-{
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+
+@ExtendWith(EphemeralFileSystemExtension.class)
+class TestEphemeralFileChannel {
 
     @Inject
     private EphemeralFileSystemAbstraction fileSystem;
 
     @Test
-    void smoke() throws Exception
-    {
-        StoreChannel channel = fileSystem.write( Path.of( "yo" ) );
+    void smoke() throws Exception {
+        StoreChannel channel = fileSystem.write(Path.of("yo"));
 
         // Clear it because we depend on it to be zeros where we haven't written
-        ByteBuffer buffer = allocate( 23, INSTANCE );
-        buffer.put( new byte[23] ); // zeros
+        ByteBuffer buffer = allocate(23, INSTANCE);
+        buffer.put(new byte[23]); // zeros
         buffer.flip();
-        channel.write( buffer );
-        channel = fileSystem.write( Path.of( "yo" ) );
+        channel.write(buffer);
+        channel = fileSystem.write(Path.of("yo"));
         long longValue = 1234567890L;
 
         // [1].....[2]........[1234567890L]...
 
         buffer.clear();
-        buffer.limit( 1 );
-        buffer.put( (byte) 1 );
+        buffer.limit(1);
+        buffer.put((byte) 1);
         buffer.flip();
-        channel.write( buffer );
+        channel.write(buffer);
 
         buffer.clear();
-        buffer.limit( 1 );
-        buffer.put( (byte) 2 );
+        buffer.limit(1);
+        buffer.put((byte) 2);
         buffer.flip();
-        channel.position( 6 );
-        channel.write( buffer );
+        channel.position(6);
+        channel.write(buffer);
 
         buffer.clear();
-        buffer.limit( 8 );
-        buffer.putLong( longValue );
+        buffer.limit(8);
+        buffer.putLong(longValue);
         buffer.flip();
-        channel.position( 15 );
-        channel.write( buffer );
-        assertEquals( 23, channel.size() );
+        channel.position(15);
+        channel.write(buffer);
+        assertEquals(23, channel.size());
 
         // Read with position
         // byte 0
         buffer.clear();
-        buffer.limit( 1 );
-        channel.read( buffer, 0 );
+        buffer.limit(1);
+        channel.read(buffer, 0);
         buffer.flip();
-        assertEquals( (byte) 1, buffer.get() );
+        assertEquals((byte) 1, buffer.get());
 
         // bytes 5-7
         buffer.clear();
-        buffer.limit( 3 );
-        channel.read( buffer, 5 );
+        buffer.limit(3);
+        channel.read(buffer, 5);
         buffer.flip();
-        assertEquals( (byte) 0, buffer.get() );
-        assertEquals( (byte) 2, buffer.get() );
-        assertEquals( (byte) 0, buffer.get() );
+        assertEquals((byte) 0, buffer.get());
+        assertEquals((byte) 2, buffer.get());
+        assertEquals((byte) 0, buffer.get());
 
         // bytes 15-23
         buffer.clear();
-        buffer.limit( 8 );
-        channel.read( buffer, 15 );
+        buffer.limit(8);
+        channel.read(buffer, 15);
         buffer.flip();
-        assertEquals( longValue, buffer.getLong() );
+        assertEquals(longValue, buffer.getLong());
     }
 
     @Test
-    void absoluteVersusRelative() throws Exception
-    {
+    void absoluteVersusRelative() throws Exception {
         // GIVEN
-        Path file = Path.of( "myfile" ).toAbsolutePath();
-        StoreChannel channel = fileSystem.write( file );
+        Path file = Path.of("myfile").toAbsolutePath();
+        StoreChannel channel = fileSystem.write(file);
         byte[] bytes = "test".getBytes();
-        channel.write( ByteBuffer.wrap( bytes ) );
+        channel.write(ByteBuffer.wrap(bytes));
         channel.close();
 
         // WHEN
-        channel = fileSystem.read( file );
+        channel = fileSystem.read(file);
         byte[] readBytes = new byte[bytes.length];
-        channel.readAll( ByteBuffer.wrap( readBytes ) );
+        channel.readAll(ByteBuffer.wrap(readBytes));
 
         // THEN
-        assertArrayEquals( bytes, readBytes );
+        assertArrayEquals(bytes, readBytes);
     }
 
     @Test
-    void listFiles() throws Exception
-    {
+    void listFiles() throws Exception {
         /* GIVEN
          *                        root
          *                       /    \
@@ -135,28 +129,28 @@ class TestEphemeralFileChannel
          *       |
          *     file
          */
-        Path root = Path.of( "/root" ).toAbsolutePath().normalize();
-        Path dir1 = root.resolve( "dir1" );
-        Path dir2 = root.resolve( "dir2" );
-        Path subdir1 = dir1.resolve( "sub" );
-        Path file1 = dir1.resolve( "file" );
-        Path file2 = dir1.resolve( "file2" );
-        Path file3 = dir2.resolve( "file" );
-        Path file4 = subdir1.resolve( "file" );
+        Path root = Path.of("/root").toAbsolutePath().normalize();
+        Path dir1 = root.resolve("dir1");
+        Path dir2 = root.resolve("dir2");
+        Path subdir1 = dir1.resolve("sub");
+        Path file1 = dir1.resolve("file");
+        Path file2 = dir1.resolve("file2");
+        Path file3 = dir2.resolve("file");
+        Path file4 = subdir1.resolve("file");
 
-        fileSystem.mkdirs( dir2 );
-        fileSystem.mkdirs( dir1 );
-        fileSystem.mkdirs( subdir1 );
+        fileSystem.mkdirs(dir2);
+        fileSystem.mkdirs(dir1);
+        fileSystem.mkdirs(subdir1);
 
-        fileSystem.write( file1 );
-        fileSystem.write( file2 );
-        fileSystem.write( file3 );
-        fileSystem.write( file4 );
+        fileSystem.write(file1);
+        fileSystem.write(file2);
+        fileSystem.write(file3);
+        fileSystem.write(file4);
 
         // THEN
-        assertThat( fileSystem.listFiles( root ) ).containsExactlyInAnyOrder( dir1, dir2 );
-        assertThat( fileSystem.listFiles( dir1 ) ).containsExactlyInAnyOrder( subdir1, file1, file2 );
-        assertThat( fileSystem.listFiles( dir2 ) ).containsExactly( file3 );
-        assertThat( fileSystem.listFiles( subdir1 ) ).containsExactly( file4 );
+        assertThat(fileSystem.listFiles(root)).containsExactlyInAnyOrder(dir1, dir2);
+        assertThat(fileSystem.listFiles(dir1)).containsExactlyInAnyOrder(subdir1, file1, file2);
+        assertThat(fileSystem.listFiles(dir2)).containsExactly(file3);
+        assertThat(fileSystem.listFiles(subdir1)).containsExactly(file4);
     }
 }

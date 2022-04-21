@@ -27,23 +27,26 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.util.StepSequencer
 
 object TransformerDebugging {
+
   /**
    * Transformer that can be inserted when debugging, to help detect
    * what part of the compilation introduces a plan issue.
    */
-  def printPlan(tag: String): Transformer[BaseContext, BaseState, BaseState] = new Transformer[BaseContext, BaseState, BaseState] {
-    override def transform(from: BaseState, context: BaseContext): BaseState = {
-      from match {
-        case s:LogicalPlanState if s.maybeLogicalPlan.isDefined =>
-          println("     |||||||| PRINT Plan: "+tag)
-          println(LogicalPlanToPlanBuilderString(s.logicalPlan))
-        case _ =>
+  def printPlan(tag: String): Transformer[BaseContext, BaseState, BaseState] =
+    new Transformer[BaseContext, BaseState, BaseState] {
+
+      override def transform(from: BaseState, context: BaseContext): BaseState = {
+        from match {
+          case s: LogicalPlanState if s.maybeLogicalPlan.isDefined =>
+            println("     |||||||| PRINT Plan: " + tag)
+            println(LogicalPlanToPlanBuilderString(s.logicalPlan))
+          case _ =>
+        }
+        from
       }
-      from
+
+      override def postConditions: Set[StepSequencer.Condition] = Set.empty
+
+      override def name: String = "print plan"
     }
-
-    override def postConditions: Set[StepSequencer.Condition] = Set.empty
-
-    override def name: String = "print plan"
-  }
 }

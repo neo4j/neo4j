@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.tracing;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
@@ -32,8 +31,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 /**
  * The default PageCacheTracer implementation, that just increments counters.
  */
-public class DefaultPageCacheTracer implements PageCacheTracer
-{
+public class DefaultPageCacheTracer implements PageCacheTracer {
     protected final LongAdder faults = new LongAdder();
     protected final LongAdder noFaults = new LongAdder();
     protected final LongAdder failedFaults = new LongAdder();
@@ -65,451 +63,374 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     private final EvictionRunEvent evictionRunEvent = new DefaultEvictionRunEvent();
     private final MajorFlushEvent majorFlushEvent = new DefaultPageCacheMajorFlushEvent();
 
-    public DefaultPageCacheTracer()
-    {
-        this( false );
+    public DefaultPageCacheTracer() {
+        this(false);
     }
 
-    public DefaultPageCacheTracer( boolean tracePageFileIndividually )
-    {
+    public DefaultPageCacheTracer(boolean tracePageFileIndividually) {
         this.tracePageFileIndividually = tracePageFileIndividually;
     }
 
     @Override
-    public PageFileSwapperTracer createFileSwapperTracer()
-    {
+    public PageFileSwapperTracer createFileSwapperTracer() {
         return tracePageFileIndividually ? new DefaultPageFileSwapperTracer() : PageFileSwapperTracer.NULL;
     }
 
     @Override
-    public PageCursorTracer createPageCursorTracer( String tag )
-    {
-        return new DefaultPageCursorTracer( this, tag );
+    public PageCursorTracer createPageCursorTracer(String tag) {
+        return new DefaultPageCursorTracer(this, tag);
     }
 
     @Override
-    public void mappedFile( int swapperId, PagedFile mappedFile )
-    {
+    public void mappedFile(int swapperId, PagedFile mappedFile) {
         filesMapped.increment();
     }
 
     @Override
-    public void unmappedFile( int swapperId, PagedFile mappedFile )
-    {
+    public void unmappedFile(int swapperId, PagedFile mappedFile) {
         filesUnmapped.increment();
     }
 
     @Override
-    public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
-    {
+    public EvictionRunEvent beginPageEvictions(int pageCountToEvict) {
         return evictionRunEvent;
     }
 
     @Override
-    public EvictionRunEvent beginEviction()
-    {
+    public EvictionRunEvent beginEviction() {
         return evictionRunEvent;
     }
 
     @Override
-    public MajorFlushEvent beginFileFlush( PageSwapper swapper )
-    {
+    public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
         return majorFlushEvent;
     }
 
     @Override
-    public MajorFlushEvent beginCacheFlush()
-    {
+    public MajorFlushEvent beginCacheFlush() {
         return majorFlushEvent;
     }
 
     @Override
-    public long faults()
-    {
+    public long faults() {
         return faults.sum();
     }
 
     @Override
-    public long failedFaults()
-    {
+    public long failedFaults() {
         return failedFaults.sum();
     }
 
     @Override
-    public long noFaults()
-    {
+    public long noFaults() {
         return noFaults.sum();
     }
 
     @Override
-    public long evictions()
-    {
+    public long evictions() {
         return evictions.sum();
     }
 
     @Override
-    public long cooperativeEvictions()
-    {
+    public long cooperativeEvictions() {
         return cooperativeEvictions.sum();
     }
 
     @Override
-    public long pins()
-    {
+    public long pins() {
         return pins.sum();
     }
 
     @Override
-    public long unpins()
-    {
+    public long unpins() {
         return unpins.sum();
     }
 
     @Override
-    public long hits()
-    {
+    public long hits() {
         return hits.sum();
     }
 
     @Override
-    public long flushes()
-    {
+    public long flushes() {
         return flushes.sum();
     }
 
     @Override
-    public long merges()
-    {
+    public long merges() {
         return merges.sum();
     }
 
     @Override
-    public long bytesRead()
-    {
+    public long bytesRead() {
         return bytesRead.sum();
     }
 
     @Override
-    public long bytesWritten()
-    {
+    public long bytesWritten() {
         return bytesWritten.sum();
     }
 
     @Override
-    public long filesMapped()
-    {
+    public long filesMapped() {
         return filesMapped.sum();
     }
 
     @Override
-    public long filesUnmapped()
-    {
+    public long filesUnmapped() {
         return filesUnmapped.sum();
     }
 
     @Override
-    public long evictionExceptions()
-    {
+    public long evictionExceptions() {
         return evictionExceptions.sum();
     }
 
     @Override
-    public double hitRatio()
-    {
-        return MathUtil.portion( hits(), faults() );
+    public double hitRatio() {
+        return MathUtil.portion(hits(), faults());
     }
 
     @Override
-    public double usageRatio()
-    {
+    public double usageRatio() {
         long pages = maxPages.get();
-        if ( pages == 0 )
-        {
+        if (pages == 0) {
             return 0;
         }
-        return Math.max( 0, (faults.sum() - evictions.sum()) / (double) pages );
+        return Math.max(0, (faults.sum() - evictions.sum()) / (double) pages);
     }
 
     @Override
-    public long iopqPerformed()
-    {
+    public long iopqPerformed() {
         return iopqPerformed.sum();
     }
 
     @Override
-    public long ioLimitedTimes()
-    {
+    public long ioLimitedTimes() {
         return ioLimitedTimes.sum();
     }
 
     @Override
-    public long ioLimitedMillis()
-    {
+    public long ioLimitedMillis() {
         return ioLimitedMillis.sum();
     }
 
     @Override
-    public long openedCursors()
-    {
+    public long openedCursors() {
         return openedCursors.sum();
     }
 
     @Override
-    public long closedCursors()
-    {
+    public long closedCursors() {
         return closedCursors.sum();
     }
 
     @Override
-    public void iopq( long iopq )
-    {
-        iopqPerformed.add( iopq );
+    public void iopq(long iopq) {
+        iopqPerformed.add(iopq);
     }
 
     @Override
-    public void limitIO( long millis )
-    {
+    public void limitIO(long millis) {
         ioLimitedTimes.increment();
-        ioLimitedMillis.add( millis );
+        ioLimitedMillis.add(millis);
     }
 
     @Override
-    public void closeCursor()
-    {
+    public void closeCursor() {
         closedCursors.increment();
     }
 
     @Override
-    public void openCursor()
-    {
+    public void openCursor() {
         openedCursors.increment();
     }
 
     @Override
-    public void pins( long pins )
-    {
-        this.pins.add( pins );
+    public void pins(long pins) {
+        this.pins.add(pins);
     }
 
     @Override
-    public void unpins( long unpins )
-    {
-        this.unpins.add( unpins );
+    public void unpins(long unpins) {
+        this.unpins.add(unpins);
     }
 
     @Override
-    public void hits( long hits )
-    {
-        this.hits.add( hits );
+    public void hits(long hits) {
+        this.hits.add(hits);
     }
 
     @Override
-    public void faults( long faults )
-    {
-        this.faults.add( faults );
+    public void faults(long faults) {
+        this.faults.add(faults);
     }
 
     @Override
-    public void noFaults( long noFaults )
-    {
-        this.noFaults.add( noFaults );
+    public void noFaults(long noFaults) {
+        this.noFaults.add(noFaults);
     }
 
     @Override
-    public void failedFaults( long failedFaults )
-    {
-        this.failedFaults.add( failedFaults );
+    public void failedFaults(long failedFaults) {
+        this.failedFaults.add(failedFaults);
     }
 
     @Override
-    public void bytesRead( long bytesRead )
-    {
-        this.bytesRead.add( bytesRead );
+    public void bytesRead(long bytesRead) {
+        this.bytesRead.add(bytesRead);
     }
 
     @Override
-    public void evictions( long evictions )
-    {
-        this.evictions.add( evictions );
+    public void evictions(long evictions) {
+        this.evictions.add(evictions);
     }
 
     @Override
-    public void cooperativeEvictions( long evictions )
-    {
-        this.cooperativeEvictions.add( evictions );
+    public void cooperativeEvictions(long evictions) {
+        this.cooperativeEvictions.add(evictions);
     }
 
     @Override
-    public void evictionExceptions( long evictionExceptions )
-    {
-        this.evictionExceptions.add( evictionExceptions );
+    public void evictionExceptions(long evictionExceptions) {
+        this.evictionExceptions.add(evictionExceptions);
     }
 
     @Override
-    public void bytesWritten( long bytesWritten )
-    {
-        this.bytesWritten.add( bytesWritten );
+    public void bytesWritten(long bytesWritten) {
+        this.bytesWritten.add(bytesWritten);
     }
 
     @Override
-    public void flushes( long flushes )
-    {
-        this.flushes.add( flushes );
+    public void flushes(long flushes) {
+        this.flushes.add(flushes);
     }
 
     @Override
-    public void merges( long merges )
-    {
-        this.merges.add( merges );
+    public void merges(long merges) {
+        this.merges.add(merges);
     }
 
     @Override
-    public void maxPages( long maxPages, long pageSize )
-    {
-        this.maxPages.set( maxPages );
+    public void maxPages(long maxPages, long pageSize) {
+        this.maxPages.set(maxPages);
     }
 
-    private class PageCacheFlushEvent implements FlushEvent
-    {
+    private class PageCacheFlushEvent implements FlushEvent {
         private PageFileSwapperTracer swapperTracer;
 
         @Override
-        public void addBytesWritten( long bytes )
-        {
-            bytesWritten.add( bytes );
-            swapperTracer.bytesWritten( bytes );
+        public void addBytesWritten(long bytes) {
+            bytesWritten.add(bytes);
+            swapperTracer.bytesWritten(bytes);
         }
 
         @Override
-        public void close()
-        {
+        public void close() {}
+
+        @Override
+        public void setException(IOException exception) {}
+
+        @Override
+        public void addPagesFlushed(int pageCount) {
+            flushes.add(pageCount);
+            swapperTracer.flushes(pageCount);
         }
 
         @Override
-        public void setException( IOException exception )
-        {
-        }
-
-        @Override
-        public void addPagesFlushed( int pageCount )
-        {
-            flushes.add( pageCount );
-            swapperTracer.flushes( pageCount );
-        }
-
-        @Override
-        public void addPagesMerged( int pagesMerged )
-        {
-            merges.add( pagesMerged );
-            swapperTracer.merges( pagesMerged );
+        public void addPagesMerged(int pagesMerged) {
+            merges.add(pagesMerged);
+            swapperTracer.merges(pagesMerged);
         }
     }
 
-    private class PageCacheEvictionEvent implements EvictionEvent
-    {
+    private class PageCacheEvictionEvent implements EvictionEvent {
         private PageFileSwapperTracer swapperTracer;
 
         @Override
-        public void setFilePageId( long filePageId )
-        {
-        }
+        public void setFilePageId(long filePageId) {}
 
         @Override
-        public void setSwapper( PageSwapper swapper )
-        {
+        public void setSwapper(PageSwapper swapper) {
             this.swapperTracer = swapper.fileSwapperTracer();
         }
 
         @Override
-        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
-        {
+        public FlushEvent beginFlush(
+                long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator) {
             flushEvent.swapperTracer = swapper.fileSwapperTracer();
             return flushEvent;
         }
 
         @Override
-        public void setException( IOException exception )
-        {
+        public void setException(IOException exception) {
             evictionExceptions.increment();
-            swapperTracer.evictionExceptions( 1 );
+            swapperTracer.evictionExceptions(1);
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             evictions.increment();
-            if ( swapperTracer != null )
-            {
-                swapperTracer.evictions( 1 );
+            if (swapperTracer != null) {
+                swapperTracer.evictions(1);
             }
         }
     }
 
-    private class DefaultEvictionRunEvent implements EvictionRunEvent
-    {
+    private class DefaultEvictionRunEvent implements EvictionRunEvent {
 
         @Override
-        public void freeListSize( int size )
-        {
-        }
+        public void freeListSize(int size) {}
 
         @Override
-        public EvictionEvent beginEviction( long cachePageId )
-        {
+        public EvictionEvent beginEviction(long cachePageId) {
             return evictionEvent;
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     }
 
-    private class DefaultPageCacheMajorFlushEvent implements MajorFlushEvent
-    {
+    private class DefaultPageCacheMajorFlushEvent implements MajorFlushEvent {
 
         @Override
-        public FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush,
-                                      int mergedPages )
-        {
+        public FlushEvent beginFlush(
+                long[] pageRefs,
+                PageSwapper swapper,
+                PageReferenceTranslator pageReferenceTranslator,
+                int pagesToFlush,
+                int mergedPages) {
             flushEvent.swapperTracer = swapper.fileSwapperTracer();
             return flushEvent;
         }
 
         @Override
-        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
-        {
+        public FlushEvent beginFlush(
+                long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator) {
             flushEvent.swapperTracer = swapper.fileSwapperTracer();
             return flushEvent;
         }
 
         @Override
-        public void startFlush( int[][] translationTable )
-        {
-        }
+        public void startFlush(int[][] translationTable) {}
 
         @Override
-        public ChunkEvent startChunk( int[] chunk )
-        {
+        public ChunkEvent startChunk(int[] chunk) {
             return ChunkEvent.NULL;
         }
 
         @Override
-        public void throttle( long millis )
-        {
+        public void throttle(long millis) {
             ioLimitedTimes.increment();
-            ioLimitedMillis.add( millis );
+            ioLimitedMillis.add(millis);
         }
 
         @Override
-        public void reportIO( int completedIOs )
-        {
-            iopqPerformed.add( completedIOs );
+        public void reportIO(int completedIOs) {
+            iopqPerformed.add(completedIOs);
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     }
 }

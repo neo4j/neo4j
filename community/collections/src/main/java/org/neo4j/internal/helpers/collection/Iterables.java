@@ -35,7 +35,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Resource;
@@ -48,21 +47,17 @@ import org.neo4j.internal.helpers.Exceptions;
  * {@link Resource}, it will be {@link Resource#close() closed} when the processing
  * has been completed.
  */
-public final class Iterables
-{
-    private Iterables()
-    {
-        throw new AssertionError( "no instance" );
+public final class Iterables {
+    private Iterables() {
+        throw new AssertionError("no instance");
     }
 
-    public static <T> Iterable<T> empty()
-    {
+    public static <T> Iterable<T> empty() {
         return Collections.emptyList();
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> ResourceIterable<T> emptyResourceIterable()
-    {
+    @SuppressWarnings("unchecked")
+    public static <T> ResourceIterable<T> emptyResourceIterable() {
         return (ResourceIterable<T>) EmptyResourceIterable.EMPTY_RESOURCE_ITERABLE;
     }
 
@@ -80,149 +75,115 @@ public final class Iterables
      * @param <C> the type of the collection to add the items to.
      * @return the {@code collection} that has been updated.
      */
-    public static <T, C extends Collection<T>> C addAll( C collection, Iterable<? extends T> iterable )
-    {
-        try
-        {
+    public static <T, C extends Collection<T>> C addAll(C collection, Iterable<? extends T> iterable) {
+        try {
             Iterator<? extends T> iterator = iterable.iterator();
-            try
-            {
-                while ( iterator.hasNext() )
-                {
-                    collection.add( iterator.next() );
+            try {
+                while (iterator.hasNext()) {
+                    collection.add(iterator.next());
                 }
-            }
-            finally
-            {
+            } finally {
 
-                Iterators.tryCloseResource( iterator );
+                Iterators.tryCloseResource(iterator);
             }
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+        } finally {
+            tryCloseResource(iterable);
         }
 
         return collection;
     }
 
-    public static <X> Iterable<X> filter( Predicate<? super X> specification, Iterable<X> i )
-    {
-        return new FilterIterable<>( i, specification );
+    public static <X> Iterable<X> filter(Predicate<? super X> specification, Iterable<X> i) {
+        return new FilterIterable<>(i, specification);
     }
 
-    public static <X> List<X> reverse( List<X> iterable )
-    {
-        List<X> list = asList( iterable );
-        Collections.reverse( list );
+    public static <X> List<X> reverse(List<X> iterable) {
+        List<X> list = asList(iterable);
+        Collections.reverse(list);
         return list;
     }
 
-    public static <FROM, TO> Iterable<TO> map( Function<? super FROM, ? extends TO> function, Iterable<FROM> from )
-    {
-        return new MapIterable<>( from, function );
+    public static <FROM, TO> Iterable<TO> map(Function<? super FROM, ? extends TO> function, Iterable<FROM> from) {
+        return new MapIterable<>(from, function);
     }
 
     @SafeVarargs
-    public static <T, C extends T> Iterable<T> iterable( C... items )
-    {
-        return Arrays.asList( items );
+    public static <T, C extends T> Iterable<T> iterable(C... items) {
+        return Arrays.asList(items);
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static <T, C> Iterable<T> cast( Iterable<C> iterable )
-    {
+    @SuppressWarnings("unchecked")
+    public static <T, C> Iterable<T> cast(Iterable<C> iterable) {
         return (Iterable<T>) iterable;
     }
 
     @SafeVarargs
-    @SuppressWarnings( "unchecked" )
-    public static <T> Iterable<T> concat( Iterable<? extends T>... iterables )
-    {
-        return concat( Arrays.asList( (Iterable<T>[]) iterables ) );
+    @SuppressWarnings("unchecked")
+    public static <T> Iterable<T> concat(Iterable<? extends T>... iterables) {
+        return concat(Arrays.asList((Iterable<T>[]) iterables));
     }
 
-    public static <T> Iterable<T> concat( final Iterable<? extends Iterable<T>> iterables )
-    {
-        return new CombiningIterable<>( iterables );
+    public static <T> Iterable<T> concat(final Iterable<? extends Iterable<T>> iterables) {
+        return new CombiningIterable<>(iterables);
     }
 
-    public static <T, C extends T> Iterable<T> append( final C item, final Iterable<T> iterable )
-    {
-        return () ->
-        {
+    public static <T, C extends T> Iterable<T> append(final C item, final Iterable<T> iterable) {
+        return () -> {
             final Iterator<T> iterator = iterable.iterator();
 
-            return new Iterator<>()
-            {
+            return new Iterator<>() {
                 T last = item;
 
                 @Override
-                public boolean hasNext()
-                {
+                public boolean hasNext() {
                     return iterator.hasNext() || last != null;
                 }
 
                 @Override
-                public T next()
-                {
-                    if ( iterator.hasNext() )
-                    {
+                public T next() {
+                    if (iterator.hasNext()) {
                         return iterator.next();
                     }
-                    try
-                    {
+                    try {
                         return last;
-                    }
-                    finally
-                    {
+                    } finally {
                         last = null;
                     }
                 }
 
                 @Override
-                public void remove()
-                {
-                }
+                public void remove() {}
             };
         };
     }
 
-    public static Object[] asArray( Iterable<Object> iterable )
-    {
-        return asArray( Object.class, iterable );
+    public static Object[] asArray(Iterable<Object> iterable) {
+        return asArray(Object.class, iterable);
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> T[] asArray( Class<T> componentType, Iterable<T> iterable )
-    {
-        if ( iterable == null )
-        {
+    @SuppressWarnings("unchecked")
+    public static <T> T[] asArray(Class<T> componentType, Iterable<T> iterable) {
+        if (iterable == null) {
             return null;
         }
 
-        List<T> list = asList( iterable );
-        return list.toArray( (T[]) Array.newInstance( componentType, list.size() ) );
+        List<T> list = asList(iterable);
+        return list.toArray((T[]) Array.newInstance(componentType, list.size()));
     }
 
-    public static <T> ResourceIterable<T> asResourceIterable( final Iterable<T> iterable )
-    {
-        if ( iterable instanceof ResourceIterable<?> )
-        {
+    public static <T> ResourceIterable<T> asResourceIterable(final Iterable<T> iterable) {
+        if (iterable instanceof ResourceIterable<?>) {
             return (ResourceIterable<T>) iterable;
         }
-        return new AbstractResourceIterable<>()
-        {
+        return new AbstractResourceIterable<>() {
             @Override
-            protected ResourceIterator<T> newIterator()
-            {
-                return Iterators.asResourceIterator( iterable.iterator() );
+            protected ResourceIterator<T> newIterator() {
+                return Iterators.asResourceIterator(iterable.iterator());
             }
 
             @Override
-            protected void onClosed()
-            {
-                tryCloseResource( iterable );
+            protected void onClosed() {
+                tryCloseResource(iterable);
             }
         };
     }
@@ -241,26 +202,20 @@ public final class Iterables
      * @param separator the separator to use between the items in {@code values}.
      * @return the joined string.
      */
-    public static String toString( Iterable<?> values, String separator )
-    {
+    public static String toString(Iterable<?> values, String separator) {
         Iterator<?> it = values.iterator();
-        try
-        {
+        try {
             StringBuilder sb = new StringBuilder();
-            while ( it.hasNext() )
-            {
-                sb.append( it.next() );
-                if ( it.hasNext() )
-                {
-                    sb.append( separator );
+            while (it.hasNext()) {
+                sb.append(it.next());
+                if (it.hasNext()) {
+                    sb.append(separator);
                 }
             }
             return sb.toString();
-        }
-        finally
-        {
-            Iterators.tryCloseResource( it );
-            tryCloseResource( values );
+        } finally {
+            Iterators.tryCloseResource(it);
+            tryCloseResource(values);
         }
     }
 
@@ -280,15 +235,11 @@ public final class Iterables
      * @return the first element in the {@code iterable}, or {@code null} if no
      * element found.
      */
-    public static <T> T firstOrNull( Iterable<T> iterable )
-    {
-        try
-        {
-            return Iterators.firstOrNull( iterable.iterator() );
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+    public static <T> T firstOrNull(Iterable<T> iterable) {
+        try {
+            return Iterators.firstOrNull(iterable.iterator());
+        } finally {
+            tryCloseResource(iterable);
         }
     }
 
@@ -304,15 +255,11 @@ public final class Iterables
      * @return the first element in the {@code iterable}.
      * @throws NoSuchElementException if no element found.
      */
-    public static <T> T first( Iterable<T> iterable )
-    {
-        try
-        {
-            return Iterators.first( iterable.iterator() );
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+    public static <T> T first(Iterable<T> iterable) {
+        try {
+            return Iterators.first(iterable.iterator());
+        } finally {
+            tryCloseResource(iterable);
         }
     }
 
@@ -328,15 +275,11 @@ public final class Iterables
      * @return the last element in the {@code iterable}.
      * @throws NoSuchElementException if no element found.
      */
-    public static <T> T last( Iterable<T> iterable )
-    {
-        try
-        {
-            return Iterators.last( iterable.iterator() );
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+    public static <T> T last(Iterable<T> iterable) {
+        try {
+            return Iterators.last(iterable.iterator());
+        } finally {
+            tryCloseResource(iterable);
         }
     }
 
@@ -358,15 +301,11 @@ public final class Iterables
      * element found.
      * @throws NoSuchElementException if more than one element was found.
      */
-    public static <T> T singleOrNull( Iterable<T> iterable )
-    {
-        try
-        {
-            return Iterators.singleOrNull( iterable.iterator() );
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+    public static <T> T singleOrNull(Iterable<T> iterable) {
+        try {
+            return Iterators.singleOrNull(iterable.iterator());
+        } finally {
+            tryCloseResource(iterable);
         }
     }
 
@@ -387,15 +326,11 @@ public final class Iterables
      * @return the single element in the {@code iterable}.
      * @throws NoSuchElementException if there isn't exactly one element.
      */
-    public static <T> T single( Iterable<T> iterable )
-    {
-        try
-        {
-            return Iterators.single( iterable.iterator() );
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+    public static <T> T single(Iterable<T> iterable) {
+        try {
+            return Iterators.single(iterable.iterator());
+        } finally {
+            tryCloseResource(iterable);
         }
     }
 
@@ -418,15 +353,11 @@ public final class Iterables
      * element found.
      * @throws NoSuchElementException if more than one element was found.
      */
-    public static <T> T single( Iterable<T> iterable, T itemIfNone )
-    {
-        try
-        {
-            return Iterators.single( iterable.iterator(), itemIfNone );
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+    public static <T> T single(Iterable<T> iterable, T itemIfNone) {
+        try {
+            return Iterators.single(iterable.iterator(), itemIfNone);
+        } finally {
+            tryCloseResource(iterable);
         }
     }
 
@@ -443,9 +374,8 @@ public final class Iterables
      * @param iterable the {@link Iterable} to count items in.
      * @return the number of items found in {@code iterable}.
      */
-    public static <T> long count( Iterable<T> iterable )
-    {
-        return count( iterable, Predicates.alwaysTrue() );
+    public static <T> long count(Iterable<T> iterable) {
+        return count(iterable, Predicates.alwaysTrue());
     }
 
     /**
@@ -462,15 +392,11 @@ public final class Iterables
      * @param filter the filter to test items against
      * @return the number of found in {@code iterable}.
      */
-    public static <T> long count( Iterable<T> iterable, Predicate<T> filter )
-    {
-        try
-        {
-            return Iterators.count( iterable.iterator(), filter );
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+    public static <T> long count(Iterable<T> iterable, Predicate<T> filter) {
+        try {
+            return Iterators.count(iterable.iterator(), filter);
+        } finally {
+            tryCloseResource(iterable);
         }
     }
 
@@ -487,9 +413,8 @@ public final class Iterables
      * @param <T> The generic type of both the iterable and the collection.
      * @return a collection containing all items from the iterable.
      */
-    public static <T> Collection<T> asCollection( Iterable<T> iterable )
-    {
-        return addAll( new ArrayList<>(), iterable );
+    public static <T> Collection<T> asCollection(Iterable<T> iterable) {
+        return addAll(new ArrayList<>(), iterable);
     }
 
     /**
@@ -505,9 +430,8 @@ public final class Iterables
      * @param <T> The generic type of both the iterable and the list.
      * @return a list containing all items from the iterable.
      */
-    public static <T> List<T> asList( Iterable<T> iterable )
-    {
-        return addAll( new ArrayList<>(), iterable );
+    public static <T> List<T> asList(Iterable<T> iterable) {
+        return addAll(new ArrayList<>(), iterable);
     }
 
     /**
@@ -523,9 +447,8 @@ public final class Iterables
      * @param <T> The generic type of items.
      * @return a set containing all items from the {@link Iterable}.
      */
-    public static <T> Set<T> asSet( Iterable<T> iterable )
-    {
-        return addAll( new HashSet<>(), iterable );
+    public static <T> Set<T> asSet(Iterable<T> iterable) {
+        return addAll(new HashSet<>(), iterable);
     }
 
     /**
@@ -538,62 +461,49 @@ public final class Iterables
      * @param <T> The generic type of items.
      * @return a set containing all items from the {@link Iterable}.
      */
-    public static <T> Set<T> asUniqueSet( Iterable<T> iterable )
-    {
-        try
-        {
-            return Iterators.addToCollectionUnique( iterable, new HashSet<>() );
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+    public static <T> Set<T> asUniqueSet(Iterable<T> iterable) {
+        try {
+            return Iterators.addToCollectionUnique(iterable, new HashSet<>());
+        } finally {
+            tryCloseResource(iterable);
         }
     }
 
-    public static Iterable<Long> asIterable( final long... array )
-    {
-        return () -> Iterators.asIterator( array );
+    public static Iterable<Long> asIterable(final long... array) {
+        return () -> Iterators.asIterator(array);
     }
 
-    public static Iterable<Integer> asIterable( final int... array )
-    {
-        return () -> Iterators.asIterator( array );
+    public static Iterable<Integer> asIterable(final int... array) {
+        return () -> Iterators.asIterator(array);
     }
 
     @SafeVarargs
-    public static <T> Iterable<T> asIterable( final T... array )
-    {
-        return () -> Iterators.iterator( array );
+    public static <T> Iterable<T> asIterable(final T... array) {
+        return () -> Iterators.iterator(array);
     }
 
-    public static <T> ResourceIterable<T> resourceIterable( final Iterable<T> iterable )
-    {
-        return new AbstractResourceIterable<>()
-        {
+    public static <T> ResourceIterable<T> resourceIterable(final Iterable<T> iterable) {
+        return new AbstractResourceIterable<>() {
             @Override
-            protected ResourceIterator<T> newIterator()
-            {
+            protected ResourceIterator<T> newIterator() {
                 Iterator<T> iterator = iterable.iterator();
                 Resource resource = (iterator instanceof Resource) ? (Resource) iterator : Resource.EMPTY;
-                return Iterators.resourceIterator( iterator, resource );
+                return Iterators.resourceIterator(iterator, resource);
             }
 
             @Override
-            protected void onClosed()
-            {
-                tryCloseResource( iterable );
+            protected void onClosed() {
+                tryCloseResource(iterable);
             }
         };
     }
 
-    public static <T> Iterable<T> option( final T item )
-    {
-        if ( item == null )
-        {
+    public static <T> Iterable<T> option(final T item) {
+        if (item == null) {
             return Collections.emptyList();
         }
 
-        return () -> Iterators.iterator( item );
+        return () -> Iterators.iterator(item);
     }
 
     /**
@@ -607,9 +517,8 @@ public final class Iterables
      * @return stream over the iterable elements
      * @throws NullPointerException when the given iterable is {@code null}
      */
-    public static <T> Stream<T> stream( Iterable<T> iterable )
-    {
-        return stream( iterable, 0 );
+    public static <T> Stream<T> stream(Iterable<T> iterable) {
+        return stream(iterable, 0);
     }
 
     /**
@@ -624,10 +533,9 @@ public final class Iterables
      * @return stream over the iterable elements
      * @throws NullPointerException when the given iterable is {@code null}
      */
-    public static <T> Stream<T> stream( Iterable<T> iterable, int characteristics )
-    {
-        Objects.requireNonNull( iterable );
-        return Iterators.stream( iterable.iterator(), characteristics ).onClose( () -> tryCloseResource( iterable ) );
+    public static <T> Stream<T> stream(Iterable<T> iterable, int characteristics) {
+        Objects.requireNonNull(iterable);
+        return Iterators.stream(iterable.iterator(), characteristics).onClose(() -> tryCloseResource(iterable));
     }
 
     /**
@@ -640,18 +548,13 @@ public final class Iterables
      * @param iterable iterable to iterate over
      * @param consumer lambda function to call on each object passed
      */
-    public static <V> void forEach( Iterable<V> iterable, Consumer<V> consumer )
-    {
-        try
-        {
-            for ( final var item : iterable )
-            {
-                consumer.accept( item );
+    public static <V> void forEach(Iterable<V> iterable, Consumer<V> consumer) {
+        try {
+            for (final var item : iterable) {
+                consumer.accept(item);
             }
-        }
-        finally
-        {
-            tryCloseResource( iterable );
+        } finally {
+            tryCloseResource(iterable);
         }
     }
 
@@ -665,31 +568,23 @@ public final class Iterables
      * @param <E> the type of exception anticipated, inferred from the lambda
      * @throws E if consumption fails with this exception
      */
-    @SuppressWarnings( "unchecked" )
-    public static <T, E extends Exception> void safeForAll( ThrowingConsumer<T,E> consumer, Iterable<T> subjects ) throws E
-    {
-        try
-        {
+    @SuppressWarnings("unchecked")
+    public static <T, E extends Exception> void safeForAll(ThrowingConsumer<T, E> consumer, Iterable<T> subjects)
+            throws E {
+        try {
             E exception = null;
-            for ( T instance : subjects )
-            {
-                try
-                {
-                    consumer.accept( instance );
-                }
-                catch ( Exception e )
-                {
-                    exception = Exceptions.chain( exception, (E) e );
+            for (T instance : subjects) {
+                try {
+                    consumer.accept(instance);
+                } catch (Exception e) {
+                    exception = Exceptions.chain(exception, (E) e);
                 }
             }
-            if ( exception != null )
-            {
+            if (exception != null) {
                 throw exception;
             }
-        }
-        finally
-        {
-            tryCloseResource( subjects );
+        } finally {
+            tryCloseResource(subjects);
         }
     }
 
@@ -698,27 +593,22 @@ public final class Iterables
      *
      * @param iterable the iterable to check for closing
      */
-    public static void tryCloseResource( Iterable<?> iterable )
-    {
-        if ( iterable instanceof Resource closeable )
-        {
+    public static void tryCloseResource(Iterable<?> iterable) {
+        if (iterable instanceof Resource closeable) {
             closeable.close();
         }
     }
 
-    private static class EmptyResourceIterable<T> implements ResourceIterable<T>
-    {
+    private static class EmptyResourceIterable<T> implements ResourceIterable<T> {
         private static final ResourceIterable<Object> EMPTY_RESOURCE_ITERABLE = new EmptyResourceIterable<>();
 
         @Override
-        public ResourceIterator<T> iterator()
-        {
+        public ResourceIterator<T> iterator() {
             return Iterators.emptyResourceIterator();
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             // no-op
         }
     }

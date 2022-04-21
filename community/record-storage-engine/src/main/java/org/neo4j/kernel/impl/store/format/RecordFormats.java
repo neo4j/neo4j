@@ -39,13 +39,11 @@ import org.neo4j.storageengine.api.format.CapabilityType;
  * The record formats that a store version uses. Contains all formats for all different stores as well as
  * accessors for which {@link Capability capabilities} a format has as to be able to compare between formats.
  */
-public interface RecordFormats
-{
+public interface RecordFormats {
     int NO_GENERATION = -1;
 
     @Service
-    interface Factory extends NamedService
-    {
+    interface Factory extends NamedService {
         RecordFormats newInstance();
     }
 
@@ -108,7 +106,7 @@ public interface RecordFormats
      * @param capability {@link Capability} to check for.
      * @return whether or not this format has a certain {@link Capability}.
      */
-    boolean hasCapability( Capability capability );
+    boolean hasCapability(Capability capability);
 
     /**
      * Get format family to which this format belongs to.
@@ -124,7 +122,7 @@ public interface RecordFormats
      * @param type {@link CapabilityType type} of capability to check compatibility for.
      * @return true if the {@code other} format have compatible capabilities of the given {@code type}.
      */
-    boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type );
+    boolean hasCompatibleCapabilities(RecordFormats other, CapabilityType type);
 
     /**
      * Record format name
@@ -136,8 +134,7 @@ public interface RecordFormats
      * Other (older) record formats that are compatible with this one, for rolling upgrade into this version
      * @return a list of compatible older record formats. Empty list if none
      */
-    default RecordFormats[] compatibleVersionsForRollingUpgrade()
-    {
+    default RecordFormats[] compatibleVersionsForRollingUpgrade() {
         return new RecordFormats[0];
     }
 
@@ -145,8 +142,7 @@ public interface RecordFormats
      * Can be used while developing a new format make sure it has a higher generation than the real formats and that
      * {@link GraphDatabaseInternalSettings#include_versions_under_development} is set.
      */
-    default boolean formatUnderDevelopment()
-    {
+    default boolean formatUnderDevelopment() {
         return false;
     }
 

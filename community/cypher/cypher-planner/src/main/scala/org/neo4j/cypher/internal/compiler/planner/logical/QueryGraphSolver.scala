@@ -28,23 +28,45 @@ import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait QueryGraphSolver {
-  def plan(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): BestPlans
-  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): LogicalPlan
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): LogicalPlan
+
+  def plan(
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): BestPlans
+
+  def planPatternExpression(
+    planArguments: Set[String],
+    expr: PatternExpression,
+    context: LogicalPlanningContext
+  ): LogicalPlan
+
+  def planPatternComprehension(
+    planArguments: Set[String],
+    expr: PatternComprehension,
+    context: LogicalPlanningContext
+  ): LogicalPlan
 }
 
 trait PatternExpressionSolving {
 
   self: QueryGraphSolver =>
 
-  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): LogicalPlan = {
+  def planPatternExpression(
+    planArguments: Set[String],
+    expr: PatternExpression,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     val qg = asQueryGraph(expr, planArguments, context.anonymousVariableNameGenerator)
     self.plan(qg, InterestingOrderConfig.empty, context).result
   }
 
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): LogicalPlan = {
+  def planPatternComprehension(
+    planArguments: Set[String],
+    expr: PatternComprehension,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     val qg = asQueryGraph(expr, planArguments, context.anonymousVariableNameGenerator)
     self.plan(qg, InterestingOrderConfig.empty, context).result
   }
 }
-

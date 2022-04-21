@@ -19,104 +19,89 @@
  */
 package org.neo4j.values.storable;
 
-import java.time.OffsetTime;
-import java.util.Arrays;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static org.neo4j.memory.HeapEstimator.OFFSET_TIME_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 
-public class TimeArray extends TemporalArray<OffsetTime>
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( TimeArray.class );
+import java.time.OffsetTime;
+import java.util.Arrays;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public class TimeArray extends TemporalArray<OffsetTime> {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(TimeArray.class);
 
     private final OffsetTime[] value;
 
-    TimeArray( OffsetTime[] value )
-    {
+    TimeArray(OffsetTime[] value) {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    protected OffsetTime[] value()
-    {
+    protected OffsetTime[] value() {
         return value;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapTimeArray( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapTimeArray(this);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+    public boolean equals(Value other) {
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( OffsetTime[] x )
-    {
-        return Arrays.equals( value, x);
+    public boolean equals(OffsetTime[] x) {
+        return Arrays.equals(value, x);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writeTo( writer, ValueWriter.ArrayType.ZONED_TIME ,value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writeTo(writer, ValueWriter.ArrayType.ZONED_TIME, value);
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.ZONED_TIME_ARRAY;
     }
 
     @Override
-    protected int unsafeCompareTo( Value otherValue )
-    {
-        return compareToNonPrimitiveArray( (TimeArray) otherValue );
+    protected int unsafeCompareTo(Value otherValue) {
+        return compareToNonPrimitiveArray((TimeArray) otherValue);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "TimeArray";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOfObjectArray( OFFSET_TIME_SIZE, value.length );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOfObjectArray(OFFSET_TIME_SIZE, value.length);
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof TimeValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        OffsetTime[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        OffsetTime[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = ((TimeValue) added).temporal();
-        return new TimeArray( newArray );
+        return new TimeArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         OffsetTime[] newArray = new OffsetTime[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
+        System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((TimeValue) prepended).temporal();
-        return new TimeArray( newArray );
+        return new TimeArray(newArray);
     }
 }

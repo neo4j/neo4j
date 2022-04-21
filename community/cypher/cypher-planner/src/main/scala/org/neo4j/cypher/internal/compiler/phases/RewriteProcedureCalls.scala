@@ -49,8 +49,8 @@ trait RewriteProcedureCalls {
   def process(from: BaseState, resolver: ProcedureSignatureResolver): BaseState = {
     val rewrittenStatement = from.statement().endoRewrite(rewriter(resolver))
     from.withStatement(rewrittenStatement)
-      // normalizeWithAndReturnClauses aliases return columns, but only now do we have return columns for procedure calls
-      // so now we can assign them in the state.
+    // normalizeWithAndReturnClauses aliases return columns, but only now do we have return columns for procedure calls
+    // so now we can assign them in the state.
       .withReturnColumns(rewrittenStatement.returnColumns.map(_.name))
   }
 
@@ -102,7 +102,7 @@ trait RewriteProcedureCalls {
   private def getResolvedAndProjection(resolved: ResolvedCall): (ResolvedCall, Option[Return]) = {
     val newResolved = resolved.withFakedFullDeclarations
 
-    //Add the equivalent of a return for each item yielded by the procedure
+    // Add the equivalent of a return for each item yielded by the procedure
     val projection =
       Option(newResolved.callResults)
         .filter(_.nonEmpty)
@@ -111,11 +111,16 @@ trait RewriteProcedureCalls {
             distinct = false,
             returnItems = ReturnItems(
               includeExisting = false,
-              items = callResults.map(item => AliasedReturnItem(
-                item.variable.copyId,
-                item.variable.copyId)(resolved.position, isAutoAliased = true))
+              items = callResults.map(item =>
+                AliasedReturnItem(
+                  item.variable.copyId,
+                  item.variable.copyId
+                )(resolved.position, isAutoAliased = true)
+              )
             )(resolved.position),
-            None, None, None
+            None,
+            None,
+            None
           )(resolved.position)
         }
 
@@ -130,17 +135,18 @@ case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseS
 
   override def phase = AST_REWRITE
 
-
   override def process(from: BaseState, context: PlannerContext): BaseState = process(from, context.planContext)
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))
+  override def postConditions: Set[StepSequencer.Condition] =
+    Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))
 
 }
 
 /**
  * Rewrites unresolved calls into resolved calls, or leaves them unresolved if not found.
  */
-case class TryRewriteProcedureCalls(resolver: ProcedureSignatureResolver) extends Phase[BaseContext, BaseState, BaseState] with RewriteProcedureCalls {
+case class TryRewriteProcedureCalls(resolver: ProcedureSignatureResolver)
+    extends Phase[BaseContext, BaseState, BaseState] with RewriteProcedureCalls {
 
   override def phase = AST_REWRITE
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public interface IndexProxyFactory
-{
+public interface IndexProxyFactory {
     IndexProxy create() throws Exception;
 }

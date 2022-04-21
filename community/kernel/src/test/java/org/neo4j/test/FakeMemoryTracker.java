@@ -21,23 +21,19 @@ package org.neo4j.test;
 
 import org.neo4j.memory.HeapHighWaterMarkTracker;
 
-public class FakeMemoryTracker implements HeapHighWaterMarkTracker
-{
+public class FakeMemoryTracker implements HeapHighWaterMarkTracker {
     private long allocatedBytes;
 
-    public FakeMemoryTracker()
-    {
+    public FakeMemoryTracker() {
         this.allocatedBytes = 0L;
     }
 
     @Override
-    public long heapHighWaterMark()
-    {
+    public long heapHighWaterMark() {
         return allocatedBytes;
     }
 
-    public FakeMemoryTracker add( long bytes )
-    {
+    public FakeMemoryTracker add(long bytes) {
         allocatedBytes += bytes;
         return this;
     }

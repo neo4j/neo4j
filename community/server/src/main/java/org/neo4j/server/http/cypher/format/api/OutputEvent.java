@@ -76,14 +76,11 @@ package org.neo4j.server.http.cypher.format.api;
  * </ul>
  * There is an error while the second statement is executed in the example above.
  */
-public interface OutputEvent
-{
+public interface OutputEvent {
 
     Type getType();
 
-    enum Type
-    {
-
+    enum Type {
         TRANSACTION_INFO,
         STATEMENT_START,
         STATEMENT_END,

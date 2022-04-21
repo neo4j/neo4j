@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.Folded.Stop
 
-
 sealed trait QueryType
 
 object QueryType {
@@ -38,9 +37,11 @@ object QueryType {
   case object Read extends QueryType {
     override def toString: String = "Read query"
   }
+
   case object ReadPlusUnresolved extends QueryType {
     override def toString: String = "Read query (with unresolved procedures)"
   }
+
   case object Write extends QueryType {
     override def toString: String = "Write query"
   }
@@ -54,19 +55,19 @@ object QueryType {
 
   def of(ast: ASTNode): QueryType =
     ast.folded(default)(merge) {
-      case _: UpdateClause                => Stop(Write)
-      case c: CallClause                  => Stop(of(c))
-      case _: SchemaCommand               => Stop(Write)
-      case a: AdministrationCommand       => Stop(if (a.isReadOnly) Read else Write)
+      case _: UpdateClause          => Stop(Write)
+      case c: CallClause            => Stop(of(c))
+      case _: SchemaCommand         => Stop(Write)
+      case a: AdministrationCommand => Stop(if (a.isReadOnly) Read else Write)
     }
 
   def of(ast: Seq[Clause]): QueryType =
     ast.map(of).fold(default)(merge)
 
   def of(ast: CallClause): QueryType = ast match {
-    case _: UnresolvedCall => ReadPlusUnresolved
+    case _: UnresolvedCall                      => ReadPlusUnresolved
     case c: ResolvedCall if c.containsNoUpdates => Read
-    case _ => Write
+    case _                                      => Write
   }
 
   def recursive(fragment: Fragment): QueryType =
@@ -98,9 +99,9 @@ object QueryType {
 
   def sensitive(fragment: Fragment): Boolean =
     fragment match {
-      case apply: Fragment.Apply     => sensitive(apply.input) || sensitive(apply.inner)
-      case union: Fragment.Union     => sensitive(union.input) || sensitive(union.lhs) || sensitive(union.rhs)
-      case exec: Fragment.Exec       => sensitive(exec.input) || exec.sensitive
-      case _ => false
+      case apply: Fragment.Apply => sensitive(apply.input) || sensitive(apply.inner)
+      case union: Fragment.Union => sensitive(union.input) || sensitive(union.lhs) || sensitive(union.rhs)
+      case exec: Fragment.Exec   => sensitive(exec.input) || exec.sensitive
+      case _                     => false
     }
 }

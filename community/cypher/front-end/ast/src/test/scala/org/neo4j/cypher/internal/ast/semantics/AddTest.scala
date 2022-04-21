@@ -142,7 +142,9 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
   }
 
   test("should work with ORed types") {
-    testValidTypes(CTInteger | CTList(CTString), CTList(CTString) | CTInteger)(CTList(CTAny) | CTList(CTString) | CTInteger)
+    testValidTypes(CTInteger | CTList(CTString), CTList(CTString) | CTInteger)(
+      CTList(CTAny) | CTList(CTString) | CTInteger
+    )
     testValidTypes(CTInteger | CTList(CTInteger), CTString)(CTString | CTList(CTAny))
     testValidTypes(CTInteger | CTList(CTInteger), CTBoolean)(CTList(CTAny))
   }

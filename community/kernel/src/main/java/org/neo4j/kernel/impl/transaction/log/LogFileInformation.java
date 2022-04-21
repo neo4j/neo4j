@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-public interface LogFileInformation
-{
+public interface LogFileInformation {
     /**
      * @return the reachable entry that is farthest back of them all, in any existing version.
      */
@@ -33,7 +32,7 @@ public interface LogFileInformation
      * @return the first committed entry id for the log with {@code version}.
      * If that log doesn't exist -1 is returned.
      */
-    long getFirstEntryId( long version ) throws IOException;
+    long getFirstEntryId(long version) throws IOException;
 
     /**
      * @return the last committed entry id for this log.
@@ -49,5 +48,5 @@ public interface LogFileInformation
      * @param version the log version to get first entry timestamp for.
      * @return the timestamp for the start record for the first encountered entry in the log {@code version}.
      */
-    long getFirstStartRecordTimestamp( long version ) throws IOException;
+    long getFirstStartRecordTimestamp(long version) throws IOException;
 }

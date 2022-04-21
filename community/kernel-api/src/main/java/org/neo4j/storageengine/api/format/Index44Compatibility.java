@@ -23,26 +23,21 @@ package org.neo4j.storageengine.api.format;
  * A special capability used for marking formats
  * that are compatible with 4.4 indexing.
  */
-public class Index44Compatibility implements Capability
-{
+public class Index44Compatibility implements Capability {
     public static final Index44Compatibility INSTANCE = new Index44Compatibility();
 
-    private Index44Compatibility()
-    {
-
-    }
+    private Index44Compatibility() {}
 
     @Override
-    public boolean isType( CapabilityType type )
-    {
-        // This capability has no type - to not trigger any format compatibility checks and do extra unnecessary migration
+    public boolean isType(CapabilityType type) {
+        // This capability has no type - to not trigger any format compatibility checks and do extra unnecessary
+        // migration
         // It is just used as a marker to know if format has 4.4 indexing and should treat schema store special
         return false;
     }
 
     @Override
-    public boolean isAdditive()
-    {
+    public boolean isAdditive() {
         return false;
     }
 }

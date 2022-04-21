@@ -19,31 +19,29 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import org.neo4j.logging.InternalLog;
-
 import static java.lang.String.format;
 
-public class ReverseTransactionCursorLoggingMonitor implements ReversedTransactionCursorMonitor
-{
+import org.neo4j.logging.InternalLog;
+
+public class ReverseTransactionCursorLoggingMonitor implements ReversedTransactionCursorMonitor {
     private final InternalLog log;
 
-    public ReverseTransactionCursorLoggingMonitor( InternalLog log )
-    {
+    public ReverseTransactionCursorLoggingMonitor(InternalLog log) {
         this.log = log;
     }
 
     @Override
-    public void transactionalLogRecordReadFailure( long[] transactionOffsets, int transactionIndex, long logVersion )
-    {
-        log.warn( transactionIndex > 0 ?
-               format( "Fail to read transaction log version %d. Last valid transaction start offset is: %d.",
-                       logVersion, transactionOffsets[transactionIndex - 1] ) :
-               format( "Fail to read first transaction of log version %d.", logVersion) );
+    public void transactionalLogRecordReadFailure(long[] transactionOffsets, int transactionIndex, long logVersion) {
+        log.warn(
+                transactionIndex > 0
+                        ? format(
+                                "Fail to read transaction log version %d. Last valid transaction start offset is: %d.",
+                                logVersion, transactionOffsets[transactionIndex - 1])
+                        : format("Fail to read first transaction of log version %d.", logVersion));
     }
 
     @Override
-    public void presketchingTransactionLogs()
-    {
-        log.debug( "Pre-sketching transaction logs in the background." );
+    public void presketchingTransactionLogs() {
+        log.debug("Pre-sketching transaction logs in the background.");
     }
 }

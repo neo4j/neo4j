@@ -19,15 +19,14 @@
  */
 package org.neo4j.internal.id;
 
-import org.neo4j.exceptions.UnderlyingStorageException;
-
 import static java.lang.String.format;
 
-public class IdCapacityExceededException extends UnderlyingStorageException
-{
-    IdCapacityExceededException( IdType idType, long id, long maxId )
-    {
-        super( format( "Maximum id limit for %s has been reached. Generated id %d is out of permitted range [0, %d].",
-                idType.name(), id, maxId ) );
+import org.neo4j.exceptions.UnderlyingStorageException;
+
+public class IdCapacityExceededException extends UnderlyingStorageException {
+    IdCapacityExceededException(IdType idType, long id, long maxId) {
+        super(format(
+                "Maximum id limit for %s has been reached. Generated id %d is out of permitted range [0, %d].",
+                idType.name(), id, maxId));
     }
 }

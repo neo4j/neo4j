@@ -24,8 +24,7 @@ import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.virtual.MapValue;
 
-public class HttpProfilerStatistics implements ExecutionPlanDescription.ProfilerStatistics
-{
+public class HttpProfilerStatistics implements ExecutionPlanDescription.ProfilerStatistics {
     private final long rows;
     private final long dbHits;
     private final long pageCacheHits;
@@ -33,8 +32,8 @@ public class HttpProfilerStatistics implements ExecutionPlanDescription.Profiler
     private final double pageCacheRatio;
     private final long time;
 
-    private HttpProfilerStatistics( long rows, long dbHits, long pageCacheHits, long pageCacheMisses, double pageCacheRatio, long time )
-    {
+    private HttpProfilerStatistics(
+            long rows, long dbHits, long pageCacheHits, long pageCacheMisses, double pageCacheRatio, long time) {
         this.rows = rows;
         this.dbHits = dbHits;
         this.pageCacheHits = pageCacheHits;
@@ -43,90 +42,74 @@ public class HttpProfilerStatistics implements ExecutionPlanDescription.Profiler
         this.time = time;
     }
 
-    public static ExecutionPlanDescription.ProfilerStatistics fromMapValue( MapValue mapValue )
-    {
+    public static ExecutionPlanDescription.ProfilerStatistics fromMapValue(MapValue mapValue) {
         long dbHits = 0, rows = 0, pageCacheHits = 0, pageCacheMisses = 0, time = 0;
         double pageCacheRatio = 0;
 
-        if ( mapValue.containsKey( "dbHits" ) )
-        {
-            dbHits = ((LongValue) mapValue.get( "dbHits" )).value();
+        if (mapValue.containsKey("dbHits")) {
+            dbHits = ((LongValue) mapValue.get("dbHits")).value();
         }
-        if ( mapValue.containsKey( "pageCacheMisses" ) )
-        {
-            pageCacheMisses = ((LongValue) mapValue.get( "pageCacheMisses" )).value();
+        if (mapValue.containsKey("pageCacheMisses")) {
+            pageCacheMisses = ((LongValue) mapValue.get("pageCacheMisses")).value();
         }
-        if ( mapValue.containsKey( "pageCacheHits" ) )
-        {
-            pageCacheHits = ((LongValue) mapValue.get( "pageCacheHits" )).value();
+        if (mapValue.containsKey("pageCacheHits")) {
+            pageCacheHits = ((LongValue) mapValue.get("pageCacheHits")).value();
         }
-        if ( mapValue.containsKey( "pageCacheRatio" ) )
-        {
-            pageCacheRatio = ((DoubleValue) mapValue.get( "pageCacheRatio" )).value();
+        if (mapValue.containsKey("pageCacheRatio")) {
+            pageCacheRatio = ((DoubleValue) mapValue.get("pageCacheRatio")).value();
         }
-        if ( mapValue.containsKey( "rows" ) )
-        {
-            rows = ((LongValue) mapValue.get( "rows" )).value();
+        if (mapValue.containsKey("rows")) {
+            rows = ((LongValue) mapValue.get("rows")).value();
         }
-        if ( mapValue.containsKey( "time" ) )
-        {
-            time = ((LongValue) mapValue.get( "time" )).value();
+        if (mapValue.containsKey("time")) {
+            time = ((LongValue) mapValue.get("time")).value();
         }
 
-        return new HttpProfilerStatistics( rows, dbHits, pageCacheHits, pageCacheMisses, pageCacheRatio, time );
+        return new HttpProfilerStatistics(rows, dbHits, pageCacheHits, pageCacheMisses, pageCacheRatio, time);
     }
 
     @Override
-    public boolean hasRows()
-    {
+    public boolean hasRows() {
         return rows > 0;
     }
 
     @Override
-    public long getRows()
-    {
+    public long getRows() {
         return rows;
     }
 
     @Override
-    public boolean hasDbHits()
-    {
+    public boolean hasDbHits() {
         return dbHits > 0;
     }
 
     @Override
-    public long getDbHits()
-    {
+    public long getDbHits() {
         return dbHits;
     }
 
     @Override
-    public boolean hasPageCacheStats()
-    {
+    public boolean hasPageCacheStats() {
         return pageCacheHits > 0 || pageCacheMisses > 0 || pageCacheRatio > 0;
     }
 
     @Override
-    public long getPageCacheHits()
-    {
+    public long getPageCacheHits() {
         return pageCacheHits;
     }
 
     @Override
-    public long getPageCacheMisses()
-    {
+    public long getPageCacheMisses() {
         return pageCacheMisses;
     }
 
     @Override
-    public boolean hasTime()
-    {
+    public boolean hasTime() {
         return time > 0;
     }
 
     @Override
-    public long getTime()
-    {
+    public long getTime() {
         return time;
     }
 }

@@ -19,17 +19,14 @@
  */
 package org.neo4j.procedure.builtin;
 
-class TransactionMarkForTerminationFailedResult extends TransactionMarkForTerminationResult
-{
+class TransactionMarkForTerminationFailedResult extends TransactionMarkForTerminationResult {
     private static final String FAILURE_MESSAGE = "Transaction not found.";
 
-    TransactionMarkForTerminationFailedResult( String transactionId, String userName )
-    {
-        super( transactionId, userName, FAILURE_MESSAGE );
+    TransactionMarkForTerminationFailedResult(String transactionId, String userName) {
+        super(transactionId, userName, FAILURE_MESSAGE);
     }
 
-    TransactionMarkForTerminationFailedResult( String transactionId, String userName, String message )
-    {
-        super( transactionId, userName, message );
+    TransactionMarkForTerminationFailedResult(String transactionId, String userName, String message) {
+        super(transactionId, userName, message);
     }
 }

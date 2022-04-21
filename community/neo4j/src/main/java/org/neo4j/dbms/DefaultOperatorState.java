@@ -21,22 +21,19 @@ package org.neo4j.dbms;
 
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 
-public enum DefaultOperatorState implements OperatorState
-{
-    STOPPED( TopologyGraphDbmsModel.DatabaseStatus.offline.name() ),
-    STARTED( TopologyGraphDbmsModel.DatabaseStatus.online.name() ),
-    UNKNOWN( "unknown" );
+public enum DefaultOperatorState implements OperatorState {
+    STOPPED(TopologyGraphDbmsModel.DatabaseStatus.offline.name()),
+    STARTED(TopologyGraphDbmsModel.DatabaseStatus.online.name()),
+    UNKNOWN("unknown");
 
     private final String description;
 
-    DefaultOperatorState( String description )
-    {
+    DefaultOperatorState(String description) {
         this.description = description;
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return description;
     }
 }

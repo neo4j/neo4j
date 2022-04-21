@@ -47,20 +47,27 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
     providedOrder: ProvidedOrder,
     indexOrder: IndexOrder,
     solvedPredicates: Seq[Expression],
-    indexType: IndexType,
+    indexType: IndexType
   )
 
   protected def constructPlan(solution: Solution, context: LogicalPlanningContext): LogicalPlan
 
-  def createSolution(indexMatch: NodeIndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Option[Solution] = {
+  def createSolution(
+    indexMatch: NodeIndexMatch,
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): Option[Solution] = {
 
-    val predicateSet = indexMatch.predicateSet(predicatesForIndexSeek(indexMatch.propertyPredicates), exactPredicatesCanGetValue = true)
+    val predicateSet =
+      indexMatch.predicateSet(predicatesForIndexSeek(indexMatch.propertyPredicates), exactPredicatesCanGetValue = true)
 
     if (predicateSet.propertyPredicates.forall(_.isExists)) {
       None
     } else {
 
-      val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(predicateSet.propertyPredicates)
+      val queryExpression: QueryExpression[Expression] =
+        mergeQueryExpressionsToSingleOne(predicateSet.propertyPredicates)
 
       val properties = predicateSet.indexedProperties(context)
 
@@ -79,7 +86,7 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
         indexMatch.providedOrder,
         indexMatch.indexOrder,
         predicateSet.allSolvedPredicates,
-        indexMatch.indexDescriptor.indexType,
+        indexMatch.indexDescriptor.indexType
       ))
     }
   }

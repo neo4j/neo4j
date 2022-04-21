@@ -21,46 +21,37 @@ package org.neo4j.harness.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 
-class HarnessRegisteredProcs
-{
+class HarnessRegisteredProcs {
     private final List<Class<?>> procs = new ArrayList<>();
     private final List<Class<?>> functions = new ArrayList<>();
     private final List<Class<?>> aggregationFunctions = new ArrayList<>();
 
-    void addProcedure( Class<?> procedureClass )
-    {
-        this.procs.add( procedureClass );
+    void addProcedure(Class<?> procedureClass) {
+        this.procs.add(procedureClass);
     }
 
-    void addFunction( Class<?> functionClass )
-    {
-        this.functions.add( functionClass );
+    void addFunction(Class<?> functionClass) {
+        this.functions.add(functionClass);
     }
 
-    void addAggregationFunction( Class<?> functionClass )
-    {
-        this.aggregationFunctions.add( functionClass );
+    void addAggregationFunction(Class<?> functionClass) {
+        this.aggregationFunctions.add(functionClass);
     }
 
-    void applyTo( GlobalProcedures globalProcedures ) throws KernelException
-    {
-        for ( Class<?> cls : procs )
-        {
-            globalProcedures.registerProcedure( cls );
+    void applyTo(GlobalProcedures globalProcedures) throws KernelException {
+        for (Class<?> cls : procs) {
+            globalProcedures.registerProcedure(cls);
         }
 
-        for ( Class<?> cls : functions )
-        {
-            globalProcedures.registerFunction( cls );
+        for (Class<?> cls : functions) {
+            globalProcedures.registerFunction(cls);
         }
 
-        for ( Class<?> cls : aggregationFunctions )
-        {
-            globalProcedures.registerAggregationFunction( cls );
+        for (Class<?> cls : aggregationFunctions) {
+            globalProcedures.registerAggregationFunction(cls);
         }
     }
 }

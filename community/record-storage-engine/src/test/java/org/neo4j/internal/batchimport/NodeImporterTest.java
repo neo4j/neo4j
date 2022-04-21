@@ -19,10 +19,18 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMappers;
@@ -48,21 +56,10 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-class NodeImporterTest
-{
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+class NodeImporterTest {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
     @Inject
     private PageCache pageCache;
@@ -74,85 +71,99 @@ class NodeImporterTest
     private RecordDatabaseLayout layout;
 
     @Test
-    void shouldHandleLargeAmountsOfLabels() throws IOException
-    {
+    void shouldHandleLargeAmountsOfLabels() throws IOException {
         // given
-        IdMapper idMapper = mock( IdMapper.class );
+        IdMapper idMapper = mock(IdMapper.class);
         JobScheduler scheduler = new ThreadPoolJobScheduler();
-        try ( Lifespan life = new Lifespan( scheduler );
-              BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, CONTEXT_FACTORY, layout,
-                      Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL, Config.defaults(), INSTANCE ) )
-        {
+        try (Lifespan life = new Lifespan(scheduler);
+                BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache(
+                        fs,
+                        pageCache,
+                        NULL,
+                        CONTEXT_FACTORY,
+                        layout,
+                        Configuration.DEFAULT,
+                        NullLogService.getInstance(),
+                        AdditionalInitialIds.EMPTY,
+                        EMPTY_LOG_TAIL,
+                        Config.defaults(),
+                        INSTANCE)) {
             stores.createNew();
-            try ( var storeCursors = new CachedStoreCursors( stores.getNeoStores(), CursorContext.NULL_CONTEXT ) )
-            {
+            try (var storeCursors = new CachedStoreCursors(stores.getNeoStores(), CursorContext.NULL_CONTEXT)) {
                 // when
                 int numberOfLabels = 50;
                 long nodeId = 0;
-                try ( NodeImporter importer = new NodeImporter( stores, idMapper, new DataImporter.Monitor(), CONTEXT_FACTORY, INSTANCE ) )
-                {
-                    importer.id( nodeId );
+                try (NodeImporter importer =
+                        new NodeImporter(stores, idMapper, new DataImporter.Monitor(), CONTEXT_FACTORY, INSTANCE)) {
+                    importer.id(nodeId);
                     String[] labels = new String[numberOfLabels];
-                    for ( int i = 0; i < labels.length; i++ )
-                    {
+                    for (int i = 0; i < labels.length; i++) {
                         labels[i] = "Label" + i;
                     }
-                    importer.labels( labels );
+                    importer.labels(labels);
                     importer.endOfEntity();
                 }
 
                 // then
                 NodeStore nodeStore = stores.getNodeStore();
-                PageCursor nodeCursor = storeCursors.readCursor( NODE_CURSOR );
-                NodeRecord record = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor );
-                long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, storeCursors );
-                assertEquals( numberOfLabels, labels.length );
+                PageCursor nodeCursor = storeCursors.readCursor(NODE_CURSOR);
+                NodeRecord record =
+                        nodeStore.getRecordByCursor(nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor);
+                long[] labels = NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors);
+                assertEquals(numberOfLabels, labels.length);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnNodeImport() throws IOException
-    {
+    void tracePageCacheAccessOnNodeImport() throws IOException {
         JobScheduler scheduler = new ThreadPoolJobScheduler();
-        try ( Lifespan life = new Lifespan( scheduler );
-                BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, CONTEXT_FACTORY, layout,
-                        Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL, Config.defaults(), INSTANCE ) )
-        {
+        try (Lifespan life = new Lifespan(scheduler);
+                BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache(
+                        fs,
+                        pageCache,
+                        NULL,
+                        CONTEXT_FACTORY,
+                        layout,
+                        Configuration.DEFAULT,
+                        NullLogService.getInstance(),
+                        AdditionalInitialIds.EMPTY,
+                        EMPTY_LOG_TAIL,
+                        Config.defaults(),
+                        INSTANCE)) {
             stores.createNew();
 
-            try ( var storeCursors = new CachedStoreCursors( stores.getNeoStores(), CursorContext.NULL_CONTEXT ) )
-            {
+            try (var storeCursors = new CachedStoreCursors(stores.getNeoStores(), CursorContext.NULL_CONTEXT)) {
                 int numberOfLabels = 50;
                 long nodeId = 0;
                 var cacheTracer = new DefaultPageCacheTracer();
-                var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
-                try ( NodeImporter importer = new NodeImporter( stores, IdMappers.actual(), new DataImporter.Monitor(), contextFactory, INSTANCE ) )
-                {
-                    importer.id( nodeId );
+                var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+                try (NodeImporter importer = new NodeImporter(
+                        stores, IdMappers.actual(), new DataImporter.Monitor(), contextFactory, INSTANCE)) {
+                    importer.id(nodeId);
                     String[] labels = new String[numberOfLabels];
-                    for ( int i = 0; i < labels.length; i++ )
-                    {
+                    for (int i = 0; i < labels.length; i++) {
                         labels[i] = "Label" + i;
                     }
-                    importer.labels( labels );
-                    importer.property( "a", randomAscii( 10 ) );
-                    importer.property( "b", randomAscii( 100 ) );
-                    importer.property( "c", randomAscii( 1000 ) );
+                    importer.labels(labels);
+                    importer.property("a", randomAscii(10));
+                    importer.property("b", randomAscii(100));
+                    importer.property("c", randomAscii(1000));
                     importer.endOfEntity();
                 }
 
                 NodeStore nodeStore = stores.getNodeStore();
 
-                PageCursor nodeCursor = storeCursors.readCursor( NODE_CURSOR );
-                NodeRecord record = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor );
-                long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, storeCursors );
-                assertEquals( numberOfLabels, labels.length );
+                PageCursor nodeCursor = storeCursors.readCursor(NODE_CURSOR);
+                NodeRecord record =
+                        nodeStore.getRecordByCursor(nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor);
+                long[] labels = NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors);
+                assertEquals(numberOfLabels, labels.length);
 
-                assertThat( cacheTracer.faults() ).isEqualTo( 2 );
-                assertThat( cacheTracer.pins() ).isEqualTo( 5 );
-                assertThat( cacheTracer.unpins() ).isEqualTo( 5 );
-                assertThat( cacheTracer.hits() ).isEqualTo( 3 );
+                assertThat(cacheTracer.faults()).isEqualTo(2);
+                assertThat(cacheTracer.pins()).isEqualTo(5);
+                assertThat(cacheTracer.unpins()).isEqualTo(5);
+                assertThat(cacheTracer.hits()).isEqualTo(3);
             }
         }
     }

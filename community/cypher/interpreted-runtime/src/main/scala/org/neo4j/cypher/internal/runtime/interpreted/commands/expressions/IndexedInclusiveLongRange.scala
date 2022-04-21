@@ -48,13 +48,14 @@ case class IndexedInclusiveLongRange(start: Long, end: Long, step: Long) extends
 
   private var len = -1
 
-  override def length: Int = if (len != -1) len
-  else {
-    val l = ((end - start) / step) + 1
-    if (l > ArrayUtil.MAX_ARRAY_SIZE) throw new OutOfMemoryError(s"Cannot index an collection of size $l")
-    len = l.toInt
-    len
-  }
+  override def length: Int =
+    if (len != -1) len
+    else {
+      val l = ((end - start) / step) + 1
+      if (l > ArrayUtil.MAX_ARRAY_SIZE) throw new OutOfMemoryError(s"Cannot index an collection of size $l")
+      len = l.toInt
+      len
+    }
 
   override def apply(idx: Int): Long = if (idx >= length) throw new IndexOutOfBoundsException else start + idx * step
 }

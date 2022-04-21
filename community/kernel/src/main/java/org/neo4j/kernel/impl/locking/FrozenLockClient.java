@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.kernel.impl.api.LeaseClient;
@@ -35,119 +34,101 @@ import org.neo4j.memory.MemoryTracker;
  * A lock client that prevents interactions with the state of the locks. This is used to guarantee that we do not perform any locking while reading from
  * the transaction in parallel, which would be dangerous since {@link Locks.Client} are not thread safe.
  */
-public class FrozenLockClient implements Locks.Client
-{
+public class FrozenLockClient implements Locks.Client {
     private final Locks.Client delegate;
     private int nesting;
 
-    public FrozenLockClient( Locks.Client delegate )
-    {
+    public FrozenLockClient(Locks.Client delegate) {
         this.delegate = delegate;
         this.nesting = 1;
     }
 
-    public Locks.Client getRealLockClient()
-    {
+    public Locks.Client getRealLockClient() {
         return delegate;
     }
 
-    public void freeze()
-    {
+    public void freeze() {
         nesting++;
     }
 
-    public boolean thaw()
-    {
+    public boolean thaw() {
         nesting--;
         return nesting == 0;
     }
 
     @Override
-    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config )
-    {
-        delegate.initialize( leaseClient, transactionId, memoryTracker, config );
+    public void initialize(LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config) {
+        delegate.initialize(leaseClient, transactionId, memoryTracker, config);
     }
 
     @Override
-    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
-    {
+    public void acquireShared(LockTracer tracer, ResourceType resourceType, long... resourceIds)
+            throws AcquireLockTimeoutException {
         throw frozenLockException();
     }
 
     @Override
-    public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
-    {
+    public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds)
+            throws AcquireLockTimeoutException {
         throw frozenLockException();
     }
 
     @Override
-    public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
-    {
+    public boolean tryExclusiveLock(ResourceType resourceType, long resourceId) {
         throw frozenLockException();
     }
 
     @Override
-    public boolean trySharedLock( ResourceType resourceType, long resourceId )
-    {
+    public boolean trySharedLock(ResourceType resourceType, long resourceId) {
         throw frozenLockException();
     }
 
     @Override
-    public void releaseShared( ResourceType resourceType, long... resourceIds )
-    {
+    public void releaseShared(ResourceType resourceType, long... resourceIds) {
         throw frozenLockException();
     }
 
     @Override
-    public void releaseExclusive( ResourceType resourceType, long... resourceIds )
-    {
+    public void releaseExclusive(ResourceType resourceType, long... resourceIds) {
         throw frozenLockException();
     }
 
     @Override
-    public void prepareForCommit()
-    {
+    public void prepareForCommit() {
         throw frozenLockException();
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         delegate.stop();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         throw frozenLockException();
     }
 
     @Override
-    public long getTransactionId()
-    {
+    public long getTransactionId() {
         return delegate.getTransactionId();
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks()
-    {
+    public Stream<ActiveLock> activeLocks() {
         return delegate.activeLocks();
     }
 
     @Override
-    public boolean holdsLock( long id, ResourceType resource, LockType lockType )
-    {
-        return delegate.holdsLock( id, resource, lockType );
+    public boolean holdsLock(long id, ResourceType resource, LockType lockType) {
+        return delegate.holdsLock(id, resource, lockType);
     }
 
     @Override
-    public long activeLockCount()
-    {
+    public long activeLockCount() {
         return delegate.activeLockCount();
     }
 
-    private FrozenLocksException frozenLockException()
-    {
-        return new FrozenLocksException( delegate.getTransactionId() );
+    private FrozenLocksException frozenLockException() {
+        return new FrozenLocksException(delegate.getTransactionId());
     }
 }

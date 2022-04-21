@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -35,43 +34,39 @@ import org.neo4j.kernel.api.KernelTransaction;
  * Data collector section that simply return all tokens (propertyKeys, labels and relationship types) that
  * are known to the database.
  */
-final class TokensSection
-{
-    private TokensSection()
-    { // only static methods
+final class TokensSection {
+    private TokensSection() { // only static methods
     }
 
-    static Stream<RetrieveResult> retrieve( Kernel kernel ) throws TransactionFailureException
-    {
-        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
+    static Stream<RetrieveResult> retrieve(Kernel kernel) throws TransactionFailureException {
+        try (KernelTransaction tx =
+                kernel.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
             TokenRead tokens = tx.tokenRead();
 
-            List<String> labels = new ArrayList<>( tokens.labelCount() );
-            tokens.labelsGetAllTokens().forEachRemaining( t -> labels.add( t.name() ) );
+            List<String> labels = new ArrayList<>(tokens.labelCount());
+            tokens.labelsGetAllTokens().forEachRemaining(t -> labels.add(t.name()));
 
-            List<String> relationshipTypes = new ArrayList<>( tokens.relationshipTypeCount() );
-            tokens.relationshipTypesGetAllTokens().forEachRemaining( t -> relationshipTypes.add( t.name() ) );
+            List<String> relationshipTypes = new ArrayList<>(tokens.relationshipTypeCount());
+            tokens.relationshipTypesGetAllTokens().forEachRemaining(t -> relationshipTypes.add(t.name()));
 
-            List<String> propertyKeys = new ArrayList<>( tokens.propertyKeyCount() );
-            tokens.propertyKeyGetAllTokens().forEachRemaining( t -> propertyKeys.add( t.name() ) );
+            List<String> propertyKeys = new ArrayList<>(tokens.propertyKeyCount());
+            tokens.propertyKeyGetAllTokens().forEachRemaining(t -> propertyKeys.add(t.name()));
 
-            Map<String,Object> data = new HashMap<>();
-            data.put( "labels", labels );
-            data.put( "relationshipTypes", relationshipTypes );
-            data.put( "propertyKeys", propertyKeys );
-            return Stream.of( new RetrieveResult( Sections.TOKENS, data ) );
+            Map<String, Object> data = new HashMap<>();
+            data.put("labels", labels);
+            data.put("relationshipTypes", relationshipTypes);
+            data.put("propertyKeys", propertyKeys);
+            return Stream.of(new RetrieveResult(Sections.TOKENS, data));
         }
     }
 
-    static void putTokenCounts( Map<String,Object> metaData, Kernel kernel ) throws TransactionFailureException
-    {
-        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
+    static void putTokenCounts(Map<String, Object> metaData, Kernel kernel) throws TransactionFailureException {
+        try (KernelTransaction tx =
+                kernel.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
             TokenRead tokens = tx.tokenRead();
-            metaData.put( "labelCount", tokens.labelCount() );
-            metaData.put( "relationshipTypeCount", tokens.relationshipTypeCount() );
-            metaData.put( "propertyKeyCount", tokens.propertyKeyCount() );
+            metaData.put("labelCount", tokens.labelCount());
+            metaData.put("relationshipTypeCount", tokens.relationshipTypeCount());
+            metaData.put("propertyKeyCount", tokens.propertyKeyCount());
             tx.commit();
         }
     }

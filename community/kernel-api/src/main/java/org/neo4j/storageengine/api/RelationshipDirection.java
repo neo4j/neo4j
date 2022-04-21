@@ -39,66 +39,56 @@ import org.neo4j.graphdb.Direction;
  *  a.getRelationships( org.neo4j.graphdb.Direction.INCOMING ) => r2, r3
  *  a.getRelationships( org.neo4j.graphdb.Direction.BOTH ) => r1, r2, r3
  */
-public enum RelationshipDirection
-{
+public enum RelationshipDirection {
     // These IDs mustn't change, they are used for serializing/deserializing directions
-    OUTGOING( 0 )
-            {
-                @Override
-                public boolean matches( Direction direction )
-                {
-                    return direction != Direction.INCOMING;
-                }
-            },
-    INCOMING( 1 )
-            {
-                @Override
-                public boolean matches( Direction direction )
-                {
-                    return direction != Direction.OUTGOING;
-                }
-            },
-    LOOP( 2 )
-            {
-                @Override
-                public boolean matches( Direction direction )
-                {
-                    return true;
-                }
-            };
+    OUTGOING(0) {
+        @Override
+        public boolean matches(Direction direction) {
+            return direction != Direction.INCOMING;
+        }
+    },
+    INCOMING(1) {
+        @Override
+        public boolean matches(Direction direction) {
+            return direction != Direction.OUTGOING;
+        }
+    },
+    LOOP(2) {
+        @Override
+        public boolean matches(Direction direction) {
+            return true;
+        }
+    };
 
-    private static final RelationshipDirection[] DIRECTIONS_BY_ID = new RelationshipDirection[]{OUTGOING, INCOMING, LOOP};
+    private static final RelationshipDirection[] DIRECTIONS_BY_ID =
+            new RelationshipDirection[] {OUTGOING, INCOMING, LOOP};
 
-    public static RelationshipDirection ofId( int id )
-    {
+    public static RelationshipDirection ofId(int id) {
         return DIRECTIONS_BY_ID[id];
     }
 
-    public static RelationshipDirection directionOfStrict( long nodeReference, long sourceNodeReference, long targetNodeReference )
-    {
-        if ( sourceNodeReference == nodeReference )
-        {
+    public static RelationshipDirection directionOfStrict(
+            long nodeReference, long sourceNodeReference, long targetNodeReference) {
+        if (sourceNodeReference == nodeReference) {
             return targetNodeReference == nodeReference ? RelationshipDirection.LOOP : RelationshipDirection.OUTGOING;
         }
-        if ( targetNodeReference == nodeReference )
-        {
+        if (targetNodeReference == nodeReference) {
             return RelationshipDirection.INCOMING;
         }
-        throw new IllegalStateException( "Traversed relationship that wasn't part of the origin node:" + nodeReference +
-                ". The encountered relationship has source:" + sourceNodeReference + " and target:" + targetNodeReference );
+        throw new IllegalStateException("Traversed relationship that wasn't part of the origin node:" + nodeReference
+                + ". The encountered relationship has source:" + sourceNodeReference + " and target:"
+                + targetNodeReference);
     }
 
     private final int id;
 
-    RelationshipDirection( int id )
-    {
+    RelationshipDirection(int id) {
         this.id = id;
     }
 
-    public int id()
-    {
+    public int id() {
         return id;
     }
 
-    public abstract boolean matches( Direction direction );
+    public abstract boolean matches(Direction direction);
 }

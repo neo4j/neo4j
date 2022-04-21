@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.collection.Iterables.asSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +34,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.LockSupport;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -40,12 +44,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.Futures;
-
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.collection.Iterables.asSet;
 
 /**
  * Token creation should be able to handle cases of concurrent token creation
@@ -56,8 +54,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.asSet;
  * Otherwise attempt to retrieve labels from newly created node can fail.
  */
 @DbmsExtension
-class TokenCreationIT
-{
+class TokenCreationIT {
     private static final int WORKERS = 10;
 
     @Inject
@@ -67,84 +64,67 @@ class TokenCreationIT
     private ExecutorService executorService;
 
     @BeforeEach
-    void setUp()
-    {
-        executorService = Executors.newFixedThreadPool( WORKERS );
+    void setUp() {
+        executorService = Executors.newFixedThreadPool(WORKERS);
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         executorService.shutdown();
     }
 
-    @RepeatedTest( 5 )
-    void concurrentLabelTokenCreation() throws InterruptedException, ExecutionException
-    {
-        CountDownLatch latch = new CountDownLatch( WORKERS );
+    @RepeatedTest(5)
+    void concurrentLabelTokenCreation() throws InterruptedException, ExecutionException {
+        CountDownLatch latch = new CountDownLatch(WORKERS);
         List<Future<?>> futures = new ArrayList<>();
-        for ( int i = 0; i < WORKERS; i++ )
-        {
-            futures.add( executorService.submit( new LabelCreator( db, latch ) ) );
+        for (int i = 0; i < WORKERS; i++) {
+            futures.add(executorService.submit(new LabelCreator(db, latch)));
         }
-        LockSupport.parkNanos( MILLISECONDS.toNanos( 500 ) );
+        LockSupport.parkNanos(MILLISECONDS.toNanos(500));
         stop = true;
         latch.await();
-        consumeFutures( futures );
+        consumeFutures(futures);
     }
 
-    private static void consumeFutures( List<Future<?>> futures ) throws ExecutionException
-    {
-        Futures.getAll( futures );
+    private static void consumeFutures(List<Future<?>> futures) throws ExecutionException {
+        Futures.getAll(futures);
     }
 
-    private static Label[] getLabels()
-    {
-        int randomLabelValue = ThreadLocalRandom.current().nextInt( 2 ) + 1;
+    private static Label[] getLabels() {
+        int randomLabelValue = ThreadLocalRandom.current().nextInt(2) + 1;
         Label[] labels = new Label[randomLabelValue];
-        for ( int i = 0; i < labels.length; i++ )
-        {
-            labels[i] = Label.label( randomAlphanumeric( randomLabelValue ) );
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = Label.label(randomAlphanumeric(randomLabelValue));
         }
         return labels;
     }
 
-    private class LabelCreator implements Runnable
-    {
+    private class LabelCreator implements Runnable {
         private final GraphDatabaseService database;
         private final CountDownLatch createLatch;
 
-        LabelCreator( GraphDatabaseService database, CountDownLatch createLatch )
-        {
+        LabelCreator(GraphDatabaseService database, CountDownLatch createLatch) {
             this.database = database;
             this.createLatch = createLatch;
         }
 
         @Override
-        public void run()
-        {
-            try
-            {
-                while ( !stop )
-                {
+        public void run() {
+            try {
+                while (!stop) {
 
-                    try ( Transaction transaction = database.beginTx() )
-                    {
+                    try (Transaction transaction = database.beginTx()) {
                         Label[] createdLabels = getLabels();
-                        Node node = transaction.createNode( createdLabels );
+                        Node node = transaction.createNode(createdLabels);
                         Iterable<Label> nodeLabels = node.getLabels();
-                        assertEquals( asSet( asList( createdLabels ) ), asSet( nodeLabels ) );
+                        assertEquals(asSet(asList(createdLabels)), asSet(nodeLabels));
                         transaction.commit();
-                    }
-                    catch ( Exception e )
-                    {
+                    } catch (Exception e) {
                         stop = true;
                         throw e;
                     }
                 }
-            }
-            finally
-            {
+            } finally {
                 createLatch.countDown();
             }
         }

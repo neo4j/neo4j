@@ -19,15 +19,6 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.logging.NullLog;
-
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -36,49 +27,66 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
-class PageCacheArrayFactoryMonitorTest
-{
-    private final PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( mock( PageCache.class ),
-            new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), Path.of( "storeDir" ), NullLog.getInstance(), DEFAULT_DATABASE_NAME );
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.logging.NullLog;
+
+class PageCacheArrayFactoryMonitorTest {
+    private final PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory(
+            mock(PageCache.class),
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+            Path.of("storeDir"),
+            NullLog.getInstance(),
+            DEFAULT_DATABASE_NAME);
     private final PageCacheArrayFactoryMonitor monitor = new PageCacheArrayFactoryMonitor();
 
     @Test
-    void shouldComposeFailureDescriptionForFailedCandidates()
-    {
+    void shouldComposeFailureDescriptionForFailedCandidates() {
         // given
-        monitor.allocationSuccessful( 123, factory, asList(
-                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM1" ), NumberArrayFactories.HEAP ),
-                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM2" ), NumberArrayFactories.OFF_HEAP ) ) );
+        monitor.allocationSuccessful(
+                123,
+                factory,
+                asList(
+                        new NumberArrayFactory.AllocationFailure(
+                                new OutOfMemoryError("OOM1"), NumberArrayFactories.HEAP),
+                        new NumberArrayFactory.AllocationFailure(
+                                new OutOfMemoryError("OOM2"), NumberArrayFactories.OFF_HEAP)));
 
         // when
         String failure = monitor.pageCacheAllocationOrNull();
 
         // then
-        assertThat( failure ).contains( "OOM1" );
-        assertThat( failure ).contains( "OOM2" );
+        assertThat(failure).contains("OOM1");
+        assertThat(failure).contains("OOM2");
     }
 
     @Test
-    void shouldClearFailureStateAfterAccessorCall()
-    {
+    void shouldClearFailureStateAfterAccessorCall() {
         // given
-        monitor.allocationSuccessful( 123, factory, asList(
-                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM1" ), NumberArrayFactories.HEAP ),
-                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM2" ), NumberArrayFactories.OFF_HEAP ) ) );
+        monitor.allocationSuccessful(
+                123,
+                factory,
+                asList(
+                        new NumberArrayFactory.AllocationFailure(
+                                new OutOfMemoryError("OOM1"), NumberArrayFactories.HEAP),
+                        new NumberArrayFactory.AllocationFailure(
+                                new OutOfMemoryError("OOM2"), NumberArrayFactories.OFF_HEAP)));
 
         // when
         String failure = monitor.pageCacheAllocationOrNull();
         String secondCall = monitor.pageCacheAllocationOrNull();
 
         // then
-        assertNotNull( failure );
-        assertNull( secondCall );
+        assertNotNull(failure);
+        assertNull(secondCall);
     }
 
     @Test
-    void shouldReturnNullFailureOnNoFailure()
-    {
+    void shouldReturnNullFailureOnNoFailure() {
         // then
-        assertNull( monitor.pageCacheAllocationOrNull() );
+        assertNull(monitor.pageCacheAllocationOrNull());
     }
 }

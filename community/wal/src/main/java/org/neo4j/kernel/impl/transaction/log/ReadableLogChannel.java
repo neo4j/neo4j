@@ -19,6 +19,4 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-public interface ReadableLogChannel extends ReadableClosablePositionAwareChecksumChannel, VersionableLog
-{
-}
+public interface ReadableLogChannel extends ReadableClosablePositionAwareChecksumChannel, VersionableLog {}

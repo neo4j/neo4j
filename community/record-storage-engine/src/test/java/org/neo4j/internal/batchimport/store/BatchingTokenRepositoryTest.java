@@ -19,11 +19,23 @@
  */
 package org.neo4j.internal.batchimport.store;
 
-import org.assertj.core.api.Condition;
-import org.junit.jupiter.api.Test;
+import static java.lang.Integer.parseInt;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.util.List;
-
+import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
@@ -48,152 +60,135 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.token.api.NamedToken;
 
-import static java.lang.Integer.parseInt;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-class BatchingTokenRepositoryTest
-{
-    public static final Condition<long[]> ORDERED_IDS_CONDITION = new Condition<>( BatchingTokenRepositoryTest::areOrdered, "Label ids should be ordered" );
+class BatchingTokenRepositoryTest {
+    public static final Condition<long[]> ORDERED_IDS_CONDITION =
+            new Condition<>(BatchingTokenRepositoryTest::areOrdered, "Label ids should be ordered");
+
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
     @Test
-    void shouldDedupLabelIds()
-    {
+    void shouldDedupLabelIds() {
         // GIVEN
-        BatchingTokenRepository.BatchingLabelTokenRepository repo = new BatchingTokenRepository.BatchingLabelTokenRepository( mock( TokenStore.class ) );
+        BatchingTokenRepository.BatchingLabelTokenRepository repo =
+                new BatchingTokenRepository.BatchingLabelTokenRepository(mock(TokenStore.class));
 
         // WHEN
-        long[] ids = repo.getOrCreateIds( new String[] {"One", "Two", "One"} );
+        long[] ids = repo.getOrCreateIds(new String[] {"One", "Two", "One"});
 
         // THEN
-        assertThat( ids ).satisfies( ORDERED_IDS_CONDITION );
+        assertThat(ids).satisfies(ORDERED_IDS_CONDITION);
     }
 
     @Test
-    void shouldSortLabelIds()
-    {
+    void shouldSortLabelIds() {
         // GIVEN
-        BatchingTokenRepository.BatchingLabelTokenRepository repo = new BatchingTokenRepository.BatchingLabelTokenRepository( mock( TokenStore.class ) );
-        long[] expected = new long[] {
-                repo.getOrCreateId( "One" ),
-                repo.getOrCreateId( "Two" ),
-                repo.getOrCreateId( "Three" )
-        };
+        BatchingTokenRepository.BatchingLabelTokenRepository repo =
+                new BatchingTokenRepository.BatchingLabelTokenRepository(mock(TokenStore.class));
+        long[] expected =
+                new long[] {repo.getOrCreateId("One"), repo.getOrCreateId("Two"), repo.getOrCreateId("Three")};
 
         // WHEN
-        long[] ids = repo.getOrCreateIds( new String[] {"Two", "One", "Three"} );
+        long[] ids = repo.getOrCreateIds(new String[] {"Two", "One", "Three"});
 
         // THEN
-        assertArrayEquals( expected, ids );
-        assertThat( ids ).satisfies( ORDERED_IDS_CONDITION );
+        assertArrayEquals(expected, ids);
+        assertThat(ids).satisfies(ORDERED_IDS_CONDITION);
     }
 
     @Test
-    void shouldRespectExistingTokens()
-    {
+    void shouldRespectExistingTokens() {
         // given
-        TokenStore<RelationshipTypeTokenRecord> tokenStore = mock( TokenStore.class );
+        TokenStore<RelationshipTypeTokenRecord> tokenStore = mock(TokenStore.class);
         int previousHighId = 5;
-        when( tokenStore.getHighId() ).thenReturn( (long) previousHighId );
-        BatchingRelationshipTypeTokenRepository repo = new BatchingRelationshipTypeTokenRepository( tokenStore );
-        verify( tokenStore ).getHighId();
+        when(tokenStore.getHighId()).thenReturn((long) previousHighId);
+        BatchingRelationshipTypeTokenRepository repo = new BatchingRelationshipTypeTokenRepository(tokenStore);
+        verify(tokenStore).getHighId();
 
         // when
-        int tokenId = repo.getOrCreateId( "NEW_ONE" );
+        int tokenId = repo.getOrCreateId("NEW_ONE");
 
         // then
-        assertEquals( previousHighId, tokenId );
+        assertEquals(previousHighId, tokenId);
     }
 
     @Test
-    void shouldFlushNewTokens()
-    {
+    void shouldFlushNewTokens() {
         // given
-        try ( NeoStores stores = newNeoStores( StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME );
-              var storeCursors = new CachedStoreCursors( stores, NULL_CONTEXT ) )
-        {
+        try (NeoStores stores = newNeoStores(StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME);
+                var storeCursors = new CachedStoreCursors(stores, NULL_CONTEXT)) {
             TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();
             int rounds = 3;
             int tokensPerRound = 4;
-            BatchingPropertyKeyTokenRepository repo = new BatchingPropertyKeyTokenRepository( tokenStore );
+            BatchingPropertyKeyTokenRepository repo = new BatchingPropertyKeyTokenRepository(tokenStore);
             // when first creating some tokens
             int expectedId = 0;
             int tokenNameAsInt = 0;
-            for ( int round = 0; round < rounds; round++ )
-            {
-                for ( int i = 0; i < tokensPerRound; i++ )
-                {
-                    int tokenId = repo.getOrCreateId( String.valueOf( tokenNameAsInt++ ) );
-                    assertEquals( expectedId + i, tokenId );
+            for (int round = 0; round < rounds; round++) {
+                for (int i = 0; i < tokensPerRound; i++) {
+                    int tokenId = repo.getOrCreateId(String.valueOf(tokenNameAsInt++));
+                    assertEquals(expectedId + i, tokenId);
                 }
-                assertEquals( expectedId, tokenStore.getHighId() );
-                try ( PageCursor pageCursor = storeCursors.writeCursor( RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR ) )
-                {
-                    repo.flush( NULL_CONTEXT, pageCursor, storeCursors );
+                assertEquals(expectedId, tokenStore.getHighId());
+                try (PageCursor pageCursor = storeCursors.writeCursor(RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR)) {
+                    repo.flush(NULL_CONTEXT, pageCursor, storeCursors);
                 }
-                assertEquals( expectedId + tokensPerRound, tokenStore.getHighId() );
+                assertEquals(expectedId + tokensPerRound, tokenStore.getHighId());
                 expectedId += tokensPerRound;
             }
-            try ( PageCursor pageCursor = storeCursors.writeCursor( RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR ) )
-            {
-                repo.flush( NULL_CONTEXT, pageCursor, storeCursors );
+            try (PageCursor pageCursor = storeCursors.writeCursor(RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR)) {
+                repo.flush(NULL_CONTEXT, pageCursor, storeCursors);
             }
 
-            List<NamedToken> tokens = tokenStore.getTokens( storeCursors );
-            assertEquals( tokensPerRound * rounds, tokens.size() );
-            for ( NamedToken token : tokens )
-            {
-                assertEquals( token.id(), parseInt( token.name() ) );
+            List<NamedToken> tokens = tokenStore.getTokens(storeCursors);
+            assertEquals(tokensPerRound * rounds, tokens.size());
+            for (NamedToken token : tokens) {
+                assertEquals(token.id(), parseInt(token.name()));
             }
         }
     }
 
     @Test
-    void shouldCheckTokenNamesForValidity()
-    {
-        try ( NeoStores neoStores = newNeoStores( StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME ) )
-        {
+    void shouldCheckTokenNamesForValidity() {
+        try (NeoStores neoStores = newNeoStores(StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME)) {
             BatchingTokenRepository.BatchingLabelTokenRepository repository =
-                    new BatchingTokenRepository.BatchingLabelTokenRepository( neoStores.getLabelTokenStore() );
-            assertThrows( IllegalArgumentException.class, () -> repository.getOrCreateId( null ) );
-            assertThrows( IllegalArgumentException.class, () -> repository.getOrCreateId( "" ) );
-            assertThrows( IllegalArgumentException.class, () -> repository.getOrCreateId( (Object) "" ) ); // the string-or-integer method
-            assertThrows( IllegalArgumentException.class, () -> repository.getOrCreateIds( new String[]{"abc", "", null} ) );
+                    new BatchingTokenRepository.BatchingLabelTokenRepository(neoStores.getLabelTokenStore());
+            assertThrows(IllegalArgumentException.class, () -> repository.getOrCreateId(null));
+            assertThrows(IllegalArgumentException.class, () -> repository.getOrCreateId(""));
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> repository.getOrCreateId((Object) "")); // the string-or-integer method
+            assertThrows(
+                    IllegalArgumentException.class, () -> repository.getOrCreateIds(new String[] {"abc", "", null}));
         }
     }
 
-    private NeoStores newNeoStores( StoreType... storeTypes )
-    {
-        return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ),
-                pageCache, fileSystem, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                writable(), EMPTY_LOG_TAIL ).openNeoStores( true, storeTypes );
+    private NeoStores newNeoStores(StoreType... storeTypes) {
+        return new StoreFactory(
+                        databaseLayout,
+                        Config.defaults(),
+                        new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName()),
+                        pageCache,
+                        fileSystem,
+                        NullLogProvider.getInstance(),
+                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        writable(),
+                        EMPTY_LOG_TAIL)
+                .openNeoStores(true, storeTypes);
     }
 
-    public static boolean areOrdered( long[] labelIds )
-    {
+    public static boolean areOrdered(long[] labelIds) {
         long prev = -1;
-        for ( long labelId : labelIds )
-        {
-            if ( labelId <= prev )
-            {
+        for (long labelId : labelIds) {
+            if (labelId <= prev) {
                 return false;
             }
             prev = labelId;

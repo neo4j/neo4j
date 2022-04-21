@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-public interface LeaseClient
-{
+public interface LeaseClient {
     /**
      * The ID of an acquired lease.
      *

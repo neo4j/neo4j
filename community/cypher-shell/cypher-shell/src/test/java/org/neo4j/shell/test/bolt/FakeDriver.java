@@ -19,10 +19,11 @@
  */
 package org.neo4j.shell.test.bolt;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Session;
@@ -32,104 +33,83 @@ import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
-
-public class FakeDriver implements Driver
-{
+public class FakeDriver implements Driver {
     public List<SessionConfig> sessionConfigs = new LinkedList<>();
 
     @Override
-    public boolean isEncrypted()
-    {
+    public boolean isEncrypted() {
         return false;
     }
 
     @Override
-    public Session session()
-    {
+    public Session session() {
         return new FakeSession();
     }
 
     @Override
-    public Session session( SessionConfig sessionConfig )
-    {
-        sessionConfigs.add( sessionConfig );
+    public Session session(SessionConfig sessionConfig) {
+        sessionConfigs.add(sessionConfig);
         return new FakeSession();
     }
 
     @Override
-    public void close() throws Neo4jException
-    {
-    }
+    public void close() throws Neo4jException {}
 
     @Override
-    public CompletionStage<Void> closeAsync()
-    {
+    public CompletionStage<Void> closeAsync() {
         return null;
     }
 
     @Override
-    public Metrics metrics()
-    {
+    public Metrics metrics() {
         return null;
     }
 
     @Override
-    public boolean isMetricsEnabled()
-    {
+    public boolean isMetricsEnabled() {
         return false;
     }
 
     @Override
-    public RxSession rxSession()
-    {
+    public RxSession rxSession() {
         return null;
     }
 
     @Override
-    public RxSession rxSession( SessionConfig sessionConfig )
-    {
+    public RxSession rxSession(SessionConfig sessionConfig) {
         return null;
     }
 
     @Override
-    public AsyncSession asyncSession()
-    {
+    public AsyncSession asyncSession() {
         return null;
     }
 
     @Override
-    public AsyncSession asyncSession( SessionConfig sessionConfig )
-    {
+    public AsyncSession asyncSession(SessionConfig sessionConfig) {
         return null;
     }
 
     @Override
-    public TypeSystem defaultTypeSystem()
-    {
+    public TypeSystem defaultTypeSystem() {
         return null;
     }
 
     @Override
-    public void verifyConnectivity()
-    {
-    }
+    public void verifyConnectivity() {}
 
     @Override
-    public CompletionStage<Void> verifyConnectivityAsync()
-    {
+    public CompletionStage<Void> verifyConnectivityAsync() {
         return null;
     }
 
     @Override
-    public boolean supportsMultiDb()
-    {
+    public boolean supportsMultiDb() {
         return true;
     }
 
     @Override
-    public CompletionStage<Boolean> supportsMultiDbAsync()
-    {
-        return completedFuture( true );
+    public CompletionStage<Boolean> supportsMultiDbAsync() {
+        return completedFuture(true);
     }
 }

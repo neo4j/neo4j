@@ -79,26 +79,36 @@ class ToFloatListFunctionTest extends CypherFunSuite with ScalaCheckDrivenProper
   }
 
   test("should convert a list with a large number to a list of floats") {
-    val tooBigFloat = BigDecimal(Double.MaxValue) *1.5  // this will evaluate to infinity
-    assert(toFloatList(Seq("1", tooBigFloat.toString(), "8589934592.0")) == VirtualValues.list(doubleValue(1), doubleValue(tooBigFloat.toDouble), doubleValue(8589934592L)))
+    val tooBigFloat = BigDecimal(Double.MaxValue) * 1.5 // this will evaluate to infinity
+    assert(toFloatList(Seq("1", tooBigFloat.toString(), "8589934592.0")) == VirtualValues.list(
+      doubleValue(1),
+      doubleValue(tooBigFloat.toDouble),
+      doubleValue(8589934592L)
+    ))
   }
 
   test("should not throw an exception if the list argument contains an object which cannot be converted to float") {
-    assert(toFloatList(Seq("1234", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))) === VirtualValues.list(doubleValue(1234), NO_VALUE))
+    assert(toFloatList(
+      Seq("1234", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))
+    ) === VirtualValues.list(doubleValue(1234), NO_VALUE))
   }
 
   test("should throw an exception if the list argument contains a non-list") {
     val caughtException = the[CypherTypeException] thrownBy toFloatList("foo")
-    caughtException.getMessage should equal("""Invalid input for function 'toFloatList()': Expected a List, got: String("foo")""")
+    caughtException.getMessage should equal(
+      """Invalid input for function 'toFloatList()': Expected a List, got: String("foo")"""
+    )
   }
 
   test("should not throw an exception for any value in the list") {
     val generator: Gen[List[Any]] = Gen.listOf(Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double]))
-    forAll(generator) { s => {
-      import scala.jdk.CollectionConverters.IterableHasAsScala
-      val result = toFloatList(s)
-      Inspectors.forAll(result.asInstanceOf[ListValue].asScala) {  _ should (be (a [DoubleValue]) or equal(NO_VALUE)) }
-    }}
+    forAll(generator) { s =>
+      {
+        import scala.jdk.CollectionConverters.IterableHasAsScala
+        val result = toFloatList(s)
+        Inspectors.forAll(result.asInstanceOf[ListValue].asScala) { _ should (be(a[DoubleValue]) or equal(NO_VALUE)) }
+      }
+    }
   }
 
   private def toFloatList(orig: Any) = {

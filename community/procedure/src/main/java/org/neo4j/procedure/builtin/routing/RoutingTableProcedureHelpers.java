@@ -19,8 +19,10 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import java.util.Optional;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
+import java.util.Optional;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -29,43 +31,39 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
-class RoutingTableProcedureHelpers
-{
-    static Optional<SocketAddress> findClientProvidedAddress( MapValue routingContext, int defaultBoltPort, InternalLog log ) throws ProcedureException
-    {
-        var address = routingContext.get( GetRoutingTableProcedure.ADDRESS_CONTEXT_KEY );
-        if ( address == null || address == NO_VALUE )
-        {
+class RoutingTableProcedureHelpers {
+    static Optional<SocketAddress> findClientProvidedAddress(
+            MapValue routingContext, int defaultBoltPort, InternalLog log) throws ProcedureException {
+        var address = routingContext.get(GetRoutingTableProcedure.ADDRESS_CONTEXT_KEY);
+        if (address == null || address == NO_VALUE) {
             return Optional.empty();
         }
 
-        if ( address instanceof TextValue )
-        {
-            try
-            {
+        if (address instanceof TextValue) {
+            try {
                 String clientProvidedAddress = ((TextValue) address).stringValue();
-                if ( clientProvidedAddress != null && !clientProvidedAddress.isEmpty() && !clientProvidedAddress.isBlank() )
-                {
-                    return Optional.of( SocketAddressParser.socketAddress( clientProvidedAddress, defaultBoltPort, SocketAddress::new ) );
+                if (clientProvidedAddress != null
+                        && !clientProvidedAddress.isEmpty()
+                        && !clientProvidedAddress.isBlank()) {
+                    return Optional.of(SocketAddressParser.socketAddress(
+                            clientProvidedAddress, defaultBoltPort, SocketAddress::new));
                 }
                 // fall through to the procedure Exception
-            }
-            catch ( Exception e )
-            { // Do nothing but warn
-                log.warn( "Exception attempting to determine address value from routing context", e );
+            } catch (Exception e) { // Do nothing but warn
+                log.warn("Exception attempting to determine address value from routing context", e);
             }
         }
 
-        throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "An address key is included in the query string provided to the " +
-                                                                            "GetRoutingTableProcedure, but its value could not be parsed." );
+        throw new ProcedureException(
+                Status.Procedure.ProcedureCallFailed,
+                "An address key is included in the query string provided to the "
+                        + "GetRoutingTableProcedure, but its value could not be parsed.");
     }
 
-    static ProcedureException databaseNotFoundException( String databaseName )
-    {
-        return new ProcedureException( DatabaseNotFound,
-                                       "Unable to get a routing table for database '" + databaseName + "' because this database does not exist" );
+    static ProcedureException databaseNotFoundException(String databaseName) {
+        return new ProcedureException(
+                DatabaseNotFound,
+                "Unable to get a routing table for database '" + databaseName
+                        + "' because this database does not exist");
     }
 }

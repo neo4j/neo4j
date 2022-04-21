@@ -22,17 +22,16 @@ package org.neo4j.consistency.checker;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.internal.helpers.collection.LongRange;
 
-interface Checker
-{
-    void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception;
+interface Checker {
+    void check(LongRange nodeIdRange, boolean firstRange, boolean lastRange) throws Exception;
 
-    boolean shouldBeChecked( ConsistencyFlags flags );
+    boolean shouldBeChecked(ConsistencyFlags flags);
 
     /**
      * If the ranges the checker uses is based on the node ids.
      */
-    default boolean isNodeBasedCheck()
-    {
+    default boolean isNodeBasedCheck() {
         return true;
-    };
+    }
+    ;
 }

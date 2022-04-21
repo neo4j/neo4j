@@ -23,31 +23,26 @@ package org.neo4j.kernel.lifecycle;
  * A {@link Lifecycle} that has a {@link LifeSupport} inside of it. Convenient in situations where you have a component involving
  * multiple {@link Lifecycle} "child" instances.
  */
-public class LifeContainer implements Lifecycle
-{
+public class LifeContainer implements Lifecycle {
     protected final LifeSupport life = new LifeSupport();
 
     @Override
-    public void init()
-    {
+    public void init() {
         life.init();
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         life.start();
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         life.stop();
     }
 
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         life.shutdown();
     }
 }

@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.concurrent.Callable;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -49,16 +49,15 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
 @PageCacheExtension
-@ExtendWith( RandomExtension.class )
-abstract class IndexProviderCompatabilityTestBase
-{
+@ExtendWith(RandomExtension.class)
+abstract class IndexProviderCompatabilityTestBase {
     @Inject
     private PageCache pageCache;
+
     @Inject
     RandomSupport random;
+
     @Inject
     FileSystemAbstraction fs;
 
@@ -74,77 +73,72 @@ abstract class IndexProviderCompatabilityTestBase
     Path homePath;
 
     @BeforeEach
-    void setup( TestInfo info ) throws Exception
-    {
-        testDirectory = TestDirectory.testDirectory( fs );
+    void setup(TestInfo info) throws Exception {
+        testDirectory = TestDirectory.testDirectory(fs);
         Class<?> testClass = info.getTestClass().orElseThrow();
-        String testName = info.getTestMethod().orElseThrow().getName().toLowerCase( Locale.ROOT );
-        testDirectory.prepareDirectory( testClass, testSuite.getClass().getSimpleName() );
-        homePath = testDirectory.homePath( testName );
+        String testName = info.getTestMethod().orElseThrow().getName().toLowerCase(Locale.ROOT);
+        testDirectory.prepareDirectory(testClass, testSuite.getClass().getSimpleName());
+        homePath = testDirectory.homePath(testName);
 
         Config.Builder configBuilder = Config.newBuilder();
-        configBuilder.set( GraphDatabaseSettings.neo4j_home, homePath );
-        testSuite.additionalConfig( configBuilder );
-        additionalConfig( configBuilder );
+        configBuilder.set(GraphDatabaseSettings.neo4j_home, homePath);
+        testSuite.additionalConfig(configBuilder);
+        additionalConfig(configBuilder);
         this.config = configBuilder.build();
 
-        indexProvider = testSuite.createIndexProvider( pageCache, fs, homePath, config );
-        descriptor = indexProvider.completeConfiguration( incompleteIndexPrototype.withName( "index_17" ).materialise( 17 ) );
+        indexProvider = testSuite.createIndexProvider(pageCache, fs, homePath, config);
+        descriptor = indexProvider.completeConfiguration(
+                incompleteIndexPrototype.withName("index_17").materialise(17));
         jobScheduler.start();
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
-        if ( jobScheduler != null )
-        {
+    void tearDown() throws Exception {
+        if (jobScheduler != null) {
             jobScheduler.shutdown();
         }
-        testDirectory.complete( false );
+        testDirectory.complete(false);
     }
 
-    void additionalConfig( Config.Builder configBuilder )
-    {
-        //can be overridden in sub-classes that wants to add additional Config settings.
+    void additionalConfig(Config.Builder configBuilder) {
+        // can be overridden in sub-classes that wants to add additional Config settings.
     }
 
-    IndexProviderCompatabilityTestBase( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
-    {
+    IndexProviderCompatabilityTestBase(IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype) {
         this.testSuite = testSuite;
         this.incompleteIndexPrototype = prototype;
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
-        {
+        populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler() {
 
             @Override
-            public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
-            {
-                return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, new JobMonitoringParams( null, null, null ), job );
+            public <T> JobHandle<T> schedule(
+                    IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job) {
+                return jobScheduler.schedule(
+                        Group.INDEX_POPULATION_WORK, new JobMonitoringParams(null, null, null), job);
             }
         };
         tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
     }
 
-    void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception
-    {
-        withPopulator( populator, runWithPopulator, true );
+    void withPopulator(IndexPopulator populator, ThrowingConsumer<IndexPopulator, Exception> runWithPopulator)
+            throws Exception {
+        withPopulator(populator, runWithPopulator, true);
     }
 
-    void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator, boolean closeSuccessfully ) throws Exception
-    {
-        try
-        {
+    void withPopulator(
+            IndexPopulator populator,
+            ThrowingConsumer<IndexPopulator, Exception> runWithPopulator,
+            boolean closeSuccessfully)
+            throws Exception {
+        try {
             populator.create();
-            runWithPopulator.accept( populator );
-            if ( closeSuccessfully )
-            {
-                populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, NULL_CONTEXT );
-                testSuite.consistencyCheck( populator );
+            runWithPopulator.accept(populator);
+            if (closeSuccessfully) {
+                populator.scanCompleted(PhaseTracker.nullInstance, populationWorkScheduler, NULL_CONTEXT);
+                testSuite.consistencyCheck(populator);
             }
-        }
-        finally
-        {
-            populator.close( closeSuccessfully, NULL_CONTEXT );
+        } finally {
+            populator.close(closeSuccessfully, NULL_CONTEXT);
         }
     }
 }

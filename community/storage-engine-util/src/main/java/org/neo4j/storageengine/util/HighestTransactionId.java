@@ -20,20 +20,17 @@
 package org.neo4j.storageengine.util;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.storageengine.api.TransactionId;
 
 /**
  * Can accept offerings about {@link TransactionId}, but will always only keep the highest one,
  * always available in {@link #get()}.
  */
-public class HighestTransactionId
-{
+public class HighestTransactionId {
     private final AtomicReference<TransactionId> highest = new AtomicReference<>();
 
-    public HighestTransactionId( long initialTransactionId, int initialChecksum, long commitTimestamp )
-    {
-        set( initialTransactionId, initialChecksum, commitTimestamp );
+    public HighestTransactionId(long initialTransactionId, int initialChecksum, long commitTimestamp) {
+        set(initialTransactionId, initialChecksum, commitTimestamp);
     }
 
     /**
@@ -46,20 +43,17 @@ public class HighestTransactionId
      * @return {@code true} if the given transaction id was higher than the current highest,
      * {@code false}.
      */
-    public boolean offer( long transactionId, int checksum, long commitTimestamp )
-    {
+    public boolean offer(long transactionId, int checksum, long commitTimestamp) {
         TransactionId high = highest.get();
-        if ( transactionId < high.transactionId() )
-        {   // a higher id has already been offered
+        if (transactionId < high.transactionId()) { // a higher id has already been offered
             return false;
         }
 
-        TransactionId update = new TransactionId( transactionId, checksum, commitTimestamp );
-        while ( !highest.compareAndSet( high, update ) )
-        {
+        TransactionId update = new TransactionId(transactionId, checksum, commitTimestamp);
+        while (!highest.compareAndSet(high, update)) {
             high = highest.get();
-            if ( high.transactionId() >= transactionId )
-            {   // apparently someone else set a higher id while we were trying to set this id
+            if (high.transactionId()
+                    >= transactionId) { // apparently someone else set a higher id while we were trying to set this id
                 return false;
             }
         }
@@ -74,16 +68,14 @@ public class HighestTransactionId
      * @param checksum checksum of the transaction.
      * @param commitTimestamp commit time for transaction with {@code transactionId}.
      */
-    public final void set( long transactionId, int checksum, long commitTimestamp )
-    {
-        highest.set( new TransactionId( transactionId, checksum, commitTimestamp ) );
+    public final void set(long transactionId, int checksum, long commitTimestamp) {
+        highest.set(new TransactionId(transactionId, checksum, commitTimestamp));
     }
 
     /**
      * @return the currently highest transaction together with its checksum.
      */
-    public TransactionId get()
-    {
+    public TransactionId get() {
         return highest.get();
     }
 }

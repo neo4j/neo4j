@@ -25,6 +25,7 @@ import org.neo4j.values.AnyValue
  * Input data stream for Cypher query execution.
  */
 trait InputDataStream {
+
   /**
    * Get a cursor which traverses a batch of the input stream. Thread-safe.
    *
@@ -37,6 +38,7 @@ trait InputDataStream {
  * Cursor which traverses a batch of cypher query input rows.
  */
 trait InputCursor extends AutoCloseable {
+
   /**
    * Advance the cursor to the new input row.
    *

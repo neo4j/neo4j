@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
 case class Collect(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
+
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
     memoryTracker.allocateHeap(CollectFunction.SHALLOW_SIZE)
     new CollectFunction(anInner, memoryTracker)

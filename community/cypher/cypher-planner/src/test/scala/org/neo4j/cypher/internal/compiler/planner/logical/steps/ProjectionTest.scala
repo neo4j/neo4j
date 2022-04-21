@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
+class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should add projection for expressions not already covered") {
     // given
@@ -47,7 +47,9 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projections))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+      RegularQueryProjection(projections)
+    )
   }
 
   test("should mark as solved according to projectionsToMarkSolved argument") {
@@ -62,7 +64,9 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projectionsToMarkSolved))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+      RegularQueryProjection(projectionsToMarkSolved)
+    )
   }
 
   test("does not add projection when not needed") {
@@ -75,7 +79,9 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
     // then
     result should equal(startPlan)
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projections))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+      RegularQueryProjection(projections)
+    )
   }
 
   test("only adds the set difference of projections needed") {
@@ -89,7 +95,9 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     // then
     val actualProjections = Map("42" -> literalInt(42))
     result should equal(Projection(startPlan, actualProjections))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projections))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+      RegularQueryProjection(projections)
+    )
   }
 
   test("does projection when renaming columns") {
@@ -102,22 +110,32 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projections))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+      RegularQueryProjection(projections)
+    )
   }
 
-  private def queryGraphWith(skip: Option[Expression] = None,
-                             limit: Option[Expression] = None,
-                             sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, Expression],
-                             availablePropertiesFromIndexes: Map[Property, String] = Map.empty):
-  (LogicalPlanningContext, LogicalPlan) = {
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]]))
+  private def queryGraphWith(
+    skip: Option[Expression] = None,
+    limit: Option[Expression] = None,
+    sortItems: Seq[ast.SortItem] = Seq.empty,
+    projectionsMap: Map[String, Expression],
+    availablePropertiesFromIndexes: Map[Property, String] = Map.empty
+  ): (LogicalPlanningContext, LogicalPlan) = {
+    val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext(),
+      semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]])
+    )
 
     val ids = projectionsMap.keySet
 
     val plan =
-      newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = ids, solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)),
-        availablePropertiesFromIndexes = availablePropertiesFromIndexes)
+      newMockedLogicalPlanWithSolved(
+        context.planningAttributes,
+        idNames = ids,
+        solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)),
+        availablePropertiesFromIndexes = availablePropertiesFromIndexes
+      )
 
     (context, plan)
   }

@@ -19,11 +19,18 @@
  */
 package org.neo4j.fabric.transaction;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.emptyMap;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_MOCKS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction_end_timeout;
 
 import java.time.Duration;
 import java.util.UUID;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.configuration.Config;
@@ -39,63 +46,64 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.time.Clocks;
 
-import static java.util.Collections.emptyMap;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Answers.RETURNS_MOCKS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction_end_timeout;
-
-class TransactionManagerTest
-{
+class TransactionManagerTest {
 
     @Test
-    void terminateNonLocalTransactionsOnStop()
-    {
-        var remoteTransactionContext = mock( FabricRemoteExecutor.RemoteTransactionContext.class );
-        var localTransactionContext = mock( FabricRemoteExecutor.RemoteTransactionContext.class );
-        when( localTransactionContext.isEmptyContext() ).thenReturn( true );
+    void terminateNonLocalTransactionsOnStop() {
+        var remoteTransactionContext = mock(FabricRemoteExecutor.RemoteTransactionContext.class);
+        var localTransactionContext = mock(FabricRemoteExecutor.RemoteTransactionContext.class);
+        when(localTransactionContext.isEmptyContext()).thenReturn(true);
 
-        var fabricRemoteExecutor = mock( FabricRemoteExecutor.class );
-        when( fabricRemoteExecutor.startTransactionContext( any(), any(), any() ) ).thenReturn( localTransactionContext, remoteTransactionContext,
-                localTransactionContext );
+        var fabricRemoteExecutor = mock(FabricRemoteExecutor.class);
+        when(fabricRemoteExecutor.startTransactionContext(any(), any(), any()))
+                .thenReturn(localTransactionContext, remoteTransactionContext, localTransactionContext);
 
-        var localExecutor = mock( FabricLocalExecutor.class, RETURNS_MOCKS );
-        var errorReporter = mock( ErrorReporter.class );
-        var transactionMonitor = mock( FabricTransactionMonitor.class );
-        var bookmarkManager = mock( TransactionBookmarkManager.class );
-        var guard = mock( AvailabilityGuard.class );
-        var securityLog = mock( AbstractSecurityLog.class );
-        var config = Config.defaults( shutdown_transaction_end_timeout, Duration.ZERO );
-        var fabricConfig = FabricConfig.from( config );
-        var transactionManager =
-                new TransactionManager( fabricRemoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor, securityLog, Clocks.nanoClock(),
-                        config, guard );
+        var localExecutor = mock(FabricLocalExecutor.class, RETURNS_MOCKS);
+        var errorReporter = mock(ErrorReporter.class);
+        var transactionMonitor = mock(FabricTransactionMonitor.class);
+        var bookmarkManager = mock(TransactionBookmarkManager.class);
+        var guard = mock(AvailabilityGuard.class);
+        var securityLog = mock(AbstractSecurityLog.class);
+        var config = Config.defaults(shutdown_transaction_end_timeout, Duration.ZERO);
+        var fabricConfig = FabricConfig.from(config);
+        var transactionManager = new TransactionManager(
+                fabricRemoteExecutor,
+                localExecutor,
+                errorReporter,
+                fabricConfig,
+                transactionMonitor,
+                securityLog,
+                Clocks.nanoClock(),
+                config,
+                guard);
 
-        //local tx
-        var tx1 = transactionManager.begin( createTransactionInfo(), bookmarkManager );
-        //remote tx
-        var tx2 = transactionManager.begin( createTransactionInfo(), bookmarkManager );
-        // will be terminated before stop
-        var tx3 = transactionManager.begin( createTransactionInfo(), bookmarkManager );
         // local tx
-        var tx4 = transactionManager.begin( createTransactionInfo(), bookmarkManager );
+        var tx1 = transactionManager.begin(createTransactionInfo(), bookmarkManager);
+        // remote tx
+        var tx2 = transactionManager.begin(createTransactionInfo(), bookmarkManager);
+        // will be terminated before stop
+        var tx3 = transactionManager.begin(createTransactionInfo(), bookmarkManager);
+        // local tx
+        var tx4 = transactionManager.begin(createTransactionInfo(), bookmarkManager);
 
-        tx3.markForTermination( Status.Transaction.Outdated );
+        tx3.markForTermination(Status.Transaction.Outdated);
         transactionManager.stop();
 
-        assertTrue( tx1.isOpen() );
-        assertFalse( tx2.isOpen() );
-        assertFalse( tx3.isOpen() );
-        assertTrue( tx4.isOpen() );
+        assertTrue(tx1.isOpen());
+        assertFalse(tx2.isOpen());
+        assertFalse(tx3.isOpen());
+        assertTrue(tx4.isOpen());
     }
 
-    private static FabricTransactionInfo createTransactionInfo()
-    {
-        return new FabricTransactionInfo( AccessMode.READ, LoginContext.AUTH_DISABLED, ClientConnectionInfo.EMBEDDED_CONNECTION,
-                DatabaseIdFactory.from( "a", UUID.randomUUID() ), false, Duration.ZERO,
-                emptyMap(), new RoutingContext( true, emptyMap() ) );
+    private static FabricTransactionInfo createTransactionInfo() {
+        return new FabricTransactionInfo(
+                AccessMode.READ,
+                LoginContext.AUTH_DISABLED,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                DatabaseIdFactory.from("a", UUID.randomUUID()),
+                false,
+                Duration.ZERO,
+                emptyMap(),
+                new RoutingContext(true, emptyMap()));
     }
 }

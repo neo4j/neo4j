@@ -20,76 +20,64 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Arrays;
-
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.memory.HeapEstimator;
 
-public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> extends IndexEntryUpdate<INDEX_KEY>
-{
+public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> extends IndexEntryUpdate<INDEX_KEY> {
     static final long NO_TX_ID = -1;
 
     private final long[] before;
     private final long[] values;
     private final long txId;
 
-    TokenIndexEntryUpdate( long entityId, INDEX_KEY index_key, long[] before, long[] values, long txId )
-    {
-        super( entityId, index_key, UpdateMode.CHANGED );
+    TokenIndexEntryUpdate(long entityId, INDEX_KEY index_key, long[] before, long[] values, long txId) {
+        super(entityId, index_key, UpdateMode.CHANGED);
         this.before = before;
         this.values = values;
         this.txId = txId;
     }
 
-    public long[] values()
-    {
+    public long[] values() {
         return values;
     }
 
-    public long[] beforeValues()
-    {
-        if ( before == null )
-        {
-            throw new UnsupportedOperationException( "beforeValues is only valid for `UpdateMode.CHANGED" );
+    public long[] beforeValues() {
+        if (before == null) {
+            throw new UnsupportedOperationException("beforeValues is only valid for `UpdateMode.CHANGED");
         }
         return before;
     }
 
-    public long txId()
-    {
+    public long txId() {
         return txId;
     }
 
     @Override
-    public long roughSizeOfUpdate()
-    {
-        return HeapEstimator.sizeOf( values ) + (updateMode() == UpdateMode.CHANGED ? HeapEstimator.sizeOf( before ) : 0);
+    public long roughSizeOfUpdate() {
+        return HeapEstimator.sizeOf(values) + (updateMode() == UpdateMode.CHANGED ? HeapEstimator.sizeOf(before) : 0);
     }
 
     @Override
-    protected boolean valueEquals( IndexEntryUpdate<?> o )
-    {
-        if ( !(o instanceof TokenIndexEntryUpdate<?> that) )
-        {
+    protected boolean valueEquals(IndexEntryUpdate<?> o) {
+        if (!(o instanceof TokenIndexEntryUpdate<?> that)) {
             return false;
         }
-        if ( !Arrays.equals( before, that.before ) )
-        {
+        if (!Arrays.equals(before, that.before)) {
             return false;
         }
-        return Arrays.equals( values, that.values );
+        return Arrays.equals(values, that.values);
     }
 
     @Override
-    protected int valueHash()
-    {
-        int result = Arrays.hashCode( before );
-        result = 31 * result + Arrays.hashCode( values );
+    protected int valueHash() {
+        int result = Arrays.hashCode(before);
+        result = 31 * result + Arrays.hashCode(values);
         return result;
     }
 
     @Override
-    protected String valueToString()
-    {
-        return String.format( "beforeValues=%s, values=%s, txId=%d", Arrays.toString( before ), Arrays.toString( values ), txId );
+    protected String valueToString() {
+        return String.format(
+                "beforeValues=%s, values=%s, txId=%d", Arrays.toString(before), Arrays.toString(values), txId);
     }
 }

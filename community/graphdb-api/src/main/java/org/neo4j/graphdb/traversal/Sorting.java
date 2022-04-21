@@ -19,25 +19,21 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
+
 import java.util.Comparator;
 import java.util.Iterator;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
-
-import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
 
 /**
  * Provides some common traversal sorting, used by
  * {@link TraversalDescription#sort(Comparator)}.
  */
-public abstract class Sorting
-{
+public abstract class Sorting {
     // No instances
-    private Sorting()
-    {
-    }
+    private Sorting() {}
 
     /**
      * Sorts {@link Path}s by the property value of each path's end node.
@@ -45,31 +41,21 @@ public abstract class Sorting
      * @param propertyKey the property key of the values to sort on.
      * @return a {@link Comparator} suitable for sorting traversal results.
      */
-    public static Comparator<? super Path> endNodeProperty( final String propertyKey )
-    {
-        return new EndNodeComparator()
-        {
-            @SuppressWarnings( { "rawtypes", "unchecked" } )
+    public static Comparator<? super Path> endNodeProperty(final String propertyKey) {
+        return new EndNodeComparator() {
+            @SuppressWarnings({"rawtypes", "unchecked"})
             @Override
-            protected int compareNodes( Node endNode1, Node endNode2 )
-            {
-                Comparable p1 = (Comparable) endNode1.getProperty( propertyKey );
-                Comparable p2 = (Comparable) endNode2.getProperty( propertyKey );
-                if ( p1 == p2 )
-                {
+            protected int compareNodes(Node endNode1, Node endNode2) {
+                Comparable p1 = (Comparable) endNode1.getProperty(propertyKey);
+                Comparable p2 = (Comparable) endNode2.getProperty(propertyKey);
+                if (p1 == p2) {
                     return 0;
-                }
-                else if ( p1 == null )
-                {
+                } else if (p1 == null) {
                     return Integer.MIN_VALUE;
-                }
-                else if ( p2 == null )
-                {
+                } else if (p2 == null) {
                     return Integer.MAX_VALUE;
-                }
-                else
-                {
-                    return p1.compareTo( p2 );
+                } else {
+                    return p1.compareTo(p2);
                 }
             }
         };
@@ -83,24 +69,20 @@ public abstract class Sorting
      * off of each {@link Path}'s end node.
      * @return a {@link Comparator} suitable for sorting traversal results.
      */
-    public static Comparator<? super Path> endNodeRelationshipCount( final PathExpander expander )
-    {
-        return new EndNodeComparator()
-        {
+    public static Comparator<? super Path> endNodeRelationshipCount(final PathExpander expander) {
+        return new EndNodeComparator() {
             @Override
-            protected int compareNodes( Node endNode1, Node endNode2 )
-            {
-                Integer count1 = count( endNode1, expander );
-                Integer count2 = count( endNode2, expander );
-                return count1.compareTo( count2 );
+            protected int compareNodes(Node endNode1, Node endNode2) {
+                Integer count1 = count(endNode1, expander);
+                Integer count2 = count(endNode2, expander);
+                return count1.compareTo(count2);
             }
 
-            private Integer count( Node node, PathExpander expander )
-            {
-                Iterator<?> expand = expander.expand( singleNodePath( node ), BranchState.NO_STATE ).iterator();
+            private Integer count(Node node, PathExpander expander) {
+                Iterator<?> expand = expander.expand(singleNodePath(node), BranchState.NO_STATE)
+                        .iterator();
                 int count = 0;
-                while ( expand.hasNext() )
-                {
+                while (expand.hasNext()) {
                     count++;
                 }
                 return count;
@@ -111,14 +93,12 @@ public abstract class Sorting
     /**
      * Comparator for {@link Path#endNode() end nodes} of two {@link Path paths}
      */
-    private abstract static class EndNodeComparator implements Comparator<Path>
-    {
+    private abstract static class EndNodeComparator implements Comparator<Path> {
         @Override
-        public int compare( Path p1, Path p2 )
-        {
-            return compareNodes( p1.endNode(), p2.endNode() );
+        public int compare(Path p1, Path p2) {
+            return compareNodes(p1.endNode(), p2.endNode());
         }
 
-        protected abstract int compareNodes( Node endNode1, Node endNode2 );
+        protected abstract int compareNodes(Node endNode1, Node endNode2);
     }
 }

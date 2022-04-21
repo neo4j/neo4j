@@ -20,32 +20,27 @@
 package org.neo4j.kernel.recovery.facade;
 
 import java.io.IOException;
-
 import org.neo4j.io.layout.DatabaseLayout;
 
-class EmptyRecoveryFacade implements RecoveryFacade
-{
+class EmptyRecoveryFacade implements RecoveryFacade {
     static RecoveryFacade INSTANCE = new EmptyRecoveryFacade();
 
-    private EmptyRecoveryFacade()
-    {
-    }
+    private EmptyRecoveryFacade() {}
 
     @Override
-    public void performRecovery( DatabaseLayout databaseLayout ) throws IOException
-    {
+    public void performRecovery(DatabaseLayout databaseLayout) throws IOException {
         // noop
     }
 
     @Override
-    public void performRecovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException
-    {
+    public void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor) throws IOException {
         // noop
     }
 
     @Override
-    public void performRecovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException
-    {
+    public void performRecovery(
+            DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
+            throws IOException {
         // noop
     }
 }

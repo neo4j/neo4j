@@ -24,11 +24,8 @@ package org.neo4j.kernel.impl.transaction.tracing;
  * system call latency that we experience. Force calls are batched, so a single one might cause multiple transactions
  * to be considered forced.
  */
-public interface LogForceEvent extends AutoCloseable
-{
-    LogForceEvent NULL = () ->
-    {
-    };
+public interface LogForceEvent extends AutoCloseable {
+    LogForceEvent NULL = () -> {};
 
     /**
      * Marks the end of the force call on the transaction log file.

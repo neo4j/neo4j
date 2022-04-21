@@ -19,74 +19,65 @@
  */
 package org.neo4j.test.extension.pagecache;
 
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 @PageCacheExtension
-class PageCacheExtensionTest
-{
+class PageCacheExtensionTest {
     @Inject
     private PageCache pageCache;
+
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void pageCacheInjected()
-    {
-        assertNotNull( pageCache );
+    void pageCacheInjected() {
+        assertNotNull(pageCache);
     }
 
     @Test
-    void testDirectoryInjected()
-    {
-        assertNotNull( testDirectory );
+    void testDirectoryInjected() {
+        assertNotNull(testDirectory);
     }
 
     @Test
-    void testDirectoryWithHasDefaultFileSystem()
-    {
-        assertThat( testDirectory.getFileSystem() ).isInstanceOf( DefaultFileSystemAbstraction.class );
+    void testDirectoryWithHasDefaultFileSystem() {
+        assertThat(testDirectory.getFileSystem()).isInstanceOf(DefaultFileSystemAbstraction.class);
     }
 
     @Test
-    void pageCacheCanFindFileCreatedByTestDirectory() throws IOException
-    {
-        Path testFile = testDirectory.createFile( "testFile" );
-        try ( PagedFile map = pageCache.map( testFile, 4096, testDirectory.homePath().getFileName().toString() ) )
-        {
-            assertNotNull( map );
+    void pageCacheCanFindFileCreatedByTestDirectory() throws IOException {
+        Path testFile = testDirectory.createFile("testFile");
+        try (PagedFile map = pageCache.map(
+                testFile, 4096, testDirectory.homePath().getFileName().toString())) {
+            assertNotNull(map);
         }
     }
 
     @Nested
-    class NestedPageCacheTest
-    {
+    class NestedPageCacheTest {
         @Inject
         private PageCache nestedPageCache;
 
         @Test
-        void nestedPageCacheInjection()
-        {
-            assertNotNull( nestedPageCache );
+        void nestedPageCacheInjection() {
+            assertNotNull(nestedPageCache);
         }
 
         @Test
-        void nestedAndRootPageCacheAreTheSame()
-        {
-            assertSame( pageCache, nestedPageCache );
+        void nestedAndRootPageCacheAreTheSame() {
+            assertSame(pageCache, nestedPageCache);
         }
     }
 }

@@ -19,25 +19,27 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
 
 import java.nio.file.OpenOption;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
-import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
-
 /**
  * Used by the {@link BatchImporter} to get an instance of {@link IndexImporter} to which it can publish index updates.
  */
-public interface IndexImporterFactory
-{
-    IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
-                               CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions );
+public interface IndexImporterFactory {
+    IndexImporter getImporter(
+            IndexDescriptor index,
+            DatabaseLayout layout,
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions);
 
-    IndexImporterFactory EMPTY = ( descriptor, layout, fs, pageCache, cursorTracer, openOptions ) -> EMPTY_IMPORTER;
+    IndexImporterFactory EMPTY = (descriptor, layout, fs, pageCache, cursorTracer, openOptions) -> EMPTY_IMPORTER;
 }

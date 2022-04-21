@@ -19,12 +19,21 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.impl.factory.Sets;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
+import org.eclipse.collections.impl.factory.Sets;
+import org.junit.jupiter.api.Test;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -43,157 +52,152 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
-
-class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
-{
-    private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 42, 666 ) ).withIndexType( IndexType.RANGE )
-                                                                                            .withIndexProvider( RangeIndexProvider.DESCRIPTOR )
-                                                                                            .withName( "index" )
-                                                                                            .materialise( 0 );
+class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
+    private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema(forLabel(42, 666))
+            .withIndexType(IndexType.RANGE)
+            .withIndexProvider(RangeIndexProvider.DESCRIPTOR)
+            .withName("index")
+            .materialise(0);
     private static final ValueType[] SUPPORTED_TYPES = ValueType.values();
-    private static final RangeLayout LAYOUT = new RangeLayout( 1 );
+    private static final RangeLayout LAYOUT = new RangeLayout(1);
     private static final IndexCapability INDEX_CAPABILITY = RangeIndexProvider.CAPABILITY;
 
     @Override
-    NativeIndexAccessor<RangeKey> createAccessor( PageCache pageCache )
-    {
+    NativeIndexAccessor<RangeKey> createAccessor(PageCache pageCache) {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
-        DatabaseIndexContext context =
-                DatabaseIndexContext.builder( pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
-        return new RangeIndexAccessor( context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, tokenNameLookup, Sets.immutable.empty() );
+        DatabaseIndexContext context = DatabaseIndexContext.builder(
+                        pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME)
+                .withReadOnlyChecker(writable())
+                .build();
+        return new RangeIndexAccessor(
+                context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, tokenNameLookup, Sets.immutable.empty());
     }
 
     @Override
-    IndexCapability indexCapability()
-    {
+    IndexCapability indexCapability() {
         return INDEX_CAPABILITY;
     }
 
     @Override
-    ValueCreatorUtil<RangeKey> createValueCreatorUtil()
-    {
-        return new ValueCreatorUtil<>( INDEX_DESCRIPTOR, SUPPORTED_TYPES, FRACTION_DUPLICATE_NON_UNIQUE );
+    ValueCreatorUtil<RangeKey> createValueCreatorUtil() {
+        return new ValueCreatorUtil<>(INDEX_DESCRIPTOR, SUPPORTED_TYPES, FRACTION_DUPLICATE_NON_UNIQUE);
     }
 
     @Override
-    IndexDescriptor indexDescriptor()
-    {
+    IndexDescriptor indexDescriptor() {
         return INDEX_DESCRIPTOR;
     }
 
     @Override
-    RangeLayout layout()
-    {
+    RangeLayout layout() {
         return LAYOUT;
     }
 
     @Test
-    void readerShouldThrowOnBoundingBoxQueries()
-    {
-        PropertyIndexQuery.BoundingBoxPredicate boundingBoxPredicate = PropertyIndexQuery.boundingBox( 0,
-                Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 1, 1 ),
-                Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 2, 2 ) );
+    void readerShouldThrowOnBoundingBoxQueries() {
+        PropertyIndexQuery.BoundingBoxPredicate boundingBoxPredicate = PropertyIndexQuery.boundingBox(
+                0,
+                Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 1),
+                Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 2, 2));
 
-        try ( var reader = accessor.newValueReader() )
-        {
-            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
-                    unorderedValues(), boundingBoxPredicate ) )
-                    .isInstanceOf( IllegalArgumentException.class )
-                    .hasMessageContaining( "Tried to query index with illegal query. A %s predicate is not allowed", boundingBoxPredicate.type() );
+        try (var reader = accessor.newValueReader()) {
+            assertThatThrownBy(() -> reader.query(
+                            new SimpleEntityValueClient(),
+                            NULL_CONTEXT,
+                            AccessMode.Static.ACCESS,
+                            unorderedValues(),
+                            boundingBoxPredicate))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining(
+                            "Tried to query index with illegal query. A %s predicate is not allowed",
+                            boundingBoxPredicate.type());
         }
     }
 
     @Test
-    void readerShouldThrowOnStringSuffixQueries()
-    {
-        PropertyIndexQuery.StringSuffixPredicate suffixPredicate = PropertyIndexQuery.stringSuffix( 0, Values.stringValue( "myValue" ) );
+    void readerShouldThrowOnStringSuffixQueries() {
+        PropertyIndexQuery.StringSuffixPredicate suffixPredicate =
+                PropertyIndexQuery.stringSuffix(0, Values.stringValue("myValue"));
 
-        try ( var reader = accessor.newValueReader() )
-        {
-            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
-                                                    unorderedValues(), suffixPredicate ) )
-                    .isInstanceOf( IllegalArgumentException.class )
-                    .hasMessageContaining( "Tried to query index with illegal query. A %s predicate is not allowed", suffixPredicate.type() );
+        try (var reader = accessor.newValueReader()) {
+            assertThatThrownBy(() -> reader.query(
+                            new SimpleEntityValueClient(),
+                            NULL_CONTEXT,
+                            AccessMode.Static.ACCESS,
+                            unorderedValues(),
+                            suffixPredicate))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining(
+                            "Tried to query index with illegal query. A %s predicate is not allowed",
+                            suffixPredicate.type());
         }
     }
 
     @Test
-    void readerShouldThrowOnStringContainsQueries()
-    {
-        PropertyIndexQuery.StringContainsPredicate containsPredicate = PropertyIndexQuery.stringContains( 0, Values.stringValue( "myValue" ) );
+    void readerShouldThrowOnStringContainsQueries() {
+        PropertyIndexQuery.StringContainsPredicate containsPredicate =
+                PropertyIndexQuery.stringContains(0, Values.stringValue("myValue"));
 
-        try ( var reader = accessor.newValueReader() )
-        {
-            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
-                                                    unorderedValues(), containsPredicate ) )
-                    .isInstanceOf( IllegalArgumentException.class )
-                    .hasMessageContaining( "Tried to query index with illegal query. A %s predicate is not allowed", containsPredicate.type() );
+        try (var reader = accessor.newValueReader()) {
+            assertThatThrownBy(() -> reader.query(
+                            new SimpleEntityValueClient(),
+                            NULL_CONTEXT,
+                            AccessMode.Static.ACCESS,
+                            unorderedValues(),
+                            containsPredicate))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining(
+                            "Tried to query index with illegal query. A %s predicate is not allowed",
+                            containsPredicate.type());
         }
     }
 
     @Test
-    void shouldRespectIndexOrderForGeometryTypes() throws Exception
-    {
+    void shouldRespectIndexOrderForGeometryTypes() throws Exception {
         // given
         int nUpdates = 10000;
         ValueType[] types = supportedTypesForGeometry();
         Iterator<ValueIndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator =
-                valueCreatorUtil.randomUpdateGenerator( random, types );
+                valueCreatorUtil.randomUpdateGenerator(random, types);
         //noinspection unchecked
         ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates = new ValueIndexEntryUpdate[nUpdates];
-        for ( int i = 0; i < nUpdates; i++ )
-        {
+        for (int i = 0; i < nUpdates; i++) {
             someUpdates[i] = randomUpdateGenerator.next();
         }
-        processAll( someUpdates );
-        Value[] allValues = ValueCreatorUtil.extractValuesFromUpdates( someUpdates );
+        processAll(someUpdates);
+        Value[] allValues = ValueCreatorUtil.extractValuesFromUpdates(someUpdates);
 
         // when
-        try ( var reader = accessor.newValueReader() )
-        {
-            final PropertyIndexQuery.ExistsPredicate exists = PropertyIndexQuery.exists( 0 );
+        try (var reader = accessor.newValueReader()) {
+            final PropertyIndexQuery.ExistsPredicate exists = PropertyIndexQuery.exists(0);
 
-            expectIndexOrder( allValues, reader, IndexOrder.ASCENDING, exists );
-            expectIndexOrder( allValues, reader, IndexOrder.DESCENDING, exists );
+            expectIndexOrder(allValues, reader, IndexOrder.ASCENDING, exists);
+            expectIndexOrder(allValues, reader, IndexOrder.DESCENDING, exists);
         }
     }
 
-    private static void expectIndexOrder( Value[] allValues, ValueIndexReader reader, IndexOrder supportedOrder,
-            PropertyIndexQuery.ExistsPredicate supportedQuery ) throws IndexNotApplicableKernelException
-    {
-        if ( supportedOrder == IndexOrder.ASCENDING )
-        {
-            Arrays.sort( allValues, Values.COMPARATOR );
-        }
-        else if ( supportedOrder == IndexOrder.DESCENDING )
-        {
-            Arrays.sort( allValues, Values.COMPARATOR.reversed() );
+    private static void expectIndexOrder(
+            Value[] allValues,
+            ValueIndexReader reader,
+            IndexOrder supportedOrder,
+            PropertyIndexQuery.ExistsPredicate supportedQuery)
+            throws IndexNotApplicableKernelException {
+        if (supportedOrder == IndexOrder.ASCENDING) {
+            Arrays.sort(allValues, Values.COMPARATOR);
+        } else if (supportedOrder == IndexOrder.DESCENDING) {
+            Arrays.sort(allValues, Values.COMPARATOR.reversed());
         }
         SimpleEntityValueClient client = new SimpleEntityValueClient();
-        reader.query( client, NULL_CONTEXT, AccessMode.Static.READ, constrained( supportedOrder, true ), supportedQuery );
+        reader.query(client, NULL_CONTEXT, AccessMode.Static.READ, constrained(supportedOrder, true), supportedQuery);
         int i = 0;
-        while ( client.next() )
-        {
-            assertEquals( allValues[i++], client.values[0], "values in order" );
+        while (client.next()) {
+            assertEquals(allValues[i++], client.values[0], "values in order");
         }
-        assertEquals( i, allValues.length, "found all values" );
+        assertEquals(i, allValues.length, "found all values");
     }
 
-    private ValueType[] supportedTypesForGeometry()
-    {
-        return RandomValues.excluding( valueCreatorUtil.supportedTypes(),
-                                       type -> switch ( type.valueGroup.category() )
-        {
+    private ValueType[] supportedTypesForGeometry() {
+        return RandomValues.excluding(valueCreatorUtil.supportedTypes(), type -> switch (type.valueGroup.category()) {
             case GEOMETRY, GEOMETRY_ARRAY -> false;
             default -> true;
         });

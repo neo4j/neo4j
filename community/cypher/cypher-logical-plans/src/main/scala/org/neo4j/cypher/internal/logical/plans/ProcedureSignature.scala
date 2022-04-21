@@ -25,18 +25,19 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 
-case class ProcedureSignature(name: QualifiedName,
-                              inputSignature: IndexedSeq[FieldSignature],
-                              outputSignature: Option[IndexedSeq[FieldSignature]],
-                              deprecationInfo: Option[String],
-                              accessMode: ProcedureAccessMode,
-                              description: Option[String] = None,
-                              warning: Option[String] = None,
-                              eager: Boolean = false,
-                              id: Int,
-                              systemProcedure: Boolean = false,
-                              allowExpiredCredentials: Boolean = false
-                             ) {
+case class ProcedureSignature(
+  name: QualifiedName,
+  inputSignature: IndexedSeq[FieldSignature],
+  outputSignature: Option[IndexedSeq[FieldSignature]],
+  deprecationInfo: Option[String],
+  accessMode: ProcedureAccessMode,
+  description: Option[String] = None,
+  warning: Option[String] = None,
+  eager: Boolean = false,
+  id: Int,
+  systemProcedure: Boolean = false,
+  allowExpiredCredentials: Boolean = false
+) {
 
   def outputFields: Seq[FieldSignature] = outputSignature.getOrElse(Seq.empty)
 
@@ -48,19 +49,22 @@ case class ProcedureSignature(name: QualifiedName,
   }
 }
 
-case class UserFunctionSignature(name: QualifiedName,
-                                 inputSignature: IndexedSeq[FieldSignature],
-                                 outputType: CypherType,
-                                 deprecationInfo: Option[String],
-                                 description: Option[String],
-                                 isAggregate: Boolean,
-                                 id: Int,
-                                 builtIn: Boolean,
-                                 threadSafe: Boolean = false) {
+case class UserFunctionSignature(
+  name: QualifiedName,
+  inputSignature: IndexedSeq[FieldSignature],
+  outputType: CypherType,
+  deprecationInfo: Option[String],
+  description: Option[String],
+  isAggregate: Boolean,
+  id: Int,
+  builtIn: Boolean,
+  threadSafe: Boolean = false
+) {
   override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
 }
 
 object QualifiedName {
+
   def apply(unresolved: UnresolvedCall): QualifiedName =
     QualifiedName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
 
@@ -72,15 +76,22 @@ case class QualifiedName(namespace: Seq[String], name: String) {
   override def toString: String = (namespace :+ name).mkString(".")
 }
 
-case class FieldSignature(name: String, typ: CypherType, default: Option[AnyValue] = None, deprecated: Boolean = false, sensitive: Boolean = false) {
+case class FieldSignature(
+  name: String,
+  typ: CypherType,
+  default: Option[AnyValue] = None,
+  deprecated: Boolean = false,
+  sensitive: Boolean = false
+) {
+
   override def toString: String = {
-    val nameValue = default.map( d => s"$name  =  ${stringOf(d)}").getOrElse(name)
+    val nameValue = default.map(d => s"$name  =  ${stringOf(d)}").getOrElse(name)
     s"$nameValue :: ${typ.toNeoTypeString}"
   }
 
   private def stringOf(any: AnyValue) = any match {
     case v: Value => v.prettyPrint()
-    case _ => any.toString
+    case _        => any.toString
   }
 }
 

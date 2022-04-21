@@ -58,13 +58,15 @@ object Metrics {
     def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty, Map.empty)
   }
 
-  case class QueryGraphSolverInput(labelInfo: LabelInfo,
-                                   relTypeInfo: RelTypeInfo,
-                                   limitSelectivityConfig: LimitSelectivityConfig = LimitSelectivityConfig.default,
-                                   activePlanner: PlannerType = PlannerType.Match) {
+  case class QueryGraphSolverInput(
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    limitSelectivityConfig: LimitSelectivityConfig = LimitSelectivityConfig.default,
+    activePlanner: PlannerType = PlannerType.Match
+  ) {
 
     def withUpdatedLabelInfo(fromPlan: LogicalPlan, solveds: Solveds): QueryGraphSolverInput = {
-      val newLabels = (labelInfo fuse solveds.get(fromPlan.id).asSinglePlannerQuery.lastLabelInfo) (_ ++ _)
+      val newLabels = (labelInfo fuse solveds.get(fromPlan.id).asSinglePlannerQuery.lastLabelInfo)(_ ++ _)
       copy(labelInfo = newLabels)
     }
 
@@ -84,6 +86,7 @@ object Metrics {
   }
 
   trait CostModel {
+
     /**
      * This metric calculates how expensive executing a logical plan is.
      * (e.g. by looking at cardinality, expression selectivity and taking into account the effort
@@ -91,16 +94,18 @@ object Metrics {
      *
      * @return the cost of the given plan
      */
-    def costFor(plan: LogicalPlan,
-                input: QueryGraphSolverInput,
-                semanticTable: SemanticTable,
-                cardinalities: Cardinalities,
-                providedOrders: ProvidedOrders,
-                monitor: CostModelMonitor): Cost
+    def costFor(
+      plan: LogicalPlan,
+      input: QueryGraphSolverInput,
+      semanticTable: SemanticTable,
+      cardinalities: Cardinalities,
+      providedOrders: ProvidedOrders,
+      monitor: CostModelMonitor
+    ): Cost
   }
 
-
   trait CardinalityModel {
+
     /**
      * This metric estimates how many rows of data a query produces
      * (e.g. by asking the database for statistics)
@@ -108,34 +113,41 @@ object Metrics {
      * @param queryPart             the query part to estimate cardinality for
      * @return the cardinality of the query
      */
-    def apply(queryPart: PlannerQueryPart,
-              input: QueryGraphSolverInput,
-              semanticTable: SemanticTable,
-              indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality
+    def apply(
+      queryPart: PlannerQueryPart,
+      input: QueryGraphSolverInput,
+      semanticTable: SemanticTable,
+      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    ): Cardinality
   }
 
   trait QueryGraphCardinalityModel {
+
     /**
      *
      * @param queryGraph the query graph to estimate cardinality
      * @return the cardinality of the query graph
      */
-    def apply(queryGraph: QueryGraph,
-              input: QueryGraphSolverInput,
-              semanticTable: SemanticTable,
-              indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality
+    def apply(
+      queryGraph: QueryGraph,
+      input: QueryGraphSolverInput,
+      semanticTable: SemanticTable,
+      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    ): Cardinality
   }
 
   trait SelectivityCalculator {
+
     /**
      * Calculate a selectivity for the given selections.
      */
-    def apply(selections: Selections,
-              labelInfo: LabelInfo,
-              relTypeInfo: RelTypeInfo,
-              semanticTable: SemanticTable,
-              indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-             ): Selectivity
+    def apply(
+      selections: Selections,
+      labelInfo: LabelInfo,
+      relTypeInfo: RelTypeInfo,
+      semanticTable: SemanticTable,
+      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    ): Selectivity
   }
 
   /**
@@ -154,14 +166,14 @@ trait ExpressionEvaluator {
 
   def hasParameters(expr: Expression): Boolean = expr.inputs.exists {
     case (Parameter(_, _), _) => true
-    case _ => false
+    case _                    => false
   }
 
   def isDeterministic(expr: Expression): Boolean = expr.inputs.forall {
-    case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand || func.function == RandomUUID => false
-    //for UDFs we don't know but the result might be non-deterministic
-    case (_:ResolvedFunctionInvocation, _) => false
-    case _ => true
+    case (func @ FunctionInvocation(_, _, _, _), _) if func.function == Rand || func.function == RandomUUID => false
+    // for UDFs we don't know but the result might be non-deterministic
+    case (_: ResolvedFunctionInvocation, _) => false
+    case _                                  => true
   }
 
   def evaluateExpression(expr: Expression): Option[Any]
@@ -172,37 +184,58 @@ trait ExpressionEvaluator {
  */
 object simpleExpressionEvaluator extends ExpressionEvaluator {
   private val expressionEvaluator = new SimpleInternalExpressionEvaluator()
-  override def evaluateExpression(expr: Expression): Option[Any] = try {
-    Some(expressionEvaluator.evaluate(expr))
-  } catch {
-    case _: CypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
-  }
+
+  override def evaluateExpression(expr: Expression): Option[Any] =
+    try {
+      Some(expressionEvaluator.evaluate(expr))
+    } catch {
+      case _: CypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
+    }
 }
 
-case class Metrics(cost: CostModel,
-                   cardinality: CardinalityModel)
+case class Metrics(cost: CostModel, cardinality: CardinalityModel)
 
 trait MetricsFactory {
-  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                              calculator: SelectivityCalculator,
-                              expressionEvaluator: ExpressionEvaluator): CardinalityModel
+
+  def newCardinalityEstimator(
+    queryGraphCardinalityModel: QueryGraphCardinalityModel,
+    calculator: SelectivityCalculator,
+    expressionEvaluator: ExpressionEvaluator
+  ): CardinalityModel
   def newCostModel(executionModel: ExecutionModel): CostModel
-  def newQueryGraphCardinalityModel(planContext: PlanContext, calculator: SelectivityCalculator): QueryGraphCardinalityModel
 
-  def newSelectivityCalculator(planContext: PlanContext,
-                               planningTextIndexesEnabled: Boolean,
-                               planningRangeIndexesEnabled: Boolean,
-                               planningPointIndexesEnabled: Boolean): SelectivityCalculator =
-    CompositeExpressionSelectivityCalculator(planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled, planningPointIndexesEnabled)
+  def newQueryGraphCardinalityModel(
+    planContext: PlanContext,
+    calculator: SelectivityCalculator
+  ): QueryGraphCardinalityModel
 
-  def newMetrics(planContext: PlanContext,
-                 expressionEvaluator: ExpressionEvaluator,
-                 executionModel: ExecutionModel,
-                 planningTextIndexesEnabled: Boolean,
-                 planningRangeIndexesEnabled: Boolean,
-                 planningPointIndexesEnabled: Boolean,
-                ): Metrics = {
-    val selectivityCalculator = newSelectivityCalculator(planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled, planningPointIndexesEnabled)
+  def newSelectivityCalculator(
+    planContext: PlanContext,
+    planningTextIndexesEnabled: Boolean,
+    planningRangeIndexesEnabled: Boolean,
+    planningPointIndexesEnabled: Boolean
+  ): SelectivityCalculator =
+    CompositeExpressionSelectivityCalculator(
+      planContext,
+      planningTextIndexesEnabled,
+      planningRangeIndexesEnabled,
+      planningPointIndexesEnabled
+    )
+
+  def newMetrics(
+    planContext: PlanContext,
+    expressionEvaluator: ExpressionEvaluator,
+    executionModel: ExecutionModel,
+    planningTextIndexesEnabled: Boolean,
+    planningRangeIndexesEnabled: Boolean,
+    planningPointIndexesEnabled: Boolean
+  ): Metrics = {
+    val selectivityCalculator = newSelectivityCalculator(
+      planContext,
+      planningTextIndexesEnabled,
+      planningRangeIndexesEnabled,
+      planningPointIndexesEnabled
+    )
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
     Metrics(newCostModel(executionModel), cardinality)

@@ -37,8 +37,7 @@ import java.util.Objects;
  *     and wasn't there when it was loaded from the store</li>
  * </ul>
  */
-public abstract class AbstractBaseRecord
-{
+public abstract class AbstractBaseRecord {
     public static final int NO_ID = -1;
     private long id;
     // Used for the "record unit" feature where one logical record may span two physical records,
@@ -56,14 +55,12 @@ public abstract class AbstractBaseRecord
     // speed up records read/write operations.
     private boolean useFixedReferences;
 
-    protected AbstractBaseRecord( long id )
-    {
+    protected AbstractBaseRecord(long id) {
         this.id = id;
         clear();
     }
 
-    public AbstractBaseRecord( AbstractBaseRecord other )
-    {
+    public AbstractBaseRecord(AbstractBaseRecord other) {
         this.id = other.id;
         this.secondaryUnitId = other.secondaryUnitId;
         this.requiresSecondaryUnit = other.requiresSecondaryUnit;
@@ -73,8 +70,7 @@ public abstract class AbstractBaseRecord
         this.useFixedReferences = other.useFixedReferences;
     }
 
-    protected AbstractBaseRecord initialize( boolean inUse )
-    {
+    protected AbstractBaseRecord initialize(boolean inUse) {
         this.inUse = inUse;
         this.created = false;
         this.secondaryUnitId = NO_ID;
@@ -89,8 +85,7 @@ public abstract class AbstractBaseRecord
      * Subclasses, most specific subclasses only, implements this method by calling initialize with
      * zero-like arguments.
      */
-    public void clear()
-    {
+    public void clear() {
         inUse = false;
         created = false;
         secondaryUnitId = NO_ID;
@@ -99,23 +94,19 @@ public abstract class AbstractBaseRecord
         useFixedReferences = false;
     }
 
-    public AbstractBaseRecord copy()
-    {
-        throw new UnsupportedOperationException( getClass().getSimpleName() + " is not copyable." );
+    public AbstractBaseRecord copy() {
+        throw new UnsupportedOperationException(getClass().getSimpleName() + " is not copyable.");
     }
 
-    public long getId()
-    {
+    public long getId() {
         return id;
     }
 
-    public int getIntId()
-    {
-        return Math.toIntExact( id );
+    public int getIntId() {
+        return Math.toIntExact(id);
     }
 
-    public final void setId( long id )
-    {
+    public final void setId(long id) {
         this.id = id;
     }
 
@@ -123,8 +114,7 @@ public abstract class AbstractBaseRecord
      * Sets a secondary record unit ID for this record on loading the record. Setting this id is separate from setting {@link #requiresSecondaryUnit()}
      * since this secondary unit id may be used to just free that id at the time of updating in the store if a record goes from two to one unit.
      */
-    public void setSecondaryUnitIdOnLoad( long id )
-    {
+    public void setSecondaryUnitIdOnLoad(long id) {
         this.secondaryUnitId = id;
         this.requiresSecondaryUnit = secondaryUnitId != NO_ID;
     }
@@ -134,103 +124,84 @@ public abstract class AbstractBaseRecord
      * Setting this id is separate from setting {@link #requiresSecondaryUnit()} since this secondary unit id may be used to just free that id
      * at the time of updating in the store if a record goes from two to one unit.
      */
-    public void setSecondaryUnitIdOnCreate( long id )
-    {
+    public void setSecondaryUnitIdOnCreate(long id) {
         this.secondaryUnitId = id;
         this.createdSecondaryUnit = true;
         this.requiresSecondaryUnit = secondaryUnitId != NO_ID;
     }
 
-    public void setSecondaryUnitCreated( boolean value )
-    {
+    public void setSecondaryUnitCreated(boolean value) {
         this.createdSecondaryUnit = value;
     }
 
-    public boolean hasSecondaryUnitId()
-    {
+    public boolean hasSecondaryUnitId() {
         return secondaryUnitId != NO_ID;
     }
 
     /**
      * @return secondary record unit ID set by {@link #setSecondaryUnitIdOnLoad(long)} or {@link #setSecondaryUnitIdOnCreate(long)}.
      */
-    public long getSecondaryUnitId()
-    {
+    public long getSecondaryUnitId() {
         return this.secondaryUnitId;
     }
 
-    public void setRequiresSecondaryUnit( boolean requires )
-    {
+    public void setRequiresSecondaryUnit(boolean requires) {
         this.requiresSecondaryUnit = requires;
     }
 
     /**
      * @return whether or not a secondary record unit ID has been assigned.
      */
-    public boolean requiresSecondaryUnit()
-    {
+    public boolean requiresSecondaryUnit() {
         return requiresSecondaryUnit;
     }
 
-    public boolean isSecondaryUnitCreated()
-    {
+    public boolean isSecondaryUnitCreated() {
         return createdSecondaryUnit;
     }
 
-    public final boolean inUse()
-    {
+    public final boolean inUse() {
         return inUse;
     }
 
-    public void setInUse( boolean inUse )
-    {
+    public void setInUse(boolean inUse) {
         this.inUse = inUse;
     }
 
-    public final void setCreated()
-    {
+    public final void setCreated() {
         this.created = true;
     }
 
-    public void setCreated( boolean created )
-    {
+    public void setCreated(boolean created) {
         this.created = created;
     }
 
-    public final boolean isCreated()
-    {
+    public final boolean isCreated() {
         return created;
     }
 
-    public boolean isUseFixedReferences()
-    {
+    public boolean isUseFixedReferences() {
         return useFixedReferences;
     }
 
-    public void setUseFixedReferences( boolean useFixedReferences )
-    {
+    public void setUseFixedReferences(boolean useFixedReferences) {
         this.useFixedReferences = useFixedReferences;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( id, inUse );
+    public int hashCode() {
+        return Objects.hash(id, inUse);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
-        if ( obj == null )
-        {
+        if (obj == null) {
             return false;
         }
-        if ( getClass() != obj.getClass() )
-        {
+        if (getClass() != obj.getClass()) {
             return false;
         }
         AbstractBaseRecord other = (AbstractBaseRecord) obj;
@@ -246,12 +217,10 @@ public abstract class AbstractBaseRecord
      * </ul>
      * Returns empty string if this record neither requires a secondary unit nor has one assigned.
      */
-    protected String secondaryUnitToString()
-    {
-        if ( !requiresSecondaryUnit() && !hasSecondaryUnitId() )
-        {
+    protected String secondaryUnitToString() {
+        if (!requiresSecondaryUnit() && !hasSecondaryUnitId()) {
             return "";
         }
-        return String.format( ",%ssecondaryUnitId=%d", requiresSecondaryUnit() ? "+" : "-", getSecondaryUnitId() );
+        return String.format(",%ssecondaryUnitId=%d", requiresSecondaryUnit() ? "+" : "-", getSecondaryUnitId());
     }
 }

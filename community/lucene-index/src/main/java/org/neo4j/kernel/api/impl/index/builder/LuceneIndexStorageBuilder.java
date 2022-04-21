@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index.builder;
 
 import java.nio.file.Path;
 import java.util.Objects;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -31,24 +30,20 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
  * Most of the values already have most useful default value, that still can be overridden by corresponding
  * builder methods.
  */
-public class LuceneIndexStorageBuilder
-{
+public class LuceneIndexStorageBuilder {
     private DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
     private FileSystemAbstraction fileSystem;
     private Path indexRootFolder;
     private PartitionedIndexStorage indexStorage;
 
-    private LuceneIndexStorageBuilder()
-    {
-    }
+    private LuceneIndexStorageBuilder() {}
 
     /**
      * Create new lucene index storage builder
      *
      * @return index builder
      */
-    public static LuceneIndexStorageBuilder create()
-    {
+    public static LuceneIndexStorageBuilder create() {
         return new LuceneIndexStorageBuilder();
     }
 
@@ -57,14 +52,12 @@ public class LuceneIndexStorageBuilder
      *
      * @return lucene index storage
      */
-    public PartitionedIndexStorage build()
-    {
-        if ( indexStorage == null )
-        {
-            Objects.requireNonNull( directoryFactory );
-            Objects.requireNonNull( fileSystem );
-            Objects.requireNonNull( indexRootFolder );
-            indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder );
+    public PartitionedIndexStorage build() {
+        if (indexStorage == null) {
+            Objects.requireNonNull(directoryFactory);
+            Objects.requireNonNull(fileSystem);
+            Objects.requireNonNull(indexRootFolder);
+            indexStorage = new PartitionedIndexStorage(directoryFactory, fileSystem, indexRootFolder);
         }
         return indexStorage;
     }
@@ -75,8 +68,7 @@ public class LuceneIndexStorageBuilder
      * @param directoryFactory directory factory
      * @return index storage builder
      */
-    public LuceneIndexStorageBuilder withDirectoryFactory( DirectoryFactory directoryFactory )
-    {
+    public LuceneIndexStorageBuilder withDirectoryFactory(DirectoryFactory directoryFactory) {
         this.directoryFactory = directoryFactory;
         return this;
     }
@@ -87,8 +79,7 @@ public class LuceneIndexStorageBuilder
      * @param fileSystem file system abstraction
      * @return index storage builder
      */
-    public LuceneIndexStorageBuilder withFileSystem( FileSystemAbstraction fileSystem )
-    {
+    public LuceneIndexStorageBuilder withFileSystem(FileSystemAbstraction fileSystem) {
         this.fileSystem = fileSystem;
         return this;
     }
@@ -99,8 +90,7 @@ public class LuceneIndexStorageBuilder
      * @param indexRootFolder root folder
      * @return index storage builder
      */
-    public LuceneIndexStorageBuilder withIndexFolder( Path indexRootFolder )
-    {
+    public LuceneIndexStorageBuilder withIndexFolder(Path indexRootFolder) {
         this.indexRootFolder = indexRootFolder;
         return this;
     }
@@ -111,8 +101,7 @@ public class LuceneIndexStorageBuilder
      * @param indexStorage index storage
      * @return index storage builder
      */
-    public LuceneIndexStorageBuilder withIndexStorage( PartitionedIndexStorage indexStorage )
-    {
+    public LuceneIndexStorageBuilder withIndexStorage(PartitionedIndexStorage indexStorage) {
         this.indexStorage = indexStorage;
         return this;
     }

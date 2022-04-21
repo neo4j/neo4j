@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.prettifier
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
@@ -24,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 
 class PathStepStringifierTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -32,20 +32,29 @@ class PathStepStringifierTest extends CypherFunSuite with AstConstructionTestSup
   private val pathStringifier = PathStepStringifier(expressionStringifier)
 
   test("SingleRelationshipPathStep with outgoing relationship direction") {
-    val pathStep = NodePathStep(varFor("a"), SingleRelationshipPathStep(varFor("b"), OUTGOING, Some(varFor("c")), NilPathStep()(pos))(pos))(pos)
+    val pathStep = NodePathStep(
+      varFor("a"),
+      SingleRelationshipPathStep(varFor("b"), OUTGOING, Some(varFor("c")), NilPathStep()(pos))(pos)
+    )(pos)
 
     assert(pathStringifier(pathStep) === "(a)-[b]->(c)")
   }
 
   test("MultiRelationshipPathStep with incoming relationship direction") {
-    val pathStep = NodePathStep(varFor("a"), MultiRelationshipPathStep(varFor("b"), INCOMING, Some(varFor("c")), NilPathStep()(pos))(pos))(pos)
+    val pathStep = NodePathStep(
+      varFor("a"),
+      MultiRelationshipPathStep(varFor("b"), INCOMING, Some(varFor("c")), NilPathStep()(pos))(pos)
+    )(pos)
 
     assert(pathStringifier(pathStep) === "(a)<-[b*]-(c)")
   }
 
   test("Multiple relationship path steps") {
     val nextPathStep = SingleRelationshipPathStep(varFor("d"), BOTH, Some(varFor("e")), NilPathStep()(pos))(pos)
-    val pathStep = NodePathStep(varFor("a"), MultiRelationshipPathStep(varFor("b"), OUTGOING, Some(varFor("c")), nextPathStep)(pos))(pos)
+    val pathStep = NodePathStep(
+      varFor("a"),
+      MultiRelationshipPathStep(varFor("b"), OUTGOING, Some(varFor("c")), nextPathStep)(pos)
+    )(pos)
 
     assert(pathStringifier(pathStep) === "(a)-[b*]->(c)-[d]-(e)")
   }

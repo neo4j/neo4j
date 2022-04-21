@@ -19,59 +19,50 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-class RecordChangesTest
-{
-    private final RecordAccess.Loader<NodeRecord, Object> loader = new RecordAccess.Loader<>()
-    {
+class RecordChangesTest {
+    private final RecordAccess.Loader<NodeRecord, Object> loader = new RecordAccess.Loader<>() {
         @Override
-        public NodeRecord newUnused( long id, Object additionalData, MemoryTracker memoryTracker )
-        {
-            return new NodeRecord( id );
+        public NodeRecord newUnused(long id, Object additionalData, MemoryTracker memoryTracker) {
+            return new NodeRecord(id);
         }
 
         @Override
-        public NodeRecord load( long id, Object additional, RecordLoad load, MemoryTracker memoryTracker )
-        {
-            return new NodeRecord( id );
+        public NodeRecord load(long id, Object additional, RecordLoad load, MemoryTracker memoryTracker) {
+            return new NodeRecord(id);
         }
 
         @Override
-        public void ensureHeavy( NodeRecord o, StoreCursors storeCursors )
-        {
-
-        }
+        public void ensureHeavy(NodeRecord o, StoreCursors storeCursors) {}
 
         @Override
-        public NodeRecord copy( NodeRecord o, MemoryTracker memoryTracker )
-        {
+        public NodeRecord copy(NodeRecord o, MemoryTracker memoryTracker) {
             return o;
         }
     };
 
     @Test
-    void shouldCountChanges()
-    {
+    void shouldCountChanges() {
         // Given
-        var change = RecordChanges.create( loader, new MutableInt(), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, StoreCursors.NULL );
+        var change = RecordChanges.create(
+                loader, new MutableInt(), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, StoreCursors.NULL);
 
         // When
-        change.getOrLoad( 1, null ).forChangingData();
-        change.getOrLoad( 1, null ).forChangingData();
-        change.getOrLoad( 2, null ).forChangingData();
-        change.getOrLoad( 3, null ).forReadingData();
+        change.getOrLoad(1, null).forChangingData();
+        change.getOrLoad(1, null).forChangingData();
+        change.getOrLoad(2, null).forChangingData();
+        change.getOrLoad(3, null).forReadingData();
 
         // Then
-        assertThat( change.changeSize() ).isEqualTo( 2 );
+        assertThat(change.changeSize()).isEqualTo(2);
     }
 }

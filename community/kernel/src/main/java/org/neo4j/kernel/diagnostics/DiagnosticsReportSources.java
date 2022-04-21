@@ -28,16 +28,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
  * Contains helper methods to create create {@link DiagnosticsReportSource}.
  */
-public final class DiagnosticsReportSources
-{
-    private DiagnosticsReportSources()
-    {
+public final class DiagnosticsReportSources {
+    private DiagnosticsReportSources() {
         // util class
     }
 
@@ -49,9 +46,9 @@ public final class DiagnosticsReportSources
      * @param source source file to archive
      * @return a diagnostics source consuming a file.
      */
-    public static DiagnosticsReportSource newDiagnosticsFile( String destination, FileSystemAbstraction fs, Path source )
-    {
-        return new DiagnosticsFileReportSource( destination, fs, source );
+    public static DiagnosticsReportSource newDiagnosticsFile(
+            String destination, FileSystemAbstraction fs, Path source) {
+        return new DiagnosticsFileReportSource(destination, fs, source);
     }
 
     /**
@@ -60,26 +57,24 @@ public final class DiagnosticsReportSources
      * @param file input log file, should be without rotation numbers.
      * @return a list diagnostics sources consisting of the log file including all rotated away files.
      */
-    public static List<DiagnosticsReportSource> newDiagnosticsRotatingFile( String destinationFolder,
-            FileSystemAbstraction fs, Path file )
-    {
+    public static List<DiagnosticsReportSource> newDiagnosticsRotatingFile(
+            String destinationFolder, FileSystemAbstraction fs, Path file) {
         List<DiagnosticsReportSource> files = new ArrayList<>();
 
-        try
-        {
-            Path[] paths = fs.listFiles( file.getParent(), path -> path.getFileName().toString().startsWith( file.getFileName().toString() ) );
+        try {
+            Path[] paths = fs.listFiles(file.getParent(), path -> path.getFileName()
+                    .toString()
+                    .startsWith(file.getFileName().toString()));
 
-            if ( paths != null )
-            {
-                for ( Path path : paths )
-                {
-                    files.add( newDiagnosticsFile( destinationFolder + path.getFileName().toString(), fs, path ) );
+            if (paths != null) {
+                for (Path path : paths) {
+                    files.add(newDiagnosticsFile(
+                            destinationFolder + path.getFileName().toString(), fs, path));
                 }
             }
-        }
-        catch ( IOException e )
-        {
-            files.add( newDiagnosticsString( destinationFolder, () -> "Error reading files in directory: " + e.getMessage() ) );
+        } catch (IOException e) {
+            files.add(newDiagnosticsString(
+                    destinationFolder, () -> "Error reading files in directory: " + e.getMessage()));
         }
 
         return files;
@@ -94,77 +89,63 @@ public final class DiagnosticsReportSources
      * @param messageSupplier a string supplier with the final message.
      * @return a diagnostics source consuming a string.
      */
-    public static DiagnosticsReportSource newDiagnosticsString( String destination, Supplier<String> messageSupplier )
-    {
-        return new DiagnosticsStringReportSource( destination, messageSupplier );
+    public static DiagnosticsReportSource newDiagnosticsString(String destination, Supplier<String> messageSupplier) {
+        return new DiagnosticsStringReportSource(destination, messageSupplier);
     }
 
-    private static class DiagnosticsFileReportSource implements DiagnosticsReportSource
-    {
+    private static class DiagnosticsFileReportSource implements DiagnosticsReportSource {
         private final String destination;
         private final FileSystemAbstraction fs;
         private final Path source;
 
-        DiagnosticsFileReportSource( String destination, FileSystemAbstraction fs, Path source )
-        {
+        DiagnosticsFileReportSource(String destination, FileSystemAbstraction fs, Path source) {
             this.destination = destination;
             this.fs = fs;
             this.source = source;
         }
 
         @Override
-        public String destinationPath()
-        {
+        public String destinationPath() {
             return destination;
         }
 
         @Override
-        public InputStream newInputStream() throws IOException
-        {
-            return fs.openAsInputStream( source );
+        public InputStream newInputStream() throws IOException {
+            return fs.openAsInputStream(source);
         }
 
         @Override
-        public long estimatedSize()
-        {
-            try
-            {
-                return fs.getFileSize( source );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+        public long estimatedSize() {
+            try {
+                return fs.getFileSize(source);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }
 
-    private static class DiagnosticsStringReportSource implements DiagnosticsReportSource
-    {
+    private static class DiagnosticsStringReportSource implements DiagnosticsReportSource {
         private final String destination;
         private final Supplier<String> messageSupplier;
 
-        private DiagnosticsStringReportSource( String destination, Supplier<String> messageSupplier )
-        {
+        private DiagnosticsStringReportSource(String destination, Supplier<String> messageSupplier) {
             this.destination = destination;
             this.messageSupplier = messageSupplier;
         }
 
         @Override
-        public String destinationPath()
-        {
+        public String destinationPath() {
             return destination;
         }
 
         @Override
-        public InputStream newInputStream()
-        {
+        public InputStream newInputStream() {
             final String message = messageSupplier.get();
-            return new ByteArrayInputStream( message.getBytes( StandardCharsets.UTF_8 ) );
+            return new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8));
         }
 
         @Override
-        public long estimatedSize()
-        {
+        public long estimatedSize() {
             return 0; // Size of strings should be negligible
         }
     }

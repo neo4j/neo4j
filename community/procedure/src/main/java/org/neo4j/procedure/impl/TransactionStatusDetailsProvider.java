@@ -24,23 +24,19 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.procedure.StatusDetailsAccessor;
 
-public class TransactionStatusDetailsProvider implements ThrowingFunction<Context,StatusDetailsAccessor,ProcedureException>
-{
+public class TransactionStatusDetailsProvider
+        implements ThrowingFunction<Context, StatusDetailsAccessor, ProcedureException> {
     @Override
-    public StatusDetailsAccessor apply( Context context ) throws ProcedureException
-    {
+    public StatusDetailsAccessor apply(Context context) throws ProcedureException {
         var ktx = context.internalTransaction().kernelTransaction();
-        return new StatusDetailsAccessor()
-        {
+        return new StatusDetailsAccessor() {
             @Override
-            public void setStatusDetails( String statusDetails )
-            {
-                ktx.setStatusDetails( statusDetails );
+            public void setStatusDetails(String statusDetails) {
+                ktx.setStatusDetails(statusDetails);
             }
 
             @Override
-            public String statusDetails()
-            {
+            public String statusDetails() {
                 return ktx.statusDetails();
             }
         };

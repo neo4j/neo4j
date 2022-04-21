@@ -20,34 +20,26 @@
 package org.neo4j.internal.helpers.collection;
 
 import java.util.Iterator;
-
 import org.neo4j.graphdb.ResourceIterator;
 
-public abstract class NestingResourceIterator<T, U> extends PrefetchingResourceIterator<T>
-{
+public abstract class NestingResourceIterator<T, U> extends PrefetchingResourceIterator<T> {
     private final Iterator<U> source;
     private ResourceIterator<T> currentNestedIterator;
 
-    protected NestingResourceIterator( Iterator<U> source )
-    {
+    protected NestingResourceIterator(Iterator<U> source) {
         this.source = source;
     }
 
-    protected abstract ResourceIterator<T> createNestedIterator( U item );
+    protected abstract ResourceIterator<T> createNestedIterator(U item);
 
     @Override
-    protected T fetchNextOrNull()
-    {
-        if ( currentNestedIterator == null ||
-                !currentNestedIterator.hasNext() )
-        {
-            while ( source.hasNext() )
-            {
+    protected T fetchNextOrNull() {
+        if (currentNestedIterator == null || !currentNestedIterator.hasNext()) {
+            while (source.hasNext()) {
                 U currentSurfaceItem = source.next();
                 close();
-                currentNestedIterator = createNestedIterator( currentSurfaceItem );
-                if ( currentNestedIterator.hasNext() )
-                {
+                currentNestedIterator = createNestedIterator(currentSurfaceItem);
+                if (currentNestedIterator.hasNext()) {
                     break;
                 }
             }
@@ -56,10 +48,8 @@ public abstract class NestingResourceIterator<T, U> extends PrefetchingResourceI
     }
 
     @Override
-    public void close()
-    {
-        if ( currentNestedIterator != null )
-        {
+    public void close() {
+        if (currentNestedIterator != null) {
             currentNestedIterator.close();
         }
     }

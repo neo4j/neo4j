@@ -19,104 +19,89 @@
  */
 package org.neo4j.values.storable;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static org.neo4j.memory.HeapEstimator.LOCAL_DATE_TIME_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 
-public class LocalDateTimeArray extends TemporalArray<LocalDateTime>
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( LocalDateTimeArray.class );
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public class LocalDateTimeArray extends TemporalArray<LocalDateTime> {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(LocalDateTimeArray.class);
 
     private final LocalDateTime[] value;
 
-    LocalDateTimeArray( LocalDateTime[] value )
-    {
+    LocalDateTimeArray(LocalDateTime[] value) {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    protected LocalDateTime[] value()
-    {
+    protected LocalDateTime[] value() {
         return value;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapLocalDateTimeArray( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapLocalDateTimeArray(this);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+    public boolean equals(Value other) {
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( LocalDateTime[] x )
-    {
-        return Arrays.equals( value, x);
+    public boolean equals(LocalDateTime[] x) {
+        return Arrays.equals(value, x);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writeTo( writer, ValueWriter.ArrayType.LOCAL_DATE_TIME ,value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writeTo(writer, ValueWriter.ArrayType.LOCAL_DATE_TIME, value);
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.LOCAL_DATE_TIME_ARRAY;
     }
 
     @Override
-    protected int unsafeCompareTo( Value otherValue )
-    {
-        return compareToNonPrimitiveArray( (LocalDateTimeArray) otherValue );
+    protected int unsafeCompareTo(Value otherValue) {
+        return compareToNonPrimitiveArray((LocalDateTimeArray) otherValue);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "LocalDateTimeArray";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOfObjectArray( LOCAL_DATE_TIME_SIZE, value.length );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOfObjectArray(LOCAL_DATE_TIME_SIZE, value.length);
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof LocalDateTimeValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        LocalDateTime[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        LocalDateTime[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = ((LocalDateTimeValue) added).temporal();
-        return new LocalDateTimeArray( newArray );
+        return new LocalDateTimeArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         LocalDateTime[] newArray = new LocalDateTime[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
+        System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((LocalDateTimeValue) prepended).temporal();
-        return new LocalDateTimeArray( newArray );
+        return new LocalDateTimeArray(newArray);
     }
 }

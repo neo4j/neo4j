@@ -22,30 +22,24 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
-public class GivenTransactionCursor implements TransactionCursor
-{
+public class GivenTransactionCursor implements TransactionCursor {
     private int index = -1;
     private final CommittedTransactionRepresentation[] transactions;
 
-    private GivenTransactionCursor( CommittedTransactionRepresentation... transactions )
-    {
+    private GivenTransactionCursor(CommittedTransactionRepresentation... transactions) {
         this.transactions = transactions;
     }
 
     @Override
-    public CommittedTransactionRepresentation get()
-    {
+    public CommittedTransactionRepresentation get() {
         return transactions[index];
     }
 
     @Override
-    public boolean next()
-    {
-        if ( index + 1 < transactions.length )
-        {
+    public boolean next() {
+        if (index + 1 < transactions.length) {
             index++;
             return true;
         }
@@ -53,28 +47,22 @@ public class GivenTransactionCursor implements TransactionCursor
     }
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 
     @Override
-    public LogPosition position()
-    {
+    public LogPosition position() {
         return null;
     }
 
-    public static TransactionCursor given( CommittedTransactionRepresentation... transactions )
-    {
-        return new GivenTransactionCursor( transactions );
+    public static TransactionCursor given(CommittedTransactionRepresentation... transactions) {
+        return new GivenTransactionCursor(transactions);
     }
 
-    public static CommittedTransactionRepresentation[] exhaust( TransactionCursor cursor ) throws IOException
-    {
+    public static CommittedTransactionRepresentation[] exhaust(TransactionCursor cursor) throws IOException {
         List<CommittedTransactionRepresentation> list = new ArrayList<>();
-        while ( cursor.next() )
-        {
-            list.add( cursor.get() );
+        while (cursor.next()) {
+            list.add(cursor.get());
         }
-        return list.toArray( new CommittedTransactionRepresentation[0] );
+        return list.toArray(new CommittedTransactionRepresentation[0]);
     }
 }

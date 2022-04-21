@@ -27,51 +27,41 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-final class ClasspathHelper
-{
-    private ClasspathHelper()
-    {
-        throw new AssertionError( "Not for instantiation!" );
+final class ClasspathHelper {
+    private ClasspathHelper() {
+        throw new AssertionError("Not for instantiation!");
     }
 
-    static String javaClasspathString()
-    {
-        return System.getProperty( "java.class.path" );
+    static String javaClasspathString() {
+        return System.getProperty("java.class.path");
     }
 
-    static Set<String> javaClasspath()
-    {
-        String[] classpathElements = javaClasspathString().split( File.pathSeparator );
+    static Set<String> javaClasspath() {
+        String[] classpathElements = javaClasspathString().split(File.pathSeparator);
         Set<String> result = new LinkedHashSet<>();
 
-        for ( String element : classpathElements )
-        {
-            result.add( canonicalPath( element ) );
+        for (String element : classpathElements) {
+            result.add(canonicalPath(element));
         }
 
         return result;
     }
 
-    static String fullClasspathStringFor( ClassLoader classLoader )
-    {
-        Set<String> classpathElements = fullClasspathFor( classLoader );
-        return formClasspathString( classpathElements );
+    static String fullClasspathStringFor(ClassLoader classLoader) {
+        Set<String> classpathElements = fullClasspathFor(classLoader);
+        return formClasspathString(classpathElements);
     }
 
-    static Set<String> fullClasspathFor( ClassLoader classLoader )
-    {
+    static Set<String> fullClasspathFor(ClassLoader classLoader) {
         Set<String> result = new LinkedHashSet<>();
 
-        result.addAll( javaClasspath() );
+        result.addAll(javaClasspath());
 
         ClassLoader loader = classLoader;
-        while ( loader != null )
-        {
-            if ( loader instanceof URLClassLoader )
-            {
-                for ( URL url : ((URLClassLoader) loader).getURLs() )
-                {
-                    result.add( canonicalPath( url ) );
+        while (loader != null) {
+            if (loader instanceof URLClassLoader) {
+                for (URL url : ((URLClassLoader) loader).getURLs()) {
+                    result.add(canonicalPath(url));
                 }
             }
             loader = loader.getParent();
@@ -80,35 +70,27 @@ final class ClasspathHelper
         return result;
     }
 
-    private static String canonicalPath( URL url )
-    {
-        return canonicalPath( url.getPath() );
+    private static String canonicalPath(URL url) {
+        return canonicalPath(url.getPath());
     }
 
-    private static String canonicalPath( String path )
-    {
-        try
-        {
-            File file = new File( path );
+    private static String canonicalPath(String path) {
+        try {
+            File file = new File(path);
             return file.getCanonicalPath();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Failed to get canonical path for: '" + path + "'", e );
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to get canonical path for: '" + path + "'", e);
         }
     }
 
-    private static String formClasspathString( Set<String> classPathElements )
-    {
+    private static String formClasspathString(Set<String> classPathElements) {
         StringBuilder classpath = new StringBuilder();
 
         Iterator<String> classPathElementsIterator = classPathElements.iterator();
-        while ( classPathElementsIterator.hasNext() )
-        {
-            classpath.append( classPathElementsIterator.next() );
-            if ( classPathElementsIterator.hasNext() )
-            {
-                classpath.append( File.pathSeparator );
+        while (classPathElementsIterator.hasNext()) {
+            classpath.append(classPathElementsIterator.next());
+            if (classPathElementsIterator.hasNext()) {
+                classpath.append(File.pathSeparator);
             }
         }
 

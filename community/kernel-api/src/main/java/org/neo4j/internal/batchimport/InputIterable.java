@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport;
 /**
  * {@link Iterable} that returns {@link InputIterator} instances.
  */
-public interface InputIterable
-{
+public interface InputIterable {
     InputIterator iterator();
 }

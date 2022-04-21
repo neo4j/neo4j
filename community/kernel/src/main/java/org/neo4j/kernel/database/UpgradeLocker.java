@@ -26,50 +26,42 @@ import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 
-interface UpgradeLocker
-{
-    Lock acquireWriteLock( KernelTransaction tx );
+interface UpgradeLocker {
+    Lock acquireWriteLock(KernelTransaction tx);
 
-    Lock acquireReadLock( KernelTransaction tx );
+    Lock acquireReadLock(KernelTransaction tx);
 
-    UpgradeLocker DEFAULT = new UpgradeLocker()
-    {
+    UpgradeLocker DEFAULT = new UpgradeLocker() {
         private static final long ID = Long.MAX_VALUE;
         private final ResourceTypes type = ResourceTypes.NODE;
 
         @Override
-        public Lock acquireWriteLock( KernelTransaction tx )
-        {
-            Locks.Client lockClient = getLockClient( tx );
-            lockClient.acquireExclusive( LockTracer.NONE, type, ID );
-            return new Lock()
-            {
+        public Lock acquireWriteLock(KernelTransaction tx) {
+            Locks.Client lockClient = getLockClient(tx);
+            lockClient.acquireExclusive(LockTracer.NONE, type, ID);
+            return new Lock() {
                 @Override
-                public void release()
-                {
-                    lockClient.releaseExclusive( type, ID );
+                public void release() {
+                    lockClient.releaseExclusive(type, ID);
                 }
             };
         }
 
         @Override
-        public Lock acquireReadLock( KernelTransaction tx )
-        {
-            Locks.Client lockClient = getLockClient( tx );
-            lockClient.acquireShared( LockTracer.NONE, type, ID );
-            return new Lock()
-            {
+        public Lock acquireReadLock(KernelTransaction tx) {
+            Locks.Client lockClient = getLockClient(tx);
+            lockClient.acquireShared(LockTracer.NONE, type, ID);
+            return new Lock() {
                 @Override
-                public void release()
-                {
-                    lockClient.releaseShared( type, ID );
+                public void release() {
+                    lockClient.releaseShared(type, ID);
                 }
             };
         }
 
-        private Locks.Client getLockClient( KernelTransaction tx )
-        {
-            return ((KernelTransactionImplementation) tx).lockClient(); //Only one KernelTransaction implementation exists
+        private Locks.Client getLockClient(KernelTransaction tx) {
+            return ((KernelTransactionImplementation) tx)
+                    .lockClient(); // Only one KernelTransaction implementation exists
         }
     };
 }

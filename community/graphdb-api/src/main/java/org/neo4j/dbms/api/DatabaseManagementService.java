@@ -20,7 +20,6 @@
 package org.neo4j.dbms.api;
 
 import java.util.List;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
@@ -31,24 +30,22 @@ import org.neo4j.graphdb.event.TransactionEventListener;
  * The {@link DatabaseManagementService} provides an API to manage databases and provided access to the managed database services.
  */
 @PublicApi
-public interface DatabaseManagementService
-{
+public interface DatabaseManagementService {
     /**
      * Retrieve a database service by name.
      * @param databaseName name of the database.
      * @return the database service with the provided name
      * @throws DatabaseNotFoundException if no database service with the given name is found.
      */
-    GraphDatabaseService database( String databaseName ) throws DatabaseNotFoundException;
+    GraphDatabaseService database(String databaseName) throws DatabaseNotFoundException;
 
     /**
      * Create a new database.
      * @param databaseName name of the database.
      * @throws DatabaseExistsException if a database with the provided name already exists
      */
-    default void createDatabase( String databaseName ) throws DatabaseExistsException
-    {
-        createDatabase( databaseName, Configuration.EMPTY );
+    default void createDatabase(String databaseName) throws DatabaseExistsException {
+        createDatabase(databaseName, Configuration.EMPTY);
     }
 
     /**
@@ -57,7 +54,7 @@ public interface DatabaseManagementService
      * @param databaseSpecificSettings settings that are specific to this database. Only a sub-set of settings are supported TODO.
      * @throws DatabaseExistsException if a database with the provided name already exists
      */
-    void createDatabase( String databaseName, Configuration databaseSpecificSettings ) throws DatabaseExistsException;
+    void createDatabase(String databaseName, Configuration databaseSpecificSettings) throws DatabaseExistsException;
 
     /**
      * Drop a database by name. All data stored in the database will be deleted as well.
@@ -65,21 +62,21 @@ public interface DatabaseManagementService
      * @throws DatabaseNotFoundException if no database with the given name is found.
      * @throws DatabaseAliasExistsException if the database exists but has an alias.
      */
-    void dropDatabase( String databaseName ) throws DatabaseNotFoundException, DatabaseAliasExistsException;
+    void dropDatabase(String databaseName) throws DatabaseNotFoundException, DatabaseAliasExistsException;
 
     /**
      * Starts a already existing database.
      * @param databaseName name of the database to start.
      * @throws DatabaseNotFoundException if no database with the given name is found.
      */
-    void startDatabase( String databaseName ) throws DatabaseNotFoundException;
+    void startDatabase(String databaseName) throws DatabaseNotFoundException;
 
     /**
      * Shutdown database with provided name.
      * @param databaseName name of the database.
      * @throws DatabaseNotFoundException if no database with the given name is found.
      */
-    void shutdownDatabase( String databaseName ) throws DatabaseNotFoundException;
+    void shutdownDatabase(String databaseName) throws DatabaseNotFoundException;
 
     /**
      * @return an alphabetically sorted list of all database names this database server manages.
@@ -93,7 +90,7 @@ public interface DatabaseManagementService
      * @param listener the listener to receive events about different states
      *                in the database lifecycle.
      */
-    void registerDatabaseEventListener( DatabaseEventListener listener );
+    void registerDatabaseEventListener(DatabaseEventListener listener);
 
     /**
      * Unregisters {@code listener} from the list of database event handlers.
@@ -107,7 +104,7 @@ public interface DatabaseManagementService
      * @throws IllegalStateException if {@code listener} wasn't registered prior
      *                               to calling this method.
      */
-    void unregisterDatabaseEventListener( DatabaseEventListener listener );
+    void unregisterDatabaseEventListener(DatabaseEventListener listener);
 
     /**
      * Registers {@code listener} as a listener for transaction events which
@@ -121,7 +118,7 @@ public interface DatabaseManagementService
      * @param listener the listener to receive events about different states
      *                in transaction lifecycle.
      */
-    void registerTransactionEventListener( String databaseName, TransactionEventListener<?> listener );
+    void registerTransactionEventListener(String databaseName, TransactionEventListener<?> listener);
 
     /**
      * Unregisters {@code listener} from the list of transaction event listeners.
@@ -137,7 +134,7 @@ public interface DatabaseManagementService
      * @throws IllegalStateException if {@code listener} wasn't registered prior
      *                               to calling this method.
      */
-    void unregisterTransactionEventListener( String databaseName, TransactionEventListener<?> listener );
+    void unregisterTransactionEventListener(String databaseName, TransactionEventListener<?> listener);
 
     /**
      * Shutdown database server.

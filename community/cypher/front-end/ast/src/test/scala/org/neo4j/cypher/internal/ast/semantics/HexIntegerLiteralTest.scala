@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
 
 class HexIntegerLiteralTest extends SemanticFunSuite {
+
   test("correctly parses hexadecimal numbers") {
     assert(SignedHexIntegerLiteral("0x22")(DummyPosition(0)).value === 0x22)
     assert(SignedHexIntegerLiteral("0x0")(DummyPosition(0)).value === 0)

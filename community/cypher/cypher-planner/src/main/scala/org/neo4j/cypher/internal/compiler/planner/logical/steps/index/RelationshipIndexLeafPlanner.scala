@@ -51,12 +51,18 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.RelTypeId
 
-case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlanProvider], restrictions: LeafPlanRestrictions) extends LeafPlanner {
+case class RelationshipIndexLeafPlanner(
+  planProviders: Seq[RelationshipIndexPlanProvider],
+  restrictions: LeafPlanRestrictions
+) extends LeafPlanner {
 
-  override def apply(qg: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val indexMatches = findIndexMatchesForQueryGraph(qg,
+  override def apply(
+    qg: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
+    val indexMatches = findIndexMatchesForQueryGraph(
+      qg,
       context.semanticTable,
       context.planContext,
       context.indexCompatiblePredicatesProviderContext,
@@ -64,19 +70,26 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
       context.providedOrderFactory,
       context.planningTextIndexesEnabled,
       context.planningRangeIndexesEnabled,
-      context.planningPointIndexesEnabled,
+      context.planningPointIndexesEnabled
     )
 
-    val result: Set[LogicalPlan] = if (indexMatches.isEmpty) {
-      Set.empty[LogicalPlan]
-    } else {
-      for {
-        provider <- planProviders
-        plan <- provider.createPlans(indexMatches, qg.hints, qg.argumentIds, restrictions, context)
-      } yield plan
-    }.toSet
+    val result: Set[LogicalPlan] =
+      if (indexMatches.isEmpty) {
+        Set.empty[LogicalPlan]
+      } else {
+        for {
+          provider <- planProviders
+          plan <- provider.createPlans(indexMatches, qg.hints, qg.argumentIds, restrictions, context)
+        } yield plan
+      }.toSet
 
-    DynamicPropertyNotifier.issueNotifications(result, RelationshipIndexLookupUnfulfillableNotification, qg, RELATIONSHIP_TYPE, context)
+    DynamicPropertyNotifier.issueNotifications(
+      result,
+      RelationshipIndexLookupUnfulfillableNotification,
+      qg,
+      RELATIONSHIP_TYPE,
+      context
+    )
 
     result
   }
@@ -85,22 +98,22 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
 object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
 
   case class RelationshipIndexMatch(
-                                     variableName: String,
-                                     patternRelationship: PatternRelationship,
-                                     relTypeName: RelTypeName,
-                                     relTypeId: RelTypeId,
-                                     propertyPredicates: Seq[IndexCompatiblePredicate],
-                                     providedOrder: ProvidedOrder,
-                                     indexOrder: IndexOrder,
-                                     indexDescriptor: IndexDescriptor,
-                                   ) extends IndexMatch {
+    variableName: String,
+    patternRelationship: PatternRelationship,
+    relTypeName: RelTypeName,
+    relTypeId: RelTypeId,
+    propertyPredicates: Seq[IndexCompatiblePredicate],
+    providedOrder: ProvidedOrder,
+    indexOrder: IndexOrder,
+    indexDescriptor: IndexDescriptor
+  ) extends IndexMatch {
 
     def relationshipTypeToken: RelationshipTypeToken = RelationshipTypeToken(relTypeName, relTypeId)
 
     override def predicateSet(
-                               newPredicates: Seq[IndexCompatiblePredicate],
-                               exactPredicatesCanGetValue: Boolean
-                             ): PredicateSet =
+      newPredicates: Seq[IndexCompatiblePredicate],
+      exactPredicatesCanGetValue: Boolean
+    ): PredicateSet =
       RelationshipPredicateSet(
         variableName,
         relTypeName,
@@ -111,74 +124,78 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
   }
 
   case class RelationshipPredicateSet(
-                                       variableName: String,
-                                       symbolicName: RelTypeName,
-                                       propertyPredicates: Seq[IndexCompatiblePredicate],
-                                       getValueBehaviors: Seq[GetValueFromIndexBehavior],
-                                     ) extends PredicateSet {
+    variableName: String,
+    symbolicName: RelTypeName,
+    propertyPredicates: Seq[IndexCompatiblePredicate],
+    getValueBehaviors: Seq[GetValueFromIndexBehavior]
+  ) extends PredicateSet {
 
     override def getEntityType: EntityType = RELATIONSHIP_TYPE
   }
 
   def findIndexMatchesForQueryGraph(
-                                     qg: QueryGraph,
-                                     semanticTable: SemanticTable,
-                                     planContext: PlanContext,
-                                     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-                                     interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
-                                     providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
-                                     planningTextIndexesEnabled: Boolean,
-                                     planningRangeIndexesEnabled: Boolean,
-                                     planningPointIndexesEnabled: Boolean,
-                                   ): Set[RelationshipIndexMatch] = {
+    qg: QueryGraph,
+    semanticTable: SemanticTable,
+    planContext: PlanContext,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
+    providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
+    planningTextIndexesEnabled: Boolean,
+    planningRangeIndexesEnabled: Boolean,
+    planningPointIndexesEnabled: Boolean
+  ): Set[RelationshipIndexMatch] = {
     def shouldIgnore(pattern: PatternRelationship) =
       qg.argumentIds.contains(pattern.name)
 
     val predicates = qg.selections.flatPredicatesSet
     val patternRelationshipsMap: Map[String, PatternRelationship] = qg.patternRelationships.collect({
-      case pattern@PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if !shouldIgnore(pattern) => name -> pattern
+      case pattern @ PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if !shouldIgnore(pattern) =>
+        name -> pattern
     }).toMap
 
     // Find plans solving given property predicates together with any label predicates from QG
-    val indexMatches = if (patternRelationshipsMap.isEmpty) {
-      Seq.empty[RelationshipIndexMatch]
-    } else {
-      val compatiblePropertyPredicates = findIndexCompatiblePredicates(
-        predicates,
-        qg.argumentIds,
-        semanticTable,
-        planContext,
-        indexPredicateProviderContext,
-        patternRelationshipsMap.values
-      )
-
-      for {
-        propertyPredicates <- compatiblePropertyPredicates.groupBy(_.name)
-        variableName = propertyPredicates._1
-        patternRelationship <- patternRelationshipsMap.get(variableName).toSet[PatternRelationship]
-        indexMatch <- findIndexMatches(
-          variableName,
-          propertyPredicates._2,
-          patternRelationship,
-          interestingOrderConfig,
+    val indexMatches =
+      if (patternRelationshipsMap.isEmpty) {
+        Seq.empty[RelationshipIndexMatch]
+      } else {
+        val compatiblePropertyPredicates = findIndexCompatiblePredicates(
+          predicates,
+          qg.argumentIds,
           semanticTable,
           planContext,
-          providedOrderFactory,
-          planningTextIndexesEnabled,
-          planningRangeIndexesEnabled,
-          planningPointIndexesEnabled,
+          indexPredicateProviderContext,
+          patternRelationshipsMap.values
         )
-      } yield indexMatch
-    }
+
+        for {
+          propertyPredicates <- compatiblePropertyPredicates.groupBy(_.name)
+          variableName = propertyPredicates._1
+          patternRelationship <- patternRelationshipsMap.get(variableName).toSet[PatternRelationship]
+          indexMatch <- findIndexMatches(
+            variableName,
+            propertyPredicates._2,
+            patternRelationship,
+            interestingOrderConfig,
+            semanticTable,
+            planContext,
+            providedOrderFactory,
+            planningTextIndexesEnabled,
+            planningRangeIndexesEnabled,
+            planningPointIndexesEnabled
+          )
+        } yield indexMatch
+      }
     indexMatches.toSet
   }
 
-  private def findIndexCompatiblePredicates(predicates: Set[Expression],
-                                            argumentIds: Set[String],
-                                            semanticTable: SemanticTable,
-                                            planContext: PlanContext,
-                                            indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-                                            patterns: Iterable[PatternRelationship]): Set[IndexCompatiblePredicate] = {
+  private def findIndexCompatiblePredicates(
+    predicates: Set[Expression],
+    argumentIds: Set[String],
+    semanticTable: SemanticTable,
+    planContext: PlanContext,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    patterns: Iterable[PatternRelationship]
+  ): Set[IndexCompatiblePredicate] = {
     val generalCompatiblePredicates = findIndexCompatiblePredicates(
       predicates,
       argumentIds,
@@ -192,50 +209,74 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     generalCompatiblePredicates ++ patterns.flatMap {
       case PatternRelationship(name, _, _, Seq(RelTypeName(relTypeName)), _) if valid(relTypeName) =>
         val constrainedPropNames =
-          if (indexPredicateProviderContext.outerPlanHasUpdates || planContext.txStateHasChanges()) // non-committed changes may not conform to the existence constraint, so we cannot rely on it
+          if (
+            indexPredicateProviderContext.outerPlanHasUpdates || planContext.txStateHasChanges()
+          ) // non-committed changes may not conform to the existence constraint, so we cannot rely on it
             Set.empty[String]
           else
             planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName)
 
-        implicitIsNotNullPredicates(variable(name), indexPredicateProviderContext.aggregatingProperties, constrainedPropNames, generalCompatiblePredicates)
+        implicitIsNotNullPredicates(
+          variable(name),
+          indexPredicateProviderContext.aggregatingProperties,
+          constrainedPropNames,
+          generalCompatiblePredicates
+        )
 
       case _ => Set.empty[IndexCompatiblePredicate]
     }
   }
 
-  private def findIndexMatches(variableName: String,
-                               propertyPredicates: Set[IndexCompatiblePredicate],
-                               patternRelationship: PatternRelationship,
-                               interestingOrderConfig: InterestingOrderConfig,
-                               semanticTable: SemanticTable,
-                               planContext: PlanContext,
-                               providedOrderFactory: ProvidedOrderFactory,
-                               planningTextIndexesEnabled: Boolean,
-                               planningRangeIndexesEnabled: Boolean,
-                               planningPointIndexesEnabled: Boolean,
-                              ): Set[RelationshipIndexMatch] = {
+  private def findIndexMatches(
+    variableName: String,
+    propertyPredicates: Set[IndexCompatiblePredicate],
+    patternRelationship: PatternRelationship,
+    interestingOrderConfig: InterestingOrderConfig,
+    semanticTable: SemanticTable,
+    planContext: PlanContext,
+    providedOrderFactory: ProvidedOrderFactory,
+    planningTextIndexesEnabled: Boolean,
+    planningRangeIndexesEnabled: Boolean,
+    planningPointIndexesEnabled: Boolean
+  ): Set[RelationshipIndexMatch] = {
     val relTypeName = patternRelationship.types.head
-    val indexMatches = for {
-      relTypeId <- semanticTable.id(relTypeName).toSet[RelTypeId]
-      indexDescriptor <- indexDescriptorsForRelType(relTypeId, planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled, planningPointIndexesEnabled)
-      predicatesForIndex <- predicatesForIndex(indexDescriptor, propertyPredicates, interestingOrderConfig, semanticTable, providedOrderFactory)
-    } yield RelationshipIndexMatch(
-      variableName,
-      patternRelationship,
-      relTypeName,
-      relTypeId,
-      predicatesForIndex.predicatesInOrder,
-      predicatesForIndex.providedOrder,
-      predicatesForIndex.indexOrder,
-      indexDescriptor)
+    val indexMatches =
+      for {
+        relTypeId <- semanticTable.id(relTypeName).toSet[RelTypeId]
+        indexDescriptor <- indexDescriptorsForRelType(
+          relTypeId,
+          planContext,
+          planningTextIndexesEnabled,
+          planningRangeIndexesEnabled,
+          planningPointIndexesEnabled
+        )
+        predicatesForIndex <- predicatesForIndex(
+          indexDescriptor,
+          propertyPredicates,
+          interestingOrderConfig,
+          semanticTable,
+          providedOrderFactory
+        )
+      } yield RelationshipIndexMatch(
+        variableName,
+        patternRelationship,
+        relTypeName,
+        relTypeId,
+        predicatesForIndex.predicatesInOrder,
+        predicatesForIndex.providedOrder,
+        predicatesForIndex.indexOrder,
+        indexDescriptor
+      )
     indexMatches
   }
 
-  private def indexDescriptorsForRelType(relTypeId: RelTypeId,
-                                         planContext: PlanContext,
-                                         planningTextIndexesEnabled: Boolean,
-                                         planningRangeIndexesEnabled: Boolean,
-                                         planningPointIndexesEnabled: Boolean): Iterator[IndexDescriptor] = {
+  private def indexDescriptorsForRelType(
+    relTypeId: RelTypeId,
+    planContext: PlanContext,
+    planningTextIndexesEnabled: Boolean,
+    planningRangeIndexesEnabled: Boolean,
+    planningPointIndexesEnabled: Boolean
+  ): Iterator[IndexDescriptor] = {
     {
       if (planningRangeIndexesEnabled) planContext.rangeIndexesGetForRelType(relTypeId)
       else Iterator.empty
@@ -248,7 +289,6 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     }
   }
 
-
   /**
    * Find any implicit index compatible predicates.
    *
@@ -258,11 +298,13 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
    * @param valid                        a test that can be applied to check if an implicit predicate is valid
    *                                     based on its variable and dependencies as arguments to the lambda function.
    */
-  override protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
-                                                           indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-                                                           predicates: Set[Expression],
-                                                           explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
-                                                           valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[IndexCompatiblePredicate] = {
+  override protected def implicitIndexCompatiblePredicates(
+    planContext: PlanContext,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    predicates: Set[Expression],
+    explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
+    valid: (LogicalVariable, Set[LogicalVariable]) => Boolean
+  ): Set[IndexCompatiblePredicate] = {
     // The implicit index compatible predicates for relationship indexes come from the pattern relationships.
     // Instead of returning them here (where we don't have access to the pattern relationships), we add them in an extra step
     // in findIndexCompatiblePredicates

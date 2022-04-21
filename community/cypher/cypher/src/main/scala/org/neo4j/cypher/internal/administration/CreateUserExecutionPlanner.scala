@@ -28,25 +28,38 @@ import org.neo4j.cypher.internal.procs.PredicateExecutionPlan
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 
-case class CreateUserExecutionPlanner(normalExecutionEngine: ExecutionEngine, securityAuthorizationHandler: SecurityAuthorizationHandler) {
+case class CreateUserExecutionPlanner(
+  normalExecutionEngine: ExecutionEngine,
+  securityAuthorizationHandler: SecurityAuthorizationHandler
+) {
 
   def planCreateUser(createUser: CreateUser, sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
 
-    def failWithError(command: String) : PredicateExecutionPlan = {
-      new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
-        val user = runtimeStringValue(createUser.userName, params)
-        throw new CantCompileQueryException(s"Failed to create the specified user '$user': '$command' is not available in community edition.")
-      })
+    def failWithError(command: String): PredicateExecutionPlan = {
+      new PredicateExecutionPlan(
+        (_, _) => false,
+        sourcePlan,
+        (params, _) => {
+          val user = runtimeStringValue(createUser.userName, params)
+          throw new CantCompileQueryException(
+            s"Failed to create the specified user '$user': '$command' is not available in community edition."
+          )
+        }
+      )
     }
 
     if (createUser.suspended.isDefined) { // Users are always active in community
       failWithError("SET STATUS")
     } else if (createUser.defaultDatabase.isDefined) { // There is only one database in community
       failWithError("HOME DATABASE")
-    }
-    else {
+    } else {
       makeCreateUserExecutionPlan(
-        createUser.userName, createUser.isEncryptedPassword, createUser.initialPassword, createUser.requirePasswordChange, suspended = false, defaultDatabase = None
+        createUser.userName,
+        createUser.isEncryptedPassword,
+        createUser.initialPassword,
+        createUser.requirePasswordChange,
+        suspended = false,
+        defaultDatabase = None
       )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
     }
   }

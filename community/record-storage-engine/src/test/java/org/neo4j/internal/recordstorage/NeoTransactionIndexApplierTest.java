@@ -19,11 +19,16 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Answers.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.common.Subject.SYSTEM;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
 import java.util.Collections;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -33,97 +38,83 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.Answers.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.common.Subject.SYSTEM;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-
-class NeoTransactionIndexApplierTest
-{
-    private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
+class NeoTransactionIndexApplierTest {
+    private final IndexUpdateListener indexingService = mock(IndexUpdateListener.class);
     private final List<DynamicRecord> emptyDynamicRecords = Collections.emptyList();
-    private final CommandsToApply transactionToApply = new GroupOfCommands( 1L, StoreCursors.NULL );
-    private final BatchContext batchContext = mock( BatchContext.class, RETURNS_MOCKS );
+    private final CommandsToApply transactionToApply = new GroupOfCommands(1L, StoreCursors.NULL);
+    private final BatchContext batchContext = mock(BatchContext.class, RETURNS_MOCKS);
 
     @Test
-    void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
-    {
+    void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception {
         // given
         IndexTransactionApplierFactory applier = newIndexTransactionApplier();
-        NodeRecord before = new NodeRecord( 11 );
-        before.setLabelField( 17, emptyDynamicRecords );
-        NodeRecord after = new NodeRecord( 12 );
-        after.setLabelField( 18, emptyDynamicRecords );
-        Command.NodeCommand command = new Command.NodeCommand( before, after );
+        NodeRecord before = new NodeRecord(11);
+        before.setLabelField(17, emptyDynamicRecords);
+        NodeRecord after = new NodeRecord(12);
+        after.setLabelField(18, emptyDynamicRecords);
+        Command.NodeCommand command = new Command.NodeCommand(before, after);
 
         // when
         boolean result;
-        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, batchContext ) )
-        {
-            result = txApplier.visitNodeCommand( command );
+        try (TransactionApplier txApplier = applier.startTx(transactionToApply, batchContext)) {
+            result = txApplier.visitNodeCommand(command);
         }
         // then
-        assertFalse( result );
+        assertFalse(result);
     }
 
-    private IndexTransactionApplierFactory newIndexTransactionApplier()
-    {
-        return new IndexTransactionApplierFactory( indexingService );
+    private IndexTransactionApplierFactory newIndexTransactionApplier() {
+        return new IndexTransactionApplierFactory(indexingService);
     }
 
     @Test
-    void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
-    {
+    void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception {
         // Given
-        IndexDescriptor indexRule = indexRule( 1, 42, 42 );
+        IndexDescriptor indexRule = indexRule(1, 42, 42);
 
         IndexTransactionApplierFactory applier = newIndexTransactionApplier();
 
-        SchemaRecord before = new SchemaRecord( 1 );
-        SchemaRecord after = before.copy().initialize( true, 39 );
+        SchemaRecord before = new SchemaRecord(1);
+        SchemaRecord after = before.copy().initialize(true, 39);
         after.setCreated();
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, indexRule );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, indexRule);
 
         // When
         boolean result;
-        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, batchContext ) )
-        {
-            result = txApplier.visitSchemaRuleCommand( command );
+        try (TransactionApplier txApplier = applier.startTx(transactionToApply, batchContext)) {
+            result = txApplier.visitSchemaRuleCommand(command);
         }
 
         // Then
-        assertFalse( result );
-        verify( indexingService ).createIndexes( SYSTEM , indexRule );
+        assertFalse(result);
+        verify(indexingService).createIndexes(SYSTEM, indexRule);
     }
 
-    private static IndexDescriptor indexRule( long ruleId, int labelId, int propertyId )
-    {
-        return IndexPrototype.forSchema( forLabel( labelId, propertyId ) ).withName( "index_" + ruleId ).materialise( ruleId );
+    private static IndexDescriptor indexRule(long ruleId, int labelId, int propertyId) {
+        return IndexPrototype.forSchema(forLabel(labelId, propertyId))
+                .withName("index_" + ruleId)
+                .materialise(ruleId);
     }
 
     @Test
-    void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
-    {
+    void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception {
         // Given
-        IndexDescriptor indexRule = indexRule( 1, 42, 42 );
+        IndexDescriptor indexRule = indexRule(1, 42, 42);
 
         IndexTransactionApplierFactory applier = newIndexTransactionApplier();
 
-        SchemaRecord before = new SchemaRecord( 1 ).initialize( true, 39 );
-        SchemaRecord after = new SchemaRecord( 1 );
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, indexRule );
+        SchemaRecord before = new SchemaRecord(1).initialize(true, 39);
+        SchemaRecord after = new SchemaRecord(1);
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, indexRule);
 
         // When
         boolean result;
-        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, batchContext ) )
-        {
-            result = txApplier.visitSchemaRuleCommand( command );
+        try (TransactionApplier txApplier = applier.startTx(transactionToApply, batchContext)) {
+            result = txApplier.visitSchemaRuleCommand(command);
         }
 
         // Then
-        assertFalse( result );
-        verify( indexingService ).dropIndex( indexRule );
+        assertFalse(result);
+        verify(indexingService).dropIndex(indexRule);
     }
 }

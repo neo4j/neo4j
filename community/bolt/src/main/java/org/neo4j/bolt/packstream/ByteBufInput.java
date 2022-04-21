@@ -19,81 +19,67 @@
  */
 package org.neo4j.bolt.packstream;
 
-import io.netty.buffer.ByteBuf;
-
-import java.io.IOException;
-
 import static java.util.Objects.requireNonNull;
 
-public class ByteBufInput implements PackInput
-{
+import io.netty.buffer.ByteBuf;
+import java.io.IOException;
+
+public class ByteBufInput implements PackInput {
     private ByteBuf buf;
 
-    public void start( ByteBuf newBuf )
-    {
+    public void start(ByteBuf newBuf) {
         assertNotStarted();
-        buf = requireNonNull( newBuf );
+        buf = requireNonNull(newBuf);
     }
 
-    public void stop()
-    {
+    public void stop() {
         buf = null;
     }
 
     @Override
-    public byte readByte()
-    {
+    public byte readByte() {
         return buf.readByte();
     }
 
     @Override
-    public short readShort()
-    {
+    public short readShort() {
         return buf.readShort();
     }
 
     @Override
-    public int readInt()
-    {
+    public int readInt() {
         return buf.readInt();
     }
 
     @Override
-    public long readLong()
-    {
+    public long readLong() {
         return buf.readLong();
     }
 
     @Override
-    public double readDouble()
-    {
+    public double readDouble() {
         return buf.readDouble();
     }
 
     @Override
-    public PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException
-    {
-        buf.readBytes( into, offset, toRead );
+    public PackInput readBytes(byte[] into, int offset, int toRead) throws IOException {
+        buf.readBytes(into, offset, toRead);
         return this;
     }
 
     @Override
-    public byte peekByte()
-    {
-        return buf.getByte( buf.readerIndex() );
+    public byte peekByte() {
+        return buf.getByte(buf.readerIndex());
     }
 
-    private void assertNotStarted()
-    {
-        if ( buf != null )
-        {
-            throw new IllegalStateException( "Already started" );
+    private void assertNotStarted() {
+        if (buf != null) {
+            throw new IllegalStateException("Already started");
         }
     }
 
     @Override
-    public int readableBytes()
-    {
+    public int readableBytes() {
         return buf.readableBytes();
     }
 }

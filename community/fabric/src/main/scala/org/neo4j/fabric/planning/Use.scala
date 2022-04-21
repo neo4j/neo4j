@@ -33,9 +33,11 @@ object Use {
   final case class Default(graphSelection: GraphSelection) extends Use {
     def position: InputPosition = graphSelection.position
   }
+
   final case class Declared(graphSelection: GraphSelection) extends Use {
     def position: InputPosition = graphSelection.position
   }
+
   final case class Inherited(use: Use)(pos: InputPosition) extends Use {
     def graphSelection: GraphSelection = use.graphSelection
     def position: InputPosition = pos
@@ -43,8 +45,8 @@ object Use {
 
   @scala.annotation.tailrec
   def show(use: Use): Any = use match {
-    case s: Default  => show(s.graphSelection) + " (transaction default)"
-    case d: Declared => show(d.graphSelection)
+    case s: Default   => show(s.graphSelection) + " (transaction default)"
+    case d: Declared  => show(d.graphSelection)
     case i: Inherited => show(root(i))
   }
 
@@ -57,5 +59,3 @@ object Use {
     case u            => u
   }
 }
-
-

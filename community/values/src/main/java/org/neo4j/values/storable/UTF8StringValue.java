@@ -19,26 +19,24 @@
  */
 package org.neo4j.values.storable;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.neo4j.hashing.HashFunction;
-
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.values.storable.Values.utf8Value;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.neo4j.hashing.HashFunction;
 
 /*
  * Just as a normal StringValue but is backed by a byte array and does string
  * serialization lazily when necessary.
  *
  */
-public final class UTF8StringValue extends StringValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( UTF8StringValue.class );
+public final class UTF8StringValue extends StringValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(UTF8StringValue.class);
 
     /** Used for removing the high order bit from byte. */
     private static final int HIGH_BIT_MASK = 0b0111_1111;
@@ -50,8 +48,7 @@ public final class UTF8StringValue extends StringValue
     private final int offset;
     private final int byteLength;
 
-    UTF8StringValue( byte[] bytes, int offset, int length )
-    {
+    UTF8StringValue(byte[] bytes, int offset, int length) {
         assert bytes != null;
         this.bytes = bytes;
         this.offset = offset;
@@ -59,36 +56,28 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeUTF8( bytes, offset, byteLength );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeUTF8(bytes, offset, byteLength);
     }
 
     @Override
-    public boolean equals( Value value )
-    {
-        if ( value instanceof UTF8StringValue other )
-        {
-            return Arrays.equals( bytes, offset, offset + byteLength, other.bytes, other.offset, other.offset + other.byteLength );
-        }
-        else
-        {
-            return super.equals( value );
+    public boolean equals(Value value) {
+        if (value instanceof UTF8StringValue other) {
+            return Arrays.equals(
+                    bytes, offset, offset + byteLength, other.bytes, other.offset, other.offset + other.byteLength);
+        } else {
+            return super.equals(value);
         }
     }
 
     @Override
-    String value()
-    {
+    String value() {
         String s = value;
-        if ( s == null )
-        {
-            synchronized ( this )
-            {
+        if (s == null) {
+            synchronized (this) {
                 s = value;
-                if ( s == null )
-                {
-                    value = s = new String( bytes, offset, byteLength, StandardCharsets.UTF_8 );
+                if (s == null) {
+                    value = s = new String(bytes, offset, byteLength, StandardCharsets.UTF_8);
                 }
             }
         }
@@ -96,43 +85,36 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
-    public int length()
-    {
-        return numberOfCodePoints( bytes, offset, byteLength );
+    public int length() {
+        return numberOfCodePoints(bytes, offset, byteLength);
     }
 
     @Override
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return bytes.length == 0 || byteLength == 0;
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOf( bytes );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOf(bytes);
     }
 
-    private static int numberOfCodePoints( byte[] bytes, int offset, int byteLength )
-    {
+    private static int numberOfCodePoints(byte[] bytes, int offset, int byteLength) {
         int count = 0, i = offset, len = offset + byteLength;
-        while ( i < len )
-        {
+        while (i < len) {
             byte b = bytes[i];
-            //If high bit is zero (equivalent to the byte being positive in two's complement)
-            //we are dealing with an ascii value and use a single byte for storing the value.
-            if ( b >= 0 )
-            {
+            // If high bit is zero (equivalent to the byte being positive in two's complement)
+            // we are dealing with an ascii value and use a single byte for storing the value.
+            if (b >= 0) {
                 i++;
                 count++;
                 continue;
             }
 
-            //The number of high bits tells us how many bytes we use to store the value
-            //e.g. 110xxxx -> need two bytes, 1110xxxx -> need three bytes, 11110xxx -> needs
-            //four bytes
-            while ( b < 0 )
-            {
+            // The number of high bits tells us how many bytes we use to store the value
+            // e.g. 110xxxx -> need two bytes, 1110xxxx -> need three bytes, 11110xxx -> needs
+            // four bytes
+            while (b < 0) {
                 i++;
                 b = (byte) (b << 1);
             }
@@ -142,275 +124,228 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
-        if ( bytes.length == 0 || byteLength == 0 )
-        {
+    protected int computeHashToMemoize() {
+        if (bytes.length == 0 || byteLength == 0) {
             return 0;
         }
 
-        CodePointCursor cpc = new CodePointCursor( bytes, offset );
+        CodePointCursor cpc = new CodePointCursor(bytes, offset);
         int hash = 1;
         int len = offset + byteLength;
 
-        while ( cpc.i < len )
-        {
+        while (cpc.i < len) {
             hash = HASH_CONSTANT * hash + (int) cpc.nextCodePoint();
         }
         return hash;
     }
 
     @Override
-    public long updateHash( HashFunction hashFunction, long hash )
-    {
-        CodePointCursor cpc = new CodePointCursor( bytes, offset );
+    public long updateHash(HashFunction hashFunction, long hash) {
+        CodePointCursor cpc = new CodePointCursor(bytes, offset);
         int len = offset + byteLength;
 
-        while ( cpc.i < len )
-        {
+        while (cpc.i < len) {
             long codePointA = cpc.nextCodePoint() << 32;
             long codePointB = 0L;
-            if ( cpc.i < len )
-            {
+            if (cpc.i < len) {
                 codePointB = cpc.nextCodePoint();
             }
-            hash = hashFunction.update( hash, codePointA + codePointB );
+            hash = hashFunction.update(hash, codePointA + codePointB);
         }
 
-        return hashFunction.update( hash, cpc.codePointCount );
+        return hashFunction.update(hash, cpc.codePointCount);
     }
 
-    public static class CodePointCursor
-    {
+    public static class CodePointCursor {
         private byte[] values;
         private int i;
         private int codePointCount;
 
-        public CodePointCursor( byte[] values, int offset )
-        {
+        public CodePointCursor(byte[] values, int offset) {
             this.values = values;
             this.i = offset;
         }
 
-        public long nextCodePoint()
-        {
+        public long nextCodePoint() {
             codePointCount++;
             byte b = values[i];
-            //If high bit is zero (equivalent to the byte being positive in two's complement)
-            //we are dealing with an ascii value and use a single byte for storing the value.
-            if ( b >= 0 )
-            {
+            // If high bit is zero (equivalent to the byte being positive in two's complement)
+            // we are dealing with an ascii value and use a single byte for storing the value.
+            if (b >= 0) {
                 i++;
                 return b;
             }
 
-            //We can now have one of three situations.
-            //Byte1    Byte2    Byte3    Byte4
-            //110xxxxx 10xxxxxx
-            //1110xxxx 10xxxxxx 10xxxxxx
-            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-            //Figure out how many bytes we need by reading the number of leading bytes
+            // We can now have one of three situations.
+            // Byte1    Byte2    Byte3    Byte4
+            // 110xxxxx 10xxxxxx
+            // 1110xxxx 10xxxxxx 10xxxxxx
+            // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            // Figure out how many bytes we need by reading the number of leading bytes
             int bytesNeeded = 0;
-            while ( b < 0 )
-            {
+            while (b < 0) {
                 bytesNeeded++;
                 b = (byte) (b << 1);
             }
-            int codePoint = codePoint( values, b, i, bytesNeeded );
+            int codePoint = codePoint(values, b, i, bytesNeeded);
             i += bytesNeeded;
             return codePoint;
         }
     }
 
     @Override
-    public TextValue substring( int start, int length )
-    {
-        if ( start < 0 || length < 0 )
-        {
-            throw new IndexOutOfBoundsException( "Cannot handle negative start index nor negative length" );
+    public TextValue substring(int start, int length) {
+        if (start < 0 || length < 0) {
+            throw new IndexOutOfBoundsException("Cannot handle negative start index nor negative length");
         }
-        if ( length == 0 )
-        {
+        if (length == 0) {
             return StringValue.EMPTY;
         }
 
         int end = start + length;
         byte[] values = bytes;
         int count = 0, byteStart = -1, byteEnd = -1, i = offset, len = offset + byteLength;
-        while ( i < len )
-        {
-            if ( count == start )
-            {
+        while (i < len) {
+            if (count == start) {
                 byteStart = i;
             }
-            if ( count == end )
-            {
+            if (count == end) {
                 byteEnd = i;
                 break;
             }
             byte b = values[i];
-            //If high bit is zero (equivalent to the byte being positive in two's complement)
-            //we are dealing with an ascii value and use a single byte for storing the value.
-            if ( b >= 0 )
-            {
+            // If high bit is zero (equivalent to the byte being positive in two's complement)
+            // we are dealing with an ascii value and use a single byte for storing the value.
+            if (b >= 0) {
                 i++;
             }
 
-            while ( b < 0 )
-            {
+            while (b < 0) {
                 i++;
                 b = (byte) (b << 1);
             }
             count++;
         }
-        if ( byteEnd < 0 )
-        {
+        if (byteEnd < 0) {
             byteEnd = len;
         }
-        if ( byteStart < 0 )
-        {
+        if (byteStart < 0) {
             return StringValue.EMPTY;
         }
-        return new UTF8StringValue( values, byteStart, byteEnd - byteStart );
+        return new UTF8StringValue(values, byteStart, byteEnd - byteStart);
     }
 
     @Override
-    public TextValue trim()
-    {
+    public TextValue trim() {
         byte[] values = bytes;
 
-        if ( values.length == 0 || byteLength == 0 )
-        {
+        if (values.length == 0 || byteLength == 0) {
             return this;
         }
 
         int startIndex = trimLeftIndex();
         int endIndex = trimRightIndex();
-        if ( startIndex > endIndex )
-        {
+        if (startIndex > endIndex) {
             return StringValue.EMPTY;
         }
 
-        return new UTF8StringValue( values, startIndex, Math.max( endIndex + 1 - startIndex, 0 ) );
+        return new UTF8StringValue(values, startIndex, Math.max(endIndex + 1 - startIndex, 0));
     }
 
     @Override
-    public TextValue ltrim()
-    {
+    public TextValue ltrim() {
         byte[] values = bytes;
-        if ( values.length == 0 || byteLength == 0 )
-        {
+        if (values.length == 0 || byteLength == 0) {
             return this;
         }
 
         int startIndex = trimLeftIndex();
-        if ( startIndex >= values.length )
-        {
+        if (startIndex >= values.length) {
             return StringValue.EMPTY;
         }
-        return new UTF8StringValue( values, startIndex, values.length - startIndex );
+        return new UTF8StringValue(values, startIndex, values.length - startIndex);
     }
 
     @Override
-    public TextValue rtrim()
-    {
+    public TextValue rtrim() {
         byte[] values = bytes;
-        if ( values.length == 0 || byteLength == 0 )
-        {
+        if (values.length == 0 || byteLength == 0) {
             return this;
         }
 
         int endIndex = trimRightIndex();
-        if ( endIndex < 0 )
-        {
+        if (endIndex < 0) {
             return StringValue.EMPTY;
         }
-        return new UTF8StringValue( values, offset, endIndex + 1 - offset );
+        return new UTF8StringValue(values, offset, endIndex + 1 - offset);
     }
 
     @Override
-    public TextValue plus( TextValue other )
-    {
-        if ( other instanceof UTF8StringValue rhs )
-        {
+    public TextValue plus(TextValue other) {
+        if (other instanceof UTF8StringValue rhs) {
             byte[] newBytes = new byte[byteLength + rhs.byteLength];
-            System.arraycopy( bytes, offset, newBytes, 0, byteLength );
-            System.arraycopy( rhs.bytes, rhs.offset, newBytes, byteLength, rhs.byteLength );
-            return utf8Value( newBytes );
+            System.arraycopy(bytes, offset, newBytes, 0, byteLength);
+            System.arraycopy(rhs.bytes, rhs.offset, newBytes, byteLength, rhs.byteLength);
+            return utf8Value(newBytes);
         }
 
-        return Values.stringValue( stringValue() + other.stringValue() );
+        return Values.stringValue(stringValue() + other.stringValue());
     }
 
     @Override
-    public boolean startsWith( TextValue other )
-    {
+    public boolean startsWith(TextValue other) {
 
-        if ( other instanceof UTF8StringValue suffix )
-        {
-            return startsWith( suffix, 0 );
+        if (other instanceof UTF8StringValue suffix) {
+            return startsWith(suffix, 0);
         }
 
-        return value().startsWith( other.stringValue() );
+        return value().startsWith(other.stringValue());
     }
 
     @Override
-    public boolean endsWith( TextValue other )
-    {
+    public boolean endsWith(TextValue other) {
 
-        if ( other instanceof UTF8StringValue suffix )
-        {
-            return startsWith( suffix, byteLength - suffix.byteLength );
+        if (other instanceof UTF8StringValue suffix) {
+            return startsWith(suffix, byteLength - suffix.byteLength);
         }
 
-        return value().endsWith( other.stringValue() );
+        return value().endsWith(other.stringValue());
     }
 
-    @SuppressWarnings( "StatementWithEmptyBody" )
+    @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public boolean contains( TextValue other )
-    {
+    public boolean contains(TextValue other) {
 
-        if ( other instanceof final UTF8StringValue substring )
-        {
-            if ( byteLength == 0 )
-            {
+        if (other instanceof final UTF8StringValue substring) {
+            if (byteLength == 0) {
                 return substring.byteLength == 0;
             }
-            if ( substring.byteLength == 0 )
-            {
+            if (substring.byteLength == 0) {
                 return true;
             }
-            if ( substring.byteLength > byteLength )
-            {
+            if (substring.byteLength > byteLength) {
                 return false;
             }
 
             final byte first = substring.bytes[substring.offset];
             final int max = offset + byteLength - substring.byteLength;
-            for ( int pos = offset; pos <= max; pos++ )
-            {
-                //find first byte
-                if ( bytes[pos] != first )
-                {
-                    while ( ++pos <= max && bytes[pos] != first )
-                    {
-                        //do nothing
+            for (int pos = offset; pos <= max; pos++) {
+                // find first byte
+                if (bytes[pos] != first) {
+                    while (++pos <= max && bytes[pos] != first) {
+                        // do nothing
                     }
                 }
 
-                //Now we have the first byte match, look at the rest
-                if ( pos <= max )
-                {
+                // Now we have the first byte match, look at the rest
+                if (pos <= max) {
                     int i = pos + 1;
                     final int end = pos + substring.byteLength;
-                    for ( int j = substring.offset + 1; i < end && bytes[i] == substring.bytes[j]; j++, i++ )
-                    {
-                        //do nothing
+                    for (int j = substring.offset + 1; i < end && bytes[i] == substring.bytes[j]; j++, i++) {
+                        // do nothing
                     }
 
-                    if ( i == end )
-                    {
+                    if (i == end) {
                         return true;
                     }
                 }
@@ -418,23 +353,19 @@ public final class UTF8StringValue extends StringValue
             return false;
         }
 
-        return value().contains( other.stringValue() );
+        return value().contains(other.stringValue());
     }
 
-    private boolean startsWith( UTF8StringValue prefix, int startPos )
-    {
+    private boolean startsWith(UTF8StringValue prefix, int startPos) {
         int thisOffset = offset + startPos;
         int prefixOffset = prefix.offset;
         int prefixCount = prefix.byteLength;
-        if ( startPos < 0 || prefixCount > byteLength )
-        {
+        if (startPos < 0 || prefixCount > byteLength) {
             return false;
         }
 
-        while ( --prefixCount >= 0 )
-        {
-            if ( bytes[thisOffset++] != prefix.bytes[prefixOffset++] )
-            {
+        while (--prefixCount >= 0) {
+            if (bytes[thisOffset++] != prefix.bytes[prefixOffset++]) {
                 return false;
             }
         }
@@ -442,73 +373,63 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
-    public TextValue reverse()
-    {
+    public TextValue reverse() {
         byte[] values = bytes;
 
-        if ( values.length == 0 || byteLength == 0 )
-        {
+        if (values.length == 0 || byteLength == 0) {
             return StringValue.EMPTY;
         }
 
         int i = offset, len = offset + byteLength;
         byte[] newValues = new byte[byteLength];
-        while ( i < len )
-        {
+        while (i < len) {
             byte b = values[i];
-            //If high bit is zero (equivalent to the byte being positive in two's complement)
-            //we are dealing with an ascii value and use a single byte for storing the value.
-            if ( b >= 0 )
-            {
-                //a single byte is trivial to reverse
-                //just put it at the opposite end of the new array
+            // If high bit is zero (equivalent to the byte being positive in two's complement)
+            // we are dealing with an ascii value and use a single byte for storing the value.
+            if (b >= 0) {
+                // a single byte is trivial to reverse
+                // just put it at the opposite end of the new array
                 newValues[len - 1 - i] = b;
                 i++;
                 continue;
             }
 
-            //We can now have one of three situations.
-            //Byte1    Byte2    Byte3    Byte4
-            //110xxxxx 10xxxxxx
-            //1110xxxx 10xxxxxx 10xxxxxx
-            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-            //Figure out how many bytes we need by reading the number of leading bytes
+            // We can now have one of three situations.
+            // Byte1    Byte2    Byte3    Byte4
+            // 110xxxxx 10xxxxxx
+            // 1110xxxx 10xxxxxx 10xxxxxx
+            // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            // Figure out how many bytes we need by reading the number of leading bytes
             int bytesNeeded = 0;
-            while ( b < 0 )
-            {
+            while (b < 0) {
                 bytesNeeded++;
                 b = (byte) (b << 1);
             }
-            //reversing when multiple bytes are needed for the code point we cannot just reverse
-            //since we need to preserve the code point while moving it,
-            //e.g. [A, b1,b2, B] -> [B, b1,b2, A]
-            System.arraycopy( values, i, newValues, len - i - bytesNeeded, bytesNeeded );
+            // reversing when multiple bytes are needed for the code point we cannot just reverse
+            // since we need to preserve the code point while moving it,
+            // e.g. [A, b1,b2, B] -> [B, b1,b2, A]
+            System.arraycopy(values, i, newValues, len - i - bytesNeeded, bytesNeeded);
             i += bytesNeeded;
         }
 
-        return new UTF8StringValue( newValues, 0, newValues.length );
+        return new UTF8StringValue(newValues, 0, newValues.length);
     }
 
     @Override
-    public int compareTo( TextValue other )
-    {
-        if ( !(other instanceof UTF8StringValue otherUTF8) )
-        {
-            return super.compareTo( other );
+    public int compareTo(TextValue other) {
+        if (!(other instanceof UTF8StringValue otherUTF8)) {
+            return super.compareTo(other);
         }
-        return byteArrayCompare( bytes, offset, byteLength, otherUTF8.bytes, otherUTF8.offset, otherUTF8.byteLength );
+        return byteArrayCompare(bytes, offset, byteLength, otherUTF8.bytes, otherUTF8.offset, otherUTF8.byteLength);
     }
 
-    private static int byteArrayCompare( byte[] value1, int value1Offset, int value1Length,
-            byte[] value2, int value2Offset, int value2Length )
-    {
-        int lim = Math.min( value1Length, value2Length );
-        for ( int i = 0; i < lim; i++ )
-        {
+    private static int byteArrayCompare(
+            byte[] value1, int value1Offset, int value1Length, byte[] value2, int value2Offset, int value2Length) {
+        int lim = Math.min(value1Length, value2Length);
+        for (int i = 0; i < lim; i++) {
             byte b1 = value1[i + value1Offset];
             byte b2 = value2[i + value2Offset];
-            if ( b1 != b2 )
-            {
+            if (b1 != b2) {
                 return (((int) b1) & 0xFF) - (((int) b2) & 0xFF);
             }
         }
@@ -516,47 +437,40 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
-    Matcher matcher( Pattern pattern )
-    {
-        return pattern.matcher( value() );
+    Matcher matcher(Pattern pattern) {
+        return pattern.matcher(value());
     }
 
     /**
      * Returns the left-most index into the underlying byte array that does not belong to a whitespace code point
      */
-    private int trimLeftIndex()
-    {
+    private int trimLeftIndex() {
         int i = offset, len = offset + byteLength;
-        while ( i < len )
-        {
+        while (i < len) {
             byte b = bytes[i];
-            //If high bit is zero (equivalent to the byte being positive in two's complement)
-            //we are dealing with an ascii value and use a single byte for storing the value.
-            if ( b >= 0 )
-            {
-                if ( !Character.isWhitespace( b ) )
-                {
+            // If high bit is zero (equivalent to the byte being positive in two's complement)
+            // we are dealing with an ascii value and use a single byte for storing the value.
+            if (b >= 0) {
+                if (!Character.isWhitespace(b)) {
                     return i;
                 }
                 i++;
                 continue;
             }
 
-            //We can now have one of three situations.
-            //Byte1    Byte2    Byte3    Byte4
-            //110xxxxx 10xxxxxx
-            //1110xxxx 10xxxxxx 10xxxxxx
-            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-            //Figure out how many bytes we need by reading the number of leading bytes
+            // We can now have one of three situations.
+            // Byte1    Byte2    Byte3    Byte4
+            // 110xxxxx 10xxxxxx
+            // 1110xxxx 10xxxxxx 10xxxxxx
+            // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            // Figure out how many bytes we need by reading the number of leading bytes
             int bytesNeeded = 0;
-            while ( b < 0 )
-            {
+            while (b < 0) {
                 bytesNeeded++;
                 b = (byte) (b << 1);
             }
-            int codePoint = codePoint( bytes, b, i, bytesNeeded );
-            if ( !Character.isWhitespace( codePoint ) )
-            {
+            int codePoint = codePoint(bytes, b, i, bytesNeeded);
+            if (!Character.isWhitespace(codePoint)) {
                 return i;
             }
             i += bytesNeeded;
@@ -567,76 +481,66 @@ public final class UTF8StringValue extends StringValue
     /**
      * Returns the right-most index into the underlying byte array that does not belong to a whitespace code point
      */
-    private int trimRightIndex()
-    {
+    private int trimRightIndex() {
         int index = offset + byteLength - 1;
-        while ( index >= 0 )
-        {
+        while (index >= 0) {
             byte b = bytes[index];
-            //If high bit is zero (equivalent to the byte being positive in two's complement)
-            //we are dealing with an ascii value and use a single byte for storing the value.
-            if ( b >= 0 )
-            {
-                if ( !Character.isWhitespace( b ) )
-                {
+            // If high bit is zero (equivalent to the byte being positive in two's complement)
+            // we are dealing with an ascii value and use a single byte for storing the value.
+            if (b >= 0) {
+                if (!Character.isWhitespace(b)) {
                     return index;
                 }
                 index--;
                 continue;
             }
 
-            //We can now have one of three situations.
-            //Byte1    Byte2    Byte3    Byte4
-            //110xxxxx 10xxxxxx
-            //1110xxxx 10xxxxxx 10xxxxxx
-            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            // We can now have one of three situations.
+            // Byte1    Byte2    Byte3    Byte4
+            // 110xxxxx 10xxxxxx
+            // 1110xxxx 10xxxxxx 10xxxxxx
+            // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
             int bytesNeeded = 1;
-            while ( (b & NON_CONTINUATION_BIT_MASK) == 0 )
-            {
+            while ((b & NON_CONTINUATION_BIT_MASK) == 0) {
                 bytesNeeded++;
                 b = bytes[--index];
             }
 
-            int codePoint = codePoint( bytes, (byte) (b << bytesNeeded), index, bytesNeeded );
-            if ( !Character.isWhitespace( codePoint ) )
-            {
-                return Math.min( index + bytesNeeded - 1, bytes.length - 1 );
+            int codePoint = codePoint(bytes, (byte) (b << bytesNeeded), index, bytesNeeded);
+            if (!Character.isWhitespace(codePoint)) {
+                return Math.min(index + bytesNeeded - 1, bytes.length - 1);
             }
             index--;
-
         }
         return index;
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.UTF8_TEXT;
     }
 
-    public byte[] bytes()
-    {
+    public byte[] bytes() {
         return bytes;
     }
 
-    private static int codePoint( byte[] bytes, byte currentByte, int i, int bytesNeeded )
-    {
+    private static int codePoint(byte[] bytes, byte currentByte, int i, int bytesNeeded) {
         int codePoint;
-        switch ( bytesNeeded )
-        {
-        case 2:
-            codePoint = (currentByte << 4) | (bytes[i + 1] & HIGH_BIT_MASK);
-            break;
-        case 3:
-            codePoint = (currentByte << 9) | ((bytes[i + 1] & HIGH_BIT_MASK) << 6) | (bytes[i + 2] & HIGH_BIT_MASK);
-            break;
-        case 4:
-            codePoint = (currentByte << 14) | ((bytes[i + 1] & HIGH_BIT_MASK) << 12) |
-                        ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
+        switch (bytesNeeded) {
+            case 2:
+                codePoint = (currentByte << 4) | (bytes[i + 1] & HIGH_BIT_MASK);
+                break;
+            case 3:
+                codePoint = (currentByte << 9) | ((bytes[i + 1] & HIGH_BIT_MASK) << 6) | (bytes[i + 2] & HIGH_BIT_MASK);
+                break;
+            case 4:
+                codePoint = (currentByte << 14)
+                        | ((bytes[i + 1] & HIGH_BIT_MASK) << 12)
+                        | ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
                         | (bytes[i + 3] & HIGH_BIT_MASK);
-            break;
-        default:
-            throw new IllegalArgumentException( "Malformed UTF8 value" );
+                break;
+            default:
+                throw new IllegalArgumentException("Malformed UTF8 value");
         }
         return codePoint;
     }

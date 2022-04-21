@@ -20,11 +20,9 @@
 
 package org.neo4j.kernel.impl.newapi;
 
-public class NodeIndexProvidedOrderRange10Test extends AbstractIndexProvidedOrderTest
-{
+public class NodeIndexProvidedOrderRange10Test extends AbstractIndexProvidedOrderTest {
     @Override
-    EntityControl getEntityControl()
-    {
+    EntityControl getEntityControl() {
         return EntityControl.NODE;
     }
 }

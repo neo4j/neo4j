@@ -25,6 +25,4 @@ import org.neo4j.util.MarkerInterface;
  * Schema descriptors of this sub-type are guaranteed to have exactly one label, and match index updates with {@link PropertySchemaType#COMPLETE_ALL_TOKENS}.
  */
 @MarkerInterface
-public interface LabelSchemaDescriptor extends SchemaDescriptor
-{
-}
+public interface LabelSchemaDescriptor extends SchemaDescriptor {}

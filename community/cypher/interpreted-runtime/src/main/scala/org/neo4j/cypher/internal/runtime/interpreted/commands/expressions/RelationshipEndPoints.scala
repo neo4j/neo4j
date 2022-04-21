@@ -27,14 +27,18 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 
 case class RelationshipEndPoints(relExpression: Expression, start: Boolean) extends Expression {
+
   override def apply(row: ReadableRow, state: QueryState): AnyValue = relExpression(row, state) match {
     case x if x eq NO_VALUE => NO_VALUE
-    case value => if (start) CypherFunctions.startNode(value, state.query, state.cursors.relationshipScanCursor) else CypherFunctions.endNode(value, state.query, state.cursors.relationshipScanCursor)
+    case value =>
+      if (start) CypherFunctions.startNode(value, state.query, state.cursors.relationshipScanCursor)
+      else CypherFunctions.endNode(value, state.query, state.cursors.relationshipScanCursor)
   }
 
   override def arguments: Seq[Expression] = Seq(relExpression)
 
   override def children: Seq[AstNode[_]] = Seq(relExpression)
 
-  override def rewrite(f: Expression => Expression): Expression = f(RelationshipEndPoints(relExpression.rewrite(f), start))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(RelationshipEndPoints(relExpression.rewrite(f), start))
 }

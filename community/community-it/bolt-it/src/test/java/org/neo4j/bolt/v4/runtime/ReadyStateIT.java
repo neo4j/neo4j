@@ -19,12 +19,21 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
@@ -39,146 +48,131 @@ import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.testing.BoltConditions.failedWithStatus;
-import static org.neo4j.bolt.testing.BoltConditions.succeeded;
-import static org.neo4j.bolt.testing.BoltConditions.verifyKillsConnection;
-import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-
-class ReadyStateIT extends BoltStateMachineV4StateTestBase
-{
+class ReadyStateIT extends BoltStateMachineV4StateTestBase {
     @Test
-    void shouldMoveToAutoCommitOnRun_succ() throws Throwable
-    {
+    void shouldMoveToAutoCommitOnRun_succ() throws Throwable {
         // Given
         BoltStateMachineV4 machine = newStateMachine();
-        machine.process( newHelloMessage(), nullResponseHandler() );
+        machine.process(newHelloMessage(), nullResponseHandler());
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( new RunMessage( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS ), recorder );
+        machine.process(new RunMessage("CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS), recorder);
 
         // Then
 
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response ).satisfies( succeeded() );
-        assertTrue( response.hasMetadata( "fields" ) );
-        assertTrue( response.hasMetadata( "t_first") );
-        assertThat( machine.state() ).isInstanceOf( AutoCommitState.class );
+        assertThat(response).satisfies(succeeded());
+        assertTrue(response.hasMetadata("fields"));
+        assertTrue(response.hasMetadata("t_first"));
+        assertThat(machine.state()).isInstanceOf(AutoCommitState.class);
     }
 
     @Test
-    void shouldMoveToInTransactionOnBegin_succ() throws Throwable
-    {
+    void shouldMoveToInTransactionOnBegin_succ() throws Throwable {
         // Given
         BoltStateMachineV4 machine = newStateMachine();
-        machine.process( newHelloMessage(), nullResponseHandler() );
+        machine.process(newHelloMessage(), nullResponseHandler());
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( new BeginMessage(), recorder );
+        machine.process(new BeginMessage(), recorder);
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response ).satisfies( succeeded() );
-        assertThat( machine.state() ).isInstanceOf( InTransactionState.class );
+        assertThat(response).satisfies(succeeded());
+        assertThat(machine.state()).isInstanceOf(InTransactionState.class);
     }
 
     @Test
-    void shouldMoveToInterruptedOnInterrupt() throws Throwable
-    {
+    void shouldMoveToInterruptedOnInterrupt() throws Throwable {
         // Given
         BoltStateMachineV4 machine = newStateMachine();
-        machine.process( newHelloMessage(), nullResponseHandler() );
+        machine.process(newHelloMessage(), nullResponseHandler());
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( InterruptSignal.INSTANCE, recorder );
+        machine.process(InterruptSignal.INSTANCE, recorder);
 
         // Then
-        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
+        assertThat(machine.state()).isInstanceOf(InterruptedState.class);
     }
 
     @Test
-    void shouldMoveToFailedStateOnRun_fail() throws Throwable
-    {
+    void shouldMoveToFailedStateOnRun_fail() throws Throwable {
         // Given
         BoltStateMachineV4 machine = newStateMachine();
-        machine.process( newHelloMessage(), nullResponseHandler() );
+        machine.process(newHelloMessage(), nullResponseHandler());
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        RunMessage runMessage = mock( RunMessage.class );
-        when( runMessage.databaseName() ).thenReturn( ABSENT_DB_NAME );
-        when( runMessage.statement() ).thenThrow( new RuntimeException( "Fail" ) );
-        machine.process( runMessage, recorder );
+        RunMessage runMessage = mock(RunMessage.class);
+        when(runMessage.databaseName()).thenReturn(ABSENT_DB_NAME);
+        when(runMessage.statement()).thenThrow(new RuntimeException("Fail"));
+        machine.process(runMessage, recorder);
 
         // Then
-        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.General.UnknownError ) );
-        assertThat( machine.state() ).isInstanceOf( FailedState.class );
+        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.General.UnknownError));
+        assertThat(machine.state()).isInstanceOf(FailedState.class);
     }
 
     @Test
-    void shouldMoveToFailedStateOnBegin_fail() throws Throwable
-    {
+    void shouldMoveToFailedStateOnBegin_fail() throws Throwable {
         // Given
         BoltStateMachineV4 machine = newStateMachine();
-        machine.process( newHelloMessage(), nullResponseHandler() );
+        machine.process(newHelloMessage(), nullResponseHandler());
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BeginMessage beginMessage = mock( BeginMessage.class );
-        when( beginMessage.databaseName() ).thenReturn( ABSENT_DB_NAME );
-        when( beginMessage.bookmarks() ).thenThrow( new RuntimeException( "Fail" ) );
-        machine.process( beginMessage, recorder );
+        BeginMessage beginMessage = mock(BeginMessage.class);
+        when(beginMessage.databaseName()).thenReturn(ABSENT_DB_NAME);
+        when(beginMessage.bookmarks()).thenThrow(new RuntimeException("Fail"));
+        machine.process(beginMessage, recorder);
 
         // Then
-        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.General.UnknownError ) );
-        assertThat( machine.state() ).isInstanceOf( FailedState.class );
+        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.General.UnknownError));
+        assertThat(machine.state()).isInstanceOf(FailedState.class);
     }
 
     @ParameterizedTest
-    @MethodSource( "illegalV4Messages" )
-    void shouldCloseConnectionOnIllegalV3Messages( RequestMessage message ) throws Throwable
-    {
-        shouldCloseConnectionOnIllegalMessages( message );
+    @MethodSource("illegalV4Messages")
+    void shouldCloseConnectionOnIllegalV3Messages(RequestMessage message) throws Throwable {
+        shouldCloseConnectionOnIllegalMessages(message);
     }
 
     @ParameterizedTest
-    @MethodSource( "illegalV3Messages" )
-    void shouldCloseConnectionOnIllegalV2Messages( RequestMessage message ) throws Throwable
-    {
-        shouldCloseConnectionOnIllegalMessages( message );
+    @MethodSource("illegalV3Messages")
+    void shouldCloseConnectionOnIllegalV2Messages(RequestMessage message) throws Throwable {
+        shouldCloseConnectionOnIllegalMessages(message);
     }
 
-    private void shouldCloseConnectionOnIllegalMessages( RequestMessage message ) throws InterruptedException, BoltConnectionFatality
-    {
+    private void shouldCloseConnectionOnIllegalMessages(RequestMessage message)
+            throws InterruptedException, BoltConnectionFatality {
         // Given
         BoltStateMachineV4 machine = newStateMachine();
-        machine.process( newHelloMessage(), nullResponseHandler() );
+        machine.process(newHelloMessage(), nullResponseHandler());
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.process( message, recorder ) );
+        verifyKillsConnection(() -> machine.process(message, recorder));
 
         // then
-        assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Request.Invalid ) );
-        assertNull( machine.state() );
+        assertThat(recorder.nextResponse()).satisfies(failedWithStatus(Status.Request.Invalid));
+        assertNull(machine.state());
     }
 
-    private static Stream<RequestMessage> illegalV4Messages() throws BoltIOException
-    {
-        return Stream.of( BoltV4Messages.hello(), BoltV4Messages.pullAll(), BoltV4Messages.discardAll(), BoltV4Messages.commit(), BoltV4Messages.rollback(),
-                BoltV4Messages.goodbye() );
+    private static Stream<RequestMessage> illegalV4Messages() throws BoltIOException {
+        return Stream.of(
+                BoltV4Messages.hello(),
+                BoltV4Messages.pullAll(),
+                BoltV4Messages.discardAll(),
+                BoltV4Messages.commit(),
+                BoltV4Messages.rollback(),
+                BoltV4Messages.goodbye());
     }
 
-    private static Stream<RequestMessage> illegalV3Messages()
-    {
-        return Stream.of( BoltV3Messages.run(), BoltV3Messages.begin(), BoltV3Messages.discardAll(), BoltV3Messages.pullAll() );
+    private static Stream<RequestMessage> illegalV3Messages() {
+        return Stream.of(
+                BoltV3Messages.run(), BoltV3Messages.begin(), BoltV3Messages.discardAll(), BoltV3Messages.pullAll());
     }
 }

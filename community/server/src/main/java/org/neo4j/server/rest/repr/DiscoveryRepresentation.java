@@ -22,8 +22,7 @@ package org.neo4j.server.rest.repr;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.discovery.ServerVersionAndEdition;
 
-public class DiscoveryRepresentation extends MappingRepresentation
-{
+public class DiscoveryRepresentation extends MappingRepresentation {
     private static final String DISCOVERY_REPRESENTATION_TYPE = "discovery";
     private final DiscoverableURIs uris;
     private final ServerVersionAndEdition serverInfo;
@@ -34,19 +33,18 @@ public class DiscoveryRepresentation extends MappingRepresentation
      * @param serverInfo server version and edition information
      * @param authConfigRepr authentication configuration of the server.
      */
-    public DiscoveryRepresentation( DiscoverableURIs uris, ServerVersionAndEdition serverInfo, MappingRepresentation authConfigRepr )
-    {
-        super( DISCOVERY_REPRESENTATION_TYPE );
+    public DiscoveryRepresentation(
+            DiscoverableURIs uris, ServerVersionAndEdition serverInfo, MappingRepresentation authConfigRepr) {
+        super(DISCOVERY_REPRESENTATION_TYPE);
         this.uris = uris;
         this.serverInfo = serverInfo;
         this.authConfigRepr = authConfigRepr;
     }
 
     @Override
-    protected void serialize( MappingSerializer serializer )
-    {
-        uris.forEach( serializer::putString );
-        serverInfo.forEach( serializer::putString );
-        authConfigRepr.serialize( serializer );
+    protected void serialize(MappingSerializer serializer) {
+        uris.forEach(serializer::putString);
+        serverInfo.forEach(serializer::putString);
+        authConfigRepr.serialize(serializer);
     }
 }

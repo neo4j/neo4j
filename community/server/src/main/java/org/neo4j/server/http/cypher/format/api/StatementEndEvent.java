@@ -27,16 +27,17 @@ import org.neo4j.graphdb.QueryStatistics;
 /**
  * An event that marks an end of statement's execution output stream.
  */
-public class StatementEndEvent implements OutputEvent
-{
+public class StatementEndEvent implements OutputEvent {
     private final QueryExecutionType queryExecutionType;
     private final QueryStatistics queryStatistics;
     private final ExecutionPlanDescription executionPlanDescription;
     private final Iterable<Notification> notifications;
 
-    public StatementEndEvent( QueryExecutionType queryExecutionType, QueryStatistics queryStatistics, ExecutionPlanDescription executionPlanDescription,
-            Iterable<Notification> notifications )
-    {
+    public StatementEndEvent(
+            QueryExecutionType queryExecutionType,
+            QueryStatistics queryStatistics,
+            ExecutionPlanDescription executionPlanDescription,
+            Iterable<Notification> notifications) {
         this.queryExecutionType = queryExecutionType;
         this.queryStatistics = queryStatistics;
         this.executionPlanDescription = executionPlanDescription;
@@ -44,28 +45,23 @@ public class StatementEndEvent implements OutputEvent
     }
 
     @Override
-    public Type getType()
-    {
+    public Type getType() {
         return Type.STATEMENT_END;
     }
 
-    public QueryStatistics getQueryStatistics()
-    {
+    public QueryStatistics getQueryStatistics() {
         return queryStatistics;
     }
 
-    public ExecutionPlanDescription getExecutionPlanDescription()
-    {
+    public ExecutionPlanDescription getExecutionPlanDescription() {
         return executionPlanDescription;
     }
 
-    public Iterable<Notification> getNotifications()
-    {
+    public Iterable<Notification> getNotifications() {
         return notifications;
     }
 
-    public QueryExecutionType getQueryExecutionType()
-    {
+    public QueryExecutionType getQueryExecutionType() {
         return queryExecutionType;
     }
 }

@@ -20,11 +20,12 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 
 object RelationshipPatternPredicateNormalizer extends MatchPredicateNormalizer {
+
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
     case RelationshipPattern(_, _, _, _, Some(predicate), _, _) => Vector(predicate)
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@RelationshipPattern(_, _, _, _, Some(_), _, _) => p.copy(predicate = None)(p.position)
+    case p @ RelationshipPattern(_, _, _, _, Some(_), _, _) => p.copy(predicate = None)(p.position)
   }
 }

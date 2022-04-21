@@ -19,8 +19,16 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -38,109 +46,103 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
-import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
-
-class SchemaProcedureIT extends KernelIntegrationTest
-{
+class SchemaProcedureIT extends KernelIntegrationTest {
     @Test
-    void testEmptyGraph() throws Throwable
-    {
+    void testEmptyGraph() throws Throwable {
         // Given the database is empty
 
         // When
         Procedures procs = procs();
 
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs.procedureCallRead( procs.procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                procs.procedureGet(procedureName("db", "schema", "visualization"))
+                        .id(),
+                new AnyValue[0],
+                ProcedureCallContext.EMPTY);
 
         // Then
-        assertThat( asList( stream ) ).containsExactly( new AnyValue[]{EMPTY_LIST, EMPTY_LIST} );
-
+        assertThat(asList(stream)).containsExactly(new AnyValue[] {EMPTY_LIST, EMPTY_LIST});
     }
 
     @Test
-    void testLabelIndex() throws Throwable
-    {
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
-        long nbrIndexesOnStartup = Iterators.count( transaction.schemaRead().indexesGetAll() );
+    void testLabelIndex() throws Throwable {
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+        long nbrIndexesOnStartup = Iterators.count(transaction.schemaRead().indexesGetAll());
 
         // Given there is label with index and a constraint
         long nodeId = transaction.dataWrite().nodeCreate();
-        int labelId = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        transaction.dataWrite().nodeAddLabel( nodeId, labelId );
-        int propertyIdName = transaction.tokenWrite().propertyKeyGetOrCreateForName( "name" );
-        int propertyIdAge = transaction.tokenWrite().propertyKeyGetOrCreateForName( "age" );
-        transaction.dataWrite()
-                .nodeSetProperty( nodeId, propertyIdName, Values.of( "Emil" ) );
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        transaction.dataWrite().nodeAddLabel(nodeId, labelId);
+        int propertyIdName = transaction.tokenWrite().propertyKeyGetOrCreateForName("name");
+        int propertyIdAge = transaction.tokenWrite().propertyKeyGetOrCreateForName("age");
+        transaction.dataWrite().nodeSetProperty(nodeId, propertyIdName, Values.of("Emil"));
         commit();
 
         SchemaWrite schemaOps = schemaWriteInNewTransaction();
-        schemaOps.indexCreate( IndexPrototype.forSchema( forLabel( labelId, propertyIdName ) ).withName( "my index" ) );
-        schemaOps.uniquePropertyConstraintCreate( uniqueForSchema( forLabel( labelId, propertyIdAge ) ).withName( "constraint name" ) );
+        schemaOps.indexCreate(
+                IndexPrototype.forSchema(forLabel(labelId, propertyIdName)).withName("my index"));
+        schemaOps.uniquePropertyConstraintCreate(
+                uniqueForSchema(forLabel(labelId, propertyIdAge)).withName("constraint name"));
         commit();
 
         // When
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "schema", "visualization"))
+                                .id(),
+                        new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         // Then
-        while ( stream.hasNext() )
-        {
+        while (stream.hasNext()) {
             AnyValue[] next = stream.next();
-            assertEquals( 2, next.length );
+            assertEquals(2, next.length);
             ListValue nodes = (ListValue) next[0];
-            assertEquals( 1, nodes.size() );
-            NodeValue node = (NodeValue) nodes.value( 0 );
-            assertThat( node.labels() ).isEqualTo( Values.stringArray( "Person" ) );
-            assertEquals( stringValue( "Person" ), node.properties().get( "name" ) );
-            assertEquals( VirtualValues.list( stringValue( "name" ) ), node.properties().get( "indexes" ) );
-            assertEquals( VirtualValues.list( stringValue(
-                    "Constraint( id=" + (3 + nbrIndexesOnStartup) + ", name='constraint name', type='UNIQUENESS', schema=(:Person {age}), " +
-                    "ownedIndex=" + (2 + nbrIndexesOnStartup) + " )" ) ), node.properties().get( "constraints" ) );
+            assertEquals(1, nodes.size());
+            NodeValue node = (NodeValue) nodes.value(0);
+            assertThat(node.labels()).isEqualTo(Values.stringArray("Person"));
+            assertEquals(stringValue("Person"), node.properties().get("name"));
+            assertEquals(
+                    VirtualValues.list(stringValue("name")), node.properties().get("indexes"));
+            assertEquals(
+                    VirtualValues.list(stringValue("Constraint( id=" + (3 + nbrIndexesOnStartup)
+                            + ", name='constraint name', type='UNIQUENESS', schema=(:Person {age}), " + "ownedIndex="
+                            + (2 + nbrIndexesOnStartup) + " )")),
+                    node.properties().get("constraints"));
         }
     }
 
     @Test
-    void testRelationShip() throws Throwable
-    {
+    void testRelationShip() throws Throwable {
         // Given there ar
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
         long nodeIdPerson = transaction.dataWrite().nodeCreate();
-        int labelIdPerson = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        transaction.dataWrite().nodeAddLabel( nodeIdPerson, labelIdPerson );
+        int labelIdPerson = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        transaction.dataWrite().nodeAddLabel(nodeIdPerson, labelIdPerson);
         long nodeIdLocation = transaction.dataWrite().nodeCreate();
-        int labelIdLocation = transaction.tokenWrite().labelGetOrCreateForName( "Location" );
-        transaction.dataWrite().nodeAddLabel( nodeIdLocation, labelIdLocation );
-        int relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "LIVES_IN" );
-        transaction.dataWrite().relationshipCreate( nodeIdPerson, relationshipTypeId, nodeIdLocation );
+        int labelIdLocation = transaction.tokenWrite().labelGetOrCreateForName("Location");
+        transaction.dataWrite().nodeAddLabel(nodeIdLocation, labelIdLocation);
+        int relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName("LIVES_IN");
+        transaction.dataWrite().relationshipCreate(nodeIdPerson, relationshipTypeId, nodeIdLocation);
         commit();
 
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "schema", "visualization"))
+                                .id(),
+                        new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         // Then
-        while ( stream.hasNext() )
-        {
+        while (stream.hasNext()) {
             AnyValue[] next = stream.next();
-            assertEquals( 2, next.length );
+            assertEquals(2, next.length);
             ListValue relationships = (ListValue) next[1];
-            assertEquals( 1, relationships.size() );
-            RelationshipValue relationship = (RelationshipValue) relationships.value( 0 );
-            assertEquals( "LIVES_IN", relationship.type().stringValue() );
+            assertEquals(1, relationships.size());
+            RelationshipValue relationship = (RelationshipValue) relationships.value(0);
+            assertEquals("LIVES_IN", relationship.type().stringValue());
             NodeValue start = (NodeValue) relationship.startNode();
             NodeValue end = (NodeValue) relationship.endNode();
-            assertThat( start.labels() ).isEqualTo( Values.stringArray( "Person" ) );
-            assertThat( end.labels() ).isEqualTo( Values.stringArray( "Location" ) );
+            assertThat(start.labels()).isEqualTo(Values.stringArray("Person"));
+            assertThat(end.labels()).isEqualTo(Values.stringArray("Location"));
         }
     }
 }

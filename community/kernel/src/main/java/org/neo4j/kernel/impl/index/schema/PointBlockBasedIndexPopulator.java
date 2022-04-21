@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.UPDATE_IGNORE_STRATEGY;
 
 import java.nio.file.OpenOption;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -31,39 +31,66 @@ import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.UPDATE_IGNORE_STRATEGY;
-
-public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<PointKey>
-{
+public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<PointKey> {
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
     private final SpaceFillingCurveConfiguration configuration;
 
-    PointBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-                                   IndexLayout<PointKey> layout, IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
-                                   SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex,
-                                   ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
-                                   ImmutableSet<OpenOption> openOptions )
-    {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, openOptions );
+    PointBlockBasedIndexPopulator(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexLayout<PointKey> layout,
+            IndexDescriptor descriptor,
+            IndexSpecificSpaceFillingCurveSettings spatialSettings,
+            SpaceFillingCurveConfiguration configuration,
+            boolean archiveFailedIndex,
+            ByteBufferFactory bufferFactory,
+            Config config,
+            MemoryTracker memoryTracker,
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                descriptor,
+                archiveFailedIndex,
+                bufferFactory,
+                config,
+                memoryTracker,
+                openOptions);
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
     }
 
-    PointBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-                                   IndexLayout<PointKey> layout, IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
-                                   SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex,
-                                   ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker, BlockStorage.Monitor blockStorageMonitor,
-                                   ImmutableSet<OpenOption> openOptions )
-    {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor,
-               openOptions );
+    PointBlockBasedIndexPopulator(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexLayout<PointKey> layout,
+            IndexDescriptor descriptor,
+            IndexSpecificSpaceFillingCurveSettings spatialSettings,
+            SpaceFillingCurveConfiguration configuration,
+            boolean archiveFailedIndex,
+            ByteBufferFactory bufferFactory,
+            Config config,
+            MemoryTracker memoryTracker,
+            BlockStorage.Monitor blockStorageMonitor,
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                descriptor,
+                archiveFailedIndex,
+                bufferFactory,
+                config,
+                memoryTracker,
+                blockStorageMonitor,
+                openOptions);
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
     }
 
     @Override
-    protected IndexValueValidator instantiateValueValidator()
-    {
+    protected IndexValueValidator instantiateValueValidator() {
         // Validation is supposed to check that the to-be-added values fit into the index key.
         // This is always true for the point index, because it does not support composite keys
         // and the supported values have only two possible sizes - serialised 2D point
@@ -73,14 +100,12 @@ public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<Poin
     }
 
     @Override
-    NativeIndexReader<PointKey> newReader()
-    {
-        return new PointIndexReader( tree, layout, descriptor, spatialSettings, configuration );
+    NativeIndexReader<PointKey> newReader() {
+        return new PointIndexReader(tree, layout, descriptor, spatialSettings, configuration);
     }
 
     @Override
-    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy()
-    {
+    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy() {
         return UPDATE_IGNORE_STRATEGY;
     }
 }

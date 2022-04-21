@@ -19,12 +19,14 @@
  */
 package org.neo4j.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
+import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,15 +40,11 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @EphemeralTestDirectoryExtension
-public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
-{
+public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest {
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory dir;
 
@@ -54,62 +52,53 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void createDb()
-    {
-        managementService = createGraphDatabaseFactory( dir.homePath() )
-                .setFileSystem( fs )
-                .build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+    void createDb() {
+        managementService =
+                createGraphDatabaseFactory(dir.homePath()).setFileSystem(fs).build();
+        db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( Path databaseRootDir )
-    {
-        return new TestDatabaseManagementServiceBuilder( databaseRootDir );
+    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory(Path databaseRootDir) {
+        return new TestDatabaseManagementServiceBuilder(databaseRootDir);
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         managementService.shutdown();
     }
 
     @Test
-    void shouldKeepDataBetweenStartAndShutdown()
-    {
+    void shouldKeepDataBetweenStartAndShutdown() {
         createNode();
 
-        assertEquals( 1, nodeCount(), "Expected one new node" );
+        assertEquals(1, nodeCount(), "Expected one new node");
     }
 
     @Test
-    void dataShouldNotSurviveRestartOnSameFileSystem()
-    {
+    void dataShouldNotSurviveRestartOnSameFileSystem() {
         createNode();
         managementService.shutdown(); // Closing the ephemeral file system deletes all of its data.
 
         createDb();
 
-        assertEquals( 0, nodeCount(), "Should not see anything." );
+        assertEquals(0, nodeCount(), "Should not see anything.");
     }
 
     @Test
-    void dataCreatedAfterCrashShouldNotSurvive()
-    {
+    void dataCreatedAfterCrashShouldNotSurvive() {
         fs = fs.snapshot(); // Crash before we create any data.
 
         createNode(); // Pretend to create data, but we are post-crash, so the database should never see this.
         managementService.shutdown();
         createDb(); // Start database up on the crash snapshot.
 
-        assertEquals( 0, nodeCount(), "Should not see anything." );
+        assertEquals(0, nodeCount(), "Should not see anything.");
     }
 
     @Test
-    void shouldRemoveAllData()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            RelationshipType relationshipType = RelationshipType.withName( "R" );
+    void shouldRemoveAllData() {
+        try (Transaction tx = db.beginTx()) {
+            RelationshipType relationshipType = RelationshipType.withName("R");
 
             Node n1 = tx.createNode();
             Node n2 = tx.createNode();
@@ -122,35 +111,29 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
             tx.commit();
         }
 
-        cleanDatabaseContent( db );
+        cleanDatabaseContent(db);
 
-        assertThat( nodeCount() ).isZero();
+        assertThat(nodeCount()).isZero();
     }
 
-    private static void cleanDatabaseContent( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx();
-              ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
-              ResourceIterable<Node> allNodes = tx.getAllNodes() )
-        {
-            allRelationships.forEach( Relationship::delete );
-            allNodes.forEach( Node::delete );
+    private static void cleanDatabaseContent(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx();
+                ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
+                ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+            allRelationships.forEach(Relationship::delete);
+            allNodes.forEach(Node::delete);
             tx.commit();
         }
     }
 
-    private long nodeCount()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            return Iterables.count( transaction.getAllNodes() );
+    private long nodeCount() {
+        try (Transaction transaction = db.beginTx()) {
+            return Iterables.count(transaction.getAllNodes());
         }
     }
 
-    private void createNode()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
+    private void createNode() {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -30,69 +29,55 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 
-public class PropertyNameUtils
-{
-    private PropertyNameUtils()
-    {
-    }
+public class PropertyNameUtils {
+    private PropertyNameUtils() {}
 
-    public static String[] getPropertyKeysOrThrow( TokenRead tokenRead, int... properties )
-            throws PropertyKeyIdNotFoundKernelException
-    {
+    public static String[] getPropertyKeysOrThrow(TokenRead tokenRead, int... properties)
+            throws PropertyKeyIdNotFoundKernelException {
         String[] propertyKeys = new String[properties.length];
-        for ( int i = 0; i < properties.length; i++ )
-        {
-            propertyKeys[i] = tokenRead.propertyKeyName( properties[i] );
+        for (int i = 0; i < properties.length; i++) {
+            propertyKeys[i] = tokenRead.propertyKeyName(properties[i]);
         }
         return propertyKeys;
     }
 
-    public static String[] getPropertyKeys( TokenNameLookup tokenNameLookup, LabelSchemaDescriptor descriptor )
-    {
+    public static String[] getPropertyKeys(TokenNameLookup tokenNameLookup, LabelSchemaDescriptor descriptor) {
         int[] propertyKeyIds = descriptor.getPropertyIds();
         String[] propertyKeys = new String[propertyKeyIds.length];
-        for ( int i = 0; i < propertyKeyIds.length; i++ )
-        {
-            propertyKeys[i] = tokenNameLookup.propertyKeyGetName( propertyKeyIds[i] );
+        for (int i = 0; i < propertyKeyIds.length; i++) {
+            propertyKeys[i] = tokenNameLookup.propertyKeyGetName(propertyKeyIds[i]);
         }
         return propertyKeys;
     }
 
-    public static String[] getPropertyKeys( TokenNameLookup tokenNameLookup, int[] propertyIds )
-    {
+    public static String[] getPropertyKeys(TokenNameLookup tokenNameLookup, int[] propertyIds) {
         String[] propertyKeys = new String[propertyIds.length];
-        for ( int i = 0; i < propertyIds.length; i++ )
-        {
-            propertyKeys[i] = tokenNameLookup.propertyKeyGetName( propertyIds[i] );
+        for (int i = 0; i < propertyIds.length; i++) {
+            propertyKeys[i] = tokenNameLookup.propertyKeyGetName(propertyIds[i]);
         }
         return propertyKeys;
     }
 
-    public static int[] getOrCreatePropertyKeyIds( TokenWrite tokenWrite, String... propertyKeys )
-            throws KernelException
-    {
+    public static int[] getOrCreatePropertyKeyIds(TokenWrite tokenWrite, String... propertyKeys)
+            throws KernelException {
         int[] propertyKeyIds = new int[propertyKeys.length];
-        tokenWrite.propertyKeyGetOrCreateForNames( propertyKeys, propertyKeyIds );
+        tokenWrite.propertyKeyGetOrCreateForNames(propertyKeys, propertyKeyIds);
         return propertyKeyIds;
     }
 
-    public static int[] getOrCreatePropertyKeyIds( TokenWrite tokenWrite, IndexDefinition indexDefinition )
-            throws KernelException
-    {
-        return getOrCreatePropertyKeyIds( tokenWrite, getPropertyKeysArrayOf( indexDefinition ) );
+    public static int[] getOrCreatePropertyKeyIds(TokenWrite tokenWrite, IndexDefinition indexDefinition)
+            throws KernelException {
+        return getOrCreatePropertyKeyIds(tokenWrite, getPropertyKeysArrayOf(indexDefinition));
     }
 
-    private static String[] getPropertyKeysArrayOf( IndexDefinition indexDefinition )
-    {
-        if ( indexDefinition instanceof IndexDefinitionImpl )
-        {
+    private static String[] getPropertyKeysArrayOf(IndexDefinition indexDefinition) {
+        if (indexDefinition instanceof IndexDefinitionImpl) {
             return ((IndexDefinitionImpl) indexDefinition).getPropertyKeysArrayShared();
         }
         List<String> keys = new ArrayList<>();
-        for ( String key : indexDefinition.getPropertyKeys() )
-        {
-            keys.add( key );
+        for (String key : indexDefinition.getPropertyKeys()) {
+            keys.add(key);
         }
-        return keys.toArray( new String[0] );
+        return keys.toArray(new String[0]);
     }
 }

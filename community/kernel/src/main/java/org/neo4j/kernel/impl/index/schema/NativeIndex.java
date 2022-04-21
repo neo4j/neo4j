@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Consumer;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -42,11 +42,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-
-abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements ConsistencyCheckable
-{
+abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements ConsistencyCheckable {
     final PageCache pageCache;
     final IndexFiles indexFiles;
     final IndexLayout<KEY> layout;
@@ -59,11 +55,14 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     private final CursorContextFactory contextFactory;
     private final ImmutableSet<OpenOption> openOptions;
 
-    protected GBPTree<KEY,NullValue> tree;
+    protected GBPTree<KEY, NullValue> tree;
 
-    NativeIndex( DatabaseIndexContext databaseIndexContext, IndexLayout<KEY> layout, IndexFiles indexFiles, IndexDescriptor descriptor,
-                 ImmutableSet<OpenOption> openOptions )
-    {
+    NativeIndex(
+            DatabaseIndexContext databaseIndexContext,
+            IndexLayout<KEY> layout,
+            IndexFiles indexFiles,
+            IndexDescriptor descriptor,
+            ImmutableSet<OpenOption> openOptions) {
         this.pageCache = databaseIndexContext.pageCache;
         this.fileSystem = databaseIndexContext.fileSystem;
         this.monitors = databaseIndexContext.monitors;
@@ -77,61 +76,60 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         this.openOptions = openOptions;
     }
 
-    void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
-    {
+    void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter) {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
         Path storeFile = indexFiles.getStoreFile();
-        tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker,
-                openOptions, databaseName, descriptor.getName(), contextFactory );
-        afterTreeInstantiation( tree );
+        tree = new GBPTree<>(
+                pageCache,
+                storeFile,
+                layout,
+                monitor,
+                NO_HEADER_READER,
+                headerWriter,
+                recoveryCleanupWorkCollector,
+                readOnlyChecker,
+                openOptions,
+                databaseName,
+                descriptor.getName(),
+                contextFactory);
+        afterTreeInstantiation(tree);
     }
 
-    protected void afterTreeInstantiation( GBPTree<KEY,NullValue> tree )
-    {   // no-op per default
+    protected void afterTreeInstantiation(GBPTree<KEY, NullValue> tree) { // no-op per default
     }
 
-    private GBPTree.Monitor treeMonitor()
-    {
-        GBPTree.Monitor treeMonitor = monitors.newMonitor( GBPTree.Monitor.class, monitorTag );
-        IndexProvider.Monitor indexMonitor = monitors.newMonitor( IndexProvider.Monitor.class, monitorTag );
-        return new IndexMonitorAdaptor( treeMonitor, indexMonitor, indexFiles, descriptor );
+    private GBPTree.Monitor treeMonitor() {
+        GBPTree.Monitor treeMonitor = monitors.newMonitor(GBPTree.Monitor.class, monitorTag);
+        IndexProvider.Monitor indexMonitor = monitors.newMonitor(IndexProvider.Monitor.class, monitorTag);
+        return new IndexMonitorAdaptor(treeMonitor, indexMonitor, indexFiles, descriptor);
     }
 
-    private void ensureDirectoryExist()
-    {
+    private void ensureDirectoryExist() {
         indexFiles.ensureDirectoryExist();
     }
 
-    void closeTree()
-    {
-        IOUtils.closeAllUnchecked( tree );
+    void closeTree() {
+        IOUtils.closeAllUnchecked(tree);
         tree = null;
     }
 
-    void assertOpen()
-    {
-        if ( tree == null )
-        {
-            throw new IllegalStateException( "Index has been closed" );
+    void assertOpen() {
+        if (tree == null) {
+            throw new IllegalStateException("Index has been closed");
         }
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-    {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorContext );
+    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+        return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, CursorContext cursorContext )
-    {
-        try
-        {
-            return tree.consistencyCheck( visitor, cursorContext );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor<KEY> visitor, CursorContext cursorContext) {
+        try {
+            return tree.consistencyCheck(visitor, cursorContext);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

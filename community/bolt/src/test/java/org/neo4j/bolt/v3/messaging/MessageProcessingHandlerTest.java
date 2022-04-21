@@ -19,8 +19,15 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
-import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.PackOutputClosedException;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -32,129 +39,113 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
-import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
-public class MessageProcessingHandlerTest
-{
+public class MessageProcessingHandlerTest {
     @Test
-    void shouldCallHaltOnUnexpectedFailures() throws Exception
-    {
+    void shouldCallHaltOnUnexpectedFailures() throws Exception {
         // Given
         BoltResponseMessageWriter msgWriter = newResponseHandlerMock();
-        doThrow( new RuntimeException( "Something went horribly wrong" ) ).when( msgWriter ).write(
-                any( SuccessMessage.class ) );
+        doThrow(new RuntimeException("Something went horribly wrong"))
+                .when(msgWriter)
+                .write(any(SuccessMessage.class));
 
-        BoltConnection connection = mock( BoltConnection.class );
-        MessageProcessingHandler handler =
-                new MessageProcessingHandler( msgWriter, connection, mock( InternalLog.class ) );
+        BoltConnection connection = mock(BoltConnection.class);
+        MessageProcessingHandler handler = new MessageProcessingHandler(msgWriter, connection, mock(InternalLog.class));
 
         // When
         handler.onFinish();
 
         // Then
-        verify( connection ).stop();
+        verify(connection).stop();
     }
 
     @Test
-    void shouldLogOriginalErrorWhenOutputIsClosed() throws Exception
-    {
-        testLoggingOfOriginalErrorWhenOutputIsClosed( Neo4jError.from( new RuntimeException( "Non-fatal error" ) ) );
+    void shouldLogOriginalErrorWhenOutputIsClosed() throws Exception {
+        testLoggingOfOriginalErrorWhenOutputIsClosed(Neo4jError.from(new RuntimeException("Non-fatal error")));
     }
 
     @Test
-    void shouldLogOriginalFatalErrorWhenOutputIsClosed() throws Exception
-    {
-        testLoggingOfOriginalErrorWhenOutputIsClosed( Neo4jError.fatalFrom( new RuntimeException( "Fatal error" ) ) );
+    void shouldLogOriginalFatalErrorWhenOutputIsClosed() throws Exception {
+        testLoggingOfOriginalErrorWhenOutputIsClosed(Neo4jError.fatalFrom(new RuntimeException("Fatal error")));
     }
 
     @Test
-    void shouldLogWriteErrorAndOriginalErrorWhenUnknownFailure() throws Exception
-    {
+    void shouldLogWriteErrorAndOriginalErrorWhenUnknownFailure() throws Exception {
         testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(
-                Neo4jError.from( new RuntimeException( "Non-fatal error" ) ) );
+                Neo4jError.from(new RuntimeException("Non-fatal error")));
     }
 
     @Test
-    void shouldLogWriteErrorAndOriginalFatalErrorWhenUnknownFailure() throws Exception
-    {
+    void shouldLogWriteErrorAndOriginalFatalErrorWhenUnknownFailure() throws Exception {
         testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(
-                Neo4jError.fatalFrom( new RuntimeException( "Fatal error" ) ) );
+                Neo4jError.fatalFrom(new RuntimeException("Fatal error")));
     }
 
     @Test
-    void shouldLogShortWarningOnClientDisconnectMidwayThroughQuery() throws Exception
-    {
+    void shouldLogShortWarningOnClientDisconnectMidwayThroughQuery() throws Exception {
         // Connections dying is not exceptional per-se, so we don't need to fill the log with
         // eye-catching stack traces; but it could be indicative of some issue, so log a brief
         // warning in the debug log at least.
 
         // Given
-        PackOutputClosedException outputClosed = new PackOutputClosedException( "Output closed", "<client>" );
-        Neo4jError txTerminated =
-                Neo4jError.from( new TransactionTerminatedException( Status.Transaction.Terminated ) );
+        PackOutputClosedException outputClosed = new PackOutputClosedException("Output closed", "<client>");
+        Neo4jError txTerminated = Neo4jError.from(new TransactionTerminatedException(Status.Transaction.Terminated));
 
         // When
-        AssertableLogProvider logProvider = emulateFailureWritingError( txTerminated, outputClosed );
+        AssertableLogProvider logProvider = emulateFailureWritingError(txTerminated, outputClosed);
 
         // Then
-        assertThat( logProvider ).forClass( getClass() ).forLevel( WARN )
+        assertThat(logProvider)
+                .forClass(getClass())
+                .forLevel(WARN)
                 .containsMessageWithArguments(
-                "Client %s disconnected while query was running. Session has been cleaned up. " +
-                        "This can be caused by temporary network problems, but if you see this often, ensure your " +
-                        "applications are properly waiting for operations to complete before exiting.",
-                 "<client>" );
+                        "Client %s disconnected while query was running. Session has been cleaned up. "
+                                + "This can be caused by temporary network problems, but if you see this often, ensure your "
+                                + "applications are properly waiting for operations to complete before exiting.",
+                        "<client>");
     }
 
-    private static void testLoggingOfOriginalErrorWhenOutputIsClosed( Neo4jError original ) throws Exception
-    {
-        PackOutputClosedException outputClosed = new PackOutputClosedException( "Output closed", "<client>" );
-        AssertableLogProvider logProvider = emulateFailureWritingError( original, outputClosed );
-        assertThat( logProvider ).forClass( MessageProcessingHandlerTest.class ).forLevel( WARN )
-                .containsMessageWithException( "Unable to send error back to the client", original.cause() );
+    private static void testLoggingOfOriginalErrorWhenOutputIsClosed(Neo4jError original) throws Exception {
+        PackOutputClosedException outputClosed = new PackOutputClosedException("Output closed", "<client>");
+        AssertableLogProvider logProvider = emulateFailureWritingError(original, outputClosed);
+        assertThat(logProvider)
+                .forClass(MessageProcessingHandlerTest.class)
+                .forLevel(WARN)
+                .containsMessageWithException("Unable to send error back to the client", original.cause());
     }
 
-    private static void testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure( Neo4jError original )
-            throws Exception
-    {
-        RuntimeException outputError = new RuntimeException( "Output failed" );
-        AssertableLogProvider logProvider = emulateFailureWritingError( original, outputError );
-        assertThat( logProvider ).forClass( MessageProcessingHandlerTest.class ).forLevel( ERROR )
-                .containsMessageWithException( "Unable to send error back to the client", outputError );
-        assertThat( outputError ).hasSuppressedException( original.cause() );
+    private static void testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(Neo4jError original)
+            throws Exception {
+        RuntimeException outputError = new RuntimeException("Output failed");
+        AssertableLogProvider logProvider = emulateFailureWritingError(original, outputError);
+        assertThat(logProvider)
+                .forClass(MessageProcessingHandlerTest.class)
+                .forLevel(ERROR)
+                .containsMessageWithException("Unable to send error back to the client", outputError);
+        assertThat(outputError).hasSuppressedException(original.cause());
     }
 
-    private static AssertableLogProvider emulateFailureWritingError( Neo4jError error, Throwable errorDuringWrite )
-            throws Exception
-    {
+    private static AssertableLogProvider emulateFailureWritingError(Neo4jError error, Throwable errorDuringWrite)
+            throws Exception {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        BoltResponseMessageWriter responseHandler = newResponseHandlerMock( errorDuringWrite );
+        BoltResponseMessageWriter responseHandler = newResponseHandlerMock(errorDuringWrite);
 
-        MessageProcessingHandler handler =
-                new MessageProcessingHandler( responseHandler, mock( BoltConnection.class ),
-                        logProvider.getLog( MessageProcessingHandlerTest.class ) );
+        MessageProcessingHandler handler = new MessageProcessingHandler(
+                responseHandler, mock(BoltConnection.class), logProvider.getLog(MessageProcessingHandlerTest.class));
 
-        handler.markFailed( error );
+        handler.markFailed(error);
         handler.onFinish();
 
         return logProvider;
     }
 
-    private static BoltResponseMessageWriter newResponseHandlerMock( Throwable error ) throws Exception
-    {
+    private static BoltResponseMessageWriter newResponseHandlerMock(Throwable error) throws Exception {
         BoltResponseMessageWriter handler = newResponseHandlerMock();
 
-        doThrow( error ).when( handler ).write( any( FailureMessage.class ) );
+        doThrow(error).when(handler).write(any(FailureMessage.class));
         return handler;
     }
 
-    private static BoltResponseMessageWriter newResponseHandlerMock()
-    {
-        return mock( BoltResponseMessageWriter.class );
+    private static BoltResponseMessageWriter newResponseHandlerMock() {
+        return mock(BoltResponseMessageWriter.class);
     }
 }

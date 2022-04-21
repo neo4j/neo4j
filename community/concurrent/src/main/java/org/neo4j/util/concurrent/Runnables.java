@@ -21,10 +21,8 @@ package org.neo4j.util.concurrent;
 
 import org.neo4j.internal.helpers.Exceptions;
 
-public class Runnables
-{
-    public static final Runnable EMPTY_RUNNABLE = () ->
-    {
+public class Runnables {
+    public static final Runnable EMPTY_RUNNABLE = () -> {
         // empty
     };
 
@@ -34,29 +32,22 @@ public class Runnables
      * @param message passed to resulting {@link RuntimeException} if any runnable throw.
      * @param runnables to run.
      */
-    public static void runAll( String message, Runnable... runnables )
-    {
+    public static void runAll(String message, Runnable... runnables) {
         Throwable exceptions = null;
         int errors = 0;
-        for ( Runnable runnable : runnables )
-        {
-            try
-            {
+        for (Runnable runnable : runnables) {
+            try {
                 runnable.run();
-            }
-            catch ( Throwable t )
-            {
-                exceptions = Exceptions.chain( exceptions, t );
+            } catch (Throwable t) {
+                exceptions = Exceptions.chain(exceptions, t);
                 errors++;
             }
         }
-        if ( exceptions != null )
-        {
-            if ( errors == 1 )
-            {
-                Exceptions.throwIfUnchecked( exceptions );
+        if (exceptions != null) {
+            if (errors == 1) {
+                Exceptions.throwIfUnchecked(exceptions);
             }
-            throw new RuntimeException( message, exceptions );
+            throw new RuntimeException(message, exceptions);
         }
     }
 }

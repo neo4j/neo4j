@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.function.Supplier;
-
 import org.neo4j.util.FeatureToggles;
 
 /**
@@ -43,48 +42,41 @@ import org.neo4j.util.FeatureToggles;
  * keep track of the last page that we jumped to root from and if we loop
  * from the same place enough times we will throw an exception.
  */
-public class TripCountingRootCatchup implements RootCatchup
-{
+public class TripCountingRootCatchup implements RootCatchup {
     private static final String MAX_TRIP_COUNT_NAME = "max_trip_count";
     private static final int MAX_TRIP_COUNT_DEFAULT = 10;
-    static final int MAX_TRIP_COUNT = FeatureToggles.getInteger( TripCountingRootCatchup.class, MAX_TRIP_COUNT_NAME, MAX_TRIP_COUNT_DEFAULT );
+    static final int MAX_TRIP_COUNT =
+            FeatureToggles.getInteger(TripCountingRootCatchup.class, MAX_TRIP_COUNT_NAME, MAX_TRIP_COUNT_DEFAULT);
     private final Supplier<Root> rootSupplier;
     private long lastFromId = TreeNode.NO_NODE_FLAG;
     private int tripCount;
 
-    TripCountingRootCatchup( Supplier<Root> rootSupplier )
-    {
+    TripCountingRootCatchup(Supplier<Root> rootSupplier) {
         this.rootSupplier = rootSupplier;
     }
 
     @Override
-    public Root catchupFrom( long fromId )
-    {
-        updateTripCount( fromId );
+    public Root catchupFrom(long fromId) {
+        updateTripCount(fromId);
         assertTripCount();
         return rootSupplier.get();
     }
 
-    private void updateTripCount( long fromId )
-    {
-        if ( fromId == lastFromId )
-        {
+    private void updateTripCount(long fromId) {
+        if (fromId == lastFromId) {
             tripCount++;
-        }
-        else
-        {
+        } else {
             lastFromId = fromId;
             tripCount = 1;
         }
     }
 
-    private void assertTripCount()
-    {
-        if ( tripCount >= MAX_TRIP_COUNT )
-        {
+    private void assertTripCount() {
+        if (tripCount >= MAX_TRIP_COUNT) {
             throw new TreeInconsistencyException(
-                    "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. " +
-                            "Loop occurred when restarting search from root from page %d.", lastFromId );
+                    "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. "
+                            + "Loop occurred when restarting search from root from page %d.",
+                    lastFromId);
         }
     }
 }

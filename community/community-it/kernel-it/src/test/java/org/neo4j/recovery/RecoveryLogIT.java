@@ -19,12 +19,13 @@
  */
 package org.neo4j.recovery;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -39,71 +40,66 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
 @Neo4jLayoutExtension
-class RecoveryLogIT
-{
+class RecoveryLogIT {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     private DatabaseManagementService managementService;
 
     @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
+    void tearDown() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
 
     @Test
-    void transactionsRecoveryLogContainsTimeSpent() throws IOException
-    {
-        //Create database with forced recovery
+    void transactionsRecoveryLogContainsTimeSpent() throws IOException {
+        // Create database with forced recovery
         Path tmpLogDir = testDirectory.directory("logs");
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
 
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             Node node1 = tx.createNode();
             Node node2 = tx.createNode();
-            node1.createRelationshipTo( node2, RelationshipType.withName( "likes" ) );
+            node1.createRelationshipTo(node2, RelationshipType.withName("likes"));
             tx.commit();
         }
 
-        Path[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
-                                       .build().logFiles();
-        for ( Path file : txLogs )
-        {
-            fileSystem.copyToDirectory( file, tmpLogDir );
+        Path[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder(
+                        databaseLayout.getTransactionLogsDirectory(), fileSystem)
+                .build()
+                .logFiles();
+        for (Path file : txLogs) {
+            fileSystem.copyToDirectory(file, tmpLogDir);
         }
 
         managementService.shutdown();
 
-        for ( Path txLog : fileSystem.listFiles( databaseLayout.getTransactionLogsDirectory() ) )
-        {
-            fileSystem.deleteFile( txLog );
+        for (Path txLog : fileSystem.listFiles(databaseLayout.getTransactionLogsDirectory())) {
+            fileSystem.deleteFile(txLog);
         }
 
-        for ( Path file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fileSystem )
-                .build().logFiles() )
-        {
-            fileSystem.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory() );
+        for (Path file : LogFilesBuilder.logFilesBasedOnlyBuilder(tmpLogDir, fileSystem)
+                .build()
+                .logFiles()) {
+            fileSystem.moveToDirectory(file, databaseLayout.getTransactionLogsDirectory());
         }
 
         AssertableLogProvider provider = new AssertableLogProvider();
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setInternalLogProvider( provider )
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setInternalLogProvider(provider)
                 .build();
-        managementService.database( DEFAULT_DATABASE_NAME );
+        managementService.database(DEFAULT_DATABASE_NAME);
 
-        assertThat( provider ).containsMessages( "Recovery completed", "time spent" );
+        assertThat(provider).containsMessages("Recovery completed", "time spent");
     }
 }

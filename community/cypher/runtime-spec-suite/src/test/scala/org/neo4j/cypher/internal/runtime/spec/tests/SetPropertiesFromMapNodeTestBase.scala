@@ -33,21 +33,21 @@ import org.neo4j.internal.helpers.collection.Iterables
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should add new node property with removeOtherProps") {
     given {
-      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1)})
+      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1) })
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("n.prop1 as p1", "n.prop2 as p2")
-      .setPropertiesFromMap("n","{prop2: 3}", removeOtherProps = true)
+      .setPropertiesFromMap("n", "{prop2: 3}", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -61,14 +61,14 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("should add new node property without removeOtherProps") {
     given {
-      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1)})
+      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1) })
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("n.prop1 as p1", "n.prop2 as p2")
-      .setPropertiesFromMap("n","{prop2: 3}", removeOtherProps = false)
+      .setPropertiesFromMap("n", "{prop2: 3}", removeOtherProps = false)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -82,7 +82,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("should remove all node properties with removeOtherProps") {
     given {
-      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1, "prop2" -> 2)})
+      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1, "prop2" -> 2) })
     }
 
     // when
@@ -103,7 +103,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("should remove specific node property without removeOtherProps") {
     given {
-      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1, "prop2" -> 2)})
+      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1, "prop2" -> 2) })
     }
 
     // when
@@ -131,14 +131,14 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1")
-      .setPropertiesFromMap("p1","{propCopy: n.prop}", removeOtherProps = true)
+      .setPropertiesFromMap("p1", "{propCopy: n.prop}", removeOtherProps = true)
       .projection("n.prop as p1")
       .allNodeScan("n")
       .build(readOnly = false)
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    val thrownException = the [InvalidArgumentException] thrownBy consume(runtimeResult)
+    val thrownException = the[InvalidArgumentException] thrownBy consume(runtimeResult)
     thrownException.getMessage should fullyMatch regex "The expression (.*) should have been a node or a relationship, but got (.*)".r
   }
 
@@ -151,8 +151,8 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p", "otherP")
       .projection("n.prop as p", "n.propOther as otherP")
-      .setPropertiesFromMap("n","{prop: null}", removeOtherProps = false)
-      .setPropertiesFromMap("n","{propOther: n.prop + 1}", removeOtherProps = false)
+      .setPropertiesFromMap("n", "{prop: null}", removeOtherProps = false)
+      .setPropertiesFromMap("n", "{propOther: n.prop + 1}", removeOtherProps = false)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -173,8 +173,8 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p", "otherP")
       .projection("n.prop as p", "n.propOther as otherP")
-      .setPropertiesFromMap("n","{prop: 1}", removeOtherProps = true)
-      .setPropertiesFromMap("n","{propOther: n.prop + 1}", removeOtherProps = false)
+      .setPropertiesFromMap("n", "{prop: 1}", removeOtherProps = true)
+      .setPropertiesFromMap("n", "{propOther: n.prop + 1}", removeOtherProps = false)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -195,7 +195,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2", "p3")
       .projection("n.prop as p1", "n.propCopy as p2", "n.newProp as p3")
-      .setPropertiesFromMap("n","{propCopy: n.prop, newProp: 1}", removeOtherProps = true)
+      .setPropertiesFromMap("n", "{propCopy: n.prop, newProp: 1}", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -206,7 +206,6 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p1", "p2", "p3").withSingleRow(null, 0, 1).withStatistics(propertiesSet = 3)
     properties.sorted shouldBe Seq("newProp", "prop", "propCopy")
   }
-
 
   test("should set property on multiple nodes") {
     given {
@@ -372,12 +371,14 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    the [CypherTypeException] thrownBy consume(runtimeResult) should have message "Expected Null() to be a map, but it was :`NO_VALUE`"
+    the[CypherTypeException] thrownBy consume(
+      runtimeResult
+    ) should have message "Expected Null() to be a map, but it was :`NO_VALUE`"
   }
 
   test("should handle empty map") {
     given {
-      nodePropertyGraph(1, { case _ => Map("prop" -> 1)})
+      nodePropertyGraph(1, { case _ => Map("prop" -> 1) })
     }
 
     // when
@@ -441,14 +442,14 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("should count node property updates even if values are not changed") {
     val n = given {
-      nodePropertyGraph(1, { case _ => Map("prop" -> 100)})
+      nodePropertyGraph(1, { case _ => Map("prop" -> 100) })
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setPropertiesFromMap("n", "{prop: 100}", removeOtherProps = true )
+      .setPropertiesFromMap("n", "{prop: 100}", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -462,20 +463,20 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("should fail when setting non-map node property") {
     given {
-      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1)})
+      nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1) })
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("n.prop1 as p1", "n.prop2 as p2")
-      .setPropertiesFromMap("n","3", removeOtherProps = true)
+      .setPropertiesFromMap("n", "3", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    val thrownException = the [CypherTypeException] thrownBy consume(runtimeResult)
+    val thrownException = the[CypherTypeException] thrownBy consume(runtimeResult)
     thrownException.getMessage should fullyMatch regex "Expected (.*)3(.*) to be a map, but it was :`Long\\(3\\)`".r
   }
 
@@ -553,7 +554,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2", "p3")
       .projection("x1.prop1 as p1", "x1.prop2 as p2", "x1.prop3 as p3")
-      .setPropertiesFromMap( "x1", "r", removeOtherProps = true)
+      .setPropertiesFromMap("x1", "r", removeOtherProps = true)
       .directedRelationshipByIdSeek("r", "x1", "y1", Set.empty, relationships.head.getId)
       .build(readOnly = false)
 
@@ -567,7 +568,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("should set properties from map between two loops with continuation") {
     val nodes = given {
-      nodePropertyGraph(sizeHint, {case _ => Map("prop" -> 0)})
+      nodePropertyGraph(sizeHint, { case _ => Map("prop" -> 0) })
     }
 
     // when
@@ -592,15 +593,15 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     val nodes = given {
       uniqueIndex("L", "p1", "p2")
 
-      //p1 = 0, p2 = 0
-      //p1 = 1, p2 = 0
-      nodePropertyGraph(2, {case i => Map("p1" -> i, "p2" -> 0)}, "L")
+      // p1 = 0, p2 = 0
+      // p1 = 1, p2 = 0
+      nodePropertyGraph(2, { case i => Map("p1" -> i, "p2" -> 0) }, "L")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      //this could temporarily make the property pair non-unique
+      // this could temporarily make the property pair non-unique
       .setPropertiesFromMap("n", "{p1: 1, p2: 3}", removeOtherProps = true)
       .filter("n.p1 = 0", "n.p2 = 0")
       .allNodeScan("n")
@@ -618,15 +619,15 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     val nodes = given {
       uniqueIndex("L", "p1", "p2")
 
-      //p1 = 0, p2 = 0
-      //p1 = 1, p2 = 0
-      nodePropertyGraph(2, {case i => Map("p1" -> i, "p2" -> 0)}, "L")
+      // p1 = 0, p2 = 0
+      // p1 = 1, p2 = 0
+      nodePropertyGraph(2, { case i => Map("p1" -> i, "p2" -> 0) }, "L")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      //this could temporarily make the property pair non-unique
+      // this could temporarily make the property pair non-unique
       .setPropertiesFromMap("n", "{p1: 1, p2: 3}", removeOtherProps = false)
       .filter("n.p1 = 0", "n.p2 = 0")
       .allNodeScan("n")

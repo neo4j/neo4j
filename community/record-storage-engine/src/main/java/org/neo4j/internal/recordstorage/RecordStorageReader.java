@@ -19,11 +19,13 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.OptionalLong;
 import java.util.function.Function;
-
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
@@ -51,14 +53,10 @@ import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
-
 /**
  * Default implementation of StorageReader. Delegates to NeoStores and indexes.
  */
-public class RecordStorageReader implements StorageReader
-{
+public class RecordStorageReader implements StorageReader {
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final TokenHolders tokenHolders;
     private final NodeStore nodeStore;
@@ -71,9 +69,12 @@ public class RecordStorageReader implements StorageReader
 
     private boolean closed;
 
-    RecordStorageReader( TokenHolders tokenHolders, NeoStores neoStores, CountsAccessor counts, RelationshipGroupDegreesStore groupDegreesStore,
-            SchemaCache schemaCache )
-    {
+    RecordStorageReader(
+            TokenHolders tokenHolders,
+            NeoStores neoStores,
+            CountsAccessor counts,
+            RelationshipGroupDegreesStore groupDegreesStore,
+            SchemaCache schemaCache) {
         this.tokenHolders = tokenHolders;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
@@ -88,144 +89,129 @@ public class RecordStorageReader implements StorageReader
      * All the nulls in this method is a testament to the fact that we probably need to break apart this reader,
      * separating index stuff out from store stuff.
      */
-    public RecordStorageReader( NeoStores stores )
-    {
-        this( null, stores, null, null, null );
+    public RecordStorageReader(NeoStores stores) {
+        this(null, stores, null, null, null);
     }
 
-    public RecordStorageReader( NeoStores stores, SchemaCache schemaCache )
-    {
-        this( null, stores, null, null, schemaCache );
-    }
-
-    @Override
-    public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
-    {
-        return schemaCache.indexesForSchema( descriptor );
+    public RecordStorageReader(NeoStores stores, SchemaCache schemaCache) {
+        this(null, stores, null, null, schemaCache);
     }
 
     @Override
-    public IndexDescriptor indexGetForSchemaAndType( SchemaDescriptor descriptor, IndexType type )
-    {
-        return schemaCache.indexForSchemaAndType( descriptor, type );
+    public Iterator<IndexDescriptor> indexGetForSchema(SchemaDescriptor descriptor) {
+        return schemaCache.indexesForSchema(descriptor);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
-    {
-        return schemaCache.indexesForLabel( labelId );
+    public IndexDescriptor indexGetForSchemaAndType(SchemaDescriptor descriptor, IndexType type) {
+        return schemaCache.indexForSchemaAndType(descriptor, type);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
-    {
-        return schemaCache.indexesForRelationshipType( relationshipType );
+    public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
+        return schemaCache.indexesForLabel(labelId);
     }
 
     @Override
-    public IndexDescriptor indexGetForName( String name )
-    {
-        return schemaCache.indexForName( name );
+    public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
+        return schemaCache.indexesForRelationshipType(relationshipType);
     }
 
     @Override
-    public ConstraintDescriptor constraintGetForName( String name )
-    {
-        return schemaCache.constraintForName( name );
+    public IndexDescriptor indexGetForName(String name) {
+        return schemaCache.indexForName(name);
     }
 
     @Override
-    public boolean indexExists( IndexDescriptor index )
-    {
-        return schemaCache.hasIndex( index );
+    public ConstraintDescriptor constraintGetForName(String name) {
+        return schemaCache.constraintForName(name);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
-    {
+    public boolean indexExists(IndexDescriptor index) {
+        return schemaCache.hasIndex(index);
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> indexesGetAll() {
         return schemaCache.indexes().iterator();
     }
 
     @Override
-    public Collection<IndexDescriptor> valueIndexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
-    {
-        return schemaCache.getValueIndexesRelatedTo( EMPTY_LONG_ARRAY, labels, new int[]{propertyKeyId}, false, entityType );
+    public Collection<IndexDescriptor> valueIndexesGetRelated(long[] labels, int propertyKeyId, EntityType entityType) {
+        return schemaCache.getValueIndexesRelatedTo(
+                EMPTY_LONG_ARRAY, labels, new int[] {propertyKeyId}, false, entityType);
     }
 
     @Override
-    public Collection<IndexDescriptor> valueIndexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType )
-    {
-        return schemaCache.getValueIndexesRelatedTo( labels, PrimitiveLongCollections.EMPTY_LONG_ARRAY, propertyKeyIds, true, entityType );
+    public Collection<IndexDescriptor> valueIndexesGetRelated(
+            long[] labels, int[] propertyKeyIds, EntityType entityType) {
+        return schemaCache.getValueIndexesRelatedTo(
+                labels, PrimitiveLongCollections.EMPTY_LONG_ARRAY, propertyKeyIds, true, entityType);
     }
 
     @Override
-    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
-    {
-        return schemaCache.getUniquenessConstraintsRelatedTo( PrimitiveLongCollections.EMPTY_LONG_ARRAY, labels, new int[] {propertyKeyId}, false, entityType );
+    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
+            long[] labels, int propertyKeyId, EntityType entityType) {
+        return schemaCache.getUniquenessConstraintsRelatedTo(
+                PrimitiveLongCollections.EMPTY_LONG_ARRAY, labels, new int[] {propertyKeyId}, false, entityType);
     }
 
     @Override
-    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] changedLabels, long[] unchangedLabels,
-            int[] propertyKeyIds, boolean propertyKeyListIsComplete, EntityType entityType )
-    {
-        return schemaCache.getUniquenessConstraintsRelatedTo( changedLabels, unchangedLabels, propertyKeyIds, propertyKeyListIsComplete, entityType );
+    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
+            long[] changedLabels,
+            long[] unchangedLabels,
+            int[] propertyKeyIds,
+            boolean propertyKeyListIsComplete,
+            EntityType entityType) {
+        return schemaCache.getUniquenessConstraintsRelatedTo(
+                changedLabels, unchangedLabels, propertyKeyIds, propertyKeyListIsComplete, entityType);
     }
 
     @Override
-    public boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType )
-    {
-        return schemaCache.hasRelatedSchema( tokens, propertyKey, entityType );
+    public boolean hasRelatedSchema(long[] tokens, int propertyKey, EntityType entityType) {
+        return schemaCache.hasRelatedSchema(tokens, propertyKey, entityType);
     }
 
     @Override
-    public boolean hasRelatedSchema( int token, EntityType entityType )
-    {
-        return schemaCache.hasRelatedSchema( token, entityType );
+    public boolean hasRelatedSchema(int token, EntityType entityType) {
+        return schemaCache.hasRelatedSchema(token, entityType);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
-    {
-        return schemaCache.constraintsForSchema( descriptor );
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema(SchemaDescriptor descriptor) {
+        return schemaCache.constraintsForSchema(descriptor);
     }
 
     @Override
-    public boolean constraintExists( ConstraintDescriptor descriptor )
-    {
-        return schemaCache.hasConstraintRule( descriptor );
+    public boolean constraintExists(ConstraintDescriptor descriptor) {
+        return schemaCache.hasConstraintRule(descriptor);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
-    {
-        return schemaCache.constraintsForLabel( labelId );
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
+        return schemaCache.constraintsForLabel(labelId);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
-    {
-        return schemaCache.constraintsForRelationshipType( typeId );
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
+        return schemaCache.constraintsForRelationshipType(typeId);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetAll()
-    {
+    public Iterator<ConstraintDescriptor> constraintsGetAll() {
         return schemaCache.constraints().iterator();
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
-    {
-        if ( index == null )
-        {
+    public Long indexGetOwningUniquenessConstraintId(IndexDescriptor index) {
+        if (index == null) {
             return null;
         }
         OptionalLong owningConstraintId = index.getOwningConstraintId();
-        if ( owningConstraintId.isPresent() )
-        {
+        if (owningConstraintId.isPresent()) {
             Long constraintId = owningConstraintId.getAsLong();
-            if ( schemaCache.hasConstraintRule( constraintId ) )
-            {
+            if (schemaCache.hasConstraintRule(constraintId)) {
                 return constraintId;
             }
         }
@@ -233,32 +219,24 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public long countsForNode( int labelId, CursorContext cursorContext )
-    {
-        return counts.nodeCount( labelId, cursorContext );
+    public long countsForNode(int labelId, CursorContext cursorContext) {
+        return counts.nodeCount(labelId, cursorContext);
     }
 
     @Override
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext )
-    {
-        if ( !(startLabelId == ANY_LABEL || endLabelId == ANY_LABEL) )
-        {
-            throw new UnsupportedOperationException( "not implemented" );
+    public long countsForRelationship(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
+        if (!(startLabelId == ANY_LABEL || endLabelId == ANY_LABEL)) {
+            throw new UnsupportedOperationException("not implemented");
         }
-        return counts.relationshipCount( startLabelId, typeId, endLabelId, cursorContext );
+        return counts.relationshipCount(startLabelId, typeId, endLabelId, cursorContext);
     }
 
     @Override
-    public long nodesGetCount( CursorContext cursorContext )
-    {
-        if ( counts != null )
-        {
-            try
-            {
-                return counts.nodeCount( ANY_LABEL, cursorContext );
-            }
-            catch ( IllegalStateException e )
-            {
+    public long nodesGetCount(CursorContext cursorContext) {
+        if (counts != null) {
+            try {
+                return counts.nodeCount(ANY_LABEL, cursorContext);
+            } catch (IllegalStateException e) {
                 // This can happen if requesting nodes count before the store has been fully recovered.
                 // Counts store cannot return values until then, so we'll just have to return an estimate.
                 // The only use case here at the time of writing this is index population progress during recovery.
@@ -270,99 +248,88 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public long relationshipsGetCount( CursorContext cursorContext )
-    {
+    public long relationshipsGetCount(CursorContext cursorContext) {
         return relationshipStore.getNumberOfIdsInUse();
     }
 
     @Override
-    public int labelCount()
-    {
+    public int labelCount() {
         return tokenHolders.labelTokens().size();
     }
 
     @Override
-    public int propertyKeyCount()
-    {
+    public int propertyKeyCount() {
         return tokenHolders.propertyKeyTokens().size();
     }
 
     @Override
-    public int relationshipTypeCount()
-    {
+    public int relationshipTypeCount() {
         return tokenHolders.relationshipTypeTokens().size();
     }
 
     @Override
-    public boolean nodeExists( long id, StoreCursors storeCursors )
-    {
-        return nodeStore.isInUse( id, storeCursors.readCursor( RecordCursorTypes.NODE_CURSOR ) );
+    public boolean nodeExists(long id, StoreCursors storeCursors) {
+        return nodeStore.isInUse(id, storeCursors.readCursor(RecordCursorTypes.NODE_CURSOR));
     }
 
     @Override
-    public boolean relationshipExists( long id, StoreCursors storeCursors )
-    {
-        return relationshipStore.isInUse( id, storeCursors.readCursor( RecordCursorTypes.RELATIONSHIP_CURSOR ) );
+    public boolean relationshipExists(long id, StoreCursors storeCursors) {
+        return relationshipStore.isInUse(id, storeCursors.readCursor(RecordCursorTypes.RELATIONSHIP_CURSOR));
     }
 
     @Override
-    public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader,T> factory )
-    {
-        return schemaCache.getOrCreateDependantState( type, factory, this );
+    public <T> T getOrCreateSchemaDependantState(Class<T> type, Function<StorageReader, T> factory) {
+        return schemaCache.getOrCreateDependantState(type, factory, this);
     }
 
     @Override
-    public AllNodeScan allNodeScan()
-    {
+    public AllNodeScan allNodeScan() {
         return new RecordNodeScan();
     }
 
     @Override
-    public AllRelationshipsScan allRelationshipScan()
-    {
+    public AllRelationshipsScan allRelationshipScan() {
         return new RecordRelationshipScan();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         assert !closed;
         closed = true;
     }
 
     @Override
-    public RecordNodeCursor allocateNodeCursor( CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        return new RecordNodeCursor( nodeStore, relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext, storeCursors );
+    public RecordNodeCursor allocateNodeCursor(CursorContext cursorContext, StoreCursors storeCursors) {
+        return new RecordNodeCursor(
+                nodeStore, relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext, storeCursors);
     }
 
     @Override
-    public RecordRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        return new RecordRelationshipTraversalCursor( relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext );
+    public RecordRelationshipTraversalCursor allocateRelationshipTraversalCursor(
+            CursorContext cursorContext, StoreCursors storeCursors) {
+        return new RecordRelationshipTraversalCursor(
+                relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext);
     }
 
     @Override
-    public RecordRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        return new RecordRelationshipScanCursor( relationshipStore, cursorContext );
+    public RecordRelationshipScanCursor allocateRelationshipScanCursor(
+            CursorContext cursorContext, StoreCursors storeCursors) {
+        return new RecordRelationshipScanCursor(relationshipStore, cursorContext);
     }
 
     @Override
-    public StorageSchemaReader schemaSnapshot()
-    {
-        return new StorageSchemaReaderSnapshot( schemaCache.snapshot() );
+    public StorageSchemaReader schemaSnapshot() {
+        return new StorageSchemaReaderSnapshot(schemaCache.snapshot());
     }
 
     @Override
-    public TokenNameLookup tokenNameLookup()
-    {
+    public TokenNameLookup tokenNameLookup() {
         return tokenHolders;
     }
 
     @Override
-    public StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
-    {
-        return new RecordPropertyCursor( propertyStore, cursorContext, memoryTracker );
+    public StoragePropertyCursor allocatePropertyCursor(
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return new RecordPropertyCursor(propertyStore, cursorContext, memoryTracker);
     }
 }

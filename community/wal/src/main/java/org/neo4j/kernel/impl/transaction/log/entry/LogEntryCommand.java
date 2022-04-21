@@ -19,56 +19,47 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
+
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.StorageCommand;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
-
-public class LogEntryCommand extends AbstractLogEntry
-{
+public class LogEntryCommand extends AbstractLogEntry {
     private final StorageCommand command;
 
-    public LogEntryCommand( StorageCommand command )
-    {
-        this( KernelVersion.LATEST, command );
+    public LogEntryCommand(StorageCommand command) {
+        this(KernelVersion.LATEST, command);
     }
 
-    public LogEntryCommand( KernelVersion version, StorageCommand command )
-    {
-        super( version, COMMAND );
+    public LogEntryCommand(KernelVersion version, StorageCommand command) {
+        super(version, COMMAND);
         this.command = command;
     }
 
-    public StorageCommand getCommand()
-    {
+    public StorageCommand getCommand() {
         return command;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "Command[" + System.lineSeparator() + command + "]";
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         LogEntryCommand command1 = (LogEntryCommand) o;
-        return command.equals( command1.command );
+        return command.equals(command1.command);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return command.hashCode();
     }
 }

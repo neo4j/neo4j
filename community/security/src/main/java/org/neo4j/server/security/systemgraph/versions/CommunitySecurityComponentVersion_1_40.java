@@ -19,35 +19,28 @@
  */
 package org.neo4j.server.security.systemgraph.versions;
 
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.server.security.auth.UserRepository;
 
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40;
-
 /**
  * This is the UserSecurityComponent version for Neo4j 4.0
  */
-public class CommunitySecurityComponentVersion_1_40 extends SupportedCommunitySecurityComponentVersion
-{
-    public CommunitySecurityComponentVersion_1_40( AbstractSecurityLog securityLog, UserRepository userRepository )
-    {
-        super( COMMUNITY_SECURITY_40, securityLog, userRepository );
+public class CommunitySecurityComponentVersion_1_40 extends SupportedCommunitySecurityComponentVersion {
+    public CommunitySecurityComponentVersion_1_40(AbstractSecurityLog securityLog, UserRepository userRepository) {
+        super(COMMUNITY_SECURITY_40, securityLog, userRepository);
     }
 
     @Override
-    public boolean detected( Transaction tx )
-    {
-        return componentNotInVersionNode( tx ) && nodesWithLabelExist( tx, USER_LABEL );
+    public boolean detected(Transaction tx) {
+        return componentNotInVersionNode(tx) && nodesWithLabelExist(tx, USER_LABEL);
     }
 
     @Override
-    public void upgradeSecurityGraph( Transaction tx, int fromVersion ) throws Exception
-    {
-    }
+    public void upgradeSecurityGraph(Transaction tx, int fromVersion) throws Exception {}
 
     @Override
-    public void upgradeSecurityGraphSchema( Transaction tx, int fromVersion )
-    {
-    }
+    public void upgradeSecurityGraphSchema(Transaction tx, int fromVersion) {}
 }

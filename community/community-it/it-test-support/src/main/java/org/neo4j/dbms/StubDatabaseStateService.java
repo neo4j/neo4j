@@ -23,43 +23,37 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public class StubDatabaseStateService implements DatabaseStateService
-{
-    private final Map<NamedDatabaseId,DatabaseState> databaseStates;
-    private final Function<NamedDatabaseId,DatabaseState> unknownFactory;
+public class StubDatabaseStateService implements DatabaseStateService {
+    private final Map<NamedDatabaseId, DatabaseState> databaseStates;
+    private final Function<NamedDatabaseId, DatabaseState> unknownFactory;
 
-    public StubDatabaseStateService( Function<NamedDatabaseId,DatabaseState> unknownFactory )
-    {
+    public StubDatabaseStateService(Function<NamedDatabaseId, DatabaseState> unknownFactory) {
         this.unknownFactory = unknownFactory;
         this.databaseStates = Collections.emptyMap();
     }
 
-    public StubDatabaseStateService( Map<NamedDatabaseId,DatabaseState> databaseStates,
-            Function<NamedDatabaseId,DatabaseState> unknownFactory )
-    {
+    public StubDatabaseStateService(
+            Map<NamedDatabaseId, DatabaseState> databaseStates,
+            Function<NamedDatabaseId, DatabaseState> unknownFactory) {
         this.databaseStates = databaseStates;
         this.unknownFactory = unknownFactory;
     }
 
     @Override
-    public DatabaseState stateOfDatabase( NamedDatabaseId namedDatabaseId )
-    {
-        var state = databaseStates.get( namedDatabaseId );
-        return state == null ? unknownFactory.apply( namedDatabaseId ) : state;
+    public DatabaseState stateOfDatabase(NamedDatabaseId namedDatabaseId) {
+        var state = databaseStates.get(namedDatabaseId);
+        return state == null ? unknownFactory.apply(namedDatabaseId) : state;
     }
 
     @Override
-    public Optional<Throwable> causeOfFailure( NamedDatabaseId namedDatabaseId )
-    {
-        return Optional.ofNullable( databaseStates.get( namedDatabaseId ) ).flatMap( DatabaseState::failure );
+    public Optional<Throwable> causeOfFailure(NamedDatabaseId namedDatabaseId) {
+        return Optional.ofNullable(databaseStates.get(namedDatabaseId)).flatMap(DatabaseState::failure);
     }
 
     @Override
-    public Map<NamedDatabaseId,DatabaseState> stateOfAllDatabases()
-    {
-        return Map.copyOf( databaseStates );
+    public Map<NamedDatabaseId, DatabaseState> stateOfAllDatabases() {
+        return Map.copyOf(databaseStates);
     }
 }

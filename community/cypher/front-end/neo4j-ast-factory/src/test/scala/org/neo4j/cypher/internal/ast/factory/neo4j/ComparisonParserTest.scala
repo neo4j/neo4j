@@ -46,6 +46,12 @@ class ComparisonParserTest extends JavaccParserAstTestBase[Expression] {
   }
 
   test("a < b > c = d <= e >= f") {
-    gives(ands(lt(id("a"), id("b")), gt(id("b"), id("c")), eq(id("c"), id("d")), lte(id("d"), id("e")), gte(id("e"), id("f"))))
+    gives(ands(
+      lt(id("a"), id("b")),
+      gt(id("b"), id("c")),
+      eq(id("c"), id("d")),
+      lte(id("d"), id("e")),
+      gte(id("e"), id("f"))
+    ))
   }
 }

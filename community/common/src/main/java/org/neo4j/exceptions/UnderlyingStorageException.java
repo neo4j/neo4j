@@ -19,20 +19,16 @@
  */
 package org.neo4j.exceptions;
 
-public class UnderlyingStorageException extends StoreFailureException
-{
-    public UnderlyingStorageException( String msg )
-    {
-        super( msg );
+public class UnderlyingStorageException extends StoreFailureException {
+    public UnderlyingStorageException(String msg) {
+        super(msg);
     }
 
-    public UnderlyingStorageException( Throwable cause )
-    {
-        super( cause );
+    public UnderlyingStorageException(Throwable cause) {
+        super(cause);
     }
 
-    public UnderlyingStorageException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public UnderlyingStorageException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

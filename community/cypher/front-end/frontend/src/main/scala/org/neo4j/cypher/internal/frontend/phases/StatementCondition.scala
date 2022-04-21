@@ -20,15 +20,17 @@ import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.StepSequencer
 
 case class StatementCondition(inner: ValidatingCondition) extends ValidatingCondition {
+
   override def apply(state: Any): Seq[String] = state match {
     case s: BaseState => inner(s.statement())
-    case x => throw new IllegalStateException(s"Unknown state: $x")
+    case x            => throw new IllegalStateException(s"Unknown state: $x")
   }
 
   override def name: String = productPrefix
 }
 
 object StatementCondition {
+
   /**
    * Conditions that during Rewriting check the statement need to be checked on the Statement only.
    * When checking these same conditions during higher-level phases, we need to wrap ValidatingCondition in StatementCondition.
@@ -36,7 +38,7 @@ object StatementCondition {
   def wrap(condition: StepSequencer.Condition): StepSequencer.Condition = {
     condition match {
       case vc: ValidatingCondition => StatementCondition(vc)
-      case _ => condition
+      case _                       => condition
     }
   }
 }

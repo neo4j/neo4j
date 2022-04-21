@@ -24,55 +24,49 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Caching
-{
-    private static final Optional<NamedDatabaseId> OPT_SYS_DB = Optional.of( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID );
+public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Caching {
+    private static final Optional<NamedDatabaseId> OPT_SYS_DB = Optional.of(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID);
 
     private final DatabaseIdRepository delegate;
-    private volatile Map<String,NamedDatabaseId> databaseIdsByName;
-    private volatile Map<DatabaseId,NamedDatabaseId> databaseIdsByUuid;
+    private volatile Map<String, NamedDatabaseId> databaseIdsByName;
+    private volatile Map<DatabaseId, NamedDatabaseId> databaseIdsByUuid;
 
-    public MapCachingDatabaseIdRepository( DatabaseIdRepository delegate )
-    {
+    public MapCachingDatabaseIdRepository(DatabaseIdRepository delegate) {
         this.delegate = delegate;
         this.databaseIdsByName = new ConcurrentHashMap<>();
         this.databaseIdsByUuid = new ConcurrentHashMap<>();
     }
 
     @Override
-    public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
-    {
-        if ( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.name().equals( databaseName.name() ) )
-        {
+    public Optional<NamedDatabaseId> getByName(NormalizedDatabaseName databaseName) {
+        if (NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.name().equals(databaseName.name())) {
             return OPT_SYS_DB;
         }
-        var dbId = Optional.ofNullable( databaseIdsByName.computeIfAbsent( databaseName.name(), name -> delegate.getByName( name ).orElse( null ) ) );
-        dbId.ifPresent( id -> databaseIdsByUuid.put( id.databaseId(), id ) );
+        var dbId = Optional.ofNullable(databaseIdsByName.computeIfAbsent(
+                databaseName.name(), name -> delegate.getByName(name).orElse(null)));
+        dbId.ifPresent(id -> databaseIdsByUuid.put(id.databaseId(), id));
         return dbId;
     }
 
     @Override
-    public Optional<NamedDatabaseId> getById( DatabaseId uuid )
-    {
-        if ( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.databaseId().equals( uuid ) )
-        {
+    public Optional<NamedDatabaseId> getById(DatabaseId uuid) {
+        if (NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.databaseId().equals(uuid)) {
             return OPT_SYS_DB;
         }
-        var dbId = Optional.ofNullable( databaseIdsByUuid.computeIfAbsent( uuid, id -> delegate.getById( id ).orElse( null ) ) );
-        dbId.ifPresent( id -> databaseIdsByName.put( id.name(), id ) );
+        var dbId = Optional.ofNullable(databaseIdsByUuid.computeIfAbsent(
+                uuid, id -> delegate.getById(id).orElse(null)));
+        dbId.ifPresent(id -> databaseIdsByName.put(id.name(), id));
         return dbId;
     }
 
     @Override
-    public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
-    {
+    public Map<NormalizedDatabaseName, NamedDatabaseId> getAllDatabaseAliases() {
         // Can't cache getAll call
         return delegate.getAllDatabaseAliases();
     }
 
     @Override
-    public Set<NamedDatabaseId> getAllDatabaseIds()
-    {
+    public Set<NamedDatabaseId> getAllDatabaseIds() {
         // Can't cache getAll call
         return delegate.getAllDatabaseIds();
     }
@@ -82,8 +76,7 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
      *  and a concurrent .computeIfAbsent() could preserve a stale value.
      */
     @Override
-    public void invalidateAll()
-    {
+    public void invalidateAll() {
         this.databaseIdsByName = new ConcurrentHashMap<>();
         this.databaseIdsByUuid = new ConcurrentHashMap<>();
     }

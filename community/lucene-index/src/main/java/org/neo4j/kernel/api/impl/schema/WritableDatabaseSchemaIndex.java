@@ -31,12 +31,18 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 /**
  * Writable schema index
  */
-public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<LuceneSchemaIndex,ValueIndexReader> implements SchemaIndex
-{
+public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<LuceneSchemaIndex, ValueIndexReader>
+        implements SchemaIndex {
 
-    WritableDatabaseSchemaIndex( PartitionedIndexStorage storage, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
-            WritableIndexPartitionFactory writableIndexPartitionFactory, DatabaseReadOnlyChecker readOnlyChecker, Config config )
-    {
-        super( new LuceneSchemaIndex( storage, descriptor, samplingConfig, writableIndexPartitionFactory, config ), readOnlyChecker );
+    WritableDatabaseSchemaIndex(
+            PartitionedIndexStorage storage,
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            WritableIndexPartitionFactory writableIndexPartitionFactory,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config) {
+        super(
+                new LuceneSchemaIndex(storage, descriptor, samplingConfig, writableIndexPartitionFactory, config),
+                readOnlyChecker);
     }
 }

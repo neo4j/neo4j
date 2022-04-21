@@ -24,7 +24,9 @@ class RepeatTest extends CypherFunSuite {
 
   var count = 0
   val result = new Object
+
   val mockedRewriter = new Rewriter {
+
     def apply(v1: AnyRef): AnyRef = {
       count += 1
       result

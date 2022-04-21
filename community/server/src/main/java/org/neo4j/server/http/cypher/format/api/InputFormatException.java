@@ -24,15 +24,12 @@ package org.neo4j.server.http.cypher.format.api;
  * <p>
  * This exception serves for format problems. {@link ConnectionException} should be used for networking problems.
  */
-public class InputFormatException extends RuntimeException
-{
-    public InputFormatException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class InputFormatException extends RuntimeException {
+    public InputFormatException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public InputFormatException( String message )
-    {
-        super( message );
+    public InputFormatException(String message) {
+        super(message);
     }
 }

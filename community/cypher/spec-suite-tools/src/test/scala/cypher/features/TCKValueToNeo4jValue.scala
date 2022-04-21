@@ -36,14 +36,14 @@ object TCKValueToNeo4jValue extends (CypherValue => Object) {
 
   def apply(value: CypherValue): Object = {
     value match {
-      case CypherString(s) => s
-      case CypherInteger(v) => Long.box(v)
-      case CypherFloat(v) => Double.box(v)
-      case CypherBoolean(v) => Boolean.box(v)
-      case CypherProperty(k, v) => (k, TCKValueToNeo4jValue(v))
+      case CypherString(s)       => s
+      case CypherInteger(v)      => Long.box(v)
+      case CypherFloat(v)        => Double.box(v)
+      case CypherBoolean(v)      => Boolean.box(v)
+      case CypherProperty(k, v)  => (k, TCKValueToNeo4jValue(v))
       case CypherPropertyMap(ps) => ps.map { case (k, v) => k -> TCKValueToNeo4jValue(v) }.asJava
-      case l: CypherList => l.elements.map(TCKValueToNeo4jValue).asJava
-      case CypherNull => null
+      case l: CypherList         => l.elements.map(TCKValueToNeo4jValue).asJava
+      case CypherNull            => null
       case _ => throw new UnsupportedOperationException(s"Could not convert value $value to a Neo4j representation")
     }
   }

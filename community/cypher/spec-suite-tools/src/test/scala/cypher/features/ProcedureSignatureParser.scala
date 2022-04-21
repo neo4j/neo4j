@@ -47,7 +47,7 @@ class ProcedureSignatureParser {
 
     // Extract everything before the first parentheses = the full procedure name
     val parts = signature.split("(?=\\()", 2)
-    if(parts.size < 2) {
+    if (parts.size < 2) {
       throw new SyntaxException("Error parsing procedure signature: expected '(' after procedure name")
     }
 
@@ -60,20 +60,24 @@ class ProcedureSignatureParser {
     val inputs = extractProcedureInputFields(inputPart)
     val outputs = extractProcedureOutputFields(outputPart)
 
-   features.ProcedureSignature(nameParts.dropRight(1), nameParts.last, inputs, outputs)
+    features.ProcedureSignature(nameParts.dropRight(1), nameParts.last, inputs, outputs)
   }
 
   private def extractInputAndOutputParts(inputAndOutputString: String): (String, String) = {
 
     // Check that the first and last char are parenthesis
     if (inputAndOutputString.head != '(' || inputAndOutputString.last != ')') {
-      throw new SyntaxException("Error parsing procedure signature: expected input fields to be on the format '(input) :: (output)'")
+      throw new SyntaxException(
+        "Error parsing procedure signature: expected input fields to be on the format '(input) :: (output)'"
+      )
     }
 
     // Check there is exactly one ') :: (' and split on it
     val inputAndOutput = inputAndOutputString.split("\\) :: \\(")
     if (inputAndOutput.size != 2) {
-      throw new SyntaxException("Error parsing procedure signature: expected exactly one ') :: (' between input and output.")
+      throw new SyntaxException(
+        "Error parsing procedure signature: expected exactly one ') :: (' between input and output."
+      )
     }
 
     // Remove the first and last parenthesis
@@ -109,7 +113,9 @@ class ProcedureSignatureParser {
     val fieldParts = procedureField.split("::")
 
     if (fieldParts.size != 2) {
-      throw new SyntaxException("Error parsing procedure signature: expected exactly one '::' between procedure field parts.")
+      throw new SyntaxException(
+        "Error parsing procedure signature: expected exactly one '::' between procedure field parts."
+      )
     }
 
     val fieldName = fieldParts.head.trim
@@ -118,20 +124,21 @@ class ProcedureSignatureParser {
   }
 
   private def extractCypherType(typeString: String): CypherType = {
-     typeString match {
-      case "ANY?" => CTAny
-      case "MAP?" => CTMap
-      case "NODE?" => CTNode
-      case "RELATIONSHIP?" => CTRelationship
-      case "POINT?" => CTPoint
-      case "PATH?" => CTPath
-      case "STRING?" => CTString
-      case "BOOLEAN?" => CTBoolean
-      case "NUMBER?" => CTNumber
-      case "INTEGER?" => CTInteger
-      case "FLOAT?" => CTFloat
+    typeString match {
+      case "ANY?"                         => CTAny
+      case "MAP?"                         => CTMap
+      case "NODE?"                        => CTNode
+      case "RELATIONSHIP?"                => CTRelationship
+      case "POINT?"                       => CTPoint
+      case "PATH?"                        => CTPath
+      case "STRING?"                      => CTString
+      case "BOOLEAN?"                     => CTBoolean
+      case "NUMBER?"                      => CTNumber
+      case "INTEGER?"                     => CTInteger
+      case "FLOAT?"                       => CTFloat
       case s if s.startsWith("LIST? OF ") => CTList(extractCypherType(s.stripPrefix("LIST? OF ")))
-      case unexpected => throw new SyntaxException(s"Error parsing procedure signature: unexpected Cypher type $unexpected")
+      case unexpected =>
+        throw new SyntaxException(s"Error parsing procedure signature: unexpected Cypher type $unexpected")
     }
   }
 }

@@ -19,34 +19,33 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.jupiter.api.Test;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.neo4j.logging.LogAssertions.assertThat;
-
 @ImpermanentDbmsExtension
-public class CypherLoggingTest
-{
+public class CypherLoggingTest {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
+
     @Inject
     private GraphDatabaseService database;
 
     @Test
-    public void shouldNotLogQueries()
-    {
+    public void shouldNotLogQueries() {
         // when
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" ).close();
-            transaction.execute( "MATCH (n) RETURN n" ).close();
+        try (Transaction transaction = database.beginTx()) {
+            transaction
+                    .execute("CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n")
+                    .close();
+            transaction.execute("MATCH (n) RETURN n").close();
         }
 
         // then
-        assertThat( logProvider ).doesNotHaveAnyLogs();
+        assertThat(logProvider).doesNotHaveAnyLogs();
     }
 }

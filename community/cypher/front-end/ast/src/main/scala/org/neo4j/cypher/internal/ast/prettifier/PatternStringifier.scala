@@ -66,11 +66,14 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
         .map(le => s":${expr(le)}")
 
     val body =
-      concatenate(" ", Seq(
-        concatenate("", Seq(variable, labelExpression)),
-        nodePattern.properties.map(expr(_)),
-        nodePattern.predicate.map(stringifyPredicate),
-      )).getOrElse("")
+      concatenate(
+        " ",
+        Seq(
+          concatenate("", Seq(variable, labelExpression)),
+          nodePattern.properties.map(expr(_)),
+          nodePattern.predicate.map(stringifyPredicate)
+        )
+      ).getOrElse("")
 
     s"($body)"
   }
@@ -94,21 +97,24 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
         .map(_.map(expr(_)).mkString(":", separator, ""))
 
     val length = relationship.length match {
-      case None => None
-      case Some(None) => Some("*")
+      case None              => None
+      case Some(None)        => Some("*")
       case Some(Some(range)) => Some(stringifyRange(range))
     }
 
-    val body = concatenate(" ", Seq(
-      concatenate("", Seq(variable, types, length)),
-      relationship.properties.map(expr(_)),
-      relationship.predicate.map(stringifyPredicate),
-    )).fold("")(inner => s"[$inner]")
+    val body = concatenate(
+      " ",
+      Seq(
+        concatenate("", Seq(variable, types, length)),
+        relationship.properties.map(expr(_)),
+        relationship.predicate.map(stringifyPredicate)
+      )
+    ).fold("")(inner => s"[$inner]")
 
     relationship.direction match {
       case SemanticDirection.OUTGOING => s"-$body->"
       case SemanticDirection.INCOMING => s"<-$body-"
-      case SemanticDirection.BOTH => s"-$body-"
+      case SemanticDirection.BOTH     => s"-$body-"
     }
   }
 

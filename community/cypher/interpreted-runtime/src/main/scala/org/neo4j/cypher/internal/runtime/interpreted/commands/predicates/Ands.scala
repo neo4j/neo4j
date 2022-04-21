@@ -29,10 +29,11 @@ case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPre
   override def shouldExitWhen = false
   override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
   override def rewrite(f: Expression => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
+
   override def toString: String = {
     predicates.foldLeft("") {
       case (acc, next) if acc.isEmpty => next.toString
-      case (acc, next) => s"$acc AND $next"
+      case (acc, next)                => s"$acc AND $next"
     }
   }
 
@@ -40,28 +41,33 @@ case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPre
 }
 
 object Ands {
+
   def apply(predicates: Predicate*): Predicate = predicates.filterNot(_ == True()).toList match {
-    case Nil => True()
-    case single :: Nil => single
+    case Nil            => True()
+    case single :: Nil  => single
     case manyPredicates => Ands(NonEmptyList.from(manyPredicates))
   }
 }
 
-case class AndedPropertyComparablePredicates(ident: VariableCommand, prop: Expression,
-                                             override val predicates: NonEmptyList[ComparablePredicate])
-  extends CompositeBooleanPredicate {
+case class AndedPropertyComparablePredicates(
+  ident: VariableCommand,
+  prop: Expression,
+  override val predicates: NonEmptyList[ComparablePredicate]
+) extends CompositeBooleanPredicate {
 
   // some rewriters change the type of this, and we can't allow that
   private def rewriteVariableIfNotTypeChanged(f: Expression => Expression) =
     ident.rewrite(f) match {
       case i: Variable => i
-      case _ => ident
+      case _           => ident
     }
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(AndedPropertyComparablePredicates(rewriteVariableIfNotTypeChanged(f),
+    f(AndedPropertyComparablePredicates(
+      rewriteVariableIfNotTypeChanged(f),
       prop.rewrite(f),
-      predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
+      predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])
+    ))
 
   override def shouldExitWhen: Boolean = false
 

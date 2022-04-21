@@ -19,13 +19,28 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
+import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
+import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.logging.internal.NullLogService.getInstance;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
@@ -44,139 +59,154 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
-import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
-import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.logging.internal.NullLogService.getInstance;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-@ExtendWith( RandomExtension.class )
-class ImportLogicTest
-{
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+@ExtendWith(RandomExtension.class)
+class ImportLogicTest {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private RandomSupport random;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
     @Test
-    void closeImporterWithoutDiagnosticState() throws IOException
-    {
-        ExecutionMonitor monitor = mock( ExecutionMonitor.class );
-        IndexImporterFactory factory = mock( IndexImporterFactory.class );
-        CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
-        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, CONTEXT_FACTORY,
-                databaseLayout, DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL, defaults(), INSTANCE ) )
-        {
+    void closeImporterWithoutDiagnosticState() throws IOException {
+        ExecutionMonitor monitor = mock(ExecutionMonitor.class);
+        IndexImporterFactory factory = mock(IndexImporterFactory.class);
+        CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY);
+        try (BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache(
+                fileSystem,
+                pageCache,
+                NULL,
+                CONTEXT_FACTORY,
+                databaseLayout,
+                DEFAULT,
+                getInstance(),
+                AdditionalInitialIds.EMPTY,
+                EMPTY_LOG_TAIL,
+                defaults(),
+                INSTANCE)) {
             //noinspection EmptyTryBlock
-            try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    Collector.EMPTY, NO_MONITOR, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
-            {
+            try (ImportLogic logic = new ImportLogic(
+                    databaseLayout,
+                    stores,
+                    DEFAULT,
+                    defaults(),
+                    getInstance(),
+                    monitor,
+                    Collector.EMPTY,
+                    NO_MONITOR,
+                    contextFactory,
+                    factory,
+                    EmptyMemoryTracker.INSTANCE)) {
                 // nothing to run in this import
                 logic.success();
             }
         }
 
-        verify( monitor ).done( eq( true ), anyLong(), contains( "Data statistics is not available." ) );
+        verify(monitor).done(eq(true), anyLong(), contains("Data statistics is not available."));
     }
 
     @Test
-    void shouldSplitUpRelationshipTypesInBatches()
-    {
+    void shouldSplitUpRelationshipTypesInBatches() {
         // GIVEN
         int denseNodeThreshold = 5;
         int numberOfNodes = 100;
         int numberOfTypes = 10;
-        NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactories.HEAP, denseNodeThreshold, EmptyMemoryTracker.INSTANCE );
-        cache.setNodeCount( numberOfNodes + 1 );
+        NodeRelationshipCache cache =
+                new NodeRelationshipCache(NumberArrayFactories.HEAP, denseNodeThreshold, EmptyMemoryTracker.INSTANCE);
+        cache.setNodeCount(numberOfNodes + 1);
         Direction[] directions = Direction.values();
-        for ( int i = 0; i < numberOfNodes; i++ )
-        {
-            int count = random.nextInt( 1, denseNodeThreshold * 2 );
-            cache.setCount( i, count, random.nextInt( numberOfTypes ), random.among( directions ) );
+        for (int i = 0; i < numberOfNodes; i++) {
+            int count = random.nextInt(1, denseNodeThreshold * 2);
+            cache.setCount(i, count, random.nextInt(numberOfTypes), random.among(directions));
         }
         cache.countingCompleted();
         List<DataStatistics.RelationshipTypeCount> types = new ArrayList<>();
         int numberOfRelationships = 0;
-        for ( int i = 0; i < numberOfTypes; i++ )
-        {
-            int count = random.nextInt( 1, 100 );
-            types.add( new DataStatistics.RelationshipTypeCount( i, count ) );
+        for (int i = 0; i < numberOfTypes; i++) {
+            int count = random.nextInt(1, 100);
+            types.add(new DataStatistics.RelationshipTypeCount(i, count));
             numberOfRelationships += count;
         }
-        types.sort( ( t1, t2 ) -> Long.compare( t2.getCount(), t1.getCount() ) );
+        types.sort((t1, t2) -> Long.compare(t2.getCount(), t1.getCount()));
         DataStatistics typeDistribution =
-                new DataStatistics( 0, 0, types.toArray( new DataStatistics.RelationshipTypeCount[0] ) );
+                new DataStatistics(0, 0, types.toArray(new DataStatistics.RelationshipTypeCount[0]));
 
         // WHEN enough memory for all types
         {
-            long memory = cache.calculateMaxMemoryUsage( numberOfRelationships ) * numberOfTypes;
-            int upToType = ImportLogic.nextSetOfTypesThatFitInMemory( typeDistribution, 0, memory, cache.getNumberOfDenseNodes() );
+            long memory = cache.calculateMaxMemoryUsage(numberOfRelationships) * numberOfTypes;
+            int upToType = ImportLogic.nextSetOfTypesThatFitInMemory(
+                    typeDistribution, 0, memory, cache.getNumberOfDenseNodes());
 
             // THEN
-            assertEquals( types.size(), upToType );
+            assertEquals(types.size(), upToType);
         }
 
         // and WHEN less than enough memory for all types
         {
-            long memory = cache.calculateMaxMemoryUsage( numberOfRelationships ) * numberOfTypes / 3;
+            long memory = cache.calculateMaxMemoryUsage(numberOfRelationships) * numberOfTypes / 3;
             int startingFromType = 0;
             int rounds = 0;
-            while ( startingFromType < types.size() )
-            {
+            while (startingFromType < types.size()) {
                 rounds++;
-                startingFromType = ImportLogic.nextSetOfTypesThatFitInMemory( typeDistribution, startingFromType, memory,
-                        cache.getNumberOfDenseNodes() );
+                startingFromType = ImportLogic.nextSetOfTypesThatFitInMemory(
+                        typeDistribution, startingFromType, memory, cache.getNumberOfDenseNodes());
             }
-            assertEquals( types.size(), startingFromType );
-            assertThat( rounds ).isGreaterThan( 1 );
+            assertEquals(types.size(), startingFromType);
+            assertThat(rounds).isGreaterThan(1);
         }
     }
 
     @Test
-    void shouldUseDataStatisticsCountsForPrintingFinalStats() throws IOException
-    {
+    void shouldUseDataStatisticsCountsForPrintingFinalStats() throws IOException {
         // given
-        ExecutionMonitor monitor = mock( ExecutionMonitor.class );
-        IndexImporterFactory factory = mock( IndexImporterFactory.class );
-        CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
-        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, CONTEXT_FACTORY,
-                databaseLayout, DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL, defaults(), INSTANCE ) )
-        {
+        ExecutionMonitor monitor = mock(ExecutionMonitor.class);
+        IndexImporterFactory factory = mock(IndexImporterFactory.class);
+        CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY);
+        try (BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache(
+                fileSystem,
+                pageCache,
+                NULL,
+                CONTEXT_FACTORY,
+                databaseLayout,
+                DEFAULT,
+                getInstance(),
+                AdditionalInitialIds.EMPTY,
+                EMPTY_LOG_TAIL,
+                defaults(),
+                INSTANCE)) {
             // when
-            DataStatistics.RelationshipTypeCount[] relationshipTypeCounts = new DataStatistics.RelationshipTypeCount[]
-                    {
-                            new DataStatistics.RelationshipTypeCount( 0, 33 ),
-                            new DataStatistics.RelationshipTypeCount( 1, 66 )
-                    };
-            DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
-            try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    Collector.EMPTY, NO_MONITOR, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
-            {
-                logic.putState( dataStatistics );
+            DataStatistics.RelationshipTypeCount[] relationshipTypeCounts = new DataStatistics.RelationshipTypeCount[] {
+                new DataStatistics.RelationshipTypeCount(0, 33), new DataStatistics.RelationshipTypeCount(1, 66)
+            };
+            DataStatistics dataStatistics = new DataStatistics(100123, 100456, relationshipTypeCounts);
+            try (ImportLogic logic = new ImportLogic(
+                    databaseLayout,
+                    stores,
+                    DEFAULT,
+                    defaults(),
+                    getInstance(),
+                    monitor,
+                    Collector.EMPTY,
+                    NO_MONITOR,
+                    contextFactory,
+                    factory,
+                    EmptyMemoryTracker.INSTANCE)) {
+                logic.putState(dataStatistics);
                 logic.success();
             }
 
             // then
-            verify( monitor ).done( eq( true ), anyLong(), contains( dataStatistics.toString() ) );
+            verify(monitor).done(eq(true), anyLong(), contains(dataStatistics.toString()));
         }
     }
 }

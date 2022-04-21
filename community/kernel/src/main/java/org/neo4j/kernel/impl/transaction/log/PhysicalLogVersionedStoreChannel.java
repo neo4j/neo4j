@@ -22,14 +22,13 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 
-public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<StoreChannel> implements LogVersionedStoreChannel
-{
+public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<StoreChannel>
+        implements LogVersionedStoreChannel {
     private final long version;
     private final byte formatVersion;
     private long position;
@@ -38,16 +37,27 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
     private final boolean raw;
     private final DatabaseTracer databaseTracer;
 
-    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion, Path path,
-            ChannelNativeAccessor nativeChannelAccessor, DatabaseTracer databaseTracer ) throws IOException
-    {
-        this( delegateChannel, version, formatVersion, path, nativeChannelAccessor, databaseTracer, false );
+    public PhysicalLogVersionedStoreChannel(
+            StoreChannel delegateChannel,
+            long version,
+            byte formatVersion,
+            Path path,
+            ChannelNativeAccessor nativeChannelAccessor,
+            DatabaseTracer databaseTracer)
+            throws IOException {
+        this(delegateChannel, version, formatVersion, path, nativeChannelAccessor, databaseTracer, false);
     }
 
-    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion, Path path,
-            ChannelNativeAccessor nativeChannelAccessor, DatabaseTracer databaseTracer, boolean raw ) throws IOException
-    {
-        super( delegateChannel );
+    public PhysicalLogVersionedStoreChannel(
+            StoreChannel delegateChannel,
+            long version,
+            byte formatVersion,
+            Path path,
+            ChannelNativeAccessor nativeChannelAccessor,
+            DatabaseTracer databaseTracer,
+            boolean raw)
+            throws IOException {
+        super(delegateChannel);
         this.version = version;
         this.formatVersion = formatVersion;
         this.position = delegateChannel.position();
@@ -57,140 +67,116 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
         this.raw = raw;
     }
 
-    public Path getPath()
-    {
+    public Path getPath() {
         return path;
     }
 
     @Override
-    public void writeAll( ByteBuffer src, long position )
-    {
-        throw new UnsupportedOperationException( "Not needed" );
+    public void writeAll(ByteBuffer src, long position) {
+        throw new UnsupportedOperationException("Not needed");
     }
 
     @Override
-    public void writeAll( ByteBuffer src ) throws IOException
-    {
-        advance( src.remaining() );
-        super.writeAll( src );
+    public void writeAll(ByteBuffer src) throws IOException {
+        advance(src.remaining());
+        super.writeAll(src);
     }
 
     @Override
-    public int read( ByteBuffer dst, long position )
-    {
-        throw new UnsupportedOperationException( "Not needed" );
+    public int read(ByteBuffer dst, long position) {
+        throw new UnsupportedOperationException("Not needed");
     }
 
     @Override
-    public StoreChannel position( long newPosition ) throws IOException
-    {
+    public StoreChannel position(long newPosition) throws IOException {
         this.position = newPosition;
-        return super.position( newPosition );
+        return super.position(newPosition);
     }
 
     @Override
-    public int read( ByteBuffer dst ) throws IOException
-    {
-        return (int) advance( super.read( dst ) );
+    public int read(ByteBuffer dst) throws IOException {
+        return (int) advance(super.read(dst));
     }
 
-    private long advance( long bytes )
-    {
-        if ( bytes != -1 )
-        {
+    private long advance(long bytes) {
+        if (bytes != -1) {
             position += bytes;
         }
         return bytes;
     }
 
     @Override
-    public int write( ByteBuffer src ) throws IOException
-    {
-        return (int) advance( super.write( src ) );
+    public int write(ByteBuffer src) throws IOException {
+        return (int) advance(super.write(src));
     }
 
     @Override
-    public long position()
-    {
+    public long position() {
         return position;
     }
 
     @Override
-    public void close() throws IOException
-    {
-        if ( !raw )
-        {
-            nativeChannelAccessor.evictFromSystemCache( this, version );
+    public void close() throws IOException {
+        if (!raw) {
+            nativeChannelAccessor.evictFromSystemCache(this, version);
         }
-        databaseTracer.closeLogFile( path );
+        databaseTracer.closeLogFile(path);
         super.close();
     }
 
     @Override
-    public long write( ByteBuffer[] sources, int offset, int length ) throws IOException
-    {
-        return advance( super.write( sources, offset, length ) );
+    public long write(ByteBuffer[] sources, int offset, int length) throws IOException {
+        return advance(super.write(sources, offset, length));
     }
 
     @Override
-    public long write( ByteBuffer[] srcs ) throws IOException
-    {
-        return advance( super.write( srcs ) );
+    public long write(ByteBuffer[] srcs) throws IOException {
+        return advance(super.write(srcs));
     }
 
     @Override
-    public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
-    {
-        return advance( super.read( dsts, offset, length ) );
+    public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
+        return advance(super.read(dsts, offset, length));
     }
 
     @Override
-    public long read( ByteBuffer[] dsts ) throws IOException
-    {
-        return advance( super.read( dsts ) );
+    public long read(ByteBuffer[] dsts) throws IOException {
+        return advance(super.read(dsts));
     }
 
     @Override
-    public long getVersion()
-    {
+    public long getVersion() {
         return version;
     }
 
     @Override
-    public byte getLogFormatVersion()
-    {
+    public byte getLogFormatVersion() {
         return formatVersion;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         PhysicalLogVersionedStoreChannel that = (PhysicalLogVersionedStoreChannel) o;
 
-        return version == that.version && delegate.equals( that.delegate );
+        return version == that.version && delegate.equals(that.delegate);
     }
 
     @Override
-    public void flush() throws IOException
-    {
-        try ( var flushEvent = databaseTracer.flushFile() )
-        {
+    public void flush() throws IOException {
+        try (var flushEvent = databaseTracer.flushFile()) {
             super.flush();
         }
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = delegate.hashCode();
         result = 31 * result + (int) (version ^ (version >>> 32));
         return result;

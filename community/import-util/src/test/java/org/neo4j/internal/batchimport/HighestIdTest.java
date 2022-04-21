@@ -19,67 +19,57 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.RepeatedTest;
+import static java.lang.Math.max;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLongArray;
-
+import org.junit.jupiter.api.RepeatedTest;
 import org.neo4j.test.Race;
 
-import static java.lang.Math.max;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class HighestIdTest
-{
-    @RepeatedTest( 100 )
-    void shouldKeepHighest() throws Throwable
-    {
+class HighestIdTest {
+    @RepeatedTest(100)
+    void shouldKeepHighest() throws Throwable {
         // GIVEN
         Race race = new Race();
         HighestId highestId = new HighestId();
         int threads = Runtime.getRuntime().availableProcessors();
-        CountDownLatch latch = new CountDownLatch( threads );
-        AtomicLongArray highestIds = new AtomicLongArray( threads );
-        for ( int c = 0; c < threads; c++ )
-        {
+        CountDownLatch latch = new CountDownLatch(threads);
+        AtomicLongArray highestIds = new AtomicLongArray(threads);
+        for (int c = 0; c < threads; c++) {
             int cc = c;
-            race.addContestant( new Runnable()
-            {
+            race.addContestant(new Runnable() {
                 boolean run;
                 ThreadLocalRandom random = ThreadLocalRandom.current();
 
                 @Override
-                public void run()
-                {
-                    if ( run )
-                    {
+                public void run() {
+                    if (run) {
                         return;
                     }
 
                     long highest = 0;
-                    for ( int i = 0; i < 10; i++ )
-                    {
-                        long nextLong = random.nextLong( 100 );
-                        highestId.offer( nextLong );
-                        highest = max( highest, nextLong );
+                    for (int i = 0; i < 10; i++) {
+                        long nextLong = random.nextLong(100);
+                        highestId.offer(nextLong);
+                        highest = max(highest, nextLong);
                     }
-                    highestIds.set( cc, highest );
+                    highestIds.set(cc, highest);
                     latch.countDown();
                     run = true;
                 }
-            } );
+            });
         }
-        race.withEndCondition( () -> latch.getCount() == 0 );
+        race.withEndCondition(() -> latch.getCount() == 0);
 
         // WHEN
         race.go();
 
         long highest = 0;
-        for ( int i = 0; i < threads; i++ )
-        {
-            highest = max( highest, highestIds.get( i ) );
+        for (int i = 0; i < threads; i++) {
+            highest = max(highest, highestIds.get(i));
         }
-        assertEquals( highest, highestId.get() );
+        assertEquals(highest, highestId.get());
     }
 }

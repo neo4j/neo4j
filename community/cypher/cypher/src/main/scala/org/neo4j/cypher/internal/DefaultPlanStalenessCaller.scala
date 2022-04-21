@@ -35,21 +35,25 @@ import java.time.Clock
  *                                  statistics, and how much time has passed.
  * @param lastCommittedTxIdProvider Reports the id of the latest committed transaction.
  */
-class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
-                                                   divergenceCalculator: StatsDivergenceCalculator,
-                                                   lastCommittedTxIdProvider: () => Long,
-                                                   reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState,
-                                                   log: InternalLog) extends PlanStalenessCaller[EXECUTABLE_QUERY] {
+class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](
+  clock: Clock,
+  divergenceCalculator: StatsDivergenceCalculator,
+  lastCommittedTxIdProvider: () => Long,
+  reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState,
+  log: InternalLog
+) extends PlanStalenessCaller[EXECUTABLE_QUERY] {
 
-  override def staleness(transactionalContext: TransactionalContext,
-                         cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {
+  override def staleness(
+    transactionalContext: TransactionalContext,
+    cachedExecutableQuery: EXECUTABLE_QUERY
+  ): Staleness = {
     val reusability = reusabilityInfo(cachedExecutableQuery, transactionalContext)
     reusability match {
       case MaybeReusable(ref) =>
         val ktx = transactionalContext.kernelTransaction()
         staleness(ref, TransactionBoundGraphStatistics(ktx.dataRead, ktx.schemaRead, log))
 
-      case FineToReuse => NotStale
+      case FineToReuse    => NotStale
       case NeedsReplan(x) => Stale(x, None)
     }
   }
@@ -59,15 +63,22 @@ class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
     lazy val currentTimeMillis = clock.millis()
     lazy val lastCommittedTxId = lastCommittedTxIdProvider()
 
-    if (divergenceCalculator.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) && lastCommittedTxId != f.lastCommittedTxId) {
-      //check if we have diverged?
+    if (
+      divergenceCalculator.shouldCheck(
+        currentTimeMillis,
+        f.lastCheckTimeMillis
+      ) && lastCommittedTxId != f.lastCommittedTxId
+    ) {
+      // check if we have diverged?
       val threshold = divergenceCalculator.decay(currentTimeMillis - f.creationTimeMillis)
       val divergence = f.snapshot.diverges(f.snapshot.recompute(statistics))
       if (divergence.divergence > threshold) {
-        Stale(((currentTimeMillis - f.creationTimeMillis) / 1000).toInt,
+        Stale(
+          ((currentTimeMillis - f.creationTimeMillis) / 1000).toInt,
           Option(s"${divergence.key} changed from ${divergence.before} to ${divergence.after}, " +
             s"which is a divergence of ${divergence.divergence} which is greater than " +
-            s"threshold $threshold"))
+            s"threshold $threshold")
+        )
       } else {
         ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis, lastCommittedTxId = lastCommittedTxId)
         NotStale

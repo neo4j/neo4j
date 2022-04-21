@@ -64,7 +64,7 @@ class combineHasLabelsTest extends CypherFunSuite with LogicalPlanningTestSuppor
       hasLabels(varFor("b"), "Sailor"),
       hasLabels(varFor("a"), "Singer"),
       hasLabels(varFor("b"), "Captain"),
-      hasLabels(varFor("c"), "Cat"),
+      hasLabels(varFor("c"), "Cat")
     )
     rewrite(expr) shouldBe ors(
       hasLabels(varFor("c"), "Cat"),

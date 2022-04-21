@@ -21,32 +21,27 @@ package org.neo4j.internal.counts;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
-
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Both reading and writing of a {@link GBPTreeCountsStore} tree header collected into one class.
  */
-class CountsHeader implements Header.Reader, Consumer<PageCursor>
-{
+class CountsHeader implements Header.Reader, Consumer<PageCursor> {
     private boolean wasRead;
     private long highestGapFreeTxId;
 
-    CountsHeader( long highestGapFreeTxId )
-    {
+    CountsHeader(long highestGapFreeTxId) {
         this.highestGapFreeTxId = highestGapFreeTxId;
     }
 
     @Override
-    public void read( ByteBuffer headerBytes )
-    {
+    public void read(ByteBuffer headerBytes) {
         wasRead = true;
         highestGapFreeTxId = headerBytes.getLong();
     }
 
-    boolean wasRead()
-    {
+    boolean wasRead() {
         return wasRead;
     }
 
@@ -54,14 +49,12 @@ class CountsHeader implements Header.Reader, Consumer<PageCursor>
      * @return the highest gap-free transaction id that the tree has counts data for. The tree may include counts data
      * for transaction ids higher than this id, but information about those transaction ids lives in the tree itself.
      */
-    long highestGapFreeTxId()
-    {
+    long highestGapFreeTxId() {
         return highestGapFreeTxId;
     }
 
     @Override
-    public void accept( PageCursor cursor )
-    {
-        cursor.putLong( highestGapFreeTxId );
+    public void accept(PageCursor cursor) {
+        cursor.putLong(highestGapFreeTxId);
     }
 }

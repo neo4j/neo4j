@@ -36,12 +36,14 @@ import org.neo4j.values.virtual.MapValue
 
 abstract class ExecutionPlan {
 
-  def run(queryContext: QueryContext,
-          executionMode: ExecutionMode,
-          params: MapValue,
-          prePopulateResults: Boolean,
-          input: InputDataStream,
-          subscriber: QuerySubscriber): RuntimeResult
+  def run(
+    queryContext: QueryContext,
+    executionMode: ExecutionMode,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    input: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult
 
   /**
    * @return if this ExecutionPlan needs a thread safe cursor factory and resource manager factory to be used from the TransactionBoundQueryContext,
@@ -69,12 +71,15 @@ trait ResourceManagerFactory {
 }
 
 abstract class DelegatingExecutionPlan(inner: ExecutionPlan) extends ExecutionPlan {
-  override def run(queryContext: QueryContext,
-                   executionMode: ExecutionMode,
-                   params: MapValue,
-                   prePopulateResults: Boolean,
-                   input: InputDataStream,
-                   subscriber: QuerySubscriber): RuntimeResult =
+
+  override def run(
+    queryContext: QueryContext,
+    executionMode: ExecutionMode,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    input: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult =
     inner.run(queryContext, executionMode, params, prePopulateResults, input, subscriber)
 
   override def runtimeName: RuntimeName = inner.runtimeName

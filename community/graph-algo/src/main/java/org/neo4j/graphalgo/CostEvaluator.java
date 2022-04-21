@@ -37,8 +37,7 @@ import org.neo4j.graphdb.Relationship;
  * @param <T> The data type the edge weights are represented by.
  */
 @PublicApi
-public interface CostEvaluator<T>
-{
+public interface CostEvaluator<T> {
     /**
      * This is the general method for looking up costs for relationships. This
      * can do anything, like looking up a property or running some small
@@ -50,5 +49,5 @@ public interface CostEvaluator<T>
      *            {@link Direction#OUTGOING}.
      * @return The cost for this edge/relationship
      */
-    T getCost( Relationship relationship, Direction direction );
+    T getCost(Relationship relationship, Direction direction);
 }

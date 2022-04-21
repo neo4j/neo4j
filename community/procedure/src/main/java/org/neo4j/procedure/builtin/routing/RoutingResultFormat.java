@@ -19,13 +19,19 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.procedure.builtin.routing.Role.READ;
+import static org.neo4j.procedure.builtin.routing.Role.ROUTE;
+import static org.neo4j.procedure.builtin.routing.Role.WRITE;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.utf8Value;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
@@ -36,129 +42,103 @@ import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.procedure.builtin.routing.Role.READ;
-import static org.neo4j.procedure.builtin.routing.Role.ROUTE;
-import static org.neo4j.procedure.builtin.routing.Role.WRITE;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.utf8Value;
-
 /**
  * The result format of GetServersV1 and GetServersV2 procedures.
  */
-public final class RoutingResultFormat
-{
+public final class RoutingResultFormat {
     private static final String ROLE_KEY = "role";
     private static final String ADDRESSES_KEY = "addresses";
-    private static final TextValue READ_NAME = utf8Value( READ.name() );
-    private static final TextValue WRTE_NAME = utf8Value( WRITE.name() );
-    private static final TextValue ROUTE_NAME = utf8Value( ROUTE.name() );
+    private static final TextValue READ_NAME = utf8Value(READ.name());
+    private static final TextValue WRTE_NAME = utf8Value(WRITE.name());
+    private static final TextValue ROUTE_NAME = utf8Value(ROUTE.name());
 
-    private RoutingResultFormat()
-    {
-    }
+    private RoutingResultFormat() {}
 
-    public static AnyValue[] build( RoutingResult result )
-    {
-        ListValue routers = asValues( result.routeEndpoints() );
-        ListValue readers = asValues( result.readEndpoints() );
-        ListValue writers = asValues( result.writeEndpoints() );
+    public static AnyValue[] build(RoutingResult result) {
+        ListValue routers = asValues(result.routeEndpoints());
+        ListValue readers = asValues(result.readEndpoints());
+        ListValue writers = asValues(result.writeEndpoints());
 
         ListValueBuilder servers = ListValueBuilder.newListBuilder();
 
-        if ( writers.size() > 0 )
-        {
+        if (writers.size() > 0) {
             MapValueBuilder builder = new MapValueBuilder();
 
-            builder.add( ROLE_KEY, WRTE_NAME );
-            builder.add( ADDRESSES_KEY, writers );
+            builder.add(ROLE_KEY, WRTE_NAME);
+            builder.add(ADDRESSES_KEY, writers);
 
-            servers.add( builder.build() );
+            servers.add(builder.build());
         }
 
-        if ( readers.size() > 0 )
-        {
+        if (readers.size() > 0) {
             MapValueBuilder builder = new MapValueBuilder();
 
-            builder.add( ROLE_KEY, READ_NAME );
-            builder.add( ADDRESSES_KEY, readers );
+            builder.add(ROLE_KEY, READ_NAME);
+            builder.add(ADDRESSES_KEY, readers);
 
-            servers.add( builder.build() );
+            servers.add(builder.build());
         }
 
-        if ( routers.size() > 0 )
-        {
+        if (routers.size() > 0) {
             MapValueBuilder builder = new MapValueBuilder();
 
-            builder.add( ROLE_KEY, ROUTE_NAME );
-            builder.add( ADDRESSES_KEY, routers );
+            builder.add(ROLE_KEY, ROUTE_NAME);
+            builder.add(ADDRESSES_KEY, routers);
 
-            servers.add( builder.build() );
+            servers.add(builder.build());
         }
 
-        LongValue timeToLiveSeconds = longValue( MILLISECONDS.toSeconds( result.ttlMillis() ) );
-        return new AnyValue[]{timeToLiveSeconds, servers.build()};
+        LongValue timeToLiveSeconds = longValue(MILLISECONDS.toSeconds(result.ttlMillis()));
+        return new AnyValue[] {timeToLiveSeconds, servers.build()};
     }
 
-    public static RoutingResult parse( AnyValue[] record )
-    {
+    public static RoutingResult parse(AnyValue[] record) {
         LongValue timeToLiveSeconds = (LongValue) record[0];
         ListValue endpointData = (ListValue) record[1];
 
-        Map<Role,List<SocketAddress>> endpoints = parseRows( endpointData );
+        Map<Role, List<SocketAddress>> endpoints = parseRows(endpointData);
 
         return new RoutingResult(
-                endpoints.get( ROUTE ),
-                endpoints.get( WRITE ),
-                endpoints.get( READ ),
-                timeToLiveSeconds.longValue() * 1000 );
+                endpoints.get(ROUTE), endpoints.get(WRITE), endpoints.get(READ), timeToLiveSeconds.longValue() * 1000);
     }
 
-    public static RoutingResult parse( MapValue record )
-    {
-        return parse( new AnyValue[]{
-                record.get( ParameterNames.TTL.parameterName() ),
-                record.get( ParameterNames.SERVERS.parameterName() )
-        } );
+    public static RoutingResult parse(MapValue record) {
+        return parse(new AnyValue[] {
+            record.get(ParameterNames.TTL.parameterName()), record.get(ParameterNames.SERVERS.parameterName())
+        });
     }
 
-    public static List<SocketAddress> parseEndpoints( ListValue addresses )
-    {
-        List<SocketAddress> result = new ArrayList<>( addresses.size() );
-        for ( AnyValue address : addresses )
-        {
-            result.add( parseAddress( ((TextValue) address).stringValue() ) );
+    public static List<SocketAddress> parseEndpoints(ListValue addresses) {
+        List<SocketAddress> result = new ArrayList<>(addresses.size());
+        for (AnyValue address : addresses) {
+            result.add(parseAddress(((TextValue) address).stringValue()));
         }
         return result;
     }
 
-    private static Map<Role,List<SocketAddress>> parseRows( ListValue rows )
-    {
-        Map<Role,List<SocketAddress>> endpoints = new HashMap<>();
-        for ( AnyValue single : rows )
-        {
+    private static Map<Role, List<SocketAddress>> parseRows(ListValue rows) {
+        Map<Role, List<SocketAddress>> endpoints = new HashMap<>();
+        for (AnyValue single : rows) {
             MapValue row = (MapValue) single;
-            Role role = Role.valueOf( ((TextValue) row.get( "role" )).stringValue() );
-            List<SocketAddress> addresses = parseEndpoints( (ListValue) row.get( "addresses" ) );
-            endpoints.put( role, addresses );
+            Role role = Role.valueOf(((TextValue) row.get("role")).stringValue());
+            List<SocketAddress> addresses = parseEndpoints((ListValue) row.get("addresses"));
+            endpoints.put(role, addresses);
         }
 
-        Arrays.stream( Role.values() ).forEach( r -> endpoints.putIfAbsent( r, Collections.emptyList() ) );
+        Arrays.stream(Role.values()).forEach(r -> endpoints.putIfAbsent(r, Collections.emptyList()));
 
         return endpoints;
     }
 
-    private static SocketAddress parseAddress( String address )
-    {
-        String[] split = address.split( ":" );
-        return new SocketAddress( split[0], Integer.parseInt( split[1] ) );
+    private static SocketAddress parseAddress(String address) {
+        String[] split = address.split(":");
+        return new SocketAddress(split[0], Integer.parseInt(split[1]));
     }
 
-    private static ListValue asValues( List<SocketAddress> addresses )
-    {
+    private static ListValue asValues(List<SocketAddress> addresses) {
         return addresses.stream()
-                .map( SocketAddress::toString )
-                .map( Values::utf8Value )
-                .collect( ListValueBuilder.collector() );
+                .map(SocketAddress::toString)
+                .map(Values::utf8Value)
+                .collect(ListValueBuilder.collector());
     }
 }

@@ -19,10 +19,6 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.messaging.BoltIOException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,28 +28,26 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-class MessageMetadataParserTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.BoltIOException;
+
+class MessageMetadataParserTest {
     @Test
-    void noDatabaseNameShouldDefaultToEmptyString() throws Exception
-    {
-        assertThat( ABSENT_DB_NAME ).isEqualTo( "" );
-        assertThat( parseDatabaseName( EMPTY_MAP ) ).isEqualTo( ABSENT_DB_NAME );
+    void noDatabaseNameShouldDefaultToEmptyString() throws Exception {
+        assertThat(ABSENT_DB_NAME).isEqualTo("");
+        assertThat(parseDatabaseName(EMPTY_MAP)).isEqualTo(ABSENT_DB_NAME);
     }
 
     @Test
-    void shouldParseDatabaseName() throws Exception
-    {
+    void shouldParseDatabaseName() throws Exception {
         String databaseName = "cat_pictures";
-        assertThat( parseDatabaseName( asMapValue( map( "db", databaseName ) ) ) ).isEqualTo( databaseName );
+        assertThat(parseDatabaseName(asMapValue(map("db", databaseName)))).isEqualTo(databaseName);
     }
 
     @Test
-    void shouldThrowForIncorrectDatabaseName()
-    {
-        BoltIOException e = assertThrows( BoltIOException.class,
-                () -> parseDatabaseName( asMapValue( map( "db", 10L ) ) ) );
+    void shouldThrowForIncorrectDatabaseName() {
+        BoltIOException e = assertThrows(BoltIOException.class, () -> parseDatabaseName(asMapValue(map("db", 10L))));
 
-        assertTrue( e.causesFailureMessage() );
+        assertTrue(e.causesFailureMessage());
     }
 }

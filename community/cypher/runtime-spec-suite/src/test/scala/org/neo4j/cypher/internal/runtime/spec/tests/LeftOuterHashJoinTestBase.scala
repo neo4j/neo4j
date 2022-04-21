@@ -28,14 +28,16 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 
 import java.util.Collections.emptyList
+
 import scala.jdk.CollectionConverters.IterableHasAsJava
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
 
-abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                    runtime: CypherRuntime[CONTEXT],
-                                                                    val sizeHint: Int
-                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should handle Apply all around") {
     // given
@@ -60,10 +62,11 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, y, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
@@ -86,10 +89,11 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, y, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
@@ -111,10 +115,11 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, y, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
@@ -136,10 +141,11 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, x, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, x, y)
     runtimeResult should beColumns("x", "x2", "y").withRows(expectedResultRows)
   }
 
@@ -164,10 +170,11 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, y, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
@@ -189,10 +196,11 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, x, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, x, y)
     runtimeResult should beColumns("x", "x2", "y").withRows(expectedResultRows)
   }
 
@@ -240,13 +248,14 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, y, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
-  
+
   test("should work when LHS is empty") {
     given {
       val randomSmallIntProps: PartialFunction[Int, Map[String, Any]] = {
@@ -300,7 +309,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     val rhsRows = for {
       n <- nodes.filter(_.hasLabel(Label.label("Right")))
-      r  = n.getProperty("rightProp").asInstanceOf[Int]
+      r = n.getProperty("rightProp").asInstanceOf[Int]
     } yield (n, r)
 
     val expectedRows = for {
@@ -368,16 +377,17 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
           nodePropertyGraph(sizeHint, randomSmallIntProps, "Right", "Left")
       }
 
-      val logicalQueryTop = if (t.isEmpty) {
-        new LogicalQueryBuilder(this)
-          .produceResults("n", "l", "r")
-      } else {
-        new LogicalQueryBuilder(this)
-          .produceResults("n", "l", "r")
-          .projection("row[0] as n", "row[1] as l", "row[2] as r")
-          .unwind("c as row")
-          .aggregation(Seq.empty, Seq("collect([n, l, r]) as c"))
-      }
+      val logicalQueryTop =
+        if (t.isEmpty) {
+          new LogicalQueryBuilder(this)
+            .produceResults("n", "l", "r")
+        } else {
+          new LogicalQueryBuilder(this)
+            .produceResults("n", "l", "r")
+            .projection("row[0] as n", "row[1] as l", "row[2] as r")
+            .unwind("c as row")
+            .aggregation(Seq.empty, Seq("collect([n, l, r]) as c"))
+        }
 
       val logicalQuery = logicalQueryTop
         .leftOuterHashJoin("n")
@@ -571,17 +581,17 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val rhsFilterDbHits = runtimeResult.runtimeResult.queryProfile().operatorProfile(3).dbHits()
 
     // final projection should only need to look up n.leftProp for :Right nodes
-    runtimeResult.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe rhsFilterDbHits/2
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe rhsFilterDbHits / 2
   }
 
   test("should handle aggregation on top of left-outer hash join") {
-    //given
+    // given
     val exposures = given {
-      //create some unattached nodes
+      // create some unattached nodes
       tx.createNode(Label.label("OB"))
       tx.createNode(Label.label("OB"))
       tx.createNode(Label.label("OB"))
-      //...and one attached
+      // ...and one attached
       val node = tx.createNode(Label.label("OB"))
       val exposures = (1 to 4).map(_ => tx.createNode(Label.label("Exposure")))
 
@@ -598,10 +608,10 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
       .nodeByLabelScan("ob", "OB")
       .build()
 
-    //when
+    // when
     val runtimeResult = execute(logicalQuery, runtime)
 
-    //then
+    // then
     val expected = Seq(exposures.asJava, emptyList(), emptyList(), emptyList())
       .map(r => Array(r))
     runtimeResult should beColumns("exposures").withRows(expected, listInAnyOrder = true)
@@ -664,7 +674,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
   // or a single row (k', null) if no key matches
   private def matchingRowsOuter[K, V >: Null](rows: Seq[(K, V)], key: K): Seq[(K, V)] = {
     // Get matching rows. Null keys match nothing. No matches gives a null value
-    rows.collect { case row@(candidate, _) if matches(key, candidate) => row }
+    rows.collect { case row @ (candidate, _) if matches(key, candidate) => row }
       .padTo(1, (key, null))
   }
 

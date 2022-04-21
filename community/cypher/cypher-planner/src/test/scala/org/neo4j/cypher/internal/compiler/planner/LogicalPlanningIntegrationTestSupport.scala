@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 trait LogicalPlanningIntegrationTestSupport
-  extends StatisticsBackedLogicalPlanningSupport
+    extends StatisticsBackedLogicalPlanningSupport
     with LogicalPlanTestOps
     with LogicalPlanMatchers
     with ProcedureTestSupport

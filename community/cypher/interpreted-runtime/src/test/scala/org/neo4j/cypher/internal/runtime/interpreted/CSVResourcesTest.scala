@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.net.URL
-
 import org.apache.commons.lang3.SystemUtils
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
@@ -32,6 +30,8 @@ import org.neo4j.exceptions.LoadExternalResourceException
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.values.storable.TextValue
+
+import java.net.URL
 
 class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
@@ -53,9 +53,13 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("4")
     }
 
-    //when
-    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
+    // when
+    val result: List[Array[String]] = resources.getCsvIterator(
+      new URL(url),
+      None,
+      legacyCsvQuoteEscaping = false,
+      DEFAULT_BUFFER_SIZE
+    ).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
 
     (result zip List(
       Array[String]("1"),
@@ -77,11 +81,12 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("3,4")
     }
 
-    //when
-    val result = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
+    // when
+    val result = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
+      _.map(_.asInstanceOf[TextValue].stringValue)
+    ).toList
 
-    //then
+    // then
     (result zip List(
       Array[String]("a", "b"),
       Array[String]("1", "2"),
@@ -101,11 +106,12 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("3")
     }
 
-    //when
-    val result = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
+    // when
+    val result = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
+      _.map(_.asInstanceOf[TextValue].stringValue)
+    ).toList
 
-    //then
+    // then
     (result zip List(
       Array[String]("a", "b"),
       Array[String]("1", "2"),
@@ -120,9 +126,10 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // given
     val url = createCSVTempFileURL(_ => {})
 
-    //when
-    val result = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
+    // when
+    val result = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
+      _.map(_.asInstanceOf[TextValue].stringValue)
+    ).toList
 
     result should equal(List.empty)
   }
@@ -153,9 +160,13 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("4\tx")
     }
 
-    //when
-    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), Some("\t"), legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
+    // when
+    val result: List[Array[String]] = resources.getCsvIterator(
+      new URL(url),
+      Some("\t"),
+      legacyCsvQuoteEscaping = false,
+      DEFAULT_BUFFER_SIZE
+    ).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
 
     (result zip List(
       Array[String]("122", "foo"),
@@ -176,9 +187,13 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("K\u0248benhavn")
     }
 
-    //when
-    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
+    // when
+    val result: List[Array[String]] = resources.getCsvIterator(
+      new URL(url),
+      None,
+      legacyCsvQuoteEscaping = false,
+      DEFAULT_BUFFER_SIZE
+    ).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
 
     (result zip List(
       Array[String]("Malm\u0246"),
@@ -200,8 +215,12 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     // when
-    val e = intercept[IllegalStateException](resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE))
+    val e = intercept[IllegalStateException](resources.getCsvIterator(
+      new URL(url),
+      None,
+      legacyCsvQuoteEscaping = false,
+      DEFAULT_BUFFER_SIZE
+    ))
 
     var path = url.replace("file:", "")
     if (SystemUtils.IS_OS_WINDOWS) {
@@ -215,11 +234,17 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   test("should handle local missing file") {
     intercept[LoadExternalResourceException](resources.getCsvIterator(
-      new URL("file:///this/file/url/probably/doesnt/exist"), None, legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE).toList)
+      new URL("file:///this/file/url/probably/doesnt/exist"),
+      None,
+      legacyCsvQuoteEscaping = false,
+      DEFAULT_BUFFER_SIZE
+    ).toList)
     intercept[LoadExternalResourceException](resources.getCsvIterator(
-      new URL("http://127.0.0.1/url/probably/doesnt/exist"), None, legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE).toList)
+      new URL("http://127.0.0.1/url/probably/doesnt/exist"),
+      None,
+      legacyCsvQuoteEscaping = false,
+      DEFAULT_BUFFER_SIZE
+    ).toList)
   }
 
   test("should parse multiline fields") {
@@ -232,9 +257,13 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("3\t\"Bar\n\nQuux\"")
     }
 
-    //when
-    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), Some("\t"), legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
+    // when
+    val result: List[Array[String]] = resources.getCsvIterator(
+      new URL(url),
+      Some("\t"),
+      legacyCsvQuoteEscaping = false,
+      DEFAULT_BUFFER_SIZE
+    ).map(_.map(_.asInstanceOf[TextValue].stringValue)).toList
 
     (result zip List(
       Array[String]("a", "b"),

@@ -27,40 +27,34 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * provided through various include/exclude calls
  * @see DefaultNonUniqueIndexSampler
  */
-public interface NonUniqueIndexSampler
-{
-    void include( String value );
+public interface NonUniqueIndexSampler {
+    void include(String value);
 
-    void include( String value, long increment );
+    void include(String value, long increment);
 
-    void exclude( String value );
+    void exclude(String value);
 
-    void exclude( String value, long decrement );
+    void exclude(String value, long decrement);
 
-    IndexSample sample( CursorContext cursorContext );
+    IndexSample sample(CursorContext cursorContext);
 
-    IndexSample sample( int numDocs, CursorContext cursorContext );
+    IndexSample sample(int numDocs, CursorContext cursorContext);
 
-    abstract class Adapter implements NonUniqueIndexSampler
-    {
+    abstract class Adapter implements NonUniqueIndexSampler {
         @Override
-        public void include( String value )
-        {   // no-op
+        public void include(String value) { // no-op
         }
 
         @Override
-        public void include( String value, long increment )
-        {   // no-op
+        public void include(String value, long increment) { // no-op
         }
 
         @Override
-        public void exclude( String value )
-        {   // no-op
+        public void exclude(String value) { // no-op
         }
 
         @Override
-        public void exclude( String value, long decrement )
-        {   // no-op
+        public void exclude(String value, long decrement) { // no-op
         }
     }
 }

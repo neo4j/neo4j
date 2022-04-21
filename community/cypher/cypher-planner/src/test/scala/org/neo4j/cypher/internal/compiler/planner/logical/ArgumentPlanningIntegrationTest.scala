@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ArgumentPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
+
   test("should build plans containing single row") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("RETURN 42").stripProduceResults

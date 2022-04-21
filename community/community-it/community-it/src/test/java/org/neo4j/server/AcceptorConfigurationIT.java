@@ -19,33 +19,31 @@
  */
 package org.neo4j.server;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.server.helpers.TestWebContainer;
-import org.neo4j.test.server.ExclusiveWebContainerTestBase;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.GET;
 
-class AcceptorConfigurationIT extends ExclusiveWebContainerTestBase
-{
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.helpers.TestWebContainer;
+import org.neo4j.test.server.ExclusiveWebContainerTestBase;
+
+class AcceptorConfigurationIT extends ExclusiveWebContainerTestBase {
     private TestWebContainer testWebContainer;
 
     @AfterEach
-    void stopTheServer()
-    {
+    void stopTheServer() {
         testWebContainer.shutdown();
     }
 
     @Test
-    void serverShouldNotHangWithThreadPoolSizeSmallerThanCpuCount() throws Exception
-    {
-        testWebContainer = serverOnRandomPorts().withMaxJettyThreads( 3 )
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
+    void serverShouldNotHangWithThreadPoolSizeSmallerThanCpuCount() throws Exception {
+        testWebContainer = serverOnRandomPorts()
+                .withMaxJettyThreads(3)
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
                 .build();
 
-        assertThat( GET( testWebContainer.getBaseUri().toString() ).status() ).isEqualTo( 200 );
+        assertThat(GET(testWebContainer.getBaseUri().toString()).status()).isEqualTo(200);
     }
 }

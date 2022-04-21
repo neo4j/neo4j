@@ -19,25 +19,21 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.ThrowingValueWriter.throwing;
 
-class ThrowingValueWriterTest
-{
+import org.junit.jupiter.api.Test;
+
+class ThrowingValueWriterTest {
     @Test
-    void shouldBeAbleToThrowFromValueWriter()
-    {
+    void shouldBeAbleToThrowFromValueWriter() {
         // Given
-        Value value = Values.of( "This is a value" );
-        ValueWriter<TestException> writer = throwing( TestException::new );
+        Value value = Values.of("This is a value");
+        ValueWriter<TestException> writer = throwing(TestException::new);
 
         // Expect
-        assertThrows(TestException.class, () -> value.writeTo( writer ) );
+        assertThrows(TestException.class, () -> value.writeTo(writer));
     }
 
-    private static class TestException extends Exception
-    {
-    }
+    private static class TestException extends Exception {}
 }

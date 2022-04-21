@@ -19,43 +19,37 @@
  */
 package org.neo4j.harness.junit.extension;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.test.server.HTTP;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-class Neo4jExtensionRegisterStaticIT
-{
+class Neo4jExtensionRegisterStaticIT {
     @RegisterExtension
     static Neo4jExtension neo4jExtension = Neo4jExtension.builder().build();
 
     @Test
-    void neo4jAvailable( Neo4j neo4j )
-    {
-        assertNotNull( neo4j );
-        assertThat( HTTP.GET( neo4j.httpURI().toString() ).status() ).isEqualTo( 200 );
+    void neo4jAvailable(Neo4j neo4j) {
+        assertNotNull(neo4j);
+        assertThat(HTTP.GET(neo4j.httpURI().toString()).status()).isEqualTo(200);
     }
 
-    @RepeatedTest( 2 )
-    void accumulateNodes( GraphDatabaseService databaseService, RepetitionInfo repetitionInfo )
-    {
-        try ( Transaction transaction = databaseService.beginTx() )
-        {
+    @RepeatedTest(2)
+    void accumulateNodes(GraphDatabaseService databaseService, RepetitionInfo repetitionInfo) {
+        try (Transaction transaction = databaseService.beginTx()) {
             transaction.createNode();
             transaction.commit();
         }
-        try ( Transaction transaction = databaseService.beginTx() )
-        {
-            assertThat( Iterables.count( transaction.getAllNodes() ) ).isEqualTo( repetitionInfo.getCurrentRepetition() );
+        try (Transaction transaction = databaseService.beginTx()) {
+            assertThat(Iterables.count(transaction.getAllNodes())).isEqualTo(repetitionInfo.getCurrentRepetition());
         }
     }
 }

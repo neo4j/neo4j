@@ -27,8 +27,7 @@ import org.neo4j.graphdb.RelationshipType;
  * Definition of a constraint.
  */
 @PublicApi
-public interface ConstraintDefinition
-{
+public interface ConstraintDefinition {
     /**
      * This accessor method returns a label which this constraint is associated with if this constraint has type
      * {@link ConstraintType#UNIQUENESS} or {@link ConstraintType#NODE_PROPERTY_EXISTENCE}.
@@ -70,7 +69,7 @@ public interface ConstraintDefinition
      * @param type a constraint type
      * @return true if this constraint definition's type is equal to the provided type
      */
-    boolean isConstraintType( ConstraintType type );
+    boolean isConstraintType(ConstraintType type);
 
     /**
      * Get the name given to this constraint when it was created.

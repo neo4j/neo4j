@@ -19,10 +19,8 @@
  */
 package org.neo4j.csv.reader;
 
-public class BufferOverflowException extends IllegalStateException
-{
-    public BufferOverflowException( String msg )
-    {
-        super( msg );
+public class BufferOverflowException extends IllegalStateException {
+    public BufferOverflowException(String msg) {
+        super(msg);
     }
 }

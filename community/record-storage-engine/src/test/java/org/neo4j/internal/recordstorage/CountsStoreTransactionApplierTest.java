@@ -19,14 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.counts.CountsAccessor;
-import org.neo4j.counts.CountsStore;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -34,26 +26,33 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
-class CountsStoreTransactionApplierTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+
+class CountsStoreTransactionApplierTest {
     @Test
-    void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws Exception
-    {
+    void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws Exception {
         // GIVEN
-        final CountsStore counts = mock( CountsStore.class );
-        final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
-        when( counts.apply( anyLong(), any( CursorContext.class ) ) ).thenReturn( updater );
-        final RelationshipGroupDegreesStore groupDegreesStore = mock( RelationshipGroupDegreesStore.class );
-        when( groupDegreesStore.apply( anyLong(), any( CursorContext.class ) ) ).thenReturn( mock( RelationshipGroupDegreesStore.Updater.class ) );
-        final CountsStoreTransactionApplierFactory applier = new CountsStoreTransactionApplierFactory( counts, groupDegreesStore );
+        final CountsStore counts = mock(CountsStore.class);
+        final CountsAccessor.Updater updater = mock(CountsAccessor.Updater.class);
+        when(counts.apply(anyLong(), any(CursorContext.class))).thenReturn(updater);
+        final RelationshipGroupDegreesStore groupDegreesStore = mock(RelationshipGroupDegreesStore.class);
+        when(groupDegreesStore.apply(anyLong(), any(CursorContext.class)))
+                .thenReturn(mock(RelationshipGroupDegreesStore.Updater.class));
+        final CountsStoreTransactionApplierFactory applier =
+                new CountsStoreTransactionApplierFactory(counts, groupDegreesStore);
 
         // WHEN
-        try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L, StoreCursors.NULL ), mock( BatchContext.class ) ) )
-        {
-            txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( ANY_LABEL, 1 ) );
+        try (TransactionApplier txApplier =
+                applier.startTx(new GroupOfCommands(2L, StoreCursors.NULL), mock(BatchContext.class))) {
+            txApplier.visitNodeCountsCommand(new Command.NodeCountsCommand(ANY_LABEL, 1));
         }
 
         // THEN
-        verify( updater ).incrementNodeCount( ANY_LABEL, 1 );
+        verify(updater).incrementNodeCount(ANY_LABEL, 1);
     }
 }

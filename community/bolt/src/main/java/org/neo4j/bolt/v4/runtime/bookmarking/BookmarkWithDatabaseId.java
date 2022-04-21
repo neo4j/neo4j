@@ -19,71 +19,60 @@
  */
 package org.neo4j.bolt.v4.runtime.bookmarking;
 
-import java.util.Objects;
+import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.utf8Value;
 
+import java.util.Objects;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.utf8Value;
-
 /**
  * This bookmark is introduced in bolt v4 with multi-databases support.
  */
-public class BookmarkWithDatabaseId implements Bookmark
-{
+public class BookmarkWithDatabaseId implements Bookmark {
     private final long txId;
     private final NamedDatabaseId namedDatabaseId;
 
-    public BookmarkWithDatabaseId( long txId, NamedDatabaseId namedDatabaseId )
-    {
+    public BookmarkWithDatabaseId(long txId, NamedDatabaseId namedDatabaseId) {
         this.txId = txId;
         this.namedDatabaseId = namedDatabaseId;
     }
 
     @Override
-    public long txId()
-    {
+    public long txId() {
         return txId;
     }
 
     @Override
-    public NamedDatabaseId databaseId()
-    {
+    public NamedDatabaseId databaseId() {
         return namedDatabaseId;
     }
 
     @Override
-    public void attachTo( BoltResponseHandler state )
-    {
-        state.onMetadata( BOOKMARK_KEY, utf8Value( toString() ) );
+    public void attachTo(BoltResponseHandler state) {
+        state.onMetadata(BOOKMARK_KEY, utf8Value(toString()));
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         var that = (BookmarkWithDatabaseId) o;
-        return txId == that.txId && Objects.equals( namedDatabaseId, that.namedDatabaseId );
+        return txId == that.txId && Objects.equals(namedDatabaseId, that.namedDatabaseId);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( txId, namedDatabaseId );
+    public int hashCode() {
+        return Objects.hash(txId, namedDatabaseId);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s:%d", namedDatabaseId.databaseId().uuid(), txId );
+    public String toString() {
+        return format("%s:%d", namedDatabaseId.databaseId().uuid(), txId);
     }
 }

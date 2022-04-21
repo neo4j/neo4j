@@ -55,7 +55,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery, context) should beCountPlanFor("*")
   }
 
-  test ("should not plan a count if no match provided") {
+  test("should not plan a count if no match provided") {
     val query = "RETURN count(*)"
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
@@ -63,7 +63,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
-  test ("should plan a count for simple cases even if nodes are unnamed") {
+  test("should plan a count for simple cases even if nodes are unnamed") {
     val query = "MATCH () RETURN count(*)"
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
@@ -273,7 +273,8 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   private def producePlannerQuery(query: String, variable: String) = {
     val (pq, _) = producePlannerQueryForPattern(query)
     pq.withHorizon(AggregatingQueryProjection(
-      aggregationExpressions = Map(s"count($variable)" -> count(varFor(variable)))))
+      aggregationExpressions = Map(s"count($variable)" -> count(varFor(variable)))
+    ))
   }
 
   case class IsCountPlan(variable: String, noneExpected: Boolean) extends Matcher[Option[LogicalPlan]] {
@@ -290,7 +291,10 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
               true
             case _ =>
               false
-          }, "No count store plan produced", "")
+          },
+          "No count store plan produced",
+          ""
+        )
       }
     }
   }

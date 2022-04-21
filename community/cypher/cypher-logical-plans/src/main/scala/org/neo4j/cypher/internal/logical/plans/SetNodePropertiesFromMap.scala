@@ -31,14 +31,15 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *   produce row
  */
 case class SetNodePropertiesFromMap(
-                                     override val source: LogicalPlan,
-                                     idName: String,
-                                     expression: Expression,
-                                     removeOtherProps: Boolean
-                                   )(implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+  override val source: LogicalPlan,
+  idName: String,
+  expression: Expression,
+  removeOtherProps: Boolean
+)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
+    copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols + idName
 }

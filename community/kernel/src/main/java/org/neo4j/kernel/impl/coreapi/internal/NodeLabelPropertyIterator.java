@@ -28,8 +28,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 
-public class NodeLabelPropertyIterator extends PropertyFilteringIterator<Node,NodeLabelIndexCursor,NodeCursor>
-{
+public class NodeLabelPropertyIterator extends PropertyFilteringIterator<Node, NodeLabelIndexCursor, NodeCursor> {
     private final Read read;
 
     public NodeLabelPropertyIterator(
@@ -37,29 +36,26 @@ public class NodeLabelPropertyIterator extends PropertyFilteringIterator<Node,No
             NodeLabelIndexCursor nodeLabelCursor,
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor,
-            CursorEntityFactory<NodeLabelIndexCursor,Node> nodeFactory,
+            CursorEntityFactory<NodeLabelIndexCursor, Node> nodeFactory,
             ResourceTracker resourceTracker,
-            PropertyIndexQuery... queries )
-    {
-        super( nodeLabelCursor, nodeCursor, propertyCursor, nodeFactory, resourceTracker, queries );
+            PropertyIndexQuery... queries) {
+        super(nodeLabelCursor, nodeCursor, propertyCursor, nodeFactory, resourceTracker, queries);
         this.read = read;
     }
 
     @Override
-    protected long entityReference( NodeLabelIndexCursor cursor )
-    {
+    protected long entityReference(NodeLabelIndexCursor cursor) {
         return cursor.nodeReference();
     }
 
     @Override
-    protected void singleEntity( long id, NodeCursor cursor )
-    {
-        read.singleNode( id, cursor );
+    protected void singleEntity(long id, NodeCursor cursor) {
+        read.singleNode(id, cursor);
     }
 
     @Override
-    protected void properties( NodeCursor nodeCursor, PropertyCursor propertyCursor, PropertySelection propertySelection )
-    {
-        nodeCursor.properties( propertyCursor, propertySelection );
+    protected void properties(
+            NodeCursor nodeCursor, PropertyCursor propertyCursor, PropertySelection propertySelection) {
+        nodeCursor.properties(propertyCursor, propertySelection);
     }
 }

@@ -21,17 +21,14 @@ package org.neo4j.server.web;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class DisabledNeoWebServer extends LifecycleAdapter implements WebContainerThreadInfo
-{
+public class DisabledNeoWebServer extends LifecycleAdapter implements WebContainerThreadInfo {
     @Override
-    public int allThreads()
-    {
+    public int allThreads() {
         return 0;
     }
 
     @Override
-    public int idleThreads()
-    {
+    public int idleThreads() {
         return 0;
     }
 }

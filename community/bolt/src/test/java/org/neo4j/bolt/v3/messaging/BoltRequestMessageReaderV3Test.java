@@ -19,18 +19,6 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.messaging.BoltRequestMessageReader;
-import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.PackedInputArray;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -40,45 +28,48 @@ import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.encode;
 import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newNeo4jPack;
 import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.requestMessageReader;
 
-class BoltRequestMessageReaderV3Test
-{
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackedInputArray;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+
+class BoltRequestMessageReaderV3Test {
     @ParameterizedTest
-    @MethodSource( "boltV3Messages" )
-    void shouldDecodeV3Messages( RequestMessage message ) throws Exception
-    {
-        testMessageDecoding( message );
+    @MethodSource("boltV3Messages")
+    void shouldDecodeV3Messages(RequestMessage message) throws Exception {
+        testMessageDecoding(message);
     }
 
     @ParameterizedTest
-    @MethodSource( "boltV3UnsupportedMessages" )
-    void shouldNotDecodeUnsupportedMessages( RequestMessage message )
-    {
-        assertThrows( Exception.class, () -> testMessageDecoding( message ) );
+    @MethodSource("boltV3UnsupportedMessages")
+    void shouldNotDecodeUnsupportedMessages(RequestMessage message) {
+        assertThrows(Exception.class, () -> testMessageDecoding(message));
     }
 
-    private static void testMessageDecoding( RequestMessage message ) throws Exception
-    {
+    private static void testMessageDecoding(RequestMessage message) throws Exception {
         Neo4jPack neo4jPack = newNeo4jPack();
 
-        BoltStateMachine stateMachine = mock( BoltStateMachine.class );
-        BoltRequestMessageReader reader = requestMessageReader( stateMachine );
+        BoltStateMachine stateMachine = mock(BoltStateMachine.class);
+        BoltRequestMessageReader reader = requestMessageReader(stateMachine);
 
-        PackedInputArray input = new PackedInputArray( encode( neo4jPack, message ) );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        PackedInputArray input = new PackedInputArray(encode(neo4jPack, message));
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
 
-        reader.read( unpacker );
+        reader.read(unpacker);
 
-        verify( stateMachine ).process( eq( message ), any() );
+        verify(stateMachine).process(eq(message), any());
     }
 
-    private static Stream<RequestMessage> boltV3Messages()
-    {
+    private static Stream<RequestMessage> boltV3Messages() {
         return BoltV3Messages.supported();
     }
 
-    private static Stream<RequestMessage> boltV3UnsupportedMessages() throws BoltIOException
-    {
+    private static Stream<RequestMessage> boltV3UnsupportedMessages() throws BoltIOException {
         return BoltV3Messages.unsupported();
     }
-
 }

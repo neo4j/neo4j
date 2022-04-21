@@ -19,35 +19,30 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import org.neo4j.shell.TransactionHandler;
-import org.neo4j.shell.exception.CommandException;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class CommitTest
-{
-    private final TransactionHandler mockShell = mock( TransactionHandler.class );
-    private final Command commitCommand = new Commit( mockShell );
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.shell.TransactionHandler;
+import org.neo4j.shell.exception.CommandException;
+
+class CommitTest {
+    private final TransactionHandler mockShell = mock(TransactionHandler.class);
+    private final Command commitCommand = new Commit(mockShell);
 
     @Test
-    void shouldNotAcceptArgs()
-    {
-        CommandException exception = assertThrows( CommandException.class, () -> commitCommand.execute( List.of( "bob" ) ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+    void shouldNotAcceptArgs() {
+        CommandException exception = assertThrows(CommandException.class, () -> commitCommand.execute(List.of("bob")));
+        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
     }
 
     @Test
-    void commitTransactionOnShell() throws CommandException
-    {
-        commitCommand.execute( List.of() );
-        verify( mockShell ).commitTransaction();
+    void commitTransactionOnShell() throws CommandException {
+        commitCommand.execute(List.of());
+        verify(mockShell).commitTransaction();
     }
 }

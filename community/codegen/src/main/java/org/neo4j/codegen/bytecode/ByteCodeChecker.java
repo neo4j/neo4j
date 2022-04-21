@@ -20,11 +20,9 @@
 package org.neo4j.codegen.bytecode;
 
 import java.util.Collection;
-
 import org.neo4j.codegen.ByteCodes;
 import org.neo4j.codegen.CompilationFailureException;
 
-interface ByteCodeChecker
-{
-    void check( ClassLoader classpathLoader, Collection<ByteCodes> byteCodes ) throws CompilationFailureException;
+interface ByteCodeChecker {
+    void check(ClassLoader classpathLoader, Collection<ByteCodes> byteCodes) throws CompilationFailureException;
 }

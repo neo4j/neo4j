@@ -19,11 +19,13 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.packstream.example.Nodes.ALICE;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,7 +33,11 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackedOutputArray;
@@ -50,19 +56,10 @@ import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.storable.TextArray;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.packstream.example.Nodes.ALICE;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-@ExtendWith( OtherThreadExtension.class )
-public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTransportsTest
-{
+@ExtendWith(OtherThreadExtension.class)
+public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTransportsTest {
     @Inject
     private Neo4jWithSocket server;
 
@@ -70,197 +67,185 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
     private OtherThread otherThread;
 
     @BeforeEach
-    public void setup( TestInfo testInfo ) throws IOException
-    {
-        server.setConfigure( getSettingsFunction() );
-        server.init( testInfo );
+    public void setup(TestInfo testInfo) throws IOException {
+        server.setConfigure(getSettingsFunction());
+        server.init(testInfo);
         address = server.lookupDefaultConnector();
     }
 
     @Override
-    protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
-    {
+    protected Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
         return settings -> {
-            settings.put( BoltConnector.encryption_level, OPTIONAL );
-            settings.put( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, Duration.ofSeconds( 5 ) );
-            settings.put( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes, ByteUnit.kibiBytes( 1 ) );
+            settings.put(BoltConnector.encryption_level, OPTIONAL);
+            settings.put(
+                    BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, Duration.ofSeconds(5));
+            settings.put(
+                    BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes,
+                    ByteUnit.kibiBytes(1));
         };
     }
 
-    @ParameterizedTest( name = "{displayName} {2}" )
-    @MethodSource( "argumentsProvider" )
-    public void shouldFinishHelloMessage( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
-    {
-        initParameters( connectionClass, neo4jPack, name );
+    @ParameterizedTest(name = "{displayName} {2}")
+    @MethodSource("argumentsProvider")
+    public void shouldFinishHelloMessage(
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
+        initParameters(connectionClass, neo4jPack, name);
 
         // When
-        connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
-                .send( util.defaultAuth() );
+        connection.connect(address).send(util.defaultAcceptedVersions()).send(util.defaultAuth());
 
         // Then
-        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
 
         connection.disconnect();
-        assertThat( connection ).satisfies( eventuallyDisconnects() );
+        assertThat(connection).satisfies(eventuallyDisconnects());
     }
 
-    @ParameterizedTest( name = "{displayName} {2}" )
-    @MethodSource( "argumentsProvider" )
-    public void shouldTimeoutTooSlowConnection( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
-    {
-        initParameters( connectionClass, neo4jPack, name );
+    @ParameterizedTest(name = "{displayName} {2}")
+    @MethodSource("argumentsProvider")
+    public void shouldTimeoutTooSlowConnection(
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
+        initParameters(connectionClass, neo4jPack, name);
 
         // Given
         var handshakeBytes = util.defaultAcceptedVersions();
 
         // When
-        var conn = connection.connect( address );
-        otherThread.execute( () ->
-        {
+        var conn = connection.connect(address);
+        otherThread.execute(() -> {
             // Each byte will arrive within BoltConnector.unsupported_bolt_auth_timeout.
             // However the timeout is for all bytes.
             byte[] buffer = new byte[1];
-            for ( var aByte : handshakeBytes )
-            {
+            for (var aByte : handshakeBytes) {
                 buffer[0] = aByte;
-                conn.send( buffer );
-                Thread.sleep( 500 );
+                conn.send(buffer);
+                Thread.sleep(500);
             }
             return null;
-        } );
+        });
 
         // Then
-        assertThat( connection ).satisfies( eventuallyDisconnects() );
+        assertThat(connection).satisfies(eventuallyDisconnects());
     }
 
-    @ParameterizedTest( name = "{displayName} {2}" )
-    @MethodSource( "argumentsProvider" )
+    @ParameterizedTest(name = "{displayName} {2}")
+    @MethodSource("argumentsProvider")
     public void shouldTimeoutToHandshakeForHalfHandshake(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
-    {
-        initParameters( connectionClass, neo4jPack, name );
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
+        initParameters(connectionClass, neo4jPack, name);
 
         // Given half written bolt handshake message
-        ByteBuffer bb = ByteBuffers.allocate( Integer.BYTES, INSTANCE );
-        bb.putInt( 0x6060B017 );
+        ByteBuffer bb = ByteBuffers.allocate(Integer.BYTES, INSTANCE);
+        bb.putInt(0x6060B017);
         // When
-        connection.connect( address ).send( bb.array() );
+        connection.connect(address).send(bb.array());
 
         // Then
-        assertThat( connection ).satisfies( eventuallyDisconnects() );
+        assertThat(connection).satisfies(eventuallyDisconnects());
     }
 
-    @ParameterizedTest( name = "{displayName} {2}" )
-    @MethodSource( "argumentsProvider" )
+    @ParameterizedTest(name = "{displayName} {2}")
+    @MethodSource("argumentsProvider")
     public void shouldTimeoutToAuthForHalfHelloMessage(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
-    {
-        initParameters( connectionClass, neo4jPack, name );
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
+        initParameters(connectionClass, neo4jPack, name);
 
         // Given half written hello message
         var helloMessage = util.defaultAuth();
-        var buffer = ByteBuffer.wrap( helloMessage, 0, helloMessage.length / 2 );
+        var buffer = ByteBuffer.wrap(helloMessage, 0, helloMessage.length / 2);
         byte[] halfMessage = new byte[buffer.limit()];
-        buffer.get( halfMessage );
+        buffer.get(halfMessage);
 
         // When
-        connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
-                .send( halfMessage );
+        connection.connect(address).send(util.defaultAcceptedVersions()).send(halfMessage);
 
         // Then
-        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection ).satisfies( eventuallyDisconnects() );
+        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        assertThat(connection).satisfies(eventuallyDisconnects());
     }
 
-    @ParameterizedTest( name = "{displayName} {2}" )
-    @MethodSource( "argumentsProvider" )
+    @ParameterizedTest(name = "{displayName} {2}")
+    @MethodSource("argumentsProvider")
     public void shouldCloseConnectionDueToTooBigHelloMessage(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
-    {
-        initParameters( connectionClass, neo4jPack, name );
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
+        initParameters(connectionClass, neo4jPack, name);
 
         // When
-        Map<String,Object> authMeta = new HashMap<>();
-        for ( int i = 0; i < 100; i++ )
-        {
-            authMeta.put( "index-" + i, i );
+        Map<String, Object> authMeta = new HashMap<>();
+        for (int i = 0; i < 100; i++) {
+            authMeta.put("index-" + i, i);
         }
-        connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
-                .send( util.defaultAuth( authMeta ) );
+        connection.connect(address).send(util.defaultAcceptedVersions()).send(util.defaultAuth(authMeta));
 
         // Then
-        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection ).satisfies( eventuallyDisconnects() );
+        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        assertThat(connection).satisfies(eventuallyDisconnects());
     }
 
-    @ParameterizedTest( name = "{displayName} {2}" )
-    @MethodSource( "argumentsProvider" )
+    @ParameterizedTest(name = "{displayName} {2}")
+    @MethodSource("argumentsProvider")
     public void shouldCloseConnectionDueToTooBigDeclaredMapInHelloMessage(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
-    {
-        initParameters( connectionClass, neo4jPack, name );
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
+        initParameters(connectionClass, neo4jPack, name);
 
         // When
-        connection.connect( address )
-                  .send( util.defaultAcceptedVersions() )
-                  .send( TransportTestUtil.chunk( 64, createHelloWithOversizeDeclaredMap( neo4jPack ) ) );
+        connection
+                .connect(address)
+                .send(util.defaultAcceptedVersions())
+                .send(TransportTestUtil.chunk(64, createHelloWithOversizeDeclaredMap(neo4jPack)));
 
         // Then
-        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid,
-                                                                                 "Collection size exceeds message capacity" ) ) );
-        assertThat( connection ).satisfies( eventuallyDisconnects() );
+        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        assertThat(connection)
+                .satisfies(util.eventuallyReceives(
+                        msgFailure(Status.Request.Invalid, "Collection size exceeds message capacity")));
+        assertThat(connection).satisfies(eventuallyDisconnects());
     }
 
-    @ParameterizedTest( name = "{displayName} {2}" )
-    @MethodSource( "argumentsProvider" )
+    @ParameterizedTest(name = "{displayName} {2}")
+    @MethodSource("argumentsProvider")
     public void shouldCloseConnectionDueToTooBigDeclaredListInHelloMessage(
-            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
-    {
-        initParameters( connectionClass, neo4jPack, name );
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name) throws Exception {
+        initParameters(connectionClass, neo4jPack, name);
 
         // When
-        connection.connect( address )
-                  .send( util.defaultAcceptedVersions() )
-                  .send( TransportTestUtil.chunk( 64, createHelloWithOversizeDeclaredList( neo4jPack ) ) );
+        connection
+                .connect(address)
+                .send(util.defaultAcceptedVersions())
+                .send(TransportTestUtil.chunk(64, createHelloWithOversizeDeclaredList(neo4jPack)));
 
         // Then
-        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid,
-                                                                                 "Collection size exceeds message capacity" ) ) );
-        assertThat( connection ).satisfies( eventuallyDisconnects() );
+        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        assertThat(connection)
+                .satisfies(util.eventuallyReceives(
+                        msgFailure(Status.Request.Invalid, "Collection size exceeds message capacity")));
+        assertThat(connection).satisfies(eventuallyDisconnects());
     }
 
-    private static byte[] createHelloWithOversizeDeclaredMap( Neo4jPack neo4jPack ) throws IOException
-    {
+    private static byte[] createHelloWithOversizeDeclaredMap(Neo4jPack neo4jPack) throws IOException {
         PackedOutputArray out = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( out );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(out);
 
-        packer.packStructHeader( 2, HelloMessage.SIGNATURE );
-        packer.packMapHeader( Integer.MAX_VALUE ); // Map claims to be huge when it isn't
-        packer.pack( "x" );
-        packer.pack( "Boom!" );
+        packer.packStructHeader(2, HelloMessage.SIGNATURE);
+        packer.packMapHeader(Integer.MAX_VALUE); // Map claims to be huge when it isn't
+        packer.pack("x");
+        packer.pack("Boom!");
 
         return out.bytes();
     }
 
-    static byte[] createHelloWithOversizeDeclaredList( Neo4jPack neo4jPack ) throws IOException
-    {
+    static byte[] createHelloWithOversizeDeclaredList(Neo4jPack neo4jPack) throws IOException {
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.packStructHeader( 2, HelloMessage.SIGNATURE );
-        packer.packMapHeader( 1 );
-        packer.pack( "x" );
-        packer.packListHeader( Integer.MAX_VALUE ); // list claims to be huge when it isn't
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.packStructHeader(2, HelloMessage.SIGNATURE);
+        packer.packMapHeader(1);
+        packer.pack("x");
+        packer.packListHeader(Integer.MAX_VALUE); // list claims to be huge when it isn't
         TextArray labels = ALICE.labels();
-        for ( int i = 0; i < labels.length(); i++ )
-        {
-            String labelName = labels.stringValue( i );
-            packer.pack( labelName );
+        for (int i = 0; i < labels.length(); i++) {
+            String labelName = labels.stringValue(i);
+            packer.pack(labelName);
         }
         return output.bytes();
     }

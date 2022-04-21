@@ -23,19 +23,16 @@ import java.lang.annotation.Annotation;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.SimpleElementVisitor8;
 
-public class AnnotationTypeVisitor extends SimpleElementVisitor8<Boolean,Void>
-{
+public class AnnotationTypeVisitor extends SimpleElementVisitor8<Boolean, Void> {
 
     private final Class<? extends Annotation> annotationType;
 
-    public AnnotationTypeVisitor( Class<? extends Annotation> annotationType )
-    {
+    public AnnotationTypeVisitor(Class<? extends Annotation> annotationType) {
         this.annotationType = annotationType;
     }
 
     @Override
-    public Boolean visitType( TypeElement element, Void aVoid )
-    {
-        return element.getQualifiedName().contentEquals( annotationType.getName() );
+    public Boolean visitType(TypeElement element, Void aVoid) {
+        return element.getQualifiedName().contentEquals(annotationType.getName());
     }
 }

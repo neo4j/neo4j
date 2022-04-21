@@ -43,6 +43,7 @@ import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.matchers.Matcher
 
 import java.util.Objects
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -77,15 +78,18 @@ case object RowsMatch extends RowMatchResult
 case class RowsDontMatch(errorMessage: String) extends RowMatchResult
 
 trait RowsMatcher {
+
   def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult =
     if (matchesRaw(columns, rows)) {
       RowsMatch
     } else {
       RowsDontMatch(errorMessage(rows))
     }
+
   def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
     matches(columns, rows) == RowsMatch
   protected def formatRows(rows: IndexedSeq[Array[AnyValue]]): String
+
   protected def errorMessage(rows: IndexedSeq[Array[AnyValue]]): String =
     s"""Expected:
        |
@@ -109,15 +113,15 @@ object NoRowsMatcher extends RowsMatcher {
 }
 
 abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
-  protected def matchSorted(expRowsRaw: IndexedSeq[ListValue],
-                            gotRowsRaw: IndexedSeq[ListValue]): RowMatchResult = {
+
+  protected def matchSorted(expRowsRaw: IndexedSeq[ListValue], gotRowsRaw: IndexedSeq[ListValue]): RowMatchResult = {
 
     def mapRow(mapper: ValueMapper[AnyValue])(row: ListValue): ListValue = {
       val array = new Array[AnyValue](row.length())
       for (i <- 0 until row.length()) {
         array(i) = row.value(i).map(mapper)
       }
-      VirtualValues.list(array:_*)
+      VirtualValues.list(array: _*)
     }
 
     val (expRows, gotRows) =
@@ -177,23 +181,27 @@ abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
   }
 }
 
-case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder: Boolean = false) extends EqualRowsMatcher(listInAnyOrder) {
+case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder: Boolean = false)
+    extends EqualRowsMatcher(listInAnyOrder) {
   override def toString: String = formatRows(expected) + " in any order"
+
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
-    val sortedExpected = expected.map(row => VirtualValues.list(row:_*)).sorted(Rows.ANY_VALUE_ORDERING)
-    val sortedRows = rows.map(row => VirtualValues.list(row:_*)).sorted(Rows.ANY_VALUE_ORDERING)
+    val sortedExpected = expected.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
+    val sortedRows = rows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
     matchSorted(sortedExpected, sortedRows)
   }
 
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String =
-    Rows.pretty(rows.map(row => VirtualValues.list(row:_*)).sorted(Rows.ANY_VALUE_ORDERING).map(l => l.asArray()))
+    Rows.pretty(rows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING).map(l => l.asArray()))
 }
 
-case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder: Boolean = false) extends EqualRowsMatcher(listInAnyOrder) {
+case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder: Boolean = false)
+    extends EqualRowsMatcher(listInAnyOrder) {
   override def toString: String = formatRows(expected) + " in order"
+
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
-    val sortedExpected = expected.map(row => VirtualValues.list(row:_*))
-    val sortedRows = rows.map(row => VirtualValues.list(row:_*))
+    val sortedExpected = expected.map(row => VirtualValues.list(row: _*))
+    val sortedRows = rows.map(row => VirtualValues.list(row: _*))
     matchSorted(sortedExpected, sortedRows)
   }
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
@@ -232,11 +240,12 @@ case class DisallowValues(columnValuePredicates: Seq[(String, AnyValue => Boolea
     true
   }
 
-  protected override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
+  override protected def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
 case class CustomRowsMatcher(inner: Matcher[Seq[Array[AnyValue]]]) extends RowsMatcher {
   override def toString: String = s"Rows matching $inner"
+
   override def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
     inner(rows).matches
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
@@ -244,9 +253,10 @@ case class CustomRowsMatcher(inner: Matcher[Seq[Array[AnyValue]]]) extends RowsM
 
 trait RowOrderMatcher extends RowsMatcher {
   protected var inner: Option[RowOrderMatcher] = None
+
   private def append(x: RowOrderMatcher): Unit =
     inner match {
-      case None => inner = Some(x)
+      case None       => inner = Some(x)
       case Some(tail) => tail.append(x)
     }
 
@@ -254,16 +264,19 @@ trait RowOrderMatcher extends RowsMatcher {
     append(new Ascending(column))
     this
   }
+
   def desc(column: String): RowOrderMatcher = {
     append(new Descending(column))
     this
   }
+
   def groupBy(columns: String*): RowOrderMatcher = {
-    append(new GroupBy(None, None, columns:_*))
+    append(new GroupBy(None, None, columns: _*))
     this
   }
+
   def groupBy(nGroups: Int, groupSize: Int, columns: String*): RowOrderMatcher = {
-    append(new GroupBy(Some(nGroups), Some(groupSize), columns:_*))
+    append(new GroupBy(Some(nGroups), Some(groupSize), columns: _*))
     this
   }
 
@@ -305,7 +318,9 @@ trait RowOrderMatcher extends RowsMatcher {
   def onComplete(): Boolean
 }
 
-class GroupBy(val nGroups: Option[Int], val groupSize: Option[Int], val groupingColumns: String*) extends RowOrderMatcher {
+class GroupBy(val nGroups: Option[Int], val groupSize: Option[Int], val groupingColumns: String*)
+    extends RowOrderMatcher {
+
   def description: String = {
     val n = nGroups.map(n => s"$n ").getOrElse("")
     val size = groupSize.map(n => s"of size $n ").getOrElse("")
@@ -322,13 +337,14 @@ class GroupBy(val nGroups: Option[Int], val groupSize: Option[Int], val grouping
     previous = null
   }
 
-  override def onRow(columns: IndexedSeq[String],
-                     row: Array[AnyValue]): Boolean = {
+  override def onRow(columns: IndexedSeq[String], row: Array[AnyValue]): Boolean = {
 
     val is = groupingColumns.map(col => {
       val i = columns.indexOf(col)
       if (i == -1)
-        throw new IllegalArgumentException(s"group by column '$col' is not part of result columns '${columns.mkString(",")}'")
+        throw new IllegalArgumentException(
+          s"group by column '$col' is not part of result columns '${columns.mkString(",")}'"
+        )
       i
     })
 
@@ -380,11 +396,12 @@ abstract class Sort extends RowOrderMatcher {
 
   override def reset(): Unit = previous = initialValue
 
-  override def onRow(columns: IndexedSeq[String],
-                     row: Array[AnyValue]): Boolean = {
+  override def onRow(columns: IndexedSeq[String], row: Array[AnyValue]): Boolean = {
     val i = columns.indexOf(column)
     if (i == -1)
-      throw new IllegalArgumentException(s"sort column '$column' is not part of result columns '${columns.mkString(",")}'")
+      throw new IllegalArgumentException(
+        s"sort column '$column' is not part of result columns '${columns.mkString(",")}'"
+      )
 
     val current = row(i)
     val cmp = AnyValues.COMPARATOR.compare(previous, current)
@@ -432,13 +449,14 @@ object SortListValueMapper extends ValueMapper[AnyValue] {
   override def mapRelationship(value: VirtualRelationshipValue): AnyValue = value
   override def mapMap(value: MapValue): AnyValue = value
   override def mapNoValue(): AnyValue = Values.NO_VALUE
+
   override def mapSequence(seq: SequenceValue): AnyValue = {
     val array = new Array[AnyValue](seq.length())
     for (i <- 0 until seq.length()) {
       array(i) = seq.value(i).map(this)
     }
     java.util.Arrays.sort(array, AnyValues.COMPARATOR)
-    VirtualValues.list(array:_*)
+    VirtualValues.list(array: _*)
   }
   override def mapText(value: TextValue): AnyValue = value
   override def mapBoolean(value: BooleanValue): AnyValue = value

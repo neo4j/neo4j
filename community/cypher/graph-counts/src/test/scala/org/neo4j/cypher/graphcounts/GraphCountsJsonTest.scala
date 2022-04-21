@@ -42,7 +42,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    ],
         |    "type": "Uniqueness constraint"
         |}
-      """.stripMargin)).extract[Constraint] should be(
+      """.stripMargin
+    )).extract[Constraint] should be(
       Constraint(
         Some("DeprecatedRelyingParty"),
         None,
@@ -63,7 +64,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    ],
         |    "type": "Existence constraint"
         |}
-      """.stripMargin)).extract[Constraint] should be(
+      """.stripMargin
+    )).extract[Constraint] should be(
       Constraint(
         None,
         Some("Foo"),
@@ -89,7 +91,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "updatesSinceEstimation": 0,
         |    "indexType": "BTREE"
         |}
-      """.stripMargin)).extract[Index] should be(
+      """.stripMargin
+    )).extract[Index] should be(
       Index(Some(Seq("Person")), None, IndexType.BTREE, Seq("uuid"), 2, 2, 0)
     )
   }
@@ -110,7 +113,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "updatesSinceEstimation": 0,
         |    "indexType": "BTREE"
         |}
-      """.stripMargin)).extract[Index] should be(
+      """.stripMargin
+    )).extract[Index] should be(
       Index(None, Some(Seq("REL")), IndexType.BTREE, Seq("prop"), 2, 2, 0)
     )
   }
@@ -126,7 +130,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "updatesSinceEstimation": 0,
         |    "indexType": "LOOKUP"
         |}
-      """.stripMargin)).extract[Index] should be(
+      """.stripMargin
+    )).extract[Index] should be(
       Index(Some(Seq()), None, IndexType.LOOKUP, Seq(), 0, 0, 0)
     )
   }
@@ -142,7 +147,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "updatesSinceEstimation": 0,
         |    "indexType": "LOOKUP"
         |}
-      """.stripMargin)).extract[Index] should be(
+      """.stripMargin
+    )).extract[Index] should be(
       Index(None, Some(Seq()), IndexType.LOOKUP, Seq(), 0, 0, 0)
     )
   }
@@ -154,7 +160,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "count": 2,
         |    "label": "Person"
         |}
-      """.stripMargin)).extract[NodeCount] should be(
+      """.stripMargin
+    )).extract[NodeCount] should be(
       NodeCount(2, Some("Person"))
     )
   }
@@ -165,7 +172,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |{
         |    "count": 2,
         |}
-      """.stripMargin)).extract[NodeCount] should be(
+      """.stripMargin
+    )).extract[NodeCount] should be(
       NodeCount(2, None)
     )
   }
@@ -176,10 +184,12 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |{
         |    "count": 5,
         |}
-      """.stripMargin)).extract[RelationshipCount] should be(
+      """.stripMargin
+    )).extract[RelationshipCount] should be(
       RelationshipCount(5, None, None, None)
     )
   }
+
   test("RelationshipCount with type") {
     JsonMethods.parse(StringInput(
       """
@@ -187,10 +197,12 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "count": 5,
         |    "relationshipType": "HAS_SSL_CERTIFICATE",
         |}
-      """.stripMargin)).extract[RelationshipCount] should be(
+      """.stripMargin
+    )).extract[RelationshipCount] should be(
       RelationshipCount(5, Some("HAS_SSL_CERTIFICATE"), None, None)
     )
   }
+
   test("RelationshipCount with type and startLabel") {
     JsonMethods.parse(StringInput(
       """
@@ -199,10 +211,12 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "relationshipType": "HAS_SSL_CERTIFICATE",
         |    "startLabel": "RelyingParty"
         |}
-      """.stripMargin)).extract[RelationshipCount] should be(
+      """.stripMargin
+    )).extract[RelationshipCount] should be(
       RelationshipCount(5, Some("HAS_SSL_CERTIFICATE"), Some("RelyingParty"), None)
     )
   }
+
   test("RelationshipCount with type and endLabel") {
     JsonMethods.parse(StringInput(
       """
@@ -211,8 +225,9 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "relationshipType": "HAS_SSL_CERTIFICATE",
         |    "endLabel": "RelyingParty"
         |}
-      """.stripMargin)).extract[RelationshipCount] should be(
-      RelationshipCount(5, Some("HAS_SSL_CERTIFICATE"), None,  Some("RelyingParty"))
+      """.stripMargin
+    )).extract[RelationshipCount] should be(
+      RelationshipCount(5, Some("HAS_SSL_CERTIFICATE"), None, Some("RelyingParty"))
     )
   }
 
@@ -248,7 +263,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "relationshipType": "HAS_GEOLOCATION",
         |    "startLabel": "Address"
         |}]}
-      """.stripMargin)).extract[GraphCountData] should be(
+      """.stripMargin
+    )).extract[GraphCountData] should be(
       GraphCountData(
         Seq(Constraint(Some("SSLCertificate"), None, Seq("serialNumber"), ConstraintType.UNIQUE)),
         Seq(Index(Some(Seq("SSLCertificate")), None, IndexType.BTREE, Seq("serialNumber"), 4, 4, 0)),

@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -33,14 +34,10 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.logging.InternalLogProvider;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-
 /**
  * Implementation of the property store.
  */
-public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
-{
+public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord> {
     // Historical type descriptor, should be called PropertyKeyTokenStore
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
 
@@ -55,10 +52,23 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, config, SchemaIdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
-                recordFormats.propertyKeyToken(), recordFormats.storeVersion(), readOnlyChecker, databaseName, PROPERTY_KEY_TOKEN_CURSOR,
-                DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                config,
+                SchemaIdType.PROPERTY_KEY_TOKEN,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                nameStore,
+                TYPE_DESCRIPTOR,
+                recordFormats.propertyKeyToken(),
+                recordFormats.storeVersion(),
+                readOnlyChecker,
+                databaseName,
+                PROPERTY_KEY_TOKEN_CURSOR,
+                DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR,
+                openOptions);
     }
 }

@@ -21,9 +21,8 @@ package org.neo4j.bolt.transport;
 
 import io.netty.channel.Channel;
 
-public interface ThrottleLock
-{
-    void lock( Channel channel, long timeout ) throws InterruptedException;
+public interface ThrottleLock {
+    void lock(Channel channel, long timeout) throws InterruptedException;
 
-    void unlock( Channel channel );
+    void unlock(Channel channel);
 }

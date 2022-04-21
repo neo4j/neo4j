@@ -34,47 +34,69 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
 
-case class AssumeIndependenceQueryGraphCardinalityModel(planContext: PlanContext,
-                                                        selectivityCalculator: SelectivityCalculator,
-                                                        combiner: SelectivityCombiner) extends QueryGraphCardinalityModel {
+case class AssumeIndependenceQueryGraphCardinalityModel(
+  planContext: PlanContext,
+  selectivityCalculator: SelectivityCalculator,
+  combiner: SelectivityCombiner
+) extends QueryGraphCardinalityModel {
 
-  private implicit val numericMultiplier: NumericMultiplier.type = NumericMultiplier
+  implicit private val numericMultiplier: NumericMultiplier.type = NumericMultiplier
 
   private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(planContext.statistics, combiner)
 
-  def apply(queryGraph: QueryGraph,
-            input: QueryGraphSolverInput,
-            semanticTable: SemanticTable,
-            indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality = {
+  def apply(
+    queryGraph: QueryGraph,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Cardinality = {
     val cardinalityAndInput = CardinalityAndInput(Cardinality.SINGLE, input)
     // Fold over query graph and optional query graphs, aggregating cardinality and label info using QueryGraphSolverInput
     val afterOuter = visitQueryGraph(queryGraph, cardinalityAndInput, semanticTable, indexPredicateProviderContext)
-    val afterOptionalMatches = visitOptionalMatchQueryGraphs(queryGraph.optionalMatches, afterOuter, semanticTable, indexPredicateProviderContext)
+    val afterOptionalMatches = visitOptionalMatchQueryGraphs(
+      queryGraph.optionalMatches,
+      afterOuter,
+      semanticTable,
+      indexPredicateProviderContext
+    )
     afterOptionalMatches.cardinality
   }
 
-  private def visitQueryGraph(outer: QueryGraph,
-                              cardinalityAndInput: CardinalityAndInput,
-                              semanticTable: SemanticTable,
-                              indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): CardinalityAndInput = {
-    cardinalityAndInput.copy(cardinality = cardinalityForQueryGraph(outer, cardinalityAndInput.input, semanticTable, indexPredicateProviderContext))
+  private def visitQueryGraph(
+    outer: QueryGraph,
+    cardinalityAndInput: CardinalityAndInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): CardinalityAndInput = {
+    cardinalityAndInput.copy(cardinality =
+      cardinalityForQueryGraph(outer, cardinalityAndInput.input, semanticTable, indexPredicateProviderContext)
+    )
   }
 
-  private def visitOptionalMatchQueryGraphs(optionals: Seq[QueryGraph],
-                                            cardinalityAndInput: CardinalityAndInput,
-                                            semanticTable: SemanticTable,
-                                            indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): CardinalityAndInput = {
+  private def visitOptionalMatchQueryGraphs(
+    optionals: Seq[QueryGraph],
+    cardinalityAndInput: CardinalityAndInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): CardinalityAndInput = {
     optionals.foldLeft(cardinalityAndInput) { case (current, optional) =>
       visitOptionalQueryGraph(optional, current, semanticTable, indexPredicateProviderContext)
     }
   }
 
-  private def visitOptionalQueryGraph(optional: QueryGraph,
-                                      cardinalityAndInput: CardinalityAndInput,
-                                      semanticTable: SemanticTable,
-                                      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): CardinalityAndInput = {
+  private def visitOptionalQueryGraph(
+    optional: QueryGraph,
+    cardinalityAndInput: CardinalityAndInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): CardinalityAndInput = {
     val inputWithKnownLabelInfo = cardinalityAndInput.input.withFusedLabelInfo(optional.selections.labelInfo)
-    val optionalCardinality = cardinalityAndInput.cardinality * cardinalityForQueryGraph(optional, inputWithKnownLabelInfo, semanticTable, indexPredicateProviderContext)
+    val optionalCardinality = cardinalityAndInput.cardinality * cardinalityForQueryGraph(
+      optional,
+      inputWithKnownLabelInfo,
+      semanticTable,
+      indexPredicateProviderContext
+    )
     // OPTIONAL MATCH can't decrease cardinality
     cardinalityAndInput.copy(
       cardinality = Cardinality.max(cardinalityAndInput.cardinality, optionalCardinality),
@@ -82,11 +104,14 @@ case class AssumeIndependenceQueryGraphCardinalityModel(planContext: PlanContext
     )
   }
 
-  private def cardinalityForQueryGraph(qg: QueryGraph,
-                                       input: QueryGraphSolverInput,
-                                       semanticTable: SemanticTable,
-                                       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality = {
-    val patternMultiplier = calculateMultiplier(qg, input.labelInfo, input.relTypeInfo, semanticTable, indexPredicateProviderContext)
+  private def cardinalityForQueryGraph(
+    qg: QueryGraph,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Cardinality = {
+    val patternMultiplier =
+      calculateMultiplier(qg, input.labelInfo, input.relTypeInfo, semanticTable, indexPredicateProviderContext)
     val numberOfPatternNodes = qg.patternNodes.count { n =>
       !qg.argumentIds.contains(n) && !qg.patternRelationships.exists(r =>
         qg.argumentIds.contains(r.name) && Seq(r.left, r.right).contains(n)
@@ -98,12 +123,15 @@ case class AssumeIndependenceQueryGraphCardinalityModel(planContext: PlanContext
     (numberOfGraphNodes ^ numberOfPatternNodes) * patternMultiplier
   }
 
-  private def calculateMultiplier(qg: QueryGraph,
-                                  labels: LabelInfo,
-                                  relTypes: RelTypeInfo,
-                                  semanticTable: SemanticTable,
-                                  indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Multiplier = {
-    val expressionSelectivity = selectivityCalculator(qg.selections, labels, relTypes, semanticTable, indexPredicateProviderContext)
+  private def calculateMultiplier(
+    qg: QueryGraph,
+    labels: LabelInfo,
+    relTypes: RelTypeInfo,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Multiplier = {
+    val expressionSelectivity =
+      selectivityCalculator(qg.selections, labels, relTypes, semanticTable, indexPredicateProviderContext)
 
     val patternRelationships = qg.patternRelationships.toIndexedSeq
     val patternMultipliers = patternRelationships.map(r =>

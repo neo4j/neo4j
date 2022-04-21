@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -29,40 +28,33 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * This is done after all sparse node relationship links have been done and the {@link NodeRelationshipCache node cache}
  * points to the first relationship for sparse each node.
  */
-public class SparseNodeFirstRelationshipProcessor implements RecordProcessor<NodeRecord>
-{
+public class SparseNodeFirstRelationshipProcessor implements RecordProcessor<NodeRecord> {
     private final NodeRelationshipCache cache;
 
-    public SparseNodeFirstRelationshipProcessor( NodeRelationshipCache cache )
-    {
+    public SparseNodeFirstRelationshipProcessor(NodeRelationshipCache cache) {
         this.cache = cache;
     }
 
     @Override
-    public boolean process( NodeRecord node, StoreCursors storeCursors )
-    {
+    public boolean process(NodeRecord node, StoreCursors storeCursors) {
         long nodeId = node.getId();
-        long firstRel = cache.getFirstRel( nodeId, NodeRelationshipCache.NO_GROUP_VISITOR );
-        if ( firstRel != -1 )
-        {
-            node.setNextRel( firstRel );
+        long firstRel = cache.getFirstRel(nodeId, NodeRelationshipCache.NO_GROUP_VISITOR);
+        if (firstRel != -1) {
+            node.setNextRel(firstRel);
         }
         return true;
     }
 
     @Override
-    public void done()
-    {   // Nothing to do here
+    public void done() { // Nothing to do here
     }
 
     @Override
-    public void mergeResultsFrom( RecordProcessor<NodeRecord> other )
-    {
-        throw new UnsupportedOperationException( "Should not be called, since it's single-threaded" );
+    public void mergeResultsFrom(RecordProcessor<NodeRecord> other) {
+        throw new UnsupportedOperationException("Should not be called, since it's single-threaded");
     }
 
     @Override
-    public void close()
-    {   // Nothing to do here
+    public void close() { // Nothing to do here
     }
 }

@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.tracer;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
@@ -37,229 +38,178 @@ import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-
 /**
  * Tracer used to trace database scoped events, like transaction logs rotations, checkpoints, transactions etc
  */
-public class DefaultTracer implements DatabaseTracer
-{
+public class DefaultTracer implements DatabaseTracer {
     private final AtomicLong appendedBytes = new AtomicLong();
     private final AtomicLong numberOfFlushes = new AtomicLong();
     private final AtomicLong appliedBatchSize = new AtomicLong();
 
     private final CountingLogRotateEvent countingLogRotateEvent = new CountingLogRotateEvent();
-    private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.addAndGet( CURRENT_FORMAT_LOG_HEADER_SIZE );
+    private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.addAndGet(CURRENT_FORMAT_LOG_HEADER_SIZE);
     private final LogFileFlushEvent logFileFlushEvent = numberOfFlushes::incrementAndGet;
-    private final CountingLogCheckPointEvent logCheckPointEvent = new CountingLogCheckPointEvent( this::appendLogBytes, countingLogRotateEvent );
+    private final CountingLogCheckPointEvent logCheckPointEvent =
+            new CountingLogCheckPointEvent(this::appendLogBytes, countingLogRotateEvent);
     private final LogAppendEvent logAppendEvent = new DefaultLogAppendEvent();
     private final CommitEvent commitEvent = new DefaultCommitEvent();
     private final TransactionEvent transactionEvent = new DefaultTransactionEvent();
 
-    public DefaultTracer()
-    {
-        //empty
+    public DefaultTracer() {
+        // empty
     }
 
     @Override
-    public TransactionEvent beginTransaction( CursorContext cursorContext )
-    {
+    public TransactionEvent beginTransaction(CursorContext cursorContext) {
         return transactionEvent;
     }
 
     @Override
-    public long appendedBytes()
-    {
+    public long appendedBytes() {
         return appendedBytes.get();
     }
 
     @Override
-    public long numberOfLogRotations()
-    {
+    public long numberOfLogRotations() {
         return countingLogRotateEvent.numberOfLogRotations();
     }
 
     @Override
-    public long logRotationAccumulatedTotalTimeMillis()
-    {
+    public long logRotationAccumulatedTotalTimeMillis() {
         return countingLogRotateEvent.logRotationAccumulatedTotalTimeMillis();
     }
 
     @Override
-    public long lastLogRotationTimeMillis()
-    {
+    public long lastLogRotationTimeMillis() {
         return countingLogRotateEvent.lastLogRotationTimeMillis();
     }
 
     @Override
-    public long numberOfFlushes()
-    {
+    public long numberOfFlushes() {
         return numberOfFlushes.get();
     }
 
     @Override
-    public long lastTransactionLogAppendBatch()
-    {
+    public long lastTransactionLogAppendBatch() {
         return appliedBatchSize.get();
     }
 
     @Override
-    public long numberOfCheckPoints()
-    {
+    public long numberOfCheckPoints() {
         return logCheckPointEvent.numberOfCheckPoints();
     }
 
     @Override
-    public long checkPointAccumulatedTotalTimeMillis()
-    {
+    public long checkPointAccumulatedTotalTimeMillis() {
         return logCheckPointEvent.checkPointAccumulatedTotalTimeMillis();
     }
 
     @Override
-    public long lastCheckpointTimeMillis()
-    {
+    public long lastCheckpointTimeMillis() {
         return logCheckPointEvent.lastCheckpointTimeMillis();
     }
 
     @Override
-    public LogCheckPointEvent beginCheckPoint()
-    {
+    public LogCheckPointEvent beginCheckPoint() {
         return logCheckPointEvent;
     }
 
-    private void appendLogBytes( LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend )
-    {
-        if ( logPositionAfterAppend.getLogVersion() != logPositionBeforeAppend.getLogVersion() )
-        {
-            throw new IllegalStateException( "Appending to several log files is not supported." );
+    private void appendLogBytes(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {
+        if (logPositionAfterAppend.getLogVersion() != logPositionBeforeAppend.getLogVersion()) {
+            throw new IllegalStateException("Appending to several log files is not supported.");
         }
-        appendedBytes.addAndGet( logPositionAfterAppend.getByteOffset() - logPositionBeforeAppend.getByteOffset() );
+        appendedBytes.addAndGet(logPositionAfterAppend.getByteOffset() - logPositionBeforeAppend.getByteOffset());
     }
 
     @Override
-    public LogFileCreateEvent createLogFile()
-    {
+    public LogFileCreateEvent createLogFile() {
         return logFileCreateEvent;
     }
 
     @Override
-    public void openLogFile( Path filePath )
-    {
-    }
+    public void openLogFile(Path filePath) {}
 
     @Override
-    public void closeLogFile( Path filePath )
-    {
-    }
+    public void closeLogFile(Path filePath) {}
 
     @Override
-    public LogAppendEvent logAppend()
-    {
+    public LogAppendEvent logAppend() {
         return logAppendEvent;
     }
 
     @Override
-    public LogFileFlushEvent flushFile()
-    {
+    public LogFileFlushEvent flushFile() {
         return logFileFlushEvent;
     }
 
-    private class DefaultTransactionEvent implements TransactionEvent
-    {
+    private class DefaultTransactionEvent implements TransactionEvent {
 
         @Override
-        public void setSuccess( boolean success )
-        {
-        }
+        public void setSuccess(boolean success) {}
 
         @Override
-        public void setFailure( boolean failure )
-        {
-        }
+        public void setFailure(boolean failure) {}
 
         @Override
-        public CommitEvent beginCommitEvent()
-        {
+        public CommitEvent beginCommitEvent() {
             return commitEvent;
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public void setTransactionWriteState( String transactionWriteState )
-        {
-        }
+        public void setTransactionWriteState(String transactionWriteState) {}
 
         @Override
-        public void setReadOnly( boolean wasReadOnly )
-        {
-        }
+        public void setReadOnly(boolean wasReadOnly) {}
     }
 
-    private class DefaultCommitEvent implements CommitEvent
-    {
+    private class DefaultCommitEvent implements CommitEvent {
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public LogAppendEvent beginLogAppend()
-        {
+        public LogAppendEvent beginLogAppend() {
             return logAppendEvent;
         }
 
         @Override
-        public StoreApplyEvent beginStoreApply()
-        {
+        public StoreApplyEvent beginStoreApply() {
             return StoreApplyEvent.NULL;
         }
     }
 
-    private class DefaultLogAppendEvent implements LogAppendEvent
-    {
+    private class DefaultLogAppendEvent implements LogAppendEvent {
         @Override
-        public void appendToLogFile( LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend )
-        {
-            appendLogBytes( logPositionBeforeAppend, logPositionAfterAppend );
+        public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {
+            appendLogBytes(logPositionBeforeAppend, logPositionAfterAppend);
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public void setLogRotated( boolean logRotated )
-        {
-
-        }
+        public void setLogRotated(boolean logRotated) {}
 
         @Override
-        public LogRotateEvent beginLogRotate()
-        {
+        public LogRotateEvent beginLogRotate() {
             return countingLogRotateEvent;
         }
 
         @Override
-        public AppendTransactionEvent beginAppendTransaction( int appendItems )
-        {
-            appliedBatchSize.set( appendItems );
+        public AppendTransactionEvent beginAppendTransaction(int appendItems) {
+            appliedBatchSize.set(appendItems);
             return AppendTransactionEvent.NULL;
         }
 
         @Override
-        public LogForceWaitEvent beginLogForceWait()
-        {
+        public LogForceWaitEvent beginLogForceWait() {
             return LogForceWaitEvent.NULL;
         }
 
         @Override
-        public LogForceEvent beginLogForce()
-        {
+        public LogForceEvent beginLogForce() {
             return LogForceEvent.NULL;
         }
     }

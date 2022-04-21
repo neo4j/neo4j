@@ -46,11 +46,13 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
   /**
    * Set properties on node by delegating to `setProperty`.
    */
-  protected def setProperties(context: CypherRow,
-                              state: QueryState,
-                              entityId: Long,
-                              properties: Expression,
-                              ops: WriteOperations[_, _]): Unit = {
+  protected def setProperties(
+    context: CypherRow,
+    state: QueryState,
+    entityId: Long,
+    properties: Expression,
+    ops: WriteOperations[_, _]
+  ): Unit = {
     val value = properties(context, state)
     value match {
       case _: VirtualNodeValue | _: VirtualRelationshipValue =>
@@ -78,9 +80,11 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   /**
    * Create node from command.
    */
-  protected def createNode(context: CypherRow,
-                           state: QueryState,
-                           data: CreateNodeCommand): (String, VirtualNodeValue) = {
+  protected def createNode(
+    context: CypherRow,
+    state: QueryState,
+    data: CreateNodeCommand
+  ): (String, VirtualNodeValue) = {
     val labelIds = data.labels.map(_.getOrCreateId(state.query)).toArray
     val node = state.query.createNodeId(labelIds)
 
@@ -91,9 +95,11 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   /**
    * Create relationship from command.
    */
-  protected def createRelationship(context: CypherRow,
-                                   state: QueryState,
-                                   data: CreateRelationshipCommand): (String, AnyValue) = {
+  protected def createRelationship(
+    context: CypherRow,
+    state: QueryState,
+    data: CreateRelationshipCommand
+  ): (String, AnyValue) = {
     val start = getNode(context, data.idName, data.startNode, state.lenientCreateRelationship)
     val end = getNode(context, data.idName, data.endNode, state.lenientCreateRelationship)
 
@@ -122,17 +128,21 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
 /**
  * Creates nodes and relationships from the constructor commands.
  */
-case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships: Array[CreateRelationshipCommand])
-                     (val id: Id = Id.INVALID_ID) extends EntityCreatePipe(src) {
+case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships: Array[CreateRelationshipCommand])(
+  val id: Id = Id.INVALID_ID
+) extends EntityCreatePipe(src) {
 
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] =
     input.map(row => {
       nodes.foreach { nodeCommand =>
         val (key, node) = createNode(row, state, nodeCommand)
         row.set(key, node)
       }
 
-      relationships.foreach{ relCommand =>
+      relationships.foreach { relCommand =>
         val (key, node) = createRelationship(row, state, relCommand)
         row.set(key, node)
       }
@@ -141,12 +151,12 @@ case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships:
     })
 }
 
-case class CreateNodeCommand(idName: String,
-                             labels: Seq[LazyLabel],
-                             properties: Option[Expression])
+case class CreateNodeCommand(idName: String, labels: Seq[LazyLabel], properties: Option[Expression])
 
-case class CreateRelationshipCommand(idName: String,
-                                     startNode: String,
-                                     relType: LazyType,
-                                     endNode: String,
-                                     properties: Option[Expression])
+case class CreateRelationshipCommand(
+  idName: String,
+  startNode: String,
+  relType: LazyType,
+  endNode: String,
+  properties: Option[Expression]
+)

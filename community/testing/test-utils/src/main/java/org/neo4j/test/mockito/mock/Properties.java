@@ -19,57 +19,44 @@
  */
 package org.neo4j.test.mockito.mock;
 
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.neo4j.graphdb.NotFoundException;
 
-public class Properties implements Answer<Object>, Iterable<String>
-{
-    public static Properties properties( Property... properties )
-    {
-        return new Properties( properties );
+public class Properties implements Answer<Object>, Iterable<String> {
+    public static Properties properties(Property... properties) {
+        return new Properties(properties);
     }
 
-    public static Properties properties( Map<String, Object> properties )
-    {
-        return new Properties( properties );
+    public static Properties properties(Map<String, Object> properties) {
+        return new Properties(properties);
     }
 
     private final SortedMap<String, Object> propertiesMap = new TreeMap<>();
 
-    private Properties( Property[] properties )
-    {
-        for ( Property property : properties )
-        {
-            this.propertiesMap.put( property.key(), property.value() );
+    private Properties(Property[] properties) {
+        for (Property property : properties) {
+            this.propertiesMap.put(property.key(), property.value());
         }
     }
 
-    private Properties( Map<String, Object> properties )
-    {
-        this.propertiesMap.putAll( properties );
+    private Properties(Map<String, Object> properties) {
+        this.propertiesMap.putAll(properties);
     }
 
     @Override
-    public Object answer( InvocationOnMock invocation )
-    {
+    public Object answer(InvocationOnMock invocation) {
         Object[] arguments = invocation.getArguments();
-        @SuppressWarnings( "SuspiciousMethodCalls" )
-        Object result = propertiesMap.get( arguments[0] );
-        if ( result == null )
-        {
-            if ( arguments.length == 2 )
-            {
+        @SuppressWarnings("SuspiciousMethodCalls")
+        Object result = propertiesMap.get(arguments[0]);
+        if (result == null) {
+            if (arguments.length == 2) {
                 return arguments[1];
-            }
-            else
-            {
+            } else {
                 throw new NotFoundException();
             }
         }
@@ -77,13 +64,11 @@ public class Properties implements Answer<Object>, Iterable<String>
     }
 
     @Override
-    public Iterator<String> iterator()
-    {
+    public Iterator<String> iterator() {
         return propertiesMap.keySet().iterator();
     }
 
-    public SortedMap<String, Object> getProperties()
-    {
+    public SortedMap<String, Object> getProperties() {
         return propertiesMap;
     }
 }

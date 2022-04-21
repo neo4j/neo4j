@@ -84,10 +84,12 @@ import scala.annotation.tailrec
  *
  * @see #selectivityForCompositeIndexPredicates(SelectivitiesForPredicates, SelectivityCombiner)
  */
-case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
-                                                    planningTextIndexesEnabled: Boolean,
-                                                    planningRangeIndexesEnabled: Boolean,
-                                                    planningPointIndexesEnabled: Boolean) extends SelectivityCalculator {
+case class CompositeExpressionSelectivityCalculator(
+  planContext: PlanContext,
+  planningTextIndexesEnabled: Boolean,
+  planningRangeIndexesEnabled: Boolean,
+  planningPointIndexesEnabled: Boolean
+) extends SelectivityCalculator {
 
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
@@ -96,29 +98,33 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
     combiner,
     planningTextIndexesEnabled,
     planningRangeIndexesEnabled,
-    planningPointIndexesEnabled)
+    planningPointIndexesEnabled
+  )
 
-  private val nodeIndexMatchCache = CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch]] {
-    (a, b, c) => findNodeIndexMatches(a, b, c)
-  }
+  private val nodeIndexMatchCache =
+    CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch]] {
+      (a, b, c) => findNodeIndexMatches(a, b, c)
+    }
 
-  private val relationshipIndexMatchCache = CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch]] {
-    (a, b, c) => findRelationshipIndexMatches(a, b, c)
-  }
+  private val relationshipIndexMatchCache =
+    CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch]] {
+      (a, b, c) => findRelationshipIndexMatches(a, b, c)
+    }
 
   private val hasCompositeIndexes = planContext.propertyIndexesGetAll().exists(_.properties.size > 1)
 
   override def apply(
-                      selections: Selections,
-                      labelInfo: LabelInfo,
-                      relTypeInfo: RelTypeInfo,
-                      semanticTable: SemanticTable,
-                      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-                    ): Selectivity = {
+    selections: Selections,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Selectivity = {
 
     // Used when we can conclude that no composite index influences the result
     def fallback: Selectivity = {
-      val simpleSelectivities = selections.flatPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
+      val simpleSelectivities =
+        selections.flatPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
       combiner.andTogetherSelectivities(simpleSelectivities).getOrElse(Selectivity.ONE)
     }
 
@@ -133,7 +139,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
     }
 
     val hasPropertyPredicate = selections.folder.treeExists {
-      case _:Property => true
+      case _: Property => true
     }
     if (!hasPropertyPredicate) {
       // If there are no property predicates, we might still get index matches because of EXISTENCE / NODE KEY constraints.
@@ -148,8 +154,9 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
     val queryGraphs = getQueryGraphs(labelInfo, relTypeInfo, unwrappedSelections)
 
     // we search for index matches for each variable individually to increase the chance of cache hits
-    val indexMatches = queryGraphs.relQgs.flatMap(relationshipIndexMatchCache(_, semanticTable, indexPredicateProviderContext)) ++
-      queryGraphs.nodeQgs.flatMap(nodeIndexMatchCache(_, semanticTable, indexPredicateProviderContext))
+    val indexMatches =
+      queryGraphs.relQgs.flatMap(relationshipIndexMatchCache(_, semanticTable, indexPredicateProviderContext)) ++
+        queryGraphs.nodeQgs.flatMap(nodeIndexMatchCache(_, semanticTable, indexPredicateProviderContext))
 
     if (indexMatches.forall(_.propertyPredicates.size <= 1)) {
       // If we match with no composite index we can use the singleExpressionSelectivityCalculator
@@ -163,7 +170,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
         // If we have multiple index matches for the same index, let's pick the match solving the most predicates.
         val indexMatch = indexMatches.maxBy(_.propertyPredicates.flatMap(_.solvedPredicate).size)
         val predicates = indexMatch.propertyPredicates.flatMap(_.solvedPredicate)
-        val maybeExistsSelectivity = planContext.statistics.indexPropertyIsNotNullSelectivity(indexMatch.indexDescriptor)
+        val maybeExistsSelectivity =
+          planContext.statistics.indexPropertyIsNotNullSelectivity(indexMatch.indexDescriptor)
         val maybeUniqueSelectivity = planContext.statistics.uniqueValueSelectivity(indexMatch.indexDescriptor)
         (maybeExistsSelectivity, maybeUniqueSelectivity) match {
           case (Some(existsSelectivity), Some(uniqueSelectivity)) =>
@@ -171,7 +179,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
               predicates.toSet,
               existsSelectivity,
               uniqueSelectivity,
-              indexMatch.indexDescriptor.properties.size,
+              indexMatch.indexDescriptor.properties.size
             ))
           case _ => None
         }
@@ -179,9 +187,10 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
 
     // Keep only index matches that have no overlaps - otherwise the math gets very complicated.
     val disjointPredicatesWithSelectivities = selectivitiesForPredicates.filter {
-      case s1@SelectivitiesForPredicates(predicates1, _, _, _) => selectivitiesForPredicates.forall {
-        case s2@SelectivitiesForPredicates(predicates2, _, _, _) => s1 == s2 || predicates1.intersect(predicates2).isEmpty
-      }
+      case s1 @ SelectivitiesForPredicates(predicates1, _, _, _) => selectivitiesForPredicates.forall {
+          case s2 @ SelectivitiesForPredicates(predicates2, _, _, _) =>
+            s1 == s2 || predicates1.intersect(predicates2).isEmpty
+        }
     }
 
     // For performance, keep only predicates of composite indexes
@@ -193,17 +202,24 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
     val notCoveredPredicates = unwrappedSelections.flatPredicates.filter(!coveredPredicates.contains(_))
 
     // Forward all not covered predicates to the singleExpressionSelectivityCalculator.
-    val notCoveredPredicatesSelectivities = notCoveredPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
+    val notCoveredPredicatesSelectivities =
+      notCoveredPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
     // Use composite index selectivities for all covered predicates.
-    val coveredPredicatesSelectivities = compositeDisjointPredicatesWithSelectivities.map(selectivityForCompositeIndexPredicates(_, combiner))
+    val coveredPredicatesSelectivities =
+      compositeDisjointPredicatesWithSelectivities.map(selectivityForCompositeIndexPredicates(_, combiner))
 
-    combiner.andTogetherSelectivities(notCoveredPredicatesSelectivities ++ coveredPredicatesSelectivities).getOrElse(Selectivity.ONE)
+    combiner.andTogetherSelectivities(notCoveredPredicatesSelectivities ++ coveredPredicatesSelectivities).getOrElse(
+      Selectivity.ONE
+    )
   }
 
-  private def findNodeIndexMatches(queryGraph: QueryGraph,
-                                   semanticTable: SemanticTable,
-                                   indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Set[IndexMatch] = {
-    NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph,
+  private def findNodeIndexMatches(
+    queryGraph: QueryGraph,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Set[IndexMatch] = {
+    NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(
+      queryGraph,
       semanticTable,
       planContext,
       indexPredicateProviderContext,
@@ -211,13 +227,17 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
       planningTextIndexesEnabled = false,
       planningRangeIndexesEnabled = planningRangeIndexesEnabled,
       // point indexes do not support composite indexes
-      planningPointIndexesEnabled = false).toSet[IndexMatch]
+      planningPointIndexesEnabled = false
+    ).toSet[IndexMatch]
   }
 
-  private def findRelationshipIndexMatches(queryGraph: QueryGraph,
-                                           semanticTable: SemanticTable,
-                                           indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Set[IndexMatch] = {
-    RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph,
+  private def findRelationshipIndexMatches(
+    queryGraph: QueryGraph,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Set[IndexMatch] = {
+    RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(
+      queryGraph,
       semanticTable,
       planContext,
       indexPredicateProviderContext,
@@ -225,22 +245,26 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
       planningTextIndexesEnabled = false,
       planningRangeIndexesEnabled = planningRangeIndexesEnabled,
       // point indexes do not support composite indexes
-      planningPointIndexesEnabled = false).toSet[IndexMatch]
+      planningPointIndexesEnabled = false
+    ).toSet[IndexMatch]
   }
 
   private case class NodeRelQgs(nodeQgs: Iterable[QueryGraph], relQgs: Iterable[QueryGraph]) {
     def mapQgs(f: QueryGraph => QueryGraph): NodeRelQgs = NodeRelQgs(nodeQgs.map(f), relQgs.map(f))
   }
 
-  private def getQueryGraphs(labelInfo: LabelInfo,
-                             relTypeInfo: RelTypeInfo,
-                             unwrappedSelections: Selections): NodeRelQgs = {
+  private def getQueryGraphs(
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    unwrappedSelections: Selections
+  ): NodeRelQgs = {
     val expressionsContainingVariable = unwrappedSelections.expressionsContainingVariable
     val variables = expressionsContainingVariable.keys
     val nodes = variables.filter(labelInfo.contains)
     val relationships = variables.filter(relTypeInfo.contains)
 
-    def findSelectionsFor(variable: String): Selections = unwrappedSelections.filter(expressionsContainingVariable(variable))
+    def findSelectionsFor(variable: String): Selections =
+      unwrappedSelections.filter(expressionsContainingVariable(variable))
 
     // Construct query graphs for each variable that can be fed to leaf planners to search for index matches.
     val nodeQgs = nodes.map { n =>
@@ -251,7 +275,13 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
     }
     val relQgs = relationships.map { r =>
       QueryGraph(
-        patternRelationships = Set(PatternRelationship(r, ("  UNNAMED0", "  UNNAMED1"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
+        patternRelationships = Set(PatternRelationship(
+          r,
+          ("  UNNAMED0", "  UNNAMED1"),
+          SemanticDirection.OUTGOING,
+          Seq.empty,
+          SimplePatternLength
+        )),
         selections = findSelectionsFor(r)
       )
     }
@@ -261,10 +291,12 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
 
   private def inlineLabelAndRelTypeInfo(qg: QueryGraph, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo): QueryGraph = {
     val labelPredicates = labelInfo.collect {
-      case (name, labels) if qg.patternNodes.contains(name) => WhereClausePredicate(HasLabels(Variable(name)(InputPosition.NONE), labels.toSeq)(InputPosition.NONE))
+      case (name, labels) if qg.patternNodes.contains(name) =>
+        WhereClausePredicate(HasLabels(Variable(name)(InputPosition.NONE), labels.toSeq)(InputPosition.NONE))
     }
     val relTypePredicates = relTypeInfo.collect {
-      case (name, relType) if qg.patternRelationships.map(_.name).contains(name) => WhereClausePredicate(HasTypes(Variable(name)(InputPosition.NONE), Seq(relType))(InputPosition.NONE))
+      case (name, relType) if qg.patternRelationships.map(_.name).contains(name) =>
+        WhereClausePredicate(HasTypes(Variable(name)(InputPosition.NONE), Seq(relType))(InputPosition.NONE))
     }
     (labelPredicates ++ relTypePredicates).foldLeft(qg) {
       case (qg, predicate) => predicate.addToQueryGraph(qg)
@@ -273,26 +305,34 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
 }
 
 object CompositeExpressionSelectivityCalculator {
+
   val unwrapPartialPredicates: Rewriter = topDown(Rewriter.lift {
     case partial: PartialPredicate[_] => partial.coveredPredicate
   })
 
-  private[cardinality] def selectivityForCompositeIndexPredicates(selectivitiesForPredicates: SelectivitiesForPredicates,
-                                                                  combiner: SelectivityCombiner): Selectivity = {
+  private[cardinality] def selectivityForCompositeIndexPredicates(
+    selectivitiesForPredicates: SelectivitiesForPredicates,
+    combiner: SelectivityCombiner
+  ): Selectivity = {
     // We assume that all properties contribute equally to the unique selectivity. That is, they are independent.
-    val assumedUniqueSelectivityPerPredicate = selectivitiesForPredicates.uniqueSelectivity ^ (1.0 / selectivitiesForPredicates.numberOfIndexedProperties)
+    val assumedUniqueSelectivityPerPredicate =
+      selectivitiesForPredicates.uniqueSelectivity ^ (1.0 / selectivitiesForPredicates.numberOfIndexedProperties)
 
-    val selectivitiesAssumingExistence = selectivitiesForPredicates.solvedPredicates.toSeq.map(getPredicateSelectivity(assumedUniqueSelectivityPerPredicate, combiner))
+    val selectivitiesAssumingExistence = selectivitiesForPredicates.solvedPredicates.toSeq.map(getPredicateSelectivity(
+      assumedUniqueSelectivityPerPredicate,
+      combiner
+    ))
 
-    selectivitiesForPredicates.existsSelectivity * combiner.andTogetherSelectivities(selectivitiesAssumingExistence).getOrElse(Selectivity.ONE)
+    selectivitiesForPredicates.existsSelectivity * combiner.andTogetherSelectivities(
+      selectivitiesAssumingExistence
+    ).getOrElse(Selectivity.ONE)
   }
 
   @tailrec
   private def getPredicateSelectivity(
-                                       assumedUniqueSelectivityPerPredicate: Selectivity,
-                                       combiner: SelectivityCombiner,
-                                     )
-                                     (predicate: Expression): Selectivity = {
+    assumedUniqueSelectivityPerPredicate: Selectivity,
+    combiner: SelectivityCombiner
+  )(predicate: Expression): Selectivity = {
     predicate match {
       // SubPredicate(sub, super)
       case partial: PartialPredicate[_] =>
@@ -340,7 +380,10 @@ object CompositeExpressionSelectivityCalculator {
 
       // WHERE x.prop <, <=, >=, > that could benefit from an index
       case AsValueRangeSeekable(seekable) =>
-        ExpressionSelectivityCalculator.getPropertyPredicateRangeSelectivity(seekable, assumedUniqueSelectivityPerPredicate)
+        ExpressionSelectivityCalculator.getPropertyPredicateRangeSelectivity(
+          seekable,
+          assumedUniqueSelectivityPerPredicate
+        )
 
       // WHERE x.prop IS NOT NULL
       case AsPropertyScannable(_) =>
@@ -359,8 +402,10 @@ object CompositeExpressionSelectivityCalculator {
    * @param uniqueSelectivity         selectivity for uniqueness of all properties (given they exist)
    * @param numberOfIndexedProperties the number of properties in the index (may differ from solvedPredicates.size)
    */
-  private[cardinality] case class SelectivitiesForPredicates(solvedPredicates: Set[Expression],
-                                                             existsSelectivity: Selectivity,
-                                                             uniqueSelectivity: Selectivity,
-                                                             numberOfIndexedProperties: Int)
+  private[cardinality] case class SelectivitiesForPredicates(
+    solvedPredicates: Set[Expression],
+    existsSelectivity: Selectivity,
+    uniqueSelectivity: Selectivity,
+    numberOfIndexedProperties: Int
+  )
 }

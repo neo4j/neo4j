@@ -27,11 +27,12 @@ import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializ
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
+
   test("serialization should leave numeric arguments as numbers") {
-    serialize(DbHits(12)) shouldBe a [java.lang.Number]
-    serialize(Rows(12)) shouldBe a [java.lang.Number]
-    serialize(EstimatedRows(12, Some(12))) shouldBe a [java.lang.Number]
-    serialize(EstimatedRows(12, None)) shouldBe a [java.lang.Number]
-    serialize(BatchSize(12)) shouldBe a [java.lang.Number]
+    serialize(DbHits(12)) shouldBe a[java.lang.Number]
+    serialize(Rows(12)) shouldBe a[java.lang.Number]
+    serialize(EstimatedRows(12, Some(12))) shouldBe a[java.lang.Number]
+    serialize(EstimatedRows(12, None)) shouldBe a[java.lang.Number]
+    serialize(BatchSize(12)) shouldBe a[java.lang.Number]
   }
 }

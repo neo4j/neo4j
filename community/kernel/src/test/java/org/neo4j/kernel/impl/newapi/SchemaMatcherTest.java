@@ -19,21 +19,18 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.neo4j.internal.schema.IndexDescriptor;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forRelType;
 
-abstract class SchemaMatcherTest
-{
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.schema.IndexDescriptor;
+
+abstract class SchemaMatcherTest {
     private static final int tokenId1 = 10;
     private static final int nonExistentTokenId = 12;
     private static final int propId1 = 20;
@@ -50,61 +47,56 @@ abstract class SchemaMatcherTest
     private final IndexDescriptor indexOnSpecialProperty = indexOnSpecialProperty();
 
     @Test
-    void shouldMatchOnSingleProperty()
-    {
+    void shouldMatchOnSingleProperty() {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
-        SchemaMatcher.onMatchingSchema( iterator( index1 ), unIndexedPropId, props, matched::add );
+        SchemaMatcher.onMatchingSchema(iterator(index1), unIndexedPropId, props, matched::add);
 
         // then
-        assertThat( matched ).containsExactly( index1 );
+        assertThat(matched).containsExactly(index1);
     }
 
     @Test
-    void shouldMatchOnTwoProperties()
-    {
+    void shouldMatchOnTwoProperties() {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
-        SchemaMatcher.onMatchingSchema( iterator( index1_2 ), unIndexedPropId, props, matched::add );
+        SchemaMatcher.onMatchingSchema(iterator(index1_2), unIndexedPropId, props, matched::add);
 
         // then
-        assertThat( matched ).containsExactly( index1_2 );
+        assertThat(matched).containsExactly(index1_2);
     }
 
     @Test
-    void shouldNotMatchIfEntityIsMissingProperty()
-    {
+    void shouldNotMatchIfEntityIsMissingProperty() {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
-        SchemaMatcher.onMatchingSchema( iterator( indexWithMissingProperty ), unIndexedPropId, props, matched::add );
+        SchemaMatcher.onMatchingSchema(iterator(indexWithMissingProperty), unIndexedPropId, props, matched::add);
 
         // then
-        assertThat( matched ).isEmpty();
+        assertThat(matched).isEmpty();
     }
 
     @Test
-    void shouldMatchOnSpecialProperty()
-    {
+    void shouldMatchOnSpecialProperty() {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
-        SchemaMatcher.onMatchingSchema( iterator( indexOnSpecialProperty ), specialPropId, props, matched::add );
+        SchemaMatcher.onMatchingSchema(iterator(indexOnSpecialProperty), specialPropId, props, matched::add);
 
         // then
-        assertThat( matched ).containsExactly( indexOnSpecialProperty );
+        assertThat(matched).containsExactly(indexOnSpecialProperty);
     }
 
     @Test
-    void shouldMatchSeveralTimes()
-    {
+    void shouldMatchSeveralTimes() {
         // given
-        List<IndexDescriptor> indexes = Arrays.asList( index1, index1, index1_2, index1_2 );
+        List<IndexDescriptor> indexes = Arrays.asList(index1, index1, index1_2, index1_2);
 
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
-        SchemaMatcher.onMatchingSchema( indexes.iterator(), unIndexedPropId, props, matched::add );
+        SchemaMatcher.onMatchingSchema(indexes.iterator(), unIndexedPropId, props, matched::add);
 
         // then
-        assertThat( matched ).isEqualTo( indexes );
+        assertThat(matched).isEqualTo(indexes);
     }
 
     abstract IndexDescriptor index1();
@@ -117,71 +109,59 @@ abstract class SchemaMatcherTest
 
     abstract IndexDescriptor indexOnSpecialProperty();
 
-    static class ForNode extends SchemaMatcherTest
-    {
+    static class ForNode extends SchemaMatcherTest {
 
         @Override
-        IndexDescriptor index1()
-        {
-            return forLabel( tokenId1, propId1 );
+        IndexDescriptor index1() {
+            return forLabel(tokenId1, propId1);
         }
 
         @Override
-        IndexDescriptor index1_2()
-        {
-            return forLabel( tokenId1, propId1, propId2 );
+        IndexDescriptor index1_2() {
+            return forLabel(tokenId1, propId1, propId2);
         }
 
         @Override
-        IndexDescriptor indexWithMissingProperty()
-        {
-            return forLabel( tokenId1, propId1, nonExistentPropId );
+        IndexDescriptor indexWithMissingProperty() {
+            return forLabel(tokenId1, propId1, nonExistentPropId);
         }
 
         @Override
-        IndexDescriptor indexWithMissingToken()
-        {
-            return forLabel( nonExistentTokenId, propId1, propId2 );
+        IndexDescriptor indexWithMissingToken() {
+            return forLabel(nonExistentTokenId, propId1, propId2);
         }
 
         @Override
-        IndexDescriptor indexOnSpecialProperty()
-        {
-            return forLabel( tokenId1, propId1, specialPropId );
+        IndexDescriptor indexOnSpecialProperty() {
+            return forLabel(tokenId1, propId1, specialPropId);
         }
     }
 
-    static class ForRelationship extends SchemaMatcherTest
-    {
+    static class ForRelationship extends SchemaMatcherTest {
 
         @Override
-        IndexDescriptor index1()
-        {
-            return forRelType( tokenId1, propId1 );
+        IndexDescriptor index1() {
+            return forRelType(tokenId1, propId1);
         }
 
         @Override
-        IndexDescriptor index1_2()
-        {
-            return forRelType( tokenId1, propId1, propId2 );
+        IndexDescriptor index1_2() {
+            return forRelType(tokenId1, propId1, propId2);
         }
 
         @Override
-        IndexDescriptor indexWithMissingProperty()
-        {
-            return forRelType( tokenId1, propId1, nonExistentPropId );
+        IndexDescriptor indexWithMissingProperty() {
+            return forRelType(tokenId1, propId1, nonExistentPropId);
         }
 
         @Override
-        IndexDescriptor indexWithMissingToken()
-        {
-            return forRelType( nonExistentTokenId, propId1, propId2 );
+        IndexDescriptor indexWithMissingToken() {
+            return forRelType(nonExistentTokenId, propId1, propId2);
         }
 
         @Override
-        IndexDescriptor indexOnSpecialProperty()
-        {
-            return forRelType( tokenId1, propId1, specialPropId );
+        IndexDescriptor indexOnSpecialProperty() {
+            return forRelType(tokenId1, propId1, specialPropId);
         }
     }
 }

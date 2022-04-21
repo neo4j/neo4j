@@ -20,11 +20,9 @@
 
 package org.neo4j.kernel.impl.newapi;
 
-public class NodeIndexProvidedValuesRange10Test extends IndexProvidedValuesRange10Test
-{
+public class NodeIndexProvidedValuesRange10Test extends IndexProvidedValuesRange10Test {
     @Override
-    EntityControl getEntityControl()
-    {
+    EntityControl getEntityControl() {
         return EntityControl.NODE;
     }
 }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.nio.file.Path;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 
+import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -35,91 +38,89 @@ import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
 
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-
-class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenRecord>
-{
+class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenRecord> {
     @Override
-    protected PageCursor storeCursor()
-    {
-        return storeCursors.readCursor( PROPERTY_KEY_TOKEN_CURSOR );
+    protected PageCursor storeCursor() {
+        return storeCursors.readCursor(PROPERTY_KEY_TOKEN_CURSOR);
     }
 
     @Override
-    protected StoreCursors createCursors( TokenStore<PropertyKeyTokenRecord> store, DynamicStringStore nameStore )
-    {
-        return new PropertyKeyTokenStoreCursors( store, nameStore );
+    protected StoreCursors createCursors(TokenStore<PropertyKeyTokenRecord> store, DynamicStringStore nameStore) {
+        return new PropertyKeyTokenStoreCursors(store, nameStore);
     }
 
     @Override
-    protected TokenStore<PropertyKeyTokenRecord> instantiateStore( Path file, Path idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
-            InternalLogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
-    {
-        return new PropertyKeyTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats,
-                DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
+    protected TokenStore<PropertyKeyTokenRecord> instantiateStore(
+            Path file,
+            Path idFile,
+            IdGeneratorFactory generatorFactory,
+            PageCache pageCache,
+            InternalLogProvider logProvider,
+            DynamicStringStore nameStore,
+            RecordFormats formats,
+            Config config) {
+        return new PropertyKeyTokenStore(
+                file,
+                idFile,
+                config,
+                generatorFactory,
+                pageCache,
+                logProvider,
+                nameStore,
+                formats,
+                DatabaseReadOnlyChecker.writable(),
+                DEFAULT_DATABASE_NAME,
+                immutable.empty());
     }
 
-    private static class PropertyKeyTokenStoreCursors extends StoreCursorsAdapter
-    {
+    private static class PropertyKeyTokenStoreCursors extends StoreCursorsAdapter {
         private final TokenStore<PropertyKeyTokenRecord> store;
         private final DynamicStringStore nameStore;
         private PageCursor storeCursor;
         private PageCursor dynamicCursor;
 
-        PropertyKeyTokenStoreCursors( TokenStore<PropertyKeyTokenRecord> store, DynamicStringStore nameStore )
-        {
+        PropertyKeyTokenStoreCursors(TokenStore<PropertyKeyTokenRecord> store, DynamicStringStore nameStore) {
             this.store = store;
             this.nameStore = nameStore;
         }
 
         @Override
-        public PageCursor readCursor( CursorType type )
-        {
-            switch ( (RecordCursorTypes) type )
-            {
-            case PROPERTY_KEY_TOKEN_CURSOR:
-                if ( storeCursor == null )
-                {
-                    storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT );
-                }
-                return storeCursor;
-            case DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR:
-                if ( dynamicCursor == null )
-                {
-                    dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT );
-                }
-                return dynamicCursor;
-            default:
-                return super.readCursor( type );
+        public PageCursor readCursor(CursorType type) {
+            switch ((RecordCursorTypes) type) {
+                case PROPERTY_KEY_TOKEN_CURSOR:
+                    if (storeCursor == null) {
+                        storeCursor = store.openPageCursorForReading(0, CursorContext.NULL_CONTEXT);
+                    }
+                    return storeCursor;
+                case DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR:
+                    if (dynamicCursor == null) {
+                        dynamicCursor = nameStore.openPageCursorForReading(0, CursorContext.NULL_CONTEXT);
+                    }
+                    return dynamicCursor;
+                default:
+                    return super.readCursor(type);
             }
         }
 
         @Override
-        public PageCursor writeCursor( CursorType type )
-        {
-            switch ( (RecordCursorTypes) type )
-            {
-            case PROPERTY_KEY_TOKEN_CURSOR:
-                return store.openPageCursorForWriting( 0, CursorContext.NULL_CONTEXT );
-            case DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR:
-                return nameStore.openPageCursorForWriting( 0, CursorContext.NULL_CONTEXT );
-            default:
-                return super.writeCursor( type );
+        public PageCursor writeCursor(CursorType type) {
+            switch ((RecordCursorTypes) type) {
+                case PROPERTY_KEY_TOKEN_CURSOR:
+                    return store.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
+                case DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR:
+                    return nameStore.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
+                default:
+                    return super.writeCursor(type);
             }
         }
 
         @Override
-        public void close()
-        {
-            if ( dynamicCursor != null )
-            {
+        public void close() {
+            if (dynamicCursor != null) {
                 dynamicCursor.close();
                 dynamicCursor = null;
             }
-            if ( storeCursor != null )
-            {
+            if (storeCursor != null) {
                 storeCursor.close();
                 storeCursor = null;
             }

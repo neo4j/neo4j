@@ -19,40 +19,44 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.factory.Sets;
-
 import java.io.IOException;
-
+import org.eclipse.collections.api.factory.Sets;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.memory.MemoryTracker;
 
-class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorTest<RangeKey>
-{
+class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorTest<RangeKey> {
     @Override
-    IndexType indexType()
-    {
+    IndexType indexType() {
         return IndexType.RANGE;
     }
 
     @Override
-    BlockBasedIndexPopulator<RangeKey> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker ) throws IOException
-    {
+    BlockBasedIndexPopulator<RangeKey> instantiatePopulator(
+            BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker)
+            throws IOException {
         RangeLayout layout = layout();
-        Config config = Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 );
-        RangeBlockBasedIndexPopulator populator =
-                new RangeBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory, config, memoryTracker,
-                                                   tokenNameLookup, monitor, Sets.immutable.empty() );
+        Config config = Config.defaults(GraphDatabaseInternalSettings.index_populator_merge_factor, 2);
+        RangeBlockBasedIndexPopulator populator = new RangeBlockBasedIndexPopulator(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                INDEX_DESCRIPTOR,
+                false,
+                bufferFactory,
+                config,
+                memoryTracker,
+                tokenNameLookup,
+                monitor,
+                Sets.immutable.empty());
         populator.create();
         return populator;
     }
 
     @Override
-    RangeLayout layout()
-    {
-        return new RangeLayout( 1 );
+    RangeLayout layout() {
+        return new RangeLayout(1);
     }
 }

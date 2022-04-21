@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -59,13 +64,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.TestLabels.LABEL_ONE;
-
 /**
  * Issue came up when observing that recovering an INDEX DROP command didn't actually call {@link IndexProxy#drop()},
  * and actually did nothing to that {@link IndexProxy} except removing it from its {@link IndexMap}.
@@ -77,142 +75,129 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
  * was recovered.
  */
 @Neo4jLayoutExtension
-class RecoverIndexDropIT
-{
+class RecoverIndexDropIT {
     private static final String KEY = "key";
 
     @Inject
     private DefaultFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory directory;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
-    TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-    {
+    TestDatabaseManagementServiceBuilder configure(TestDatabaseManagementServiceBuilder builder) {
         return builder;
     }
 
     @Test
-    void shouldDropIndexOnRecovery() throws IOException
-    {
+    void shouldDropIndexOnRecovery() throws IOException {
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
-        DatabaseManagementService managementService = configure( new TestDatabaseManagementServiceBuilder( databaseLayout ) ).build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        long initialIndexCount = currentIndexCount( db );
-        createIndex( db );
-        StorageEngineFactory storageEngineFactory = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngineFactory.class );
+        DatabaseManagementService managementService = configure(
+                        new TestDatabaseManagementServiceBuilder(databaseLayout))
+                .build();
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+        long initialIndexCount = currentIndexCount(db);
+        createIndex(db);
+        StorageEngineFactory storageEngineFactory =
+                ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(StorageEngineFactory.class);
         managementService.shutdown();
-        appendDropTransactionToTransactionLog( databaseLayout.getTransactionLogsDirectory(), dropTransaction, storageEngineFactory );
+        appendDropTransactionToTransactionLog(
+                databaseLayout.getTransactionLogsDirectory(), dropTransaction, storageEngineFactory);
 
         // when recovering this (the drop transaction with the index file intact)
         Monitors monitors = new Monitors();
         AssertRecoveryIsPerformed recoveryMonitor = new AssertRecoveryIsPerformed();
-        monitors.addMonitorListener( recoveryMonitor );
-        managementService = configure( new TestDatabaseManagementServiceBuilder( databaseLayout )
-                                               .setMonitors( monitors ) ).build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            assertTrue( recoveryMonitor.recoveryWasRequired );
+        monitors.addMonitorListener(recoveryMonitor);
+        managementService = configure(new TestDatabaseManagementServiceBuilder(databaseLayout).setMonitors(monitors))
+                .build();
+        db = managementService.database(DEFAULT_DATABASE_NAME);
+        try {
+            assertTrue(recoveryMonitor.recoveryWasRequired);
 
             // then
-            assertEquals( initialIndexCount, currentIndexCount( db ) );
-        }
-        finally
-        {
+            assertEquals(initialIndexCount, currentIndexCount(db));
+        } finally {
             // and the ability to shut down w/o failing on still open files
             managementService.shutdown();
         }
     }
 
-    private static long currentIndexCount( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            return count( tx.schema().getIndexes() );
+    private static long currentIndexCount(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
+            return count(tx.schema().getIndexes());
         }
     }
 
-    private static IndexDefinition createIndex( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            IndexDefinition index = tx.schema().indexFor( LABEL_ONE ).on( KEY ).create();
+    private static IndexDefinition createIndex(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
+            IndexDefinition index = tx.schema().indexFor(LABEL_ONE).on(KEY).create();
             tx.commit();
             return index;
         }
     }
 
-    private void appendDropTransactionToTransactionLog( Path transactionLogsDirectory, CommittedTransactionRepresentation dropTransaction,
-            StorageEngineFactory storageEngineFactory ) throws IOException
-    {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs )
-                .withStorageEngineFactory( storageEngineFactory )
+    private void appendDropTransactionToTransactionLog(
+            Path transactionLogsDirectory,
+            CommittedTransactionRepresentation dropTransaction,
+            StorageEngineFactory storageEngineFactory)
+            throws IOException {
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(transactionLogsDirectory, fs)
+                .withStorageEngineFactory(storageEngineFactory)
                 .build();
         LogFile logFile = logFiles.getLogFile();
 
-        try ( ReadableLogChannel reader = logFile.getReader( logFile.extractHeader( 0 ).getStartPosition() ) )
-        {
-            LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
-            while ( logEntryReader.readLogEntry( reader ) != null )
-            {
-            }
+        try (ReadableLogChannel reader =
+                logFile.getReader(logFile.extractHeader(0).getStartPosition())) {
+            LogEntryReader logEntryReader = new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory());
+            while (logEntryReader.readLogEntry(reader) != null) {}
             LogPosition position = logEntryReader.lastPosition();
-            StoreChannel storeChannel = fs.write( logFile.getLogFileForVersion( logFile.getHighestLogVersion() ) );
-            storeChannel.position( position.getByteOffset() );
-            try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, new HeapScopedBuffer( 100, INSTANCE ) ) )
-            {
-                new LogEntryWriter<>( writeChannel, KernelVersion.LATEST ).serialize( dropTransaction );
+            StoreChannel storeChannel = fs.write(logFile.getLogFileForVersion(logFile.getHighestLogVersion()));
+            storeChannel.position(position.getByteOffset());
+            try (PhysicalFlushableChecksumChannel writeChannel =
+                    new PhysicalFlushableChecksumChannel(storeChannel, new HeapScopedBuffer(100, INSTANCE))) {
+                new LogEntryWriter<>(writeChannel, KernelVersion.LATEST).serialize(dropTransaction);
             }
         }
     }
 
-    private CommittedTransactionRepresentation prepareDropTransaction() throws IOException
-    {
-        DatabaseManagementService managementService =
-                configure( new TestDatabaseManagementServiceBuilder( directory.directory( "preparation" ) ) ).build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
+    private CommittedTransactionRepresentation prepareDropTransaction() throws IOException {
+        DatabaseManagementService managementService = configure(
+                        new TestDatabaseManagementServiceBuilder(directory.directory("preparation")))
+                .build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
             // Create index
             IndexDefinition index;
-            index = createIndex( db );
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().getIndexByName( index.getName() ).drop();
+            index = createIndex(db);
+            try (Transaction tx = db.beginTx()) {
+                tx.schema().getIndexByName(index.getName()).drop();
                 tx.commit();
             }
-            return extractLastTransaction( db );
-        }
-        finally
-        {
+            return extractLastTransaction(db);
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private static CommittedTransactionRepresentation extractLastTransaction( GraphDatabaseAPI db ) throws IOException
-    {
-        LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
+    private static CommittedTransactionRepresentation extractLastTransaction(GraphDatabaseAPI db) throws IOException {
+        LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
         CommittedTransactionRepresentation transaction = null;
-        try ( TransactionCursor cursor = txStore.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
-        {
-            while ( cursor.next() )
-            {
+        try (TransactionCursor cursor = txStore.getTransactions(TransactionIdStore.BASE_TX_ID + 1)) {
+            while (cursor.next()) {
                 transaction = cursor.get();
             }
         }
         return transaction;
     }
 
-    private static class AssertRecoveryIsPerformed implements RecoveryMonitor
-    {
+    private static class AssertRecoveryIsPerformed implements RecoveryMonitor {
         boolean recoveryWasRequired;
 
         @Override
-        public void recoveryRequired( LogPosition recoveryPosition )
-        {
+        public void recoveryRequired(LogPosition recoveryPosition) {
             recoveryWasRequired = true;
         }
     }

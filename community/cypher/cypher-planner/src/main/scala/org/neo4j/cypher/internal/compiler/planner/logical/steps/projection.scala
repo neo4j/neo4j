@@ -28,13 +28,15 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 
 object projection {
 
-  def apply(in: LogicalPlan,
-            projectionsToPlan: Map[String, Expression],
-            projectionsToMarkSolved: Option[Map[String, Expression]],
-            context: LogicalPlanningContext): LogicalPlan = {
+  def apply(
+    in: LogicalPlan,
+    projectionsToPlan: Map[String, Expression],
+    projectionsToMarkSolved: Option[Map[String, Expression]],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
     val solver = PatternExpressionSolver.solverFor(in, context)
-    val projectionsMap = stillToSolveProjection.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val projectionsMap = stillToSolveProjection.map { case (k, v) => (k, solver.solve(v, Some(k))) }
     val plan = solver.rewrittenPlan()
 
     val ids = plan.availableSymbols
@@ -44,7 +46,7 @@ object projection {
     val projectionsDiff =
       projections.filter({
         case (x, Variable(y)) if x == y => !ids.contains(x)
-        case _ => true
+        case _                          => true
       }).toMap
 
     if (projectionsDiff.isEmpty) {
@@ -57,12 +59,16 @@ object projection {
   /**
    * Computes the projections that are not yet marked as solved.
    */
-  private def projectionsLeft(in: LogicalPlan, projectionsToPlan: Map[String, Expression], solveds: Solveds): Map[String, Expression] = {
+  private def projectionsLeft(
+    in: LogicalPlan,
+    projectionsToPlan: Map[String, Expression],
+    solveds: Solveds
+  ): Map[String, Expression] = {
     // if we had a previous projection it might have projected something already
     // we only want to project what's left from that previous projection
     val alreadySolvedProjections = solveds.get(in.id).asSinglePlannerQuery.tailOrSelf.horizon match {
       case solvedProjection: QueryProjection => solvedProjection.projections
-      case _ => Map.empty[String, Expression]
+      case _                                 => Map.empty[String, Expression]
     }
     projectionsToPlan -- alreadySolvedProjections.keys
   }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.database.transaction;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.neo4j.io.IOUtils;
 
 /**
@@ -29,23 +28,19 @@ import org.neo4j.io.IOUtils;
  * Channels come in a list. Channel that is before another channel in a list, is also before that channel in actual transactions logs.
  * Provided channels are read only and can be closed at any time by the provided service.
  */
-public class TransactionLogChannels implements AutoCloseable
-{
+public class TransactionLogChannels implements AutoCloseable {
     private final List<LogChannel> channels;
 
-    public TransactionLogChannels( List<LogChannel> channels )
-    {
+    public TransactionLogChannels(List<LogChannel> channels) {
         this.channels = channels;
     }
 
-    public List<LogChannel> getChannels()
-    {
+    public List<LogChannel> getChannels() {
         return channels;
     }
 
     @Override
-    public void close() throws IOException
-    {
-        IOUtils.closeAll( channels );
+    public void close() throws IOException {
+        IOUtils.closeAll(channels);
     }
 }

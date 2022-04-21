@@ -32,27 +32,32 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
-case class mergeDuplicateBooleanOperators(additionalPreConditions: Set[StepSequencer.Condition] = Set.empty) extends ASTRewriterFactory with CnfPhase {
-  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable ++ Set(!AndRewrittenToAnds) ++ additionalPreConditions
+case class mergeDuplicateBooleanOperators(additionalPreConditions: Set[StepSequencer.Condition] = Set.empty)
+    extends ASTRewriterFactory with CnfPhase {
+
+  override def preConditions: Set[StepSequencer.Condition] =
+    SemanticInfoAvailable ++ Set(!AndRewrittenToAnds) ++ additionalPreConditions
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoDuplicateNeighbouringBooleanOperands)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = mergeDuplicateBooleanOperatorsRewriter(semanticState)
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = mergeDuplicateBooleanOperatorsRewriter(semanticState)
 
-  override def getRewriter(from: BaseState,
-                           context: BaseContext): Rewriter = mergeDuplicateBooleanOperatorsRewriter(from.semantics())
+  override def getRewriter(from: BaseState, context: BaseContext): Rewriter =
+    mergeDuplicateBooleanOperatorsRewriter(from.semantics())
 }
 
 case class mergeDuplicateBooleanOperatorsRewriter(semanticState: SemanticState) extends Rewriter {
 
   private def instance(semanticState: SemanticState) = fixedPoint(topDown(Rewriter.lift {
-    case p@And(lhs, rhs) if (lhs == rhs) => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
-    case p@Or(lhs, rhs) if (lhs == rhs) => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
+    case p @ And(lhs, rhs) if (lhs == rhs) => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
+    case p @ Or(lhs, rhs) if (lhs == rhs)  => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
   }))
 
   def apply(that: AnyRef): AnyRef = instance(semanticState).apply(that)

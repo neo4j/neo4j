@@ -35,10 +35,13 @@ import scala.language.implicitConversions
 
 class DistanceFunctionTest extends CypherFunSuite {
 
-  implicit def javaToScalaPair(pair: Pair[PointValue, PointValue]): (PointValue, PointValue) = (pair.first(), pair.other())
+  implicit def javaToScalaPair(pair: Pair[PointValue, PointValue]): (PointValue, PointValue) =
+    (pair.first(), pair.other())
 
   def boundingBox(center: PointValue, distance: Double): Seq[(PointValue, PointValue)] =
-    center.getCoordinateReferenceSystem.getCalculator.boundingBox(center, distance).asScala.map(pair => (pair.first(), pair.other())).toSeq
+    center.getCoordinateReferenceSystem.getCalculator.boundingBox(center, distance).asScala.map(pair =>
+      (pair.first(), pair.other())
+    ).toSeq
 
   def boundingBoxLengthOne(center: PointValue, distance: Double): (PointValue, PointValue) = {
     val boxes = boundingBox(center, distance)
@@ -300,14 +303,19 @@ class DistanceFunctionTest extends CypherFunSuite {
     }
   }
 
-  private def insideBoundingBox(point: PointValue, bottomLeft: PointValue, topRight: PointValue, tolerant: Boolean): Boolean = {
+  private def insideBoundingBox(
+    point: PointValue,
+    bottomLeft: PointValue,
+    topRight: PointValue,
+    tolerant: Boolean
+  ): Boolean = {
     val doubleEquality =
       if (tolerant) TolerantNumerics.tolerantDoubleEquality(0.0001)
       else new Equality[Double] {
         def areEqual(a: Double, b: Any): Boolean = {
           b match {
             case bDouble: Double => a == bDouble
-            case _ => false
+            case _               => false
           }
         }
       }
@@ -321,17 +329,23 @@ class DistanceFunctionTest extends CypherFunSuite {
     val trLong = topRight.coordinate()(0)
 
     (lat > blLat || doubleEquality.areEquivalent(lat, blLat)) &&
-      (lat < trLat || doubleEquality.areEquivalent(lat, trLat)) &&
-      (long > blLong || doubleEquality.areEquivalent(long, blLong)) &&
-      (long < trLong || doubleEquality.areEquivalent(long, trLong))
+    (lat < trLat || doubleEquality.areEquivalent(lat, trLat)) &&
+    (long > blLong || doubleEquality.areEquivalent(long, blLong)) &&
+    (long < trLong || doubleEquality.areEquivalent(long, trLong))
   }
 
-  private def beInsideOneBoundingBox(boxes: Seq[(PointValue, PointValue)], tolerant: Boolean = false): Matcher[PointValue] = new Matcher[PointValue] {
+  private def beInsideOneBoundingBox(
+    boxes: Seq[(PointValue, PointValue)],
+    tolerant: Boolean = false
+  ): Matcher[PointValue] = new Matcher[PointValue] {
+
     override def apply(point: PointValue): MatchResult = {
       MatchResult(
-        matches = boxes.exists { case (bottomLeft, topRight) => insideBoundingBox(point, bottomLeft, topRight, tolerant) },
+        matches =
+          boxes.exists { case (bottomLeft, topRight) => insideBoundingBox(point, bottomLeft, topRight, tolerant) },
         rawFailureMessage = s"$point should be inside one of $boxes, but was not.",
-        rawNegatedFailureMessage = s"$point should not be inside one of $boxes, but was.")
+        rawNegatedFailureMessage = s"$point should not be inside one of $boxes, but was."
+      )
     }
   }
 
@@ -345,7 +359,10 @@ class DistanceFunctionTest extends CypherFunSuite {
     val long1 = Math.toRadians(startingPoint.coordinate()(0))
     val R = EARTH_RADIUS_METERS
     val lat2 = Math.asin(Math.sin(lat1) * Math.cos(d / R) + Math.cos(lat1) * Math.sin(d / R) * Math.cos(brng))
-    val long2 = long1 + Math.atan2(Math.sin(brng) * Math.sin(d / R) * Math.cos(lat1), Math.cos(d / R) - Math.sin(lat1) * Math.sin(lat2))
+    val long2 = long1 + Math.atan2(
+      Math.sin(brng) * Math.sin(d / R) * Math.cos(lat1),
+      Math.cos(d / R) - Math.sin(lat1) * Math.sin(lat2)
+    )
     val normLong2 = (long2 + 3 * Math.PI) % (2 * Math.PI) - Math.PI
 
     Values.pointValue(CoordinateReferenceSystem.WGS_84, Math.toDegrees(normLong2), Math.toDegrees(lat2))

@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-
-import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.time.FakeClock;
-import org.neo4j.time.SystemNanoClock;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,58 +26,62 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-class EntryTimespanThresholdTest
-{
-    private final Path file = mock( Path.class );
-    private final LogFileInformation source = mock( LogFileInformation.class );
+import java.io.IOException;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.time.FakeClock;
+import org.neo4j.time.SystemNanoClock;
+
+class EntryTimespanThresholdTest {
+    private final Path file = mock(Path.class);
+    private final LogFileInformation source = mock(LogFileInformation.class);
     private final long version = 4;
-    private SystemNanoClock clock = new FakeClock( 1000, MILLISECONDS );
+    private SystemNanoClock clock = new FakeClock(1000, MILLISECONDS);
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    void shouldReturnFalseWhenTimeIsEqualOrAfterTheLowerLimit() throws IOException
-    {
+    void shouldReturnFalseWhenTimeIsEqualOrAfterTheLowerLimit() throws IOException {
         // given
-        final EntryTimespanThreshold threshold = new EntryTimespanThreshold( logProvider, clock, MILLISECONDS, 200 );
+        final EntryTimespanThreshold threshold = new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 200);
 
-        when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800L );
+        when(source.getFirstStartRecordTimestamp(version)).thenReturn(800L);
 
         // when
         threshold.init();
-        final boolean result = threshold.reached( file, version, source );
+        final boolean result = threshold.reached(file, version, source);
 
         // then
-        assertFalse( result );
+        assertFalse(result);
     }
 
     @Test
-    void shouldReturnReturnWhenTimeIsBeforeTheLowerLimit() throws IOException
-    {
+    void shouldReturnReturnWhenTimeIsBeforeTheLowerLimit() throws IOException {
         // given
-        final EntryTimespanThreshold threshold = new EntryTimespanThreshold( logProvider, clock, MILLISECONDS, 100 );
+        final EntryTimespanThreshold threshold = new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 100);
 
-        when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800L );
+        when(source.getFirstStartRecordTimestamp(version)).thenReturn(800L);
 
         // when
         threshold.init();
-        final boolean result = threshold.reached( file, version, source );
+        final boolean result = threshold.reached(file, version, source);
 
         // then
-        assertTrue( result );
+        assertTrue(result);
     }
 
     @Test
-    void thresholdNotReachedWhenTheLogCannotBeRead() throws IOException
-    {
+    void thresholdNotReachedWhenTheLogCannotBeRead() throws IOException {
         // given
-        final EntryTimespanThreshold threshold = new EntryTimespanThreshold( logProvider, clock, MILLISECONDS, 100 );
+        final EntryTimespanThreshold threshold = new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 100);
 
         final IOException ex = new IOException();
-        when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( ex );
+        when(source.getFirstStartRecordTimestamp(version)).thenThrow(ex);
 
         // when
         threshold.init();
-        assertFalse( threshold.reached( file, version, source ) );
-        assertThat( logProvider ).containsMessages( "Fail to get timestamp info from transaction log file" );
+        assertFalse(threshold.reached(file, version, source));
+        assertThat(logProvider).containsMessages("Fail to get timestamp info from transaction log file");
     }
 }

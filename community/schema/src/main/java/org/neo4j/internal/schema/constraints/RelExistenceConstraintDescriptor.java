@@ -21,11 +21,10 @@ package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-public interface RelExistenceConstraintDescriptor extends ConstraintDescriptor
-{
+public interface RelExistenceConstraintDescriptor extends ConstraintDescriptor {
     @Override
-    RelExistenceConstraintDescriptor withId( long id );
+    RelExistenceConstraintDescriptor withId(long id);
 
     @Override
-    RelExistenceConstraintDescriptor withName( String name );
+    RelExistenceConstraintDescriptor withName(String name);
 }

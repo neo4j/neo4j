@@ -22,16 +22,19 @@ package org.neo4j.storageengine.api;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 
-public interface LogFilesInitializer
-{
+public interface LogFilesInitializer {
     /**
      * A LogFilesInitializer instance that doesn't do anything.
      */
-    LogFilesInitializer NULL = ( databaseLayout, store, fileSystem, checkpointReason ) -> {};
+    LogFilesInitializer NULL = (databaseLayout, store, fileSystem, checkpointReason) -> {};
 
     /**
      * Initialize the transaction log files in the given database layout.
      * This is usually called after creating an empty, or newly imported, store.
      */
-    void initializeLogFiles( DatabaseLayout databaseLayout, MetadataProvider store, FileSystemAbstraction fileSystem, String checkpointReason );
+    void initializeLogFiles(
+            DatabaseLayout databaseLayout,
+            MetadataProvider store,
+            FileSystemAbstraction fileSystem,
+            String checkpointReason);
 }

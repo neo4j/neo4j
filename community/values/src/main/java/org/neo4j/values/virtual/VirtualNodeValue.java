@@ -20,7 +20,6 @@
 package org.neo4j.values.virtual;
 
 import java.util.Comparator;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.ElementIdMapper;
@@ -28,8 +27,7 @@ import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
-public abstract class VirtualNodeValue extends VirtualValue
-{
+public abstract class VirtualNodeValue extends VirtualValue {
     public abstract long id();
 
     public abstract String elementId();
@@ -37,43 +35,36 @@ public abstract class VirtualNodeValue extends VirtualValue
     abstract ElementIdMapper elementIdMapper();
 
     @Override
-    public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )
-    {
+    public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
         VirtualNodeValue otherNode = (VirtualNodeValue) other;
-        return Long.compare( id(), otherNode.id() );
+        return Long.compare(id(), otherNode.id());
     }
 
     @Override
-    public Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator )
-    {
-        return Comparison.from( unsafeCompareTo( other, comparator ) );
+    public Comparison unsafeTernaryCompareTo(VirtualValue other, TernaryComparator<AnyValue> comparator) {
+        return Comparison.from(unsafeCompareTo(other, comparator));
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
-        return Long.hashCode( id() );
+    protected int computeHashToMemoize() {
+        return Long.hashCode(id());
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapNode( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapNode(this);
     }
 
     @Override
-    public boolean equals( VirtualValue other )
-    {
-        if ( !(other instanceof VirtualNodeValue that) )
-        {
+    public boolean equals(VirtualValue other) {
+        if (!(other instanceof VirtualNodeValue that)) {
             return false;
         }
         return id() == that.id();
     }
 
     @Override
-    public VirtualValueGroup valueGroup()
-    {
+    public VirtualValueGroup valueGroup() {
         return VirtualValueGroup.NODE;
     }
 }

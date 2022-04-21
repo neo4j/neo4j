@@ -19,8 +19,10 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -29,264 +31,229 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.collection.Iterables.single;
-
 @ImpermanentDbmsExtension
-class DenseNodeIT
-{
+class DenseNodeIT {
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private Config config;
 
     @Test
-    void testBringingNodeOverDenseThresholdIsConsistent()
-    {
+    void testBringingNodeOverDenseThresholdIsConsistent() {
         // GIVEN
         Node root;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             root = tx.createNode();
-            createRelationshipsOnNode( tx, root, 40 );
+            createRelationshipsOnNode(tx, root, 40);
             tx.commit();
         }
 
         // WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            root = tx.getNodeById( root.getId() );
-            createRelationshipsOnNode( tx, root, 60 );
+        try (Transaction tx = db.beginTx()) {
+            root = tx.getNodeById(root.getId());
+            createRelationshipsOnNode(tx, root, 60);
 
             // THEN
-            assertEquals( 100, root.getDegree() );
-            assertEquals( 100, root.getDegree( Direction.OUTGOING ) );
-            assertEquals( 0, root.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type3" ) ) );
+            assertEquals(100, root.getDegree());
+            assertEquals(100, root.getDegree(Direction.OUTGOING));
+            assertEquals(0, root.getDegree(Direction.INCOMING));
+            assertEquals(25, root.getDegree(RelationshipType.withName("Type0")));
+            assertEquals(25, root.getDegree(RelationshipType.withName("Type1")));
+            assertEquals(25, root.getDegree(RelationshipType.withName("Type2")));
+            assertEquals(25, root.getDegree(RelationshipType.withName("Type3")));
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            root = tx.getNodeById( root.getId() );
+        try (Transaction tx = db.beginTx()) {
+            root = tx.getNodeById(root.getId());
 
-            assertEquals( 100, root.getDegree() );
-            assertEquals( 100, root.getDegree( Direction.OUTGOING ) );
-            assertEquals( 0, root.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type3" ) ) );
+            assertEquals(100, root.getDegree());
+            assertEquals(100, root.getDegree(Direction.OUTGOING));
+            assertEquals(0, root.getDegree(Direction.INCOMING));
+            assertEquals(25, root.getDegree(RelationshipType.withName("Type0")));
+            assertEquals(25, root.getDegree(RelationshipType.withName("Type1")));
+            assertEquals(25, root.getDegree(RelationshipType.withName("Type2")));
+            assertEquals(25, root.getDegree(RelationshipType.withName("Type3")));
             tx.commit();
         }
     }
 
     @Test
-    void deletingRelationshipsFromDenseNodeIsConsistent()
-    {
+    void deletingRelationshipsFromDenseNodeIsConsistent() {
         // GIVEN
         Node root;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             root = tx.createNode();
-            createRelationshipsOnNode( tx, root, 100 );
+            createRelationshipsOnNode(tx, root, 100);
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            root = tx.getNodeById( root.getId() );
-            deleteRelationshipsFromNode( root, 80 );
+        try (Transaction tx = db.beginTx()) {
+            root = tx.getNodeById(root.getId());
+            deleteRelationshipsFromNode(root, 80);
 
-            assertEquals( 20, root.getDegree() );
-            assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
-            assertEquals( 0, root.getDegree( Direction.INCOMING ) );
+            assertEquals(20, root.getDegree());
+            assertEquals(20, root.getDegree(Direction.OUTGOING));
+            assertEquals(0, root.getDegree(Direction.INCOMING));
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            root = tx.getNodeById( root.getId() );
-            assertEquals( 20, root.getDegree() );
-            assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
-            assertEquals( 0, root.getDegree( Direction.INCOMING ) );
+        try (Transaction tx = db.beginTx()) {
+            root = tx.getNodeById(root.getId());
+            assertEquals(20, root.getDegree());
+            assertEquals(20, root.getDegree(Direction.OUTGOING));
+            assertEquals(0, root.getDegree(Direction.INCOMING));
             tx.commit();
         }
     }
 
     @Test
-    void movingBilaterallyOfTheDenseNodeThresholdIsConsistent()
-    {
+    void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() {
         // GIVEN
         Node root;
         // WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             root = tx.createNode();
-            createRelationshipsOnNode( tx, root, 100 );
-            deleteRelationshipsFromNode( root, 80 );
+            createRelationshipsOnNode(tx, root, 100);
+            deleteRelationshipsFromNode(root, 80);
 
-            assertEquals( 20, root.getDegree() );
-            assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
-            assertEquals( 0, root.getDegree( Direction.INCOMING ) );
+            assertEquals(20, root.getDegree());
+            assertEquals(20, root.getDegree(Direction.OUTGOING));
+            assertEquals(0, root.getDegree(Direction.INCOMING));
 
             tx.commit();
         }
 
         // THEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            root = tx.getNodeById( root.getId() );
-            assertEquals( 20, root.getDegree() );
-            assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
-            assertEquals( 0, root.getDegree( Direction.INCOMING ) );
+        try (Transaction tx = db.beginTx()) {
+            root = tx.getNodeById(root.getId());
+            assertEquals(20, root.getDegree());
+            assertEquals(20, root.getDegree(Direction.OUTGOING));
+            assertEquals(0, root.getDegree(Direction.INCOMING));
             tx.commit();
         }
     }
 
     @Test
-    void testBringingTwoConnectedNodesOverDenseThresholdIsConsistent()
-    {
+    void testBringingTwoConnectedNodesOverDenseThresholdIsConsistent() {
         // GIVEN
         Node source;
         Node sink;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             source = tx.createNode();
             sink = tx.createNode();
-            createRelationshipsBetweenNodes( source, sink, 40 );
+            createRelationshipsBetweenNodes(source, sink, 40);
             tx.commit();
         }
 
         // WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            source = tx.getNodeById( source.getId() );
-            sink = tx.getNodeById( sink.getId() );
-            createRelationshipsBetweenNodes( source, sink, 60 );
+        try (Transaction tx = db.beginTx()) {
+            source = tx.getNodeById(source.getId());
+            sink = tx.getNodeById(sink.getId());
+            createRelationshipsBetweenNodes(source, sink, 60);
 
             // THEN
-            assertEquals( 100, source.getDegree() );
-            assertEquals( 100, source.getDegree( Direction.OUTGOING ) );
-            assertEquals( 0, source.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type3" ) ) );
+            assertEquals(100, source.getDegree());
+            assertEquals(100, source.getDegree(Direction.OUTGOING));
+            assertEquals(0, source.getDegree(Direction.INCOMING));
+            assertEquals(25, source.getDegree(RelationshipType.withName("Type0")));
+            assertEquals(25, source.getDegree(RelationshipType.withName("Type1")));
+            assertEquals(25, source.getDegree(RelationshipType.withName("Type2")));
+            assertEquals(25, source.getDegree(RelationshipType.withName("Type3")));
 
-            assertEquals( 100, sink.getDegree() );
-            assertEquals( 0, sink.getDegree( Direction.OUTGOING ) );
-            assertEquals( 100, sink.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type3" ) ) );
+            assertEquals(100, sink.getDegree());
+            assertEquals(0, sink.getDegree(Direction.OUTGOING));
+            assertEquals(100, sink.getDegree(Direction.INCOMING));
+            assertEquals(25, sink.getDegree(RelationshipType.withName("Type0")));
+            assertEquals(25, sink.getDegree(RelationshipType.withName("Type1")));
+            assertEquals(25, sink.getDegree(RelationshipType.withName("Type2")));
+            assertEquals(25, sink.getDegree(RelationshipType.withName("Type3")));
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            source = tx.getNodeById( source.getId() );
-            sink = tx.getNodeById( sink.getId() );
+        try (Transaction tx = db.beginTx()) {
+            source = tx.getNodeById(source.getId());
+            sink = tx.getNodeById(sink.getId());
 
-            assertEquals( 100, source.getDegree() );
-            assertEquals( 100, source.getDegree( Direction.OUTGOING ) );
-            assertEquals( 0, source.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type3" ) ) );
+            assertEquals(100, source.getDegree());
+            assertEquals(100, source.getDegree(Direction.OUTGOING));
+            assertEquals(0, source.getDegree(Direction.INCOMING));
+            assertEquals(25, source.getDegree(RelationshipType.withName("Type0")));
+            assertEquals(25, source.getDegree(RelationshipType.withName("Type1")));
+            assertEquals(25, source.getDegree(RelationshipType.withName("Type2")));
+            assertEquals(25, source.getDegree(RelationshipType.withName("Type3")));
 
-            assertEquals( 100, sink.getDegree() );
-            assertEquals( 0, sink.getDegree( Direction.OUTGOING ) );
-            assertEquals( 100, sink.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type3" ) ) );
+            assertEquals(100, sink.getDegree());
+            assertEquals(0, sink.getDegree(Direction.OUTGOING));
+            assertEquals(100, sink.getDegree(Direction.INCOMING));
+            assertEquals(25, sink.getDegree(RelationshipType.withName("Type0")));
+            assertEquals(25, sink.getDegree(RelationshipType.withName("Type1")));
+            assertEquals(25, sink.getDegree(RelationshipType.withName("Type2")));
+            assertEquals(25, sink.getDegree(RelationshipType.withName("Type3")));
             tx.commit();
         }
     }
 
     @Test
-    void shouldBeAbleToCreateRelationshipsInEmptyDenseNode()
-    {
+    void shouldBeAbleToCreateRelationshipsInEmptyDenseNode() {
         // GIVEN
         Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             node = tx.createNode();
-            createRelationshipsBetweenNodes( node, tx.createNode(), denseNodeThreshold( db ) + 1 );
+            createRelationshipsBetweenNodes(node, tx.createNode(), denseNodeThreshold(db) + 1);
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             long nodeId = node.getId();
-            Iterables.forEach( tx.getNodeById( nodeId ).getRelationships(), Relationship::delete );
+            Iterables.forEach(tx.getNodeById(nodeId).getRelationships(), Relationship::delete);
             tx.commit();
         }
 
         // WHEN
         Relationship rel;
-        try ( Transaction tx = db.beginTx() )
-        {
-            rel = tx.getNodeById( node.getId() ).createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+        try (Transaction tx = db.beginTx()) {
+            rel = tx.getNodeById(node.getId()).createRelationshipTo(tx.createNode(), MyRelTypes.TEST);
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             // THEN
-            node = tx.getNodeById( node.getId() );
-            rel = tx.getRelationshipById( rel.getId() );
-            assertEquals( rel, single( node.getRelationships() ) );
+            node = tx.getNodeById(node.getId());
+            rel = tx.getRelationshipById(rel.getId());
+            assertEquals(rel, single(node.getRelationships()));
             tx.commit();
         }
     }
 
-    private int denseNodeThreshold( GraphDatabaseAPI db )
-    {
-        return config.get( GraphDatabaseSettings.dense_node_threshold );
+    private int denseNodeThreshold(GraphDatabaseAPI db) {
+        return config.get(GraphDatabaseSettings.dense_node_threshold);
     }
 
-    private static void deleteRelationshipsFromNode( Node root, int numberOfRelationships )
-    {
+    private static void deleteRelationshipsFromNode(Node root, int numberOfRelationships) {
         int deleted = 0;
-        try ( ResourceIterable<Relationship> relationships = root.getRelationships() )
-        {
-            for ( final var relationship : relationships )
-            {
+        try (ResourceIterable<Relationship> relationships = root.getRelationships()) {
+            for (final var relationship : relationships) {
                 relationship.delete();
                 deleted++;
-                if ( deleted == numberOfRelationships )
-                {
+                if (deleted == numberOfRelationships) {
                     break;
                 }
             }
         }
     }
 
-    private static void createRelationshipsOnNode( Transaction tx, Node root, int numberOfRelationships )
-    {
-        for ( int i = 0; i < numberOfRelationships; i++ )
-        {
-            root.createRelationshipTo( tx.createNode(), RelationshipType.withName( "Type" + (i % 4) ) )
-                    .setProperty( "" + i, i );
-
+    private static void createRelationshipsOnNode(Transaction tx, Node root, int numberOfRelationships) {
+        for (int i = 0; i < numberOfRelationships; i++) {
+            root.createRelationshipTo(tx.createNode(), RelationshipType.withName("Type" + (i % 4)))
+                    .setProperty("" + i, i);
         }
     }
 
-    private static void createRelationshipsBetweenNodes( Node source, Node sink,
-            int numberOfRelationships )
-    {
-        for ( int i = 0; i < numberOfRelationships; i++ )
-        {
-            source.createRelationshipTo( sink, RelationshipType.withName( "Type" + (i % 4) ) )
-                    .setProperty( "" + i, i );
-
+    private static void createRelationshipsBetweenNodes(Node source, Node sink, int numberOfRelationships) {
+        for (int i = 0; i < numberOfRelationships; i++) {
+            source.createRelationshipTo(sink, RelationshipType.withName("Type" + (i % 4)))
+                    .setProperty("" + i, i);
         }
     }
 }

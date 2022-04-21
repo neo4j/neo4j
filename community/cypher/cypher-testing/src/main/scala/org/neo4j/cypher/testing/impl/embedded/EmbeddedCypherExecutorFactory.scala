@@ -25,7 +25,10 @@ import org.neo4j.cypher.testing.api.CypherExecutor
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
 
-case class EmbeddedCypherExecutorFactory(private val databaseManagementService: DatabaseManagementService, private val config: Config) extends CypherExecutorFactory {
+case class EmbeddedCypherExecutorFactory(
+  private val databaseManagementService: DatabaseManagementService,
+  private val config: Config
+) extends CypherExecutorFactory {
 
   override def executor(): CypherExecutor = executor(DEFAULT_DATABASE_NAME)
 

@@ -19,8 +19,13 @@
  */
 package org.neo4j.bolt.txtracking;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -29,72 +34,60 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-
-class SimpleReconciledTransactionTrackerTest
-{
-    private final GraphDatabaseAPI systemDb = mock( GraphDatabaseAPI.class );
-    private final DatabaseManagementService managementService = mock( DatabaseManagementService.class );
-    private final ReconciledTransactionTracker tracker = new SimpleReconciledTransactionTracker( managementService, NullLogService.getInstance() );
+class SimpleReconciledTransactionTrackerTest {
+    private final GraphDatabaseAPI systemDb = mock(GraphDatabaseAPI.class);
+    private final DatabaseManagementService managementService = mock(DatabaseManagementService.class);
+    private final ReconciledTransactionTracker tracker =
+            new SimpleReconciledTransactionTracker(managementService, NullLogService.getInstance());
 
     @Test
-    void shouldNotSupportInitialization()
-    {
-        assertThrows( UnsupportedOperationException.class, () -> tracker.enable( 42 ) );
+    void shouldNotSupportInitialization() {
+        assertThrows(UnsupportedOperationException.class, () -> tracker.enable(42));
     }
 
     @Test
-    void shouldNotSupportUpdates()
-    {
-        assertThrows( UnsupportedOperationException.class, () -> tracker.offerReconciledTransactionId( 42 ) );
+    void shouldNotSupportUpdates() {
+        assertThrows(UnsupportedOperationException.class, () -> tracker.offerReconciledTransactionId(42));
     }
 
     @Test
-    void shouldReturnDummyTransactionIdWhenSystemDatabaseNotAvailable()
-    {
-        when( managementService.database( SYSTEM_DATABASE_NAME ) ).thenReturn( systemDb );
-        when( systemDb.isAvailable() ).thenReturn( false );
+    void shouldReturnDummyTransactionIdWhenSystemDatabaseNotAvailable() {
+        when(managementService.database(SYSTEM_DATABASE_NAME)).thenReturn(systemDb);
+        when(systemDb.isAvailable()).thenReturn(false);
 
-        assertEquals( -1, tracker.getLastReconciledTransactionId() );
+        assertEquals(-1, tracker.getLastReconciledTransactionId());
     }
 
     @Test
-    void shouldReturnDummyTransactionIdWhenSystemDatabaseDoesNotExist()
-    {
-        when( managementService.database( SYSTEM_DATABASE_NAME ) ).thenThrow( DatabaseNotFoundException.class );
+    void shouldReturnDummyTransactionIdWhenSystemDatabaseDoesNotExist() {
+        when(managementService.database(SYSTEM_DATABASE_NAME)).thenThrow(DatabaseNotFoundException.class);
 
-        assertEquals( -1, tracker.getLastReconciledTransactionId() );
+        assertEquals(-1, tracker.getLastReconciledTransactionId());
     }
 
     @Test
-    void shouldReturnDummyTransactionIdWhenTransactionIdStoreForSystemDatabaseClosed()
-    {
-        when( managementService.database( SYSTEM_DATABASE_NAME ) ).thenReturn( systemDb );
-        when( systemDb.isAvailable() ).thenReturn( true );
-        var dependencyResolver = mock( DependencyResolver.class );
-        when( systemDb.getDependencyResolver() ).thenReturn( dependencyResolver );
-        var txIdStore = mock( TransactionIdStore.class );
-        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
-        when( txIdStore.getLastClosedTransactionId() ).thenThrow( StoreFileClosedException.class );
+    void shouldReturnDummyTransactionIdWhenTransactionIdStoreForSystemDatabaseClosed() {
+        when(managementService.database(SYSTEM_DATABASE_NAME)).thenReturn(systemDb);
+        when(systemDb.isAvailable()).thenReturn(true);
+        var dependencyResolver = mock(DependencyResolver.class);
+        when(systemDb.getDependencyResolver()).thenReturn(dependencyResolver);
+        var txIdStore = mock(TransactionIdStore.class);
+        when(dependencyResolver.resolveDependency(TransactionIdStore.class)).thenReturn(txIdStore);
+        when(txIdStore.getLastClosedTransactionId()).thenThrow(StoreFileClosedException.class);
 
-        assertEquals( -1, tracker.getLastReconciledTransactionId() );
+        assertEquals(-1, tracker.getLastReconciledTransactionId());
     }
 
     @Test
-    void shouldReturnLastClosedTransactionIdFromSystemDatabase()
-    {
-        when( managementService.database( SYSTEM_DATABASE_NAME ) ).thenReturn( systemDb );
-        when( systemDb.isAvailable() ).thenReturn( true );
-        var dependencyResolver = mock( DependencyResolver.class );
-        when( systemDb.getDependencyResolver() ).thenReturn( dependencyResolver );
-        var txIdStore = mock( TransactionIdStore.class );
-        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
-        when( txIdStore.getLastClosedTransactionId() ).thenReturn( 42L );
+    void shouldReturnLastClosedTransactionIdFromSystemDatabase() {
+        when(managementService.database(SYSTEM_DATABASE_NAME)).thenReturn(systemDb);
+        when(systemDb.isAvailable()).thenReturn(true);
+        var dependencyResolver = mock(DependencyResolver.class);
+        when(systemDb.getDependencyResolver()).thenReturn(dependencyResolver);
+        var txIdStore = mock(TransactionIdStore.class);
+        when(dependencyResolver.resolveDependency(TransactionIdStore.class)).thenReturn(txIdStore);
+        when(txIdStore.getLastClosedTransactionId()).thenReturn(42L);
 
-        assertEquals( 42, tracker.getLastReconciledTransactionId() );
+        assertEquals(42, tracker.getLastReconciledTransactionId());
     }
 }

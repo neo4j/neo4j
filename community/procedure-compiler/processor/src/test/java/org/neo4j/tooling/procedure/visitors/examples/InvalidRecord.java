@@ -19,8 +19,7 @@
  */
 package org.neo4j.tooling.procedure.visitors.examples;
 
-public class InvalidRecord
-{
+public class InvalidRecord {
     private static final String BAR = "bar";
 
     String foo = BAR;

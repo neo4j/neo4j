@@ -19,45 +19,39 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
+
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
-import java.util.concurrent.CountDownLatch;
-
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.fs.watcher.SilentFileWatcher;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
-
-class DefaultFileSystemWatcherServiceTest
-{
+class DefaultFileSystemWatcherServiceTest {
 
     private static JobScheduler jobScheduler;
-    private final FileWatcher fileWatcher = Mockito.mock( FileWatcher.class );
+    private final FileWatcher fileWatcher = Mockito.mock(FileWatcher.class);
 
     @BeforeAll
-    static void setUp()
-    {
+    static void setUp() {
         jobScheduler = createInitialisedScheduler();
     }
 
     @AfterAll
-    static void tearDown() throws Throwable
-    {
+    static void tearDown() throws Throwable {
         jobScheduler.shutdown();
     }
 
     @Test
-    void startMonitoringWhenLifecycleStarting() throws Throwable
-    {
-        CountDownLatch latch = new CountDownLatch( 1 );
-        FileWatcher watcher = new TestFileWatcher( latch );
-        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService( jobScheduler, watcher );
+    void startMonitoringWhenLifecycleStarting() throws Throwable {
+        CountDownLatch latch = new CountDownLatch(1);
+        FileWatcher watcher = new TestFileWatcher(latch);
+        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService(jobScheduler, watcher);
         service.init();
         service.start();
 
@@ -65,41 +59,36 @@ class DefaultFileSystemWatcherServiceTest
     }
 
     @Test
-    void stopMonitoringWhenLifecycleStops() throws Throwable
-    {
-        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService( jobScheduler, fileWatcher );
+    void stopMonitoringWhenLifecycleStops() throws Throwable {
+        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService(jobScheduler, fileWatcher);
         service.init();
         service.start();
         service.stop();
 
-        verify( fileWatcher ).stopWatching();
+        verify(fileWatcher).stopWatching();
     }
 
     @Test
-    void closeFileWatcherOnShutdown() throws Throwable
-    {
-        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService( jobScheduler, fileWatcher );
+    void closeFileWatcherOnShutdown() throws Throwable {
+        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService(jobScheduler, fileWatcher);
         service.init();
         service.start();
         service.stop();
         service.shutdown();
 
-        verify( fileWatcher ).close();
+        verify(fileWatcher).close();
     }
 
-    private static class TestFileWatcher extends SilentFileWatcher
-    {
+    private static class TestFileWatcher extends SilentFileWatcher {
 
         private CountDownLatch latch;
 
-        TestFileWatcher( CountDownLatch latch )
-        {
+        TestFileWatcher(CountDownLatch latch) {
             this.latch = latch;
         }
 
         @Override
-        public void startWatching()
-        {
+        public void startWatching() {
             latch.countDown();
         }
     }

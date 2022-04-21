@@ -23,44 +23,32 @@ package org.neo4j.io.pagecache.context;
  * {@link VersionContext} that does not perform any kind of version tracking for cases when its not required.
  * @see VersionContext
  */
-public class EmptyVersionContext implements VersionContext
-{
+public class EmptyVersionContext implements VersionContext {
     public static final VersionContext EMPTY = new EmptyVersionContext();
 
-    private EmptyVersionContext()
-    {
-    }
+    private EmptyVersionContext() {}
 
     @Override
-    public void initRead()
-    {
-    }
+    public void initRead() {}
 
     @Override
-    public void initWrite( long committingTransactionId )
-    {
-    }
+    public void initWrite(long committingTransactionId) {}
 
     @Override
-    public long committingTransactionId()
-    {
+    public long committingTransactionId() {
         return 0;
     }
 
     @Override
-    public long lastClosedTransactionId()
-    {
+    public long lastClosedTransactionId() {
         return Long.MAX_VALUE;
     }
 
     @Override
-    public void markAsDirty()
-    {
-    }
+    public void markAsDirty() {}
 
     @Override
-    public boolean isDirty()
-    {
+    public boolean isDirty() {
         return false;
     }
 }

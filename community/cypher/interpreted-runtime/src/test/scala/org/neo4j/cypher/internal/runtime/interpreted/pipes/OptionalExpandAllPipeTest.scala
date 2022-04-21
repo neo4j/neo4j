@@ -31,15 +31,18 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
 class OptionalExpandAllPipeTest extends CypherFunSuite {
+
   test("exhaust should close relationships iterator") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
     val nodeValue = VirtualValues.nodeValue(0, "n", null, Values.stringArray(), VirtualValues.map(Array(), Array()))
     val relIter = new CountingRelationshipIterator(PrimitiveLongHelper.relationshipIteratorFrom((0, 0, 0, 0)))
-    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(relIter)
+    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(
+      relIter
+    )
 
-    val input = FakePipe(Seq(Map("a"->nodeValue)))
+    val input = FakePipe(Seq(Map("a" -> nodeValue)))
     val pipe = OptionalExpandAllPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, new EagerTypes(Array(0)), None)()
     // exhaust
     pipe.createResults(state).toList
@@ -54,8 +57,10 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
     val nodeValue = VirtualValues.nodeValue(0, "n", null, Values.stringArray(), VirtualValues.map(Array(), Array()))
 
     val relIter = new CountingRelationshipIterator(PrimitiveLongHelper.relationshipIteratorFrom((0, 0, 0, 0)))
-    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(relIter)
-    val input = FakePipe(Seq(Map("a"->nodeValue)))
+    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(
+      relIter
+    )
+    val input = FakePipe(Seq(Map("a" -> nodeValue)))
     val pipe = OptionalExpandAllPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, new EagerTypes(Array(0)), None)()
     val result = pipe.createResults(state)
     result.hasNext shouldBe true // Need to initialize

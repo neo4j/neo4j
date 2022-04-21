@@ -24,24 +24,20 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class NodeCursorBehaviour implements EntityScanCursorBehaviour<StorageNodeCursor>
-{
+public class NodeCursorBehaviour implements EntityScanCursorBehaviour<StorageNodeCursor> {
     private final StorageReader storageReader;
 
-    NodeCursorBehaviour( StorageReader storageReader )
-    {
+    NodeCursorBehaviour(StorageReader storageReader) {
         this.storageReader = storageReader;
     }
 
     @Override
-    public StorageNodeCursor allocateEntityScanCursor( CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        return storageReader.allocateNodeCursor( cursorContext, storeCursors );
+    public StorageNodeCursor allocateEntityScanCursor(CursorContext cursorContext, StoreCursors storeCursors) {
+        return storageReader.allocateNodeCursor(cursorContext, storeCursors);
     }
 
     @Override
-    public long[] readTokens( StorageNodeCursor cursor )
-    {
+    public long[] readTokens(StorageNodeCursor cursor) {
         return cursor.labels();
     }
 }

@@ -26,148 +26,122 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.function.Supplier;
 
-public abstract class ThrowingValueWriter<E extends Exception> implements ValueWriter<E>
-{
-    protected abstract E exception( String method );
+public abstract class ThrowingValueWriter<E extends Exception> implements ValueWriter<E> {
+    protected abstract E exception(String method);
 
-    static <E extends Exception> ValueWriter<E> throwing( Supplier<E> exception )
-    {
-        return new ThrowingValueWriter<E>()
-        {
+    static <E extends Exception> ValueWriter<E> throwing(Supplier<E> exception) {
+        return new ThrowingValueWriter<E>() {
             @Override
-            protected E exception( String method )
-            {
+            protected E exception(String method) {
                 return exception.get();
             }
         };
     }
 
-    public abstract static class AssertOnly extends ThrowingValueWriter<RuntimeException>
-    {
+    public abstract static class AssertOnly extends ThrowingValueWriter<RuntimeException> {
         @Override
-        protected RuntimeException exception( String method )
-        {
-            throw new AssertionError( method );
+        protected RuntimeException exception(String method) {
+            throw new AssertionError(method);
         }
     }
 
     @Override
-    public void writeNull() throws E
-    {
-        throw exception( "writeNull" );
+    public void writeNull() throws E {
+        throw exception("writeNull");
     }
 
     @Override
-    public void writeBoolean( boolean value ) throws E
-    {
-        throw exception( "writeBoolean" );
+    public void writeBoolean(boolean value) throws E {
+        throw exception("writeBoolean");
     }
 
     @Override
-    public void writeInteger( byte value ) throws E
-    {
-        throw exception( "writeInteger" );
+    public void writeInteger(byte value) throws E {
+        throw exception("writeInteger");
     }
 
     @Override
-    public void writeInteger( short value ) throws E
-    {
-        throw exception( "writeInteger" );
+    public void writeInteger(short value) throws E {
+        throw exception("writeInteger");
     }
 
     @Override
-    public void writeInteger( int value ) throws E
-    {
-        throw exception( "writeInteger" );
+    public void writeInteger(int value) throws E {
+        throw exception("writeInteger");
     }
 
     @Override
-    public void writeInteger( long value ) throws E
-    {
-        throw exception( "writeInteger" );
+    public void writeInteger(long value) throws E {
+        throw exception("writeInteger");
     }
 
     @Override
-    public void writeFloatingPoint( float value ) throws E
-    {
-        throw exception( "writeFloatingPoint" );
+    public void writeFloatingPoint(float value) throws E {
+        throw exception("writeFloatingPoint");
     }
 
     @Override
-    public void writeFloatingPoint( double value ) throws E
-    {
-        throw exception( "writeFloatingPoint" );
+    public void writeFloatingPoint(double value) throws E {
+        throw exception("writeFloatingPoint");
     }
 
     @Override
-    public void writeString( String value ) throws E
-    {
-        throw exception( "writeString" );
+    public void writeString(String value) throws E {
+        throw exception("writeString");
     }
 
     @Override
-    public void writeString( char value ) throws E
-    {
-        throw exception( "writeString" );
+    public void writeString(char value) throws E {
+        throw exception("writeString");
     }
 
     @Override
-    public void beginArray( int size, ArrayType arrayType ) throws E
-    {
-        throw exception( "beginArray" );
+    public void beginArray(int size, ArrayType arrayType) throws E {
+        throw exception("beginArray");
     }
 
     @Override
-    public void endArray() throws E
-    {
-        throw exception( "endArray" );
+    public void endArray() throws E {
+        throw exception("endArray");
     }
 
     @Override
-    public void writeByteArray( byte[] value ) throws E
-    {
-        throw exception( "writeByteArray" );
+    public void writeByteArray(byte[] value) throws E {
+        throw exception("writeByteArray");
     }
 
     @Override
-    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
-    {
-        throw exception( "writePoint" );
+    public void writePoint(CoordinateReferenceSystem crs, double[] coordinate) throws E {
+        throw exception("writePoint");
     }
 
     @Override
-    public void writeDuration( long months, long days, long seconds, int nanos ) throws E
-    {
-        throw exception( "writeDuration" );
+    public void writeDuration(long months, long days, long seconds, int nanos) throws E {
+        throw exception("writeDuration");
     }
 
     @Override
-    public void writeDate( LocalDate localDate ) throws E
-    {
-        throw exception( "writeDate" );
+    public void writeDate(LocalDate localDate) throws E {
+        throw exception("writeDate");
     }
 
     @Override
-    public void writeLocalTime( LocalTime localTime ) throws E
-    {
-        throw exception( "writeLocalTime" );
+    public void writeLocalTime(LocalTime localTime) throws E {
+        throw exception("writeLocalTime");
     }
 
     @Override
-    public void writeTime( OffsetTime offsetTime ) throws E
-    {
-        throw exception( "writeTime" );
+    public void writeTime(OffsetTime offsetTime) throws E {
+        throw exception("writeTime");
     }
 
     @Override
-    public void writeLocalDateTime( LocalDateTime localDateTime ) throws E
-    {
-        throw exception( "writeLocalDateTime" );
+    public void writeLocalDateTime(LocalDateTime localDateTime) throws E {
+        throw exception("writeLocalDateTime");
     }
 
     @Override
-    public void writeDateTime( ZonedDateTime zonedDateTime ) throws E
-    {
-        throw exception( "writeDateTime" );
+    public void writeDateTime(ZonedDateTime zonedDateTime) throws E {
+        throw exception("writeDateTime");
     }
 }

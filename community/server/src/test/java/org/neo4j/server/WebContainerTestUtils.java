@@ -19,6 +19,10 @@
  */
 package org.neo4j.server;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,7 +34,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,157 +41,116 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+public final class WebContainerTestUtils {
+    private WebContainerTestUtils() {}
 
-public final class WebContainerTestUtils
-{
-    private WebContainerTestUtils()
-    {
+    public static Path createTempDir() throws IOException {
+        return Files.createTempDirectory("neo4j-test");
     }
 
-    public static Path createTempDir() throws IOException
-    {
-        return Files.createTempDirectory( "neo4j-test" );
+    public static Path getRelativePath(Path folder, Setting<Path> setting) {
+        return folder.resolve(setting.defaultValue());
     }
 
-    public static Path getRelativePath( Path folder, Setting<Path> setting )
-    {
-        return folder.resolve( setting.defaultValue() );
-    }
-
-    public static Map<String,String> getDefaultRelativeProperties( Path folder )
-    {
-        Map<String,String> settings = new HashMap<>();
-        addDefaultRelativeProperties( settings, folder );
+    public static Map<String, String> getDefaultRelativeProperties(Path folder) {
+        Map<String, String> settings = new HashMap<>();
+        addDefaultRelativeProperties(settings, folder);
         return settings;
     }
 
-    public static void addDefaultRelativeProperties( Map<String,String> properties, Path temporaryFolder )
-    {
-        addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.data_directory );
-        addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.logs_directory );
-        properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+    public static void addDefaultRelativeProperties(Map<String, String> properties, Path temporaryFolder) {
+        addRelativeProperty(temporaryFolder, properties, GraphDatabaseSettings.data_directory);
+        addRelativeProperty(temporaryFolder, properties, GraphDatabaseSettings.logs_directory);
+        properties.put(GraphDatabaseSettings.pagecache_memory.name(), "8m");
     }
 
-    private static void addRelativeProperty( Path temporaryFolder, Map<String,String> properties,
-            Setting<Path> setting )
-    {
-        properties.put( setting.name(), getRelativePath( temporaryFolder, setting ).toString() );
+    private static void addRelativeProperty(
+            Path temporaryFolder, Map<String, String> properties, Setting<Path> setting) {
+        properties.put(setting.name(), getRelativePath(temporaryFolder, setting).toString());
     }
 
-    public static void writeConfigToFile( Map<String, String> properties, Path file )
-    {
-        Properties props = loadProperties( file );
-        for ( Map.Entry<String, String> entry : properties.entrySet() )
-        {
-            props.setProperty( entry.getKey(), entry.getValue() );
+    public static void writeConfigToFile(Map<String, String> properties, Path file) {
+        Properties props = loadProperties(file);
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            props.setProperty(entry.getKey(), entry.getValue());
         }
-        storeProperties( file, props );
+        storeProperties(file, props);
     }
 
-    public static String asOneLine( Map<String, String> properties )
-    {
+    public static String asOneLine(Map<String, String> properties) {
         StringBuilder builder = new StringBuilder();
-        for ( Map.Entry<String, String> property : properties.entrySet() )
-        {
-            builder.append( builder.length() > 0 ? "," : "" );
-            builder.append( property.getKey() ).append( '=' ).append( property.getValue() );
+        for (Map.Entry<String, String> property : properties.entrySet()) {
+            builder.append(builder.length() > 0 ? "," : "");
+            builder.append(property.getKey()).append('=').append(property.getValue());
         }
         return builder.toString();
     }
 
-    private static void storeProperties( Path file, Properties properties )
-    {
-        try ( OutputStream out = Files.newOutputStream( file ) )
-        {
-            properties.store( out, "" );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+    private static void storeProperties(Path file, Properties properties) {
+        try (OutputStream out = Files.newOutputStream(file)) {
+            properties.store(out, "");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private static Properties loadProperties( Path file )
-    {
+    private static Properties loadProperties(Path file) {
         Properties properties = new Properties();
-        if ( Files.exists( file ) )
-        {
-            try ( InputStream in = Files.newInputStream( file ) )
-            {
-                properties.load( in );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
+        if (Files.exists(file)) {
+            try (InputStream in = Files.newInputStream(file)) {
+                properties.load(in);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
         return properties;
     }
 
-    public static Path createTempConfigFile( Path parentDir )
-    {
-        return parentDir.resolve( "test-" + new Random().nextInt() + ".properties" );
+    public static Path createTempConfigFile(Path parentDir) {
+        return parentDir.resolve("test-" + new Random().nextInt() + ".properties");
     }
 
-    public interface BlockWithCSVFileURL
-    {
-        void execute( String url ) throws Exception;
+    public interface BlockWithCSVFileURL {
+        void execute(String url) throws Exception;
     }
 
-    public static void withCSVFile( int rowCount, BlockWithCSVFileURL block ) throws Exception
-    {
-        Path file = Files.createTempFile( "file", ".csv" );
-        try
-        {
-            try ( PrintWriter writer = new PrintWriter( Files.newOutputStream( file ) ) )
-            {
-                for ( int i = 0; i < rowCount; ++i )
-                {
+    public static void withCSVFile(int rowCount, BlockWithCSVFileURL block) throws Exception {
+        Path file = Files.createTempFile("file", ".csv");
+        try {
+            try (PrintWriter writer = new PrintWriter(Files.newOutputStream(file))) {
+                for (int i = 0; i < rowCount; ++i) {
                     writer.println("1,2,3");
                 }
             }
 
-            String url = file.toUri().toURL().toString().replace( "\\", "\\\\" );
-            block.execute( url );
-        }
-        finally
-        {
-            Files.delete( file );
+            String url = file.toUri().toURL().toString().replace("\\", "\\\\");
+            block.execute(url);
+        } finally {
+            Files.delete(file);
         }
     }
 
-    public static void verifyConnector( GraphDatabaseService db, String name, boolean enabled )
-    {
-        HostnamePort address = connectorAddress( db, name );
-        if ( enabled )
-        {
-            assertNotNull( address );
-            assertTrue( canConnectToSocket( address.getHost(), address.getPort() ) );
-        }
-        else
-        {
-            assertNull( address );
+    public static void verifyConnector(GraphDatabaseService db, String name, boolean enabled) {
+        HostnamePort address = connectorAddress(db, name);
+        if (enabled) {
+            assertNotNull(address);
+            assertTrue(canConnectToSocket(address.getHost(), address.getPort()));
+        } else {
+            assertNull(address);
         }
     }
 
-    public static HostnamePort connectorAddress( GraphDatabaseService db, String name )
-    {
-        ConnectorPortRegister portRegister = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
-        return portRegister.getLocalAddress( name );
+    public static HostnamePort connectorAddress(GraphDatabaseService db, String name) {
+        ConnectorPortRegister portRegister =
+                ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(ConnectorPortRegister.class);
+        return portRegister.getLocalAddress(name);
     }
 
-    private static boolean canConnectToSocket( String host, int port )
-    {
-        try
-        {
-            new Socket( host, port ).close();
+    private static boolean canConnectToSocket(String host, int port) {
+        try {
+            new Socket(host, port).close();
             return true;
-        }
-        catch ( Throwable ignore )
-        {
+        } catch (Throwable ignore) {
             return false;
         }
     }

@@ -41,21 +41,17 @@ import scala.collection.immutable.Map
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.language.implicitConversions
 
-class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
+class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with GraphDatabaseTestSupport
+    with ExecutionEngineTestSupport {
   implicit def contextQuery(context: TransactionalContext): ExecutingQuery = context.executingQuery()
 
   val defaultFunction: ResultSubscriber => Unit = { _: ResultSubscriber => }
 
-  private def runQuery(query: String, f: ResultSubscriber => Unit = defaultFunction ): ExecutingQuery = {
-    db.withTx( tx => {
+  private def runQuery(query: String, f: ResultSubscriber => Unit = defaultFunction): ExecutingQuery = {
+    db.withTx(tx => {
       val context = db.transactionalContext(tx, query = query -> Map.empty)
       val result = new ResultSubscriber(context)
-      val executionResult = engine.execute(query,
-        MapValue.EMPTY,
-        context,
-        profile = false,
-        prePopulate = false,
-        result)
+      val executionResult = engine.execute(query, MapValue.EMPTY, context, profile = false, prePopulate = false, result)
       result.init(executionResult)
       try {
         f(result)
@@ -63,14 +59,17 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
         result.close()
       }
       context.executingQuery()
-    } )
+    })
   }
 
   test("monitor is not called if iterator not exhausted") {
     // when
-    runQuery("RETURN 42", r => {
-      verify(monitor, never()).endSuccess(_)
-    })
+    runQuery(
+      "RETURN 42",
+      r => {
+        verify(monitor, never()).endSuccess(_)
+      }
+    )
   }
 
   test("monitor is called when exhausted") {
@@ -80,7 +79,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
         result.next()
       }
     }
-    val query = runQuery("RETURN 42",iterate )
+    val query = runQuery("RETURN 42", iterate)
 
     // then
     verify(monitor).endSuccess(query)
@@ -104,10 +103,13 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
 
   test("monitor is called when using columnAs[] from Java and explicitly closing") {
     // when
-    val query = runQuery("RETURN 42 as x", r => {
-      r.columnAs[Number]("x")
-      r.close()
-    })
+    val query = runQuery(
+      "RETURN 42 as x",
+      r => {
+        r.columnAs[Number]("x")
+        r.close()
+      }
+    )
 
     // then
     verify(monitor).endSuccess(query)
@@ -115,10 +117,13 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
 
   test("monitor is called when using columnAs[] from Java and emptying") {
     // when
-    val query = runQuery("RETURN 42 as x", r => {
-      val res = r.columnAs[Number]("x")
-      while(res.hasNext) res.next()
-    })
+    val query = runQuery(
+      "RETURN 42 as x",
+      r => {
+        val res = r.columnAs[Number]("x")
+        while (res.hasNext) res.next()
+      }
+    )
 
     // then
     verify(monitor).endSuccess(query)
@@ -132,17 +137,20 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   }
 
   test("monitor is not called multiple times even if result is closed multiple times") {
-    val context = runQuery("CREATE ()", r => {
-      r.close()
-      r.close()
-    })
+    val context = runQuery(
+      "CREATE ()",
+      r => {
+        r.close()
+        r.close()
+      }
+    )
 
     // then
     verify(monitor).endSuccess(context)
   }
 
   test("monitor is called directly when proc return is void") {
-    db.withTx( tx => tx.execute("CREATE INDEX `MyIndex` FOR (n:Person) ON (n.name)").close())
+    db.withTx(tx => tx.execute("CREATE INDEX `MyIndex` FOR (n:Person) ON (n.name)").close())
 
     val context = runQuery("CALL db.awaitIndex('MyIndex')")
 
@@ -151,8 +159,8 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   }
 
   test("monitor is called when iterator closes") {
-   // given
-   val context = runQuery("RETURN 42", r => r.close())
+    // given
+    val context = runQuery("RETURN 42", r => r.close())
 
     // then
     verify(monitor).endSuccess(context)
@@ -160,11 +168,14 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
 
   test("monitor is not called when next on empty iterator") {
     // given
-    val context = runQuery("RETURN 42", r => {
-      // when
-      r.next()
-      intercept[Throwable](r.next())
-    })
+    val context = runQuery(
+      "RETURN 42",
+      r => {
+        // when
+        r.next()
+        intercept[Throwable](r.next())
+      }
+    )
 
     // then, since the result was successfully emptied
     verify(monitor).endSuccess(context)
@@ -173,22 +184,28 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
 
   test("check so that profile triggers monitor") {
     // when
-    val context = runQuery("RETURN [1, 2, 3, 4, 5]", r => {
-      //then
-      while (r.hasNext) {
-        r.next()
+    val context = runQuery(
+      "RETURN [1, 2, 3, 4, 5]",
+      r => {
+        // then
+        while (r.hasNext) {
+          r.next()
+        }
       }
-    })
+    )
 
     verify(monitor).endSuccess(context)
   }
 
   test("check that monitoring is correctly done when using visitor") {
     // when
-    val context = runQuery("RETURN [1, 2, 3, 4, 5]", r => {
-      //then
-      r.accept((_: ResultRow) => true)
-    })
+    val context = runQuery(
+      "RETURN [1, 2, 3, 4, 5]",
+      r => {
+        // then
+        r.accept((_: ResultRow) => true)
+      }
+    )
 
     verify(monitor).endSuccess(context)
   }
@@ -198,7 +215,9 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   var engine: ExecutionEngine = _
 
   override protected def beforeEach(): Unit = {
-    db = new GraphDatabaseCypherService(new TestDatabaseManagementServiceBuilder().impermanent().build().database(DEFAULT_DATABASE_NAME))
+    db = new GraphDatabaseCypherService(
+      new TestDatabaseManagementServiceBuilder().impermanent().build().database(DEFAULT_DATABASE_NAME)
+    )
     monitor = mock[QueryExecutionMonitor]
     val monitors = db.getDependencyResolver.resolveDependency(classOf[Monitors])
     monitors.addMonitorListener(monitor)

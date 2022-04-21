@@ -20,20 +20,16 @@
 package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
-
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 
-public class DefaultFileSystemExtension extends FileSystemExtension<DefaultFileSystemAbstraction>
-{
+public class DefaultFileSystemExtension extends FileSystemExtension<DefaultFileSystemAbstraction> {
     @Override
-    protected Class<DefaultFileSystemAbstraction> getFieldType()
-    {
+    protected Class<DefaultFileSystemAbstraction> getFieldType() {
         return DefaultFileSystemAbstraction.class;
     }
 
     @Override
-    protected DefaultFileSystemAbstraction createField( ExtensionContext extensionContext )
-    {
+    protected DefaultFileSystemAbstraction createField(ExtensionContext extensionContext) {
         return new DefaultFileSystemAbstraction();
     }
 }

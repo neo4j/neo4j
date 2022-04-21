@@ -19,115 +19,89 @@
  */
 package org.neo4j.server.logging;
 
-import org.eclipse.jetty.util.log.AbstractLogger;
-import org.eclipse.jetty.util.log.Logger;
+import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlaceholders;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-
+import org.eclipse.jetty.util.log.AbstractLogger;
+import org.eclipse.jetty.util.log.Logger;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlaceholders;
-
-public class JettyLogBridge extends AbstractLogger
-{
-    private static final Pattern packagePattern = Pattern.compile( "(\\w)\\w+\\." );
-    private static final AtomicReference<InternalLogProvider> logProvider = new AtomicReference<>( NullLogProvider.getInstance() );
+public class JettyLogBridge extends AbstractLogger {
+    private static final Pattern packagePattern = Pattern.compile("(\\w)\\w+\\.");
+    private static final AtomicReference<InternalLogProvider> logProvider =
+            new AtomicReference<>(NullLogProvider.getInstance());
     private final String fullname;
     private final InternalLog log;
 
-    public JettyLogBridge()
-    {
-        this( "org.eclipse.jetty.util.log" );
+    public JettyLogBridge() {
+        this("org.eclipse.jetty.util.log");
     }
 
-    public JettyLogBridge( String fullname )
-    {
+    public JettyLogBridge(String fullname) {
         this.fullname = fullname;
-        this.log = logProvider.get().getLog( packagePattern.matcher( fullname ).replaceAll( "$1." ) );
+        this.log = logProvider.get().getLog(packagePattern.matcher(fullname).replaceAll("$1."));
     }
 
-    public static InternalLogProvider setLogProvider( InternalLogProvider newLogProvider )
-    {
-        return logProvider.getAndSet( newLogProvider );
-    }
-
-    @Override
-    protected Logger newLogger( String fullname )
-    {
-        return new JettyLogBridge( fullname );
+    public static InternalLogProvider setLogProvider(InternalLogProvider newLogProvider) {
+        return logProvider.getAndSet(newLogProvider);
     }
 
     @Override
-    public String getName()
-    {
+    protected Logger newLogger(String fullname) {
+        return new JettyLogBridge(fullname);
+    }
+
+    @Override
+    public String getName() {
         return fullname;
     }
 
     @Override
-    public void warn( String msg, Object... args )
-    {
-        log.warn( slf4jToStringFormatPlaceholders( msg ), args );
+    public void warn(String msg, Object... args) {
+        log.warn(slf4jToStringFormatPlaceholders(msg), args);
     }
 
     @Override
-    public void warn( Throwable thrown )
-    {
-        log.warn( "", thrown );
+    public void warn(Throwable thrown) {
+        log.warn("", thrown);
     }
 
     @Override
-    public void warn( String msg, Throwable thrown )
-    {
-        log.warn( msg, thrown );
+    public void warn(String msg, Throwable thrown) {
+        log.warn(msg, thrown);
     }
 
     @Override
-    public void info( String msg, Object... args )
-    {
-    }
+    public void info(String msg, Object... args) {}
 
     @Override
-    public void info( Throwable thrown )
-    {
-    }
+    public void info(Throwable thrown) {}
 
     @Override
-    public void info( String msg, Throwable thrown )
-    {
-    }
+    public void info(String msg, Throwable thrown) {}
 
     @Override
-    public boolean isDebugEnabled()
-    {
+    public boolean isDebugEnabled() {
         return false;
     }
 
     @Override
-    public void setDebugEnabled( boolean enabled )
-    {
+    public void setDebugEnabled(boolean enabled) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void debug( String msg, Object... args )
-    {
-    }
+    public void debug(String msg, Object... args) {}
 
     @Override
-    public void debug( Throwable thrown )
-    {
-    }
+    public void debug(Throwable thrown) {}
 
     @Override
-    public void debug( String msg, Throwable thrown )
-    {
-    }
+    public void debug(String msg, Throwable thrown) {}
 
     @Override
-    public void ignore( Throwable ignored )
-    {
-    }
+    public void ignore(Throwable ignored) {}
 }

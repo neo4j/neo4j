@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.gl.GalicianAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Galician extends AnalyzerProvider
-{
-    public Galician()
-    {
-        super( "galician" );
+public class Galician extends AnalyzerProvider {
+    public Galician() {
+        super("galician");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
-        return new GalicianAnalyzer( cleanStopWordSet( GalicianAnalyzer.getDefaultStopSet() ) );
+    public Analyzer createAnalyzer() {
+        return new GalicianAnalyzer(cleanStopWordSet(GalicianAnalyzer.getDefaultStopSet()));
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Galician analyzer with stemming and stop word filtering.";
     }
 }

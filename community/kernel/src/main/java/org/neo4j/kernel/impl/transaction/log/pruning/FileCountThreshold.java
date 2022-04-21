@@ -20,35 +20,29 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.nio.file.Path;
-
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
-public final class FileCountThreshold implements Threshold
-{
+public final class FileCountThreshold implements Threshold {
     private final long maxNonEmptyLogs;
 
     private long nonEmptyLogCount;
 
-    FileCountThreshold( long maxNonEmptyLogs )
-    {
+    FileCountThreshold(long maxNonEmptyLogs) {
         this.maxNonEmptyLogs = maxNonEmptyLogs;
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         nonEmptyLogCount = 0;
     }
 
     @Override
-    public boolean reached( Path file, long version, LogFileInformation source )
-    {
+    public boolean reached(Path file, long version, LogFileInformation source) {
         return ++nonEmptyLogCount >= maxNonEmptyLogs;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return maxNonEmptyLogs + " files";
     }
 }

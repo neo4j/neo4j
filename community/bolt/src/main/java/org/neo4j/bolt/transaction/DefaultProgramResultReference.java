@@ -21,26 +21,22 @@ package org.neo4j.bolt.transaction;
 
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 
-public final class DefaultProgramResultReference implements ProgramResultReference
-{
+public final class DefaultProgramResultReference implements ProgramResultReference {
     private final String transactionId;
     private final StatementMetadata statementMetadata;
 
-    public DefaultProgramResultReference( String transactionId, StatementMetadata statementMetadata )
-    {
+    public DefaultProgramResultReference(String transactionId, StatementMetadata statementMetadata) {
         this.transactionId = transactionId;
         this.statementMetadata = statementMetadata;
     }
 
     @Override
-    public String transactionId()
-    {
+    public String transactionId() {
         return transactionId;
     }
 
     @Override
-    public StatementMetadata statementMetadata()
-    {
+    public StatementMetadata statementMetadata() {
         return statementMetadata;
     }
 }

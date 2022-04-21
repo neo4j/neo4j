@@ -31,7 +31,7 @@ final class EagerTypes(tokens: Array[Int]) extends RelationshipTypes {
   override def types(context: ReadTokenContext): Array[Int] = tokens
 }
 
-final class LazyTypes(names: Array[String], private var ids:Array[Int]) extends RelationshipTypes {
+final class LazyTypes(names: Array[String], private var ids: Array[Int]) extends RelationshipTypes {
 
   override def types(context: ReadTokenContext): Array[Int] = {
     if (ids.length != names.length) {
@@ -47,7 +47,7 @@ object RelationshipTypes {
     if (names.isEmpty) empty
     else {
       val ids = names.flatMap(r => table.id(r).map(_.id))
-      if ( ids.length == names.length) new EagerTypes(ids)
+      if (ids.length == names.length) new EagerTypes(ids)
       else {
         val types = new LazyTypes(names.map(_.name), ids)
         types
@@ -59,13 +59,14 @@ object RelationshipTypes {
     if (names.isEmpty) empty
     else {
       val ids = names.flatMap(context.getOptRelTypeId)
-      if ( ids.length == names.length) new EagerTypes(ids)
+      if (ids.length == names.length) new EagerTypes(ids)
       else {
         val types = new LazyTypes(names, ids)
         types
       }
     }
   }
+
   def apply(names: Array[String]): RelationshipTypes = {
     if (names.isEmpty) empty
     else new LazyTypes(names, Array.empty)

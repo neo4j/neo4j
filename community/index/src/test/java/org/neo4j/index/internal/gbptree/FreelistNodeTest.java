@@ -19,69 +19,63 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.io.pagecache.ByteArrayPageCursor;
-import org.neo4j.io.pagecache.PageCursor;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class FreelistNodeTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
+import org.neo4j.io.pagecache.PageCursor;
+
+class FreelistNodeTest {
     private static final int PAGE_SIZE = 128;
 
-    private final PageCursor cursor = ByteArrayPageCursor.wrap( PAGE_SIZE );
-    private final FreelistNode freelist = new FreelistNode( PAGE_SIZE );
+    private final PageCursor cursor = ByteArrayPageCursor.wrap(PAGE_SIZE);
+    private final FreelistNode freelist = new FreelistNode(PAGE_SIZE);
     private final int maxEntries = freelist.maxEntries();
 
     @Test
-    void shouldInitializeTreeNode()
-    {
+    void shouldInitializeTreeNode() {
         // GIVEN
-        FreelistNode.initialize( cursor );
+        FreelistNode.initialize(cursor);
 
         // WHEN
-        byte nodeType = TreeNode.nodeType( cursor );
+        byte nodeType = TreeNode.nodeType(cursor);
 
         // THEN
-        assertEquals( TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType );
+        assertEquals(TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType);
     }
 
     @Test
-    void shouldNodeOverwriteNodeType()
-    {
+    void shouldNodeOverwriteNodeType() {
         // GIVEN
-        FreelistNode.initialize( cursor );
-        byte nodeType = TreeNode.nodeType( cursor );
-        assertEquals( TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType );
+        FreelistNode.initialize(cursor);
+        byte nodeType = TreeNode.nodeType(cursor);
+        assertEquals(TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType);
 
         // WHEN
         long someId = 1234;
-        FreelistNode.setNext( cursor, someId );
+        FreelistNode.setNext(cursor, someId);
 
         // THEN
-        nodeType = TreeNode.nodeType( cursor );
-        assertEquals( TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType );
+        nodeType = TreeNode.nodeType(cursor);
+        assertEquals(TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType);
     }
 
     @Test
-    void shouldSetAndGetNext()
-    {
+    void shouldSetAndGetNext() {
         // GIVEN
         long nextId = 12345;
 
         // WHEN
-        FreelistNode.setNext( cursor, nextId );
-        long readNextId = FreelistNode.next( cursor );
+        FreelistNode.setNext(cursor, nextId);
+        long readNextId = FreelistNode.next(cursor);
 
         // THEN
-        assertEquals( nextId, readNextId );
+        assertEquals(nextId, readNextId);
     }
 
     @Test
-    void shouldReadAndWriteFreeListEntries()
-    {
+    void shouldReadAndWriteFreeListEntries() {
         // GIVEN
         long generationA = 34;
         long pointerA = 56;
@@ -89,48 +83,46 @@ class FreelistNodeTest
         long pointerB = 90;
 
         // WHEN
-        freelist.write( cursor, generationA, pointerA, 0 );
-        freelist.write( cursor, generationB, pointerB, 1 );
-        long readPointerA = freelist.read( cursor, generationA + 1, 0 );
-        long readPointerB = freelist.read( cursor, generationB + 1, 1 );
+        freelist.write(cursor, generationA, pointerA, 0);
+        freelist.write(cursor, generationB, pointerB, 1);
+        long readPointerA = freelist.read(cursor, generationA + 1, 0);
+        long readPointerB = freelist.read(cursor, generationB + 1, 1);
 
         // THEN
-        assertEquals( pointerA, readPointerA );
-        assertEquals( pointerB, readPointerB );
+        assertEquals(pointerA, readPointerA);
+        assertEquals(pointerB, readPointerB);
     }
 
     @Test
-    void shouldFailOnWritingBeyondMaxEntries()
-    {
-        assertThrows( IllegalArgumentException.class, () -> freelist.write( cursor, 1, 10, maxEntries ) );
+    void shouldFailOnWritingBeyondMaxEntries() {
+        assertThrows(IllegalArgumentException.class, () -> freelist.write(cursor, 1, 10, maxEntries));
     }
 
     @Test
-    void shouldFailOnWritingTooBigPointer()
-    {
-        assertThrows( IllegalArgumentException.class, () -> freelist.write( cursor, 1, PageCursorUtil._6B_MASK + 1, 0 ) );
+    void shouldFailOnWritingTooBigPointer() {
+        assertThrows(IllegalArgumentException.class, () -> freelist.write(cursor, 1, PageCursorUtil._6B_MASK + 1, 0));
     }
 
     @Test
-    void shouldFailOnWritingTooBigGeneration()
-    {
-        assertThrows( IllegalArgumentException.class, () -> freelist.write( cursor, GenerationSafePointer.MAX_GENERATION + 1, 1, 0 ) );
+    void shouldFailOnWritingTooBigGeneration() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> freelist.write(cursor, GenerationSafePointer.MAX_GENERATION + 1, 1, 0));
     }
 
     @Test
-    void shouldReturnNoPageOnUnstableEntry()
-    {
+    void shouldReturnNoPageOnUnstableEntry() {
         // GIVEN
         long stableGeneration = 10;
         long unstableGeneration = stableGeneration + 1;
         long pageId = 20;
         int pos = 2;
-        freelist.write( cursor, unstableGeneration, pageId, pos );
+        freelist.write(cursor, unstableGeneration, pageId, pos);
 
         // WHEN
-        long read = freelist.read( cursor, stableGeneration, pos );
+        long read = freelist.read(cursor, stableGeneration, pos);
 
         // THEN
-        assertEquals( FreelistNode.NO_PAGE_ID, read );
+        assertEquals(FreelistNode.NO_PAGE_ID, read);
     }
 }

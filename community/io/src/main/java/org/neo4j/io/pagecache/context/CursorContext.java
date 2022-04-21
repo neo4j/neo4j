@@ -19,50 +19,44 @@
  */
 package org.neo4j.io.pagecache.context;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
-public class CursorContext implements AutoCloseable
-{
-    public static final CursorContext NULL_CONTEXT = new CursorContext( NULL_CONTEXT_FACTORY, PageCursorTracer.NULL, EmptyVersionContext.EMPTY );
+import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
+public class CursorContext implements AutoCloseable {
+    public static final CursorContext NULL_CONTEXT =
+            new CursorContext(NULL_CONTEXT_FACTORY, PageCursorTracer.NULL, EmptyVersionContext.EMPTY);
 
     private final PageCursorTracer cursorTracer;
     private final VersionContext versionContext;
     private final CursorContextFactory contextFactory;
 
-    CursorContext( CursorContextFactory contextFactory, PageCursorTracer cursorTracer, VersionContext versionContext )
-    {
-        this.cursorTracer = requireNonNull( cursorTracer );
-        this.versionContext = requireNonNull( versionContext );
+    CursorContext(CursorContextFactory contextFactory, PageCursorTracer cursorTracer, VersionContext versionContext) {
+        this.cursorTracer = requireNonNull(cursorTracer);
+        this.versionContext = requireNonNull(versionContext);
         this.contextFactory = contextFactory;
     }
 
-    public PageCursorTracer getCursorTracer()
-    {
+    public PageCursorTracer getCursorTracer() {
         return cursorTracer;
     }
 
-    public VersionContext getVersionContext()
-    {
+    public VersionContext getVersionContext() {
         return versionContext;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         cursorTracer.close();
     }
 
-    public void merge( CursorStatisticSnapshot statisticSnapshot )
-    {
-        cursorTracer.merge( statisticSnapshot );
+    public void merge(CursorStatisticSnapshot statisticSnapshot) {
+        cursorTracer.merge(statisticSnapshot);
     }
 
-    public CursorContext createRelatedContext( String tag )
-    {
-        return contextFactory.create( tag, versionContext );
+    public CursorContext createRelatedContext(String tag) {
+        return contextFactory.create(tag, versionContext);
     }
 }

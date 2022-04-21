@@ -19,25 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry.v42;
 
-import java.util.Objects;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
 
+import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractLogEntry;
 import org.neo4j.storageengine.api.LegacyStoreId;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
-
-public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry
-{
+public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry {
     private final LogPosition logPosition;
     private final long checkpointTime;
     private final LegacyStoreId storeId;
     private final String reason;
 
-    public LogEntryDetachedCheckpointV4_2( KernelVersion version, LogPosition logPosition, long checkpointMillis, LegacyStoreId storeId, String reason )
-    {
-        super( version, DETACHED_CHECK_POINT );
+    public LogEntryDetachedCheckpointV4_2(
+            KernelVersion version,
+            LogPosition logPosition,
+            long checkpointMillis,
+            LegacyStoreId storeId,
+            String reason) {
+        super(version, DETACHED_CHECK_POINT);
         this.logPosition = logPosition;
         this.checkpointTime = checkpointMillis;
         this.storeId = storeId;
@@ -45,46 +47,40 @@ public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         LogEntryDetachedCheckpointV4_2 that = (LogEntryDetachedCheckpointV4_2) o;
-        return Objects.equals( logPosition, that.logPosition ) && checkpointTime == that.checkpointTime &&
-                Objects.equals( storeId, that.storeId ) && Objects.equals( reason, that.reason );
+        return Objects.equals(logPosition, that.logPosition)
+                && checkpointTime == that.checkpointTime
+                && Objects.equals(storeId, that.storeId)
+                && Objects.equals(reason, that.reason);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( logPosition, checkpointTime, storeId, reason );
+    public int hashCode() {
+        return Objects.hash(logPosition, checkpointTime, storeId, reason);
     }
 
-    public LegacyStoreId getStoreId()
-    {
+    public LegacyStoreId getStoreId() {
         return storeId;
     }
 
-    public LogPosition getLogPosition()
-    {
+    public LogPosition getLogPosition() {
         return logPosition;
     }
 
-    public String getReason()
-    {
+    public String getReason() {
         return reason;
     }
 
     @Override
-    public String toString()
-    {
-        return "LogEntryDetachedCheckpoint{" + "logPosition=" + logPosition + ", checkpointTime=" + checkpointTime + ", storeId=" + storeId + ", reason='" +
-                reason + '\'' + '}';
+    public String toString() {
+        return "LogEntryDetachedCheckpoint{" + "logPosition=" + logPosition + ", checkpointTime=" + checkpointTime
+                + ", storeId=" + storeId + ", reason='" + reason + '\'' + '}';
     }
 }

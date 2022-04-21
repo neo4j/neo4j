@@ -21,7 +21,6 @@ package org.neo4j.function;
 
 import java.util.function.Consumer;
 
-public interface FailableConsumer<TYPE> extends Consumer<TYPE>
-{
-    void fail( Exception failure );
+public interface FailableConsumer<TYPE> extends Consumer<TYPE> {
+    void fail(Exception failure);
 }

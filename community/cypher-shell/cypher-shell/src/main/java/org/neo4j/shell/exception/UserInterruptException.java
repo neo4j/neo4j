@@ -19,12 +19,10 @@
  */
 package org.neo4j.shell.exception;
 
-public class UserInterruptException extends Exception
-{
+public class UserInterruptException extends Exception {
     public final String partialLine;
 
-    public UserInterruptException( String partialLine )
-    {
+    public UserInterruptException(String partialLine) {
         this.partialLine = partialLine;
     }
 }

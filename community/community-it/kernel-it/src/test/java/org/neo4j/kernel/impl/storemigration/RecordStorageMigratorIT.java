@@ -19,19 +19,32 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.StoreVersionCheck.MigrationOutcome.MIGRATION_POSSIBLE;
+import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -72,9 +85,9 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ExternalStoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -87,34 +100,20 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
-import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.StoreVersionCheck.MigrationOutcome.MIGRATION_POSSIBLE;
-import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
 @MultiVersionedTag
-class RecordStorageMigratorIT
-{
+class RecordStorageMigratorIT {
     private static final String MIGRATION_DIRECTORY = StoreMigrator.MIGRATION_DIRECTORY;
-    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
+    private static final Config CONFIG = Config.defaults(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
     private static final long TX_ID = 51;
 
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
@@ -125,353 +124,499 @@ class RecordStorageMigratorIT
     private final MigrationProgressMonitor progressMonitor = SILENT;
     private final JobScheduler jobScheduler = new ThreadPoolJobScheduler();
 
-    private static Stream<Arguments> versions()
-    {
-        return Stream.of( Arguments.of( StandardV4_3.STORE_VERSION ) );
+    private static Stream<Arguments> versions() {
+        return Stream.of(Arguments.of(StandardV4_3.STORE_VERSION));
     }
 
     @BeforeEach
-    void setup() throws IOException
-    {
-        migrationLayout = Neo4jLayout.of( testDirectory.homePath( MIGRATION_DIRECTORY ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+    void setup() throws IOException {
+        migrationLayout =
+                Neo4jLayout.of(testDirectory.homePath(MIGRATION_DIRECTORY)).databaseLayout(DEFAULT_DATABASE_NAME);
         batchImporterFactory = BatchImporterFactory.withHighestPriority();
         fileSystem = testDirectory.getFileSystem();
-        fileSystem.mkdirs( migrationLayout.databaseDirectory() );
+        fileSystem.mkdirs(migrationLayout.databaseDirectory());
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
+    void tearDown() throws Exception {
         jobScheduler.close();
     }
 
     @ParameterizedTest
-    @MethodSource( "versions" )
-    void shouldBeAbleToResumeMigrationOnMoving( String version )
-        throws Exception
-    {
+    @MethodSource("versions")
+    void shouldBeAbleToResumeMigrationOnMoving(String version) throws Exception {
         // GIVEN a legacy database
-        Path prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
-        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
+        RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
 
-        String versionToMigrateFrom = getVersionToMigrateFrom( check );
+        String versionToMigrateFrom = getVersionToMigrateFrom(check);
         MigrationProgressMonitor progressMonitor = SILENT;
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
-                batchImporterFactory, INSTANCE );
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
-                getStoreVersion( getVersionToMigrateTo() ), EMPTY, EMPTY_LOG_TAIL );
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        RecordStorageMigrator migrator = new RecordStorageMigrator(
+                fs,
+                pageCache,
+                cacheTracer,
+                CONFIG,
+                logService,
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE);
+        migrator.migrate(
+                databaseLayout,
+                migrationLayout,
+                progressMonitor.startSection("section"),
+                getStoreVersion(versionToMigrateFrom),
+                getStoreVersion(getVersionToMigrateTo()),
+                EMPTY,
+                EMPTY_LOG_TAIL);
 
         // WHEN simulating resuming the migration
-        migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory, batchImporterFactory,
-                INSTANCE );
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo() );
+        migrator = new RecordStorageMigrator(
+                fs,
+                pageCache,
+                cacheTracer,
+                CONFIG,
+                logService,
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE);
+        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo());
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
-                        logService.getInternalLogProvider(), contextFactory, writable(), EMPTY_LOG_TAIL );
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout,
+                CONFIG,
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                pageCache,
+                fs,
+                logService.getInternalLogProvider(),
+                contextFactory,
+                writable(),
+                EMPTY_LOG_TAIL);
         storeFactory.openAllNeoStores().close();
     }
 
     @ParameterizedTest
-    @MethodSource( "versions" )
-    void keepExternalIdAndDatabaseIdOnMigration( String version )
-            throws IOException, KernelException
-    {
-        Path prepare = testDirectory.directory( "prepare" );
+    @MethodSource("versions")
+    void keepExternalIdAndDatabaseIdOnMigration(String version) throws IOException, KernelException {
+        Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
 
         LogService logService = NullLogService.getInstance();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
-        String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+        RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
+        String versionToMigrateFrom = getVersionToMigrateFrom(check);
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
 
         StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
-                batchImporterFactory, INSTANCE );
+        RecordStorageMigrator migrator = new RecordStorageMigrator(
+                fs,
+                pageCache,
+                cacheTracer,
+                CONFIG,
+                logService,
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE);
         String migrateTo = getVersionToMigrateTo();
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
-                getStoreVersion( migrateTo ), EMPTY, loadLogTail( databaseLayout, CONFIG, storageEngine ) );
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo );
+        migrator.migrate(
+                databaseLayout,
+                migrationLayout,
+                progressMonitor.startSection("section"),
+                getStoreVersion(versionToMigrateFrom),
+                getStoreVersion(migrateTo),
+                EMPTY,
+                loadLogTail(databaseLayout, CONFIG, storageEngine));
+        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo);
 
-        StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
-                        logService.getInternalLogProvider(), contextFactory, writable(), loadLogTail( databaseLayout, CONFIG, storageEngine ) );
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
-        {
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout,
+                CONFIG,
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                pageCache,
+                fs,
+                logService.getInternalLogProvider(),
+                contextFactory,
+                writable(),
+                loadLogTail(databaseLayout, CONFIG, storageEngine));
+        try (NeoStores neoStores = storeFactory.openAllNeoStores()) {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            assertEquals( new UUID( 1, 2 ), metaDataStore.getDatabaseIdUuid( NULL_CONTEXT ).orElseThrow() );
-            assertEquals( new UUID( 3, 4 ), metaDataStore.getExternalStoreId().orElseThrow().getId() );
+            assertEquals(
+                    new UUID(1, 2),
+                    metaDataStore.getDatabaseIdUuid(NULL_CONTEXT).orElseThrow());
+            assertEquals(
+                    new UUID(3, 4),
+                    metaDataStore.getExternalStoreId().orElseThrow().getId());
         }
     }
 
     @Test
-    void changeStoreIdOnMigration() throws IOException, KernelException
-    {
-        Path prepare = testDirectory.directory( "prepare" );
+    void changeStoreIdOnMigration() throws IOException, KernelException {
+        Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( StandardV4_3.STORE_VERSION, fs, databaseLayout, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase(StandardV4_3.STORE_VERSION, fs, databaseLayout, prepare);
 
         LogService logService = NullLogService.getInstance();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
-        String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+        RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
+        String versionToMigrateFrom = getVersionToMigrateFrom(check);
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
 
         StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
-                batchImporterFactory, INSTANCE );
+        RecordStorageMigrator migrator = new RecordStorageMigrator(
+                fs,
+                pageCache,
+                cacheTracer,
+                CONFIG,
+                logService,
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE);
         String migrateTo = getVersionToMigrateTo();
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
-                getStoreVersion( migrateTo ), EMPTY, loadLogTail( databaseLayout, CONFIG, storageEngine ) );
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo );
+        migrator.migrate(
+                databaseLayout,
+                migrationLayout,
+                progressMonitor.startSection("section"),
+                getStoreVersion(versionToMigrateFrom),
+                getStoreVersion(migrateTo),
+                EMPTY,
+                loadLogTail(databaseLayout, CONFIG, storageEngine));
+        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo);
 
-        StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
-                        logService.getInternalLogProvider(), contextFactory, writable(), loadLogTail( databaseLayout, CONFIG, storageEngine ) );
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
-        {
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout,
+                CONFIG,
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                pageCache,
+                fs,
+                logService.getInternalLogProvider(),
+                contextFactory,
+                writable(),
+                loadLogTail(databaseLayout, CONFIG, storageEngine));
+        try (NeoStores neoStores = storeFactory.openAllNeoStores()) {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             LegacyStoreId storeId = metaDataStore.getStoreId();
-            assertNotEquals( 1155255428148939479L, storeId.getRandomId() );
-            assertEquals( Standard.LATEST_STORE_VERSION, StoreVersion.versionLongToString( storeId.getStoreVersion() ) );
+            assertNotEquals(1155255428148939479L, storeId.getRandomId());
+            assertEquals(Standard.LATEST_STORE_VERSION, StoreVersion.versionLongToString(storeId.getStoreVersion()));
         }
     }
 
     @Test
-    void keepIdsOnUpgrade() throws IOException, KernelException
-    {
+    void keepIdsOnUpgrade() throws IOException, KernelException {
         LegacyStoreId storeId;
         ExternalStoreId externalStoreId;
         UUID databaseUUID = UUID.randomUUID();
-        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        try
-        {
-            GraphDatabaseAPI database = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
-            MetadataProvider metadataProvider = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
+        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        try {
+            GraphDatabaseAPI database = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
+            MetadataProvider metadataProvider =
+                    database.getDependencyResolver().resolveDependency(MetadataProvider.class);
             storeId = metadataProvider.getStoreId();
             externalStoreId = metadataProvider.getExternalStoreId().orElseThrow();
 
-            metadataProvider.setDatabaseIdUuid( databaseUUID, NULL_CONTEXT );
-        }
-        finally
-        {
+            metadataProvider.setDatabaseIdUuid(databaseUUID, NULL_CONTEXT);
+        } finally {
             dbms.shutdown();
         }
 
         LogService logService = NullLogService.getInstance();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
 
         StandardFormatWithMinorVersionBump toFormat = new StandardFormatWithMinorVersionBump();
-        RecordStoreVersion versionToMigrateFrom = new RecordStoreVersion( Standard.LATEST_RECORD_FORMATS );
-        RecordStoreVersion versionToMigrateTo = new RecordStoreVersion( toFormat );
+        RecordStoreVersion versionToMigrateFrom = new RecordStoreVersion(Standard.LATEST_RECORD_FORMATS);
+        RecordStoreVersion versionToMigrateTo = new RecordStoreVersion(toFormat);
 
-        Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
-        config.set( GraphDatabaseInternalSettings.include_versions_under_development, true );
+        Config config = Config.defaults(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
+        config.set(GraphDatabaseInternalSettings.include_versions_under_development, true);
 
         StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
         FileSystemAbstraction fs = testDirectory.getFileSystem();
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, config, logService, jobScheduler,
-                contextFactory, batchImporterFactory, INSTANCE );
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
-                versionToMigrateTo, EMPTY, loadLogTail( databaseLayout, config, storageEngine ) );
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom.storeVersion(), versionToMigrateTo.storeVersion() );
+        RecordStorageMigrator migrator = new RecordStorageMigrator(
+                fs,
+                pageCache,
+                cacheTracer,
+                config,
+                logService,
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE);
+        migrator.migrate(
+                databaseLayout,
+                migrationLayout,
+                progressMonitor.startSection("section"),
+                versionToMigrateFrom,
+                versionToMigrateTo,
+                EMPTY,
+                loadLogTail(databaseLayout, config, storageEngine));
+        migrator.moveMigratedFiles(
+                migrationLayout,
+                databaseLayout,
+                versionToMigrateFrom.storeVersion(),
+                versionToMigrateTo.storeVersion());
 
-        StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, config, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
-                        logService.getInternalLogProvider(), contextFactory, writable(), loadLogTail( databaseLayout, config, storageEngine ) );
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
-        {
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout,
+                config,
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                pageCache,
+                fs,
+                logService.getInternalLogProvider(),
+                contextFactory,
+                writable(),
+                loadLogTail(databaseLayout, config, storageEngine));
+        try (NeoStores neoStores = storeFactory.openAllNeoStores()) {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             LegacyStoreId newStoreId = metaDataStore.getStoreId();
             // Store version should be updated, and the rest should be as before
-            assertEquals( toFormat.storeVersion(), StoreVersion.versionLongToString( newStoreId.getStoreVersion() ) );
-            assertEquals( storeId.getRandomId(), newStoreId.getRandomId() );
-            assertEquals( databaseUUID, metaDataStore.getDatabaseIdUuid( NULL_CONTEXT ).orElseThrow() );
-            assertEquals( externalStoreId, metaDataStore.getExternalStoreId().orElseThrow() );
+            assertEquals(toFormat.storeVersion(), StoreVersion.versionLongToString(newStoreId.getStoreVersion()));
+            assertEquals(storeId.getRandomId(), newStoreId.getRandomId());
+            assertEquals(
+                    databaseUUID, metaDataStore.getDatabaseIdUuid(NULL_CONTEXT).orElseThrow());
+            assertEquals(externalStoreId, metaDataStore.getExternalStoreId().orElseThrow());
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "versions" )
-    void shouldBeAbleToMigrateWithoutErrors( String version ) throws Exception
-    {
+    @MethodSource("versions")
+    void shouldBeAbleToMigrateWithoutErrors(String version) throws Exception {
         // GIVEN a legacy database
 
-        Path prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
 
-        AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        LogService logService = new SimpleLogService( logProvider, logProvider );
+        AssertableLogProvider logProvider = new AssertableLogProvider(true);
+        LogService logService = new SimpleLogService(logProvider, logProvider);
 
-        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
+        RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
 
-        String versionToMigrateFrom = getVersionToMigrateFrom( check );
+        String versionToMigrateFrom = getVersionToMigrateFrom(check);
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
-                batchImporterFactory, INSTANCE );
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        RecordStorageMigrator migrator = new RecordStorageMigrator(
+                fs,
+                pageCache,
+                cacheTracer,
+                CONFIG,
+                logService,
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE);
 
         // WHEN migrating
         var engineFactory = StorageEngineFactory.defaultStorageEngine();
-        var logTailMetadata = loadLogTail( databaseLayout, CONFIG, engineFactory );
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
-                getStoreVersion( getVersionToMigrateTo() ),
-                EMPTY, logTailMetadata );
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo() );
+        var logTailMetadata = loadLogTail(databaseLayout, CONFIG, engineFactory);
+        migrator.migrate(
+                databaseLayout,
+                migrationLayout,
+                progressMonitor.startSection("section"),
+                getStoreVersion(versionToMigrateFrom),
+                getStoreVersion(getVersionToMigrateTo()),
+                EMPTY,
+                logTailMetadata);
+        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo());
 
         // THEN starting the new store should be successful
-        assertThat( testDirectory.getFileSystem().fileExists( databaseLayout.relationshipGroupDegreesStore() ) ).isTrue();
-        GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder noRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
-        {
-            @Override
-            public void rebuild( RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-            {
-                throw new IllegalStateException( "Rebuild should not be required" );
-            }
+        assertThat(testDirectory.getFileSystem().fileExists(databaseLayout.relationshipGroupDegreesStore()))
+                .isTrue();
+        GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder noRebuildAssertion =
+                new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+                    @Override
+                    public void rebuild(
+                            RelationshipGroupDegreesStore.Updater updater,
+                            CursorContext cursorContext,
+                            MemoryTracker memoryTracker) {
+                        throw new IllegalStateException("Rebuild should not be required");
+                    }
 
-            @Override
-            public long lastCommittedTxId()
-            {
-                try
-                {
-                    return new RecordStorageEngineFactory().readOnlyTransactionIdStore( logTailMetadata )
-                                                           .getLastCommittedTransactionId();
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
-                }
-            }
-        };
-        var migratedStoreOpenOptions = engineFactory.getStoreOpenOptions( fs, pageCache, databaseLayout, contextFactory );
-        try ( var groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
-                                                                                databaseLayout.relationshipGroupDegreesStore(), testDirectory.getFileSystem(),
-                                                                                immediate(), noRebuildAssertion, writable(),
-                                                                                GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(),
-                                                                                counts_store_max_cached_entries.defaultValue(),
-                                                                                NullLogProvider.getInstance(), contextFactory,
-                                                                                migratedStoreOpenOptions ) )
-        {
+                    @Override
+                    public long lastCommittedTxId() {
+                        try {
+                            return new RecordStorageEngineFactory()
+                                    .readOnlyTransactionIdStore(logTailMetadata)
+                                    .getLastCommittedTransactionId();
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
+                };
+        var migratedStoreOpenOptions = engineFactory.getStoreOpenOptions(fs, pageCache, databaseLayout, contextFactory);
+        try (var groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore(
+                pageCache,
+                databaseLayout.relationshipGroupDegreesStore(),
+                testDirectory.getFileSystem(),
+                immediate(),
+                noRebuildAssertion,
+                writable(),
+                GBPTreeGenericCountsStore.NO_MONITOR,
+                databaseLayout.getDatabaseName(),
+                counts_store_max_cached_entries.defaultValue(),
+                NullLogProvider.getInstance(),
+                contextFactory,
+                migratedStoreOpenOptions)) {
             // The rebuild would happen here in start and will throw exception (above) if invoked
-            groupDegreesStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
+            groupDegreesStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
 
             // The store keeps track of committed transactions.
             // It is essential that it starts with the transaction
             // that is the last committed one at the upgrade time.
-            assertEquals( TX_ID, groupDegreesStore.txId() );
+            assertEquals(TX_ID, groupDegreesStore.txId());
         }
 
-        StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
-                        logService.getInternalLogProvider(), contextFactory, writable(),
-                        loadLogTail( databaseLayout, CONFIG, engineFactory ) );
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout,
+                CONFIG,
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                pageCache,
+                fs,
+                logService.getInternalLogProvider(),
+                contextFactory,
+                writable(),
+                loadLogTail(databaseLayout, CONFIG, engineFactory));
         storeFactory.openAllNeoStores().close();
-        assertThat( logProvider ).forLevel( ERROR ).doesNotHaveAnyLogs();
+        assertThat(logProvider).forLevel(ERROR).doesNotHaveAnyLogs();
     }
 
     @ParameterizedTest
-    @MethodSource( "versions" )
-    void shouldBeAbleToResumeMigrationOnRebuildingCounts( String version )
-        throws Exception
-    {
+    @MethodSource("versions")
+    void shouldBeAbleToResumeMigrationOnRebuildingCounts(String version) throws Exception {
         // GIVEN a legacy database
 
-        Path prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
-        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
+        RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
 
-        String versionToMigrateFrom = getVersionToMigrateFrom( check );
+        String versionToMigrateFrom = getVersionToMigrateFrom(check);
         MigrationProgressMonitor progressMonitor = SILENT;
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        var contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
-                batchImporterFactory, INSTANCE );
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
-                getStoreVersion( getVersionToMigrateTo() ), EMPTY, EMPTY_LOG_TAIL );
+        var contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        RecordStorageMigrator migrator = new RecordStorageMigrator(
+                fs,
+                pageCache,
+                cacheTracer,
+                CONFIG,
+                logService,
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE);
+        migrator.migrate(
+                databaseLayout,
+                migrationLayout,
+                progressMonitor.startSection("section"),
+                getStoreVersion(versionToMigrateFrom),
+                getStoreVersion(getVersionToMigrateTo()),
+                EMPTY,
+                EMPTY_LOG_TAIL);
 
         // WHEN simulating resuming the migration
 
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo() );
+        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo());
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
-                        logService.getInternalLogProvider(), contextFactory, writable(), EMPTY_LOG_TAIL );
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout,
+                CONFIG,
+                new ScanOnOpenOverwritingIdGeneratorFactory(fs, databaseLayout.getDatabaseName()),
+                pageCache,
+                fs,
+                logService.getInternalLogProvider(),
+                contextFactory,
+                writable(),
+                EMPTY_LOG_TAIL);
         storeFactory.openAllNeoStores().close();
     }
 
     @ParameterizedTest
-    @MethodSource( "versions" )
-    void shouldStartCheckpointLogVersionFromZeroIfMissingBeforeMigration( String version ) throws Exception
-    {
+    @MethodSource("versions")
+    void shouldStartCheckpointLogVersionFromZeroIfMissingBeforeMigration(String version) throws Exception {
         // given
-        Path prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
-        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
-        String versionToMigrateFrom = getVersionToMigrateFrom( check );
+        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
+        RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
+        String versionToMigrateFrom = getVersionToMigrateFrom(check);
         String versionToMigrateTo = getVersionToMigrateTo();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        var contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+        var contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
 
         // when
-        RecordStorageMigrator migrator =
-                new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, NullLogService.getInstance(), jobScheduler, contextFactory,
-                        batchImporterFactory, INSTANCE );
+        RecordStorageMigrator migrator = new RecordStorageMigrator(
+                fs,
+                pageCache,
+                cacheTracer,
+                CONFIG,
+                NullLogService.getInstance(),
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE);
 
         // when
-        migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
-                getStoreVersion( versionToMigrateTo ), EMPTY, EMPTY_LOG_TAIL );
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
+        migrator.migrate(
+                databaseLayout,
+                migrationLayout,
+                SILENT.startSection("section"),
+                getStoreVersion(versionToMigrateFrom),
+                getStoreVersion(versionToMigrateTo),
+                EMPTY,
+                EMPTY_LOG_TAIL);
+        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
 
         // then
-        try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(),
-                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, NullLogProvider.getInstance(),
-                contextFactory, writable(), EMPTY_LOG_TAIL ).openNeoStores( StoreType.META_DATA ) )
-        {
-            neoStores.start( NULL_CONTEXT );
-            assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( 0 );
+        try (NeoStores neoStores = new StoreFactory(
+                        databaseLayout,
+                        Config.defaults(),
+                        new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                        pageCache,
+                        fs,
+                        NullLogProvider.getInstance(),
+                        contextFactory,
+                        writable(),
+                        EMPTY_LOG_TAIL)
+                .openNeoStores(StoreType.META_DATA)) {
+            neoStores.start(NULL_CONTEXT);
+            assertThat(neoStores.getMetaDataStore().getCheckpointLogVersion()).isEqualTo(0);
         }
     }
 
-    private static String getVersionToMigrateFrom( RecordStoreVersionCheck check )
-    {
-        StoreVersionCheck.MigrationCheckResult result = check.getAndCheckMigrationTargetVersion( null, NULL_CONTEXT );
-        assertEquals( result.outcome(), MIGRATION_POSSIBLE );
+    private static String getVersionToMigrateFrom(RecordStoreVersionCheck check) {
+        StoreVersionCheck.MigrationCheckResult result = check.getAndCheckMigrationTargetVersion(null, NULL_CONTEXT);
+        assertEquals(result.outcome(), MIGRATION_POSSIBLE);
         return result.versionToMigrateFrom();
     }
 
-    private static String getVersionToMigrateTo()
-    {
+    private static String getVersionToMigrateTo() {
         return Standard.LATEST_NAME;
     }
 
-    private static RecordStoreVersionCheck getVersionCheck( PageCache pageCache, RecordDatabaseLayout layout )
-    {
-        return new RecordStoreVersionCheck( pageCache, layout, Config.defaults() );
+    private static RecordStoreVersionCheck getVersionCheck(PageCache pageCache, RecordDatabaseLayout layout) {
+        return new RecordStoreVersionCheck(pageCache, layout, Config.defaults());
     }
 
-    private static StoreVersion getStoreVersion( String version )
-    {
-        return StorageEngineFactory.defaultStorageEngine().versionInformation( version );
+    private static StoreVersion getStoreVersion(String version) {
+        return StorageEngineFactory.defaultStorageEngine().versionInformation(version);
     }
 
-    private LogTailMetadata loadLogTail( DatabaseLayout layout, Config config, StorageEngineFactory engineFactory ) throws IOException
-    {
-        return new LogTailExtractor( fileSystem, pageCache, config, engineFactory, DatabaseTracers.EMPTY ).getTailMetadata( layout, INSTANCE );
+    private LogTailMetadata loadLogTail(DatabaseLayout layout, Config config, StorageEngineFactory engineFactory)
+            throws IOException {
+        return new LogTailExtractor(fileSystem, pageCache, config, engineFactory, DatabaseTracers.EMPTY)
+                .getTailMetadata(layout, INSTANCE);
     }
 }

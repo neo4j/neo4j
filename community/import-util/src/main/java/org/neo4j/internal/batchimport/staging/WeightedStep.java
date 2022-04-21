@@ -19,6 +19,4 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-public record WeightedStep(Step<?> step, Float weight)
-{
-}
+public record WeightedStep(Step<?> step, Float weight) {}

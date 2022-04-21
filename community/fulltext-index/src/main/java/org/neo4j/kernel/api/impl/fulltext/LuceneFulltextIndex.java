@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.analysis.Analyzer;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-
+import org.apache.lucene.analysis.Analyzer;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
@@ -35,8 +33,7 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.token.api.TokenHolder;
 
-public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable
-{
+public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable {
     private final Config config;
     private final Analyzer analyzer;
     private final TokenHolder propertyKeyTokenHolder;
@@ -44,49 +41,50 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     private final Path transactionsFolder;
     private final IndexDescriptor descriptor;
 
-    LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor,
-            TokenHolder propertyKeyTokenHolder, Config config, Analyzer analyzer, String[] propertyNames )
-    {
-        super( storage, partitionFactory, descriptor, config );
+    LuceneFulltextIndex(
+            PartitionedIndexStorage storage,
+            IndexPartitionFactory partitionFactory,
+            IndexDescriptor descriptor,
+            TokenHolder propertyKeyTokenHolder,
+            Config config,
+            Analyzer analyzer,
+            String[] propertyNames) {
+        super(storage, partitionFactory, descriptor, config);
         this.descriptor = descriptor;
         this.config = config;
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         Path indexFolder = storage.getIndexFolder();
-        transactionsFolder = indexFolder.resolve( indexFolder.getFileName() + ".tx" );
+        transactionsFolder = indexFolder.resolve(indexFolder.getFileName() + ".tx");
     }
 
     @Override
-    public void open() throws IOException
-    {
+    public void open() throws IOException {
         super.open();
-        indexStorage.prepareFolder( transactionsFolder );
+        indexStorage.prepareFolder(transactionsFolder);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         super.close();
-        indexStorage.cleanupFolder( transactionsFolder );
+        indexStorage.cleanupFolder(transactionsFolder);
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
-    {
+    public IndexDescriptor getDescriptor() {
         return descriptor;
     }
 
     @Override
-    protected FulltextIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
-    {
-        return createPartitionedReader( partitions );
+    protected FulltextIndexReader createSimpleReader(List<AbstractIndexPartition> partitions) throws IOException {
+        return createPartitionedReader(partitions);
     }
 
     @Override
-    protected FulltextIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
-    {
-        List<SearcherReference> searchers = acquireSearchers( partitions );
-        return new FulltextIndexReader( searchers, propertyKeyTokenHolder, getDescriptor(), config, analyzer, propertyNames );
+    protected FulltextIndexReader createPartitionedReader(List<AbstractIndexPartition> partitions) throws IOException {
+        List<SearcherReference> searchers = acquireSearchers(partitions);
+        return new FulltextIndexReader(
+                searchers, propertyKeyTokenHolder, getDescriptor(), config, analyzer, propertyNames);
     }
 }

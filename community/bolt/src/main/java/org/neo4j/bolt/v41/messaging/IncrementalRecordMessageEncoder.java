@@ -20,13 +20,11 @@
 package org.neo4j.bolt.v41.messaging;
 
 import java.io.IOException;
-
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.values.AnyValue;
 
-public interface IncrementalRecordMessageEncoder
-{
-    void beginRecord( Neo4jPack.Packer packer, int numberOfFields ) throws IOException;
+public interface IncrementalRecordMessageEncoder {
+    void beginRecord(Neo4jPack.Packer packer, int numberOfFields) throws IOException;
 
-    void onField( Neo4jPack.Packer packer, AnyValue field ) throws IOException;
+    void onField(Neo4jPack.Packer packer, AnyValue field) throws IOException;
 }

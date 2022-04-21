@@ -25,6 +25,4 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 /**
  * Recovery transaction applier that will apply all recovered transaction to underlying store.
  */
-public interface RecoveryApplier extends Visitor<CommittedTransactionRepresentation,Exception>, AutoCloseable
-{
-}
+public interface RecoveryApplier extends Visitor<CommittedTransactionRepresentation, Exception>, AutoCloseable {}

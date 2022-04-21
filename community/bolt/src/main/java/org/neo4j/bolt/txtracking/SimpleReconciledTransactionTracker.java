@@ -19,62 +19,52 @@
  */
 package org.neo4j.bolt.txtracking;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-
 /**
  * A {@link ReconciledTransactionTracker} used for community databases that do not have a reconciler.
  */
-public class SimpleReconciledTransactionTracker implements ReconciledTransactionTracker
-{
+public class SimpleReconciledTransactionTracker implements ReconciledTransactionTracker {
     private final DatabaseManagementService dbService;
     private final InternalLog log;
 
-    public SimpleReconciledTransactionTracker( DatabaseManagementService dbService, LogService logService )
-    {
+    public SimpleReconciledTransactionTracker(DatabaseManagementService dbService, LogService logService) {
         this.dbService = dbService;
-        this.log = logService.getInternalLog( getClass() );
+        this.log = logService.getInternalLog(getClass());
     }
 
     @Override
-    public void disable()
-    {
-        throw new UnsupportedOperationException( "Initialization is not supported" );
+    public void disable() {
+        throw new UnsupportedOperationException("Initialization is not supported");
     }
 
     @Override
-    public void enable( long reconciledTransactionId )
-    {
-        throw new UnsupportedOperationException( "Initialization is not supported" );
+    public void enable(long reconciledTransactionId) {
+        throw new UnsupportedOperationException("Initialization is not supported");
     }
 
     @Override
-    public long getLastReconciledTransactionId()
-    {
-        try
-        {
-            var systemDb = (GraphDatabaseAPI) dbService.database( SYSTEM_DATABASE_NAME );
-            if ( systemDb.isAvailable() )
-            {
-                var txIdStore = systemDb.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+    public long getLastReconciledTransactionId() {
+        try {
+            var systemDb = (GraphDatabaseAPI) dbService.database(SYSTEM_DATABASE_NAME);
+            if (systemDb.isAvailable()) {
+                var txIdStore = systemDb.getDependencyResolver().resolveDependency(TransactionIdStore.class);
                 return txIdStore.getLastClosedTransactionId();
             }
-        }
-        catch ( Exception e )
-        {
-            log.warn( "Unable to get last reconciled transaction ID", e );
+        } catch (Exception e) {
+            log.warn("Unable to get last reconciled transaction ID", e);
         }
         return NO_RECONCILED_TRANSACTION_ID;
     }
 
     @Override
-    public void offerReconciledTransactionId( long reconciledTransactionId )
-    {
-        throw new UnsupportedOperationException( "Updates are not supported" );
+    public void offerReconciledTransactionId(long reconciledTransactionId) {
+        throw new UnsupportedOperationException("Updates are not supported");
     }
 }

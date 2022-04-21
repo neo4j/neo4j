@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ResultRowImplTest extends CypherFunSuite {
+
   test("int can be handled as a Number") {
     val row = new ResultRowImpl
     row.set("x", 10)

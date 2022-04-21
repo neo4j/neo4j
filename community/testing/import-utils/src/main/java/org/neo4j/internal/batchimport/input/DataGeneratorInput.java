@@ -19,22 +19,21 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import static java.util.Arrays.asList;
+import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
-
-import static java.util.Arrays.asList;
-import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
@@ -61,8 +60,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
  * }
  * </pre>
  */
-public class DataGeneratorInput implements Input
-{
+public class DataGeneratorInput implements Input {
     private final long nodes;
     private final long relationships;
     private final IdType idType;
@@ -77,10 +75,18 @@ public class DataGeneratorInput implements Input
     private final Groups groups = new Groups();
     private int maxStringLength = 20;
 
-    public DataGeneratorInput( long nodes, long relationships, IdType idType, long seed, long startId,
-            Header nodeHeader, Header relationshipHeader, int labelCount, int relationshipTypeCount,
-            float factorBadNodeData, float factorBadRelationshipData )
-    {
+    public DataGeneratorInput(
+            long nodes,
+            long relationships,
+            IdType idType,
+            long seed,
+            long startId,
+            Header nodeHeader,
+            Header relationshipHeader,
+            int labelCount,
+            int relationshipTypeCount,
+            float factorBadNodeData,
+            float factorBadRelationshipData) {
         this.nodes = nodes;
         this.relationships = relationships;
         this.idType = idType;
@@ -90,135 +96,137 @@ public class DataGeneratorInput implements Input
         this.relationshipHeader = relationshipHeader;
         this.factorBadNodeData = factorBadNodeData;
         this.factorBadRelationshipData = factorBadRelationshipData;
-        this.labels = new Distribution<>( tokens( "Label", labelCount ) );
-        this.relationshipTypes = new Distribution<>( tokens( "TYPE", relationshipTypeCount ) );
+        this.labels = new Distribution<>(tokens("Label", labelCount));
+        this.relationshipTypes = new Distribution<>(tokens("TYPE", relationshipTypeCount));
     }
 
     @Override
-    public InputIterable nodes( Collector badCollector )
-    {
-        return () -> new RandomEntityDataGenerator( nodes, nodes, 10_000, seed, startId, nodeHeader, labels, relationshipTypes,
-                factorBadNodeData, factorBadRelationshipData, maxStringLength );
+    public InputIterable nodes(Collector badCollector) {
+        return () -> new RandomEntityDataGenerator(
+                nodes,
+                nodes,
+                10_000,
+                seed,
+                startId,
+                nodeHeader,
+                labels,
+                relationshipTypes,
+                factorBadNodeData,
+                factorBadRelationshipData,
+                maxStringLength);
     }
 
     @Override
-    public InputIterable relationships( Collector badCollector )
-    {
-        return () -> new RandomEntityDataGenerator( nodes, relationships, 10_000, seed, startId, relationshipHeader,
-                labels, relationshipTypes, factorBadNodeData, factorBadRelationshipData, maxStringLength );
+    public InputIterable relationships(Collector badCollector) {
+        return () -> new RandomEntityDataGenerator(
+                nodes,
+                relationships,
+                10_000,
+                seed,
+                startId,
+                relationshipHeader,
+                labels,
+                relationshipTypes,
+                factorBadNodeData,
+                factorBadRelationshipData,
+                maxStringLength);
     }
 
     @Override
-    public IdType idType()
-    {
+    public IdType idType() {
         return idType;
     }
 
     @Override
-    public ReadableGroups groups()
-    {
+    public ReadableGroups groups() {
         return groups;
     }
 
     @Override
-    public Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator )
-    {
+    public Estimates calculateEstimates(PropertySizeCalculator valueSizeCalculator) {
         int sampleSize = 100;
-        InputEntity[] nodeSample = sample( nodes( Collector.EMPTY ), sampleSize );
-        double labelsPerNodeEstimate = sampleLabels( nodeSample );
-        double[] nodePropertyEstimate = sampleProperties( nodeSample, valueSizeCalculator );
-        double[] relationshipPropertyEstimate = sampleProperties( sample( relationships( Collector.EMPTY ), sampleSize ), valueSizeCalculator );
+        InputEntity[] nodeSample = sample(nodes(Collector.EMPTY), sampleSize);
+        double labelsPerNodeEstimate = sampleLabels(nodeSample);
+        double[] nodePropertyEstimate = sampleProperties(nodeSample, valueSizeCalculator);
+        double[] relationshipPropertyEstimate =
+                sampleProperties(sample(relationships(Collector.EMPTY), sampleSize), valueSizeCalculator);
         return Input.knownEstimates(
-                nodes, relationships,
-                (long) (nodes * nodePropertyEstimate[0]), (long) (relationships * relationshipPropertyEstimate[0]),
-                (long) (nodes * nodePropertyEstimate[1]), (long) (relationships * relationshipPropertyEstimate[1]),
-                (long) (nodes * labelsPerNodeEstimate) );
+                nodes,
+                relationships,
+                (long) (nodes * nodePropertyEstimate[0]),
+                (long) (relationships * relationshipPropertyEstimate[0]),
+                (long) (nodes * nodePropertyEstimate[1]),
+                (long) (relationships * relationshipPropertyEstimate[1]),
+                (long) (nodes * labelsPerNodeEstimate));
     }
 
-    private static InputEntity[] sample( InputIterable source, int size )
-    {
-        try ( InputIterator iterator = source.iterator();
-              InputChunk chunk = iterator.newChunk() )
-        {
+    private static InputEntity[] sample(InputIterable source, int size) {
+        try (InputIterator iterator = source.iterator();
+                InputChunk chunk = iterator.newChunk()) {
             InputEntity[] sample = new InputEntity[size];
             int cursor = 0;
-            while ( cursor < size && iterator.next( chunk ) )
-            {
-                while ( cursor < size && chunk.next( sample[cursor++] = new InputEntity() ) )
-                {
+            while (cursor < size && iterator.next(chunk)) {
+                while (cursor < size && chunk.next(sample[cursor++] = new InputEntity())) {
                     // just loop
                 }
             }
             return sample;
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private static double sampleLabels( InputEntity[] nodes )
-    {
+    private static double sampleLabels(InputEntity[] nodes) {
         int labels = 0;
-        for ( InputEntity node : nodes )
-        {
-            if ( node != null )
-            {
+        for (InputEntity node : nodes) {
+            if (node != null) {
                 labels += node.labels().length;
             }
         }
         return (double) labels / nodes.length;
     }
 
-    private static double[] sampleProperties( InputEntity[] sample, PropertySizeCalculator valueSizeCalculator )
-    {
-        if ( sample.length == 0 || sample[0] == null )
-        {
-            return new double[]{0, 0};
+    private static double[] sampleProperties(InputEntity[] sample, PropertySizeCalculator valueSizeCalculator) {
+        if (sample.length == 0 || sample[0] == null) {
+            return new double[] {0, 0};
         }
 
         int propertiesPerEntity = sample[0].propertyCount();
         long propertiesSize = 0;
-        for ( InputEntity entity : sample )
-        {
-            if ( entity != null )
-            {
-                propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL_CONTEXT, INSTANCE );
+        for (InputEntity entity : sample) {
+            if (entity != null) {
+                propertiesSize += Inputs.calculatePropertySize(entity, valueSizeCalculator, NULL_CONTEXT, INSTANCE);
             }
         }
         double propertySizePerEntity = (double) propertiesSize / sample.length;
         return new double[] {propertiesPerEntity, propertySizePerEntity};
     }
 
-    public static Header bareboneNodeHeader( IdType idType, Extractors extractors )
-    {
-        return bareboneNodeHeader( null, idType, extractors );
+    public static Header bareboneNodeHeader(IdType idType, Extractors extractors) {
+        return bareboneNodeHeader(null, idType, extractors);
     }
 
-    public static Header bareboneNodeHeader( String idKey, IdType idType, Extractors extractors, Entry... additionalEntries )
-    {
+    public static Header bareboneNodeHeader(
+            String idKey, IdType idType, Extractors extractors, Entry... additionalEntries) {
         List<Entry> entries = new ArrayList<>();
-        entries.add( new Entry( idKey, Type.ID, null, idExtractor( idType, extractors ) ) );
-        entries.add( new Entry( null, Type.LABEL, null, extractors.stringArray() ) );
-        entries.addAll( asList( additionalEntries ) );
-        return new Header( entries.toArray( new Entry[0] ) );
+        entries.add(new Entry(idKey, Type.ID, null, idExtractor(idType, extractors)));
+        entries.add(new Entry(null, Type.LABEL, null, extractors.stringArray()));
+        entries.addAll(asList(additionalEntries));
+        return new Header(entries.toArray(new Entry[0]));
     }
 
-    public static Header bareboneRelationshipHeader( IdType idType, Extractors extractors, Entry... additionalEntries )
-    {
+    public static Header bareboneRelationshipHeader(IdType idType, Extractors extractors, Entry... additionalEntries) {
         List<Entry> entries = new ArrayList<>();
-        entries.add( new Entry( null, Type.START_ID, null, idExtractor( idType, extractors ) ) );
-        entries.add( new Entry( null, Type.END_ID, null, idExtractor( idType, extractors ) ) );
-        entries.add( new Entry( null, Type.TYPE, null, extractors.string() ) );
-        entries.addAll( asList( additionalEntries ) );
-        return new Header( entries.toArray( new Entry[0] ) );
+        entries.add(new Entry(null, Type.START_ID, null, idExtractor(idType, extractors)));
+        entries.add(new Entry(null, Type.END_ID, null, idExtractor(idType, extractors)));
+        entries.add(new Entry(null, Type.TYPE, null, extractors.string()));
+        entries.addAll(asList(additionalEntries));
+        return new Header(entries.toArray(new Entry[0]));
     }
 
-    private static String[] tokens( String prefix, int count )
-    {
+    private static String[] tokens(String prefix, int count) {
         String[] result = new String[count];
-        for ( int i = 0; i < count; i++ )
-        {
+        for (int i = 0; i < count; i++) {
             result[i] = prefix + (i + 1);
         }
         return result;

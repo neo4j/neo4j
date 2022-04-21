@@ -20,40 +20,34 @@
 package org.neo4j.values.storable;
 
 import java.util.function.Function;
-
 import org.neo4j.values.StructureBuilder;
 
-public final class InputMappingStructureBuilder<Input, Internal, Result> implements StructureBuilder<Input,Result>
-{
-    public static <R> StructureBuilder<Object,R> fromValues( StructureBuilder<? super Value,R> builder )
-    {
-        return mapping( Values::of, builder );
+public final class InputMappingStructureBuilder<Input, Internal, Result> implements StructureBuilder<Input, Result> {
+    public static <R> StructureBuilder<Object, R> fromValues(StructureBuilder<? super Value, R> builder) {
+        return mapping(Values::of, builder);
     }
 
-    public static <I, N, O> StructureBuilder<I,O> mapping( Function<I,N> mapping, StructureBuilder<N,O> builder )
-    {
-        return new InputMappingStructureBuilder<>( mapping, builder );
+    public static <I, N, O> StructureBuilder<I, O> mapping(Function<I, N> mapping, StructureBuilder<N, O> builder) {
+        return new InputMappingStructureBuilder<>(mapping, builder);
     }
 
-    private final Function<Input,Internal> mapping;
-    private final StructureBuilder<Internal,Result> builder;
+    private final Function<Input, Internal> mapping;
+    private final StructureBuilder<Internal, Result> builder;
 
-    private InputMappingStructureBuilder( Function<Input,Internal> mapping, StructureBuilder<Internal,Result> builder )
-    {
+    private InputMappingStructureBuilder(
+            Function<Input, Internal> mapping, StructureBuilder<Internal, Result> builder) {
         this.mapping = mapping;
         this.builder = builder;
     }
 
     @Override
-    public StructureBuilder<Input,Result> add( String field, Input value )
-    {
-        builder.add( field, mapping.apply( value ) );
+    public StructureBuilder<Input, Result> add(String field, Input value) {
+        builder.add(field, mapping.apply(value));
         return this;
     }
 
     @Override
-    public Result build()
-    {
+    public Result build() {
         return builder.build();
     }
 }

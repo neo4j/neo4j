@@ -19,12 +19,23 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_MOCKS;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -39,151 +50,131 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Answers.RETURNS_MOCKS;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-
-class KernelStatementTest
-{
-    private final AtomicReference<CpuClock> cpuClockRef = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
+class KernelStatementTest {
+    private final AtomicReference<CpuClock> cpuClockRef = new AtomicReference<>(CpuClock.NOT_AVAILABLE);
 
     @Test
-    void shouldReleaseResourcesWhenForceClosed()
-    {
+    void shouldReleaseResourcesWhenForceClosed() {
         // given
-        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.isSuccess() ).thenReturn( true );
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        KernelStatement statement = createStatement( transaction );
-        var cursorContext = contextFactory.create( "test" );
-        statement.initialize( mock( Locks.Client.class ), cursorContext, 1 );
+        KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
+        when(transaction.isSuccess()).thenReturn(true);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        KernelStatement statement = createStatement(transaction);
+        var cursorContext = contextFactory.create("test");
+        statement.initialize(mock(Locks.Client.class), cursorContext, 1);
         statement.acquire();
 
         // when
-        assertThrows( KernelStatement.StatementNotClosedException.class, statement::forceClose );
+        assertThrows(KernelStatement.StatementNotClosedException.class, statement::forceClose);
 
         // then
-        verify( transaction ).releaseStatementResources();
+        verify(transaction).releaseStatementResources();
     }
 
     @Test
-    void assertStatementIsNotOpenWhileAcquireIsNotInvoked()
-    {
-        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        KernelStatement statement = createStatement( transaction );
+    void assertStatementIsNotOpenWhileAcquireIsNotInvoked() {
+        KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
+        KernelStatement statement = createStatement(transaction);
 
-        assertThrows( NotInTransactionException.class, statement::assertOpen );
+        assertThrows(NotInTransactionException.class, statement::assertOpen);
     }
 
     @Test
-    void reportQueryWaitingTimeToTransactionStatisticWhenFinishQueryExecution()
-    {
-        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+    void reportQueryWaitingTimeToTransactionStatisticWhenFinishQueryExecution() {
+        KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
 
-        KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction, cpuClockRef, false );
-        when( transaction.getStatistics() ).thenReturn( statistics );
-        when( transaction.executingQuery() ).thenReturn( Optional.empty() );
+        KernelTransactionImplementation.Statistics statistics =
+                new KernelTransactionImplementation.Statistics(transaction, cpuClockRef, false);
+        when(transaction.getStatistics()).thenReturn(statistics);
+        when(transaction.executingQuery()).thenReturn(Optional.empty());
 
-        KernelStatement statement = createStatement( transaction );
-        var cursorContext = contextFactory.create( "test" );
-        statement.initialize( mock( Locks.Client.class ), cursorContext, 1 );
+        KernelStatement statement = createStatement(transaction);
+        var cursorContext = contextFactory.create("test");
+        statement.initialize(mock(Locks.Client.class), cursorContext, 1);
         statement.acquire();
 
         ExecutingQuery query = getQueryWithWaitingTime();
         ExecutingQuery query2 = getQueryWithWaitingTime();
         ExecutingQuery query3 = getQueryWithWaitingTime();
 
-        statement.stopQueryExecution( query );
-        statement.stopQueryExecution( query2 );
-        statement.stopQueryExecution( query3 );
+        statement.stopQueryExecution(query);
+        statement.stopQueryExecution(query2);
+        statement.stopQueryExecution(query3);
 
-        assertEquals( 3, statistics.getWaitingTimeNanos( 1 ) );
+        assertEquals(3, statistics.getWaitingTimeNanos(1));
     }
 
     @Test
-    void emptyPageCacheStatisticOnClosedStatement()
-    {
-        var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        try ( var statement = createStatement( transaction ) )
-        {
-            var cursorContext = contextFactory.create( "test" );
-            statement.initialize( mock( Locks.Client.class ), cursorContext, 100 );
+    void emptyPageCacheStatisticOnClosedStatement() {
+        var transaction = mock(KernelTransactionImplementation.class, RETURNS_DEEP_STUBS);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        try (var statement = createStatement(transaction)) {
+            var cursorContext = contextFactory.create("test");
+            statement.initialize(mock(Locks.Client.class), cursorContext, 100);
             statement.acquire();
 
-            PageSwapper swapper = mock( PageSwapper.class, RETURNS_MOCKS );
-            try ( var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
-            {
+            PageSwapper swapper = mock(PageSwapper.class, RETURNS_MOCKS);
+            try (var pinEvent = cursorContext.getCursorTracer().beginPin(false, 1, swapper)) {
                 pinEvent.hit();
             }
-            try ( var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
-            {
+            try (var pinEvent = cursorContext.getCursorTracer().beginPin(false, 1, swapper)) {
                 pinEvent.hit();
             }
-            try ( var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
-            {
-                pinEvent.beginPageFault( 1, swapper ).close();
+            try (var pinEvent = cursorContext.getCursorTracer().beginPin(false, 1, swapper)) {
+                pinEvent.beginPageFault(1, swapper).close();
             }
-            assertEquals( 2, statement.getHits() );
-            assertEquals( 1, statement.getFaults() );
+            assertEquals(2, statement.getHits());
+            assertEquals(1, statement.getFaults());
 
             statement.close();
 
-            assertEquals( 0, statement.getHits() );
-            assertEquals( 0, statement.getFaults() );
+            assertEquals(0, statement.getHits());
+            assertEquals(0, statement.getFaults());
         }
     }
 
     @Test
-    void trackSequentialQueriesInStatement()
-    {
-        var queryFactory = new ExecutingQueryFactory( Clocks.nanoClock(), cpuClockRef, Config.defaults() );
-        var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
-        var statement = createStatement( transaction );
-        statement.initialize( mock( Locks.Client.class ), CursorContext.NULL_CONTEXT, 100 );
+    void trackSequentialQueriesInStatement() {
+        var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef, Config.defaults());
+        var transaction = mock(KernelTransactionImplementation.class, RETURNS_DEEP_STUBS);
+        var statement = createStatement(transaction);
+        statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
 
-        var query1 = queryFactory.createForStatement( statement, "test1", MapValue.EMPTY );
-        var query2 = queryFactory.createForStatement( statement, "test2", MapValue.EMPTY );
-        var query3 = queryFactory.createForStatement( statement, "test3", MapValue.EMPTY );
+        var query1 = queryFactory.createForStatement(statement, "test1", MapValue.EMPTY);
+        var query2 = queryFactory.createForStatement(statement, "test2", MapValue.EMPTY);
+        var query3 = queryFactory.createForStatement(statement, "test3", MapValue.EMPTY);
 
-        statement.startQueryExecution( query1 );
-        statement.startQueryExecution( query2 );
-        assertSame( query2, statement.executingQuery().orElseThrow() );
+        statement.startQueryExecution(query1);
+        statement.startQueryExecution(query2);
+        assertSame(query2, statement.executingQuery().orElseThrow());
 
-        statement.startQueryExecution( query3 );
-        assertSame( query3, statement.executingQuery().orElseThrow() );
+        statement.startQueryExecution(query3);
+        assertSame(query3, statement.executingQuery().orElseThrow());
 
-        statement.stopQueryExecution( query3 );
-        assertSame( query2, statement.executingQuery().orElseThrow() );
+        statement.stopQueryExecution(query3);
+        assertSame(query2, statement.executingQuery().orElseThrow());
 
-        statement.stopQueryExecution( query2 );
-        assertSame( query1, statement.executingQuery().orElseThrow() );
+        statement.stopQueryExecution(query2);
+        assertSame(query1, statement.executingQuery().orElseThrow());
 
-        statement.stopQueryExecution( query1 );
-        assertFalse( statement.executingQuery().isPresent() );
+        statement.stopQueryExecution(query1);
+        assertFalse(statement.executingQuery().isPresent());
     }
 
-    private KernelStatement createStatement( KernelTransactionImplementation transaction )
-    {
-        return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(),
-                cpuClockRef, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
-                Config.defaults( GraphDatabaseInternalSettings.track_tx_statement_close, true ) );
+    private KernelStatement createStatement(KernelTransactionImplementation transaction) {
+        return new KernelStatement(
+                transaction,
+                LockTracer.NONE,
+                new ClockContext(),
+                cpuClockRef,
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                Config.defaults(GraphDatabaseInternalSettings.track_tx_statement_close, true));
     }
 
-    private static ExecutingQuery getQueryWithWaitingTime()
-    {
-        ExecutingQuery executingQuery = mock( ExecutingQuery.class );
-        when( executingQuery.reportedWaitingTimeNanos() ).thenReturn( 1L );
+    private static ExecutingQuery getQueryWithWaitingTime() {
+        ExecutingQuery executingQuery = mock(ExecutingQuery.class);
+        when(executingQuery.reportedWaitingTimeNanos()).thenReturn(1L);
         return executingQuery;
     }
 }

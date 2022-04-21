@@ -24,21 +24,16 @@ package org.neo4j.exceptions;
  * The constructor parameters {@code parsedData} and {@code errorIndex} can optionally be provided
  * in order to conform with Java's {@code DateTimeParseException} and {@code SyntaxException}.
  */
-public class TemporalParseException extends SyntaxException
-{
-    public TemporalParseException( String errorMsg, Throwable cause )
-    {
-        super( errorMsg, cause );
+public class TemporalParseException extends SyntaxException {
+    public TemporalParseException(String errorMsg, Throwable cause) {
+        super(errorMsg, cause);
     }
 
-    public TemporalParseException( String errorMsg, String parsedData, int errorIndex )
-    {
-        super( errorMsg, parsedData, errorIndex );
+    public TemporalParseException(String errorMsg, String parsedData, int errorIndex) {
+        super(errorMsg, parsedData, errorIndex);
     }
 
-    public TemporalParseException( String errorMsg, String parsedData, int errorIndex, Throwable cause )
-    {
-        super( errorMsg, parsedData, errorIndex, cause );
+    public TemporalParseException(String errorMsg, String parsedData, int errorIndex, Throwable cause) {
+        super(errorMsg, parsedData, errorIndex, cause);
     }
-
 }

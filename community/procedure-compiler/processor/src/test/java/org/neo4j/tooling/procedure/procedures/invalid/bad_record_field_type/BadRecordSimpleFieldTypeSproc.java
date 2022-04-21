@@ -20,15 +20,12 @@
 package org.neo4j.tooling.procedure.procedures.invalid.bad_record_field_type;
 
 import java.util.stream.Stream;
-
 import org.neo4j.procedure.Procedure;
 
-public class BadRecordSimpleFieldTypeSproc
-{
+public class BadRecordSimpleFieldTypeSproc {
 
     @Procedure
-    public Stream<BadRecordSimpleFieldType> doSomething()
-    {
+    public Stream<BadRecordSimpleFieldType> doSomething() {
         return Stream.empty();
     }
 }

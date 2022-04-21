@@ -25,10 +25,13 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait RelationshipIndexPlanProvider {
-  def createPlans(indexMatches: Set[RelationshipIndexLeafPlanner.RelationshipIndexMatch],
-                  hints: Set[Hint],
-                  argumentIds: Set[String],
-                  restrictions: LeafPlanRestrictions,
-                  context: LogicalPlanningContext): Set[LogicalPlan]
+
+  def createPlans(
+    indexMatches: Set[RelationshipIndexLeafPlanner.RelationshipIndexMatch],
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    restrictions: LeafPlanRestrictions,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan]
 
 }

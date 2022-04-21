@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
@@ -31,8 +30,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * @param <KEY> type of key in this tree.
  * @param <VALUE> type of value in this value.
  */
-public interface Seeker<KEY,VALUE> extends Closeable
-{
+public interface Seeker<KEY, VALUE> extends Closeable {
     /**
      * Moves this seeker to the next result in this seek.
      *
@@ -54,8 +52,7 @@ public interface Seeker<KEY,VALUE> extends Closeable
      */
     VALUE value();
 
-    interface Factory<KEY,VALUE>
-    {
+    interface Factory<KEY, VALUE> {
         /**
          * Allocates a {@link Seeker} instance for seeking in the tree. Caller can reuse the returned instance for multiple calls to
          * {@link #seek(Seeker, Object, Object)} and in the end caller is also responsible for closing the seeker.
@@ -64,7 +61,7 @@ public interface Seeker<KEY,VALUE> extends Closeable
          * @return the allocated and reusable {@link Seeker} instance.
          * @throws IOException on I/O error opening a seeker.
          */
-        Seeker<KEY,VALUE> allocateSeeker( CursorContext cursorContext ) throws IOException;
+        Seeker<KEY, VALUE> allocateSeeker(CursorContext cursorContext) throws IOException;
 
         /**
          * Seeks hits in this tree, given a key range. Hits are iterated over using the returned {@link Seeker}.
@@ -88,9 +85,9 @@ public interface Seeker<KEY,VALUE> extends Closeable
          * @return a {@link Seeker} used to iterate over the hits within the specified key range.
          * @throws IOException on error reading from index.
          */
-        default Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive, CursorContext cursorContext ) throws IOException
-        {
-            return seek( allocateSeeker( cursorContext ), fromInclusive, toExclusive );
+        default Seeker<KEY, VALUE> seek(KEY fromInclusive, KEY toExclusive, CursorContext cursorContext)
+                throws IOException {
+            return seek(allocateSeeker(cursorContext), fromInclusive, toExclusive);
         }
 
         /**
@@ -103,6 +100,6 @@ public interface Seeker<KEY,VALUE> extends Closeable
          * @return a {@link Seeker} used to iterate over the hits within the specified key range.
          * @throws IOException on error reading from index.
          */
-        Seeker<KEY,VALUE> seek( Seeker<KEY,VALUE> seeker, KEY fromInclusive, KEY toExclusive ) throws IOException;
+        Seeker<KEY, VALUE> seek(Seeker<KEY, VALUE> seeker, KEY fromInclusive, KEY toExclusive) throws IOException;
     }
 }

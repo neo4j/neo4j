@@ -21,12 +21,10 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class ConstraintWithNameAlreadyExistsException extends SchemaRuleWithNameAlreadyExistsException
-{
+public class ConstraintWithNameAlreadyExistsException extends SchemaRuleWithNameAlreadyExistsException {
     private static final String CONSTRAINT_NAME_FORMAT = "There already exists a constraint called '%s'.";
 
-    public ConstraintWithNameAlreadyExistsException( String schemaName )
-    {
-        super( Status.Schema.ConstraintWithNameAlreadyExists, String.format( CONSTRAINT_NAME_FORMAT, schemaName ) );
+    public ConstraintWithNameAlreadyExistsException(String schemaName) {
+        super(Status.Schema.ConstraintWithNameAlreadyExists, String.format(CONSTRAINT_NAME_FORMAT, schemaName));
     }
 }

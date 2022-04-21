@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
-
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -28,36 +27,31 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 /**
  * {@link IOCursor} abstraction on top of a {@link LogEntryReader}
  */
-public class LogEntryCursor implements IOCursor<LogEntry>
-{
+public class LogEntryCursor implements IOCursor<LogEntry> {
     private final LogEntryReader logEntryReader;
     private final ReadableClosablePositionAwareChecksumChannel channel;
     private final LogPositionMarker position = new LogPositionMarker();
     private LogEntry entry;
 
-    public LogEntryCursor( LogEntryReader logEntryReader, ReadableClosablePositionAwareChecksumChannel channel )
-    {
+    public LogEntryCursor(LogEntryReader logEntryReader, ReadableClosablePositionAwareChecksumChannel channel) {
         this.logEntryReader = logEntryReader;
         this.channel = channel;
     }
 
     @Override
-    public LogEntry get()
-    {
+    public LogEntry get() {
         return entry;
     }
 
     @Override
-    public boolean next() throws IOException
-    {
-        entry = logEntryReader.readLogEntry( channel );
+    public boolean next() throws IOException {
+        entry = logEntryReader.readLogEntry(channel);
 
         return entry != null;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         channel.close();
     }
 
@@ -67,9 +61,8 @@ public class LogEntryCursor implements IOCursor<LogEntry>
      *
      * @return the log version of the most recent {@link LogEntry} returned from {@link #next()}.
      */
-    public long getCurrentLogVersion() throws IOException
-    {
-        channel.getCurrentPosition( position );
+    public long getCurrentLogVersion() throws IOException {
+        channel.getCurrentPosition(position);
         return position.getLogVersion();
     }
 }

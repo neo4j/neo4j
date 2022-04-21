@@ -38,6 +38,7 @@ class ErrorCollectingContext extends BaseContext {
   override def notificationLogger: devNullLogger.type = devNullLogger
   override def cypherExceptionFactory: CypherExceptionFactory = OpenCypherExceptionFactory(None)
   override def monitors: Monitors = ???
+
   override def errorHandler: Seq[SemanticErrorDef] => Unit = (errs: Seq[SemanticErrorDef]) =>
     errors = errs
 
@@ -47,15 +48,19 @@ class ErrorCollectingContext extends BaseContext {
 }
 
 object ErrorCollectingContext {
+
   def failWith(errorMessages: String*): Matcher[ErrorCollectingContext] = new Matcher[ErrorCollectingContext] {
+
     override def apply(context: ErrorCollectingContext): MatchResult = {
       MatchResult(
         matches = context.errors.map(_.msg) == errorMessages,
         rawFailureMessage = s"Expected errors: $errorMessages but got ${context.errors}",
-        rawNegatedFailureMessage = s"Did not expect errors: $errorMessages.")
+        rawNegatedFailureMessage = s"Did not expect errors: $errorMessages."
+      )
     }
   }
 }
+
 object NoPlannerName extends PlannerName {
   override def name = "no planner"
   override def toTextOutput = "no planner"

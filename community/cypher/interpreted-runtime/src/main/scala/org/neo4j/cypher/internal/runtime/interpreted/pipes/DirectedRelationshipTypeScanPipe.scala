@@ -25,8 +25,13 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class DirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ: LazyType, toNode: String, indexOrder: IndexOrder)
-                                           (val id: Id = Id.INVALID_ID) extends Pipe {
+case class DirectedRelationshipTypeScanPipe(
+  ident: String,
+  fromNode: String,
+  typ: LazyType,
+  toNode: String,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val ctx = state.newRowWithArgument(rowFactory)
@@ -35,12 +40,15 @@ case class DirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ
     if (typeId == LazyType.UNKNOWN) ClosingIterator.empty
     else {
       val relIterator = query.getRelationshipsByType(state.relTypeTokenReadSession.get, typeId, indexOrder)
-      PrimitiveLongHelper.map(relIterator, relationshipId => {
-        val relationship = state.query.relationshipById(relationshipId)
-        val startNode = query.nodeById(relIterator.startNodeId())
-        val endNode = query.nodeById(relIterator.endNodeId())
-        rowFactory.copyWith(ctx, ident, relationship, fromNode, startNode, toNode, endNode)
-      })
+      PrimitiveLongHelper.map(
+        relIterator,
+        relationshipId => {
+          val relationship = state.query.relationshipById(relationshipId)
+          val startNode = query.nodeById(relIterator.startNodeId())
+          val endNode = query.nodeById(relIterator.endNodeId())
+          rowFactory.copyWith(ctx, ident, relationship, fromNode, startNode, toNode, endNode)
+        }
+      )
     }
   }
 }

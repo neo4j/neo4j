@@ -32,24 +32,23 @@ import java.util.function.Predicate;
  *
  * @param <T> type of elements in this buffer.
  */
-public interface RecentBuffer<T>
-{
+public interface RecentBuffer<T> {
     /**
      * Produce element into the buffer.
      *
      * @param t element to produce
      */
-    void produce( T t );
+    void produce(T t);
 
     /**
      * Clear all elements from the buffer that meet the provided predicate.
      */
-    void clearIf( Predicate<T> predicate );
+    void clearIf(Predicate<T> predicate);
 
     /**
      * Iterate over all elements in the buffer. No elements are removed from the buffer.
      *
      * @param consumer consumer to apply on each element
      */
-    void foreach( Consumer<T> consumer );
+    void foreach(Consumer<T> consumer);
 }

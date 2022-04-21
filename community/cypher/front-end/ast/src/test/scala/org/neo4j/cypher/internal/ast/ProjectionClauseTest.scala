@@ -31,8 +31,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
   test("should introduce variables into scope") {
     // GIVEN WITH "a" as n
     val returnItem = AliasedReturnItem(literalString("a"), varFor("n"))(pos, isAutoAliased = false)
-    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
-    val withObj = With(distinct = false, listedReturnItems, None, None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem)) _
+    val withObj = With(distinct = false, listedReturnItems, None, None, None, None) _
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope
@@ -47,8 +47,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
   test("should remove variables from scope") {
     // GIVEN n WITH "a" as X
     val returnItem = AliasedReturnItem(literalString("a"), varFor("X"))(pos, isAutoAliased = false)
-    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
-    val withObj = With(distinct = false, listedReturnItems,  None, None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem)) _
+    val withObj = With(distinct = false, listedReturnItems, None, None, None, None) _
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
     val middleState = withObj.semanticCheck(beforeState).state
@@ -67,11 +67,11 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val orderBy: OrderBy = OrderBy(Seq(
       AscSortItem(prop("X", "prop1"))(pos),
       AscSortItem(prop("X", "prop2"))(pos)
-    ))_
+    )) _
 
     val returnItem = AliasedReturnItem(varFor("n"), varFor("X"))(pos, isAutoAliased = false)
-    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
-    val withObj = With(distinct = false, listedReturnItems,  Some(orderBy), None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem)) _
+    val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None) _
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
@@ -88,11 +88,11 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     // GIVEN MATCH n WITH n.prop AS introducedVariable ORDER BY introducedVariable + 2
     val orderBy: OrderBy = OrderBy(Seq(
       AscSortItem(add(varFor("introducedVariable"), literalInt(2)))(pos)
-    ))_
+    )) _
 
     val returnItem = AliasedReturnItem(prop("n", "prop"), varFor("introducedVariable"))(pos, isAutoAliased = false)
-    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
-    val withObj = With(distinct = false, listedReturnItems,  Some(orderBy), None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem)) _
+    val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None) _
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
@@ -107,21 +107,24 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
   test("test where and order by scoping referring to previous scope items") {
     // GIVEN MATCH n, m WITH m AS X ORDER BY n.foo, X.bar WHERE n.foo = 10 AND X.bar = 2
     val where: Where = Where(and(
-     equals(prop("n", "foo"), literalUnsignedInt(10)),
-     equals(prop("X", "bar"), literalUnsignedInt(2))
+      equals(prop("n", "foo"), literalUnsignedInt(10)),
+      equals(prop("X", "bar"), literalUnsignedInt(2))
     ))(pos)
 
     val orderBy: OrderBy = OrderBy(Seq(
       AscSortItem(prop("n", "foo"))(pos),
       AscSortItem(prop("X", "bar"))(pos)
-    ))_
+    )) _
 
     val returnItem = AliasedReturnItem(varFor("m"), varFor("X"))(pos, isAutoAliased = false)
-    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
-    val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, Some(where))_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem)) _
+    val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, Some(where)) _
 
     // WHEN
-    val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get.declareVariable(varFor("m"), CTNode).right.get
+    val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get.declareVariable(
+      varFor("m"),
+      CTNode
+    ).right.get
     val middleState = withObj.semanticCheck(beforeState).state
     val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
@@ -136,11 +139,11 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     // GIVEN MATCH n WITH n AS n ORDER BY n + 2
     val orderBy: OrderBy = OrderBy(Seq(
       AscSortItem(add(varFor("n"), literalInt(2)))(pos)
-    ))_
+    )) _
 
     val returnItem = AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false)
-    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
-    val withObj = With(distinct = false, listedReturnItems,  Some(orderBy), None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem)) _
+    val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None) _
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
@@ -153,7 +156,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
   test("WITH * allowed when no variables in scope") {
     // GIVEN CREATE () WITH * CREATE ()
-    val withObj = With(distinct = false, ReturnItems(includeExisting = true, Seq())_,  None, None, None, None)_
+    val withObj = With(distinct = false, ReturnItems(includeExisting = true, Seq()) _, None, None, None, None) _
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope
@@ -166,7 +169,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
   test("RETURN * not allowed when no variables in scope") {
     // GIVEN CREATE () WITH * CREATE ()
-    val withObj = Return(distinct = false, ReturnItems(includeExisting = true, Seq())_, None, None, None)_
+    val withObj = Return(distinct = false, ReturnItems(includeExisting = true, Seq()) _, None, None, None) _
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope
@@ -180,14 +183,14 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     // GIVEN MATCH n WITH n.prop as x, count(*) ORDER BY n.bar
     val orderBy: OrderBy = OrderBy(Seq(
       AscSortItem(prop("n", "bar"))(pos)
-    ))_
+    )) _
 
     val returnItems: Seq[AliasedReturnItem] = Seq(
       AliasedReturnItem(prop("n", "prop"), varFor("x"))(pos, isAutoAliased = false),
-      AliasedReturnItem(CountStar()_, varFor("count"))(pos, isAutoAliased = false)
+      AliasedReturnItem(CountStar() _, varFor("count"))(pos, isAutoAliased = false)
     )
-    val listedReturnItems = ReturnItems(includeExisting = false, returnItems)_
-    val withObj = With(distinct = false, listedReturnItems,  Some(orderBy), None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, returnItems) _
+    val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None) _
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
@@ -201,14 +204,14 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
   test("Distinct queries remove variables from scope") {
     // GIVEN MATCH n WITH DISTINCT n.prop as x ORDER BY n.bar
     val orderBy: OrderBy = OrderBy(Seq(
-      AscSortItem(Property(varFor("n"), PropertyKeyName("bar")_)_)(pos)
-    ))_
+      AscSortItem(Property(varFor("n"), PropertyKeyName("bar") _) _)(pos)
+    )) _
 
     val returnItems: Seq[AliasedReturnItem] = Seq(
-      AliasedReturnItem(Property(varFor("n"), PropertyKeyName("prop")_)_, varFor("x"))(pos, isAutoAliased = false)
+      AliasedReturnItem(Property(varFor("n"), PropertyKeyName("prop") _) _, varFor("x"))(pos, isAutoAliased = false)
     )
-    val listedReturnItems = ReturnItems(includeExisting = false, returnItems)_
-    val withObj = With(distinct = true, listedReturnItems,  Some(orderBy), None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, returnItems) _
+    val withObj = With(distinct = true, listedReturnItems, Some(orderBy), None, None, None) _
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
@@ -223,13 +226,13 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     // GIVEN MATCH n WITH n.prop as x ORDER BY n.bar
     val orderBy: OrderBy = OrderBy(Seq(
       AscSortItem(prop("n", "bar"))(pos)
-    ))_
+    )) _
 
     val returnItems: Seq[AliasedReturnItem] = Seq(
       AliasedReturnItem(prop("n", "prop"), varFor("x"))(pos, isAutoAliased = false)
     )
-    val listedReturnItems = ReturnItems(includeExisting = false, returnItems)_
-    val withObj = With(distinct = false, listedReturnItems,  Some(orderBy), None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, returnItems) _
+    val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None) _
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
@@ -244,8 +247,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val returnItems: Seq[AliasedReturnItem] = Seq(
       AliasedReturnItem(literalInt(1), varFor("x"))(pos, isAutoAliased = false)
     )
-    val listedReturnItems = ReturnItems(includeExisting = false, returnItems)_
-    val withObj = With(distinct = false, listedReturnItems,  None, None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, returnItems) _
+    val withObj = With(distinct = false, listedReturnItems, None, None, None, None) _
 
     // WHEN
     val outerState = SemanticState.clean.newChildScope.declareVariable(varFor("x"), CTNode).right.get
@@ -263,8 +266,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val returnItems: Seq[AliasedReturnItem] = Seq(
       AliasedReturnItem(literalInt(1), varFor("x").copy()(varPosition))(pos, isAutoAliased = false)
     )
-    val listedReturnItems = ReturnItems(includeExisting = false, returnItems)_
-    val returnObj = Return(distinct = false, listedReturnItems,  None, None, None)_
+    val listedReturnItems = ReturnItems(includeExisting = false, returnItems) _
+    val returnObj = Return(distinct = false, listedReturnItems, None, None, None) _
 
     // WHEN
     val outerState = SemanticState.clean.newChildScope.declareVariable(varFor("x"), CTNode).right.get

@@ -21,8 +21,7 @@ package org.neo4j.internal.schema;
 
 import org.neo4j.common.TokenNameLookup;
 
-public interface SchemaDescriptorSupplier
-{
+public interface SchemaDescriptorSupplier {
     SchemaDescriptor schema();
 
     /**
@@ -31,8 +30,7 @@ public interface SchemaDescriptorSupplier
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of this schema entity.
      */
-    default String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        return schema().userDescription( tokenNameLookup );
+    default String userDescription(TokenNameLookup tokenNameLookup) {
+        return schema().userDescription(tokenNameLookup);
     }
 }

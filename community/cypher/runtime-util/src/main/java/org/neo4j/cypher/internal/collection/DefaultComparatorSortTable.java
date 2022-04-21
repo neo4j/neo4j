@@ -19,46 +19,39 @@
  */
 package org.neo4j.cypher.internal.collection;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 import java.util.Comparator;
 import java.util.Iterator;
-
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-
 /**
  * Utility priority queue collection used to implement heap sort
  */
-public class DefaultComparatorSortTable<T> extends MemoryTrackingHeap<T>
-{
-    private static final long SHALLOW_INSTANCE_SIZE = shallowSizeOfInstance( DefaultComparatorSortTable.class );
+public class DefaultComparatorSortTable<T> extends MemoryTrackingHeap<T> {
+    private static final long SHALLOW_INSTANCE_SIZE = shallowSizeOfInstance(DefaultComparatorSortTable.class);
 
-    public DefaultComparatorSortTable( Comparator<? super T> comparator, int initialSize )
-    {
-        this( comparator, initialSize, EmptyMemoryTracker.INSTANCE );
+    public DefaultComparatorSortTable(Comparator<? super T> comparator, int initialSize) {
+        this(comparator, initialSize, EmptyMemoryTracker.INSTANCE);
     }
 
-    public DefaultComparatorSortTable( Comparator<? super T> comparator, int initialSize, MemoryTracker memoryTracker )
-    {
-        super( comparator.reversed(), initialSize, memoryTracker );
+    public DefaultComparatorSortTable(Comparator<? super T> comparator, int initialSize, MemoryTracker memoryTracker) {
+        super(comparator.reversed(), initialSize, memoryTracker);
     }
 
     @Override
-    protected long shallowInstanceSize()
-    {
+    protected long shallowInstanceSize() {
         return SHALLOW_INSTANCE_SIZE;
     }
 
-    public int getSize()
-    {
+    public int getSize() {
         return size;
     }
 
-    public void reset()
-    {
+    public void reset() {
         clear();
     }
 
@@ -66,40 +59,33 @@ public class DefaultComparatorSortTable<T> extends MemoryTrackingHeap<T>
      * Returns all the elements in no particular order
      */
     @VisibleForTesting
-    Iterator<T> unorderedIterator()
-    {
+    Iterator<T> unorderedIterator() {
         return getIterator();
     }
 
-    public boolean add( T e )
-    {
-        return super.insert( e );
+    public boolean add(T e) {
+        return super.insert(e);
     }
 
-    public T peek()
-    {
+    public T peek() {
         return heap[0];
     }
 
-    public T poll()
-    {
+    public T poll() {
         var result = heap[0];
-        if ( result != null )
-        {
+        if (result != null) {
             int n = --size;
             // Take out the bottom/last element and sift down from the top/first
             var x = heap[n];
             heap[n] = null;
-            if ( n > 0 )
-            {
-                siftDown( 0, x, n );
+            if (n > 0) {
+                siftDown(0, x, n);
             }
         }
         return result;
     }
 
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return size == 0;
     }
 
@@ -111,14 +97,12 @@ public class DefaultComparatorSortTable<T> extends MemoryTrackingHeap<T>
      *
      * @param x element to sift down
      */
-    public void siftDown( T x )
-    {
-        super.siftDown( 0, x, size );
+    public void siftDown(T x) {
+        super.siftDown(0, x, size);
     }
 
     @Override
-    protected void overflow( long maxSize )
-    {
-        throw new CypherExecutionException( "Sort table cannot hold more than " + maxSize + " elements." );
+    protected void overflow(long maxSize) {
+        throw new CypherExecutionException("Sort table cannot hold more than " + maxSize + " elements.");
     }
 }

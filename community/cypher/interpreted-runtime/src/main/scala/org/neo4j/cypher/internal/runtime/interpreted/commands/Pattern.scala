@@ -33,15 +33,15 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import scala.collection.Map
 
 trait Pattern extends AstNode[Pattern] {
-  def possibleStartPoints: Seq[(String,CypherType)]
-  def relTypes:Seq[String]
+  def possibleStartPoints: Seq[(String, CypherType)]
+  def relTypes: Seq[String]
 
   protected def leftArrow(dir: SemanticDirection): String = if (dir == INCOMING) "<-" else "-"
   protected def rightArrow(dir: SemanticDirection): String = if (dir == OUTGOING) "->" else "-"
 
-  def rewrite( f : Expression => Expression) : Pattern
+  def rewrite(f: Expression => Expression): Pattern
 
-  def rels:Seq[String]
+  def rels: Seq[String]
 
   def variables: Seq[String] = possibleStartPoints.map(_._1)
 }
@@ -51,21 +51,21 @@ object Pattern {
 }
 
 object RelationshipPattern {
+
   def unapply(x: Any): Option[(RelationshipPattern, SingleNode, SingleNode)] = x match {
-    case pattern@ShortestPath(_, left, right, _, _, _, _, _, _)          => Some((pattern, left, right))
-    case _                                                            => None
+    case pattern @ ShortestPath(_, left, right, _, _, _, _, _, _) => Some((pattern, left, right))
+    case _                                                        => None
   }
 }
 
 trait RelationshipPattern {
-  def left:SingleNode
-  def right:SingleNode
+  def left: SingleNode
+  def right: SingleNode
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): Pattern
 }
 
-case class SingleNode(name: String,
-                      labels: Seq[KeyToken] = Seq.empty,
-                      properties: Map[String, Expression] = Map.empty) extends Pattern with GraphElementPropertyFunctions {
+case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, properties: Map[String, Expression] = Map.empty)
+    extends Pattern with GraphElementPropertyFunctions {
   override def possibleStartPoints: Seq[(String, CypherType)] = Seq(name -> CTNode)
 
   def predicate = True()
@@ -74,7 +74,8 @@ case class SingleNode(name: String,
 
   override def relTypes: Seq[String] = Seq.empty
 
-  override def rewrite(f: Expression => Expression) = SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), properties.rewrite(f))
+  override def rewrite(f: Expression => Expression) =
+    SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), properties.rewrite(f))
 
   override def children: Seq[AstNode[_]] = labels ++ properties.values
 
@@ -94,19 +95,20 @@ abstract class PathPattern extends Pattern with RelationshipPattern {
   def relIterator: Option[String]
 }
 
+case class ShortestPath(
+  pathName: String,
+  left: SingleNode,
+  right: SingleNode,
+  relTypes: Seq[String],
+  dir: SemanticDirection,
+  allowZeroLength: Boolean,
+  maxDepth: Option[Int],
+  single: Boolean,
+  relIterator: Option[String]
+) extends PathPattern {
 
-case class ShortestPath(pathName: String,
-                        left: SingleNode,
-                        right: SingleNode,
-                        relTypes: Seq[String],
-                        dir: SemanticDirection,
-                        allowZeroLength: Boolean,
-                        maxDepth: Option[Int],
-                        single: Boolean,
-                        relIterator: Option[String])
-  extends PathPattern {
-
-  override def toString: String = pathName + "=" + algo + "(" + left + leftArrow(dir) + relInfo + rightArrow(dir) + right + ")"
+  override def toString: String =
+    pathName + "=" + algo + "(" + left + leftArrow(dir) + relInfo + rightArrow(dir) + right + ")"
 
   private def algo = if (single) "singleShortestPath" else "allShortestPath"
 
@@ -122,10 +124,21 @@ case class ShortestPath(pathName: String,
     info + "]"
   }
 
-  override lazy val possibleStartPoints: Seq[(String, CypherType)] = left.possibleStartPoints ++ right.possibleStartPoints
+  override lazy val possibleStartPoints: Seq[(String, CypherType)] =
+    left.possibleStartPoints ++ right.possibleStartPoints
 
   override def rewrite(f: Expression => Expression) =
-    ShortestPath(pathName, left.rewrite(f), right.rewrite(f), relTypes, dir, allowZeroLength, maxDepth, single, relIterator)
+    ShortestPath(
+      pathName,
+      left.rewrite(f),
+      right.rewrite(f),
+      relTypes,
+      dir,
+      allowZeroLength,
+      maxDepth,
+      single,
+      relIterator
+    )
 
   override def rels: Seq[String] = Seq()
 

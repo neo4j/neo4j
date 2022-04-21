@@ -35,8 +35,9 @@ class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with 
         SingleQuery(
           Seq(create(
             nodePat(Some("n"), namePos = (1, 16, 15), position = (1, 15, 14)),
-            (1, 8, 7))))
-        (defaultPos),
+            (1, 8, 7)
+          ))
+        )(defaultPos),
         Some(InTransactionsParameters(None)(1, 21, 20))
       )(defaultPos)
 
@@ -57,17 +58,20 @@ class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with 
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROW") {
-    val expected = subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(42))), create(nodePat(Some("n"))))
+    val expected =
+      subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(42))), create(nodePat(Some("n"))))
     gives(expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROWS") {
-    val expected = subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(42))), create(nodePat(Some("n"))))
+    val expected =
+      subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(42))), create(nodePat(Some("n"))))
     gives(expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF $param ROWS") {
-    val expected = subqueryCallInTransactions(inTransactionsParameters(Some(parameter("param", CTAny))), create(nodePat(Some("n"))))
+    val expected =
+      subqueryCallInTransactions(inTransactionsParameters(Some(parameter("param", CTAny))), create(nodePat(Some("n"))))
     gives(expected)
   }
 

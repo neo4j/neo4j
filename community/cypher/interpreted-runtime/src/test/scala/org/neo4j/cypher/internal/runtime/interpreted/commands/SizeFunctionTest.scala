@@ -37,48 +37,48 @@ import org.neo4j.values.storable.Values.longValue
 class SizeFunctionTest extends CypherFunSuite {
 
   test("size can be used on collections") {
-    //given
+    // given
     val l = Seq("it", "was", "the")
     val m = CypherRow.from("l" -> l)
     val sizeFunction = SizeFunction(Variable("l"))
 
-    //when
+    // when
     val result = sizeFunction.apply(m, QueryStateHelper.empty)
 
-    //then
+    // then
     result should equal(longValue(3))
   }
 
   test("size can be used on strings") {
-    //given
+    // given
     val s = "it was the"
     val m = CypherRow.from("s" -> s)
     val sizeFunction = SizeFunction(Variable("s"))
 
-    //when
+    // when
     val result = sizeFunction.apply(m, QueryStateHelper.empty)
 
-    //then
+    // then
     result should equal(longValue(10))
   }
 
   test("size cannot be used on paths") {
-    //given
+    // given
     val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
     val m = CypherRow.from("p" -> p)
     val sizeFunction = SizeFunction(Variable("p"))
 
-    //when/then
+    // when/then
     val e = intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
     e.getMessage should be("Invalid input for function 'size()': Expected a String or List, got: Path{(0)-[0]-(0)}")
   }
 
   test("size cannot be used on integers") {
-    //given
+    // given
     val m = CypherRow.from("p" -> Values.of(33))
     val sizeFunction = SizeFunction(Variable("p"))
 
-    //when/then
+    // when/then
     val e = intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
     e.getMessage should be("Invalid input for function 'size()': Expected a String or List, got: Int(33)")
   }

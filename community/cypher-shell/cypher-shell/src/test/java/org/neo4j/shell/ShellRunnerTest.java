@@ -19,27 +19,25 @@
  */
 package org.neo4j.shell;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.NonInteractiveShellRunner;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-class ShellRunnerTest
-{
+class ShellRunnerTest {
     @Test
-    void inputIsNonInteractiveIfForced() throws Exception
-    {
+    void inputIsNonInteractiveIfForced() throws Exception {
         CliArgs args = new CliArgs();
-        args.setNonInteractive( true );
-        var terminal = mock( CypherShellTerminal.class );
-        when( terminal.isInteractive() ).thenReturn( true );
-        ShellRunner runner = new ShellRunner.Factory().create( args, mock( CypherShell.class ), mock( Printer.class ), terminal );
-        assertTrue( runner instanceof NonInteractiveShellRunner, "Should be non-interactive shell runner when forced" );
+        args.setNonInteractive(true);
+        var terminal = mock(CypherShellTerminal.class);
+        when(terminal.isInteractive()).thenReturn(true);
+        ShellRunner runner =
+                new ShellRunner.Factory().create(args, mock(CypherShell.class), mock(Printer.class), terminal);
+        assertTrue(runner instanceof NonInteractiveShellRunner, "Should be non-interactive shell runner when forced");
     }
 }

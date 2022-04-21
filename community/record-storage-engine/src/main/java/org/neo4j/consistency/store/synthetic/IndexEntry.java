@@ -19,46 +19,44 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
+import static java.lang.String.format;
+
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-import static java.lang.String.format;
-
 /**
  * Synthetic record type that stands in for a real record to fit in conveniently
  * with consistency checking
  */
-public class IndexEntry extends AbstractBaseRecord
-{
+public class IndexEntry extends AbstractBaseRecord {
     private final IndexDescriptor indexDescriptor;
     private final TokenNameLookup tokenNameLookup;
 
-    public IndexEntry( IndexDescriptor indexDescriptor, TokenNameLookup tokenNameLookup, long nodeId )
-    {
-        super( nodeId );
+    public IndexEntry(IndexDescriptor indexDescriptor, TokenNameLookup tokenNameLookup, long nodeId) {
+        super(nodeId);
         this.indexDescriptor = indexDescriptor;
         this.tokenNameLookup = tokenNameLookup;
-        setInUse( true );
+        setInUse(true);
     }
 
     @Override
-    public void clear()
-    {
-        initialize( false );
+    public void clear() {
+        initialize(false);
     }
 
     @Override
-    public IndexEntry copy()
-    {
-        throw new UnsupportedOperationException( "Synthetic records cannot be copied." );
+    public IndexEntry copy() {
+        throw new UnsupportedOperationException("Synthetic records cannot be copied.");
     }
 
     @Override
-    public String toString()
-    {
-        return format( "IndexEntry[%s=%d, index=%s]", indexDescriptor.schema().entityType() == EntityType.NODE ? "nodeId" : "relationshipId", getId(),
-                indexDescriptor.userDescription( tokenNameLookup ) );
+    public String toString() {
+        return format(
+                "IndexEntry[%s=%d, index=%s]",
+                indexDescriptor.schema().entityType() == EntityType.NODE ? "nodeId" : "relationshipId",
+                getId(),
+                indexDescriptor.userDescription(tokenNameLookup));
     }
 }

@@ -21,8 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.graphdb.RelationshipType;
 
-public enum TestRelType implements RelationshipType
-{
+public enum TestRelType implements RelationshipType {
     IN,
     OUT,
     LOOP

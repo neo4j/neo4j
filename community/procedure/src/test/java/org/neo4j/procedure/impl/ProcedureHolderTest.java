@@ -19,79 +19,76 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.NoSuchElementException;
-
-import org.neo4j.internal.kernel.api.procs.QualifiedName;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ProcedureHolderTest
-{
+import java.util.NoSuchElementException;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+
+class ProcedureHolderTest {
     @Test
-    void shouldGetProcedureFromHolder()
-    {
+    void shouldGetProcedureFromHolder() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qualifiedName = new QualifiedName( new String[0], "CaseSensitive" );
+        QualifiedName qualifiedName = new QualifiedName(new String[0], "CaseSensitive");
         String item = "CaseSensitiveItem";
-        procHolder.put( qualifiedName, item, false );
+        procHolder.put(qualifiedName, item, false);
 
         // then
-        assertThat( procHolder.get( qualifiedName ) ).isEqualTo( item );
-        assertThat( procHolder.idOf( qualifiedName ) ).isEqualTo( 0 );
+        assertThat(procHolder.get(qualifiedName)).isEqualTo(item);
+        assertThat(procHolder.idOf(qualifiedName)).isEqualTo(0);
     }
 
     @Test
-    void okToHaveProcsOnlyDifferByCase()
-    {
+    void okToHaveProcsOnlyDifferByCase() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        procHolder.put( new QualifiedName( new String[0], "CASESENSITIVE" ), "CASESENSITIVEItem", false );
-        procHolder.put( new QualifiedName( new String[0], "CaseSensitive" ), "CaseSensitiveItem", false );
+        procHolder.put(new QualifiedName(new String[0], "CASESENSITIVE"), "CASESENSITIVEItem", false);
+        procHolder.put(new QualifiedName(new String[0], "CaseSensitive"), "CaseSensitiveItem", false);
 
         // then
-        assertThat( procHolder.get( new QualifiedName( new String[0], "CASESENSITIVE" ) ) ).isEqualTo( "CASESENSITIVEItem" );
-        assertThat( procHolder.get( new QualifiedName( new String[0], "CaseSensitive" ) ) ).isEqualTo( "CaseSensitiveItem" );
-        assertThat( procHolder.idOf( new QualifiedName( new String[0], "CASESENSITIVE" ) ) ).isEqualTo( 0 );
-        assertThat( procHolder.idOf( new QualifiedName( new String[0], "CaseSensitive" ) ) ).isEqualTo( 1 );
+        assertThat(procHolder.get(new QualifiedName(new String[0], "CASESENSITIVE")))
+                .isEqualTo("CASESENSITIVEItem");
+        assertThat(procHolder.get(new QualifiedName(new String[0], "CaseSensitive")))
+                .isEqualTo("CaseSensitiveItem");
+        assertThat(procHolder.idOf(new QualifiedName(new String[0], "CASESENSITIVE")))
+                .isEqualTo(0);
+        assertThat(procHolder.idOf(new QualifiedName(new String[0], "CaseSensitive")))
+                .isEqualTo(1);
     }
 
     @Test
-    void shouldGetCaseInsensitiveFromHolder()
-    {
+    void shouldGetCaseInsensitiveFromHolder() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qualifiedName = new QualifiedName( new String[0], "CaseInSensitive" );
+        QualifiedName qualifiedName = new QualifiedName(new String[0], "CaseInSensitive");
         String item = "CaseInSensitiveItem";
-        procHolder.put( qualifiedName, item, true );
+        procHolder.put(qualifiedName, item, true);
 
         // then
-        QualifiedName lowerCaseName = new QualifiedName( new String[0], "caseinsensitive" );
-        assertThat( procHolder.get( lowerCaseName ) ).isEqualTo( item );
-        assertThat( procHolder.idOf( lowerCaseName ) ).isEqualTo( 0 );
+        QualifiedName lowerCaseName = new QualifiedName(new String[0], "caseinsensitive");
+        assertThat(procHolder.get(lowerCaseName)).isEqualTo(item);
+        assertThat(procHolder.idOf(lowerCaseName)).isEqualTo(0);
     }
 
     @Test
-    void canOverwriteFunctionAndChangeCaseSensitivity()
-    {
+    void canOverwriteFunctionAndChangeCaseSensitivity() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qualifiedName = new QualifiedName( new String[0], "CaseInSensitive" );
+        QualifiedName qualifiedName = new QualifiedName(new String[0], "CaseInSensitive");
         String item = "CaseInSensitiveItem";
-        procHolder.put( qualifiedName, item, true );
+        procHolder.put(qualifiedName, item, true);
 
         // then
-        QualifiedName lowerCaseName = new QualifiedName( new String[0], "caseinsensitive" );
-        assertThat( procHolder.get( lowerCaseName ) ).isEqualTo( item );
-        assertThat( procHolder.idOf( lowerCaseName ) ).isEqualTo( 0 );
+        QualifiedName lowerCaseName = new QualifiedName(new String[0], "caseinsensitive");
+        assertThat(procHolder.get(lowerCaseName)).isEqualTo(item);
+        assertThat(procHolder.idOf(lowerCaseName)).isEqualTo(0);
 
         // and then
-        procHolder.put( qualifiedName, item, false );
-        assertNull( procHolder.get( lowerCaseName ) );
-        assertThrows( NoSuchElementException.class, () -> procHolder.idOf( lowerCaseName ) );
+        procHolder.put(qualifiedName, item, false);
+        assertNull(procHolder.get(lowerCaseName));
+        assertThrows(NoSuchElementException.class, () -> procHolder.idOf(lowerCaseName));
     }
 }

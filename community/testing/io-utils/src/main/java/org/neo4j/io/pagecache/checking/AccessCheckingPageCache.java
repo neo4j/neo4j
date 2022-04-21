@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.checking;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -34,16 +33,13 @@ import org.neo4j.io.pagecache.PagedFile;
  * {@link PageCursor#shouldRetry()} and asserting that flag not being cleared with doing
  * {@link PageCursor#next()}, {@link PageCursor#next(long)} and {@link PageCursor#close()}.
  */
-public class AccessCheckingPageCache extends DelegatingPageCache
-{
-    public AccessCheckingPageCache( PageCache delegate )
-    {
-        super( delegate );
+public class AccessCheckingPageCache extends DelegatingPageCache {
+    public AccessCheckingPageCache(PageCache delegate) {
+        super(delegate);
     }
 
     @Override
-    public PagedFile map( Path path, int pageSize, String databaseName ) throws IOException
-    {
-        return new AccessCheckingPagedFile( super.map( path, pageSize, databaseName ) );
+    public PagedFile map(Path path, int pageSize, String databaseName) throws IOException {
+        return new AccessCheckingPagedFile(super.map(path, pageSize, databaseName));
     }
 }

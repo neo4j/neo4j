@@ -19,22 +19,16 @@
  */
 package org.neo4j.shell.test;
 
-public final class Util
-{
-    private Util()
-    {
-    }
+public final class Util {
+    private Util() {}
 
-    public static String[] asArray( String... arguments )
-    {
+    public static String[] asArray(String... arguments) {
         return arguments;
     }
 
-    public static class NotImplementedYetException extends RuntimeException
-    {
-        public NotImplementedYetException( String message )
-        {
-            super( message );
+    public static class NotImplementedYetException extends RuntimeException {
+        public NotImplementedYetException(String message) {
+            super(message);
         }
     }
 }

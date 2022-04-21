@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.lt.LithuanianAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Lithuanian extends AnalyzerProvider
-{
-    public Lithuanian()
-    {
-        super( "lithuanian" );
+public class Lithuanian extends AnalyzerProvider {
+    public Lithuanian() {
+        super("lithuanian");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new LithuanianAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Lithuanian analyzer with stemming and stop word filtering.";
     }
 }

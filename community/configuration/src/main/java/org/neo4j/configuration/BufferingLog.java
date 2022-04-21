@@ -21,7 +21,6 @@ package org.neo4j.configuration;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
-
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Neo4jLogMessage;
 import org.neo4j.logging.Neo4jMessageSupplier;
@@ -44,146 +43,122 @@ import org.neo4j.logging.Neo4jMessageSupplier;
  * subjected to an unbounded quantity of log messages, since the buffer keeps
  * all messages until it gets a chance to replay them.
  */
-public class BufferingLog implements InternalLog
-{
+public class BufferingLog implements InternalLog {
     @FunctionalInterface
-    private interface LogMessage
-    {
-        void replayInto( InternalLog other );
+    private interface LogMessage {
+        void replayInto(InternalLog other);
     }
 
     private final Queue<LogMessage> buffer = new ArrayDeque<>();
 
     @Override
-    public boolean isDebugEnabled()
-    {
+    public boolean isDebugEnabled() {
         return true;
     }
 
     @Override
-    public synchronized void debug( String message )
-    {
-        buffer.add( other -> other.debug( message ) );
+    public synchronized void debug(String message) {
+        buffer.add(other -> other.debug(message));
     }
 
     @Override
-    public synchronized void debug( String message, Throwable throwable )
-    {
-        buffer.add( other -> other.debug( message, throwable ) );
+    public synchronized void debug(String message, Throwable throwable) {
+        buffer.add(other -> other.debug(message, throwable));
     }
 
     @Override
-    public synchronized void debug( String format, Object... arguments )
-    {
-        buffer.add( other -> other.debug( format, arguments ) );
+    public synchronized void debug(String format, Object... arguments) {
+        buffer.add(other -> other.debug(format, arguments));
     }
 
     @Override
-    public synchronized void info( String message )
-    {
-        buffer.add( other -> other.info( message ) );
+    public synchronized void info(String message) {
+        buffer.add(other -> other.info(message));
     }
 
     @Override
-    public synchronized void info( String message, Throwable throwable )
-    {
-        buffer.add( other -> other.info( message, throwable ) );
+    public synchronized void info(String message, Throwable throwable) {
+        buffer.add(other -> other.info(message, throwable));
     }
 
     @Override
-    public synchronized void info( String format, Object... arguments )
-    {
-        buffer.add( other -> other.info( format, arguments ) );
+    public synchronized void info(String format, Object... arguments) {
+        buffer.add(other -> other.info(format, arguments));
     }
 
     @Override
-    public synchronized void warn( String message )
-    {
-        buffer.add( other -> other.warn( message ) );
+    public synchronized void warn(String message) {
+        buffer.add(other -> other.warn(message));
     }
 
     @Override
-    public synchronized void warn( String message, Throwable throwable )
-    {
-        buffer.add( other -> other.warn( message, throwable ) );
+    public synchronized void warn(String message, Throwable throwable) {
+        buffer.add(other -> other.warn(message, throwable));
     }
 
     @Override
-    public synchronized void warn( String format, Object... arguments )
-    {
-        buffer.add( other -> other.warn( format, arguments ) );
+    public synchronized void warn(String format, Object... arguments) {
+        buffer.add(other -> other.warn(format, arguments));
     }
 
     @Override
-    public synchronized void error( String message )
-    {
-        buffer.add( other -> other.error( message ) );
+    public synchronized void error(String message) {
+        buffer.add(other -> other.error(message));
     }
 
     @Override
-    public synchronized void error( String message, Throwable throwable )
-    {
-        buffer.add( other -> other.error( message, throwable ) );
+    public synchronized void error(String message, Throwable throwable) {
+        buffer.add(other -> other.error(message, throwable));
     }
 
     @Override
-    public synchronized void error( String format, Object... arguments )
-    {
-        buffer.add( other -> other.error( format, arguments ) );
+    public synchronized void error(String format, Object... arguments) {
+        buffer.add(other -> other.error(format, arguments));
     }
 
     @Override
-    public synchronized void debug( Neo4jLogMessage message )
-    {
-        buffer.add( other -> other.debug( message ) );
+    public synchronized void debug(Neo4jLogMessage message) {
+        buffer.add(other -> other.debug(message));
     }
 
     @Override
-    public synchronized void debug( Neo4jMessageSupplier supplier )
-    {
-        buffer.add( other -> other.debug( supplier ) );
+    public synchronized void debug(Neo4jMessageSupplier supplier) {
+        buffer.add(other -> other.debug(supplier));
     }
 
     @Override
-    public synchronized void info( Neo4jLogMessage message )
-    {
-        buffer.add( other -> other.info( message ) );
+    public synchronized void info(Neo4jLogMessage message) {
+        buffer.add(other -> other.info(message));
     }
 
     @Override
-    public synchronized void info( Neo4jMessageSupplier supplier )
-    {
-        buffer.add( other -> other.info( supplier ) );
+    public synchronized void info(Neo4jMessageSupplier supplier) {
+        buffer.add(other -> other.info(supplier));
     }
 
     @Override
-    public synchronized void warn( Neo4jLogMessage message )
-    {
-        buffer.add( other -> other.warn( message ) );
+    public synchronized void warn(Neo4jLogMessage message) {
+        buffer.add(other -> other.warn(message));
     }
 
     @Override
-    public synchronized void warn( Neo4jMessageSupplier supplier )
-    {
-        buffer.add( other -> other.warn( supplier ) );
+    public synchronized void warn(Neo4jMessageSupplier supplier) {
+        buffer.add(other -> other.warn(supplier));
     }
 
     @Override
-    public synchronized void error( Neo4jLogMessage message )
-    {
-        buffer.add( other -> other.error( message ) );
+    public synchronized void error(Neo4jLogMessage message) {
+        buffer.add(other -> other.error(message));
     }
 
     @Override
-    public synchronized void error( Neo4jMessageSupplier supplier )
-    {
-        buffer.add( other -> other.error( supplier ) );
+    public synchronized void error(Neo4jMessageSupplier supplier) {
+        buffer.add(other -> other.error(supplier));
     }
 
     @Override
-    public synchronized void error( Neo4jLogMessage message, Throwable throwable )
-    {
-        buffer.add( other -> other.error( message, throwable ) );
+    public synchronized void error(Neo4jLogMessage message, Throwable throwable) {
+        buffer.add(other -> other.error(message, throwable));
     }
 
     /**
@@ -191,14 +166,11 @@ public class BufferingLog implements InternalLog
      *
      * @param other the log to reply into
      */
-    public void replayInto( InternalLog other )
-    {
-        synchronized ( buffer )
-        {
+    public void replayInto(InternalLog other) {
+        synchronized (buffer) {
             LogMessage message = buffer.poll();
-            while ( message != null )
-            {
-                message.replayInto( other );
+            while (message != null) {
+                message.replayInto(other);
                 message = buffer.poll();
             }
         }

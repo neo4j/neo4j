@@ -21,22 +21,19 @@ package org.neo4j.kernel.api.query;
 
 import org.neo4j.values.virtual.MapValue;
 
-public interface QueryObfuscator
-{
-    String obfuscateText( String rawQueryText );
-    MapValue obfuscateParameters( MapValue rawQueryParameters );
+public interface QueryObfuscator {
+    String obfuscateText(String rawQueryText);
 
-    QueryObfuscator PASSTHROUGH = new QueryObfuscator()
-    {
+    MapValue obfuscateParameters(MapValue rawQueryParameters);
+
+    QueryObfuscator PASSTHROUGH = new QueryObfuscator() {
         @Override
-        public String obfuscateText( String rawQueryText )
-        {
+        public String obfuscateText(String rawQueryText) {
             return rawQueryText;
         }
 
         @Override
-        public MapValue obfuscateParameters( MapValue rawQueryParameters )
-        {
+        public MapValue obfuscateParameters(MapValue rawQueryParameters) {
             return rawQueryParameters;
         }
     };

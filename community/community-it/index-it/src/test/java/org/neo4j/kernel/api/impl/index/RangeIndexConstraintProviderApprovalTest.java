@@ -20,18 +20,16 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.junit.jupiter.api.BeforeAll;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class RangeIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
-{
+public class RangeIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest {
     @BeforeAll
-    public static void init()
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        setupBeforeAllTests( managementService, IndexType.RANGE );
+    public static void init() {
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder().impermanent().build();
+        setupBeforeAllTests(managementService, IndexType.RANGE);
     }
 }

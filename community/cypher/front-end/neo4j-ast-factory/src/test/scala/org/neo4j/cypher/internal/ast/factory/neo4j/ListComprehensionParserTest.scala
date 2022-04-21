@@ -35,30 +35,40 @@ class ListComprehensionParserTest extends JavaccParserTestBase[Expression, Any] 
   test("tests") {
 
     parsing("[ a in p WHERE a.foo > 123 ]") shouldGive
-      expressions.ListComprehension(ExtractScope(expressions.Variable("a")(t),
-                                         Some(GreaterThan(
-                                           Property(expressions.Variable("a")(t),
-                                                    expressions.PropertyKeyName("foo")(t))(t),
-                                           SignedDecimalIntegerLiteral("123")(t))(t)),
-                                         None)(t),
-                            expressions.Variable("p")(t))(t)
+      expressions.ListComprehension(
+        ExtractScope(
+          expressions.Variable("a")(t),
+          Some(GreaterThan(
+            Property(expressions.Variable("a")(t), expressions.PropertyKeyName("foo")(t))(t),
+            SignedDecimalIntegerLiteral("123")(t)
+          )(t)),
+          None
+        )(t),
+        expressions.Variable("p")(t)
+      )(t)
 
     parsing("[ a in p | a.foo ]") shouldGive
-      expressions.ListComprehension(ExtractScope(expressions.Variable("a")(t),
-                                         None,
-                                         Some(Property(expressions.Variable("a")(t),expressions.PropertyKeyName("foo")(t))(t))
-                                        )(t),
-                            expressions.Variable("p")(t))(t)
+      expressions.ListComprehension(
+        ExtractScope(
+          expressions.Variable("a")(t),
+          None,
+          Some(Property(expressions.Variable("a")(t), expressions.PropertyKeyName("foo")(t))(t))
+        )(t),
+        expressions.Variable("p")(t)
+      )(t)
 
     parsing("[ a in p WHERE a.foo > 123 | a.foo ]") shouldGive
-      expressions.ListComprehension(ExtractScope(expressions.Variable("a")(t),
-                                         Some(GreaterThan(
-                                           Property(expressions.Variable("a")(t),
-                                                    expressions.PropertyKeyName("foo")(t))(t),
-                                           SignedDecimalIntegerLiteral("123")(t))(t)),
-                                         Some(Property(expressions.Variable("a")(t),expressions.PropertyKeyName("foo")(t))(t))
-                                        )(t),
-                            expressions.Variable("p")(t))(t)
+      expressions.ListComprehension(
+        ExtractScope(
+          expressions.Variable("a")(t),
+          Some(GreaterThan(
+            Property(expressions.Variable("a")(t), expressions.PropertyKeyName("foo")(t))(t),
+            SignedDecimalIntegerLiteral("123")(t)
+          )(t)),
+          Some(Property(expressions.Variable("a")(t), expressions.PropertyKeyName("foo")(t))(t))
+        )(t),
+        expressions.Variable("p")(t)
+      )(t)
   }
 
   override def convert(result: Expression): Any = result

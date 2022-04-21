@@ -24,20 +24,18 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 
-final class CommandHelpers
-{
-    private CommandHelpers()
-    { // should not be constructable
+final class CommandHelpers {
+    private CommandHelpers() { // should not be constructable
     }
 
-    static Config buildConfig( ExecutionContext ctx, boolean allowCommandExpansion )
-    {
+    static Config buildConfig(ExecutionContext ctx, boolean allowCommandExpansion) {
         Config cfg = Config.newBuilder()
-                           .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                           .commandExpansion( allowCommandExpansion )
-                           .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() )
-                           .set( GraphDatabaseSettings.read_only_database_default, true ).build();
-        ConfigUtils.disableAllConnectors( cfg );
+                .fromFileNoThrow(ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME))
+                .commandExpansion(allowCommandExpansion)
+                .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir())
+                .set(GraphDatabaseSettings.read_only_database_default, true)
+                .build();
+        ConfigUtils.disableAllConnectors(cfg);
         return cfg;
     }
 }

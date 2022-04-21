@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static org.neo4j.kernel.impl.api.KernelTransactions.SYSTEM_TRANSACTION_ID;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -28,18 +31,13 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 
-import static org.neo4j.kernel.impl.api.KernelTransactions.SYSTEM_TRANSACTION_ID;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-public class IndexedStoreScan implements StoreScan
-{
+public class IndexedStoreScan implements StoreScan {
     private final Locks locks;
     private final Config config;
     private final StoreScan delegate;
     private final IndexDescriptor index;
 
-    public IndexedStoreScan( Locks locks, IndexDescriptor index, Config config, StoreScan delegate )
-    {
+    public IndexedStoreScan(Locks locks, IndexDescriptor index, Config config, StoreScan delegate) {
         this.locks = locks;
         this.config = config;
         this.delegate = delegate;
@@ -47,31 +45,27 @@ public class IndexedStoreScan implements StoreScan
     }
 
     @Override
-    public void run( ExternalUpdatesCheck externalUpdatesCheck )
-    {
-        try ( Locks.Client client = locks.newClient() )
-        {
-            client.initialize( NoLeaseClient.INSTANCE, SYSTEM_TRANSACTION_ID, INSTANCE, config );
-            client.acquireShared( LockTracer.NONE, index.schema().keyType(), index.schema().lockingKeys() );
-            delegate.run( externalUpdatesCheck );
+    public void run(ExternalUpdatesCheck externalUpdatesCheck) {
+        try (Locks.Client client = locks.newClient()) {
+            client.initialize(NoLeaseClient.INSTANCE, SYSTEM_TRANSACTION_ID, INSTANCE, config);
+            client.acquireShared(
+                    LockTracer.NONE, index.schema().keyType(), index.schema().lockingKeys());
+            delegate.run(externalUpdatesCheck);
         }
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         delegate.stop();
     }
 
     @Override
-    public PopulationProgress getProgress()
-    {
+    public PopulationProgress getProgress() {
         return delegate.getProgress();
     }
 
     @Override
-    public void setPhaseTracker( PhaseTracker phaseTracker )
-    {
-        delegate.setPhaseTracker( phaseTracker );
+    public void setPhaseTracker(PhaseTracker phaseTracker) {
+        delegate.setPhaseTracker(phaseTracker);
     }
 }

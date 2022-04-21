@@ -19,47 +19,40 @@
  */
 package org.neo4j.kernel.monitoring;
 
+import static java.util.Objects.requireNonNull;
+
 import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.VmPauseMonitor;
 
-import static java.util.Objects.requireNonNull;
-
-public class LoggingVmPauseMonitor implements VmPauseMonitor.Monitor
-{
+public class LoggingVmPauseMonitor implements VmPauseMonitor.Monitor {
     private final InternalLog log;
 
-    public LoggingVmPauseMonitor( InternalLog log )
-    {
-        this.log = requireNonNull( log );
+    public LoggingVmPauseMonitor(InternalLog log) {
+        this.log = requireNonNull(log);
     }
 
     @Override
-    public void started()
-    {
-        log.debug( "Starting VM pause monitor" );
+    public void started() {
+        log.debug("Starting VM pause monitor");
     }
 
     @Override
-    public void stopped()
-    {
-        log.debug( "Stopping VM pause monitor" );
+    public void stopped() {
+        log.debug("Stopping VM pause monitor");
     }
 
     @Override
-    public void interrupted()
-    {
-        log.debug( "VM pause monitor stopped" );
+    public void interrupted() {
+        log.debug("VM pause monitor stopped");
     }
 
     @Override
-    public void failed( Exception e )
-    {
-        log.debug( "VM pause monitor failed", e );
+    public void failed(Exception e) {
+        log.debug("VM pause monitor failed", e);
     }
 
     @Override
-    public void pauseDetected( VmPauseMonitor.VmPauseInfo info )
-    {
-        log.warn( "Detected VM stop-the-world pause: %s", info );
+    public void pauseDetected(VmPauseMonitor.VmPauseInfo info) {
+        log.warn("Detected VM stop-the-world pause: %s", info);
     }
 }

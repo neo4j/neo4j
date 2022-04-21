@@ -29,18 +29,22 @@ import org.neo4j.kernel.impl.util.collection.DistinctSet
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValueBuilder
 
-case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
-                       (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
   private val keyNames = groupingColumns.map(_.key)
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     new PrefetchingIterator[CypherRow] {
       /*
        * The filtering is done by extracting from the context the values of all return expressions, and keeping them
        * in a set.
        */
-      private var seen = DistinctSet.createDistinctSet[AnyValue](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+      private var seen =
+        DistinctSet.createDistinctSet[AnyValue](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
 
       state.query.resources.trace(seen)
 
@@ -66,7 +70,7 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
         None
       }
 
-      override protected[this] def closeMore(): Unit = if(seen != null) seen.close()
+      override protected[this] def closeMore(): Unit = if (seen != null) seen.close()
     }
   }
 

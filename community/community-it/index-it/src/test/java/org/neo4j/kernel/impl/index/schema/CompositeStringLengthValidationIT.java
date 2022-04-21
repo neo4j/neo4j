@@ -19,10 +19,17 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -45,26 +52,19 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-
-@ExtendWith( RandomExtension.class )
+@ExtendWith(RandomExtension.class)
 @DbmsExtension
-class CompositeStringLengthValidationIT
-{
+class CompositeStringLengthValidationIT {
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
     private static final String KEY2 = "key2";
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private RandomSupport random;
 
@@ -72,9 +72,9 @@ class CompositeStringLengthValidationIT
     private int secondSlotLength;
 
     @BeforeEach
-    void calculateSlotSizes()
-    {
-        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( pageCache.payloadSize() ) - NativeIndexKey.ENTITY_ID_SIZE;
+    void calculateSlotSizes() {
+        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize(pageCache.payloadSize())
+                - NativeIndexKey.ENTITY_ID_SIZE;
         int perSlotOverhead = GenericKey.TYPE_ID_SIZE + Types.SIZE_STRING_LENGTH;
         int firstSlotSpace = totalSpace / 2;
         int secondSlotSpace = totalSpace - firstSlotSpace;
@@ -83,80 +83,76 @@ class CompositeStringLengthValidationIT
     }
 
     @Test
-    void shouldHandleCompositeSizesCloseToTheLimit() throws KernelException
-    {
-        String firstSlot = random.nextAlphaNumericString( firstSlotLength, firstSlotLength );
-        String secondSlot = random.nextAlphaNumericString( secondSlotLength, secondSlotLength );
+    void shouldHandleCompositeSizesCloseToTheLimit() throws KernelException {
+        String firstSlot = random.nextAlphaNumericString(firstSlotLength, firstSlotLength);
+        String secondSlot = random.nextAlphaNumericString(secondSlotLength, secondSlotLength);
 
         // given
-        IndexDescriptor index = createIndex( KEY, KEY2 );
+        IndexDescriptor index = createIndex(KEY, KEY2);
 
         Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = tx.createNode( LABEL );
-            node.setProperty( KEY, firstSlot );
-            node.setProperty( KEY2, secondSlot );
+        try (Transaction tx = db.beginTx()) {
+            node = tx.createNode(LABEL);
+            node.setProperty(KEY, firstSlot);
+            node.setProperty(KEY2, secondSlot);
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            int propertyKeyId1 = ktx.tokenRead().propertyKey( KEY );
-            int propertyKeyId2 = ktx.tokenRead().propertyKey( KEY2 );
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
-            {
-                IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
-                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexReadSession,
-                                              cursor, unconstrained(), PropertyIndexQuery.exact( propertyKeyId1, firstSlot ),
-                                              PropertyIndexQuery.exact( propertyKeyId2, secondSlot ) );
-                assertTrue( cursor.next() );
-                assertEquals( node.getId(), cursor.nodeReference() );
-                assertFalse( cursor.next() );
+            int propertyKeyId1 = ktx.tokenRead().propertyKey(KEY);
+            int propertyKeyId2 = ktx.tokenRead().propertyKey(KEY2);
+            try (NodeValueIndexCursor cursor =
+                    ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
+                IndexReadSession indexReadSession = ktx.dataRead().indexReadSession(index);
+                ktx.dataRead()
+                        .nodeIndexSeek(
+                                ktx.queryContext(),
+                                indexReadSession,
+                                cursor,
+                                unconstrained(),
+                                PropertyIndexQuery.exact(propertyKeyId1, firstSlot),
+                                PropertyIndexQuery.exact(propertyKeyId2, secondSlot));
+                assertTrue(cursor.next());
+                assertEquals(node.getId(), cursor.nodeReference());
+                assertFalse(cursor.next());
             }
             tx.commit();
         }
     }
 
     @Test
-    void shouldFailBeforeCommitOnCompositeSizesLargerThanLimit()
-    {
-        String firstSlot = random.nextAlphaNumericString( firstSlotLength + 1, firstSlotLength + 1 );
-        String secondSlot = random.nextAlphaNumericString( secondSlotLength, secondSlotLength );
+    void shouldFailBeforeCommitOnCompositeSizesLargerThanLimit() {
+        String firstSlot = random.nextAlphaNumericString(firstSlotLength + 1, firstSlotLength + 1);
+        String secondSlot = random.nextAlphaNumericString(secondSlotLength, secondSlotLength);
 
         // given
-        createIndex( KEY, KEY2 );
+        createIndex(KEY, KEY2);
 
-        IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node = tx.createNode( LABEL );
-                node.setProperty( KEY, firstSlot );
-                node.setProperty( KEY2, secondSlot );
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> {
+            try (Transaction tx = db.beginTx()) {
+                Node node = tx.createNode(LABEL);
+                node.setProperty(KEY, firstSlot);
+                node.setProperty(KEY2, secondSlot);
                 tx.commit();
             }
-        } );
-        assertThat( e.getMessage() ).contains( "Property value is too large to index, please see index documentation for limitations." );
+        });
+        assertThat(e.getMessage())
+                .contains("Property value is too large to index, please see index documentation for limitations.");
     }
 
-    private IndexDescriptor createIndex( String... keys )
-    {
+    private IndexDescriptor createIndex(String... keys) {
         IndexDefinition indexDefinition;
-        try ( Transaction tx = db.beginTx() )
-        {
-            IndexCreator indexCreator = tx.schema().indexFor( LABEL );
-            for ( String key : keys )
-            {
-                indexCreator = indexCreator.on( key );
+        try (Transaction tx = db.beginTx()) {
+            IndexCreator indexCreator = tx.schema().indexFor(LABEL);
+            for (String key : keys) {
+                indexCreator = indexCreator.on(key);
             }
             indexDefinition = indexCreator.create();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 30, SECONDS );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(30, SECONDS);
             tx.commit();
         }
         return ((IndexDefinitionImpl) indexDefinition).getIndexReference();

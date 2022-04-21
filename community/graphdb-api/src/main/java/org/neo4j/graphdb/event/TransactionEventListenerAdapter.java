@@ -29,21 +29,16 @@ import org.neo4j.graphdb.Transaction;
  * {@link TransactionEventListener#beforeCommit(TransactionData, Transaction, GraphDatabaseService)} to
  * {@link TransactionEventListener#afterCommit(TransactionData, Object, GraphDatabaseService)}.
  */
-public class TransactionEventListenerAdapter<T> implements TransactionEventListener<T>
-{
+public class TransactionEventListenerAdapter<T> implements TransactionEventListener<T> {
     @Override
-    public T beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
-    {
+    public T beforeCommit(TransactionData data, Transaction transaction, GraphDatabaseService databaseService)
+            throws Exception {
         return null;
     }
 
     @Override
-    public void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService )
-    {
-    }
+    public void afterCommit(TransactionData data, T state, GraphDatabaseService databaseService) {}
 
     @Override
-    public void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService )
-    {
-    }
+    public void afterRollback(TransactionData data, T state, GraphDatabaseService databaseService) {}
 }

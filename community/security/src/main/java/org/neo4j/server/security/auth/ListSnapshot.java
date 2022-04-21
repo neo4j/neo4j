@@ -21,24 +21,20 @@ package org.neo4j.server.security.auth;
 
 import java.util.List;
 
-public class ListSnapshot<T>
-{
+public class ListSnapshot<T> {
     private final long timestamp;
     private final List<T> values;
 
-    public ListSnapshot( long timestamp, List<T> values )
-    {
+    public ListSnapshot(long timestamp, List<T> values) {
         this.timestamp = timestamp;
         this.values = values;
     }
 
-    public long timestamp()
-    {
+    public long timestamp() {
         return timestamp;
     }
 
-    public List<T> values()
-    {
+    public List<T> values() {
         return values;
     }
 }

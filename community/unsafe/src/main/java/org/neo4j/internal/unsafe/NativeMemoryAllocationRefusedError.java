@@ -24,65 +24,57 @@ import static org.neo4j.io.os.OsBeanUtil.getCommittedVirtualMemory;
 import static org.neo4j.io.os.OsBeanUtil.getFreePhysicalMemory;
 import static org.neo4j.io.os.OsBeanUtil.getTotalPhysicalMemory;
 
-public class NativeMemoryAllocationRefusedError extends Error
-{
+public class NativeMemoryAllocationRefusedError extends Error {
     private final long attemptedAllocationSizeBytes;
     private final long alreadyAllocatedBytes;
 
-    NativeMemoryAllocationRefusedError( long size, long alreadyAllocatedBytes )
-    {
+    NativeMemoryAllocationRefusedError(long size, long alreadyAllocatedBytes) {
         this.attemptedAllocationSizeBytes = size;
         this.alreadyAllocatedBytes = alreadyAllocatedBytes;
     }
 
     @Override
-    public String getMessage()
-    {
+    public String getMessage() {
         String message = super.getMessage();
         StringBuilder sb = new StringBuilder();
-        sb.append( "Failed to allocate " ).append( attemptedAllocationSizeBytes ).append( " bytes. " );
-        sb.append( "So far " ).append( alreadyAllocatedBytes );
-        sb.append( " bytes have already been successfully allocated. " );
-        sb.append( "The system currently has " );
-        appendBytes( sb, getTotalPhysicalMemory() ).append( " total physical memory, " );
-        appendBytes( sb, getCommittedVirtualMemory() ).append( " committed virtual memory, and " );
-        appendBytes( sb, getFreePhysicalMemory() ).append( " free physical memory. " );
-        sb.append( "Relevant system properties: " );
-        appendSysProp( sb, "java.vm.name" );
-        appendSysProp( sb.append( ", " ), "java.vm.vendor" );
-        appendSysProp( sb.append( ", " ), "os.arch" );
+        sb.append("Failed to allocate ").append(attemptedAllocationSizeBytes).append(" bytes. ");
+        sb.append("So far ").append(alreadyAllocatedBytes);
+        sb.append(" bytes have already been successfully allocated. ");
+        sb.append("The system currently has ");
+        appendBytes(sb, getTotalPhysicalMemory()).append(" total physical memory, ");
+        appendBytes(sb, getCommittedVirtualMemory()).append(" committed virtual memory, and ");
+        appendBytes(sb, getFreePhysicalMemory()).append(" free physical memory. ");
+        sb.append("Relevant system properties: ");
+        appendSysProp(sb, "java.vm.name");
+        appendSysProp(sb.append(", "), "java.vm.vendor");
+        appendSysProp(sb.append(", "), "os.arch");
 
-        if ( getCause() instanceof OutOfMemoryError )
-        {
-            sb.append( ". The allocation was refused by the operating system" );
+        if (getCause() instanceof OutOfMemoryError) {
+            sb.append(". The allocation was refused by the operating system");
         }
 
-        if ( message != null )
-        {
-            sb.append( ": " ).append( message );
-        }
-        else
-        {
-            sb.append( '.' );
+        if (message != null) {
+            sb.append(": ").append(message);
+        } else {
+            sb.append('.');
         }
         return sb.toString();
     }
 
-    private static StringBuilder appendBytes( StringBuilder sb, long bytes )
-    {
-        if ( bytes == VALUE_UNAVAILABLE )
-        {
-            sb.append( "(?) bytes" );
-        }
-        else
-        {
-            sb.append( bytes ).append( " bytes" );
+    private static StringBuilder appendBytes(StringBuilder sb, long bytes) {
+        if (bytes == VALUE_UNAVAILABLE) {
+            sb.append("(?) bytes");
+        } else {
+            sb.append(bytes).append(" bytes");
         }
         return sb;
     }
 
-    private static void appendSysProp( StringBuilder sb, String sysProp )
-    {
-        sb.append( '"' ).append( sysProp ).append( "\" = \"" ).append( System.getProperty( sysProp ) ).append( '"' );
+    private static void appendSysProp(StringBuilder sb, String sysProp) {
+        sb.append('"')
+                .append(sysProp)
+                .append("\" = \"")
+                .append(System.getProperty(sysProp))
+                .append('"');
     }
 }

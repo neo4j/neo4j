@@ -19,53 +19,45 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
 import static java.util.Collections.emptyList;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class NodeRecord extends PrimitiveRecord
-{
-    public static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeRecord.class );
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+public class NodeRecord extends PrimitiveRecord {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeRecord.class);
     private long nextRel;
     private long labels;
     private List<DynamicRecord> dynamicLabelRecords;
     private boolean isLight;
     private boolean dense;
 
-    public NodeRecord( long id )
-    {
-        super( id );
+    public NodeRecord(long id) {
+        super(id);
     }
 
-    public NodeRecord( NodeRecord other )
-    {
-        super( other );
+    public NodeRecord(NodeRecord other) {
+        super(other);
         this.nextRel = other.nextRel;
         this.labels = other.labels;
-        if ( other.dynamicLabelRecords.isEmpty() )
-        {
+        if (other.dynamicLabelRecords.isEmpty()) {
             this.dynamicLabelRecords = emptyList();
-        }
-        else
-        {
-            this.dynamicLabelRecords = new ArrayList<>( other.dynamicLabelRecords.size() );
-            for ( DynamicRecord labelRecord : other.dynamicLabelRecords )
-            {
-                this.dynamicLabelRecords.add( new DynamicRecord( labelRecord ) );
+        } else {
+            this.dynamicLabelRecords = new ArrayList<>(other.dynamicLabelRecords.size());
+            for (DynamicRecord labelRecord : other.dynamicLabelRecords) {
+                this.dynamicLabelRecords.add(new DynamicRecord(labelRecord));
             }
         }
         this.isLight = other.isLight;
         this.dense = other.dense;
     }
 
-    public NodeRecord initialize( boolean inUse, long nextProp, boolean dense, long nextRel, long labels )
-    {
-        super.initialize( inUse, nextProp );
+    public NodeRecord initialize(boolean inUse, long nextProp, boolean dense, long nextRel, long labels) {
+        super.initialize(inUse, nextProp);
         this.nextRel = nextRel;
         this.dense = dense;
         this.labels = labels;
@@ -75,19 +67,20 @@ public class NodeRecord extends PrimitiveRecord
     }
 
     @Override
-    public void clear()
-    {
-        initialize( false, Record.NO_NEXT_PROPERTY.intValue(), false,
-                Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_LABELS_FIELD.intValue() );
+    public void clear() {
+        initialize(
+                false,
+                Record.NO_NEXT_PROPERTY.intValue(),
+                false,
+                Record.NO_NEXT_RELATIONSHIP.intValue(),
+                Record.NO_LABELS_FIELD.intValue());
     }
 
-    public long getNextRel()
-    {
+    public long getNextRel() {
         return nextRel;
     }
 
-    public void setNextRel( long nextRel )
-    {
+    public void setNextRel(long nextRel) {
         this.nextRel = nextRel;
     }
 
@@ -98,8 +91,7 @@ public class NodeRecord extends PrimitiveRecord
      * @param labels this will be either in-lined labels, or an id where to get the labels
      * @param dynamicRecords all changed dynamic records by doing this.
      */
-    public void setLabelField( long labels, List<DynamicRecord> dynamicRecords )
-    {
+    public void setLabelField(long labels, List<DynamicRecord> dynamicRecords) {
         this.labels = labels;
         this.dynamicLabelRecords = dynamicRecords;
 
@@ -109,78 +101,65 @@ public class NodeRecord extends PrimitiveRecord
         this.isLight = dynamicRecords.isEmpty();
     }
 
-    public long getLabelField()
-    {
+    public long getLabelField() {
         return this.labels;
     }
 
-    public boolean isLight()
-    {
+    public boolean isLight() {
         return isLight;
     }
 
-    public List<DynamicRecord> getDynamicLabelRecords()
-    {
+    public List<DynamicRecord> getDynamicLabelRecords() {
         return this.dynamicLabelRecords;
     }
 
-    public Iterable<DynamicRecord> getUsedDynamicLabelRecords()
-    {
-        return filter( AbstractBaseRecord::inUse, dynamicLabelRecords );
+    public Iterable<DynamicRecord> getUsedDynamicLabelRecords() {
+        return filter(AbstractBaseRecord::inUse, dynamicLabelRecords);
     }
 
-    public boolean isDense()
-    {
+    public boolean isDense() {
         return dense;
     }
 
-    public void setDense( boolean dense )
-    {
+    public void setDense(boolean dense) {
         this.dense = dense;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         String denseInfo = (dense ? "group" : "rel") + "=" + nextRel;
-        String lightHeavyInfo = isLight ? "light" :
-                                dynamicLabelRecords.isEmpty() ?
-                                "heavy" : "heavy,dynlabels=" + dynamicLabelRecords;
+        String lightHeavyInfo =
+                isLight ? "light" : dynamicLabelRecords.isEmpty() ? "heavy" : "heavy,dynlabels=" + dynamicLabelRecords;
 
-        return "Node[" + getId() +
-               ",used=" + inUse() +
-               ",created=" + isCreated() +
-               "," + denseInfo +
-               ",prop=" + getNextProp() +
-               ",labels=" + parseLabelsField( this ) +
-               "," + lightHeavyInfo +
-               secondaryUnitToString() +
-               "," + "fixedRefs=" + isUseFixedReferences() + "]";
+        return "Node[" + getId() + ",used="
+                + inUse() + ",created="
+                + isCreated() + ","
+                + denseInfo + ",prop="
+                + getNextProp() + ",labels="
+                + parseLabelsField(this) + ","
+                + lightHeavyInfo + secondaryUnitToString()
+                + ","
+                + "fixedRefs=" + isUseFixedReferences() + "]";
     }
 
     @Override
-    public void setIdTo( PropertyRecord property )
-    {
-        property.setNodeId( getId() );
+    public void setIdTo(PropertyRecord property) {
+        property.setNodeId(getId());
     }
 
     @Override
-    public NodeRecord copy()
-    {
-        return new NodeRecord( this );
+    public NodeRecord copy() {
+        return new NodeRecord(this);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( super.hashCode(), nextRel, labels, dense );
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), nextRel, labels, dense);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( !super.equals( obj ) )
-        {
+    public boolean equals(Object obj) {
+        if (!super.equals(obj)) {
             return false;
         }
         NodeRecord other = (NodeRecord) obj;

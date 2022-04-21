@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -33,15 +34,11 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.InternalLogProvider;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
-
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
  * relationship type names.
  */
-public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeTokenRecord>
-{
+public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeTokenRecord> {
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
 
     public RelationshipTypeTokenStore(
@@ -55,10 +52,23 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, config, SchemaIdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
-                TYPE_DESCRIPTOR, recordFormats.relationshipTypeToken(),
-                recordFormats.storeVersion(), readOnlyChecker, databaseName, REL_TYPE_TOKEN_CURSOR, DYNAMIC_REL_TYPE_TOKEN_CURSOR, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                config,
+                SchemaIdType.RELATIONSHIP_TYPE_TOKEN,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                nameStore,
+                TYPE_DESCRIPTOR,
+                recordFormats.relationshipTypeToken(),
+                recordFormats.storeVersion(),
+                readOnlyChecker,
+                databaseName,
+                REL_TYPE_TOKEN_CURSOR,
+                DYNAMIC_REL_TYPE_TOKEN_CURSOR,
+                openOptions);
     }
 }

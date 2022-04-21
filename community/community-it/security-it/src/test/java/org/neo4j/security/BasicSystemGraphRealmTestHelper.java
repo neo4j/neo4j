@@ -19,10 +19,16 @@
  */
 package org.neo4j.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
+import static org.neo4j.server.security.auth.SecurityTestUtils.password;
+
 import java.util.Collections;
 import java.util.Optional;
 import java.util.SortedMap;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -39,110 +45,90 @@ import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
-import static org.neo4j.server.security.auth.SecurityTestUtils.password;
-
-public class BasicSystemGraphRealmTestHelper
-{
-    public static class TestDatabaseManager extends LifecycleAdapter implements DatabaseManager<StandaloneDatabaseContext>
-    {
+public class BasicSystemGraphRealmTestHelper {
+    public static class TestDatabaseManager extends LifecycleAdapter
+            implements DatabaseManager<StandaloneDatabaseContext> {
         protected GraphDatabaseFacade testSystemDb;
         protected final DatabaseManagementService managementService;
         private final DatabaseIdRepository.Caching databaseIdRepository = new TestDatabaseIdRepository.Caching();
 
-        protected TestDatabaseManager( TestDirectory testDir )
-        {
-            managementService = createManagementService( testDir );
-            testSystemDb = (GraphDatabaseFacade) managementService.database( SYSTEM_DATABASE_NAME );
+        protected TestDatabaseManager(TestDirectory testDir) {
+            managementService = createManagementService(testDir);
+            testSystemDb = (GraphDatabaseFacade) managementService.database(SYSTEM_DATABASE_NAME);
         }
 
-        protected DatabaseManagementService createManagementService( TestDirectory testDir )
-        {
-            return new TestDatabaseManagementServiceBuilder( testDir.homePath() ).impermanent()
+        protected DatabaseManagementService createManagementService(TestDirectory testDir) {
+            return new TestDatabaseManagementServiceBuilder(testDir.homePath())
+                    .impermanent()
                     .noOpSystemGraphInitializer()
-                    .setConfig( GraphDatabaseSettings.auth_enabled, false ).build();
+                    .setConfig(GraphDatabaseSettings.auth_enabled, false)
+                    .build();
         }
 
-        public DatabaseManagementService getManagementService()
-        {
+        public DatabaseManagementService getManagementService() {
             return managementService;
         }
 
         @Override
-        public Optional<StandaloneDatabaseContext> getDatabaseContext( NamedDatabaseId namedDatabaseId )
-        {
-            if ( namedDatabaseId.isSystemDatabase() )
-            {
+        public Optional<StandaloneDatabaseContext> getDatabaseContext(NamedDatabaseId namedDatabaseId) {
+            if (namedDatabaseId.isSystemDatabase()) {
                 DependencyResolver dependencyResolver = testSystemDb.getDependencyResolver();
-                Database database = dependencyResolver.resolveDependency( Database.class );
-                return Optional.of( new StandaloneDatabaseContext( database ) );
+                Database database = dependencyResolver.resolveDependency(Database.class);
+                return Optional.of(new StandaloneDatabaseContext(database));
             }
             return Optional.empty();
         }
 
         @Override
-        public StandaloneDatabaseContext createDatabase( NamedDatabaseId namedDatabaseId )
-        {
-            throw new UnsupportedOperationException( "Call to createDatabase not expected" );
+        public StandaloneDatabaseContext createDatabase(NamedDatabaseId namedDatabaseId) {
+            throw new UnsupportedOperationException("Call to createDatabase not expected");
         }
 
         @Override
-        public void dropDatabase( NamedDatabaseId namedDatabaseId )
-        {
-        }
+        public void dropDatabase(NamedDatabaseId namedDatabaseId) {}
 
         @Override
-        public void stopDatabase( NamedDatabaseId namedDatabaseId )
-        {
-        }
+        public void stopDatabase(NamedDatabaseId namedDatabaseId) {}
 
         @Override
-        public void startDatabase( NamedDatabaseId namedDatabaseId )
-        {
-        }
+        public void startDatabase(NamedDatabaseId namedDatabaseId) {}
 
         @Override
-        public DatabaseIdRepository.Caching databaseIdRepository()
-        {
+        public DatabaseIdRepository.Caching databaseIdRepository() {
             return databaseIdRepository;
         }
 
         @Override
-        public SortedMap<NamedDatabaseId,StandaloneDatabaseContext> registeredDatabases()
-        {
+        public SortedMap<NamedDatabaseId, StandaloneDatabaseContext> registeredDatabases() {
             return Collections.emptySortedMap();
         }
     }
 
-    public static void assertAuthenticationSucceeds( SystemGraphRealmHelper realmHelper, String username, String password ) throws Exception
-    {
-        assertAuthenticationSucceeds( realmHelper, username, password, false );
+    public static void assertAuthenticationSucceeds(
+            SystemGraphRealmHelper realmHelper, String username, String password) throws Exception {
+        assertAuthenticationSucceeds(realmHelper, username, password, false);
     }
 
-    public static void assertAuthenticationSucceeds( SystemGraphRealmHelper realmHelper, String username, String password, boolean changeRequired )
-            throws Exception
-    {
-        var user = realmHelper.getUser( username );
-        assertTrue( user.credentials().matchesPassword( password( password ) ) );
-        assertThat( user.passwordChangeRequired() )
-                .withFailMessage( "Expected change required to be %s, but was %s", changeRequired, user.passwordChangeRequired() )
-                .isEqualTo( changeRequired );
+    public static void assertAuthenticationSucceeds(
+            SystemGraphRealmHelper realmHelper, String username, String password, boolean changeRequired)
+            throws Exception {
+        var user = realmHelper.getUser(username);
+        assertTrue(user.credentials().matchesPassword(password(password)));
+        assertThat(user.passwordChangeRequired())
+                .withFailMessage(
+                        "Expected change required to be %s, but was %s", changeRequired, user.passwordChangeRequired())
+                .isEqualTo(changeRequired);
     }
 
-    public static void assertAuthenticationFails( SystemGraphRealmHelper realmHelper, String username, String password ) throws Exception
-    {
-        var user = realmHelper.getUser( username );
-        assertFalse( user.credentials().matchesPassword( password( password ) ) );
+    public static void assertAuthenticationFails(SystemGraphRealmHelper realmHelper, String username, String password)
+            throws Exception {
+        var user = realmHelper.getUser(username);
+        assertFalse(user.credentials().matchesPassword(password(password)));
     }
 
-    public static User createUser( String userName, String password, boolean pwdChangeRequired )
-    {
-        return new User.Builder( userName, credentialFor( password ) )
-                .withRequiredPasswordChange( pwdChangeRequired )
+    public static User createUser(String userName, String password, boolean pwdChangeRequired) {
+        return new User.Builder(userName, credentialFor(password))
+                .withRequiredPasswordChange(pwdChangeRequired)
                 .build();
     }
 }

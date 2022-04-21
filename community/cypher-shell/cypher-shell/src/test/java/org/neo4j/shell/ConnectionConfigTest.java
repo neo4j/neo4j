@@ -19,97 +19,93 @@
  */
 package org.neo4j.shell;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.shell.cli.Encryption;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
-class ConnectionConfigTest
-{
-    private final Map<String,String> env = new HashMap<>();
-    private final Environment testEnvironment = new Environment( env );
-    private final ConnectionConfig config = connectionConfig( "bolt", "localhost", 1, "bob", "pass", Encryption.DEFAULT, "db", new Environment() );
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.shell.cli.Encryption;
+
+class ConnectionConfigTest {
+    private final Map<String, String> env = new HashMap<>();
+    private final Environment testEnvironment = new Environment(env);
+    private final ConnectionConfig config =
+            connectionConfig("bolt", "localhost", 1, "bob", "pass", Encryption.DEFAULT, "db", new Environment());
 
     @Test
-    void scheme()
-    {
-        assertEquals( "bolt", config.scheme() );
+    void scheme() {
+        assertEquals("bolt", config.scheme());
     }
 
     @Test
-    void host()
-    {
-        assertEquals( "localhost", config.host() );
+    void host() {
+        assertEquals("localhost", config.host());
     }
 
     @Test
-    void port()
-    {
-        assertEquals( 1, config.port() );
+    void port() {
+        assertEquals(1, config.port());
     }
 
     @Test
-    void username()
-    {
-        assertEquals( "bob", config.username() );
+    void username() {
+        assertEquals("bob", config.username());
     }
 
     @Test
-    void usernameDefaultsToEnvironmentVar()
-    {
-        env.put( ConnectionConfig.USERNAME_ENV_VAR, "alice" );
-        ConnectionConfig configWithEmptyParams = connectionConfig( "bolt", "localhost", 1, "",
-                                                                       "", Encryption.DEFAULT, ABSENT_DB_NAME, testEnvironment );
-        assertEquals( "alice", configWithEmptyParams.username() );
+    void usernameDefaultsToEnvironmentVar() {
+        env.put(ConnectionConfig.USERNAME_ENV_VAR, "alice");
+        ConnectionConfig configWithEmptyParams =
+                connectionConfig("bolt", "localhost", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, testEnvironment);
+        assertEquals("alice", configWithEmptyParams.username());
     }
 
     @Test
-    void password()
-    {
-        assertEquals( "pass", config.password() );
+    void password() {
+        assertEquals("pass", config.password());
     }
 
     @Test
-    void passwordDefaultsToEnvironmentVar()
-    {
-        env.put( ConnectionConfig.PASSWORD_ENV_VAR, "ssap" );
-        ConnectionConfig configWithEmptyParams = connectionConfig( "bolt", "localhost", 1, "",
-                                                                       "", Encryption.DEFAULT, ABSENT_DB_NAME, testEnvironment );
-        assertEquals( "ssap", configWithEmptyParams.password() );
+    void passwordDefaultsToEnvironmentVar() {
+        env.put(ConnectionConfig.PASSWORD_ENV_VAR, "ssap");
+        ConnectionConfig configWithEmptyParams =
+                connectionConfig("bolt", "localhost", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, testEnvironment);
+        assertEquals("ssap", configWithEmptyParams.password());
     }
 
     @Test
-    void database()
-    {
-        assertEquals( "db", config.database() );
+    void database() {
+        assertEquals("db", config.database());
     }
 
     @Test
-    void databaseDefaultsToEnvironmentVar()
-    {
-        env.put( ConnectionConfig.DATABASE_ENV_VAR, "funnyDB" );
-        ConnectionConfig configWithEmptyParams = connectionConfig( "bolt", "localhost", 1, "",
-                                                                       "", Encryption.DEFAULT, ABSENT_DB_NAME, testEnvironment );
-        assertEquals( "funnyDB", configWithEmptyParams.database() );
+    void databaseDefaultsToEnvironmentVar() {
+        env.put(ConnectionConfig.DATABASE_ENV_VAR, "funnyDB");
+        ConnectionConfig configWithEmptyParams =
+                connectionConfig("bolt", "localhost", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, testEnvironment);
+        assertEquals("funnyDB", configWithEmptyParams.database());
     }
 
     @Test
-    void driverUrlDefaultScheme()
-    {
-        assertEquals( "bolt://localhost:1", config.driverUrl() );
+    void driverUrlDefaultScheme() {
+        assertEquals("bolt://localhost:1", config.driverUrl());
     }
 
     @Test
-    void encryption()
-    {
-        assertEquals( Encryption.DEFAULT, connectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ).encryption() );
-        assertEquals( Encryption.TRUE, connectionConfig( "bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME, new Environment() ).encryption() );
-        assertEquals( Encryption.FALSE, connectionConfig( "bolt", "", -1, "", "", Encryption.FALSE, ABSENT_DB_NAME, new Environment() ).encryption() );
+    void encryption() {
+        assertEquals(
+                Encryption.DEFAULT,
+                connectionConfig("bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment())
+                        .encryption());
+        assertEquals(
+                Encryption.TRUE,
+                connectionConfig("bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME, new Environment())
+                        .encryption());
+        assertEquals(
+                Encryption.FALSE,
+                connectionConfig("bolt", "", -1, "", "", Encryption.FALSE, ABSENT_DB_NAME, new Environment())
+                        .encryption());
     }
 }

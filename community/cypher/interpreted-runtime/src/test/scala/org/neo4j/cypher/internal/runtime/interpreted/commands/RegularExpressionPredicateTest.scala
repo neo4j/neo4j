@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Regular
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RegularExpressionPredicateTest extends CypherFunSuite {
+
   test("LiteralRegEx: should not match if the lhs expression evaluates to null") {
     val expression = LiteralRegularExpression(Null(), literal(".*"))
     expression.isMatch(null, QueryStateHelper.empty) should equal(None)
@@ -37,12 +38,12 @@ class RegularExpressionPredicateTest extends CypherFunSuite {
     expression.isMatch(null, QueryStateHelper.empty) should equal(None)
   }
 
-  test("RegEx: should not match if the lhs expression evaluates to something that is not a string"){
+  test("RegEx: should not match if the lhs expression evaluates to something that is not a string") {
     val expression = RegularExpression(literal(5), literal(".*"))
     expression.isMatch(null, QueryStateHelper.empty) should equal(None)
   }
 
-  test("LiteralRegEx: should not match if the lhs expression evaluates to something that is not a string"){
+  test("LiteralRegEx: should not match if the lhs expression evaluates to something that is not a string") {
     val expression = LiteralRegularExpression(literal(5), literal(".*"))
     expression.isMatch(null, QueryStateHelper.empty) should equal(None)
   }

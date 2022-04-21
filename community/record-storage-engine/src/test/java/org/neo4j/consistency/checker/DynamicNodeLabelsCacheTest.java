@@ -19,53 +19,46 @@
  */
 package org.neo4j.consistency.checker;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@ExtendWith( RandomExtension.class )
-class DynamicNodeLabelsCacheTest
-{
+@ExtendWith(RandomExtension.class)
+class DynamicNodeLabelsCacheTest {
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldPutAndGetLabels()
-    {
+    void shouldPutAndGetLabels() {
         // given
-        DynamicNodeLabelsCache cache = new DynamicNodeLabelsCache( INSTANCE );
+        DynamicNodeLabelsCache cache = new DynamicNodeLabelsCache(INSTANCE);
         long[] indexes = new long[1_000];
         long[][] expectedLabels = new long[indexes.length][];
 
         // when
-        for ( int i = 0; i < indexes.length; i++ )
-        {
+        for (int i = 0; i < indexes.length; i++) {
             long[] labels = expectedLabels[i] = randomSortedLabels();
-            indexes[i] = cache.put( labels );
+            indexes[i] = cache.put(labels);
         }
 
         // then
-        for ( int i = 0; i < indexes.length; i++ )
-        {
+        for (int i = 0; i < indexes.length; i++) {
             long[] expected = expectedLabels[i];
-            long[] actual = cache.get( indexes[i], new long[expected.length] );
-            assertArrayEquals( expected, actual );
+            long[] actual = cache.get(indexes[i], new long[expected.length]);
+            assertArrayEquals(expected, actual);
         }
     }
 
-    private long[] randomSortedLabels()
-    {
-        long[] labels = new long[random.nextInt( 1, 10 )];
+    private long[] randomSortedLabels() {
+        long[] labels = new long[random.nextInt(1, 10)];
         int strider = 0;
-        for ( int ii = 0; ii < labels.length; ii++ )
-        {
-            strider += random.nextInt( 1, 100 );
+        for (int ii = 0; ii < labels.length; ii++) {
+            strider += random.nextInt(1, 100);
             labels[ii] = strider;
         }
         return labels;

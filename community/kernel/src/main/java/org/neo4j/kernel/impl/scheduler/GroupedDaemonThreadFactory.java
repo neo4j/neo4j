@@ -22,79 +22,64 @@ package org.neo4j.kernel.impl.scheduler;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.SchedulerThreadFactory;
 
-public class GroupedDaemonThreadFactory implements SchedulerThreadFactory
-{
+public class GroupedDaemonThreadFactory implements SchedulerThreadFactory {
     protected final Group group;
     protected final ThreadGroup threadGroup;
 
-    protected GroupedDaemonThreadFactory( Group group, ThreadGroup parentThreadGroup )
-    {
+    protected GroupedDaemonThreadFactory(Group group, ThreadGroup parentThreadGroup) {
         this.group = group;
-        threadGroup = new ThreadGroup( parentThreadGroup, group.groupName() );
+        threadGroup = new ThreadGroup(parentThreadGroup, group.groupName());
     }
 
     @Override
-    public Thread newThread( Runnable job )
-    {
-        Thread thread = new Thread( threadGroup, job, group.threadName() )
-        {
+    public Thread newThread(Runnable job) {
+        Thread thread = new Thread(threadGroup, job, group.threadName()) {
             @Override
-            public String toString()
-            {
-                return threadToString( this );
+            public String toString() {
+                return threadToString(this);
             }
         };
-        thread.setDaemon( true );
+        thread.setDaemon(true);
         return thread;
     }
 
-    protected static String threadToString( Thread thread )
-    {
-        StringBuilder sb = new StringBuilder( "Thread[" ).append( thread.getName() );
+    protected static String threadToString(Thread thread) {
+        StringBuilder sb = new StringBuilder("Thread[").append(thread.getName());
         ThreadGroup group = thread.getThreadGroup();
         String sep = ", in ";
-        while ( group != null )
-        {
-            sb.append( sep ).append( group.getName() );
+        while (group != null) {
+            sb.append(sep).append(group.getName());
             group = group.getParent();
             sep = "/";
         }
-        return sb.append( ']' ).toString();
+        return sb.append(']').toString();
     }
 
     @Override
-    public ForkJoinWorkerThread newThread( ForkJoinPool pool )
-    {
+    public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
         // We do this complicated dance of allocating the ForkJoinThread in a separate thread,
         // because there is no way to give it a specific ThreadGroup, other than through inheritance
         // from the allocating thread.
         ForkJoinPool.ForkJoinWorkerThreadFactory factory = ForkJoinPool.defaultForkJoinWorkerThreadFactory;
         AtomicReference<ForkJoinWorkerThread> reference = new AtomicReference<>();
-        Thread allocator = newThread( () -> reference.set( factory.newThread( pool ) ) );
+        Thread allocator = newThread(() -> reference.set(factory.newThread(pool)));
         allocator.start();
-        do
-        {
-            try
-            {
+        do {
+            try {
                 allocator.join();
+            } catch (InterruptedException ignore) {
             }
-            catch ( InterruptedException ignore )
-            {
-            }
-        }
-        while ( reference.get() == null );
+        } while (reference.get() == null);
         ForkJoinWorkerThread worker = reference.get();
-        worker.setName( group.threadName() );
+        worker.setName(group.threadName());
         return worker;
     }
 
     @Override
-    public ThreadGroup getThreadGroup()
-    {
+    public ThreadGroup getThreadGroup() {
         return threadGroup;
     }
 }

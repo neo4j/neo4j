@@ -21,34 +21,23 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.neo4j.io.fs.StoreChannel;
 
-public interface ChannelNativeAccessor
-{
+public interface ChannelNativeAccessor {
     ChannelNativeAccessor EMPTY_ACCESSOR = new EmptyChannelNativeAccessor();
 
-    void adviseSequentialAccessAndKeepInCache( StoreChannel storeChannel, long version );
+    void adviseSequentialAccessAndKeepInCache(StoreChannel storeChannel, long version);
 
-    void evictFromSystemCache( StoreChannel storeChannel, long version );
+    void evictFromSystemCache(StoreChannel storeChannel, long version);
 
-    void preallocateSpace( StoreChannel storeChannel, long version );
+    void preallocateSpace(StoreChannel storeChannel, long version);
 
-    class EmptyChannelNativeAccessor implements ChannelNativeAccessor
-    {
+    class EmptyChannelNativeAccessor implements ChannelNativeAccessor {
         @Override
-        public void adviseSequentialAccessAndKeepInCache( StoreChannel storeChannel, long version )
-        {
-
-        }
+        public void adviseSequentialAccessAndKeepInCache(StoreChannel storeChannel, long version) {}
 
         @Override
-        public void evictFromSystemCache( StoreChannel storeChannel, long version )
-        {
-
-        }
+        public void evictFromSystemCache(StoreChannel storeChannel, long version) {}
 
         @Override
-        public void preallocateSpace( StoreChannel storeChannel, long version )
-        {
-
-        }
+        public void preallocateSpace(StoreChannel storeChannel, long version) {}
     }
 }

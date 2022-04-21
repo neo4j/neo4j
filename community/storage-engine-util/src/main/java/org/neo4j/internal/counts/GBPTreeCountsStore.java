@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.counts;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Map;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
@@ -40,9 +40,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 /**
  * Counts store build on top of the {@link GBPTree}.
  * Changes between checkpoints are kept in memory and written out to the tree in {@link #checkpoint(CursorContext)}.
@@ -50,8 +47,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
  * Checkpoint will acquire a write lock, wait for currently active appliers to close while at the same time blocking new appliers to start,
  * but doesn't wait for appliers that haven't even started yet, i.e. it doesn't require a gap-free transaction sequence to be completed.
  */
-public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements CountsStore
-{
+public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements CountsStore {
     private static final String NAME = "Counts store";
 
     private static final byte TYPE_NODE = 1;
@@ -69,9 +65,8 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
      * @param labelId id of the label.
      * @return a {@link CountsKey for the node label id. The returned key can be put into {@link Map maps} and similar.
      */
-    public static CountsKey nodeKey( long labelId )
-    {
-        return new CountsKey( TYPE_NODE, labelId, 0 );
+    public static CountsKey nodeKey(long labelId) {
+        return new CountsKey(TYPE_NODE, labelId, 0);
     }
 
     /**
@@ -88,131 +83,145 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
      * @param endLabelId id of the label of end node.
      * @return a {@link CountsKey for the node start/end label and relationship type id. The returned key can be put into {@link Map maps} and similar.
      */
-    public static CountsKey relationshipKey( long startLabelId, long typeId, long endLabelId )
-    {
-        return new CountsKey( TYPE_RELATIONSHIP, (startLabelId << Integer.SIZE) | (typeId & 0xFFFFFFFFL), (int) endLabelId );
+    public static CountsKey relationshipKey(long startLabelId, long typeId, long endLabelId) {
+        return new CountsKey(
+                TYPE_RELATIONSHIP, (startLabelId << Integer.SIZE) | (typeId & 0xFFFFFFFFL), (int) endLabelId);
     }
 
-    public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-                               CountsBuilder initialCountsBuilder, DatabaseReadOnlyChecker readOnlyChecker, Monitor monitor, String databaseName,
-                               int maxCacheSize, InternalLogProvider userLogProvider, CursorContextFactory contextFactory,
-                               ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnlyChecker, NAME,
-               monitor, databaseName, maxCacheSize, userLogProvider, contextFactory, openOptions );
-    }
-
-    @Override
-    public CountsAccessor.Updater apply( long txId, CursorContext cursorContext )
-    {
-        CountUpdater updater = updater( txId, cursorContext );
-        return updater != null ? new Incrementer( updater ) : NO_OP_UPDATER;
-    }
-
-    public CountsAccessor.Updater directApply( boolean deltas, CursorContext cursorContext ) throws IOException
-    {
-        CountUpdater updater = directUpdater( deltas, cursorContext );
-        return updater != null ? new Incrementer( updater ) : NO_OP_UPDATER;
-    }
-
-    @Override
-    public long nodeCount( int labelId, CursorContext cursorContext )
-    {
-        return read( nodeKey( labelId ), cursorContext );
-    }
-
-    @Override
-    public long relationshipCount( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext )
-    {
-        return read( relationshipKey( startLabelId, typeId, endLabelId ), cursorContext );
+    public GBPTreeCountsStore(
+            PageCache pageCache,
+            Path file,
+            FileSystemAbstraction fileSystem,
+            RecoveryCleanupWorkCollector recoveryCollector,
+            CountsBuilder initialCountsBuilder,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Monitor monitor,
+            String databaseName,
+            int maxCacheSize,
+            InternalLogProvider userLogProvider,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        super(
+                pageCache,
+                file,
+                fileSystem,
+                recoveryCollector,
+                new InitialCountsRebuilder(initialCountsBuilder),
+                readOnlyChecker,
+                NAME,
+                monitor,
+                databaseName,
+                maxCacheSize,
+                userLogProvider,
+                contextFactory,
+                openOptions);
     }
 
     @Override
-    public void accept( CountsVisitor visitor, CursorContext cursorContext )
-    {
-        visitAllCounts( ( key, count ) ->
-        {
-            if ( key.type == TYPE_NODE )
-            {
-                visitor.visitNodeCount( (int) key.first, count );
-            }
-            else if ( key.type == TYPE_RELATIONSHIP )
-            {
-                visitor.visitRelationshipCount( key.extractHighFirstInt(), key.extractLowFirstInt(), key.second, count );
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Unknown key type " + key.type );
-            }
-        }, cursorContext );
+    public CountsAccessor.Updater apply(long txId, CursorContext cursorContext) {
+        CountUpdater updater = updater(txId, cursorContext);
+        return updater != null ? new Incrementer(updater) : NO_OP_UPDATER;
     }
 
-    public static String keyToString( CountsKey key )
-    {
-        if ( key.type == TYPE_NODE )
-        {
-            return format( "Node[label:%d]", key.first );
+    public CountsAccessor.Updater directApply(boolean deltas, CursorContext cursorContext) throws IOException {
+        CountUpdater updater = directUpdater(deltas, cursorContext);
+        return updater != null ? new Incrementer(updater) : NO_OP_UPDATER;
+    }
+
+    @Override
+    public long nodeCount(int labelId, CursorContext cursorContext) {
+        return read(nodeKey(labelId), cursorContext);
+    }
+
+    @Override
+    public long relationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
+        return read(relationshipKey(startLabelId, typeId, endLabelId), cursorContext);
+    }
+
+    @Override
+    public void accept(CountsVisitor visitor, CursorContext cursorContext) {
+        visitAllCounts(
+                (key, count) -> {
+                    if (key.type == TYPE_NODE) {
+                        visitor.visitNodeCount((int) key.first, count);
+                    } else if (key.type == TYPE_RELATIONSHIP) {
+                        visitor.visitRelationshipCount(
+                                key.extractHighFirstInt(), key.extractLowFirstInt(), key.second, count);
+                    } else {
+                        throw new IllegalArgumentException("Unknown key type " + key.type);
+                    }
+                },
+                cursorContext);
+    }
+
+    public static String keyToString(CountsKey key) {
+        if (key.type == TYPE_NODE) {
+            return format("Node[label:%d]", key.first);
+        } else if (key.type == TYPE_RELATIONSHIP) {
+            return format(
+                    "Relationship[startLabel:%d, type:%d, endLabel:%d]",
+                    key.extractHighFirstInt(), key.extractLowFirstInt(), key.second);
         }
-        else if ( key.type == TYPE_RELATIONSHIP )
-        {
-            return format( "Relationship[startLabel:%d, type:%d, endLabel:%d]", key.extractHighFirstInt(), key.extractLowFirstInt(), key.second );
-        }
-        throw new IllegalArgumentException( "Unknown type " + key.type );
+        throw new IllegalArgumentException("Unknown type " + key.type);
     }
 
-    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContextFactory contextFactory,
-                             ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, contextFactory, GBPTreeCountsStore::keyToString, openOptions );
+    public static void dump(
+            PageCache pageCache,
+            Path file,
+            PrintStream out,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        GBPTreeGenericCountsStore.dump(
+                pageCache,
+                file,
+                out,
+                DEFAULT_DATABASE_NAME,
+                NAME,
+                contextFactory,
+                GBPTreeCountsStore::keyToString,
+                openOptions);
     }
 
-    private static class Incrementer implements CountsAccessor.Updater
-    {
+    private static class Incrementer implements CountsAccessor.Updater {
         private final CountUpdater actual;
 
-        Incrementer( CountUpdater actual )
-        {
+        Incrementer(CountUpdater actual) {
             this.actual = actual;
         }
 
         @Override
-        public void incrementNodeCount( long labelId, long delta )
-        {
-            actual.increment( nodeKey( labelId ), delta );
+        public void incrementNodeCount(long labelId, long delta) {
+            actual.increment(nodeKey(labelId), delta);
         }
 
         @Override
-        public void incrementRelationshipCount( long startLabelId, int typeId, long endLabelId, long delta )
-        {
-            actual.increment( relationshipKey( startLabelId, typeId, endLabelId ), delta );
+        public void incrementRelationshipCount(long startLabelId, int typeId, long endLabelId, long delta) {
+            actual.increment(relationshipKey(startLabelId, typeId, endLabelId), delta);
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             actual.close();
         }
     }
 
-    private static class InitialCountsRebuilder implements Rebuilder
-    {
+    private static class InitialCountsRebuilder implements Rebuilder {
         private final CountsBuilder initialCountsBuilder;
 
-        InitialCountsRebuilder( CountsBuilder initialCountsBuilder )
-        {
+        InitialCountsRebuilder(CountsBuilder initialCountsBuilder) {
             this.initialCountsBuilder = initialCountsBuilder;
         }
 
         @Override
-        public long lastCommittedTxId()
-        {
+        public long lastCommittedTxId() {
             return initialCountsBuilder.lastCommittedTxId();
         }
 
         @Override
-        public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-        {
-            initialCountsBuilder.initialize( new Incrementer( updater ), cursorContext, memoryTracker );
+        public void rebuild(CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            initialCountsBuilder.initialize(new Incrementer(updater), cursorContext, memoryTracker);
         }
     }
 }

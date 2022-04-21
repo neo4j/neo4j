@@ -19,40 +19,35 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class BaseRecordFormatTest
-{
+class BaseRecordFormatTest {
     @Test
-    void shouldRecognizeDesignatedInUseBit()
-    {
+    void shouldRecognizeDesignatedInUseBit() {
         // GIVEN
         RecordFormat<DynamicRecord> format = new DynamicRecordFormat();
-        PageCursor cursor = new StubPageCursor( 0, 1_000 );
+        PageCursor cursor = new StubPageCursor(0, 1_000);
 
         byte inUseByte = 0;
-        for ( int i = 0; i < 8; i++ )
-        {
+        for (int i = 0; i < 8; i++) {
             // WHEN
-            cursor.setOffset( 68 );
-            cursor.putByte( cursor.getOffset(), inUseByte );
+            cursor.setOffset(68);
+            cursor.putByte(cursor.getOffset(), inUseByte);
 
             // THEN
-            assertEquals( shouldBeInUse( inUseByte ), format.isInUse( cursor ) );
+            assertEquals(shouldBeInUse(inUseByte), format.isInUse(cursor));
             inUseByte <<= 1;
             inUseByte |= 1;
         }
     }
 
-    private static boolean shouldBeInUse( byte inUseByte )
-    {
+    private static boolean shouldBeInUse(byte inUseByte) {
         return (inUseByte & 0x10) != 0;
     }
 }

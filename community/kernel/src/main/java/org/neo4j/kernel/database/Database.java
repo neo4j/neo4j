@@ -19,6 +19,19 @@
  */
 package org.neo4j.kernel.database;
 
+import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.function.ThrowingAction.executeAll;
+import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.id.BufferingIdGeneratorFactory.PAGED_ID_BUFFER_FILE_NAME;
+import static org.neo4j.internal.schema.IndexType.LOOKUP;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
+import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
+import static org.neo4j.kernel.recovery.Recovery.context;
+import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -32,7 +45,6 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
@@ -166,35 +178,20 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.KernelVersionRepository;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.ElementIdMapper;
 
-import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
-import static org.neo4j.function.Predicates.alwaysTrue;
-import static org.neo4j.function.ThrowingAction.executeAll;
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.id.BufferingIdGeneratorFactory.PAGED_ID_BUFFER_FILE_NAME;
-import static org.neo4j.internal.schema.IndexType.LOOKUP;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
-import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
-import static org.neo4j.kernel.recovery.Recovery.context;
-import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
-
-public class Database extends LifecycleAdapter
-{
+public class Database extends LifecycleAdapter {
     private static final String STORE_ID_VALIDATOR_TAG = "storeIdValidator";
     private final Monitors parentMonitors;
     private final DependencyResolver globalDependencies;
@@ -242,7 +239,7 @@ public class Database extends LifecycleAdapter
     private QueryExecutionEngine executionEngine;
     private DatabaseKernelModule kernelModule;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
-    private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
+    private final Function<DatabaseLayout, DatabaseLayoutWatcher> watcherServiceFactory;
     private final Factory<DatabaseHealth> databaseHealthFactory;
     private final QueryEngineProvider engineProvider;
     private volatile boolean initialized;
@@ -265,8 +262,7 @@ public class Database extends LifecycleAdapter
     private IOController ioController;
     private ElementIdMapper elementIdMapper;
 
-    public Database( DatabaseCreationContext context )
-    {
+    public Database(DatabaseCreationContext context) {
         this.namedDatabaseId = context.getNamedDatabaseId();
         this.databaseLayout = context.getDatabaseLayout();
         this.databaseConfig = context.getDatabaseConfig();
@@ -299,21 +295,24 @@ public class Database extends LifecycleAdapter
         this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
         this.engineProvider = context.getEngineProvider();
-        this.msgLog = internalLogProvider.getLog( getClass() );
+        this.msgLog = internalLogProvider.getLog(getClass());
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = context.getCommitProcessFactory();
         this.globalPageCache = context.getPageCache();
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.storageEngineFactory = context.getStorageEngineFactory();
-        long availabilityGuardTimeout = databaseConfig.get( GraphDatabaseInternalSettings.transaction_start_timeout ).toMillis();
-        this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
-        this.databaseFacade = new GraphDatabaseFacade( this, databaseConfig, dbmsInfo, databaseAvailabilityGuard );
-        this.kernelTransactionFactory = new FacadeKernelTransactionFactory( databaseConfig, databaseFacade );
-        this.tracers = new DatabaseTracers( context.getTracers() );
+        long availabilityGuardTimeout = databaseConfig
+                .get(GraphDatabaseInternalSettings.transaction_start_timeout)
+                .toMillis();
+        this.databaseAvailabilityGuard =
+                context.getDatabaseAvailabilityGuardFactory().apply(availabilityGuardTimeout);
+        this.databaseFacade = new GraphDatabaseFacade(this, databaseConfig, dbmsInfo, databaseAvailabilityGuard);
+        this.kernelTransactionFactory = new FacadeKernelTransactionFactory(databaseConfig, databaseFacade);
+        this.tracers = new DatabaseTracers(context.getTracers());
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
-        this.readOnlyDatabaseChecker = context.getDbmsReadOnlyChecker().forDatabase( namedDatabaseId );
+        this.readOnlyDatabaseChecker = context.getDbmsReadOnlyChecker().forDatabase(namedDatabaseId);
         this.externalIdReuseConditionProvider = context.externalIdReuseConditionProvider();
     }
 
@@ -322,79 +321,74 @@ public class Database extends LifecycleAdapter
      * upgraded if necessary.
      */
     @Override
-    public synchronized void init()
-    {
-        if ( initialized )
-        {
+    public synchronized void init() {
+        if (initialized) {
             return;
         }
-        try
-        {
-            databaseDependencies = new Dependencies( globalDependencies );
-            ioController = ioControllerService.createIOController( databaseConfig, clock );
-            databasePageCache = new DatabasePageCache( globalPageCache, ioController );
-            databaseMonitors = new Monitors( parentMonitors, internalLogProvider );
+        try {
+            databaseDependencies = new Dependencies(globalDependencies);
+            ioController = ioControllerService.createIOController(databaseConfig, clock);
+            databasePageCache = new DatabasePageCache(globalPageCache, ioController);
+            databaseMonitors = new Monitors(parentMonitors, internalLogProvider);
 
             life = new LifeSupport();
-            life.add( new LockerLifecycleAdapter( fileLockerService.createDatabaseLocker( fs, databaseLayout ) ) );
-            life.add( databaseConfig );
+            life.add(new LockerLifecycleAdapter(fileLockerService.createDatabaseLocker(fs, databaseLayout)));
+            life.add(databaseConfig);
 
             databaseHealth = databaseHealthFactory.newInstance();
             databaseAvailability = new DatabaseAvailability(
-                    databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
+                    databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis());
 
-            databaseDependencies.satisfyDependency( this );
-            databaseDependencies.satisfyDependency( ioController );
-            databaseDependencies.satisfyDependency( readOnlyDatabaseChecker );
-            databaseDependencies.satisfyDependency( databaseLayout );
-            databaseDependencies.satisfyDependency( namedDatabaseId );
-            databaseDependencies.satisfyDependency( startupController );
-            databaseDependencies.satisfyDependency( databaseConfig );
-            databaseDependencies.satisfyDependency( databaseMonitors );
-            databaseDependencies.satisfyDependency( databaseLogService );
-            databaseDependencies.satisfyDependency( databasePageCache );
-            databaseDependencies.satisfyDependency( tokenHolders );
-            databaseDependencies.satisfyDependency( databaseFacade );
-            databaseDependencies.satisfyDependency( kernelTransactionFactory );
-            databaseDependencies.satisfyDependency( databaseHealth );
-            databaseDependencies.satisfyDependency( storeCopyCheckPointMutex );
-            databaseDependencies.satisfyDependency( transactionStats );
-            databaseDependencies.satisfyDependency( locks );
-            databaseDependencies.satisfyDependency( databaseAvailabilityGuard );
-            databaseDependencies.satisfyDependency( databaseAvailability );
-            databaseDependencies.satisfyDependency( idGeneratorFactory );
-            databaseDependencies.satisfyDependency( idController );
-            databaseDependencies.satisfyDependency( lockService );
-            databaseDependencies.satisfyDependency( cursorContextFactory );
-            databaseDependencies.satisfyDependency( tracers );
-            databaseDependencies.satisfyDependency( tracers.getDatabaseTracer() );
-            databaseDependencies.satisfyDependency( tracers.getPageCacheTracer() );
-            databaseDependencies.satisfyDependency( storageEngineFactory );
+            databaseDependencies.satisfyDependency(this);
+            databaseDependencies.satisfyDependency(ioController);
+            databaseDependencies.satisfyDependency(readOnlyDatabaseChecker);
+            databaseDependencies.satisfyDependency(databaseLayout);
+            databaseDependencies.satisfyDependency(namedDatabaseId);
+            databaseDependencies.satisfyDependency(startupController);
+            databaseDependencies.satisfyDependency(databaseConfig);
+            databaseDependencies.satisfyDependency(databaseMonitors);
+            databaseDependencies.satisfyDependency(databaseLogService);
+            databaseDependencies.satisfyDependency(databasePageCache);
+            databaseDependencies.satisfyDependency(tokenHolders);
+            databaseDependencies.satisfyDependency(databaseFacade);
+            databaseDependencies.satisfyDependency(kernelTransactionFactory);
+            databaseDependencies.satisfyDependency(databaseHealth);
+            databaseDependencies.satisfyDependency(storeCopyCheckPointMutex);
+            databaseDependencies.satisfyDependency(transactionStats);
+            databaseDependencies.satisfyDependency(locks);
+            databaseDependencies.satisfyDependency(databaseAvailabilityGuard);
+            databaseDependencies.satisfyDependency(databaseAvailability);
+            databaseDependencies.satisfyDependency(idGeneratorFactory);
+            databaseDependencies.satisfyDependency(idController);
+            databaseDependencies.satisfyDependency(lockService);
+            databaseDependencies.satisfyDependency(cursorContextFactory);
+            databaseDependencies.satisfyDependency(tracers);
+            databaseDependencies.satisfyDependency(tracers.getDatabaseTracer());
+            databaseDependencies.satisfyDependency(tracers.getPageCacheTracer());
+            databaseDependencies.satisfyDependency(storageEngineFactory);
 
             recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-            databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );
+            databaseDependencies.satisfyDependency(recoveryCleanupWorkCollector);
 
-            life.add( new PageCacheLifecycle( databasePageCache ) );
-            life.add( initializeExtensions( databaseDependencies ) );
-            life.add( initializeIndexProviderMap( databaseDependencies ) );
+            life.add(new PageCacheLifecycle(databasePageCache));
+            life.add(initializeExtensions(databaseDependencies));
+            life.add(initializeIndexProviderMap(databaseDependencies));
 
-            DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply( databaseLayout );
-            life.add( watcherService );
-            databaseDependencies.satisfyDependency( watcherService );
+            DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply(databaseLayout);
+            life.add(watcherService);
+            databaseDependencies.satisfyDependency(watcherService);
 
-            otherDatabasePool = otherMemoryPool.newDatabasePool( namedDatabaseId.name(), 0, null );
-            life.add( onShutdown( () -> otherDatabasePool.close() ) );
+            otherDatabasePool = otherMemoryPool.newDatabasePool(namedDatabaseId.name(), 0, null);
+            life.add(onShutdown(() -> otherDatabasePool.close()));
             otherDatabaseMemoryTracker = otherDatabasePool.getPoolMemoryTracker();
 
-            databaseDependencies.satisfyDependency( new DatabaseMemoryTrackers( otherDatabaseMemoryTracker ) );
+            databaseDependencies.satisfyDependency(new DatabaseMemoryTrackers(otherDatabaseMemoryTracker));
 
-            eventListeners.databaseCreate( namedDatabaseId );
+            eventListeners.databaseCreate(namedDatabaseId);
 
             initialized = true;
-        }
-        catch ( Throwable e )
-        {
-            handleStartupFailure( e );
+        } catch (Throwable e) {
+            handleStartupFailure(e);
         }
     }
 
@@ -404,283 +398,350 @@ public class Database extends LifecycleAdapter
      * If the store files are obsolete (older than oldest supported version), then start will throw an exception.
      */
     @Override
-    public synchronized void start()
-    {
-        if ( started )
-        {
+    public synchronized void start() {
+        if (started) {
             return;
         }
         init(); // Ensure we're initialized
-        try
-        {
-            databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
-            databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( DetachedLogTailScanner.class ) ) );
+        try {
+            databaseMonitors.addMonitorListener(new LoggingLogFileMonitor(msgLog));
             databaseMonitors.addMonitorListener(
-                    new ReverseTransactionCursorLoggingMonitor( internalLogProvider.getLog( ReversedSingleFileTransactionCursor.class ) ) );
+                    new LoggingLogTailScannerMonitor(internalLogProvider.getLog(DetachedLogTailScanner.class)));
+            databaseMonitors.addMonitorListener(new ReverseTransactionCursorLoggingMonitor(
+                    internalLogProvider.getLog(ReversedSingleFileTransactionCursor.class)));
 
             // Upgrade the store before we begin
-            upgradeStore( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
+            upgradeStore(databaseConfig, databasePageCache, otherDatabaseMemoryTracker);
 
             // Check the tail of transaction logs and validate version
             LogTailMetadata tailMetadata = getLogTail();
-            initialiseContextFactory( tailMetadata.getLastCommittedTransaction()::transactionId );
+            initialiseContextFactory(tailMetadata.getLastCommittedTransaction()::transactionId);
 
-            boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
-            validateStoreAndTxLogs( tailMetadata, cursorContextFactory, storageExists );
+            boolean storageExists = storageEngineFactory.storageExists(fs, databaseLayout, databasePageCache);
+            validateStoreAndTxLogs(tailMetadata, cursorContextFactory, storageExists);
 
-            if ( Recovery.performRecovery( context( fs, databasePageCache, tracers, databaseConfig, databaseLayout, otherDatabaseMemoryTracker, ioController )
-                            .storageEngineFactory( storageEngineFactory )
-                            .log( internalLogProvider )
-                            .recoveryPredicate( RecoveryPredicate.ALL )
-                            .monitors( databaseMonitors )
-                            .extensionFactories( extensionFactories )
-                            .logTail( tailMetadata )
-                            .startupChecker( new RecoveryStartupChecker( startupController, namedDatabaseId ) )
-                            .clock( clock ) ) )
-            {
-                // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the latest info
+            if (Recovery.performRecovery(context(
+                            fs,
+                            databasePageCache,
+                            tracers,
+                            databaseConfig,
+                            databaseLayout,
+                            otherDatabaseMemoryTracker,
+                            ioController)
+                    .storageEngineFactory(storageEngineFactory)
+                    .log(internalLogProvider)
+                    .recoveryPredicate(RecoveryPredicate.ALL)
+                    .monitors(databaseMonitors)
+                    .extensionFactories(extensionFactories)
+                    .logTail(tailMetadata)
+                    .startupChecker(new RecoveryStartupChecker(startupController, namedDatabaseId))
+                    .clock(clock))) {
+                // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the
+                // latest info
                 tailMetadata = getLogTail();
-                initialiseContextFactory( tailMetadata.getLastCommittedTransaction()::transactionId );
+                initialiseContextFactory(tailMetadata.getLastCommittedTransaction()::transactionId);
             }
 
             // Build all modules and their services
-            DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
+            DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState(internalLogProvider);
 
-            idController.initialize( fs, databaseLayout.file( PAGED_ID_BUFFER_FILE_NAME ), databaseConfig, () -> kernelModule.kernelTransactions().get(),
-                    s -> kernelModule.kernelTransactions().eligibleForFreeing( s ), otherDatabaseMemoryTracker );
+            idController.initialize(
+                    fs,
+                    databaseLayout.file(PAGED_ID_BUFFER_FILE_NAME),
+                    databaseConfig,
+                    () -> kernelModule.kernelTransactions().get(),
+                    s -> kernelModule.kernelTransactions().eligibleForFreeing(s),
+                    otherDatabaseMemoryTracker);
 
-            storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
-                    constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, databaseHealth, internalLogProvider,
-                    userLogProvider, recoveryCleanupWorkCollector, !storageExists, readOnlyDatabaseChecker, tailMetadata, otherDatabaseMemoryTracker,
-                    cursorContextFactory );
+            storageEngine = storageEngineFactory.instantiate(
+                    fs,
+                    databaseLayout,
+                    databaseConfig,
+                    databasePageCache,
+                    tokenHolders,
+                    databaseSchemaState,
+                    constraintSemantics,
+                    indexProviderMap,
+                    lockService,
+                    idGeneratorFactory,
+                    databaseHealth,
+                    internalLogProvider,
+                    userLogProvider,
+                    recoveryCleanupWorkCollector,
+                    !storageExists,
+                    readOnlyDatabaseChecker,
+                    tailMetadata,
+                    otherDatabaseMemoryTracker,
+                    cursorContextFactory);
 
             MetadataProvider metadataProvider = storageEngine.metadataProvider();
-            databaseDependencies.satisfyDependency( metadataProvider );
-            initialiseContextFactory( metadataProvider::getLastClosedTransactionId );
-            elementIdMapper = new DefaultElementIdMapperV1( storageEngine, namedDatabaseId );
+            databaseDependencies.satisfyDependency(metadataProvider);
+            initialiseContextFactory(metadataProvider::getLastClosedTransactionId);
+            elementIdMapper = new DefaultElementIdMapperV1(storageEngine, namedDatabaseId);
 
-            //Recreate the logFiles after storage engine to get access to dependencies
+            // Recreate the logFiles after storage engine to get access to dependencies
             var logFiles = getLogFiles();
 
-            life.add( storageEngine );
-            life.add( storageEngine.schemaAndTokensLifecycle() );
-            life.add( logFiles );
+            life.add(storageEngine);
+            life.add(storageEngine.schemaAndTokensLifecycle());
+            life.add(logFiles);
 
             // Token indexes
-            FullScanStoreView fullScanStoreView =
-                    new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, databaseConfig, scheduler );
-            IndexStoreViewFactory indexStoreViewFactory =
-                    new IndexStoreViewFactory( databaseConfig, storageEngine::createStorageCursors, storageEngine::newReader, locks, fullScanStoreView,
-                            lockService, internalLogProvider );
+            FullScanStoreView fullScanStoreView = new FullScanStoreView(
+                    lockService,
+                    storageEngine::newReader,
+                    storageEngine::createStorageCursors,
+                    databaseConfig,
+                    scheduler);
+            IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
+                    databaseConfig,
+                    storageEngine::createStorageCursors,
+                    storageEngine::newReader,
+                    locks,
+                    fullScanStoreView,
+                    lockService,
+                    internalLogProvider);
 
             // Schema indexes
-            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
-                    readOnlyDatabaseChecker, cursorContextFactory, storageEngine.getOpenOptions() );
-            life.add( indexStatisticsStore );
+            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore(
+                    databasePageCache,
+                    databaseLayout,
+                    recoveryCleanupWorkCollector,
+                    readOnlyDatabaseChecker,
+                    cursorContextFactory,
+                    storageEngine.getOpenOptions());
+            life.add(indexStatisticsStore);
 
-            IndexingService indexingService =
-                    buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore, otherDatabaseMemoryTracker );
+            IndexingService indexingService = buildIndexingService(
+                    storageEngine,
+                    databaseSchemaState,
+                    indexStoreViewFactory,
+                    indexStatisticsStore,
+                    otherDatabaseMemoryTracker);
 
-            databaseDependencies.satisfyDependency( storageEngine.countsAccessor() );
+            databaseDependencies.satisfyDependency(storageEngine.countsAccessor());
 
-            CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
-            DatabaseTransactionLogModule transactionLogModule =
-                    buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation, metadataProvider,
-                                          databaseMonitors, databaseDependencies, cursorContextFactory, storageEngineFactory.commandReaderFactory() );
+            CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation(indexingService, storageEngine);
+            DatabaseTransactionLogModule transactionLogModule = buildTransactionLogs(
+                    logFiles,
+                    databaseConfig,
+                    internalLogProvider,
+                    scheduler,
+                    forceOperation,
+                    metadataProvider,
+                    databaseMonitors,
+                    databaseDependencies,
+                    cursorContextFactory,
+                    storageEngineFactory.commandReaderFactory());
 
-            databaseTransactionEventListeners = new DatabaseTransactionEventListeners( databaseFacade, transactionEventListeners, namedDatabaseId );
-            life.add( databaseTransactionEventListeners );
-            final DatabaseKernelModule kernelModule =
-                    buildKernel( logFiles, transactionLogModule.transactionAppender(), indexingService, databaseSchemaState, storageEngine,
-                            metadataProvider, metadataProvider, databaseAvailabilityGuard, clock, indexStatisticsStore, leaseService,
-                            cursorContextFactory );
+            databaseTransactionEventListeners =
+                    new DatabaseTransactionEventListeners(databaseFacade, transactionEventListeners, namedDatabaseId);
+            life.add(databaseTransactionEventListeners);
+            final DatabaseKernelModule kernelModule = buildKernel(
+                    logFiles,
+                    transactionLogModule.transactionAppender(),
+                    indexingService,
+                    databaseSchemaState,
+                    storageEngine,
+                    metadataProvider,
+                    metadataProvider,
+                    databaseAvailabilityGuard,
+                    clock,
+                    indexStatisticsStore,
+                    leaseService,
+                    cursorContextFactory);
 
-            kernelModule.satisfyDependencies( databaseDependencies );
+            kernelModule.satisfyDependencies(databaseDependencies);
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.kernelModule = kernelModule;
 
-            databaseDependencies.satisfyDependency( databaseSchemaState );
-            databaseDependencies.satisfyDependency( storageEngine );
-            databaseDependencies.satisfyDependency( indexingService );
-            databaseDependencies.satisfyDependency( indexStoreViewFactory );
-            databaseDependencies.satisfyDependency( indexStatisticsStore );
-            databaseDependencies.satisfyDependency( indexProviderMap );
-            databaseDependencies.satisfyDependency( forceOperation );
-            databaseDependencies.satisfyDependency( storageEngine.storeEntityCounters() );
-            databaseDependencies.satisfyDependency( elementIdMapper );
+            databaseDependencies.satisfyDependency(databaseSchemaState);
+            databaseDependencies.satisfyDependency(storageEngine);
+            databaseDependencies.satisfyDependency(indexingService);
+            databaseDependencies.satisfyDependency(indexStoreViewFactory);
+            databaseDependencies.satisfyDependency(indexStatisticsStore);
+            databaseDependencies.satisfyDependency(indexProviderMap);
+            databaseDependencies.satisfyDependency(forceOperation);
+            databaseDependencies.satisfyDependency(storageEngine.storeEntityCounters());
+            databaseDependencies.satisfyDependency(elementIdMapper);
 
-            var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
-            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi );
+            var providerSpi = QueryEngineProvider.spi(
+                    internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig);
+            this.executionEngine = QueryEngineProvider.initialize(
+                    databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi);
 
-            this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
+            this.checkpointerLifecycle = new CheckpointerLifecycle(transactionLogModule.checkPointer(), databaseHealth);
 
-            life.add( idController );
-            life.add( onStart( this::registerUpgradeListener ) );
-            life.add( databaseHealth );
-            life.add( databaseAvailabilityGuard );
-            life.add( databaseAvailability );
-            life.setLast( checkpointerLifecycle );
+            life.add(idController);
+            life.add(onStart(this::registerUpgradeListener));
+            life.add(databaseHealth);
+            life.add(databaseAvailabilityGuard);
+            life.add(databaseAvailability);
+            life.setLast(checkpointerLifecycle);
 
-            databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
+            databaseDependencies.resolveDependency(DbmsDiagnosticsManager.class).dumpDatabaseDiagnostics(this);
             life.start();
 
-            eventListeners.databaseStart( namedDatabaseId );
+            eventListeners.databaseStart(namedDatabaseId);
 
             started = true;
-            postStartupInit( storageExists );
-        }
-        catch ( Throwable e )
-        {
-            handleStartupFailure( e );
+            postStartupInit(storageExists);
+        } catch (Throwable e) {
+            handleStartupFailure(e);
         }
     }
 
-    private void initialiseContextFactory( LongSupplier longSupplier )
-    {
-        cursorContextFactory.init( longSupplier );
+    private void initialiseContextFactory(LongSupplier longSupplier) {
+        cursorContextFactory.init(longSupplier);
     }
 
-    private void postStartupInit( boolean storageExists ) throws KernelException
-    {
-        if ( !storageExists )
-        {
-            if ( databaseConfig.get( GraphDatabaseInternalSettings.skip_default_indexes_on_creation ) )
-            {
+    private void postStartupInit(boolean storageExists) throws KernelException {
+        if (!storageExists) {
+            if (databaseConfig.get(GraphDatabaseInternalSettings.skip_default_indexes_on_creation)) {
                 return;
             }
-            try ( var tx = kernelModule.kernelAPI().beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
-            {
-                createLookupIndex( tx, EntityType.NODE );
-                createLookupIndex( tx, EntityType.RELATIONSHIP );
+            try (var tx = kernelModule
+                    .kernelAPI()
+                    .beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
+                createLookupIndex(tx, EntityType.NODE);
+                createLookupIndex(tx, EntityType.RELATIONSHIP);
                 tx.commit();
             }
         }
     }
 
-    private void createLookupIndex( KernelTransaction tx, EntityType entityType ) throws KernelException
-    {
-        var descriptor = SchemaDescriptors.forAnyEntityTokens( entityType );
+    private void createLookupIndex(KernelTransaction tx, EntityType entityType) throws KernelException {
+        var descriptor = SchemaDescriptors.forAnyEntityTokens(entityType);
 
-        IndexPrototype prototype = IndexPrototype.forSchema( descriptor ).withIndexType( LOOKUP )
-                                                 .withIndexProvider( indexProviderMap.getTokenIndexProvider().getProviderDescriptor() );
-        prototype = prototype.withName( SchemaNameUtil.generateName( prototype, new String[]{}, new String[]{} ) );
+        IndexPrototype prototype = IndexPrototype.forSchema(descriptor)
+                .withIndexType(LOOKUP)
+                .withIndexProvider(indexProviderMap.getTokenIndexProvider().getProviderDescriptor());
+        prototype = prototype.withName(SchemaNameUtil.generateName(prototype, new String[] {}, new String[] {}));
 
-        tx.schemaWrite().indexCreate( prototype );
+        tx.schemaWrite().indexCreate(prototype);
     }
 
-    private LogTailMetadata getLogTail() throws IOException
-    {
+    private LogTailMetadata getLogTail() throws IOException {
         return getLogFiles().getTailMetadata();
     }
 
-    private LogFiles getLogFiles() throws IOException
-    {
-        return LogFilesBuilder.builder( databaseLayout, fs )
-                .withConfig( databaseConfig )
-                .withDependencies( databaseDependencies )
-                .withLogProvider( internalLogProvider )
-                .withDatabaseTracers( tracers )
-                .withMemoryTracker( otherDatabaseMemoryTracker )
-                .withMonitors( databaseMonitors )
-                .withClock( clock )
-                .withStorageEngineFactory( storageEngineFactory )
+    private LogFiles getLogFiles() throws IOException {
+        return LogFilesBuilder.builder(databaseLayout, fs)
+                .withConfig(databaseConfig)
+                .withDependencies(databaseDependencies)
+                .withLogProvider(internalLogProvider)
+                .withDatabaseTracers(tracers)
+                .withMemoryTracker(otherDatabaseMemoryTracker)
+                .withMonitors(databaseMonitors)
+                .withClock(clock)
+                .withStorageEngineFactory(storageEngineFactory)
                 .build();
     }
 
-    private void registerUpgradeListener()
-    {
-        DatabaseUpgradeTransactionHandler handler =
-                new DatabaseUpgradeTransactionHandler( storageEngine, globalDependencies.resolveDependency( DbmsRuntimeRepository.class ),
-                        storageEngine.metadataProvider(), databaseTransactionEventListeners, UpgradeLocker.DEFAULT, internalLogProvider );
+    private void registerUpgradeListener() {
+        DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler(
+                storageEngine,
+                globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
+                storageEngine.metadataProvider(),
+                databaseTransactionEventListeners,
+                UpgradeLocker.DEFAULT,
+                internalLogProvider);
 
-        handler.registerUpgradeListener( commands ->
-        {
+        handler.registerUpgradeListener(commands -> {
             PhysicalTransactionRepresentation transactionRepresentation =
-                    new PhysicalTransactionRepresentation( commands );
+                    new PhysicalTransactionRepresentation(commands);
             long time = clock.millis();
-            transactionRepresentation.setHeader( EMPTY_BYTE_ARRAY, time, storageEngine.metadataProvider().getLastClosedTransactionId(), time,
-                    leaseService.newClient().leaseId(), AuthSubject.AUTH_DISABLED );
-            try ( var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL_CONTEXT ) )
-            {
+            transactionRepresentation.setHeader(
+                    EMPTY_BYTE_ARRAY,
+                    time,
+                    storageEngine.metadataProvider().getLastClosedTransactionId(),
+                    time,
+                    leaseService.newClient().leaseId(),
+                    AuthSubject.AUTH_DISABLED);
+            try (var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
                 TransactionToApply toApply =
-                        new TransactionToApply( transactionRepresentation, CursorContext.NULL_CONTEXT, storeCursors );
+                        new TransactionToApply(transactionRepresentation, CursorContext.NULL_CONTEXT, storeCursors);
 
-                TransactionCommitProcess commitProcess = databaseDependencies.resolveDependency( TransactionCommitProcess.class );
-                commitProcess.commit( toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
+                TransactionCommitProcess commitProcess =
+                        databaseDependencies.resolveDependency(TransactionCommitProcess.class);
+                commitProcess.commit(toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL);
             }
-        } );
-
+        });
     }
 
-    private void validateStoreAndTxLogs( LogTailMetadata logTail, CursorContextFactory contextFactory, boolean storageExists )
-            throws IOException
-    {
-        if ( storageExists )
-        {
-            checkStoreId( logTail, contextFactory );
-        }
-        else
-        {
-            validateLogsAndStoreAbsence( logTail );
+    private void validateStoreAndTxLogs(
+            LogTailMetadata logTail, CursorContextFactory contextFactory, boolean storageExists) throws IOException {
+        if (storageExists) {
+            checkStoreId(logTail, contextFactory);
+        } else {
+            validateLogsAndStoreAbsence(logTail);
         }
     }
 
-    private void validateLogsAndStoreAbsence( LogTailMetadata logTail )
-    {
-        if ( !logTail.logsMissing() )
-        {
-            throw new RuntimeException( format( "Fail to start '%s' since transaction logs were found, while database " +
-                    "files are missing.", namedDatabaseId ) );
+    private void validateLogsAndStoreAbsence(LogTailMetadata logTail) {
+        if (!logTail.logsMissing()) {
+            throw new RuntimeException(format(
+                    "Fail to start '%s' since transaction logs were found, while database " + "files are missing.",
+                    namedDatabaseId));
         }
     }
 
-    private void handleStartupFailure( Throwable e )
-    {
+    private void handleStartupFailure(Throwable e) {
         // Something unexpected happened during startup
-        databaseAvailabilityGuard.startupFailure( e );
-        msgLog.warn( "Exception occurred while starting the database. Trying to stop already started components.", e );
-        try
-        {
+        databaseAvailabilityGuard.startupFailure(e);
+        msgLog.warn("Exception occurred while starting the database. Trying to stop already started components.", e);
+        try {
             shutdown();
+        } catch (Exception closeException) {
+            msgLog.error("Couldn't close database after startup failure", closeException);
         }
-        catch ( Exception closeException )
-        {
-            msgLog.error( "Couldn't close database after startup failure", closeException );
-        }
-        throw new RuntimeException( e );
+        throw new RuntimeException(e);
     }
 
-    private void checkStoreId( LogTailMetadata tailMetadata, CursorContextFactory contextFactory ) throws IOException
-    {
-        try ( var cursorContext = contextFactory.create( STORE_ID_VALIDATOR_TAG ) )
-        {
-            validateStoreId( tailMetadata, storageEngineFactory.storeId( fs, databaseLayout, databasePageCache, cursorContext ) );
+    private void checkStoreId(LogTailMetadata tailMetadata, CursorContextFactory contextFactory) throws IOException {
+        try (var cursorContext = contextFactory.create(STORE_ID_VALIDATOR_TAG)) {
+            validateStoreId(
+                    tailMetadata, storageEngineFactory.storeId(fs, databaseLayout, databasePageCache, cursorContext));
         }
     }
 
-    private LifeSupport initializeExtensions( Dependencies dependencies )
-    {
+    private LifeSupport initializeExtensions(Dependencies dependencies) {
         LifeSupport extensionsLife = new LifeSupport();
 
-        extensionsLife.add( new DatabaseExtensions( new DatabaseExtensionContext( databaseLayout, dbmsInfo, dependencies ), extensionFactories,
-                dependencies, fail() ) );
+        extensionsLife.add(new DatabaseExtensions(
+                new DatabaseExtensionContext(databaseLayout, dbmsInfo, dependencies),
+                extensionFactories,
+                dependencies,
+                fail()));
 
         extensionsLife.init();
         return extensionsLife;
     }
 
-    private Lifecycle initializeIndexProviderMap( Dependencies dependencies )
-    {
+    private Lifecycle initializeIndexProviderMap(Dependencies dependencies) {
         var indexProvidersLife = new LifeSupport();
 
         var indexProviderMap = StaticIndexProviderMapFactory.create(
-                indexProvidersLife, databaseConfig, databasePageCache, fs, databaseLogService, databaseMonitors, readOnlyDatabaseChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, cursorContextFactory, dependencies );
-        this.indexProviderMap = indexProvidersLife.add( indexProviderMap );
-        dependencies.satisfyDependency( this.indexProviderMap );
+                indexProvidersLife,
+                databaseConfig,
+                databasePageCache,
+                fs,
+                databaseLogService,
+                databaseMonitors,
+                readOnlyDatabaseChecker,
+                dbmsInfo,
+                recoveryCleanupWorkCollector,
+                databaseLayout,
+                tokenHolders,
+                scheduler,
+                cursorContextFactory,
+                dependencies);
+        this.indexProviderMap = indexProvidersLife.add(indexProviderMap);
+        dependencies.satisfyDependency(this.indexProviderMap);
         // fulltextadapter for FulltextProcedures
-        dependencies.satisfyDependency( new DefaultFulltextAdapter( (FulltextIndexProvider) this.indexProviderMap.getFulltextProvider() ) );
+        dependencies.satisfyDependency(
+                new DefaultFulltextAdapter((FulltextIndexProvider) this.indexProviderMap.getFulltextProvider()));
         indexProvidersLife.init();
         return indexProvidersLife;
     }
@@ -689,24 +750,31 @@ public class Database extends LifecycleAdapter
      * A database can be upgraded <em>after</em> it has been {@link #init() initialized},
      * and <em>before</em> it is {@link #start() started}.
      */
-    private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker ) throws IOException
-    {
-        IndexProviderMap indexProviderMap = databaseDependencies.resolveDependency( IndexProviderMap.class );
-        var logTailSupplier = Suppliers.lazySingleton( () ->
-        {
-            try
-            {
-                return new LogTailExtractor( fs, databasePageCache, databaseConfig, storageEngineFactory, tracers )
-                        .getTailMetadata( databaseLayout, memoryTracker );
+    private void upgradeStore(
+            DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker)
+            throws IOException {
+        IndexProviderMap indexProviderMap = databaseDependencies.resolveDependency(IndexProviderMap.class);
+        var logTailSupplier = Suppliers.lazySingleton(() -> {
+            try {
+                return new LogTailExtractor(fs, databasePageCache, databaseConfig, storageEngineFactory, tracers)
+                        .getTailMetadata(databaseLayout, memoryTracker);
+            } catch (Exception e) {
+                throw new UnableToMigrateException("Fail to load log tail during upgrade.", e);
             }
-            catch ( Exception e )
-            {
-                throw new UnableToMigrateException( "Fail to load log tail during upgrade.", e );
-            }
-        } );
-        var storeMigrator = new StoreMigrator( fs, databaseConfig, databaseLogService, databasePageCache, tracers.getPageCacheTracer(), scheduler,
-                databaseLayout, storageEngineFactory, indexProviderMap, new CursorContextFactory( tracers.getPageCacheTracer(), EMPTY ), memoryTracker,
-                logTailSupplier );
+        });
+        var storeMigrator = new StoreMigrator(
+                fs,
+                databaseConfig,
+                databaseLogService,
+                databasePageCache,
+                tracers.getPageCacheTracer(),
+                scheduler,
+                databaseLayout,
+                storageEngineFactory,
+                indexProviderMap,
+                new CursorContextFactory(tracers.getPageCacheTracer(), EMPTY),
+                memoryTracker,
+                logTailSupplier);
         storeMigrator.upgradeIfNeeded();
     }
 
@@ -718,11 +786,22 @@ public class Database extends LifecycleAdapter
             DatabaseSchemaState databaseSchemaState,
             IndexStoreViewFactory indexStoreViewFactory,
             IndexStatisticsStore indexStatisticsStore,
-            MemoryTracker memoryTracker )
-    {
-        return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore, databaseConfig, scheduler,
-                indexProviderMap, tokenHolders, internalLogProvider, databaseMonitors.newMonitor( IndexMonitor.class ),
-                cursorContextFactory, memoryTracker, namedDatabaseId.name(), readOnlyDatabaseChecker ) );
+            MemoryTracker memoryTracker) {
+        return life.add(buildIndexingService(
+                storageEngine,
+                databaseSchemaState,
+                indexStoreViewFactory,
+                indexStatisticsStore,
+                databaseConfig,
+                scheduler,
+                indexProviderMap,
+                tokenHolders,
+                internalLogProvider,
+                databaseMonitors.newMonitor(IndexMonitor.class),
+                cursorContextFactory,
+                memoryTracker,
+                namedDatabaseId.name(),
+                readOnlyDatabaseChecker));
     }
 
     /**
@@ -742,70 +821,103 @@ public class Database extends LifecycleAdapter
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             String databaseName,
-            DatabaseReadOnlyChecker readOnlyChecker )
-    {
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory,
-                tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, indexMonitor,
-                databaseSchemaState, indexStatisticsStore, contextFactory, memoryTracker, databaseName, readOnlyChecker, storageEngine.getOpenOptions() );
-        storageEngine.addIndexUpdateListener( indexingService );
+            DatabaseReadOnlyChecker readOnlyChecker) {
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService(
+                config,
+                jobScheduler,
+                indexProviderMap,
+                indexStoreViewFactory,
+                tokenNameLookup,
+                initialSchemaRulesLoader(storageEngine),
+                internalLogProvider,
+                indexMonitor,
+                databaseSchemaState,
+                indexStatisticsStore,
+                contextFactory,
+                memoryTracker,
+                databaseName,
+                readOnlyChecker,
+                storageEngine.getOpenOptions());
+        storageEngine.addIndexUpdateListener(indexingService);
         return indexingService;
     }
 
-    public boolean isSystem()
-    {
+    public boolean isSystem() {
         return namedDatabaseId.isSystemDatabase();
     }
 
-    private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config, InternalLogProvider logProvider, JobScheduler scheduler,
-                                                               CheckPointerImpl.ForceOperation forceOperation,
-                                                               MetadataProvider metadataProvider, Monitors monitors,
-                                                               Dependencies databaseDependencies, CursorContextFactory cursorContextFactory,
-                                                               CommandReaderFactory commandReaderFactory )
-    {
+    private DatabaseTransactionLogModule buildTransactionLogs(
+            LogFiles logFiles,
+            Config config,
+            InternalLogProvider logProvider,
+            JobScheduler scheduler,
+            CheckPointerImpl.ForceOperation forceOperation,
+            MetadataProvider metadataProvider,
+            Monitors monitors,
+            Dependencies databaseDependencies,
+            CursorContextFactory cursorContextFactory,
+            CommandReaderFactory commandReaderFactory) {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
         Lock pruneLock = new ReentrantLock();
         final LogPruning logPruning =
-                new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, pruneLock );
+                new LogPruningImpl(fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, pruneLock);
 
-        var transactionAppender =
-                createTransactionAppender( logFiles, metadataProvider, transactionMetadataCache, config, databaseHealth, scheduler, logProvider );
-        life.add( transactionAppender );
+        var transactionAppender = createTransactionAppender(
+                logFiles, metadataProvider, transactionMetadataCache, config, databaseHealth, scheduler, logProvider);
+        life.add(transactionAppender);
 
-        final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, commandReaderFactory, monitors, true, config );
+        final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore(
+                logFiles, transactionMetadataCache, commandReaderFactory, monitors, true, config);
 
-        CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
+        CheckPointThreshold threshold = CheckPointThreshold.createThreshold(config, clock, logPruning, logProvider);
 
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
-        final CheckPointerImpl checkPointer =
-                new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, checkpointAppender, databaseHealth, logProvider,
-                        tracers, storeCopyCheckPointMutex, cursorContextFactory, clock );
+        final CheckPointerImpl checkPointer = new CheckPointerImpl(
+                metadataProvider,
+                threshold,
+                forceOperation,
+                logPruning,
+                checkpointAppender,
+                databaseHealth,
+                logProvider,
+                tracers,
+                storeCopyCheckPointMutex,
+                cursorContextFactory,
+                clock);
 
         long recurringPeriod = threshold.checkFrequencyMillis();
-        CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, scheduler, recurringPeriod, databaseHealth, namedDatabaseId.name() );
+        CheckPointScheduler checkPointScheduler = new CheckPointScheduler(
+                checkPointer, scheduler, recurringPeriod, databaseHealth, namedDatabaseId.name());
 
-        life.add( checkPointer );
-        life.add( checkPointScheduler );
+        life.add(checkPointer);
+        life.add(checkPointScheduler);
 
-        TransactionLogServiceImpl transactionLogService =
-                new TransactionLogServiceImpl( metadataProvider, logFiles, logicalTransactionStore, pruneLock, databaseAvailabilityGuard );
-        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, transactionAppender, transactionLogService );
+        TransactionLogServiceImpl transactionLogService = new TransactionLogServiceImpl(
+                metadataProvider, logFiles, logicalTransactionStore, pruneLock, databaseAvailabilityGuard);
+        databaseDependencies.satisfyDependencies(
+                checkPointer, logFiles, logicalTransactionStore, transactionAppender, transactionLogService);
 
-        return new DatabaseTransactionLogModule( checkPointer, transactionAppender );
+        return new DatabaseTransactionLogModule(checkPointer, transactionAppender);
     }
 
-    private DatabaseKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
-            IndexingService indexingService, DatabaseSchemaState databaseSchemaState,
-            StorageEngine storageEngine, TransactionIdStore transactionIdStore,
+    private DatabaseKernelModule buildKernel(
+            LogFiles logFiles,
+            TransactionAppender appender,
+            IndexingService indexingService,
+            DatabaseSchemaState databaseSchemaState,
+            StorageEngine storageEngine,
+            TransactionIdStore transactionIdStore,
             KernelVersionRepository kernelVersionRepository,
-            AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock,
+            AvailabilityGuard databaseAvailabilityGuard,
+            SystemNanoClock clock,
             IndexStatisticsStore indexStatisticsStore,
-            LeaseService leaseService, CursorContextFactory cursorContextFactory )
-    {
+            LeaseService leaseService,
+            CursorContextFactory cursorContextFactory) {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
 
-        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine, namedDatabaseId, readOnlyDatabaseChecker );
+        TransactionCommitProcess transactionCommitProcess =
+                commitProcessFactory.create(appender, storageEngine, namedDatabaseId, readOnlyDatabaseChecker);
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned
@@ -813,73 +925,98 @@ public class Database extends LifecycleAdapter
          */
         Supplier<Kernel> kernelProvider = () -> kernelModule.kernelAPI();
 
-        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, internalLogProvider );
+        ConstraintIndexCreator constraintIndexCreator =
+                new ConstraintIndexCreator(kernelProvider, indexingService, internalLogProvider);
 
-        TransactionExecutionMonitor transactionExecutionMonitor = getMonitors().newMonitor( TransactionExecutionMonitor.class );
-        KernelTransactions kernelTransactions = life.add(
-                new KernelTransactions( databaseConfig, locks, constraintIndexCreator,
-                                        transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
-                                        databaseAvailabilityGuard, storageEngine, globalProcedures, transactionIdStore,
-                                        globalDependencies.resolveDependency( DbmsRuntimeRepository.class ), kernelVersionRepository,
-                                        clock, cpuClockRef,
-                                        accessCapabilityFactory, cursorContextFactory, collectionsFactorySupplier,
-                                        constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService,
-                                        indexStatisticsStore, databaseDependencies,
-                                        tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
-                                        externalIdReuseConditionProvider.get( transactionIdStore, clock ), internalLogProvider ) );
+        TransactionExecutionMonitor transactionExecutionMonitor =
+                getMonitors().newMonitor(TransactionExecutionMonitor.class);
+        KernelTransactions kernelTransactions = life.add(new KernelTransactions(
+                databaseConfig,
+                locks,
+                constraintIndexCreator,
+                transactionCommitProcess,
+                databaseTransactionEventListeners,
+                transactionStats,
+                databaseAvailabilityGuard,
+                storageEngine,
+                globalProcedures,
+                transactionIdStore,
+                globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
+                kernelVersionRepository,
+                clock,
+                cpuClockRef,
+                accessCapabilityFactory,
+                cursorContextFactory,
+                collectionsFactorySupplier,
+                constraintSemantics,
+                databaseSchemaState,
+                tokenHolders,
+                getNamedDatabaseId(),
+                indexingService,
+                indexStatisticsStore,
+                databaseDependencies,
+                tracers,
+                leaseService,
+                transactionsMemoryPool,
+                readOnlyDatabaseChecker,
+                transactionExecutionMonitor,
+                externalIdReuseConditionProvider.get(transactionIdStore, clock),
+                internalLogProvider));
 
-        buildTransactionMonitor( kernelTransactions, databaseConfig );
+        buildTransactionMonitor(kernelTransactions, databaseConfig);
 
-        KernelImpl kernel = new KernelImpl( kernelTransactions, databaseHealth, transactionStats, globalProcedures, databaseConfig, storageEngine,
-                                            transactionExecutionMonitor );
+        KernelImpl kernel = new KernelImpl(
+                kernelTransactions,
+                databaseHealth,
+                transactionStats,
+                globalProcedures,
+                databaseConfig,
+                storageEngine,
+                transactionExecutionMonitor);
 
-        life.add( kernel );
+        life.add(kernel);
 
         final StoreFileListing fileListing =
-                new StoreFileListing( databaseLayout, logFiles, indexingService, storageEngine, idGeneratorFactory );
-        databaseDependencies.satisfyDependency( fileListing );
+                new StoreFileListing(databaseLayout, logFiles, indexingService, storageEngine, idGeneratorFactory);
+        databaseDependencies.satisfyDependency(fileListing);
 
-        return new DatabaseKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
+        return new DatabaseKernelModule(transactionCommitProcess, kernel, kernelTransactions, fileListing);
     }
 
-    private AtomicReference<CpuClock> setupCpuClockAtomicReference()
-    {
-        AtomicReference<CpuClock> cpuClock = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
-        SettingChangeListener<Boolean> cpuClockUpdater = ( before, after ) ->
-        {
-            if ( after )
-            {
-                cpuClock.set( CpuClock.CPU_CLOCK );
-            }
-            else
-            {
-                cpuClock.set( CpuClock.NOT_AVAILABLE );
+    private AtomicReference<CpuClock> setupCpuClockAtomicReference() {
+        AtomicReference<CpuClock> cpuClock = new AtomicReference<>(CpuClock.NOT_AVAILABLE);
+        SettingChangeListener<Boolean> cpuClockUpdater = (before, after) -> {
+            if (after) {
+                cpuClock.set(CpuClock.CPU_CLOCK);
+            } else {
+                cpuClock.set(CpuClock.NOT_AVAILABLE);
             }
         };
-        cpuClockUpdater.accept( null, databaseConfig.get( GraphDatabaseSettings.track_query_cpu_time ) );
-        databaseConfig.addListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
+        cpuClockUpdater.accept(null, databaseConfig.get(GraphDatabaseSettings.track_query_cpu_time));
+        databaseConfig.addListener(GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater);
         return cpuClock;
     }
 
-    private void buildTransactionMonitor( KernelTransactions kernelTransactions, Config config )
-    {
-        KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, databaseLogService );
-        databaseDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
-        TransactionMonitorScheduler transactionMonitorScheduler =
-                new TransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
-                        config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis(), namedDatabaseId.name() );
-        life.add( transactionMonitorScheduler );
+    private void buildTransactionMonitor(KernelTransactions kernelTransactions, Config config) {
+        KernelTransactionMonitor kernelTransactionTimeoutMonitor =
+                new KernelTransactionMonitor(kernelTransactions, clock, databaseLogService);
+        databaseDependencies.satisfyDependency(kernelTransactionTimeoutMonitor);
+        TransactionMonitorScheduler transactionMonitorScheduler = new TransactionMonitorScheduler(
+                kernelTransactionTimeoutMonitor,
+                scheduler,
+                config.get(GraphDatabaseSettings.transaction_monitor_check_interval)
+                        .toMillis(),
+                namedDatabaseId.name());
+        life.add(transactionMonitorScheduler);
     }
 
     @Override
-    public synchronized void stop()
-    {
-        if ( !started )
-        {
+    public synchronized void stop() {
+        if (!started) {
             return;
         }
 
-        eventListeners.databaseShutdown( namedDatabaseId );
+        eventListeners.databaseShutdown(namedDatabaseId);
         life.stop();
         awaitAllClosingTransactions();
         life.shutdown();
@@ -888,244 +1025,201 @@ public class Database extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void shutdown() throws Exception
-    {
+    public synchronized void shutdown() throws Exception {
         safeCleanup();
         started = false;
         initialized = false;
     }
 
-    private void safeCleanup() throws Exception
-    {
-        executeAll( () -> safeLifeShutdown( life ), () -> safeStorageEngineClose( storageEngine ), () -> safePoolRelease( otherDatabasePool ) );
+    private void safeCleanup() throws Exception {
+        executeAll(
+                () -> safeLifeShutdown(life),
+                () -> safeStorageEngineClose(storageEngine),
+                () -> safePoolRelease(otherDatabasePool));
     }
 
-    public void prepareToDrop()
-    {
-        prepareStop( alwaysTrue() );
-        checkpointerLifecycle.setCheckpointOnShutdown( false );
+    public void prepareToDrop() {
+        prepareStop(alwaysTrue());
+        checkpointerLifecycle.setCheckpointOnShutdown(false);
     }
 
-    public synchronized void drop()
-    {
-        if ( started )
-        {
+    public synchronized void drop() {
+        if (started) {
             prepareToDrop();
             stop();
         }
-        deleteDatabaseFiles( List.of( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() ) );
-        eventListeners.databaseDrop( namedDatabaseId );
+        deleteDatabaseFiles(List.of(databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory()));
+        eventListeners.databaseDrop(namedDatabaseId);
     }
 
-    private void deleteDatabaseFiles( List<Path> files )
-    {
-        try
-        {
-            for ( Path fileToDelete : files )
-            {
-                FileSystemUtils.deleteFile( fs, fileToDelete );
+    private void deleteDatabaseFiles(List<Path> files) {
+        try {
+            for (Path fileToDelete : files) {
+                FileSystemUtils.deleteFile(fs, fileToDelete);
             }
-        }
-        catch ( IOException e )
-        {
-            internalLogProvider.getLog( Database.class ).error( format( "Failed to delete '%s' files.", namedDatabaseId ), e );
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            internalLogProvider
+                    .getLog(Database.class)
+                    .error(format("Failed to delete '%s' files.", namedDatabaseId), e);
+            throw new UncheckedIOException(e);
         }
     }
 
-    private void awaitAllClosingTransactions()
-    {
-        msgLog.info( "Waiting for closing transactions." );
+    private void awaitAllClosingTransactions() {
+        msgLog.info("Waiting for closing transactions.");
         KernelTransactions kernelTransactions = kernelModule.kernelTransactions();
         kernelTransactions.terminateTransactions();
 
-        while ( kernelTransactions.haveClosingTransaction() )
-        {
-            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+        while (kernelTransactions.haveClosingTransaction()) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
-        msgLog.info( "All transactions are closed." );
+        msgLog.info("All transactions are closed.");
     }
 
-    public Config getConfig()
-    {
+    public Config getConfig() {
         return databaseConfig;
     }
 
-    public DatabaseLogService getLogService()
-    {
+    public DatabaseLogService getLogService() {
         return databaseLogService;
     }
 
-    public DatabaseLogProvider getInternalLogProvider()
-    {
+    public DatabaseLogProvider getInternalLogProvider() {
         return internalLogProvider;
     }
 
-    public LegacyStoreId getStoreId()
-    {
+    public LegacyStoreId getStoreId() {
         return storageEngine.getStoreId();
     }
 
-    public DatabaseLayout getDatabaseLayout()
-    {
+    public DatabaseLayout getDatabaseLayout() {
         return databaseLayout;
     }
 
-    public Monitors getMonitors()
-    {
+    public Monitors getMonitors() {
         return databaseMonitors;
     }
 
-    public QueryExecutionEngine getExecutionEngine()
-    {
+    public QueryExecutionEngine getExecutionEngine() {
         return executionEngine;
     }
 
-    public Kernel getKernel()
-    {
+    public Kernel getKernel() {
         return kernelModule.kernelAPI();
     }
 
-    public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
-    {
+    public ResourceIterator<StoreFileMetadata> listStoreFiles(boolean includeLogs) throws IOException {
         StoreFileListing.Builder fileListingBuilder = getStoreFileListing().builder();
         fileListingBuilder.excludeIdFiles();
-        if ( !includeLogs )
-        {
+        if (!includeLogs) {
             fileListingBuilder.excludeLogFiles();
         }
         return fileListingBuilder.build();
     }
 
-    public StoreFileListing getStoreFileListing()
-    {
+    public StoreFileListing getStoreFileListing() {
         return kernelModule.fileListing();
     }
 
-    public Dependencies getDependencyResolver()
-    {
+    public Dependencies getDependencyResolver() {
         return databaseDependencies;
     }
 
-    public JobScheduler getScheduler()
-    {
+    public JobScheduler getScheduler() {
         return scheduler;
     }
 
-    public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex()
-    {
+    public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex() {
         return storeCopyCheckPointMutex;
     }
 
-    public NamedDatabaseId getNamedDatabaseId()
-    {
+    public NamedDatabaseId getNamedDatabaseId() {
         return namedDatabaseId;
     }
 
-    public TokenHolders getTokenHolders()
-    {
+    public TokenHolders getTokenHolders() {
         return tokenHolders;
     }
 
-    public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
-    {
+    public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard() {
         return databaseAvailabilityGuard;
     }
 
-    public GraphDatabaseFacade getDatabaseFacade()
-    {
+    public GraphDatabaseFacade getDatabaseFacade() {
         return databaseFacade;
     }
 
-    public DatabaseTracers getTracers()
-    {
+    public DatabaseTracers getTracers() {
         return tracers;
     }
 
-    public MemoryTracker getOtherDatabaseMemoryTracker()
-    {
+    public MemoryTracker getOtherDatabaseMemoryTracker() {
         return otherDatabaseMemoryTracker;
     }
 
-    public DatabaseHealth getDatabaseHealth()
-    {
+    public DatabaseHealth getDatabaseHealth() {
         return databaseHealth;
     }
 
-    public StorageEngineFactory getStorageEngineFactory()
-    {
+    public StorageEngineFactory getStorageEngineFactory() {
         return storageEngineFactory;
     }
 
-    public IOController getIoController()
-    {
+    public IOController getIoController() {
         return ioController;
     }
 
-    public CursorContextFactory getCursorContextFactory()
-    {
+    public CursorContextFactory getCursorContextFactory() {
         return cursorContextFactory;
     }
 
-    public ElementIdMapper getElementIdMapper()
-    {
+    public ElementIdMapper getElementIdMapper() {
         return elementIdMapper;
     }
 
-    private void prepareStop( Predicate<PagedFile> deleteFilePredicate )
-    {
-        databasePageCache.listExistingMappings()
-                .stream().filter( deleteFilePredicate )
-                .forEach( file -> file.setDeleteOnClose( true ) );
+    private void prepareStop(Predicate<PagedFile> deleteFilePredicate) {
+        databasePageCache.listExistingMappings().stream()
+                .filter(deleteFilePredicate)
+                .forEach(file -> file.setDeleteOnClose(true));
     }
 
-    private long getAwaitActiveTransactionDeadlineMillis()
-    {
-        return databaseConfig.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
+    private long getAwaitActiveTransactionDeadlineMillis() {
+        return databaseConfig
+                .get(GraphDatabaseSettings.shutdown_transaction_end_timeout)
+                .toMillis();
     }
 
     @VisibleForTesting
-    public LifeSupport getLife()
-    {
+    public LifeSupport getLife() {
         return life;
     }
 
-    public static Iterable<IndexDescriptor> initialSchemaRulesLoader( StorageEngine storageEngine )
-    {
-        return () ->
-        {
-            try ( StorageReader reader = storageEngine.newReader() )
-            {
-                return asList( reader.indexesGetAll() ).iterator();
+    public static Iterable<IndexDescriptor> initialSchemaRulesLoader(StorageEngine storageEngine) {
+        return () -> {
+            try (StorageReader reader = storageEngine.newReader()) {
+                return asList(reader.indexesGetAll()).iterator();
             }
         };
     }
 
-    public boolean isStarted()
-    {
+    public boolean isStarted() {
         return started;
     }
 
-    private static void safeStorageEngineClose( StorageEngine storageEngine )
-    {
-        if ( storageEngine != null )
-        {
+    private static void safeStorageEngineClose(StorageEngine storageEngine) {
+        if (storageEngine != null) {
             storageEngine.shutdown();
         }
     }
 
-    private static void safePoolRelease( ScopedMemoryPool pool )
-    {
-        if ( pool != null )
-        {
+    private static void safePoolRelease(ScopedMemoryPool pool) {
+        if (pool != null) {
             pool.close();
         }
     }
 
-    private static void safeLifeShutdown( LifeSupport life )
-    {
-        if ( life != null )
-        {
+    private static void safeLifeShutdown(LifeSupport life) {
+        if (life != null) {
             life.shutdown();
         }
     }

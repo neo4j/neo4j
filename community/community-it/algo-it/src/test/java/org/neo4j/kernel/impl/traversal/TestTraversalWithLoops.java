@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.traversal;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
@@ -28,28 +27,29 @@ import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Uniqueness;
 
-class TestTraversalWithLoops extends TraversalTestBase
-{
+class TestTraversalWithLoops extends TraversalTestBase {
     @Test
-    void traverseThroughNodeWithLoop()
-    {
+    void traverseThroughNodeWithLoop() {
         /*
          * (a)-->(b)-->(c)-->(d)-->(e)
          *             /  \ /  \
          *             \__/ \__/
          */
 
-        createGraph( "a TO b", "b TO c", "c TO c", "c TO d", "d TO d", "d TO e" );
+        createGraph("a TO b", "b TO c", "c TO c", "c TO d", "d TO d", "d TO e");
 
-        try ( Transaction tx = beginTx() )
-        {
-            Node a = getNodeWithName( tx, "a" );
-            final Node e = getNodeWithName( tx, "e" );
-            Evaluator onlyEndNode = path -> Evaluation.ofIncludes( path.endNode().equals( e ) );
-            TraversalDescription basicTraverser = tx.traversalDescription().evaluator( onlyEndNode );
-            expectPaths( basicTraverser.traverse( a ), "a,b,c,d,e" );
-            expectPaths( basicTraverser.uniqueness( Uniqueness.RELATIONSHIP_PATH ).traverse( a ),
-                    "a,b,c,d,e", "a,b,c,c,d,e", "a,b,c,d,d,e", "a,b,c,c,d,d,e" );
+        try (Transaction tx = beginTx()) {
+            Node a = getNodeWithName(tx, "a");
+            final Node e = getNodeWithName(tx, "e");
+            Evaluator onlyEndNode = path -> Evaluation.ofIncludes(path.endNode().equals(e));
+            TraversalDescription basicTraverser = tx.traversalDescription().evaluator(onlyEndNode);
+            expectPaths(basicTraverser.traverse(a), "a,b,c,d,e");
+            expectPaths(
+                    basicTraverser.uniqueness(Uniqueness.RELATIONSHIP_PATH).traverse(a),
+                    "a,b,c,d,e",
+                    "a,b,c,c,d,e",
+                    "a,b,c,d,d,e",
+                    "a,b,c,c,d,d,e");
             tx.commit();
         }
     }

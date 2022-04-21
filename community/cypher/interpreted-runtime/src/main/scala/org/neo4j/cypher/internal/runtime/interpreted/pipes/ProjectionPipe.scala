@@ -26,10 +26,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Interprete
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class ProjectionPipe(source: Pipe, projection: CommandProjection)
-                         (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class ProjectionPipe(source: Pipe, projection: CommandProjection)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     if (projection.isEmpty)
       input
     else {
@@ -43,6 +46,7 @@ case class ProjectionPipe(source: Pipe, projection: CommandProjection)
 }
 
 object ProjectionPipe {
+
   def apply(source: Pipe, projections: Map[String, Expression]): ProjectionPipe =
     ProjectionPipe(source, InterpretedCommandProjection(projections))()
 }

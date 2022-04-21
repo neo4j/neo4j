@@ -23,8 +23,7 @@ package org.neo4j.dbms.database;
  * Describes the version scheme of those system components that needs versioning.
  * Also keeps track of the current versions and for which versions runtime and migration are supported.
  */
-public interface ComponentVersion
-{
+public interface ComponentVersion {
     String SECURITY_USER_COMPONENT = "security-users";
     String SECURITY_PRIVILEGE_COMPONENT = "security-privileges";
     String DBMS_RUNTIME_COMPONENT = "dbms-runtime";
@@ -51,13 +50,11 @@ public interface ComponentVersion
 
     boolean runtimeSupported();
 
-    default boolean isGreaterThan( ComponentVersion other )
-    {
+    default boolean isGreaterThan(ComponentVersion other) {
         return this.getVersion() > other.getVersion();
     }
 
-    class Neo4jVersions
-    {
+    class Neo4jVersions {
         public static final String VERSION_40 = "Neo4j 4.0";
         public static final String VERSION_41D1 = "Neo4j 4.1.0-Drop01";
         public static final String VERSION_41 = "Neo4j 4.1";

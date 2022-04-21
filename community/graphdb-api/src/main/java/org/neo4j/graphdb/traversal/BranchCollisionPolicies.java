@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.traversal;
 
 import java.util.function.Predicate;
-
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.impl.traversal.ShortestPathsBranchCollisionDetector;
 import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
@@ -30,22 +29,17 @@ import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
  *
  * Copied from kernel package so that we can hide kernel from the public API.
  */
-public enum BranchCollisionPolicies implements BranchCollisionPolicy
-{
-    STANDARD
-    {
+public enum BranchCollisionPolicies implements BranchCollisionPolicy {
+    STANDARD {
         @Override
-        public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )
-        {
-            return new StandardBranchCollisionDetector( evaluator, pathPredicate );
+        public BranchCollisionDetector create(Evaluator evaluator, Predicate<Path> pathPredicate) {
+            return new StandardBranchCollisionDetector(evaluator, pathPredicate);
         }
     },
-    SHORTEST_PATH
-    {
+    SHORTEST_PATH {
         @Override
-        public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )
-        {
-            return new ShortestPathsBranchCollisionDetector( evaluator, pathPredicate );
+        public BranchCollisionDetector create(Evaluator evaluator, Predicate<Path> pathPredicate) {
+            return new ShortestPathsBranchCollisionDetector(evaluator, pathPredicate);
         }
     }
 }

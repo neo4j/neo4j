@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.function.LongPredicate;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -33,8 +32,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
-public class IndexSamplingControllerFactory
-{
+public class IndexSamplingControllerFactory {
     private final IndexSamplingConfig samplingConfig;
     private final IndexStatisticsStore indexStatisticsStore;
     private final JobScheduler scheduler;
@@ -44,10 +42,15 @@ public class IndexSamplingControllerFactory
     private final Config config;
     private final String databaseName;
 
-    public IndexSamplingControllerFactory( IndexSamplingConfig samplingConfig, IndexStatisticsStore indexStatisticsStore,
-                                           JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                                           InternalLogProvider logProvider, CursorContextFactory contextFactory, Config config, String databaseName )
-    {
+    public IndexSamplingControllerFactory(
+            IndexSamplingConfig samplingConfig,
+            IndexStatisticsStore indexStatisticsStore,
+            JobScheduler scheduler,
+            TokenNameLookup tokenNameLookup,
+            InternalLogProvider logProvider,
+            CursorContextFactory contextFactory,
+            Config config,
+            String databaseName) {
         this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;
         this.scheduler = scheduler;
@@ -58,44 +61,50 @@ public class IndexSamplingControllerFactory
         this.databaseName = databaseName;
     }
 
-    public IndexSamplingController create( IndexMapSnapshotProvider snapshotProvider )
-    {
-        OnlineIndexSamplingJobFactory jobFactory = new OnlineIndexSamplingJobFactory( indexStatisticsStore, tokenNameLookup, logProvider, contextFactory );
+    public IndexSamplingController create(IndexMapSnapshotProvider snapshotProvider) {
+        OnlineIndexSamplingJobFactory jobFactory =
+                new OnlineIndexSamplingJobFactory(indexStatisticsStore, tokenNameLookup, logProvider, contextFactory);
         LongPredicate samplingUpdatePredicate = createSamplingPredicate();
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, databaseName );
-        RecoveryCondition indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );
-        return new IndexSamplingController( samplingConfig, jobFactory, samplingUpdatePredicate, jobTracker, snapshotProvider, scheduler,
-                indexRecoveryCondition, logProvider, config, databaseName );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker(scheduler, databaseName);
+        RecoveryCondition indexRecoveryCondition = createIndexRecoveryCondition(logProvider, tokenNameLookup);
+        return new IndexSamplingController(
+                samplingConfig,
+                jobFactory,
+                samplingUpdatePredicate,
+                jobTracker,
+                snapshotProvider,
+                scheduler,
+                indexRecoveryCondition,
+                logProvider,
+                config,
+                databaseName);
     }
 
-    private LongPredicate createSamplingPredicate()
-    {
+    private LongPredicate createSamplingPredicate() {
         return indexId -> {
-            var indexInfo = indexStatisticsStore.indexSample( indexId );
+            var indexInfo = indexStatisticsStore.indexSample(indexId);
             long updates = indexInfo.updates();
             long size = indexInfo.indexSize();
-            long threshold = Math.round( samplingConfig.updateRatio() * size );
+            long threshold = Math.round(samplingConfig.updateRatio() * size);
             return updates > threshold;
         };
     }
 
-    private RecoveryCondition createIndexRecoveryCondition( final InternalLogProvider logProvider,
-                                                                     final TokenNameLookup tokenNameLookup )
-    {
-        return new RecoveryCondition()
-        {
-            private final InternalLog log = logProvider.getLog( IndexSamplingController.class );
+    private RecoveryCondition createIndexRecoveryCondition(
+            final InternalLogProvider logProvider, final TokenNameLookup tokenNameLookup) {
+        return new RecoveryCondition() {
+            private final InternalLog log = logProvider.getLog(IndexSamplingController.class);
 
             @Override
-            public boolean test( IndexDescriptor descriptor )
-            {
-                IndexSample indexSample = indexStatisticsStore.indexSample( descriptor.getId() );
+            public boolean test(IndexDescriptor descriptor) {
+                IndexSample indexSample = indexStatisticsStore.indexSample(descriptor.getId());
                 long samples = indexSample.sampleSize();
                 long size = indexSample.indexSize();
                 boolean empty = (samples == 0) || (size == 0);
-                if ( empty )
-                {
-                    log.debug( "Recovering index sampling for index %s", descriptor.schema().userDescription( tokenNameLookup ) );
+                if (empty) {
+                    log.debug(
+                            "Recovering index sampling for index %s",
+                            descriptor.schema().userDescription(tokenNameLookup));
                 }
                 return empty;
             }

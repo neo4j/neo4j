@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.eclipse.collections.api.factory.Sets;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,53 +27,68 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexProviderCompatibilityTestSuite.Compatibility
-{
-    SpecialisedIndexPopulatorCompatibility( SpecialisedIndexProviderCompatibilityTestSuite testSuite )
-    {
-        super( testSuite, testSuite.indexPrototype() );
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+
+abstract class SpecialisedIndexPopulatorCompatibility
+        extends SpecialisedIndexProviderCompatibilityTestSuite.Compatibility {
+    SpecialisedIndexPopulatorCompatibility(SpecialisedIndexProviderCompatibilityTestSuite testSuite) {
+        super(testSuite, testSuite.indexPrototype());
     }
 
     @Test
-    void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
-    {
+    void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception {
         // GIVEN
         String failure = "The contrived failure";
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig(config);
         // WHEN (this will attempt to call close)
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, immutable.empty() ),
-                p -> p.markAsFailed( failure ), false );
+        withPopulator(
+                indexProvider.getPopulator(
+                        descriptor,
+                        indexSamplingConfig,
+                        heapBufferFactory(1024),
+                        INSTANCE,
+                        tokenNameLookup,
+                        immutable.empty()),
+                p -> p.markAsFailed(failure),
+                false);
         // THEN
-        assertThat( indexProvider.getPopulationFailure( descriptor, NULL_CONTEXT, immutable.empty() ) ).contains( failure );
+        assertThat(indexProvider.getPopulationFailure(descriptor, NULL_CONTEXT, immutable.empty()))
+                .contains(failure);
     }
 
     @Test
-    void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
-    {
+    void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
-                                                   immutable.empty() ), p ->
-        {
-            String failure = "The contrived failure";
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig(config);
+        withPopulator(
+                indexProvider.getPopulator(
+                        descriptor,
+                        indexSamplingConfig,
+                        heapBufferFactory(1024),
+                        INSTANCE,
+                        tokenNameLookup,
+                        immutable.empty()),
+                p -> {
+                    String failure = "The contrived failure";
 
-            // WHEN
-            p.markAsFailed( failure );
-            p.close( false, NULL_CONTEXT );
+                    // WHEN
+                    p.markAsFailed(failure);
+                    p.close(false, NULL_CONTEXT);
 
-            // THEN
-            assertEquals( FAILED, indexProvider.getInitialState( descriptor, NULL_CONTEXT, immutable.empty() ) );
-        }, false );
+                    // THEN
+                    assertEquals(FAILED, indexProvider.getInitialState(descriptor, NULL_CONTEXT, immutable.empty()));
+                },
+                false);
     }
 
     @Test
-    void shouldBeAbleToDropAClosedIndexPopulator()
-    {
+    void shouldBeAbleToDropAClosedIndexPopulator() {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-        final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
-                                                             immutable.empty() );
-        p.close( false, NULL_CONTEXT );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig(config);
+        final IndexPopulator p = indexProvider.getPopulator(
+                descriptor, indexSamplingConfig, heapBufferFactory(1024), INSTANCE, tokenNameLookup, immutable.empty());
+        p.close(false, NULL_CONTEXT);
 
         // WHEN
         p.drop();

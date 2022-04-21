@@ -37,8 +37,7 @@ import org.neo4j.graphdb.Path;
  *
  * @see TraversalDescription
  */
-public interface BidirectionalTraversalDescription
-{
+public interface BidirectionalTraversalDescription {
     /**
      * Sets the start side {@link TraversalDescription} of this bidirectional
      * traversal. The point of a bidirectional traversal is that the start
@@ -48,7 +47,7 @@ public interface BidirectionalTraversalDescription
      * for the start side traversal.
      * @return a new traversal description with the new modifications.
      */
-    BidirectionalTraversalDescription startSide( TraversalDescription startSideDescription );
+    BidirectionalTraversalDescription startSide(TraversalDescription startSideDescription);
 
     /**
      * Sets the end side {@link TraversalDescription} of this bidirectional
@@ -59,7 +58,7 @@ public interface BidirectionalTraversalDescription
      * for the end side traversal.
      * @return a new traversal description with the new modifications.
      */
-    BidirectionalTraversalDescription endSide( TraversalDescription endSideDescription );
+    BidirectionalTraversalDescription endSide(TraversalDescription endSideDescription);
 
     /**
      * Sets both the start side and end side of this bidirectional traversal,
@@ -75,7 +74,7 @@ public interface BidirectionalTraversalDescription
      * {@link TraversalDescription#reverse() reversed}
      * @return a new traversal description with the new modifications.
      */
-    BidirectionalTraversalDescription mirroredSides( TraversalDescription sideDescription );
+    BidirectionalTraversalDescription mirroredSides(TraversalDescription sideDescription);
 
     /**
      * Sets the collision policy to use during this traversal. Branch collisions
@@ -86,7 +85,7 @@ public interface BidirectionalTraversalDescription
      * this traversal.
      * @return a new traversal description with the new modifications.
      */
-    BidirectionalTraversalDescription collisionPolicy( BranchCollisionPolicy collisionDetection );
+    BidirectionalTraversalDescription collisionPolicy(BranchCollisionPolicy collisionDetection);
 
     /**
      * Sets the {@link Evaluator} to use for branch collisions. The outcome
@@ -95,7 +94,7 @@ public interface BidirectionalTraversalDescription
      * branch collisions.
      * @return a new traversal description with the new modifications.
      */
-    BidirectionalTraversalDescription collisionEvaluator( Evaluator collisionEvaluator );
+    BidirectionalTraversalDescription collisionEvaluator(Evaluator collisionEvaluator);
 
     /**
      * Sets the {@link PathEvaluator} to use for branch collisions. The outcome
@@ -104,7 +103,7 @@ public interface BidirectionalTraversalDescription
      * branch collisions.
      * @return a new traversal description with the new modifications.
      */
-    BidirectionalTraversalDescription collisionEvaluator( PathEvaluator collisionEvaluator );
+    BidirectionalTraversalDescription collisionEvaluator(PathEvaluator collisionEvaluator);
 
     /**
      * In a bidirectional traversal the traverser alternates which side
@@ -118,7 +117,7 @@ public interface BidirectionalTraversalDescription
      * got knowledge of both the sides of the traversal at any given point.
      * @return a new traversal description with the new modifications.
      */
-    BidirectionalTraversalDescription sideSelector( SideSelectorPolicy sideSelector, int maxDepth );
+    BidirectionalTraversalDescription sideSelector(SideSelectorPolicy sideSelector, int maxDepth);
 
     /**
      * Traverse between a given {@code start} and {@code end} node with all
@@ -134,7 +133,7 @@ public interface BidirectionalTraversalDescription
      * @return a {@link Traverser} used to step through the graph and to get
      * results from.
      */
-    Traverser traverse( Node start, Node end );
+    Traverser traverse(Node start, Node end);
 
     /**
      * Traverse between a set of {@code start} and {@code end} nodes with all
@@ -150,5 +149,5 @@ public interface BidirectionalTraversalDescription
      * @return a {@link Traverser} used to step through the graph and to get
      * results from.
      */
-    Traverser traverse( Iterable<Node> start, Iterable<Node> end );
+    Traverser traverse(Iterable<Node> start, Iterable<Node> end);
 }

@@ -19,80 +19,69 @@
  */
 package org.neo4j.values.virtual;
 
-import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.ElementIdMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class NodeReference extends VirtualNodeValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeReference.class );
+import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ElementIdMapper;
+
+public class NodeReference extends VirtualNodeValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeReference.class);
 
     private final long id;
     private final String elementId;
     private final ElementIdMapper elementIdMapper;
 
-    NodeReference( long id )
-    {
-        this( id, null, null );
+    NodeReference(long id) {
+        this(id, null, null);
     }
 
-    NodeReference( long id, String elementId, ElementIdMapper elementIdMapper )
-    {
+    NodeReference(long id, String elementId, ElementIdMapper elementIdMapper) {
         this.id = id;
         this.elementId = elementId;
         this.elementIdMapper = elementIdMapper;
     }
 
     @Override
-    public String elementId()
-    {
-        if ( elementId != null )
-        {
+    public String elementId() {
+        if (elementId != null) {
             return elementId;
         }
-        if ( elementIdMapper == null )
-        {
-            throw new UnsupportedOperationException( "This is tricky to implement for NodeReference because of the disconnected nature of it. " +
-                    "Didn't we want to get rid of this thing completely?" );
+        if (elementIdMapper == null) {
+            throw new UnsupportedOperationException(
+                    "This is tricky to implement for NodeReference because of the disconnected nature of it. "
+                            + "Didn't we want to get rid of this thing completely?");
         }
-        return elementIdMapper.nodeElementId( id );
+        return elementIdMapper.nodeElementId(id);
     }
 
     @Override
-    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-    {
-        writer.writeNodeReference( id );
+    public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {
+        writer.writeNodeReference(id);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "NodeReference";
     }
 
     @Override
-    public String toString()
-    {
-        return format( "(%d)", id );
+    public String toString() {
+        return format("(%d)", id);
     }
 
     @Override
-    public long id()
-    {
+    public long id() {
         return id;
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return SHALLOW_SIZE;
     }
 
     @Override
-    ElementIdMapper elementIdMapper()
-    {
+    ElementIdMapper elementIdMapper() {
         return elementIdMapper;
     }
 }

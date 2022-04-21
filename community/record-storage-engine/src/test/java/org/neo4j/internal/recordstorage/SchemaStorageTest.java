@@ -19,10 +19,16 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.test.mockito.matcher.KernelExceptionUserMessageAssert.assertThat;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +36,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -70,21 +79,9 @@ import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.test.mockito.matcher.KernelExceptionUserMessageAssert.assertThat;
-
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
-class SchemaStorageTest
-{
+class SchemaStorageTest {
     private static final String LABEL1 = "Label1";
     private static final int LABEL1_ID = 1;
     private static final String TYPE1 = "Type1";
@@ -94,235 +91,244 @@ class SchemaStorageTest
 
     @Inject
     private PageCache pageCache;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
+
     @Inject
     private EphemeralFileSystemAbstraction fs;
 
     private SchemaStorage storage;
     private NeoStores neoStores;
     private StoreCursors storeCursors;
-    private final RandomSchema randomSchema = new RandomSchema()
-    {
+    private final RandomSchema randomSchema = new RandomSchema() {
         @Override
-        public int nextRuleId()
-        {
-            return (int) storage.newRuleId( NULL_CONTEXT );
+        public int nextRuleId() {
+            return (int) storage.newRuleId(NULL_CONTEXT);
         }
     };
 
     @BeforeEach
-    void before()
-    {
-        var storeFactory =
-                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache, fs, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), EMPTY_LOG_TAIL );
-        neoStores = storeFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN,
-            StoreType.RELATIONSHIP_TYPE_TOKEN );
+    void before() {
+        var storeFactory = new StoreFactory(
+                databaseLayout,
+                Config.defaults(),
+                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                writable(),
+                EMPTY_LOG_TAIL);
+        neoStores = storeFactory.openNeoStores(
+                true,
+                StoreType.SCHEMA,
+                StoreType.PROPERTY_KEY_TOKEN,
+                StoreType.LABEL_TOKEN,
+                StoreType.RELATIONSHIP_TYPE_TOKEN);
         var tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE )
-        );
-        storage = new SchemaStorage( neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST );
-        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
+                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
+                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_LABEL),
+                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
+        storage = new SchemaStorage(neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST);
+        storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
 
     @AfterEach
-    void after()
-    {
+    void after() {
         neoStores.close();
     }
 
     @Test
-    void shouldThrowExceptionOnNodeRuleNotFound()
-    {
+    void shouldThrowExceptionOnNodeRuleNotFound() {
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
-        var e = assertThrows( SchemaRuleNotFoundException.class, () ->
-            storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForLabel( LABEL1_ID, PROP1_ID ), StoreCursors.NULL ) );
+        var e = assertThrows(
+                SchemaRuleNotFoundException.class,
+                () -> storage.constraintsGetSingle(
+                        ConstraintDescriptorFactory.existsForLabel(LABEL1_ID, PROP1_ID), StoreCursors.NULL));
 
-        assertThat( e, tokenNameLookup ).hasUserMessage( "No label property existence constraint was found for (:Label1 {prop1})." );
+        assertThat(e, tokenNameLookup)
+                .hasUserMessage("No label property existence constraint was found for (:Label1 {prop1}).");
     }
 
     @Test
-    void shouldThrowExceptionOnNodeDuplicateRuleFound()
-    {
+    void shouldThrowExceptionOnNodeDuplicateRuleFound() {
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
-        SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        when( schemaStorageSpy.streamAllSchemaRules( false, StoreCursors.NULL ) ).thenReturn(
-            Stream.of(
-                getUniquePropertyConstraintRule( 1L, LABEL1_ID, PROP1_ID ),
-                getUniquePropertyConstraintRule( 2L, LABEL1_ID, PROP1_ID ) ) );
+        SchemaStorage schemaStorageSpy = Mockito.spy(storage);
+        when(schemaStorageSpy.streamAllSchemaRules(false, StoreCursors.NULL))
+                .thenReturn(Stream.of(
+                        getUniquePropertyConstraintRule(1L, LABEL1_ID, PROP1_ID),
+                        getUniquePropertyConstraintRule(2L, LABEL1_ID, PROP1_ID)));
 
-        var e = assertThrows( DuplicateSchemaRuleException.class, () ->
-            schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.uniqueForLabel( LABEL1_ID, PROP1_ID ), StoreCursors.NULL ) );
+        var e = assertThrows(
+                DuplicateSchemaRuleException.class,
+                () -> schemaStorageSpy.constraintsGetSingle(
+                        ConstraintDescriptorFactory.uniqueForLabel(LABEL1_ID, PROP1_ID), StoreCursors.NULL));
 
-        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple label uniqueness constraints found for (:Label1 {prop1})." );
+        assertThat(e, tokenNameLookup)
+                .hasUserMessage("Multiple label uniqueness constraints found for (:Label1 {prop1}).");
     }
 
     @Test
-    void shouldThrowExceptionOnRelationshipRuleNotFound()
-    {
+    void shouldThrowExceptionOnRelationshipRuleNotFound() {
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
-        var e = assertThrows( SchemaRuleNotFoundException.class, () ->
-            storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ), StoreCursors.NULL ) );
-        assertThat( e, tokenNameLookup ).hasUserMessage( "No relationship type property existence constraint was found for ()-[:Type1 {prop1}]-()." );
+        var e = assertThrows(
+                SchemaRuleNotFoundException.class,
+                () -> storage.constraintsGetSingle(
+                        ConstraintDescriptorFactory.existsForRelType(TYPE1_ID, PROP1_ID), StoreCursors.NULL));
+        assertThat(e, tokenNameLookup)
+                .hasUserMessage(
+                        "No relationship type property existence constraint was found for ()-[:Type1 {prop1}]-().");
     }
 
     @Test
-    void shouldThrowExceptionOnRelationshipDuplicateRuleFound()
-    {
+    void shouldThrowExceptionOnRelationshipDuplicateRuleFound() {
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
-        SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        when( schemaStorageSpy.streamAllSchemaRules( false, StoreCursors.NULL ) ).thenReturn(
-            Stream.of(
-                getRelationshipPropertyExistenceConstraintRule( 1L, TYPE1_ID, PROP1_ID ),
-                getRelationshipPropertyExistenceConstraintRule( 2L, TYPE1_ID, PROP1_ID ) ) );
+        SchemaStorage schemaStorageSpy = Mockito.spy(storage);
+        when(schemaStorageSpy.streamAllSchemaRules(false, StoreCursors.NULL))
+                .thenReturn(Stream.of(
+                        getRelationshipPropertyExistenceConstraintRule(1L, TYPE1_ID, PROP1_ID),
+                        getRelationshipPropertyExistenceConstraintRule(2L, TYPE1_ID, PROP1_ID)));
 
-        var e = assertThrows( DuplicateSchemaRuleException.class, () ->
-            schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ), StoreCursors.NULL ) );
+        var e = assertThrows(
+                DuplicateSchemaRuleException.class,
+                () -> schemaStorageSpy.constraintsGetSingle(
+                        ConstraintDescriptorFactory.existsForRelType(TYPE1_ID, PROP1_ID), StoreCursors.NULL));
 
-        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple relationship type property existence constraints found for ()-[:Type1 {prop1}]-()." );
+        assertThat(e, tokenNameLookup)
+                .hasUserMessage(
+                        "Multiple relationship type property existence constraints found for ()-[:Type1 {prop1}]-().");
     }
 
     @Test
-    void shouldMarkAllRecordIdsAsUnusedOnDeletion() throws KernelException
-    {
+    void shouldMarkAllRecordIdsAsUnusedOnDeletion() throws KernelException {
         // Given
         var tracker = new TrackingIdUpdaterListener();
 
         // When
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
-        storage.writeSchemaRule( schemaRule, tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors );
+        storage.writeSchemaRule(schemaRule, tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors);
 
         // Then
-        assertThat( tracker.usedIdsPerType ).isNotEmpty();
-        assertThat( tracker.usedIdsPerType ).containsKeys( expectedUsedIdTypes( schemaRule ) );
-        assertThat( tracker.unusedIdsPerType ).isEmpty();
+        assertThat(tracker.usedIdsPerType).isNotEmpty();
+        assertThat(tracker.usedIdsPerType).containsKeys(expectedUsedIdTypes(schemaRule));
+        assertThat(tracker.unusedIdsPerType).isEmpty();
 
         // When
-        storage.deleteSchemaRule( schemaRule.getId(), tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors );
+        storage.deleteSchemaRule(schemaRule.getId(), tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors);
 
         // Then
-        assertThat( tracker.unusedIdsPerType ).isNotEmpty();
-        assertThat( tracker.unusedIdsPerType ).isEqualTo( tracker.usedIdsPerType );
+        assertThat(tracker.unusedIdsPerType).isNotEmpty();
+        assertThat(tracker.unusedIdsPerType).isEqualTo(tracker.usedIdsPerType);
     }
 
     @Test
-    void shouldMarkAllRecordsAsNotInUseOnDeletion() throws KernelException
-    {
+    void shouldMarkAllRecordsAsNotInUseOnDeletion() throws KernelException {
         // Given
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
         var tracker = new TrackingIdUpdaterListener();
-        storage.writeSchemaRule( schemaRule, tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors );
+        storage.writeSchemaRule(schemaRule, tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors);
 
         // Then
-        verifyExpectedInUse( tracker.usedIdsPerType, true );
+        verifyExpectedInUse(tracker.usedIdsPerType, true);
 
         // When
-        storage.deleteSchemaRule( schemaRule.getId(), IdUpdateListener.DIRECT, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors );
+        storage.deleteSchemaRule(
+                schemaRule.getId(), IdUpdateListener.DIRECT, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors);
 
         // Then
-        verifyExpectedInUse( tracker.usedIdsPerType, false );
+        verifyExpectedInUse(tracker.usedIdsPerType, false);
     }
 
-    private void verifyExpectedInUse( Map<IdType,Set<Long>> idsByType, boolean expectInUse )
-    {
-        for ( Map.Entry<IdType,Set<Long>> entry : idsByType.entrySet() )
-        {
-            RecordStore<? extends AbstractBaseRecord> store = getStore( entry.getKey() );
-            verifyInUseStatusForStore( store, entry.getValue(), expectInUse );
+    private void verifyExpectedInUse(Map<IdType, Set<Long>> idsByType, boolean expectInUse) {
+        for (Map.Entry<IdType, Set<Long>> entry : idsByType.entrySet()) {
+            RecordStore<? extends AbstractBaseRecord> store = getStore(entry.getKey());
+            verifyInUseStatusForStore(store, entry.getValue(), expectInUse);
         }
     }
 
-    private <T extends AbstractBaseRecord> void verifyInUseStatusForStore( RecordStore<T> store, Set<Long> ids, boolean expectInUse )
-    {
+    private <T extends AbstractBaseRecord> void verifyInUseStatusForStore(
+            RecordStore<T> store, Set<Long> ids, boolean expectInUse) {
         T record = store.newRecord();
-        try ( PageCursor pageCursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
-        {
-            for ( Long id : ids )
-            {
-                store.getRecordByCursor( id, record, RecordLoad.CHECK, pageCursor );
-                assertThat( record.inUse() ).isEqualTo( expectInUse );
+        try (PageCursor pageCursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
+            for (Long id : ids) {
+                store.getRecordByCursor(id, record, RecordLoad.CHECK, pageCursor);
+                assertThat(record.inUse()).isEqualTo(expectInUse);
             }
         }
     }
 
-    private RecordStore<? extends AbstractBaseRecord> getStore( IdType idType )
-    {
-        return switch ( idType.name() )
-                {
-                    case "SCHEMA" -> neoStores.getSchemaStore();
-                    case "PROPERTY" -> neoStores.getPropertyStore();
-                    case "ARRAY_BLOCK" -> neoStores.getPropertyStore().getArrayStore();
-                    case "STRING_BLOCK" -> neoStores.getPropertyStore().getStringStore();
-                    default -> throw new IllegalArgumentException( "Did not recognize idType " + idType.name() );
-                };
+    private RecordStore<? extends AbstractBaseRecord> getStore(IdType idType) {
+        return switch (idType.name()) {
+            case "SCHEMA" -> neoStores.getSchemaStore();
+            case "PROPERTY" -> neoStores.getPropertyStore();
+            case "ARRAY_BLOCK" -> neoStores.getPropertyStore().getArrayStore();
+            case "STRING_BLOCK" -> neoStores.getPropertyStore().getStringStore();
+            default -> throw new IllegalArgumentException("Did not recognize idType " + idType.name());
+        };
     }
 
-    private static IdType[] expectedUsedIdTypes( SchemaRule schemaRule )
-    {
+    private static IdType[] expectedUsedIdTypes(SchemaRule schemaRule) {
         var expectedIdTypes = new ArrayList<IdType>();
-        expectedIdTypes.add( RecordIdType.PROPERTY );
-        expectedIdTypes.add( SchemaIdType.SCHEMA );
-        if ( schemaRule.getName().length() > 36 )
-        {
-            expectedIdTypes.add( RecordIdType.STRING_BLOCK );
+        expectedIdTypes.add(RecordIdType.PROPERTY);
+        expectedIdTypes.add(SchemaIdType.SCHEMA);
+        if (schemaRule.getName().length() > 36) {
+            expectedIdTypes.add(RecordIdType.STRING_BLOCK);
         }
-        if ( schemaRule.schema().getPropertyIds().length > 8 )
-        {
-            expectedIdTypes.add( RecordIdType.ARRAY_BLOCK );
+        if (schemaRule.schema().getPropertyIds().length > 8) {
+            expectedIdTypes.add(RecordIdType.ARRAY_BLOCK);
         }
-        return expectedIdTypes.toArray( IdType[]::new );
+        return expectedIdTypes.toArray(IdType[]::new);
     }
 
-    private static TokenNameLookup getDefaultTokenNameLookup()
-    {
-        TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
-        when( tokenNameLookup.labelGetName( LABEL1_ID ) ).thenReturn( LABEL1 );
-        when( tokenNameLookup.propertyKeyGetName( PROP1_ID ) ).thenReturn( PROP1 );
-        when( tokenNameLookup.relationshipTypeGetName( TYPE1_ID ) ).thenReturn( TYPE1 );
-        when( tokenNameLookup.entityTokensGetNames( EntityType.NODE, new int[]{LABEL1_ID} ) ).thenReturn( new String[]{LABEL1} );
-        when( tokenNameLookup.entityTokensGetNames( EntityType.RELATIONSHIP, new int[]{TYPE1_ID} ) ).thenReturn( new String[]{TYPE1} );
+    private static TokenNameLookup getDefaultTokenNameLookup() {
+        TokenNameLookup tokenNameLookup = mock(TokenNameLookup.class);
+        when(tokenNameLookup.labelGetName(LABEL1_ID)).thenReturn(LABEL1);
+        when(tokenNameLookup.propertyKeyGetName(PROP1_ID)).thenReturn(PROP1);
+        when(tokenNameLookup.relationshipTypeGetName(TYPE1_ID)).thenReturn(TYPE1);
+        when(tokenNameLookup.entityTokensGetNames(EntityType.NODE, new int[] {LABEL1_ID}))
+                .thenReturn(new String[] {LABEL1});
+        when(tokenNameLookup.entityTokensGetNames(EntityType.RELATIONSHIP, new int[] {TYPE1_ID}))
+                .thenReturn(new String[] {TYPE1});
         return tokenNameLookup;
     }
 
-    private static ConstraintDescriptor getUniquePropertyConstraintRule( long id, int label, int property )
-    {
-        return ConstraintDescriptorFactory.uniqueForLabel( label, property ).withId( id ).withOwnedIndexId( 0 );
+    private static ConstraintDescriptor getUniquePropertyConstraintRule(long id, int label, int property) {
+        return ConstraintDescriptorFactory.uniqueForLabel(label, property)
+                .withId(id)
+                .withOwnedIndexId(0);
     }
 
-    private static ConstraintDescriptor getRelationshipPropertyExistenceConstraintRule( long id, int type, int property )
-    {
-        return ConstraintDescriptorFactory.existsForRelType( type, property ).withId( id );
+    private static ConstraintDescriptor getRelationshipPropertyExistenceConstraintRule(
+            long id, int type, int property) {
+        return ConstraintDescriptorFactory.existsForRelType(type, property).withId(id);
     }
 
-    private static class TrackingIdUpdaterListener implements IdUpdateListener
-    {
-        Map<IdType,Set<Long>> usedIdsPerType = new HashMap<>();
-        Map<IdType,Set<Long>> unusedIdsPerType = new HashMap<>();
+    private static class TrackingIdUpdaterListener implements IdUpdateListener {
+        Map<IdType, Set<Long>> usedIdsPerType = new HashMap<>();
+        Map<IdType, Set<Long>> unusedIdsPerType = new HashMap<>();
 
         @Override
-        public void markIdAsUsed( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
-        {
-            usedIdsPerType.computeIfAbsent( idGenerator.idType(), k -> new HashSet<>() ).add( id );
-            IdUpdateListener.DIRECT.markIdAsUsed( idGenerator, id, size, cursorContext );
+        public void markIdAsUsed(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
+            usedIdsPerType
+                    .computeIfAbsent(idGenerator.idType(), k -> new HashSet<>())
+                    .add(id);
+            IdUpdateListener.DIRECT.markIdAsUsed(idGenerator, id, size, cursorContext);
         }
 
         @Override
-        public void markIdAsUnused( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
-        {
-            unusedIdsPerType.computeIfAbsent( idGenerator.idType(), k -> new HashSet<>() ).add( id );
-            IdUpdateListener.DIRECT.markIdAsUnused( idGenerator, id, size, cursorContext );
+        public void markIdAsUnused(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
+            unusedIdsPerType
+                    .computeIfAbsent(idGenerator.idType(), k -> new HashSet<>())
+                    .add(id);
+            IdUpdateListener.DIRECT.markIdAsUnused(idGenerator, id, size, cursorContext);
         }
 
         @Override
-        public void close() throws Exception
-        {
-        }
+        public void close() throws Exception {}
     }
 }

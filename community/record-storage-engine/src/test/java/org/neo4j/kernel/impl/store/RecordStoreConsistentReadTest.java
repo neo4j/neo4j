@@ -19,13 +19,20 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.test.utils.PageCacheConfig.config;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -44,24 +51,18 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.test.utils.PageCacheConfig.config;
-
 @EphemeralNeo4jLayoutExtension
-abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
-{
+abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>> {
     // Constants for the contents of the existing record
     protected static final int ID = 1;
+
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withInconsistentReads( false ) );
+    static PageCacheSupportExtension pageCacheExtension =
+            new PageCacheSupportExtension(config().withInconsistentReads(false));
+
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
@@ -72,127 +73,119 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     protected CachedStoreCursors storeCursors;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         nextReadIsInconsistent = new AtomicBoolean();
-        pageCache = PageCacheSupportExtension.getPageCache( fs, config().withInconsistentReads( nextReadIsInconsistent ) );
-        StoreFactory factory =
-                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache, fs, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), EMPTY_LOG_TAIL );
-        neoStores = factory.openAllNeoStores( true );
-        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
-        initialiseStore( neoStores );
+        pageCache = PageCacheSupportExtension.getPageCache(fs, config().withInconsistentReads(nextReadIsInconsistent));
+        StoreFactory factory = new StoreFactory(
+                databaseLayout,
+                Config.defaults(),
+                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                writable(),
+                EMPTY_LOG_TAIL);
+        neoStores = factory.openAllNeoStores(true);
+        storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
+        initialiseStore(neoStores);
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         storeCursors.close();
         neoStores.close();
         pageCache.close();
     }
 
-    protected S initialiseStore( NeoStores neoStores )
-    {
-        S store = getStore( neoStores );
-        try ( var cursor = store.openPageCursorForWriting( 0, CursorContext.NULL_CONTEXT ) )
-        {
-            store.updateRecord( createExistingRecord( false ), cursor, CursorContext.NULL_CONTEXT, storeCursors );
+    protected S initialiseStore(NeoStores neoStores) {
+        S store = getStore(neoStores);
+        try (var cursor = store.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT)) {
+            store.updateRecord(createExistingRecord(false), cursor, CursorContext.NULL_CONTEXT, storeCursors);
         }
         return store;
     }
 
-    protected abstract S getStore( NeoStores neoStores );
+    protected abstract S getStore(NeoStores neoStores);
 
-    protected abstract PageCursor getCursor( StoreCursors storeCursors );
+    protected abstract PageCursor getCursor(StoreCursors storeCursors);
 
-    protected abstract R createNullRecord( long id );
+    protected abstract R createNullRecord(long id);
 
-    protected abstract R createExistingRecord( boolean light );
+    protected abstract R createExistingRecord(boolean light);
 
-    protected abstract R getLight( long id, S store, PageCursor pageCursor );
+    protected abstract R getLight(long id, S store, PageCursor pageCursor);
 
-    protected abstract void assertRecordsEqual( R actualRecord, R expectedRecord );
+    protected abstract void assertRecordsEqual(R actualRecord, R expectedRecord);
 
-    protected R getHeavy( S store, long id, PageCursor pageCursor )
-    {
-        R record = store.getRecordByCursor( id, store.newRecord(), NORMAL, pageCursor );
-        store.ensureHeavy( record, storeCursors );
+    protected R getHeavy(S store, long id, PageCursor pageCursor) {
+        R record = store.getRecordByCursor(id, store.newRecord(), NORMAL, pageCursor);
+        store.ensureHeavy(record, storeCursors);
         return record;
     }
 
-    R getForce( S store, int id, PageCursor pageCursor )
-    {
-        return store.getRecordByCursor( id, store.newRecord(), RecordLoad.FORCE, pageCursor );
+    R getForce(S store, int id, PageCursor pageCursor) {
+        return store.getRecordByCursor(id, store.newRecord(), RecordLoad.FORCE, pageCursor);
     }
 
     @Test
-    void mustReadExistingRecord()
-    {
-        S store = getStore( neoStores );
-        R record = getHeavy( store, ID, getCursor( storeCursors ) );
-        assertRecordsEqual( record, createExistingRecord( false ) );
+    void mustReadExistingRecord() {
+        S store = getStore(neoStores);
+        R record = getHeavy(store, ID, getCursor(storeCursors));
+        assertRecordsEqual(record, createExistingRecord(false));
     }
 
     @Test
-    void mustReadExistingLightRecord()
-    {
-        S store = getStore( neoStores );
-        R record = getLight( ID, store, getCursor( storeCursors ) );
-        assertRecordsEqual( record, createExistingRecord( true ) );
+    void mustReadExistingLightRecord() {
+        S store = getStore(neoStores);
+        R record = getLight(ID, store, getCursor(storeCursors));
+        assertRecordsEqual(record, createExistingRecord(true));
     }
 
     @Test
-    void mustForceReadExistingRecord()
-    {
-        S store = getStore( neoStores );
-        R record = getForce( store, ID, getCursor( storeCursors ) );
-        assertRecordsEqual( record, createExistingRecord( true ) );
+    void mustForceReadExistingRecord() {
+        S store = getStore(neoStores);
+        R record = getForce(store, ID, getCursor(storeCursors));
+        assertRecordsEqual(record, createExistingRecord(true));
     }
 
     @Test
-    void readingNonExistingRecordMustThrow()
-    {
-        assertThrows( InvalidRecordException.class, () ->
-        {
-            S store = getStore( neoStores );
-            getHeavy( store, ID + 1, getCursor( storeCursors ) );
-        } );
+    void readingNonExistingRecordMustThrow() {
+        assertThrows(InvalidRecordException.class, () -> {
+            S store = getStore(neoStores);
+            getHeavy(store, ID + 1, getCursor(storeCursors));
+        });
     }
 
     @Test
-    void forceReadingNonExistingRecordMustReturnEmptyRecordWithThatId()
-    {
-        S store = getStore( neoStores );
-        R record = getForce( store, ID + 1, getCursor( storeCursors ) );
-        R nullRecord = createNullRecord( ID + 1 );
-        assertRecordsEqual( record, nullRecord );
+    void forceReadingNonExistingRecordMustReturnEmptyRecordWithThatId() {
+        S store = getStore(neoStores);
+        R record = getForce(store, ID + 1, getCursor(storeCursors));
+        R nullRecord = createNullRecord(ID + 1);
+        assertRecordsEqual(record, nullRecord);
     }
 
     @Test
-    void mustRetryInconsistentReads()
-    {
-        S store = getStore( neoStores );
-        nextReadIsInconsistent.set( true );
-        R record = getHeavy( store, ID, getCursor( storeCursors ) );
-        assertRecordsEqual( record, createExistingRecord( false ) );
+    void mustRetryInconsistentReads() {
+        S store = getStore(neoStores);
+        nextReadIsInconsistent.set(true);
+        R record = getHeavy(store, ID, getCursor(storeCursors));
+        assertRecordsEqual(record, createExistingRecord(false));
     }
 
     @Test
-    void mustRetryInconsistentLightReads()
-    {
-        S store = getStore( neoStores );
-        nextReadIsInconsistent.set( true );
-        R record = getLight( ID, store, getCursor( storeCursors ) );
-        assertRecordsEqual( record, createExistingRecord( true ) );
+    void mustRetryInconsistentLightReads() {
+        S store = getStore(neoStores);
+        nextReadIsInconsistent.set(true);
+        R record = getLight(ID, store, getCursor(storeCursors));
+        assertRecordsEqual(record, createExistingRecord(true));
     }
 
     @Test
-    void mustRetryInconsistentForcedReads()
-    {
-        S store = getStore( neoStores );
-        nextReadIsInconsistent.set( true );
-        R record = getForce( store, ID, getCursor( storeCursors ) );
-        assertRecordsEqual( record, createExistingRecord( true ) );
+    void mustRetryInconsistentForcedReads() {
+        S store = getStore(neoStores);
+        nextReadIsInconsistent.set(true);
+        R record = getForce(store, ID, getCursor(storeCursors));
+        assertRecordsEqual(record, createExistingRecord(true));
     }
 }

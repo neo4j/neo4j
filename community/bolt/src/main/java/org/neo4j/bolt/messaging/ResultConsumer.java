@@ -21,9 +21,8 @@ package org.neo4j.bolt.messaging;
 
 import org.neo4j.bolt.runtime.BoltResult;
 
-public interface ResultConsumer
-{
-    void consume( BoltResult t ) throws Throwable;
+public interface ResultConsumer {
+    void consume(BoltResult t) throws Throwable;
 
     boolean hasMore();
 }

@@ -24,21 +24,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 
-class WaitingOnLock extends ExecutingQueryStatus
-{
+class WaitingOnLock extends ExecutingQueryStatus {
     private final LockType lockType;
     private final ResourceType resourceType;
     private final long transactionId;
     private final long[] resourceIds;
     private final long startTimeNanos;
 
-    WaitingOnLock( LockType lockType, ResourceType resourceType, long transactionId, long[] resourceIds, long startTimeNanos )
-    {
+    WaitingOnLock(
+            LockType lockType, ResourceType resourceType, long transactionId, long[] resourceIds, long startTimeNanos) {
         this.lockType = lockType;
         this.resourceType = resourceType;
         this.transactionId = transactionId;
@@ -47,42 +45,36 @@ class WaitingOnLock extends ExecutingQueryStatus
     }
 
     @Override
-    long waitTimeNanos( long currentTimeNanos )
-    {
+    long waitTimeNanos(long currentTimeNanos) {
         return currentTimeNanos - startTimeNanos;
     }
 
     @Override
-    Map<String,Object> toMap( long currentTimeNanos )
-    {
-        Map<String,Object> map = new HashMap<>();
-        map.put( "lockMode", lockType.getDescription() );
-        map.put( "waitTimeMillis", TimeUnit.NANOSECONDS.toMillis( waitTimeNanos( currentTimeNanos ) ) );
-        map.put( "resourceType", resourceType.toString() );
-        map.put( "resourceIds", resourceIds );
-        map.put( "transactionId", transactionId );
+    Map<String, Object> toMap(long currentTimeNanos) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("lockMode", lockType.getDescription());
+        map.put("waitTimeMillis", TimeUnit.NANOSECONDS.toMillis(waitTimeNanos(currentTimeNanos)));
+        map.put("resourceType", resourceType.toString());
+        map.put("resourceIds", resourceIds);
+        map.put("transactionId", transactionId);
         return map;
     }
 
     @Override
-    String name()
-    {
+    String name() {
         return WAITING_STATE;
     }
 
     @Override
-    boolean isWaitingOnLocks()
-    {
+    boolean isWaitingOnLocks() {
         return true;
     }
 
     @Override
-    List<ActiveLock> waitingOnLocks()
-    {
-        List<ActiveLock> locks = new ArrayList<>( resourceIds.length );
-        for ( long resourceId : resourceIds )
-        {
-            locks.add( new ActiveLock( resourceType, lockType, transactionId, resourceId ) );
+    List<ActiveLock> waitingOnLocks() {
+        List<ActiveLock> locks = new ArrayList<>(resourceIds.length);
+        for (long resourceId : resourceIds) {
+            locks.add(new ActiveLock(resourceType, lockType, transactionId, resourceId));
         }
         return locks;
     }

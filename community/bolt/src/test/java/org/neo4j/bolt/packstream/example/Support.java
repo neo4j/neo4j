@@ -21,39 +21,32 @@ package org.neo4j.bolt.packstream.example;
 
 import java.util.Arrays;
 import java.util.List;
-
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class Support
-{
+public class Support {
     static final TextArray NO_LABELS = Values.stringArray();
     static final MapValue NO_PROPERTIES = VirtualValues.EMPTY_MAP;
 
-    private Support()
-    {
-    }
+    private Support() {}
 
     // Helper to produce literal list of nodes
-    public static NodeValue[] nodes( NodeValue... nodes )
-    {
+    public static NodeValue[] nodes(NodeValue... nodes) {
         return nodes;
     }
 
     // Helper to extract list of nodes from a path
-    public static List<NodeValue> nodes( PathValue path )
-    {
-        return Arrays.asList( path.nodes() );
+    public static List<NodeValue> nodes(PathValue path) {
+        return Arrays.asList(path.nodes());
     }
 
     // Helper to produce literal list of relationships
-    public static RelationshipValue[] edges( RelationshipValue... edgeValues )
-    {
+    public static RelationshipValue[] edges(RelationshipValue... edgeValues) {
         return edgeValues;
     }
 }

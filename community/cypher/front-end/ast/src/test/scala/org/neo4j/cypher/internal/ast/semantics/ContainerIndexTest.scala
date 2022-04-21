@@ -80,9 +80,7 @@ class ContainerIndexTest extends SemanticFunSuite {
   }
 
   test("should return list inner types of expression") {
-    val index = ContainerIndex(dummyList,
-      SignedDecimalIntegerLiteral("1")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyList, SignedDecimalIntegerLiteral("1")(DummyPosition(5)))(DummyPosition(4))
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors shouldBe empty
@@ -90,69 +88,83 @@ class ContainerIndexTest extends SemanticFunSuite {
   }
 
   test("should raise error if indexing by fraction") {
-    val index = ContainerIndex(dummyList,
-      DecimalDoubleLiteral("1.3")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyList, DecimalDoubleLiteral("1.3")(DummyPosition(5)))(DummyPosition(4))
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("Type mismatch: list index must be given as Integer, but was Float", index.idx.position)))
+    result.errors should equal(Seq(SemanticError(
+      "Type mismatch: list index must be given as Integer, but was Float",
+      index.idx.position
+    )))
   }
 
   test("should raise error if indexing list by string") {
-    val index = ContainerIndex(dummyList,
-      StringLiteral("1.3")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyList, StringLiteral("1.3")(DummyPosition(5)))(DummyPosition(4))
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("Type mismatch: list index must be given as Integer, but was String", index.idx.position)))
+    result.errors should equal(Seq(SemanticError(
+      "Type mismatch: list index must be given as Integer, but was String",
+      index.idx.position
+    )))
   }
 
   test("should raise error if indexing map by int") {
-    val index = ContainerIndex(dummyMap,
-      SignedDecimalIntegerLiteral("1")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyMap, SignedDecimalIntegerLiteral("1")(DummyPosition(5)))(DummyPosition(4))
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("Type mismatch: map key must be given as String, but was Integer", index.idx.position)))
+    result.errors should equal(Seq(SemanticError(
+      "Type mismatch: map key must be given as String, but was Integer",
+      index.idx.position
+    )))
   }
 
   test("should raise error if indexing node by int") {
-    val index = ContainerIndex(dummyNode,
-      SignedDecimalIntegerLiteral("1")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyNode, SignedDecimalIntegerLiteral("1")(DummyPosition(5)))(DummyPosition(4))
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("Type mismatch: node or relationship property key must be given as String, but was Integer", index.idx.position)))
+    result.errors should equal(Seq(SemanticError(
+      "Type mismatch: node or relationship property key must be given as String, but was Integer",
+      index.idx.position
+    )))
   }
 
   test("should raise error if indexing relationship by int") {
-    val index = ContainerIndex(dummyRelationship,
-      SignedDecimalIntegerLiteral("1")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyRelationship, SignedDecimalIntegerLiteral("1")(DummyPosition(5)))(DummyPosition(4))
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("Type mismatch: node or relationship property key must be given as String, but was Integer", index.idx.position)))
+    result.errors should equal(Seq(SemanticError(
+      "Type mismatch: node or relationship property key must be given as String, but was Integer",
+      index.idx.position
+    )))
   }
 
   test("should raise error if looking up not from a container, with int") {
     val index = ContainerIndex(dummyInteger, dummyInteger)(DummyPosition(10))
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("Type mismatch: expected List<T> but was Integer", index.idx.position)))
+    result.errors should equal(Seq(SemanticError(
+      "Type mismatch: expected List<T> but was Integer",
+      index.idx.position
+    )))
   }
 
   test("should raise error if looking up not from a container, with string") {
     val index = ContainerIndex(dummyInteger, dummyString)(DummyPosition(10))
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("Type mismatch: expected Map, Node or Relationship but was Integer", index.idx.position)))
+    result.errors should equal(Seq(SemanticError(
+      "Type mismatch: expected Map, Node or Relationship but was Integer",
+      index.idx.position
+    )))
   }
 
   test("should raise error if looking up not from container, with invalid type") {
     val index = ContainerIndex(dummyInteger, dummyFloat)(DummyPosition(10))
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("Type mismatch: expected Map, Node, Relationship or List<T> but was Integer", index.idx.position)))
+    result.errors should equal(Seq(SemanticError(
+      "Type mismatch: expected Map, Node, Relationship or List<T> but was Integer",
+      index.idx.position
+    )))
   }
 
   private def assertIsList(spec: TypeSpec) = {

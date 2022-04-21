@@ -19,71 +19,52 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public class RangeKeyStateTest extends IndexKeyStateTest<RangeKey>
-{
+public class RangeKeyStateTest extends IndexKeyStateTest<RangeKey> {
     @Override
-    boolean includePointTypesForComparisons()
-    {
+    boolean includePointTypesForComparisons() {
         return true;
     }
 
     @Override
-    int getPointSerialisedSize( int dimensions )
-    {
-        if ( dimensions == 2 )
-        {
+    int getPointSerialisedSize(int dimensions) {
+        if (dimensions == 2) {
             return 20;
-        }
-        else if ( dimensions == 3 )
-        {
+        } else if (dimensions == 3) {
             return 28;
-        }
-        else
-        {
-            throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
+        } else {
+            throw new RuntimeException("Did not expect spatial value with " + dimensions + " dimensions.");
         }
     }
 
     @Override
-    int getArrayPointSerialisedSize( int dimensions )
-    {
-        if ( dimensions == 2 )
-        {
-            return  16;
-        }
-        else if ( dimensions == 3 )
-        {
-            return  24;
-        }
-        else
-        {
-            throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
+    int getArrayPointSerialisedSize(int dimensions) {
+        if (dimensions == 2) {
+            return 16;
+        } else if (dimensions == 3) {
+            return 24;
+        } else {
+            throw new RuntimeException("Did not expect spatial value with " + dimensions + " dimensions.");
         }
     }
 
     @Override
-    Layout<RangeKey> newLayout( int numberOfSlots )
-    {
-        RangeLayout rangeLayout = new RangeLayout( numberOfSlots );
-        return new Layout<>()
-        {
+    Layout<RangeKey> newLayout(int numberOfSlots) {
+        RangeLayout rangeLayout = new RangeLayout(numberOfSlots);
+        return new Layout<>() {
 
             @Override
-            public RangeKey newKey()
-            {
+            public RangeKey newKey() {
                 return rangeLayout.newKey();
             }
 
             @Override
-            public void minimalSplitter( RangeKey left, RangeKey right, RangeKey into )
-            {
-                rangeLayout.minimalSplitter( left, right, into );
+            public void minimalSplitter(RangeKey left, RangeKey right, RangeKey into) {
+                rangeLayout.minimalSplitter(left, right, into);
             }
 
             @Override
-            public int compare( RangeKey k1, RangeKey k2 )
-            {
-                return rangeLayout.compare( k1, k2 );
+            public int compare(RangeKey k1, RangeKey k2) {
+                return rangeLayout.compare(k1, k2);
             }
         };
     }

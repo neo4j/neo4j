@@ -46,18 +46,28 @@ import org.neo4j.cypher.internal.util.WorkReduction
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanConstructionTestSupport  {
+class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSupport
+    with LogicalPlanConstructionTestSupport {
 
   private val SMALL_CHUNK_SIZE = 128
   private val BIG_CHUNK_SIZE = 1024
 
-  private def costFor(plan: LogicalPlan,
-                      input: QueryGraphSolverInput,
-                      semanticTable: SemanticTable,
-                      cardinalities: Cardinalities,
-                      providedOrders: ProvidedOrders,
-                      executionModel: ExecutionModel = ExecutionModel.default): Cost = {
-    CardinalityCostModel(executionModel).costFor(plan, input, semanticTable, cardinalities, providedOrders, CostModelMonitor.DEFAULT)
+  private def costFor(
+    plan: LogicalPlan,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    cardinalities: Cardinalities,
+    providedOrders: ProvidedOrders,
+    executionModel: ExecutionModel = ExecutionModel.default
+  ): Cost = {
+    CardinalityCostModel(executionModel).costFor(
+      plan,
+      input,
+      semanticTable,
+      cardinalities,
+      providedOrders,
+      CostModelMonitor.DEFAULT
+    )
   }
 
   test("expand should only be counted once") {
@@ -70,7 +80,13 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .argument("a").withCardinality(10)
       .build()
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should equal(Cost(231))
+    costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    ) should equal(Cost(231))
   }
 
   test("multiple property expressions are counted for in cost") {
@@ -84,7 +100,13 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     val numberOfPredicates = 3
     val costForSelection = cardinality * numberOfPredicates * PROPERTY_ACCESS_DB_HITS
     val costForArgument = cardinality * DEFAULT_COST_PER_ROW.cost
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should equal(Cost(costForSelection + costForArgument))
+    costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    ) should equal(Cost(costForSelection + costForArgument))
   }
 
   test("deeply nested property access does not increase cost") {
@@ -101,8 +123,20 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .argument("a").withCardinality(cardinality).newVar("a", CTNode)
       .build()
 
-    costFor(shallowPlan, QueryGraphSolverInput.empty, shallowPlanBuilder.getSemanticTable, shallowPlanBuilder.cardinalities, shallowPlanBuilder.providedOrders) should
-      equal(costFor(deepPlan, QueryGraphSolverInput.empty, deepPlanBuilder.getSemanticTable, deepPlanBuilder.cardinalities, deepPlanBuilder.providedOrders))
+    costFor(
+      shallowPlan,
+      QueryGraphSolverInput.empty,
+      shallowPlanBuilder.getSemanticTable,
+      shallowPlanBuilder.cardinalities,
+      shallowPlanBuilder.providedOrders
+    ) should
+      equal(costFor(
+        deepPlan,
+        QueryGraphSolverInput.empty,
+        deepPlanBuilder.getSemanticTable,
+        deepPlanBuilder.cardinalities,
+        deepPlanBuilder.providedOrders
+      ))
   }
 
   test("limit should retain its cardinality") {
@@ -117,7 +151,13 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     val costLimit = Cost(DEFAULT_COST_PER_ROW.cost * 10)
     val costTot = costLimit + Cost(10 * 1.2)
 
-    costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) shouldBe costTot
+    costFor(
+      plan,
+      withoutLimit,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    ) shouldBe costTot
   }
 
   test("lazy plans should be cheaper when limit selectivity is < 1.0") {
@@ -128,9 +168,18 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .build()
 
     val withoutLimit = QueryGraphSolverInput.empty
-    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(Selectivity.of(0.5).get, Selectivity.ONE))
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(
+      Selectivity.of(0.5).get,
+      Selectivity.ONE
+    ))
 
-    costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, new StubProvidedOrders) should be < costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
+    costFor(
+      plan,
+      withLimit,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      new StubProvidedOrders
+    ) should be < costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
   }
 
   test("hash join should be cheaper when limit selectivity is < 1.0") {
@@ -145,9 +194,18 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .build()
 
     val withoutLimit = QueryGraphSolverInput.empty
-    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(Selectivity.of(0.5).get, Selectivity.ONE))
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(
+      Selectivity.of(0.5).get,
+      Selectivity.ONE
+    ))
 
-    costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should be < costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
+    costFor(
+      plan,
+      withLimit,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    ) should be < costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
   }
 
   test("eager plans should cost the same regardless of limit selectivity") {
@@ -158,9 +216,14 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .build()
 
     val withoutLimit = QueryGraphSolverInput.empty
-    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(Selectivity.of(0.5).get, Selectivity.ONE))
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(
+      Selectivity.of(0.5).get,
+      Selectivity.ONE
+    ))
 
-    costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should equal(costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders))
+    costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should equal(
+      costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
+    )
   }
 
   test("cartesian product with 1 row from the left is equally expensive in both execution models") {
@@ -171,22 +234,54 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .argument("a").withCardinality(1)
       .build()
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Volcano) should equal(
-      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
+    costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      Volcano
+    ) should equal(
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders,
+        BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)
+      )
     )
   }
 
-  test("cartesian product with many rows from the left is multiple factors cheaper in Batched execution, big chunk size") {
+  test(
+    "cartesian product with many rows from the left is multiple factors cheaper in Batched execution, big chunk size"
+  ) {
     val cardinality = 1500.0
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
-      .cartesianProduct().withCardinality(cardinality * cardinality) // 2250000 > BIG_CHUNK_SIZE, so big chunk size should be picked
+      .cartesianProduct().withCardinality(
+        cardinality * cardinality
+      ) // 2250000 > BIG_CHUNK_SIZE, so big chunk size should be picked
       .|.argument("b").withCardinality(cardinality)
       .argument("a").withCardinality(cardinality)
       .build()
 
-    val volcanoCost = costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Volcano)
-    val batchedCost = costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
+    val volcanoCost = costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      Volcano
+    )
+    val batchedCost = costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)
+    )
 
     // The reduction in cost should be proportional to some factor of batch size. This is a somewhat made up but hopefully conservative estimate.
     val factor = BIG_CHUNK_SIZE / 3
@@ -198,54 +293,96 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     val cardinalityRight = 2.0
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
-      .cartesianProduct().withCardinality(cardinalityLeft * cardinalityRight) // 400 < BIG_CHUNK_SIZE, so small batch size should be picked
+      .cartesianProduct().withCardinality(
+        cardinalityLeft * cardinalityRight
+      ) // 400 < BIG_CHUNK_SIZE, so small batch size should be picked
       .|.argument("b").withCardinality(cardinalityRight)
       .argument("a").withCardinality(cardinalityLeft)
       .build()
 
-    val volcanoCost = costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Volcano)
-    val batchedCost = costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
+    val volcanoCost = costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      Volcano
+    )
+    val batchedCost = costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)
+    )
 
     // when RHS has small cardinality, the effect of batching is not as pronounced, so we don't multiply with any factor as in test above.
     batchedCost should be < volcanoCost
   }
 
-  test("should pick big chunk size if a plan below the cartesian product has a higher cardinality than big chunk size") {
+  test(
+    "should pick big chunk size if a plan below the cartesian product has a higher cardinality than big chunk size"
+  ) {
     val cardinalityLeaves = 1500.0
     val cardinalityCP = 500.0
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
-      .cartesianProduct().withCardinality(cardinalityCP) // This does not make sense mathematically, but that is OK for this test
+      .cartesianProduct().withCardinality(
+        cardinalityCP
+      ) // This does not make sense mathematically, but that is OK for this test
       .|.argument("b").withCardinality(cardinalityLeaves)
       .argument("a").withCardinality(cardinalityLeaves)
       .build()
 
     val argCost = Cardinality(cardinalityLeaves) * DEFAULT_COST_PER_ROW
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+    costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)
+    ) should
       equal(argCost + argCost * Math.ceil(cardinalityLeaves / BIG_CHUNK_SIZE))
   }
 
-  test("should pick big chunk size if a plan above the cartesian product has a higher cardinality than big chunk size") {
+  test(
+    "should pick big chunk size if a plan above the cartesian product has a higher cardinality than big chunk size"
+  ) {
     val cardinalityLater = 1500.0
     val cardinalityEarlier = 500.0
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
       .unwind("[1, 2, 3] AS x").withCardinality(cardinalityLater)
-      .cartesianProduct().withCardinality(cardinalityEarlier) // This does not make sense mathematically, but that is OK for this test
+      .cartesianProduct().withCardinality(
+        cardinalityEarlier
+      ) // This does not make sense mathematically, but that is OK for this test
       .|.argument("b").withCardinality(cardinalityEarlier)
       .argument("a").withCardinality(cardinalityEarlier)
       .build()
 
     val argCost = Cardinality(cardinalityEarlier) * DEFAULT_COST_PER_ROW
-    val unwindCost = Cardinality(cardinalityEarlier) * DEFAULT_COST_PER_ROW // cost of unwind is determined on the amount of incoming rows
+    val unwindCost =
+      Cardinality(
+        cardinalityEarlier
+      ) * DEFAULT_COST_PER_ROW // cost of unwind is determined on the amount of incoming rows
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+    costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)
+    ) should
       equal(unwindCost + argCost + argCost * Math.ceil(cardinalityEarlier / BIG_CHUNK_SIZE))
   }
 
-
-  test("cartesian product with many row from the left but with provided order is equally expensive in both execution models") {
+  test(
+    "cartesian product with many row from the left but with provided order is equally expensive in both execution models"
+  ) {
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
       .cartesianProduct().withCardinality(10000).withProvidedOrder(ProvidedOrder.asc(varFor("a")))
@@ -253,8 +390,22 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .argument("a").withCardinality(100).withProvidedOrder(ProvidedOrder.asc(varFor("a")))
       .build()
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Volcano) should equal(
-      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
+    costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders,
+      Volcano
+    ) should equal(
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders,
+        BatchedSingleThreaded(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)
+      )
     )
   }
 
@@ -378,28 +529,41 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
       .cartesianProduct().withCardinality(cardA * cardB * cardC)
-        .|.cartesianProduct().withCardinality(cardB * cardC)
-        .|.|.allNodeScan("C").withCardinality(cardC)
-        .|.allNodeScan("B").withCardinality(cardB)
+      .|.cartesianProduct().withCardinality(cardB * cardC)
+      .|.|.allNodeScan("C").withCardinality(cardC)
+      .|.allNodeScan("B").withCardinality(cardB)
       .allNodeScan("A").withCardinality(cardA)
 
-    val effective = CardinalityCostModel.effectiveCardinalities(plan.build(), WorkReduction.NoReduction, ExecutionModel.VolcanoBatchSize, plan.cardinalities)
+    val effective = CardinalityCostModel.effectiveCardinalities(
+      plan.build(),
+      WorkReduction.NoReduction,
+      ExecutionModel.VolcanoBatchSize,
+      plan.cardinalities
+    )
 
     effective.lhs shouldEqual Cardinality(10)
     effective.rhs shouldEqual Cardinality(100)
   }
 
-  private def effectiveCardinalitiesOfCartesian(lhsCard: Double, rhsCard: Double, chunkSize: Int, limit: Option[Int] = None) = {
+  private def effectiveCardinalitiesOfCartesian(
+    lhsCard: Double,
+    rhsCard: Double,
+    chunkSize: Int,
+    limit: Option[Int] = None
+  ) = {
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
       .cartesianProduct().withCardinality(lhsCard * rhsCard)
       .|.allNodeScan("rhs").withCardinality(rhsCard)
       .allNodeScan("lhs").withCardinality(lhsCard)
       .build()
-    val executionModel = if (chunkSize == 1) ExecutionModel.Volcano else ExecutionModel.BatchedSingleThreaded(chunkSize, chunkSize)
+    val executionModel =
+      if (chunkSize == 1) ExecutionModel.Volcano else ExecutionModel.BatchedSingleThreaded(chunkSize, chunkSize)
     val batchSize = executionModel.selectBatchSize(plan, builder.cardinalities)
-    val workReduction = limit.map(l => WorkReduction(Selectivity(Multiplier.of(l.toDouble / (lhsCard * rhsCard)).getOrElse(Multiplier.ZERO).coefficient)))
-                             .getOrElse(WorkReduction.NoReduction)
+    val workReduction = limit.map(l =>
+      WorkReduction(Selectivity(Multiplier.of(l.toDouble / (lhsCard * rhsCard)).getOrElse(Multiplier.ZERO).coefficient))
+    )
+      .getOrElse(WorkReduction.NoReduction)
     CardinalityCostModel.effectiveCardinalities(plan, workReduction, batchSize, builder.cardinalities)
   }
 
@@ -413,7 +577,13 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
 
     val expectedCost = Cardinality(cardinality) * (DEFAULT_COST_PER_ROW + CostPerRow(LABEL_CHECK_DB_HITS) * 3)
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) shouldBe expectedCost
+    costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    ) shouldBe expectedCost
   }
 
   test("sort should cost the same regardless of limit selectivity") {
@@ -424,7 +594,10 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .build()
     val semanticTable = SemanticTable().addNode(varFor("n"))
     val withoutLimit = QueryGraphSolverInput.empty
-    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(Selectivity.of(0.5).get, Selectivity.ONE))
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(
+      Selectivity.of(0.5).get,
+      Selectivity.ONE
+    ))
     val unlimited = costFor(plan, withLimit, semanticTable, builder.cardinalities, builder.providedOrders)
     val limited = costFor(plan, withoutLimit, semanticTable, builder.cardinalities, builder.providedOrders)
     unlimited should equal(limited)
@@ -433,52 +606,57 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
   test("should reduce cardinality of all semiApply variants") {
     val plans = Seq[LogicalPlanBuilder => LogicalPlan](
       _.semiApply().withCardinality(75)
-       .|.expandAll("(n)-->()").withCardinality(12345)
-       .|.argument("n").withCardinality(100)
-       .allNodeScan("n").withCardinality(100)
-       .build(),
+        .|.expandAll("(n)-->()").withCardinality(12345)
+        .|.argument("n").withCardinality(100)
+        .allNodeScan("n").withCardinality(100)
+        .build(),
       _.antiSemiApply().withCardinality(25)
-       .|.expandAll("(n)-->()").withCardinality(12345)
-       .|.argument("n").withCardinality(100)
-       .allNodeScan("n").withCardinality(100)
-       .build(),
+        .|.expandAll("(n)-->()").withCardinality(12345)
+        .|.argument("n").withCardinality(100)
+        .allNodeScan("n").withCardinality(100)
+        .build(),
       _.letSemiApply("x").withCardinality(100)
-       .|.expandAll("(n)-->()").withCardinality(12345)
-       .|.argument("n").withCardinality(100)
-       .allNodeScan("n").withCardinality(100)
-       .build(),
+        .|.expandAll("(n)-->()").withCardinality(12345)
+        .|.argument("n").withCardinality(100)
+        .allNodeScan("n").withCardinality(100)
+        .build(),
       _.letAntiSemiApply("x").withCardinality(100)
-       .|.expandAll("(n)-->()").withCardinality(12345)
-       .|.argument("n").withCardinality(100)
-       .allNodeScan("n").withCardinality(100)
-       .build(),
+        .|.expandAll("(n)-->()").withCardinality(12345)
+        .|.argument("n").withCardinality(100)
+        .allNodeScan("n").withCardinality(100)
+        .build(),
       _.selectOrSemiApply("x").withCardinality(50)
-       .|.expandAll("(n)-->()").withCardinality(12345)
-       .|.argument("n").withCardinality(100)
-       .allNodeScan("n").withCardinality(100)
-       .build(),
+        .|.expandAll("(n)-->()").withCardinality(12345)
+        .|.argument("n").withCardinality(100)
+        .allNodeScan("n").withCardinality(100)
+        .build(),
       _.selectOrAntiSemiApply("x").withCardinality(50)
-       .|.expandAll("(n)-->()").withCardinality(12345)
-       .|.argument("n").withCardinality(100)
-       .allNodeScan("n").withCardinality(100)
-       .build(),
+        .|.expandAll("(n)-->()").withCardinality(12345)
+        .|.argument("n").withCardinality(100)
+        .allNodeScan("n").withCardinality(100)
+        .build(),
       _.letSelectOrSemiApply("x", "true").withCardinality(50)
-       .|.expandAll("(n)-->()").withCardinality(12345)
-       .|.argument("n").withCardinality(100)
-       .allNodeScan("n").withCardinality(100)
-       .build(),
+        .|.expandAll("(n)-->()").withCardinality(12345)
+        .|.argument("n").withCardinality(100)
+        .allNodeScan("n").withCardinality(100)
+        .build(),
       _.letSelectOrAntiSemiApply("x", "true").withCardinality(50)
-       .|.expandAll("(n)-->()").withCardinality(12345)
-       .|.argument("n").withCardinality(100)
-       .allNodeScan("n").withCardinality(100)
-       .build(),
+        .|.expandAll("(n)-->()").withCardinality(12345)
+        .|.argument("n").withCardinality(100)
+        .allNodeScan("n").withCardinality(100)
+        .build()
     )
 
-    def workReductionOf(buildPlan: LogicalPlanBuilder => LogicalPlan, incomingWorkReduction: WorkReduction, executionModel: ExecutionModel = ExecutionModel.default) = {
+    def workReductionOf(
+      buildPlan: LogicalPlanBuilder => LogicalPlan,
+      incomingWorkReduction: WorkReduction,
+      executionModel: ExecutionModel = ExecutionModel.default
+    ) = {
       val builder = new LogicalPlanBuilder(wholePlan = false)
       val plan = buildPlan(builder)
       val batchSize = executionModel.selectBatchSize(plan, builder.cardinalities)
-      val reduction = CardinalityCostModel.childrenWorkReduction(plan, incomingWorkReduction, batchSize, builder.cardinalities)
+      val reduction =
+        CardinalityCostModel.childrenWorkReduction(plan, incomingWorkReduction, batchSize, builder.cardinalities)
       (plan, reduction)
     }
 
@@ -486,7 +664,12 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       val incoming = WorkReduction.NoReduction
       val (plan, reduction) = workReductionOf(buildPlan, incoming)
       withClue(LogicalPlanToPlanBuilderString(plan)) {
-        reduction shouldEqual ((incoming, WorkReduction(fraction = Selectivity(1.0/12345.0), minimum = Some(Cardinality(1)))))
+        reduction shouldEqual (
+          (
+            incoming,
+            WorkReduction(fraction = Selectivity(1.0 / 12345.0), minimum = Some(Cardinality(1)))
+          )
+        )
       }
     }
 
@@ -494,7 +677,12 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       val incoming = WorkReduction(Selectivity(0.3))
       val (plan, reduction) = workReductionOf(buildPlan, incoming)
       withClue(LogicalPlanToPlanBuilderString(plan)) {
-        reduction shouldEqual ((incoming, WorkReduction(fraction = Selectivity(1.0/12345.0), minimum = Some(Cardinality(1)))))
+        reduction shouldEqual (
+          (
+            incoming,
+            WorkReduction(fraction = Selectivity(1.0 / 12345.0), minimum = Some(Cardinality(1)))
+          )
+        )
       }
     }
   }

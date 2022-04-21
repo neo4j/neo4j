@@ -55,24 +55,24 @@ trait VerifyAstPositionTestSupport extends Assertions with Matchers {
 
         astNode.folder.treeFold(Seq.empty[(ASTNode, InputPosition)]) {
           case _: Property |
-               _: SetPropertyItem |
-               _: RemovePropertyItem |
-               _: LoadCSV |
-               _: UseGraph |
-               _: EveryPath |
-               _: RelationshipChain |
-               _: Yield |
-               _: ContainerIndex |
-               _: ListSlice |
-               _: HasLabelsOrTypes |
-               _: SingleQuery |
-               _: ReadAdministrationCommand |
-               _: SetIncludingPropertiesFromMapItem |
-               _: SetExactPropertiesFromMapItem => acc => TraverseChildren(acc)
+            _: SetPropertyItem |
+            _: RemovePropertyItem |
+            _: LoadCSV |
+            _: UseGraph |
+            _: EveryPath |
+            _: RelationshipChain |
+            _: Yield |
+            _: ContainerIndex |
+            _: ListSlice |
+            _: HasLabelsOrTypes |
+            _: SingleQuery |
+            _: ReadAdministrationCommand |
+            _: SetIncludingPropertiesFromMapItem |
+            _: SetExactPropertiesFromMapItem => acc => TraverseChildren(acc)
           case returnItems: ReturnItems if returnItems.items.isEmpty => acc => SkipChildren(acc)
-          case _: Variable if containsReadAdministratorCommand => acc => TraverseChildren(acc)
+          case _: Variable if containsReadAdministratorCommand       => acc => TraverseChildren(acc)
           case astNode: ASTNode => acc => TraverseChildren(acc :+ (astNode -> astNode.position))
-          case _ => acc => TraverseChildren(acc)
+          case _                => acc => TraverseChildren(acc)
         }
       }
     }
@@ -80,9 +80,10 @@ trait VerifyAstPositionTestSupport extends Assertions with Matchers {
     astWithPosition(javaCCAstNode).zip(astWithPosition(expectedAstNode))
       .foreach {
         case ((_, _), (_, InputPosition(a, 1, b))) if a == b => // Ignore DummyPositions
-        case ((astChildNode1, pos1), (_, pos2)) => withClue(s"AST node $astChildNode1 was parsed with different positions:") {
-          pos1 shouldBe pos2
-        }
+        case ((astChildNode1, pos1), (_, pos2)) =>
+          withClue(s"AST node $astChildNode1 was parsed with different positions:") {
+            pos1 shouldBe pos2
+          }
         case _ => // Do nothing
       }
   }

@@ -26,12 +26,12 @@ object VariableParser {
 
   def unescaped(varName: String): String = unapply(varName) match {
     case Some(value) => value
-    case None => throw new IllegalArgumentException(s"'$varName' cannot be parsed as a variable name")
+    case None        => throw new IllegalArgumentException(s"'$varName' cannot be parsed as a variable name")
   }
 
   def unapply(varName: String): Option[String] = varName match {
-    case raw(n) => Some(n)
+    case raw(n)     => Some(n)
     case escaped(n) => Some(n)
-    case _ => None
+    case _          => None
   }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v4.runtime;
 
 import java.time.Clock;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
@@ -38,50 +37,47 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachineSPI
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionStateMachineV4SPI.class );
+public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachineSPI {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionStateMachineV4SPI.class);
 
     protected final NamedDatabaseId namedDatabaseId;
 
-    public TransactionStateMachineV4SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
-                                         StatementProcessorReleaseManager resourceReleaseManager, String transactionId )
-    {
-        super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId );
+    public TransactionStateMachineV4SPI(
+            BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI,
+            BoltChannel boltChannel,
+            SystemNanoClock clock,
+            StatementProcessorReleaseManager resourceReleaseManager,
+            String transactionId) {
+        super(boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId);
         this.namedDatabaseId = boltGraphDatabaseServiceSPI.getNamedDatabaseId();
     }
 
     @Override
-    public Bookmark newestBookmark( BoltTransaction tx )
-    {
+    public Bookmark newestBookmark(BoltTransaction tx) {
         var bookmarkMetadata = tx.getBookmarkMetadata();
-        return bookmarkMetadata.toBookmark( BookmarkWithDatabaseId::new );
+        return bookmarkMetadata.toBookmark(BookmarkWithDatabaseId::new);
     }
 
     @Override
-    protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
-    {
-        return new BoltResultHandleV4( statement, params, boltQueryExecutor );
+    protected BoltResultHandle newBoltResultHandle(
+            String statement, MapValue params, BoltQueryExecutor boltQueryExecutor) {
+        return new BoltResultHandleV4(statement, params, boltQueryExecutor);
     }
 
     @Override
-    public boolean supportsNestedStatementsInTransaction()
-    {
+    public boolean supportsNestedStatementsInTransaction() {
         return true;
     }
 
-    private class BoltResultHandleV4 extends AbstractBoltResultHandle
-    {
+    private class BoltResultHandleV4 extends AbstractBoltResultHandle {
 
-        BoltResultHandleV4( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
-        {
-            super( statement, params, boltQueryExecutor );
+        BoltResultHandleV4(String statement, MapValue params, BoltQueryExecutor boltQueryExecutor) {
+            super(statement, params, boltQueryExecutor);
         }
 
         @Override
-        protected BoltResult newBoltResult( QueryExecution result, BoltAdapterSubscriber subscriber, Clock clock )
-        {
-            return new CypherAdapterStreamV4( result, subscriber, clock, namedDatabaseId.name() );
+        protected BoltResult newBoltResult(QueryExecution result, BoltAdapterSubscriber subscriber, Clock clock) {
+            return new CypherAdapterStreamV4(result, subscriber, clock, namedDatabaseId.name());
         }
     }
 }

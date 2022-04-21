@@ -25,18 +25,31 @@ import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.virtual.VirtualValues
 
-case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
-                                             (val id: Id = Id.INVALID_ID) extends Pipe {
+case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)(
+  val id: Id = Id.INVALID_ID
+) extends Pipe {
 
-  protected override def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val ctx = state.newRowWithArgument(rowFactory)
     val relIds = relIdExpr.expressions(ctx, state)
-    val relationships = new UndirectedRelationshipIdSeekIterator(relIds.iterator(), state.query.transactionalContext.dataRead, state.query.scanCursor())
-    PrimitiveLongHelper.map(relationships, r => {
-      rowFactory.copyWith(ctx,
-        ident, VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()),
-        fromNode, VirtualValues.node(relationships.startNodeId()),
-        toNode, VirtualValues.node(relationships.endNodeId()))
-    })
+    val relationships = new UndirectedRelationshipIdSeekIterator(
+      relIds.iterator(),
+      state.query.transactionalContext.dataRead,
+      state.query.scanCursor()
+    )
+    PrimitiveLongHelper.map(
+      relationships,
+      r => {
+        rowFactory.copyWith(
+          ctx,
+          ident,
+          VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()),
+          fromNode,
+          VirtualValues.node(relationships.startNodeId()),
+          toNode,
+          VirtualValues.node(relationships.endNodeId())
+        )
+      }
+    )
   }
 }

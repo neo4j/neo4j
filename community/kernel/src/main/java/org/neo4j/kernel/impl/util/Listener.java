@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-public interface Listener<T>
-{
-    void receive( T notification );
+public interface Listener<T> {
+    void receive(T notification);
 }

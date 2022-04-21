@@ -20,20 +20,22 @@
 package org.neo4j.server.http.cypher.format.jolt;
 
 import java.util.Map;
-
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-final class JoltRelationship
-{
+final class JoltRelationship {
     private final long id;
     private final long startNodeId;
     private final long endNodeId;
     private final RelationshipType relationshipType;
-    private final Map<String,Object> properties;
+    private final Map<String, Object> properties;
 
-    private JoltRelationship( long id, long startNodeId, RelationshipType relationshipType, long endNodeId, Map<String,Object> properties )
-    {
+    private JoltRelationship(
+            long id,
+            long startNodeId,
+            RelationshipType relationshipType,
+            long endNodeId,
+            Map<String, Object> properties) {
         this.id = id;
         this.startNodeId = startNodeId;
         this.endNodeId = endNodeId;
@@ -41,34 +43,32 @@ final class JoltRelationship
         this.properties = properties;
     }
 
-    public static JoltRelationship fromRelationshipReversed( Relationship relationship )
-    {
-        return new JoltRelationship( relationship.getId(), relationship.getEndNodeId(),
-                                     relationship.getType(), relationship.getStartNodeId(), relationship.getAllProperties() );
+    public static JoltRelationship fromRelationshipReversed(Relationship relationship) {
+        return new JoltRelationship(
+                relationship.getId(),
+                relationship.getEndNodeId(),
+                relationship.getType(),
+                relationship.getStartNodeId(),
+                relationship.getAllProperties());
     }
 
-    public RelationshipType getType()
-    {
+    public RelationshipType getType() {
         return relationshipType;
     }
 
-    public long getId()
-    {
+    public long getId() {
         return id;
     }
 
-    public long getStartNodeId()
-    {
+    public long getStartNodeId() {
         return startNodeId;
     }
 
-    public long getEndNodeId()
-    {
+    public long getEndNodeId() {
         return endNodeId;
     }
 
-    public Map<String,Object> getAllProperties()
-    {
+    public Map<String, Object> getAllProperties() {
         return properties;
     }
 }

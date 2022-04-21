@@ -26,7 +26,6 @@ import org.neo4j.service.PrioritizedService;
 import org.neo4j.time.SystemNanoClock;
 
 @Service
-public interface LocksFactory extends NamedService, PrioritizedService
-{
-    Locks newInstance( Config config, SystemNanoClock clock );
+public interface LocksFactory extends NamedService, PrioritizedService {
+    Locks newInstance(Config config, SystemNanoClock clock);
 }

@@ -19,15 +19,13 @@
  */
 package org.neo4j.shell;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class HistorianTest
-{
+import org.junit.jupiter.api.Test;
+
+class HistorianTest {
     @Test
-    void getHistory()
-    {
-        assertTrue( Historian.empty.getHistory().isEmpty() );
+    void getHistory() {
+        assertTrue(Historian.empty.getHistory().isEmpty());
     }
 }

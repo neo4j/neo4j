@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.indexOf;
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -51,15 +56,8 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.Values;
 
-import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.indexOf;
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
-
-public class RelationshipEntity implements Relationship, RelationshipVisitor<RuntimeException>
-{
-    public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipEntity.class );
+public class RelationshipEntity implements Relationship, RelationshipVisitor<RuntimeException> {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance(RelationshipEntity.class);
 
     private final InternalTransaction internalTransaction;
     private final RelationshipDataAccessor cursor;
@@ -68,65 +66,60 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     private long endNode = NO_ID;
     private int type;
 
-    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type,
-            long endNode, RelationshipDataAccessor cursor )
-    {
+    public RelationshipEntity(
+            InternalTransaction internalTransaction,
+            long id,
+            long startNode,
+            int type,
+            long endNode,
+            RelationshipDataAccessor cursor) {
         this.internalTransaction = internalTransaction;
         this.cursor = cursor;
-        visit( id, type, startNode, endNode );
+        visit(id, type, startNode, endNode);
     }
 
-    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type,
-            long endNode )
-    {
-        this( internalTransaction, id, startNode, type, endNode, null );
+    public RelationshipEntity(
+            InternalTransaction internalTransaction, long id, long startNode, int type, long endNode) {
+        this(internalTransaction, id, startNode, type, endNode, null);
     }
 
-    public RelationshipEntity( InternalTransaction internalTransaction, long id )
-    {
+    public RelationshipEntity(InternalTransaction internalTransaction, long id) {
         this.internalTransaction = internalTransaction;
         this.id = id;
         this.cursor = null;
     }
 
-    public static boolean isDeletedInCurrentTransaction( Relationship relationship )
-    {
-        if ( relationship instanceof RelationshipEntity proxy )
-        {
+    public static boolean isDeletedInCurrentTransaction(Relationship relationship) {
+        if (relationship instanceof RelationshipEntity proxy) {
             KernelTransaction ktx = proxy.internalTransaction.kernelTransaction();
-            return ktx.dataRead().relationshipDeletedInTransaction( proxy.id );
+            return ktx.dataRead().relationshipDeletedInTransaction(proxy.id);
         }
         return false;
     }
 
     @Override
-    public final void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
-    {
+    public final void visit(long id, int type, long startNode, long endNode) throws RuntimeException {
         this.id = id;
         this.type = type;
         this.startNode = startNode;
         this.endNode = endNode;
     }
 
-    public boolean initializeData()
-    {
-        if ( startNode == NO_ID )
-        {
+    public boolean initializeData() {
+        if (startNode == NO_ID) {
             KernelTransaction transaction = internalTransaction.kernelTransaction();
             RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
-            return initializeData( relationships );
+            return initializeData(relationships);
         }
         return true;
     }
 
-    public boolean initializeData( RelationshipScanCursor relationships )
-    {
+    public boolean initializeData(RelationshipScanCursor relationships) {
         // It enough to check only start node, since it's absence will indicate that data was not yet loaded.
-        if ( startNode == NO_ID )
-        {
+        if (startNode == NO_ID) {
             KernelTransaction transaction = internalTransaction.kernelTransaction();
 
-            transaction.dataRead().singleRelationship( id, relationships );
+            transaction.dataRead().singleRelationship(id, relationships);
             // At this point we don't care if it is there or not just load what we got.
             boolean wasPresent = relationships.next();
             this.type = relationships.type();
@@ -139,170 +132,141 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     }
 
     @Override
-    public long getId()
-    {
+    public long getId() {
         return id;
     }
 
     @Override
-    public String getElementId()
-    {
-        return internalTransaction.elementIdMapper().relationshipElementId( id );
+    public String getElementId() {
+        return internalTransaction.elementIdMapper().relationshipElementId(id);
     }
 
-    private int typeId()
-    {
+    private int typeId() {
         initializeData();
         return type;
     }
 
-    private long sourceId()
-    {
+    private long sourceId() {
         initializeData();
         return startNode;
     }
 
-    private long targetId()
-    {
+    private long targetId() {
         initializeData();
         return endNode;
     }
 
     @Override
-    public void delete()
-    {
+    public void delete() {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        try
-        {
-            boolean deleted = transaction.dataWrite().relationshipDelete( id );
-            if ( !deleted )
-            {
-                throw new NotFoundException( "Unable to delete relationship[" +
-                                             getId() + "] since it is already deleted." );
+        try {
+            boolean deleted = transaction.dataWrite().relationshipDelete(id);
+            if (!deleted) {
+                throw new NotFoundException(
+                        "Unable to delete relationship[" + getId() + "] since it is already deleted.");
             }
-        }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
+        } catch (InvalidTransactionTypeKernelException e) {
+            throw new ConstraintViolationException(e.getMessage(), e);
         }
     }
 
     @Override
-    public Node[] getNodes()
-    {
+    public Node[] getNodes() {
         internalTransaction.checkInTransaction();
-        return new Node[]{
-                internalTransaction.newNodeEntity( sourceId() ),
-                internalTransaction.newNodeEntity( targetId() )};
+        return new Node[] {internalTransaction.newNodeEntity(sourceId()), internalTransaction.newNodeEntity(targetId())
+        };
     }
 
     @Override
-    public Node getOtherNode( Node node )
-    {
+    public Node getOtherNode(Node node) {
         internalTransaction.checkInTransaction();
-        return internalTransaction.newNodeEntity( getOtherNodeId( node.getId() ) );
+        return internalTransaction.newNodeEntity(getOtherNodeId(node.getId()));
     }
 
     @Override
-    public Node getStartNode()
-    {
+    public Node getStartNode() {
         internalTransaction.checkInTransaction();
-        return internalTransaction.newNodeEntity( sourceId() );
+        return internalTransaction.newNodeEntity(sourceId());
     }
 
     @Override
-    public Node getEndNode()
-    {
+    public Node getEndNode() {
         internalTransaction.checkInTransaction();
-        return internalTransaction.newNodeEntity( targetId() );
+        return internalTransaction.newNodeEntity(targetId());
     }
 
     @Override
-    public long getStartNodeId()
-    {
+    public long getStartNodeId() {
         return sourceId();
     }
 
     @Override
-    public long getEndNodeId()
-    {
+    public long getEndNodeId() {
         return targetId();
     }
 
     @Override
-    public long getOtherNodeId( long id )
-    {
+    public long getOtherNodeId(long id) {
         long start = sourceId();
         long end = targetId();
-        if ( start == id )
-        {
+        if (start == id) {
             return end;
         }
-        if ( end == id )
-        {
+        if (end == id) {
             return start;
         }
-        throw new NotFoundException( "Node[" + id + "] not connected to this relationship[" + getId() + "]" );
+        throw new NotFoundException("Node[" + id + "] not connected to this relationship[" + getId() + "]");
     }
 
     @Override
-    public RelationshipType getType()
-    {
+    public RelationshipType getType() {
         internalTransaction.checkInTransaction();
         int typeId = typeId();
-        if ( typeId == NO_ID )
-        {
-            throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, id ) );
+        if (typeId == NO_ID) {
+            throw new NotFoundException(new EntityNotFoundException(EntityType.NODE, id));
         }
-        return internalTransaction.getRelationshipTypeById( typeId );
+        return internalTransaction.getRelationshipTypeById(typeId);
     }
 
-    private PropertyCursor initializePropertyCursor( PropertyCursor properties, KernelTransaction transaction, PropertySelection selection )
-    {
-        if ( cursor != null && !cursor.isClosed() && cursor.relationshipReference() == id )
-        {
-            // If this relationship entity instance was instantiated from a node.getRelationships()and the cursor hasn't moved on,
-            // then we can use that relationship cursor to get the properties from to avoid looking up and loading the relationship again
-            cursor.properties( properties, selection );
-        }
-        else
-        {
+    private PropertyCursor initializePropertyCursor(
+            PropertyCursor properties, KernelTransaction transaction, PropertySelection selection) {
+        if (cursor != null && !cursor.isClosed() && cursor.relationshipReference() == id) {
+            // If this relationship entity instance was instantiated from a node.getRelationships()and the cursor hasn't
+            // moved on,
+            // then we can use that relationship cursor to get the properties from to avoid looking up and loading the
+            // relationship again
+            cursor.properties(properties, selection);
+        } else {
             // Otherwise fall back to looking up the relationship by ID
             RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
-            singleRelationship( transaction, relationships );
-            relationships.properties( properties, selection );
+            singleRelationship(transaction, relationships);
+            relationships.properties(properties, selection);
         }
         return properties;
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
-    {
+    public Iterable<String> getPropertyKeys() {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         List<String> keys = new ArrayList<>();
-        try
-        {
-            PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction, ALL_PROPERTIES );
+        try {
+            PropertyCursor properties =
+                    initializePropertyCursor(transaction.ambientPropertyCursor(), transaction, ALL_PROPERTIES);
             TokenRead token = transaction.tokenRead();
-            while ( properties.next() )
-            {
-                keys.add( token.propertyKeyName( properties.propertyKey() ));
+            while (properties.next()) {
+                keys.add(token.propertyKeyName(properties.propertyKey()));
             }
-        }
-        catch ( PropertyKeyIdNotFoundKernelException e )
-        {
-            throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
+        } catch (PropertyKeyIdNotFoundKernelException e) {
+            throw new IllegalStateException("Property key retrieved through kernel API should exist.", e);
         }
         return keys;
     }
 
     @Override
-    public Map<String, Object> getProperties( String... keys )
-    {
-        Objects.requireNonNull( keys, "Properties keys should be not null array." );
+    public Map<String, Object> getProperties(String... keys) {
+        Objects.requireNonNull(keys, "Properties keys should be not null array.");
 
-        if ( keys.length == 0 )
-        {
+        if (keys.length == 0) {
             return Collections.emptyMap();
         }
 
@@ -311,261 +275,208 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         int itemsToReturn = keys.length;
         TokenRead token = transaction.tokenRead();
 
-        //Find ids, note we are betting on that the number of keys
-        //is small enough not to use a set here.
+        // Find ids, note we are betting on that the number of keys
+        // is small enough not to use a set here.
         int[] propertyIds = new int[itemsToReturn];
-        for ( int i = 0; i < itemsToReturn; i++ )
-        {
+        for (int i = 0; i < itemsToReturn; i++) {
             String key = keys[i];
-            if ( key == null )
-            {
-                throw new NullPointerException( String.format( "Key %d was null", i ) );
+            if (key == null) {
+                throw new NullPointerException(String.format("Key %d was null", i));
             }
-            propertyIds[i] = token.propertyKey( key );
+            propertyIds[i] = token.propertyKey(key);
         }
 
-        Map<String,Object> properties = new HashMap<>( itemsToReturn );
-        PropertyCursor propertyCursor = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction,
-                PropertySelection.selection( propertyIds ) );
-        while ( propertyCursor.next() )
-        {
-            properties.put( keys[indexOf( propertyIds, propertyCursor.propertyKey() )], propertyCursor.propertyValue().asObjectCopy() );
+        Map<String, Object> properties = new HashMap<>(itemsToReturn);
+        PropertyCursor propertyCursor = initializePropertyCursor(
+                transaction.ambientPropertyCursor(), transaction, PropertySelection.selection(propertyIds));
+        while (propertyCursor.next()) {
+            properties.put(
+                    keys[indexOf(propertyIds, propertyCursor.propertyKey())],
+                    propertyCursor.propertyValue().asObjectCopy());
         }
         return properties;
     }
 
     @Override
-    public Map<String,Object> getAllProperties()
-    {
+    public Map<String, Object> getAllProperties() {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
-        return getAllProperties( propertyCursor );
+        return getAllProperties(propertyCursor);
     }
 
-    public Map<String, Object> getAllProperties( PropertyCursor propertyCursor )
-    {
+    public Map<String, Object> getAllProperties(PropertyCursor propertyCursor) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        Map<String,Object> properties = new HashMap<>();
+        Map<String, Object> properties = new HashMap<>();
 
-        try
-        {
-            initializePropertyCursor( propertyCursor, transaction, ALL_PROPERTIES );
+        try {
+            initializePropertyCursor(propertyCursor, transaction, ALL_PROPERTIES);
             TokenRead token = transaction.tokenRead();
-            while ( propertyCursor.next() )
-            {
-                properties.put( token.propertyKeyName( propertyCursor.propertyKey() ),
-                        propertyCursor.propertyValue().asObjectCopy() );
+            while (propertyCursor.next()) {
+                properties.put(
+                        token.propertyKeyName(propertyCursor.propertyKey()),
+                        propertyCursor.propertyValue().asObjectCopy());
             }
-        }
-        catch ( PropertyKeyIdNotFoundKernelException e )
-        {
-            throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
+        } catch (PropertyKeyIdNotFoundKernelException e) {
+            throw new IllegalStateException("Property key retrieved through kernel API should exist.", e);
         }
         return properties;
     }
 
     @Override
-    public Object getProperty( String key )
-    {
-        if ( null == key )
-        {
-            throw new IllegalArgumentException( "(null) property key is not allowed" );
+    public Object getProperty(String key) {
+        if (null == key) {
+            throw new IllegalArgumentException("(null) property key is not allowed");
         }
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == TokenRead.NO_TOKEN )
-        {
-            throw new NotFoundException( format( "No such property, '%s'.", key ) );
+        int propertyKey = transaction.tokenRead().propertyKey(key);
+        if (propertyKey == TokenRead.NO_TOKEN) {
+            throw new NotFoundException(format("No such property, '%s'.", key));
         }
 
-        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction, PropertySelection.selection( propertyKey ) );
-        if ( !properties.next() )
-        {
-            throw new NotFoundException( format( "No such property, '%s'.", key ) );
+        PropertyCursor properties = initializePropertyCursor(
+                transaction.ambientPropertyCursor(), transaction, PropertySelection.selection(propertyKey));
+        if (!properties.next()) {
+            throw new NotFoundException(format("No such property, '%s'.", key));
         }
         return properties.propertyValue().asObjectCopy();
     }
 
     @Override
-    public Object getProperty( String key, Object defaultValue )
-    {
-        if ( null == key )
-        {
-            throw new IllegalArgumentException( "(null) property key is not allowed" );
+    public Object getProperty(String key, Object defaultValue) {
+        if (null == key) {
+            throw new IllegalArgumentException("(null) property key is not allowed");
         }
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == TokenRead.NO_TOKEN )
-        {
+        int propertyKey = transaction.tokenRead().propertyKey(key);
+        if (propertyKey == TokenRead.NO_TOKEN) {
             return defaultValue;
         }
 
-        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction, PropertySelection.selection( propertyKey ) );
+        PropertyCursor properties = initializePropertyCursor(
+                transaction.ambientPropertyCursor(), transaction, PropertySelection.selection(propertyKey));
         return properties.next() ? properties.propertyValue().asObjectCopy() : defaultValue;
     }
 
     @Override
-    public boolean hasProperty( String key )
-    {
-        if ( null == key )
-        {
+    public boolean hasProperty(String key) {
+        if (null == key) {
             return false;
         }
 
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == TokenRead.NO_TOKEN )
-        {
+        int propertyKey = transaction.tokenRead().propertyKey(key);
+        if (propertyKey == TokenRead.NO_TOKEN) {
             return false;
         }
 
-        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction, PropertySelection.selection( propertyKey ) );
+        PropertyCursor properties = initializePropertyCursor(
+                transaction.ambientPropertyCursor(), transaction, PropertySelection.selection(propertyKey));
         return properties.next();
     }
 
     @Override
-    public void setProperty( String key, Object value )
-    {
+    public void setProperty(String key, Object value) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKeyId;
-        try
-        {
-            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
-        }
-        catch ( IllegalTokenNameException e )
-        {
-            throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
-        }
-        catch ( TokenCapacityExceededKernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( KernelException e )
-        {
-            throw new TransactionFailureException( "Unknown error trying to create property key token", e );
+        try {
+            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName(key);
+        } catch (IllegalTokenNameException e) {
+            throw new IllegalArgumentException(format("Invalid property key '%s'.", key), e);
+        } catch (TokenCapacityExceededKernelException e) {
+            throw new ConstraintViolationException(e.getMessage(), e);
+        } catch (KernelException e) {
+            throw new TransactionFailureException("Unknown error trying to create property key token", e);
         }
 
-        try
-        {
-            transaction.dataWrite().relationshipSetProperty( id, propertyKeyId, Values.of( value, false ) );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            try
-            {
+        try {
+            transaction.dataWrite().relationshipSetProperty(id, propertyKeyId, Values.of(value, false));
+        } catch (IllegalArgumentException e) {
+            try {
                 transaction.rollback();
-            }
-            catch ( org.neo4j.internal.kernel.api.exceptions.TransactionFailureException ex )
-            {
-                ex.addSuppressed( e );
-                throw new TransactionFailureException( "Fail to rollback transaction.", ex );
+            } catch (org.neo4j.internal.kernel.api.exceptions.TransactionFailureException ex) {
+                ex.addSuppressed(e);
+                throw new TransactionFailureException("Fail to rollback transaction.", ex);
             }
             throw e;
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
+        } catch (EntityNotFoundException e) {
+            throw new NotFoundException(e);
+        } catch (InvalidTransactionTypeKernelException e) {
+            throw new ConstraintViolationException(e.getMessage(), e);
         }
     }
 
     @Override
-    public Object removeProperty( String key )
-    {
+    public Object removeProperty(String key) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKeyId;
-        try
-        {
-            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
-        }
-        catch ( IllegalTokenNameException e )
-        {
-            throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
-        }
-        catch ( KernelException e )
-        {
-            throw new TransactionFailureException( "Unknown error trying to get property key token", e );
+        try {
+            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName(key);
+        } catch (IllegalTokenNameException e) {
+            throw new IllegalArgumentException(format("Invalid property key '%s'.", key), e);
+        } catch (KernelException e) {
+            throw new TransactionFailureException("Unknown error trying to get property key token", e);
         }
 
-        try
-        {
-            return transaction.dataWrite().relationshipRemoveProperty( id, propertyKeyId ).asObjectCopy();
-        }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( e );
+        try {
+            return transaction
+                    .dataWrite()
+                    .relationshipRemoveProperty(id, propertyKeyId)
+                    .asObjectCopy();
+        } catch (InvalidTransactionTypeKernelException e) {
+            throw new ConstraintViolationException(e.getMessage(), e);
+        } catch (EntityNotFoundException e) {
+            throw new NotFoundException(e);
         }
     }
 
     @Override
-    public boolean isType( RelationshipType type )
-    {
+    public boolean isType(RelationshipType type) {
         internalTransaction.checkInTransaction();
-        return internalTransaction.getRelationshipTypeById( typeId() ).name().equals( type.name() );
+        return internalTransaction.getRelationshipTypeById(typeId()).name().equals(type.name());
     }
 
-    public int compareTo( Object rel )
-    {
+    public int compareTo(Object rel) {
         Relationship r = (Relationship) rel;
-        return Long.compare( this.getId(), r.getId() );
+        return Long.compare(this.getId(), r.getId());
     }
 
     @Override
-    public boolean equals( Object o )
-    {
+    public boolean equals(Object o) {
         return o instanceof Relationship && this.getId() == ((Relationship) o).getId();
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return (int) ((getId() >>> 32) ^ getId());
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         String relType;
-        try
-        {
-            relType = internalTransaction.getRelationshipTypeById( typeId() ).name();
-            return format( "(%d)-[%s,%d]->(%d)", sourceId(), relType, getId(), targetId() );
-        }
-        catch ( NotInTransactionException | DatabaseShutdownException e )
-        {
+        try {
+            relType = internalTransaction.getRelationshipTypeById(typeId()).name();
+            return format("(%d)-[%s,%d]->(%d)", sourceId(), relType, getId(), targetId());
+        } catch (NotInTransactionException | DatabaseShutdownException e) {
             // We don't keep the rel-name lookup if the database is shut down. Source ID and target ID also requires
             // database access in a transaction. However, failing on toString would be uncomfortably evil, so we fall
             // back to noting the relationship type id.
         }
         relType = "RELTYPE(" + type + ")";
-        return format( "(?)-[%s,%d]->(?)", relType, getId() );
+        return format("(?)-[%s,%d]->(?)", relType, getId());
     }
 
-    private void singleRelationship( KernelTransaction transaction, RelationshipScanCursor relationships )
-    {
-        if ( startNode != NO_ID )
-        {
-            transaction.dataRead().singleRelationship( id, startNode, type, endNode, relationships );
+    private void singleRelationship(KernelTransaction transaction, RelationshipScanCursor relationships) {
+        if (startNode != NO_ID) {
+            transaction.dataRead().singleRelationship(id, startNode, type, endNode, relationships);
+        } else {
+            transaction.dataRead().singleRelationship(id, relationships);
         }
-        else
-        {
-            transaction.dataRead().singleRelationship( id, relationships );
-        }
-        if ( !relationships.next() )
-        {
-            throw new NotFoundException( new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
+        if (!relationships.next()) {
+            throw new NotFoundException(new EntityNotFoundException(EntityType.RELATIONSHIP, id));
         }
     }
 
-    public InternalTransaction getTransaction()
-    {
+    public InternalTransaction getTransaction() {
         return internalTransaction;
     }
 }

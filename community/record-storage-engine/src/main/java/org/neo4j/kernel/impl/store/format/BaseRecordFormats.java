@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import static java.util.stream.Collectors.toSet;
+import static org.neo4j.internal.helpers.ArrayUtil.contains;
+
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -29,14 +31,10 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
-import static java.util.stream.Collectors.toSet;
-import static org.neo4j.internal.helpers.ArrayUtil.contains;
-
 /**
  * Base class for simpler implementation of {@link RecordFormats}.
  */
-public abstract class BaseRecordFormats implements RecordFormats
-{
+public abstract class BaseRecordFormats implements RecordFormats {
     private final int majorFormatVersion;
     private final int minorFormatVersion;
     private final boolean onlyForMigration;
@@ -44,8 +42,8 @@ public abstract class BaseRecordFormats implements RecordFormats
     private final String storeVersion;
     private final String introductionVersion;
 
-    protected BaseRecordFormats( StoreVersion storeVersion, int majorFormatVersion, int minorFormatVersion, Capability... capabilities )
-    {
+    protected BaseRecordFormats(
+            StoreVersion storeVersion, int majorFormatVersion, int minorFormatVersion, Capability... capabilities) {
         this.storeVersion = storeVersion.versionString();
         this.onlyForMigration = storeVersion.onlyForMigration();
         this.majorFormatVersion = majorFormatVersion;
@@ -55,64 +53,55 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public String storeVersion()
-    {
+    public String storeVersion() {
         return storeVersion;
     }
 
     @Override
-    public String introductionVersion()
-    {
+    public String introductionVersion() {
         return introductionVersion;
     }
 
     @Override
-    public int majorVersion()
-    {
+    public int majorVersion() {
         return majorFormatVersion;
     }
 
     @Override
-    public int minorVersion()
-    {
+    public int minorVersion() {
         return minorFormatVersion;
     }
 
     @Override
-    public RecordFormat<MetaDataRecord> metaData()
-    {
+    public RecordFormat<MetaDataRecord> metaData() {
         return new MetaDataRecordFormat();
     }
 
     @Override
-    public boolean onlyForMigration()
-    {
+    public boolean onlyForMigration() {
         return onlyForMigration;
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( !(obj instanceof RecordFormats other) )
-        {
+    public boolean equals(Object obj) {
+        if (!(obj instanceof RecordFormats other)) {
             return false;
         }
 
-        return  majorFormatVersion == other.majorVersion() &&
-                minorFormatVersion == other.minorVersion() &&
-                node().equals( other.node() ) &&
-                relationship().equals( other.relationship() ) &&
-                relationshipGroup().equals( other.relationshipGroup() ) &&
-                property().equals( other.property() ) &&
-                labelToken().equals( other.labelToken() ) &&
-                relationshipTypeToken().equals( other.relationshipTypeToken() ) &&
-                propertyKeyToken().equals( other.propertyKeyToken() ) &&
-                dynamic().equals( other.dynamic() );
+        return majorFormatVersion == other.majorVersion()
+                && minorFormatVersion == other.minorVersion()
+                && node().equals(other.node())
+                && relationship().equals(other.relationship())
+                && relationshipGroup().equals(other.relationshipGroup())
+                && property().equals(other.property())
+                && labelToken().equals(other.labelToken())
+                && relationshipTypeToken().equals(other.relationshipTypeToken())
+                && propertyKeyToken().equals(other.propertyKeyToken())
+                && dynamic().equals(other.dynamic());
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int hashCode = 17;
         hashCode = 31 * hashCode + node().hashCode();
         hashCode = 31 * hashCode + relationship().hashCode();
@@ -126,40 +115,37 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "RecordFormat:" + getClass().getSimpleName() + "[" + storeVersion() + "]";
     }
 
     @Override
-    public Capability[] capabilities()
-    {
+    public Capability[] capabilities() {
         return capabilities;
     }
 
     @Override
-    public boolean hasCapability( Capability capability )
-    {
-        return contains( capabilities(), capability );
+    public boolean hasCapability(Capability capability) {
+        return contains(capabilities(), capability);
     }
 
-    public static boolean hasCompatibleCapabilities( RecordFormats one, RecordFormats other, CapabilityType type )
-    {
-        Set<Capability> myFormatCapabilities = Stream.of( one.capabilities() )
-                .filter( capability -> capability.isType( type ) ).collect( toSet() );
-        Set<Capability> otherFormatCapabilities = Stream.of( other.capabilities() )
-                .filter( capability -> capability.isType( type ) ).collect( toSet() );
+    public static boolean hasCompatibleCapabilities(RecordFormats one, RecordFormats other, CapabilityType type) {
+        Set<Capability> myFormatCapabilities = Stream.of(one.capabilities())
+                .filter(capability -> capability.isType(type))
+                .collect(toSet());
+        Set<Capability> otherFormatCapabilities = Stream.of(other.capabilities())
+                .filter(capability -> capability.isType(type))
+                .collect(toSet());
 
-        if ( myFormatCapabilities.equals( otherFormatCapabilities ) )
-        {
+        if (myFormatCapabilities.equals(otherFormatCapabilities)) {
             // If they have the same capabilities then of course they are compatible
             return true;
         }
 
-        boolean capabilitiesNotRemoved = otherFormatCapabilities.containsAll( myFormatCapabilities );
+        boolean capabilitiesNotRemoved = otherFormatCapabilities.containsAll(myFormatCapabilities);
 
-        otherFormatCapabilities.removeAll( myFormatCapabilities );
-        boolean allAddedAreAdditive = otherFormatCapabilities.stream().allMatch( Capability::isAdditive );
+        otherFormatCapabilities.removeAll(myFormatCapabilities);
+        boolean allAddedAreAdditive = otherFormatCapabilities.stream().allMatch(Capability::isAdditive);
 
         // Even if capabilities of the two aren't the same then there's a special case where if the additional
         // capabilities of the other format are all additive then they are also compatible because no data
@@ -168,14 +154,12 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
-    {
-        return hasCompatibleCapabilities( this, other, type );
+    public boolean hasCompatibleCapabilities(RecordFormats other, CapabilityType type) {
+        return hasCompatibleCapabilities(this, other, type);
     }
 
     @Override
-    public RecordFormat<SchemaRecord> schema()
-    {
+    public RecordFormat<SchemaRecord> schema() {
         return new NoRecordFormat<>();
     }
 }

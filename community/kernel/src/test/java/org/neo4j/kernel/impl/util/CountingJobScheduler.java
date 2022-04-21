@@ -25,7 +25,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.scheduler.FailedJobRun;
@@ -37,171 +36,153 @@ import org.neo4j.scheduler.MonitoredJobExecutor;
 import org.neo4j.scheduler.MonitoredJobInfo;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
-public class CountingJobScheduler implements JobScheduler
-{
+public class CountingJobScheduler implements JobScheduler {
     private final AtomicInteger counter;
     private final JobScheduler delegate;
 
-    public CountingJobScheduler( AtomicInteger counter, JobScheduler delegate )
-    {
+    public CountingJobScheduler(AtomicInteger counter, JobScheduler delegate) {
         this.counter = counter;
         this.delegate = delegate;
     }
 
     @Override
-    public void setTopLevelGroupName( String name )
-    {
-        delegate.setTopLevelGroupName( name );
+    public void setTopLevelGroupName(String name) {
+        delegate.setTopLevelGroupName(name);
     }
 
     @Override
-    public void setParallelism( Group group, int parallelism )
-    {
-        delegate.setParallelism( group, parallelism );
+    public void setParallelism(Group group, int parallelism) {
+        delegate.setParallelism(group, parallelism);
     }
 
     @Override
-    public void setThreadFactory( Group group, SchedulerThreadFactoryFactory threadFactory )
-    {
-        delegate.setThreadFactory( group, threadFactory );
+    public void setThreadFactory(Group group, SchedulerThreadFactoryFactory threadFactory) {
+        delegate.setThreadFactory(group, threadFactory);
     }
 
     @Override
-    public CallableExecutor executor( Group group )
-    {
-        return delegate.executor( group );
+    public CallableExecutor executor(Group group) {
+        return delegate.executor(group);
     }
 
     @Override
-    public MonitoredJobExecutor monitoredJobExecutor( Group group )
-    {
-        return delegate.monitoredJobExecutor( group );
+    public MonitoredJobExecutor monitoredJobExecutor(Group group) {
+        return delegate.monitoredJobExecutor(group);
     }
 
     @Override
-    public ThreadFactory threadFactory( Group group )
-    {
-        return delegate.threadFactory( group );
+    public ThreadFactory threadFactory(Group group) {
+        return delegate.threadFactory(group);
     }
 
     @Override
-    public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
-    {
+    public <T> JobHandle<T> schedule(Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job) {
         counter.getAndIncrement();
-        return delegate.schedule( group, jobMonitoringParams, job );
+        return delegate.schedule(group, jobMonitoringParams, job);
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, Runnable job )
-    {
+    public JobHandle<?> schedule(Group group, Runnable job) {
         counter.getAndIncrement();
-        return delegate.schedule( group, job );
+        return delegate.schedule(group, job);
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable job )
-    {
+    public JobHandle<?> schedule(Group group, JobMonitoringParams monitoredJobParams, Runnable job) {
         counter.getAndIncrement();
-        return delegate.schedule( group, monitoredJobParams, job );
+        return delegate.schedule(group, monitoredJobParams, job);
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
-    {
+    public JobHandle<?> schedule(Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit) {
         counter.getAndIncrement();
-        return delegate.schedule( group, runnable, initialDelay, timeUnit );
+        return delegate.schedule(group, runnable, initialDelay, timeUnit);
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, TimeUnit timeUnit )
-    {
+    public JobHandle<?> schedule(
+            Group group,
+            JobMonitoringParams monitoredJobParams,
+            Runnable runnable,
+            long initialDelay,
+            TimeUnit timeUnit) {
         counter.incrementAndGet();
-        return delegate.schedule( group, monitoredJobParams, runnable, initialDelay, timeUnit );
+        return delegate.schedule(group, monitoredJobParams, runnable, initialDelay, timeUnit);
     }
 
     @Override
-    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period,
-                                        TimeUnit timeUnit )
-    {
+    public JobHandle<?> scheduleRecurring(Group group, Runnable runnable, long period, TimeUnit timeUnit) {
         counter.getAndIncrement();
-        return delegate.scheduleRecurring( group, runnable, period, timeUnit );
+        return delegate.scheduleRecurring(group, runnable, period, timeUnit);
     }
 
     @Override
-    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit )
-    {
+    public JobHandle<?> scheduleRecurring(
+            Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit) {
         counter.getAndIncrement();
-        return delegate.scheduleRecurring( group, monitoredJobParams, runnable, period, timeUnit );
+        return delegate.scheduleRecurring(group, monitoredJobParams, runnable, period, timeUnit);
     }
 
     @Override
-    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period,
-                                        TimeUnit timeUnit )
-    {
+    public JobHandle<?> scheduleRecurring(
+            Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit) {
         counter.getAndIncrement();
-        return delegate.scheduleRecurring( group, runnable, initialDelay, period, timeUnit );
+        return delegate.scheduleRecurring(group, runnable, initialDelay, period, timeUnit);
     }
 
     @Override
-    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, long period,
-            TimeUnit timeUnit )
-    {
+    public JobHandle<?> scheduleRecurring(
+            Group group,
+            JobMonitoringParams monitoredJobParams,
+            Runnable runnable,
+            long initialDelay,
+            long period,
+            TimeUnit timeUnit) {
         counter.getAndIncrement();
-        return delegate.scheduleRecurring( group, monitoredJobParams, runnable, initialDelay, period, timeUnit );
+        return delegate.scheduleRecurring(group, monitoredJobParams, runnable, initialDelay, period, timeUnit);
     }
 
     @Override
-    public Stream<ActiveGroup> activeGroups()
-    {
+    public Stream<ActiveGroup> activeGroups() {
         return delegate.activeGroups();
     }
 
     @Override
-    public List<MonitoredJobInfo> getMonitoredJobs()
-    {
+    public List<MonitoredJobInfo> getMonitoredJobs() {
         return delegate.getMonitoredJobs();
     }
 
     @Override
-    public List<FailedJobRun> getFailedJobRuns()
-    {
+    public List<FailedJobRun> getFailedJobRuns() {
         return delegate.getFailedJobRuns();
     }
 
     @Override
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         delegate.init();
     }
 
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         delegate.start();
     }
 
     @Override
-    public void stop() throws Exception
-    {
+    public void stop() throws Exception {
         delegate.stop();
     }
 
     @Override
-    public void shutdown() throws Exception
-    {
+    public void shutdown() throws Exception {
         delegate.shutdown();
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
+    public void close() {
+        try {
             shutdown();
-        }
-        catch ( Throwable throwable )
-        {
-            throw new RuntimeException( throwable );
+        } catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
         }
     }
 }

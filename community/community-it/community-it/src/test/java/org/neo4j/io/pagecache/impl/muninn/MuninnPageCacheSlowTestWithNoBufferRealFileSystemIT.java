@@ -21,11 +21,9 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 
-class MuninnPageCacheSlowTestWithNoBufferRealFileSystemIT extends MuninnPageCacheSlowTestWithRealFileSystemIT
-{
+class MuninnPageCacheSlowTestWithNoBufferRealFileSystemIT extends MuninnPageCacheSlowTestWithRealFileSystemIT {
     @Override
-    protected Fixture<MuninnPageCache> createFixture()
-    {
-        return super.createFixture().withBufferFactory( DISABLED_BUFFER_FACTORY );
+    protected Fixture<MuninnPageCache> createFixture() {
+        return super.createFixture().withBufferFactory(DISABLED_BUFFER_FACTORY);
     }
 }

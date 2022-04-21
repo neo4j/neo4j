@@ -24,10 +24,8 @@ package org.neo4j.counts;
  * <p>
  * Invalid values stored in the count store are caused by corruptions.
  */
-public class InvalidCountException extends RuntimeException
-{
-    public InvalidCountException( String message )
-    {
-        super( message );
+public class InvalidCountException extends RuntimeException {
+    public InvalidCountException(String message) {
+        super(message);
     }
 }

@@ -22,32 +22,27 @@ package org.neo4j.kernel.impl.traversal;
 import org.neo4j.graphdb.Path;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-abstract class AbstractTraverserIterator extends PrefetchingIterator<Path> implements TraverserIterator
-{
+abstract class AbstractTraverserIterator extends PrefetchingIterator<Path> implements TraverserIterator {
     int numberOfPathsReturned;
     private int numberOfRelationshipsTraversed;
 
     @Override
-    public int getNumberOfPathsReturned()
-    {
+    public int getNumberOfPathsReturned() {
         return numberOfPathsReturned;
     }
 
     @Override
-    public int getNumberOfRelationshipsTraversed()
-    {
+    public int getNumberOfRelationshipsTraversed() {
         return numberOfRelationshipsTraversed;
     }
 
     @Override
-    public void relationshipTraversed()
-    {
+    public void relationshipTraversed() {
         numberOfRelationshipsTraversed++;
     }
 
     @Override
-    public void unnecessaryRelationshipTraversed()
-    {
+    public void unnecessaryRelationshipTraversed() {
         numberOfRelationshipsTraversed++;
     }
 }

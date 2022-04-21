@@ -20,15 +20,12 @@
 package org.neo4j.procedure.builtin.routing;
 
 import java.time.Duration;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 
-public interface RoutingTableTTLProvider
-{
-    static RoutingTableTTLProvider ttlFromConfig( Config config )
-    {
-        return () -> config.get( GraphDatabaseSettings.routing_ttl );
+public interface RoutingTableTTLProvider {
+    static RoutingTableTTLProvider ttlFromConfig(Config config) {
+        return () -> config.get(GraphDatabaseSettings.routing_ttl);
     }
 
     Duration nextTTL();

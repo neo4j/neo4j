@@ -22,7 +22,6 @@ package org.neo4j.server.http.cypher.format.jolt;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
@@ -30,37 +29,33 @@ import java.util.Optional;
 /**
  * Custom relationship serializer to flip the relationship sigil when use with {@link JoltPathSerializer} to allow flowing paths.
  */
-final class JoltRelationshipReversedSerializer extends StdSerializer<JoltRelationship>
-{
-    JoltRelationshipReversedSerializer()
-    {
-        super( JoltRelationship.class );
+final class JoltRelationshipReversedSerializer extends StdSerializer<JoltRelationship> {
+    JoltRelationshipReversedSerializer() {
+        super(JoltRelationship.class);
     }
 
     @Override
-    public void serialize( JoltRelationship relationship, JsonGenerator generator, SerializerProvider provider )
-            throws IOException
-    {
-        generator.writeStartObject( relationship );
-        generator.writeFieldName( Sigil.RELATIONSHIP_REVERSED.getValue() );
+    public void serialize(JoltRelationship relationship, JsonGenerator generator, SerializerProvider provider)
+            throws IOException {
+        generator.writeStartObject(relationship);
+        generator.writeFieldName(Sigil.RELATIONSHIP_REVERSED.getValue());
 
         generator.writeStartArray();
 
-        generator.writeNumber( relationship.getId() );
+        generator.writeNumber(relationship.getId());
 
-        generator.writeNumber( relationship.getStartNodeId() );
+        generator.writeNumber(relationship.getStartNodeId());
 
-        generator.writeString( relationship.getType().name() );
+        generator.writeString(relationship.getType().name());
 
-        generator.writeNumber( relationship.getEndNodeId() );
+        generator.writeNumber(relationship.getEndNodeId());
 
-        var properties = Optional.ofNullable( relationship.getAllProperties() ).orElseGet( Map::of );
+        var properties = Optional.ofNullable(relationship.getAllProperties()).orElseGet(Map::of);
         generator.writeStartObject();
 
-        for ( var entry : properties.entrySet() )
-        {
-            generator.writeFieldName( entry.getKey() );
-            generator.writeObject( entry.getValue() );
+        for (var entry : properties.entrySet()) {
+            generator.writeFieldName(entry.getKey());
+            generator.writeObject(entry.getValue());
         }
 
         generator.writeEndObject();

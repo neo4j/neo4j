@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
-
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -32,131 +31,112 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
-class SchemaReadCoreSnapshot implements SchemaReadCore
-{
+class SchemaReadCoreSnapshot implements SchemaReadCore {
     private final StorageSchemaReader snapshot;
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder stores;
 
-    SchemaReadCoreSnapshot( StorageSchemaReader snapshot, KernelTransactionImplementation ktx, AllStoreHolder stores )
-    {
+    SchemaReadCoreSnapshot(StorageSchemaReader snapshot, KernelTransactionImplementation ktx, AllStoreHolder stores) {
         this.snapshot = snapshot;
         this.ktx = ktx;
         this.stores = stores;
     }
 
     @Override
-    public IndexDescriptor indexGetForName( String name )
-    {
-        return stores.indexGetForName( snapshot, name );
+    public IndexDescriptor indexGetForName(String name) {
+        return stores.indexGetForName(snapshot, name);
     }
 
     @Override
-    public ConstraintDescriptor constraintGetForName( String name )
-    {
-        return stores.constraintGetForName( snapshot, name );
+    public ConstraintDescriptor constraintGetForName(String name) {
+        return stores.constraintGetForName(snapshot, name);
     }
 
     @Override
-    public Iterator<IndexDescriptor> index( SchemaDescriptor schema )
-    {
+    public Iterator<IndexDescriptor> index(SchemaDescriptor schema) {
         ktx.assertOpen();
-        return stores.indexGetForSchema( snapshot, schema );
+        return stores.indexGetForSchema(snapshot, schema);
     }
 
     @Override
-    public IndexDescriptor index( SchemaDescriptor schema, IndexType type )
-    {
+    public IndexDescriptor index(SchemaDescriptor schema, IndexType type) {
         ktx.assertOpen();
-        return stores.index( schema, type );
+        return stores.index(schema, type);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
-    {
+    public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
         ktx.assertOpen();
-        return stores.indexesGetForLabel( snapshot, labelId );
+        return stores.indexesGetForLabel(snapshot, labelId);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
-    {
+    public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
         ktx.assertOpen();
-        return stores.indexesGetForRelationshipType( snapshot, relationshipType );
+        return stores.indexesGetForRelationshipType(snapshot, relationshipType);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
-    {
+    public Iterator<IndexDescriptor> indexesGetAll() {
         ktx.assertOpen();
-        return stores.indexesGetAll( snapshot );
+        return stores.indexesGetAll(snapshot);
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        AllStoreHolder.assertValidIndex( index );
+    public InternalIndexState indexGetState(IndexDescriptor index) throws IndexNotFoundKernelException {
+        AllStoreHolder.assertValidIndex(index);
         ktx.assertOpen();
-        return stores.indexGetStateLocked( index );
+        return stores.indexGetStateLocked(index);
     }
 
     @Override
-    public InternalIndexState indexGetStateNonLocking( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        return indexGetState( index );
+    public InternalIndexState indexGetStateNonLocking(IndexDescriptor index) throws IndexNotFoundKernelException {
+        return indexGetState(index);
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        AllStoreHolder.assertValidIndex( index );
+    public PopulationProgress indexGetPopulationProgress(IndexDescriptor index) throws IndexNotFoundKernelException {
+        AllStoreHolder.assertValidIndex(index);
         ktx.assertOpen();
-        return stores.indexGetPopulationProgressLocked( index );
+        return stores.indexGetPopulationProgressLocked(index);
     }
 
     @Override
-    public String indexGetFailure( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        AllStoreHolder.assertValidIndex( index );
-        return stores.indexGetFailure( index );
+    public String indexGetFailure(IndexDescriptor index) throws IndexNotFoundKernelException {
+        AllStoreHolder.assertValidIndex(index);
+        return stores.indexGetFailure(index);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
-    {
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
         ktx.assertOpen();
-        return stores.constraintsGetForLabel( snapshot, labelId );
+        return stores.constraintsGetForLabel(snapshot, labelId);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking( int labelId )
-    {
-        return constraintsGetForLabel( labelId );
+    public Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking(int labelId) {
+        return constraintsGetForLabel(labelId);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
-    {
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
         ktx.assertOpen();
-        return stores.constraintsGetForRelationshipType( snapshot, typeId );
+        return stores.constraintsGetForRelationshipType(snapshot, typeId);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking( int typeId )
-    {
-        return constraintsGetForRelationshipType( typeId );
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking(int typeId) {
+        return constraintsGetForRelationshipType(typeId);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetAll()
-    {
+    public Iterator<ConstraintDescriptor> constraintsGetAll() {
         ktx.assertOpen();
-        return stores.constraintsGetAll( snapshot );
+        return stores.constraintsGetAll(snapshot);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking()
-    {
+    public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking() {
         return constraintsGetAll();
     }
 }

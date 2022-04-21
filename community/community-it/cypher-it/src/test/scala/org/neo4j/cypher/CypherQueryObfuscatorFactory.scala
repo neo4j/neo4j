@@ -47,7 +47,12 @@ class CypherQueryObfuscatorFactory {
 
   def obfuscatorForQuery(query: String): QueryObfuscator = {
     val preParsedQuery = preParser.preParseQuery(query)
-    val state = InitialState(preParsedQuery.statement, Some(preParsedQuery.options.offset), null, new AnonymousVariableNameGenerator())
+    val state = InitialState(
+      preParsedQuery.statement,
+      Some(preParsedQuery.options.offset),
+      null,
+      new AnonymousVariableNameGenerator()
+    )
     val res = pipeline.transform(state, plannerContext(query))
     CypherQueryObfuscator(res.obfuscationMetadata())
   }
@@ -62,7 +67,8 @@ class CypherQueryObfuscatorFactory {
 
   private val preParser = new PreParser(
     CypherConfiguration.fromConfig(Config.defaults()),
-    new LFUCache[String, PreParsedQuery](new ExecutorBasedCaffeineCacheFactory((r: Runnable) => r.run()), 1))
+    new LFUCache[String, PreParsedQuery](new ExecutorBasedCaffeineCacheFactory((r: Runnable) => r.run()), 1)
+  )
 
   private val pipeline =
     Parse andThen
@@ -85,7 +91,8 @@ class CypherQueryObfuscatorFactory {
       null,
       null,
       null,
-      CancellationChecker.NeverCancelled)
+      CancellationChecker.NeverCancelled
+    )
 
   private object PlanContextWithProceduresRegistry extends PlanContext {
 
@@ -110,7 +117,11 @@ class CypherQueryObfuscatorFactory {
     override def canLookupRelationshipsByType: Nothing = fail()
     override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Nothing = fail()
     override def getNodePropertiesWithExistenceConstraint(labelName: String): Nothing = fail()
-    override def hasRelationshipPropertyExistenceConstraint(relationshipTypeName: String, propertyKey: String): Nothing = fail()
+
+    override def hasRelationshipPropertyExistenceConstraint(
+      relationshipTypeName: String,
+      propertyKey: String
+    ): Nothing = fail()
     override def getRelationshipPropertiesWithExistenceConstraint(relationshipTypeName: String): Nothing = fail()
     override def getPropertiesWithExistenceConstraint: Nothing = fail()
     override def lastCommittedTxIdProvider: Nothing = fail()
@@ -130,15 +141,21 @@ class CypherQueryObfuscatorFactory {
     override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
-    override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
+
+    override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing =
+      fail()
     override def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def rangeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
-    override def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
+
+    override def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing =
+      fail()
     override def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def pointIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
-    override def pointIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
+
+    override def pointIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing =
+      fail()
 
     private def fail() = throw new IllegalStateException("Should not have been called in this test.")
   }

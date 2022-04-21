@@ -19,42 +19,36 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import static org.neo4j.graphdb.schema.IndexType.TEXT;
+
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.test.RandomSupport;
 
-import static org.neo4j.graphdb.schema.IndexType.TEXT;
-
-public class TextIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT
-{
+public class TextIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT {
     @Override
-    protected int getSingleKeySizeLimit( int payloadSize )
-    {
+    protected int getSingleKeySizeLimit(int payloadSize) {
         return LuceneIndexValueValidator.MAX_TERM_LENGTH;
     }
 
     @Override
-    protected String getString( RandomSupport random, int keySize )
-    {
-        return random.nextAlphaNumericString( keySize, keySize );
+    protected String getString(RandomSupport random, int keySize) {
+        return random.nextAlphaNumericString(keySize, keySize);
     }
 
     @Override
-    protected IndexType getIndexType()
-    {
+    protected IndexType getIndexType() {
         return TEXT;
     }
 
     @Override
-    protected String getIndexProviderString()
-    {
+    protected String getIndexProviderString() {
         return TextIndexProvider.DESCRIPTOR.name();
     }
 
     @Override
-    protected String expectedPopulationFailureCauseMessage( long indexId, long entityId )
-    {
-        return "Document contains at least one immense term in field=\"string\" (whose UTF8 encoding is longer than the max length 32766), " +
-                "all of which were skipped.  Please correct the analyzer to not produce such terms.";
+    protected String expectedPopulationFailureCauseMessage(long indexId, long entityId) {
+        return "Document contains at least one immense term in field=\"string\" (whose UTF8 encoding is longer than the max length 32766), "
+                + "all of which were skipped.  Please correct the analyzer to not produce such terms.";
     }
 }

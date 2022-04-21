@@ -22,31 +22,26 @@ package org.neo4j.server.http.cypher.format.api;
 import java.util.List;
 import java.util.function.Function;
 
-public class RecordEvent implements OutputEvent
-{
+public class RecordEvent implements OutputEvent {
 
     private final List<String> columns;
-    private final Function<String,Object> valueSupplier;
+    private final Function<String, Object> valueSupplier;
 
-    public RecordEvent( List<String> columns, Function<String,Object> valueSupplier )
-    {
+    public RecordEvent(List<String> columns, Function<String, Object> valueSupplier) {
         this.columns = columns;
         this.valueSupplier = valueSupplier;
     }
 
     @Override
-    public Type getType()
-    {
+    public Type getType() {
         return Type.RECORD;
     }
 
-    public List<String> getColumns()
-    {
+    public List<String> getColumns() {
         return columns;
     }
 
-    public Object getValue( String column )
-    {
-        return valueSupplier.apply( column );
+    public Object getValue(String column) {
+        return valueSupplier.apply(column);
     }
 }

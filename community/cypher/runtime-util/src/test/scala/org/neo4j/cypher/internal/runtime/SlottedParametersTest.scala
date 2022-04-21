@@ -32,33 +32,37 @@ class SlottedParametersTest extends CypherFunSuite with AstConstructionTestSuppo
   implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
   test("should rewrite plan") {
-    //given
+    // given
     val allNodes = AllNodesScan("x", Set.empty)
     val predicate = greaterThan(add(parameter("a", symbols.CTAny), parameter("b", symbols.CTAny)), literalInt(42))
     val produceResult = ProduceResult(Selection(Seq(predicate), allNodes), Seq("x"))
 
-
-    //when
+    // when
     val (newPlan, mapping) = slottedParameters(produceResult)
 
-    //then
-    val newPredicate = greaterThan(add(ParameterFromSlot(0, "a", symbols.CTAny), ParameterFromSlot( 1, "b", symbols.CTAny)), literalInt(42))
+    // then
+    val newPredicate = greaterThan(
+      add(ParameterFromSlot(0, "a", symbols.CTAny), ParameterFromSlot(1, "b", symbols.CTAny)),
+      literalInt(42)
+    )
     mapping should equal(ParameterMapping.empty.updated("a").updated("b"))
     newPlan should equal(ProduceResult(Selection(Seq(newPredicate), allNodes), Seq("x")))
   }
 
   test("should rewrite plan with multiple occurrences of same parameter") {
-    //given
+    // given
     val allNodes = AllNodesScan("x", Set.empty)
     val predicate = greaterThan(add(parameter("a", symbols.CTAny), parameter("a", symbols.CTAny)), literalInt(42))
     val produceResult = ProduceResult(Selection(Seq(predicate), allNodes), Seq("x"))
 
-
-    //when
+    // when
     val (newPlan, mapping) = slottedParameters(produceResult)
 
-    //then
-    val newPredicate = greaterThan(add(ParameterFromSlot(0, "a", symbols.CTAny), ParameterFromSlot( 0, "a", symbols.CTAny)), literalInt(42))
+    // then
+    val newPredicate = greaterThan(
+      add(ParameterFromSlot(0, "a", symbols.CTAny), ParameterFromSlot(0, "a", symbols.CTAny)),
+      literalInt(42)
+    )
     mapping should equal(ParameterMapping.empty.updated("a"))
     newPlan should equal(ProduceResult(Selection(Seq(newPredicate), allNodes), Seq("x")))
   }

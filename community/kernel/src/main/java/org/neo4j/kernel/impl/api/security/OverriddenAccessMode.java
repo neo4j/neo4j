@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.security;
 
 import java.util.function.Supplier;
-
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -32,178 +31,148 @@ import org.neo4j.messages.MessageUtil;
  * Access mode that overrides the original access mode with the overriding mode. Allows exactly what the overriding
  * mode allows, while retaining the meta data of the original mode only.
  */
-public class OverriddenAccessMode extends WrappedAccessMode
-{
-    public OverriddenAccessMode( AccessMode original, Static overriding )
-    {
-        super( original, overriding );
+public class OverriddenAccessMode extends WrappedAccessMode {
+    public OverriddenAccessMode(AccessMode original, Static overriding) {
+        super(original, overriding);
     }
 
     @Override
-    public boolean allowsWrites()
-    {
+    public boolean allowsWrites() {
         return wrapping.allowsWrites();
     }
 
     @Override
-    public PermissionState allowsTokenCreates( PrivilegeAction action )
-    {
-        return wrapping.allowsTokenCreates( action );
+    public PermissionState allowsTokenCreates(PrivilegeAction action) {
+        return wrapping.allowsTokenCreates(action);
     }
 
     @Override
-    public boolean allowsSchemaWrites()
-    {
+    public boolean allowsSchemaWrites() {
         return wrapping.allowsSchemaWrites();
     }
 
     @Override
-    public PermissionState allowsSchemaWrites( PrivilegeAction action )
-    {
-        return wrapping.allowsSchemaWrites( action );
+    public PermissionState allowsSchemaWrites(PrivilegeAction action) {
+        return wrapping.allowsSchemaWrites(action);
     }
 
     @Override
-    public boolean allowsShowIndex()
-    {
+    public boolean allowsShowIndex() {
         return wrapping.allowsShowIndex();
     }
 
     @Override
-    public boolean allowsShowConstraint()
-    {
+    public boolean allowsShowConstraint() {
         return wrapping.allowsShowConstraint();
     }
 
     @Override
-    public boolean allowsTraverseAllLabels()
-    {
+    public boolean allowsTraverseAllLabels() {
         return wrapping.allowsTraverseAllLabels();
     }
 
     @Override
-    public boolean allowsTraverseAllNodesWithLabel( long label )
-    {
-        return wrapping.allowsTraverseAllNodesWithLabel( label );
+    public boolean allowsTraverseAllNodesWithLabel(long label) {
+        return wrapping.allowsTraverseAllNodesWithLabel(label);
     }
 
     @Override
-    public boolean disallowsTraverseLabel( long label )
-    {
-        return wrapping.disallowsTraverseLabel( label );
+    public boolean disallowsTraverseLabel(long label) {
+        return wrapping.disallowsTraverseLabel(label);
     }
 
     @Override
-    public boolean allowsTraverseNode( long... labels )
-    {
-        return wrapping.allowsTraverseNode( labels );
+    public boolean allowsTraverseNode(long... labels) {
+        return wrapping.allowsTraverseNode(labels);
     }
 
     @Override
-    public boolean allowsTraverseAllRelTypes()
-    {
+    public boolean allowsTraverseAllRelTypes() {
         return wrapping.allowsTraverseAllRelTypes();
     }
 
     @Override
-    public boolean allowsTraverseRelType( int relType )
-    {
-        return wrapping.allowsTraverseRelType( relType );
+    public boolean allowsTraverseRelType(int relType) {
+        return wrapping.allowsTraverseRelType(relType);
     }
 
     @Override
-    public boolean disallowsTraverseRelType( int relType )
-    {
-        return wrapping.disallowsTraverseRelType( relType );
+    public boolean disallowsTraverseRelType(int relType) {
+        return wrapping.disallowsTraverseRelType(relType);
     }
 
     @Override
-    public boolean allowsReadPropertyAllLabels( int propertyKey )
-    {
-        return wrapping.allowsReadPropertyAllLabels( propertyKey );
+    public boolean allowsReadPropertyAllLabels(int propertyKey) {
+        return wrapping.allowsReadPropertyAllLabels(propertyKey);
     }
 
     @Override
-    public boolean disallowsReadPropertyForSomeLabel( int propertyKey )
-    {
-        return wrapping.disallowsReadPropertyForSomeLabel( propertyKey );
+    public boolean disallowsReadPropertyForSomeLabel(int propertyKey) {
+        return wrapping.disallowsReadPropertyForSomeLabel(propertyKey);
     }
 
     @Override
-    public boolean allowsReadNodeProperty( Supplier<TokenSet> labels, int propertyKey )
-    {
-        return wrapping.allowsReadNodeProperty( labels, propertyKey );
+    public boolean allowsReadNodeProperty(Supplier<TokenSet> labels, int propertyKey) {
+        return wrapping.allowsReadNodeProperty(labels, propertyKey);
     }
 
     @Override
-    public boolean allowsReadPropertyAllRelTypes( int propertyKey )
-    {
-        return wrapping.allowsReadPropertyAllRelTypes( propertyKey );
+    public boolean allowsReadPropertyAllRelTypes(int propertyKey) {
+        return wrapping.allowsReadPropertyAllRelTypes(propertyKey);
     }
 
     @Override
-    public boolean allowsReadRelationshipProperty( RelTypeSupplier relType, int propertyKey )
-    {
-        return wrapping.allowsReadRelationshipProperty( relType, propertyKey );
+    public boolean allowsReadRelationshipProperty(RelTypeSupplier relType, int propertyKey) {
+        return wrapping.allowsReadRelationshipProperty(relType, propertyKey);
     }
 
     @Override
-    public boolean allowsSeePropertyKeyToken( int propertyKey )
-    {
-        return wrapping.allowsSeePropertyKeyToken( propertyKey );
+    public boolean allowsSeePropertyKeyToken(int propertyKey) {
+        return wrapping.allowsSeePropertyKeyToken(propertyKey);
     }
 
     @Override
-    public boolean allowsSetLabel( long labelId )
-    {
-        return wrapping.allowsSetLabel( labelId );
+    public boolean allowsSetLabel(long labelId) {
+        return wrapping.allowsSetLabel(labelId);
     }
 
     @Override
-    public boolean allowsRemoveLabel( long labelId )
-    {
-        return wrapping.allowsRemoveLabel( labelId );
+    public boolean allowsRemoveLabel(long labelId) {
+        return wrapping.allowsRemoveLabel(labelId);
     }
 
     @Override
-    public boolean allowsCreateNode( int[] labelIds )
-    {
-        return wrapping.allowsCreateNode( labelIds );
+    public boolean allowsCreateNode(int[] labelIds) {
+        return wrapping.allowsCreateNode(labelIds);
     }
 
     @Override
-    public boolean allowsDeleteNode( Supplier<TokenSet> labelSupplier )
-    {
-        return wrapping.allowsDeleteNode( labelSupplier );
+    public boolean allowsDeleteNode(Supplier<TokenSet> labelSupplier) {
+        return wrapping.allowsDeleteNode(labelSupplier);
     }
 
     @Override
-    public boolean allowsCreateRelationship( int relType )
-    {
-        return wrapping.allowsCreateRelationship( relType );
+    public boolean allowsCreateRelationship(int relType) {
+        return wrapping.allowsCreateRelationship(relType);
     }
 
     @Override
-    public boolean allowsDeleteRelationship( int relType )
-    {
-        return wrapping.allowsDeleteRelationship( relType );
+    public boolean allowsDeleteRelationship(int relType) {
+        return wrapping.allowsDeleteRelationship(relType);
     }
 
     @Override
-    public boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey )
-    {
-        return wrapping.allowsSetProperty( labels, propertyKey );
+    public boolean allowsSetProperty(Supplier<TokenSet> labels, int propertyKey) {
+        return wrapping.allowsSetProperty(labels, propertyKey);
     }
 
     @Override
-    public boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey )
-    {
-        return wrapping.allowsSetProperty( relType, propertyKey);
+    public boolean allowsSetProperty(RelTypeSupplier relType, int propertyKey) {
+        return wrapping.allowsSetProperty(relType, propertyKey);
     }
 
     @Override
-    public String name()
-    {
-        return MessageUtil.overridenMode( original.name(), wrapping.name() );
+    public String name() {
+        return MessageUtil.overridenMode(original.name(), wrapping.name());
     }
 }

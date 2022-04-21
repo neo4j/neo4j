@@ -19,56 +19,51 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.storageengine.api.LegacyStoreId;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-class LogHeaderCacheTest
-{
+class LogHeaderCacheTest {
     @Test
-    void shouldReturnNullWhenThereIsNoHeaderInTheCache()
-    {
+    void shouldReturnNullWhenThereIsNoHeaderInTheCache() {
         // given
-        final LogHeaderCache cache = new LogHeaderCache( 2 );
+        final LogHeaderCache cache = new LogHeaderCache(2);
 
         // when
-        final LogHeader logHeader = cache.getLogHeader( 5 );
+        final LogHeader logHeader = cache.getLogHeader(5);
 
         // then
-        assertNull( logHeader );
+        assertNull(logHeader);
     }
 
     @Test
-    void shouldReturnTheHeaderIfInTheCache()
-    {
+    void shouldReturnTheHeaderIfInTheCache() {
         // given
-        final LogHeaderCache cache = new LogHeaderCache( 2 );
+        final LogHeaderCache cache = new LogHeaderCache(2);
 
         // when
-        cache.putHeader( 5, new LogHeader( 1, 3, LegacyStoreId.UNKNOWN ) );
-        final LogHeader logHeader = cache.getLogHeader( 5 );
+        cache.putHeader(5, new LogHeader(1, 3, LegacyStoreId.UNKNOWN));
+        final LogHeader logHeader = cache.getLogHeader(5);
 
         // then
-        assertEquals( 3, logHeader.getLastCommittedTxId() );
+        assertEquals(3, logHeader.getLastCommittedTxId());
     }
 
     @Test
-    void shouldClearTheCache()
-    {
+    void shouldClearTheCache() {
         // given
-        final LogHeaderCache cache = new LogHeaderCache( 2 );
+        final LogHeaderCache cache = new LogHeaderCache(2);
 
         // when
-        cache.putHeader( 5, new LogHeader( 1, 3, LegacyStoreId.UNKNOWN ) );
+        cache.putHeader(5, new LogHeader(1, 3, LegacyStoreId.UNKNOWN));
         cache.clear();
-        final LogHeader logHeader = cache.getLogHeader( 5 );
+        final LogHeader logHeader = cache.getLogHeader(5);
 
         // then
-        assertNull( logHeader );
+        assertNull(logHeader);
     }
 }

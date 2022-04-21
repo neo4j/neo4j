@@ -28,15 +28,12 @@ import org.neo4j.annotations.api.PublicApi;
  * For instance, if removing a node that still has relationships.
  */
 @PublicApi
-public class ConstraintViolationException extends RuntimeException
-{
-    public ConstraintViolationException( String msg )
-    {
-        super( msg );
+public class ConstraintViolationException extends RuntimeException {
+    public ConstraintViolationException(String msg) {
+        super(msg);
     }
 
-    public ConstraintViolationException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public ConstraintViolationException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

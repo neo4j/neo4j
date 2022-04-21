@@ -19,19 +19,16 @@
  */
 package org.neo4j.annotations;
 
-import com.google.common.primitives.Bytes;
-
-import java.io.IOException;
-import java.io.InputStream;
-
-import org.neo4j.annotations.api.PublicApiAnnotationProcessor;
-
 import static java.util.Arrays.copyOf;
 import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
 import static org.neo4j.annotations.AnnotationConstants.WINDOWS_NEW_LINE;
 
-public class AnnotationTestHelper
-{
+import com.google.common.primitives.Bytes;
+import java.io.IOException;
+import java.io.InputStream;
+import org.neo4j.annotations.api.PublicApiAnnotationProcessor;
+
+public class AnnotationTestHelper {
     /**
      * Looks at contents of a text file and sees whether or not it has windows-style newlines, or unix style.
      * Used in tests to make annotation processors generate files matching signature files to verify contents with.
@@ -42,19 +39,17 @@ public class AnnotationTestHelper
      * @return either {@link AnnotationConstants#DEFAULT_NEW_LINE} or {@link AnnotationConstants#WINDOWS_NEW_LINE}.
      * @throws IOException on I/O error.
      */
-    public static String detectNewLineSignature( String fullyQualifiedName ) throws IOException
-    {
-        try ( InputStream inputStream = PublicApiAnnotationProcessor.class.getClassLoader().getResourceAsStream( fullyQualifiedName ) )
-        {
+    public static String detectNewLineSignature(String fullyQualifiedName) throws IOException {
+        try (InputStream inputStream =
+                PublicApiAnnotationProcessor.class.getClassLoader().getResourceAsStream(fullyQualifiedName)) {
             byte[] buffer = new byte[1024];
-            int read = inputStream.read( buffer );
-            return hasWindowsNewLineSignature( copyOf( buffer, read ) ) ? WINDOWS_NEW_LINE : DEFAULT_NEW_LINE;
+            int read = inputStream.read(buffer);
+            return hasWindowsNewLineSignature(copyOf(buffer, read)) ? WINDOWS_NEW_LINE : DEFAULT_NEW_LINE;
         }
     }
 
-    private static boolean hasWindowsNewLineSignature( byte[] buffer )
-    {
+    private static boolean hasWindowsNewLineSignature(byte[] buffer) {
         byte[] windowsNewLineChars = WINDOWS_NEW_LINE.getBytes();
-        return Bytes.indexOf( buffer, windowsNewLineChars ) != -1;
+        return Bytes.indexOf(buffer, windowsNewLineChars) != -1;
     }
 }

@@ -19,14 +19,18 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
+import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newMessageEncoder;
+
+import java.io.IOException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.provider.Arguments;
-
-import java.io.IOException;
-import java.util.stream.Stream;
-
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.bolt.testing.client.SecureWebSocketConnection;
@@ -42,16 +46,9 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
-import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newMessageEncoder;
-
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-public abstract class BoltV3TransportBase
-{
+public abstract class BoltV3TransportBase {
     protected static final String USER_AGENT = "TestClient/3.0";
 
     @Inject
@@ -61,52 +58,48 @@ public abstract class BoltV3TransportBase
     protected TransportConnection connection;
     protected TransportTestUtil util;
 
-    private static Stream<Arguments> argumentsProvider()
-    {
+    private static Stream<Arguments> argumentsProvider() {
         // TODO : is this used
-        return Stream.of( Arguments.of( SocketConnection.class ), Arguments.of( WebSocketConnection.class ),
-                Arguments.of( SecureSocketConnection.class ), Arguments.of( SecureWebSocketConnection.class ) );
+        return Stream.of(
+                Arguments.of(SocketConnection.class),
+                Arguments.of(WebSocketConnection.class),
+                Arguments.of(SecureSocketConnection.class),
+                Arguments.of(SecureWebSocketConnection.class));
     }
 
-    protected void init( Class<? extends TransportConnection> connectionClass ) throws Exception
-    {
+    protected void init(Class<? extends TransportConnection> connectionClass) throws Exception {
         connection = connectionClass.getDeclaredConstructor().newInstance();
     }
 
     @BeforeEach
-    public void setUp( TestInfo testInfo ) throws IOException
-    {
-        server.setConfigure( settings ->
-        {
-            withOptionalBoltEncryption().accept( settings );
-            settings.put( FabricSettings.enabled_by_default, fabricEnabled() );
-        } );
-        server.init( testInfo );
+    public void setUp(TestInfo testInfo) throws IOException {
+        server.setConfigure(settings -> {
+            withOptionalBoltEncryption().accept(settings);
+            settings.put(FabricSettings.enabled_by_default, fabricEnabled());
+        });
+        server.init(testInfo);
         address = server.lookupDefaultConnector();
-        util = new TransportTestUtil( newMessageEncoder() );
+        util = new TransportTestUtil(newMessageEncoder());
     }
 
     @AfterEach
-    public void tearDown() throws IOException
-    {
-        if ( connection != null )
-        {
+    public void tearDown() throws IOException {
+        if (connection != null) {
             connection.disconnect();
         }
     }
 
-    protected boolean fabricEnabled()
-    {
+    protected boolean fabricEnabled() {
         return true;
     }
 
-    protected void negotiateBoltV3() throws Exception
-    {
-        connection.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 3, 0, 0, 0 ) )
-                .send( util.chunk( new HelloMessage( MapUtil.map( "user_agent", USER_AGENT ) ) ) );
+    protected void negotiateBoltV3() throws Exception {
+        connection
+                .connect(address)
+                .send(TransportTestUtil.acceptedVersions(3, 0, 0, 0))
+                .send(util.chunk(new HelloMessage(MapUtil.map("user_agent", USER_AGENT))));
 
-        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+        assertThat(connection).satisfies(eventuallyReceives(new byte[] {0, 0, 0, 3}));
+        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
     }
 }

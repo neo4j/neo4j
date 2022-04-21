@@ -21,41 +21,34 @@ package org.neo4j.kernel.availability;
 
 import java.util.Objects;
 
-public class DescriptiveAvailabilityRequirement implements AvailabilityRequirement
-{
+public class DescriptiveAvailabilityRequirement implements AvailabilityRequirement {
     private final String requirementDescription;
 
-    public DescriptiveAvailabilityRequirement( String description )
-    {
+    public DescriptiveAvailabilityRequirement(String description) {
         this.requirementDescription = description;
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return requirementDescription;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         AvailabilityRequirement that = (AvailabilityRequirement) o;
 
-        return Objects.equals( requirementDescription, that.description() );
+        return Objects.equals(requirementDescription, that.description());
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hashCode( requirementDescription );
+    public int hashCode() {
+        return Objects.hashCode(requirementDescription);
     }
 }

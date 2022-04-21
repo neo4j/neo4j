@@ -19,20 +19,18 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.function.Predicate;
+import static org.neo4j.graphdb.Direction.BOTH;
 
+import java.util.function.Predicate;
 import org.neo4j.graphdb.impl.OrderedByTypeExpander;
 import org.neo4j.graphdb.impl.StandardExpander;
-
-import static org.neo4j.graphdb.Direction.BOTH;
 
 /**
  * A fluent builder for creating specialized {@link PathExpander path expanders}.
  * <p>
  * See {@link PathExpanders} for a catalog of common expanders.
  */
-public class PathExpanderBuilder
-{
+public class PathExpanderBuilder {
     /**
      * A {@link PathExpanderBuilder} that follows no relationships. You start with this and use
      * {@link #add(RelationshipType, Direction)} to form a restrictive PathExpander with just a few expansion rules
@@ -40,9 +38,8 @@ public class PathExpanderBuilder
      *
      * @return a {@link PathExpanderBuilder} that follows no relationships
      */
-    public static PathExpanderBuilder empty()
-    {
-        return new PathExpanderBuilder( StandardExpander.EMPTY );
+    public static PathExpanderBuilder empty() {
+        return new PathExpanderBuilder(StandardExpander.EMPTY);
     }
 
     /**
@@ -52,9 +49,8 @@ public class PathExpanderBuilder
      *
      * @return a {@link PathExpanderBuilder} that follows no relationships
      */
-    public static PathExpanderBuilder emptyOrderedByType()
-    {
-        return new PathExpanderBuilder( new OrderedByTypeExpander() );
+    public static PathExpanderBuilder emptyOrderedByType() {
+        return new PathExpanderBuilder(new OrderedByTypeExpander());
     }
 
     /**
@@ -65,9 +61,8 @@ public class PathExpanderBuilder
      * @return a {@link PathExpanderBuilder} that is seeded with all possible relationship types in {@link Direction#BOTH both
      * directions}
      */
-    public static PathExpanderBuilder allTypesAndDirections()
-    {
-        return new PathExpanderBuilder( StandardExpander.DEFAULT );
+    public static PathExpanderBuilder allTypesAndDirections() {
+        return new PathExpanderBuilder(StandardExpander.DEFAULT);
     }
 
     /**
@@ -78,9 +73,8 @@ public class PathExpanderBuilder
      * @param direction The direction you want to restrict expansions to
      * @return a {@link PathExpanderBuilder} seeded with all possible types but restricted to {@code direction}.
      */
-    public static PathExpanderBuilder allTypes( Direction direction )
-    {
-        return new PathExpanderBuilder( StandardExpander.create( direction ) );
+    public static PathExpanderBuilder allTypes(Direction direction) {
+        return new PathExpanderBuilder(StandardExpander.create(direction));
     }
 
     /**
@@ -89,9 +83,8 @@ public class PathExpanderBuilder
      * @param type the type to add for expansion in both directions
      * @return a {@link PathExpanderBuilder} with the added expansion of {@code type} relationships in both directions
      */
-    public PathExpanderBuilder add( RelationshipType type )
-    {
-        return add( type, BOTH );
+    public PathExpanderBuilder add(RelationshipType type) {
+        return add(type, BOTH);
     }
 
     /**
@@ -101,9 +94,8 @@ public class PathExpanderBuilder
      * @param direction the direction to restrict the expansion to
      * @return a {@link PathExpanderBuilder} with the added expansion of {@code type} relationships in the given direction
      */
-    public PathExpanderBuilder add( RelationshipType type, Direction direction )
-    {
-        return new PathExpanderBuilder( expander.add( type, direction ) );
+    public PathExpanderBuilder add(RelationshipType type, Direction direction) {
+        return new PathExpanderBuilder(expander.add(type, direction));
     }
 
     /**
@@ -116,9 +108,8 @@ public class PathExpanderBuilder
      * @param type the type to remove from expansion
      * @return a {@link PathExpanderBuilder} with expansion of {@code type} relationships removed
      */
-    public PathExpanderBuilder remove( RelationshipType type )
-    {
-        return new PathExpanderBuilder( expander.remove( type ) );
+    public PathExpanderBuilder remove(RelationshipType type) {
+        return new PathExpanderBuilder(expander.remove(type));
     }
 
     /**
@@ -127,9 +118,8 @@ public class PathExpanderBuilder
      * @param filter a Predicate for filtering nodes.
      * @return a {@link PathExpanderBuilder} with the added node filter.
      */
-    public PathExpanderBuilder addNodeFilter( Predicate<? super Node> filter )
-    {
-        return new PathExpanderBuilder( expander.addNodeFilter( filter ) );
+    public PathExpanderBuilder addNodeFilter(Predicate<? super Node> filter) {
+        return new PathExpanderBuilder(expander.addNodeFilter(filter));
     }
 
     /**
@@ -138,9 +128,8 @@ public class PathExpanderBuilder
      * @param filter a Predicate for filtering relationships.
      * @return a {@link PathExpanderBuilder} with the added relationship filter.
      */
-    public PathExpanderBuilder addRelationshipFilter( Predicate<? super Relationship> filter )
-    {
-        return new PathExpanderBuilder( expander.addRelationshipFilter( filter ) );
+    public PathExpanderBuilder addRelationshipFilter(Predicate<? super Relationship> filter) {
+        return new PathExpanderBuilder(expander.addRelationshipFilter(filter));
     }
 
     /**
@@ -149,16 +138,14 @@ public class PathExpanderBuilder
      * @param <STATE> the type of the object holding the state
      * @return a PathExpander produced from the configuration you have built up
      */
-    @SuppressWarnings( "unchecked" )
-    public <STATE> PathExpander<STATE> build()
-    {
+    @SuppressWarnings("unchecked")
+    public <STATE> PathExpander<STATE> build() {
         return expander;
     }
 
     private final StandardExpander expander;
 
-    private PathExpanderBuilder( StandardExpander expander )
-    {
+    private PathExpanderBuilder(StandardExpander expander) {
         this.expander = expander;
     }
 }

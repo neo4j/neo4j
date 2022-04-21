@@ -22,10 +22,8 @@ package org.neo4j.internal.kernel.api.exceptions.schema;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class IndexNotApplicableKernelException extends KernelException
-{
-    public IndexNotApplicableKernelException( String msg )
-    {
-        super( Status.Schema.IndexNotApplicable, msg );
+public class IndexNotApplicableKernelException extends KernelException {
+    public IndexNotApplicableKernelException(String msg) {
+        super(Status.Schema.IndexNotApplicable, msg);
     }
 }

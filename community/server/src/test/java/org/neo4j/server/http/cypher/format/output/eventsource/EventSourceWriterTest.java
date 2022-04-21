@@ -19,71 +19,85 @@
  */
 package org.neo4j.server.http.cypher.format.output.eventsource;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
-import org.assertj.core.util.Lists;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Map;
-
-import org.neo4j.server.http.cypher.format.api.RecordEvent;
-import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
-import org.neo4j.server.http.cypher.format.output.json.ResultDataContentWriter;
-import org.neo4j.server.rest.domain.JsonParseException;
-
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 
-class EventSourceWriterTest
-{
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Map;
+import org.assertj.core.util.Lists;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.http.cypher.format.api.RecordEvent;
+import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
+import org.neo4j.server.http.cypher.format.output.json.ResultDataContentWriter;
+import org.neo4j.server.rest.domain.JsonParseException;
+
+class EventSourceWriterTest {
     @Test
-    void shouldWriteSimpleRecord() throws Exception
-    {
+    void shouldWriteSimpleRecord() throws Exception {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new JoltCodec( true ).createGenerator( out );
+        JsonGenerator json = new JoltCodec(true).createGenerator(out);
 
-        JsonNode row = serialize( out, json, new EventSourceWriter(), Map.of( "value", Map.of( "country", "France" ) ) );
+        JsonNode row = serialize(out, json, new EventSourceWriter(), Map.of("value", Map.of("country", "France")));
 
-        assertThat( row.size() ).isEqualTo( 1 );
-        JsonNode value = row.get( 0 ).get( "{}" );
-        assertThat( value.get( "country" ).get( "U" ).asText() ).isEqualTo( "France" );
+        assertThat(row.size()).isEqualTo(1);
+        JsonNode value = row.get(0).get("{}");
+        assertThat(value.get("country").get("U").asText()).isEqualTo("France");
     }
 
     @Test
-    void shouldWriteNestedMaps() throws Exception
-    {
-        //Given
+    void shouldWriteNestedMaps() throws Exception {
+        // Given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new JoltCodec( true ).createGenerator( out );
+        JsonGenerator json = new JoltCodec(true).createGenerator(out);
 
-        Map<String,Object> data = map( "ColumnA", map( "one", map( "two", asList( true, map( "three", 42 ) ) ) ) );
+        Map<String, Object> data = map("ColumnA", map("one", map("two", asList(true, map("three", 42)))));
 
-        //When
-        JsonNode record = serialize( out, json, new EventSourceWriter(), data );
+        // When
+        JsonNode record = serialize(out, json, new EventSourceWriter(), data);
 
-        //Then
-        assertThat( record.get( 0 ).size() ).isEqualTo( 1 );
-        JsonNode value = record.get( 0 ).get( "{}" );
-        assertThat( value.get( "one" ).get( "{}" ).get( "two" ).get( "[]" ).size() ).isEqualTo( 2 );
-        assertThat( value.get( "one" ).get( "{}" ).get( "two" ).get( "[]" ).get( 0 ).get( "?" ).asBoolean() ).isEqualTo( true );
-        assertThat( value.get( "one" ).get( "{}" ).get( "two" ).get( "[]" ).get( 1 ).get( "{}" ).get( "three" ).get( "Z" ).asInt() ).isEqualTo( 42 );
+        // Then
+        assertThat(record.get(0).size()).isEqualTo(1);
+        JsonNode value = record.get(0).get("{}");
+        assertThat(value.get("one").get("{}").get("two").get("[]").size()).isEqualTo(2);
+        assertThat(value.get("one")
+                        .get("{}")
+                        .get("two")
+                        .get("[]")
+                        .get(0)
+                        .get("?")
+                        .asBoolean())
+                .isEqualTo(true);
+        assertThat(value.get("one")
+                        .get("{}")
+                        .get("two")
+                        .get("[]")
+                        .get(1)
+                        .get("{}")
+                        .get("three")
+                        .get("Z")
+                        .asInt())
+                .isEqualTo(42);
     }
 
-    private static JsonNode serialize( ByteArrayOutputStream out, JsonGenerator json, ResultDataContentWriter
-            resultDataContentWriter, Map<String,Object> data ) throws IOException, JsonParseException
-    {
+    private static JsonNode serialize(
+            ByteArrayOutputStream out,
+            JsonGenerator json,
+            ResultDataContentWriter resultDataContentWriter,
+            Map<String, Object> data)
+            throws IOException, JsonParseException {
 
-        RecordEvent recordEvent = new RecordEvent( Lists.newArrayList( data.keySet() ), data::get );
+        RecordEvent recordEvent = new RecordEvent(Lists.newArrayList(data.keySet()), data::get);
 
-        resultDataContentWriter.write( json, recordEvent );
+        resultDataContentWriter.write(json, recordEvent);
         json.flush();
         json.close();
 
         String jsonAsString = out.toString();
-        return jsonNode( jsonAsString );
+        return jsonNode(jsonAsString);
     }
 }

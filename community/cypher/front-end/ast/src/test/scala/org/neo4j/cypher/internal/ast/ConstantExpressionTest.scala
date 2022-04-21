@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ConstantExpressionTest extends CypherFunSuite {
+
   test("tests") {
     assertIsConstant(SignedDecimalIntegerLiteral("42")(null))
     assertIsConstant(Parameter("42", CTAny)(null))

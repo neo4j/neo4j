@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-public enum ScopeType
-{
+public enum ScopeType {
     ALL,
     DEFAULT,
     HOME,

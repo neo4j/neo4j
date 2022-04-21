@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -37,78 +38,75 @@ import org.neo4j.procedure.builtin.routing.SimpleClientRoutingDomainChecker;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
-
-class CommunityDiscoverableURIsTest
-{
+class CommunityDiscoverableURIsTest {
     @Test
-    void shouldAdvertiseTransactionAndManagementURIs()
-    {
-        var uris = communityDiscoverableURIs( Config.defaults(), null, null );
-        assertEquals( Map.of( "transaction", "/db/{databaseName}/tx" ), toMap( uris ) );
+    void shouldAdvertiseTransactionAndManagementURIs() {
+        var uris = communityDiscoverableURIs(Config.defaults(), null, null);
+        assertEquals(Map.of("transaction", "/db/{databaseName}/tx"), toMap(uris));
     }
 
     @Test
-    void shouldNotAdvertiseDisabledTransactionAndManagementURIs()
-    {
+    void shouldNotAdvertiseDisabledTransactionAndManagementURIs() {
         var uris = communityDiscoverableURIs(
-                Config.defaults( ServerSettings.http_enabled_modules, EnumSet.complementOf( EnumSet.of( ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS ) ) ),
-                null, null );
-        assertEquals( Map.of(), toMap( uris ) );
+                Config.defaults(
+                        ServerSettings.http_enabled_modules,
+                        EnumSet.complementOf(EnumSet.of(ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS))),
+                null,
+                null);
+        assertEquals(Map.of(), toMap(uris));
     }
 
     @Test
-    void shouldAdvertiseBoltIfExplicitlyConfigured()
-    {
+    void shouldAdvertiseBoltIfExplicitlyConfigured() {
         var uris = communityDiscoverableURIs(
                 Config.newBuilder()
-                      .set( BoltConnector.enabled, true )
-                      .set( ServerSettings.bolt_discoverable_address, URI.create( "bolt://banana.com:1234" ) )
-                      .build(), null, null );
+                        .set(BoltConnector.enabled, true)
+                        .set(ServerSettings.bolt_discoverable_address, URI.create("bolt://banana.com:1234"))
+                        .build(),
+                null,
+                null);
 
-        var map = toMap( uris );
-        assertEquals( "bolt://banana.com:1234", map.get( "bolt_direct" ) );
-        assertEquals( "neo4j://localhost:7687", map.get( "bolt_routing" ) );
+        var map = toMap(uris);
+        assertEquals("bolt://banana.com:1234", map.get("bolt_direct"));
+        assertEquals("neo4j://localhost:7687", map.get("bolt_routing"));
     }
 
     @Test
-    void shouldAdvertiseBoltOnBaseURIIfServerSideRoutingEnabled()
-    {
+    void shouldAdvertiseBoltOnBaseURIIfServerSideRoutingEnabled() {
         Config config = Config.newBuilder()
-                              .set( BoltConnector.enabled, true )
-                              .set( BoltConnector.advertised_address, new SocketAddress( "banana.com", 1234 ) )
-                              .set( GraphDatabaseSettings.routing_default_router, GraphDatabaseSettings.RoutingMode.SERVER )
-                              .build();
+                .set(BoltConnector.enabled, true)
+                .set(BoltConnector.advertised_address, new SocketAddress("banana.com", 1234))
+                .set(GraphDatabaseSettings.routing_default_router, GraphDatabaseSettings.RoutingMode.SERVER)
+                .build();
         var uris = communityDiscoverableURIs(
-                config, null, SimpleClientRoutingDomainChecker.fromConfig( config, NullLogProvider.getInstance() ) );
+                config, null, SimpleClientRoutingDomainChecker.fromConfig(config, NullLogProvider.getInstance()));
 
-        var map = toMap( uris.update( URI.create( "https://orange.org:8080" ) ) );
-        assertEquals( "bolt://orange.org:1234", map.get( "bolt_direct" ) );
-        assertEquals( "neo4j://orange.org:1234", map.get( "bolt_routing" ) );
+        var map = toMap(uris.update(URI.create("https://orange.org:8080")));
+        assertEquals("bolt://orange.org:1234", map.get("bolt_direct"));
+        assertEquals("neo4j://orange.org:1234", map.get("bolt_routing"));
     }
 
     @Test
-    void shouldLookupBoltPortInRegisterIfConfigured()
-    {
+    void shouldLookupBoltPortInRegisterIfConfigured() {
         var register = new ConnectorPortRegister();
-        register.register( BoltConnector.NAME, new InetSocketAddress( 1337 ) );
+        register.register(BoltConnector.NAME, new InetSocketAddress(1337));
 
         var uris = communityDiscoverableURIs(
                 Config.newBuilder()
-                      .set( BoltConnector.advertised_address, new SocketAddress( "apple.com", 0 ) )
-                      .set( BoltConnector.enabled, true )
-                      .build(), register, null );
+                        .set(BoltConnector.advertised_address, new SocketAddress("apple.com", 0))
+                        .set(BoltConnector.enabled, true)
+                        .build(),
+                register,
+                null);
 
-        var map = toMap( uris );
-        assertEquals( "bolt://apple.com:1337", map.get( "bolt_direct" ) );
-        assertEquals( "neo4j://apple.com:1337", map.get( "bolt_routing" ) );
+        var map = toMap(uris);
+        assertEquals("bolt://apple.com:1337", map.get("bolt_direct"));
+        assertEquals("neo4j://apple.com:1337", map.get("bolt_routing"));
     }
 
-    private static Map<String,String> toMap( DiscoverableURIs uris )
-    {
-        Map<String,String> out = new HashMap<>();
-        uris.forEach( out::put );
+    private static Map<String, String> toMap(DiscoverableURIs uris) {
+        Map<String, String> out = new HashMap<>();
+        uris.forEach(out::put);
         return out;
     }
 }

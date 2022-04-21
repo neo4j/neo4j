@@ -23,11 +23,8 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 
-public final class ConfigUtils
-{
-    private ConfigUtils()
-    {
-    }
+public final class ConfigUtils {
+    private ConfigUtils() {}
 
     /**
      * Will disable all configured connectors in the provided config. Useful for tests that does not require connectors to avoid port
@@ -35,10 +32,9 @@ public final class ConfigUtils
      *
      * @param config to disable connectors in.
      */
-    public static void disableAllConnectors( Config config )
-    {
-        config.set( BoltConnector.enabled, Boolean.FALSE );
-        config.set( HttpConnector.enabled, Boolean.FALSE );
-        config.set( HttpsConnector.enabled, Boolean.FALSE );
+    public static void disableAllConnectors(Config config) {
+        config.set(BoltConnector.enabled, Boolean.FALSE);
+        config.set(HttpConnector.enabled, Boolean.FALSE);
+        config.set(HttpsConnector.enabled, Boolean.FALSE);
     }
 }

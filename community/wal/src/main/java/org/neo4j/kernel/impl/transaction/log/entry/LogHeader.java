@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.util.Objects;
-
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.storageengine.api.LegacyStoreId;
-
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
-public class LogHeader
-{
+import java.util.Objects;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.LegacyStoreId;
+
+public class LogHeader {
     /**
      * The size of the version section of the header
      */
@@ -40,90 +38,80 @@ public class LogHeader
     private final LegacyStoreId storeId;
     private final LogPosition startPosition;
 
-    public LogHeader( long logVersion, long lastCommittedTxId, LegacyStoreId storeId )
-    {
-        this( CURRENT_LOG_FORMAT_VERSION, logVersion, lastCommittedTxId, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE );
+    public LogHeader(long logVersion, long lastCommittedTxId, LegacyStoreId storeId) {
+        this(CURRENT_LOG_FORMAT_VERSION, logVersion, lastCommittedTxId, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
     }
 
-    public LogHeader( byte logFormatVersion, long logVersion, long lastCommittedTxId, long headerSize )
-    {
-        this( logFormatVersion, logVersion, lastCommittedTxId, LegacyStoreId.UNKNOWN, headerSize );
+    public LogHeader(byte logFormatVersion, long logVersion, long lastCommittedTxId, long headerSize) {
+        this(logFormatVersion, logVersion, lastCommittedTxId, LegacyStoreId.UNKNOWN, headerSize);
     }
 
-    public LogHeader( byte logFormatVersion, long logVersion, long lastCommittedTxId, LegacyStoreId storeId, long headerSize )
-    {
+    public LogHeader(
+            byte logFormatVersion, long logVersion, long lastCommittedTxId, LegacyStoreId storeId, long headerSize) {
         this.logFormatVersion = logFormatVersion;
         this.logVersion = logVersion;
         this.lastCommittedTxId = lastCommittedTxId;
         this.storeId = storeId;
-        this.startPosition = new LogPosition( logVersion, headerSize );
+        this.startPosition = new LogPosition(logVersion, headerSize);
     }
 
-    public LogHeader( LogHeader logHeader, long version )
-    {
-        this( logHeader.getLogFormatVersion(), version, logHeader.getLastCommittedTxId(), logHeader.getStoreId(),
-                logHeader.getStartPosition().getByteOffset() );
+    public LogHeader(LogHeader logHeader, long version) {
+        this(
+                logHeader.getLogFormatVersion(),
+                version,
+                logHeader.getLastCommittedTxId(),
+                logHeader.getStoreId(),
+                logHeader.getStartPosition().getByteOffset());
     }
 
-    public LogPosition getStartPosition()
-    {
+    public LogPosition getStartPosition() {
         return startPosition;
     }
 
-    public byte getLogFormatVersion()
-    {
+    public byte getLogFormatVersion() {
         return logFormatVersion;
     }
 
-    public long getLogVersion()
-    {
+    public long getLogVersion() {
         return logVersion;
     }
 
-    public long getLastCommittedTxId()
-    {
+    public long getLastCommittedTxId() {
         return lastCommittedTxId;
     }
 
-    public LegacyStoreId getStoreId()
-    {
+    public LegacyStoreId getStoreId() {
         return storeId;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         LogHeader logHeader = (LogHeader) o;
-        return logFormatVersion == logHeader.logFormatVersion &&
-                logVersion == logHeader.logVersion &&
-                lastCommittedTxId == logHeader.lastCommittedTxId &&
-                Objects.equals( storeId, logHeader.storeId ) &&
-                Objects.equals( startPosition, logHeader.startPosition );
+        return logFormatVersion == logHeader.logFormatVersion
+                && logVersion == logHeader.logVersion
+                && lastCommittedTxId == logHeader.lastCommittedTxId
+                && Objects.equals(storeId, logHeader.storeId)
+                && Objects.equals(startPosition, logHeader.startPosition);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( logFormatVersion, logVersion, lastCommittedTxId, storeId, startPosition );
+    public int hashCode() {
+        return Objects.hash(logFormatVersion, logVersion, lastCommittedTxId, storeId, startPosition);
     }
 
     @Override
-    public String toString()
-    {
-        return "LogHeader{" +
-                "logFormatVersion=" + logFormatVersion +
-                ", logVersion=" + logVersion +
-                ", lastCommittedTxId=" + lastCommittedTxId +
-                ", storeId=" + storeId +
-                ", startPosition=" + startPosition +
-                '}';
+    public String toString() {
+        return "LogHeader{" + "logFormatVersion="
+                + logFormatVersion + ", logVersion="
+                + logVersion + ", lastCommittedTxId="
+                + lastCommittedTxId + ", storeId="
+                + storeId + ", startPosition="
+                + startPosition + '}';
     }
 }

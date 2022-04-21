@@ -31,12 +31,13 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * a collection of paths) and pattern comprehension.
  *
  */
-case class RollUpApply(override val left: LogicalPlan,
-                       override val right: LogicalPlan,
-                       collectionName: String,
-                       variableToCollect: String
-                      )(implicit idGen: IdGen)
-  extends LogicalBinaryPlan(idGen) with ApplyPlan {
+case class RollUpApply(
+  override val left: LogicalPlan,
+  override val right: LogicalPlan,
+  collectionName: String,
+  variableToCollect: String
+)(implicit idGen: IdGen)
+    extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)

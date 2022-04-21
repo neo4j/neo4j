@@ -24,8 +24,10 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
-public interface CommitProcessFactory
-{
-    TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine, NamedDatabaseId databaseId,
-            DatabaseReadOnlyChecker readOnlyDatabaseChecker );
+public interface CommitProcessFactory {
+    TransactionCommitProcess create(
+            TransactionAppender appender,
+            StorageEngine storageEngine,
+            NamedDatabaseId databaseId,
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker);
 }

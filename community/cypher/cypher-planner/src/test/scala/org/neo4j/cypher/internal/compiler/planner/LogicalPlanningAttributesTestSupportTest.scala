@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.exceptions.TestFailedException
 
 class LogicalPlanningAttributesTestSupportTest
-  extends CypherFunSuite
-  with LogicalPlanningTestSupport2
-  with LogicalPlanningIntegrationTestSupport
-  with LogicalPlanningAttributesTestSupport {
+    extends CypherFunSuite
+    with LogicalPlanningTestSupport2
+    with LogicalPlanningIntegrationTestSupport
+    with LogicalPlanningAttributesTestSupport {
 
   val config: StatisticsBackedLogicalPlanningConfiguration =
     plannerBuilder()
@@ -139,7 +139,10 @@ class LogicalPlanningAttributesTestSupportTest
         .filter("cacheNFromStore[a.prop] > 42").withEffectiveCardinality(15)
         .nodeByLabelScan("a", "A", IndexOrderNone).withEffectiveCardinality(50)
 
-    planAndEffectiveCardinalities should haveSamePlanAndEffectiveCardinalitiesAs((expected.build(), expected.effectiveCardinalities))
+    planAndEffectiveCardinalities should haveSamePlanAndEffectiveCardinalitiesAs((
+      expected.build(),
+      expected.effectiveCardinalities
+    ))
   }
 
   test("should reject incorrect effective cardinalities – more like defective cardinalities") {
@@ -153,7 +156,10 @@ class LogicalPlanningAttributesTestSupportTest
         .nodeByLabelScan("a", "A", IndexOrderNone).withEffectiveCardinality(50)
 
     assertThrows[TestFailedException] {
-      planAndEffectiveCardinalities should haveSamePlanAndEffectiveCardinalitiesAs((expected.build(), expected.effectiveCardinalities), ComparingProvidedAttributesOnly)
+      planAndEffectiveCardinalities should haveSamePlanAndEffectiveCardinalitiesAs(
+        (expected.build(), expected.effectiveCardinalities),
+        ComparingProvidedAttributesOnly
+      )
     }
   }
 
@@ -195,7 +201,10 @@ class LogicalPlanningAttributesTestSupportTest
         .filter("cacheNFromStore[a.prop] > 42")
         .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(NoProvidedOrder)
 
-    planAndProvidedOrders should haveSamePlanAndProvidedOrdersAs((expected.build(), expected.providedOrders), ComparingProvidedAttributesOnly)
+    planAndProvidedOrders should haveSamePlanAndProvidedOrdersAs(
+      (expected.build(), expected.providedOrders),
+      ComparingProvidedAttributesOnly
+    )
   }
 
   test("should reject incorrect provided orders where provided") {
@@ -209,7 +218,10 @@ class LogicalPlanningAttributesTestSupportTest
         .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(NoProvidedOrder)
 
     assertThrows[TestFailedException] {
-      planAndProvidedOrders should haveSamePlanAndProvidedOrdersAs((expected.build(), expected.providedOrders), ComparingProvidedAttributesOnly)
+      planAndProvidedOrders should haveSamePlanAndProvidedOrdersAs(
+        (expected.build(), expected.providedOrders),
+        ComparingProvidedAttributesOnly
+      )
     }
   }
 }

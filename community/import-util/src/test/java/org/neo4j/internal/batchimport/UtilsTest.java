@@ -19,123 +19,108 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class UtilsTest
-{
+import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import org.junit.jupiter.api.Test;
+
+class UtilsTest {
 
     @Test
-    void shouldDetectCollisions()
-    {
+    void shouldDetectCollisions() {
         // GIVEN
         long[] first = {1, 4, 7, 10, 100, 101};
         long[] other = {2, 3, 34, 75, 101};
 
         // WHEN
-        boolean collides = Utils.anyIdCollides( first, first.length, other, other.length );
+        boolean collides = Utils.anyIdCollides(first, first.length, other, other.length);
 
         // THEN
-        assertTrue( collides );
+        assertTrue(collides);
     }
 
     @Test
-    void shouldNotReportDisjointArraysAsCollision()
-    {
+    void shouldNotReportDisjointArraysAsCollision() {
         // GIVEN
         long[] first = {1, 4, 7, 10, 100, 101};
         long[] other = {2, 3, 34, 75, 102};
 
         // WHEN
-        boolean collides = Utils.anyIdCollides( first, first.length, other, other.length );
+        boolean collides = Utils.anyIdCollides(first, first.length, other, other.length);
 
         // THEN
-        assertFalse( collides );
+        assertFalse(collides);
     }
 
     @Test
-    void shouldBeCorrectForSomeRandomBatches()
-    {
+    void shouldBeCorrectForSomeRandomBatches() {
         // GIVEN
         Random random = ThreadLocalRandom.current();
         long[][] batches = new long[20][];
-        for ( int i = 0; i < batches.length; i++ )
-        {
-            batches[i] = randomBatch( 1_000, random, 5_000_000 );
+        for (int i = 0; i < batches.length; i++) {
+            batches[i] = randomBatch(1_000, random, 5_000_000);
         }
 
         // WHEN
-        for ( long[] rBatch : batches )
-        {
-            for ( long[] lBatch : batches )
-            {
+        for (long[] rBatch : batches) {
+            for (long[] lBatch : batches) {
                 // THEN
-                assertEquals( actuallyCollides( rBatch, lBatch ),
-                        Utils.anyIdCollides( rBatch, rBatch.length, lBatch, lBatch.length ) );
+                assertEquals(
+                        actuallyCollides(rBatch, lBatch),
+                        Utils.anyIdCollides(rBatch, rBatch.length, lBatch, lBatch.length));
             }
         }
     }
 
     @Test
-    void shouldMergeIdsInto()
-    {
+    void shouldMergeIdsInto() {
         // GIVEN
         long[] values = {2, 4, 10, 11, 14};
         long[] into = {1, 5, 6, 11, 25};
         int intoLengthBefore = into.length;
-        into = Arrays.copyOf( into, into.length + values.length );
+        into = Arrays.copyOf(into, into.length + values.length);
 
         // WHEN
-        Utils.mergeSortedInto( values, into, intoLengthBefore );
+        Utils.mergeSortedInto(values, into, intoLengthBefore);
 
         // THEN
-        assertArrayEquals( new long[]{1, 2, 4, 5, 6, 10, 11, 11, 14, 25}, into );
+        assertArrayEquals(new long[] {1, 2, 4, 5, 6, 10, 11, 11, 14, 25}, into);
     }
 
     @Test
-    void shouldMergeSomeRandomIdsInto()
-    {
+    void shouldMergeSomeRandomIdsInto() {
         // GIVEN
         Random random = ThreadLocalRandom.current();
         int batchSize = 10_000;
 
         // WHEN
-        for ( int i = 0; i < 100; i++ )
-        {
-            long[] values = randomBatch( batchSize, random, 100_000_000 );
-            long[] into = randomBatch( batchSize, random, 100_000_000 );
-            long[] expectedMergedArray = manuallyMerge( values, into );
-            into = Arrays.copyOf( into, batchSize * 2 );
-            Utils.mergeSortedInto( values, into, batchSize );
-            assertArrayEquals( expectedMergedArray, into );
+        for (int i = 0; i < 100; i++) {
+            long[] values = randomBatch(batchSize, random, 100_000_000);
+            long[] into = randomBatch(batchSize, random, 100_000_000);
+            long[] expectedMergedArray = manuallyMerge(values, into);
+            into = Arrays.copyOf(into, batchSize * 2);
+            Utils.mergeSortedInto(values, into, batchSize);
+            assertArrayEquals(expectedMergedArray, into);
         }
     }
 
-    private static long[] manuallyMerge( long[] values, long[] into )
-    {
+    private static long[] manuallyMerge(long[] values, long[] into) {
         long[] all = new long[values.length + into.length];
-        System.arraycopy( values, 0, all, 0, values.length );
-        System.arraycopy( into, 0, all, values.length, into.length );
-        Arrays.sort( all );
+        System.arraycopy(values, 0, all, 0, values.length);
+        System.arraycopy(into, 0, all, values.length, into.length);
+        Arrays.sort(all);
         return all;
     }
 
-    private static boolean actuallyCollides( long[] b1, long[] b2 )
-    {
-        for ( int i = 0; i < b1.length; i++ )
-        {
-            for ( int j = 0; j < b2.length; j++ )
-            {
-                if ( b1[i] == b2[j] )
-                {
+    private static boolean actuallyCollides(long[] b1, long[] b2) {
+        for (int i = 0; i < b1.length; i++) {
+            for (int j = 0; j < b2.length; j++) {
+                if (b1[i] == b2[j]) {
                     return true;
                 }
             }
@@ -143,19 +128,16 @@ class UtilsTest
         return false;
     }
 
-    private static long[] randomBatch( int length, Random random, int max )
-    {
+    private static long[] randomBatch(int length, Random random, int max) {
         long[] result = new long[length];
-        randomBatchInto( result, length, random, max );
+        randomBatchInto(result, length, random, max);
         return result;
     }
 
-    private static void randomBatchInto( long[] into, int length, Random random, int max )
-    {
-        for ( int i = 0; i < length; i++ )
-        {
-            into[i] = random.nextInt( max );
+    private static void randomBatchInto(long[] into, int length, Random random, int max) {
+        for (int i = 0; i < length; i++) {
+            into[i] = random.nextInt(max);
         }
-        Arrays.sort( into, 0, length );
+        Arrays.sort(into, 0, length);
     }
 }

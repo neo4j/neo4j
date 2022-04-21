@@ -29,71 +29,57 @@ import org.neo4j.values.storable.Values.stringValue
 class SimpleCaseTest extends CypherFunSuite {
 
   test("case_with_single_alternative_works") {
-    //GIVEN
-    val caseExpr = case_(1,
-      1 -> "one"
-    )
+    // GIVEN
+    val caseExpr = case_(1, 1 -> "one")
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     result should equal(stringValue("one"))
   }
 
   test("case_with_two_alternatives_picks_the_second") {
-    //GIVEN
-    val caseExpr = case_(2,
-      1 -> "one",
-      2 -> "two"
-    )
+    // GIVEN
+    val caseExpr = case_(2, 1 -> "one", 2 -> "two")
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     result should equal(stringValue("two"))
   }
 
   test("case_with_no_match_returns_null") {
-    //GIVEN
-    val caseExpr = case_(3,
-      1 -> "one",
-      2 -> "two"
-    )
+    // GIVEN
+    val caseExpr = case_(3, 1 -> "one", 2 -> "two")
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     result should equal(NO_VALUE)
   }
 
   test("case_with_no_match_returns_default") {
-    //GIVEN
-    val caseExpr = case_(3,
-      1 -> "one",
-      2 -> "two"
-    ) defaultsTo "default"
+    // GIVEN
+    val caseExpr = case_(3, 1 -> "one", 2 -> "two") defaultsTo "default"
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     result should equal(stringValue("default"))
   }
 
   test("when_the_input_expression_is_null_return_the_else_case") {
-    //GIVEN
-    val caseExpr = case_(null,
-      1 -> "one",
-      2 -> "two"
-    ) defaultsTo "default"
+    // GIVEN
+    val caseExpr = case_(null, 1 -> "one", 2 -> "two") defaultsTo "default"
 
-    //WHEN
+    // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
 
-    //THEN
+    // THEN
     assert(result == stringValue("default"))
   }
 
@@ -110,7 +96,7 @@ class SimpleCaseTest extends CypherFunSuite {
     SimpleCase(literal(in), mappedAlt, None)
   }
 
-  implicit class SimpleCasePimp(in:SimpleCase) {
-    def defaultsTo(a:Any): SimpleCase = SimpleCase(in.expression, in.alternatives, Some(literal(a)))
+  implicit class SimpleCasePimp(in: SimpleCase) {
+    def defaultsTo(a: Any): SimpleCase = SimpleCase(in.expression, in.alternatives, Some(literal(a)))
   }
 }

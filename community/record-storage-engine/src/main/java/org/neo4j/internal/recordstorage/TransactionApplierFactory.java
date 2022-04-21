@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-
 import org.neo4j.storageengine.api.CommandsToApply;
 
 /**
@@ -50,8 +49,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
  *
  * </pre>
  */
-public interface TransactionApplierFactory
-{
+public interface TransactionApplierFactory {
     /**
      * Get the suitable {@link TransactionApplier} for a given transaction, and the store which this {@link
      * TransactionApplierFactory} is associated with.
@@ -74,5 +72,5 @@ public interface TransactionApplierFactory
      * @return a {@link TransactionApplier} which can apply this transaction and other commands to the store.
      * @throws IOException on error.
      */
-    TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext ) throws IOException;
+    TransactionApplier startTx(CommandsToApply transaction, BatchContext batchContext) throws IOException;
 }

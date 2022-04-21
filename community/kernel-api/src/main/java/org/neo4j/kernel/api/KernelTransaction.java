@@ -22,7 +22,6 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -96,8 +95,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * }
  * </pre>
  */
-public interface KernelTransaction extends AssertOpen, AutoCloseable
-{
+public interface KernelTransaction extends AssertOpen, AutoCloseable {
     /**
      * The store id of a rolled back transaction.
      */
@@ -119,16 +117,15 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * @return id of the committed transaction or {@link #ROLLBACK_ID} if transaction was rolled back or
      * {@link #READ_ONLY_ID} if transaction was read-only.
      */
-    long commit( KernelTransactionMonitor kernelTransactionMonitor ) throws TransactionFailureException;
+    long commit(KernelTransactionMonitor kernelTransactionMonitor) throws TransactionFailureException;
 
     /**
      * Commit without a {@link KernelTransactionMonitor}.
      *
      * @see #commit(KernelTransactionMonitor)
      */
-    default long commit() throws TransactionFailureException
-    {
-        return commit( NO_MONITOR );
+    default long commit() throws TransactionFailureException {
+        return commit(NO_MONITOR);
     }
 
     /**
@@ -252,26 +249,26 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * terminated by having other methods throw a specific termination exception, as to sooner reach the assumed
      * point where {@link #close()} will be invoked.
      */
-    void markForTermination( Status reason );
+    void markForTermination(Status reason);
 
     /**
      * Sets the user defined meta data to be associated with started queries.
      * @param data the meta data
      */
-    void setMetaData( Map<String,Object> data );
+    void setMetaData(Map<String, Object> data);
 
     /**
      * Gets associated meta data.
      *
      * @return the meta data
      */
-    Map<String,Object> getMetaData();
+    Map<String, Object> getMetaData();
 
     /**
      * Sets additional status to be associated with particular transaction execution step.
      * @param statusDetails - additional status details.
      */
-    void setStatusDetails( String statusDetails );
+    void setStatusDetails(String statusDetails);
 
     /**
      * Gets additional status details if available
@@ -279,8 +276,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      */
     String statusDetails();
 
-    enum Type
-    {
+    enum Type {
         /**
          * An IMPLICIT transaction is automatically opened together with a query and does not allow multiple queries to be executed in it. The transaction
          * itself is never returned to the user, and they don't get any control over it. It commits/rollbacks automatically once the query is finished.
@@ -308,7 +304,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * @param prototype the prototype of the unique index to create.
      * @return IndexReference for the index to be created.
      */
-    IndexDescriptor indexUniqueCreate( IndexPrototype prototype ) throws KernelException;
+    IndexDescriptor indexUniqueCreate(IndexPrototype prototype) throws KernelException;
 
     /**
      * @return the security context this transaction is currently executing in.
@@ -345,7 +341,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
     /**
      * Bind this kernel transaction to a user transaction
      */
-    void bindToUserTransaction( InternalTransaction internalTransaction );
+    void bindToUserTransaction(InternalTransaction internalTransaction);
 
     /**
      * Return user transaction that is bound to current kernel transaction
@@ -405,7 +401,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * @param context the temporary SecurityContext.
      * @return {@link Revertable} which reverts to the original SecurityContext.
      */
-    Revertable overrideWith( SecurityContext context );
+    Revertable overrideWith(SecurityContext context);
 
     /**
      * This callback is used by upgrade listener to adapt transaction state
@@ -478,8 +474,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
     MemoryTracker memoryTracker();
 
     @FunctionalInterface
-    interface Revertable extends AutoCloseable
-    {
+    interface Revertable extends AutoCloseable {
         @Override
         void close();
     }
@@ -503,8 +498,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
 
     InnerTransactionHandler getInnerTransactionHandler();
 
-    interface KernelTransactionMonitor
-    {
+    interface KernelTransactionMonitor {
         /**
          * Called during commit after all logical transaction state have been converted into storage commands,
          * but before the commands have been applied to the transaction log and store.

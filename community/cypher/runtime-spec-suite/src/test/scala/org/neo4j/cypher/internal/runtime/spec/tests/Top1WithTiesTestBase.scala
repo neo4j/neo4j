@@ -32,10 +32,10 @@ import org.neo4j.graphdb.Node
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
-                                                        edition: Edition[CONTEXT],
-                                                        runtime: CypherRuntime[CONTEXT],
-                                                        sizeHint: Int
-                                                      ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("empty input gives empty output") {
     // when
@@ -85,7 +85,8 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val sorted = input.flatten.sortBy(arr => (-arr(0).asInstanceOf[Int], arr(1).asInstanceOf[Int], -arr(2).asInstanceOf[Int]))
+    val sorted =
+      input.flatten.sortBy(arr => (-arr(0).asInstanceOf[Int], arr(1).asInstanceOf[Int], -arr(2).asInstanceOf[Int]))
     val expected = sorted.takeWhile(_.toSeq == sorted.head.toSeq)
     runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
   }
@@ -132,11 +133,9 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a").withRows(inOrder(expected))
   }
 
-
   test("should top twice in a row") {
     // given
     val nodes = given { nodeGraph(1000) }
-
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -167,7 +166,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
       .|.top1WithTies(sortItems = Seq(Descending("y")))
       .|.expand("(x)-[:R]->(y)")
       .|.argument("x")
-      .nodeByLabelScan("x","A", IndexOrderNone)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -204,7 +203,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
 
     val expected = allRows.minBy(row => (-row(1).asInstanceOf[Node].getId, row(0).asInstanceOf[Node].getId))
 
-    runtimeResult should beColumns("x", "y").withSingleRow(expected:_*)
+    runtimeResult should beColumns("x", "y").withSingleRow(expected: _*)
   }
 
   test("should apply apply top") {

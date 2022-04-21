@@ -27,8 +27,6 @@ import java.lang.annotation.Target;
 /**
  * This annotation marks a {@link Procedure} as being hidden, i.e. not listed in SHOW PROCEDURES and not documented.
  */
-@Target( ElementType.METHOD )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface Internal
-{
-}
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Internal {}

@@ -22,71 +22,57 @@ package org.neo4j.kernel.impl.query;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.values.AnyValue;
 
-public class RecordingQuerySubscriber implements QuerySubscriber
-{
+public class RecordingQuerySubscriber implements QuerySubscriber {
     private List<AnyValue[]> all = new ArrayList<>();
     private AnyValue[] current;
     private Throwable throwable;
     private QueryStatistics statistics = QueryStatistics.EMPTY;
 
     @Override
-    public void onResult( int numberOfFields )
-    {
+    public void onResult(int numberOfFields) {
         this.current = new AnyValue[numberOfFields];
     }
 
     @Override
-    public void onRecord()
-    {
-    }
+    public void onRecord() {}
 
     @Override
-    public void onField( int offset, AnyValue value )
-    {
+    public void onField(int offset, AnyValue value) {
         current[offset] = value;
     }
 
     @Override
-    public void onRecordCompleted()
-    {
-        all.add( Arrays.copyOf( current, current.length ) );
+    public void onRecordCompleted() {
+        all.add(Arrays.copyOf(current, current.length));
     }
 
     @Override
-    public void onError( Throwable throwable )
-    {
-        if ( this.throwable == null )
-        {
+    public void onError(Throwable throwable) {
+        if (this.throwable == null) {
             this.throwable = throwable;
         }
     }
 
     @Override
-    public void onResultCompleted( QueryStatistics statistics )
-    {
+    public void onResultCompleted(QueryStatistics statistics) {
         this.statistics = statistics;
     }
 
-    public List<AnyValue[]> getOrThrow() throws Throwable
-    {
+    public List<AnyValue[]> getOrThrow() throws Throwable {
         assertNoErrors();
         return all;
     }
 
-    public void assertNoErrors() throws Throwable
-    {
-        if ( throwable != null )
-        {
+    public void assertNoErrors() throws Throwable {
+        if (throwable != null) {
             throw throwable;
         }
     }
 
-    public QueryStatistics queryStatistics()
-    {
+    public QueryStatistics queryStatistics() {
         return statistics;
     }
 }

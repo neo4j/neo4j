@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CompactedPlanDescriptionTest extends CypherFunSuite {
+
   test("empty in empty out") {
     // Given two plans with empty argument
     val planA = mock[InternalPlanDescription]
@@ -37,7 +38,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments shouldBe empty
   }
 
@@ -54,7 +55,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB, planC))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments should equal(Seq(DbHits(4)))
   }
 
@@ -71,7 +72,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments should equal(Seq(Time(2)))
   }
 
@@ -88,7 +89,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB, planC))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments should equal(Seq(Rows(30)))
   }
 
@@ -105,7 +106,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB, planC))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments.toSet should equal(Set(Rows(30), DbHits(4), Time(3)))
   }
 }

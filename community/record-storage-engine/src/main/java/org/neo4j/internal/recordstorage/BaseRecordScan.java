@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 
 /**
@@ -28,16 +27,14 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
  * <p>
  * Will break up the scan in ranges depending on the provided size hint.
  */
-abstract class BaseRecordScan<C extends PrimitiveRecord>
-{
-    private final AtomicLong nextStart = new AtomicLong( 0 );
+abstract class BaseRecordScan<C extends PrimitiveRecord> {
+    private final AtomicLong nextStart = new AtomicLong(0);
 
-    boolean scanBatch( int sizeHint, C cursor )
-    {
-        long start = nextStart.getAndAdd( sizeHint );
+    boolean scanBatch(int sizeHint, C cursor) {
+        long start = nextStart.getAndAdd(sizeHint);
         long stopInclusive = start + sizeHint - 1;
-        return scanRange( cursor, start, stopInclusive );
+        return scanRange(cursor, start, stopInclusive);
     }
 
-    abstract boolean scanRange( C cursor, long start, long stopInclusive );
+    abstract boolean scanRange(C cursor, long start, long stopInclusive);
 }

@@ -20,32 +20,27 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.io.IOException;
-
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 
-public class UnclosableChannel extends DelegatingStoreChannel<LogVersionedStoreChannel> implements LogVersionedStoreChannel
-{
-    public UnclosableChannel( LogVersionedStoreChannel channel )
-    {
-        super( channel );
+public class UnclosableChannel extends DelegatingStoreChannel<LogVersionedStoreChannel>
+        implements LogVersionedStoreChannel {
+    public UnclosableChannel(LogVersionedStoreChannel channel) {
+        super(channel);
     }
 
     @Override
-    public long getVersion()
-    {
+    public long getVersion() {
         return delegate.getVersion();
     }
 
     @Override
-    public byte getLogFormatVersion()
-    {
+    public byte getLogFormatVersion() {
         return delegate.getLogFormatVersion();
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         // do not close since channel is shared
     }
 }

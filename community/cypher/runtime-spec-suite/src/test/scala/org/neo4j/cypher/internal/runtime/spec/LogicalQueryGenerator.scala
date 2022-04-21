@@ -43,7 +43,12 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 object LogicalQueryGenerator {
 
-  def logicalQuery(txContext: TransactionalContext, costLimit: Cost, nodes: Seq[Node], rels: Seq[Relationship]): Gen[WithState[LogicalQuery]] = {
+  def logicalQuery(
+    txContext: TransactionalContext,
+    costLimit: Cost,
+    nodes: Seq[Node],
+    rels: Seq[Relationship]
+  ): Gen[WithState[LogicalQuery]] = {
     val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
       override val defaultValue: ProvidedOrder = ProvidedOrder.empty
     }
@@ -57,23 +62,29 @@ object LogicalQueryGenerator {
     val relMap = tokenRead.relationshipTypesGetAllTokens().asScala.toVector.map(r => r.name() -> r.id()).toMap
 
     for {
-      WithState(logicalPlan, state) <- new LogicalPlanGenerator(labelMap, relMap, planContext, costLimit, nodes, rels).logicalPlan
+      WithState(logicalPlan, state) <-
+        new LogicalPlanGenerator(labelMap, relMap, planContext, costLimit, nodes, rels).logicalPlan
     } yield {
 
       val effectiveCardinalities = new EffectiveCardinalities
       state.cardinalities.iterator.foreach(cp => effectiveCardinalities.set(cp._1, EffectiveCardinality(cp._2.amount)))
 
-      WithState(LogicalQuery(logicalPlan,
-        "<<queryText>>",
-        readOnly = true,
-        logicalPlan.availableSymbols.toArray,
-        state.semanticTable,
-        effectiveCardinalities,
-        providedOrders,
-        leveragedOrders,
-        hasLoadCSV = false,
-        state.idGen,
-        doProfile = false), state)
+      WithState(
+        LogicalQuery(
+          logicalPlan,
+          "<<queryText>>",
+          readOnly = true,
+          logicalPlan.availableSymbols.toArray,
+          state.semanticTable,
+          effectiveCardinalities,
+          providedOrders,
+          leveragedOrders,
+          hasLoadCSV = false,
+          state.idGen,
+          doProfile = false
+        ),
+        state
+      )
     }
   }
 }

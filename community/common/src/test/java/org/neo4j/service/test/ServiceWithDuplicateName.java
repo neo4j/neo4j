@@ -21,22 +21,17 @@ package org.neo4j.service.test;
 
 import org.neo4j.service.NamedService;
 
-public interface ServiceWithDuplicateName extends NamedService
-{
-    class ServiceWithDuplicateNameImpl1 implements ServiceWithDuplicateName
-    {
+public interface ServiceWithDuplicateName extends NamedService {
+    class ServiceWithDuplicateNameImpl1 implements ServiceWithDuplicateName {
         @Override
-        public String getName()
-        {
+        public String getName() {
             return "duplicate-name";
         }
     }
 
-    class ServiceWithDuplicateNameImpl2 implements ServiceWithDuplicateName
-    {
+    class ServiceWithDuplicateNameImpl2 implements ServiceWithDuplicateName {
         @Override
-        public String getName()
-        {
+        public String getName() {
             return "duplicate-name";
         }
     }

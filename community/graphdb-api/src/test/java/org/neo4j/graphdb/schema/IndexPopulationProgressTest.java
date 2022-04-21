@@ -19,47 +19,40 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class IndexPopulationProgressTest
-{
+import org.junit.jupiter.api.Test;
+
+class IndexPopulationProgressTest {
     @Test
-    void testNone()
-    {
-        assertEquals( 0, IndexPopulationProgress.NONE.getCompletedPercentage(), 0.01 );
+    void testNone() {
+        assertEquals(0, IndexPopulationProgress.NONE.getCompletedPercentage(), 0.01);
     }
 
     @Test
-    void testDone()
-    {
-        assertEquals( 100, IndexPopulationProgress.DONE.getCompletedPercentage(), 0.01 );
+    void testDone() {
+        assertEquals(100, IndexPopulationProgress.DONE.getCompletedPercentage(), 0.01);
     }
 
     @Test
-    void testNegativeCompleted()
-    {
-        assertThrows( IllegalArgumentException.class, () -> new IndexPopulationProgress( -1, 1 ) );
+    void testNegativeCompleted() {
+        assertThrows(IllegalArgumentException.class, () -> new IndexPopulationProgress(-1, 1));
     }
 
     @Test
-    void testNegativeTotal()
-    {
-        assertThrows( IllegalArgumentException.class, () -> new IndexPopulationProgress( 0, -1 ) );
+    void testNegativeTotal() {
+        assertThrows(IllegalArgumentException.class, () -> new IndexPopulationProgress(0, -1));
     }
 
     @Test
-    void testCompletedGreaterThanTotal()
-    {
-        assertThrows( IllegalArgumentException.class, () -> new IndexPopulationProgress( 2, 1 ) );
+    void testCompletedGreaterThanTotal() {
+        assertThrows(IllegalArgumentException.class, () -> new IndexPopulationProgress(2, 1));
     }
 
     @Test
-    void testGetCompletedPercentage()
-    {
-        IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
-        assertEquals( 50.0f, progress.getCompletedPercentage(), 0.01f );
+    void testGetCompletedPercentage() {
+        IndexPopulationProgress progress = new IndexPopulationProgress(1, 2);
+        assertEquals(50.0f, progress.getCompletedPercentage(), 0.01f);
     }
 }

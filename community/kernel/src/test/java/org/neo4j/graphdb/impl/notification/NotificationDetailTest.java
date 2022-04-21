@@ -19,85 +19,77 @@
  */
 package org.neo4j.graphdb.impl.notification;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class NotificationDetailTest
-{
+class NotificationDetailTest {
     @Test
-    void shouldConstructNodeIndexDetails()
-    {
-        NotificationDetail detail = NotificationDetail.Factory.nodeAnyIndex( "person", "Person", "name" );
+    void shouldConstructNodeIndexDetails() {
+        NotificationDetail detail = NotificationDetail.Factory.nodeAnyIndex("person", "Person", "name");
 
-        assertThat( detail.name() ).isEqualTo( "index" );
-        assertThat( detail.value() ).isEqualTo( "INDEX FOR (`person`:`Person`) ON (`person`.`name`)" );
-        assertThat( detail.toString() ).isEqualTo( "index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`)" );
+        assertThat(detail.name()).isEqualTo("index");
+        assertThat(detail.value()).isEqualTo("INDEX FOR (`person`:`Person`) ON (`person`.`name`)");
+        assertThat(detail.toString()).isEqualTo("index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`)");
     }
 
     @Test
-    void shouldConstructRelationshipIndexDetails()
-    {
-        NotificationDetail detail = NotificationDetail.Factory.relationshipAnyIndex( "person", "Person", "name" );
+    void shouldConstructRelationshipIndexDetails() {
+        NotificationDetail detail = NotificationDetail.Factory.relationshipAnyIndex("person", "Person", "name");
 
-        assertThat( detail.name() ).isEqualTo( "index" );
-        assertThat( detail.value() ).isEqualTo( "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" );
-        assertThat( detail.toString() ).isEqualTo( "index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" );
+        assertThat(detail.name()).isEqualTo("index");
+        assertThat(detail.value()).isEqualTo("INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)");
+        assertThat(detail.toString()).isEqualTo("index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)");
     }
 
     @Test
-    void shouldConstructCartesianProductDetailsSingular()
-    {
+    void shouldConstructCartesianProductDetailsSingular() {
         Set<String> idents = new HashSet<>();
-        idents.add( "n" );
-        NotificationDetail detail = NotificationDetail.Factory.cartesianProduct( idents );
+        idents.add("n");
+        NotificationDetail detail = NotificationDetail.Factory.cartesianProduct(idents);
 
-        assertThat( detail.name() ).isEqualTo( "identifier" );
-        assertThat( detail.value() ).isEqualTo( "(n)" );
-        assertThat( detail.toString() ).isEqualTo( "identifier is: (n)" );
+        assertThat(detail.name()).isEqualTo("identifier");
+        assertThat(detail.value()).isEqualTo("(n)");
+        assertThat(detail.toString()).isEqualTo("identifier is: (n)");
     }
 
     @Test
-    void shouldConstructCartesianProductDetails()
-    {
+    void shouldConstructCartesianProductDetails() {
         Set<String> idents = new TreeSet<>();
-        idents.add( "n" );
-        idents.add( "node2" );
-        NotificationDetail detail = NotificationDetail.Factory.cartesianProduct( idents );
+        idents.add("n");
+        idents.add("node2");
+        NotificationDetail detail = NotificationDetail.Factory.cartesianProduct(idents);
 
-        assertThat( detail.name() ).isEqualTo( "identifiers" );
-        assertThat( detail.value() ).isEqualTo( "(n, node2)" );
-        assertThat( detail.toString() ).isEqualTo( "identifiers are: (n, node2)" );
+        assertThat(detail.name()).isEqualTo("identifiers");
+        assertThat(detail.value()).isEqualTo("(n, node2)");
+        assertThat(detail.toString()).isEqualTo("identifiers are: (n, node2)");
     }
 
     @Test
-    void shouldConstructJoinHintDetailsSingular()
-    {
+    void shouldConstructJoinHintDetailsSingular() {
         List<String> idents = new ArrayList<>();
-        idents.add( "n" );
-        NotificationDetail detail = NotificationDetail.Factory.joinKey( idents );
+        idents.add("n");
+        NotificationDetail detail = NotificationDetail.Factory.joinKey(idents);
 
-        assertThat( detail.name() ).isEqualTo( "hinted join key identifier" );
-        assertThat( detail.value() ).isEqualTo( "n" );
-        assertThat( detail.toString() ).isEqualTo( "hinted join key identifier is: n" );
+        assertThat(detail.name()).isEqualTo("hinted join key identifier");
+        assertThat(detail.value()).isEqualTo("n");
+        assertThat(detail.toString()).isEqualTo("hinted join key identifier is: n");
     }
 
     @Test
-    void shouldConstructJoinHintDetails()
-    {
+    void shouldConstructJoinHintDetails() {
         List<String> idents = new ArrayList<>();
-        idents.add( "n" );
-        idents.add( "node2" );
-        NotificationDetail detail = NotificationDetail.Factory.joinKey( idents );
+        idents.add("n");
+        idents.add("node2");
+        NotificationDetail detail = NotificationDetail.Factory.joinKey(idents);
 
-        assertThat( detail.name() ).isEqualTo( "hinted join key identifiers" );
-        assertThat( detail.value() ).isEqualTo( "n, node2" );
-        assertThat( detail.toString() ).isEqualTo( "hinted join key identifiers are: n, node2" );
+        assertThat(detail.name()).isEqualTo("hinted join key identifiers");
+        assertThat(detail.value()).isEqualTo("n, node2");
+        assertThat(detail.toString()).isEqualTo("hinted join key identifiers are: n, node2");
     }
 }

@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.nio.file.OpenOption;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
@@ -35,54 +33,84 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
-class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<BtreeKey>
-{
+class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<BtreeKey> {
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
     private final SpaceFillingCurveConfiguration configuration;
     private final TokenNameLookup tokenNameLookup;
 
-    GenericBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<BtreeKey> layout,
-                                     IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
-                                     SpaceFillingCurveConfiguration configuration,
-                                     boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
-                                     TokenNameLookup tokenNameLookup, ImmutableSet<OpenOption> openOptions )
-    {
-        this( databaseIndexContext, indexFiles, layout, descriptor, spatialSettings, configuration, archiveFailedIndex, bufferFactory, config, memoryTracker,
-              tokenNameLookup, BlockStorage.Monitor.NO_MONITOR, openOptions );
+    GenericBlockBasedIndexPopulator(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexLayout<BtreeKey> layout,
+            IndexDescriptor descriptor,
+            IndexSpecificSpaceFillingCurveSettings spatialSettings,
+            SpaceFillingCurveConfiguration configuration,
+            boolean archiveFailedIndex,
+            ByteBufferFactory bufferFactory,
+            Config config,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        this(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                descriptor,
+                spatialSettings,
+                configuration,
+                archiveFailedIndex,
+                bufferFactory,
+                config,
+                memoryTracker,
+                tokenNameLookup,
+                BlockStorage.Monitor.NO_MONITOR,
+                openOptions);
     }
 
-    GenericBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<BtreeKey> layout,
-                                     IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
-                                     SpaceFillingCurveConfiguration configuration,
-                                     boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
-                                     TokenNameLookup tokenNameLookup,
-                                     BlockStorage.Monitor blockStorageMonitor,
-                                     ImmutableSet<OpenOption> openOptions )
-    {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor,
-               openOptions );
+    GenericBlockBasedIndexPopulator(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexLayout<BtreeKey> layout,
+            IndexDescriptor descriptor,
+            IndexSpecificSpaceFillingCurveSettings spatialSettings,
+            SpaceFillingCurveConfiguration configuration,
+            boolean archiveFailedIndex,
+            ByteBufferFactory bufferFactory,
+            Config config,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            BlockStorage.Monitor blockStorageMonitor,
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                descriptor,
+                archiveFailedIndex,
+                bufferFactory,
+                config,
+                memoryTracker,
+                blockStorageMonitor,
+                openOptions);
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
         this.tokenNameLookup = tokenNameLookup;
     }
 
     @Override
-    NativeIndexReader<BtreeKey> newReader()
-    {
-        return new GenericNativeIndexReader( tree, layout, descriptor, spatialSettings, configuration );
+    NativeIndexReader<BtreeKey> newReader() {
+        return new GenericNativeIndexReader(tree, layout, descriptor, spatialSettings, configuration);
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
-        Map<String,Value> map = new HashMap<>();
-        spatialSettings.visitIndexSpecificSettings( new SpatialConfigVisitor( map ) );
+    public Map<String, Value> indexConfig() {
+        Map<String, Value> map = new HashMap<>();
+        spatialSettings.visitIndexSpecificSettings(new SpatialConfigVisitor(map));
         return map;
     }
 
     @Override
-    protected IndexValueValidator instantiateValueValidator()
-    {
-        return new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
+    protected IndexValueValidator instantiateValueValidator() {
+        return new GenericIndexKeyValidator(tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup);
     }
 }

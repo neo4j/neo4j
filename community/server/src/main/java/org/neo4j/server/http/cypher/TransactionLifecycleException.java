@@ -27,21 +27,17 @@ import org.neo4j.server.rest.Neo4jError;
  * due to server transaction lifecycle transitions that map directly on a
  * {@link Status.Code}.
  */
-abstract class TransactionLifecycleException extends Exception
-{
-    protected TransactionLifecycleException( String message )
-    {
-        super( message );
+abstract class TransactionLifecycleException extends Exception {
+    protected TransactionLifecycleException(String message) {
+        super(message);
     }
 
-    protected TransactionLifecycleException( String message, Throwable cause )
-    {
-        super( message, cause );
+    protected TransactionLifecycleException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    Neo4jError toNeo4jError()
-    {
-        return new Neo4jError( getStatusCode(), this );
+    Neo4jError toNeo4jError() {
+        return new Neo4jError(getStatusCode(), this);
     }
 
     protected abstract Status getStatusCode();

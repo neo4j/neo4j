@@ -23,8 +23,7 @@ package org.neo4j.server.modules;
  * An interface which the NeoServer uses to initialise server modules (e.g.
  * JAX-RS, static content, webadmin)
  */
-public interface ServerModule
-{
+public interface ServerModule {
     void start();
 
     void stop();

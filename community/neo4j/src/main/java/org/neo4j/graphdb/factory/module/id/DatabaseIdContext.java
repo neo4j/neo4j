@@ -22,24 +22,20 @@ package org.neo4j.graphdb.factory.module.id;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 
-public class DatabaseIdContext
-{
+public class DatabaseIdContext {
     private final IdGeneratorFactory idGeneratorFactory;
     private final IdController idController;
 
-    DatabaseIdContext( IdGeneratorFactory idGeneratorFactory, IdController idController )
-    {
+    DatabaseIdContext(IdGeneratorFactory idGeneratorFactory, IdController idController) {
         this.idGeneratorFactory = idGeneratorFactory;
         this.idController = idController;
     }
 
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
+    public IdGeneratorFactory getIdGeneratorFactory() {
         return idGeneratorFactory;
     }
 
-    public IdController getIdController()
-    {
+    public IdController getIdController() {
         return idController;
     }
 }

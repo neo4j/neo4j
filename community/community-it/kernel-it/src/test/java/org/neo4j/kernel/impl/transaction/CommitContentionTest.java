@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.kernel.database.NoOpSystemGraphInitializer.noOpSystemGraphInitializer;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -41,18 +43,13 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.kernel.database.NoOpSystemGraphInitializer.noOpSystemGraphInitializer;
-
 @TestDirectoryExtension
-class CommitContentionTest
-{
+class CommitContentionTest {
     @Inject
     private TestDirectory testDirectory;
 
-    private final Semaphore semaphore1 = new Semaphore( 1 );
-    private final Semaphore semaphore2 = new Semaphore( 1 );
+    private final Semaphore semaphore1 = new Semaphore(1);
+    private final Semaphore semaphore2 = new Semaphore(1);
     private final AtomicReference<Exception> reference = new AtomicReference<>();
     private final AtomicBoolean interceptorEnabled = new AtomicBoolean();
 
@@ -60,23 +57,20 @@ class CommitContentionTest
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void before() throws Exception
-    {
+    void before() throws Exception {
         db = createDb();
         semaphore1.acquire();
         semaphore2.acquire();
     }
 
     @AfterEach
-    void after()
-    {
+    void after() {
         managementService.shutdown();
     }
 
     @Test
-    void shouldNotContendOnCommitWhenPushingUpdates() throws Exception
-    {
-        interceptorEnabled.set( true );
+    void shouldNotContendOnCommitWhenPushingUpdates() throws Exception {
+        interceptorEnabled.set(true);
 
         Thread thread = startFirstTransactionWhichBlocksDuringPushUntilSecondTransactionFinishes();
         runAndFinishSecondTransaction();
@@ -84,36 +78,30 @@ class CommitContentionTest
         assertNoFailures();
     }
 
-    private void assertNoFailures()
-    {
+    private void assertNoFailures() {
         Exception e = reference.get();
 
-        if ( e != null )
-        {
-            throw new AssertionError( e );
+        if (e != null) {
+            throw new AssertionError(e);
         }
     }
 
-    private void runAndFinishSecondTransaction()
-    {
+    private void runAndFinishSecondTransaction() {
         createNode();
 
         signalSecondTransactionFinished();
     }
 
-    private void createNode()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
+    private void createNode() {
+        try (Transaction transaction = db.beginTx()) {
             transaction.createNode();
             transaction.commit();
         }
     }
 
-    private Thread startFirstTransactionWhichBlocksDuringPushUntilSecondTransactionFinishes() throws
-            InterruptedException
-    {
-        Thread thread = new Thread( this::createNode );
+    private Thread startFirstTransactionWhichBlocksDuringPushUntilSecondTransactionFinishes()
+            throws InterruptedException {
+        Thread thread = new Thread(this::createNode);
 
         thread.start();
 
@@ -122,69 +110,57 @@ class CommitContentionTest
         return thread;
     }
 
-    private GraphDatabaseService createDb()
-    {
-        Config cfg = Config.newBuilder().set( neo4j_home, testDirectory.absolutePath() ).build();
-        managementService = new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
-        {
-            @Override
-            public DatabaseTransactionStats.Factory getTransactionMonitorFactory()
-            {
-                return SkipTransactionDatabaseStats::new;
-            }
-        } ).build( cfg, GraphDatabaseDependencies.newDependencies().dependencies( noOpSystemGraphInitializer( cfg ) ) );
-        return managementService.database( cfg.get( GraphDatabaseSettings.default_database ));
+    private GraphDatabaseService createDb() {
+        Config cfg = Config.newBuilder()
+                .set(neo4j_home, testDirectory.absolutePath())
+                .build();
+        managementService = new DatabaseManagementServiceFactory(
+                        DbmsInfo.COMMUNITY, globalModule -> new CommunityEditionModule(globalModule) {
+                            @Override
+                            public DatabaseTransactionStats.Factory getTransactionMonitorFactory() {
+                                return SkipTransactionDatabaseStats::new;
+                            }
+                        })
+                .build(cfg, GraphDatabaseDependencies.newDependencies().dependencies(noOpSystemGraphInitializer(cfg)));
+        return managementService.database(cfg.get(GraphDatabaseSettings.default_database));
     }
 
-    private void waitForFirstTransactionToStartPushing() throws InterruptedException
-    {
-        if ( !semaphore1.tryAcquire( 10, SECONDS ) )
-        {
-            throw new IllegalStateException( "First transaction never started pushing" );
+    private void waitForFirstTransactionToStartPushing() throws InterruptedException {
+        if (!semaphore1.tryAcquire(10, SECONDS)) {
+            throw new IllegalStateException("First transaction never started pushing");
         }
     }
 
-    private void signalFirstTransactionStartedPushing()
-    {
+    private void signalFirstTransactionStartedPushing() {
         semaphore1.release();
     }
 
-    private void signalSecondTransactionFinished()
-    {
+    private void signalSecondTransactionFinished() {
         semaphore2.release();
     }
 
-    private void waitForSecondTransactionToFinish()
-    {
-        try
-        {
-            boolean acquired = semaphore2.tryAcquire( 10, SECONDS );
+    private void waitForSecondTransactionToFinish() {
+        try {
+            boolean acquired = semaphore2.tryAcquire(10, SECONDS);
 
-            if ( !acquired )
-            {
-                reference.set( new IllegalStateException( "Second transaction never finished" ) );
+            if (!acquired) {
+                reference.set(new IllegalStateException("Second transaction never finished"));
             }
-        }
-        catch ( InterruptedException e )
-        {
-            reference.set( e );
+        } catch (InterruptedException e) {
+            reference.set(e);
         }
     }
 
-    private class SkipTransactionDatabaseStats extends DatabaseTransactionStats
-    {
+    private class SkipTransactionDatabaseStats extends DatabaseTransactionStats {
         boolean skip;
 
         @Override
-        public void transactionFinished( boolean committed, boolean write )
-        {
-            super.transactionFinished( committed, write );
+        public void transactionFinished(boolean committed, boolean write) {
+            super.transactionFinished(committed, write);
 
-            if ( committed && interceptorEnabled.get() )
-            {
+            if (committed && interceptorEnabled.get()) {
                 // skip signal and waiting for second transaction
-                if ( skip )
-                {
+                if (skip) {
                     return;
                 }
                 skip = true;

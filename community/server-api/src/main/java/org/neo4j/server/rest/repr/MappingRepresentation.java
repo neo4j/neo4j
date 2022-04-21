@@ -21,38 +21,32 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 
-public abstract class MappingRepresentation extends Representation
-{
-    MappingRepresentation( RepresentationType type )
-    {
-        super( type );
+public abstract class MappingRepresentation extends Representation {
+    MappingRepresentation(RepresentationType type) {
+        super(type);
     }
 
-    public MappingRepresentation( String type )
-    {
-        super( type );
+    public MappingRepresentation(String type) {
+        super(type);
     }
 
     @Override
-    String serialize( RepresentationFormat format, URI baseUri )
-    {
-        MappingWriter writer = format.serializeMapping( type );
-        serialize( new MappingSerializer( writer, baseUri ) );
+    String serialize(RepresentationFormat format, URI baseUri) {
+        MappingWriter writer = format.serializeMapping(type);
+        serialize(new MappingSerializer(writer, baseUri));
         writer.done();
-        return format.complete( writer );
+        return format.complete(writer);
     }
 
-    protected abstract void serialize( MappingSerializer serializer );
+    protected abstract void serialize(MappingSerializer serializer);
 
     @Override
-    void addTo( ListSerializer serializer )
-    {
-        serializer.addMapping( this );
+    void addTo(ListSerializer serializer) {
+        serializer.addMapping(this);
     }
 
     @Override
-    void putTo( MappingSerializer serializer, String key )
-    {
-        serializer.putMapping( key, this );
+    void putTo(MappingSerializer serializer, String key) {
+        serializer.putMapping(key, this);
     }
 }

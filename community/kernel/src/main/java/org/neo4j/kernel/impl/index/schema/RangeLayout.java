@@ -22,66 +22,56 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-class RangeLayout extends IndexLayout<RangeKey>
-{
+class RangeLayout extends IndexLayout<RangeKey> {
     private final int numberOfSlots;
 
-    RangeLayout( int numberOfSlots )
-    {
-        super( false, Layout.namedIdentifier( "RL", numberOfSlots ), 0, 1 );
+    RangeLayout(int numberOfSlots) {
+        super(false, Layout.namedIdentifier("RL", numberOfSlots), 0, 1);
         this.numberOfSlots = numberOfSlots;
     }
 
     @Override
-    public RangeKey newKey()
-    {
+    public RangeKey newKey() {
         return numberOfSlots == 1
-               // An optimized version which has the GenericKeyState built-in w/o indirection
-               ? new RangeKey()
-               // A version which has an indirection to GenericKeyState[]
-               : new CompositeRangeKey( numberOfSlots );
+                // An optimized version which has the GenericKeyState built-in w/o indirection
+                ? new RangeKey()
+                // A version which has an indirection to GenericKeyState[]
+                : new CompositeRangeKey(numberOfSlots);
     }
 
     @Override
-    public RangeKey copyKey( RangeKey key, RangeKey into )
-    {
-        into.copyFrom( key );
+    public RangeKey copyKey(RangeKey key, RangeKey into) {
+        into.copyFrom(key);
         return into;
     }
 
     @Override
-    public int keySize( RangeKey key )
-    {
+    public int keySize(RangeKey key) {
         return key.size();
     }
 
     @Override
-    public void writeKey( PageCursor cursor, RangeKey key )
-    {
-        key.put( cursor );
+    public void writeKey(PageCursor cursor, RangeKey key) {
+        key.put(cursor);
     }
 
     @Override
-    public void readKey( PageCursor cursor, RangeKey into, int keySize )
-    {
-        into.get( cursor, keySize );
+    public void readKey(PageCursor cursor, RangeKey into, int keySize) {
+        into.get(cursor, keySize);
     }
 
     @Override
-    public void minimalSplitter( RangeKey left, RangeKey right, RangeKey into )
-    {
-        right.minimalSplitter( left, right, into );
+    public void minimalSplitter(RangeKey left, RangeKey right, RangeKey into) {
+        right.minimalSplitter(left, right, into);
     }
 
     @Override
-    public void initializeAsLowest( RangeKey key )
-    {
+    public void initializeAsLowest(RangeKey key) {
         key.initValuesAsLowest();
     }
 
     @Override
-    public void initializeAsHighest( RangeKey key )
-    {
+    public void initializeAsHighest(RangeKey key) {
         key.initValuesAsHighest();
     }
 }

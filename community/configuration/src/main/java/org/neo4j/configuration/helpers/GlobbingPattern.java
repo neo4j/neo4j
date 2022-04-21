@@ -23,96 +23,73 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Simple globbing pattern with support for '*' and '?'.
  */
 @PublicApi
-public final class GlobbingPattern
-{
+public final class GlobbingPattern {
     private final String originalString;
     private final Pattern regexPattern;
 
-    public GlobbingPattern( String pattern )
-    {
+    public GlobbingPattern(String pattern) {
         originalString = pattern;
-        try
-        {
-            regexPattern = buildRegex( pattern );
-        }
-        catch ( PatternSyntaxException e )
-        {
-            throw new IllegalArgumentException( "Invalid globbing pattern '" + pattern + "'", e );
+        try {
+            regexPattern = buildRegex(pattern);
+        } catch (PatternSyntaxException e) {
+            throw new IllegalArgumentException("Invalid globbing pattern '" + pattern + "'", e);
         }
     }
 
-    public static List<GlobbingPattern> create( String... patterns )
-    {
+    public static List<GlobbingPattern> create(String... patterns) {
         ArrayList<GlobbingPattern> globbingPatterns = new ArrayList<>();
-        for ( String pattern : patterns )
-        {
-            globbingPatterns.add( new GlobbingPattern( pattern ) );
+        for (String pattern : patterns) {
+            globbingPatterns.add(new GlobbingPattern(pattern));
         }
         return globbingPatterns;
     }
 
-    public boolean matches( String value )
-    {
-        return regexPattern.matcher( value ).matches();
+    public boolean matches(String value) {
+        return regexPattern.matcher(value).matches();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return originalString;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         GlobbingPattern that = (GlobbingPattern) o;
-        return originalString.equals( that.originalString );
+        return originalString.equals(that.originalString);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return originalString.hashCode();
     }
 
-    private static Pattern buildRegex( String globbingPattern )
-    {
+    private static Pattern buildRegex(String globbingPattern) {
         StringBuilder patternString = new StringBuilder();
-        for ( int i = 0; i < globbingPattern.length(); i++ )
-        {
-            char ch = globbingPattern.charAt( i );
-            if ( ch == '*' )
-            {
-                patternString.append( ".*" );
-            }
-            else if ( ch == '?' )
-            {
-                patternString.append( "." );
-            }
-            else if ( ch == '.' || ch == '-' )
-            {
-                patternString.append( "\\" ).append( ch );
-            }
-            else
-            {
-                patternString.append( ch );
+        for (int i = 0; i < globbingPattern.length(); i++) {
+            char ch = globbingPattern.charAt(i);
+            if (ch == '*') {
+                patternString.append(".*");
+            } else if (ch == '?') {
+                patternString.append(".");
+            } else if (ch == '.' || ch == '-') {
+                patternString.append("\\").append(ch);
+            } else {
+                patternString.append(ch);
             }
         }
-        return Pattern.compile( patternString.toString() );
+        return Pattern.compile(patternString.toString());
     }
 }

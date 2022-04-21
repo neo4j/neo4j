@@ -19,46 +19,42 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class GBPTreeMetaTest
-{
+class GBPTreeMetaTest {
     private static final int PAGE_SIZE = PageCache.PAGE_SIZE;
-    private final PageCursor cursor = ByteArrayPageCursor.wrap( new byte[PAGE_SIZE] );
+    private final PageCursor cursor = ByteArrayPageCursor.wrap(new byte[PAGE_SIZE]);
 
     @Test
-    void mustReadWhatIsWritten() throws IOException
-    {
+    void mustReadWhatIsWritten() throws IOException {
         // given
         Layout layout = SimpleLongLayout.longLayout()
-                .withIdentifier( 666 )
-                .withMajorVersion( 10 )
-                .withMinorVersion( 100 )
+                .withIdentifier(666)
+                .withMajorVersion(10)
+                .withMinorVersion(100)
                 .build();
-        Meta written = new Meta( (byte) 1, (byte) 2, PAGE_SIZE, layout );
+        Meta written = new Meta((byte) 1, (byte) 2, PAGE_SIZE, layout);
         int offset = cursor.getOffset();
-        written.write( cursor );
+        written.write(cursor);
 
         // when
-        cursor.setOffset( offset );
-        Meta read = Meta.read( cursor );
+        cursor.setOffset(offset);
+        Meta read = Meta.read(cursor);
 
         // then
-        assertEquals( written.getFormatIdentifier(), read.getFormatIdentifier() );
-        assertEquals( written.getFormatVersion(), read.getFormatVersion() );
-        assertEquals( written.getUnusedVersionSlot3(), read.getUnusedVersionSlot3() );
-        assertEquals( written.getUnusedVersionSlot4(), read.getUnusedVersionSlot4() );
-        assertEquals( written.getLayoutIdentifier(), read.getLayoutIdentifier() );
-        assertEquals( written.getLayoutMajorVersion(), read.getLayoutMajorVersion() );
-        assertEquals( written.getLayoutMinorVersion(), read.getLayoutMinorVersion() );
-        assertEquals( written.getPayloadSize(), read.getPayloadSize() );
+        assertEquals(written.getFormatIdentifier(), read.getFormatIdentifier());
+        assertEquals(written.getFormatVersion(), read.getFormatVersion());
+        assertEquals(written.getUnusedVersionSlot3(), read.getUnusedVersionSlot3());
+        assertEquals(written.getUnusedVersionSlot4(), read.getUnusedVersionSlot4());
+        assertEquals(written.getLayoutIdentifier(), read.getLayoutIdentifier());
+        assertEquals(written.getLayoutMajorVersion(), read.getLayoutMajorVersion());
+        assertEquals(written.getLayoutMinorVersion(), read.getLayoutMinorVersion());
+        assertEquals(written.getPayloadSize(), read.getPayloadSize());
     }
 }

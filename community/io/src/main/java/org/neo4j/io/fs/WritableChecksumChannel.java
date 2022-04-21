@@ -24,32 +24,30 @@ import java.io.IOException;
 /**
  * Represents an infinite channel to write primitive data to that can have a checksum calculated over.
  */
-public interface WritableChecksumChannel extends WritableChannel, ChecksumWriter
-{
+public interface WritableChecksumChannel extends WritableChannel, ChecksumWriter {
     @Override
-    WritableChecksumChannel put( byte value ) throws IOException;
+    WritableChecksumChannel put(byte value) throws IOException;
 
     @Override
-    WritableChecksumChannel putShort( short value ) throws IOException;
+    WritableChecksumChannel putShort(short value) throws IOException;
 
     @Override
-    WritableChecksumChannel putInt( int value ) throws IOException;
+    WritableChecksumChannel putInt(int value) throws IOException;
 
     @Override
-    WritableChecksumChannel putLong( long value ) throws IOException;
+    WritableChecksumChannel putLong(long value) throws IOException;
 
     @Override
-    WritableChecksumChannel putFloat( float value ) throws IOException;
+    WritableChecksumChannel putFloat(float value) throws IOException;
 
     @Override
-    WritableChecksumChannel putDouble( double value ) throws IOException;
+    WritableChecksumChannel putDouble(double value) throws IOException;
 
     @Override
-    default WritableChecksumChannel put( byte[] value, int length ) throws IOException
-    {
-        return put( value, 0, length );
+    default WritableChecksumChannel put(byte[] value, int length) throws IOException {
+        return put(value, 0, length);
     }
 
     @Override
-    WritableChecksumChannel put( byte[] value, int offset, int length ) throws IOException;
+    WritableChecksumChannel put(byte[] value, int offset, int length) throws IOException;
 }

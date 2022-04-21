@@ -28,9 +28,11 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.TypedRewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
-case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.empty,
-                           seenVariables: Set[LogicalVariable] = Set.empty,
-                           usageCount: Map[LogicalVariable, Int] = Map.empty) {
+case class InliningContext(
+  projections: Map[LogicalVariable, Expression] = Map.empty,
+  seenVariables: Set[LogicalVariable] = Set.empty,
+  usageCount: Map[LogicalVariable, Int] = Map.empty
+) {
 
   def trackUsageOfVariable(id: Variable): InliningContext =
     copy(usageCount = usageCount + (id -> (usageCount.withDefaultValue(0)(id) + 1)))
@@ -40,16 +42,17 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
     val containsAggregation = newProjections.values.exists(containsAggregate)
     val shadowing = newProjections.view.filterKeys(seenVariables.contains).filter {
       case (_, _: PathExpression) => false
-      case (key, value) => key != value
+      case (key, value)           => key != value
     }
 
     assert(shadowing.isEmpty, "Should have deduped by this point: " + shadowing)
 
-    val resultProjections = if (containsAggregation) {
-      projections
-    } else {
-      projections ++ newProjections.view.mapValues(inlineExpressions)
-    }
+    val resultProjections =
+      if (containsAggregation) {
+        projections
+      } else {
+        projections ++ newProjections.view.mapValues(inlineExpressions)
+      }
     copy(projections = resultProjections, seenVariables = seenVariables ++ newProjections.keys)
   }
 
@@ -61,7 +64,7 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
       projections.get(variable).map(_.endoRewrite(copyVariables)).getOrElse(variable.copyId)
   })
 
-  //noinspection DfaConstantConditions
+  // noinspection DfaConstantConditions
   // Intellij seems to think this method always returns false, added the noinspection to not warn for it
   def okToRewrite(i: LogicalVariable): Boolean =
     projections.contains(i) &&
@@ -84,7 +87,7 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
 
   def alias(variable: LogicalVariable): Option[LogicalVariable] = projections.get(variable) match {
     case Some(other: Variable) => Some(other.copyId)
-    case _                       => None
+    case _                     => None
   }
 }
 

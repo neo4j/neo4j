@@ -20,15 +20,13 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Keeps id and generation of root of the tree. Can move {@link PageCursor} to root id and return its generation,
  * both read atomically.
  */
-class Root
-{
+class Root {
     /**
      * Current page id which contains the root of the tree.
      */
@@ -39,8 +37,7 @@ class Root
      */
     private final long rootGeneration;
 
-    Root( long rootId, long rootGeneration )
-    {
+    Root(long rootId, long rootGeneration) {
         this.rootId = rootId;
         this.rootGeneration = rootGeneration;
     }
@@ -53,19 +50,16 @@ class Root
      * @return the generation where the current root was assigned.
      * @throws IOException on {@link PageCursor} error.
      */
-    long goTo( PageCursor cursor ) throws IOException
-    {
-        PageCursorUtil.goTo( cursor, "root", rootId );
+    long goTo(PageCursor cursor) throws IOException {
+        PageCursorUtil.goTo(cursor, "root", rootId);
         return rootGeneration;
     }
 
-    long id()
-    {
+    long id() {
         return rootId;
     }
 
-    long generation()
-    {
+    long generation() {
         return rootGeneration;
     }
 }

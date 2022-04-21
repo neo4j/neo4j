@@ -19,8 +19,11 @@
  */
 package org.neo4j.graphdb.factory.module.id;
 
-import java.util.function.Function;
+import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
+import java.util.function.Function;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -31,25 +34,18 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 
-import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-
-public final class IdContextFactoryBuilder
-{
+public final class IdContextFactoryBuilder {
     private FileSystemAbstraction fileSystemAbstraction;
     private JobScheduler jobScheduler;
-    private Function<NamedDatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider;
-    private Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
+    private Function<NamedDatabaseId, IdGeneratorFactory> idGeneratorFactoryProvider;
+    private Function<IdGeneratorFactory, IdGeneratorFactory> factoryWrapper;
     private Config config;
     private LogService logService = NullLogService.getInstance();
 
-    private IdContextFactoryBuilder()
-    {
-    }
+    private IdContextFactoryBuilder() {}
 
-    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, JobScheduler jobScheduler, Config config )
-    {
+    public static IdContextFactoryBuilder of(
+            FileSystemAbstraction fileSystemAbstraction, JobScheduler jobScheduler, Config config) {
         IdContextFactoryBuilder builder = new IdContextFactoryBuilder();
         builder.fileSystemAbstraction = fileSystemAbstraction;
         builder.jobScheduler = jobScheduler;
@@ -57,48 +53,45 @@ public final class IdContextFactoryBuilder
         return builder;
     }
 
-    public IdContextFactoryBuilder withIdGenerationFactoryProvider( Function<NamedDatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider )
-    {
+    public IdContextFactoryBuilder withIdGenerationFactoryProvider(
+            Function<NamedDatabaseId, IdGeneratorFactory> idGeneratorFactoryProvider) {
         this.idGeneratorFactoryProvider = idGeneratorFactoryProvider;
         return this;
     }
 
-    public IdContextFactoryBuilder withFactoryWrapper( Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper )
-    {
+    public IdContextFactoryBuilder withFactoryWrapper(Function<IdGeneratorFactory, IdGeneratorFactory> factoryWrapper) {
         this.factoryWrapper = factoryWrapper;
         return this;
     }
 
-    public IdContextFactoryBuilder withLogService( LogService logService )
-    {
+    public IdContextFactoryBuilder withLogService(LogService logService) {
         this.logService = logService;
         return this;
     }
 
-    public IdContextFactory build()
-    {
-        if ( idGeneratorFactoryProvider == null )
-        {
-            requireNonNull( fileSystemAbstraction, "File system is required to build id generator factory." );
+    public IdContextFactory build() {
+        if (idGeneratorFactoryProvider == null) {
+            requireNonNull(fileSystemAbstraction, "File system is required to build id generator factory.");
             // Note on the RecoveryCleanupWorkCollector: this is just using the immediate() because we aren't
             // expecting any cleanup to be performed on main startup (this is after recovery).
-            idGeneratorFactoryProvider = defaultIdGeneratorFactoryProvider( fileSystemAbstraction, config );
+            idGeneratorFactoryProvider = defaultIdGeneratorFactoryProvider(fileSystemAbstraction, config);
         }
-        if ( factoryWrapper == null )
-        {
+        if (factoryWrapper == null) {
             factoryWrapper = identity();
         }
-        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, factoryWrapper, logService );
+        return new IdContextFactory(jobScheduler, idGeneratorFactoryProvider, factoryWrapper, logService);
     }
 
-    public static Function<NamedDatabaseId,IdGeneratorFactory> defaultIdGeneratorFactoryProvider( FileSystemAbstraction fs, Config config )
-    {
-        return databaseId ->
-        {
-            // There's no point allocating large ID caches for the system database because it generally sees very low activity.
-            // Also take into consideration if user has explicitly overridden the behaviour to always force small caches.
-            boolean allowLargeIdCaches = !config.get( GraphDatabaseInternalSettings.force_small_id_cache ) && !databaseId.isSystemDatabase();
-            return new DefaultIdGeneratorFactory( fs, immediate(), allowLargeIdCaches, databaseId.name() );
+    public static Function<NamedDatabaseId, IdGeneratorFactory> defaultIdGeneratorFactoryProvider(
+            FileSystemAbstraction fs, Config config) {
+        return databaseId -> {
+            // There's no point allocating large ID caches for the system database because it generally sees very low
+            // activity.
+            // Also take into consideration if user has explicitly overridden the behaviour to always force small
+            // caches.
+            boolean allowLargeIdCaches =
+                    !config.get(GraphDatabaseInternalSettings.force_small_id_cache) && !databaseId.isSystemDatabase();
+            return new DefaultIdGeneratorFactory(fs, immediate(), allowLargeIdCaches, databaseId.name());
         };
     }
 }

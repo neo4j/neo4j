@@ -25,7 +25,6 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
-
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -35,13 +34,11 @@ import java.util.stream.Collectors;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
-
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-public class SslPolicy
-{
+public class SslPolicy {
     /* cryptographic objects */
     private final PrivateKey privateKey;
     private final X509Certificate[] keyCertChain;
@@ -57,151 +54,135 @@ public class SslPolicy
     private final boolean verifyHostname;
     private final InternalLog log;
 
-    public SslPolicy( PrivateKey privateKey, X509Certificate[] keyCertChain, List<String> tlsVersions, List<String> ciphers, ClientAuth clientAuth,
-            TrustManagerFactory trustManagerFactory, SslProvider sslProvider, boolean verifyHostname, InternalLogProvider logProvider )
-    {
+    public SslPolicy(
+            PrivateKey privateKey,
+            X509Certificate[] keyCertChain,
+            List<String> tlsVersions,
+            List<String> ciphers,
+            ClientAuth clientAuth,
+            TrustManagerFactory trustManagerFactory,
+            SslProvider sslProvider,
+            boolean verifyHostname,
+            InternalLogProvider logProvider) {
         this.privateKey = privateKey;
         this.keyCertChain = keyCertChain;
-        this.tlsVersions = tlsVersions == null ? null : tlsVersions.toArray( new String[0] );
+        this.tlsVersions = tlsVersions == null ? null : tlsVersions.toArray(new String[0]);
         this.ciphers = ciphers;
         this.clientAuth = clientAuth;
         this.trustManagerFactory = trustManagerFactory;
         this.sslProvider = sslProvider;
         this.verifyHostname = verifyHostname;
-        this.log = logProvider.getLog( SslPolicy.class );
+        this.log = logProvider.getLog(SslPolicy.class);
     }
 
-    public SslContext nettyServerContext() throws SSLException
-    {
-        return SslContextBuilder.forServer( privateKey, keyCertChain )
-                .sslProvider( sslProvider )
-                .clientAuth( forNetty( clientAuth ) )
-                .protocols( tlsVersions )
-                .ciphers( ciphers )
-                .trustManager( trustManagerFactory )
+    public SslContext nettyServerContext() throws SSLException {
+        return SslContextBuilder.forServer(privateKey, keyCertChain)
+                .sslProvider(sslProvider)
+                .clientAuth(forNetty(clientAuth))
+                .protocols(tlsVersions)
+                .ciphers(ciphers)
+                .trustManager(trustManagerFactory)
                 .build();
     }
 
-    public SslContext nettyClientContext() throws SSLException
-    {
+    public SslContext nettyClientContext() throws SSLException {
         return SslContextBuilder.forClient()
-                .sslProvider( sslProvider )
-                .keyManager( privateKey, keyCertChain )
-                .protocols( tlsVersions )
-                .ciphers( ciphers )
-                .trustManager( trustManagerFactory )
+                .sslProvider(sslProvider)
+                .keyManager(privateKey, keyCertChain)
+                .protocols(tlsVersions)
+                .ciphers(ciphers)
+                .trustManager(trustManagerFactory)
                 .build();
     }
 
-    private static io.netty.handler.ssl.ClientAuth forNetty( ClientAuth clientAuth )
-    {
-        switch ( clientAuth )
-        {
-        case NONE:
-            return io.netty.handler.ssl.ClientAuth.NONE;
-        case OPTIONAL:
-            return io.netty.handler.ssl.ClientAuth.OPTIONAL;
-        case REQUIRE:
-            return io.netty.handler.ssl.ClientAuth.REQUIRE;
-        default:
-            throw new IllegalArgumentException( "Cannot translate to netty equivalent: " + clientAuth );
+    private static io.netty.handler.ssl.ClientAuth forNetty(ClientAuth clientAuth) {
+        switch (clientAuth) {
+            case NONE:
+                return io.netty.handler.ssl.ClientAuth.NONE;
+            case OPTIONAL:
+                return io.netty.handler.ssl.ClientAuth.OPTIONAL;
+            case REQUIRE:
+                return io.netty.handler.ssl.ClientAuth.REQUIRE;
+            default:
+                throw new IllegalArgumentException("Cannot translate to netty equivalent: " + clientAuth);
         }
     }
 
-    public ChannelHandler nettyServerHandler( Channel channel ) throws SSLException
-    {
-        return nettyServerHandler( channel, nettyServerContext() );
+    public ChannelHandler nettyServerHandler(Channel channel) throws SSLException {
+        return nettyServerHandler(channel, nettyServerContext());
     }
 
-    private static ChannelHandler nettyServerHandler( Channel channel, SslContext sslContext )
-    {
-        SSLEngine sslEngine = sslContext.newEngine( channel.alloc() );
-        return new SslHandler( sslEngine );
+    private static ChannelHandler nettyServerHandler(Channel channel, SslContext sslContext) {
+        SSLEngine sslEngine = sslContext.newEngine(channel.alloc());
+        return new SslHandler(sslEngine);
     }
 
-    public ChannelHandler nettyClientHandler( Channel channel ) throws SSLException
-    {
-        return nettyClientHandler( channel, nettyClientContext() );
+    public ChannelHandler nettyClientHandler(Channel channel) throws SSLException {
+        return nettyClientHandler(channel, nettyClientContext());
     }
 
-    public ChannelHandler nettyClientHandler( Channel channel, SslContext sslContext )
-    {
-        return new ClientSideOnConnectSslHandler( channel, sslContext, verifyHostname, tlsVersions );
+    public ChannelHandler nettyClientHandler(Channel channel, SslContext sslContext) {
+        return new ClientSideOnConnectSslHandler(channel, sslContext, verifyHostname, tlsVersions);
     }
 
-    public PrivateKey privateKey()
-    {
+    public PrivateKey privateKey() {
         return privateKey;
     }
 
-    public X509Certificate[] certificateChain()
-    {
+    public X509Certificate[] certificateChain() {
         return keyCertChain;
     }
 
-    public KeyStore getKeyStore( char[] keyStorePass, char[] privateKeyPass )
-    {
+    public KeyStore getKeyStore(char[] keyStorePass, char[] privateKeyPass) {
         KeyStore keyStore;
-        try
-        {
-            keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
-            log.debug( "Keystore loaded is of type " + keyStore.getClass().getName() );
-            keyStore.load( null, keyStorePass );
-            keyStore.setKeyEntry( "key", privateKey, privateKeyPass, keyCertChain );
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
+        try {
+            keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            log.debug("Keystore loaded is of type " + keyStore.getClass().getName());
+            keyStore.load(null, keyStorePass);
+            keyStore.setKeyEntry("key", privateKey, privateKeyPass, keyCertChain);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         return keyStore;
     }
 
-    public TrustManagerFactory getTrustManagerFactory()
-    {
+    public TrustManagerFactory getTrustManagerFactory() {
         return trustManagerFactory;
     }
 
-    public List<String> getCipherSuites()
-    {
+    public List<String> getCipherSuites() {
         return ciphers;
     }
 
-    public String[] getTlsVersions()
-    {
+    public String[] getTlsVersions() {
         return tlsVersions;
     }
 
-    public ClientAuth getClientAuth()
-    {
+    public ClientAuth getClientAuth() {
         return clientAuth;
     }
 
-    public boolean isVerifyHostname()
-    {
+    public boolean isVerifyHostname() {
         return verifyHostname;
     }
 
     @Override
-    public String toString()
-    {
-        return "SslPolicy{" +
-               "keyCertChain=" + describeCertChain() +
-               ", ciphers=" + ciphers +
-               ", tlsVersions=" + Arrays.toString( tlsVersions ) +
-               ", clientAuth=" + clientAuth +
-               '}';
+    public String toString() {
+        return "SslPolicy{" + "keyCertChain="
+                + describeCertChain() + ", ciphers="
+                + ciphers + ", tlsVersions="
+                + Arrays.toString(tlsVersions) + ", clientAuth="
+                + clientAuth + '}';
     }
 
-    private static String describeCertificate( X509Certificate certificate )
-    {
-        return "Subject: " + certificate.getSubjectDN() +
-               ", Issuer: " + certificate.getIssuerDN();
+    private static String describeCertificate(X509Certificate certificate) {
+        return "Subject: " + certificate.getSubjectDN() + ", Issuer: " + certificate.getIssuerDN();
     }
 
-    private String describeCertChain()
-    {
-        List<String> certificates = Arrays.stream( keyCertChain ).map( SslPolicy::describeCertificate ).collect( Collectors.toList() );
-        return String.join( ", ", certificates );
+    private String describeCertChain() {
+        List<String> certificates =
+                Arrays.stream(keyCertChain).map(SslPolicy::describeCertificate).collect(Collectors.toList());
+        return String.join(", ", certificates);
     }
 }

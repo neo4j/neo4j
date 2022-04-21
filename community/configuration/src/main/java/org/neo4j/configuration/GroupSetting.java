@@ -28,8 +28,7 @@ import org.neo4j.annotations.service.Service;
  */
 @Service
 @PublicApi
-public interface GroupSetting
-{
+public interface GroupSetting {
     /**
      * The name is unique to one instance of a group
      *

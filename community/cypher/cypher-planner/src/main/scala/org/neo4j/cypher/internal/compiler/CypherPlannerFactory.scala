@@ -29,10 +29,12 @@ import java.time.Clock
 
 class CypherPlannerFactory[C <: PlannerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
 
-  def costBasedCompiler(config: CypherPlannerConfiguration,
-                        clock: Clock,
-                        monitors: Monitors,
-                        updateStrategy: Option[UpdateStrategy]): CypherPlanner[C] = {
+  def costBasedCompiler(
+    config: CypherPlannerConfiguration,
+    clock: Clock,
+    monitors: Monitors,
+    updateStrategy: Option[UpdateStrategy]
+  ): CypherPlanner[C] = {
     val metricsFactory = CachedSimpleMetricsFactory
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
     CypherPlanner(monitors, metricsFactory, config, actualUpdateStrategy, clock)

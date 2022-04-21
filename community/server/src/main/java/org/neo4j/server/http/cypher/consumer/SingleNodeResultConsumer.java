@@ -20,32 +20,27 @@
 package org.neo4j.server.http.cypher.consumer;
 
 import java.util.function.Consumer;
-
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.server.http.cypher.CachingWriter;
 
-public class SingleNodeResultConsumer implements ResultConsumer
-{
+public class SingleNodeResultConsumer implements ResultConsumer {
     private final CachingWriter cachingWriter;
     private final Consumer<Node> nodeConsumer;
 
-    public SingleNodeResultConsumer( CachingWriter cachingWriter, Consumer<Node> nodeConsumer )
-    {
+    public SingleNodeResultConsumer(CachingWriter cachingWriter, Consumer<Node> nodeConsumer) {
         this.cachingWriter = cachingWriter;
         this.nodeConsumer = nodeConsumer;
     }
 
     @Override
-    public void consume( BoltResult result ) throws Throwable
-    {
-        result.handleRecords( new SingleNodeRecordConsumer( cachingWriter, nodeConsumer ), -1 );
+    public void consume(BoltResult result) throws Throwable {
+        result.handleRecords(new SingleNodeRecordConsumer(cachingWriter, nodeConsumer), -1);
     }
 
     @Override
-    public boolean hasMore()
-    {
+    public boolean hasMore() {
         return false;
     }
 }

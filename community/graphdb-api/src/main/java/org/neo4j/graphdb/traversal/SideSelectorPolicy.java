@@ -22,8 +22,7 @@ package org.neo4j.graphdb.traversal;
 /**
  * A factory for {@link SideSelector}s. Used during bidirectional traversals.
  */
-public interface SideSelectorPolicy
-{
+public interface SideSelectorPolicy {
     /**
      * Creates a new {@link SideSelector} given the {@code start}/{@code end}
      * {@link BranchSelector}s and an optional {@code maxDepth}.
@@ -38,5 +37,5 @@ public interface SideSelectorPolicy
      * @return a new {@link SideSelector} for {@code start} and {@code end}
      * {@link BranchSelector}s.
      */
-    SideSelector create( BranchSelector start, BranchSelector end, int maxDepth );
+    SideSelector create(BranchSelector start, BranchSelector end, int maxDepth);
 }

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class ToBooleanListTest extends FunctionTestBase("toBooleanList")  {
+class ToBooleanListTest extends FunctionTestBase("toBooleanList") {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTList(CTAny))(CTList(CTBoolean))

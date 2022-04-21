@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
@@ -26,54 +28,43 @@ import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
-import static org.neo4j.util.Preconditions.checkState;
-
-public abstract class FailSafeBoltStateMachineState implements BoltStateMachineState
-{
+public abstract class FailSafeBoltStateMachineState implements BoltStateMachineState {
     protected BoltStateMachineState failedState;
     private BoltStateMachineState interruptedState;
 
     @Override
-    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
-    {
+    public BoltStateMachineState process(RequestMessage message, StateMachineContext context)
+            throws BoltConnectionFatality {
         assertInitialized();
 
-        if ( message instanceof InterruptSignal )
-        {
+        if (message instanceof InterruptSignal) {
             return interruptedState;
         }
 
-        try
-        {
-            return processUnsafe( message, context );
-        }
-        catch ( AuthorizationExpiredException e )
-        {
-            context.handleFailure( e, true );
+        try {
+            return processUnsafe(message, context);
+        } catch (AuthorizationExpiredException e) {
+            context.handleFailure(e, true);
             return failedState;
-        }
-        catch ( Throwable t )
-        {
-            context.handleFailure( t, false );
+        } catch (Throwable t) {
+            context.handleFailure(t, false);
             return failedState;
         }
     }
 
-    public void setFailedState( BoltStateMachineState failedState )
-    {
+    public void setFailedState(BoltStateMachineState failedState) {
         this.failedState = failedState;
     }
 
-    public void setInterruptedState( BoltStateMachineState interruptedState )
-    {
+    public void setInterruptedState(BoltStateMachineState interruptedState) {
         this.interruptedState = interruptedState;
     }
 
-    protected void assertInitialized()
-    {
-        checkState( failedState != null, "Failed state not set" );
-        checkState( interruptedState != null, "Interrupted state not set" );
+    protected void assertInitialized() {
+        checkState(failedState != null, "Failed state not set");
+        checkState(interruptedState != null, "Interrupted state not set");
     }
 
-    protected abstract BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable;
+    protected abstract BoltStateMachineState processUnsafe(RequestMessage message, StateMachineContext context)
+            throws Throwable;
 }

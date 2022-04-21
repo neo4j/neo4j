@@ -19,74 +19,63 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
+import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
+
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
-import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
-import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
-
-public class EmptyLogTailMetadata implements LogTailMetadata
-{
-    static final LogPosition START_POSITION = new LogPosition( INITIAL_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+public class EmptyLogTailMetadata implements LogTailMetadata {
+    static final LogPosition START_POSITION = new LogPosition(INITIAL_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET);
 
     @Override
-    public boolean isRecoveryRequired()
-    {
+    public boolean isRecoveryRequired() {
         return false;
     }
 
     @Override
-    public long getCheckpointLogVersion()
-    {
+    public long getCheckpointLogVersion() {
         return INITIAL_LOG_VERSION;
     }
 
     @Override
-    public KernelVersion getKernelVersion()
-    {
+    public KernelVersion getKernelVersion() {
         return KernelVersion.LATEST;
     }
 
     @Override
-    public long getLogVersion()
-    {
+    public long getLogVersion() {
         return INITIAL_LOG_VERSION;
     }
 
     @Override
-    public LegacyStoreId getStoreId()
-    {
+    public LegacyStoreId getStoreId() {
         return LegacyStoreId.UNKNOWN;
     }
 
     @Override
-    public boolean logsMissing()
-    {
+    public boolean logsMissing() {
         return true;
     }
 
     @Override
-    public TransactionId getLastCommittedTransaction()
-    {
+    public TransactionId getLastCommittedTransaction() {
         return EMPTY_LAST_TRANSACTION;
     }
 
     @Override
-    public LogPosition getLastTransactionLogPosition()
-    {
+    public LogPosition getLastTransactionLogPosition() {
         return START_POSITION;
     }
 
     @Override
-    public boolean hasUnreadableBytesInCheckpointLogs()
-    {
+    public boolean hasUnreadableBytesInCheckpointLogs() {
         return false;
     }
 
     @Override
-    public CheckpointInfo getLastCheckPoint()
-    {
+    public CheckpointInfo getLastCheckPoint() {
         return null;
     }
 }

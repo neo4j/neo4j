@@ -19,8 +19,15 @@
  */
 package org.neo4j.dbms.systemgraph.versions;
 
-import java.util.stream.Stream;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 
+import java.util.stream.Stream;
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.KnownSystemComponentVersion;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
@@ -30,20 +37,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
-
-public abstract class KnownCommunityTopologyComponentVersion extends KnownSystemComponentVersion
-{
-    KnownCommunityTopologyComponentVersion( ComponentVersion componentVersion )
-    {
+public abstract class KnownCommunityTopologyComponentVersion extends KnownSystemComponentVersion {
+    KnownCommunityTopologyComponentVersion(ComponentVersion componentVersion) {
         // TODO we do not have access to the security log here should we send in the neo4j log instead?
-        super( componentVersion, CommunitySecurityLog.NULL_LOG );
+        super(componentVersion, CommunitySecurityLog.NULL_LOG);
     }
 
     /**
@@ -51,10 +48,9 @@ public abstract class KnownCommunityTopologyComponentVersion extends KnownSystem
      *
      * @param tx open transaction to perform the initialization in
      */
-    public void initializeTopologyGraph( Transaction tx )
-    {
-        setDatabaseAccessToReadWrite( tx );
-        addDatabaseNameNodes( tx );
+    public void initializeTopologyGraph(Transaction tx) {
+        setDatabaseAccessToReadWrite(tx);
+        addDatabaseNameNodes(tx);
     }
 
     /**
@@ -62,10 +58,10 @@ public abstract class KnownCommunityTopologyComponentVersion extends KnownSystem
      *
      * @param tx open transaction to perform the method in
      */
-    protected void setDatabaseAccessToReadWrite( Transaction tx )
-    {
+    protected void setDatabaseAccessToReadWrite(Transaction tx) {
         String rwString = TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE.toString();
-        Iterators.forEachRemaining( tx.findNodes( DATABASE_LABEL ), node -> node.setProperty( DATABASE_ACCESS_PROPERTY, rwString ) );
+        Iterators.forEachRemaining(
+                tx.findNodes(DATABASE_LABEL), node -> node.setProperty(DATABASE_ACCESS_PROPERTY, rwString));
     }
 
     /**
@@ -73,25 +69,21 @@ public abstract class KnownCommunityTopologyComponentVersion extends KnownSystem
      * (:Database)<-[:TARGETS]-(:DatabaseName)
      * @param tx open transaction to perform the method in
      */
-    protected void addDatabaseNameNodes( Transaction tx )
-    {
-        Iterators.forEachRemaining( tx.findNodes( DATABASE_LABEL ), databaseNode ->
-        {
-            if ( !hasPrimaryAlias( databaseNode ) )
-            {
-                Node nameNode = tx.createNode( DATABASE_NAME_LABEL );
-                nameNode.setProperty( NAME_PROPERTY, databaseNode.getProperty( DATABASE_NAME_PROPERTY ) );
-                nameNode.setProperty( PRIMARY_PROPERTY, true );
-                nameNode.createRelationshipTo( databaseNode, TARGETS_RELATIONSHIP );
+    protected void addDatabaseNameNodes(Transaction tx) {
+        Iterators.forEachRemaining(tx.findNodes(DATABASE_LABEL), databaseNode -> {
+            if (!hasPrimaryAlias(databaseNode)) {
+                Node nameNode = tx.createNode(DATABASE_NAME_LABEL);
+                nameNode.setProperty(NAME_PROPERTY, databaseNode.getProperty(DATABASE_NAME_PROPERTY));
+                nameNode.setProperty(PRIMARY_PROPERTY, true);
+                nameNode.createRelationshipTo(databaseNode, TARGETS_RELATIONSHIP);
             }
-        } );
+        });
     }
 
-    private boolean hasPrimaryAlias( Node node )
-    {
-        try ( Stream<Relationship> targets = node.getRelationships( TARGETS_RELATIONSHIP ).stream() )
-        {
-            return targets.anyMatch( r -> r.getStartNode().getProperty( PRIMARY_PROPERTY ).equals( true ) );
+    private boolean hasPrimaryAlias(Node node) {
+        try (Stream<Relationship> targets = node.getRelationships(TARGETS_RELATIONSHIP).stream()) {
+            return targets.anyMatch(
+                    r -> r.getStartNode().getProperty(PRIMARY_PROPERTY).equals(true));
         }
     }
 
@@ -102,5 +94,5 @@ public abstract class KnownCommunityTopologyComponentVersion extends KnownSystem
      * @param tx open transaction to perform the upgrade in
      * @param fromVersion the detected version, upgrade will be performed rolling from this
      */
-    public abstract void upgradeTopologyGraph( Transaction tx, int fromVersion ) throws Exception;
+    public abstract void upgradeTopologyGraph(Transaction tx, int fromVersion) throws Exception;
 }

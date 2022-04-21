@@ -19,21 +19,19 @@
  */
 package org.neo4j.values.virtual;
 
-import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.ElementIdMapper;
-import org.neo4j.values.storable.TextArray;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 
-public abstract class NodeValue extends VirtualNodeValue
-{
+import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ElementIdMapper;
+import org.neo4j.values.storable.TextArray;
+
+public abstract class NodeValue extends VirtualNodeValue {
     private final long id;
     private final ElementIdMapper elementIdMapper;
 
-    protected NodeValue( long id, ElementIdMapper elementIdMapper )
-    {
+    protected NodeValue(long id, ElementIdMapper elementIdMapper) {
         this.id = id;
         this.elementIdMapper = elementIdMapper;
     }
@@ -43,52 +41,42 @@ public abstract class NodeValue extends VirtualNodeValue
     public abstract MapValue properties();
 
     @Override
-    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-    {
-        if ( writer.entityMode() == REFERENCE )
-        {
-            writer.writeNodeReference( id );
-        }
-        else
-        {
-            writer.writeNode( id, labels(), properties(), isDeleted() );
+    public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {
+        if (writer.entityMode() == REFERENCE) {
+            writer.writeNodeReference(id);
+        } else {
+            writer.writeNode(id, labels(), properties(), isDeleted());
         }
     }
 
     @Override
-    public long id()
-    {
+    public long id() {
         return id;
     }
 
     @Override
-    public String elementId()
-    {
-        return elementIdMapper.nodeElementId( id );
+    public String elementId() {
+        return elementIdMapper.nodeElementId(id);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "(%d)", id );
+    public String toString() {
+        return format("(%d)", id);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Node";
     }
 
     @Override
-    ElementIdMapper elementIdMapper()
-    {
+    ElementIdMapper elementIdMapper() {
         return elementIdMapper;
     }
 
-    private static final long DIRECT_NODE_SHALLOW_SIZE = shallowSizeOfInstance( DirectNodeValue.class );
+    private static final long DIRECT_NODE_SHALLOW_SIZE = shallowSizeOfInstance(DirectNodeValue.class);
 
-    static class DirectNodeValue extends NodeValue
-    {
+    static class DirectNodeValue extends NodeValue {
         private final TextArray labels;
         private final MapValue properties;
         private final boolean isDeleted;
@@ -102,9 +90,14 @@ public abstract class NodeValue extends VirtualNodeValue
          * @param properties properties of this node.
          * @param isDeleted whether this node is deleted.
          */
-        DirectNodeValue( long id, String elementId, ElementIdMapper elementIdMapper, TextArray labels, MapValue properties, boolean isDeleted )
-        {
-            super( id, elementIdMapper );
+        DirectNodeValue(
+                long id,
+                String elementId,
+                ElementIdMapper elementIdMapper,
+                TextArray labels,
+                MapValue properties,
+                boolean isDeleted) {
+            super(id, elementIdMapper);
             this.elementId = elementId;
             assert labels != null;
             assert properties != null;
@@ -114,32 +107,27 @@ public abstract class NodeValue extends VirtualNodeValue
         }
 
         @Override
-        public TextArray labels()
-        {
+        public TextArray labels() {
             return labels;
         }
 
         @Override
-        public MapValue properties()
-        {
+        public MapValue properties() {
             return properties;
         }
 
         @Override
-        public long estimatedHeapUsage()
-        {
+        public long estimatedHeapUsage() {
             return DIRECT_NODE_SHALLOW_SIZE + labels.estimatedHeapUsage() + properties.estimatedHeapUsage();
         }
 
         @Override
-        public boolean isDeleted()
-        {
+        public boolean isDeleted() {
             return isDeleted;
         }
 
         @Override
-        public String elementId()
-        {
+        public String elementId() {
             return elementId != null ? elementId : super.elementId();
         }
     }

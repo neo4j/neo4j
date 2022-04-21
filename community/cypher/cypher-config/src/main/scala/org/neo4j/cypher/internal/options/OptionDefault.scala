@@ -24,7 +24,6 @@ import magnolia.Magnolia
 
 import scala.language.experimental.macros
 
-
 /**
  * Creates default values for options
  */

@@ -28,7 +28,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
@@ -42,142 +41,119 @@ import org.neo4j.shell.test.Util;
 /**
  * A fake Result with fake records and fake values
  */
-class FakeResult implements Result
-{
+class FakeResult implements Result {
 
-    public static final FakeResult PING_SUCCESS = new FakeResult( Collections.singletonList( FakeRecord.of( "success", BooleanValue.TRUE ) ) );
+    public static final FakeResult PING_SUCCESS =
+            new FakeResult(Collections.singletonList(FakeRecord.of("success", BooleanValue.TRUE)));
     public static final FakeResult SERVER_VERSION = new FakeResult(
-            Collections.singletonList( FakeRecord.of( "versions", new ListValue( new StringValue( "4.3.0" ) ) ) )
-    );
+            Collections.singletonList(FakeRecord.of("versions", new ListValue(new StringValue("4.3.0")))));
     private final List<Record> records;
     private int currentRecord = -1;
 
-    FakeResult()
-    {
-        this( new ArrayList<>() );
+    FakeResult() {
+        this(new ArrayList<>());
     }
 
-    FakeResult( List<Record> records )
-    {
+    FakeResult(List<Record> records) {
         this.records = records;
     }
 
     /**
      * Supports fake parsing of very limited cypher statements, only for basic test purposes
      */
-    static FakeResult parseStatement( final String statement )
-    {
+    static FakeResult parseStatement(final String statement) {
 
-        if ( isPing( statement ) )
-        {
+        if (isPing(statement)) {
             return PING_SUCCESS;
         }
 
-        if ( isServerVersion( statement ) )
-        {
+        if (isServerVersion(statement)) {
             return SERVER_VERSION;
         }
 
-        Pattern returnAsPattern = Pattern.compile( "^return (.*) as (.*)$", Pattern.CASE_INSENSITIVE );
-        Pattern returnPattern = Pattern.compile( "^return (.*)$", Pattern.CASE_INSENSITIVE );
+        Pattern returnAsPattern = Pattern.compile("^return (.*) as (.*)$", Pattern.CASE_INSENSITIVE);
+        Pattern returnPattern = Pattern.compile("^return (.*)$", Pattern.CASE_INSENSITIVE);
 
         // Be careful with order here
-        for ( Pattern p : Arrays.asList( returnAsPattern, returnPattern ) )
-        {
-            Matcher m = p.matcher( statement );
-            if ( m.find() )
-            {
-                String value = m.group( 1 );
+        for (Pattern p : Arrays.asList(returnAsPattern, returnPattern)) {
+            Matcher m = p.matcher(statement);
+            if (m.find()) {
+                String value = m.group(1);
                 String key = value;
-                if ( m.groupCount() > 1 )
-                {
-                    key = m.group( 2 );
+                if (m.groupCount() > 1) {
+                    key = m.group(2);
                 }
                 FakeResult statementResult = new FakeResult();
-                statementResult.records.add( FakeRecord.of( key, value ) );
+                statementResult.records.add(FakeRecord.of(key, value));
                 return statementResult;
             }
         }
-        throw new IllegalArgumentException( "No idea how to parse this statement: " + statement );
+        throw new IllegalArgumentException("No idea how to parse this statement: " + statement);
     }
 
-    static FakeResult fromQuery( final Query statement )
-    {
+    static FakeResult fromQuery(final Query statement) {
 
-        if ( isServerVersion( statement.text() ) )
-        {
+        if (isServerVersion(statement.text())) {
             return SERVER_VERSION;
         }
 
         return new FakeResult();
     }
 
-    private static boolean isPing( String statement )
-    {
-        return statement.trim().equalsIgnoreCase( "CALL db.ping()" );
+    private static boolean isPing(String statement) {
+        return statement.trim().equalsIgnoreCase("CALL db.ping()");
     }
 
-    private static boolean isServerVersion( String statement )
-    {
-        return statement.trim().equalsIgnoreCase( "CALL dbms.components() YIELD versions" );
-    }
-
-    @Override
-    public List<String> keys()
-    {
-        return records.stream().map( r -> r.keys().get( 0 ) ).collect( Collectors.toList() );
+    private static boolean isServerVersion(String statement) {
+        return statement.trim().equalsIgnoreCase("CALL dbms.components() YIELD versions");
     }
 
     @Override
-    public boolean hasNext()
-    {
+    public List<String> keys() {
+        return records.stream().map(r -> r.keys().get(0)).collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean hasNext() {
         return currentRecord + 1 < records.size();
     }
 
     @Override
-    public Record next()
-    {
+    public Record next() {
         currentRecord += 1;
-        return records.get( currentRecord );
+        return records.get(currentRecord);
     }
 
     @Override
-    public Record single() throws NoSuchRecordException
-    {
-        if ( records.size() == 1 )
-        {
-            return records.get( 0 );
+    public Record single() throws NoSuchRecordException {
+        if (records.size() == 1) {
+            return records.get(0);
         }
-        throw new NoSuchRecordException( "There are more than records" );
+        throw new NoSuchRecordException("There are more than records");
     }
 
     @Override
-    public Record peek()
-    {
-        throw new Util.NotImplementedYetException( "Not implemented yet" );
+    public Record peek() {
+        throw new Util.NotImplementedYetException("Not implemented yet");
     }
 
     @Override
-    public Stream<Record> stream()
-    {
+    public Stream<Record> stream() {
         return records.stream();
     }
 
     @Override
-    public List<Record> list()
-    {
+    public List<Record> list() {
         return records;
     }
 
     @Override
-    public <T> List<T> list( Function<Record, T> mapFunction )
-    {
-        throw new Util.NotImplementedYetException( "Not implemented yet" );
+    public <T> List<T> list(Function<Record, T> mapFunction) {
+        throw new Util.NotImplementedYetException("Not implemented yet");
     }
 
     @Override
-    public ResultSummary consume()
-    {
+    public ResultSummary consume() {
         return new FakeResultSummary();
     }
 }

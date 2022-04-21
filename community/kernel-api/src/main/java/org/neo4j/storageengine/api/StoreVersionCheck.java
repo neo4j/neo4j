@@ -20,18 +20,16 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Optional;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public interface StoreVersionCheck
-{
+public interface StoreVersionCheck {
     /**
      * Store version of an existing store (this instance knows which store it's about).
      *
      * @param cursorContext underlying page cursor context.
      * @return store version of the existing store.
      */
-    Optional<String> storeVersion( CursorContext cursorContext );
+    Optional<String> storeVersion(CursorContext cursorContext);
 
     /**
      * Convert the a store version to String form.
@@ -39,7 +37,7 @@ public interface StoreVersionCheck
      * @param storeVersion the store version to convert
      * @return store version of the existing store.
      */
-    String storeVersionToString( long storeVersion );
+    String storeVersionToString(long storeVersion);
 
     /**
      * Figures out the migration target version and checks if migration to that version is possible.
@@ -49,7 +47,7 @@ public interface StoreVersionCheck
      * If the submitted format family is {@code null }, it will be the latest store version (both latest major and minor)
      * for the store family the store is currently on.
      */
-    MigrationCheckResult getAndCheckMigrationTargetVersion( String formatFamily, CursorContext cursorContext );
+    MigrationCheckResult getAndCheckMigrationTargetVersion(String formatFamily, CursorContext cursorContext);
 
     /**
      * Figures out the upgrade target version and checks if upgrade to that version is possible.
@@ -57,15 +55,12 @@ public interface StoreVersionCheck
      * The upgrade target version is the latest minor format version for the combination of the format family
      * and the major version of the store format the store is currently on.
      */
-    UpgradeCheckResult getAndCheckUpgradeTargetVersion( CursorContext cursorContext );
+    UpgradeCheckResult getAndCheckUpgradeTargetVersion(CursorContext cursorContext);
 
-    record MigrationCheckResult(MigrationOutcome outcome, String versionToMigrateFrom, String versionToMigrateTo, Exception cause )
-    {
+    record MigrationCheckResult(
+            MigrationOutcome outcome, String versionToMigrateFrom, String versionToMigrateTo, Exception cause) {}
 
-    }
-
-    enum MigrationOutcome
-    {
+    enum MigrationOutcome {
         // successful outcomes:
         /**
          * The target migration version is the same as the version the store is currently on.
@@ -98,13 +93,10 @@ public interface StoreVersionCheck
         UNSUPPORTED_TARGET_VERSION,
     }
 
-    record UpgradeCheckResult(UpgradeOutcome outcome, String versionToUpgradeFrom, String versionToUpgradeTo, Exception cause )
-    {
+    record UpgradeCheckResult(
+            UpgradeOutcome outcome, String versionToUpgradeFrom, String versionToUpgradeTo, Exception cause) {}
 
-    }
-
-    enum UpgradeOutcome
-    {
+    enum UpgradeOutcome {
         // successful outcomes:
 
         /**

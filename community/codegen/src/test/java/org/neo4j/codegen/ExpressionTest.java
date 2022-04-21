@@ -19,9 +19,6 @@
  */
 package org.neo4j.codegen;
 
-
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -41,139 +38,133 @@ import static org.neo4j.codegen.Expression.notEqual;
 import static org.neo4j.codegen.Expression.or;
 import static org.neo4j.codegen.MethodReference.methodReference;
 
-public class ExpressionTest
-{
+import org.junit.jupiter.api.Test;
+
+public class ExpressionTest {
     @Test
-    void shouldNegateTrueToFalse()
-    {
-        assertSame( FALSE, not( TRUE ) );
-        assertSame( TRUE, not( FALSE ) );
+    void shouldNegateTrueToFalse() {
+        assertSame(FALSE, not(TRUE));
+        assertSame(TRUE, not(FALSE));
     }
 
     @Test
-    void shouldRemoveDoubleNegation()
-    {
-        Expression expression = invoke( methodReference( getClass(), boolean.class, "TRUE" ) );
-        assertSame( expression, not( not( expression ) ) );
+    void shouldRemoveDoubleNegation() {
+        Expression expression = invoke(methodReference(getClass(), boolean.class, "TRUE"));
+        assertSame(expression, not(not(expression)));
     }
 
     @Test
-    void shouldOptimizeNullChecks()
-    {
+    void shouldOptimizeNullChecks() {
         // given
-        ExpressionVisitor visitor = mock( ExpressionVisitor.class );
-        Expression expression = invoke( methodReference( getClass(), Object.class, "value" ) );
+        ExpressionVisitor visitor = mock(ExpressionVisitor.class);
+        Expression expression = invoke(methodReference(getClass(), Object.class, "value"));
 
         // when
-        equal( expression, NULL ).accept( visitor );
+        equal(expression, NULL).accept(visitor);
 
         // then
-        verify( visitor ).isNull( expression );
+        verify(visitor).isNull(expression);
 
-        reset( visitor ); // next
+        reset(visitor); // next
 
         // when
-        equal( NULL, expression ).accept( visitor );
+        equal(NULL, expression).accept(visitor);
 
         // then
-        verify( visitor ).isNull( expression );
+        verify(visitor).isNull(expression);
 
-        reset( visitor ); // next
+        reset(visitor); // next
 
         // when
-        not( equal( expression, NULL ) ).accept( visitor );
+        not(equal(expression, NULL)).accept(visitor);
 
         // then
-        verify( visitor ).notNull( expression );
+        verify(visitor).notNull(expression);
 
-        reset( visitor ); // next
+        reset(visitor); // next
 
         // when
-        not( equal( NULL, expression ) ).accept( visitor );
+        not(equal(NULL, expression)).accept(visitor);
 
         // then
-        verify( visitor ).notNull( expression );
+        verify(visitor).notNull(expression);
     }
 
     @Test
-    void shouldOptimizeNegatedInequalities()
-    {
+    void shouldOptimizeNegatedInequalities() {
         // given
-        ExpressionVisitor visitor = mock( ExpressionVisitor.class );
-        Expression expression = invoke( methodReference( getClass(), Object.class, "value" ) );
+        ExpressionVisitor visitor = mock(ExpressionVisitor.class);
+        Expression expression = invoke(methodReference(getClass(), Object.class, "value"));
 
         // when
-        not( gt( expression, expression ) ).accept( visitor );
+        not(gt(expression, expression)).accept(visitor);
 
         // then
-        verify( visitor ).lte( expression, expression );
+        verify(visitor).lte(expression, expression);
 
-        reset( visitor ); // next
+        reset(visitor); // next
 
         // when
-        not( gte( expression, expression ) ).accept( visitor );
+        not(gte(expression, expression)).accept(visitor);
 
         // then
-        verify( visitor ).lt( expression, expression );
+        verify(visitor).lt(expression, expression);
 
-        reset( visitor ); // next
+        reset(visitor); // next
 
         // when
-        not( lt( expression, expression ) ).accept( visitor );
+        not(lt(expression, expression)).accept(visitor);
 
         // then
-        verify( visitor ).gte( expression, expression );
+        verify(visitor).gte(expression, expression);
 
-        reset( visitor ); // next
+        reset(visitor); // next
 
         // when
-        not( lte( expression, expression ) ).accept( visitor );
+        not(lte(expression, expression)).accept(visitor);
 
         // then
-        verify( visitor ).gt( expression, expression );
+        verify(visitor).gt(expression, expression);
 
-        reset( visitor ); // next
+        reset(visitor); // next
 
         // when
-        not( equal( expression, expression ) ).accept( visitor );
+        not(equal(expression, expression)).accept(visitor);
 
         // then
-        verify( visitor ).notEqual( expression, expression );
+        verify(visitor).notEqual(expression, expression);
 
-        reset( visitor ); // next
+        reset(visitor); // next
 
         // when
-        not( notEqual( expression, expression ) ).accept( visitor );
+        not(notEqual(expression, expression)).accept(visitor);
 
         // then
-        verify( visitor ).equal( expression, expression );
+        verify(visitor).equal(expression, expression);
     }
 
     @Test
-    void shouldOptimizeBooleanCombinationsWithConstants()
-    {
+    void shouldOptimizeBooleanCombinationsWithConstants() {
         // given
-        Expression expression = invoke( methodReference( getClass(), boolean.class, "TRUE" ) );
+        Expression expression = invoke(methodReference(getClass(), boolean.class, "TRUE"));
 
         // then
-        assertSame( expression, and( expression, TRUE ) );
-        assertSame( expression, and( TRUE, expression ) );
-        assertSame( FALSE, and( expression, FALSE ) );
-        assertSame( FALSE, and( FALSE, expression ) );
+        assertSame(expression, and(expression, TRUE));
+        assertSame(expression, and(TRUE, expression));
+        assertSame(FALSE, and(expression, FALSE));
+        assertSame(FALSE, and(FALSE, expression));
 
-        assertSame( expression, or( expression, FALSE ) );
-        assertSame( expression, or( FALSE, expression ) );
-        assertSame( TRUE, or( expression, TRUE ) );
-        assertSame( TRUE, or( TRUE, expression ) );
+        assertSame(expression, or(expression, FALSE));
+        assertSame(expression, or(FALSE, expression));
+        assertSame(TRUE, or(expression, TRUE));
+        assertSame(TRUE, or(TRUE, expression));
     }
 
-    public static boolean TRUE()
-    {
+    public static boolean TRUE() {
         return true;
     }
 
-    public static Object value()
-    {
+    public static Object value() {
         return null;
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 import java.util.Set;
-
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -29,8 +28,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 /**
  * A component that can store and retrieve users. Implementations must be thread safe.
  */
-public interface UserRepository extends Lifecycle
-{
+public interface UserRepository extends Lifecycle {
     /**
      * Clears all cached user data.
      */
@@ -41,7 +39,7 @@ public interface UserRepository extends Lifecycle
      * @param username the username
      * @return the associated user, or null if no user exists
      */
-    User getUserByName( String username );
+    User getUserByName(String username);
 
     /**
      * Create a user, given that the users token is unique.
@@ -49,7 +47,7 @@ public interface UserRepository extends Lifecycle
      * @throws InvalidArgumentsException if the username is not valid
      * @throws IOException if the underlying storage for users fails
      */
-    void create( User user ) throws InvalidArgumentsException, IOException;
+    void create(User user) throws InvalidArgumentsException, IOException;
 
     /**
      * Replaces the users in the repository with the given users.
@@ -57,7 +55,7 @@ public interface UserRepository extends Lifecycle
      * @throws InvalidArgumentsException if any username is not valid
      * @throws IOException if the underlying storage for users fails
      */
-    void setUsers( ListSnapshot<User> users ) throws InvalidArgumentsException;
+    void setUsers(ListSnapshot<User> users) throws InvalidArgumentsException;
 
     int numberOfUsers();
 
@@ -67,7 +65,7 @@ public interface UserRepository extends Lifecycle
      * @param username the username to be tested.
      * @throws InvalidArgumentsException if the username was invalid.
      */
-    void assertValidUsername( String username ) throws InvalidArgumentsException;
+    void assertValidUsername(String username) throws InvalidArgumentsException;
 
     Set<String> getAllUsernames();
 

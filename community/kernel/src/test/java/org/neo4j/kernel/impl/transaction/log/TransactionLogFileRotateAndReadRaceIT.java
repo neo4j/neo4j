@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
@@ -41,16 +42,13 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests an issue where writer would append data and sometimes rotate the log to new file. When rotating the log
@@ -64,15 +62,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * since it's non-deterministic.
  */
 @Neo4jLayoutExtension
-@ExtendWith( {LifeExtension.class, OtherThreadExtension.class} )
-class TransactionLogFileRotateAndReadRaceIT
-{
+@ExtendWith({LifeExtension.class, OtherThreadExtension.class})
+class TransactionLogFileRotateAndReadRaceIT {
     @Inject
     private LifeSupport life;
+
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private OtherThread t2;
 
@@ -81,100 +81,84 @@ class TransactionLogFileRotateAndReadRaceIT
     private static final int LIMIT_READS = 1_000;
 
     @Test
-    void shouldNotSeeEmptyLogFileWhenReadingTransactionStream() throws Exception
-    {
+    void shouldNotSeeEmptyLogFileWhenReadingTransactionStream() throws Exception {
         // GIVEN
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, databaseLayout.getNeo4jLayout().homeDirectory() )
-                .set( GraphDatabaseSettings.preallocate_logical_logs, false )
-                .set( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
+                .set(
+                        GraphDatabaseSettings.neo4j_home,
+                        databaseLayout.getNeo4jLayout().homeDirectory())
+                .set(GraphDatabaseSettings.preallocate_logical_logs, false)
+                .set(GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes(128))
                 .build();
 
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
-                .withLogVersionRepository( logVersionRepository )
-                .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withConfig( cfg )
-                .withStoreId( LegacyStoreId.UNKNOWN )
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+                .withLogVersionRepository(logVersionRepository)
+                .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withConfig(cfg)
+                .withStoreId(LegacyStoreId.UNKNOWN)
                 .build();
-        life.add( logFiles );
+        life.add(logFiles);
         LogFile logFile = logFiles.getLogFile();
         var writer = logFile.getTransactionLogWriter();
         LogPositionMarker startPosition = new LogPositionMarker();
-        writer.getCurrentPosition( startPosition );
+        writer.getCurrentPosition(startPosition);
 
         // WHEN
         AtomicBoolean end = new AtomicBoolean();
         byte[] dataChunk = new byte[100];
         // one thread constantly writing to and rotating the channel
-        CountDownLatch startSignal = new CountDownLatch( 1 );
-        Future<Void> writeFuture = t2.execute( () ->
-        {
+        CountDownLatch startSignal = new CountDownLatch(1);
+        Future<Void> writeFuture = t2.execute(() -> {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             startSignal.countDown();
             int rotations = 0;
-            while ( !end.get() )
-            {
-                int bytesToWrite = random.nextInt( 1, dataChunk.length );
-                writer.getChannel().put( dataChunk, bytesToWrite );
-                if ( logFile.rotationNeeded() )
-                {
+            while (!end.get()) {
+                int bytesToWrite = random.nextInt(1, dataChunk.length);
+                writer.getChannel().put(dataChunk, bytesToWrite);
+                if (logFile.rotationNeeded()) {
                     logFile.rotate();
                     // Let's just close the gap to the reader so that it gets closer to the "hot zone"
                     // where the rotation happens.
-                    writer.getCurrentPosition( startPosition );
-                    if ( ++rotations > LIMIT_ROTATIONS )
-                    {
-                        end.set( true );
+                    writer.getCurrentPosition(startPosition);
+                    if (++rotations > LIMIT_ROTATIONS) {
+                        end.set(true);
                     }
                 }
             }
             return null;
-        } );
-        assertTrue( startSignal.await( 10, SECONDS ) );
+        });
+        assertTrue(startSignal.await(10, SECONDS));
         // one thread reading through the channel
-        try
-        {
+        try {
             int reads = 0;
-            while ( !end.get() )
-            {
-                try ( ReadableLogChannel reader = logFile.getReader( startPosition.newPosition() ) )
-                {
-                    deplete( reader );
+            while (!end.get()) {
+                try (ReadableLogChannel reader = logFile.getReader(startPosition.newPosition())) {
+                    deplete(reader);
                 }
-                if ( ++reads > LIMIT_READS )
-                {
-                    end.set( true );
+                if (++reads > LIMIT_READS) {
+                    end.set(true);
                 }
             }
-        }
-        finally
-        {
+        } finally {
             writeFuture.get();
         }
 
         // THEN simply getting here means this was successful
     }
 
-    private static void deplete( ReadableLogChannel reader )
-    {
+    private static void deplete(ReadableLogChannel reader) {
         byte[] dataChunk = new byte[100];
-        try
-        {
-            long maxIterations = ByteUnit.mebiBytes( 1 ) / dataChunk.length; //no need to read more
-            for ( int i = 0; i < maxIterations; i++ )
-            {
-                reader.get( dataChunk, dataChunk.length );
+        try {
+            long maxIterations = ByteUnit.mebiBytes(1) / dataChunk.length; // no need to read more
+            for (int i = 0; i < maxIterations; i++) {
+                reader.get(dataChunk, dataChunk.length);
             }
-        }
-        catch ( ReadPastEndException e )
-        {
+        } catch (ReadPastEndException e) {
             // This is OK, it means we've reached the end
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

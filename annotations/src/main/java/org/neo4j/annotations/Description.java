@@ -27,9 +27,8 @@ import java.lang.annotation.Target;
 /**
  * Used to attach a description to a field.
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.FIELD )
-public @interface Description
-{
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface Description {
     String value();
 }

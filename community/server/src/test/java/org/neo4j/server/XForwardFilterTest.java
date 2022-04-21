@@ -19,115 +19,124 @@
  */
 package org.neo4j.server;
 
-import org.glassfish.jersey.internal.PropertiesDelegate;
-import org.glassfish.jersey.server.ContainerRequest;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.SecurityContext;
-
+import org.glassfish.jersey.internal.PropertiesDelegate;
+import org.glassfish.jersey.server.ContainerRequest;
+import org.junit.jupiter.api.Test;
 import org.neo4j.server.web.XForwardFilter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-
-class XForwardFilterTest
-{
+class XForwardFilterTest {
     private static final String X_FORWARD_HOST_HEADER_KEY = "X-Forwarded-Host";
     private static final String X_FORWARD_PROTO_HEADER_KEY = "X-Forwarded-Proto";
 
     @Test
-    void shouldSetTheBaseUriToTheSameValueAsTheXForwardHostHeader()
-    {
+    void shouldSetTheBaseUriToTheSameValueAsTheXForwardHostHeader() {
         // given
         var xForwardHostAndPort = "jimwebber.org:1234";
 
         var filter = new XForwardFilter();
 
-        var headers = Map.of( X_FORWARD_HOST_HEADER_KEY, List.of( xForwardHostAndPort ) );
+        var headers = Map.of(X_FORWARD_HOST_HEADER_KEY, List.of(xForwardHostAndPort));
 
         var request = new ContainerRequest(
-                URI.create( "http://iansrobinson.com" ), URI.create( "http://iansrobinson.com/foo/bar" ), "GET",
-                mock( SecurityContext.class ), mock( PropertiesDelegate.class ), null );
+                URI.create("http://iansrobinson.com"),
+                URI.create("http://iansrobinson.com/foo/bar"),
+                "GET",
+                mock(SecurityContext.class),
+                mock(PropertiesDelegate.class),
+                null);
 
-        request.headers( headers );
+        request.headers(headers);
 
         // when
-        filter.filter( request );
+        filter.filter(request);
 
         // then
-        assertThat( request.getBaseUri().toString() ).contains( xForwardHostAndPort );
+        assertThat(request.getBaseUri().toString()).contains(xForwardHostAndPort);
     }
 
     @Test
-    void shouldSetTheRequestUriToTheSameValueAsTheXForwardHostHeader()
-    {
+    void shouldSetTheRequestUriToTheSameValueAsTheXForwardHostHeader() {
         // given
         var xForwardHostAndPort = "jimwebber.org:1234";
 
         var filter = new XForwardFilter();
 
-        var headers = Map.of( X_FORWARD_HOST_HEADER_KEY, List.of( xForwardHostAndPort ) );
+        var headers = Map.of(X_FORWARD_HOST_HEADER_KEY, List.of(xForwardHostAndPort));
 
         var request = new ContainerRequest(
-                URI.create( "http://iansrobinson.com" ), URI.create( "http://iansrobinson.com/foo/bar" ), "GET",
-                mock( SecurityContext.class ), mock( PropertiesDelegate.class ), null );
+                URI.create("http://iansrobinson.com"),
+                URI.create("http://iansrobinson.com/foo/bar"),
+                "GET",
+                mock(SecurityContext.class),
+                mock(PropertiesDelegate.class),
+                null);
 
-        request.headers( headers );
+        request.headers(headers);
 
         // when
-        filter.filter( request );
+        filter.filter(request);
 
         // then
-        assertTrue( request.getRequestUri().toString().startsWith( "http://" + xForwardHostAndPort ) );
+        assertTrue(request.getRequestUri().toString().startsWith("http://" + xForwardHostAndPort));
     }
 
     @Test
-    void shouldSetTheBaseUriToTheSameProtocolAsTheXForwardProtoHeader()
-    {
+    void shouldSetTheBaseUriToTheSameProtocolAsTheXForwardProtoHeader() {
         // given
         var theProtocol = "https";
 
         var filter = new XForwardFilter();
 
-        var headers = Map.of( X_FORWARD_PROTO_HEADER_KEY, List.of( theProtocol ) );
+        var headers = Map.of(X_FORWARD_PROTO_HEADER_KEY, List.of(theProtocol));
 
         var request = new ContainerRequest(
-                URI.create( "http://jimwebber.org:1234" ), URI.create( "http://jimwebber.org:1234/foo/bar" ), "GET",
-                mock( SecurityContext.class ), mock( PropertiesDelegate.class ), null );
+                URI.create("http://jimwebber.org:1234"),
+                URI.create("http://jimwebber.org:1234/foo/bar"),
+                "GET",
+                mock(SecurityContext.class),
+                mock(PropertiesDelegate.class),
+                null);
 
-        request.headers( headers );
+        request.headers(headers);
 
         // when
-        filter.filter( request );
+        filter.filter(request);
 
         // then
-        assertThat( request.getBaseUri().getScheme() ).contains( theProtocol );
+        assertThat(request.getBaseUri().getScheme()).contains(theProtocol);
     }
 
     @Test
-    void shouldSetTheRequestUriToTheSameProtocolAsTheXForwardProtoHeader()
-    {
+    void shouldSetTheRequestUriToTheSameProtocolAsTheXForwardProtoHeader() {
         // given
         var theProtocol = "https";
 
         var filter = new XForwardFilter();
 
-        var headers = Map.of( X_FORWARD_PROTO_HEADER_KEY, List.of( theProtocol ) );
+        var headers = Map.of(X_FORWARD_PROTO_HEADER_KEY, List.of(theProtocol));
 
         var request = new ContainerRequest(
-                URI.create( "http://jimwebber.org:1234" ), URI.create( "http://jimwebber.org:1234/foo/bar" ), "GET",
-                mock( SecurityContext.class ), mock( PropertiesDelegate.class ), null );
+                URI.create("http://jimwebber.org:1234"),
+                URI.create("http://jimwebber.org:1234/foo/bar"),
+                "GET",
+                mock(SecurityContext.class),
+                mock(PropertiesDelegate.class),
+                null);
 
-        request.headers( headers );
+        request.headers(headers);
 
         // when
-        filter.filter( request );
+        filter.filter(request);
 
         // then
-        assertThat( request.getBaseUri().getScheme() ).contains( theProtocol );
+        assertThat(request.getBaseUri().getScheme()).contains(theProtocol);
     }
 }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -28,31 +31,28 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-class OnlineIndexProxyTest
-{
+class OnlineIndexProxyTest {
     private final long indexId = 1;
-    private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withName( "index" ).materialise( indexId );
-    private final IndexAccessor accessor = mock( IndexAccessor.class );
-    private final IndexStoreView storeView = mock( IndexStoreView.class );
-    private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
-    private final IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy( descriptor, indexStatisticsStore, SchemaTestUtil.SIMPLE_NAME_LOOKUP );
+    private final IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2))
+            .withName("index")
+            .materialise(indexId);
+    private final IndexAccessor accessor = mock(IndexAccessor.class);
+    private final IndexStoreView storeView = mock(IndexStoreView.class);
+    private final IndexStatisticsStore indexStatisticsStore = mock(IndexStatisticsStore.class);
+    private final IndexProxyStrategy indexProxyStrategy =
+            new ValueIndexProxyStrategy(descriptor, indexStatisticsStore, SchemaTestUtil.SIMPLE_NAME_LOOKUP);
 
     @Test
-    void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
-    {
+    void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() {
         // given
-        OnlineIndexProxy index = new OnlineIndexProxy( indexProxyStrategy, accessor, false );
+        OnlineIndexProxy index = new OnlineIndexProxy(indexProxyStrategy, accessor, false);
 
         // when
         index.drop();
 
         // then
-        verify( accessor ).drop();
-        verify( indexStatisticsStore ).removeIndex( indexId );
-        verifyNoMoreInteractions( accessor, storeView );
+        verify(accessor).drop();
+        verify(indexStatisticsStore).removeIndex(indexId);
+        verifyNoMoreInteractions(accessor, storeView);
     }
 }

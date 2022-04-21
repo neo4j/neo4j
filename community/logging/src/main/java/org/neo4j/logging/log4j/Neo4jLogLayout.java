@@ -19,6 +19,14 @@
  */
 package org.neo4j.logging.log4j;
 
+import static org.apache.logging.log4j.core.layout.PatternLayout.newSerializerBuilder;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.core.Layout;
@@ -31,59 +39,41 @@ import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.message.Message;
 import org.apache.logging.log4j.spi.AbstractLogger;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.function.Consumer;
-
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.logging.InternalLog;
 
-import static org.apache.logging.log4j.core.layout.PatternLayout.newSerializerBuilder;
-
-@Plugin( name = "Neo4jLogLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true )
-public class Neo4jLogLayout extends AbstractStringLayout
-{
+@Plugin(name = "Neo4jLogLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true)
+public class Neo4jLogLayout extends AbstractStringLayout {
     protected final Serializer eventSerializer;
     protected volatile Consumer<InternalLog> headerLogger;
     protected volatile String headerClassName;
 
-    protected Neo4jLogLayout( String pattern, Neo4jConfiguration config )
-    {
-        super( config, StandardCharsets.UTF_8, null, null );
+    protected Neo4jLogLayout(String pattern, Neo4jConfiguration config) {
+        super(config, StandardCharsets.UTF_8, null, null);
         this.eventSerializer = newSerializerBuilder()
-                .setConfiguration( config )
-                .setAlwaysWriteExceptions( true )
-                .setDisableAnsi( false )
-                .setNoConsoleNoAnsi( false )
-                .setPattern( pattern )
+                .setConfiguration(config)
+                .setAlwaysWriteExceptions(true)
+                .setDisableAnsi(false)
+                .setNoConsoleNoAnsi(false)
+                .setPattern(pattern)
                 .build();
     }
 
     @PluginFactory
-    public static Neo4jLogLayout createLayout( @PluginAttribute( "pattern" ) String pattern )
-    {
-        return new Neo4jLogLayout( pattern, new Neo4jConfiguration() );
+    public static Neo4jLogLayout createLayout(@PluginAttribute("pattern") String pattern) {
+        return new Neo4jLogLayout(pattern, new Neo4jConfiguration());
     }
 
     @Override
-    public byte[] getHeader()
-    {
-        if ( headerLogger == null )
-        {
+    public byte[] getHeader() {
+        if (headerLogger == null) {
             return super.getHeader();
         }
         ByteArrayLogger byteArrayLogger = new ByteArrayLogger();
-        Log4jLog log = new Log4jLog( byteArrayLogger );
-        try
-        {
-            headerLogger.accept( log );
-        }
-        catch ( UnsatisfiedDependencyException e )
-        {
+        Log4jLog log = new Log4jLog(byteArrayLogger);
+        try {
+            headerLogger.accept(log);
+        } catch (UnsatisfiedDependencyException e) {
             // This will happen if we are asked to rotate to the next file before all dependencies are set up.
             // Most likely scenario would be that a log file already exist on start up that is close to rotating.
             // The only thing that happens is that the header will not be printed in the beginning of the file,
@@ -94,144 +84,173 @@ public class Neo4jLogLayout extends AbstractStringLayout
     }
 
     @Override
-    public String toSerializable( LogEvent event )
-    {
-        return eventSerializer.toSerializable( event );
+    public String toSerializable(LogEvent event) {
+        return eventSerializer.toSerializable(event);
     }
 
     // Will make all log files created after this is set get their header from the consumer.
-    public void setHeaderLogger( Consumer<InternalLog> headerLogger, String className )
-    {
+    public void setHeaderLogger(Consumer<InternalLog> headerLogger, String className) {
         this.headerLogger = headerLogger;
         this.headerClassName = className;
     }
 
-    private class ByteArrayLogger extends AbstractLogger
-    {
+    private class ByteArrayLogger extends AbstractLogger {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, Message message, Throwable t )
-        {
+        public boolean isEnabled(Level level, Marker marker, Message message, Throwable t) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, CharSequence message, Throwable t )
-        {
+        public boolean isEnabled(Level level, Marker marker, CharSequence message, Throwable t) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, Object message, Throwable t )
-        {
+        public boolean isEnabled(Level level, Marker marker, Object message, Throwable t) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Throwable t )
-        {
+        public boolean isEnabled(Level level, Marker marker, String message, Throwable t) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message )
-        {
+        public boolean isEnabled(Level level, Marker marker, String message) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object... params )
-        {
+        public boolean isEnabled(Level level, Marker marker, String message, Object... params) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0 )
-        {
+        public boolean isEnabled(Level level, Marker marker, String message, Object p0) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0, Object p1 )
-        {
+        public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0, Object p1, Object p2 )
-        {
+        public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1, Object p2) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3 )
-        {
+        public boolean isEnabled(
+                Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4 )
-        {
+        public boolean isEnabled(
+                Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5 )
-        {
+        public boolean isEnabled(
+                Level level,
+                Marker marker,
+                String message,
+                Object p0,
+                Object p1,
+                Object p2,
+                Object p3,
+                Object p4,
+                Object p5) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6 )
-        {
+        public boolean isEnabled(
+                Level level,
+                Marker marker,
+                String message,
+                Object p0,
+                Object p1,
+                Object p2,
+                Object p3,
+                Object p4,
+                Object p5,
+                Object p6) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6,
-                Object p7 )
-        {
+        public boolean isEnabled(
+                Level level,
+                Marker marker,
+                String message,
+                Object p0,
+                Object p1,
+                Object p2,
+                Object p3,
+                Object p4,
+                Object p5,
+                Object p6,
+                Object p7) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6,
-                Object p7, Object p8 )
-        {
+        public boolean isEnabled(
+                Level level,
+                Marker marker,
+                String message,
+                Object p0,
+                Object p1,
+                Object p2,
+                Object p3,
+                Object p4,
+                Object p5,
+                Object p6,
+                Object p7,
+                Object p8) {
             return true;
         }
 
         @Override
-        public boolean isEnabled( Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6,
-                Object p7, Object p8, Object p9 )
-        {
+        public boolean isEnabled(
+                Level level,
+                Marker marker,
+                String message,
+                Object p0,
+                Object p1,
+                Object p2,
+                Object p3,
+                Object p4,
+                Object p5,
+                Object p6,
+                Object p7,
+                Object p8,
+                Object p9) {
             return true;
         }
 
         @Override
-        public void logMessage( String fqcn, Level level, Marker marker, Message message, Throwable t )
-        {
-            String logMsg = toSerializable(
-                    DefaultLogEventFactory.getInstance().createEvent( headerClassName, marker, fqcn, level, message, Collections.emptyList(), t ) );
-            try
-            {
-                baos.write( logMsg.getBytes( StandardCharsets.UTF_8 ) );
+        public void logMessage(String fqcn, Level level, Marker marker, Message message, Throwable t) {
+            String logMsg = toSerializable(DefaultLogEventFactory.getInstance()
+                    .createEvent(headerClassName, marker, fqcn, level, message, Collections.emptyList(), t));
+            try {
+                baos.write(logMsg.getBytes(StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
         }
 
         @Override
-        public Level getLevel()
-        {
+        public Level getLevel() {
             return null;
         }
 
-        public byte[] getBytes()
-        {
+        public byte[] getBytes() {
             return baos.toByteArray();
         }
     }

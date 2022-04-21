@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 
 import scala.language.experimental.macros
 
-
 /**
  * Reads a value of T by consuming part of the input,
  * returning the value and the remainder of input
@@ -42,8 +41,9 @@ object OptionReader {
   /** Input to OptionReader:s */
   case class Input(
     config: CypherConfiguration,
-    keyValues: Set[(String, String)],
+    keyValues: Set[(String, String)]
   ) {
+
     /** Grab all values from keyValues mapped for the given key. Return the values and the remaining input */
     def extract(key: String): Result[Set[String]] = {
       val (hits, misses) = keyValues.partition(_._1 == key)
@@ -52,6 +52,7 @@ object OptionReader {
   }
 
   object Input {
+
     /** Creates an input with canonical keys and values */
     def apply(config: CypherConfiguration, keyValues: Set[(String, String)]): Input =
       new Input(config, keyValues.map { case (k, v) => (canonical(k), canonical(v)) })
@@ -65,8 +66,9 @@ object OptionReader {
    */
   case class Result[T](
     remainder: Input,
-    result: T,
+    result: T
   ) {
+
     def map[R](transform: T => R): Result[R] =
       copy(result = transform(result))
   }

@@ -21,18 +21,15 @@ package org.neo4j.test;
 
 import org.neo4j.function.ThrowingFunction;
 
-public abstract class NamedFunction<FROM, TO> implements ThrowingFunction<FROM, TO, RuntimeException>
-{
+public abstract class NamedFunction<FROM, TO> implements ThrowingFunction<FROM, TO, RuntimeException> {
     private final String name;
 
-    public NamedFunction( String name )
-    {
+    public NamedFunction(String name) {
         this.name = name;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return name;
     }
 }

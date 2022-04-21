@@ -19,14 +19,12 @@
  */
 package org.neo4j.server.web;
 
+import java.net.SocketAddress;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnection;
-
-import java.net.SocketAddress;
-
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 
 /**
@@ -35,82 +33,74 @@ import org.neo4j.kernel.api.net.TrackedNetworkConnection;
  *
  * @see HttpConnection#getCurrentConnection()
  */
-public class JettyHttpConnection extends HttpConnection implements TrackedNetworkConnection
-{
+public class JettyHttpConnection extends HttpConnection implements TrackedNetworkConnection {
     private final String id;
     private final long connectTime;
 
     private volatile String username;
     private volatile String userAgent;
 
-    public JettyHttpConnection( String id, HttpConfiguration config, Connector connector, EndPoint endPoint,
-            HttpCompliance compliance, boolean recordComplianceViolations )
-    {
-        super( config, connector, endPoint, compliance, recordComplianceViolations );
+    public JettyHttpConnection(
+            String id,
+            HttpConfiguration config,
+            Connector connector,
+            EndPoint endPoint,
+            HttpCompliance compliance,
+            boolean recordComplianceViolations) {
+        super(config, connector, endPoint, compliance, recordComplianceViolations);
         this.id = id;
         this.connectTime = System.currentTimeMillis();
     }
 
     @Override
-    public String id()
-    {
+    public String id() {
         return id;
     }
 
     @Override
-    public long connectTime()
-    {
+    public long connectTime() {
         return connectTime;
     }
 
     @Override
-    public String connector()
-    {
+    public String connector() {
         return getConnector().getName();
     }
 
     @Override
-    public SocketAddress serverAddress()
-    {
+    public SocketAddress serverAddress() {
         return getEndPoint().getLocalAddress();
     }
 
     @Override
-    public SocketAddress clientAddress()
-    {
+    public SocketAddress clientAddress() {
         return getEndPoint().getRemoteAddress();
     }
 
     @Override
-    public String username()
-    {
+    public String username() {
         return username;
     }
 
     @Override
-    public String userAgent()
-    {
+    public String userAgent() {
         return userAgent;
     }
 
     @Override
-    public void updateUser( String username, String userAgent )
-    {
+    public void updateUser(String username, String userAgent) {
         this.username = username;
         this.userAgent = userAgent;
     }
 
-    public static void updateUserForCurrentConnection( String username, String userAgent )
-    {
+    public static void updateUserForCurrentConnection(String username, String userAgent) {
         JettyHttpConnection connection = getCurrentJettyHttpConnection();
-        if ( connection != null )
-        {
-            connection.updateUser( username, userAgent );
+        if (connection != null) {
+            connection.updateUser(username, userAgent);
         }
     }
 
-    public static JettyHttpConnection getCurrentJettyHttpConnection()
-    {
+    public static JettyHttpConnection getCurrentJettyHttpConnection() {
         HttpConnection connection = HttpConnection.getCurrentConnection();
         return connection instanceof JettyHttpConnection ? (JettyHttpConnection) connection : null;
     }

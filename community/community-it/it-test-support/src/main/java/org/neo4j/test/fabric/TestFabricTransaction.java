@@ -19,10 +19,11 @@
  */
 package org.neo4j.test.fabric;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber;
@@ -53,446 +54,370 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.ElementIdMapper;
 
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
-
-public class TestFabricTransaction implements InternalTransaction
-{
+public class TestFabricTransaction implements InternalTransaction {
 
     private final BoltTransaction fabricTransaction;
     private final InternalTransaction kernelInternalTransaction;
 
-    TestFabricTransaction( BoltTransaction transaction, InternalTransaction kernelInternalTransaction )
-    {
+    TestFabricTransaction(BoltTransaction transaction, InternalTransaction kernelInternalTransaction) {
         this.fabricTransaction = transaction;
         this.kernelInternalTransaction = kernelInternalTransaction;
     }
 
     @Override
-    public void registerCloseableResource( AutoCloseable closeableResource )
-    {
-        kernelInternalTransaction.registerCloseableResource( closeableResource );
+    public void registerCloseableResource(AutoCloseable closeableResource) {
+        kernelInternalTransaction.registerCloseableResource(closeableResource);
     }
 
     @Override
-    public void unregisterCloseableResource( AutoCloseable closeableResource )
-    {
-        kernelInternalTransaction.unregisterCloseableResource( closeableResource );
+    public void unregisterCloseableResource(AutoCloseable closeableResource) {
+        kernelInternalTransaction.unregisterCloseableResource(closeableResource);
     }
 
     @Override
-    public Result execute( String query ) throws QueryExecutionException
-    {
-        return execute( query, Map.of() );
+    public Result execute(String query) throws QueryExecutionException {
+        return execute(query, Map.of());
     }
 
     @Override
-    public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
-    {
-        var ctx = new TestFabricTransactionalContext( kernelInternalTransaction );
-        var params = ValueUtils.asParameterMapValue( parameters );
-        var result = new ResultSubscriber( ctx, ctx.valueMapper() );
-        try
-        {
-            BoltQueryExecution boltQueryExecution = fabricTransaction.executeQuery( query, params, false, result );
-            result.init( boltQueryExecution.getQueryExecution() );
-        }
-        catch ( FabricException e )
-        {
-            if ( e.getCause() instanceof RuntimeException )
-            {
+    public Result execute(String query, Map<String, Object> parameters) throws QueryExecutionException {
+        var ctx = new TestFabricTransactionalContext(kernelInternalTransaction);
+        var params = ValueUtils.asParameterMapValue(parameters);
+        var result = new ResultSubscriber(ctx, ctx.valueMapper());
+        try {
+            BoltQueryExecution boltQueryExecution = fabricTransaction.executeQuery(query, params, false, result);
+            result.init(boltQueryExecution.getQueryExecution());
+        } catch (FabricException e) {
+            if (e.getCause() instanceof RuntimeException) {
                 throw (RuntimeException) e.getCause();
+            } else {
+                throw new QueryExecutionException(
+                        e.getMessage(), e, e.status().code().serialize());
             }
-            else
-            {
-                throw new QueryExecutionException( e.getMessage(), e, e.status().code().serialize() );
-            }
-        }
-        catch ( QueryExecutionKernelException | Neo4jException e )
-        {
-            throw new QueryExecutionException( e.getMessage(), e, e.status().code().serialize() );
+        } catch (QueryExecutionKernelException | Neo4jException e) {
+            throw new QueryExecutionException(
+                    e.getMessage(), e, e.status().code().serialize());
         }
 
         return result;
     }
 
     @Override
-    public void terminate()
-    {
-        terminate( Terminated );
+    public void terminate() {
+        terminate(Terminated);
     }
 
     @Override
-    public void terminate( Status reason )
-    {
-        fabricTransaction.markForTermination( reason );
+    public void terminate(Status reason) {
+        fabricTransaction.markForTermination(reason);
     }
 
     @Override
-    public UUID getDatabaseId()
-    {
+    public UUID getDatabaseId() {
         return this.kernelInternalTransaction.getDatabaseId();
     }
 
     @Override
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return this.kernelInternalTransaction.getDatabaseName();
     }
 
     @Override
-    public <E extends Entity> E validateSameDB( E entity )
-    {
-        return this.kernelInternalTransaction.validateSameDB( entity );
+    public <E extends Entity> E validateSameDB(E entity) {
+        return this.kernelInternalTransaction.validateSameDB(entity);
     }
 
     @Override
-    public void commit()
-    {
-        try
-        {
+    public void commit() {
+        try {
             fabricTransaction.commit();
-        }
-        catch ( FabricException e )
-        {
-            throw unwrapFabricException( e );
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new org.neo4j.graphdb.TransactionFailureException( "Unable to complete transaction.", e );
+        } catch (FabricException e) {
+            throw unwrapFabricException(e);
+        } catch (TransactionFailureException e) {
+            throw new org.neo4j.graphdb.TransactionFailureException("Unable to complete transaction.", e);
         }
     }
 
     @Override
-    public void rollback()
-    {
-        try
-        {
+    public void rollback() {
+        try {
             fabricTransaction.rollback();
-        }
-        catch ( FabricException e )
-        {
-            throw unwrapFabricException( e );
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new org.neo4j.graphdb.TransactionFailureException( "Unable to complete transaction.", e );
+        } catch (FabricException e) {
+            throw unwrapFabricException(e);
+        } catch (TransactionFailureException e) {
+            throw new org.neo4j.graphdb.TransactionFailureException("Unable to complete transaction.", e);
         }
     }
 
-    private static RuntimeException unwrapFabricException( FabricException e )
-    {
-        if ( e.getCause() instanceof RuntimeException )
-        {
+    private static RuntimeException unwrapFabricException(FabricException e) {
+        if (e.getCause() instanceof RuntimeException) {
             return (RuntimeException) e.getCause();
-        }
-        else
-        {
+        } else {
             return e;
         }
     }
 
     @Override
-    public void close()
-    {
-        if ( kernelInternalTransaction.isOpen() )
-        {
-            try
-            {
+    public void close() {
+        if (kernelInternalTransaction.isOpen()) {
+            try {
                 fabricTransaction.rollback();
-            }
-            catch ( TransactionFailureException e )
-            {
-                throw new RuntimeException( e );
+            } catch (TransactionFailureException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
     @Override
-    public Node createNode()
-    {
+    public Node createNode() {
         return kernelInternalTransaction.createNode();
     }
 
     @Override
-    public Node createNode( Label... labels )
-    {
-        return kernelInternalTransaction.createNode( labels );
+    public Node createNode(Label... labels) {
+        return kernelInternalTransaction.createNode(labels);
     }
 
     @Override
-    public Node getNodeById( long id )
-    {
-        return kernelInternalTransaction.getNodeById( id );
+    public Node getNodeById(long id) {
+        return kernelInternalTransaction.getNodeById(id);
     }
 
     @Override
-    public Node getNodeByElementId( String elementId )
-    {
-        return kernelInternalTransaction.getNodeByElementId( elementId );
+    public Node getNodeByElementId(String elementId) {
+        return kernelInternalTransaction.getNodeByElementId(elementId);
     }
 
     @Override
-    public Relationship getRelationshipById( long id )
-    {
-        return kernelInternalTransaction.getRelationshipById( id );
+    public Relationship getRelationshipById(long id) {
+        return kernelInternalTransaction.getRelationshipById(id);
     }
 
     @Override
-    public Relationship getRelationshipByElementId( String elementId )
-    {
-        return kernelInternalTransaction.getRelationshipByElementId( elementId );
+    public Relationship getRelationshipByElementId(String elementId) {
+        return kernelInternalTransaction.getRelationshipByElementId(elementId);
     }
 
     @Override
-    public BidirectionalTraversalDescription bidirectionalTraversalDescription()
-    {
+    public BidirectionalTraversalDescription bidirectionalTraversalDescription() {
         return kernelInternalTransaction.bidirectionalTraversalDescription();
     }
 
     @Override
-    public TraversalDescription traversalDescription()
-    {
+    public TraversalDescription traversalDescription() {
         return kernelInternalTransaction.traversalDescription();
     }
 
     @Override
-    public Iterable<Label> getAllLabelsInUse()
-    {
+    public Iterable<Label> getAllLabelsInUse() {
         return kernelInternalTransaction.getAllLabelsInUse();
     }
 
     @Override
-    public Iterable<RelationshipType> getAllRelationshipTypesInUse()
-    {
+    public Iterable<RelationshipType> getAllRelationshipTypesInUse() {
         return kernelInternalTransaction.getAllRelationshipTypesInUse();
     }
 
     @Override
-    public Iterable<Label> getAllLabels()
-    {
+    public Iterable<Label> getAllLabels() {
         return kernelInternalTransaction.getAllLabels();
     }
 
     @Override
-    public Iterable<RelationshipType> getAllRelationshipTypes()
-    {
+    public Iterable<RelationshipType> getAllRelationshipTypes() {
         return kernelInternalTransaction.getAllRelationshipTypes();
     }
 
     @Override
-    public Iterable<String> getAllPropertyKeys()
-    {
+    public Iterable<String> getAllPropertyKeys() {
         return kernelInternalTransaction.getAllPropertyKeys();
     }
 
     @Override
-    public ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
-    {
-        return kernelInternalTransaction.findNodes( label, key, template, searchMode );
+    public ResourceIterator<Node> findNodes(Label label, String key, String template, StringSearchMode searchMode) {
+        return kernelInternalTransaction.findNodes(label, key, template, searchMode);
     }
 
     @Override
-    public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
-    {
-        return kernelInternalTransaction.findNodes( label, propertyValues );
+    public ResourceIterator<Node> findNodes(Label label, Map<String, Object> propertyValues) {
+        return kernelInternalTransaction.findNodes(label, propertyValues);
     }
 
     @Override
-    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2, String key3, Object value3 )
-    {
-        return kernelInternalTransaction.findNodes( label, key1, value1, key2, value2, key3, value3 );
+    public ResourceIterator<Node> findNodes(
+            Label label, String key1, Object value1, String key2, Object value2, String key3, Object value3) {
+        return kernelInternalTransaction.findNodes(label, key1, value1, key2, value2, key3, value3);
     }
 
     @Override
-    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
-    {
-        return kernelInternalTransaction.findNodes( label, key1, value1, key2, value2 );
+    public ResourceIterator<Node> findNodes(Label label, String key1, Object value1, String key2, Object value2) {
+        return kernelInternalTransaction.findNodes(label, key1, value1, key2, value2);
     }
 
     @Override
-    public Node findNode( Label label, String key, Object value )
-    {
-        return kernelInternalTransaction.findNode( label, key, value );
+    public Node findNode(Label label, String key, Object value) {
+        return kernelInternalTransaction.findNode(label, key, value);
     }
 
     @Override
-    public ResourceIterator<Node> findNodes( Label label, String key, Object value )
-    {
-        return kernelInternalTransaction.findNodes( label, key, value );
+    public ResourceIterator<Node> findNodes(Label label, String key, Object value) {
+        return kernelInternalTransaction.findNodes(label, key, value);
     }
 
     @Override
-    public ResourceIterator<Node> findNodes( Label label )
-    {
-        return kernelInternalTransaction.findNodes( label );
+    public ResourceIterator<Node> findNodes(Label label) {
+        return kernelInternalTransaction.findNodes(label);
     }
 
     @Override
-    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, String template, StringSearchMode searchMode )
-    {
-        return kernelInternalTransaction.findRelationships( relationshipType, key, template, searchMode );
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, String key, String template, StringSearchMode searchMode) {
+        return kernelInternalTransaction.findRelationships(relationshipType, key, template, searchMode);
     }
 
     @Override
-    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, Map<String,Object> propertyValues )
-    {
-        return kernelInternalTransaction.findRelationships( relationshipType, propertyValues );
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, Map<String, Object> propertyValues) {
+        return kernelInternalTransaction.findRelationships(relationshipType, propertyValues);
     }
 
     @Override
-    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2,
-                                                             String key3, Object value3 )
-    {
-        return kernelInternalTransaction.findRelationships( relationshipType, key1, value1, key2, value2, key3, value3 );
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType,
+            String key1,
+            Object value1,
+            String key2,
+            Object value2,
+            String key3,
+            Object value3) {
+        return kernelInternalTransaction.findRelationships(relationshipType, key1, value1, key2, value2, key3, value3);
     }
 
     @Override
-    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2 )
-    {
-        return kernelInternalTransaction.findRelationships( relationshipType, key1, value1, key2, value2 );
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, String key1, Object value1, String key2, Object value2) {
+        return kernelInternalTransaction.findRelationships(relationshipType, key1, value1, key2, value2);
     }
 
     @Override
-    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, Object value )
-    {
-        return kernelInternalTransaction.findRelationships( relationshipType, key, value );
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, String key, Object value) {
+        return kernelInternalTransaction.findRelationships(relationshipType, key, value);
     }
 
     @Override
-    public Relationship findRelationship( RelationshipType relationshipType, String key, Object value )
-    {
-        return kernelInternalTransaction.findRelationship( relationshipType, key, value );
+    public Relationship findRelationship(RelationshipType relationshipType, String key, Object value) {
+        return kernelInternalTransaction.findRelationship(relationshipType, key, value);
     }
 
     @Override
-    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType )
-    {
-        return kernelInternalTransaction.findRelationships( relationshipType );
+    public ResourceIterator<Relationship> findRelationships(RelationshipType relationshipType) {
+        return kernelInternalTransaction.findRelationships(relationshipType);
     }
 
     @Override
-    public ResourceIterable<Node> getAllNodes()
-    {
+    public ResourceIterable<Node> getAllNodes() {
         return kernelInternalTransaction.getAllNodes();
     }
 
     @Override
-    public ResourceIterable<Relationship> getAllRelationships()
-    {
+    public ResourceIterable<Relationship> getAllRelationships() {
         return kernelInternalTransaction.getAllRelationships();
     }
 
     @Override
-    public Lock acquireWriteLock( Entity entity )
-    {
-        return kernelInternalTransaction.acquireWriteLock( entity );
+    public Lock acquireWriteLock(Entity entity) {
+        return kernelInternalTransaction.acquireWriteLock(entity);
     }
 
     @Override
-    public Lock acquireReadLock( Entity entity )
-    {
-        return kernelInternalTransaction.acquireReadLock( entity );
+    public Lock acquireReadLock(Entity entity) {
+        return kernelInternalTransaction.acquireReadLock(entity);
     }
 
     @Override
-    public Schema schema()
-    {
+    public Schema schema() {
         return kernelInternalTransaction.schema();
     }
 
     @Override
-    public void setTransaction( KernelTransaction transaction )
-    {
-        kernelInternalTransaction.setTransaction( transaction );
+    public void setTransaction(KernelTransaction transaction) {
+        kernelInternalTransaction.setTransaction(transaction);
     }
 
     @Override
-    public KernelTransaction kernelTransaction()
-    {
+    public KernelTransaction kernelTransaction() {
         return kernelInternalTransaction.kernelTransaction();
     }
 
     @Override
-    public KernelTransaction.Type transactionType()
-    {
+    public KernelTransaction.Type transactionType() {
         return kernelInternalTransaction.transactionType();
     }
 
     @Override
-    public SecurityContext securityContext()
-    {
+    public SecurityContext securityContext() {
         return kernelInternalTransaction.securityContext();
     }
 
     @Override
-    public ClientConnectionInfo clientInfo()
-    {
+    public ClientConnectionInfo clientInfo() {
         return kernelInternalTransaction.clientInfo();
     }
 
     @Override
-    public KernelTransaction.Revertable overrideWith( SecurityContext context )
-    {
-        return kernelInternalTransaction.overrideWith( context );
+    public KernelTransaction.Revertable overrideWith(SecurityContext context) {
+        return kernelInternalTransaction.overrideWith(context);
     }
 
     @Override
-    public Optional<Status> terminationReason()
-    {
+    public Optional<Status> terminationReason() {
         return kernelInternalTransaction.terminationReason();
     }
 
     @Override
-    public void setMetaData( Map<String,Object> txMeta )
-    {
-        kernelInternalTransaction.setMetaData( txMeta );
+    public void setMetaData(Map<String, Object> txMeta) {
+        kernelInternalTransaction.setMetaData(txMeta);
     }
 
     @Override
-    public void checkInTransaction()
-    {
+    public void checkInTransaction() {
         kernelInternalTransaction.checkInTransaction();
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return kernelInternalTransaction.isOpen();
     }
 
     @Override
-    public Relationship newRelationshipEntity( long id )
-    {
-        return kernelInternalTransaction.newRelationshipEntity( id );
+    public Relationship newRelationshipEntity(long id) {
+        return kernelInternalTransaction.newRelationshipEntity(id);
     }
 
     @Override
-    public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId )
-    {
-        return kernelInternalTransaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId );
+    public Relationship newRelationshipEntity(long id, long startNodeId, int typeId, long endNodeId) {
+        return kernelInternalTransaction.newRelationshipEntity(id, startNodeId, typeId, endNodeId);
     }
 
     @Override
-    public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor )
-    {
-        return kernelInternalTransaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId, cursor );
+    public Relationship newRelationshipEntity(
+            long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor) {
+        return kernelInternalTransaction.newRelationshipEntity(id, startNodeId, typeId, endNodeId, cursor);
     }
 
     @Override
-    public Node newNodeEntity( long nodeId )
-    {
-        return kernelInternalTransaction.newNodeEntity( nodeId );
+    public Node newNodeEntity(long nodeId) {
+        return kernelInternalTransaction.newNodeEntity(nodeId);
     }
 
     @Override
-    public RelationshipType getRelationshipTypeById( int type )
-    {
-        return kernelInternalTransaction.getRelationshipTypeById( type );
+    public RelationshipType getRelationshipTypeById(int type) {
+        return kernelInternalTransaction.getRelationshipTypeById(type);
     }
 
     @Override
-    public ElementIdMapper elementIdMapper()
-    {
+    public ElementIdMapper elementIdMapper() {
         return kernelInternalTransaction.elementIdMapper();
     }
 }

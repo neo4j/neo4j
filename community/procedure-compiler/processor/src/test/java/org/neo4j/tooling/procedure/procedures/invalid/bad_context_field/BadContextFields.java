@@ -28,54 +28,47 @@ import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
 
-public class BadContextFields
-{
+public class BadContextFields {
 
     @Context
     public static GraphDatabaseService shouldBeNonStatic;
+
     public static String value;
+
     @Context
     public final GraphDatabaseService shouldBeNonFinal = null;
+
     @Context
     public GraphDatabaseService db;
+
     @Context
     protected GraphDatabaseService shouldBePublic;
+
     String shouldBeStatic;
 
     @Procedure
-    public void sproc1()
-    {
-    }
+    public void sproc1() {}
 
     @Procedure
-    public void sproc2()
-    {
-    }
+    public void sproc2() {}
 
     @UserFunction
-    public Long function()
-    {
+    public Long function() {
         return 42L;
     }
 
     @UserAggregationFunction
-    public MyAggregation aggregation()
-    {
+    public MyAggregation aggregation() {
         return new MyAggregation();
     }
 
-    public static class MyAggregation
-    {
+    public static class MyAggregation {
         @UserAggregationResult
-        public Long result()
-        {
+        public Long result() {
             return 42L;
         }
 
         @UserAggregationUpdate
-        public void woot( @Name( "undostres" ) String onetwothree )
-        {
-
-        }
+        public void woot(@Name("undostres") String onetwothree) {}
     }
 }

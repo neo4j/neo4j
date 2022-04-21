@@ -22,18 +22,15 @@ package org.neo4j.server.rest.repr;
 /**
  * Representation used in Community Edition. Since SSO is an enterprise feature, this representation does nothing on purpose.
  */
-public class AuthConfigRepresentation extends MappingRepresentation
-{
+public class AuthConfigRepresentation extends MappingRepresentation {
     private static final String AUTH_CONFIG_REPRESENTATION_TYPE = "auth_config";
 
-    public AuthConfigRepresentation()
-    {
-        super( AUTH_CONFIG_REPRESENTATION_TYPE );
+    public AuthConfigRepresentation() {
+        super(AUTH_CONFIG_REPRESENTATION_TYPE);
     }
 
     @Override
-    public void serialize( MappingSerializer serializer )
-    {
-        //do nothing on purpose
+    public void serialize(MappingSerializer serializer) {
+        // do nothing on purpose
     }
 }

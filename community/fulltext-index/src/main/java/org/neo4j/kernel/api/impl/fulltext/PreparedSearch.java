@@ -19,44 +19,38 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Weight;
-
 import java.io.IOException;
 import java.util.function.LongPredicate;
-
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Weight;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 
-class PreparedSearch
-{
+class PreparedSearch {
     private final Neo4jIndexSearcher searcher;
     private final LongPredicate filter;
 
-    PreparedSearch( Neo4jIndexSearcher searcher, LongPredicate filter )
-    {
+    PreparedSearch(Neo4jIndexSearcher searcher, LongPredicate filter) {
         this.searcher = searcher;
         this.filter = filter;
     }
 
-    Neo4jIndexSearcher searcher()
-    {
+    Neo4jIndexSearcher searcher() {
         return searcher;
     }
 
-    ValuesIterator search( Query query, IndexQueryConstraints constraints, StatsCollector statsCollector ) throws IOException
-    {
-        FulltextResultCollector collector = new FulltextResultCollector( constraints, filter );
+    ValuesIterator search(Query query, IndexQueryConstraints constraints, StatsCollector statsCollector)
+            throws IOException {
+        FulltextResultCollector collector = new FulltextResultCollector(constraints, filter);
 
         // Weights are bonded with the top IndexReaderContext of the index searcher that they are created for.
         // That's why we have to create a new StatsCachingIndexSearcher, and a new weight, for every index partition.
         // However, the important thing is that we re-use the statsCollector.
-        StatsCachingIndexSearcher statsCachingIndexSearcher = new StatsCachingIndexSearcher( this, statsCollector );
-        Weight weight = statsCachingIndexSearcher.createWeight( query, collector.scoreMode(), 1 );
+        StatsCachingIndexSearcher statsCachingIndexSearcher = new StatsCachingIndexSearcher(this, statsCollector);
+        Weight weight = statsCachingIndexSearcher.createWeight(query, collector.scoreMode(), 1);
 
-        searcher.search( weight, collector );
+        searcher.search(weight, collector);
         return collector.iterator();
     }
 }

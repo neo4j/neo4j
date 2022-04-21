@@ -30,8 +30,7 @@ package org.neo4j.cursor;
  * {@link #next()} has been done, or if it returned false, then such accessor methods throw {@link
  * IllegalStateException}.
  */
-public interface Cursor<T> extends RawCursor<T,RuntimeException>
-{
+public interface Cursor<T> extends RawCursor<T, RuntimeException> {
     @Override
     boolean next();
 

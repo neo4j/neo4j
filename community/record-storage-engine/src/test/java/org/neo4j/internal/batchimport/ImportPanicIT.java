@@ -19,8 +19,12 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.csv.reader.Configuration.COMMAS;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -28,7 +32,8 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.function.Supplier;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.CharReadable;
@@ -57,23 +62,17 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.csv.reader.Configuration.COMMAS;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @Neo4jLayoutExtension
-@ExtendWith( RandomExtension.class )
-class ImportPanicIT
-{
+@ExtendWith(RandomExtension.class)
+class ImportPanicIT {
     private static final int BUFFER_SIZE = 1000;
 
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private RandomSupport random;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
@@ -82,68 +81,70 @@ class ImportPanicIT
      * paniced would hang the import entirely.
      */
     @Test
-    void shouldExitAndThrowExceptionOnPanic() throws Exception
-    {
-        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
-        {
+    void shouldExitAndThrowExceptionOnPanic() throws Exception {
+        try (JobScheduler jobScheduler = new ThreadPoolJobScheduler()) {
             BatchImporter importer = new ParallelBatchImporter(
-                    databaseLayout, testDirectory.getFileSystem(), PageCacheTracer.NULL,
-                    Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitor.INVISIBLE, AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL,
-                    Config.defaults( GraphDatabaseSettings.record_format_created_db, GraphDatabaseSettings.DatabaseRecordFormat.standard ),
-                    Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
-                    LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE,
-                    new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
-            Iterable<DataFactory> nodeData =
-                DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
+                    databaseLayout,
+                    testDirectory.getFileSystem(),
+                    PageCacheTracer.NULL,
+                    Configuration.DEFAULT,
+                    NullLogService.getInstance(),
+                    ExecutionMonitor.INVISIBLE,
+                    AdditionalInitialIds.EMPTY,
+                    EMPTY_LOG_TAIL,
+                    Config.defaults(
+                            GraphDatabaseSettings.record_format_created_db,
+                            GraphDatabaseSettings.DatabaseRecordFormat.standard),
+                    Monitor.NO_MONITOR,
+                    jobScheduler,
+                    Collector.EMPTY,
+                    LogFilesInitializer.NULL,
+                    IndexImporterFactory.EMPTY,
+                    EmptyMemoryTracker.INSTANCE,
+                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+            Iterable<DataFactory> nodeData = DataFactories.datas(DataFactories.data(
+                    InputEntityDecorators.NO_DECORATOR, fileAsCharReadable(nodeCsvFileWithBrokenEntries())));
             Input brokenCsvInput = new CsvInput(
-                nodeData, DataFactories.defaultFormatNodeFileHeader(),
-                DataFactories.datas(), DataFactories.defaultFormatRelationshipFileHeader(),
-                IdType.ACTUAL,
-                csvConfigurationWithLowBufferSize(),
-                false, CsvInput.NO_MONITOR, INSTANCE );
-            var e = assertThrows( InputException.class, () -> importer.doImport( brokenCsvInput ) );
-            assertTrue( e.getCause() instanceof DataAfterQuoteException );
+                    nodeData,
+                    DataFactories.defaultFormatNodeFileHeader(),
+                    DataFactories.datas(),
+                    DataFactories.defaultFormatRelationshipFileHeader(),
+                    IdType.ACTUAL,
+                    csvConfigurationWithLowBufferSize(),
+                    false,
+                    CsvInput.NO_MONITOR,
+                    INSTANCE);
+            var e = assertThrows(InputException.class, () -> importer.doImport(brokenCsvInput));
+            assertTrue(e.getCause() instanceof DataAfterQuoteException);
         }
     }
 
-    private static org.neo4j.csv.reader.Configuration csvConfigurationWithLowBufferSize()
-    {
-        return COMMAS.toBuilder().withBufferSize( BUFFER_SIZE ).build();
+    private static org.neo4j.csv.reader.Configuration csvConfigurationWithLowBufferSize() {
+        return COMMAS.toBuilder().withBufferSize(BUFFER_SIZE).build();
     }
 
-    private static Supplier<CharReadable> fileAsCharReadable( Path path )
-    {
-        return () ->
-        {
-            try
-            {
-                return Readables.files( StandardCharsets.UTF_8, path );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+    private static Supplier<CharReadable> fileAsCharReadable(Path path) {
+        return () -> {
+            try {
+                return Readables.files(StandardCharsets.UTF_8, path);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         };
     }
 
-    private Path nodeCsvFileWithBrokenEntries() throws IOException
-    {
-        Path file = testDirectory.file( "broken-node-data.csv" );
-        try ( PrintWriter writer = new PrintWriter(
-                testDirectory.getFileSystem().openAsWriter( file, StandardCharsets.UTF_8, false ) ) )
-        {
-            writer.println( ":ID,name" );
+    private Path nodeCsvFileWithBrokenEntries() throws IOException {
+        Path file = testDirectory.file("broken-node-data.csv");
+        try (PrintWriter writer =
+                new PrintWriter(testDirectory.getFileSystem().openAsWriter(file, StandardCharsets.UTF_8, false))) {
+            writer.println(":ID,name");
             int numberOfLines = BUFFER_SIZE * 10;
-            int brokenLine = random.nextInt( numberOfLines );
-            for ( int i = 0; i < numberOfLines; i++ )
-            {
-                if ( i == brokenLine )
-                {
-                    writer.println( i + ",\"broken\"line" );
-                }
-                else
-                {
-                    writer.println( i + ",name" + i );
+            int brokenLine = random.nextInt(numberOfLines);
+            for (int i = 0; i < numberOfLines; i++) {
+                if (i == brokenLine) {
+                    writer.println(i + ",\"broken\"line");
+                } else {
+                    writer.println(i + ",name" + i);
                 }
             }
         }

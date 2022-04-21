@@ -19,208 +19,190 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
 import java.util.Set;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-
-class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
-{
+class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase {
     @Test
-    void shouldListAllIndexes() throws Exception
-    {
+    void shouldListAllIndexes() throws Exception {
         // Given
-        IndexDescriptor firstExpectedIndex = createIndex( label1, propertyKey );
-        IndexDescriptor secondExpectedIndex = createIndex( label2, propertyKey );
+        IndexDescriptor firstExpectedIndex = createIndex(label1, propertyKey);
+        IndexDescriptor secondExpectedIndex = createIndex(label2, propertyKey);
 
         // When
-        Set<IndexDescriptor> indexes = asSet( storageReader.indexesGetAll() );
+        Set<IndexDescriptor> indexes = asSet(storageReader.indexesGetAll());
 
         // Then
-        Set<IndexDescriptor> expectedIndexes = asSet( firstExpectedIndex, secondExpectedIndex );
-        assertEquals( expectedIndexes, indexes );
+        Set<IndexDescriptor> expectedIndexes = asSet(firstExpectedIndex, secondExpectedIndex);
+        assertEquals(expectedIndexes, indexes);
     }
 
     @Test
-    void shouldListAllIndexesAtTimeOfSnapshot() throws Exception
-    {
+    void shouldListAllIndexesAtTimeOfSnapshot() throws Exception {
         // Given
-        IndexDescriptor expectedIndex = createIndex( label1, propertyKey );
+        IndexDescriptor expectedIndex = createIndex(label1, propertyKey);
 
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
-        createIndex( label2, propertyKey );
-        Set<IndexDescriptor> indexes = asSet( snapshot.indexesGetAll() );
+        createIndex(label2, propertyKey);
+        Set<IndexDescriptor> indexes = asSet(snapshot.indexesGetAll());
 
         // Then
-        assertEquals( asSet( expectedIndex ), indexes );
+        assertEquals(asSet(expectedIndex), indexes);
     }
 
     @Test
-    void shouldListAllConstraints() throws Exception
-    {
+    void shouldListAllConstraints() throws Exception {
         // Given
-        createUniquenessConstraint( label1, propertyKey );
-        createUniquenessConstraint( label2, propertyKey );
+        createUniquenessConstraint(label1, propertyKey);
+        createUniquenessConstraint(label2, propertyKey);
 
         // When
-        Set<ConstraintDescriptor> constraints = asSet( storageReader.constraintsGetAll() );
+        Set<ConstraintDescriptor> constraints = asSet(storageReader.constraintsGetAll());
 
         // Then
-        Set<ConstraintDescriptor> expectedConstraints = asSet(
-                uniqueConstraintDescriptor( label1, propertyKey ),
-                uniqueConstraintDescriptor( label2, propertyKey ) );
+        Set<ConstraintDescriptor> expectedConstraints =
+                asSet(uniqueConstraintDescriptor(label1, propertyKey), uniqueConstraintDescriptor(label2, propertyKey));
 
-        assertEquals( expectedConstraints, constraints );
+        assertEquals(expectedConstraints, constraints);
     }
 
     @Test
-    void shouldListAllConstraintsAtTimeOfSnapshot() throws Exception
-    {
+    void shouldListAllConstraintsAtTimeOfSnapshot() throws Exception {
         // Given
-        createUniquenessConstraint( label1, propertyKey );
+        createUniquenessConstraint(label1, propertyKey);
 
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
-        createUniquenessConstraint( label2, propertyKey );
-        Set<ConstraintDescriptor> constraints = asSet( snapshot.constraintsGetAll() );
+        createUniquenessConstraint(label2, propertyKey);
+        Set<ConstraintDescriptor> constraints = asSet(snapshot.constraintsGetAll());
 
         // Then
-        Set<ConstraintDescriptor> expectedConstraints = asSet(
-                uniqueConstraintDescriptor( label1, propertyKey ) );
+        Set<ConstraintDescriptor> expectedConstraints = asSet(uniqueConstraintDescriptor(label1, propertyKey));
 
-        assertEquals( expectedConstraints, constraints );
+        assertEquals(expectedConstraints, constraints);
     }
 
     @Test
-    void shouldListAllIndexesForLabel() throws Exception
-    {
+    void shouldListAllIndexesForLabel() throws Exception {
         // Given
-        IndexDescriptor expectedUniquenessIndex = createUniquenessConstraint( label1, propertyKey );
-        IndexDescriptor expectedIndex = createIndex( label1, otherPropertyKey );
-        createUniquenessConstraint( label2, propertyKey );
-        createIndex( label2, otherPropertyKey );
+        IndexDescriptor expectedUniquenessIndex = createUniquenessConstraint(label1, propertyKey);
+        IndexDescriptor expectedIndex = createIndex(label1, otherPropertyKey);
+        createUniquenessConstraint(label2, propertyKey);
+        createIndex(label2, otherPropertyKey);
 
         // When
-        Set<IndexDescriptor> indexes = asSet( storageReader.indexesGetForLabel( labelId( label1 ) ) );
+        Set<IndexDescriptor> indexes = asSet(storageReader.indexesGetForLabel(labelId(label1)));
 
         // Then
-        Set<IndexDescriptor> expectedIndexes = asSet( expectedIndex, expectedUniquenessIndex );
-        assertEquals( expectedIndexes, indexes );
+        Set<IndexDescriptor> expectedIndexes = asSet(expectedIndex, expectedUniquenessIndex);
+        assertEquals(expectedIndexes, indexes);
     }
 
     @Test
-    void shouldListAllIndexesForLabelAtTimeOfSnapshot() throws Exception
-    {
+    void shouldListAllIndexesForLabelAtTimeOfSnapshot() throws Exception {
         // Given
-        IndexDescriptor expectedUniquenessIndex = createUniquenessConstraint( label1, propertyKey );
-        IndexDescriptor expectedIndex = createIndex( label1, otherPropertyKey );
-        createUniquenessConstraint( label2, propertyKey );
-        createIndex( label2, otherPropertyKey );
+        IndexDescriptor expectedUniquenessIndex = createUniquenessConstraint(label1, propertyKey);
+        IndexDescriptor expectedIndex = createIndex(label1, otherPropertyKey);
+        createUniquenessConstraint(label2, propertyKey);
+        createIndex(label2, otherPropertyKey);
 
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
-        Set<IndexDescriptor> indexes = asSet( snapshot.indexesGetForLabel( labelId( label1 ) ) );
+        Set<IndexDescriptor> indexes = asSet(snapshot.indexesGetForLabel(labelId(label1)));
 
         // Then
-        Set<IndexDescriptor> expectedIndexes = asSet( expectedIndex, expectedUniquenessIndex );
-        assertEquals( expectedIndexes, indexes );
+        Set<IndexDescriptor> expectedIndexes = asSet(expectedIndex, expectedUniquenessIndex);
+        assertEquals(expectedIndexes, indexes);
     }
 
     @Test
-    void shouldListAllIndexesForRelationshipType() throws Exception
-    {
+    void shouldListAllIndexesForRelationshipType() throws Exception {
         // Given
-        IndexDescriptor expectedIndex = createIndex( relType1, propertyKey );
-        createIndex( relType2, propertyKey );
+        IndexDescriptor expectedIndex = createIndex(relType1, propertyKey);
+        createIndex(relType2, propertyKey);
 
         // When
-        Set<IndexDescriptor> indexes = asSet( storageReader.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
+        Set<IndexDescriptor> indexes = asSet(storageReader.indexesGetForRelationshipType(relationshipTypeId(relType1)));
 
         // Then
 
-        assertEquals( asSet( expectedIndex ), indexes );
+        assertEquals(asSet(expectedIndex), indexes);
     }
 
     @Test
-    void shouldListAllIndexesForRelationshipTypeAtTimeOfSnapshot() throws Exception
-    {
+    void shouldListAllIndexesForRelationshipTypeAtTimeOfSnapshot() throws Exception {
         // Given
-        IndexDescriptor expectedIndex = createIndex( relType1, propertyKey );
-        createIndex( relType2, propertyKey );
+        IndexDescriptor expectedIndex = createIndex(relType1, propertyKey);
+        createIndex(relType2, propertyKey);
 
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
-        Set<IndexDescriptor> indexes = asSet( snapshot.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
+        Set<IndexDescriptor> indexes = asSet(snapshot.indexesGetForRelationshipType(relationshipTypeId(relType1)));
 
         // Then
-        assertEquals( asSet( expectedIndex ), indexes );
+        assertEquals(asSet(expectedIndex), indexes);
     }
 
     @Test
-    void shouldListAllConstraintsForLabel() throws Exception
-    {
+    void shouldListAllConstraintsForLabel() throws Exception {
         // Given
-        createUniquenessConstraint( label1, propertyKey );
-        createUniquenessConstraint( label2, propertyKey );
+        createUniquenessConstraint(label1, propertyKey);
+        createUniquenessConstraint(label2, propertyKey);
 
         // When
-        Set<ConstraintDescriptor> constraints = asSet( storageReader.constraintsGetForLabel( labelId( label1 ) ) );
+        Set<ConstraintDescriptor> constraints = asSet(storageReader.constraintsGetForLabel(labelId(label1)));
 
         // Then
-        Set<ConstraintDescriptor> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
+        Set<ConstraintDescriptor> expectedConstraints = asSet(uniqueConstraintDescriptor(label1, propertyKey));
 
-        assertEquals( expectedConstraints, constraints );
+        assertEquals(expectedConstraints, constraints);
     }
 
     @Test
-    void shouldListAllConstraintsForLabelAtTimeOfSnapshot() throws Exception
-    {
+    void shouldListAllConstraintsForLabelAtTimeOfSnapshot() throws Exception {
         // Given
-        createUniquenessConstraint( label1, propertyKey );
-        createUniquenessConstraint( label2, propertyKey );
+        createUniquenessConstraint(label1, propertyKey);
+        createUniquenessConstraint(label2, propertyKey);
 
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
-        createUniquenessConstraint( label1, otherPropertyKey );
-        Set<ConstraintDescriptor> constraints = asSet( snapshot.constraintsGetForLabel( labelId( label1 ) ) );
+        createUniquenessConstraint(label1, otherPropertyKey);
+        Set<ConstraintDescriptor> constraints = asSet(snapshot.constraintsGetForLabel(labelId(label1)));
 
         // Then
-        Set<ConstraintDescriptor> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
+        Set<ConstraintDescriptor> expectedConstraints = asSet(uniqueConstraintDescriptor(label1, propertyKey));
 
-        assertEquals( expectedConstraints, constraints );
+        assertEquals(expectedConstraints, constraints);
     }
 
     @Test
-    void shouldListAllConstraintsForLabelAndProperty() throws Exception
-    {
+    void shouldListAllConstraintsForLabelAndProperty() throws Exception {
         // Given
-        createUniquenessConstraint( label1, propertyKey );
-        createUniquenessConstraint( label1, otherPropertyKey );
+        createUniquenessConstraint(label1, propertyKey);
+        createUniquenessConstraint(label1, otherPropertyKey);
 
         // When
-        Set<ConstraintDescriptor> constraints = asSet(
-                storageReader.constraintsGetForSchema( uniqueConstraintDescriptor( label1, propertyKey ).schema() ) );
+        Set<ConstraintDescriptor> constraints = asSet(storageReader.constraintsGetForSchema(
+                uniqueConstraintDescriptor(label1, propertyKey).schema()));
 
         // Then
-        Set<ConstraintDescriptor> expectedConstraints = asSet(
-                uniqueConstraintDescriptor( label1, propertyKey ) );
+        Set<ConstraintDescriptor> expectedConstraints = asSet(uniqueConstraintDescriptor(label1, propertyKey));
 
-        assertEquals( expectedConstraints, constraints );
+        assertEquals(expectedConstraints, constraints);
     }
 
-    private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )
-    {
-        int labelId = labelId( label );
-        int propKeyId = propertyKeyId( propertyKey );
-        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propKeyId );
+    private ConstraintDescriptor uniqueConstraintDescriptor(Label label, String propertyKey) {
+        int labelId = labelId(label);
+        int propKeyId = propertyKeyId(propertyKey);
+        return ConstraintDescriptorFactory.uniqueForLabel(labelId, propKeyId);
     }
 }

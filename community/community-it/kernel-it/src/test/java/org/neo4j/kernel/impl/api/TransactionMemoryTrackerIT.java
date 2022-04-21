@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -30,41 +32,33 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @DbmsExtension
-class TransactionMemoryTrackerIT
-{
+class TransactionMemoryTrackerIT {
     @Inject
     private GraphDatabaseAPI db;
 
     @Test
-    void failToAllocateOnClosedTransaction() throws TransactionFailureException
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
+    void failToAllocateOnClosedTransaction() throws TransactionFailureException {
+        try (Transaction transaction = db.beginTx()) {
             KernelTransaction kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             kernelTransaction.closeTransaction();
 
             MemoryTracker memoryTracker = kernelTransaction.memoryTracker();
-            assertThrows( AssertionError.class, () -> memoryTracker.allocateHeap( 1 ) );
-            assertThrows( AssertionError.class, () -> memoryTracker.allocateNative( 1 ) );
+            assertThrows(AssertionError.class, () -> memoryTracker.allocateHeap(1));
+            assertThrows(AssertionError.class, () -> memoryTracker.allocateNative(1));
         }
     }
 
     @Test
-    void allocateOnOpenTransaction()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
+    void allocateOnOpenTransaction() {
+        try (Transaction transaction = db.beginTx()) {
             KernelTransaction kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
 
             MemoryTracker memoryTracker = kernelTransaction.memoryTracker();
-            assertDoesNotThrow( () -> memoryTracker.allocateHeap( 1 ) );
-            assertDoesNotThrow( () -> memoryTracker.allocateNative( 1 ) );
-            assertDoesNotThrow( () -> memoryTracker.releaseNative( 1 ) );
-            assertDoesNotThrow( () -> memoryTracker.releaseHeap( 1 ) );
+            assertDoesNotThrow(() -> memoryTracker.allocateHeap(1));
+            assertDoesNotThrow(() -> memoryTracker.allocateNative(1));
+            assertDoesNotThrow(() -> memoryTracker.releaseNative(1));
+            assertDoesNotThrow(() -> memoryTracker.releaseHeap(1));
         }
     }
 }

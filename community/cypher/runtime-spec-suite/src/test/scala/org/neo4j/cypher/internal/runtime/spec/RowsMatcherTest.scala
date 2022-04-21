@@ -28,7 +28,7 @@ import org.neo4j.values.virtual.VirtualValues
 
 import scala.util.Random
 
-class RowsMatcherTest extends CypherFunSuite with TestName  {
+class RowsMatcherTest extends CypherFunSuite with TestName {
 
   private val NO_ROWS = IndexedSeq[Array[AnyValue]]()
 
@@ -36,24 +36,30 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
     AnyRowsMatcher.matchesRaw(Array[String](), NO_ROWS) should be(true)
     AnyRowsMatcher.matchesRaw(Array("a"), NO_ROWS) should be(true)
     AnyRowsMatcher.matchesRaw(Array("a"), Array(row(1))) should be(true)
-    AnyRowsMatcher.matchesRaw(Array("X", "Y", "Z"), Array(
-      row(1, 0, 4),
-      row(4, 0, 4),
-      row(1, 2, 4),
-      row(2, 0, 4)
-    )) should be(true)
+    AnyRowsMatcher.matchesRaw(
+      Array("X", "Y", "Z"),
+      Array(
+        row(1, 0, 4),
+        row(4, 0, 4),
+        row(1, 2, 4),
+        row(2, 0, 4)
+      )
+    ) should be(true)
   }
 
   test("NoRowsMatcher") {
     NoRowsMatcher.matchesRaw(Array[String](), NO_ROWS) should be(true)
     NoRowsMatcher.matchesRaw(Array("a"), NO_ROWS) should be(true)
     NoRowsMatcher.matchesRaw(Array("a"), Array(row(1))) should be(false)
-    NoRowsMatcher.matchesRaw(Array("X", "Y", "Z"), Array(
-      row(1, 0, 4),
-      row(4, 0, 4),
-      row(1, 2, 4),
-      row(2, 0, 4)
-    )) should be(false)
+    NoRowsMatcher.matchesRaw(
+      Array("X", "Y", "Z"),
+      Array(
+        row(1, 0, 4),
+        row(4, 0, 4),
+        row(1, 2, 4),
+        row(2, 0, 4)
+      )
+    ) should be(false)
   }
 
   test("EqualInAnyOrder") {
@@ -70,7 +76,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(4, 0, 4),
       row(4, 0, 4),
       row(1, 2, 4),
-      row(2, 0, 4))
+      row(2, 0, 4)
+    )
 
     EqualInAnyOrder(rows).matchesRaw(Array("X", "Y", "Z"), rows) should be(true)
     EqualInAnyOrder(rows).matchesRaw(Array("X", "Y", "Z"), rows.tail :+ rows.head) should be(true)
@@ -92,7 +99,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(4, 0, 4),
       row(4, 0, 4),
       row(1, 2, 4),
-      row(2, 0, 4))
+      row(2, 0, 4)
+    )
 
     EqualInAnyOrder(rows).matchesRaw(Array("X", "Y", "Z"), rows) should be(true)
     EqualInOrder(rows).matchesRaw(Array("X", "Y", "Z"), rows.tail :+ rows.head) should be(false)
@@ -101,7 +109,7 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
   }
 
   test("EqualInAnyOrder.matches") {
-    val rows = (0 until 100).map(i => row(i*100))
+    val rows = (0 until 100).map(i => row(i * 100))
     val rowsAt21 = (0 until 7).map(i => row(2100 + i))
 
     EqualInAnyOrder(rows).matches(Array("X"), rows) should be(RowsMatch)
@@ -132,7 +140,9 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
           | - Int(8500)
           | - Int(8600)
           |    ... 13 matching rows ...
-          |""".stripMargin.replace("\r\n", "\n")))
+          |""".stripMargin.replace("\r\n", "\n")
+      )
+    )
 
     EqualInAnyOrder(rows).matches(Array("X"), rows.slice(1, 99) :+ row(-1) :+ row(999999)) should be(
       RowsDontMatch(
@@ -141,15 +151,17 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
           |    ... 98 matching rows ...
           | - Int(9900)
           | + Int(999999)
-          |""".stripMargin.replace("\r\n", "\n")))
+          |""".stripMargin.replace("\r\n", "\n")
+      )
+    )
   }
 
   test("listInAnyOrder basic") {
     val random = new Random()
 
     val elements = (0 until 100).map(i => Values.intValue(i))
-    val ordered = VirtualValues.list(elements.toArray:_*)
-    val shuffled = VirtualValues.list(random.shuffle(elements).toArray:_*)
+    val ordered = VirtualValues.list(elements.toArray: _*)
+    val shuffled = VirtualValues.list(random.shuffle(elements).toArray: _*)
 
     val got = IndexedSeq(Array[AnyValue](ordered))
     val expected = IndexedSeq(Array[AnyValue](shuffled))
@@ -165,9 +177,9 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
         (0 until 100).map(_ => {
           val rawElements = (0 until 10).map(j => Values.intValue(j))
           val elements = if (shuffle) random.shuffle(rawElements) else rawElements
-          VirtualValues.list(elements.toArray:_*)
+          VirtualValues.list(elements.toArray: _*)
         })
-      VirtualValues.list(outerElements.toArray:_*)
+      VirtualValues.list(outerElements.toArray: _*)
     }
 
     val ordered = nestedLists(shuffle = false)
@@ -189,7 +201,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(4, 0, 4),
       row(4, 0, 4),
       row(1, 2, 4),
-      row(2, 2, 4))
+      row(2, 2, 4)
+    )
 
     new GroupBy(None, None, "a").matchesRaw(Array("a", "b", "c"), rows) should be(false)
     new GroupBy(None, None, "b").matchesRaw(Array("a", "b", "c"), rows) should be(true)
@@ -204,7 +217,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(1, 2),
       row(2, 2),
       row(2, 2),
-      row(4, 1))
+      row(4, 1)
+    )
 
     new GroupBy(None, None, "a", "b").matchesRaw(Array("a", "b"), rows) should be(true)
     new GroupBy(None, None, "b", "a").matchesRaw(Array("a", "b"), rows) should be(true)
@@ -220,7 +234,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(1, 0, 4),
       row(1, 2, 4),
       row(3, 2, 4),
-      row(3, 2, 4))
+      row(3, 2, 4)
+    )
 
     new GroupBy(None, Some(1), "a").matchesRaw(Array("a", "b", "c"), rows) should be(false)
     new GroupBy(None, Some(4), "a").matchesRaw(Array("a", "b", "c"), rows) should be(false)
@@ -238,7 +253,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(1, 0, 4),
       row(1, 2, 4),
       row(3, 2, 4),
-      row(3, 2, 4))
+      row(3, 2, 4)
+    )
 
     new GroupBy(Some(1), Some(3), "b").matchesRaw(Array("a", "b", "c"), rows) should be(false)
     new GroupBy(Some(2), Some(3), "b").matchesRaw(Array("a", "b", "c"), rows) should be(true)
@@ -256,7 +272,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(4, 0, 2),
       row(4, 0, 3),
       row(1, 2, 4),
-      row(2, 2, 5))
+      row(2, 2, 5)
+    )
 
     new Ascending("a").matchesRaw(Array("a", "b", "c"), rows) should be(false)
     new Ascending("b").matchesRaw(Array("a", "b", "c"), rows) should be(true)
@@ -272,7 +289,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(4, 1, 4),
       row(4, 1, 3),
       row(1, 0, 2),
-      row(2, 0, 1))
+      row(2, 0, 1)
+    )
 
     new Descending("a").matchesRaw(Array("a", "b", "c"), rows) should be(false)
     new Descending("b").matchesRaw(Array("a", "b", "c"), rows) should be(true)
@@ -290,7 +308,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(2, 4, 5),
       row(2, 3, 6),
       row(2, 2, 6),
-      row(2, 1, 6))
+      row(2, 1, 6)
+    )
 
     new GroupBy(None, None, "a").desc("b").asc("c").matchesRaw(Array("a", "b", "c"), rows) should be(true)
     new GroupBy(None, None, "c").desc("a").matchesRaw(Array("a", "b", "c"), rows) should be(true)
@@ -319,7 +338,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
       row(3, 2, 1),
       row(3, 2, 2),
       row(3, 3, 1),
-      row(3, 3, 2))
+      row(3, 3, 2)
+    )
 
     new GroupBy(None, None, "a").groupBy("b").groupBy("c").matchesRaw(Array("a", "b", "c"), rows) should be(true)
     new Ascending("a").asc("b").asc("c").matchesRaw(Array("a", "b", "c"), rows) should be(true)

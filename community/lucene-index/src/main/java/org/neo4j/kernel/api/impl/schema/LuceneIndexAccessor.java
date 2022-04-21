@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.ToLongFunction;
-
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -39,103 +37,84 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.values.storable.Value;
 
-public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,SchemaIndex>
-{
+public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader, SchemaIndex> {
 
     private final LuceneIndexValueValidator valueValidator;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, IndexUpdateIgnoreStrategy ignoreStrategy )
-    {
-        super( luceneIndex, descriptor, ignoreStrategy );
-        this.valueValidator = new LuceneIndexValueValidator( descriptor, tokenNameLookup );
+    public LuceneIndexAccessor(
+            SchemaIndex luceneIndex,
+            IndexDescriptor descriptor,
+            TokenNameLookup tokenNameLookup,
+            IndexUpdateIgnoreStrategy ignoreStrategy) {
+        super(luceneIndex, descriptor, ignoreStrategy);
+        this.valueValidator = new LuceneIndexValueValidator(descriptor, tokenNameLookup);
     }
 
     @Override
-    protected IndexUpdater getIndexUpdater( IndexUpdateMode mode )
-    {
-        return new LuceneSchemaIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
+    protected IndexUpdater getIndexUpdater(IndexUpdateMode mode) {
+        return new LuceneSchemaIndexUpdater(mode.requiresIdempotency(), mode.requiresRefresh());
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
-    {
-        return super.newAllEntriesReader( LuceneDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive );
+    public BoundedIterable<Long> newAllEntriesValueReader(
+            long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
+        return super.newAllEntriesReader(LuceneDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive);
     }
 
     @Override
-    public IndexEntriesReader[] newAllEntriesValueReader( ToLongFunction<Document> entityIdReader, int numPartitions )
-    {
-        return super.newAllEntriesValueReader( LuceneDocumentStructure::getNodeId, numPartitions );
+    public IndexEntriesReader[] newAllEntriesValueReader(ToLongFunction<Document> entityIdReader, int numPartitions) {
+        return super.newAllEntriesValueReader(LuceneDocumentStructure::getNodeId, numPartitions);
     }
 
     @Override
-    public void validateBeforeCommit( long entityId, Value[] tuple )
-    {
-        valueValidator.validate( entityId, tuple );
+    public void validateBeforeCommit(long entityId, Value[] tuple) {
+        valueValidator.validate(entityId, tuple);
     }
 
-    private class LuceneSchemaIndexUpdater extends AbstractLuceneIndexUpdater
-    {
+    private class LuceneSchemaIndexUpdater extends AbstractLuceneIndexUpdater {
 
-        LuceneSchemaIndexUpdater( boolean idempotent, boolean refresh )
-        {
-            super( idempotent, refresh );
+        LuceneSchemaIndexUpdater(boolean idempotent, boolean refresh) {
+            super(idempotent, refresh);
         }
 
         @Override
-        protected void addIdempotent( long entityId, Value[] values )
-        {
-            try
-            {
-                Document document = LuceneDocumentStructure.documentRepresentingProperties( entityId, values );
-                writer.updateOrDeleteDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ), document );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+        protected void addIdempotent(long entityId, Value[] values) {
+            try {
+                Document document = LuceneDocumentStructure.documentRepresentingProperties(entityId, values);
+                writer.updateOrDeleteDocument(LuceneDocumentStructure.newTermForChangeOrRemove(entityId), document);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
 
         @Override
-        protected void add( long entityId, Value[] values )
-        {
-            try
-            {
-                Document document = LuceneDocumentStructure.documentRepresentingProperties( entityId, values );
-                writer.nullableAddDocument( document );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+        protected void add(long entityId, Value[] values) {
+            try {
+                Document document = LuceneDocumentStructure.documentRepresentingProperties(entityId, values);
+                writer.nullableAddDocument(document);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
 
         @Override
-        protected void change( long entityId, Value[] values )
-        {
-            try
-            {
-                Term term = LuceneDocumentStructure.newTermForChangeOrRemove( entityId );
-                Document document = LuceneDocumentStructure.documentRepresentingProperties( entityId, values );
-                writer.updateOrDeleteDocument( term, document );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+        protected void change(long entityId, Value[] values) {
+            try {
+                Term term = LuceneDocumentStructure.newTermForChangeOrRemove(entityId);
+                Document document = LuceneDocumentStructure.documentRepresentingProperties(entityId, values);
+                writer.updateOrDeleteDocument(term, document);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
 
         @Override
-        protected void remove( long entityId )
-        {
-            try
-            {
-                Term term = LuceneDocumentStructure.newTermForChangeOrRemove( entityId );
-                writer.deleteDocuments( term );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+        protected void remove(long entityId) {
+            try {
+                Term term = LuceneDocumentStructure.newTermForChangeOrRemove(entityId);
+                writer.deleteDocuments(term);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }

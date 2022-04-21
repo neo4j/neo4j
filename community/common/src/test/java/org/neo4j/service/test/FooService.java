@@ -19,17 +19,14 @@
  */
 package org.neo4j.service.test;
 
-public class FooService implements SomeService
-{
+public class FooService implements SomeService {
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "foo";
     }
 
     @Override
-    public int getPriority()
-    {
+    public int getPriority() {
         return 1;
     }
 }

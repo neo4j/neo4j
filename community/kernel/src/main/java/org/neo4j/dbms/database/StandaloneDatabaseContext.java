@@ -19,55 +19,47 @@
  */
 package org.neo4j.dbms.database;
 
+import static java.util.Objects.requireNonNull;
+
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
-import static java.util.Objects.requireNonNull;
-
-public class StandaloneDatabaseContext implements DatabaseContext
-{
+public class StandaloneDatabaseContext implements DatabaseContext {
     private final Database database;
     private final GraphDatabaseFacade databaseFacade;
     private volatile Throwable failureCause;
 
-    public StandaloneDatabaseContext( Database database )
-    {
-        requireNonNull( database );
+    public StandaloneDatabaseContext(Database database) {
+        requireNonNull(database);
         this.database = database;
         this.databaseFacade = database.getDatabaseFacade();
     }
 
     @Override
-    public Database database()
-    {
+    public Database database() {
         return database;
     }
 
     @Override
-    public GraphDatabaseFacade databaseFacade()
-    {
+    public GraphDatabaseFacade databaseFacade() {
         return databaseFacade;
     }
 
-    public void fail( Throwable failureCause )
-    {
+    public void fail(Throwable failureCause) {
         this.failureCause = failureCause;
     }
 
-    public boolean isFailed()
-    {
+    public boolean isFailed() {
         return failureCause != null;
     }
 
-    public Throwable failureCause()
-    {
+    public Throwable failureCause() {
         return failureCause;
     }
 
     @Override
-    public GraphDatabaseSettings.Mode mode()
-    {
+    public GraphDatabaseSettings.Mode mode() {
         return GraphDatabaseSettings.Mode.SINGLE;
     }
 }

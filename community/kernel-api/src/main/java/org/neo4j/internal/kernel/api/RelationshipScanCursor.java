@@ -22,6 +22,4 @@ package org.neo4j.internal.kernel.api;
 /**
  * Cursor for scanning relationships, that is listing relationships without grouping by source or target node.
  */
-public interface RelationshipScanCursor extends RelationshipDataAccessor, Cursor
-{
-}
+public interface RelationshipScanCursor extends RelationshipDataAccessor, Cursor {}

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import java.util
-
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
@@ -35,6 +33,8 @@ import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues.map
+
+import java.util
 
 class PropertiesFunctionTest extends CypherFunSuite {
 
@@ -77,7 +77,9 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.relationshipAsMap(0, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)).thenReturn(value)
+    when(query.relationshipAsMap(0, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)).thenReturn(
+      value
+    )
 
     properties(rel) should equal(value)
   }

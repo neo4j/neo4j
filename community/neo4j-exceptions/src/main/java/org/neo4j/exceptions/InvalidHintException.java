@@ -24,16 +24,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * The hint in the query does not make sense in itself, regardless of availability of indexes.
  */
-public class InvalidHintException extends Neo4jException
-{
-    public InvalidHintException( String message )
-    {
-        super( message );
+public class InvalidHintException extends Neo4jException {
+    public InvalidHintException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.SemanticError;
     }
 }

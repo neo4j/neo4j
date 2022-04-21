@@ -23,8 +23,7 @@ package org.neo4j.storageengine.api;
  * Many commands have before/after versions of their records. In some scenarios there's a need
  * to parameterize which of those to work with.
  */
-public enum CommandVersion
-{
+public enum CommandVersion {
     /**
      * The "before" version of a command's record. I.e. the record how it looked before changes took place.
      */

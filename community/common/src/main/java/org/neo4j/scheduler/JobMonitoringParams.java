@@ -19,34 +19,34 @@
  */
 package org.neo4j.scheduler;
 
-import java.util.Objects;
-import java.util.function.Supplier;
-
-import org.neo4j.common.Subject;
-
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.common.Subject.SYSTEM;
 
-public class JobMonitoringParams
-{
-    public static final JobMonitoringParams NOT_MONITORED = new JobMonitoringParams( null, null, null, null );
+import java.util.Objects;
+import java.util.function.Supplier;
+import org.neo4j.common.Subject;
+
+public class JobMonitoringParams {
+    public static final JobMonitoringParams NOT_MONITORED = new JobMonitoringParams(null, null, null, null);
 
     private final Subject submitter;
     private final String targetDatabaseName;
     private final String description;
     private final Supplier<String> currentStateDescriptionSupplier;
 
-    public JobMonitoringParams( Subject submitter, String targetDatabaseName, String description, Supplier<String> currentStateDescriptionSupplier )
-    {
-        this.submitter = Objects.requireNonNullElse( submitter, AUTH_DISABLED );
+    public JobMonitoringParams(
+            Subject submitter,
+            String targetDatabaseName,
+            String description,
+            Supplier<String> currentStateDescriptionSupplier) {
+        this.submitter = Objects.requireNonNullElse(submitter, AUTH_DISABLED);
         this.targetDatabaseName = targetDatabaseName;
         this.description = description;
         this.currentStateDescriptionSupplier = currentStateDescriptionSupplier;
     }
 
-    public JobMonitoringParams( Subject submitter, String targetDatabaseName, String description )
-    {
-        this( submitter, targetDatabaseName, description, null );
+    public JobMonitoringParams(Subject submitter, String targetDatabaseName, String description) {
+        this(submitter, targetDatabaseName, description, null);
     }
 
     /**
@@ -54,9 +54,8 @@ public class JobMonitoringParams
      *
      * @param description description of the job used for monitoring purposes.
      */
-    public static JobMonitoringParams systemJob( String description )
-    {
-        return new JobMonitoringParams( SYSTEM, null, description );
+    public static JobMonitoringParams systemJob(String description) {
+        return new JobMonitoringParams(SYSTEM, null, description);
     }
 
     /**
@@ -65,30 +64,24 @@ public class JobMonitoringParams
      * @param targetDatabaseName name of the database this job works with.
      * @param description description of the job used for monitoring purposes.
      */
-    public static JobMonitoringParams systemJob( String targetDatabaseName, String description )
-    {
-        return new JobMonitoringParams( SYSTEM, targetDatabaseName, description );
+    public static JobMonitoringParams systemJob(String targetDatabaseName, String description) {
+        return new JobMonitoringParams(SYSTEM, targetDatabaseName, description);
     }
 
-    public Subject getSubmitter()
-    {
+    public Subject getSubmitter() {
         return submitter;
     }
 
-    public String getTargetDatabaseName()
-    {
+    public String getTargetDatabaseName() {
         return targetDatabaseName;
     }
 
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
-    public String getCurrentStateDescription()
-    {
-        if ( currentStateDescriptionSupplier == null )
-        {
+    public String getCurrentStateDescription() {
+        if (currentStateDescriptionSupplier == null) {
             return null;
         }
 
@@ -96,12 +89,10 @@ public class JobMonitoringParams
     }
 
     @Override
-    public String toString()
-    {
-        return "JobMonitoringParams{" +
-                "submitter=" + submitter +
-                ", targetDatabaseName='" + targetDatabaseName + '\'' +
-                ", description='" + description + '\'' +
-                '}';
+    public String toString() {
+        return "JobMonitoringParams{" + "submitter="
+                + submitter + ", targetDatabaseName='"
+                + targetDatabaseName + '\'' + ", description='"
+                + description + '\'' + '}';
     }
 }

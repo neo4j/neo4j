@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.util;
 
 import org.neo4j.graphdb.Entity;
 
-public interface WrappingEntity<T extends Entity>
-{
+public interface WrappingEntity<T extends Entity> {
     T getEntity();
 }

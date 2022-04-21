@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LimitPipeTest extends CypherFunSuite {
+
   test("limit 0 should not pull anything from the incoming iterator") {
     // Given
     val inputIterator = mock[Iterator[CypherRow]](new ReturnsMocks)

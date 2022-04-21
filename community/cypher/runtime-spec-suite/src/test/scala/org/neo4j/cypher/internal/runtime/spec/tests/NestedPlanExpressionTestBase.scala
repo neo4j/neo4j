@@ -33,13 +33,14 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
 
 import java.util.Collections
+
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should support nested plan collect with no rows") {
     // when
@@ -297,7 +298,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
       val seas = nodeGraph(7, "Sea")
       seas.zipWithIndex.foreach {
         case (sea, seaNumber) =>
-          nodePropertyGraph(10, { case i => Map("isPirate" -> (seaNumber == 2 && i == 9))}, "Ship")
+          nodePropertyGraph(10, { case i => Map("isPirate" -> (seaNumber == 2 && i == 9)) }, "Ship")
             .foreach(ship => ship.createRelationshipTo(sea, RelationshipType.withName("SAILS")))
       }
       seas

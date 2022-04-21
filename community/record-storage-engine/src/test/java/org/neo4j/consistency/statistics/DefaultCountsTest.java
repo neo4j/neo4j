@@ -19,43 +19,39 @@
  */
 package org.neo4j.consistency.statistics;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.consistency.statistics.Counts.Type;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class DefaultCountsTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.consistency.statistics.Counts.Type;
+
+class DefaultCountsTest {
     @Test
-    void shouldCountPerThread()
-    {
+    void shouldCountPerThread() {
         // GIVEN
-        Counts counts = new DefaultCounts( 3 );
+        Counts counts = new DefaultCounts(3);
 
         // WHEN
-        counts.incAndGet( Type.activeCache, 0 );
-        counts.incAndGet( Type.activeCache, 1 );
-        counts.incAndGet( Type.backLinks, 2 );
+        counts.incAndGet(Type.activeCache, 0);
+        counts.incAndGet(Type.activeCache, 1);
+        counts.incAndGet(Type.backLinks, 2);
 
         // THEN
-        assertEquals( 2, counts.sum( Type.activeCache ) );
-        assertEquals( 1, counts.sum( Type.backLinks ) );
-        assertEquals( 0, counts.sum( Type.clearCache ) );
+        assertEquals(2, counts.sum(Type.activeCache));
+        assertEquals(1, counts.sum(Type.backLinks));
+        assertEquals(0, counts.sum(Type.clearCache));
     }
 
     @Test
-    void shouldResetCounts()
-    {
+    void shouldResetCounts() {
         // GIVEN
-        Counts counts = new DefaultCounts( 2 );
-        counts.incAndGet( Type.activeCache, 0 );
-        assertEquals( 1, counts.sum( Type.activeCache ) );
+        Counts counts = new DefaultCounts(2);
+        counts.incAndGet(Type.activeCache, 0);
+        assertEquals(1, counts.sum(Type.activeCache));
 
         // WHEN
         counts.reset();
 
         // THEN
-        assertEquals( 0, counts.sum( Type.activeCache ) );
+        assertEquals(0, counts.sum(Type.activeCache));
     }
 }

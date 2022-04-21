@@ -27,25 +27,21 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
  * As the {@link BoltStateMachine} with this connection will also shut down at the same time,
  * this message will actually NEVER be handled by {@link BoltStateMachine}.
  */
-public class GoodbyeMessage implements RequestMessage
-{
+public class GoodbyeMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x02;
     public static final GoodbyeMessage GOODBYE_MESSAGE = new GoodbyeMessage();
 
-    private GoodbyeMessage()
-    {
+    private GoodbyeMessage() {
         // left empty on purpose
     }
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return true;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "GOODBYE";
     }
 }

@@ -25,7 +25,6 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -39,73 +38,60 @@ import org.neo4j.util.concurrent.WorkSync;
  *
  * Used to wrap {@link IndexPopulator}s that are not thread-safe in terms of {@link IndexPopulator#add(Collection, CursorContext)} operation.
  */
-public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating
-{
-    private final WorkSync<IndexUpdateApply,IndexUpdateWork> workSync = new WorkSync<>( new IndexUpdateApply() );
+public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating {
+    private final WorkSync<IndexUpdateApply, IndexUpdateWork> workSync = new WorkSync<>(new IndexUpdateApply());
 
-    public WorkSyncedIndexPopulator( IndexPopulator delegate )
-    {
-        super( delegate );
+    public WorkSyncedIndexPopulator(IndexPopulator delegate) {
+        super(delegate);
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException
-    {
-        if ( updates.isEmpty() )
-        {
+    public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext)
+            throws IndexEntryConflictException {
+        if (updates.isEmpty()) {
             return;
         }
 
-        try
-        {
-            workSync.apply( new IndexUpdateWork( updates, cursorContext ) );
-        }
-        catch ( ExecutionException e )
-        {
+        try {
+            workSync.apply(new IndexUpdateWork(updates, cursorContext));
+        } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            if ( cause instanceof IOException )
-            {
-                throw new UncheckedIOException( (IOException) cause );
+            if (cause instanceof IOException) {
+                throw new UncheckedIOException((IOException) cause);
             }
-            if ( cause instanceof IndexEntryConflictException )
-            {
+            if (cause instanceof IndexEntryConflictException) {
                 throw (IndexEntryConflictException) cause;
             }
-            throw new RuntimeException( cause );
+            throw new RuntimeException(cause);
         }
     }
 
-    private class IndexUpdateApply
-    {
-        void process( Collection<? extends IndexEntryUpdate<?>> indexEntryUpdates, CursorContext cursorContext ) throws Exception
-        {
-            WorkSyncedIndexPopulator.super.add( indexEntryUpdates, cursorContext );
+    private class IndexUpdateApply {
+        void process(Collection<? extends IndexEntryUpdate<?>> indexEntryUpdates, CursorContext cursorContext)
+                throws Exception {
+            WorkSyncedIndexPopulator.super.add(indexEntryUpdates, cursorContext);
         }
     }
 
-    private class IndexUpdateWork implements Work<IndexUpdateApply,IndexUpdateWork>
-    {
+    private class IndexUpdateWork implements Work<IndexUpdateApply, IndexUpdateWork> {
         private final Collection<? extends IndexEntryUpdate<?>> updates;
         private final CursorContext cursorContext;
 
-        IndexUpdateWork( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
-        {
+        IndexUpdateWork(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {
             this.updates = updates;
             this.cursorContext = cursorContext;
         }
 
         @Override
-        public IndexUpdateWork combine( IndexUpdateWork work )
-        {
-            ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>( updates );
-            combined.addAll( work.updates );
-            return new IndexUpdateWork( combined, cursorContext );
+        public IndexUpdateWork combine(IndexUpdateWork work) {
+            ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>(updates);
+            combined.addAll(work.updates);
+            return new IndexUpdateWork(combined, cursorContext);
         }
 
         @Override
-        public void apply( IndexUpdateApply indexUpdateApply ) throws Exception
-        {
-            indexUpdateApply.process( updates, cursorContext );
+        public void apply(IndexUpdateApply indexUpdateApply) throws Exception {
+            indexUpdateApply.process(updates, cursorContext);
         }
     }
 }

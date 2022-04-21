@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
-
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
-class PhysicalToLogicalTokenChanges
-{
-    private PhysicalToLogicalTokenChanges()
-    {
-    }
+import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
+
+class PhysicalToLogicalTokenChanges {
+    private PhysicalToLogicalTokenChanges() {}
 
     /**
      * Converts physical before/after state to logical remove/add state. This conversion copies the existing
@@ -36,8 +33,7 @@ class PhysicalToLogicalTokenChanges
      *
      * @param update {@link TokenIndexEntryUpdate} containing physical before/after state.
      */
-    static LogicalTokenUpdates convertToAdditionsAndRemovals( TokenIndexEntryUpdate<?> update )
-    {
+    static LogicalTokenUpdates convertToAdditionsAndRemovals(TokenIndexEntryUpdate<?> update) {
         int beforeLength = update.beforeValues().length;
         int afterLength = update.values().length;
 
@@ -45,31 +41,24 @@ class PhysicalToLogicalTokenChanges
         int ac = 0;
         long[] removals = update.beforeValues().clone();
         long[] additions = update.values().clone();
-        for ( int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; )
-        {
-            long beforeId = bi < beforeLength ? requireNonNegative( removals[bi] ) : -1;
-            long afterId = ai < afterLength ? requireNonNegative( additions[ai] ) : -1;
-            if ( beforeId == afterId )
-            {   // no change
+        for (int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; ) {
+            long beforeId = bi < beforeLength ? requireNonNegative(removals[bi]) : -1;
+            long afterId = ai < afterLength ? requireNonNegative(additions[ai]) : -1;
+            if (beforeId == afterId) { // no change
                 bi++;
                 ai++;
                 continue;
             }
 
-            if ( smaller( beforeId, afterId ) )
-            {
-                while ( smaller( beforeId, afterId ) && bi < beforeLength )
-                {
+            if (smaller(beforeId, afterId)) {
+                while (smaller(beforeId, afterId) && bi < beforeLength) {
                     // looks like there's an id in before which isn't in after ==> REMOVE
                     removals[rc++] = beforeId;
                     bi++;
                     beforeId = bi < beforeLength ? removals[bi] : -1;
                 }
-            }
-            else if ( smaller( afterId, beforeId ) )
-            {
-                while ( smaller( afterId, beforeId ) && ai < afterLength )
-                {
+            } else if (smaller(afterId, beforeId)) {
+                while (smaller(afterId, beforeId) && ai < afterLength) {
                     // looks like there's an id in after which isn't in before ==> ADD
                     additions[ac++] = afterId;
                     ai++;
@@ -78,30 +67,26 @@ class PhysicalToLogicalTokenChanges
             }
         }
 
-        terminateWithMinusOneIfNeeded( removals, rc );
-        terminateWithMinusOneIfNeeded( additions, ac );
-        return new LogicalTokenUpdates( update.txId(), update.getEntityId(), removals, additions );
+        terminateWithMinusOneIfNeeded(removals, rc);
+        terminateWithMinusOneIfNeeded(additions, ac);
+        return new LogicalTokenUpdates(update.txId(), update.getEntityId(), removals, additions);
     }
 
-    private static boolean smaller( long id, long otherId )
-    {
+    private static boolean smaller(long id, long otherId) {
         return id != -1 && (otherId == -1 || id < otherId);
     }
 
-    private static void terminateWithMinusOneIfNeeded( long[] tokenIds, int actualLength )
-    {
-        if ( actualLength < tokenIds.length )
-        {
+    private static void terminateWithMinusOneIfNeeded(long[] tokenIds, int actualLength) {
+        if (actualLength < tokenIds.length) {
             tokenIds[actualLength] = -1;
         }
     }
 
-    record LogicalTokenUpdates( long txId, long entityId, long[] removals, long[] additions ) implements Comparable<LogicalTokenUpdates>
-    {
+    record LogicalTokenUpdates(long txId, long entityId, long[] removals, long[] additions)
+            implements Comparable<LogicalTokenUpdates> {
         @Override
-        public int compareTo( LogicalTokenUpdates o )
-        {
-            return Long.compare( entityId, o.entityId );
+        public int compareTo(LogicalTokenUpdates o) {
+            return Long.compare(entityId, o.entityId);
         }
     }
 }

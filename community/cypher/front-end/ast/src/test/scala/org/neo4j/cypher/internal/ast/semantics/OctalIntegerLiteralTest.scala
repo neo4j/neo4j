@@ -17,10 +17,11 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
+import org.neo4j.cypher.internal.util.DummyPosition
 
 class OctalIntegerLiteralTest extends SemanticFunSuite {
+
   // old syntax
   test("correctly parses old syntax ocatal numbers") {
     assert(SignedOctalIntegerLiteral("022")(DummyPosition(0)).value === java.lang.Long.decode("022"))

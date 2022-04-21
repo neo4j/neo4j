@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.reverse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -37,27 +36,22 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
  *
  * @see ReversedMultiFileTransactionCursor
  */
-public class EagerlyReversedTransactionCursor implements TransactionCursor
-{
+public class EagerlyReversedTransactionCursor implements TransactionCursor {
     private final List<CommittedTransactionRepresentation> txs = new ArrayList<>();
     private final TransactionCursor cursor;
     private int indexToReturn;
 
-    public EagerlyReversedTransactionCursor( TransactionCursor cursor ) throws IOException
-    {
+    public EagerlyReversedTransactionCursor(TransactionCursor cursor) throws IOException {
         this.cursor = cursor;
-        while ( cursor.next() )
-        {
-            txs.add( cursor.get() );
+        while (cursor.next()) {
+            txs.add(cursor.get());
         }
         this.indexToReturn = txs.size();
     }
 
     @Override
-    public boolean next()
-    {
-        if ( indexToReturn > 0 )
-        {
+    public boolean next() {
+        if (indexToReturn > 0) {
             indexToReturn--;
             return true;
         }
@@ -65,25 +59,21 @@ public class EagerlyReversedTransactionCursor implements TransactionCursor
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         cursor.close();
     }
 
     @Override
-    public CommittedTransactionRepresentation get()
-    {
-        return txs.get( indexToReturn );
+    public CommittedTransactionRepresentation get() {
+        return txs.get(indexToReturn);
     }
 
     @Override
-    public LogPosition position()
-    {
-        throw new UnsupportedOperationException( "Should not be called" );
+    public LogPosition position() {
+        throw new UnsupportedOperationException("Should not be called");
     }
 
-    public static TransactionCursor eagerlyReverse( TransactionCursor cursor ) throws IOException
-    {
-        return new EagerlyReversedTransactionCursor( cursor );
+    public static TransactionCursor eagerlyReverse(TransactionCursor cursor) throws IOException {
+        return new EagerlyReversedTransactionCursor(cursor);
     }
 }

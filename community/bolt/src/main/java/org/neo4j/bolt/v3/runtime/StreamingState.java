@@ -19,32 +19,30 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
-import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.memory.HeapEstimator;
 
 /**
  * When STREAMING, additionally attach bookmark to PULL_ALL, DISCARD_ALL result
  */
-public class StreamingState extends AbstractStreamingState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( StreamingState.class );
+public class StreamingState extends AbstractStreamingState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(StreamingState.class);
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "STREAMING";
     }
 
     @Override
-    protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
-    {
+    protected BoltStateMachineState processStreamResultMessage(
+            ResultConsumer resultConsumer, StateMachineContext context) throws Throwable {
         var statementId = StatementMetadata.ABSENT_QUERY_ID;
         var bookmark = context.getTransactionManager()
-                              .pullData( context.connectionState().getCurrentTransactionId(), statementId, -1, resultConsumer );
-        bookmark.attachTo( context.connectionState() );
+                .pullData(context.connectionState().getCurrentTransactionId(), statementId, -1, resultConsumer);
+        bookmark.attachTo(context.connectionState());
         return readyState;
     }
 }

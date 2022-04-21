@@ -19,23 +19,21 @@
  */
 package org.neo4j.io.pagecache;
 
+import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.neo4j.io.memory.ByteBuffers;
-
-import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Utility for testing code that depends on page cursors.
  */
-public class StubPageCursor extends PageCursor
-{
+public class StubPageCursor extends PageCursor {
     private final long pageId;
     private final int pageSize;
     protected ByteBuffer page;
@@ -49,18 +47,15 @@ public class StubPageCursor extends PageCursor
     private boolean writeLocked;
     private int mark;
 
-    public StubPageCursor( long initialPageId, int pageSize )
-    {
-        this( initialPageId, ByteBuffers.allocate( pageSize, INSTANCE ), RESERVED_BYTES );
+    public StubPageCursor(long initialPageId, int pageSize) {
+        this(initialPageId, ByteBuffers.allocate(pageSize, INSTANCE), RESERVED_BYTES);
     }
 
-    public StubPageCursor( long initialPageId, ByteBuffer buffer )
-    {
-        this( initialPageId, buffer, RESERVED_BYTES );
+    public StubPageCursor(long initialPageId, ByteBuffer buffer) {
+        this(initialPageId, buffer, RESERVED_BYTES);
     }
 
-    public StubPageCursor( long initialPageId, ByteBuffer buffer, int reservedBytes )
-    {
+    public StubPageCursor(long initialPageId, ByteBuffer buffer, int reservedBytes) {
         this.pageId = initialPageId;
         this.pageSize = buffer.capacity();
         this.page = buffer;
@@ -70,487 +65,383 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public long getCurrentPageId()
-    {
+    public long getCurrentPageId() {
         return pageId;
     }
 
     @Override
-    public Path getCurrentFile()
-    {
+    public Path getCurrentFile() {
         return getRawCurrentFile();
     }
 
     @Override
-    public PagedFile getPagedFile()
-    {
-        return new StubPagedFile( pageSize );
+    public PagedFile getPagedFile() {
+        return new StubPagedFile(pageSize);
     }
 
     @Override
-    public Path getRawCurrentFile()
-    {
-        return Path.of( "" );
+    public Path getRawCurrentFile() {
+        return Path.of("");
     }
 
     @Override
-    public void rewind()
-    {
+    public void rewind() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean next()
-    {
+    public boolean next() {
         return true;
     }
 
     @Override
-    public boolean next( long pageId )
-    {
+    public boolean next(long pageId) {
         return true;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         closed = true;
-        if ( linkedCursor != null )
-        {
+        if (linkedCursor != null) {
             linkedCursor.close();
             linkedCursor = null;
         }
     }
 
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return closed;
     }
 
     @Override
-    public boolean shouldRetry()
-    {
-        if ( needsRetry )
-        {
+    public boolean shouldRetry() {
+        if (needsRetry) {
             checkAndClearBoundsFlag();
         }
         return needsRetry || (linkedCursor != null && linkedCursor.shouldRetry());
     }
 
-    public void setNeedsRetry( boolean needsRetry )
-    {
+    public void setNeedsRetry(boolean needsRetry) {
         this.needsRetry = needsRetry;
     }
 
     @Override
-    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
-    {
+    public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
         return 0;
     }
 
     @Override
-    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
-    {
+    public int copyTo(int sourceOffset, ByteBuffer targetBuffer) {
         return 0;
     }
 
     @Override
-    public void shiftBytes( int sourceOffset, int length, int shift )
-    {
-        throw new UnsupportedOperationException( "Stub cursor does not support this method... yet" );
+    public void shiftBytes(int sourceOffset, int length, int shift) {
+        throw new UnsupportedOperationException("Stub cursor does not support this method... yet");
     }
 
     @Override
-    public boolean checkAndClearBoundsFlag()
-    {
+    public boolean checkAndClearBoundsFlag() {
         boolean overflow = observedOverflow;
         observedOverflow = false;
         return overflow || (linkedCursor != null && linkedCursor.checkAndClearBoundsFlag());
     }
 
     @Override
-    public void checkAndClearCursorException() throws CursorException
-    {
+    public void checkAndClearCursorException() throws CursorException {
         String message = this.cursorErrorMessage;
-        if ( message != null )
-        {
-            throw new CursorException( message );
+        if (message != null) {
+            throw new CursorException(message);
         }
     }
 
     @Override
-    public void raiseOutOfBounds()
-    {
+    public void raiseOutOfBounds() {
         observedOverflow = true;
     }
 
     @Override
-    public void setCursorException( String message )
-    {
+    public void setCursorException(String message) {
         this.cursorErrorMessage = message;
     }
 
     @Override
-    public void clearCursorException()
-    {
+    public void clearCursorException() {
         this.cursorErrorMessage = null;
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
-    {
-        linkedCursor = new StubPageCursor( pageId, pageSize );
+    public PageCursor openLinkedCursor(long pageId) {
+        linkedCursor = new StubPageCursor(pageId, pageSize);
         return linkedCursor;
     }
 
     @Override
-    public byte getByte()
-    {
-        byte value = getByteInternal( currentOffset );
+    public byte getByte() {
+        byte value = getByteInternal(currentOffset);
         currentOffset += 1;
         return value;
     }
 
     @Override
-    public byte getByte( int offset )
-    {
-        return getByteInternal( reservedBytes + offset );
+    public byte getByte(int offset) {
+        return getByteInternal(reservedBytes + offset);
     }
 
-    private byte getByteInternal( int offset )
-    {
-        try
-        {
-            if ( offset < reservedBytes )
-            {
+    private byte getByteInternal(int offset) {
+        try {
+            if (offset < reservedBytes) {
                 return handleOverflow();
             }
-            return page.get( offset );
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+            return page.get(offset);
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             return handleOverflow();
         }
     }
 
-    private byte handleOverflow()
-    {
+    private byte handleOverflow() {
         observedOverflow = true;
         return (byte) ThreadLocalRandom.current().nextInt();
     }
 
     @Override
-    public void putByte( byte value )
-    {
-        putByteInternal( currentOffset, value );
+    public void putByte(byte value) {
+        putByteInternal(currentOffset, value);
         currentOffset += 1;
     }
 
     @Override
-    public void putByte( int offset, byte value )
-    {
-        putByteInternal( offset + reservedBytes, value );
+    public void putByte(int offset, byte value) {
+        putByteInternal(offset + reservedBytes, value);
     }
 
-    private void putByteInternal( int offset, byte value )
-    {
-        try
-        {
-            if ( offset < reservedBytes )
-            {
+    private void putByteInternal(int offset, byte value) {
+        try {
+            if (offset < reservedBytes) {
                 handleOverflow();
             }
-            page.put( offset, value );
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+            page.put(offset, value);
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             handleOverflow();
         }
     }
 
     @Override
-    public long getLong()
-    {
-        long value = getLongInternal( currentOffset );
+    public long getLong() {
+        long value = getLongInternal(currentOffset);
         currentOffset += 8;
         return value;
     }
 
     @Override
-    public long getLong( int offset )
-    {
-        return getLongInternal( offset + reservedBytes );
+    public long getLong(int offset) {
+        return getLongInternal(offset + reservedBytes);
     }
 
-    private long getLongInternal( int offset )
-    {
-        try
-        {
-            if ( offset < reservedBytes )
-            {
+    private long getLongInternal(int offset) {
+        try {
+            if (offset < reservedBytes) {
                 return handleOverflow();
             }
-            return page.getLong( offset );
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+            return page.getLong(offset);
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             return handleOverflow();
         }
     }
 
     @Override
-    public void putLong( long value )
-    {
-        putLongInternal( currentOffset, value );
+    public void putLong(long value) {
+        putLongInternal(currentOffset, value);
         currentOffset += 8;
     }
 
     @Override
-    public void putLong( int offset, long value )
-    {
-        putLongInternal( reservedBytes + offset, value );
+    public void putLong(int offset, long value) {
+        putLongInternal(reservedBytes + offset, value);
     }
 
-    private void putLongInternal( int offset, long value )
-    {
-        try
-        {
-            if ( offset < reservedBytes )
-            {
+    private void putLongInternal(int offset, long value) {
+        try {
+            if (offset < reservedBytes) {
                 handleOverflow();
             }
-            page.putLong( offset, value );
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+            page.putLong(offset, value);
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             handleOverflow();
         }
     }
 
     @Override
-    public int getInt()
-    {
-        int value = getIntInternal( currentOffset );
+    public int getInt() {
+        int value = getIntInternal(currentOffset);
         currentOffset += 4;
         return value;
     }
 
     @Override
-    public int getInt( int offset )
-    {
-        return getIntInternal( reservedBytes + offset );
+    public int getInt(int offset) {
+        return getIntInternal(reservedBytes + offset);
     }
 
-    private int getIntInternal( int offset )
-    {
-        try
-        {
-            if ( offset < reservedBytes )
-            {
+    private int getIntInternal(int offset) {
+        try {
+            if (offset < reservedBytes) {
                 return handleOverflow();
             }
-            return page.getInt( offset );
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+            return page.getInt(offset);
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             return handleOverflow();
         }
     }
 
     @Override
-    public void putInt( int value )
-    {
-        putIntInternal( currentOffset, value );
+    public void putInt(int value) {
+        putIntInternal(currentOffset, value);
         currentOffset += 4;
     }
 
     @Override
-    public void putInt( int offset, int value )
-    {
-        putIntInternal( reservedBytes + offset, value );
+    public void putInt(int offset, int value) {
+        putIntInternal(reservedBytes + offset, value);
     }
 
-    private void putIntInternal( int offset, int value )
-    {
-        try
-        {
-            if ( offset < reservedBytes )
-            {
+    private void putIntInternal(int offset, int value) {
+        try {
+            if (offset < reservedBytes) {
                 handleOverflow();
             }
-            page.putInt( offset, value );
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+            page.putInt(offset, value);
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             handleOverflow();
         }
     }
 
     @Override
-    public void getBytes( byte[] data )
-    {
-        getBytes( data, 0, data.length );
+    public void getBytes(byte[] data) {
+        getBytes(data, 0, data.length);
     }
 
     @Override
-    public void getBytes( byte[] data, int arrayOffset, int length )
-    {
-        try
-        {
+    public void getBytes(byte[] data, int arrayOffset, int length) {
+        try {
             assert arrayOffset == 0 : "please implement support for arrayOffset";
-            page.position( currentOffset );
-            page.get( data, arrayOffset, length );
+            page.position(currentOffset);
+            page.get(data, arrayOffset, length);
             currentOffset += length;
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             handleOverflow();
         }
     }
 
     @Override
-    public void putBytes( byte[] data )
-    {
-        putBytes( data, 0, data.length );
+    public void putBytes(byte[] data) {
+        putBytes(data, 0, data.length);
     }
 
     @Override
-    public void putBytes( byte[] data, int arrayOffset, int length )
-    {
-        try
-        {
+    public void putBytes(byte[] data, int arrayOffset, int length) {
+        try {
             assert arrayOffset == 0 : "please implement support for arrayOffset";
-            page.position( currentOffset );
-            page.put( data, arrayOffset, length );
+            page.position(currentOffset);
+            page.put(data, arrayOffset, length);
             currentOffset += length;
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             handleOverflow();
         }
     }
 
     @Override
-    public void putBytes( int bytes, byte value )
-    {
+    public void putBytes(int bytes, byte value) {
         byte[] byteArray = new byte[bytes];
-        Arrays.fill( byteArray, value );
-        putBytes( byteArray, 0, bytes );
+        Arrays.fill(byteArray, value);
+        putBytes(byteArray, 0, bytes);
     }
 
     @Override
-    public short getShort()
-    {
-        short value = getShortInternal( currentOffset );
+    public short getShort() {
+        short value = getShortInternal(currentOffset);
         currentOffset += 2;
         return value;
     }
 
     @Override
-    public short getShort( int offset )
-    {
-        return getShortInternal( reservedBytes + offset );
+    public short getShort(int offset) {
+        return getShortInternal(reservedBytes + offset);
     }
 
-    private short getShortInternal( int offset )
-    {
-        try
-        {
-            if ( offset < reservedBytes )
-            {
-               return handleOverflow();
+    private short getShortInternal(int offset) {
+        try {
+            if (offset < reservedBytes) {
+                return handleOverflow();
             }
-            return page.getShort( offset );
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+            return page.getShort(offset);
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             return handleOverflow();
         }
     }
 
     @Override
-    public void putShort( short value )
-    {
-        putShortInternal( currentOffset, value );
+    public void putShort(short value) {
+        putShortInternal(currentOffset, value);
         currentOffset += 2;
     }
 
     @Override
-    public void putShort( int offset, short value )
-    {
-        putShortInternal( reservedBytes + offset, value );
+    public void putShort(int offset, short value) {
+        putShortInternal(reservedBytes + offset, value);
     }
 
-    private void putShortInternal( int offset, short value )
-    {
-        try
-        {
-            if ( offset < reservedBytes )
-            {
+    private void putShortInternal(int offset, short value) {
+        try {
+            if (offset < reservedBytes) {
                 handleOverflow();
             }
-            page.putShort( offset, value );
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
+            page.putShort(offset, value);
+        } catch (IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e) {
             handleOverflow();
         }
     }
 
     @Override
-    public int getOffset()
-    {
+    public int getOffset() {
         return currentOffset - reservedBytes;
     }
 
     @Override
-    public void setOffset( int offset )
-    {
-        if ( offset < 0 )
-        {
+    public void setOffset(int offset) {
+        if (offset < 0) {
             throw new IndexOutOfBoundsException();
         }
         currentOffset = offset + reservedBytes;
     }
 
     @Override
-    public void mark()
-    {
+    public void mark() {
         this.mark = currentOffset;
     }
 
     @Override
-    public void setOffsetToMark()
-    {
+    public void setOffsetToMark() {
         this.currentOffset = this.mark;
     }
 
     @Override
-    public void zapPage()
-    {
-        for ( int i = 0; i < pageSize; i++ )
-        {
-            putByte( i, (byte) 0 );
+    public void zapPage() {
+        for (int i = 0; i < pageSize; i++) {
+            putByte(i, (byte) 0);
         }
     }
 
     @Override
-    public String toString()
-    {
-        return "PageCursor{" +
-               "currentOffset=" + currentOffset +
-               ", page=" + page +
-               '}';
+    public String toString() {
+        return "PageCursor{" + "currentOffset=" + currentOffset + ", page=" + page + '}';
     }
 
     @Override
-    public boolean isWriteLocked()
-    {
+    public boolean isWriteLocked() {
         return writeLocked;
     }
 
-    public void setWriteLocked( boolean writeLocked )
-    {
+    public void setWriteLocked(boolean writeLocked) {
         this.writeLocked = writeLocked;
     }
 }

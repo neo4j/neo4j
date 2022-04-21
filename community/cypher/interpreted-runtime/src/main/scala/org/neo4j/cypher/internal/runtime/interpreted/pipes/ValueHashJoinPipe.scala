@@ -27,11 +27,14 @@ import org.neo4j.kernel.impl.util.collection
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expression, left: Pipe, right: Pipe)
-                            (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(left) {
+case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expression, left: Pipe, right: Pipe)(val id: Id =
+  Id.INVALID_ID)
+    extends PipeWithSource(left) {
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
 
     if (input.isEmpty)
       return ClosingIterator.empty
@@ -62,11 +65,18 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     result.closing(table)
   }
 
-  private def buildProbeTable(input: ClosingIterator[CypherRow], state: QueryState): collection.ProbeTable[AnyValue, CypherRow] = {
-    val table = collection.ProbeTable.createProbeTable[AnyValue, CypherRow](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+  private def buildProbeTable(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): collection.ProbeTable[AnyValue, CypherRow] = {
+    val table = collection.ProbeTable.createProbeTable[AnyValue, CypherRow](
+      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
+    )
 
-    for (context <- input;
-         joinKey = lhsExpression(context, state) if joinKey != null) {
+    for (
+      context <- input;
+      joinKey = lhsExpression(context, state) if joinKey != null
+    ) {
       table.put(joinKey, context)
     }
 

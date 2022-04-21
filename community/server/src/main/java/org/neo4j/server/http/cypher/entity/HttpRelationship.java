@@ -23,24 +23,27 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-public class HttpRelationship implements Relationship
-{
+public class HttpRelationship implements Relationship {
     private final long relId;
     private final long startNodeId;
     private final long endNodeId;
     private final String type;
-    private final Map<String,Object> properties;
+    private final Map<String, Object> properties;
     private final boolean isDeleted;
-    private final BiFunction<Long,Boolean,Optional<Node>> getNodeById;
+    private final BiFunction<Long, Boolean, Optional<Node>> getNodeById;
 
-    public HttpRelationship( long relId, long startNodeId, long endNodeId, String type, Map<String,Object> properties, boolean isDeleted,
-                             BiFunction<Long,Boolean,Optional<Node>> getNodeById )
-    {
+    public HttpRelationship(
+            long relId,
+            long startNodeId,
+            long endNodeId,
+            String type,
+            Map<String, Object> properties,
+            boolean isDeleted,
+            BiFunction<Long, Boolean, Optional<Node>> getNodeById) {
         this.relId = relId;
         this.startNodeId = startNodeId;
         this.endNodeId = endNodeId;
@@ -51,133 +54,107 @@ public class HttpRelationship implements Relationship
     }
 
     @Override
-    public long getId()
-    {
+    public long getId() {
         return relId;
     }
 
     @Override
-    public String getElementId()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public String getElementId() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public boolean hasProperty( String key )
-    {
+    public boolean hasProperty(String key) {
         return false;
     }
 
     @Override
-    public Object getProperty( String key )
-    {
+    public Object getProperty(String key) {
         return null;
     }
 
     @Override
-    public Object getProperty( String key, Object defaultValue )
-    {
+    public Object getProperty(String key, Object defaultValue) {
         return null;
     }
 
     @Override
-    public void setProperty( String key, Object value )
-    {
-
-    }
+    public void setProperty(String key, Object value) {}
 
     @Override
-    public Object removeProperty( String key )
-    {
+    public Object removeProperty(String key) {
         return null;
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
-    {
+    public Iterable<String> getPropertyKeys() {
         return null;
     }
 
     @Override
-    public Map<String,Object> getProperties( String... keys )
-    {
+    public Map<String, Object> getProperties(String... keys) {
         return null;
     }
 
     @Override
-    public Map<String,Object> getAllProperties()
-    {
+    public Map<String, Object> getAllProperties() {
         return properties;
     }
 
     @Override
-    public void delete()
-    {
-
-    }
+    public void delete() {}
 
     @Override
-    public long getStartNodeId()
-    {
+    public long getStartNodeId() {
         return startNodeId;
     }
 
     @Override
-    public long getEndNodeId()
-    {
+    public long getEndNodeId() {
         return endNodeId;
     }
 
     @Override
-    public Node getStartNode()
-    {
-        return getNodeById.apply( startNodeId, isDeleted ).orElseGet( () -> new HttpNode( startNodeId ) );
+    public Node getStartNode() {
+        return getNodeById.apply(startNodeId, isDeleted).orElseGet(() -> new HttpNode(startNodeId));
     }
 
     @Override
-    public Node getEndNode()
-    {
-        return getNodeById.apply( endNodeId, isDeleted ).orElseGet( () -> new HttpNode( endNodeId ) );
+    public Node getEndNode() {
+        return getNodeById.apply(endNodeId, isDeleted).orElseGet(() -> new HttpNode(endNodeId));
     }
 
     @Override
-    public Node getOtherNode( Node node )
-    {
+    public Node getOtherNode(Node node) {
         return null;
     }
 
     @Override
-    public Node[] getNodes()
-    {
+    public Node[] getNodes() {
         return new Node[0];
     }
 
     @Override
-    public RelationshipType getType()
-    {
-        return RelationshipType.withName( type );
+    public RelationshipType getType() {
+        return RelationshipType.withName(type);
     }
 
     @Override
-    public boolean isType( RelationshipType type )
-    {
+    public boolean isType(RelationshipType type) {
         return false;
     }
 
-    public boolean isDeleted()
-    {
+    public boolean isDeleted() {
         return isDeleted;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( relId );
+    public int hashCode() {
+        return Objects.hash(relId);
     }
 
     @Override
-    public boolean equals( Object other )
-    {
+    public boolean equals(Object other) {
         return other instanceof Relationship && this.getId() == ((Relationship) other).getId();
     }
 }

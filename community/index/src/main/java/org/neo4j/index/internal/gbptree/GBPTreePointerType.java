@@ -19,131 +19,105 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.Objects;
-
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
 
-public interface GBPTreePointerType
-{
-    int offset( TreeNode node );
+import java.util.Objects;
 
-    static GBPTreePointerType leftSibling()
-    {
+public interface GBPTreePointerType {
+    int offset(TreeNode node);
+
+    static GBPTreePointerType leftSibling() {
         return SimplePointer.LEFT_SIBLING;
     }
 
-    static GBPTreePointerType rightSibling()
-    {
+    static GBPTreePointerType rightSibling() {
         return SimplePointer.RIGHT_SIBLING;
     }
 
-    static GBPTreePointerType successor()
-    {
+    static GBPTreePointerType successor() {
         return SimplePointer.SUCCESSOR;
     }
 
-    static GBPTreePointerType noPointer()
-    {
+    static GBPTreePointerType noPointer() {
         return SimplePointer.NO_POINTER;
     }
 
-    static GBPTreePointerType child( int pos )
-    {
-        return new ChildPointer( pos );
+    static GBPTreePointerType child(int pos) {
+        return new ChildPointer(pos);
     }
 
-    enum SimplePointer implements GBPTreePointerType
-    {
-        NO_POINTER
-                {
-                    @Override
-                    public int offset( TreeNode node )
-                    {
-                        return 0;
-                    }
+    enum SimplePointer implements GBPTreePointerType {
+        NO_POINTER {
+            @Override
+            public int offset(TreeNode node) {
+                return 0;
+            }
 
-                    @Override
-                    public String toString()
-                    {
-                        return "no pointer";
-                    }
-                },
-        LEFT_SIBLING
-                {
-                    @Override
-                    public int offset( TreeNode node )
-                    {
-                        return BYTE_POS_LEFTSIBLING;
-                    }
+            @Override
+            public String toString() {
+                return "no pointer";
+            }
+        },
+        LEFT_SIBLING {
+            @Override
+            public int offset(TreeNode node) {
+                return BYTE_POS_LEFTSIBLING;
+            }
 
-                    @Override
-                    public String toString()
-                    {
-                        return "left sibling";
-                    }
-                },
-        RIGHT_SIBLING
-                {
-                    @Override
-                    public int offset( TreeNode node )
-                    {
-                        return BYTE_POS_RIGHTSIBLING;
-                    }
+            @Override
+            public String toString() {
+                return "left sibling";
+            }
+        },
+        RIGHT_SIBLING {
+            @Override
+            public int offset(TreeNode node) {
+                return BYTE_POS_RIGHTSIBLING;
+            }
 
-                    @Override
-                    public String toString()
-                    {
-                        return "right sibling";
-                    }
-                },
-        SUCCESSOR
-                {
-                    @Override
-                    public int offset( TreeNode node )
-                    {
-                        return BYTE_POS_SUCCESSOR;
-                    }
+            @Override
+            public String toString() {
+                return "right sibling";
+            }
+        },
+        SUCCESSOR {
+            @Override
+            public int offset(TreeNode node) {
+                return BYTE_POS_SUCCESSOR;
+            }
 
-                    @Override
-                    public String toString()
-                    {
-                        return "successor";
-                    }
-                }
+            @Override
+            public String toString() {
+                return "successor";
+            }
+        }
     }
 
-    class ChildPointer implements GBPTreePointerType
-    {
+    class ChildPointer implements GBPTreePointerType {
         private final int pos;
 
-        ChildPointer( int pos )
-        {
+        ChildPointer(int pos) {
             this.pos = pos;
         }
 
         @Override
-        public int offset( TreeNode node )
-        {
-            return node.childOffset( pos );
+        public int offset(TreeNode node) {
+            return node.childOffset(pos);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "child(" + pos + ")";
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             ChildPointer that = (ChildPointer) o;
@@ -151,9 +125,8 @@ public interface GBPTreePointerType
         }
 
         @Override
-        public int hashCode()
-        {
-            return Objects.hash( pos );
+        public int hashCode() {
+            return Objects.hash(pos);
         }
     }
 }

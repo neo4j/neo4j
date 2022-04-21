@@ -19,15 +19,14 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.LongFunction;
-
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
-
-import static java.lang.Math.max;
-import static java.lang.Math.toIntExact;
 
 /**
  * A utility to be able to write an {@link InputIterator} with low effort.
@@ -36,8 +35,7 @@ import static java.lang.Math.toIntExact;
  *
  * @param <CHUNKSTATE> type of objects handed out from the supplied {@link Iterator}.
  */
-public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
-{
+public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator {
     private final LongFunction<CHUNKSTATE> states;
     private final long totalCount;
     private final int batchSize;
@@ -47,69 +45,60 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
     private long nextBatch;
     private long numberOfBatches;
 
-    public GeneratingInputIterator( long totalCount, int batchSize, LongFunction<CHUNKSTATE> states,
-            Generator<CHUNKSTATE> generator, long startId )
-    {
-        this.totalCount = max( totalCount, 0 );
-        this.batchSize = max( batchSize, 0 );
+    public GeneratingInputIterator(
+            long totalCount,
+            int batchSize,
+            LongFunction<CHUNKSTATE> states,
+            Generator<CHUNKSTATE> generator,
+            long startId) {
+        this.totalCount = max(totalCount, 0);
+        this.batchSize = max(batchSize, 0);
         this.states = states;
         this.generator = generator;
         this.startId = startId;
-        this.numberOfBatches = this.totalCount > 0 && this.batchSize > 0
-                               ? 1 + (this.totalCount - 1) / this.batchSize
-                               : 0;
+        this.numberOfBatches =
+                this.totalCount > 0 && this.batchSize > 0 ? 1 + (this.totalCount - 1) / this.batchSize : 0;
     }
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 
     @Override
-    public InputChunk newChunk()
-    {
+    public InputChunk newChunk() {
         return new Chunk();
     }
 
     @Override
-    public synchronized boolean next( InputChunk chunk )
-    {
-        if ( numberOfBatches > 1 )
-        {
+    public synchronized boolean next(InputChunk chunk) {
+        if (numberOfBatches > 1) {
             long batch = nextBatch++;
-            ((Chunk) chunk).initialize( states.apply( batch ), batch, batchSize );
+            ((Chunk) chunk).initialize(states.apply(batch), batch, batchSize);
             numberOfBatches--;
             return true;
-        }
-        else if ( numberOfBatches == 1 )
-        {
+        } else if (numberOfBatches == 1) {
             long remaining = 1 + (totalCount - 1) % batchSize;
             long batch = nextBatch++;
-            ((Chunk) chunk).initialize( states.apply( batch ), batch, toIntExact( remaining ) );
+            ((Chunk) chunk).initialize(states.apply(batch), batch, toIntExact(remaining));
             numberOfBatches--;
             return true;
         }
         return false;
     }
 
-    private class Chunk implements InputChunk
-    {
+    private class Chunk implements InputChunk {
         private CHUNKSTATE state;
         private int count;
         private int itemInBatch;
         private long baseId;
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         /**
          * @param state CHUNKSTATE which is the source of data generation for this chunk.
          * @param batch zero-based id (order) of this batch.
          */
-        private void initialize( CHUNKSTATE state, long batch, int count )
-        {
+        private void initialize(CHUNKSTATE state, long batch, int count) {
             this.state = state;
             this.count = count;
             this.baseId = startId + batch * batchSize;
@@ -117,11 +106,9 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
         }
 
         @Override
-        public boolean next( InputEntityVisitor visitor ) throws IOException
-        {
-            if ( itemInBatch < count )
-            {
-                generator.accept( state, visitor, baseId + itemInBatch );
+        public boolean next(InputEntityVisitor visitor) throws IOException {
+            if (itemInBatch < count) {
+                generator.accept(state, visitor, baseId + itemInBatch);
                 visitor.endOfEntity();
                 itemInBatch++;
                 return true;
@@ -130,14 +117,13 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
         }
     }
 
-    public static final InputIterator EMPTY = new GeneratingInputIterator<Void>( 0, 1, batch -> null, null, 0 )
-    {   // here's nothing
-    };
+    public static final InputIterator EMPTY =
+            new GeneratingInputIterator<Void>(0, 1, batch -> null, null, 0) { // here's nothing
+            };
 
     public static final InputIterable EMPTY_ITERABLE = () -> EMPTY;
 
-    public interface Generator<CHUNKSTATE>
-    {
-        void accept( CHUNKSTATE state, InputEntityVisitor visitor, long id );
+    public interface Generator<CHUNKSTATE> {
+        void accept(CHUNKSTATE state, InputEntityVisitor visitor, long id);
     }
 }

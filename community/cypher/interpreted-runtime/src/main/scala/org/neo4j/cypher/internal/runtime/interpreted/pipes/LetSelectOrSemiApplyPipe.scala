@@ -25,11 +25,19 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.Values
 
-case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, predicate: Predicate, negated: Boolean)
-                                   (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class LetSelectOrSemiApplyPipe(
+  source: Pipe,
+  inner: Pipe,
+  letVarName: String,
+  predicate: Predicate,
+  negated: Boolean
+)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.map {
       outerContext =>
         val holds = predicate.isTrue(outerContext, state) || {

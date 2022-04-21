@@ -32,16 +32,18 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *     one like the directed case
  *     one like the directed case, but with start and end node swapped, and rel = reverse(rel)
  */
-case class ProjectEndpoints(override val source: LogicalPlan,
-                            rel: String,
-                            start: String,
-                            startInScope: Boolean,
-                            end: String,
-                            endInScope: Boolean,
-                            types: Option[Seq[RelTypeName]],
-                            directed: Boolean,
-                            length: PatternLength)(implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen)  {
+case class ProjectEndpoints(
+  override val source: LogicalPlan,
+  rel: String,
+  start: String,
+  startInScope: Boolean,
+  end: String,
+  endInScope: Boolean,
+  types: Option[Seq[RelTypeName]],
+  directed: Boolean,
+  length: PatternLength
+)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 

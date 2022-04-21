@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.http.cypher;
 
-public interface TransactionTerminationHandle
-{
+public interface TransactionTerminationHandle {
     boolean terminate();
 }

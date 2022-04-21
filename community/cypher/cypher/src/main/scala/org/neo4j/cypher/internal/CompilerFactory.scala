@@ -30,9 +30,11 @@ import org.neo4j.cypher.internal.options.CypherVersion
 trait CompilerFactory {
   def supportsAdministrativeCommands(): Boolean
 
-  def createCompiler(cypherVersion: CypherVersion,
-                     cypherPlanner: CypherPlannerOption,
-                     cypherRuntime: CypherRuntimeOption,
-                     cypherUpdateStrategy: CypherUpdateStrategy,
-                     executionEngineProvider: () => ExecutionEngine): Compiler
+  def createCompiler(
+    cypherVersion: CypherVersion,
+    cypherPlanner: CypherPlannerOption,
+    cypherRuntime: CypherRuntimeOption,
+    cypherUpdateStrategy: CypherUpdateStrategy,
+    executionEngineProvider: () => ExecutionEngine
+  ): Compiler
 }

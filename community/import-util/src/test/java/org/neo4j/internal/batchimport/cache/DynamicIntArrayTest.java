@@ -19,75 +19,68 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.MemoryPools;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class DynamicIntArrayTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryPools;
+
+class DynamicIntArrayTest {
     @Test
-    void shouldWorkOnSingleChunk()
-    {
+    void shouldWorkOnSingleChunk() {
         // GIVEN
         int defaultValue = 0;
-        IntArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, defaultValue, INSTANCE );
-        array.set( 4, 5 );
+        IntArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray(10, defaultValue, INSTANCE);
+        array.set(4, 5);
 
         // WHEN
-        assertEquals( 5L, array.get( 4 ) );
-        assertEquals( defaultValue, array.get( 12 ) );
-        array.set( 7, 1324 );
-        assertEquals( 1324L, array.get( 7 ) );
+        assertEquals(5L, array.get(4));
+        assertEquals(defaultValue, array.get(12));
+        array.set(7, 1324);
+        assertEquals(1324L, array.get(7));
     }
 
     @Test
-    void trackHeapMemoryOnArrayAllocations()
-    {
-        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
-        var longArray = NumberArrayFactories.HEAP.newDynamicLongArray( 10, 1, memoryTracker );
+    void trackHeapMemoryOnArrayAllocations() {
+        var memoryTracker = new LocalMemoryTracker(MemoryPools.NO_TRACKING, 300, 0, null);
+        var longArray = NumberArrayFactories.HEAP.newDynamicLongArray(10, 1, memoryTracker);
 
-        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-        assertEquals( 0, memoryTracker.usedNativeMemory() );
+        assertEquals(0, memoryTracker.estimatedHeapMemory());
+        assertEquals(0, memoryTracker.usedNativeMemory());
 
-        longArray.set( 0, 5 );
+        longArray.set(0, 5);
 
-        assertEquals( 96, memoryTracker.estimatedHeapMemory() );
-        assertEquals( 0, memoryTracker.usedNativeMemory() );
+        assertEquals(96, memoryTracker.estimatedHeapMemory());
+        assertEquals(0, memoryTracker.usedNativeMemory());
     }
 
     @Test
-    void trackNativeMemoryOnArrayAllocations()
-    {
-        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
-        try ( var longArray = NumberArrayFactories.OFF_HEAP.newDynamicLongArray( 10, 1, memoryTracker ) )
-        {
+    void trackNativeMemoryOnArrayAllocations() {
+        var memoryTracker = new LocalMemoryTracker(MemoryPools.NO_TRACKING, 300, 0, null);
+        try (var longArray = NumberArrayFactories.OFF_HEAP.newDynamicLongArray(10, 1, memoryTracker)) {
 
-            assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-            assertEquals( 0, memoryTracker.usedNativeMemory() );
+            assertEquals(0, memoryTracker.estimatedHeapMemory());
+            assertEquals(0, memoryTracker.usedNativeMemory());
 
-            longArray.set( 0, 5 );
+            longArray.set(0, 5);
 
-            assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-            assertEquals( 80, memoryTracker.usedNativeMemory() );
+            assertEquals(0, memoryTracker.estimatedHeapMemory());
+            assertEquals(80, memoryTracker.usedNativeMemory());
         }
     }
 
     @Test
-    void shouldChunksAsNeeded()
-    {
+    void shouldChunksAsNeeded() {
         // GIVEN
-        IntArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, 0, INSTANCE );
+        IntArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray(10, 0, INSTANCE);
 
         // WHEN
         long index = 243;
         int value = 5485748;
-        array.set( index, value );
+        array.set(index, value);
 
         // THEN
-        assertEquals( value, array.get( index ) );
+        assertEquals(value, array.get(index));
     }
 }

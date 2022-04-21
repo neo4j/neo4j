@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.MinMaxOrdering.NullOrdering
   same node and property (n.prop) during planning, esp. for generating index seek by range plans.
  */
 sealed trait SeekRange[+V] {
+
   /**
    * The [[V]]s that are used to define this [[SeekRange]].
    */
@@ -45,11 +46,12 @@ object InequalitySeekRange {
    optionally some lower bounds and some upper bounds.  Such an input may be obtained by partitioning
    inequality expressions.  See usages of this method for examples.
    */
-  def fromPartitionedBounds[V](bounds: Either[(Bounds[V], Option[Bounds[V]]), (Option[Bounds[V]], Bounds[V])]): InequalitySeekRange[V] =
+  def fromPartitionedBounds[V](bounds: Either[(Bounds[V], Option[Bounds[V]]), (Option[Bounds[V]], Bounds[V])])
+    : InequalitySeekRange[V] =
     bounds match {
-      case Left((lefts, None)) => RangeGreaterThan(lefts)
-      case Left((lefts, Some(rights))) => RangeBetween(RangeGreaterThan(lefts), RangeLessThan(rights))
-      case Right((None, rights)) => RangeLessThan(rights)
+      case Left((lefts, None))          => RangeGreaterThan(lefts)
+      case Left((lefts, Some(rights)))  => RangeBetween(RangeGreaterThan(lefts), RangeLessThan(rights))
+      case Right((None, rights))        => RangeLessThan(rights)
       case Right((Some(lefts), rights)) => RangeBetween(RangeGreaterThan(lefts), RangeLessThan(rights))
     }
 }
@@ -79,18 +81,20 @@ sealed trait HalfOpenSeekRange[+V] extends InequalitySeekRange[V] {
   protected def boundOrdering[X >: V](implicit ordering: MinMaxOrdering[X]): Ordering[Bound[X]]
 }
 
-final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: RangeLessThan[V]) extends InequalitySeekRange[V] {
+final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: RangeLessThan[V])
+    extends InequalitySeekRange[V] {
 
   override def arguments: Seq[V] = greaterThan.arguments ++ lessThan.arguments
 
-  override def mapBounds[P](f: V => P): RangeBetween[P] = copy(greaterThan = greaterThan.mapBounds(f), lessThan = lessThan.mapBounds(f))
+  override def mapBounds[P](f: V => P): RangeBetween[P] =
+    copy(greaterThan = greaterThan.mapBounds(f), lessThan = lessThan.mapBounds(f))
 
   override def groupBy[K](f: Bound[V] => K): Map[K, InequalitySeekRange[V]] = {
     val greaterThanBounds = greaterThan.bounds.map(Left(_))
     val lessThanBounds = lessThan.bounds.map(Right(_))
     val allBounds = greaterThanBounds ++ lessThanBounds
     val groupedBounds = allBounds.groupBy[Either[Bound[V], Bound[V]], K] {
-      case Left(bound) => f(bound)
+      case Left(bound)  => f(bound)
       case Right(bound) => f(bound)
     }
     groupedBounds.view.mapValues[InequalitySeekRange[V]] { bounds =>
@@ -140,13 +144,13 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
   - It directly maps on prefix queries of index implementations
   - It removes the need to construct a proper upper bound value for an interval that
   would describe the prefix search (which can be difficult due to unicode issues)
-*/
+ */
 final case class PrefixRange[T](prefix: T) extends SeekRange[T] {
   override def arguments: Seq[T] = Seq(prefix)
 
   def map[X](f: T => X): PrefixRange[X] = copy(f(prefix))
 
-  override def toString: String = s"STARTS WITH ${if(prefix == null) "null" else prefix.toString}"
+  override def toString: String = s"STARTS WITH ${if (prefix == null) "null" else prefix.toString}"
 }
 
 final case class PointDistanceRange[T](point: T, distance: T, inclusive: Boolean) extends SeekRange[T] {
@@ -162,6 +166,7 @@ final case class PointBoundingBoxRange[T](lowerLeft: T, upperRight: T) extends S
 }
 
 final case class MinBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[T]] {
+
   override def compare(x: Bound[T], y: Bound[T]): Int = {
     val cmp = inner.compare(x.endPoint, y.endPoint)
     if (cmp == 0)
@@ -172,6 +177,7 @@ final case class MinBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[
 }
 
 final case class MaxBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[T]] {
+
   override def compare(x: Bound[T], y: Bound[T]): Int = {
     val cmp = inner.compare(x.endPoint, y.endPoint)
     if (cmp == 0)
@@ -190,7 +196,9 @@ case class MinMaxOrdering[T](ordering: Ordering[T]) {
 object MinMaxOrdering {
 
   implicit class NullOrdering[T](ordering: Ordering[T]) {
+
     def withNullsFirst = new Ordering[T] {
+
       override def compare(x: T, y: T): Int = {
         if (x == null) {
           if (y == null) 0 else -1
@@ -203,6 +211,7 @@ object MinMaxOrdering {
     }
 
     def withNullsLast = new Ordering[T] {
+
       override def compare(x: T, y: T): Int = {
         if (x == null) {
           if (y == null) 0 else +1

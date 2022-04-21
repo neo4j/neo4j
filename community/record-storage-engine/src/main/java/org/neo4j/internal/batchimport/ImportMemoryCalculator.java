@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.io.ByteUnit.gibiBytes;
+import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
+
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-
-import static org.neo4j.io.ByteUnit.gibiBytes;
-import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 
 /**
  * Aims to collect logic for calculating memory usage, optimal heap size and more, mostly based on
@@ -35,23 +35,23 @@ import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
  *
  * The calculated numbers are a bit on the defensive side, generally adding 10% to the numbers.
  */
-public class ImportMemoryCalculator
-{
-    public static long estimatedStoreSize( Input.Estimates estimates, RecordFormats recordFormats )
-    {
-        long nodeSize = estimates.numberOfNodes() * recordFormats.node().getRecordSize( NO_STORE_HEADER );
-        long relationshipSize = estimates.numberOfRelationships() * recordFormats.relationship().getRecordSize( NO_STORE_HEADER );
+public class ImportMemoryCalculator {
+    public static long estimatedStoreSize(Input.Estimates estimates, RecordFormats recordFormats) {
+        long nodeSize = estimates.numberOfNodes() * recordFormats.node().getRecordSize(NO_STORE_HEADER);
+        long relationshipSize =
+                estimates.numberOfRelationships() * recordFormats.relationship().getRecordSize(NO_STORE_HEADER);
         long propertySize = estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties();
-        long tempIdPropertySize = estimates.numberOfNodes() * recordFormats.property().getRecordSize( NO_STORE_HEADER );
+        long tempIdPropertySize =
+                estimates.numberOfNodes() * recordFormats.property().getRecordSize(NO_STORE_HEADER);
 
-        return defensivelyPadMemoryEstimate( nodeSize + relationshipSize + propertySize + tempIdPropertySize );
+        return defensivelyPadMemoryEstimate(nodeSize + relationshipSize + propertySize + tempIdPropertySize);
     }
 
-    public static long estimatedCacheSize( MemoryStatsVisitor.Visitable baseMemory, MemoryStatsVisitor.Visitable... memoryUsers )
-    {
-        long neoStoreSize = GatheringMemoryStatsVisitor.totalMemoryUsageOf( baseMemory );
-        long importCacheSize = GatheringMemoryStatsVisitor.highestMemoryUsageOf( memoryUsers );
-        return neoStoreSize + defensivelyPadMemoryEstimate( importCacheSize );
+    public static long estimatedCacheSize(
+            MemoryStatsVisitor.Visitable baseMemory, MemoryStatsVisitor.Visitable... memoryUsers) {
+        long neoStoreSize = GatheringMemoryStatsVisitor.totalMemoryUsageOf(baseMemory);
+        long importCacheSize = GatheringMemoryStatsVisitor.highestMemoryUsageOf(memoryUsers);
+        return neoStoreSize + defensivelyPadMemoryEstimate(importCacheSize);
     }
 
     /**
@@ -67,23 +67,21 @@ public class ImportMemoryCalculator
      * @param recordFormats {@link RecordFormats}, containing record sizes.
      * @return an optimal minimal heap size to use for this import.
      */
-    public static long optimalMinimalHeapSize( Input.Estimates estimates, RecordFormats recordFormats )
-    {
-        long estimatedStoreSize = estimatedStoreSize( estimates, recordFormats );
+    public static long optimalMinimalHeapSize(Input.Estimates estimates, RecordFormats recordFormats) {
+        long estimatedStoreSize = estimatedStoreSize(estimates, recordFormats);
 
         return // working memory
-               gibiBytes( 1 ) +
-               // page cache meta data, see outline of this number above
-               estimatedStoreSize / 2_000;
+        gibiBytes(1)
+                +
+                // page cache meta data, see outline of this number above
+                estimatedStoreSize / 2_000;
     }
 
-    public static long defensivelyPadMemoryEstimate( long bytes )
-    {
+    public static long defensivelyPadMemoryEstimate(long bytes) {
         return (long) (bytes * 1.1);
     }
 
-    public static long defensivelyPadMemoryEstimate( MemoryStatsVisitor.Visitable... memoryUsers )
-    {
-        return defensivelyPadMemoryEstimate( GatheringMemoryStatsVisitor.totalMemoryUsageOf( memoryUsers ) );
+    public static long defensivelyPadMemoryEstimate(MemoryStatsVisitor.Visitable... memoryUsers) {
+        return defensivelyPadMemoryEstimate(GatheringMemoryStatsVisitor.totalMemoryUsageOf(memoryUsers));
     }
 }

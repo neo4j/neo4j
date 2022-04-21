@@ -17,30 +17,39 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
+
 import scala.IterableOnce
 
 object SemanticCheckResult {
   val success: SemanticCheck = SemanticCheckResult(_, Vector())
-  def error(state: SemanticState, error: SemanticErrorDef): SemanticCheckResult = SemanticCheckResult(state, Vector(error))
-  def error(state: SemanticState, error: Option[SemanticErrorDef]): SemanticCheckResult = SemanticCheckResult(state, error.toVector)
+
+  def error(state: SemanticState, error: SemanticErrorDef): SemanticCheckResult =
+    SemanticCheckResult(state, Vector(error))
+
+  def error(state: SemanticState, error: Option[SemanticErrorDef]): SemanticCheckResult =
+    SemanticCheckResult(state, error.toVector)
 }
 
 case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticErrorDef])
 
 class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
+
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck =
     option.fold(SemanticCheckResult.success)(check)
 }
 
 class TraversableOnceSemanticChecking[A](val traversable: IterableOnce[A]) extends AnyVal {
-  def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = state => traversable.foldLeft(SemanticCheckResult.success(state)) {
-    (r1, o) =>
-      val r2 = check(o)(r1.state)
-      SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
-  }
+
+  def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = state =>
+    traversable.foldLeft(SemanticCheckResult.success(state)) {
+      (r1, o) =>
+        val r2 = check(o)(r1.state)
+        SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
+    }
 }
 
 class ChainableSemanticCheck(val check: SemanticCheck) extends AnyVal {
+
   def chain(next: SemanticCheck): SemanticCheck = state => {
     val r1 = check(state)
     val r2 = next(r1.state)
@@ -61,7 +70,7 @@ trait SemanticCheckable {
 }
 
 trait SemanticCheckableExpression {
-  def semanticCheck(ctx:SemanticContext): SemanticCheck
+  def semanticCheck(ctx: SemanticContext): SemanticCheck
 }
 
 class SemanticCheckableOption[A <: SemanticCheckable](val option: Option[A]) extends AnyVal {

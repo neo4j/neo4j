@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema.config;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -31,17 +30,14 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  * them, and will not use these settings at all. Changes will only affect future indexes made. In order to change existing indexes, you will need
  * to drop and recreate any indexes you wish to affect.
  */
-public class ConfiguredSpaceFillingCurveSettingsCache
-{
-    private final Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
+public class ConfiguredSpaceFillingCurveSettingsCache {
+    private final Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> settings = new HashMap<>();
 
-    public ConfiguredSpaceFillingCurveSettingsCache( Config config )
-    {
-        Map<CoordinateReferenceSystem,EnvelopeSettings> env = EnvelopeSettings.envelopeSettingsFromConfig( config );
-        for ( Map.Entry<CoordinateReferenceSystem,EnvelopeSettings> entry : env.entrySet() )
-        {
+    public ConfiguredSpaceFillingCurveSettingsCache(Config config) {
+        Map<CoordinateReferenceSystem, EnvelopeSettings> env = EnvelopeSettings.envelopeSettingsFromConfig(config);
+        for (Map.Entry<CoordinateReferenceSystem, EnvelopeSettings> entry : env.entrySet()) {
             CoordinateReferenceSystem crs = entry.getKey();
-            settings.put( crs, SpaceFillingCurveSettingsFactory.fromConfig( entry.getValue() ) );
+            settings.put(crs, SpaceFillingCurveSettingsFactory.fromConfig(entry.getValue()));
         }
     }
 
@@ -53,15 +49,11 @@ public class ConfiguredSpaceFillingCurveSettingsCache
      *
      * @return The default settings for the specified coordinate reference system
      */
-    public SpaceFillingCurveSettings forCRS( CoordinateReferenceSystem crs )
-    {
-        if ( settings.containsKey( crs ) )
-        {
-            return settings.get( crs );
-        }
-        else
-        {
-            return SpaceFillingCurveSettingsFactory.fromConfig( new EnvelopeSettings( crs ) );
+    public SpaceFillingCurveSettings forCRS(CoordinateReferenceSystem crs) {
+        if (settings.containsKey(crs)) {
+            return settings.get(crs);
+        } else {
+            return SpaceFillingCurveSettingsFactory.fromConfig(new EnvelopeSettings(crs));
         }
     }
 }

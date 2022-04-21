@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,90 +34,83 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-
 @DbmsExtension
-class LogPruningIT
-{
-    private static final SimpleTriggerInfo triggerInfo = new SimpleTriggerInfo( "forced trigger" );
+class LogPruningIT {
+    private static final SimpleTriggerInfo triggerInfo = new SimpleTriggerInfo("forced trigger");
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private LogFiles logFiles;
+
     @Inject
     private CheckPointer checkPointer;
+
     @Inject
     private Config config;
+
     @Inject
     private FileSystemAbstraction fs;
 
     @Test
-    void pruningStrategyShouldBeDynamic() throws IOException
-    {
-        LogFiles logFiles = LogFilesBuilder.builder( db.databaseLayout(), fs )
-                .withLogVersionRepository( new SimpleLogVersionRepository() )
-                .withLastCommittedTransactionIdSupplier( () -> 1 )
-                .withStorageEngineFactory( db.getDependencyResolver().resolveDependency( StorageEngineFactory.class ) )
-                .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
+    void pruningStrategyShouldBeDynamic() throws IOException {
+        LogFiles logFiles = LogFilesBuilder.builder(db.databaseLayout(), fs)
+                .withLogVersionRepository(new SimpleLogVersionRepository())
+                .withLastCommittedTransactionIdSupplier(() -> 1)
+                .withStorageEngineFactory(db.getDependencyResolver().resolveDependency(StorageEngineFactory.class))
+                .withTransactionIdStore(new SimpleTransactionIdStore())
+                .build();
 
         // Force transaction log rotation
         writeTransactionsAndRotateTwice();
 
         // Checkpoint to make sure strategy is evaluated
-        checkPointer.forceCheckPoint( triggerInfo );
+        checkPointer.forceCheckPoint(triggerInfo);
 
-        // Make sure file is still there since we have disable pruning. 3 transaction logs and 1 separate checkpoint file.
-        assertThat( countTransactionLogs( logFiles ) ).isEqualTo( 4 );
+        // Make sure file is still there since we have disable pruning. 3 transaction logs and 1 separate checkpoint
+        // file.
+        assertThat(countTransactionLogs(logFiles)).isEqualTo(4);
 
         // Change pruning to true
-        config.setDynamic( keep_logical_logs, FALSE, "LogPruningIT" );
+        config.setDynamic(keep_logical_logs, FALSE, "LogPruningIT");
 
         // Checkpoint to make sure strategy is evaluated
-        checkPointer.forceCheckPoint( triggerInfo );
+        checkPointer.forceCheckPoint(triggerInfo);
 
         // Make sure file is removed
-        assertThat( countTransactionLogs( logFiles ) ).isEqualTo( 3 );
+        assertThat(countTransactionLogs(logFiles)).isEqualTo(3);
     }
 
-    private void writeTransactionsAndRotateTwice() throws IOException
-    {
+    private void writeTransactionsAndRotateTwice() throws IOException {
         // Apparently we always keep an extra log file what even though the threshold is reached... produce two then
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
-        logFiles.getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
-        try ( Transaction tx = db.beginTx() )
-        {
+        logFiles.getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
-        logFiles.getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
-        try ( Transaction tx = db.beginTx() )
-        {
+        logFiles.getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
     }
 
-    private static int countTransactionLogs( LogFiles logFiles ) throws IOException
-    {
+    private static int countTransactionLogs(LogFiles logFiles) throws IOException {
         return logFiles.logFiles().length;
     }
 }

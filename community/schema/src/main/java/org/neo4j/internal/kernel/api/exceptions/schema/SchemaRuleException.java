@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.exceptions.schema;
 
+import static java.lang.String.format;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -26,13 +28,10 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static java.lang.String.format;
-
 /**
  * Represent something gone wrong related to SchemaRules
  */
-public class SchemaRuleException extends SchemaKernelException
-{
+public class SchemaRuleException extends SchemaKernelException {
     private final SchemaDescriptorSupplier schemaThing;
     private final String messageTemplate;
 
@@ -41,52 +40,53 @@ public class SchemaRuleException extends SchemaKernelException
      * @param schemaThing schema element relevant to this exception.
      * @param tokenNameLookup how to look up tokens for describing the given {@code schemaThing}.
      */
-    SchemaRuleException( Status status, String messageTemplate, SchemaDescriptorSupplier schemaThing, TokenNameLookup tokenNameLookup )
-    {
-        super( status, format( messageTemplate, describe( schemaThing ),
-                schemaThing.schema().userDescription( tokenNameLookup ) ) );
+    SchemaRuleException(
+            Status status,
+            String messageTemplate,
+            SchemaDescriptorSupplier schemaThing,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                status,
+                format(
+                        messageTemplate,
+                        describe(schemaThing),
+                        schemaThing.schema().userDescription(tokenNameLookup)));
         this.schemaThing = schemaThing;
         this.messageTemplate = messageTemplate;
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
-        return format( messageTemplate, describe( schemaThing ), schemaThing.schema().userDescription( tokenNameLookup ) );
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
+        return format(
+                messageTemplate, describe(schemaThing), schemaThing.schema().userDescription(tokenNameLookup));
     }
 
-    public static String describe( SchemaDescriptorSupplier schemaThing )
-    {
+    public static String describe(SchemaDescriptorSupplier schemaThing) {
         SchemaDescriptor schema = schemaThing.schema();
         String tagType;
-        switch ( schema.entityType() )
-        {
-        case NODE:
-            tagType = "label";
-            break;
-        case RELATIONSHIP:
-            tagType = "relationship type";
-            break;
-        default:
-            throw new AssertionError( "Unknown entity type: " + schema.entityType() );
+        switch (schema.entityType()) {
+            case NODE:
+                tagType = "label";
+                break;
+            case RELATIONSHIP:
+                tagType = "relationship type";
+                break;
+            default:
+                throw new AssertionError("Unknown entity type: " + schema.entityType());
         }
 
-        if ( schemaThing instanceof ConstraintDescriptor constraint )
-        {
-            switch ( constraint.type() )
-            {
-            case UNIQUE:
-                return tagType + " uniqueness constraint";
-            case EXISTS:
-                return tagType + " property existence constraint";
-            case UNIQUE_EXISTS:
-                return schema.entityType().name().toLowerCase() + " key constraint";
-            default:
-                throw new AssertionError( "Unknown constraint type: " + constraint.type() );
+        if (schemaThing instanceof ConstraintDescriptor constraint) {
+            switch (constraint.type()) {
+                case UNIQUE:
+                    return tagType + " uniqueness constraint";
+                case EXISTS:
+                    return tagType + " property existence constraint";
+                case UNIQUE_EXISTS:
+                    return schema.entityType().name().toLowerCase() + " key constraint";
+                default:
+                    throw new AssertionError("Unknown constraint type: " + constraint.type());
             }
-        }
-        else if ( schemaThing instanceof IndexDescriptor index )
-        {
+        } else if (schemaThing instanceof IndexDescriptor index) {
             return index.getIndexType().name().toLowerCase() + " " + tagType + " index";
         }
         return tagType + " schema";

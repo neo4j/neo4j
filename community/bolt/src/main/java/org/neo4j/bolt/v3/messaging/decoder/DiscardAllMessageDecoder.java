@@ -20,37 +20,31 @@
 package org.neo4j.bolt.v3.messaging.decoder;
 
 import java.io.IOException;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
 
-public class DiscardAllMessageDecoder implements RequestMessageDecoder
-{
+public class DiscardAllMessageDecoder implements RequestMessageDecoder {
     private final BoltResponseHandler responseHandler;
 
-    public DiscardAllMessageDecoder( BoltResponseHandler responseHandler )
-    {
+    public DiscardAllMessageDecoder(BoltResponseHandler responseHandler) {
         this.responseHandler = responseHandler;
     }
 
     @Override
-    public int signature()
-    {
+    public int signature() {
         return DiscardAllMessage.SIGNATURE;
     }
 
     @Override
-    public BoltResponseHandler responseHandler()
-    {
+    public BoltResponseHandler responseHandler() {
         return responseHandler;
     }
 
     @Override
-    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
+    public RequestMessage decode(Neo4jPack.Unpacker unpacker) throws IOException {
         return DiscardAllMessage.INSTANCE;
     }
 }

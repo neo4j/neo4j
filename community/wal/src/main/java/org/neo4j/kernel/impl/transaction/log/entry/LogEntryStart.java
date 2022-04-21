@@ -19,32 +19,42 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.util.Arrays;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 
+import java.util.Arrays;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
-
-public class LogEntryStart extends AbstractLogEntry
-{
+public class LogEntryStart extends AbstractLogEntry {
     private final long timeWritten;
     private final long lastCommittedTxWhenTransactionStarted;
     private final int previousChecksum;
     private final byte[] additionalHeader;
     private final LogPosition startPosition;
 
-    public LogEntryStart( long timeWritten, long lastCommittedTxWhenTransactionStarted,
-            int previousChecksum, byte[] additionalHeader, LogPosition startPosition )
-    {
-        this( KernelVersion.LATEST, timeWritten, lastCommittedTxWhenTransactionStarted, previousChecksum,
-                additionalHeader, startPosition );
+    public LogEntryStart(
+            long timeWritten,
+            long lastCommittedTxWhenTransactionStarted,
+            int previousChecksum,
+            byte[] additionalHeader,
+            LogPosition startPosition) {
+        this(
+                KernelVersion.LATEST,
+                timeWritten,
+                lastCommittedTxWhenTransactionStarted,
+                previousChecksum,
+                additionalHeader,
+                startPosition);
     }
 
-    public LogEntryStart( KernelVersion version, long timeWritten, long lastCommittedTxWhenTransactionStarted,
-            int previousChecksum, byte[] additionalHeader, LogPosition startPosition )
-    {
-        super( version, TX_START );
+    public LogEntryStart(
+            KernelVersion version,
+            long timeWritten,
+            long lastCommittedTxWhenTransactionStarted,
+            int previousChecksum,
+            byte[] additionalHeader,
+            LogPosition startPosition) {
+        super(version, TX_START);
         this.previousChecksum = previousChecksum;
         this.startPosition = startPosition;
         this.timeWritten = timeWritten;
@@ -52,73 +62,65 @@ public class LogEntryStart extends AbstractLogEntry
         this.additionalHeader = additionalHeader;
     }
 
-    public LogPosition getStartPosition()
-    {
+    public LogPosition getStartPosition() {
         return startPosition;
     }
 
-    public long getTimeWritten()
-    {
+    public long getTimeWritten() {
         return timeWritten;
     }
 
-    public long getLastCommittedTxWhenTransactionStarted()
-    {
+    public long getLastCommittedTxWhenTransactionStarted() {
         return lastCommittedTxWhenTransactionStarted;
     }
 
-    public byte[] getAdditionalHeader()
-    {
+    public byte[] getAdditionalHeader() {
         return additionalHeader;
     }
 
     @Override
-    public String toString()
-    {
-        return "Start[" +
-                "kernelVersion=" + getVersion() + "," +
-                "time=" + timestamp( timeWritten ) + "," +
-                "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
-                "previousChecksum=" + previousChecksum + "," +
-                "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) + "," +
-                (additionalHeader == null ? "" : Arrays.toString( additionalHeader ) ) + "," +
-                "position=" + startPosition +
-                "]";
+    public String toString() {
+        return "Start[" + "kernelVersion="
+                + getVersion() + "," + "time="
+                + timestamp(timeWritten) + "," + "lastCommittedTxWhenTransactionStarted="
+                + lastCommittedTxWhenTransactionStarted + "," + "previousChecksum="
+                + previousChecksum + "," + "additionalHeaderLength="
+                + (additionalHeader == null ? -1 : additionalHeader.length) + ","
+                + (additionalHeader == null ? "" : Arrays.toString(additionalHeader))
+                + "," + "position="
+                + startPosition + "]";
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         LogEntryStart start = (LogEntryStart) o;
 
-        return lastCommittedTxWhenTransactionStarted == start.lastCommittedTxWhenTransactionStarted &&
-               timeWritten == start.timeWritten &&
-               previousChecksum == start.previousChecksum &&
-               Arrays.equals( additionalHeader, start.additionalHeader ) && startPosition.equals( start.startPosition );
+        return lastCommittedTxWhenTransactionStarted == start.lastCommittedTxWhenTransactionStarted
+                && timeWritten == start.timeWritten
+                && previousChecksum == start.previousChecksum
+                && Arrays.equals(additionalHeader, start.additionalHeader)
+                && startPosition.equals(start.startPosition);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = (int) (timeWritten ^ (timeWritten >>> 32));
-        result = 31 * result + (int) (lastCommittedTxWhenTransactionStarted ^ (lastCommittedTxWhenTransactionStarted >>> 32));
+        result = 31 * result
+                + (int) (lastCommittedTxWhenTransactionStarted ^ (lastCommittedTxWhenTransactionStarted >>> 32));
         result = 31 * result + previousChecksum;
-        result = 31 * result + (additionalHeader != null ? Arrays.hashCode( additionalHeader ) : 0);
+        result = 31 * result + (additionalHeader != null ? Arrays.hashCode(additionalHeader) : 0);
         result = 31 * result + startPosition.hashCode();
         return result;
     }
 
-    public int getPreviousChecksum()
-    {
+    public int getPreviousChecksum() {
         return previousChecksum;
     }
 }

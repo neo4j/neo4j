@@ -52,29 +52,32 @@ import scala.language.implicitConversions
 import scala.util.Failure
 import scala.util.Success
 
-class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBase[ast.Statement] with VerifyAstPositionTestSupport {
+class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBase[ast.Statement]
+    with VerifyAstPositionTestSupport {
 
-    implicit protected val parser: JavaccRule[ast.Statement] = JavaccRule.Statements
+  implicit protected val parser: JavaccRule[ast.Statement] = JavaccRule.Statements
 
-    protected def assertAst(expected: Statement, comparePosition: Boolean = true )(implicit p: JavaccRule[ast.Statement]): Unit = {
-      parseRule(p, testName) match {
-        case Success(statement) =>
-          statement shouldBe expected
-          if (comparePosition) {
-            //change flag to true to get basic print methods for position of words
-            printQueryPositions(testName, printFlag = false)
-            verifyPositions(statement, expected)
-          }
-        case Failure(exception) =>
-          fail(exception)
-      }
+  protected def assertAst(expected: Statement, comparePosition: Boolean = true)(implicit
+  p: JavaccRule[ast.Statement]): Unit = {
+    parseRule(p, testName) match {
+      case Success(statement) =>
+        statement shouldBe expected
+        if (comparePosition) {
+          // change flag to true to get basic print methods for position of words
+          printQueryPositions(testName, printFlag = false)
+          verifyPositions(statement, expected)
+        }
+      case Failure(exception) =>
+        fail(exception)
     }
+  }
 
-    private def printQueryPositions(query: String, printFlag: Boolean): Unit = {
+  private def printQueryPositions(query: String, printFlag: Boolean): Unit = {
     if (printFlag) {
       println(query)
       query.split("[ ,:.()\\[\\]]+").foreach(split =>
-        println(s"$split: ${query.indexOf(split)+1}, ${query.indexOf(split)}"))
+        println(s"$split: ${query.indexOf(split) + 1}, ${query.indexOf(split)}")
+      )
       println("---")
     }
   }
@@ -116,128 +119,280 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
 
   def toUtf8Bytes(pw: String): Array[Byte] = pw.getBytes(StandardCharsets.UTF_8)
 
-  def pw(password: String): InputPosition => SensitiveStringLiteral = expressions.SensitiveStringLiteral(toUtf8Bytes(password))(_)
+  def pw(password: String): InputPosition => SensitiveStringLiteral =
+    expressions.SensitiveStringLiteral(toUtf8Bytes(password))(_)
 
   def pwParam(name: String): Parameter = expressions.Parameter(name, CTString)(_)
 
-  type resourcePrivilegeFunc = (PrivilegeType, ActionResource, List[GraphPrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
-  type noResourcePrivilegeFunc = (PrivilegeType, List[GraphPrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
-  type databasePrivilegeFunc = (DatabaseAction, List[DatabaseScope], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
-  type transactionPrivilegeFunc = (DatabaseAction, List[DatabaseScope], List[DatabasePrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
-  type dbmsPrivilegeFunc = (DbmsAction, Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
-  type executeProcedurePrivilegeFunc = (DbmsAction, List[ProcedurePrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
-  type executeFunctionPrivilegeFunc = (DbmsAction, List[FunctionPrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
+  type resourcePrivilegeFunc = (
+    PrivilegeType,
+    ActionResource,
+    List[GraphPrivilegeQualifier],
+    Seq[Either[String, Parameter]]
+  ) => InputPosition => ast.Statement
 
-  def grantGraphPrivilege(p: PrivilegeType, a: ActionResource, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  type noResourcePrivilegeFunc =
+    (PrivilegeType, List[GraphPrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
+
+  type databasePrivilegeFunc =
+    (DatabaseAction, List[DatabaseScope], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
+
+  type transactionPrivilegeFunc = (
+    DatabaseAction,
+    List[DatabaseScope],
+    List[DatabasePrivilegeQualifier],
+    Seq[Either[String, Parameter]]
+  ) => InputPosition => ast.Statement
+  type dbmsPrivilegeFunc = (DbmsAction, Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
+
+  type executeProcedurePrivilegeFunc =
+    (DbmsAction, List[ProcedurePrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
+
+  type executeFunctionPrivilegeFunc =
+    (DbmsAction, List[FunctionPrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
+
+  def grantGraphPrivilege(
+    p: PrivilegeType,
+    a: ActionResource,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.GrantPrivilege(p, Some(a), q, r)
 
-  def grantGraphPrivilege(p: PrivilegeType, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def grantGraphPrivilege(
+    p: PrivilegeType,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.GrantPrivilege(p, None, q, r)
 
-  def grantDatabasePrivilege(d: DatabaseAction, s: List[DatabaseScope], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def grantDatabasePrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.GrantPrivilege.databaseAction(d, s, r)
 
-  def grantTransactionPrivilege(d: DatabaseAction, s: List[DatabaseScope], q: List[DatabasePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def grantTransactionPrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    q: List[DatabasePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.GrantPrivilege.databaseAction(d, s, r, q)
 
   def grantDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(a, r)
 
-  def grantExecuteProcedurePrivilege(a: DbmsAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def grantExecuteProcedurePrivilege(
+    a: DbmsAction,
+    q: List[ProcedurePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(a, r, q)
 
-  def grantExecuteFunctionPrivilege(a: DbmsAction, q: List[FunctionPrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def grantExecuteFunctionPrivilege(
+    a: DbmsAction,
+    q: List[FunctionPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(a, r, q)
 
-  def denyGraphPrivilege(p: PrivilegeType, a: ActionResource, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def denyGraphPrivilege(
+    p: PrivilegeType,
+    a: ActionResource,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.DenyPrivilege(p, Some(a), q, r)
 
-  def denyGraphPrivilege(p: PrivilegeType, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def denyGraphPrivilege(
+    p: PrivilegeType,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.DenyPrivilege(p, None, q, r)
 
-  def denyDatabasePrivilege(d: DatabaseAction, s: List[DatabaseScope], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def denyDatabasePrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.DenyPrivilege.databaseAction(d, s, r)
 
-  def denyTransactionPrivilege(d: DatabaseAction, s: List[DatabaseScope], q: List[DatabasePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def denyTransactionPrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    q: List[DatabasePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.DenyPrivilege.databaseAction(d, s, r, q)
 
   def denyDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(a, r)
 
-  def denyExecuteProcedurePrivilege(a: DbmsAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def denyExecuteProcedurePrivilege(
+    a: DbmsAction,
+    q: List[ProcedurePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(a, r, q)
 
-  def denyExecuteFunctionPrivilege(a: DbmsAction, q: List[FunctionPrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def denyExecuteFunctionPrivilege(
+    a: DbmsAction,
+    q: List[FunctionPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(a, r, q)
 
-  def revokeGrantGraphPrivilege(p: PrivilegeType, a: ActionResource, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeGrantGraphPrivilege(
+    p: PrivilegeType,
+    a: ActionResource,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, Some(a), q, r, RevokeGrantType()(pos))
 
-  def revokeGrantGraphPrivilege(p: PrivilegeType, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeGrantGraphPrivilege(
+    p: PrivilegeType,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, None, q, r, RevokeGrantType()(pos))
 
-  def revokeGrantDatabasePrivilege(d: DatabaseAction, s: List[DatabaseScope], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeGrantDatabasePrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, s, r, RevokeGrantType()(pos))
 
-  def revokeGrantTransactionPrivilege(d: DatabaseAction, s: List[DatabaseScope], q: List[DatabasePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeGrantTransactionPrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    q: List[DatabasePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, s, r, RevokeGrantType()(pos), q)
 
   def revokeGrantDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeGrantType()(pos))
 
-  def revokeGrantExecuteProcedurePrivilege(a: DbmsAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeGrantExecuteProcedurePrivilege(
+    a: DbmsAction,
+    q: List[ProcedurePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeGrantType()(pos), q)
 
-  def revokeGrantExecuteFunctionPrivilege(a: DbmsAction, q: List[FunctionPrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeGrantExecuteFunctionPrivilege(
+    a: DbmsAction,
+    q: List[FunctionPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeGrantType()(pos), q)
 
-  def revokeDenyGraphPrivilege(p: PrivilegeType, a: ActionResource, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeDenyGraphPrivilege(
+    p: PrivilegeType,
+    a: ActionResource,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, Some(a), q, r, RevokeDenyType()(pos))
 
-  def revokeDenyGraphPrivilege(p: PrivilegeType, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeDenyGraphPrivilege(
+    p: PrivilegeType,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, None, q, r, RevokeDenyType()(pos))
 
-  def revokeDenyDatabasePrivilege(d: DatabaseAction, s: List[DatabaseScope], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeDenyDatabasePrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, s, r, RevokeDenyType()(pos))
 
-  def revokeDenyTransactionPrivilege(d: DatabaseAction, s: List[DatabaseScope], q: List[DatabasePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeDenyTransactionPrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    q: List[DatabasePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, s, r, RevokeDenyType()(pos), q)
 
   def revokeDenyDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeDenyType()(pos))
 
-  def revokeDenyExecuteProcedurePrivilege(a: DbmsAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeDenyExecuteProcedurePrivilege(
+    a: DbmsAction,
+    q: List[ProcedurePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeDenyType()(pos), q)
 
-  def revokeDenyExecuteFunctionPrivilege(a: DbmsAction, q: List[FunctionPrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeDenyExecuteFunctionPrivilege(
+    a: DbmsAction,
+    q: List[FunctionPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeDenyType()(pos), q)
 
-  def revokeGraphPrivilege(p: PrivilegeType, a: ActionResource, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeGraphPrivilege(
+    p: PrivilegeType,
+    a: ActionResource,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, Some(a), q, r, RevokeBothType()(pos))
 
-  def revokeGraphPrivilege(p: PrivilegeType, q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeGraphPrivilege(
+    p: PrivilegeType,
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, None, q, r, RevokeBothType()(pos))
 
-  def revokeDatabasePrivilege(d: DatabaseAction, s: List[DatabaseScope], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeDatabasePrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, s, r, RevokeBothType()(pos))
 
-  def revokeTransactionPrivilege(d: DatabaseAction, s: List[DatabaseScope], q: List[DatabasePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeTransactionPrivilege(
+    d: DatabaseAction,
+    s: List[DatabaseScope],
+    q: List[DatabasePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, s, r, RevokeBothType()(pos), q)
 
   def revokeDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeBothType()(pos))
 
-  def revokeExecuteProcedurePrivilege(a: DbmsAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeExecuteProcedurePrivilege(
+    a: DbmsAction,
+    q: List[ProcedurePrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeBothType()(pos), q)
 
-  def revokeExecuteFunctionPrivilege(a: DbmsAction, q: List[FunctionPrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeExecuteFunctionPrivilege(
+    a: DbmsAction,
+    q: List[FunctionPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeBothType()(pos), q)
 
   // Can't use the `return_` methods in `AstConstructionTestSupport`
   // since that results in `Cannot resolve overloaded method 'return_'` for unknown reasons
-  def returnClause(returnItems: ast.ReturnItems,
-                   orderBy: Option[ast.OrderBy] = None,
-                   limit: Option[ast.Limit] = None,
-                   distinct: Boolean = false): ast.Return =
+  def returnClause(
+    returnItems: ast.ReturnItems,
+    orderBy: Option[ast.OrderBy] = None,
+    limit: Option[ast.Limit] = None,
+    distinct: Boolean = false
+  ): ast.Return =
     ast.Return(distinct, returnItems, orderBy, None, limit)(pos)
 }

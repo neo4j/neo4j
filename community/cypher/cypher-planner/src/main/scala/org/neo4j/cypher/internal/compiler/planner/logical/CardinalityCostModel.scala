@@ -108,17 +108,28 @@ import org.neo4j.cypher.internal.util.WorkReduction
 
 case class CardinalityCostModel(executionModel: ExecutionModel) extends CostModel {
 
-  override def costFor(plan: LogicalPlan,
-                       input: QueryGraphSolverInput,
-                       semanticTable: SemanticTable,
-                       cardinalities: Cardinalities,
-                       providedOrders: ProvidedOrders,
-                       monitor: CostModelMonitor): Cost = {
+  override def costFor(
+    plan: LogicalPlan,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    cardinalities: Cardinalities,
+    providedOrders: ProvidedOrders,
+    monitor: CostModelMonitor
+  ): Cost = {
     // The plan we use here to select the batch size will obviously not be the final plan for the whole query.
     // So it could very well be that we select the small chunk size here for cost estimation purposes, but the cardinalities increase
     // in the later course of the plan and it will actually be executed with the big chunk size.
     val batchSize = executionModel.selectBatchSize(plan, cardinalities)
-    calculateCost(plan, WorkReduction(input.limitSelectivity), cardinalities, providedOrders, semanticTable, plan, batchSize, monitor)
+    calculateCost(
+      plan,
+      WorkReduction(input.limitSelectivity),
+      cardinalities,
+      providedOrders,
+      semanticTable,
+      plan,
+      batchSize,
+      monitor
+    )
   }
 
   /**
@@ -128,23 +139,48 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
    * @param workReduction expected work reduction due to limits and laziness
    * @param rootPlan      the whole plan currently calculating cost for.
    */
-  private def calculateCost(plan: LogicalPlan,
-                            workReduction: WorkReduction,
-                            cardinalities: Cardinalities,
-                            providedOrders: ProvidedOrders,
-                            semanticTable: SemanticTable,
-                            rootPlan: LogicalPlan,
-                            batchSize: SelectedBatchSize,
-                            monitor: CostModelMonitor): Cost = {
+  private def calculateCost(
+    plan: LogicalPlan,
+    workReduction: WorkReduction,
+    cardinalities: Cardinalities,
+    providedOrders: ProvidedOrders,
+    semanticTable: SemanticTable,
+    rootPlan: LogicalPlan,
+    batchSize: SelectedBatchSize,
+    monitor: CostModelMonitor
+  ): Cost = {
 
     val effectiveBatchSize = getEffectiveBatchSize(batchSize, plan, providedOrders)
 
     val effectiveCard = effectiveCardinalities(plan, workReduction, effectiveBatchSize, cardinalities)
 
-    val lhsCost = plan.lhs.map(p => calculateCost(p, effectiveCard.lhsReduction, cardinalities, providedOrders, semanticTable, rootPlan, batchSize, monitor)) getOrElse Cost.ZERO
-    val rhsCost = plan.rhs.map(p => calculateCost(p, effectiveCard.rhsReduction, cardinalities, providedOrders, semanticTable, rootPlan, batchSize, monitor)) getOrElse Cost.ZERO
+    val lhsCost = plan.lhs.map(p =>
+      calculateCost(
+        p,
+        effectiveCard.lhsReduction,
+        cardinalities,
+        providedOrders,
+        semanticTable,
+        rootPlan,
+        batchSize,
+        monitor
+      )
+    ) getOrElse Cost.ZERO
+    val rhsCost = plan.rhs.map(p =>
+      calculateCost(
+        p,
+        effectiveCard.rhsReduction,
+        cardinalities,
+        providedOrders,
+        semanticTable,
+        rootPlan,
+        batchSize,
+        monitor
+      )
+    ) getOrElse Cost.ZERO
 
-    val cost = combinedCostForPlan(plan, effectiveCard, cardinalities, lhsCost, rhsCost, semanticTable, effectiveBatchSize)
+    val cost =
+      combinedCostForPlan(plan, effectiveCard, cardinalities, lhsCost, rhsCost, semanticTable, effectiveBatchSize)
 
     monitor.reportPlanCost(rootPlan, plan, cost)
     monitor.reportPlanEffectiveCardinality(rootPlan, plan, effectiveCard.outputCardinality)
@@ -159,13 +195,15 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
    * @param effectiveCardinalities the effective cardinalities for this plan, the LHS and the RHS
    * @param cardinalities          the cardinalities without applying any limit selectivities to them
    */
-  private def combinedCostForPlan(plan: LogicalPlan,
-                                  effectiveCardinalities: EffectiveCardinalities,
-                                  cardinalities: Cardinalities,
-                                  lhsCost: Cost,
-                                  rhsCost: Cost,
-                                  semanticTable: SemanticTable,
-                                  batchSize: SelectedBatchSize): Cost = plan match {
+  private def combinedCostForPlan(
+    plan: LogicalPlan,
+    effectiveCardinalities: EffectiveCardinalities,
+    cardinalities: Cardinalities,
+    lhsCost: Cost,
+    rhsCost: Cost,
+    semanticTable: SemanticTable,
+    batchSize: SelectedBatchSize
+  ): Cost = plan match {
     case _: CartesianProduct =>
       val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
 
@@ -220,12 +258,13 @@ object CardinalityCostModel {
    */
   def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
     val noOfStoreAccesses = expression.folder.treeFold(0) {
-      case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
-      case cp: CachedProperty if cp.knownToAccessStore => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
+      case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) =>
+        count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
+      case cp: CachedProperty if cp.knownToAccessStore    => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case cp: CachedHasProperty if cp.knownToAccessStore => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case _: HasLabels |
-           _: HasTypes |
-           _: HasLabelsOrTypes => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
+        _: HasTypes |
+        _: HasLabelsOrTypes => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
       case _ => count => TraverseChildren(count)
     }
     if (noOfStoreAccesses > 0)
@@ -240,112 +279,95 @@ object CardinalityCostModel {
    * @param semanticTable the semantic table
    * @return the cost of the plan per outgoing row
    */
-  private def costPerRow(plan: LogicalPlan, cardinality: Cardinality, semanticTable: SemanticTable): CostPerRow = plan match {
-    /*
-     * These constants are approximations derived from test runs,
-     * see ActualCostCalculationTest
-     */
+  private def costPerRow(plan: LogicalPlan, cardinality: Cardinality, semanticTable: SemanticTable): CostPerRow =
+    plan match {
+      /*
+       * These constants are approximations derived from test runs,
+       * see ActualCostCalculationTest
+       */
 
-    /*
-     * Ties that may occur between leaf plans (e.g. label/type scans and index plans) are arbitrated by a SelectorHeuristic
-     */
+      /*
+       * Ties that may occur between leaf plans (e.g. label/type scans and index plans) are arbitrated by a SelectorHeuristic
+       */
 
-    case _: NodeByLabelScan |
-         _: NodeIndexScan
-    => INDEX_SCAN_COST_PER_ROW
+      case _: NodeByLabelScan |
+        _: NodeIndexScan => INDEX_SCAN_COST_PER_ROW
 
-    case _: ProjectEndpoints
-    => STORE_LOOKUP_COST_PER_ROW
+      case _: ProjectEndpoints => STORE_LOOKUP_COST_PER_ROW
 
-    case Selection(predicate, _)
-    => costPerRowFor(predicate, semanticTable)
+      case Selection(predicate, _) => costPerRowFor(predicate, semanticTable)
 
-    case _: AllNodesScan
-    => 1.2
+      case _: AllNodesScan => 1.2
 
-    case e: OptionalExpand if e.mode == ExpandInto
-    => EXPAND_INTO_COST
+      case e: OptionalExpand if e.mode == ExpandInto => EXPAND_INTO_COST
 
-    case e: Expand if e.mode == ExpandInto
-    => EXPAND_INTO_COST
+      case e: Expand if e.mode == ExpandInto => EXPAND_INTO_COST
 
-    case e: VarExpand if e.mode == ExpandInto
-    => EXPAND_INTO_COST
+      case e: VarExpand if e.mode == ExpandInto => EXPAND_INTO_COST
 
-    case _: Expand |
-         _: VarExpand |
-         _: OptionalExpand
-    => 1.5
+      case _: Expand |
+        _: VarExpand |
+        _: OptionalExpand => 1.5
 
-    case _: NodeUniqueIndexSeek |
-         _: NodeIndexSeek |
-         _: NodeIndexContainsScan |
-         _: NodeIndexEndsWithScan
-    => INDEX_SEEK_COST_PER_ROW
+      case _: NodeUniqueIndexSeek |
+        _: NodeIndexSeek |
+        _: NodeIndexContainsScan |
+        _: NodeIndexEndsWithScan => INDEX_SEEK_COST_PER_ROW
 
-    case _: NodeByIdSeek |
-         _: DirectedRelationshipByIdSeek
-    => STORE_LOOKUP_COST_PER_ROW
+      case _: NodeByIdSeek |
+        _: DirectedRelationshipByIdSeek => STORE_LOOKUP_COST_PER_ROW
 
-    case _: UndirectedRelationshipByIdSeek
-      // Only every second row needs to access the store
-    => STORE_LOOKUP_COST_PER_ROW / 2
+      case _: UndirectedRelationshipByIdSeek
+        // Only every second row needs to access the store
+        => STORE_LOOKUP_COST_PER_ROW / 2
 
-    case
-      _: DirectedRelationshipTypeScan |
-      _: DirectedRelationshipIndexScan
-    => INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
+      case _: DirectedRelationshipTypeScan |
+        _: DirectedRelationshipIndexScan => INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
 
-    case
-      _: UndirectedRelationshipTypeScan |
-      _: UndirectedRelationshipIndexScan
-      // Only every second row needs to access the index and the store
-    => (INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW) / 2
+      case _: UndirectedRelationshipTypeScan |
+        _: UndirectedRelationshipIndexScan
+        // Only every second row needs to access the index and the store
+        => (INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW) / 2
 
-    case
-      _: DirectedRelationshipIndexSeek |
-      _: DirectedRelationshipIndexContainsScan |
-      _: DirectedRelationshipIndexEndsWithScan
-    => INDEX_SEEK_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
+      case _: DirectedRelationshipIndexSeek |
+        _: DirectedRelationshipIndexContainsScan |
+        _: DirectedRelationshipIndexEndsWithScan => INDEX_SEEK_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
 
-    case
-      _: UndirectedRelationshipIndexSeek |
-      _: UndirectedRelationshipIndexContainsScan |
-      _: UndirectedRelationshipIndexEndsWithScan
-      // Only every second row needs to access the index and the store
-    => (INDEX_SEEK_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW) / 2
+      case _: UndirectedRelationshipIndexSeek |
+        _: UndirectedRelationshipIndexContainsScan |
+        _: UndirectedRelationshipIndexEndsWithScan
+        // Only every second row needs to access the index and the store
+        => (INDEX_SEEK_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW) / 2
 
-    case _: NodeHashJoin |
-         _: AggregatingPlan |
-         _: AbstractLetSemiApply |
-         _: Limit |
-         _: ExhaustiveLimit |
-         _: Optional |
-         _: Argument |
-         _: LeftOuterHashJoin |
-         _: RightOuterHashJoin |
-         _: AbstractSemiApply |
-         _: Skip |
-         _: Union |
-         _: ValueHashJoin |
-         _: UnwindCollection |
-         _: ProcedureCall
-    => DEFAULT_COST_PER_ROW
+      case _: NodeHashJoin |
+        _: AggregatingPlan |
+        _: AbstractLetSemiApply |
+        _: Limit |
+        _: ExhaustiveLimit |
+        _: Optional |
+        _: Argument |
+        _: LeftOuterHashJoin |
+        _: RightOuterHashJoin |
+        _: AbstractSemiApply |
+        _: Skip |
+        _: Union |
+        _: ValueHashJoin |
+        _: UnwindCollection |
+        _: ProcedureCall => DEFAULT_COST_PER_ROW
 
-    case _:Sort =>
-      // Sorting is O(n * log(n)). Therefore the cost per row is O(log(n))
-      // This means:
-      // Sorting 1 row has cost 0.03 per row.
-      // Sorting 9 rows has cost 0.1 per row (DEFAULT_COST_PER_ROW).
-      // Sorting 99 rows has cost 0.2 per row.
-      DEFAULT_COST_PER_ROW * Math.log(cardinality.amount + 1)
+      case _: Sort =>
+        // Sorting is O(n * log(n)). Therefore the cost per row is O(log(n))
+        // This means:
+        // Sorting 1 row has cost 0.03 per row.
+        // Sorting 9 rows has cost 0.1 per row (DEFAULT_COST_PER_ROW).
+        // Sorting 99 rows has cost 0.2 per row.
+        DEFAULT_COST_PER_ROW * Math.log(cardinality.amount + 1)
 
-    case _: FindShortestPaths
-    => 12.0
+      case _: FindShortestPaths => 12.0
 
-    case _ // Default
-    => DEFAULT_COST_PER_ROW
-  }
+      case _ // Default
+        => DEFAULT_COST_PER_ROW
+    }
 
   /**
    * The input cardinality if defined, otherwise the output cardinality
@@ -362,7 +384,7 @@ object CardinalityCostModel {
     lhs: Cardinality,
     rhs: Cardinality,
     lhsReduction: WorkReduction,
-    rhsReduction: WorkReduction,
+    rhsReduction: WorkReduction
   )
 
   /**
@@ -372,7 +394,11 @@ object CardinalityCostModel {
    * @param outputCardinality       the cardinality of plan
    * @param parentLimitSelectivity  the limit selectivity of the plan's parent
    */
-  def limitingPlanSelectivity(inputCardinality: Cardinality, outputCardinality: Cardinality, parentLimitSelectivity: Selectivity): Selectivity =
+  def limitingPlanSelectivity(
+    inputCardinality: Cardinality,
+    outputCardinality: Cardinality,
+    parentLimitSelectivity: Selectivity
+  ): Selectivity =
     limitingPlanWorkReduction(inputCardinality, outputCardinality, WorkReduction(parentLimitSelectivity)).fraction
 
   /**
@@ -382,7 +408,11 @@ object CardinalityCostModel {
    * @param outputCardinality       the cardinality of plan
    * @param parentWorkReduction     the work reduction of the plan's parent
    */
-  def limitingPlanWorkReduction(inputCardinality: Cardinality, outputCardinality: Cardinality, parentWorkReduction: WorkReduction): WorkReduction = {
+  def limitingPlanWorkReduction(
+    inputCardinality: Cardinality,
+    outputCardinality: Cardinality,
+    parentWorkReduction: WorkReduction
+  ): WorkReduction = {
     val reducedOutput = parentWorkReduction.calculate(outputCardinality)
     val fraction = (reducedOutput / inputCardinality) getOrElse Selectivity.ONE
     parentWorkReduction.withFraction(fraction)
@@ -392,7 +422,12 @@ object CardinalityCostModel {
    * Given an incoming WorkReduction, calculate how this reduction applies to the LHS and RHS of the plan.
    *
    */
-  private[logical] def effectiveCardinalities(plan: LogicalPlan, workReduction: WorkReduction, batchSize: SelectedBatchSize, cardinalities: Cardinalities): EffectiveCardinalities = {
+  private[logical] def effectiveCardinalities(
+    plan: LogicalPlan,
+    workReduction: WorkReduction,
+    batchSize: SelectedBatchSize,
+    cardinalities: Cardinalities
+  ): EffectiveCardinalities = {
     val (lhsWorkReduction, rhsWorkReduction) = childrenWorkReduction(plan, workReduction, batchSize, cardinalities)
 
     // Make sure argument leaf plans under semiApply etc. get bounded to the same cardinality as the lhs
@@ -407,16 +442,21 @@ object CardinalityCostModel {
       plan.lhs.map(p => lhsWorkReduction.calculate(cardinalities.get(p.id))) getOrElse Cardinality.EMPTY,
       plan.rhs.map(p => rhsWorkReduction.calculate(cardinalities.get(p.id))) getOrElse Cardinality.EMPTY,
       lhsWorkReduction,
-      rhsWorkReduction,
+      rhsWorkReduction
     )
   }
 
   /**
    * Given an parent WorkReduction, calculate how this reduction applies to the LHS and RHS of the plan.
    */
-  private[logical] def childrenWorkReduction(plan: LogicalPlan, parentWorkReduction: WorkReduction, batchSize: SelectedBatchSize, cardinalities: Cardinalities): (WorkReduction, WorkReduction) = plan match {
+  private[logical] def childrenWorkReduction(
+    plan: LogicalPlan,
+    parentWorkReduction: WorkReduction,
+    batchSize: SelectedBatchSize,
+    cardinalities: Cardinalities
+  ): (WorkReduction, WorkReduction) = plan match {
 
-    //NOTE: we don't match on ExhaustiveLimit here since that doesn't affect the cardinality of earlier plans
+    // NOTE: we don't match on ExhaustiveLimit here since that doesn't affect the cardinality of earlier plans
     case p: LimitingLogicalPlan =>
       val inputCardinality = cardinalities.get(p.source.id)
       val outputCardinality = cardinalities.get(p.id)
@@ -428,19 +468,20 @@ object CardinalityCostModel {
       // The RHS is reduced by 1/rhsCardinality.
       // Any existing work reduction does not propagate into the RHS, since that does not influence the amount of rows _per loop invocation_.
       // It will, however, reduce the amount of effective rows after `recordEffectiveOutputCardinality` has multiplied the RHS with the LHS cardinality.
-      val rhsReduction = limitingPlanWorkReduction(rhsCardinality, Cardinality.SINGLE, WorkReduction.NoReduction).copy(minimum = Some(Cardinality.SINGLE))
+      val rhsReduction =
+        limitingPlanWorkReduction(rhsCardinality, Cardinality.SINGLE, WorkReduction.NoReduction).copy(minimum =
+          Some(Cardinality.SINGLE))
       (parentWorkReduction, rhsReduction)
 
     // if there is no parentWorkReduction, all cases below are unnecessary, so let's skip doing unnecessary work
     case _ if parentWorkReduction == WorkReduction.NoReduction =>
       (parentWorkReduction, parentWorkReduction)
 
-
     case _: ForeachApply =>
       // ForeachApply is an ApplyPlan, but only yields LHS rows, therefore we match this before matching ApplyPlan
       (parentWorkReduction, WorkReduction.NoReduction)
 
-    case a:ApplyPlan =>
+    case a: ApplyPlan =>
       nestedLoopChildrenWorkReduction(a, parentWorkReduction, VolcanoBatchSize, cardinalities)
 
     case p: CartesianProduct =>
@@ -449,18 +490,19 @@ object CardinalityCostModel {
     case _: AssertSameNode =>
       (parentWorkReduction, WorkReduction.NoReduction)
 
-    case u:Union =>
+    case u: Union =>
       // number of rows available from lhs/rhs plan
       val lhsCardinality: Cardinality = cardinalities.get(u.left.id)
       val rhsCardinality: Cardinality = cardinalities.get(u.right.id)
 
       val parentEffectiveCardinality = cardinalities.get(u.id) * parentWorkReduction.fraction
 
-      val (lhsEffectiveCardinality, rhsEffectiveCardinality) = if (lhsCardinality > parentEffectiveCardinality) {
-        (parentEffectiveCardinality, Cardinality.EMPTY)
-      } else {
-        (lhsCardinality, parentEffectiveCardinality - lhsCardinality)
-      }
+      val (lhsEffectiveCardinality, rhsEffectiveCardinality) =
+        if (lhsCardinality > parentEffectiveCardinality) {
+          (parentEffectiveCardinality, Cardinality.EMPTY)
+        } else {
+          (lhsCardinality, parentEffectiveCardinality - lhsCardinality)
+        }
 
       val lhsFraction = (lhsEffectiveCardinality / lhsCardinality).getOrElse(Selectivity.ONE)
       val rhsFraction = (rhsEffectiveCardinality / rhsCardinality).getOrElse(Selectivity.ONE)
@@ -473,7 +515,7 @@ object CardinalityCostModel {
     case HashJoin() =>
       (WorkReduction.NoReduction, parentWorkReduction)
 
-    case _:PartialSort =>
+    case _: PartialSort =>
       // Let's assume the child has to do "a little more" work.
       // This happens because PartialSort has to process at least a whole bucket of identical values.
       val parentFraction = parentWorkReduction.fraction.factor
@@ -486,19 +528,27 @@ object CardinalityCostModel {
     case _: LogicalUnaryPlan =>
       (parentWorkReduction, WorkReduction.NoReduction)
 
-    case _:LogicalLeafPlan =>
+    case _: LogicalLeafPlan =>
       (parentWorkReduction, WorkReduction.NoReduction)
 
-    case lp:LogicalBinaryPlan =>
+    case lp: LogicalBinaryPlan =>
       // Forces us to hopefully think about this when adding new binary plans
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(false, s"childrenWorkReduction: No case for ${lp.getClass.getSimpleName} added.")
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        false,
+        s"childrenWorkReduction: No case for ${lp.getClass.getSimpleName} added."
+      )
       (parentWorkReduction, WorkReduction.NoReduction)
   }
 
   /**
    * Given an parent WorkReduction, calculate how this reduction applies to the LHS and RHS of this plan that implements a nested loop.
    */
-  private def nestedLoopChildrenWorkReduction(plan: LogicalBinaryPlan, parentWorkReduction: WorkReduction, batchSize: SelectedBatchSize, cardinalities: Cardinalities): (WorkReduction, WorkReduction) = {
+  private def nestedLoopChildrenWorkReduction(
+    plan: LogicalBinaryPlan,
+    parentWorkReduction: WorkReduction,
+    batchSize: SelectedBatchSize,
+    cardinalities: Cardinalities
+  ): (WorkReduction, WorkReduction) = {
     // number of rows available from lhs/rhs plan
     val lhsCardinality: Cardinality = cardinalities.get(plan.left.id)
     val rhsCardinality: Cardinality = cardinalities.get(plan.right.id)
@@ -512,17 +562,24 @@ object CardinalityCostModel {
 
     // round required output to nearest multiple of the smallest output chunk
     val outputChunk = chunkSize * rhsRowsMinimum
-    val requiredOutput: Cardinality = outputChunk * Multiplier.ofDivision(parentWorkReduction.calculate(cardinalities.get(plan.id)), outputChunk).getOrElse(Multiplier.ZERO).ceil
+    val requiredOutput: Cardinality = outputChunk * Multiplier.ofDivision(
+      parentWorkReduction.calculate(cardinalities.get(plan.id)),
+      outputChunk
+    ).getOrElse(Multiplier.ZERO).ceil
 
     // number of executions needed to produce the required output
-    val rhsExecutions: Multiplier = Multiplier.ofDivision(requiredOutput, outputRowsPerExecution).getOrElse(Multiplier.ZERO)
+    val rhsExecutions: Multiplier =
+      Multiplier.ofDivision(requiredOutput, outputRowsPerExecution).getOrElse(Multiplier.ZERO)
     val lhsFullBatches: Cardinality = Cardinality(rhsExecutions.coefficient).ceil
 
     // total number of rows fetched from lhs/rhs
     val lhsProducedRows: Cardinality = Cardinality.min(lhsFullBatches * chunkSize, lhsCardinality)
     val rhsProducedRows: Cardinality = Cardinality.max(rhsExecutions * rhsCardinality, rhsRowsMinimum)
 
-    val rhsProducedRowsPerExecution = Cardinality(Multiplier.ofDivision(rhsProducedRows * chunkSize, lhsProducedRows).getOrElse(Multiplier.ZERO).coefficient)
+    val rhsProducedRowsPerExecution = Cardinality(Multiplier.ofDivision(
+      rhsProducedRows * chunkSize,
+      lhsProducedRows
+    ).getOrElse(Multiplier.ZERO).coefficient)
 
     val lhsFraction = (lhsProducedRows / lhsCardinality).getOrElse(Selectivity.ONE)
     val rhsFraction = (rhsProducedRowsPerExecution / rhsCardinality).getOrElse(Selectivity.ONE)
@@ -530,21 +587,27 @@ object CardinalityCostModel {
     (parentWorkReduction.withFraction(lhsFraction), parentWorkReduction.withFraction(rhsFraction))
   }
 
-  private[logical] def getEffectiveBatchSize(batchSize: SelectedBatchSize, plan: LogicalPlan, providedOrders: ProvidedOrders): SelectedBatchSize = {
+  private[logical] def getEffectiveBatchSize(
+    batchSize: SelectedBatchSize,
+    plan: LogicalPlan,
+    providedOrders: ProvidedOrders
+  ): SelectedBatchSize = {
     plan match {
       // Ideally we would want to check leveragedOrders here. But that attribute will not be set properly at this point of planning,
       // since that only happens when the leveraging plan is planned.
-      case cp:CartesianProduct if !providedOrders(cp.id).isEmpty => ExecutionModel.VolcanoBatchSize // A CartesianProduct that provides order is rewritten to execute in a row-by-row fashion
+      case cp: CartesianProduct if !providedOrders(cp.id).isEmpty =>
+        ExecutionModel.VolcanoBatchSize // A CartesianProduct that provides order is rewritten to execute in a row-by-row fashion
       case _ => batchSize
     }
   }
 
   private object HashJoin {
+
     def unapply(x: LogicalPlan): Boolean = x match {
       case _: NodeHashJoin |
-           _: LeftOuterHashJoin |
-           _: RightOuterHashJoin |
-           _: ValueHashJoin => true
+        _: LeftOuterHashJoin |
+        _: RightOuterHashJoin |
+        _: ValueHashJoin => true
       case _ => false
     }
   }

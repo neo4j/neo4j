@@ -22,19 +22,14 @@ package org.neo4j.server.rest.web;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import javax.servlet.http.HttpServletRequest;
-
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 import org.neo4j.server.web.JettyHttpConnection;
 
-public class HttpConnectionInfoFactory
-{
-    private HttpConnectionInfoFactory()
-    {
-    }
+public class HttpConnectionInfoFactory {
+    private HttpConnectionInfoFactory() {}
 
-    public static ClientConnectionInfo create( HttpServletRequest request )
-    {
+    public static ClientConnectionInfo create(HttpServletRequest request) {
         String connectionId;
         String protocol = request.getScheme();
         SocketAddress clientAddress;
@@ -42,21 +37,18 @@ public class HttpConnectionInfoFactory
         String requestURI = request.getRequestURI();
 
         JettyHttpConnection connection = JettyHttpConnection.getCurrentJettyHttpConnection();
-        if ( connection != null )
-        {
+        if (connection != null) {
             connectionId = connection.id();
             clientAddress = connection.clientAddress();
             serverAddress = connection.serverAddress();
-        }
-        else
-        {
+        } else {
             // connection is unknown, connection object can't be extracted or is missing from the Jetty thread-local
             // get all the available information directly from the request
             connectionId = null;
-            clientAddress = new InetSocketAddress( request.getRemoteAddr(), request.getRemotePort() );
-            serverAddress = new InetSocketAddress( request.getServerName(), request.getServerPort() );
+            clientAddress = new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
+            serverAddress = new InetSocketAddress(request.getServerName(), request.getServerPort());
         }
 
-        return new HttpConnectionInfo( connectionId, protocol, clientAddress, serverAddress, requestURI );
+        return new HttpConnectionInfo(connectionId, protocol, clientAddress, serverAddress, requestURI);
     }
 }

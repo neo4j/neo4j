@@ -26,28 +26,29 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class SimpleEntityValueClient extends SimpleEntityClient implements IndexProgressor.EntityValueClient
-{
+public class SimpleEntityValueClient extends SimpleEntityClient implements IndexProgressor.EntityValueClient {
     public Value[] values;
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
-                            boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
-    {
-        initialize( progressor );
+    public void initialize(
+            IndexDescriptor descriptor,
+            IndexProgressor progressor,
+            AccessMode accessMode,
+            boolean indexIncludesTransactionState,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query) {
+        initialize(progressor);
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value... values )
-    {
-        acceptEntity( reference );
+    public boolean acceptEntity(long reference, float score, Value... values) {
+        acceptEntity(reference);
         this.values = values;
         return true;
     }
 
     @Override
-    public boolean needsValues()
-    {
+    public boolean needsValues() {
         return true;
     }
 }

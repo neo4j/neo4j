@@ -19,62 +19,54 @@
  */
 package org.neo4j.internal.batchimport.store.io;
 
+import static java.lang.System.nanoTime;
+
 import org.neo4j.internal.batchimport.IoThroughputStat;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 
-import static java.lang.System.nanoTime;
-
 /**
  * {@link IoTracer} exposed as a {@link StatsProvider}.
  *
  * Assumes that I/O is busy all the time.
  */
-public class IoMonitor implements StatsProvider
-{
+public class IoMonitor implements StatsProvider {
     private volatile long startTime;
     private volatile long endTime;
     private final IoTracer tracer;
     private long resetPoint;
 
-    public IoMonitor( IoTracer tracer )
-    {
+    public IoMonitor(IoTracer tracer) {
         this.tracer = tracer;
         reset();
     }
 
-    public void reset()
-    {
+    public void reset() {
         startTime = nanoTime();
         endTime = 0;
         resetPoint = tracer.countBytesWritten();
     }
 
-    public void stop()
-    {
+    public void stop() {
         endTime = nanoTime();
     }
 
-    private long totalBytesWritten()
-    {
+    private long totalBytesWritten() {
         return tracer.countBytesWritten() - resetPoint;
     }
 
     @Override
-    public Stat stat( Key key )
-    {
-        if ( key == Keys.io_throughput )
-        {
-            return new IoThroughputStat( startTime, endTime, totalBytesWritten() );
+    public Stat stat(Key key) {
+        if (key == Keys.io_throughput) {
+            return new IoThroughputStat(startTime, endTime, totalBytesWritten());
         }
         return null;
     }
 
     @Override
-    public Key[] keys()
-    {
-        return new Key[] { Keys.io_throughput };
+    public Key[] keys() {
+        return new Key[] {Keys.io_throughput};
     }
 }

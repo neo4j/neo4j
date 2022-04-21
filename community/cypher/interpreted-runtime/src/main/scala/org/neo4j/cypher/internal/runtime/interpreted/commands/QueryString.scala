@@ -24,6 +24,7 @@ object QueryString {
 }
 
 case class QueryString(text: String) {
+
   override def equals(p1: Any): Boolean = p1 match {
     case null           => false
     case _: QueryString => true

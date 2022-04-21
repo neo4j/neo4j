@@ -19,170 +19,159 @@
  */
 package org.neo4j.scheduler;
 
-import org.junit.jupiter.api.extension.ExtensionContext;
-
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
-class TraceableJobExecutionScheduler extends JobSchedulerExtension
-{
+class TraceableJobExecutionScheduler extends JobSchedulerExtension {
     @Override
-    protected JobScheduler createField( ExtensionContext context )
-    {
-        return new TestJobScheduler( super.createField( context ) );
+    protected JobScheduler createField(ExtensionContext context) {
+        return new TestJobScheduler(super.createField(context));
     }
 
-    private static class TestJobScheduler implements JobScheduler
-    {
+    private static class TestJobScheduler implements JobScheduler {
 
         private final JobScheduler originalScheduler;
 
-        TestJobScheduler( JobScheduler originalScheduler )
-        {
+        TestJobScheduler(JobScheduler originalScheduler) {
             this.originalScheduler = originalScheduler;
         }
 
         @Override
-        public void init() throws Exception
-        {
+        public void init() throws Exception {
             originalScheduler.init();
         }
 
         @Override
-        public void start() throws Exception
-        {
+        public void start() throws Exception {
             originalScheduler.start();
         }
 
         @Override
-        public void stop() throws Exception
-        {
+        public void stop() throws Exception {
             originalScheduler.stop();
         }
 
         @Override
-        public void shutdown() throws Exception
-        {
+        public void shutdown() throws Exception {
             originalScheduler.shutdown();
         }
 
         @Override
-        public void setTopLevelGroupName( String name )
-        {
-            originalScheduler.setTopLevelGroupName( name );
+        public void setTopLevelGroupName(String name) {
+            originalScheduler.setTopLevelGroupName(name);
         }
 
         @Override
-        public void setParallelism( Group group, int parallelism )
-        {
-            originalScheduler.setParallelism( group, parallelism );
+        public void setParallelism(Group group, int parallelism) {
+            originalScheduler.setParallelism(group, parallelism);
         }
 
         @Override
-        public void setThreadFactory( Group group, SchedulerThreadFactoryFactory threadFactory )
-        {
-            originalScheduler.setThreadFactory( group, threadFactory );
+        public void setThreadFactory(Group group, SchedulerThreadFactoryFactory threadFactory) {
+            originalScheduler.setThreadFactory(group, threadFactory);
         }
 
         @Override
-        public CallableExecutor executor( Group group )
-        {
-            return originalScheduler.executor( group );
+        public CallableExecutor executor(Group group) {
+            return originalScheduler.executor(group);
         }
 
         @Override
-        public MonitoredJobExecutor monitoredJobExecutor( Group group )
-        {
-            return originalScheduler.monitoredJobExecutor( group );
+        public MonitoredJobExecutor monitoredJobExecutor(Group group) {
+            return originalScheduler.monitoredJobExecutor(group);
         }
 
         @Override
-        public ThreadFactory threadFactory( Group group )
-        {
-            return originalScheduler.threadFactory( group );
+        public ThreadFactory threadFactory(Group group) {
+            return originalScheduler.threadFactory(group);
         }
 
         @Override
-        public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
-        {
-            return originalScheduler.schedule( group, jobMonitoringParams, job );
+        public <T> JobHandle<T> schedule(Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job) {
+            return originalScheduler.schedule(group, jobMonitoringParams, job);
         }
 
         @Override
-        public JobHandle<?> schedule( Group group, Runnable job )
-        {
-            return originalScheduler.schedule( group, job );
+        public JobHandle<?> schedule(Group group, Runnable job) {
+            return originalScheduler.schedule(group, job);
         }
 
         @Override
-        public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable job )
-        {
-            return originalScheduler.schedule( group, monitoredJobParams, job );
+        public JobHandle<?> schedule(Group group, JobMonitoringParams monitoredJobParams, Runnable job) {
+            return originalScheduler.schedule(group, monitoredJobParams, job);
         }
 
         @Override
-        public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
-        {
-            return originalScheduler.schedule( group, runnable, initialDelay, timeUnit );
+        public JobHandle<?> schedule(Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit) {
+            return originalScheduler.schedule(group, runnable, initialDelay, timeUnit);
         }
 
         @Override
-        public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, TimeUnit timeUnit )
-        {
-            return originalScheduler.schedule( group, monitoredJobParams, runnable, initialDelay, timeUnit );
+        public JobHandle<?> schedule(
+                Group group,
+                JobMonitoringParams monitoredJobParams,
+                Runnable runnable,
+                long initialDelay,
+                TimeUnit timeUnit) {
+            return originalScheduler.schedule(group, monitoredJobParams, runnable, initialDelay, timeUnit);
         }
 
         @Override
-        public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
-        {
-            return originalScheduler.scheduleRecurring( group, runnable, period, timeUnit );
+        public JobHandle<?> scheduleRecurring(Group group, Runnable runnable, long period, TimeUnit timeUnit) {
+            return originalScheduler.scheduleRecurring(group, runnable, period, timeUnit);
         }
 
         @Override
-        public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit )
-        {
-            return originalScheduler.scheduleRecurring( group, monitoredJobParams, runnable, period, timeUnit );
+        public JobHandle<?> scheduleRecurring(
+                Group group,
+                JobMonitoringParams monitoredJobParams,
+                Runnable runnable,
+                long period,
+                TimeUnit timeUnit) {
+            return originalScheduler.scheduleRecurring(group, monitoredJobParams, runnable, period, timeUnit);
         }
 
         @Override
-        public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
-        {
-            return originalScheduler.scheduleRecurring( group, runnable, initialDelay, period, timeUnit );
+        public JobHandle<?> scheduleRecurring(
+                Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit) {
+            return originalScheduler.scheduleRecurring(group, runnable, initialDelay, period, timeUnit);
         }
 
         @Override
-        public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, long period,
-                TimeUnit timeUnit )
-        {
-            return originalScheduler.scheduleRecurring( group, monitoredJobParams, runnable, initialDelay, period, timeUnit );
+        public JobHandle<?> scheduleRecurring(
+                Group group,
+                JobMonitoringParams monitoredJobParams,
+                Runnable runnable,
+                long initialDelay,
+                long period,
+                TimeUnit timeUnit) {
+            return originalScheduler.scheduleRecurring(
+                    group, monitoredJobParams, runnable, initialDelay, period, timeUnit);
         }
 
         @Override
-        public Stream<ActiveGroup> activeGroups()
-        {
+        public Stream<ActiveGroup> activeGroups() {
             return originalScheduler.activeGroups();
         }
 
         @Override
-        public List<MonitoredJobInfo> getMonitoredJobs()
-        {
+        public List<MonitoredJobInfo> getMonitoredJobs() {
             return originalScheduler.getMonitoredJobs();
         }
 
         @Override
-        public List<FailedJobRun> getFailedJobRuns()
-        {
+        public List<FailedJobRun> getFailedJobRuns() {
             return originalScheduler.getFailedJobRuns();
         }
 
         @Override
-        public void close() throws Exception
-        {
+        public void close() throws Exception {
             originalScheduler.close();
-            throw new RuntimeException( "Shutdown called." );
+            throw new RuntimeException("Shutdown called.");
         }
     }
 }

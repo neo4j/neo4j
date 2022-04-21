@@ -24,8 +24,7 @@ import org.neo4j.graphdb.Direction;
 /**
  * Holds data about degrees for various combinations of relationship type and {@link Direction}, retrieved from a node.
  */
-public interface Degrees
-{
+public interface Degrees {
     /**
      * @return which relationship types this instances has degrees for.
      */
@@ -37,16 +36,15 @@ public interface Degrees
      * @return the degree (i.e. number of relationships on the specific node) of the given relationship type and direction,
      * or {@code 0} if no degree of that combination was found.
      */
-    int degree( int type, Direction direction );
+    int degree(int type, Direction direction);
 
     /**
      * @param type the relationship type to get degree for.
      * @return the outgoing degree, including loops (i.e. number of relationships on the specific node) of the given relationship type,
      * or {@code 0} if no degree of that combination was found.
      */
-    default int outgoingDegree( int type )
-    {
-        return degree( type, Direction.OUTGOING );
+    default int outgoingDegree(int type) {
+        return degree(type, Direction.OUTGOING);
     }
 
     /**
@@ -54,9 +52,8 @@ public interface Degrees
      * @return the incoming degree, including loops (i.e. number of relationships on the specific node) of the given relationship type,
      * or {@code 0} if no degree of that combination was found.
      */
-    default int incomingDegree( int type )
-    {
-        return degree( type, Direction.INCOMING );
+    default int incomingDegree(int type) {
+        return degree(type, Direction.INCOMING);
     }
 
     /**
@@ -64,9 +61,8 @@ public interface Degrees
      * @return the degree (i.e. number of relationships on the specific node) of the given relationship type in all directions,
      * or {@code 0} if no degree of that combination was found.
      */
-    default int totalDegree( int type )
-    {
-        return degree( type, Direction.BOTH );
+    default int totalDegree(int type) {
+        return degree(type, Direction.BOTH);
     }
 
     /**
@@ -75,30 +71,26 @@ public interface Degrees
      * @return the degree (i.e. number of relationships on the specific node) of the given relationship type and direction,
      * or {@code 0} if no degree of that combination was found.
      */
-    default int degree( Direction direction )
-    {
-        switch ( direction )
-        {
-        case OUTGOING:
-            return outgoingDegree();
-        case INCOMING:
-            return incomingDegree();
-        case BOTH:
-            return totalDegree();
-        default:
-            throw new UnsupportedOperationException( "Unknown direction " + direction );
+    default int degree(Direction direction) {
+        switch (direction) {
+            case OUTGOING:
+                return outgoingDegree();
+            case INCOMING:
+                return incomingDegree();
+            case BOTH:
+                return totalDegree();
+            default:
+                throw new UnsupportedOperationException("Unknown direction " + direction);
         }
     }
 
     /**
      * @return the outgoing degree, including loops (i.e. number of relationships on the specific node) or {@code 0} if no degree of that combination was found.
      */
-    default int outgoingDegree()
-    {
+    default int outgoingDegree() {
         int degree = 0;
-        for ( int type : types() )
-        {
-            degree += outgoingDegree( type );
+        for (int type : types()) {
+            degree += outgoingDegree(type);
         }
         return degree;
     }
@@ -106,12 +98,10 @@ public interface Degrees
     /**
      * @return the incoming degree, including loops (i.e. number of relationships on the specific node) or {@code 0} if no degree of that combination was found.
      */
-    default int incomingDegree()
-    {
+    default int incomingDegree() {
         int degree = 0;
-        for ( int type : types() )
-        {
-            degree += incomingDegree( type );
+        for (int type : types()) {
+            degree += incomingDegree(type);
         }
         return degree;
     }
@@ -119,12 +109,10 @@ public interface Degrees
     /**
      * @return the degree (i.e. number of relationships on the specific node).
      */
-    default int totalDegree()
-    {
+    default int totalDegree() {
         int degree = 0;
-        for ( int type : types() )
-        {
-            degree += totalDegree( type );
+        for (int type : types()) {
+            degree += totalDegree(type);
         }
         return degree;
     }
@@ -132,30 +120,26 @@ public interface Degrees
     /**
      * {@link Degrees} instance with all zero degrees.
      */
-    Degrees EMPTY = new Degrees()
-    {
+    Degrees EMPTY = new Degrees() {
         private final int[] noTypes = new int[0];
 
         @Override
-        public int[] types()
-        {
+        public int[] types() {
             return noTypes;
         }
 
         @Override
-        public int degree( int type, Direction direction )
-        {
+        public int degree(int type, Direction direction) {
             return 0;
         }
     };
 
-    interface Mutator
-    {
+    interface Mutator {
         /**
          * Returns <code>true</code> if computation should continue otherwise
          * <code>false</code>
          */
-        boolean add( int type, int outgoing, int incoming, int loop );
+        boolean add(int type, int outgoing, int incoming, int loop);
 
         /**
          * @return whether or not this mutator collects relationships split by type and direction.

@@ -19,13 +19,12 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
-
 import static java.lang.Long.toBinaryString;
 import static java.lang.String.format;
 import static java.util.Arrays.fill;
+
+import java.util.Arrays;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Value in a GB+Tree for indexing id states. Accompanies that with a generation, i.e. which generation this value were written in.
@@ -39,8 +38,7 @@ import static java.util.Arrays.fill;
  * Each {@link IdRange} is associated with an {@link IdRangeKey} which specifies the range, e.g. an ID range of 3 in a layout where ids-per-entry is 128
  * holds IDs between 384-511.
  */
-class IdRange
-{
+class IdRange {
     static final int BITSET_COUNT = 3;
 
     static final int BITSET_COMMIT = 0;
@@ -57,185 +55,156 @@ class IdRange
     private final long[][] bitSets;
     private final int numOfLongs;
 
-    IdRange( int numOfLongs )
-    {
+    IdRange(int numOfLongs) {
         this.bitSets = new long[BITSET_COUNT][numOfLongs];
         this.numOfLongs = numOfLongs;
     }
 
-    IdState getState( int n )
-    {
+    IdState getState(int n) {
         int longIndex = n / BITSET_SIZE;
         int bitIndex = n % BITSET_SIZE;
-        boolean commitBit = (bitSets[BITSET_COMMIT][longIndex] & bitMask( bitIndex )) != 0;
-        if ( commitBit )
-        {
-            boolean reuseBit = (bitSets[BITSET_REUSE][longIndex] & bitMask( bitIndex )) != 0;
-            boolean reservedBit = (bitSets[BITSET_RESERVED][longIndex] & bitMask( bitIndex )) != 0;
+        boolean commitBit = (bitSets[BITSET_COMMIT][longIndex] & bitMask(bitIndex)) != 0;
+        if (commitBit) {
+            boolean reuseBit = (bitSets[BITSET_REUSE][longIndex] & bitMask(bitIndex)) != 0;
+            boolean reservedBit = (bitSets[BITSET_RESERVED][longIndex] & bitMask(bitIndex)) != 0;
             return reuseBit && !reservedBit ? IdState.FREE : IdState.DELETED;
         }
         return IdState.USED;
     }
 
-    private static long bitMask( int bitIndex )
-    {
+    private static long bitMask(int bitIndex) {
         return 1L << bitIndex;
     }
 
-    void setBits( int type, int n, int numIds )
-    {
-        for ( int i = 0; i < numIds; i++ )
-        {
+    void setBits(int type, int n, int numIds) {
+        for (int i = 0; i < numIds; i++) {
             int bit = n + i;
             int longIndex = bit / BITSET_SIZE;
             int bitIndex = bit % BITSET_SIZE;
-            bitSets[type][longIndex] |= bitMask( bitIndex );
+            bitSets[type][longIndex] |= bitMask(bitIndex);
         }
     }
 
-    void setBitsForAllTypes( int n, int numIds )
-    {
-        for ( int i = 0; i < numIds; i++ )
-        {
+    void setBitsForAllTypes(int n, int numIds) {
+        for (int i = 0; i < numIds; i++) {
             int bit = n + i;
             int longIndex = bit / BITSET_SIZE;
             int bitIndex = bit % BITSET_SIZE;
-            long mask = bitMask( bitIndex );
+            long mask = bitMask(bitIndex);
             bitSets[BITSET_COMMIT][longIndex] |= mask;
             bitSets[BITSET_REUSE][longIndex] |= mask;
             bitSets[BITSET_RESERVED][longIndex] |= mask;
         }
     }
 
-    void clear( long generation, boolean addition )
-    {
+    void clear(long generation, boolean addition) {
         this.generation = generation;
         this.addition = addition;
-        fill( bitSets[BITSET_COMMIT], 0 );
-        fill( bitSets[BITSET_REUSE], 0 );
-        fill( bitSets[BITSET_RESERVED], 0 );
+        fill(bitSets[BITSET_COMMIT], 0);
+        fill(bitSets[BITSET_REUSE], 0);
+        fill(bitSets[BITSET_RESERVED], 0);
     }
 
-    long getGeneration()
-    {
+    long getGeneration() {
         return generation;
     }
 
-    void setGeneration( long generation )
-    {
+    void setGeneration(long generation) {
         this.generation = generation;
     }
 
-    long[][] getBitSets()
-    {
+    long[][] getBitSets() {
         return bitSets;
     }
 
-    void normalize()
-    {
-        for ( int i = 0; i < numOfLongs; i++ )
-        {
-            // Set the reuse bits to whatever the commit bits are. This will let USED be USED and DELETED will become FREE
+    void normalize() {
+        for (int i = 0; i < numOfLongs; i++) {
+            // Set the reuse bits to whatever the commit bits are. This will let USED be USED and DELETED will become
+            // FREE
             bitSets[BITSET_REUSE][i] = bitSets[BITSET_COMMIT][i];
             bitSets[BITSET_RESERVED][i] = 0;
         }
     }
 
-    boolean mergeFrom( IdRangeKey key, IdRange other, boolean recoveryMode )
-    {
-        if ( !recoveryMode )
-        {
-            verifyMerge( key, other );
+    boolean mergeFrom(IdRangeKey key, IdRange other, boolean recoveryMode) {
+        if (!recoveryMode) {
+            verifyMerge(key, other);
         }
 
-        for ( int bitSetIndex = 0; bitSetIndex < BITSET_COUNT; bitSetIndex++ )
-        {
-            mergeBitSet( bitSets[bitSetIndex], other.bitSets[bitSetIndex], other.addition );
+        for (int bitSetIndex = 0; bitSetIndex < BITSET_COUNT; bitSetIndex++) {
+            mergeBitSet(bitSets[bitSetIndex], other.bitSets[bitSetIndex], other.addition);
         }
 
         return true;
     }
 
-    private static void mergeBitSet( long[] into, long[] mergeFrom, boolean addition )
-    {
-        for ( int i = 0; i < into.length; i++ )
-        {
-            into[i] = addition ? into[i] | mergeFrom[i]
-                               : into[i] & ~mergeFrom[i];
+    private static void mergeBitSet(long[] into, long[] mergeFrom, boolean addition) {
+        for (int i = 0; i < into.length; i++) {
+            into[i] = addition ? into[i] | mergeFrom[i] : into[i] & ~mergeFrom[i];
         }
     }
 
-    private void verifyMerge( IdRangeKey key, IdRange other )
-    {
+    private void verifyMerge(IdRangeKey key, IdRange other) {
         boolean addition = other.addition;
         long[] intoBitSet = bitSets[BITSET_COMMIT];
         long[] fromBitSet = other.bitSets[BITSET_COMMIT];
-        for ( int i = 0; i < intoBitSet.length; i++ )
-        {
+        for (int i = 0; i < intoBitSet.length; i++) {
             long into = intoBitSet[i];
             long from = fromBitSet[i];
-            if ( addition )
-            {
-                if ( (into & from ) != 0 )
-                {
-                    throw new IllegalStateException( format( "Illegal addition ID state for range: %s transition longIdx: %d%ninto: %s%nfrom: %s",
-                            key.getIdRangeIdx(), i, toPaddedBinaryString( into ), toPaddedBinaryString( from ) ) );
+            if (addition) {
+                if ((into & from) != 0) {
+                    throw new IllegalStateException(format(
+                            "Illegal addition ID state for range: %s transition longIdx: %d%ninto: %s%nfrom: %s",
+                            key.getIdRangeIdx(), i, toPaddedBinaryString(into), toPaddedBinaryString(from)));
                 }
             }
             // don't verify removal since we can't quite verify transitioning to USED since 0 is the default bit value
         }
     }
 
-    private static String toPaddedBinaryString( long bits )
-    {
-        char[] padded = StringUtils.leftPad( toBinaryString( bits ), Long.SIZE, '0' ).toCharArray();
+    private static String toPaddedBinaryString(long bits) {
+        char[] padded =
+                StringUtils.leftPad(toBinaryString(bits), Long.SIZE, '0').toCharArray();
 
         // Now add a space between each byte
         int numberOfSpaces = padded.length / Byte.SIZE - 1;
         char[] spaced = new char[padded.length + numberOfSpaces];
-        Arrays.fill( spaced, ' ' );
-        for ( int i = 0; i < numberOfSpaces + 1; i++ )
-        {
-            System.arraycopy( padded, i * Byte.SIZE, spaced, i * Byte.SIZE + i, Byte.SIZE );
+        Arrays.fill(spaced, ' ');
+        for (int i = 0; i < numberOfSpaces + 1; i++) {
+            System.arraycopy(padded, i * Byte.SIZE, spaced, i * Byte.SIZE + i, Byte.SIZE);
         }
-        return String.valueOf( spaced );
+        return String.valueOf(spaced);
     }
 
     @Override
-    public String toString()
-    {
-        StringBuilder builder = new StringBuilder().append( addition ? "+" : "-" ).append( " gen:" ).append( generation );
-        appendBitSet( builder, bitSets[BITSET_COMMIT], "deleted " );
-        appendBitSet( builder, bitSets[BITSET_REUSE], "freed   " );
-        appendBitSet( builder, bitSets[BITSET_RESERVED], "reserved" );
+    public String toString() {
+        StringBuilder builder =
+                new StringBuilder().append(addition ? "+" : "-").append(" gen:").append(generation);
+        appendBitSet(builder, bitSets[BITSET_COMMIT], "deleted ");
+        appendBitSet(builder, bitSets[BITSET_REUSE], "freed   ");
+        appendBitSet(builder, bitSets[BITSET_RESERVED], "reserved");
         return builder.toString();
     }
 
-    private static void appendBitSet( StringBuilder builder, long[] bitSet, String name )
-    {
-        builder.append( format( "%n" ) ).append( name ).append( ':' );
+    private static void appendBitSet(StringBuilder builder, long[] bitSet, String name) {
+        builder.append(format("%n")).append(name).append(':');
         String delimiter = "";
-        for ( int i = bitSet.length - 1; i >= 0; i-- )
-        {
-            builder.append( delimiter ).append( toPaddedBinaryString( bitSet[i] ) );
+        for (int i = bitSet.length - 1; i >= 0; i--) {
+            builder.append(delimiter).append(toPaddedBinaryString(bitSet[i]));
             delimiter = " , ";
         }
     }
 
-    public boolean isEmpty()
-    {
-        for ( long bits : bitSets[BITSET_COMMIT] )
-        {
-            if ( bits != 0 )
-            {
+    public boolean isEmpty() {
+        for (long bits : bitSets[BITSET_COMMIT]) {
+            if (bits != 0) {
                 return false;
             }
         }
         return true;
     }
 
-    enum IdState
-    {
+    enum IdState {
         USED,
         DELETED,
         FREE

@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.schema;
 
 import java.util.Locale;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -30,19 +29,16 @@ import org.neo4j.annotations.api.PublicApi;
  * Use IndexPopulationProgress.NONE if you need an object without any particular progress.
  */
 @PublicApi
-public class IndexPopulationProgress
-{
-    public static final IndexPopulationProgress NONE = new IndexPopulationProgress( 0, 0 );
-    public static final IndexPopulationProgress DONE = new IndexPopulationProgress( 1, 1 );
+public class IndexPopulationProgress {
+    public static final IndexPopulationProgress NONE = new IndexPopulationProgress(0, 0);
+    public static final IndexPopulationProgress DONE = new IndexPopulationProgress(1, 1);
 
     private final long completedCount;
     private final long totalCount;
 
-    public IndexPopulationProgress( long completed, long total )
-    {
-        if ( completed < 0 || completed > total )
-        {
-            throw new IllegalArgumentException( "Invalid progress specified: " + completed + "/" + total );
+    public IndexPopulationProgress(long completed, long total) {
+        if (completed < 0 || completed > total) {
+            throw new IllegalArgumentException("Invalid progress specified: " + completed + "/" + total);
         }
         this.completedCount = completed;
         this.totalCount = total;
@@ -51,14 +47,12 @@ public class IndexPopulationProgress
     /**
      * @return percentage (from 0 to 100) of totalCount items which have been indexed. If totalCount is 0, returns 0.
      */
-    public float getCompletedPercentage()
-    {
+    public float getCompletedPercentage() {
         return totalCount > 0 ? ((float) (completedCount * 100) / totalCount) : 0.0f;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( Locale.ROOT, "%1.1f%%", getCompletedPercentage() );
+    public String toString() {
+        return String.format(Locale.ROOT, "%1.1f%%", getCompletedPercentage());
     }
 }

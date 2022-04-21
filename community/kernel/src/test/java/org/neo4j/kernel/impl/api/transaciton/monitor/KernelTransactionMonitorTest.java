@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.transaciton.monitor;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.kernel.api.KernelTransactionHandle;
-import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
-import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.time.FakeClock;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -36,27 +27,34 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class KernelTransactionMonitorTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
+import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.time.FakeClock;
+
+class KernelTransactionMonitorTest {
     @Test
-    void shouldNotTimeoutSchemaTransactions()
-    {
+    void shouldNotTimeoutSchemaTransactions() {
         // given
-        KernelTransactions kernelTransactions = mock( KernelTransactions.class );
-        FakeClock clock = new FakeClock( 100, MINUTES );
-        KernelTransactionMonitor monitor = new KernelTransactionMonitor( kernelTransactions, clock, NullLogService.getInstance() );
+        KernelTransactions kernelTransactions = mock(KernelTransactions.class);
+        FakeClock clock = new FakeClock(100, MINUTES);
+        KernelTransactionMonitor monitor =
+                new KernelTransactionMonitor(kernelTransactions, clock, NullLogService.getInstance());
         // a 2 minutes old schema transaction which has a timeout of 1 minute
-        KernelTransactionHandle oldSchemaTransaction = mock( KernelTransactionHandle.class );
-        when( oldSchemaTransaction.isSchemaTransaction() ).thenReturn( true );
-        when( oldSchemaTransaction.startTime() ).thenReturn( clock.millis() - MINUTES.toMillis( 2 ) );
-        when( oldSchemaTransaction.timeoutMillis() ).thenReturn( MINUTES.toMillis( 1 ) );
-        when( kernelTransactions.activeTransactions() ).thenReturn( Iterators.asSet( oldSchemaTransaction ) );
+        KernelTransactionHandle oldSchemaTransaction = mock(KernelTransactionHandle.class);
+        when(oldSchemaTransaction.isSchemaTransaction()).thenReturn(true);
+        when(oldSchemaTransaction.startTime()).thenReturn(clock.millis() - MINUTES.toMillis(2));
+        when(oldSchemaTransaction.timeoutMillis()).thenReturn(MINUTES.toMillis(1));
+        when(kernelTransactions.activeTransactions()).thenReturn(Iterators.asSet(oldSchemaTransaction));
 
         // when
         monitor.run();
 
         // then
-        verify( oldSchemaTransaction, times( 1 ) ).isSchemaTransaction();
-        verify( oldSchemaTransaction, never() ).markForTermination( any() );
+        verify(oldSchemaTransaction, times(1)).isSchemaTransaction();
+        verify(oldSchemaTransaction, never()).markForTermination(any());
     }
 }

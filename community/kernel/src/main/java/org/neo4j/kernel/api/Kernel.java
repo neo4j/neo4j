@@ -37,8 +37,7 @@ import org.neo4j.kernel.api.procedure.CallableUserFunction;
  * inside the transaction are visible in read operations for {@link Statement statements}
  * executed within that transaction context.
  */
-public interface Kernel
-{
+public interface Kernel {
     /**
      * Creates and returns a new {@link KernelTransaction} capable of modifying the
      * underlying graph with custom timeout in milliseconds.
@@ -48,7 +47,8 @@ public interface Kernel
      * @param clientInfo transaction client info
      * @param timeout transaction timeout in milliseconds
      */
-    KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout )
+    KernelTransaction beginTransaction(
+            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout)
             throws TransactionFailureException;
 
     /**
@@ -59,7 +59,8 @@ public interface Kernel
      * @param clientInfo {@link ClientConnectionInfo} of the user which is beginning this transaction
      * @return the transaction
      */
-    KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo )
+    KernelTransaction beginTransaction(
+            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo)
             throws TransactionFailureException;
 
     /**
@@ -69,7 +70,7 @@ public interface Kernel
      * @param loginContext the {@link LoginContext} of the user which is beginning this transaction
      * @return the transaction
      */
-    KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
+    KernelTransaction beginTransaction(KernelTransaction.Type type, LoginContext loginContext)
             throws TransactionFailureException;
 
     /**
@@ -78,7 +79,7 @@ public interface Kernel
      *
      * @param procedure procedure to register
      */
-    void registerProcedure( CallableProcedure procedure ) throws ProcedureException;
+    void registerProcedure(CallableProcedure procedure) throws ProcedureException;
 
     /**
      * Register a function that should be available from this kernel. This is not a transactional method, the function is not
@@ -86,7 +87,7 @@ public interface Kernel
      *
      * @param function function to register
      */
-    void registerUserFunction( CallableUserFunction function ) throws ProcedureException;
+    void registerUserFunction(CallableUserFunction function) throws ProcedureException;
 
     /**
      * Register an aggregation function that should be available from this kernel. This is not a transactional method, the function is not
@@ -94,7 +95,7 @@ public interface Kernel
      *
      * @param function function to register
      */
-    void registerUserAggregationFunction( CallableUserAggregationFunction function ) throws ProcedureException;
+    void registerUserAggregationFunction(CallableUserAggregationFunction function) throws ProcedureException;
 
     /**
      * Cursor factory which produces cursors that are not bound to any particular transaction.

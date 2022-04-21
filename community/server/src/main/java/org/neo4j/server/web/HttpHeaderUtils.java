@@ -19,45 +19,38 @@
  */
 package org.neo4j.server.web;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.InternalLog;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-public class HttpHeaderUtils
-{
+public class HttpHeaderUtils {
 
     public static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
     public static final String ACCESS_MODE_HEADER = "access-mode";
 
-    public static final Map<String,String> CHARSET = Map.of( "charset", UTF_8.name() );
+    public static final Map<String, String> CHARSET = Map.of("charset", UTF_8.name());
 
-    private HttpHeaderUtils()
-    {
-    }
+    private HttpHeaderUtils() {}
 
-    public static MediaType mediaTypeWithCharsetUtf8( MediaType mediaType )
-    {
-        Map<String,String> parameters = mediaType.getParameters();
-        if ( parameters.isEmpty() )
-        {
-            return new MediaType( mediaType.getType(), mediaType.getSubtype(), CHARSET );
+    public static MediaType mediaTypeWithCharsetUtf8(MediaType mediaType) {
+        Map<String, String> parameters = mediaType.getParameters();
+        if (parameters.isEmpty()) {
+            return new MediaType(mediaType.getType(), mediaType.getSubtype(), CHARSET);
         }
-        if ( parameters.containsKey( "charset" ) )
-        {
+        if (parameters.containsKey("charset")) {
             return mediaType;
         }
-        Map<String,String> paramsWithCharset = new HashMap<>( parameters );
-        paramsWithCharset.putAll( CHARSET );
-        return new MediaType( mediaType.getType(), mediaType.getSubtype(), paramsWithCharset );
+        Map<String, String> paramsWithCharset = new HashMap<>(parameters);
+        paramsWithCharset.putAll(CHARSET);
+        return new MediaType(mediaType.getType(), mediaType.getSubtype(), paramsWithCharset);
     }
 
     /**
@@ -68,10 +61,9 @@ public class HttpHeaderUtils
      * @param errorLog errors log for header parsing errors
      * @return custom timeout if header set, -1 otherwise or when value is not a valid number.
      */
-    public static long getTransactionTimeout( HttpServletRequest request, InternalLog errorLog )
-    {
-        String headerValue = request.getHeader( MAX_EXECUTION_TIME_HEADER );
-        return getTransactionTimeout( headerValue, errorLog );
+    public static long getTransactionTimeout(HttpServletRequest request, InternalLog errorLog) {
+        String headerValue = request.getHeader(MAX_EXECUTION_TIME_HEADER);
+        return getTransactionTimeout(headerValue, errorLog);
     }
 
     /**
@@ -82,47 +74,39 @@ public class HttpHeaderUtils
      * @param errorLog errors log for header parsing errors
      * @return custom timeout if header set, -1 otherwise or when value is not a valid number.
      */
-    public static long getTransactionTimeout( HttpHeaders headers, InternalLog errorLog )
-    {
-        String headerValue = headers.getHeaderString( MAX_EXECUTION_TIME_HEADER );
-        return getTransactionTimeout( headerValue, errorLog );
+    public static long getTransactionTimeout(HttpHeaders headers, InternalLog errorLog) {
+        String headerValue = headers.getHeaderString(MAX_EXECUTION_TIME_HEADER);
+        return getTransactionTimeout(headerValue, errorLog);
     }
 
-    public static Optional<Boolean> getAccessMode( HttpHeaders headers )
-    {
-        String headerValue = headers.getHeaderString( ACCESS_MODE_HEADER );
+    public static Optional<Boolean> getAccessMode(HttpHeaders headers) {
+        String headerValue = headers.getHeaderString(ACCESS_MODE_HEADER);
 
-        if ( headerValue == null )
-        {
+        if (headerValue == null) {
             return Optional.empty();
-        }
-        else
-        {
-            try
-            {
-                return Optional.of( AccessMode.valueOf( headerValue.toUpperCase() ).equals( AccessMode.READ ) );
+        } else {
+            try {
+                return Optional.of(AccessMode.valueOf(headerValue.toUpperCase()).equals(AccessMode.READ));
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "The header '%s' should be either 'WRITE' or 'READ' but found '%s'.",
+                                ACCESS_MODE_HEADER, headerValue),
+                        ex);
             }
-            catch ( IllegalArgumentException ex )
-            {
-                throw new IllegalArgumentException( String.format( "The header '%s' should be either 'WRITE' or 'READ' but found '%s'.",
-                                                                   ACCESS_MODE_HEADER, headerValue ), ex );
-            }
-
         }
     }
 
-    private static long getTransactionTimeout( String headerValue, InternalLog errorLog )
-    {
-        if ( headerValue != null )
-        {
-            try
-            {
-                return Long.parseLong( headerValue );
-            }
-            catch ( NumberFormatException e )
-            {
-                errorLog.error( String.format( "Fail to parse `%s` header with value: '%s'. Should be a positive number.",
-                        MAX_EXECUTION_TIME_HEADER, headerValue), e );
+    private static long getTransactionTimeout(String headerValue, InternalLog errorLog) {
+        if (headerValue != null) {
+            try {
+                return Long.parseLong(headerValue);
+            } catch (NumberFormatException e) {
+                errorLog.error(
+                        String.format(
+                                "Fail to parse `%s` header with value: '%s'. Should be a positive number.",
+                                MAX_EXECUTION_TIME_HEADER, headerValue),
+                        e);
             }
         }
         return GraphDatabaseSettings.UNSPECIFIED_TIMEOUT;
@@ -135,22 +119,17 @@ public class HttpHeaderUtils
      * @param name the HTTP header name, like 'Accept' or 'Content-Type'.
      * @return {@code true} when given name represents a valid HTTP header, {@code false} otherwise.
      */
-    public static boolean isValidHttpHeaderName( String name )
-    {
-        if ( name == null || name.isEmpty() )
-        {
+    public static boolean isValidHttpHeaderName(String name) {
+        if (name == null || name.isEmpty()) {
             return false;
         }
         boolean isBlank = true;
-        for ( int i = 0; i < name.length(); i++ )
-        {
-            char c = name.charAt( i );
-            if ( Character.isISOControl( c ) )
-            {
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (Character.isISOControl(c)) {
                 return false;
             }
-            if ( !Character.isWhitespace( c ) )
-            {
+            if (!Character.isWhitespace(c)) {
                 isBlank = false;
             }
         }

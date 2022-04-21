@@ -22,7 +22,6 @@ package org.neo4j.bolt.v4.messaging;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.AccessMode;
@@ -31,25 +30,36 @@ import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.values.virtual.MapValue;
 
-public class RunMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder
-{
-    public RunMessageDecoder( BoltResponseHandler responseHandler, BookmarksParser bookmarksParser )
-    {
-        super( responseHandler, bookmarksParser );
+public class RunMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder {
+    public RunMessageDecoder(BoltResponseHandler responseHandler, BookmarksParser bookmarksParser) {
+        super(responseHandler, bookmarksParser);
     }
 
     @Override
-    protected final RequestMessage newRunMessage( String statement, MapValue params, MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
-                                                  AccessMode accessMode, Map<String,Object> txMetadata ) throws BoltIOException
-    {
-        var databaseName = MessageMetadataParser.parseDatabaseName( meta );
-        return this.newRunMessage( statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName );
+    protected final RequestMessage newRunMessage(
+            String statement,
+            MapValue params,
+            MapValue meta,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata)
+            throws BoltIOException {
+        var databaseName = MessageMetadataParser.parseDatabaseName(meta);
+        return this.newRunMessage(statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName);
     }
 
-    protected RequestMessage newRunMessage( String statement, MapValue params, MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
-                                            AccessMode accessMode, Map<String,Object> txMetadata, String databaseName ) throws BoltIOException
-    {
-        return new RunMessage( statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName ); // v4 RUN message
+    protected RequestMessage newRunMessage(
+            String statement,
+            MapValue params,
+            MapValue meta,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            String databaseName)
+            throws BoltIOException {
+        return new RunMessage(
+                statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName); // v4 RUN message
     }
 }
-

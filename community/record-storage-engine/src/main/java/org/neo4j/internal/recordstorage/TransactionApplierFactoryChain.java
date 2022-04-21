@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 import java.util.function.Function;
-
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.util.IdUpdateListener;
@@ -32,31 +31,27 @@ import org.neo4j.storageengine.util.IdUpdateListener;
  * TransactionApplierFactory#startTx(CommandsToApply, BatchContext)} methods.
  * Chains are reused between the batches of transactions as a consequence they should be stateless.
  */
-public class TransactionApplierFactoryChain implements TransactionApplierFactory
-{
-    private final Function<IdGeneratorUpdatesWorkSync,IdUpdateListener> idUpdateListenerFunction;
+public class TransactionApplierFactoryChain implements TransactionApplierFactory {
+    private final Function<IdGeneratorUpdatesWorkSync, IdUpdateListener> idUpdateListenerFunction;
     private final TransactionApplierFactory[] appliers;
 
-    public TransactionApplierFactoryChain( Function<IdGeneratorUpdatesWorkSync,IdUpdateListener> idUpdateListenerFunction,
-            TransactionApplierFactory... appliers )
-    {
+    public TransactionApplierFactoryChain(
+            Function<IdGeneratorUpdatesWorkSync, IdUpdateListener> idUpdateListenerFunction,
+            TransactionApplierFactory... appliers) {
         this.idUpdateListenerFunction = idUpdateListenerFunction;
         this.appliers = appliers;
     }
 
-    public IdUpdateListener getIdUpdateListener( IdGeneratorUpdatesWorkSync idGeneratorUpdatesWorkSync )
-    {
-        return idUpdateListenerFunction.apply( idGeneratorUpdatesWorkSync );
+    public IdUpdateListener getIdUpdateListener(IdGeneratorUpdatesWorkSync idGeneratorUpdatesWorkSync) {
+        return idUpdateListenerFunction.apply(idGeneratorUpdatesWorkSync);
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext ) throws IOException
-    {
+    public TransactionApplier startTx(CommandsToApply transaction, BatchContext batchContext) throws IOException {
         TransactionApplier[] txAppliers = new TransactionApplier[appliers.length];
-        for ( int i = 0; i < appliers.length; i++ )
-        {
-            txAppliers[i] = appliers[i].startTx( transaction, batchContext );
+        for (int i = 0; i < appliers.length; i++) {
+            txAppliers[i] = appliers[i].startTx(transaction, batchContext);
         }
-        return new TransactionApplierFacade( txAppliers );
+        return new TransactionApplierFacade(txAppliers);
     }
 }

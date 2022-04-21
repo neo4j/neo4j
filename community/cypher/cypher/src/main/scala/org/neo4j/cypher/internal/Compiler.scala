@@ -41,10 +41,11 @@ trait Compiler {
    * @return a compiled and executable query
    */
   @throws[Neo4jException]
-  def compile(query: InputQuery,
-              tracer: CompilationPhaseTracer,
-              preParsingNotifications: Set[Notification],
-              transactionalContext: TransactionalContext,
-              params: MapValue
-             ): ExecutableQuery
+  def compile(
+    query: InputQuery,
+    tracer: CompilationPhaseTracer,
+    preParsingNotifications: Set[Notification],
+    transactionalContext: TransactionalContext,
+    params: MapValue
+  ): ExecutableQuery
 }

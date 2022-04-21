@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import static java.lang.System.arraycopy;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,15 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-
 import org.neo4j.kernel.impl.store.PropertyType;
-
-import static java.lang.System.arraycopy;
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
-import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
-import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 /**
  * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
@@ -43,14 +42,13 @@ import static org.neo4j.memory.HeapEstimator.sizeOf;
  * variable length, a full PropertyRecord can be holding just one
  * PropertyBlock.
  */
-public class PropertyRecord extends AbstractBaseRecord implements Iterable<PropertyBlock>
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyRecord.class );
+public class PropertyRecord extends AbstractBaseRecord implements Iterable<PropertyBlock> {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(PropertyRecord.class);
     private static final int PAYLOAD_SIZE = PropertyType.getPayloadSizeLongs();
-    public static final long INITIAL_SIZE = SHALLOW_SIZE +
-                                            sizeOf( new long[PAYLOAD_SIZE] ) +
-                                            shallowSizeOfObjectArray( PAYLOAD_SIZE ) +
-                                            PropertyBlock.HEAP_SIZE; // at least one block
+    public static final long INITIAL_SIZE = SHALLOW_SIZE
+            + sizeOf(new long[PAYLOAD_SIZE])
+            + shallowSizeOfObjectArray(PAYLOAD_SIZE)
+            + PropertyBlock.HEAP_SIZE; // at least one block
 
     private static final byte TYPE_NODE = 1;
     private static final byte TYPE_REL = 2;
@@ -77,46 +75,39 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     private byte entityType;
     private List<DynamicRecord> deletedRecords;
 
-    public PropertyRecord( long id )
-    {
-        super( id );
+    public PropertyRecord(long id) {
+        super(id);
     }
 
-    public PropertyRecord( long id, PrimitiveRecord primitive )
-    {
-        super( id );
-        primitive.setIdTo( this );
+    public PropertyRecord(long id, PrimitiveRecord primitive) {
+        super(id);
+        primitive.setIdTo(this);
     }
 
-    public PropertyRecord( PropertyRecord other )
-    {
-        super( other );
+    public PropertyRecord(PropertyRecord other) {
+        super(other);
         this.nextProp = other.nextProp;
         this.prevProp = other.prevProp;
-        arraycopy( other.blocks, 0, this.blocks, 0, other.blocks.length );
+        arraycopy(other.blocks, 0, this.blocks, 0, other.blocks.length);
         this.blocksCursor = other.blocksCursor;
         this.blockRecordsCursor = other.blockRecordsCursor;
         this.blocksLoaded = other.blocksLoaded;
         this.entityId = other.entityId;
         this.entityType = other.entityType;
 
-        for ( int i = 0; i < blockRecordsCursor; i++ )
-        {
-            this.blockRecords[i] = new PropertyBlock( other.blockRecords[i] );
+        for (int i = 0; i < blockRecordsCursor; i++) {
+            this.blockRecords[i] = new PropertyBlock(other.blockRecords[i]);
         }
-        if ( other.deletedRecords != null )
-        {
-            this.deletedRecords = new ArrayList<>( other.deletedRecords.size() );
-            for ( DynamicRecord deletedRecord : other.deletedRecords )
-            {
-                this.deletedRecords.add( new DynamicRecord( deletedRecord ) );
+        if (other.deletedRecords != null) {
+            this.deletedRecords = new ArrayList<>(other.deletedRecords.size());
+            for (DynamicRecord deletedRecord : other.deletedRecords) {
+                this.deletedRecords.add(new DynamicRecord(deletedRecord));
             }
         }
     }
 
-    public PropertyRecord initialize( boolean inUse, long prevProp, long nextProp )
-    {
-        super.initialize( inUse );
+    public PropertyRecord initialize(boolean inUse, long prevProp, long nextProp) {
+        super.initialize(inUse);
         this.prevProp = prevProp;
         this.nextProp = nextProp;
         this.deletedRecords = null;
@@ -126,9 +117,8 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     }
 
     @Override
-    public void clear()
-    {
-        super.initialize( false );
+    public void clear() {
+        super.initialize(false);
         this.entityId = -1;
         this.entityType = 0;
         this.prevProp = NO_PREVIOUS_PROPERTY.intValue();
@@ -138,123 +128,100 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         this.blocksLoaded = false;
     }
 
-    public void setNodeId( long nodeId )
-    {
+    public void setNodeId(long nodeId) {
         entityType = TYPE_NODE;
         entityId = nodeId;
     }
 
-    public void setRelId( long relId )
-    {
+    public void setRelId(long relId) {
         entityType = TYPE_REL;
         entityId = relId;
     }
 
-    public void setSchemaRuleId( long id )
-    {
+    public void setSchemaRuleId(long id) {
         entityType = TYPE_SCHEMA_RULE;
         entityId = id;
     }
 
-    public void setEntity( PropertyRecord other )
-    {
+    public void setEntity(PropertyRecord other) {
         entityType = other.entityType;
         entityId = other.entityId;
     }
 
-    public boolean isNodeSet()
-    {
+    public boolean isNodeSet() {
         return entityType == TYPE_NODE;
     }
 
-    public boolean isRelSet()
-    {
+    public boolean isRelSet() {
         return entityType == TYPE_REL;
     }
 
-    public boolean isSchemaSet()
-    {
+    public boolean isSchemaSet() {
         return entityType == TYPE_SCHEMA_RULE;
     }
 
-    public long getNodeId()
-    {
-        if ( isNodeSet() )
-        {
+    public long getNodeId() {
+        if (isNodeSet()) {
             return entityId;
         }
         return -1;
     }
 
-    public long getRelId()
-    {
-        if ( isRelSet() )
-        {
+    public long getRelId() {
+        if (isRelSet()) {
             return entityId;
         }
         return -1;
     }
 
-    public long getSchemaRuleId()
-    {
-        if ( isSchemaSet() )
-        {
+    public long getSchemaRuleId() {
+        if (isSchemaSet()) {
             return entityId;
         }
         return -1;
     }
 
-    public long getEntityId()
-    {
+    public long getEntityId() {
         return entityId;
     }
 
     /**
      * Gets the sum of the sizes of the blocks in this record, in bytes.
      */
-    public int size()
-    {
+    public int size() {
         ensureBlocksLoaded();
         int result = 0;
-        for ( int i = 0; i < blockRecordsCursor; i++ )
-        {
+        for (int i = 0; i < blockRecordsCursor; i++) {
             result += blockRecords[i].getSize();
         }
         return result;
     }
 
-    public int numberOfProperties()
-    {
+    public int numberOfProperties() {
         ensureBlocksLoaded();
         return blockRecordsCursor;
     }
 
-    public PropertyBlock[] getPropertyBlocks()
-    {
+    public PropertyBlock[] getPropertyBlocks() {
         return blockRecords;
     }
 
     @Override
-    public Iterator<PropertyBlock> iterator()
-    {
+    public Iterator<PropertyBlock> iterator() {
         ensureBlocksLoaded();
-        return new Iterator<>()
-        {
+        return new Iterator<>() {
             // state for the Iterator aspect of this class.
             private int blockRecordsIteratorCursor;
             private boolean canRemoveFromIterator;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return blockRecordsIteratorCursor < blockRecordsCursor;
             }
 
             @Override
-            public PropertyBlock next()
-            {
-                if ( !hasNext() )
-                {
+            public PropertyBlock next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
                 canRemoveFromIterator = true;
@@ -262,16 +229,13 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
             }
 
             @Override
-            public void remove()
-            {
-                if ( !canRemoveFromIterator )
-                {
+            public void remove() {
+                if (!canRemoveFromIterator) {
                     throw new IllegalStateException(
-                            "cursor:" + blockRecordsIteratorCursor + " canRemove:" + canRemoveFromIterator );
+                            "cursor:" + blockRecordsIteratorCursor + " canRemove:" + canRemoveFromIterator);
                 }
 
-                if ( --blockRecordsCursor > --blockRecordsIteratorCursor )
-                {
+                if (--blockRecordsCursor > --blockRecordsIteratorCursor) {
                     blockRecords[blockRecordsIteratorCursor] = blockRecords[blockRecordsCursor];
                 }
                 canRemoveFromIterator = false;
@@ -279,34 +243,30 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         };
     }
 
-    public List<DynamicRecord> getDeletedRecords()
-    {
+    public List<DynamicRecord> getDeletedRecords() {
         return deletedRecords != null ? deletedRecords : Collections.emptyList();
     }
 
-    public void addDeletedRecord( DynamicRecord record )
-    {
+    public void addDeletedRecord(DynamicRecord record) {
         assert !record.inUse();
-        if ( deletedRecords == null )
-        {
-            deletedRecords = new ArrayList<>( 1 );
+        if (deletedRecords == null) {
+            deletedRecords = new ArrayList<>(1);
         }
-        deletedRecords.add( record );
+        deletedRecords.add(record);
     }
 
-    public void addPropertyBlock( PropertyBlock block )
-    {
+    public void addPropertyBlock(PropertyBlock block) {
         ensureBlocksLoaded();
-        assert hasSpaceFor( block ) :
-                "Exceeded capacity of property record " + this
-                + ". My current size is reported as " + size() + "The added block was " + block +
-                " (note that size is " + block.getSize() + ")";
+        assert hasSpaceFor(block)
+                : "Exceeded capacity of property record " + this
+                        + ". My current size is reported as " + size() + "The added block was " + block
+                        + " (note that size is "
+                        + block.getSize() + ")";
 
         blockRecords[blockRecordsCursor++] = block;
     }
 
-    public boolean hasSpaceFor( PropertyBlock block )
-    {
+    public boolean hasSpaceFor(PropertyBlock block) {
         return size() + block.getSize() <= PropertyType.getPayloadSize();
     }
 
@@ -314,19 +274,16 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
      * Reads blocks[] and constructs {@link PropertyBlock} instances from them, making that abstraction
      * available to the outside. Done the first time any PropertyBlock is needed or manipulated.
      */
-    public void ensureBlocksLoaded()
-    {
-        if ( !blocksLoaded )
-        {
+    public void ensureBlocksLoaded() {
+        if (!blocksLoaded) {
             assert blockRecordsCursor == 0;
             // We haven't loaded the blocks yet, please do so now
             int index = 0;
-            while ( index < blocksCursor )
-            {
-                PropertyType type = PropertyType.getPropertyTypeOrThrow( blocks[index] );
+            while (index < blocksCursor) {
+                PropertyType type = PropertyType.getPropertyTypeOrThrow(blocks[index]);
                 PropertyBlock block = new PropertyBlock();
-                int length = type.calculateNumberOfBlocksUsed( blocks[index] );
-                block.setValueBlocks( Arrays.copyOfRange( blocks, index, index + length ) );
+                int length = type.calculateNumberOfBlocksUsed(blocks[index]);
+                block.setValueBlocks(Arrays.copyOfRange(blocks, index, index + length));
                 blockRecords[blockRecordsCursor++] = block;
                 index += length;
             }
@@ -334,30 +291,23 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         }
     }
 
-    public PropertyBlock getPropertyBlock( int keyIndex )
-    {
+    public PropertyBlock getPropertyBlock(int keyIndex) {
         ensureBlocksLoaded();
-        for ( int i = 0; i < blockRecordsCursor; i++ )
-        {
+        for (int i = 0; i < blockRecordsCursor; i++) {
             PropertyBlock block = blockRecords[i];
-            if ( block.getKeyIndexId() == keyIndex )
-            {
+            if (block.getKeyIndexId() == keyIndex) {
                 return block;
             }
         }
         return null;
     }
 
-    public PropertyBlock removePropertyBlock( int keyIndex )
-    {
+    public PropertyBlock removePropertyBlock(int keyIndex) {
         ensureBlocksLoaded();
-        for ( int i = 0; i < blockRecordsCursor; i++ )
-        {
-            if ( blockRecords[i].getKeyIndexId() == keyIndex )
-            {
+        for (int i = 0; i < blockRecordsCursor; i++) {
+            if (blockRecords[i].getKeyIndexId() == keyIndex) {
                 PropertyBlock block = blockRecords[i];
-                if ( --blockRecordsCursor > i )
-                {
+                if (--blockRecordsCursor > i) {
                     blockRecords[i] = blockRecords[blockRecordsCursor];
                 }
                 return block;
@@ -366,120 +316,109 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         return null;
     }
 
-    public void clearPropertyBlocks()
-    {
+    public void clearPropertyBlocks() {
         blockRecordsCursor = 0;
     }
 
-    public long getNextProp()
-    {
+    public long getNextProp() {
         return nextProp;
     }
 
-    public void setNextProp( long nextProp )
-    {
+    public void setNextProp(long nextProp) {
         this.nextProp = nextProp;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder buf = new StringBuilder();
-        buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
-                prevProp ).append( ",next=" ).append( nextProp ).append( ",created=" ).append( isCreated() ).append( "," );
+        buf.append("Property[")
+                .append(getId())
+                .append(",used=")
+                .append(inUse())
+                .append(",prev=")
+                .append(prevProp)
+                .append(",next=")
+                .append(nextProp)
+                .append(",created=")
+                .append(isCreated())
+                .append(",");
 
-        switch ( entityType )
-        {
-            case TYPE_NODE -> buf.append( "node" );
-            case TYPE_REL -> buf.append( "rel" );
-            case TYPE_SCHEMA_RULE -> buf.append( "schema" );
-            default -> buf.append( "unkownType(" ).append( entityType ).append( ")" );
+        switch (entityType) {
+            case TYPE_NODE -> buf.append("node");
+            case TYPE_REL -> buf.append("rel");
+            case TYPE_SCHEMA_RULE -> buf.append("schema");
+            default -> buf.append("unkownType(").append(entityType).append(")");
         }
 
-        buf.append( "=" ).append( entityId );
+        buf.append("=").append(entityId);
 
-        if ( blocksLoaded )
-        {
-            for ( int i = 0; i < blockRecordsCursor; i++ )
-            {
-                buf.append( ',' ).append( blockRecords[i] );
+        if (blocksLoaded) {
+            for (int i = 0; i < blockRecordsCursor; i++) {
+                buf.append(',').append(blockRecords[i]);
+            }
+        } else {
+            buf.append(", (blocks not loaded)");
+        }
+
+        if (deletedRecords != null) {
+            for (DynamicRecord dyn : deletedRecords) {
+                buf.append(", del:").append(dyn);
             }
         }
-        else
-        {
-            buf.append( ", (blocks not loaded)" );
-        }
 
-        if ( deletedRecords != null )
-        {
-            for ( DynamicRecord dyn : deletedRecords )
-            {
-                buf.append( ", del:" ).append( dyn );
-            }
-        }
-
-        buf.append( ']' );
+        buf.append(']');
         return buf.toString();
     }
 
-    public void setChanged( PrimitiveRecord primitive )
-    {
-        primitive.setIdTo( this );
+    public void setChanged(PrimitiveRecord primitive) {
+        primitive.setIdTo(this);
     }
 
-    public long getPrevProp()
-    {
+    public long getPrevProp() {
         return prevProp;
     }
 
-    public void setPrevProp( long prev )
-    {
+    public void setPrevProp(long prev) {
         prevProp = prev;
     }
 
     @Override
-    public PropertyRecord copy()
-    {
-        return new PropertyRecord( this );
+    public PropertyRecord copy() {
+        return new PropertyRecord(this);
     }
 
-    public long[] getBlocks()
-    {
+    public long[] getBlocks() {
         return blocks;
     }
 
-    public void addLoadedBlock( long block )
-    {
+    public void addLoadedBlock(long block) {
         assert blocksCursor + 1 <= blocks.length : "Capacity of " + blocks.length + " exceeded";
         blocks[blocksCursor++] = block;
     }
 
-    public int getBlockCapacity()
-    {
+    public int getBlockCapacity() {
         return blocks.length;
     }
 
-    public int getNumberOfBlocks()
-    {
+    public int getNumberOfBlocks() {
         return blocksCursor;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( super.hashCode(), nextProp, prevProp, Arrays.hashCode( blocks ), entityId, entityType );
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), nextProp, prevProp, Arrays.hashCode(blocks), entityId, entityType);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( !super.equals( obj ) )
-        {
+    public boolean equals(Object obj) {
+        if (!super.equals(obj)) {
             return false;
         }
         PropertyRecord other = (PropertyRecord) obj;
-        return nextProp == other.nextProp && prevProp == other.prevProp &&
-                Arrays.equals( blocks, 0, blocksCursor, other.blocks, 0, other.blocksCursor ) && entityId == other.entityId &&
-                entityType == other.entityType;
+        return nextProp == other.nextProp
+                && prevProp == other.prevProp
+                && Arrays.equals(blocks, 0, blocksCursor, other.blocks, 0, other.blocksCursor)
+                && entityId == other.entityId
+                && entityType == other.entityType;
     }
 }

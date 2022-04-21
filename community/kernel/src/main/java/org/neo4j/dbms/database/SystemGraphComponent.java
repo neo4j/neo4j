@@ -41,9 +41,8 @@ import org.neo4j.kernel.impl.coreapi.TransactionImpl;
  * also means it is possible to upgrade to the current version. This means that if the <code>detect</code> method return <code>REQUIRES_UPGRADE</code>, then it
  * should be possible to call the <code>upgradeToCurrent</code> method and achieve the upgrade.
  */
-public interface SystemGraphComponent
-{
-    Label VERSION_LABEL = Label.label( "Version" );
+public interface SystemGraphComponent {
+    Label VERSION_LABEL = Label.label("Version");
 
     /**
      * This string should be a unique identifier for the component. It will be used in two places:
@@ -59,7 +58,7 @@ public interface SystemGraphComponent
      * managed by this component is missing, old or up-to-date. Older sub-graphs could be supported for upgrade, or unsupported (in which case the server cannot
      * be started).
      */
-    Status detect( Transaction tx );
+    Status detect(Transaction tx);
 
     /**
      * If the component-specific sub-graph of the system database is not initialized yet (empty), this method should populate it with the default contents for
@@ -67,7 +66,7 @@ public interface SystemGraphComponent
      *
      * @throws Exception on any possible error raised by the initialization process
      */
-    void initializeSystemGraph( GraphDatabaseService system, boolean firstInitialization ) throws Exception;
+    void initializeSystemGraph(GraphDatabaseService system, boolean firstInitialization) throws Exception;
 
     /**
      * If the component-specific sub-graph of the system database is an older, but still supported, version, this method should upgrade it to the latest
@@ -75,28 +74,25 @@ public interface SystemGraphComponent
      *
      * @throws Exception on any possible error raised by the upgrade process
      */
-    void upgradeToCurrent( GraphDatabaseService system ) throws Exception;
+    void upgradeToCurrent(GraphDatabaseService system) throws Exception;
 
     /**
      * Delete unused parts of the system graph.
      */
-    default void cleanup( GraphDatabaseService system ) throws Exception
-    {
-    }
+    default void cleanup(GraphDatabaseService system) throws Exception {}
 
-    static void executeWithFullAccess( GraphDatabaseService system, ThrowingConsumer<Transaction,Exception> consumer ) throws Exception
-    {
-        try ( TransactionImpl tx = (TransactionImpl) system.beginTx();
-              KernelTransaction.Revertable ignore = tx.kernelTransaction().overrideWith( SecurityContext.AUTH_DISABLED ) )
-        {
-            consumer.accept( tx );
+    static void executeWithFullAccess(GraphDatabaseService system, ThrowingConsumer<Transaction, Exception> consumer)
+            throws Exception {
+        try (TransactionImpl tx = (TransactionImpl) system.beginTx();
+                KernelTransaction.Revertable ignore =
+                        tx.kernelTransaction().overrideWith(SecurityContext.AUTH_DISABLED)) {
+            consumer.accept(tx);
             tx.commit();
         }
     }
 
-    default Integer getVersion( Transaction tx, String componentVersionProperty )
-    {
-        return getVersionNumber( tx, componentVersionProperty );
+    default Integer getVersion(Transaction tx, String componentVersionProperty) {
+        return getVersionNumber(tx, componentVersionProperty);
     }
 
     /**
@@ -106,36 +102,36 @@ public interface SystemGraphComponent
      * @param componentVersionProperty name of the property describing the version for the component
      * @return The version of the component or null if there is no stored information.
      */
-    static Integer getVersionNumber( Transaction tx, String componentVersionProperty )
-    {
+    static Integer getVersionNumber(Transaction tx, String componentVersionProperty) {
         Integer result = null;
-        try ( ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL ) )
-        {
-            if ( nodes.hasNext() )
-            {
+        try (ResourceIterator<Node> nodes = tx.findNodes(VERSION_LABEL)) {
+            if (nodes.hasNext()) {
                 Node versionNode = nodes.next();
-                result = (Integer) versionNode.getProperty( componentVersionProperty, null );
+                result = (Integer) versionNode.getProperty(componentVersionProperty, null);
             }
         }
         return result;
     }
 
-    enum Status
-    {
-        UNINITIALIZED( "No sub-graph detected for this component", "requires initialization" ),
-        CURRENT( "The sub-graph is already at the current version", "nothing to do" ),
-        REQUIRES_UPGRADE( "The sub-graph is supported, but is an older version and requires upgrade", "CALL dbms.upgrade()" ),
-        UNSUPPORTED_BUT_CAN_UPGRADE( "The sub-graph is unsupported, this component cannot function",
-                "Restart Neo4j in single-instance mode to upgrade this component at startup" ),
-        UNSUPPORTED( "The sub-graph is unsupported because it is too old, this component cannot function",
-                "Downgrade Neo4j and then upgrade this component before upgrading Neo4j again" ),
-        UNSUPPORTED_FUTURE( "The sub-graph is unsupported because it is a newer version, this component cannot function", "Upgrade Neo4j" );
+    enum Status {
+        UNINITIALIZED("No sub-graph detected for this component", "requires initialization"),
+        CURRENT("The sub-graph is already at the current version", "nothing to do"),
+        REQUIRES_UPGRADE(
+                "The sub-graph is supported, but is an older version and requires upgrade", "CALL dbms.upgrade()"),
+        UNSUPPORTED_BUT_CAN_UPGRADE(
+                "The sub-graph is unsupported, this component cannot function",
+                "Restart Neo4j in single-instance mode to upgrade this component at startup"),
+        UNSUPPORTED(
+                "The sub-graph is unsupported because it is too old, this component cannot function",
+                "Downgrade Neo4j and then upgrade this component before upgrading Neo4j again"),
+        UNSUPPORTED_FUTURE(
+                "The sub-graph is unsupported because it is a newer version, this component cannot function",
+                "Upgrade Neo4j");
 
         private final String description;
         private final String resolution;
 
-        Status( String description, String resolution )
-        {
+        Status(String description, String resolution) {
             this.description = description;
             this.resolution = resolution;
         }
@@ -148,26 +144,23 @@ public interface SystemGraphComponent
          * </ul>
          * Initialization is handled through a different code path and so does not require handling here.
          */
-        public Status with( Status other )
-        {
-            Status[] precedence = new Status[]{UNSUPPORTED_FUTURE, UNSUPPORTED, UNSUPPORTED_BUT_CAN_UPGRADE, REQUIRES_UPGRADE, UNINITIALIZED, CURRENT};
-            for ( Status status : precedence )
-            {
-                if ( other == status || this == status )
-                {
+        public Status with(Status other) {
+            Status[] precedence = new Status[] {
+                UNSUPPORTED_FUTURE, UNSUPPORTED, UNSUPPORTED_BUT_CAN_UPGRADE, REQUIRES_UPGRADE, UNINITIALIZED, CURRENT
+            };
+            for (Status status : precedence) {
+                if (other == status || this == status) {
                     return status;
                 }
             }
             return this;
         }
 
-        public String description()
-        {
+        public String description() {
             return description;
         }
 
-        public String resolution()
-        {
+        public String resolution() {
             return resolution;
         }
     }

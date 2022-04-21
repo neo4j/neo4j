@@ -19,17 +19,16 @@
  */
 package org.neo4j.internal.nativeimpl;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
+import static org.neo4j.internal.nativeimpl.LinuxErrorTranslator.EINVAL;
+import static org.neo4j.internal.nativeimpl.LinuxErrorTranslator.ERANGE;
+
 import com.sun.jna.LastErrorException;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
-import static org.neo4j.internal.nativeimpl.LinuxErrorTranslator.EINVAL;
-import static org.neo4j.internal.nativeimpl.LinuxErrorTranslator.ERANGE;
-
-public class LinuxNativeAccess implements NativeAccess
-{
+public class LinuxNativeAccess implements NativeAccess {
 
     /**
      * Constant defined in fadvise.h and suggest that the specified data will be accessed sequentially (with lower offsets read before higher ones).
@@ -52,20 +51,15 @@ public class LinuxNativeAccess implements NativeAccess
     private static final boolean NATIVE_ACCESS_AVAILABLE;
     private static final Throwable INITIALIZATION_FAILURE;
 
-    static
-    {
+    static {
         Throwable initFailure = null;
         boolean available = false;
-        try
-        {
-            if ( Platform.isLinux() )
-            {
-                Native.register( Platform.C_LIBRARY_NAME );
+        try {
+            if (Platform.isLinux()) {
+                Native.register(Platform.C_LIBRARY_NAME);
                 available = true;
             }
-        }
-        catch ( Throwable t )
-        {
+        } catch (Throwable t) {
             initFailure = t;
         }
         NATIVE_ACCESS_AVAILABLE = available;
@@ -83,7 +77,7 @@ public class LinuxNativeAccess implements NativeAccess
      * @param flag advise options
      * @return 0 on success. On error, an error number is returned
      */
-    private static native int posix_fadvise( int fd, long offset, long len, int flag ) throws LastErrorException;
+    private static native int posix_fadvise(int fd, long offset, long len, int flag) throws LastErrorException;
 
     /**
      *  Ensures that disk space is allocated for the file referred to by the file descriptor fd for the bytes in the range starting at offset
@@ -95,7 +89,7 @@ public class LinuxNativeAccess implements NativeAccess
      * @param len len in bytes
      * @return returns zero on success, or an error number on failure
      */
-    private static native int posix_fallocate( int fd, long offset, long len ) throws LastErrorException;
+    private static native int posix_fallocate(int fd, long offset, long len) throws LastErrorException;
 
     /**
      * Return pointer to a string describing error number, possibly using the LC_MESSAGES part of the current locale to select the appropriate language.
@@ -103,153 +97,131 @@ public class LinuxNativeAccess implements NativeAccess
      * @param buffPtr pointer to error message buffer
      * @param buffLength length of error message buffer
      */
-    public static native long strerror_r( int errnum, long buffPtr, int buffLength );
+    public static native long strerror_r(int errnum, long buffPtr, int buffLength);
 
     @Override
-    public boolean isAvailable()
-    {
+    public boolean isAvailable() {
         return NATIVE_ACCESS_AVAILABLE;
     }
 
     @Override
-    public NativeCallResult tryEvictFromCache( int fd )
-    {
-        if ( fd <= 0 )
-        {
-            return new NativeCallResult( ERROR, "Incorrect file descriptor." );
+    public NativeCallResult tryEvictFromCache(int fd) {
+        if (fd <= 0) {
+            return new NativeCallResult(ERROR, "Incorrect file descriptor.");
         }
-        return wrapResult( () -> posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED ) );
+        return wrapResult(() -> posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED));
     }
 
     @Override
-    public NativeCallResult tryAdviseSequentialAccess( int fd )
-    {
-        if ( fd <= 0 )
-        {
-            return new NativeCallResult( ERROR, "Incorrect file descriptor." );
+    public NativeCallResult tryAdviseSequentialAccess(int fd) {
+        if (fd <= 0) {
+            return new NativeCallResult(ERROR, "Incorrect file descriptor.");
         }
-        return wrapResult( () -> posix_fadvise( fd, 0, 0, POSIX_FADV_SEQUENTIAL ) );
+        return wrapResult(() -> posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL));
     }
 
     @Override
-    public NativeCallResult tryAdviseToKeepInCache( int fd )
-    {
-        if ( fd <= 0 )
-        {
-            return new NativeCallResult( ERROR, "Incorrect file descriptor." );
+    public NativeCallResult tryAdviseToKeepInCache(int fd) {
+        if (fd <= 0) {
+            return new NativeCallResult(ERROR, "Incorrect file descriptor.");
         }
-        return wrapResult( () -> posix_fadvise( fd, 0, 0, POSIX_FADV_WILLNEED ) );
+        return wrapResult(() -> posix_fadvise(fd, 0, 0, POSIX_FADV_WILLNEED));
     }
 
     @Override
-    public NativeCallResult tryPreallocateSpace( int fd, long bytes )
-    {
-        if ( fd <= 0 )
-        {
-            return new NativeCallResult( ERROR, "Incorrect file descriptor." );
+    public NativeCallResult tryPreallocateSpace(int fd, long bytes) {
+        if (fd <= 0) {
+            return new NativeCallResult(ERROR, "Incorrect file descriptor.");
         }
-        if ( bytes <= 0 )
-        {
-            return new NativeCallResult( ERROR, "Number of bytes to preallocate should be positive. Requested: " + bytes );
+        if (bytes <= 0) {
+            return new NativeCallResult(
+                    ERROR, "Number of bytes to preallocate should be positive. Requested: " + bytes);
         }
-        return wrapResult( () -> posix_fallocate( fd, 0, bytes ) );
+        return wrapResult(() -> posix_fallocate(fd, 0, bytes));
     }
 
     @Override
-    public ErrorTranslator errorTranslator()
-    {
+    public ErrorTranslator errorTranslator() {
         return LinuxErrorTranslator.INSTANCE;
     }
 
     @Override
-    public String describe()
-    {
-        if ( NATIVE_ACCESS_AVAILABLE )
-        {
+    public String describe() {
+        if (NATIVE_ACCESS_AVAILABLE) {
             return "Linux native access is available.";
         }
-        StringBuilder descriptionBuilder = new StringBuilder( "Linux native access is not available." );
-        if ( INITIALIZATION_FAILURE != null )
-        {
-            String exception = getStackTrace( INITIALIZATION_FAILURE );
-            descriptionBuilder.append( " Details: " ).append( exception );
+        StringBuilder descriptionBuilder = new StringBuilder("Linux native access is not available.");
+        if (INITIALIZATION_FAILURE != null) {
+            String exception = getStackTrace(INITIALIZATION_FAILURE);
+            descriptionBuilder.append(" Details: ").append(exception);
         }
         return descriptionBuilder.toString();
     }
 
-    private static NativeCallResult wrapResult( NativeCall call )
-    {
-        try
-        {
+    private static NativeCallResult wrapResult(NativeCall call) {
+        try {
             int result = call.call();
-            if ( result == SUCCESS )
-            {
+            if (result == SUCCESS) {
                 return NativeCallResult.SUCCESS;
+            } else {
+                return new NativeCallResult(result, tryExtractError(result));
             }
-            else
-            {
-                return new NativeCallResult( result, tryExtractError( result ) );
-            }
-        }
-        catch ( LastErrorException e )
-        {
-            return new NativeCallResult( e.getErrorCode(), e.getMessage() );
+        } catch (LastErrorException e) {
+            return new NativeCallResult(e.getErrorCode(), e.getMessage());
         }
     }
 
-    private static String tryExtractError( int errorCode )
-    {
+    private static String tryExtractError(int errorCode) {
         // The GNU C Library uses a buffer of 1024 characters for strerror().
-        // This buffer size therefore should be sufficient to avoid an ERANGE error when calling strerror_r() and strerror_l().
+        // This buffer size therefore should be sufficient to avoid an ERANGE error when calling strerror_r() and
+        // strerror_l().
         final int bufferLength = 1024;
-        final long bufferPointer = Native.malloc( bufferLength );
-        if ( bufferPointer > 0 )
-        {
-            try
-            {
-//                The strerror_r() function is similar to strerror(), but is thread safe.
-//                This function is available in two versions: an XSI-compliant version specified in POSIX.1-2001 (available
-//                since glibc 2.3.4, but not POSIX-compliant until glibc 2.13), and a GNU-specific version (available since glibc 2.0).
-//                The XSI-compliant version is provided with the feature test
-//                macros  settings  shown in the SYNOPSIS; otherwise the GNU-specific version is provided.
-//                The XSI-compliant strerror_r() is preferred for portable applications.
-                long result = strerror_r( errorCode, bufferPointer, bufferLength );
+        final long bufferPointer = Native.malloc(bufferLength);
+        if (bufferPointer > 0) {
+            try {
+                //                The strerror_r() function is similar to strerror(), but is thread safe.
+                //                This function is available in two versions: an XSI-compliant version specified in
+                // POSIX.1-2001 (available
+                //                since glibc 2.3.4, but not POSIX-compliant until glibc 2.13), and a GNU-specific
+                // version (available since glibc 2.0).
+                //                The XSI-compliant version is provided with the feature test
+                //                macros  settings  shown in the SYNOPSIS; otherwise the GNU-specific version is
+                // provided.
+                //                The XSI-compliant strerror_r() is preferred for portable applications.
+                long result = strerror_r(errorCode, bufferPointer, bufferLength);
 
-//                The GNU-specific strerror_r() returns a pointer to a string containing the error message.
-//                This may be either a pointer to a string that the function stores in buf, or a  pointer
-//                to  some  (immutable)  static  string (in which case buf is unused).
-//                If the function stores a string in buf, then at most buflen bytes are stored (the string may be truncated if
-//                buflen is too small and errnum is unknown).
-//                The string always includes a terminating null byte ('\0').
+                //                The GNU-specific strerror_r() returns a pointer to a string containing the error
+                // message.
+                //                This may be either a pointer to a string that the function stores in buf, or a
+                // pointer
+                //                to  some  (immutable)  static  string (in which case buf is unused).
+                //                If the function stores a string in buf, then at most buflen bytes are stored (the
+                // string may be truncated if
+                //                buflen is too small and errnum is unknown).
+                //                The string always includes a terminating null byte ('\0').
 
-//                The XSI-compliant strerror_r() function returns 0 on success.
-//                On error, a (positive) error number is returned (since glibc 2.13), or -1 is returned and errno is set to  indicate
-//                the error (glibc versions before 2.13).
-                if ( result == SUCCESS )
-                {
-                    return new Pointer( bufferPointer ).getString( 0 );
+                //                The XSI-compliant strerror_r() function returns 0 on success.
+                //                On error, a (positive) error number is returned (since glibc 2.13), or -1 is returned
+                // and errno is set to  indicate
+                //                the error (glibc versions before 2.13).
+                if (result == SUCCESS) {
+                    return new Pointer(bufferPointer).getString(0);
                 }
                 // not error, not EINVAL and not ERANGE
-                if ( result != ERROR && result != EINVAL && result != ERANGE )
-                {
-                    return new Pointer( result ).getString( 0 );
+                if (result != ERROR && result != EINVAL && result != ERANGE) {
+                    return new Pointer(result).getString(0);
                 }
-            }
-            catch ( Throwable t )
-            {
+            } catch (Throwable t) {
                 // ignore and use generic error message instead.
-            }
-            finally
-            {
-                Native.free( bufferPointer );
+            } finally {
+                Native.free(bufferPointer);
             }
         }
         return "Error occurred calling native function. Please check error code.";
     }
 
     @FunctionalInterface
-    private interface NativeCall
-    {
+    private interface NativeCall {
         int call() throws LastErrorException;
     }
 }

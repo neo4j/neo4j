@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser.javacc;
 
-public enum ExpectBar
-{
+public enum ExpectBar {
     /**
      * Expect a bar to follow the label expression
      */

@@ -41,7 +41,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n AS n
         |RETURN n AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("ensure map projections are aliased") {
@@ -53,7 +54,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n {.foo, .bar} AS n
         |RETURN n {.baz, .bar} AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("ensure expressions are aliased in RETURN") {
@@ -63,7 +65,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN n.bar AS `n.bar`, n AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("ensure all things are are aliased in UNION") {
@@ -81,7 +84,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |MATCH (n)
         |WITH n {.foo, .bar} AS n
         |RETURN n {.baz, .bar} AS n, 3 + 5 AS `3 + 5`
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("ensure valid things are aliased in subqueries") {
@@ -109,45 +113,52 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |  RETURN p {.foo, .bar} AS p, m AS m
         |}
         |RETURN n AS n, m AS m, p AS p
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("ensure variables are aliased for SHOW PRIVILEGES") {
     assertRewrite(
       "SHOW PRIVILEGES YIELD role",
-      "SHOW PRIVILEGES YIELD role AS role")
+      "SHOW PRIVILEGES YIELD role AS role"
+    )
   }
 
   test("ensure variables are aliased for SHOW USER PRIVILEGES with WHERE") {
     assertRewriteAndSemanticError(
       "SHOW USER neo4j PRIVILEGES YIELD access, resource WHERE role = 'PUBLIC'",
       "SHOW USER neo4j PRIVILEGES YIELD access AS access, resource AS resource WHERE role = 'PUBLIC'",
-      "Variable `role` not defined (line 1, column 57 (offset: 56))")
+      "Variable `role` not defined (line 1, column 57 (offset: 56))"
+    )
   }
 
   test("ensure variables are aliased for SHOW USER PRIVILEGES with ORDER BY") {
     assertRewriteAndSemanticError(
       "SHOW USER neo4j PRIVILEGES YIELD access, resource ORDER BY role",
       "SHOW USER neo4j PRIVILEGES YIELD access AS access, resource AS resource ORDER BY role",
-      "Variable `role` not defined (line 1, column 60 (offset: 59))")
+      "Variable `role` not defined (line 1, column 60 (offset: 59))"
+    )
   }
 
   test("ensure variables are aliased for SHOW USER") {
     assertRewrite(
       "SHOW USERS YIELD user",
-      "SHOW USERS YIELD user AS user")
+      "SHOW USERS YIELD user AS user"
+    )
   }
 
   test("ensure variables are aliased for SHOW ROLES") {
     assertRewrite(
       "SHOW ROLES YIELD role",
-      "SHOW ROLES YIELD role AS role")
+      "SHOW ROLES YIELD role AS role"
+    )
   }
 
   test("ensure variables are aliased for SHOW DATABASES") {
     assertRewrite(
       "SHOW DATABASES YIELD name",
-      "SHOW DATABASES YIELD name AS name")
+      "SHOW DATABASES YIELD name AS name"
+    )
   }
 
   test("WITH: attach ORDER BY expressions to existing aliases") {
@@ -159,7 +170,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop ORDER BY prop
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: attach ORDER BY expressions to existing aliases") {
@@ -169,7 +181,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN n.prop AS prop ORDER BY prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("attach WHERE expression to existing aliases") {
@@ -181,7 +194,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH size(n.prop) > 10 AS result WHERE result
         |RETURN result AS result
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("does not introduce aliases for ORDER BY with existing alias") {
@@ -189,7 +203,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop ORDER BY prop
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("does not introduce aliases for WHERE with existing alias") {
@@ -197,7 +212,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop WHERE prop
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: does not introduce aliases for ORDER BY expressions that depend on existing variables") {
@@ -209,7 +225,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n AS n ORDER BY size(n.prop)
         |RETURN n AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: does not introduce aliases for ORDER BY expressions that depend on existing variables") {
@@ -219,7 +236,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN n AS n ORDER BY size(n.prop)
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("does not introduce aliases for WHERE expressions that depend on existing variables") {
@@ -231,7 +249,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n AS n WHERE size(n.prop) > 10
         |RETURN n AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: introduces aliases for ORDER BY expressions that depend on existing aliases") {
@@ -243,7 +262,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop ORDER BY size(prop)
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: introduces aliases for ORDER BY expressions that depend on existing aliases") {
@@ -253,7 +273,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN n.prop AS prop ORDER BY size(prop)
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("introduces aliases for WHERE expressions that depend on existing aliases") {
@@ -265,7 +286,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop WHERE size(prop) > 10
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: renames variables for ORDER BY expressions that depend on existing aliases") {
@@ -277,7 +299,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n AS m ORDER BY m
         |RETURN m AS m
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: renames variables for ORDER BY expressions that depend on existing aliases") {
@@ -287,7 +310,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN n AS m ORDER BY m
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: does not rename variables for ORDER BY from RHS of AS, if they also exist on LHS of AS") {
@@ -296,7 +320,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |WITH x AS y, y as z
         |ORDER BY y
         |RETURN y AS y, z AS z
-        |""".stripMargin)
+        |""".stripMargin
+    )
   }
 
   test("RETURN: does not rename variables for ORDER BY from RHS of AS, if they also exist on LHS of AS") {
@@ -304,24 +329,31 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (x), (y)
         |RETURN x AS y, y as z
         |ORDER BY y
-        |""".stripMargin)
+        |""".stripMargin
+    )
   }
 
-  test("WITH: does not rename variables for ORDER BY from RHS of AS, if they also exist on LHS of AS. Expression in ORDER BY.") {
+  test(
+    "WITH: does not rename variables for ORDER BY from RHS of AS, if they also exist on LHS of AS. Expression in ORDER BY."
+  ) {
     assertIsNotRewritten(
       """MATCH (x), (y)
         |WITH x AS y, y as z
         |ORDER BY foo(y)
         |RETURN y AS y, z AS z
-        |""".stripMargin)
+        |""".stripMargin
+    )
   }
 
-  test("RETURN: does not rename variables for ORDER BY from RHS of AS, if they also exist on LHS of AS. Expression in ORDER BY.") {
+  test(
+    "RETURN: does not rename variables for ORDER BY from RHS of AS, if they also exist on LHS of AS. Expression in ORDER BY."
+  ) {
     assertIsNotRewritten(
       """MATCH (x), (y)
         |RETURN x AS y, y as z
         |ORDER BY foo(y)
-        |""".stripMargin)
+        |""".stripMargin
+    )
   }
 
   test("WITH: renames variables for ORDER BY from LHS of AS, if the RHS also exist on LHS of another AS") {
@@ -331,12 +363,12 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |ORDER BY x
         |RETURN y AS y, z AS z
         |""".stripMargin,
-
       """MATCH (x), (y)
         |WITH x AS y, y as z
         |ORDER BY y
         |RETURN y AS y, z AS z
-        |""".stripMargin)
+        |""".stripMargin
+    )
   }
 
   test("RETURN: renames variables for ORDER BY from LHS of AS, if the RHS also exist on LHS of another AS") {
@@ -348,7 +380,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (x), (y)
         |RETURN x AS y, y as z
         |ORDER BY y
-        |""".stripMargin)
+        |""".stripMargin
+    )
   }
 
   test("renames variables for WHERE expressions that depend on existing aliases") {
@@ -360,7 +393,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """UNWIND [true] as n
         |WITH n AS m WHERE m
         |RETURN m AS m
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: introduces aliases for complex ORDER BY expressions that depend on existing aliases") {
@@ -372,7 +406,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop ORDER BY size(prop[0])
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: introduces aliases for complex ORDER BY expressions that depend on existing aliases") {
@@ -382,7 +417,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN n.prop AS prop ORDER BY size(prop[0])
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("introduces aliases for complex WHERE expressions that depend on existing aliases") {
@@ -394,7 +430,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop WHERE size(prop[0]) > 10
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("does not introduce variables for ORDER BY expressions that depend on non-aliased variables") {
@@ -402,7 +439,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop ORDER BY n.foo DESC
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("does not introduce variables for WHERE expressions that depend on non-aliased variables") {
@@ -410,7 +448,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop WHERE n.foo > 10
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("does not introduce variables for ORDER BY expressions that depend on non-aliased variables in WITH *") {
@@ -418,14 +457,17 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH *, n.prop AS prop ORDER BY n.foo DESC
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
+
   test("does not introduce variables for WHERE expressions that depend on non-aliased variables in WITH *") {
     assertIsNotRewritten(
       """MATCH (n)
         |WITH *, n.prop AS prop WHERE n.foo > 10
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: introduces variables for ORDER BY expressions that depend on existing aliases in WITH *") {
@@ -437,7 +479,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH *, n.prop AS prop ORDER BY prop DESC
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: introduces variables for ORDER BY expressions that depend on existing aliases in WITH *") {
@@ -447,7 +490,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN *, n.prop AS prop ORDER BY prop DESC
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("introduces variables for WHERE expressions that depend on existing aliases in WITH *") {
@@ -459,7 +503,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH *, n.prop AS prop WHERE prop > 10
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: does not attach ORDER BY expressions to unaliased items") {
@@ -468,34 +513,38 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop ORDER BY n.prop
         |RETURN prop AS prop
-      """.stripMargin, "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 15))")
+      """.stripMargin,
+      "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 15))"
+    )
   }
 
   test("should not introduce aliases in subquery return") {
     assertNotRewrittenAndSemanticErrors(
       "CALL { RETURN 1 } RETURN 1 AS one",
-      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 15 (offset: 14))")
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 15 (offset: 14))"
+    )
   }
 
   test("should not introduce aliases in union subquery return") {
     assertNotRewrittenAndSemanticErrors(
       "CALL { RETURN 1 UNION RETURN 1 } RETURN 1 AS one",
       "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 15 (offset: 14))",
-      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 30 (offset: 29))",
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 30 (offset: 29))"
     )
   }
 
   test("should not introduce aliases in correlated subquery return") {
     assertNotRewrittenAndSemanticErrors(
       "MATCH (n) CALL { WITH n AS n RETURN 1 } RETURN 1 AS one",
-      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 37 (offset: 36))")
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 37 (offset: 36))"
+    )
   }
 
   test("should not introduce aliases in correlated union subquery return") {
     assertNotRewrittenAndSemanticErrors(
       "MATCH (n) CALL { WITH n AS n RETURN 1 UNION WITH n AS n RETURN 1 } RETURN 1 AS one",
       "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 37 (offset: 36))",
-      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 64 (offset: 63))",
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 64 (offset: 63))"
     )
   }
 
@@ -506,7 +555,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN n.prop AS `n.prop` ORDER BY `n.prop`
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: aliases complex expression") {
@@ -516,7 +566,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN foo(n.prop[0]) AS `foo(n.prop[0])`
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("does not attach WHERE expression to unaliased items") {
@@ -525,7 +576,9 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop WHERE n.prop
         |RETURN prop AS prop
-      """.stripMargin, "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 15))")
+      """.stripMargin,
+      "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 15))"
+    )
   }
 
   test("rejects use of aggregation in ORDER BY if aggregation is not used in associated WITH") {
@@ -535,11 +588,14 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         """MATCH (n)
           |WITH n.prop AS prop ORDER BY max(n.foo)
           |RETURN prop
-        """.stripMargin))
+        """.stripMargin
+      ))
       fail("We shouldn't get here")
     } catch {
       case e: SyntaxException =>
-        e.getMessage should equal("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding WITH (line 2, column 1 (offset: 10))")
+        e.getMessage should equal(
+          "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding WITH (line 2, column 1 (offset: 10))"
+        )
     }
   }
 
@@ -549,11 +605,14 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       rewrite(parseForRewriting(
         """MATCH (n)
           |RETURN n.prop AS prop ORDER BY max(n.foo)
-        """.stripMargin))
+        """.stripMargin
+      ))
       fail("We shouldn't get here")
     } catch {
       case e: SyntaxException =>
-        e.getMessage should equal("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 2, column 1 (offset: 10))")
+        e.getMessage should equal(
+          "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 2, column 1 (offset: 10))"
+        )
     }
   }
 
@@ -600,7 +659,9 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop WHERE max(n.foo)
         |RETURN prop AS prop
-      """.stripMargin, "Invalid use of aggregating function max(...) in this context (line 2, column 27 (offset: 36))")
+      """.stripMargin,
+      "Invalid use of aggregating function max(...) in this context (line 2, column 27 (offset: 36))"
+    )
   }
 
   test("preserves SKIP and LIMIT") {
@@ -612,7 +673,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n AS n SKIP 5 LIMIT 2
         |RETURN n AS n SKIP 5 LIMIT 2
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: preserves SKIP and LIMIT with ORDER BY expressions") {
@@ -624,7 +686,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n AS n ORDER BY n.prop SKIP 5 LIMIT 2
         |RETURN n AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: preserves SKIP and LIMIT with ORDER BY expressions") {
@@ -634,7 +697,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN n AS n ORDER BY n.prop SKIP 5 LIMIT 2
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("preserves SKIP and LIMIT with WHERE expression") {
@@ -646,7 +710,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n AS n SKIP 5 LIMIT 2 WHERE n.prop > 10
         |RETURN n AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: preserves DISTINCT when replacing ORDER BY expressions with alias") {
@@ -658,7 +723,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH DISTINCT n.prop AS prop ORDER BY prop
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: preserves DISTINCT when replacing ORDER BY expressions with alias") {
@@ -668,7 +734,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN DISTINCT n.prop AS prop ORDER BY prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("preserves DISTINCT when replacing WHERE expressions with alias") {
@@ -680,7 +747,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH DISTINCT n.prop AS prop WHERE prop
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("WITH: aggregating: does not change grouping set when introducing aliases for ORDER BY") {
@@ -692,7 +760,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH DISTINCT n.prop AS prop ORDER BY size(prop)
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
 
     assertRewrite(
       """MATCH (n)
@@ -702,7 +771,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop, count(*) AS count ORDER BY size(prop)
         |RETURN prop AS prop, count AS count
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("RETURN: aggregating: does not change grouping set when introducing aliases for ORDER BY") {
@@ -712,7 +782,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN DISTINCT n.prop AS prop ORDER BY size(prop)
-      """.stripMargin)
+      """.stripMargin
+    )
 
     assertRewrite(
       """MATCH (n)
@@ -720,7 +791,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin,
       """MATCH (n)
         |RETURN n.prop AS prop, count(*) AS count ORDER BY size(prop)
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("aggregating: does not change grouping set when introducing aliases for WHERE") {
@@ -732,7 +804,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH DISTINCT n.prop AS prop WHERE size(prop) = 1
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
 
     assertRewrite(
       """MATCH (n)
@@ -742,35 +815,48 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop AS prop, count(*) AS count WHERE size(prop) = 1
         |RETURN prop AS prop, count AS count
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
-  test("WITH: aggregating: does not change grouping set when introducing aliases for ORDER BY with non-grouping expression") {
+  test(
+    "WITH: aggregating: does not change grouping set when introducing aliases for ORDER BY with non-grouping expression"
+  ) {
     // Note: using a non-grouping expression for ORDER BY when aggregating is invalid, and will be caught during semantic check
     assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH DISTINCT n.prop AS prop ORDER BY n.foo
         |RETURN prop AS prop
-      """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 39 (offset: 48))")
+      """.stripMargin,
+      "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 39 (offset: 48))"
+    )
 
     assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH n.prop AS prop, collect(n.foo) AS foos ORDER BY n.foo
         |RETURN prop AS prop, foos AS foos
-      """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 54 (offset: 63))")
+      """.stripMargin,
+      "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 54 (offset: 63))"
+    )
   }
 
-  test("RETURN: aggregating: does not change grouping set when introducing aliases for ORDER BY with non-grouping expression") {
+  test(
+    "RETURN: aggregating: does not change grouping set when introducing aliases for ORDER BY with non-grouping expression"
+  ) {
     // Note: using a non-grouping expression for ORDER BY when aggregating is invalid, and will be caught during semantic check
     assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |RETURN DISTINCT n.prop AS prop ORDER BY n.foo
-      """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 41 (offset: 50))")
+      """.stripMargin,
+      "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 41 (offset: 50))"
+    )
 
     assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |RETURN n.prop AS prop, collect(n.foo) AS foos ORDER BY n.foo
-      """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 56 (offset: 65))")
+      """.stripMargin,
+      "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 56 (offset: 65))"
+    )
   }
 
   test("aggregating: does not change grouping set when introducing aliases for WHERE with non-grouping expression") {
@@ -779,14 +865,17 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH DISTINCT n.prop AS prop WHERE n.foo
         |RETURN prop AS prop
-      """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 36 (offset: 45))")
-
+      """.stripMargin,
+      "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 36 (offset: 45))"
+    )
 
     assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH n.prop AS prop, collect(n.foo) AS foos WHERE n.foo
         |RETURN prop AS prop, foos AS foos
-      """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 51 (offset: 60))")
+      """.stripMargin,
+      "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 51 (offset: 60))"
+    )
   }
 
   // Below: unordered, exploratory tests
@@ -797,7 +886,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |WITH r1 AS r2, rand() AS c ORDER BY c
         |MATCH (a)-[r2]->(b)
         |RETURN r2 AS rel
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("MATCH (foo) WITH $meh AS x ORDER BY x.prop DESC LIMIT 4 RETURN x") {
@@ -805,7 +895,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (foo)
         |WITH $meh AS x ORDER BY x.prop DESC LIMIT 4
         |RETURN x AS x
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("MATCH (n) with n order by n.name ASC skip 2 return n") {
@@ -817,7 +908,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n AS n ORDER BY n.name ASC SKIP 2
         |RETURN n AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("MATCH (x) WITH DISTINCT x as otherName ORDER BY x.name RETURN otherName") {
@@ -829,7 +921,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (x)
         |WITH DISTINCT x AS otherName ORDER BY otherName.name
         |RETURN otherName AS otherName
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("MATCH (x) WITH x as otherName ORDER BY x.name + otherName.name RETURN otherName") {
@@ -841,7 +934,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (x)
         |WITH x AS otherName ORDER BY otherName.name + otherName.name
         |RETURN otherName AS otherName
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("MATCH (a)-[r]->(b) WITH a, r, b, rand() AS c ORDER BY c MATCH (a)-[r]->(b) RETURN r AS rel") {
@@ -859,7 +953,9 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     )
   }
 
-  test("MATCH (n) WHERE id(n) IN [0,1,2,3] WITH n.division AS div, max(n.age) AS age order by max(n.age) RETURN div, age") {
+  test(
+    "MATCH (n) WHERE id(n) IN [0,1,2,3] WITH n.division AS div, max(n.age) AS age order by max(n.age) RETURN div, age"
+  ) {
     assertRewrite(
       """MATCH (n) WHERE id(n) IN [0,1,2,3]
         |WITH n.division AS div, max(n.age) AS age ORDER BY max(n.age)
@@ -890,7 +986,8 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH * ORDER BY id(n)
         |RETURN *
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("MATCH (n) WITH n, 0 AS foo WITH n AS n ORDER BY foo, n.bar RETURN n") {
@@ -904,23 +1001,31 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |WITH n AS n, 0 AS foo
         |WITH n AS n ORDER BY foo, n.bar
         |RETURN n AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("MATCH (n) WITH n AS n ORDER BY max(n) RETURN n") {
     a[SyntaxException] shouldBe thrownBy { rewriting("MATCH (n) WITH n AS n ORDER BY max(n) RETURN n") }
   }
 
-  protected override def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
+  override protected def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     // Expect no warnings
     assertRewriteAndWarnings(originalQuery, expectedQuery, Set.empty)
   }
 
-  protected def assertRewriteAndSemanticError(originalQuery: String, expectedQuery: String, semanticErrors: String*): Unit = {
+  protected def assertRewriteAndSemanticError(
+    originalQuery: String,
+    expectedQuery: String,
+    semanticErrors: String*
+  ): Unit = {
     val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
     val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
     val result = endoRewrite(original)
-    assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
+    assert(
+      result === expected,
+      s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}"
+    )
 
     val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases))
     val errors = checkResult.errors.map(error => s"${error.msg} (${error.position})").toSet
@@ -929,12 +1034,19 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     )
   }
 
-  protected def assertRewriteAndWarnings(originalQuery: String, expectedQuery: String, expectedWarnings: Set[InternalNotification]): Unit = {
+  protected def assertRewriteAndWarnings(
+    originalQuery: String,
+    expectedQuery: String,
+    expectedWarnings: Set[InternalNotification]
+  ): Unit = {
     notificationLogger.clear()
     val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
     val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
     val result = endoRewrite(original)
-    assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
+    assert(
+      result === expected,
+      s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}"
+    )
 
     val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases))
     assert(checkResult.errors === Seq())

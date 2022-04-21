@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -36,8 +35,7 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
-public class OnlineIndexProxy implements IndexProxy
-{
+public class OnlineIndexProxy implements IndexProxy {
     private final IndexProxyStrategy indexProxyStrategy;
     final IndexAccessor accessor;
     private boolean started;
@@ -68,8 +66,7 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    OnlineIndexProxy( IndexProxyStrategy indexProxyStrategy, IndexAccessor accessor, boolean forcedIdempotentMode )
-    {
+    OnlineIndexProxy(IndexProxyStrategy indexProxyStrategy, IndexAccessor accessor, boolean forcedIdempotentMode) {
         assert accessor != null;
         this.indexProxyStrategy = indexProxyStrategy;
         this.accessor = accessor;
@@ -77,150 +74,127 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         started = true;
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
-        IndexUpdater actual = accessor.newUpdater( escalateModeIfNecessary( mode ), cursorContext, parallel );
-        return started ? updateCountingUpdater( actual ) : actual;
+    public IndexUpdater newUpdater(final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+        IndexUpdater actual = accessor.newUpdater(escalateModeIfNecessary(mode), cursorContext, parallel);
+        return started ? updateCountingUpdater(actual) : actual;
     }
 
-    private IndexUpdateMode escalateModeIfNecessary( IndexUpdateMode mode )
-    {
-        if ( forcedIdempotentMode )
-        {
-            // If this proxy is flagged with taking extra care about idempotency then escalate ONLINE to ONLINE_IDEMPOTENT.
-            if ( mode != IndexUpdateMode.ONLINE )
-            {
-                throw new IllegalArgumentException( "Unexpected mode " + mode + " given that " + this +
-                        " has been marked with forced idempotent mode. Expected mode " + IndexUpdateMode.ONLINE );
+    private IndexUpdateMode escalateModeIfNecessary(IndexUpdateMode mode) {
+        if (forcedIdempotentMode) {
+            // If this proxy is flagged with taking extra care about idempotency then escalate ONLINE to
+            // ONLINE_IDEMPOTENT.
+            if (mode != IndexUpdateMode.ONLINE) {
+                throw new IllegalArgumentException("Unexpected mode " + mode + " given that " + this
+                        + " has been marked with forced idempotent mode. Expected mode " + IndexUpdateMode.ONLINE);
             }
             return IndexUpdateMode.ONLINE_IDEMPOTENT;
         }
         return mode;
     }
 
-    private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )
-    {
-        return new UpdateCountingIndexUpdater( indexProxyStrategy, indexUpdater );
+    private IndexUpdater updateCountingUpdater(final IndexUpdater indexUpdater) {
+        return new UpdateCountingIndexUpdater(indexProxyStrategy, indexUpdater);
     }
 
     @Override
-    public void drop()
-    {
+    public void drop() {
         indexProxyStrategy.removeStatisticsForIndex();
         accessor.drop();
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
-    {
+    public IndexDescriptor getDescriptor() {
         return indexProxyStrategy.getIndexDescriptor();
     }
 
     @Override
-    public void changeIdentity( IndexDescriptor descriptor )
-    {
-        indexProxyStrategy.changeIndexDescriptor( descriptor );
+    public void changeIdentity(IndexDescriptor descriptor) {
+        indexProxyStrategy.changeIndexDescriptor(descriptor);
     }
 
     @Override
-    public InternalIndexState getState()
-    {
+    public InternalIndexState getState() {
         return InternalIndexState.ONLINE;
     }
 
     @Override
-    public void force( CursorContext cursorContext )
-    {
-        accessor.force( cursorContext );
+    public void force(CursorContext cursorContext) {
+        accessor.force(cursorContext);
     }
 
     @Override
-    public void refresh()
-    {
+    public void refresh() {
         accessor.refresh();
     }
 
     @Override
-    public void close( CursorContext cursorContext ) throws IOException
-    {
+    public void close(CursorContext cursorContext) throws IOException {
         accessor.close();
     }
 
     @Override
-    public ValueIndexReader newValueReader()
-    {
+    public ValueIndexReader newValueReader() {
         return accessor.newValueReader();
     }
 
     @Override
-    public TokenIndexReader newTokenReader()
-    {
+    public TokenIndexReader newTokenReader() {
         return accessor.newTokenReader();
     }
 
     @Override
-    public boolean awaitStoreScanCompleted( long time, TimeUnit unit )
-    {
+    public boolean awaitStoreScanCompleted(long time, TimeUnit unit) {
         return false; // the store scan is already completed
     }
 
     @Override
-    public void activate()
-    {
+    public void activate() {
         // ok, already active
     }
 
     @Override
-    public void validate()
-    {
+    public void validate() {
         // ok, it's online so it's valid
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple, long entityId )
-    {
-        accessor.validateBeforeCommit( entityId, tuple );
+    public void validateBeforeCommit(Value[] tuple, long entityId) {
+        accessor.validateBeforeCommit(entityId, tuple);
     }
 
     @Override
-    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
-    {
-        throw new IllegalStateException( this + " is ONLINE" );
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException {
+        throw new IllegalStateException(this + " is ONLINE");
     }
 
     @Override
-    public PopulationProgress getIndexPopulationProgress()
-    {
+    public PopulationProgress getIndexPopulationProgress() {
         return PopulationProgress.DONE;
     }
 
     @Override
-    public ResourceIterator<Path> snapshotFiles()
-    {
+    public ResourceIterator<Path> snapshotFiles() {
         return accessor.snapshotFiles();
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
+    public Map<String, Value> indexConfig() {
         return accessor.indexConfig();
     }
 
     @Override
-    public String toString()
-    {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexProxyStrategy.getIndexDescriptor() + "]";
+    public String toString() {
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:"
+                + indexProxyStrategy.getIndexDescriptor() + "]";
     }
 
     @VisibleForTesting
-    public IndexAccessor accessor()
-    {
+    public IndexAccessor accessor() {
         return accessor;
     }
 }

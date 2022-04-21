@@ -23,8 +23,7 @@ package org.neo4j.procedure.builtin.routing;
  * Enumerates the parameter names used for the GetServers
  * procedures in a causal cluster.
  */
-public enum ParameterNames
-{
+public enum ParameterNames {
     /**
      * Type: IN
      * <p>
@@ -33,7 +32,7 @@ public enum ParameterNames
      * Refer to the specific routing plugin deployed to
      * understand which specific keys can be utilised.
      */
-    CONTEXT( "context" ),
+    CONTEXT("context"),
 
     /**
      * Type: IN
@@ -42,7 +41,7 @@ public enum ParameterNames
      * <p>
      * Describes for which database a routing table should be returned.
      */
-    DATABASE( "database" ),
+    DATABASE("database"),
 
     /**
      * Type: OUT
@@ -52,7 +51,7 @@ public enum ParameterNames
      * Refer to the protocol specification to understand the
      * exact format and how to utilise it.
      */
-    SERVERS( "servers" ),
+    SERVERS("servers"),
 
     /**
      * Type: OUT
@@ -63,17 +62,15 @@ public enum ParameterNames
      * Refer to the specific routing plugin deployed to
      * understand the impact of this setting.
      */
-    TTL( "ttl" );
+    TTL("ttl");
 
     private final String parameterName;
 
-    ParameterNames( String parameterName )
-    {
+    ParameterNames(String parameterName) {
         this.parameterName = parameterName;
     }
 
-    public String parameterName()
-    {
+    public String parameterName() {
         return parameterName;
     }
 }

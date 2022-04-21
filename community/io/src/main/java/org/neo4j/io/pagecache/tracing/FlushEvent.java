@@ -24,59 +24,47 @@ import java.io.IOException;
 /**
  * Begin flushing modifications from an in-memory page to the backing file.
  */
-public interface FlushEvent extends AutoCloseablePageCacheTracerEvent
-{
+public interface FlushEvent extends AutoCloseablePageCacheTracerEvent {
     /**
      * A FlushEvent implementation that does nothing.
      */
-    FlushEvent NULL = new FlushEvent()
-    {
+    FlushEvent NULL = new FlushEvent() {
         @Override
-        public void addBytesWritten( long bytes )
-        {
-        }
+        public void addBytesWritten(long bytes) {}
 
         @Override
-        public void setException( IOException exception )
-        {
-        }
+        public void setException(IOException exception) {}
 
         @Override
-        public void addPagesFlushed( int pageCount )
-        {
-        }
+        public void addPagesFlushed(int pageCount) {}
 
         @Override
-        public void addPagesMerged( int pagesMerged )
-        {
-        }
+        public void addPagesMerged(int pagesMerged) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     };
 
     /**
      * Add up a number of bytes that has been written to the file.
      */
-    void addBytesWritten( long bytes );
+    void addBytesWritten(long bytes);
 
     /**
      * Add up a number of pages that has been flushed.
      */
-    void addPagesFlushed( int pageCount );
+    void addPagesFlushed(int pageCount);
 
     /**
      * Record number of pages that were merged together into single flushed buffer.
      * @param pagesMerged number of merged pages
      */
-    void addPagesMerged( int pagesMerged );
+    void addPagesMerged(int pagesMerged);
 
     /**
      * The page flush threw the given exception.
      */
-    void setException( IOException exception );
+    void setException(IOException exception);
 
     /**
      * The page flush has completed.

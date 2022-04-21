@@ -20,14 +20,12 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.nio.file.Path;
-
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 /**
  * Determines transaction log pruning point below which it should be safe to prune log files.
  */
-public interface Threshold
-{
+public interface Threshold {
     void init();
 
     /**
@@ -39,5 +37,5 @@ public interface Threshold
      * @param source meta information about particular transaction file
      * @return true if reached, false otherwise
      */
-    boolean reached( Path path, long version, LogFileInformation source );
+    boolean reached(Path path, long version, LogFileInformation source);
 }

@@ -42,11 +42,11 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 class OrLeafPlanningIntegrationTest
-  extends CypherFunSuite
-  with LogicalPlanningIntegrationTestSupport
-  with AstConstructionTestSupport
-  with LogicalPlanConstructionTestSupport
-  with ScalaCheckPropertyChecks {
+    extends CypherFunSuite
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport
+    with LogicalPlanConstructionTestSupport
+    with ScalaCheckPropertyChecks {
 
   private def plannerConfig(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     plannerBuilder()
@@ -236,12 +236,12 @@ class OrLeafPlanningIntegrationTest
       .addNodeIndex("L", Seq("p2"), 1.0, 1.0)
       .build()
 
-    def plan(withHint: Boolean = true)= cfg.plan(
+    def plan(withHint: Boolean = true) = cfg.plan(
       s"""MATCH (n:L:P)
-        |${if (withHint) "" else "//"} USING INDEX n:L(p1)
-        |${if (withHint) "" else "//"} USING INDEX n:L(p2)
-        |WHERE n.p1 = 1 OR n.p2 = 2
-        |RETURN n""".stripMargin
+         |${if (withHint) "" else "//"} USING INDEX n:L(p1)
+         |${if (withHint) "" else "//"} USING INDEX n:L(p2)
+         |WHERE n.p1 = 1 OR n.p2 = 2
+         |RETURN n""".stripMargin
     )
 
     plan() should (equal(
@@ -267,7 +267,9 @@ class OrLeafPlanningIntegrationTest
     plan() should not equal plan(withHint = false)
   }
 
-  test("should work with index seeks of property disjunctions with label conjunction, where every combination is indexed") {
+  test(
+    "should work with index seeks of property disjunctions with label conjunction, where every combination is indexed"
+  ) {
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
       .addNodeIndex("L", Seq("p2"), 0.5, 0.5)
@@ -293,7 +295,7 @@ class OrLeafPlanningIntegrationTest
       (seekLProp1, hasP),
       (seekLProp2, hasP),
       (seekPProp1, hasL),
-      (seekPProp2, hasL),
+      (seekPProp2, hasL)
     )
 
     val planAlternatives = for {
@@ -342,9 +344,9 @@ class OrLeafPlanningIntegrationTest
 
     def plan(withHint: Boolean = true) = cfg.plan(
       s"""MATCH (a)-[r:REL1]-(b)
-        |${if (withHint) "" else "//"} USING INDEX r:REL1(p1)
-        |WHERE r.p1 = 1 OR r.p2 = 2
-        |RETURN r""".stripMargin
+         |${if (withHint) "" else "//"} USING INDEX r:REL1(p1)
+         |WHERE r.p1 = 1 OR r.p2 = 2
+         |RETURN r""".stripMargin
     )
 
     plan() should (equal(
@@ -375,10 +377,10 @@ class OrLeafPlanningIntegrationTest
 
     def plan(withHint: Boolean = true) = cfg.plan(
       s"""MATCH (a)-[r:REL1]-(b)
-        |${if (withHint) "" else "//"} USING INDEX r:REL1(p1)
-        |${if (withHint) "" else "//"} USING INDEX r:REL1(p2)
-        |WHERE r.p1 = 1 OR r.p2 = 2
-        |RETURN r""".stripMargin
+         |${if (withHint) "" else "//"} USING INDEX r:REL1(p1)
+         |${if (withHint) "" else "//"} USING INDEX r:REL1(p2)
+         |WHERE r.p1 = 1 OR r.p2 = 2
+         |RETURN r""".stripMargin
     )
 
     plan() should (equal(
@@ -574,9 +576,9 @@ class OrLeafPlanningIntegrationTest
 
     def plan(withHint: Boolean = true) = cfg.plan(
       s"""MATCH (a)-[r]-(b)
-        |${if (withHint) "" else "//"} USING INDEX r:REL2(p1)
-        |WHERE (r:REL1 OR r:REL2) AND (r.p1 = 1)
-        |RETURN r""".stripMargin
+         |${if (withHint) "" else "//"} USING INDEX r:REL2(p1)
+         |WHERE (r:REL1 OR r:REL2) AND (r.p1 = 1)
+         |RETURN r""".stripMargin
     )
 
     // Possible improvement: We could have planned this as OrderedDistinct
@@ -608,10 +610,10 @@ class OrLeafPlanningIntegrationTest
 
     def plan(withHint: Boolean = true) = cfg.plan(
       s"""MATCH (a)-[r]-(b)
-        |${if (withHint) "" else "//"} USING INDEX r:REL1(p1)
-        |${if (withHint) "" else "//"} USING INDEX r:REL2(p1)
-        |WHERE (r:REL1 OR r:REL2) AND (r.p1 = 1)
-        |RETURN r""".stripMargin
+         |${if (withHint) "" else "//"} USING INDEX r:REL1(p1)
+         |${if (withHint) "" else "//"} USING INDEX r:REL2(p1)
+         |WHERE (r:REL1 OR r:REL2) AND (r.p1 = 1)
+         |RETURN r""".stripMargin
     )
 
     // Possible improvement: We could have planned this as OrderedDistinct
@@ -757,9 +759,9 @@ class OrLeafPlanningIntegrationTest
 
     def plan(withHint: Boolean = true) = cfg.plan(
       s"""MATCH (a)-[r]-(b)
-        |${if (withHint) "" else "//"} USING SCAN r:REL2
-        |WHERE (r:REL1 OR r:REL2)
-        |RETURN r""".stripMargin
+         |${if (withHint) "" else "//"} USING SCAN r:REL2
+         |WHERE (r:REL1 OR r:REL2)
+         |RETURN r""".stripMargin
     )
 
     plan() should (equal(
@@ -787,10 +789,10 @@ class OrLeafPlanningIntegrationTest
 
     def plan(withHint: Boolean = true) = cfg.plan(
       s"""MATCH (a)-[r]-(b)
-        |${if (withHint) "" else "//"} USING SCAN r:REL1
-        |${if (withHint) "" else "//"} USING SCAN r:REL2
-        |WHERE (r:REL1 OR r:REL2)
-        |RETURN r""".stripMargin
+         |${if (withHint) "" else "//"} USING SCAN r:REL1
+         |${if (withHint) "" else "//"} USING SCAN r:REL2
+         |WHERE (r:REL1 OR r:REL2)
+         |RETURN r""".stripMargin
     )
 
     plan() should (equal(
@@ -849,7 +851,8 @@ class OrLeafPlanningIntegrationTest
     val plan = cfg.plan(
       """MATCH (n)
         |WHERE (n:L) OR (n:P AND n.p1 = 1)
-        |RETURN n""".stripMargin)
+        |RETURN n""".stripMargin
+    )
 
     // Possible improvement: This could be planned with a nodeByLabelScan and a nodeIndexSeek
     plan should (equal(
@@ -965,7 +968,9 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test("should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used") {
+  test(
+    "should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used"
+  ) {
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
       .addNodeExistenceConstraint("L", "p1")
@@ -996,7 +1001,9 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test("should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used") {
+  test(
+    "should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used"
+  ) {
     val cfg = plannerConfig()
       .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1, withValues = true)
       .addRelationshipExistenceConstraint("REL1", "p1")
@@ -1027,7 +1034,9 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test("should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality") {
+  test(
+    "should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality"
+  ) {
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
       .addNodeExistenceConstraint("L", "p1")
@@ -1060,7 +1069,9 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test("should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality") {
+  test(
+    "should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality"
+  ) {
     val cfg = plannerConfig()
       .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1, withValues = true)
       .addRelationshipExistenceConstraint("REL1", "p1")
@@ -1303,14 +1314,24 @@ class OrLeafPlanningIntegrationTest
         .union()
         .|.filter("n:L")
         .|.nodeByIdSeek("n", Set(), 1)
-        .nodeIndexOperator("n:L(prop > 123)", argumentIds = Set(), getValue = Map("prop" -> DoNotGetValue), indexType = IndexType.RANGE)
+        .nodeIndexOperator(
+          "n:L(prop > 123)",
+          argumentIds = Set(),
+          getValue = Map("prop" -> DoNotGetValue),
+          indexType = IndexType.RANGE
+        )
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:L(prop > 123)", argumentIds = Set(), getValue = Map("prop" -> DoNotGetValue), indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          "n:L(prop > 123)",
+          argumentIds = Set(),
+          getValue = Map("prop" -> DoNotGetValue),
+          indexType = IndexType.RANGE
+        )
         .filter("n:L")
         .nodeByIdSeek("n", Set(), 1)
         .build()
@@ -1343,14 +1364,16 @@ class OrLeafPlanningIntegrationTest
         |  a.prop3 IS NOT NULL
         |)
         |AND a.prop1 IS NOT NULL
-        |RETURN a""".stripMargin)
+        |RETURN a""".stripMargin
+    )
 
     plan should (equal(
       planner.planBuilder()
         .produceResults("a")
         .filter(
           "a.prop2 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL",
-          "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL")
+          "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL"
+        )
         .distinct("a AS a")
         .union()
         .|.filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
@@ -1363,7 +1386,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("a")
         .filter(
           "a.prop2 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL",
-          "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL")
+          "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL"
+        )
         .distinct("a AS a")
         .union()
         .|.filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
@@ -1381,9 +1405,10 @@ class OrLeafPlanningIntegrationTest
       .enableMinimumGraphStatistics()
       .build()
 
-    forAll (for {
+    forAll(for {
       size <- Gen.choose(2, 3)
-      disjunctions <- Gen.sequence[Seq[Set[Int]], Set[Int]](Seq.fill(size)(Gen.nonEmptyBuildableOf[Set[Int], Int](Gen.choose(1,3))))
+      disjunctions <-
+        Gen.sequence[Seq[Set[Int]], Set[Int]](Seq.fill(size)(Gen.nonEmptyBuildableOf[Set[Int], Int](Gen.choose(1, 3))))
     } yield disjunctions) { (disjunctions: Seq[Set[Int]]) =>
       val selections =
         disjunctions.map(

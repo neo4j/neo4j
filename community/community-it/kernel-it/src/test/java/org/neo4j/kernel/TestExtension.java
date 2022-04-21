@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFactoryContractTest;
 import org.neo4j.kernel.extension.GlobalExtensions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test the implementation of the {@link ExtensionFactory} framework. Treats the
@@ -39,27 +38,25 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * the extension implementation as a black box to assert that it fulfills the
  * requirements stipulated by the framework.
  */
-class TestExtension extends ExtensionFactoryContractTest
-{
-    TestExtension()
-    {
-        super( DummyExtensionFactory.EXTENSION_ID, DummyExtensionFactory.class );
+class TestExtension extends ExtensionFactoryContractTest {
+    TestExtension() {
+        super(DummyExtensionFactory.EXTENSION_ID, DummyExtensionFactory.class);
     }
 
     /**
      * Check that lifecycle status of extension is STARTED
      */
     @Test
-    void shouldBeStarted()
-    {
+    void shouldBeStarted() {
         GraphDatabaseAPI graphdb = graphDb();
-        try
-        {
-            assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
-                    GlobalExtensions.class ).resolveDependency( DummyExtension.class ).getStatus() );
-        }
-        finally
-        {
+        try {
+            assertEquals(
+                    LifecycleStatus.STARTED,
+                    graphdb.getDependencyResolver()
+                            .resolveDependency(GlobalExtensions.class)
+                            .resolveDependency(DummyExtension.class)
+                            .getStatus());
+        } finally {
             managementService.shutdown();
         }
     }
@@ -68,18 +65,22 @@ class TestExtension extends ExtensionFactoryContractTest
      * Check that dependencies can be accessed
      */
     @Test
-    void dependenciesCanBeRetrieved()
-    {
+    void dependenciesCanBeRetrieved() {
         GraphDatabaseAPI graphdb = graphDb();
-        try
-        {
-            GlobalExtensions globalExtensions = graphdb.getDependencyResolver().resolveDependency( GlobalExtensions.class );
-            assertNotNull( globalExtensions.resolveDependency( DummyExtension.class ).getDependencies().getConfig() );
-            assertEquals( graphdb.getDependencyResolver().resolveDependency( DatabaseManager.class ),
-                    globalExtensions.resolveDependency( DummyExtension.class ).getDependencies().getDatabaseManager() );
-        }
-        finally
-        {
+        try {
+            GlobalExtensions globalExtensions =
+                    graphdb.getDependencyResolver().resolveDependency(GlobalExtensions.class);
+            assertNotNull(globalExtensions
+                    .resolveDependency(DummyExtension.class)
+                    .getDependencies()
+                    .getConfig());
+            assertEquals(
+                    graphdb.getDependencyResolver().resolveDependency(DatabaseManager.class),
+                    globalExtensions
+                            .resolveDependency(DummyExtension.class)
+                            .getDependencies()
+                            .getDatabaseManager());
+        } finally {
             managementService.shutdown();
         }
     }
@@ -88,12 +89,15 @@ class TestExtension extends ExtensionFactoryContractTest
      * Check that lifecycle status of extension is SHUTDOWN
      */
     @Test
-    void shouldBeShutdown()
-    {
+    void shouldBeShutdown() {
         GraphDatabaseAPI graphdb = graphDb();
         managementService.shutdown();
 
-        assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( GlobalExtensions
-                .class ).resolveDependency( DummyExtension.class ).getStatus() );
+        assertEquals(
+                LifecycleStatus.SHUTDOWN,
+                graphdb.getDependencyResolver()
+                        .resolveDependency(GlobalExtensions.class)
+                        .resolveDependency(DummyExtension.class)
+                        .getStatus());
     }
 }

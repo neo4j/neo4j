@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
 object Pattern {
+
   sealed trait SemanticContext {
     def name: String = SemanticContext.name(this)
   }
@@ -31,9 +32,9 @@ object Pattern {
     case object Expression extends SemanticContext
 
     def name(ctx: SemanticContext): String = ctx match {
-      case Match => "MATCH"
-      case Merge => "MERGE"
-      case Create => "CREATE"
+      case Match      => "MATCH"
+      case Merge      => "MERGE"
+      case Create     => "CREATE"
       case Expression => "expression"
     }
   }
@@ -43,21 +44,20 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
 
   lazy val length: Int = this.folder.fold(0) {
     case RelationshipChain(_, _, _) => _ + 1
-    case _ => identity
+    case _                          => identity
   }
 }
 
 case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode
 
-
 sealed abstract class PatternPart extends ASTNode {
   def element: PatternElement
 }
 
-case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
+case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition)
+    extends PatternPart {
   def element: PatternElement = patternPart.element
 }
-
 
 sealed trait AnonymousPatternPart extends PatternPart
 
@@ -65,7 +65,9 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
   def position = element.position
 }
 
-case class ShortestPaths(element: PatternElement, single: Boolean)(val position: InputPosition) extends AnonymousPatternPart {
+case class ShortestPaths(element: PatternElement, single: Boolean)(val position: InputPosition)
+    extends AnonymousPatternPart {
+
   val name: String =
     if (single)
       "shortestPath"
@@ -81,11 +83,11 @@ sealed abstract class PatternElement extends ASTNode {
 }
 
 case class RelationshipChain(
-                              element: PatternElement,
-                              relationship: RelationshipPattern,
-                              rightNode: NodePattern
-                            )(val position: InputPosition)
-  extends PatternElement {
+  element: PatternElement,
+  relationship: RelationshipPattern,
+  rightNode: NodePattern
+)(val position: InputPosition)
+    extends PatternElement {
 
   def variable: Option[LogicalVariable] = relationship.variable
 
@@ -94,6 +96,7 @@ case class RelationshipChain(
 }
 
 object RelationshipChain {
+
   /**
    * This method will traverse into any ASTNode and find duplicate relationship variables inside of RelationshipChains.
    *
@@ -112,14 +115,15 @@ object RelationshipChain {
 }
 
 object InvalidNodePattern {
+
   def apply(id: Variable, labels: Seq[LabelName], properties: Option[Expression])(position: InputPosition) =
     new InvalidNodePattern(id)(position)
 }
 
 class InvalidNodePattern(
-                          val id: LogicalVariable
-                        )(
-                          position: InputPosition
+  val id: LogicalVariable
+)(
+  position: InputPosition
 ) extends NodePattern(Some(id), None, None, None)(position) {
 
   override def productPrefix: String = "InvalidNodePattern"
@@ -146,11 +150,13 @@ class InvalidNodePattern(
   override def allVariables: Set[LogicalVariable] = Set.empty
 }
 
-case class NodePattern(variable: Option[LogicalVariable],
-                       labelExpression: Option[LabelExpression],
-                       properties: Option[Expression],
-                       predicate: Option[Expression])(val position: InputPosition)
-  extends PatternElement {
+case class NodePattern(
+  variable: Option[LogicalVariable],
+  labelExpression: Option[LabelExpression],
+  properties: Option[Expression],
+  predicate: Option[Expression]
+)(val position: InputPosition)
+    extends PatternElement {
 
   override def allVariables: Set[LogicalVariable] = variable.toSet
 
@@ -158,13 +164,14 @@ case class NodePattern(variable: Option[LogicalVariable],
 }
 
 case class RelationshipPattern(
-                                variable: Option[LogicalVariable],
-                                types: Seq[RelTypeName],
-                                length: Option[Option[Range]],
-                                properties: Option[Expression],
-                                predicate: Option[Expression],
-                                direction: SemanticDirection,
-                                legacyTypeSeparator: Boolean = false)(val position: InputPosition) extends ASTNode {
+  variable: Option[LogicalVariable],
+  types: Seq[RelTypeName],
+  length: Option[Option[Range]],
+  properties: Option[Expression],
+  predicate: Option[Expression],
+  direction: SemanticDirection,
+  legacyTypeSeparator: Boolean = false
+)(val position: InputPosition) extends ASTNode {
 
   def isSingleLength: Boolean = length.isEmpty
 

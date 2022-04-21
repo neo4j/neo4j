@@ -24,13 +24,11 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 /**
  * Information about applied transaction, written during checkpoint and read on opening the {@link GBPTreeCountsStore}.
  */
-class TxIdInformation
-{
+class TxIdInformation {
     final long highestGapFreeTxId;
     final LongSet strayTxIds;
 
-    TxIdInformation( long highestGapFreeTxId, LongSet strayTxIds )
-    {
+    TxIdInformation(long highestGapFreeTxId, LongSet strayTxIds) {
         this.highestGapFreeTxId = highestGapFreeTxId;
         this.strayTxIds = strayTxIds;
     }
@@ -40,8 +38,7 @@ class TxIdInformation
      * @param txId the transaction id to check whether or not it has already been applied to the counts store.
      * @return whether or not the supplied txId has already been applied to the tree.
      */
-    boolean txIdIsAlreadyApplied( long txId )
-    {
-        return txId <= highestGapFreeTxId || strayTxIds.contains( txId );
+    boolean txIdIsAlreadyApplied(long txId) {
+        return txId <= highestGapFreeTxId || strayTxIds.contains(txId);
     }
 }

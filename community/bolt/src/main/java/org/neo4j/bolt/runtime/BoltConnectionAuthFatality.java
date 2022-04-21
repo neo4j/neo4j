@@ -19,36 +19,31 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.neo4j.bolt.security.auth.AuthenticationException;
-
 import static java.util.Objects.requireNonNull;
+
+import org.neo4j.bolt.security.auth.AuthenticationException;
 
 /**
  * Indicates that bolt connection has been fatally misused and therefore the server should close the connection.
  */
-public class BoltConnectionAuthFatality extends BoltConnectionFatality
-{
+public class BoltConnectionAuthFatality extends BoltConnectionFatality {
     private final boolean isLoggable;
 
-    public BoltConnectionAuthFatality( String message, Throwable cause )
-    {
-        this( message, cause, false );
+    public BoltConnectionAuthFatality(String message, Throwable cause) {
+        this(message, cause, false);
     }
 
-    public BoltConnectionAuthFatality( AuthenticationException cause )
-    {
-        this( cause.getMessage(), cause, true );
+    public BoltConnectionAuthFatality(AuthenticationException cause) {
+        this(cause.getMessage(), cause, true);
     }
 
-    private BoltConnectionAuthFatality( String message, Throwable cause, boolean isLoggable )
-    {
-        super( message, cause );
-        requireNonNull( message );
+    private BoltConnectionAuthFatality(String message, Throwable cause, boolean isLoggable) {
+        super(message, cause);
+        requireNonNull(message);
         this.isLoggable = isLoggable;
     }
 
-    public boolean isLoggable()
-    {
+    public boolean isLoggable() {
         return this.isLoggable;
     }
 }

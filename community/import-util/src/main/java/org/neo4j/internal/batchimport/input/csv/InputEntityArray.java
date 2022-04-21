@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.input.csv;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
@@ -30,123 +29,101 @@ import org.neo4j.internal.id.IdSequence;
 /**
  * An array of {@link InputEntity} looking like an {@link InputEntityVisitor} to be able to fit into thinks like {@link Decorator}.
  */
-public class InputEntityArray implements InputEntityVisitor
-{
+public class InputEntityArray implements InputEntityVisitor {
     private final InputEntity[] entities;
     private int cursor;
 
-    public InputEntityArray( int length )
-    {
+    public InputEntityArray(int length) {
         this.entities = new InputEntity[length];
     }
 
     @Override
-    public void close()
-    {
+    public void close() {}
+
+    @Override
+    public boolean propertyId(long nextProp) {
+        return currentEntity().propertyId(nextProp);
     }
 
     @Override
-    public boolean propertyId( long nextProp )
-    {
-        return currentEntity().propertyId( nextProp );
+    public boolean property(String key, Object value) {
+        return currentEntity().property(key, value);
     }
 
     @Override
-    public boolean property( String key, Object value )
-    {
-        return currentEntity().property( key, value );
+    public boolean property(int propertyKeyId, Object value) {
+        return currentEntity().property(propertyKeyId, value);
     }
 
     @Override
-    public boolean property( int propertyKeyId, Object value )
-    {
-        return currentEntity().property( propertyKeyId, value );
+    public boolean id(long id) {
+        return currentEntity().id(id);
     }
 
     @Override
-    public boolean id( long id )
-    {
-        return currentEntity().id( id );
+    public boolean id(Object id, Group group) {
+        return currentEntity().id(id, group);
     }
 
     @Override
-    public boolean id( Object id, Group group )
-    {
-        return currentEntity().id( id, group );
+    public boolean id(Object id, Group group, IdSequence idSequence) {
+        return currentEntity().id(id, group, idSequence);
     }
 
     @Override
-    public boolean id( Object id, Group group, IdSequence idSequence )
-    {
-        return currentEntity().id( id, group, idSequence );
+    public boolean labels(String[] labels) {
+        return currentEntity().labels(labels);
     }
 
     @Override
-    public boolean labels( String[] labels )
-    {
-        return currentEntity().labels( labels );
+    public boolean labelField(long labelField) {
+        return currentEntity().labelField(labelField);
     }
 
     @Override
-    public boolean labelField( long labelField )
-    {
-        return currentEntity().labelField( labelField );
+    public boolean startId(long id) {
+        return currentEntity().startId(id);
     }
 
     @Override
-    public boolean startId( long id )
-    {
-        return currentEntity().startId( id );
+    public boolean startId(Object id, Group group) {
+        return currentEntity().startId(id, group);
     }
 
     @Override
-    public boolean startId( Object id, Group group )
-    {
-        return currentEntity().startId( id, group );
+    public boolean endId(long id) {
+        return currentEntity().endId(id);
     }
 
     @Override
-    public boolean endId( long id )
-    {
-        return currentEntity().endId( id );
+    public boolean endId(Object id, Group group) {
+        return currentEntity().endId(id, group);
     }
 
     @Override
-    public boolean endId( Object id, Group group )
-    {
-        return currentEntity().endId( id, group );
+    public boolean type(int type) {
+        return currentEntity().type(type);
     }
 
     @Override
-    public boolean type( int type )
-    {
-        return currentEntity().type( type );
+    public boolean type(String type) {
+        return currentEntity().type(type);
     }
 
     @Override
-    public boolean type( String type )
-    {
-        return currentEntity().type( type );
-    }
-
-    @Override
-    public void endOfEntity() throws IOException
-    {
+    public void endOfEntity() throws IOException {
         currentEntity().endOfEntity();
         cursor++;
     }
 
-    private InputEntity currentEntity()
-    {
-        if ( entities[cursor] == null )
-        {
+    private InputEntity currentEntity() {
+        if (entities[cursor] == null) {
             entities[cursor] = new InputEntity();
         }
         return entities[cursor];
     }
 
-    public InputEntity[] toArray()
-    {
-        return cursor == entities.length ? entities : Arrays.copyOf( entities, cursor );
+    public InputEntity[] toArray() {
+        return cursor == entities.length ? entities : Arrays.copyOf(entities, cursor);
     }
 }

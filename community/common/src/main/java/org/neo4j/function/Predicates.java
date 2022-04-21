@@ -19,6 +19,10 @@
  */
 package org.neo4j.function;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
+import static org.neo4j.function.ThrowingSupplier.throwingSupplier;
+
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Objects;
@@ -31,15 +35,10 @@ import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
-import static org.neo4j.function.ThrowingSupplier.throwingSupplier;
-
 /**
  * Constructors for basic {@link Predicate} types
  */
-public final class Predicates
-{
+public final class Predicates {
     public static final IntPredicate ALWAYS_TRUE_INT = v -> true;
     public static final IntPredicate ALWAYS_FALSE_INT = v -> false;
     public static final LongPredicate ALWAYS_FALSE_LONG = v -> false;
@@ -47,39 +46,29 @@ public final class Predicates
     private static final int DEFAULT_POLL_INTERVAL = 20;
     private static final int DEFAULT_TIMEOUT_MS = 20_000;
 
-    private Predicates()
-    {
-    }
+    private Predicates() {}
 
-    public static <T> Predicate<T> alwaysTrue()
-    {
+    public static <T> Predicate<T> alwaysTrue() {
         return x -> true;
     }
 
-    public static <T> Predicate<T> alwaysFalse()
-    {
+    public static <T> Predicate<T> alwaysFalse() {
         return x -> false;
     }
 
-    public static <T> Predicate<T> notNull()
-    {
+    public static <T> Predicate<T> notNull() {
         return Objects::nonNull;
     }
 
     @SafeVarargs
-    public static <T> Predicate<T> all( final Predicate<T>... predicates )
-    {
-        return all( Arrays.asList( predicates ) );
+    public static <T> Predicate<T> all(final Predicate<T>... predicates) {
+        return all(Arrays.asList(predicates));
     }
 
-    public static <T> Predicate<T> all( final Iterable<Predicate<T>> predicates )
-    {
-        return item ->
-        {
-            for ( Predicate<T> predicate : predicates )
-            {
-                if ( !predicate.test( item ) )
-                {
+    public static <T> Predicate<T> all(final Iterable<Predicate<T>> predicates) {
+        return item -> {
+            for (Predicate<T> predicate : predicates) {
+                if (!predicate.test(item)) {
                     return false;
                 }
             }
@@ -88,19 +77,14 @@ public final class Predicates
     }
 
     @SafeVarargs
-    public static <T> Predicate<T> any( final Predicate<T>... predicates )
-    {
-        return any( Arrays.asList( predicates ) );
+    public static <T> Predicate<T> any(final Predicate<T>... predicates) {
+        return any(Arrays.asList(predicates));
     }
 
-    public static <T> Predicate<T> any( final Iterable<Predicate<T>> predicates )
-    {
-        return item ->
-        {
-            for ( Predicate<T> predicate : predicates )
-            {
-                if ( predicate.test( item ) )
-                {
+    public static <T> Predicate<T> any(final Iterable<Predicate<T>> predicates) {
+        return item -> {
+            for (Predicate<T> predicate : predicates) {
+                if (predicate.test(item)) {
                     return true;
                 }
             }
@@ -108,21 +92,15 @@ public final class Predicates
         };
     }
 
-    public static <T> Predicate<T> instanceOf( final Class<?> clazz )
-    {
+    public static <T> Predicate<T> instanceOf(final Class<?> clazz) {
         return clazz::isInstance;
     }
 
-    public static <T> Predicate<T> instanceOfAny( final Class<?>... classes )
-    {
-        return item ->
-        {
-            if ( item != null )
-            {
-                for ( Class<?> clazz : classes )
-                {
-                    if ( clazz.isInstance( item ) )
-                    {
+    public static <T> Predicate<T> instanceOfAny(final Class<?>... classes) {
+        return item -> {
+            if (item != null) {
+                for (Class<?> clazz : classes) {
+                    if (clazz.isInstance(item)) {
                         return true;
                     }
                 }
@@ -131,120 +109,129 @@ public final class Predicates
         };
     }
 
-    public static <TYPE> TYPE await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout,
-            TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit ) throws TimeoutException
-    {
-        return awaitEx( supplier::get, predicate::test, timeout, timeoutUnit, pollInterval, pollUnit );
+    public static <TYPE> TYPE await(
+            Supplier<TYPE> supplier,
+            Predicate<TYPE> predicate,
+            long timeout,
+            TimeUnit timeoutUnit,
+            long pollInterval,
+            TimeUnit pollUnit)
+            throws TimeoutException {
+        return awaitEx(supplier::get, predicate::test, timeout, timeoutUnit, pollInterval, pollUnit);
     }
 
-    public static <TYPE> TYPE await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout,
-            TimeUnit timeoutUnit ) throws TimeoutException
-    {
-        return awaitEx( throwingSupplier( supplier ), throwingPredicate( predicate ), timeout, timeoutUnit );
+    public static <TYPE> TYPE await(
+            Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout, TimeUnit timeoutUnit)
+            throws TimeoutException {
+        return awaitEx(throwingSupplier(supplier), throwingPredicate(predicate), timeout, timeoutUnit);
     }
 
-    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,EXCEPTION> supplier,
-            ThrowingPredicate<TYPE,EXCEPTION> predicate, long timeout, TimeUnit timeoutUnit, long pollInterval,
-            TimeUnit pollUnit ) throws TimeoutException, EXCEPTION
-    {
-        Suppliers.ThrowingCapturingSupplier<TYPE,EXCEPTION> composed = Suppliers.compose( supplier, predicate );
-        awaitEx( composed, timeout, timeoutUnit, pollInterval, pollUnit );
+    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx(
+            ThrowingSupplier<TYPE, EXCEPTION> supplier,
+            ThrowingPredicate<TYPE, EXCEPTION> predicate,
+            long timeout,
+            TimeUnit timeoutUnit,
+            long pollInterval,
+            TimeUnit pollUnit)
+            throws TimeoutException, EXCEPTION {
+        Suppliers.ThrowingCapturingSupplier<TYPE, EXCEPTION> composed = Suppliers.compose(supplier, predicate);
+        awaitEx(composed, timeout, timeoutUnit, pollInterval, pollUnit);
         return composed.lastInput();
     }
 
-    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,? extends EXCEPTION> supplier,
-            ThrowingPredicate<TYPE, ? extends EXCEPTION> predicate, long timeout, TimeUnit timeoutUnit )
-            throws TimeoutException, EXCEPTION
-    {
-        Suppliers.ThrowingCapturingSupplier<TYPE,EXCEPTION> composed = Suppliers.compose( supplier, predicate );
-        awaitEx( composed, timeout, timeoutUnit );
+    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx(
+            ThrowingSupplier<TYPE, ? extends EXCEPTION> supplier,
+            ThrowingPredicate<TYPE, ? extends EXCEPTION> predicate,
+            long timeout,
+            TimeUnit timeoutUnit)
+            throws TimeoutException, EXCEPTION {
+        Suppliers.ThrowingCapturingSupplier<TYPE, EXCEPTION> composed = Suppliers.compose(supplier, predicate);
+        awaitEx(composed, timeout, timeoutUnit);
         return composed.lastInput();
     }
 
-    public static void await( BooleanSupplier condition ) throws TimeoutException
-    {
-        awaitEx( condition::getAsBoolean, DEFAULT_TIMEOUT_MS, MILLISECONDS );
+    public static void await(BooleanSupplier condition) throws TimeoutException {
+        awaitEx(condition::getAsBoolean, DEFAULT_TIMEOUT_MS, MILLISECONDS);
     }
 
-    public static void await( BooleanSupplier condition, long timeout, TimeUnit unit ) throws TimeoutException
-    {
-        awaitEx( condition::getAsBoolean, timeout, unit );
+    public static void await(BooleanSupplier condition, long timeout, TimeUnit unit) throws TimeoutException {
+        awaitEx(condition::getAsBoolean, timeout, unit);
     }
 
-    public static <EXCEPTION extends Exception> void awaitEx( ThrowingSupplier<Boolean,EXCEPTION> condition,
-            long timeout, TimeUnit unit ) throws TimeoutException, EXCEPTION
-    {
-        awaitEx( condition, timeout, unit, DEFAULT_POLL_INTERVAL, MILLISECONDS );
+    public static <EXCEPTION extends Exception> void awaitEx(
+            ThrowingSupplier<Boolean, EXCEPTION> condition, long timeout, TimeUnit unit)
+            throws TimeoutException, EXCEPTION {
+        awaitEx(condition, timeout, unit, DEFAULT_POLL_INTERVAL, MILLISECONDS);
     }
 
-    public static void await( BooleanSupplier condition, long timeout, TimeUnit timeoutUnit, long pollInterval,
-            TimeUnit pollUnit ) throws TimeoutException
-    {
-        awaitEx( condition::getAsBoolean, timeout, timeoutUnit, pollInterval, pollUnit );
+    public static void await(
+            BooleanSupplier condition, long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit)
+            throws TimeoutException {
+        awaitEx(condition::getAsBoolean, timeout, timeoutUnit, pollInterval, pollUnit);
     }
 
-    public static <EXCEPTION extends Exception> void awaitEx( ThrowingSupplier<Boolean,EXCEPTION> condition,
-            long timeout, TimeUnit unit, long pollInterval, TimeUnit pollUnit ) throws TimeoutException, EXCEPTION
-    {
-        if ( !tryAwaitEx( condition, timeout, unit, pollInterval, pollUnit ) )
-        {
+    public static <EXCEPTION extends Exception> void awaitEx(
+            ThrowingSupplier<Boolean, EXCEPTION> condition,
+            long timeout,
+            TimeUnit unit,
+            long pollInterval,
+            TimeUnit pollUnit)
+            throws TimeoutException, EXCEPTION {
+        if (!tryAwaitEx(condition, timeout, unit, pollInterval, pollUnit)) {
             throw new TimeoutException(
-                    "Waited for " + timeout + " " + unit + ", but " + condition + " was not accepted." );
+                    "Waited for " + timeout + " " + unit + ", but " + condition + " was not accepted.");
         }
     }
 
-    public static <EXCEPTION extends Exception> boolean tryAwaitEx( ThrowingSupplier<Boolean,EXCEPTION> condition,
-            long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit ) throws EXCEPTION
-    {
-        return tryAwaitEx( condition, timeout, timeoutUnit, pollInterval, pollUnit, Clock.systemUTC() );
+    public static <EXCEPTION extends Exception> boolean tryAwaitEx(
+            ThrowingSupplier<Boolean, EXCEPTION> condition,
+            long timeout,
+            TimeUnit timeoutUnit,
+            long pollInterval,
+            TimeUnit pollUnit)
+            throws EXCEPTION {
+        return tryAwaitEx(condition, timeout, timeoutUnit, pollInterval, pollUnit, Clock.systemUTC());
     }
 
-    public static <EXCEPTION extends Exception> boolean tryAwaitEx( ThrowingSupplier<Boolean,EXCEPTION> condition,
-            long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit, Clock clock ) throws EXCEPTION
-    {
-        long deadlineMillis = clock.millis() + timeoutUnit.toMillis( timeout );
-        long pollIntervalNanos = pollUnit.toNanos( pollInterval );
+    public static <EXCEPTION extends Exception> boolean tryAwaitEx(
+            ThrowingSupplier<Boolean, EXCEPTION> condition,
+            long timeout,
+            TimeUnit timeoutUnit,
+            long pollInterval,
+            TimeUnit pollUnit,
+            Clock clock)
+            throws EXCEPTION {
+        long deadlineMillis = clock.millis() + timeoutUnit.toMillis(timeout);
+        long pollIntervalNanos = pollUnit.toNanos(pollInterval);
 
-        do
-        {
-            if ( condition.get() )
-            {
+        do {
+            if (condition.get()) {
                 return true;
             }
-            LockSupport.parkNanos( pollIntervalNanos );
-        }
-        while ( clock.millis() < deadlineMillis );
+            LockSupport.parkNanos(pollIntervalNanos);
+        } while (clock.millis() < deadlineMillis);
         return false;
     }
 
-    public static void awaitForever( BooleanSupplier condition, long checkInterval, TimeUnit unit )
-    {
-        long sleep = unit.toNanos( checkInterval );
-        do
-        {
-            if ( condition.getAsBoolean() )
-            {
+    public static void awaitForever(BooleanSupplier condition, long checkInterval, TimeUnit unit) {
+        long sleep = unit.toNanos(checkInterval);
+        do {
+            if (condition.getAsBoolean()) {
                 return;
             }
-            LockSupport.parkNanos( sleep );
-        }
-        while ( true );
+            LockSupport.parkNanos(sleep);
+        } while (true);
     }
 
     @SafeVarargs
-    public static <T> Predicate<T> in( final T... allowed )
-    {
-        return in( Arrays.asList( allowed ) );
+    public static <T> Predicate<T> in(final T... allowed) {
+        return in(Arrays.asList(allowed));
     }
 
-    public static <T> Predicate<T> in( final Iterable<T> allowed )
-    {
-        return item ->
-        {
-            for ( T allow : allowed )
-            {
-                if ( allow.equals( item ) )
-                {
+    public static <T> Predicate<T> in(final Iterable<T> allowed) {
+        return item -> {
+            for (T allow : allowed) {
+                if (allow.equals(item)) {
                     return true;
                 }
             }
@@ -252,14 +239,10 @@ public final class Predicates
         };
     }
 
-    public static IntPredicate any( int[] values )
-    {
-        return v ->
-        {
-            for ( int value : values )
-            {
-                if ( v == value )
-                {
+    public static IntPredicate any(int[] values) {
+        return v -> {
+            for (int value : values) {
+                if (v == value) {
                     return true;
                 }
             }

@@ -19,94 +19,77 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.NodeCursor;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
-public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
-{
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.NodeCursor;
+
+public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G> {
     private static final List<Long> NODE_IDS = new ArrayList<>();
     private static final int N_NODES = 10000;
 
     private static final Random RANDOM = new Random();
 
     @Override
-    public void createTestGraph( GraphDatabaseService graphDb )
-    {
+    public void createTestGraph(GraphDatabaseService graphDb) {
         List<Node> deleted = new ArrayList<>();
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            for ( int i = 0; i < N_NODES; i++ )
-            {
+        try (Transaction tx = graphDb.beginTx()) {
+            for (int i = 0; i < N_NODES; i++) {
                 Node node = tx.createNode();
-                if ( RANDOM.nextBoolean() )
-                {
-                    NODE_IDS.add( node.getId() );
-                }
-                else
-                {
-                    deleted.add( node );
+                if (RANDOM.nextBoolean()) {
+                    NODE_IDS.add(node.getId());
+                } else {
+                    deleted.add(node);
                 }
             }
             tx.commit();
         }
 
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            for ( Node node : deleted )
-            {
-                tx.getNodeById( node.getId() ).delete();
+        try (Transaction tx = graphDb.beginTx()) {
+            for (Node node : deleted) {
+                tx.getNodeById(node.getId()).delete();
             }
             tx.commit();
         }
     }
 
     @Test
-    void shouldScanNodes()
-    {
+    void shouldScanNodes() {
         // given
         List<Long> ids = new ArrayList<>();
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-        {
+        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
             // when
-            read.allNodesScan( nodes );
-            while ( nodes.next() )
-            {
-                ids.add( nodes.nodeReference() );
+            read.allNodesScan(nodes);
+            while (nodes.next()) {
+                ids.add(nodes.nodeReference());
             }
         }
 
         // then
-        assertEquals( NODE_IDS, ids );
+        assertEquals(NODE_IDS, ids);
     }
 
     @Test
-    void shouldAccessNodesByReference()
-    {
+    void shouldAccessNodesByReference() {
         // given
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-        {
-            for ( long id : NODE_IDS )
-            {
+        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            for (long id : NODE_IDS) {
                 // when
-                read.singleNode( id, nodes );
+                read.singleNode(id, nodes);
 
                 // then
-                assertTrue( nodes.next(), "should access defined node" );
-                assertEquals( id, nodes.nodeReference(), "should access the correct node" );
-                assertFalse( nodes.next(), "should only access a single node" );
+                assertTrue(nodes.next(), "should access defined node");
+                assertEquals(id, nodes.nodeReference(), "should access the correct node");
+                assertFalse(nodes.next(), "should only access a single node");
             }
         }
     }

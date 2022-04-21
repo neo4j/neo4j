@@ -21,19 +21,15 @@ package org.neo4j.tooling.procedure.procedures.invalid.duplicated;
 
 import org.neo4j.procedure.UserFunction;
 
-public class UserFunction2
-{
+public class UserFunction2 {
 
     @UserFunction
-    public String foobar()
-    {
+    public String foobar() {
         return "42";
     }
 
     @UserFunction
-    public String foobarbaz()
-    {
+    public String foobarbaz() {
         return "42";
     }
-
 }

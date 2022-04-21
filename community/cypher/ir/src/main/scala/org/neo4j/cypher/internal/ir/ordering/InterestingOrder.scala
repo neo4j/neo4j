@@ -36,7 +36,7 @@ object InterestingOrder {
    * An [[InterestingOrder]] can be fully, partially, or not all all satisfied by a [[ProvidedOrder]].
    * This class specifies the satisfied prefix of columns and the missing suffix of columns.
    */
-  case class Satisfaction(satisfiedPrefix: Seq[ColumnOrder], missingSuffix: Seq[ColumnOrder]){
+  case class Satisfaction(satisfiedPrefix: Seq[ColumnOrder], missingSuffix: Seq[ColumnOrder]) {
     def withSatisfied(columnOrder: ColumnOrder): Satisfaction = this.copy(satisfiedPrefix :+ columnOrder, missingSuffix)
     def withMissing(columnOrder: ColumnOrder): Satisfaction = this.copy(satisfiedPrefix, missingSuffix :+ columnOrder)
   }
@@ -53,7 +53,8 @@ object InterestingOrder {
 
   def required(candidate: RequiredOrderCandidate): InterestingOrder = InterestingOrder(candidate, Seq.empty)
 
-  def interested(candidate: InterestingOrderCandidate): InterestingOrder = InterestingOrder(RequiredOrderCandidate.empty, Seq(candidate))
+  def interested(candidate: InterestingOrderCandidate): InterestingOrder =
+    InterestingOrder(RequiredOrderCandidate.empty, Seq(candidate))
 }
 
 /**
@@ -65,32 +66,38 @@ object InterestingOrder {
  * @param requiredOrderCandidate     a candidate for required sort directions of columns
  * @param interestingOrderCandidates a sequence of candidates for interesting sort directions of columns
  */
-case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
-                            interestingOrderCandidates: Seq[InterestingOrderCandidate] = Seq.empty) {
+case class InterestingOrder(
+  requiredOrderCandidate: RequiredOrderCandidate,
+  interestingOrderCandidates: Seq[InterestingOrderCandidate] = Seq.empty
+) {
 
   val isEmpty: Boolean = requiredOrderCandidate.isEmpty && interestingOrderCandidates.forall(_.isEmpty)
 
   // TODO maybe merge some candidates
-  def interesting(candidate: InterestingOrderCandidate): InterestingOrder = InterestingOrder(requiredOrderCandidate, interestingOrderCandidates :+ candidate)
+  def interesting(candidate: InterestingOrderCandidate): InterestingOrder =
+    InterestingOrder(requiredOrderCandidate, interestingOrderCandidates :+ candidate)
 
   // TODO maybe merge some candidates
   def asInteresting: InterestingOrder =
     if (requiredOrderCandidate.isEmpty) this
-    else InterestingOrder(RequiredOrderCandidate.empty,
-      interestingOrderCandidates :+ requiredOrderCandidate.asInteresting)
+    else
+      InterestingOrder(RequiredOrderCandidate.empty, interestingOrderCandidates :+ requiredOrderCandidate.asInteresting)
 
-  def withReverseProjectedColumns(projectExpressions: Map[String, Expression], argumentIds: Set[String]): InterestingOrder = {
+  def withReverseProjectedColumns(
+    projectExpressions: Map[String, Expression],
+    argumentIds: Set[String]
+  ): InterestingOrder = {
     def columnIfArgument(expression: Expression, column: ColumnOrder): Option[ColumnOrder] = {
       expression match {
         case Property(Variable(varName), _) if argumentIds.contains(varName) => Some(column)
-        case Variable(varName) if argumentIds.contains(varName) => Some(column)
-        case _ => None
+        case Variable(varName) if argumentIds.contains(varName)              => Some(column)
+        case _                                                               => None
       }
     }
 
     def projectedColumnOrder(column: ColumnOrder, projected: Expression, name: String) = {
       column match {
-        case _: Asc => Some(Asc(projected, Map(name -> projectExpressions(name))))
+        case _: Asc  => Some(Asc(projected, Map(name -> projectExpressions(name))))
         case _: Desc => Some(Desc(projected, Map(name -> projectExpressions(name))))
       }
     }
@@ -99,8 +106,10 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
       // expression with all incoming projections applied
       val projected = projectExpression(column.expression, column.projections)
       projected match {
-        case Property(Variable(prevVarName), _) if projectExpressions.contains(prevVarName) => projectedColumnOrder(column, projected, prevVarName)
-        case Variable(prevVarName) if projectExpressions.contains(prevVarName) => projectedColumnOrder(column, projected, prevVarName)
+        case Property(Variable(prevVarName), _) if projectExpressions.contains(prevVarName) =>
+          projectedColumnOrder(column, projected, prevVarName)
+        case Variable(prevVarName) if projectExpressions.contains(prevVarName) =>
+          projectedColumnOrder(column, projected, prevVarName)
         case _ =>
           columnIfArgument(projected, column)
       }
@@ -109,8 +118,10 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
     def renamePrefix(columns: Seq[ColumnOrder]): Seq[ColumnOrder] =
       columns.map(renameColumn).takeWhile(_.isDefined).flatten
 
-    InterestingOrder(requiredOrderCandidate.renameColumns(renamePrefix),
-      interestingOrderCandidates.map(_.renameColumns(renamePrefix)).filter(!_.isEmpty))
+    InterestingOrder(
+      requiredOrderCandidate.renameColumns(renamePrefix),
+      interestingOrderCandidates.map(_.renameColumns(renamePrefix)).filter(!_.isEmpty)
+    )
   }
 
   /**
@@ -118,7 +129,11 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
    */
   def satisfiedBy(providedOrder: ProvidedOrder): Satisfaction = {
     @tailrec
-    def satisfied(providedOrder: Expression, requiredOrder: Expression, projections: Map[String, Expression]): Boolean = {
+    def satisfied(
+      providedOrder: Expression,
+      requiredOrder: Expression,
+      projections: Map[String, Expression]
+    ): Boolean = {
       val projected = projectExpression(requiredOrder, projections)
       if (providedOrder == requiredOrder || providedOrder == projected) {
         true
@@ -128,11 +143,18 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
         false
       }
     }
-    requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).foldLeft(Satisfaction(Seq.empty, Seq.empty)){
+    requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).foldLeft(
+      Satisfaction(Seq.empty, Seq.empty)
+    ) {
       case (s, (null, _)) => s // no required order left
-      case (s@FullSatisfaction(), (satisfiedColumn@Asc(requiredExp, projections), Asc(providedExpr, _))) if satisfied(providedExpr, requiredExp, projections)  => s.withSatisfied(satisfiedColumn)
-      case (s@FullSatisfaction(), (satisfiedColumn@Desc(requiredExp, projections), Desc(providedExpr, _))) if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
-      case (s, (unsatisfiedColumn, _)) => s.withMissing(unsatisfiedColumn) // required order left but no provided or provided not matching or previous column not matching
+      case (s @ FullSatisfaction(), (satisfiedColumn @ Asc(requiredExp, projections), Asc(providedExpr, _)))
+        if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
+      case (s @ FullSatisfaction(), (satisfiedColumn @ Desc(requiredExp, projections), Desc(providedExpr, _)))
+        if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
+      case (s, (unsatisfiedColumn, _)) =>
+        s.withMissing(
+          unsatisfiedColumn
+        ) // required order left but no provided or provided not matching or previous column not matching
     }
   }
 }

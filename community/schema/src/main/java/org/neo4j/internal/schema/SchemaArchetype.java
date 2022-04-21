@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
-public enum SchemaArchetype
-{
+public enum SchemaArchetype {
     LABEL_PROPERTY,
     RELATIONSHIP_PROPERTY,
     MULTI_TOKEN,

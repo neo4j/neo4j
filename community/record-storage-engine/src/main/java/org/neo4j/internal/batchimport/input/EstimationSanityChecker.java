@@ -20,34 +20,30 @@
 package org.neo4j.internal.batchimport.input;
 
 import java.util.function.BiConsumer;
-
 import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 
-public class EstimationSanityChecker
-{
+public class EstimationSanityChecker {
     private final RecordFormats formats;
     private final Monitor monitor;
 
-    public EstimationSanityChecker( RecordFormats formats, Monitor monitor )
-    {
+    public EstimationSanityChecker(RecordFormats formats, Monitor monitor) {
         this.formats = formats;
         this.monitor = monitor;
     }
 
-    public void sanityCheck( Input.Estimates estimates )
-    {
-        sanityCheckEstimateWithMaxId( estimates.numberOfNodes(), formats.node().getMaxId(),
-                monitor::mayExceedNodeIdCapacity );
-        sanityCheckEstimateWithMaxId( estimates.numberOfRelationships(), formats.relationship().getMaxId(),
-                monitor::mayExceedRelationshipIdCapacity );
+    public void sanityCheck(Input.Estimates estimates) {
+        sanityCheckEstimateWithMaxId(
+                estimates.numberOfNodes(), formats.node().getMaxId(), monitor::mayExceedNodeIdCapacity);
+        sanityCheckEstimateWithMaxId(
+                estimates.numberOfRelationships(),
+                formats.relationship().getMaxId(),
+                monitor::mayExceedRelationshipIdCapacity);
     }
 
-    private static void sanityCheckEstimateWithMaxId( long estimate, long max, BiConsumer<Long,Long> reporter )
-    {
-        if ( estimate > max * 0.8 )
-        {
-            reporter.accept( max, estimate );
+    private static void sanityCheckEstimateWithMaxId(long estimate, long max, BiConsumer<Long, Long> reporter) {
+        if (estimate > max * 0.8) {
+            reporter.accept(max, estimate);
         }
     }
 }

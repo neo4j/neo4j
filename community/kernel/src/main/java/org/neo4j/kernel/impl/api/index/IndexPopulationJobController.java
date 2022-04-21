@@ -19,87 +19,69 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.scheduler.Group.INDEX_POPULATION;
+
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.scheduler.Group.INDEX_POPULATION;
-
-class IndexPopulationJobController
-{
+class IndexPopulationJobController {
     private final Set<IndexPopulationJob> populationJobs = ConcurrentHashMap.newKeySet();
     private final JobScheduler scheduler;
 
-    IndexPopulationJobController( JobScheduler scheduler )
-    {
+    IndexPopulationJobController(JobScheduler scheduler) {
         this.scheduler = scheduler;
     }
 
-    void stop() throws InterruptedException
-    {
-        for ( IndexPopulationJob job : populationJobs )
-        {
+    void stop() throws InterruptedException {
+        for (IndexPopulationJob job : populationJobs) {
             job.stop();
         }
 
         InterruptedException interrupted = null;
-        for ( IndexPopulationJob job : populationJobs )
-        {
-            try
-            {
-                job.awaitCompletion( 0, TimeUnit.SECONDS );
-            }
-            catch ( InterruptedException e )
-            {
-                interrupted = Exceptions.chain( interrupted, e );
+        for (IndexPopulationJob job : populationJobs) {
+            try {
+                job.awaitCompletion(0, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                interrupted = Exceptions.chain(interrupted, e);
             }
         }
-        if ( interrupted != null )
-        {
+        if (interrupted != null) {
             throw interrupted;
         }
     }
 
-    void startIndexPopulation( IndexPopulationJob job )
-    {
-        populationJobs.add( job );
-        job.setHandle( scheduler.schedule( INDEX_POPULATION, job.getMonitoringParams(), new IndexPopulationJobWrapper( job, this ) ) );
+    void startIndexPopulation(IndexPopulationJob job) {
+        populationJobs.add(job);
+        job.setHandle(scheduler.schedule(
+                INDEX_POPULATION, job.getMonitoringParams(), new IndexPopulationJobWrapper(job, this)));
     }
 
-    private void indexPopulationCompleted( IndexPopulationJob populationJob )
-    {
-        populationJobs.remove( populationJob );
+    private void indexPopulationCompleted(IndexPopulationJob populationJob) {
+        populationJobs.remove(populationJob);
     }
 
-    Set<IndexPopulationJob> getPopulationJobs()
-    {
+    Set<IndexPopulationJob> getPopulationJobs() {
         return populationJobs;
     }
 
-    private static class IndexPopulationJobWrapper implements Runnable
-    {
+    private static class IndexPopulationJobWrapper implements Runnable {
         private final IndexPopulationJob indexPopulationJob;
         private final IndexPopulationJobController jobController;
 
-        IndexPopulationJobWrapper( IndexPopulationJob indexPopulationJob, IndexPopulationJobController jobController )
-        {
+        IndexPopulationJobWrapper(IndexPopulationJob indexPopulationJob, IndexPopulationJobController jobController) {
             this.indexPopulationJob = indexPopulationJob;
             this.jobController = jobController;
         }
 
         @Override
-        public void run()
-        {
-            try
-            {
+        public void run() {
+            try {
                 indexPopulationJob.run();
-            }
-            finally
-            {
-                jobController.indexPopulationCompleted( indexPopulationJob );
+            } finally {
+                jobController.indexPopulationCompleted(indexPopulationJob);
             }
         }
     }

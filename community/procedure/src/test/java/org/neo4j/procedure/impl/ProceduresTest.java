@@ -19,10 +19,21 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
+import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
@@ -38,167 +49,164 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
-import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
-
-class ProceduresTest
-{
+class ProceduresTest {
     private final GlobalProceduresRegistry procs = new GlobalProceduresRegistry();
-    private final ProcedureSignature signature = procedureSignature( "org", "myproc" ).out( "name", NTString ).build();
-    private final CallableProcedure procedure = procedure( signature );
+    private final ProcedureSignature signature =
+            procedureSignature("org", "myproc").out("name", NTString).build();
+    private final CallableProcedure procedure = procedure(signature);
     private final DependencyResolver dependencyResolver = new Dependencies();
-    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( InternalTransaction.class ) );
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
 
     @Test
-    void shouldGetRegisteredProcedure() throws Throwable
-    {
+    void shouldGetRegisteredProcedure() throws Throwable {
         // When
-        procs.register( procedure );
+        procs.register(procedure);
 
         // Then
-        assertThat( procs.procedure( signature.name() ).signature() ).isEqualTo( signature );
+        assertThat(procs.procedure(signature.name()).signature()).isEqualTo(signature);
     }
 
     @Test
-    void shouldGetAllRegisteredProcedures() throws Throwable
-    {
+    void shouldGetAllRegisteredProcedures() throws Throwable {
         // When
-        procs.register( procedure( procedureSignature( "org", "myproc1" ).out( "age", NTInteger ).build() ) );
-        procs.register( procedure( procedureSignature( "org", "myproc2" ).out( "age", NTInteger ).build() ) );
-        procs.register( procedure( procedureSignature( "org", "myproc3" ).out( "age", NTInteger ).build() ) );
+        procs.register(procedure(
+                procedureSignature("org", "myproc1").out("age", NTInteger).build()));
+        procs.register(procedure(
+                procedureSignature("org", "myproc2").out("age", NTInteger).build()));
+        procs.register(procedure(
+                procedureSignature("org", "myproc3").out("age", NTInteger).build()));
 
         // Then
-        List<ProcedureSignature> signatures = Iterables.asList( procs.getAllProcedures() );
-        assertThat( signatures ).contains( procedureSignature( "org", "myproc1" ).out( "age", NTInteger ).build(),
-                procedureSignature( "org", "myproc2" ).out( "age", NTInteger ).build(),
-                procedureSignature( "org", "myproc3" ).out( "age", NTInteger ).build() );
+        List<ProcedureSignature> signatures = Iterables.asList(procs.getAllProcedures());
+        assertThat(signatures)
+                .contains(
+                        procedureSignature("org", "myproc1")
+                                .out("age", NTInteger)
+                                .build(),
+                        procedureSignature("org", "myproc2")
+                                .out("age", NTInteger)
+                                .build(),
+                        procedureSignature("org", "myproc3")
+                                .out("age", NTInteger)
+                                .build());
     }
 
     @Test
-    void shouldCallRegisteredProcedure() throws Throwable
-    {
+    void shouldCallRegisteredProcedure() throws Throwable {
         // Given
-        procs.register( procedure );
-        ProcedureHandle procHandle = procs.procedure( signature.name() );
+        procs.register(procedure);
+        ProcedureHandle procHandle = procs.procedure(signature.name());
+
+        // When
+        RawIterator<AnyValue[], ProcedureException> result = procs.callProcedure(
+                buildContext(dependencyResolver, valueMapper).context(),
+                procHandle.id(),
+                new AnyValue[] {longValue(1337)},
+                EMPTY_RESOURCE_TRACKER);
+
+        // Then
+        assertThat(asList(result)).contains(new AnyValue[] {longValue(1337)});
+    }
+
+    @Test
+    void shouldNotAllowCallingNonExistingProcedure() {
+        ProcedureException exception = assertThrows(ProcedureException.class, () -> procs.procedure(signature.name()));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the "
+                                + "procedure name correctly and that the procedure is properly deployed.");
+    }
+
+    @Test
+    void shouldNotAllowRegisteringConflictingName() throws Throwable {
+        // Given
+        procs.register(procedure);
+
+        ProcedureException exception = assertThrows(ProcedureException.class, () -> procs.register(procedure));
+        assertThat(exception.getMessage())
+                .isEqualTo("Unable to register procedure, because the name `org.myproc` is already in use.");
+    }
+
+    @Test
+    void shouldNotAllowDuplicateFieldNamesInInput() {
+        ProcedureException exception = assertThrows(
+                ProcedureException.class,
+                () -> procs.register(procedureWithSignature(
+                        procedureSignature("asd").in("a", NTAny).in("a", NTAny).build())));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be registered, because it contains a duplicated input field, 'a'. "
+                                + "You need to rename or remove one of the duplicate fields.");
+    }
+
+    @Test
+    void shouldNotAllowDuplicateFieldNamesInOutput() {
+        ProcedureException exception = assertThrows(
+                ProcedureException.class,
+                () -> procs.register(procedureWithSignature(procedureSignature("asd")
+                        .out("a", NTAny)
+                        .out("a", NTAny)
+                        .build())));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, because it contains a duplicated output field, 'a'. "
+                                + "You need to rename or remove one of the duplicate fields.");
+    }
+
+    @Test
+    void shouldSignalNonExistingProcedure() {
+        ProcedureException exception = assertThrows(ProcedureException.class, () -> procs.procedure(signature.name()));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the "
+                                + "procedure name correctly and that the procedure is properly deployed.");
+    }
+
+    @Test
+    void shouldMakeContextAvailable() throws Throwable {
+        // Given
+
+        procs.register(new CallableProcedure.BasicProcedure(signature) {
+            @Override
+            public RawIterator<AnyValue[], ProcedureException> apply(
+                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker) {
+                return RawIterator.<AnyValue[], ProcedureException>of(
+                        new AnyValue[] {stringValue(ctx.thread().getName())});
+            }
+        });
+
+        Context ctx = prepareContext();
+        ProcedureHandle procedureHandle = procs.procedure(signature.name());
 
         // When
         RawIterator<AnyValue[], ProcedureException> result =
-                procs.callProcedure( buildContext( dependencyResolver, valueMapper ).context(), procHandle.id(),
-                        new AnyValue[]{longValue( 1337 )}, EMPTY_RESOURCE_TRACKER );
+                procs.callProcedure(ctx, procedureHandle.id(), new AnyValue[0], EMPTY_RESOURCE_TRACKER);
 
         // Then
-        assertThat( asList( result ) ).contains( new AnyValue[]{longValue( 1337 )} );
+        assertThat(asList(result))
+                .contains(new AnyValue[] {stringValue(Thread.currentThread().getName())});
     }
 
-    @Test
-    void shouldNotAllowCallingNonExistingProcedure()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () ->
-                procs.procedure( signature.name() ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the " +
-                        "procedure name correctly and that the procedure is properly deployed." );
+    private Context prepareContext() {
+        return buildContext(dependencyResolver, valueMapper).context();
     }
 
-    @Test
-    void shouldNotAllowRegisteringConflictingName() throws Throwable
-    {
-        // Given
-        procs.register( procedure );
-
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.register( procedure ) );
-        assertThat( exception.getMessage() ).isEqualTo( "Unable to register procedure, because the name `org.myproc` is already in use." );
-    }
-
-    @Test
-    void shouldNotAllowDuplicateFieldNamesInInput()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class,
-                () -> procs.register( procedureWithSignature( procedureSignature( "asd" ).in( "a", NTAny ).in( "a", NTAny ).build() ) ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be registered, because it contains a duplicated input field, 'a'. " +
-                        "You need to rename or remove one of the duplicate fields." );
-    }
-
-    @Test
-    void shouldNotAllowDuplicateFieldNamesInOutput()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class,
-                () -> procs.register( procedureWithSignature( procedureSignature( "asd" ).out( "a", NTAny ).out( "a", NTAny ).build() ) ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, because it contains a duplicated output field, 'a'. " +
-                        "You need to rename or remove one of the duplicate fields." );
-    }
-
-    @Test
-    void shouldSignalNonExistingProcedure()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.procedure( signature.name() ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the " +
-                        "procedure name correctly and that the procedure is properly deployed." );
-    }
-
-    @Test
-    void shouldMakeContextAvailable() throws Throwable
-    {
-        // Given
-
-        procs.register( new CallableProcedure.BasicProcedure( signature )
-        {
-            @Override
-            public RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker )
-            {
-                return RawIterator.<AnyValue[], ProcedureException>of( new AnyValue[]{stringValue(ctx.thread().getName())} );
-            }
-        } );
-
-        Context ctx = prepareContext();
-        ProcedureHandle procedureHandle = procs.procedure( signature.name() );
-
-        // When
-        RawIterator<AnyValue[], ProcedureException> result = procs.callProcedure( ctx, procedureHandle.id(), new AnyValue[0], EMPTY_RESOURCE_TRACKER );
-
-        // Then
-        assertThat( asList( result ) ).contains( new AnyValue[]{ stringValue( Thread.currentThread().getName() ) } );
-    }
-
-    private Context prepareContext()
-    {
-        return buildContext( dependencyResolver, valueMapper ).context();
-    }
-
-    private CallableProcedure.BasicProcedure procedureWithSignature( final ProcedureSignature signature )
-    {
-        return new CallableProcedure.BasicProcedure( signature )
-        {
+    private CallableProcedure.BasicProcedure procedureWithSignature(final ProcedureSignature signature) {
+        return new CallableProcedure.BasicProcedure(signature) {
             @Override
             public RawIterator<AnyValue[], ProcedureException> apply(
-                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker )
-            {
+                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker) {
                 return null;
             }
         };
     }
 
-    private CallableProcedure procedure( ProcedureSignature signature )
-    {
-        return new CallableProcedure.BasicProcedure( signature )
-        {
+    private CallableProcedure procedure(ProcedureSignature signature) {
+        return new CallableProcedure.BasicProcedure(signature) {
             @Override
-            public RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker )
-            {
-                return RawIterator.<AnyValue[], ProcedureException>of( input );
+            public RawIterator<AnyValue[], ProcedureException> apply(
+                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker) {
+                return RawIterator.<AnyValue[], ProcedureException>of(input);
             }
         };
     }

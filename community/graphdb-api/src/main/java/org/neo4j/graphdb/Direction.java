@@ -34,8 +34,7 @@ import org.neo4j.annotations.api.PublicApi;
  * {@link #OUTGOING} or {@link #INCOMING}.
  */
 @PublicApi
-public enum Direction
-{
+public enum Direction {
     /**
      * Defines outgoing relationships.
      */
@@ -56,13 +55,11 @@ public enum Direction
      *
      * @return The reversed direction.
      */
-    public Direction reverse()
-    {
-        return switch ( this )
-                {
-                    case OUTGOING -> INCOMING;
-                    case INCOMING -> OUTGOING;
-                    case BOTH -> BOTH;
-                };
+    public Direction reverse() {
+        return switch (this) {
+            case OUTGOING -> INCOMING;
+            case INCOMING -> OUTGOING;
+            case BOTH -> BOTH;
+        };
     }
 }

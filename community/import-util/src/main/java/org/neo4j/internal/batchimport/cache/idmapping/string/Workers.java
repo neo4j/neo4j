@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-
 import org.neo4j.internal.helpers.collection.Iterators;
 
 /**
@@ -38,13 +37,11 @@ import org.neo4j.internal.helpers.collection.Iterators;
  *
  * @param <R> type of workers
  */
-public class Workers<R extends Runnable> implements Iterable<R>
-{
+public class Workers<R extends Runnable> implements Iterable<R> {
     private final List<Worker> workers = new ArrayList<>();
     private final String names;
 
-    public Workers( String names )
-    {
+    public Workers(String names) {
         this.names = names;
     }
 
@@ -53,87 +50,68 @@ public class Workers<R extends Runnable> implements Iterable<R>
      *
      * @param toRun worker to start and run among potentially other workers.
      */
-    public void start( R toRun )
-    {
-        Worker worker = new Worker( names + "-" + workers.size(), toRun );
+    public void start(R toRun) {
+        Worker worker = new Worker(names + "-" + workers.size(), toRun);
         worker.start();
-        workers.add( worker );
+        workers.add(worker);
     }
 
-    public Throwable await() throws InterruptedException
-    {
+    public Throwable await() throws InterruptedException {
         Throwable error = null;
-        for ( Worker worker : workers )
-        {
+        for (Worker worker : workers) {
             Throwable anError = worker.await();
-            if ( error == null )
-            {
+            if (error == null) {
                 error = anError;
             }
         }
         return error;
     }
 
-    public void awaitAndThrowOnError() throws InterruptedException
-    {
+    public void awaitAndThrowOnError() throws InterruptedException {
         Throwable error = await();
-        if ( error != null )
-        {
-            throw new RuntimeException( error );
+        if (error != null) {
+            throw new RuntimeException(error);
         }
     }
 
-    public void awaitAndThrowOnErrorStrict( )
-    {
-        try
-        {
+    public void awaitAndThrowOnErrorStrict() {
+        try {
             awaitAndThrowOnError();
-        }
-        catch ( InterruptedException e )
-        {
-            throw handleInterrupted( e );
+        } catch (InterruptedException e) {
+            throw handleInterrupted(e);
         }
     }
 
-    private RuntimeException handleInterrupted( InterruptedException e )
-    {
+    private RuntimeException handleInterrupted(InterruptedException e) {
         Thread.interrupted();
-        return new RuntimeException( "Got interrupted while awaiting workers (" + names + ") to complete", e );
+        return new RuntimeException("Got interrupted while awaiting workers (" + names + ") to complete", e);
     }
 
     @Override
-    public Iterator<R> iterator()
-    {
-        return Iterators.map( worker -> worker.toRun, workers.iterator() );
+    public Iterator<R> iterator() {
+        return Iterators.map(worker -> worker.toRun, workers.iterator());
     }
 
-    private class Worker extends Thread
-    {
+    private class Worker extends Thread {
         private volatile Throwable error;
         private final R toRun;
 
-        Worker( String name, R toRun )
-        {
-            super( name );
+        Worker(String name, R toRun) {
+            super(name);
             this.toRun = toRun;
         }
 
         @Override
-        public void run()
-        {
-            try
-            {
+        public void run() {
+            try {
                 toRun.run();
-            }
-            catch ( Throwable t )
-            {
+            } catch (Throwable t) {
                 error = t;
-                throw new RuntimeException( t );
+                throw new RuntimeException(t);
             }
         }
 
-        protected synchronized Throwable await() throws InterruptedException
-        {
+        protected synchronized Throwable await() throws InterruptedException {
             join();
             return error;
         }

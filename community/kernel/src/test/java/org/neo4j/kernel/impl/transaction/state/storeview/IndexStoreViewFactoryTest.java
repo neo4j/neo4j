@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -28,27 +30,29 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-class IndexStoreViewFactoryTest
-{
-    FullScanStoreView fullScanStoreView = mock( FullScanStoreView.class );
-    LockService lockService = mock( LockService.class );
-    InternalLogProvider logProvider = mock( InternalLogProvider.class );
-    IndexProxyProvider indexProxies = mock( IndexProxyProvider.class );
-    Locks locks = mock( Locks.class);
+class IndexStoreViewFactoryTest {
+    FullScanStoreView fullScanStoreView = mock(FullScanStoreView.class);
+    LockService lockService = mock(LockService.class);
+    InternalLogProvider logProvider = mock(InternalLogProvider.class);
+    IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
+    Locks locks = mock(Locks.class);
 
     @Test
-    void shouldCreateIndexStoreView()
-    {
-        //Given
-        var factory = new IndexStoreViewFactory( Config.defaults(), any -> StoreCursors.NULL, () -> null, locks, fullScanStoreView, lockService, logProvider );
+    void shouldCreateIndexStoreView() {
+        // Given
+        var factory = new IndexStoreViewFactory(
+                Config.defaults(),
+                any -> StoreCursors.NULL,
+                () -> null,
+                locks,
+                fullScanStoreView,
+                lockService,
+                logProvider);
 
-        //When
-        var indexStoreView = factory.createTokenIndexStoreView( indexProxies );
+        // When
+        var indexStoreView = factory.createTokenIndexStoreView(indexProxies);
 
-        //Then
-        assertThat( indexStoreView.getClass() ).isEqualTo( DynamicIndexStoreView.class );
+        // Then
+        assertThat(indexStoreView.getClass()).isEqualTo(DynamicIndexStoreView.class);
     }
 }

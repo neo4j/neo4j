@@ -19,6 +19,12 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import static java.lang.String.format;
+import static java.time.ZoneOffset.UTC;
+import static org.neo4j.csv.reader.Readables.individualFiles;
+import static org.neo4j.csv.reader.Readables.iterator;
+import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -32,7 +38,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
@@ -53,23 +58,15 @@ import org.neo4j.values.storable.CSVHeaderInformation;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
 
-import static java.lang.String.format;
-import static java.time.ZoneOffset.UTC;
-import static org.neo4j.csv.reader.Readables.individualFiles;
-import static org.neo4j.csv.reader.Readables.iterator;
-import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
-
 /**
  * Provides common implementations of factories required by f.ex {@link CsvInput}.
  */
-public class DataFactories
-{
-    private static final Pattern TYPE_SPEC_AND_OPTIONAL_PARAMETER = Pattern.compile( "(?<newTypeSpec>.+?)(?<optionalParameter>\\{.*})?$" );
+public class DataFactories {
+    private static final Pattern TYPE_SPEC_AND_OPTIONAL_PARAMETER =
+            Pattern.compile("(?<newTypeSpec>.+?)(?<optionalParameter>\\{.*})?$");
     private static final Supplier<ZoneId> DEFAULT_TIME_ZONE = () -> UTC;
 
-    private DataFactories()
-    {
-    }
+    private DataFactories() {}
 
     /**
      * Creates a {@link DataFactory} where data exists in multiple files. If the first line of the first file is a header,
@@ -81,25 +78,19 @@ public class DataFactories
      *
      * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
      */
-    public static DataFactory data( final Decorator decorator,
-            final Charset charset, final Path... files )
-    {
-        if ( files.length == 0 )
-        {
-            throw new IllegalArgumentException( "No files specified" );
+    public static DataFactory data(final Decorator decorator, final Charset charset, final Path... files) {
+        if (files.length == 0) {
+            throw new IllegalArgumentException("No files specified");
         }
 
-        return config -> new Data()
-        {
+        return config -> new Data() {
             @Override
-            public RawIterator<CharReadable,IOException> stream()
-            {
-                return individualFiles( charset, files );
+            public RawIterator<CharReadable, IOException> stream() {
+                return individualFiles(charset, files);
             }
 
             @Override
-            public Decorator decorator()
-            {
+            public Decorator decorator() {
                 return decorator;
             }
         };
@@ -111,20 +102,15 @@ public class DataFactories
      * multiple times.
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
      */
-    public static DataFactory data( final Decorator decorator,
-            final Supplier<CharReadable> readable )
-    {
-        return config -> new Data()
-        {
+    public static DataFactory data(final Decorator decorator, final Supplier<CharReadable> readable) {
+        return config -> new Data() {
             @Override
-            public RawIterator<CharReadable,IOException> stream()
-            {
-                return iterator( reader -> reader, readable.get() );
+            public RawIterator<CharReadable, IOException> stream() {
+                return iterator(reader -> reader, readable.get());
             }
 
             @Override
-            public Decorator decorator()
-            {
+            public Decorator decorator() {
                 return decorator;
             }
         };
@@ -139,26 +125,23 @@ public class DataFactories
      * @param defaultTimeZone A supplier of the time zone to be used for temporal values when not specified explicitly
      * @param normalizeTypes whether or not to normalize types.
      */
-    public static Header.Factory defaultFormatNodeFileHeader( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
-    {
-        return new DefaultNodeFileHeaderParser( defaultTimeZone, normalizeTypes );
+    public static Header.Factory defaultFormatNodeFileHeader(Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes) {
+        return new DefaultNodeFileHeaderParser(defaultTimeZone, normalizeTypes);
     }
 
     /**
      * Like {@link #defaultFormatNodeFileHeader(Supplier, boolean)}} with UTC as the default time zone.
      * @param normalizeTypes whether or not to normalize types.
      */
-    public static Header.Factory defaultFormatNodeFileHeader( boolean normalizeTypes )
-    {
-        return defaultFormatNodeFileHeader( DEFAULT_TIME_ZONE, normalizeTypes );
+    public static Header.Factory defaultFormatNodeFileHeader(boolean normalizeTypes) {
+        return defaultFormatNodeFileHeader(DEFAULT_TIME_ZONE, normalizeTypes);
     }
 
     /**
      * Like {@link #defaultFormatNodeFileHeader(boolean)}} with no normalization.
      */
-    public static Header.Factory defaultFormatNodeFileHeader()
-    {
-        return defaultFormatNodeFileHeader( false );
+    public static Header.Factory defaultFormatNodeFileHeader() {
+        return defaultFormatNodeFileHeader(false);
     }
 
     /**
@@ -170,137 +153,150 @@ public class DataFactories
      * @param defaultTimeZone A supplier of the time zone to be used for temporal values when not specified explicitly
      * @param normalizeTypes whether or not to normalize types.
      */
-    public static Header.Factory defaultFormatRelationshipFileHeader( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
-    {
-        return new DefaultRelationshipFileHeaderParser( defaultTimeZone, normalizeTypes );
+    public static Header.Factory defaultFormatRelationshipFileHeader(
+            Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes) {
+        return new DefaultRelationshipFileHeaderParser(defaultTimeZone, normalizeTypes);
     }
 
     /**
      * Like {@link #defaultFormatRelationshipFileHeader(Supplier, boolean)} with UTC as the default time zone.
      * @param normalizeTypes whether or not to normalize types.
      */
-    public static Header.Factory defaultFormatRelationshipFileHeader( boolean normalizeTypes )
-    {
-        return defaultFormatRelationshipFileHeader( DEFAULT_TIME_ZONE, normalizeTypes );
+    public static Header.Factory defaultFormatRelationshipFileHeader(boolean normalizeTypes) {
+        return defaultFormatRelationshipFileHeader(DEFAULT_TIME_ZONE, normalizeTypes);
     }
 
     /**
      * Like {@link #defaultFormatRelationshipFileHeader(boolean)} with no normalization.
      */
-    public static Header.Factory defaultFormatRelationshipFileHeader()
-    {
-        return defaultFormatRelationshipFileHeader( DEFAULT_TIME_ZONE, false );
+    public static Header.Factory defaultFormatRelationshipFileHeader() {
+        return defaultFormatRelationshipFileHeader(DEFAULT_TIME_ZONE, false);
     }
 
-    public static Entry[] parseHeaderEntries( CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups, Supplier<ZoneId> defaultTimeZone,
-            HeaderEntryFactory entryFactory, Header.Monitor monitor )
-    {
-        try
-        {
+    public static Entry[] parseHeaderEntries(
+            CharSeeker dataSeeker,
+            Configuration config,
+            IdType idType,
+            Groups groups,
+            Supplier<ZoneId> defaultTimeZone,
+            HeaderEntryFactory entryFactory,
+            Header.Monitor monitor) {
+        try {
             Mark mark = new Mark();
-            Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull(),
-                    config.trimStrings(), defaultTimeZone );
-            Extractor<?> idExtractor = idExtractor( idType, extractors );
+            Extractors extractors = new Extractors(
+                    config.arrayDelimiter(), config.emptyQuotedStringsAsNull(), config.trimStrings(), defaultTimeZone);
+            Extractor<?> idExtractor = idExtractor(idType, extractors);
             int delimiter = config.delimiter();
             List<Header.Entry> columns = new ArrayList<>();
-            for ( int i = 0; !mark.isEndOfLine() && dataSeeker.seek( mark, delimiter ); i++ )
-            {
-                String entryString = dataSeeker.tryExtract( mark, extractors.string() )
-                                     ? extractors.string().value() : null;
-                HeaderEntrySpec spec = new HeaderEntrySpec( entryString );
+            for (int i = 0; !mark.isEndOfLine() && dataSeeker.seek(mark, delimiter); i++) {
+                String entryString = dataSeeker.tryExtract(mark, extractors.string())
+                        ? extractors.string().value()
+                        : null;
+                HeaderEntrySpec spec = new HeaderEntrySpec(entryString);
 
-                if ( (spec.name == null && spec.type == null) ||
-                        (spec.type != null && spec.type.equals( Type.IGNORE.name() )) )
-                {
-                    columns.add( new Header.Entry( null, Type.IGNORE, Group.GLOBAL, null, null ) );
-                }
-                else
-                {
-                    columns.add( entryFactory.create( dataSeeker.sourceDescription(), i, spec.name, spec.type, spec.groupName, extractors, idExtractor, groups,
-                            monitor ) );
+                if ((spec.name == null && spec.type == null)
+                        || (spec.type != null && spec.type.equals(Type.IGNORE.name()))) {
+                    columns.add(new Header.Entry(null, Type.IGNORE, Group.GLOBAL, null, null));
+                } else {
+                    columns.add(entryFactory.create(
+                            dataSeeker.sourceDescription(),
+                            i,
+                            spec.name,
+                            spec.type,
+                            spec.groupName,
+                            extractors,
+                            idExtractor,
+                            groups,
+                            monitor));
                 }
             }
-            return columns.toArray( new Entry[0] );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+            return columns.toArray(new Entry[0]);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private abstract static class AbstractDefaultFileHeaderParser implements Header.Factory
-    {
+    private abstract static class AbstractDefaultFileHeaderParser implements Header.Factory {
         private final Type[] mandatoryTypes;
         private final Supplier<ZoneId> defaultTimeZone;
         private final boolean normalizeTypes;
         private final HeaderEntryFactory entryFactory;
 
-        AbstractDefaultFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean createGroups, boolean normalizeTypes, Type... mandatoryTypes )
-        {
+        AbstractDefaultFileHeaderParser(
+                Supplier<ZoneId> defaultTimeZone,
+                boolean createGroups,
+                boolean normalizeTypes,
+                Type... mandatoryTypes) {
             this.defaultTimeZone = defaultTimeZone;
             this.normalizeTypes = normalizeTypes;
             this.mandatoryTypes = mandatoryTypes;
-            this.entryFactory = ( sourceDescription, entryIndex, name, type, groupName, extractors, idExtractor, groups, monitor ) ->
-            {
-                Group group = createGroups ? groups.getOrCreate( groupName ) : groups.get( groupName );
-                return entry( sourceDescription, entryIndex, name, type, group, extractors, idExtractor, monitor );
-            };
+            this.entryFactory =
+                    (sourceDescription,
+                            entryIndex,
+                            name,
+                            type,
+                            groupName,
+                            extractors,
+                            idExtractor,
+                            groups,
+                            monitor) -> {
+                        Group group = createGroups ? groups.getOrCreate(groupName) : groups.get(groupName);
+                        return entry(
+                                sourceDescription, entryIndex, name, type, group, extractors, idExtractor, monitor);
+                    };
         }
 
         @Override
-        public Header create( CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups, Monitor monitor )
-        {
-            Entry[] entries = parseHeaderEntries( dataSeeker, config, idType, groups, defaultTimeZone, entryFactory, monitor );
-            validateHeader( entries, dataSeeker );
-            return new Header( entries );
+        public Header create(
+                CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups, Monitor monitor) {
+            Entry[] entries =
+                    parseHeaderEntries(dataSeeker, config, idType, groups, defaultTimeZone, entryFactory, monitor);
+            validateHeader(entries, dataSeeker);
+            return new Header(entries);
         }
 
-        private void validateHeader( Entry[] entries, CharSeeker dataSeeker )
-        {
-            Map<String,Entry> properties = new HashMap<>();
-            EnumMap<Type,Entry> singletonEntries = new EnumMap<>( Type.class );
-            for ( Entry entry : entries )
-            {
-                switch ( entry.type() )
-                {
-                case PROPERTY:
-                    Entry existingPropertyEntry = properties.get( entry.name() );
-                    if ( existingPropertyEntry != null )
-                    {
-                        throw new DuplicateHeaderException( existingPropertyEntry, entry, dataSeeker.sourceDescription() );
-                    }
-                    properties.put( entry.name(), entry );
-                    break;
+        private void validateHeader(Entry[] entries, CharSeeker dataSeeker) {
+            Map<String, Entry> properties = new HashMap<>();
+            EnumMap<Type, Entry> singletonEntries = new EnumMap<>(Type.class);
+            for (Entry entry : entries) {
+                switch (entry.type()) {
+                    case PROPERTY:
+                        Entry existingPropertyEntry = properties.get(entry.name());
+                        if (existingPropertyEntry != null) {
+                            throw new DuplicateHeaderException(
+                                    existingPropertyEntry, entry, dataSeeker.sourceDescription());
+                        }
+                        properties.put(entry.name(), entry);
+                        break;
 
-                case ID: case START_ID: case END_ID: case TYPE:
-                    Entry existingSingletonEntry = singletonEntries.get( entry.type() );
-                    if ( existingSingletonEntry != null )
-                    {
-                        throw new DuplicateHeaderException( existingSingletonEntry, entry, dataSeeker.sourceDescription() );
-                    }
-                    singletonEntries.put( entry.type(), entry );
-                    break;
-                default:
-                    // No need to validate other headers
-                    break;
+                    case ID:
+                    case START_ID:
+                    case END_ID:
+                    case TYPE:
+                        Entry existingSingletonEntry = singletonEntries.get(entry.type());
+                        if (existingSingletonEntry != null) {
+                            throw new DuplicateHeaderException(
+                                    existingSingletonEntry, entry, dataSeeker.sourceDescription());
+                        }
+                        singletonEntries.put(entry.type(), entry);
+                        break;
+                    default:
+                        // No need to validate other headers
+                        break;
                 }
             }
 
-            for ( Type type : mandatoryTypes )
-            {
-                if ( !singletonEntries.containsKey( type ) )
-                {
-                    throw new HeaderException( format( "Missing header of type %s, among entries %s", type, Arrays.toString( entries ) ) );
+            for (Type type : mandatoryTypes) {
+                if (!singletonEntries.containsKey(type)) {
+                    throw new HeaderException(
+                            format("Missing header of type %s, among entries %s", type, Arrays.toString(entries)));
                 }
             }
         }
 
-        static boolean isRecognizedType( String typeSpec )
-        {
-            for ( Type type : Type.values() )
-            {
-                if ( type.name().equalsIgnoreCase( typeSpec ) )
-                {
+        static boolean isRecognizedType(String typeSpec) {
+            for (Type type : Type.values()) {
+                if (type.name().equalsIgnoreCase(typeSpec)) {
                     return true;
                 }
             }
@@ -308,23 +304,21 @@ public class DataFactories
         }
 
         @Override
-        public boolean isDefined()
-        {
+        public boolean isDefined() {
             return false;
         }
 
-        Extractor<?> propertyExtractor( String sourceDescription, String name, String typeSpec, Extractors extractors, Monitor monitor )
-        {
-            Extractor<?> extractor = parsePropertyType( typeSpec, extractors );
-            if ( normalizeTypes )
-            {
-                // This basically mean that e.g. a specified type "float" will actually be "double", "int", "short" and all that will be "long".
+        Extractor<?> propertyExtractor(
+                String sourceDescription, String name, String typeSpec, Extractors extractors, Monitor monitor) {
+            Extractor<?> extractor = parsePropertyType(typeSpec, extractors);
+            if (normalizeTypes) {
+                // This basically mean that e.g. a specified type "float" will actually be "double", "int", "short" and
+                // all that will be "long".
                 String fromType = extractor.name();
                 Extractor<?> normalized = extractor.normalize();
-                if ( !normalized.equals( extractor ) )
-                {
+                if (!normalized.equals(extractor)) {
                     String toType = normalized.name();
-                    monitor.typeNormalized( sourceDescription, name, fromType, toType );
+                    monitor.typeNormalized(sourceDescription, name, fromType, toType);
                     return normalized;
                 }
             }
@@ -335,42 +329,43 @@ public class DataFactories
          * @param idExtractor we supply the id extractor explicitly because it's a configuration,
          * or at least input-global concern and not a concern of this particular header.
          */
-        protected abstract Header.Entry entry( String sourceDescription, int index, String name, String typeSpec, Group group,
-                Extractors extractors, Extractor<?> idExtractor, Monitor monitor );
+        protected abstract Header.Entry entry(
+                String sourceDescription,
+                int index,
+                String name,
+                String typeSpec,
+                Group group,
+                Extractors extractors,
+                Extractor<?> idExtractor,
+                Monitor monitor);
     }
 
-    private static class HeaderEntrySpec
-    {
+    private static class HeaderEntrySpec {
         private final String name;
         private final String type;
         private final String groupName;
 
-        HeaderEntrySpec( String rawHeaderField )
-        {
+        HeaderEntrySpec(String rawHeaderField) {
             String name = rawHeaderField;
             String type = null;
             String groupName = null;
 
             int typeIndex;
 
-            if ( rawHeaderField != null )
-            {
-                String rawHeaderUntilOptions = rawHeaderField.split( "\\{" )[0];
-                if ( (typeIndex = rawHeaderUntilOptions.lastIndexOf( ':' )) != -1 )
-                {   // Specific type given
-                    name = typeIndex > 0 ? rawHeaderField.substring( 0, typeIndex ) : null;
-                    type = rawHeaderField.substring( typeIndex + 1 );
-                    int groupNameStartIndex = type.indexOf( '(' );
-                    if ( groupNameStartIndex != -1 )
-                    {   // Specific group given also
-                        if ( !type.endsWith( ")" ) )
-                        {
-                            throw new IllegalArgumentException(
-                                    "Group specification in '" + rawHeaderField + "' is invalid, format expected to be 'name:TYPE(group)' " +
-                                            "where TYPE and (group) are optional" );
+            if (rawHeaderField != null) {
+                String rawHeaderUntilOptions = rawHeaderField.split("\\{")[0];
+                if ((typeIndex = rawHeaderUntilOptions.lastIndexOf(':')) != -1) { // Specific type given
+                    name = typeIndex > 0 ? rawHeaderField.substring(0, typeIndex) : null;
+                    type = rawHeaderField.substring(typeIndex + 1);
+                    int groupNameStartIndex = type.indexOf('(');
+                    if (groupNameStartIndex != -1) { // Specific group given also
+                        if (!type.endsWith(")")) {
+                            throw new IllegalArgumentException("Group specification in '" + rawHeaderField
+                                    + "' is invalid, format expected to be 'name:TYPE(group)' "
+                                    + "where TYPE and (group) are optional");
                         }
-                        groupName = type.substring( groupNameStartIndex + 1, type.length() - 1 );
-                        type = type.substring( 0, groupNameStartIndex );
+                        groupName = type.substring(groupNameStartIndex + 1, type.length() - 1);
+                        type = type.substring(0, groupNameStartIndex);
                     }
                 }
             }
@@ -381,175 +376,153 @@ public class DataFactories
         }
     }
 
-    interface HeaderEntryFactory
-    {
-        Entry create( String sourceDescription, int entryIndex, String name, String type, String groupName, Extractors extractors, Extractor<?> idExtractor,
-                Groups groups, Monitor monitor );
+    interface HeaderEntryFactory {
+        Entry create(
+                String sourceDescription,
+                int entryIndex,
+                String name,
+                String type,
+                String groupName,
+                Extractors extractors,
+                Extractor<?> idExtractor,
+                Groups groups,
+                Monitor monitor);
     }
 
-    private static class DefaultNodeFileHeaderParser extends AbstractDefaultFileHeaderParser
-    {
-        DefaultNodeFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
-        {
-            super( defaultTimeZone, true, normalizeTypes );
+    private static class DefaultNodeFileHeaderParser extends AbstractDefaultFileHeaderParser {
+        DefaultNodeFileHeaderParser(Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes) {
+            super(defaultTimeZone, true, normalizeTypes);
         }
 
         @Override
-        protected Header.Entry entry( String sourceDescription, int index, String name, String typeSpec, Group group, Extractors extractors,
-                Extractor<?> idExtractor, Monitor monitor )
-        {
+        protected Header.Entry entry(
+                String sourceDescription,
+                int index,
+                String name,
+                String typeSpec,
+                Group group,
+                Extractors extractors,
+                Extractor<?> idExtractor,
+                Monitor monitor) {
             // For nodes it's simply ID,LABEL,PROPERTY. typeSpec can be either ID,LABEL or a type of property,
             // like 'int' or 'string_array' or similar, or empty for 'string' property.
             Type type;
             Extractor<?> extractor;
             CSVHeaderInformation optionalParameter = null;
-            if ( typeSpec == null )
-            {
+            if (typeSpec == null) {
                 type = Type.PROPERTY;
                 extractor = extractors.string();
-            }
-            else
-            {
+            } else {
                 var split = splitTypeSpecAndOptionalParameter(typeSpec);
                 typeSpec = split.typeSpec();
-                if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
-                {
+                if (typeSpec.equalsIgnoreCase(Type.ID.name())) {
                     type = Type.ID;
                     extractor = idExtractor;
-                }
-                else if ( typeSpec.equalsIgnoreCase( Type.LABEL.name() ) )
-                {
+                } else if (typeSpec.equalsIgnoreCase(Type.LABEL.name())) {
                     type = Type.LABEL;
                     extractor = extractors.stringArray();
-                }
-                else if ( isRecognizedType( typeSpec ) )
-                {
-                    throw new HeaderException( "Unexpected node header type '" + typeSpec + "'" );
-                }
-                else
-                {
+                } else if (isRecognizedType(typeSpec)) {
+                    throw new HeaderException("Unexpected node header type '" + typeSpec + "'");
+                } else {
                     type = Type.PROPERTY;
-                    extractor = propertyExtractor( sourceDescription, name, typeSpec, extractors, monitor );
-                    optionalParameter = parseOptionalParameter( extractor, split.optionalParameter() );
+                    extractor = propertyExtractor(sourceDescription, name, typeSpec, extractors, monitor);
+                    optionalParameter = parseOptionalParameter(extractor, split.optionalParameter());
                 }
             }
-            return new Header.Entry( name, type, group, extractor, optionalParameter );
+            return new Header.Entry(name, type, group, extractor, optionalParameter);
         }
     }
 
-    private static class DefaultRelationshipFileHeaderParser extends AbstractDefaultFileHeaderParser
-    {
-        DefaultRelationshipFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
-        {
+    private static class DefaultRelationshipFileHeaderParser extends AbstractDefaultFileHeaderParser {
+        DefaultRelationshipFileHeaderParser(Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes) {
             // Don't have TYPE as mandatory since a decorator could provide that
-            super( defaultTimeZone, false, normalizeTypes, Type.START_ID, Type.END_ID );
+            super(defaultTimeZone, false, normalizeTypes, Type.START_ID, Type.END_ID);
         }
 
         @Override
-        protected Header.Entry entry( String sourceDescription, int index, String name, String typeSpec, Group group, Extractors extractors,
-                Extractor<?> idExtractor, Monitor monitor )
-        {
+        protected Header.Entry entry(
+                String sourceDescription,
+                int index,
+                String name,
+                String typeSpec,
+                Group group,
+                Extractors extractors,
+                Extractor<?> idExtractor,
+                Monitor monitor) {
             Type type;
             Extractor<?> extractor;
             CSVHeaderInformation optionalParameter = null;
-            if ( typeSpec == null )
-            {   // Property
+            if (typeSpec == null) { // Property
                 type = Type.PROPERTY;
                 extractor = extractors.string();
-            }
-            else
-            {
-                var split = splitTypeSpecAndOptionalParameter( typeSpec );
+            } else {
+                var split = splitTypeSpecAndOptionalParameter(typeSpec);
                 typeSpec = split.typeSpec();
 
-                if ( typeSpec.equalsIgnoreCase( Type.START_ID.name() ) )
-                {
+                if (typeSpec.equalsIgnoreCase(Type.START_ID.name())) {
                     type = Type.START_ID;
                     extractor = idExtractor;
-                }
-                else if ( typeSpec.equalsIgnoreCase( Type.END_ID.name() ) )
-                {
+                } else if (typeSpec.equalsIgnoreCase(Type.END_ID.name())) {
                     type = Type.END_ID;
                     extractor = idExtractor;
-                }
-                else if ( typeSpec.equalsIgnoreCase( Type.TYPE.name() ) )
-                {
+                } else if (typeSpec.equalsIgnoreCase(Type.TYPE.name())) {
                     type = Type.TYPE;
                     extractor = extractors.string();
-                }
-                else if ( isRecognizedType( typeSpec ) )
-                {
-                    throw new HeaderException( "Unexpected relationship header type '" + typeSpec + "'" );
-                }
-                else
-                {
+                } else if (isRecognizedType(typeSpec)) {
+                    throw new HeaderException("Unexpected relationship header type '" + typeSpec + "'");
+                } else {
                     type = Type.PROPERTY;
-                    extractor = propertyExtractor( sourceDescription, name, typeSpec, extractors, monitor );
-                    optionalParameter = parseOptionalParameter( extractor, split.optionalParameter() );
+                    extractor = propertyExtractor(sourceDescription, name, typeSpec, extractors, monitor);
+                    optionalParameter = parseOptionalParameter(extractor, split.optionalParameter());
                 }
             }
-            return new Header.Entry( name, type, group, extractor, optionalParameter );
+            return new Header.Entry(name, type, group, extractor, optionalParameter);
         }
     }
 
-    private static CSVHeaderInformation parseOptionalParameter( Extractor<?> extractor, String optionalParameterString )
-    {
-        if ( optionalParameterString != null )
-        {
-            if ( extractor instanceof Extractors.PointExtractor || extractor instanceof Extractors.PointArrayExtractor )
-            {
-                return PointValue.parseHeaderInformation( optionalParameterString );
-            }
-            else if ( extractor instanceof Extractors.TimeExtractor || extractor instanceof Extractors.DateTimeExtractor
-                      || extractor instanceof Extractors.TimeArrayExtractor || extractor instanceof Extractors.DateTimeArrayExtractor )
-            {
-                return TemporalValue.parseHeaderInformation( optionalParameterString );
+    private static CSVHeaderInformation parseOptionalParameter(Extractor<?> extractor, String optionalParameterString) {
+        if (optionalParameterString != null) {
+            if (extractor instanceof Extractors.PointExtractor || extractor instanceof Extractors.PointArrayExtractor) {
+                return PointValue.parseHeaderInformation(optionalParameterString);
+            } else if (extractor instanceof Extractors.TimeExtractor
+                    || extractor instanceof Extractors.DateTimeExtractor
+                    || extractor instanceof Extractors.TimeArrayExtractor
+                    || extractor instanceof Extractors.DateTimeArrayExtractor) {
+                return TemporalValue.parseHeaderInformation(optionalParameterString);
             }
         }
         return null;
     }
 
-    private static Extractor<?> parsePropertyType( String typeSpec, Extractors extractors )
-    {
-        try
-        {
-            return extractors.valueOf( typeSpec );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new HeaderException( "Unable to parse header", e );
+    private static Extractor<?> parsePropertyType(String typeSpec, Extractors extractors) {
+        try {
+            return extractors.valueOf(typeSpec);
+        } catch (IllegalArgumentException e) {
+            throw new HeaderException("Unable to parse header", e);
         }
     }
 
-    public static Iterable<DataFactory> datas( DataFactory... factories )
-    {
-        return Iterables.iterable( factories );
+    public static Iterable<DataFactory> datas(DataFactory... factories) {
+        return Iterables.iterable(factories);
     }
 
-    private static Specification splitTypeSpecAndOptionalParameter( String typeSpec )
-    {
+    private static Specification splitTypeSpecAndOptionalParameter(String typeSpec) {
         String optionalParameter = null;
         String newTypeSpec = typeSpec;
 
-        Matcher matcher = TYPE_SPEC_AND_OPTIONAL_PARAMETER.matcher( typeSpec );
+        Matcher matcher = TYPE_SPEC_AND_OPTIONAL_PARAMETER.matcher(typeSpec);
 
-        if ( matcher.find() )
-        {
-            try
-            {
-                newTypeSpec = matcher.group( "newTypeSpec" );
-                optionalParameter = matcher.group( "optionalParameter" );
-            }
-            catch ( IllegalArgumentException e )
-            {
-                String errorMessage = format( "Failed to parse header: '%s'", typeSpec );
-                throw new IllegalArgumentException( errorMessage, e );
+        if (matcher.find()) {
+            try {
+                newTypeSpec = matcher.group("newTypeSpec");
+                optionalParameter = matcher.group("optionalParameter");
+            } catch (IllegalArgumentException e) {
+                String errorMessage = format("Failed to parse header: '%s'", typeSpec);
+                throw new IllegalArgumentException(errorMessage, e);
             }
         }
-        return new Specification( newTypeSpec, optionalParameter );
+        return new Specification(newTypeSpec, optionalParameter);
     }
 
-    private record Specification(String typeSpec, String optionalParameter)
-    {
-    }
+    private record Specification(String typeSpec, String optionalParameter) {}
 }

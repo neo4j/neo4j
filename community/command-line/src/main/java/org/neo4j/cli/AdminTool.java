@@ -19,10 +19,9 @@
  */
 package org.neo4j.cli;
 
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.ExitCode;
-import picocli.CommandLine.HelpCommand;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.neo4j.cli.AdminTool.VersionProvider;
+import static picocli.CommandLine.IVersionProvider;
 
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -30,14 +29,13 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.stream.Collectors;
-
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.service.Services;
 import org.neo4j.util.VisibleForTesting;
-
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.neo4j.cli.AdminTool.VersionProvider;
-import static picocli.CommandLine.IVersionProvider;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.ExitCode;
+import picocli.CommandLine.HelpCommand;
 
 @Command(
         name = "neo4j-admin",
@@ -47,109 +45,96 @@ import static picocli.CommandLine.IVersionProvider;
         sortOptions = false,
         footerHeading = "\nEnvironment variables:\n",
         footer = {
-                "  NEO4J_CONF    Path to directory which contains neo4j.conf.",
-                "  NEO4J_DEBUG   Set to anything to enable debug output.",
-                "  NEO4J_HOME    Neo4j home directory.",
-                "  HEAP_SIZE     Set JVM maximum heap size during command execution. Takes a number and a unit, for example 512m.",
-                "  JAVA_OPTS     Used to pass custom setting to Java Virtual Machine. Refer to JVM documentation about the exact format. " +
-                        "This variable is incompatible with HEAP_SIZE and takes precedence over HEAP_SIZE."
-        }
-)
-public final class AdminTool
-{
-    //Accept arguments also used by Neo4jAdminCommand, just to let them show in the usage
-    @CommandLine.Option( names = "--expand-commands", description = "Allow command expansion in config value evaluation." )
+            "  NEO4J_CONF    Path to directory which contains neo4j.conf.",
+            "  NEO4J_DEBUG   Set to anything to enable debug output.",
+            "  NEO4J_HOME    Neo4j home directory.",
+            "  HEAP_SIZE     Set JVM maximum heap size during command execution. Takes a number and a unit, for example 512m.",
+            "  JAVA_OPTS     Used to pass custom setting to Java Virtual Machine. Refer to JVM documentation about the exact format. "
+                    + "This variable is incompatible with HEAP_SIZE and takes precedence over HEAP_SIZE."
+        })
+public final class AdminTool {
+    // Accept arguments also used by Neo4jAdminCommand, just to let them show in the usage
+    @CommandLine.Option(
+            names = "--expand-commands",
+            description = "Allow command expansion in config value evaluation.")
     private boolean expandCommands;
 
-    @CommandLine.Option( names = "--verbose", description = "Prints additional information." )
+    @CommandLine.Option(names = "--verbose", description = "Prints additional information.")
     private boolean verbose;
 
-    private AdminTool()
-    {
+    private AdminTool() {
         // nope
     }
 
-    public static void main( String[] args )
-    {
-        final var homeDir = getDirOrExit( "NEO4J_HOME" );
-        final var confDir = getDirOrExit( "NEO4J_CONF" );
-        final var ctx = new ExecutionContext( homeDir, confDir );
-        final var exitCode = execute( ctx, args );
-        System.exit( exitCode );
+    public static void main(String[] args) {
+        final var homeDir = getDirOrExit("NEO4J_HOME");
+        final var confDir = getDirOrExit("NEO4J_CONF");
+        final var ctx = new ExecutionContext(homeDir, confDir);
+        final var exitCode = execute(ctx, args);
+        System.exit(exitCode);
     }
 
-    @SuppressWarnings( "InstantiationOfUtilityClass" )
+    @SuppressWarnings("InstantiationOfUtilityClass")
     @VisibleForTesting
-    public static int execute( ExecutionContext ctx, String... args )
-    {
-        final CommandLine cmd = getCommandLine( ctx );
-        if ( args.length == 0 )
-        {
-            cmd.usage( cmd.getOut() );
+    public static int execute(ExecutionContext ctx, String... args) {
+        final CommandLine cmd = getCommandLine(ctx);
+        if (args.length == 0) {
+            cmd.usage(cmd.getOut());
             return ExitCode.USAGE;
         }
-        return cmd.execute( args );
+        return cmd.execute(args);
     }
 
-    public static CommandLine getCommandLine( ExecutionContext ctx )
-    {
-        CommandLine cmd = new CommandLine( new AdminTool() )
-                .setOut( new PrintWriter( ctx.out(), true ) )
-                .setErr( new PrintWriter( ctx.err(), true ) )
-                .setUsageHelpWidth( 120 )
-                .setCaseInsensitiveEnumValuesAllowed( true );
-        registerCommands( cmd, ctx, Services.loadAll( CommandProvider.class ) );
+    public static CommandLine getCommandLine(ExecutionContext ctx) {
+        CommandLine cmd = new CommandLine(new AdminTool())
+                .setOut(new PrintWriter(ctx.out(), true))
+                .setErr(new PrintWriter(ctx.err(), true))
+                .setUsageHelpWidth(120)
+                .setCaseInsensitiveEnumValuesAllowed(true);
+        registerCommands(cmd, ctx, Services.loadAll(CommandProvider.class));
         return cmd;
     }
 
-    private static void registerCommands( CommandLine cmd, ExecutionContext ctx, Collection<CommandProvider> commandProviders )
-    {
-        cmd.addSubcommand( HelpCommand.class );
-        filterCommandProviders( commandProviders ).stream()
-                .sorted( Comparator.comparing( CommandProvider::commandType ) )
-                .forEach( commandProvider -> cmd.addSubcommand( commandProvider.createCommand( ctx ) ) );
+    private static void registerCommands(
+            CommandLine cmd, ExecutionContext ctx, Collection<CommandProvider> commandProviders) {
+        cmd.addSubcommand(HelpCommand.class);
+        filterCommandProviders(commandProviders).stream()
+                .sorted(Comparator.comparing(CommandProvider::commandType))
+                .forEach(commandProvider -> cmd.addSubcommand(commandProvider.createCommand(ctx)));
     }
 
-    protected static Collection<CommandProvider> filterCommandProviders( Collection<CommandProvider> commandProviders )
-    {
-        return commandProviders
-                .stream()
-                .collect( Collectors.toMap( k -> k.commandType(), v -> v, ( cp1, cp2 ) ->
-                {
-                    if ( cp1.getPriority() == cp2.getPriority() )
-                    {
-                        throw new IllegalArgumentException(
-                                String.format( "Command providers %s and %s create commands with the same priority", cp1.getClass(), cp2.getClass() ) );
+    protected static Collection<CommandProvider> filterCommandProviders(Collection<CommandProvider> commandProviders) {
+        return commandProviders.stream()
+                .collect(Collectors.toMap(k -> k.commandType(), v -> v, (cp1, cp2) -> {
+                    if (cp1.getPriority() == cp2.getPriority()) {
+                        throw new IllegalArgumentException(String.format(
+                                "Command providers %s and %s create commands with the same priority",
+                                cp1.getClass(), cp2.getClass()));
                     }
 
                     return cp1.getPriority() > cp2.getPriority() ? cp1 : cp2;
-                } ) )
+                }))
                 .values();
     }
 
-    private static Path getDirOrExit( String envVar )
-    {
-        final var value = System.getenv( envVar );
-        if ( isBlank( value ) )
-        {
-            System.err.printf( "Required environment variable '%s' is not set%n", envVar );
-            System.exit( ExitCode.USAGE );
+    private static Path getDirOrExit(String envVar) {
+        final var value = System.getenv(envVar);
+        if (isBlank(value)) {
+            System.err.printf("Required environment variable '%s' is not set%n", envVar);
+            System.exit(ExitCode.USAGE);
         }
-        final var path = Path.of( value ).toAbsolutePath();
-        if ( !Files.isDirectory( path ) )
-        {
-            System.err.printf( "%s path doesn't exist or not a directory: %s%n", envVar, path );
-            System.exit( ExitCode.USAGE );
+        final var path = Path.of(value).toAbsolutePath();
+        if (!Files.isDirectory(path)) {
+            System.err.printf("%s path doesn't exist or not a directory: %s%n", envVar, path);
+            System.exit(ExitCode.USAGE);
         }
         return path;
     }
 
-    static class VersionProvider implements IVersionProvider
-    {
+    static class VersionProvider implements IVersionProvider {
         @Override
-        public String[] getVersion()
-        {
-            return new String[]{Version.getNeo4jVersion()};
+        public String[] getVersion() {
+            return new String[] {Version.getNeo4jVersion()};
         }
     }
 }

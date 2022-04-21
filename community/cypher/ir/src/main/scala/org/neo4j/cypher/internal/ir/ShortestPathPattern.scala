@@ -23,14 +23,15 @@ import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.util.Rewritable
 
 //noinspection ZeroIndexToHead
-final case class ShortestPathPattern(name: Option[String], rel: PatternRelationship, single: Boolean)
-                                    (val expr: ShortestPaths) extends Rewritable {
+final case class ShortestPathPattern(name: Option[String], rel: PatternRelationship, single: Boolean)(
+  val expr: ShortestPaths
+) extends Rewritable {
 
   def dup(children: Seq[AnyRef]): this.type =
     copy(
       children(0).asInstanceOf[Option[String]],
       children(1).asInstanceOf[PatternRelationship],
-      children(2).asInstanceOf[Boolean],
+      children(2).asInstanceOf[Boolean]
     )(expr).asInstanceOf[this.type]
 
   def isFindableFrom(symbols: Set[String]) = symbols.contains(rel.left) && symbols.contains(rel.right)

@@ -19,18 +19,15 @@
  */
 package org.neo4j.graphdb.traversal;
 
-abstract class AbstractUniquenessFilter implements BidirectionalUniquenessFilter
-{
+abstract class AbstractUniquenessFilter implements BidirectionalUniquenessFilter {
     final PrimitiveTypeFetcher type;
 
-    AbstractUniquenessFilter( PrimitiveTypeFetcher type )
-    {
+    AbstractUniquenessFilter(PrimitiveTypeFetcher type) {
         this.type = type;
     }
 
     @Override
-    public boolean checkFirst( TraversalBranch branch )
-    {
-        return type == PrimitiveTypeFetcher.RELATIONSHIP || check( branch );
+    public boolean checkFirst(TraversalBranch branch) {
+        return type == PrimitiveTypeFetcher.RELATIONSHIP || check(branch);
     }
 }

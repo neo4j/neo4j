@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
-case class Distinct(innerAggregator: AggregationExpression, expression: Expression) extends AggregationWithInnerExpression(expression) {
+case class Distinct(innerAggregator: AggregationExpression, expression: Expression)
+    extends AggregationWithInnerExpression(expression) {
   override val expectedInnerType: CypherType = CTAny
 
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {

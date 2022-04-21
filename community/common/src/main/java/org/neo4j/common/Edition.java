@@ -19,23 +19,20 @@
  */
 package org.neo4j.common;
 
-public enum Edition
-{
+public enum Edition {
     // Note, these are sent verbatim via UDC if UDC is enabled
-    UNKNOWN( "unknown" ),
-    COMMUNITY( "community" ),
-    ENTERPRISE( "enterprise" );
+    UNKNOWN("unknown"),
+    COMMUNITY("community"),
+    ENTERPRISE("enterprise");
 
     private final String description;
 
-    Edition( String description )
-    {
+    Edition(String description) {
         this.description = description;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return description;
     }
 }

@@ -21,33 +21,28 @@ package org.neo4j.kernel.api.query;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.common.EntityType;
 
-public class LookupIndexUsage extends IndexUsage
-{
+public class LookupIndexUsage extends IndexUsage {
     private final String identifier;
     private final EntityType entityType;
 
-    public LookupIndexUsage( String identifier, EntityType entityType )
-    {
-        super( identifier );
+    public LookupIndexUsage(String identifier, EntityType entityType) {
+        super(identifier);
         this.identifier = identifier;
         this.entityType = entityType;
     }
 
-    public EntityType getEntityType()
-    {
+    public EntityType getEntityType() {
         return entityType;
     }
 
     @Override
-    public Map<String,String> asMap()
-    {
-        Map<String,String> map = new HashMap<>();
-        map.put( "indexType", "LOOKUP INDEX" );
-        map.put( "entityType", entityType.name() );
-        map.put( "identifier", identifier );
+    public Map<String, String> asMap() {
+        Map<String, String> map = new HashMap<>();
+        map.put("indexType", "LOOKUP INDEX");
+        map.put("entityType", entityType.name());
+        map.put("identifier", identifier);
         return map;
     }
 }

@@ -25,8 +25,7 @@ package org.neo4j.function;
  *
  * @param <E> the type of exception that may be thrown from the supplier
  */
-public interface ThrowingBooleanSupplier<E extends Exception>
-{
+public interface ThrowingBooleanSupplier<E extends Exception> {
     /**
      * Gets a result.
      *

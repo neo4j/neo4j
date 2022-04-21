@@ -29,12 +29,15 @@ import org.neo4j.values.virtual.MapValue
 
 trait ExecutionResultBuilder {
   def addProfileDecorator(profileDecorator: PipeDecorator): Unit
-  def build(params: MapValue,
-            queryProfile: QueryProfile,
-            prePopulateResults: Boolean,
-            input: InputDataStream,
-            subscriber: QuerySubscriber,
-            doProfile: Boolean): RuntimeResult
+
+  def build(
+    params: MapValue,
+    queryProfile: QueryProfile,
+    prePopulateResults: Boolean,
+    input: InputDataStream,
+    subscriber: QuerySubscriber,
+    doProfile: Boolean
+  ): RuntimeResult
 }
 
 trait ExecutionResultBuilderFactory {

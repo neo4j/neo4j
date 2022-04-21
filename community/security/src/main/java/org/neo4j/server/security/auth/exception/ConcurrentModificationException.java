@@ -21,18 +21,15 @@ package org.neo4j.server.security.auth.exception;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class ConcurrentModificationException extends Exception implements Status.HasStatus
-{
+public class ConcurrentModificationException extends Exception implements Status.HasStatus {
     private final Status status;
 
-    public ConcurrentModificationException()
-    {
+    public ConcurrentModificationException() {
         this.status = Status.Security.ModifiedConcurrently;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 }

@@ -27,13 +27,20 @@ import org.neo4j.graphdb.Result
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-case class EmbeddedCypherExecutor(private val graph: GraphDatabaseService) extends CypherExecutor with EmbeddedExceptionConverter {
+case class EmbeddedCypherExecutor(private val graph: GraphDatabaseService) extends CypherExecutor
+    with EmbeddedExceptionConverter {
   override def beginTransaction(): CypherExecutorTransaction = EmbeddedTransaction(graph.beginTx())
 
-  override def execute[T](queryToExecute: String,
-                          neo4jParams: Map[String, Object],
-                          converter: StatementResult => T): T = convertExceptions {
-    graph.executeTransactionally(queryToExecute, neo4jParams.asJava, (graphDbResult: Result) => converter(EmbeddedStatementResult(graphDbResult)))
+  override def execute[T](
+    queryToExecute: String,
+    neo4jParams: Map[String, Object],
+    converter: StatementResult => T
+  ): T = convertExceptions {
+    graph.executeTransactionally(
+      queryToExecute,
+      neo4jParams.asJava,
+      (graphDbResult: Result) => converter(EmbeddedStatementResult(graphDbResult))
+    )
   }
 
   override def close(): Unit = {}

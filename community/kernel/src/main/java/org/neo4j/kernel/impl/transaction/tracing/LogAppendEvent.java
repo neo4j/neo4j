@@ -25,8 +25,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
  * Represents the process of turning the state of a committing transaction into a sequence of commands, and appending
  * them to the transaction log.
  */
-public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoCloseable
-{
+public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoCloseable {
     LogAppendEvent NULL = new Empty();
 
     /**
@@ -35,7 +34,7 @@ public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoClo
      * @param logPositionBeforeAppend start position
      * @param logPositionAfterAppend end position
      */
-    void appendToLogFile( LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend );
+    void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend);
 
     /**
      * Mark the end of the process of appending a transaction to the transaction log.
@@ -46,53 +45,41 @@ public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoClo
     /**
      * Note whether or not the log was rotated by the appending of this transaction to the log.
      */
-    void setLogRotated( boolean logRotated );
+    void setLogRotated(boolean logRotated);
 
     /**
      * Begin serializing and writing out the commands for this transaction.
      * @param appendItems number of items we desire to append
      */
-    AppendTransactionEvent beginAppendTransaction( int appendItems );
+    AppendTransactionEvent beginAppendTransaction(int appendItems);
 
-    class Empty implements LogAppendEvent
-    {
+    class Empty implements LogAppendEvent {
         @Override
-        public void appendToLogFile( LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend )
-        {
-        }
+        public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public void setLogRotated( boolean logRotated )
-        {
-
-        }
+        public void setLogRotated(boolean logRotated) {}
 
         @Override
-        public LogRotateEvent beginLogRotate()
-        {
+        public LogRotateEvent beginLogRotate() {
             return LogRotateEvent.NULL;
         }
 
         @Override
-        public AppendTransactionEvent beginAppendTransaction( int appendItems )
-        {
+        public AppendTransactionEvent beginAppendTransaction(int appendItems) {
             return AppendTransactionEvent.NULL;
         }
 
         @Override
-        public LogForceWaitEvent beginLogForceWait()
-        {
+        public LogForceWaitEvent beginLogForceWait() {
             return LogForceWaitEvent.NULL;
         }
 
         @Override
-        public LogForceEvent beginLogForce()
-        {
+        public LogForceEvent beginLogForce() {
             return LogForceEvent.NULL;
         }
     }

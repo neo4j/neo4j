@@ -66,11 +66,12 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
    * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
    * @return a compiled and executable query
    */
-  def compile(query: InputQuery,
-              tracer: CompilationPhaseTracer,
-              transactionalContext: TransactionalContext,
-              params: MapValue
-             ): ExecutableQuery = {
+  def compile(
+    query: InputQuery,
+    tracer: CompilationPhaseTracer,
+    transactionalContext: TransactionalContext,
+    params: MapValue
+  ): ExecutableQuery = {
 
     val logger = new RecordingNotificationLogger(Some(query.options.offset))
 
@@ -81,7 +82,8 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
       query.options.queryOptions.version,
       query.options.queryOptions.planner,
       query.options.queryOptions.runtime,
-      query.options.queryOptions.updateStrategy)
+      query.options.queryOptions.updateStrategy
+    )
 
     compiler.compile(query, tracer, notificationsSoFar(), transactionalContext, params)
   }

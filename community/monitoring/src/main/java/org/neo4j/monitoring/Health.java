@@ -19,11 +19,10 @@
  */
 package org.neo4j.monitoring;
 
-public interface Health
-{
-    <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION;
+public interface Health {
+    <EXCEPTION extends Throwable> void assertHealthy(Class<EXCEPTION> panicDisguise) throws EXCEPTION;
 
-    void panic( Throwable cause );
+    void panic(Throwable cause);
 
     boolean isHealthy();
 

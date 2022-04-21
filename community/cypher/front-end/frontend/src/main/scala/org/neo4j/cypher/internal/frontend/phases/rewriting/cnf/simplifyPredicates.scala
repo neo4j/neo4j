@@ -53,39 +53,40 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
   }
 
   private def computeReplacement: Expression => Expression = {
-    case n@Not(Not(innerExpression)) => simplifyToInnerExpression(n, innerExpression)
-    case n@Not(IsNull(innerExpression)) => IsNotNull(innerExpression)(n.position)
-    case Ands(exps)   if exps.isEmpty => throw new IllegalStateException("Found an instance of Ands with empty expressions")
-    case Ors(exps)    if exps.isEmpty => throw new IllegalStateException("Found an instance of Ors with empty expressions")
-    case p@Ands(exps) if exps.contains(F) => False()(p.position)
-    case p@Ors(exps)  if exps.contains(T) => True()(p.position)
-    case p@Ands(exps) if exps.size == 1   => simplifyToInnerExpression(p, exps.head)
-    case p@Ors(exps)  if exps.size == 1   => simplifyToInnerExpression(p, exps.head)
-    case p@Ands(exps) if exps.contains(T) =>
+    case n @ Not(Not(innerExpression))    => simplifyToInnerExpression(n, innerExpression)
+    case n @ Not(IsNull(innerExpression)) => IsNotNull(innerExpression)(n.position)
+    case Ands(exps) if exps.isEmpty =>
+      throw new IllegalStateException("Found an instance of Ands with empty expressions")
+    case Ors(exps) if exps.isEmpty => throw new IllegalStateException("Found an instance of Ors with empty expressions")
+    case p @ Ands(exps) if exps.contains(F) => False()(p.position)
+    case p @ Ors(exps) if exps.contains(T)  => True()(p.position)
+    case p @ Ands(exps) if exps.size == 1   => simplifyToInnerExpression(p, exps.head)
+    case p @ Ors(exps) if exps.size == 1    => simplifyToInnerExpression(p, exps.head)
+    case p @ Ands(exps) if exps.contains(T) =>
       val nonTrue = exps.filterNot(T == _)
       if (nonTrue.isEmpty)
         True()(p.position)
-      else if(nonTrue.size == 1)
+      else if (nonTrue.size == 1)
         simplifyToInnerExpression(p, nonTrue.head)
       else
         Ands(nonTrue)(p.position)
-    case p@Ors(exps) if exps.contains(F) =>
+    case p @ Ors(exps) if exps.contains(F) =>
       val nonFalse = exps.filterNot(F == _)
       if (nonFalse.isEmpty)
         False()(p.position)
-      else if(nonFalse.size == 1)
+      else if (nonFalse.size == 1)
         simplifyToInnerExpression(p, nonFalse.head)
       else
         Ors(nonFalse)(p.position)
-    case p@Ors(conditions) =>
+    case p @ Ors(conditions) =>
       val distinctConditions = conditions.distinct
       if (distinctConditions eq conditions) p else p.copy(distinctConditions)(p.position)
-    case p@Ands(conditions) =>
+    case p @ Ands(conditions) =>
       val distinctConditions = conditions.distinct
       if (distinctConditions eq conditions) p else p.copy(distinctConditions)(p.position)
 
     // technically, this is not simplification but it helps addressing the separate predicates in the conjunction
-    case all@AllIterablePredicate(fs@FilterScope(variable, Some(Ands(preds))), expression) =>
+    case all @ AllIterablePredicate(fs @ FilterScope(variable, Some(Ands(preds))), expression) =>
       val predicates = preds.map { predicate =>
         AllIterablePredicate(FilterScope(variable, Some(predicate))(fs.position), expression)(all.position)
       }
@@ -93,8 +94,7 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
     case expression => expression
   }
 
-  private def simplifyToInnerExpression(outerExpression: BooleanExpression,
-                                        innerExpression: Expression) = {
+  private def simplifyToInnerExpression(outerExpression: BooleanExpression, innerExpression: Expression) = {
     val newExpression = computeReplacement(innerExpression)
     coerceInnerExpressionToBooleanIfNecessary(semanticState, outerExpression, newExpression)
   }
@@ -108,12 +108,13 @@ case object simplifyPredicates extends StepSequencer.Step with PlanPipelineTrans
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
-  override def getRewriter(from: BaseState,
-                           context: BaseContext): Rewriter = this (from.semantics())
+  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = this(from.semantics())
 
-  def coerceInnerExpressionToBooleanIfNecessary(semanticState: SemanticState,
-                                                outerExpression: BooleanExpression,
-                                                innerExpression: Expression): Expression = {
+  def coerceInnerExpressionToBooleanIfNecessary(
+    semanticState: SemanticState,
+    outerExpression: BooleanExpression,
+    innerExpression: Expression
+  ): Expression = {
     if (needsToBeExplicitlyCoercedToBoolean(semanticState, outerExpression, innerExpression)) {
       CoerceToPredicate(innerExpression)
     } else {
@@ -126,7 +127,11 @@ case object simplifyPredicates extends StepSequencer.Step with PlanPipelineTrans
    *
    * While `outerExpression` would have converted the value to boolean, we check here whether that information would be lost.
    */
-  private def needsToBeExplicitlyCoercedToBoolean(semanticState: SemanticState, outerExpression: BooleanExpression, innerExpression: Expression) = {
+  private def needsToBeExplicitlyCoercedToBoolean(
+    semanticState: SemanticState,
+    outerExpression: BooleanExpression,
+    innerExpression: Expression
+  ) = {
     val expectedToBeBoolean = semanticState.expressionType(outerExpression).expected.exists(_.contains(CTBoolean))
     val specifiedToBeBoolean = semanticState.expressionType(innerExpression).specified.contains(CTBoolean)
     !expectedToBeBoolean && !specifiedToBeBoolean

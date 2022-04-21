@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-public class UnexpectedEndOfInputException extends InputException
-{
-    public UnexpectedEndOfInputException( String message )
-    {
-        super( message );
+public class UnexpectedEndOfInputException extends InputException {
+    public UnexpectedEndOfInputException(String message) {
+        super(message);
     }
 }

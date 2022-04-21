@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import java.util.function.Function;
-
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
@@ -47,8 +46,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * and the defragmenter verifies this constraint, the groups will be reversed so that types are instead
  * ascending and groups are always co-located.
  */
-public class RelationshipGroupDefragmenter
-{
+public class RelationshipGroupDefragmenter {
 
     private final Configuration config;
     private final ExecutionMonitor executionMonitor;
@@ -57,8 +55,7 @@ public class RelationshipGroupDefragmenter
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
 
-    public interface Monitor
-    {
+    public interface Monitor {
         /**
          * When defragmenting the relationship group store it may happen in chunks, selected by node range.
          * Every time a chunk is selected this method is called.
@@ -66,18 +63,20 @@ public class RelationshipGroupDefragmenter
          * @param fromNodeId low node id in the range to process (inclusive).
          * @param toNodeId high node id in the range to process (exclusive).
          */
-        default void defragmentingNodeRange( long fromNodeId, long toNodeId )
-        {   // empty
+        default void defragmentingNodeRange(long fromNodeId, long toNodeId) { // empty
         }
 
-        Monitor EMPTY = new Monitor()
-        {   // empty
-        };
+        Monitor EMPTY = new Monitor() { // empty
+                };
     }
 
-    public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor, Monitor monitor,
-            NumberArrayFactory numberArrayFactory, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
+    public RelationshipGroupDefragmenter(
+            Configuration config,
+            ExecutionMonitor executionMonitor,
+            Monitor monitor,
+            NumberArrayFactory numberArrayFactory,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         this.config = config;
         this.executionMonitor = executionMonitor;
         this.monitor = monitor;
@@ -86,33 +85,33 @@ public class RelationshipGroupDefragmenter
         this.memoryTracker = memoryTracker;
     }
 
-    public void run( long memoryWeCanHoldForCertain, BatchingNeoStores neoStore, long highNodeId )
-    {
-        try ( RelationshipGroupCache groupCache =
-                new RelationshipGroupCache( numberArrayFactory, memoryWeCanHoldForCertain, highNodeId, memoryTracker ) )
-        {
+    public void run(long memoryWeCanHoldForCertain, BatchingNeoStores neoStore, long highNodeId) {
+        try (RelationshipGroupCache groupCache =
+                new RelationshipGroupCache(numberArrayFactory, memoryWeCanHoldForCertain, highNodeId, memoryTracker)) {
             // Read from the temporary relationship group store...
             RecordStore<RelationshipGroupRecord> fromStore = neoStore.getTemporaryRelationshipGroupStore();
             // and write into the main relationship group store
             RecordStore<RelationshipGroupRecord> toStore = neoStore.getRelationshipGroupStore();
-            Function<CursorContext,StoreCursors> storeCursorCreator = cursorContext -> new CachedStoreCursors( neoStore.getNeoStores(), cursorContext );
+            Function<CursorContext, StoreCursors> storeCursorCreator =
+                    cursorContext -> new CachedStoreCursors(neoStore.getNeoStores(), cursorContext);
 
             // Count all nodes, how many groups each node has each
-            Configuration groupConfig =
-                    Configuration.withBatchSize( config, neoStore.getRelationshipGroupStore().getRecordsPerPage() );
-            StatsProvider memoryUsage = new MemoryUsageStatsProvider( neoStore, groupCache );
-            executeStage( new CountGroupsStage( groupConfig, fromStore, groupCache, contextFactory, memoryUsage ) );
+            Configuration groupConfig = Configuration.withBatchSize(
+                    config, neoStore.getRelationshipGroupStore().getRecordsPerPage());
+            StatsProvider memoryUsage = new MemoryUsageStatsProvider(neoStore, groupCache);
+            executeStage(new CountGroupsStage(groupConfig, fromStore, groupCache, contextFactory, memoryUsage));
             long fromNodeId = 0;
-            while ( fromNodeId < highNodeId )
-            {
+            while (fromNodeId < highNodeId) {
                 // See how many nodes' groups we can fit into the cache this iteration of the loop.
                 // Groups that doesn't fit in this round will be included in consecutive rounds.
-                long toNodeId = groupCache.prepare( fromNodeId );
-                monitor.defragmentingNodeRange( fromNodeId, toNodeId );
+                long toNodeId = groupCache.prepare(fromNodeId);
+                monitor.defragmentingNodeRange(fromNodeId, toNodeId);
                 // Cache those groups
-                executeStage( new ScanAndCacheGroupsStage( groupConfig, fromStore, groupCache, contextFactory, memoryUsage ) );
+                executeStage(
+                        new ScanAndCacheGroupsStage(groupConfig, fromStore, groupCache, contextFactory, memoryUsage));
                 // And write them in sequential order in the store
-                executeStage( new WriteGroupsStage( groupConfig, groupCache, toStore, contextFactory, storeCursorCreator ) );
+                executeStage(
+                        new WriteGroupsStage(groupConfig, groupCache, toStore, contextFactory, storeCursorCreator));
 
                 // Make adjustments for the next iteration
                 fromNodeId = toNodeId;
@@ -121,13 +120,14 @@ public class RelationshipGroupDefragmenter
             // Now update nodes to point to the new groups
             ByteArray groupCountCache = groupCache.getGroupCountCache();
             groupCountCache.clear();
-            Configuration nodeConfig = Configuration.withBatchSize( config, neoStore.getNodeStore().getRecordsPerPage() );
-            executeStage( new NodeFirstGroupStage( nodeConfig, toStore, neoStore.getNodeStore(), groupCountCache, contextFactory, storeCursorCreator ) );
+            Configuration nodeConfig =
+                    Configuration.withBatchSize(config, neoStore.getNodeStore().getRecordsPerPage());
+            executeStage(new NodeFirstGroupStage(
+                    nodeConfig, toStore, neoStore.getNodeStore(), groupCountCache, contextFactory, storeCursorCreator));
         }
     }
 
-    private void executeStage( Stage stage )
-    {
-        ExecutionSupervisors.superviseExecution( executionMonitor, stage );
+    private void executeStage(Stage stage) {
+        ExecutionSupervisors.superviseExecution(executionMonitor, stage);
     }
 }

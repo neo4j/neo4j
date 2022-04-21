@@ -21,19 +21,16 @@ package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-@ExtendWith( LifeExtension.class )
-class LifeExtensionIncorrectUsage
-{
+@ExtendWith(LifeExtension.class)
+class LifeExtensionIncorrectUsage {
     @Inject
     private LifeSupport lifeSupport = new LifeSupport();
 
     @Test
-    void anything()
-    {
-        lifeSupport.add( new LifecycleAdapter() );
+    void anything() {
+        lifeSupport.add(new LifecycleAdapter());
     }
 }

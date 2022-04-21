@@ -53,15 +53,19 @@ trait QueryHorizon extends Foldable {
    */
   def couldContainRead: Boolean = dependingExpressions.exists(!_.isInstanceOf[Variable])
 
-    /**
+  /**
      * @return all recursively included query graphs, with leaf information for Eagerness analysis.
      *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
      *         is not safe to use for planning pattern expressions and pattern comprehensions.
      */
   protected def getAllQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
-    val patternComprehensions = filtered.folder.findAllByClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
-    val patternExpressions = filtered.folder.findAllByClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
+    val patternComprehensions = filtered.folder.findAllByClass[PatternComprehension].map((e: PatternComprehension) =>
+      ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator)
+    )
+    val patternExpressions = filtered.folder.findAllByClass[PatternExpression].map((e: PatternExpression) =>
+      ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator)
+    )
     val qgs = patternComprehensions ++ patternExpressions :+ getQueryGraphFromDependingExpressions
     qgs.map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
   }
@@ -74,7 +78,7 @@ trait QueryHorizon extends Foldable {
 
     QueryGraph(
       argumentIds = dependencies,
-      selections = Selections.from(dependingExpressions),
+      selections = Selections.from(dependingExpressions)
     )
   }
 
@@ -95,16 +99,23 @@ case class UnwindProjection(variable: String, exp: Expression) extends QueryHori
   override def dependingExpressions: Seq[Expression] = Seq(exp)
 }
 
-case class LoadCSVProjection(variable: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
+case class LoadCSVProjection(
+  variable: String,
+  url: Expression,
+  format: CSVFormat,
+  fieldTerminator: Option[StringLiteral]
+) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
 
   override def dependingExpressions: Seq[Expression] = Seq(url)
 }
 
-case class CallSubqueryHorizon(callSubquery: PlannerQueryPart,
-                               correlated: Boolean,
-                               yielding: Boolean,
-                               inTransactionsParameters: Option[InTransactionsParameters]) extends QueryHorizon {
+case class CallSubqueryHorizon(
+  callSubquery: PlannerQueryPart,
+  correlated: Boolean,
+  yielding: Boolean,
+  inTransactionsParameters: Option[InTransactionsParameters]
+) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ callSubquery.returns
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
@@ -143,7 +154,8 @@ object QueryProjection {
 
   def forIds(coveredIds: Set[String]) =
     coveredIds.toIndexedSeq.map(idName =>
-      AliasedReturnItem(Variable(idName)(null), Variable(idName)(null))(null, false))
+      AliasedReturnItem(Variable(idName)(null), Variable(idName)(null))(null, false)
+    )
 
   def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {
     case (left: RegularQueryProjection, right: RegularQueryProjection) =>
@@ -154,9 +166,11 @@ object QueryProjection {
   }
 }
 
-final case class RegularQueryProjection(projections: Map[String, Expression] = Map.empty,
-                                        queryPagination: QueryPagination = QueryPagination.empty,
-                                        selections: Selections = Selections()) extends QueryProjection {
+final case class RegularQueryProjection(
+  projections: Map[String, Expression] = Map.empty,
+  queryPagination: QueryPagination = QueryPagination.empty,
+  selections: Selections = Selections()
+) extends QueryProjection {
   def keySet: Set[String] = projections.keySet
 
   def ++(other: RegularQueryProjection) =
@@ -177,10 +191,12 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }
 
-final case class AggregatingQueryProjection(groupingExpressions: Map[String, Expression] = Map.empty,
-                                            aggregationExpressions: Map[String, Expression] = Map.empty,
-                                            queryPagination: QueryPagination = QueryPagination.empty,
-                                            selections: Selections = Selections()) extends QueryProjection {
+final case class AggregatingQueryProjection(
+  groupingExpressions: Map[String, Expression] = Map.empty,
+  aggregationExpressions: Map[String, Expression] = Map.empty,
+  queryPagination: QueryPagination = QueryPagination.empty,
+  selections: Selections = Selections()
+) extends QueryProjection {
 
   assert(
     !(groupingExpressions.isEmpty && aggregationExpressions.isEmpty),
@@ -199,14 +215,17 @@ final case class AggregatingQueryProjection(groupingExpressions: Map[String, Exp
   override def withPagination(queryPagination: QueryPagination): AggregatingQueryProjection =
     copy(queryPagination = queryPagination)
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingExpressions.keySet ++ aggregationExpressions.keySet
+  override def exposedSymbols(coveredIds: Set[String]): Set[String] =
+    groupingExpressions.keySet ++ aggregationExpressions.keySet
 
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }
 
-final case class DistinctQueryProjection(groupingExpressions: Map[String, Expression] = Map.empty,
-                                         queryPagination: QueryPagination = QueryPagination.empty,
-                                         selections: Selections = Selections()) extends QueryProjection {
+final case class DistinctQueryProjection(
+  groupingExpressions: Map[String, Expression] = Map.empty,
+  queryPagination: QueryPagination = QueryPagination.empty,
+  selections: Selections = Selections()
+) extends QueryProjection {
 
   def projections: Map[String, Expression] = groupingExpressions
 

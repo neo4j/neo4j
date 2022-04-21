@@ -54,6 +54,7 @@ case object SemanticTypeCheck extends Phase[BaseContext, BaseState, BaseState] {
 }
 
 object PatternExpressionInNonExistenceCheck {
+
   private def isExpectedTypeBoolean(semanticTable: SemanticTable, e: Expression) =
     semanticTable.types.get(e)
       .flatMap(_.expected)
@@ -75,5 +76,3 @@ object PatternExpressionInNonExistenceCheck {
     "It should therefore only be used in contexts that evaluate to a boolean, e.g. inside the function exists() or in a WHERE-clause. " +
     "No other uses are allowed, instead they should be replaced by a pattern comprehension."
 }
-
-

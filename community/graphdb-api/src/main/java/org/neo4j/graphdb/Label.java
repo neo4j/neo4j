@@ -59,8 +59,7 @@ import org.neo4j.annotations.api.PublicApi;
  * @see Node
  */
 @PublicApi
-public interface Label
-{
+public interface Label {
     /**
      * Returns the name of the label. The name uniquely identifies a
      * label, i.e. two different Label instances with different object identifiers
@@ -78,43 +77,34 @@ public interface Label
      * @return a {@link Label} instance for the given name
      * @throws IllegalArgumentException if name is {@code null}
      */
-    static Label label( String name )
-    {
-        if ( name == null )
-        {
-            throw new IllegalArgumentException( "A label cannot have a null name" );
+    static Label label(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("A label cannot have a null name");
         }
-        return new Label()
-        {
+        return new Label() {
             @Override
-            public String name()
-            {
+            public String name() {
                 return name;
             }
 
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return name;
             }
 
             @Override
-            public boolean equals( Object that )
-            {
-                if ( this == that )
-                {
+            public boolean equals(Object that) {
+                if (this == that) {
                     return true;
                 }
-                if ( that == null || that.getClass() != getClass() )
-                {
+                if (that == null || that.getClass() != getClass()) {
                     return false;
                 }
-                return name.equals( ((Label) that).name() );
+                return name.equals(((Label) that).name());
             }
 
             @Override
-            public int hashCode()
-            {
+            public int hashCode() {
                 return name.hashCode();
             }
         };

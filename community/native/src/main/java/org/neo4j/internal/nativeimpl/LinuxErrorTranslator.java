@@ -19,13 +19,10 @@
  */
 package org.neo4j.internal.nativeimpl;
 
-public class LinuxErrorTranslator implements ErrorTranslator
-{
+public class LinuxErrorTranslator implements ErrorTranslator {
     static final LinuxErrorTranslator INSTANCE = new LinuxErrorTranslator();
 
-    private LinuxErrorTranslator()
-    {
-    }
+    private LinuxErrorTranslator() {}
 
     //  No space left on device
     static final int ENOSPC = 28;
@@ -35,8 +32,7 @@ public class LinuxErrorTranslator implements ErrorTranslator
     static final int ERANGE = 34;
 
     @Override
-    public boolean isOutOfDiskSpace( NativeCallResult callResult )
-    {
+    public boolean isOutOfDiskSpace(NativeCallResult callResult) {
         return ENOSPC == callResult.getErrorCode();
     }
 }

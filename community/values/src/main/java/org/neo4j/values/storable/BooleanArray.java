@@ -19,160 +19,136 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.Arrays;
-
-import org.neo4j.hashing.HashFunction;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 
-public final class BooleanArray extends ArrayValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( BooleanArray.class );
+import java.util.Arrays;
+import org.neo4j.hashing.HashFunction;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public final class BooleanArray extends ArrayValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(BooleanArray.class);
 
     private final boolean[] value;
 
-    BooleanArray( boolean[] value )
-    {
+    BooleanArray(boolean[] value) {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         return value.length;
     }
 
-    public boolean booleanValue( int offset )
-    {
+    public boolean booleanValue(int offset) {
         return value[offset];
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "BooleanArray";
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( this.value );
+    public boolean equals(Value other) {
+        return other.equals(this.value);
     }
 
     @Override
-    public boolean equals( boolean[] x )
-    {
-        return Arrays.equals( value, x );
+    public boolean equals(boolean[] x) {
+        return Arrays.equals(value, x);
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
-        return NumberValues.hash( value );
+    protected int computeHashToMemoize() {
+        return NumberValues.hash(value);
     }
 
     @Override
-    public long updateHash( HashFunction hashFunction, long hash )
-    {
-        hash = hashFunction.update( hash, value.length );
-        hash = hashFunction.update( hash, hashCode() );
+    public long updateHash(HashFunction hashFunction, long hash) {
+        hash = hashFunction.update(hash, value.length);
+        hash = hashFunction.update(hash, hashCode());
         return hash;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapBooleanArray( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapBooleanArray(this);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        PrimitiveArrayWriting.writeTo( writer, value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        PrimitiveArrayWriting.writeTo(writer, value);
     }
 
     @Override
-    public boolean[] asObjectCopy()
-    {
-        return Arrays.copyOf( value, value.length );
+    public boolean[] asObjectCopy() {
+        return Arrays.copyOf(value, value.length);
     }
 
     @Override
     @Deprecated
-    public boolean[] asObject()
-    {
+    public boolean[] asObject() {
         return value;
     }
 
     @Override
-    protected int unsafeCompareTo( Value otherValue )
-    {
-        return NumberValues.compareBooleanArrays( this, (BooleanArray) otherValue );
+    protected int unsafeCompareTo(Value otherValue) {
+        return NumberValues.compareBooleanArrays(this, (BooleanArray) otherValue);
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.BOOLEAN_ARRAY;
     }
 
     @Override
-    public NumberType numberType()
-    {
+    public NumberType numberType() {
         return NumberType.NO_NUMBER;
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return Arrays.toString( value );
+    public String prettyPrint() {
+        return Arrays.toString(value);
     }
 
     @Override
-    public AnyValue value( int position )
-    {
-        return Values.booleanValue( booleanValue( position ) );
+    public AnyValue value(int position) {
+        return Values.booleanValue(booleanValue(position));
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s%s", getTypeName(), Arrays.toString( value ) );
+    public String toString() {
+        return format("%s%s", getTypeName(), Arrays.toString(value));
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOf( value );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOf(value);
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof BooleanValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        boolean[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        boolean[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = ((BooleanValue) added).booleanValue();
-        return new BooleanArray( newArray );
+        return new BooleanArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         boolean[] newArray = new boolean[value.length + 1];
         newArray[0] = ((BooleanValue) prepended).booleanValue();
-        System.arraycopy( value, 0, newArray, 1, value.length );
-        return new BooleanArray( newArray );
+        System.arraycopy(value, 0, newArray, 1, value.length);
+        return new BooleanArray(newArray);
     }
 }

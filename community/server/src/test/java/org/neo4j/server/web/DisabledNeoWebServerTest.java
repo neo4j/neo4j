@@ -19,22 +19,19 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class DisabledNeoWebServerTest
-{
+import org.junit.jupiter.api.Test;
+
+class DisabledNeoWebServerTest {
 
     @Test
-    void disabledAllThreads()
-    {
-        assertEquals( 0, new DisabledNeoWebServer().allThreads() );
+    void disabledAllThreads() {
+        assertEquals(0, new DisabledNeoWebServer().allThreads());
     }
 
     @Test
-    void disabledIdleThreads()
-    {
-        assertEquals( 0, new DisabledNeoWebServer().idleThreads() );
+    void disabledIdleThreads() {
+        assertEquals(0, new DisabledNeoWebServer().idleThreads());
     }
 }

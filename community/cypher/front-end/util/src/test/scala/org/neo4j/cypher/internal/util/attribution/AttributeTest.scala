@@ -52,9 +52,9 @@ class AttributeTest extends CypherFunSuite {
 
     val iter = attr.iterator
     iter.hasNext should be(true)
-    iter.next() should be((Id(2),33))
+    iter.next() should be((Id(2), 33))
     iter.hasNext should be(true)
-    iter.next() should be((Id(4),27))
+    iter.next() should be((Id(4), 27))
     iter.hasNext should be(false)
     intercept[NoSuchElementException](iter.next())
   }

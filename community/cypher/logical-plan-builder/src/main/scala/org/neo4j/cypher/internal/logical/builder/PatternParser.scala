@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.builder.PatternParser.Pattern
 import org.neo4j.cypher.internal.util.InputPosition.NONE
 
-class PatternParser
-{
+class PatternParser {
   private val ID = "([a-zA-Z0-9` @_]*)"
   private val REL_TYPES = "([a-zA-Z0-9_|]*)"
   private val regex = s"\\($ID\\)(<?)-\\[?$ID:?$REL_TYPES(\\*?)([0-9]*)(\\.?\\.?)([0-9]*)\\]?-(>?)\\($ID\\)".r
@@ -45,21 +44,23 @@ class PatternParser
         val dir = (incoming, outgoing) match {
           case ("<", "") => SemanticDirection.INCOMING
           case ("", ">") => SemanticDirection.OUTGOING
-          case ("", "") => SemanticDirection.BOTH
-          case _ => throw new UnsupportedOperationException(s"Direction $incoming-$outgoing not supported")
+          case ("", "")  => SemanticDirection.BOTH
+          case _         => throw new UnsupportedOperationException(s"Direction $incoming-$outgoing not supported")
         }
         val relTypes =
           if (relTypesStr.isEmpty) Seq.empty
           else relTypesStr.split("\\|").toSeq.map(x => RelTypeName(x)(NONE))
         val length =
           (star, min, dots, max) match {
-            case ("", "", "", "")  => SimplePatternLength
-            case ("*", "", "", "") => VarPatternLength(1, None)
-            case ("*", x, "..", "")  => VarPatternLength(x.toInt, None)
-            case ("*", x, "", "")  => VarPatternLength(x.toInt, Some(x.toInt))
-            case ("*", "", "..", _)  => VarPatternLength(1, Some(max.toInt))
-            case ("*", _, "..", _)   => VarPatternLength(min.toInt, Some(max.toInt))
-            case _ => throw new UnsupportedOperationException(s"$star, $min, $max is not a supported variable length identifier")
+            case ("", "", "", "")   => SimplePatternLength
+            case ("*", "", "", "")  => VarPatternLength(1, None)
+            case ("*", x, "..", "") => VarPatternLength(x.toInt, None)
+            case ("*", x, "", "")   => VarPatternLength(x.toInt, Some(x.toInt))
+            case ("*", "", "..", _) => VarPatternLength(1, Some(max.toInt))
+            case ("*", _, "..", _)  => VarPatternLength(min.toInt, Some(max.toInt))
+            case _ => throw new UnsupportedOperationException(
+                s"$star, $min, $max is not a supported variable length identifier"
+              )
           }
         val relNameOrUnnamed =
           if (relName.isEmpty) {
@@ -74,10 +75,13 @@ class PatternParser
 }
 
 object PatternParser {
-  case class Pattern(from: String,
-                     dir: SemanticDirection,
-                     relTypes: Seq[RelTypeName],
-                     relName: String,
-                     to: String,
-                     length: PatternLength)
+
+  case class Pattern(
+    from: String,
+    dir: SemanticDirection,
+    relTypes: Seq[RelTypeName],
+    relName: String,
+    to: String,
+    length: PatternLength
+  )
 }

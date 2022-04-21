@@ -33,26 +33,25 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
  *
  * Each IndexUpdater is not thread-safe, and is assumed to be instantiated per transaction.
  */
-public interface IndexUpdater extends AutoCloseable
-{
-    void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException;
+public interface IndexUpdater extends AutoCloseable {
+    void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException;
 
-    default <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate( IndexEntryUpdate<INDEX_KEY> update )
-    {
-        if ( update instanceof ValueIndexEntryUpdate )
-        {
+    default <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate(
+            IndexEntryUpdate<INDEX_KEY> update) {
+        if (update instanceof ValueIndexEntryUpdate) {
             return (ValueIndexEntryUpdate<INDEX_KEY>) update;
         }
-        throw new UnsupportedOperationException( "Tried to process " + update + " with " + getClass().getSimpleName() + ", but this is not supported." );
+        throw new UnsupportedOperationException(
+                "Tried to process " + update + " with " + getClass().getSimpleName() + ", but this is not supported.");
     }
 
-    default <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> asTokenUpdate( IndexEntryUpdate<INDEX_KEY> update )
-    {
-        if ( update instanceof TokenIndexEntryUpdate )
-        {
+    default <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> asTokenUpdate(
+            IndexEntryUpdate<INDEX_KEY> update) {
+        if (update instanceof TokenIndexEntryUpdate) {
             return (TokenIndexEntryUpdate<INDEX_KEY>) update;
         }
-        throw new UnsupportedOperationException( "Tried to process " + update + " with " + getClass().getSimpleName() + ", but this is not supported." );
+        throw new UnsupportedOperationException(
+                "Tried to process " + update + " with " + getClass().getSimpleName() + ", but this is not supported.");
     }
 
     @Override

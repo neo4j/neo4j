@@ -21,38 +21,34 @@ package org.neo4j.dbms.database;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 
-public record DatabaseOptions(Map<Setting<?>,Object> settings,
-                              TopologyGraphDbmsModel.HostedOnMode mode)
-{
-    public static final DatabaseOptions RAFT = empty( TopologyGraphDbmsModel.HostedOnMode.raft );
-    public static final DatabaseOptions SINGLE = empty( TopologyGraphDbmsModel.HostedOnMode.single );
+public record DatabaseOptions(Map<Setting<?>, Object> settings, TopologyGraphDbmsModel.HostedOnMode mode) {
+    public static final DatabaseOptions RAFT = empty(TopologyGraphDbmsModel.HostedOnMode.raft);
+    public static final DatabaseOptions SINGLE = empty(TopologyGraphDbmsModel.HostedOnMode.single);
 
-    public static DatabaseOptions empty( TopologyGraphDbmsModel.HostedOnMode mode )
-    {
-        return new DatabaseOptions( new HashMap<>(), mode );
+    public static DatabaseOptions empty(TopologyGraphDbmsModel.HostedOnMode mode) {
+        return new DatabaseOptions(new HashMap<>(), mode);
     }
 
-    public static DatabaseOptions fromProperties( Map<String,Object> allProperties, TopologyGraphDbmsModel.HostedOnMode mode )
-    {
-        var storageEngineName = (String) allProperties.get( TopologyGraphDbmsModel.DATABASE_STORAGE_ENGINE_PROPERTY );
-        var storeFormat = (String) allProperties.get( TopologyGraphDbmsModel.DATABASE_STORE_FORMAT_NEW_DB_PROPERTY );
+    public static DatabaseOptions fromProperties(
+            Map<String, Object> allProperties, TopologyGraphDbmsModel.HostedOnMode mode) {
+        var storageEngineName = (String) allProperties.get(TopologyGraphDbmsModel.DATABASE_STORAGE_ENGINE_PROPERTY);
+        var storeFormat = (String) allProperties.get(TopologyGraphDbmsModel.DATABASE_STORE_FORMAT_NEW_DB_PROPERTY);
 
-        Map<Setting<?>,Object> settings = new HashMap<>();
+        Map<Setting<?>, Object> settings = new HashMap<>();
 
-        if ( storageEngineName != null )
-        {
-            settings.put( GraphDatabaseInternalSettings.storage_engine, storageEngineName );
+        if (storageEngineName != null) {
+            settings.put(GraphDatabaseInternalSettings.storage_engine, storageEngineName);
         }
-        if ( storeFormat != null )
-        {
-            settings.put( GraphDatabaseSettings.record_format_created_db, GraphDatabaseSettings.DatabaseRecordFormat.valueOf( storeFormat ) );
+        if (storeFormat != null) {
+            settings.put(
+                    GraphDatabaseSettings.record_format_created_db,
+                    GraphDatabaseSettings.DatabaseRecordFormat.valueOf(storeFormat));
         }
 
-        return new DatabaseOptions( settings, mode );
+        return new DatabaseOptions(settings, mode);
     }
 }

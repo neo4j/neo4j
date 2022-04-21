@@ -22,35 +22,28 @@ package org.neo4j.hashing;
 /**
  * @see HashFunction#javaUtilHashing()
  */
-class JavaUtilHashFunction implements HashFunction
-{
+class JavaUtilHashFunction implements HashFunction {
     static final HashFunction INSTANCE = new JavaUtilHashFunction();
 
-    private JavaUtilHashFunction()
-    {
-    }
+    private JavaUtilHashFunction() {}
 
     @Override
-    public long initialise( long seed )
-    {
+    public long initialise(long seed) {
         return seed;
     }
 
     @Override
-    public long update( long intermediateHash, long value )
-    {
-        return hashSingleValueToInt( intermediateHash + value );
+    public long update(long intermediateHash, long value) {
+        return hashSingleValueToInt(intermediateHash + value);
     }
 
     @Override
-    public long finalise( long intermediateHash )
-    {
+    public long finalise(long intermediateHash) {
         return intermediateHash;
     }
 
     @Override
-    public int hashSingleValueToInt( long value )
-    {
+    public int hashSingleValueToInt(long value) {
         int h = (int) ((value >>> 32) ^ value);
         h ^= (h >>> 20) ^ (h >>> 12);
         return h ^ (h >>> 7) ^ (h >>> 4);

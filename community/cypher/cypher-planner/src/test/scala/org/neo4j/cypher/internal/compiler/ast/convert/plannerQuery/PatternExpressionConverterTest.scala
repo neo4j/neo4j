@@ -37,15 +37,17 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val aNode = NodePattern(Some(varFor("a")), None, None, None)_
-  private val bNode = NodePattern(Some(varFor("b")), None, None, None)_
-  private val rRel = RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.OUTGOING)_
-  private val TYP: RelTypeName = RelTypeName("TYP")_
+  private val aNode = NodePattern(Some(varFor("a")), None, None, None) _
+  private val bNode = NodePattern(Some(varFor("b")), None, None, None) _
+  private val rRel = RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.OUTGOING) _
+  private val TYP: RelTypeName = RelTypeName("TYP") _
   private val dependencies = Set("a", "r", "b")
 
   private val rRelWithType = rRel.copy(types = Seq(TYP)) _
   private val planRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val planRelWithType = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(TYP), SimplePatternLength)
+
+  private val planRelWithType =
+    PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(TYP), SimplePatternLength)
 
   test("(a)-[r]->(b)") {
     // Given
@@ -77,7 +79,8 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
 
   test("(a)-[r]->(b:Label)") {
     // Given
-    val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labelExpression = Some(labelAtom("Label")))(pos))
+    val patternExpression =
+      createPatternExpression(aNode, rRel, bNode.copy(labelExpression = Some(labelAtom("Label")))(pos))
 
     // When
     val qg = asQueryGraph(patternExpression, dependencies, new AnonymousVariableNameGenerator)

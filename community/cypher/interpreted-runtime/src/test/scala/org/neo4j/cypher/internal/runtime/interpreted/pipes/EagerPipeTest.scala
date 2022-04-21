@@ -43,22 +43,22 @@ class EagerPipeTest extends CypherFunSuite {
   test("close should close buffer") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
     val pipe = EagerPipe(input)()
     val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     result.close()
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: EagerBuffer[_] => t } should have size(1)
+    monitor.closedResources.collect { case t: EagerBuffer[_] => t } should have size (1)
   }
 
   test("exhaust should close buffer") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
     val pipe = EagerPipe(input)()
     // exhaust
     pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).toList
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: EagerBuffer[_] => t } should have size(1)
+    monitor.closedResources.collect { case t: EagerBuffer[_] => t } should have size (1)
   }
 }

@@ -19,87 +19,81 @@
  */
 package org.neo4j.memory;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.memory.MemoryGroup.OTHER;
 import static org.neo4j.memory.MemoryGroup.TRANSACTION;
 
-class MemoryPoolsTest
-{
+import org.junit.jupiter.api.Test;
+
+class MemoryPoolsTest {
 
     @Test
-    void createdPoolRegisteredInListOfPools()
-    {
+    void createdPoolRegisteredInListOfPools() {
         var pools = new MemoryPools();
-        var pool1 = pools.pool( OTHER, 2, true, null );
-        var pool2 = pools.pool( TRANSACTION, 2, true, null );
-        assertThat( pools.getPools() ).contains( pool1, pool2 );
+        var pool1 = pools.pool(OTHER, 2, true, null);
+        var pool2 = pools.pool(TRANSACTION, 2, true, null);
+        assertThat(pools.getPools()).contains(pool1, pool2);
     }
 
     @Test
-    void poolsWithDisabledMemoryTracking()
-    {
-        var pools = new MemoryPools( false );
-        var pool = pools.pool( TRANSACTION, 2, true, null );
+    void poolsWithDisabledMemoryTracking() {
+        var pools = new MemoryPools(false);
+        var pool = pools.pool(TRANSACTION, 2, true, null);
 
-        assertEquals( 0, pool.usedNative() );
-        assertEquals( 0, pool.usedHeap() );
-        assertEquals( 0, pool.totalUsed() );
+        assertEquals(0, pool.usedNative());
+        assertEquals(0, pool.usedHeap());
+        assertEquals(0, pool.totalUsed());
 
         var memoryTracker = pool.getPoolMemoryTracker();
-        memoryTracker.allocateHeap( 100 );
-        memoryTracker.allocateNative( 1000 );
+        memoryTracker.allocateHeap(100);
+        memoryTracker.allocateNative(1000);
 
-        assertEquals( 0, pool.usedNative() );
-        assertEquals( 0, pool.usedHeap() );
-        assertEquals( 0, pool.totalUsed() );
+        assertEquals(0, pool.usedNative());
+        assertEquals(0, pool.usedHeap());
+        assertEquals(0, pool.totalUsed());
     }
 
     @Test
-    void subpoolWithDisabledMemoryTracking()
-    {
-        var pools = new MemoryPools( false );
-        var pool = pools.pool( TRANSACTION, 2, true, null ).newDatabasePool( "test", 1, null );
+    void subpoolWithDisabledMemoryTracking() {
+        var pools = new MemoryPools(false);
+        var pool = pools.pool(TRANSACTION, 2, true, null).newDatabasePool("test", 1, null);
 
-        assertEquals( 0, pool.usedNative() );
-        assertEquals( 0, pool.usedHeap() );
-        assertEquals( 0, pool.totalUsed() );
+        assertEquals(0, pool.usedNative());
+        assertEquals(0, pool.usedHeap());
+        assertEquals(0, pool.totalUsed());
 
         var memoryTracker = pool.getPoolMemoryTracker();
-        memoryTracker.allocateHeap( 100 );
-        memoryTracker.allocateNative( 1000 );
+        memoryTracker.allocateHeap(100);
+        memoryTracker.allocateNative(1000);
 
-        assertEquals( 0, pool.usedNative() );
-        assertEquals( 0, pool.usedHeap() );
-        assertEquals( 0, pool.totalUsed() );
+        assertEquals(0, pool.usedNative());
+        assertEquals(0, pool.usedHeap());
+        assertEquals(0, pool.totalUsed());
     }
 
     @Test
-    void poolIsDeregisteredOnClose()
-    {
+    void poolIsDeregisteredOnClose() {
         var pools = new MemoryPools();
-        var pool = pools.pool( TRANSACTION, 2, true, null );
+        var pool = pools.pool(TRANSACTION, 2, true, null);
 
-        assertThat( pools.getPools() ).contains( pool );
+        assertThat(pools.getPools()).contains(pool);
         pool.close();
-        assertThat( pools.getPools() ).isEmpty();
+        assertThat(pools.getPools()).isEmpty();
     }
 
     @Test
-    void registerAndDeregisterExternalPool()
-    {
+    void registerAndDeregisterExternalPool() {
         var pools = new MemoryPools();
-        assertThat( pools.getPools() ).isEmpty();
+        assertThat(pools.getPools()).isEmpty();
 
-        var externalPool = new GlobalMemoryGroupTracker( pools, MemoryGroup.NO_TRACKING, 0, true, true, null );
-        pools.registerPool( externalPool );
+        var externalPool = new GlobalMemoryGroupTracker(pools, MemoryGroup.NO_TRACKING, 0, true, true, null);
+        pools.registerPool(externalPool);
 
-        assertThat( pools.getPools() ).hasSize( 1 );
-        assertThat( pools.getPools() ).contains( externalPool );
+        assertThat(pools.getPools()).hasSize(1);
+        assertThat(pools.getPools()).contains(externalPool);
 
-        pools.unregisterPool( externalPool );
-        assertThat( pools.getPools() ).isEmpty();
+        pools.unregisterPool(externalPool);
+        assertThat(pools.getPools()).isEmpty();
     }
 }

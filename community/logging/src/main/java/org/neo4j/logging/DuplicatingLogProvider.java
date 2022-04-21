@@ -22,26 +22,22 @@ package org.neo4j.logging;
 /**
  * A {@link InternalLogProvider} implementation that duplicates all messages to other LogProvider instances
  */
-public class DuplicatingLogProvider implements InternalLogProvider
-{
+public class DuplicatingLogProvider implements InternalLogProvider {
     private final InternalLogProvider logProvider1;
     private final InternalLogProvider logProvider2;
 
-    public DuplicatingLogProvider( InternalLogProvider logProvider1, InternalLogProvider logProvider2 )
-    {
+    public DuplicatingLogProvider(InternalLogProvider logProvider1, InternalLogProvider logProvider2) {
         this.logProvider1 = logProvider1;
         this.logProvider2 = logProvider2;
     }
 
     @Override
-    public InternalLog getLog( Class<?> loggingClass )
-    {
-        return new DuplicatingLog( logProvider1.getLog( loggingClass ), logProvider2.getLog( loggingClass ) );
+    public InternalLog getLog(Class<?> loggingClass) {
+        return new DuplicatingLog(logProvider1.getLog(loggingClass), logProvider2.getLog(loggingClass));
     }
 
     @Override
-    public InternalLog getLog( String name )
-    {
-        return new DuplicatingLog( logProvider1.getLog( name ), logProvider2.getLog( name ) );
+    public InternalLog getLog(String name) {
+        return new DuplicatingLog(logProvider1.getLog(name), logProvider2.getLog(name));
     }
 }

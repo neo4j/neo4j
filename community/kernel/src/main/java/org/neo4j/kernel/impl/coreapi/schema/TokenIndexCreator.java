@@ -20,8 +20,9 @@
 
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import java.util.Map;
+import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
 
+import java.util.Map;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -30,22 +31,18 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
-import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
-
-public class TokenIndexCreator implements IndexCreator
-{
+public class TokenIndexCreator implements IndexCreator {
     private final InternalSchemaActions actions;
     private final AnyTokens tokens;
     private final String indexName;
     private final IndexConfig indexConfig;
 
-    public TokenIndexCreator( InternalSchemaActions actions, AnyTokens tokens )
-    {
-        this( actions, tokens, null, null );
+    public TokenIndexCreator(InternalSchemaActions actions, AnyTokens tokens) {
+        this(actions, tokens, null, null);
     }
 
-    public TokenIndexCreator( InternalSchemaActions actions, AnyTokens tokens, String indexName, IndexConfig indexConfig )
-    {
+    public TokenIndexCreator(
+            InternalSchemaActions actions, AnyTokens tokens, String indexName, IndexConfig indexConfig) {
         this.actions = actions;
         this.tokens = tokens;
         this.indexName = indexName;
@@ -55,41 +52,36 @@ public class TokenIndexCreator implements IndexCreator
     }
 
     @Override
-    public IndexCreator on( String propertyKey )
-    {
+    public IndexCreator on(String propertyKey) {
         actions.assertInOpenTransaction();
-        throw new ConstraintViolationException( "LOOKUP indexes doesn't support inclusion of property keys." );
+        throw new ConstraintViolationException("LOOKUP indexes doesn't support inclusion of property keys.");
     }
 
     @Override
-    public IndexCreator withName( String indexName )
-    {
+    public IndexCreator withName(String indexName) {
         actions.assertInOpenTransaction();
-        return new TokenIndexCreator( actions, tokens, indexName, indexConfig );
+        return new TokenIndexCreator(actions, tokens, indexName, indexConfig);
     }
 
     @Override
-    public IndexCreator withIndexType( IndexType type )
-    {
+    public IndexCreator withIndexType(IndexType type) {
         actions.assertInOpenTransaction();
-        if ( type != IndexType.LOOKUP )
-        {
-            throw new ConstraintViolationException( "Only LOOKUP index type supported for token indexes." );
+        if (type != IndexType.LOOKUP) {
+            throw new ConstraintViolationException("Only LOOKUP index type supported for token indexes.");
         }
         return this;
     }
 
     @Override
-    public IndexCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
-    {
+    public IndexCreator withIndexConfiguration(Map<IndexSetting, Object> indexConfiguration) {
         actions.assertInOpenTransaction();
-        return new TokenIndexCreator( actions, tokens, indexName, toIndexConfigFromIndexSettingObjectMap( indexConfiguration ) );
+        return new TokenIndexCreator(
+                actions, tokens, indexName, toIndexConfigFromIndexSettingObjectMap(indexConfiguration));
     }
 
     @Override
-    public IndexDefinition create() throws ConstraintViolationException
-    {
+    public IndexDefinition create() throws ConstraintViolationException {
         actions.assertInOpenTransaction();
-        return actions.createIndexDefinition( tokens, indexName, indexConfig );
+        return actions.createIndexDefinition(tokens, indexName, indexConfig);
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.tracer;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
-
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
@@ -32,70 +31,60 @@ import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
  * Log checkpoint event that counts number of checkpoint that occurred and amount of time elapsed
  * for all of them and for the last one.
  */
-class CountingLogCheckPointEvent implements LogCheckPointEvent
-{
+class CountingLogCheckPointEvent implements LogCheckPointEvent {
     private final AtomicLong checkpointCounter = new AtomicLong();
     private final AtomicLong accumulatedCheckpointTotalTimeMillis = new AtomicLong();
-    private final BiConsumer<LogPosition,LogPosition> logFileAppendConsumer;
+    private final BiConsumer<LogPosition, LogPosition> logFileAppendConsumer;
     private final CountingLogRotateEvent countingLogRotateEvent;
     private volatile long lastCheckpointTimeMillis;
 
-    CountingLogCheckPointEvent( BiConsumer<LogPosition,LogPosition> logFileAppendConsumer, CountingLogRotateEvent countingLogRotateEvent )
-    {
+    CountingLogCheckPointEvent(
+            BiConsumer<LogPosition, LogPosition> logFileAppendConsumer, CountingLogRotateEvent countingLogRotateEvent) {
         this.logFileAppendConsumer = logFileAppendConsumer;
         this.countingLogRotateEvent = countingLogRotateEvent;
     }
 
     @Override
-    public void checkpointCompleted( long checkpointMillis )
-    {
+    public void checkpointCompleted(long checkpointMillis) {
         checkpointCounter.incrementAndGet();
-        accumulatedCheckpointTotalTimeMillis.addAndGet( checkpointMillis );
+        accumulatedCheckpointTotalTimeMillis.addAndGet(checkpointMillis);
         lastCheckpointTimeMillis = checkpointMillis;
     }
 
     @Override
-    public void close()
-    {
-        //empty
+    public void close() {
+        // empty
     }
 
     @Override
-    public void appendToLogFile( LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint )
-    {
-        logFileAppendConsumer.accept( positionBeforeCheckpoint, positionAfterCheckpoint );
+    public void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint) {
+        logFileAppendConsumer.accept(positionBeforeCheckpoint, positionAfterCheckpoint);
     }
 
     @Override
-    public LogForceWaitEvent beginLogForceWait()
-    {
+    public LogForceWaitEvent beginLogForceWait() {
         return LogForceWaitEvent.NULL;
     }
 
     @Override
-    public LogForceEvent beginLogForce()
-    {
+    public LogForceEvent beginLogForce() {
         return LogForceEvent.NULL;
     }
 
-    long numberOfCheckPoints()
-    {
+    long numberOfCheckPoints() {
         return checkpointCounter.get();
     }
 
-    long checkPointAccumulatedTotalTimeMillis()
-    {
+    long checkPointAccumulatedTotalTimeMillis() {
         return accumulatedCheckpointTotalTimeMillis.get();
     }
 
-    long lastCheckpointTimeMillis()
-    {
+    long lastCheckpointTimeMillis() {
         return lastCheckpointTimeMillis;
     }
 
     @Override
-    public LogRotateEvent beginLogRotate()
-    {
+    public LogRotateEvent beginLogRotate() {
         return countingLogRotateEvent;
     }
 }

@@ -23,11 +23,13 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class SubqueryForeachPipe(source: Pipe, inner: Pipe)
-                              (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class SubqueryForeachPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] =
     input.map {
       outerContext =>
         val innerState = state.withInitialContext(outerContext)

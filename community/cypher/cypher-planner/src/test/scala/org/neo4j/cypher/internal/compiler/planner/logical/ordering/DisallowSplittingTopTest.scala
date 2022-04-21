@@ -36,17 +36,16 @@ class DisallowSplittingTopTest extends CypherFunSuite with AstConstructionTestSu
       RegularSinglePlannerQuery()
         .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
         .withTail(RegularSinglePlannerQuery()
-          .withHorizon(RegularQueryProjection().withPagination(limitPagination(2)))
-        )
+          .withHorizon(RegularQueryProjection().withPagination(limitPagination(2))))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(None)
+      .shouldEqual(None)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
   }
 
   test("should not demote order in query with order by in self") {
@@ -55,13 +54,13 @@ class DisallowSplittingTopTest extends CypherFunSuite with AstConstructionTestSu
         .withInterestingOrder(requiredOrder("x"))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.SelfOrderBy))
+      .shouldEqual(Some(DisallowSplittingTop.SelfOrderBy))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
   }
 
   test("should not demote order in query with order by in self and order by in tail") {
@@ -69,17 +68,16 @@ class DisallowSplittingTopTest extends CypherFunSuite with AstConstructionTestSu
       RegularSinglePlannerQuery()
         .withInterestingOrder(requiredOrder("x"))
         .withTail(RegularSinglePlannerQuery()
-          .withInterestingOrder(requiredOrder("y"))
-        )
+          .withInterestingOrder(requiredOrder("y")))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.SelfOrderBy))
+      .shouldEqual(Some(DisallowSplittingTop.SelfOrderBy))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
   }
 
   test("should not demote order in query with order by in self and order by and limit in tail") {
@@ -88,34 +86,32 @@ class DisallowSplittingTopTest extends CypherFunSuite with AstConstructionTestSu
         .withInterestingOrder(requiredOrder("x"))
         .withTail(RegularSinglePlannerQuery()
           .withInterestingOrder(requiredOrder("y"))
-          .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
-        )
+          .withHorizon(RegularQueryProjection().withPagination(limitPagination(1))))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.SelfOrderBy))
+      .shouldEqual(Some(DisallowSplittingTop.SelfOrderBy))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
   }
 
   test("should not demote order in query with order by in tail") {
     val query =
       RegularSinglePlannerQuery()
         .withTail(RegularSinglePlannerQuery()
-          .withInterestingOrder(requiredOrder("y"))
-        )
+          .withInterestingOrder(requiredOrder("y")))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.TailOrderBy))
+      .shouldEqual(Some(DisallowSplittingTop.TailOrderBy))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
   }
 
   test("should not demote order in query with limit in self and order by in tail") {
@@ -123,17 +119,16 @@ class DisallowSplittingTopTest extends CypherFunSuite with AstConstructionTestSu
       RegularSinglePlannerQuery()
         .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
         .withTail(RegularSinglePlannerQuery()
-          .withInterestingOrder(requiredOrder("y"))
-        )
+          .withInterestingOrder(requiredOrder("y")))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.TailOrderBy))
+      .shouldEqual(Some(DisallowSplittingTop.TailOrderBy))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
   }
 
   test("should not demote order in query with order by in tail and order by and limit in tail of tail") {
@@ -143,18 +138,16 @@ class DisallowSplittingTopTest extends CypherFunSuite with AstConstructionTestSu
           .withInterestingOrder(requiredOrder("x"))
           .withTail(RegularSinglePlannerQuery()
             .withInterestingOrder(requiredOrder("y"))
-            .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
-          )
-        )
+            .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.TailOrderBy))
+      .shouldEqual(Some(DisallowSplittingTop.TailOrderBy))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
   }
 
   test("should demote order in query with order by and limit in self, but not when planning horizon") {
@@ -164,52 +157,54 @@ class DisallowSplittingTopTest extends CypherFunSuite with AstConstructionTestSu
         .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.SelfOrderByLimit))
+      .shouldEqual(Some(DisallowSplittingTop.SelfOrderByLimit))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(true)
+      .shouldEqual(true)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
   }
 
-  test("should demote order in query with order by and limit in self and order by in tail, but not when planning horizon") {
+  test(
+    "should demote order in query with order by and limit in self and order by in tail, but not when planning horizon"
+  ) {
+    val query =
+      RegularSinglePlannerQuery()
+        .withInterestingOrder(requiredOrder("x"))
+        .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
+        .withTail(RegularSinglePlannerQuery()
+          .withInterestingOrder(requiredOrder("y")))
+
+    DisallowSplittingTop.requiredOrderOrigin(query)
+      .shouldEqual(Some(DisallowSplittingTop.SelfOrderByLimit))
+
+    DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
+      .shouldEqual(true)
+
+    DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
+      .shouldEqual(false)
+  }
+
+  test(
+    "should demote order in query with order by and limit in self and order by and limit in tail, but not when planning horizon"
+  ) {
     val query =
       RegularSinglePlannerQuery()
         .withInterestingOrder(requiredOrder("x"))
         .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
         .withTail(RegularSinglePlannerQuery()
           .withInterestingOrder(requiredOrder("y"))
-        )
+          .withHorizon(RegularQueryProjection().withPagination(limitPagination(1))))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.SelfOrderByLimit))
+      .shouldEqual(Some(DisallowSplittingTop.SelfOrderByLimit))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(true)
+      .shouldEqual(true)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
-  }
-
-  test("should demote order in query with order by and limit in self and order by and limit in tail, but not when planning horizon") {
-    val query =
-      RegularSinglePlannerQuery()
-        .withInterestingOrder(requiredOrder("x"))
-        .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
-        .withTail(RegularSinglePlannerQuery()
-          .withInterestingOrder(requiredOrder("y"))
-          .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
-        )
-
-    DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.SelfOrderByLimit))
-
-    DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(true)
-
-    DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(false)
+      .shouldEqual(false)
   }
 
   test("should demote order in query with order by and limit in tail, also when planning horizon") {
@@ -217,20 +212,21 @@ class DisallowSplittingTopTest extends CypherFunSuite with AstConstructionTestSu
       RegularSinglePlannerQuery()
         .withTail(RegularSinglePlannerQuery()
           .withInterestingOrder(requiredOrder("y"))
-          .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
-        )
+          .withHorizon(RegularQueryProjection().withPagination(limitPagination(1))))
 
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.TailOrderByLimit))
+      .shouldEqual(Some(DisallowSplittingTop.TailOrderByLimit))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(true)
+      .shouldEqual(true)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(true)
+      .shouldEqual(true)
   }
 
-  test("should demote order in query with order by and limit in tail and order by and limit in tail of tail, also when planning horizon") {
+  test(
+    "should demote order in query with order by and limit in tail and order by and limit in tail of tail, also when planning horizon"
+  ) {
     val query =
       RegularSinglePlannerQuery()
         .withTail(
@@ -239,17 +235,16 @@ class DisallowSplittingTopTest extends CypherFunSuite with AstConstructionTestSu
             .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
             .withTail(RegularSinglePlannerQuery()
               .withInterestingOrder(requiredOrder("y"))
-              .withHorizon(RegularQueryProjection().withPagination(limitPagination(1)))
-            )
+              .withHorizon(RegularQueryProjection().withPagination(limitPagination(1))))
         )
     DisallowSplittingTop.requiredOrderOrigin(query)
-                        .shouldEqual(Some(DisallowSplittingTop.TailOrderByLimit))
+      .shouldEqual(Some(DisallowSplittingTop.TailOrderByLimit))
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = false, disallowSplittingTop = true)
-                        .shouldEqual(true)
+      .shouldEqual(true)
 
     DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon = true, disallowSplittingTop = true)
-                        .shouldEqual(true)
+      .shouldEqual(true)
   }
 
   private def limitPagination(i: Int) =

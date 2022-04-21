@@ -22,15 +22,12 @@ package org.neo4j.index.internal.gbptree;
 /**
  * Thrown to signal mismatches between meta data about tree and user-provided configuration.
  */
-public class MetadataMismatchException extends RuntimeException
-{
-    MetadataMismatchException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class MetadataMismatchException extends RuntimeException {
+    MetadataMismatchException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    MetadataMismatchException( String message )
-    {
-        super( message );
+    MetadataMismatchException(String message) {
+        super(message);
     }
 }

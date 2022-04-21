@@ -19,9 +19,12 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,7 +32,8 @@ import java.io.PrintStream;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
@@ -38,17 +42,10 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
+import picocli.CommandLine;
 
 @Neo4jLayoutExtension
-class UnbindCommandTest
-{
+class UnbindCommandTest {
     @Inject
     private TestDirectory testDirectory;
 
@@ -58,100 +55,88 @@ class UnbindCommandTest
     private Path serverId;
 
     @BeforeEach
-    void setUp() throws IOException
-    {
-        homeDir = testDirectory.directory( "home-dir" );
+    void setUp() throws IOException {
+        homeDir = testDirectory.directory("home-dir");
         var config = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
+                .set(GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath())
                 .build();
-        neo4jLayout = Neo4jLayout.of( config );
-        configDir = testDirectory.directory( "config-dir" );
+        neo4jLayout = Neo4jLayout.of(config);
+        configDir = testDirectory.directory("config-dir");
         serverId = neo4jLayout.serverIdFile();
-        testDirectory.getFileSystem().mkdirs( serverId.getParent() );
-        Files.createDirectories( neo4jLayout.databasesDirectory() );
+        testDirectory.getFileSystem().mkdirs(serverId.getParent());
+        Files.createDirectories(neo4jLayout.databasesDirectory());
     }
 
     @Test
-    void printUsageHelp()
-    {
+    void printUsageHelp() {
         var baos = new ByteArrayOutputStream();
-        var command = new UnbindCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ) );
-        try ( var out = new PrintStream( baos ) )
-        {
-            CommandLine.usage( command, new PrintStream( out ), CommandLine.Help.Ansi.OFF );
+        var command = new UnbindCommand(new ExecutionContext(Path.of("."), Path.of(".")));
+        try (var out = new PrintStream(baos)) {
+            CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
-        assertThat( baos.toString().trim() ).isEqualTo( String.format(
-                "Removes server identifier.%n" +
-                "%n" +
-                "USAGE%n" +
-                "%n" +
-                "unbind [--expand-commands] [--verbose]%n" +
-                "%nDESCRIPTION%n" +
-                "%n" +
-                "Removes server identifier. Next start instance will create a new identity for%n" +
-                "itself.%n" +
-                "%n" +
-                "OPTIONS%n" +
-                "%n" +
-                "      --verbose           Enable verbose output.%n" +
-                "      --expand-commands   Allow command expansion in config value evaluation."
-        ) );
+        assertThat(baos.toString().trim())
+                .isEqualTo(String.format("Removes server identifier.%n" + "%n"
+                        + "USAGE%n"
+                        + "%n"
+                        + "unbind [--expand-commands] [--verbose]%n"
+                        + "%nDESCRIPTION%n"
+                        + "%n"
+                        + "Removes server identifier. Next start instance will create a new identity for%n"
+                        + "itself.%n"
+                        + "%n"
+                        + "OPTIONS%n"
+                        + "%n"
+                        + "      --verbose           Enable verbose output.%n"
+                        + "      --expand-commands   Allow command expansion in config value evaluation."));
     }
 
     @Test
-    void shouldIgnoreNoServerIdFound() throws CommandFailedException
-    {
+    void shouldIgnoreNoServerIdFound() throws CommandFailedException {
         // when
         execute();
         // then
-        assertFalse( testDirectory.getFileSystem().fileExists( serverId ) );
+        assertFalse(testDirectory.getFileSystem().fileExists(serverId));
     }
 
     @Test
-    void shouldRemoveServerId() throws CommandFailedException, IOException
-    {
+    void shouldRemoveServerId() throws CommandFailedException, IOException {
         // given
-        Files.write( serverId, new byte[17] );
-        assertTrue( testDirectory.getFileSystem().fileExists( serverId ) );
+        Files.write(serverId, new byte[17]);
+        assertTrue(testDirectory.getFileSystem().fileExists(serverId));
 
         // when
         execute();
         // then
-        assertFalse( testDirectory.getFileSystem().fileExists( serverId ) );
+        assertFalse(testDirectory.getFileSystem().fileExists(serverId));
     }
 
     @Test
-    void shouldFailToUnbindLiveDatabase() throws Exception
-    {
+    void shouldFailToUnbindLiveDatabase() throws Exception {
         // given
-        try ( var ignored = createLockedFakeDbDir() )
-        {
+        try (var ignored = createLockedFakeDbDir()) {
             // when/then
-            assertThat( assertThrows( CommandFailedException.class, this::execute ) )
-                    .hasMessageContaining( "Database is currently locked. Please shutdown database." );
+            assertThat(assertThrows(CommandFailedException.class, this::execute))
+                    .hasMessageContaining("Database is currently locked. Please shutdown database.");
         }
     }
 
-    private FileLock createLockedFakeDbDir() throws IOException
-    {
-        var channel = testDirectory.getFileSystem().write( neo4jLayout.storeLockFile() );
+    private FileLock createLockedFakeDbDir() throws IOException {
+        var channel = testDirectory.getFileSystem().write(neo4jLayout.storeLockFile());
         var fileLock = channel.tryLock();
-        assertNotNull( fileLock, "Unable to acquire a store lock" );
+        assertNotNull(fileLock, "Unable to acquire a store lock");
         return fileLock;
     }
 
-    private void execute()
-    {
+    private void execute() {
         var command = buildCommand();
-        CommandLine.populateCommand( command );
+        CommandLine.populateCommand(command);
         command.execute();
     }
 
-    private UnbindCommand buildCommand()
-    {
-        var out = mock( PrintStream.class );
-        var err = mock( PrintStream.class );
+    private UnbindCommand buildCommand() {
+        var out = mock(PrintStream.class);
+        var err = mock(PrintStream.class);
         var fileSystem = testDirectory.getFileSystem();
-        return new UnbindCommand( new ExecutionContext( homeDir, configDir, out, err, fileSystem ) );
+        return new UnbindCommand(new ExecutionContext(homeDir, configDir, out, err, fileSystem));
     }
 }

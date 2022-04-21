@@ -27,11 +27,9 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 case class CoalesceFunction(override val arguments: Expression*) extends Expression {
+
   override def apply(row: ReadableRow, state: QueryState): AnyValue =
-    arguments.
-      view.
-      map(expression => expression(row, state)).
-      find(value => !(value eq Values.NO_VALUE)) match {
+    arguments.view.map(expression => expression(row, state)).find(value => !(value eq Values.NO_VALUE)) match {
       case None    => Values.NO_VALUE
       case Some(x) => x
     }
@@ -42,7 +40,8 @@ case class CoalesceFunction(override val arguments: Expression*) extends Express
 
   override def toString: String = "coalesce(" + argumentsString + ")"
 
-  override def rewrite(f: Expression => Expression): Expression = f(CoalesceFunction(arguments.map(e => e.rewrite(f)): _*))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(CoalesceFunction(arguments.map(e => e.rewrite(f)): _*))
 
   override def children: Seq[AstNode[_]] = arguments
 }

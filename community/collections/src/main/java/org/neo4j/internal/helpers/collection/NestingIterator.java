@@ -32,37 +32,27 @@ import java.util.Iterator;
  * @param <T> the type of items to return
  * @param <U> the type of items in the surface item iterator
  */
-public abstract class NestingIterator<T, U> extends PrefetchingIterator<T>
-{
+public abstract class NestingIterator<T, U> extends PrefetchingIterator<T> {
     private final Iterator<U> source;
     private Iterator<T> currentNestedIterator;
 
-    public NestingIterator( Iterator<U> source )
-    {
+    public NestingIterator(Iterator<U> source) {
         this.source = source;
     }
 
-    protected abstract Iterator<T> createNestedIterator( U item );
+    protected abstract Iterator<T> createNestedIterator(U item);
 
     @Override
-    protected T fetchNextOrNull()
-    {
-        if ( currentNestedIterator == null ||
-            !currentNestedIterator.hasNext() )
-        {
-            while ( source.hasNext() )
-            {
+    protected T fetchNextOrNull() {
+        if (currentNestedIterator == null || !currentNestedIterator.hasNext()) {
+            while (source.hasNext()) {
                 U currentSurfaceItem = source.next();
-                currentNestedIterator =
-                    createNestedIterator( currentSurfaceItem );
-                if ( currentNestedIterator.hasNext() )
-                {
+                currentNestedIterator = createNestedIterator(currentSurfaceItem);
+                if (currentNestedIterator.hasNext()) {
                     break;
                 }
             }
         }
-        return currentNestedIterator != null &&
-            currentNestedIterator.hasNext() ?
-            currentNestedIterator.next() : null;
+        return currentNestedIterator != null && currentNestedIterator.hasNext() ? currentNestedIterator.next() : null;
     }
 }

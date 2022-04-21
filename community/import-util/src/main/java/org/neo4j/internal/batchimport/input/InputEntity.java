@@ -23,29 +23,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.neo4j.internal.id.IdSequence;
 
 /**
  * Simple utility for gathering all information about an {@link InputEntityVisitor} and exposing getters
  * for that data. Easier to work with than purely visitor-based implementation in tests.
  */
-public class InputEntity implements InputEntityVisitor
-{
+public class InputEntity implements InputEntityVisitor {
     public static final Object[] NO_PROPERTIES = new Object[0];
     public static final String[] NO_LABELS = new String[0];
 
     private final InputEntityVisitor delegate;
 
-    public InputEntity( InputEntityVisitor delegate )
-    {
+    public InputEntity(InputEntityVisitor delegate) {
         this.delegate = delegate;
         clear();
     }
 
-    public InputEntity()
-    {
-        this( NULL );
+    public InputEntity() {
+        this(NULL);
     }
 
     public boolean hasPropertyId;
@@ -79,173 +75,150 @@ public class InputEntity implements InputEntityVisitor
     private boolean end;
 
     @Override
-    public boolean propertyId( long nextProp )
-    {
+    public boolean propertyId(long nextProp) {
         checkClear();
         hasPropertyId = true;
         propertyId = nextProp;
-        return delegate.propertyId( nextProp );
+        return delegate.propertyId(nextProp);
     }
 
     @Override
-    public boolean property( String key, Object value )
-    {
+    public boolean property(String key, Object value) {
         checkClear();
-        properties.add( key );
-        properties.add( value );
-        return delegate.property( key, value );
+        properties.add(key);
+        properties.add(value);
+        return delegate.property(key, value);
     }
 
     @Override
-    public boolean property( int propertyKeyId, Object value )
-    {
+    public boolean property(int propertyKeyId, Object value) {
         checkClear();
         hasIntPropertyKeyIds = true;
-        properties.add( propertyKeyId );
-        properties.add( value );
-        return delegate.property( propertyKeyId, value );
+        properties.add(propertyKeyId);
+        properties.add(value);
+        return delegate.property(propertyKeyId, value);
     }
 
     @Override
-    public boolean id( long id )
-    {
+    public boolean id(long id) {
         checkClear();
         hasLongId = true;
         longId = id;
-        return delegate.id( id );
+        return delegate.id(id);
     }
 
     @Override
-    public boolean id( Object id, Group group )
-    {
+    public boolean id(Object id, Group group) {
         checkClear();
         objectId = id;
         idGroup = group;
-        return delegate.id( id, group );
+        return delegate.id(id, group);
     }
 
     @Override
-    public boolean id( Object id, Group group, IdSequence idSequence )
-    {
+    public boolean id(Object id, Group group, IdSequence idSequence) {
         checkClear();
         objectId = id;
         idGroup = group;
-        return delegate.id( id, group, idSequence );
+        return delegate.id(id, group, idSequence);
     }
 
     @Override
-    public boolean labels( String[] labels )
-    {
+    public boolean labels(String[] labels) {
         checkClear();
-        Collections.addAll( this.labels, labels );
-        return delegate.labels( labels );
+        Collections.addAll(this.labels, labels);
+        return delegate.labels(labels);
     }
 
     @Override
-    public boolean labelField( long labelField )
-    {
+    public boolean labelField(long labelField) {
         checkClear();
         hasLabelField = true;
         this.labelField = labelField;
-        return delegate.labelField( labelField );
+        return delegate.labelField(labelField);
     }
 
     @Override
-    public boolean startId( long id )
-    {
+    public boolean startId(long id) {
         checkClear();
         hasLongStartId = true;
         longStartId = id;
-        return delegate.startId( id );
+        return delegate.startId(id);
     }
 
     @Override
-    public boolean startId( Object id, Group group )
-    {
+    public boolean startId(Object id, Group group) {
         checkClear();
         objectStartId = id;
         startIdGroup = group;
-        return delegate.startId( id, group );
+        return delegate.startId(id, group);
     }
 
     @Override
-    public boolean endId( long id )
-    {
+    public boolean endId(long id) {
         checkClear();
         hasLongEndId = true;
         longEndId = id;
-        return delegate.endId( id );
+        return delegate.endId(id);
     }
 
     @Override
-    public boolean endId( Object id, Group group )
-    {
+    public boolean endId(Object id, Group group) {
         checkClear();
         objectEndId = id;
         endIdGroup = group;
-        return delegate.endId( id, group );
+        return delegate.endId(id, group);
     }
 
     @Override
-    public boolean type( int type )
-    {
+    public boolean type(int type) {
         checkClear();
         hasIntType = true;
         intType = type;
-        return delegate.type( type );
+        return delegate.type(type);
     }
 
     @Override
-    public boolean type( String type )
-    {
+    public boolean type(String type) {
         checkClear();
         stringType = type;
-        return delegate.type( type );
+        return delegate.type(type);
     }
 
     @Override
-    public void endOfEntity() throws IOException
-    {
+    public void endOfEntity() throws IOException {
         // Mark that the next call to any data method should clear the state
         end = true;
         delegate.endOfEntity();
     }
 
-    public String[] labels()
-    {
-        return labels.toArray( new String[0] );
+    public String[] labels() {
+        return labels.toArray(new String[0]);
     }
 
-    public Object[] properties()
-    {
+    public Object[] properties() {
         return properties.toArray();
     }
 
-    public Object id()
-    {
+    public Object id() {
         return hasLongId ? longId : objectId;
     }
 
-    public Object endId()
-    {
+    public Object endId() {
         return hasLongEndId ? longEndId : objectEndId;
     }
 
-    public Object startId()
-    {
+    public Object startId() {
         return hasLongStartId ? longStartId : objectStartId;
     }
 
-    private void checkClear()
-    {
-        if ( end )
-        {
+    private void checkClear() {
+        if (end) {
             clear();
         }
     }
 
-    private void clear()
-    {
+    private void clear() {
         end = false;
         hasPropertyId = false;
         propertyId = -1;
@@ -272,97 +245,70 @@ public class InputEntity implements InputEntityVisitor
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         delegate.close();
     }
 
-    public int propertyCount()
-    {
+    public int propertyCount() {
         return properties.size() / 2;
     }
 
-    public Object propertyKey( int i )
-    {
-        return properties.get( i * 2 );
+    public Object propertyKey(int i) {
+        return properties.get(i * 2);
     }
 
-    public Object propertyValue( int i )
-    {
-        return properties.get( i * 2 + 1 );
+    public Object propertyValue(int i) {
+        return properties.get(i * 2 + 1);
     }
 
-    public void replayOnto( InputEntityVisitor visitor ) throws IOException
-    {
+    public void replayOnto(InputEntityVisitor visitor) throws IOException {
         // properties
-        if ( hasPropertyId )
-        {
-            visitor.propertyId( propertyId );
-        }
-        else if ( !properties.isEmpty() )
-        {
+        if (hasPropertyId) {
+            visitor.propertyId(propertyId);
+        } else if (!properties.isEmpty()) {
             int propertyCount = propertyCount();
-            for ( int i = 0; i < propertyCount; i++ )
-            {
-                if ( hasIntPropertyKeyIds )
-                {
-                    visitor.property( (Integer) propertyKey( i ), propertyValue( i ) );
-                }
-                else
-                {
-                    visitor.property( (String) propertyKey( i ), propertyValue( i ) );
+            for (int i = 0; i < propertyCount; i++) {
+                if (hasIntPropertyKeyIds) {
+                    visitor.property((Integer) propertyKey(i), propertyValue(i));
+                } else {
+                    visitor.property((String) propertyKey(i), propertyValue(i));
                 }
             }
         }
 
         // id
-        if ( hasLongId )
-        {
-            visitor.id( longId );
-        }
-        else if ( objectId != null )
-        {
-            visitor.id( objectId, idGroup );
+        if (hasLongId) {
+            visitor.id(longId);
+        } else if (objectId != null) {
+            visitor.id(objectId, idGroup);
         }
 
         // labels
-        if ( hasLabelField )
-        {
-            visitor.labelField( labelField );
-        }
-        else if ( !labels.isEmpty() )
-        {
-            visitor.labels( labels.toArray( new String[0] ) );
+        if (hasLabelField) {
+            visitor.labelField(labelField);
+        } else if (!labels.isEmpty()) {
+            visitor.labels(labels.toArray(new String[0]));
         }
 
         // start id
-        if ( hasLongStartId )
-        {
-            visitor.startId( longStartId );
-        }
-        else if ( objectStartId != null )
-        {
-            visitor.startId( objectStartId, startIdGroup );
+        if (hasLongStartId) {
+            visitor.startId(longStartId);
+        } else if (objectStartId != null) {
+            visitor.startId(objectStartId, startIdGroup);
         }
 
         // end id
-        if ( hasLongEndId )
-        {
-            visitor.endId( longEndId );
-        }
-        else if ( objectEndId != null )
-        {
-            visitor.endId( objectEndId, endIdGroup );
+        if (hasLongEndId) {
+            visitor.endId(longEndId);
+        } else if (objectEndId != null) {
+            visitor.endId(objectEndId, endIdGroup);
         }
 
         // type
-        if ( hasIntType )
-        {
-            visitor.type( intType );
-        }
-        else if ( stringType != null )
-        {
-            visitor.type( stringType );
+        if (hasIntType) {
+            visitor.type(intType);
+        } else if (stringType != null) {
+            visitor.type(stringType);
         }
 
         // all done

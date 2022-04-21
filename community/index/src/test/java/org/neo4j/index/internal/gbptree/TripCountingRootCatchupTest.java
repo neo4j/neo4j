@@ -19,63 +19,54 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.function.Supplier;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class TripCountingRootCatchupTest
-{
+import java.util.function.Supplier;
+import org.junit.jupiter.api.Test;
+
+class TripCountingRootCatchupTest {
     @Test
-    void mustThrowOnConsecutiveCatchupsFromSamePage()
-    {
+    void mustThrowOnConsecutiveCatchupsFromSamePage() {
         // Given
         TripCountingRootCatchup tripCountingRootCatchup = getTripCounter();
 
-        assertThrows( TreeInconsistencyException.class, () ->
-        {
-            for ( int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT; i++ )
-            {
-                tripCountingRootCatchup.catchupFrom( 10 );
+        assertThrows(TreeInconsistencyException.class, () -> {
+            for (int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT; i++) {
+                tripCountingRootCatchup.catchupFrom(10);
             }
-        } );
+        });
     }
 
     @Test
-    void mustNotThrowOnInterleavedCatchups()
-    {
+    void mustNotThrowOnInterleavedCatchups() {
         // given
         TripCountingRootCatchup tripCountingRootCatchup = getTripCounter();
 
         // When
-        for ( int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT * 4; i++ )
-        {
-            tripCountingRootCatchup.catchupFrom( i % 2 );
+        for (int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT * 4; i++) {
+            tripCountingRootCatchup.catchupFrom(i % 2);
         }
 
         // then this should be fine
     }
 
     @Test
-    void mustReturnRootUsingProvidedSupplier()
-    {
+    void mustReturnRootUsingProvidedSupplier() {
         // given
-        Root expectedRoot = new Root( 1, 2 );
+        Root expectedRoot = new Root(1, 2);
         Supplier<Root> rootSupplier = () -> expectedRoot;
-        TripCountingRootCatchup tripCountingRootCatchup = new TripCountingRootCatchup( rootSupplier );
+        TripCountingRootCatchup tripCountingRootCatchup = new TripCountingRootCatchup(rootSupplier);
 
         // when
-        Root actualRoot = tripCountingRootCatchup.catchupFrom( 10 );
+        Root actualRoot = tripCountingRootCatchup.catchupFrom(10);
 
         // then
-        assertSame( expectedRoot, actualRoot );
+        assertSame(expectedRoot, actualRoot);
     }
 
-    private static TripCountingRootCatchup getTripCounter()
-    {
-        Root root = new Root( 1, 2 );
-        return new TripCountingRootCatchup( () -> root );
+    private static TripCountingRootCatchup getTripCounter() {
+        Root root = new Root(1, 2);
+        return new TripCountingRootCatchup(() -> root);
     }
 }

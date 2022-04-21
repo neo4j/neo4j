@@ -21,6 +21,7 @@ import scala.language.postfixOps
 
 object TypeSpec {
   def exact(types: CypherType*): TypeSpec = exact(types)
+
   def exact[T <: CypherType](iterableOnce: IterableOnce[T]): TypeSpec =
     TypeSpec(iterableOnce.iterator.map(t => TypeRange(t, t)))
   val all: TypeSpec = TypeSpec(TypeRange(CTAny, None))
@@ -53,6 +54,7 @@ object TypeSpec {
   )
 
   private def apply(range: TypeRange): TypeSpec = new TypeSpec(Vector(range))
+
   private def apply(ranges: IterableOnce[TypeRange]): TypeSpec =
     new TypeSpec(minimalRanges(ranges))
 
@@ -80,6 +82,7 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
   private def contains(that: CypherType, rs: Seq[TypeRange]): Boolean = rs.exists(_ contains that)
 
   def containsAny(types: CypherType*): Boolean = containsAny(TypeSpec.exact(types))
+
   def containsAny(that: TypeSpec): Boolean = ranges.exists { r1 =>
     that.ranges.exists(r2 => (r1 constrain r2.lower).isDefined)
   }
@@ -116,7 +119,6 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
 
   def without(aType: CypherType): TypeSpec = TypeSpec(ranges.flatMap(_ without aType))
 
-
   def constrain(that: CypherType): TypeSpec = TypeSpec(ranges.flatMap(_ constrain that))
 
   def constrainOrCoerce(that: CypherType): TypeSpec = {
@@ -144,13 +146,13 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
   def unwrapLists: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: ListType => c.innerType }))
 
   def unwrapPotentialLists: TypeSpec = TypeSpec(ranges.map(_.reparent {
-    case c: ListType => c.innerType
+    case c: ListType   => c.innerType
     case c: CypherType => c
   }))
 
   def coercions: TypeSpec = {
     val simpleCoercions = ranges.flatMap(_.lower.coercibleTo)
-      TypeSpec.exact(simpleCoercions)
+    TypeSpec.exact(simpleCoercions)
   }
 
   def isEmpty: Boolean = ranges.isEmpty
@@ -159,6 +161,7 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
   lazy val hasDefiniteSize: Boolean = ranges.forall(_.hasDefiniteSize)
 
   def toStream: Stream[CypherType] = toStream(ranges)
+
   private def toStream(rs: => Seq[TypeRange]): Stream[CypherType] =
     if (rs.isEmpty)
       Stream()
@@ -169,6 +172,7 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
   def iterator: Iterator[CypherType] = toStream.iterator
 
   override def hashCode = 41 * ranges.hashCode
+
   override def equals(that: Any): Boolean = that match {
     case that: TypeSpec =>
       if (this.ranges.isEmpty) {
@@ -178,7 +182,7 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
           val (finite1, infinite1) = ranges.partition(_.hasDefiniteSize)
           val (finite2, infinite2) = that.ranges.partition(_.hasDefiniteSize)
           (infinite1 == infinite2) &&
-            ((finite1 == finite2) || (toStream(finite1) == toStream(finite2)))
+          ((finite1 == finite2) || (toStream(finite1) == toStream(finite2)))
         }
       }
     case _ => false
@@ -189,16 +193,18 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
 
   @tailrec
   private def toStrings(
-      acc: IndexedSeq[String],
-      rs: Seq[TypeRange],
-      format: String => String
+    acc: IndexedSeq[String],
+    rs: Seq[TypeRange],
+    format: String => String
   ): IndexedSeq[String] =
     if (rs.isEmpty)
       acc
-    else if (rs.exists({
+    else if (
+      rs.exists({
         case TypeRange(_: AnyType, None) => true
-        case _ => false
-      }))
+        case _                           => false
+      })
+    )
       acc :+ format("T")
     else
       toStrings(
@@ -209,19 +215,22 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
 
   def mkString(sep: String): String =
     mkString("", sep, sep, "")
+
   def mkString(sep: String, lastSep: String): String =
     mkString("", sep, lastSep, "")
+
   def mkString(start: String, sep: String, end: String): String =
     mkString(start, sep, sep, end)
+
   def mkString(start: String, sep: String, lastSep: String, end: String): String =
     addString(new StringBuilder(), start, sep, lastSep, end).toString()
 
   def addString(
-      b: StringBuilder,
-      start: String,
-      sep: String,
-      lastSep: String,
-      end: String
+    b: StringBuilder,
+    start: String,
+    sep: String,
+    lastSep: String,
+    end: String
   ): StringBuilder = {
     val strings = toStrings
     if (strings.length > 1)
@@ -241,9 +250,9 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
 
   private def innerTypeRanges(rs: Seq[TypeRange]): Seq[TypeRange] = rs.flatMap {
     case TypeRange(c: ListType, Some(u: ListType)) => Some(TypeRange(c.innerType, u.innerType))
-    case TypeRange(c: ListType, None) => Some(TypeRange(c.innerType, None))
-    case TypeRange(_: AnyType, Some(u: ListType)) => Some(TypeRange(CTAny, u.innerType))
-    case r @ TypeRange(_: AnyType, None) => Some(r)
-    case _ => None
+    case TypeRange(c: ListType, None)              => Some(TypeRange(c.innerType, None))
+    case TypeRange(_: AnyType, Some(u: ListType))  => Some(TypeRange(CTAny, u.innerType))
+    case r @ TypeRange(_: AnyType, None)           => Some(r)
+    case _                                         => None
   }
 }

@@ -19,35 +19,31 @@
  */
 package org.neo4j.internal.nativeimpl;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.nativeimpl.NativeCallResult.SUCCESS;
 
-class AbsentNativeAccessTest
-{
+import org.junit.jupiter.api.Test;
+
+class AbsentNativeAccessTest {
     private final AbsentNativeAccess absentNativeAccess = new AbsentNativeAccess();
 
     @Test
-    void absentNativeAccessIsNotAvailable()
-    {
-        assertFalse( absentNativeAccess.isAvailable() );
+    void absentNativeAccessIsNotAvailable() {
+        assertFalse(absentNativeAccess.isAvailable());
     }
 
     @Test
-    void absentNativeAccessSkipCacheAlwaysFinishSuccessfully()
-    {
-        assertFalse( absentNativeAccess.tryEvictFromCache( 1 ).isError() );
-        assertFalse( absentNativeAccess.tryEvictFromCache( 2 ).isError() );
-        assertFalse( absentNativeAccess.tryEvictFromCache( -1 ).isError() );
+    void absentNativeAccessSkipCacheAlwaysFinishSuccessfully() {
+        assertFalse(absentNativeAccess.tryEvictFromCache(1).isError());
+        assertFalse(absentNativeAccess.tryEvictFromCache(2).isError());
+        assertFalse(absentNativeAccess.tryEvictFromCache(-1).isError());
     }
 
     @Test
-    void absentNativeAccessPreallocationsAlwaysFinishSuccessfully()
-    {
-        assertEquals( SUCCESS, absentNativeAccess.tryPreallocateSpace( 0, 1L ) );
-        assertEquals( SUCCESS, absentNativeAccess.tryPreallocateSpace( 1, 2L ) );
-        assertEquals( SUCCESS, absentNativeAccess.tryPreallocateSpace( 3, 4L ) );
+    void absentNativeAccessPreallocationsAlwaysFinishSuccessfully() {
+        assertEquals(SUCCESS, absentNativeAccess.tryPreallocateSpace(0, 1L));
+        assertEquals(SUCCESS, absentNativeAccess.tryPreallocateSpace(1, 2L));
+        assertEquals(SUCCESS, absentNativeAccess.tryPreallocateSpace(3, 4L));
     }
 }

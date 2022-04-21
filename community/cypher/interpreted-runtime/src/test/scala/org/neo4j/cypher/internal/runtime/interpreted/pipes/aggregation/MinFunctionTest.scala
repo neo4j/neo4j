@@ -28,11 +28,12 @@ import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.storable.Values.stringValue
 
 class MinFunctionTest extends CypherFunSuite with AggregateTest {
+
   test("singleValueReturnsThatNumber") {
     val result = aggregateOn(intValue(1))
 
     result should equal(intValue(1))
-    result shouldBe an [IntValue]
+    result shouldBe an[IntValue]
   }
 
   test("singleValueOfDecimalReturnsDecimal") {
@@ -66,13 +67,15 @@ class MinFunctionTest extends CypherFunSuite with AggregateTest {
   }
 
   test("aggregating strings work") {
-    val result = aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), stringValue("B"), stringValue("abc1"))
+    val result =
+      aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), stringValue("B"), stringValue("abc1"))
 
     result should equal(stringValue("B"))
   }
 
   test("nulls are simply skipped") {
-    val result = aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), Values.NO_VALUE, stringValue("abc1"))
+    val result =
+      aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), Values.NO_VALUE, stringValue("abc1"))
 
     result should equal(stringValue("a"))
   }

@@ -28,7 +28,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -37,22 +36,20 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.net.ssl.SSLEngine;
 
-public class ClientSideOnConnectSslHandler extends ChannelDuplexHandler
-{
+public class ClientSideOnConnectSslHandler extends ChannelDuplexHandler {
     private final ChannelPipeline pipeline;
     private final SslContext sslContext;
-    private final Collection<Function<SSLEngine,SSLEngine>> engineModifications;
+    private final Collection<Function<SSLEngine, SSLEngine>> engineModifications;
 
-    ClientSideOnConnectSslHandler( Channel channel, SslContext sslContext, boolean verifyHostname, String[] tlsVersions )
-    {
+    ClientSideOnConnectSslHandler(
+            Channel channel, SslContext sslContext, boolean verifyHostname, String[] tlsVersions) {
         this.pipeline = channel.pipeline();
         this.sslContext = sslContext;
 
         this.engineModifications = new ArrayList<>();
-        engineModifications.add( new EssentialEngineModifications( tlsVersions, true ) );
-        if ( verifyHostname )
-        {
-            engineModifications.add( new ClientSideHostnameVerificationEngineModification() );
+        engineModifications.add(new EssentialEngineModifications(tlsVersions, true));
+        if (verifyHostname) {
+            engineModifications.add(new ClientSideHostnameVerificationEngineModification());
         }
     }
 
@@ -67,29 +64,28 @@ public class ClientSideOnConnectSslHandler extends ChannelDuplexHandler
      * @throws Exception when there is an error of any sort
      */
     @Override
-    public void connect( ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise ) throws Exception
-    {
-        SslHandler sslHandler = createSslHandler( ctx, (InetSocketAddress) remoteAddress );
-        replaceSelfWith( sslHandler );
-        ctx.connect( remoteAddress, localAddress, promise );
+    public void connect(
+            ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise)
+            throws Exception {
+        SslHandler sslHandler = createSslHandler(ctx, (InetSocketAddress) remoteAddress);
+        replaceSelfWith(sslHandler);
+        ctx.connect(remoteAddress, localAddress, promise);
     }
 
     @Override
-    public void handlerAdded( ChannelHandlerContext ctx ) throws Exception
-    {
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         // Sometimes the connect event will have happened before adding, the channel will be active then
-        if ( ctx.channel().isActive() )
-        {
-            SslHandler sslHandler = createSslHandler( ctx, (InetSocketAddress) ctx.channel().remoteAddress() );
-            replaceSelfWith( sslHandler );
-            sslHandler.handlerAdded( ctx );
+        if (ctx.channel().isActive()) {
+            SslHandler sslHandler =
+                    createSslHandler(ctx, (InetSocketAddress) ctx.channel().remoteAddress());
+            replaceSelfWith(sslHandler);
+            sslHandler.handlerAdded(ctx);
         }
     }
 
     @Override
-    public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
-    {
-        throw new RuntimeException( Thread.currentThread().getName() + " - This handler does not write" );
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        throw new RuntimeException(Thread.currentThread().getName() + " - This handler does not write");
     }
 
     /**
@@ -97,28 +93,24 @@ public class ClientSideOnConnectSslHandler extends ChannelDuplexHandler
      *
      * @param sslHandler configured netty handler that enables TLS
      */
-    private void replaceSelfWith( SslHandler sslHandler )
-    {
-        String myName = pipeline.toMap()
-                .entrySet()
-                .stream()
-                .filter( entry -> this.equals( entry.getValue() ) )
-                .map( Map.Entry::getKey )
+    private void replaceSelfWith(SslHandler sslHandler) {
+        String myName = pipeline.toMap().entrySet().stream()
+                .filter(entry -> this.equals(entry.getValue()))
+                .map(Map.Entry::getKey)
                 .findFirst()
-                .orElseThrow( () -> new IllegalStateException( "This handler has no name" ) );
-        pipeline.replace( this, myName, sslHandler );
-        pipeline.addAfter( myName, "handshakeCompletionSslDetailsHandler", new HandshakeCompletionSslDetailsHandler() );
+                .orElseThrow(() -> new IllegalStateException("This handler has no name"));
+        pipeline.replace(this, myName, sslHandler);
+        pipeline.addAfter(myName, "handshakeCompletionSslDetailsHandler", new HandshakeCompletionSslDetailsHandler());
     }
 
-    private SslHandler createSslHandler( ChannelHandlerContext ctx, InetSocketAddress inetSocketAddress )
-    {
-        SSLEngine sslEngine = sslContext.newEngine( ctx.alloc(), inetSocketAddress.getHostName(), inetSocketAddress.getPort() );
-        for ( Function<SSLEngine,SSLEngine> mod : engineModifications )
-        {
-            sslEngine = mod.apply( sslEngine );
+    private SslHandler createSslHandler(ChannelHandlerContext ctx, InetSocketAddress inetSocketAddress) {
+        SSLEngine sslEngine =
+                sslContext.newEngine(ctx.alloc(), inetSocketAddress.getHostName(), inetSocketAddress.getPort());
+        for (Function<SSLEngine, SSLEngine> mod : engineModifications) {
+            sslEngine = mod.apply(sslEngine);
         }
         // Don't need to set tls versions since that is set up from the context
-        return new SslHandler( sslEngine );
+        return new SslHandler(sslEngine);
     }
 
     /**
@@ -126,23 +118,19 @@ public class ClientSideOnConnectSslHandler extends ChannelDuplexHandler
      * Some tests rely on having these ssl details available.
      * Having this adapter exposes those details to the tests.
      */
-    private static class HandshakeCompletionSslDetailsHandler extends ChannelInboundHandlerAdapter
-    {
+    private static class HandshakeCompletionSslDetailsHandler extends ChannelInboundHandlerAdapter {
         @Override
-        public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
-        {
-            if ( evt instanceof SslHandshakeCompletionEvent sslHandshakeEvent )
-            {
-                if ( sslHandshakeEvent.cause() == null )
-                {
-                    SslHandler sslHandler = ctx.pipeline().get( SslHandler.class );
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+            if (evt instanceof SslHandshakeCompletionEvent sslHandshakeEvent) {
+                if (sslHandshakeEvent.cause() == null) {
+                    SslHandler sslHandler = ctx.pipeline().get(SslHandler.class);
                     String ciphers = sslHandler.engine().getSession().getCipherSuite();
                     String protocols = sslHandler.engine().getSession().getProtocol();
 
-                    ctx.fireUserEventTriggered( new SslHandlerDetailsRegisteredEvent( ciphers, protocols ) );
+                    ctx.fireUserEventTriggered(new SslHandlerDetailsRegisteredEvent(ciphers, protocols));
                 }
             }
-            ctx.fireUserEventTriggered( evt );
+            ctx.fireUserEventTriggered(evt);
         }
     }
 }

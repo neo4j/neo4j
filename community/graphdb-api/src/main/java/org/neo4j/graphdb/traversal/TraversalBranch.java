@@ -27,8 +27,7 @@ import org.neo4j.graphdb.PathExpander;
  * traversal context, for example parent and an iterator of relationships to go
  * next. It's a base to write a {@link BranchSelector} on top of.
  */
-public interface TraversalBranch extends Path
-{
+public interface TraversalBranch extends Path {
     /**
      * The parent expansion source which created this {@link TraversalBranch}.
      * @return the parent of this expansion source.
@@ -43,7 +42,7 @@ public interface TraversalBranch extends Path
      * @param metadata the context of the traversal
      * @return the next expansion source from this expansion source.
      */
-    TraversalBranch next( PathExpander expander, TraversalContext metadata );
+    TraversalBranch next(PathExpander expander, TraversalContext metadata);
 
     /**
      * Returns the number of relationships this expansion source has expanded.
@@ -81,7 +80,7 @@ public interface TraversalBranch extends Path
      * to force pruning.
      * @param eval the {@link Evaluation} to AND with the current evaluation.
      */
-    void evaluation( Evaluation eval );
+    void evaluation(Evaluation eval);
 
     /**
      * Initializes this {@link TraversalBranch}, the relationship iterator,
@@ -90,7 +89,7 @@ public interface TraversalBranch extends Path
      * @param expander {@link PathExpander} to use for getting relationships.
      * @param metadata {@link TraversalContext} to update on progress.
      */
-    void initialize( PathExpander expander, TraversalContext metadata );
+    void initialize(PathExpander expander, TraversalContext metadata);
 
     /**
      * Returns the state associated with this branch.

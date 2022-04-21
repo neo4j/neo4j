@@ -35,10 +35,15 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+case class expandSolverStep(qg: QueryGraph)
+    extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
-
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(
+    registry: IdRegistry[PatternRelationship],
+    goal: Goal,
+    table: IDPCache[LogicalPlan],
+    context: LogicalPlanningContext
+  ): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
       for {
         patternId <- goal.bitSet.iterator
@@ -62,18 +67,32 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
 
 object expandSolverStep {
 
-  def planSingleProjectEndpoints(patternRel: PatternRelationship, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+  def planSingleProjectEndpoints(
+    patternRel: PatternRelationship,
+    plan: LogicalPlan,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     val (start, end) = patternRel.inOrder
     val isStartInScope = plan.availableSymbols(start)
     val isEndInScope = plan.availableSymbols(end)
-    context.logicalPlanProducer.planProjectEndpoints(plan, start, isStartInScope, end, isEndInScope, patternRel, context)
+    context.logicalPlanProducer.planProjectEndpoints(
+      plan,
+      start,
+      isStartInScope,
+      end,
+      isEndInScope,
+      patternRel,
+      context
+    )
   }
 
-  def planSinglePatternSide(qg: QueryGraph,
-                            patternRel: PatternRelationship,
-                            sourcePlan: LogicalPlan,
-                            nodeId: String,
-                            context: LogicalPlanningContext): Option[LogicalPlan] = {
+  def planSinglePatternSide(
+    qg: QueryGraph,
+    patternRel: PatternRelationship,
+    sourcePlan: LogicalPlan,
+    nodeId: String,
+    context: LogicalPlanningContext
+  ): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
 
     if (availableSymbols(nodeId)) {
@@ -83,12 +102,14 @@ object expandSolverStep {
     }
   }
 
-  private def produceLogicalPlan(qg: QueryGraph,
-                                 patternRel: PatternRelationship,
-                                 sourcePlan: LogicalPlan,
-                                 nodeId: String,
-                                 availableSymbols: Set[String],
-                                 context: LogicalPlanningContext): LogicalPlan = {
+  private def produceLogicalPlan(
+    qg: QueryGraph,
+    patternRel: PatternRelationship,
+    sourcePlan: LogicalPlan,
+    nodeId: String,
+    availableSymbols: Set[String],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     val dir = patternRel.directionRelativeTo(nodeId)
     val otherSide = patternRel.otherSide(nodeId)
     val overlapping = availableSymbols.contains(otherSide)
@@ -103,14 +124,18 @@ object expandSolverStep {
           qg.selections.predicatesGiven(availableSymbols + patternRel.name + otherSide)
         val tempNode = patternRel.name + "_NODES"
         val tempRelationship = patternRel.name + "_RELS"
-        val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
+        val (
+          nodePredicates: Seq[Expression],
+          relationshipPredicates: Seq[Expression],
+          solvedPredicates: Seq[Expression]
+        ) =
           extractPredicates(
             availablePredicates,
             originalRelationshipName = patternRel.name,
             tempRelationship = tempRelationship,
             tempNode = tempNode,
             originalNodeName = nodeId,
-            targetNodeName = otherSide,
+            targetNodeName = otherSide
           )
 
         context.logicalPlanProducer.planVarExpand(
@@ -123,7 +148,8 @@ object expandSolverStep {
           relationshipPredicate = variablePredicate(tempRelationship, relationshipPredicates),
           solvedPredicates = solvedPredicates,
           mode = mode,
-          context = context)
+          context = context
+        )
     }
   }
 

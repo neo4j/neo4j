@@ -21,22 +21,18 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.nio.file.Path;
 
-final class FileMapping
-{
+final class FileMapping {
     public volatile FileMapping next;
     public final Path path;
     public final MuninnPagedFile pagedFile;
 
-    FileMapping( Path path, MuninnPagedFile pagedFile )
-    {
+    FileMapping(Path path, MuninnPagedFile pagedFile) {
         this.path = path;
         this.pagedFile = pagedFile;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "FileMapping[fname = %s, refCount = %s] :: %s",
-                path, pagedFile.getRefCount(), next );
+    public String toString() {
+        return String.format("FileMapping[fname = %s, refCount = %s] :: %s", path, pagedFile.getRefCount(), next);
     }
 }

@@ -31,17 +31,16 @@ import org.neo4j.kernel.api.index.IndexSample;
  * <p>
  * This is also a link to index statistics.
  */
-interface IndexProxyStrategy
-{
+interface IndexProxyStrategy {
     IndexDescriptor getIndexDescriptor();
 
     void removeStatisticsForIndex();
 
-    void incrementUpdateStatisticsForIndex( long delta );
+    void incrementUpdateStatisticsForIndex(long delta);
 
-    void replaceStatisticsForIndex( IndexSample sample );
+    void replaceStatisticsForIndex(IndexSample sample);
 
-    void changeIndexDescriptor( IndexDescriptor descriptor );
+    void changeIndexDescriptor(IndexDescriptor descriptor);
 
     String getIndexUserDescription();
 }

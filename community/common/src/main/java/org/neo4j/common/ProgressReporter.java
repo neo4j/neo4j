@@ -26,42 +26,37 @@ package org.neo4j.common;
  * progress.
  * In the end {@link #completed()} should be invoked to signal about execution completion.
  */
-public interface ProgressReporter
-{
+public interface ProgressReporter {
     /**
      * @param max max progress, which {@link #progress(long)} moves towards.
      */
-    void start( long max );
+    void start(long max);
 
     /**
      * Percentage completeness for the current section.
      *
      * @param add progress to add towards a maximum.
      */
-    void progress( long add );
+    void progress(long add);
 
     /**
      * Called if this section was completed successfully.
      */
     void completed();
 
-    ProgressReporter SILENT = new ProgressReporter()
-    {
+    ProgressReporter SILENT = new ProgressReporter() {
         @Override
-        public void start( long max )
-        {
+        public void start(long max) {
             // nop
         }
 
         @Override
-        public void progress( long add )
-        {
+        public void progress(long add) {
             // nop
         }
 
         @Override
-        public void completed()
-        {
+        public void completed() {
             // nop
         }
     };

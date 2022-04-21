@@ -21,13 +21,11 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
 import java.time.Instant;
-
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.storageengine.api.TransactionId;
 
-public interface CheckpointAppender
-{
+public interface CheckpointAppender {
     /**
      * Appends a check point to a log which marks a starting point for recovery in the event of failure.
      * After this method have returned the check point mark must have been flushed to disk.
@@ -40,6 +38,11 @@ public interface CheckpointAppender
      * @throws IOException if there was a problem appending the transaction. See method javadoc body for
      * how to handle exceptions in general thrown from this method.
      */
-    void checkPoint( LogCheckPointEvent logCheckPointEvent, TransactionId transactionId, LogPosition logPosition, Instant checkpointTime, String reason )
+    void checkPoint(
+            LogCheckPointEvent logCheckPointEvent,
+            TransactionId transactionId,
+            LogPosition logPosition,
+            Instant checkpointTime,
+            String reason)
             throws IOException;
 }

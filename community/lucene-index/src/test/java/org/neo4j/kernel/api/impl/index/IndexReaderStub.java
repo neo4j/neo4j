@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Function;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
@@ -40,203 +46,187 @@ import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Function;
-
 import org.neo4j.internal.helpers.collection.MapUtil;
 
-public class IndexReaderStub extends LeafReader
-{
+public class IndexReaderStub extends LeafReader {
     private Fields fields;
     private String[] elements = new String[0];
-    private Function<String,NumericDocValues> ndvs;
+    private Function<String, NumericDocValues> ndvs;
 
-    private static final FieldInfo DUMMY_FIELD_INFO =
-            new FieldInfo( "id", 0, false, true, false, IndexOptions.DOCS,
-                    DocValuesType.NONE, -1, Collections.emptyMap(), 1, 1, 8, 0, VectorSimilarityFunction.EUCLIDEAN, true );
+    private static final FieldInfo DUMMY_FIELD_INFO = new FieldInfo(
+            "id",
+            0,
+            false,
+            true,
+            false,
+            IndexOptions.DOCS,
+            DocValuesType.NONE,
+            -1,
+            Collections.emptyMap(),
+            1,
+            1,
+            8,
+            0,
+            VectorSimilarityFunction.EUCLIDEAN,
+            true);
 
-    public IndexReaderStub( final NumericDocValues ndv )
-    {
+    public IndexReaderStub(final NumericDocValues ndv) {
         this.ndvs = s -> ndv;
     }
 
-    public IndexReaderStub( Fields fields )
-    {
+    public IndexReaderStub(Fields fields) {
         this.fields = fields;
     }
 
-    public void setElements( String[] elements )
-    {
+    public void setElements(String[] elements) {
         this.elements = elements;
     }
 
     @Override
-    public CacheHelper getCoreCacheHelper()
-    {
+    public CacheHelper getCoreCacheHelper() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Terms terms( String field )
-    {
-        if ( fields != null )
-        {
-            try
-            {
-                return fields.terms( field );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
+    public Terms terms(String field) {
+        if (fields != null) {
+            try {
+                return fields.terms(field);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
         return null;
     }
 
     @Override
-    public NumericDocValues getNumericDocValues( String field )
-    {
-        return ndvs.apply( field );
+    public NumericDocValues getNumericDocValues(String field) {
+        return ndvs.apply(field);
     }
 
     @Override
-    public BinaryDocValues getBinaryDocValues( String field )
-    {
+    public BinaryDocValues getBinaryDocValues(String field) {
         return DocValues.emptyBinary();
     }
 
     @Override
-    public SortedDocValues getSortedDocValues( String field )
-    {
+    public SortedDocValues getSortedDocValues(String field) {
         return DocValues.emptySorted();
     }
 
     @Override
-    public SortedNumericDocValues getSortedNumericDocValues( String field )
-    {
+    public SortedNumericDocValues getSortedNumericDocValues(String field) {
         return DocValues.emptySortedNumeric();
     }
 
     @Override
-    public SortedSetDocValues getSortedSetDocValues( String field )
-    {
+    public SortedSetDocValues getSortedSetDocValues(String field) {
         return DocValues.emptySortedSet();
     }
 
     @Override
-    public NumericDocValues getNormValues( String field )
-    {
+    public NumericDocValues getNormValues(String field) {
         return DocValues.emptyNumeric();
     }
 
     @Override
-    public VectorValues getVectorValues( String field )
-    {
+    public VectorValues getVectorValues(String field) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public TopDocs searchNearestVectors( String field, float[] target, int k, Bits acceptDocs, int visitedLimit )
-    {
+    public TopDocs searchNearestVectors(String field, float[] target, int k, Bits acceptDocs, int visitedLimit) {
         return null;
     }
 
     @Override
-    public FieldInfos getFieldInfos()
-    {
+    public FieldInfos getFieldInfos() {
         List<FieldInfo> infos = new ArrayList<>();
         int id = 0;
-        for ( String field : fields )
-        {
-            infos.add( new FieldInfo( field, id++, true, false, false, IndexOptions.DOCS, DocValuesType.SORTED, 1, MapUtil.stringMap(), 1, 1, 8, 0,
-                    VectorSimilarityFunction.EUCLIDEAN, false ) );
+        for (String field : fields) {
+            infos.add(new FieldInfo(
+                    field,
+                    id++,
+                    true,
+                    false,
+                    false,
+                    IndexOptions.DOCS,
+                    DocValuesType.SORTED,
+                    1,
+                    MapUtil.stringMap(),
+                    1,
+                    1,
+                    8,
+                    0,
+                    VectorSimilarityFunction.EUCLIDEAN,
+                    false));
         }
-        return new FieldInfos( infos.toArray( new FieldInfo[0] ) );
+        return new FieldInfos(infos.toArray(new FieldInfo[0]));
     }
 
     @Override
-    public Bits getLiveDocs()
-    {
-        return new Bits()
-        {
+    public Bits getLiveDocs() {
+        return new Bits() {
             @Override
-            public boolean get( int index )
-            {
-                if ( index >= elements.length )
-                {
-                    throw new IllegalArgumentException( "Doc id out of range" );
+            public boolean get(int index) {
+                if (index >= elements.length) {
+                    throw new IllegalArgumentException("Doc id out of range");
                 }
                 return true;
             }
 
             @Override
-            public int length()
-            {
+            public int length() {
                 return elements.length;
             }
         };
     }
 
     @Override
-    public PointValues getPointValues( String field )
-    {
+    public PointValues getPointValues(String field) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void checkIntegrity()
-    {
-    }
+    public void checkIntegrity() {}
 
     @Override
-    public LeafMetaData getMetaData()
-    {
+    public LeafMetaData getMetaData() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Fields getTermVectors( int docID )
-    {
-        throw new RuntimeException( "Not yet implemented." );
+    public Fields getTermVectors(int docID) {
+        throw new RuntimeException("Not yet implemented.");
     }
 
     @Override
-    public int numDocs()
-    {
+    public int numDocs() {
         return elements.length;
     }
 
     @Override
-    public int maxDoc()
-    {
-        return Math.max( maxValue(), elements.length) + 1;
+    public int maxDoc() {
+        return Math.max(maxValue(), elements.length) + 1;
     }
 
     @Override
-    public void document( int docID, StoredFieldVisitor visitor ) throws IOException
-    {
-        visitor.stringField( DUMMY_FIELD_INFO, String.valueOf( docID ) );
+    public void document(int docID, StoredFieldVisitor visitor) throws IOException {
+        visitor.stringField(DUMMY_FIELD_INFO, String.valueOf(docID));
     }
 
     @Override
-    protected void doClose()
-    {
-    }
+    protected void doClose() {}
 
     @Override
-    public CacheHelper getReaderCacheHelper()
-    {
+    public CacheHelper getReaderCacheHelper() {
         throw new UnsupportedOperationException();
     }
 
-    private int maxValue()
-    {
-        return Arrays.stream( elements )
-                .mapToInt( value ->  NumberUtils.toInt( value, 0 )).max().orElse( 0 );
+    private int maxValue() {
+        return Arrays.stream(elements)
+                .mapToInt(value -> NumberUtils.toInt(value, 0))
+                .max()
+                .orElse(0);
     }
 }

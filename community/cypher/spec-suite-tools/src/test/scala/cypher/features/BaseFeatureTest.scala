@@ -30,7 +30,12 @@ import java.net.URI
 @Execution(ExecutionMode.CONCURRENT)
 abstract class BaseFeatureTest extends FeatureTest with ScenarioTestHelper {
 
-  def filterScenarios(allScenarios: Seq[Scenario], categoryToRun: String, featureToRun: String, scenarioToRun: String): Seq[Scenario] = {
+  def filterScenarios(
+    allScenarios: Seq[Scenario],
+    categoryToRun: String,
+    featureToRun: String,
+    scenarioToRun: String
+  ): Seq[Scenario] = {
     allScenarios.filter(s =>
       categoryToRun.isEmpty || s.categories.exists(c => c.contains(categoryToRun))
     ).filter(s =>
@@ -44,6 +49,7 @@ abstract class BaseFeatureTest extends FeatureTest with ScenarioTestHelper {
 object BaseFeatureTestHolder {
 
   lazy val allTckScenarios: Seq[Scenario] = CypherTCK.allTckScenarios
+
   lazy val allAcceptanceScenarios: Seq[Scenario] = {
     val resourcePath: String = "/acceptance/features"
 

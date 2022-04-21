@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable: SemanticTable)
-  extends ListSupport {
+    extends ListSupport {
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.amendQueryGraph(f)))
@@ -49,24 +49,33 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
 
-  def withCallSubquery(subquery: PlannerQueryPart,
-                       correlated: Boolean,
-                       yielding: Boolean,
-                       inTransactionsParameters: Option[InTransactionsParameters]): PlannerQueryBuilder = {
-    withHorizon(CallSubqueryHorizon(subquery, correlated, yielding, inTransactionsParameters)).withTail(SinglePlannerQuery.empty)
+  def withCallSubquery(
+    subquery: PlannerQueryPart,
+    correlated: Boolean,
+    yielding: Boolean,
+    inTransactionsParameters: Option[InTransactionsParameters]
+  ): PlannerQueryBuilder = {
+    withHorizon(CallSubqueryHorizon(subquery, correlated, yielding, inTransactionsParameters)).withTail(
+      SinglePlannerQuery.empty
+    )
   }
 
   def withTail(newTail: SinglePlannerQuery): PlannerQueryBuilder = {
-    copy(q = q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq)))))
+    copy(q =
+      q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq))))
+    )
   }
 
-  def withQueryInput(inputVariables : Seq[String]): PlannerQueryBuilder = {
+  def withQueryInput(inputVariables: Seq[String]): PlannerQueryBuilder = {
     copy(q = q.withInput(inputVariables))
   }
 
   def withInterestingOrder(interestingOrder: InterestingOrder): PlannerQueryBuilder = {
     val existingIO = q.last.interestingOrder
-    val newIO = InterestingOrder(interestingOrder.requiredOrderCandidate, existingIO.interestingOrderCandidates ++ interestingOrder.interestingOrderCandidates)
+    val newIO = InterestingOrder(
+      interestingOrder.requiredOrderCandidate,
+      existingIO.interestingOrderCandidates ++ interestingOrder.interestingOrderCandidates
+    )
     copy(q = q.updateTailOrSelf(_.withInterestingOrder(newIO)))
   }
 
@@ -80,10 +89,11 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
 
   def currentlyAvailableVariables: Set[String] = {
     val allPlannerQueries = q.allPlannerQueries
-    val previousAvailableSymbols = if (allPlannerQueries.length > 1) {
-      val current = allPlannerQueries(allPlannerQueries.length - 2)
-      current.horizon.exposedSymbols(current.queryGraph.allCoveredIds)
-    } else Set.empty
+    val previousAvailableSymbols =
+      if (allPlannerQueries.length > 1) {
+        val current = allPlannerQueries(allPlannerQueries.length - 2)
+        current.horizon.exposedSymbols(current.queryGraph.allCoveredIds)
+      } else Set.empty
 
     // for the last planner query we should not consider the return projection
     previousAvailableSymbols ++ q.lastQueryGraph.allCoveredIds
@@ -102,10 +112,11 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
 
     def fixArgumentIdsOnOptionalMatch(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
       val optionalMatches = plannerQuery.queryGraph.optionalMatches
-      val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.queryGraph.idsWithoutOptionalMatchesOrUpdates) {
-        case (args, qg) =>
-          (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.dependencies))
-      }
+      val (_, newOptionalMatches) =
+        optionalMatches.foldMap(plannerQuery.queryGraph.idsWithoutOptionalMatchesOrUpdates) {
+          case (args, qg) =>
+            (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.dependencies))
+        }
       plannerQuery
         .amendQueryGraph(_.withOptionalMatches(newOptionalMatches.toIndexedSeq))
         .updateTail(fixArgumentIdsOnOptionalMatch)
@@ -152,7 +163,9 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
     def fixStandaloneArgumentPatternNodes(part: SinglePlannerQuery): SinglePlannerQuery = {
 
       def addPredicates(qg: QueryGraph): QueryGraph = {
-        val preds = qg.standaloneArgumentPatternNodes.map { n => AssertIsNode(Variable(n)(InputPosition.NONE))(InputPosition.NONE) }
+        val preds = qg.standaloneArgumentPatternNodes.map { n =>
+          AssertIsNode(Variable(n)(InputPosition.NONE))(InputPosition.NONE)
+        }
         qg.addPredicates(preds.toSeq: _*)
       }
 
@@ -171,8 +184,10 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
 }
 
 object PlannerQueryBuilder {
+
   def apply(semanticTable: SemanticTable): PlannerQueryBuilder =
     PlannerQueryBuilder(SinglePlannerQuery.empty, semanticTable)
+
   def apply(semanticTable: SemanticTable, argumentIds: Set[String]): PlannerQueryBuilder =
     PlannerQueryBuilder(RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds)), semanticTable)
 
@@ -183,7 +198,7 @@ object PlannerQueryBuilder {
       final case class Result(newPatternRelationships: Set[PatternRelationship], inlinedPredicates: Set[Predicate])
 
       val result = qg.patternRelationships.foldLeft(Result(qg.patternRelationships, Set.empty)) {
-        case (resultSoFar@Result(newPatternRelationships, inlinedPredicates), rel) =>
+        case (resultSoFar @ Result(newPatternRelationships, inlinedPredicates), rel) =>
           if (rel.types.nonEmpty) resultSoFar
           else {
             typePredicates.get(rel.name).fold(resultSoFar) { case (pred, types) =>
@@ -202,11 +217,11 @@ object PlannerQueryBuilder {
   private def findRelationshipTypePredicatesPerSymbol(qg: QueryGraph): Map[String, (Predicate, Seq[RelTypeName])] = {
     qg.selections.predicates.foldLeft(Map.empty[String, (Predicate, Seq[RelTypeName])]) {
       // WHERE r:REL
-      case (acc, pred@Predicate(_, HasTypes(Variable(name), relTypes))) =>
+      case (acc, pred @ Predicate(_, HasTypes(Variable(name), relTypes))) =>
         acc + (name -> (pred -> relTypes))
 
       // WHERE r:REL OR r:OTHER_REL
-      case (acc, pred@Predicate(_, Ors(HasTypes(Variable(name), headRelTypes) +: exprs))) =>
+      case (acc, pred @ Predicate(_, Ors(HasTypes(Variable(name), headRelTypes) +: exprs))) =>
         val tailRelTypesOnTheSameVariable = exprs.collect {
           case HasTypes(Variable(`name`), relTypes) => relTypes
         }.toSeq

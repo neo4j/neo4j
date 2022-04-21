@@ -19,104 +19,89 @@
  */
 package org.neo4j.values.storable;
 
-import java.time.LocalTime;
-import java.util.Arrays;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static org.neo4j.memory.HeapEstimator.LOCAL_TIME_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 
-public class LocalTimeArray extends TemporalArray<LocalTime>
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( LocalTimeArray.class );
+import java.time.LocalTime;
+import java.util.Arrays;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public class LocalTimeArray extends TemporalArray<LocalTime> {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(LocalTimeArray.class);
 
     private final LocalTime[] value;
 
-    LocalTimeArray( LocalTime[] value )
-    {
+    LocalTimeArray(LocalTime[] value) {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    protected LocalTime[] value()
-    {
+    protected LocalTime[] value() {
         return value;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapLocalTimeArray( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapLocalTimeArray(this);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+    public boolean equals(Value other) {
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( LocalTime[] x )
-    {
-        return Arrays.equals( value, x);
+    public boolean equals(LocalTime[] x) {
+        return Arrays.equals(value, x);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writeTo( writer, ValueWriter.ArrayType.LOCAL_TIME ,value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writeTo(writer, ValueWriter.ArrayType.LOCAL_TIME, value);
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.LOCAL_TIME_ARRAY;
     }
 
     @Override
-    protected int unsafeCompareTo( Value otherValue )
-    {
-        return compareToNonPrimitiveArray( (LocalTimeArray) otherValue );
+    protected int unsafeCompareTo(Value otherValue) {
+        return compareToNonPrimitiveArray((LocalTimeArray) otherValue);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "LocalTimeArray";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOfObjectArray( LOCAL_TIME_SIZE, value.length );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOfObjectArray(LOCAL_TIME_SIZE, value.length);
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof LocalTimeValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        LocalTime[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        LocalTime[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = ((LocalTimeValue) added).temporal();
-        return new LocalTimeArray( newArray );
+        return new LocalTimeArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         LocalTime[] newArray = new LocalTime[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
+        System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((LocalTimeValue) prepended).temporal();
-        return new LocalTimeArray( newArray );
+        return new LocalTimeArray(newArray);
     }
 }

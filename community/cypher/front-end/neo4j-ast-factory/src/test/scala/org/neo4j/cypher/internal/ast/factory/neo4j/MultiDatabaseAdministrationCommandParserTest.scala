@@ -56,7 +56,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     ("DATABASE $db", ast.ShowDatabase.apply(NamedDatabaseScope(param("db"))(pos), _: YieldOrWhere) _),
     ("DATABASE neo4j", ast.ShowDatabase.apply(NamedDatabaseScope(literal("neo4j"))(pos), _: YieldOrWhere) _)
   ).foreach { case (dbType, privilege) =>
-
     test(s"SHOW $dbType") {
       yields(privilege(None))
     }
@@ -84,14 +83,21 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     test(s"SHOW $dbType YIELD access ORDER BY access WHERE access ='none'") {
       val orderByClause = orderBy(sortItem(accessVar))
       val whereClause = where(equals(accessVar, noneString))
-      val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause), where = Some(whereClause))
+      val columns =
+        yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause), where = Some(whereClause))
       yields(privilege(Some(Left((columns, None)))))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
       val orderByClause = orderBy(sortItem(accessVar))
       val whereClause = where(equals(accessVar, noneString))
-      val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause), Some(skip(1)), Some(limit(10)), Some(whereClause))
+      val columns = yieldClause(
+        returnItems(variableReturnItem(accessString)),
+        Some(orderByClause),
+        Some(skip(1)),
+        Some(limit(10)),
+        Some(whereClause)
+      )
       yields(privilege(Some(Left((columns, None)))))
     }
 
@@ -102,7 +108,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
     test(s"SHOW $dbType YIELD access ORDER BY access RETURN access") {
       yields(privilege(
-        Some(Left((yieldClause(returnItems(variableReturnItem(accessString)), Some(orderBy(sortItem(accessVar)))),
+        Some(Left((
+          yieldClause(returnItems(variableReturnItem(accessString)), Some(orderBy(sortItem(accessVar)))),
           Some(returnClause(returnItems(variableReturnItem(accessString))))
         )))
       ))
@@ -113,7 +120,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     }
 
     test(s"SHOW $dbType YIELD * RETURN *") {
-      yields(privilege(Some(Left((yieldClause(returnAllItems),Some(returnClause(returnAllItems)))))))
+      yields(privilege(Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))))
     }
   }
 
@@ -126,7 +133,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("SHOW DATABASE") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"
+    )
   }
 
   test("SHOW DATABASE blah YIELD *,blah RETURN user") {
@@ -258,7 +268,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE") {
     // missing db name but parses as 'normal' cypher CREATE...
-    assertFailsWithMessage(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column 16 (offset: 15))""")
+    assertFailsWithMessage(
+      testName,
+      s"""Invalid input '': expected a parameter or an identifier (line 1, column 16 (offset: 15))"""
+    )
   }
 
   test("CREATE DATABASE \"foo.bar\"") {
@@ -303,7 +316,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE DATABASE foo WAIT 3.14") {
-    assertFailsWithMessage(testName, "Invalid input '3.14': expected <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 26 (offset: 25))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '3.14': expected <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 26 (offset: 25))"
+    )
   }
 
   test("CREATE DATABASE foo WAIT bar") {
@@ -315,24 +331,50 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE OR REPLACE DATABASE") {
-    assertFailsWithMessage(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))""")
+    assertFailsWithMessage(
+      testName,
+      s"""Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))"""
+    )
   }
 
-  test("CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'}") {
+  test(
+    "CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'}"
+  ) {
     assertAst(
-      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsMap(Map("existingData" -> StringLiteral("use")(1, 44, 43),
-        "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76))), NoWait)(defaultPos))
+      CreateDatabase(
+        Left("foo"),
+        IfExistsThrowError,
+        OptionsMap(Map(
+          "existingData" -> StringLiteral("use")(1, 44, 43),
+          "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76)
+        )),
+        NoWait
+      )(defaultPos)
+    )
   }
 
-  test("CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} WAIT") {
+  test(
+    "CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} WAIT"
+  ) {
     assertAst(
-      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsMap(Map("existingData" -> StringLiteral("use")(1, 44, 43),
-        "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76))), IndefiniteWait)(defaultPos))
+      CreateDatabase(
+        Left("foo"),
+        IfExistsThrowError,
+        OptionsMap(Map(
+          "existingData" -> StringLiteral("use")(1, 44, 43),
+          "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76)
+        )),
+        IndefiniteWait
+      )(defaultPos)
+    )
   }
 
   test("CREATE DATABASE foo OPTIONS $param") {
     assertAst(
-      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsParam(Parameter("param", CTMap)(1, 29, 28)), NoWait)(defaultPos))
+      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsParam(Parameter("param", CTMap)(1, 29, 28)), NoWait)(
+        defaultPos
+      )
+    )
   }
 
   test("CREATE DATABASE alias") {
@@ -430,7 +472,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("DROP DATABASE") {
-    assertFailsWithMessage(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))""")
+    assertFailsWithMessage(
+      testName,
+      s"""Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"""
+    )
   }
 
   test("DROP DATABASE  IF EXISTS") {
@@ -461,13 +506,14 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     ("READ WRITE", ReadWriteAccess)
   ).foreach {
     case (accessKeyword, accessType) =>
-
       test(s"ALTER DATABASE foo SET ACCESS $accessKeyword") {
         assertAst(AlterDatabase(literalFoo, ifExists = false, accessType)(defaultPos))
       }
 
       test(s"ALTER DATABASE $$foo SET ACCESS $accessKeyword") {
-        assertAst(AlterDatabase( Right(expressions.Parameter("foo", CTString)(1, 16, 15)), ifExists = false, accessType)(defaultPos))
+        assertAst(AlterDatabase(Right(expressions.Parameter("foo", CTString)(1, 16, 15)), ifExists = false, accessType)(
+          defaultPos
+        ))
       }
 
       test(s"ALTER DATABASE `foo.bar` SET ACCESS $accessKeyword") {
@@ -485,11 +531,17 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("ALTER DATABASE") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))"
+    )
   }
 
   test("ALTER DATABASE foo") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \".\", \"IF\" or \"SET\" (line 1, column 19 (offset: 18))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected \".\", \"IF\" or \"SET\" (line 1, column 19 (offset: 18))"
+    )
   }
 
   test("ALTER DATABASE foo SET READ ONLY") {
@@ -497,11 +549,17 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("ALTER DATABASE foo ACCESS READ WRITE") {
-    assertFailsWithMessage(testName, "Invalid input 'ACCESS': expected \".\", \"IF\" or \"SET\" (line 1, column 20 (offset: 19))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'ACCESS': expected \".\", \"IF\" or \"SET\" (line 1, column 20 (offset: 19))"
+    )
   }
 
   test("ALTER DATABASE foo SET ACCESS READ") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \"ONLY\" or \"WRITE\" (line 1, column 35 (offset: 34))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected \"ONLY\" or \"WRITE\" (line 1, column 35 (offset: 34))"
+    )
   }
 
   test("ALTER DATABASE foo SET ACCESS READWRITE'") {
@@ -538,7 +596,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   // ALTER OR REPLACE
   test("ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE") {
-    assertFailsWithMessage(testName, "Invalid input 'OR': expected \"ALIAS\", \"CURRENT\", \"DATABASE\" or \"USER\" (line 1, column 7 (offset: 6))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'OR': expected \"ALIAS\", \"CURRENT\", \"DATABASE\" or \"USER\" (line 1, column 7 (offset: 6))"
+    )
   }
 
   // START DATABASE
@@ -584,7 +645,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("START DATABASE") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))"
+    )
   }
 
   // STOP DATABASE
@@ -630,6 +694,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("STOP DATABASE") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"
+    )
   }
 }

@@ -38,13 +38,18 @@ object ReactiveResultStressTestBase {
   val WORKERS = 13
 }
 
-abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                       runtime: CypherRuntime[CONTEXT],
-                                                                       sizeHint: Int)
-  extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big -> Integer.valueOf(MORSEL_SIZE),
-    GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small -> Integer.valueOf(MORSEL_SIZE),
-    GraphDatabaseInternalSettings.cypher_worker_count -> Integer.valueOf(WORKERS)), runtime) with Eventually {
+abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith(
+        GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big -> Integer.valueOf(MORSEL_SIZE),
+        GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small -> Integer.valueOf(MORSEL_SIZE),
+        GraphDatabaseInternalSettings.cypher_worker_count -> Integer.valueOf(WORKERS)
+      ),
+      runtime
+    ) with Eventually {
   private val random = new Random(seed = 31)
 
   test("should handle allNodeScan") {
@@ -56,7 +61,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
       .allNodeScan("x")
       .build()
 
-    //then
+    // then
     oneAtaTimeCount(logicalQuery) should equal(sizeHint)
     randomCount(logicalQuery) should equal(sizeHint)
   }
@@ -89,14 +94,13 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
   }
 
   private def randomCount(logicalQuery: LogicalQuery): Int =
-    count(logicalQuery,
-          () => intBetween(MORSEL_SIZE - MORSEL_SIZE/2, MORSEL_SIZE + MORSEL_SIZE/2))
+    count(logicalQuery, () => intBetween(MORSEL_SIZE - MORSEL_SIZE / 2, MORSEL_SIZE + MORSEL_SIZE / 2))
 
   private def oneAtaTimeCount(logicalQuery: LogicalQuery): Int = count(logicalQuery, () => 1)
 
   private def count(logicalQuery: LogicalQuery, request: () => Int): Int = {
     val subscriber = TestSubscriber.concurrent
-    val data = inputValues((1 to sizeHint).map(Array[Any](_)):_*)
+    val data = inputValues((1 to sizeHint).map(Array[Any](_)): _*)
     val runtimeResult = execute(logicalQuery, runtime, data.stream(), subscriber)
     var hasMore = true
     var totalNumberOfRequests = 0

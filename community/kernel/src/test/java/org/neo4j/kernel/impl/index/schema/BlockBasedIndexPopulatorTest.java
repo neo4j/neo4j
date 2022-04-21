@@ -19,12 +19,23 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
+import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,7 +45,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongPredicate;
-
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -78,42 +94,29 @@ import org.neo4j.test.scheduler.JobSchedulerAdapter;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.singletonList;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
-import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
-import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.Race.throwing;
-
 @ActorsExtension
 @EphemeralPageCacheExtension
-abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
-{
-    private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptors.forLabel( 1, 1 );
-    final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withIndexType( indexType() )
-            .withName( "index" ).materialise( 1 );
-    public static final int SUFFICIENTLY_LARGE_BUFFER_SIZE = (int) ByteUnit.kibiBytes( 50 );
+abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
+    private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptors.forLabel(1, 1);
+    final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema(SCHEMA_DESCRIPTOR)
+            .withIndexType(indexType())
+            .withName("index")
+            .materialise(1);
+    public static final int SUFFICIENTLY_LARGE_BUFFER_SIZE = (int) ByteUnit.kibiBytes(50);
     final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
     @Inject
     Actor merger;
+
     @Inject
     Actor closer;
+
     @Inject
     FileSystemAbstraction fs;
+
     @Inject
     TestDirectory testDir;
+
     @Inject
     PageCache pageCache;
 
@@ -123,104 +126,100 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
     IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
 
     abstract IndexType indexType();
-    abstract BlockBasedIndexPopulator<KEY> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker ) throws IOException;
-    abstract Layout<KEY,NullValue> layout();
-    abstract Value supportedValue( int i );
+
+    abstract BlockBasedIndexPopulator<KEY> instantiatePopulator(
+            BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker)
+            throws IOException;
+
+    abstract Layout<KEY, NullValue> layout();
+
+    abstract Value supportedValue(int i);
 
     @BeforeEach
-    void setup()
-    {
-        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
-        IndexDirectoryStructure directoryStructure = directoriesByProvider( testDir.homePath() ).forProvider( providerDescriptor );
-        indexFiles = new IndexFiles.Directory( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
-        databaseIndexContext =
-                DatabaseIndexContext.builder( pageCache, fs, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), DEFAULT_DATABASE_NAME ).build();
+    void setup() {
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor("test", "v1");
+        IndexDirectoryStructure directoryStructure =
+                directoriesByProvider(testDir.homePath()).forProvider(providerDescriptor);
+        indexFiles = new IndexFiles.Directory(fs, directoryStructure, INDEX_DESCRIPTOR.getId());
+        databaseIndexContext = DatabaseIndexContext.builder(
+                        pageCache, fs, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), DEFAULT_DATABASE_NAME)
+                .build();
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        populationWorkScheduler = wrapScheduler( jobScheduler );
+        populationWorkScheduler = wrapScheduler(jobScheduler);
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
+    void tearDown() throws Exception {
         jobScheduler.shutdown();
     }
 
-    private static IndexPopulator.PopulationWorkScheduler wrapScheduler( JobScheduler jobScheduler )
-    {
-        return new IndexPopulator.PopulationWorkScheduler()
-        {
+    private static IndexPopulator.PopulationWorkScheduler wrapScheduler(JobScheduler jobScheduler) {
+        return new IndexPopulator.PopulationWorkScheduler() {
 
             @Override
-            public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
-            {
-                return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, new JobMonitoringParams( null, null, null ), job );
+            public <T> JobHandle<T> schedule(
+                    IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job) {
+                return jobScheduler.schedule(
+                        Group.INDEX_POPULATION_WORK, new JobMonitoringParams(null, null, null), job);
             }
         };
     }
 
     @Test
-    void shouldAwaitMergeToBeFullyAbortedBeforeLeavingCloseMethod() throws Exception
-    {
+    void shouldAwaitMergeToBeFullyAbortedBeforeLeavingCloseMethod() throws Exception {
         // given
-        TrappingMonitor monitor = new TrappingMonitor( ignore -> false );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( monitor );
+        TrappingMonitor monitor = new TrappingMonitor(ignore -> false);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(monitor);
         boolean closed = false;
-        try
-        {
-            populator.add( batchOfUpdates(), NULL_CONTEXT );
+        try {
+            populator.add(batchOfUpdates(), NULL_CONTEXT);
 
             // when starting to merge (in a separate thread)
-            Future<Object> mergeFuture = merger.submit( scanCompletedTask( populator ) );
+            Future<Object> mergeFuture = merger.submit(scanCompletedTask(populator));
             // and waiting for merge to get going
             monitor.barrier.awaitUninterruptibly();
-            // calling close here should wait for the merge future, so that checking the merge future for "done" immediately afterwards must say true
-            Future<Void> closeFuture = closer.submit( () -> populator.close( false, NULL_CONTEXT ) );
+            // calling close here should wait for the merge future, so that checking the merge future for "done"
+            // immediately afterwards must say true
+            Future<Void> closeFuture = closer.submit(() -> populator.close(false, NULL_CONTEXT));
             closer.untilWaiting();
             monitor.barrier.release();
             closeFuture.get();
             closed = true;
 
             // then
-            assertTrue( mergeFuture.isDone() );
-        }
-        finally
-        {
-            if ( !closed )
-            {
-                populator.close( true, NULL_CONTEXT );
+            assertTrue(mergeFuture.isDone());
+        } finally {
+            if (!closed) {
+                populator.close(true, NULL_CONTEXT);
             }
         }
     }
 
-    private Callable<Object> scanCompletedTask( BlockBasedIndexPopulator<KEY> populator )
-    {
-        return () ->
-        {
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+    private Callable<Object> scanCompletedTask(BlockBasedIndexPopulator<KEY> populator) {
+        return () -> {
+            populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
             return null;
         };
     }
 
     @Test
-    void shouldHandleBeingAbortedWhileMerging() throws Exception
-    {
+    void shouldHandleBeingAbortedWhileMerging() throws Exception {
         // given
-        TrappingMonitor monitor = new TrappingMonitor( numberOfBlocks -> numberOfBlocks == 2 );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( monitor );
+        TrappingMonitor monitor = new TrappingMonitor(numberOfBlocks -> numberOfBlocks == 2);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(monitor);
         boolean closed = false;
-        try
-        {
-            populator.add( batchOfUpdates(), NULL_CONTEXT );
+        try {
+            populator.add(batchOfUpdates(), NULL_CONTEXT);
 
             // when starting to merge (in a separate thread)
-            Future<Object> mergeFuture = merger.submit( scanCompletedTask( populator ) );
+            Future<Object> mergeFuture = merger.submit(scanCompletedTask(populator));
             // and waiting for merge to get going
             monitor.barrier.await();
             monitor.barrier.release();
             monitor.mergeFinishedBarrier.awaitUninterruptibly();
-            // calling close here should wait for the merge future, so that checking the merge future for "done" immediately afterwards must say true
-            Future<Void> closeFuture = closer.submit( () -> populator.close( false, NULL_CONTEXT ) );
+            // calling close here should wait for the merge future, so that checking the merge future for "done"
+            // immediately afterwards must say true
+            Future<Void> closeFuture = closer.submit(() -> populator.close(false, NULL_CONTEXT));
             closer.untilWaiting();
             monitor.mergeFinishedBarrier.release();
             closeFuture.get();
@@ -228,442 +227,379 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
 
             // then let's make sure scanComplete was cancelled, not throwing exception or anything.
             mergeFuture.get();
-        }
-        finally
-        {
-            if ( !closed )
-            {
-                populator.close( false, NULL_CONTEXT );
+        } finally {
+            if (!closed) {
+                populator.close(false, NULL_CONTEXT);
             }
         }
     }
 
     @Test
-    void shouldReportAccurateProgressThroughoutThePhases() throws Exception
-    {
+    void shouldReportAccurateProgressThroughoutThePhases() throws Exception {
         // given
-        TrappingMonitor monitor = new TrappingMonitor( numberOfBlocks -> numberOfBlocks == 1 );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( monitor );
-        try
-        {
-            populator.add( batchOfUpdates(), NULL_CONTEXT );
+        TrappingMonitor monitor = new TrappingMonitor(numberOfBlocks -> numberOfBlocks == 1);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(monitor);
+        try {
+            populator.add(batchOfUpdates(), NULL_CONTEXT);
 
             // when starting to merge (in a separate thread)
-            Future<Object> mergeFuture = merger.submit( scanCompletedTask( populator ) );
+            Future<Object> mergeFuture = merger.submit(scanCompletedTask(populator));
             // and waiting for merge to get going
             monitor.barrier.awaitUninterruptibly();
             // this is a bit fuzzy, but what we want is to assert that the scan doesn't represent 100% of the work
-            assertEquals( 0.5f, populator.progress( PopulationProgress.DONE ).getProgress(), 0.1f );
+            assertEquals(0.5f, populator.progress(PopulationProgress.DONE).getProgress(), 0.1f);
             monitor.barrier.release();
             monitor.mergeFinishedBarrier.awaitUninterruptibly();
-            assertEquals( 0.7f, populator.progress( PopulationProgress.DONE ).getProgress(), 0.1f );
+            assertEquals(0.7f, populator.progress(PopulationProgress.DONE).getProgress(), 0.1f);
             monitor.mergeFinishedBarrier.release();
             mergeFuture.get();
-            assertEquals( 1f, populator.progress( PopulationProgress.DONE ).getProgress(), 0f );
-        }
-        finally
-        {
-            populator.close( true, NULL_CONTEXT );
+            assertEquals(1f, populator.progress(PopulationProgress.DONE).getProgress(), 0f);
+        } finally {
+            populator.close(true, NULL_CONTEXT);
         }
     }
 
     @Test
-    void shouldCorrectlyDecideToAwaitMergeDependingOnProgress() throws Throwable
-    {
+    void shouldCorrectlyDecideToAwaitMergeDependingOnProgress() throws Throwable {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR);
         boolean closed = false;
-        try
-        {
-            populator.add( batchOfUpdates(), NULL_CONTEXT );
+        try {
+            populator.add(batchOfUpdates(), NULL_CONTEXT);
 
             // when
             Race race = new Race();
-            race.addContestant( throwing( () -> populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT ) ) );
-            race.addContestant( throwing( () -> populator.close( false, NULL_CONTEXT ) ) );
+            race.addContestant(
+                    throwing(() -> populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT)));
+            race.addContestant(throwing(() -> populator.close(false, NULL_CONTEXT)));
             race.go();
             closed = true;
 
             // then regardless of who wins (close/merge) after close call returns no files should still be mapped
             EphemeralFileSystemAbstraction ephemeralFileSystem = (EphemeralFileSystemAbstraction) fs;
             ephemeralFileSystem.assertNoOpenFiles();
-        }
-        finally
-        {
-            if ( !closed )
-            {
-                populator.close( true, NULL_CONTEXT );
+        } finally {
+            if (!closed) {
+                populator.close(true, NULL_CONTEXT);
             }
         }
     }
 
     @Test
-    void shouldDeleteDirectoryOnDrop() throws Exception
-    {
+    void shouldDeleteDirectoryOnDrop() throws Exception {
         // given
-        TrappingMonitor monitor = new TrappingMonitor( ignore -> false );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( monitor );
+        TrappingMonitor monitor = new TrappingMonitor(ignore -> false);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(monitor);
         boolean closed = false;
-        try
-        {
-            populator.add( batchOfUpdates(), NULL_CONTEXT );
+        try {
+            populator.add(batchOfUpdates(), NULL_CONTEXT);
 
             // when starting to merge (in a separate thread)
-            Future<Object> mergeFuture = merger.submit( scanCompletedTask( populator ) );
+            Future<Object> mergeFuture = merger.submit(scanCompletedTask(populator));
             // and waiting for merge to get going
             monitor.barrier.awaitUninterruptibly();
             // calling drop here should wait for the merge future and then delete index directory
-            assertTrue( fs.fileExists( indexFiles.getBase() ) );
-            assertTrue( fs.isDirectory( indexFiles.getBase() ) );
-            assertTrue( fs.listFiles( indexFiles.getBase() ).length > 0 );
+            assertTrue(fs.fileExists(indexFiles.getBase()));
+            assertTrue(fs.isDirectory(indexFiles.getBase()));
+            assertTrue(fs.listFiles(indexFiles.getBase()).length > 0);
 
-            Future<Void> dropFuture = closer.submit( populator::drop );
+            Future<Void> dropFuture = closer.submit(populator::drop);
             closer.untilWaiting();
             monitor.barrier.release();
             dropFuture.get();
             closed = true;
 
             // then
-            assertTrue( mergeFuture.isDone() );
-            assertFalse( fs.fileExists( indexFiles.getBase() ) );
-        }
-        finally
-        {
-            if ( !closed )
-            {
-                populator.close( true, NULL_CONTEXT );
+            assertTrue(mergeFuture.isDone());
+            assertFalse(fs.fileExists(indexFiles.getBase()));
+        } finally {
+            if (!closed) {
+                populator.close(true, NULL_CONTEXT);
             }
         }
     }
 
     @Test
-    void shouldDeallocateAllAllocatedMemoryOnClose() throws IndexEntryConflictException, IOException
-    {
+    void shouldDeallocateAllAllocatedMemoryOnClose() throws IndexEntryConflictException, IOException {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, 100);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR, bufferFactory, memoryTracker);
         boolean closed = false;
-        try
-        {
+        try {
             // when
             Collection<IndexEntryUpdate<?>> updates = batchOfUpdates();
-            populator.add( updates, NULL_CONTEXT );
+            populator.add(updates, NULL_CONTEXT);
             int nextId = updates.size();
-            externalUpdates( populator, nextId, nextId + 10 );
+            externalUpdates(populator, nextId, nextId + 10);
             nextId = nextId + 10;
             long memoryBeforeScanCompleted = memoryTracker.usedNativeMemory();
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-            externalUpdates( populator, nextId, nextId + 10 );
+            populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+            externalUpdates(populator, nextId, nextId + 10);
 
             // then
-            assertTrue( memoryTracker.peakMemoryUsage() > memoryBeforeScanCompleted,
-                    "expected some memory to have been temporarily allocated in scanCompleted" );
-            populator.close( true, NULL_CONTEXT );
+            assertTrue(
+                    memoryTracker.peakMemoryUsage() > memoryBeforeScanCompleted,
+                    "expected some memory to have been temporarily allocated in scanCompleted");
+            populator.close(true, NULL_CONTEXT);
             closed = true;
 
             bufferFactory.close();
-            assertEquals( 0, memoryTracker.usedNativeMemory() );
-        }
-        finally
-        {
-            if ( !closed )
-            {
-                populator.close( true, NULL_CONTEXT );
+            assertEquals(0, memoryTracker.usedNativeMemory());
+        } finally {
+            if (!closed) {
+                populator.close(true, NULL_CONTEXT);
             }
         }
     }
 
     @Test
-    void shouldDeallocateAllAllocatedMemoryOnDrop() throws IndexEntryConflictException, IOException
-    {
+    void shouldDeallocateAllAllocatedMemoryOnDrop() throws IndexEntryConflictException, IOException {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, 100);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR, bufferFactory, memoryTracker);
         boolean closed = false;
-        try
-        {
+        try {
             // when
             Collection<IndexEntryUpdate<?>> updates = batchOfUpdates();
-            populator.add( updates, NULL_CONTEXT );
+            populator.add(updates, NULL_CONTEXT);
             int nextId = updates.size();
-            externalUpdates( populator, nextId, nextId + 10 );
+            externalUpdates(populator, nextId, nextId + 10);
             nextId = nextId + 10;
             long memoryBeforeScanCompleted = memoryTracker.usedNativeMemory();
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-            externalUpdates( populator, nextId, nextId + 10 );
+            populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+            externalUpdates(populator, nextId, nextId + 10);
 
             // then
-            assertTrue( memoryTracker.peakMemoryUsage() > memoryBeforeScanCompleted,
-                    "expected some memory to have been temporarily allocated in scanCompleted" );
+            assertTrue(
+                    memoryTracker.peakMemoryUsage() > memoryBeforeScanCompleted,
+                    "expected some memory to have been temporarily allocated in scanCompleted");
             populator.drop();
             closed = true;
             bufferFactory.close();
-            assertEquals( 0, memoryTracker.usedNativeMemory() );
-        }
-        finally
-        {
-            if ( !closed )
-            {
-                populator.close( true, NULL_CONTEXT );
+            assertEquals(0, memoryTracker.usedNativeMemory());
+        } finally {
+            if (!closed) {
+                populator.close(true, NULL_CONTEXT);
             }
         }
     }
 
     @Test
-    void shouldBuildNonUniqueSampleAsPartOfScanCompleted() throws IndexEntryConflictException, IOException
-    {
+    void shouldBuildNonUniqueSampleAsPartOfScanCompleted() throws IndexEntryConflictException, IOException {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, 100);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR, bufferFactory, memoryTracker);
         Collection<IndexEntryUpdate<?>> populationUpdates = batchOfUpdates();
-        populator.add( populationUpdates, NULL_CONTEXT );
+        populator.add(populationUpdates, NULL_CONTEXT);
 
         // when
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+        populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
         // Also a couple of updates afterwards
         int numberOfUpdatesAfterCompleted = 4;
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
-        {
-            for ( int i = 0; i < numberOfUpdatesAfterCompleted; i++ )
-            {
-                updater.process( IndexEntryUpdate.add( 10_000 + i, INDEX_DESCRIPTOR, supportedValue( i ) ) );
+        try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+            for (int i = 0; i < numberOfUpdatesAfterCompleted; i++) {
+                updater.process(IndexEntryUpdate.add(10_000 + i, INDEX_DESCRIPTOR, supportedValue(i)));
             }
         }
-        populator.close( true, NULL_CONTEXT );
+        populator.close(true, NULL_CONTEXT);
 
         // then
-        IndexSample sample = populator.sample( NULL_CONTEXT );
-        assertEquals( populationUpdates.size(), sample.indexSize() );
-        assertEquals( populationUpdates.size(), sample.sampleSize() );
-        assertEquals( populationUpdates.size(), sample.uniqueValues() );
-        assertEquals( numberOfUpdatesAfterCompleted, sample.updates() );
+        IndexSample sample = populator.sample(NULL_CONTEXT);
+        assertEquals(populationUpdates.size(), sample.indexSize());
+        assertEquals(populationUpdates.size(), sample.sampleSize());
+        assertEquals(populationUpdates.size(), sample.uniqueValues());
+        assertEquals(numberOfUpdatesAfterCompleted, sample.updates());
     }
 
     @Test
-    void shouldFlushTreeOnScanCompleted() throws IndexEntryConflictException, IOException
-    {
+    void shouldFlushTreeOnScanCompleted() throws IndexEntryConflictException, IOException {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, 100);
         AtomicInteger checkpoints = new AtomicInteger();
-        GBPTree.Monitor treeMonitor = new GBPTree.Monitor.Adaptor()
-        {
+        GBPTree.Monitor treeMonitor = new GBPTree.Monitor.Adaptor() {
             @Override
-            public void checkpointCompleted()
-            {
+            public void checkpointCompleted() {
                 checkpoints.incrementAndGet();
             }
         };
-        Monitors monitors = new Monitors( databaseIndexContext.monitors, NullLogProvider.getInstance() );
-        monitors.addMonitorListener( treeMonitor );
-        databaseIndexContext = DatabaseIndexContext.builder( databaseIndexContext )
-                .withMonitors( monitors )
+        Monitors monitors = new Monitors(databaseIndexContext.monitors, NullLogProvider.getInstance());
+        monitors.addMonitorListener(treeMonitor);
+        databaseIndexContext = DatabaseIndexContext.builder(databaseIndexContext)
+                .withMonitors(monitors)
                 .build();
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
-        try
-        {
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR, bufferFactory, memoryTracker);
+        try {
             // when
             int numberOfCheckPointsBeforeScanCompleted = checkpoints.get();
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+            populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
 
             // then
-            assertEquals( numberOfCheckPointsBeforeScanCompleted + 1, checkpoints.get() );
-        }
-        finally
-        {
-            populator.close( true, NULL_CONTEXT );
+            assertEquals(numberOfCheckPointsBeforeScanCompleted + 1, checkpoints.get());
+        } finally {
+            populator.close(true, NULL_CONTEXT);
         }
     }
 
     @Test
-    void shouldScheduleMergeOnJobSchedulerWithCorrectGroup() throws IndexEntryConflictException, IOException
-    {
+    void shouldScheduleMergeOnJobSchedulerWithCorrectGroup() throws IndexEntryConflictException, IOException {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR);
         boolean closed = false;
-        try
-        {
-            populator.add( batchOfUpdates(), NULL_CONTEXT );
+        try {
+            populator.add(batchOfUpdates(), NULL_CONTEXT);
 
             // when
             MutableBoolean called = new MutableBoolean();
-            JobScheduler trackingJobScheduler = new JobSchedulerAdapter()
-            {
+            JobScheduler trackingJobScheduler = new JobSchedulerAdapter() {
                 @Override
-                public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
-                {
+                public <T> JobHandle<T> schedule(
+                        Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job) {
                     called.setTrue();
-                    assertThat( group ).isSameAs( Group.INDEX_POPULATION_WORK );
-                    return jobScheduler.schedule( group, jobMonitoringParams, job );
+                    assertThat(group).isSameAs(Group.INDEX_POPULATION_WORK);
+                    return jobScheduler.schedule(group, jobMonitoringParams, job);
                 }
             };
-            populator.scanCompleted( nullInstance, wrapScheduler( trackingJobScheduler ), NULL_CONTEXT );
-            assertTrue( called.booleanValue() );
-            populator.close( true, NULL_CONTEXT );
+            populator.scanCompleted(nullInstance, wrapScheduler(trackingJobScheduler), NULL_CONTEXT);
+            assertTrue(called.booleanValue());
+            populator.close(true, NULL_CONTEXT);
             closed = true;
-        }
-        finally
-        {
-            if ( !closed )
-            {
-                populator.close( true, NULL_CONTEXT );
+        } finally {
+            if (!closed) {
+                populator.close(true, NULL_CONTEXT);
             }
         }
     }
 
     @Test
-    void shouldFailOnBatchAddedTooLargeValue() throws IOException
-    {
+    void shouldFailOnBatchAddedTooLargeValue() throws IOException {
         /// given
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
-        try
-        {
+        ByteBufferFactory bufferFactory =
+                new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR, bufferFactory, INSTANCE);
+        try {
             int size = populator.tree.keyValueSizeCap() + 1;
-            assertThrows( IllegalArgumentException.class, () -> populator.add( singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR,
-                    generateStringValueResultingInIndexEntrySize( layout(), size ) ) ), NULL_CONTEXT ) );
-        }
-        finally
-        {
-            populator.close( false, NULL_CONTEXT );
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> populator.add(
+                            singletonList(IndexEntryUpdate.add(
+                                    0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize(layout(), size))),
+                            NULL_CONTEXT));
+        } finally {
+            populator.close(false, NULL_CONTEXT);
         }
     }
 
-    @ValueSource( booleans = {true, false} )
+    @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void shouldFailOnUpdatedTooLargeValue( boolean updateBeforeScanCompleted ) throws IndexEntryConflictException, IOException
-    {
+    void shouldFailOnUpdatedTooLargeValue(boolean updateBeforeScanCompleted)
+            throws IndexEntryConflictException, IOException {
         /// given
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
-        try
-        {
+        ByteBufferFactory bufferFactory =
+                new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR, bufferFactory, INSTANCE);
+        try {
             int size = populator.tree.keyValueSizeCap() + 1;
-            if ( !updateBeforeScanCompleted )
-            {
-                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+            if (!updateBeforeScanCompleted) {
+                populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
             }
-            assertThrows( IllegalArgumentException.class, () ->
-            {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
-                {
-                    updater.process( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( layout(), size ) ) );
+            assertThrows(IllegalArgumentException.class, () -> {
+                try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+                    updater.process(IndexEntryUpdate.add(
+                            0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize(layout(), size)));
                 }
-            } );
-        }
-        finally
-        {
-            populator.close( false, NULL_CONTEXT );
+            });
+        } finally {
+            populator.close(false, NULL_CONTEXT);
         }
     }
 
     @Test
-    void shouldCountExternalUpdatesAsSampleUpdates() throws IOException, IndexEntryConflictException
-    {
+    void shouldCountExternalUpdatesAsSampleUpdates() throws IOException, IndexEntryConflictException {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR );
-        try
-        {
-            populator.add( List.of( add( 0 ), add( 1 ) ), NULL_CONTEXT );
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
-            {
-                updater.process( add( 10 ) );
-                updater.process( add( 11 ) );
-                updater.process( add( 12 ) );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR);
+        try {
+            populator.add(List.of(add(0), add(1)), NULL_CONTEXT);
+            try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+                updater.process(add(10));
+                updater.process(add(11));
+                updater.process(add(12));
             }
 
             // when
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+            populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
 
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
-            {
-                updater.process( remove( 10 ) );
+            try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+                updater.process(remove(10));
             }
 
             // then
-            IndexSample sample = populator.sample( NULL_CONTEXT );
-            assertThat( sample.updates() ).isEqualTo( 4 );
-        }
-        finally
-        {
-            populator.close( true, NULL_CONTEXT );
+            IndexSample sample = populator.sample(NULL_CONTEXT);
+            assertThat(sample.updates()).isEqualTo(4);
+        } finally {
+            populator.close(true, NULL_CONTEXT);
         }
     }
 
-    Seeker<KEY,NullValue> seek( GBPTree<KEY,NullValue> tree, Layout<KEY,NullValue> layout )
-            throws IOException
-    {
+    Seeker<KEY, NullValue> seek(GBPTree<KEY, NullValue> tree, Layout<KEY, NullValue> layout) throws IOException {
         KEY low = layout.newKey();
-        low.initialize( Long.MIN_VALUE );
+        low.initialize(Long.MIN_VALUE);
         low.initValuesAsLowest();
         KEY high = layout.newKey();
-        high.initialize( Long.MAX_VALUE );
+        high.initialize(Long.MAX_VALUE);
         high.initValuesAsHighest();
-        return tree.seek( low, high, NULL_CONTEXT );
+        return tree.seek(low, high, NULL_CONTEXT);
     }
 
-    private void externalUpdates( BlockBasedIndexPopulator<KEY> populator, int firstId, int lastId )
-            throws IndexEntryConflictException
-    {
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
-        {
-            for ( int i = firstId; i < lastId; i++ )
-            {
-                updater.process( add( i ) );
+    private void externalUpdates(BlockBasedIndexPopulator<KEY> populator, int firstId, int lastId)
+            throws IndexEntryConflictException {
+        try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+            for (int i = firstId; i < lastId; i++) {
+                updater.process(add(i));
             }
         }
     }
 
-    protected BlockBasedIndexPopulator<KEY> instantiatePopulator( BlockStorage.Monitor monitor ) throws IOException
-    {
-        return instantiatePopulator( monitor, heapBufferFactory( 100 ), INSTANCE );
+    protected BlockBasedIndexPopulator<KEY> instantiatePopulator(BlockStorage.Monitor monitor) throws IOException {
+        return instantiatePopulator(monitor, heapBufferFactory(100), INSTANCE);
     }
 
-    private Collection<IndexEntryUpdate<?>> batchOfUpdates()
-    {
+    private Collection<IndexEntryUpdate<?>> batchOfUpdates() {
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
-        for ( int i = 0; i < 50; i++ )
-        {
-            updates.add( add( i ) );
+        for (int i = 0; i < 50; i++) {
+            updates.add(add(i));
         }
         return updates;
     }
 
-    private IndexEntryUpdate<IndexDescriptor> add( int i )
-    {
-        return IndexEntryUpdate.add( i, INDEX_DESCRIPTOR, supportedValue( i ) );
+    private IndexEntryUpdate<IndexDescriptor> add(int i) {
+        return IndexEntryUpdate.add(i, INDEX_DESCRIPTOR, supportedValue(i));
     }
 
-    private IndexEntryUpdate<IndexDescriptor> remove( int i )
-    {
-        return IndexEntryUpdate.remove( i, INDEX_DESCRIPTOR, supportedValue( i ) );
+    private IndexEntryUpdate<IndexDescriptor> remove(int i) {
+        return IndexEntryUpdate.remove(i, INDEX_DESCRIPTOR, supportedValue(i));
     }
 
-    private static class TrappingMonitor extends BlockStorage.Monitor.Adapter
-    {
+    private static class TrappingMonitor extends BlockStorage.Monitor.Adapter {
         private final Barrier.Control barrier = new Barrier.Control();
         private final Barrier.Control mergeFinishedBarrier = new Barrier.Control();
         private final LongPredicate trapForMergeIterationFinished;
 
-        TrappingMonitor( LongPredicate trapForMergeIterationFinished )
-        {
+        TrappingMonitor(LongPredicate trapForMergeIterationFinished) {
             this.trapForMergeIterationFinished = trapForMergeIterationFinished;
         }
 
         @Override
-        public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks )
-        {
+        public void mergedBlocks(long resultingBlockSize, long resultingEntryCount, long numberOfBlocks) {
             barrier.reached();
         }
 
         @Override
-        public void mergeIterationFinished( long numberOfBlocksBefore, long numberOfBlocksAfter )
-        {
-            if ( trapForMergeIterationFinished.test( numberOfBlocksAfter ) )
-            {
+        public void mergeIterationFinished(long numberOfBlocksBefore, long numberOfBlocksAfter) {
+            if (trapForMergeIterationFinished.test(numberOfBlocksAfter)) {
                 mergeFinishedBarrier.reached();
             }
         }

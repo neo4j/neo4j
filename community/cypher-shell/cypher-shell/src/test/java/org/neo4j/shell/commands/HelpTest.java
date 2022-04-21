@@ -19,15 +19,6 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
-import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.printer.Printer;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -36,94 +27,92 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class HelpTest
-{
-    private final Printer printer = mock( Printer.class );
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
+import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.printer.Printer;
+
+class HelpTest {
+    private final Printer printer = mock(Printer.class);
     private CommandFactoryHelper cmdHelper;
     private Command cmd;
 
     @BeforeEach
-    public void setup()
-    {
-        cmdHelper = mock( CommandFactoryHelper.class );
-        cmd = new Help( printer, cmdHelper );
+    public void setup() {
+        cmdHelper = mock(CommandFactoryHelper.class);
+        cmd = new Help(printer, cmdHelper);
     }
 
     @Test
-    void shouldAcceptNoArgs()
-    {
-        assertDoesNotThrow( () -> cmd.execute( List.of() ) );
+    void shouldAcceptNoArgs() {
+        assertDoesNotThrow(() -> cmd.execute(List.of()));
     }
 
     @Test
-    void shouldNotAcceptTooManyArgs()
-    {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob", "alice" ) ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+    void shouldNotAcceptTooManyArgs() {
+        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob", "alice")));
+        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
     }
 
     @Test
-    void helpListing() throws CommandException
-    {
+    void helpListing() throws CommandException {
         // given
-        var commands = List.of( mockFactory( "bob" ), mockFactory( "bobby" ) );
-        when( cmdHelper.factories() ).thenReturn( commands );
+        var commands = List.of(mockFactory("bob"), mockFactory("bobby"));
+        when(cmdHelper.factories()).thenReturn(commands);
 
         // when
-        cmd.execute( List.of() );
+        cmd.execute(List.of());
 
         // then
-        verify( printer ).printOut( "\nAvailable commands:" );
-        verify( printer ).printOut( "  @|BOLD bob  |@ description for bob" );
-        verify( printer ).printOut( "  @|BOLD bobby|@ description for bobby" );
-        verify( printer ).printOut( "\nFor help on a specific command type:" );
-        verify( printer ).printOut( "    :help@|BOLD  command|@\n" );
-        verify( printer ).printOut( "\nFor help on cypher please visit:" );
-        verify( printer ).printOut( "    " + Help.CYPHER_MANUAL_LINK + "\n" );
+        verify(printer).printOut("\nAvailable commands:");
+        verify(printer).printOut("  @|BOLD bob  |@ description for bob");
+        verify(printer).printOut("  @|BOLD bobby|@ description for bobby");
+        verify(printer).printOut("\nFor help on a specific command type:");
+        verify(printer).printOut("    :help@|BOLD  command|@\n");
+        verify(printer).printOut("\nFor help on cypher please visit:");
+        verify(printer).printOut("    " + Help.CYPHER_MANUAL_LINK + "\n");
     }
 
     @Test
-    void helpForCommand() throws CommandException
-    {
+    void helpForCommand() throws CommandException {
         // given
-        var factory = mockFactory( "bob" );
-        when( cmdHelper.factoryByName( "bob" ) ).thenReturn( factory );
+        var factory = mockFactory("bob");
+        when(cmdHelper.factoryByName("bob")).thenReturn(factory);
 
         // when
-        cmd.execute( List.of( "bob" ) );
+        cmd.execute(List.of("bob"));
 
         // then
-        verify( printer ).printOut( "\nusage: @|BOLD bob|@ usage for bob\n"
-                                    + "\nhelp for bob\n" );
+        verify(printer).printOut("\nusage: @|BOLD bob|@ usage for bob\n" + "\nhelp for bob\n");
     }
 
     @Test
-    void helpForNonExistingCommandThrows()
-    {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "notacommandname" ) ) );
-        assertThat( exception.getMessage(), containsString( "No such command: notacommandname" ) );
+    void helpForNonExistingCommandThrows() {
+        CommandException exception =
+                assertThrows(CommandException.class, () -> cmd.execute(List.of("notacommandname")));
+        assertThat(exception.getMessage(), containsString("No such command: notacommandname"));
     }
 
     @Test
-    void helpForCommandHasOptionalColon() throws CommandException
-    {
+    void helpForCommandHasOptionalColon() throws CommandException {
         // given
-        var factory = mockFactory( ":bob" );
-        when( cmdHelper.factoryByName( ":bob" ) ).thenReturn( factory );
+        var factory = mockFactory(":bob");
+        when(cmdHelper.factoryByName(":bob")).thenReturn(factory);
 
         // when
-        cmd.execute( List.of( "bob" ) );
+        cmd.execute(List.of("bob"));
 
         // then
-        verify( printer ).printOut( "\nusage: @|BOLD :bob|@ usage for :bob\n"
-                                    + "\nhelp for :bob\n" );
+        verify(printer).printOut("\nusage: @|BOLD :bob|@ usage for :bob\n" + "\nhelp for :bob\n");
     }
 
-    private static Command.Factory mockFactory( String name )
-    {
-        var metadata = new Command.Metadata( name, "description for " + name, "usage for " + name, "help for " + name, List.of() );
-        var factory = mock( Command.Factory.class );
-        when( factory.metadata() ).thenReturn( metadata );
+    private static Command.Factory mockFactory(String name) {
+        var metadata = new Command.Metadata(
+                name, "description for " + name, "usage for " + name, "help for " + name, List.of());
+        var factory = mock(Command.Factory.class);
+        when(factory.metadata()).thenReturn(metadata);
         return factory;
     }
 }

@@ -25,10 +25,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * Signals that a deadlock between two or more transactions has been detected.
  */
-public class DeadlockDetectedException extends TransientTransactionFailureException
-{
-    public DeadlockDetectedException( String message )
-    {
-        super( Status.Transaction.DeadlockDetected, message );
+public class DeadlockDetectedException extends TransientTransactionFailureException {
+    public DeadlockDetectedException(String message) {
+        super(Status.Transaction.DeadlockDetected, message);
     }
 }

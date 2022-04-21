@@ -19,11 +19,10 @@
  */
 package org.neo4j.io.fs;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * This class consists exclusively of static methods that operate on files, directories, or other types of files.
@@ -31,11 +30,8 @@ import java.nio.file.Path;
  *
  * @see FileUtils
  */
-public final class FileSystemUtils
-{
-    private FileSystemUtils()
-    {
-    }
+public final class FileSystemUtils {
+    private FileSystemUtils() {}
 
     /**
      * Creates a file, or opens an existing file. If necessary, parent directories will be created.
@@ -45,13 +41,12 @@ public final class FileSystemUtils
      * @return An output stream.
      * @throws IOException If an error occurs creating directories or opening the file.
      */
-    public static OutputStream createOrOpenAsOutputStream( FileSystemAbstraction fs, Path file, boolean append ) throws IOException
-    {
-        if ( file.getParent() != null )
-        {
-            fs.mkdirs( file.getParent() );
+    public static OutputStream createOrOpenAsOutputStream(FileSystemAbstraction fs, Path file, boolean append)
+            throws IOException {
+        if (file.getParent() != null) {
+            fs.mkdirs(file.getParent());
         }
-        return fs.openAsOutputStream( file, append );
+        return fs.openAsOutputStream(file, append);
     }
 
     /**
@@ -61,14 +56,12 @@ public final class FileSystemUtils
      * @param directory directory to check.
      * @return {@code true} when directory does not exist or exists and is empty, {@code false} otherwise.
      */
-    public static boolean isEmptyOrNonExistingDirectory( FileSystemAbstraction fs, Path directory ) throws IOException
-    {
-        if ( fs.isDirectory( directory ) )
-        {
-            Path[] files = fs.listFiles( directory );
-            return ArrayUtils.isEmpty( files );
+    public static boolean isEmptyOrNonExistingDirectory(FileSystemAbstraction fs, Path directory) throws IOException {
+        if (fs.isDirectory(directory)) {
+            Path[] files = fs.listFiles(directory);
+            return ArrayUtils.isEmpty(files);
         }
-        return !fs.fileExists( directory );
+        return !fs.fileExists(directory);
     }
 
     /**
@@ -80,41 +73,29 @@ public final class FileSystemUtils
      * @return the size, in bytes, of the file or the total size of the content in the directory, including
      * subdirectories.
      */
-    public static long size( FileSystemAbstraction fs, Path file )
-    {
-        try
-        {
-            if ( fs.isDirectory( file ) )
-            {
-                Path[] files = fs.listFiles( file );
+    public static long size(FileSystemAbstraction fs, Path file) {
+        try {
+            if (fs.isDirectory(file)) {
+                Path[] files = fs.listFiles(file);
                 long size = 0L;
-                for ( Path child : files )
-                {
-                    size += size( fs, child );
+                for (Path child : files) {
+                    size += size(fs, child);
                 }
                 return size;
+            } else {
+                return fs.getFileSize(file);
             }
-            else
-            {
-                return fs.getFileSize( file );
-            }
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             // usually it's file that was deleted while evaluating directory size
             return 0;
         }
     }
 
-    public static void deleteFile( FileSystemAbstraction fs, Path fileToDelete ) throws IOException
-    {
-        if ( fs.isDirectory( fileToDelete ) )
-        {
-            fs.deleteRecursively( fileToDelete );
-        }
-        else
-        {
-            fs.deleteFile( fileToDelete );
+    public static void deleteFile(FileSystemAbstraction fs, Path fileToDelete) throws IOException {
+        if (fs.isDirectory(fileToDelete)) {
+            fs.deleteRecursively(fileToDelete);
+        } else {
+            fs.deleteFile(fileToDelete);
         }
     }
 }

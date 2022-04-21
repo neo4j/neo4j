@@ -19,16 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.kernel.impl.locking.LocksFactory;
-import org.neo4j.kernel.impl.locking.forseti.ForsetiLocksFactory;
-import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.SystemNanoClock;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,48 +28,52 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
 
-class EditionLocksFactoriesTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.kernel.impl.locking.LocksFactory;
+import org.neo4j.kernel.impl.locking.forseti.ForsetiLocksFactory;
+import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
+
+class EditionLocksFactoriesTest {
 
     @Test
-    void createLocksForAllResourceTypes()
-    {
-        LocksFactory lockFactory = mock( LocksFactory.class );
+    void createLocksForAllResourceTypes() {
+        LocksFactory lockFactory = mock(LocksFactory.class);
         Config config = Config.defaults();
         SystemNanoClock clock = Clocks.nanoClock();
 
-        createLockManager( lockFactory, config, clock );
+        createLockManager(lockFactory, config, clock);
 
-        verify( lockFactory ).newInstance( eq( config ), eq( clock ) );
+        verify(lockFactory).newInstance(eq(config), eq(clock));
     }
 
     @Test
-    void createForsetiLocksFactoryWhenNotConfigured()
-    {
+    void createForsetiLocksFactoryWhenNotConfigured() {
         Config config = Config.defaults();
-        LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
+        LocksFactory lockFactory = createLockFactory(config, NullLogService.getInstance());
 
-        assertThat( lockFactory ).isInstanceOf( ForsetiLocksFactory.class );
+        assertThat(lockFactory).isInstanceOf(ForsetiLocksFactory.class);
     }
 
     @Test
-    void createForsetiWhenObsoleteCommunityLocksFactorySpecified()
-    {
-        Config config = Config.defaults( GraphDatabaseInternalSettings.lock_manager, "community");
+    void createForsetiWhenObsoleteCommunityLocksFactorySpecified() {
+        Config config = Config.defaults(GraphDatabaseInternalSettings.lock_manager, "community");
 
-        LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
+        LocksFactory lockFactory = createLockFactory(config, NullLogService.getInstance());
 
-        assertThat( lockFactory ).isInstanceOf( ForsetiLocksFactory.class );
+        assertThat(lockFactory).isInstanceOf(ForsetiLocksFactory.class);
     }
 
     @Test
-    void failToCreateWhenConfiguredFactoryNotFound()
-    {
-        Config config = Config.defaults( GraphDatabaseInternalSettings.lock_manager, "notFoundManager");
+    void failToCreateWhenConfiguredFactoryNotFound() {
+        Config config = Config.defaults(GraphDatabaseInternalSettings.lock_manager, "notFoundManager");
 
-        IllegalArgumentException exception =
-                assertThrows( IllegalArgumentException.class, () -> createLockFactory( config, NullLogService.getInstance() ) );
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class, () -> createLockFactory(config, NullLogService.getInstance()));
 
-        assertEquals( "No lock manager found with the name 'notFoundManager'.", exception.getMessage() );
+        assertEquals("No lock manager found with the name 'notFoundManager'.", exception.getMessage());
     }
 }

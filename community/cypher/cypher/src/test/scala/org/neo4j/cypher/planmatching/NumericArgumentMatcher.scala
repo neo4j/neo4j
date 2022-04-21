@@ -72,14 +72,15 @@ trait NumericArgumentMatcher extends Matcher[InternalPlanDescription] {
   override def apply(plan: InternalPlanDescription): MatchResult = {
     maybeMatchingArgument(plan) match {
       case None => MatchResult(
-        matches = false,
-        rawFailureMessage = s"No $argString found.",
-        rawNegatedFailureMessage = "")
+          matches = false,
+          rawFailureMessage = s"No $argString found.",
+          rawNegatedFailureMessage = ""
+        )
       case Some(amount) => MatchResult(
-        matches = matches(amount),
-        rawFailureMessage = s"Expected ${plan.name} to have $argMatcherDesc $argString but had $amount $argString.",
-        rawNegatedFailureMessage = s"Expected ${plan.name} not to have $argMatcherDesc $argString."
-      )
+          matches = matches(amount),
+          rawFailureMessage = s"Expected ${plan.name} to have $argMatcherDesc $argString but had $amount $argString.",
+          rawNegatedFailureMessage = s"Expected ${plan.name} not to have $argMatcherDesc $argString."
+        )
     }
   }
 }

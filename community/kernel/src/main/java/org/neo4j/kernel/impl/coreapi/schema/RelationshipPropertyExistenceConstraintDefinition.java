@@ -19,30 +19,30 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import static java.lang.String.format;
+
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-import static java.lang.String.format;
-
-public class RelationshipPropertyExistenceConstraintDefinition extends RelationshipConstraintDefinition
-{
-    public RelationshipPropertyExistenceConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint,
-            RelationshipType relationshipType, String propertyKey )
-    {
-        super( actions, constraint, relationshipType, propertyKey );
+public class RelationshipPropertyExistenceConstraintDefinition extends RelationshipConstraintDefinition {
+    public RelationshipPropertyExistenceConstraintDefinition(
+            InternalSchemaActions actions,
+            ConstraintDescriptor constraint,
+            RelationshipType relationshipType,
+            String propertyKey) {
+        super(actions, constraint, relationshipType, propertyKey);
     }
 
     @Override
-    public ConstraintType getConstraintType()
-    {
+    public ConstraintType getConstraintType() {
         return ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE;
     }
 
     @Override
-    public String toString()
-    {
-        return format( "ON ()-[%1$s:%2$s]-() ASSERT (%1$s.%3$s) IS NOT NULL",
-                relationshipType.name().toLowerCase(), relationshipType.name(), propertyKey );
+    public String toString() {
+        return format(
+                "ON ()-[%1$s:%2$s]-() ASSERT (%1$s.%3$s) IS NOT NULL",
+                relationshipType.name().toLowerCase(), relationshipType.name(), propertyKey);
     }
 }

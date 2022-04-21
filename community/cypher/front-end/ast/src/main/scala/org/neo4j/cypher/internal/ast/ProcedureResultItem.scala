@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 object ProcedureResultItem {
+
   def apply(output: ProcedureOutput, variable: Variable)(position: InputPosition): ProcedureResultItem =
     ProcedureResultItem(Some(output), variable)(position)
 
@@ -35,7 +36,7 @@ object ProcedureResultItem {
 }
 
 case class ProcedureResultItem(output: Option[ProcedureOutput], variable: LogicalVariable)(val position: InputPosition)
-  extends ASTNode with SemanticAnalysisTooling {
+    extends ASTNode with SemanticAnalysisTooling {
 
   val outputName: String = output.map(_.name).getOrElse(variable.name)
 

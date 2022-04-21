@@ -20,23 +20,29 @@
 package cypher.features
 
 class TestConfig(
-                  val denylist: Option[String],
-                  val executionPrefix: String,
-                  val experimental: Boolean = false
+  val denylist: Option[String],
+  val executionPrefix: String,
+  val experimental: Boolean = false
 )
 
-case object DefaultTestConfig extends TestConfig(Some("default.txt"),"")
+case object DefaultTestConfig extends TestConfig(Some("default.txt"), "")
 
-case object SlottedTestConfig extends TestConfig(Some("slotted.txt"),"CYPHER planner=cost runtime=slotted")
+case object SlottedTestConfig extends TestConfig(Some("slotted.txt"), "CYPHER planner=cost runtime=slotted")
 
-case object SlottedWithCompiledExpressionsTestConfig extends TestConfig(Some("slotted-with-compiled-expressions.txt"),"CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
+case object SlottedWithCompiledExpressionsTestConfig extends TestConfig(
+      Some("slotted-with-compiled-expressions.txt"),
+      "CYPHER planner=cost runtime=slotted expressionEngine=COMPILED"
+    )
 
-case object PipelinedTestConfig extends TestConfig(Some("pipelined-single-threaded.txt"), "CYPHER planner=cost runtime=pipelined")
+case object PipelinedTestConfig
+    extends TestConfig(Some("pipelined-single-threaded.txt"), "CYPHER planner=cost runtime=pipelined")
 
 case object ParallelTestConfig extends TestConfig(Some("parallel.txt"), "CYPHER planner=cost runtime=parallel")
 
-case object InterpretedTestConfig extends TestConfig(Some("interpreted.txt"),"CYPHER planner=cost runtime=interpreted")
+case object InterpretedTestConfig extends TestConfig(Some("interpreted.txt"), "CYPHER planner=cost runtime=interpreted")
 
 case object PipelinedFullTestConfig extends TestConfig(
-  Some("pipelined-single-threaded-full.txt"),
-  "CYPHER planner=cost runtime=pipelined interpretedPipesFallback=all", experimental = true)
+      Some("pipelined-single-threaded-full.txt"),
+      "CYPHER planner=cost runtime=pipelined interpretedPipesFallback=all",
+      experimental = true
+    )

@@ -27,8 +27,7 @@ import org.neo4j.graphdb.PathExpander;
  *
  * @param <STATE> type of initial state to produce.
  */
-public interface InitialBranchState<STATE>
-{
+public interface InitialBranchState<STATE> {
     InitialBranchState<Object> NO_STATE = path -> null;
     InitialBranchState<Double> DOUBLE_ZERO = path -> 0d;
 
@@ -42,41 +41,36 @@ public interface InitialBranchState<STATE>
      * @param path the start branch to return the initial state for.
      * @return an initial state for the traversal branch.
      */
-    STATE initialState( Path path );
+    STATE initialState(Path path);
 
     /**
      * Creates a version of this state factory which produces reversed initial state,
      * used in bidirectional traversals.
      * @return an instance which produces reversed initial state.
      */
-    default InitialBranchState<STATE> reverse()
-    {
+    default InitialBranchState<STATE> reverse() {
         return this;
     }
 
     /**
      * Branch state evaluator for an initial state.
      */
-    class State<STATE> implements InitialBranchState<STATE>
-    {
+    class State<STATE> implements InitialBranchState<STATE> {
         private final STATE initialState;
         private final STATE reversedInitialState;
 
-        public State( STATE initialState, STATE reversedInitialState )
-        {
+        public State(STATE initialState, STATE reversedInitialState) {
             this.initialState = initialState;
             this.reversedInitialState = reversedInitialState;
         }
 
         @Override
-        public InitialBranchState<STATE> reverse()
-        {
-            return new State<>( reversedInitialState, initialState );
+        public InitialBranchState<STATE> reverse() {
+            return new State<>(reversedInitialState, initialState);
         }
 
         @Override
-        public STATE initialState( Path path )
-        {
+        public STATE initialState(Path path) {
             return initialState;
         }
     }

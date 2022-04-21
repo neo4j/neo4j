@@ -32,11 +32,11 @@ case class CompilationContains[T]()(implicit val tag: ClassTag[T]) extends Valid
   override def apply(in: Any): Seq[String] = in match {
     case state: LogicalPlanState =>
       tag.runtimeClass match {
-        case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
+        case x if classOf[Statement] == x && state.maybeStatement.isEmpty     => Seq("Statement missing")
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
-        case x if classOf[UnionQuery] == x && state.maybeQuery.isEmpty => Seq("Union query missing")
+        case x if classOf[UnionQuery] == x && state.maybeQuery.isEmpty        => Seq("Union query missing")
         case x if classOf[LogicalPlan] == x && state.maybeLogicalPlan.isEmpty => Seq("Logical plan missing")
-        case _ => Seq.empty
+        case _                                                                => Seq.empty
       }
     case x => throw new IllegalArgumentException(s"Unknown state: $x")
   }
@@ -46,7 +46,7 @@ case class CompilationContains[T]()(implicit val tag: ClassTag[T]) extends Valid
   override def hashCode(): Int = tag.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
-    case cc:CompilationContains[_] => tag.equals(cc.tag)
-    case  _ => false
+    case cc: CompilationContains[_] => tag.equals(cc.tag)
+    case _                          => false
   }
 }

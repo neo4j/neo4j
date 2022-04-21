@@ -22,11 +22,9 @@ package org.neo4j.io.pagecache.impl;
 import org.neo4j.adversaries.fs.AdversarialChannelDefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-public class SingleFilePageSwapperWithAdversarialFileChannelIT extends SingleFilePageSwapperWithRealFileSystemIT
-{
+public class SingleFilePageSwapperWithAdversarialFileChannelIT extends SingleFilePageSwapperWithRealFileSystemIT {
     @Override
-    protected FileSystemAbstraction getFs()
-    {
+    protected FileSystemAbstraction getFs() {
         return new AdversarialChannelDefaultFileSystemAbstraction();
     }
 }

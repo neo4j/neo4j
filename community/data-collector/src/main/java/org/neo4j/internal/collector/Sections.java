@@ -20,13 +20,10 @@
 package org.neo4j.internal.collector;
 
 import java.util.Arrays;
-
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
-class Sections
-{
-    private Sections()
-    { // only static methods
+class Sections {
+    private Sections() { // only static methods
     }
 
     static final String GRAPH_COUNTS = "GRAPH COUNTS";
@@ -35,11 +32,10 @@ class Sections
     static final String QUERIES = "QUERIES";
 
     private static final String[] SECTIONS = {GRAPH_COUNTS, TOKENS, QUERIES};
-    private static final String NAMES = Arrays.toString( SECTIONS );
+    private static final String NAMES = Arrays.toString(SECTIONS);
 
-    static InvalidArgumentsException unknownSectionException( String section )
-    {
-        return new InvalidArgumentsException( String.format( "Unknown section '%s', known sections are %s",
-                                                             section, NAMES ) );
+    static InvalidArgumentsException unknownSectionException(String section) {
+        return new InvalidArgumentsException(
+                String.format("Unknown section '%s', known sections are %s", section, NAMES));
     }
 }

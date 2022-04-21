@@ -19,10 +19,8 @@
  */
 package org.neo4j.server.startup;
 
-class BootProcessFailureException extends BootFailureException
-{
-    BootProcessFailureException( int exitCode )
-    {
-        super( "Unexpected process failure. See log for info.", exitCode );
+class BootProcessFailureException extends BootFailureException {
+    BootProcessFailureException(int exitCode) {
+        super("Unexpected process failure. See log for info.", exitCode);
     }
 }

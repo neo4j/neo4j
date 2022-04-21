@@ -31,16 +31,21 @@ import org.neo4j.test.server.HTTP
 
 import java.net.URI
 
-case class HttpCypherExecutorFactory(private val databaseManagementService: DatabaseManagementService, private val config: Config) extends CypherExecutorFactory {
+case class HttpCypherExecutorFactory(
+  private val databaseManagementService: DatabaseManagementService,
+  private val config: Config
+) extends CypherExecutorFactory {
 
   private val http: HTTP.Builder = {
     val connectorPortRegister =
-      databaseManagementService.database(config.get(GraphDatabaseSettings.default_database)).asInstanceOf[GraphDatabaseAPI]
+      databaseManagementService.database(config.get(GraphDatabaseSettings.default_database)).asInstanceOf[
+        GraphDatabaseAPI
+      ]
         .getDependencyResolver.resolveDependency(classOf[ConnectorPortRegister])
 
-
     val uri =
-      if (config.get(HttpConnector.enabled)) URI.create(s"http://${connectorPortRegister.getLocalAddress(HttpConnector.NAME)}/")
+      if (config.get(HttpConnector.enabled))
+        URI.create(s"http://${connectorPortRegister.getLocalAddress(HttpConnector.NAME)}/")
       else throw new IllegalStateException("HTTP connector is not configured")
 
     HTTP.withBaseUri(uri)

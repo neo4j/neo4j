@@ -31,6 +31,7 @@ class simpleExpressionEvaluatorTest extends CypherFunSuite {
   test("isNonDeterministic should not care about capitalization") {
     val evaluator = simpleExpressionEvaluator
     evaluator.isDeterministic(
-      FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)) shouldBe false
+      FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)
+    ) shouldBe false
   }
 }

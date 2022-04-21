@@ -19,10 +19,16 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -38,20 +44,13 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @EphemeralTestDirectoryExtension
-class SchemaImplTest
-{
-    private static final Label USER_LABEL = Label.label( "User" );
+class SchemaImplTest {
+    private static final Label USER_LABEL = Label.label("User");
 
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDirectory;
 
@@ -59,107 +58,95 @@ class SchemaImplTest
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void createDb()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setFileSystem( fs )
+    void createDb() {
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setFileSystem(fs)
                 .impermanent()
                 .build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+        db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
     @AfterEach
-    void shutdownDb()
-    {
+    void shutdownDb() {
         managementService.shutdown();
     }
 
     @Test
-    void testGetIndexPopulationProgress() throws Exception
-    {
-        assertFalse( indexExists( USER_LABEL ) );
+    void testGetIndexPopulationProgress() throws Exception {
+        assertFalse(indexExists(USER_LABEL));
 
         // Create some nodes
-        try ( Transaction tx = db.beginTx() )
-        {
-            Label label = Label.label( "User" );
+        try (Transaction tx = db.beginTx()) {
+            Label label = Label.label("User");
 
             // Create a huge bunch of users so the index takes a while to build
-            for ( int id = 0; id < 100000; id++ )
-            {
-                Node userNode = tx.createNode( label );
-                userNode.setProperty( "username", "user" + id + "@neo4j.org" );
+            for (int id = 0; id < 100000; id++) {
+                Node userNode = tx.createNode(label);
+                userNode.setProperty("username", "user" + id + "@neo4j.org");
             }
             tx.commit();
         }
 
         // Create an index
         IndexDefinition indexDefinition;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             Schema schema = tx.schema();
-            indexDefinition = schema.indexFor( USER_LABEL ).on( "username" ).create();
+            indexDefinition = schema.indexFor(USER_LABEL).on("username").create();
             tx.commit();
         }
 
         // Get state and progress
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             Schema schema = tx.schema();
             Schema.IndexState state;
 
             IndexPopulationProgress progress;
-            do
-            {
-                state = schema.getIndexState( indexDefinition );
-                progress = schema.getIndexPopulationProgress( indexDefinition );
+            do {
+                state = schema.getIndexState(indexDefinition);
+                progress = schema.getIndexPopulationProgress(indexDefinition);
 
-                assertTrue( progress.getCompletedPercentage() >= 0 );
-                assertTrue( progress.getCompletedPercentage() <= 100 );
-                Thread.sleep( 10 );
-            }
-            while ( state == Schema.IndexState.POPULATING );
+                assertTrue(progress.getCompletedPercentage() >= 0);
+                assertTrue(progress.getCompletedPercentage() <= 100);
+                Thread.sleep(10);
+            } while (state == Schema.IndexState.POPULATING);
 
-            assertSame( state, Schema.IndexState.ONLINE );
-            assertEquals( 100.0, progress.getCompletedPercentage(), 0.0001 );
+            assertSame(state, Schema.IndexState.ONLINE);
+            assertEquals(100.0, progress.getCompletedPercentage(), 0.0001);
         }
     }
 
     @Test
-    void createdIndexDefinitionsMustBeNamed()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            IndexDefinition index = tx.schema().indexFor( USER_LABEL ).on( "name" ).create();
-            assertThat( index.getName() ).isEqualTo( "index_83617be8" );
+    void createdIndexDefinitionsMustBeNamed() {
+        try (Transaction tx = db.beginTx()) {
+            IndexDefinition index = tx.schema().indexFor(USER_LABEL).on("name").create();
+            assertThat(index.getName()).isEqualTo("index_83617be8");
             tx.commit();
         }
     }
 
     @Test
-    void mustRememberNamesOfCreatedIndex()
-    {
+    void mustRememberNamesOfCreatedIndex() {
         String indexName = "Users index";
-        try ( Transaction tx = db.beginTx() )
-        {
-            IndexDefinition index = tx.schema().indexFor( USER_LABEL ).on( "name" ).withName( indexName ).create();
-            assertThat( index.getName() ).isEqualTo( indexName );
+        try (Transaction tx = db.beginTx()) {
+            IndexDefinition index = tx.schema()
+                    .indexFor(USER_LABEL)
+                    .on("name")
+                    .withName(indexName)
+                    .create();
+            assertThat(index.getName()).isEqualTo(indexName);
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            IndexDefinition index = tx.schema().getIndexByName( indexName );
-            assertThat( index.getName() ).isEqualTo( indexName );
+        try (Transaction tx = db.beginTx()) {
+            IndexDefinition index = tx.schema().getIndexByName(indexName);
+            assertThat(index.getName()).isEqualTo(indexName);
             tx.commit();
         }
     }
 
-    private boolean indexExists( Label label )
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Iterable<IndexDefinition> indexes = transaction.schema().getIndexes( label );
-            IndexDefinition index = Iterables.firstOrNull( indexes );
+    private boolean indexExists(Label label) {
+        try (Transaction transaction = db.beginTx()) {
+            Iterable<IndexDefinition> indexes = transaction.schema().getIndexes(label);
+            IndexDefinition index = Iterables.firstOrNull(indexes);
             boolean exists = index != null;
             transaction.commit();
             return exists;

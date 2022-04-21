@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.jctools.queues.MessagePassingQueue;
-import org.jctools.queues.MpscUnboundedXaddArrayQueue;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.LockSupport;
-
+import org.jctools.queues.MessagePassingQueue;
+import org.jctools.queues.MpscUnboundedXaddArrayQueue;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -42,13 +45,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
-import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
-
-public class TransactionLogQueue extends LifecycleAdapter
-{
+public class TransactionLogQueue extends LifecycleAdapter {
     private static final int CONSUMER_MAX_BATCH = 1024;
     private static final int INITIAL_CAPACITY = 128;
     private static final int FAILED_TX_MARKER = -1;
@@ -65,68 +62,69 @@ public class TransactionLogQueue extends LifecycleAdapter
     private Thread logAppender;
     private volatile boolean stopped;
 
-    public TransactionLogQueue( LogFiles logFiles, TransactionIdStore transactionIdStore, Health databaseHealth,
-            TransactionMetadataCache transactionMetadataCache, JobScheduler jobScheduler, InternalLogProvider logProvider )
-    {
+    public TransactionLogQueue(
+            LogFiles logFiles,
+            TransactionIdStore transactionIdStore,
+            Health databaseHealth,
+            TransactionMetadataCache transactionMetadataCache,
+            JobScheduler jobScheduler,
+            InternalLogProvider logProvider) {
         this.logFiles = logFiles;
         this.logRotation = logFiles.getLogFile().getLogRotation();
         this.transactionIdStore = transactionIdStore;
         this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.txAppendQueue = new MpscUnboundedXaddArrayQueue<>( INITIAL_CAPACITY );
+        this.txAppendQueue = new MpscUnboundedXaddArrayQueue<>(INITIAL_CAPACITY);
         this.jobScheduler = jobScheduler;
         this.stopped = true;
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
     }
 
-    public TxQueueElement submit( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException
-    {
-        if ( stopped )
-        {
+    public TxQueueElement submit(TransactionToApply batch, LogAppendEvent logAppendEvent) throws IOException {
+        if (stopped) {
             throw new DatabaseShutdownException();
         }
-        TxQueueElement txQueueElement = new TxQueueElement( batch, logAppendEvent );
-        while ( !txAppendQueue.offer( txQueueElement ) )
-        {
-            if ( stopped )
-            {
+        TxQueueElement txQueueElement = new TxQueueElement(batch, logAppendEvent);
+        while (!txAppendQueue.offer(txQueueElement)) {
+            if (stopped) {
                 throw new DatabaseShutdownException();
             }
         }
-        LockSupport.unpark( logAppender );
+        LockSupport.unpark(logAppender);
         return txQueueElement;
     }
 
     @Override
-    public synchronized void start()
-    {
-        transactionWriter =
-                new TransactionWriter( txAppendQueue, logFiles.getLogFile(), transactionIdStore, databaseHealth, transactionMetadataCache, logRotation, log );
-        logAppender = jobScheduler.threadFactory( Group.LOG_WRITER ).newThread( transactionWriter );
+    public synchronized void start() {
+        transactionWriter = new TransactionWriter(
+                txAppendQueue,
+                logFiles.getLogFile(),
+                transactionIdStore,
+                databaseHealth,
+                transactionMetadataCache,
+                logRotation,
+                log);
+        logAppender = jobScheduler.threadFactory(Group.LOG_WRITER).newThread(transactionWriter);
         logAppender.start();
         stopped = false;
     }
 
     @Override
-    public synchronized void shutdown() throws ExecutionException, InterruptedException
-    {
+    public synchronized void shutdown() throws ExecutionException, InterruptedException {
         stopped = true;
         TransactionWriter writer = this.transactionWriter;
-        if ( writer != null )
-        {
+        if (writer != null) {
             writer.stop();
         }
 
         Thread appender = this.logAppender;
-        if ( appender != null )
-        {
+        if (appender != null) {
             appender.join();
         }
     }
 
-    static class TxQueueElement
-    {
-        private static final long PARK_TIME = MILLISECONDS.toNanos( 100 );
+    static class TxQueueElement {
+        private static final long PARK_TIME = MILLISECONDS.toNanos(100);
 
         private final TransactionToApply batch;
         private final LogAppendEvent logAppendEvent;
@@ -136,49 +134,41 @@ public class TransactionLogQueue extends LifecycleAdapter
         private volatile long[] txIds;
         private volatile long txId;
 
-        TxQueueElement( TransactionToApply batch, LogAppendEvent logAppendEvent )
-        {
+        TxQueueElement(TransactionToApply batch, LogAppendEvent logAppendEvent) {
             this.batch = batch;
             this.logAppendEvent = logAppendEvent;
             this.executor = Thread.currentThread();
         }
 
-        public long getCommittedTxId()
-        {
-            while ( txId == 0 && txIds == null )
-            {
-                LockSupport.parkNanos( PARK_TIME );
+        public long getCommittedTxId() {
+            while (txId == 0 && txIds == null) {
+                LockSupport.parkNanos(PARK_TIME);
             }
             var elements = this.elementsToNotify;
-            if ( elements != null )
-            {
+            if (elements != null) {
                 long[] ids = txIds;
-                for ( int i = 1; i < elements.length; i++ )
-                {
+                for (int i = 1; i < elements.length; i++) {
                     TxQueueElement element = elements[i];
                     element.txId = ids[i];
-                    LockSupport.unpark( element.executor );
+                    LockSupport.unpark(element.executor);
                 }
                 txId = ids[0];
             }
             var exception = throwable;
-            if ( exception != null )
-            {
-                throw new RuntimeException( exception );
+            if (exception != null) {
+                throw new RuntimeException(exception);
             }
             return txId;
         }
 
-        public void fail( Throwable throwable )
-        {
+        public void fail(Throwable throwable) {
             this.throwable = throwable;
             this.txId = FAILED_TX_MARKER;
-            LockSupport.unpark( executor );
+            LockSupport.unpark(executor);
         }
     }
 
-    private static class TransactionWriter implements Runnable
-    {
+    private static class TransactionWriter implements Runnable {
         private final MpscUnboundedXaddArrayQueue<TxQueueElement> txQueue;
         private final TransactionLogWriter transactionLogWriter;
         private final LogFile logFile;
@@ -191,9 +181,14 @@ public class TransactionLogQueue extends LifecycleAdapter
         private volatile boolean stopped;
         private final MessagePassingQueue.WaitStrategy waitStrategy;
 
-        TransactionWriter( MpscUnboundedXaddArrayQueue<TxQueueElement> txQueue, LogFile logFile, TransactionIdStore transactionIdStore, Health databaseHealth,
-                TransactionMetadataCache transactionMetadataCache, LogRotation logRotation, InternalLog log )
-        {
+        TransactionWriter(
+                MpscUnboundedXaddArrayQueue<TxQueueElement> txQueue,
+                LogFile logFile,
+                TransactionIdStore transactionIdStore,
+                Health databaseHealth,
+                TransactionMetadataCache transactionMetadataCache,
+                LogRotation logRotation,
+                InternalLog log) {
             this.txQueue = txQueue;
             this.transactionLogWriter = logFile.getTransactionLogWriter();
             this.logFile = logFile;
@@ -207,53 +202,43 @@ public class TransactionLogQueue extends LifecycleAdapter
         }
 
         @Override
-        public void run()
-        {
-            TxConsumer txConsumer = new TxConsumer( databaseHealth, transactionIdStore, transactionLogWriter, checksum, transactionMetadataCache );
+        public void run() {
+            TxConsumer txConsumer = new TxConsumer(
+                    databaseHealth, transactionIdStore, transactionLogWriter, checksum, transactionMetadataCache);
 
             int idleCounter = 0;
-            while ( !stopped )
-            {
-                try
-                {
-                    int drainedElements = txQueue.drain( txConsumer, CONSUMER_MAX_BATCH );
-                    if ( drainedElements > 0 )
-                    {
+            while (!stopped) {
+                try {
+                    int drainedElements = txQueue.drain(txConsumer, CONSUMER_MAX_BATCH);
+                    if (drainedElements > 0) {
                         idleCounter = 0;
                         txConsumer.processBatch();
 
                         LogAppendEvent logAppendEvent = txConsumer.txElements[drainedElements - 1].logAppendEvent;
-                        boolean logRotated = logRotation.locklessRotateLogIfNeeded( logAppendEvent );
-                        logAppendEvent.setLogRotated( logRotated );
-                        if ( !logRotated )
-                        {
-                            logFile.locklessForce( logAppendEvent );
+                        boolean logRotated = logRotation.locklessRotateLogIfNeeded(logAppendEvent);
+                        logAppendEvent.setLogRotated(logRotated);
+                        if (!logRotated) {
+                            logFile.locklessForce(logAppendEvent);
                         }
                         txConsumer.complete();
+                    } else {
+                        idleCounter = waitStrategy.idle(idleCounter);
                     }
-                    else
-                    {
-                        idleCounter = waitStrategy.idle( idleCounter );
-                    }
-                }
-                catch ( Throwable t )
-                {
-                    log.error( "Transaction log applier failure.", t );
-                    databaseHealth.panic( t );
-                    txConsumer.cancelBatch( t );
+                } catch (Throwable t) {
+                    log.error("Transaction log applier failure.", t);
+                    databaseHealth.panic(t);
+                    txConsumer.cancelBatch(t);
                 }
             }
 
             DatabaseShutdownException databaseShutdownException = new DatabaseShutdownException();
             TxQueueElement element;
-            while ( (element = txQueue.poll()) != null )
-            {
-                element.fail( databaseShutdownException );
+            while ((element = txQueue.poll()) != null) {
+                element.fail(databaseShutdownException);
             }
         }
 
-        private static class TxConsumer implements MessagePassingQueue.Consumer<TxQueueElement>
-        {
+        private static class TxConsumer implements MessagePassingQueue.Consumer<TxQueueElement> {
             private final Health databaseHealth;
             private final TransactionIdStore transactionIdStore;
             private final TransactionLogWriter transactionLogWriter;
@@ -265,9 +250,12 @@ public class TransactionLogQueue extends LifecycleAdapter
             private TxQueueElement[] elements;
             private long[] txIds;
 
-            TxConsumer( Health databaseHealth, TransactionIdStore transactionIdStore, TransactionLogWriter transactionLogWriter, int checksum,
-                    TransactionMetadataCache transactionMetadataCache )
-            {
+            TxConsumer(
+                    Health databaseHealth,
+                    TransactionIdStore transactionIdStore,
+                    TransactionLogWriter transactionLogWriter,
+                    int checksum,
+                    TransactionMetadataCache transactionMetadataCache) {
                 this.transactionMetadataCache = transactionMetadataCache;
                 this.databaseHealth = databaseHealth;
                 this.transactionIdStore = transactionIdStore;
@@ -276,106 +264,101 @@ public class TransactionLogQueue extends LifecycleAdapter
             }
 
             @Override
-            public void accept( TxQueueElement txQueueElement )
-            {
+            public void accept(TxQueueElement txQueueElement) {
                 txElements[index++] = txQueueElement;
             }
 
-            private void processBatch() throws IOException
-            {
-                databaseHealth.assertHealthy( IOException.class );
+            private void processBatch() throws IOException {
+                databaseHealth.assertHealthy(IOException.class);
                 int drainedElements = index;
                 elements = new TxQueueElement[drainedElements];
                 txIds = new long[drainedElements];
-                for ( int i = 0; i < drainedElements; i++ )
-                {
+                for (int i = 0; i < drainedElements; i++) {
                     TxQueueElement txQueueElement = txElements[i];
                     elements[i] = txQueueElement;
                     LogAppendEvent logAppendEvent = txQueueElement.logAppendEvent;
                     long lastTransactionId = TransactionIdStore.BASE_TX_ID;
-                    try ( var appendEvent = logAppendEvent.beginAppendTransaction( drainedElements ) )
-                    {
+                    try (var appendEvent = logAppendEvent.beginAppendTransaction(drainedElements)) {
                         TransactionToApply tx = txQueueElement.batch;
-                        while ( tx != null )
-                        {
+                        while (tx != null) {
                             long transactionId = transactionIdStore.nextCommittingTransactionId();
 
                             // If we're in a scenario where we're merely replicating transactions, i.e. transaction
                             // id have already been generated by another entity we simply check that our id
                             // that we generated match that id. If it doesn't we've run into a problem we can't ´
                             // really recover from and would point to a bug somewhere.
-                            matchAgainstExpectedTransactionIdIfAny( transactionId, tx );
+                            matchAgainstExpectedTransactionIdIfAny(transactionId, tx);
 
-                            TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId, logAppendEvent, checksum );
+                            TransactionCommitment commitment = appendToLog(
+                                    tx.transactionRepresentation(), transactionId, logAppendEvent, checksum);
                             checksum = commitment.getTransactionChecksum();
-                            tx.commitment( commitment, transactionId );
-                            tx.logPosition( commitment.logPosition() );
+                            tx.commitment(commitment, transactionId);
+                            tx.logPosition(commitment.logPosition());
                             tx = tx.next();
                             lastTransactionId = transactionId;
                         }
                         txIds[i] = lastTransactionId;
-                    }
-                    catch ( Exception e )
-                    {
-                        txQueueElement.fail( e );
-                        throwIfUnchecked( e );
-                        throw new RuntimeException( e );
+                    } catch (Exception e) {
+                        txQueueElement.fail(e);
+                        throwIfUnchecked(e);
+                        throw new RuntimeException(e);
                     }
                 }
             }
 
-            private void matchAgainstExpectedTransactionIdIfAny( long transactionId, TransactionToApply tx )
-            {
+            private void matchAgainstExpectedTransactionIdIfAny(long transactionId, TransactionToApply tx) {
                 long expectedTransactionId = tx.transactionId();
-                if ( TRANSACTION_ID_NOT_SPECIFIED != expectedTransactionId )
-                {
-                    if ( transactionId != expectedTransactionId )
-                    {
+                if (TRANSACTION_ID_NOT_SPECIFIED != expectedTransactionId) {
+                    if (transactionId != expectedTransactionId) {
                         throw new IllegalStateException(
-                                "Received " + tx.transactionRepresentation() + " with txId:" + expectedTransactionId +
-                                        " to be applied, but appending it ended up generating an unexpected txId:" +
-                                        transactionId );
+                                "Received " + tx.transactionRepresentation() + " with txId:" + expectedTransactionId
+                                        + " to be applied, but appending it ended up generating an unexpected txId:"
+                                        + transactionId);
                     }
                 }
             }
 
-            private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId, LogAppendEvent logAppendEvent,
-                    int previousChecksum ) throws IOException
-            {
+            private TransactionCommitment appendToLog(
+                    TransactionRepresentation transaction,
+                    long transactionId,
+                    LogAppendEvent logAppendEvent,
+                    int previousChecksum)
+                    throws IOException {
                 var logPositionBeforeCommit = transactionLogWriter.getCurrentPosition();
-                int checksum = transactionLogWriter.append( transaction, transactionId, previousChecksum );
+                int checksum = transactionLogWriter.append(transaction, transactionId, previousChecksum);
                 var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
-                logAppendEvent.appendToLogFile( logPositionBeforeCommit, logPositionAfterCommit );
+                logAppendEvent.appendToLogFile(logPositionBeforeCommit, logPositionAfterCommit);
 
-                transactionMetadataCache.cacheTransactionMetadata( transactionId, logPositionBeforeCommit );
+                transactionMetadataCache.cacheTransactionMetadata(transactionId, logPositionBeforeCommit);
 
-                return new TransactionCommitment( transactionId, checksum, transaction.getTimeCommitted(), logPositionAfterCommit, transactionIdStore );
+                return new TransactionCommitment(
+                        transactionId,
+                        checksum,
+                        transaction.getTimeCommitted(),
+                        logPositionAfterCommit,
+                        transactionIdStore);
             }
 
-            public void complete()
-            {
+            public void complete() {
                 TxQueueElement first = txElements[0];
                 first.elementsToNotify = elements;
                 first.txIds = txIds;
-                LockSupport.unpark( first.executor );
+                LockSupport.unpark(first.executor);
 
-                Arrays.fill( txElements, 0, index, null );
+                Arrays.fill(txElements, 0, index, null);
                 index = 0;
             }
 
-            public void cancelBatch( Throwable t )
-            {
-                for ( int i = 0; i < index; i++ )
-                {
-                    txElements[i].fail( t );
+            public void cancelBatch(Throwable t) {
+                for (int i = 0; i < index; i++) {
+                    txElements[i].fail(t);
                 }
-                Arrays.fill( txElements, 0, index, null );
+                Arrays.fill(txElements, 0, index, null);
                 index = 0;
             }
         }
 
-        public void stop()
-        {
+        public void stop() {
             stopped = true;
         }
     }
@@ -386,28 +369,21 @@ public class TransactionLogQueue extends LifecycleAdapter
      * This is a strategy that should be good on systems with lots of work but may cause some increased latency spikes on systems with relatively small
      * number of incoming transactions.
      */
-    private static class SpinParkCombineWaitingStrategy implements MessagePassingQueue.WaitStrategy
-    {
+    private static class SpinParkCombineWaitingStrategy implements MessagePassingQueue.WaitStrategy {
         private static final int SPIN_THRESHOLD = Runtime.getRuntime().availableProcessors() < 2 ? 1 : 1000;
         private static final int SHORT_PARK_THRESHOLD = 100_000;
         private static final int LONG_PARK_COUNTER = SHORT_PARK_THRESHOLD + 1;
         private static final int SHORT_PARK_TIME = 10;
-        private static final long LONG_PARK_TIME = MILLISECONDS.toNanos( 10 );
+        private static final long LONG_PARK_TIME = MILLISECONDS.toNanos(10);
 
         @Override
-        public int idle( int idleCounter )
-        {
-            if ( idleCounter < SPIN_THRESHOLD )
-            {
+        public int idle(int idleCounter) {
+            if (idleCounter < SPIN_THRESHOLD) {
                 Thread.onSpinWait();
-            }
-            else if ( idleCounter < SHORT_PARK_THRESHOLD )
-            {
-                parkNanos( SHORT_PARK_TIME );
-            }
-            else
-            {
-                parkNanos( LONG_PARK_TIME );
+            } else if (idleCounter < SHORT_PARK_THRESHOLD) {
+                parkNanos(SHORT_PARK_TIME);
+            } else {
+                parkNanos(LONG_PARK_TIME);
                 return LONG_PARK_COUNTER;
             }
             return idleCounter + 1;

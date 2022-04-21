@@ -19,9 +19,10 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
+
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.ResourceLock;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
@@ -36,54 +37,45 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
-
-@ResourceLock( "boltStateMachineV4" )
-public class BoltStateMachineV4StateTestBase
-{
+@ResourceLock("boltStateMachineV4")
+public class BoltStateMachineV4StateTestBase {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
-    protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel( "conn-v4-test-boltchannel-id" );
+    protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel("conn-v4-test-boltchannel-id");
     protected static final MemoryTracker MEMORY_TRACKER = EmptyMemoryTracker.INSTANCE;
 
     @RegisterExtension
     static final SessionExtension env = new SessionExtension();
 
-    protected BoltStateMachineV4 newStateMachine()
-    {
-        return (BoltStateMachineV4) env.newMachine( BoltProtocolV4.VERSION, BOLT_CHANNEL, MEMORY_TRACKER );
+    protected BoltStateMachineV4 newStateMachine() {
+        return (BoltStateMachineV4) env.newMachine(BoltProtocolV4.VERSION, BOLT_CHANNEL, MEMORY_TRACKER);
     }
 
-    protected BoltStateMachineV4 newStateMachineAfterAuth() throws BoltConnectionFatality
-    {
+    protected BoltStateMachineV4 newStateMachineAfterAuth() throws BoltConnectionFatality {
         return newStateMachineAfterAuth(env);
     }
 
-    protected BoltStateMachineV4 newStateMachineAfterAuth( String connectionId ) throws BoltConnectionFatality
-    {
-        var machine = (BoltStateMachineV4) env.newMachine( BoltProtocolV4.VERSION, BoltTestUtil.newTestBoltChannel( connectionId ), MEMORY_TRACKER );
-        machine.process( BoltV4Messages.hello(), nullResponseHandler() );
+    protected BoltStateMachineV4 newStateMachineAfterAuth(String connectionId) throws BoltConnectionFatality {
+        var machine = (BoltStateMachineV4)
+                env.newMachine(BoltProtocolV4.VERSION, BoltTestUtil.newTestBoltChannel(connectionId), MEMORY_TRACKER);
+        machine.process(BoltV4Messages.hello(), nullResponseHandler());
         return machine;
     }
 
-    protected static BoltStateMachineV4 newStateMachineAfterAuth( SessionExtension env ) throws BoltConnectionFatality
-    {
-        var machine = (BoltStateMachineV4) env.newMachine( BoltProtocolV4.VERSION, BOLT_CHANNEL, MEMORY_TRACKER );
-        machine.process( BoltV4Messages.hello(), nullResponseHandler() );
+    protected static BoltStateMachineV4 newStateMachineAfterAuth(SessionExtension env) throws BoltConnectionFatality {
+        var machine = (BoltStateMachineV4) env.newMachine(BoltProtocolV4.VERSION, BOLT_CHANNEL, MEMORY_TRACKER);
+        machine.process(BoltV4Messages.hello(), nullResponseHandler());
         return machine;
     }
 
-    protected static RequestMessage newHelloMessage()
-    {
+    protected static RequestMessage newHelloMessage() {
         return BoltV4Messages.hello();
     }
 
-    protected static RequestMessage newPullMessage( long size ) throws BoltIOException
-    {
-        return BoltV4Messages.pull( size );
+    protected static RequestMessage newPullMessage(long size) throws BoltIOException {
+        return BoltV4Messages.pull(size);
     }
 
-    protected static RequestMessage newDiscardMessage( long size ) throws BoltIOException
-    {
-        return BoltV4Messages.discard( size );
+    protected static RequestMessage newDiscardMessage(long size) throws BoltIOException {
+        return BoltV4Messages.discard(size);
     }
 }

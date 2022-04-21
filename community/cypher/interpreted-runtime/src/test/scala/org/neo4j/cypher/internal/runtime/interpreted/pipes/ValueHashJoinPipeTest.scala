@@ -41,7 +41,6 @@ import org.neo4j.values.storable.Values.intValue
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
 
-
   test("should support simple hash join between two identifiers") {
     // given
     val queryState = QueryStateHelper.emptyWithValueSerialization
@@ -82,16 +81,17 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
       row("a" -> 1, "a2" -> 1),
       row("a" -> 1, "a2" -> 2),
       row("a" -> 2, "a2" -> 3),
-      row("a" -> 3, "a2" -> 4)))
+      row("a" -> 3, "a2" -> 4)
+    ))
 
     val rightSide = ClosingIterator(Iterator(
       row("b" -> 1, "b2" -> 1),
       row("b" -> 2, "b2" -> 2),
       row("b" -> 2, "b2" -> 3),
-      row("b" -> 4, "b2" -> 4)))
+      row("b" -> 4, "b2" -> 4)
+    ))
 
     val queryState = QueryStateHelper.emptyWithValueSerialization
-
 
     val left = mock[Pipe]
     when(left.createResults(queryState)).thenReturn(leftSide)
@@ -147,7 +147,6 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     rhsIter.fetched should equal(0)
   }
 
-
   test("if RHS is empty, terminate building of the probe map early") {
     // given
     val queryState = QueryStateHelper.emptyWithValueSerialization
@@ -179,13 +178,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(rows("a", ints, intArray(Array(2, 3, 4))))
 
     val right = mock[Pipe]
-    when(right.createResults(queryState)).thenReturn(rows("b",  doubles, intArray(Array(0, 1, 2))))
+    when(right.createResults(queryState)).thenReturn(rows("b", doubles, intArray(Array(0, 1, 2))))
 
     // when
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should beEquivalentTo(List(Map("a" -> ints, "b" ->  doubles)))
+    result.toList should beEquivalentTo(List(Map("a" -> ints, "b" -> doubles)))
   }
 
   test("exhaust should close table") {
@@ -193,14 +192,14 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val monitor = QueryStateHelper.trackClosedMonitor
     val queryState = QueryStateHelper.emptyWithResourceManager(new ResourceManager(monitor))
 
-    val left = new FakePipe(Seq(Map("a"->1),Map("a"->2)))
-    val right = new FakePipe(Seq(Map("b"->1),Map("b"->2)))
+    val left = new FakePipe(Seq(Map("a" -> 1), Map("a" -> 2)))
+    val right = new FakePipe(Seq(Map("b" -> 1), Map("b" -> 2)))
 
     // when
     ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState).toList
 
     // then
-    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size(1)
+    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size (1)
   }
 
   test("close should close table") {
@@ -208,15 +207,15 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val monitor = QueryStateHelper.trackClosedMonitor
     val queryState = QueryStateHelper.emptyWithResourceManager(new ResourceManager(monitor))
 
-    val left = new FakePipe(Seq(Map("a"->1),Map("a"->2)))
-    val right = new FakePipe(Seq(Map("b"->1),Map("b"->2)))
+    val left = new FakePipe(Seq(Map("a" -> 1), Map("a" -> 2)))
+    val right = new FakePipe(Seq(Map("b" -> 1), Map("b" -> 2)))
 
     // when
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
     result.close()
 
     // then
-    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size(1)
+    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size (1)
   }
 
   private def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)
@@ -225,4 +224,3 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     ClosingIterator(values.map(x => CypherRow.from(variable -> x)).iterator)
 
 }
-

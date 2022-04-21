@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.semantics
 import org.neo4j.cypher.internal.ast.Statement
 
 object SemanticChecker {
+
   def check(statement: Statement, state: SemanticState = SemanticState.clean): SemanticCheckResult = {
     val result = statement.semanticCheck(state)
     val scopeTreeIssues = ScopeTreeVerifier.verify(result.state.scopeTree)

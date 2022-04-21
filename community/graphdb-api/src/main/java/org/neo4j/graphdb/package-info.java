@@ -21,4 +21,3 @@
  * The core graph database API.
  */
 package org.neo4j.graphdb;
-

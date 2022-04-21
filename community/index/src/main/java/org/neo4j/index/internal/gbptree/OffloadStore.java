@@ -20,14 +20,12 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Store used by {@link TreeNodeDynamicSize} to store keys and values that are too large to be inlined in {@link GBPTree}.
  */
-public interface OffloadStore<KEY, VALUE>
-{
+public interface OffloadStore<KEY, VALUE> {
     /**
      * @return max size for entries in this offload store where entry size is keySize + valueSize.
      */
@@ -38,7 +36,7 @@ public interface OffloadStore<KEY, VALUE>
      *
      * @see #readKeyValue(long, Object, Object, CursorContext)
      */
-    void readKey( long offloadId, KEY into, CursorContext cursorContext ) throws IOException;
+    void readKey(long offloadId, KEY into, CursorContext cursorContext) throws IOException;
 
     /**
      * Read key and value mapped to by given offloadId.
@@ -49,21 +47,22 @@ public interface OffloadStore<KEY, VALUE>
      * @param cursorContext underlying page cursor context
      * @throws IOException if something went wrong while reading key or value.
      */
-    void readKeyValue( long offloadId, KEY key, VALUE value, CursorContext cursorContext ) throws IOException;
+    void readKeyValue(long offloadId, KEY key, VALUE value, CursorContext cursorContext) throws IOException;
 
     /**
      * Read only value.
      *
      * @see #readKeyValue(long, Object, Object, CursorContext)
      */
-    void readValue( long offloadId, VALUE into, CursorContext cursorContext ) throws IOException;
+    void readValue(long offloadId, VALUE into, CursorContext cursorContext) throws IOException;
 
     /**
      * Store key in offload store.
      *
      * @see #writeKeyValue(Object, Object, long, long, CursorContext)
      */
-    long writeKey( KEY key, long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException;
+    long writeKey(KEY key, long stableGeneration, long unstableGeneration, CursorContext cursorContext)
+            throws IOException;
 
     /**
      * Store key and value in offload store, mapping them to offloadId
@@ -77,7 +76,9 @@ public interface OffloadStore<KEY, VALUE>
      * @return offloadId to use when reading key and value back.
      * @throws IOException if something went wrong while writing key or value.
      */
-    long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException;
+    long writeKeyValue(
+            KEY key, VALUE value, long stableGeneration, long unstableGeneration, CursorContext cursorContext)
+            throws IOException;
 
     /**
      * Free the given offloadId effectively deleting that entry from offload store.
@@ -88,5 +89,6 @@ public interface OffloadStore<KEY, VALUE>
      * @param cursorContext underlying page cursor context
      * @throws IOException if something went wrong when freeing id.
      */
-    void free( long offloadId, long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException;
+    void free(long offloadId, long stableGeneration, long unstableGeneration, CursorContext cursorContext)
+            throws IOException;
 }

@@ -25,51 +25,42 @@ import java.util.Objects;
  * Simple implementation of a trigger info taking in construction the name/description of what triggered the check point
  * and offering the possibility to be enriched with a single optional extra description.
  */
-public class SimpleTriggerInfo implements TriggerInfo
-{
+public class SimpleTriggerInfo implements TriggerInfo {
     private final String triggerName;
     private String description;
 
-    public SimpleTriggerInfo( String triggerName )
-    {
+    public SimpleTriggerInfo(String triggerName) {
         assert triggerName != null;
         this.triggerName = triggerName;
     }
 
     @Override
-    public String describe( long transactionId )
-    {
+    public String describe(long transactionId) {
         String info = description == null ? triggerName : triggerName + " for " + description;
         return "Checkpoint triggered by \"" + info + "\" @ txId: " + transactionId;
     }
 
     @Override
-    public void accept( String description )
-    {
+    public void accept(String description) {
         assert description != null;
         assert this.description == null;
         this.description = description;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         SimpleTriggerInfo that = (SimpleTriggerInfo) o;
-        return Objects.equals( triggerName, that.triggerName ) &&
-               Objects.equals( description, that.description );
+        return Objects.equals(triggerName, that.triggerName) && Objects.equals(description, that.description);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( triggerName, description );
+    public int hashCode() {
+        return Objects.hash(triggerName, description);
     }
 }

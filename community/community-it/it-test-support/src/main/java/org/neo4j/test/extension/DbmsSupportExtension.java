@@ -19,6 +19,9 @@
  */
 package org.neo4j.test.extension;
 
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
+
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -26,52 +29,40 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
-
-public class DbmsSupportExtension implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback
-{
+public class DbmsSupportExtension
+        implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback {
 
     @Override
-    public void beforeAll( ExtensionContext context )
-    {
-        if ( getLifecycle( context ) == PER_CLASS )
-        {
-            DbmsSupportController controller = new DbmsSupportController( context );
+    public void beforeAll(ExtensionContext context) {
+        if (getLifecycle(context) == PER_CLASS) {
+            DbmsSupportController controller = new DbmsSupportController(context);
             controller.startDbms();
         }
     }
 
     @Override
-    public void beforeEach( ExtensionContext context )
-    {
-        if ( getLifecycle( context ) == PER_METHOD )
-        {
-            DbmsSupportController controller = new DbmsSupportController( context );
+    public void beforeEach(ExtensionContext context) {
+        if (getLifecycle(context) == PER_METHOD) {
+            DbmsSupportController controller = new DbmsSupportController(context);
             controller.startDbms();
         }
     }
 
     @Override
-    public void afterEach( ExtensionContext context )
-    {
-        if ( getLifecycle( context ) == PER_METHOD )
-        {
-            DbmsSupportController.remove( context ).shutdown();
+    public void afterEach(ExtensionContext context) {
+        if (getLifecycle(context) == PER_METHOD) {
+            DbmsSupportController.remove(context).shutdown();
         }
     }
 
     @Override
-    public void afterAll( ExtensionContext context )
-    {
-        if ( getLifecycle( context ) == PER_CLASS )
-        {
-            DbmsSupportController.remove( context ).shutdown();
+    public void afterAll(ExtensionContext context) {
+        if (getLifecycle(context) == PER_CLASS) {
+            DbmsSupportController.remove(context).shutdown();
         }
     }
 
-    private static TestInstance.Lifecycle getLifecycle( ExtensionContext context )
-    {
-        return context.getTestInstanceLifecycle().orElse( PER_METHOD );
+    private static TestInstance.Lifecycle getLifecycle(ExtensionContext context) {
+        return context.getTestInstanceLifecycle().orElse(PER_METHOD);
     }
 }

@@ -24,56 +24,43 @@ import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-class FulltextIndexProgressor implements IndexProgressor
-{
+class FulltextIndexProgressor implements IndexProgressor {
     private final ValuesIterator itr;
     private final EntityValueClient client;
     private long limit;
 
-    FulltextIndexProgressor( ValuesIterator itr, EntityValueClient client, IndexQueryConstraints constraints )
-    {
+    FulltextIndexProgressor(ValuesIterator itr, EntityValueClient client, IndexQueryConstraints constraints) {
         this.itr = itr;
         this.client = client;
-        if ( constraints.skip().isPresent() )
-        {
+        if (constraints.skip().isPresent()) {
             long skip = constraints.skip().getAsLong();
-            while ( skip > 0 && itr.hasNext() )
-            {
+            while (skip > 0 && itr.hasNext()) {
                 itr.next();
                 skip--;
             }
         }
-        if ( constraints.limit().isPresent() )
-        {
+        if (constraints.limit().isPresent()) {
             this.limit = constraints.limit().getAsLong();
-        }
-        else
-        {
+        } else {
             this.limit = Long.MAX_VALUE;
         }
     }
 
     @Override
-    public boolean next()
-    {
-        if ( !itr.hasNext() || limit == 0 )
-        {
+    public boolean next() {
+        if (!itr.hasNext() || limit == 0) {
             return false;
         }
         boolean accepted;
-        do
-        {
+        do {
             long entityId = itr.next();
             float score = itr.currentScore();
-            accepted = client.acceptEntity( entityId, score, (Value[]) null );
-        }
-        while ( !accepted && itr.hasNext() );
+            accepted = client.acceptEntity(entityId, score, (Value[]) null);
+        } while (!accepted && itr.hasNext());
         limit--;
         return accepted;
     }
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 }

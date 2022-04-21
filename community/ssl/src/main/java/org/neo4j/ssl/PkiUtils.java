@@ -19,6 +19,18 @@
  */
 package org.neo4j.ssl;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.Security;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.Collection;
+import java.util.LinkedList;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
@@ -35,96 +47,72 @@ import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.PrivateKey;
-import java.security.Provider;
-import java.security.Security;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.util.Collection;
-import java.util.LinkedList;
-
 /**
  * Public Key Infrastructure utilities, e.g. generating/loading keys and certificates.
  */
-public final class PkiUtils
-{
+public final class PkiUtils {
     public static final String CERTIFICATE_TYPE = "X.509";
 
     private static final Provider PROVIDER = new BouncyCastleProvider();
-    static
-    {
-        Security.addProvider( PROVIDER );
+
+    static {
+        Security.addProvider(PROVIDER);
     }
 
-    private PkiUtils()
-    {
+    private PkiUtils() {
         // Disallow any instance creation. Only static methods are available.
     }
 
-    public static X509Certificate[] loadCertificates( Path certFile ) throws CertificateException, IOException
-    {
-        CertificateFactory certFactory = CertificateFactory.getInstance( CERTIFICATE_TYPE );
+    public static X509Certificate[] loadCertificates(Path certFile) throws CertificateException, IOException {
+        CertificateFactory certFactory = CertificateFactory.getInstance(CERTIFICATE_TYPE);
         Collection<X509Certificate> certificates = new LinkedList<>();
 
-        try ( PemReader r = new PemReader( Files.newBufferedReader( certFile ) ) )
-        {
-            for ( PemObject pemObject = r.readPemObject(); pemObject != null; pemObject = r.readPemObject() )
-            {
+        try (PemReader r = new PemReader(Files.newBufferedReader(certFile))) {
+            for (PemObject pemObject = r.readPemObject(); pemObject != null; pemObject = r.readPemObject()) {
                 byte[] encodedCert = pemObject.getContent();
-                Collection<X509Certificate> loadedCertificates =
-                        (Collection<X509Certificate>) certFactory.generateCertificates( new ByteArrayInputStream( encodedCert ) );
-                certificates.addAll( loadedCertificates );
+                Collection<X509Certificate> loadedCertificates = (Collection<X509Certificate>)
+                        certFactory.generateCertificates(new ByteArrayInputStream(encodedCert));
+                certificates.addAll(loadedCertificates);
             }
-            return certificates.toArray( new X509Certificate[0] );
+            return certificates.toArray(new X509Certificate[0]);
         }
     }
 
-    public static PrivateKey loadPrivateKey( Path privateKeyFile, String passPhrase ) throws IOException
-    {
-        if ( passPhrase == null )
-        {
+    public static PrivateKey loadPrivateKey(Path privateKeyFile, String passPhrase) throws IOException {
+        if (passPhrase == null) {
             passPhrase = "";
         }
-        try ( PEMParser r = new PEMParser( Files.newBufferedReader( privateKeyFile ) ) )
-        {
+        try (PEMParser r = new PEMParser(Files.newBufferedReader(privateKeyFile))) {
             Object pemObject = r.readObject();
-            final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider( PROVIDER );
+            final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(PROVIDER);
 
-            if ( pemObject instanceof final PEMEncryptedKeyPair ckp ) // -----BEGIN RSA/DSA/EC PRIVATE KEY----- Proc-Type: 4,ENCRYPTED
+            if (pemObject
+                    instanceof
+                    final PEMEncryptedKeyPair
+                    ckp) // -----BEGIN RSA/DSA/EC PRIVATE KEY----- Proc-Type: 4,ENCRYPTED
             {
-                final PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build( passPhrase.toCharArray() );
-                return converter.getKeyPair( ckp.decryptKeyPair( decProv ) ).getPrivate();
-            }
-            else if ( pemObject instanceof PKCS8EncryptedPrivateKeyInfo ) // -----BEGIN ENCRYPTED PRIVATE KEY-----
+                final PEMDecryptorProvider decProv =
+                        new JcePEMDecryptorProviderBuilder().build(passPhrase.toCharArray());
+                return converter.getKeyPair(ckp.decryptKeyPair(decProv)).getPrivate();
+            } else if (pemObject instanceof PKCS8EncryptedPrivateKeyInfo) // -----BEGIN ENCRYPTED PRIVATE KEY-----
             {
-                try
-                {
+                try {
                     final PKCS8EncryptedPrivateKeyInfo encryptedInfo = (PKCS8EncryptedPrivateKeyInfo) pemObject;
-                    final InputDecryptorProvider provider = new JceOpenSSLPKCS8DecryptorProviderBuilder().build( passPhrase.toCharArray() );
-                    final PrivateKeyInfo privateKeyInfo = encryptedInfo.decryptPrivateKeyInfo( provider );
-                    return converter.getPrivateKey( privateKeyInfo );
+                    final InputDecryptorProvider provider =
+                            new JceOpenSSLPKCS8DecryptorProviderBuilder().build(passPhrase.toCharArray());
+                    final PrivateKeyInfo privateKeyInfo = encryptedInfo.decryptPrivateKeyInfo(provider);
+                    return converter.getPrivateKey(privateKeyInfo);
+                } catch (PKCSException | OperatorCreationException e) {
+                    throw new IOException("Unable to decrypt private key.", e);
                 }
-                catch ( PKCSException | OperatorCreationException e )
-                {
-                    throw new IOException( "Unable to decrypt private key.", e );
-                }
-            }
-            else if ( pemObject instanceof PrivateKeyInfo ) // -----BEGIN PRIVATE KEY-----
+            } else if (pemObject instanceof PrivateKeyInfo) // -----BEGIN PRIVATE KEY-----
             {
-                return converter.getPrivateKey( (PrivateKeyInfo) pemObject );
-            }
-            else if ( pemObject instanceof PEMKeyPair ) // -----BEGIN RSA/DSA/EC PRIVATE KEY-----
+                return converter.getPrivateKey((PrivateKeyInfo) pemObject);
+            } else if (pemObject instanceof PEMKeyPair) // -----BEGIN RSA/DSA/EC PRIVATE KEY-----
             {
-                return converter.getKeyPair( (PEMKeyPair) pemObject ).getPrivate();
-            }
-            else
-            {
-                throw new IOException( "Unrecognized private key format." );
+                return converter.getKeyPair((PEMKeyPair) pemObject).getPrivate();
+            } else {
+                throw new IOException("Unrecognized private key format.");
             }
         }
     }

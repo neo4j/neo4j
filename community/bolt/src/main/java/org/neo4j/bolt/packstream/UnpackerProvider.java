@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.packstream;
 
-public interface UnpackerProvider
-{
-    Neo4jPack.Unpacker newUnpacker( PackInput input );
+public interface UnpackerProvider {
+    Neo4jPack.Unpacker newUnpacker(PackInput input);
 }

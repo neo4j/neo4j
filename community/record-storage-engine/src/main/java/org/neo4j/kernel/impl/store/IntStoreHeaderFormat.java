@@ -21,36 +21,30 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-public class IntStoreHeaderFormat implements StoreHeaderFormat<IntStoreHeader>
-{
+public class IntStoreHeaderFormat implements StoreHeaderFormat<IntStoreHeader> {
     protected final int header;
 
-    public IntStoreHeaderFormat( int header )
-    {
+    public IntStoreHeaderFormat(int header) {
         this.header = header;
     }
 
     @Override
-    public int numberOfReservedRecords()
-    {
+    public int numberOfReservedRecords() {
         return 1;
     }
 
     @Override
-    public void writeHeader( PageCursor cursor )
-    {
-        cursor.putInt( header );
+    public void writeHeader(PageCursor cursor) {
+        cursor.putInt(header);
     }
 
     @Override
-    public IntStoreHeader readHeader( PageCursor cursor )
-    {
-        return new IntStoreHeader( cursor.getInt() );
+    public IntStoreHeader readHeader(PageCursor cursor) {
+        return new IntStoreHeader(cursor.getInt());
     }
 
     @Override
-    public IntStoreHeader generateHeader()
-    {
-        return new IntStoreHeader( header );
+    public IntStoreHeader generateHeader() {
+        return new IntStoreHeader(header);
     }
 }

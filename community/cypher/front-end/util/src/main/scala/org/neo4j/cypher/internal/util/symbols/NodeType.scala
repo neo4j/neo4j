@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object NodeType {
+
   val instance = new NodeType() {
     val parentType = CTMap
     override val toString = "Node"

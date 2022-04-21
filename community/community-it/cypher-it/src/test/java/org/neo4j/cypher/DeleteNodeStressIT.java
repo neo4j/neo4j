@@ -19,43 +19,36 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.neo4j.graphdb.Label.label;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.neo4j.graphdb.Label.label;
-
 @ImpermanentDbmsExtension
-class DeleteNodeStressIT
-{
-    private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
+class DeleteNodeStressIT {
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Inject
     private GraphDatabaseService db;
 
     @BeforeEach
-    void setup()
-    {
-        for ( int i = 0; i < 100; i++ )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
+    void setup() {
+        for (int i = 0; i < 100; i++) {
+            try (Transaction tx = db.beginTx()) {
 
-                for ( int j = 0; j < 100; j++ )
-                {
-                    Node node = tx.createNode( label( "L" ) );
-                    node.setProperty( "prop", i + j );
+                for (int j = 0; j < 100; j++) {
+                    Node node = tx.createNode(label("L"));
+                    node.setProperty("prop", i + j);
                 }
                 tx.commit();
             }
@@ -63,17 +56,16 @@ class DeleteNodeStressIT
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         executorService.shutdown();
     }
 
     @Test
-    void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException, ExecutionException
-    {
+    void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException, ExecutionException {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () return n" );
-        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+        Future query1 =
+                executeInThread("MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () return n");
+        Future query2 = executeInThread("MATCH (n:L {prop:42}) DELETE n");
 
         // Then
         query1.get();
@@ -81,11 +73,11 @@ class DeleteNodeStressIT
     }
 
     @Test
-    void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
-    {
+    void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () RETURN n.prop IS NOT NULL" );
-        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+        Future query1 = executeInThread(
+                "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () RETURN n.prop IS NOT NULL");
+        Future query2 = executeInThread("MATCH (n:L {prop:42}) DELETE n");
 
         // When
         query1.get();
@@ -93,11 +85,11 @@ class DeleteNodeStressIT
     }
 
     @Test
-    void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
-    {
+    void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException, ExecutionException {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () REMOVE n.prop" );
-        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+        Future query1 =
+                executeInThread("MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () REMOVE n.prop");
+        Future query2 = executeInThread("MATCH (n:L {prop:42}) DELETE n");
 
         // When
         query1.get();
@@ -105,11 +97,11 @@ class DeleteNodeStressIT
     }
 
     @Test
-    void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
-    {
+    void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () SET n.foo = 'bar'" );
-        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+        Future query1 = executeInThread(
+                "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () SET n.foo = 'bar'");
+        Future query2 = executeInThread("MATCH (n:L {prop:42}) DELETE n");
 
         // When
         query1.get();
@@ -117,26 +109,23 @@ class DeleteNodeStressIT
     }
 
     @Test
-    void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException, ExecutionException
-    {
+    void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException, ExecutionException {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () RETURN labels(n)" );
-        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+        Future query1 = executeInThread(
+                "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () RETURN labels(n)");
+        Future query2 = executeInThread("MATCH (n:L {prop:42}) DELETE n");
 
         // When
         query1.get();
         query2.get();
     }
 
-    private Future executeInThread( final String query )
-    {
-        return executorService.submit( () ->
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
-                transaction.execute( query ).resultAsString();
+    private Future executeInThread(final String query) {
+        return executorService.submit(() -> {
+            try (Transaction transaction = db.beginTx()) {
+                transaction.execute(query).resultAsString();
                 transaction.commit();
             }
-        } );
+        });
     }
 }

@@ -26,8 +26,7 @@ import java.nio.ByteBuffer;
 /**
  * This is where {@link PackStream} writes its output to.
  */
-public interface PackOutput extends Closeable
-{
+public interface PackOutput extends Closeable {
     /**
      * Prepare this output to write a message. Later successful message should be signaled by {@link #messageSucceeded()}
      * and failed message by {@link #messageFailed()};
@@ -55,23 +54,23 @@ public interface PackOutput extends Closeable
     PackOutput flush() throws IOException;
 
     /** Produce a single byte */
-    PackOutput writeByte( byte value ) throws IOException;
+    PackOutput writeByte(byte value) throws IOException;
 
     /** Produce binary data */
-    PackOutput writeBytes( ByteBuffer data ) throws IOException;
+    PackOutput writeBytes(ByteBuffer data) throws IOException;
 
     /** Produce binary data */
-    PackOutput writeBytes( byte[] data, int offset, int amountToWrite ) throws IOException;
+    PackOutput writeBytes(byte[] data, int offset, int amountToWrite) throws IOException;
 
     /** Produce a 4-byte signed integer */
-    PackOutput writeShort( short value ) throws IOException;
+    PackOutput writeShort(short value) throws IOException;
 
     /** Produce a 4-byte signed integer */
-    PackOutput writeInt( int value ) throws IOException;
+    PackOutput writeInt(int value) throws IOException;
 
     /** Produce an 8-byte signed integer */
-    PackOutput writeLong( long value ) throws IOException;
+    PackOutput writeLong(long value) throws IOException;
 
     /** Produce an 8-byte IEEE 754 "double format" floating-point number */
-    PackOutput writeDouble( double value ) throws IOException;
+    PackOutput writeDouble(double value) throws IOException;
 }

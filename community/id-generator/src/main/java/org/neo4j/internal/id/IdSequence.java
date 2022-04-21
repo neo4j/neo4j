@@ -21,7 +21,6 @@ package org.neo4j.internal.id;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public interface IdSequence
-{
-    long nextId( CursorContext cursorContext );
+public interface IdSequence {
+    long nextId(CursorContext cursorContext);
 }

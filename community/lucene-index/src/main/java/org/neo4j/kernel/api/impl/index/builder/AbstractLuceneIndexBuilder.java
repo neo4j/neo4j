@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index.builder;
 
 import java.nio.file.Path;
 import java.util.Objects;
-
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -32,14 +31,12 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
  *
  * @param <T> actual index type
  */
-public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder<T>>
-{
+public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder<T>> {
     protected LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
     protected final DatabaseReadOnlyChecker readOnlyChecker;
 
-    public AbstractLuceneIndexBuilder( DatabaseReadOnlyChecker readOnlyChecker )
-    {
-        this.readOnlyChecker = Objects.requireNonNull( readOnlyChecker );
+    public AbstractLuceneIndexBuilder(DatabaseReadOnlyChecker readOnlyChecker) {
+        this.readOnlyChecker = Objects.requireNonNull(readOnlyChecker);
     }
 
     /**
@@ -48,9 +45,8 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
      * @param indexStorage index storage
      * @return index builder
      */
-    public T withIndexStorage( PartitionedIndexStorage indexStorage )
-    {
-        storageBuilder.withIndexStorage( indexStorage );
+    public T withIndexStorage(PartitionedIndexStorage indexStorage) {
+        storageBuilder.withIndexStorage(indexStorage);
         return (T) this;
     }
 
@@ -60,9 +56,8 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
      * @param directoryFactory directory factory
      * @return index builder
      */
-    public T withDirectoryFactory( DirectoryFactory directoryFactory )
-    {
-        storageBuilder.withDirectoryFactory( directoryFactory );
+    public T withDirectoryFactory(DirectoryFactory directoryFactory) {
+        storageBuilder.withDirectoryFactory(directoryFactory);
         return (T) this;
     }
 
@@ -72,9 +67,8 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
      * @param fileSystem file system abstraction
      * @return index builder
      */
-    public T withFileSystem( FileSystemAbstraction fileSystem )
-    {
-        storageBuilder.withFileSystem( fileSystem );
+    public T withFileSystem(FileSystemAbstraction fileSystem) {
+        storageBuilder.withFileSystem(fileSystem);
         return (T) this;
     }
 
@@ -84,9 +78,8 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
      * @param indexRootFolder root folder
      * @return index builder
      */
-    public T withIndexRootFolder( Path indexRootFolder )
-    {
-        storageBuilder.withIndexFolder( indexRootFolder );
+    public T withIndexRootFolder(Path indexRootFolder) {
+        storageBuilder.withIndexFolder(indexRootFolder);
         return (T) this;
     }
 }

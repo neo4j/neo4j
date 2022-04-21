@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import static java.lang.String.format;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -38,15 +38,12 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.lang.String.format;
-
-@Disabled( "Too costly to run by default but useful for testing resource clean up and indexing" )
+@Disabled("Too costly to run by default but useful for testing resource clean up and indexing")
 @DbmsExtension
-class ManyMergesStressTest
-{
+class ManyMergesStressTest {
     private Random random = new Random();
 
-    private String[] SYLLABLES = new String[] { "Om", "Pa", "So", "Hu", "Ma", "Ni", "Ru", "Gu", "Ha", "Ta" };
+    private String[] SYLLABLES = new String[] {"Om", "Pa", "So", "Hu", "Ma", "Ni", "Ru", "Gu", "Ha", "Ta"};
 
     private static final int TRIES = 8000;
 
@@ -54,71 +51,62 @@ class ManyMergesStressTest
     private GraphDatabaseService db;
 
     @Test
-    void shouldWorkFine()
-    {
-        GraphDatabaseQueryService graph = new GraphDatabaseCypherService( db );
+    void shouldWorkFine() {
+        GraphDatabaseQueryService graph = new GraphDatabaseCypherService(db);
 
-        Label person = Label.label( "Person" );
+        Label person = Label.label("Person");
 
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             // THIS USED TO CAUSE OUT OF FILE HANDLES
             // (maybe look at:  http://stackoverflow.com/questions/6210348/too-many-open-files-error-on-lucene)
-            tx.schema().indexFor( person ).on( "id" ).create();
+            tx.schema().indexFor(person).on("id").create();
 
             // THIS SHOULD ALSO WORK
-            tx.schema().constraintFor( person ).assertPropertyIsUnique( "id" ).create();
+            tx.schema().constraintFor(person).assertPropertyIsUnique("id").create();
 
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( person ).on( "name" ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().indexFor(person).on("name").create();
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
 
-        for ( int count = 0; count < TRIES; count++ )
-        {
+        for (int count = 0; count < TRIES; count++) {
             Pair<String, String> stringPair = getRandomName();
             String ident = stringPair.first();
             String name = stringPair.other();
-            String id = Long.toString( Math.abs( random.nextLong() ) );
-            String query =
-                format( "MERGE (%s:Person {id: %s}) ON CREATE SET %s.name = \"%s\";", ident, id, ident, name );
+            String id = Long.toString(Math.abs(random.nextLong()));
+            String query = format("MERGE (%s:Person {id: %s}) ON CREATE SET %s.name = \"%s\";", ident, id, ident, name);
 
-            try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
-            {
-                Result result = tx.execute( query );
+            try (InternalTransaction tx =
+                    graph.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
+                Result result = tx.execute(query);
                 result.close();
                 tx.commit();
             }
         }
     }
 
-    private Pair<String, String> getRandomName()
-    {
+    private Pair<String, String> getRandomName() {
         StringBuilder identBuilder = new StringBuilder();
         StringBuilder nameBuilder = new StringBuilder();
 
-        for ( int j = 0; j < 10; j++ )
-        {
-            String part = SYLLABLES[random.nextInt( SYLLABLES.length )];
-            if ( j != 0 )
-            {
-                identBuilder.append( '_' );
-                nameBuilder.append( ' ' );
+        for (int j = 0; j < 10; j++) {
+            String part = SYLLABLES[random.nextInt(SYLLABLES.length)];
+            if (j != 0) {
+                identBuilder.append('_');
+                nameBuilder.append(' ');
             }
-            identBuilder.append( part );
-            nameBuilder.append( part );
+            identBuilder.append(part);
+            nameBuilder.append(part);
         }
 
-        return Pair.of( identBuilder.toString(), nameBuilder.toString() );
+        return Pair.of(identBuilder.toString(), nameBuilder.toString());
     }
 }

@@ -29,57 +29,44 @@ import org.neo4j.kernel.api.index.IndexSample;
  * <p>
  * Also collecting statistics on token indexes is not needed and therefore not supported.
  */
-class TokenIndexProxyStrategy implements IndexProxyStrategy
-{
+class TokenIndexProxyStrategy implements IndexProxyStrategy {
     private volatile IndexDescriptor descriptor;
     private final TokenNameLookup tokenNameLookup;
     private final boolean allowToChangeDescriptor;
 
-    TokenIndexProxyStrategy( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, boolean allowToChangeDescriptor )
-    {
+    TokenIndexProxyStrategy(
+            IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, boolean allowToChangeDescriptor) {
         this.descriptor = descriptor;
         this.tokenNameLookup = tokenNameLookup;
         this.allowToChangeDescriptor = allowToChangeDescriptor;
     }
 
     @Override
-    public IndexDescriptor getIndexDescriptor()
-    {
+    public IndexDescriptor getIndexDescriptor() {
         return descriptor;
     }
 
     @Override
-    public void removeStatisticsForIndex()
-    {
-
-    }
+    public void removeStatisticsForIndex() {}
 
     @Override
-    public void incrementUpdateStatisticsForIndex( long delta )
-    {
-
-    }
+    public void incrementUpdateStatisticsForIndex(long delta) {}
 
     @Override
-    public void replaceStatisticsForIndex( IndexSample sample )
-    {
-
-    }
+    public void replaceStatisticsForIndex(IndexSample sample) {}
 
     @Override
-    public void changeIndexDescriptor( IndexDescriptor descriptor )
-    {
-        if ( !allowToChangeDescriptor )
-        {
-            throw new UnsupportedOperationException( "Changing descriptor on this token index proxy strategy is not allowed" );
+    public void changeIndexDescriptor(IndexDescriptor descriptor) {
+        if (!allowToChangeDescriptor) {
+            throw new UnsupportedOperationException(
+                    "Changing descriptor on this token index proxy strategy is not allowed");
         }
 
         this.descriptor = descriptor;
     }
 
     @Override
-    public String getIndexUserDescription()
-    {
-        return descriptor.userDescription( tokenNameLookup );
+    public String getIndexUserDescription() {
+        return descriptor.userDescription(tokenNameLookup);
     }
 }

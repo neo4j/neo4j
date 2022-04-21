@@ -24,7 +24,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 @FunctionalInterface
-public interface IndexDescriptorProvider
-{
-    ResourceIterator<IndexDescriptor> indexDescriptors( CursorContext cursorContext );
+public interface IndexDescriptorProvider {
+    ResourceIterator<IndexDescriptor> indexDescriptors(CursorContext cursorContext);
 }

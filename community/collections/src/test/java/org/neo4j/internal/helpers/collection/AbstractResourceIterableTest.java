@@ -19,22 +19,6 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Stream;
-
-import org.neo4j.graphdb.Resource;
-import org.neo4j.graphdb.ResourceIterator;
-
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,95 +27,96 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
-public class AbstractResourceIterableTest
-{
-    @Test
-    void shouldDelegateToUnderlyingIterableForData()
-    {
-        // Given
-        final var iterableClosed = new MutableBoolean( false );
-        final var iteratorClosed = new MutableBoolean( false );
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceIterator;
 
-        final var items = Arrays.asList( 0, 1, 2 );
+public class AbstractResourceIterableTest {
+    @Test
+    void shouldDelegateToUnderlyingIterableForData() {
+        // Given
+        final var iterableClosed = new MutableBoolean(false);
+        final var iteratorClosed = new MutableBoolean(false);
+
+        final var items = Arrays.asList(0, 1, 2);
 
         // When
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
-                return Iterators.resourceIterator( items.iterator(), iteratorClosed::setTrue );
+            protected ResourceIterator<Integer> newIterator() {
+                return Iterators.resourceIterator(items.iterator(), iteratorClosed::setTrue);
             }
 
             @Override
-            protected void onClosed()
-            {
+            protected void onClosed() {
                 iterableClosed.setTrue();
             }
         };
         final var iterator = iterable.iterator();
 
         // Then
-        assertThat( Iterators.asList( iterator ) ).containsExactlyElementsOf( items );
-        assertThat( iteratorClosed.isTrue() ).isTrue();
-        assertThat( iterableClosed.isTrue() ).isFalse();
+        assertThat(Iterators.asList(iterator)).containsExactlyElementsOf(items);
+        assertThat(iteratorClosed.isTrue()).isTrue();
+        assertThat(iterableClosed.isTrue()).isFalse();
     }
 
     @ParameterizedTest
-    @ValueSource( ints = {0, 1, 2, 3, 10} )
-    void callToIteratorShouldCreateNewIterators( int numberOfIterators )
-    {
+    @ValueSource(ints = {0, 1, 2, 3, 10})
+    void callToIteratorShouldCreateNewIterators(int numberOfIterators) {
         // Given
-        final var iterableClosed = new MutableBoolean( false );
+        final var iterableClosed = new MutableBoolean(false);
         final var iteratorCount = new MutableInt();
 
         // When
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
+            protected ResourceIterator<Integer> newIterator() {
                 iteratorCount.increment();
-                return Iterators.resourceIterator( Iterators.asIterator( 0 ), Resource.EMPTY );
+                return Iterators.resourceIterator(Iterators.asIterator(0), Resource.EMPTY);
             }
 
             @Override
-            protected void onClosed()
-            {
+            protected void onClosed() {
                 iterableClosed.setTrue();
             }
         };
 
         final var iterators = new ArrayList<ResourceIterator<Integer>>();
-        for ( int i = 0; i < numberOfIterators; i++ )
-        {
-            iterators.add( iterable.iterator() );
+        for (int i = 0; i < numberOfIterators; i++) {
+            iterators.add(iterable.iterator());
         }
         iterable.close();
 
         // Then
-        assertThat( iterableClosed.isTrue() ).isTrue();
-        assertThat( iteratorCount.getValue() ).isEqualTo( numberOfIterators );
-        assertThat( iterators ).containsOnlyOnceElementsOf( new HashSet<>( iterators ) );
+        assertThat(iterableClosed.isTrue()).isTrue();
+        assertThat(iteratorCount.getValue()).isEqualTo(numberOfIterators);
+        assertThat(iterators).containsOnlyOnceElementsOf(new HashSet<>(iterators));
     }
 
     @Test
-    void shouldCloseAllIteratorsIfCloseCalledOnIterable()
-    {
+    void shouldCloseAllIteratorsIfCloseCalledOnIterable() {
         // Given
-        final var iteratorsClosed = Arrays.asList( false, false, false, false );
+        final var iteratorsClosed = Arrays.asList(false, false, false, false);
 
         // When
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             private int created;
 
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
+            protected ResourceIterator<Integer> newIterator() {
                 var pos = created;
                 created++;
-                return Iterators.resourceIterator( Iterators.asIterator( 0 ), () -> iteratorsClosed.set( pos, true ) );
+                return Iterators.resourceIterator(Iterators.asIterator(0), () -> iteratorsClosed.set(pos, true));
             }
         };
         iterable.iterator();
@@ -140,25 +125,22 @@ public class AbstractResourceIterableTest
         iterable.close();
 
         // Then
-        assertThat( iteratorsClosed.get( 0 ) ).isTrue();
-        assertThat( iteratorsClosed.get( 1 ) ).isTrue();
-        assertThat( iteratorsClosed.get( 2 ) ).isTrue();
-        assertThat( iteratorsClosed.get( 3 ) ).isFalse();
+        assertThat(iteratorsClosed.get(0)).isTrue();
+        assertThat(iteratorsClosed.get(1)).isTrue();
+        assertThat(iteratorsClosed.get(2)).isTrue();
+        assertThat(iteratorsClosed.get(3)).isFalse();
     }
 
     @Test
-    void shouldCloseAllIteratorsEvenIfOnlySomeCloseCalled()
-    {
+    void shouldCloseAllIteratorsEvenIfOnlySomeCloseCalled() {
         // Given
         final var iteratorsClosed = new MutableInt();
 
         // When
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
-                return Iterators.resourceIterator( Iterators.asIterator( 0 ), iteratorsClosed::increment );
+            protected ResourceIterator<Integer> newIterator() {
+                return Iterators.resourceIterator(Iterators.asIterator(0), iteratorsClosed::increment);
             }
         };
         final var iterator1 = iterable.iterator();
@@ -176,21 +158,18 @@ public class AbstractResourceIterableTest
         iterable.close();
 
         // Then
-        assertThat( iteratorsClosed.getValue() ).isEqualTo( 7 );
+        assertThat(iteratorsClosed.getValue()).isEqualTo(7);
     }
 
     @Test
-    void failIteratorCreationAfterIterableClosed()
-    {
+    void failIteratorCreationAfterIterableClosed() {
         // Given
-        final var iteratorCreated = new MutableBoolean( false );
+        final var iteratorCreated = new MutableBoolean(false);
 
         // When
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
+            protected ResourceIterator<Integer> newIterator() {
                 iteratorCreated.setTrue();
                 return Iterators.emptyResourceIterator();
             }
@@ -198,172 +177,149 @@ public class AbstractResourceIterableTest
         iterable.close();
 
         // Then
-        assertThatThrownBy( iterable::iterator );
-        assertThat( iteratorCreated.isTrue() ).isFalse();
+        assertThatThrownBy(iterable::iterator);
+        assertThat(iteratorCreated.isTrue()).isFalse();
     }
 
     @Test
-    void shouldCloseIteratorIfCloseCalled()
-    {
+    void shouldCloseIteratorIfCloseCalled() {
         // Given
-        final var iterableClosed = new MutableBoolean( false );
-        final var iteratorCreated = new MutableBoolean( false );
-        final var iteratorClosed = new MutableBoolean( false );
+        final var iterableClosed = new MutableBoolean(false);
+        final var iteratorCreated = new MutableBoolean(false);
+        final var iteratorClosed = new MutableBoolean(false);
 
         // When
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
+            protected ResourceIterator<Integer> newIterator() {
                 iteratorCreated.setTrue();
-                return Iterators.resourceIterator( List.of( 0 ).iterator(), iteratorClosed::setTrue );
+                return Iterators.resourceIterator(List.of(0).iterator(), iteratorClosed::setTrue);
             }
 
             @Override
-            protected void onClosed()
-            {
+            protected void onClosed() {
                 iterableClosed.setTrue();
             }
         };
-        assertThat( iterable.iterator().hasNext() ).isTrue();
+        assertThat(iterable.iterator().hasNext()).isTrue();
         iterable.close();
 
         // Then
-        assertThat( iteratorCreated.isTrue() ).isTrue();
-        assertThat( iteratorClosed.isTrue() ).isTrue();
-        assertThat( iterableClosed.isTrue() ).isTrue();
+        assertThat(iteratorCreated.isTrue()).isTrue();
+        assertThat(iteratorClosed.isTrue()).isTrue();
+        assertThat(iterableClosed.isTrue()).isTrue();
     }
 
     @Test
-    void shouldCloseIteratorOnForEachFailure()
-    {
+    void shouldCloseIteratorOnForEachFailure() {
         // Given
-        final var iterableClosed = new MutableBoolean( false );
-        final var iteratorClosed = new MutableBoolean( false );
+        final var iterableClosed = new MutableBoolean(false);
+        final var iteratorClosed = new MutableBoolean(false);
 
-        @SuppressWarnings( "unchecked" ) final var intIterator = (Iterator<Integer>) mock( Iterator.class );
-        when( intIterator.hasNext() ).thenReturn( true ).thenReturn( true );
-        when( intIterator.next() ).thenReturn( 1 ).thenThrow( IllegalStateException.class );
+        @SuppressWarnings("unchecked")
+        final var intIterator = (Iterator<Integer>) mock(Iterator.class);
+        when(intIterator.hasNext()).thenReturn(true).thenReturn(true);
+        when(intIterator.next()).thenReturn(1).thenThrow(IllegalStateException.class);
 
         // When
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
-                return Iterators.resourceIterator( intIterator, iteratorClosed::setTrue );
+            protected ResourceIterator<Integer> newIterator() {
+                return Iterators.resourceIterator(intIterator, iteratorClosed::setTrue);
             }
 
             @Override
-            protected void onClosed()
-            {
+            protected void onClosed() {
                 iterableClosed.setTrue();
             }
         };
 
         // Then
         final var emitted = new ArrayList<Integer>();
-        assertThatThrownBy( () ->
-        {
-            try ( iterable )
-            {
-                for ( var item : iterable )
-                {
-                    emitted.add( item );
+        assertThatThrownBy(() -> {
+            try (iterable) {
+                for (var item : iterable) {
+                    emitted.add(item);
                 }
             }
-        } );
-        assertThat( emitted ).isEqualTo( List.of( 1 ) );
-        assertThat( iteratorClosed.isTrue() ).isTrue();
-        assertThat( iterableClosed.isTrue() ).isTrue();
+        });
+        assertThat(emitted).isEqualTo(List.of(1));
+        assertThat(iteratorClosed.isTrue()).isTrue();
+        assertThat(iterableClosed.isTrue()).isTrue();
     }
 
     @Test
-    void shouldCloseIteratorOnForEachCompletion()
-    {
+    void shouldCloseIteratorOnForEachCompletion() {
         // Given
-        final var iterableClosed = new MutableBoolean( false );
-        final var iteratorClosed = new MutableBoolean( false );
+        final var iterableClosed = new MutableBoolean(false);
+        final var iteratorClosed = new MutableBoolean(false);
 
-        final var items = Arrays.asList( 0, 1, 2 );
+        final var items = Arrays.asList(0, 1, 2);
 
         // When
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
-                return Iterators.resourceIterator( items.iterator(), iteratorClosed::setTrue );
+            protected ResourceIterator<Integer> newIterator() {
+                return Iterators.resourceIterator(items.iterator(), iteratorClosed::setTrue);
             }
 
             @Override
-            protected void onClosed()
-            {
+            protected void onClosed() {
                 iterableClosed.setTrue();
             }
         };
 
         final var emitted = new ArrayList<Integer>();
-        for ( var item : iterable )
-        {
-            emitted.add( item );
+        for (var item : iterable) {
+            emitted.add(item);
         }
 
         // Then
-        assertThat( emitted ).isEqualTo( items );
-        assertThat( iteratorClosed.isTrue() ).isTrue();
-        assertThat( iterableClosed.isTrue() ).isFalse();
+        assertThat(emitted).isEqualTo(items);
+        assertThat(iteratorClosed.isTrue()).isTrue();
+        assertThat(iterableClosed.isTrue()).isFalse();
     }
 
     @Test
-    void streamShouldCloseIteratorAndIterable()
-    {
+    void streamShouldCloseIteratorAndIterable() {
         // Given
-        final var iterableClosed = new MutableBoolean( false );
-        final var iteratorClosed = new MutableBoolean( false );
-        final var resourceIterator = newResourceIterator( iterator( new Integer[]{1, 2, 3} ), iteratorClosed::setTrue );
+        final var iterableClosed = new MutableBoolean(false);
+        final var iteratorClosed = new MutableBoolean(false);
+        final var resourceIterator = newResourceIterator(iterator(new Integer[] {1, 2, 3}), iteratorClosed::setTrue);
 
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
+            protected ResourceIterator<Integer> newIterator() {
                 return resourceIterator;
             }
 
             @Override
-            protected void onClosed()
-            {
+            protected void onClosed() {
                 iterableClosed.setTrue();
             }
         };
 
         // When
-        try ( Stream<Integer> stream = iterable.stream() )
-        {
+        try (Stream<Integer> stream = iterable.stream()) {
             final var result = stream.toList();
-            assertThat( result ).isEqualTo( asList( 1, 2, 3 ) );
+            assertThat(result).isEqualTo(asList(1, 2, 3));
         }
 
         // Then
-        assertThat( iterableClosed.isTrue() ).isTrue();
-        assertThat( iteratorClosed.isTrue() ).isTrue();
+        assertThat(iterableClosed.isTrue()).isTrue();
+        assertThat(iteratorClosed.isTrue()).isTrue();
     }
 
     @Test
-    void streamShouldCloseMultipleOnCompleted()
-    {
+    void streamShouldCloseMultipleOnCompleted() {
         // Given
         final var closed = new MutableInt();
         Resource resource = closed::incrementAndGet;
-        final var resourceIterator = newResourceIterator( iterator( new Integer[]{1, 2, 3} ), resource, resource );
+        final var resourceIterator = newResourceIterator(iterator(new Integer[] {1, 2, 3}), resource, resource);
 
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
+            protected ResourceIterator<Integer> newIterator() {
                 return resourceIterator;
             }
         };
@@ -372,7 +328,7 @@ public class AbstractResourceIterableTest
         final var result = iterable.stream().toList();
 
         // Then
-        assertThat( result ).isEqualTo( asList( 1, 2, 3 ) );
-        assertThat( closed.intValue() ).isEqualTo( 2 );
+        assertThat(result).isEqualTo(asList(1, 2, 3));
+        assertThat(closed.intValue()).isEqualTo(2);
     }
 }

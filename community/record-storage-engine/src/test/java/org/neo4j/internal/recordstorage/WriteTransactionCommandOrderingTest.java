@@ -19,14 +19,18 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
@@ -49,122 +53,119 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-class WriteTransactionCommandOrderingTest
-{
-    private static NodeRecord missingNode()
-    {
-        return new NodeRecord( -1 ).initialize( false, -1, false, -1, 0 );
+class WriteTransactionCommandOrderingTest {
+    private static NodeRecord missingNode() {
+        return new NodeRecord(-1).initialize(false, -1, false, -1, 0);
     }
 
-    private static NodeRecord createdNode()
-    {
-        NodeRecord record = new NodeRecord( 2 ).initialize( false, -1, false, -1, 0 );
-        record.setInUse( true );
+    private static NodeRecord createdNode() {
+        NodeRecord record = new NodeRecord(2).initialize(false, -1, false, -1, 0);
+        record.setInUse(true);
         record.setCreated();
         return record;
     }
 
-    private static NodeRecord inUseNode()
-    {
-        NodeRecord record = new NodeRecord( 1 ).initialize( false, -1, false, -1, 0 );
-        record.setInUse( true );
+    private static NodeRecord inUseNode() {
+        NodeRecord record = new NodeRecord(1).initialize(false, -1, false, -1, 0);
+        record.setInUse(true);
         return record;
     }
 
     @Test
-    void shouldExecuteCommandsInTheSameOrderRegardlessOfItBeingRecoveredOrNot() throws Exception
-    {
+    void shouldExecuteCommandsInTheSameOrderRegardlessOfItBeingRecoveredOrNot() throws Exception {
         // Given
         TransactionRecordState tx = injectAllPossibleCommands();
 
         // When
-        CommandsToApply commands = transactionRepresentationOf( tx );
+        CommandsToApply commands = transactionRepresentationOf(tx);
 
         // Then
         final OrderVerifyingCommandHandler orderVerifyingCommandHandler = new OrderVerifyingCommandHandler();
-        commands.accept( element -> ((Command)element).handle( orderVerifyingCommandHandler ) );
+        commands.accept(element -> ((Command) element).handle(orderVerifyingCommandHandler));
     }
 
-    private static CommandsToApply transactionRepresentationOf( TransactionRecordState tx )
-            throws TransactionFailureException
-    {
+    private static CommandsToApply transactionRepresentationOf(TransactionRecordState tx)
+            throws TransactionFailureException {
         List<StorageCommand> commands = new ArrayList<>();
-        tx.extractCommands( commands, INSTANCE );
-        return new GroupOfCommands( StoreCursors.NULL, commands.toArray( new StorageCommand[0] ) );
+        tx.extractCommands(commands, INSTANCE);
+        return new GroupOfCommands(StoreCursors.NULL, commands.toArray(new StorageCommand[0]));
     }
 
-    private static TransactionRecordState injectAllPossibleCommands()
-    {
-        RecordChangeSet recordChangeSet = mock( RecordChangeSet.class );
+    private static TransactionRecordState injectAllPossibleCommands() {
+        RecordChangeSet recordChangeSet = mock(RecordChangeSet.class);
 
-        RecordChanges<LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
-        RecordChanges<RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges = mock( RecordChanges.class );
-        RecordChanges<PropertyKeyTokenRecord,Void> propertyKeyTokenChanges = mock( RecordChanges.class );
-        RecordChanges<NodeRecord,Void> nodeRecordChanges = mock( RecordChanges.class );
-        RecordChanges<RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class );
-        RecordChanges<PropertyRecord,PrimitiveRecord> propertyRecordChanges = mock( RecordChanges.class );
-        RecordChanges<RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class );
-        RecordChanges<SchemaRecord, SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
+        RecordChanges<LabelTokenRecord, Void> labelTokenChanges = mock(RecordChanges.class);
+        RecordChanges<RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges = mock(RecordChanges.class);
+        RecordChanges<PropertyKeyTokenRecord, Void> propertyKeyTokenChanges = mock(RecordChanges.class);
+        RecordChanges<NodeRecord, Void> nodeRecordChanges = mock(RecordChanges.class);
+        RecordChanges<RelationshipRecord, Void> relationshipRecordChanges = mock(RecordChanges.class);
+        RecordChanges<PropertyRecord, PrimitiveRecord> propertyRecordChanges = mock(RecordChanges.class);
+        RecordChanges<RelationshipGroupRecord, Integer> relationshipGroupChanges = mock(RecordChanges.class);
+        RecordChanges<SchemaRecord, SchemaRule> schemaRuleChanges = mock(RecordChanges.class);
 
-        when( recordChangeSet.getLabelTokenChanges() ).thenReturn( labelTokenChanges );
-        when( recordChangeSet.getRelationshipTypeTokenChanges() ).thenReturn( relationshipTypeTokenChanges );
-        when( recordChangeSet.getPropertyKeyTokenChanges() ).thenReturn( propertyKeyTokenChanges );
-        when( recordChangeSet.getNodeRecords() ).thenReturn( nodeRecordChanges );
-        when( recordChangeSet.getRelRecords() ).thenReturn( relationshipRecordChanges );
-        when( recordChangeSet.getPropertyRecords() ).thenReturn( propertyRecordChanges );
-        when( recordChangeSet.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
-        when( recordChangeSet.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
+        when(recordChangeSet.getLabelTokenChanges()).thenReturn(labelTokenChanges);
+        when(recordChangeSet.getRelationshipTypeTokenChanges()).thenReturn(relationshipTypeTokenChanges);
+        when(recordChangeSet.getPropertyKeyTokenChanges()).thenReturn(propertyKeyTokenChanges);
+        when(recordChangeSet.getNodeRecords()).thenReturn(nodeRecordChanges);
+        when(recordChangeSet.getRelRecords()).thenReturn(relationshipRecordChanges);
+        when(recordChangeSet.getPropertyRecords()).thenReturn(propertyRecordChanges);
+        when(recordChangeSet.getRelGroupRecords()).thenReturn(relationshipGroupChanges);
+        when(recordChangeSet.getSchemaRuleChanges()).thenReturn(schemaRuleChanges);
 
-        List<RecordProxy<NodeRecord,Void>> nodeChanges = new LinkedList<>();
+        List<RecordProxy<NodeRecord, Void>> nodeChanges = new LinkedList<>();
 
-        var deletedNode = mock( RecordProxy.class );
-        when( deletedNode.getBefore() ).thenReturn( inUseNode() );
-        when( deletedNode.forReadingLinkage() ).thenReturn( missingNode() );
-        nodeChanges.add( deletedNode );
+        var deletedNode = mock(RecordProxy.class);
+        when(deletedNode.getBefore()).thenReturn(inUseNode());
+        when(deletedNode.forReadingLinkage()).thenReturn(missingNode());
+        nodeChanges.add(deletedNode);
 
-        var createdNode = mock( RecordProxy.class );
-        when( createdNode.getBefore() ).thenReturn( missingNode() );
-        when( createdNode.forReadingLinkage() ).thenReturn( createdNode() );
-        nodeChanges.add( createdNode );
+        var createdNode = mock(RecordProxy.class);
+        when(createdNode.getBefore()).thenReturn(missingNode());
+        when(createdNode.forReadingLinkage()).thenReturn(createdNode());
+        nodeChanges.add(createdNode);
 
-        var updatedNode = mock( RecordProxy.class );
-        when( updatedNode.getBefore() ).thenReturn( inUseNode() );
-        when( updatedNode.forReadingLinkage() ).thenReturn( inUseNode() );
-        nodeChanges.add( updatedNode );
+        var updatedNode = mock(RecordProxy.class);
+        when(updatedNode.getBefore()).thenReturn(inUseNode());
+        when(updatedNode.forReadingLinkage()).thenReturn(inUseNode());
+        nodeChanges.add(updatedNode);
 
-        when( nodeRecordChanges.changes() ).thenReturn( nodeChanges );
-        when( nodeRecordChanges.changeSize() ).thenReturn( 3 );
-        when( recordChangeSet.changeSize() ).thenReturn( 3 );
+        when(nodeRecordChanges.changes()).thenReturn(nodeChanges);
+        when(nodeRecordChanges.changeSize()).thenReturn(3);
+        when(recordChangeSet.changeSize()).thenReturn(3);
 
-        when( labelTokenChanges.changes() ).thenReturn( Collections.emptyList() );
-        when( relationshipTypeTokenChanges.changes() ).thenReturn( Collections.emptyList() );
-        when( propertyKeyTokenChanges.changes() ).thenReturn( Collections.emptyList() );
-        when( relationshipRecordChanges.changes() ).thenReturn( Collections.emptyList() );
-        when( propertyRecordChanges.changes() ).thenReturn( Collections.emptyList() );
-        when( relationshipGroupChanges.changes() ).thenReturn( Collections.emptyList() );
-        when( schemaRuleChanges.changes() ).thenReturn( Collections.emptyList() );
+        when(labelTokenChanges.changes()).thenReturn(Collections.emptyList());
+        when(relationshipTypeTokenChanges.changes()).thenReturn(Collections.emptyList());
+        when(propertyKeyTokenChanges.changes()).thenReturn(Collections.emptyList());
+        when(relationshipRecordChanges.changes()).thenReturn(Collections.emptyList());
+        when(propertyRecordChanges.changes()).thenReturn(Collections.emptyList());
+        when(relationshipGroupChanges.changes()).thenReturn(Collections.emptyList());
+        when(schemaRuleChanges.changes()).thenReturn(Collections.emptyList());
 
-        NeoStores neoStores = mock( NeoStores.class );
-        NodeStore store = mock( NodeStore.class );
-        when( neoStores.getNodeStore() ).thenReturn( store );
-        RelationshipGroupStore relationshipGroupStore = mock( RelationshipGroupStore.class );
-        when( neoStores.getRelationshipGroupStore() ).thenReturn( relationshipGroupStore );
-        RelationshipStore relationshipStore = mock( RelationshipStore.class );
-        when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
+        NeoStores neoStores = mock(NeoStores.class);
+        NodeStore store = mock(NodeStore.class);
+        when(neoStores.getNodeStore()).thenReturn(store);
+        RelationshipGroupStore relationshipGroupStore = mock(RelationshipGroupStore.class);
+        when(neoStores.getRelationshipGroupStore()).thenReturn(relationshipGroupStore);
+        RelationshipStore relationshipStore = mock(RelationshipStore.class);
+        when(neoStores.getRelationshipStore()).thenReturn(relationshipStore);
 
-        return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet, 0, null, LockTracer.NONE, null, null, null,
+        return new TransactionRecordState(
+                neoStores,
+                mock(IntegrityValidator.class),
+                recordChangeSet,
+                0,
+                null,
+                LockTracer.NONE,
+                null,
+                null,
+                null,
                 NULL_CONTEXT,
-                StoreCursors.NULL, INSTANCE, LATEST_LOG_SERIALIZATION );
+                StoreCursors.NULL,
+                INSTANCE,
+                LATEST_LOG_SERIALIZATION);
     }
 
-    private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter
-    {
+    private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter {
         private boolean nodeVisited;
 
         // Commands should appear in this order
@@ -172,30 +173,27 @@ class WriteTransactionCommandOrderingTest
         private boolean deleted;
 
         @Override
-        public boolean visitNodeCommand( NodeCommand command )
-        {
-            if ( !nodeVisited )
-            {
+        public boolean visitNodeCommand(NodeCommand command) {
+            if (!nodeVisited) {
                 updated = false;
                 deleted = false;
             }
             nodeVisited = true;
 
-            switch ( command.getMode() )
-            {
-            case CREATE:
-                Assertions.assertFalse( updated );
-                Assertions.assertFalse( deleted );
-                break;
-            case UPDATE:
-                updated = true;
-                Assertions.assertFalse( deleted );
-                break;
-            case DELETE:
-                deleted = true;
-                break;
-            default:
-                throw new IllegalStateException( "Unknown command mode: " + command.getMode() );
+            switch (command.getMode()) {
+                case CREATE:
+                    Assertions.assertFalse(updated);
+                    Assertions.assertFalse(deleted);
+                    break;
+                case UPDATE:
+                    updated = true;
+                    Assertions.assertFalse(deleted);
+                    break;
+                case DELETE:
+                    deleted = true;
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown command mode: " + command.getMode());
             }
             return false;
         }

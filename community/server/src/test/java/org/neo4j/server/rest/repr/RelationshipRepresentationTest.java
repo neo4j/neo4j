@@ -19,14 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-
-import org.neo4j.server.http.cypher.entity.HttpRelationship;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
@@ -34,74 +26,69 @@ import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN
 import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
 
-class RelationshipRepresentationTest
-{
-    @Test
-    void shouldHaveSelfLink()
-    {
-        assertUriMatches( RELATIONSHIP_URI_PATTERN, relrep( 1234 ).selfUri() );
-    }
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.http.cypher.entity.HttpRelationship;
 
+class RelationshipRepresentationTest {
     @Test
-    void shouldHaveType()
-    {
-        assertNotNull( relrep( 1234 ).getType() );
+    void shouldHaveSelfLink() {
+        assertUriMatches(RELATIONSHIP_URI_PATTERN, relrep(1234).selfUri());
     }
 
     @Test
-    void shouldHaveStartNodeLink()
-    {
-        assertUriMatches( NODE_URI_PATTERN, relrep( 1234 ).startNodeUri() );
+    void shouldHaveType() {
+        assertNotNull(relrep(1234).getType());
     }
 
     @Test
-    void shouldHaveEndNodeLink()
-    {
-        assertUriMatches( NODE_URI_PATTERN, relrep( 1234 ).endNodeUri() );
+    void shouldHaveStartNodeLink() {
+        assertUriMatches(NODE_URI_PATTERN, relrep(1234).startNodeUri());
     }
 
     @Test
-    void shouldHavePropertiesLink()
-    {
-        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties", relrep( 1234 ).propertiesUri() );
+    void shouldHaveEndNodeLink() {
+        assertUriMatches(NODE_URI_PATTERN, relrep(1234).endNodeUri());
     }
 
     @Test
-    void shouldHavePropertyLinkTemplate()
-    {
-        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", relrep( 1234 ).propertyUriTemplate() );
+    void shouldHavePropertiesLink() {
+        assertUriMatches(RELATIONSHIP_URI_PATTERN + "/properties", relrep(1234).propertiesUri());
     }
 
     @Test
-    void shouldSerialiseToMap()
-    {
-        Map<String, Object> repr = serialize( relrep( 1234 ) );
-        assertNotNull( repr );
-        verifySerialisation( repr );
+    void shouldHavePropertyLinkTemplate() {
+        assertUriMatches(
+                RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", relrep(1234).propertyUriTemplate());
     }
 
-    private static RelationshipRepresentation relrep( long id )
-    {
-        return new RelationshipRepresentation(
-                new HttpRelationship( 0, 0, 1, "LOVES", Collections.emptyMap(), false, ( ignoredA, ignoredB ) -> Optional.empty() ) );
+    @Test
+    void shouldSerialiseToMap() {
+        Map<String, Object> repr = serialize(relrep(1234));
+        assertNotNull(repr);
+        verifySerialisation(repr);
     }
 
-    static void verifySerialisation( Map<String,Object> relrep )
-    {
-        assertUriMatches( RELATIONSHIP_URI_PATTERN, relrep.get( "self" )
-                .toString() );
-        assertUriMatches( NODE_URI_PATTERN, relrep.get( "start" )
-                .toString() );
-        assertUriMatches( NODE_URI_PATTERN, relrep.get( "end" )
-                .toString() );
-        assertNotNull( relrep.get( "type" ) );
-        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties", relrep.get( "properties" )
-                .toString() );
-        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", (String) relrep.get( "property" ) );
-        assertNotNull( relrep.get( "data" ) );
-        assertNotNull( relrep.get( "metadata" ) );
-        Map metadata = (Map) relrep.get( "metadata" );
-        assertNotNull( metadata.get("type") );
-        assertTrue( ( (Number) metadata.get("id") ).longValue() >= 0 );
+    private static RelationshipRepresentation relrep(long id) {
+        return new RelationshipRepresentation(new HttpRelationship(
+                0, 0, 1, "LOVES", Collections.emptyMap(), false, (ignoredA, ignoredB) -> Optional.empty()));
+    }
+
+    static void verifySerialisation(Map<String, Object> relrep) {
+        assertUriMatches(RELATIONSHIP_URI_PATTERN, relrep.get("self").toString());
+        assertUriMatches(NODE_URI_PATTERN, relrep.get("start").toString());
+        assertUriMatches(NODE_URI_PATTERN, relrep.get("end").toString());
+        assertNotNull(relrep.get("type"));
+        assertUriMatches(
+                RELATIONSHIP_URI_PATTERN + "/properties",
+                relrep.get("properties").toString());
+        assertUriMatches(RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", (String) relrep.get("property"));
+        assertNotNull(relrep.get("data"));
+        assertNotNull(relrep.get("metadata"));
+        Map metadata = (Map) relrep.get("metadata");
+        assertNotNull(metadata.get("type"));
+        assertTrue(((Number) metadata.get("id")).longValue() >= 0);
     }
 }

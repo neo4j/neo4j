@@ -19,49 +19,40 @@
  */
 package org.neo4j.kernel.impl.newapi.index;
 
-interface IndexParams
-{
+interface IndexParams {
     String providerKey();
 
     String providerVersion();
 
-    default boolean indexProvidesStringValues()
-    {
+    default boolean indexProvidesStringValues() {
         return false;
     }
 
-    default boolean indexProvidesNumericValues()
-    {
+    default boolean indexProvidesNumericValues() {
         return false;
     }
 
-    default boolean indexProvidesArrayValues()
-    {
+    default boolean indexProvidesArrayValues() {
         return false;
     }
 
-    default boolean indexProvidesBooleanValues()
-    {
+    default boolean indexProvidesBooleanValues() {
         return false;
     }
 
-    default boolean indexProvidesTemporalValues()
-    {
+    default boolean indexProvidesTemporalValues() {
         return true;
     }
 
-    default boolean indexProvidesSpatialValues()
-    {
+    default boolean indexProvidesSpatialValues() {
         return false;
     }
 
-    default boolean indexProvidesAllValues()
-    {
+    default boolean indexProvidesAllValues() {
         return false;
     }
 
-    default boolean indexSupportsStringSuffixAndContains()
-    {
+    default boolean indexSupportsStringSuffixAndContains() {
         return true;
     }
 }

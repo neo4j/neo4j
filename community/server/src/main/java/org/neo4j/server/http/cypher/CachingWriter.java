@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -39,107 +38,104 @@ import org.neo4j.server.http.cypher.entity.HttpPath;
 import org.neo4j.server.http.cypher.entity.HttpRelationship;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
-public class CachingWriter extends BaseToObjectValueWriter<IOException>
-{
+public class CachingWriter extends BaseToObjectValueWriter<IOException> {
     private Object cachedObject;
     private ValueMapper mapper;
 
-    private BiFunction<Long,Boolean,Optional<Node>> getNodeById;
+    private BiFunction<Long, Boolean, Optional<Node>> getNodeById;
 
-    public CachingWriter( ValueMapper mapper )
-    {
+    public CachingWriter(ValueMapper mapper) {
         this.mapper = mapper;
-        this.getNodeById = ( ignoredA, ignoredB ) -> Optional.empty();
+        this.getNodeById = (ignoredA, ignoredB) -> Optional.empty();
     }
 
-    public Object getCachedObject()
-    {
+    public Object getCachedObject() {
         return cachedObject;
     }
 
     @Override
-    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted )
-    {
-        cachedObject = new HttpRelationship( relId, startNodeId, endNodeId, type.stringValue(), processProperties( properties ), isDeleted, getNodeById );
+    public void writeRelationship(
+            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted) {
+        cachedObject = new HttpRelationship(
+                relId,
+                startNodeId,
+                endNodeId,
+                type.stringValue(),
+                processProperties(properties),
+                isDeleted,
+                getNodeById);
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships )
-    {
-        var nodeList = convertNodeValues( nodes );
-        var relList = convertRelationshipValues( relationships );
+    public void writePath(NodeValue[] nodes, RelationshipValue[] relationships) {
+        var nodeList = convertNodeValues(nodes);
+        var relList = convertRelationshipValues(relationships);
 
-        cachedObject = new HttpPath( nodeList, relList );
+        cachedObject = new HttpPath(nodeList, relList);
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray labels, MapValue properties, boolean isDeleted )
-    {
-        var labelList =
-                Arrays.stream( (String[]) labels.asObjectCopy() ).map( Label::label ).collect( Collectors.toList() );
+    public void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) {
+        var labelList = Arrays.stream((String[]) labels.asObjectCopy())
+                .map(Label::label)
+                .collect(Collectors.toList());
 
-        cachedObject = new HttpNode( nodeId, labelList, processProperties( properties ), isDeleted );
+        cachedObject = new HttpNode(nodeId, labelList, processProperties(properties), isDeleted);
     }
 
     @Override
-    protected Node newNodeEntityById( long id )
-    {
-        throw new UnsupportedOperationException( "Only can write existing nodes" );
+    protected Node newNodeEntityById(long id) {
+        throw new UnsupportedOperationException("Only can write existing nodes");
     }
 
     @Override
-    protected Relationship newRelationshipEntityById( long id )
-    {
-        throw new UnsupportedOperationException( "Only can write existing relationships" );
+    protected Relationship newRelationshipEntityById(long id) {
+        throw new UnsupportedOperationException("Only can write existing relationships");
     }
 
     @Override
-    protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
-    {
-        throw new UnsupportedOperationException( "Does not write points" );
+    protected Point newPoint(CoordinateReferenceSystem crs, double[] coordinate) {
+        throw new UnsupportedOperationException("Does not write points");
     }
 
-    public void setGetNodeById( BiFunction<Long,Boolean,Optional<Node>> getNodeById )
-    {
+    public void setGetNodeById(BiFunction<Long, Boolean, Optional<Node>> getNodeById) {
         this.getNodeById = getNodeById;
     }
 
-    private Map<String,Object> processProperties( MapValue properties )
-    {
-        var propertyMap = new HashMap<String,Object>();
-        properties.foreach( ( k, v ) ->
-                            {
-                                propertyMap.put( k, v.map( mapper ) );
-                            } );
+    private Map<String, Object> processProperties(MapValue properties) {
+        var propertyMap = new HashMap<String, Object>();
+        properties.foreach((k, v) -> {
+            propertyMap.put(k, v.map(mapper));
+        });
         return propertyMap;
     }
 
-    private List<Node> convertNodeValues( NodeValue[] nodeValues )
-    {
+    private List<Node> convertNodeValues(NodeValue[] nodeValues) {
         var nodeArrayList = new ArrayList<Node>();
-        for ( NodeValue nodeValue : nodeValues )
-        {
-            writeNode( nodeValue.id(), nodeValue.labels(), nodeValue.properties(), nodeValue.isDeleted() );
-            nodeArrayList.add( (HttpNode) cachedObject );
+        for (NodeValue nodeValue : nodeValues) {
+            writeNode(nodeValue.id(), nodeValue.labels(), nodeValue.properties(), nodeValue.isDeleted());
+            nodeArrayList.add((HttpNode) cachedObject);
         }
         return nodeArrayList;
     }
 
-    private List<Relationship> convertRelationshipValues( RelationshipValue[] relationships )
-    {
+    private List<Relationship> convertRelationshipValues(RelationshipValue[] relationships) {
         var relArrayList = new ArrayList<Relationship>();
-        for ( RelationshipValue relationship : relationships )
-        {
-            writeRelationship( relationship.id(), relationship.startNodeId(), relationship.endNodeId(), relationship.type(),
-                               relationship.properties(), relationship.isDeleted() );
-            relArrayList.add( (HttpRelationship) cachedObject );
+        for (RelationshipValue relationship : relationships) {
+            writeRelationship(
+                    relationship.id(),
+                    relationship.startNodeId(),
+                    relationship.endNodeId(),
+                    relationship.type(),
+                    relationship.properties(),
+                    relationship.isDeleted());
+            relArrayList.add((HttpRelationship) cachedObject);
         }
         return relArrayList;
     }

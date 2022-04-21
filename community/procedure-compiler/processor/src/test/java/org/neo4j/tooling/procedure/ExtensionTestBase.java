@@ -19,12 +19,13 @@
  */
 package org.neo4j.tooling.procedure;
 
-import com.google.testing.compile.CompileTester;
-import org.junit.Test;
+import static com.google.common.truth.Truth.assert_;
+import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 
+import com.google.testing.compile.CompileTester;
 import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;
-
+import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -32,83 +33,104 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.tooling.procedure.testutils.JavaFileObjectUtils;
 
-import static com.google.common.truth.Truth.assert_;
-import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
-
-public abstract class ExtensionTestBase
-{
+public abstract class ExtensionTestBase {
 
     abstract Processor processor();
 
     @Test
-    public void fails_if_context_injected_fields_have_wrong_modifiers()
-    {
+    public void fails_if_context_injected_fields_have_wrong_modifiers() {
         JavaFileObject sproc =
-                JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/bad_context_field/BadContextFields.java" );
+                JavaFileObjectUtils.INSTANCE.procedureSource("invalid/bad_context_field/BadContextFields.java");
 
-        CompileTester.UnsuccessfulCompilationClause unsuccessfulCompilationClause =
-                assert_().about( javaSource() ).that( sproc ).processedWith( processor() ).failsToCompile()
-                        .withErrorCount( 4 );
+        CompileTester.UnsuccessfulCompilationClause unsuccessfulCompilationClause = assert_()
+                .about(javaSource())
+                .that(sproc)
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(4);
 
-        unsuccessfulCompilationClause.withErrorContaining(
-                "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBeNonStatic should be public, " +
-                "non-static and non-final" )
-                .in( sproc ).onLine( 35 );
-
-        unsuccessfulCompilationClause.withErrorContaining(
-                "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBeNonFinal should be public, " +
-                "non-static and non-final" )
-                .in( sproc ).onLine( 38 );
-
-        unsuccessfulCompilationClause.withErrorContaining(
-                "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBePublic should be public, " +
-                "non-static and non-final" )
-                .in( sproc ).onLine( 42 );
-
-        unsuccessfulCompilationClause.withErrorContaining( "Field BadContextFields#shouldBeStatic should be static" )
-                .in( sproc ).onLine( 43 );
-    }
-
-    @Test
-    public void emits_warnings_if_context_injected_field_types_are_restricted()
-    {
-        JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
-                .procedureSource( "invalid/bad_context_field/BadContextRestrictedTypeField.java" );
-
-        assert_().about( javaSource() ).that( sproc ).processedWith( processor() ).compilesWithoutError()
-                .withWarningCount( 2 ).withWarningContaining(
-                "@org.neo4j.procedure.Context usage warning: found unsupported restricted type <org.neo4j.kernel.internal" +
-                ".GraphDatabaseAPI> on BadContextRestrictedTypeField#notOfficiallySupported.\n" +
-                "  The procedure will not load unless declared via the configuration option 'dbms.security.procedures.unrestricted'.\n" +
-                "  You can ignore this warning by passing the option -AIgnoreContextWarnings to the Java compiler" )
-                .in( sproc ).onLine( 35 );
-    }
-
-    @Test
-    public void does_not_emit_warnings_if_context_injected_field_types_are_restricted_when_context_warnings_disabled()
-    {
-        JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
-                .procedureSource( "invalid/bad_context_field/BadContextRestrictedTypeField.java" );
-
-        assert_().about( javaSource() ).that( sproc ).withCompilerOptions( "-AIgnoreContextWarnings" )
-                .processedWith( processor() ).compilesWithoutError().withWarningCount( 1 );
-    }
-
-    @Test
-    public void fails_if_context_injected_fields_have_unsupported_types()
-    {
-        JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
-                .procedureSource( "invalid/bad_context_field/BadContextUnsupportedTypeError.java" );
-
-        assert_().about( javaSource() ).that( sproc ).processedWith( processor() ).failsToCompile().withErrorCount( 1 )
+        unsuccessfulCompilationClause
                 .withErrorContaining(
-                        "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field " +
-                                "BadContextUnsupportedTypeError#foo, expected one of: <" +
-                                GraphDatabaseService.class.getName() + ">, <" +
-                                InternalLog.class.getName() + ">, <" +
-                                TerminationGuard.class.getName() + ">, <" +
-                                SecurityContext.class.getName() + ">, <" +
-                                Transaction.class.getName() + ">" )
-                .in( sproc ).onLine( 33 );
+                        "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBeNonStatic should be public, "
+                                + "non-static and non-final")
+                .in(sproc)
+                .onLine(35);
+
+        unsuccessfulCompilationClause
+                .withErrorContaining(
+                        "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBeNonFinal should be public, "
+                                + "non-static and non-final")
+                .in(sproc)
+                .onLine(38);
+
+        unsuccessfulCompilationClause
+                .withErrorContaining(
+                        "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBePublic should be public, "
+                                + "non-static and non-final")
+                .in(sproc)
+                .onLine(42);
+
+        unsuccessfulCompilationClause
+                .withErrorContaining("Field BadContextFields#shouldBeStatic should be static")
+                .in(sproc)
+                .onLine(43);
+    }
+
+    @Test
+    public void emits_warnings_if_context_injected_field_types_are_restricted() {
+        JavaFileObject sproc = JavaFileObjectUtils.INSTANCE.procedureSource(
+                "invalid/bad_context_field/BadContextRestrictedTypeField.java");
+
+        assert_()
+                .about(javaSource())
+                .that(sproc)
+                .processedWith(processor())
+                .compilesWithoutError()
+                .withWarningCount(2)
+                .withWarningContaining(
+                        "@org.neo4j.procedure.Context usage warning: found unsupported restricted type <org.neo4j.kernel.internal"
+                                + ".GraphDatabaseAPI> on BadContextRestrictedTypeField#notOfficiallySupported.\n"
+                                + "  The procedure will not load unless declared via the configuration option 'dbms.security.procedures.unrestricted'.\n"
+                                + "  You can ignore this warning by passing the option -AIgnoreContextWarnings to the Java compiler")
+                .in(sproc)
+                .onLine(35);
+    }
+
+    @Test
+    public void does_not_emit_warnings_if_context_injected_field_types_are_restricted_when_context_warnings_disabled() {
+        JavaFileObject sproc = JavaFileObjectUtils.INSTANCE.procedureSource(
+                "invalid/bad_context_field/BadContextRestrictedTypeField.java");
+
+        assert_()
+                .about(javaSource())
+                .that(sproc)
+                .withCompilerOptions("-AIgnoreContextWarnings")
+                .processedWith(processor())
+                .compilesWithoutError()
+                .withWarningCount(1);
+    }
+
+    @Test
+    public void fails_if_context_injected_fields_have_unsupported_types() {
+        JavaFileObject sproc = JavaFileObjectUtils.INSTANCE.procedureSource(
+                "invalid/bad_context_field/BadContextUnsupportedTypeError.java");
+
+        assert_()
+                .about(javaSource())
+                .that(sproc)
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(1)
+                .withErrorContaining(
+                        "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field "
+                                + "BadContextUnsupportedTypeError#foo, expected one of: <"
+                                + GraphDatabaseService.class.getName()
+                                + ">, <" + InternalLog.class.getName()
+                                + ">, <" + TerminationGuard.class.getName()
+                                + ">, <" + SecurityContext.class.getName()
+                                + ">, <" + Transaction.class.getName()
+                                + ">")
+                .in(sproc)
+                .onLine(33);
     }
 }

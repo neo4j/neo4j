@@ -88,8 +88,8 @@ class MathFunctionsTest extends CypherFunSuite {
   }
 
   test("atan2Tests") {
-    asDouble(calc(Atan2Function(literal(.7),literal(.8)))).doubleValue() should equal(0.718829999621624 +- 0.00001)
-    asDouble(calc(Atan2Function(literal(.8),literal(.8)))).doubleValue() should equal(0.785398163397448 +- 0.00001)
+    asDouble(calc(Atan2Function(literal(.7), literal(.8)))).doubleValue() should equal(0.718829999621624 +- 0.00001)
+    asDouble(calc(Atan2Function(literal(.8), literal(.8)))).doubleValue() should equal(0.785398163397448 +- 0.00001)
     intercept[CypherTypeException](calc(Atan2Function(literal("wut"), literal(.7))))
   }
 
@@ -189,5 +189,5 @@ class MathFunctionsTest extends CypherFunSuite {
     intercept[CypherTypeException](calc(SqrtFunction(literal("wut"))))
   }
 
-  private def calc(e:Expression) = e(CypherRow.empty, QueryStateHelper.empty)
+  private def calc(e: Expression) = e(CypherRow.empty, QueryStateHelper.empty)
 }

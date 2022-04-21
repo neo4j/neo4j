@@ -27,19 +27,20 @@ import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-case class InputDataStreamTestInitialState(queryText: String,
-                                           startPosition: Option[InputPosition],
-                                           plannerName: PlannerName,
-                                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-                                           initialFields: Map[String, CypherType] = Map.empty,
-                                           maybeStatement: Option[ast.Statement] = None,
-                                           maybeSemantics: Option[SemanticState] = None,
-                                           maybeExtractedParams: Option[Map[String, Any]] = None,
-                                           maybeSemanticTable: Option[SemanticTable] = None,
-                                           accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
-                                           maybeReturnColumns: Option[Seq[String]] = None,
-                                           maybeObfuscationMetadata: Option[ObfuscationMetadata] = None) extends BaseState {
-
+case class InputDataStreamTestInitialState(
+  queryText: String,
+  startPosition: Option[InputPosition],
+  plannerName: PlannerName,
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  initialFields: Map[String, CypherType] = Map.empty,
+  maybeStatement: Option[ast.Statement] = None,
+  maybeSemantics: Option[SemanticState] = None,
+  maybeExtractedParams: Option[Map[String, Any]] = None,
+  maybeSemanticTable: Option[SemanticTable] = None,
+  accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
+  maybeReturnColumns: Option[Seq[String]] = None,
+  maybeObfuscationMetadata: Option[ObfuscationMetadata] = None
+) extends BaseState {
 
   override def withStatement(s: ast.Statement): InputDataStreamTestInitialState = {
     // the unmodified parser is part of the pipeline and it will try to set the result of parsing 'RETURN 1'
@@ -57,7 +58,9 @@ case class InputDataStreamTestInitialState(queryText: String,
 
   override def withParams(p: Map[String, Any]): InputDataStreamTestInitialState = copy(maybeExtractedParams = Some(p))
 
-  override def withReturnColumns(cols: Seq[String]): InputDataStreamTestInitialState = copy(maybeReturnColumns = Some(cols))
+  override def withReturnColumns(cols: Seq[String]): InputDataStreamTestInitialState =
+    copy(maybeReturnColumns = Some(cols))
 
-  override def withObfuscationMetadata(o: ObfuscationMetadata): InputDataStreamTestInitialState = copy(maybeObfuscationMetadata = Some(o))
+  override def withObfuscationMetadata(o: ObfuscationMetadata): InputDataStreamTestInitialState =
+    copy(maybeObfuscationMetadata = Some(o))
 }

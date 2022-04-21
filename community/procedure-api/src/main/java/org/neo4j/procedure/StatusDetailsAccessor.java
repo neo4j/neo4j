@@ -19,13 +19,12 @@
  */
 package org.neo4j.procedure;
 
-public interface StatusDetailsAccessor
-{
+public interface StatusDetailsAccessor {
     /**
      * Sets additional status to be associated with particular transaction execution step.
      * @param statusDetails - additional status details.
      */
-    void setStatusDetails( String statusDetails );
+    void setStatusDetails(String statusDetails);
 
     /**
      * Gets additional status details if available

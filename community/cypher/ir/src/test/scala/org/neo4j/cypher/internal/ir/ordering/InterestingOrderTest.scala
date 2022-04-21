@@ -56,7 +56,6 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
     result should be(InterestingOrder.required(RequiredOrderCandidate.desc(varFor("xfoo"), projections)))
   }
 
-
   test("should reverse project property to property") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "foo")))
     // projection
@@ -81,9 +80,8 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
     result should be(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"), projections)))
   }
 
-
   test("cannot reverse project expression") {
-    val expr:Expression = Add(varFor("xfoo"), prop("y", "foo"))(pos)
+    val expr: Expression = Add(varFor("xfoo"), prop("y", "foo"))(pos)
     // projection
     val projection = Map("xfoo" -> prop("x", "foo"))
     val io = InterestingOrder.required(RequiredOrderCandidate.desc(expr, projection))
@@ -162,29 +160,44 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
   }
 
   test("should not reverse project variable to variable if not argument") {
-    val result = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(Map.empty, Set.empty)
+    val result = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(
+      Map.empty,
+      Set.empty
+    )
     result should be(InterestingOrder.empty)
   }
 
   test("should reverse project variable to variable if is argument") {
-    val result = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(Map.empty, Set("y"))
+    val result = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(
+      Map.empty,
+      Set("y")
+    )
     result should be(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"))))
   }
 
   test("should reverse project property to property if variable is argument") {
-    val result = InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"))).withReverseProjectedColumns(Map.empty, Set("y"))
+    val result = InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"))).withReverseProjectedColumns(
+      Map.empty,
+      Set("y")
+    )
     result should be(InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"))))
   }
 
   test("should reverse project variable to variable if is argument when projections exist") {
     val projections = Map("y" -> varFor("x"))
-    val result = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(projections, Set("y"))
+    val result = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(
+      projections,
+      Set("y")
+    )
     result should be(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"), projections)))
   }
 
   test("should reverse project property to property if variable is argument when projections exist") {
     val projections = Map("y" -> varFor("x"))
-    val result = InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"))).withReverseProjectedColumns(projections, Set("y"))
+    val result = InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"))).withReverseProjectedColumns(
+      projections,
+      Set("y")
+    )
     result should be(InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"), projections)))
   }
 
@@ -203,26 +216,26 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
   test("Required order is not satisfied by an empty provided order") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
 
-    io.satisfiedBy(ProvidedOrder.empty) should matchPattern { case NoSatisfaction() =>}
+    io.satisfiedBy(ProvidedOrder.empty) should matchPattern { case NoSatisfaction() => }
   }
 
   test("Required order is not satisfied by provided order in other direction") {
     val ioAsc = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
     val ioDesc = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")))
 
-    val poAsc = ProvidedOrder.asc(prop("x","foo"))
-    val poDesc = ProvidedOrder.desc(prop("x","foo"))
+    val poAsc = ProvidedOrder.asc(prop("x", "foo"))
+    val poDesc = ProvidedOrder.desc(prop("x", "foo"))
 
-    ioAsc.satisfiedBy(poDesc) should matchPattern { case NoSatisfaction() =>}
-    ioDesc.satisfiedBy(poAsc) should matchPattern { case NoSatisfaction() =>}
+    ioAsc.satisfiedBy(poDesc) should matchPattern { case NoSatisfaction() => }
+    ioDesc.satisfiedBy(poAsc) should matchPattern { case NoSatisfaction() => }
   }
 
   test("Required order should be satisfied by provided order on same property") {
     val ioAsc = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
     val ioDesc = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")))
 
-    val poAsc = ProvidedOrder.asc(prop("x","foo"))
-    val poDesc = ProvidedOrder.desc(prop("x","foo"))
+    val poAsc = ProvidedOrder.asc(prop("x", "foo"))
+    val poDesc = ProvidedOrder.desc(prop("x", "foo"))
 
     ioAsc.satisfiedBy(poAsc) should matchPattern { case FullSatisfaction() => }
     ioDesc.satisfiedBy(poDesc) should matchPattern { case FullSatisfaction() => }
@@ -236,7 +249,7 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
     val ioDesc = InterestingOrder.required(RequiredOrderCandidate.desc(varFor("xfoo"), projectionOneStep))
 
     val poAsc = ProvidedOrder.asc(prop("z", "foo"))
-    val poDesc = ProvidedOrder.desc(prop("x","foo"))
+    val poDesc = ProvidedOrder.desc(prop("x", "foo"))
 
     ioAsc.satisfiedBy(poAsc) should matchPattern { case FullSatisfaction() => }
     ioDesc.satisfiedBy(poDesc) should matchPattern { case FullSatisfaction() => }
@@ -244,9 +257,9 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
 
   test("Required order should not be satisfied by provided order on different property") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-    val po = ProvidedOrder.asc(prop("y","foo"))
+    val po = ProvidedOrder.asc(prop("y", "foo"))
 
-    io.satisfiedBy(po) should matchPattern { case NoSatisfaction() =>}
+    io.satisfiedBy(po) should matchPattern { case NoSatisfaction() => }
   }
 
   test("Required order on renamed property should not be satisfied by provided order on different property") {
@@ -255,16 +268,16 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
     val io = InterestingOrder.required(RequiredOrderCandidate.desc(varFor("xfoo"), projection))
     val po = ProvidedOrder.desc(prop("y", "foo"))
 
-    io.satisfiedBy(po) should matchPattern { case NoSatisfaction() =>}
+    io.satisfiedBy(po) should matchPattern { case NoSatisfaction() => }
   }
 
   test("Required order on expression is not satisfied by provided order on property") {
     val projection = Map("add" -> Add(prop("x", "foo"), SignedDecimalIntegerLiteral("42")(pos))(pos))
 
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("add"), projection))
-    val po = ProvidedOrder.asc(prop("x","foo"))
+    val po = ProvidedOrder.asc(prop("x", "foo"))
 
-    io.satisfiedBy(po) should matchPattern { case NoSatisfaction() =>}
+    io.satisfiedBy(po) should matchPattern { case NoSatisfaction() => }
   }
 
   test("should transform required to interesting") {
@@ -281,10 +294,15 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
   test("should reverse project property to variable (for both)") {
     val projection = Map("xfoo" -> prop("x", "foo"), "yfoo" -> prop("y", "foo"))
 
-    val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("xfoo"))).interesting(InterestingOrderCandidate.desc(varFor("yfoo")))
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("xfoo"))).interesting(
+      InterestingOrderCandidate.desc(varFor("yfoo"))
+    )
 
     val result = io.withReverseProjectedColumns(projection, Set.empty)
-    result should be(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("xfoo"), Map("xfoo" -> prop("x", "foo"))))
+    result should be(InterestingOrder.required(RequiredOrderCandidate.asc(
+      varFor("xfoo"),
+      Map("xfoo" -> prop("x", "foo"))
+    ))
       .interesting(InterestingOrderCandidate.desc(varFor("yfoo"), Map("yfoo" -> prop("y", "foo")))))
   }
 
@@ -330,7 +348,7 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
     // when
     val result = io.withReverseProjectedColumns(projections, Set.empty)
 
-    //then
+    // then
     result should be(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("y", "foo"), projections)))
   }
 
@@ -354,12 +372,18 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
   }
 
   test("should not reverse project variable to variable if not argument (for interesting)") {
-    val result = InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(Map.empty, Set.empty)
+    val result = InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(
+      Map.empty,
+      Set.empty
+    )
     result should be(InterestingOrder.empty)
   }
 
   test("should reverse project variable to variable if is argument (for interesting)") {
-    val result = InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(Map.empty, Set("y"))
+    val result = InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(
+      Map.empty,
+      Set("y")
+    )
     result should be(InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("y"))))
   }
 
@@ -367,74 +391,175 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
 
   test("Empty required order satisfied by anything") {
     InterestingOrder.empty.satisfiedBy(ProvidedOrder.empty) should matchPattern { case FullSatisfaction() => }
-    InterestingOrder.empty.satisfiedBy(ProvidedOrder.asc(varFor("x"))) should matchPattern { case FullSatisfaction() => }
-    InterestingOrder.empty.satisfiedBy(ProvidedOrder.desc(varFor("x"))) should matchPattern { case FullSatisfaction() => }
-    InterestingOrder.empty.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y"))) should matchPattern { case FullSatisfaction() => }
-    InterestingOrder.empty.satisfiedBy(ProvidedOrder.desc(varFor("x")).desc(varFor("y"))) should matchPattern { case FullSatisfaction() => }
+    InterestingOrder.empty.satisfiedBy(ProvidedOrder.asc(varFor("x"))) should matchPattern { case FullSatisfaction() =>
+    }
+    InterestingOrder.empty.satisfiedBy(ProvidedOrder.desc(varFor("x"))) should matchPattern { case FullSatisfaction() =>
+    }
+    InterestingOrder.empty.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y"))) should matchPattern {
+      case FullSatisfaction() =>
+    }
+    InterestingOrder.empty.satisfiedBy(ProvidedOrder.desc(varFor("x")).desc(varFor("y"))) should matchPattern {
+      case FullSatisfaction() =>
+    }
   }
 
   test("Single property required order satisfied by matching provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("x"))) should matchPattern { case FullSatisfaction() => }
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(
+      ProvidedOrder.asc(varFor("x"))
+    ) should matchPattern { case FullSatisfaction() => }
   }
 
   test("Single property required order satisfied by longer provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y"))) should matchPattern { case FullSatisfaction() => }
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y"))) should matchPattern { case FullSatisfaction() => }
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(
+      ProvidedOrder.asc(varFor("x")).asc(varFor("y"))
+    ) should matchPattern { case FullSatisfaction() => }
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(
+      ProvidedOrder.asc(varFor("x")).desc(varFor("y"))
+    ) should matchPattern { case FullSatisfaction() => }
   }
 
   test("Single property required order not satisfied by mismatching provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("y"))) should matchPattern { case NoSatisfaction() => }
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.desc(varFor("x"))) should matchPattern { case NoSatisfaction() => }
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("y")).asc(varFor("x"))) should matchPattern { case NoSatisfaction() => }
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(
+      ProvidedOrder.asc(varFor("y"))
+    ) should matchPattern { case NoSatisfaction() => }
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(
+      ProvidedOrder.desc(varFor("x"))
+    ) should matchPattern { case NoSatisfaction() => }
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(
+      ProvidedOrder.asc(varFor("y")).asc(varFor("x"))
+    ) should matchPattern { case NoSatisfaction() => }
   }
 
   test("Multi property required order can yield partial satisfaction") {
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")).desc(varFor("y")).asc(varFor("z")))
+    val interestingOrder =
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")).desc(varFor("y")).asc(varFor("z")))
 
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x"))) should be(Satisfaction(Seq(Asc(varFor("x"))), Seq(Desc(varFor("y")), Asc(varFor("z")))))
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x"))) should be(Satisfaction(
+      Seq(Asc(varFor("x"))),
+      Seq(Desc(varFor("y")), Asc(varFor("z")))
+    ))
     interestingOrder.satisfiedBy(ProvidedOrder.desc(varFor("x"))) should matchPattern { case NoSatisfaction() => }
     interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("y"))) should matchPattern { case NoSatisfaction() => }
 
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y"))) should be(Satisfaction(Seq(Asc(varFor("x")), Desc(varFor("y"))), Seq(Asc(varFor("z")))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y"))) should be(Satisfaction(Seq(Asc(varFor("x"))), Seq(Desc(varFor("y")), Asc(varFor("z")))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("x"))), Seq(Desc(varFor("y")), Asc(varFor("z")))))
-    interestingOrder.satisfiedBy(ProvidedOrder.desc(varFor("x")).desc(varFor("y"))) should matchPattern { case NoSatisfaction() => }
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y"))) should be(Satisfaction(
+      Seq(Asc(varFor("x")), Desc(varFor("y"))),
+      Seq(Asc(varFor("z")))
+    ))
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y"))) should be(Satisfaction(
+      Seq(Asc(varFor("x"))),
+      Seq(Desc(varFor("y")), Asc(varFor("z")))
+    ))
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("z"))) should be(Satisfaction(
+      Seq(Asc(varFor("x"))),
+      Seq(Desc(varFor("y")), Asc(varFor("z")))
+    ))
+    interestingOrder.satisfiedBy(ProvidedOrder.desc(varFor("x")).desc(varFor("y"))) should matchPattern {
+      case NoSatisfaction() =>
+    }
 
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))) should matchPattern { case FullSatisfaction() => }
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("z")).asc(varFor("y"))) should be(Satisfaction(Seq(Asc(varFor("x"))), Seq(Desc(varFor("y")), Asc(varFor("z")))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).desc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("x")), Desc(varFor("y"))), Seq(Asc(varFor("z")))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y")).desc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("x"))), Seq(Desc(varFor("y")), Asc(varFor("z")))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y")).asc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("x"))), Seq(Desc(varFor("y")), Asc(varFor("z")))))
-    interestingOrder.satisfiedBy(ProvidedOrder.desc(varFor("x")).desc(varFor("y")).asc(varFor("z"))) should matchPattern { case NoSatisfaction() => }
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))
+    ) should matchPattern { case FullSatisfaction() => }
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("z")).asc(varFor("y"))) should be(
+      Satisfaction(Seq(Asc(varFor("x"))), Seq(Desc(varFor("y")), Asc(varFor("z"))))
+    )
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).desc(varFor("z"))) should be(
+      Satisfaction(Seq(Asc(varFor("x")), Desc(varFor("y"))), Seq(Asc(varFor("z"))))
+    )
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y")).desc(varFor("z"))) should be(
+      Satisfaction(Seq(Asc(varFor("x"))), Seq(Desc(varFor("y")), Asc(varFor("z"))))
+    )
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y")).asc(varFor("z"))) should be(
+      Satisfaction(Seq(Asc(varFor("x"))), Seq(Desc(varFor("y")), Asc(varFor("z"))))
+    )
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.desc(varFor("x")).desc(varFor("y")).asc(varFor("z"))
+    ) should matchPattern { case NoSatisfaction() => }
 
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("z")).asc(varFor("a"))) should matchPattern { case FullSatisfaction() => }
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("a")).asc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("x")), Desc(varFor("y"))), Seq(Asc(varFor("z")))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("a")).asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))) should matchPattern { case NoSatisfaction() => }
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("z")).asc(varFor("a"))
+    ) should matchPattern { case FullSatisfaction() => }
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("a")).asc(varFor("z"))
+    ) should be(Satisfaction(Seq(Asc(varFor("x")), Desc(varFor("y"))), Seq(Asc(varFor("z")))))
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.asc(varFor("a")).asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))
+    ) should matchPattern { case NoSatisfaction() => }
   }
 
   test("Multi property required order (with projections) can yield partial satisfaction") {
     val projection = Map("newX" -> varFor("x"))
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("newX"), projection).desc(varFor("y"), projection).asc(varFor("z"), projection))
+    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("newX"), projection).desc(
+      varFor("y"),
+      projection
+    ).asc(varFor("z"), projection))
 
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x"))) should be(Satisfaction(Seq(Asc(varFor("newX"), projection)), Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))))
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x"))) should be(Satisfaction(
+      Seq(Asc(varFor("newX"), projection)),
+      Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))
+    ))
     interestingOrder.satisfiedBy(ProvidedOrder.desc(varFor("x"))) should matchPattern { case NoSatisfaction() => }
     interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("y"))) should matchPattern { case NoSatisfaction() => }
 
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y"))) should be(Satisfaction(Seq(Asc(varFor("newX"), projection), Desc(varFor("y"), projection)), Seq(Asc(varFor("z"), projection))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y"))) should be(Satisfaction(Seq(Asc(varFor("newX"), projection)), Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("newX"), projection)), Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))))
-    interestingOrder.satisfiedBy(ProvidedOrder.desc(varFor("x")).desc(varFor("y"))) should matchPattern { case NoSatisfaction() => }
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y"))) should be(Satisfaction(
+      Seq(Asc(varFor("newX"), projection), Desc(varFor("y"), projection)),
+      Seq(Asc(varFor("z"), projection))
+    ))
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y"))) should be(Satisfaction(
+      Seq(Asc(varFor("newX"), projection)),
+      Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))
+    ))
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("z"))) should be(Satisfaction(
+      Seq(Asc(varFor("newX"), projection)),
+      Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))
+    ))
+    interestingOrder.satisfiedBy(ProvidedOrder.desc(varFor("x")).desc(varFor("y"))) should matchPattern {
+      case NoSatisfaction() =>
+    }
 
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))) should matchPattern { case FullSatisfaction() => }
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("z")).asc(varFor("y"))) should be(Satisfaction(Seq(Asc(varFor("newX"), projection)), Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).desc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("newX"), projection), Desc(varFor("y"), projection)), Seq(Asc(varFor("z"), projection))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y")).desc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("newX"), projection)), Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y")).asc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("newX"), projection)), Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))))
-    interestingOrder.satisfiedBy(ProvidedOrder.desc(varFor("x")).desc(varFor("y")).asc(varFor("z"))) should matchPattern { case NoSatisfaction() => }
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))
+    ) should matchPattern { case FullSatisfaction() => }
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("z")).asc(varFor("y"))) should be(
+      Satisfaction(
+        Seq(Asc(varFor("newX"), projection)),
+        Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))
+      )
+    )
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).desc(varFor("z"))) should be(
+      Satisfaction(
+        Seq(Asc(varFor("newX"), projection), Desc(varFor("y"), projection)),
+        Seq(Asc(varFor("z"), projection))
+      )
+    )
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y")).desc(varFor("z"))) should be(
+      Satisfaction(
+        Seq(Asc(varFor("newX"), projection)),
+        Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))
+      )
+    )
+    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y")).asc(varFor("z"))) should be(
+      Satisfaction(
+        Seq(Asc(varFor("newX"), projection)),
+        Seq(Desc(varFor("y"), projection), Asc(varFor("z"), projection))
+      )
+    )
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.desc(varFor("x")).desc(varFor("y")).asc(varFor("z"))
+    ) should matchPattern { case NoSatisfaction() => }
 
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("z")).asc(varFor("a"))) should matchPattern { case FullSatisfaction() => }
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("a")).asc(varFor("z"))) should be(Satisfaction(Seq(Asc(varFor("newX"), projection), Desc(varFor("y"), projection)), Seq(Asc(varFor("z"), projection))))
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("a")).asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))) should matchPattern { case NoSatisfaction() => }
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("z")).asc(varFor("a"))
+    ) should matchPattern { case FullSatisfaction() => }
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("a")).asc(varFor("z"))
+    ) should be(Satisfaction(
+      Seq(Asc(varFor("newX"), projection), Desc(varFor("y"), projection)),
+      Seq(Asc(varFor("z"), projection))
+    ))
+    interestingOrder.satisfiedBy(
+      ProvidedOrder.asc(varFor("a")).asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))
+    ) should matchPattern { case NoSatisfaction() => }
   }
 
 }

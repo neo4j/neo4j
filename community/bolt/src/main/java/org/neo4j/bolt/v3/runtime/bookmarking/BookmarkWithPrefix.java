@@ -19,57 +19,48 @@
  */
 package org.neo4j.bolt.v3.runtime.bookmarking;
 
-import java.util.Objects;
+import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.utf8Value;
 
+import java.util.Objects;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.kernel.database.NamedDatabaseId;
-
-import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
  * This is the bookmark used in Bolt V1-V3. It is prefixed to identify this string is a bookmark.
  * This bookmark cannot be used with multi-databases as we cannot identify the database where the bookmark is originally generated.
  */
-public class BookmarkWithPrefix implements Bookmark
-{
+public class BookmarkWithPrefix implements Bookmark {
     static final String BOOKMARK_TX_PREFIX = "neo4j:bookmark:v1:tx";
 
     private final long txId;
 
-    public BookmarkWithPrefix( long txId )
-    {
+    public BookmarkWithPrefix(long txId) {
         this.txId = txId;
     }
 
     @Override
-    public long txId()
-    {
+    public long txId() {
         return txId;
     }
 
     @Override
-    public NamedDatabaseId databaseId()
-    {
+    public NamedDatabaseId databaseId() {
         return null;
     }
 
     @Override
-    public void attachTo( BoltResponseHandler state )
-    {
-        state.onMetadata( BOOKMARK_KEY, utf8Value( toString() ) );
+    public void attachTo(BoltResponseHandler state) {
+        state.onMetadata(BOOKMARK_KEY, utf8Value(toString()));
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         BookmarkWithPrefix bookmark = (BookmarkWithPrefix) o;
@@ -77,14 +68,12 @@ public class BookmarkWithPrefix implements Bookmark
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( txId );
+    public int hashCode() {
+        return Objects.hash(txId);
     }
 
     @Override
-    public String toString()
-    {
-        return format( BOOKMARK_TX_PREFIX + "%d", txId );
+    public String toString() {
+        return format(BOOKMARK_TX_PREFIX + "%d", txId);
     }
 }

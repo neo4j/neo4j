@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -46,15 +51,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-class TestLogPruning
-{
+class TestLogPruning {
     private DatabaseManagementService managementService;
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
@@ -63,97 +60,86 @@ class TestLogPruning
     private int performedTransactions;
 
     @AfterEach
-    void after() throws Exception
-    {
-        if ( db != null )
-        {
+    void after() throws Exception {
+        if (db != null) {
             managementService.shutdown();
         }
         fs.close();
     }
 
     @Test
-    void noPruning() throws Exception
-    {
-        newDb( "true", 2 );
+    void noPruning() throws Exception {
+        newDb("true", 2);
 
-        for ( int i = 0; i < 100; i++ )
-        {
+        for (int i = 0; i < 100; i++) {
             doTransaction();
         }
 
         LogFile logFile = logFiles.getLogFile();
         long currentVersion = logFile.getHighestLogVersion();
-        for ( long version = 0; version < currentVersion; version++ )
-        {
-            assertTrue( fs.fileExists( logFile.getLogFileForVersion( version ) ), "Version " + version + " has been unexpectedly pruned" );
+        for (long version = 0; version < currentVersion; version++) {
+            assertTrue(
+                    fs.fileExists(logFile.getLogFileForVersion(version)),
+                    "Version " + version + " has been unexpectedly pruned");
         }
     }
 
     @Test
-    void pruneByFileSize() throws Exception
-    {
+    void pruneByFileSize() throws Exception {
         // Given
         int transactionByteSize = figureOutSampleTransactionSizeBytes();
         int transactionsPerFile = 3;
         int logThreshold = transactionByteSize * transactionsPerFile;
-        newDb( logThreshold + " size", 1 );
+        newDb(logThreshold + " size", 1);
 
         // When
-        for ( int i = 0; i < 100; i++ )
-        {
+        for (int i = 0; i < 100; i++) {
             doTransaction();
         }
 
         int totalLogFileSize = logFileSize();
         double totalTransactions = (double) totalLogFileSize / transactionByteSize;
-        assertTrue( totalTransactions >= 3 && totalTransactions < 4 );
+        assertTrue(totalTransactions >= 3 && totalTransactions < 4);
     }
 
     @Test
-    void pruneByFileCount() throws Exception
-    {
+    void pruneByFileCount() throws Exception {
         int logsToKeep = 5;
-        newDb( logsToKeep + " files", 3 );
+        newDb(logsToKeep + " files", 3);
 
-        for ( int i = 0; i < 100; i++ )
-        {
+        for (int i = 0; i < 100; i++) {
             doTransaction();
         }
 
-        assertEquals( logsToKeep, logCount() );
+        assertEquals(logsToKeep, logCount());
     }
 
     @Test
-    void pruneByTransactionCount() throws Exception
-    {
+    void pruneByTransactionCount() throws Exception {
         int transactionsToKeep = 100;
         int transactionsPerLog = 3;
-        newDb( transactionsToKeep + " txs", 3 );
+        newDb(transactionsToKeep + " txs", 3);
 
-        for ( int i = 0; i < 100; i++ )
-        {
+        for (int i = 0; i < 100; i++) {
             doTransaction();
         }
 
         int transactionCount = transactionCount();
-        assertTrue( transactionCount >= transactionsToKeep &&
-                             transactionCount <= (transactionsToKeep + transactionsPerLog),
-                "Transaction count expected to be within " + transactionsToKeep + " <= txs <= " + (transactionsToKeep + transactionsPerLog) +
-                        ", but was " + transactionCount );
+        assertTrue(
+                transactionCount >= transactionsToKeep && transactionCount <= (transactionsToKeep + transactionsPerLog),
+                "Transaction count expected to be within " + transactionsToKeep + " <= txs <= "
+                        + (transactionsToKeep + transactionsPerLog) + ", but was " + transactionCount);
     }
 
     @Test
-    void shouldKeepAtLeastOneTransactionAfterRotate() throws Exception
-    {
+    void shouldKeepAtLeastOneTransactionAfterRotate() throws Exception {
         // Given
         // a database configured to keep 1 byte worth of logs, which means prune everything on rotate
-        newDb( 1 + " size", 1 );
+        newDb(1 + " size", 1);
 
         // When
         // some transactions go through, rotating and pruning everything after them
-        for ( int i = 0; i < 2; i++ )
-        {
+        for (int i = 0; i < 2; i++) {
             doTransaction();
         }
         // and the log gets rotated, which means we have a new one with no txs in it
@@ -165,111 +151,96 @@ class TestLogPruning
 
         // Then
         // the database must have kept at least one tx (in our case exactly one, because we rotated the log)
-        assertThat( transactionCount() ).isGreaterThanOrEqualTo( 1 );
+        assertThat(transactionCount()).isGreaterThanOrEqualTo(1);
     }
 
-    private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions )
-    {
+    private GraphDatabaseAPI newDb(String logPruning, int rotateEveryNTransactions) {
         this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();
         managementService = new TestDatabaseManagementServiceBuilder()
-                                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) ).impermanent()
-                                .setConfig( keep_logical_logs, logPruning ).build();
-        this.db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = db.getDependencyResolver().resolveDependency( LogFiles.class );
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
+                .impermanent()
+                .setConfig(keep_logical_logs, logPruning)
+                .build();
+        this.db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        logFiles = db.getDependencyResolver().resolveDependency(LogFiles.class);
         return db;
     }
 
-    private void doTransaction() throws IOException
-    {
-        if ( ++performedTransactions >= rotateEveryNTransactions )
-        {
+    private void doTransaction() throws IOException {
+        if (++performedTransactions >= rotateEveryNTransactions) {
             rotate();
             performedTransactions = 0;
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
-            node.setProperty( "name", "a somewhat lengthy string of some sort, right?" );
+            node.setProperty("name", "a somewhat lengthy string of some sort, right?");
             tx.commit();
         }
         checkPoint();
     }
 
-    private void rotate() throws IOException
-    {
-        logFiles.getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
+    private void rotate() throws IOException {
+        logFiles.getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
     }
 
-    private void checkPoint() throws IOException
-    {
-        TriggerInfo triggerInfo = new SimpleTriggerInfo( "test" );
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );
+    private void checkPoint() throws IOException {
+        TriggerInfo triggerInfo = new SimpleTriggerInfo("test");
+        db.getDependencyResolver().resolveDependency(CheckPointer.class).forceCheckPoint(triggerInfo);
     }
 
-    private int figureOutSampleTransactionSizeBytes() throws IOException
-    {
-        db = newDb( "true", 5 );
+    private int figureOutSampleTransactionSizeBytes() throws IOException {
+        db = newDb("true", 5);
         doTransaction();
         managementService.shutdown();
-        return (int) fs.getFileSize( logFiles.getLogFile().getLogFileForVersion( 0 ) );
+        return (int) fs.getFileSize(logFiles.getLogFile().getLogFileForVersion(0));
     }
 
-    private int aggregateLogData( Extractor extractor ) throws IOException
-    {
+    private int aggregateLogData(Extractor extractor) throws IOException {
         int total = 0;
         LogFile logFile = logFiles.getLogFile();
-        for ( long i = logFile.getHighestLogVersion(); i >= 0; i-- )
-        {
-            if ( logFile.versionExists( i ) )
-            {
-                total += extractor.extract( i );
-            }
-            else
-            {
+        for (long i = logFile.getHighestLogVersion(); i >= 0; i--) {
+            if (logFile.versionExists(i)) {
+                total += extractor.extract(i);
+            } else {
                 break;
             }
         }
         return total;
     }
 
-    private int logCount() throws IOException
-    {
-        return aggregateLogData( from -> 1 );
+    private int logCount() throws IOException {
+        return aggregateLogData(from -> 1);
     }
 
-    private int logFileSize() throws IOException
-    {
-        return aggregateLogData( from -> (int) fs.getFileSize( logFiles.getLogFile().getLogFileForVersion( from ) ) );
+    private int logFileSize() throws IOException {
+        return aggregateLogData(
+                from -> (int) fs.getFileSize(logFiles.getLogFile().getLogFileForVersion(from)));
     }
 
-    private int transactionCount() throws IOException
-    {
-        return aggregateLogData( version ->
-        {
+    private int transactionCount() throws IOException {
+        return aggregateLogData(version -> {
             int counter = 0;
             LogVersionBridge bridge = LogVersionBridge.NO_MORE_CHANNELS;
-            LogVersionedStoreChannel versionedStoreChannel = logFiles.getLogFile().openForVersion( version );
-            StorageEngineFactory storageEngineFactory = db.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
-            try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, INSTANCE ) )
-            {
-                try ( PhysicalTransactionCursor physicalTransactionCursor =
-                        new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() ) ) )
-                {
-                    while ( physicalTransactionCursor.next() )
-                    {
+            LogVersionedStoreChannel versionedStoreChannel =
+                    logFiles.getLogFile().openForVersion(version);
+            StorageEngineFactory storageEngineFactory =
+                    db.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
+            try (ReadableLogChannel channel = new ReadAheadLogChannel(versionedStoreChannel, bridge, INSTANCE)) {
+                try (PhysicalTransactionCursor physicalTransactionCursor = new PhysicalTransactionCursor(
+                        channel, new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory()))) {
+                    while (physicalTransactionCursor.next()) {
                         counter++;
                     }
                 }
             }
             return counter;
-        } );
+        });
     }
 
     @FunctionalInterface
-    private interface Extractor
-    {
-        int extract( long fromVersion ) throws IOException;
+    private interface Extractor {
+        int extract(long fromVersion) throws IOException;
     }
 }

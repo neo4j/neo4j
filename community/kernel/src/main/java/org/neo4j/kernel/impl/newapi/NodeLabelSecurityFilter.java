@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, IndexProgressor
-{
+class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, IndexProgressor {
     private final int[] properties;
     private final EntityValueClient target;
     private final NodeCursor node;
@@ -37,8 +36,8 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
     private final AccessMode accessMode;
     private IndexProgressor progressor;
 
-    NodeLabelSecurityFilter( int[] properties, EntityValueClient target, NodeCursor node, Read read, AccessMode accessMode )
-    {
+    NodeLabelSecurityFilter(
+            int[] properties, EntityValueClient target, NodeCursor node, Read read, AccessMode accessMode) {
         this.properties = properties;
         this.target = target;
         this.node = node;
@@ -47,48 +46,46 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
     }
 
     @Override
-    public boolean next()
-    {
+    public boolean next() {
         return progressor.next();
     }
 
     @Override
-    public void close()
-    {
-        IOUtils.close( RuntimeException::new, node, progressor );
+    public void close() {
+        IOUtils.close(RuntimeException::new, node, progressor);
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
-                            boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
-    {
+    public void initialize(
+            IndexDescriptor descriptor,
+            IndexProgressor progressor,
+            AccessMode accessMode,
+            boolean indexIncludesTransactionState,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query) {
         this.progressor = progressor;
-        target.initialize( descriptor, this, accessMode, indexIncludesTransactionState, constraints, query );
+        target.initialize(descriptor, this, accessMode, indexIncludesTransactionState, constraints, query);
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value... values )
-    {
-        read.singleNode( reference, node );
-        if ( !node.next() )
-        {
+    public boolean acceptEntity(long reference, float score, Value... values) {
+        read.singleNode(reference, node);
+        if (!node.next()) {
             // This node is not visible to this security context
             return false;
         }
 
         boolean allowed = true;
         long[] labels = node.labelsIgnoringTxStateSetRemove().all();
-        for ( int prop : properties )
-        {
-            allowed &= accessMode.allowsReadNodeProperty( () -> Labels.from( labels ), prop );
+        for (int prop : properties) {
+            allowed &= accessMode.allowsReadNodeProperty(() -> Labels.from(labels), prop);
         }
 
-        return allowed && target.acceptEntity( reference, score, values );
+        return allowed && target.acceptEntity(reference, score, values);
     }
 
     @Override
-    public boolean needsValues()
-    {
+    public boolean needsValues() {
         return target.needsValues();
     }
 }

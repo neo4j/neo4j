@@ -22,19 +22,26 @@ package org.neo4j.consistency.report;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-public interface InconsistencyLogger
-{
-    void error( RecordType recordType, AbstractBaseRecord record, String message, Object... args );
+public interface InconsistencyLogger {
+    void error(RecordType recordType, AbstractBaseRecord record, String message, Object... args);
 
-    void error( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, String message,
-                Object... args );
+    void error(
+            RecordType recordType,
+            AbstractBaseRecord oldRecord,
+            AbstractBaseRecord newRecord,
+            String message,
+            Object... args);
 
-    void error( String message );
+    void error(String message);
 
-    void warning( RecordType recordType, AbstractBaseRecord record, String message, Object... args );
+    void warning(RecordType recordType, AbstractBaseRecord record, String message, Object... args);
 
-    void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, String message,
-                  Object... args );
+    void warning(
+            RecordType recordType,
+            AbstractBaseRecord oldRecord,
+            AbstractBaseRecord newRecord,
+            String message,
+            Object... args);
 
-    void warning( String message );
+    void warning(String message);
 }

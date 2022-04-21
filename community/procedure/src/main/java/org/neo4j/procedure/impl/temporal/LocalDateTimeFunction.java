@@ -19,11 +19,12 @@
  */
 package org.neo4j.procedure.impl.temporal;
 
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalDateTime;
+
 import java.time.Clock;
 import java.time.ZoneId;
 import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
-
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
@@ -31,43 +32,35 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalDateTime;
-
-@Description( "Create a LocalDateTime instant." )
-class LocalDateTimeFunction extends TemporalFunction<LocalDateTimeValue>
-{
-    LocalDateTimeFunction( Supplier<ZoneId> defaultZone )
-    {
-        super( NTLocalDateTime, defaultZone );
+@Description("Create a LocalDateTime instant.")
+class LocalDateTimeFunction extends TemporalFunction<LocalDateTimeValue> {
+    LocalDateTimeFunction(Supplier<ZoneId> defaultZone) {
+        super(NTLocalDateTime, defaultZone);
     }
 
     @Override
-    protected LocalDateTimeValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone )
-    {
-        return timezone == null ? LocalDateTimeValue.now( clock, defaultZone ) : LocalDateTimeValue.now( clock, timezone );
+    protected LocalDateTimeValue now(Clock clock, String timezone, Supplier<ZoneId> defaultZone) {
+        return timezone == null ? LocalDateTimeValue.now(clock, defaultZone) : LocalDateTimeValue.now(clock, timezone);
     }
 
     @Override
-    protected LocalDateTimeValue parse( TextValue value, Supplier<ZoneId> defaultZone )
-    {
-        return LocalDateTimeValue.parse( value );
+    protected LocalDateTimeValue parse(TextValue value, Supplier<ZoneId> defaultZone) {
+        return LocalDateTimeValue.parse(value);
     }
 
     @Override
-    protected LocalDateTimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
-    {
-        return LocalDateTimeValue.build( map, defaultZone );
+    protected LocalDateTimeValue build(MapValue map, Supplier<ZoneId> defaultZone) {
+        return LocalDateTimeValue.build(map, defaultZone);
     }
 
     @Override
-    protected LocalDateTimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
-    {
-        return LocalDateTimeValue.select( from, defaultZone );
+    protected LocalDateTimeValue select(AnyValue from, Supplier<ZoneId> defaultZone) {
+        return LocalDateTimeValue.select(from, defaultZone);
     }
 
     @Override
-    protected LocalDateTimeValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
-    {
-        return LocalDateTimeValue.truncate( unit, input, fields, defaultZone );
+    protected LocalDateTimeValue truncate(
+            TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone) {
+        return LocalDateTimeValue.truncate(unit, input, fields, defaultZone);
     }
 }

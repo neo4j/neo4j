@@ -19,18 +19,6 @@
  */
 package org.neo4j.server.security.ssl;
 
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.HttpOutput;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.server.configuration.ServerSettings;
-
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
 import static org.eclipse.jetty.http.HttpScheme.HTTPS;
 import static org.eclipse.jetty.server.HttpConfiguration.Customizer;
@@ -40,67 +28,70 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class HttpsRequestCustomizerTest
-{
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.server.configuration.ServerSettings;
+
+class HttpsRequestCustomizerTest {
     @Test
-    void shouldSetRequestSchemeToHttps()
-    {
+    void shouldSetRequestSchemeToHttps() {
         Customizer customizer = newCustomizer();
-        Request request = mock( Request.class );
+        Request request = mock(Request.class);
 
-        customize( customizer, request );
+        customize(customizer, request);
 
-        verify( request ).setScheme( HTTPS.asString() );
+        verify(request).setScheme(HTTPS.asString());
     }
 
     @Test
-    void shouldAddHstsHeaderWhenConfigured()
-    {
+    void shouldAddHstsHeaderWhenConfigured() {
         String configuredValue = "max-age=3600; includeSubDomains";
-        Customizer customizer = newCustomizer( configuredValue );
+        Customizer customizer = newCustomizer(configuredValue);
         Request request = newRequest();
 
-        customize( customizer, request );
+        customize(customizer, request);
 
-        String receivedValue = request.getResponse().getHttpFields().get( STRICT_TRANSPORT_SECURITY );
-        assertEquals( configuredValue, receivedValue );
+        String receivedValue = request.getResponse().getHttpFields().get(STRICT_TRANSPORT_SECURITY);
+        assertEquals(configuredValue, receivedValue);
     }
 
     @Test
-    void shouldNotAddHstsHeaderWhenNotConfigured()
-    {
+    void shouldNotAddHstsHeaderWhenNotConfigured() {
         Customizer customizer = newCustomizer();
         Request request = newRequest();
 
-        customize( customizer, request );
+        customize(customizer, request);
 
-        String hstsValue = request.getResponse().getHttpFields().get( STRICT_TRANSPORT_SECURITY );
-        assertNull( hstsValue );
+        String hstsValue = request.getResponse().getHttpFields().get(STRICT_TRANSPORT_SECURITY);
+        assertNull(hstsValue);
     }
 
-    private static void customize( Customizer customizer, Request request )
-    {
-        customizer.customize( mock( Connector.class ), new HttpConfiguration(), request );
+    private static void customize(Customizer customizer, Request request) {
+        customizer.customize(mock(Connector.class), new HttpConfiguration(), request);
     }
 
-    private static Request newRequest()
-    {
-        HttpChannel channel = mock( HttpChannel.class );
-        Response response = new Response( channel, mock( HttpOutput.class ) );
-        Request request = new Request( channel, mock( HttpInput.class ) );
-        when( channel.getRequest() ).thenReturn( request );
-        when( channel.getResponse() ).thenReturn( response );
+    private static Request newRequest() {
+        HttpChannel channel = mock(HttpChannel.class);
+        Response response = new Response(channel, mock(HttpOutput.class));
+        Request request = new Request(channel, mock(HttpInput.class));
+        when(channel.getRequest()).thenReturn(request);
+        when(channel.getResponse()).thenReturn(response);
         return request;
     }
 
-    private static Customizer newCustomizer()
-    {
-        return new HttpsRequestCustomizer( Config.defaults() );
+    private static Customizer newCustomizer() {
+        return new HttpsRequestCustomizer(Config.defaults());
     }
 
-    private static Customizer newCustomizer( String hstsValue )
-    {
-        Config config = Config.defaults( ServerSettings.http_strict_transport_security, hstsValue );
-        return new HttpsRequestCustomizer( config );
+    private static Customizer newCustomizer(String hstsValue) {
+        Config config = Config.defaults(ServerSettings.http_strict_transport_security, hstsValue);
+        return new HttpsRequestCustomizer(config);
     }
 }

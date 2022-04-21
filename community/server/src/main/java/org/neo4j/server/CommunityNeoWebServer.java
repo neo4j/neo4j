@@ -19,9 +19,10 @@
  */
 package org.neo4j.server;
 
+import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
+
 import java.util.ArrayList;
 import java.util.function.Supplier;
-
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -46,69 +47,71 @@ import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
-
-public class CommunityNeoWebServer extends AbstractNeoWebServer
-{
-    public CommunityNeoWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
-                                  InternalLogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools, TransactionManager transactionManager,
-                                  SystemNanoClock clock )
-    {
-        super( managementService, globalDependencies, config, userLogProvider, dbmsInfo, memoryPools, transactionManager, clock );
+public class CommunityNeoWebServer extends AbstractNeoWebServer {
+    public CommunityNeoWebServer(
+            DatabaseManagementService managementService,
+            Dependencies globalDependencies,
+            Config config,
+            InternalLogProvider userLogProvider,
+            DbmsInfo dbmsInfo,
+            MemoryPools memoryPools,
+            TransactionManager transactionManager,
+            SystemNanoClock clock) {
+        super(
+                managementService,
+                globalDependencies,
+                config,
+                userLogProvider,
+                dbmsInfo,
+                memoryPools,
+                transactionManager,
+                clock);
     }
 
     @Override
-    protected Iterable<ServerModule> createServerModules()
-    {
+    protected Iterable<ServerModule> createServerModules() {
         var config = getConfig();
-        var enabledModules = config.get( ServerSettings.http_enabled_modules );
+        var enabledModules = config.get(ServerSettings.http_enabled_modules);
         var serverModules = new ArrayList<ServerModule>();
-        if ( !enabledModules.isEmpty() )
-        {
-            serverModules.add( createDBMSModule() );
+        if (!enabledModules.isEmpty()) {
+            serverModules.add(createDBMSModule());
 
-            if ( enabledModules.contains( ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS ) )
-            {
-                serverModules.add( new TransactionModule( webServer, config, clock ) );
-                serverModules.add( new LegacyTransactionModule( webServer, config, clock ) );
+            if (enabledModules.contains(ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS)) {
+                serverModules.add(new TransactionModule(webServer, config, clock));
+                serverModules.add(new LegacyTransactionModule(webServer, config, clock));
             }
-            if ( enabledModules.contains( ConfigurableServerModules.UNMANAGED_EXTENSIONS ) )
-            {
-                serverModules.add( new ThirdPartyJAXRSModule( webServer, config, userLogProvider ) );
+            if (enabledModules.contains(ConfigurableServerModules.UNMANAGED_EXTENSIONS)) {
+                serverModules.add(new ThirdPartyJAXRSModule(webServer, config, userLogProvider));
             }
-            if ( enabledModules.contains( ConfigurableServerModules.BROWSER ) )
-            {
-                serverModules.add( new Neo4jBrowserModule( webServer ) );
+            if (enabledModules.contains(ConfigurableServerModules.BROWSER)) {
+                serverModules.add(new Neo4jBrowserModule(webServer));
             }
 
-            serverModules.add( createAuthorizationModule() );
+            serverModules.add(createAuthorizationModule());
         }
         return serverModules;
     }
 
     @Override
-    protected WebServer createWebServer()
-    {
+    protected WebServer createWebServer() {
         var globalDependencies = getGlobalDependencies();
-        var connectionTracker = globalDependencies.resolveDependency( NetworkConnectionTracker.class );
-        var webServer = new Jetty9WebServer( userLogProvider, getConfig(), connectionTracker, byteBufferPool );
-        globalDependencies.satisfyDependency( webServer );
+        var connectionTracker = globalDependencies.resolveDependency(NetworkConnectionTracker.class);
+        var webServer = new Jetty9WebServer(userLogProvider, getConfig(), connectionTracker, byteBufferPool);
+        globalDependencies.satisfyDependency(webServer);
         return webServer;
     }
 
-    protected DBMSModule createDBMSModule()
-    {
+    protected DBMSModule createDBMSModule() {
         var globalDependencies = getGlobalDependencies();
-        var clientRoutingDomainChecker = globalDependencies.resolveDependency( ClientRoutingDomainChecker.class );
+        var clientRoutingDomainChecker = globalDependencies.resolveDependency(ClientRoutingDomainChecker.class);
         // Bolt port isn't available until runtime, so defer loading until then
         Supplier<DiscoverableURIs> discoverableURIs =
-                () -> communityDiscoverableURIs( getConfig(), connectorPortRegister, clientRoutingDomainChecker );
-        var authConfigProvider = getGlobalDependencies().resolveDependency( AuthConfigProvider.class );
-        return new DBMSModule( webServer, getConfig(), discoverableURIs, userLogProvider, authConfigProvider );
+                () -> communityDiscoverableURIs(getConfig(), connectorPortRegister, clientRoutingDomainChecker);
+        var authConfigProvider = getGlobalDependencies().resolveDependency(AuthConfigProvider.class);
+        return new DBMSModule(webServer, getConfig(), discoverableURIs, userLogProvider, authConfigProvider);
     }
 
-    protected AuthorizationModule createAuthorizationModule()
-    {
-        return new AuthorizationModule( webServer, authManagerSupplier, userLogProvider, getConfig(), getUriWhitelist() );
+    protected AuthorizationModule createAuthorizationModule() {
+        return new AuthorizationModule(webServer, authManagerSupplier, userLogProvider, getConfig(), getUriWhitelist());
     }
 }

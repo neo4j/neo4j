@@ -24,21 +24,20 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-public class DatabaseTransactionCommitProcess implements TransactionCommitProcess
-{
+public class DatabaseTransactionCommitProcess implements TransactionCommitProcess {
     private final TransactionCommitProcess commitProcess;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
 
-    public DatabaseTransactionCommitProcess( InternalTransactionCommitProcess commitProcess, DatabaseReadOnlyChecker readOnlyDatabaseChecker )
-    {
+    public DatabaseTransactionCommitProcess(
+            InternalTransactionCommitProcess commitProcess, DatabaseReadOnlyChecker readOnlyDatabaseChecker) {
         this.commitProcess = commitProcess;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
     }
 
     @Override
-    public long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode ) throws TransactionFailureException
-    {
+    public long commit(TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+            throws TransactionFailureException {
         readOnlyDatabaseChecker.check();
-        return commitProcess.commit( batch, commitEvent, mode );
+        return commitProcess.commit(batch, commitEvent, mode);
     }
 }

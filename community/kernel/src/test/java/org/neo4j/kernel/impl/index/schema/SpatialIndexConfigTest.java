@@ -19,63 +19,61 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@ExtendWith( RandomExtension.class )
-class SpatialIndexConfigTest
-{
+@ExtendWith(RandomExtension.class)
+class SpatialIndexConfigTest {
     @Inject
     RandomSupport random;
 
     @Test
-    void mustAddSpatialConfigToMap()
-    {
-        Map<String,Value> map = new HashMap<>();
-        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
-        {
+    void mustAddSpatialConfigToMap() {
+        Map<String, Value> map = new HashMap<>();
+        for (CoordinateReferenceSystem crs : CoordinateReferenceSystem.all()) {
             Config config = Config.defaults();
-            SpaceFillingCurveSettings spaceFillingCurveSettings = new ConfiguredSpaceFillingCurveSettingsCache( config ).forCRS( crs );
-            SpatialIndexConfig.addSpatialConfig( map, crs, spaceFillingCurveSettings );
+            SpaceFillingCurveSettings spaceFillingCurveSettings =
+                    new ConfiguredSpaceFillingCurveSettingsCache(config).forCRS(crs);
+            SpatialIndexConfig.addSpatialConfig(map, crs, spaceFillingCurveSettings);
 
-            assertNotNull( map.remove( IndexSettingUtil.spatialMinSettingForCrs( crs ).getSettingName() ) );
-            assertNotNull( map.remove( IndexSettingUtil.spatialMaxSettingForCrs( crs ).getSettingName() ) );
-            assertTrue( map.isEmpty() );
+            assertNotNull(
+                    map.remove(IndexSettingUtil.spatialMinSettingForCrs(crs).getSettingName()));
+            assertNotNull(
+                    map.remove(IndexSettingUtil.spatialMaxSettingForCrs(crs).getSettingName()));
+            assertTrue(map.isEmpty());
         }
     }
 
     @Test
-    void mustAddAndExtractSpatialConfigToIndexConfig()
-    {
+    void mustAddAndExtractSpatialConfigToIndexConfig() {
         IndexConfig indexConfig = IndexConfig.empty();
-        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> expectedMap = new HashMap<>();
-        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
-        {
+        Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> expectedMap = new HashMap<>();
+        for (CoordinateReferenceSystem crs : CoordinateReferenceSystem.all()) {
             Config config = Config.defaults();
-            SpaceFillingCurveSettings spaceFillingCurveSettings = new ConfiguredSpaceFillingCurveSettingsCache( config ).forCRS( crs );
-            expectedMap.put( crs, spaceFillingCurveSettings );
-            indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
+            SpaceFillingCurveSettings spaceFillingCurveSettings =
+                    new ConfiguredSpaceFillingCurveSettingsCache(config).forCRS(crs);
+            expectedMap.put(crs, spaceFillingCurveSettings);
+            indexConfig = SpatialIndexConfig.addSpatialConfig(indexConfig, crs, spaceFillingCurveSettings);
         }
 
-        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> extractedMap = SpatialIndexConfig.extractSpatialConfig( indexConfig );
-        assertEquals( expectedMap, extractedMap );
+        Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> extractedMap =
+                SpatialIndexConfig.extractSpatialConfig(indexConfig);
+        assertEquals(expectedMap, extractedMap);
     }
 }

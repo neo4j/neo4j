@@ -19,10 +19,11 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.junit.jupiter.api.RepeatedTest;
+import static org.neo4j.test.Race.throwing;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.RepeatedTest;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -31,93 +32,80 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.neo4j.test.Race.throwing;
-import static org.neo4j.test.TestLabels.LABEL_ONE;
-
 @ImpermanentDbmsExtension
-abstract class UpdateDeletedNodeIndexBase
-{
+abstract class UpdateDeletedNodeIndexBase {
     @Inject
     protected GraphDatabaseAPI db;
 
     protected static final String KEY = "key";
     private static final int NODES = 100;
 
-    @RepeatedTest( 5 )
-    void shouldHandleCreateNodeConcurrentlyWithIndexDrop() throws Throwable
-    {
-        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.createNode( LABEL_ONE ).setProperty( KEY, nodeId ) );
+    @RepeatedTest(5)
+    void shouldHandleCreateNodeConcurrentlyWithIndexDrop() throws Throwable {
+        shouldHandleIndexDropConcurrentlyWithOperation(
+                (tx, nodeId) -> tx.createNode(LABEL_ONE).setProperty(KEY, nodeId));
     }
 
-    @RepeatedTest( 5 )
-    void shouldHandleRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable
-    {
-        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).removeLabel( LABEL_ONE ) );
+    @RepeatedTest(5)
+    void shouldHandleRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable {
+        shouldHandleIndexDropConcurrentlyWithOperation(
+                (tx, nodeId) -> tx.getNodeById(nodeId).removeLabel(LABEL_ONE));
     }
 
-    @RepeatedTest( 5 )
-    void shouldHandleDeleteNodeConcurrentlyWithIndexDrop() throws Throwable
-    {
-        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).delete() );
+    @RepeatedTest(5)
+    void shouldHandleDeleteNodeConcurrentlyWithIndexDrop() throws Throwable {
+        shouldHandleIndexDropConcurrentlyWithOperation(
+                (tx, nodeId) -> tx.getNodeById(nodeId).delete());
     }
 
-    @RepeatedTest( 5 )
-    void shouldHandleRemovePropertyConcurrentlyWithIndexDrop() throws Throwable
-    {
-        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).removeProperty( KEY ) );
+    @RepeatedTest(5)
+    void shouldHandleRemovePropertyConcurrentlyWithIndexDrop() throws Throwable {
+        shouldHandleIndexDropConcurrentlyWithOperation(
+                (tx, nodeId) -> tx.getNodeById(nodeId).removeProperty(KEY));
     }
 
-    @RepeatedTest( 5 )
-    void shouldHandleNodeDetachDeleteConcurrentlyWithIndexDrop() throws Throwable
-    {
-        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) ->
-        {
-            ((InternalTransaction) tx).kernelTransaction().dataWrite().nodeDetachDelete( nodeId );
-        } );
+    @RepeatedTest(5)
+    void shouldHandleNodeDetachDeleteConcurrentlyWithIndexDrop() throws Throwable {
+        shouldHandleIndexDropConcurrentlyWithOperation((tx, nodeId) -> {
+            ((InternalTransaction) tx).kernelTransaction().dataWrite().nodeDetachDelete(nodeId);
+        });
     }
 
-    private void shouldHandleIndexDropConcurrentlyWithOperation( NodeOperation operation ) throws Throwable
-    {
+    private void shouldHandleIndexDropConcurrentlyWithOperation(NodeOperation operation) throws Throwable {
         // given
         long[] nodes = createNodes();
         IndexDefinition indexDefinition = createIndex();
 
         // when
         Race race = new Race();
-        race.addContestant( () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().getIndexByName( indexDefinition.getName() ).drop();
-                tx.commit();
-            }
-        }, 1 );
-        for ( int i = 0; i < NODES; i++ )
-        {
+        race.addContestant(
+                () -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.schema().getIndexByName(indexDefinition.getName()).drop();
+                        tx.commit();
+                    }
+                },
+                1);
+        for (int i = 0; i < NODES; i++) {
             final long nodeId = nodes[i];
-            race.addContestant( throwing( () ->
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    operation.run( tx, nodeId );
+            race.addContestant(throwing(() -> {
+                try (Transaction tx = db.beginTx()) {
+                    operation.run(tx, nodeId);
                     tx.commit();
                 }
-            } ) );
+            }));
         }
 
         // then
         race.go();
     }
 
-    private long[] createNodes()
-    {
+    private long[] createNodes() {
         long[] nodes = new long[NODES];
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < NODES; i++ )
-            {
-                Node node = tx.createNode( LABEL_ONE );
-                node.setProperty( KEY, i );
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < NODES; i++) {
+                Node node = tx.createNode(LABEL_ONE);
+                node.setProperty(KEY, i);
                 nodes[i] = node.getId();
             }
             tx.commit();
@@ -125,21 +113,17 @@ abstract class UpdateDeletedNodeIndexBase
         return nodes;
     }
 
-    private IndexDefinition createIndex()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < NODES; i++ )
-            {
-                tx.createNode( LABEL_ONE ).setProperty( KEY, i );
+    private IndexDefinition createIndex() {
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < NODES; i++) {
+                tx.createNode(LABEL_ONE).setProperty(KEY, i);
             }
             tx.commit();
         }
         IndexDefinition indexDefinition;
         indexDefinition = indexCreate();
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
         return indexDefinition;
@@ -147,8 +131,7 @@ abstract class UpdateDeletedNodeIndexBase
 
     protected abstract IndexDefinition indexCreate();
 
-    private interface NodeOperation
-    {
-        void run( Transaction tx, long nodeId ) throws Exception;
+    private interface NodeOperation {
+        void run(Transaction tx, long nodeId) throws Exception;
     }
 }

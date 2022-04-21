@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Objects;
-
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -37,97 +36,82 @@ import org.neo4j.io.pagecache.monitoring.PageFileCounters;
  * Depending on the adversary each operation can throw either {@link RuntimeException} like {@link SecurityException}
  * or {@link IOException} like {@link NoSuchFileException}.
  */
-@SuppressWarnings( "unchecked" )
-public class AdversarialPagedFile implements PagedFile
-{
+@SuppressWarnings("unchecked")
+public class AdversarialPagedFile implements PagedFile {
     private final PagedFile delegate;
     private final Adversary adversary;
 
-    public AdversarialPagedFile( PagedFile delegate, Adversary adversary )
-    {
-        this.delegate = Objects.requireNonNull( delegate );
-        this.adversary = Objects.requireNonNull( adversary );
+    public AdversarialPagedFile(PagedFile delegate, Adversary adversary) {
+        this.delegate = Objects.requireNonNull(delegate);
+        this.adversary = Objects.requireNonNull(adversary);
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
-    {
-        adversary.injectFailure( IllegalStateException.class );
-        PageCursor pageCursor = delegate.io( pageId, pf_flags, context );
-        if ( (pf_flags & PF_SHARED_READ_LOCK) == PF_SHARED_READ_LOCK )
-        {
-            return new AdversarialReadPageCursor( pageCursor, adversary );
+    public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
+        adversary.injectFailure(IllegalStateException.class);
+        PageCursor pageCursor = delegate.io(pageId, pf_flags, context);
+        if ((pf_flags & PF_SHARED_READ_LOCK) == PF_SHARED_READ_LOCK) {
+            return new AdversarialReadPageCursor(pageCursor, adversary);
         }
-        return new AdversarialWritePageCursor( pageCursor, adversary );
+        return new AdversarialWritePageCursor(pageCursor, adversary);
     }
 
     @Override
-    public int pageSize()
-    {
+    public int pageSize() {
         return delegate.pageSize();
     }
 
     @Override
-    public int payloadSize()
-    {
+    public int payloadSize() {
         return delegate.payloadSize();
     }
 
     @Override
-    public long fileSize() throws IOException
-    {
-        adversary.injectFailure( IllegalStateException.class );
+    public long fileSize() throws IOException {
+        adversary.injectFailure(IllegalStateException.class);
         return delegate.fileSize();
     }
 
     @Override
-    public Path path()
-    {
+    public Path path() {
         return delegate.path();
     }
 
     @Override
-    public void flushAndForce() throws IOException
-    {
-        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
+    public void flushAndForce() throws IOException {
+        adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
         delegate.flushAndForce();
     }
 
     @Override
-    public long getLastPageId() throws IOException
-    {
-        adversary.injectFailure( IllegalStateException.class );
+    public long getLastPageId() throws IOException {
+        adversary.injectFailure(IllegalStateException.class);
         return delegate.getLastPageId();
     }
 
     @Override
-    public void close()
-    {
-        adversary.injectFailure( NoSuchFileException.class, SecurityException.class );
+    public void close() {
+        adversary.injectFailure(NoSuchFileException.class, SecurityException.class);
         delegate.close();
     }
 
     @Override
-    public void setDeleteOnClose( boolean deleteOnClose )
-    {
-        delegate.setDeleteOnClose( deleteOnClose );
+    public void setDeleteOnClose(boolean deleteOnClose) {
+        delegate.setDeleteOnClose(deleteOnClose);
     }
 
     @Override
-    public boolean isDeleteOnClose()
-    {
+    public boolean isDeleteOnClose() {
         return delegate.isDeleteOnClose();
     }
 
     @Override
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return delegate.getDatabaseName();
     }
 
     @Override
-    public PageFileCounters pageFileCounters()
-    {
+    public PageFileCounters pageFileCounters() {
         return delegate.pageFileCounters();
     }
 }

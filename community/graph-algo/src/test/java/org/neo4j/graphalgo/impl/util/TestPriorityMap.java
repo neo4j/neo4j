@@ -19,29 +19,25 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class TestPriorityMap
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
+
+class TestPriorityMap {
     @Test
-    void testIt()
-    {
-        PriorityMap<Integer, Integer, Double> map =
-            PriorityMap.withSelfKeyNaturalOrder();
-        map.put( 0, 5d );
-        map.put( 1, 4d );
-        map.put( 1, 4d );
-        map.put( 1, 3d );
-        assertEntry( map.pop(), 1, 3d );
-        assertEntry( map.pop(), 0, 5d );
-        assertNull( map.pop() );
+    void testIt() {
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder();
+        map.put(0, 5d);
+        map.put(1, 4d);
+        map.put(1, 4d);
+        map.put(1, 3d);
+        assertEntry(map.pop(), 1, 3d);
+        assertEntry(map.pop(), 0, 5d);
+        assertNull(map.pop());
 
         int start = 0;
         int a = 1;
@@ -52,111 +48,106 @@ class TestPriorityMap
         int f = 7;
         int y = 8;
         int x = 9;
-        map.put( start, 0d );
-        map.put( a, 1d );
+        map.put(start, 0d);
+        map.put(a, 1d);
         // get start
         // get a
-        map.put( x, 10d );
-        map.put( b, 2d );
+        map.put(x, 10d);
+        map.put(b, 2d);
         // get b
-        map.put( x, 9d );
-        map.put( c, 3d );
+        map.put(x, 9d);
+        map.put(c, 3d);
         // get c
-        map.put( x, 8d );
-        map.put( x, 6d );
-        map.put( d, 4d );
+        map.put(x, 8d);
+        map.put(x, 6d);
+        map.put(d, 4d);
         // get d
-        map.put( x, 7d );
-        map.put( e, 5d );
+        map.put(x, 7d);
+        map.put(e, 5d);
         // get e
-        map.put( x, 6d );
-        map.put( f, 7d );
+        map.put(x, 6d);
+        map.put(f, 7d);
         // get x
-        map.put( y, 8d );
+        map.put(y, 8d);
     }
 
     @Test
-    void shouldReplaceIfBetter()
-    {
+    void shouldReplaceIfBetter() {
         // GIVEN
         PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder();
-        map.put( 1, 2d );
+        map.put(1, 2d);
 
         // WHEN
-        boolean putResult = map.put( 1, 1.5d );
+        boolean putResult = map.put(1, 1.5d);
 
         // THEN
-        assertTrue( putResult );
+        assertTrue(putResult);
         Entry<Integer, Double> top = map.pop();
-        assertNull( map.peek() );
-        assertEquals( 1, top.getEntity().intValue() );
-        assertEquals( 1.5d, top.getPriority(), 0.00001 );
+        assertNull(map.peek());
+        assertEquals(1, top.getEntity().intValue());
+        assertEquals(1.5d, top.getPriority(), 0.00001);
     }
 
     @Test
-    void shouldKeepAllPrioritiesIfToldTo()
-    {
+    void shouldKeepAllPrioritiesIfToldTo() {
         // GIVEN
         int entity = 5;
-        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder( false, false );
-        assertTrue( map.put( entity, 3d ) );
-        assertTrue( map.put( entity, 2d ) );
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder(false, false);
+        assertTrue(map.put(entity, 3d));
+        assertTrue(map.put(entity, 2d));
 
         // WHEN
-        assertTrue( map.put( entity, 5d ) );
-        assertTrue( map.put( entity, 4d ) );
+        assertTrue(map.put(entity, 5d));
+        assertTrue(map.put(entity, 4d));
 
         // THEN
-        assertEntry( map.pop(), entity, 2d );
-        assertEntry( map.pop(), entity, 3d );
-        assertEntry( map.pop(), entity, 4d );
-        assertEntry( map.pop(), entity, 5d );
+        assertEntry(map.pop(), entity, 2d);
+        assertEntry(map.pop(), entity, 3d);
+        assertEntry(map.pop(), entity, 4d);
+        assertEntry(map.pop(), entity, 5d);
     }
 
     @Test
-    void inCaseSaveAllPrioritiesShouldHandleNewEntryWithWorsePrio()
-    {
+    void inCaseSaveAllPrioritiesShouldHandleNewEntryWithWorsePrio() {
         // GIVEN
         int first = 1;
         int second = 2;
-        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder( false, false);
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder(false, false);
 
         // WHEN
-        assertTrue( map.put( first, 1d) );
-        assertTrue( map.put( second, 2d) );
-        assertTrue( map.put( first, 3d ) );
+        assertTrue(map.put(first, 1d));
+        assertTrue(map.put(second, 2d));
+        assertTrue(map.put(first, 3d));
 
         // THEN
-        assertEntry( map.pop(), first, 1d );
-        assertEntry( map.pop(), second, 2d );
-        assertEntry( map.pop(), first, 3d );
-        assertNull( map.peek() );
+        assertEntry(map.pop(), first, 1d);
+        assertEntry(map.pop(), second, 2d);
+        assertEntry(map.pop(), first, 3d);
+        assertNull(map.peek());
     }
 
     @Test
-    void inCaseSaveAllPrioritiesShouldHandleNewEntryWithBetterPrio()
-    {
+    void inCaseSaveAllPrioritiesShouldHandleNewEntryWithBetterPrio() {
         // GIVEN
         int first = 1;
         int second = 2;
-        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder( false, false);
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder(false, false);
 
         // WHEN
-        assertTrue( map.put( first, 3d) );
-        assertTrue( map.put( second, 2d) );
-        assertTrue( map.put( first, 1d ) );
+        assertTrue(map.put(first, 3d));
+        assertTrue(map.put(second, 2d));
+        assertTrue(map.put(first, 1d));
 
         // THEN
-        assertEntry( map.pop(), first, 1d );
-        assertEntry( map.pop(), second, 2d );
-        assertEntry( map.pop(), first, 3d );
-        assertNull( map.peek() );
+        assertEntry(map.pop(), first, 1d);
+        assertEntry(map.pop(), second, 2d);
+        assertEntry(map.pop(), first, 3d);
+        assertNull(map.peek());
     }
 
-    private static void assertEntry( Entry<Integer,Double> entry, Integer entity, Double priority )
-    {
-        assertNotNull( entry );
-        assertEquals( entity, entry.getEntity() );
-        assertEquals( priority, entry.getPriority() );
+    private static void assertEntry(Entry<Integer, Double> entry, Integer entity, Double priority) {
+        assertNotNull(entry);
+        assertEquals(entity, entry.getEntity());
+        assertEquals(priority, entry.getPriority());
     }
 }

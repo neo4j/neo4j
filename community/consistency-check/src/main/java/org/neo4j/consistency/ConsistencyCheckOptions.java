@@ -19,53 +19,57 @@
  */
 package org.neo4j.consistency;
 
-import picocli.CommandLine;
-import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Option;
-
-import java.io.PrintStream;
-import java.nio.file.Path;
-
-import org.neo4j.cli.ExecutionContext;
-
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 
-@SuppressWarnings( "FieldMayBeFinal" )
-public class ConsistencyCheckOptions
-{
-    @Option( names = "--report-dir", paramLabel = "<path>",
-            description = "Directory where consistency report will be written.", defaultValue = "." )
+import java.nio.file.Path;
+import picocli.CommandLine.Option;
+
+@SuppressWarnings("FieldMayBeFinal")
+public class ConsistencyCheckOptions {
+    @Option(
+            names = "--report-dir",
+            paramLabel = "<path>",
+            description = "Directory where consistency report will be written.",
+            defaultValue = ".")
     private Path reportDir;
 
-    @Option( names = "--check-graph", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
-            description = "Perform consistency checks between nodes, relationships, properties, types and tokens." )
+    @Option(
+            names = "--check-graph",
+            arity = "1",
+            showDefaultValue = ALWAYS,
+            paramLabel = "<true/false>",
+            description = "Perform consistency checks between nodes, relationships, properties, types and tokens.")
     private boolean checkGraph = true;
 
-    @Option( names = "--check-indexes", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
-            description = "Perform consistency checks on indexes." )
+    @Option(
+            names = "--check-indexes",
+            arity = "1",
+            showDefaultValue = ALWAYS,
+            paramLabel = "<true/false>",
+            description = "Perform consistency checks on indexes.")
     private boolean checkIndexes = true;
 
-    @Option( names = "--check-index-structure", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
-            description = "Perform structure checks on indexes." )
+    @Option(
+            names = "--check-index-structure",
+            arity = "1",
+            showDefaultValue = ALWAYS,
+            paramLabel = "<true/false>",
+            description = "Perform structure checks on indexes.")
     private boolean checkIndexStructure = true;
 
-    public Path getReportDir()
-    {
+    public Path getReportDir() {
         return reportDir;
     }
 
-    public boolean isCheckGraph()
-    {
+    public boolean isCheckGraph() {
         return checkGraph;
     }
 
-    public boolean isCheckIndexes()
-    {
+    public boolean isCheckIndexes() {
         return checkIndexes;
     }
 
-    public boolean isCheckIndexStructure()
-    {
+    public boolean isCheckIndexStructure() {
         return checkIndexStructure;
     }
 }

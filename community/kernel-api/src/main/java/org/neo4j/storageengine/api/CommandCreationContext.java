@@ -27,8 +27,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * to calls about creating commands. One of its purposes is to reserve and release ids. E.g. internal nodes and relationship references
  * are publicly exposed even before committed, which means that they will have to be reserved before committing.
  */
-public interface CommandCreationContext extends AutoCloseable
-{
+public interface CommandCreationContext extends AutoCloseable {
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
      * internal ids of nodes and relationships are publicly accessible all the way out to the user.
@@ -46,7 +45,7 @@ public interface CommandCreationContext extends AutoCloseable
      * @return a reserved relationship id for future use.
      * @param sourceNode id of the source node to reserve this id for.
      */
-    long reserveRelationship( long sourceNode );
+    long reserveRelationship(long sourceNode);
 
     /**
      * Reserves an id for a schema record, be it for a constraint or an index, for future use to store a schema record. The reason for it being exposed here
@@ -81,5 +80,5 @@ public interface CommandCreationContext extends AutoCloseable
      * Initialise command creation context for specific transactional cursor context
      * @param cursorContext transaction cursor context
      */
-    void initialize( CursorContext cursorContext, StoreCursors storeCursors );
+    void initialize(CursorContext cursorContext, StoreCursors storeCursors);
 }

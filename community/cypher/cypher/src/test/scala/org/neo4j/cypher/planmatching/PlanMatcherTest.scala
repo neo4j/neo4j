@@ -23,7 +23,7 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 import org.scalatest.Matchers.not
 
-class PlanMatcherTest extends FunSuite{
+class PlanMatcherTest extends FunSuite {
 
   test("should be able to convert plan matcher with several regex arguments into plan description") {
     // should not throw

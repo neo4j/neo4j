@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.RelationshipType.withName
 
 abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
-                                                              edition: Edition[CONTEXT],
-                                                              runtime: CypherRuntime[CONTEXT],
-                                                              sizeHint: Int
-                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should not produce any rows") {
     given {
@@ -177,8 +177,10 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
   test("should support optional expand(into) + emptyResult under apply") {
     given {
       val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
-      for {a <- aNodes
-           b <- bNodes} {
+      for {
+        a <- aNodes
+        b <- bNodes
+      } {
         a.createRelationshipTo(b, withName("R"))
       }
     }

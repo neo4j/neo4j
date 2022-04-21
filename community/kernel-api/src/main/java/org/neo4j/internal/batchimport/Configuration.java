@@ -19,9 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.io.os.OsBeanUtil;
-
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
@@ -29,25 +26,27 @@ import static org.neo4j.configuration.GraphDatabaseSettings.upgrade_processors;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.io.os.OsBeanUtil;
+
 /**
  * Configuration for a an importer, mostly how and how much resources are used.
  */
-public interface Configuration
-{
-    int DEFAULT_BATCH_SIZE = getInteger( Configuration.class, "DEFAULT_BATCH_SIZE", 10_000 );
+public interface Configuration {
+    int DEFAULT_BATCH_SIZE = getInteger(Configuration.class, "DEFAULT_BATCH_SIZE", 10_000);
 
     /**
      * File name in which bad entries from the import will end up. This file will be created in the
      * database directory of the imported database, i.e. <into>/bad.log.
      */
-    long MAX_PAGE_CACHE_MEMORY = gibiBytes( 1 );
+    long MAX_PAGE_CACHE_MEMORY = gibiBytes(1);
+
     int DEFAULT_MAX_MEMORY_PERCENT = 90;
 
     /**
      * Size of batches that are being sent through pipelines for processing.
      */
-    default int batchSize()
-    {
+    default int batchSize() {
         return DEFAULT_BATCH_SIZE;
     }
 
@@ -56,8 +55,7 @@ public interface Configuration
      * number of batches processed. A total average is probably not that interesting so this configuration
      * option specifies how many of the latest processed batches counts in the equation above.
      */
-    default int movingAverageSize()
-    {
+    default int movingAverageSize() {
         return 100;
     }
 
@@ -72,8 +70,7 @@ public interface Configuration
      * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
      * of a processor.
      */
-    default int maxNumberOfProcessors()
-    {
+    default int maxNumberOfProcessors() {
         return allAvailableProcessors();
     }
 
@@ -81,13 +78,11 @@ public interface Configuration
      * The maximum number of batches that will be queued in processor steps. The total number of "alive" batches
      * will roughly be this value + number of processors assigned to the step that has the most processors assigned.
      */
-    default int maxQueueSize()
-    {
+    default int maxQueueSize() {
         return maxNumberOfProcessors();
     }
 
-    static int allAvailableProcessors()
-    {
+    static int allAvailableProcessors() {
         return Runtime.getRuntime().availableProcessors();
     }
 
@@ -98,16 +93,14 @@ public interface Configuration
      * estimated to be 100-200 MiB. The importer will figure out an optimal page size from this value,
      * with slightly bigger page size than "normal" random access use cases.
      */
-    default long pageCacheMemory()
-    {
+    default long pageCacheMemory() {
         // Get the upper bound of what we can get from the default config calculation
         // We even want to limit amount of memory a bit more since we don't need very much during import
         long maxFreeMemory = OsBeanUtil.getFreePhysicalMemory();
-        if ( 0 < maxFreeMemory && maxFreeMemory < Long.MAX_VALUE )
-        {
+        if (0 < maxFreeMemory && maxFreeMemory < Long.MAX_VALUE) {
             // We got a reading of amount of free memory from the OS, use this to potentially reduce the page cache
             // size if the amount of free memory is very small.
-            return min( MAX_PAGE_CACHE_MEMORY, maxFreeMemory );
+            return min(MAX_PAGE_CACHE_MEMORY, maxFreeMemory);
         }
         // We couldn't get a proper reading from the OS, just allocate the default page cache size,
         // which is quite small and optimal in terms of performance.
@@ -121,9 +114,8 @@ public interface Configuration
      * {@value #DEFAULT_MAX_MEMORY_PERCENT}% of that figure.
      * @throws UnsupportedOperationException if available memory couldn't be determined.
      */
-    default long maxMemoryUsage()
-    {
-        return calculateMaxMemoryFromPercent( DEFAULT_MAX_MEMORY_PERCENT );
+    default long maxMemoryUsage() {
+        return calculateMaxMemoryFromPercent(DEFAULT_MAX_MEMORY_PERCENT);
     }
 
     /**
@@ -132,8 +124,7 @@ public interface Configuration
      * writes happen in this single background thread and will greatly benefit hardware which generally
      * benefits from single sequential writer.
      */
-    default boolean sequentialBackgroundFlushing()
-    {
+    default boolean sequentialBackgroundFlushing() {
         return true;
     }
 
@@ -141,8 +132,7 @@ public interface Configuration
      * Controls whether or not to write records in parallel. Multiple threads writing records in parallel
      * doesn't necessarily mean concurrent I/O because writing is separate from page cache eviction/flushing.
      */
-    default boolean parallelRecordWrites()
-    {
+    default boolean parallelRecordWrites() {
         // Defaults to true since this benefits virtually all environments
         return true;
     }
@@ -151,8 +141,7 @@ public interface Configuration
      * Controls whether or not to read records in parallel in stages where there's no record writing.
      * Enabling this may result in multiple pages being read from underlying storage concurrently.
      */
-    default boolean parallelRecordReads()
-    {
+    default boolean parallelRecordReads() {
         // Defaults to true since this benefits most environments
         return true;
     }
@@ -162,8 +151,7 @@ public interface Configuration
      * Enabling will probably increase concurrent I/O to a point which reduces performance if underlying storage
      * isn't great at concurrent I/O, especially if also {@link #parallelRecordWrites()} is enabled.
      */
-    default boolean highIO()
-    {
+    default boolean highIO() {
         return true;
     }
 
@@ -173,178 +161,147 @@ public interface Configuration
      * try to allocate chunks of the cache on heap instead. This config control whether or not to allow
      * this allocation to happen on heap.
      */
-    default boolean allowCacheAllocationOnHeap()
-    {
+    default boolean allowCacheAllocationOnHeap() {
         return false;
     }
 
     /**
      * @return index related configurations.
      */
-    default IndexConfig indexConfig()
-    {
+    default IndexConfig indexConfig() {
         return IndexConfig.DEFAULT;
     }
 
-    Configuration DEFAULT = new Configuration()
-    {
-    };
+    Configuration DEFAULT = new Configuration() {};
 
     /**
      * {@link #DEFAULT} configuration additionally specialized for the given {@code pathOnDevice}.
      * @return a {@link Configuration} instance with {@link #DEFAULT defaults} and additionally further specialized for the given device.
      */
-    static Configuration defaultConfiguration()
-    {
-        return new Overridden( Configuration.DEFAULT )
-        {
+    static Configuration defaultConfiguration() {
+        return new Overridden(Configuration.DEFAULT) {
             @Override
-            public boolean highIO()
-            {
+            public boolean highIO() {
                 return true;
             }
         };
     }
 
-    class Overridden implements Configuration
-    {
+    class Overridden implements Configuration {
         private final Configuration defaults;
         private final Config config;
 
-        public Overridden( Configuration defaults )
-        {
-            this( defaults, Config.defaults() );
+        public Overridden(Configuration defaults) {
+            this(defaults, Config.defaults());
         }
 
-        public Overridden( Configuration defaults, Config config )
-        {
+        public Overridden(Configuration defaults, Config config) {
             this.defaults = defaults;
             this.config = config;
         }
 
-        public Overridden( Config config )
-        {
-            this( Configuration.DEFAULT, config );
+        public Overridden(Config config) {
+            this(Configuration.DEFAULT, config);
         }
 
         @Override
-        public long pageCacheMemory()
-        {
-            Long pageCacheMemory = config.get( pagecache_memory );
-            if ( pageCacheMemory == null )
-            {
+        public long pageCacheMemory() {
+            Long pageCacheMemory = config.get(pagecache_memory);
+            if (pageCacheMemory == null) {
                 return defaults.pageCacheMemory();
             }
-            return min( MAX_PAGE_CACHE_MEMORY, pageCacheMemory );
+            return min(MAX_PAGE_CACHE_MEMORY, pageCacheMemory);
         }
 
         @Override
-        public int movingAverageSize()
-        {
+        public int movingAverageSize() {
             return defaults.movingAverageSize();
         }
 
         @Override
-        public boolean sequentialBackgroundFlushing()
-        {
+        public boolean sequentialBackgroundFlushing() {
             return defaults.sequentialBackgroundFlushing();
         }
 
         @Override
-        public int batchSize()
-        {
+        public int batchSize() {
             return defaults.batchSize();
         }
 
         @Override
-        public int maxNumberOfProcessors()
-        {
-            Integer upgradeProcessors = config.get( upgrade_processors );
-            if ( upgradeProcessors == 0 )
-            {
+        public int maxNumberOfProcessors() {
+            Integer upgradeProcessors = config.get(upgrade_processors);
+            if (upgradeProcessors == 0) {
                 return defaults.maxNumberOfProcessors();
             }
             return upgradeProcessors;
         }
 
         @Override
-        public boolean parallelRecordWrites()
-        {
+        public boolean parallelRecordWrites() {
             return defaults.parallelRecordWrites();
         }
 
         @Override
-        public boolean parallelRecordReads()
-        {
+        public boolean parallelRecordReads() {
             return defaults.parallelRecordReads();
         }
 
         @Override
-        public boolean highIO()
-        {
+        public boolean highIO() {
             return defaults.highIO();
         }
 
         @Override
-        public long maxMemoryUsage()
-        {
+        public long maxMemoryUsage() {
             return defaults.maxMemoryUsage();
         }
 
         @Override
-        public boolean allowCacheAllocationOnHeap()
-        {
+        public boolean allowCacheAllocationOnHeap() {
             return defaults.allowCacheAllocationOnHeap();
         }
     }
 
-    static Configuration withBatchSize( Configuration config, int batchSize )
-    {
-        return new Overridden( config )
-        {
+    static Configuration withBatchSize(Configuration config, int batchSize) {
+        return new Overridden(config) {
             @Override
-            public int batchSize()
-            {
+            public int batchSize() {
                 return batchSize;
             }
         };
     }
 
-    static boolean canDetectFreeMemory()
-    {
+    static boolean canDetectFreeMemory() {
         return OsBeanUtil.getFreePhysicalMemory() != OsBeanUtil.VALUE_UNAVAILABLE;
     }
 
-    static long calculateMaxMemoryFromPercent( int percent )
-    {
-        if ( percent < 1 )
-        {
-            throw new IllegalArgumentException( "Expected percentage to be > 0, was " + percent );
+    static long calculateMaxMemoryFromPercent(int percent) {
+        if (percent < 1) {
+            throw new IllegalArgumentException("Expected percentage to be > 0, was " + percent);
         }
-        if ( percent > 100 )
-        {
-            throw new IllegalArgumentException( "Expected percentage to be < 100, was " + percent );
+        if (percent > 100) {
+            throw new IllegalArgumentException("Expected percentage to be < 100, was " + percent);
         }
         long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
-        if ( totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
-        {
+        if (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE) {
             // Unable to detect amount of free memory, so rather max memory should be explicitly set
             // in order to get best performance. However let's just go with a default of 2G in this case.
-            return gibiBytes( 2 );
+            return gibiBytes(2);
         }
 
         double factor = percent / 100D;
         long jvmMaxMemory = Runtime.getRuntime().maxMemory();
         long halfPhysicalMemory = totalPhysicalMemory / 2;
-        if ( jvmMaxMemory > halfPhysicalMemory )
-        {
+        if (jvmMaxMemory > halfPhysicalMemory) {
             // The JVM max heap size (-Xmx) have been configured to use a significant portion of the machine memory.
-            // This isn't reasonable, at the very least not desirable for an import since the majority of memory lives off-heap.
+            // This isn't reasonable, at the very least not desirable for an import since the majority of memory lives
+            // off-heap.
             // So if this is the case then assume only half the memory is assigned to the JVM, otherwise the importer
             // performance could be massively crippled.
             jvmMaxMemory = halfPhysicalMemory;
         }
         long availableMemory = totalPhysicalMemory - jvmMaxMemory;
-        return round( availableMemory * factor );
+        return round(availableMemory * factor);
     }
 }

@@ -22,19 +22,16 @@ package org.neo4j.cypher.internal.tracing;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer;
 
-public class TimingCompilationTracer implements CompilationTracer
-{
-    public interface EventListener
-    {
-        void startQueryCompilation( String query );
-        void queryCompiled( QueryEvent event );
+public class TimingCompilationTracer implements CompilationTracer {
+    public interface EventListener {
+        void startQueryCompilation(String query);
+
+        void queryCompiled(QueryEvent event);
     }
 
-    public interface QueryEvent
-    {
+    public interface QueryEvent {
         String query();
 
         long nanoTime();
@@ -42,15 +39,13 @@ public class TimingCompilationTracer implements CompilationTracer
         List<PhaseEvent> phases();
     }
 
-    public interface PhaseEvent
-    {
+    public interface PhaseEvent {
         CompilationPhaseTracer.CompilationPhase phase();
 
         long nanoTime();
     }
 
-    interface Clock
-    {
+    interface Clock {
         long nanoTime();
 
         Clock SYSTEM = System::nanoTime;
@@ -59,135 +54,112 @@ public class TimingCompilationTracer implements CompilationTracer
     private final Clock clock;
     private final EventListener listener;
 
-    public TimingCompilationTracer( EventListener listener )
-    {
-        this( Clock.SYSTEM, listener );
+    public TimingCompilationTracer(EventListener listener) {
+        this(Clock.SYSTEM, listener);
     }
 
-    TimingCompilationTracer( Clock clock, EventListener listener )
-    {
+    TimingCompilationTracer(Clock clock, EventListener listener) {
         this.clock = clock;
         this.listener = listener;
     }
 
     @Override
-    public QueryCompilationEvent compileQuery( String query )
-    {
-        listener.startQueryCompilation( query );
-        return new Query( clock, query, listener );
+    public QueryCompilationEvent compileQuery(String query) {
+        listener.startQueryCompilation(query);
+        return new Query(clock, query, listener);
     }
 
-    private abstract static class Event implements AutoCloseable
-    {
+    private abstract static class Event implements AutoCloseable {
         private Clock clock;
         private long time;
 
-        Event( Clock clock )
-        {
+        Event(Clock clock) {
             this.clock = clock;
             this.time = clock.nanoTime();
         }
 
         @Override
-        public final void close()
-        {
-            if ( clock != null )
-            {
+        public final void close() {
+            if (clock != null) {
                 time = clock.nanoTime() - time;
                 clock = null;
                 done();
             }
         }
 
-        @SuppressWarnings( "UnusedDeclaration"/*used through inheritance*/ )
-        public final long nanoTime()
-        {
+        @SuppressWarnings("UnusedDeclaration" /*used through inheritance*/)
+        public final long nanoTime() {
             return time;
         }
 
         abstract void done();
 
-        final Clock clock()
-        {
-            if ( clock == null )
-            {
-                throw new IllegalStateException( this + " has been closed" );
+        final Clock clock() {
+            if (clock == null) {
+                throw new IllegalStateException(this + " has been closed");
             }
             return clock;
         }
     }
 
-    private static class Query extends Event implements QueryEvent, QueryCompilationEvent
-    {
+    private static class Query extends Event implements QueryEvent, QueryCompilationEvent {
         private final String queryString;
         private final EventListener listener;
         private final List<Phase> phases = new ArrayList<>();
 
-        Query( Clock clock, String query, EventListener listener )
-        {
-            super( clock );
+        Query(Clock clock, String query, EventListener listener) {
+            super(clock);
             this.queryString = query;
             this.listener = listener;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return getClass().getSimpleName() + "[" + queryString + "]";
         }
 
         @Override
-        public CompilationPhaseEvent beginPhase( CompilationPhase phase )
-        {
-            Phase event = new Phase( super.clock(), phase );
-            phases.add( event );
+        public CompilationPhaseEvent beginPhase(CompilationPhase phase) {
+            Phase event = new Phase(super.clock(), phase);
+            phases.add(event);
             return event;
         }
 
         @Override
-        void done()
-        {
-            listener.queryCompiled( this );
+        void done() {
+            listener.queryCompiled(this);
         }
 
         @Override
-        public String query()
-        {
+        public String query() {
             return queryString;
         }
 
         @Override
-        public List<PhaseEvent> phases()
-        {
-            return Collections.unmodifiableList( phases );
+        public List<PhaseEvent> phases() {
+            return Collections.unmodifiableList(phases);
         }
     }
 
-    private static class Phase extends Event implements PhaseEvent, CompilationPhaseTracer.CompilationPhaseEvent
-    {
+    private static class Phase extends Event implements PhaseEvent, CompilationPhaseTracer.CompilationPhaseEvent {
         private final CompilationPhaseTracer.CompilationPhase compilationPhase;
 
-        Phase( Clock clock, CompilationPhaseTracer.CompilationPhase phase )
-        {
-            super( clock );
+        Phase(Clock clock, CompilationPhaseTracer.CompilationPhase phase) {
+            super(clock);
             this.compilationPhase = phase;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return getClass().getSimpleName() + "[" + compilationPhase + "]";
         }
 
         @Override
-        public CompilationPhaseTracer.CompilationPhase phase()
-        {
+        public CompilationPhaseTracer.CompilationPhase phase() {
             return compilationPhase;
         }
 
         @Override
-        void done()
-        {
-        }
+        void done() {}
     }
 }

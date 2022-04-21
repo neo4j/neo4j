@@ -23,23 +23,20 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 
-public interface CallableUserAggregationFunction
-{
+public interface CallableUserAggregationFunction {
     UserFunctionSignature signature();
-    UserAggregator create( Context ctx ) throws ProcedureException;
 
-    abstract class BasicUserAggregationFunction implements CallableUserAggregationFunction
-    {
+    UserAggregator create(Context ctx) throws ProcedureException;
+
+    abstract class BasicUserAggregationFunction implements CallableUserAggregationFunction {
         private final UserFunctionSignature signature;
 
-        protected BasicUserAggregationFunction( UserFunctionSignature signature )
-        {
+        protected BasicUserAggregationFunction(UserFunctionSignature signature) {
             this.signature = signature;
         }
 
         @Override
-        public UserFunctionSignature signature()
-        {
+        public UserFunctionSignature signature() {
             return signature;
         }
     }

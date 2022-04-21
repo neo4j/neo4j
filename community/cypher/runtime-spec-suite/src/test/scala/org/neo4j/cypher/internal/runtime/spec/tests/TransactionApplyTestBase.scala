@@ -41,15 +41,17 @@ import org.neo4j.logging.InternalLogProvider
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
 
-  override protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
-                                                  edition: Edition[CONTEXT],
-                                                  workloadMode: Boolean,
-                                                  logProvider: InternalLogProvider): RuntimeTestSupport[CONTEXT] = {
+  override protected def createRuntimeTestSupport(
+    graphDb: GraphDatabaseService,
+    edition: Edition[CONTEXT],
+    workloadMode: Boolean,
+    logProvider: InternalLogProvider
+  ): RuntimeTestSupport[CONTEXT] = {
     new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions) {
       override def getTransactionType: Type = Type.IMPLICIT
     }
@@ -149,7 +151,10 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 20, transactionsCommitted = 5)
   }
 
-  def inputStreamWithSideEffectInNewTxn(inputValues: InputDataStream, sideEffect: (InternalTransaction, Long) => Unit): InputDataStream = {
+  def inputStreamWithSideEffectInNewTxn(
+    inputValues: InputDataStream,
+    sideEffect: (InternalTransaction, Long) => Unit
+  ): InputDataStream = {
     new OnNextInputDataStream(inputValues) {
       override protected def onNext(offset: Long): Unit = withNewTx(sideEffect(_, offset))
     }
@@ -210,7 +215,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     nodes.size shouldBe numberOfIterations
   }
 
-
   test("should create data in different transactions when using transactionApply and see previous changes") {
     val numberOfIterations = 8
     val inputRows = (0 until numberOfIterations).map { i =>
@@ -250,9 +254,8 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     given {
       nodeIndex("Label", "prop")
-      nodePropertyGraph(1, {case _ => Map[String, Any]("prop" -> 2)},"Label")
+      nodePropertyGraph(1, { case _ => Map[String, Any]("prop" -> 2) }, "Label")
     }
-
 
     val query = new LogicalQueryBuilder(this)
       .produceResults("b")

@@ -19,27 +19,27 @@
  */
 package org.neo4j.fabric.config;
 
+import static org.neo4j.configuration.SettingConstraints.min;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.INT;
+
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.configuration.SettingConstraints.min;
-import static org.neo4j.configuration.SettingImpl.newBuilder;
-import static org.neo4j.configuration.SettingValueParsers.BOOL;
-import static org.neo4j.configuration.SettingValueParsers.INT;
-
 @ServiceProvider
-public class FabricSettings implements SettingsDeclaration
-{
-    @Description( "Batch size used when requesting records from local Cypher engine." )
+public class FabricSettings implements SettingsDeclaration {
+    @Description("Batch size used when requesting records from local Cypher engine.")
     @Internal
-    public static final Setting<Integer> batch_size_setting = newBuilder( "internal.fabric.stream.batch_size", INT, 50 )
-            .addConstraint( min(1) )
+    public static final Setting<Integer> batch_size_setting = newBuilder("internal.fabric.stream.batch_size", INT, 50)
+            .addConstraint(min(1))
             .build();
 
     @Internal
-    @Description( "Toggle if fabric is enabled by default" )
-    public static final Setting<Boolean> enabled_by_default = newBuilder( "internal.fabric.enabled_by_default", BOOL, true ).build();
+    @Description("Toggle if fabric is enabled by default")
+    public static final Setting<Boolean> enabled_by_default =
+            newBuilder("internal.fabric.enabled_by_default", BOOL, true).build();
 }

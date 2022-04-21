@@ -24,7 +24,8 @@ import org.neo4j.graphdb.config.Setting
 
 class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
+  override def databaseConfig(): Map[Setting[_], Object] =
+    super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
 
   test("should fail on showing all privileges from community") {
     assertFailure("SHOW ALL PRIVILEGES", "Unsupported administration command: SHOW ALL PRIVILEGES")
@@ -33,30 +34,60 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   test("should fail on showing role privileges from community") {
     assertFailure("SHOW ROLE reader PRIVILEGES", "Unsupported administration command: SHOW ROLE reader PRIVILEGES")
     assertFailure("SHOW ROLE $role PRIVILEGES", "Unsupported administration command: SHOW ROLE $role PRIVILEGES")
-    assertFailure("SHOW ROLES role1, $role2 PRIVILEGES", "Unsupported administration command: SHOW ROLES role1, $role2 PRIVILEGES")
+    assertFailure(
+      "SHOW ROLES role1, $role2 PRIVILEGES",
+      "Unsupported administration command: SHOW ROLES role1, $role2 PRIVILEGES"
+    )
   }
 
   test("should fail on showing user privileges from community") {
     assertFailure("SHOW USER foo PRIVILEGES", "Unsupported administration command: SHOW USER foo PRIVILEGES")
     assertFailure("SHOW USER $foo PRIVILEGES", "Unsupported administration command: SHOW USER $foo PRIVILEGES")
-    assertFailure("SHOW USERS $foo, bar PRIVILEGES", "Unsupported administration command: SHOW USERS $foo, bar PRIVILEGES")
+    assertFailure(
+      "SHOW USERS $foo, bar PRIVILEGES",
+      "Unsupported administration command: SHOW USERS $foo, bar PRIVILEGES"
+    )
   }
 
   test("should fail on showing all privileges as (revoke) commands from community") {
-    assertFailure("SHOW ALL PRIVILEGES AS COMMANDS", "Unsupported administration command: SHOW ALL PRIVILEGES AS COMMANDS")
-    assertFailure("SHOW ALL PRIVILEGES AS REVOKE COMMAND", "Unsupported administration command: SHOW ALL PRIVILEGES AS REVOKE COMMAND")
+    assertFailure(
+      "SHOW ALL PRIVILEGES AS COMMANDS",
+      "Unsupported administration command: SHOW ALL PRIVILEGES AS COMMANDS"
+    )
+    assertFailure(
+      "SHOW ALL PRIVILEGES AS REVOKE COMMAND",
+      "Unsupported administration command: SHOW ALL PRIVILEGES AS REVOKE COMMAND"
+    )
   }
 
   test("should fail on showing role privileges as (revoke) commands from community") {
-    assertFailure("SHOW ROLE reader PRIVILEGES AS COMMANDS", "Unsupported administration command: SHOW ROLE reader PRIVILEGES AS COMMANDS")
-    assertFailure("SHOW ROLE $role PRIVILEGES AS REVOKE COMMANDS", "Unsupported administration command: SHOW ROLE $role PRIVILEGES AS REVOKE COMMANDS")
-    assertFailure("SHOW ROLES role1, $role2 PRIVILEGES AS COMMAND", "Unsupported administration command: SHOW ROLES role1, $role2 PRIVILEGES AS COMMAND")
+    assertFailure(
+      "SHOW ROLE reader PRIVILEGES AS COMMANDS",
+      "Unsupported administration command: SHOW ROLE reader PRIVILEGES AS COMMANDS"
+    )
+    assertFailure(
+      "SHOW ROLE $role PRIVILEGES AS REVOKE COMMANDS",
+      "Unsupported administration command: SHOW ROLE $role PRIVILEGES AS REVOKE COMMANDS"
+    )
+    assertFailure(
+      "SHOW ROLES role1, $role2 PRIVILEGES AS COMMAND",
+      "Unsupported administration command: SHOW ROLES role1, $role2 PRIVILEGES AS COMMAND"
+    )
   }
 
   test("should fail on showing user privileges as (revoke) commands from community") {
-    assertFailure("SHOW USER foo PRIVILEGES AS COMMAND", "Unsupported administration command: SHOW USER foo PRIVILEGES AS COMMAND")
-    assertFailure("SHOW USER $foo PRIVILEGES AS REVOKE COMMANDS", "Unsupported administration command: SHOW USER $foo PRIVILEGES AS REVOKE COMMANDS")
-    assertFailure("SHOW USERS $foo, bar PRIVILEGES AS REVOKE COMMANDS", "Unsupported administration command: SHOW USERS $foo, bar PRIVILEGES AS REVOKE COMMANDS")
+    assertFailure(
+      "SHOW USER foo PRIVILEGES AS COMMAND",
+      "Unsupported administration command: SHOW USER foo PRIVILEGES AS COMMAND"
+    )
+    assertFailure(
+      "SHOW USER $foo PRIVILEGES AS REVOKE COMMANDS",
+      "Unsupported administration command: SHOW USER $foo PRIVILEGES AS REVOKE COMMANDS"
+    )
+    assertFailure(
+      "SHOW USERS $foo, bar PRIVILEGES AS REVOKE COMMANDS",
+      "Unsupported administration command: SHOW USERS $foo, bar PRIVILEGES AS REVOKE COMMANDS"
+    )
   }
 
   private val privilegeTypes = Seq(

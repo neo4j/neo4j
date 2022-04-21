@@ -51,9 +51,8 @@ import org.neo4j.time.SystemNanoClock;
  * This is done to ensure we stick to the contract of the response handler, which is important, because if we skimp on
  * it, clients may be left waiting for results that never arrive.
  */
-class TransactionFacade
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionFacade.class );
+class TransactionFacade {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionFacade.class);
 
     private final String databaseName;
     private final QueryExecutionEngine engine;
@@ -64,10 +63,15 @@ class TransactionFacade
     private final AuthManager authManager;
     private final boolean readByDefault;
 
-    TransactionFacade( String databaseName, QueryExecutionEngine engine, TransactionRegistry registry,
-                       TransactionManager transactionManager, InternalLogProvider logProvider, BoltGraphDatabaseManagementServiceSPI boltSPI,
-                       AuthManager authManager, boolean readByDefault )
-    {
+    TransactionFacade(
+            String databaseName,
+            QueryExecutionEngine engine,
+            TransactionRegistry registry,
+            TransactionManager transactionManager,
+            InternalLogProvider logProvider,
+            BoltGraphDatabaseManagementServiceSPI boltSPI,
+            AuthManager authManager,
+            boolean readByDefault) {
         this.databaseName = databaseName;
         this.engine = engine;
         this.registry = registry;
@@ -78,37 +82,68 @@ class TransactionFacade
         this.readByDefault = readByDefault;
     }
 
-    TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,
-                                            LoginContext loginContext, ClientConnectionInfo clientConnectionInfo,
-                                            MemoryTracker memoryTracker, long customTransactionTimeout,
-                                            SystemNanoClock clock )
-    {
-        memoryTracker.allocateHeap( TransactionHandle.SHALLOW_SIZE );
+    TransactionHandle newTransactionHandle(
+            TransactionUriScheme uriScheme,
+            boolean implicitTransaction,
+            LoginContext loginContext,
+            ClientConnectionInfo clientConnectionInfo,
+            MemoryTracker memoryTracker,
+            long customTransactionTimeout,
+            SystemNanoClock clock) {
+        memoryTracker.allocateHeap(TransactionHandle.SHALLOW_SIZE);
 
-        return new TransactionHandle( databaseName, engine, registry, uriScheme, implicitTransaction,
-                                      loginContext, clientConnectionInfo, customTransactionTimeout, transactionManager, logProvider, boltSPI, memoryTracker,
-                                      authManager, clock, readByDefault );
+        return new TransactionHandle(
+                databaseName,
+                engine,
+                registry,
+                uriScheme,
+                implicitTransaction,
+                loginContext,
+                clientConnectionInfo,
+                customTransactionTimeout,
+                transactionManager,
+                logProvider,
+                boltSPI,
+                memoryTracker,
+                authManager,
+                clock,
+                readByDefault);
     }
 
-    TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,
-                                            LoginContext loginContext, ClientConnectionInfo clientConnectionInfo,
-                                            MemoryTracker memoryTracker, long customTransactionTimeout,
-                                            SystemNanoClock clock, boolean isReadOnlyTransaction )
-    {
-        memoryTracker.allocateHeap( TransactionHandle.SHALLOW_SIZE );
+    TransactionHandle newTransactionHandle(
+            TransactionUriScheme uriScheme,
+            boolean implicitTransaction,
+            LoginContext loginContext,
+            ClientConnectionInfo clientConnectionInfo,
+            MemoryTracker memoryTracker,
+            long customTransactionTimeout,
+            SystemNanoClock clock,
+            boolean isReadOnlyTransaction) {
+        memoryTracker.allocateHeap(TransactionHandle.SHALLOW_SIZE);
 
-        return new TransactionHandle( databaseName, engine, registry, uriScheme, implicitTransaction,
-                                      loginContext, clientConnectionInfo, customTransactionTimeout, transactionManager, logProvider, boltSPI, memoryTracker,
-                                      authManager, clock, isReadOnlyTransaction );
+        return new TransactionHandle(
+                databaseName,
+                engine,
+                registry,
+                uriScheme,
+                implicitTransaction,
+                loginContext,
+                clientConnectionInfo,
+                customTransactionTimeout,
+                transactionManager,
+                logProvider,
+                boltSPI,
+                memoryTracker,
+                authManager,
+                clock,
+                isReadOnlyTransaction);
     }
 
-    TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException
-    {
-        return registry.acquire( txId );
+    TransactionHandle findTransactionHandle(long txId) throws TransactionLifecycleException {
+        return registry.acquire(txId);
     }
 
-    TransactionHandle terminate( long txId ) throws TransactionLifecycleException
-    {
-        return registry.terminate( txId );
+    TransactionHandle terminate(long txId) throws TransactionLifecycleException {
+        return registry.terminate(txId);
     }
 }

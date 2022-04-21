@@ -22,41 +22,32 @@ package org.neo4j.tooling.procedure.visitors.examples;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
-public class UserFunctionsExamples
-{
-    @UserFunction( name = "in_root_namespace" )
-    public String functionWithName()
-    {
+public class UserFunctionsExamples {
+    @UserFunction(name = "in_root_namespace")
+    public String functionWithName() {
         return "42";
     }
 
-    @UserFunction( value = "in_root_namespace_again" )
-    public String functionWithValue()
-    {
+    @UserFunction(value = "in_root_namespace_again")
+    public String functionWithValue() {
         return "42";
     }
 
-    @UserFunction( name = "not.in.root.namespace" )
-    public String ok()
-    {
+    @UserFunction(name = "not.in.root.namespace")
+    public String ok() {
         return "42";
     }
 
-    @UserFunction( name = "com.acme.foobar" )
-    public void wrongReturnType()
-    {
+    @UserFunction(name = "com.acme.foobar")
+    public void wrongReturnType() {}
 
-    }
-
-    @UserFunction( name = "com.acme.foobar" )
-    public String wrongParameterType( @Name( "foo" ) Thread foo )
-    {
+    @UserFunction(name = "com.acme.foobar")
+    public String wrongParameterType(@Name("foo") Thread foo) {
         return "42";
     }
 
-    @UserFunction( name = "com.acme.foobar" )
-    public String missingParameterAnnotation( @Name( "foo" ) String foo, String oops )
-    {
+    @UserFunction(name = "com.acme.foobar")
+    public String missingParameterAnnotation(@Name("foo") String foo, String oops) {
         return "42";
     }
 }

@@ -19,35 +19,31 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import java.net.http.HttpRequest;
-
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedirectorIT extends AbstractRestFunctionalTestBase
-{
+import java.net.URI;
+import java.net.http.HttpRequest;
+import org.junit.jupiter.api.Test;
+
+public class RedirectorIT extends AbstractRestFunctionalTestBase {
     @Test
-    public void shouldRedirectRootToBrowser() throws Exception
-    {
-        var request = HttpRequest.newBuilder( container().getBaseUri() ).GET().build();
+    public void shouldRedirectRootToBrowser() throws Exception {
+        var request = HttpRequest.newBuilder(container().getBaseUri()).GET().build();
 
-        var response = newHttpClient().send( request, discarding() );
+        var response = newHttpClient().send(request, discarding());
 
-        assertThat( response.statusCode() ).isNotEqualTo( 404 );
+        assertThat(response.statusCode()).isNotEqualTo(404);
     }
 
     @Test
-    public void shouldNotRedirectTheRestOfTheWorld() throws Exception
-    {
-        var uri = URI.create( container().getBaseUri() + "a/different/relative/data/uri/" );
-        var request = HttpRequest.newBuilder( uri ).GET().build();
+    public void shouldNotRedirectTheRestOfTheWorld() throws Exception {
+        var uri = URI.create(container().getBaseUri() + "a/different/relative/data/uri/");
+        var request = HttpRequest.newBuilder(uri).GET().build();
 
-        var response = newHttpClient().send( request, discarding() );
+        var response = newHttpClient().send(request, discarding());
 
-        assertThat( response.statusCode() ).isEqualTo( 404 );
+        assertThat(response.statusCode()).isEqualTo(404);
     }
 }

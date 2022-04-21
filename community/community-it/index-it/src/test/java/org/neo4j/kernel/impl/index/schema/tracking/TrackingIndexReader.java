@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema.tracking;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -33,46 +32,45 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 
-public class TrackingIndexReader implements ValueIndexReader
-{
+public class TrackingIndexReader implements ValueIndexReader {
     private final ValueIndexReader delegate;
     private final AtomicLong closeReadersCounter;
 
-    TrackingIndexReader( ValueIndexReader delegate, AtomicLong closeReadersCounter )
-    {
+    TrackingIndexReader(ValueIndexReader delegate, AtomicLong closeReadersCounter) {
         this.delegate = delegate;
         this.closeReadersCounter = closeReadersCounter;
     }
 
     @Override
-    public long countIndexedEntities( long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues )
-    {
-        return delegate.countIndexedEntities( entityId, cursorContext, propertyKeyIds, propertyValues );
+    public long countIndexedEntities(
+            long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues) {
+        return delegate.countIndexedEntities(entityId, cursorContext, propertyKeyIds, propertyValues);
     }
 
     @Override
-    public IndexSampler createSampler()
-    {
+    public IndexSampler createSampler() {
         return delegate.createSampler();
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
-                       IndexQueryConstraints constraints, PropertyIndexQuery... query )
-            throws IndexNotApplicableKernelException
-    {
-        delegate.query( client, context, accessMode, constraints, query );
+    public void query(
+            IndexProgressor.EntityValueClient client,
+            QueryContext context,
+            AccessMode accessMode,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query)
+            throws IndexNotApplicableKernelException {
+        delegate.query(client, context, accessMode, constraints, query);
     }
 
     @Override
-    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query )
-    {
-        return delegate.valueSeek( desiredNumberOfPartitions, context, query );
+    public PartitionedValueSeek valueSeek(
+            int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query) {
+        return delegate.valueSeek(desiredNumberOfPartitions, context, query);
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         delegate.close();
         closeReadersCounter.incrementAndGet();
     }

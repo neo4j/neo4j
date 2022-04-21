@@ -19,52 +19,46 @@
  */
 package org.neo4j.test.extension;
 
-import java.util.function.UnaryOperator;
-
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
+import java.util.function.UnaryOperator;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 /**
  * Implementations of this interface can be {@link Inject injected} into {@link DbmsExtension} based tests, to allow them to restart the DBMS or the database
  * the test is operating on.
  */
-public interface DbmsController
-{
+public interface DbmsController {
     /**
      * Restart the DBMS while applying the given changes to the builder.
      * @param databaseName name of the database used to re inject dependencies from after restart
      * @param callback The callback that will apply changes to the DBMS builder.
      */
-    void restartDbms( String databaseName, UnaryOperator<TestDatabaseManagementServiceBuilder> callback );
+    void restartDbms(String databaseName, UnaryOperator<TestDatabaseManagementServiceBuilder> callback);
 
     /**
      * Restart the DBMS without changing anything.
      * @param databaseName name of the database used to re inject dependencies from after restart
      */
-    default void restartDbms( String databaseName )
-    {
-        restartDbms( databaseName, UnaryOperator.identity() );
+    default void restartDbms(String databaseName) {
+        restartDbms(databaseName, UnaryOperator.identity());
     }
 
     /**
      * Restart the database without changing anything.
      * @param databaseName name of the database to restart
      */
-    void restartDatabase( String databaseName );
+    void restartDatabase(String databaseName);
 
-    default void restartDbms()
-    {
-        restartDbms( DEFAULT_DATABASE_NAME, UnaryOperator.identity() );
+    default void restartDbms() {
+        restartDbms(DEFAULT_DATABASE_NAME, UnaryOperator.identity());
     }
 
-    default void restartDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
-    {
-        restartDbms( DEFAULT_DATABASE_NAME, callback );
+    default void restartDbms(UnaryOperator<TestDatabaseManagementServiceBuilder> callback) {
+        restartDbms(DEFAULT_DATABASE_NAME, callback);
     }
 
-    default void restartDatabase()
-    {
-        restartDbms( DEFAULT_DATABASE_NAME );
+    default void restartDatabase() {
+        restartDbms(DEFAULT_DATABASE_NAME);
     }
 }

@@ -22,7 +22,6 @@ package org.neo4j.procedure.impl;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
@@ -49,388 +48,337 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.ElementIdMapper;
 
-public class ProcedureTransactionProvider implements ThrowingFunction<Context,Transaction,ProcedureException>
-{
+public class ProcedureTransactionProvider implements ThrowingFunction<Context, Transaction, ProcedureException> {
     @Override
-    public Transaction apply( Context ctx ) throws ProcedureException
-    {
+    public Transaction apply(Context ctx) throws ProcedureException {
         InternalTransaction ktx = ctx.internalTransaction();
-        return new ProcedureTransactionImpl( ktx );
+        return new ProcedureTransactionImpl(ktx);
     }
 
-    private static class ProcedureTransactionImpl implements InternalTransaction
-    {
+    private static class ProcedureTransactionImpl implements InternalTransaction {
         private final InternalTransaction transaction;
 
-        ProcedureTransactionImpl( InternalTransaction transaction )
-        {
+        ProcedureTransactionImpl(InternalTransaction transaction) {
             this.transaction = transaction;
         }
 
         @Override
-        public void registerCloseableResource( AutoCloseable closeableResource )
-        {
-            transaction.registerCloseableResource( closeableResource );
+        public void registerCloseableResource(AutoCloseable closeableResource) {
+            transaction.registerCloseableResource(closeableResource);
         }
 
         @Override
-        public void unregisterCloseableResource( AutoCloseable closeableResource )
-        {
-            transaction.unregisterCloseableResource( closeableResource );
+        public void unregisterCloseableResource(AutoCloseable closeableResource) {
+            transaction.unregisterCloseableResource(closeableResource);
         }
 
         @Override
-        public void commit()
-        {
-            throw new UnsupportedOperationException( "Commit of ongoing transaction inside of procedure is unsupported." );
+        public void commit() {
+            throw new UnsupportedOperationException(
+                    "Commit of ongoing transaction inside of procedure is unsupported.");
         }
 
         @Override
-        public void rollback()
-        {
-            throw new UnsupportedOperationException( "Rollback of ongoing transaction inside of procedure is unsupported." );
+        public void rollback() {
+            throw new UnsupportedOperationException(
+                    "Rollback of ongoing transaction inside of procedure is unsupported.");
         }
 
         @Override
-        public Node createNode()
-        {
+        public Node createNode() {
             return transaction.createNode();
         }
 
         @Override
-        public Node createNode( Label... labels )
-        {
-            return transaction.createNode( labels );
+        public Node createNode(Label... labels) {
+            return transaction.createNode(labels);
         }
 
         @Override
-        public Node getNodeById( long id )
-        {
-            return transaction.getNodeById( id );
+        public Node getNodeById(long id) {
+            return transaction.getNodeById(id);
         }
 
         @Override
-        public Node getNodeByElementId( String elementId )
-        {
-            return transaction.getNodeByElementId( elementId );
+        public Node getNodeByElementId(String elementId) {
+            return transaction.getNodeByElementId(elementId);
         }
 
         @Override
-        public Result execute( String query ) throws QueryExecutionException
-        {
-            return transaction.execute( query );
+        public Result execute(String query) throws QueryExecutionException {
+            return transaction.execute(query);
         }
 
         @Override
-        public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
-        {
-            return transaction.execute( query, parameters );
+        public Result execute(String query, Map<String, Object> parameters) throws QueryExecutionException {
+            return transaction.execute(query, parameters);
         }
 
         @Override
-        public Relationship getRelationshipById( long id )
-        {
-            return transaction.getRelationshipById( id );
+        public Relationship getRelationshipById(long id) {
+            return transaction.getRelationshipById(id);
         }
 
         @Override
-        public Relationship getRelationshipByElementId( String elementId )
-        {
-            return transaction.getRelationshipByElementId( elementId );
+        public Relationship getRelationshipByElementId(String elementId) {
+            return transaction.getRelationshipByElementId(elementId);
         }
 
         @Override
-        public BidirectionalTraversalDescription bidirectionalTraversalDescription()
-        {
+        public BidirectionalTraversalDescription bidirectionalTraversalDescription() {
             return transaction.bidirectionalTraversalDescription();
         }
 
         @Override
-        public TraversalDescription traversalDescription()
-        {
+        public TraversalDescription traversalDescription() {
             return transaction.traversalDescription();
         }
 
         @Override
-        public Iterable<Label> getAllLabelsInUse()
-        {
+        public Iterable<Label> getAllLabelsInUse() {
             return transaction.getAllLabelsInUse();
         }
 
         @Override
-        public Iterable<RelationshipType> getAllRelationshipTypesInUse()
-        {
+        public Iterable<RelationshipType> getAllRelationshipTypesInUse() {
             return transaction.getAllRelationshipTypesInUse();
         }
 
         @Override
-        public Iterable<Label> getAllLabels()
-        {
+        public Iterable<Label> getAllLabels() {
             return transaction.getAllLabels();
         }
 
         @Override
-        public Iterable<RelationshipType> getAllRelationshipTypes()
-        {
+        public Iterable<RelationshipType> getAllRelationshipTypes() {
             return transaction.getAllRelationshipTypes();
         }
 
         @Override
-        public Iterable<String> getAllPropertyKeys()
-        {
+        public Iterable<String> getAllPropertyKeys() {
             return transaction.getAllPropertyKeys();
         }
 
         @Override
-        public Node findNode( Label myLabel, String key, Object value )
-        {
-            return transaction.findNode( myLabel, key, value );
+        public Node findNode(Label myLabel, String key, Object value) {
+            return transaction.findNode(myLabel, key, value);
         }
 
         @Override
-        public ResourceIterator<Node> findNodes( Label myLabel )
-        {
-            return transaction.findNodes( myLabel );
+        public ResourceIterator<Node> findNodes(Label myLabel) {
+            return transaction.findNodes(myLabel);
         }
 
         @Override
-        public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, String template, StringSearchMode searchMode )
-        {
-            return transaction.findRelationships( relationshipType, key, template, searchMode );
+        public ResourceIterator<Relationship> findRelationships(
+                RelationshipType relationshipType, String key, String template, StringSearchMode searchMode) {
+            return transaction.findRelationships(relationshipType, key, template, searchMode);
         }
 
         @Override
-        public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, Map<String,Object> propertyValues )
-        {
-            return transaction.findRelationships( relationshipType, propertyValues );
+        public ResourceIterator<Relationship> findRelationships(
+                RelationshipType relationshipType, Map<String, Object> propertyValues) {
+            return transaction.findRelationships(relationshipType, propertyValues);
         }
 
         @Override
-        public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2,
-                                                                 String key3, Object value3 )
-        {
-            return transaction.findRelationships( relationshipType, key1, value1, key2, value2, key3, value3 );
+        public ResourceIterator<Relationship> findRelationships(
+                RelationshipType relationshipType,
+                String key1,
+                Object value1,
+                String key2,
+                Object value2,
+                String key3,
+                Object value3) {
+            return transaction.findRelationships(relationshipType, key1, value1, key2, value2, key3, value3);
         }
 
         @Override
-        public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2 )
-        {
-            return transaction.findRelationships( relationshipType, key1, value1, key2, value2 );
+        public ResourceIterator<Relationship> findRelationships(
+                RelationshipType relationshipType, String key1, Object value1, String key2, Object value2) {
+            return transaction.findRelationships(relationshipType, key1, value1, key2, value2);
         }
 
         @Override
-        public Relationship findRelationship( RelationshipType relationshipType, String key, Object value )
-        {
-            return transaction.findRelationship( relationshipType, key, value );
+        public Relationship findRelationship(RelationshipType relationshipType, String key, Object value) {
+            return transaction.findRelationship(relationshipType, key, value);
         }
 
         @Override
-        public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, Object value )
-        {
-            return transaction.findRelationships( relationshipType, key, value );
+        public ResourceIterator<Relationship> findRelationships(
+                RelationshipType relationshipType, String key, Object value) {
+            return transaction.findRelationships(relationshipType, key, value);
         }
 
         @Override
-        public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType )
-        {
-            return transaction.findRelationships( relationshipType );
+        public ResourceIterator<Relationship> findRelationships(RelationshipType relationshipType) {
+            return transaction.findRelationships(relationshipType);
         }
 
         @Override
-        public ResourceIterator<Node> findNodes( Label myLabel, String key, Object value )
-        {
-            return transaction.findNodes( myLabel, key, value );
+        public ResourceIterator<Node> findNodes(Label myLabel, String key, Object value) {
+            return transaction.findNodes(myLabel, key, value);
         }
 
         @Override
-        public ResourceIterator<Node> findNodes( Label myLabel, String key, String value, StringSearchMode searchMode )
-        {
-            return transaction.findNodes( myLabel, key, value, searchMode );
+        public ResourceIterator<Node> findNodes(Label myLabel, String key, String value, StringSearchMode searchMode) {
+            return transaction.findNodes(myLabel, key, value, searchMode);
         }
 
         @Override
-        public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2, String key3, Object value3 )
-        {
-            return transaction.findNodes( label, key1, value1, key2, value2, key3, value3 );
+        public ResourceIterator<Node> findNodes(
+                Label label, String key1, Object value1, String key2, Object value2, String key3, Object value3) {
+            return transaction.findNodes(label, key1, value1, key2, value2, key3, value3);
         }
 
         @Override
-        public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
-        {
-            return transaction.findNodes( label, key1, value1, key2, value2 );
+        public ResourceIterator<Node> findNodes(Label label, String key1, Object value1, String key2, Object value2) {
+            return transaction.findNodes(label, key1, value1, key2, value2);
         }
 
         @Override
-        public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
-        {
-            return transaction.findNodes( label, propertyValues );
+        public ResourceIterator<Node> findNodes(Label label, Map<String, Object> propertyValues) {
+            return transaction.findNodes(label, propertyValues);
         }
 
         @Override
-        public ResourceIterable<Node> getAllNodes()
-        {
+        public ResourceIterable<Node> getAllNodes() {
             return transaction.getAllNodes();
         }
 
         @Override
-        public ResourceIterable<Relationship> getAllRelationships()
-        {
+        public ResourceIterable<Relationship> getAllRelationships() {
             return transaction.getAllRelationships();
         }
 
         @Override
-        public void close()
-        {
-            throw new UnsupportedOperationException( "Close of ongoing transaction inside of procedure is unsupported." );
+        public void close() {
+            throw new UnsupportedOperationException("Close of ongoing transaction inside of procedure is unsupported.");
         }
 
         @Override
-        public void setTransaction( KernelTransaction transaction )
-        {
-            this.transaction.setTransaction( transaction );
+        public void setTransaction(KernelTransaction transaction) {
+            this.transaction.setTransaction(transaction);
         }
 
         @Override
-        public Lock acquireWriteLock( Entity entity )
-        {
-            return transaction.acquireWriteLock( entity );
+        public Lock acquireWriteLock(Entity entity) {
+            return transaction.acquireWriteLock(entity);
         }
 
         @Override
-        public Lock acquireReadLock( Entity entity )
-        {
-            return transaction.acquireReadLock( entity );
+        public Lock acquireReadLock(Entity entity) {
+            return transaction.acquireReadLock(entity);
         }
 
         @Override
-        public Schema schema()
-        {
+        public Schema schema() {
             return transaction.schema();
         }
 
         @Override
-        public KernelTransaction kernelTransaction()
-        {
+        public KernelTransaction kernelTransaction() {
             return transaction.kernelTransaction();
         }
 
         @Override
-        public KernelTransaction.Type transactionType()
-        {
+        public KernelTransaction.Type transactionType() {
             return transaction.transactionType();
         }
 
         @Override
-        public SecurityContext securityContext()
-        {
+        public SecurityContext securityContext() {
             return transaction.securityContext();
         }
 
         @Override
-        public ClientConnectionInfo clientInfo()
-        {
+        public ClientConnectionInfo clientInfo() {
             return transaction.clientInfo();
         }
 
         @Override
-        public KernelTransaction.Revertable overrideWith( SecurityContext context )
-        {
-            return transaction.overrideWith( context );
+        public KernelTransaction.Revertable overrideWith(SecurityContext context) {
+            return transaction.overrideWith(context);
         }
 
         @Override
-        public Optional<Status> terminationReason()
-        {
+        public Optional<Status> terminationReason() {
             return transaction.terminationReason();
         }
 
         @Override
-        public void setMetaData( Map<String,Object> txMeta )
-        {
-            transaction.setMetaData( txMeta );
+        public void setMetaData(Map<String, Object> txMeta) {
+            transaction.setMetaData(txMeta);
         }
 
         @Override
-        public void checkInTransaction()
-        {
+        public void checkInTransaction() {
             transaction.checkInTransaction();
         }
 
         @Override
-        public boolean isOpen()
-        {
+        public boolean isOpen() {
             return transaction.isOpen();
         }
 
         @Override
-        public void terminate( Status reason )
-        {
-            transaction.terminate( reason );
+        public void terminate(Status reason) {
+            transaction.terminate(reason);
         }
 
         @Override
-        public UUID getDatabaseId()
-        {
+        public UUID getDatabaseId() {
             return transaction.getDatabaseId();
         }
 
         @Override
-        public String getDatabaseName()
-        {
+        public String getDatabaseName() {
             return transaction.getDatabaseName();
         }
 
         @Override
-        public <E extends Entity> E validateSameDB( E entity )
-        {
-            return transaction.validateSameDB( entity );
+        public <E extends Entity> E validateSameDB(E entity) {
+            return transaction.validateSameDB(entity);
         }
 
         @Override
-        public void terminate()
-        {
+        public void terminate() {
             transaction.terminate();
         }
 
         @Override
-        public Relationship newRelationshipEntity( long id )
-        {
-            return transaction.newRelationshipEntity( id );
+        public Relationship newRelationshipEntity(long id) {
+            return transaction.newRelationshipEntity(id);
         }
 
         @Override
-        public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId )
-        {
-            return transaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId );
+        public Relationship newRelationshipEntity(long id, long startNodeId, int typeId, long endNodeId) {
+            return transaction.newRelationshipEntity(id, startNodeId, typeId, endNodeId);
         }
 
         @Override
-        public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor )
-        {
-            return transaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId, cursor );
+        public Relationship newRelationshipEntity(
+                long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor) {
+            return transaction.newRelationshipEntity(id, startNodeId, typeId, endNodeId, cursor);
         }
 
         @Override
-        public Node newNodeEntity( long nodeId )
-        {
-            return transaction.newNodeEntity( nodeId );
+        public Node newNodeEntity(long nodeId) {
+            return transaction.newNodeEntity(nodeId);
         }
 
         @Override
-        public RelationshipType getRelationshipTypeById( int type )
-        {
-            return transaction.getRelationshipTypeById( type );
+        public RelationshipType getRelationshipTypeById(int type) {
+            return transaction.getRelationshipTypeById(type);
         }
 
         @Override
-        public void addCloseCallback( TransactionClosedCallback callback )
-        {
-            transaction.addCloseCallback( callback );
+        public void addCloseCallback(TransactionClosedCallback callback) {
+            transaction.addCloseCallback(callback);
         }
 
         @Override
-        public ElementIdMapper elementIdMapper()
-        {
+        public ElementIdMapper elementIdMapper() {
             return transaction.elementIdMapper();
         }
     }

@@ -19,56 +19,50 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
+import picocli.CommandLine;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class DiagnosticsReportCommandTest
-{
+class DiagnosticsReportCommandTest {
     @Test
-    void printUsageHelp()
-    {
+    void printUsageHelp() {
         final var baos = new ByteArrayOutputStream();
-        final var command = new DiagnosticsReportCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ) );
-        try ( var out = new PrintStream( baos ) )
-        {
-            CommandLine.usage( command, new PrintStream( out ), CommandLine.Help.Ansi.OFF );
+        final var command = new DiagnosticsReportCommand(new ExecutionContext(Path.of("."), Path.of(".")));
+        try (var out = new PrintStream(baos)) {
+            CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
-        assertThat( baos.toString().trim() ).isEqualTo( String.format(
-                "Produces a zip/tar of the most common information needed for remote assessments.%n" +
-                        "%n" +
-                        "USAGE%n" +
-                        "%n" +
-                        "report [--expand-commands] [--force] [--list] [--verbose] [--pid=<pid>]%n" +
-                        "       [--to=<path>] [<classifier>...]%n" +
-                        "%n" +
-                        "DESCRIPTION%n" +
-                        "%n" +
-                        "Will collect information about the system and package everything in an archive.%n" +
-                        "If you specify 'all', everything will be included. You can also fine tune the%n" +
-                        "selection by passing classifiers to the tool, e.g 'logs tx threads'.%n" +
-                        "%n" +
-                        "PARAMETERS%n" +
-                        "%n" +
-                        "      [<classifier>...]     Default: [config, logs, metrics, plugins, ps,%n" +
-                        "                            sysprop, threads, tree, version]%n" +
-                        "%n" +
-                        "OPTIONS%n" +
-                        "%n" +
-                        "      --verbose           Enable verbose output.%n" +
-                        "      --expand-commands   Allow command expansion in config value evaluation.%n" +
-                        "      --list              List all available classifiers%n" +
-                        "      --force             Ignore disk full warning%n" +
-                        "      --to=<path>         Destination directory for reports. Defaults to a%n" +
-                        "                            system tmp directory.%n" +
-                        "      --pid=<pid>         Specify process id of running neo4j instance"
-        ) );
+        assertThat(baos.toString().trim())
+                .isEqualTo(String.format(
+                        "Produces a zip/tar of the most common information needed for remote assessments.%n" + "%n"
+                                + "USAGE%n"
+                                + "%n"
+                                + "report [--expand-commands] [--force] [--list] [--verbose] [--pid=<pid>]%n"
+                                + "       [--to=<path>] [<classifier>...]%n"
+                                + "%n"
+                                + "DESCRIPTION%n"
+                                + "%n"
+                                + "Will collect information about the system and package everything in an archive.%n"
+                                + "If you specify 'all', everything will be included. You can also fine tune the%n"
+                                + "selection by passing classifiers to the tool, e.g 'logs tx threads'.%n"
+                                + "%n"
+                                + "PARAMETERS%n"
+                                + "%n"
+                                + "      [<classifier>...]     Default: [config, logs, metrics, plugins, ps,%n"
+                                + "                            sysprop, threads, tree, version]%n"
+                                + "%n"
+                                + "OPTIONS%n"
+                                + "%n"
+                                + "      --verbose           Enable verbose output.%n"
+                                + "      --expand-commands   Allow command expansion in config value evaluation.%n"
+                                + "      --list              List all available classifiers%n"
+                                + "      --force             Ignore disk full warning%n"
+                                + "      --to=<path>         Destination directory for reports. Defaults to a%n"
+                                + "                            system tmp directory.%n"
+                                + "      --pid=<pid>         Specify process id of running neo4j instance"));
     }
 }

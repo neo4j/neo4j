@@ -19,27 +19,22 @@
  */
 package org.neo4j.service.test;
 
-public interface NotNamedService
-{
+public interface NotNamedService {
 
     long id();
 
-    class ServiceImpl1 implements NotNamedService
-    {
+    class ServiceImpl1 implements NotNamedService {
 
         @Override
-        public long id()
-        {
+        public long id() {
             return 1;
         }
     }
 
-    class ServiceImpl2 implements NotNamedService
-    {
+    class ServiceImpl2 implements NotNamedService {
 
         @Override
-        public long id()
-        {
+        public long id() {
             return 2;
         }
     }

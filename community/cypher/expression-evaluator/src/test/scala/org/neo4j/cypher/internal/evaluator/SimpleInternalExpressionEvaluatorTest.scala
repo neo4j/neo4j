@@ -54,7 +54,8 @@ class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
     val evaluator = new SimpleInternalExpressionEvaluator
 
     evaluator.evaluate("[x IN range(0,10) WHERE x % 2 = 0 | x^3]") should equal(
-      list(intValue(0), intValue(8), intValue(64), intValue(216), intValue(512), intValue(1000)))
+      list(intValue(0), intValue(8), intValue(64), intValue(216), intValue(512), intValue(1000))
+    )
   }
 
   test("functions") {
@@ -103,7 +104,9 @@ class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
 
     evaluator
       .evaluate(
-        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("point({ latitude: p.y, longitude: p.x, height: 1000 })"),
+        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse(
+          "point({ latitude: p.y, longitude: p.x, height: 1000 })"
+        ),
         context = CypherRow.from("p" -> Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 56, 12))
       )
       .shouldEqual(pointValue(WGS_84_3D, 56, 12, 1000))

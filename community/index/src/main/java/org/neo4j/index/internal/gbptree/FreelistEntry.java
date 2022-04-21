@@ -22,15 +22,13 @@ package org.neo4j.index.internal.gbptree;
 /**
  * A read and cached free-list entry, i.e. a free page ID accompanied which pos it was read from and which generation it was freed in.
  */
-class FreelistEntry
-{
+class FreelistEntry {
     final long freelistPageId;
     final int pos;
     final long id;
     final long generation;
 
-    FreelistEntry( long freelistPageId, int pos, long id, long generation )
-    {
+    FreelistEntry(long freelistPageId, int pos, long id, long generation) {
         this.freelistPageId = freelistPageId;
         this.pos = pos;
         this.id = id;

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.cache
 
-import java.util.concurrent.Executor
-import java.util.concurrent.TimeUnit
-
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.Ticker
+
+import java.util.concurrent.Executor
+import java.util.concurrent.TimeUnit
 
 trait CaffeineCacheFactory {
   def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V]
@@ -33,6 +33,7 @@ trait CaffeineCacheFactory {
 }
 
 class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCacheFactory {
+
   override def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V] = {
     Caffeine
       .newBuilder()
@@ -50,7 +51,7 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
       .build[K, V]()
   }
 
-  override def createCache[K <: AnyRef, V <: AnyRef]( ticker: Ticker, ttlAfterWrite: Long, size: Int ): Cache[K, V] =
+  override def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V] =
     Caffeine
       .newBuilder()
       .executor(executor)

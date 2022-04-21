@@ -66,7 +66,7 @@ class IDPTableTest extends CypherFunSuite {
       (Goal(BitSet(3)), Goal(BitSet(1, 2))),
       (Goal(BitSet(1, 2)), Goal(BitSet(3))),
       (Goal(BitSet(1, 3)), Goal(BitSet(2))),
-      (Goal(BitSet(2, 3)), Goal(BitSet(1))),
+      (Goal(BitSet(2, 3)), Goal(BitSet(1)))
     )
   }
 }

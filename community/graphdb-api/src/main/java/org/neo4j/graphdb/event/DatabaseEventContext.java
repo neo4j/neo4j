@@ -25,7 +25,6 @@ import org.neo4j.annotations.api.PublicApi;
  * Event context propagated to database event listeners as part of any event notification.
  */
 @PublicApi
-public interface DatabaseEventContext
-{
+public interface DatabaseEventContext {
     String getDatabaseName();
 }

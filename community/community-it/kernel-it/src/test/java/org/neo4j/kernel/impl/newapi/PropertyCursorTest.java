@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class PropertyCursorTest extends PropertyCursorTestBase<ReadTestSupport>
-{
+public class PropertyCursorTest extends PropertyCursorTestBase<ReadTestSupport> {
     @Override
-    public ReadTestSupport newTestSupport()
-    {
+    public ReadTestSupport newTestSupport() {
         return new ReadTestSupport();
     }
 }

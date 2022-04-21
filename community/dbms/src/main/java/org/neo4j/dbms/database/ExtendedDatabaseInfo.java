@@ -22,7 +22,6 @@ package org.neo4j.dbms.database;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.Set;
-
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess;
 import org.neo4j.dbms.identity.ServerId;
@@ -31,8 +30,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 /**
  * An extension of {@link DatabaseInfo} with the additional fields for the information returned by {@link DatabaseInfoService#requestDetailedInfo(Set)}.
  */
-public class ExtendedDatabaseInfo extends DatabaseInfo
-{
+public class ExtendedDatabaseInfo extends DatabaseInfo {
     public static final long COMMITTED_TX_ID_NOT_AVAILABLE = -1;
 
     private final long lastCommittedTxId;
@@ -42,10 +40,18 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
     /**
      * If the lastCommittedTxId is set to COMMITTED_TX_ID_NOT_AVAILABLE both lastCommittedTxId() and txCommitLag() will return empty optionals
      */
-    public ExtendedDatabaseInfo( NamedDatabaseId namedDatabaseId, ServerId serverId, DatabaseAccess accessFromConfig, SocketAddress boltAddress,
-                                 SocketAddress catchupAddress, String role, String status, String error, long lastCommittedTxId, long txCommitLag )
-    {
-        super( namedDatabaseId, serverId, accessFromConfig, boltAddress, catchupAddress, role, status, error );
+    public ExtendedDatabaseInfo(
+            NamedDatabaseId namedDatabaseId,
+            ServerId serverId,
+            DatabaseAccess accessFromConfig,
+            SocketAddress boltAddress,
+            SocketAddress catchupAddress,
+            String role,
+            String status,
+            String error,
+            long lastCommittedTxId,
+            long txCommitLag) {
+        super(namedDatabaseId, serverId, accessFromConfig, boltAddress, catchupAddress, role, status, error);
         this.committedTxIdNotAvailable = lastCommittedTxId == COMMITTED_TX_ID_NOT_AVAILABLE;
         this.lastCommittedTxId = committedTxIdNotAvailable ? 0 : lastCommittedTxId;
         this.txCommitLag = committedTxIdNotAvailable ? 0 : txCommitLag;
@@ -60,9 +66,8 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
      *
      * @return last committed transaction id or empty if not available
      */
-    public OptionalLong lastCommittedTxId()
-    {
-        return committedTxIdNotAvailable ? OptionalLong.empty() : OptionalLong.of( lastCommittedTxId );
+    public OptionalLong lastCommittedTxId() {
+        return committedTxIdNotAvailable ? OptionalLong.empty() : OptionalLong.of(lastCommittedTxId);
     }
 
     /**
@@ -75,55 +80,58 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
      *
      * @return the lag in number of committed transactions
      */
-    public OptionalLong txCommitLag()
-    {
-        return committedTxIdNotAvailable ? OptionalLong.empty() : OptionalLong.of( txCommitLag );
+    public OptionalLong txCommitLag() {
+        return committedTxIdNotAvailable ? OptionalLong.empty() : OptionalLong.of(txCommitLag);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         ExtendedDatabaseInfo that = (ExtendedDatabaseInfo) o;
-        return lastCommittedTxId == that.lastCommittedTxId &&
-               txCommitLag == that.txCommitLag &&
-               Objects.equals( namedDatabaseId, that.namedDatabaseId ) &&
-               Objects.equals( serverId, that.serverId ) &&
-               Objects.equals( access, that.access ) &&
-               Objects.equals( boltAddress, that.boltAddress ) &&
-               Objects.equals( catchupAddress, that.catchupAddress ) &&
-               Objects.equals( role, that.role ) &&
-               Objects.equals( status, that.status ) &&
-               Objects.equals( error, that.error );
+        return lastCommittedTxId == that.lastCommittedTxId
+                && txCommitLag == that.txCommitLag
+                && Objects.equals(namedDatabaseId, that.namedDatabaseId)
+                && Objects.equals(serverId, that.serverId)
+                && Objects.equals(access, that.access)
+                && Objects.equals(boltAddress, that.boltAddress)
+                && Objects.equals(catchupAddress, that.catchupAddress)
+                && Objects.equals(role, that.role)
+                && Objects.equals(status, that.status)
+                && Objects.equals(error, that.error);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( namedDatabaseId, serverId, access, boltAddress, catchupAddress, role, status, error, lastCommittedTxId, txCommitLag );
+    public int hashCode() {
+        return Objects.hash(
+                namedDatabaseId,
+                serverId,
+                access,
+                boltAddress,
+                catchupAddress,
+                role,
+                status,
+                error,
+                lastCommittedTxId,
+                txCommitLag);
     }
 
     @Override
-    public String toString()
-    {
-        return "ExtendedDatabaseInfoImpl{" +
-               "namedDatabaseId=" + namedDatabaseId +
-               ", serverId=" + serverId +
-               ", accessFromConfig=" + access +
-               ", boltAddress=" + boltAddress +
-               ", catchupAddress=" + catchupAddress +
-               ", role='" + role + '\'' +
-               ", status='" + status + '\'' +
-               ", error='" + error + '\'' +
-               ", lastCommittedTxId=" + lastCommittedTxId() +
-               ", txCommitLag=" + txCommitLag() +
-               '}';
+    public String toString() {
+        return "ExtendedDatabaseInfoImpl{" + "namedDatabaseId="
+                + namedDatabaseId + ", serverId="
+                + serverId + ", accessFromConfig="
+                + access + ", boltAddress="
+                + boltAddress + ", catchupAddress="
+                + catchupAddress + ", role='"
+                + role + '\'' + ", status='"
+                + status + '\'' + ", error='"
+                + error + '\'' + ", lastCommittedTxId="
+                + lastCommittedTxId() + ", txCommitLag="
+                + txCommitLag() + '}';
     }
 }

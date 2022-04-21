@@ -21,7 +21,6 @@ package org.neo4j.kernel.database;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
@@ -39,8 +38,7 @@ import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 
-class DatabaseUpgradeTransactionHandler
-{
+class DatabaseUpgradeTransactionHandler {
     private final StorageEngine storageEngine;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final KernelVersionRepository kernelVersionRepository;
@@ -66,21 +64,23 @@ class DatabaseUpgradeTransactionHandler
     private final UpgradeLocker locker;
     private final InternalLog log;
 
-    DatabaseUpgradeTransactionHandler( StorageEngine storageEngine, DbmsRuntimeRepository dbmsRuntimeRepository,
-            KernelVersionRepository kernelVersionRepository, DatabaseTransactionEventListeners transactionEventListeners, UpgradeLocker locker,
-            InternalLogProvider logProvider )
-    {
+    DatabaseUpgradeTransactionHandler(
+            StorageEngine storageEngine,
+            DbmsRuntimeRepository dbmsRuntimeRepository,
+            KernelVersionRepository kernelVersionRepository,
+            DatabaseTransactionEventListeners transactionEventListeners,
+            UpgradeLocker locker,
+            InternalLogProvider logProvider) {
         this.storageEngine = storageEngine;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.kernelVersionRepository = kernelVersionRepository;
         this.transactionEventListeners = transactionEventListeners;
         this.locker = locker;
-        this.log = logProvider.getLog( this.getClass() );
+        this.log = logProvider.getLog(this.getClass());
     }
 
-    interface InternalTransactionCommitHandler
-    {
-        void commit( List<StorageCommand> commands ) throws TransactionFailureException;
+    interface InternalTransactionCommitHandler {
+        void commit(List<StorageCommand> commands) throws TransactionFailureException;
     }
 
     /**
@@ -93,87 +93,80 @@ class DatabaseUpgradeTransactionHandler
      * In the rare event of the "internal" upgrade transaction failing, it will stay on the old version and fail all transactions for this db
      * until it succeeds.
      */
-    void registerUpgradeListener( InternalTransactionCommitHandler internalTransactionCommitHandler )
-    {
-        if ( !kernelVersionRepository.kernelVersion().isLatest() )
-        {
-            transactionEventListeners.registerTransactionEventListener( new DatabaseUpgradeListener( internalTransactionCommitHandler ) );
+    void registerUpgradeListener(InternalTransactionCommitHandler internalTransactionCommitHandler) {
+        if (!kernelVersionRepository.kernelVersion().isLatest()) {
+            transactionEventListeners.registerTransactionEventListener(
+                    new DatabaseUpgradeListener(internalTransactionCommitHandler));
         }
     }
 
-    private class DatabaseUpgradeListener extends InternalTransactionEventListener.Adapter<Lock>
-    {
+    private class DatabaseUpgradeListener extends InternalTransactionEventListener.Adapter<Lock> {
         private final InternalTransactionCommitHandler internalTransactionCommitHandler;
 
-        DatabaseUpgradeListener( InternalTransactionCommitHandler internalTransactionCommitHandler )
-        {
+        DatabaseUpgradeListener(InternalTransactionCommitHandler internalTransactionCommitHandler) {
             this.internalTransactionCommitHandler = internalTransactionCommitHandler;
         }
 
         @Override
-        public Lock beforeCommit( TransactionData data, KernelTransaction tx, GraphDatabaseService databaseService ) throws Exception
-        {
+        public Lock beforeCommit(TransactionData data, KernelTransaction tx, GraphDatabaseService databaseService)
+                throws Exception {
             KernelVersion checkKernelVersion = kernelVersionRepository.kernelVersion();
-            if ( dbmsRuntimeRepository.getVersion().kernelVersion().isGreaterThan( checkKernelVersion ) )
-            {
-                try
-                {
-                    try ( Lock lock = locker.acquireWriteLock( tx ) )
-                    {
-                        KernelVersion kernelVersionToUpgradeTo = dbmsRuntimeRepository.getVersion().kernelVersion();
+            if (dbmsRuntimeRepository.getVersion().kernelVersion().isGreaterThan(checkKernelVersion)) {
+                try {
+                    try (Lock lock = locker.acquireWriteLock(tx)) {
+                        KernelVersion kernelVersionToUpgradeTo =
+                                dbmsRuntimeRepository.getVersion().kernelVersion();
                         KernelVersion currentKernelVersion = kernelVersionRepository.kernelVersion();
-                        if ( kernelVersionToUpgradeTo.isGreaterThan( currentKernelVersion ) )
-                        {
-                            log.info( "Upgrade transaction from %s to %s started", currentKernelVersion, kernelVersionToUpgradeTo );
+                        if (kernelVersionToUpgradeTo.isGreaterThan(currentKernelVersion)) {
+                            log.info(
+                                    "Upgrade transaction from %s to %s started",
+                                    currentKernelVersion, kernelVersionToUpgradeTo);
                             var callback = tx.injectedNLIUpgradeCallback();
-                            internalTransactionCommitHandler.commit( storageEngine.createUpgradeCommands( kernelVersionToUpgradeTo, callback ) );
-                            log.info( "Upgrade transaction from %s to %s completed", currentKernelVersion, kernelVersionToUpgradeTo );
+                            internalTransactionCommitHandler.commit(
+                                    storageEngine.createUpgradeCommands(kernelVersionToUpgradeTo, callback));
+                            log.info(
+                                    "Upgrade transaction from %s to %s completed",
+                                    currentKernelVersion, kernelVersionToUpgradeTo);
                         }
                     }
+                } catch (LockAcquisitionTimeoutException | DeadlockDetectedException ignore) {
+                    // This can happen if there is an ongoing committing transaction waiting for locks that the "trigger
+                    // tx" has
+                    // Let the "trigger tx" continue and try the upgrade again on the next write
+                    log.info(
+                            "Upgrade transaction from %s to %s not possible right now due to conflicting transaction, will retry on next write",
+                            checkKernelVersion,
+                            dbmsRuntimeRepository.getVersion().kernelVersion());
                 }
-                catch ( LockAcquisitionTimeoutException | DeadlockDetectedException ignore )
-                {
-                    //This can happen if there is an ongoing committing transaction waiting for locks that the "trigger tx" has
-                    //Let the "trigger tx" continue and try the upgrade again on the next write
-                    log.info( "Upgrade transaction from %s to %s not possible right now due to conflicting transaction, will retry on next write",
-                            checkKernelVersion, dbmsRuntimeRepository.getVersion().kernelVersion() );
-                }
-
             }
-            return locker.acquireReadLock( tx ); // This read lock will be released in afterCommit or afterRollback
+            return locker.acquireReadLock(tx); // This read lock will be released in afterCommit or afterRollback
         }
 
         @Override
-        public void afterCommit( TransactionData data, Lock readLock, GraphDatabaseService databaseService )
-        {
-            checkUnlockAndUnregister( readLock );
+        public void afterCommit(TransactionData data, Lock readLock, GraphDatabaseService databaseService) {
+            checkUnlockAndUnregister(readLock);
         }
 
         @Override
-        public void afterRollback( TransactionData data, Lock readLock, GraphDatabaseService databaseService )
-        {
-            checkUnlockAndUnregister( readLock );
+        public void afterRollback(TransactionData data, Lock readLock, GraphDatabaseService databaseService) {
+            checkUnlockAndUnregister(readLock);
         }
 
-        private void checkUnlockAndUnregister( Lock readLock )
-        {
-            // For some reason the transaction event listeners handling is such that even if beforeCommit fails for this listener
-            // then an afterRollback will be called. Therefore we distinguish between success and failure using the state (which is the lock)
-            if ( readLock == null )
-            {
+        private void checkUnlockAndUnregister(Lock readLock) {
+            // For some reason the transaction event listeners handling is such that even if beforeCommit fails for this
+            // listener
+            // then an afterRollback will be called. Therefore we distinguish between success and failure using the
+            // state (which is the lock)
+            if (readLock == null) {
                 return;
             }
 
             readLock.close();
-            if ( kernelVersionRepository.kernelVersion().isLatest() && unregistered.compareAndSet( false, true ) )
-            {
-                try
-                {
-                    transactionEventListeners.unregisterTransactionEventListener( this );
-                }
-                catch ( Throwable e )
-                {
-                    unregistered.set( false );
+            if (kernelVersionRepository.kernelVersion().isLatest() && unregistered.compareAndSet(false, true)) {
+                try {
+                    transactionEventListeners.unregisterTransactionEventListener(this);
+                } catch (Throwable e) {
+                    unregistered.set(false);
                     throw e;
                 }
             }

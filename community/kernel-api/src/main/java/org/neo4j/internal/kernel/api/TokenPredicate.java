@@ -23,23 +23,19 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.values.storable.ValueCategory;
 
-public record TokenPredicate( int tokenId ) implements IndexQuery
-{
+public record TokenPredicate(int tokenId) implements IndexQuery {
     @Override
-    public int queriedId()
-    {
+    public int queriedId() {
         return tokenId();
     }
 
     @Override
-    public IndexQueryType type()
-    {
+    public IndexQueryType type() {
         return IndexQueryType.TOKEN_LOOKUP;
     }
 
     @Override
-    public ValueCategory valueCategory()
-    {
+    public ValueCategory valueCategory() {
         return ValueCategory.NO_CATEGORY;
     }
 }

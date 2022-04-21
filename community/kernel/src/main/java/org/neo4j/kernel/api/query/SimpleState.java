@@ -19,64 +19,54 @@
  */
 package org.neo4j.kernel.api.query;
 
-import java.util.Map;
-
 import static java.util.Collections.emptyMap;
 
-final class SimpleState extends ExecutingQueryStatus
-{
-    private static final ExecutingQueryStatus PARSING = new SimpleState( PARSING_STATE );
-    private static final ExecutingQueryStatus PLANNING = new SimpleState( PLANNING_STATE );
-    private static final ExecutingQueryStatus PLANNED = new SimpleState( PLANNED_STATE );
-    private static final ExecutingQueryStatus RUNNING = new SimpleState( RUNNING_STATE );
+import java.util.Map;
+
+final class SimpleState extends ExecutingQueryStatus {
+    private static final ExecutingQueryStatus PARSING = new SimpleState(PARSING_STATE);
+    private static final ExecutingQueryStatus PLANNING = new SimpleState(PLANNING_STATE);
+    private static final ExecutingQueryStatus PLANNED = new SimpleState(PLANNED_STATE);
+    private static final ExecutingQueryStatus RUNNING = new SimpleState(RUNNING_STATE);
     private final String name;
 
-    static ExecutingQueryStatus parsing()
-    {
+    static ExecutingQueryStatus parsing() {
         return PARSING;
     }
 
-    static ExecutingQueryStatus planning()
-    {
+    static ExecutingQueryStatus planning() {
         return PLANNING;
     }
 
-    static ExecutingQueryStatus planned()
-    {
+    static ExecutingQueryStatus planned() {
         return PLANNED;
     }
 
-    static ExecutingQueryStatus running()
-    {
+    static ExecutingQueryStatus running() {
         return RUNNING;
     }
 
-    private SimpleState( String name )
-    {
+    private SimpleState(String name) {
         this.name = name;
     }
 
     @Override
-    long waitTimeNanos( long currentTimeNanos )
-    {
+    long waitTimeNanos(long currentTimeNanos) {
         return 0;
     }
 
     @Override
-    Map<String,Object> toMap( long currentTimeNanos )
-    {
+    Map<String, Object> toMap(long currentTimeNanos) {
         return emptyMap();
     }
 
     @Override
-    String name()
-    {
+    String name() {
         return name;
     }
 
     @Override
-    boolean isParsingOrPlanning()
-    {
+    boolean isParsingOrPlanning() {
         return this == PLANNING || this == PARSING;
     }
 }

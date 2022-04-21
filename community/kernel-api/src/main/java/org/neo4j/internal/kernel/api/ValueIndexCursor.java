@@ -21,8 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import org.neo4j.values.storable.Value;
 
-public interface ValueIndexCursor
-{
+public interface ValueIndexCursor {
     /**
      * @return the number of properties accessible within the index, and thus from this cursor.
      */
@@ -36,5 +35,5 @@ public interface ValueIndexCursor
      */
     boolean hasValue();
 
-    Value propertyValue( int offset );
+    Value propertyValue(int offset);
 }

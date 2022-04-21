@@ -20,11 +20,9 @@
 package org.neo4j.bolt.transport;
 
 import io.netty.channel.Channel;
-
 import org.neo4j.memory.MemoryTracker;
 
-public interface TransportThrottle
-{
+public interface TransportThrottle {
 
     /**
      * Installs the throttle to the given channel.
@@ -32,7 +30,7 @@ public interface TransportThrottle
      * @param channel the netty channel to which this throttle should be installed
      * @param memoryTracker the pool from which memory is to be allocated
      */
-    void install( Channel channel, MemoryTracker memoryTracker );
+    void install(Channel channel, MemoryTracker memoryTracker);
 
     /**
      * Apply throttling logic for the given channel..
@@ -40,19 +38,19 @@ public interface TransportThrottle
      * @param channel the netty channel to which this throttling logic should be applied
      * @throws TransportThrottleException when throttle decides this connection should be halted
      */
-    void acquire( Channel channel ) throws TransportThrottleException;
+    void acquire(Channel channel) throws TransportThrottleException;
 
     /**
      * Release throttling for the given channel (if applied)..
      *
      * @param channel the netty channel from which this throttling logic should be released
      */
-    void release( Channel channel );
+    void release(Channel channel);
 
     /**
      * Uninstalls the throttle from the given channel.
      *
      * @param channel the netty channel from which this throttle should be uninstalled
      */
-    void uninstall( Channel channel );
+    void uninstall(Channel channel);
 }

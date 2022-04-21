@@ -19,76 +19,70 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import org.neo4j.io.pagecache.PageCursor;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
-public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
-{
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.PageCursor;
+
+public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes, RawBytes> {
     private static final long STABLE_GENERATION = 3;
     private static final long UNSTABLE_GENERATION = 4;
 
     private final SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
 
     @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout()
-    {
+    protected TestLayout<RawBytes, RawBytes> getLayout() {
         return layout;
     }
 
     @Override
-    protected TreeNodeDynamicSize<RawBytes,RawBytes> getNode( int pageSize, Layout<RawBytes,RawBytes> layout,
-            OffloadStore<RawBytes,RawBytes> offloadStore )
-    {
-        return new TreeNodeDynamicSize<>( pageSize, layout, offloadStore );
+    protected TreeNodeDynamicSize<RawBytes, RawBytes> getNode(
+            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
+        return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
     }
 
     @Override
-    void assertAdditionalHeader( PageCursor cursor, TreeNode<RawBytes,RawBytes> node, int pageSize )
-    {
+    void assertAdditionalHeader(PageCursor cursor, TreeNode<RawBytes, RawBytes> node, int pageSize) {
         // When
-        int currentAllocSpace = ((TreeNodeDynamicSize<RawBytes,RawBytes>) node).getAllocOffset( cursor );
+        int currentAllocSpace = ((TreeNodeDynamicSize<RawBytes, RawBytes>) node).getAllocOffset(cursor);
 
         // Then
-        assertEquals( pageSize, currentAllocSpace, "allocSpace point to end of page" );
+        assertEquals(pageSize, currentAllocSpace, "allocSpace point to end of page");
     }
 
     @Test
-    void mustCompactKeyValueSizeHeader() throws IOException
-    {
+    void mustCompactKeyValueSizeHeader() throws IOException {
         int oneByteKeyMax = DynamicSizeUtil.MASK_ONE_BYTE_KEY_SIZE;
         int oneByteValueMax = DynamicSizeUtil.MASK_ONE_BYTE_VALUE_SIZE;
 
-        TreeNodeDynamicSize<RawBytes,RawBytes> node = getNode( PAGE_SIZE, layout, createOffloadStore() );
+        TreeNodeDynamicSize<RawBytes, RawBytes> node = getNode(PAGE_SIZE, layout, createOffloadStore());
 
-        verifyOverhead( node, oneByteKeyMax, 0, 1 );
-        verifyOverhead( node, oneByteKeyMax, 1, 2 );
-        verifyOverhead( node, oneByteKeyMax, oneByteValueMax, 2 );
-        verifyOverhead( node, oneByteKeyMax, oneByteValueMax +  1, 3 );
-        verifyOverhead( node, oneByteKeyMax + 1, 0, 2 );
-        verifyOverhead( node, oneByteKeyMax + 1, 1, 3 );
-        verifyOverhead( node, oneByteKeyMax + 1, oneByteValueMax, 3 );
-        verifyOverhead( node, oneByteKeyMax + 1, oneByteValueMax +  1, 4 );
+        verifyOverhead(node, oneByteKeyMax, 0, 1);
+        verifyOverhead(node, oneByteKeyMax, 1, 2);
+        verifyOverhead(node, oneByteKeyMax, oneByteValueMax, 2);
+        verifyOverhead(node, oneByteKeyMax, oneByteValueMax + 1, 3);
+        verifyOverhead(node, oneByteKeyMax + 1, 0, 2);
+        verifyOverhead(node, oneByteKeyMax + 1, 1, 3);
+        verifyOverhead(node, oneByteKeyMax + 1, oneByteValueMax, 3);
+        verifyOverhead(node, oneByteKeyMax + 1, oneByteValueMax + 1, 4);
     }
 
-    private void verifyOverhead( TreeNodeDynamicSize<RawBytes,RawBytes> node, int keySize, int valueSize, int expectedOverhead ) throws IOException
-    {
+    private void verifyOverhead(
+            TreeNodeDynamicSize<RawBytes, RawBytes> node, int keySize, int valueSize, int expectedOverhead)
+            throws IOException {
         cursor.zapPage();
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf(cursor, STABLE_GENERATION, UNSTABLE_GENERATION);
 
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[keySize];
         value.bytes = new byte[valueSize];
 
-        int allocOffsetBefore = node.getAllocOffset( cursor );
-        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT );
-        int allocOffsetAfter = node.getAllocOffset( cursor );
-        assertEquals( allocOffsetBefore - keySize - valueSize - expectedOverhead, allocOffsetAfter );
+        int allocOffsetBefore = node.getAllocOffset(cursor);
+        node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        int allocOffsetAfter = node.getAllocOffset(cursor);
+        assertEquals(allocOffsetBefore - keySize - valueSize - expectedOverhead, allocOffsetAfter);
     }
 }

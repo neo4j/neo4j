@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static java.util.Collections.emptyIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+
 import java.io.Closeable;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -36,14 +38,10 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.emptyIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
-
 /**
  * Used for online operation of an index.
  */
-public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalIndexAccessor
-{
+public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalIndexAccessor {
     long UNKNOWN_NUMBER_OF_ENTRIES = -1;
     IndexAccessor EMPTY = new Adapter();
 
@@ -59,7 +57,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * @param cursorContext the context to track cursor access.
      * @param parallel hint that this updater will be used in parallel with other updaters concurrently on this index.
      */
-    IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel );
+    IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel);
 
     /**
      * Forces this index to disk. Called at certain points from within Neo4j for example when
@@ -69,7 +67,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * @param cursorContext underlying page cursor context
      * @throws UncheckedIOException if there was a problem forcing the state to persistent storage.
      */
-    void force( CursorContext cursorContext );
+    void force(CursorContext cursorContext);
 
     /**
      * Refreshes this index, so that {@link #newValueReader() readers} created after completion of this call
@@ -101,34 +99,35 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * The returned reader must honor repeatable reads.
      * @throws UnsupportedOperationException if underline index is not Token Index
      */
-    default TokenIndexReader newTokenReader()
-    {
-        throw new UnsupportedOperationException( "Not supported for " + getClass().getSimpleName() );
+    default TokenIndexReader newTokenReader() {
+        throw new UnsupportedOperationException(
+                "Not supported for " + getClass().getSimpleName());
     }
 
     /**
      * @param cursorContext underlying page cursor context
      * @return a {@link BoundedIterable} to access all entity ids indexed in this index.
      */
-    default BoundedIterable<Long> newAllEntriesValueReader( CursorContext cursorContext )
-    {
-        return newAllEntriesValueReader( 0, Long.MAX_VALUE, cursorContext );
+    default BoundedIterable<Long> newAllEntriesValueReader(CursorContext cursorContext) {
+        return newAllEntriesValueReader(0, Long.MAX_VALUE, cursorContext);
     }
 
     /**
      * @param cursorContext underlying page cursor context
      * @return a {@link BoundedIterable} to access all entity ids indexed in the range {@code fromIdInclusive}-{@code toIdExclusive} in this index.
      */
-    BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext );
+    BoundedIterable<Long> newAllEntriesValueReader(
+            long fromIdInclusive, long toIdExclusive, CursorContext cursorContext);
 
     /**
      * @param cursorContext underlying page cursor context
      * @return a {@link BoundedIterable} to access all token ids associated with every entity indexed in the range
      * {@code fromIdInclusive}-{@code toIdExclusive} in this index.
      */
-    default BoundedIterable<EntityTokenRange> newAllEntriesTokenReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "Not supported for " + getClass().getSimpleName() );
+    default BoundedIterable<EntityTokenRange> newAllEntriesTokenReader(
+            long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
+        throw new UnsupportedOperationException(
+                "Not supported for " + getClass().getSimpleName());
     }
 
     /**
@@ -141,37 +140,31 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * @return the partitions that can read the index entries in this index. The implementation should strive to adhere to this number,
      * but the only real contract is that the returned number of readers is between 1 <= numberOfReturnedReaders <= partitions.
      */
-    default IndexEntriesReader[] newAllEntriesValueReader( int partitions, CursorContext cursorContext )
-    {
-        BoundedIterable<Long> entriesReader = newAllEntriesValueReader( cursorContext );
+    default IndexEntriesReader[] newAllEntriesValueReader(int partitions, CursorContext cursorContext) {
+        BoundedIterable<Long> entriesReader = newAllEntriesValueReader(cursorContext);
         Iterator<Long> ids = entriesReader.iterator();
-        IndexEntriesReader reader = new IndexEntriesReader()
-        {
+        IndexEntriesReader reader = new IndexEntriesReader() {
             @Override
-            public Value[] values()
-            {
+            public Value[] values() {
                 return null;
             }
 
             @Override
-            public long next()
-            {
+            public long next() {
                 return ids.next();
             }
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return ids.hasNext();
             }
 
             @Override
-            public void close()
-            {
-                IOUtils.closeAllUnchecked( entriesReader );
+            public void close() {
+                IOUtils.closeAllUnchecked(entriesReader);
             }
         };
-        return new IndexEntriesReader[]{reader};
+        return new IndexEntriesReader[] {reader};
     }
 
     /**
@@ -184,8 +177,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
     /**
      * Validates the {@link Value value tuple} before transaction determines that it can commit.
      */
-    default void validateBeforeCommit( long entityId, Value[] tuple )
-    {
+    default void validateBeforeCommit(long entityId, Value[] tuple) {
         // For most value types there are no specific validations to be made.
     }
 
@@ -194,176 +186,142 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * if number of entries couldn't be determined.
      * @param cursorContext underlying page cursor context
      */
-    long estimateNumberOfEntries( CursorContext cursorContext );
+    long estimateNumberOfEntries(CursorContext cursorContext);
 
-    class Adapter implements IndexAccessor
-    {
+    class Adapter implements IndexAccessor {
         @Override
-        public void drop()
-        {
-        }
+        public void drop() {}
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-        {
+        public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
             return SwallowingIndexUpdater.INSTANCE;
         }
 
         @Override
-        public void force( CursorContext cursorContext )
-        {
-        }
+        public void force(CursorContext cursorContext) {}
 
         @Override
-        public void refresh()
-        {
-        }
+        public void refresh() {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public ValueIndexReader newValueReader()
-        {
+        public ValueIndexReader newValueReader() {
             return ValueIndexReader.EMPTY;
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
-        {
-            return new BoundedIterable<>()
-            {
+        public BoundedIterable<Long> newAllEntriesValueReader(
+                long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
+            return new BoundedIterable<>() {
                 @Override
-                public long maxCount()
-                {
+                public long maxCount() {
                     return 0;
                 }
 
                 @Override
-                public void close()
-                {
-                }
+                public void close() {}
 
                 @Override
-                public Iterator<Long> iterator()
-                {
+                public Iterator<Long> iterator() {
                     return emptyIterator();
                 }
             };
         }
 
         @Override
-        public ResourceIterator<Path> snapshotFiles()
-        {
+        public ResourceIterator<Path> snapshotFiles() {
             return emptyResourceIterator();
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-        {
+        public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
             return true;
         }
 
         @Override
-        public long estimateNumberOfEntries( CursorContext cursorContext )
-        {
+        public long estimateNumberOfEntries(CursorContext cursorContext) {
             return UNKNOWN_NUMBER_OF_ENTRIES;
         }
     }
 
-    class Delegating implements IndexAccessor
-    {
+    class Delegating implements IndexAccessor {
         private final IndexAccessor delegate;
 
-        public Delegating( IndexAccessor delegate )
-        {
+        public Delegating(IndexAccessor delegate) {
             this.delegate = delegate;
         }
 
         @Override
-        public void drop()
-        {
+        public void drop() {
             delegate.drop();
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-        {
-            return delegate.newUpdater( mode, cursorContext, parallel );
+        public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+            return delegate.newUpdater(mode, cursorContext, parallel);
         }
 
         @Override
-        public void force( CursorContext cursorContext )
-        {
-            delegate.force( cursorContext );
+        public void force(CursorContext cursorContext) {
+            delegate.force(cursorContext);
         }
 
         @Override
-        public void refresh()
-        {
+        public void refresh() {
             delegate.refresh();
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             delegate.close();
         }
 
         @Override
-        public ValueIndexReader newValueReader()
-        {
+        public ValueIndexReader newValueReader() {
             return delegate.newValueReader();
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesValueReader( CursorContext cursorContext )
-        {
-            return delegate.newAllEntriesValueReader( cursorContext );
+        public BoundedIterable<Long> newAllEntriesValueReader(CursorContext cursorContext) {
+            return delegate.newAllEntriesValueReader(cursorContext);
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
-        {
-            return delegate.newAllEntriesValueReader( fromIdInclusive, toIdExclusive, cursorContext );
+        public BoundedIterable<Long> newAllEntriesValueReader(
+                long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
+            return delegate.newAllEntriesValueReader(fromIdInclusive, toIdExclusive, cursorContext);
         }
 
         @Override
-        public ResourceIterator<Path> snapshotFiles()
-        {
+        public ResourceIterator<Path> snapshotFiles() {
             return delegate.snapshotFiles();
         }
 
         @Override
-        public Map<String,Value> indexConfig()
-        {
+        public Map<String, Value> indexConfig() {
             return delegate.indexConfig();
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return delegate.toString();
         }
 
         @Override
-        public void validateBeforeCommit( long entityId, Value[] tuple )
-        {
-            delegate.validateBeforeCommit( entityId, tuple );
+        public void validateBeforeCommit(long entityId, Value[] tuple) {
+            delegate.validateBeforeCommit(entityId, tuple);
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-        {
-            return delegate.consistencyCheck( reporterFactory, cursorContext );
+        public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+            return delegate.consistencyCheck(reporterFactory, cursorContext);
         }
 
         @Override
-        public long estimateNumberOfEntries( CursorContext cursorContext )
-        {
-            return delegate.estimateNumberOfEntries( cursorContext );
+        public long estimateNumberOfEntries(CursorContext cursorContext) {
+            return delegate.estimateNumberOfEntries(cursorContext);
         }
     }
 }

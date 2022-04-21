@@ -30,9 +30,14 @@ trait CostModelMonitor {
 }
 
 object CostModelMonitor {
+
   val DEFAULT: CostModelMonitor = new CostModelMonitor {
     override def reportPlanCost(rootPlan: LogicalPlan, plan: LogicalPlan, cost: Cost): Unit = {}
 
-    override def reportPlanEffectiveCardinality(rootPlan: LogicalPlan, plan: LogicalPlan, cardinality: Cardinality): Unit = {}
+    override def reportPlanEffectiveCardinality(
+      rootPlan: LogicalPlan,
+      plan: LogicalPlan,
+      cardinality: Cardinality
+    ): Unit = {}
   }
 }

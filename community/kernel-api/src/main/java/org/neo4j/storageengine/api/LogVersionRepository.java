@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-public interface LogVersionRepository
-{
+public interface LogVersionRepository {
     long INITIAL_LOG_VERSION = 0;
     long BASE_TX_LOG_VERSION = 0;
     int BASE_TX_LOG_BYTE_OFFSET = 64;
@@ -34,7 +33,7 @@ public interface LogVersionRepository
      * Set current log version
      * @param version new current log version
      */
-    void setCurrentLogVersion( long version );
+    void setCurrentLogVersion(long version);
 
     /**
      * Increments and returns the latest log version for this repository.
@@ -51,7 +50,7 @@ public interface LogVersionRepository
      * Set checkpoint log version
      * @param version new current log version
      */
-    void setCheckpointLogVersion( long version );
+    void setCheckpointLogVersion(long version);
 
     /**
      * Increments and returns the latest checkpoint log version for this repository.

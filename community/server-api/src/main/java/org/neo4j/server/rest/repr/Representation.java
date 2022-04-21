@@ -21,8 +21,7 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 
-public abstract class Representation
-{
+public abstract class Representation {
     // non-inlineable constants
     public static final String GRAPHDB = RepresentationType.GRAPHDB.valueName;
     public static final String INDEX = RepresentationType.INDEX.valueName;
@@ -63,57 +62,45 @@ public abstract class Representation
 
     final RepresentationType type;
 
-    Representation( RepresentationType type )
-    {
+    Representation(RepresentationType type) {
         this.type = type;
     }
 
-    Representation( String type )
-    {
-        this.type = new RepresentationType( type );
+    Representation(String type) {
+        this.type = new RepresentationType(type);
     }
 
-    public RepresentationType getRepresentationType()
-    {
+    public RepresentationType getRepresentationType() {
         return this.type;
     }
 
-    abstract String serialize( RepresentationFormat format, URI baseUri );
+    abstract String serialize(RepresentationFormat format, URI baseUri);
 
-    abstract void addTo( ListSerializer serializer );
+    abstract void addTo(ListSerializer serializer);
 
-    abstract void putTo( MappingSerializer serializer, String key );
+    abstract void putTo(MappingSerializer serializer, String key);
 
-    boolean isEmpty()
-    {
+    boolean isEmpty() {
         return false;
     }
 
-    public static Representation emptyRepresentation()
-    {
-        return new Representation( (RepresentationType) null )
-        {
+    public static Representation emptyRepresentation() {
+        return new Representation((RepresentationType) null) {
             @Override
-            boolean isEmpty()
-            {
+            boolean isEmpty() {
                 return true;
             }
 
             @Override
-            String serialize( RepresentationFormat format, URI baseUri )
-            {
+            String serialize(RepresentationFormat format, URI baseUri) {
                 return "";
             }
 
             @Override
-            void putTo( MappingSerializer serializer, String key )
-            {
-            }
+            void putTo(MappingSerializer serializer, String key) {}
 
             @Override
-            void addTo( ListSerializer serializer )
-            {
-            }
+            void addTo(ListSerializer serializer) {}
         };
     }
 }

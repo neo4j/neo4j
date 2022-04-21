@@ -29,8 +29,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.channels.SeekableByteChannel;
 
-public interface StoreChannel extends Flushable, SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel, InterruptibleChannel
-{
+public interface StoreChannel
+        extends Flushable, SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel, InterruptibleChannel {
     /**
      * Attempts to acquire an exclusive lock on this channel's file.
      * @return A lock object representing the newly-acquired lock, or null if the lock could not be acquired.
@@ -43,18 +43,18 @@ public interface StoreChannel extends Flushable, SeekableByteChannel, GatheringB
      * Same as #write(), except this method will write the full contents of the buffer in chunks if the OS fails to
      * write it all at once.
      */
-    void writeAll( ByteBuffer src, long position ) throws IOException;
+    void writeAll(ByteBuffer src, long position) throws IOException;
 
     /**
      * Same as #write(), except this method will write the full contents of the buffer in chunks if the OS fails to
      * write it all at once.
      */
-    void writeAll( ByteBuffer src ) throws IOException;
+    void writeAll(ByteBuffer src) throws IOException;
 
     /**
      * @see java.nio.channels.FileChannel#read(java.nio.ByteBuffer, long)
      */
-    int read( ByteBuffer dst, long position ) throws IOException;
+    int read(ByteBuffer dst, long position) throws IOException;
 
     /**
      * Try to Read a sequence of bytes from channel into the given buffer, till the buffer will be full.
@@ -65,15 +65,15 @@ public interface StoreChannel extends Flushable, SeekableByteChannel, GatheringB
      * @throws IllegalStateException if end of stream reached during reading.
      * @see ReadableByteChannel#read(ByteBuffer)
      */
-    void readAll( ByteBuffer dst ) throws IOException;
+    void readAll(ByteBuffer dst) throws IOException;
 
-    void force( boolean metaData ) throws IOException;
-
-    @Override
-    StoreChannel position( long newPosition ) throws IOException;
+    void force(boolean metaData) throws IOException;
 
     @Override
-    StoreChannel truncate( long size ) throws IOException;
+    StoreChannel position(long newPosition) throws IOException;
+
+    @Override
+    StoreChannel truncate(long size) throws IOException;
 
     /**
      * Get the OS file descriptor for this channel.

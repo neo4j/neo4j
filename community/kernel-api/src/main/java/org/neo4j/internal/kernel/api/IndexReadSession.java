@@ -26,7 +26,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
  * the transaction. It might be created at any time in an open transaction, and will be closed automatically
  * on transaction close.
  */
-public interface IndexReadSession
-{
+public interface IndexReadSession {
     IndexDescriptor reference();
 }

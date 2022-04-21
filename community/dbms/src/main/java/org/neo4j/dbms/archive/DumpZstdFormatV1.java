@@ -23,20 +23,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class DumpZstdFormatV1 implements CompressionFormat
-{
+public class DumpZstdFormatV1 implements CompressionFormat {
     static final String MAGIC_HEADER = "DZV1";
 
     @Override
-    public OutputStream compress( OutputStream stream ) throws IOException
-    {
-        stream.write( MAGIC_HEADER.getBytes() );
-        return StandardCompressionFormat.ZSTD.compress( stream );
+    public OutputStream compress(OutputStream stream) throws IOException {
+        stream.write(MAGIC_HEADER.getBytes());
+        return StandardCompressionFormat.ZSTD.compress(stream);
     }
 
     @Override
-    public InputStream decompress( InputStream stream ) throws IOException
-    {
-        return StandardCompressionFormat.ZSTD.decompress( stream );
+    public InputStream decompress(InputStream stream) throws IOException {
+        return StandardCompressionFormat.ZSTD.decompress(stream);
     }
 }

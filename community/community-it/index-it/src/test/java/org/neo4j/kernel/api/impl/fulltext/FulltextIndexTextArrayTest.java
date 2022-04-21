@@ -19,150 +19,130 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import org.neo4j.graphdb.Entity;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Transaction;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
-class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport
-{
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.graphdb.Entity;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 
-    @MethodSource( "entityTypeProvider" )
+class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
+
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void shouldFindIndexedTextArray( EntityUtil entityUtil )
-    {
-        createIndexAndWait( entityUtil );
+    void shouldFindIndexedTextArray(EntityUtil entityUtil) {
+        createIndexAndWait(entityUtil);
 
         long id;
-        try ( Transaction tx = db.beginTx() )
-        {
-            id = entityUtil.createEntityWithProperty( tx, array( "foo", "bar" ) );
+        try (Transaction tx = db.beginTx()) {
+            id = entityUtil.createEntityWithProperty(tx, array("foo", "bar"));
             tx.commit();
         }
 
-        assertEntityFound( entityUtil, id, "foo" );
-        assertEntityFound( entityUtil, id, "bar" );
+        assertEntityFound(entityUtil, id, "foo");
+        assertEntityFound(entityUtil, id, "bar");
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void shouldFindIndexedTextArraySingleElement( EntityUtil entityUtil )
-    {
-        createIndexAndWait( entityUtil );
+    void shouldFindIndexedTextArraySingleElement(EntityUtil entityUtil) {
+        createIndexAndWait(entityUtil);
 
         long id;
-        try ( Transaction tx = db.beginTx() )
-        {
-            id = entityUtil.createEntityWithProperty( tx, array( "foo" ) );
+        try (Transaction tx = db.beginTx()) {
+            id = entityUtil.createEntityWithProperty(tx, array("foo"));
             tx.commit();
         }
 
-        assertEntityFound( entityUtil, id, "foo" );
+        assertEntityFound(entityUtil, id, "foo");
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void shouldFindIndexedTextArrayWithEmptyElement( EntityUtil entityUtil )
-    {
-        createIndexAndWait( entityUtil );
+    void shouldFindIndexedTextArrayWithEmptyElement(EntityUtil entityUtil) {
+        createIndexAndWait(entityUtil);
 
         long id;
-        try ( Transaction tx = db.beginTx() )
-        {
-            id = entityUtil.createEntityWithProperty( tx, array( "foo", "bar", "" ) );
+        try (Transaction tx = db.beginTx()) {
+            id = entityUtil.createEntityWithProperty(tx, array("foo", "bar", ""));
             tx.commit();
         }
 
-        assertEntityFound( entityUtil, id, "foo" );
+        assertEntityFound(entityUtil, id, "foo");
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void testEmptyArray( EntityUtil entityUtil )
-    {
-        createIndexAndWait( entityUtil );
+    void testEmptyArray(EntityUtil entityUtil) {
+        createIndexAndWait(entityUtil);
 
         long id;
-        try ( Transaction tx = db.beginTx() )
-        {
-            id = entityUtil.createEntityWithProperty( tx, new String[0] );
+        try (Transaction tx = db.beginTx()) {
+            id = entityUtil.createEntityWithProperty(tx, new String[0]);
             tx.commit();
         }
 
-        assertNothingFound( entityUtil, "*" );
+        assertNothingFound(entityUtil, "*");
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void shouldFindIndexedTextArrayReferencingProperty( EntityUtil entityUtil )
-    {
-        createIndexAndWait( entityUtil );
+    void shouldFindIndexedTextArrayReferencingProperty(EntityUtil entityUtil) {
+        createIndexAndWait(entityUtil);
 
         long id;
-        try ( Transaction tx = db.beginTx() )
-        {
-            id = entityUtil.createEntityWithProperty( tx, array( "foo", "bar" ) );
+        try (Transaction tx = db.beginTx()) {
+            id = entityUtil.createEntityWithProperty(tx, array("foo", "bar"));
             tx.commit();
         }
 
-        assertEntityFound( entityUtil, id, "prop:bar" );
+        assertEntityFound(entityUtil, id, "prop:bar");
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void shouldFindIndexedCharArray( EntityUtil entityUtil )
-    {
-        createIndexAndWait( entityUtil );
+    void shouldFindIndexedCharArray(EntityUtil entityUtil) {
+        createIndexAndWait(entityUtil);
 
         long id;
-        try ( Transaction tx = db.beginTx() )
-        {
-            id = entityUtil.createEntityWithProperty( tx, array( 'a', 'b', 'c' ) );
+        try (Transaction tx = db.beginTx()) {
+            id = entityUtil.createEntityWithProperty(tx, array('a', 'b', 'c'));
             tx.commit();
         }
 
-        assertEntityFound( entityUtil, id, "a" );
+        assertEntityFound(entityUtil, id, "a");
     }
 
-    @MethodSource( "entityTypeProvider" )
+    @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    void shouldFindInCompositeIndex( EntityUtil entityUtil )
-    {
-        createCompositeIndexAndWait( entityUtil );
+    void shouldFindInCompositeIndex(EntityUtil entityUtil) {
+        createCompositeIndexAndWait(entityUtil);
 
         long id;
-        try ( Transaction tx = db.beginTx() )
-        {
-            id = entityUtil.createEntityWithProperties( tx, "fred", array( "foo", "bar" ) );
+        try (Transaction tx = db.beginTx()) {
+            id = entityUtil.createEntityWithProperties(tx, "fred", array("foo", "bar"));
             tx.commit();
         }
 
-        assertEntityFound( entityUtil, id, "prop2:bar" );
+        assertEntityFound(entityUtil, id, "prop2:bar");
     }
 
-    private void assertEntityFound( EntityUtil entityUtil, long id, String query )
-    {
-        try ( Transaction tx = db.beginTx();
-              ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions( tx, query, "{}" ) )
-        {
-            assertThat( iterator.next().getId() ).isEqualTo( id );
-            assertFalse( iterator.hasNext() );
+    private void assertEntityFound(EntityUtil entityUtil, long id, String query) {
+        try (Transaction tx = db.beginTx();
+                ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, query, "{}")) {
+            assertThat(iterator.next().getId()).isEqualTo(id);
+            assertFalse(iterator.hasNext());
             tx.commit();
         }
     }
 
-    private void assertNothingFound( EntityUtil entityUtil, String query )
-    {
-        try ( Transaction tx = db.beginTx();
-              ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions( tx, query, "{}" ) )
-        {
-            assertFalse( iterator.hasNext() );
+    private void assertNothingFound(EntityUtil entityUtil, String query) {
+        try (Transaction tx = db.beginTx();
+                ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, query, "{}")) {
+            assertFalse(iterator.hasNext());
             tx.commit();
         }
     }

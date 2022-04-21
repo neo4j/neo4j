@@ -19,30 +19,28 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.storageengine.api.cursor.StoreCursors;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class RecordChangeSetTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+
+class RecordChangeSetTest {
     @Test
-    void shouldStartWithSetsInitializedAndEmpty()
-    {
+    void shouldStartWithSetsInitializedAndEmpty() {
         // GIVEN
-        RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, StoreCursors.NULL );
+        RecordChangeSet changeSet = new RecordChangeSet(
+                mock(Loaders.class), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, StoreCursors.NULL);
 
         // WHEN
         // nothing really
 
         // THEN
-        assertEquals( 0, changeSet.getNodeRecords().changeSize() );
-        assertEquals( 0, changeSet.getPropertyRecords().changeSize() );
-        assertEquals( 0, changeSet.getRelRecords().changeSize() );
-        assertEquals( 0, changeSet.getSchemaRuleChanges().changeSize() );
-        assertEquals( 0, changeSet.getRelGroupRecords().changeSize() );
+        assertEquals(0, changeSet.getNodeRecords().changeSize());
+        assertEquals(0, changeSet.getPropertyRecords().changeSize());
+        assertEquals(0, changeSet.getRelRecords().changeSize());
+        assertEquals(0, changeSet.getSchemaRuleChanges().changeSize());
+        assertEquals(0, changeSet.getRelGroupRecords().changeSize());
     }
 }

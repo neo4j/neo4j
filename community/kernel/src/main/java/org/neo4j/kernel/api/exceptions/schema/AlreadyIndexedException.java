@@ -24,44 +24,40 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class AlreadyIndexedException extends SchemaKernelException
-{
+public class AlreadyIndexedException extends SchemaKernelException {
     private static final String NO_CONTEXT_FORMAT = "Already indexed %s.";
 
     private static final String INDEX_CONTEXT_FORMAT = "There already exists an index %s.";
-    private static final String CONSTRAINT_CONTEXT_FORMAT = "There already exists an index %s. " +
-                                                            "A constraint cannot be created until the index has been dropped.";
+    private static final String CONSTRAINT_CONTEXT_FORMAT =
+            "There already exists an index %s. " + "A constraint cannot be created until the index has been dropped.";
 
     private final SchemaDescriptor descriptor;
     private final OperationContext context;
 
-    public AlreadyIndexedException( SchemaDescriptor descriptor, OperationContext context, TokenNameLookup tokenNameLookup )
-    {
-        super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, tokenNameLookup, descriptor ) );
+    public AlreadyIndexedException(
+            SchemaDescriptor descriptor, OperationContext context, TokenNameLookup tokenNameLookup) {
+        super(Status.Schema.IndexAlreadyExists, constructUserMessage(context, tokenNameLookup, descriptor));
 
         this.descriptor = descriptor;
         this.context = context;
     }
 
-    private static String constructUserMessage( OperationContext context, TokenNameLookup tokenNameLookup, SchemaDescriptor descriptor )
-    {
-        switch ( context )
-        {
+    private static String constructUserMessage(
+            OperationContext context, TokenNameLookup tokenNameLookup, SchemaDescriptor descriptor) {
+        switch (context) {
             case INDEX_CREATION:
-                return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT, descriptor );
+                return messageWithLabelAndPropertyName(tokenNameLookup, INDEX_CONTEXT_FORMAT, descriptor);
             case CONSTRAINT_CREATION:
-                return messageWithLabelAndPropertyName( tokenNameLookup, CONSTRAINT_CONTEXT_FORMAT, descriptor );
+                return messageWithLabelAndPropertyName(tokenNameLookup, CONSTRAINT_CONTEXT_FORMAT, descriptor);
             default:
-                return String.format( NO_CONTEXT_FORMAT, descriptor );
+                return String.format(NO_CONTEXT_FORMAT, descriptor);
         }
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
-        if ( descriptor != null )
-        {
-            return constructUserMessage( context, tokenNameLookup, descriptor );
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
+        if (descriptor != null) {
+            return constructUserMessage(context, tokenNameLookup, descriptor);
         }
         return "Already indexed.";
     }

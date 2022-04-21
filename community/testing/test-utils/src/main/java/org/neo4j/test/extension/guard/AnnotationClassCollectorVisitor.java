@@ -19,23 +19,19 @@
  */
 package org.neo4j.test.extension.guard;
 
+import java.util.Set;
 import org.objectweb.asm.AnnotationVisitor;
 
-import java.util.Set;
-
-public class AnnotationClassCollectorVisitor extends AnnotationVisitor
-{
+public class AnnotationClassCollectorVisitor extends AnnotationVisitor {
     private final Set<String> descriptors;
 
-    AnnotationClassCollectorVisitor( int apiVersion, Set<String> descriptors )
-    {
-        super( apiVersion );
+    AnnotationClassCollectorVisitor(int apiVersion, Set<String> descriptors) {
+        super(apiVersion);
         this.descriptors = descriptors;
     }
 
     @Override
-    public void visitEnum( String name, String descriptor, String value )
-    {
-        descriptors.add( descriptor );
+    public void visitEnum(String name, String descriptor, String value) {
+        descriptors.add(descriptor);
     }
 }

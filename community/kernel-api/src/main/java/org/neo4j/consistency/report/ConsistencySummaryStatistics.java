@@ -27,77 +27,67 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ConsistencySummaryStatistics
-{
-    private final Map<String,AtomicInteger> inconsistenciesPerType = new ConcurrentHashMap<>();
+public class ConsistencySummaryStatistics {
+    private final Map<String, AtomicInteger> inconsistenciesPerType = new ConcurrentHashMap<>();
     private final AtomicLong errorCount = new AtomicLong();
     private final AtomicLong warningCount = new AtomicLong();
     private final List<String> genericErrors = new CopyOnWriteArrayList<>();
 
     @Override
-    public String toString()
-    {
-        StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( '{' );
-        result.append( "\n\tNumber of errors: " ).append( errorCount );
-        result.append( "\n\tNumber of warnings: " ).append( warningCount );
-        for ( Map.Entry<String, AtomicInteger> entry : inconsistenciesPerType.entrySet() )
-        {
-            if ( entry.getValue().get() != 0 )
-            {
-                result.append( "\n\tNumber of inconsistent " )
-                      .append( entry.getKey() ).append( " records: " ).append( entry.getValue() );
+    public String toString() {
+        StringBuilder result = new StringBuilder(getClass().getSimpleName()).append('{');
+        result.append("\n\tNumber of errors: ").append(errorCount);
+        result.append("\n\tNumber of warnings: ").append(warningCount);
+        for (Map.Entry<String, AtomicInteger> entry : inconsistenciesPerType.entrySet()) {
+            if (entry.getValue().get() != 0) {
+                result.append("\n\tNumber of inconsistent ")
+                        .append(entry.getKey())
+                        .append(" records: ")
+                        .append(entry.getValue());
             }
         }
-        if ( !genericErrors.isEmpty() )
-        {
-            result.append( "\n\tGeneric errors: " );
-            genericErrors.forEach( message -> result.append( "\n\t\t" ).append( message ) );
+        if (!genericErrors.isEmpty()) {
+            result.append("\n\tGeneric errors: ");
+            genericErrors.forEach(message -> result.append("\n\t\t").append(message));
         }
-        return result.append( "\n}" ).toString();
+        return result.append("\n}").toString();
     }
 
-    public boolean isConsistent()
-    {
+    public boolean isConsistent() {
         return getTotalInconsistencyCount() == 0;
     }
 
-    public int getInconsistencyCountForRecordType( String type )
-    {
-        AtomicInteger count = inconsistenciesPerType.get( type );
+    public int getInconsistencyCountForRecordType(String type) {
+        AtomicInteger count = inconsistenciesPerType.get(type);
         return count != null ? count.get() : 0;
     }
 
-    public long getTotalInconsistencyCount()
-    {
+    public long getTotalInconsistencyCount() {
         return errorCount.get() - genericErrors.size();
     }
 
-    public long getTotalWarningCount()
-    {
+    public long getTotalWarningCount() {
         return warningCount.get();
     }
 
-    public List<String> getGenericErrors()
-    {
-        return Collections.unmodifiableList( genericErrors );
+    public List<String> getGenericErrors() {
+        return Collections.unmodifiableList(genericErrors);
     }
 
-    public void update( String type, int errors, int warnings )
-    {
-        if ( errors > 0 )
-        {
-            inconsistenciesPerType.computeIfAbsent( type, t -> new AtomicInteger() ).addAndGet( errors );
-            errorCount.addAndGet( errors );
+    public void update(String type, int errors, int warnings) {
+        if (errors > 0) {
+            inconsistenciesPerType
+                    .computeIfAbsent(type, t -> new AtomicInteger())
+                    .addAndGet(errors);
+            errorCount.addAndGet(errors);
         }
-        if ( warnings > 0 )
-        {
-            warningCount.addAndGet( warnings );
+        if (warnings > 0) {
+            warningCount.addAndGet(warnings);
         }
     }
 
-    public void genericError( String message )
-    {
-        errorCount.addAndGet( 1 );
-        genericErrors.add( message );
+    public void genericError(String message) {
+        errorCount.addAndGet(1);
+        genericErrors.add(message);
     }
 }

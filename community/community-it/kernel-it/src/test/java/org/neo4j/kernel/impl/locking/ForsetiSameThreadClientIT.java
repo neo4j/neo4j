@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -31,47 +32,42 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 @DbmsExtension()
-class ForsetiSameThreadClientIT
-{
+class ForsetiSameThreadClientIT {
     @Inject
     GraphDatabaseAPI database;
+
     @Inject
     DatabaseManagementService managementService;
 
     @Test
-    void shouldDetectDeadlockForCommitListeners()
-    {
-        //Given
+    void shouldDetectDeadlockForCommitListeners() {
+        // Given
         long nodeId;
-        try ( Transaction tx = database.beginTx() )
-        {
+        try (Transaction tx = database.beginTx()) {
             nodeId = tx.createNode().getId();
             tx.commit();
         }
 
-        managementService.registerTransactionEventListener( database.databaseName(), new TransactionEventListenerAdapter<Void>()
-        {
-            @Override
-            public void afterCommit( TransactionData data, Void state, GraphDatabaseService databaseService )
-            {
-                try ( Transaction tx = database.beginTx() )
-                {
-                    tx.acquireReadLock( tx.getNodeById( nodeId ) );
-                }
-            }
-        } );
+        managementService.registerTransactionEventListener(
+                database.databaseName(), new TransactionEventListenerAdapter<Void>() {
+                    @Override
+                    public void afterCommit(TransactionData data, Void state, GraphDatabaseService databaseService) {
+                        try (Transaction tx = database.beginTx()) {
+                            tx.acquireReadLock(tx.getNodeById(nodeId));
+                        }
+                    }
+                });
 
-        //When
-        try ( Transaction tx = database.beginTx() )
-        {
-            tx.createNode(); //Make it a write tx to trigger afterCommit events
-            tx.acquireWriteLock( tx.getNodeById( nodeId ) );
+        // When
+        try (Transaction tx = database.beginTx()) {
+            tx.createNode(); // Make it a write tx to trigger afterCommit events
+            tx.acquireWriteLock(tx.getNodeById(nodeId));
 
-            //Then
-            assertThatThrownBy( tx::commit ).isInstanceOf( DeadlockDetectedException.class ).hasMessageContaining( "committing on the same thread" );
+            // Then
+            assertThatThrownBy(tx::commit)
+                    .isInstanceOf(DeadlockDetectedException.class)
+                    .hasMessageContaining("committing on the same thread");
         }
     }
 }

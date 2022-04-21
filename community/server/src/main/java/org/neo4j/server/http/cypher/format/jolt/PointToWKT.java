@@ -19,26 +19,23 @@
  */
 package org.neo4j.server.http.cypher.format.jolt;
 
-import java.util.function.Function;
-
-import org.neo4j.graphdb.spatial.Point;
-
 import static java.util.stream.Collectors.joining;
 
-final class PointToWKT implements Function<Point,String>
-{
+import java.util.function.Function;
+import org.neo4j.graphdb.spatial.Point;
+
+final class PointToWKT implements Function<Point, String> {
     @Override
-    public String apply( Point point )
-    {
+    public String apply(Point point) {
         var coordinates = point.getCoordinate().getCoordinate();
         var wkt = new StringBuilder()
-                .append( "SRID=" )
-                .append( point.getCRS().getCode() )
-                .append( ";POINT" )
-                .append( coordinates.size() == 3 ? " Z " : "" )
-                .append( "(" )
-                .append( coordinates.stream().map( String::valueOf ).collect( joining( " " ) ) )
-                .append( ")" );
+                .append("SRID=")
+                .append(point.getCRS().getCode())
+                .append(";POINT")
+                .append(coordinates.size() == 3 ? " Z " : "")
+                .append("(")
+                .append(coordinates.stream().map(String::valueOf).collect(joining(" ")))
+                .append(")");
         return wkt.toString();
     }
 }

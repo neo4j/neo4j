@@ -20,39 +20,34 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 @ImpermanentDbmsExtension
-class CreateAndDeleteNodesIT
-{
+class CreateAndDeleteNodesIT {
     @Inject
     private GraphDatabaseService db;
 
-    enum RelTypes implements RelationshipType
-    {
+    enum RelTypes implements RelationshipType {
         ASD
     }
 
     @Test
-    void creatingAndDeletingEntitiesShouldNotThrow()
-    {
+    void creatingAndDeletingEntitiesShouldNotThrow() {
         // Given
         Node myNode;
 
         // When
-        try ( Transaction bobTransaction = db.beginTx() )
-        {
+        try (Transaction bobTransaction = db.beginTx()) {
             myNode = bobTransaction.createNode();
-            myNode.setProperty( "Name", "Bob" );
+            myNode.setProperty("Name", "Bob");
 
-            myNode.createRelationshipTo( bobTransaction.createNode(), RelTypes.ASD );
+            myNode.createRelationshipTo(bobTransaction.createNode(), RelTypes.ASD);
             bobTransaction.commit();
         }
 
         // When
-        GraphDatabaseServiceCleaner.cleanupAllRelationshipsAndNodes( db );
+        GraphDatabaseServiceCleaner.cleanupAllRelationshipsAndNodes(db);
     }
 }

@@ -39,7 +39,7 @@ class SemanticTypeCheckTest extends CypherFunSuite {
   test("should fail if pattern expression is used wherever we don't expect a boolean value") {
     val queries = Seq(
       "MATCH (a) RETURN (a)--()",
-      "MATCH (a) WHERE ANY (x IN (a)--() WHERE 1=1) RETURN a",
+      "MATCH (a) WHERE ANY (x IN (a)--() WHERE 1=1) RETURN a"
     )
 
     queries.foreach { query =>
@@ -66,8 +66,7 @@ class SemanticTypeCheckTest extends CypherFunSuite {
         |    WHEN (actor)-[:WON]->(:GoldenGlobe) THEN 'Golden Globe winner'
         |    ELSE 'None'
         |  END AS accolade
-        |""".stripMargin
-      ,
+        |""".stripMargin,
       """
         |MATCH (movie:Movie)<-[:ACTED_IN]-(actor:Actor)
         |WITH movie, collect(actor) AS cast

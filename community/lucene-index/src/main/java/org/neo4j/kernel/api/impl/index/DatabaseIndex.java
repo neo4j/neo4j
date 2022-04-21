@@ -23,21 +23,18 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 
 /**
  * Lucene index that may consist of one or multiple separate lucene indexes that are represented as independent
  * {@link AbstractIndexPartition partitions}.
  */
-public interface DatabaseIndex<READER extends ValueIndexReader> extends Closeable
-{
+public interface DatabaseIndex<READER extends ValueIndexReader> extends Closeable {
     /**
      * Creates new index.
      * As part of creation process index will allocate all required folders, index failure storage
@@ -153,5 +150,5 @@ public interface DatabaseIndex<READER extends ValueIndexReader> extends Closeabl
      * @param failure the failure message.
      * @throws IOException
      */
-    void markAsFailed( String failure ) throws IOException;
+    void markAsFailed(String failure) throws IOException;
 }

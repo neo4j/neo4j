@@ -19,58 +19,50 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @TestDirectoryExtension
-class ValidatorsTest
-{
+class ValidatorsTest {
     @Inject
     private TestDirectory directory;
 
     @Test
-    void shouldFindFilesByRegex() throws Exception
-    {
+    void shouldFindFilesByRegex() throws Exception {
         // GIVEN
-        existenceOfFile( "abc" );
-        existenceOfFile( "bcd" );
+        existenceOfFile("abc");
+        existenceOfFile("bcd");
 
         // WHEN/THEN
-        assertValid( "abc" );
-        assertValid( "bcd" );
-        assertValid( "ab." );
-        assertValid( ".*bc" );
-        assertNotValid( "abcd" );
-        assertNotValid( ".*de.*" );
+        assertValid("abc");
+        assertValid("bcd");
+        assertValid("ab.");
+        assertValid(".*bc");
+        assertNotValid("abcd");
+        assertNotValid(".*de.*");
     }
 
-    private void assertNotValid( String string )
-    {
-        assertThrows( IllegalArgumentException.class, () -> validate( string ) );
+    private void assertNotValid(String string) {
+        assertThrows(IllegalArgumentException.class, () -> validate(string));
     }
 
-    private void assertValid( String fileByName )
-    {
-        validate( fileByName );
+    private void assertValid(String fileByName) {
+        validate(fileByName);
     }
 
-    private void validate( String fileByName )
-    {
+    private void validate(String fileByName) {
         Path home = directory.homePath();
-        Validators.REGEX_FILE_EXISTS.validate( home + home.getFileSystem().getSeparator() + fileByName );
+        Validators.REGEX_FILE_EXISTS.validate(home + home.getFileSystem().getSeparator() + fileByName);
     }
 
-    private void existenceOfFile( String name ) throws IOException
-    {
-        Files.createFile( directory.file( name ) );
+    private void existenceOfFile(String name) throws IOException {
+        Files.createFile(directory.file(name));
     }
 }

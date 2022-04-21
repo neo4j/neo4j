@@ -19,8 +19,7 @@
  */
 package org.neo4j.io.layout;
 
-public interface DatabaseFile
-{
+public interface DatabaseFile {
     String getName();
 
     boolean hasIdFile();

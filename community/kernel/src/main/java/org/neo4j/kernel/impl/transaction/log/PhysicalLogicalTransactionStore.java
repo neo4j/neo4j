@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.pre_sketch_transaction_logs;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
+
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -37,12 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedTransactionCursorMo
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.pre_sketch_transaction_logs;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
-
-public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
-{
+public class PhysicalLogicalTransactionStore implements LogicalTransactionStore {
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
     private final CommandReaderFactory commandReaderFactory;
@@ -50,145 +48,133 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     private final boolean failOnCorruptedLogFiles;
     private final boolean presketchLogFiles;
 
-    public PhysicalLogicalTransactionStore( LogFiles logFiles,
-                                            TransactionMetadataCache transactionMetadataCache,
-                                            CommandReaderFactory commandReaderFactory, Monitors monitors,
-                                            boolean failOnCorruptedLogFiles, Config config )
-    {
+    public PhysicalLogicalTransactionStore(
+            LogFiles logFiles,
+            TransactionMetadataCache transactionMetadataCache,
+            CommandReaderFactory commandReaderFactory,
+            Monitors monitors,
+            boolean failOnCorruptedLogFiles,
+            Config config) {
         this.logFile = logFiles.getLogFile();
         this.transactionMetadataCache = transactionMetadataCache;
         this.commandReaderFactory = commandReaderFactory;
         this.monitors = monitors;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
-        this.presketchLogFiles = config.get( pre_sketch_transaction_logs );
+        this.presketchLogFiles = config.get(pre_sketch_transaction_logs);
     }
 
     @Override
-    public TransactionCursor getTransactions( LogPosition position ) throws IOException
-    {
-        return new PhysicalTransactionCursor( logFile.getReader( position ), new VersionAwareLogEntryReader( commandReaderFactory ) );
+    public TransactionCursor getTransactions(LogPosition position) throws IOException {
+        return new PhysicalTransactionCursor(
+                logFile.getReader(position), new VersionAwareLogEntryReader(commandReaderFactory));
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition )
-    {
-        return ReversedMultiFileTransactionCursor
-                .fromLogFile( logFile, backToPosition, new VersionAwareLogEntryReader( commandReaderFactory ), failOnCorruptedLogFiles,
-                        monitors.newMonitor( ReversedTransactionCursorMonitor.class ), presketchLogFiles );
+    public TransactionCursor getTransactionsInReverseOrder(LogPosition backToPosition) {
+        return ReversedMultiFileTransactionCursor.fromLogFile(
+                logFile,
+                backToPosition,
+                new VersionAwareLogEntryReader(commandReaderFactory),
+                failOnCorruptedLogFiles,
+                monitors.newMonitor(ReversedTransactionCursorMonitor.class),
+                presketchLogFiles);
     }
 
     @Override
-    public TransactionCursor getTransactions( final long transactionIdToStartFrom ) throws IOException
-    {
+    public TransactionCursor getTransactions(final long transactionIdToStartFrom) throws IOException {
         // look up in position cache
-        try
-        {
-            var logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
-            TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom );
-            if ( transactionMetadata != null )
-            {
+        try {
+            var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory);
+            TransactionMetadataCache.TransactionMetadata transactionMetadata =
+                    transactionMetadataCache.getTransactionMetadata(transactionIdToStartFrom);
+            if (transactionMetadata != null) {
                 // we're good
-                var channel = logFile.getReader( transactionMetadata.getStartPosition() );
-                return new PhysicalTransactionCursor( channel, logEntryReader );
+                var channel = logFile.getReader(transactionMetadata.getStartPosition());
+                return new PhysicalTransactionCursor(channel, logEntryReader);
             }
 
             // ask logFiles about the version it may be in
-            var headerVisitor = new LogVersionLocator( transactionIdToStartFrom );
-            logFile.accept( headerVisitor );
+            var headerVisitor = new LogVersionLocator(transactionIdToStartFrom);
+            logFile.accept(headerVisitor);
 
             // ask LogFile
-            var transactionPositionLocator = new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
-            logFile.accept( transactionPositionLocator, headerVisitor.getLogPosition() );
+            var transactionPositionLocator = new TransactionPositionLocator(transactionIdToStartFrom, logEntryReader);
+            logFile.accept(transactionPositionLocator, headerVisitor.getLogPosition());
             var position = transactionPositionLocator.getLogPosition();
-            transactionMetadataCache.cacheTransactionMetadata( transactionIdToStartFrom, position );
-            return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
-        }
-        catch ( NoSuchFileException e )
-        {
+            transactionMetadataCache.cacheTransactionMetadata(transactionIdToStartFrom, position);
+            return new PhysicalTransactionCursor(logFile.getReader(position), logEntryReader);
+        } catch (NoSuchFileException e) {
             throw new NoSuchTransactionException(
                     transactionIdToStartFrom,
-                    "Log position acquired, but couldn't find the log file itself. Perhaps it just recently was " +
-                    "deleted? [" + e.getMessage() + "]",
-                    e );
+                    "Log position acquired, but couldn't find the log file itself. Perhaps it just recently was "
+                            + "deleted? [" + e.getMessage() + "]",
+                    e);
         }
     }
 
-    public static class TransactionPositionLocator implements LogFile.LogFileVisitor
-    {
+    public static class TransactionPositionLocator implements LogFile.LogFileVisitor {
         private final long startTransactionId;
         private final LogEntryReader logEntryReader;
         private LogEntryStart transactionStartEntry;
 
-        TransactionPositionLocator( long startTransactionId, LogEntryReader logEntryReader )
-        {
+        TransactionPositionLocator(long startTransactionId, LogEntryReader logEntryReader) {
             this.startTransactionId = startTransactionId;
             this.logEntryReader = logEntryReader;
         }
 
         @Override
-        public boolean visit( ReadableClosablePositionAwareChecksumChannel channel ) throws IOException
-        {
+        public boolean visit(ReadableClosablePositionAwareChecksumChannel channel) throws IOException {
             LogEntry logEntry;
             LogEntryStart startEntry = null;
-            while ( (logEntry = logEntryReader.readLogEntry( channel )) != null )
-            {
-                switch ( logEntry.getType() )
-                {
-                case TX_START:
-                    startEntry = (LogEntryStart) logEntry;
-                    break;
-                case TX_COMMIT:
-                    LogEntryCommit commit = (LogEntryCommit) logEntry;
-                    if ( commit.getTxId() == startTransactionId )
-                    {
-                        transactionStartEntry = startEntry;
-                        return false;
-                    }
-                    break;
-                default: // just skip commands
-                    break;
+            while ((logEntry = logEntryReader.readLogEntry(channel)) != null) {
+                switch (logEntry.getType()) {
+                    case TX_START:
+                        startEntry = (LogEntryStart) logEntry;
+                        break;
+                    case TX_COMMIT:
+                        LogEntryCommit commit = (LogEntryCommit) logEntry;
+                        if (commit.getTxId() == startTransactionId) {
+                            transactionStartEntry = startEntry;
+                            return false;
+                        }
+                        break;
+                    default: // just skip commands
+                        break;
                 }
             }
             return true;
         }
 
-        LogPosition getLogPosition() throws NoSuchTransactionException
-        {
-            if ( transactionStartEntry == null )
-            {
-                throw new NoSuchTransactionException( startTransactionId );
+        LogPosition getLogPosition() throws NoSuchTransactionException {
+            if (transactionStartEntry == null) {
+                throw new NoSuchTransactionException(startTransactionId);
             }
             return transactionStartEntry.getStartPosition();
         }
     }
 
-    public static final class LogVersionLocator implements LogHeaderVisitor
-    {
+    public static final class LogVersionLocator implements LogHeaderVisitor {
         private final long transactionId;
         private LogPosition foundPosition;
 
-        public LogVersionLocator( long transactionId )
-        {
+        public LogVersionLocator(long transactionId) {
             this.transactionId = transactionId;
         }
 
         @Override
-        public boolean visit( LogHeader logHeader, LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog )
-        {
-            boolean foundIt = transactionId >= firstTransactionIdInLog &&
-                              transactionId <= lastTransactionIdInLog;
-            if ( foundIt )
-            {
+        public boolean visit(
+                LogHeader logHeader, LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog) {
+            boolean foundIt = transactionId >= firstTransactionIdInLog && transactionId <= lastTransactionIdInLog;
+            if (foundIt) {
                 foundPosition = position;
             }
             return !foundIt; // continue as long we don't find it
         }
 
-        public LogPosition getLogPosition() throws NoSuchTransactionException
-        {
-            if ( foundPosition == null )
-            {
-                throw new NoSuchTransactionException( transactionId, "Couldn't find any log containing " + transactionId );
+        public LogPosition getLogPosition() throws NoSuchTransactionException {
+            if (foundPosition == null) {
+                throw new NoSuchTransactionException(
+                        transactionId, "Couldn't find any log containing " + transactionId);
             }
             return foundPosition;
         }

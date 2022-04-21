@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
+import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
-
 import org.neo4j.collection.PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.Configuration;
@@ -41,20 +44,15 @@ import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
-import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-
 /**
  * Scan store with the view given by iterator created by {@link #getEntityIdIterator(CursorContext, StoreCursors)}. This might be a full scan of the store
  * or a partial scan backed by the node label index.
  *
  * @param <CURSOR> the type of cursor used to read the records.
  */
-public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor<?>> implements StoreScan
-{
+public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor<?>> implements StoreScan {
     protected final StorageReader storageReader;
-    private final Function<CursorContext,StoreCursors> storeCursorsFactory;
+    private final Function<CursorContext, StoreCursors> storeCursorsFactory;
     protected final EntityScanCursorBehaviour<CURSOR> cursorBehaviour;
     private final boolean parallelWrite;
     private final JobScheduler scheduler;
@@ -71,11 +69,21 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     protected final PropertyScanConsumer propertyScanConsumer;
     private volatile StoreScanStage<CURSOR> stage;
 
-    protected PropertyAwareEntityStoreScan( Config config, StorageReader storageReader, Function<CursorContext,StoreCursors> storeCursorsFactory,
-            long totalEntityCount, int[] entityTokenIdFilter, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
-            TokenScanConsumer tokenScanConsumer, LongFunction<Lock> lockFunction, EntityScanCursorBehaviour<CURSOR> cursorBehaviour, boolean parallelWrite,
-            JobScheduler scheduler, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
+    protected PropertyAwareEntityStoreScan(
+            Config config,
+            StorageReader storageReader,
+            Function<CursorContext, StoreCursors> storeCursorsFactory,
+            long totalEntityCount,
+            int[] entityTokenIdFilter,
+            IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer tokenScanConsumer,
+            LongFunction<Lock> lockFunction,
+            EntityScanCursorBehaviour<CURSOR> cursorBehaviour,
+            boolean parallelWrite,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         this.storageReader = storageReader;
         this.storeCursorsFactory = storeCursorsFactory;
         this.cursorBehaviour = cursorBehaviour;
@@ -94,36 +102,45 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     }
 
     @Override
-    public void run( ExternalUpdatesCheck externalUpdatesCheck )
-    {
-        try
-        {
-            continueScanning.set( true );
-            stage = new StoreScanStage<>( dbConfig, Configuration.DEFAULT, this::getEntityIdIterator, externalUpdatesCheck, continueScanning, storageReader,
-                    storeCursorsFactory, entityTokenIdFilter, propertyKeyIdFilter, propertyScanConsumer, tokenScanConsumer, cursorBehaviour, lockFunction,
-                    parallelWrite, scheduler, contextFactory, memoryTracker );
-            superviseDynamicExecution( INVISIBLE, stage );
-            stage.reportTo( phaseTracker );
-        }
-        finally
-        {
-            closeAllUnchecked( storageReader );
+    public void run(ExternalUpdatesCheck externalUpdatesCheck) {
+        try {
+            continueScanning.set(true);
+            stage = new StoreScanStage<>(
+                    dbConfig,
+                    Configuration.DEFAULT,
+                    this::getEntityIdIterator,
+                    externalUpdatesCheck,
+                    continueScanning,
+                    storageReader,
+                    storeCursorsFactory,
+                    entityTokenIdFilter,
+                    propertyKeyIdFilter,
+                    propertyScanConsumer,
+                    tokenScanConsumer,
+                    cursorBehaviour,
+                    lockFunction,
+                    parallelWrite,
+                    scheduler,
+                    contextFactory,
+                    memoryTracker);
+            superviseDynamicExecution(INVISIBLE, stage);
+            stage.reportTo(phaseTracker);
+        } finally {
+            closeAllUnchecked(storageReader);
         }
     }
 
     @Override
-    public void stop()
-    {
-        continueScanning.set( false );
+    public void stop() {
+        continueScanning.set(false);
     }
 
     @Override
-    public PopulationProgress getProgress()
-    {
+    public PopulationProgress getProgress() {
         StoreScanStage<CURSOR> observedStage = stage;
-        if ( totalCount > 0 || observedStage == null )
-        {
-            return PopulationProgress.single( observedStage != null ? observedStage.numberOfIteratedEntities() : 0, totalCount );
+        if (totalCount > 0 || observedStage == null) {
+            return PopulationProgress.single(
+                    observedStage != null ? observedStage.numberOfIteratedEntities() : 0, totalCount);
         }
 
         // nothing to do 100% completed
@@ -131,38 +148,32 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     }
 
     @Override
-    public void setPhaseTracker( PhaseTracker phaseTracker )
-    {
+    public void setPhaseTracker(PhaseTracker phaseTracker) {
         this.phaseTracker = phaseTracker;
     }
 
-    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        return new CursorEntityIdIterator<>( cursorBehaviour.allocateEntityScanCursor( cursorContext, storeCursors ) );
+    public EntityIdIterator getEntityIdIterator(CursorContext cursorContext, StoreCursors storeCursors) {
+        return new CursorEntityIdIterator<>(cursorBehaviour.allocateEntityScanCursor(cursorContext, storeCursors));
     }
 
-    static class CursorEntityIdIterator<CURSOR extends StorageEntityScanCursor<?>> extends AbstractPrimitiveLongBaseResourceIterator
-            implements EntityIdIterator
-    {
+    static class CursorEntityIdIterator<CURSOR extends StorageEntityScanCursor<?>>
+            extends AbstractPrimitiveLongBaseResourceIterator implements EntityIdIterator {
         private final CURSOR entityCursor;
 
-        CursorEntityIdIterator( CURSOR entityCursor )
-        {
-            super( entityCursor::close );
+        CursorEntityIdIterator(CURSOR entityCursor) {
+            super(entityCursor::close);
             this.entityCursor = entityCursor;
             entityCursor.scan();
         }
 
         @Override
-        public void invalidateCache()
-        {
+        public void invalidateCache() {
             // Nothing to invalidate, we're reading directly from the store
         }
 
         @Override
-        protected boolean fetchNext()
-        {
-            return entityCursor.next() && next( entityCursor.entityReference() );
+        protected boolean fetchNext() {
+            return entityCursor.next() && next(entityCursor.entityReference());
         }
     }
 }

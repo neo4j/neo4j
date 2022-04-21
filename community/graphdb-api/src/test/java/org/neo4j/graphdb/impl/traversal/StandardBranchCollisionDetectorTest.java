@@ -19,14 +19,17 @@
  */
 package org.neo4j.graphdb.impl.traversal;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.Collection;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
@@ -35,54 +38,44 @@ import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-class StandardBranchCollisionDetectorTest
-{
+class StandardBranchCollisionDetectorTest {
     @Test
-    void testFilteredPathEvaluation()
-    {
-        final Entity endNode = mock( Node.class );
-        final Entity alternativeEndNode = mock( Node.class );
-        final Node startNode = mock( Node.class );
-        Evaluator evaluator = mock( Evaluator.class );
-        TraversalBranch branch = mock( TraversalBranch.class );
-        TraversalBranch alternativeBranch = mock( TraversalBranch.class );
+    void testFilteredPathEvaluation() {
+        final Entity endNode = mock(Node.class);
+        final Entity alternativeEndNode = mock(Node.class);
+        final Node startNode = mock(Node.class);
+        Evaluator evaluator = mock(Evaluator.class);
+        TraversalBranch branch = mock(TraversalBranch.class);
+        TraversalBranch alternativeBranch = mock(TraversalBranch.class);
 
-        when( branch.iterator() ).thenAnswer( new IteratorAnswer( endNode ) );
-        when( alternativeBranch.iterator() ).thenAnswer( new IteratorAnswer( alternativeEndNode ) );
-        when( alternativeBranch.startNode() ).thenReturn( startNode );
-        when( evaluator.evaluate( Mockito.any( Path.class ) ) ).thenReturn( Evaluation.INCLUDE_AND_CONTINUE );
-        StandardBranchCollisionDetector collisionDetector = new StandardBranchCollisionDetector( evaluator,
-                path -> alternativeEndNode.equals( path.endNode() ) && startNode.equals( path.startNode() ) );
+        when(branch.iterator()).thenAnswer(new IteratorAnswer(endNode));
+        when(alternativeBranch.iterator()).thenAnswer(new IteratorAnswer(alternativeEndNode));
+        when(alternativeBranch.startNode()).thenReturn(startNode);
+        when(evaluator.evaluate(Mockito.any(Path.class))).thenReturn(Evaluation.INCLUDE_AND_CONTINUE);
+        StandardBranchCollisionDetector collisionDetector = new StandardBranchCollisionDetector(
+                evaluator, path -> alternativeEndNode.equals(path.endNode()) && startNode.equals(path.startNode()));
 
-        Collection<Path> incoming = collisionDetector.evaluate( branch, Direction.INCOMING );
-        Collection<Path> outgoing = collisionDetector.evaluate( branch, Direction.OUTGOING );
-        Collection<Path> alternativeIncoming = collisionDetector.evaluate( alternativeBranch, Direction.INCOMING );
-        Collection<Path> alternativeOutgoing = collisionDetector.evaluate( alternativeBranch, Direction.OUTGOING );
+        Collection<Path> incoming = collisionDetector.evaluate(branch, Direction.INCOMING);
+        Collection<Path> outgoing = collisionDetector.evaluate(branch, Direction.OUTGOING);
+        Collection<Path> alternativeIncoming = collisionDetector.evaluate(alternativeBranch, Direction.INCOMING);
+        Collection<Path> alternativeOutgoing = collisionDetector.evaluate(alternativeBranch, Direction.OUTGOING);
 
-        assertNull( incoming );
-        assertNull( outgoing );
-        assertNull( alternativeIncoming );
-        assertEquals( 1, alternativeOutgoing.size() );
+        assertNull(incoming);
+        assertNull(outgoing);
+        assertNull(alternativeIncoming);
+        assertEquals(1, alternativeOutgoing.size());
     }
 
-    private static class IteratorAnswer implements Answer<Object>
-    {
+    private static class IteratorAnswer implements Answer<Object> {
         private final Entity endNode;
 
-        IteratorAnswer( Entity endNode )
-        {
+        IteratorAnswer(Entity endNode) {
             this.endNode = endNode;
         }
 
         @Override
-        public Object answer( InvocationOnMock invocation )
-        {
-            return Arrays.asList( endNode ).iterator();
+        public Object answer(InvocationOnMock invocation) {
+            return Arrays.asList(endNode).iterator();
         }
     }
 }

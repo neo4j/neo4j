@@ -19,10 +19,13 @@
  */
 package org.neo4j.server.http.cypher;
 
+import static java.lang.Math.round;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
-
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -36,15 +39,10 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
-import static java.lang.Math.round;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
-
 /**
  * An entry point for managing transaction in HTTP API.
  */
-public class HttpTransactionManager
-{
+public class HttpTransactionManager {
     private final TransactionHandleRegistry transactionRegistry;
     private final DatabaseManagementService managementService;
     private final JobScheduler jobScheduler;
@@ -56,11 +54,17 @@ public class HttpTransactionManager
     private final Clock clock;
     private final boolean readByDefault;
 
-    public HttpTransactionManager( DatabaseManagementService managementService, MemoryPool memoryPool,
-                                   JobScheduler jobScheduler, Clock clock, Duration transactionTimeout,
-                                   InternalLogProvider userLogProvider, TransactionManager transactionManager, BoltGraphDatabaseManagementServiceSPI boltSPI,
-                                   AuthManager authManager, boolean readByDefault )
-    {
+    public HttpTransactionManager(
+            DatabaseManagementService managementService,
+            MemoryPool memoryPool,
+            JobScheduler jobScheduler,
+            Clock clock,
+            Duration transactionTimeout,
+            InternalLogProvider userLogProvider,
+            TransactionManager transactionManager,
+            BoltGraphDatabaseManagementServiceSPI boltSPI,
+            AuthManager authManager,
+            boolean readByDefault) {
         this.managementService = managementService;
         this.jobScheduler = jobScheduler;
         this.transactionManager = transactionManager;
@@ -71,8 +75,8 @@ public class HttpTransactionManager
         this.clock = clock;
         this.readByDefault = readByDefault;
 
-        transactionRegistry = new TransactionHandleRegistry( clock, transactionTimeout, userLogProvider, memoryPool );
-        scheduleTransactionTimeout( transactionTimeout );
+        transactionRegistry = new TransactionHandleRegistry(clock, transactionTimeout, userLogProvider, memoryPool);
+        scheduleTransactionTimeout(transactionTimeout);
     }
 
     /**
@@ -81,54 +85,66 @@ public class HttpTransactionManager
      * @param databaseName database name.
      * @return a transaction facade or {@code null} if a database with the supplied database name does not exist.
      */
-    public Optional<GraphDatabaseAPI> getGraphDatabaseAPI( String databaseName )
-    {
+    public Optional<GraphDatabaseAPI> getGraphDatabaseAPI(String databaseName) {
         Optional<GraphDatabaseAPI> database;
-        try
-        {
-            database = Optional.of( (GraphDatabaseAPI) managementService.database( databaseName ) );
-        }
-        catch ( DatabaseNotFoundException e )
-        {
+        try {
+            database = Optional.of((GraphDatabaseAPI) managementService.database(databaseName));
+        } catch (DatabaseNotFoundException e) {
             database = Optional.empty();
         }
         return database;
     }
 
-    public TransactionHandleRegistry getTransactionHandleRegistry()
-    {
+    public TransactionHandleRegistry getTransactionHandleRegistry() {
         return transactionRegistry;
     }
 
-    public TransactionFacade createTransactionFacade( GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker, String databaseName )
-    {
+    public TransactionFacade createTransactionFacade(
+            GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker, String databaseName) {
         var dependencyResolver = databaseAPI.getDependencyResolver();
 
-        memoryTracker.allocateHeap( TransactionFacade.SHALLOW_SIZE );
-        return new TransactionFacade( databaseName,
-                dependencyResolver.resolveDependency( QueryExecutionEngine.class ), transactionRegistry,
-                                      transactionManager, userLogProvider, boltSPI, authManager, readByDefault );
+        memoryTracker.allocateHeap(TransactionFacade.SHALLOW_SIZE);
+        return new TransactionFacade(
+                databaseName,
+                dependencyResolver.resolveDependency(QueryExecutionEngine.class),
+                transactionRegistry,
+                transactionManager,
+                userLogProvider,
+                boltSPI,
+                authManager,
+                readByDefault);
     }
 
-    public TransactionFacade createTransactionFacade( GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker, String databaseName,
-                                                      boolean isReadOnlyTransaction )
-    {
+    public TransactionFacade createTransactionFacade(
+            GraphDatabaseAPI databaseAPI,
+            MemoryTracker memoryTracker,
+            String databaseName,
+            boolean isReadOnlyTransaction) {
         var dependencyResolver = databaseAPI.getDependencyResolver();
 
-        memoryTracker.allocateHeap( TransactionFacade.SHALLOW_SIZE );
-        return new TransactionFacade( databaseName,
-                                      dependencyResolver.resolveDependency( QueryExecutionEngine.class ), transactionRegistry,
-                                      transactionManager, userLogProvider, boltSPI, authManager, isReadOnlyTransaction );
+        memoryTracker.allocateHeap(TransactionFacade.SHALLOW_SIZE);
+        return new TransactionFacade(
+                databaseName,
+                dependencyResolver.resolveDependency(QueryExecutionEngine.class),
+                transactionRegistry,
+                transactionManager,
+                userLogProvider,
+                boltSPI,
+                authManager,
+                isReadOnlyTransaction);
     }
 
-    private void scheduleTransactionTimeout( Duration timeout )
-    {
+    private void scheduleTransactionTimeout(Duration timeout) {
         long timeoutMillis = timeout.toMillis();
-        long runEvery = round( timeoutMillis / 2.0 );
-        jobScheduler.scheduleRecurring( Group.SERVER_TRANSACTION_TIMEOUT, systemJob( "Timeout of HTTP transactions" ), () ->
-        {
-            long maxAge = clock.millis() - timeoutMillis;
-            transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
-        }, runEvery, MILLISECONDS );
+        long runEvery = round(timeoutMillis / 2.0);
+        jobScheduler.scheduleRecurring(
+                Group.SERVER_TRANSACTION_TIMEOUT,
+                systemJob("Timeout of HTTP transactions"),
+                () -> {
+                    long maxAge = clock.millis() - timeoutMillis;
+                    transactionRegistry.rollbackSuspendedTransactionsIdleSince(maxAge);
+                },
+                runEvery,
+                MILLISECONDS);
     }
 }

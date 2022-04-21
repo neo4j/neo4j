@@ -19,61 +19,56 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.graphdb.WriteOperationsNotAllowedException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class AccessCapabilityFactoryTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.graphdb.WriteOperationsNotAllowedException;
+
+class AccessCapabilityFactoryTest {
     private final DatabaseReadOnlyChecker readWriteChecker = DatabaseReadOnlyChecker.writable();
     private final DatabaseReadOnlyChecker readOnlyChecker = DatabaseReadOnlyChecker.readOnly();
 
     @Test
-    void shouldCreateConfigDependentFactoryForReadWriteConfig()
-    {
+    void shouldCreateConfigDependentFactoryForReadWriteConfig() {
         var factory = AccessCapabilityFactory.configDependent();
 
-        var accessCapability = factory.newAccessCapability( readWriteChecker );
+        var accessCapability = factory.newAccessCapability(readWriteChecker);
 
-        assertThat( accessCapability ).isInstanceOf( CanWrite.class );
-        assertDoesNotThrow( accessCapability::assertCanWrite );
+        assertThat(accessCapability).isInstanceOf(CanWrite.class);
+        assertDoesNotThrow(accessCapability::assertCanWrite);
     }
 
     @Test
-    void shouldCreateConfigDependentFactoryForReadOnlyConfig()
-    {
+    void shouldCreateConfigDependentFactoryForReadOnlyConfig() {
         var factory = AccessCapabilityFactory.configDependent();
 
-        var accessCapability = factory.newAccessCapability( readOnlyChecker );
+        var accessCapability = factory.newAccessCapability(readOnlyChecker);
 
-        assertThat( accessCapability ).isInstanceOf( ReadOnly.class );
-        assertThrows( WriteOperationsNotAllowedException.class, accessCapability::assertCanWrite );
+        assertThat(accessCapability).isInstanceOf(ReadOnly.class);
+        assertThrows(WriteOperationsNotAllowedException.class, accessCapability::assertCanWrite);
     }
 
     @Test
-    void shouldCreateFixedFactory()
-    {
+    void shouldCreateFixedFactory() {
         var accessCapability1 = CanWrite.INSTANCE;
         var accessCapability2 = ReadOnly.INSTANCE;
         var accessCapability3 = ReadReplica.INSTANCE;
 
-        var factory1 = AccessCapabilityFactory.fixed( accessCapability1 );
-        var factory2 = AccessCapabilityFactory.fixed( accessCapability2 );
-        var factory3 = AccessCapabilityFactory.fixed( accessCapability3 );
+        var factory1 = AccessCapabilityFactory.fixed(accessCapability1);
+        var factory2 = AccessCapabilityFactory.fixed(accessCapability2);
+        var factory3 = AccessCapabilityFactory.fixed(accessCapability3);
 
-        assertEquals( accessCapability1, factory1.newAccessCapability( readWriteChecker ) );
-        assertEquals( accessCapability1, factory1.newAccessCapability( readOnlyChecker ) );
+        assertEquals(accessCapability1, factory1.newAccessCapability(readWriteChecker));
+        assertEquals(accessCapability1, factory1.newAccessCapability(readOnlyChecker));
 
-        assertEquals( accessCapability2, factory2.newAccessCapability( readWriteChecker ) );
-        assertEquals( accessCapability2, factory2.newAccessCapability( readOnlyChecker ) );
+        assertEquals(accessCapability2, factory2.newAccessCapability(readWriteChecker));
+        assertEquals(accessCapability2, factory2.newAccessCapability(readOnlyChecker));
 
-        assertEquals( accessCapability3, factory3.newAccessCapability( readWriteChecker ) );
-        assertEquals( accessCapability3, factory3.newAccessCapability( readOnlyChecker ) );
+        assertEquals(accessCapability3, factory3.newAccessCapability(readWriteChecker));
+        assertEquals(accessCapability3, factory3.newAccessCapability(readOnlyChecker));
     }
 }

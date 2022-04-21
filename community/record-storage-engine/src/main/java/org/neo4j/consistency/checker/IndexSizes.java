@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checker.ParallelExecution.ThrowingRunnable;
 import org.neo4j.consistency.checking.index.IndexAccessors;
@@ -39,21 +38,24 @@ import org.neo4j.values.storable.ValueCategory;
 /**
  * Calculates index sizes in parallel and caches the sizes
  */
-class IndexSizes
-{
+class IndexSizes {
     private static final String SIZE_CALCULATOR_TAG = "sizeCalculator";
     private static final double SMALL_INDEX_FACTOR_THRESHOLD = 0.05;
 
     private final ParallelExecution execution;
     private final IndexAccessors indexAccessors;
-    private final ConcurrentMap<IndexDescriptor,Long> nodeIndexSizes = new ConcurrentHashMap<>();
-    private final ConcurrentMap<IndexDescriptor,Long> relationshipIndexSizes = new ConcurrentHashMap<>();
+    private final ConcurrentMap<IndexDescriptor, Long> nodeIndexSizes = new ConcurrentHashMap<>();
+    private final ConcurrentMap<IndexDescriptor, Long> relationshipIndexSizes = new ConcurrentHashMap<>();
     private final long highNodeId;
     private final long highRelationshipId;
     private final CursorContextFactory contextFactory;
 
-    IndexSizes( ParallelExecution execution, IndexAccessors indexAccessors, long highNodeId, long highRelationshipId, CursorContextFactory contextFactory )
-    {
+    IndexSizes(
+            ParallelExecution execution,
+            IndexAccessors indexAccessors,
+            long highNodeId,
+            long highRelationshipId,
+            CursorContextFactory contextFactory) {
         this.execution = execution;
         this.indexAccessors = indexAccessors;
         this.highNodeId = highNodeId;
@@ -61,80 +63,74 @@ class IndexSizes
         this.contextFactory = contextFactory;
     }
 
-    void initialize() throws Exception
-    {
-        calculateSizes( EntityType.NODE, nodeIndexSizes );
-        calculateSizes( EntityType.RELATIONSHIP, relationshipIndexSizes );
+    void initialize() throws Exception {
+        calculateSizes(EntityType.NODE, nodeIndexSizes);
+        calculateSizes(EntityType.RELATIONSHIP, relationshipIndexSizes);
     }
 
-    private void calculateSizes( EntityType entityType, ConcurrentMap<IndexDescriptor,Long> indexSizes ) throws Exception
-    {
-        List<IndexDescriptor> indexes = indexAccessors.onlineRules( entityType );
-        execution.run( "Estimate index sizes", indexes.stream().map( index -> (ThrowingRunnable) () ->
-        {
-            try ( var cursorContext = contextFactory.create( SIZE_CALCULATOR_TAG ) )
-            {
-                IndexAccessor accessor = indexAccessors.accessorFor( index );
-                indexSizes.put( index, accessor.estimateNumberOfEntries( cursorContext ) );
-            }
-        } ).toArray( ThrowingRunnable[]::new ) );
+    private void calculateSizes(EntityType entityType, ConcurrentMap<IndexDescriptor, Long> indexSizes)
+            throws Exception {
+        List<IndexDescriptor> indexes = indexAccessors.onlineRules(entityType);
+        execution.run(
+                "Estimate index sizes",
+                indexes.stream()
+                        .map(index -> (ThrowingRunnable) () -> {
+                            try (var cursorContext = contextFactory.create(SIZE_CALCULATOR_TAG)) {
+                                IndexAccessor accessor = indexAccessors.accessorFor(index);
+                                indexSizes.put(index, accessor.estimateNumberOfEntries(cursorContext));
+                            }
+                        })
+                        .toArray(ThrowingRunnable[]::new));
     }
 
-    private List<IndexDescriptor> getAllIndexes( EntityType entityType )
-    {
-        return new ArrayList<>( indexAccessors.onlineRules( entityType ) );
+    private List<IndexDescriptor> getAllIndexes(EntityType entityType) {
+        return new ArrayList<>(indexAccessors.onlineRules(entityType));
     }
 
-    List<IndexDescriptor> smallIndexes( EntityType entityType )
-    {
-        List<IndexDescriptor> smallIndexes = getAllIndexes( entityType );
-        smallIndexes.removeAll( largeIndexes( entityType ) );
+    List<IndexDescriptor> smallIndexes(EntityType entityType) {
+        List<IndexDescriptor> smallIndexes = getAllIndexes(entityType);
+        smallIndexes.removeAll(largeIndexes(entityType));
         return smallIndexes;
     }
 
-    List<IndexDescriptor> largeIndexes( EntityType entityType )
-    {
-        List<IndexDescriptor> indexes = getAllIndexes( entityType );
-        indexes.sort( Comparator.comparingLong( this::getEstimatedIndexSize ).reversed() );
+    List<IndexDescriptor> largeIndexes(EntityType entityType) {
+        List<IndexDescriptor> indexes = getAllIndexes(entityType);
+        indexes.sort(Comparator.comparingLong(this::getEstimatedIndexSize).reversed());
         int threshold = 0;
-        for ( IndexDescriptor index : indexes )
-        {
-            if ( !index.schema().isFulltextSchemaDescriptor() && !hasValues( index ) )
-            {
+        for (IndexDescriptor index : indexes) {
+            if (!index.schema().isFulltextSchemaDescriptor() && !hasValues(index)) {
                 // Skip those that we cannot read values from. They should not be checked by the IndexChecker,
                 // but the "inefficient" way of doing a lookup per node/index in NodeChecker instead
                 continue;
             }
 
-            if ( getSizeFactor( index, entityType ) > SMALL_INDEX_FACTOR_THRESHOLD || threshold % IndexChecker.NUM_INDEXES_IN_CACHE != 0 )
-            {
+            if (getSizeFactor(index, entityType) > SMALL_INDEX_FACTOR_THRESHOLD
+                    || threshold % IndexChecker.NUM_INDEXES_IN_CACHE != 0) {
                 threshold++;
             }
         }
-        return indexes.subList( 0, threshold );
+        return indexes.subList(0, threshold);
     }
 
-    static boolean hasValues( IndexDescriptor index )
-    {
+    static boolean hasValues(IndexDescriptor index) {
         IndexCapability capabilities = index.getCapability();
         ValueCategory[] categories = new ValueCategory[index.schema().getPropertyIds().length];
-        Arrays.fill( categories, ValueCategory.UNKNOWN );
-        return capabilities.valueCapability( categories ) == IndexValueCapability.YES && !index.schema().isFulltextSchemaDescriptor();
+        Arrays.fill(categories, ValueCategory.UNKNOWN);
+        return capabilities.valueCapability(categories) == IndexValueCapability.YES
+                && !index.schema().isFulltextSchemaDescriptor();
     }
 
-    private double getSizeFactor( IndexDescriptor index, EntityType entityType )
-    {
-        if ( entityType == EntityType.RELATIONSHIP )
-        {
-            return (double) getEstimatedIndexSize( index ) / highRelationshipId;
+    private double getSizeFactor(IndexDescriptor index, EntityType entityType) {
+        if (entityType == EntityType.RELATIONSHIP) {
+            return (double) getEstimatedIndexSize(index) / highRelationshipId;
         }
-        return (double) getEstimatedIndexSize( index ) / highNodeId;
+        return (double) getEstimatedIndexSize(index) / highNodeId;
     }
 
-    long getEstimatedIndexSize( IndexDescriptor index )
-    {
+    long getEstimatedIndexSize(IndexDescriptor index) {
         EntityType entityType = index.schema().entityType();
-        ConcurrentMap<IndexDescriptor,Long> map = entityType == EntityType.NODE ? nodeIndexSizes : relationshipIndexSizes;
-        return map.get( index );
+        ConcurrentMap<IndexDescriptor, Long> map =
+                entityType == EntityType.NODE ? nodeIndexSizes : relationshipIndexSizes;
+        return map.get(index);
     }
 }

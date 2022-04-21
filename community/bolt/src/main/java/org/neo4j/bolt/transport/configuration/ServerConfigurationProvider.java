@@ -21,13 +21,11 @@ package org.neo4j.bolt.transport.configuration;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
-
 import java.net.SocketAddress;
 import java.util.concurrent.ThreadFactory;
 
-public interface ServerConfigurationProvider
-{
-    EventLoopGroup createEventLoopGroup( ThreadFactory threadFactory );
+public interface ServerConfigurationProvider {
+    EventLoopGroup createEventLoopGroup(ThreadFactory threadFactory);
 
-    Class<? extends ServerChannel> getChannelClass( SocketAddress socketAddress );
+    Class<? extends ServerChannel> getChannelClass(SocketAddress socketAddress);
 }

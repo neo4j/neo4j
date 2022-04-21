@@ -19,30 +19,26 @@
  */
 package org.neo4j.bolt.v3.messaging.request;
 
-import java.io.IOException;
-
-import org.neo4j.bolt.packstream.Neo4jPack.Unpacker;
-import org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder;
-import org.neo4j.values.virtual.MapValue;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
-class RunMessageTest extends AbstractTransactionInitiatingMessage
-{
+import java.io.IOException;
+import org.neo4j.bolt.packstream.Neo4jPack.Unpacker;
+import org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder;
+import org.neo4j.values.virtual.MapValue;
+
+class RunMessageTest extends AbstractTransactionInitiatingMessage {
     @Override
-    protected TransactionInitiatingMessage createMessage()
-    {
-        return new RunMessage( "RETURN 1" );
+    protected TransactionInitiatingMessage createMessage() {
+        return new RunMessage("RETURN 1");
     }
 
     @Override
-    protected TransactionInitiatingMessage createMessage( MapValue meta ) throws IOException
-    {
-        var unpacker = mock( Unpacker.class );
-        when( unpacker.unpackMap() ).thenReturn( meta );
-        var decoder = new RunMessageDecoder( nullResponseHandler() );
-        return (TransactionInitiatingMessage) decoder.decode( unpacker );
+    protected TransactionInitiatingMessage createMessage(MapValue meta) throws IOException {
+        var unpacker = mock(Unpacker.class);
+        when(unpacker.unpackMap()).thenReturn(meta);
+        var decoder = new RunMessageDecoder(nullResponseHandler());
+        return (TransactionInitiatingMessage) decoder.decode(unpacker);
     }
 }

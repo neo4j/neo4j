@@ -49,8 +49,7 @@ package org.neo4j.util.concurrent;
  * @param <W> The concrete type of work being performed.
  * @see WorkSync
  */
-public interface Work<Material, W extends Work<Material,W>>
-{
+public interface Work<Material, W extends Work<Material, W>> {
     /**
      * <p>
      * Combine this unit of work with the given unit of work, and produce a unit of work that represents the
@@ -61,10 +60,10 @@ public interface Work<Material, W extends Work<Material,W>>
      * and then return itself. This is perhaps useful for reducing the allocation rate a little.
      * </p>
      */
-    W combine( W work );
+    W combine(W work);
 
     /**
      * Apply this unit of work to the given material.
      */
-    void apply( Material material ) throws Exception;
+    void apply(Material material) throws Exception;
 }

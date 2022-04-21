@@ -19,67 +19,58 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class NumberAwareStringComparatorTest
-{
+import org.junit.jupiter.api.Test;
+
+class NumberAwareStringComparatorTest {
     @Test
-    void shouldHandleSingleNumber()
-    {
+    void shouldHandleSingleNumber() {
         // LESSER
-        assertLesser( "123", "456" );
-        assertLesser( "123", "1234" );
-        assertLesser( "1", "12" );
+        assertLesser("123", "456");
+        assertLesser("123", "1234");
+        assertLesser("1", "12");
 
         // SAME
-        assertSame( "123", "123" );
-        assertSame( "001", "1" );
+        assertSame("123", "123");
+        assertSame("001", "1");
 
         // GREATER
-        assertGreater( "555", "66" );
+        assertGreater("555", "66");
     }
 
     @Test
-    void shouldHandleMixedAlthoughSimilarNumbersAndStrings()
-    {
-        assertLesser( "same-1-thing-45", "same-12-thing-45" );
-        assertGreater( "same-2-thing-46", "same-2-thing-45" );
+    void shouldHandleMixedAlthoughSimilarNumbersAndStrings() {
+        assertLesser("same-1-thing-45", "same-12-thing-45");
+        assertGreater("same-2-thing-46", "same-2-thing-45");
     }
 
     @Test
-    void shouldHandleMixedAndDifferentNumbersAndStrings()
-    {
-        assertLesser( "same123thing456", "same123thing456andmore" );
-        assertGreater( "same12", "same1thing456andmore" );
+    void shouldHandleMixedAndDifferentNumbersAndStrings() {
+        assertLesser("same123thing456", "same123thing456andmore");
+        assertGreater("same12", "same1thing456andmore");
     }
 
     @Test
-    void shouldHandleBigNumbers()
-    {
-        assertGreater( "same-9999999999999999999999999999999999999", "same-9999999999999999999999999999999999998" );
-        assertLesser( "same-9", "same-8999999999999999999999999999999999998" );
+    void shouldHandleBigNumbers() {
+        assertGreater("same-9999999999999999999999999999999999999", "same-9999999999999999999999999999999999998");
+        assertLesser("same-9", "same-8999999999999999999999999999999999998");
     }
 
-    private static void assertLesser( String first, String other )
-    {
-        assertTrue( compare( first, other ) < 0 );
+    private static void assertLesser(String first, String other) {
+        assertTrue(compare(first, other) < 0);
     }
 
-    private static void assertSame( String first, String other )
-    {
-        assertEquals( 0, compare( first, other ) );
+    private static void assertSame(String first, String other) {
+        assertEquals(0, compare(first, other));
     }
 
-    private static void assertGreater( String first, String other )
-    {
-        assertTrue( compare( first, other ) > 0 );
+    private static void assertGreater(String first, String other) {
+        assertTrue(compare(first, other) > 0);
     }
 
-    private static int compare( String first, String other )
-    {
-        return NumberAwareStringComparator.INSTANCE.compare( first, other );
+    private static int compare(String first, String other) {
+        return NumberAwareStringComparator.INSTANCE.compare(first, other);
     }
 }

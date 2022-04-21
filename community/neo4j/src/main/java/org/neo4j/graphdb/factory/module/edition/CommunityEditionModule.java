@@ -19,8 +19,10 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import java.util.function.Supplier;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
+import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.collection.Dependencies;
@@ -80,15 +82,11 @@ import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-
 /**
  * This implementation of {@link AbstractEditionModule} creates the implementations of services
  * that are specific to the Community edition.
  */
-public class CommunityEditionModule extends StandaloneEditionModule implements DefaultDatabaseContextFactoryComponents
-{
+public class CommunityEditionModule extends StandaloneEditionModule implements DefaultDatabaseContextFactoryComponents {
     protected final SslPolicyLoader sslPolicyLoader;
     protected final GlobalModule globalModule;
     protected final ServerIdentity identityModule;
@@ -97,152 +95,167 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
     protected DatabaseStateService databaseStateService;
     protected ReadOnlyDatabases globalReadOnlyChecker;
 
-    public CommunityEditionModule( GlobalModule globalModule )
-    {
+    public CommunityEditionModule(GlobalModule globalModule) {
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
         Config globalConfig = globalModule.getGlobalConfig();
         LogService logService = globalModule.getLogService();
         this.globalModule = globalModule;
 
-        this.sslPolicyLoader = SslPolicyLoader.create( globalConfig, logService.getInternalLogProvider() );
-        globalDependencies.satisfyDependency( sslPolicyLoader ); // for bolt and web server
-        globalDependencies.satisfyDependency( new DatabaseOperationCounts.Counter() ); // for global metrics
+        this.sslPolicyLoader = SslPolicyLoader.create(globalConfig, logService.getInternalLogProvider());
+        globalDependencies.satisfyDependency(sslPolicyLoader); // for bolt and web server
+        globalDependencies.satisfyDependency(new DatabaseOperationCounts.Counter()); // for global metrics
 
-        globalDependencies.satisfyDependency( createAuthConfigProvider( globalModule ) );
+        globalDependencies.satisfyDependency(createAuthConfigProvider(globalModule));
 
-        identityModule = tryResolveOrCreate( ServerIdentityFactory.class,
-                                             globalModule.getExternalDependencyResolver(),
-                                             DefaultIdentityModule::fromGlobalModule ).create( globalModule );
-        globalDependencies.satisfyDependency( identityModule );
+        identityModule = tryResolveOrCreate(
+                        ServerIdentityFactory.class,
+                        globalModule.getExternalDependencyResolver(),
+                        DefaultIdentityModule::fromGlobalModule)
+                .create(globalModule);
+        globalDependencies.satisfyDependency(identityModule);
 
-        connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
+        connectionTracker = globalDependencies.satisfyDependency(createConnectionTracker());
 
-        fabricServicesBootstrap = new FabricServicesBootstrap.Community( globalModule.getGlobalLife(), globalDependencies, globalModule.getLogService() );
+        fabricServicesBootstrap = new FabricServicesBootstrap.Community(
+                globalModule.getGlobalLife(), globalDependencies, globalModule.getLogService());
     }
 
     @Override
-    public DatabaseManager<? extends DatabaseContext> createDatabaseManager( GlobalModule globalModule )
-    {
-        var databaseContextFactory = new DefaultDatabaseContextFactory( globalModule,
-                                                                        getTransactionMonitorFactory(),
-                                                                        createIdContextFactory( globalModule ),
-                                                                        createCommitProcessFactory(),
-                                                                        this );
-        var databaseManager = new DefaultDatabaseManager( globalModule, databaseContextFactory );
-        databaseStateService = new CommunityDatabaseStateService( databaseManager );
+    public DatabaseManager<? extends DatabaseContext> createDatabaseManager(GlobalModule globalModule) {
+        var databaseContextFactory = new DefaultDatabaseContextFactory(
+                globalModule,
+                getTransactionMonitorFactory(),
+                createIdContextFactory(globalModule),
+                createCommitProcessFactory(),
+                this);
+        var databaseManager = new DefaultDatabaseManager(globalModule, databaseContextFactory);
+        databaseStateService = new CommunityDatabaseStateService(databaseManager);
 
-        globalModule.getGlobalLife().add( databaseManager );
-        globalModule.getGlobalDependencies().satisfyDependency( databaseManager );
-        globalModule.getGlobalDependencies().satisfyDependency( databaseStateService );
+        globalModule.getGlobalLife().add(databaseManager);
+        globalModule.getGlobalDependencies().satisfyDependency(databaseManager);
+        globalModule.getGlobalDependencies().satisfyDependency(databaseStateService);
 
-        globalReadOnlyChecker = createGlobalReadOnlyChecker( databaseManager, globalModule.getGlobalConfig(),
-                                                             globalModule.getTransactionEventListeners(), globalModule.getGlobalLife(),
-                                                             globalModule.getLogService().getInternalLogProvider() );
+        globalReadOnlyChecker = createGlobalReadOnlyChecker(
+                databaseManager,
+                globalModule.getGlobalConfig(),
+                globalModule.getTransactionEventListeners(),
+                globalModule.getGlobalLife(),
+                globalModule.getLogService().getInternalLogProvider());
 
-        var databaseIdCacheCleaner = new DatabaseIdCacheClearingListener( databaseManager.databaseIdRepository() );
-        globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, databaseIdCacheCleaner );
+        var databaseIdCacheCleaner = new DatabaseIdCacheClearingListener(databaseManager.databaseIdRepository());
+        globalModule
+                .getTransactionEventListeners()
+                .registerTransactionEventListener(SYSTEM_DATABASE_NAME, databaseIdCacheCleaner);
 
         return databaseManager;
     }
 
     @Override
-    public Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
-                                      InternalLogProvider userLogProvider, DbmsInfo dbmsInfo )
-    {
-        return new CommunityNeoWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo,
-                                          globalModule.getMemoryPools(), globalModule.getTransactionManager(), globalModule.getGlobalClock() );
+    public Lifecycle createWebServer(
+            DatabaseManagementService managementService,
+            Dependencies globalDependencies,
+            Config config,
+            InternalLogProvider userLogProvider,
+            DbmsInfo dbmsInfo) {
+        return new CommunityNeoWebServer(
+                managementService,
+                globalDependencies,
+                config,
+                userLogProvider,
+                dbmsInfo,
+                globalModule.getMemoryPools(),
+                globalModule.getTransactionManager(),
+                globalModule.getGlobalClock());
     }
 
     @Override
-    public DatabaseInfoService createDatabaseInfoService( DatabaseManager<?> databaseManager )
-    {
-        var address = globalModule.getGlobalConfig().get( BoltConnector.advertised_address );
-        return new StandaloneDatabaseInfoService( identityModule.serverId(), address, databaseManager , databaseStateService, globalReadOnlyChecker );
+    public DatabaseInfoService createDatabaseInfoService(DatabaseManager<?> databaseManager) {
+        var address = globalModule.getGlobalConfig().get(BoltConnector.advertised_address);
+        return new StandaloneDatabaseInfoService(
+                identityModule.serverId(), address, databaseManager, databaseStateService, globalReadOnlyChecker);
     }
 
     @Override
-    public void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager ) throws KernelException
-    {
-    }
+    public void registerEditionSpecificProcedures(GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager)
+            throws KernelException {}
 
     @Override
-    protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
-                                                                                 ClientRoutingDomainChecker clientRoutingDomainChecker )
-    {
+    protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller(
+            GlobalModule globalModule,
+            DatabaseManager<?> databaseManager,
+            ClientRoutingDomainChecker clientRoutingDomainChecker) {
         ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
         Config config = globalModule.getGlobalConfig();
         InternalLogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
-        return new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider );
+        return new SingleInstanceRoutingProcedureInstaller(
+                databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider);
     }
 
     @Override
-    protected AuthConfigProvider createAuthConfigProvider( GlobalModule globalModule )
-    {
+    protected AuthConfigProvider createAuthConfigProvider(GlobalModule globalModule) {
         return new CommunityAuthConfigProvider();
     }
 
     @Override
-    public SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule )
-    {
+    public SystemGraphInitializer createSystemGraphInitializer(GlobalModule globalModule) {
         DependencyResolver globalDependencies = globalModule.getGlobalDependencies();
-        Supplier<GraphDatabaseService> systemSupplier = systemSupplier( globalDependencies );
+        Supplier<GraphDatabaseService> systemSupplier = systemSupplier(globalDependencies);
         var systemGraphComponents = globalModule.getSystemGraphComponents();
-        SystemGraphInitializer initializer =
-                CommunityEditionModule.tryResolveOrCreate( SystemGraphInitializer.class, globalModule.getExternalDependencyResolver(),
-                        () -> new DefaultSystemGraphInitializer( systemSupplier, systemGraphComponents ) );
-        return globalModule.getGlobalDependencies().satisfyDependency( initializer );
+        SystemGraphInitializer initializer = CommunityEditionModule.tryResolveOrCreate(
+                SystemGraphInitializer.class,
+                globalModule.getExternalDependencyResolver(),
+                () -> new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents));
+        return globalModule.getGlobalDependencies().satisfyDependency(initializer);
     }
 
     @Override
-    public void registerSystemGraphComponents( SystemGraphComponents systemGraphComponents, GlobalModule globalModule )
-    {
+    public void registerSystemGraphComponents(SystemGraphComponents systemGraphComponents, GlobalModule globalModule) {
         var config = globalModule.getGlobalConfig();
         var log = globalModule.getLogService().getInternalLogProvider();
         var clock = globalModule.getGlobalClock();
-        var systemGraphComponent = new DefaultSystemGraphComponent( config, clock );
-        systemGraphComponents.register( systemGraphComponent );
-        var communityTopologyGraphComponentComponent = new CommunityTopologyGraphComponent( config, log );
-        systemGraphComponents.register( communityTopologyGraphComponentComponent );
+        var systemGraphComponent = new DefaultSystemGraphComponent(config, clock);
+        systemGraphComponents.register(systemGraphComponent);
+        var communityTopologyGraphComponentComponent = new CommunityTopologyGraphComponent(config, log);
+        systemGraphComponents.register(communityTopologyGraphComponentComponent);
     }
 
-    protected static Supplier<GraphDatabaseService> systemSupplier( DependencyResolver dependencies )
-    {
-        return () ->
-        {
-            DatabaseManager<?> databaseManager = dependencies.resolveDependency( DatabaseManager.class );
-            return databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
-                    () -> new RuntimeException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
+    protected static Supplier<GraphDatabaseService> systemSupplier(DependencyResolver dependencies) {
+        return () -> {
+            DatabaseManager<?> databaseManager = dependencies.resolveDependency(DatabaseManager.class);
+            return databaseManager
+                    .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                    .orElseThrow(
+                            () -> new RuntimeException("No database called `" + SYSTEM_DATABASE_NAME + "` was found."))
+                    .databaseFacade();
         };
     }
 
-    private void setupSecurityGraphInitializer( GlobalModule globalModule )
-    {
+    private void setupSecurityGraphInitializer(GlobalModule globalModule) {
         Config config = globalModule.getGlobalConfig();
         FileSystemAbstraction fileSystem = globalModule.getFileSystem();
         InternalLogProvider logProvider = globalModule.getLogService().getUserLogProvider();
-        AbstractSecurityLog securityLog = new CommunitySecurityLog( logProvider.getLog( UserSecurityGraphComponent.class ) );
+        AbstractSecurityLog securityLog =
+                new CommunitySecurityLog(logProvider.getLog(UserSecurityGraphComponent.class));
 
-        var communityComponent = CommunitySecurityModule.createSecurityComponent( securityLog, config, fileSystem, logProvider );
+        var communityComponent =
+                CommunitySecurityModule.createSecurityComponent(securityLog, config, fileSystem, logProvider);
 
         Dependencies dependencies = globalModule.getGlobalDependencies();
-        SystemGraphComponents systemGraphComponents = dependencies.resolveDependency( SystemGraphComponents.class );
-        systemGraphComponents.register( communityComponent );
-   }
-
-    @Override
-    public void createSecurityModule( GlobalModule globalModule )
-    {
-        setSecurityProvider( makeSecurityModule( globalModule ) );
+        SystemGraphComponents systemGraphComponents = dependencies.resolveDependency(SystemGraphComponents.class);
+        systemGraphComponents.register(communityComponent);
     }
 
-    private SecurityProvider makeSecurityModule( GlobalModule globalModule )
-    {
-        globalModule.getGlobalDependencies().satisfyDependency( CommunitySecurityLog.NULL_LOG );
-        setupSecurityGraphInitializer( globalModule );
-        if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )
-        {
-            SecurityModule securityModule =
-                    new CommunitySecurityModule( globalModule.getLogService(), globalModule.getGlobalConfig(), globalModule.getGlobalDependencies() );
+    @Override
+    public void createSecurityModule(GlobalModule globalModule) {
+        setSecurityProvider(makeSecurityModule(globalModule));
+    }
+
+    private SecurityProvider makeSecurityModule(GlobalModule globalModule) {
+        globalModule.getGlobalDependencies().satisfyDependency(CommunitySecurityLog.NULL_LOG);
+        setupSecurityGraphInitializer(globalModule);
+        if (globalModule.getGlobalConfig().get(GraphDatabaseSettings.auth_enabled)) {
+            SecurityModule securityModule = new CommunitySecurityModule(
+                    globalModule.getLogService(), globalModule.getGlobalConfig(), globalModule.getGlobalDependencies());
             securityModule.setup();
             return securityModule;
         }
@@ -250,44 +263,51 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
     }
 
     @Override
-    public void createDefaultDatabaseResolver( GlobalModule globalModule )
-    {
-        Supplier<GraphDatabaseService> systemDbSupplier = systemSupplier( globalModule.getGlobalDependencies() );
-        CommunityDefaultDatabaseResolver defaultDatabaseResolver = new CommunityDefaultDatabaseResolver( globalModule.getGlobalConfig(), systemDbSupplier );
-        globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, defaultDatabaseResolver );
-        setDefaultDatabaseResolver( defaultDatabaseResolver );
+    public void createDefaultDatabaseResolver(GlobalModule globalModule) {
+        Supplier<GraphDatabaseService> systemDbSupplier = systemSupplier(globalModule.getGlobalDependencies());
+        CommunityDefaultDatabaseResolver defaultDatabaseResolver =
+                new CommunityDefaultDatabaseResolver(globalModule.getGlobalConfig(), systemDbSupplier);
+        globalModule
+                .getTransactionEventListeners()
+                .registerTransactionEventListener(SYSTEM_DATABASE_NAME, defaultDatabaseResolver);
+        setDefaultDatabaseResolver(defaultDatabaseResolver);
     }
 
     @Override
-    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( Dependencies dependencies,
-            DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock, LogService logService )
-    {
-        var kernelDatabaseManagementService = createBoltKernelDatabaseManagementServiceProvider( dependencies, managementService, monitors, clock );
-        return fabricServicesBootstrap.createBoltDatabaseManagementServiceProvider( kernelDatabaseManagementService, managementService, monitors, clock );
+    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider(
+            Dependencies dependencies,
+            DatabaseManagementService managementService,
+            Monitors monitors,
+            SystemNanoClock clock,
+            LogService logService) {
+        var kernelDatabaseManagementService =
+                createBoltKernelDatabaseManagementServiceProvider(dependencies, managementService, monitors, clock);
+        return fabricServicesBootstrap.createBoltDatabaseManagementServiceProvider(
+                kernelDatabaseManagementService, managementService, monitors, clock);
     }
 
-    protected static BoltGraphDatabaseManagementServiceSPI createBoltKernelDatabaseManagementServiceProvider( Dependencies dependencies,
-            DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock )
-    {
-        var config = dependencies.resolveDependency( Config.class );
-        var bookmarkAwaitDuration =  config.get( GraphDatabaseSettings.bookmark_ready_timeout );
-        return new BoltKernelDatabaseManagementServiceProvider( managementService, monitors, clock, bookmarkAwaitDuration );
+    protected static BoltGraphDatabaseManagementServiceSPI createBoltKernelDatabaseManagementServiceProvider(
+            Dependencies dependencies,
+            DatabaseManagementService managementService,
+            Monitors monitors,
+            SystemNanoClock clock) {
+        var config = dependencies.resolveDependency(Config.class);
+        var bookmarkAwaitDuration = config.get(GraphDatabaseSettings.bookmark_ready_timeout);
+        return new BoltKernelDatabaseManagementServiceProvider(
+                managementService, monitors, clock, bookmarkAwaitDuration);
     }
 
-    protected CommitProcessFactory createCommitProcessFactory()
-    {
+    protected CommitProcessFactory createCommitProcessFactory() {
         return new CommunityCommitProcessFactory();
     }
 
     @Override
-    public void bootstrapFabricServices()
-    {
+    public void bootstrapFabricServices() {
         fabricServicesBootstrap.bootstrapServices();
     }
 
     @Override
-    public ReadOnlyDatabases readOnlyDatabases()
-    {
+    public ReadOnlyDatabases readOnlyDatabases() {
         return globalReadOnlyChecker;
     }
 }

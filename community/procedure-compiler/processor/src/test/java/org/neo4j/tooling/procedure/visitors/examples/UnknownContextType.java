@@ -21,8 +21,7 @@ package org.neo4j.tooling.procedure.visitors.examples;
 
 import org.neo4j.procedure.Context;
 
-public class UnknownContextType
-{
+public class UnknownContextType {
 
     @Context
     public String unsupportedType;

@@ -24,8 +24,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * The past or future application of work submitted asynchronously to a {@link WorkSync}.
  */
-public interface AsyncApply
-{
+public interface AsyncApply {
     /**
      * Await the application of the work submitted to a {@link WorkSync}.
      * <p>

@@ -19,6 +19,13 @@
  */
 package org.neo4j.test.extension.testdirectory;
 
+import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
+import static org.neo4j.test.utils.TestDirectory.testDirectory;
+
+import java.io.IOException;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -28,149 +35,118 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.platform.commons.JUnitException;
-
-import java.io.IOException;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.FileSystemExtension;
 import org.neo4j.test.extension.StatefulFieldExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.lang.Boolean.TRUE;
-import static java.lang.String.format;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
-import static org.neo4j.test.utils.TestDirectory.testDirectory;
-
 public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDirectory>
-        implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback, TestExecutionExceptionHandler
-{
+        implements BeforeEachCallback,
+                BeforeAllCallback,
+                AfterEachCallback,
+                AfterAllCallback,
+                TestExecutionExceptionHandler {
     public static final String TEST_DIRECTORY = "testDirectory";
     private static final String FAILURE_MARKER = "failureMarker";
-    public static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create( TEST_DIRECTORY );
+    public static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create(TEST_DIRECTORY);
 
     @Override
-    public void beforeAll( ExtensionContext context ) throws IOException
-    {
-        if ( getLifecycle( context ) == PER_CLASS )
-        {
-            prepare( context );
+    public void beforeAll(ExtensionContext context) throws IOException {
+        if (getLifecycle(context) == PER_CLASS) {
+            prepare(context);
         }
     }
 
     @Override
-    public void beforeEach( ExtensionContext context ) throws IOException
-    {
-        if ( getLifecycle( context ) == PER_METHOD )
-        {
-            prepare( context );
+    public void beforeEach(ExtensionContext context) throws IOException {
+        if (getLifecycle(context) == PER_METHOD) {
+            prepare(context);
         }
     }
 
     @Override
-    public void afterEach( ExtensionContext context )
-    {
-        if ( getLifecycle( context ) == PER_METHOD )
-        {
-            cleanUp( context );
+    public void afterEach(ExtensionContext context) {
+        if (getLifecycle(context) == PER_METHOD) {
+            cleanUp(context);
         }
     }
 
     @Override
-    public void afterAll( ExtensionContext context )
-    {
-        if ( getLifecycle( context ) == PER_CLASS )
-        {
-            cleanUp( context );
+    public void afterAll(ExtensionContext context) {
+        if (getLifecycle(context) == PER_CLASS) {
+            cleanUp(context);
         }
     }
 
-    private static TestInstance.Lifecycle getLifecycle( ExtensionContext context )
-    {
-        return context.getTestInstanceLifecycle().orElse( PER_METHOD );
+    private static TestInstance.Lifecycle getLifecycle(ExtensionContext context) {
+        return context.getTestInstanceLifecycle().orElse(PER_METHOD);
     }
 
-    public void prepare( ExtensionContext context ) throws IOException
-    {
-        String name = context.getTestMethod().map( method -> method.getName().concat( context.getDisplayName() ) )
-                .orElseGet( () -> context.getRequiredTestClass().getSimpleName() );
-        TestDirectory testDirectory = getStoredValue( context );
-        testDirectory.prepareDirectory( context.getRequiredTestClass(), name );
+    public void prepare(ExtensionContext context) throws IOException {
+        String name = context.getTestMethod()
+                .map(method -> method.getName().concat(context.getDisplayName()))
+                .orElseGet(() -> context.getRequiredTestClass().getSimpleName());
+        TestDirectory testDirectory = getStoredValue(context);
+        testDirectory.prepareDirectory(context.getRequiredTestClass(), name);
     }
 
-    private void cleanUp( ExtensionContext context )
-    {
-        TestDirectory testDirectory = getStoredValue( context );
-        try
-        {
-            testDirectory.complete( context.getExecutionException().isEmpty() &&
-                                    !hasFailureMarker( context ) );
-        }
-        catch ( Exception e )
-        {
-            throw new JUnitException( format( "Fail to cleanup test directory for %s test.", context.getDisplayName() ), e );
+    private void cleanUp(ExtensionContext context) {
+        TestDirectory testDirectory = getStoredValue(context);
+        try {
+            testDirectory.complete(context.getExecutionException().isEmpty() && !hasFailureMarker(context));
+        } catch (Exception e) {
+            throw new JUnitException(
+                    format("Fail to cleanup test directory for %s test.", context.getDisplayName()), e);
         }
     }
 
     @Override
-    protected String getFieldKey()
-    {
+    protected String getFieldKey() {
         return TEST_DIRECTORY;
     }
 
     @Override
-    protected Class<TestDirectory> getFieldType()
-    {
+    protected Class<TestDirectory> getFieldType() {
         return TestDirectory.class;
     }
 
     @Override
-    protected TestDirectory createField( ExtensionContext extensionContext )
-    {
-        ExtensionContext.Store fileSystemStore = getStore( extensionContext, FileSystemExtension.FILE_SYSTEM_NAMESPACE );
-        FileSystemAbstraction fileSystemAbstraction = fileSystemStore.get( FileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class );
-        return fileSystemAbstraction != null ? testDirectory( fileSystemAbstraction ) : testDirectory();
+    protected TestDirectory createField(ExtensionContext extensionContext) {
+        ExtensionContext.Store fileSystemStore = getStore(extensionContext, FileSystemExtension.FILE_SYSTEM_NAMESPACE);
+        FileSystemAbstraction fileSystemAbstraction =
+                fileSystemStore.get(FileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class);
+        return fileSystemAbstraction != null ? testDirectory(fileSystemAbstraction) : testDirectory();
     }
 
     @Override
-    protected Namespace getNameSpace()
-    {
+    protected Namespace getNameSpace() {
         return TEST_DIRECTORY_NAMESPACE;
     }
 
     @Override
-    public void handleTestExecutionException( ExtensionContext context, Throwable throwable ) throws Throwable
-    {
-        if ( getLifecycle( context ) == PER_CLASS )
-        {
-            var store = getTestDirectoryStore( context );
-            store.put( FAILURE_MARKER, TRUE );
+    public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        if (getLifecycle(context) == PER_CLASS) {
+            var store = getTestDirectoryStore(context);
+            store.put(FAILURE_MARKER, TRUE);
         }
         throw throwable;
     }
 
-    private boolean hasFailureMarker( ExtensionContext context )
-    {
-        return getLifecycle( context ) == PER_CLASS &&
-               getLocalStore( context ).get( FAILURE_MARKER ) != null;
+    private boolean hasFailureMarker(ExtensionContext context) {
+        return getLifecycle(context) == PER_CLASS && getLocalStore(context).get(FAILURE_MARKER) != null;
     }
 
-    private ExtensionContext.Store getTestDirectoryStore( ExtensionContext context )
-    {
+    private ExtensionContext.Store getTestDirectoryStore(ExtensionContext context) {
         ExtensionContext.Store store = null;
-        while ( context != null )
-        {
-            var localStore = context.getStore( getNameSpace() );
-            if ( localStore.get( getFieldKey() ) == null )
-            {
+        while (context != null) {
+            var localStore = context.getStore(getNameSpace());
+            if (localStore.get(getFieldKey()) == null) {
                 return store;
-            }
-            else
-            {
+            } else {
                 store = localStore;
             }
-            context = context.getParent().orElse( null );
+            context = context.getParent().orElse(null);
         }
-        throw new IllegalStateException( "Test directory store not found" );
+        throw new IllegalStateException("Test directory store not found");
     }
 }

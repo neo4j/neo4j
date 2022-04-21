@@ -19,12 +19,23 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
+
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.stream.Stream;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
@@ -49,27 +60,15 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
-
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
-class ApplyRecoveredTransactionsTest
-{
+class ApplyRecoveredTransactionsTest {
     @Inject
     private PageCache pageCache;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private EphemeralFileSystemAbstraction fs;
 
@@ -78,77 +77,83 @@ class ApplyRecoveredTransactionsTest
     private CachedStoreCursors storeCursors;
 
     @BeforeEach
-    void before()
-    {
-        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(),
-                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), EMPTY_LOG_TAIL );
-        neoStores = storeFactory.openAllNeoStores( true );
-        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
+    void before() {
+        idGeneratorFactory = new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout,
+                Config.defaults(),
+                idGeneratorFactory,
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                writable(),
+                EMPTY_LOG_TAIL);
+        neoStores = storeFactory.openAllNeoStores(true);
+        storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
 
     @AfterEach
-    void after()
-    {
-        closeAllUnchecked( storeCursors, neoStores );
+    void after() {
+        closeAllUnchecked(storeCursors, neoStores);
     }
 
     @Test
-    void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception
-    {
+    void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception {
         // WHEN recovering a transaction that creates some data
-        long nodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
-        long relationshipId = neoStores.getRelationshipStore().nextId( NULL_CONTEXT );
+        long nodeId = neoStores.getNodeStore().nextId(NULL_CONTEXT);
+        long relationshipId = neoStores.getRelationshipStore().nextId(NULL_CONTEXT);
         int type = 1;
-        applyExternalTransaction( 1,
-                new NodeCommand( new NodeRecord( nodeId ), inUse( created( new NodeRecord( nodeId ) ) ) ),
-                new RelationshipCommand( null,
-                        inUse( created( with( new RelationshipRecord( relationshipId ), nodeId, nodeId, type ) ) ) ) );
+        applyExternalTransaction(
+                1,
+                new NodeCommand(new NodeRecord(nodeId), inUse(created(new NodeRecord(nodeId)))),
+                new RelationshipCommand(
+                        null, inUse(created(with(new RelationshipRecord(relationshipId), nodeId, nodeId, type)))));
 
         // and when, later on, recovering a transaction deleting some of those
-        applyExternalTransaction( 2,
-                new NodeCommand( inUse( created( new NodeRecord( nodeId ) ) ), new NodeRecord( nodeId ) ),
-                new RelationshipCommand( null, new RelationshipRecord( relationshipId ) ) );
+        applyExternalTransaction(
+                2,
+                new NodeCommand(inUse(created(new NodeRecord(nodeId))), new NodeRecord(nodeId)),
+                new RelationshipCommand(null, new RelationshipRecord(relationshipId)));
 
         // THEN that should be possible and the high ids should be correct, i.e. highest applied + 1
-        assertEquals( nodeId + 1, neoStores.getNodeStore().getHighId() );
-        assertEquals( relationshipId + 1, neoStores.getRelationshipStore().getHighId() );
+        assertEquals(nodeId + 1, neoStores.getNodeStore().getHighId());
+        assertEquals(relationshipId + 1, neoStores.getRelationshipStore().getHighId());
     }
 
-    private static RelationshipRecord with( RelationshipRecord relationship, long startNode, long endNode, int type )
-    {
-        relationship.setFirstNode( startNode );
-        relationship.setSecondNode( endNode );
-        relationship.setType( type );
+    private static RelationshipRecord with(RelationshipRecord relationship, long startNode, long endNode, int type) {
+        relationship.setFirstNode(startNode);
+        relationship.setSecondNode(endNode);
+        relationship.setType(type);
         return relationship;
     }
 
-    private void applyExternalTransaction( long transactionId, Command... commands ) throws Exception
-    {
-        LockService lockService = mock( LockService.class );
-        when( lockService.acquireNodeLock( anyLong(), any( LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
-        when( lockService.acquireRelationshipLock( anyLong(), any( LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
+    private void applyExternalTransaction(long transactionId, Command... commands) throws Exception {
+        LockService lockService = mock(LockService.class);
+        when(lockService.acquireNodeLock(anyLong(), any(LockType.class))).thenReturn(LockService.NO_LOCK);
+        when(lockService.acquireRelationshipLock(anyLong(), any(LockType.class)))
+                .thenReturn(LockService.NO_LOCK);
         IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
-        Stream.of( RecordIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
+        Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
 
-        NeoStoreTransactionApplierFactory applier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ),
-                lockService );
-        CommandsToApply tx = new GroupOfCommands( transactionId, storeCursors, commands );
-        CommandHandlerContract.apply( applier, txApplier ->
-        {
-            tx.accept( txApplier );
-            return false;
-        }, new GroupOfCommands( transactionId, storeCursors, commands ) );
+        NeoStoreTransactionApplierFactory applier = new NeoStoreTransactionApplierFactory(
+                INTERNAL, neoStores, mock(CacheAccessBackDoor.class), lockService);
+        CommandsToApply tx = new GroupOfCommands(transactionId, storeCursors, commands);
+        CommandHandlerContract.apply(
+                applier,
+                txApplier -> {
+                    tx.accept(txApplier);
+                    return false;
+                },
+                new GroupOfCommands(transactionId, storeCursors, commands));
     }
 
-    private static <RECORD extends AbstractBaseRecord> RECORD inUse( RECORD record )
-    {
-        record.setInUse( true );
+    private static <RECORD extends AbstractBaseRecord> RECORD inUse(RECORD record) {
+        record.setInUse(true);
         return record;
     }
 
-    private static <RECORD extends AbstractBaseRecord> RECORD created( RECORD record )
-    {
+    private static <RECORD extends AbstractBaseRecord> RECORD created(RECORD record) {
         record.setCreated();
         return record;
     }

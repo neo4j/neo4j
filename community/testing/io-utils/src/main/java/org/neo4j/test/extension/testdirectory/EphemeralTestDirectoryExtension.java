@@ -19,18 +19,14 @@
  */
 package org.neo4j.test.extension.testdirectory;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 
-@Target( {ElementType.TYPE, ElementType.METHOD} )
-@Retention( RetentionPolicy.RUNTIME )
-@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectorySupportExtension.class} )
-public @interface EphemeralTestDirectoryExtension
-{
-}
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@ExtendWith({EphemeralFileSystemExtension.class, TestDirectorySupportExtension.class})
+public @interface EphemeralTestDirectoryExtension {}

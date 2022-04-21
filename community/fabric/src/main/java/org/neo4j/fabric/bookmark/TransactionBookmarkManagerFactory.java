@@ -24,17 +24,16 @@ import org.neo4j.fabric.FabricDatabaseManager;
 /**
  * The main purpose of this factory is to make bookmark logic testable.
  */
-public class TransactionBookmarkManagerFactory
-{
+public class TransactionBookmarkManagerFactory {
     private FabricDatabaseManager fabricDatabaseManager;
 
-    public TransactionBookmarkManagerFactory( FabricDatabaseManager fabricDatabaseManager )
-    {
+    public TransactionBookmarkManagerFactory(FabricDatabaseManager fabricDatabaseManager) {
         this.fabricDatabaseManager = fabricDatabaseManager;
     }
 
-    public TransactionBookmarkManager createTransactionBookmarkManager( LocalGraphTransactionIdTracker transactionIdTracker )
-    {
-        return new TransactionBookmarkManagerImpl( transactionIdTracker, fabricDatabaseManager.multiGraphCapabilitiesEnabledForAllDatabases() );
+    public TransactionBookmarkManager createTransactionBookmarkManager(
+            LocalGraphTransactionIdTracker transactionIdTracker) {
+        return new TransactionBookmarkManagerImpl(
+                transactionIdTracker, fabricDatabaseManager.multiGraphCapabilitiesEnabledForAllDatabases());
     }
 }

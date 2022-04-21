@@ -22,43 +22,35 @@ package org.neo4j.bolt.transport.pipeline;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 
-public class KeepAliveHandler extends IdleStateHandler
-{
+public class KeepAliveHandler extends IdleStateHandler {
     private final BoltResponseMessageWriter messageWriter;
 
     // accessed from bolt worker pool
     private volatile boolean active;
 
-    public KeepAliveHandler( long writerIdleTimeSeconds, BoltResponseMessageWriter messageWriter )
-    {
-        super( 0, writerIdleTimeSeconds, 0, TimeUnit.MILLISECONDS );
+    public KeepAliveHandler(long writerIdleTimeSeconds, BoltResponseMessageWriter messageWriter) {
+        super(0, writerIdleTimeSeconds, 0, TimeUnit.MILLISECONDS);
 
         this.messageWriter = messageWriter;
     }
 
     @Override
-    protected void channelIdle( ChannelHandlerContext ctx, IdleStateEvent evt ) throws Exception
-    {
-        if ( !active )
-        {
+    protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
+        if (!active) {
             return;
         }
 
         this.messageWriter.flushBufferOrSendKeepAlive();
     }
 
-    public boolean isActive()
-    {
+    public boolean isActive() {
         return active;
     }
 
-    public void setActive( boolean active )
-    {
+    public void setActive(boolean active) {
         this.active = active;
     }
 }

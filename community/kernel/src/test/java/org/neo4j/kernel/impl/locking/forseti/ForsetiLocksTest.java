@@ -27,19 +27,16 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.time.SystemNanoClock;
 
-public class ForsetiLocksTest extends LockingCompatibilityTestSuite
-{
+public class ForsetiLocksTest extends LockingCompatibilityTestSuite {
     @Override
-    protected Locks createLockManager( Config config, SystemNanoClock clock )
-    {
-        return new ForsetiLockManager( config, clock, ResourceTypes.values() );
+    protected Locks createLockManager(Config config, SystemNanoClock clock) {
+        return new ForsetiLockManager(config, clock, ResourceTypes.values());
     }
 
     @Override
-    protected boolean isAwaitingLockAcquisition( Actor actor ) throws Exception
-    {
-        actor.untilWaitingIn( ForsetiClient.class.getDeclaredMethod(
-                "waitFor", ForsetiLockManager.Lock.class, ResourceType.class, long.class, int.class) );
+    protected boolean isAwaitingLockAcquisition(Actor actor) throws Exception {
+        actor.untilWaitingIn(ForsetiClient.class.getDeclaredMethod(
+                "waitFor", ForsetiLockManager.Lock.class, ResourceType.class, long.class, int.class));
         return true;
     }
 }

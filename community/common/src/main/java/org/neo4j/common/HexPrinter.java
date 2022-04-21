@@ -19,14 +19,14 @@
  */
 package org.neo4j.common;
 
+import static java.nio.ByteBuffer.wrap;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
-
-import static java.nio.ByteBuffer.wrap;
 
 /**
  * Prints streams of bytes as hex, printed in columns and rows neatly ordered. For example:
@@ -42,8 +42,7 @@ import static java.nio.ByteBuffer.wrap;
  * then no line number, prefix, or suffix will be added.
  *
  */
-public class HexPrinter
-{
+public class HexPrinter {
     private final PrintStream out;
     private int bytesPerLine;
     private int bytesPerGroup;
@@ -64,64 +63,54 @@ public class HexPrinter
     private static final String DEFAULT_LINE_NUMBER_SUFFIX = ": ";
     private static final String DEFAULT_BYTE_SEPARATOR = " ";
 
-    public HexPrinter withBytesPerLine( int bytesPerLine )
-    {
+    public HexPrinter withBytesPerLine(int bytesPerLine) {
         this.bytesPerLine = bytesPerLine;
         return this;
     }
 
-    public HexPrinter withBytesPerGroup( int bytesPerGroup )
-    {
+    public HexPrinter withBytesPerGroup(int bytesPerGroup) {
         this.bytesPerGroup = bytesPerGroup;
         return this;
     }
 
-    public HexPrinter withGroupSeparator( String separator )
-    {
+    public HexPrinter withGroupSeparator(String separator) {
         this.groupSeparator = separator;
         return this;
     }
 
-    public HexPrinter withLineNumberDigits( int maxLineNumberDigits )
-    {
+    public HexPrinter withLineNumberDigits(int maxLineNumberDigits) {
         this.maxLineNumberDigits = maxLineNumberDigits;
         return this;
     }
 
-    public HexPrinter withLineNumberPrefix( String prefix )
-    {
+    public HexPrinter withLineNumberPrefix(String prefix) {
         this.lineNumberPrefix = prefix;
         return this;
     }
 
-    public HexPrinter withLineNumberSuffix( String suffix )
-    {
+    public HexPrinter withLineNumberSuffix(String suffix) {
         this.lineNumberSuffix = suffix;
         return this;
     }
 
-    public HexPrinter withLineNumberOffset( long offset )
-    {
+    public HexPrinter withLineNumberOffset(long offset) {
         this.currentLineNumber = offset;
         return this;
     }
 
-    public HexPrinter withByteSeparator( String byteSeparator )
-    {
+    public HexPrinter withByteSeparator(String byteSeparator) {
         this.byteSeparator = byteSeparator;
         return this;
     }
 
-    public HexPrinter withBytesGroupingFormat( int bytesPerLine, int bytesPerGroup, String separator )
-    {
+    public HexPrinter withBytesGroupingFormat(int bytesPerLine, int bytesPerGroup, String separator) {
         this.bytesPerLine = bytesPerLine;
         this.bytesPerGroup = bytesPerGroup;
         this.groupSeparator = separator;
         return this;
     }
 
-    public HexPrinter withLineNumberFormat( int maxLineNumberDigits, String prefix, String suffix )
-    {
+    public HexPrinter withLineNumberFormat(int maxLineNumberDigits, String prefix, String suffix) {
         this.maxLineNumberDigits = maxLineNumberDigits;
         this.lineNumberPrefix = prefix;
         this.lineNumberSuffix = suffix;
@@ -138,13 +127,11 @@ public class HexPrinter
      *
      * @param out
      */
-    public HexPrinter( PrintStream out )
-    {
-        this( out, DEFAULT_BYTES_PER_GROUP, DEFAULT_GROUP_SEPARATOR );
+    public HexPrinter(PrintStream out) {
+        this(out, DEFAULT_BYTES_PER_GROUP, DEFAULT_GROUP_SEPARATOR);
     }
 
-    public HexPrinter( PrintStream out, int bytesPerGroup, String groupSep )
-    {
+    public HexPrinter(PrintStream out, int bytesPerGroup, String groupSep) {
         this.out = out;
         this.bytesPerLine = DEFAULT_GROUPS_PER_LINE * bytesPerGroup;
         this.bytesPerGroup = bytesPerGroup;
@@ -160,10 +147,9 @@ public class HexPrinter
      * @param value
      * @return
      */
-    public HexPrinter append( byte value )
-    {
+    public HexPrinter append(byte value) {
         checkNewLine();
-        addHexValue( value );
+        addHexValue(value);
         return this;
     }
 
@@ -173,9 +159,8 @@ public class HexPrinter
      * @return
      * @throws IOException
      */
-    public HexPrinter append( ReadableByteChannel source ) throws IOException
-    {
-        return append( source, -1 );
+    public HexPrinter append(ReadableByteChannel source) throws IOException {
+        return append(source, -1);
     }
 
     /**
@@ -185,28 +170,23 @@ public class HexPrinter
      * @return
      * @throws IOException
      */
-    public HexPrinter append( ReadableByteChannel source, int atMost ) throws IOException
-    {
+    public HexPrinter append(ReadableByteChannel source, int atMost) throws IOException {
         boolean indefinite = atMost == -1;
-        ByteBuffer buffer = ByteBuffer.allocate( 4 * 1024 );
-        while ( true )
-        {
+        ByteBuffer buffer = ByteBuffer.allocate(4 * 1024);
+        while (true) {
             buffer.clear();
-            if ( !indefinite )
-            {
-                buffer.limit( Math.min( buffer.capacity(), atMost ) );
+            if (!indefinite) {
+                buffer.limit(Math.min(buffer.capacity(), atMost));
             }
-            int read = source.read( buffer );
-            if ( read == -1 )
-            {
+            int read = source.read(buffer);
+            if (read == -1) {
                 break;
             }
 
             atMost -= read;
             buffer.flip();
-            while ( buffer.hasRemaining() )
-            {
-                append( buffer.get() );
+            while (buffer.hasRemaining()) {
+                append(buffer.get());
             }
         }
         return this;
@@ -219,11 +199,9 @@ public class HexPrinter
      * @param length
      * @return
      */
-    public HexPrinter append( ByteBuffer bytes, int offset, int length )
-    {
-        for ( int i = offset; i < offset + length; i++ )
-        {
-            append( bytes.get( i ) );
+    public HexPrinter append(ByteBuffer bytes, int offset, int length) {
+        for (int i = offset; i < offset + length; i++) {
+            append(bytes.get(i));
         }
         return this;
     }
@@ -234,9 +212,8 @@ public class HexPrinter
      * @param bytes
      * @return
      */
-    public HexPrinter append( ByteBuffer bytes )
-    {
-        return append( bytes, bytes.position(), bytes.remaining() );
+    public HexPrinter append(ByteBuffer bytes) {
+        return append(bytes, bytes.position(), bytes.remaining());
     }
 
     /**
@@ -244,44 +221,34 @@ public class HexPrinter
      * @param bytes
      * @return
      */
-    public HexPrinter append( byte[] bytes )
-    {
-        return append( wrap( bytes ), 0, bytes.length );
+    public HexPrinter append(byte[] bytes) {
+        return append(wrap(bytes), 0, bytes.length);
     }
 
-    private void addHexValue( byte value )
-    {
-        if ( bytesOnThisLine == 1 )
-        {
+    private void addHexValue(byte value) {
+        if (bytesOnThisLine == 1) {
             // it is the first byte
             // out.append( NOTHING )
-        }
-        else if ( bytesOnThisLine % bytesPerGroup == 1 )
-        {
+        } else if (bytesOnThisLine % bytesPerGroup == 1) {
             // it is the first byte for a new byte group
-            out.append( groupSeparator );
+            out.append(groupSeparator);
+        } else {
+            out.append(byteSeparator);
         }
-        else
-        {
-            out.append( byteSeparator );
-        }
-        out.printf( "%X%X", 0xF & (value >> 4), 0xF & value );
+        out.printf("%X%X", 0xF & (value >> 4), 0xF & value);
     }
 
-    private void checkNewLine()
-    {
-        if ( bytesOnThisLine >= bytesPerLine )
-        {
+    private void checkNewLine() {
+        if (bytesOnThisLine >= bytesPerLine) {
             out.println();
             bytesOnThisLine = 0;
             currentLineNumber++;
         }
-        if ( bytesOnThisLine == 0 && maxLineNumberDigits > 0 )
-        {
+        if (bytesOnThisLine == 0 && maxLineNumberDigits > 0) {
             // a new line and line number enabled
-            out.append( lineNumberPrefix );
-            out.printf( "0x%0" + maxLineNumberDigits + "X", currentLineNumber );
-            out.append( lineNumberSuffix );
+            out.append(lineNumberPrefix);
+            out.printf("0x%0" + maxLineNumberDigits + "X", currentLineNumber);
+            out.append(lineNumberSuffix);
         }
         bytesOnThisLine++;
     }
@@ -300,19 +267,17 @@ public class HexPrinter
      * @param length
      * @return formatted hex numbers in string
      */
-    public static String hex( ByteBuffer bytes, int offset, int length )
-    {
-        return hex( bytes, offset, length, DEFAULT_BYTES_PER_GROUP, DEFAULT_GROUP_SEPARATOR );
+    public static String hex(ByteBuffer bytes, int offset, int length) {
+        return hex(bytes, offset, length, DEFAULT_BYTES_PER_GROUP, DEFAULT_GROUP_SEPARATOR);
     }
 
-    public static String hex( ByteBuffer bytes, int offset, int length, int bytesPerBlock, String groupSep )
-    {
+    public static String hex(ByteBuffer bytes, int offset, int length, int bytesPerBlock, String groupSep) {
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( outStream, false, StandardCharsets.UTF_8 );
+        PrintStream out = new PrintStream(outStream, false, StandardCharsets.UTF_8);
 
-        new HexPrinter( out, bytesPerBlock, groupSep ).append( bytes, offset, length );
+        new HexPrinter(out, bytesPerBlock, groupSep).append(bytes, offset, length);
         out.flush();
-        return outStream.toString( StandardCharsets.UTF_8 );
+        return outStream.toString(StandardCharsets.UTF_8);
     }
 
     /**
@@ -325,14 +290,12 @@ public class HexPrinter
      * @param bytes
      * @return formatted hex numbers in string
      */
-    public static String hex( ByteBuffer bytes )
-    {
-        return hex( bytes, DEFAULT_BYTES_PER_GROUP, DEFAULT_GROUP_SEPARATOR );
+    public static String hex(ByteBuffer bytes) {
+        return hex(bytes, DEFAULT_BYTES_PER_GROUP, DEFAULT_GROUP_SEPARATOR);
     }
 
-    public static String hex( ByteBuffer bytes, int bytesPerBlock, String groupSep )
-    {
-        return hex( bytes, bytes.position(), bytes.limit(), bytesPerBlock, groupSep );
+    public static String hex(ByteBuffer bytes, int bytesPerBlock, String groupSep) {
+        return hex(bytes, bytes.position(), bytes.limit(), bytesPerBlock, groupSep);
     }
 
     /**
@@ -345,14 +308,12 @@ public class HexPrinter
      * @param bytes
      * @return formatted hex numbers in string
      */
-    public static String hex( byte[] bytes )
-    {
-        return hex( bytes, DEFAULT_BYTES_PER_GROUP, DEFAULT_GROUP_SEPARATOR );
+    public static String hex(byte[] bytes) {
+        return hex(bytes, DEFAULT_BYTES_PER_GROUP, DEFAULT_GROUP_SEPARATOR);
     }
 
-    public static String hex( byte[] bytes, int bytesPerBlock, String groupSep )
-    {
-        return hex( wrap( bytes ), bytesPerBlock, groupSep );
+    public static String hex(byte[] bytes, int bytesPerBlock, String groupSep) {
+        return hex(wrap(bytes), bytesPerBlock, groupSep);
     }
 
     /**
@@ -360,8 +321,7 @@ public class HexPrinter
      * @param b
      * @return formatted hex numbers in string
      */
-    public static String hex( byte b )
-    {
-        return String.format( "%02X", b );
+    public static String hex(byte b) {
+        return String.format("%02X", b);
     }
 }

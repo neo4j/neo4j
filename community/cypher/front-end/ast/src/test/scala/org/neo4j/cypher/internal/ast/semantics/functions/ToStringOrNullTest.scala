@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 
-class ToStringOrNullTest extends FunctionTestBase("toStringOrNull")  {
+class ToStringOrNullTest extends FunctionTestBase("toStringOrNull") {
 
   test("should accept correct types or types that could be correct at runtime") {
     testValidTypes(CTString)(CTString)

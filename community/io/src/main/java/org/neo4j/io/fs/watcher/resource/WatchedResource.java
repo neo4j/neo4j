@@ -22,7 +22,6 @@ package org.neo4j.io.fs.watcher.resource;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
-
 import org.neo4j.io.fs.watcher.FileWatcher;
 
 /**
@@ -30,28 +29,21 @@ import org.neo4j.io.fs.watcher.FileWatcher;
  *
  * Should be closed if further monitoring is not required.
  */
-public interface WatchedResource extends Closeable
-{
+public interface WatchedResource extends Closeable {
 
-    WatchedResource EMPTY = new WatchedResource()
-    {
+    WatchedResource EMPTY = new WatchedResource() {
         @Override
-        public Path getWatchedFile()
-        {
+        public Path getWatchedFile() {
             return null;
         }
 
         @Override
-        public WatchKey getWatchKey()
-        {
+        public WatchKey getWatchKey() {
             return null;
         }
 
         @Override
-        public void close()
-        {
-
-        }
+        public void close() {}
     };
 
     Path getWatchedFile();

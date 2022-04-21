@@ -22,50 +22,44 @@ package org.neo4j.kernel.api.query;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SchemaIndexUsage extends IndexUsage
-{
+public class SchemaIndexUsage extends IndexUsage {
     private final String label;
     private final String[] propertyKeys;
     private final int[] propertyKeyIds;
     private final int labelId;
 
-    public SchemaIndexUsage( String identifier, int labelId, String label, int[] propertyKeyIds, String... propertyKeys )
-    {
-        super( identifier );
+    public SchemaIndexUsage(
+            String identifier, int labelId, String label, int[] propertyKeyIds, String... propertyKeys) {
+        super(identifier);
         this.label = label;
         this.labelId = labelId;
         this.propertyKeys = propertyKeys;
         this.propertyKeyIds = propertyKeyIds;
     }
 
-    public SchemaIndexUsage( String identifier, int labelId, String label, String... propertyKeys )
-    {
-        this( identifier, labelId, label, new int[0], propertyKeys );
+    public SchemaIndexUsage(String identifier, int labelId, String label, String... propertyKeys) {
+        this(identifier, labelId, label, new int[0], propertyKeys);
     }
 
-    public int getLabelId()
-    {
+    public int getLabelId() {
         return labelId;
     }
 
-    public int[] getPropertyKeys()
-    {
+    public int[] getPropertyKeys() {
         return propertyKeyIds;
     }
 
     @Override
-    public Map<String,String> asMap()
-    {
-        Map<String,String> map = new HashMap<>();
-        map.put( "indexType", "SCHEMA INDEX" );
-        map.put( "entityType", "NODE" );
-        map.put( "identifier", identifier );
-        map.put( "label", label );
-        map.put( "labelId", String.valueOf( labelId ) );
-        for ( int i = 0; i < propertyKeys.length; i++ )
-        {
+    public Map<String, String> asMap() {
+        Map<String, String> map = new HashMap<>();
+        map.put("indexType", "SCHEMA INDEX");
+        map.put("entityType", "NODE");
+        map.put("identifier", identifier);
+        map.put("label", label);
+        map.put("labelId", String.valueOf(labelId));
+        for (int i = 0; i < propertyKeys.length; i++) {
             String key = (propertyKeys.length > 1) ? "propertyKey_" + i : "propertyKey";
-            map.put( key, propertyKeys[i] );
+            map.put(key, propertyKeys[i]);
         }
         return map;
     }

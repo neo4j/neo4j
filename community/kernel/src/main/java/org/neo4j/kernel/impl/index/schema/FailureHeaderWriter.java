@@ -21,15 +21,13 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Writes a failure message to a header in a {@link GBPTree}.
  */
-class FailureHeaderWriter implements Consumer<PageCursor>
-{
+class FailureHeaderWriter implements Consumer<PageCursor> {
     /**
      * The {@code short} length field containing the length (number of bytes) of the failure message.
      */
@@ -38,28 +36,24 @@ class FailureHeaderWriter implements Consumer<PageCursor>
     private final byte[] failureBytes;
     private final byte byteFailed;
 
-    FailureHeaderWriter( byte[] failureBytes )
-    {
-        this( failureBytes, NativeIndexPopulator.BYTE_FAILED );
+    FailureHeaderWriter(byte[] failureBytes) {
+        this(failureBytes, NativeIndexPopulator.BYTE_FAILED);
     }
 
-    FailureHeaderWriter( byte[] failureBytes, byte headerFailureByte )
-    {
+    FailureHeaderWriter(byte[] failureBytes, byte headerFailureByte) {
         this.failureBytes = failureBytes;
         this.byteFailed = headerFailureByte;
     }
 
     @Override
-    public void accept( PageCursor cursor )
-    {
+    public void accept(PageCursor cursor) {
         byte[] bytesToWrite = failureBytes;
-        cursor.putByte( byteFailed );
+        cursor.putByte(byteFailed);
         int availableSpace = cursor.getPagedFile().payloadSize() - cursor.getOffset();
-        if ( bytesToWrite.length + HEADER_LENGTH_FIELD_LENGTH > availableSpace )
-        {
-            bytesToWrite = Arrays.copyOf( bytesToWrite, availableSpace - HEADER_LENGTH_FIELD_LENGTH );
+        if (bytesToWrite.length + HEADER_LENGTH_FIELD_LENGTH > availableSpace) {
+            bytesToWrite = Arrays.copyOf(bytesToWrite, availableSpace - HEADER_LENGTH_FIELD_LENGTH);
         }
-        cursor.putShort( (short) bytesToWrite.length );
-        cursor.putBytes( bytesToWrite );
+        cursor.putShort((short) bytesToWrite.length);
+        cursor.putBytes(bytesToWrite);
     }
 }

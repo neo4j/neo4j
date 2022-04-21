@@ -19,98 +19,79 @@
  */
 package org.neo4j.server.http.cypher.entity;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import java.util.Iterator;
 import java.util.List;
-
+import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-public class HttpPath implements Path
-{
+public class HttpPath implements Path {
     private final List<Relationship> relationships;
     private final List<Node> nodes;
 
-    public HttpPath( List<Node> nodes, List<Relationship> relationships )
-    {
+    public HttpPath(List<Node> nodes, List<Relationship> relationships) {
         this.relationships = relationships;
         this.nodes = nodes;
     }
 
     @Override
-    public Node startNode()
-    {
-        return nodes.get( 0 );
+    public Node startNode() {
+        return nodes.get(0);
     }
 
     @Override
-    public Node endNode()
-    {
-        return nodes.get( nodes.size() - 1 );
+    public Node endNode() {
+        return nodes.get(nodes.size() - 1);
     }
 
     @Override
-    public Relationship lastRelationship()
-    {
-        return relationships.get( relationships.size() - 1 );
+    public Relationship lastRelationship() {
+        return relationships.get(relationships.size() - 1);
     }
 
     @Override
-    public Iterable<Relationship> relationships()
-    {
+    public Iterable<Relationship> relationships() {
         return relationships;
     }
 
     @Override
-    public Iterable<Relationship> reverseRelationships()
-    {
-        throw new NotImplementedException( "HttpPath cannot reverse relationships" );
+    public Iterable<Relationship> reverseRelationships() {
+        throw new NotImplementedException("HttpPath cannot reverse relationships");
     }
 
     @Override
-    public Iterable<Node> nodes()
-    {
+    public Iterable<Node> nodes() {
         return nodes;
     }
 
     @Override
-    public Iterable<Node> reverseNodes()
-    {
-        throw new NotImplementedException( "HttpPath cannot reverse nodes" );
+    public Iterable<Node> reverseNodes() {
+        throw new NotImplementedException("HttpPath cannot reverse nodes");
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         return relationships.size();
     }
 
     @Override
-    public Iterator<Entity> iterator()
-    {
-        return new Iterator<>()
-        {
+    public Iterator<Entity> iterator() {
+        return new Iterator<>() {
             Iterator<? extends Entity> current = nodes().iterator();
             Iterator<? extends Entity> next = relationships().iterator();
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return current.hasNext();
             }
 
             @Override
-            public Entity next()
-            {
-                try
-                {
+            public Entity next() {
+                try {
                     return current.next();
-                }
-                finally
-                {
+                } finally {
                     Iterator<? extends Entity> temp = current;
                     current = next;
                     next = temp;
@@ -118,8 +99,7 @@ public class HttpPath implements Path
             }
 
             @Override
-            public void remove()
-            {
+            public void remove() {
                 next.remove();
             }
         };

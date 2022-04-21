@@ -48,8 +48,12 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     val nodesWithLabel = 40
     val relationships = 5000
 
-    val statistics = graphStatistics(allNodes = allNodes, idxSelectivity = indexSelectivity,
-      relCardinality = relationships, labeledNodes = nodesWithLabel)
+    val statistics = graphStatistics(
+      allNodes = allNodes,
+      idxSelectivity = indexSelectivity,
+      relCardinality = relationships,
+      labeledNodes = nodesWithLabel
+    )
     val instrumentedStatistics = InstrumentedGraphStatistics(statistics, snapshot)
     instrumentedStatistics.nodesAllCardinality()
     instrumentedStatistics.uniqueValueSelectivity(index)
@@ -211,33 +215,37 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     val frozen1 = snapshot1.freeze
     val frozen2 = snapshot2.freeze
 
-    frozen1.diverges(frozen2).divergence should not (be < 1.0)
+    frozen1.diverges(frozen2).divergence should not(be < 1.0)
   }
 
-  private def graphStatistics(allNodes: Long = 500,
-                              labeledNodes: Long = 500,
-                              relCardinality: Long = 5000,
-                              idxSelectivity: Double = 1,
-                              idxPropertyExistsSelectivity: Double = 1): TestGraphStatistics =
-    new TestGraphStatistics(allNodes,
-      labeledNodes,
-      relCardinality,
-      idxSelectivity,
-      idxPropertyExistsSelectivity)
+  private def graphStatistics(
+    allNodes: Long = 500,
+    labeledNodes: Long = 500,
+    relCardinality: Long = 5000,
+    idxSelectivity: Double = 1,
+    idxPropertyExistsSelectivity: Double = 1
+  ): TestGraphStatistics =
+    new TestGraphStatistics(allNodes, labeledNodes, relCardinality, idxSelectivity, idxPropertyExistsSelectivity)
 
-  class TestGraphStatistics(allNodes: Long,
-                            labeledNodes: Long,
-                            relCardinality: Long ,
-                            idxSelectivity: Double ,
-                            idxPropertyExistsSelectivity: Double) extends GraphStatistics {
+  class TestGraphStatistics(
+    allNodes: Long,
+    labeledNodes: Long,
+    relCardinality: Long,
+    idxSelectivity: Double,
+    idxPropertyExistsSelectivity: Double
+  ) extends GraphStatistics {
     private var _factor: Double = 1L
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelId match {
-      case None => Cardinality.SINGLE
+      case None     => Cardinality.SINGLE
       case Some(id) => Cardinality(labeledNodes * _factor)
     }
 
-    def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    def patternStepCardinality(
+      fromLabel: Option[LabelId],
+      relTypeId: Option[RelTypeId],
+      toLabel: Option[LabelId]
+    ): Cardinality =
       Cardinality(relCardinality * _factor)
 
     def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {

@@ -32,8 +32,7 @@ import org.neo4j.internal.helpers.collection.LongRange;
  * since they will be printed to the debug log.
  */
 @FunctionalInterface
-public interface LogPruneStrategy
-{
+public interface LogPruneStrategy {
     /**
      * Produce a stream of log versions which can be deleted, up to and <em>excluding</em> the given
      * {@code upToLogVersion}.
@@ -46,5 +45,5 @@ public interface LogPruneStrategy
      * @return The, possibly empty, range of log versions whose files can be deleted, according to this log pruning
      * strategy.
      */
-    LongRange findLogVersionsToDelete( long upToLogVersion );
+    LongRange findLogVersionsToDelete(long upToLogVersion);
 }

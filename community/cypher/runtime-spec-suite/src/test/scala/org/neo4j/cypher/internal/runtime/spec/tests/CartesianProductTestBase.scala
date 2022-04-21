@@ -37,19 +37,22 @@ import org.neo4j.graphdb.schema.IndexType
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
-
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("handle cached properties and cartesian product on LHS of apply") {
     // given
     nodeIndex("Label", "prop")
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -69,11 +72,14 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple columns ") {
     // given
-    val size = 10 //sizehint is a bit too big here
+    val size = 10 // sizehint is a bit too big here
     val nodes = given {
-      val nodes = nodePropertyGraph(size, {
-        case _ => Map("prop" -> "foo")
-      })
+      val nodes = nodePropertyGraph(
+        size,
+        {
+          case _ => Map("prop" -> "foo")
+        }
+      )
       val relTuples = (for (i <- 0 until size) yield {
         Seq(
           (i, (i + 1) % size, "R")
@@ -104,9 +110,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle different cached-properties on lhs and rhs of cartesian product") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -122,16 +131,21 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {i <- 0 to 9
-                        j <- 0 to 4} yield Array(i, j)
+    val expected = for {
+      i <- 0 to 9
+      j <- 0 to 4
+    } yield Array(i, j)
     runtimeResult should beColumns("aProp", "bProp").withRows(expected)
   }
 
   test("should handle cached properties from both lhs and rhs") {
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -231,11 +245,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expectedResultRows = for {x <- nodes
-                                  y <- unfilteredNodes
-                                  rel <- y.getRelationships.asScala
-                                  z = rel.getOtherNode(y)
-                                  } yield Array(x, y, z)
+    val expectedResultRows = for {
+      x <- nodes
+      y <- unfilteredNodes
+      rel <- y.getRelationships.asScala
+      z = rel.getOtherNode(y)
+    } yield Array(x, y, z)
 
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResultRows)
   }
@@ -258,11 +273,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expectedResultRows = for {y <- nodes if y != null
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  z <- unfilteredNodes
-                                  } yield Array(x, y, z)
+    val expectedResultRows = for {
+      y <- nodes if y != null
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+      z <- unfilteredNodes
+    } yield Array(x, y, z)
 
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResultRows)
   }
@@ -291,9 +307,10 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expectedResultRows = for {x <- nodes if x != null
-                                  z <- unfilteredNodes
-                                  } yield Array(x, z)
+    val expectedResultRows = for {
+      x <- nodes if x != null
+      z <- unfilteredNodes
+    } yield Array(x, z)
 
     runtimeResult should beColumns("x", "z").withRows(expectedResultRows)
   }
@@ -319,9 +336,10 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  z <- unfilteredNodes
-                                  } yield Array(y, z)
+    val expectedResultRows = for {
+      y <- nodes
+      z <- unfilteredNodes
+    } yield Array(y, z)
 
     runtimeResult should beColumns("y", "z").withRows(expectedResultRows)
   }
@@ -347,9 +365,10 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  z <- unfilteredNodes
-                                  } yield Array(y, z)
+    val expectedResultRows = for {
+      y <- nodes
+      z <- unfilteredNodes
+    } yield Array(y, z)
 
     runtimeResult should beColumns("y", "z").withRows(expectedResultRows)
   }
@@ -362,7 +381,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       val bs = nodeGraph(n, "B")
       val cs = nodeGraph(n, "C")
       val ds = nodeGraph(n, "D")
-      (as, bs, cs ,ds)
+      (as, bs, cs, ds)
     }
 
     // when
@@ -380,11 +399,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expectedResultRows = for {a <- as
-                                  b <- bs
-                                  c <- cs
-                                  d <- ds
-                                  } yield Array(a, b, c, d)
+    val expectedResultRows = for {
+      a <- as
+      b <- bs
+      c <- cs
+      d <- ds
+    } yield Array(a, b, c, d)
 
     runtimeResult should beColumns("a", "b", "c", "d").withRows(expectedResultRows)
   }
@@ -411,9 +431,10 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expectedResultRows = for {a <- nodes if a != null
-                                  r1 <- a.getRelationships(Direction.OUTGOING).asScala
-                                  r2 <- a.getRelationships(Direction.OUTGOING).asScala
+    val expectedResultRows = for {
+      a <- nodes if a != null
+      r1 <- a.getRelationships(Direction.OUTGOING).asScala
+      r2 <- a.getRelationships(Direction.OUTGOING).asScala
     } yield Array(a, r1, r2)
 
     runtimeResult should beColumns("a", "r1", "r2").withRows(expectedResultRows)
@@ -464,11 +485,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val allRows = for {x <- nodes
-                       y <- unfilteredNodes
-                       rel <- y.getRelationships().asScala
-                       z = rel.getOtherNode(y)
-                       } yield Array(x, y, z)
+    val allRows = for {
+      x <- nodes
+      y <- unfilteredNodes
+      rel <- y.getRelationships().asScala
+      z = rel.getOtherNode(y)
+    } yield Array(x, y, z)
     val expectedResultRows = allRows.sortBy(arr => (-arr(0).getId, arr(1).getId, arr(2).getId)).take(limitCount)
 
     runtimeResult should beColumns("x", "y", "z").withRows(inOrder(expectedResultRows))
@@ -608,9 +630,16 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
     nodeIndex("Label", "prop")
     given {
-      nodePropertyGraph(nValues, {
-        case i: Int => Map("prop" -> (nValues + 3 - i) % nValues) // Reverse and offset when creating the values so we do not accidentally get them in order
-      }, "Label")
+      nodePropertyGraph(
+        nValues,
+        {
+          case i: Int =>
+            Map(
+              "prop" -> (nValues + 3 - i) % nValues
+            ) // Reverse and offset when creating the values so we do not accidentally get them in order
+        },
+        "Label"
+      )
     }
 
     // when
@@ -625,9 +654,11 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    val expected = for {i <- 0 until nValues
-                        j <- 0 until i
-                        k <- 0 until i} yield Array(j, k)
+    val expected = for {
+      i <- 0 until nValues
+      j <- 0 until i
+      k <- 0 until i
+    } yield Array(j, k)
     val runtimeResult = execute(logicalQuery, runtime, inputRows)
     runtimeResult should beColumns("nn", "mm").withRows(inOrder(expected))
   }
@@ -644,7 +675,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     }
 
     require((n & 1) == 0)
-    val nBatchSize = n/2
+    val nBatchSize = n / 2
     val inputStream = batchedInputValues(nBatchSize, as.map(n => Array[Any](n)): _*).stream()
 
     // when
@@ -669,9 +700,10 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     inputStream.hasMore shouldBe false
 
     // then
-    val expectedResultRows = for {a <- as
-                                  b <- bs
-                                  } yield Array(a, b)
+    val expectedResultRows = for {
+      a <- as
+      b <- bs
+    } yield Array(a, b)
 
     val runtimeResult = RecordingRuntimeResult(result, subscriber)
     runtimeResult should beColumns("a", "b").withRows(expectedResultRows)
@@ -687,11 +719,11 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       val bs = nodeGraph(n, "B")
       val cs = nodeGraph(n, "C")
       val ds = nodeGraph(n, "D")
-      (as, bs, cs ,ds)
+      (as, bs, cs, ds)
     }
 
     require((n & 1) == 0)
-    val nBatchSize = n/2
+    val nBatchSize = n / 2
     val inputStream = batchedInputValues(nBatchSize, as.map(n => Array[Any](n)): _*).stream()
 
     // when
@@ -720,11 +752,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     inputStream.hasMore shouldBe false
 
     // then
-    val expectedResultRows = for {a <- as
-                                  b <- bs
-                                  c <- cs
-                                  d <- ds
-                                  } yield Array(a, b, c, d)
+    val expectedResultRows = for {
+      a <- as
+      b <- bs
+      c <- cs
+      d <- ds
+    } yield Array(a, b, c, d)
 
     val runtimeResult = RecordingRuntimeResult(result, subscriber)
     runtimeResult should beColumns("a", "b", "c", "d").withRows(expectedResultRows)

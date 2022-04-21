@@ -25,8 +25,7 @@ package org.neo4j.procedure.builtin.routing;
  * Note that a particular server might have several capabilities
  * but they will all be reported as distinct endpoints.
  */
-public enum Role
-{
+public enum Role {
     /**
      * Supports read operations.
      */

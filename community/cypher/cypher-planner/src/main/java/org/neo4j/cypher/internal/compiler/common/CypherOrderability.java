@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.common;
 
+import static java.lang.String.format;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -27,7 +29,6 @@ import java.util.Map;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-
 import org.neo4j.exceptions.IncomparableValuesException;
 import org.neo4j.exceptions.UnorderableValueException;
 import org.neo4j.graphdb.Entity;
@@ -39,8 +40,6 @@ import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
-
-import static java.lang.String.format;
 
 /**
  * Helper class for dealing with orderability in compiled code.
@@ -82,13 +81,11 @@ import static java.lang.String.format;
  *
  * TBD: POINT and GEOMETRY
  */
-public class CypherOrderability
-{
+public class CypherOrderability {
     /**
      * Do not instantiate this class
      */
-    private CypherOrderability()
-    {
+    private CypherOrderability() {
         throw new UnsupportedOperationException();
     }
 
@@ -99,268 +96,193 @@ public class CypherOrderability
      * @param rhs
      * @return
      */
-    public static int compare( Object lhs, Object rhs )
-    {
-        if ( lhs == rhs )
-        {
+    public static int compare(Object lhs, Object rhs) {
+        if (lhs == rhs) {
             return 0;
         }
         // null is greater than any other type
-        else if ( lhs == Values.NO_VALUE || lhs == null )
-        {
+        else if (lhs == Values.NO_VALUE || lhs == null) {
             return 1;
-        }
-        else if ( rhs == Values.NO_VALUE || rhs == null )
-        {
+        } else if (rhs == Values.NO_VALUE || rhs == null) {
             return -1;
-        }
-        else if ( lhs instanceof AnyValue )
-        {
-            return AnyValues.COMPARATOR.compare( (AnyValue) lhs, ValueUtils.of( rhs ) );
-        }
-        else if ( rhs instanceof AnyValue )
-        {
-            return AnyValues.COMPARATOR.compare( ValueUtils.of( lhs ), (AnyValue) rhs );
+        } else if (lhs instanceof AnyValue) {
+            return AnyValues.COMPARATOR.compare((AnyValue) lhs, ValueUtils.of(rhs));
+        } else if (rhs instanceof AnyValue) {
+            return AnyValues.COMPARATOR.compare(ValueUtils.of(lhs), (AnyValue) rhs);
         }
         // Compare the types
         // TODO: Test coverage for the Orderability CIP
-        SuperType leftType = SuperType.ofValue( lhs );
-        SuperType rightType = SuperType.ofValue( rhs );
+        SuperType leftType = SuperType.ofValue(lhs);
+        SuperType rightType = SuperType.ofValue(rhs);
 
-        int typeComparison = SuperType.TYPE_ID_COMPARATOR.compare( leftType, rightType );
-        if ( typeComparison != 0 )
-        {
+        int typeComparison = SuperType.TYPE_ID_COMPARATOR.compare(leftType, rightType);
+        if (typeComparison != 0) {
             // Types are different an decides the order
             return typeComparison;
         }
 
-        return leftType.comparator.compare( lhs, rhs );
+        return leftType.comparator.compare(lhs, rhs);
     }
 
-    public enum SuperType
-    {
-        MAP( 0, FALLBACK_COMPARATOR /*TODO*/ ),
-        NODE( 1, NODE_COMPARATOR ),
-        RELATIONSHIP( 2, RELATIONSHIP_COMPARATOR ),
-        LIST( 3, LIST_COMPARATOR ),
-        PATH( 4, PATH_COMPARATOR ),
-        STRING( 5, STRING_COMPARATOR ),
-        BOOLEAN( 6, BOOLEAN_COMPARATOR ),
-        NUMBER( 7, NUMBER_COMPARATOR ),
-        VOID( 8, VOID_COMPARATOR );
+    public enum SuperType {
+        MAP(0, FALLBACK_COMPARATOR /*TODO*/),
+        NODE(1, NODE_COMPARATOR),
+        RELATIONSHIP(2, RELATIONSHIP_COMPARATOR),
+        LIST(3, LIST_COMPARATOR),
+        PATH(4, PATH_COMPARATOR),
+        STRING(5, STRING_COMPARATOR),
+        BOOLEAN(6, BOOLEAN_COMPARATOR),
+        NUMBER(7, NUMBER_COMPARATOR),
+        VOID(8, VOID_COMPARATOR);
 
         public final int typeId;
         public final Comparator comparator;
 
-        SuperType( int typeId, Comparator comparator )
-        {
+        SuperType(int typeId, Comparator comparator) {
             this.typeId = typeId;
             this.comparator = comparator;
         }
 
-        public static SuperType ofValue( Object value )
-        {
-            if ( value instanceof String || value instanceof Character )
-            {
+        public static SuperType ofValue(Object value) {
+            if (value instanceof String || value instanceof Character) {
                 return STRING;
-            }
-            else if ( value instanceof Number )
-            {
+            } else if (value instanceof Number) {
                 return NUMBER;
-            }
-            else if ( value instanceof Boolean )
-            {
+            } else if (value instanceof Boolean) {
                 return BOOLEAN;
-            }
-            else if ( value instanceof Map<?,?> )
-            {
+            } else if (value instanceof Map<?, ?>) {
                 return MAP;
-            }
-            else if ( value instanceof List<?> || value.getClass().isArray() )
-            {
+            } else if (value instanceof List<?> || value.getClass().isArray()) {
                 return LIST;
-            }
-            else if ( value instanceof VirtualNodeValue )
-            {
-                if ( ((VirtualNodeValue) value).id() == -1 )
-                {
+            } else if (value instanceof VirtualNodeValue) {
+                if (((VirtualNodeValue) value).id() == -1) {
                     return VOID;
                 }
                 return NODE;
-            }
-            else if ( value instanceof VirtualRelationshipValue )
-            {
-                if ( ((VirtualRelationshipValue) value).id() == -1 )
-                {
+            } else if (value instanceof VirtualRelationshipValue) {
+                if (((VirtualRelationshipValue) value).id() == -1) {
                     return VOID;
                 }
                 return RELATIONSHIP;
             }
             // TODO is Path really the class that compiled runtime will be using?
-            else if ( value instanceof Path )
-            {
+            else if (value instanceof Path) {
                 return PATH;
             }
-            throw new UnorderableValueException( value.getClass().getSimpleName(), null );
+            throw new UnorderableValueException(value.getClass().getSimpleName(), null);
         }
 
-        public static final Comparator<SuperType> TYPE_ID_COMPARATOR = Comparator.comparingInt( left -> left.typeId );
+        public static final Comparator<SuperType> TYPE_ID_COMPARATOR = Comparator.comparingInt(left -> left.typeId);
     }
 
     // NOTE: nulls are handled at the top of the public compare() method
     // so the type-specific comparators should not check arguments for null
 
-    private static final Comparator<Object> FALLBACK_COMPARATOR = ( lhs, rhs ) ->
-    {
-        if ( lhs.getClass().isAssignableFrom( rhs.getClass() ) &&
-             lhs instanceof Comparable &&
-             rhs instanceof Comparable )
-        {
-            return ((Comparable) lhs).compareTo( rhs );
+    private static final Comparator<Object> FALLBACK_COMPARATOR = (lhs, rhs) -> {
+        if (lhs.getClass().isAssignableFrom(rhs.getClass()) && lhs instanceof Comparable && rhs instanceof Comparable) {
+            return ((Comparable) lhs).compareTo(rhs);
         }
 
-        throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
+        throw new IncomparableValuesException(
+                lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName());
     };
 
-    private static final Comparator<Object> VOID_COMPARATOR = ( lhs, rhs ) -> 0;
+    private static final Comparator<Object> VOID_COMPARATOR = (lhs, rhs) -> 0;
 
-    private static final Comparator<Number> NUMBER_COMPARATOR = ( lhs, rhs ) ->
-    {
+    private static final Comparator<Number> NUMBER_COMPARATOR = (lhs, rhs) -> {
         // If floats, compare float values. If integer types, compare long values
-        if ( lhs instanceof Double && rhs instanceof Float )
-        {
-            return ((Double) lhs).compareTo( rhs.doubleValue() );
-        }
-        else if ( lhs instanceof Float && rhs instanceof Double )
-        {
-            return -((Double) rhs).compareTo( lhs.doubleValue() );
-        }
-        else if ( lhs instanceof Float && rhs instanceof Float )
-        {
-            return ((Float) lhs).compareTo( (Float) rhs );
-        }
-        else if ( lhs instanceof Double && rhs instanceof Double )
-        {
-            return ((Double) lhs).compareTo( (Double) rhs );
+        if (lhs instanceof Double && rhs instanceof Float) {
+            return ((Double) lhs).compareTo(rhs.doubleValue());
+        } else if (lhs instanceof Float && rhs instanceof Double) {
+            return -((Double) rhs).compareTo(lhs.doubleValue());
+        } else if (lhs instanceof Float && rhs instanceof Float) {
+            return ((Float) lhs).compareTo((Float) rhs);
+        } else if (lhs instanceof Double && rhs instanceof Double) {
+            return ((Double) lhs).compareTo((Double) rhs);
         }
         // Right hand side is neither Float nor Double
-        else if ( lhs instanceof Double || lhs instanceof Float )
-        {
-            return MathUtil.compareDoubleAgainstLong( lhs.doubleValue(), rhs.longValue() );
+        else if (lhs instanceof Double || lhs instanceof Float) {
+            return MathUtil.compareDoubleAgainstLong(lhs.doubleValue(), rhs.longValue());
         }
         // Left hand side is neither Float nor Double
-        else if ( rhs instanceof Double || rhs instanceof Float )
-        {
-            return -MathUtil.compareDoubleAgainstLong( rhs.doubleValue(), lhs.longValue() );
+        else if (rhs instanceof Double || rhs instanceof Float) {
+            return -MathUtil.compareDoubleAgainstLong(rhs.doubleValue(), lhs.longValue());
         }
         // Everything else is a long from Cypher's point-of-view
-        return Long.compare( lhs.longValue(), rhs.longValue() );
+        return Long.compare(lhs.longValue(), rhs.longValue());
     };
 
-    private static final Comparator<Object> STRING_COMPARATOR = ( lhs, rhs ) ->
-    {
-        if ( lhs instanceof Character && rhs instanceof String )
-        {
-            return lhs.toString().compareTo( (String) rhs );
-        }
-        else if ( lhs instanceof String && rhs instanceof Character )
-        {
-            return ((String) lhs).compareTo( rhs.toString() );
-        }
-        else
-        {
-            return ((Comparable) lhs).compareTo( rhs );
+    private static final Comparator<Object> STRING_COMPARATOR = (lhs, rhs) -> {
+        if (lhs instanceof Character && rhs instanceof String) {
+            return lhs.toString().compareTo((String) rhs);
+        } else if (lhs instanceof String && rhs instanceof Character) {
+            return ((String) lhs).compareTo(rhs.toString());
+        } else {
+            return ((Comparable) lhs).compareTo(rhs);
         }
     };
 
     private static final Comparator<Boolean> BOOLEAN_COMPARATOR = Boolean::compareTo;
 
-    private static final Comparator<VirtualNodeValue> NODE_COMPARATOR = Comparator.comparingLong( VirtualNodeValue::id );
+    private static final Comparator<VirtualNodeValue> NODE_COMPARATOR = Comparator.comparingLong(VirtualNodeValue::id);
 
     private static final Comparator<VirtualRelationshipValue> RELATIONSHIP_COMPARATOR =
-            Comparator.comparingLong( VirtualRelationshipValue::id );
+            Comparator.comparingLong(VirtualRelationshipValue::id);
 
     // TODO test
-    private static final Comparator<Path> PATH_COMPARATOR = ( lhs, rhs ) ->
-    {
+    private static final Comparator<Path> PATH_COMPARATOR = (lhs, rhs) -> {
         Iterator<Entity> lhsIter = lhs.iterator();
         Iterator<Entity> rhsIter = rhs.iterator();
-        while ( lhsIter.hasNext() && rhsIter.hasNext() )
-        {
-            int result = compare( lhsIter.next(), rhsIter.next() );
-            if ( 0 != result )
-            {
+        while (lhsIter.hasNext() && rhsIter.hasNext()) {
+            int result = compare(lhsIter.next(), rhsIter.next());
+            if (0 != result) {
                 return result;
             }
         }
-        return (lhsIter.hasNext()) ? 1
-                                   : (rhsIter.hasNext()) ? -1
-                                                         : 0;
+        return (lhsIter.hasNext()) ? 1 : (rhsIter.hasNext()) ? -1 : 0;
     };
 
-    private static final Comparator<Object> LIST_COMPARATOR = new Comparator<>()
-    {
+    private static final Comparator<Object> LIST_COMPARATOR = new Comparator<>() {
         @Override
-        public int compare( Object lhs, Object rhs )
-        {
-            Iterator lhsIter = toIterator( lhs );
-            Iterator rhsIter = toIterator( rhs );
-            while ( lhsIter.hasNext() && rhsIter.hasNext() )
-            {
-                int result = CypherOrderability.compare( lhsIter.next(), rhsIter.next() );
-                if ( 0 != result )
-                {
+        public int compare(Object lhs, Object rhs) {
+            Iterator lhsIter = toIterator(lhs);
+            Iterator rhsIter = toIterator(rhs);
+            while (lhsIter.hasNext() && rhsIter.hasNext()) {
+                int result = CypherOrderability.compare(lhsIter.next(), rhsIter.next());
+                if (0 != result) {
                     return result;
                 }
             }
-            return (lhsIter.hasNext()) ? 1
-                                       : (rhsIter.hasNext()) ? -1
-                                                             : 0;
+            return (lhsIter.hasNext()) ? 1 : (rhsIter.hasNext()) ? -1 : 0;
         }
 
-        private Iterator toIterator( Object o )
-        {
+        private Iterator toIterator(Object o) {
             Class<?> clazz = o.getClass();
-            if ( Iterable.class.isAssignableFrom( clazz ) )
-            {
+            if (Iterable.class.isAssignableFrom(clazz)) {
                 return ((Iterable) o).iterator();
-            }
-            else if ( Object[].class.isAssignableFrom( clazz ) )
-            {
-                return Arrays.stream( (Object[]) o ).iterator();
-            }
-            else if ( clazz.equals( int[].class ) )
-            {
-                return IntStream.of( (int[]) o ).iterator();
-            }
-            else if ( clazz.equals( long[].class ) )
-            {
-                return LongStream.of( (long[]) o ).iterator();
-            }
-            else if ( clazz.equals( float[].class ) )
-            {
-                return IntStream.range( 0, ((float[]) o).length ).mapToObj( i -> ((float[]) o)[i] ).iterator();
-            }
-            else if ( clazz.equals( double[].class ) )
-            {
-                return DoubleStream.of( (double[]) o ).iterator();
-            }
-            else if ( clazz.equals( String[].class ) )
-            {
-                return Arrays.stream( (String[]) o ).iterator();
-            }
-            else if ( clazz.equals( boolean[].class ) )
-            {
+            } else if (Object[].class.isAssignableFrom(clazz)) {
+                return Arrays.stream((Object[]) o).iterator();
+            } else if (clazz.equals(int[].class)) {
+                return IntStream.of((int[]) o).iterator();
+            } else if (clazz.equals(long[].class)) {
+                return LongStream.of((long[]) o).iterator();
+            } else if (clazz.equals(float[].class)) {
+                return IntStream.range(0, ((float[]) o).length)
+                        .mapToObj(i -> ((float[]) o)[i])
+                        .iterator();
+            } else if (clazz.equals(double[].class)) {
+                return DoubleStream.of((double[]) o).iterator();
+            } else if (clazz.equals(String[].class)) {
+                return Arrays.stream((String[]) o).iterator();
+            } else if (clazz.equals(boolean[].class)) {
                 // TODO Is there a better way to covert boolean[] to Iterator?
-                return IntStream.range( 0, ((boolean[]) o).length ).mapToObj( i -> ((boolean[]) o)[i] ).iterator();
-            }
-            else if ( clazz.equals( Boolean[].class ) )
-            {
-                return Arrays.stream( (Boolean[]) o ).iterator();
-            }
-            else
-            {
-                throw new UnsupportedOperationException( format( "Can not convert to iterator: %s", clazz.getName() ) );
+                return IntStream.range(0, ((boolean[]) o).length)
+                        .mapToObj(i -> ((boolean[]) o)[i])
+                        .iterator();
+            } else if (clazz.equals(Boolean[].class)) {
+                return Arrays.stream((Boolean[]) o).iterator();
+            } else {
+                throw new UnsupportedOperationException(format("Can not convert to iterator: %s", clazz.getName()));
             }
         }
     };

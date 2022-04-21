@@ -22,161 +22,138 @@ package org.neo4j.kernel.impl.transaction;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
-import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class SimpleMetaDataProvider implements MetadataProvider
-{
+public class SimpleMetaDataProvider implements MetadataProvider {
     private final SimpleTransactionIdStore transactionIdStore;
     private final SimpleLogVersionRepository logVersionRepository;
-    private final ExternalStoreId externalStoreId = new ExternalStoreId( UUID.randomUUID() );
+    private final ExternalStoreId externalStoreId = new ExternalStoreId(UUID.randomUUID());
 
-    public SimpleMetaDataProvider()
-    {
+    public SimpleMetaDataProvider() {
         transactionIdStore = new SimpleTransactionIdStore();
         logVersionRepository = new SimpleLogVersionRepository();
     }
 
     @Override
-    public void close() throws IOException
-    {
-    }
+    public void close() throws IOException {}
 
     @Override
-    public long getCurrentLogVersion()
-    {
+    public long getCurrentLogVersion() {
         return logVersionRepository.getCurrentLogVersion();
     }
 
     @Override
-    public void setCurrentLogVersion( long version )
-    {
-        logVersionRepository.setCurrentLogVersion( version );
+    public void setCurrentLogVersion(long version) {
+        logVersionRepository.setCurrentLogVersion(version);
     }
 
     @Override
-    public long incrementAndGetVersion()
-    {
+    public long incrementAndGetVersion() {
         return logVersionRepository.incrementAndGetVersion();
     }
 
     @Override
-    public long getCheckpointLogVersion()
-    {
+    public long getCheckpointLogVersion() {
         return logVersionRepository.getCheckpointLogVersion();
     }
 
     @Override
-    public void setCheckpointLogVersion( long version )
-    {
-        logVersionRepository.setCheckpointLogVersion( version );
+    public void setCheckpointLogVersion(long version) {
+        logVersionRepository.setCheckpointLogVersion(version);
     }
 
     @Override
-    public long incrementAndGetCheckpointLogVersion()
-    {
+    public long incrementAndGetCheckpointLogVersion() {
         return logVersionRepository.incrementAndGetCheckpointLogVersion();
     }
 
     @Override
-    public LegacyStoreId getStoreId()
-    {
+    public LegacyStoreId getStoreId() {
         return LegacyStoreId.UNKNOWN;
     }
 
     @Override
-    public Optional<ExternalStoreId> getExternalStoreId()
-    {
-        return Optional.of( externalStoreId );
+    public Optional<ExternalStoreId> getExternalStoreId() {
+        return Optional.of(externalStoreId);
     }
 
     @Override
-    public long nextCommittingTransactionId()
-    {
+    public long nextCommittingTransactionId() {
         return transactionIdStore.nextCommittingTransactionId();
     }
 
     @Override
-    public long committingTransactionId()
-    {
+    public long committingTransactionId() {
         return transactionIdStore.committingTransactionId();
     }
 
     @Override
-    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
-    {
-        transactionIdStore.transactionCommitted( transactionId, checksum, commitTimestamp );
+    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp) {
+        transactionIdStore.transactionCommitted(transactionId, checksum, commitTimestamp);
     }
 
     @Override
-    public long getLastCommittedTransactionId()
-    {
+    public long getLastCommittedTransactionId() {
         return transactionIdStore.getLastCommittedTransactionId();
     }
 
     @Override
-    public TransactionId getLastCommittedTransaction()
-    {
+    public TransactionId getLastCommittedTransaction() {
         return transactionIdStore.getLastCommittedTransaction();
     }
 
     @Override
-    public long getLastClosedTransactionId()
-    {
+    public long getLastClosedTransactionId() {
         return transactionIdStore.getLastClosedTransactionId();
     }
 
     @Override
-    public ClosedTransactionMetadata getLastClosedTransaction()
-    {
+    public ClosedTransactionMetadata getLastClosedTransaction() {
         return transactionIdStore.getLastClosedTransaction();
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion )
-    {
-        transactionIdStore.setLastCommittedAndClosedTransactionId( transactionId, checksum, commitTimestamp, byteOffset, logVersion );
+    public void setLastCommittedAndClosedTransactionId(
+            long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion) {
+        transactionIdStore.setLastCommittedAndClosedTransactionId(
+                transactionId, checksum, commitTimestamp, byteOffset, logVersion);
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp )
-    {
-        transactionIdStore.transactionClosed( transactionId, logVersion, byteOffset, checksum, commitTimestamp );
+    public void transactionClosed(
+            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
+        transactionIdStore.transactionClosed(transactionId, logVersion, byteOffset, checksum, commitTimestamp);
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp )
-    {
-        transactionIdStore.resetLastClosedTransaction( transactionId, logVersion, byteOffset, checksum, commitTimestamp );
+    public void resetLastClosedTransaction(
+            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
+        transactionIdStore.resetLastClosedTransaction(transactionId, logVersion, byteOffset, checksum, commitTimestamp);
     }
 
     @Override
-    public KernelVersion kernelVersion()
-    {
+    public KernelVersion kernelVersion() {
         return KernelVersion.LATEST;
     }
 
     @Override
-    public Optional<UUID> getDatabaseIdUuid( CursorContext cursorContext )
-    {
-        throw new IllegalStateException( "Not supported" );
+    public Optional<UUID> getDatabaseIdUuid(CursorContext cursorContext) {
+        throw new IllegalStateException("Not supported");
     }
 
     @Override
-    public void setDatabaseIdUuid( UUID uuid, CursorContext cursorContext )
-    {
-        throw new IllegalStateException( "Not supported" );
+    public void setDatabaseIdUuid(UUID uuid, CursorContext cursorContext) {
+        throw new IllegalStateException("Not supported");
     }
 
     @Override
-    public void regenerateMetadata( LegacyStoreId storeId, UUID externalStoreUUID, CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "RegenerateMetadata is not supported." );
+    public void regenerateMetadata(LegacyStoreId storeId, UUID externalStoreUUID, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("RegenerateMetadata is not supported.");
     }
 }

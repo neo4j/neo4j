@@ -19,11 +19,11 @@
  */
 package org.neo4j.index;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -38,80 +38,71 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ImpermanentDbmsExtension
-class ShutdownOnIndexUpdateIT
-{
+class ShutdownOnIndexUpdateIT {
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private Database database;
 
     private static final String UNIQUE_PROPERTY_NAME = "uniquePropertyName";
     private static final AtomicLong indexProvider = new AtomicLong();
-    private static final Label CONSTRAINT_INDEX_LABEL = Label.label( "ConstraintIndexLabel" );
+    private static final Label CONSTRAINT_INDEX_LABEL = Label.label("ConstraintIndexLabel");
 
     @Test
-    void shutdownWhileFinishingTransactionWithIndexUpdates()
-    {
-        createConstraint( db );
-        waitIndexesOnline( db );
+    void shutdownWhileFinishingTransactionWithIndexUpdates() {
+        createConstraint(db);
+        waitIndexesOnline(db);
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Node node = transaction.createNode( CONSTRAINT_INDEX_LABEL );
-            node.setProperty( UNIQUE_PROPERTY_NAME, indexProvider.getAndIncrement() );
+        try (Transaction transaction = db.beginTx()) {
+            Node node = transaction.createNode(CONSTRAINT_INDEX_LABEL);
+            node.setProperty(UNIQUE_PROPERTY_NAME, indexProvider.getAndIncrement());
 
             LifeSupport dataSourceLife = database.getLife();
-            TransactionCloseListener closeListener = new TransactionCloseListener( transaction );
-            dataSourceLife.addLifecycleListener( closeListener );
+            TransactionCloseListener closeListener = new TransactionCloseListener(transaction);
+            dataSourceLife.addLifecycleListener(closeListener);
             database.stop();
 
-            assertTrue( closeListener.isTransactionClosed(), "Transaction should be closed and no exception should be thrown." );
+            assertTrue(
+                    closeListener.isTransactionClosed(),
+                    "Transaction should be closed and no exception should be thrown.");
         }
     }
 
-    private static void waitIndexesOnline( GraphDatabaseService database )
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
+    private static void waitIndexesOnline(GraphDatabaseService database) {
+        try (Transaction tx = database.beginTx()) {
+            tx.schema().awaitIndexesOnline(5, TimeUnit.MINUTES);
         }
     }
 
-    private static void createConstraint( GraphDatabaseService database )
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
+    private static void createConstraint(GraphDatabaseService database) {
+        try (Transaction transaction = database.beginTx()) {
             Schema schema = transaction.schema();
-            schema.constraintFor( CONSTRAINT_INDEX_LABEL ).assertPropertyIsUnique( UNIQUE_PROPERTY_NAME ).create();
+            schema.constraintFor(CONSTRAINT_INDEX_LABEL)
+                    .assertPropertyIsUnique(UNIQUE_PROPERTY_NAME)
+                    .create();
             transaction.commit();
         }
     }
 
-    private static class TransactionCloseListener implements LifecycleListener
-    {
+    private static class TransactionCloseListener implements LifecycleListener {
         private final Transaction transaction;
         private boolean transactionClosed;
 
-        TransactionCloseListener( Transaction transaction )
-        {
+        TransactionCloseListener(Transaction transaction) {
             this.transaction = transaction;
         }
 
         @Override
-        public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
-        {
-            if ( (LifecycleStatus.STOPPED == to) && instance instanceof RecordStorageEngine )
-            {
+        public void notifyStatusChanged(Object instance, LifecycleStatus from, LifecycleStatus to) {
+            if ((LifecycleStatus.STOPPED == to) && instance instanceof RecordStorageEngine) {
                 transaction.commit();
                 transactionClosed = true;
             }
         }
 
-        boolean isTransactionClosed()
-        {
+        boolean isTransactionClosed() {
             return transactionClosed;
         }
     }

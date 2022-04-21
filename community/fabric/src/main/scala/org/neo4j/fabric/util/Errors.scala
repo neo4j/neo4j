@@ -51,14 +51,14 @@ object Errors {
   }
 
   case class InvalidQueryException(errors: Seq[SemanticErrorDef]) extends RuntimeException(
-    s"Invalid query\n${errors.map(e => s"- ${e.msg} [at ${e.position}]").mkString("\n")}"
-  ) with HasErrors {
+        s"Invalid query\n${errors.map(e => s"- ${e.msg} [at ${e.position}]").mkString("\n")}"
+      ) with HasErrors {
     override def update(upd: SemanticErrorDef => SemanticErrorDef): InvalidQueryException = copy(errors.map(upd))
   }
 
   case class EvaluationFailedException(errors: Seq[SemanticErrorDef]) extends RuntimeException(
-    s"Evaluation failed\n${errors.map(e => s"- ${e.msg} [at ${e.position}]").mkString("\n")}"
-  ) with HasErrors {
+        s"Evaluation failed\n${errors.map(e => s"- ${e.msg} [at ${e.position}]").mkString("\n")}"
+      ) with HasErrors {
     override def update(upd: SemanticErrorDef => SemanticErrorDef): EvaluationFailedException = copy(errors.map(upd))
   }
   def openCypherSemantic(msg: String, node: ASTNode): SemanticError = SemanticError(msg, node.position)
@@ -73,41 +73,51 @@ object Errors {
 
   def openCypherFailure(error: SemanticErrorDef): Nothing = openCypherFailure(Seq(error))
 
-  def openCypherUnexpected(exp: String, pos: InputPosition): Nothing = openCypherInvalid(SemanticError(s"Expected: $exp", pos))
+  def openCypherUnexpected(exp: String, pos: InputPosition): Nothing =
+    openCypherInvalid(SemanticError(s"Expected: $exp", pos))
 
-  def openCypherUnexpected(exp: String, got: String, pos: InputPosition): Nothing = openCypherInvalid(SemanticError(s"Expected: $exp, got: $got", pos))
+  def openCypherUnexpected(exp: String, got: String, pos: InputPosition): Nothing =
+    openCypherInvalid(SemanticError(s"Expected: $exp, got: $got", pos))
 
-  def openCypherUnexpected(exp: String, got: String, in: String, pos: InputPosition): Nothing = openCypherInvalid(SemanticError(s"Expected: $exp, got: $got, in: $in", pos))
+  def openCypherUnexpected(exp: String, got: String, in: String, pos: InputPosition): Nothing =
+    openCypherInvalid(SemanticError(s"Expected: $exp, got: $got, in: $in", pos))
 
   def openCypherUnexpected(exp: String, got: ASTNode): Nothing = openCypherUnexpected(exp, got.position)
 
-  def openCypherUnknownFunction(qualifiedName : String, pos: InputPosition): Nothing = openCypherFailure(SemanticError(s"Unknown function '$qualifiedName'", pos))
+  def openCypherUnknownFunction(qualifiedName: String, pos: InputPosition): Nothing =
+    openCypherFailure(SemanticError(s"Unknown function '$qualifiedName'", pos))
 
-  def wrongType(exp: String, got: String): Nothing = throw new CypherTypeException(s"Wrong type. Expected $exp, got $got")
+  def wrongType(exp: String, got: String): Nothing =
+    throw new CypherTypeException(s"Wrong type. Expected $exp, got $got")
 
-  def wrongArity(exp: Int, got: Int, pos: InputPosition): Nothing = syntax(s"Wrong arity. Expected $exp argument(s), got $got argument(s)")
+  def wrongArity(exp: Int, got: Int, pos: InputPosition): Nothing =
+    syntax(s"Wrong arity. Expected $exp argument(s), got $got argument(s)")
 
   def syntax(msg: String): Nothing = throw new SyntaxException(msg)
 
-  def syntax(msg: String, query: String, pos: InputPosition): Nothing = throw new SyntaxException(msg, query, pos.offset)
+  def syntax(msg: String, query: String, pos: InputPosition): Nothing =
+    throw new SyntaxException(msg, query, pos.offset)
 
   def semantic(message: String) = throw new InvalidSemanticsException(message)
 
   def ddlNotSupported(ddl: AdministrationCommand) = throw new DatabaseAdministrationException(
-    s"This is an administration command and it should be executed against the system database: ${ddl.name}")
+    s"This is an administration command and it should be executed against the system database: ${ddl.name}"
+  )
 
-  def entityNotFound(kind: String, needle: String): Nothing = throw new EntityNotFoundException(s"$kind not found: $needle")
+  def entityNotFound(kind: String, needle: String): Nothing =
+    throw new EntityNotFoundException(s"$kind not found: $needle")
 
   /** Attaches position and query info to exceptions, if it is missing */
   def errorContext[T](query: String, node: ASTNode)(block: => T): T =
-    try block catch {
+    try block
+    catch {
       case e: HasErrors => throw e.update {
-        case SemanticError(msg, InputPosition.NONE) => syntax(msg, query, node.position)
-        case SemanticError(msg, pos) => syntax(msg, query, pos)
-        case FeatureError(msg, _, InputPosition.NONE) => syntax(msg, query, node.position)
-        case FeatureError(msg, _, pos) => syntax(msg, query, pos)
-        case o => o
-      }
+          case SemanticError(msg, InputPosition.NONE)   => syntax(msg, query, node.position)
+          case SemanticError(msg, pos)                  => syntax(msg, query, pos)
+          case FeatureError(msg, _, InputPosition.NONE) => syntax(msg, query, node.position)
+          case FeatureError(msg, _, pos)                => syntax(msg, query, pos)
+          case o                                        => o
+        }
     }
 
   def show(n: CatalogName): String = n.parts.mkString(".")

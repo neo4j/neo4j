@@ -21,7 +21,6 @@ package org.neo4j.bolt.v43.messaging.request;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
@@ -29,8 +28,7 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * Message used to retrieve the routing table given a routing context and a database name.
  */
-public class RouteMessage implements RequestMessage
-{
+public class RouteMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x66;
     private static final String NAME = "ROUTE";
 
@@ -38,57 +36,47 @@ public class RouteMessage implements RequestMessage
     private final List<Bookmark> bookmarks;
     private final String databaseName;
 
-    public RouteMessage( MapValue requestContext, List<Bookmark> bookmarks, String databaseName )
-    {
+    public RouteMessage(MapValue requestContext, List<Bookmark> bookmarks, String databaseName) {
         this.databaseName = databaseName;
         this.requestContext = requestContext;
         this.bookmarks = bookmarks;
     }
 
-    public MapValue getRequestContext()
-    {
+    public MapValue getRequestContext() {
         return requestContext;
     }
 
-    public List<Bookmark> getBookmarks()
-    {
+    public List<Bookmark> getBookmarks() {
         return bookmarks;
     }
 
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return databaseName;
     }
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return true;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return NAME;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( o instanceof RouteMessage that )
-        {
-            return Objects.equals( requestContext, that.requestContext ) && Objects.equals( databaseName, that.databaseName )
-                    && Objects.equals( this.bookmarks, that.bookmarks );
-        }
-        else
-        {
+    public boolean equals(Object o) {
+        if (o instanceof RouteMessage that) {
+            return Objects.equals(requestContext, that.requestContext)
+                    && Objects.equals(databaseName, that.databaseName)
+                    && Objects.equals(this.bookmarks, that.bookmarks);
+        } else {
             return false;
         }
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( requestContext, bookmarks, databaseName );
+    public int hashCode() {
+        return Objects.hash(requestContext, bookmarks, databaseName);
     }
 }

@@ -39,7 +39,7 @@ class ListSupportTest extends FunSuite with Matchers with ScalaCheckPropertyChec
       Seq(
         3 -> Seq("foo", "bar"),
         0 -> Seq("", ""),
-        1 -> Seq("a", "b", "c"),
+        1 -> Seq("a", "b", "c")
       )
 
     groups shouldEqual expected
@@ -76,6 +76,7 @@ class ListSupportTest extends FunSuite with Matchers with ScalaCheckPropertyChec
 }
 
 case class WithDuplicates[A](values: Seq[A])
+
 object WithDuplicates {
   implicit def arbitraryWithDuplicates[A: Arbitrary]: Arbitrary[WithDuplicates[A]] = Arbitrary(genWithDuplicates)
 

@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.exceptions.schema;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -30,59 +29,63 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 
-public class UniquePropertyValueValidationException extends ConstraintValidationException
-{
+public class UniquePropertyValueValidationException extends ConstraintValidationException {
     private final Set<IndexEntryConflictException> conflicts;
 
-    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint, ConstraintValidationException.Phase phase,
-            IndexEntryConflictException conflict, TokenNameLookup tokenNameLookup )
-    {
-        this( constraint, phase, Collections.singleton( conflict ), tokenNameLookup );
+    public UniquePropertyValueValidationException(
+            IndexBackedConstraintDescriptor constraint,
+            ConstraintValidationException.Phase phase,
+            IndexEntryConflictException conflict,
+            TokenNameLookup tokenNameLookup) {
+        this(constraint, phase, Collections.singleton(conflict), tokenNameLookup);
     }
 
-    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint, ConstraintValidationException.Phase phase,
-            Set<IndexEntryConflictException> conflicts, TokenNameLookup tokenNameLookup )
-    {
-        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", buildCauseChain( conflicts ), tokenNameLookup );
+    public UniquePropertyValueValidationException(
+            IndexBackedConstraintDescriptor constraint,
+            ConstraintValidationException.Phase phase,
+            Set<IndexEntryConflictException> conflicts,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                constraint,
+                phase,
+                phase == Phase.VERIFICATION ? "Existing data" : "New data",
+                buildCauseChain(conflicts),
+                tokenNameLookup);
         this.conflicts = conflicts;
     }
 
-    private static IndexEntryConflictException buildCauseChain( Set<IndexEntryConflictException> conflicts )
-    {
+    private static IndexEntryConflictException buildCauseChain(Set<IndexEntryConflictException> conflicts) {
         IndexEntryConflictException chainedConflicts = null;
-        for ( IndexEntryConflictException conflict : conflicts )
-        {
-            chainedConflicts = Exceptions.chain( chainedConflicts, conflict );
+        for (IndexEntryConflictException conflict : conflicts) {
+            chainedConflicts = Exceptions.chain(chainedConflicts, conflict);
         }
         return chainedConflicts;
     }
 
-    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint, ConstraintValidationException.Phase phase, Throwable cause,
-            TokenNameLookup tokenNameLookup )
-    {
-        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", cause, tokenNameLookup );
+    public UniquePropertyValueValidationException(
+            IndexBackedConstraintDescriptor constraint,
+            ConstraintValidationException.Phase phase,
+            Throwable cause,
+            TokenNameLookup tokenNameLookup) {
+        super(constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", cause, tokenNameLookup);
         this.conflicts = Collections.emptySet();
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
         SchemaDescriptor schema = constraint.schema();
         StringBuilder message = new StringBuilder();
-        for ( Iterator<IndexEntryConflictException> iterator = conflicts.iterator(); iterator.hasNext(); )
-        {
+        for (Iterator<IndexEntryConflictException> iterator = conflicts.iterator(); iterator.hasNext(); ) {
             IndexEntryConflictException conflict = iterator.next();
-            message.append( conflict.evidenceMessage( tokenNameLookup, schema ) );
-            if ( iterator.hasNext() )
-            {
-                message.append( System.lineSeparator() );
+            message.append(conflict.evidenceMessage(tokenNameLookup, schema));
+            if (iterator.hasNext()) {
+                message.append(System.lineSeparator());
             }
         }
         return message.toString();
     }
 
-    public Set<IndexEntryConflictException> conflicts()
-    {
+    public Set<IndexEntryConflictException> conflicts() {
         return conflicts;
     }
 }

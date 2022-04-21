@@ -20,15 +20,13 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.function.IntPredicate;
-
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.memory.MemoryTracker;
 
 /** The indexing services view of the universe. */
-public interface IndexStoreView
-{
+public interface IndexStoreView {
     IndexStoreView EMPTY = new Adaptor();
 
     /**
@@ -50,8 +48,15 @@ public interface IndexStoreView
      * @param contextFactory underlying page cursor context factory.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
-            boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker );
+    StoreScan visitNodes(
+            int[] labelIds,
+            IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer labelScanConsumer,
+            boolean forceStoreScan,
+            boolean parallelWrite,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker);
 
     /**
      * Retrieve all relationships in the database which have any of the the given relationship types AND
@@ -72,52 +77,60 @@ public interface IndexStoreView
      * @param contextFactory underlying page cursor context factory.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            PropertyScanConsumer propertyScanConsumer, TokenScanConsumer relationshipTypeScanConsumer,
-            boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker );
+    StoreScan visitRelationships(
+            int[] relationshipTypeIds,
+            IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer relationshipTypeScanConsumer,
+            boolean forceStoreScan,
+            boolean parallelWrite,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker);
 
-    boolean isEmpty( CursorContext cursorContext );
+    boolean isEmpty(CursorContext cursorContext);
 
-    StoreScan EMPTY_SCAN = new StoreScan()
-    {
+    StoreScan EMPTY_SCAN = new StoreScan() {
         @Override
-        public void run( ExternalUpdatesCheck externalUpdatesCheck )
-        {
-        }
-
-        @Override
-        public void stop()
-        {
-        }
+        public void run(ExternalUpdatesCheck externalUpdatesCheck) {}
 
         @Override
-        public PopulationProgress getProgress()
-        {
+        public void stop() {}
+
+        @Override
+        public PopulationProgress getProgress() {
             return PopulationProgress.DONE;
         }
     };
 
-    class Adaptor implements IndexStoreView
-    {
+    class Adaptor implements IndexStoreView {
         @Override
-        public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
-                TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory,
-                MemoryTracker memoryTracker )
-        {
+        public StoreScan visitNodes(
+                int[] labelIds,
+                IntPredicate propertyKeyIdFilter,
+                PropertyScanConsumer propertyScanConsumer,
+                TokenScanConsumer labelScanConsumer,
+                boolean forceStoreScan,
+                boolean parallelWrite,
+                CursorContextFactory contextFactory,
+                MemoryTracker memoryTracker) {
             return EMPTY_SCAN;
         }
 
         @Override
-        public StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
-                TokenScanConsumer relationshipTypeScanConsumer, boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory,
-                MemoryTracker memoryTracker )
-        {
+        public StoreScan visitRelationships(
+                int[] relationshipTypeIds,
+                IntPredicate propertyKeyIdFilter,
+                PropertyScanConsumer propertyScanConsumer,
+                TokenScanConsumer relationshipTypeScanConsumer,
+                boolean forceStoreScan,
+                boolean parallelWrite,
+                CursorContextFactory contextFactory,
+                MemoryTracker memoryTracker) {
             return EMPTY_SCAN;
         }
 
         @Override
-        public boolean isEmpty( CursorContext cursorContext )
-        {
+        public boolean isEmpty(CursorContext cursorContext) {
             return true;
         }
     }

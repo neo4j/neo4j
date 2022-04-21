@@ -38,8 +38,8 @@ import org.neo4j.kernel.impl.query.QuerySubscription
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 
 import scala.collection.mutable.ArrayBuffer
-import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 trait RewindableExecutionResult {
   def columns: Array[String]
@@ -73,12 +73,14 @@ trait RewindableExecutionResult {
 /**
  * Helper class to ease asserting on cypher results from scala.
  */
-class RewindableExecutionResultImplementation(val columns: Array[String],
-                                              protected val result: Seq[Map[String, AnyRef]],
-                                              val executionMode: ExecutionMode,
-                                              protected val planDescription: InternalPlanDescription,
-                                              protected val statistics: QueryStatistics,
-                                              val notifications: Iterable[Notification]) extends RewindableExecutionResult
+class RewindableExecutionResultImplementation(
+  val columns: Array[String],
+  protected val result: Seq[Map[String, AnyRef]],
+  val executionMode: ExecutionMode,
+  protected val planDescription: InternalPlanDescription,
+  protected val statistics: QueryStatistics,
+  val notifications: Iterable[Notification]
+) extends RewindableExecutionResult
 
 object RewindableExecutionResult {
 
@@ -87,20 +89,27 @@ object RewindableExecutionResult {
   def apply(in: Result): RewindableExecutionResult = {
     try {
       val columns = in.columns().asScala.toArray
-      val result = in.asScala.map(javaResult => scalaValues.asDeepScalaMap(javaResult).asInstanceOf[Map[String, AnyRef]]).toList
-      new RewindableExecutionResultImplementation(columns,
+      val result =
+        in.asScala.map(javaResult => scalaValues.asDeepScalaMap(javaResult).asInstanceOf[Map[String, AnyRef]]).toList
+      new RewindableExecutionResultImplementation(
+        columns,
         result,
         NormalMode,
         in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
         QueryStatistics(in.getQueryStatistics),
-        Seq.empty)
+        Seq.empty
+      )
     } finally in.close()
   }
 
-  def apply(runtimeResult: RuntimeResult, queryContext: QueryContext,
-            subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
+  def apply(
+    runtimeResult: RuntimeResult,
+    queryContext: QueryContext,
+    subscriber: RecordingQuerySubscriber
+  ): RewindableExecutionResult = {
     try {
-      apply(runtimeResult,
+      apply(
+        runtimeResult,
         queryContext,
         subscriber,
         runtimeResult.fieldNames(),
@@ -112,15 +121,20 @@ object RewindableExecutionResult {
     } finally runtimeResult.close()
   }
 
-  def apply(result: QueryExecution, queryContext: QueryContext,
-            subscriber: RecordingQuerySubscriber, internalNotification: Seq[InternalNotification] = Seq.empty): RewindableExecutionResult = {
+  def apply(
+    result: QueryExecution,
+    queryContext: QueryContext,
+    subscriber: RecordingQuerySubscriber,
+    internalNotification: Seq[InternalNotification] = Seq.empty
+  ): RewindableExecutionResult = {
     try {
       val (executionMode, notifications) = result match {
         case r: InternalExecutionResult => (r.executionMode, r.notifications.toSet)
-        case _ => (NormalMode, Set.empty[Notification])
+        case _                          => (NormalMode, Set.empty[Notification])
       }
 
-      apply(result,
+      apply(
+        result,
         queryContext,
         subscriber,
         result.fieldNames(),
@@ -132,20 +146,22 @@ object RewindableExecutionResult {
     } finally result.cancel()
   }
 
-  def apply(subscription: QuerySubscription,
-            queryContext: QueryContext,
-            subscriber: RecordingQuerySubscriber,
-            columns: Array[String],
-            executionMode: ExecutionMode,
-            planDescription: () => InternalPlanDescription,
-            notifications: Set[Notification],
-            internalNotifications: Seq[InternalNotification]): RewindableExecutionResult = {
+  def apply(
+    subscription: QuerySubscription,
+    queryContext: QueryContext,
+    subscriber: RecordingQuerySubscriber,
+    columns: Array[String],
+    executionMode: ExecutionMode,
+    planDescription: () => InternalPlanDescription,
+    notifications: Set[Notification],
+    internalNotifications: Seq[InternalNotification]
+  ): RewindableExecutionResult = {
     try {
       subscription.request(Long.MaxValue)
       subscriber.assertNoErrors()
       subscription.await()
       val result = new ArrayBuffer[Map[String, AnyRef]]()
-      subscriber.getOrThrow().asScala.foreach( record => {
+      subscriber.getOrThrow().asScala.foreach(record => {
         val row = columns.zipWithIndex.map {
           case (value, index) => {
             val atIndex = scalaValues.asDeepScalaValue(queryContext.asObject(record(index))).asInstanceOf[AnyRef]
@@ -155,12 +171,14 @@ object RewindableExecutionResult {
         }
         if (row.nonEmpty) result.append(row.toMap)
       })
-      new RewindableExecutionResultImplementation(columns,
+      new RewindableExecutionResultImplementation(
+        columns,
         result.toSeq,
         executionMode,
         planDescription(),
         QueryStatistics(subscriber.queryStatistics()),
-        notifications ++ internalNotifications.map(NotificationWrapping.asKernelNotification(None)))
+        notifications ++ internalNotifications.map(NotificationWrapping.asKernelNotification(None))
+      )
     } finally subscription.cancel()
   }
 

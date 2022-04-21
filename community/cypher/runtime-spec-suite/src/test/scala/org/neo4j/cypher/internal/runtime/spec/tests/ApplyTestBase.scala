@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("apply on empty lhs and rhs") {
     // given
@@ -101,9 +101,13 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
   test("apply on aggregation should carry through argument variables") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
     val lhsRows = inputValues()
 
@@ -125,9 +129,13 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
   test("apply on grouped aggregation should carry through argument variables") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("prop" -> i, "group" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("prop" -> i, "group" -> i)
+        },
+        "Label"
+      )
     }
     val lhsRows = inputValues()
 
@@ -149,9 +157,13 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
   test("apply on entity aggregation should carry through argument variables") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("prop" -> i, "group" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("prop" -> i, "group" -> i)
+        },
+        "Label"
+      )
     }
     val lhsRows = inputValues()
 

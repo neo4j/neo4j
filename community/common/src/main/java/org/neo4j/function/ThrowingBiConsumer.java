@@ -27,8 +27,7 @@ package org.neo4j.function;
  * @param <U> the type of the second argument to the function
  * @param <E> the type of exception that may be thrown from the operation
  */
-public interface ThrowingBiConsumer<T, U, E extends Exception>
-{
+public interface ThrowingBiConsumer<T, U, E extends Exception> {
     /**
      * Performs this operation on the given arguments.
      *
@@ -36,5 +35,5 @@ public interface ThrowingBiConsumer<T, U, E extends Exception>
      * @param u the second input argument
      * @throws E an exception if the operation fails
      */
-    void accept( T t, U u ) throws E;
+    void accept(T t, U u) throws E;
 }

@@ -31,8 +31,7 @@ import org.neo4j.logging.InternalLogProvider;
  * accept a specialized subset of commands. The innerCypherExecutionEngine on the other hand will
  * understand the normal Cypher commands not available on the surface for the System Database.
  */
-class SystemExecutionEngine extends ExecutionEngine
-{
+class SystemExecutionEngine extends ExecutionEngine {
     private org.neo4j.cypher.internal.ExecutionEngine innerCypherExecutionEngine; // doesn't understand ddl
 
     /**
@@ -40,21 +39,27 @@ class SystemExecutionEngine extends ExecutionEngine
      * This is used for processing system database commands, where the outer Cypher engine will only understand administration commands
      * and translate them into normal Cypher against the SYSTEM database, processed by the inner Cypher runtime, which understands normal Cypher.
      */
-    SystemExecutionEngine( GraphDatabaseQueryService queryService,
-                           InternalLogProvider logProvider,
-                           CypherQueryCaches systemQueryCaches,
-                           CompilerFactory systemCompilerFactory,
-                           CypherQueryCaches normalQueryCaches,
-                           CompilerFactory normalCompilerFactory )
-    {
-        innerCypherExecutionEngine =
-                makeExecutionEngine( queryService, normalQueryCaches, logProvider, new CompilerLibrary( normalCompilerFactory, this::normalExecutionEngine ) );
+    SystemExecutionEngine(
+            GraphDatabaseQueryService queryService,
+            InternalLogProvider logProvider,
+            CypherQueryCaches systemQueryCaches,
+            CompilerFactory systemCompilerFactory,
+            CypherQueryCaches normalQueryCaches,
+            CompilerFactory normalCompilerFactory) {
+        innerCypherExecutionEngine = makeExecutionEngine(
+                queryService,
+                normalQueryCaches,
+                logProvider,
+                new CompilerLibrary(normalCompilerFactory, this::normalExecutionEngine));
         cypherExecutionEngine = // only understands ddl
-                makeExecutionEngine( queryService, systemQueryCaches, logProvider, new CompilerLibrary( systemCompilerFactory, this::normalExecutionEngine ) );
+                makeExecutionEngine(
+                        queryService,
+                        systemQueryCaches,
+                        logProvider,
+                        new CompilerLibrary(systemCompilerFactory, this::normalExecutionEngine));
     }
 
-    org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine()
-    {
+    org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine() {
         return innerCypherExecutionEngine;
     }
 }

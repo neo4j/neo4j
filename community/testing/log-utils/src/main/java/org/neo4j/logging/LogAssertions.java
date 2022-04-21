@@ -21,14 +21,10 @@ package org.neo4j.logging;
 
 import org.assertj.core.api.Assertions;
 
-public final class LogAssertions extends Assertions
-{
-    private LogAssertions()
-    {
-    }
+public final class LogAssertions extends Assertions {
+    private LogAssertions() {}
 
-    public static LogAssert assertThat( AssertableLogProvider logProvider )
-    {
-        return new LogAssert( logProvider );
+    public static LogAssert assertThat(AssertableLogProvider logProvider) {
+        return new LogAssert(logProvider);
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
@@ -30,88 +28,72 @@ import static org.neo4j.values.virtual.VirtualValueTestUtil.path;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.rel;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.relationships;
 
-class GraphElementValueTest
-{
+import org.junit.jupiter.api.Test;
+
+class GraphElementValueTest {
     @Test
-    void nodeShouldEqualItself()
-    {
-        assertEqual( node( 1L ), node( 1L ) );
+    void nodeShouldEqualItself() {
+        assertEqual(node(1L), node(1L));
     }
 
     @Test
-    void nodeShouldNotEqualOtherNode()
-    {
-        assertNotEqual( node( 1L ), node( 2L ) );
+    void nodeShouldNotEqualOtherNode() {
+        assertNotEqual(node(1L), node(2L));
     }
 
     @Test
-    void edgeShouldEqualItself()
-    {
-        assertEqual( rel( 1L, 1L, 2L ), rel( 1L ,1L, 2L) );
+    void edgeShouldEqualItself() {
+        assertEqual(rel(1L, 1L, 2L), rel(1L, 1L, 2L));
     }
 
     @Test
-    void edgeShouldNotEqualOtherEdge()
-    {
-        assertNotEqual( rel( 1L, 1L, 2L), rel( 2L, 1L, 2L ) );
+    void edgeShouldNotEqualOtherEdge() {
+        assertNotEqual(rel(1L, 1L, 2L), rel(2L, 1L, 2L));
     }
 
     @Test
-    void pathShouldEqualItself()
-    {
-        assertEqual( path( node( 1L ) ), path( node( 1L ) ) );
-        assertEqual(
-                path( node( 1L ), rel( 2L, 1L, 3L ), node( 3L ) ),
-                path( node( 1L ), rel( 2L, 1L, 3L ), node( 3L ) ) );
+    void pathShouldEqualItself() {
+        assertEqual(path(node(1L)), path(node(1L)));
+        assertEqual(path(node(1L), rel(2L, 1L, 3L), node(3L)), path(node(1L), rel(2L, 1L, 3L), node(3L)));
 
         assertEqual(
-                path( node( 1L ), rel( 2L, 1L, 3L ), node( 2L ), rel( 3L, 2L, 1L ), node( 1L ) ),
-                path( node( 1L ), rel( 2L, 1L, 3L ), node( 2L ), rel( 3L, 2L, 1L ), node( 1L ) ) );
+                path(node(1L), rel(2L, 1L, 3L), node(2L), rel(3L, 2L, 1L), node(1L)),
+                path(node(1L), rel(2L, 1L, 3L), node(2L), rel(3L, 2L, 1L), node(1L)));
     }
 
     @Test
-    void pathShouldNotEqualOtherPath()
-    {
-        assertNotEqual( path( node( 1L ) ), path( node( 2L ) ) );
-        assertNotEqual( path( node( 1L ) ), path( node( 1L ), rel( 1L, 1L, 2L ), node( 2L ) ) );
-        assertNotEqual( path( node( 1L ) ), path( node( 2L ), rel( 1L, 2L, 1L ), node( 1L ) ) );
+    void pathShouldNotEqualOtherPath() {
+        assertNotEqual(path(node(1L)), path(node(2L)));
+        assertNotEqual(path(node(1L)), path(node(1L), rel(1L, 1L, 2L), node(2L)));
+        assertNotEqual(path(node(1L)), path(node(2L), rel(1L, 2L, 1L), node(1L)));
 
-        assertNotEqual(
-                path( node( 1L ), rel( 2L, 1L, 3L ), node( 3L ) ),
-                path( node( 1L ), rel( 3L, 1L, 3L ), node( 3L ) ) );
+        assertNotEqual(path(node(1L), rel(2L, 1L, 3L), node(3L)), path(node(1L), rel(3L, 1L, 3L), node(3L)));
 
-        assertNotEqual(
-                path( node( 1L ), rel( 2L, 1L, 2L ), node( 2L ) ),
-                path( node( 1L ), rel( 2L, 1L, 3L ), node( 3L ) ) );
+        assertNotEqual(path(node(1L), rel(2L, 1L, 2L), node(2L)), path(node(1L), rel(2L, 1L, 3L), node(3L)));
     }
 
     @Test
-    void pathShouldNotOnlyContainRelationship()
-    {
-        assertThrows( AssertionError.class, () -> VirtualValues.path( nodes(), relationships( 1L ) ) );
+    void pathShouldNotOnlyContainRelationship() {
+        assertThrows(AssertionError.class, () -> VirtualValues.path(nodes(), relationships(1L)));
     }
 
     @Test
-    void pathShouldContainOneMoreNodeThenEdges()
-    {
-        assertThrows( Exception.class, () -> VirtualValues.path( nodes( 1L, 2L ), relationships() ) );
+    void pathShouldContainOneMoreNodeThenEdges() {
+        assertThrows(Exception.class, () -> VirtualValues.path(nodes(1L, 2L), relationships()));
     }
 
     @Test
-    void pathShouldHandleNulls()
-    {
-        assertThrows( AssertionError.class, () -> VirtualValues.path( null, null ) );
+    void pathShouldHandleNulls() {
+        assertThrows(AssertionError.class, () -> VirtualValues.path(null, null));
     }
 
     @Test
-    void pathShouldHandleNullEdge()
-    {
-        assertThrows( AssertionError.class, () -> VirtualValues.path( nodes( 1L ), null ) );
+    void pathShouldHandleNullEdge() {
+        assertThrows(AssertionError.class, () -> VirtualValues.path(nodes(1L), null));
     }
 
     @Test
-    void pathShouldHandleNullNodes()
-    {
-        assertThrows( AssertionError.class, () -> VirtualValues.path( null, relationships( 1L ) ) );
+    void pathShouldHandleNullNodes() {
+        assertThrows(AssertionError.class, () -> VirtualValues.path(null, relationships(1L)));
     }
 }

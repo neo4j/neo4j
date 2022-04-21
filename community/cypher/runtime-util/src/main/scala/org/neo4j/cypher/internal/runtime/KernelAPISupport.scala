@@ -27,23 +27,24 @@ import org.neo4j.values.storable.ValueGroup
 import org.neo4j.values.storable.Values
 
 object KernelAPISupport {
+
   /**
    * Returns true if the specified property index query would never return any results
    */
   def isImpossibleIndexQuery(query: PropertyIndexQuery): Boolean = query match {
     case p: PropertyIndexQuery.ExactPredicate => p.value() match {
-      case Values.NO_VALUE => true
-      case fp: FloatingPointValue => fp.isNaN
-      case _ => false
-    }
+        case Values.NO_VALUE        => true
+        case fp: FloatingPointValue => fp.isNaN
+        case _                      => false
+      }
     case p: PropertyIndexQuery.RangePredicate[_] => p.valueGroup() == ValueGroup.NO_VALUE
-    case _ => false
+    case _                                       => false
   }
 
   def asKernelIndexOrder(indexOrder: plans.IndexOrder): schema.IndexOrder =
     indexOrder match {
-      case plans.IndexOrderAscending => schema.IndexOrder.ASCENDING
+      case plans.IndexOrderAscending  => schema.IndexOrder.ASCENDING
       case plans.IndexOrderDescending => schema.IndexOrder.DESCENDING
-      case plans.IndexOrderNone => schema.IndexOrder.NONE
+      case plans.IndexOrderNone       => schema.IndexOrder.NONE
     }
 }

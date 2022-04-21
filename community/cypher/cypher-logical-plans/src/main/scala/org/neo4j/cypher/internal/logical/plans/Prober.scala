@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  * NOTE: This plan is only for testing
  */
-case class Prober(override val source: LogicalPlan, probe: Probe)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen)  {
+case class Prober(override val source: LogicalPlan, probe: Probe)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
@@ -35,7 +36,9 @@ case class Prober(override val source: LogicalPlan, probe: Probe)(implicit idGen
 }
 
 object Prober {
+
   trait Probe {
+
     /**
      * Called on each row that passes through this operator.
      *
@@ -57,4 +60,3 @@ object Prober {
     override def onRow(row: AnyRef): Unit = {}
   }
 }
-

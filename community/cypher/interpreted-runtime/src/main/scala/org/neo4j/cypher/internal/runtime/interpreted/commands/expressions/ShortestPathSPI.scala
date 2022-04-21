@@ -27,31 +27,42 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Path
 
 abstract class BaseExpander() extends Expander {
+
   override def addRelationshipFilter(newFilter: KernelPredicate[Entity]): Expander =
     newWith(newRelFilters = relFilters :+ newFilter)
 
   override def addNodeFilter(newFilter: KernelPredicate[Entity]): Expander =
     newWith(newNodeFilters = nodeFilters :+ newFilter)
 
-  protected def newWith(newNodeFilters: Seq[KernelPredicate[Entity]] = nodeFilters,
-                        newRelFilters: Seq[KernelPredicate[Entity]] = relFilters): Expander
+  protected def newWith(
+    newNodeFilters: Seq[KernelPredicate[Entity]] = nodeFilters,
+    newRelFilters: Seq[KernelPredicate[Entity]] = relFilters
+  ): Expander
 }
 
-case class OnlyDirectionExpander(override val nodeFilters: Seq[KernelPredicate[Entity]],
-                                 override val relFilters: Seq[KernelPredicate[Entity]],
-                                 direction: SemanticDirection) extends BaseExpander {
+case class OnlyDirectionExpander(
+  override val nodeFilters: Seq[KernelPredicate[Entity]],
+  override val relFilters: Seq[KernelPredicate[Entity]],
+  direction: SemanticDirection
+) extends BaseExpander {
 
-  override protected def newWith(newNodeFilters: Seq[KernelPredicate[Entity]],
-                                 newRelFilters: Seq[KernelPredicate[Entity]]): OnlyDirectionExpander =
+  override protected def newWith(
+    newNodeFilters: Seq[KernelPredicate[Entity]],
+    newRelFilters: Seq[KernelPredicate[Entity]]
+  ): OnlyDirectionExpander =
     copy(nodeFilters = newNodeFilters, relFilters = newRelFilters)
 }
 
-case class TypeAndDirectionExpander(override val nodeFilters: Seq[KernelPredicate[Entity]],
-                                    override val relFilters: Seq[KernelPredicate[Entity]],
-                                    typDirs: Seq[(String, SemanticDirection)]) extends BaseExpander {
+case class TypeAndDirectionExpander(
+  override val nodeFilters: Seq[KernelPredicate[Entity]],
+  override val relFilters: Seq[KernelPredicate[Entity]],
+  typDirs: Seq[(String, SemanticDirection)]
+) extends BaseExpander {
 
-  override protected def newWith(newNodeFilters: Seq[KernelPredicate[Entity]],
-                                 newRelFilters: Seq[KernelPredicate[Entity]]): TypeAndDirectionExpander =
+  override protected def newWith(
+    newNodeFilters: Seq[KernelPredicate[Entity]],
+    newRelFilters: Seq[KernelPredicate[Entity]]
+  ): TypeAndDirectionExpander =
     copy(nodeFilters = newNodeFilters, relFilters = newRelFilters)
 
   def add(typ: String, dir: SemanticDirection): TypeAndDirectionExpander =

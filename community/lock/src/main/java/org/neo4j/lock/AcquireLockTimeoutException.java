@@ -26,24 +26,20 @@ import org.neo4j.kernel.api.exceptions.Status;
  * Acquiring a lock failed. This is a runtime exception now to ease the transition from the old lock interface, but
  * it should be made into a {@link KernelException} asap.
  */
-public class AcquireLockTimeoutException extends RuntimeException implements Status.HasStatus
-{
+public class AcquireLockTimeoutException extends RuntimeException implements Status.HasStatus {
     private final Status statusCode;
 
-    public AcquireLockTimeoutException( String message, Status statusCode )
-    {
-        this( message, null, statusCode );
+    public AcquireLockTimeoutException(String message, Status statusCode) {
+        this(message, null, statusCode);
     }
 
-    public AcquireLockTimeoutException( String message, Throwable cause, Status statusCode )
-    {
-        super( message, cause );
+    public AcquireLockTimeoutException(String message, Throwable cause, Status statusCode) {
+        super(message, cause);
         this.statusCode = statusCode;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return statusCode;
     }
 }

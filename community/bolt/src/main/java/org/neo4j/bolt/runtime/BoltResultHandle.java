@@ -21,11 +21,10 @@ package org.neo4j.bolt.runtime;
 
 import org.neo4j.exceptions.KernelException;
 
-public interface BoltResultHandle
-{
+public interface BoltResultHandle {
     BoltResult start() throws KernelException;
 
-    void close( boolean success );
+    void close(boolean success);
 
     void terminate();
 }

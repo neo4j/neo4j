@@ -20,12 +20,10 @@
 package org.neo4j.bolt.transport.pipeline;
 
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-
 import org.neo4j.memory.HeapEstimator;
 
-public class ChunkDecoder extends LengthFieldBasedFrameDecoder
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ChunkDecoder.class );
+public class ChunkDecoder extends LengthFieldBasedFrameDecoder {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ChunkDecoder.class);
 
     private static final int MAX_CHUNK_LENGTH = 0xFFFF;
     private static final int LENGTH_FIELD_OFFSET = 0;
@@ -33,8 +31,12 @@ public class ChunkDecoder extends LengthFieldBasedFrameDecoder
     private static final int LENGTH_ADJUSTMENT = 0;
     private static final int INITIAL_BYTES_TO_STRIP = LENGTH_FIELD_SIZE;
 
-    public ChunkDecoder()
-    {
-        super( MAX_CHUNK_LENGTH + LENGTH_FIELD_SIZE, LENGTH_FIELD_OFFSET, LENGTH_FIELD_SIZE, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP );
+    public ChunkDecoder() {
+        super(
+                MAX_CHUNK_LENGTH + LENGTH_FIELD_SIZE,
+                LENGTH_FIELD_OFFSET,
+                LENGTH_FIELD_SIZE,
+                LENGTH_ADJUSTMENT,
+                INITIAL_BYTES_TO_STRIP);
     }
 }

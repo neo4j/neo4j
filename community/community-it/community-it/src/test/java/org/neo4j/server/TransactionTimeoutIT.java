@@ -19,55 +19,51 @@
  */
 package org.neo4j.server;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Map;
-
-import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.helpers.TestWebContainer;
-import org.neo4j.test.server.ExclusiveWebContainerTestBase;
-import org.neo4j.test.server.HTTP;
-
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
-class TransactionTimeoutIT extends ExclusiveWebContainerTestBase
-{
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.helpers.TestWebContainer;
+import org.neo4j.test.server.ExclusiveWebContainerTestBase;
+import org.neo4j.test.server.HTTP;
+
+class TransactionTimeoutIT extends ExclusiveWebContainerTestBase {
     private TestWebContainer testWebContainer;
 
     @AfterEach
-    void stopTheServer()
-    {
+    void stopTheServer() {
         testWebContainer.shutdown();
     }
 
     @Test
-    void shouldHonorReallyLowSessionTimeout() throws Exception
-    {
+    void shouldHonorReallyLowSessionTimeout() throws Exception {
         // Given
         testWebContainer = serverOnRandomPorts()
-                .withProperty( ServerSettings.transaction_idle_timeout.name(), "1" ).build();
+                .withProperty(ServerSettings.transaction_idle_timeout.name(), "1")
+                .build();
 
-        String tx = HTTP.POST( txURI(), map("statements", singletonList( map( "statement", "CREATE (n)" ) ) ) ).location();
+        String tx = HTTP.POST(txURI(), map("statements", singletonList(map("statement", "CREATE (n)"))))
+                .location();
 
         // When
-        Thread.sleep( 1000 * 5 );
-        Map<String, Object> response = HTTP.POST( tx + "/commit" ).content();
+        Thread.sleep(1000 * 5);
+        Map<String, Object> response = HTTP.POST(tx + "/commit").content();
 
         // Then
-        @SuppressWarnings( "unchecked" )
-        List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
-        assertThat( errors.get( 0 ).get( "code" ) ).isEqualTo( TransactionNotFound.code().serialize() );
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get("errors");
+        assertThat(errors.get(0).get("code"))
+                .isEqualTo(TransactionNotFound.code().serialize());
     }
 
-    private String txURI()
-    {
+    private String txURI() {
         return testWebContainer.getBaseUri() + txEndpoint();
     }
-
 }

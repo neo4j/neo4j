@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public class IndexProviderNotFoundException extends RuntimeException
-{
-    public IndexProviderNotFoundException( String message )
-    {
-        super( message );
+public class IndexProviderNotFoundException extends RuntimeException {
+    public IndexProviderNotFoundException(String message) {
+        super(message);
     }
 }

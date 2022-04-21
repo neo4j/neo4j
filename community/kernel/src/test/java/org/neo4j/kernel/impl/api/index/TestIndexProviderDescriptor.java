@@ -21,12 +21,9 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 
-public class TestIndexProviderDescriptor
-{
+public class TestIndexProviderDescriptor {
     public static final IndexProviderDescriptor PROVIDER_DESCRIPTOR =
-            new IndexProviderDescriptor( "quantum-dex", "25.0" );
+            new IndexProviderDescriptor("quantum-dex", "25.0");
 
-    private TestIndexProviderDescriptor()
-    {
-    }
+    private TestIndexProviderDescriptor() {}
 }

@@ -173,7 +173,10 @@ class PathValueBuilderTest extends CypherFunSuite {
       .addUndirectedRelationships(VirtualValues.list(rel1, rel2))
       .addUndirectedRelationships(VirtualValues.list(rel3, rel4))
 
-    builder.result() should equal(pathReference(Array(A.id(), B.id(), C.id(), D.id(), E.id()), Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())))
+    builder.result() should equal(pathReference(
+      Array(A.id(), B.id(), C.id(), D.id(), E.id()),
+      Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())
+    ))
   }
 
   test("p = (a)-[r1*]-()-[r2*]-() reversed r1") {
@@ -183,7 +186,10 @@ class PathValueBuilderTest extends CypherFunSuite {
       .addUndirectedRelationships(VirtualValues.list(rel2, rel1))
       .addUndirectedRelationships(VirtualValues.list(rel3, rel4))
 
-    builder.result() should equal(pathReference(Array(A.id(), B.id(), C.id(), D.id(), E.id()), Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())))
+    builder.result() should equal(pathReference(
+      Array(A.id(), B.id(), C.id(), D.id(), E.id()),
+      Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())
+    ))
   }
 
   test("p = (a)-[r1*]-()-[r2*]-() reversed r2") {
@@ -193,7 +199,10 @@ class PathValueBuilderTest extends CypherFunSuite {
       .addUndirectedRelationships(VirtualValues.list(rel1, rel2))
       .addUndirectedRelationships(VirtualValues.list(rel4, rel3))
 
-    builder.result() should equal(pathReference(Array(A.id(), B.id(), C.id(), D.id(), E.id()), Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())))
+    builder.result() should equal(pathReference(
+      Array(A.id(), B.id(), C.id(), D.id(), E.id()),
+      Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())
+    ))
   }
 
   test("p = (a)-[r1*]-()-[r2*]-() reversed r1 && r2") {
@@ -203,7 +212,10 @@ class PathValueBuilderTest extends CypherFunSuite {
       .addUndirectedRelationships(VirtualValues.list(rel2, rel1))
       .addUndirectedRelationships(VirtualValues.list(rel4, rel3))
 
-    builder.result() should equal(pathReference(Array(A.id(), B.id(), C.id(), D.id(), E.id()), Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())))
+    builder.result() should equal(pathReference(
+      Array(A.id(), B.id(), C.id(), D.id(), E.id()),
+      Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())
+    ))
   }
 
   test("p = (b)-[r:X*0]-(a)") {

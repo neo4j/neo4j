@@ -23,22 +23,18 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 
-public class FullAccessRelationshipTypeIndexCursor extends DefaultRelationshipTypeIndexCursor
-{
-    FullAccessRelationshipTypeIndexCursor( CursorPool<DefaultRelationshipTypeIndexCursor> pool )
-    {
-        super( pool, null );
+public class FullAccessRelationshipTypeIndexCursor extends DefaultRelationshipTypeIndexCursor {
+    FullAccessRelationshipTypeIndexCursor(CursorPool<DefaultRelationshipTypeIndexCursor> pool) {
+        super(pool, null);
     }
 
     @Override
-    boolean allowed( long reference, TokenSet tokens )
-    {
+    boolean allowed(long reference, TokenSet tokens) {
         return true;
     }
 
     @Override
-    boolean allowedToSeeEntity( AccessMode accessMode, long entityReference, TokenSet tokens )
-    {
+    boolean allowedToSeeEntity(AccessMode accessMode, long entityReference, TokenSet tokens) {
         return true;
     }
 }

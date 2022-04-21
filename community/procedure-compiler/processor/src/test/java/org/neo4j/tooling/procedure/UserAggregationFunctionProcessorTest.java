@@ -19,22 +19,19 @@
  */
 package org.neo4j.tooling.procedure;
 
-import com.google.testing.compile.CompilationRule;
-import com.google.testing.compile.CompileTester;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
-import javax.annotation.processing.Processor;
-import javax.tools.JavaFileObject;
-
-import org.neo4j.tooling.procedure.testutils.JavaFileObjectUtils;
-
 import static com.google.common.truth.Truth.assert_;
 import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 
-public class UserAggregationFunctionProcessorTest extends ExtensionTestBase
-{
+import com.google.testing.compile.CompilationRule;
+import com.google.testing.compile.CompileTester;
+import javax.annotation.processing.Processor;
+import javax.tools.JavaFileObject;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.tooling.procedure.testutils.JavaFileObjectUtils;
+
+public class UserAggregationFunctionProcessorTest extends ExtensionTestBase {
 
     @Rule
     public CompilationRule compilation = new CompilationRule();
@@ -42,55 +39,67 @@ public class UserAggregationFunctionProcessorTest extends ExtensionTestBase
     private Processor processor = new UserAggregationFunctionProcessor();
 
     @Test
-    public void fails_if_aggregation_function_directly_exposes_parameters()
-    {
+    public void fails_if_aggregation_function_directly_exposes_parameters() {
         JavaFileObject function =
-                JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/aggregation/FunctionWithParameters.java" );
+                JavaFileObjectUtils.INSTANCE.procedureSource("invalid/aggregation/FunctionWithParameters.java");
 
-        assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
-                .withErrorCount( 1 )
-                .withErrorContaining( "@UserAggregationFunction usage error: method should be public, non-static and without parameters." )
-                .in( function ).onLine( 31 );
+        assert_()
+                .about(javaSource())
+                .that(function)
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(1)
+                .withErrorContaining(
+                        "@UserAggregationFunction usage error: method should be public, non-static and without parameters.")
+                .in(function)
+                .onLine(31);
     }
 
     @Test
-    public void fails_if_aggregation_function_exposes_non_aggregation_return_type()
-    {
+    public void fails_if_aggregation_function_exposes_non_aggregation_return_type() {
         JavaFileObject function =
-                JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/aggregation/FunctionWithWrongReturnType.java" );
+                JavaFileObjectUtils.INSTANCE.procedureSource("invalid/aggregation/FunctionWithWrongReturnType.java");
 
-        assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
-                .withErrorCount( 1 )
-                .withErrorContaining( "Unsupported return type <void> of aggregation function." )
-                .in( function ).onLine( 27 );
+        assert_()
+                .about(javaSource())
+                .that(function)
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(1)
+                .withErrorContaining("Unsupported return type <void> of aggregation function.")
+                .in(function)
+                .onLine(27);
     }
 
     @Test
-    @Ignore( "javac fails to publish the deferred diagnostic of the second error to com.google.testing.compile.Compiler" )
-    public void fails_if_aggregation_function_exposes_return_type_without_aggregation_methods()
-    {
-        JavaFileObject function =
-                JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/aggregation/FunctionWithoutAggregationMethods.java" );
+    @Ignore("javac fails to publish the deferred diagnostic of the second error to com.google.testing.compile.Compiler")
+    public void fails_if_aggregation_function_exposes_return_type_without_aggregation_methods() {
+        JavaFileObject function = JavaFileObjectUtils.INSTANCE.procedureSource(
+                "invalid/aggregation/FunctionWithoutAggregationMethods.java");
 
-        CompileTester.UnsuccessfulCompilationClause unsuccessfulCompilationClause =
-                assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
-                        .withErrorCount( 2 );
+        CompileTester.UnsuccessfulCompilationClause unsuccessfulCompilationClause = assert_()
+                .about(javaSource())
+                .that(function)
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(2);
 
         unsuccessfulCompilationClause
-                .withErrorContaining( "@UserAggregationUpdate usage error: expected aggregation type " +
-                "<org.neo4j.tooling.procedure.procedures.invalid.aggregation.FunctionWithoutAggregationMethods.MyAggregation> " +
-                "to define exactly 1 method with this annotation. Found none." )
-                .in( function ).onLine( 31 );
+                .withErrorContaining("@UserAggregationUpdate usage error: expected aggregation type "
+                        + "<org.neo4j.tooling.procedure.procedures.invalid.aggregation.FunctionWithoutAggregationMethods.MyAggregation> "
+                        + "to define exactly 1 method with this annotation. Found none.")
+                .in(function)
+                .onLine(31);
         unsuccessfulCompilationClause
-                .withErrorContaining( "@UserAggregationResult usage error: expected aggregation type " +
-                "<org.neo4j.tooling.procedure.procedures.invalid.aggregation.FunctionWithoutAggregationMethods.MyAggregation> " +
-                "to define exactly 1 method with this annotation. Found none." )
-                .in( function ).onLine( 31 );
+                .withErrorContaining("@UserAggregationResult usage error: expected aggregation type "
+                        + "<org.neo4j.tooling.procedure.procedures.invalid.aggregation.FunctionWithoutAggregationMethods.MyAggregation> "
+                        + "to define exactly 1 method with this annotation. Found none.")
+                .in(function)
+                .onLine(31);
     }
 
     @Override
-    Processor processor()
-    {
+    Processor processor() {
         return processor;
     }
 }

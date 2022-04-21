@@ -19,14 +19,27 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
+import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -52,822 +65,717 @@ import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
-import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
-
-@SuppressWarnings( {"WeakerAccess", "unused"} )
-public class UserAggregationFunctionTest
-{
+@SuppressWarnings({"WeakerAccess", "unused"})
+public class UserAggregationFunctionTest {
     private ProcedureCompiler procedureCompiler;
     private ComponentRegistry components;
     private final DependencyResolver dependencyResolver = new Dependencies();
-    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( InternalTransaction.class ) );
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         components = new ComponentRegistry();
-        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, components,
-                NullLog.getInstance(), ProcedureConfig.DEFAULT );
+        procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(), components, components, NullLog.getInstance(), ProcedureConfig.DEFAULT);
     }
 
     @Test
-    void shouldCompileAggregationFunction() throws Throwable
-    {
+    void shouldCompileAggregationFunction() throws Throwable {
         // When
-        List<CallableUserAggregationFunction> function = compile( SingleAggregationFunction.class );
+        List<CallableUserAggregationFunction> function = compile(SingleAggregationFunction.class);
 
         // Then
-        assertEquals( 1, function.size() );
-        assertThat( function.get( 0 ).signature() ).isEqualTo(
-                functionSignature( "org", "neo4j", "procedure", "impl", "collectCool" ).in( "name", Neo4jTypes.NTString ).out(
-                        Neo4jTypes.NTList( Neo4jTypes.NTAny ) ).build() );
+        assertEquals(1, function.size());
+        assertThat(function.get(0).signature())
+                .isEqualTo(functionSignature("org", "neo4j", "procedure", "impl", "collectCool")
+                        .in("name", Neo4jTypes.NTString)
+                        .out(Neo4jTypes.NTList(Neo4jTypes.NTAny))
+                        .build());
     }
 
     @Test
-    void shouldRunAggregationFunction() throws Throwable
-    {
+    void shouldRunAggregationFunction() throws Throwable {
         // Given
-        CallableUserAggregationFunction func = compile( SingleAggregationFunction.class ).get( 0 );
+        CallableUserAggregationFunction func =
+                compile(SingleAggregationFunction.class).get(0);
 
         // When
-        UserAggregator aggregator = func.create( prepareContext() );
+        UserAggregator aggregator = func.create(prepareContext());
 
-        aggregator.update( new AnyValue[]{stringValue( "Harry" )} );
-        aggregator.update( new AnyValue[]{stringValue( "Bonnie" )} );
-        aggregator.update( new AnyValue[]{stringValue( "Sally" )} );
-        aggregator.update( new AnyValue[]{stringValue( "Clyde" )} );
+        aggregator.update(new AnyValue[] {stringValue("Harry")});
+        aggregator.update(new AnyValue[] {stringValue("Bonnie")});
+        aggregator.update(new AnyValue[] {stringValue("Sally")});
+        aggregator.update(new AnyValue[] {stringValue("Clyde")});
 
         // Then
-        assertThat( aggregator.result() ).isEqualTo( VirtualValues.list( stringValue( "Bonnie" ), stringValue( "Clyde" ) ) );
+        assertThat(aggregator.result()).isEqualTo(VirtualValues.list(stringValue("Bonnie"), stringValue("Clyde")));
     }
 
     @Test
-    void shouldInjectLogging() throws KernelException
-    {
+    void shouldInjectLogging() throws KernelException {
         // Given
-        InternalLog log = spy( InternalLog.class );
-        components.register( InternalLog.class, ctx -> log );
-        CallableUserAggregationFunction
-                function = procedureCompiler.compileAggregationFunction( LoggingFunction.class ).get( 0 );
+        InternalLog log = spy(InternalLog.class);
+        components.register(InternalLog.class, ctx -> log);
+        CallableUserAggregationFunction function = procedureCompiler
+                .compileAggregationFunction(LoggingFunction.class)
+                .get(0);
 
         // When
-        UserAggregator aggregator = function.create( prepareContext() );
-        aggregator.update( new AnyValue[]{} );
+        UserAggregator aggregator = function.create(prepareContext());
+        aggregator.update(new AnyValue[] {});
         aggregator.result();
 
         // Then
-        verify( log ).debug( "1" );
-        verify( log ).info( "2" );
-        verify( log ).warn( "3" );
-        verify( log ).error( "4" );
+        verify(log).debug("1");
+        verify(log).info("2");
+        verify(log).warn("3");
+        verify(log).error("4");
     }
 
     @Test
-    void shouldIgnoreClassesWithNoFunctions() throws Throwable
-    {
+    void shouldIgnoreClassesWithNoFunctions() throws Throwable {
         // When
-        List<CallableUserAggregationFunction> functions = compile( PrivateConstructorButNoFunctions.class );
+        List<CallableUserAggregationFunction> functions = compile(PrivateConstructorButNoFunctions.class);
 
         // Then
-        assertEquals( 0, functions.size() );
+        assertEquals(0, functions.size());
     }
 
     @Test
-    void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
-    {
+    void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable {
         // Given
-        List<CallableUserAggregationFunction> compiled = compile( MultiFunction.class );
-        CallableUserAggregationFunction f1 = compiled.get( 0 );
-        CallableUserAggregationFunction f2 = compiled.get( 1 );
+        List<CallableUserAggregationFunction> compiled = compile(MultiFunction.class);
+        CallableUserAggregationFunction f1 = compiled.get(0);
+        CallableUserAggregationFunction f2 = compiled.get(1);
 
         // When
-        UserAggregator f1Aggregator = f1.create( prepareContext() );
-        f1Aggregator.update( new AnyValue[]{stringValue( "Bonnie" )} );
-        f1Aggregator.update( new AnyValue[]{stringValue( "Clyde" )} );
-        UserAggregator f2Aggregator = f2.create( prepareContext() );
-        f2Aggregator.update( new AnyValue[]{stringValue( "Bonnie" ), longValue( 1337L )} );
-        f2Aggregator.update( new AnyValue[]{stringValue( "Bonnie" ), longValue( 42L )} );
+        UserAggregator f1Aggregator = f1.create(prepareContext());
+        f1Aggregator.update(new AnyValue[] {stringValue("Bonnie")});
+        f1Aggregator.update(new AnyValue[] {stringValue("Clyde")});
+        UserAggregator f2Aggregator = f2.create(prepareContext());
+        f2Aggregator.update(new AnyValue[] {stringValue("Bonnie"), longValue(1337L)});
+        f2Aggregator.update(new AnyValue[] {stringValue("Bonnie"), longValue(42L)});
 
         // Then
-        assertThat( f1Aggregator.result() ).isEqualTo( VirtualValues.list( stringValue( "Bonnie" ), stringValue( "Clyde" ) ) );
-        assertThat( ((MapValue) f2Aggregator.result()).get( "Bonnie" ) ).isEqualTo( longValue( 1337L ) );
+        assertThat(f1Aggregator.result()).isEqualTo(VirtualValues.list(stringValue("Bonnie"), stringValue("Clyde")));
+        assertThat(((MapValue) f2Aggregator.result()).get("Bonnie")).isEqualTo(longValue(1337L));
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WeirdConstructorFunction.class ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "Unable to find a usable public no-argument constructor in the class `WeirdConstructorFunction`. Please add a " +
-                        "valid, public constructor, recompile the class and try again." );
+    void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(WeirdConstructorFunction.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Unable to find a usable public no-argument constructor in the class `WeirdConstructorFunction`. Please add a "
+                                + "valid, public constructor, recompile the class and try again.");
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnNoPublicConstructor()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( PrivateConstructorFunction.class ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "Unable to find a usable public no-argument constructor in the class `PrivateConstructorFunction`. Please add " +
-                        "a valid, public constructor, recompile the class and try again." );
+    void shouldGiveHelpfulErrorOnNoPublicConstructor() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(PrivateConstructorFunction.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Unable to find a usable public no-argument constructor in the class `PrivateConstructorFunction`. Please add "
+                                + "a valid, public constructor, recompile the class and try again.");
     }
 
     @Test
-    void shouldNotAllowVoidOutput()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithVoidOutput.class ) );
-        assertThat( exception.getMessage() ).startsWith( "Don't know how to map `void` to the Neo4j Type System." );
+    void shouldNotAllowVoidOutput() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithVoidOutput.class));
+        assertThat(exception.getMessage()).startsWith("Don't know how to map `void` to the Neo4j Type System.");
     }
 
     @Test
-    void shouldNotAllowNonVoidUpdate()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithNonVoidUpdate.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( "Update method 'update' in VoidOutput has type 'long' but must have return type 'void'." );
+    void shouldNotAllowNonVoidUpdate() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithNonVoidUpdate.class));
+        assertThat(exception.getMessage())
+                .isEqualTo("Update method 'update' in VoidOutput has type 'long' but must have return type 'void'.");
     }
 
     @Test
-    void shouldNotAllowMissingAnnotations()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithMissingAnnotations.class ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "Class 'MissingAggregator' must contain methods annotated with both '@UserAggregationResult' as well as '@UserAggregationUpdate'." );
+    void shouldNotAllowMissingAnnotations() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithMissingAnnotations.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Class 'MissingAggregator' must contain methods annotated with both '@UserAggregationResult' as well as '@UserAggregationUpdate'.");
     }
 
     @Test
-    void shouldNotAllowMultipleUpdateAnnotations()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithDuplicateUpdateAnnotations.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationUpdate'." );
+    void shouldNotAllowMultipleUpdateAnnotations() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithDuplicateUpdateAnnotations.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationUpdate'.");
     }
 
     @Test
-    void shouldNotAllowMultipleResultAnnotations()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithDuplicateResultAnnotations.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationResult'." );
+    void shouldNotAllowMultipleResultAnnotations() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithDuplicateResultAnnotations.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationResult'.");
     }
 
     @Test
-    void shouldNotAllowNonPublicMethod()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( NonPublicTestMethod.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( "Aggregation method 'test' in NonPublicTestMethod must be public." );
+    void shouldNotAllowNonPublicMethod() {
+        ProcedureException exception = assertThrows(ProcedureException.class, () -> compile(NonPublicTestMethod.class));
+        assertThat(exception.getMessage())
+                .isEqualTo("Aggregation method 'test' in NonPublicTestMethod must be public.");
     }
 
     @Test
-    void shouldNotAllowNonPublicUpdateMethod()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( NonPublicUpdateMethod.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( "Aggregation update method 'update' in InnerAggregator must be public." );
+    void shouldNotAllowNonPublicUpdateMethod() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(NonPublicUpdateMethod.class));
+        assertThat(exception.getMessage())
+                .isEqualTo("Aggregation update method 'update' in InnerAggregator must be public.");
     }
 
     @Test
-    void shouldNotAllowNonPublicResultMethod()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( NonPublicResultMethod.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( "Aggregation result method 'result' in InnerAggregator must be public." );
+    void shouldNotAllowNonPublicResultMethod() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(NonPublicResultMethod.class));
+        assertThat(exception.getMessage())
+                .isEqualTo("Aggregation result method 'result' in InnerAggregator must be public.");
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnFunctionReturningInvalidType()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( String.format(
-                "Don't know how to map `char[]` to the Neo4j Type System.%n" +
-                        "Please refer to to the documentation for full details.%n" +
-                        "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
-                        "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
-                        "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
-                        "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
-                        "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ) );
+    void shouldGiveHelpfulErrorOnFunctionReturningInvalidType() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithInvalidOutput.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(String.format("Don't know how to map `char[]` to the Neo4j Type System.%n"
+                        + "Please refer to to the documentation for full details.%n"
+                        + "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, "
+                        + "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, "
+                        + "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, "
+                        + "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, "
+                        + "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]"));
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnContextAnnotatedStaticField()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( String.format(
-                "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is annotated as a @Context field,%n" +
-                        "but it is static. @Context fields must be public, non-final and non-static,%n" +
-                        "because they are reset each time a procedure is invoked." ) );
+    void shouldGiveHelpfulErrorOnContextAnnotatedStaticField() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithStaticContextAnnotatedField.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(String.format(
+                        "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is annotated as a @Context field,%n"
+                                + "but it is static. @Context fields must be public, non-final and non-static,%n"
+                                + "because they are reset each time a procedure is invoked."));
     }
 
     @Test
-    void shouldAllowOverridingProcedureName() throws Throwable
-    {
+    void shouldAllowOverridingProcedureName() throws Throwable {
         // When
-        CallableUserAggregationFunction method = compile( FunctionWithOverriddenName.class ).get( 0 );
+        CallableUserAggregationFunction method =
+                compile(FunctionWithOverriddenName.class).get(0);
 
         // Then
-        assertEquals("org.mystuff.thisisActuallyTheName", method.signature().name().toString() );
+        assertEquals(
+                "org.mystuff.thisisActuallyTheName", method.signature().name().toString());
     }
 
     @Test
-    void shouldNotAllowOverridingFunctionNameWithoutNamespace()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithSingleName.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( "It is not allowed to define functions in the root namespace please use a " +
-                "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" );
+    void shouldNotAllowOverridingFunctionNameWithoutNamespace() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithSingleName.class));
+        assertThat(exception.getMessage())
+                .isEqualTo("It is not allowed to define functions in the root namespace please use a "
+                        + "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")");
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
-    {
+    void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable {
         // Given
-        CallableUserAggregationFunction method = compile( FunctionThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
+        CallableUserAggregationFunction method =
+                compile(FunctionThatThrowsNullMsgExceptionAtInvocation.class).get(0);
 
-        ProcedureException exception = assertThrows( ProcedureException.class,
-                () -> method.create( prepareContext() ).update( new AnyValue[]{} ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "Failed to invoke function `org.neo4j.procedure.impl.test`: Caused by: java.lang.IndexOutOfBoundsException" );
+        ProcedureException exception = assertThrows(
+                ProcedureException.class, () -> method.create(prepareContext()).update(new AnyValue[] {}));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Failed to invoke function `org.neo4j.procedure.impl.test`: Caused by: java.lang.IndexOutOfBoundsException");
     }
 
     @Test
-    void shouldLoadWhiteListedFunction() throws Throwable
-    {
+    void shouldLoadWhiteListedFunction() throws Throwable {
         // Given
-        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of(
-                "org.neo4j.procedure.impl.collectCool" ) ) ) );
+        procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(),
+                components,
+                new ComponentRegistry(),
+                NullLog.getInstance(),
+                new ProcedureConfig(Config.defaults(
+                        GraphDatabaseSettings.procedure_allowlist, List.of("org.neo4j.procedure.impl.collectCool"))));
 
-        CallableUserAggregationFunction method = compile( SingleAggregationFunction.class ).get( 0 );
+        CallableUserAggregationFunction method =
+                compile(SingleAggregationFunction.class).get(0);
 
         // Expect
-        UserAggregator created = method.create( prepareContext() );
-        created.update( new AnyValue[]{stringValue( "Bonnie" )} );
-        assertThat( created.result() ).isEqualTo( VirtualValues.list( stringValue( "Bonnie" ) ) );
+        UserAggregator created = method.create(prepareContext());
+        created.update(new AnyValue[] {stringValue("Bonnie")});
+        assertThat(created.result()).isEqualTo(VirtualValues.list(stringValue("Bonnie")));
     }
 
     @Test
-    void shouldNotLoadNoneWhiteListedFunction() throws Throwable
-    {
+    void shouldNotLoadNoneWhiteListedFunction() throws Throwable {
         // Given
-        InternalLog log = spy( InternalLog.class);
-        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "WrongName" ) ) ) );
+        InternalLog log = spy(InternalLog.class);
+        procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(),
+                components,
+                new ComponentRegistry(),
+                log,
+                new ProcedureConfig(Config.defaults(GraphDatabaseSettings.procedure_allowlist, List.of("WrongName"))));
 
-        List<CallableUserAggregationFunction> method = compile( SingleAggregationFunction.class );
-        verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the allowlist and won't be loaded." );
-        assertThat( method.size() ).isEqualTo( 0 );
+        List<CallableUserAggregationFunction> method = compile(SingleAggregationFunction.class);
+        verify(log)
+                .warn(
+                        "The function 'org.neo4j.procedure.impl.collectCool' is not on the allowlist and won't be loaded.");
+        assertThat(method.size()).isEqualTo(0);
     }
 
     @Test
-    void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
-    {
+    void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable {
         // Given
-        InternalLog log = spy( InternalLog.class);
-        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "" ) ) ) );
+        InternalLog log = spy(InternalLog.class);
+        procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(),
+                components,
+                new ComponentRegistry(),
+                log,
+                new ProcedureConfig(Config.defaults(GraphDatabaseSettings.procedure_allowlist, List.of(""))));
 
-        List<CallableUserAggregationFunction> method = compile( SingleAggregationFunction.class );
-        verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the allowlist and won't be loaded." );
-        assertThat( method.size() ).isEqualTo( 0 );
+        List<CallableUserAggregationFunction> method = compile(SingleAggregationFunction.class);
+        verify(log)
+                .warn(
+                        "The function 'org.neo4j.procedure.impl.collectCool' is not on the allowlist and won't be loaded.");
+        assertThat(method.size()).isEqualTo(0);
     }
 
     @Test
-    void shouldSupportFunctionDeprecation() throws Throwable
-    {
+    void shouldSupportFunctionDeprecation() throws Throwable {
         // Given
-        InternalLog log = mock( InternalLog.class);
-        ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
-                new ComponentRegistry(), log, ProcedureConfig.DEFAULT );
+        InternalLog log = mock(InternalLog.class);
+        ProcedureCompiler procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(), components, new ComponentRegistry(), log, ProcedureConfig.DEFAULT);
 
         // When
-        List<CallableUserAggregationFunction> funcs = procedureCompiler.compileAggregationFunction( FunctionWithDeprecation.class );
+        List<CallableUserAggregationFunction> funcs =
+                procedureCompiler.compileAggregationFunction(FunctionWithDeprecation.class);
 
         // Then
-        verify( log ).warn( "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in org.neo4j.procedure.impl.badFunc" );
-        verifyNoMoreInteractions( log );
-        for ( CallableUserAggregationFunction func : funcs )
-        {
+        verify(log)
+                .warn(
+                        "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in org.neo4j.procedure.impl.badFunc");
+        verifyNoMoreInteractions(log);
+        for (CallableUserAggregationFunction func : funcs) {
             String name = func.signature().name().name();
-            func.create( prepareContext() );
-            switch ( name )
-            {
-            case "newFunc":
-                assertFalse( func.signature().deprecated().isPresent(), "Should not be deprecated" );
-                break;
-            case "oldFunc":
-            case "badFunc":
-                assertTrue( func.signature().deprecated().isPresent(), "Should be deprecated" );
-                assertThat( func.signature().deprecated().get() ).isEqualTo( "newFunc" );
-                break;
-            default:
-                fail( "Unexpected function: " + name );
+            func.create(prepareContext());
+            switch (name) {
+                case "newFunc":
+                    assertFalse(func.signature().deprecated().isPresent(), "Should not be deprecated");
+                    break;
+                case "oldFunc":
+                case "badFunc":
+                    assertTrue(func.signature().deprecated().isPresent(), "Should be deprecated");
+                    assertThat(func.signature().deprecated().get()).isEqualTo("newFunc");
+                    break;
+                default:
+                    fail("Unexpected function: " + name);
             }
         }
     }
 
     @Test
-    void shouldRunAggregationFunctionWithInternalTypes() throws Throwable
-    {
+    void shouldRunAggregationFunctionWithInternalTypes() throws Throwable {
         // Given
-        CallableUserAggregationFunction func = compile( InternalTypes.class ).get( 0 );
+        CallableUserAggregationFunction func = compile(InternalTypes.class).get(0);
 
         // When
-        UserAggregator aggregator = func.create( prepareContext() );
+        UserAggregator aggregator = func.create(prepareContext());
 
-        aggregator.update( new AnyValue[]{longValue( 1 )} );
-        aggregator.update( new AnyValue[]{longValue( 1 )} );
-        aggregator.update( new AnyValue[]{longValue( 1 )} );
-        aggregator.update( new AnyValue[]{longValue( 1 )} );
-        aggregator.update( new AnyValue[]{longValue( 1 )} );
+        aggregator.update(new AnyValue[] {longValue(1)});
+        aggregator.update(new AnyValue[] {longValue(1)});
+        aggregator.update(new AnyValue[] {longValue(1)});
+        aggregator.update(new AnyValue[] {longValue(1)});
+        aggregator.update(new AnyValue[] {longValue(1)});
 
         // Then
-        assertThat( aggregator.result() ).isEqualTo( longValue( 5 ) );
+        assertThat(aggregator.result()).isEqualTo(longValue(5));
     }
 
-    private org.neo4j.kernel.api.procedure.Context prepareContext()
-    {
-        return buildContext( dependencyResolver, valueMapper ).context();
+    private org.neo4j.kernel.api.procedure.Context prepareContext() {
+        return buildContext(dependencyResolver, valueMapper).context();
     }
 
-    public static class SingleAggregationFunction
-    {
+    public static class SingleAggregationFunction {
         @UserAggregationFunction
-        public CoolPeopleAggregator collectCool()
-        {
+        public CoolPeopleAggregator collectCool() {
             return new CoolPeopleAggregator();
         }
     }
 
-    public static class CoolPeopleAggregator
-    {
+    public static class CoolPeopleAggregator {
         private List<String> coolPeople = new ArrayList<>();
 
         @UserAggregationUpdate
-        public void update( @Name( "name" ) String name )
-        {
-            if ( name.equals( "Bonnie" ) || name.equals( "Clyde" ) )
-            {
-                coolPeople.add( name );
+        public void update(@Name("name") String name) {
+            if (name.equals("Bonnie") || name.equals("Clyde")) {
+                coolPeople.add(name);
             }
         }
 
         @UserAggregationResult
-        public List<String> result()
-        {
+        public List<String> result() {
             return coolPeople;
         }
     }
 
-    public static class FunctionWithVoidOutput
-    {
+    public static class FunctionWithVoidOutput {
         @UserAggregationFunction
-        public VoidOutput voidOutput()
-        {
+        public VoidOutput voidOutput() {
             return new VoidOutput();
         }
 
-        public static class VoidOutput
-        {
+        public static class VoidOutput {
             @UserAggregationUpdate
-            public void update()
-            {
-            }
+            public void update() {}
 
             @UserAggregationResult
-            public void result()
-            {
-            }
+            public void result() {}
         }
     }
 
-    public static class FunctionWithMissingAnnotations
-    {
+    public static class FunctionWithMissingAnnotations {
         @UserAggregationFunction
-        public MissingAggregator test()
-        {
+        public MissingAggregator test() {
             return new MissingAggregator();
         }
 
-        public static class MissingAggregator
-        {
-            public void update()
-            {
-            }
+        public static class MissingAggregator {
+            public void update() {}
 
-            public String result()
-            {
+            public String result() {
                 return "test";
             }
         }
     }
 
-    public static class FunctionWithDuplicateUpdateAnnotations
-    {
+    public static class FunctionWithDuplicateUpdateAnnotations {
         @UserAggregationFunction
-        public MissingAggregator test()
-        {
+        public MissingAggregator test() {
             return new MissingAggregator();
         }
 
-        public static class MissingAggregator
-        {
+        public static class MissingAggregator {
             @UserAggregationUpdate
-            public void update1()
-            {
-            }
+            public void update1() {}
 
             @UserAggregationUpdate
-            public void update2()
-            {
-            }
+            public void update2() {}
 
             @UserAggregationResult
-            public String result()
-            {
+            public String result() {
                 return "test";
             }
         }
     }
 
-    public static class FunctionWithDuplicateResultAnnotations
-    {
+    public static class FunctionWithDuplicateResultAnnotations {
         @UserAggregationFunction
-        public MissingAggregator test()
-        {
+        public MissingAggregator test() {
             return new MissingAggregator();
         }
 
-        public static class MissingAggregator
-        {
+        public static class MissingAggregator {
             @UserAggregationUpdate
-            public void update()
-            {
-            }
+            public void update() {}
 
             @UserAggregationResult
-            public String result1()
-            {
+            public String result1() {
                 return "test";
             }
 
             @UserAggregationResult
-            public String result2()
-            {
+            public String result2() {
                 return "test";
             }
         }
     }
 
-    public static class FunctionWithNonVoidUpdate
-    {
+    public static class FunctionWithNonVoidUpdate {
         @UserAggregationFunction
-        public VoidOutput voidOutput()
-        {
+        public VoidOutput voidOutput() {
             return new VoidOutput();
         }
 
-        public static class VoidOutput
-        {
+        public static class VoidOutput {
             @UserAggregationUpdate
-            public long update()
-            {
+            public long update() {
                 return 42L;
             }
 
             @UserAggregationResult
-            public long result()
-            {
+            public long result() {
                 return 42L;
             }
         }
     }
 
-    public static class LoggingFunction
-    {
+    public static class LoggingFunction {
         @Context
         public InternalLog log;
 
         @UserAggregationFunction
-        public LoggingAggregator log()
-        {
-            return new LoggingAggregator( );
+        public LoggingAggregator log() {
+            return new LoggingAggregator();
         }
 
-        public class LoggingAggregator
-        {
+        public class LoggingAggregator {
             @UserAggregationUpdate
-            public void logAround()
-            {
-                log.debug( "1" );
-                log.info( "2" );
-                log.warn( "3" );
-                log.error( "4" );
+            public void logAround() {
+                log.debug("1");
+                log.info("2");
+                log.warn("3");
+                log.error("4");
             }
 
             @UserAggregationResult
-            public long result()
-            {
+            public long result() {
                 return 1337L;
             }
         }
     }
 
-    public static class MapAggregator
-    {
-        private Map<String,Object> map = new HashMap<>();
+    public static class MapAggregator {
+        private Map<String, Object> map = new HashMap<>();
 
         @UserAggregationUpdate
-        public void update( @Name( "name" ) String name, @Name( "value" ) long value )
-        {
-            Long prev = (Long) map.getOrDefault( name, 0L );
-            if ( value > prev )
-            {
-                map.put( name, value );
+        public void update(@Name("name") String name, @Name("value") long value) {
+            Long prev = (Long) map.getOrDefault(name, 0L);
+            if (value > prev) {
+                map.put(name, value);
             }
         }
 
         @UserAggregationResult
-        public Map<String,Object> result()
-        {
+        public Map<String, Object> result() {
             return map;
         }
     }
 
-    public static class MultiFunction
-    {
+    public static class MultiFunction {
         @UserAggregationFunction
-        public CoolPeopleAggregator collectCool()
-        {
+        public CoolPeopleAggregator collectCool() {
             return new CoolPeopleAggregator();
         }
 
         @UserAggregationFunction
-        public MapAggregator collectMap()
-        {
+        public MapAggregator collectMap() {
             return new MapAggregator();
         }
     }
 
-    public static class WeirdConstructorFunction
-    {
-        public WeirdConstructorFunction( WeirdConstructorFunction wat )
-        {
-
-        }
+    public static class WeirdConstructorFunction {
+        public WeirdConstructorFunction(WeirdConstructorFunction wat) {}
 
         @UserAggregationFunction
-        public CoolPeopleAggregator collectCool()
-        {
+        public CoolPeopleAggregator collectCool() {
             return new CoolPeopleAggregator();
         }
     }
 
-    public static class FunctionWithInvalidOutput
-    {
+    public static class FunctionWithInvalidOutput {
         @UserAggregationFunction
-        public InvalidAggregator test()
-        {
+        public InvalidAggregator test() {
             return new InvalidAggregator();
         }
 
-        public static class InvalidAggregator
-        {
+        public static class InvalidAggregator {
             @UserAggregationUpdate
-            public void update()
-            {
-                //dd nothing
+            public void update() {
+                // dd nothing
             }
 
             @UserAggregationResult
-            public char[] result()
-            {
-                return "Testing" .toCharArray();
+            public char[] result() {
+                return "Testing".toCharArray();
             }
         }
-
     }
 
-    public static class FunctionWithStaticContextAnnotatedField
-    {
+    public static class FunctionWithStaticContextAnnotatedField {
         @Context
         public static GraphDatabaseService gdb;
 
         @UserAggregationFunction
-        public InvalidAggregator test()
-        {
+        public InvalidAggregator test() {
             return new InvalidAggregator();
         }
 
-        public static class InvalidAggregator
-        {
+        public static class InvalidAggregator {
 
             @UserAggregationUpdate
-            public void update()
-            {
-                //dd nothing
+            public void update() {
+                // dd nothing
             }
 
             @UserAggregationResult
-            public String result()
-            {
+            public String result() {
                 return "Testing";
             }
         }
     }
 
-    public static class FunctionThatThrowsNullMsgExceptionAtInvocation
-    {
+    public static class FunctionThatThrowsNullMsgExceptionAtInvocation {
         @UserAggregationFunction
-        public ThrowingAggregator test()
-        {
+        public ThrowingAggregator test() {
             return new ThrowingAggregator();
         }
 
-        public static class ThrowingAggregator
-        {
+        public static class ThrowingAggregator {
             @UserAggregationUpdate
-            public void update()
-            {
+            public void update() {
                 throw new IndexOutOfBoundsException();
             }
 
             @UserAggregationResult
-            public String result()
-            {
+            public String result() {
                 return "Testing";
             }
         }
     }
 
-    public static class PrivateConstructorFunction
-    {
-        private PrivateConstructorFunction()
-        {
-
-        }
+    public static class PrivateConstructorFunction {
+        private PrivateConstructorFunction() {}
 
         @UserAggregationFunction
-        public CoolPeopleAggregator collectCool()
-        {
+        public CoolPeopleAggregator collectCool() {
             return new CoolPeopleAggregator();
         }
     }
 
-    public static class PrivateConstructorButNoFunctions
-    {
-        private PrivateConstructorButNoFunctions()
-        {
+    public static class PrivateConstructorButNoFunctions {
+        private PrivateConstructorButNoFunctions() {}
 
-        }
-
-        public String thisIsNotAFunction()
-        {
+        public String thisIsNotAFunction() {
             return null;
         }
     }
 
-    public static class FunctionWithOverriddenName
-    {
-        @UserAggregationFunction( "org.mystuff.thisisActuallyTheName" )
-        public CoolPeopleAggregator collectCool()
-        {
+    public static class FunctionWithOverriddenName {
+        @UserAggregationFunction("org.mystuff.thisisActuallyTheName")
+        public CoolPeopleAggregator collectCool() {
             return new CoolPeopleAggregator();
         }
     }
 
-    public static class FunctionWithSingleName
-    {
-        @UserAggregationFunction( "singleName" )
-        public CoolPeopleAggregator collectCool()
-        {
+    public static class FunctionWithSingleName {
+        @UserAggregationFunction("singleName")
+        public CoolPeopleAggregator collectCool() {
             return new CoolPeopleAggregator();
         }
     }
 
-    public static class FunctionWithDeprecation
-    {
+    public static class FunctionWithDeprecation {
         @UserAggregationFunction()
-        public CoolPeopleAggregator newFunc()
-        {
+        public CoolPeopleAggregator newFunc() {
             return new CoolPeopleAggregator();
         }
 
         @Deprecated
-        @UserAggregationFunction( deprecatedBy = "newFunc" )
-        public CoolPeopleAggregator oldFunc()
-        {
+        @UserAggregationFunction(deprecatedBy = "newFunc")
+        public CoolPeopleAggregator oldFunc() {
             return new CoolPeopleAggregator();
         }
 
-        @UserAggregationFunction( deprecatedBy = "newFunc" )
-        public CoolPeopleAggregator badFunc()
-        {
+        @UserAggregationFunction(deprecatedBy = "newFunc")
+        public CoolPeopleAggregator badFunc() {
             return new CoolPeopleAggregator();
         }
     }
 
-    public static class NonPublicTestMethod
-    {
+    public static class NonPublicTestMethod {
         @UserAggregationFunction
-        InnerAggregator test()
-        {
+        InnerAggregator test() {
             return new InnerAggregator();
         }
 
-        public static class InnerAggregator
-        {
+        public static class InnerAggregator {
             @UserAggregationUpdate
-            public void update()
-            {
-            }
+            public void update() {}
 
             @UserAggregationResult
-            public String result()
-            {
+            public String result() {
                 return "Testing";
             }
         }
     }
 
-    public static class NonPublicUpdateMethod
-    {
+    public static class NonPublicUpdateMethod {
         @UserAggregationFunction
-        public InnerAggregator test()
-        {
+        public InnerAggregator test() {
             return new InnerAggregator();
         }
 
-        public static class InnerAggregator
-        {
+        public static class InnerAggregator {
             @UserAggregationUpdate
-            void update()
-            {
-            }
+            void update() {}
 
             @UserAggregationResult
-            public String result()
-            {
+            public String result() {
                 return "Testing";
             }
         }
     }
 
-    public static class NonPublicResultMethod
-    {
+    public static class NonPublicResultMethod {
         @UserAggregationFunction
-        public InnerAggregator test()
-        {
+        public InnerAggregator test() {
             return new InnerAggregator();
         }
 
-        public static class InnerAggregator
-        {
+        public static class InnerAggregator {
             @UserAggregationUpdate
-            public void update()
-            {
-            }
+            public void update() {}
 
             @UserAggregationResult
-            String result()
-            {
+            String result() {
                 return "Testing";
             }
         }
     }
 
-    public static class InternalTypes
-    {
+    public static class InternalTypes {
         @UserAggregationFunction
-        public InnerAggregator test()
-        {
+        public InnerAggregator test() {
             return new InnerAggregator();
         }
 
-        public static class InnerAggregator
-        {
+        public static class InnerAggregator {
             private long sum;
+
             @UserAggregationUpdate
-            public void update( @Name( value = "in" ) LongValue in )
-            {
+            public void update(@Name(value = "in") LongValue in) {
                 sum += in.longValue();
             }
 
             @UserAggregationResult
-            public LongValue result()
-            {
-                return longValue( sum );
+            public LongValue result() {
+                return longValue(sum);
             }
         }
     }
 
-    private List<CallableUserAggregationFunction> compile( Class<?> clazz ) throws KernelException
-    {
-        return procedureCompiler.compileAggregationFunction( clazz );
+    private List<CallableUserAggregationFunction> compile(Class<?> clazz) throws KernelException {
+        return procedureCompiler.compileAggregationFunction(clazz);
     }
 }

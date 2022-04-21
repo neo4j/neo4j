@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.result
 
-import java.lang
-
 import org.neo4j.cypher.internal.QueryTypeConversion
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.ExplainMode
@@ -30,6 +28,8 @@ import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.impl.query.QueryExecution
+
+import java.lang
 
 import scala.jdk.CollectionConverters.IterableHasAsJava
 
@@ -53,7 +53,7 @@ trait InternalExecutionResult extends QueryExecution {
     executionMode match {
       case ExplainMode => QueryExecutionType.explained(qt)
       case ProfileMode => QueryExecutionType.profiled(qt)
-      case NormalMode => QueryExecutionType.query(qt)
+      case NormalMode  => QueryExecutionType.query(qt)
     }
   }
 
@@ -68,4 +68,3 @@ sealed trait CloseReason
 case object Success extends CloseReason
 case object Failure extends CloseReason
 case class Error(t: Throwable) extends CloseReason
-

@@ -19,10 +19,6 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -33,239 +29,221 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class MutableConnectionStateTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
+
+class MutableConnectionStateTest {
     private final MutableConnectionState state = new MutableConnectionState();
 
-    private final BoltResult result = mock( BoltResult.class );
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+    private final BoltResult result = mock(BoltResult.class);
+    private final BoltResponseHandler responseHandler = mock(BoltResponseHandler.class);
 
     @Test
-    void shouldHandleOnPullRecordsWithoutResponseHandler() throws Throwable
-    {
-        state.setResponseHandler( null );
+    void shouldHandleOnPullRecordsWithoutResponseHandler() throws Throwable {
+        state.setResponseHandler(null);
 
-        state.onPullRecords( result, STREAM_LIMIT_UNLIMITED );
+        state.onPullRecords(result, STREAM_LIMIT_UNLIMITED);
 
-        assertNull( state.getPendingError() );
-        assertFalse( state.hasPendingIgnore() );
+        assertNull(state.getPendingError());
+        assertFalse(state.hasPendingIgnore());
     }
 
     @Test
-    void shouldHandleOnPullRecordsWithResponseHandler() throws Throwable
-    {
-        state.setResponseHandler( responseHandler );
+    void shouldHandleOnPullRecordsWithResponseHandler() throws Throwable {
+        state.setResponseHandler(responseHandler);
 
-        state.onPullRecords( result, STREAM_LIMIT_UNLIMITED );
+        state.onPullRecords(result, STREAM_LIMIT_UNLIMITED);
 
-        verify( responseHandler ).onPullRecords( result, STREAM_LIMIT_UNLIMITED );
+        verify(responseHandler).onPullRecords(result, STREAM_LIMIT_UNLIMITED);
     }
 
     @Test
-    void shouldHandleOnDiscardRecordsWithoutResponseHandler() throws Throwable
-    {
-        state.setResponseHandler( null );
+    void shouldHandleOnDiscardRecordsWithoutResponseHandler() throws Throwable {
+        state.setResponseHandler(null);
 
-        state.onDiscardRecords( result, STREAM_LIMIT_UNLIMITED );
+        state.onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
 
-        assertNull( state.getPendingError() );
-        assertFalse( state.hasPendingIgnore() );
+        assertNull(state.getPendingError());
+        assertFalse(state.hasPendingIgnore());
     }
 
     @Test
-    void shouldHandleOnDiscardRecordsWithResponseHandler() throws Throwable
-    {
-        state.setResponseHandler( responseHandler );
+    void shouldHandleOnDiscardRecordsWithResponseHandler() throws Throwable {
+        state.setResponseHandler(responseHandler);
 
-        state.onDiscardRecords( result, STREAM_LIMIT_UNLIMITED );
+        state.onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
 
-        verify( responseHandler ).onDiscardRecords( result, STREAM_LIMIT_UNLIMITED );
+        verify(responseHandler).onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
     }
 
     @Test
-    void shouldHandleOnMetadataWithoutResponseHandler()
-    {
-        state.setResponseHandler( null );
+    void shouldHandleOnMetadataWithoutResponseHandler() {
+        state.setResponseHandler(null);
 
-        state.onMetadata( "key", stringValue( "value" ) );
+        state.onMetadata("key", stringValue("value"));
 
-        assertNull( state.getPendingError() );
-        assertFalse( state.hasPendingIgnore() );
+        assertNull(state.getPendingError());
+        assertFalse(state.hasPendingIgnore());
     }
 
     @Test
-    void shouldHandleOnMetadataWitResponseHandler()
-    {
-        state.setResponseHandler( responseHandler );
+    void shouldHandleOnMetadataWitResponseHandler() {
+        state.setResponseHandler(responseHandler);
 
-        state.onMetadata( "key", stringValue( "value" ) );
+        state.onMetadata("key", stringValue("value"));
 
-        verify( responseHandler ).onMetadata( "key", stringValue( "value" ) );
+        verify(responseHandler).onMetadata("key", stringValue("value"));
     }
 
     @Test
-    void shouldHandleMarkIgnoredWithoutResponseHandler()
-    {
-        state.setResponseHandler( null );
+    void shouldHandleMarkIgnoredWithoutResponseHandler() {
+        state.setResponseHandler(null);
 
         state.markIgnored();
 
-        assertNull( state.getPendingError() );
-        assertTrue( state.hasPendingIgnore() );
+        assertNull(state.getPendingError());
+        assertTrue(state.hasPendingIgnore());
     }
 
     @Test
-    void shouldHandleMarkIgnoredWitResponseHandler()
-    {
-        state.setResponseHandler( responseHandler );
+    void shouldHandleMarkIgnoredWitResponseHandler() {
+        state.setResponseHandler(responseHandler);
 
         state.markIgnored();
 
-        verify( responseHandler ).markIgnored();
-        assertNull( state.getPendingError() );
-        assertFalse( state.hasPendingIgnore() );
+        verify(responseHandler).markIgnored();
+        assertNull(state.getPendingError());
+        assertFalse(state.hasPendingIgnore());
     }
 
     @Test
-    void shouldHandleMarkFailedWithoutResponseHandler()
-    {
-        state.setResponseHandler( null );
+    void shouldHandleMarkFailedWithoutResponseHandler() {
+        state.setResponseHandler(null);
 
-        Neo4jError error = Neo4jError.from( new RuntimeException() );
-        state.markFailed( error );
+        Neo4jError error = Neo4jError.from(new RuntimeException());
+        state.markFailed(error);
 
-        assertEquals( error, state.getPendingError() );
-        assertFalse( state.hasPendingIgnore() );
+        assertEquals(error, state.getPendingError());
+        assertFalse(state.hasPendingIgnore());
     }
 
     @Test
-    void shouldHandleMarkFailedWitResponseHandler()
-    {
-        state.setResponseHandler( responseHandler );
+    void shouldHandleMarkFailedWitResponseHandler() {
+        state.setResponseHandler(responseHandler);
 
-        Neo4jError error = Neo4jError.from( new RuntimeException() );
-        state.markFailed( error );
+        Neo4jError error = Neo4jError.from(new RuntimeException());
+        state.markFailed(error);
 
-        verify( responseHandler ).markFailed( error );
-        assertNull( state.getPendingError() );
-        assertFalse( state.hasPendingIgnore() );
+        verify(responseHandler).markFailed(error);
+        assertNull(state.getPendingError());
+        assertFalse(state.hasPendingIgnore());
     }
 
     @Test
-    void shouldHandleOnFinishWithoutResponseHandler()
-    {
-        state.setResponseHandler( null );
+    void shouldHandleOnFinishWithoutResponseHandler() {
+        state.setResponseHandler(null);
 
         state.onFinish();
 
-        assertNull( state.getPendingError() );
-        assertFalse( state.hasPendingIgnore() );
+        assertNull(state.getPendingError());
+        assertFalse(state.hasPendingIgnore());
     }
 
     @Test
-    void shouldHandleOnFinishWitResponseHandler()
-    {
-        state.setResponseHandler( responseHandler );
+    void shouldHandleOnFinishWitResponseHandler() {
+        state.setResponseHandler(responseHandler);
 
         state.onFinish();
 
-        verify( responseHandler ).onFinish();
+        verify(responseHandler).onFinish();
     }
 
     @Test
-    void shouldResetPendingFailureAndIgnored()
-    {
-        state.setResponseHandler( null );
+    void shouldResetPendingFailureAndIgnored() {
+        state.setResponseHandler(null);
 
-        Neo4jError error = Neo4jError.from( new RuntimeException() );
+        Neo4jError error = Neo4jError.from(new RuntimeException());
         state.markIgnored();
-        state.markFailed( error );
+        state.markFailed(error);
 
-        assertEquals( error, state.getPendingError() );
-        assertTrue( state.hasPendingIgnore() );
+        assertEquals(error, state.getPendingError());
+        assertTrue(state.hasPendingIgnore());
 
         state.resetPendingFailedAndIgnored();
 
-        assertNull( state.getPendingError() );
-        assertFalse( state.hasPendingIgnore() );
+        assertNull(state.getPendingError());
+        assertFalse(state.hasPendingIgnore());
     }
 
     @Test
-    void shouldNotProcessMessageWhenClosed()
-    {
-        state.setResponseHandler( null );
+    void shouldNotProcessMessageWhenClosed() {
+        state.setResponseHandler(null);
 
         state.markClosed();
 
-        assertFalse( state.canProcessMessage() );
+        assertFalse(state.canProcessMessage());
     }
 
     @Test
-    void shouldNotProcessMessageWithPendingError()
-    {
-        state.setResponseHandler( null );
+    void shouldNotProcessMessageWithPendingError() {
+        state.setResponseHandler(null);
 
-        state.markFailed( Neo4jError.from( new RuntimeException() ) );
+        state.markFailed(Neo4jError.from(new RuntimeException()));
 
-        assertFalse( state.canProcessMessage() );
+        assertFalse(state.canProcessMessage());
     }
 
     @Test
-    void shouldNotProcessMessageWithPendingIgnore()
-    {
-        state.setResponseHandler( null );
+    void shouldNotProcessMessageWithPendingIgnore() {
+        state.setResponseHandler(null);
 
         state.markIgnored();
 
-        assertFalse( state.canProcessMessage() );
+        assertFalse(state.canProcessMessage());
     }
 
     @Test
-    void shouldInterrupt()
-    {
-        assertFalse( state.isInterrupted() );
+    void shouldInterrupt() {
+        assertFalse(state.isInterrupted());
 
-        assertEquals( 1, state.incrementInterruptCounter() );
-        assertTrue( state.isInterrupted() );
+        assertEquals(1, state.incrementInterruptCounter());
+        assertTrue(state.isInterrupted());
 
-        assertEquals( 2, state.incrementInterruptCounter() );
-        assertTrue( state.isInterrupted() );
+        assertEquals(2, state.incrementInterruptCounter());
+        assertTrue(state.isInterrupted());
 
-        assertEquals( 3, state.incrementInterruptCounter() );
-        assertTrue( state.isInterrupted() );
+        assertEquals(3, state.incrementInterruptCounter());
+        assertTrue(state.isInterrupted());
 
-        assertEquals( 2, state.decrementInterruptCounter() );
-        assertTrue( state.isInterrupted() );
+        assertEquals(2, state.decrementInterruptCounter());
+        assertTrue(state.isInterrupted());
 
-        assertEquals( 1, state.decrementInterruptCounter() );
-        assertTrue( state.isInterrupted() );
+        assertEquals(1, state.decrementInterruptCounter());
+        assertTrue(state.isInterrupted());
 
-        assertEquals( 0, state.decrementInterruptCounter() );
-        assertFalse( state.isInterrupted() );
+        assertEquals(0, state.decrementInterruptCounter());
+        assertFalse(state.isInterrupted());
     }
 
     @Test
-    void shouldGetAndSetTransactionId() throws BoltProtocolBreachFatality
-    {
-        state.setCurrentTransactionId( "123" );
-        assertEquals( "123", state.getCurrentTransactionId() );
+    void shouldGetAndSetTransactionId() throws BoltProtocolBreachFatality {
+        state.setCurrentTransactionId("123");
+        assertEquals("123", state.getCurrentTransactionId());
     }
 
     @Test
-    void shouldThrowIfTransactionIdIsReplaceWithoutFirstClearing() throws BoltProtocolBreachFatality
-    {
-        state.setCurrentTransactionId( "123" );
-        assertThrows( BoltProtocolBreachFatality.class, () -> state.setCurrentTransactionId( "456" ) );
+    void shouldThrowIfTransactionIdIsReplaceWithoutFirstClearing() throws BoltProtocolBreachFatality {
+        state.setCurrentTransactionId("123");
+        assertThrows(BoltProtocolBreachFatality.class, () -> state.setCurrentTransactionId("456"));
     }
 
     @Test
-    void shouldClearTransactionId() throws BoltProtocolBreachFatality
-    {
-        state.setCurrentTransactionId( "123" );
-        assertEquals( "123", state.getCurrentTransactionId() );
+    void shouldClearTransactionId() throws BoltProtocolBreachFatality {
+        state.setCurrentTransactionId("123");
+        assertEquals("123", state.getCurrentTransactionId());
 
         state.clearCurrentTransactionId();
 
-        assertNull( state.getCurrentTransactionId() );
+        assertNull(state.getCurrentTransactionId());
     }
 }

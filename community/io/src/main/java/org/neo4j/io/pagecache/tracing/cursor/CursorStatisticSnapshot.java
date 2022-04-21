@@ -19,13 +19,32 @@
  */
 package org.neo4j.io.pagecache.tracing.cursor;
 
-public record CursorStatisticSnapshot(long pins, long unpins, long hits, long faults, long noFaults, long failedFaults, long bytesRead, long bytesWritten,
-                                      long evictions, long evictionExceptions, long flushes, long merges)
-{
-    public CursorStatisticSnapshot( PageCursorTracer cursorTracer )
-    {
-        this( cursorTracer.pins(), cursorTracer.unpins(), cursorTracer.hits(), cursorTracer.faults(), cursorTracer.noFaults(), cursorTracer.failedFaults(),
-                cursorTracer.bytesRead(), cursorTracer.bytesWritten(), cursorTracer.evictions(), cursorTracer.evictionExceptions(), cursorTracer.flushes(),
-                cursorTracer.merges() );
+public record CursorStatisticSnapshot(
+        long pins,
+        long unpins,
+        long hits,
+        long faults,
+        long noFaults,
+        long failedFaults,
+        long bytesRead,
+        long bytesWritten,
+        long evictions,
+        long evictionExceptions,
+        long flushes,
+        long merges) {
+    public CursorStatisticSnapshot(PageCursorTracer cursorTracer) {
+        this(
+                cursorTracer.pins(),
+                cursorTracer.unpins(),
+                cursorTracer.hits(),
+                cursorTracer.faults(),
+                cursorTracer.noFaults(),
+                cursorTracer.failedFaults(),
+                cursorTracer.bytesRead(),
+                cursorTracer.bytesWritten(),
+                cursorTracer.evictions(),
+                cursorTracer.evictionExceptions(),
+                cursorTracer.flushes(),
+                cursorTracer.merges());
     }
 }

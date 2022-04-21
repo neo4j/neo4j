@@ -33,7 +33,7 @@ abstract class ProjectionTestBase[CONTEXT <: RuntimeContext](
 
   test("should introduce new variables and keep old ones") {
     // given
-    val input = inputValues((0 until sizeHint).map(Array[Any](_)):_*)
+    val input = inputValues((0 until sizeHint).map(Array[Any](_)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

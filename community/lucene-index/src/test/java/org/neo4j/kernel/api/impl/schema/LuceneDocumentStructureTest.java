@@ -19,21 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.search.WildcardQuery;
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.newSeekQuery;
@@ -41,76 +29,80 @@ import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_K
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.useFieldForUniquenessVerification;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.String;
 
-class LuceneDocumentStructureTest
-{
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.TermQuery;
+import org.junit.jupiter.api.Test;
+
+class LuceneDocumentStructureTest {
     @Test
-    void stringWithMaximumLengthShouldBeAllowed()
-    {
-        String longestString = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH );
-        Document document = documentRepresentingProperties( 123, longestString );
-        assertEquals( longestString, document.getField( String.key( 0 ) ).stringValue() );
+    void stringWithMaximumLengthShouldBeAllowed() {
+        String longestString = RandomStringUtils.randomAscii(IndexWriter.MAX_TERM_LENGTH);
+        Document document = documentRepresentingProperties(123, longestString);
+        assertEquals(longestString, document.getField(String.key(0)).stringValue());
     }
 
     @Test
-    void shouldBuildDocumentRepresentingStringProperty()
-    {
+    void shouldBuildDocumentRepresentingStringProperty() {
         // given
-        Document document = documentRepresentingProperties( 123, "hello" );
+        Document document = documentRepresentingProperties(123, "hello");
 
         // then
-        assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( "hello", document.get( String.key( 0 ) ) );
+        assertEquals("123", document.get(NODE_ID_KEY));
+        assertEquals("hello", document.get(String.key(0)));
     }
 
     @Test
-    void shouldBuildDocumentRepresentingMultipleStringProperties()
-    {
+    void shouldBuildDocumentRepresentingMultipleStringProperties() {
         // given
-        String[] values = new String[]{"hello", "world"};
-        Document document = documentRepresentingProperties( 123, values );
+        String[] values = new String[] {"hello", "world"};
+        Document document = documentRepresentingProperties(123, values);
 
         // then
-        assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertThat( document.get( String.key( 0 ) ) ).isEqualTo( values[0] );
-        assertThat( document.get( String.key( 1 ) ) ).isEqualTo( values[1] );
+        assertEquals("123", document.get(NODE_ID_KEY));
+        assertThat(document.get(String.key(0))).isEqualTo(values[0]);
+        assertThat(document.get(String.key(1))).isEqualTo(values[1]);
     }
 
     @Test
-    void shouldBuildQueryRepresentingStringProperty()
-    {
+    void shouldBuildQueryRepresentingStringProperty() {
         // given
-        BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( "Characters" );
-        ConstantScoreQuery query = (ConstantScoreQuery) booleanQuery.clauses().get( 0 ).getQuery();
+        BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery("Characters");
+        ConstantScoreQuery query =
+                (ConstantScoreQuery) booleanQuery.clauses().get(0).getQuery();
 
         // then
-        assertEquals( "Characters", ((TermQuery) query.getQuery()).getTerm().text() );
+        assertEquals("Characters", ((TermQuery) query.getQuery()).getTerm().text());
     }
 
     @Test
-    void shouldBuildQueryRepresentingMultipleProperties()
-    {
+    void shouldBuildQueryRepresentingMultipleProperties() {
         // given
-        BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( "foo", "bar" );
+        BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery("foo", "bar");
 
-        ConstantScoreQuery fooScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 0 ).getQuery();
+        ConstantScoreQuery fooScoreQuery =
+                (ConstantScoreQuery) booleanQuery.clauses().get(0).getQuery();
         TermQuery fooTermQuery = (TermQuery) fooScoreQuery.getQuery();
 
-        ConstantScoreQuery barScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 1 ).getQuery();
+        ConstantScoreQuery barScoreQuery =
+                (ConstantScoreQuery) booleanQuery.clauses().get(1).getQuery();
         TermQuery barTermQuery = (TermQuery) barScoreQuery.getQuery();
 
         // then
-        assertEquals( "foo", fooTermQuery.getTerm().text() );
-        assertEquals( "bar", barTermQuery.getTerm().text() );
+        assertEquals("foo", fooTermQuery.getTerm().text());
+        assertEquals("bar", barTermQuery.getTerm().text());
     }
 
     @Test
-    void checkFieldUsageForUniquenessVerification()
-    {
-        assertFalse( useFieldForUniquenessVerification( "id" ) );
-        assertFalse( useFieldForUniquenessVerification( "1number" ) );
-        assertTrue( useFieldForUniquenessVerification( "number" ) );
-        assertFalse( useFieldForUniquenessVerification( "1string" ) );
-        assertFalse( useFieldForUniquenessVerification( "10string" ) );
-        assertTrue( useFieldForUniquenessVerification( "string" ) );
+    void checkFieldUsageForUniquenessVerification() {
+        assertFalse(useFieldForUniquenessVerification("id"));
+        assertFalse(useFieldForUniquenessVerification("1number"));
+        assertTrue(useFieldForUniquenessVerification("number"));
+        assertFalse(useFieldForUniquenessVerification("1string"));
+        assertFalse(useFieldForUniquenessVerification("10string"));
+        assertTrue(useFieldForUniquenessVerification("string"));
     }
 }

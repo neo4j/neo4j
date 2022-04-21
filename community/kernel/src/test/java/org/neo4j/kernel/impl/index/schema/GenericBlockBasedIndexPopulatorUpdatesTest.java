@@ -19,17 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Collection;
-
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
-
 import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,68 +27,72 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
-abstract class GenericBlockBasedIndexPopulatorUpdatesTest<KEY extends GenericKey<KEY>> extends BlockBasedIndexPopulatorUpdatesTest<KEY>
-{
+import java.io.IOException;
+import java.util.Collection;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
+
+abstract class GenericBlockBasedIndexPopulatorUpdatesTest<KEY extends GenericKey<KEY>>
+        extends BlockBasedIndexPopulatorUpdatesTest<KEY> {
     @Test
-    void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException, IOException
-    {
+    void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException, IOException {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
-        try
-        {
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(INDEX_DESCRIPTOR);
+        try {
             int maxKeyValueSize = populator.tree.keyValueSizeCap();
-            ValueIndexEntryUpdate<IndexDescriptor> update =
-                    add( 1, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( populator.layout, maxKeyValueSize ) );
+            ValueIndexEntryUpdate<IndexDescriptor> update = add(
+                    1,
+                    INDEX_DESCRIPTOR,
+                    generateStringValueResultingInIndexEntrySize(populator.layout, maxKeyValueSize));
 
             // when
-            Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
-            populator.add( updates, NULL_CONTEXT );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+            Collection<ValueIndexEntryUpdate<?>> updates = singleton(update);
+            populator.add(updates, NULL_CONTEXT);
+            populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
 
             // then
-            assertHasEntry( populator, update.values()[0], 1 );
-        }
-        finally
-        {
-            populator.close( true, NULL_CONTEXT );
+            assertHasEntry(populator, update.values()[0], 1);
+        } finally {
+            populator.close(true, NULL_CONTEXT);
         }
     }
 
     @Test
-    void shouldThrowForEntriesLargerThanMaxSize() throws IOException
-    {
+    void shouldThrowForEntriesLargerThanMaxSize() throws IOException {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
-        try
-        {
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(INDEX_DESCRIPTOR);
+        try {
             int maxKeyValueSize = populator.tree.keyValueSizeCap();
-            ValueIndexEntryUpdate<IndexDescriptor> update =
-                    add( 1, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( populator.layout, maxKeyValueSize + 1 ) );
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
-            {
-                Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
-                populator.add( updates, NULL_CONTEXT );
-                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-            } );
+            ValueIndexEntryUpdate<IndexDescriptor> update = add(
+                    1,
+                    INDEX_DESCRIPTOR,
+                    generateStringValueResultingInIndexEntrySize(populator.layout, maxKeyValueSize + 1));
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> {
+                Collection<ValueIndexEntryUpdate<?>> updates = singleton(update);
+                populator.add(updates, NULL_CONTEXT);
+                populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+            });
             // then
-            assertThat( e )
+            assertThat(e)
                     .hasMessageContaining(
-                    "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index', " +
-                            "type='GENERAL " + indexType() +
-                            "', schema=(:Label1 {property1}), indexProvider='Undecided-0' ), entity id: 1, property size: " )
+                            "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index', "
+                                    + "type='GENERAL "
+                                    + indexType()
+                                    + "', schema=(:Label1 {property1}), indexProvider='Undecided-0' ), entity id: 1, property size: ")
                     .hasMessageContaining(
-                            ", value: [String(\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA...." );
+                            ", value: [String(\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA....");
 
-        }
-        finally
-        {
-            populator.close( true, NULL_CONTEXT );
+        } finally {
+            populator.close(true, NULL_CONTEXT);
         }
     }
 
     @Override
-    Value supportedValue( int identifier )
-    {
-        return Values.stringValue( "StringValue " + identifier );
+    Value supportedValue(int identifier) {
+        return Values.stringValue("StringValue " + identifier);
     }
 }

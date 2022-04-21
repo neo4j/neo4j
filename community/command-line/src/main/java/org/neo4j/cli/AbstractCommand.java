@@ -19,17 +19,15 @@
  */
 package org.neo4j.cli;
 
+import static java.util.Objects.requireNonNull;
+
+import java.io.PrintStream;
+import org.neo4j.kernel.diagnostics.providers.SystemDiagnostics;
+import org.neo4j.kernel.internal.Version;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
-
-import java.io.PrintStream;
-
-import org.neo4j.kernel.diagnostics.providers.SystemDiagnostics;
-import org.neo4j.kernel.internal.Version;
-
-import static java.util.Objects.requireNonNull;
 
 @CommandLine.Command(
         headerHeading = "%n",
@@ -38,57 +36,46 @@ import static java.util.Objects.requireNonNull;
         optionListHeading = "%n@|bold,underline OPTIONS|@%n%n",
         parameterListHeading = "%n@|bold,underline PARAMETERS|@%n%n",
         showDefaultValues = true,
-        sortOptions = false
-)
-public abstract class AbstractCommand implements Command
-{
-    @Option( names = "--verbose", arity = "0", description = "Enable verbose output." )
+        sortOptions = false)
+public abstract class AbstractCommand implements Command {
+    @Option(names = "--verbose", arity = "0", description = "Enable verbose output.")
     protected boolean verbose;
 
-    @Option( names = "--expand-commands", description = "Allow command expansion in config value evaluation." )
+    @Option(names = "--expand-commands", description = "Allow command expansion in config value evaluation.")
     protected boolean allowCommandExpansion;
 
     protected final ExecutionContext ctx;
+
     @Spec
     protected CommandSpec spec;
 
-    protected AbstractCommand( ExecutionContext ctx )
-    {
-        this.ctx = requireNonNull( ctx );
+    protected AbstractCommand(ExecutionContext ctx) {
+        this.ctx = requireNonNull(ctx);
     }
 
     protected abstract void execute() throws Exception;
 
     @Override
-    public Integer call() throws Exception
-    {
-        if ( verbose )
-        {
+    public Integer call() throws Exception {
+        if (verbose) {
             printVerboseHeader();
         }
-        try
-        {
+        try {
             execute();
-        }
-        catch ( CommandFailedException e )
-        {
-            if ( verbose )
-            {
-                e.printStackTrace( ctx.err() );
-            }
-            else
-            {
-                ctx.err().println( e.getMessage() );
+        } catch (CommandFailedException e) {
+            if (verbose) {
+                e.printStackTrace(ctx.err());
+            } else {
+                ctx.err().println(e.getMessage());
             }
             return e.getExitCode();
         }
         return 0;
     }
 
-    private void printVerboseHeader()
-    {
+    private void printVerboseHeader() {
         PrintStream out = ctx.out();
-        out.println( "neo4j " + Version.getNeo4jVersion() );
-        SystemDiagnostics.JAVA_VIRTUAL_MACHINE.dump( out::println );
+        out.println("neo4j " + Version.getNeo4jVersion());
+        SystemDiagnostics.JAVA_VIRTUAL_MACHINE.dump(out::println);
     }
 }

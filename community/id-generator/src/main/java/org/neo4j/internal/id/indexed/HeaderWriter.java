@@ -21,7 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -31,20 +30,19 @@ import org.neo4j.io.pagecache.context.CursorContext;
  *
  * @see HeaderReader
  */
-class HeaderWriter implements Consumer<PageCursor>
-{
+class HeaderWriter implements Consumer<PageCursor> {
     /**
      * highId to write in the header. This is a supplier because of how this writer is constructed before entering the critical
      * section inside {@link GBPTree#checkpoint(CursorContext)} and so the highId may have changed between constructing this writer
      * and entering the checkpoint critical section.
      */
     private final LongSupplier highId;
+
     private final LongSupplier highestWrittenId;
     private final long generation;
     private final int idsPerEntry;
 
-    HeaderWriter( LongSupplier highId, LongSupplier highestWrittenId, long generation, int idsPerEntry )
-    {
+    HeaderWriter(LongSupplier highId, LongSupplier highestWrittenId, long generation, int idsPerEntry) {
         this.highId = highId;
         this.highestWrittenId = highestWrittenId;
         this.generation = generation;
@@ -52,13 +50,12 @@ class HeaderWriter implements Consumer<PageCursor>
     }
 
     @Override
-    public void accept( PageCursor cursor )
-    {
+    public void accept(PageCursor cursor) {
         long highId = this.highId.getAsLong();
         long highestWrittenId = this.highestWrittenId.getAsLong();
-        cursor.putLong( highId );
-        cursor.putLong( highestWrittenId );
-        cursor.putLong( generation );
-        cursor.putInt( idsPerEntry );
+        cursor.putLong(highId);
+        cursor.putLong(highestWrittenId);
+        cursor.putLong(generation);
+        cursor.putInt(idsPerEntry);
     }
 }

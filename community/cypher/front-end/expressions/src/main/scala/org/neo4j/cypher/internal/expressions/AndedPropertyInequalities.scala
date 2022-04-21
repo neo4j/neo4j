@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 case class AndedPropertyInequalities(
-                                      variable: LogicalVariable,
-                                      property: LogicalProperty,
-                                      inequalities: NonEmptyList[InequalityExpression]
-                                    ) extends BooleanExpression {
+  variable: LogicalVariable,
+  property: LogicalProperty,
+  inequalities: NonEmptyList[InequalityExpression]
+) extends BooleanExpression {
   def position: InputPosition = variable.position
 }

@@ -21,7 +21,6 @@ package org.neo4j.procedure.impl;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.procedure.Context;
@@ -29,22 +28,17 @@ import org.neo4j.kernel.api.procedure.Context;
 /**
  * Tracks components that can be injected into compiled procedures.
  */
-public class ComponentRegistry
-{
-    private final Map<Class<?>, ThrowingFunction<Context,?,ProcedureException>> suppliers = new HashMap<>();
+public class ComponentRegistry {
+    private final Map<Class<?>, ThrowingFunction<Context, ?, ProcedureException>> suppliers = new HashMap<>();
 
-    public ComponentRegistry()
-    {
+    public ComponentRegistry() {}
+
+    @SuppressWarnings("unchecked")
+    <T> ThrowingFunction<Context, T, ProcedureException> providerFor(Class<T> type) {
+        return (ThrowingFunction<Context, T, ProcedureException>) suppliers.get(type);
     }
 
-    @SuppressWarnings( "unchecked" )
-    <T> ThrowingFunction<Context,T,ProcedureException> providerFor( Class<T> type )
-    {
-        return (ThrowingFunction<Context,T,ProcedureException>) suppliers.get( type );
-    }
-
-    public <T> void register( Class<T> cls, ThrowingFunction<Context,T,ProcedureException> supplier )
-    {
-        suppliers.put( cls, supplier );
+    public <T> void register(Class<T> cls, ThrowingFunction<Context, T, ProcedureException> supplier) {
+        suppliers.put(cls, supplier);
     }
 }

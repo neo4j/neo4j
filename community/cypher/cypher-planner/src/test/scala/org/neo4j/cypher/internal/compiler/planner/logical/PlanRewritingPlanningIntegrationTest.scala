@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PlanRewritingPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class PlanRewritingPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   test("should use GetDegree to compute the degree of a node") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()

@@ -19,23 +19,6 @@
  */
 package org.neo4j.kernel.availability;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.stubbing.Answer;
-
-import java.time.Clock;
-import java.util.UUID;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.logging.NullLog;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.LifeExtension;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,10 +31,25 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
-@ExtendWith( LifeExtension.class )
-class CompositeDatabaseAvailabilityGuardTest
-{
-    private final DescriptiveAvailabilityRequirement requirement = new DescriptiveAvailabilityRequirement( "testRequirement" );
+import java.time.Clock;
+import java.util.UUID;
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.stubbing.Answer;
+import org.neo4j.configuration.Config;
+import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.NullLog;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+
+@ExtendWith(LifeExtension.class)
+class CompositeDatabaseAvailabilityGuardTest {
+    private final DescriptiveAvailabilityRequirement requirement =
+            new DescriptiveAvailabilityRequirement("testRequirement");
     private CompositeDatabaseAvailabilityGuard compositeGuard;
     private DatabaseAvailabilityGuard defaultGuard;
     private DatabaseAvailabilityGuard systemGuard;
@@ -62,166 +60,153 @@ class CompositeDatabaseAvailabilityGuardTest
     private LifeSupport life;
 
     @BeforeEach
-    void setUp() throws Throwable
-    {
-        mockClock = mock( Clock.class );
+    void setUp() throws Throwable {
+        mockClock = mock(Clock.class);
         config = Config.defaults();
-        compositeGuard = new CompositeDatabaseAvailabilityGuard( mockClock, config );
-        defaultGuard = createDatabaseAvailabilityGuard( from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), mockClock, compositeGuard );
-        systemGuard = createDatabaseAvailabilityGuard( NAMED_SYSTEM_DATABASE_ID, mockClock, compositeGuard );
+        compositeGuard = new CompositeDatabaseAvailabilityGuard(mockClock, config);
+        defaultGuard = createDatabaseAvailabilityGuard(
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()), mockClock, compositeGuard);
+        systemGuard = createDatabaseAvailabilityGuard(NAMED_SYSTEM_DATABASE_ID, mockClock, compositeGuard);
         defaultGuard.start();
         systemGuard.start();
         compositeGuard.start();
     }
 
     @Test
-    void availabilityRequirementOnMultipleGuards()
-    {
-        assertTrue( defaultGuard.isAvailable() );
-        assertTrue( systemGuard.isAvailable() );
+    void availabilityRequirementOnMultipleGuards() {
+        assertTrue(defaultGuard.isAvailable());
+        assertTrue(systemGuard.isAvailable());
 
-        compositeGuard.require( new DescriptiveAvailabilityRequirement( "testRequirement" ) );
+        compositeGuard.require(new DescriptiveAvailabilityRequirement("testRequirement"));
 
-        assertFalse( defaultGuard.isAvailable() );
-        assertFalse( systemGuard.isAvailable() );
+        assertFalse(defaultGuard.isAvailable());
+        assertFalse(systemGuard.isAvailable());
     }
 
     @Test
-    void availabilityFulfillmentOnMultipleGuards()
-    {
-        compositeGuard.require( requirement );
+    void availabilityFulfillmentOnMultipleGuards() {
+        compositeGuard.require(requirement);
 
-        assertFalse( defaultGuard.isAvailable() );
-        assertFalse( systemGuard.isAvailable() );
+        assertFalse(defaultGuard.isAvailable());
+        assertFalse(systemGuard.isAvailable());
 
-        compositeGuard.fulfill( requirement );
+        compositeGuard.fulfill(requirement);
 
-        assertTrue( defaultGuard.isAvailable() );
-        assertTrue( systemGuard.isAvailable() );
+        assertTrue(defaultGuard.isAvailable());
+        assertTrue(systemGuard.isAvailable());
     }
 
     @Test
-    void availableWhenAllGuardsAreAvailable()
-    {
-        assertTrue( compositeGuard.isAvailable() );
+    void availableWhenAllGuardsAreAvailable() {
+        assertTrue(compositeGuard.isAvailable());
 
-        defaultGuard.require( requirement );
+        defaultGuard.require(requirement);
 
-        assertFalse( compositeGuard.isAvailable() );
+        assertFalse(compositeGuard.isAvailable());
     }
 
     @Test
-    void compositeGuardDoesNotSupportListeners()
-    {
-        AvailabilityListener listener = mock( AvailabilityListener.class );
-        assertThrows( UnsupportedOperationException.class, () -> compositeGuard.addListener( listener ) );
-        assertThrows( UnsupportedOperationException.class, () -> compositeGuard.removeListener( listener ) );
+    void compositeGuardDoesNotSupportListeners() {
+        AvailabilityListener listener = mock(AvailabilityListener.class);
+        assertThrows(UnsupportedOperationException.class, () -> compositeGuard.addListener(listener));
+        assertThrows(UnsupportedOperationException.class, () -> compositeGuard.removeListener(listener));
     }
 
     @Test
-    void availabilityTimeoutSharedAcrossAllGuards()
-    {
-        compositeGuard.require( requirement );
+    void availabilityTimeoutSharedAcrossAllGuards() {
+        compositeGuard.require(requirement);
         MutableLong counter = new MutableLong();
 
-        when( mockClock.millis() ).thenAnswer( (Answer<Long>) invocation ->
-        {
-            if ( counter.longValue() == 7 )
-            {
-                defaultGuard.fulfill( requirement );
+        when(mockClock.millis()).thenAnswer((Answer<Long>) invocation -> {
+            if (counter.longValue() == 7) {
+                defaultGuard.fulfill(requirement);
             }
             return counter.incrementAndGet();
-        } );
+        });
 
-        assertFalse( compositeGuard.isAvailable( 10 ) );
+        assertFalse(compositeGuard.isAvailable(10));
 
-        assertThat( counter.getValue() ).isLessThan( 20L );
-        assertTrue( defaultGuard.isAvailable() );
-        assertFalse( systemGuard.isAvailable() );
+        assertThat(counter.getValue()).isLessThan(20L);
+        assertTrue(defaultGuard.isAvailable());
+        assertFalse(systemGuard.isAvailable());
     }
 
     @Test
-    void awaitCheckTimeoutSharedAcrossAllGuards()
-    {
-        compositeGuard.require( requirement );
+    void awaitCheckTimeoutSharedAcrossAllGuards() {
+        compositeGuard.require(requirement);
         MutableLong counter = new MutableLong();
 
-        when( mockClock.millis() ).thenAnswer( (Answer<Long>) invocation ->
-        {
-            if ( counter.longValue() == 7 )
-            {
-                defaultGuard.fulfill( requirement );
+        when(mockClock.millis()).thenAnswer((Answer<Long>) invocation -> {
+            if (counter.longValue() == 7) {
+                defaultGuard.fulfill(requirement);
             }
             return counter.incrementAndGet();
-        } );
+        });
 
-        assertThrows( UnavailableException.class, () -> compositeGuard.await( 10 ) );
+        assertThrows(UnavailableException.class, () -> compositeGuard.await(10));
 
-        assertThat( counter.getValue() ).isLessThan( 20L );
-        assertTrue( defaultGuard.isAvailable() );
-        assertFalse( systemGuard.isAvailable() );
+        assertThat(counter.getValue()).isLessThan(20L);
+        assertTrue(defaultGuard.isAvailable());
+        assertFalse(systemGuard.isAvailable());
     }
 
     @Test
-    void stopOfAvailabilityGuardDeregisterItInCompositeParent()
-    {
+    void stopOfAvailabilityGuardDeregisterItInCompositeParent() {
         int initialGuards = compositeGuard.getGuards().size();
-        DatabaseAvailabilityGuard firstGuard = createDatabaseAvailabilityGuard( from( "foo", UUID.randomUUID() ), mockClock, compositeGuard );
-        DatabaseAvailabilityGuard secondGuard = createDatabaseAvailabilityGuard( from( "bar", UUID.randomUUID() ), mockClock, compositeGuard );
+        DatabaseAvailabilityGuard firstGuard =
+                createDatabaseAvailabilityGuard(from("foo", UUID.randomUUID()), mockClock, compositeGuard);
+        DatabaseAvailabilityGuard secondGuard =
+                createDatabaseAvailabilityGuard(from("bar", UUID.randomUUID()), mockClock, compositeGuard);
         firstGuard.start();
         secondGuard.start();
 
-        assertEquals( 2, countNewGuards( initialGuards ) );
+        assertEquals(2, countNewGuards(initialGuards));
 
-        new Lifespan( firstGuard ).close();
+        new Lifespan(firstGuard).close();
 
-        assertEquals( 1, countNewGuards( initialGuards ) );
+        assertEquals(1, countNewGuards(initialGuards));
 
-        new Lifespan( secondGuard ).close();
+        new Lifespan(secondGuard).close();
 
-        assertEquals( 0, countNewGuards( initialGuards ) );
+        assertEquals(0, countNewGuards(initialGuards));
     }
 
     @Test
-    void compositeGuardIsAvailableByDefault()
-    {
-        CompositeDatabaseAvailabilityGuard testGuard = new CompositeDatabaseAvailabilityGuard( mockClock, config );
-        assertTrue( testGuard.isAvailable() );
+    void compositeGuardIsAvailableByDefault() {
+        CompositeDatabaseAvailabilityGuard testGuard = new CompositeDatabaseAvailabilityGuard(mockClock, config);
+        assertTrue(testGuard.isAvailable());
     }
 
     @Test
-    void guardIsShutdownStateAfterStop() throws Throwable
-    {
-        CompositeDatabaseAvailabilityGuard testGuard = new CompositeDatabaseAvailabilityGuard( mockClock, config );
+    void guardIsShutdownStateAfterStop() throws Throwable {
+        CompositeDatabaseAvailabilityGuard testGuard = new CompositeDatabaseAvailabilityGuard(mockClock, config);
         testGuard.start();
-        assertFalse( testGuard.isShutdown() );
+        assertFalse(testGuard.isShutdown());
 
         testGuard.stop();
-        assertTrue( testGuard.isShutdown() );
+        assertTrue(testGuard.isShutdown());
     }
 
     @Test
-    void stoppedGuardIsNotAvailableInAwait() throws Throwable
-    {
-        CompositeDatabaseAvailabilityGuard testGuard = new CompositeDatabaseAvailabilityGuard( mockClock, config );
+    void stoppedGuardIsNotAvailableInAwait() throws Throwable {
+        CompositeDatabaseAvailabilityGuard testGuard = new CompositeDatabaseAvailabilityGuard(mockClock, config);
 
         testGuard.start();
-        assertDoesNotThrow( () -> testGuard.await( 0 ) );
+        assertDoesNotThrow(() -> testGuard.await(0));
 
         testGuard.stop();
-        assertThrows( UnavailableException.class, () -> testGuard.await( 0 ) );
+        assertThrows(UnavailableException.class, () -> testGuard.await(0));
     }
 
-    private int countNewGuards( int initialGuards )
-    {
+    private int countNewGuards(int initialGuards) {
         return compositeGuard.getGuards().size() - initialGuards;
     }
 
-    private DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( NamedDatabaseId namedDatabaseId, Clock clock,
-            CompositeDatabaseAvailabilityGuard compositeGuard )
-    {
-        DatabaseAvailabilityGuard availabilityGuard = new DatabaseAvailabilityGuard( namedDatabaseId, clock, NullLog.getInstance(), 0, compositeGuard );
-        life.add( availabilityGuard );
+    private DatabaseAvailabilityGuard createDatabaseAvailabilityGuard(
+            NamedDatabaseId namedDatabaseId, Clock clock, CompositeDatabaseAvailabilityGuard compositeGuard) {
+        DatabaseAvailabilityGuard availabilityGuard =
+                new DatabaseAvailabilityGuard(namedDatabaseId, clock, NullLog.getInstance(), 0, compositeGuard);
+        life.add(availabilityGuard);
         return availabilityGuard;
     }
 }

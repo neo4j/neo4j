@@ -28,11 +28,23 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
 
-  override def createPlans(indexMatches: Set[NodeIndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = for {
+  override def createPlans(
+    indexMatches: Set[NodeIndexMatch],
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    restrictions: LeafPlanRestrictions,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = for {
     solution <- createSolutions(indexMatches, hints, argumentIds, restrictions, context)
   } yield constructPlan(solution, context)
 
-  private def createSolutions(indexMatches: Set[NodeIndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[Solution] = for {
+  private def createSolutions(
+    indexMatches: Set[NodeIndexMatch],
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    restrictions: LeafPlanRestrictions,
+    context: LogicalPlanningContext
+  ): Set[Solution] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch.propertyPredicates, restrictions)
     solution <- createSolution(indexMatch, hints, argumentIds, context)
@@ -51,7 +63,7 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
         solution.providedOrder,
         solution.indexOrder,
         context,
-        solution.indexType,
+        solution.indexType
       )
     } else {
       context.logicalPlanProducer.planNodeIndexSeek(
@@ -65,8 +77,7 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
         solution.providedOrder,
         solution.indexOrder,
         context,
-        solution.indexType,
+        solution.indexType
       )
     }
 }
-

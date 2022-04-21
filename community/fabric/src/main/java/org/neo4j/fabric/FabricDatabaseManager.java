@@ -33,50 +33,43 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
-public abstract class FabricDatabaseManager
-{
+public abstract class FabricDatabaseManager {
     @FunctionalInterface
-    public interface DatabaseNodeCreator
-    {
-        Node createDatabaseNode( Transaction tx, NormalizedDatabaseName databaseName );
+    public interface DatabaseNodeCreator {
+        Node createDatabaseNode(Transaction tx, NormalizedDatabaseName databaseName);
     }
 
     private final DatabaseManager<DatabaseContext> databaseManager;
     private final DatabaseIdRepository databaseIdRepository;
     private final boolean multiGraphEverywhere;
 
-    public FabricDatabaseManager( FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager )
-    {
+    public FabricDatabaseManager(FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager) {
         this.databaseManager = databaseManager;
         this.databaseIdRepository = databaseManager.databaseIdRepository();
         this.multiGraphEverywhere = fabricConfig.isEnabledByDefault();
     }
 
-    public static boolean fabricByDefault( Config config )
-    {
-        return config.get( FabricSettings.enabled_by_default );
+    public static boolean fabricByDefault(Config config) {
+        return config.get(FabricSettings.enabled_by_default);
     }
 
-    public DatabaseIdRepository databaseIdRepository()
-    {
+    public DatabaseIdRepository databaseIdRepository() {
         return databaseIdRepository;
     }
 
-    public boolean hasMultiGraphCapabilities( String databaseNameRaw )
-    {
-        return multiGraphCapabilitiesEnabledForAllDatabases() || isFabricDatabase( databaseNameRaw );
+    public boolean hasMultiGraphCapabilities(String databaseNameRaw) {
+        return multiGraphCapabilitiesEnabledForAllDatabases() || isFabricDatabase(databaseNameRaw);
     }
 
-    public boolean multiGraphCapabilitiesEnabledForAllDatabases()
-    {
+    public boolean multiGraphCapabilitiesEnabledForAllDatabases() {
         return multiGraphEverywhere;
     }
 
-    public GraphDatabaseFacade getDatabase( String databaseNameRaw ) throws UnavailableException
-    {
-        var databaseContext = databaseIdRepository.getByName( databaseNameRaw )
-                                                  .flatMap( databaseManager::getDatabaseContext )
-                                                  .orElseThrow( () -> new DatabaseNotFoundException( "Database " + databaseNameRaw + " not found" ) );
+    public GraphDatabaseFacade getDatabase(String databaseNameRaw) throws UnavailableException {
+        var databaseContext = databaseIdRepository
+                .getByName(databaseNameRaw)
+                .flatMap(databaseManager::getDatabaseContext)
+                .orElseThrow(() -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found"));
 
         databaseContext.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
         return databaseContext.databaseFacade();
@@ -84,32 +77,29 @@ public abstract class FabricDatabaseManager
 
     public abstract boolean isFabricDatabasePresent();
 
-    public abstract void manageFabricDatabases( GraphDatabaseService system, boolean update, DatabaseNodeCreator databaseCreator );
+    public abstract void manageFabricDatabases(
+            GraphDatabaseService system, boolean update, DatabaseNodeCreator databaseCreator);
 
-    public abstract boolean isFabricDatabase( String databaseNameRaw );
+    public abstract boolean isFabricDatabase(String databaseNameRaw);
 
-    public static class Community extends FabricDatabaseManager
-    {
-        public Community( FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager )
-        {
-            super( fabricConfig, databaseManager );
+    public static class Community extends FabricDatabaseManager {
+        public Community(FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager) {
+            super(fabricConfig, databaseManager);
         }
 
         @Override
-        public boolean isFabricDatabasePresent()
-        {
+        public boolean isFabricDatabasePresent() {
             return false;
         }
 
         @Override
-        public void manageFabricDatabases( GraphDatabaseService system, boolean update, DatabaseNodeCreator databaseCreator )
-        {
+        public void manageFabricDatabases(
+                GraphDatabaseService system, boolean update, DatabaseNodeCreator databaseCreator) {
             // a "Fabric" database with special capabilities cannot exist in CE
         }
 
         @Override
-        public boolean isFabricDatabase( String databaseNameRaw )
-        {
+        public boolean isFabricDatabase(String databaseNameRaw) {
             // a "Fabric" database with special capabilities cannot exist in CE
             return false;
         }

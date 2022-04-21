@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import org.apache.lucene.document.Document;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Predicate;
-
+import org.apache.lucene.document.Document;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
@@ -40,108 +38,83 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 /**
  * An {@link IndexPopulator} used to create, populate and mark as online a Lucene schema index.
  */
-public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> implements IndexPopulator
-{
+public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> implements IndexPopulator {
     protected final IndexUpdateIgnoreStrategy ignoreStrategy;
     protected INDEX luceneIndex;
     protected LuceneIndexWriter writer;
 
-    protected LuceneIndexPopulator( INDEX luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy )
-    {
+    protected LuceneIndexPopulator(INDEX luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy) {
         this.luceneIndex = luceneIndex;
         this.ignoreStrategy = ignoreStrategy;
     }
 
     @Override
-    public void create()
-    {
-        try
-        {
+    public void create() {
+        try {
             luceneIndex.create();
             luceneIndex.open();
             writer = luceneIndex.getIndexWriter();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void drop()
-    {
+    public void drop() {
         luceneIndex.drop();
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
-    {
-        assert updatesForCorrectIndex( updates );
+    public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {
+        assert updatesForCorrectIndex(updates);
 
-        try
-        {
-            // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here
+        try {
+            // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents
+            // here
             // That is why we create a lazy Iterator and then Iterable
-            writer.addDocuments( updates.size(), () -> updates.stream()
-                    .map( u -> (ValueIndexEntryUpdate<?>) u )
-                    .filter( Predicate.not( ignoreStrategy::ignore ) )
-                    .map( LuceneIndexPopulator::updateAsDocument )
-                    .filter( Objects::nonNull )
-                    .iterator() );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+            writer.addDocuments(updates.size(), () -> updates.stream()
+                    .map(u -> (ValueIndexEntryUpdate<?>) u)
+                    .filter(Predicate.not(ignoreStrategy::ignore))
+                    .map(LuceneIndexPopulator::updateAsDocument)
+                    .filter(Objects::nonNull)
+                    .iterator());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
-    {
-        try
-        {
-            if ( populationCompletedSuccessfully )
-            {
+    public void close(boolean populationCompletedSuccessfully, CursorContext cursorContext) {
+        try {
+            if (populationCompletedSuccessfully) {
                 luceneIndex.markAsOnline();
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-        finally
-        {
-            IOUtils.closeAllSilently( luceneIndex );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } finally {
+            IOUtils.closeAllSilently(luceneIndex);
         }
     }
 
     @Override
-    public void markAsFailed( String failure )
-    {
-        try
-        {
-            luceneIndex.markAsFailed( failure );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public void markAsFailed(String failure) {
+        try {
+            luceneIndex.markAsFailed(failure);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private boolean updatesForCorrectIndex( Collection<? extends IndexEntryUpdate<?>> updates )
-    {
-        for ( IndexEntryUpdate<?> update : updates )
-        {
-            if ( !update.indexKey().schema().equals( luceneIndex.getDescriptor().schema() ) )
-            {
+    private boolean updatesForCorrectIndex(Collection<? extends IndexEntryUpdate<?>> updates) {
+        for (IndexEntryUpdate<?> update : updates) {
+            if (!update.indexKey().schema().equals(luceneIndex.getDescriptor().schema())) {
                 return false;
             }
         }
         return true;
     }
 
-    private static Document updateAsDocument( ValueIndexEntryUpdate<?> update )
-    {
-        return LuceneDocumentStructure.documentRepresentingProperties( update.getEntityId(), update.values() );
+    private static Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
+        return LuceneDocumentStructure.documentRepresentingProperties(update.getEntityId(), update.values());
     }
 }

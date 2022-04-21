@@ -29,7 +29,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class LogicalPlansTest extends CypherFunSuite {
 
-  private val pos = InputPosition(1,1,1)
+  private val pos = InputPosition(1, 1, 1)
 
   test("LogicalPlans.map") {
 
@@ -95,9 +95,7 @@ class LogicalPlansTest extends CypherFunSuite {
     val p3 = Apply(p1, p2)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p3,
-        (acc, plan) => s"$acc->${id(plan)}",
-        (_, rhs, plan) => s"$rhs=>${id(plan)}")
+      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (_, rhs, plan) => s"$rhs=>${id(plan)}")
 
     foldedString shouldBe "->p0->p1->p2=>p3"
   }
@@ -112,9 +110,7 @@ class LogicalPlansTest extends CypherFunSuite {
     val p3 = Apply(p0, p2)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p3,
-        (acc, plan) => s"$acc->${id(plan)}",
-        (_, rhs, plan) => s"$rhs=>${id(plan)}")
+      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (_, rhs, plan) => s"$rhs=>${id(plan)}")
 
     foldedString shouldBe "->p0->p1->p2=>p3"
   }
@@ -129,9 +125,7 @@ class LogicalPlansTest extends CypherFunSuite {
     val p3 = Selection(List(True()(pos)), p2)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p3,
-        (acc, plan) => s"$acc->${id(plan)}",
-        (_, rhs, plan) => s"$rhs=>${id(plan)}")
+      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (_, rhs, plan) => s"$rhs=>${id(plan)}")
 
     foldedString shouldBe "->p0->p1=>p2->p3"
   }
@@ -147,14 +141,15 @@ class LogicalPlansTest extends CypherFunSuite {
     case class Acc(str: String = "", uppercase: Boolean = false)
 
     val Acc(foldedString, _) =
-      LogicalPlans.foldPlan(Acc())(p3,
+      LogicalPlans.foldPlan(Acc())(
+        p3,
         {
           case (Acc(str, uppercase), plan) => Acc(s"$str->${id(plan, uppercase)}", uppercase)
         },
         (lhs, rhs, plan) => Acc(s"${rhs.str}=>${id(plan, lhs.uppercase)}", lhs.uppercase),
         mapArguments = {
-          case (acc, `p2`) =>  acc.copy(uppercase = true)
-          case _ => fail("Should only call mapArguments with p2")
+          case (acc, `p2`) => acc.copy(uppercase = true)
+          case _           => fail("Should only call mapArguments with p2")
         }
       )
 
@@ -172,12 +167,13 @@ class LogicalPlansTest extends CypherFunSuite {
     case class Acc(str: String = "", uppercase: Boolean = false)
 
     val Acc(foldedString, _) =
-      LogicalPlans.foldPlan(Acc())(p3,
+      LogicalPlans.foldPlan(Acc())(
+        p3,
         {
           case (Acc(str, uppercase), plan) => Acc(s"$str->${id(plan, uppercase)}", uppercase)
         },
         (lhs, rhs, plan) => Acc(s"${id(plan, lhs.uppercase)}(${lhs.str}, ${rhs.str})", lhs.uppercase),
-        mapArguments = (acc, _) =>  acc.copy(uppercase = true)
+        mapArguments = (acc, _) => acc.copy(uppercase = true)
       )
 
     foldedString shouldBe "p2(->p0, ->p1)->p3"
@@ -193,9 +189,7 @@ class LogicalPlansTest extends CypherFunSuite {
     val p3 = Selection(List(True()(pos)), p2)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p3,
-        (acc, plan) => s"$acc->${id(plan)}",
-        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
 
     foldedString shouldBe "p2(->p0, ->p1)->p3"
   }
@@ -223,13 +217,15 @@ class LogicalPlansTest extends CypherFunSuite {
     val p7 = Apply(p1, p6)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p7,
+      LogicalPlans.foldPlan("")(
+        p7,
         (acc, plan) => s"$acc->${id(plan)}",
         (lhs, rhs, plan) =>
           plan match {
             case _: Apply => s"$rhs=>${id(plan)}"
-            case _ => s"${id(plan)}($lhs, $rhs)"
-          })
+            case _        => s"${id(plan)}($lhs, $rhs)"
+          }
+      )
 
     foldedString shouldBe "p5(->p0->p1->p2->p3, ->p0->p1->p2->p4)=>p6=>p7"
   }
@@ -254,17 +250,18 @@ class LogicalPlansTest extends CypherFunSuite {
     case class Acc(str: String = "", uppercase: Boolean = false)
 
     val Acc(foldedString, _) =
-      LogicalPlans.foldPlan(Acc())(p5,
+      LogicalPlans.foldPlan(Acc())(
+        p5,
         {
           case (Acc(str, uppercase), plan) => Acc(s"$str->${id(plan, uppercase)}", uppercase)
         },
         (lhs, rhs, plan) =>
           plan match {
             case _: Apply => Acc(s"${rhs.str}=>${id(plan, lhs.uppercase)}", lhs.uppercase)
-            case _ => Acc(s"${id(plan, lhs.uppercase)}(${lhs.str}, ${rhs.str})", lhs.uppercase)
+            case _        => Acc(s"${id(plan, lhs.uppercase)}(${lhs.str}, ${rhs.str})", lhs.uppercase)
           },
         mapArguments = {
-          case (acc, _) =>  acc.copy(uppercase = true)
+          case (acc, _) => acc.copy(uppercase = true)
         }
       )
 
@@ -294,19 +291,21 @@ class LogicalPlansTest extends CypherFunSuite {
     val p7 = Selection(List(True()(pos)), p6)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p7,
+      LogicalPlans.foldPlan("")(
+        p7,
         (acc, plan) => s"$acc->${id(plan)}",
         (lhs, rhs, plan) =>
           plan match {
             case _: Apply => s"$rhs=>${id(plan)}"
-            case _ => s"${id(plan)}($lhs, $rhs)"
-          })
+            case _        => s"${id(plan)}($lhs, $rhs)"
+          }
+      )
 
     foldedString shouldBe "p6(->p0->p1=>p2, ->p3->p4=>p5)->p7"
   }
 
   private def id(plan: LogicalPlan, uppercase: Boolean = false) = {
-    if(uppercase) {
+    if (uppercase) {
       "P" + plan.id.x
     } else {
       "p" + plan.id.x

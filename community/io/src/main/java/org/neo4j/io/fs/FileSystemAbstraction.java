@@ -39,19 +39,18 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.neo4j.io.fs.watcher.FileWatcher;
 
 /**
  * Abstraction for all interactions with files.
  */
-public interface FileSystemAbstraction extends Closeable
-{
+public interface FileSystemAbstraction extends Closeable {
     /**
      * Used as return value from {@link #getFileDescriptor(StoreChannel)} for a channel where the machine-specific file descriptor
      * for that given file cannot be determined or retrieved.
      */
     int INVALID_FILE_DESCRIPTOR = -1;
+
     CopyOption[] EMPTY_COPY_OPTIONS = new CopyOption[0];
 
     /**
@@ -83,7 +82,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws IOException on I/O error opening/creating the file with the provided set of {@code options}, or if the provided options
      * doesn't match the state of the file, e.g. if the options prohibits the file from existing, but it already exists.
      */
-    StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException;
+    StoreChannel open(Path fileName, Set<OpenOption> options) throws IOException;
 
     /**
      * Opens a file denoted by the {@code fileName} and returns an {@link OutputStream} to write binary data to it.
@@ -100,7 +99,7 @@ public interface FileSystemAbstraction extends Closeable
      * @return an {@link OutputStream} capable of writing binary data to the file denoted by {@code fileName}.
      * @throws IOException on I/O error opening/creating the file.
      */
-    OutputStream openAsOutputStream( Path fileName, boolean append ) throws IOException;
+    OutputStream openAsOutputStream(Path fileName, boolean append) throws IOException;
 
     /**
      * Opens a file denoted by the {@code fileName} and returns an {@link InputStream} to read from it.
@@ -109,7 +108,7 @@ public interface FileSystemAbstraction extends Closeable
      * @return an {@link InputStream} capable of reading from the file denoted by {@code fileName}.
      * @throws IOException on I/O error or if the file doesn't exist.
      */
-    InputStream openAsInputStream( Path fileName ) throws IOException;
+    InputStream openAsInputStream(Path fileName) throws IOException;
 
     /**
      * Opens a file denoted by the {@code fileName} and returns a {@link Reader} to read from it.
@@ -127,7 +126,7 @@ public interface FileSystemAbstraction extends Closeable
      * @return a {@link Reader} capable of reading textual data from the file denoted by {@code fileName}.
      * @throws IOException on I/O error of if the file doesn't exist.
      */
-    Reader openAsReader( Path fileName, Charset charset ) throws IOException;
+    Reader openAsReader(Path fileName, Charset charset) throws IOException;
 
     /**
      * Opens a file denoted by the {@code fileName} and returns a {@link Writer} to write textual data to it.
@@ -144,7 +143,7 @@ public interface FileSystemAbstraction extends Closeable
      * @return an {@link Writer} capable of writing textual data to the file denoted by {@code fileName}.
      * @throws IOException on I/O error opening/creating the file.
      */
-    Writer openAsWriter( Path fileName, Charset charset, boolean append ) throws IOException;
+    Writer openAsWriter(Path fileName, Charset charset, boolean append) throws IOException;
 
     /**
      * Convenience method for calling {@link #open(Path, Set)} with the open options:
@@ -158,7 +157,7 @@ public interface FileSystemAbstraction extends Closeable
      * @return the {@link StoreChannel} used to interact with the opened file.
      * @throws IOException on I/O error opening/creating the file.
      */
-    StoreChannel write( Path fileName ) throws IOException;
+    StoreChannel write(Path fileName) throws IOException;
 
     /**
      * Convenience method for calling {@link #open(Path, Set)} with the open options:
@@ -170,13 +169,13 @@ public interface FileSystemAbstraction extends Closeable
      * @return the {@link StoreChannel} used to interact with the opened file.
      * @throws IOException on I/O error opening the file.
      */
-    StoreChannel read( Path fileName ) throws IOException;
+    StoreChannel read(Path fileName) throws IOException;
 
     /**
      * @param file the file to check whether or not it exists in this file system.
      * @return {@code true} if this file exists, otherwise {@code false}.
      */
-    boolean fileExists( Path file );
+    boolean fileExists(Path file);
 
     /**
      * Creates the directory denoted by {@code fileName}. All parent directories must exist for this call to succeed.
@@ -186,7 +185,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws FileAlreadyExistsException if this file already exists, either as a file or as a directory.
      * @throws IOException on I/O error creating the directory.
      */
-    void mkdir( Path fileName ) throws IOException;
+    void mkdir(Path fileName) throws IOException;
 
     /**
      * Creates the directory denoted by {@code fileName}, including all non-existent parent directories.
@@ -196,7 +195,7 @@ public interface FileSystemAbstraction extends Closeable
      * @param fileName the path to the directory to create, together with its non-existent parent directories.
      * @throws IOException on I/O error creating any of the directories.
      */
-    void mkdirs( Path fileName ) throws IOException;
+    void mkdirs(Path fileName) throws IOException;
 
     /**
      * Returns the size, in bytes, of the file denoted by {@code fileName}.
@@ -207,7 +206,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NoSuchFileException if the file doesn't exist.
      * @throws IOException on I/O error.
      */
-    long getFileSize( Path fileName ) throws IOException;
+    long getFileSize(Path fileName) throws IOException;
 
     /**
      * Returns the block size of the file denoted by {@code file}, or rather the block size of files on the drive that
@@ -217,7 +216,7 @@ public interface FileSystemAbstraction extends Closeable
      * @return the block size for the given {@code file}.
      * @throws IOException on I/O error getting the block size.
      */
-    long getBlockSize( Path file ) throws IOException;
+    long getBlockSize(Path file) throws IOException;
 
     /**
      * Deletes the file/directory denoted by {@code path}, if it exists. If the {@code path} denotes a directory then the directory, and all its
@@ -227,15 +226,11 @@ public interface FileSystemAbstraction extends Closeable
      * @throws IOException on I/O error or if one or more file/directory couldn't be deleted. One scenario is that the file may
      * be in use by some other process (mostly a Windows-specific issue) or security/permission issues.
      */
-    default void delete( Path path ) throws IOException
-    {
-        if ( isDirectory( path ) )
-        {
-            deleteRecursively( path );
-        }
-        else
-        {
-            deleteFile( path );
+    default void delete(Path path) throws IOException {
+        if (isDirectory(path)) {
+            deleteRecursively(path);
+        } else {
+            deleteFile(path);
         }
     }
 
@@ -247,7 +242,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws DirectoryNotEmptyException if {@code fileName} denotes a directory and the directory isn't empty.
      * @throws IOException on I/O error or if the file couldn't be deleted.
      */
-    void deleteFile( Path fileName ) throws IOException;
+    void deleteFile(Path fileName) throws IOException;
 
     /**
      * Deletes the directory denoted by {@code fileName}, if it exists.
@@ -259,7 +254,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NotDirectoryException if {@code fileName} denotes a file.
      * @throws IOException on I/O error or if some file or directory couldn't be deleted.
      */
-    void deleteRecursively( Path directory ) throws IOException;
+    void deleteRecursively(Path directory) throws IOException;
 
     /**
      * Renames/moves a file or directory. Renaming a file or directory to/from the same file storage is typically an atomic operation,
@@ -272,7 +267,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws FileAlreadyExistsException if the {@code to} file/directory already exist.
      * @throws IOException on I/O error.
      */
-    void renameFile( Path from, Path to, CopyOption... copyOptions ) throws IOException;
+    void renameFile(Path from, Path to, CopyOption... copyOptions) throws IOException;
 
     /**
      * Lists files in the given {@code directory}.
@@ -283,7 +278,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NoSuchFileException if the provided {@code directory} doesn't exist.
      * @throws IOException on I/O error.
      */
-    Path[] listFiles( Path directory ) throws IOException;
+    Path[] listFiles(Path directory) throws IOException;
 
     /**
      * Lists files that passes the provided {@code filter} in the given {@code directory}.
@@ -295,13 +290,13 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NoSuchFileException if the provided {@code directory} doesn't exist.
      * @throws IOException on I/O error.
      */
-    Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter ) throws IOException;
+    Path[] listFiles(Path directory, DirectoryStream.Filter<Path> filter) throws IOException;
 
     /**
      * @param file the file to check whether or not it's a directory.
      * @return {@code true} if the {@code file} exists and denotes a directory, otherwise {@code false}.
      */
-    boolean isDirectory( Path file );
+    boolean isDirectory(Path file);
 
     /**
      * Moves a file to another directory. If the {@code toDirectory} or any of its parent doesn't exist they will be created before moving the file.
@@ -311,7 +306,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NotDirectoryException if {@code toDirectory} isn't a directory.
      * @throws IOException on I/O error.
      */
-    void moveToDirectory( Path file, Path toDirectory ) throws IOException;
+    void moveToDirectory(Path file, Path toDirectory) throws IOException;
 
     /**
      * Copies a file to another directory. If the {@code toDirectory} or any of its parent doesn't exist they will be created before moving the file.
@@ -321,7 +316,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NotDirectoryException if {@code toDirectory} isn't a directory.
      * @throws IOException on I/O error.
      */
-    void copyToDirectory( Path file, Path toDirectory ) throws IOException;
+    void copyToDirectory(Path file, Path toDirectory) throws IOException;
 
     /**
      * Copies a file. If the target file {@code to} exists and is a file it will be overwritten.
@@ -333,9 +328,8 @@ public interface FileSystemAbstraction extends Closeable
      * @throws DirectoryNotEmptyException if target file {@code to} is a non-empty directory.
      * @throws IOException on I/O error.
      */
-    default void copyFile( Path from, Path to ) throws IOException
-    {
-        copyFile( from, to, StandardCopyOption.REPLACE_EXISTING );
+    default void copyFile(Path from, Path to) throws IOException {
+        copyFile(from, to, StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**
@@ -349,7 +343,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws DirectoryNotEmptyException if target file {@code to} is a non-empty directory.
      * @throws IOException on I/O error.
      */
-    void copyFile( Path from, Path to, CopyOption... copyOptions ) throws IOException;
+    void copyFile(Path from, Path to, CopyOption... copyOptions) throws IOException;
 
     /**
      * Copies all sub-directories and files recursively of the directory denoted by {@code fromDirectory} into the directory denoted by {@code toDirectory}.
@@ -380,7 +374,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NoSuchFileException if {@code toDirectory} is a file.
      * @throws IOException on I/O error.
      */
-    void copyRecursively( Path fromDirectory, Path toDirectory ) throws IOException;
+    void copyRecursively(Path fromDirectory, Path toDirectory) throws IOException;
 
     /**
      * Truncates a file down to the given {@code size} in bytes, removing all remaining bytes from the file.
@@ -391,7 +385,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NoSuchFileException if the file doesn't exist.
      * @throws IOException on I/O error or if the {@code file} is a directory.
      */
-    void truncate( Path file, long size ) throws IOException;
+    void truncate(Path file, long size) throws IOException;
 
     /**
      * Returns the timestamp (in milliseconds) of when the given file or directory denoted by {@code file} was last modified.
@@ -402,7 +396,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NoSuchFileException if the file doesn't exist.
      * @throws IOException on I/O error.
      */
-    long lastModifiedTime( Path file ) throws IOException;
+    long lastModifiedTime(Path file) throws IOException;
 
     /**
      * Deletes the file/directory denoted by {@code fileName}. If the file/directory doesn't exist a {@link NoSuchFileException} is thrown.
@@ -413,7 +407,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NoSuchFileException if {@code fileName} doesn't exist.
      * @throws IOException on I/O error or if the file couldn't be deleted.
      */
-    void deleteFileOrThrow( Path file ) throws IOException;
+    void deleteFileOrThrow(Path file) throws IOException;
 
     /**
      * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
@@ -435,7 +429,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NoSuchFileException If the given base directory or file does not exists.
      * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
-    Stream<FileHandle> streamFilesRecursive( Path directory ) throws IOException;
+    Stream<FileHandle> streamFilesRecursive(Path directory) throws IOException;
 
     /**
      * Get underlying store channel file descriptor.
@@ -443,5 +437,5 @@ public interface FileSystemAbstraction extends Closeable
      * @param channel channel to get file descriptor from.
      * @return {@link #INVALID_FILE_DESCRIPTOR} when the file description can't be retrieved from the provided channel.
      */
-    int getFileDescriptor( StoreChannel channel );
+    int getFileDescriptor(StoreChannel channel);
 }

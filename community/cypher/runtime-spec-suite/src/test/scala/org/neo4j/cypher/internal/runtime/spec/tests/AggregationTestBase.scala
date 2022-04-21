@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.time.Duration
-import java.time.temporal.ChronoUnit
-import java.util.Collections
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big
 import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small
@@ -57,14 +54,18 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.time.Duration
+import java.time.temporal.ChronoUnit
+import java.util.Collections
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
 
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               val sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should count(*)") {
     given { nodeGraph(sizeHint, "Honey") }
@@ -119,16 +120,20 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = aNodes.map( _ => Array[Any](limit))
+    val expected = aNodes.map(_ => Array[Any](limit))
 
     runtimeResult should beColumns("c").withRows(expected)
   }
 
   test("should count(*) on single grouping column") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -214,10 +219,14 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single grouping column with nulls") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
-        case i: Int if i % 2 == 1 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
+          case i: Int if i % 2 == 1 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -252,15 +261,19 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for(node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array(node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 
   test("should count(*) on two grouping columns") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}", "surname" -> s"bobbins${i / 100}")
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}", "surname" -> s"bobbins${i / 100}")
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -273,9 +286,10 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("name", "surname", "c").withRows(for (i <- 0 until 10; j <- 0 until sizeHint / 100) yield {
-      Array(s"bob$i", s"bobbins$j", 10)
-    })
+    runtimeResult should beColumns("name", "surname", "c").withRows(for (i <- 0 until 10; j <- 0 until sizeHint / 100)
+      yield {
+        Array(s"bob$i", s"bobbins$j", 10)
+      })
   }
 
   test("should count(*) on two primitive grouping columns with nulls") {
@@ -296,15 +310,19 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for(node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array(node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 
   test("should count(*) on three grouping columns") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}", "surname" -> s"bobbins${i / 100}", "dead" -> i % 2)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}", "surname" -> s"bobbins${i / 100}", "dead" -> i % 2)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -317,16 +335,22 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("name", "surname", "dead", "c").withRows(for (i <- 0 until 10; j <- 0 until sizeHint / 100) yield {
+    runtimeResult should beColumns("name", "surname", "dead", "c").withRows(for (
+      i <- 0 until 10; j <- 0 until sizeHint / 100
+    ) yield {
       Array(s"bob$i", s"bobbins$j", i % 2, 10)
     })
   }
 
   test("should count(n.prop)") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -344,9 +368,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(DISTINCT n.prop)") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i % (sizeHint/ 8))
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i % (sizeHint / 8))
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -364,9 +392,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should collect(n.prop)") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -381,12 +413,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("c").withRows(matching {
       // The order of the collected elements in the list can differ
-      case Seq(Array(d:ListValue)) if d.asArray().toSeq.sorted(ANY_VALUE_ORDERING) == (0 until sizeHint by 2).map(Values.intValue) =>
+      case Seq(Array(d: ListValue))
+        if d.asArray().toSeq.sorted(ANY_VALUE_ORDERING) == (0 until sizeHint by 2).map(Values.intValue) =>
     })
   }
 
   test("should collect(n) where n is null") {
-    val input = inputValues(Array(Array[Any](null)):_*)
+    val input = inputValues(Array(Array[Any](null)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -402,7 +435,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should collect(n) where n is null with grouping") {
-    val input = inputValues(Array(Array[Any](null)):_*)
+    val input = inputValues(Array(Array[Any](null)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -419,9 +452,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should sum(n.prop)") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -467,30 +504,35 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       consume(execute(logicalQuery, runtime, input))
     }
 
-    val batchSize = edition.getSetting(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big).map(_.toInt).getOrElse(10)
+    val batchSize =
+      edition.getSetting(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big).map(_.toInt).getOrElse(10)
     val numberBatches = (0 until batchSize * 10).map(_ => NUMBER)
     val durationBatches = (0 until batchSize * 10).map(_ => DURATION)
 
     // then III
     intercept[CypherTypeException] {
       val batches: Seq[Array[Any]] = numberBatches ++ durationBatches
-      val input = batchedInputValues(batchSize, batches:_*)
+      val input = batchedInputValues(batchSize, batches: _*)
       consume(execute(logicalQuery, runtime, input))
     }
 
     // then IV
     intercept[CypherTypeException] {
       val batches: Seq[Array[Any]] = durationBatches ++ numberBatches
-      val input = batchedInputValues(batchSize, batches:_*)
+      val input = batchedInputValues(batchSize, batches: _*)
       consume(execute(logicalQuery, runtime, input))
     }
   }
 
   test("should min(n.prop)") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -508,7 +550,10 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should min(n.prop) with nulls correctly") {
     // given
-    val input = batchedInputValues(sizeHint / 8, Random.shuffle(Seq.fill(sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*).stream()
+    val input = batchedInputValues(
+      sizeHint / 8,
+      Random.shuffle(Seq.fill(sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*
+    ).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -525,9 +570,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should max(n.prop)") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -545,7 +594,10 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should max(n.prop) with nulls correctly") {
     // given
-    val input = batchedInputValues(sizeHint / 8, Random.shuffle(Seq.fill(sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*).stream()
+    val input = batchedInputValues(
+      sizeHint / 8,
+      Random.shuffle(Seq.fill(sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*
+    ).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -562,9 +614,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should avg(n.prop)") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> (i + 1))
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> (i + 1))
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -578,15 +634,19 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("c").withRows(matching {
-      case Seq(Array(d:DoubleValue)) if tolerantEquals(sizeHint.toDouble / 2, d.value()) =>
+      case Seq(Array(d: DoubleValue)) if tolerantEquals(sizeHint.toDouble / 2, d.value()) =>
     })
   }
 
   test("should avg(n.prop) with grouping") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> (i + 1), "name" -> s"bob${i % 10}")
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> (i + 1), "name" -> s"bob${i % 10}")
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -614,16 +674,20 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     )
     runtimeResult should beColumns("name", "c").withRows(matching {
       case rows: Seq[_] if rows.size == expectedBobCounts.size && rows.forall {
-        case Array(s:StringValue, d:DoubleValue) => tolerantEquals(expectedBobCounts(s.stringValue()), d.value())
-      } =>
+          case Array(s: StringValue, d: DoubleValue) => tolerantEquals(expectedBobCounts(s.stringValue()), d.value())
+        } =>
     })
   }
 
   test("should avg(n.prop) with durations") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> Duration.of(i + 1, ChronoUnit.NANOS))
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> Duration.of(i + 1, ChronoUnit.NANOS))
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -637,17 +701,22 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
     // then
     runtimeResult should beColumns("c").withRows(matching {
-      //convert to millis to be less sensitive to rounding errors
-      case Seq(Array(d:DurationValue)) if tolerantEquals(asMillis(sizeHint.toDouble / 2), asMillis(d.get(ChronoUnit.NANOS))) =>
+      // convert to millis to be less sensitive to rounding errors
+      case Seq(Array(d: DurationValue))
+        if tolerantEquals(asMillis(sizeHint.toDouble / 2), asMillis(d.get(ChronoUnit.NANOS))) =>
     })
   }
 
   test("should avg(n.prop) without numerical overflow") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 1000 == 0 => Map("num" -> (Double.MaxValue - 2.0))
-        case i: Int if i % 1000 == 1 => Map("num" -> (Double.MaxValue - 1.0))
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 1000 == 0 => Map("num" -> (Double.MaxValue - 2.0))
+          case i: Int if i % 1000 == 1 => Map("num" -> (Double.MaxValue - 1.0))
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -661,44 +730,57 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("c").withRows(matching {
-      case Seq(Array(d:DoubleValue)) if tolerantEquals(Double.MaxValue - 1.5, d.value()) =>
+      case Seq(Array(d: DoubleValue)) if tolerantEquals(Double.MaxValue - 1.5, d.value()) =>
     })
   }
 
   test("should return zero for empty input") {
     // given
-    val columns = Seq("countStar",
-      "count", "countD",
-      "avg", "avgD",
-      "collect", "collectD",
-      "max", "maxD",
-      "min", "minD",
-      "sum", "sumD",
-      "stdev", "stdevD",
-      "stdevP", "stdevPD")
+    val columns = Seq(
+      "countStar",
+      "count",
+      "countD",
+      "avg",
+      "avgD",
+      "collect",
+      "collectD",
+      "max",
+      "maxD",
+      "min",
+      "minD",
+      "sum",
+      "sumD",
+      "stdev",
+      "stdevD",
+      "stdevP",
+      "stdevPD"
+    )
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults(columns.toSeq: _*)
-      .aggregation(Seq.empty, Seq(
-        "count(*) AS countStar",
-        "count(x.num) AS count",
-        "count(DISTINCT x.num) AS countD",
-        "avg(x.num) AS avg",
-        "avg(DISTINCT x.num) AS avgD",
-        "collect(x.num) AS collect",
-        "collect(DISTINCT x.num) AS collectD",
-        "max(x.num) AS max",
-        "max(DISTINCT x.num) AS maxD",
-        "min(x.num) AS min",
-        "min(DISTINCT x.num) AS minD",
-        "sum(x.num) AS sum",
-        "sum(DISTINCT x.num) AS sumD",
-        "stdev(x.num) AS stdev",
-        "stdev(DISTINCT x.num) AS stdevD",
-        "stdevP(x.num) AS stdevP",
-        "stdevP(DISTINCT x.num) AS stdevPD",
-      ))
+      .aggregation(
+        Seq.empty,
+        Seq(
+          "count(*) AS countStar",
+          "count(x.num) AS count",
+          "count(DISTINCT x.num) AS countD",
+          "avg(x.num) AS avg",
+          "avg(DISTINCT x.num) AS avgD",
+          "collect(x.num) AS collect",
+          "collect(DISTINCT x.num) AS collectD",
+          "max(x.num) AS max",
+          "max(DISTINCT x.num) AS maxD",
+          "min(x.num) AS min",
+          "min(DISTINCT x.num) AS minD",
+          "sum(x.num) AS sum",
+          "sum(DISTINCT x.num) AS sumD",
+          "stdev(x.num) AS stdev",
+          "stdev(DISTINCT x.num) AS stdevD",
+          "stdevP(x.num) AS stdevP",
+          "stdevP(DISTINCT x.num) AS stdevPD"
+        )
+      )
       .allNodeScan("x")
       .build()
 
@@ -706,44 +788,75 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns(columns.toSeq: _*)
-      .withSingleRow(0, 0, 0, null, null, Collections.emptyList(), Collections.emptyList(),  null, null, null, null, 0, 0, 0, 0, 0, 0)
+      .withSingleRow(
+        0,
+        0,
+        0,
+        null,
+        null,
+        Collections.emptyList(),
+        Collections.emptyList(),
+        null,
+        null,
+        null,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      )
   }
 
   test("should return one row for one input row") {
     // given one row
     val input = inputValues(Array(1))
-    val columns = Seq("countStar",
-      "count", "countD",
-      "avg", "avgD",
-      "collect", "collectD",
-      "max", "maxD",
-      "min", "minD",
-      "sum", "sumD",
-      "stdev", "stdevD",
-      "stdevP", "stdevPD")
+    val columns = Seq(
+      "countStar",
+      "count",
+      "countD",
+      "avg",
+      "avgD",
+      "collect",
+      "collectD",
+      "max",
+      "maxD",
+      "min",
+      "minD",
+      "sum",
+      "sumD",
+      "stdev",
+      "stdevD",
+      "stdevP",
+      "stdevPD"
+    )
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults(columns.toSeq: _*)
-      .aggregation(Seq("x AS x"), Seq(
-        "count(*) AS countStar",
-        "count(x) AS count",
-        "count(DISTINCT x) AS countD",
-        "avg(x) AS avg",
-        "avg(DISTINCT x) AS avgD",
-        "collect(x) AS collect",
-        "collect(DISTINCT x) AS collectD",
-        "max(x) AS max",
-        "max(DISTINCT x) AS maxD",
-        "min(x) AS min",
-        "min(DISTINCT x) AS minD",
-        "sum(x) AS sum",
-        "sum(DISTINCT x) AS sumD",
-        "stdev(x) AS stdev",
-        "stdev(DISTINCT x) AS stdevD",
-        "stdevP(x) AS stdevP",
-        "stdevP(DISTINCT x) AS stdevPD",
-      ))
+      .aggregation(
+        Seq("x AS x"),
+        Seq(
+          "count(*) AS countStar",
+          "count(x) AS count",
+          "count(DISTINCT x) AS countD",
+          "avg(x) AS avg",
+          "avg(DISTINCT x) AS avgD",
+          "collect(x) AS collect",
+          "collect(DISTINCT x) AS collectD",
+          "max(x) AS max",
+          "max(DISTINCT x) AS maxD",
+          "min(x) AS min",
+          "min(DISTINCT x) AS minD",
+          "sum(x) AS sum",
+          "sum(DISTINCT x) AS sumD",
+          "stdev(x) AS stdev",
+          "stdev(DISTINCT x) AS stdevD",
+          "stdevP(x) AS stdevP",
+          "stdevP(DISTINCT x) AS stdevPD"
+        )
+      )
       .input(variables = Seq("x"))
       .build()
 
@@ -751,7 +864,25 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns(columns.toSeq: _*)
-      .withSingleRow(1, 1, 1, 1, 1, Collections.singletonList(1), Collections.singletonList(1),  1, 1, 1, 1, 1, 1, 0, 0, 0, 0)
+      .withSingleRow(
+        1,
+        1,
+        1,
+        1,
+        1,
+        Collections.singletonList(1),
+        Collections.singletonList(1),
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      )
   }
 
   test("should aggregate twice in a row") {
@@ -869,8 +1000,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       (for {
         rel <- from.getRelationships().asScala.toSeq
         to = rel.getOtherNode(from)
-      } yield (from, to)).groupBy{ case (_, to) => to.getId % 2}
-        .map{ case (key, seq) => (key, seq.map(_._2))}.toSeq
+      } yield (from, to)).groupBy { case (_, to) => to.getId % 2 }
+        .map { case (key, seq) => (key, seq.map(_._2)) }.toSeq
     }
 
     val expected = (for {
@@ -878,8 +1009,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       (outerKey, ys) <- outerAgg(x)
       innerKey = outerKey
       innerSum = ys.map(_.getId).sum
-    } yield (innerKey, innerSum)).groupBy{ case (innerKey, _) => innerKey % 2}
-                                 .map { case (key, seq) => Array[Any](key, seq.map(_._2).sum) }
+    } yield (innerKey, innerSum)).groupBy { case (innerKey, _) => innerKey % 2 }
+      .map { case (key, seq) => Array[Any](key, seq.map(_._2).sum) }
 
     // then
     runtimeResult should beColumns("key", "sum").withRows(expected)
@@ -887,9 +1018,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(cache[n.prop]) with nulls") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -909,9 +1044,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   test("should count(cache[n.prop]) with nulls and limit") {
     // given
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
     val limit = sizeHint / 10
 
@@ -929,16 +1068,20 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("c").withRows(matching {
       // We don't know how many of these rows have null, so the final count produced by the aggregation can be anywhere between 0 and limit
-      case Seq(Array(d:IntegralValue)) if d.longValue() >= 0 && d.longValue() <= limit =>
+      case Seq(Array(d: IntegralValue)) if d.longValue() >= 0 && d.longValue() <= limit =>
     })
   }
 
   test("should count(*) on cache[n.prop] grouping column with nulls") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
-        case i: Int if i % 2 == 1 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
+          case i: Int if i % 2 == 1 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -967,7 +1110,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
         "R",
         aProperties = {
           case i: Int => Map("name" -> s"bob$i")
-        })
+        }
+      )
     }
     val limit = nodesPerLabel / 2
 
@@ -992,9 +1136,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle percentileDisc") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i % 10)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1012,9 +1160,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle percentileDisc with nulls") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i % 10)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1032,9 +1184,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle percentileDisc with distinct") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i % 10)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1052,7 +1208,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("percentileDisc should return null for empty input") {
-    //given no data
+    // given no data
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1069,8 +1225,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("percentileDisc should return one row for one input row") {
     given {
-      nodePropertyGraph(1, {
-        case i: Int => Map("num" -> 11)}, "Honey")
+      nodePropertyGraph(
+        1,
+        {
+          case i: Int => Map("num" -> 11)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1088,9 +1249,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle percentileCont") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i % 10)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1108,9 +1273,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle percentileCont with nulls") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i % 10)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1128,9 +1297,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle percentileCont with distinct") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i % 10)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1148,7 +1321,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("percentileCont should return null for empty input") {
-    //given no data
+    // given no data
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1165,8 +1338,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("percentileCont should return one row for one input row") {
     given {
-      nodePropertyGraph(1, {
-        case i: Int => Map("num" -> 11)}, "Honey")
+      nodePropertyGraph(
+        1,
+        {
+          case i: Int => Map("num" -> 11)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1185,6 +1363,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
 trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
   self: AggregationTestBase[CONTEXT] =>
+
   private val userAggregationFunctions = {
     val noArgument = UserFunctionSignature.functionSignature("test", "foo0")
       .out(Neo4jTypes.NTInteger)
@@ -1204,7 +1383,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
       .in("in2", Neo4jTypes.NTFloat, ntFloat(Math.PI))
       .in("in3", Neo4jTypes.NTBoolean, ntBoolean(true))
       .in("in4", Neo4jTypes.NTMap, ntMap(java.util.Map.of("default", "yes")))
-      .in("in5", Neo4jTypes.NTByteArray, ntByteArray(Array[Byte](1,2,3)))
+      .in("in5", Neo4jTypes.NTByteArray, ntByteArray(Array[Byte](1, 2, 3)))
       .in("in6", Neo4jTypes.NTString, ntString("hello"))
       .build()
 
@@ -1262,9 +1441,13 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
   test("should support user-defined aggregation") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1281,7 +1464,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
   }
 
   test("should handle user-defined aggregation that is never called") {
-    //given no data
+    // given no data
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1298,9 +1481,13 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
   test("should support user-defined aggregation with no argument") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1318,9 +1505,13 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
   test("should support user-defined aggregation with grouping") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> 10, "name" -> ("name" + i % 10))
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> 10, "name" -> ("name" + i % 10))
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1339,9 +1530,13 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
   test("should support user-defined aggregation under apply") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1353,7 +1548,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)): _*))
 
     // then
     val expected = (1 to 10).map(_ => Array[Any]((sizeHint * (sizeHint - 1) / 2)))
@@ -1362,9 +1557,13 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
   test("should support combine user-defined aggregation and aggregation") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1382,9 +1581,13 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
   test("should support user-defined aggregation with multiple inputs") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num1" -> i, "num2" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num1" -> i, "num2" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1402,9 +1605,13 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
   test("should support user-defined aggregation with multiple arguments and grouping") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> 10, "name" -> ("name" + i % 10))
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> 10, "name" -> ("name" + i % 10))
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1423,9 +1630,13 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
   test("should support user-defined aggregation with multiple arguments under apply") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1437,7 +1648,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)): _*))
 
     // then
     val expected = (1 to 10).map(_ => Array[Any]((sizeHint - 1) * sizeHint * (2 * sizeHint - 1) / 6))
@@ -1446,9 +1657,13 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
   test("should support combine user-defined aggregation with multiple arguments and aggregation") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1461,14 +1676,21 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("p", "c").withRows(singleRow((sizeHint - 1) * sizeHint * (2 * sizeHint - 1) / 6, sizeHint))
+    runtimeResult should beColumns("p", "c").withRows(singleRow(
+      (sizeHint - 1) * sizeHint * (2 * sizeHint - 1) / 6,
+      sizeHint
+    ))
   }
 
   test("should support user-defined aggregation with multiple inputs with default") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("num1" -> i, "num2" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num1" -> i, "num2" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -1542,9 +1764,11 @@ abstract class AggregationLargeMorselTestBase[CONTEXT <: RuntimeContext](
 }
 
 object AggregationLargeMorselTestBase {
+
   def withLargeMorsels[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]): Edition[CONTEXT] = {
-    edition.copyWith(additionalConfigs =
-      cypher_pipelined_batch_size_big -> Integer.valueOf(1024),
+    edition.copyWith(
+      additionalConfigs =
+        cypher_pipelined_batch_size_big -> Integer.valueOf(1024),
       cypher_pipelined_batch_size_small -> Integer.valueOf(128)
     )
   }

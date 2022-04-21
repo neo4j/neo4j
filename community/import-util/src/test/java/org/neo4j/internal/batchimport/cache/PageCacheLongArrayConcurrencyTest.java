@@ -19,81 +19,66 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
+import java.io.IOException;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
-public class PageCacheLongArrayConcurrencyTest extends PageCacheNumberArrayConcurrencyTest
-{
+public class PageCacheLongArrayConcurrencyTest extends PageCacheNumberArrayConcurrencyTest {
     @Override
-    protected Runnable wholeFileRacer( NumberArray array, int contestant )
-    {
-        return new WholeFileRacer( (PageCacheLongArray) array );
+    protected Runnable wholeFileRacer(NumberArray array, int contestant) {
+        return new WholeFileRacer((PageCacheLongArray) array);
     }
 
     @Override
-    protected Runnable fileRangeRacer( NumberArray array, int contestant )
-    {
-        return new FileRangeRacer( (PageCacheLongArray) array, contestant );
+    protected Runnable fileRangeRacer(NumberArray array, int contestant) {
+        return new FileRangeRacer((PageCacheLongArray) array, contestant);
     }
 
     @Override
-    protected PageCacheLongArray getNumberArray( PagedFile file ) throws IOException
-    {
-        return new PageCacheLongArray( file, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), COUNT, 0, 0 );
+    protected PageCacheLongArray getNumberArray(PagedFile file) throws IOException {
+        return new PageCacheLongArray(file, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), COUNT, 0, 0);
     }
 
-    private static class WholeFileRacer implements Runnable
-    {
+    private static class WholeFileRacer implements Runnable {
         private final LongArray array;
 
-        WholeFileRacer( LongArray array )
-        {
+        WholeFileRacer(LongArray array) {
             this.array = array;
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
 
-            for ( int o = 0; o < LAPS; o++ )
-            {
-                for ( long i = 0; i < COUNT; i++ )
-                {
-                    array.set( i, i );
-                    assertEquals( i, array.get( i ) );
+            for (int o = 0; o < LAPS; o++) {
+                for (long i = 0; i < COUNT; i++) {
+                    array.set(i, i);
+                    assertEquals(i, array.get(i));
                 }
             }
         }
     }
 
-    private class FileRangeRacer implements Runnable
-    {
+    private class FileRangeRacer implements Runnable {
         private final LongArray array;
         private final int contestant;
 
-        FileRangeRacer( LongArray array, int contestant )
-        {
+        FileRangeRacer(LongArray array, int contestant) {
             this.array = array;
             this.contestant = contestant;
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
 
-            for ( int o = 0; o < LAPS; o++ )
-            {
-                for ( long i = contestant; i < COUNT; i += CONTESTANTS )
-                {
+            for (int o = 0; o < LAPS; o++) {
+                for (long i = contestant; i < COUNT; i += CONTESTANTS) {
                     long value = random.nextLong();
-                    array.set( i, value );
-                    assertEquals( value, array.get( i ) );
+                    array.set(i, value);
+                    assertEquals(value, array.get(i));
                 }
             }
         }

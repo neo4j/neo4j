@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandStream;
@@ -26,24 +29,17 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 /**
  * Serves as executor of transactions, i.e. the visit... methods and will invoke the other lifecycle methods like {@link
  * TransactionApplierFactory#startTx(CommandsToApply, BatchContext)}, {@link TransactionApplier#close()} ()} a.s.o
  * correctly.
  */
-public class CommandHandlerContract
-{
-    private CommandHandlerContract()
-    {
-    }
+public class CommandHandlerContract {
+    private CommandHandlerContract() {}
 
     @FunctionalInterface
-    public interface ApplyFunction
-    {
-        boolean apply( TransactionApplier applier ) throws Exception;
+    public interface ApplyFunction {
+        boolean apply(TransactionApplier applier) throws Exception;
     }
 
     /**
@@ -54,17 +50,14 @@ public class CommandHandlerContract
      * @param applier to use
      * @param transactions to apply
      */
-    public static void apply( TransactionApplierFactory applier, CommandsToApply... transactions ) throws Exception
-    {
-        var batchContext = mock( BatchContext.class );
-        when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
-        when( batchContext.getIdUpdateListener() ).thenReturn( IdUpdateListener.IGNORE );
-        when( batchContext.getIndexActivator() ).thenReturn( mock( IndexActivator.class ) );
-        for ( CommandsToApply tx : transactions )
-        {
-            try ( TransactionApplier txApplier = applier.startTx( tx, batchContext ) )
-            {
-                tx.accept( txApplier );
+    public static void apply(TransactionApplierFactory applier, CommandsToApply... transactions) throws Exception {
+        var batchContext = mock(BatchContext.class);
+        when(batchContext.getLockGroup()).thenReturn(new LockGroup());
+        when(batchContext.getIdUpdateListener()).thenReturn(IdUpdateListener.IGNORE);
+        when(batchContext.getIndexActivator()).thenReturn(mock(IndexActivator.class));
+        for (CommandsToApply tx : transactions) {
+            try (TransactionApplier txApplier = applier.startTx(tx, batchContext)) {
+                tx.accept(txApplier);
             }
         }
     }
@@ -79,14 +72,14 @@ public class CommandHandlerContract
      * function.
      * @return the boolean-and result of all function operations.
      */
-    public static boolean apply( TransactionApplierFactory applier, ApplyFunction function,
-            CommandsToApply... transactions ) throws Exception
-    {
-        BatchContext batchContext = mock( BatchContext.class );
-        when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
-        when( batchContext.getIdUpdateListener() ).thenReturn( IdUpdateListener.DIRECT );
-        when( batchContext.getIndexActivator() ).thenReturn( new IndexActivator( mock( IndexUpdateListener.class ) ) );
-        return apply( applier, function, batchContext, transactions );
+    public static boolean apply(
+            TransactionApplierFactory applier, ApplyFunction function, CommandsToApply... transactions)
+            throws Exception {
+        BatchContext batchContext = mock(BatchContext.class);
+        when(batchContext.getLockGroup()).thenReturn(new LockGroup());
+        when(batchContext.getIdUpdateListener()).thenReturn(IdUpdateListener.DIRECT);
+        when(batchContext.getIndexActivator()).thenReturn(new IndexActivator(mock(IndexUpdateListener.class)));
+        return apply(applier, function, batchContext, transactions);
     }
 
     /**
@@ -100,15 +93,16 @@ public class CommandHandlerContract
      * function.
      * @return the boolean-and result of all function operations.
      */
-    public static boolean apply( TransactionApplierFactory applier, ApplyFunction function, BatchContext batchContext, CommandsToApply... transactions )
-            throws Exception
-    {
+    public static boolean apply(
+            TransactionApplierFactory applier,
+            ApplyFunction function,
+            BatchContext batchContext,
+            CommandsToApply... transactions)
+            throws Exception {
         boolean result = true;
-        for ( CommandsToApply tx : transactions )
-        {
-            try ( TransactionApplier txApplier = applier.startTx( tx, batchContext ) )
-            {
-                result &= function.apply( txApplier );
+        for (CommandsToApply tx : transactions) {
+            try (TransactionApplier txApplier = applier.startTx(tx, batchContext)) {
+                result &= function.apply(txApplier);
             }
         }
         return result;

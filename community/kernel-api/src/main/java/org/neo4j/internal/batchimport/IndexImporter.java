@@ -25,8 +25,7 @@ import java.io.IOException;
 /**
  * Used by the {@link BatchImporter} to publish index entries as it imports node & relationship records.
  */
-public interface IndexImporter extends Closeable
-{
+public interface IndexImporter extends Closeable {
     IndexImporter EMPTY_IMPORTER = new EmptyIndexImporter();
 
     /**
@@ -34,20 +33,13 @@ public interface IndexImporter extends Closeable
      * @param entity the id of the entity (node id/relationship id)
      * @param tokens the tokens associated with the entity (labels/relationship types)
      */
-    void add( long entity, long[] tokens );
+    void add(long entity, long[] tokens);
 
-    class EmptyIndexImporter implements IndexImporter
-    {
+    class EmptyIndexImporter implements IndexImporter {
         @Override
-        public void add( long entity, long[] tokens )
-        {
-
-        }
+        public void add(long entity, long[] tokens) {}
 
         @Override
-        public void close() throws IOException
-        {
-
-        }
+        public void close() throws IOException {}
     }
 }

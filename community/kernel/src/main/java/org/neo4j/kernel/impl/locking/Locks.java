@@ -45,18 +45,21 @@ import org.neo4j.memory.MemoryTracker;
  * Each call to acquire a lock must be accompanied by a call to release that same lock. A user can call acquire on the
  * same lock multiple times, thus requiring an equal number of calls to release those locks.
  */
-public interface Locks
-{
+public interface Locks {
     /** For introspection and debugging. */
-    interface Visitor
-    {
+    interface Visitor {
         /** Visit the description of a lock held by at least one client. */
-        void visit( LockType lockType, ResourceType resourceType, long transactionId, long resourceId,
-                String description, long estimatedWaitTime, long lockIdentityHashCode );
+        void visit(
+                LockType lockType,
+                ResourceType resourceType,
+                long transactionId,
+                long resourceId,
+                String description,
+                long estimatedWaitTime,
+                long lockIdentityHashCode);
     }
 
-    interface Client extends ResourceLocker, AutoCloseable
-    {
+    interface Client extends ResourceLocker, AutoCloseable {
         /**
          * Invalid transaction id that lock clients using before they are initialised or after close
          */
@@ -75,10 +78,10 @@ public interface Locks
          * @param memoryTracker memory tracker from the transaction
          * @param config neo4j configuration
          */
-        void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config );
+        void initialize(LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config);
 
         /** Try grabbing shared lock, not waiting and returning a boolean indicating if we got the lock. */
-        boolean trySharedLock( ResourceType resourceType, long resourceId );
+        boolean trySharedLock(ResourceType resourceType, long resourceId);
 
         /**
          * Start preparing this transaction for committing. In two-phase locking palace, we will in principle no longer
@@ -117,29 +120,21 @@ public interface Locks
     Client newClient();
 
     /** Visit all held locks. */
-    void accept( Visitor visitor );
+    void accept(Visitor visitor);
 
     void close();
 
     /** An implementation that doesn't do any locking **/
-    Locks NO_LOCKS = new Locks()
-    {
+    Locks NO_LOCKS = new Locks() {
         @Override
-        public Client newClient()
-        {
+        public Client newClient() {
             return new NoOpClient();
         }
 
         @Override
-        public void accept( Visitor visitor )
-        {
-
-        }
+        public void accept(Visitor visitor) {}
 
         @Override
-        public void close()
-        {
-
-        }
+        public void close() {}
     };
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.values.storable.Value;
-
 import static org.neo4j.values.storable.Values.NO_VALUE;
+
+import org.neo4j.values.storable.Value;
 
 /**
  * Cursor for scanning the property values of nodes in a schema index.
@@ -52,74 +52,57 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  *     }
  * </code></pre>
  */
-public interface NodeValueIndexCursor extends NodeIndexCursor, ValueIndexCursor
-{
-    class Empty extends DoNothingCloseListenable implements NodeValueIndexCursor
-    {
+public interface NodeValueIndexCursor extends NodeIndexCursor, ValueIndexCursor {
+    class Empty extends DoNothingCloseListenable implements NodeValueIndexCursor {
 
         @Override
-        public void node( NodeCursor cursor )
-        {
-        }
+        public void node(NodeCursor cursor) {}
 
         @Override
-        public long nodeReference()
-        {
+        public long nodeReference() {
             return -1L;
         }
 
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return false;
         }
 
         @Override
-        public void closeInternal()
-        {
-            //do nothing
+        public void closeInternal() {
+            // do nothing
         }
 
         @Override
-        public boolean isClosed()
-        {
+        public boolean isClosed() {
             return false;
         }
 
         @Override
-        public int numberOfProperties()
-        {
+        public int numberOfProperties() {
             return 0;
         }
 
         @Override
-        public boolean hasValue()
-        {
+        public boolean hasValue() {
             return false;
         }
 
         @Override
-        public float score()
-        {
+        public float score() {
             return Float.NaN;
         }
 
         @Override
-        public Value propertyValue( int offset )
-        {
+        public Value propertyValue(int offset) {
             return NO_VALUE;
         }
 
         @Override
-        public void setTracer( KernelReadTracer tracer )
-        {
-        }
+        public void setTracer(KernelReadTracer tracer) {}
 
         @Override
-        public void removeTracer()
-        {
-
-        }
+        public void removeTracer() {}
     }
 
     NodeValueIndexCursor EMPTY = new Empty();

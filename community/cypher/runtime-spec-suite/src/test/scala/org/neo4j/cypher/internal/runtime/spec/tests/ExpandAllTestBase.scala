@@ -35,6 +35,7 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 object ExpandAllTestBase {
+
   def smallTestGraph(tx: InternalTransaction): (Node, Node, Node, Node, Node, Node) = {
     val a1 = tx.createNode(Label.label("A"))
     val a2 = tx.createNode(Label.label("A"))
@@ -61,7 +62,7 @@ object ExpandAllTestBase {
 abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  protected  val sizeHint: Int
+  protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should expand and provide variables for relationship and end node - outgoing") {
@@ -99,7 +100,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - outgoing, one type") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -131,7 +132,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - outgoing, two types") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT"),
@@ -164,7 +165,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and handle self loops") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, i, "ME")
       )
@@ -256,9 +257,11 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     val (r1, r2, r3) = given {
       val node = tx.createNode(Label.label("L"))
       val other = tx.createNode(Label.label("L"))
-      (node.createRelationshipTo(other, RelationshipType.withName("R")),
+      (
+        node.createRelationshipTo(other, RelationshipType.withName("R")),
         node.createRelationshipTo(other, RelationshipType.withName("S")),
-        node.createRelationshipTo(other, RelationshipType.withName("T")))
+        node.createRelationshipTo(other, RelationshipType.withName("T"))
+      )
     }
 
     // when
@@ -295,15 +298,15 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(List.empty)
 
-    //CREATE S
+    // CREATE S
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
 
-    //CREATE R
+    // CREATE R
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(2))
 
-    //CREATE T
+    // CREATE T
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(3))
   }
@@ -325,15 +328,15 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     execute(executablePlan) should beColumns("x", "y").withRows(List.empty)
 
-    //CREATE S
+    // CREATE S
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(1))
 
-    //CREATE R
+    // CREATE R
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(2))
 
-    //CREATE T
+    // CREATE T
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
@@ -423,7 +426,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("should handle node reference as input") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -457,7 +460,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("should gracefully handle non-node reference as input") {
     // given
     val n = sizeHint
-    val input = inputValues((1 to n).map(Array[Any](_)):_*)
+    val input = inputValues((1 to n).map(Array[Any](_)): _*)
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
@@ -466,7 +469,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .build()
 
     // then
-    a [ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
+    a[ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
   }
 
   test("should handle expand + filter") {
@@ -488,7 +491,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     val expected =
       for {
         r <- rels
-        if r.getEndNode.getId >= size /2
+        if r.getEndNode.getId >= size / 2
         row <- List(Array(r.getStartNode, r.getEndNode))
       } yield row
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -506,7 +509,8 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
         "R",
         aProperties = {
           case i: Int => Map("prop" -> i)
-        })
+        }
+      )
     }
 
     // when
@@ -547,7 +551,8 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
         },
         bProperties = {
           case i: Int => Map("prop" -> i)
-        })
+        }
+      )
     }
 
     // when

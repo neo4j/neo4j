@@ -19,87 +19,74 @@
  */
 package org.neo4j.storageengine.util;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Test;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-
-import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
-class IdGeneratorUpdatesWorkSyncTest
-{
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+
+class IdGeneratorUpdatesWorkSyncTest {
     @Test
-    void shouldGatherChangedIds() throws ExecutionException
-    {
+    void shouldGatherChangedIds() throws ExecutionException {
         // given
         IdGeneratorUpdatesWorkSync workSync = new IdGeneratorUpdatesWorkSync();
-        IdGenerator idGenerator = mock( IdGenerator.class );
+        IdGenerator idGenerator = mock(IdGenerator.class);
         RecordingMarker marker = new RecordingMarker();
-        when( idGenerator.marker( any() ) ).thenReturn( marker );
-        workSync.add( idGenerator );
+        when(idGenerator.marker(any())).thenReturn(marker);
+        workSync.add(idGenerator);
 
         // when
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
-        IdGeneratorUpdatesWorkSync.Batch batch = workSync.newBatch( contextFactory );
-        batch.markIdAsUsed( idGenerator, 10, 1, CursorContext.NULL_CONTEXT );
-        batch.markIdAsUnused( idGenerator, 11, 1, CursorContext.NULL_CONTEXT );
-        batch.markIdAsUsed( idGenerator, 270, 4, CursorContext.NULL_CONTEXT );
-        batch.markIdAsUnused( idGenerator, 513, 7, CursorContext.NULL_CONTEXT );
+        var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+        IdGeneratorUpdatesWorkSync.Batch batch = workSync.newBatch(contextFactory);
+        batch.markIdAsUsed(idGenerator, 10, 1, CursorContext.NULL_CONTEXT);
+        batch.markIdAsUnused(idGenerator, 11, 1, CursorContext.NULL_CONTEXT);
+        batch.markIdAsUsed(idGenerator, 270, 4, CursorContext.NULL_CONTEXT);
+        batch.markIdAsUnused(idGenerator, 513, 7, CursorContext.NULL_CONTEXT);
         batch.apply();
 
         // then
-        assertThat( marker.used( 10, 1 ) ).isTrue();
-        assertThat( marker.deleted( 11, 1 ) ).isTrue();
-        assertThat( marker.used( 270, 4 ) ).isTrue();
-        assertThat( marker.deleted( 513, 7 ) ).isTrue();
+        assertThat(marker.used(10, 1)).isTrue();
+        assertThat(marker.deleted(11, 1)).isTrue();
+        assertThat(marker.used(270, 4)).isTrue();
+        assertThat(marker.deleted(513, 7)).isTrue();
     }
 
-    private static class RecordingMarker implements IdGenerator.Marker
-    {
-        private final Set<Pair<Long,Integer>> used = new HashSet<>();
-        private final Set<Pair<Long,Integer>> deleted = new HashSet<>();
+    private static class RecordingMarker implements IdGenerator.Marker {
+        private final Set<Pair<Long, Integer>> used = new HashSet<>();
+        private final Set<Pair<Long, Integer>> deleted = new HashSet<>();
 
         @Override
-        public void markUsed( long id, int numberOfIds )
-        {
-            used.add( Pair.of( id, numberOfIds ) );
+        public void markUsed(long id, int numberOfIds) {
+            used.add(Pair.of(id, numberOfIds));
         }
 
         @Override
-        public void markDeleted( long id, int numberOfIds )
-        {
-            deleted.add( Pair.of( id, numberOfIds ) );
+        public void markDeleted(long id, int numberOfIds) {
+            deleted.add(Pair.of(id, numberOfIds));
         }
 
         @Override
-        public void markFree( long id, int numberOfIds )
-        {
-        }
+        public void markFree(long id, int numberOfIds) {}
 
         @Override
-        public void close()
-        {
+        public void close() {}
+
+        boolean used(long id, int numberOfIds) {
+            return used.contains(Pair.of(id, numberOfIds));
         }
 
-        boolean used( long id, int numberOfIds )
-        {
-            return used.contains( Pair.of( id, numberOfIds ) );
-        }
-
-        boolean deleted( long id, int numberOfIds )
-        {
-            return deleted.contains( Pair.of( id, numberOfIds ) );
+        boolean deleted(long id, int numberOfIds) {
+            return deleted.contains(Pair.of(id, numberOfIds));
         }
     }
 }

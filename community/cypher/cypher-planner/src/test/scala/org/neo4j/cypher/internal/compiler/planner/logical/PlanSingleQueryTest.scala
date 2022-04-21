@@ -41,11 +41,12 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("should use Selectivity.ONE in the absence of LIMIT") {
     // MATCH (n) RETURN n
     val q = RegularSinglePlannerQuery(
-      queryGraph = QueryGraph(patternNodes = Set("n")))
+      queryGraph = QueryGraph(patternNodes = Set("n"))
+    )
 
     planSingleQuery(q) shouldEqual Vector(
-      (PlannerType.Match,   Selectivity.ONE),
-      (PlannerType.Horizon, Selectivity.ONE),
+      (PlannerType.Match, Selectivity.ONE),
+      (PlannerType.Horizon, Selectivity.ONE)
     )
   }
 
@@ -55,11 +56,14 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
       queryGraph = QueryGraph(patternNodes = Set("n")),
       horizon = RegularQueryProjection(
         queryPagination = QueryPagination(
-          limit = Some(literalInt(1000)))))
+          limit = Some(literalInt(1000))
+        )
+      )
+    )
 
     planSingleQuery(q) shouldEqual Vector(
-      (PlannerType.Match,   Selectivity.of(0.1).get),
-      (PlannerType.Horizon, Selectivity.ONE),
+      (PlannerType.Match, Selectivity.of(0.1).get),
+      (PlannerType.Horizon, Selectivity.ONE)
     )
   }
 
@@ -70,20 +74,22 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
       horizon = RegularQueryProjection(
         projections = Map("m" -> varFor("n")),
         queryPagination = QueryPagination(
-          limit = Some(literalInt(1000)))
+          limit = Some(literalInt(1000))
+        )
       ),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
           patternNodes = Set("m"),
-          argumentIds = Set("m")),
+          argumentIds = Set("m")
+        )
       ))
     )
 
     planSingleQuery(q) shouldEqual Vector(
-      (PlannerType.Match,   Selectivity.of(0.1).get),
+      (PlannerType.Match, Selectivity.of(0.1).get),
       (PlannerType.Horizon, Selectivity.ONE),
-      (PlannerType.Match,   Selectivity.ONE),
-      (PlannerType.Horizon, Selectivity.ONE),
+      (PlannerType.Match, Selectivity.ONE),
+      (PlannerType.Horizon, Selectivity.ONE)
     )
   }
 
@@ -94,7 +100,8 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
       horizon = RegularQueryProjection(
         projections = Map("m" -> varFor("n")),
         queryPagination = QueryPagination(
-          limit = Some(literalInt(1000)))
+          limit = Some(literalInt(1000))
+        )
       ),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
@@ -103,16 +110,17 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
         ),
         horizon = RegularQueryProjection(
           queryPagination = QueryPagination(
-            limit = Some(literalInt(500)))
-        ),
+            limit = Some(literalInt(500))
+          )
+        )
       ))
     )
 
     planSingleQuery(q) shouldEqual Vector(
-      (PlannerType.Match,   Selectivity.of(0.1 * 0.5).get),
+      (PlannerType.Match, Selectivity.of(0.1 * 0.5).get),
       (PlannerType.Horizon, Selectivity.of(0.5).get),
-      (PlannerType.Match,   Selectivity.of(0.5).get),
-      (PlannerType.Horizon, Selectivity.ONE),
+      (PlannerType.Match, Selectivity.of(0.5).get),
+      (PlannerType.Horizon, Selectivity.ONE)
     )
   }
 
@@ -123,24 +131,33 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
 
     val planner = PlanSingleQuery(
       PlanHead(matchPlanner = recordingPlanMatch, eventHorizonPlanner = recordingPlanHorizon),
-      PlanWithTail(matchPlanner = recordingPlanMatch, eventHorizonPlanner = recordingPlanHorizon))
+      PlanWithTail(matchPlanner = recordingPlanMatch, eventHorizonPlanner = recordingPlanHorizon)
+    )
 
     new given().withLogicalPlanningContext { (_, context) => planner.plan(query, context) }
     log.toVector
   }
 
   private class RecordingMatchPlanner(log: ArrayBuffer[LogEntry]) extends MatchPlanner {
-    override protected def doPlan(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean): BestPlans = {
+
+    override protected def doPlan(
+      query: SinglePlannerQuery,
+      context: LogicalPlanningContext,
+      rhsPart: Boolean
+    ): BestPlans = {
       log += ((context.input.activePlanner, context.input.limitSelectivity))
       planMatch.plan(query, context, rhsPart)
     }
   }
 
   private class RecordingHorizonPlanner(log: ArrayBuffer[LogEntry]) extends EventHorizonPlanner {
-    override protected def doPlanHorizon(plannerQuery: SinglePlannerQuery,
-                                         incomingPlans: BestResults[LogicalPlan],
-                                         prevInterestingOrder: Option[InterestingOrder],
-                                         context: LogicalPlanningContext): BestResults[LogicalPlan] = {
+
+    override protected def doPlanHorizon(
+      plannerQuery: SinglePlannerQuery,
+      incomingPlans: BestResults[LogicalPlan],
+      prevInterestingOrder: Option[InterestingOrder],
+      context: LogicalPlanningContext
+    ): BestResults[LogicalPlan] = {
       log += ((context.input.activePlanner, context.input.limitSelectivity))
       PlanEventHorizon.planHorizon(plannerQuery, incomingPlans, prevInterestingOrder, context)
     }

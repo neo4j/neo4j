@@ -34,10 +34,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * }}}
  */
 case class SubqueryForeach(override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen)
-  extends LogicalBinaryPlan(idGen) with ApplyPlan {
+    extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols // NOTE: right.availableSymbols are not available outside
+  override val availableSymbols: Set[String] =
+    left.availableSymbols // NOTE: right.availableSymbols are not available outside
 }

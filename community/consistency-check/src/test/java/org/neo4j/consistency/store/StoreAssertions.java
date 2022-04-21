@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.store;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -27,23 +29,19 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+public final class StoreAssertions {
+    private StoreAssertions() {}
 
-public final class StoreAssertions
-{
-    private StoreAssertions()
-    {
-    }
-
-    public static void assertConsistentStore( DatabaseLayout databaseLayout ) throws ConsistencyCheckIncompleteException
-    {
-        Config configuration = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
+    public static void assertConsistentStore(DatabaseLayout databaseLayout) throws ConsistencyCheckIncompleteException {
+        Config configuration = Config.defaults(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
         AssertableLogProvider logger = new AssertableLogProvider();
-        ConsistencyCheckService.Result result = new ConsistencyCheckService( databaseLayout )
-                .with( configuration )
-                .with( logger )
+        ConsistencyCheckService.Result result = new ConsistencyCheckService(databaseLayout)
+                .with(configuration)
+                .with(logger)
                 .runFullConsistencyCheck();
 
-        assertTrue( result.isSuccessful(), "Consistency check for " + databaseLayout + " found inconsistencies:\n\n" + logger.serialize() );
+        assertTrue(
+                result.isSuccessful(),
+                "Consistency check for " + databaseLayout + " found inconsistencies:\n\n" + logger.serialize());
     }
 }

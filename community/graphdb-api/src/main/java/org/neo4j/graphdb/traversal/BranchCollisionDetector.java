@@ -27,8 +27,7 @@ import org.neo4j.graphdb.Path;
  * they will probably meet somewhere in the middle and the full paths are formed.
  * This is where that detection and path generation takes place.
  */
-public interface BranchCollisionDetector
-{
+public interface BranchCollisionDetector {
     /**
      * Evaluate the given {@code branch} coming from either the start side or the
      * end side. Which side the branch represents is controlled by the {@code direction}
@@ -45,5 +44,5 @@ public interface BranchCollisionDetector
      * @return new paths formed if this branch collided with other branches,
      * or {@code null} if no collision occurred.
      */
-    Iterable<Path> evaluate( TraversalBranch branch, Direction direction );
+    Iterable<Path> evaluate(TraversalBranch branch, Direction direction);
 }

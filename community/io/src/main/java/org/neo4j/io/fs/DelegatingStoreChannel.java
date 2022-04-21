@@ -23,152 +23,127 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 
-public class DelegatingStoreChannel<T extends StoreChannel> implements StoreChannel
-{
+public class DelegatingStoreChannel<T extends StoreChannel> implements StoreChannel {
     protected final T delegate;
 
-    public DelegatingStoreChannel( T delegate )
-    {
+    public DelegatingStoreChannel(T delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public FileLock tryLock() throws IOException
-    {
+    public FileLock tryLock() throws IOException {
         return delegate.tryLock();
     }
 
     @Override
-    public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
-    {
-        return delegate.write( srcs, offset, length );
+    public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
+        return delegate.write(srcs, offset, length);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         delegate.close();
     }
 
     @Override
-    public void writeAll( ByteBuffer src, long position ) throws IOException
-    {
-        delegate.writeAll( src, position );
+    public void writeAll(ByteBuffer src, long position) throws IOException {
+        delegate.writeAll(src, position);
     }
 
     @Override
-    public StoreChannel truncate( long size ) throws IOException
-    {
-        delegate.truncate( size );
+    public StoreChannel truncate(long size) throws IOException {
+        delegate.truncate(size);
         return this;
     }
 
     @Override
-    public int getFileDescriptor()
-    {
+    public int getFileDescriptor() {
         return delegate.getFileDescriptor();
     }
 
     @Override
-    public void writeAll( ByteBuffer src ) throws IOException
-    {
-        delegate.writeAll( src );
+    public void writeAll(ByteBuffer src) throws IOException {
+        delegate.writeAll(src);
     }
 
     @Override
-    public int write( ByteBuffer src ) throws IOException
-    {
-        return delegate.write( src );
+    public int write(ByteBuffer src) throws IOException {
+        return delegate.write(src);
     }
 
     @Override
-    public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
-    {
-        return delegate.read( dsts, offset, length );
+    public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
+        return delegate.read(dsts, offset, length);
     }
 
     @Override
-    public long write( ByteBuffer[] srcs ) throws IOException
-    {
-        return delegate.write( srcs );
+    public long write(ByteBuffer[] srcs) throws IOException {
+        return delegate.write(srcs);
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return delegate.isOpen();
     }
 
     @Override
-    public int read( ByteBuffer dst ) throws IOException
-    {
-        return delegate.read( dst );
+    public int read(ByteBuffer dst) throws IOException {
+        return delegate.read(dst);
     }
 
     @Override
-    public void force( boolean metaData ) throws IOException
-    {
-        delegate.force( metaData );
+    public void force(boolean metaData) throws IOException {
+        delegate.force(metaData);
     }
 
     @Override
-    public long read( ByteBuffer[] dsts ) throws IOException
-    {
-        return delegate.read( dsts );
+    public long read(ByteBuffer[] dsts) throws IOException {
+        return delegate.read(dsts);
     }
 
     @Override
-    public int read( ByteBuffer dst, long position ) throws IOException
-    {
-        return delegate.read( dst, position );
+    public int read(ByteBuffer dst, long position) throws IOException {
+        return delegate.read(dst, position);
     }
 
     @Override
-    public void readAll( ByteBuffer dst ) throws IOException
-    {
-        delegate.readAll( dst );
+    public void readAll(ByteBuffer dst) throws IOException {
+        delegate.readAll(dst);
     }
 
     @Override
-    public long position() throws IOException
-    {
+    public long position() throws IOException {
         return delegate.position();
     }
 
     @Override
-    public long size() throws IOException
-    {
+    public long size() throws IOException {
         return delegate.size();
     }
 
     @Override
-    public StoreChannel position( long newPosition ) throws IOException
-    {
-        delegate.position( newPosition );
+    public StoreChannel position(long newPosition) throws IOException {
+        delegate.position(newPosition);
         return this;
     }
 
     @Override
-    public void flush() throws IOException
-    {
+    public void flush() throws IOException {
         delegate.flush();
     }
 
     @Override
-    public boolean hasPositionLock()
-    {
+    public boolean hasPositionLock() {
         return delegate.hasPositionLock();
     }
 
     @Override
-    public Object getPositionLock()
-    {
+    public Object getPositionLock() {
         return delegate.getPositionLock();
     }
 
     @Override
-    public void tryMakeUninterruptible()
-    {
+    public void tryMakeUninterruptible() {
         delegate.tryMakeUninterruptible();
     }
 }

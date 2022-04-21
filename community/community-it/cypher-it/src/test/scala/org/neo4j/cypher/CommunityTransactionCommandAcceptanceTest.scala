@@ -43,12 +43,14 @@ import org.scalatest.time.Span
 
 import java.util
 
-class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport with Eventually {
+class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport
+    with Eventually {
   private val username = "foo"
   private val username2 = "bar"
   private val password = "secret"
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(15, Seconds)), interval = scaled(Span(3, Seconds)))
+  implicit override val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = scaled(Span(15, Seconds)), interval = scaled(Span(3, Seconds)))
 
   private val threading: Threading = new Threading()
 
@@ -62,7 +64,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     threading.after()
   }
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
+  override def databaseConfig(): Map[Setting[_], Object] =
+    super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
 
   // SHOW TRANSACTIONS (don't test exact id as it might change)
 
@@ -88,12 +91,16 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     val res = execute("SHOW TRANSACTIONS").toList
-    val result = res.filterNot(m => m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME)) // remove random system transactions from parallel tests/set-up
+    val result =
+      res.filterNot(m =>
+        m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME)
+      ) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-", username, unwindQuery)
     assertCorrectDefaultMap(sortedRes(1), "neo4j-transaction-", "", "SHOW TRANSACTIONS")
   }
@@ -109,14 +116,25 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN
     selectDatabase(DEFAULT_DATABASE_NAME)
     val res = execute("SHOW TRANSACTIONS").toList
-    val result = res.filter(m => !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals(username)) // remove possible random system transactions from parallel tests/set-up
+    val result = res.filter(m =>
+      !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals(
+        username
+      )
+    ) // remove possible random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS")
-    assertCorrectDefaultMap(sortedRes(1), "system-transaction-", username, "SHOW DATABASES", database = SYSTEM_DATABASE_NAME)
+    assertCorrectDefaultMap(
+      sortedRes(1),
+      "system-transaction-",
+      username,
+      "SHOW DATABASES",
+      database = SYSTEM_DATABASE_NAME
+    )
   }
 
   test("Should only show given transactions") {
@@ -152,7 +170,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectDefaultMap(sortedRes.head, user2Id, username2, user2Query)
     assertCorrectDefaultMap(sortedRes(1), user1Id, username, user1Query)
   }
@@ -173,7 +192,13 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
       // THEN
       result should have size 1
-      assertCorrectDefaultMap(result.head, "system-transaction-", "", "SHOW TRANSACTIONS", database = SYSTEM_DATABASE_NAME)
+      assertCorrectDefaultMap(
+        result.head,
+        "system-transaction-",
+        "",
+        "SHOW TRANSACTIONS",
+        database = SYSTEM_DATABASE_NAME
+      )
     }
   }
 
@@ -189,14 +214,23 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN
     selectDatabase(SYSTEM_DATABASE_NAME)
     val res = execute("SHOW TRANSACTIONS").toList
-    val result = res.filter(m => !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals("")) // remove possible random system transactions from parallel tests/set-up
+    val result = res.filter(m =>
+      !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals("")
+    ) // remove possible random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-", username, unwindQuery)
-    assertCorrectDefaultMap(sortedRes(1), "system-transaction-", "", "SHOW TRANSACTIONS", database = SYSTEM_DATABASE_NAME)
+    assertCorrectDefaultMap(
+      sortedRes(1),
+      "system-transaction-",
+      "",
+      "SHOW TRANSACTIONS",
+      database = SYSTEM_DATABASE_NAME
+    )
   }
 
   test("Should only show given transactions when executing on system database") {
@@ -214,7 +248,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectDefaultMap(sortedRes.head, user2Id, username2, user2Query)
     assertCorrectDefaultMap(sortedRes(1), user1Id, username, user1Query)
   }
@@ -271,14 +306,25 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN
     selectDatabase(DEFAULT_DATABASE_NAME)
     val res = executeAs(showUser, password, "SHOW TRANSACTIONS").toList
-    val result = res.filter(m => !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals(username2)) // remove possible random system transactions from parallel tests/set-up
+    val result = res.filter(m =>
+      !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals(
+        username2
+      )
+    ) // remove possible random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 4
-    val sortedRes = result.sortBy(m => m("currentQuery").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("currentQuery").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-", username2, user2Query1)
-    assertCorrectDefaultMap(sortedRes(1), "system-transaction-", username2, user2Query2, database = SYSTEM_DATABASE_NAME)
+    assertCorrectDefaultMap(
+      sortedRes(1),
+      "system-transaction-",
+      username2,
+      user2Query2,
+      database = SYSTEM_DATABASE_NAME
+    )
     assertCorrectDefaultMap(sortedRes(2), "neo4j-transaction-", showUser, "SHOW TRANSACTIONS")
     assertCorrectDefaultMap(sortedRes(3), "neo4j-transaction-", username, user1Query)
   }
@@ -329,7 +375,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN
     val user1Id = getTransactionIdExecutingQuery(user1Query)
     val user2Id = getTransactionIdExecutingQuery(user2Query1)
-    val result = execute(s"SHOW TRANSACTIONS '$user1Id', '$user2Id' WHERE transactionId = '$user2Id' OR transactionId STARTS WITH 'system-transaction-'").toList
+    val result = execute(
+      s"SHOW TRANSACTIONS '$user1Id', '$user2Id' WHERE transactionId = '$user2Id' OR transactionId STARTS WITH 'system-transaction-'"
+    ).toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -370,15 +418,28 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN
     selectDatabase(DEFAULT_DATABASE_NAME)
     val res = execute("SHOW TRANSACTIONS YIELD *").toList
-    val result = res.filter(m => !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals(username)) // remove possible random system transactions from parallel tests/set-up
+    val result = res.filter(m =>
+      !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals(
+        username
+      )
+    ) // remove possible random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectFullMap(sortedRes.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *")
-    assertCorrectFullMap(sortedRes(1), "system-transaction-", username, userQuery, database = SYSTEM_DATABASE_NAME, planner = "administration",
-      runtime = "system", queryAllocatedBytesIsNull = true) // we don't track queryAllocatedBytes for system queries
+    assertCorrectFullMap(
+      sortedRes(1),
+      "system-transaction-",
+      username,
+      userQuery,
+      database = SYSTEM_DATABASE_NAME,
+      planner = "administration",
+      runtime = "system",
+      queryAllocatedBytesIsNull = true
+    ) // we don't track queryAllocatedBytes for system queries
   }
 
   test("Should show given transactions with YIELD *") {
@@ -395,7 +456,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectFullMap(sortedRes.head, user2Id, username2, user2Query)
     assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query)
   }
@@ -415,11 +477,15 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN
     val showQuery = "SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime"
     val res = execute(showQuery).toList
-    val result = res.filterNot(m => m("transactionId").asInstanceOf[String].startsWith("system")) // remove random system transactions from parallel tests/set-up
+    val result =
+      res.filterNot(m =>
+        m("transactionId").asInstanceOf[String].startsWith("system")
+      ) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     sortedRes should be(List(
       Map("transactionId" -> unwindId, "currentQuery" -> unwindQuery, "runtime" -> "interpreted"),
       Map("transactionId" -> showId, "currentQuery" -> showQuery, "runtime" -> "interpreted")
@@ -435,11 +501,13 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN
     val user1Id = getTransactionIdExecutingQuery(user1Query)
     val user2Id = getTransactionIdExecutingQuery(user2Query)
-    val result = execute(s"SHOW TRANSACTIONS '$user2Id', '$user1Id', '$user1Id' YIELD transactionId, currentQuery, runtime").toList
+    val result =
+      execute(s"SHOW TRANSACTIONS '$user2Id', '$user1Id', '$user1Id' YIELD transactionId, currentQuery, runtime").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     sortedRes should be(List(
       Map("transactionId" -> user1Id, "currentQuery" -> user1Query, "runtime" -> "interpreted"),
       Map("transactionId" -> user2Id, "currentQuery" -> user2Query, "runtime" -> "interpreted")
@@ -460,7 +528,10 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     val res = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId ASC").toList
-    val result = res.filterNot(m => m("transactionId").asInstanceOf[String].startsWith("system")) // remove random system transactions from parallel tests/set-up
+    val result =
+      res.filterNot(m =>
+        m("transactionId").asInstanceOf[String].startsWith("system")
+      ) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -484,7 +555,10 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     val res = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId DESC").toList
-    val result = res.filterNot(m => m("transactionId").asInstanceOf[String].startsWith("system")) // remove random system transactions from parallel tests/set-up
+    val result =
+      res.filterNot(m =>
+        m("transactionId").asInstanceOf[String].startsWith("system")
+      ) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -508,7 +582,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectFullMap(sortedRes.head, user2Id, username2, user2Query)
     assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query)
   }
@@ -522,11 +597,14 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val user2Id = getTransactionIdExecutingQuery(user2Query)
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime, username WHERE runtime = 'interpreted' AND username <> ''").toList
+    val result = execute(
+      "SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime, username WHERE runtime = 'interpreted' AND username <> ''"
+    ).toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     sortedRes should be(List(
       Map("transactionId" -> user1Id, "currentQuery" -> user1Query, "username" -> username, "runtime" -> "interpreted"),
       Map("transactionId" -> user2Id, "currentQuery" -> user2Query, "username" -> username2, "runtime" -> "interpreted")
@@ -549,11 +627,13 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
         |WHERE runtime = 'interpreted'
         |AND username <> ''
         |RETURN transactionId, left(currentQuery, 5) AS shortQuery"""
-        .stripMargin).toList
+        .stripMargin
+    ).toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+    val sortedRes =
+      result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     sortedRes should be(List(
       Map("transactionId" -> user1Id, "shortQuery" -> user1Query.substring(0, 5)),
       Map("transactionId" -> user2Id, "shortQuery" -> user2Query.substring(0, 5))
@@ -576,7 +656,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
     val matchId = getTransactionIdExecutingQuery(matchQuery)
-    val result = execute("SHOW TRANSACTIONS YIELD transactionId AS txId, runtime, username ORDER BY txId SKIP 1 LIMIT 5 WHERE runtime = 'interpreted' AND username <> '' RETURN txId").toList
+    val result = execute(
+      "SHOW TRANSACTIONS YIELD transactionId AS txId, runtime, username ORDER BY txId SKIP 1 LIMIT 5 WHERE runtime = 'interpreted' AND username <> '' RETURN txId"
+    ).toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -607,7 +689,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN (WHERE to remove random system transactions from parallel tests/set-up)
     selectDatabase(DEFAULT_DATABASE_NAME)
-    val result = execute(s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId DESC WHERE database <> '$SYSTEM_DATABASE_NAME' OR username = '$username2' RETURN transactionId, database ORDER BY database ASC")
+    val result = execute(
+      s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId DESC WHERE database <> '$SYSTEM_DATABASE_NAME' OR username = '$username2' RETURN transactionId, database ORDER BY database ASC"
+    )
     val resultList = result.toList
     val planDescr = result.executionPlanDescription()
     latch.finishAndWaitForAllToFinish()
@@ -634,7 +718,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val showId = s"neo4j-transaction-$showIdNumber"
 
     // WHEN (WHERE to remove random system transactions from parallel tests/set-up)
-    val result = execute(s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId WHERE database <> '$SYSTEM_DATABASE_NAME' RETURN collect(transactionId) AS txIds")
+    val result = execute(
+      s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId WHERE database <> '$SYSTEM_DATABASE_NAME' RETURN collect(transactionId) AS txIds"
+    )
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -651,7 +737,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN: the query is rewritten to include WITH (splitting the aggregation)
     // (WHERE to remove random system transactions from parallel tests/set-up)
-    val result = execute(s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId WHERE database <> '$SYSTEM_DATABASE_NAME' RETURN size(collect(transactionId)) AS numTx")
+    val result = execute(
+      s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId WHERE database <> '$SYSTEM_DATABASE_NAME' RETURN size(collect(transactionId)) AS numTx"
+    )
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -669,7 +757,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN: the query is rewritten to include WITH (splitting the aggregation)
     // (WHERE to remove random system transactions from parallel tests/set-up)
     selectDatabase(SYSTEM_DATABASE_NAME)
-    val result = execute(s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId WHERE database <> '$SYSTEM_DATABASE_NAME' OR username = '' RETURN size(collect(transactionId)) AS numTx")
+    val result = execute(
+      s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId WHERE database <> '$SYSTEM_DATABASE_NAME' OR username = '' RETURN size(collect(transactionId)) AS numTx"
+    )
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -693,7 +783,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute(s"TERMINATE TRANSACTION '$unwindTransactionId'").toList
 
       // THEN
-      result should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username)))
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "transactionId" -> unwindTransactionId,
+        "username" -> username
+      )))
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -704,9 +798,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute(
         s"""SHOW TRANSACTIONS
            |WHERE database = '$SYSTEM_DATABASE_NAME' AND username = '$username'
-           |""".stripMargin)
+           |""".stripMargin
+      )
 
-      if (result.isEmpty) throw new RuntimeException(s"No queries found for user '$username' on database '$SYSTEM_DATABASE_NAME'")
+      if (result.isEmpty)
+        throw new RuntimeException(s"No queries found for user '$username' on database '$SYSTEM_DATABASE_NAME'")
 
       result.columnAs[String]("transactionId").next
     }
@@ -725,7 +821,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute(s"TERMINATE TRANSACTION '$systemTransactionId'").toList
 
       // THEN
-      result should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> systemTransactionId, "username" -> username)))
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "transactionId" -> systemTransactionId,
+        "username" -> username
+      )))
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -753,10 +853,12 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       // WHEN
       val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
       val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
-      val result = execute(s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId', '$matchTransactionId'").toList
+      val result =
+        execute(s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId', '$matchTransactionId'").toList
 
       // THEN
-      val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+      val sortedRes =
+        result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
       sortedRes should be(List(
         Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username),
         Map("message" -> "Transaction terminated.", "transactionId" -> matchTransactionId, "username" -> username2)
@@ -779,11 +881,19 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       // WHEN
       val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
       val resultFirstTerminate = execute(s"TERMINATE TRANSACTION '$unwindTransactionId'").toList
-      resultFirstTerminate should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username)))
+      resultFirstTerminate should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "transactionId" -> unwindTransactionId,
+        "username" -> username
+      )))
 
       // THEN (same behaviour as the procedure)
       val resultSecondTerminate = execute(s"TERMINATE TRANSACTION '$unwindTransactionId'").toList
-      resultSecondTerminate should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username)))
+      resultSecondTerminate should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "transactionId" -> unwindTransactionId,
+        "username" -> username
+      )))
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -794,7 +904,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val result = execute("TERMINATE TRANSACTION 'none-transaction-0'").toList
 
     // THEN
-    result should be(List(Map("message" -> "Transaction not found.", "transactionId" -> "none-transaction-0", "username" -> null)))
+    result should be(List(Map(
+      "message" -> "Transaction not found.",
+      "transactionId" -> "none-transaction-0",
+      "username" -> null
+    )))
   }
 
   test("Should fail to terminate transaction when missing id") {
@@ -804,7 +918,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     }
 
     // THEN
-    exception.getMessage should startWith("Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`")
+    exception.getMessage should startWith(
+      "Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`"
+    )
   }
 
   test("Should terminate transaction when executing on system database") {
@@ -823,7 +939,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute(s"TERMINATE TRANSACTION '$unwindTransactionId'").toList
 
       // THEN
-      result should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username)))
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "transactionId" -> unwindTransactionId,
+        "username" -> username
+      )))
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -844,7 +964,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute("TERMINATE TRANSACTION $id", Map("id" -> unwindTransactionId)).toList
 
       // THEN
-      result should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username)))
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "transactionId" -> unwindTransactionId,
+        "username" -> username
+      )))
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -865,7 +989,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute("TERMINATE TRANSACTION $id", Map("id" -> List(unwindTransactionId))).toList
 
       // THEN
-      result should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username)))
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "transactionId" -> unwindTransactionId,
+        "username" -> username
+      )))
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -887,7 +1015,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = executeAs(username2, password, s"TERMINATE TRANSACTION '$unwindTransactionId'").toList
 
       // THEN
-      result should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username)))
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "transactionId" -> unwindTransactionId,
+        "username" -> username
+      )))
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -907,7 +1039,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute(s"TERMINATE TRANSACTIONS '$unwindTransactionId', '$matchTransactionId' YIELD *").toList
 
       // THEN
-      val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+      val sortedRes =
+        result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
       sortedRes should be(List(
         Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username),
         Map("message" -> "Transaction terminated.", "transactionId" -> matchTransactionId, "username" -> username2)
@@ -922,9 +1055,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute(
         s"""SHOW TRANSACTIONS
            |WHERE database = '$SYSTEM_DATABASE_NAME' AND username = '$username'
-           |""".stripMargin)
+           |""".stripMargin
+      )
 
-      if (result.isEmpty) throw new RuntimeException(s"No queries found for user '$username' on database '$SYSTEM_DATABASE_NAME'")
+      if (result.isEmpty)
+        throw new RuntimeException(s"No queries found for user '$username' on database '$SYSTEM_DATABASE_NAME'")
 
       result.columnAs[String]("transactionId").next
     }
@@ -943,7 +1078,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute(s"TERMINATE TRANSACTION '$systemTransactionId' YIELD *").toList
 
       // THEN
-      result should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> systemTransactionId, "username" -> username)))
+      result should be(List(Map(
+        "message" -> "Transaction terminated.",
+        "transactionId" -> systemTransactionId,
+        "username" -> username
+      )))
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -981,7 +1120,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       selectDatabase(DEFAULT_DATABASE_NAME)
       val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
       val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
-      val result = execute(s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' YIELD * WHERE username = '$username'").toList
+      val result = execute(
+        s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' YIELD * WHERE username = '$username'"
+      ).toList
 
       // THEN
       result should be(List(
@@ -989,7 +1130,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       ))
       // Check that either the transactions are gone or at least marked as terminated,
       // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
-      execute(s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+      execute(
+        s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' WHERE NOT status STARTS WITH 'Terminated'"
+      ) should be(empty)
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -1006,7 +1149,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       selectDatabase(DEFAULT_DATABASE_NAME)
       val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
       val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
-      val result = execute(s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' YIELD message, username WHERE username = '$username'").toList
+      val result = execute(
+        s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' YIELD message, username WHERE username = '$username'"
+      ).toList
 
       // THEN
       result should be(List(
@@ -1014,7 +1159,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       ))
       // Check that either the transactions are gone or at least marked as terminated,
       // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
-      execute(s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+      execute(
+        s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' WHERE NOT status STARTS WITH 'Terminated'"
+      ) should be(empty)
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -1031,7 +1178,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       selectDatabase(DEFAULT_DATABASE_NAME)
       val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
       val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
-      val result = execute(s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' YIELD message, username WHERE username = '$username' RETURN message").toList
+      val result = execute(
+        s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' YIELD message, username WHERE username = '$username' RETURN message"
+      ).toList
 
       // THEN
       result should be(List(
@@ -1039,7 +1188,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       ))
       // Check that either the transactions are gone or at least marked as terminated,
       // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
-      execute(s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+      execute(
+        s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' WHERE NOT status STARTS WITH 'Terminated'"
+      ) should be(empty)
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -1067,14 +1218,17 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
            |YIELD transactionId AS txId, username
            |ORDER BY txId DESC SKIP 1 LIMIT 5
            |WHERE username = '$username'
-           |RETURN txId""".stripMargin).toList
+           |RETURN txId""".stripMargin
+      ).toList
 
       // THEN
       result should have size 1
       result.head("txId") should be(unwindTransactionId)
       // Check that either the transactions are gone or at least marked as terminated,
       // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
-      execute(s"SHOW TRANSACTIONS '$unwindTransactionId', '$matchTransactionId', '$createTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+      execute(
+        s"SHOW TRANSACTIONS '$unwindTransactionId', '$matchTransactionId', '$createTransactionId' WHERE NOT status STARTS WITH 'Terminated'"
+      ) should be(empty)
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -1100,7 +1254,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
            |YIELD *
            |ORDER BY transactionId DESC
            |RETURN transactionId, username
-           |ORDER BY username DESC""".stripMargin)
+           |ORDER BY username DESC""".stripMargin
+      )
       val planDescr = result.executionPlanDescription()
 
       // THEN
@@ -1110,10 +1265,14 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
         Map("transactionId" -> matchTransactionId, "username" -> username2),
         Map("transactionId" -> unwindTransactionId, "username" -> username),
         Map("transactionId" -> createTransactionId, "username" -> username)
-      ).sortBy(m => m("transactionId")).sortBy(m => m("username")).reverse) // order expected by txId DESC, username DESC
+      ).sortBy(m => m("transactionId")).sortBy(m =>
+        m("username")
+      ).reverse) // order expected by txId DESC, username DESC
       // Check that either the transactions are gone or at least marked as terminated,
       // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
-      execute(s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId', '$createTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+      execute(
+        s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId', '$createTransactionId' WHERE NOT status STARTS WITH 'Terminated'"
+      ) should be(empty)
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -1133,13 +1292,16 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val result = execute(
         s"""TERMINATE TRANSACTIONS '$unwindTransactionId', '$matchTransactionId'
            |YIELD transactionId
-           |RETURN size(collect(transactionId)) AS numTx""".stripMargin).toList
+           |RETURN size(collect(transactionId)) AS numTx""".stripMargin
+      ).toList
 
       // THEN
       result should be(List(Map("numTx" -> 2)))
       // Check that either the transactions are gone or at least marked as terminated,
       // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
-      execute(s"SHOW TRANSACTIONS '$unwindTransactionId', '$matchTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+      execute(
+        s"SHOW TRANSACTIONS '$unwindTransactionId', '$matchTransactionId' WHERE NOT status STARTS WITH 'Terminated'"
+      ) should be(empty)
     } finally {
       latch.finishAndWaitForAllToFinish()
     }
@@ -1163,7 +1325,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       }
 
       // THEN
-      exception.getMessage should startWith("`WHERE` is not allowed by itself, please use `TERMINATE TRANSACTION ... YIELD ... WHERE ...` instead")
+      exception.getMessage should startWith(
+        "`WHERE` is not allowed by itself, please use `TERMINATE TRANSACTION ... YIELD ... WHERE ...` instead"
+      )
 
       val res = execute(s"SHOW TRANSACTION '$txId'").toList
       res should have size 1
@@ -1175,16 +1339,22 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   // Help methods
 
-  private def assertCorrectDefaultMap(resultMap: Map[String, AnyRef],
-                                      transactionId: String,
-                                      username: String,
-                                      query: String,
-                                      database: String = DEFAULT_DATABASE_NAME,
-                                      numColumns: Int = 10) = {
+  private def assertCorrectDefaultMap(
+    resultMap: Map[String, AnyRef],
+    transactionId: String,
+    username: String,
+    query: String,
+    database: String = DEFAULT_DATABASE_NAME,
+    numColumns: Int = 10
+  ) = {
     resultMap.keys.size should be(numColumns)
     resultMap("database") should be(database)
-    resultMap("transactionId").asInstanceOf[String] should startWith(transactionId) // not stable on system database, differs among things between running the test on its own and the whole class
-    resultMap("currentQueryId").asInstanceOf[String] should startWith("query-") // not stable, differs among things between running the test on its own and the whole class
+    resultMap("transactionId").asInstanceOf[String] should startWith(
+      transactionId
+    ) // not stable on system database, differs among things between running the test on its own and the whole class
+    resultMap("currentQueryId").asInstanceOf[String] should startWith(
+      "query-"
+    ) // not stable, differs among things between running the test on its own and the whole class
     resultMap("username") should be(username)
     resultMap("currentQuery") should be(query)
     // Default values:
@@ -1196,14 +1366,16 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     resultMap("elapsedTime").isInstanceOf[DurationValue] should be(true)
   }
 
-  private def assertCorrectFullMap(resultMap: Map[String, AnyRef],
-                                   transactionId: String,
-                                   username: String,
-                                   query: String,
-                                   database: String = DEFAULT_DATABASE_NAME,
-                                   planner: String = "idp",
-                                   runtime: String = "interpreted",
-                                   queryAllocatedBytesIsNull: Boolean = false) = {
+  private def assertCorrectFullMap(
+    resultMap: Map[String, AnyRef],
+    transactionId: String,
+    username: String,
+    query: String,
+    database: String = DEFAULT_DATABASE_NAME,
+    planner: String = "idp",
+    runtime: String = "interpreted",
+    queryAllocatedBytesIsNull: Boolean = false
+  ) = {
     assertCorrectDefaultMap(resultMap, transactionId, username, query, database, numColumns = 39)
     resultMap("planner") should be(planner)
     resultMap("runtime") should be(runtime)
@@ -1271,7 +1443,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val result = execute(
       s"""SHOW TRANSACTIONS
          |WHERE currentQuery = '$query'
-         |""".stripMargin)
+         |""".stripMargin
+    )
 
     if (result.isEmpty) throw new RuntimeException(s"Expected query not found: $query")
 
@@ -1304,32 +1477,34 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     private val graphService = new GraphDatabaseCypherService(managementService.database(database))
 
     def execute(username: String, password: String, threading: Threading, query: String): Unit = {
-      val startTransaction = new NamedFunction[LoginContext, Throwable]("threaded-transaction-" + util.Arrays.hashCode(query.toCharArray)) {
-        override def apply(subject: LoginContext): Throwable = try {
-          val tx = graphService.beginTransaction(Type.EXPLICIT, subject)
-
-          try {
-            var result: Result = null
+      val startTransaction =
+        new NamedFunction[LoginContext, Throwable]("threaded-transaction-" + util.Arrays.hashCode(query.toCharArray)) {
+          override def apply(subject: LoginContext): Throwable =
             try {
-              result = tx.execute(query)
-              latch.startAndWaitForAllToStart()
-            } finally {
-              latch.start()
-              latch.finishAndWaitForAllToFinish()
+              val tx = graphService.beginTransaction(Type.EXPLICIT, subject)
+
+              try {
+                var result: Result = null
+                try {
+                  result = tx.execute(query)
+                  latch.startAndWaitForAllToStart()
+                } finally {
+                  latch.start()
+                  latch.finishAndWaitForAllToFinish()
+                }
+                if (result != null) {
+                  result.accept((_: Result.ResultRow) => true)
+                  result.close()
+                }
+                tx.commit()
+                null
+              } catch {
+                case t: Throwable => t
+              } finally {
+                if (tx != null) tx.close()
+              }
             }
-            if (result != null) {
-              result.accept((_: Result.ResultRow) => true)
-              result.close()
-            }
-            tx.commit()
-            null
-          } catch {
-            case t: Throwable => t
-          } finally {
-            if (tx != null) tx.close()
-          }
         }
-      }
       val subject = login(username, password)
       threading.execute(startTransaction, subject)
     }

@@ -24,8 +24,7 @@ package org.neo4j.procedure;
  * query has been terminated by the user or a database administrator or was timed out for some other reason.
  *
  */
-public interface TerminationGuard
-{
+public interface TerminationGuard {
     /**
      * Check that the surrounding executing query has not yet been terminated or timed out. Throws an appropriate
      * exception if it has.

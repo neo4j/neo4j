@@ -27,8 +27,6 @@ import java.lang.annotation.Target;
 /**
  * Used to define a configuration setting as internal.
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( {ElementType.TYPE, ElementType.FIELD} )
-public @interface Internal
-{
-}
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.FIELD})
+public @interface Internal {}

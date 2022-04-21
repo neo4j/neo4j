@@ -89,6 +89,7 @@ import java.time.chrono.ChronoZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Random
@@ -105,15 +106,16 @@ object RuntimeTestSuite {
  *  - executed on a real database
  *  - evaluated by it's results
  */
-abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                           val runtime: CypherRuntime[CONTEXT],
-                                                           workloadMode: Boolean = false)
-  extends CypherFunSuite
-  with AstConstructionTestSupport
-  with RuntimeExecutionSupport[CONTEXT]
-  with GraphCreation[CONTEXT]
-  with BeforeAndAfterEach
-  with Resolver {
+abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  val runtime: CypherRuntime[CONTEXT],
+  workloadMode: Boolean = false
+) extends CypherFunSuite
+    with AstConstructionTestSupport
+    with RuntimeExecutionSupport[CONTEXT]
+    with GraphCreation[CONTEXT]
+    with BeforeAndAfterEach
+    with Resolver {
 
   protected var managementService: DatabaseManagementService = _
   protected var graphDb: GraphDatabaseService = _
@@ -125,27 +127,25 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
   val isParallel: Boolean = runtime.name.toLowerCase == "parallel"
   val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
 
-  protected def restartDB(): Unit =
-  {
+  protected def restartDB(): Unit = {
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
     kernel = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Kernel])
   }
 
-  protected def createRuntimeTestSupport(): Unit =
-  {
+  protected def createRuntimeTestSupport(): Unit = {
     logProvider.clear()
     runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
     runtimeTestSupport.start()
     runtimeTestSupport.startTx()
   }
 
-
-
-  protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
-                                         edition: Edition[CONTEXT],
-                                         workloadMode: Boolean,
-                                         logProvider: InternalLogProvider): RuntimeTestSupport[CONTEXT] = {
+  protected def createRuntimeTestSupport(
+    graphDb: GraphDatabaseService,
+    edition: Edition[CONTEXT],
+    workloadMode: Boolean,
+    logProvider: InternalLogProvider
+  ): RuntimeTestSupport[CONTEXT] = {
     new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions)
   }
 
@@ -189,73 +189,101 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
     TransactionBoundPlanContext.functionSignature(ktx, name)
   }
 
-  def select[X](things: Seq[X],
-                selectivity: Double = 1.0,
-                duplicateProbability: Double = 0.0,
-                nullProbability: Double = 0.0): Seq[X] = {
+  def select[X](
+    things: Seq[X],
+    selectivity: Double = 1.0,
+    duplicateProbability: Double = 0.0,
+    nullProbability: Double = 0.0
+  ): Seq[X] = {
     val rng = new Random(42)
-    for {thing <- things if rng.nextDouble() < selectivity
-         dup <- if (rng.nextDouble() < duplicateProbability) Seq(thing, thing) else Seq(thing)
-         nullifiedDup = if (rng.nextDouble() < nullProbability) null.asInstanceOf[X] else dup
-         } yield nullifiedDup
+    for {
+      thing <- things if rng.nextDouble() < selectivity
+      dup <- if (rng.nextDouble() < duplicateProbability) Seq(thing, thing) else Seq(thing)
+      nullifiedDup = if (rng.nextDouble() < nullProbability) null.asInstanceOf[X] else dup
+    } yield nullifiedDup
   }
 
   // EXECUTE
 
-  override def execute(logicalQuery: LogicalQuery,
-                       runtime: CypherRuntime[CONTEXT],
-                       input: InputDataStream,
-                       subscriber: QuerySubscriber): RuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, input, subscriber)
+  override def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, input, subscriber)
 
-  override def execute(logicalQuery: LogicalQuery,
-                       runtime: CypherRuntime[CONTEXT],
-                       inputStream: InputDataStream): RecordingRuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, inputStream)
+  override def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputStream: InputDataStream
+  ): RecordingRuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, inputStream)
 
-  override def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
-                                                runtime: CypherRuntime[CONTEXT],
-                                                parameters: Map[String, Any] = Map.empty,
-                                                profileAssertion: Option[QueryProfile => Unit] = None
-                                               ): IndexedSeq[Array[AnyValue]] = runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime, parameters, profileAssertion)
+  override def executeAndConsumeTransactionally(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    parameters: Map[String, Any] = Map.empty,
+    profileAssertion: Option[QueryProfile => Unit] = None
+  ): IndexedSeq[Array[AnyValue]] =
+    runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime, parameters, profileAssertion)
 
   override def execute(executablePlan: ExecutionPlan, readOnly: Boolean, implicitTx: Boolean): RecordingRuntimeResult =
     runtimeTestSupport.execute(executablePlan, readOnly, implicitTx)
 
-  override def buildPlan(logicalQuery: LogicalQuery,
-                         runtime: CypherRuntime[CONTEXT]): ExecutionPlan = runtimeTestSupport.buildPlan(logicalQuery, runtime)
+  override def buildPlan(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
+    runtimeTestSupport.buildPlan(logicalQuery, runtime)
 
-  override def buildPlanAndContext(logicalQuery: LogicalQuery,
-                                   runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT) = runtimeTestSupport.buildPlanAndContext(logicalQuery, runtime)
+  override def buildPlanAndContext(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT]
+  ): (ExecutionPlan, CONTEXT) = runtimeTestSupport.buildPlanAndContext(logicalQuery, runtime)
 
-  override def profile(logicalQuery: LogicalQuery,
-                       runtime: CypherRuntime[CONTEXT],
-                       inputDataStream: InputDataStream = NoInput): RecordingRuntimeResult = runtimeTestSupport.profile(logicalQuery.copy(doProfile = true), runtime, inputDataStream)
+  override def profile(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputDataStream: InputDataStream = NoInput
+  ): RecordingRuntimeResult = runtimeTestSupport.profile(logicalQuery.copy(doProfile = true), runtime, inputDataStream)
 
-  override def profile(executablePlan: ExecutionPlan,
-                       inputDataStream: InputDataStream,
-                       readOnly: Boolean): RecordingRuntimeResult = runtimeTestSupport.profile(executablePlan, inputDataStream, readOnly)
+  override def profile(
+    executablePlan: ExecutionPlan,
+    inputDataStream: InputDataStream,
+    readOnly: Boolean
+  ): RecordingRuntimeResult = runtimeTestSupport.profile(executablePlan, inputDataStream, readOnly)
 
-  override def profileNonRecording(logicalQuery: LogicalQuery,
-                                   runtime: CypherRuntime[CONTEXT],
-                                   inputDataStream: InputDataStream = NoInput): NonRecordingRuntimeResult =
+  override def profileNonRecording(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputDataStream: InputDataStream = NoInput
+  ): NonRecordingRuntimeResult =
     runtimeTestSupport.profileNonRecording(logicalQuery.copy(doProfile = true), runtime, inputDataStream)
 
-  override def profileWithSubscriber(logicalQuery: LogicalQuery,
-                                     runtime: CypherRuntime[CONTEXT],
-                                     subscriber: QuerySubscriber,
-                                     inputDataStream: InputDataStream = NoInput): RuntimeResult =
+  override def profileWithSubscriber(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    subscriber: QuerySubscriber,
+    inputDataStream: InputDataStream = NoInput
+  ): RuntimeResult =
     runtimeTestSupport.profileWithSubscriber(logicalQuery, runtime, subscriber, inputDataStream)
 
-  override def executeAndContext(logicalQuery: LogicalQuery,
-                                 runtime: CypherRuntime[CONTEXT],
-                                 input: InputValues
-                                ): (RecordingRuntimeResult, CONTEXT) = runtimeTestSupport.executeAndContext(logicalQuery, runtime, input)
+  override def executeAndContext(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues
+  ): (RecordingRuntimeResult, CONTEXT) = runtimeTestSupport.executeAndContext(logicalQuery, runtime, input)
 
-  override def executeAndExplain(logicalQuery: LogicalQuery,
-                                 runtime: CypherRuntime[CONTEXT],
-                                 input: InputValues
-                                ): (RecordingRuntimeResult, InternalPlanDescription) = runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
+  override def executeAndExplain(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues
+  ): (RecordingRuntimeResult, InternalPlanDescription) =
+    runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
 
-  def printQueryProfile(fileName: String, maxAllocatedMemory: Long, logToStdOut: Boolean, lastAllocation: Long, stackTrace: Option[String]): Unit = {
+  def printQueryProfile(
+    fileName: String,
+    maxAllocatedMemory: Long,
+    logToStdOut: Boolean,
+    lastAllocation: Long,
+    stackTrace: Option[String]
+  ): Unit = {
     val pw = new PrintWriter(new File(fileName))
     val logString = new StringBuilder("Estimation of max allocated memory: ")
     logString.append(maxAllocatedMemory)
@@ -277,11 +305,17 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
     }
   }
 
-  def printQueryProfile(fileName: String, queryProfile: QueryProfile, logToStdOut: Boolean = false, lastAllocation: Long = 0, stackTrace: Option[String] = None): Unit = {
+  def printQueryProfile(
+    fileName: String,
+    queryProfile: QueryProfile,
+    logToStdOut: Boolean = false,
+    lastAllocation: Long = 0,
+    stackTrace: Option[String] = None
+  ): Unit = {
     printQueryProfile(fileName, queryProfile.maxAllocatedMemory(), logToStdOut, lastAllocation, stackTrace)
   }
 
-    // PROCEDURES
+  // PROCEDURES
 
   def registerProcedure(proc: CallableProcedure): Unit = {
     kernel.registerProcedure(proc)
@@ -340,15 +374,15 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
     def withNoUpdates(): RuntimeResultMatcher = withStatistics()
 
     def withStatistics(
-                        nodesCreated: Int = 0,
-                        nodesDeleted: Int = 0,
-                        relationshipsCreated: Int = 0,
-                        relationshipsDeleted: Int = 0,
-                        labelsAdded: Int = 0,
-                        labelsRemoved: Int = 0,
-                        propertiesSet: Int = 0,
-                        transactionsCommitted: Int = 1,
-                      ): RuntimeResultMatcher = {
+      nodesCreated: Int = 0,
+      nodesDeleted: Int = 0,
+      relationshipsCreated: Int = 0,
+      relationshipsDeleted: Int = 0,
+      labelsAdded: Int = 0,
+      labelsRemoved: Int = 0,
+      propertiesSet: Int = 0,
+      transactionsCommitted: Int = 1
+    ): RuntimeResultMatcher = {
       maybeStatistics = Some(new QueryStatisticsMatcher(
         nodesCreated,
         nodesDeleted,
@@ -357,7 +391,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
         labelsAdded,
         labelsRemoved,
         propertiesSet,
-        transactionsCommitted,
+        transactionsCommitted
       ))
       this
     }
@@ -368,7 +402,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
     }
 
     def withLockedRelationships(relationshipId: Set[Long], onlyCheckContains: Boolean = false): RuntimeResultMatcher = {
-      maybeLockedRelationships = Some(new LockResourceMatcher(relationshipId, ResourceTypes.RELATIONSHIP, onlyCheckContains))
+      maybeLockedRelationships =
+        Some(new LockResourceMatcher(relationshipId, ResourceTypes.RELATIONSHIP, onlyCheckContains))
       this
     }
 
@@ -379,7 +414,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
 
     def withSingleRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values: _*))
 
-    def withRows(rows: Iterable[Array[_]], listInAnyOrder: Boolean = false): RuntimeResultMatcher = withRows(inAnyOrder(rows, listInAnyOrder))
+    def withRows(rows: Iterable[Array[_]], listInAnyOrder: Boolean = false): RuntimeResultMatcher =
+      withRows(inAnyOrder(rows, listInAnyOrder))
 
     def withNoRows(): RuntimeResultMatcher = withRows(NoRowsMatcher)
 
@@ -413,7 +449,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
                       .filter(_.matches == false)
                       .getOrElse {
                         rowsMatcher.matches(columns, rows) match {
-                          case RowsMatch => MatchResult(matches = true, "", "")
+                          case RowsMatch          => MatchResult(matches = true, "", "")
                           case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
                         }
                       }
@@ -427,8 +463,10 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
   /*
    * locks.accept() does not keep the order of when the locks was taken, therefore we don't assert on the order of the locks.
    */
-  class LockResourceMatcher(expectedLocked: Set[Long], expectedResourceType: ResourceType, onlyCheckContains: Boolean) extends Matcher[Unit] {
-     override def apply(left: Unit): MatchResult = {
+  class LockResourceMatcher(expectedLocked: Set[Long], expectedResourceType: ResourceType, onlyCheckContains: Boolean)
+      extends Matcher[Unit] {
+
+    override def apply(left: Unit): MatchResult = {
       val locksList = new util.ArrayList[Long]
       runtimeTestSupport.locks.accept(
         (_: LockType, resourceType: ResourceType, _: Long, resourceId: Long, _: String, _: Long, _: Long) => {
@@ -437,7 +475,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
       )
 
       val actualLocked = locksList.asScala.toSet
-      val setsMatches = if ( onlyCheckContains ) expectedLocked.subsetOf(actualLocked) else actualLocked == expectedLocked
+      val setsMatches = if (onlyCheckContains) expectedLocked.subsetOf(actualLocked) else actualLocked == expectedLocked
       MatchResult(
         matches = setsMatches,
         rawFailureMessage = s"expected ${expectedResourceType.name} locked=$expectedLocked but was $actualLocked",
@@ -449,8 +487,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
   class LockMatcher(expectedLocked: Seq[(LockType, ResourceType)]) extends Matcher[Unit] {
 
     private val ordering = new Ordering[(LockType, ResourceType)] {
-      override def compare(x: (LockType, ResourceType),
-                           y: (LockType, ResourceType)): Int = {
+
+      override def compare(x: (LockType, ResourceType), y: (LockType, ResourceType)): Int = {
         val (xLock, xType) = x
         val (yLock, yType) = y
         val comparison = xLock.compareTo(yLock)
@@ -461,11 +499,11 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
         }
       }
     }
+
     override def apply(left: Unit): MatchResult = {
       val actualLockList = ArrayBuffer.empty[(LockType, ResourceType)]
       runtimeTestSupport.locks.accept(
         (lockType: LockType, resourceType: ResourceType, _: Long, _: Long, _: String, _: Long, _: Long) =>
-
           actualLockList.append((lockType, resourceType))
       )
 
@@ -478,15 +516,15 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
   }
 
   class QueryStatisticsMatcher(
-                                nodesCreated: Int,
-                                nodesDeleted: Int,
-                                relationshipsCreated: Int,
-                                relationshipsDeleted: Int,
-                                labelsAdded: Int,
-                                labelsRemoved: Int,
-                                propertiesSet: Int,
-                                transactionsCommitted: Int,
-                              ) extends Matcher[QueryStatistics] {
+    nodesCreated: Int,
+    nodesDeleted: Int,
+    relationshipsCreated: Int,
+    relationshipsDeleted: Int,
+    labelsAdded: Int,
+    labelsRemoved: Int,
+    propertiesSet: Int,
+    transactionsCommitted: Int
+  ) extends Matcher[QueryStatistics] {
 
     override def apply(left: QueryStatistics): MatchResult = {
       def transactionsCommittedDoesNotMatch: Option[MatchResult] = {
@@ -494,13 +532,21 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
           case qs: org.neo4j.cypher.internal.runtime.QueryStatistics =>
             // FIXME: we currently do not account for the outermost transaction because that is out of cypher's control
             if (transactionsCommitted - 1 != qs.transactionsCommitted) {
-              Some(MatchResult(matches = false, s"expected transactionsCommitted=$transactionsCommitted but was ${qs.transactionsCommitted + 1}", ""))
+              Some(MatchResult(
+                matches = false,
+                s"expected transactionsCommitted=$transactionsCommitted but was ${qs.transactionsCommitted + 1}",
+                ""
+              ))
             } else {
               None
             }
           case _ =>
             if (transactionsCommitted != 1) {
-              Some(MatchResult(matches = false, s"expected transactionsCommitted=$transactionsCommitted but can only match on org.neo4j.cypher.internal.runtime.QueryStatistics and was $left", ""))
+              Some(MatchResult(
+                matches = false,
+                s"expected transactionsCommitted=$transactionsCommitted but can only match on org.neo4j.cypher.internal.runtime.QueryStatistics and was $left",
+                ""
+              ))
             } else {
               None
             }
@@ -512,16 +558,24 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
       } else if (nodesDeleted != left.getNodesDeleted) {
         MatchResult(matches = false, s"expected nodesDeleted=$nodesDeleted but was ${left.getNodesDeleted}", "")
       } else if (relationshipsCreated != left.getRelationshipsCreated) {
-        MatchResult(matches = false, s"expected relationshipCreated=$relationshipsCreated but was ${left.getRelationshipsCreated}", "")
+        MatchResult(
+          matches = false,
+          s"expected relationshipCreated=$relationshipsCreated but was ${left.getRelationshipsCreated}",
+          ""
+        )
       } else if (relationshipsDeleted != left.getRelationshipsDeleted) {
-        MatchResult(matches = false, s"expected relationshipsDeleted=$relationshipsDeleted but was ${left.getRelationshipsDeleted}", "")
+        MatchResult(
+          matches = false,
+          s"expected relationshipsDeleted=$relationshipsDeleted but was ${left.getRelationshipsDeleted}",
+          ""
+        )
       } else if (labelsAdded != left.getLabelsAdded) {
         MatchResult(matches = false, s"expected labelsAdded=$labelsAdded but was ${left.getLabelsAdded}", "")
       } else if (labelsRemoved != left.getLabelsRemoved) {
         MatchResult(matches = false, s"expected labelsRemoved=$labelsRemoved but was ${left.getLabelsRemoved}", "")
       } else if (propertiesSet != left.getPropertiesSet) {
         MatchResult(matches = false, s"expected propertiesSet=$propertiesSet but was ${left.getPropertiesSet}", "")
-      } else if (transactionsCommittedDoesNotMatch.nonEmpty)  {
+      } else if (transactionsCommittedDoesNotMatch.nonEmpty) {
         transactionsCommittedDoesNotMatch.get
       } else {
         MatchResult(matches = true, "", "")
@@ -585,7 +639,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
 
   def groupedBy(columns: String*): RowOrderMatcher = new GroupBy(None, None, columns: _*)
 
-  def groupedBy(nGroups: Int, groupSize: Int, columns: String*): RowOrderMatcher = new GroupBy(Some(nGroups), Some(groupSize), columns: _*)
+  def groupedBy(nGroups: Int, groupSize: Int, columns: String*): RowOrderMatcher =
+    new GroupBy(Some(nGroups), Some(groupSize), columns: _*)
 
   def sortedAsc(column: String): RowOrderMatcher = new Ascending(column)
 
@@ -595,8 +650,9 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
 
   def failProbe(failAfterRowCount: Int): Prober.Probe = new Prober.Probe {
     val c = new AtomicInteger(0)
+
     override def onRow(row: AnyRef): Unit = {
-      if ( c.incrementAndGet() == failAfterRowCount ) {
+      if (c.incrementAndGet() == failAfterRowCount) {
         throw new RuntimeException(s"Probe failed as expected (row count=$c)")
       }
     }
@@ -604,26 +660,32 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
 
   def toExpression(value: Any): Expression = {
     def resolve(function: FunctionInvocation): Expression = {
-      if (function.needsToBeResolved) ResolvedFunctionInvocation(functionSignature)(function).coerceArguments else function
+      if (function.needsToBeResolved) ResolvedFunctionInvocation(functionSignature)(function).coerceArguments
+      else function
     }
     val valueToConvert = value match {
       case neo4jValue: Value => neo4jValue.asObject()
-      case other => other
+      case other             => other
     }
     valueToConvert match {
-      case date: ChronoLocalDate => resolve(function("date", literalString(date.format(DateTimeFormatter.ISO_LOCAL_DATE))))
-      case dateTime: ChronoLocalDateTime[_] => resolve(function("localdatetime", literalString(dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-      case time: LocalTime => resolve(function("localtime", literalString(time.format(DateTimeFormatter.ISO_LOCAL_TIME))))
+      case date: ChronoLocalDate =>
+        resolve(function("date", literalString(date.format(DateTimeFormatter.ISO_LOCAL_DATE))))
+      case dateTime: ChronoLocalDateTime[_] =>
+        resolve(function("localdatetime", literalString(dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
+      case time: LocalTime =>
+        resolve(function("localtime", literalString(time.format(DateTimeFormatter.ISO_LOCAL_TIME))))
       case duration: DurationValue => resolve(function("duration", literalString(duration.prettyPrint())))
-      case offsetTime: OffsetTime => resolve(function("time", literalString(offsetTime.format(DateTimeFormatter.ISO_OFFSET_TIME))))
-      case dateTime: ChronoZonedDateTime[_] => resolve(function("datetime", literalString(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))))
+      case offsetTime: OffsetTime =>
+        resolve(function("time", literalString(offsetTime.format(DateTimeFormatter.ISO_OFFSET_TIME))))
+      case dateTime: ChronoZonedDateTime[_] =>
+        resolve(function("datetime", literalString(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))))
       case point: PointValue =>
         val coordExpr = point.coordinate().toSeq.zip(Seq("x", "y", "z"))
           .map { case (value, key) => key -> literal(value) }
         val crsExpr = "crs" -> literal(point.getCRS.getType)
-        resolve(function("point", mapOf((coordExpr :+ crsExpr):_*)))
-      case array: Array[_] => listOf(array.map(toExpression):_*)
-      case other => literal(other)
+        resolve(function("point", mapOf((coordExpr :+ crsExpr): _*)))
+      case array: Array[_] => listOf(array.map(toExpression): _*)
+      case other           => literal(other)
     }
   }
 }
@@ -631,10 +693,12 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[
 /**
  * Used for the general case where you want to clear the entire database before each test.
  */
-abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                           runtime: CypherRuntime[CONTEXT],
-                                                           workloadMode: Boolean = false)
-  extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode) {
+abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  workloadMode: Boolean = false
+) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode) {
+
   override protected def beforeEach(): Unit = {
     DebugLog.beginTime()
     restartDB()
@@ -651,7 +715,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 }
 
-
 /**
  * Used for the case when you want create the database once and run multiple test
  * against that database. Useful for when a bigger database is required.
@@ -659,16 +722,19 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
  * NOTE: The database is not cleared between tests so if any tests in the extending class are
  * doing updates these will be visible to other tests, use with caution.
  */
-abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                           runtime: CypherRuntime[CONTEXT],
-                                                           workloadMode: Boolean = false) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode)
-                                                           with BeforeAndAfterAll {
+abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  workloadMode: Boolean = false
+) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode)
+    with BeforeAndAfterAll {
 
   override protected def beforeEach(): Unit = {
     DebugLog.beginTime()
     createRuntimeTestSupport()
     super.beforeEach()
   }
+
   override protected def afterEach(): Unit = {
     runtimeTestSupport.stopTx()
     DebugLog.log("")
@@ -694,6 +760,7 @@ abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: E
 }
 
 case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {
+
   def awaitAll(): IndexedSeq[Array[AnyValue]] = {
     runtimeResult.consumeAll()
     runtimeResult.close()
@@ -706,11 +773,16 @@ case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySu
 }
 
 object RecordingRuntimeResult {
+
   def apply(runtimeResult: RuntimeResult, testSubscriber: TestSubscriber): RecordingRuntimeResult =
     RecordingRuntimeResult(runtimeResult, TestSubscriberWrappingRecordingQuerySubscriber(testSubscriber))
 }
 
-case class NonRecordingRuntimeResult(runtimeResult: RuntimeResult, nonRecordingQuerySubscriber: NonRecordingQuerySubscriber) {
+case class NonRecordingRuntimeResult(
+  runtimeResult: RuntimeResult,
+  nonRecordingQuerySubscriber: NonRecordingQuerySubscriber
+) {
+
   def awaitAll(): Long = {
     runtimeResult.consumeAll()
     runtimeResult.close()
@@ -723,6 +795,7 @@ case class NonRecordingRuntimeResult(runtimeResult: RuntimeResult, nonRecordingQ
 }
 
 case class TestSubscriberRuntimeResult(runtimeResult: RuntimeResult, testSubscriber: TestSubscriber) {
+
   def awaitAll(): IndexedSeq[Array[AnyValue]] = {
     runtimeResult.consumeAll()
     runtimeResult.close()
@@ -735,7 +808,9 @@ case class TestSubscriberRuntimeResult(runtimeResult: RuntimeResult, testSubscri
 
 case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)
 
-case class TestSubscriberWrappingRecordingQuerySubscriber(testSubscriber: TestSubscriber) extends RecordingQuerySubscriber {
+case class TestSubscriberWrappingRecordingQuerySubscriber(testSubscriber: TestSubscriber)
+    extends RecordingQuerySubscriber {
+
   override def getOrThrow: util.List[Array[AnyValue]] = {
     assertNoErrors()
     util.Arrays.asList[Array[AnyValue]](testSubscriber.allSeen.map(_.toArray): _*)

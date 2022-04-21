@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport.input.csv;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
-
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.MultiReadable;
@@ -36,8 +35,7 @@ import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 /**
  * Iterates over groups of input data, each group containing one or more input files. A whole group conforms has each its own header.
  */
-public class CsvGroupInputIterator implements InputIterator
-{
+public class CsvGroupInputIterator implements InputIterator {
     private final Iterator<DataFactory> source;
     private final Header.Factory headerFactory;
     private final IdType idType;
@@ -49,9 +47,15 @@ public class CsvGroupInputIterator implements InputIterator
     private CsvInputIterator current;
     private int groupId;
 
-    public CsvGroupInputIterator( Iterator<DataFactory> source, Header.Factory headerFactory,
-            IdType idType, Configuration config, Collector badCollector, Groups groups, boolean autoSkipHeaders, Monitor monitor )
-    {
+    public CsvGroupInputIterator(
+            Iterator<DataFactory> source,
+            Header.Factory headerFactory,
+            IdType idType,
+            Configuration config,
+            Collector badCollector,
+            Groups groups,
+            boolean autoSkipHeaders,
+            Monitor monitor) {
         this.source = source;
         this.headerFactory = headerFactory;
         this.idType = idType;
@@ -63,34 +67,37 @@ public class CsvGroupInputIterator implements InputIterator
     }
 
     @Override
-    public CsvInputChunkProxy newChunk()
-    {
+    public CsvInputChunkProxy newChunk() {
         return new CsvInputChunkProxy();
     }
 
-    static Extractors extractors( Configuration config )
-    {
-        return new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull() );
+    static Extractors extractors(Configuration config) {
+        return new Extractors(config.arrayDelimiter(), config.emptyQuotedStringsAsNull());
     }
 
     @Override
-    public synchronized boolean next( InputChunk chunk ) throws IOException
-    {
-        while ( true )
-        {
-            if ( current == null )
-            {
-                if ( !source.hasNext() )
-                {
+    public synchronized boolean next(InputChunk chunk) throws IOException {
+        while (true) {
+            if (current == null) {
+                if (!source.hasNext()) {
                     return false;
                 }
-                Data data = source.next().create( config );
-                current = new CsvInputIterator( new MultiReadable( data.stream() ), data.decorator(),
-                        headerFactory, idType, config, groups, badCollector, extractors( config ), groupId++, autoSkipHeaders, monitor );
+                Data data = source.next().create(config);
+                current = new CsvInputIterator(
+                        new MultiReadable(data.stream()),
+                        data.decorator(),
+                        headerFactory,
+                        idType,
+                        config,
+                        groups,
+                        badCollector,
+                        extractors(config),
+                        groupId++,
+                        autoSkipHeaders,
+                        monitor);
             }
 
-            if ( current.next( (CsvInputChunkProxy) chunk ) )
-            {
+            if (current.next((CsvInputChunkProxy) chunk)) {
                 return true;
             }
             current.close();
@@ -99,19 +106,14 @@ public class CsvGroupInputIterator implements InputIterator
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
-            if ( current != null )
-            {
+    public void close() {
+        try {
+            if (current != null) {
                 current.close();
             }
             current = null;
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

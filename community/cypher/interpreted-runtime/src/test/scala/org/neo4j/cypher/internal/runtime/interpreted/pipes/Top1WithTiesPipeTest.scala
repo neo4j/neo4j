@@ -39,7 +39,9 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     val source = new FakePipe(list)
     val sortPipe = Top1WithTiesPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(Map("x" -> "A")))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(Map("x" -> "A"))
+    )
   }
 
   test("two ties for the first place are all returned") {
@@ -55,13 +57,14 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
       Map("x" -> 1, "y" -> 1),
-      Map("x" -> 1, "y" -> 2)))
+      Map("x" -> 1, "y" -> 2)
+    ))
   }
 
   test("if only null is present, it should be returned") {
     val input = List(
-      Map[String,Any]("x" -> null, "y" -> 1),
-      Map[String,Any]("x" -> null, "y" -> 2)
+      Map[String, Any]("x" -> null, "y" -> 1),
+      Map[String, Any]("x" -> null, "y" -> 2)
     ).iterator
 
     val source = new FakePipe(input)
@@ -69,28 +72,30 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
       Map("x" -> null, "y" -> 1),
-      Map("x" -> null, "y" -> 2)))
+      Map("x" -> null, "y" -> 2)
+    ))
   }
 
   test("null should not be returned if other values are present") {
     val input = List(
-      Map[String,Any]("x" -> 1, "y" -> 1),
-      Map[String,Any]("x" -> null, "y" -> 2),
-      Map[String,Any]("x" -> 2, "y" -> 3)
+      Map[String, Any]("x" -> 1, "y" -> 1),
+      Map[String, Any]("x" -> null, "y" -> 2),
+      Map[String, Any]("x" -> 2, "y" -> 3)
     ).iterator
 
     val source = new FakePipe(input)
     val sortPipe = Top1WithTiesPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> 1, "y" -> 1)))
+      Map("x" -> 1, "y" -> 1)
+    ))
   }
 
   test("comparing arrays") {
     val smaller = Array(1, 2)
     val input = List(
-      Map[String,Any]("x" -> Array(3,4), "y" -> 2),
-      Map[String,Any]("x" -> smaller, "y" -> 1)
+      Map[String, Any]("x" -> Array(3, 4), "y" -> 2),
+      Map[String, Any]("x" -> smaller, "y" -> 1)
     ).iterator
 
     val source = new FakePipe(input)
@@ -103,8 +108,8 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
 
   test("comparing numbers and strings") {
     val input = List(
-      Map[String,Any]("x" -> 1, "y" -> 1),
-      Map[String,Any]("x" -> "A", "y" -> 2)
+      Map[String, Any]("x" -> 1, "y" -> 1),
+      Map[String, Any]("x" -> "A", "y" -> 2)
     ).iterator
 
     val source = new FakePipe(input)

@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
-
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -29,12 +28,12 @@ import org.neo4j.storageengine.api.StorageCommand;
  * Keeper of state that is about to be committed. That state can be {@link #extractCommands(Collection, MemoryTracker) extracted}
  * into a list of {@link Command commands}.
  */
-public interface RecordState
-{
+public interface RecordState {
     /**
      * Extracts this record state in the form of {@link Command commands} into the supplied {@code target} list.
      * @param target list that commands will be added into.
      * @throws TransactionFailureException if the state is invalid or not applicable.
      */
-    void extractCommands( Collection<StorageCommand> target, MemoryTracker memoryTracker ) throws TransactionFailureException;
+    void extractCommands(Collection<StorageCommand> target, MemoryTracker memoryTracker)
+            throws TransactionFailureException;
 }

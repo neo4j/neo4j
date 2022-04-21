@@ -26,8 +26,7 @@ import org.neo4j.graphdb.Direction;
  * the next step for. For example an alternating side selector will return alternating
  * start side and end side as long as each side hasn't reached it's end.
  */
-public interface SideSelector extends BranchSelector
-{
+public interface SideSelector extends BranchSelector {
     /**
      * @return the side to traverse next on, {@link Direction#OUTGOING} for start side
      * and {@link Direction#INCOMING} for end side.

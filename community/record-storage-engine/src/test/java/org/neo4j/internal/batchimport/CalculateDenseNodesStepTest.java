@@ -19,15 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.internal.batchimport.staging.SimpleStageControl;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -35,49 +26,65 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
-class CalculateDenseNodesStepTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.internal.batchimport.staging.SimpleStageControl;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+
+class CalculateDenseNodesStepTest {
     @Test
-    void shouldNotProcessLoopsTwice() throws Exception
-    {
+    void shouldNotProcessLoopsTwice() throws Exception {
         // GIVEN
-        NodeRelationshipCache cache = mock( NodeRelationshipCache.class );
-        try ( CalculateDenseNodesStep step = new CalculateDenseNodesStep( new SimpleStageControl(), Configuration.DEFAULT, cache,
-                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ) )
-        {
-            step.start( 0 );
-            step.processors( 4 );
+        NodeRelationshipCache cache = mock(NodeRelationshipCache.class);
+        try (CalculateDenseNodesStep step = new CalculateDenseNodesStep(
+                new SimpleStageControl(),
+                Configuration.DEFAULT,
+                cache,
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY))) {
+            step.start(0);
+            step.processors(4);
 
             // WHEN
             long id = 0;
             RelationshipRecord[] batch = batch(
-                    relationship( id++, 1, 5 ),
-                    relationship( id++, 3, 10 ),
-                    relationship( id++, 2, 2 ), // <-- the loop
-                    relationship( id, 4, 1 ) );
-            step.receive( 0, batch );
+                    relationship(id++, 1, 5),
+                    relationship(id++, 3, 10),
+                    relationship(id++, 2, 2), // <-- the loop
+                    relationship(id, 4, 1));
+            step.receive(0, batch);
             step.endOfUpstream();
             step.awaitCompleted();
 
             // THEN
-            verify( cache, times( 2 ) ).incrementCount( eq( 1L ) );
-            verify( cache ).incrementCount( eq( 2L ) );
-            verify( cache ).incrementCount( eq( 3L ) );
-            verify( cache ).incrementCount( eq( 4L ) );
-            verify( cache ).incrementCount( eq( 5L ) );
-            verify( cache ).incrementCount( eq( 10L ) );
+            verify(cache, times(2)).incrementCount(eq(1L));
+            verify(cache).incrementCount(eq(2L));
+            verify(cache).incrementCount(eq(3L));
+            verify(cache).incrementCount(eq(4L));
+            verify(cache).incrementCount(eq(5L));
+            verify(cache).incrementCount(eq(10L));
         }
     }
 
-    private static RelationshipRecord[] batch( RelationshipRecord... relationships )
-    {
+    private static RelationshipRecord[] batch(RelationshipRecord... relationships) {
         return relationships;
     }
 
-    private static RelationshipRecord relationship( long id, long startNodeId, long endNodeId )
-    {
-        return new RelationshipRecord( id ).initialize( true, Record.NO_NEXT_PROPERTY.longValue(),
-                startNodeId, endNodeId, 0, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), false, false );
+    private static RelationshipRecord relationship(long id, long startNodeId, long endNodeId) {
+        return new RelationshipRecord(id)
+                .initialize(
+                        true,
+                        Record.NO_NEXT_PROPERTY.longValue(),
+                        startNodeId,
+                        endNodeId,
+                        0,
+                        NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue(),
+                        false,
+                        false);
     }
 }

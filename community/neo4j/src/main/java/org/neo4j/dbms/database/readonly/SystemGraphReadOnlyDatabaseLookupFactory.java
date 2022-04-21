@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.neo4j.dbms.database.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -33,94 +32,80 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyDatabases.LookupFactory
-{
+public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyDatabases.LookupFactory {
     private final DatabaseManager<?> databaseManager;
     private final InternalLog log;
 
     private volatile SystemGraphLookup previousLookup;
 
-    public SystemGraphReadOnlyDatabaseLookupFactory( DatabaseManager<?> databaseManager, InternalLogProvider logProvider )
-    {
+    public SystemGraphReadOnlyDatabaseLookupFactory(
+            DatabaseManager<?> databaseManager, InternalLogProvider logProvider) {
         this.databaseManager = databaseManager;
         this.previousLookup = SystemGraphLookup.ALWAYS_READONLY;
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
     }
 
-    private Optional<GraphDatabaseFacade> systemDatabase()
-    {
-        var systemDb = databaseManager.getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID );
-        var started = systemDb.map( db -> db.databaseFacade().isAvailable() ).orElse( false );
+    private Optional<GraphDatabaseFacade> systemDatabase() {
+        var systemDb = databaseManager.getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID);
+        var started = systemDb.map(db -> db.databaseFacade().isAvailable()).orElse(false);
 
-        if ( started )
-        {
-            return systemDb.map( DatabaseContext::databaseFacade );
+        if (started) {
+            return systemDb.map(DatabaseContext::databaseFacade);
         }
         return Optional.empty();
     }
 
     @Override
-    public ReadOnlyDatabases.Lookup lookupReadOnlyDatabases()
-    {
+    public ReadOnlyDatabases.Lookup lookupReadOnlyDatabases() {
         var previous = previousLookup;
         var next = previous;
 
-        try
-        {
+        try {
             next = systemDatabase()
-                    .map( this::lookupReadOnlyDatabases )
-                    .map( dbs -> new SystemGraphLookup( dbs, false ) )
-                    .orElse( previous );
-        }
-        catch ( Exception e )
-        {
-            log.warn( "Unable to lookup readonly databases from the system database due to error!" +
-                      " Using previous lookup %s.%nUnderlying error: %s", previous, e.getMessage() );
+                    .map(this::lookupReadOnlyDatabases)
+                    .map(dbs -> new SystemGraphLookup(dbs, false))
+                    .orElse(previous);
+        } catch (Exception e) {
+            log.warn(
+                    "Unable to lookup readonly databases from the system database due to error!"
+                            + " Using previous lookup %s.%nUnderlying error: %s",
+                    previous, e.getMessage());
         }
 
         this.previousLookup = next;
         return next;
     }
 
-    private Set<NamedDatabaseId> lookupReadOnlyDatabases( GraphDatabaseFacade db )
-    {
-        try ( var tx = db.beginTx() )
-        {
-            var model = new CommunityTopologyGraphDbmsModel( tx );
+    private Set<NamedDatabaseId> lookupReadOnlyDatabases(GraphDatabaseFacade db) {
+        try (var tx = db.beginTx()) {
+            var model = new CommunityTopologyGraphDbmsModel(tx);
             var databaseAccess = model.getAllDatabaseAccess();
             return databaseAccess.entrySet().stream()
-                                 .filter( e -> e.getValue() == TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY )
-                                 .map( Map.Entry::getKey )
-                                 .collect( Collectors.toUnmodifiableSet() );
+                    .filter(e -> e.getValue() == TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY)
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toUnmodifiableSet());
         }
     }
 
-    private static class SystemGraphLookup implements ReadOnlyDatabases.Lookup
-    {
-        static final SystemGraphLookup ALWAYS_READONLY = new SystemGraphLookup( Set.of(), true );
+    private static class SystemGraphLookup implements ReadOnlyDatabases.Lookup {
+        static final SystemGraphLookup ALWAYS_READONLY = new SystemGraphLookup(Set.of(), true);
 
         private final Set<NamedDatabaseId> lookup;
         private final boolean alwaysReadOnly;
 
-        SystemGraphLookup( Set<NamedDatabaseId> lookup, boolean alwaysReadOnly )
-        {
+        SystemGraphLookup(Set<NamedDatabaseId> lookup, boolean alwaysReadOnly) {
             this.lookup = lookup;
             this.alwaysReadOnly = alwaysReadOnly;
         }
 
         @Override
-        public boolean databaseIsReadOnly( NamedDatabaseId databaseId )
-        {
-            return alwaysReadOnly || lookup.contains( databaseId );
+        public boolean databaseIsReadOnly(NamedDatabaseId databaseId) {
+            return alwaysReadOnly || lookup.contains(databaseId);
         }
 
         @Override
-        public String toString()
-        {
-            return "SystemGraphLookup{" +
-                   "readOnlyDatabases=" + lookup +
-                   ", alwaysReadOnly=" + alwaysReadOnly +
-                   '}';
+        public String toString() {
+            return "SystemGraphLookup{" + "readOnlyDatabases=" + lookup + ", alwaysReadOnly=" + alwaysReadOnly + '}';
         }
     }
 }

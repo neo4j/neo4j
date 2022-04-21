@@ -19,15 +19,17 @@
  */
 package org.neo4j.consistency;
 
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Option;
+import static java.lang.String.format;
+import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
+import static picocli.CommandLine.ArgGroup;
+import static picocli.CommandLine.Command;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Optional;
-
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
@@ -52,39 +54,40 @@ import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
-
-import static java.lang.String.format;
-import static org.neo4j.internal.helpers.Strings.joinAsLines;
-import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
-import static picocli.CommandLine.ArgGroup;
-import static picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Option;
 
 @Command(
         name = "check-consistency",
         header = "Check the consistency of a database.",
-        description = "This command allows for checking the consistency of a database or a backup thereof. It cannot " +
-                "be used with a database which is currently in use.%n" +
-                "%n" +
-                "All checks except 'check-graph' can be quite expensive so it may be useful to turn them off" +
-                " for very large databases. Increasing the heap size can also be a good idea." +
-                " See 'neo4j-admin help' for details."
-
-)
-public class CheckConsistencyCommand extends AbstractCommand
-{
-    @ArgGroup( multiplicity = "1" )
+        description = "This command allows for checking the consistency of a database or a backup thereof. It cannot "
+                + "be used with a database which is currently in use.%n"
+                + "%n"
+                + "All checks except 'check-graph' can be quite expensive so it may be useful to turn them off"
+                + " for very large databases. Increasing the heap size can also be a good idea."
+                + " See 'neo4j-admin help' for details.")
+public class CheckConsistencyCommand extends AbstractCommand {
+    @ArgGroup(multiplicity = "1")
     private TargetOption target = new TargetOption();
 
-    private static class TargetOption
-    {
-        @Option( names = "--database", description = "Name of the database to check.", converter = DatabaseNameConverter.class )
+    private static class TargetOption {
+        @Option(
+                names = "--database",
+                description = "Name of the database to check.",
+                converter = DatabaseNameConverter.class)
         private NormalizedDatabaseName database;
 
-        @Option( names = "--backup", paramLabel = "<path>", description = "Path to backup to check consistency of. Cannot be used together with --database." )
+        @Option(
+                names = "--backup",
+                paramLabel = "<path>",
+                description = "Path to backup to check consistency of. Cannot be used together with --database.")
         private Path backup;
     }
 
-    @Option( names = "--additional-config", paramLabel = "<path>", description = "Configuration file to supply additional configuration in." )
+    @Option(
+            names = "--additional-config",
+            paramLabel = "<path>",
+            description = "Configuration file to supply additional configuration in.")
     private Path additionalConfig;
 
     @Mixin
@@ -92,128 +95,116 @@ public class CheckConsistencyCommand extends AbstractCommand
 
     private final ConsistencyCheckService consistencyCheckService;
 
-    public CheckConsistencyCommand( ExecutionContext ctx )
-    {
-        this( ctx, new ConsistencyCheckService( null ) );
+    public CheckConsistencyCommand(ExecutionContext ctx) {
+        this(ctx, new ConsistencyCheckService(null));
     }
 
     @VisibleForTesting
-    public CheckConsistencyCommand( ExecutionContext ctx, ConsistencyCheckService consistencyCheckService )
-    {
-        super( ctx );
+    public CheckConsistencyCommand(ExecutionContext ctx, ConsistencyCheckService consistencyCheckService) {
+        super(ctx);
         this.consistencyCheckService = consistencyCheckService;
     }
 
     @Override
-    public void execute()
-    {
-        if ( target.backup != null )
-        {
+    public void execute() {
+        if (target.backup != null) {
             target.backup = target.backup.toAbsolutePath();
 
-            if ( !ctx.fs().isDirectory( target.backup ) )
-            {
-                throw new CommandFailedException( "Report directory path doesn't exist or not a directory: " + target.backup );
+            if (!ctx.fs().isDirectory(target.backup)) {
+                throw new CommandFailedException(
+                        "Report directory path doesn't exist or not a directory: " + target.backup);
             }
         }
 
-        Config config = loadNeo4jConfig( ctx.homeDir(), ctx.confDir(), additionalConfig );
+        Config config = loadNeo4jConfig(ctx.homeDir(), ctx.confDir(), additionalConfig);
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
 
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
-        {
+        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction()) {
 
-            RecordDatabaseLayout databaseLayout = Optional.ofNullable( target.backup ) //Consistency checker only supports Record format for now
-                    .map( RecordDatabaseLayout::ofFlat )
-                    .orElseGet( () -> RecordDatabaseLayout.of( Neo4jLayout.of( config ), target.database.name() ) );
+            RecordDatabaseLayout databaseLayout = Optional.ofNullable(
+                            target.backup) // Consistency checker only supports Record format for now
+                    .map(RecordDatabaseLayout::ofFlat)
+                    .orElseGet(() -> RecordDatabaseLayout.of(Neo4jLayout.of(config), target.database.name()));
 
-            checkDatabaseExistence( databaseLayout );
-            try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
-            {
-                checkDbState( ctx.fs(), databaseLayout, config, memoryTracker );
+            checkDatabaseExistence(databaseLayout);
+            try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
+                checkDbState(ctx.fs(), databaseLayout, config, memoryTracker);
                 // Only output progress indicator if a console receives the output
                 PrintStream progressOutput = System.console() != null ? System.out : null;
 
                 ConsistencyCheckService.Result consistencyCheckResult;
-                try ( Log4jLogProvider logProvider = Util.configuredLogProvider( config, System.out ) )
-                {
+                try (Log4jLogProvider logProvider = Util.configuredLogProvider(config, System.out)) {
                     consistencyCheckResult = consistencyCheckService
-                            .with( databaseLayout )
-                            .with( config )
-                            .with( progressOutput )
-                            .with( logProvider )
-                            .with( fileSystem )
-                            .verbose( verbose )
-                            .with( options.getReportDir().normalize() )
-                            .with( new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure() ) )
+                            .with(databaseLayout)
+                            .with(config)
+                            .with(progressOutput)
+                            .with(logProvider)
+                            .with(fileSystem)
+                            .verbose(verbose)
+                            .with(options.getReportDir().normalize())
+                            .with(new ConsistencyFlags(
+                                    options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure()))
                             .runFullConsistencyCheck();
                 }
 
-                if ( !consistencyCheckResult.isSuccessful() )
-                {
-                    throw new CommandFailedException( format( "Inconsistencies found. See '%s' for details.",
-                            consistencyCheckResult.reportFile() ) );
+                if (!consistencyCheckResult.isSuccessful()) {
+                    throw new CommandFailedException(format(
+                            "Inconsistencies found. See '%s' for details.", consistencyCheckResult.reportFile()));
                 }
+            } catch (FileLockException e) {
+                throw new CommandFailedException(
+                        "The database is in use. Stop database '" + databaseLayout.getDatabaseName()
+                                + "' and try again.",
+                        e);
+            } catch (CannotWriteException e) {
+                throw new CommandFailedException("You do not have permission to check database consistency.", e);
             }
-            catch ( FileLockException e )
-            {
-                throw new CommandFailedException( "The database is in use. Stop database '" + databaseLayout.getDatabaseName() + "' and try again.", e );
-            }
-            catch ( CannotWriteException e )
-            {
-                throw new CommandFailedException( "You do not have permission to check database consistency.", e );
-            }
-        }
-        catch ( ConsistencyCheckIncompleteException | IOException e )
-        {
-            throw new CommandFailedException( "Consistency checking failed." + e.getMessage(), e );
+        } catch (ConsistencyCheckIncompleteException | IOException e) {
+            throw new CommandFailedException("Consistency checking failed." + e.getMessage(), e);
         }
     }
 
-    private static void checkDatabaseExistence( DatabaseLayout databaseLayout )
-    {
-        try
-        {
-            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseLayout.databaseDirectory() );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new CommandFailedException( "Database does not exist: " + databaseLayout.getDatabaseName(), e );
+    private static void checkDatabaseExistence(DatabaseLayout databaseLayout) {
+        try {
+            Validators.CONTAINS_EXISTING_DATABASE.validate(databaseLayout.databaseDirectory());
+        } catch (IllegalArgumentException e) {
+            throw new CommandFailedException("Database does not exist: " + databaseLayout.getDatabaseName(), e);
         }
     }
 
-    private static void checkDbState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
-    {
-        if ( checkRecoveryState( fs, databaseLayout, additionalConfiguration, memoryTracker ) )
-        {
-            throw new CommandFailedException( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
+    private static void checkDbState(
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            Config additionalConfiguration,
+            MemoryTracker memoryTracker) {
+        if (checkRecoveryState(fs, databaseLayout, additionalConfiguration, memoryTracker)) {
+            throw new CommandFailedException(joinAsLines(
+                    "Active logical log detected, this might be a source of inconsistencies.",
                     "Please recover database before running the consistency check.",
-                    "To perform recovery please start database and perform clean shutdown." ) );
+                    "To perform recovery please start database and perform clean shutdown."));
         }
     }
 
-    private static boolean checkRecoveryState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config additionalConfiguration,
-            MemoryTracker memoryTracker )
-    {
-        try
-        {
-            return isRecoveryRequired( fs, databaseLayout, additionalConfiguration, memoryTracker );
-        }
-        catch ( Exception e )
-        {
-            throw new CommandFailedException( "Failure when checking for recovery state: " + e.getMessage(), e );
+    private static boolean checkRecoveryState(
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            Config additionalConfiguration,
+            MemoryTracker memoryTracker) {
+        try {
+            return isRecoveryRequired(fs, databaseLayout, additionalConfiguration, memoryTracker);
+        } catch (Exception e) {
+            throw new CommandFailedException("Failure when checking for recovery state: " + e.getMessage(), e);
         }
     }
 
-    private Config loadNeo4jConfig( Path homeDir, Path configDir, Path additionalConfig )
-    {
+    private Config loadNeo4jConfig(Path homeDir, Path configDir, Path additionalConfig) {
         Config cfg = Config.newBuilder()
-                           .fromFileNoThrow( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                           .fromFileNoThrow( additionalConfig )
-                           .commandExpansion( allowCommandExpansion )
-                           .set( GraphDatabaseSettings.neo4j_home, homeDir )
-                           .build();
-        ConfigUtils.disableAllConnectors( cfg );
+                .fromFileNoThrow(configDir.resolve(Config.DEFAULT_CONFIG_FILE_NAME))
+                .fromFileNoThrow(additionalConfig)
+                .commandExpansion(allowCommandExpansion)
+                .set(GraphDatabaseSettings.neo4j_home, homeDir)
+                .build();
+        ConfigUtils.disableAllConnectors(cfg);
         return cfg;
     }
 }

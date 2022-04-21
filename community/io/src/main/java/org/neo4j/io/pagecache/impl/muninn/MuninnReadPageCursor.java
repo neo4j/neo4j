@@ -20,126 +20,102 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
-final class MuninnReadPageCursor extends MuninnPageCursor
-{
+final class MuninnReadPageCursor extends MuninnPageCursor {
     private long lockStamp;
 
-    MuninnReadPageCursor( long victimPage, CursorContext cursorContext )
-    {
-        super( victimPage, cursorContext );
+    MuninnReadPageCursor(long victimPage, CursorContext cursorContext) {
+        super(victimPage, cursorContext);
     }
 
     @Override
-    protected void unpinCurrentPage()
-    {
-        if ( pinnedPageRef != 0 )
-        {
-            tracer.unpin( loadPlainCurrentPageId(), swapper );
+    protected void unpinCurrentPage() {
+        if (pinnedPageRef != 0) {
+            tracer.unpin(loadPlainCurrentPageId(), swapper);
         }
         lockStamp = 0; // make sure not to accidentally keep a lock state around
         clearPageCursorState();
     }
 
     @Override
-    public boolean next() throws IOException
-    {
+    public boolean next() throws IOException {
         unpinCurrentPage();
         long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
-        if ( nextPageId > lastPageId || nextPageId < 0 )
-        {
-            storeCurrentPageId( UNBOUND_PAGE_ID );
+        if (nextPageId > lastPageId || nextPageId < 0) {
+            storeCurrentPageId(UNBOUND_PAGE_ID);
             return false;
         }
-        storeCurrentPageId( nextPageId );
+        storeCurrentPageId(nextPageId);
         nextPageId++;
         long filePageId = loadPlainCurrentPageId();
-        try ( var pinEvent = tracer.beginPin( false, filePageId, swapper ) )
-        {
-            pin( pinEvent, filePageId );
+        try (var pinEvent = tracer.beginPin(false, filePageId, swapper)) {
+            pin(pinEvent, filePageId);
         }
         verifyContext();
         return true;
     }
 
     @Override
-    protected boolean tryLockPage( long pageRef )
-    {
-        lockStamp = PageList.tryOptimisticReadLock( pageRef );
+    protected boolean tryLockPage(long pageRef) {
+        lockStamp = PageList.tryOptimisticReadLock(pageRef);
         return true;
     }
 
     @Override
-    protected void unlockPage( long pageRef )
-    {
-    }
+    protected void unlockPage(long pageRef) {}
 
     @Override
-    protected void pinCursorToPage( PinEvent pinEvent, long pageRef, long filePageId, PageSwapper swapper )
-    {
-        reset( pinEvent, pageRef );
-        if ( updateUsage )
-        {
-            PageList.incrementUsage( pageRef );
+    protected void pinCursorToPage(PinEvent pinEvent, long pageRef, long filePageId, PageSwapper swapper) {
+        reset(pinEvent, pageRef);
+        if (updateUsage) {
+            PageList.incrementUsage(pageRef);
         }
     }
 
     @Override
-    protected void convertPageFaultLock( long pageRef )
-    {
-        lockStamp = PageList.unlockExclusive( pageRef );
+    protected void convertPageFaultLock(long pageRef) {
+        lockStamp = PageList.unlockExclusive(pageRef);
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
-    {
+    public boolean shouldRetry() throws IOException {
         MuninnReadPageCursor cursor = this;
-        do
-        {
+        do {
             long pageRef = cursor.pinnedPageRef;
-            if ( pageRef != 0 && !PageList.validateReadLock( pageRef, cursor.lockStamp ) )
-            {
+            if (pageRef != 0 && !PageList.validateReadLock(pageRef, cursor.lockStamp)) {
                 assertPagedFileStillMappedAndGetIdOfLastPage();
                 startRetryLinkedChain();
                 return true;
             }
             cursor = (MuninnReadPageCursor) cursor.linkedCursor;
-        }
-        while ( cursor != null );
+        } while (cursor != null);
         return false;
     }
 
-    private void startRetryLinkedChain() throws IOException
-    {
+    private void startRetryLinkedChain() throws IOException {
         MuninnReadPageCursor cursor = this;
-        do
-        {
+        do {
             long pageRef = cursor.pinnedPageRef;
-            if ( pageRef != 0 )
-            {
-                cursor.startRetry( pageRef );
+            if (pageRef != 0) {
+                cursor.startRetry(pageRef);
             }
             cursor = (MuninnReadPageCursor) cursor.linkedCursor;
-        }
-        while ( cursor != null );
+        } while (cursor != null);
     }
 
-    private void startRetry( long pageRef ) throws IOException
-    {
-        setOffset( 0 );
+    private void startRetry(long pageRef) throws IOException {
+        setOffset(0);
         checkAndClearBoundsFlag();
         clearCursorException();
-        lockStamp = PageList.tryOptimisticReadLock( pageRef );
+        lockStamp = PageList.tryOptimisticReadLock(pageRef);
         // The page might have been evicted while we held the optimistic
         // read lock, so we need to check with page.pin that this is still
         // the page we're actually interested in:
         var filePageId = loadPlainCurrentPageId();
-        if ( !PageList.isBoundTo( pageRef, pagedFile.swapperId, filePageId ) )
-        {
+        if (!PageList.isBoundTo(pageRef, pagedFile.swapperId, filePageId)) {
             // This is no longer the page we're interested in, so we have
             // to redo the pinning.
             // This might in turn lead to a new optimistic lock on a
@@ -153,54 +129,46 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             // in memory.
             clearPageReference();
             // trace unpin before trying pin again
-            tracer.unpin( filePageId, swapper );
+            tracer.unpin(filePageId, swapper);
             // Then try pin again.
-            try ( var pinEvent = tracer.beginPin( false, filePageId, swapper ) )
-            {
-                pin( pinEvent, filePageId );
+            try (var pinEvent = tracer.beginPin(false, filePageId, swapper)) {
+                pin(pinEvent, filePageId);
             }
         }
     }
 
     @Override
-    public void putByte( byte value )
-    {
-        throw new IllegalStateException( "Cannot write to read-locked page" );
+    public void putByte(byte value) {
+        throw new IllegalStateException("Cannot write to read-locked page");
     }
 
     @Override
-    public void putLong( long value )
-    {
-        throw new IllegalStateException( "Cannot write to read-locked page" );
+    public void putLong(long value) {
+        throw new IllegalStateException("Cannot write to read-locked page");
     }
 
     @Override
-    public void putInt( int value )
-    {
-        throw new IllegalStateException( "Cannot write to read-locked page" );
+    public void putInt(int value) {
+        throw new IllegalStateException("Cannot write to read-locked page");
     }
 
     @Override
-    public void putBytes( byte[] data, int arrayOffset, int length )
-    {
-        throw new IllegalStateException( "Cannot write to read-locked page" );
+    public void putBytes(byte[] data, int arrayOffset, int length) {
+        throw new IllegalStateException("Cannot write to read-locked page");
     }
 
     @Override
-    public void putShort( short value )
-    {
-        throw new IllegalStateException( "Cannot write to read-locked page" );
+    public void putShort(short value) {
+        throw new IllegalStateException("Cannot write to read-locked page");
     }
 
     @Override
-    public void shiftBytes( int sourceStart, int length, int shift )
-    {
-        throw new IllegalStateException( "Cannot write to read-locked page" );
+    public void shiftBytes(int sourceStart, int length, int shift) {
+        throw new IllegalStateException("Cannot write to read-locked page");
     }
 
     @Override
-    public void zapPage()
-    {
-        throw new IllegalStateException( "Cannot write to read-locked page" );
+    public void zapPage() {
+        throw new IllegalStateException("Cannot write to read-locked page");
     }
 }

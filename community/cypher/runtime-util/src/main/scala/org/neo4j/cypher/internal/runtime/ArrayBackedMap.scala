@@ -30,7 +30,8 @@ import scala.reflect.ClassTag
  * Stores values in an array and has a lookup table from key to array index for doing lookups.
  * @param keyToIndexMap the mapping from keys to array indexes
  */
-class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int], nullValue: V = null.asInstanceOf[V])(implicit val tag: ClassTag[V]) extends Map[K, V] {
+class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int], nullValue: V = null.asInstanceOf[V])(implicit
+val tag: ClassTag[V]) extends Map[K, V] {
   private var valueArray: Array[V] = _
 
   /**
@@ -53,7 +54,7 @@ class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int], nullValue: V = null.asIns
     newMap
   }
 
-  override def get(key: K): Option[V] = keyToIndexMap.get(key).map{ index =>
+  override def get(key: K): Option[V] = keyToIndexMap.get(key).map { index =>
     if (valueArray != null && index < valueArray.length)
       valueArray(index)
     else
@@ -79,7 +80,7 @@ class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int], nullValue: V = null.asIns
   override def updated[B1 >: V](key: K, value: B1): Map[K, B1] = {
     val index = keyToIndexMap.get(key)
     index match {
-      //key already existed in map, copy over values and create new map
+      // key already existed in map, copy over values and create new map
       case Some(i) =>
         val newArray = new Array[V](valueArray.length)
         System.arraycopy(valueArray, 0, newArray, 0, valueArray.length)
@@ -87,7 +88,7 @@ class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int], nullValue: V = null.asIns
         val newMap: ArrayBackedMap[K, V] = new ArrayBackedMap[K, V](keyToIndexMap, nullValue)
         newMap.putValues(newArray)
         newMap
-      //key was not in map, create new map and add new key-value pair at the end of the its valueArray
+      // key was not in map, create new map and add new key-value pair at the end of the its valueArray
       case None =>
         val newHeadersMap = keyToIndexMap.updated(key, valueArray.length)
         val newMap = new ArrayBackedMap[K, V](newHeadersMap, nullValue)
@@ -123,9 +124,10 @@ class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int], nullValue: V = null.asIns
 }
 
 object ArrayBackedMap {
+
   def apply[K, V](keys: K*)(nullValue: V = null.asInstanceOf[V])(implicit tag: ClassTag[V]): ArrayBackedMap[K, V] =
     new ArrayBackedMap[K, V](keys.zipWithIndex.toMap, nullValue)
 
-  final val SHALLOW_SIZE = shallowSizeOfInstance(classOf[ArrayBackedMap[_,_]]) +
+  final val SHALLOW_SIZE = shallowSizeOfInstance(classOf[ArrayBackedMap[_, _]]) +
     shallowSizeOfInstanceWithObjectReferences(2) // scala.collection.convert.Wrappers$MapWrapper
 }

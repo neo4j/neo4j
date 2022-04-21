@@ -31,7 +31,8 @@ case class ToBooleanListFunction(a: Expression) extends NullInNullOutExpression(
 
   override def rewrite(f: Expression => Expression): Expression = f(ToBooleanListFunction(a.rewrite(f)))
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.toBooleanList(value)
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toBooleanList(value)
 
   override def children: Seq[AstNode[_]] = Seq(a)
 }

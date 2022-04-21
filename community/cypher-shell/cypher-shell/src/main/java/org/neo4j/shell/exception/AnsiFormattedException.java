@@ -19,36 +19,30 @@
  */
 package org.neo4j.shell.exception;
 
-
 import org.neo4j.shell.printer.AnsiFormattedText;
 
 /**
  * A type of exception where the message can formatted with Ansi codes.
  */
-public class AnsiFormattedException extends Exception
-{
+public class AnsiFormattedException extends Exception {
     private final AnsiFormattedText message;
 
-    public AnsiFormattedException( String message )
-    {
-        super( message );
-        this.message = AnsiFormattedText.from( message );
+    public AnsiFormattedException(String message) {
+        super(message);
+        this.message = AnsiFormattedText.from(message);
     }
 
-    public AnsiFormattedException( String message, Throwable cause )
-    {
-        super( message, cause );
-        this.message = AnsiFormattedText.from( message );
+    public AnsiFormattedException(String message, Throwable cause) {
+        super(message, cause);
+        this.message = AnsiFormattedText.from(message);
     }
 
-    public AnsiFormattedException( AnsiFormattedText message )
-    {
-        super( message.plainString() );
+    public AnsiFormattedException(AnsiFormattedText message) {
+        super(message.plainString());
         this.message = message;
     }
 
-    public AnsiFormattedText getFormattedMessage()
-    {
+    public AnsiFormattedText getFormattedMessage() {
         return message;
     }
 }

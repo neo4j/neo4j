@@ -19,54 +19,48 @@
  */
 package org.neo4j.exceptions;
 
-import org.eclipse.collections.impl.factory.Maps;
-
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import org.eclipse.collections.impl.factory.Maps;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Used to provide additional information on a Neo4jException.
  */
-public class StatusWrapCypherException extends Neo4jException
-{
-    public enum ExtraInformation
-    {
+public class StatusWrapCypherException extends Neo4jException {
+    public enum ExtraInformation {
         LINE_NUMBER,
         TRANSACTIONS_COMMITTED
     }
 
-    private final Map<ExtraInformation,String> extraInfoMap = Maps.mutable.of();
+    private final Map<ExtraInformation, String> extraInfoMap = Maps.mutable.of();
 
-    public StatusWrapCypherException( Neo4jException cause )
-    {
-        super( cause.getMessage(), cause );
+    public StatusWrapCypherException(Neo4jException cause) {
+        super(cause.getMessage(), cause);
     }
 
-    public StatusWrapCypherException addExtraInfo( ExtraInformation informationType, String extraInfo )
-    {
-        extraInfoMap.put( informationType, extraInfo );
+    public StatusWrapCypherException addExtraInfo(ExtraInformation informationType, String extraInfo) {
+        extraInfoMap.put(informationType, extraInfo);
         return this;
     }
 
-    public boolean containsInfoFor( ExtraInformation informationType )
-    {
-        return extraInfoMap.containsKey( informationType );
+    public boolean containsInfoFor(ExtraInformation informationType) {
+        return extraInfoMap.containsKey(informationType);
     }
 
     @Override
-    public String getMessage()
-    {
-        return String.format( "%s (%s)", getCause().getMessage(), extraInfoMap.entrySet().stream()
-                                                                              .sorted( Map.Entry.comparingByKey() )
-                                                                              .map( Map.Entry::getValue )
-                                                                              .collect( Collectors.joining( ", " ) ) );
+    public String getMessage() {
+        return String.format(
+                "%s (%s)",
+                getCause().getMessage(),
+                extraInfoMap.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .map(Map.Entry::getValue)
+                        .collect(Collectors.joining(", ")));
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return ((Neo4jException) getCause()).status();
     }
 }

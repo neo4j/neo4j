@@ -23,32 +23,27 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic;
 
-public class ContextFieldWarning implements CompilationMessage
-{
+public class ContextFieldWarning implements CompilationMessage {
     private final Element element;
     private final String contents;
 
-    public ContextFieldWarning( VariableElement element, String message, Object... args )
-    {
+    public ContextFieldWarning(VariableElement element, String message, Object... args) {
         this.element = element;
-        this.contents = String.format( message, args );
+        this.contents = String.format(message, args);
     }
 
     @Override
-    public Element getElement()
-    {
+    public Element getElement() {
         return element;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return contents;
     }
 
     @Override
-    public Diagnostic.Kind getCategory()
-    {
+    public Diagnostic.Kind getCategory() {
         return Diagnostic.Kind.WARNING;
     }
 }

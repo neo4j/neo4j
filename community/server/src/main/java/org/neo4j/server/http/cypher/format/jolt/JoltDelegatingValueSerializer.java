@@ -22,28 +22,24 @@ package org.neo4j.server.http.cypher.format.jolt;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import java.io.IOException;
 import java.util.function.Function;
 
-final class JoltDelegatingValueSerializer<T> extends StdSerializer<T>
-{
+final class JoltDelegatingValueSerializer<T> extends StdSerializer<T> {
     private final Sigil sigil;
-    private final Function<T,String> converter;
+    private final Function<T, String> converter;
 
-    JoltDelegatingValueSerializer( Class<T> t, Sigil sigil, Function<T,String> converter )
-    {
-        super( t );
+    JoltDelegatingValueSerializer(Class<T> t, Sigil sigil, Function<T, String> converter) {
+        super(t);
         this.sigil = sigil;
         this.converter = converter;
     }
 
     @Override
-    public void serialize( T value, JsonGenerator generator, SerializerProvider provider ) throws IOException
-    {
-        generator.writeStartObject( value );
-        generator.writeFieldName( sigil.getValue() );
-        generator.writeString( converter.apply( value ) );
+    public void serialize(T value, JsonGenerator generator, SerializerProvider provider) throws IOException {
+        generator.writeStartObject(value);
+        generator.writeFieldName(sigil.getValue());
+        generator.writeString(converter.apply(value));
         generator.writeEndObject();
     }
 }

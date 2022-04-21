@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.security;
 
-public class FormatException extends Exception
-{
-    public FormatException( String message )
-    {
-        super( message );
+public class FormatException extends Exception {
+    public FormatException(String message) {
+        super(message);
     }
 }

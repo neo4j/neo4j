@@ -30,21 +30,17 @@ import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
  * These settings can be created either by defaults from the neo4j.conf file (see ConfiguredSpaceFullCurveSettingsCache)
  * or from reading the header of an existing GBPTree based index.
  */
-public final class SpaceFillingCurveSettingsFactory
-{
-    private SpaceFillingCurveSettingsFactory()
-    {
-    }
+public final class SpaceFillingCurveSettingsFactory {
+    private SpaceFillingCurveSettingsFactory() {}
 
     /**
      * This method builds the default index configuration object for the specified CRS and other config options.
      * Currently we only support a SingleSpaceFillingCurveSettings which is the best option for cartesian, but
      * not necessarily the best for geographic coordinate systems.
      */
-    static SpaceFillingCurveSettings fromConfig( EnvelopeSettings envelopeSettings )
-    {
+    static SpaceFillingCurveSettings fromConfig(EnvelopeSettings envelopeSettings) {
         // Currently we support only one type of index, but in future we could support different types for different CRS
-        return new SpaceFillingCurveSettings( envelopeSettings.getCrs().getDimension(), envelopeSettings.asEnvelope() );
+        return new SpaceFillingCurveSettings(envelopeSettings.getCrs().getDimension(), envelopeSettings.asEnvelope());
     }
 
     /**
@@ -54,19 +50,15 @@ public final class SpaceFillingCurveSettingsFactory
      * @param config {@link Config} containing space filling curve settings.
      * @return {@link SpaceFillingCurveConfiguration} from the settings found in {@link Config}.
      */
-    public static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )
-    {
-        int extraLevels = config.get( SpatialIndexSettings.space_filling_curve_extra_levels );
-        double topThreshold = config.get( SpatialIndexSettings.space_filling_curve_top_threshold );
-        double bottomThreshold = config.get( SpatialIndexSettings.space_filling_curve_bottom_threshold );
+    public static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration(Config config) {
+        int extraLevels = config.get(SpatialIndexSettings.space_filling_curve_extra_levels);
+        double topThreshold = config.get(SpatialIndexSettings.space_filling_curve_top_threshold);
+        double bottomThreshold = config.get(SpatialIndexSettings.space_filling_curve_bottom_threshold);
 
-        if ( topThreshold == 0.0 || bottomThreshold == 0.0 )
-        {
-            return new StandardConfiguration( extraLevels );
-        }
-        else
-        {
-            return new PartialOverlapConfiguration( extraLevels, topThreshold, bottomThreshold );
+        if (topThreshold == 0.0 || bottomThreshold == 0.0) {
+            return new StandardConfiguration(extraLevels);
+        } else {
+            return new PartialOverlapConfiguration(extraLevels, topThreshold, bottomThreshold);
         }
     }
 }

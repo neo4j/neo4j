@@ -19,30 +19,26 @@
  */
 package org.neo4j.codegen.source;
 
+import static javax.tools.JavaFileObject.Kind.SOURCE;
+
 import java.net.URI;
 import javax.tools.SimpleJavaFileObject;
 
-import static javax.tools.JavaFileObject.Kind.SOURCE;
-
-class JavaSourceFile extends SimpleJavaFileObject
-{
+class JavaSourceFile extends SimpleJavaFileObject {
     private final StringBuilder content;
 
-    JavaSourceFile( URI uri, StringBuilder content )
-    {
-        super( uri, SOURCE );
+    JavaSourceFile(URI uri, StringBuilder content) {
+        super(uri, SOURCE);
         this.content = content;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + "[" + toUri() + "]";
     }
 
     @Override
-    public CharSequence getCharContent( boolean ignoreEncodingErrors )
-    {
+    public CharSequence getCharContent(boolean ignoreEncodingErrors) {
         return content;
     }
 
@@ -56,10 +52,9 @@ class JavaSourceFile extends SimpleJavaFileObject
      * @return The number of characters read (0 if no characters remain)
      * @see java.io.Reader#read(char[], int, int)
      */
-    public int read( int pos, char[] cbuf, int off, int len )
-    {
-        len = Math.min( content.length() - pos, len );
-        content.getChars( pos, pos + len, cbuf, off );
+    public int read(int pos, char[] cbuf, int off, int len) {
+        len = Math.min(content.length() - pos, len);
+        content.getChars(pos, pos + len, cbuf, off);
         return len;
     }
 }

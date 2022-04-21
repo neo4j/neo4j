@@ -25,15 +25,17 @@ import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
 object LiteralHelper {
+
   def literal(any: Any): Literal = any match {
-    case seq: Seq[_] => literal(seq)
-    case map: Map[_, _] => literal(map.asInstanceOf[Map[String,_]])
-    case _ => Literal (ValueUtils.of (any) )
+    case seq: Seq[_]    => literal(seq)
+    case map: Map[_, _] => literal(map.asInstanceOf[Map[String, _]])
+    case _              => Literal(ValueUtils.of(any))
   }
-  def literal(anys: Seq[_]): Literal = Literal(VirtualValues.list(anys.map(ValueUtils.of):_*))
+  def literal(anys: Seq[_]): Literal = Literal(VirtualValues.list(anys.map(ValueUtils.of): _*))
+
   def literal(map: Map[String, _]): Literal = {
     val mapBuilder = new MapValueBuilder()
-    map.foreach{
+    map.foreach {
       case (k, v) => mapBuilder.add(k, ValueUtils.of(v))
     }
     Literal(mapBuilder.build())

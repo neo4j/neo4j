@@ -19,15 +19,13 @@
  */
 package org.neo4j.shell.cli;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.ArgumentAction;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parameter.ParameterService.ParameterParser;
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
@@ -35,52 +33,39 @@ import org.neo4j.shell.parameter.ParameterService.RawParameter;
 /**
  * Action that parses and appends query parameters.
  */
-public class AddParamArgumentAction implements ArgumentAction
-{
+public class AddParamArgumentAction implements ArgumentAction {
     private final ParameterParser queryParameterParser;
 
-    AddParamArgumentAction( ParameterParser queryParameterParser )
-    {
+    AddParamArgumentAction(ParameterParser queryParameterParser) {
         this.queryParameterParser = queryParameterParser;
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
-    public void run( ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value ) throws ArgumentParserException
-    {
-        if ( attrs.get( arg.getDest() ) instanceof List queryParams )
-        {
-            queryParams.add( parse( value.toString() ) );
-        }
-        else
-        {
+    @SuppressWarnings("unchecked")
+    public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value)
+            throws ArgumentParserException {
+        if (attrs.get(arg.getDest()) instanceof List queryParams) {
+            queryParams.add(parse(value.toString()));
+        } else {
             var queryParams = new ArrayList<RawParameter>();
-            queryParams.add( parse( value.toString() ) );
-            attrs.put( arg.getDest(), queryParams );
+            queryParams.add(parse(value.toString()));
+            attrs.put(arg.getDest(), queryParams);
         }
     }
 
-    private RawParameter parse( String input )
-    {
-        try
-        {
-            return queryParameterParser.parse( input );
-        }
-        catch ( ParameterService.ParameterParsingException e )
-        {
-            throw new IllegalArgumentException( "Incorrect usage.\nusage: --param  'name => value'" );
+    private RawParameter parse(String input) {
+        try {
+            return queryParameterParser.parse(input);
+        } catch (ParameterService.ParameterParsingException e) {
+            throw new IllegalArgumentException("Incorrect usage.\nusage: --param  'name => value'");
         }
     }
 
     @Override
-    public void onAttach( Argument arg )
-    {
-
-    }
+    public void onAttach(Argument arg) {}
 
     @Override
-    public boolean consumeArgument()
-    {
+    public boolean consumeArgument() {
         return true;
     }
 }

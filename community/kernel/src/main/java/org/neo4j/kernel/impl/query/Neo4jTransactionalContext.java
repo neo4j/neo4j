@@ -40,8 +40,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.ValueMapper;
 
-public class Neo4jTransactionalContext implements TransactionalContext
-{
+public class Neo4jTransactionalContext implements TransactionalContext {
     private final GraphDatabaseQueryService graph;
 
     public final KernelTransaction.Type transactionType;
@@ -59,15 +58,19 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final KernelTransactionFactory transactionFactory;
     private volatile boolean isOpen = true;
 
-    // The statisticProvider behaves different depending on whether we run a "normal" query or a "PERIODIC COMMIT" query.
+    // The statisticProvider behaves different depending on whether we run a "normal" query or a "PERIODIC COMMIT"
+    // query.
     // For normal queries we only include page hits/misses of the current transaction.
     // For PERIODIC COMMIT we also need to include page hits/misses of any committed transactions, because a transaction
     // can be committed/restarted at any point, even during a "profiling event".
     private StatisticProvider statisticProvider;
 
-    public Neo4jTransactionalContext( GraphDatabaseQueryService graph, InternalTransaction transaction,
-            KernelStatement initialStatement, ExecutingQuery executingQuery, KernelTransactionFactory transactionFactory )
-    {
+    public Neo4jTransactionalContext(
+            GraphDatabaseQueryService graph,
+            InternalTransaction transaction,
+            KernelStatement initialStatement,
+            ExecutingQuery executingQuery,
+            KernelTransactionFactory transactionFactory) {
         this.graph = graph;
         this.transactionType = transaction.transactionType();
         this.securityContext = transaction.securityContext();
@@ -80,55 +83,45 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.statement = initialStatement;
         this.elementIdMapper = transaction.elementIdMapper();
         this.userTransactionId = kernelTransaction.getUserTransactionId();
-        this.valueMapper = new DefaultValueMapper( transaction );
+        this.valueMapper = new DefaultValueMapper(transaction);
         this.transactionFactory = transactionFactory;
 
-        this.statisticProvider = new TransactionalContextStatisticProvider( kernelTransaction.executionStatistics() );
+        this.statisticProvider = new TransactionalContextStatisticProvider(kernelTransaction.executionStatistics());
     }
 
     @Override
-    public ValueMapper<Object> valueMapper()
-    {
+    public ValueMapper<Object> valueMapper() {
         return valueMapper;
     }
 
     @Override
-    public ExecutingQuery executingQuery()
-    {
+    public ExecutingQuery executingQuery() {
         return executingQuery;
     }
 
     @Override
-    public KernelTransaction kernelTransaction()
-    {
+    public KernelTransaction kernelTransaction() {
         return kernelTransaction;
     }
 
     @Override
-    public InternalTransaction transaction()
-    {
+    public InternalTransaction transaction() {
         return transaction;
     }
 
     @Override
-    public boolean isTopLevelTx()
-    {
+    public boolean isTopLevelTx() {
         return transaction.transactionType() == KernelTransaction.Type.IMPLICIT;
     }
 
     @Override
-    public void close()
-    {
-        if ( isOpen )
-        {
-            try
-            {
+    public void close() {
+        if (isOpen) {
+            try {
                 // Unbind the new transaction/statement from the executingQuery
-                statement.queryRegistry().unbindExecutingQuery( executingQuery, userTransactionId );
+                statement.queryRegistry().unbindExecutingQuery(executingQuery, userTransactionId);
                 statement.close();
-            }
-            finally
-            {
+            } finally {
                 statement = null;
                 isOpen = false;
             }
@@ -136,40 +129,33 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public void rollback()
-    {
-        try
-        {
+    public void rollback() {
+        try {
             close();
-        }
-        finally
-        {
+        } finally {
             transaction.rollback();
         }
     }
 
     @Override
-    public void terminate()
-    {
-        if ( isOpen )
-        {
+    public void terminate() {
+        if (isOpen) {
             transaction.terminate();
         }
     }
 
     @Override
-    public long commitAndRestartTx()
-    {
-       /*
-        * This method is use by the Cypher runtime to cater for PERIODIC COMMIT, which allows a single query to
-        * periodically, after x number of rows, to commit a transaction and spawn a new one.
-        *
-        * To still keep track of the running stream after switching transactions, we need to open the new transaction
-        * before closing the old one. This way, a query will not disappear and appear when switching transactions.
-        *
-        * Since our transactions are thread bound, we must first unbind the old transaction from the thread before
-        * creating a new one. And then we need to do that thread switching again to close the old transaction.
-        */
+    public long commitAndRestartTx() {
+        /*
+         * This method is use by the Cypher runtime to cater for PERIODIC COMMIT, which allows a single query to
+         * periodically, after x number of rows, to commit a transaction and spawn a new one.
+         *
+         * To still keep track of the running stream after switching transactions, we need to open the new transaction
+         * before closing the old one. This way, a query will not disappear and appear when switching transactions.
+         *
+         * Since our transactions are thread bound, we must first unbind the old transaction from the thread before
+         * creating a new one. And then we need to do that thread switching again to close the old transaction.
+         */
 
         checkNotTerminated();
 
@@ -179,186 +165,157 @@ public class Neo4jTransactionalContext implements TransactionalContext
         KernelTransaction oldKernelTx = transaction.kernelTransaction();
 
         // (2) Unregister the old transaction from the executing query
-        oldQueryRegistry.unbindExecutingQuery( executingQuery, userTransactionId );
+        oldQueryRegistry.unbindExecutingQuery(executingQuery, userTransactionId);
 
         // (3) Create and register new transaction
-        kernelTransaction = transactionFactory.beginKernelTransaction( transactionType, securityContext, clientInfo );
+        kernelTransaction = transactionFactory.beginKernelTransaction(transactionType, securityContext, clientInfo);
         statement = (KernelStatement) kernelTransaction.acquireStatement();
         userTransactionId = kernelTransaction.getUserTransactionId();
-        statement.queryRegistry().bindExecutingQuery( executingQuery );
-        transaction.setTransaction( kernelTransaction );
+        statement.queryRegistry().bindExecutingQuery(executingQuery);
+        transaction.setTransaction(kernelTransaction);
 
         // (4) Update statistic provider with new kernel transaction
-        updatePeriodicCommitStatisticProvider( kernelTransaction );
+        updatePeriodicCommitStatisticProvider(kernelTransaction);
 
         // (5) commit old transaction
-        try
-        {
+        try {
             oldStatement.close();
-            try ( oldKernelTx )
-            {
+            try (oldKernelTx) {
                 return oldKernelTx.commit();
             }
-        }
-        catch ( Throwable t )
-        {
+        } catch (Throwable t) {
             // Corner case: The old transaction might have been terminated by the user. Now we also need to
             // terminate the new transaction.
             transaction.rollback();
-            throw new RuntimeException( t );
+            throw new RuntimeException(t);
         }
     }
 
     @Override
-    public Neo4jTransactionalContext contextWithNewTransaction()
-    {
+    public Neo4jTransactionalContext contextWithNewTransaction() {
         checkNotTerminated();
-        if ( transactionType != KernelTransaction.Type.IMPLICIT )
-        {
-            throw new TransactionFailureException( "A query with 'CALL { ... } IN TRANSACTIONS' can only be executed in an implicit transaction, " +
-                                                   "but tried to execute in an explicit transaction." );
+        if (transactionType != KernelTransaction.Type.IMPLICIT) {
+            throw new TransactionFailureException(
+                    "A query with 'CALL { ... } IN TRANSACTIONS' can only be executed in an implicit transaction, "
+                            + "but tried to execute in an explicit transaction.");
         }
 
         // Create new InternalTransaction, creates new KernelTransaction
-        InternalTransaction newTransaction = graph.beginTransaction( transactionType, securityContext, clientInfo );
+        InternalTransaction newTransaction = graph.beginTransaction(transactionType, securityContext, clientInfo);
         long newTransactionId = newTransaction.kernelTransaction().getUserTransactionId();
         InnerTransactionHandler innerTransactionHandler = kernelTransaction.getInnerTransactionHandler();
-        innerTransactionHandler.registerInnerTransaction( newTransactionId );
-        // We rely on the close callback of the inner transaction to be called on close. Otherwise, the worst thing that could happen is that the outer
-        // transaction cannot commit because of inner transactions still being open. But the close callback not being called, should be such an off scenario
+        innerTransactionHandler.registerInnerTransaction(newTransactionId);
+        // We rely on the close callback of the inner transaction to be called on close. Otherwise, the worst thing that
+        // could happen is that the outer
+        // transaction cannot commit because of inner transactions still being open. But the close callback not being
+        // called, should be such an off scenario
         // that we may not want to commit the outer transaction anyways.
-        newTransaction.addCloseCallback( () -> innerTransactionHandler.removeInnerTransaction( newTransactionId ) );
+        newTransaction.addCloseCallback(() -> innerTransactionHandler.removeInnerTransaction(newTransactionId));
 
-        KernelStatement newStatement = (KernelStatement) newTransaction.kernelTransaction().acquireStatement();
+        KernelStatement newStatement =
+                (KernelStatement) newTransaction.kernelTransaction().acquireStatement();
         // Bind the new transaction/statement to the executingQuery
-        newStatement.queryRegistry().bindExecutingQuery( executingQuery );
+        newStatement.queryRegistry().bindExecutingQuery(executingQuery);
 
-        return new Neo4jTransactionalContext(
-                graph,
-                newTransaction,
-                newStatement,
-                executingQuery,
-                transactionFactory
-        );
+        return new Neo4jTransactionalContext(graph, newTransaction, newStatement, executingQuery, transactionFactory);
     }
 
     @Override
-    public TransactionalContext getOrBeginNewIfClosed()
-    {
+    public TransactionalContext getOrBeginNewIfClosed() {
         checkNotTerminated();
 
-        if ( !isOpen )
-        {
+        if (!isOpen) {
             statement = (KernelStatement) kernelTransaction.acquireStatement();
-            statement.queryRegistry().bindExecutingQuery( executingQuery );
+            statement.queryRegistry().bindExecutingQuery(executingQuery);
             isOpen = true;
         }
         return this;
     }
 
-    private void checkNotTerminated()
-    {
-        transaction.terminationReason().ifPresent( status ->
-        {
-            throw new TransactionTerminatedException( status );
-        } );
+    private void checkNotTerminated() {
+        transaction.terminationReason().ifPresent(status -> {
+            throw new TransactionTerminatedException(status);
+        });
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return isOpen;
     }
 
     @Override
-    public GraphDatabaseQueryService graph()
-    {
+    public GraphDatabaseQueryService graph() {
         return graph;
     }
 
     @Override
-    public NamedDatabaseId databaseId()
-    {
+    public NamedDatabaseId databaseId() {
         return namedDatabaseId;
     }
 
     @Override
-    public Statement statement()
-    {
+    public Statement statement() {
         return statement;
     }
 
     @Override
-    public KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context )
-    {
-        return transaction.overrideWith( context );
+    public KernelTransaction.Revertable restrictCurrentTransaction(SecurityContext context) {
+        return transaction.overrideWith(context);
     }
 
     @Override
-    public SecurityContext securityContext()
-    {
+    public SecurityContext securityContext() {
         return securityContext;
     }
 
     @Override
-    public ResourceTracker resourceTracker()
-    {
+    public ResourceTracker resourceTracker() {
         // We use the current statement as resourceTracker since it is attached to the KernelTransaction
         // and is guaranteed to be cleaned up on transaction failure.
         return statement;
     }
 
     @Override
-    public ElementIdMapper elementIdMapper()
-    {
+    public ElementIdMapper elementIdMapper() {
         return elementIdMapper;
     }
 
     @Override
-    public StatisticProvider kernelStatisticProvider()
-    {
+    public StatisticProvider kernelStatisticProvider() {
         return statisticProvider;
     }
 
     /**
      * Set a new statistic provider that captures hits/misses of the new open transaction plus any hits/misses of already committed transactions.
      */
-    private void updatePeriodicCommitStatisticProvider( KernelTransaction kernelTransaction )
-    {
-        statisticProvider = new PeriodicCommitTransactionalContextStatisticProvider( kernelTransaction.executionStatistics() );
+    private void updatePeriodicCommitStatisticProvider(KernelTransaction kernelTransaction) {
+        statisticProvider =
+                new PeriodicCommitTransactionalContextStatisticProvider(kernelTransaction.executionStatistics());
     }
 
     @FunctionalInterface
-    interface Creator
-    {
+    interface Creator {
         Neo4jTransactionalContext create(
-                InternalTransaction tx,
-                KernelStatement initialStatement,
-                ExecutingQuery executingQuery
-        );
+                InternalTransaction tx, KernelStatement initialStatement, ExecutingQuery executingQuery);
     }
 
     /**
      * Provide statistics using only the page hits/misses of the current transaction.
      */
-    private static class TransactionalContextStatisticProvider implements StatisticProvider
-    {
+    private static class TransactionalContextStatisticProvider implements StatisticProvider {
         private final ExecutionStatistics executionStatistics;
 
-        private TransactionalContextStatisticProvider( ExecutionStatistics executionStatistics )
-        {
+        private TransactionalContextStatisticProvider(ExecutionStatistics executionStatistics) {
             this.executionStatistics = executionStatistics;
         }
 
         @Override
-        public long getPageCacheHits()
-        {
+        public long getPageCacheHits() {
             return executionStatistics.pageHits();
         }
 
         @Override
-        public long getPageCacheMisses()
-        {
+        public long getPageCacheMisses() {
             return executionStatistics.pageFaults();
         }
     }
@@ -366,24 +323,20 @@ public class Neo4jTransactionalContext implements TransactionalContext
     /**
      * Provide statistics using the page hits/misses of the current transaction and any already committed transactions.
      */
-    private class PeriodicCommitTransactionalContextStatisticProvider implements StatisticProvider
-    {
+    private class PeriodicCommitTransactionalContextStatisticProvider implements StatisticProvider {
         private final ExecutionStatistics executionStatistics;
 
-        private PeriodicCommitTransactionalContextStatisticProvider( ExecutionStatistics executionStatistics )
-        {
+        private PeriodicCommitTransactionalContextStatisticProvider(ExecutionStatistics executionStatistics) {
             this.executionStatistics = executionStatistics;
         }
 
         @Override
-        public long getPageCacheHits()
-        {
+        public long getPageCacheHits() {
             return executionStatistics.pageHits() + executingQuery.pageHitsOfClosedTransactions();
         }
 
         @Override
-        public long getPageCacheMisses()
-        {
+        public long getPageCacheMisses() {
             return executionStatistics.pageFaults() + executingQuery.pageFaultsOfClosedTransactions();
         }
     }

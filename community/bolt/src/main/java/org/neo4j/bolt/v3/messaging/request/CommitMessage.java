@@ -21,25 +21,21 @@ package org.neo4j.bolt.v3.messaging.request;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 
-public class CommitMessage implements RequestMessage
-{
+public class CommitMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x12;
     public static final CommitMessage COMMIT_MESSAGE = new CommitMessage();
 
-    private CommitMessage()
-    {
+    private CommitMessage() {
         // left empty on purpose
     }
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return false;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "COMMIT";
     }
 }

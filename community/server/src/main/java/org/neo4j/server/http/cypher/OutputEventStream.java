@@ -22,7 +22,6 @@ package org.neo4j.server.http.cypher;
 import java.net.URI;
 import java.util.List;
 import java.util.function.Function;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
@@ -35,16 +34,18 @@ import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
 /**
  * An output stream that can be used to create and send {@link OutputEvent}s.
  */
-public interface OutputEventStream
-{
-    void writeStatementStart( Statement statement, List<String> columns );
+public interface OutputEventStream {
+    void writeStatementStart(Statement statement, List<String> columns);
 
-    void writeStatementEnd( QueryExecutionType queryExecutionType, QueryStatistics queryStatistics, ExecutionPlanDescription executionPlanDescription,
-                            Iterable<Notification> notifications );
+    void writeStatementEnd(
+            QueryExecutionType queryExecutionType,
+            QueryStatistics queryStatistics,
+            ExecutionPlanDescription executionPlanDescription,
+            Iterable<Notification> notifications);
 
-    void writeRecord( List<String> columns, Function<String,Object> valueSupplier );
+    void writeRecord(List<String> columns, Function<String, Object> valueSupplier);
 
-    void writeTransactionInfo( TransactionNotificationState notification, URI commitUri, long expirationTimestamp );
+    void writeTransactionInfo(TransactionNotificationState notification, URI commitUri, long expirationTimestamp);
 
-    void writeFailure( Status status, String message );
+    void writeFailure(Status status, String message);
 }

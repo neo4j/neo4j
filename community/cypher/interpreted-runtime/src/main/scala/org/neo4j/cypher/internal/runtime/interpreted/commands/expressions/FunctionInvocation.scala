@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
-  extends Expression with GraphElementPropertyFunctions {
+    extends Expression with GraphElementPropertyFunctions {
 
   override def arguments: Seq[Expression] = input
 
@@ -47,17 +47,22 @@ abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array
   override def toString = s"${signature.name}(${input.mkString(",")})"
 }
 
-case class BuiltInFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression]) extends FunctionInvocation(signature, input) {
-  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = query.callBuiltInFunction(signature.id, argValues)
+case class BuiltInFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
+    extends FunctionInvocation(signature, input) {
+
+  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue =
+    query.callBuiltInFunction(signature.id, argValues)
 
   override def rewrite(f: Expression => Expression): Expression =
     f(BuiltInFunctionInvocation(signature, input.map(a => a.rewrite(f))))
 }
 
-case class UserFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression]) extends FunctionInvocation(signature, input) {
-  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = query.callFunction(signature.id, argValues)
+case class UserFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
+    extends FunctionInvocation(signature, input) {
+
+  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue =
+    query.callFunction(signature.id, argValues)
 
   override def rewrite(f: Expression => Expression): Expression =
     f(UserFunctionInvocation(signature, input.map(a => a.rewrite(f))))
 }
-

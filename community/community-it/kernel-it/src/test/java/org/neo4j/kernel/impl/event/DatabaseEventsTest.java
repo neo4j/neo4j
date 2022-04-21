@@ -19,84 +19,75 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-class DatabaseEventsTest
-{
+class DatabaseEventsTest {
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setUp()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+    void setUp() {
+        managementService =
+                new TestDatabaseManagementServiceBuilder().impermanent().build();
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
+    void tearDown() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
 
     @Test
-    void registerUnregisterHandlers()
-    {
+    void registerUnregisterHandlers() {
         DatabaseEventListener handler1 = new DummyDatabaseEventListener();
         DatabaseEventListener handler2 = new DummyDatabaseEventListener();
 
-        assertThrows( IllegalStateException.class, () -> managementService.unregisterDatabaseEventListener( handler1 ) );
+        assertThrows(IllegalStateException.class, () -> managementService.unregisterDatabaseEventListener(handler1));
 
-        managementService.registerDatabaseEventListener( handler1 );
-        managementService.registerDatabaseEventListener( handler1 );
-        managementService.unregisterDatabaseEventListener( handler1 );
+        managementService.registerDatabaseEventListener(handler1);
+        managementService.registerDatabaseEventListener(handler1);
+        managementService.unregisterDatabaseEventListener(handler1);
 
-        assertThrows( IllegalStateException.class, () -> managementService.unregisterDatabaseEventListener( handler1 ) );
+        assertThrows(IllegalStateException.class, () -> managementService.unregisterDatabaseEventListener(handler1));
 
-        managementService.registerDatabaseEventListener( handler1 );
-        managementService.registerDatabaseEventListener( handler2 );
-        managementService.unregisterDatabaseEventListener( handler1 );
-        managementService.unregisterDatabaseEventListener( handler2 );
+        managementService.registerDatabaseEventListener(handler1);
+        managementService.registerDatabaseEventListener(handler2);
+        managementService.unregisterDatabaseEventListener(handler1);
+        managementService.unregisterDatabaseEventListener(handler2);
     }
 
     @Test
-    void shutdownEvents()
-    {
+    void shutdownEvents() {
         DummyDatabaseEventListener handler1 = new DummyDatabaseEventListener();
         DummyDatabaseEventListener handler2 = new DummyDatabaseEventListener();
-        managementService.registerDatabaseEventListener( handler1 );
-        managementService.registerDatabaseEventListener( handler2 );
+        managementService.registerDatabaseEventListener(handler1);
+        managementService.registerDatabaseEventListener(handler2);
 
         managementService.shutdown();
 
-        assertEquals( 2, handler2.getShutdownCounter() );
-        assertEquals( 2, handler1.getShutdownCounter() );
+        assertEquals(2, handler2.getShutdownCounter());
+        assertEquals(2, handler1.getShutdownCounter());
     }
 
-    private static class DummyDatabaseEventListener extends DatabaseEventListenerAdapter
-    {
+    private static class DummyDatabaseEventListener extends DatabaseEventListenerAdapter {
         private int shutdownCounter;
 
         @Override
-        public void databaseShutdown( DatabaseEventContext eventContext )
-        {
+        public void databaseShutdown(DatabaseEventContext eventContext) {
             shutdownCounter++;
         }
 
-        int getShutdownCounter()
-        {
+        int getShutdownCounter() {
             return shutdownCounter;
         }
     }

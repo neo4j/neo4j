@@ -19,6 +19,19 @@
  */
 package org.neo4j.test.extension;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
+import static org.neo4j.test.extension.ExecutionSharedContext.CREATED_TEST_FILE_PAIRS_KEY;
+import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
+import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
+
+import java.nio.file.Path;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -29,36 +42,20 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.nio.file.Path;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
-import static org.neo4j.test.extension.ExecutionSharedContext.CREATED_TEST_FILE_PAIRS_KEY;
-import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
-import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
-
 /**
  * This test is disabled by default and not executed directly by test runner.
  * It will be executed by a specific test executor as part of extensions lifecycle testing.
  * @see TestDirectoryExtensionTestSupport#failedTestShouldKeepDirectory()
  */
-@ExtendWith( DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.class )
-@ResourceLock( SHARED_RESOURCE )
-abstract class DirectoryExtensionLifecycleVerificationTest
-{
+@ExtendWith(DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.class)
+@ResourceLock(SHARED_RESOURCE)
+abstract class DirectoryExtensionLifecycleVerificationTest {
     @Inject
     private TestDirectory directory;
 
@@ -66,110 +63,90 @@ abstract class DirectoryExtensionLifecycleVerificationTest
     private FileSystemAbstraction fs;
 
     @TestDirectoryExtension
-    static class WithRealFs extends DirectoryExtensionLifecycleVerificationTest
-    {
+    static class WithRealFs extends DirectoryExtensionLifecycleVerificationTest {
         @Nested
-        @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-        class PerClassTest extends SecondTestFailTest
-        {
-        }
+        @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+        class PerClassTest extends SecondTestFailTest {}
 
         @Nested
-        @TestInstance( TestInstance.Lifecycle.PER_METHOD )
-        class PerMethodTest extends SecondTestFailTest
-        {
-        }
+        @TestInstance(TestInstance.Lifecycle.PER_METHOD)
+        class PerMethodTest extends SecondTestFailTest {}
     }
 
     @EphemeralTestDirectoryExtension
-    static class WithEphemeralFs extends DirectoryExtensionLifecycleVerificationTest
-    {
+    static class WithEphemeralFs extends DirectoryExtensionLifecycleVerificationTest {
         @Nested
-        @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-        class PerClassTest extends SecondTestFailTest
-        {
-        }
+        @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+        class PerClassTest extends SecondTestFailTest {}
 
         @Nested
-        @TestInstance( TestInstance.Lifecycle.PER_METHOD )
-        class PerMethodTest extends SecondTestFailTest
-        {
-        }
+        @TestInstance(TestInstance.Lifecycle.PER_METHOD)
+        class PerMethodTest extends SecondTestFailTest {}
     }
 
     @Test
-    void executeAndCleanupDirectory()
-    {
-        Path file = directory.createFile( "a" );
-        assertTrue( fs.fileExists( file ) );
-        ExecutionSharedContext.setValue( SUCCESSFUL_TEST_FILE_KEY, file );
+    void executeAndCleanupDirectory() {
+        Path file = directory.createFile("a");
+        assertTrue(fs.fileExists(file));
+        ExecutionSharedContext.setValue(SUCCESSFUL_TEST_FILE_KEY, file);
     }
 
     @Test
-    void failAndKeepDirectory()
-    {
-        Path file = directory.createFile( "b" );
-        ExecutionSharedContext.setValue( CREATED_TEST_FILE_PAIRS_KEY, file );
-        throw new RuntimeException( "simulate test failure" );
+    void failAndKeepDirectory() {
+        Path file = directory.createFile("b");
+        ExecutionSharedContext.setValue(CREATED_TEST_FILE_PAIRS_KEY, file);
+        throw new RuntimeException("simulate test failure");
     }
 
     @Test
-    void lockFileAndFailToDeleteDirectory()
-    {
-        Path nonDeletableDirectory = directory.directory( "c" );
-        ExecutionSharedContext.setValue( LOCKED_TEST_FILE_KEY, nonDeletableDirectory );
-        assertTrue( nonDeletableDirectory.toFile().setReadable( false, false ) );
+    void lockFileAndFailToDeleteDirectory() {
+        Path nonDeletableDirectory = directory.directory("c");
+        ExecutionSharedContext.setValue(LOCKED_TEST_FILE_KEY, nonDeletableDirectory);
+        assertTrue(nonDeletableDirectory.toFile().setReadable(false, false));
     }
 
-    static class SecondTestFailTest
-    {
+    static class SecondTestFailTest {
         @Inject
         TestDirectory testDirectory;
 
         @Test
-        void createAFileAndThenPass()
-        {
-            createFileSaveAndFailIfNeeded( Boolean.FALSE );
+        void createAFileAndThenPass() {
+            createFileSaveAndFailIfNeeded(Boolean.FALSE);
         }
 
         @Test
-        void createAFileAndThenFail()
-        {
-            createFileSaveAndFailIfNeeded( Boolean.TRUE );
+        void createAFileAndThenFail() {
+            createFileSaveAndFailIfNeeded(Boolean.TRUE);
         }
 
         @Test
-        void createAnotherFileAndThenPass()
-        {
-            createFileSaveAndFailIfNeeded( Boolean.FALSE );
+        void createAnotherFileAndThenPass() {
+            createFileSaveAndFailIfNeeded(Boolean.FALSE);
         }
 
-        @ValueSource( booleans = {false, true, false} )
+        @ValueSource(booleans = {false, true, false})
         @ParameterizedTest
-        void createFileSaveAndFailIfNeeded( Boolean fail )
-        {
+        void createFileSaveAndFailIfNeeded(Boolean fail) {
             var filename = UUID.randomUUID().toString();
-            var file = testDirectory.createFile( filename );
-            List<Pair<Path,Boolean>> pairs = ExecutionSharedContext.getValue( CREATED_TEST_FILE_PAIRS_KEY );
+            var file = testDirectory.createFile(filename);
+            List<Pair<Path, Boolean>> pairs = ExecutionSharedContext.getValue(CREATED_TEST_FILE_PAIRS_KEY);
             pairs = pairs == null ? new LinkedList<>() : pairs;
-            pairs.add( Pair.of( file, fail ) );
-            ExecutionSharedContext.setValue( CREATED_TEST_FILE_PAIRS_KEY, pairs );
-            if ( fail )
-            {
+            pairs.add(Pair.of(file, fail));
+            ExecutionSharedContext.setValue(CREATED_TEST_FILE_PAIRS_KEY, pairs);
+            if (fail) {
                 fail();
             }
         }
     }
 
-    static class ConfigurationParameterCondition implements ExecutionCondition
-    {
+    static class ConfigurationParameterCondition implements ExecutionCondition {
         static final String TEST_TOGGLE = "testToggle";
 
         @Override
-        public ConditionEvaluationResult evaluateExecutionCondition( ExtensionContext context )
-        {
-            Optional<String> option = context.getConfigurationParameter( TEST_TOGGLE );
-            return option.map( ConditionEvaluationResult::enabled ).orElseGet( () -> disabled( "configuration parameter not present" ) );
+        public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+            Optional<String> option = context.getConfigurationParameter(TEST_TOGGLE);
+            return option.map(ConditionEvaluationResult::enabled)
+                    .orElseGet(() -> disabled("configuration parameter not present"));
         }
     }
 }

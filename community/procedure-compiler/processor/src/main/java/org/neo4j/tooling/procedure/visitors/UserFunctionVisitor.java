@@ -23,27 +23,24 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.util.SimpleElementVisitor8;
-
 import org.neo4j.procedure.UserFunction;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 
-public class UserFunctionVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
-{
+public class UserFunctionVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>, Void> {
 
     private final FunctionVisitor functionVisitor;
 
-    public UserFunctionVisitor( FunctionVisitor<UserFunction> baseFunctionVisitor )
-    {
+    public UserFunctionVisitor(FunctionVisitor<UserFunction> baseFunctionVisitor) {
         this.functionVisitor = baseFunctionVisitor;
     }
 
     @Override
-    public Stream<CompilationMessage> visitExecutable( ExecutableElement executableElement, Void ignored )
-    {
-        return Stream.<Stream<CompilationMessage>>of( functionVisitor.validateEnclosingClass( executableElement ),
-                functionVisitor.validateParameters( executableElement.getParameters() ),
-                functionVisitor.validateName( executableElement ),
-                functionVisitor.validateReturnType( executableElement ) ).flatMap( Function.identity() );
+    public Stream<CompilationMessage> visitExecutable(ExecutableElement executableElement, Void ignored) {
+        return Stream.<Stream<CompilationMessage>>of(
+                        functionVisitor.validateEnclosingClass(executableElement),
+                        functionVisitor.validateParameters(executableElement.getParameters()),
+                        functionVisitor.validateName(executableElement),
+                        functionVisitor.validateReturnType(executableElement))
+                .flatMap(Function.identity());
     }
-
 }

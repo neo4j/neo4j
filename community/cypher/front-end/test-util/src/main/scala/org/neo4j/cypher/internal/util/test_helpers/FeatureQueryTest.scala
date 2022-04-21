@@ -42,9 +42,11 @@ trait FeatureQueryTest extends FeatureTest {
    */
   def runQuery(scenario: Scenario, query: String): Option[Executable]
 
-  final override def runDenyListedScenario(scenario: Scenario): Seq[Executable] = getQueries(scenario).flatMap(runDenyListedQuery(scenario, _))
+  final override def runDenyListedScenario(scenario: Scenario): Seq[Executable] =
+    getQueries(scenario).flatMap(runDenyListedQuery(scenario, _))
 
-  final override def runScenario(scenario: Scenario): Seq[Executable] = getQueries(scenario).flatMap(runQuery(scenario, _))
+  final override def runScenario(scenario: Scenario): Seq[Executable] =
+    getQueries(scenario).flatMap(runQuery(scenario, _))
 
   private def getQueries(scenario: Scenario): Seq[String] = {
     scenario.steps.collect {

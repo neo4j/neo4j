@@ -19,70 +19,63 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.storageengine.api.StorageNodeCursor;
-import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
+import org.junit.jupiter.api.Test;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+
 /**
  * Test reading committed node and relationships from disk.
  */
-class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase
-{
+class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase {
     @Test
-    void shouldTellIfNodeExists() throws Exception
-    {
+    void shouldTellIfNodeExists() throws Exception {
         // Given
-        long created = createNode( map() );
-        long createdAndRemoved = createNode( map() );
+        long created = createNode(map());
+        long createdAndRemoved = createNode(map());
         long neverExisted = createdAndRemoved + 99;
 
-        deleteNode( createdAndRemoved );
+        deleteNode(createdAndRemoved);
 
         // When & then
-        assertTrue(  nodeExists( created ));
-        assertFalse( nodeExists( createdAndRemoved ) );
-        assertFalse( nodeExists( neverExisted ) );
+        assertTrue(nodeExists(created));
+        assertFalse(nodeExists(createdAndRemoved));
+        assertFalse(nodeExists(neverExisted));
     }
 
     @Test
-    void shouldTellIfRelExists() throws Exception
-    {
+    void shouldTellIfRelExists() throws Exception {
         // Given
-        long node = createNode( map() );
-        long created = createRelationship( createNode( map() ), createNode( map() ), withName( "Banana" ) );
-        long createdAndRemoved = createRelationship( createNode( map() ), createNode( map() ), withName( "Banana" ) );
+        long node = createNode(map());
+        long created = createRelationship(createNode(map()), createNode(map()), withName("Banana"));
+        long createdAndRemoved = createRelationship(createNode(map()), createNode(map()), withName("Banana"));
         long neverExisted = created + 99;
 
-        deleteRelationship( createdAndRemoved );
+        deleteRelationship(createdAndRemoved);
 
         // When & then
-        assertTrue(  relationshipExists( node ));
-        assertFalse( relationshipExists( createdAndRemoved ) );
-        assertFalse( relationshipExists( neverExisted ) );
+        assertTrue(relationshipExists(node));
+        assertFalse(relationshipExists(createdAndRemoved));
+        assertFalse(relationshipExists(neverExisted));
     }
 
-    private boolean nodeExists( long id )
-    {
-        try ( StorageNodeCursor node = storageReader.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL ) )
-        {
-            node.single( id );
+    private boolean nodeExists(long id) {
+        try (StorageNodeCursor node = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+            node.single(id);
             return node.next();
         }
     }
 
-    private boolean relationshipExists( long id )
-    {
-        try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor( NULL_CONTEXT, StoreCursors.NULL ) )
-        {
-            relationship.single( id );
+    private boolean relationshipExists(long id) {
+        try (StorageRelationshipScanCursor relationship =
+                storageReader.allocateRelationshipScanCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+            relationship.single(id);
             return relationship.next();
         }
     }

@@ -34,17 +34,18 @@ import org.scalatest.matchers.Matcher
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class ExecutionEngineFunSuite
-  extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport with QueryPlanTestSupport {
+    extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport with QueryPlanTestSupport {
 
   case class haveProperty(propName: String) extends Matcher[Entity] {
+
     def apply(left: Entity): MatchResult = {
-      val result = graph.withTx( tx => {
+      val result = graph.withTx(tx => {
         val entity = left match {
-          case _: Node => tx.getNodeById(left.getId)
+          case _: Node         => tx.getNodeById(left.getId)
           case _: Relationship => tx.getRelationshipById(left.getId)
         }
         entity.hasProperty(propName)
-      } )
+      })
 
       MatchResult(
         result,
@@ -54,14 +55,15 @@ abstract class ExecutionEngineFunSuite
     }
 
     def withValue(value: Any) = this and new Matcher[Entity] {
+
       def apply(left: Entity): MatchResult = {
-        val propValue = graph.withTx( tx => {
+        val propValue = graph.withTx(tx => {
           val entity = left match {
-            case _: Node => tx.getNodeById(left.getId)
+            case _: Node         => tx.getNodeById(left.getId)
             case _: Relationship => tx.getRelationshipById(left.getId)
           }
           entity.getProperty(propName)
-        } )
+        })
         val result = propValue == value
         MatchResult(
           result,
@@ -73,6 +75,7 @@ abstract class ExecutionEngineFunSuite
   }
 
   case class haveLabels(expectedLabels: String*) extends Matcher[Node] {
+
     def apply(left: Node): MatchResult = {
 
       val labels = graph.withTx { tx =>
@@ -92,10 +95,12 @@ abstract class ExecutionEngineFunSuite
   def shouldHaveWarning(result: Result, statusCode: Status, detailMessage: String): Unit = {
     val notifications: Iterable[Notification] = result.getNotifications.asScala
 
-    withClue(s"Expected a notification with status code: $statusCode and detail message: $detailMessage\nBut got: $notifications") {
+    withClue(
+      s"Expected a notification with status code: $statusCode and detail message: $detailMessage\nBut got: $notifications"
+    ) {
       notifications.exists { notification =>
         notification.getCode == statusCode.code().serialize() &&
-          notification.getDescription == detailMessage
+        notification.getDescription == detailMessage
       } should be(true)
     }
   }
@@ -111,22 +116,42 @@ abstract class ExecutionEngineFunSuite
   }
 }
 
-case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0, compilations: Int = 0, compilationsWithExpressionCodeGen: Int =0) {
-  override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, compilations = $compilations, compilationsWithExpressionCodeGen = $compilationsWithExpressionCodeGen"
+case class CacheCounts(
+  hits: Int = 0,
+  misses: Int = 0,
+  flushes: Int = 0,
+  evicted: Int = 0,
+  compilations: Int = 0,
+  compilationsWithExpressionCodeGen: Int = 0
+) {
+
+  override def toString =
+    s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, compilations = $compilations, compilationsWithExpressionCodeGen = $compilationsWithExpressionCodeGen"
 }
 
 class CountingCacheTracer[Key] extends CacheTracer[Key] {
   var counts: CacheCounts = CacheCounts()
+
   override def queryCacheHit(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(hits = counts.hits + 1)
+
   override def queryCacheMiss(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(misses = counts.misses + 1)
+
   override def queryCompile(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(compilations = counts.compilations + 1)
+
   override def queryCompileWithExpressionCodeGen(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
-  override def queryCacheStale(queryKey: Key, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
+
+  override def queryCacheStale(
+    queryKey: Key,
+    secondsSincePlan: Int,
+    metaData: String,
+    maybeReason: Option[String]
+  ): Unit =
     counts = counts.copy(evicted = counts.evicted + 1)
+
   override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit =
     counts = counts.copy(flushes = counts.flushes + 1)
 }

@@ -19,14 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ACCESS;
@@ -91,88 +83,91 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TRAVERSE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.USER_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.WRITE;
 
-class PrivilegeActionTest
-{
-    private static final Map<PrivilegeAction,Set<PrivilegeAction>> expected = new HashMap<>();
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
 
-    static
-    {
-        expected.put( ADMIN, Set.of( DBMS_ACTIONS, TRANSACTION_MANAGEMENT, START_DATABASE, STOP_DATABASE ) );
-        expected.put( TRANSACTION_MANAGEMENT, Set.of( SHOW_TRANSACTION, TERMINATE_TRANSACTION, SHOW_CONNECTION, TERMINATE_CONNECTION ) );
-        expected.put( ROLE_MANAGEMENT, Set.of( SHOW_ROLE, CREATE_ROLE, RENAME_ROLE, DROP_ROLE, ASSIGN_ROLE, REMOVE_ROLE ) );
-        expected.put( USER_MANAGEMENT, Set.of( SHOW_USER, CREATE_USER, RENAME_USER, DROP_USER, ALTER_USER ) );
-        expected.put( ALTER_USER, Set.of( SET_USER_STATUS, SET_PASSWORDS, SET_USER_HOME_DATABASE ) );
-        expected.put( DATABASE_MANAGEMENT, Set.of( CREATE_DATABASE, DROP_DATABASE, ALTER_DATABASE ) );
-        expected.put( ALTER_DATABASE, Set.of( SET_DATABASE_ACCESS ) );
-        expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE ) );
-        expected.put( WRITE, Set.of( SET_LABEL, REMOVE_LABEL, CREATE_ELEMENT, DELETE_ELEMENT, SET_PROPERTY ) );
-        expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE, MATCH ) );
-        expected.put( MERGE, Set.of( MATCH, TRAVERSE, READ, CREATE_ELEMENT, SET_PROPERTY  ) );
-        expected.put( MATCH, Set.of( TRAVERSE, READ ) );
-        expected.put( INDEX, Set.of( CREATE_INDEX, DROP_INDEX, SHOW_INDEX ) );
-        expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT, SHOW_CONSTRAINT ) );
-        expected.put( TOKEN, Set.of( CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY ) );
-        expected.put( DATABASE_ACTIONS, Set.of( INDEX, CONSTRAINT, TOKEN, ACCESS ) );
-        expected.put( DBMS_ACTIONS, Set.of( ROLE_MANAGEMENT, USER_MANAGEMENT, DATABASE_MANAGEMENT, PRIVILEGE_MANAGEMENT, EXECUTE_ADMIN, IMPERSONATE ) );
+class PrivilegeActionTest {
+    private static final Map<PrivilegeAction, Set<PrivilegeAction>> expected = new HashMap<>();
+
+    static {
+        expected.put(ADMIN, Set.of(DBMS_ACTIONS, TRANSACTION_MANAGEMENT, START_DATABASE, STOP_DATABASE));
+        expected.put(
+                TRANSACTION_MANAGEMENT,
+                Set.of(SHOW_TRANSACTION, TERMINATE_TRANSACTION, SHOW_CONNECTION, TERMINATE_CONNECTION));
+        expected.put(ROLE_MANAGEMENT, Set.of(SHOW_ROLE, CREATE_ROLE, RENAME_ROLE, DROP_ROLE, ASSIGN_ROLE, REMOVE_ROLE));
+        expected.put(USER_MANAGEMENT, Set.of(SHOW_USER, CREATE_USER, RENAME_USER, DROP_USER, ALTER_USER));
+        expected.put(ALTER_USER, Set.of(SET_USER_STATUS, SET_PASSWORDS, SET_USER_HOME_DATABASE));
+        expected.put(DATABASE_MANAGEMENT, Set.of(CREATE_DATABASE, DROP_DATABASE, ALTER_DATABASE));
+        expected.put(ALTER_DATABASE, Set.of(SET_DATABASE_ACCESS));
+        expected.put(PRIVILEGE_MANAGEMENT, Set.of(SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE));
+        expected.put(WRITE, Set.of(SET_LABEL, REMOVE_LABEL, CREATE_ELEMENT, DELETE_ELEMENT, SET_PROPERTY));
+        expected.put(GRAPH_ACTIONS, Set.of(TRAVERSE, READ, WRITE, MATCH));
+        expected.put(MERGE, Set.of(MATCH, TRAVERSE, READ, CREATE_ELEMENT, SET_PROPERTY));
+        expected.put(MATCH, Set.of(TRAVERSE, READ));
+        expected.put(INDEX, Set.of(CREATE_INDEX, DROP_INDEX, SHOW_INDEX));
+        expected.put(CONSTRAINT, Set.of(CREATE_CONSTRAINT, DROP_CONSTRAINT, SHOW_CONSTRAINT));
+        expected.put(TOKEN, Set.of(CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY));
+        expected.put(DATABASE_ACTIONS, Set.of(INDEX, CONSTRAINT, TOKEN, ACCESS));
+        expected.put(
+                DBMS_ACTIONS,
+                Set.of(
+                        ROLE_MANAGEMENT,
+                        USER_MANAGEMENT,
+                        DATABASE_MANAGEMENT,
+                        PRIVILEGE_MANAGEMENT,
+                        EXECUTE_ADMIN,
+                        IMPERSONATE));
     }
 
     @Test
-    void shouldSatisfySelf()
-    {
-        for ( var action : PrivilegeAction.values() )
-        {
-            assertTrue( action.satisfies( action ) );
+    void shouldSatisfySelf() {
+        for (var action : PrivilegeAction.values()) {
+            assertTrue(action.satisfies(action));
         }
     }
 
     @Test
-    void shouldSatisfyAtAllLevels()
-    {
-        for ( var groupAction : expected.keySet() )
-        {
-            assertGroupSatisfies( groupAction, expected.get( groupAction ) );
+    void shouldSatisfyAtAllLevels() {
+        for (var groupAction : expected.keySet()) {
+            assertGroupSatisfies(groupAction, expected.get(groupAction));
         }
     }
 
-    static void assertGroupSatisfies( PrivilegeAction group, Set<PrivilegeAction> actions )
-    {
-        for ( var action : actions )
-        {
-            if ( expected.containsKey( action ) )
-            {
-                assertGroupSatisfies( group, expected.get( action ) );
+    static void assertGroupSatisfies(PrivilegeAction group, Set<PrivilegeAction> actions) {
+        for (var action : actions) {
+            if (expected.containsKey(action)) {
+                assertGroupSatisfies(group, expected.get(action));
             }
-            assertTrue( group.satisfies( action ), String.format( "%s should satisfy %s", group, action ) );
+            assertTrue(group.satisfies(action), String.format("%s should satisfy %s", group, action));
         }
     }
 
     @Test
-    void shouldNotSatisfy()
-    {
-        for ( var action : PrivilegeAction.values() )
-        {
-            for ( var notSatisfied : notChild( action ) )
-            {
-                assertFalse( action.satisfies( notSatisfied ), String.format( "%s should not satisfy %s", action, notSatisfied ) );
+    void shouldNotSatisfy() {
+        for (var action : PrivilegeAction.values()) {
+            for (var notSatisfied : notChild(action)) {
+                assertFalse(
+                        action.satisfies(notSatisfied),
+                        String.format("%s should not satisfy %s", action, notSatisfied));
             }
         }
     }
 
-    private static Set<PrivilegeAction> notChild( PrivilegeAction action )
-    {
-        var notChildren = new HashSet<>( Arrays.asList( PrivilegeAction.values() ) );
-        removeChildren( action, notChildren );
+    private static Set<PrivilegeAction> notChild(PrivilegeAction action) {
+        var notChildren = new HashSet<>(Arrays.asList(PrivilegeAction.values()));
+        removeChildren(action, notChildren);
         return notChildren;
     }
 
-    private static void removeChildren( PrivilegeAction action, Set<PrivilegeAction> notChildren )
-    {
-        notChildren.remove( action );
-        if ( expected.containsKey( action ) )
-        {
-            for ( var child : expected.get( action ) )
-            {
-                removeChildren( child, notChildren );
+    private static void removeChildren(PrivilegeAction action, Set<PrivilegeAction> notChildren) {
+        notChildren.remove(action);
+        if (expected.containsKey(action)) {
+            for (var child : expected.get(action)) {
+                removeChildren(child, notChildren);
             }
         }
     }

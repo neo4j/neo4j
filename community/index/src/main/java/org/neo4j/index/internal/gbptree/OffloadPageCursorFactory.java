@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -30,7 +29,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * rather by {@link ByteArrayPageCursor}.
  */
 @FunctionalInterface
-interface OffloadPageCursorFactory
-{
-    PageCursor create( long pageId, int pf_flags, CursorContext cursorContext ) throws IOException;
+interface OffloadPageCursorFactory {
+    PageCursor create(long pageId, int pf_flags, CursorContext cursorContext) throws IOException;
 }

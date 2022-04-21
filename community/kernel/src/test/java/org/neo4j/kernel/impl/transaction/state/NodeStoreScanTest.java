@@ -19,6 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysTrue;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.collection.PrimitiveArrays.intersect;
+import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.IntPredicate;
 import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
@@ -28,12 +41,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.IntPredicate;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -56,26 +63,16 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysTrue;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.collection.PrimitiveArrays.intersect;
-import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@ExtendWith( RandomExtension.class )
-class NodeStoreScanTest
-{
+@ExtendWith(RandomExtension.class)
+class NodeStoreScanTest {
     private static final String KEY_NAME = "name";
     private static final String KEY_AGE = "age";
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
     @Inject
     private RandomSupport random;
 
-    private final LockService locks = mock( LockService.class, RETURNS_MOCKS );
+    private final LockService locks = mock(LockService.class, RETURNS_MOCKS);
     private final StubStorageCursors cursors = new StubStorageCursors();
     private final int[] allPossibleLabelIds = {1, 2, 3, 4};
     private int nameKeyId;
@@ -83,117 +80,127 @@ class NodeStoreScanTest
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
     @AfterEach
-    void tearDown() throws Exception
-    {
+    void tearDown() throws Exception {
         jobScheduler.close();
     }
 
     @BeforeEach
-    void setUp() throws KernelException
-    {
-        nameKeyId = cursors.propertyKeyTokenHolder().getOrCreateId( KEY_NAME );
-        ageKeyId = cursors.propertyKeyTokenHolder().getOrCreateId( KEY_AGE );
+    void setUp() throws KernelException {
+        nameKeyId = cursors.propertyKeyTokenHolder().getOrCreateId(KEY_NAME);
+        ageKeyId = cursors.propertyKeyTokenHolder().getOrCreateId(KEY_AGE);
     }
 
     @Test
-    void shouldScanOverRelevantNodesAllLabelsAndAllProperties()
-    {
-        shouldScanOverRelevantNodes( allPossibleLabelIds, alwaysTrue() );
+    void shouldScanOverRelevantNodesAllLabelsAndAllProperties() {
+        shouldScanOverRelevantNodes(allPossibleLabelIds, alwaysTrue());
     }
 
     @Test
-    void shouldScanOverRelevantNodesAllLabelsAndSomeProperties()
-    {
-        shouldScanOverRelevantNodes( allPossibleLabelIds, key -> key == nameKeyId );
+    void shouldScanOverRelevantNodesAllLabelsAndSomeProperties() {
+        shouldScanOverRelevantNodes(allPossibleLabelIds, key -> key == nameKeyId);
     }
 
     @Test
-    void shouldScanOverRelevantNodesSomeLabelsAndAllProperties()
-    {
-        shouldScanOverRelevantNodes( randomLabels(), alwaysTrue() );
+    void shouldScanOverRelevantNodesSomeLabelsAndAllProperties() {
+        shouldScanOverRelevantNodes(randomLabels(), alwaysTrue());
     }
 
     @Test
-    void shouldScanOverRelevantNodesSomeLabelsAndSomeProperties()
-    {
-        shouldScanOverRelevantNodes( randomLabels(), key -> key == ageKeyId );
+    void shouldScanOverRelevantNodesSomeLabelsAndSomeProperties() {
+        shouldScanOverRelevantNodes(randomLabels(), key -> key == ageKeyId);
     }
 
     @Test
-    void shouldSeeZeroProgressBeforeRunStarted()
-    {
+    void shouldSeeZeroProgressBeforeRunStarted() {
         // given
-        NodeStoreScan scan = new NodeStoreScan( Config.defaults(), cursors, any -> StoreCursors.NULL, locks, mock( TokenScanConsumer.class ),
-                mock( PropertyScanConsumer.class ), allPossibleLabelIds, k -> true, false, jobScheduler, CONTEXT_FACTORY, INSTANCE );
+        NodeStoreScan scan = new NodeStoreScan(
+                Config.defaults(),
+                cursors,
+                any -> StoreCursors.NULL,
+                locks,
+                mock(TokenScanConsumer.class),
+                mock(PropertyScanConsumer.class),
+                allPossibleLabelIds,
+                k -> true,
+                false,
+                jobScheduler,
+                CONTEXT_FACTORY,
+                INSTANCE);
 
         // when
         PopulationProgress progressBeforeStarted = scan.getProgress();
 
         // then
-        assertThat( progressBeforeStarted.getCompleted() ).isZero();
+        assertThat(progressBeforeStarted.getCompleted()).isZero();
     }
 
-    private void shouldScanOverRelevantNodes( int[] labelFilter, IntPredicate propertyKeyFilter )
-    {
+    private void shouldScanOverRelevantNodes(int[] labelFilter, IntPredicate propertyKeyFilter) {
         // given
         long total = 100;
         MutableLongSet expectedPropertyUpdatesNodes = new LongHashSet();
         MutableLongSet expectedTokenUpdatesNodes = new LongHashSet();
-        for ( long id = 0; id < total; id++ )
-        {
-            StubStorageCursors.NodeData node = cursors.withNode( id );
+        for (long id = 0; id < total; id++) {
+            StubStorageCursors.NodeData node = cursors.withNode(id);
             int[] labels = randomLabels();
-            node.labels( intsToLongs( labels ) );
-            Map<String,Value> properties = new HashMap<>();
+            node.labels(intsToLongs(labels));
+            Map<String, Value> properties = new HashMap<>();
             boolean passesPropertyFilter = false;
-            if ( random.nextBoolean() )
-            {
-                properties.put( KEY_NAME, Values.of( "Node_" + id ) );
-                passesPropertyFilter |= propertyKeyFilter.test( nameKeyId );
+            if (random.nextBoolean()) {
+                properties.put(KEY_NAME, Values.of("Node_" + id));
+                passesPropertyFilter |= propertyKeyFilter.test(nameKeyId);
             }
-            if ( random.nextBoolean() )
-            {
-                properties.put( KEY_AGE, Values.of( id ) );
-                passesPropertyFilter |= propertyKeyFilter.test( ageKeyId );
+            if (random.nextBoolean()) {
+                properties.put(KEY_AGE, Values.of(id));
+                passesPropertyFilter |= propertyKeyFilter.test(ageKeyId);
             }
-            node.properties( properties );
-            if ( passesPropertyFilter && intersect( intsToLongs( labels ), intsToLongs( labelFilter ) ).length > 0 )
-            {
-                expectedPropertyUpdatesNodes.add( id );
+            node.properties(properties);
+            if (passesPropertyFilter && intersect(intsToLongs(labels), intsToLongs(labelFilter)).length > 0) {
+                expectedPropertyUpdatesNodes.add(id);
             }
-            if ( labels.length > 0 )
-            {
-                expectedTokenUpdatesNodes.add( id );
+            if (labels.length > 0) {
+                expectedTokenUpdatesNodes.add(id);
             }
         }
 
         // when
         var tokenConsumer = new TestTokenScanConsumer();
         var propertyConsumer = new TestPropertyScanConsumer();
-        NodeStoreScan scan =
-                new NodeStoreScan( Config.defaults(), cursors, any -> StoreCursors.NULL, locks, tokenConsumer, propertyConsumer, labelFilter, propertyKeyFilter,
-                        false, jobScheduler, CONTEXT_FACTORY, INSTANCE );
-        assertThat( scan.getProgress().getCompleted() ).isZero();
+        NodeStoreScan scan = new NodeStoreScan(
+                Config.defaults(),
+                cursors,
+                any -> StoreCursors.NULL,
+                locks,
+                tokenConsumer,
+                propertyConsumer,
+                labelFilter,
+                propertyKeyFilter,
+                false,
+                jobScheduler,
+                CONTEXT_FACTORY,
+                INSTANCE);
+        assertThat(scan.getProgress().getCompleted()).isZero();
 
-        scan.run( StoreScan.NO_EXTERNAL_UPDATES );
+        scan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
         // then
-        assertThat( LongSets.mutable.of(
-                tokenConsumer.batches.stream().flatMap( Collection::stream ).mapToLong( TestTokenScanConsumer.Record::getEntityId ).toArray() ) )
-                .isEqualTo( expectedTokenUpdatesNodes );
-        assertThat( LongSets.mutable.of( propertyConsumer.batches.stream()
-                                                                 .flatMap( Collection::stream )
-                                                                 .mapToLong( TestPropertyScanConsumer.Record::getEntityId )
-                                                                 .toArray() ) )
-                .isEqualTo( expectedPropertyUpdatesNodes );
+        assertThat(LongSets.mutable.of(tokenConsumer.batches.stream()
+                        .flatMap(Collection::stream)
+                        .mapToLong(TestTokenScanConsumer.Record::getEntityId)
+                        .toArray()))
+                .isEqualTo(expectedTokenUpdatesNodes);
+        assertThat(LongSets.mutable.of(propertyConsumer.batches.stream()
+                        .flatMap(Collection::stream)
+                        .mapToLong(TestPropertyScanConsumer.Record::getEntityId)
+                        .toArray()))
+                .isEqualTo(expectedPropertyUpdatesNodes);
     }
 
-    private int[] randomLabels()
-    {
+    private int[] randomLabels() {
         MutableIntList list = IntLists.mutable.empty();
-        for ( int i = random.nextInt( allPossibleLabelIds.length ); i < allPossibleLabelIds.length; i += random.nextInt( 1, allPossibleLabelIds.length - 1 ) )
-        {
-            list.add( allPossibleLabelIds[i] );
+        for (int i = random.nextInt(allPossibleLabelIds.length);
+                i < allPossibleLabelIds.length;
+                i += random.nextInt(1, allPossibleLabelIds.length - 1)) {
+            list.add(allPossibleLabelIds[i]);
         }
         return list.toArray();
     }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.annotations.api;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.google.testing.compile.JavaFileObjects.forResource;
 import static com.google.testing.compile.JavaSourcesSubject.assertThat;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
@@ -29,89 +26,88 @@ import static org.neo4j.annotations.AnnotationTestHelper.detectNewLineSignature;
 import static org.neo4j.annotations.api.PublicApiAnnotationProcessor.GENERATED_SIGNATURE_DESTINATION;
 import static org.neo4j.annotations.api.PublicApiAnnotationProcessor.VERIFY_TOGGLE;
 
-class PublicApiAnnotationProcessorTest
-{
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class PublicApiAnnotationProcessorTest {
     @BeforeEach
-    void setUp()
-    {
-        System.setProperty( VERIFY_TOGGLE, "true" );
+    void setUp() {
+        System.setProperty(VERIFY_TOGGLE, "true");
     }
 
     @Test
-    void printPublicSignature() throws Exception
-    {
-        assertThat(
-                forResource( "org/neo4j/annotations/api/PublicClass.java" ) )
-                .processedWith( new PublicApiAnnotationProcessor( true, detectNewLineSignature( "signatures/PublicClass.txt" ) ) )
+    void printPublicSignature() throws Exception {
+        assertThat(forResource("org/neo4j/annotations/api/PublicClass.java"))
+                .processedWith(
+                        new PublicApiAnnotationProcessor(true, detectNewLineSignature("signatures/PublicClass.txt")))
                 .compilesWithoutError()
                 .and()
-                .generatesFileNamed( CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION )
+                .generatesFileNamed(CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION)
                 .and()
-                .generatesFiles( forResource( "signatures/PublicClass.txt" ) );
+                .generatesFiles(forResource("signatures/PublicClass.txt"));
     }
 
     @Test
-    void printAnnotationSignature() throws Exception
-    {
-        assertThat(
-                forResource( "org/neo4j/annotations/api/PublicAnnotation.java" ) )
-                .processedWith( new PublicApiAnnotationProcessor( true, detectNewLineSignature( "signatures/PublicAnnotation.txt" ) ) )
+    void printAnnotationSignature() throws Exception {
+        assertThat(forResource("org/neo4j/annotations/api/PublicAnnotation.java"))
+                .processedWith(new PublicApiAnnotationProcessor(
+                        true, detectNewLineSignature("signatures/PublicAnnotation.txt")))
                 .compilesWithoutError()
                 .and()
-                .generatesFileNamed( CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION )
+                .generatesFileNamed(CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION)
                 .and()
-                .generatesFiles( forResource( "signatures/PublicAnnotation.txt" ) );
+                .generatesFiles(forResource("signatures/PublicAnnotation.txt"));
     }
 
     @Test
-    void failClassIsNotPublic()
-    {
-        assertThat(
-                forResource( "org/neo4j/annotations/api/NonPublicClass.java" ) )
-                .processedWith( new PublicApiAnnotationProcessor( true ) )
+    void failClassIsNotPublic() {
+        assertThat(forResource("org/neo4j/annotations/api/NonPublicClass.java"))
+                .processedWith(new PublicApiAnnotationProcessor(true))
                 .failsToCompile()
-                .withErrorContaining( "Class marked as public is not actually public" );
+                .withErrorContaining("Class marked as public is not actually public");
     }
 
     @Test
-    void failClassIsNotMarkedPublic()
-    {
+    void failClassIsNotMarkedPublic() {
         assertThat(
-                forResource( "org/neo4j/annotations/api/ExposingPublicInterface.java" ),
-                forResource( "org/neo4j/annotations/api/NotMarkedClass.java" ) )
-                .processedWith( new PublicApiAnnotationProcessor( true ) )
+                        forResource("org/neo4j/annotations/api/ExposingPublicInterface.java"),
+                        forResource("org/neo4j/annotations/api/NotMarkedClass.java"))
+                .processedWith(new PublicApiAnnotationProcessor(true))
                 .failsToCompile()
-                .withErrorContaining( "Error processing org.neo4j.annotations.api.ExposingPublicInterface::i():" + System.lineSeparator() +
-                        "  org.neo4j.annotations.api.NotMarkedClass exposed through the API is not marked with @" + PublicApi.class.getSimpleName() );
+                .withErrorContaining("Error processing org.neo4j.annotations.api.ExposingPublicInterface::i():"
+                        + System.lineSeparator()
+                        + "  org.neo4j.annotations.api.NotMarkedClass exposed through the API is not marked with @"
+                        + PublicApi.class.getSimpleName());
     }
 
     @Test
-    void failNestedClassIsNotMarkedPublic()
-    {
+    void failNestedClassIsNotMarkedPublic() {
         assertThat(
-                forResource( "org/neo4j/annotations/api/ExposingPublicNestedInterface.java" ),
-                forResource( "org/neo4j/annotations/api/NotMarkedNestedClass.java" ) )
-                .processedWith( new PublicApiAnnotationProcessor( true ) )
+                        forResource("org/neo4j/annotations/api/ExposingPublicNestedInterface.java"),
+                        forResource("org/neo4j/annotations/api/NotMarkedNestedClass.java"))
+                .processedWith(new PublicApiAnnotationProcessor(true))
                 .failsToCompile()
-                .withErrorContaining( "Error processing org.neo4j.annotations.api.ExposingPublicNestedInterface::nested():" + System.lineSeparator() +
-                        "  org.neo4j.annotations.api.NotMarkedNestedClass.Nested's parent, " +
-                        "org.neo4j.annotations.api.NotMarkedNestedClass, is not marked with @" +
-                        PublicApi.class.getSimpleName() );
+                .withErrorContaining(
+                        "Error processing org.neo4j.annotations.api.ExposingPublicNestedInterface::nested():"
+                                + System.lineSeparator()
+                                + "  org.neo4j.annotations.api.NotMarkedNestedClass.Nested's parent, "
+                                + "org.neo4j.annotations.api.NotMarkedNestedClass, is not marked with @"
+                                + PublicApi.class.getSimpleName());
     }
 
     @Test
-    void successDeprecatedClassIsNotMarkedPublic() throws Exception
-    {
+    void successDeprecatedClassIsNotMarkedPublic() throws Exception {
         assertThat(
-                forResource( "org/neo4j/annotations/api/ExposingDeprecatedPublicInterface.java" ),
-                forResource( "org/neo4j/annotations/api/NotMarkedClass.java" ) )
-                .processedWith( new PublicApiAnnotationProcessor( true, detectNewLineSignature( "signatures/ExposingDeprecatedPublicInterface.txt" ) ) )
+                        forResource("org/neo4j/annotations/api/ExposingDeprecatedPublicInterface.java"),
+                        forResource("org/neo4j/annotations/api/NotMarkedClass.java"))
+                .processedWith(new PublicApiAnnotationProcessor(
+                        true, detectNewLineSignature("signatures/ExposingDeprecatedPublicInterface.txt")))
                 .compilesWithoutError()
                 .and()
-                .generatesFileNamed( CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION )
+                .generatesFileNamed(CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION)
                 .and()
-                .generatesFiles( forResource( "signatures/ExposingDeprecatedPublicInterface.txt" ) )
+                .generatesFiles(forResource("signatures/ExposingDeprecatedPublicInterface.txt"))
                 .withWarningContaining(
-                        "Non-public element, org.neo4j.annotations.api.NotMarkedNestedClass, is exposed through the API via a deprecated method" );
+                        "Non-public element, org.neo4j.annotations.api.NotMarkedNestedClass, is exposed through the API via a deprecated method");
     }
 }

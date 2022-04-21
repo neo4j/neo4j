@@ -21,41 +21,34 @@ package org.neo4j.codegen;
 
 import static org.neo4j.codegen.TypeReference.typeReference;
 
-public class Resource
-{
-    public static Resource withResource( Class<?> type, String name, Expression producer )
-    {
-        return withResource( typeReference( type ), name, producer );
+public class Resource {
+    public static Resource withResource(Class<?> type, String name, Expression producer) {
+        return withResource(typeReference(type), name, producer);
     }
 
-    public static Resource withResource( TypeReference type, String name, Expression producer )
-    {
-        return new Resource( type, name, producer );
+    public static Resource withResource(TypeReference type, String name, Expression producer) {
+        return new Resource(type, name, producer);
     }
 
     private final TypeReference type;
     private final String name;
     private final Expression producer;
 
-    private Resource( TypeReference type, String name, Expression producer )
-    {
+    private Resource(TypeReference type, String name, Expression producer) {
         this.type = type;
         this.name = name;
         this.producer = producer;
     }
 
-    public TypeReference type()
-    {
+    public TypeReference type() {
         return type;
     }
 
-    public String name()
-    {
+    public String name() {
         return name;
     }
 
-    public Expression producer()
-    {
+    public Expression producer() {
         return producer;
     }
 }

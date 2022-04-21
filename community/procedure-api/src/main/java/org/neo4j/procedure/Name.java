@@ -23,7 +23,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -31,11 +30,10 @@ import org.neo4j.annotations.api.PublicApi;
  * to use as arguments for the procedure when it is called. For instance, if you are invoking a procedure
  * using parameters, the name you declare here will map to names of the parameters.
  */
-@Target( ElementType.PARAMETER )
-@Retention( RetentionPolicy.RUNTIME )
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
 @PublicApi
-public @interface Name
-{
+public @interface Name {
     /**
      * @return the name of this input argument.
      */

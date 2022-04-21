@@ -19,11 +19,11 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.Arrays;
-import java.util.concurrent.atomic.LongAdder;
-
 import static java.lang.String.format;
 import static java.util.Arrays.sort;
+
+import java.util.Arrays;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Locks nodes as traversal goes down the tree. The locking scheme is a variant of what is known as "Better Latch Crabbing" and consists of
@@ -85,8 +85,7 @@ import static java.util.Arrays.sort;
  *     - Flip to pessimistic mode
  * </pre>
  */
-class LatchCrabbingCoordination implements TreeWriterCoordination
-{
+class LatchCrabbingCoordination implements TreeWriterCoordination {
     private final TreeNodeLatchService latchService;
     private final int leafUnderflowThreshold;
     private DepthData[] dataByDepth = new DepthData[10];
@@ -95,44 +94,38 @@ class LatchCrabbingCoordination implements TreeWriterCoordination
     private volatile long latchAcquisitionId;
     private volatile boolean latchAcquisitionIsWrite;
 
-    LatchCrabbingCoordination( TreeNodeLatchService latchService, int leafUnderflowThreshold )
-    {
+    LatchCrabbingCoordination(TreeNodeLatchService latchService, int leafUnderflowThreshold) {
         this.latchService = latchService;
         this.leafUnderflowThreshold = leafUnderflowThreshold;
-        for ( int i = 0; i < dataByDepth.length; i++ )
-        {
+        for (int i = 0; i < dataByDepth.length; i++) {
             dataByDepth[i] = new DepthData();
         }
     }
 
     @Override
-    public boolean mustStartFromRoot()
-    {
+    public boolean mustStartFromRoot() {
         return true;
     }
 
     @Override
-    public void initialize()
-    {
+    public void initialize() {
         assert depth == -1;
         this.pessimistic = false;
-        inc( Stat.TOTAL_OPERATIONS );
+        inc(Stat.TOTAL_OPERATIONS);
     }
 
     @Override
-    public void beforeTraversingToChild( long childTreeNodeId, int childPos )
-    {
+    public void beforeTraversingToChild(long childTreeNodeId, int childPos) {
         // Acquire latch on the child node
         latchAcquisitionId = childTreeNodeId;
         latchAcquisitionIsWrite = pessimistic;
-        LongSpinLatch latch = pessimistic ? latchService.acquireWrite( childTreeNodeId )
-                                          : latchService.acquireRead( childTreeNodeId );
+        LongSpinLatch latch =
+                pessimistic ? latchService.acquireWrite(childTreeNodeId) : latchService.acquireRead(childTreeNodeId);
         latchAcquisitionId = -1;
 
         // Remember information about the latch
         depth++;
-        if ( depth >= dataByDepth.length )
-        {
+        if (depth >= dataByDepth.length) {
             growDepthDataArray();
         }
         DepthData depthData = dataByDepth[depth];
@@ -141,43 +134,39 @@ class LatchCrabbingCoordination implements TreeWriterCoordination
         depthData.childPos = childPos;
     }
 
-    private void growDepthDataArray()
-    {
-        dataByDepth = Arrays.copyOf( dataByDepth, dataByDepth.length * 2 );
-        for ( int i = depth; i < dataByDepth.length; i++ )
-        {
+    private void growDepthDataArray() {
+        dataByDepth = Arrays.copyOf(dataByDepth, dataByDepth.length * 2);
+        for (int i = depth; i < dataByDepth.length; i++) {
             dataByDepth[i] = new DepthData();
         }
     }
 
     @Override
-    public boolean arrivedAtChild( boolean isInternal, int availableSpace, boolean isStable, int keyCount )
-    {
+    public boolean arrivedAtChild(boolean isInternal, int availableSpace, boolean isStable, int keyCount) {
         DepthData depthData = dataByDepth[depth];
         depthData.availableSpace = availableSpace;
         depthData.isStable = isStable;
         depthData.keyCount = keyCount;
-        if ( isInternal || pessimistic )
-        {
-            // Wait to make decision till we reach the leaf. Also if we're in pessimistic mode then bailing out isn't an option.
+        if (isInternal || pessimistic) {
+            // Wait to make decision till we reach the leaf. Also if we're in pessimistic mode then bailing out isn't an
+            // option.
             return true;
         }
 
         // If we have arrived at leaf in optimistic mode, upgrade to write latch
-        boolean upgraded = tryUpgradeReadLatchToWrite( depth );
-        if ( !upgraded )
-        {
-            inc( Stat.FAIL_LEAF_UPGRADE );
+        boolean upgraded = tryUpgradeReadLatchToWrite(depth);
+        if (!upgraded) {
+            inc(Stat.FAIL_LEAF_UPGRADE);
             return false;
         }
 
-        if ( isStable )
-        {
-            if ( depthData.positionedAtTheEdge() )
-            {
-                // If the leaf we're updating needs a successor and the position of this leaf in the parent is at the edge
-                // it means that one of its siblings sits in a neighbour parent, which isn't currently locked, so fall back to pessimistic
-                inc( Stat.FAIL_SUCCESSOR_SIBLING );
+        if (isStable) {
+            if (depthData.positionedAtTheEdge()) {
+                // If the leaf we're updating needs a successor and the position of this leaf in the parent is at the
+                // edge
+                // it means that one of its siblings sits in a neighbour parent, which isn't currently locked, so fall
+                // back to pessimistic
+                inc(Stat.FAIL_SUCCESSOR_SIBLING);
                 return false;
             }
             return tryUpgradeUnstableParentReadLatchToWrite();
@@ -187,119 +176,105 @@ class LatchCrabbingCoordination implements TreeWriterCoordination
     }
 
     @Override
-    public boolean beforeSplittingLeaf( int bubbleEntrySize )
-    {
-        inc( Stat.LEAF_SPLITS );
-        if ( pessimistic )
-        {
+    public boolean beforeSplittingLeaf(int bubbleEntrySize) {
+        inc(Stat.LEAF_SPLITS);
+        if (pessimistic) {
             return true;
         }
 
-        // We have one chance to do a simple optimization here, which is that if we can see that adding this bubble key to the parent
-        // without this parent change propagating any further we can try to upgrade the parent read latch and continue with the leaf split
+        // We have one chance to do a simple optimization here, which is that if we can see that adding this bubble key
+        // to the parent
+        // without this parent change propagating any further we can try to upgrade the parent read latch and continue
+        // with the leaf split
         // in optimistic mode
         DepthData parent = depth > 0 ? dataByDepth[depth - 1] : null;
         boolean parentSafe = parent != null && parent.availableSpace - bubbleEntrySize >= 0;
-        if ( !parentSafe )
-        {
-            // This split will cause parent split too... it's getting complicated at this point so bail out to pessimistic mode
-            inc( Stat.FAIL_LEAF_SPLIT_PARENT_UNSAFE );
+        if (!parentSafe) {
+            // This split will cause parent split too... it's getting complicated at this point so bail out to
+            // pessimistic mode
+            inc(Stat.FAIL_LEAF_SPLIT_PARENT_UNSAFE);
             return false;
         }
         return tryUpgradeUnstableParentReadLatchToWrite();
     }
 
     @Override
-    public boolean beforeRemovalFromLeaf( int sizeOfLeafEntryToRemove )
-    {
-        if ( pessimistic )
-        {
+    public boolean beforeRemovalFromLeaf(int sizeOfLeafEntryToRemove) {
+        if (pessimistic) {
             return true;
         }
 
         int availableSpaceAfterRemoval = dataByDepth[depth].availableSpace + sizeOfLeafEntryToRemove;
         boolean leafWillUnderflow = availableSpaceAfterRemoval > leafUnderflowThreshold;
-        if ( leafWillUnderflow )
-        {
-            inc( Stat.FAIL_LEAF_UNDERFLOW );
+        if (leafWillUnderflow) {
+            inc(Stat.FAIL_LEAF_UNDERFLOW);
             return false;
         }
         return true;
     }
 
     @Override
-    public void beforeSplitInternal( long treeNodeId )
-    {
-        if ( !pessimistic )
-        {
-            throw new IllegalStateException( format( "Unexpected split of internal node [%d] in optimistic mode", treeNodeId ) );
+    public void beforeSplitInternal(long treeNodeId) {
+        if (!pessimistic) {
+            throw new IllegalStateException(
+                    format("Unexpected split of internal node [%d] in optimistic mode", treeNodeId));
         }
     }
 
     @Override
-    public void beforeUnderflowInLeaf( long treeNodeId )
-    {
-        if ( !pessimistic )
-        {
-            throw new IllegalStateException( format( "Unexpected underflow of leaf node [%d] in optimistic mode", treeNodeId ) );
+    public void beforeUnderflowInLeaf(long treeNodeId) {
+        if (!pessimistic) {
+            throw new IllegalStateException(
+                    format("Unexpected underflow of leaf node [%d] in optimistic mode", treeNodeId));
         }
     }
 
     @Override
-    public void reset()
-    {
-        while ( depth >= 0 )
-        {
-            releaseLatchAtDepth( depth-- );
+    public void reset() {
+        while (depth >= 0) {
+            releaseLatchAtDepth(depth--);
         }
     }
 
     @Override
-    public void flipToPessimisticMode()
-    {
+    public void flipToPessimisticMode() {
         reset();
         pessimistic = true;
-        inc( Stat.PESSIMISTIC );
+        inc(Stat.PESSIMISTIC);
     }
 
     /**
      * Tries to upgrade the parent read latch to write if the parent is unstable.
      * @return {@code true} if the parent is in unstable generation and latch was successfully upgraded from read to write, otherwise {@code false}.
      */
-    private boolean tryUpgradeUnstableParentReadLatchToWrite()
-    {
-        if ( depth == 0 || dataByDepth[depth - 1].isStable )
-        {
-            inc( Stat.FAIL_PARENT_NEEDS_SUCCESSOR );
+    private boolean tryUpgradeUnstableParentReadLatchToWrite() {
+        if (depth == 0 || dataByDepth[depth - 1].isStable) {
+            inc(Stat.FAIL_PARENT_NEEDS_SUCCESSOR);
             // If the parent needs to create successor it means that this will cause an update on grand parent.
-            // Since this will only happen this first time this parent needs successor it's fine to bail out to pessimistic.
+            // Since this will only happen this first time this parent needs successor it's fine to bail out to
+            // pessimistic.
             return false;
         }
 
         // Try to upgrade parent latch to write, otherwise bail out to pessimistic.
-        boolean upgraded = tryUpgradeReadLatchToWrite( depth - 1 );
-        if ( !upgraded )
-        {
-            inc( Stat.FAIL_PARENT_UPGRADE );
+        boolean upgraded = tryUpgradeReadLatchToWrite(depth - 1);
+        if (!upgraded) {
+            inc(Stat.FAIL_PARENT_UPGRADE);
         }
         return upgraded;
     }
 
-    private boolean tryUpgradeReadLatchToWrite( int depth )
-    {
-        if ( depth < 0 )
-        {
+    private boolean tryUpgradeReadLatchToWrite(int depth) {
+        if (depth < 0) {
             // We're doing something on the root node, which is a leaf a.t.m? Anyway flip to pessimistic.
             return false;
         }
 
         DepthData depthData = dataByDepth[depth];
-        if ( !depthData.latchTypeIsWrite )
-        {
+        if (!depthData.latchTypeIsWrite) {
             latchAcquisitionId = depthData.latch.treeNodeId();
             latchAcquisitionIsWrite = true;
-            if ( !depthData.latch.tryUpgradeToWrite() )
-            {
+            if (!depthData.latch.tryUpgradeToWrite()) {
                 // To avoid deadlock.
                 return false;
             }
@@ -309,34 +284,30 @@ class LatchCrabbingCoordination implements TreeWriterCoordination
         return true;
     }
 
-    private void releaseLatchAtDepth( int depth )
-    {
+    private void releaseLatchAtDepth(int depth) {
         DepthData depthData = dataByDepth[depth];
-        if ( depthData.latchTypeIsWrite )
-        {
+        if (depthData.latchTypeIsWrite) {
             depthData.latch.releaseWrite();
-        }
-        else
-        {
+        } else {
             depthData.latch.releaseRead();
         }
     }
 
     @Override
-    public String toString()
-    {
-        StringBuilder builder = new StringBuilder( format( "LATCHES %s depth:%d%n", pessimistic ? "PESSIMISTIC" : "OPTIMISTIC", depth ) );
-        for ( int i = 0; i <= depth; i++ )
-        {
+    public String toString() {
+        StringBuilder builder =
+                new StringBuilder(format("LATCHES %s depth:%d%n", pessimistic ? "PESSIMISTIC" : "OPTIMISTIC", depth));
+        for (int i = 0; i <= depth; i++) {
             LongSpinLatch latch = dataByDepth[i].latch;
-            builder.append( dataByDepth[i].latchTypeIsWrite ? "W" : "R" ).append( latch.toString() ).append( format( "%n" ) );
+            builder.append(dataByDepth[i].latchTypeIsWrite ? "W" : "R")
+                    .append(latch.toString())
+                    .append(format("%n"));
         }
-        builder.append( latchAcquisitionIsWrite ? "W" : "R" ).append( "Acquiring:" ).append( latchAcquisitionId );
+        builder.append(latchAcquisitionIsWrite ? "W" : "R").append("Acquiring:").append(latchAcquisitionId);
         return builder.toString();
     }
 
-    private static class DepthData
-    {
+    private static class DepthData {
         private LongSpinLatch latch;
         private boolean latchTypeIsWrite;
         private int availableSpace;
@@ -344,8 +315,7 @@ class LatchCrabbingCoordination implements TreeWriterCoordination
         private int childPos;
         private boolean isStable;
 
-        boolean positionedAtTheEdge()
-        {
+        boolean positionedAtTheEdge() {
             return childPos == 0 || childPos == keyCount;
         }
     }
@@ -354,8 +324,7 @@ class LatchCrabbingCoordination implements TreeWriterCoordination
 
     private static final boolean KEEP_STATS = false;
 
-    private enum Stat
-    {
+    private enum Stat {
         /**
          * Total number of operations where one operation is one merge or remove on the writer.
          */
@@ -363,46 +332,44 @@ class LatchCrabbingCoordination implements TreeWriterCoordination
         /**
          * Number of operations that had to flip to pessimistic mode.
          */
-        PESSIMISTIC( TOTAL_OPERATIONS ),
+        PESSIMISTIC(TOTAL_OPERATIONS),
         /**
          * Number of operations that resulted in leaf split.
          */
-        LEAF_SPLITS( TOTAL_OPERATIONS ),
+        LEAF_SPLITS(TOTAL_OPERATIONS),
         /**
          * Number of "flip to pessimistic" caused by failure to upgrade read latch on the leaf to write.
          */
-        FAIL_LEAF_UPGRADE( PESSIMISTIC ),
+        FAIL_LEAF_UPGRADE(PESSIMISTIC),
         /**
          * Number of "flip to pessimistic" caused by parent not considered safe on leaf split.
          */
-        FAIL_LEAF_SPLIT_PARENT_UNSAFE( PESSIMISTIC ),
+        FAIL_LEAF_SPLIT_PARENT_UNSAFE(PESSIMISTIC),
         /**
          * Number of "flip to pessimistic" caused by leaf underflow.
          */
-        FAIL_LEAF_UNDERFLOW( PESSIMISTIC ),
+        FAIL_LEAF_UNDERFLOW(PESSIMISTIC),
         /**
          * Number of "flip to pessimistic" caused by leaf needing successor and leaf's childPos in parent being either 0 or keyCount.
          */
-        FAIL_SUCCESSOR_SIBLING( PESSIMISTIC ),
+        FAIL_SUCCESSOR_SIBLING(PESSIMISTIC),
         /**
          * Number of "flip to pessimistic" caused by parent (due to leaf split) needing successor.
          */
-        FAIL_PARENT_NEEDS_SUCCESSOR( PESSIMISTIC ),
+        FAIL_PARENT_NEEDS_SUCCESSOR(PESSIMISTIC),
         /**
          * Number of "flip to pessimistic" caused by failure to upgrade parent read latch to write.
          */
-        FAIL_PARENT_UPGRADE( PESSIMISTIC );
+        FAIL_PARENT_UPGRADE(PESSIMISTIC);
 
         private final Stat comparedTo;
         private final LongAdder count = new LongAdder();
 
-        Stat()
-        {
-            this( null );
+        Stat() {
+            this(null);
         }
 
-        Stat( Stat comparedTo )
-        {
+        Stat(Stat comparedTo) {
             this.comparedTo = comparedTo;
         }
     }
@@ -411,36 +378,29 @@ class LatchCrabbingCoordination implements TreeWriterCoordination
      * Increments statistics about the effect this monitor has on traversals.
      * @param stat the specific statistic to increment.
      */
-    private static void inc( Stat stat )
-    {
-        if ( KEEP_STATS )
-        {
-            stat.count.add( 1 );
+    private static void inc(Stat stat) {
+        if (KEEP_STATS) {
+            stat.count.add(1);
         }
     }
 
-    static
-    {
-        if ( KEEP_STATS )
-        {
-            Runtime.getRuntime().addShutdownHook( new Thread( LatchCrabbingCoordination::dumpStats ) );
+    static {
+        if (KEEP_STATS) {
+            Runtime.getRuntime().addShutdownHook(new Thread(LatchCrabbingCoordination::dumpStats));
         }
     }
 
-    static void dumpStats()
-    {
-        System.out.println( "Stats for GBPTree parallel writes locking:" );
+    static void dumpStats() {
+        System.out.println("Stats for GBPTree parallel writes locking:");
         Stat[] stats = Stat.values();
-        sort( stats, ( s1, s2 ) -> Long.compare( s2.count.sum(), s1.count.sum() ) );
-        for ( Stat stat : stats )
-        {
+        sort(stats, (s1, s2) -> Long.compare(s2.count.sum(), s1.count.sum()));
+        for (Stat stat : stats) {
             long sum = stat.count.sum();
-            System.out.printf( "  %s: %d", stat.name(), sum );
-            if ( stat.comparedTo != null )
-            {
+            System.out.printf("  %s: %d", stat.name(), sum);
+            if (stat.comparedTo != null) {
                 long comparedToSum = stat.comparedTo.count.sum();
                 double percentage = (100D * sum) / comparedToSum;
-                System.out.printf( " (%.4f%% of %s)", percentage, stat.comparedTo.name() );
+                System.out.printf(" (%.4f%% of %s)", percentage, stat.comparedTo.name());
             }
             System.out.println();
         }

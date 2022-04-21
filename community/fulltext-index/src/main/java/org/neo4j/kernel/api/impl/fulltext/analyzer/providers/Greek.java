@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.el.GreekAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Greek extends AnalyzerProvider
-{
-    public Greek()
-    {
-        super( "greek" );
+public class Greek extends AnalyzerProvider {
+    public Greek() {
+        super("greek");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new GreekAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Greek analyzer with stemming and stop word filtering.";
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-
 import org.neo4j.internal.recordstorage.Command.GroupDegreeCommand;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.MetaDataCommand;
@@ -38,109 +37,95 @@ import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
  * An interface for dealing with commands, either reading or writing them. See also {@link TransactionApplier}. The
  * methods in this class should almost always return false, unless something went wrong.
  */
-public interface CommandVisitor
-{
+public interface CommandVisitor {
     // Store commands
-    boolean visitNodeCommand( NodeCommand command ) throws IOException;
+    boolean visitNodeCommand(NodeCommand command) throws IOException;
 
-    boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException;
+    boolean visitRelationshipCommand(RelationshipCommand command) throws IOException;
 
-    boolean visitPropertyCommand( PropertyCommand command ) throws IOException;
+    boolean visitPropertyCommand(PropertyCommand command) throws IOException;
 
-    boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException;
+    boolean visitRelationshipGroupCommand(RelationshipGroupCommand command) throws IOException;
 
-    boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException;
+    boolean visitRelationshipTypeTokenCommand(RelationshipTypeTokenCommand command) throws IOException;
 
-    boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException;
+    boolean visitLabelTokenCommand(LabelTokenCommand command) throws IOException;
 
-    boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException;
+    boolean visitPropertyKeyTokenCommand(PropertyKeyTokenCommand command) throws IOException;
 
-    boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException;
+    boolean visitSchemaRuleCommand(SchemaRuleCommand command) throws IOException;
 
-    boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException;
+    boolean visitNodeCountsCommand(NodeCountsCommand command) throws IOException;
 
-    boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException;
+    boolean visitRelationshipCountsCommand(RelationshipCountsCommand command) throws IOException;
 
-    boolean visitMetaDataCommand( MetaDataCommand command ) throws IOException;
+    boolean visitMetaDataCommand(MetaDataCommand command) throws IOException;
 
-    boolean visitGroupDegreeCommand( GroupDegreeCommand command ) throws IOException;
+    boolean visitGroupDegreeCommand(GroupDegreeCommand command) throws IOException;
 
     /**
      * An empty implementation of a {@link CommandVisitor}. Allows you to implement only the methods you are
      * interested in. See also {@link TransactionApplier.Adapter} if need handle commands inside of a transaction, or
      * have a lock.
      */
-    class Adapter implements CommandVisitor
-    {
+    class Adapter implements CommandVisitor {
         @Override
-        public boolean visitNodeCommand( NodeCommand command )
-        {
+        public boolean visitNodeCommand(NodeCommand command) {
             return false;
         }
 
         @Override
-        public boolean visitRelationshipCommand( RelationshipCommand command )
-        {
+        public boolean visitRelationshipCommand(RelationshipCommand command) {
             return false;
         }
 
         @Override
-        public boolean visitPropertyCommand( PropertyCommand command )
-        {
+        public boolean visitPropertyCommand(PropertyCommand command) {
             return false;
         }
 
         @Override
-        public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command )
-        {
+        public boolean visitRelationshipGroupCommand(RelationshipGroupCommand command) {
             return false;
         }
 
         @Override
-        public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command )
-        {
+        public boolean visitRelationshipTypeTokenCommand(RelationshipTypeTokenCommand command) {
             return false;
         }
 
         @Override
-        public boolean visitLabelTokenCommand( LabelTokenCommand command )
-        {
+        public boolean visitLabelTokenCommand(LabelTokenCommand command) {
             return false;
         }
 
         @Override
-        public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command )
-        {
+        public boolean visitPropertyKeyTokenCommand(PropertyKeyTokenCommand command) {
             return false;
         }
 
         @Override
-        public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
-        {
+        public boolean visitSchemaRuleCommand(SchemaRuleCommand command) throws IOException {
             return false;
         }
 
         @Override
-        public boolean visitNodeCountsCommand( NodeCountsCommand command )
-        {
+        public boolean visitNodeCountsCommand(NodeCountsCommand command) {
             return false;
         }
 
         @Override
-        public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command )
-        {
+        public boolean visitRelationshipCountsCommand(RelationshipCountsCommand command) {
             return false;
         }
 
         @Override
-        public boolean visitMetaDataCommand( MetaDataCommand command ) throws IOException
-        {
+        public boolean visitMetaDataCommand(MetaDataCommand command) throws IOException {
             return false;
         }
 
         @Override
-        public boolean visitGroupDegreeCommand( GroupDegreeCommand command )
-        {
+        public boolean visitGroupDegreeCommand(GroupDegreeCommand command) {
             return false;
         }
     }

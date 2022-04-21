@@ -19,8 +19,9 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import java.util.function.Supplier;
+import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
+import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -67,145 +68,150 @@ import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
-
 /**
  * Edition module for {@link DatabaseManagementServiceFactory}. Implementations of this class
  * need to create all the services that would be specific for a particular edition of the database.
  */
-public abstract class AbstractEditionModule
-{
+public abstract class AbstractEditionModule {
     protected NetworkConnectionTracker connectionTracker;
     protected SecurityProvider securityProvider;
     protected DefaultDatabaseResolver defaultDatabaseResolver;
 
-    public void registerProcedures( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig, GlobalModule globalModule,
-            DatabaseManager<?> databaseManager ) throws KernelException
-    {
-        globalProcedures.registerProcedure( BuiltInProcedures.class );
-        globalProcedures.registerProcedure( TokenProcedures.class );
-        globalProcedures.registerProcedure( BuiltInDbmsProcedures.class );
-        globalProcedures.registerProcedure( FulltextProcedures.class );
-        globalProcedures.registerProcedure( DataCollectorProcedures.class );
-        registerTemporalFunctions( globalProcedures, procedureConfig );
+    public void registerProcedures(
+            GlobalProcedures globalProcedures,
+            ProcedureConfig procedureConfig,
+            GlobalModule globalModule,
+            DatabaseManager<?> databaseManager)
+            throws KernelException {
+        globalProcedures.registerProcedure(BuiltInProcedures.class);
+        globalProcedures.registerProcedure(TokenProcedures.class);
+        globalProcedures.registerProcedure(BuiltInDbmsProcedures.class);
+        globalProcedures.registerProcedure(FulltextProcedures.class);
+        globalProcedures.registerProcedure(DataCollectorProcedures.class);
+        registerTemporalFunctions(globalProcedures, procedureConfig);
 
-        registerEditionSpecificProcedures( globalProcedures, databaseManager );
-        AbstractRoutingProcedureInstaller routingProcedureInstaller =
-                createRoutingProcedureInstaller( globalModule, databaseManager,
-                                                 globalModule.getGlobalDependencies().resolveDependency( ClientRoutingDomainChecker.class ) );
-        routingProcedureInstaller.install( globalProcedures );
+        registerEditionSpecificProcedures(globalProcedures, databaseManager);
+        AbstractRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller(
+                globalModule,
+                databaseManager,
+                globalModule.getGlobalDependencies().resolveDependency(ClientRoutingDomainChecker.class));
+        routingProcedureInstaller.install(globalProcedures);
     }
 
-    public ClientRoutingDomainChecker createClientRoutingDomainChecker( GlobalModule globalModule )
-    {
+    public ClientRoutingDomainChecker createClientRoutingDomainChecker(GlobalModule globalModule) {
         Config config = globalModule.getGlobalConfig();
-        var domainChecker = SimpleClientRoutingDomainChecker.fromConfig( config, globalModule.getLogService().getInternalLogProvider() );
-        globalModule.getGlobalDependencies().satisfyDependencies( domainChecker );
+        var domainChecker = SimpleClientRoutingDomainChecker.fromConfig(
+                config, globalModule.getLogService().getInternalLogProvider());
+        globalModule.getGlobalDependencies().satisfyDependencies(domainChecker);
         return domainChecker;
     }
 
-    protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager )
-            throws KernelException;
+    protected abstract void registerEditionSpecificProcedures(
+            GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager) throws KernelException;
 
-    protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
-                                                                                          ClientRoutingDomainChecker clientRoutingDomainChecker );
+    protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller(
+            GlobalModule globalModule,
+            DatabaseManager<?> databaseManager,
+            ClientRoutingDomainChecker clientRoutingDomainChecker);
 
-    protected abstract AuthConfigProvider createAuthConfigProvider( GlobalModule globalModule );
+    protected abstract AuthConfigProvider createAuthConfigProvider(GlobalModule globalModule);
 
-    public abstract <DB extends DatabaseContext> DatabaseManager<DB> createDatabaseManager( GlobalModule globalModule );
+    public abstract <DB extends DatabaseContext> DatabaseManager<DB> createDatabaseManager(GlobalModule globalModule);
 
-    public abstract SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule );
+    public abstract SystemGraphInitializer createSystemGraphInitializer(GlobalModule globalModule);
 
-    public abstract void registerSystemGraphComponents( SystemGraphComponents systemGraphComponents, GlobalModule globalModule );
+    public abstract void registerSystemGraphComponents(
+            SystemGraphComponents systemGraphComponents, GlobalModule globalModule);
 
-    public abstract void createSecurityModule( GlobalModule globalModule );
+    public abstract void createSecurityModule(GlobalModule globalModule);
 
-    protected static NetworkConnectionTracker createConnectionTracker()
-    {
+    protected static NetworkConnectionTracker createConnectionTracker() {
         return new DefaultNetworkConnectionTracker();
     }
 
-    public DatabaseTransactionStats.Factory getTransactionMonitorFactory()
-    {
+    public DatabaseTransactionStats.Factory getTransactionMonitorFactory() {
         return DatabaseTransactionStats::new;
     }
 
-    public NetworkConnectionTracker getConnectionTracker()
-    {
+    public NetworkConnectionTracker getConnectionTracker() {
         return connectionTracker;
     }
 
-    public SecurityProvider getSecurityProvider()
-    {
+    public SecurityProvider getSecurityProvider() {
         return securityProvider;
     }
 
-    public void setSecurityProvider( SecurityProvider securityProvider )
-    {
+    public void setSecurityProvider(SecurityProvider securityProvider) {
         this.securityProvider = securityProvider;
     }
 
-    public abstract void createDefaultDatabaseResolver( GlobalModule globalModule );
+    public abstract void createDefaultDatabaseResolver(GlobalModule globalModule);
 
-    public void setDefaultDatabaseResolver( DefaultDatabaseResolver defaultDatabaseResolver )
-    {
+    public void setDefaultDatabaseResolver(DefaultDatabaseResolver defaultDatabaseResolver) {
         this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
-    public DefaultDatabaseResolver getDefaultDatabaseResolver()
-    {
+    public DefaultDatabaseResolver getDefaultDatabaseResolver() {
         return defaultDatabaseResolver;
     }
 
     public abstract void bootstrapFabricServices();
 
-    public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( Dependencies dependencies,
-            DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock, LogService logService );
+    public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider(
+            Dependencies dependencies,
+            DatabaseManagementService managementService,
+            Monitors monitors,
+            SystemNanoClock clock,
+            LogService logService);
 
-    public AuthManager getBoltAuthManager( DependencyResolver dependencyResolver )
-    {
-        return dependencyResolver.resolveDependency( AuthManager.class );
+    public AuthManager getBoltAuthManager(DependencyResolver dependencyResolver) {
+        return dependencyResolver.resolveDependency(AuthManager.class);
     }
 
-    public AuthManager getBoltInClusterAuthManager()
-    {
+    public AuthManager getBoltInClusterAuthManager() {
         return securityProvider.inClusterAuthManager();
     }
 
-    public AuthManager getBoltLoopbackAuthManager()
-    {
+    public AuthManager getBoltLoopbackAuthManager() {
         return securityProvider.loopbackAuthManager();
     }
 
-    public abstract Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies,
-            Config config, InternalLogProvider userLogProvider, DbmsInfo dbmsInfo );
+    public abstract Lifecycle createWebServer(
+            DatabaseManagementService managementService,
+            Dependencies globalDependencies,
+            Config config,
+            InternalLogProvider userLogProvider,
+            DbmsInfo dbmsInfo);
 
-    public abstract DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule, DatabaseManager<?> databaseManager,
-            Dependencies dependencies, DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent );
+    public abstract DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository(
+            GlobalModule globalModule,
+            DatabaseManager<?> databaseManager,
+            Dependencies dependencies,
+            DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent);
 
-    protected ServerSideRoutingTableProvider serverSideRoutingTableProvider( GlobalModule globalModule )
-    {
+    protected ServerSideRoutingTableProvider serverSideRoutingTableProvider(GlobalModule globalModule) {
         ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
         Config config = globalModule.getGlobalConfig();
         InternalLogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
-        RoutingTableTTLProvider ttlProvider = RoutingTableTTLProvider.ttlFromConfig( config );
-        return new SingleAddressRoutingTableProvider( portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlProvider );
+        RoutingTableTTLProvider ttlProvider = RoutingTableTTLProvider.ttlFromConfig(config);
+        return new SingleAddressRoutingTableProvider(
+                portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlProvider);
     }
 
-    public abstract DatabaseInfoService createDatabaseInfoService( DatabaseManager<?> databaseManager );
+    public abstract DatabaseInfoService createDatabaseInfoService(DatabaseManager<?> databaseManager);
 
-    public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
-    {
-        return dependencies.containsDependency( clazz ) ? dependencies.resolveDependency( clazz ) : newInstanceMethod.get();
+    public static <T> T tryResolveOrCreate(
+            Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod) {
+        return dependencies.containsDependency(clazz) ? dependencies.resolveDependency(clazz) : newInstanceMethod.get();
     }
 
-    protected IdContextFactory createIdContextFactory( GlobalModule globalModule )
-    {
-        return tryResolveOrCreate( IdContextFactory.class, globalModule.getExternalDependencyResolver(), () ->
-            IdContextFactoryBuilder.of( globalModule.getFileSystem(),
-                                        globalModule.getJobScheduler(),
-                                        globalModule.getGlobalConfig() )
-                                   .withLogService( globalModule.getLogService() )
-                                   .build() );
+    protected IdContextFactory createIdContextFactory(GlobalModule globalModule) {
+        return tryResolveOrCreate(
+                IdContextFactory.class, globalModule.getExternalDependencyResolver(), () -> IdContextFactoryBuilder.of(
+                                globalModule.getFileSystem(),
+                                globalModule.getJobScheduler(),
+                                globalModule.getGlobalConfig())
+                        .withLogService(globalModule.getLogService())
+                        .build());
     }
 }

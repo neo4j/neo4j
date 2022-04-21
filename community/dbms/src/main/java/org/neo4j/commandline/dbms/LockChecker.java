@@ -22,7 +22,6 @@ package org.neo4j.commandline.dbms;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
-
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -33,74 +32,57 @@ import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.kernel.internal.locker.GlobalLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 
-public final class LockChecker implements Closeable
-{
+public final class LockChecker implements Closeable {
     private final FileSystemAbstraction fileSystem;
     private final Locker locker;
 
-    private LockChecker( FileSystemAbstraction fileSystem, Locker locker )
-    {
+    private LockChecker(FileSystemAbstraction fileSystem, Locker locker) {
         this.fileSystem = fileSystem;
         this.locker = locker;
     }
 
-    public static Closeable checkDbmsLock( Neo4jLayout neo4jLayout ) throws CannotWriteException
-    {
+    public static Closeable checkDbmsLock(Neo4jLayout neo4jLayout) throws CannotWriteException {
         var fileSystem = new DefaultFileSystemAbstraction();
-        var locker = new GlobalLocker( fileSystem, neo4jLayout );
-        return check( locker, fileSystem );
+        var locker = new GlobalLocker(fileSystem, neo4jLayout);
+        return check(locker, fileSystem);
     }
 
-    public static Closeable checkDatabaseLock( DatabaseLayout databaseLayout ) throws CannotWriteException
-    {
+    public static Closeable checkDatabaseLock(DatabaseLayout databaseLayout) throws CannotWriteException {
         var fileSystem = new DefaultFileSystemAbstraction();
-        var locker = new DatabaseLocker( fileSystem, databaseLayout );
-        return check( locker, fileSystem );
+        var locker = new DatabaseLocker(fileSystem, databaseLayout);
+        return check(locker, fileSystem);
     }
 
-    private static Closeable check( Locker locker, FileSystemAbstraction fileSystem ) throws CannotWriteException
-    {
+    private static Closeable check(Locker locker, FileSystemAbstraction fileSystem) throws CannotWriteException {
         var lockFile = locker.lockFile();
 
-        if ( Files.isWritable( lockFile.getParent() ) )
-        {
-            if ( Files.exists( lockFile ) && !Files.isWritable( lockFile ) )
-            {
-                throw new CannotWriteException( lockFile );
+        if (Files.isWritable(lockFile.getParent())) {
+            if (Files.exists(lockFile) && !Files.isWritable(lockFile)) {
+                throw new CannotWriteException(lockFile);
             }
-            LockChecker lockChecker = new LockChecker( fileSystem, locker );
-            try
-            {
+            LockChecker lockChecker = new LockChecker(fileSystem, locker);
+            try {
                 lockChecker.checkLock();
                 return lockChecker;
-            }
-            catch ( FileLockException le )
-            {
-                try
-                {
+            } catch (FileLockException le) {
+                try {
                     locker.close();
-                }
-                catch ( IOException e )
-                {
-                    le.addSuppressed( e );
+                } catch (IOException e) {
+                    le.addSuppressed(e);
                 }
                 throw le;
             }
-        }
-        else
-        {
-            throw new CannotWriteException( lockFile );
+        } else {
+            throw new CannotWriteException(lockFile);
         }
     }
 
-    private void checkLock()
-    {
+    private void checkLock() {
         locker.checkLock();
     }
 
     @Override
-    public void close() throws IOException
-    {
-        IOUtils.closeAll( locker, fileSystem );
+    public void close() throws IOException {
+        IOUtils.closeAll(locker, fileSystem);
     }
 }

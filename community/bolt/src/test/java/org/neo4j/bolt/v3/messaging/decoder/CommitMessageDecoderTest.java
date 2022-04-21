@@ -19,37 +19,32 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.messaging.RequestMessageDecoder;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v3.messaging.request.CommitMessage;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoderTest.assertOriginalMessageEqualsToDecoded;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 
-class CommitMessageDecoderTest
-{
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final RequestMessageDecoder decoder = new CommitMessageDecoder( responseHandler );
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.v3.messaging.request.CommitMessage;
+
+class CommitMessageDecoderTest {
+    private final BoltResponseHandler responseHandler = mock(BoltResponseHandler.class);
+    private final RequestMessageDecoder decoder = new CommitMessageDecoder(responseHandler);
 
     @Test
-    void shouldReturnCorrectSignature()
-    {
-        assertEquals( CommitMessage.SIGNATURE, decoder.signature() );
+    void shouldReturnCorrectSignature() {
+        assertEquals(CommitMessage.SIGNATURE, decoder.signature());
     }
 
     @Test
-    void shouldReturnConnectResponseHandler()
-    {
-        assertEquals( responseHandler, decoder.responseHandler() );
+    void shouldReturnConnectResponseHandler() {
+        assertEquals(responseHandler, decoder.responseHandler());
     }
 
     @Test
-    void shouldDecodeBeginMessage() throws Exception
-    {
-        assertOriginalMessageEqualsToDecoded( COMMIT_MESSAGE, decoder );
+    void shouldDecodeBeginMessage() throws Exception {
+        assertOriginalMessageEqualsToDecoded(COMMIT_MESSAGE, decoder);
     }
 }

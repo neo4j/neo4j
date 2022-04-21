@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.util
-
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadOperations
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -33,16 +31,19 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
+import java.util
+
 import scala.collection.immutable
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 object IsMap extends MapSupport {
 
-  def unapply(x: AnyValue): Option[QueryState => MapValue] = if (isMap(x)) {
-    Some(castToMap(x))
-  } else {
-    None
-  }
+  def unapply(x: AnyValue): Option[QueryState => MapValue] =
+    if (isMap(x)) {
+      Some(castToMap(x))
+    } else {
+      None
+    }
 }
 
 trait MapSupport {
@@ -51,26 +52,44 @@ trait MapSupport {
 
   def castToMap: PartialFunction[AnyValue, QueryState => MapValue] = {
     case x: MapValue => _ => x
-    case x: VirtualNodeValue => state => new LazyMap(state.query, state.query.nodeReadOps, state.cursors.nodeCursor, state.cursors.propertyCursor, x.id())
-    case x: VirtualRelationshipValue => state => new LazyMap(state.query, state.query.relationshipReadOps, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, x.id())
+    case x: VirtualNodeValue => state =>
+        new LazyMap(
+          state.query,
+          state.query.nodeReadOps,
+          state.cursors.nodeCursor,
+          state.cursors.propertyCursor,
+          x.id()
+        )
+    case x: VirtualRelationshipValue => state =>
+        new LazyMap(
+          state.query,
+          state.query.relationshipReadOps,
+          state.cursors.relationshipScanCursor,
+          state.cursors.propertyCursor,
+          x.id()
+        )
   }
 }
 
-class LazyMap[T, CURSOR](ctx: QueryContext, ops: ReadOperations[T, CURSOR], cursor: CURSOR, propertyCursor: PropertyCursor, id: Long)
-  extends MapValue {
+class LazyMap[T, CURSOR](
+  ctx: QueryContext,
+  ops: ReadOperations[T, CURSOR],
+  cursor: CURSOR,
+  propertyCursor: PropertyCursor,
+  id: Long
+) extends MapValue {
 
   private lazy val allProps: util.Map[String, AnyValue] = ops.propertyKeyIds(id, cursor, propertyCursor)
     .map(propertyId => {
       val value: AnyValue = ops.getProperty(id, propertyId, cursor, propertyCursor, throwOnDeleted = true)
       ctx.getPropertyKeyName(propertyId) -> value
-    }
-    ).toMap.asJava
+    }).toMap.asJava
 
   override def keySet(): util.Set[String] = allProps.keySet()
 
   override def foreach[E <: Exception](f: ThrowingBiConsumer[String, AnyValue, E]): Unit = {
     val it = allProps.entrySet().iterator()
-    while(it.hasNext) {
+    while (it.hasNext) {
       val entry = it.next()
       f.accept(entry.getKey, entry.getValue)
     }
@@ -80,18 +99,18 @@ class LazyMap[T, CURSOR](ctx: QueryContext, ops: ReadOperations[T, CURSOR], curs
     ctx.getOptPropertyKeyId(key).exists(propertyKeyId => ops.hasProperty(id, propertyKeyId, cursor, propertyCursor))
 
   override def get(key: String): AnyValue =
-      ctx.getOptPropertyKeyId(key) match {
-        case Some(keyId) =>
-          ops.getProperty(id, keyId, cursor, propertyCursor, throwOnDeleted = true)
-        case None =>
-          Values.NO_VALUE
-      }
+    ctx.getOptPropertyKeyId(key) match {
+      case Some(keyId) =>
+        ops.getProperty(id, keyId, cursor, propertyCursor, throwOnDeleted = true)
+      case None =>
+        Values.NO_VALUE
+    }
 
   override def size(): Int = allProps.size()
 
   override def isEmpty: Boolean = allProps.isEmpty
 
-  //we need a way forcefully load lazy values
+  // we need a way forcefully load lazy values
   def load(): MapValue =
     if (allProps != null) this
     else throw new InternalException("properties must be loadable at this instant")
@@ -106,7 +125,7 @@ object MapSupport {
     def fuse(other: immutable.Map[A, B])(f: (B, B) => B): immutable.Map[A, B] = {
       other.foldLeft(m) {
         case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
-        case (acc, entry) => acc + entry
+        case (acc, entry)                     => acc + entry
       }
     }
   }

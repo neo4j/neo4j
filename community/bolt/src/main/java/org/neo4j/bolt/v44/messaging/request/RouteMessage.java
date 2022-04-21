@@ -20,23 +20,19 @@
 package org.neo4j.bolt.v44.messaging.request;
 
 import java.util.List;
-
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 
-public class RouteMessage extends org.neo4j.bolt.v43.messaging.request.RouteMessage
-{
+public class RouteMessage extends org.neo4j.bolt.v43.messaging.request.RouteMessage {
     private final String impersonatedUser;
 
-    public RouteMessage( MapValue requestContext, List<Bookmark> bookmarks,
-                         String databaseName, String impersonatedUser )
-    {
-        super( requestContext, bookmarks, databaseName );
+    public RouteMessage(
+            MapValue requestContext, List<Bookmark> bookmarks, String databaseName, String impersonatedUser) {
+        super(requestContext, bookmarks, databaseName);
         this.impersonatedUser = impersonatedUser;
     }
 
-    public String impersonatedUser()
-    {
+    public String impersonatedUser() {
         return impersonatedUser;
     }
 }

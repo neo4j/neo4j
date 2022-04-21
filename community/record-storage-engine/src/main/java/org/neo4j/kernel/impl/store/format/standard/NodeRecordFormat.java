@@ -26,35 +26,29 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
-public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
-{
+public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord> {
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)+extra(byte)
     public static final int RECORD_SIZE = 15;
 
-    public NodeRecordFormat()
-    {
-        this( false );
+    public NodeRecordFormat() {
+        this(false);
     }
 
-    public NodeRecordFormat( boolean pageAligned )
-    {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, StandardFormatSettings.NODE_MAXIMUM_ID_BITS, pageAligned );
-    }
-
-    @Override
-    public NodeRecord newRecord()
-    {
-        return new NodeRecord( -1 );
+    public NodeRecordFormat(boolean pageAligned) {
+        super(fixedRecordSize(RECORD_SIZE), 0, IN_USE_BIT, StandardFormatSettings.NODE_MAXIMUM_ID_BITS, pageAligned);
     }
 
     @Override
-    public void read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
-    {
+    public NodeRecord newRecord() {
+        return new NodeRecord(-1);
+    }
+
+    @Override
+    public void read(NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
         byte headerByte = cursor.getByte();
-        boolean inUse = isInUse( headerByte );
-        record.setInUse( inUse );
-        if ( mode.shouldLoad( inUse ) )
-        {
+        boolean inUse = isInUse(headerByte);
+        record.setInUse(inUse);
+        if (mode.shouldLoad(inUse)) {
             long nextRel = cursor.getInt() & 0xFFFFFFFFL;
             long nextProp = cursor.getInt() & 0xFFFFFFFFL;
 
@@ -62,55 +56,55 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
             long propModifier = (headerByte & 0xF0L) << 28;
 
             long lsbLabels = cursor.getInt() & 0xFFFFFFFFL;
-            long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
+            long hsbLabels =
+                    cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
             long labels = lsbLabels | (hsbLabels << 32);
             byte extra = cursor.getByte();
             boolean dense = (extra & 0x1) > 0;
 
-            record.initialize( inUse,
-                    BaseRecordFormat.longFromIntAndMod( nextProp, propModifier ), dense,
-                    BaseRecordFormat.longFromIntAndMod( nextRel, relModifier ), labels );
-        }
-        else
-        {
+            record.initialize(
+                    inUse,
+                    BaseRecordFormat.longFromIntAndMod(nextProp, propModifier),
+                    dense,
+                    BaseRecordFormat.longFromIntAndMod(nextRel, relModifier),
+                    labels);
+        } else {
             int nextOffset = cursor.getOffset() + recordSize - HEADER_SIZE;
-            cursor.setOffset( nextOffset );
+            cursor.setOffset(nextOffset);
         }
     }
 
     @Override
-    public void write( NodeRecord record, PageCursor cursor, int recordSize, int recordsPerPage )
-    {
-        if ( record.inUse() )
-        {
+    public void write(NodeRecord record, PageCursor cursor, int recordSize, int recordsPerPage) {
+        if (record.inUse()) {
             long nextRel = record.getNextRel();
             long nextProp = record.getNextProp();
 
-            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x700000000L) >> 31);
-            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp & 0xF00000000L) >> 28);
+            short relModifier =
+                    nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short) ((nextRel & 0x700000000L) >> 31);
+            short propModifier =
+                    nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short) ((nextProp & 0xF00000000L) >> 28);
 
             // [    ,   x] in use bit
             // [    ,xxx ] higher bits for rel id
             // [xxxx,    ] higher bits for prop id
-            short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
-            inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
+            short inUseUnsignedByte = (record.inUse() ? Record.IN_USE : Record.NOT_IN_USE).byteValue();
+            inUseUnsignedByte = (short) (inUseUnsignedByte | relModifier | propModifier);
 
-            cursor.putByte( (byte) inUseUnsignedByte );
-            cursor.putInt( (int) nextRel );
-            cursor.putInt( (int) nextProp );
+            cursor.putByte((byte) inUseUnsignedByte);
+            cursor.putInt((int) nextRel);
+            cursor.putInt((int) nextProp);
 
             // lsb of labels
             long labelField = record.getLabelField();
-            cursor.putInt( (int) labelField );
+            cursor.putInt((int) labelField);
             // msb of labels
-            cursor.putByte( (byte) ((labelField & 0xFF00000000L) >> 32) );
+            cursor.putByte((byte) ((labelField & 0xFF00000000L) >> 32));
 
-            byte extra = record.isDense() ? (byte)1 : (byte)0;
-            cursor.putByte( extra );
-        }
-        else
-        {
-            markAsUnused( cursor );
+            byte extra = record.isDense() ? (byte) 1 : (byte) 0;
+            cursor.putByte(extra);
+        } else {
+            markAsUnused(cursor);
         }
     }
 }

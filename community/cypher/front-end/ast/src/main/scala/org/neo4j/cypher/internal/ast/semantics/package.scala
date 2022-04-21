@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
-import scala.language.implicitConversions
 import scala.IterableOnce
+import scala.language.implicitConversions
 
 package object semantics {
 
@@ -30,18 +30,22 @@ package object semantics {
   implicit def chainableSemanticCheck(check: SemanticCheck): ChainableSemanticCheck = new ChainableSemanticCheck(check)
 
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Either[SemanticErrorDef, SemanticState]) func
-  implicit def chainableSemanticEitherFunc(func: SemanticState => Either[SemanticErrorDef, SemanticState]): ChainableSemanticCheck = new ChainableSemanticCheck(func)
+  implicit def chainableSemanticEitherFunc(func: SemanticState => Either[SemanticErrorDef, SemanticState])
+    : ChainableSemanticCheck = new ChainableSemanticCheck(func)
 
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Seq[SemanticErrorDef]) func
-  implicit def chainableSemanticErrorDefsFunc(func: SemanticState => Seq[SemanticErrorDef]): ChainableSemanticCheck = new ChainableSemanticCheck(func)
+  implicit def chainableSemanticErrorDefsFunc(func: SemanticState => Seq[SemanticErrorDef]): ChainableSemanticCheck =
+    new ChainableSemanticCheck(func)
 
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Option[SemanticErrorDef]) func
-  implicit def chainableSemanticOptionFunc(func: SemanticState => Option[SemanticErrorDef]): ChainableSemanticCheck = new ChainableSemanticCheck(func)
+  implicit def chainableSemanticOptionFunc(func: SemanticState => Option[SemanticErrorDef]): ChainableSemanticCheck =
+    new ChainableSemanticCheck(func)
 
   // Allows using a (SemanticState => Either[SemanticErrorDef, SemanticState]) func, where a (SemanticState => SemanticCheckResult) func is expected
-  implicit def liftSemanticEitherFunc(func: SemanticState => Either[SemanticErrorDef, SemanticState]): SemanticCheck = state => {
-    func(state).fold(error => SemanticCheckResult.error(state, error), s => SemanticCheckResult.success(s))
-  }
+  implicit def liftSemanticEitherFunc(func: SemanticState => Either[SemanticErrorDef, SemanticState]): SemanticCheck =
+    state => {
+      func(state).fold(error => SemanticCheckResult.error(state, error), s => SemanticCheckResult.success(s))
+    }
 
   // Allows using a (SemanticState => Seq[SemanticErrorDef]) func, where a (SemanticState => SemanticCheckResult) func is expected
   implicit def liftSemanticErrorDefsFunc(func: SemanticState => Seq[SemanticErrorDef]): SemanticCheck = state => {
@@ -60,36 +64,44 @@ package object semantics {
   implicit def liftSemanticErrorDef(error: SemanticErrorDef): SemanticCheck = SemanticCheckResult.error(_, error)
 
   // Allows using an optional SemanticErrorDef, where a (SemanticState => SemanticCheckResult) func is expected
-  implicit def liftSemanticErrorDefOption(error: Option[SemanticErrorDef]): SemanticCheck = SemanticCheckResult.error(_, error)
+  implicit def liftSemanticErrorDefOption(error: Option[SemanticErrorDef]): SemanticCheck =
+    SemanticCheckResult.error(_, error)
 
   // Allows starting with a sequence of SemanticErrorDef, and joining to a (SemanticState => SemanticCheckResult) func (using then)
-  implicit def liftSemanticErrorDefsAndChain(errors: Seq[SemanticErrorDef]): ChainableSemanticCheck = liftSemanticErrorDefs(errors)
+  implicit def liftSemanticErrorDefsAndChain(errors: Seq[SemanticErrorDef]): ChainableSemanticCheck =
+    liftSemanticErrorDefs(errors)
 
   // Allows starting with a single SemanticErrorDef, and joining to a (SemanticState => SemanticCheckResult) func (using then)
-  implicit def liftSemanticErrorDefAndChain(error: SemanticErrorDef): ChainableSemanticCheck = liftSemanticErrorDef(error)
+  implicit def liftSemanticErrorDefAndChain(error: SemanticErrorDef): ChainableSemanticCheck =
+    liftSemanticErrorDef(error)
 
   // Allows starting with an optional SemanticErrorDef, and joining to a (SemanticState => SemanticCheckResult) func (using then)
-  implicit def liftSemanticErrorDefOptionAndChain(error: Option[SemanticErrorDef]): ChainableSemanticCheck = liftSemanticErrorDefOption(error)
+  implicit def liftSemanticErrorDefOptionAndChain(error: Option[SemanticErrorDef]): ChainableSemanticCheck =
+    liftSemanticErrorDefOption(error)
 
   // Allows folding a semantic checking func over a collection
-  implicit def optionSemanticChecking[A](option: Option[A]): OptionSemanticChecking[A] = new OptionSemanticChecking(option)
+  implicit def optionSemanticChecking[A](option: Option[A]): OptionSemanticChecking[A] =
+    new OptionSemanticChecking(option)
 
-  implicit def traversableOnceSemanticChecking[A](traversable: IterableOnce[A]): TraversableOnceSemanticChecking[A] = new TraversableOnceSemanticChecking(traversable)
+  implicit def traversableOnceSemanticChecking[A](traversable: IterableOnce[A]): TraversableOnceSemanticChecking[A] =
+    new TraversableOnceSemanticChecking(traversable)
 
   // Allows calling semanticCheck on an optional SemanticCheckable object
-  implicit def semanticCheckableOption[A <: SemanticCheckable](option: Option[A]): SemanticCheckableOption[A] = new SemanticCheckableOption(option)
+  implicit def semanticCheckableOption[A <: SemanticCheckable](option: Option[A]): SemanticCheckableOption[A] =
+    new SemanticCheckableOption(option)
 
   // Allows calling semanticCheck on a traversable sequence of SemanticCheckable objects
-  implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: IterableOnce[A]): SemanticCheckableTraversableOnce[A] = new SemanticCheckableTraversableOnce(traversable)
+  implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: IterableOnce[A])
+    : SemanticCheckableTraversableOnce[A] = new SemanticCheckableTraversableOnce(traversable)
 
   implicit final class RichSemanticCheck(val check: SemanticCheck) extends AnyVal {
 
     // Only run a check if a given feature is enabled
     def ifFeatureEnabled(feature: SemanticFeature): SemanticCheck =
-      (s: SemanticState) => if(s.features(feature)) check(s) else SemanticCheckResult.success(s)
+      (s: SemanticState) => if (s.features(feature)) check(s) else SemanticCheckResult.success(s)
 
     // Only run a check if a given feature is *not* enabled
     def unlessFeatureEnabled(feature: SemanticFeature): SemanticCheck =
-      (s: SemanticState) => if(!s.features(feature)) check(s) else SemanticCheckResult.success(s)
+      (s: SemanticState) => if (!s.features(feature)) check(s) else SemanticCheckResult.success(s)
   }
 }

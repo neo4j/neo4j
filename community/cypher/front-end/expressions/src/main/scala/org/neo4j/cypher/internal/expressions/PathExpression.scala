@@ -26,11 +26,21 @@ final case class NodePathStep(node: LogicalVariable, next: PathStep)(val positio
   override val dependencies: Set[LogicalVariable] = next.dependencies + node
 }
 
-final case class SingleRelationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep)(val position: InputPosition) extends PathStep {
+final case class SingleRelationshipPathStep(
+  rel: LogicalVariable,
+  direction: SemanticDirection,
+  toNode: Option[LogicalVariable],
+  next: PathStep
+)(val position: InputPosition) extends PathStep {
   override val dependencies: Set[LogicalVariable] = next.dependencies ++ toNode + rel
 }
 
-final case class MultiRelationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep)(val position: InputPosition) extends PathStep {
+final case class MultiRelationshipPathStep(
+  rel: LogicalVariable,
+  direction: SemanticDirection,
+  toNode: Option[LogicalVariable],
+  next: PathStep
+)(val position: InputPosition) extends PathStep {
   override val dependencies: Set[LogicalVariable] = next.dependencies ++ toNode + rel
 }
 

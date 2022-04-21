@@ -21,106 +21,87 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.time.LocalDateTime;
 import java.util.StringJoiner;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-class LocalDateTimeType extends Type
-{
+class LocalDateTimeType extends Type {
     // Affected key state:
     // long0 (nanoOfSecond)
     // long1 (epochSecond)
 
-    LocalDateTimeType( byte typeId )
-    {
-        super( ValueGroup.LOCAL_DATE_TIME, typeId, LocalDateTimeValue.MIN_VALUE, LocalDateTimeValue.MAX_VALUE );
+    LocalDateTimeType(byte typeId) {
+        super(ValueGroup.LOCAL_DATE_TIME, typeId, LocalDateTimeValue.MIN_VALUE, LocalDateTimeValue.MAX_VALUE);
     }
 
     @Override
-    int valueSize( GenericKey<?> state )
-    {
+    int valueSize(GenericKey<?> state) {
         return Types.SIZE_LOCAL_DATE_TIME;
     }
 
     @Override
-    void copyValue( GenericKey<?> to, GenericKey<?> from )
-    {
+    void copyValue(GenericKey<?> to, GenericKey<?> from) {
         to.long0 = from.long0;
         to.long1 = from.long1;
     }
 
     @Override
-    Value asValue( GenericKey<?> state )
-    {
-        return asValue( state.long0, state.long1 );
+    Value asValue(GenericKey<?> state) {
+        return asValue(state.long0, state.long1);
     }
 
     @Override
-    int compareValue( GenericKey<?> left, GenericKey<?> right )
-    {
+    int compareValue(GenericKey<?> left, GenericKey<?> right) {
         return compare(
                 left.long0, left.long1,
-                right.long0, right.long1 );
+                right.long0, right.long1);
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey<?> state )
-    {
-        put( cursor, state.long0, state.long1 );
+    void putValue(PageCursor cursor, GenericKey<?> state) {
+        put(cursor, state.long0, state.long1);
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey<?> into )
-    {
-        return read( cursor, into );
+    boolean readValue(PageCursor cursor, int size, GenericKey<?> into) {
+        return read(cursor, into);
     }
 
-    static LocalDateTimeValue asValue( long long0, long long1 )
-    {
-        return LocalDateTimeValue.localDateTime( asValueRaw( long0, long1 ) );
+    static LocalDateTimeValue asValue(long long0, long long1) {
+        return LocalDateTimeValue.localDateTime(asValueRaw(long0, long1));
     }
 
-    static LocalDateTime asValueRaw( long long0, long long1 )
-    {
-        return LocalDateTimeValue.localDateTimeRaw( long1, long0 );
+    static LocalDateTime asValueRaw(long long0, long long1) {
+        return LocalDateTimeValue.localDateTimeRaw(long1, long0);
     }
 
-    static void put( PageCursor cursor, long long0, long long1 )
-    {
-        cursor.putLong( long1 );
-        cursor.putInt( (int) long0 );
+    static void put(PageCursor cursor, long long0, long long1) {
+        cursor.putLong(long1);
+        cursor.putInt((int) long0);
     }
 
-    static boolean read( PageCursor cursor, GenericKey<?> into )
-    {
-        into.writeLocalDateTime( cursor.getLong(), cursor.getInt() );
+    static boolean read(PageCursor cursor, GenericKey<?> into) {
+        into.writeLocalDateTime(cursor.getLong(), cursor.getInt());
         return true;
     }
 
-    static int compare(
-            long this_long0, long this_long1,
-            long that_long0, long that_long1 )
-    {
-        int compare = Long.compare( this_long1, that_long1 );
-        if ( compare == 0 )
-        {
-            compare = Integer.compare( (int) this_long0, (int) that_long0 );
+    static int compare(long this_long0, long this_long1, long that_long0, long that_long1) {
+        int compare = Long.compare(this_long1, that_long1);
+        if (compare == 0) {
+            compare = Integer.compare((int) this_long0, (int) that_long0);
         }
         return compare;
     }
 
-    static void write( GenericKey<?> state, long epochSecond, int nano )
-    {
+    static void write(GenericKey<?> state, long epochSecond, int nano) {
         state.long0 = nano;
         state.long1 = epochSecond;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
-    {
-        joiner.add( "long0=" + state.long0 );
-        joiner.add( "long1=" + state.long1 );
+    protected void addTypeSpecificDetails(StringJoiner joiner, GenericKey<?> state) {
+        joiner.add("long0=" + state.long0);
+        joiner.add("long1=" + state.long1);
     }
 }

@@ -19,14 +19,17 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.server.security.auth.CommunitySecurityModule.getInitialUserRepositoryFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,18 +38,13 @@ import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.server.security.auth.CommunitySecurityModule.getInitialUserRepositoryFile;
+import picocli.CommandLine;
 
 @EphemeralTestDirectoryExtension
-class SetDefaultAdminCommandTest
-{
+class SetDefaultAdminCommandTest {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private TestDirectory testDir;
 
@@ -54,58 +52,56 @@ class SetDefaultAdminCommandTest
     private Path adminIniFile;
 
     @BeforeEach
-    void setup()
-    {
-        command = new SetDefaultAdminCommand( new ExecutionContext( testDir.directory( "home" ),
-                                                                    testDir.directory( "conf" ), mock( PrintStream.class ), mock( PrintStream.class ),
-                                                                    fileSystem ) );
+    void setup() {
+        command = new SetDefaultAdminCommand(new ExecutionContext(
+                testDir.directory("home"),
+                testDir.directory("conf"),
+                mock(PrintStream.class),
+                mock(PrintStream.class),
+                fileSystem));
         final Config config = command.loadNeo4jConfig();
-        adminIniFile = getInitialUserRepositoryFile( config ).resolveSibling( "admin.ini" );
+        adminIniFile = getInitialUserRepositoryFile(config).resolveSibling("admin.ini");
     }
 
     @Test
-    void printUsageHelp()
-    {
+    void printUsageHelp() {
         final var baos = new ByteArrayOutputStream();
-        try ( var out = new PrintStream( baos ) )
-        {
-            CommandLine.usage( command, new PrintStream( out ), CommandLine.Help.Ansi.OFF );
+        try (var out = new PrintStream(baos)) {
+            CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
-        assertThat( baos.toString().trim() ).isEqualTo( String.format(
-                "USAGE%n" + "%n" +
-                        "set-default-admin [--expand-commands] [--verbose] <username>%n" +
-                        "%n" + "DESCRIPTION%n" + "%n" +
-                        "Sets the default admin user.%n" +
-                        "This user will be granted the admin role on startup if the system has no roles.%n" +
-                        "%n" +
-                        "PARAMETERS%n" + "%n" +
-                        "      <username>%n" + "%n" + "OPTIONS%n" + "%n" +
-                        "      --verbose           Enable verbose output.%n" +
-                        "      --expand-commands   Allow command expansion in config value evaluation.") );
+        assertThat(baos.toString().trim())
+                .isEqualTo(String.format(
+                        "USAGE%n" + "%n" + "set-default-admin [--expand-commands] [--verbose] <username>%n"
+                                + "%n"
+                                + "DESCRIPTION%n" + "%n" + "Sets the default admin user.%n"
+                                + "This user will be granted the admin role on startup if the system has no roles.%n"
+                                + "%n"
+                                + "PARAMETERS%n"
+                                + "%n" + "      <username>%n"
+                                + "%n" + "OPTIONS%n" + "%n" + "      --verbose           Enable verbose output.%n"
+                                + "      --expand-commands   Allow command expansion in config value evaluation."));
     }
 
     @Test
-    void shouldSetDefaultAdmin() throws Throwable
-    {
+    void shouldSetDefaultAdmin() throws Throwable {
         // Given
-        assertFalse( fileSystem.fileExists( adminIniFile ) );
+        assertFalse(fileSystem.fileExists(adminIniFile));
 
         // When
-        CommandLine.populateCommand( command, "jake" );
+        CommandLine.populateCommand(command, "jake");
 
         command.execute();
 
         // Then
-        assertAdminIniFile( "jake" );
+        assertAdminIniFile("jake");
     }
 
-    @SuppressWarnings( "SameParameterValue" )
-    private void assertAdminIniFile( String username ) throws Throwable
-    {
-        assertTrue( fileSystem.fileExists( adminIniFile ) );
-        FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
-            NullLogProvider.getInstance() );
+    @SuppressWarnings("SameParameterValue")
+    private void assertAdminIniFile(String username) throws Throwable {
+        assertTrue(fileSystem.fileExists(adminIniFile));
+        FileUserRepository userRepository =
+                new FileUserRepository(fileSystem, adminIniFile, NullLogProvider.getInstance());
         userRepository.start();
-        assertThat( userRepository.getAllUsernames() ).contains( username );
+        assertThat(userRepository.getAllUsernames()).contains(username);
     }
 }

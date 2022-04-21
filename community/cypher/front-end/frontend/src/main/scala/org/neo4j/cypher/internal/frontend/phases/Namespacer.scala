@@ -50,7 +50,8 @@ case object AmbiguousNamesDisambiguated extends StepSequencer.Condition
 /**
  * Rename variables so they are all unique.
  */
-case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
   type VariableRenamings = Map[Ref[LogicalVariable], LogicalVariable]
 
   override def phase: CompilationPhase = AST_REWRITE
@@ -62,7 +63,8 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     val ambiguousNames = shadowedNames(from.semantics().scopeTree)
 
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics().scopeTree.allVariableDefinitions
-    val renamings = variableRenamings(withProjectedUnions, variableDefinitions, ambiguousNames, from.anonymousVariableNameGenerator)
+    val renamings =
+      variableRenamings(withProjectedUnions, variableDefinitions, ambiguousNames, from.anonymousVariableNameGenerator)
 
     if (renamings.isEmpty) {
       from.withStatement(withProjectedUnions).withSemanticTable(table)
@@ -82,14 +84,19 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     }.toSet
   }
 
-  private def variableRenamings(statement: Statement,
-                                variableDefinitions: Map[SymbolUse, SymbolUse],
-                                ambiguousNames: Set[String],
-                                anonymousVariableNameGenerator: AnonymousVariableNameGenerator): VariableRenamings = {
+  private def variableRenamings(
+    statement: Statement,
+    variableDefinitions: Map[SymbolUse, SymbolUse],
+    ambiguousNames: Set[String],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): VariableRenamings = {
     val newNames = mutable.Map[SymbolUse, String]()
 
-    def createVariableRenaming(variable: LogicalVariable,
-                               anonymousVariableNameGenerator: AnonymousVariableNameGenerator): (Ref[LogicalVariable], LogicalVariable) = {
+    def createVariableRenaming(
+      variable: LogicalVariable,
+      anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    ): (Ref[LogicalVariable], LogicalVariable) = {
+
       /**
        * Generate a unique anonymous name.
        *
@@ -129,14 +136,14 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     // This needs to be topDown so that Unions do net get copied before being replaced by a ProjectingUnion,
     // otherwise we create new copies of the unionMapping variables which are then unknown to the semantic state.
     topDown(Rewriter.lift {
-      case u: UnionAll => ProjectingUnionAll(u.part, u.query, u.unionMappings)(u.position)
+      case u: UnionAll      => ProjectingUnionAll(u.part, u.query, u.unionMappings)(u.position)
       case u: UnionDistinct => ProjectingUnionDistinct(u.part, u.query, u.unionMappings)(u.position)
     })
   }
 
   private def renamingRewriter(renamings: VariableRenamings): Rewriter = inSequence(
     bottomUp(Rewriter.lift {
-      case item@ProcedureResultItem(None, v: Variable) if renamings.contains(Ref(v)) =>
+      case item @ ProcedureResultItem(None, v: Variable) if renamings.contains(Ref(v)) =>
         item.copy(output = Some(ProcedureOutput(v.name)(v.position)))(item.position)
     }),
     bottomUp(Rewriter.lift {
@@ -153,7 +160,8 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
           }
         })
         e.withOuterScope(newOuterScope)
-    }))
+    })
+  )
 
   override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
@@ -165,6 +173,8 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[BaseContext, BaseState, BaseState] = this
 }

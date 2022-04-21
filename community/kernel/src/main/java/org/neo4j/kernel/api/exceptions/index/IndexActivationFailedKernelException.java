@@ -22,10 +22,8 @@ package org.neo4j.kernel.api.exceptions.index;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class IndexActivationFailedKernelException extends KernelException
-{
-    public IndexActivationFailedKernelException( Throwable cause, String message )
-    {
-        super( Status.Schema.IndexCreationFailed, cause, message );
+public class IndexActivationFailedKernelException extends KernelException {
+    public IndexActivationFailedKernelException(Throwable cause, String message) {
+        super(Status.Schema.IndexCreationFailed, cause, message);
     }
 }

@@ -19,46 +19,40 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
-import java.util.NoSuchElementException;
-
-import org.neo4j.io.pagecache.context.CursorContext;
-
 import static java.lang.String.format;
 
-public class StoreIdIterator implements LongIterator
-{
+import java.util.NoSuchElementException;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.neo4j.io.pagecache.context.CursorContext;
+
+public class StoreIdIterator implements LongIterator {
     private final RecordStore<?> store;
     private long targetId;
     private long id;
     private final boolean forward;
 
-    public StoreIdIterator( RecordStore<?> store, boolean forward, CursorContext cursorContext )
-    {
-        this( store, forward, forward ? store.getNumberOfReservedLowIds() : store.getHighestPossibleIdInUse( cursorContext ) );
+    public StoreIdIterator(RecordStore<?> store, boolean forward, CursorContext cursorContext) {
+        this(
+                store,
+                forward,
+                forward ? store.getNumberOfReservedLowIds() : store.getHighestPossibleIdInUse(cursorContext));
     }
 
-    public StoreIdIterator( RecordStore<?> store, boolean forward, long initialId )
-    {
+    public StoreIdIterator(RecordStore<?> store, boolean forward, long initialId) {
         this.store = store;
         this.id = initialId;
         this.forward = forward;
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s[id=%s/%s; store=%s]", getClass().getSimpleName(), id, targetId, store );
+    public String toString() {
+        return format("%s[id=%s/%s; store=%s]", getClass().getSimpleName(), id, targetId, store);
     }
 
     @Override
-    public boolean hasNext()
-    {
-        if ( forward )
-        {
-            if ( id < targetId )
-            {
+    public boolean hasNext() {
+        if (forward) {
+            if (id < targetId) {
                 return true;
             }
             targetId = store.getHighId();
@@ -69,20 +63,16 @@ public class StoreIdIterator implements LongIterator
     }
 
     @Override
-    public long next()
-    {
-        if ( !hasNext() )
-        {
-            throw new NoSuchElementException( forward
-                    ? format( "ID [%s] has exceeded the high ID [%s] of %s.", id, targetId, store )
-                    : format( "ID [%s] has exceeded the low ID [%s] of %s.", id, targetId, store ) );
+    public long next() {
+        if (!hasNext()) {
+            throw new NoSuchElementException(
+                    forward
+                            ? format("ID [%s] has exceeded the high ID [%s] of %s.", id, targetId, store)
+                            : format("ID [%s] has exceeded the low ID [%s] of %s.", id, targetId, store));
         }
-        try
-        {
+        try {
             return id;
-        }
-        finally
-        {
+        } finally {
             id += forward ? 1 : -1;
         }
     }

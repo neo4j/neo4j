@@ -20,19 +20,14 @@
 package org.neo4j.io.pagecache;
 
 import java.io.Flushable;
-
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 
-public class EmptyIOController implements IOController
-{
+public class EmptyIOController implements IOController {
     @Override
-    public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent )
-    {
-    }
+    public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent) {}
 
     @Override
-    public void reportIO( int completedIOs )
-    {
+    public void reportIO(int completedIOs) {
         // nothing to report
     }
 }

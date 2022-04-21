@@ -36,7 +36,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.neo4j.graphdb.schema.IndexType
 
-class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
+
   test("should plan single merge node") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MERGE (a)").stripProduceResults
@@ -114,8 +116,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .assertSameNode("a")
       .|.nodeIndexOperator("a:Y(prop = 42)", unique = true, indexType = IndexType.RANGE)
       .nodeIndexOperator("a:X(prop = 42)", unique = true, indexType = IndexType.RANGE)
-      .build()
-    )
+      .build())
   }
 
   test("should use AssertSameNode when multiple unique indexes match, after a MATCH clause") {
@@ -133,13 +134,29 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .apply()
-      .|.merge(Seq(createNodeWithProperties("a", Seq("X", "Y"), "{prop: cacheNFromStore[n.prop]}")), Seq(), Seq(), Seq())
+      .|.merge(
+        Seq(createNodeWithProperties("a", Seq("X", "Y"), "{prop: cacheNFromStore[n.prop]}")),
+        Seq(),
+        Seq(),
+        Seq()
+      )
       .|.assertSameNode("a")
-      .|.|.nodeIndexOperator("a:Y(prop = ???)", argumentIds = Set("n"), paramExpr = Some(cachedNodePropFromStore("n", "prop")), unique = true, indexType = IndexType.RANGE)
-      .|.nodeIndexOperator("a:X(prop = ???)", argumentIds = Set("n"), paramExpr = Some(cachedNodePropFromStore("n", "prop")), unique = true, indexType = IndexType.RANGE)
+      .|.|.nodeIndexOperator(
+        "a:Y(prop = ???)",
+        argumentIds = Set("n"),
+        paramExpr = Some(cachedNodePropFromStore("n", "prop")),
+        unique = true,
+        indexType = IndexType.RANGE
+      )
+      .|.nodeIndexOperator(
+        "a:X(prop = ???)",
+        argumentIds = Set("n"),
+        paramExpr = Some(cachedNodePropFromStore("n", "prop")),
+        unique = true,
+        indexType = IndexType.RANGE
+      )
       .nodeByLabelScan("n", "Z")
-      .build()
-    )
+      .build())
   }
 
   test("should not use AssertSameNode when one unique index matches") {
@@ -157,8 +174,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .merge(Seq(createNodeWithProperties("a", Seq("X", "Y"), "{prop: 42}")), Seq(), Seq(), Seq())
       .filter("a:Y")
       .nodeIndexOperator("a:X(prop = 42)", unique = true, indexType = IndexType.RANGE)
-      .build()
-    )
+      .build())
   }
 
   test("should use AssertSameNode with PatternComprehension") {
@@ -181,16 +197,25 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
     plan should beLike {
       case Merge(
-      AssertSameNode("n",
-      Apply(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName1, _),
-      NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName1), _, _), _
-      ),
-      Apply(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName2, _),
-      NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName2), _, _), _
-      ))
-      , _, _, _, _, _) if collectionName1 == argumentName1 && collectionName2 == argumentName2 => ()
+          AssertSameNode(
+            "n",
+            Apply(
+              RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName1, _),
+              NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName1), _, _),
+              _
+            ),
+            Apply(
+              RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName2, _),
+              NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName2), _, _),
+              _
+            )
+          ),
+          _,
+          _,
+          _,
+          _,
+          _
+        ) if collectionName1 == argumentName1 && collectionName2 == argumentName2 => ()
     }
   }
 
@@ -202,7 +227,8 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .merge(
         nodes = Seq(createNode("a")),
         onMatch = Seq(setLabel("a", "L")),
-        onCreate = Seq(setNodeProperty("a", "prop", "1")))
+        onCreate = Seq(setNodeProperty("a", "prop", "1"))
+      )
       .allNodeScan("a")
       .build()
   }

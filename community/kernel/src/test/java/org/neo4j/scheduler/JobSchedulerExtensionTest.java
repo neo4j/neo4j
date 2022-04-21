@@ -19,17 +19,6 @@
  */
 package org.neo4j.scheduler;
 
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.platform.testkit.engine.EngineTestKit;
-import org.junit.platform.testkit.engine.Events;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.test.extension.Inject;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
@@ -38,31 +27,44 @@ import static org.junit.platform.testkit.engine.EventConditions.finishedWithFail
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
-@ExtendWith( JobSchedulerExtension.class )
-class JobSchedulerExtensionTest
-{
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.platform.testkit.engine.EngineTestKit;
+import org.junit.platform.testkit.engine.Events;
+import org.neo4j.test.extension.Inject;
+
+@ExtendWith(JobSchedulerExtension.class)
+class JobSchedulerExtensionTest {
     @Inject
     private JobScheduler jobScheduler;
 
     @Test
-    void injectStartedJobScheduler() throws InterruptedException
-    {
-        CountDownLatch countDownLatch = new CountDownLatch( 1 );
-        jobScheduler.schedule( Group.TESTING, countDownLatch::countDown );
-        assertTrue( countDownLatch.await( 1, TimeUnit.MINUTES ) );
+    void injectStartedJobScheduler() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        jobScheduler.schedule(Group.TESTING, countDownLatch::countDown);
+        assertTrue(countDownLatch.await(1, TimeUnit.MINUTES));
     }
 
     @Nested
-    class ShutdownScheduler
-    {
+    class ShutdownScheduler {
 
         @Test
-        void componentShutdownAfterTest()
-        {
-            Events testEvents = EngineTestKit.engine( ENGINE_ID ).selectors( selectClass( JobSchedulerExtensionShutdown.class ) ).execute().testEvents();
+        void componentShutdownAfterTest() {
+            Events testEvents = EngineTestKit.engine(ENGINE_ID)
+                    .selectors(selectClass(JobSchedulerExtensionShutdown.class))
+                    .execute()
+                    .testEvents();
 
-            testEvents.assertThatEvents().haveExactly( 1,
-                    event( finishedWithFailure( instanceOf( RuntimeException.class ), message( message -> message.contains( "Shutdown called." ) ) ) ) );
+            testEvents
+                    .assertThatEvents()
+                    .haveExactly(
+                            1,
+                            event(finishedWithFailure(
+                                    instanceOf(RuntimeException.class),
+                                    message(message -> message.contains("Shutdown called.")))));
         }
     }
 }

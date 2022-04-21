@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -39,17 +38,19 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 /**
  * Node store view that will always visit all nodes during store scan.
  */
-public class FullScanStoreView implements IndexStoreView
-{
+public class FullScanStoreView implements IndexStoreView {
     protected final LockService locks;
     protected final Supplier<StorageReader> storageReaderSupplier;
-    private final Function<CursorContext,StoreCursors> storeCursorsFactory;
+    private final Function<CursorContext, StoreCursors> storeCursorsFactory;
     protected final Config config;
     protected final JobScheduler scheduler;
 
-    public FullScanStoreView( LockService locks, Supplier<StorageReader> storageReaderSupplier, Function<CursorContext,StoreCursors> storeCursorsFactory,
-            Config config, JobScheduler scheduler )
-    {
+    public FullScanStoreView(
+            LockService locks,
+            Supplier<StorageReader> storageReaderSupplier,
+            Function<CursorContext, StoreCursors> storeCursorsFactory,
+            Config config,
+            JobScheduler scheduler) {
         this.locks = locks;
         this.storageReaderSupplier = storageReaderSupplier;
         this.storeCursorsFactory = storeCursorsFactory;
@@ -58,29 +59,59 @@ public class FullScanStoreView implements IndexStoreView
     }
 
     @Override
-    public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-            PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
-            boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
-        return new NodeStoreScan( config, storageReaderSupplier.get(), storeCursorsFactory, locks, labelScanConsumer,
-                propertyScanConsumer, labelIds, propertyKeyIdFilter, parallelWrite, scheduler, contextFactory, memoryTracker );
+    public StoreScan visitNodes(
+            int[] labelIds,
+            IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer labelScanConsumer,
+            boolean forceStoreScan,
+            boolean parallelWrite,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        return new NodeStoreScan(
+                config,
+                storageReaderSupplier.get(),
+                storeCursorsFactory,
+                locks,
+                labelScanConsumer,
+                propertyScanConsumer,
+                labelIds,
+                propertyKeyIdFilter,
+                parallelWrite,
+                scheduler,
+                contextFactory,
+                memoryTracker);
     }
 
     @Override
-    public StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            PropertyScanConsumer propertyScanConsumer, TokenScanConsumer relationshipTypeScanConsumer,
-            boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
-        return new RelationshipStoreScan( config, storageReaderSupplier.get(), storeCursorsFactory, locks, relationshipTypeScanConsumer, propertyScanConsumer,
-                relationshipTypeIds, propertyKeyIdFilter, parallelWrite, scheduler, contextFactory, memoryTracker );
+    public StoreScan visitRelationships(
+            int[] relationshipTypeIds,
+            IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer relationshipTypeScanConsumer,
+            boolean forceStoreScan,
+            boolean parallelWrite,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        return new RelationshipStoreScan(
+                config,
+                storageReaderSupplier.get(),
+                storeCursorsFactory,
+                locks,
+                relationshipTypeScanConsumer,
+                propertyScanConsumer,
+                relationshipTypeIds,
+                propertyKeyIdFilter,
+                parallelWrite,
+                scheduler,
+                contextFactory,
+                memoryTracker);
     }
 
     @Override
-    public boolean isEmpty( CursorContext cursorContext )
-    {
-        try ( StorageReader reader = storageReaderSupplier.get() )
-        {
-            return reader.nodesGetCount( cursorContext ) == 0 && reader.relationshipsGetCount( cursorContext ) == 0;
+    public boolean isEmpty(CursorContext cursorContext) {
+        try (StorageReader reader = storageReaderSupplier.get()) {
+            return reader.nodesGetCount(cursorContext) == 0 && reader.relationshipsGetCount(cursorContext) == 0;
         }
     }
 }

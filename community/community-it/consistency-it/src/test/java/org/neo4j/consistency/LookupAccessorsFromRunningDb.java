@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -29,33 +31,24 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexProxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class LookupAccessorsFromRunningDb implements IndexAccessors.IndexAccessorLookup
-{
+public class LookupAccessorsFromRunningDb implements IndexAccessors.IndexAccessorLookup {
     private final IndexingService indexingService;
 
-    public LookupAccessorsFromRunningDb( IndexingService indexingService )
-    {
+    public LookupAccessorsFromRunningDb(IndexingService indexingService) {
         this.indexingService = indexingService;
     }
 
     @Override
-    public IndexAccessor apply( IndexDescriptor indexDescriptor )
-    {
-        try
-        {
-            IndexProxy proxy = indexingService.getIndexProxy( indexDescriptor );
-            while ( proxy instanceof AbstractDelegatingIndexProxy )
-            {
+    public IndexAccessor apply(IndexDescriptor indexDescriptor) {
+        try {
+            IndexProxy proxy = indexingService.getIndexProxy(indexDescriptor);
+            while (proxy instanceof AbstractDelegatingIndexProxy) {
                 proxy = ((AbstractDelegatingIndexProxy) proxy).getDelegate();
             }
-            assertEquals( InternalIndexState.ONLINE, proxy.getState() );
+            assertEquals(InternalIndexState.ONLINE, proxy.getState());
             return ((OnlineIndexProxy) proxy).accessor();
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IndexNotFoundKernelException e) {
+            throw new RuntimeException(e);
         }
     }
 }

@@ -22,8 +22,7 @@ package org.neo4j.scheduler;
 /**
  * Gets notified about calls to {@link JobHandle#cancel()}.
  */
-public interface CancelListener
-{
+public interface CancelListener {
     /**
      * Notification that {@link JobHandle#cancel()} was called.
      */

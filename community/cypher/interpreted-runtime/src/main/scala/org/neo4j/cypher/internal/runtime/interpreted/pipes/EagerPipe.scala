@@ -26,14 +26,18 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 
 case class EagerPipe(src: Pipe)(val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(src) {
+    extends PipeWithSource(src) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    val buffer = EagerBuffer.createEagerBuffer[CypherRow](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x),
-                                                          1024,
-                                                          8192,
-                                                          EagerBuffer.GROW_NEW_CHUNKS_BY_100_PCT
-                                                          )
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
+    val buffer = EagerBuffer.createEagerBuffer[CypherRow](
+      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x),
+      1024,
+      8192,
+      EagerBuffer.GROW_NEW_CHUNKS_BY_100_PCT
+    )
     state.query.resources.trace(buffer)
     while (input.hasNext) {
       buffer.add(input.next())

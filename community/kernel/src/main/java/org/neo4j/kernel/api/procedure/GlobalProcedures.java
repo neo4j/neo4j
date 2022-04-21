@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.procedure;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
@@ -37,67 +36,66 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.values.AnyValue;
 
-public interface GlobalProcedures
-{
-    void register( CallableProcedure proc ) throws ProcedureException;
+public interface GlobalProcedures {
+    void register(CallableProcedure proc) throws ProcedureException;
 
-    void register( CallableUserFunction function ) throws ProcedureException;
+    void register(CallableUserFunction function) throws ProcedureException;
 
-    void register( CallableUserAggregationFunction function ) throws ProcedureException;
+    void register(CallableUserAggregationFunction function) throws ProcedureException;
 
-    void register( CallableUserFunction function, boolean overrideCurrentImplementation ) throws ProcedureException;
+    void register(CallableUserFunction function, boolean overrideCurrentImplementation) throws ProcedureException;
 
-    void registerBuiltIn( CallableUserFunction function ) throws ProcedureException;
+    void registerBuiltIn(CallableUserFunction function) throws ProcedureException;
 
-    void register( CallableUserAggregationFunction function, boolean overrideCurrentImplementation ) throws ProcedureException;
+    void register(CallableUserAggregationFunction function, boolean overrideCurrentImplementation)
+            throws ProcedureException;
 
-    void register( CallableProcedure proc, boolean overrideCurrentImplementation ) throws ProcedureException;
+    void register(CallableProcedure proc, boolean overrideCurrentImplementation) throws ProcedureException;
 
-    void registerProcedure( Class<?> proc ) throws KernelException;
+    void registerProcedure(Class<?> proc) throws KernelException;
 
-    void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException;
+    void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws KernelException;
 
-    void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, String warning ) throws KernelException;
+    void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation, String warning) throws KernelException;
 
-    void registerBuiltInFunctions( Class<?> func ) throws KernelException;
+    void registerBuiltInFunctions(Class<?> func) throws KernelException;
 
-    void registerFunction( Class<?> func ) throws KernelException;
+    void registerFunction(Class<?> func) throws KernelException;
 
-    void registerAggregationFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException;
+    void registerAggregationFunction(Class<?> func, boolean overrideCurrentImplementation) throws KernelException;
 
-    void registerAggregationFunction( Class<?> func ) throws KernelException;
+    void registerAggregationFunction(Class<?> func) throws KernelException;
 
-    void registerFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException;
+    void registerFunction(Class<?> func, boolean overrideCurrentImplementation) throws KernelException;
 
-    void registerType( Class<?> javaClass, Neo4jTypes.AnyType type );
+    void registerType(Class<?> javaClass, Neo4jTypes.AnyType type);
 
-    <T> void registerComponent( Class<T> cls, ThrowingFunction<Context,T,ProcedureException> provider, boolean safe );
+    <T> void registerComponent(Class<T> cls, ThrowingFunction<Context, T, ProcedureException> provider, boolean safe);
 
-    ProcedureHandle procedure( QualifiedName name ) throws ProcedureException;
+    ProcedureHandle procedure(QualifiedName name) throws ProcedureException;
 
-    UserFunctionHandle function( QualifiedName name );
+    UserFunctionHandle function(QualifiedName name);
 
-    UserFunctionHandle aggregationFunction( QualifiedName name );
+    UserFunctionHandle aggregationFunction(QualifiedName name);
 
-    int[] getIdsOfFunctionsMatching( Predicate<CallableUserFunction> predicate );
+    int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate);
 
-    int[] getIdsOfAggregatingFunctionsMatching( Predicate<CallableUserAggregationFunction> predicate );
+    int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate);
 
     Set<ProcedureSignature> getAllProcedures();
 
-    int[] getIdsOfProceduresMatching( Predicate<CallableProcedure> predicate );
+    int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate);
 
     Stream<UserFunctionSignature> getAllNonAggregatingFunctions();
 
     Stream<UserFunctionSignature> getAllAggregatingFunctions();
 
-    RawIterator<AnyValue[], ProcedureException> callProcedure( Context ctx, int id, AnyValue[] input,
-            ResourceTracker resourceTracker ) throws ProcedureException;
+    RawIterator<AnyValue[], ProcedureException> callProcedure(
+            Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException;
 
-    AnyValue callFunction( Context ctx, int id, AnyValue[] input ) throws ProcedureException;
+    AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException;
 
-    UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException;
+    UserAggregator createAggregationFunction(Context ctx, int id) throws ProcedureException;
 
-    <T> ThrowingFunction<Context,T,ProcedureException> lookupComponentProvider( Class<T> cls, boolean safe );
-
+    <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe);
 }

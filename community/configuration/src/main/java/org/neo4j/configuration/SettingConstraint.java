@@ -20,7 +20,6 @@
 package org.neo4j.configuration;
 
 import java.util.function.Function;
-
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
@@ -28,9 +27,8 @@ import org.neo4j.graphdb.config.Setting;
  * A constraint limiting the set of accepted values of the associated {@link Setting}.
  * @param <T> the type of the objects this constraint is working on.
  */
-public abstract class SettingConstraint<T>
-{
-    private Function<T,String> valueToString = T::toString;
+public abstract class SettingConstraint<T> {
+    private Function<T, String> valueToString = T::toString;
 
     /**
      * Validates if an object is satisfying the constraint.
@@ -39,7 +37,7 @@ public abstract class SettingConstraint<T>
      * @param config The config the value belongs to.
      * @throws IllegalArgumentException if the constraint is not satisfied.
      */
-    public abstract void validate( T value, Configuration config );
+    public abstract void validate(T value, Configuration config);
 
     /**
      * A textual representation of the constraint, including information about valid/invalid values
@@ -54,13 +52,11 @@ public abstract class SettingConstraint<T>
      * @param value A value of type {@code T}.
      * @return String representation of the provided value.
      */
-    protected String valueToString( T value )
-    {
-        return valueToString.apply( value );
+    protected String valueToString(T value) {
+        return valueToString.apply(value);
     }
 
-    void setParser( SettingValueParser<T> parser )
-    {
+    void setParser(SettingValueParser<T> parser) {
         this.valueToString = parser::valueToString;
     }
 }

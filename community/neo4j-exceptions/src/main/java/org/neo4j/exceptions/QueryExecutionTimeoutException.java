@@ -21,21 +21,17 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class QueryExecutionTimeoutException extends Neo4jException
-{
-    public QueryExecutionTimeoutException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class QueryExecutionTimeoutException extends Neo4jException {
+    public QueryExecutionTimeoutException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public QueryExecutionTimeoutException( String message )
-    {
-        super( message );
+    public QueryExecutionTimeoutException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.ExecutionTimeout;
     }
 }

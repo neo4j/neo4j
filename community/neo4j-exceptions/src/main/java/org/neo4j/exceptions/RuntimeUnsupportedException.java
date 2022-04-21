@@ -21,21 +21,17 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class RuntimeUnsupportedException extends Neo4jException
-{
-    public RuntimeUnsupportedException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class RuntimeUnsupportedException extends Neo4jException {
+    public RuntimeUnsupportedException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public RuntimeUnsupportedException( String message )
-    {
-        super( message );
+    public RuntimeUnsupportedException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.RuntimeUnsupportedError;
     }
 }

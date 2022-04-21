@@ -26,17 +26,16 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 
-public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.kernel.api.Cursor> implements PartitionedScan<Cursor>
-{
+public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
+        implements PartitionedScan<Cursor> {
     private final Read read;
     private final TokenPredicate query;
     private final PartitionedTokenScan tokenScan;
 
-    PartitionedTokenIndexCursorScan( Read read, TokenPredicate query, PartitionedTokenScan tokenScan )
-    {
-        if ( read.hasTxStateWithChanges() )
-        {
-            throw new IllegalStateException( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
+    PartitionedTokenIndexCursorScan(Read read, TokenPredicate query, PartitionedTokenScan tokenScan) {
+        if (read.hasTxStateWithChanges()) {
+            throw new IllegalStateException(
+                    "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
         }
         this.read = read;
         this.query = query;
@@ -44,22 +43,19 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
     }
 
     @Override
-    public int getNumberOfPartitions()
-    {
+    public int getNumberOfPartitions() {
         return tokenScan.getNumberOfPartitions();
     }
 
     @Override
-    public boolean reservePartition( Cursor cursor, CursorContext cursorContext, AccessMode accessMode )
-    {
+    public boolean reservePartition(Cursor cursor, CursorContext cursorContext, AccessMode accessMode) {
         var indexCursor = (DefaultEntityTokenIndexCursor<? extends DefaultEntityTokenIndexCursor<?>>) cursor;
-        indexCursor.setRead( read );
-        var indexProgressor = tokenScan.reservePartition( indexCursor, cursorContext );
-        if ( indexProgressor == IndexProgressor.EMPTY )
-        {
+        indexCursor.setRead(read);
+        var indexProgressor = tokenScan.reservePartition(indexCursor, cursorContext);
+        if (indexProgressor == IndexProgressor.EMPTY) {
             return false;
         }
-        indexCursor.initialize( indexProgressor, query.tokenId(), null, null, accessMode );
+        indexCursor.initialize(indexProgressor, query.tokenId(), null, null, accessMode);
         return true;
     }
 }

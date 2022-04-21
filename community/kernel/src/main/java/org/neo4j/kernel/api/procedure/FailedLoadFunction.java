@@ -24,17 +24,15 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 
-public class FailedLoadFunction extends CallableUserFunction.BasicUserFunction
-{
-    public FailedLoadFunction( UserFunctionSignature signature )
-    {
-        super( signature );
+public class FailedLoadFunction extends CallableUserFunction.BasicUserFunction {
+    public FailedLoadFunction(UserFunctionSignature signature) {
+        super(signature);
     }
 
     @Override
-    public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
-    {
-        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name() ) );
+    public AnyValue apply(Context ctx, AnyValue[] input) throws ProcedureException {
+        throw new ProcedureException(
+                Status.Procedure.ProcedureRegistrationFailed,
+                signature().description().orElse("Failed to load " + signature().name()));
     }
 }

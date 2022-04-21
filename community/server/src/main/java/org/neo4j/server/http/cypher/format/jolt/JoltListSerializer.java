@@ -24,30 +24,25 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.type.CollectionLikeType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-
 import java.io.IOException;
 import java.util.List;
 
-final class JoltListSerializer extends StdSerializer<List<?>>
-{
-    static final CollectionLikeType HANDLED_TYPE = TypeFactory
-            .defaultInstance().constructCollectionLikeType( List.class, Object.class );
+final class JoltListSerializer extends StdSerializer<List<?>> {
+    static final CollectionLikeType HANDLED_TYPE =
+            TypeFactory.defaultInstance().constructCollectionLikeType(List.class, Object.class);
 
-    JoltListSerializer()
-    {
-        super( HANDLED_TYPE );
+    JoltListSerializer() {
+        super(HANDLED_TYPE);
     }
 
     @Override
-    public void serialize( List<?> list, JsonGenerator generator, SerializerProvider provider ) throws IOException
-    {
-        generator.writeStartObject( list );
-        generator.writeFieldName( Sigil.LIST.getValue() );
-        generator.writeStartArray( list );
+    public void serialize(List<?> list, JsonGenerator generator, SerializerProvider provider) throws IOException {
+        generator.writeStartObject(list);
+        generator.writeFieldName(Sigil.LIST.getValue());
+        generator.writeStartArray(list);
 
-        for ( var entry : list )
-        {
-            generator.writeObject( entry );
+        for (var entry : list) {
+            generator.writeObject(entry);
         }
 
         generator.writeEndArray();

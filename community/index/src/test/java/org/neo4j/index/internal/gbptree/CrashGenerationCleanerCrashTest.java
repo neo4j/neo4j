@@ -19,7 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.CrashGenerationCleaner.MAX_BATCH_SIZE;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,7 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPagedFile;
@@ -39,75 +45,63 @@ import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.index.internal.gbptree.CrashGenerationCleaner.MAX_BATCH_SIZE;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
 @PageCacheExtension
-class CrashGenerationCleanerCrashTest
-{
+class CrashGenerationCleanerCrashTest {
     @Test
-    void mustNotLeakTasksOnCrash()
-    {
+    void mustNotLeakTasksOnCrash() {
         // Given
         String exceptionMessage = "When there's no more room in hell, the dead will walk the earth";
-        CrashGenerationCleaner cleaner = newCrashingCrashGenerationCleaner( exceptionMessage );
-        ExecutorService executorService = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        ThreadPoolJobScheduler threadPoolJobScheduler = new ThreadPoolJobScheduler( executorService );
+        CrashGenerationCleaner cleaner = newCrashingCrashGenerationCleaner(exceptionMessage);
+        ExecutorService executorService =
+                Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ThreadPoolJobScheduler threadPoolJobScheduler = new ThreadPoolJobScheduler(executorService);
 
-        try
-        {
-            var executor = new CleanupJob.Executor()
-            {
+        try {
+            var executor = new CleanupJob.Executor() {
                 @Override
-                public <T> CleanupJob.JobResult<T> submit( String jobDescription, Callable<T> job )
-                {
-                    var jobHandle = threadPoolJobScheduler.schedule( Group.TESTING, JobMonitoringParams.NOT_MONITORED, job );
+                public <T> CleanupJob.JobResult<T> submit(String jobDescription, Callable<T> job) {
+                    var jobHandle =
+                            threadPoolJobScheduler.schedule(Group.TESTING, JobMonitoringParams.NOT_MONITORED, job);
                     return jobHandle::get;
                 }
             };
-            Throwable exception = assertThrows( Throwable.class, () -> cleaner.clean( executor ) );
-            Throwable rootCause = getRootCause( exception );
-            assertTrue( rootCause instanceof IOException );
-            assertEquals( exceptionMessage, rootCause.getMessage() );
-        }
-        finally
-        {
+            Throwable exception = assertThrows(Throwable.class, () -> cleaner.clean(executor));
+            Throwable rootCause = getRootCause(exception);
+            assertTrue(rootCause instanceof IOException);
+            assertEquals(exceptionMessage, rootCause.getMessage());
+        } finally {
             List<Runnable> tasks = executorService.shutdownNow();
-            assertEquals( 0, tasks.size() );
+            assertEquals(0, tasks.size());
         }
     }
 
-    private static CrashGenerationCleaner newCrashingCrashGenerationCleaner( String message )
-    {
+    private static CrashGenerationCleaner newCrashingCrashGenerationCleaner(String message) {
         int pageSize = 8192;
-        PagedFile pagedFile = new StubPagedFile( pageSize )
-        {
-            final AtomicBoolean first = new AtomicBoolean( true );
+        PagedFile pagedFile = new StubPagedFile(pageSize) {
+            final AtomicBoolean first = new AtomicBoolean(true);
 
             @Override
-            public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
-            {
-                try
-                {
-                    Thread.sleep( 1 );
+            public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
+                if (first.getAndSet(false)) {
+                    throw new IOException(message);
                 }
-                if ( first.getAndSet( false ) )
-                {
-                    throw new IOException( message );
-                }
-                return super.io( pageId, pf_flags, context );
+                return super.io(pageId, pf_flags, context);
             }
         };
-        return new CrashGenerationCleaner( pagedFile, new TreeNodeFixedSize<>( pageSize, SimpleLongLayout.longLayout().build() ), 0,
-                MAX_BATCH_SIZE * 1_000_000_000, 5, 7, NO_MONITOR, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), "test tree" );
+        return new CrashGenerationCleaner(
+                pagedFile,
+                new TreeNodeFixedSize<>(pageSize, SimpleLongLayout.longLayout().build()),
+                0,
+                MAX_BATCH_SIZE * 1_000_000_000,
+                5,
+                7,
+                NO_MONITOR,
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                "test tree");
     }
 }

@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.query;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.lock.ActiveLock;
 
 /**
@@ -32,8 +31,7 @@ import org.neo4j.lock.ActiveLock;
  *
  * @see ExecutingQuery#status
  */
-abstract class ExecutingQueryStatus
-{
+abstract class ExecutingQueryStatus {
     static final String PARSING_STATE = "parsing";
     static final String PLANNING_STATE = "planning";
     static final String PLANNED_STATE = "planned";
@@ -47,14 +45,13 @@ abstract class ExecutingQueryStatus
      *         the current timestamp on the nano clock.
      * @return the time between the time this state started waiting and the provided timestamp.
      */
-    abstract long waitTimeNanos( long currentTimeNanos );
+    abstract long waitTimeNanos(long currentTimeNanos);
 
-    abstract Map<String,Object> toMap( long currentTimeNanos );
+    abstract Map<String, Object> toMap(long currentTimeNanos);
 
     abstract String name();
 
-    boolean isParsingOrPlanning()
-    {
+    boolean isParsingOrPlanning() {
         return false;
     }
 
@@ -62,8 +59,7 @@ abstract class ExecutingQueryStatus
      * Is query waiting on a locks
      * @return true if waiting on locks, false otherwise
      */
-    boolean isWaitingOnLocks()
-    {
+    boolean isWaitingOnLocks() {
         return false;
     }
 
@@ -71,8 +67,7 @@ abstract class ExecutingQueryStatus
      * List of locks query is waiting on. Will be empty for all of the statuses except for {@link WaitingOnLock}.
      * @return list of locks query is waiting on, empty list if query is not waiting.
      */
-    List<ActiveLock> waitingOnLocks()
-    {
+    List<ActiveLock> waitingOnLocks() {
         return Collections.emptyList();
     }
 }

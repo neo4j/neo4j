@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-public enum ActionType
-{
+public enum ActionType {
     // Database actions
     DATABASE_ALL,
     DATABASE_START,

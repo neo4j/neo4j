@@ -19,13 +19,14 @@
  */
 package org.neo4j.test.fabric;
 
+import static java.util.Objects.requireNonNull;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.runtime.AccessMode;
@@ -42,44 +43,46 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionExceptionMapper;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
-import static java.util.Objects.requireNonNull;
-
-public class TestFabricGraphDatabaseService extends GraphDatabaseFacade
-{
+public class TestFabricGraphDatabaseService extends GraphDatabaseFacade {
     final Supplier<BoltGraphDatabaseServiceSPI> boltFabricDatabaseServiceSupplier;
     final Config config;
 
-    public TestFabricGraphDatabaseService( GraphDatabaseFacade baseDb,
-                                           Config config,
-                                           Supplier<BoltGraphDatabaseServiceSPI> boltFabricDatabaseServiceSupplier )
-    {
-        super( baseDb, Function.identity() );
+    public TestFabricGraphDatabaseService(
+            GraphDatabaseFacade baseDb,
+            Config config,
+            Supplier<BoltGraphDatabaseServiceSPI> boltFabricDatabaseServiceSupplier) {
+        super(baseDb, Function.identity());
         this.boltFabricDatabaseServiceSupplier = boltFabricDatabaseServiceSupplier;
-        this.config = requireNonNull( config );
+        this.config = requireNonNull(config);
     }
 
     @Override
-    protected InternalTransaction beginTransactionInternal( KernelTransaction.Type type,
-                                                            LoginContext loginContext,
-                                                            ClientConnectionInfo connectionInfo,
-                                                            long timeoutMillis,
-                                                            Consumer<Status> terminationCallback,
-                                                            TransactionExceptionMapper transactionExceptionMapper )
-    {
+    protected InternalTransaction beginTransactionInternal(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo connectionInfo,
+            long timeoutMillis,
+            Consumer<Status> terminationCallback,
+            TransactionExceptionMapper transactionExceptionMapper) {
 
         var databaseService = boltFabricDatabaseServiceSupplier.get();
-        var boltTransaction = databaseService.beginTransaction( type, loginContext, connectionInfo, List.of(),
-                                                                          Duration.ofMillis( timeoutMillis ), AccessMode.WRITE,
-                                                                          Map.of(),
-                                                                          new RoutingContext( false, Map.of() ) );
-        var internalTransaction = forceKernelTxCreation( boltTransaction );
-        return new TestFabricTransaction( boltTransaction, internalTransaction );
+        var boltTransaction = databaseService.beginTransaction(
+                type,
+                loginContext,
+                connectionInfo,
+                List.of(),
+                Duration.ofMillis(timeoutMillis),
+                AccessMode.WRITE,
+                Map.of(),
+                new RoutingContext(false, Map.of()));
+        var internalTransaction = forceKernelTxCreation(boltTransaction);
+        return new TestFabricTransaction(boltTransaction, internalTransaction);
     }
 
-    private InternalTransaction forceKernelTxCreation( BoltTransaction boltTransaction )
-    {
-        FabricExecutor fabricExecutor = getDependencyResolver().resolveDependency( FabricExecutor.class );
-        FabricTransaction fabricTransaction = ((BoltFabricDatabaseService.BoltTransactionImpl) boltTransaction).getFabricTransaction();
-        return fabricExecutor.forceKernelTxCreation( fabricTransaction );
+    private InternalTransaction forceKernelTxCreation(BoltTransaction boltTransaction) {
+        FabricExecutor fabricExecutor = getDependencyResolver().resolveDependency(FabricExecutor.class);
+        FabricTransaction fabricTransaction =
+                ((BoltFabricDatabaseService.BoltTransactionImpl) boltTransaction).getFabricTransaction();
+        return fabricExecutor.forceKernelTxCreation(fabricTransaction);
     }
 }

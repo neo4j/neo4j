@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
+
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
@@ -27,7 +31,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.ResourceLock;
-
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -49,10 +52,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
-
 /**
  * KernelAPIWriteTestBase is the basis of write tests targeting the Kernel API.
  *
@@ -64,21 +63,20 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
  *
  * @param <WriteSupport> The test support for the current test.
  */
-@SuppressWarnings( "WeakerAccess" )
+@SuppressWarnings("WeakerAccess")
 @TestDirectoryExtension
-@TestInstance( TestInstance.Lifecycle.PER_CLASS )
-@ResourceLock( SHARED_RESOURCE )
-public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWriteTestSupport>
-{
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ResourceLock(SHARED_RESOURCE)
+public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWriteTestSupport> {
     protected static KernelAPIWriteTestSupport testSupport;
     protected static GraphDatabaseService graphDb;
 
     // the following static fields are needed to create a fake internal transaction
-    private static final TokenHolders tokenHolders = mock( TokenHolders.class );
-    private static final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
-    private static final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
-    private static final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
-    private static final ElementIdMapper elementIdMapper = mock( ElementIdMapper.class );
+    private static final TokenHolders tokenHolders = mock(TokenHolders.class);
+    private static final QueryExecutionEngine engine = mock(QueryExecutionEngine.class);
+    private static final TransactionalContextFactory contextFactory = mock(TransactionalContextFactory.class);
+    private static final DatabaseAvailabilityGuard availabilityGuard = mock(DatabaseAvailabilityGuard.class);
+    private static final ElementIdMapper elementIdMapper = mock(ElementIdMapper.class);
 
     @Inject
     private TestDirectory testDirectory;
@@ -89,22 +87,19 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     public abstract WriteSupport newTestSupport();
 
     @BeforeAll
-    public void setupGraph()
-    {
+    public void setupGraph() {
         testSupport = newTestSupport();
-        testSupport.setup( testDirectory.homePath(), this::createSystemGraph );
+        testSupport.setup(testDirectory.homePath(), this::createSystemGraph);
         graphDb = testSupport.graphBackdoor();
     }
 
     @BeforeEach
-    public void clearGraph()
-    {
+    public void clearGraph() {
         testSupport.clearGraph();
     }
 
     @AfterAll
-    public static void tearDown()
-    {
+    public static void tearDown() {
         testSupport.tearDown();
     }
 
@@ -114,45 +109,38 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
      *
      * @param graphDb a graph API which should be used to build the system test graph
      */
-    public void createSystemGraph( GraphDatabaseService graphDb )
-    {
+    public void createSystemGraph(GraphDatabaseService graphDb) {}
+
+    protected static KernelTransaction beginTransaction() throws TransactionFailureException {
+        return beginTransaction(LoginContext.AUTH_DISABLED);
     }
 
-    protected static KernelTransaction beginTransaction() throws TransactionFailureException
-    {
-        return beginTransaction( LoginContext.AUTH_DISABLED );
-    }
-
-    protected static KernelTransaction beginTransaction( LoginContext loginContext ) throws TransactionFailureException
-    {
+    protected static KernelTransaction beginTransaction(LoginContext loginContext) throws TransactionFailureException {
         Kernel kernel = testSupport.kernelToTest();
-        KernelTransaction kernelTransaction = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );
-        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, elementIdMapper );
+        KernelTransaction kernelTransaction = kernel.beginTransaction(KernelTransaction.Type.IMPLICIT, loginContext);
+        new TransactionImpl(
+                tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, elementIdMapper);
         return kernelTransaction;
     }
 
-    protected static void transaction( ThrowingConsumer<KernelTransaction,Exception> action ) throws Exception
-    {
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            action.accept( tx );
+    protected static void transaction(ThrowingConsumer<KernelTransaction, Exception> action) throws Exception {
+        try (KernelTransaction tx = beginTransaction()) {
+            action.accept(tx);
             tx.commit();
         }
     }
 
-    protected static CursorFactory cursorFactory( KernelTransaction ktx )
-    {
+    protected static CursorFactory cursorFactory(KernelTransaction ktx) {
         return ((Read) ktx.dataRead()).cursors();
     }
 
-    protected void assertProperties( EntityCursor entityCursor, PropertyCursor propertyCursor, IntObjectMap<Value> expectedProperties )
-    {
-        entityCursor.properties( propertyCursor, PropertySelection.ALL_PROPERTIES );
+    protected void assertProperties(
+            EntityCursor entityCursor, PropertyCursor propertyCursor, IntObjectMap<Value> expectedProperties) {
+        entityCursor.properties(propertyCursor, PropertySelection.ALL_PROPERTIES);
         MutableIntObjectMap<Value> readProperties = IntObjectMaps.mutable.empty();
-        while ( propertyCursor.next() )
-        {
-            readProperties.put( propertyCursor.propertyKey(), propertyCursor.propertyValue() );
+        while (propertyCursor.next()) {
+            readProperties.put(propertyCursor.propertyKey(), propertyCursor.propertyValue());
         }
-        assertThat( readProperties ).isEqualTo( expectedProperties );
+        assertThat(readProperties).isEqualTo(expectedProperties);
     }
 }

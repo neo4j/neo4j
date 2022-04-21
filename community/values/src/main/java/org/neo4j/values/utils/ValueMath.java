@@ -19,25 +19,23 @@
  */
 package org.neo4j.values.utils;
 
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
+
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.longValue;
-
 /**
  * Helper methods for doing math on Values
  */
-public final class ValueMath
-{
+public final class ValueMath {
     public static final int HASH_CONSTANT = 31;
 
-    private ValueMath()
-    {
-        throw new UnsupportedOperationException( "Do not instantiate" );
+    private ValueMath() {
+        throw new UnsupportedOperationException("Do not instantiate");
     }
 
     /**
@@ -47,9 +45,8 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a + b
      */
-    public static LongValue add( long a, long b )
-    {
-        return longValue( Math.addExact( a, b ) );
+    public static LongValue add(long a, long b) {
+        return longValue(Math.addExact(a, b));
     }
 
     /**
@@ -60,15 +57,11 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a + b
      */
-    public static NumberValue overflowSafeAdd( NumberValue a, NumberValue b )
-    {
-        if ( a instanceof IntegralValue && b instanceof IntegralValue )
-        {
-            return overflowSafeAdd( a.longValue(), b.longValue() );
-        }
-        else
-        {
-            return a.plus( b );
+    public static NumberValue overflowSafeAdd(NumberValue a, NumberValue b) {
+        if (a instanceof IntegralValue && b instanceof IntegralValue) {
+            return overflowSafeAdd(a.longValue(), b.longValue());
+        } else {
+            return a.plus(b);
         }
     }
 
@@ -81,15 +74,13 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a + b
      */
-    public static NumberValue overflowSafeAdd( long a, long b )
-    {
+    public static NumberValue overflowSafeAdd(long a, long b) {
         long r = a + b;
-        //Check if result overflows
-        if ( ((a ^ r) & (b ^ r)) < 0 )
-        {
-            return Values.doubleValue( (double) a + (double) b );
+        // Check if result overflows
+        if (((a ^ r) & (b ^ r)) < 0) {
+            return Values.doubleValue((double) a + (double) b);
         }
-        return longValue( r );
+        return longValue(r);
     }
 
     /**
@@ -99,9 +90,8 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a + b
      */
-    public static DoubleValue add( double a, double b )
-    {
-        return Values.doubleValue( a + b );
+    public static DoubleValue add(double a, double b) {
+        return Values.doubleValue(a + b);
     }
 
     /**
@@ -111,9 +101,8 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a - b
      */
-    public static LongValue subtract( long a, long b )
-    {
-        return longValue( Math.subtractExact( a, b ) );
+    public static LongValue subtract(long a, long b) {
+        return longValue(Math.subtractExact(a, b));
     }
 
     /**
@@ -125,15 +114,13 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a - b
      */
-    public static NumberValue overflowSafeSubtract( long a, long b )
-    {
+    public static NumberValue overflowSafeSubtract(long a, long b) {
         long r = a - b;
-        //Check if result overflows
-        if ( ((a ^ b) & (a ^ r)) < 0 )
-        {
-            return Values.doubleValue( (double) a - (double) b );
+        // Check if result overflows
+        if (((a ^ b) & (a ^ r)) < 0) {
+            return Values.doubleValue((double) a - (double) b);
         }
-        return longValue( r );
+        return longValue(r);
     }
 
     /**
@@ -143,9 +130,8 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a - b
      */
-    public static DoubleValue subtract( double a, double b )
-    {
-        return Values.doubleValue( a - b );
+    public static DoubleValue subtract(double a, double b) {
+        return Values.doubleValue(a - b);
     }
 
     /**
@@ -155,9 +141,8 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a * b
      */
-    public static LongValue multiply( long a, long b )
-    {
-        return longValue( Math.multiplyExact( a, b ) );
+    public static LongValue multiply(long a, long b) {
+        return longValue(Math.multiplyExact(a, b));
     }
 
     /**
@@ -169,20 +154,17 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a * b
      */
-    public static NumberValue overflowSafeMultiply( long a, long b )
-    {
+    public static NumberValue overflowSafeMultiply(long a, long b) {
         long r = a * b;
-        //Check if result overflows
-        long aa = Math.abs( a );
-        long ab = Math.abs( b );
-        if ( (aa | ab) >>> 31 != 0 )
-        {
-            if ( ((b != 0) && (r / b != a)) || (a == Long.MIN_VALUE && b == -1) )
-            {
-                return doubleValue( (double) a * (double) b );
+        // Check if result overflows
+        long aa = Math.abs(a);
+        long ab = Math.abs(b);
+        if ((aa | ab) >>> 31 != 0) {
+            if (((b != 0) && (r / b != a)) || (a == Long.MIN_VALUE && b == -1)) {
+                return doubleValue((double) a * (double) b);
             }
         }
-        return longValue( r );
+        return longValue(r);
     }
 
     /**
@@ -192,8 +174,7 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a * b
      */
-    public static DoubleValue multiply( double a, double b )
-    {
-        return Values.doubleValue( a * b );
+    public static DoubleValue multiply(double a, double b) {
+        return Values.doubleValue(a * b);
     }
 }

@@ -49,13 +49,13 @@ class AvgFunctionTest extends CypherFunSuite with AggregateTest {
     val durationValue2 = DurationValue.duration(0, 2, 2, 1)
     val result = aggregateOn(durationValue, durationValue2)
 
-    result should equal(DurationValue.duration(0,2,12 * 3600 + 1, 1 ))
+    result should equal(DurationValue.duration(0, 2, 12 * 3600 + 1, 1))
   }
 
   test("cantMixDurationAndNumber") {
     val durationValue = DurationValue.duration(0, 0, 0, 1)
     val numberValue = longValue(1)
-    a[CypherTypeException] shouldBe thrownBy{
+    a[CypherTypeException] shouldBe thrownBy {
       aggregateOn(durationValue, numberValue)
     }
   }
@@ -97,7 +97,7 @@ class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   }
 
   test("noOverflowOnLongListOfLargeNumbers") {
-    val result = aggregateOn(longValue(Long.MaxValue / 2),longValue(Long.MaxValue / 2), longValue(Long.MaxValue / 2))
+    val result = aggregateOn(longValue(Long.MaxValue / 2), longValue(Long.MaxValue / 2), longValue(Long.MaxValue / 2))
 
     result should equal(doubleValue(Long.MaxValue / 2))
   }

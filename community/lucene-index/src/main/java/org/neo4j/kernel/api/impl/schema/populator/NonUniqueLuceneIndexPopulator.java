@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import java.io.IOException;
-
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
@@ -32,41 +31,32 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 /**
  * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes, Performs index sampling.
  */
-public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex>
-{
+public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex> {
 
-    public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy )
-    {
-        super( luceneIndex, ignoreStrategy );
+    public NonUniqueLuceneIndexPopulator(SchemaIndex luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy) {
+        super(luceneIndex, ignoreStrategy);
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
-    {
-        return new NonUniqueLuceneIndexPopulatingUpdater( writer, ignoreStrategy );
+    public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
+        return new NonUniqueLuceneIndexPopulatingUpdater(writer, ignoreStrategy);
     }
 
     @Override
-    public void includeSample( IndexEntryUpdate<?> update )
-    {
+    public void includeSample(IndexEntryUpdate<?> update) {
         // Samples are built by scanning the index
     }
 
     @Override
-    public IndexSample sample( CursorContext cursorContext )
-    {
-        try
-        {
+    public IndexSample sample(CursorContext cursorContext) {
+        try {
             luceneIndex.maybeRefreshBlocking();
-            try ( var reader = luceneIndex.getIndexReader();
-                  var sampler = reader.createSampler() )
-            {
-                return sampler.sampleIndex( cursorContext );
+            try (var reader = luceneIndex.getIndexReader();
+                    var sampler = reader.createSampler()) {
+                return sampler.sampleIndex(cursorContext);
             }
-        }
-        catch ( IOException | IndexNotFoundKernelException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IOException | IndexNotFoundKernelException e) {
+            throw new RuntimeException(e);
         }
     }
 }

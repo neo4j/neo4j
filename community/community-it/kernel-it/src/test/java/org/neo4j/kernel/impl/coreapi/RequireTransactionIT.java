@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import static java.util.Collections.emptyMap;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-
-import java.util.Map;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -37,334 +41,285 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.Collections.emptyMap;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ImpermanentDbmsExtension
-class RequireTransactionIT
-{
+class RequireTransactionIT {
     @Inject
     private GraphDatabaseAPI databaseAPI;
+
     private Transaction transaction;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         transaction = databaseAPI.beginTx();
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( transaction != null )
-        {
+    void tearDown() {
+        if (transaction != null) {
             transaction.close();
         }
     }
 
     @Test
-    void requireTransactionForNodeCreation()
-    {
+    void requireTransactionForNodeCreation() {
         Executable executable = transaction::createNode;
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForNodeCreationWithLabels()
-    {
-        Executable executable = () -> transaction.createNode( Label.label( "label" ) );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForNodeCreationWithLabels() {
+        Executable executable = () -> transaction.createNode(Label.label("label"));
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForNodeLookupById()
-    {
+    void requireTransactionForNodeLookupById() {
         Node node;
-        try ( Transaction tx = databaseAPI.beginTx() )
-        {
+        try (Transaction tx = databaseAPI.beginTx()) {
             node = tx.createNode();
             tx.commit();
         }
-        Executable executable = () -> transaction.getNodeById( node.getId() );
-        checkTransactionRequirement( transaction, executable );
+        Executable executable = () -> transaction.getNodeById(node.getId());
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForRelationshipLookupById()
-    {
+    void requireTransactionForRelationshipLookupById() {
         Relationship relationship;
-        try ( Transaction tx = databaseAPI.beginTx() )
-        {
-            relationship = tx.createNode().createRelationshipTo( tx.createNode(), RelationshipType.withName( "type" ) );
+        try (Transaction tx = databaseAPI.beginTx()) {
+            relationship = tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("type"));
             tx.commit();
         }
-        Executable executable = () -> transaction.getNodeById( relationship.getId() );
-        checkTransactionRequirement( transaction, executable );
+        Executable executable = () -> transaction.getNodeById(relationship.getId());
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForBidirectionalTraversal()
-    {
+    void requireTransactionForBidirectionalTraversal() {
         Executable executable = () -> transaction.bidirectionalTraversalDescription();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForTraversal()
-    {
+    void requireTransactionForTraversal() {
         Executable executable = () -> transaction.traversalDescription();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForQueryExecution()
-    {
-        Executable executable = () -> transaction.execute( "MATCH (n) RETURN count(n)" );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForQueryExecution() {
+        Executable executable = () -> transaction.execute("MATCH (n) RETURN count(n)");
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForQueryExecutionWithParameters()
-    {
-        Executable executable = () -> transaction.execute( "MATCH (n) RETURN count(n)", emptyMap() );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForQueryExecutionWithParameters() {
+        Executable executable = () -> transaction.execute("MATCH (n) RETURN count(n)", emptyMap());
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForAllUsedLabelsLookup()
-    {
+    void requireTransactionForAllUsedLabelsLookup() {
         Executable executable = () -> transaction.getAllLabelsInUse();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForAllUsedRelationshipTypesLookup()
-    {
+    void requireTransactionForAllUsedRelationshipTypesLookup() {
         Executable executable = () -> transaction.getAllRelationshipTypesInUse();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForAllLabelsLookup()
-    {
+    void requireTransactionForAllLabelsLookup() {
         Executable executable = () -> transaction.getAllLabels();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForAllRelationshipTypesLookup()
-    {
+    void requireTransactionForAllRelationshipTypesLookup() {
         Executable executable = () -> transaction.getAllRelationshipTypes();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForAllPropertyKeysLookup()
-    {
+    void requireTransactionForAllPropertyKeysLookup() {
         Executable executable = () -> transaction.getAllPropertyKeys();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForNodeLookupByLabelPropertyTemplate()
-    {
-        Executable executable = () -> transaction.findNodes( Label.label( "label" ), "a", "aa", StringSearchMode.CONTAINS );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForNodeLookupByLabelPropertyTemplate() {
+        Executable executable = () -> transaction.findNodes(Label.label("label"), "a", "aa", StringSearchMode.CONTAINS);
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForNodeLookupByLabelPropertyValues()
-    {
-        Executable executable = () -> transaction.findNodes( Label.label( "label" ), Map.of( "a", "b", "c", "d" ) );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForNodeLookupByLabelPropertyValues() {
+        Executable executable = () -> transaction.findNodes(Label.label("label"), Map.of("a", "b", "c", "d"));
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForNodeLookupByLabelPropertyValuesPairs3()
-    {
-        Executable executable = () -> transaction.findNodes( Label.label( "label" ), "a", "b", "c", "d", "e", "f" );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForNodeLookupByLabelPropertyValuesPairs3() {
+        Executable executable = () -> transaction.findNodes(Label.label("label"), "a", "b", "c", "d", "e", "f");
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForNodeLookupByLabelPropertyValuesPairs2()
-    {
-        Executable executable = () -> transaction.findNodes( Label.label( "label" ), "a", "b", "c", "d" );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForNodeLookupByLabelPropertyValuesPairs2() {
+        Executable executable = () -> transaction.findNodes(Label.label("label"), "a", "b", "c", "d");
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForNodeLookupByLabelPropertyValuesPair()
-    {
-        Executable executable = () -> transaction.findNode( Label.label( "label" ), "a", "b" );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForNodeLookupByLabelPropertyValuesPair() {
+        Executable executable = () -> transaction.findNode(Label.label("label"), "a", "b");
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForNodesLookupByLabelPropertyValuesPair()
-    {
-        Executable executable = () -> transaction.findNodes( Label.label( "label" ), "a", "b" );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForNodesLookupByLabelPropertyValuesPair() {
+        Executable executable = () -> transaction.findNodes(Label.label("label"), "a", "b");
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForNodeLookupByLabel()
-    {
-        Executable executable = () -> transaction.findNodes( Label.label( "label" ) );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForNodeLookupByLabel() {
+        Executable executable = () -> transaction.findNodes(Label.label("label"));
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForRelationshipsLookupByTypePropertyTemplate()
-    {
-        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), "a", "aa", StringSearchMode.CONTAINS );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForRelationshipsLookupByTypePropertyTemplate() {
+        Executable executable = () ->
+                transaction.findRelationships(RelationshipType.withName("type"), "a", "aa", StringSearchMode.CONTAINS);
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForRelationshipsLookupByTypePropertyValues()
-    {
-        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), Map.of( "a", "b", "c", "d" ) );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForRelationshipsLookupByTypePropertyValues() {
+        Executable executable =
+                () -> transaction.findRelationships(RelationshipType.withName("type"), Map.of("a", "b", "c", "d"));
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForRelationshipsLookupByTypePropertyValuesPairs3()
-    {
-        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), "a", "b", "c", "d", "e", "f" );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForRelationshipsLookupByTypePropertyValuesPairs3() {
+        Executable executable =
+                () -> transaction.findRelationships(RelationshipType.withName("type"), "a", "b", "c", "d", "e", "f");
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForRelationshipsLookupByTypePropertyValuesPairs2()
-    {
-        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), "a", "b", "c", "d" );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForRelationshipsLookupByTypePropertyValuesPairs2() {
+        Executable executable =
+                () -> transaction.findRelationships(RelationshipType.withName("type"), "a", "b", "c", "d");
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForRelationshipLookupByTypePropertyValuesPair()
-    {
-        Executable executable = () -> transaction.findRelationship( RelationshipType.withName( "type" ), "a", "b" );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForRelationshipLookupByTypePropertyValuesPair() {
+        Executable executable = () -> transaction.findRelationship(RelationshipType.withName("type"), "a", "b");
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForRelationshipsLookupByTypePropertyValuesPair()
-    {
-        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), "a", "b" );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForRelationshipsLookupByTypePropertyValuesPair() {
+        Executable executable = () -> transaction.findRelationships(RelationshipType.withName("type"), "a", "b");
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForRelationshipLookupByType()
-    {
-        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ) );
-        checkTransactionRequirement( transaction, executable );
+    void requireTransactionForRelationshipLookupByType() {
+        Executable executable = () -> transaction.findRelationships(RelationshipType.withName("type"));
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void terminateCanBeCalledOnAnyTransaction()
-    {
+    void terminateCanBeCalledOnAnyTransaction() {
         transaction.terminate();
 
         transaction.close();
 
-        assertDoesNotThrow( () -> transaction.terminate() );
+        assertDoesNotThrow(() -> transaction.terminate());
     }
 
     @Test
-    void closeCanBeCalledOnAnyTransaction()
-    {
-        assertDoesNotThrow( () -> transaction.close() );
-        assertDoesNotThrow( () -> transaction.close() );
-        assertDoesNotThrow( () -> transaction.close() );
-        assertDoesNotThrow( () -> transaction.close() );
+    void closeCanBeCalledOnAnyTransaction() {
+        assertDoesNotThrow(() -> transaction.close());
+        assertDoesNotThrow(() -> transaction.close());
+        assertDoesNotThrow(() -> transaction.close());
+        assertDoesNotThrow(() -> transaction.close());
     }
 
     @Test
-    void requireTransactionForRollback()
-    {
-        assertDoesNotThrow( () -> transaction.rollback() );
-        assertDoesNotThrow( () -> transaction.rollback() );
-        assertDoesNotThrow( () -> transaction.rollback() );
-        assertDoesNotThrow( () -> transaction.rollback() );
+    void requireTransactionForRollback() {
+        assertDoesNotThrow(() -> transaction.rollback());
+        assertDoesNotThrow(() -> transaction.rollback());
+        assertDoesNotThrow(() -> transaction.rollback());
+        assertDoesNotThrow(() -> transaction.rollback());
     }
 
     @Test
-    void requireTransactionForCommit()
-    {
+    void requireTransactionForCommit() {
         Executable executable = () -> transaction.commit();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForAllNodesLookup()
-    {
+    void requireTransactionForAllNodesLookup() {
         Executable executable = () -> transaction.getAllNodes().close();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForAllRelationshipsLookup()
-    {
+    void requireTransactionForAllRelationshipsLookup() {
         Executable executable = () -> transaction.getAllRelationships().close();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForWriteLockAcquisition()
-    {
+    void requireTransactionForWriteLockAcquisition() {
         Node node;
-        try ( Transaction tx = databaseAPI.beginTx() )
-        {
+        try (Transaction tx = databaseAPI.beginTx()) {
             node = tx.createNode();
             tx.commit();
         }
-        Executable executable = () -> transaction.acquireWriteLock( node );
-        checkTransactionRequirement( transaction, executable );
+        Executable executable = () -> transaction.acquireWriteLock(node);
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForReadLockAcquisition()
-    {
+    void requireTransactionForReadLockAcquisition() {
         Node node;
-        try ( Transaction tx = databaseAPI.beginTx() )
-        {
+        try (Transaction tx = databaseAPI.beginTx()) {
             node = tx.createNode();
             tx.commit();
         }
-        Executable executable = () -> transaction.acquireReadLock( node );
-        checkTransactionRequirement( transaction, executable );
+        Executable executable = () -> transaction.acquireReadLock(node);
+        checkTransactionRequirement(transaction, executable);
     }
 
     @Test
-    void requireTransactionForSchemaAccess()
-    {
+    void requireTransactionForSchemaAccess() {
         Executable executable = () -> transaction.schema();
-        checkTransactionRequirement( transaction, executable );
+        checkTransactionRequirement(transaction, executable);
     }
 
-    private static void checkTransactionRequirement( Transaction transaction, Executable executable )
-    {
-        try ( transaction )
-        {
-            checkDoesNotThrow( executable );
+    private static void checkTransactionRequirement(Transaction transaction, Executable executable) {
+        try (transaction) {
+            checkDoesNotThrow(executable);
         }
-        checkThrowNotInTransaction( executable );
+        checkThrowNotInTransaction(executable);
     }
 
-    static void checkDoesNotThrow( Executable executable )
-    {
-        assertDoesNotThrow( executable );
+    static void checkDoesNotThrow(Executable executable) {
+        assertDoesNotThrow(executable);
     }
 
-    static void checkThrowNotInTransaction( Executable executable )
-    {
-        var e = assertThrows( Exception.class, executable );
-        assertThat( getRootCause( e ) ).isInstanceOf( NotInTransactionException.class );
+    static void checkThrowNotInTransaction(Executable executable) {
+        var e = assertThrows(Exception.class, executable);
+        assertThat(getRootCause(e)).isInstanceOf(NotInTransactionException.class);
     }
 }

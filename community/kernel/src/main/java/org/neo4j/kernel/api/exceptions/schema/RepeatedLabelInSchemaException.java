@@ -23,10 +23,9 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class RepeatedLabelInSchemaException extends RepeatedSchemaComponentException
-{
-    public RepeatedLabelInSchemaException( SchemaDescriptor schema, OperationContext context, TokenNameLookup tokenNameLookup )
-    {
-        super( Status.Schema.RepeatedLabelInSchema, schema, context, SchemaComponent.LABEL, tokenNameLookup );
+public class RepeatedLabelInSchemaException extends RepeatedSchemaComponentException {
+    public RepeatedLabelInSchemaException(
+            SchemaDescriptor schema, OperationContext context, TokenNameLookup tokenNameLookup) {
+        super(Status.Schema.RepeatedLabelInSchema, schema, context, SchemaComponent.LABEL, tokenNameLookup);
     }
 }

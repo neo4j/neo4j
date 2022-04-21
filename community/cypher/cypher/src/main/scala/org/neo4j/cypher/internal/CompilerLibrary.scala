@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
 
 import java.util.concurrent.ConcurrentHashMap
+
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 /**
@@ -38,18 +39,30 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
 
   private val compilers = new ConcurrentHashMap[CompilerKey, Compiler]
 
-  def selectCompiler(cypherVersion: CypherVersion,
-                     cypherPlanner: CypherPlannerOption,
-                     cypherRuntime: CypherRuntimeOption,
-                     cypherUpdateStrategy: CypherUpdateStrategy): Compiler = {
+  def selectCompiler(
+    cypherVersion: CypherVersion,
+    cypherPlanner: CypherPlannerOption,
+    cypherRuntime: CypherRuntimeOption,
+    cypherUpdateStrategy: CypherUpdateStrategy
+  ): Compiler = {
     val key = CompilerKey(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy)
-    compilers.computeIfAbsent(key, ignore => factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, executionEngineProvider))
+    compilers.computeIfAbsent(
+      key,
+      ignore =>
+        factory.createCompiler(
+          cypherVersion,
+          cypherPlanner,
+          cypherRuntime,
+          cypherUpdateStrategy,
+          executionEngineProvider
+        )
+    )
   }
 
   def clearCaches(): Long = {
     val numClearedEntries =
       compilers.values().asScala.collect {
-        case c: CypherPlanner => c.clearCaches()
+        case c: CypherPlanner            => c.clearCaches()
         case c: CypherCurrentCompiler[_] => c.clearCaches()
       }
 
@@ -64,8 +77,10 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
     }
   }
 
-  case class CompilerKey(cypherVersion: CypherVersion,
-                         cypherPlanner: CypherPlannerOption,
-                         cypherRuntime: CypherRuntimeOption,
-                         cypherUpdateStrategy: CypherUpdateStrategy)
+  case class CompilerKey(
+    cypherVersion: CypherVersion,
+    cypherPlanner: CypherPlannerOption,
+    cypherRuntime: CypherRuntimeOption,
+    cypherUpdateStrategy: CypherUpdateStrategy
+  )
 }

@@ -19,11 +19,7 @@
  */
 package org.neo4j.test.utils;
 
-import org.apache.commons.codec.digest.DigestUtils;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileHandle;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.util.VisibleForTesting;
+import static java.lang.String.format;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,8 +33,11 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-
-import static java.lang.String.format;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileHandle;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * This class represents a temporary directory which ensures that the test's working directory is cleaned up. The clean-up
@@ -59,8 +58,7 @@ import static java.lang.String.format;
  *   }
  * </pre>
  */
-public class TestDirectory
-{
+public class TestDirectory {
     /**
      * {@link TestDirectory#now}, {@link TestDirectory#DATE_TIME_FORMATTER} and hash(test_folder_name) are used to
      * construct uniquely naming test directories.
@@ -72,7 +70,9 @@ public class TestDirectory
      * when you need to investigate a flaky test, for instance.
      */
     private static final LocalDateTime now = LocalDateTime.now(Clock.systemUTC());
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern( "dd_HH-mm-ss-SSS" ).withZone( ZoneOffset.UTC );
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("dd_HH-mm-ss-SSS").withZone(ZoneOffset.UTC);
 
     private final FileSystemAbstraction fileSystem;
     private Path testClassBaseFolder;
@@ -80,35 +80,29 @@ public class TestDirectory
     private boolean keepDirectoryAfterSuccessfulTest;
     private Path directory;
 
-    private TestDirectory( FileSystemAbstraction fileSystem )
-    {
+    private TestDirectory(FileSystemAbstraction fileSystem) {
         this.fileSystem = fileSystem;
     }
 
-    private TestDirectory( FileSystemAbstraction fileSystem, Class<?> owningTest )
-    {
+    private TestDirectory(FileSystemAbstraction fileSystem, Class<?> owningTest) {
         this.fileSystem = fileSystem;
         this.owningTest = owningTest;
     }
 
-    public static TestDirectory testDirectory()
-    {
-        return new TestDirectory( new DefaultFileSystemAbstraction() );
+    public static TestDirectory testDirectory() {
+        return new TestDirectory(new DefaultFileSystemAbstraction());
     }
 
-    public static TestDirectory testDirectory( FileSystemAbstraction fs )
-    {
-        return new TestDirectory( fs );
+    public static TestDirectory testDirectory(FileSystemAbstraction fs) {
+        return new TestDirectory(fs);
     }
 
-    public static TestDirectory testDirectory( Class<?> owningTest )
-    {
-        return new TestDirectory( new DefaultFileSystemAbstraction(), owningTest );
+    public static TestDirectory testDirectory(Class<?> owningTest) {
+        return new TestDirectory(new DefaultFileSystemAbstraction(), owningTest);
     }
 
-    public static TestDirectory testDirectory( Class<?> owningTest, FileSystemAbstraction fs )
-    {
-        return new TestDirectory( fs, owningTest );
+    public static TestDirectory testDirectory(Class<?> owningTest, FileSystemAbstraction fs) {
+        return new TestDirectory(fs, owningTest);
     }
 
     /**
@@ -116,287 +110,228 @@ public class TestDirectory
      * It's just a useful debug mechanism to have for analyzing store after a test.
      * by default directories aren't kept.
      */
-    public TestDirectory keepDirectoryAfterSuccessfulTest()
-    {
+    public TestDirectory keepDirectoryAfterSuccessfulTest() {
         keepDirectoryAfterSuccessfulTest = true;
         return this;
     }
 
-    public Path absolutePath()
-    {
+    public Path absolutePath() {
         return homePath().toAbsolutePath();
     }
 
-    public Path homePath()
-    {
-        if ( !isInitialised() )
-        {
-            throw new IllegalStateException( "Not initialized" );
+    public Path homePath() {
+        if (!isInitialised()) {
+            throw new IllegalStateException("Not initialized");
         }
         return directory;
     }
 
-    public Path homePath( String homeDirName )
-    {
-        return directory( homeDirName );
+    public Path homePath(String homeDirName) {
+        return directory(homeDirName);
     }
 
-    public boolean isInitialised()
-    {
+    public boolean isInitialised() {
         return directory != null;
     }
 
-    public Path directory( String name )
-    {
-        Path dir = homePath().resolve( name );
-        createDirectory( dir );
+    public Path directory(String name) {
+        Path dir = homePath().resolve(name);
+        createDirectory(dir);
         return dir;
     }
 
-    public Path directory( String name, String... path )
-    {
+    public Path directory(String name, String... path) {
         Path dir = homePath();
-        for ( String s : path )
-        {
-            dir = dir.resolve( s );
+        for (String s : path) {
+            dir = dir.resolve(s);
         }
-        dir = dir.resolve( name );
-        createDirectory( dir );
+        dir = dir.resolve(name);
+        createDirectory(dir);
         return dir;
     }
 
-    public Path file( String name )
-    {
-        return homePath().resolve( name );
+    public Path file(String name) {
+        return homePath().resolve(name);
     }
 
-    public Path file( String name, String... path )
-    {
+    public Path file(String name, String... path) {
         Path dir = homePath();
-        for ( String s : path )
-        {
-            dir = dir.resolve( s );
+        for (String s : path) {
+            dir = dir.resolve(s);
         }
-        return dir.resolve( name );
+        return dir.resolve(name);
     }
 
-    public Path createFile( String name )
-    {
-        Path file = file( name );
-        ensureFileExists( file );
+    public Path createFile(String name) {
+        Path file = file(name);
+        ensureFileExists(file);
         return file;
     }
 
-    public void cleanup() throws IOException
-    {
-        clean( fileSystem, testClassBaseFolder );
+    public void cleanup() throws IOException {
+        clean(fileSystem, testClassBaseFolder);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         String testDirectoryName = directory == null ? "<uninitialized>" : directory.toString();
-        return format( "%s[\"%s\"]", getClass().getSimpleName(), testDirectoryName );
+        return format("%s[\"%s\"]", getClass().getSimpleName(), testDirectoryName);
     }
 
-    public Path cleanDirectory( String name ) throws IOException
-    {
-        return cleanPath( fileSystem, ensureBase().resolve( name ) );
+    public Path cleanDirectory(String name) throws IOException {
+        return cleanPath(fileSystem, ensureBase().resolve(name));
     }
 
-    public void complete( boolean success ) throws IOException
-    {
-        try
-        {
-            if ( isInitialised() )
-            {
-                if ( success && !keepDirectoryAfterSuccessfulTest )
-                {
-                    fileSystem.deleteRecursively( directory );
-                }
-                else if ( !Files.exists( directory ) )
-                {
-                    //We want to keep the files, make sure they actually exist on disk, not only in memory (like in EphemeralFileSystem)
-                    for ( FileHandle fh : fileSystem.streamFilesRecursive( directory ).toArray( FileHandle[]::new ) )
-                    {
+    public void complete(boolean success) throws IOException {
+        try {
+            if (isInitialised()) {
+                if (success && !keepDirectoryAfterSuccessfulTest) {
+                    fileSystem.deleteRecursively(directory);
+                } else if (!Files.exists(directory)) {
+                    // We want to keep the files, make sure they actually exist on disk, not only in memory (like in
+                    // EphemeralFileSystem)
+                    for (FileHandle fh :
+                            fileSystem.streamFilesRecursive(directory).toArray(FileHandle[]::new)) {
                         Path path = fh.getPath();
-                        assert !Files.exists( path );
-                        Files.createDirectories( path.getParent() );
-                        try ( InputStream inputStream = fileSystem.openAsInputStream( path ) )
-                        {
-                            Files.copy( inputStream, path );
+                        assert !Files.exists(path);
+                        Files.createDirectories(path.getParent());
+                        try (InputStream inputStream = fileSystem.openAsInputStream(path)) {
+                            Files.copy(inputStream, path);
                         }
                     }
                 }
             }
             directory = null;
-        }
-        finally
-        {
+        } finally {
             fileSystem.close();
         }
     }
 
-    public void prepareDirectory( Class<?> testClass, String test ) throws IOException
-    {
-        if ( owningTest == null )
-        {
+    public void prepareDirectory(Class<?> testClass, String test) throws IOException {
+        if (owningTest == null) {
             owningTest = testClass;
         }
-        if ( test == null )
-        {
+        if (test == null) {
             test = "static";
         }
-        directory = prepareDirectoryForTest( test );
-
+        directory = prepareDirectoryForTest(test);
     }
 
-    public Path prepareDirectoryForTest( String test ) throws IOException
-    {
+    public Path prepareDirectoryForTest(String test) throws IOException {
         String dir = getDateTime() + "_" + DigestUtils.md5Hex(test).substring(0, 5);
         evaluateClassBaseTestFolder();
-        register( test, dir );
-        return cleanDirectory( dir );
+        register(test, dir);
+        return cleanDirectory(dir);
     }
 
-    private String getDateTime()
-    {
-        return DATE_TIME_FORMATTER.format( now );
+    private String getDateTime() {
+        return DATE_TIME_FORMATTER.format(now);
     }
 
     @VisibleForTesting
-    public FileSystemAbstraction getFileSystem()
-    {
+    public FileSystemAbstraction getFileSystem() {
         return fileSystem;
     }
 
-    private void ensureFileExists( Path file )
-    {
-        try
-        {
-            if ( !fileSystem.fileExists( file ) )
-            {
-                fileSystem.write( file ).close();
+    private void ensureFileExists(Path file) {
+        try {
+            if (!fileSystem.fileExists(file)) {
+                fileSystem.write(file).close();
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( "Failed to create file: " + file, e );
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to create file: " + file, e);
         }
     }
 
-    private void createDirectory( Path directory )
-    {
-        try
-        {
-            fileSystem.mkdirs( directory );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( "Failed to create directory: " + directory, e );
+    private void createDirectory(Path directory) {
+        try {
+            fileSystem.mkdirs(directory);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to create directory: " + directory, e);
         }
     }
 
-    private static Path clean( FileSystemAbstraction fs, Path dir ) throws IOException
-    {
-        if ( fs.fileExists( dir ) )
-        {
-            fs.deleteRecursively( dir );
+    private static Path clean(FileSystemAbstraction fs, Path dir) throws IOException {
+        if (fs.fileExists(dir)) {
+            fs.deleteRecursively(dir);
         }
-        fs.mkdirs( dir );
+        fs.mkdirs(dir);
         return dir;
     }
 
-    private static Path cleanPath( FileSystemAbstraction fs, Path dir ) throws IOException
-    {
-        if ( fs.fileExists( dir ) )
-        {
-            fs.deleteRecursively( dir );
+    private static Path cleanPath(FileSystemAbstraction fs, Path dir) throws IOException {
+        if (fs.fileExists(dir)) {
+            fs.deleteRecursively(dir);
         }
-        fs.mkdirs( dir );
+        fs.mkdirs(dir);
         return dir;
     }
 
-    private void evaluateClassBaseTestFolder( )
-    {
-        if ( owningTest == null )
-        {
-            throw new IllegalStateException( " Test owning class is not defined" );
+    private void evaluateClassBaseTestFolder() {
+        if (owningTest == null) {
+            throw new IllegalStateException(" Test owning class is not defined");
         }
-        testClassBaseFolder = testDataDirectoryOf( owningTest );
+        testClassBaseFolder = testDataDirectoryOf(owningTest);
     }
 
-    private static Path testDataDirectoryOf( Class<?> owningTest )
-    {
-        Path testData = locateTarget( owningTest ).resolve( "test data" );
-        return testData.resolve( shorten( owningTest.getName() ) ).toAbsolutePath();
+    private static Path testDataDirectoryOf(Class<?> owningTest) {
+        Path testData = locateTarget(owningTest).resolve("test data");
+        return testData.resolve(shorten(owningTest.getName())).toAbsolutePath();
     }
 
-    private static String shorten( String owningTestName )
-    {
+    private static String shorten(String owningTestName) {
         int targetPartLength = 5;
-        String[] parts = owningTestName.split( "\\." );
-        for ( int i = 0; i < parts.length - 1; i++ )
-        {
+        String[] parts = owningTestName.split("\\.");
+        for (int i = 0; i < parts.length - 1; i++) {
             String part = parts[i];
-            if ( part.length() > targetPartLength )
-            {
-                parts[i] = part.substring( 0, targetPartLength - 1 ) + "~";
+            if (part.length() > targetPartLength) {
+                parts[i] = part.substring(0, targetPartLength - 1) + "~";
             }
         }
-        return String.join( ".", parts );
+        return String.join(".", parts);
     }
 
-    private void register( String test, String dir )
-    {
-        try ( PrintStream printStream =
-                new PrintStream( fileSystem.openAsOutputStream( ensureBase().resolve( ".register" ), true ), false, StandardCharsets.UTF_8 ) )
-        {
-            printStream.print( format( "%s = %s%n", dir, test ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+    private void register(String test, String dir) {
+        try (PrintStream printStream = new PrintStream(
+                fileSystem.openAsOutputStream(ensureBase().resolve(".register"), true),
+                false,
+                StandardCharsets.UTF_8)) {
+            printStream.print(format("%s = %s%n", dir, test));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private Path ensureBase()
-    {
-        if ( testClassBaseFolder == null )
-        {
+    private Path ensureBase() {
+        if (testClassBaseFolder == null) {
             evaluateClassBaseTestFolder();
         }
-        if ( fileSystem.fileExists( testClassBaseFolder ) && !fileSystem.isDirectory( testClassBaseFolder ) )
-        {
-            throw new IllegalStateException( testClassBaseFolder + " exists and is not a directory!" );
+        if (fileSystem.fileExists(testClassBaseFolder) && !fileSystem.isDirectory(testClassBaseFolder)) {
+            throw new IllegalStateException(testClassBaseFolder + " exists and is not a directory!");
         }
 
-        try
-        {
-            fileSystem.mkdirs( testClassBaseFolder );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+        try {
+            fileSystem.mkdirs(testClassBaseFolder);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return testClassBaseFolder;
     }
 
-    private static Path locateTarget( Class<?> owningTest )
-    {
-        try
-        {
-            Path codeSource = Path.of( owningTest.getProtectionDomain().getCodeSource().getLocation().toURI() );
-            if ( Files.isDirectory( codeSource ) )
-            {
+    private static Path locateTarget(Class<?> owningTest) {
+        try {
+            Path codeSource = Path.of(owningTest
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .toURI());
+            if (Files.isDirectory(codeSource)) {
                 // code loaded from a directory
                 return codeSource.getParent();
             }
-        }
-        catch ( URISyntaxException e )
-        {
+        } catch (URISyntaxException e) {
             // ignored
         }
-        return Path.of( "target" );
+        return Path.of("target");
     }
 }

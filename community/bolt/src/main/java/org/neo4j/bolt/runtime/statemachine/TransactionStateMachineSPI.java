@@ -22,7 +22,6 @@ package org.neo4j.bolt.runtime.statemachine;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.runtime.AccessMode;
@@ -33,14 +32,19 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.virtual.MapValue;
 
-public interface TransactionStateMachineSPI
-{
-    Bookmark newestBookmark( BoltTransaction tx );
+public interface TransactionStateMachineSPI {
+    Bookmark newestBookmark(BoltTransaction tx);
 
-    BoltTransaction beginTransaction( KernelTransaction.Type transactionType, LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout,
-                                      AccessMode accessMode, Map<String,Object> txMetaData, RoutingContext routingContext );
+    BoltTransaction beginTransaction(
+            KernelTransaction.Type transactionType,
+            LoginContext loginContext,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetaData,
+            RoutingContext routingContext);
 
-    BoltResultHandle executeQuery( BoltQueryExecutor boltQueryExecutor, String statement, MapValue params );
+    BoltResultHandle executeQuery(BoltQueryExecutor boltQueryExecutor, String statement, MapValue params);
 
     boolean supportsNestedStatementsInTransaction();
 

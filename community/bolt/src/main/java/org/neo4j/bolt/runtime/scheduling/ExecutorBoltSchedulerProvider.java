@@ -19,9 +19,10 @@
  */
 package org.neo4j.bolt.runtime.scheduling;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -32,10 +33,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.util.Preconditions.checkState;
-
-public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements BoltSchedulerProvider
-{
+public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements BoltSchedulerProvider {
     private final Config config;
     private final ExecutorFactory executorFactory;
     private final JobScheduler scheduler;
@@ -45,84 +43,79 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
 
     private ExecutorService forkJoinThreadPool;
 
-    public ExecutorBoltSchedulerProvider( Config config, ExecutorFactory executorFactory, JobScheduler scheduler,
-            LogService logService )
-    {
+    public ExecutorBoltSchedulerProvider(
+            Config config, ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService) {
         this.config = config;
         this.executorFactory = executorFactory;
         this.scheduler = scheduler;
         this.logService = logService;
-        this.internalLog = logService.getInternalLog( getClass() );
+        this.internalLog = logService.getInternalLog(getClass());
     }
 
     @Override
-    public void init()
-    {
-        scheduler.setThreadFactory( Group.BOLT_WORKER, NettyThreadFactory::new );
-        if ( config.get( BoltConnector.enabled ) )
-        {
-            checkState( forkJoinThreadPool == null, "ForkJoinPool already initialized, this should only be done once." );
+    public void init() {
+        scheduler.setThreadFactory(Group.BOLT_WORKER, NettyThreadFactory::new);
+        if (config.get(BoltConnector.enabled)) {
+            checkState(forkJoinThreadPool == null, "ForkJoinPool already initialized, this should only be done once.");
             forkJoinThreadPool = new ForkJoinPool();
-            this.boltScheduler =
-                    new ExecutorBoltScheduler( BoltConnector.NAME, executorFactory, scheduler, logService, config.get( BoltConnector.thread_pool_min_size ),
-                                               config.get( BoltConnector.thread_pool_max_size ), config.get( BoltConnector.thread_pool_keep_alive ),
-                                               config.get( BoltConnectorInternalSettings.unsupported_thread_pool_queue_size ), forkJoinThreadPool,
-                                               config.get( BoltConnectorInternalSettings.thread_pool_shutdown_wait_time ),
-                                               config.get( BoltConnector.connection_keep_alive_type ),
-                                               config.get( BoltConnector.connection_keep_alive_streaming_scheduling_interval ) );
+            this.boltScheduler = new ExecutorBoltScheduler(
+                    BoltConnector.NAME,
+                    executorFactory,
+                    scheduler,
+                    logService,
+                    config.get(BoltConnector.thread_pool_min_size),
+                    config.get(BoltConnector.thread_pool_max_size),
+                    config.get(BoltConnector.thread_pool_keep_alive),
+                    config.get(BoltConnectorInternalSettings.unsupported_thread_pool_queue_size),
+                    forkJoinThreadPool,
+                    config.get(BoltConnectorInternalSettings.thread_pool_shutdown_wait_time),
+                    config.get(BoltConnector.connection_keep_alive_type),
+                    config.get(BoltConnector.connection_keep_alive_streaming_scheduling_interval));
             this.boltScheduler.init();
         }
     }
 
     @Override
-    public void start()
-    {
-        if ( boltScheduler != null )
-        {
+    public void start() {
+        if (boltScheduler != null) {
             boltScheduler.start();
         }
     }
 
     @Override
-    public void stop()
-    {
-        if ( boltScheduler != null )
-        {
+    public void stop() {
+        if (boltScheduler != null) {
             boltScheduler.stop();
         }
     }
 
     @Override
-    public void shutdown()
-    {
-        if ( boltScheduler != null )
-        {
-            try
-            {
+    public void shutdown() {
+        if (boltScheduler != null) {
+            try {
                 boltScheduler.shutdown();
-            }
-            catch ( Throwable t )
-            {
-                internalLog.warn( String.format( "An unexpected error occurred while shutting down BoltScheduler [%s]", boltScheduler.connector() ), t );
+            } catch (Throwable t) {
+                internalLog.warn(
+                        String.format(
+                                "An unexpected error occurred while shutting down BoltScheduler [%s]",
+                                boltScheduler.connector()),
+                        t);
             }
             boltScheduler = null;
         }
 
-        if ( forkJoinThreadPool != null )
-        {
+        if (forkJoinThreadPool != null) {
             forkJoinThreadPool.shutdown();
             forkJoinThreadPool = null;
         }
     }
 
     @Override
-    public BoltScheduler get( BoltChannel channel )
-    {
-        if ( boltScheduler == null )
-        {
-            throw new IllegalArgumentException(
-                    String.format( "Provided channel instance [local: %s, remote: %s] is not bound to any known bolt listen addresses.",
-                            channel.serverAddress(), channel.clientAddress() ) );
+    public BoltScheduler get(BoltChannel channel) {
+        if (boltScheduler == null) {
+            throw new IllegalArgumentException(String.format(
+                    "Provided channel instance [local: %s, remote: %s] is not bound to any known bolt listen addresses.",
+                    channel.serverAddress(), channel.clientAddress()));
         }
 
         return boltScheduler;

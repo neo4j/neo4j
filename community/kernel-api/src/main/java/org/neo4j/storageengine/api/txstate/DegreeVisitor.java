@@ -19,7 +19,6 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-public interface DegreeVisitor
-{
-    void visitDegree( int type, long outgoing, long incoming );
+public interface DegreeVisitor {
+    void visitDegree(int type, long outgoing, long incoming);
 }

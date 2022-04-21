@@ -19,10 +19,11 @@
  */
 package org.neo4j.values.virtual;
 
+import static org.neo4j.memory.HeapEstimator.sizeOf;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.ArrayValue;
@@ -31,57 +32,46 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.virtual.PathValue.DirectPathValue;
 
-import static org.neo4j.memory.HeapEstimator.sizeOf;
-
 /**
  * Entry point to the virtual values library.
  */
-public final class VirtualValues
-{
+public final class VirtualValues {
     public static final MapValue EMPTY_MAP = MapValue.EMPTY;
-    public static final ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0], 0, ValueRepresentation.ANYTHING );
+    public static final ListValue EMPTY_LIST =
+            new ListValue.ArrayListValue(new AnyValue[0], 0, ValueRepresentation.ANYTHING);
 
-    private VirtualValues()
-    {
-    }
+    private VirtualValues() {}
 
     // DIRECT FACTORY METHODS
 
-    public static ListValue list( AnyValue... values )
-    {
+    public static ListValue list(AnyValue... values) {
         long payloadSize = 0;
         ValueRepresentation representation = ValueRepresentation.ANYTHING;
-        for ( AnyValue value : values )
-        {
+        for (AnyValue value : values) {
             payloadSize += value.estimatedHeapUsage();
-            if ( value.valueRepresentation() != representation )
-            {
-                representation = representation.coerce( value.valueRepresentation() );
+            if (value.valueRepresentation() != representation) {
+                representation = representation.coerce(value.valueRepresentation());
             }
         }
-        return new ListValue.ArrayListValue( values, payloadSize, representation );
+        return new ListValue.ArrayListValue(values, payloadSize, representation);
     }
 
-    public static ListValue fromList( List<AnyValue> values )
-    {
+    public static ListValue fromList(List<AnyValue> values) {
         long payloadSize = 0;
         ValueRepresentation representation = ValueRepresentation.ANYTHING;
-        for ( AnyValue value : values )
-        {
+        for (AnyValue value : values) {
             payloadSize += value.estimatedHeapUsage();
-            representation = representation.coerce( value.valueRepresentation() );
+            representation = representation.coerce(value.valueRepresentation());
         }
-        return new ListValue.JavaListListValue( values, payloadSize, representation );
+        return new ListValue.JavaListListValue(values, payloadSize, representation);
     }
 
-    public static ListValue range( long start, long end, long step )
-    {
-        return new ListValue.IntegralRangeListValue( start, end, step );
+    public static ListValue range(long start, long end, long step) {
+        return new ListValue.IntegralRangeListValue(start, end, step);
     }
 
-    public static ListValue fromArray( ArrayValue arrayValue )
-    {
-        return new ListValue.ArrayValueListValue( arrayValue );
+    public static ListValue fromArray(ArrayValue arrayValue) {
+        return new ListValue.ArrayValueListValue(arrayValue);
     }
 
     /*
@@ -96,161 +86,161 @@ public final class VirtualValues
 
     */
 
-    public static ListValue concat( ListValue... lists )
-    {
-        return new ListValue.ConcatList( lists );
+    public static ListValue concat(ListValue... lists) {
+        return new ListValue.ConcatList(lists);
     }
 
-    public static MapValue map( String[] keys, AnyValue[] values )
-    {
+    public static MapValue map(String[] keys, AnyValue[] values) {
         assert keys.length == values.length;
         long payloadSize = 0;
-        Map<String,AnyValue> map = new HashMap<>( (int) ((float) keys.length / 0.75f + 1.0f) );
-        for ( int i = 0; i < keys.length; i++ )
-        {
+        Map<String, AnyValue> map = new HashMap<>((int) ((float) keys.length / 0.75f + 1.0f));
+        for (int i = 0; i < keys.length; i++) {
             String key = keys[i];
             AnyValue value = values[i];
-            map.put( key, value );
-            payloadSize += sizeOf( key ) + value.estimatedHeapUsage();
+            map.put(key, value);
+            payloadSize += sizeOf(key) + value.estimatedHeapUsage();
         }
-        return new MapValue.MapWrappingMapValue( map, payloadSize );
+        return new MapValue.MapWrappingMapValue(map, payloadSize);
     }
 
-    public static MapValue fromMap( Map<String,AnyValue> map, long mapSize, long payloadSize )
-    {
-        return new MapValue.MapWrappingMapValue( map, mapSize, payloadSize );
+    public static MapValue fromMap(Map<String, AnyValue> map, long mapSize, long payloadSize) {
+        return new MapValue.MapWrappingMapValue(map, mapSize, payloadSize);
     }
 
-    public static ErrorValue error( Exception e )
-    {
-        return new ErrorValue( e );
+    public static ErrorValue error(Exception e) {
+        return new ErrorValue(e);
     }
 
-    public static NodeReference node( long id )
-    {
-        return new NodeReference( id );
+    public static NodeReference node(long id) {
+        return new NodeReference(id);
     }
 
-    public static NodeReference node( long id, String elementId, ElementIdMapper elementIdMapper )
-    {
-        return new NodeReference( id, elementId, elementIdMapper );
+    public static NodeReference node(long id, String elementId, ElementIdMapper elementIdMapper) {
+        return new NodeReference(id, elementId, elementIdMapper);
     }
 
-    public static RelationshipReference relationship( long id )
-    {
-        return new RelationshipReference( id, null );
+    public static RelationshipReference relationship(long id) {
+        return new RelationshipReference(id, null);
     }
 
-    public static RelationshipReference relationship( long id, long startNode, long endNode )
-    {
-        return new RelationshipReference( id, null, startNode, endNode );
+    public static RelationshipReference relationship(long id, long startNode, long endNode) {
+        return new RelationshipReference(id, null, startNode, endNode);
     }
 
-    public static RelationshipReference relationship( long id, long startNode, long endNode, int type )
-    {
-        return new RelationshipReference( id, null, startNode, endNode, type );
+    public static RelationshipReference relationship(long id, long startNode, long endNode, int type) {
+        return new RelationshipReference(id, null, startNode, endNode, type);
     }
 
-    public static RelationshipReference relationship( long id, ElementIdMapper elementIdMapper )
-    {
-        return new RelationshipReference( id, elementIdMapper );
+    public static RelationshipReference relationship(long id, ElementIdMapper elementIdMapper) {
+        return new RelationshipReference(id, elementIdMapper);
     }
 
-    public static RelationshipReference relationship( long id, ElementIdMapper elementIdMapper, long startNode, long endNode )
-    {
-        return new RelationshipReference( id, elementIdMapper, startNode, endNode );
+    public static RelationshipReference relationship(
+            long id, ElementIdMapper elementIdMapper, long startNode, long endNode) {
+        return new RelationshipReference(id, elementIdMapper, startNode, endNode);
     }
 
-    public static RelationshipReference relationship( long id, ElementIdMapper elementIdMapper, long startNode, long endNode, int type )
-    {
-        return new RelationshipReference( id, elementIdMapper, startNode, endNode, type );
+    public static RelationshipReference relationship(
+            long id, ElementIdMapper elementIdMapper, long startNode, long endNode, int type) {
+        return new RelationshipReference(id, elementIdMapper, startNode, endNode, type);
     }
 
-    public static PathReference pathReference( long[] nodes, long[] relationships )
-    {
+    public static PathReference pathReference(long[] nodes, long[] relationships) {
         assert nodes != null;
         assert relationships != null;
-        if ( (nodes.length + relationships.length) % 2 == 0 )
-        {
-            throw new IllegalArgumentException( "Tried to construct a path that is not built like a path: even number of elements" );
+        if ((nodes.length + relationships.length) % 2 == 0) {
+            throw new IllegalArgumentException(
+                    "Tried to construct a path that is not built like a path: even number of elements");
         }
         assert nodes.length == relationships.length + 1;
 
-        return new PathReference( nodes, relationships );
+        return new PathReference(nodes, relationships);
     }
 
-    public static PathReference pathReference( VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships )
-    {
+    public static PathReference pathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) {
         assert nodes != null;
         assert relationships != null;
         assert nodes.length == relationships.length + 1;
-        if ( (nodes.length + relationships.length) % 2 == 0 )
-        {
-            throw new IllegalArgumentException( "Tried to construct a path that is not built like a path: even number of elements" );
+        if ((nodes.length + relationships.length) % 2 == 0) {
+            throw new IllegalArgumentException(
+                    "Tried to construct a path that is not built like a path: even number of elements");
         }
         long[] nodeIds = new long[nodes.length];
         long[] relIds = new long[relationships.length];
-        for ( int i = 0; i < nodeIds.length; i++ )
-        {
+        for (int i = 0; i < nodeIds.length; i++) {
             nodeIds[i] = nodes[i].id();
         }
-        for ( int i = 0; i < relationships.length; i++ )
-        {
+        for (int i = 0; i < relationships.length; i++) {
             relIds[i] = relationships[i].id();
         }
-        return new PathReference( nodeIds, relIds );
+        return new PathReference(nodeIds, relIds);
     }
 
-    public static PathValue path( NodeValue[] nodes, RelationshipValue[] relationships )
-    {
+    public static PathValue path(NodeValue[] nodes, RelationshipValue[] relationships) {
         assert nodes != null;
         assert relationships != null;
-        if ( (nodes.length + relationships.length) % 2 == 0 )
-        {
-            throw new IllegalArgumentException( "Tried to construct a path that is not built like a path: even number of elements" );
+        if ((nodes.length + relationships.length) % 2 == 0) {
+            throw new IllegalArgumentException(
+                    "Tried to construct a path that is not built like a path: even number of elements");
         }
         long payloadSize = 0;
         assert nodes.length == relationships.length + 1;
         int i = 0;
-        for ( ;  i < relationships.length; i++ )
-        {
+        for (; i < relationships.length; i++) {
             payloadSize += nodes[i].estimatedHeapUsage() + relationships[i].estimatedHeapUsage();
         }
         payloadSize += nodes[i].estimatedHeapUsage();
 
-        return new DirectPathValue( nodes, relationships, payloadSize );
+        return new DirectPathValue(nodes, relationships, payloadSize);
     }
 
-    public static PathValue path( NodeValue[] nodes, RelationshipValue[] relationships, long payloadSize )
-    {
+    public static PathValue path(NodeValue[] nodes, RelationshipValue[] relationships, long payloadSize) {
         assert nodes != null;
         assert relationships != null;
-        if ( (nodes.length + relationships.length) % 2 == 0 )
-        {
-            throw new IllegalArgumentException( "Tried to construct a path that is not built like a path: even number of elements" );
+        if ((nodes.length + relationships.length) % 2 == 0) {
+            throw new IllegalArgumentException(
+                    "Tried to construct a path that is not built like a path: even number of elements");
         }
-        return new DirectPathValue( nodes, relationships, payloadSize );
+        return new DirectPathValue(nodes, relationships, payloadSize);
     }
 
-    public static NodeValue nodeValue( long id, String elementId, ElementIdMapper elementIdMapper, TextArray labels, MapValue properties )
-    {
-        return new NodeValue.DirectNodeValue( id, elementId, elementIdMapper, labels, properties, false );
+    public static NodeValue nodeValue(
+            long id, String elementId, ElementIdMapper elementIdMapper, TextArray labels, MapValue properties) {
+        return new NodeValue.DirectNodeValue(id, elementId, elementIdMapper, labels, properties, false);
     }
 
-    public static NodeValue nodeValue( long id, String elementId, ElementIdMapper elementIdMapper, TextArray labels, MapValue properties, boolean isDeleted )
-    {
-        return new NodeValue.DirectNodeValue( id, elementId, elementIdMapper, labels, properties, isDeleted );
+    public static NodeValue nodeValue(
+            long id,
+            String elementId,
+            ElementIdMapper elementIdMapper,
+            TextArray labels,
+            MapValue properties,
+            boolean isDeleted) {
+        return new NodeValue.DirectNodeValue(id, elementId, elementIdMapper, labels, properties, isDeleted);
     }
 
-    public static RelationshipValue relationshipValue( long id, String elementId, ElementIdMapper elementIdMapper, VirtualNodeValue startNode,
-            VirtualNodeValue endNode, TextValue type, MapValue properties )
-    {
-        return new RelationshipValue.DirectRelationshipValue( id, elementId, elementIdMapper, startNode, endNode, type, properties, false );
+    public static RelationshipValue relationshipValue(
+            long id,
+            String elementId,
+            ElementIdMapper elementIdMapper,
+            VirtualNodeValue startNode,
+            VirtualNodeValue endNode,
+            TextValue type,
+            MapValue properties) {
+        return new RelationshipValue.DirectRelationshipValue(
+                id, elementId, elementIdMapper, startNode, endNode, type, properties, false);
     }
 
-    public static RelationshipValue relationshipValue( long id, String elementId, ElementIdMapper elementIdMapper, VirtualNodeValue startNode,
-            VirtualNodeValue endNode, TextValue type, MapValue properties, boolean isDeleted )
-    {
-        return new RelationshipValue.DirectRelationshipValue( id, elementId, elementIdMapper, startNode, endNode, type, properties, isDeleted );
+    public static RelationshipValue relationshipValue(
+            long id,
+            String elementId,
+            ElementIdMapper elementIdMapper,
+            VirtualNodeValue startNode,
+            VirtualNodeValue endNode,
+            TextValue type,
+            MapValue properties,
+            boolean isDeleted) {
+        return new RelationshipValue.DirectRelationshipValue(
+                id, elementId, elementIdMapper, startNode, endNode, type, properties, isDeleted);
     }
 }

@@ -19,64 +19,54 @@
  */
 package org.neo4j.fabric.stream;
 
+import java.util.concurrent.Executor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxOperator;
 
-import java.util.concurrent.Executor;
-
-public class CompletionDelegatingOperator extends FluxOperator<Record,Record>
-{
+public class CompletionDelegatingOperator extends FluxOperator<Record, Record> {
     private final Flux<Record> recordStream;
     private final Executor executor;
 
-    public CompletionDelegatingOperator( Flux<Record> recordStream, Executor executor )
-    {
-        super( recordStream );
+    public CompletionDelegatingOperator(Flux<Record> recordStream, Executor executor) {
+        super(recordStream);
         this.recordStream = recordStream;
         this.executor = executor;
     }
 
     @Override
-    public void subscribe( CoreSubscriber downstreamSubscriber )
-    {
-        recordStream.subscribeWith( new UpstreamSubscriber( downstreamSubscriber ) );
+    public void subscribe(CoreSubscriber downstreamSubscriber) {
+        recordStream.subscribeWith(new UpstreamSubscriber(downstreamSubscriber));
     }
 
-    private class UpstreamSubscriber implements Subscriber<Record>
-    {
+    private class UpstreamSubscriber implements Subscriber<Record> {
 
         private final Subscriber<Record> downstreamSubscriber;
 
-        UpstreamSubscriber( Subscriber<Record> downstreamSubscriber )
-        {
+        UpstreamSubscriber(Subscriber<Record> downstreamSubscriber) {
             this.downstreamSubscriber = downstreamSubscriber;
         }
 
         @Override
-        public void onSubscribe( Subscription subscription )
-        {
-            downstreamSubscriber.onSubscribe( subscription );
+        public void onSubscribe(Subscription subscription) {
+            downstreamSubscriber.onSubscribe(subscription);
         }
 
         @Override
-        public void onNext( Record record )
-        {
-            downstreamSubscriber.onNext( record );
+        public void onNext(Record record) {
+            downstreamSubscriber.onNext(record);
         }
 
         @Override
-        public void onError( Throwable throwable )
-        {
-            executor.execute( () -> downstreamSubscriber.onError( throwable ) );
+        public void onError(Throwable throwable) {
+            executor.execute(() -> downstreamSubscriber.onError(throwable));
         }
 
         @Override
-        public void onComplete()
-        {
-            executor.execute( downstreamSubscriber::onComplete );
+        public void onComplete() {
+            executor.execute(downstreamSubscriber::onComplete);
         }
     }
 }

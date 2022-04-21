@@ -30,18 +30,25 @@ import org.neo4j.values.AnyValue
  * Expression that is really a pipe. On evaluation, the pipe is evaluated. For each returned row, a projection
  * is applied, and the resulting values are collected in a list and returned.
  */
-case class NestedPipeCollectExpression(pipe: Pipe,
-                                       projection: Expression,
-                                       availableExpressionVariables: Array[ExpressionVariable],
-                                       owningPlanId: Id)
-  extends NestedPipeExpression(pipe, availableExpressionVariables, owningPlanId) {
+case class NestedPipeCollectExpression(
+  pipe: Pipe,
+  projection: Expression,
+  availableExpressionVariables: Array[ExpressionVariable],
+  owningPlanId: Id
+) extends NestedPipeExpression(pipe, availableExpressionVariables, owningPlanId) {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val results = createNestedResults(row, state)
-    collectResults(state, results, projection, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(owningPlanId.x))
+    collectResults(
+      state,
+      results,
+      projection,
+      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(owningPlanId.x)
+    )
   }
 
-  override def rewrite(f: Expression => Expression): Expression = f(NestedPipeCollectExpression(pipe, projection.rewrite(f), availableExpressionVariables, owningPlanId))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(NestedPipeCollectExpression(pipe, projection.rewrite(f), availableExpressionVariables, owningPlanId))
 
   override def arguments: Seq[Expression] = Seq(projection)
 

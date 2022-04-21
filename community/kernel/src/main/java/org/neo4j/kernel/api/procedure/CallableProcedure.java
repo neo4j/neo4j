@@ -25,28 +25,26 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.values.AnyValue;
 
-public interface CallableProcedure
-{
+public interface CallableProcedure {
     ProcedureSignature signature();
-    RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException;
 
-    abstract class BasicProcedure implements CallableProcedure
-    {
+    RawIterator<AnyValue[], ProcedureException> apply(Context ctx, AnyValue[] input, ResourceTracker resourceTracker)
+            throws ProcedureException;
+
+    abstract class BasicProcedure implements CallableProcedure {
         private final ProcedureSignature signature;
 
-        protected BasicProcedure( ProcedureSignature signature )
-        {
+        protected BasicProcedure(ProcedureSignature signature) {
             this.signature = signature;
         }
 
         @Override
-        public ProcedureSignature signature()
-        {
+        public ProcedureSignature signature() {
             return signature;
         }
 
         @Override
         public abstract RawIterator<AnyValue[], ProcedureException> apply(
-                Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException;
+                Context ctx, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException;
     }
 }

@@ -21,17 +21,12 @@ package org.neo4j.tooling.procedure.compilerutils;
 
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.UserFunction;
 import org.neo4j.procedure.UserAggregationFunction;
+import org.neo4j.procedure.UserFunction;
 
-public class CustomNameExtractor
-{
-    private CustomNameExtractor()
-    {
-
-    }
+public class CustomNameExtractor {
+    private CustomNameExtractor() {}
 
     /**
      * Extracts user-defined names, usually from a {@link Procedure}, {@link UserFunction}
@@ -39,17 +34,14 @@ public class CustomNameExtractor
      *
      * As such, extracted strings are assumed to be non-null.
      */
-    public static Optional<String> getName( Supplier<String> nameSupplier, Supplier<String> valueSupplier )
-    {
+    public static Optional<String> getName(Supplier<String> nameSupplier, Supplier<String> valueSupplier) {
         String name = nameSupplier.get().trim();
-        if ( !name.isEmpty() )
-        {
-            return Optional.of( name );
+        if (!name.isEmpty()) {
+            return Optional.of(name);
         }
         String value = valueSupplier.get().trim();
-        if ( !value.isEmpty() )
-        {
-            return Optional.of( value );
+        if (!value.isEmpty()) {
+            return Optional.of(value);
         }
         return Optional.empty();
     }

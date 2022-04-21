@@ -21,19 +21,11 @@ package org.neo4j.bolt.testing;
 
 import org.neo4j.bolt.runtime.Job;
 
-public class Jobs
-{
+public class Jobs {
 
-    private Jobs()
-    {
+    private Jobs() {}
 
-    }
-
-    public static Job noop()
-    {
-        return machine ->
-        {
-
-        };
+    public static Job noop() {
+        return machine -> {};
     }
 }

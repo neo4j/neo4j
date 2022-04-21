@@ -20,75 +20,62 @@
 package org.neo4j.internal.schema;
 
 import java.util.Iterator;
-
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
-public class StorageSchemaReaderSnapshot implements StorageSchemaReader
-{
+public class StorageSchemaReaderSnapshot implements StorageSchemaReader {
     private final SchemaCache schema;
 
-    public StorageSchemaReaderSnapshot( SchemaCache schema )
-    {
+    public StorageSchemaReaderSnapshot(SchemaCache schema) {
         this.schema = schema;
     }
 
     @Override
-    public IndexDescriptor indexGetForName( String name )
-    {
-        return schema.indexForName( name );
+    public IndexDescriptor indexGetForName(String name) {
+        return schema.indexForName(name);
     }
 
     @Override
-    public ConstraintDescriptor constraintGetForName( String name )
-    {
-        return schema.constraintForName( name );
+    public ConstraintDescriptor constraintGetForName(String name) {
+        return schema.constraintForName(name);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
-    {
-        return schema.indexesForSchema( descriptor );
+    public Iterator<IndexDescriptor> indexGetForSchema(SchemaDescriptor descriptor) {
+        return schema.indexesForSchema(descriptor);
     }
 
     @Override
-    public IndexDescriptor indexGetForSchemaAndType( SchemaDescriptor descriptor, IndexType type )
-    {
-        return schema.indexForSchemaAndType( descriptor, type );
+    public IndexDescriptor indexGetForSchemaAndType(SchemaDescriptor descriptor, IndexType type) {
+        return schema.indexForSchemaAndType(descriptor, type);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
-    {
-        return schema.indexesForLabel( labelId );
+    public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
+        return schema.indexesForLabel(labelId);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
-    {
-        return schema.indexesForRelationshipType( relationshipType );
+    public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
+        return schema.indexesForRelationshipType(relationshipType);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
-    {
+    public Iterator<IndexDescriptor> indexesGetAll() {
         return schema.indexes().iterator();
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
-    {
-        return schema.constraintsForLabel( labelId );
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
+        return schema.constraintsForLabel(labelId);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
-    {
-        return schema.constraintsForRelationshipType( typeId );
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
+        return schema.constraintsForRelationshipType(typeId);
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetAll()
-    {
+    public Iterator<ConstraintDescriptor> constraintsGetAll() {
         return schema.constraints().iterator();
     }
 }

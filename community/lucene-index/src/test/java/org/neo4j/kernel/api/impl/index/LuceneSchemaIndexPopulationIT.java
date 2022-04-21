@@ -19,11 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
+import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 
 import java.nio.file.Path;
-
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -50,80 +56,75 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
-import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
-
 @TestDirectoryExtension
-class LuceneSchemaIndexPopulationIT
-{
-    private final IndexDescriptor descriptor = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( 0, 0 ) ).withName( "a" ).materialise( 1 );
+class LuceneSchemaIndexPopulationIT {
+    private final IndexDescriptor descriptor = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(0, 0))
+            .withName("a")
+            .materialise(1);
     private final Config config = Config.newBuilder()
-                                        .set( GraphDatabaseInternalSettings.lucene_max_partition_size, 10 )
-                                        .build();
+            .set(GraphDatabaseInternalSettings.lucene_max_partition_size, 10)
+            .build();
 
     @Inject
     private TestDirectory testDir;
+
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
 
     @ParameterizedTest
-    @ValueSource( ints = {7, 11, 14, 20, 35, 58} )
-    void partitionedIndexPopulation( int affectedNodes ) throws Exception
-    {
-        Path rootFolder = testDir.directory( "partitionIndex" + affectedNodes ).resolve( "uniqueIndex" + affectedNodes );
-        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor, writable(), config )
-                .withFileSystem( fileSystem )
-                .withIndexRootFolder( rootFolder ).build() )
-        {
+    @ValueSource(ints = {7, 11, 14, 20, 35, 58})
+    void partitionedIndexPopulation(int affectedNodes) throws Exception {
+        Path rootFolder = testDir.directory("partitionIndex" + affectedNodes).resolve("uniqueIndex" + affectedNodes);
+        try (SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create(descriptor, writable(), config)
+                .withFileSystem(fileSystem)
+                .withIndexRootFolder(rootFolder)
+                .build()) {
             uniqueIndex.open();
 
             // index is empty and not yet exist
-            assertEquals( 0, uniqueIndex.allDocumentsReader().maxCount() );
-            assertFalse( uniqueIndex.exists() );
+            assertEquals(0, uniqueIndex.allDocumentsReader().maxCount());
+            assertFalse(uniqueIndex.exists());
 
-            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex, descriptor, SIMPLE_TOKEN_LOOKUP, UPDATE_IGNORE_STRATEGY ) )
-            {
-                generateUpdates( indexAccessor, affectedNodes );
-                indexAccessor.force( CursorContext.NULL_CONTEXT );
+            try (LuceneIndexAccessor indexAccessor =
+                    new LuceneIndexAccessor(uniqueIndex, descriptor, SIMPLE_TOKEN_LOOKUP, UPDATE_IGNORE_STRATEGY)) {
+                generateUpdates(indexAccessor, affectedNodes);
+                indexAccessor.force(CursorContext.NULL_CONTEXT);
 
                 // now index is online and should contain updates data
-                assertTrue( uniqueIndex.isOnline() );
+                assertTrue(uniqueIndex.isOnline());
 
-                try ( var indexReader = indexAccessor.newValueReader();
-                      NodeValueIterator results = new NodeValueIterator();
-                      IndexSampler indexSampler = indexReader.createSampler() )
-                {
-                    indexReader.query( results, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exists( 1 ) );
-                    long[] nodes = PrimitiveLongCollections.asArray( results );
-                    assertEquals( affectedNodes, nodes.length );
+                try (var indexReader = indexAccessor.newValueReader();
+                        NodeValueIterator results = new NodeValueIterator();
+                        IndexSampler indexSampler = indexReader.createSampler()) {
+                    indexReader.query(
+                            results,
+                            QueryContext.NULL_CONTEXT,
+                            AccessMode.Static.READ,
+                            unconstrained(),
+                            PropertyIndexQuery.exists(1));
+                    long[] nodes = PrimitiveLongCollections.asArray(results);
+                    assertEquals(affectedNodes, nodes.length);
 
-                    IndexSample sample = indexSampler.sampleIndex( CursorContext.NULL_CONTEXT );
-                    assertEquals( affectedNodes, sample.indexSize() );
-                    assertEquals( affectedNodes, sample.uniqueValues() );
-                    assertEquals( affectedNodes, sample.sampleSize() );
+                    IndexSample sample = indexSampler.sampleIndex(CursorContext.NULL_CONTEXT);
+                    assertEquals(affectedNodes, sample.indexSize());
+                    assertEquals(affectedNodes, sample.uniqueValues());
+                    assertEquals(affectedNodes, sample.sampleSize());
                 }
             }
         }
     }
 
-    private void generateUpdates( LuceneIndexAccessor indexAccessor, int nodesToUpdate ) throws IndexEntryConflictException
-    {
-        try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
-        {
-            for ( int nodeId = 0; nodeId < nodesToUpdate; nodeId++ )
-            {
-                updater.process( add( nodeId, "node " + nodeId ) );
+    private void generateUpdates(LuceneIndexAccessor indexAccessor, int nodesToUpdate)
+            throws IndexEntryConflictException {
+        try (IndexUpdater updater =
+                indexAccessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            for (int nodeId = 0; nodeId < nodesToUpdate; nodeId++) {
+                updater.process(add(nodeId, "node " + nodeId));
             }
         }
     }
 
-    private IndexEntryUpdate<?> add( long nodeId, Object value )
-    {
-        return IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
+    private IndexEntryUpdate<?> add(long nodeId, Object value) {
+        return IndexEntryUpdate.add(nodeId, descriptor, Values.of(value));
     }
 }

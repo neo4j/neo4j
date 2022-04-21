@@ -33,10 +33,10 @@ import org.neo4j.internal.helpers.ArrayUtil.MAX_ARRAY_SIZE
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class TopTestBase[CONTEXT <: RuntimeContext](
-                                                        edition: Edition[CONTEXT],
-                                                        runtime: CypherRuntime[CONTEXT],
-                                                        sizeHint: Int
-                                                      ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("empty input gives empty output") {
     // when
@@ -88,7 +88,9 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = input.flatten.sortBy(arr => (-arr(0).asInstanceOf[Int], arr(1).asInstanceOf[Int], -arr(2).asInstanceOf[Int])).take(limit)
+    val expected = input.flatten.sortBy(arr =>
+      (-arr(0).asInstanceOf[Int], arr(1).asInstanceOf[Int], -arr(2).asInstanceOf[Int])
+    ).take(limit)
     runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
   }
 
@@ -245,16 +247,18 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       .|.top(sortItems = Seq(Descending("y")), limit1)
       .|.expand("(x)-[:R]->(y)")
       .|.argument("x")
-      .nodeByLabelScan("x","A", IndexOrderNone)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = aNodes.flatMap(_ => bNodes.sortBy(-_.getId)
-                         .take(limit1))
-                         .sortBy(_.getId)
-                         .take(limit2)
-                         .map(Array[Any](_))
+    val expected = aNodes.flatMap(_ =>
+      bNodes.sortBy(-_.getId)
+        .take(limit1)
+    )
+      .sortBy(_.getId)
+      .take(limit2)
+      .map(Array[Any](_))
 
     runtimeResult should beColumns("y").withRows(inOrder(expected))
   }
@@ -268,7 +272,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .top(Seq(Descending("y"), Ascending("x")), limit )
+      .top(Seq(Descending("y"), Ascending("x")), limit)
       .apply()
       .|.expandAll("(x)--(y)")
       .|.argument()
@@ -285,7 +289,8 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       y = rel.getOtherNode(x)
     } yield Array[Any](x, y)
 
-    val expected = allRows.sortBy(row => (-row(1).asInstanceOf[Node].getId, row(0).asInstanceOf[Node].getId)).take(limit)
+    val expected =
+      allRows.sortBy(row => (-row(1).asInstanceOf[Node].getId, row(0).asInstanceOf[Node].getId)).take(limit)
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }

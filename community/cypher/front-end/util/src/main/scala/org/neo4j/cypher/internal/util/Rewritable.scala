@@ -20,11 +20,13 @@ import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 
 import java.lang.reflect.Method
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object Rewriter {
+
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter =
     f.orElse({ case x => x })
 
@@ -32,12 +34,15 @@ object Rewriter {
 }
 
 object RewriterWithParent {
+
   def lift(f: PartialFunction[(AnyRef, Option[AnyRef]), AnyRef]): RewriterWithParent =
     f.orElse({ case (x, _) => x })
 }
 
 object Rewritable {
+
   implicit class IteratorEq[A <: AnyRef](val iterator: Iterator[A]) {
+
     def eqElements[B <: AnyRef](that: Iterator[B]): Boolean = {
       while (iterator.hasNext && that.hasNext) {
         if (!(iterator.next() eq that.next()))
@@ -48,6 +53,7 @@ object Rewritable {
   }
 
   private val productCopyConstructors = new ThreadLocal[mutable.HashMap[Class[_], Method]]() {
+
     override def initialValue: mutable.HashMap[Class[_], Method] =
       new mutable.HashMap[Class[_], Method]
   }
@@ -108,6 +114,7 @@ object Rewritable {
   }
 
   implicit class RewritableAny[T <: AnyRef](val that: T) extends AnyVal {
+
     def rewrite(rewriter: Rewriter): AnyRef = {
       val result = rewriter.apply(that)
       result
@@ -133,11 +140,13 @@ trait Rewritable {
 }
 
 object inSequence {
+
   private class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
+
     override def apply(that: AnyRef): AnyRef = {
       val it = rewriters.iterator
-      //this piece of code is used a lot and has been through profiling
-      //please don't just remove it because it is ugly looking
+      // this piece of code is used a lot and has been through profiling
+      // please don't just remove it because it is ugly looking
       var result = that
       while (it.hasNext) {
         result = result.rewrite(it.next())
@@ -147,7 +156,9 @@ object inSequence {
     }
   }
 
-  private class InSequenceRewriterWithCancel(rewriters: Seq[Rewriter], cancellation: CancellationChecker) extends Rewriter {
+  private class InSequenceRewriterWithCancel(rewriters: Seq[Rewriter], cancellation: CancellationChecker)
+      extends Rewriter {
+
     override def apply(that: AnyRef): AnyRef = {
       val it = rewriters.iterator
       var result = that
@@ -168,9 +179,10 @@ object inSequence {
 }
 
 object topDown {
-  private class TopDownRewriter(rewriter: Rewriter,
-                                stopper: AnyRef => Boolean,
-                                cancellation: CancellationChecker) extends Rewriter {
+
+  private class TopDownRewriter(rewriter: Rewriter, stopper: AnyRef => Boolean, cancellation: CancellationChecker)
+      extends Rewriter {
+
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.Stack((List(that), new mutable.ListBuffer[AnyRef]()))
       val result = rec(initialStack)
@@ -206,9 +218,11 @@ object topDown {
     }
   }
 
-  def apply(rewriter: Rewriter,
-            stopper: AnyRef => Boolean = _ => false,
-            cancellation: CancellationChecker = CancellationChecker.NeverCancelled): Rewriter =
+  def apply(
+    rewriter: Rewriter,
+    stopper: AnyRef => Boolean = _ => false,
+    cancellation: CancellationChecker = CancellationChecker.NeverCancelled
+  ): Rewriter =
     new TopDownRewriter(rewriter, stopper, cancellation)
 }
 
@@ -216,9 +230,13 @@ object topDown {
  * Top-down rewriter that also lets the rules see the parent of each node as additional context
  */
 object topDownWithParent {
-  private class TopDownWithParentRewriter(rewriter: RewriterWithParent,
-                                          stopper: AnyRef => Boolean,
-                                          cancellation: CancellationChecker) extends Rewriter {
+
+  private class TopDownWithParentRewriter(
+    rewriter: RewriterWithParent,
+    stopper: AnyRef => Boolean,
+    cancellation: CancellationChecker
+  ) extends Rewriter {
+
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.Stack((List(that), new ListBuffer[AnyRef]()))
       val result = rec(initialStack)
@@ -262,17 +280,19 @@ object topDownWithParent {
     }
   }
 
-  def apply(rewriter: RewriterWithParent,
-            stopper: AnyRef => Boolean = _ => false,
-            cancellation: CancellationChecker = CancellationChecker.NeverCancelled): Rewriter =
+  def apply(
+    rewriter: RewriterWithParent,
+    stopper: AnyRef => Boolean = _ => false,
+    cancellation: CancellationChecker = CancellationChecker.NeverCancelled
+  ): Rewriter =
     new TopDownWithParentRewriter(rewriter, stopper, cancellation)
 }
 
 object bottomUp {
 
-  private class BottomUpRewriter(rewriter: Rewriter,
-                                 stopper: AnyRef => Boolean,
-                                 cancellation: CancellationChecker) extends Rewriter {
+  private class BottomUpRewriter(rewriter: Rewriter, stopper: AnyRef => Boolean, cancellation: CancellationChecker)
+      extends Rewriter {
+
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.Stack((List(that), new ListBuffer[AnyRef]()))
       val result = rec(initialStack)
@@ -308,18 +328,23 @@ object bottomUp {
     }
   }
 
-  def apply(rewriter: Rewriter,
-            stopper: AnyRef => Boolean = _ => false,
-            cancellation: CancellationChecker = CancellationChecker.NeverCancelled): Rewriter =
+  def apply(
+    rewriter: Rewriter,
+    stopper: AnyRef => Boolean = _ => false,
+    cancellation: CancellationChecker = CancellationChecker.NeverCancelled
+  ): Rewriter =
     new BottomUpRewriter(rewriter, stopper, cancellation)
 }
 
 object bottomUpWithRecorder {
 
-  private class BottomUpRewriter(rewriter: Rewriter,
-                                 stopper: AnyRef => Boolean,
-                                 recorder: (AnyRef, AnyRef) => Unit,
-                                 cancellation: CancellationChecker) extends Rewriter {
+  private class BottomUpRewriter(
+    rewriter: Rewriter,
+    stopper: AnyRef => Boolean,
+    recorder: (AnyRef, AnyRef) => Unit,
+    cancellation: CancellationChecker
+  ) extends Rewriter {
+
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.Stack((List(that), new ListBuffer[AnyRef]()))
       val result = rec(initialStack)
@@ -357,9 +382,11 @@ object bottomUpWithRecorder {
     }
   }
 
-  def apply(rewriter: Rewriter,
-            stopper: AnyRef => Boolean = _ => false,
-            recorder: (AnyRef, AnyRef) => Unit = (_, _) => (),
-            cancellation: CancellationChecker = CancellationChecker.NeverCancelled): Rewriter =
+  def apply(
+    rewriter: Rewriter,
+    stopper: AnyRef => Boolean = _ => false,
+    recorder: (AnyRef, AnyRef) => Unit = (_, _) => (),
+    cancellation: CancellationChecker = CancellationChecker.NeverCancelled
+  ): Rewriter =
     new BottomUpRewriter(rewriter, stopper, recorder, cancellation)
 }

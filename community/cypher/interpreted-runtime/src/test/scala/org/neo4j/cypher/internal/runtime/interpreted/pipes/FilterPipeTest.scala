@@ -24,8 +24,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class FilterPipeTest extends CypherFunSuite {
+
   test("should be lazy") {
-    val input = new FakePipe(Seq(Map("a"->10), Map("a"->11), Map("a"->12), Map("a"->13)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11), Map("a" -> 12), Map("a" -> 13)))
     val pipe = FilterPipe(input, True())()
     // when
     val res = pipe.createResults(QueryStateHelper.emptyWithValueSerialization)

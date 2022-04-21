@@ -31,15 +31,22 @@ trait ScopeExpression extends Expression {
   def introducedVariables: Set[LogicalVariable]
 }
 
-case class FilterScope(variable: LogicalVariable, innerPredicate: Option[Expression])(val position: InputPosition) extends ScopeExpression {
+case class FilterScope(variable: LogicalVariable, innerPredicate: Option[Expression])(val position: InputPosition)
+    extends ScopeExpression {
   val introducedVariables = Set(variable)
 }
 
-case class ExtractScope(variable: LogicalVariable, innerPredicate: Option[Expression], extractExpression: Option[Expression])(val position: InputPosition) extends ScopeExpression {
+case class ExtractScope(
+  variable: LogicalVariable,
+  innerPredicate: Option[Expression],
+  extractExpression: Option[Expression]
+)(val position: InputPosition) extends ScopeExpression {
   val introducedVariables = Set(variable)
 }
 
-case class ReduceScope(accumulator: LogicalVariable, variable: LogicalVariable, expression: Expression)(val position: InputPosition) extends ScopeExpression {
+case class ReduceScope(accumulator: LogicalVariable, variable: LogicalVariable, expression: Expression)(
+  val position: InputPosition
+) extends ScopeExpression {
   val introducedVariables = Set(accumulator, variable)
 }
 

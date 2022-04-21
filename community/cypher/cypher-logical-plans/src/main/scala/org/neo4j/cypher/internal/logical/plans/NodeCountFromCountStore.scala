@@ -28,12 +28,14 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * number of nodes with that label is fetched from the counts store. These counts are multiplied together, and the
  * result is assigned to 'idName'
  */
-case class NodeCountFromCountStore(idName: String, labelNames: List[Option[LabelName]], argumentIds: Set[String])(implicit idGen: IdGen)
-  extends LogicalLeafPlan(idGen) {
+case class NodeCountFromCountStore(idName: String, labelNames: List[Option[LabelName]], argumentIds: Set[String])(
+  implicit idGen: IdGen
+) extends LogicalLeafPlan(idGen) {
 
   override val availableSymbols = Set(idName)
 
   override def usedVariables: Set[String] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeCountFromCountStore = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeCountFromCountStore =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }

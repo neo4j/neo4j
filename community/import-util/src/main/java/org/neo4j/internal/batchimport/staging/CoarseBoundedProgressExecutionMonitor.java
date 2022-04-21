@@ -19,79 +19,70 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.helpers.collection.Iterables;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * An {@link ExecutionMonitor} that prints progress in percent, knowing the max number of nodes and relationships
  * in advance.
  */
-public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMonitor.Adapter
-{
+public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMonitor.Adapter {
     private final long totalNumberOfBatches;
     private long prevDoneBatches;
     private long totalReportedBatches;
 
-    public CoarseBoundedProgressExecutionMonitor( long highNodeId, long highRelationshipId,
-            Configuration configuration )
-    {
-        super( 1, SECONDS );
+    public CoarseBoundedProgressExecutionMonitor(
+            long highNodeId, long highRelationshipId, Configuration configuration) {
+        super(1, SECONDS);
         // This calculation below is aware of internals of the parallel importer and may
         // be wrong for other importers.
-        this.totalNumberOfBatches =
-                (highNodeId / configuration.batchSize()) * 3 + // node records encountered three times
-                        (highRelationshipId / configuration.batchSize()) * 4; // rel records encountered four times
+        this.totalNumberOfBatches = (highNodeId / configuration.batchSize()) * 3
+                + // node records encountered three times
+                (highRelationshipId / configuration.batchSize()) * 4; // rel records encountered four times
     }
 
-    protected long total()
-    {
+    protected long total() {
         return totalNumberOfBatches;
     }
 
     @Override
-    public void check( StageExecution execution )
-    {
-        update( execution );
+    public void check(StageExecution execution) {
+        update(execution);
     }
 
     @Override
-    public void start( StageExecution execution )
-    {
+    public void start(StageExecution execution) {
         prevDoneBatches = 0;
     }
 
-    private void update( StageExecution execution )
-    {
+    private void update(StageExecution execution) {
         long diff = 0;
-        long doneBatches = doneBatches( execution );
+        long doneBatches = doneBatches(execution);
         diff += doneBatches - prevDoneBatches;
         prevDoneBatches = doneBatches;
 
-        if ( diff > 0 )
-        {
+        if (diff > 0) {
             totalReportedBatches += diff;
-            progress( diff );
+            progress(diff);
         }
     }
 
     /**
      * @param progress Relative progress.
      */
-    protected abstract void progress( long progress );
+    protected abstract void progress(long progress);
 
-    private static long doneBatches( StageExecution execution )
-    {
-        Step<?> step = Iterables.last( execution.steps() );
-        return step.stats().stat( Keys.done_batches ).asLong();
+    private static long doneBatches(StageExecution execution) {
+        Step<?> step = Iterables.last(execution.steps());
+        return step.stats().stat(Keys.done_batches).asLong();
     }
 
     @Override
-    public void done( boolean successful, long totalTimeMillis, String additionalInformation )
-    {
+    public void done(boolean successful, long totalTimeMillis, String additionalInformation) {
         // Just report the last progress
-        progress( totalNumberOfBatches - totalReportedBatches );
+        progress(totalNumberOfBatches - totalReportedBatches);
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.internal.batchimport.RecordIdIterators.allInReversed;
+
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
@@ -27,8 +29,6 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-
-import static org.neo4j.internal.batchimport.RecordIdIterators.allInReversed;
 
 /**
  * Scans {@link RelationshipGroupRecord} from store in reverse, this because during import the relationships
@@ -39,16 +39,18 @@ import static org.neo4j.internal.batchimport.RecordIdIterators.allInReversed;
  * with {@link WriteGroupsStage} alternating each other can run multiple times to limit max memory consumption
  * caching relationship groups.
  */
-public class ScanAndCacheGroupsStage extends Stage
-{
+public class ScanAndCacheGroupsStage extends Stage {
     public static final String NAME = "Gather";
 
-    public ScanAndCacheGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
-            RelationshipGroupCache cache, CursorContextFactory contextFactory, StatsProvider... additionalStatsProviders )
-    {
-        super( NAME, null, config, Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, allInReversed( store, config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store, contextFactory ) );
-        add( new CacheGroupsStep( control(), config, cache, contextFactory, additionalStatsProviders ) );
+    public ScanAndCacheGroupsStage(
+            Configuration config,
+            RecordStore<RelationshipGroupRecord> store,
+            RelationshipGroupCache cache,
+            CursorContextFactory contextFactory,
+            StatsProvider... additionalStatsProviders) {
+        super(NAME, null, config, Step.RECYCLE_BATCHES);
+        add(new BatchFeedStep(control(), config, allInReversed(store, config), store.getRecordSize()));
+        add(new ReadRecordsStep<>(control(), config, false, store, contextFactory));
+        add(new CacheGroupsStep(control(), config, cache, contextFactory, additionalStatsProviders));
     }
 }

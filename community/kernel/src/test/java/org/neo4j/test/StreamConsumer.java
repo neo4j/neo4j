@@ -31,18 +31,14 @@ import java.io.Writer;
  * A simple Runnable that is meant to consume the output and error streams of a
  * detached process, for debugging purposes.
  */
-public class StreamConsumer implements Runnable
-{
-    public interface StreamExceptionHandler
-    {
-        void handle( IOException failure );
+public class StreamConsumer implements Runnable {
+    public interface StreamExceptionHandler {
+        void handle(IOException failure);
     }
 
     public static final StreamExceptionHandler PRINT_FAILURES = Throwable::printStackTrace;
 
-    public static final StreamExceptionHandler IGNORE_FAILURES = failure ->
-    {
-    };
+    public static final StreamExceptionHandler IGNORE_FAILURES = failure -> {};
 
     private final BufferedReader in;
     private final Writer out;
@@ -53,41 +49,33 @@ public class StreamConsumer implements Runnable
     private final StreamExceptionHandler failureHandler;
     private final Exception stackTraceOfOrigin;
 
-    public StreamConsumer( InputStream in, OutputStream out, boolean quiet )
-    {
-        this( in, out, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES );
+    public StreamConsumer(InputStream in, OutputStream out, boolean quiet) {
+        this(in, out, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES);
     }
 
-    public StreamConsumer( InputStream in, OutputStream out, boolean quiet, String prefix,
-            StreamExceptionHandler failureHandler )
-    {
+    public StreamConsumer(
+            InputStream in, OutputStream out, boolean quiet, String prefix, StreamExceptionHandler failureHandler) {
         this.quiet = quiet;
         this.prefix = prefix;
         this.failureHandler = failureHandler;
-        this.in = new BufferedReader( new InputStreamReader( in ) );
-        this.out = new OutputStreamWriter( out );
-        this.stackTraceOfOrigin = new Exception( "Stack trace of thread that created this StreamConsumer" );
+        this.in = new BufferedReader(new InputStreamReader(in));
+        this.out = new OutputStreamWriter(out);
+        this.stackTraceOfOrigin = new Exception("Stack trace of thread that created this StreamConsumer");
     }
 
     @Override
-    public void run()
-    {
-        try
-        {
+    public void run() {
+        try {
             String line;
-            while ( (line = in.readLine()) != null )
-            {
-                if ( !quiet )
-                {
-                    out.write( prefix + line + "\n" );
+            while ((line = in.readLine()) != null) {
+                if (!quiet) {
+                    out.write(prefix + line + "\n");
                     out.flush();
                 }
             }
-        }
-        catch ( IOException exc )
-        {
-            exc.addSuppressed( stackTraceOfOrigin );
-            failureHandler.handle( exc );
+        } catch (IOException exc) {
+            exc.addSuppressed(stackTraceOfOrigin);
+            failureHandler.handle(exc);
         }
     }
 }

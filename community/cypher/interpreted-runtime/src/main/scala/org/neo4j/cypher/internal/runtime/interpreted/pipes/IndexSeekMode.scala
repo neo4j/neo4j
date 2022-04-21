@@ -26,14 +26,15 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.values.virtual.VirtualNodeValue
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
+
   def fromQueryExpression[T](qexpr: QueryExpression[T]): IndexSeekMode = qexpr match {
-    case _: RangeQueryExpression[_] if unique => UniqueIndexSeekByRange
-    case _: RangeQueryExpression[_] => IndexSeekByRange
+    case _: RangeQueryExpression[_] if unique                                   => UniqueIndexSeekByRange
+    case _: RangeQueryExpression[_]                                             => IndexSeekByRange
     case qe: CompositeQueryExpression[_] if unique && !readOnly && qe.exactOnly => LockingUniqueIndexSeek
-    case _: CompositeQueryExpression[_] if unique => UniqueIndexSeek
-    case _ if unique && !readOnly => LockingUniqueIndexSeek
-    case _ if unique => UniqueIndexSeek
-    case _ => IndexSeek
+    case _: CompositeQueryExpression[_] if unique                               => UniqueIndexSeek
+    case _ if unique && !readOnly                                               => LockingUniqueIndexSeek
+    case _ if unique                                                            => UniqueIndexSeek
+    case _                                                                      => IndexSeek
   }
 }
 
@@ -41,7 +42,7 @@ object IndexSeekMode {
   type MultipleValueQuery = QueryState => Seq[Any] => Iterator[VirtualNodeValue]
 
   def assertSingleValue(values: Seq[Any]): Any = {
-    if(values.size != 1)
+    if (values.size != 1)
       throw new InternalException("Composite lookups not yet supported")
     values.head
   }

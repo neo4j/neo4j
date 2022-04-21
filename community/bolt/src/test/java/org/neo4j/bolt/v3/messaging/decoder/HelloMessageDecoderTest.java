@@ -19,11 +19,17 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.encode;
+import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newNeo4jPack;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.test.AuthTokenUtil.assertAuthTokenMatches;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
@@ -33,92 +39,78 @@ import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.security.auth.AuthTokenDecoderTest;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.encode;
-import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newNeo4jPack;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.test.AuthTokenUtil.assertAuthTokenMatches;
-
-class HelloMessageDecoderTest extends AuthTokenDecoderTest
-{
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final RequestMessageDecoder decoder = new HelloMessageDecoder( responseHandler );
+class HelloMessageDecoderTest extends AuthTokenDecoderTest {
+    private final BoltResponseHandler responseHandler = mock(BoltResponseHandler.class);
+    private final RequestMessageDecoder decoder = new HelloMessageDecoder(responseHandler);
 
     @Test
-    void shouldReturnCorrectSignature()
-    {
-        assertEquals( HelloMessage.SIGNATURE, decoder.signature() );
+    void shouldReturnCorrectSignature() {
+        assertEquals(HelloMessage.SIGNATURE, decoder.signature());
     }
 
     @Test
-    void shouldReturnConnectResponseHandler()
-    {
-        assertEquals( responseHandler, decoder.responseHandler() );
+    void shouldReturnConnectResponseHandler() {
+        assertEquals(responseHandler, decoder.responseHandler());
     }
 
     @Test
-    void shouldDecodeHelloMessage() throws Exception
-    {
-        HelloMessage originalMessage = new HelloMessage( map( "user_agent", "My Driver", "user", "neo4j", "password", "secret" ) );
-        assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
+    void shouldDecodeHelloMessage() throws Exception {
+        HelloMessage originalMessage =
+                new HelloMessage(map("user_agent", "My Driver", "user", "neo4j", "password", "secret"));
+        assertOriginalMessageEqualsToDecoded(originalMessage, decoder);
     }
 
-    static void assertOriginalMessageEqualsToDecoded( RequestMessage originalMessage, RequestMessageDecoder decoder ) throws Exception
-    {
+    static void assertOriginalMessageEqualsToDecoded(RequestMessage originalMessage, RequestMessageDecoder decoder)
+            throws Exception {
         Neo4jPack neo4jPack = newNeo4jPack();
 
-        PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        PackedInputArray input = new PackedInputArray(encode(neo4jPack, originalMessage));
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
 
         // these two steps are executed before decoding in order to select a correct decoder
         unpacker.unpackStructHeader();
         unpacker.unpackStructSignature();
 
-        RequestMessage deserializedMessage = decoder.decode( unpacker );
-        assertEquals( originalMessage, deserializedMessage );
+        RequestMessage deserializedMessage = decoder.decode(unpacker);
+        assertEquals(originalMessage, deserializedMessage);
     }
 
     @Override
-    protected void testShouldDecodeAuthToken( Map<String,Object> authToken ) throws Exception
-    {
+    protected void testShouldDecodeAuthToken(Map<String, Object> authToken) throws Exception {
         Neo4jPack neo4jPack = newNeo4jPack();
-        authToken.put( "user_agent", "My Driver" );
-        HelloMessage originalMessage = new HelloMessage( authToken );
+        authToken.put("user_agent", "My Driver");
+        HelloMessage originalMessage = new HelloMessage(authToken);
 
-        PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        PackedInputArray input = new PackedInputArray(encode(neo4jPack, originalMessage));
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
 
         // these two steps are executed before decoding in order to select a correct decoder
         unpacker.unpackStructHeader();
         unpacker.unpackStructSignature();
 
-        RequestMessage deserializedMessage = decoder.decode( unpacker );
+        RequestMessage deserializedMessage = decoder.decode(unpacker);
 
-        assertHelloMessageMatches( originalMessage, deserializedMessage );
+        assertHelloMessageMatches(originalMessage, deserializedMessage);
     }
 
     @Test
-    protected void testShouldErrorForMissingUserAgent() throws Exception
-    {
+    protected void testShouldErrorForMissingUserAgent() throws Exception {
         Neo4jPack neo4jPack = newNeo4jPack();
-        Map<String,Object> authToken = new HashMap<>();
-        HelloMessage originalMessage = new HelloMessage( authToken );
+        Map<String, Object> authToken = new HashMap<>();
+        HelloMessage originalMessage = new HelloMessage(authToken);
 
-        PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        PackedInputArray input = new PackedInputArray(encode(neo4jPack, originalMessage));
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
 
         // these two steps are executed before decoding in order to select a correct decoder
         unpacker.unpackStructHeader();
         unpacker.unpackStructSignature();
 
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> decoder.decode( unpacker ) );
-        assertEquals( "Expected \"user_agent\" in metadata", exception.getMessage() );
+        BoltIOException exception = assertThrows(BoltIOException.class, () -> decoder.decode(unpacker));
+        assertEquals("Expected \"user_agent\" in metadata", exception.getMessage());
     }
 
-    private static void assertHelloMessageMatches( HelloMessage expected, RequestMessage actual )
-    {
-        assertAuthTokenMatches( expected.meta(), ((HelloMessage) actual).meta() );
+    private static void assertHelloMessageMatches(HelloMessage expected, RequestMessage actual) {
+        assertAuthTokenMatches(expected.meta(), ((HelloMessage) actual).meta());
     }
 }

@@ -67,8 +67,7 @@ import org.neo4j.graphdb.TransientFailureException;
  *            on whether the transaction succeeded or failed.
  */
 @PublicApi
-public interface TransactionEventListener<T>
-{
+public interface TransactionEventListener<T> {
     /**
      * Invoked when a transaction that has changes accessible via {@link TransactionData}
      * is about to be committed.
@@ -90,7 +89,8 @@ public interface TransactionEventListener<T>
      *         {@link #afterRollback(TransactionData, Object, GraphDatabaseService)} of this object.
      * @throws Exception to indicate that the transaction should be rolled back.
      */
-    T beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception;
+    T beforeCommit(TransactionData data, Transaction transaction, GraphDatabaseService databaseService)
+            throws Exception;
 
     /**
      * Invoked after the transaction has been committed successfully.
@@ -104,7 +104,7 @@ public interface TransactionEventListener<T>
      *            {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)}.
      * @param databaseService underlying database service
      */
-    void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService );
+    void afterCommit(TransactionData data, T state, GraphDatabaseService databaseService);
 
     /**
      * Invoked after the transaction has been rolled back if committing the
@@ -120,5 +120,5 @@ public interface TransactionEventListener<T>
      * {@code state} will be {@code null}.
      * @param databaseService underlying database service
      */
-    void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService );
+    void afterRollback(TransactionData data, T state, GraphDatabaseService databaseService);
 }

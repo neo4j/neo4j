@@ -19,10 +19,20 @@
  */
 package org.neo4j.consistency.checker;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -48,100 +58,110 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @DbmsExtension
-class RelationshipCheckerIT
-{
+class RelationshipCheckerIT {
     private static final String INDEX_NAME = "index";
-    private final ParallelExecution execution = new ParallelExecution( 10, NOOP_EXCEPTION_HANDLER, 100 );
+    private final ParallelExecution execution = new ParallelExecution(10, NOOP_EXCEPTION_HANDLER, 100);
+
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private RecordStorageEngine storageEngine;
+
     @Inject
     private IndexProviderMap providerMap;
+
     @Inject
     private Config config;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private TokenHolders tokenHolders;
+
     private long relationshipId;
     private CheckerContext context;
     private DefaultPageCacheTracer pageCacheTracer;
 
     @BeforeEach
-    void setUp() throws Exception
-    {
+    void setUp() throws Exception {
         pageCacheTracer = new DefaultPageCacheTracer();
-        var label = label( "any" );
-        var type = withName( "type" );
+        var label = label("any");
+        var type = withName("type");
         var propertyName = "property";
-        try ( var tx = database.beginTx() )
-        {
-            var start = tx.createNode( label );
+        try (var tx = database.beginTx()) {
+            var start = tx.createNode(label);
             var end = tx.createNode();
-            var rel = start.createRelationshipTo( end, type );
-            rel.setProperty( propertyName, "value" );
+            var rel = start.createRelationshipTo(end, type);
+            rel.setProperty(propertyName, "value");
             relationshipId = rel.getId();
             tx.commit();
         }
-        try ( var tx = database.beginTx() )
-        {
-            tx.schema().indexFor( type ).on( propertyName ).withName( INDEX_NAME ).withIndexType( IndexType.FULLTEXT ).create();
+        try (var tx = database.beginTx()) {
+            tx.schema()
+                    .indexFor(type)
+                    .on(propertyName)
+                    .withName(INDEX_NAME)
+                    .withIndexType(IndexType.FULLTEXT)
+                    .create();
             tx.commit();
         }
-        try ( var transaction = database.beginTx() )
-        {
-            transaction.schema().awaitIndexesOnline( 10, MINUTES );
+        try (var transaction = database.beginTx()) {
+            transaction.schema().awaitIndexesOnline(10, MINUTES);
         }
 
         prepareContext();
     }
 
     @Test
-    void tracePageCacheAccessOnRelationshipCheck() throws Exception
-    {
+    void tracePageCacheAccessOnRelationshipCheck() throws Exception {
         prepareContext();
-        var relationshipChecker = new RelationshipChecker( context, new IntObjectHashMap<>() );
+        var relationshipChecker = new RelationshipChecker(context, new IntObjectHashMap<>());
 
         long initialPins = pageCacheTracer.pins();
         long initialUnpins = pageCacheTracer.unpins();
         long initialHits = pageCacheTracer.hits();
 
-        relationshipChecker.check( LongRange.range( 0, relationshipId + 1 ), true, false );
+        relationshipChecker.check(LongRange.range(0, relationshipId + 1), true, false);
 
-        assertThat( pageCacheTracer.pins() - initialPins ).isEqualTo( 3 );
-        assertThat( pageCacheTracer.unpins() - initialUnpins ).isEqualTo( 3 );
-        assertThat( pageCacheTracer.hits() - initialHits ).isEqualTo( 3 );
+        assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(3);
+        assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(3);
+        assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(3);
     }
 
-    private void prepareContext() throws Exception
-    {
+    private void prepareContext() throws Exception {
         var neoStores = storageEngine.testAccessNeoStores();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
-        {
-            Iterable<IndexDescriptor> indexDescriptors =
-                    () -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST ).indexesGetAll(
-                            storeCursors );
-            var indexAccessors = new IndexAccessors( providerMap, c -> asResourceIterator( indexDescriptors.iterator() ),
-                                                     new IndexSamplingConfig( config ), tokenHolders, contextFactory, storageEngine.getOpenOptions() );
-            context = new CheckerContext( neoStores, indexAccessors,
-                    execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
-                    tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( EntityBasedMemoryLimiter.class ),
-                    ProgressMonitorFactory.NONE.multipleParts( "test" ), pageCache, INSTANCE, NullLog.getInstance(), false,
-                    ConsistencyFlags.DEFAULT, contextFactory );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
+            Iterable<IndexDescriptor> indexDescriptors = () -> SchemaRuleAccess.getSchemaRuleAccess(
+                            neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST)
+                    .indexesGetAll(storeCursors);
+            var indexAccessors = new IndexAccessors(
+                    providerMap,
+                    c -> asResourceIterator(indexDescriptors.iterator()),
+                    new IndexSamplingConfig(config),
+                    tokenHolders,
+                    contextFactory,
+                    storageEngine.getOpenOptions());
+            context = new CheckerContext(
+                    neoStores,
+                    indexAccessors,
+                    execution,
+                    mock(ConsistencyReport.Reporter.class, RETURNS_MOCKS),
+                    CacheAccess.EMPTY,
+                    tokenHolders,
+                    mock(RecordLoading.class),
+                    mock(CountsState.class),
+                    mock(EntityBasedMemoryLimiter.class),
+                    ProgressMonitorFactory.NONE.multipleParts("test"),
+                    pageCache,
+                    INSTANCE,
+                    NullLog.getInstance(),
+                    false,
+                    ConsistencyFlags.DEFAULT,
+                    contextFactory);
             context.initialize();
         }
     }

@@ -29,8 +29,7 @@ import org.neo4j.cypher.internal.util.bottomUp
  */
 case object extractSensitiveLiterals extends Phase[BaseContext, BaseState, BaseState] with Step {
 
-  override def process(from: BaseState,
-                       context: BaseContext): BaseState = {
+  override def process(from: BaseState, context: BaseContext): BaseState = {
     val rewriter: Rewriter = bottomUp(Rewriter.lift {
       case l: Literal => l.asSensitiveLiteral
     })

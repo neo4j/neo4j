@@ -21,9 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.PrintStream;
 
-@SuppressWarnings( {"unused", "WeakerAccess"} )
-public final class PrintConfig
-{
+@SuppressWarnings({"unused", "WeakerAccess"})
+public final class PrintConfig {
     private PrintStream printStream;
     private boolean printValues;
     private boolean printPosition;
@@ -32,8 +31,7 @@ public final class PrintConfig
     private boolean printFreelist;
     private boolean printOffload;
 
-    private PrintConfig()
-    {
+    private PrintConfig() {
         printStream = System.out;
     }
 
@@ -41,81 +39,70 @@ public final class PrintConfig
      * Print to System.out and exclude any extra information,
      * use builder methods to switch them on.
      */
-    public static PrintConfig defaults()
-    {
+    public static PrintConfig defaults() {
         return new PrintConfig();
     }
 
-    public PrintConfig printStream( PrintStream out )
-    {
+    public PrintConfig printStream(PrintStream out) {
         this.printStream = out;
         return this;
     }
 
-    public PrintConfig printValue()
-    {
+    public PrintConfig printValue() {
         this.printValues = true;
         return this;
     }
 
-    public PrintConfig printPosition()
-    {
+    public PrintConfig printPosition() {
         this.printPosition = true;
         return this;
     }
-    public PrintConfig printState()
-    {
+
+    public PrintConfig printState() {
         this.printState = true;
         return this;
     }
-    public PrintConfig printHeader()
-    {
+
+    public PrintConfig printHeader() {
         this.printHeader = true;
         return this;
     }
-    public PrintConfig printFreelist()
-    {
+
+    public PrintConfig printFreelist() {
         this.printFreelist = true;
         return this;
     }
-    public PrintConfig printOffload()
-    {
+
+    public PrintConfig printOffload() {
         this.printOffload = true;
         return this;
     }
 
-    PrintStream getPrintStream()
-    {
+    PrintStream getPrintStream() {
         return printStream;
     }
 
-    boolean getPrintValues()
-    {
+    boolean getPrintValues() {
         return printValues;
     }
 
-    boolean getPrintPosition()
-    {
+    boolean getPrintPosition() {
         return printPosition;
     }
 
-    boolean getPrintState()
-    {
+    boolean getPrintState() {
         return printState;
     }
 
-    boolean getPrintHeader()
-    {
+    boolean getPrintHeader() {
         return printHeader;
     }
 
-    boolean getPrintFreelist()
-    {
+    boolean getPrintFreelist() {
         return printFreelist;
     }
 
-    boolean getPrintOffload()
-    {
+    boolean getPrintOffload() {
         return printOffload;
     }
 }

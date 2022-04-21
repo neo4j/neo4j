@@ -28,17 +28,14 @@ import org.neo4j.io.layout.Neo4jLayout;
  * registered to prevent file channel locks to be missed when channel will be closed.
  * @see GlobalLocker
  */
-public class GlobalLockerService implements FileLockerService
-{
+public class GlobalLockerService implements FileLockerService {
     @Override
-    public Locker createStoreLocker( FileSystemAbstraction fileSystem, Neo4jLayout storeLayout )
-    {
-        return new GlobalLocker( fileSystem, storeLayout );
+    public Locker createStoreLocker(FileSystemAbstraction fileSystem, Neo4jLayout storeLayout) {
+        return new GlobalLocker(fileSystem, storeLayout);
     }
 
     @Override
-    public Locker createDatabaseLocker( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout )
-    {
-        return new DatabaseLocker( fileSystem, databaseLayout );
+    public Locker createDatabaseLocker(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout) {
+        return new DatabaseLocker(fileSystem, databaseLayout);
     }
 }

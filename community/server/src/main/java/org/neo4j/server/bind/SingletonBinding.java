@@ -19,6 +19,4 @@
  */
 package org.neo4j.server.bind;
 
-record SingletonBinding( Object component, Class<?> type )
-{
-}
+record SingletonBinding(Object component, Class<?> type) {}

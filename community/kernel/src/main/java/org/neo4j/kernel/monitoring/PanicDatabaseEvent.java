@@ -21,18 +21,15 @@ package org.neo4j.kernel.monitoring;
 
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public final class PanicDatabaseEvent extends DefaultDatabaseEvent
-{
+public final class PanicDatabaseEvent extends DefaultDatabaseEvent {
     private final Throwable causeOfPanic;
 
-    public PanicDatabaseEvent( NamedDatabaseId databaseId, Throwable causeOfPanic )
-    {
-        super( databaseId );
+    public PanicDatabaseEvent(NamedDatabaseId databaseId, Throwable causeOfPanic) {
+        super(databaseId);
         this.causeOfPanic = causeOfPanic;
     }
 
-    public Throwable getCauseOfPanic()
-    {
+    public Throwable getCauseOfPanic() {
         return causeOfPanic;
     }
 }

@@ -22,194 +22,161 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-enum RelationshipConnection
-{
-    START_PREV
-    {
+enum RelationshipConnection {
+    START_PREV {
         @Override
-        long get( RelationshipRecord rel )
-        {
+        long get(RelationshipRecord rel) {
             return rel.isFirstInFirstChain() ? Record.NO_NEXT_RELATIONSHIP.intValue() : rel.getFirstPrevRel();
         }
 
         @Override
-        void set( RelationshipRecord rel, long id, boolean isFirst )
-        {
-            rel.setFirstPrevRel( id );
-            rel.setFirstInFirstChain( isFirst );
+        void set(RelationshipRecord rel, long id, boolean isFirst) {
+            rel.setFirstPrevRel(id);
+            rel.setFirstInFirstChain(isFirst);
         }
 
         @Override
-        RelationshipConnection otherSide()
-        {
+        RelationshipConnection otherSide() {
             return START_NEXT;
         }
 
         @Override
-        long compareNode( RelationshipRecord rel )
-        {
+        long compareNode(RelationshipRecord rel) {
             return rel.getFirstNode();
         }
 
         @Override
-        RelationshipConnection start()
-        {
+        RelationshipConnection start() {
             return this;
         }
 
         @Override
-        RelationshipConnection end()
-        {
+        RelationshipConnection end() {
             return END_PREV;
         }
 
         @Override
-        boolean isFirstInChain( RelationshipRecord rel )
-        {
+        boolean isFirstInChain(RelationshipRecord rel) {
             return rel.isFirstInFirstChain();
         }
     },
-    START_NEXT
-    {
+    START_NEXT {
         @Override
-        long get( RelationshipRecord rel )
-        {
+        long get(RelationshipRecord rel) {
             return rel.getFirstNextRel();
         }
 
         @Override
-        void set( RelationshipRecord rel, long id, boolean isFirst )
-        {
-            rel.setFirstNextRel( id );
+        void set(RelationshipRecord rel, long id, boolean isFirst) {
+            rel.setFirstNextRel(id);
         }
 
         @Override
-        RelationshipConnection otherSide()
-        {
+        RelationshipConnection otherSide() {
             return START_PREV;
         }
 
         @Override
-        long compareNode( RelationshipRecord rel )
-        {
+        long compareNode(RelationshipRecord rel) {
             return rel.getFirstNode();
         }
 
         @Override
-        RelationshipConnection start()
-        {
+        RelationshipConnection start() {
             return this;
         }
 
         @Override
-        RelationshipConnection end()
-        {
+        RelationshipConnection end() {
             return END_NEXT;
         }
 
         @Override
-        boolean isFirstInChain( RelationshipRecord rel )
-        {
+        boolean isFirstInChain(RelationshipRecord rel) {
             return rel.isFirstInFirstChain();
         }
     },
-    END_PREV
-    {
+    END_PREV {
         @Override
-        long get( RelationshipRecord rel )
-        {
+        long get(RelationshipRecord rel) {
             return rel.isFirstInSecondChain() ? Record.NO_NEXT_RELATIONSHIP.intValue() : rel.getSecondPrevRel();
         }
 
         @Override
-        void set( RelationshipRecord rel, long id, boolean isFirst )
-        {
-            rel.setSecondPrevRel( id );
-            rel.setFirstInSecondChain( isFirst );
+        void set(RelationshipRecord rel, long id, boolean isFirst) {
+            rel.setSecondPrevRel(id);
+            rel.setFirstInSecondChain(isFirst);
         }
 
         @Override
-        RelationshipConnection otherSide()
-        {
+        RelationshipConnection otherSide() {
             return END_NEXT;
         }
 
         @Override
-        long compareNode( RelationshipRecord rel )
-        {
+        long compareNode(RelationshipRecord rel) {
             return rel.getSecondNode();
         }
 
         @Override
-        RelationshipConnection start()
-        {
+        RelationshipConnection start() {
             return START_PREV;
         }
 
         @Override
-        RelationshipConnection end()
-        {
+        RelationshipConnection end() {
             return this;
         }
 
         @Override
-        boolean isFirstInChain( RelationshipRecord rel )
-        {
+        boolean isFirstInChain(RelationshipRecord rel) {
             return rel.isFirstInSecondChain();
         }
     },
-    END_NEXT
-    {
+    END_NEXT {
         @Override
-        long get( RelationshipRecord rel )
-        {
+        long get(RelationshipRecord rel) {
             return rel.getSecondNextRel();
         }
 
         @Override
-        void set( RelationshipRecord rel, long id, boolean isFirst )
-        {
-            rel.setSecondNextRel( id );
+        void set(RelationshipRecord rel, long id, boolean isFirst) {
+            rel.setSecondNextRel(id);
         }
 
         @Override
-        RelationshipConnection otherSide()
-        {
+        RelationshipConnection otherSide() {
             return END_PREV;
         }
 
         @Override
-        long compareNode( RelationshipRecord rel )
-        {
+        long compareNode(RelationshipRecord rel) {
             return rel.getSecondNode();
         }
 
         @Override
-        RelationshipConnection start()
-        {
+        RelationshipConnection start() {
             return START_NEXT;
         }
 
         @Override
-        RelationshipConnection end()
-        {
+        RelationshipConnection end() {
             return this;
         }
 
         @Override
-        boolean isFirstInChain( RelationshipRecord rel )
-        {
+        boolean isFirstInChain(RelationshipRecord rel) {
             return rel.isFirstInSecondChain();
         }
     };
 
-    abstract long get( RelationshipRecord rel );
+    abstract long get(RelationshipRecord rel);
 
-    abstract boolean isFirstInChain( RelationshipRecord rel );
+    abstract boolean isFirstInChain(RelationshipRecord rel);
 
-    abstract void set( RelationshipRecord rel, long id, boolean isFirst );
+    abstract void set(RelationshipRecord rel, long id, boolean isFirst);
 
-    abstract long compareNode( RelationshipRecord rel );
+    abstract long compareNode(RelationshipRecord rel);
 
     abstract RelationshipConnection otherSide();
 

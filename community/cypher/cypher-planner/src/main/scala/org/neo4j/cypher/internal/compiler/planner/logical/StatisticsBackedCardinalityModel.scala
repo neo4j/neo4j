@@ -57,30 +57,49 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.values.storable.NumberValue
 
-class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                                       selectivityCalculator: SelectivityCalculator,
-                                       simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
+class StatisticsBackedCardinalityModel(
+  queryGraphCardinalityModel: QueryGraphCardinalityModel,
+  selectivityCalculator: SelectivityCalculator,
+  simpleExpressionEvaluator: ExpressionEvaluator
+) extends CardinalityModel {
 
-  override def apply(queryPart: PlannerQueryPart,
-                     input: QueryGraphSolverInput,
-                     semanticTable: SemanticTable,
-                     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality = queryPart match {
-    case singlePlannerQuery: SinglePlannerQuery => singlePlannerQueryCardinality(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
-    case uq@UnionQuery(part, query, _, _) =>
-      combineUnion(uq,
+  override def apply(
+    queryPart: PlannerQueryPart,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Cardinality = queryPart match {
+    case singlePlannerQuery: SinglePlannerQuery =>
+      singlePlannerQueryCardinality(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
+    case uq @ UnionQuery(part, query, _, _) =>
+      combineUnion(
+        uq,
         apply(part, input, semanticTable, indexPredicateProviderContext),
-        apply(query, input, semanticTable, indexPredicateProviderContext))
+        apply(query, input, semanticTable, indexPredicateProviderContext)
+      )
   }
 
-  def singlePlannerQueryCardinality(query: SinglePlannerQuery,
-                                    input: QueryGraphSolverInput,
-                                    semanticTable: SemanticTable,
-                                    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality = {
+  def singlePlannerQueryCardinality(
+    query: SinglePlannerQuery,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Cardinality = {
     val output = query.fold(CardinalityAndInput(Cardinality.SINGLE, input)) {
       case (CardinalityAndInput(inboundCardinality, input), plannerQuery) =>
-        val CardinalityAndInput(qgCardinality, afterQGInput) = calculateCardinalityForQueryGraph(plannerQuery.queryGraph, input, semanticTable, indexPredicateProviderContext)
+        val CardinalityAndInput(qgCardinality, afterQGInput) = calculateCardinalityForQueryGraph(
+          plannerQuery.queryGraph,
+          input,
+          semanticTable,
+          indexPredicateProviderContext
+        )
         val beforeHorizonCardinality = qgCardinality * inboundCardinality
-        val afterHorizon = calculateCardinalityForQueryHorizon(CardinalityAndInput(beforeHorizonCardinality, afterQGInput), plannerQuery.horizon, semanticTable, indexPredicateProviderContext)
+        val afterHorizon = calculateCardinalityForQueryHorizon(
+          CardinalityAndInput(beforeHorizonCardinality, afterQGInput),
+          plannerQuery.horizon,
+          semanticTable,
+          indexPredicateProviderContext
+        )
         afterHorizon.copy(input = afterHorizon.input.withFusedLabelInfo(plannerQuery.firstLabelInfo))
     }
     output.cardinality
@@ -95,28 +114,42 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     }
   }
 
-  private def calculateCardinalityForQueryHorizon(cardinalityAndInput: CardinalityAndInput,
-                                                  horizon: QueryHorizon,
-                                                  semanticTable: SemanticTable,
-                                                  indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): CardinalityAndInput = horizon match {
+  private def calculateCardinalityForQueryHorizon(
+    cardinalityAndInput: CardinalityAndInput,
+    horizon: QueryHorizon,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): CardinalityAndInput = horizon match {
     case projection: QueryProjection =>
       val cardinalityBeforeSkip = queryProjectionCardinalityBeforeLimit(cardinalityAndInput.cardinality, projection)
       val cardinalityBeforeLimit = queryProjectionCardinalityWithSkip(cardinalityBeforeSkip, projection.queryPagination)
-      val cardinalityBeforeSelection = queryProjectionCardinalityWithLimit(cardinalityBeforeLimit, projection.queryPagination)
+      val cardinalityBeforeSelection =
+        queryProjectionCardinalityWithLimit(cardinalityBeforeLimit, projection.queryPagination)
       queryProjectionCardinalityWithSelections(
         CardinalityAndInput(cardinalityBeforeSelection, cardinalityAndInput.input),
         projection.selections,
         semanticTable,
-        indexPredicateProviderContext)
+        indexPredicateProviderContext
+      )
 
     // Unwind
     case UnwindProjection(_, expression) =>
       val multiplier = expression match {
         case ListLiteral(expressions) => Multiplier(expressions.size)
-        case FunctionInvocation(Namespace(Seq()), FunctionName("range"), _, Seq(from: IntegerLiteral, to: IntegerLiteral)) =>
+        case FunctionInvocation(
+            Namespace(Seq()),
+            FunctionName("range"),
+            _,
+            Seq(from: IntegerLiteral, to: IntegerLiteral)
+          ) =>
           val diff = to.value - from.value + 1
           Multiplier(Math.max(0, diff))
-        case FunctionInvocation(Namespace(Seq()), FunctionName("range"), _, Seq(from: IntegerLiteral, to: IntegerLiteral, step: IntegerLiteral)) =>
+        case FunctionInvocation(
+            Namespace(Seq()),
+            FunctionName("range"),
+            _,
+            Seq(from: IntegerLiteral, to: IntegerLiteral, step: IntegerLiteral)
+          ) =>
           val diff = to.value - from.value
           val steps = diff / step.value + 1
           Multiplier(Math.max(0, steps))
@@ -126,15 +159,18 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
     // ProcedureCall
     case _: ProcedureCallProjection =>
-      cardinalityAndInput.copy(cardinality = Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
+      cardinalityAndInput.copy(cardinality =
+        Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
 
     // Show command - e.g. ShowIndexesCommand
     case _: CommandProjection =>
-      cardinalityAndInput.copy(cardinality = Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
+      cardinalityAndInput.copy(cardinality =
+        Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
 
     // Load CSV
     case _: LoadCSVProjection =>
-      cardinalityAndInput.copy(cardinality = Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
+      cardinalityAndInput.copy(cardinality =
+        Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
 
     case _: PassthroughAllHorizon =>
       cardinalityAndInput
@@ -149,20 +185,24 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       cardinalityAndInput
   }
 
-  private def queryProjectionCardinalityBeforeLimit(in: Cardinality, projection: QueryProjection): Cardinality = projection match {
-    case _: RegularQueryProjection =>
-      in
+  private def queryProjectionCardinalityBeforeLimit(in: Cardinality, projection: QueryProjection): Cardinality =
+    projection match {
+      case _: RegularQueryProjection =>
+        in
 
-    case _: DistinctQueryProjection =>
-      in * DEFAULT_DISTINCT_SELECTIVITY
-    case agg: AggregatingQueryProjection if agg.aggregationExpressions.isEmpty =>
-      in * DEFAULT_DISTINCT_SELECTIVITY
+      case _: DistinctQueryProjection =>
+        in * DEFAULT_DISTINCT_SELECTIVITY
+      case agg: AggregatingQueryProjection if agg.aggregationExpressions.isEmpty =>
+        in * DEFAULT_DISTINCT_SELECTIVITY
 
-    case agg: AggregatingQueryProjection =>
-      StatisticsBackedCardinalityModel.aggregateCardinalityEstimation(in, agg.groupingExpressions)
-  }
+      case agg: AggregatingQueryProjection =>
+        StatisticsBackedCardinalityModel.aggregateCardinalityEstimation(in, agg.groupingExpressions)
+    }
 
-  private def queryProjectionCardinalityWithLimit(cardinalityBeforeLimit: Cardinality, queryPagination: QueryPagination): Cardinality = {
+  private def queryProjectionCardinalityWithLimit(
+    cardinalityBeforeLimit: Cardinality,
+    queryPagination: QueryPagination
+  ): Cardinality = {
     queryPagination.limit match {
       case None => cardinalityBeforeLimit
       case Some(limitExpression) =>
@@ -173,7 +213,10 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     }
   }
 
-  private def queryProjectionCardinalityWithSkip(cardinalityBeforeSkip: Cardinality, queryPagination: QueryPagination): Cardinality = {
+  private def queryProjectionCardinalityWithSkip(
+    cardinalityBeforeSkip: Cardinality,
+    queryPagination: QueryPagination
+  ): Cardinality = {
     queryPagination.skip match {
       case None => cardinalityBeforeSkip
       case Some(skipExpression) =>
@@ -204,22 +247,33 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     }
   }
 
-  private def queryProjectionCardinalityWithSelections(inputBeforeSelection: CardinalityAndInput,
-                                                       where: Selections,
-                                                       semanticTable: SemanticTable,
-                                                       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): CardinalityAndInput = {
+  private def queryProjectionCardinalityWithSelections(
+    inputBeforeSelection: CardinalityAndInput,
+    where: Selections,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): CardinalityAndInput = {
     val inboundCardinality = inputBeforeSelection.cardinality
     val fusedInput = inputBeforeSelection.input.withFusedLabelInfo(where.labelInfo)
-    val whereSelectivity = selectivityCalculator(where, fusedInput.labelInfo, fusedInput.relTypeInfo, semanticTable, indexPredicateProviderContext)
-    val cardinality =  inboundCardinality * whereSelectivity
+    val whereSelectivity = selectivityCalculator(
+      where,
+      fusedInput.labelInfo,
+      fusedInput.relTypeInfo,
+      semanticTable,
+      indexPredicateProviderContext
+    )
+    val cardinality = inboundCardinality * whereSelectivity
     CardinalityAndInput(cardinality, fusedInput)
   }
 
-  private def calculateCardinalityForQueryGraph(graph: QueryGraph,
-                                                input: QueryGraphSolverInput,
-                                                semanticTable: SemanticTable,
-                                                indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): CardinalityAndInput = {
-    val fusedInput = input.withFusedLabelInfo(graph.patternNodeLabels).withFusedRelTypeInfo(graph.patternRelationshipTypes)
+  private def calculateCardinalityForQueryGraph(
+    graph: QueryGraph,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): CardinalityAndInput = {
+    val fusedInput =
+      input.withFusedLabelInfo(graph.patternNodeLabels).withFusedRelTypeInfo(graph.patternRelationshipTypes)
     val cardinality = queryGraphCardinalityModel(graph, fusedInput, semanticTable, indexPredicateProviderContext)
     CardinalityAndInput(cardinality, fusedInput)
   }

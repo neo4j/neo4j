@@ -20,7 +20,6 @@
 package org.neo4j.bolt.dbapi;
 
 import java.util.List;
-
 import org.neo4j.bolt.runtime.Bookmark;
 
 /**
@@ -31,25 +30,21 @@ import org.neo4j.bolt.runtime.Bookmark;
  * The serialization part is represented by {@link BookmarkMetadata#toBookmark(java.util.function.BiFunction)}
  * and {@link Bookmark#attachTo(org.neo4j.bolt.runtime.BoltResponseHandler)}
  */
-public interface CustomBookmarkFormatParser
-{
-    boolean isCustomBookmark( String string );
+public interface CustomBookmarkFormatParser {
+    boolean isCustomBookmark(String string);
 
-    List<Bookmark> parse( List<String> customBookmarks );
+    List<Bookmark> parse(List<String> customBookmarks);
 
-    CustomBookmarkFormatParser DEFAULT = new CustomBookmarkFormatParser()
-    {
+    CustomBookmarkFormatParser DEFAULT = new CustomBookmarkFormatParser() {
 
         @Override
-        public boolean isCustomBookmark( String string )
-        {
+        public boolean isCustomBookmark(String string) {
             return false;
         }
 
         @Override
-        public List<Bookmark> parse( List<String> customBookmarks )
-        {
-            throw new IllegalStateException( "Custom parser invoked for unsupported bookmarks" );
+        public List<Bookmark> parse(List<String> customBookmarks) {
+            throw new IllegalStateException("Custom parser invoked for unsupported bookmarks");
         }
     };
 }

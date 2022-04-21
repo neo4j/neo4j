@@ -21,26 +21,22 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.util.concurrent.locks.LockSupport;
 
-class ThreadLink
-{
+class ThreadLink {
     final Thread thread;
     volatile ThreadLink next;
     volatile boolean done;
 
-    ThreadLink( Thread thread )
-    {
+    ThreadLink(Thread thread) {
         this.thread = thread;
     }
 
-    public void unpark()
-    {
-        LockSupport.unpark( thread );
+    public void unpark() {
+        LockSupport.unpark(thread);
     }
 
-    static final ThreadLink END = new ThreadLink( null );
+    static final ThreadLink END = new ThreadLink(null);
 
-    static
-    {
+    static {
         END.next = END;
     }
 }

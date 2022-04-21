@@ -19,9 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public interface Segment
-{
-    boolean satisfies( Segment segment );
+public interface Segment {
+    boolean satisfies(Segment segment);
 
     Segment ALL = segment -> true;
 }

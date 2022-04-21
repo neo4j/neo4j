@@ -66,7 +66,8 @@ case class FabricFrontEnd(
 ) {
 
   val compilationTracer = new TimingCompilationTracer(
-    kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
+    kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener])
+  )
 
   object preParsing {
 
@@ -75,12 +76,14 @@ case class FabricFrontEnd(
       new PreParserCache.Cache(cacheFactory, cypherConfig.queryCacheSize)
     )
 
-    def executionType(options: QueryOptions, inFabricContext: Boolean): FabricPlan.ExecutionType = options.queryOptions.executionMode match {
-      case CypherExecutionMode.default => FabricPlan.Execute
-      case CypherExecutionMode.explain => FabricPlan.Explain
-      case CypherExecutionMode.profile if inFabricContext => Errors.semantic("'PROFILE' not supported in Fabric context")
-      case CypherExecutionMode.profile => FabricPlan.PROFILE
-    }
+    def executionType(options: QueryOptions, inFabricContext: Boolean): FabricPlan.ExecutionType =
+      options.queryOptions.executionMode match {
+        case CypherExecutionMode.default => FabricPlan.Execute
+        case CypherExecutionMode.explain => FabricPlan.Explain
+        case CypherExecutionMode.profile if inFabricContext =>
+          Errors.semantic("'PROFILE' not supported in Fabric context")
+        case CypherExecutionMode.profile => FabricPlan.PROFILE
+      }
 
     def preParse(queryString: String): PreParsedQuery = {
       preParser.preParseQuery(queryString)
@@ -90,7 +93,7 @@ case class FabricFrontEnd(
 
   case class Pipeline(
     query: PreParsedQuery,
-    params: MapValue,
+    params: MapValue
   ) {
 
     def traceStart(): CompilationTracer.QueryCompilationEvent =
@@ -102,7 +105,7 @@ case class FabricFrontEnd(
       query.rawStatement,
       Some(query.options.offset),
       WrappedMonitors(kernelMonitors),
-      CancellationChecker.NeverCancelled,
+      CancellationChecker.NeverCancelled
     )
 
     private val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
@@ -123,26 +126,37 @@ case class FabricFrontEnd(
     private val parsingConfig = CompilationPhases.ParsingConfig(
       compatibilityMode = compatibilityMode,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
-      semanticFeatures = CompilationPhases.enabledSemanticFeatures(cypherConfig.enableExtraSemanticFeatures) ++ semanticFeatures,
+      semanticFeatures =
+        CompilationPhases.enabledSemanticFeatures(cypherConfig.enableExtraSemanticFeatures) ++ semanticFeatures,
       obfuscateLiterals = cypherConfig.obfuscateLiterals
     )
 
     object parseAndPrepare {
+
       private val transformer =
         CompilationPhases.fabricParsing(parsingConfig, signatures)
 
       def process(): BaseState =
-        transformer.transform(InitialState(query.statement, Some(query.options.offset), null, anonymousVariableNameGenerator), context)
+        transformer.transform(
+          InitialState(query.statement, Some(query.options.offset), null, anonymousVariableNameGenerator),
+          context
+        )
     }
 
     object checkAndFinalize {
+
       private val transformer =
         CompilationPhases.fabricFinalize(parsingConfig)
 
       def process(statement: Statement): BaseState = {
         val localQueryString = QueryRenderer.render(statement)
         val plannerName = PlannerNameFor(query.options.queryOptions.planner.name)
-        val state = InitialState(localQueryString, None, plannerName, anonymousVariableNameGenerator = anonymousVariableNameGenerator)
+        val state = InitialState(
+          localQueryString,
+          None,
+          plannerName,
+          anonymousVariableNameGenerator = anonymousVariableNameGenerator
+        )
           .withStatement(statement)
         transformer.transform(state, context)
       }
@@ -157,4 +171,3 @@ case class FabricFrontEnd(
 abstract class TransformerChain(parts: Transformer[BaseContext, BaseState, BaseState]*) {
   val transformer: Transformer[BaseContext, BaseState, BaseState] = parts.reduce(_ andThen _)
 }
-

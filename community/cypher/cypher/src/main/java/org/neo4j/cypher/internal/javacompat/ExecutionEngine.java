@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.javacompat;
 
 import java.time.Clock;
 import java.util.List;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
@@ -54,116 +53,117 @@ import org.neo4j.values.virtual.MapValue;
  * operation so please make sure this will be constructed only once and properly reused.
  *
  */
-public class ExecutionEngine implements QueryExecutionEngine
-{
+public class ExecutionEngine implements QueryExecutionEngine {
     protected org.neo4j.cypher.internal.ExecutionEngine cypherExecutionEngine;
 
     /**
      * Creates an execution engine around the given graph database
      */
-    public ExecutionEngine( GraphDatabaseQueryService queryService, CypherQueryCaches queryCaches, InternalLogProvider logProvider,
-                            CompilerFactory compilerFactory )
-    {
-        cypherExecutionEngine =
-                makeExecutionEngine( queryService, queryCaches, logProvider, new CompilerLibrary( compilerFactory, this::getCypherExecutionEngine ) );
+    public ExecutionEngine(
+            GraphDatabaseQueryService queryService,
+            CypherQueryCaches queryCaches,
+            InternalLogProvider logProvider,
+            CompilerFactory compilerFactory) {
+        cypherExecutionEngine = makeExecutionEngine(
+                queryService,
+                queryCaches,
+                logProvider,
+                new CompilerLibrary(compilerFactory, this::getCypherExecutionEngine));
     }
 
     /**
      * Creates an execution engine from the inner engine of a system execution engine
      */
-    public ExecutionEngine( SystemExecutionEngine inner )
-    {
+    public ExecutionEngine(SystemExecutionEngine inner) {
         cypherExecutionEngine = inner.normalExecutionEngine();
     }
 
-    protected ExecutionEngine()
-    {
-    }
+    protected ExecutionEngine() {}
 
-    public org.neo4j.cypher.internal.ExecutionEngine getCypherExecutionEngine()
-    {
+    public org.neo4j.cypher.internal.ExecutionEngine getCypherExecutionEngine() {
         return cypherExecutionEngine;
     }
 
-    protected static org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine( GraphDatabaseQueryService queryService, CypherQueryCaches queryCaches,
-            InternalLogProvider logProvider, CompilerLibrary compilerLibrary )
-    {
+    protected static org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine(
+            GraphDatabaseQueryService queryService,
+            CypherQueryCaches queryCaches,
+            InternalLogProvider logProvider,
+            CompilerLibrary compilerLibrary) {
         DependencyResolver resolver = queryService.getDependencyResolver();
-        Monitors monitors = resolver.resolveDependency( Monitors.class );
-        Config config = resolver.resolveDependency( Config.class );
-        CypherConfiguration cypherConfiguration = CypherConfiguration.fromConfig( config );
+        Monitors monitors = resolver.resolveDependency(Monitors.class);
+        Config config = resolver.resolveDependency(Config.class);
+        CypherConfiguration cypherConfiguration = CypherConfiguration.fromConfig(config);
         CompilationTracer tracer =
-                new TimingCompilationTracer( monitors.newMonitor( TimingCompilationTracer.EventListener.class ) );
-        return new org.neo4j.cypher.internal.ExecutionEngine( queryService,
+                new TimingCompilationTracer(monitors.newMonitor(TimingCompilationTracer.EventListener.class));
+        return new org.neo4j.cypher.internal.ExecutionEngine(
+                queryService,
                 monitors,
                 tracer,
                 cypherConfiguration,
                 compilerLibrary,
                 queryCaches,
                 logProvider,
-                Clock.systemUTC() );
+                Clock.systemUTC());
     }
 
     @Override
-    public Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
-            throws QueryExecutionKernelException
-    {
-            ResultSubscriber subscriber = new ResultSubscriber( context );
-            QueryExecution queryExecution = executeQuery( query, parameters, context, false, subscriber );
-            subscriber.init( queryExecution );
-            return subscriber;
+    public Result executeQuery(String query, MapValue parameters, TransactionalContext context, boolean prePopulate)
+            throws QueryExecutionKernelException {
+        ResultSubscriber subscriber = new ResultSubscriber(context);
+        QueryExecution queryExecution = executeQuery(query, parameters, context, false, subscriber);
+        subscriber.init(queryExecution);
+        return subscriber;
     }
 
     @Override
-    public QueryExecution executeQuery( String query, MapValue parameters, TransactionalContext context,
-            boolean prePopulate, QuerySubscriber subscriber ) throws QueryExecutionKernelException
-    {
-        try
-        {
-            checkParams( context, parameters );
-            return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate, subscriber );
-        }
-        catch ( Neo4jException e )
-        {
-            throw new QueryExecutionKernelException( e );
-        }
-    }
-
-    public QueryExecution executeQuery( FullyParsedQuery query, MapValue parameters, TransactionalContext context,
-            boolean prePopulate, InputDataStream input, QueryExecutionMonitor queryMonitor, QuerySubscriber subscriber ) throws QueryExecutionKernelException
-    {
-        try
-        {
-            checkParams( context, parameters );
-            return cypherExecutionEngine.execute( query, parameters, context, prePopulate, input, queryMonitor, subscriber );
-        }
-        catch ( Neo4jException e )
-        {
-            throw new QueryExecutionKernelException( e );
+    public QueryExecution executeQuery(
+            String query,
+            MapValue parameters,
+            TransactionalContext context,
+            boolean prePopulate,
+            QuerySubscriber subscriber)
+            throws QueryExecutionKernelException {
+        try {
+            checkParams(context, parameters);
+            return cypherExecutionEngine.execute(query, parameters, context, false, prePopulate, subscriber);
+        } catch (Neo4jException e) {
+            throw new QueryExecutionKernelException(e);
         }
     }
 
-    private static void checkParams( TransactionalContext context, MapValue parameters )
-    {
-        parameters.foreach(
-                ( s, n ) ->
-                {
-                    if ( n instanceof WrappingEntity )
-                    {
-                        context.transaction().validateSameDB( ((WrappingEntity<?>) n).getEntity() );
-                    }
-                } );
+    public QueryExecution executeQuery(
+            FullyParsedQuery query,
+            MapValue parameters,
+            TransactionalContext context,
+            boolean prePopulate,
+            InputDataStream input,
+            QueryExecutionMonitor queryMonitor,
+            QuerySubscriber subscriber)
+            throws QueryExecutionKernelException {
+        try {
+            checkParams(context, parameters);
+            return cypherExecutionEngine.execute(
+                    query, parameters, context, prePopulate, input, queryMonitor, subscriber);
+        } catch (Neo4jException e) {
+            throw new QueryExecutionKernelException(e);
+        }
+    }
+
+    private static void checkParams(TransactionalContext context, MapValue parameters) {
+        parameters.foreach((s, n) -> {
+            if (n instanceof WrappingEntity) {
+                context.transaction().validateSameDB(((WrappingEntity<?>) n).getEntity());
+            }
+        });
     }
 
     @Override
-    public long clearQueryCaches()
-    {
+    public long clearQueryCaches() {
         return cypherExecutionEngine.clearQueryCaches();
     }
 
     @Override
-    public List<FunctionInformation> getProvidedLanguageFunctions()
-    {
+    public List<FunctionInformation> getProvidedLanguageFunctions() {
         return cypherExecutionEngine.getCypherFunctions();
     }
 }

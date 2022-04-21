@@ -19,8 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -29,9 +43,9 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicLong;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.neo4j.collection.RawIterator;
-import org.neo4j.cypher.internal.QueryCache;
 import org.neo4j.cypher.internal.QueryCacheTracer;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -55,112 +69,90 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
-
-class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBase
-{
+class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBase {
     @Test
-    void listAllLabels() throws Throwable
-    {
+    void listAllLabels() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
         long nodeId = transaction.dataWrite().nodeCreate();
-        int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
-        transaction.dataWrite().nodeAddLabel( nodeId, labelId );
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName("MyLabel");
+        transaction.dataWrite().nodeAddLabel(nodeId, labelId);
         commit();
 
         // When
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "labels")).id(),
+                        new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         // Then
-        assertThat( asList( stream ) ).containsExactly( new AnyValue[]{stringValue( "MyLabel" )} );
+        assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyLabel")});
     }
 
     @Test
-    void databaseInfo() throws ProcedureException
-    {
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "info" ) ).id(), new AnyValue[0], EMPTY );
+    void databaseInfo() throws ProcedureException {
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "info")).id(), new AnyValue[0], EMPTY);
 
-        var procedureResult = asList( stream );
-        assertFalse( procedureResult.isEmpty() );
-        var dbInfoRow = procedureResult.get( 0 );
-        assertThat( dbInfoRow ).contains( stringValue( db.databaseName() ) );
-        assertThat( dbInfoRow ).hasSize( 3 );
+        var procedureResult = asList(stream);
+        assertFalse(procedureResult.isEmpty());
+        var dbInfoRow = procedureResult.get(0);
+        assertThat(dbInfoRow).contains(stringValue(db.databaseName()));
+        assertThat(dbInfoRow).hasSize(3);
     }
 
     @Test
-    void dbmsInfo() throws ProcedureException
-    {
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "info" ) ).id(), new AnyValue[0], EMPTY );
+    void dbmsInfo() throws ProcedureException {
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("dbms", "info")).id(), new AnyValue[0], EMPTY);
 
-        var procedureResult = asList( stream );
-        assertFalse( procedureResult.isEmpty() );
-        var dbmsInfoRow = procedureResult.get( 0 );
-        assertThat( dbmsInfoRow ).contains( stringValue( SYSTEM_DATABASE_NAME ) );
-        assertThat( dbmsInfoRow ).hasSize( 3 );
+        var procedureResult = asList(stream);
+        assertFalse(procedureResult.isEmpty());
+        var dbmsInfoRow = procedureResult.get(0);
+        assertThat(dbmsInfoRow).contains(stringValue(SYSTEM_DATABASE_NAME));
+        assertThat(dbmsInfoRow).hasSize(3);
     }
 
     @Test
-    @Timeout( value = 6, unit = MINUTES )
-    void listAllLabelsMustNotBlockOnConstraintCreatingTransaction() throws Throwable
-    {
+    @Timeout(value = 6, unit = MINUTES)
+    void listAllLabelsMustNotBlockOnConstraintCreatingTransaction() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
         long nodeId = transaction.dataWrite().nodeCreate();
-        int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
-        int propKey = transaction.tokenWrite().propertyKeyCreateForName( "prop", false );
-        transaction.dataWrite().nodeAddLabel( nodeId, labelId );
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName("MyLabel");
+        int propKey = transaction.tokenWrite().propertyKeyCreateForName("prop", false);
+        transaction.dataWrite().nodeAddLabel(nodeId, labelId);
         commit();
 
-        CountDownLatch constraintLatch = new CountDownLatch( 1 );
-        CountDownLatch commitLatch = new CountDownLatch( 1 );
-        FutureTask<Void> createConstraintTask = new FutureTask<>( () ->
-        {
+        CountDownLatch constraintLatch = new CountDownLatch(1);
+        CountDownLatch commitLatch = new CountDownLatch(1);
+        FutureTask<Void> createConstraintTask = new FutureTask<>(() -> {
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-            try ( Resource ignore = captureTransaction() )
-            {
-                IndexPrototype prototype = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( labelId, propKey ) ).withName( "constraint name" );
-                schemaWrite.uniquePropertyConstraintCreate( prototype );
+            try (Resource ignore = captureTransaction()) {
+                IndexPrototype prototype = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propKey))
+                        .withName("constraint name");
+                schemaWrite.uniquePropertyConstraintCreate(prototype);
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();
                 commitLatch.await();
             }
             rollback();
             return null;
-        } );
-        Thread constraintCreator = new Thread( createConstraintTask );
+        });
+        Thread constraintCreator = new Thread(createConstraintTask);
         constraintCreator.start();
 
         // When
         constraintLatch.await();
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "labels")).id(),
+                        new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         // Then
-        try
-        {
-            assertThat( asList( stream ) ).containsExactly( new AnyValue[]{stringValue( "MyLabel" )} );
-        }
-        finally
-        {
+        try {
+            assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyLabel")});
+        } finally {
             commitLatch.countDown();
         }
         createConstraintTask.get();
@@ -168,181 +160,234 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
     }
 
     @Test
-    void listPropertyKeys() throws Throwable
-    {
+    void listPropertyKeys() throws Throwable {
         // Given
         TokenWrite ops = tokenWriteInNewTransaction();
-        ops.propertyKeyGetOrCreateForName( "MyProp" );
+        ops.propertyKeyGetOrCreateForName("MyProp");
         commit();
 
         // When
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "propertyKeys"))
+                                .id(),
+                        new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         // Then
-        assertThat( asList( stream ) ).containsExactly( new AnyValue[]{stringValue( "MyProp" )} );
+        assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyProp")});
     }
 
     @Test
-    void listRelationshipTypes() throws Throwable
-    {
+    void listRelationshipTypes() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
-        int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "MyRelType" );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+        int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName("MyRelType");
         long startNodeId = transaction.dataWrite().nodeCreate();
         long endNodeId = transaction.dataWrite().nodeCreate();
-        transaction.dataWrite().relationshipCreate( startNodeId, relType, endNodeId );
+        transaction.dataWrite().relationshipCreate(startNodeId, relType, endNodeId);
         commit();
 
         // When
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "relationshipTypes"))
+                                .id(),
+                        new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         // Then
-        assertThat( asList( stream ) ).containsExactly( new AnyValue[]{stringValue( "MyRelType" )} );
+        assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyRelType")});
     }
 
     @Test
-    void failWhenCallingNonExistingProcedures()
-    {
-        assertThrows( ProcedureException.class, () -> procs().procedureCallDbms( -1, new AnyValue[0], ProcedureCallContext.EMPTY ) );
+    void failWhenCallingNonExistingProcedures() {
+        assertThrows(ProcedureException.class, () -> procs().procedureCallDbms(
+                        -1, new AnyValue[0], ProcedureCallContext.EMPTY));
     }
 
     @Test
-    void listAllComponents() throws Throwable
-    {
+    void listAllComponents() throws Throwable {
         // Given a running database
 
         // When
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("dbms", "components"))
+                                .id(),
+                        new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         // Then
-        assertThat( asList( stream ) ).containsExactly(
-                new AnyValue[]{stringValue( "Neo4j Kernel" ), VirtualValues.list( stringValue( Version.getNeo4jVersion() ) ), stringValue( "community" )} );
+        assertThat(asList(stream)).containsExactly(new AnyValue[] {
+            stringValue("Neo4j Kernel"),
+            VirtualValues.list(stringValue(Version.getNeo4jVersion())),
+            stringValue("community")
+        });
 
         commit();
     }
 
     @Test
-    void listAllIndexes() throws Throwable
-    {
+    void listAllIndexes() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
-        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
-        LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooBarDescriptor ).withName( "person foo bar index" ) );
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName("Age");
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
+        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName("bar");
+        LabelSchemaDescriptor personFooDescriptor = forLabel(labelId1, propertyKeyId1);
+        LabelSchemaDescriptor ageFooDescriptor = forLabel(labelId2, propertyKeyId1);
+        LabelSchemaDescriptor personFooBarDescriptor = forLabel(labelId1, propertyKeyId1, propertyKeyId2);
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooDescriptor).withName("person foo index"));
+        transaction
+                .schemaWrite()
+                .uniquePropertyConstraintCreate(
+                        IndexPrototype.uniqueForSchema(ageFooDescriptor).withName("constraint name"));
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooBarDescriptor).withName("person foo bar index"));
         commit();
 
-        //let indexes come online
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, MINUTES );
+        // let indexes come online
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, MINUTES);
             tx.commit();
         }
 
         transaction = newTransaction();
-        IndexDescriptor personFooIndex = single( transaction.schemaRead().index( personFooDescriptor ) );
-        IndexDescriptor ageFooIndex = single( transaction.schemaRead().index( ageFooDescriptor ) );
-        IndexDescriptor personFooBarIndex = single( transaction.schemaRead().index( personFooBarDescriptor ) );
+        IndexDescriptor personFooIndex = single(transaction.schemaRead().index(personFooDescriptor));
+        IndexDescriptor ageFooIndex = single(transaction.schemaRead().index(ageFooDescriptor));
+        IndexDescriptor personFooBarIndex = single(transaction.schemaRead().index(personFooBarDescriptor));
 
         // When
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "indexes")).id(),
+                        new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         Set<AnyValue[]> result = new HashSet<>();
-        while ( stream.hasNext() )
-        {
-            result.add( stream.next() );
+        while (stream.hasNext()) {
+            result.add(stream.next());
         }
 
         // Then
-        assertThat( result ).contains(
-                dbIndexesResult( ageFooIndex.getId(), ageFooIndex.getName(), "ONLINE", 100D, "UNIQUE", "RANGE", "NODE", singletonList( "Age" ),
-                        singletonList( "foo" ), ageFooIndex.getIndexProvider().name() ),
-                dbIndexesResult( personFooIndex.getId(), personFooIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "RANGE", "NODE", singletonList( "Person" ),
-                        singletonList( "foo" ), personFooIndex.getIndexProvider().name() ),
-                dbIndexesResult( personFooBarIndex.getId(), personFooBarIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "RANGE", "NODE",
-                        singletonList( "Person" ), Arrays.asList( "foo", "bar" ), personFooBarIndex.getIndexProvider().name() ) );
+        assertThat(result)
+                .contains(
+                        dbIndexesResult(
+                                ageFooIndex.getId(),
+                                ageFooIndex.getName(),
+                                "ONLINE",
+                                100D,
+                                "UNIQUE",
+                                "RANGE",
+                                "NODE",
+                                singletonList("Age"),
+                                singletonList("foo"),
+                                ageFooIndex.getIndexProvider().name()),
+                        dbIndexesResult(
+                                personFooIndex.getId(),
+                                personFooIndex.getName(),
+                                "ONLINE",
+                                100D,
+                                "NONUNIQUE",
+                                "RANGE",
+                                "NODE",
+                                singletonList("Person"),
+                                singletonList("foo"),
+                                personFooIndex.getIndexProvider().name()),
+                        dbIndexesResult(
+                                personFooBarIndex.getId(),
+                                personFooBarIndex.getName(),
+                                "ONLINE",
+                                100D,
+                                "NONUNIQUE",
+                                "RANGE",
+                                "NODE",
+                                singletonList("Person"),
+                                Arrays.asList("foo", "bar"),
+                                personFooBarIndex.getIndexProvider().name()));
         commit();
     }
 
-    private static AnyValue[] dbIndexesResult( long id, String name, String state, Double populationPercent, String uniqueness, String type, String entityType,
-            List<String> labelsOrTypes, List<String> properties, String provider )
-    {
-        ListValue labelsOrTypesList = VirtualValues.list( labelsOrTypes.stream().map( Values::stringValue ).toArray( AnyValue[]::new ) );
-        ListValue propertiesList = VirtualValues.list( properties.stream().map( Values::stringValue ).toArray( AnyValue[]::new ) );
-        return new AnyValue[]
-                {
-                        longValue( id ),
-                        stringValue( name ),
-                        stringValue( state ),
-                        doubleValue( populationPercent ),
-                        stringValue( uniqueness ),
-                        stringValue( type ),
-                        stringValue( entityType ),
-                        labelsOrTypesList,
-                        propertiesList,
-                        stringValue( provider )
-                };
+    private static AnyValue[] dbIndexesResult(
+            long id,
+            String name,
+            String state,
+            Double populationPercent,
+            String uniqueness,
+            String type,
+            String entityType,
+            List<String> labelsOrTypes,
+            List<String> properties,
+            String provider) {
+        ListValue labelsOrTypesList = VirtualValues.list(
+                labelsOrTypes.stream().map(Values::stringValue).toArray(AnyValue[]::new));
+        ListValue propertiesList =
+                VirtualValues.list(properties.stream().map(Values::stringValue).toArray(AnyValue[]::new));
+        return new AnyValue[] {
+            longValue(id),
+            stringValue(name),
+            stringValue(state),
+            doubleValue(populationPercent),
+            stringValue(uniqueness),
+            stringValue(type),
+            stringValue(entityType),
+            labelsOrTypesList,
+            propertiesList,
+            stringValue(provider)
+        };
     }
 
     @Test
-    @Timeout( value = 6, unit = MINUTES )
-    void listAllIndexesMustNotBlockOnConstraintCreatingTransaction() throws Throwable
-    {
+    @Timeout(value = 6, unit = MINUTES)
+    void listAllIndexesMustNotBlockOnConstraintCreatingTransaction() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
-        int propertyKeyId3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "baz" );
-        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
-        LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
-        LabelSchemaDescriptor personBazDescriptor = forLabel( labelId1, propertyKeyId3 );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( ageFooDescriptor ).withName( "age foo constraint" ) );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooBarDescriptor ).withName( "person foo bar index" ) );
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName("Age");
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
+        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName("bar");
+        int propertyKeyId3 = transaction.tokenWrite().propertyKeyGetOrCreateForName("baz");
+        LabelSchemaDescriptor personFooDescriptor = forLabel(labelId1, propertyKeyId1);
+        LabelSchemaDescriptor ageFooDescriptor = forLabel(labelId2, propertyKeyId1);
+        LabelSchemaDescriptor personFooBarDescriptor = forLabel(labelId1, propertyKeyId1, propertyKeyId2);
+        LabelSchemaDescriptor personBazDescriptor = forLabel(labelId1, propertyKeyId3);
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooDescriptor).withName("person foo index"));
+        transaction
+                .schemaWrite()
+                .uniquePropertyConstraintCreate(
+                        IndexPrototype.uniqueForSchema(ageFooDescriptor).withName("age foo constraint"));
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooBarDescriptor).withName("person foo bar index"));
         commit();
 
-        //let indexes come online
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, MINUTES );
+        // let indexes come online
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, MINUTES);
             tx.commit();
         }
 
-        CountDownLatch constraintLatch = new CountDownLatch( 1 );
-        CountDownLatch commitLatch = new CountDownLatch( 1 );
+        CountDownLatch constraintLatch = new CountDownLatch(1);
+        CountDownLatch commitLatch = new CountDownLatch(1);
         AtomicLong personBazIndexId = new AtomicLong();
-        FutureTask<Void> createConstraintTask = new FutureTask<>( () ->
-        {
+        FutureTask<Void> createConstraintTask = new FutureTask<>(() -> {
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-            try ( Resource ignore = captureTransaction() )
-            {
+            try (Resource ignore = captureTransaction()) {
                 ConstraintDescriptor personBazConstraint = schemaWrite.uniquePropertyConstraintCreate(
-                        IndexPrototype.uniqueForSchema( personBazDescriptor ).withName( "person baz constraint" ) );
-                personBazIndexId.set( personBazConstraint.asIndexBackedConstraint().ownedIndexId() );
+                        IndexPrototype.uniqueForSchema(personBazDescriptor).withName("person baz constraint"));
+                personBazIndexId.set(
+                        personBazConstraint.asIndexBackedConstraint().ownedIndexId());
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();
                 commitLatch.await();
             }
             rollback();
             return null;
-        } );
-        Thread constraintCreator = new Thread( createConstraintTask );
+        });
+        Thread constraintCreator = new Thread(createConstraintTask);
         constraintCreator.start();
 
         // When
@@ -350,38 +395,72 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
 
         transaction = newTransaction();
         final SchemaReadCore schemaRead = transaction.schemaRead().snapshot();
-        IndexDescriptor personFooIndex = single( schemaRead.index( personFooDescriptor ) );
-        IndexDescriptor ageFooIndex = single( schemaRead.index( ageFooDescriptor ) );
-        IndexDescriptor personFooBarIndex = single( schemaRead.index( personFooBarDescriptor ) );
-        IndexDescriptor personBazIndex = single( schemaRead.index( personBazDescriptor ) );
+        IndexDescriptor personFooIndex = single(schemaRead.index(personFooDescriptor));
+        IndexDescriptor ageFooIndex = single(schemaRead.index(ageFooDescriptor));
+        IndexDescriptor personFooBarIndex = single(schemaRead.index(personFooBarDescriptor));
+        IndexDescriptor personBazIndex = single(schemaRead.index(personBazDescriptor));
         commit();
 
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "indexes")).id(),
+                        new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         Set<Object[]> result = new HashSet<>();
-        while ( stream.hasNext() )
-        {
-            result.add( stream.next() );
+        while (stream.hasNext()) {
+            result.add(stream.next());
         }
 
         // Then
-        try
-        {
-            assertThat( result ).contains(
-                    dbIndexesResult( ageFooIndex.getId(), ageFooIndex.getName(), "ONLINE", 100D, "UNIQUE", "RANGE", "NODE", singletonList( "Age" ),
-                            singletonList( "foo" ), ageFooIndex.getIndexProvider().name() ),
-                    dbIndexesResult( personFooIndex.getId(), personFooIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "RANGE", "NODE", singletonList( "Person" ),
-                            singletonList( "foo" ), personFooIndex.getIndexProvider().name() ),
-                    dbIndexesResult( personFooBarIndex.getId(), personFooBarIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "RANGE", "NODE",
-                            singletonList( "Person" ), Arrays.asList( "foo", "bar" ), personFooBarIndex.getIndexProvider().name() ),
-                    dbIndexesResult( personBazIndex.getId(), personBazIndex.getName() /*???*/, "POPULATING", 100D, "UNIQUE", "RANGE", "NODE",
-                            singletonList( "Person" ), singletonList( "baz" ), personBazIndex.getIndexProvider().name() ) );
+        try {
+            assertThat(result)
+                    .contains(
+                            dbIndexesResult(
+                                    ageFooIndex.getId(),
+                                    ageFooIndex.getName(),
+                                    "ONLINE",
+                                    100D,
+                                    "UNIQUE",
+                                    "RANGE",
+                                    "NODE",
+                                    singletonList("Age"),
+                                    singletonList("foo"),
+                                    ageFooIndex.getIndexProvider().name()),
+                            dbIndexesResult(
+                                    personFooIndex.getId(),
+                                    personFooIndex.getName(),
+                                    "ONLINE",
+                                    100D,
+                                    "NONUNIQUE",
+                                    "RANGE",
+                                    "NODE",
+                                    singletonList("Person"),
+                                    singletonList("foo"),
+                                    personFooIndex.getIndexProvider().name()),
+                            dbIndexesResult(
+                                    personFooBarIndex.getId(),
+                                    personFooBarIndex.getName(),
+                                    "ONLINE",
+                                    100D,
+                                    "NONUNIQUE",
+                                    "RANGE",
+                                    "NODE",
+                                    singletonList("Person"),
+                                    Arrays.asList("foo", "bar"),
+                                    personFooBarIndex.getIndexProvider().name()),
+                            dbIndexesResult(
+                                    personBazIndex.getId(),
+                                    personBazIndex.getName() /*???*/,
+                                    "POPULATING",
+                                    100D,
+                                    "UNIQUE",
+                                    "RANGE",
+                                    "NODE",
+                                    singletonList("Person"),
+                                    singletonList("baz"),
+                                    personBazIndex.getIndexProvider().name()));
             commit();
-        }
-        finally
-        {
+        } finally {
             commitLatch.countDown();
         }
         createConstraintTask.get();
@@ -389,80 +468,69 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
     }
 
     @Test
-    void prepareForReplanningShouldEmptyQueryCache()
-    {
+    void prepareForReplanningShouldEmptyQueryCache() {
         // Given, something is cached
-        try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( "MATCH (n) RETURN n" ).close();
+        try (org.neo4j.graphdb.Transaction transaction = db.beginTx()) {
+            transaction.execute("MATCH (n) RETURN n").close();
             transaction.commit();
         }
 
         ReplanMonitor monitor = replanMonitor();
 
         // When
-        try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( "CALL db.prepareForReplanning()" ).close();
+        try (org.neo4j.graphdb.Transaction transaction = db.beginTx()) {
+            transaction.execute("CALL db.prepareForReplanning()").close();
             transaction.commit();
         }
 
         // Then, the initial query and the procedure call should now have been cleared
-        assertThat( monitor.numberOfFlushedItems() ).isEqualTo( 2L );
+        assertThat(monitor.numberOfFlushedItems()).isEqualTo(2L);
     }
 
     @Test
-    void prepareForReplanningShouldTriggerIndexesSampling()
-    {
+    void prepareForReplanningShouldTriggerIndexesSampling() {
         // Given
         ReplanMonitor monitor = replanMonitor();
 
         // When
-        try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( "CALL db.prepareForReplanning()" ).close();
+        try (org.neo4j.graphdb.Transaction transaction = db.beginTx()) {
+            transaction.execute("CALL db.prepareForReplanning()").close();
             transaction.commit();
         }
 
         // Then
         IndexSamplingMode mode = monitor.samplingMode();
-        assertNotEquals( IndexSamplingMode.NO_WAIT, mode.millisToWaitForCompletion() );
-        assertThat( mode.millisToWaitForCompletion() ).isGreaterThan( 0L );
+        assertNotEquals(IndexSamplingMode.NO_WAIT, mode.millisToWaitForCompletion());
+        assertThat(mode.millisToWaitForCompletion()).isGreaterThan(0L);
     }
 
-    private ReplanMonitor replanMonitor()
-    {
-        Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
+    private ReplanMonitor replanMonitor() {
+        Monitors monitors = dependencyResolver.resolveDependency(Monitors.class);
 
         ReplanMonitor monitorListener = new ReplanMonitor();
-        monitors.addMonitorListener( monitorListener );
+        monitors.addMonitorListener(monitorListener);
         return monitorListener;
     }
 
-    private static class ReplanMonitor extends IndexMonitor.MonitorAdapter implements QueryCacheTracer<String>
-    {
+    private static class ReplanMonitor extends IndexMonitor.MonitorAdapter implements QueryCacheTracer<String> {
         private long numberOfFlushedItems = -1L;
         private IndexSamplingMode samplingMode;
 
         @Override
-        public void queryCacheFlush( long sizeOfCacheBeforeFlush )
-        {
+        public void queryCacheFlush(long sizeOfCacheBeforeFlush) {
             numberOfFlushedItems = sizeOfCacheBeforeFlush;
         }
 
         @Override
-        public void indexSamplingTriggered( IndexSamplingMode mode )
-        {
+        public void indexSamplingTriggered(IndexSamplingMode mode) {
             samplingMode = mode;
         }
 
-        long numberOfFlushedItems()
-        {
+        long numberOfFlushedItems() {
             return numberOfFlushedItems;
         }
 
-        IndexSamplingMode samplingMode()
-        {
+        IndexSamplingMode samplingMode() {
             return samplingMode;
         }
     }

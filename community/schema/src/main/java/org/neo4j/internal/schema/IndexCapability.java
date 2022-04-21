@@ -31,8 +31,7 @@ import org.neo4j.values.storable.ValueCategory;
  * It does NOT describe the capabilities of the index at some given moment. For example, it does not describe
  * index state. Rather, it describes the functionality that the index provides given that it is available.
  */
-public interface IndexCapability
-{
+public interface IndexCapability {
     IndexBehaviour[] BEHAVIOURS_NONE = new IndexBehaviour[0];
 
     /**
@@ -46,7 +45,7 @@ public interface IndexCapability
      * @return {@link IndexOrder} array containing all possible orderings for provided value categories or empty array if no explicit
      * ordering is possible or if length of {@code valueCategories} and {@link SchemaDescriptor#getPropertyIds()} differ.
      */
-    IndexOrderCapability orderCapability( ValueCategory... valueCategories );
+    IndexOrderCapability orderCapability(ValueCategory... valueCategories);
 
     /**
      * Is the index capable of providing values for a query on given combination of {@link ValueCategory}.
@@ -59,7 +58,7 @@ public interface IndexCapability
      * {@link IndexValueCapability#NO} if not or {@link IndexValueCapability#PARTIAL} for some results. If length of
      * {@code valueCategories} and {@link SchemaDescriptor#getPropertyIds()} differ {@link IndexValueCapability#NO} is returned.
      */
-    IndexValueCapability valueCapability( ValueCategory... valueCategories );
+    IndexValueCapability valueCapability(ValueCategory... valueCategories);
 
     /**
      * Checks whether the index can accept values for a given combination of {@link ValueCategory}.
@@ -70,7 +69,7 @@ public interface IndexCapability
      * @throws IllegalArgumentException if {@code valueCategories} empty, {@code null}, or contains {@code null}s.
      * @return true if the index is capable of accepting values for a provided array of value categories; false otherwise.
      */
-    boolean areValueCategoriesAccepted( ValueCategory... valueCategories );
+    boolean areValueCategoriesAccepted(ValueCategory... valueCategories);
 
     /**
      * Checks whether the index can accept values for a given combination of {@link Value}.
@@ -81,16 +80,14 @@ public interface IndexCapability
      * @throws IllegalArgumentException if {@code values} empty, {@code null}, or contains {@code null}s.
      * @return true if the index is capable of accepting values; false otherwise.
      */
-    default boolean areValuesAccepted( Value... values )
-    {
-        Preconditions.requireNonEmpty( values );
-        Preconditions.requireNoNullElements( values );
+    default boolean areValuesAccepted(Value... values) {
+        Preconditions.requireNonEmpty(values);
+        Preconditions.requireNoNullElements(values);
         final var categories = new ValueCategory[values.length];
-        for ( int i = 0; i < values.length; i++ )
-        {
+        for (int i = 0; i < values.length; i++) {
             categories[i] = values[i].valueGroup().category();
         }
-        return areValueCategoriesAccepted( categories );
+        return areValueCategoriesAccepted(categories);
     }
 
     /**
@@ -100,7 +97,7 @@ public interface IndexCapability
      * When asking about support for Index queries that doesn't have any value category,
      * like {@link IndexQueryType#TOKEN_LOOKUP}, use {@link ValueCategory#NO_CATEGORY}.
      */
-    boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory );
+    boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory);
 
     /**
      * The multiplier for the cost per returned row of executing a (potentially composite) index query with the given types.
@@ -110,7 +107,7 @@ public interface IndexCapability
      * <p>
      * Even thought the method is implemented for all index types, this check is useful only for value indexes.
      */
-    double getCostMultiplier( IndexQueryType... queryTypes );
+    double getCostMultiplier(IndexQueryType... queryTypes);
 
     /**
      * Does the index support PartitionedScan for given {@code queries}.
@@ -119,56 +116,48 @@ public interface IndexCapability
      * @return {@code true} if the index supports PartitionedScan for the given {@code queries}; false otherwise.
      * @throws IllegalArgumentException if {@code queries} empty, {@code null}, or contains {@code null}s.
      */
-    boolean supportPartitionedScan( IndexQuery... queries );
+    boolean supportPartitionedScan(IndexQuery... queries);
 
     /**
      * @return an array of behaviours that are particular to the implementation or configuration of this index.
      * It could be anything that planning could look at and either try to avoid, seek out, or issue warning for.
      */
-    default IndexBehaviour[] behaviours()
-    {
+    default IndexBehaviour[] behaviours() {
         return BEHAVIOURS_NONE;
     }
 
-    IndexCapability NO_CAPABILITY = new IndexCapability()
-    {
+    IndexCapability NO_CAPABILITY = new IndexCapability() {
         @Override
-        public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
-        {
+        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
             return IndexOrderCapability.NONE;
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-        {
+        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
             return IndexValueCapability.NO;
         }
 
         @Override
-        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
-        {
-            Preconditions.requireNonEmpty( valueCategories );
-            Preconditions.requireNoNullElements( valueCategories );
+        public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
+            Preconditions.requireNonEmpty(valueCategories);
+            Preconditions.requireNoNullElements(valueCategories);
             return false;
         }
 
         @Override
-        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
-        {
+        public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
             return false;
         }
 
         @Override
-        public double getCostMultiplier( IndexQueryType... queryTypes )
-        {
+        public double getCostMultiplier(IndexQueryType... queryTypes) {
             return 1.0;
         }
 
         @Override
-        public boolean supportPartitionedScan( IndexQuery... queries )
-        {
-            Preconditions.requireNonEmpty( queries );
-            Preconditions.requireNoNullElements( queries );
+        public boolean supportPartitionedScan(IndexQuery... queries) {
+            Preconditions.requireNonEmpty(queries);
+            Preconditions.requireNoNullElements(queries);
             return false;
         }
     };

@@ -19,48 +19,40 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
-import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-
-class DepthOneTraversalTest extends TraversalTestBase
-{
+class DepthOneTraversalTest extends TraversalTestBase {
     private Transaction tx;
 
     @BeforeEach
-    void createTheGraph()
-    {
-        createGraph( "0 ROOT 1", "1 KNOWS 2", "2 KNOWS 3", "2 KNOWS 4",
-                "4 KNOWS 5", "5 KNOWS 6", "3 KNOWS 1" );
+    void createTheGraph() {
+        createGraph("0 ROOT 1", "1 KNOWS 2", "2 KNOWS 3", "2 KNOWS 4", "4 KNOWS 5", "5 KNOWS 6", "3 KNOWS 1");
         tx = beginTx();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         tx.close();
     }
 
-    private void shouldGetBothNodesOnDepthOne( TraversalDescription description )
-    {
-        description = description.evaluator( atDepth( 1 ) );
-        expectNodes( description.traverse( getNodeWithName( tx, "3" ) ), "1", "2" );
+    private void shouldGetBothNodesOnDepthOne(TraversalDescription description) {
+        description = description.evaluator(atDepth(1));
+        expectNodes(description.traverse(getNodeWithName(tx, "3")), "1", "2");
     }
 
     @Test
-    void shouldGetBothNodesOnDepthOneForDepthFirst()
-    {
-        shouldGetBothNodesOnDepthOne( tx.traversalDescription().depthFirst() );
+    void shouldGetBothNodesOnDepthOneForDepthFirst() {
+        shouldGetBothNodesOnDepthOne(tx.traversalDescription().depthFirst());
     }
 
     @Test
-    void shouldGetBothNodesOnDepthOneForBreadthFirst()
-    {
-        shouldGetBothNodesOnDepthOne( tx.traversalDescription().breadthFirst() );
+    void shouldGetBothNodesOnDepthOneForBreadthFirst() {
+        shouldGetBothNodesOnDepthOne(tx.traversalDescription().breadthFirst());
     }
 }

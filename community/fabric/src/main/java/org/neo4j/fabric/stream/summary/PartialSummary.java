@@ -21,30 +21,25 @@ package org.neo4j.fabric.stream.summary;
 
 import java.util.Collection;
 import java.util.List;
-
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 
-public class PartialSummary extends EmptySummary
-{
+public class PartialSummary extends EmptySummary {
     private final QueryStatistics queryStatistics;
     private final List<Notification> notifications;
 
-    public PartialSummary( QueryStatistics queryStatistics, List<Notification> notifications )
-    {
+    public PartialSummary(QueryStatistics queryStatistics, List<Notification> notifications) {
         this.queryStatistics = queryStatistics;
         this.notifications = notifications;
     }
 
     @Override
-    public QueryStatistics getQueryStatistics()
-    {
+    public QueryStatistics getQueryStatistics() {
         return queryStatistics;
     }
 
     @Override
-    public Collection<Notification> getNotifications()
-    {
+    public Collection<Notification> getNotifications() {
         return notifications;
     }
 }

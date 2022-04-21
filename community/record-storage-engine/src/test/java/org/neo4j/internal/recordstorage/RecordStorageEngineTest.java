@@ -19,12 +19,22 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,7 +44,12 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -59,304 +74,256 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.storage.RecordStorageEngineSupport;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.lock.LockType.EXCLUSIVE;
-
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
-class RecordStorageEngineTest
-{
+class RecordStorageEngineTest {
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
-    private final Health databaseHealth = mock( DatabaseHealth.class );
+    private final Health databaseHealth = mock(DatabaseHealth.class);
     private final RecordStorageEngineSupport storageEngineRule = new RecordStorageEngineSupport();
 
     @BeforeEach
-    void before() throws Throwable
-    {
+    void before() throws Throwable {
         storageEngineRule.before();
     }
 
     @AfterEach
-    void after() throws Throwable
-    {
-        storageEngineRule.after( true );
+    void after() throws Throwable {
+        storageEngineRule.after(true);
     }
 
     @Test
-    @Timeout( 30 )
-    void shutdownRecordStorageEngineAfterFailedTransaction() throws Exception
-    {
+    @Timeout(30)
+    void shutdownRecordStorageEngineAfterFailedTransaction() throws Exception {
         RecordStorageEngine engine = buildRecordStorageEngine();
-        Exception applicationError = executeFailingTransaction( engine );
-        assertNotNull( applicationError );
+        Exception applicationError = executeFailingTransaction(engine);
+        assertNotNull(applicationError);
     }
 
     @Test
-    void panicOnExceptionDuringCommandsApply()
-    {
-        IllegalStateException failure = new IllegalStateException( "Too many open files" );
-        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache, databaseLayout )
-                .databaseHealth( databaseHealth )
-                .transactionApplierTransformer( facade -> transactionApplierFacadeTransformer( facade, failure ) )
+    void panicOnExceptionDuringCommandsApply() {
+        IllegalStateException failure = new IllegalStateException("Too many open files");
+        RecordStorageEngine engine = storageEngineRule
+                .getWith(fs, pageCache, databaseLayout)
+                .databaseHealth(databaseHealth)
+                .transactionApplierTransformer(facade -> transactionApplierFacadeTransformer(facade, failure))
                 .build();
-        CommandsToApply commandsToApply = mock( CommandsToApply.class );
+        CommandsToApply commandsToApply = mock(CommandsToApply.class);
 
-        var exception = assertThrows( Exception.class, () -> engine.apply( commandsToApply, TransactionApplicationMode.INTERNAL ) );
-        assertSame( failure, getRootCause( exception ) );
+        var exception =
+                assertThrows(Exception.class, () -> engine.apply(commandsToApply, TransactionApplicationMode.INTERNAL));
+        assertSame(failure, getRootCause(exception));
 
-        verify( databaseHealth ).panic( any( Throwable.class ) );
+        verify(databaseHealth).panic(any(Throwable.class));
     }
 
     private static TransactionApplierFactoryChain transactionApplierFacadeTransformer(
-            TransactionApplierFactoryChain facade, Exception failure )
-    {
-        return new CapturingTransactionApplierFactoryChain( value ->
-        {
-            throw new RuntimeException( failure );
-        } ).wrapAroundActualApplier( facade );
+            TransactionApplierFactoryChain facade, Exception failure) {
+        return new CapturingTransactionApplierFactoryChain(value -> {
+                    throw new RuntimeException(failure);
+                })
+                .wrapAroundActualApplier(facade);
     }
 
     @Test
-    void databasePanicIsRaisedWhenTxApplicationFails() throws Throwable
-    {
+    void databasePanicIsRaisedWhenTxApplicationFails() throws Throwable {
         RecordStorageEngine engine = buildRecordStorageEngine();
-        Exception applicationError = executeFailingTransaction( engine );
-        ArgumentCaptor<Exception> captor = ArgumentCaptor.forClass( Exception.class );
-        verify( databaseHealth ).panic( captor.capture() );
+        Exception applicationError = executeFailingTransaction(engine);
+        ArgumentCaptor<Exception> captor = ArgumentCaptor.forClass(Exception.class);
+        verify(databaseHealth).panic(captor.capture());
         Throwable exception = captor.getValue();
-        if ( exception instanceof KernelException )
-        {
-            assertThat( ((KernelException) exception).status() ).isEqualTo( Status.General.UnknownError );
+        if (exception instanceof KernelException) {
+            assertThat(((KernelException) exception).status()).isEqualTo(Status.General.UnknownError);
             exception = exception.getCause();
         }
-        assertThat( exception ).isEqualTo( applicationError );
+        assertThat(exception).isEqualTo(applicationError);
     }
 
     @Test
-    void shouldListAllStoreFilesWithEnabledRelaxedLocking()
-    {
+    void shouldListAllStoreFilesWithEnabledRelaxedLocking() {
         RecordStorageEngine engine = recordStorageEngineBuilder().build();
 
         // when
         Collection<StoreFileMetadata> atomicFiles = new ArrayList<>();
         Collection<StoreFileMetadata> replayableFiles = new ArrayList<>();
-        engine.listStorageFiles( atomicFiles, replayableFiles );
+        engine.listStorageFiles(atomicFiles, replayableFiles);
         Collection<StoreFileMetadata> allFiles = new ArrayList<>();
-        allFiles.addAll( atomicFiles );
-        allFiles.addAll( replayableFiles );
-        Set<Path> currentFiles = allFiles.stream().map( StoreFileMetadata::path ).collect( Collectors.toSet() );
+        allFiles.addAll(atomicFiles);
+        allFiles.addAll(replayableFiles);
+        Set<Path> currentFiles = allFiles.stream().map(StoreFileMetadata::path).collect(Collectors.toSet());
 
         // then
         Set<Path> allPossibleFiles = databaseLayout.storeFiles();
-        allPossibleFiles.remove( databaseLayout.indexStatisticsStore() );
+        allPossibleFiles.remove(databaseLayout.indexStatisticsStore());
 
-        assertEquals( allPossibleFiles, currentFiles );
-        assertThat( atomicFiles.stream().map( StoreFileMetadata::path ).collect( Collectors.toSet() ) ).isEqualTo(
-                Set.of( databaseLayout.countStore(), databaseLayout.relationshipGroupDegreesStore() ) );
+        assertEquals(allPossibleFiles, currentFiles);
+        assertThat(atomicFiles.stream().map(StoreFileMetadata::path).collect(Collectors.toSet()))
+                .isEqualTo(Set.of(databaseLayout.countStore(), databaseLayout.relationshipGroupDegreesStore()));
     }
 
     @Test
-    void shouldCloseLockGroupAfterAppliers() throws Exception
-    {
+    void shouldCloseLockGroupAfterAppliers() throws Exception {
         // given
         long nodeId = 5;
-        LockService lockService = mock( LockService.class );
-        Lock nodeLock = mock( Lock.class );
-        when( lockService.acquireNodeLock( nodeId, EXCLUSIVE ) ).thenReturn( nodeLock );
-        Consumer<Boolean> applierCloseCall = mock( Consumer.class ); // <-- simply so that we can use InOrder mockito construct
-        CapturingTransactionApplierFactoryChain applier = new CapturingTransactionApplierFactoryChain( applierCloseCall );
+        LockService lockService = mock(LockService.class);
+        Lock nodeLock = mock(Lock.class);
+        when(lockService.acquireNodeLock(nodeId, EXCLUSIVE)).thenReturn(nodeLock);
+        Consumer<Boolean> applierCloseCall =
+                mock(Consumer.class); // <-- simply so that we can use InOrder mockito construct
+        CapturingTransactionApplierFactoryChain applier = new CapturingTransactionApplierFactoryChain(applierCloseCall);
         RecordStorageEngine engine = recordStorageEngineBuilder()
-                .lockService( lockService )
-                .transactionApplierTransformer( applier::wrapAroundActualApplier )
+                .lockService(lockService)
+                .transactionApplierTransformer(applier::wrapAroundActualApplier)
                 .build();
-        try ( StoreCursors storageCursors = engine.createStorageCursors( NULL_CONTEXT ) )
-        {
-            CommandsToApply commandsToApply = mock( CommandsToApply.class );
-            when( commandsToApply.cursorContext() ).thenReturn( NULL_CONTEXT );
-            when( commandsToApply.storeCursors() ).thenReturn( storageCursors );
-            when( commandsToApply.accept( any() ) ).thenAnswer( invocationOnMock ->
-            {
+        try (StoreCursors storageCursors = engine.createStorageCursors(NULL_CONTEXT)) {
+            CommandsToApply commandsToApply = mock(CommandsToApply.class);
+            when(commandsToApply.cursorContext()).thenReturn(NULL_CONTEXT);
+            when(commandsToApply.storeCursors()).thenReturn(storageCursors);
+            when(commandsToApply.accept(any())).thenAnswer(invocationOnMock -> {
                 // Visit one node command
-                Visitor<StorageCommand,IOException> visitor = invocationOnMock.getArgument( 0 );
-                NodeRecord after = new NodeRecord( nodeId );
-                after.setInUse( true );
-                visitor.visit( new Command.NodeCommand( new NodeRecord( nodeId ), after ) );
+                Visitor<StorageCommand, IOException> visitor = invocationOnMock.getArgument(0);
+                NodeRecord after = new NodeRecord(nodeId);
+                after.setInUse(true);
+                visitor.visit(new Command.NodeCommand(new NodeRecord(nodeId), after));
                 return null;
-            } );
+            });
             // when
-            engine.apply( commandsToApply, TransactionApplicationMode.INTERNAL );
+            engine.apply(commandsToApply, TransactionApplicationMode.INTERNAL);
 
             // then
-            InOrder inOrder = inOrder( lockService, applierCloseCall, nodeLock );
-            inOrder.verify( lockService ).acquireNodeLock( nodeId, EXCLUSIVE );
-            inOrder.verify( applierCloseCall ).accept( true );
-            inOrder.verify( nodeLock ).release();
+            InOrder inOrder = inOrder(lockService, applierCloseCall, nodeLock);
+            inOrder.verify(lockService).acquireNodeLock(nodeId, EXCLUSIVE);
+            inOrder.verify(applierCloseCall).accept(true);
+            inOrder.verify(nodeLock).release();
             inOrder.verifyNoMoreInteractions();
         }
     }
 
-    private RecordStorageEngine buildRecordStorageEngine()
-    {
+    private RecordStorageEngine buildRecordStorageEngine() {
         return recordStorageEngineBuilder().build();
     }
 
-    private RecordStorageEngineSupport.Builder recordStorageEngineBuilder()
-    {
-        return storageEngineRule
-                .getWith( fs, pageCache, databaseLayout )
-                .databaseHealth( databaseHealth );
+    private RecordStorageEngineSupport.Builder recordStorageEngineBuilder() {
+        return storageEngineRule.getWith(fs, pageCache, databaseLayout).databaseHealth(databaseHealth);
     }
 
-    private static Exception executeFailingTransaction( RecordStorageEngine engine ) throws IOException
-    {
-        Exception applicationError = new UnderlyingStorageException( "No space left on device" );
-        CommandsToApply txToApply = newTransactionThatFailsWith( applicationError );
-        try
-        {
-            engine.apply( txToApply, TransactionApplicationMode.INTERNAL );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertSame( applicationError, getRootCause( e ) );
+    private static Exception executeFailingTransaction(RecordStorageEngine engine) throws IOException {
+        Exception applicationError = new UnderlyingStorageException("No space left on device");
+        CommandsToApply txToApply = newTransactionThatFailsWith(applicationError);
+        try {
+            engine.apply(txToApply, TransactionApplicationMode.INTERNAL);
+            fail("Exception expected");
+        } catch (Exception e) {
+            assertSame(applicationError, getRootCause(e));
         }
         return applicationError;
     }
 
-    private static CommandsToApply newTransactionThatFailsWith( Exception error ) throws IOException
-    {
-        CommandsToApply transaction = mock( CommandsToApply.class );
-        doThrow( error ).when( transaction ).accept( any() );
-        long txId = ThreadLocalRandom.current().nextLong( 0, 1000 );
-        when( transaction.transactionId() ).thenReturn( txId );
+    private static CommandsToApply newTransactionThatFailsWith(Exception error) throws IOException {
+        CommandsToApply transaction = mock(CommandsToApply.class);
+        doThrow(error).when(transaction).accept(any());
+        long txId = ThreadLocalRandom.current().nextLong(0, 1000);
+        when(transaction.transactionId()).thenReturn(txId);
         return transaction;
     }
 
-    private static class CapturingTransactionApplierFactoryChain extends TransactionApplierFactoryChain
-    {
+    private static class CapturingTransactionApplierFactoryChain extends TransactionApplierFactoryChain {
         private final Consumer<Boolean> applierCloseCall;
         private TransactionApplierFactoryChain actual;
 
-        CapturingTransactionApplierFactoryChain( Consumer<Boolean> applierCloseCall )
-        {
-            super( w -> w.newBatch( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ) );
+        CapturingTransactionApplierFactoryChain(Consumer<Boolean> applierCloseCall) {
+            super(w -> w.newBatch(new CursorContextFactory(PageCacheTracer.NULL, EMPTY)));
             this.applierCloseCall = applierCloseCall;
         }
 
-        CapturingTransactionApplierFactoryChain wrapAroundActualApplier( TransactionApplierFactoryChain actual )
-        {
+        CapturingTransactionApplierFactoryChain wrapAroundActualApplier(TransactionApplierFactoryChain actual) {
             this.actual = actual;
             return this;
         }
 
         @Override
-        public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext ) throws IOException
-        {
-            final TransactionApplier transactionApplier = actual.startTx( transaction, batchContext );
-            return new TransactionApplier()
-            {
+        public TransactionApplier startTx(CommandsToApply transaction, BatchContext batchContext) throws IOException {
+            final TransactionApplier transactionApplier = actual.startTx(transaction, batchContext);
+            return new TransactionApplier() {
                 @Override
-                public boolean visit( StorageCommand element ) throws IOException
-                {
-                    return transactionApplier.visit( element );
+                public boolean visit(StorageCommand element) throws IOException {
+                    return transactionApplier.visit(element);
                 }
 
                 @Override
-                public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
-                {
-                    return transactionApplier.visitNodeCommand( command );
+                public boolean visitNodeCommand(Command.NodeCommand command) throws IOException {
+                    return transactionApplier.visitNodeCommand(command);
                 }
 
                 @Override
-                public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
-                {
-                    return transactionApplier.visitRelationshipCommand( command );
+                public boolean visitRelationshipCommand(Command.RelationshipCommand command) throws IOException {
+                    return transactionApplier.visitRelationshipCommand(command);
                 }
 
                 @Override
-                public boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException
-                {
-                    return transactionApplier.visitPropertyCommand( command );
+                public boolean visitPropertyCommand(Command.PropertyCommand command) throws IOException {
+                    return transactionApplier.visitPropertyCommand(command);
                 }
 
                 @Override
-                public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
-                {
-                    return transactionApplier.visitRelationshipGroupCommand( command );
+                public boolean visitRelationshipGroupCommand(Command.RelationshipGroupCommand command)
+                        throws IOException {
+                    return transactionApplier.visitRelationshipGroupCommand(command);
                 }
 
                 @Override
-                public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
-                {
-                    return transactionApplier.visitRelationshipTypeTokenCommand( command );
+                public boolean visitRelationshipTypeTokenCommand(Command.RelationshipTypeTokenCommand command)
+                        throws IOException {
+                    return transactionApplier.visitRelationshipTypeTokenCommand(command);
                 }
 
                 @Override
-                public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
-                {
-                    return transactionApplier.visitLabelTokenCommand( command );
+                public boolean visitLabelTokenCommand(Command.LabelTokenCommand command) throws IOException {
+                    return transactionApplier.visitLabelTokenCommand(command);
                 }
 
                 @Override
-                public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
-                {
-                    return transactionApplier.visitPropertyKeyTokenCommand( command );
+                public boolean visitPropertyKeyTokenCommand(Command.PropertyKeyTokenCommand command)
+                        throws IOException {
+                    return transactionApplier.visitPropertyKeyTokenCommand(command);
                 }
 
                 @Override
-                public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
-                {
-                    return transactionApplier.visitSchemaRuleCommand( command );
+                public boolean visitSchemaRuleCommand(Command.SchemaRuleCommand command) throws IOException {
+                    return transactionApplier.visitSchemaRuleCommand(command);
                 }
 
                 @Override
-                public boolean visitNodeCountsCommand( Command.NodeCountsCommand command ) throws IOException
-                {
-                    return transactionApplier.visitNodeCountsCommand( command );
+                public boolean visitNodeCountsCommand(Command.NodeCountsCommand command) throws IOException {
+                    return transactionApplier.visitNodeCountsCommand(command);
                 }
 
                 @Override
-                public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
-                {
-                    return transactionApplier.visitRelationshipCountsCommand( command );
+                public boolean visitRelationshipCountsCommand(Command.RelationshipCountsCommand command)
+                        throws IOException {
+                    return transactionApplier.visitRelationshipCountsCommand(command);
                 }
 
                 @Override
-                public boolean visitMetaDataCommand( Command.MetaDataCommand command ) throws IOException
-                {
-                    return transactionApplier.visitMetaDataCommand( command );
+                public boolean visitMetaDataCommand(Command.MetaDataCommand command) throws IOException {
+                    return transactionApplier.visitMetaDataCommand(command);
                 }
 
                 @Override
-                public boolean visitGroupDegreeCommand( Command.GroupDegreeCommand command ) throws IOException
-                {
-                    return transactionApplier.visitGroupDegreeCommand( command );
+                public boolean visitGroupDegreeCommand(Command.GroupDegreeCommand command) throws IOException {
+                    return transactionApplier.visitGroupDegreeCommand(command);
                 }
 
                 @Override
-                public void close() throws Exception
-                {
-                    applierCloseCall.accept( true );
+                public void close() throws Exception {
+                    applierCloseCall.accept(true);
                     transactionApplier.close();
                 }
             };

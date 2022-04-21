@@ -21,43 +21,33 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>> extends NativeIndexProgressor<KEY>
-{
-    NativeHitIndexProgressor( Seeker<KEY,NullValue> seeker, IndexProgressor.EntityValueClient client )
-    {
-        super( seeker, client );
+public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>> extends NativeIndexProgressor<KEY> {
+    NativeHitIndexProgressor(Seeker<KEY, NullValue> seeker, IndexProgressor.EntityValueClient client) {
+        super(seeker, client);
     }
 
     @Override
-    public boolean next()
-    {
-        try
-        {
-            while ( seeker.next() )
-            {
+    public boolean next() {
+        try {
+            while (seeker.next()) {
                 KEY key = seeker.key();
-                Value[] values = extractValues( key );
-                if ( acceptValue( values ) && client.acceptEntity( key.getEntityId(), Float.NaN, values ) )
-                {
+                Value[] values = extractValues(key);
+                if (acceptValue(values) && client.acceptEntity(key.getEntityId(), Float.NaN, values)) {
                     return true;
                 }
             }
             close();
             return false;
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    protected boolean acceptValue( Value[] values )
-    {
+    protected boolean acceptValue(Value[] values) {
         return true;
     }
 }

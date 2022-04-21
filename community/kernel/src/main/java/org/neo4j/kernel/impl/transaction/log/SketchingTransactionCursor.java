@@ -19,58 +19,50 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.IOException;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
+import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
-
-public class SketchingTransactionCursor implements TransactionCursor
-{
+public class SketchingTransactionCursor implements TransactionCursor {
     private final ReadableClosablePositionAwareChecksumChannel channel;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
-    public SketchingTransactionCursor( ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader ) throws IOException
-    {
+    public SketchingTransactionCursor(ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader)
+            throws IOException {
         this.channel = channel;
-        channel.getCurrentPosition( lastGoodPositionMarker );
-        this.logEntryCursor = new LogEntryCursor( entryReader, channel );
+        channel.getCurrentPosition(lastGoodPositionMarker);
+        this.logEntryCursor = new LogEntryCursor(entryReader, channel);
     }
 
     @Override
-    public CommittedTransactionRepresentation get()
-    {
+    public CommittedTransactionRepresentation get() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean next() throws IOException
-    {
-        while ( hasEntries() )
-        {
+    public boolean next() throws IOException {
+        while (hasEntries()) {
             LogEntry entry = logEntryCursor.get();
 
-            if ( isCheckPoint( entry ) )
-            {
-                channel.getCurrentPosition( lastGoodPositionMarker );
+            if (isCheckPoint(entry)) {
+                channel.getCurrentPosition(lastGoodPositionMarker);
                 continue;
             }
 
             assert entry instanceof LogEntryStart : "Expected Start entry, read " + entry + " instead";
 
             // Read till commit entry
-            while ( hasEntries() )
-            {
+            while (hasEntries()) {
                 entry = logEntryCursor.get();
 
-                if ( isCommit( entry ) )
-                {
-                    channel.getCurrentPosition( lastGoodPositionMarker );
+                if (isCommit(entry)) {
+                    channel.getCurrentPosition(lastGoodPositionMarker);
                     return true;
                 }
             }
@@ -79,30 +71,25 @@ public class SketchingTransactionCursor implements TransactionCursor
         return false;
     }
 
-    private boolean hasEntries() throws IOException
-    {
+    private boolean hasEntries() throws IOException {
         return logEntryCursor.next();
     }
 
-    private boolean isCheckPoint( LogEntry entry )
-    {
+    private boolean isCheckPoint(LogEntry entry) {
         return entry.getType() == DETACHED_CHECK_POINT;
     }
 
-    private boolean isCommit( LogEntry entry )
-    {
+    private boolean isCommit(LogEntry entry) {
         return entry.getType() == TX_COMMIT;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         logEntryCursor.close();
     }
 
     @Override
-    public LogPosition position()
-    {
+    public LogPosition position() {
         return lastGoodPositionMarker.newPosition();
     }
 }

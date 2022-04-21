@@ -19,29 +19,27 @@
  */
 package org.neo4j.internal.helpers;
 
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-
-import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Mutable thread-safe container of listeners that can be notified with {@link Notification}.
  *
  * @param <T> the type of listeners.
  */
-public class Listeners<T> implements Iterable<T>
-{
+public class Listeners<T> implements Iterable<T> {
     private final List<T> listeners;
 
     /**
      * Construct new empty listeners;
      */
-    public Listeners()
-    {
-        this.listeners = createListeners( emptyList() );
+    public Listeners() {
+        this.listeners = createListeners(emptyList());
     }
 
     /**
@@ -49,11 +47,10 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param listener the listener to add.
      */
-    public void add( T listener )
-    {
-        requireNonNull( listener, "added listener can't be null" );
+    public void add(T listener) {
+        requireNonNull(listener, "added listener can't be null");
 
-        listeners.add( listener );
+        listeners.add(listener);
     }
 
     /**
@@ -61,11 +58,10 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param listener the listener to remove.
      */
-    public void remove( T listener )
-    {
-        requireNonNull( listener, "removed listener can't be null" );
+    public void remove(T listener) {
+        requireNonNull(listener, "removed listener can't be null");
 
-        listeners.remove( listener );
+        listeners.remove(listener);
     }
 
     /**
@@ -74,13 +70,11 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param notification the notification to be applied to each listener.
      */
-    public void notify( Notification<T> notification )
-    {
-        requireNonNull( notification, "notification can't be null" );
+    public void notify(Notification<T> notification) {
+        requireNonNull(notification, "notification can't be null");
 
-        for ( T listener : listeners )
-        {
-            notifySingleListener( listener, notification );
+        for (T listener : listeners) {
+            notifySingleListener(listener, notification);
         }
     }
 
@@ -92,14 +86,12 @@ public class Listeners<T> implements Iterable<T>
      * @param executor the executor to submit notifications to.
      * @param notification the notification to be applied to each listener.
      */
-    public void notify( Executor executor, Notification<T> notification )
-    {
-        requireNonNull( executor, "executor can't be null" );
-        requireNonNull( notification, "notification can't be null" );
+    public void notify(Executor executor, Notification<T> notification) {
+        requireNonNull(executor, "executor can't be null");
+        requireNonNull(notification, "notification can't be null");
 
-        for ( T listener : listeners )
-        {
-            executor.execute( () -> notifySingleListener( listener, notification ) );
+        for (T listener : listeners) {
+            executor.execute(() -> notifySingleListener(listener, notification));
         }
     }
 
@@ -114,26 +106,21 @@ public class Listeners<T> implements Iterable<T>
      * @return iterator over listeners.
      */
     @Override
-    public Iterator<T> iterator()
-    {
+    public Iterator<T> iterator() {
         return listeners.iterator();
     }
 
-    private static <T> void notifySingleListener( T listener, Notification<T> notification )
-    {
-        synchronized ( listener )
-        {
-            notification.notify( listener );
+    private static <T> void notifySingleListener(T listener, Notification<T> notification) {
+        synchronized (listener) {
+            notification.notify(listener);
         }
     }
 
-    private static <T> List<T> createListeners( List<T> existingListeners )
-    {
-        return new CopyOnWriteArrayList<>( existingListeners );
+    private static <T> List<T> createListeners(List<T> existingListeners) {
+        return new CopyOnWriteArrayList<>(existingListeners);
     }
 
-    public interface Notification<T>
-    {
-        void notify( T listener );
+    public interface Notification<T> {
+        void notify(T listener);
     }
 }

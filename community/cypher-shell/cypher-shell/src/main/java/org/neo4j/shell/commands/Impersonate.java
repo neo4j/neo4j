@@ -20,7 +20,6 @@
 package org.neo4j.shell.commands;
 
 import java.util.List;
-
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
@@ -29,29 +28,24 @@ import org.neo4j.shell.printer.Printer;
 /**
  * Impersonate user
  */
-public record Impersonate( CypherShell shell, Printer printer ) implements Command
-{
+public record Impersonate(CypherShell shell, Printer printer) implements Command {
     @Override
-    public void execute( final List<String> args ) throws ExitException, CommandException
-    {
-        requireArgumentCount( args, 0, 1 );
-        shell.impersonate( args.isEmpty() ? null : args.get( 0 ) );
+    public void execute(final List<String> args) throws ExitException, CommandException {
+        requireArgumentCount(args, 0, 1);
+        shell.impersonate(args.isEmpty() ? null : args.get(0));
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
+        public Metadata metadata() {
             var help = "Enable user impersonation.";
             var usage = " <user to impersonate>, or without arguments to reset impersonation";
-            return new Metadata( ":impersonate", "Impersonate user", usage, help, List.of() );
+            return new Metadata(":impersonate", "Impersonate user", usage, help, List.of());
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
-            return new Impersonate( args.cypherShell(), args.printer() );
+        public Command executor(Arguments args) {
+            return new Impersonate(args.cypherShell(), args.printer());
         }
     }
 }

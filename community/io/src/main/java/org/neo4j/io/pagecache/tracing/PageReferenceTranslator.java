@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.tracing;
 /**
  * Translator to translate internal page cache pageRef representation to id of page cache page, file page id, etc.
  */
-public interface PageReferenceTranslator
-{
-    int toId( long pageRef );
+public interface PageReferenceTranslator {
+    int toId(long pageRef);
 }

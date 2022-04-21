@@ -25,19 +25,21 @@ import org.neo4j.internal.batchimport.staging.Step;
  * Provides common {@link Stat statistics} about a {@link Step}, stats like number of processed batches,
  * processing time a.s.o.
  */
-public class ProcessingStats extends GenericStatsProvider
-{
+public class ProcessingStats extends GenericStatsProvider {
     public ProcessingStats(
-            long receivedBatches, long doneBatches,
-            long totalProcessingTime, long averageProcessing, long totalProcessingWallClockTime,
-            long upstreamIdleTime, long downstreamIdleTime )
-    {
-        add( Keys.received_batches, Stats.longStat( receivedBatches ) );
-        add( Keys.done_batches, Stats.longStat( doneBatches ) );
-        add( Keys.total_processing_time, Stats.longStat( totalProcessingTime ) );
-        add( Keys.total_processing_wall_clock_time, Stats.longStat( totalProcessingWallClockTime ) );
-        add( Keys.upstream_idle_time, Stats.longStat( upstreamIdleTime ) );
-        add( Keys.downstream_idle_time, Stats.longStat( downstreamIdleTime ) );
-        add( Keys.avg_processing_time, Stats.longStat( averageProcessing ) );
+            long receivedBatches,
+            long doneBatches,
+            long totalProcessingTime,
+            long averageProcessing,
+            long totalProcessingWallClockTime,
+            long upstreamIdleTime,
+            long downstreamIdleTime) {
+        add(Keys.received_batches, Stats.longStat(receivedBatches));
+        add(Keys.done_batches, Stats.longStat(doneBatches));
+        add(Keys.total_processing_time, Stats.longStat(totalProcessingTime));
+        add(Keys.total_processing_wall_clock_time, Stats.longStat(totalProcessingWallClockTime));
+        add(Keys.upstream_idle_time, Stats.longStat(upstreamIdleTime));
+        add(Keys.downstream_idle_time, Stats.longStat(downstreamIdleTime));
+        add(Keys.avg_processing_time, Stats.longStat(averageProcessing));
     }
 }

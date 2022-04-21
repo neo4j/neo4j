@@ -40,18 +40,24 @@ import org.neo4j.fabric.util.PrettyPrinting
 import org.neo4j.graphdb.ExecutionPlanDescription
 
 import java.util
+
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 
 sealed trait Fragment extends Fragment.RewritingSupport {
+
   /** Columns available to this fragment from an applied argument */
   def argumentColumns: Seq[String]
+
   /** Columns imported from the argument */
   def importColumns: Seq[String]
+
   /** Produced columns */
   def outputColumns: Seq[String]
+
   /** Whether this fragment produces final query output */
   def producesResults: Boolean
+
   /** ExecutionPlanDescription */
   def description: Fragment.Description
   /* Original input position */
@@ -59,10 +65,10 @@ sealed trait Fragment extends Fragment.RewritingSupport {
 
   def flatten: Seq[Fragment] = {
     this match {
-      case apply: Apply        => apply.input.flatten ++ Seq(apply) ++ apply.inner.flatten
-      case union: Union        => union.lhs.flatten ++ Seq(union) ++ union.rhs.flatten
-      case segment: Segment    => segment.input.flatten ++ Seq(segment)
-      case fragment: Fragment  => Seq(fragment)
+      case apply: Apply       => apply.input.flatten ++ Seq(apply) ++ apply.inner.flatten
+      case union: Union       => union.lhs.flatten ++ Seq(union) ++ union.rhs.flatten
+      case segment: Segment   => segment.input.flatten ++ Seq(segment)
+      case fragment: Fragment => Seq(fragment)
     }
   }
 }
@@ -70,6 +76,7 @@ sealed trait Fragment extends Fragment.RewritingSupport {
 object Fragment {
 
   sealed trait Chain extends Fragment {
+
     /** Graph selection for this fragment */
     def use: Use
   }
@@ -82,6 +89,7 @@ object Fragment {
   }
 
   sealed trait Command extends Fragment {
+
     /** Graph selection for this fragment */
     def use: Use
     def command: ast.Statement
@@ -96,7 +104,7 @@ object Fragment {
   final case class Init(
     use: Use,
     argumentColumns: Seq[String] = Seq.empty,
-    importColumns: Seq[String] = Seq.empty,
+    importColumns: Seq[String] = Seq.empty
   ) extends Fragment.Chain {
     override val outputColumns: Seq[String] = Seq.empty
     override val description: Fragment.Description = Description.InitDesc(this)
@@ -107,7 +115,7 @@ object Fragment {
   final case class Apply(
     input: Fragment.Chain,
     inner: Fragment,
-    inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters],
+    inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters]
   )(
     val pos: InputPosition
   ) extends Fragment.Segment {
@@ -120,7 +128,7 @@ object Fragment {
     input: Fragment.Init,
     distinct: Boolean,
     lhs: Fragment,
-    rhs: Fragment.Chain,
+    rhs: Fragment.Chain
   )(
     val pos: InputPosition
   ) extends Fragment {
@@ -134,7 +142,7 @@ object Fragment {
   final case class Leaf(
     input: Fragment.Chain,
     clauses: Seq[ast.Clause],
-    outputColumns: Seq[String],
+    outputColumns: Seq[String]
   )(
     val pos: InputPosition
   ) extends Fragment.Segment {
@@ -151,11 +159,12 @@ object Fragment {
     localQuery: BaseState,
     remoteQuery: RemoteQuery,
     sensitive: Boolean,
-    outputColumns: Seq[String],
+    outputColumns: Seq[String]
   ) extends Fragment.Segment {
+
     override val producesResults: Boolean = query match {
       case Query(part) => part.isYielding
-      case _              => true
+      case _           => true
     }
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)
     val executable: Boolean = hasExecutableClauses(query)
@@ -172,7 +181,7 @@ object Fragment {
 
   final case class SchemaCommand(
     use: Use,
-    command: ast.SchemaCommand,
+    command: ast.SchemaCommand
   ) extends Command {
     val description: Description = Description.CommandDesc(this, "Command")
     val queryType: QueryType = QueryType.of(command)
@@ -181,7 +190,7 @@ object Fragment {
 
   final case class AdminCommand(
     use: Use,
-    command: ast.AdministrationCommand,
+    command: ast.AdministrationCommand
   ) extends Command {
     val description: Description = Description.CommandDesc(this, "AdminCommand")
     val queryType: QueryType = QueryType.of(command)
@@ -230,21 +239,26 @@ object Fragment {
   }
 
   final object Description {
+
     final case class InitDesc(fragment: Fragment.Init) extends Description("Init", fragment) {
       override def getChildren: util.List[ExecutionPlanDescription] = list()
+
       override def getArguments: util.Map[String, AnyRef] = map(
         "argumentColumns" -> fragment.argumentColumns.mkString(","),
-        "importColumns" -> fragment.importColumns.mkString(","),
+        "importColumns" -> fragment.importColumns.mkString(",")
       )
     }
 
     final case class ApplyDesc(fragment: Fragment.Apply) extends Description("Apply", fragment) {
-      override def getChildren: util.List[ExecutionPlanDescription] = list(fragment.input.description, fragment.inner.description)
+
+      override def getChildren: util.List[ExecutionPlanDescription] =
+        list(fragment.input.description, fragment.inner.description)
       override def getArguments: util.Map[String, AnyRef] = map()
     }
 
     final case class LeafDesc(fragment: Fragment.Leaf) extends Description("Leaf", fragment) {
       override def getChildren: util.List[ExecutionPlanDescription] = list(fragment.input.description)
+
       override def getArguments: util.Map[String, AnyRef] = map(
         "query" -> QueryRenderer.render(fragment.clauses)
       )
@@ -252,13 +266,16 @@ object Fragment {
 
     final case class ExecDesc(fragment: Fragment.Exec) extends Description("Exec", fragment) {
       override def getChildren: util.List[ExecutionPlanDescription] = list(fragment.input.description)
+
       override def getArguments: util.Map[String, AnyRef] = map(
         "query" -> QueryRenderer.render(fragment.query)
       )
     }
 
     final case class UnionDesc(fragment: Fragment.Union) extends Description("Union", fragment) {
-      override def getChildren: util.List[ExecutionPlanDescription] = list(fragment.lhs.description, fragment.rhs.description)
+
+      override def getChildren: util.List[ExecutionPlanDescription] =
+        list(fragment.lhs.description, fragment.rhs.description)
       override def getArguments: util.Map[String, AnyRef] = map()
     }
 
@@ -275,57 +292,58 @@ object Fragment {
   }
 
   val pretty: PrettyPrinting[Fragment] = new PrettyPrinting[Fragment] {
+
     def pretty: Fragment => Stream[String] = {
       case f: Init => node(
-        name = "init",
-        fields = Seq(
-          "use" -> use(f.use),
-          "arg" -> list(f.argumentColumns),
-          "imp" -> list(f.importColumns),
+          name = "init",
+          fields = Seq(
+            "use" -> use(f.use),
+            "arg" -> list(f.argumentColumns),
+            "imp" -> list(f.importColumns)
+          )
         )
-      )
 
       case f: Apply => node(
-        name = "apply",
-        fields = Seq(
-          "out" -> list(f.outputColumns),
-          "tx" -> f.inTransactionsParameters,
-        ),
-        children = Seq(f.inner, f.input)
-      )
+          name = "apply",
+          fields = Seq(
+            "out" -> list(f.outputColumns),
+            "tx" -> f.inTransactionsParameters
+          ),
+          children = Seq(f.inner, f.input)
+        )
 
       case f: Fragment.Union => node(
-        name = "union",
-        fields = Seq(
-          "out" -> list(f.outputColumns),
-          "dist" -> f.distinct
-        ),
-        children = Seq(f.lhs, f.rhs)
-      )
+          name = "union",
+          fields = Seq(
+            "out" -> list(f.outputColumns),
+            "dist" -> f.distinct
+          ),
+          children = Seq(f.lhs, f.rhs)
+        )
 
       case f: Fragment.Leaf => node(
-        name = "leaf",
-        fields = Seq(
-          "use" -> use(f.use),
-          "arg" -> list(f.argumentColumns),
-          "imp" -> list(f.importColumns),
-          "out" -> list(f.outputColumns),
-          "qry" -> query(f.clauses),
-        ),
-        children = Seq(f.input)
-      )
+          name = "leaf",
+          fields = Seq(
+            "use" -> use(f.use),
+            "arg" -> list(f.argumentColumns),
+            "imp" -> list(f.importColumns),
+            "out" -> list(f.outputColumns),
+            "qry" -> query(f.clauses)
+          ),
+          children = Seq(f.input)
+        )
 
       case f: Fragment.Exec => node(
-        name = "exec",
-        fields = Seq(
-          "use" -> use(f.use),
-          "arg" -> list(f.argumentColumns),
-          "imp" -> list(f.importColumns),
-          "out" -> list(f.outputColumns),
-          "qry" -> query(f.query),
-        ),
-        children = Seq(f.input)
-      )
+          name = "exec",
+          fields = Seq(
+            "use" -> use(f.use),
+            "arg" -> list(f.argumentColumns),
+            "imp" -> list(f.importColumns),
+            "out" -> list(f.outputColumns),
+            "qry" -> query(f.query)
+          ),
+          children = Seq(f.input)
+        )
     }
 
     private def use(u: Use) = u match {
@@ -334,8 +352,3 @@ object Fragment {
     }
   }
 }
-
-
-
-
-

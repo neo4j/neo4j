@@ -19,21 +19,19 @@
  */
 package org.neo4j.cli;
 
+import static org.neo4j.cli.Command.CommandType;
+
 import org.neo4j.annotations.service.Service;
 import org.neo4j.service.PrioritizedService;
 
-import static org.neo4j.cli.Command.CommandType;
-
 @Service
-public interface CommandProvider<T extends Command> extends PrioritizedService
-{
-    T createCommand( ExecutionContext ctx );
+public interface CommandProvider<T extends Command> extends PrioritizedService {
+    T createCommand(ExecutionContext ctx);
 
     CommandType commandType();
 
     @Override
-    default int getPriority()
-    {
+    default int getPriority() {
         return 1;
     }
 }

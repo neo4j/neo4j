@@ -19,12 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.net.URL
-import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.Files
-import java.nio.file.NoSuchFileException
-import java.nio.file.Paths
-
 import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
@@ -49,13 +43,20 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.net.URL
+import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.Files
+import java.nio.file.NoSuchFileException
+import java.nio.file.Paths
+
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
   private val username = "foo"
   private val password = "secret"
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
+  override def databaseConfig(): Map[Setting[_], Object] =
+    super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
 
   override protected def onNewGraphDatabase(): Unit = {
     super.onNewGraphDatabase()
@@ -71,30 +72,72 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
 
   // Verbose output
 
-  private val builtInFunctionsVerbose = readAll(funcResourceUrl).map(m => m.map {
-    case ("rolesExecution", _) => ("rolesExecution", null)
-    case ("rolesBoostedExecution", _) => ("rolesBoostedExecution", null)
-    case m => m
-  })
-
-  private val userDefinedFunctionsVerbose = List(
-    Map[String, Any]("name" -> "test.function", "category" -> "", "description" -> "", "signature" -> "test.function() :: (STRING?)", "isBuiltIn" -> false, "argumentDescription" -> List(), "returnDescription" -> "STRING?", "aggregating" -> false, "rolesExecution" -> null, "rolesBoostedExecution" -> null),
-    Map[String, Any]("name" -> "test.functionWithInput", "category" -> "", "description" -> "", "signature" -> "test.functionWithInput(input :: STRING?) :: (LIST? OF ANY?)", "isBuiltIn" -> false, "argumentDescription" -> List(Map("name" -> "input", "description" -> "input :: STRING?", "type" -> "STRING?")), "returnDescription" -> "LIST? OF ANY?", "aggregating" -> false, "rolesExecution" -> null, "rolesBoostedExecution" -> null),
-    Map[String, Any]("name" -> "test.return.latest", "category" -> "", "description" -> "Return the latest number, continuously updating the value.", "signature" -> "test.return.latest(value :: INTEGER?) :: (INTEGER?)", "isBuiltIn" -> false, "argumentDescription" -> List(Map("name" -> "value", "description" -> "value :: INTEGER?", "type" -> "INTEGER?")), "returnDescription" -> "INTEGER?", "aggregating" -> true, "rolesExecution" -> null, "rolesBoostedExecution" -> null),
+  private val builtInFunctionsVerbose = readAll(funcResourceUrl).map(m =>
+    m.map {
+      case ("rolesExecution", _)        => ("rolesExecution", null)
+      case ("rolesBoostedExecution", _) => ("rolesBoostedExecution", null)
+      case m                            => m
+    }
   )
 
-  private val allFunctionsVerbose = (builtInFunctionsVerbose ++ userDefinedFunctionsVerbose).sortBy(m => m("name").asInstanceOf[String])
+  private val userDefinedFunctionsVerbose = List(
+    Map[String, Any](
+      "name" -> "test.function",
+      "category" -> "",
+      "description" -> "",
+      "signature" -> "test.function() :: (STRING?)",
+      "isBuiltIn" -> false,
+      "argumentDescription" -> List(),
+      "returnDescription" -> "STRING?",
+      "aggregating" -> false,
+      "rolesExecution" -> null,
+      "rolesBoostedExecution" -> null
+    ),
+    Map[String, Any](
+      "name" -> "test.functionWithInput",
+      "category" -> "",
+      "description" -> "",
+      "signature" -> "test.functionWithInput(input :: STRING?) :: (LIST? OF ANY?)",
+      "isBuiltIn" -> false,
+      "argumentDescription" -> List(Map("name" -> "input", "description" -> "input :: STRING?", "type" -> "STRING?")),
+      "returnDescription" -> "LIST? OF ANY?",
+      "aggregating" -> false,
+      "rolesExecution" -> null,
+      "rolesBoostedExecution" -> null
+    ),
+    Map[String, Any](
+      "name" -> "test.return.latest",
+      "category" -> "",
+      "description" -> "Return the latest number, continuously updating the value.",
+      "signature" -> "test.return.latest(value :: INTEGER?) :: (INTEGER?)",
+      "isBuiltIn" -> false,
+      "argumentDescription" -> List(Map("name" -> "value", "description" -> "value :: INTEGER?", "type" -> "INTEGER?")),
+      "returnDescription" -> "INTEGER?",
+      "aggregating" -> true,
+      "rolesExecution" -> null,
+      "rolesBoostedExecution" -> null
+    )
+  )
+
+  private val allFunctionsVerbose =
+    (builtInFunctionsVerbose ++ userDefinedFunctionsVerbose).sortBy(m => m("name").asInstanceOf[String])
 
   // Brief output
 
   private val builtInFunctionsBrief =
-    builtInFunctionsVerbose.map(m => m.view.filterKeys(k => Seq("name", "category", "description").contains(k)).toMap
-      .map { case (key, value) => (key, value.asInstanceOf[String]) }) // All brief columns are String columns
+    builtInFunctionsVerbose.map(m =>
+      m.view.filterKeys(k => Seq("name", "category", "description").contains(k)).toMap
+        .map { case (key, value) => (key, value.asInstanceOf[String]) }
+    ) // All brief columns are String columns
 
   private val userDefinedFunctionsBrief = List(
     Map("name" -> "test.function", "category" -> "", "description" -> ""),
     Map("name" -> "test.functionWithInput", "category" -> "", "description" -> ""),
-    Map("name" -> "test.return.latest", "category" -> "", "description" -> "Return the latest number, continuously updating the value."),
+    Map(
+      "name" -> "test.return.latest",
+      "category" -> "",
+      "description" -> "Return the latest number, continuously updating the value."
+    )
   )
 
   private val allFunctionsBrief = (builtInFunctionsBrief ++ userDefinedFunctionsBrief).sortBy(m => m("name"))
@@ -164,7 +207,9 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     val result = executeAs(username, password, "SHOW FUNCTIONS EXECUTABLE YIELD name, description, isBuiltIn")
 
     // THEN
-    result.toList should be(allFunctionsVerbose.map(m => m.view.filterKeys(k => Seq("name", "description", "isBuiltIn").contains(k)).toMap))
+    result.toList should be(allFunctionsVerbose.map(m =>
+      m.view.filterKeys(k => Seq("name", "description", "isBuiltIn").contains(k)).toMap
+    ))
   }
 
   test("should show functions executable by specified user") {
@@ -208,13 +253,17 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
   private val allProceduresVerbose: List[Map[String, Any]] = readAll(procResourceUrl)
     .filterNot(m => m("enterpriseOnly").asInstanceOf[Boolean])
     .map(m => m.view.filterKeys(k => !k.equals("enterpriseOnly")).toMap)
-    .map(m => m.map {
-    case ("rolesExecution", _) => ("rolesExecution", null)
-    case ("rolesBoostedExecution", _) => ("rolesBoostedExecution", null)
-    case m => m
-  })
+    .map(m =>
+      m.map {
+        case ("rolesExecution", _)        => ("rolesExecution", null)
+        case ("rolesBoostedExecution", _) => ("rolesBoostedExecution", null)
+        case m                            => m
+      }
+    )
 
-  private val allProceduresBrief = allProceduresVerbose.map(m => m.view.filterKeys(k => Seq("name", "description", "mode", "worksOnSystem").contains(k)).toMap)
+  private val allProceduresBrief = allProceduresVerbose.map(m =>
+    m.view.filterKeys(k => Seq("name", "description", "mode", "worksOnSystem").contains(k)).toMap
+  )
 
   test("should show procedures") {
     // GIVEN
@@ -257,7 +306,9 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     val result = executeAs(username, password, "SHOW PROCEDURES EXECUTABLE YIELD name, description, signature")
 
     // THEN
-    result.toList should be(allProceduresVerbose.map(m => m.view.filterKeys(k => Seq("name", "description", "signature").contains(k)).toMap))
+    result.toList should be(allProceduresVerbose.map(m =>
+      m.view.filterKeys(k => Seq("name", "description", "signature").contains(k)).toMap
+    ))
   }
 
   test("should show procedures executable by specified user") {
@@ -301,9 +352,15 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     selectDatabase(DEFAULT_DATABASE_NAME)
   }
 
-  private def executeAs(username: String, password: String, queryText: String, params: Map[String, Any] = Map.empty): RewindableExecutionResult = {
+  private def executeAs(
+    username: String,
+    password: String,
+    queryText: String,
+    params: Map[String, Any] = Map.empty
+  ): RewindableExecutionResult = {
     val authManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])
-    val login = authManager.login(SecurityTestUtils.authToken(username, password), ClientConnectionInfo.EMBEDDED_CONNECTION)
+    val login =
+      authManager.login(SecurityTestUtils.authToken(username, password), ClientConnectionInfo.EMBEDDED_CONNECTION)
     val tx = graph.beginTransaction(Type.EXPLICIT, login)
     try {
       val result = execute(queryText, params, tx)
@@ -317,23 +374,24 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
   private def readAll(resourceUrl: URL): List[Map[String, Any]] = {
     val jsonMapper = JsonMapper.builder().addModule(DefaultScalaModule).build()
     val reader = Files.newBufferedReader(Paths.get(resourceUrl.toURI), UTF_8)
-    jsonMapper.readValue(reader, new TypeReference[List[Map[String, Any]]]{})
+    jsonMapper.readValue(reader, new TypeReference[List[Map[String, Any]]] {})
   }
 }
 
 class TestShowFunction {
-  @UserFunction( "test.function" )
+
+  @UserFunction("test.function")
   def function(): String = "OK"
 
-  @UserFunction( "test.functionWithInput" )
+  @UserFunction("test.functionWithInput")
   def functionWithInput(@Name("input") input: String): ListValue = {
     val inputVal = Values.stringValue(input)
     val values: List[AnyValue] = List(inputVal, inputVal, inputVal)
     VirtualValues.fromList(values.asJava)
   }
 
-  @UserAggregationFunction( "test.return.latest" )
-  @Description( "Return the latest number, continuously updating the value." )
+  @UserAggregationFunction("test.return.latest")
+  @Description("Return the latest number, continuously updating the value.")
   def myAggFunc: ReturnLatest = new ReturnLatest
 }
 

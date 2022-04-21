@@ -23,20 +23,19 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public abstract class BaseRoutingTableProcedureValidator implements RoutingTableProcedureValidator
-{
+public abstract class BaseRoutingTableProcedureValidator implements RoutingTableProcedureValidator {
     protected final DatabaseManager<?> databaseManager;
 
-    protected BaseRoutingTableProcedureValidator( DatabaseManager<?> databaseManager )
-    {
+    protected BaseRoutingTableProcedureValidator(DatabaseManager<?> databaseManager) {
         this.databaseManager = databaseManager;
     }
 
     @Override
-    @SuppressWarnings( "ReturnValueIgnored" )
-    public void assertDatabaseExists( NamedDatabaseId namedDatabaseId ) throws ProcedureException
-    {
-        databaseManager.databaseIdRepository().getById( namedDatabaseId.databaseId() )
-                       .orElseThrow( () -> RoutingTableProcedureHelpers.databaseNotFoundException( namedDatabaseId.name() ) );
+    @SuppressWarnings("ReturnValueIgnored")
+    public void assertDatabaseExists(NamedDatabaseId namedDatabaseId) throws ProcedureException {
+        databaseManager
+                .databaseIdRepository()
+                .getById(namedDatabaseId.databaseId())
+                .orElseThrow(() -> RoutingTableProcedureHelpers.databaseNotFoundException(namedDatabaseId.name()));
     }
 }

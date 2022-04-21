@@ -31,16 +31,18 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
  * state, a KernelTransaction and all that and is now committing. <p> For other modes of application, like recovery or
  * external there are other, added functionality, decorated outside this applier.
  */
-public class NeoStoreTransactionApplierFactory implements TransactionApplierFactory
-{
+public class NeoStoreTransactionApplierFactory implements TransactionApplierFactory {
     private final CommandVersion version;
     private final NeoStores neoStores;
     // Ideally we don't want any cache access in here, but it is how it is. At least we try to minimize use of it
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
 
-    NeoStoreTransactionApplierFactory( TransactionApplicationMode mode, NeoStores store, CacheAccessBackDoor cacheAccess, LockService lockService )
-    {
+    NeoStoreTransactionApplierFactory(
+            TransactionApplicationMode mode,
+            NeoStores store,
+            CacheAccessBackDoor cacheAccess,
+            LockService lockService) {
         this.version = mode.version();
         this.neoStores = store;
         this.cacheAccess = cacheAccess;
@@ -48,10 +50,15 @@ public class NeoStoreTransactionApplierFactory implements TransactionApplierFact
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext )
-    {
-        return new NeoStoreTransactionApplier( version, neoStores, cacheAccess, lockService, transaction.transactionId(), batchContext,
-                transaction.cursorContext(), transaction.storeCursors() );
+    public TransactionApplier startTx(CommandsToApply transaction, BatchContext batchContext) {
+        return new NeoStoreTransactionApplier(
+                version,
+                neoStores,
+                cacheAccess,
+                lockService,
+                transaction.transactionId(),
+                batchContext,
+                transaction.cursorContext(),
+                transaction.storeCursors());
     }
-
 }

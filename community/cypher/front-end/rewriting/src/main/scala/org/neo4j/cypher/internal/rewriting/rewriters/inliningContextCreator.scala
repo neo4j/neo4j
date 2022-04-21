@@ -37,7 +37,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
 
       // When just passing a variable through a WITH, do not count the variable as used. This case shortcuts the
       // tree folding so the variables are not tracked.
-      case ast.AliasedReturnItem(Variable(n1), alias@Variable(n2)) if n1 == n2 =>
+      case ast.AliasedReturnItem(Variable(n1), alias @ Variable(n2)) if n1 == n2 =>
         context => SkipChildren(context)
 
       case variable: Variable =>

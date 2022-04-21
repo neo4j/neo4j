@@ -19,51 +19,46 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
+import static org.neo4j.internal.helpers.ArrayUtil.contains;
+
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
-
-import static org.neo4j.internal.helpers.ArrayUtil.contains;
 
 /**
  * A collection of high level capabilities a store can have, should not be more granular than necessary
  * for differentiating different version from one another.
  */
-public enum RecordStorageCapability implements Capability
-{
+public enum RecordStorageCapability implements Capability {
     /**
      * 3 bytes relationship type support
      */
-    RELATIONSHIP_TYPE_3BYTES( CapabilityType.FORMAT, CapabilityType.STORE ),
+    RELATIONSHIP_TYPE_3BYTES(CapabilityType.FORMAT, CapabilityType.STORE),
 
     /**
      * Records can spill over into secondary units (another record with a header saying it's a secondary unit to another record).
      */
-    SECONDARY_RECORD_UNITS( CapabilityType.FORMAT ),
+    SECONDARY_RECORD_UNITS(CapabilityType.FORMAT),
 
     /**
      * Store files are in little-endian format
      */
-    LITTLE_ENDIAN( CapabilityType.FORMAT, CapabilityType.STORE );
+    LITTLE_ENDIAN(CapabilityType.FORMAT, CapabilityType.STORE);
 
     private final CapabilityType[] types;
     private final boolean additive;
 
-    RecordStorageCapability( CapabilityType... types )
-    {
-        this( false, types );
+    RecordStorageCapability(CapabilityType... types) {
+        this(false, types);
     }
 
-    RecordStorageCapability( boolean additive, CapabilityType... types )
-    {
+    RecordStorageCapability(boolean additive, CapabilityType... types) {
         this.additive = additive;
         this.types = types;
     }
 
     @Override
-    public boolean isType( CapabilityType type )
-    {
-        return contains( types, type );
+    public boolean isType(CapabilityType type) {
+        return contains(types, type);
     }
 
     /**
@@ -73,8 +68,7 @@ public enum RecordStorageCapability implements Capability
      * @return whether or not this capability is additive.
      */
     @Override
-    public boolean isAdditive()
-    {
+    public boolean isAdditive() {
         return additive;
     }
 }

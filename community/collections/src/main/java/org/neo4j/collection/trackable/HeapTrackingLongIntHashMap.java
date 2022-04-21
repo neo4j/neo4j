@@ -19,71 +19,62 @@
  */
 package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
-
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
-
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-@SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-public class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCloseable
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongIntHashMap.class );
+import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
+
+@SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+public class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCloseable {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingLongIntHashMap.class);
     static final int DEFAULT_INITIAL_CAPACITY = 16;
 
     final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
     @VisibleForTesting
-    public static HeapTrackingLongIntHashMap createLongIntHashMap( MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap( SHALLOW_SIZE + arraysHeapSize( DEFAULT_INITIAL_CAPACITY ) );
-        return new HeapTrackingLongIntHashMap( memoryTracker, DEFAULT_INITIAL_CAPACITY );
+    public static HeapTrackingLongIntHashMap createLongIntHashMap(MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(SHALLOW_SIZE + arraysHeapSize(DEFAULT_INITIAL_CAPACITY));
+        return new HeapTrackingLongIntHashMap(memoryTracker, DEFAULT_INITIAL_CAPACITY);
     }
 
-    private HeapTrackingLongIntHashMap( MemoryTracker memoryTracker, int trackedCapacity )
-    {
-        this.memoryTracker = requireNonNull( memoryTracker );
+    private HeapTrackingLongIntHashMap(MemoryTracker memoryTracker, int trackedCapacity) {
+        this.memoryTracker = requireNonNull(memoryTracker);
         this.trackedCapacity = trackedCapacity;
     }
 
     @Override
-    protected void allocateTable( int sizeToAllocate )
-    {
-        if ( memoryTracker != null )
-        {
-            memoryTracker.allocateHeap( arraysHeapSize( sizeToAllocate ) );
-            memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) );
+    protected void allocateTable(int sizeToAllocate) {
+        if (memoryTracker != null) {
+            memoryTracker.allocateHeap(arraysHeapSize(sizeToAllocate));
+            memoryTracker.releaseHeap(arraysHeapSize(trackedCapacity));
             trackedCapacity = sizeToAllocate;
         }
-        super.allocateTable( sizeToAllocate );
+        super.allocateTable(sizeToAllocate);
     }
 
     @Override
-    public void close()
-    {
-        memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) + SHALLOW_SIZE );
+    public void close() {
+        memoryTracker.releaseHeap(arraysHeapSize(trackedCapacity) + SHALLOW_SIZE);
     }
 
     /**
      * Make size() "thread-safer" by grabbing a reference to the values.
      */
     @Override
-    public int size()
-    {
+    public int size() {
         SentinelValues sentinelValues = getSentinelValues();
         return getOccupiedWithData() + (sentinelValues == null ? 0 : sentinelValues.size());
     }
 
     @VisibleForTesting
-    public static long arraysHeapSize( int arrayLength )
-    {
-        long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES );
-        long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Integer.BYTES );
+    public static long arraysHeapSize(int arrayLength) {
+        long keyArray = alignObjectSize(ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES);
+        long valueArray = alignObjectSize(ARRAY_HEADER_BYTES + (long) arrayLength * Integer.BYTES);
         return keyArray + valueArray;
     }
 }

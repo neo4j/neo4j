@@ -34,12 +34,14 @@ sealed trait SeekArgs {
 }
 
 object SeekArgs {
+
   object empty extends SeekArgs {
-    def expressions(ctx: ReadableRow, state: QueryState):  ListValue = VirtualValues.EMPTY_LIST
+    def expressions(ctx: ReadableRow, state: QueryState): ListValue = VirtualValues.EMPTY_LIST
   }
 }
 
 case class SingleSeekArg(expr: Expression) extends SeekArgs {
+
   def expressions(ctx: ReadableRow, state: QueryState): ListValue =
     expr(ctx, state) match {
       case value => VirtualValues.list(value)
@@ -47,6 +49,7 @@ case class SingleSeekArg(expr: Expression) extends SeekArgs {
 }
 
 case class ManySeekArgs(coll: Expression) extends SeekArgs {
+
   def expressions(ctx: ReadableRow, state: QueryState): ListValue = {
     coll(ctx, state) match {
       case IsList(values) => values
@@ -54,13 +57,12 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
   }
 }
 
-case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
-                           (val id: Id = Id.INVALID_ID) extends Pipe {
+case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val ctx = state.newRowWithArgument(rowFactory)
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     val nodes = new NodeIdSeekIterator(nodeIds.iterator(), state.query)
-    PrimitiveLongHelper.map(nodes, n =>  rowFactory.copyWith(ctx, ident, VirtualValues.node(n)))
+    PrimitiveLongHelper.map(nodes, n => rowFactory.copyWith(ctx, ident, VirtualValues.node(n)))
   }
 }

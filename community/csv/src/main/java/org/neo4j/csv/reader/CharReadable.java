@@ -36,8 +36,7 @@ import java.nio.CharBuffer;
  * Also took the opportunity to let {@link CharReadable} extends {@link Closeable}, something that
  * {@link Readable} doesn't.
  */
-public interface CharReadable extends Closeable, SourceTraceability
-{
+public interface CharReadable extends Closeable, SourceTraceability {
     /**
      * Reads characters into the {@link SectionedCharBuffer buffer}.
      * This method will block until data is available, an I/O error occurs, or the end of the stream is reached.
@@ -54,7 +53,7 @@ public interface CharReadable extends Closeable, SourceTraceability
      * @return a {@link SectionedCharBuffer} containing new data.
      * @throws IOException if an I/O error occurs.
      */
-    SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException;
+    SectionedCharBuffer read(SectionedCharBuffer buffer, int from) throws IOException;
 
     /**
      * Reads characters into the given array starting at {@code offset}, reading {@code length} number of characters.
@@ -66,53 +65,45 @@ public interface CharReadable extends Closeable, SourceTraceability
      * @return number of bytes read, or 0 if there were no bytes read and end of readable is reached.
      * @throws IOException on read error.
      */
-    int read( char[] into, int offset, int length ) throws IOException;
+    int read(char[] into, int offset, int length) throws IOException;
 
     /**
      * @return length of this source, in bytes.
      */
     long length();
 
-    abstract class Adapter extends SourceTraceability.Adapter implements CharReadable
-    {
+    abstract class Adapter extends SourceTraceability.Adapter implements CharReadable {
         @Override
-        public void close() throws IOException
-        {   // Nothing to close
+        public void close() throws IOException { // Nothing to close
         }
 
         @Override
-        public float compressionRatio()
-        {
+        public float compressionRatio() {
             return 1f;
         }
     }
 
-    class Empty extends SourceTraceability.Empty implements CharReadable
-    {
+    class Empty extends SourceTraceability.Empty implements CharReadable {
         @Override
-        public int read( char[] into, int offset, int length )
-        {
+        public int read(char[] into, int offset, int length) {
             return -1;
         }
 
         @Override
-        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from )
-        {
-            buffer.compact( buffer, from );
+        public SectionedCharBuffer read(SectionedCharBuffer buffer, int from) {
+            buffer.compact(buffer, from);
             return buffer;
         }
 
         @Override
-        public long length()
-        {
+        public long length() {
             return 0;
         }
 
         @Override
-        public void close()
-        {
-        }
-    };
+        public void close() {}
+    }
+    ;
 
     CharReadable EMPTY = new Empty();
 }

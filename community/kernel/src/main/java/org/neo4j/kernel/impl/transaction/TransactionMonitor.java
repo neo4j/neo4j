@@ -24,13 +24,12 @@ import org.neo4j.kernel.impl.api.transaction.monitor.TransactionSizeMonitor;
 /**
  * This monitor is used to track transaction management. It is called when client code starts, finishes, or terminates transactions.
  */
-public interface TransactionMonitor extends TransactionSizeMonitor
-{
+public interface TransactionMonitor extends TransactionSizeMonitor {
     void transactionStarted();
 
-    void transactionFinished( boolean successful, boolean writeTx );
+    void transactionFinished(boolean successful, boolean writeTx);
 
-    void transactionTerminated( boolean writeTx );
+    void transactionTerminated(boolean writeTx);
 
     void upgradeToWriteTransaction();
 }

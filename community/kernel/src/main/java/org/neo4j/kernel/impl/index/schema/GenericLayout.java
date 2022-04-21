@@ -23,73 +23,62 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
-class GenericLayout extends IndexLayout<BtreeKey>
-{
+class GenericLayout extends IndexLayout<BtreeKey> {
     private final int numberOfSlots;
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
 
-    GenericLayout( int numberOfSlots, IndexSpecificSpaceFillingCurveSettings spatialSettings )
-    {
-        super( false, Layout.namedIdentifier( "NSIL", numberOfSlots ), 0, 5 );
+    GenericLayout(int numberOfSlots, IndexSpecificSpaceFillingCurveSettings spatialSettings) {
+        super(false, Layout.namedIdentifier("NSIL", numberOfSlots), 0, 5);
         this.numberOfSlots = numberOfSlots;
         this.spatialSettings = spatialSettings;
     }
 
     @Override
-    public BtreeKey newKey()
-    {
+    public BtreeKey newKey() {
         return numberOfSlots == 1
-               // An optimized version which has the GenericKeyState built-in w/o indirection
-               ? new BtreeKey( spatialSettings )
-               // A version which has an indirection to GenericKeyState[]
-               : new CompositeBtreeKey( numberOfSlots, spatialSettings );
+                // An optimized version which has the GenericKeyState built-in w/o indirection
+                ? new BtreeKey(spatialSettings)
+                // A version which has an indirection to GenericKeyState[]
+                : new CompositeBtreeKey(numberOfSlots, spatialSettings);
     }
 
     @Override
-    public BtreeKey copyKey( BtreeKey key, BtreeKey into )
-    {
-        into.copyFrom( key );
+    public BtreeKey copyKey(BtreeKey key, BtreeKey into) {
+        into.copyFrom(key);
         return into;
     }
 
     @Override
-    public int keySize( BtreeKey key )
-    {
+    public int keySize(BtreeKey key) {
         return key.size();
     }
 
     @Override
-    public void writeKey( PageCursor cursor, BtreeKey key )
-    {
-        key.put( cursor );
+    public void writeKey(PageCursor cursor, BtreeKey key) {
+        key.put(cursor);
     }
 
     @Override
-    public void readKey( PageCursor cursor, BtreeKey into, int keySize )
-    {
-        into.get( cursor, keySize );
+    public void readKey(PageCursor cursor, BtreeKey into, int keySize) {
+        into.get(cursor, keySize);
     }
 
     @Override
-    public void minimalSplitter( BtreeKey left, BtreeKey right, BtreeKey into )
-    {
-        right.minimalSplitter( left, right, into );
+    public void minimalSplitter(BtreeKey left, BtreeKey right, BtreeKey into) {
+        right.minimalSplitter(left, right, into);
     }
 
-    IndexSpecificSpaceFillingCurveSettings getSpaceFillingCurveSettings()
-    {
+    IndexSpecificSpaceFillingCurveSettings getSpaceFillingCurveSettings() {
         return spatialSettings;
     }
 
     @Override
-    public void initializeAsLowest( BtreeKey key )
-    {
+    public void initializeAsLowest(BtreeKey key) {
         key.initValuesAsLowest();
     }
 
     @Override
-    public void initializeAsHighest( BtreeKey key )
-    {
+    public void initializeAsHighest(BtreeKey key) {
         key.initValuesAsHighest();
     }
 }

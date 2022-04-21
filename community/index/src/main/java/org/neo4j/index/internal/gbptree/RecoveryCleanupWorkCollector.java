@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -37,8 +36,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <p>
  * Take full responsibility for closing added {@link CleanupJob CleanupJobs} as soon as possible after run.
  */
-public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
-{
+public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter {
     private static ImmediateRecoveryCleanupWorkCollector immediateInstance;
     private static IgnoringRecoveryCleanupWorkCollector ignoringInstance;
 
@@ -47,26 +45,22 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
      *
      * @param job cleanup job to perform, now or at some point in the future.
      */
-    abstract void add( CleanupJob job );
+    abstract void add(CleanupJob job);
 
-    static void executeWithExecutor( CleanupJobGroupAction action )
-    {
-        ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        try
-        {
-            action.execute( executor );
-        }
-        finally
-        {
-            shutdownExecutorAndVerifyNoLeaks( executor );
+    static void executeWithExecutor(CleanupJobGroupAction action) {
+        ExecutorService executor =
+                Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        try {
+            action.execute(executor);
+        } finally {
+            shutdownExecutorAndVerifyNoLeaks(executor);
         }
     }
-    private static void shutdownExecutorAndVerifyNoLeaks( ExecutorService executor )
-    {
+
+    private static void shutdownExecutorAndVerifyNoLeaks(ExecutorService executor) {
         List<Runnable> leakedTasks = executor.shutdownNow();
-        if ( !leakedTasks.isEmpty() )
-        {
-            throw new IllegalStateException( "Tasks leaked from CleanupJob. Tasks where " + leakedTasks );
+        if (!leakedTasks.isEmpty()) {
+            throw new IllegalStateException("Tasks leaked from CleanupJob. Tasks where " + leakedTasks);
         }
     }
 
@@ -74,10 +68,8 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
      * {@link CleanupJob#run(CleanupJob.Executor) Runs} {@link #add(CleanupJob) added} cleanup jobs right away in the thread
      * calling {@link #add(CleanupJob)}.
      */
-    public static RecoveryCleanupWorkCollector immediate()
-    {
-        if ( immediateInstance == null )
-        {
+    public static RecoveryCleanupWorkCollector immediate() {
+        if (immediateInstance == null) {
             immediateInstance = new ImmediateRecoveryCleanupWorkCollector();
         }
         return immediateInstance;
@@ -86,10 +78,8 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
     /**
      * Ignore all clean jobs.
      */
-    public static RecoveryCleanupWorkCollector ignore()
-    {
-        if ( ignoringInstance == null )
-        {
+    public static RecoveryCleanupWorkCollector ignore() {
+        if (ignoringInstance == null) {
             ignoringInstance = new IgnoringRecoveryCleanupWorkCollector();
         }
         return ignoringInstance;
@@ -99,49 +89,38 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
      * {@link RecoveryCleanupWorkCollector} which runs added {@link CleanupJob} as part of the {@link #add(CleanupJob)}
      * call in the caller thread.
      */
-    static class ImmediateRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
-    {
+    static class ImmediateRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector {
         @Override
-        public void add( CleanupJob job )
-        {
-            executeWithExecutor( executor ->
-            {
-                try
-                {
-                    job.run( new CleanupJob.Executor()
-                    {
+        public void add(CleanupJob job) {
+            executeWithExecutor(executor -> {
+                try {
+                    job.run(new CleanupJob.Executor() {
 
                         @Override
-                        public <T> CleanupJob.JobResult<T> submit( String jobDescription, Callable<T> job )
-                        {
-                            var future = executor.submit( job );
+                        public <T> CleanupJob.JobResult<T> submit(String jobDescription, Callable<T> job) {
+                            var future = executor.submit(job);
                             return future::get;
                         }
-                    } );
-                }
-                finally
-                {
+                    });
+                } finally {
                     job.close();
                 }
-            } );
+            });
         }
     }
 
     /**
      * {@link RecoveryCleanupWorkCollector} ignoring all {@link CleanupJob} added to it.
      */
-    static class IgnoringRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
-    {
+    static class IgnoringRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector {
         @Override
-        public void add( CleanupJob job )
-        {
+        public void add(CleanupJob job) {
             job.close();
         }
     }
 
     @FunctionalInterface
-    interface CleanupJobGroupAction
-    {
-        void execute( ExecutorService executor );
+    interface CleanupJobGroupAction {
+        void execute(ExecutorService executor);
     }
 }

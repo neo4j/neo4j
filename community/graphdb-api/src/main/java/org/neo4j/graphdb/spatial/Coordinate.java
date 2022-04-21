@@ -19,13 +19,12 @@
  */
 package org.neo4j.graphdb.spatial;
 
+import static java.util.Arrays.stream;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.neo4j.annotations.api.PublicApi;
-
-import static java.util.Arrays.stream;
 
 /**
  * A coordinate is used to describe a position in space.
@@ -42,15 +41,12 @@ import static java.util.Arrays.stream;
  * (see ${@link CRS})
  */
 @PublicApi
-public final class Coordinate
-{
+public final class Coordinate {
     private final double[] coordinate;
 
-    public Coordinate( double... coordinate )
-    {
-        if ( coordinate.length < 2 )
-        {
-            throw new IllegalArgumentException( "A coordinate must have at least two elements" );
+    public Coordinate(double... coordinate) {
+        if (coordinate.length < 2) {
+            throw new IllegalArgumentException("A coordinate must have at least two elements");
         }
         this.coordinate = coordinate;
     }
@@ -60,33 +56,26 @@ public final class Coordinate
      *
      * @return A list of numbers describing the coordinate.
      */
-    public List<Double> getCoordinate()
-    {
-        return stream( coordinate ).boxed().collect( Collectors.toList() );
+    public List<Double> getCoordinate() {
+        return stream(coordinate).boxed().collect(Collectors.toList());
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         Coordinate that = (Coordinate) o;
 
-        return Arrays.equals( coordinate, that.coordinate );
-
+        return Arrays.equals(coordinate, that.coordinate);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Arrays.hashCode( coordinate );
+    public int hashCode() {
+        return Arrays.hashCode(coordinate);
     }
 }
-

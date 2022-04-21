@@ -54,6 +54,7 @@ object OrLeafPlanner {
    * A kind of predicate and capabilities how to interact with the OrLeafPlanner at various stages in the computation.
    */
   sealed trait PredicateKind {
+
     /**
      * @return all disjunctions in the query graph of this kind.
      */
@@ -75,10 +76,12 @@ object OrLeafPlanner {
      * @param disjunction the disjunction
      * @return a query graph where all predicates of this kind solved in solvedQgs are added to qg, as appropriate.
      */
-    def addSolvedToQueryGraph(qg: QueryGraph,
-                              solvedQgs: Seq[QueryGraph],
-                              disjunction: DisjunctionForOneVariable,
-                              context: LogicalPlanningContext): QueryGraph
+    def addSolvedToQueryGraph(
+      qg: QueryGraph,
+      solvedQgs: Seq[QueryGraph],
+      disjunction: DisjunctionForOneVariable,
+      context: LogicalPlanningContext
+    ): QueryGraph
   }
 
   /**
@@ -88,9 +91,11 @@ object OrLeafPlanner {
    * @param predicates                 the predicates.
    * @param interestingOrderCandidates if these candidates lead to different leaf plans, we can plan OrderedUnion instead of Union
    */
-  case class DisjunctionForOneVariable(variableName: String,
-                                       predicates: collection.Seq[DistributablePredicate],
-                                       interestingOrderCandidates: Seq[InterestingOrderCandidate]) {
+  case class DisjunctionForOneVariable(
+    variableName: String,
+    predicates: collection.Seq[DistributablePredicate],
+    interestingOrderCandidates: Seq[InterestingOrderCandidate]
+  ) {
     override def toString: String = predicates.mkString(" OR ")
   }
 
@@ -98,6 +103,7 @@ object OrLeafPlanner {
    * A predicate that can be distributed by the OrLeafPlanner
    */
   sealed trait DistributablePredicate {
+
     /**
      * Add this predicate to a query graph.
      */
@@ -118,48 +124,64 @@ object OrLeafPlanner {
       expressions.headOption
         .collect {
           case HasLabels(variable, _) => variable
-          case HasTypes(variable, _) => variable
+          case HasTypes(variable, _)  => variable
         }
-        .filter(variable => expressions.tail.forall {
-          case HasLabels(`variable`, _) => true
-          case HasTypes(`variable`, _) => true
-          case _ => false
-        })
+        .filter(variable =>
+          expressions.tail.forall {
+            case HasLabels(`variable`, _) => true
+            case HasTypes(`variable`, _)  => true
+            case _                        => false
+          }
+        )
     }
 
-    override def findDisjunctions(qg: QueryGraph): Seq[DisjunctionForOneVariable] = qg.selections.flatPredicates.collect {
-      case Ors(exprs) =>
-        // All expressions in the OR must be for the same variable, otherwise we cannot solve it with Union of LeafPlans.
-        variableUsedInExpression(exprs.head, qg.argumentIds) match {
-          case Some(singleUsedVar) if exprs.tail.map(variableUsedInExpression(_, qg.argumentIds)).forall(_.contains(singleUsedVar)) =>
-            val interestingOrderCandidates = for {
-              v <- variableIfAllEqualHasLabelsOrRelTypes(exprs).toSeq
-              // ASC before DESC because it is slightly cheaper
-              indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
-            } yield InterestingOrderCandidate(Seq(indexOrder(v)))
+    override def findDisjunctions(qg: QueryGraph): Seq[DisjunctionForOneVariable] =
+      qg.selections.flatPredicates.collect {
+        case Ors(exprs) =>
+          // All expressions in the OR must be for the same variable, otherwise we cannot solve it with Union of LeafPlans.
+          variableUsedInExpression(exprs.head, qg.argumentIds) match {
+            case Some(singleUsedVar)
+              if exprs.tail.map(variableUsedInExpression(_, qg.argumentIds)).forall(_.contains(singleUsedVar)) =>
+              val interestingOrderCandidates = for {
+                v <- variableIfAllEqualHasLabelsOrRelTypes(exprs).toSeq
+                // ASC before DESC because it is slightly cheaper
+                indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
+              } yield InterestingOrderCandidate(Seq(indexOrder(v)))
 
-            Some(DisjunctionForOneVariable(singleUsedVar.name, exprs.map(WhereClausePredicate), interestingOrderCandidates))
-          case _ => None
-        }
-    }.flatten
+              Some(DisjunctionForOneVariable(
+                singleUsedVar.name,
+                exprs.map(WhereClausePredicate),
+                interestingOrderCandidates
+              ))
+            case _ => None
+          }
+      }.flatten
 
     override def stripAllFromQueryGraph(qg: QueryGraph): QueryGraph = qg.withSelections(Selections())
 
-    override def collectRelatedPredicates(qg: QueryGraph, disjunction: DisjunctionForOneVariable): Seq[DistributablePredicate] = {
+    override def collectRelatedPredicates(
+      qg: QueryGraph,
+      disjunction: DisjunctionForOneVariable
+    ): Seq[DistributablePredicate] = {
       qg.selections.flatPredicates
-          // IdSeekable predicates are never related
-          .filter{case _@AsIdSeekable(_) => false; case _ => true}
-          .collect {
-        // Those predicates which only use the variable that is used in the OR
-        // Any Ors will not get added. Those can either be the disjunction itself, or any other OR which we can't solve with the leaf planners anyway.
-        case e if variableUsedInExpression(e, qg.argumentIds).map(_.name).contains(disjunction.variableName) && !e.isInstanceOf[Ors] => WhereClausePredicate(e)
-      }
+        // IdSeekable predicates are never related
+        .filter { case _ @AsIdSeekable(_) => false; case _ => true }
+        .collect {
+          // Those predicates which only use the variable that is used in the OR
+          // Any Ors will not get added. Those can either be the disjunction itself, or any other OR which we can't solve with the leaf planners anyway.
+          case e
+            if variableUsedInExpression(e, qg.argumentIds).map(_.name).contains(
+              disjunction.variableName
+            ) && !e.isInstanceOf[Ors] => WhereClausePredicate(e)
+        }
     }
 
-    override def addSolvedToQueryGraph(qg: QueryGraph,
-                                       solvedQgs: Seq[QueryGraph],
-                                       disjunction: DisjunctionForOneVariable,
-                                       context: LogicalPlanningContext): QueryGraph = {
+    override def addSolvedToQueryGraph(
+      qg: QueryGraph,
+      solvedQgs: Seq[QueryGraph],
+      disjunction: DisjunctionForOneVariable,
+      context: LogicalPlanningContext
+    ): QueryGraph = {
       // Predicates solved by all plans can be added top-level, otherwise the planner will have to plan another Selection for them.
       val predicatesSolvedByAllPlans = solvedQgs.head.selections.flatPredicates.filter { predicate =>
         solvedQgs.tail.forall(_.selections.flatPredicates.contains(predicate))
@@ -169,8 +191,7 @@ object OrLeafPlanner {
       val disjunctivePredicatesPerPlan = solvedQgs.map(_
         .selections
         .flatPredicates
-        .filterNot(predicatesSolvedByAllPlans.contains)
-      )
+        .filterNot(predicatesSolvedByAllPlans.contains))
 
       // We assume:
       // - disjunctivePredicatesPerPlan.flatten is a subset of disjunction.predicates
@@ -192,6 +213,7 @@ object OrLeafPlanner {
   }
 
   final case class WhereClausePredicate(e: Expression) extends DistributablePredicate {
+
     override def addToQueryGraph(qg: QueryGraph): QueryGraph = e match {
       case HasTypes(Variable(varName), Seq(singleType)) =>
         InlinedRelationshipTypePredicate(varName, singleType).addToQueryGraph(qg)
@@ -215,16 +237,24 @@ object OrLeafPlanner {
           indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
         } yield InterestingOrderCandidate(Seq(indexOrder(Variable(name)(InputPosition.NONE))))
 
-        DisjunctionForOneVariable(name, types.map(InlinedRelationshipTypePredicate(name, _)), interestingOrderCandidates)
+        DisjunctionForOneVariable(
+          name,
+          types.map(InlinedRelationshipTypePredicate(name, _)),
+          interestingOrderCandidates
+        )
     }.toSeq
 
-    override def stripAllFromQueryGraph(qg: QueryGraph): QueryGraph = qg.withPatternRelationships(qg.patternRelationships.map(_.copy(types = Seq())))
+    override def stripAllFromQueryGraph(qg: QueryGraph): QueryGraph =
+      qg.withPatternRelationships(qg.patternRelationships.map(_.copy(types = Seq())))
 
-    override def collectRelatedPredicates(qg: QueryGraph, disjunction: DisjunctionForOneVariable): Seq[DistributablePredicate] = {
+    override def collectRelatedPredicates(
+      qg: QueryGraph,
+      disjunction: DisjunctionForOneVariable
+    ): Seq[DistributablePredicate] = {
       def includesHasTypes(disjunction: DisjunctionForOneVariable) =
         disjunction.predicates.exists {
           case WhereClausePredicate(_: HasTypes) => true
-          case _ => false
+          case _                                 => false
         }
 
       // We should only collect related inlined type predicates if there are no HasTypes in the disjunction,
@@ -232,7 +262,8 @@ object OrLeafPlanner {
       if (!includesHasTypes(disjunction)) {
         qg.patternRelationships.toSeq.collect {
           // PatternRelationships that have inlined type predicates
-          case rel@PatternRelationship(disjunction.variableName, _, _, types, SimplePatternLength) => types.map(InlinedRelationshipTypePredicate(rel.name, _))
+          case rel @ PatternRelationship(disjunction.variableName, _, _, types, SimplePatternLength) =>
+            types.map(InlinedRelationshipTypePredicate(rel.name, _))
         }.flatten
       } else {
         Seq.empty
@@ -242,7 +273,7 @@ object OrLeafPlanner {
     def addTypesToRelationship(qg: QueryGraph, variableName: String, types: Seq[RelTypeName]): QueryGraph = {
       // Replace the rel without a predicate with a rel with a predicate
       val relWithoutInlinedTypePredicate = qg.patternRelationships.collectFirst {
-        case pr@PatternRelationship(`variableName`, _, _, _, _) => pr
+        case pr @ PatternRelationship(`variableName`, _, _, _, _) => pr
       }.head
       val relWithInlinedTypePredicate = relWithoutInlinedTypePredicate.copy(types = types)
       qg
@@ -250,10 +281,12 @@ object OrLeafPlanner {
         .withAddedPatternRelationships(Set(relWithInlinedTypePredicate))
     }
 
-    override def addSolvedToQueryGraph(qg: QueryGraph,
-                                       solvedQgs: Seq[QueryGraph],
-                                       disjunction: DisjunctionForOneVariable,
-                                       context: LogicalPlanningContext): QueryGraph = {
+    override def addSolvedToQueryGraph(
+      qg: QueryGraph,
+      solvedQgs: Seq[QueryGraph],
+      disjunction: DisjunctionForOneVariable,
+      context: LogicalPlanningContext
+    ): QueryGraph = {
       val relTypes = solvedQgs.map { solvedQG =>
         solvedQG.patternRelationships.collectFirst {
           case PatternRelationship(disjunction.variableName, _, _, Seq(singleType), _) => singleType
@@ -270,12 +303,15 @@ object OrLeafPlanner {
     }
   }
 
-  final case class InlinedRelationshipTypePredicate(variableName: String, typ: RelTypeName) extends DistributablePredicate {
-    override def addToQueryGraph(qg: QueryGraph): QueryGraph = InlinedRelationshipTypePredicateKind.addTypesToRelationship(qg, variableName, Seq(typ))
+  final case class InlinedRelationshipTypePredicate(variableName: String, typ: RelTypeName)
+      extends DistributablePredicate {
+
+    override def addToQueryGraph(qg: QueryGraph): QueryGraph =
+      InlinedRelationshipTypePredicateKind.addTypesToRelationship(qg, variableName, Seq(typ))
 
     override def containedIn(qg: QueryGraph): Boolean = qg.patternRelationships.exists {
       case PatternRelationship(`variableName`, _, _, Seq(`typ`), _) => true
-      case _ => false
+      case _                                                        => false
     }
 
     override def toString: String = ExpressionStringifier(e => e.asCanonicalStringVal)(
@@ -296,14 +332,19 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
 
   private val predicateKinds = Set(WhereClausePredicateKind, InlinedRelationshipTypePredicateKind)
 
-  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] = {
+  override def apply(
+    qg: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     val pickBest = context.config.pickBestCandidate(context)
     val select = context.config.applySelections
 
     // The queryGraph without any predicates
     val bareQg = predicateKinds.foldLeft(qg)((accQg, dp) => dp.stripAllFromQueryGraph(accQg))
 
-    def solvedQueryGraph(plan: LogicalPlan): QueryGraph = context.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
+    def solvedQueryGraph(plan: LogicalPlan): QueryGraph =
+      context.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
 
     def findPlansPerPredicate(disjunction: DisjunctionForOneVariable): Array[Array[LogicalPlan]] = {
       // Collect any other top-level predicates that only use this variable
@@ -313,20 +354,26 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       val qgWithRelatedPredicates = relatedPredicates.foldLeft(bareQg)((accQg, dp) => dp.addToQueryGraph(accQg))
 
       // Add interesting order candidates to allow planning OrderedUnion
-      val innerInterestingOrderConfig = disjunction.interestingOrderCandidates.foldLeft(interestingOrderConfig)(_.addInterestingOrderCandidate(_))
+      val innerInterestingOrderConfig =
+        disjunction.interestingOrderCandidates.foldLeft(interestingOrderConfig)(_.addInterestingOrderCandidate(_))
 
       // Add each expression in the OR separately
       disjunction.predicates.map { predicate =>
         val qgForExpression = predicate.addToQueryGraph(qgWithRelatedPredicates)
 
         // Obtain plans for each for the query graph with this expression added
-        val innerLeafPlans = inner.flatMap(_ (qgForExpression, innerInterestingOrderConfig, context)).distinct
+        val innerLeafPlans = inner.flatMap(_(qgForExpression, innerInterestingOrderConfig, context)).distinct
         // Apply selections on top of the leaf plans.
-        val innerPlansWithSelections = innerLeafPlans.map(select(_, qgForExpression, innerInterestingOrderConfig, context))
+        val innerPlansWithSelections =
+          innerLeafPlans.map(select(_, qgForExpression, innerInterestingOrderConfig, context))
 
         // This is a Seq of possible solutions per expression
         // We really only want the best option
-        pickBest(innerPlansWithSelections, leafPlanHeuristic(context), s"best plan for $predicate from disjunction $disjunction")
+        pickBest(
+          innerPlansWithSelections,
+          leafPlanHeuristic(context),
+          s"best plan for $predicate from disjunction $disjunction"
+        )
           // Only keep a plan if it actually solves the predicate from the disjunction
           .filter(plan => predicate.containedIn(solvedQueryGraph(plan)))
           .toArray
@@ -338,14 +385,17 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       // Start by creating a query graph containing only the variables that are involved by the disjunction, and the correct arguments.
       val queryGraph = QueryGraph(
         argumentIds = bareQg.argumentIds,
-        patternNodes = solvedRel.fold(bareQg.patternNodes.filter(_ == disjunction.variableName))(r => Set(r.left, r.right)),
+        patternNodes =
+          solvedRel.fold(bareQg.patternNodes.filter(_ == disjunction.variableName))(r => Set(r.left, r.right)),
         patternRelationships = solvedRel.toSet
       )
 
       val solvedQgs = plans.map(solvedQueryGraph)
 
       // Let the predicate kinds add the predicates that each plan claims to solve to the queryGraph
-      predicateKinds.foldLeft(queryGraph)((accQg, dp) => dp.addSolvedToQueryGraph(accQg, solvedQgs, disjunction, context))
+      predicateKinds.foldLeft(queryGraph)((accQg, dp) =>
+        dp.addSolvedToQueryGraph(accQg, solvedQgs, disjunction, context)
+      )
     }
 
     def mergePlansWithUnion(plans: Array[LogicalPlan], joinedSolvedQueryGraph: QueryGraph): LogicalPlan = {
@@ -358,22 +408,24 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
         .flatMap(_.columns.headOption)
         // The only sort column must be by a variable. Convert to a logical plan ColumnOrder.
         .collect {
-          case ordering.ColumnOrder.Asc(v@Variable(varName), _) => (v, logical.plans.Ascending(varName))
-          case ordering.ColumnOrder.Desc(v@Variable(varName), _) => (v, logical.plans.Descending(varName))
+          case ordering.ColumnOrder.Asc(v @ Variable(varName), _)  => (v, logical.plans.Ascending(varName))
+          case ordering.ColumnOrder.Desc(v @ Variable(varName), _) => (v, logical.plans.Descending(varName))
         }
 
       // Join the plans with Union
       val unionPlan = plans.reduce[LogicalPlan] {
         case (p1, p2) =>
           maybeSortColumn match {
-            case Some((_, sortColumn)) => context.logicalPlanProducer.planOrderedUnion(p1, p2, List(), Seq(sortColumn), context)
+            case Some((_, sortColumn)) =>
+              context.logicalPlanProducer.planOrderedUnion(p1, p2, List(), Seq(sortColumn), context)
             case None => context.logicalPlanProducer.planUnion(p1, p2, List(), context)
           }
       }
 
       // Plan a single Distinct on top
       val orPlan = maybeSortColumn match {
-        case Some((sortVariable, _)) => context.logicalPlanProducer.planOrderedDistinctForUnion(unionPlan, Seq(sortVariable), context)
+        case Some((sortVariable, _)) =>
+          context.logicalPlanProducer.planOrderedDistinctForUnion(unionPlan, Seq(sortVariable), context)
         case None => context.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
       }
 

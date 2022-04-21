@@ -29,20 +29,16 @@ import java.io.UncheckedIOException;
  * @see org.neo4j.kernel.api.impl.index.partition.PartitionSearcher
  * @see SimpleValueIndexReader
  */
-public class IndexReaderCloseException extends UncheckedIOException
-{
-    private IndexReaderCloseException( String message, IOException cause )
-    {
-        super( message, cause );
+public class IndexReaderCloseException extends UncheckedIOException {
+    private IndexReaderCloseException(String message, IOException cause) {
+        super(message, cause);
     }
 
-    public IndexReaderCloseException( IOException cause )
-    {
-        super( cause );
+    public IndexReaderCloseException(IOException cause) {
+        super(cause);
     }
 
-    public IndexReaderCloseException( String message, Throwable throwable )
-    {
-        this( message, throwable instanceof IOException ? ((IOException) throwable) : new IOException( throwable ) );
+    public IndexReaderCloseException(String message, Throwable throwable) {
+        this(message, throwable instanceof IOException ? ((IOException) throwable) : new IOException(throwable));
     }
 }

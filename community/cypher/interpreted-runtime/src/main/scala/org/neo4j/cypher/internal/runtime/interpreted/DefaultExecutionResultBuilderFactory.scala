@@ -38,29 +38,40 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
-abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
-                                                 columns: Seq[String],
-                                                 hasLoadCSV: Boolean,
-                                                 startsTransactions: Boolean) extends ExecutionResultBuilderFactory {
+abstract class BaseExecutionResultBuilderFactory(
+  pipe: Pipe,
+  columns: Seq[String],
+  hasLoadCSV: Boolean,
+  startsTransactions: Boolean
+) extends ExecutionResultBuilderFactory {
 
   abstract class BaseExecutionResultBuilder() extends ExecutionResultBuilder {
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
     protected var pipeDecorator: PipeDecorator = if (hasLoadCSV) new LinenumberPipeDecorator() else NullPipeDecorator
 
-    protected def createQueryState(params: MapValue,
-                                   prePopulateResults: Boolean,
-                                   input: InputDataStream,
-                                   subscriber: QuerySubscriber,
-                                   doProfile: Boolean): QueryState
+    protected def createQueryState(
+      params: MapValue,
+      prePopulateResults: Boolean,
+      input: InputDataStream,
+      subscriber: QuerySubscriber,
+      doProfile: Boolean
+    ): QueryState
 
     def queryContext: QueryContext
 
     def addProfileDecorator(profileDecorator: PipeDecorator): Unit = pipeDecorator match {
       case decorator: LinenumberPipeDecorator => decorator.setInnerDecorator(profileDecorator)
-      case _ => pipeDecorator = profileDecorator
+      case _                                  => pipeDecorator = profileDecorator
     }
 
-    override def build(params: MapValue, queryProfile: QueryProfile, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber, doProfile: Boolean): RuntimeResult = {
+    override def build(
+      params: MapValue,
+      queryProfile: QueryProfile,
+      prePopulateResults: Boolean,
+      input: InputDataStream,
+      subscriber: QuerySubscriber,
+      doProfile: Boolean
+    ): RuntimeResult = {
       val state = createQueryState(params, prePopulateResults, input, subscriber, doProfile)
       new PipeExecutionResult(pipe, columns.toArray, state, queryProfile, subscriber, startsTransactions)
     }
@@ -69,45 +80,50 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 }
 
 case class InterpretedExecutionResultBuilderFactory(
-                                                     pipe: Pipe,
-                                                     queryIndexes: QueryIndexes,
-                                                     nExpressionSlots: Int,
-                                                     parameterMapping: ParameterMapping,
-                                                     columns: Seq[String],
-                                                     lenientCreateRelationship: Boolean,
-                                                     memoryTrackingController: MemoryTrackingController,
-                                                     hasLoadCSV: Boolean,
-                                                     startsTransactions: Boolean,
-                                                    )
-  extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV, startsTransactions) {
+  pipe: Pipe,
+  queryIndexes: QueryIndexes,
+  nExpressionSlots: Int,
+  parameterMapping: ParameterMapping,
+  columns: Seq[String],
+  lenientCreateRelationship: Boolean,
+  memoryTrackingController: MemoryTrackingController,
+  hasLoadCSV: Boolean,
+  startsTransactions: Boolean
+) extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV, startsTransactions) {
 
-  override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionResultBuilder(queryContext: QueryContext)
+  override def create(queryContext: QueryContext): ExecutionResultBuilder =
+    InterpretedExecutionResultBuilder(queryContext: QueryContext)
 
   case class InterpretedExecutionResultBuilder(queryContext: QueryContext) extends BaseExecutionResultBuilder {
-    override def createQueryState(params: MapValue,
-                                  prePopulateResults: Boolean,
-                                  input: InputDataStream,
-                                  subscriber: QuerySubscriber,
-                                  doProfile: Boolean): QueryState = {
+
+    override def createQueryState(
+      params: MapValue,
+      prePopulateResults: Boolean,
+      input: InputDataStream,
+      subscriber: QuerySubscriber,
+      doProfile: Boolean
+    ): QueryState = {
       val cursors = queryContext.createExpressionCursors()
 
-      QueryState(queryContext,
-                 externalResource,
-                 createParameterArray(params, parameterMapping),
-                 cursors,
-                 queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
-                 queryIndexes.initiateNodeTokenIndex(queryContext),
-                 queryIndexes.initiateRelationshipTokenIndex(queryContext),
-                 new Array[AnyValue](nExpressionSlots),
-                 subscriber,
-                 memoryTrackingController,
-                 doProfile,
-                 pipeDecorator,
-                 initialContext = None,
-                 cachedIn = createDefaultInCache(),
-                 lenientCreateRelationship = lenientCreateRelationship,
-                 prePopulateResults = prePopulateResults,
-                 input = input)
+      QueryState(
+        queryContext,
+        externalResource,
+        createParameterArray(params, parameterMapping),
+        cursors,
+        queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
+        queryIndexes.initiateNodeTokenIndex(queryContext),
+        queryIndexes.initiateRelationshipTokenIndex(queryContext),
+        new Array[AnyValue](nExpressionSlots),
+        subscriber,
+        memoryTrackingController,
+        doProfile,
+        pipeDecorator,
+        initialContext = None,
+        cachedIn = createDefaultInCache(),
+        lenientCreateRelationship = lenientCreateRelationship,
+        prePopulateResults = prePopulateResults,
+        input = input
+      )
     }
   }
 }

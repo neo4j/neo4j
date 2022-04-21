@@ -19,10 +19,11 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
 
 import java.util.function.BiConsumer;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -31,24 +32,20 @@ import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.Mockito.mock;
-
-class RecordLoadingTest
-{
+class RecordLoadingTest {
     @Test
-    void shouldReturnsFalseOnMissingToken()
-    {
+    void shouldReturnsFalseOnMissingToken() {
         // given
-        NodeRecord entity = new NodeRecord( 0 );
-        TokenHolder tokenHolder = new DelegatingTokenHolder( new ReadOnlyTokenCreator(), "Test" );
-        TokenStore<PropertyKeyTokenRecord> store = mock( TokenStore.class );
-        BiConsumer noopReporter = mock( BiConsumer.class );
+        NodeRecord entity = new NodeRecord(0);
+        TokenHolder tokenHolder = new DelegatingTokenHolder(new ReadOnlyTokenCreator(), "Test");
+        TokenStore<PropertyKeyTokenRecord> store = mock(TokenStore.class);
+        BiConsumer noopReporter = mock(BiConsumer.class);
 
         // when
-        boolean valid = RecordLoading.checkValidToken( entity, 0, tokenHolder, store, noopReporter, noopReporter, StoreCursors.NULL );
+        boolean valid = RecordLoading.checkValidToken(
+                entity, 0, tokenHolder, store, noopReporter, noopReporter, StoreCursors.NULL);
 
         // then
-        assertFalse( valid );
+        assertFalse(valid);
     }
 }

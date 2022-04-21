@@ -22,8 +22,7 @@ package org.neo4j.kernel.lifecycle;
 /**
  * Enumerates the different status an instance can have while managed through LifeSupport.
  */
-public enum LifecycleStatus
-{
+public enum LifecycleStatus {
     NONE,
     INITIALIZING,
     STARTING,

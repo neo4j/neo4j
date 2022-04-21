@@ -26,11 +26,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class ForeachPipe(source: Pipe, variable: String, expression: Expression, sideEffects: Array[SideEffect])
-                      (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) with ListSupport {
+case class ForeachPipe(source: Pipe, variable: String, expression: Expression, sideEffects: Array[SideEffect])(
+  val id: Id = Id.INVALID_ID
+) extends PipeWithSource(source) with ListSupport {
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] =
     input.map(row => {
       val values = makeTraversable(expression(row, state)).iterator()
       while (values.hasNext) {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -30,101 +32,81 @@ import java.time.temporal.TemporalField;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class FrozenClock extends Clock implements Supplier<ZoneId>
-{
+class FrozenClock extends Clock implements Supplier<ZoneId> {
     private Instant instant;
     private ZoneId zone;
 
-    FrozenClock( String zoneId )
-    {
+    FrozenClock(String zoneId) {
         instant = Instant.now();
         zone = ZoneId.of(zoneId);
     }
 
     @Override
-    public ZoneId getZone()
-    {
+    public ZoneId getZone() {
         return zone;
     }
 
-    Clock withZone( String zoneId )
-    {
-        return withZone( ZoneId.of( zoneId ) );
+    Clock withZone(String zoneId) {
+        return withZone(ZoneId.of(zoneId));
     }
 
     @Override
-    public Clock withZone( ZoneId zone )
-    {
-        return fixed( instant, zone );
+    public Clock withZone(ZoneId zone) {
+        return fixed(instant, zone);
     }
 
     @Override
-    public Instant instant()
-    {
+    public Instant instant() {
         return instant;
     }
 
     @Override
-    public long millis()
-    {
+    public long millis() {
         return instant.toEpochMilli();
     }
 
-    public Clock at( LocalDateTime datetime )
-    {
-        return at( datetime.atZone( zone ) );
+    public Clock at(LocalDateTime datetime) {
+        return at(datetime.atZone(zone));
     }
 
-    public Clock at( OffsetDateTime datetime )
-    {
-        return fixed( datetime.toInstant(), datetime.getOffset() );
+    public Clock at(OffsetDateTime datetime) {
+        return fixed(datetime.toInstant(), datetime.getOffset());
     }
 
-    public Clock at( ZonedDateTime datetime )
-    {
-        return fixed( datetime.toInstant(), datetime.getZone() );
+    public Clock at(ZonedDateTime datetime) {
+        return fixed(datetime.toInstant(), datetime.getZone());
     }
 
-    public Clock with( TemporalAdjuster adjuster )
-    {
-        return fixed( instant.with( adjuster ), zone );
+    public Clock with(TemporalAdjuster adjuster) {
+        return fixed(instant.with(adjuster), zone);
     }
 
-    public Clock with( TemporalField field, long newValue )
-    {
-        return fixed( instant.with( field, newValue ), zone );
+    public Clock with(TemporalField field, long newValue) {
+        return fixed(instant.with(field, newValue), zone);
     }
 
     @Override
-    public ZoneId get()
-    {
+    public ZoneId get() {
         return zone;
     }
 
-    static <V extends TemporalValue<?,V>> void assertEqualTemporal( V expected, V actual )
-    {
-        assertThat( actual ).isEqualTo( expected );
-        assertEqualsWithMapping( actual, expected, FrozenClock::timezone );
-        assertEqualsWithMapping( actual, expected, TemporalValue::temporal );
+    static <V extends TemporalValue<?, V>> void assertEqualTemporal(V expected, V actual) {
+        assertThat(actual).isEqualTo(expected);
+        assertEqualsWithMapping(actual, expected, FrozenClock::timezone);
+        assertEqualsWithMapping(actual, expected, TemporalValue::temporal);
     }
 
-    private static ZoneId timezone( TemporalValue<?,?> temporal )
-    {
-        if ( temporal instanceof DateTimeValue )
-        {
+    private static ZoneId timezone(TemporalValue<?, ?> temporal) {
+        if (temporal instanceof DateTimeValue) {
             return ((DateTimeValue) temporal).temporal().getZone();
         }
-        if ( temporal instanceof TimeValue )
-        {
+        if (temporal instanceof TimeValue) {
             return ((TimeValue) temporal).temporal().getOffset();
         }
         return null;
     }
 
-    private static <T, U> void assertEqualsWithMapping( T actual, T expected, Function<T,U> mapping )
-    {
-        assertThat( mapping.apply( expected ) ).isEqualTo( mapping.apply( actual ) );
+    private static <T, U> void assertEqualsWithMapping(T actual, T expected, Function<T, U> mapping) {
+        assertThat(mapping.apply(expected)).isEqualTo(mapping.apply(actual));
     }
 }

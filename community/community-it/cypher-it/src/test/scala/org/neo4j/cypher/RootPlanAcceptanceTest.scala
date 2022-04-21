@@ -95,10 +95,12 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   def given(query: String) = TestQuery(query)
 
-  case class TestQuery(query: String,
-                       cypherVersion: Option[CypherVersion] = None,
-                       planner: Option[PlannerName] = None,
-                       runtime: Option[RuntimeName] = None) {
+  case class TestQuery(
+    query: String,
+    cypherVersion: Option[CypherVersion] = None,
+    planner: Option[PlannerName] = None,
+    runtime: Option[RuntimeName] = None
+  ) {
 
     lazy val planDescription: ExecutionPlanDescription = execute()
 
@@ -135,7 +137,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
             val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
             s"CYPHER $version $plannerString $runtimeString"
         }
-        val result = executeOfficial( tx, s"$prepend PROFILE $query")
+        val result = executeOfficial(tx, s"$prepend PROFILE $query")
         result.resultAsString()
         result.getExecutionPlanDescription()
       }

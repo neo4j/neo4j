@@ -19,19 +19,6 @@
  */
 package org.neo4j.cypher.internal.collection;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
-
-import org.neo4j.memory.Measurable;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -39,188 +26,173 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-@SuppressWarnings( "ConstantConditions" )
-@ExtendWith( RandomExtension.class )
-class DefaultComparatorSortTableTest
-{
+import java.util.Comparator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.PriorityQueue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.memory.Measurable;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+
+@SuppressWarnings("ConstantConditions")
+@ExtendWith(RandomExtension.class)
+class DefaultComparatorSortTableTest {
     @Inject
     private RandomSupport random;
 
-    private static final List<Long> TEST_VALUES = List.of( 7L, 4L, 5L, 0L, 3L, 4L, 8L, 6L, 1L, 9L, 2L );
+    private static final List<Long> TEST_VALUES = List.of(7L, 4L, 5L, 0L, 3L, 4L, 8L, 6L, 1L, 9L, 2L);
 
-    private static final long[] EXPECTED_VALUES = new long[]{0L, 1L, 2L, 3L, 4L, 4L, 5L, 6L, 7L, 8L, 9L};
+    private static final long[] EXPECTED_VALUES = new long[] {0L, 1L, 2L, 3L, 4L, 4L, 5L, 6L, 7L, 8L, 9L};
 
-    private static final Comparator<MeasurableLong> comparator = Comparator.comparingLong( MeasurableLong::getValue );
-    private static final long MEASURABLE_LONG_SHALLOW_SIZE = shallowSizeOfInstance( MeasurableLong.class );
+    private static final Comparator<MeasurableLong> comparator = Comparator.comparingLong(MeasurableLong::getValue);
+    private static final long MEASURABLE_LONG_SHALLOW_SIZE = shallowSizeOfInstance(MeasurableLong.class);
 
     @Test
-    void shouldHandleAddingMoreValuesThanCapacity()
-    {
-        DefaultComparatorSortTable<MeasurableLong> table = new DefaultComparatorSortTable<>( comparator, 7 );
-        TEST_VALUES.forEach( l -> table.add( new MeasurableLong( l ) ) );
+    void shouldHandleAddingMoreValuesThanCapacity() {
+        DefaultComparatorSortTable<MeasurableLong> table = new DefaultComparatorSortTable<>(comparator, 7);
+        TEST_VALUES.forEach(l -> table.add(new MeasurableLong(l)));
 
-        for ( int i = 0; i < EXPECTED_VALUES.length; i++ )
-        {
+        for (int i = 0; i < EXPECTED_VALUES.length; i++) {
             var next = table.poll();
-            assertNotNull( next );
+            assertNotNull(next);
             long value = next.getValue();
-            assertEquals( EXPECTED_VALUES[i], value );
+            assertEquals(EXPECTED_VALUES[i], value);
         }
-        assertEmpty( table );
+        assertEmpty(table);
     }
 
     @Test
-    void shouldHandleWhenNotCompletelyFilledToCapacity()
-    {
-        DefaultComparatorSortTable<MeasurableLong> table = new DefaultComparatorSortTable<>( comparator, 20 );
-        TEST_VALUES.forEach( l -> table.add( new MeasurableLong( l ) ) );
+    void shouldHandleWhenNotCompletelyFilledToCapacity() {
+        DefaultComparatorSortTable<MeasurableLong> table = new DefaultComparatorSortTable<>(comparator, 20);
+        TEST_VALUES.forEach(l -> table.add(new MeasurableLong(l)));
 
-        for ( int i = 0; i < TEST_VALUES.size(); i++ )
-        {
+        for (int i = 0; i < TEST_VALUES.size(); i++) {
             var next = table.poll();
-            assertNotNull( next );
+            assertNotNull(next);
             long value = next.getValue();
-            assertEquals( EXPECTED_VALUES[i], value );
+            assertEquals(EXPECTED_VALUES[i], value);
         }
-        assertEmpty( table );
+        assertEmpty(table);
     }
 
     @Test
-    void shouldHandleWhenEmpty()
-    {
-        DefaultComparatorSortTable<MeasurableLong> table = new DefaultComparatorSortTable<>( comparator, 10 );
+    void shouldHandleWhenEmpty() {
+        DefaultComparatorSortTable<MeasurableLong> table = new DefaultComparatorSortTable<>(comparator, 10);
 
-        assertEmpty( table );
+        assertEmpty(table);
     }
 
     @Test
-    void shouldThrowOnInitializeToZeroCapacity()
-    {
-        assertThrows( IllegalArgumentException.class,
-                () -> new DefaultComparatorSortTable<>( comparator, 0 ) );
+    void shouldThrowOnInitializeToZeroCapacity() {
+        assertThrows(IllegalArgumentException.class, () -> new DefaultComparatorSortTable<>(comparator, 0));
     }
 
     @Test
-    void shouldThrowOnInitializeToNegativeCapacity()
-    {
-        assertThrows( IllegalArgumentException.class,
-                () -> new DefaultComparatorSortTable<>( comparator, -1 ) );
+    void shouldThrowOnInitializeToNegativeCapacity() {
+        assertThrows(IllegalArgumentException.class, () -> new DefaultComparatorSortTable<>(comparator, -1));
     }
 
     @Test
-    void boundCheck()
-    {
-        DefaultComparatorSortTable<MeasurableLong> sortTable = new DefaultComparatorSortTable<>( comparator, 5 );
-        assertThrows( NoSuchElementException.class, () -> sortTable.unorderedIterator().next() );
+    void boundCheck() {
+        DefaultComparatorSortTable<MeasurableLong> sortTable = new DefaultComparatorSortTable<>(comparator, 5);
+        assertThrows(
+                NoSuchElementException.class,
+                () -> sortTable.unorderedIterator().next());
     }
 
     @Test
-    void randomizedTest()
-    {
-        final int n = random.nextInt( 1000, 5000 );
-        DefaultComparatorSortTable<Long> table = new DefaultComparatorSortTable<>( Long::compareTo, n );
-        PriorityQueue<Long> priorityQueue = new PriorityQueue<>( Long::compareTo );
+    void randomizedTest() {
+        final int n = random.nextInt(1000, 5000);
+        DefaultComparatorSortTable<Long> table = new DefaultComparatorSortTable<>(Long::compareTo, n);
+        PriorityQueue<Long> priorityQueue = new PriorityQueue<>(Long::compareTo);
 
-        for ( int i = 0; i < n; i++ )
-        {
-            long l = random.nextInt( n / 10 );
+        for (int i = 0; i < n; i++) {
+            long l = random.nextInt(n / 10);
 
-            table.add( l );
-            add( priorityQueue, l, n );
+            table.add(l);
+            add(priorityQueue, l, n);
         }
 
-        assertEquals( n, priorityQueue.size() );
+        assertEquals(n, priorityQueue.size());
 
         // Sort table
         long[] longsFromTable = new long[n];
-        for ( int i = 0; i < n; i++ )
-        {
+        for (int i = 0; i < n; i++) {
             longsFromTable[i] = table.poll();
         }
-        assertEmpty( table );
+        assertEmpty(table);
 
         // Sort priority queue
         long[] longsFromPriorityQueue = new long[n];
-        for ( int i = 0; i < n; i++ )
-        {
+        for (int i = 0; i < n; i++) {
             longsFromPriorityQueue[i] = priorityQueue.poll();
         }
-        assertTrue( priorityQueue.isEmpty() );
+        assertTrue(priorityQueue.isEmpty());
 
         // Compare results
-        for ( int i = 0; i < n; i++ )
-        {
-            assertEquals( longsFromPriorityQueue[i], longsFromTable[i] );
+        for (int i = 0; i < n; i++) {
+            assertEquals(longsFromPriorityQueue[i], longsFromTable[i]);
         }
     }
 
     @Test
-    void shouldHandleAddingValuesAfterReset()
-    {
-        DefaultComparatorSortTable<MeasurableLong> table = new DefaultComparatorSortTable<>( comparator, 20 );
+    void shouldHandleAddingValuesAfterReset() {
+        DefaultComparatorSortTable<MeasurableLong> table = new DefaultComparatorSortTable<>(comparator, 20);
 
-        TEST_VALUES.forEach( l -> table.add( new MeasurableLong( l * 100 ) ) );
+        TEST_VALUES.forEach(l -> table.add(new MeasurableLong(l * 100)));
         table.reset();
-        assertEquals( 0, table.getSize() );
-        assertTrue( table.isEmpty() );
-        assertNull( table.peek() );
-        assertNull( table.poll() );
+        assertEquals(0, table.getSize());
+        assertTrue(table.isEmpty());
+        assertNull(table.peek());
+        assertNull(table.poll());
 
-        TEST_VALUES.forEach( l -> table.add( new MeasurableLong( l ) ) );
+        TEST_VALUES.forEach(l -> table.add(new MeasurableLong(l)));
 
-        for ( int i = 0; i < TEST_VALUES.size(); i++ )
-        {
+        for (int i = 0; i < TEST_VALUES.size(); i++) {
             var next = table.poll();
-            assertNotNull( next );
+            assertNotNull(next);
             long value = next.getValue();
-            assertEquals( EXPECTED_VALUES[i], value );
+            assertEquals(EXPECTED_VALUES[i], value);
         }
-        assertEmpty( table );
+        assertEmpty(table);
     }
 
-    private static void add( PriorityQueue<Long> priorityQueue, long e, int limit )
-    {
-        if ( priorityQueue.size() < limit )
-        {
-            priorityQueue.offer( e );
-        }
-        else
-        {
+    private static void add(PriorityQueue<Long> priorityQueue, long e, int limit) {
+        if (priorityQueue.size() < limit) {
+            priorityQueue.offer(e);
+        } else {
             long head = priorityQueue.peek();
-            if ( head > e )
-            {
+            if (head > e) {
 
                 priorityQueue.poll();
-                priorityQueue.offer( e );
+                priorityQueue.offer(e);
             }
         }
     }
 
-    private static void assertEmpty( DefaultComparatorSortTable<?> table )
-    {
-        assertTrue( table.isEmpty() );
-        assertEquals( 0, table.getSize() );
-        assertNull( table.peek() );
-        assertNull( table.poll() );
+    private static void assertEmpty(DefaultComparatorSortTable<?> table) {
+        assertTrue(table.isEmpty());
+        assertEquals(0, table.getSize());
+        assertNull(table.peek());
+        assertNull(table.poll());
     }
 
-    private static class MeasurableLong implements Measurable
-    {
+    private static class MeasurableLong implements Measurable {
         private final long value;
 
-        private MeasurableLong( long value )
-        {
+        private MeasurableLong(long value) {
             this.value = value;
         }
 
-        public long getValue()
-        {
+        public long getValue() {
             return value;
         }
 
         @Override
-        public long estimatedHeapUsage()
-        {
+        public long estimatedHeapUsage() {
             return MEASURABLE_LONG_SHALLOW_SIZE;
         }
     }

@@ -26,15 +26,14 @@ import org.neo4j.io.layout.Neo4jLayout;
 /**
  * Service to provide DBMS and individual databases file lockers
  */
-public interface FileLockerService
-{
+public interface FileLockerService {
     /**
      * Create DBMS level file locker
      * @param fileSystem file system to lock DBMS file in
      * @param storeLayout dbms store layout
      * @return DBMS locker
      */
-    Locker createStoreLocker( FileSystemAbstraction fileSystem, Neo4jLayout storeLayout );
+    Locker createStoreLocker(FileSystemAbstraction fileSystem, Neo4jLayout storeLayout);
 
     /**
      * Create database lever file locker
@@ -42,5 +41,5 @@ public interface FileLockerService
      * @param databaseLayout database layout
      * @return database locker
      */
-    Locker createDatabaseLocker( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout );
+    Locker createDatabaseLocker(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout);
 }

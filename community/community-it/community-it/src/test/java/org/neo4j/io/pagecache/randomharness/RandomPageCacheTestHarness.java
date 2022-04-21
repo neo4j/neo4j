@@ -19,6 +19,9 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -38,7 +41,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -56,9 +58,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 /**
  * The RandomPageCacheTestHarness can plan and run random page cache tests, repeatably if necessary, and verify that
  * the behaviour of the page cache is correct to some degree. For instance, it can verify that records don't end up
@@ -69,10 +68,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
  * <p>
  * See {@link LinearHistoryPageCacheTracerTest} for an example of how to configure and use the harness.
  */
-public class RandomPageCacheTestHarness implements Closeable
-{
+public class RandomPageCacheTestHarness implements Closeable {
     private final ExecutorService executorService = new ThreadPoolExecutor(
-            0, Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<>(), new DaemonThreadFactory() );
+            0, Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<>(), new DaemonThreadFactory());
 
     private double mischiefRate;
     private double failureRate;
@@ -96,8 +94,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private RecordFormat recordFormat;
     private Path basePath;
 
-    public RandomPageCacheTestHarness()
-    {
+    public RandomPageCacheTestHarness() {
         mischiefRate = 0.1;
         failureRate = 0.1;
         errorRate = 0.0;
@@ -111,25 +108,22 @@ public class RandomPageCacheTestHarness implements Closeable
 
         Command[] commands = Command.values();
         commandProbabilityFactors = new double[commands.length];
-        for ( Command command : commands )
-        {
+        for (Command command : commands) {
             commandProbabilityFactors[command.ordinal()] = command.getDefaultProbabilityFactor();
         }
 
         fs = new EphemeralFileSystemAbstraction();
         useAdversarialIO = true;
         recordFormat = new StandardRecordFormat();
-        basePath = Path.of( "random-harness-default-path" );
+        basePath = Path.of("random-harness-default-path");
     }
 
     /**
      * Disable all of the given commands, by setting their probability factors to zero.
      */
-    public void disableCommands( Command... commands )
-    {
-        for ( Command command : commands )
-        {
-            setCommandProbabilityFactor( command, 0 );
+    public void disableCommands(Command... commands) {
+        for (Command command : commands) {
+            setCommandProbabilityFactor(command, 0);
         }
     }
 
@@ -140,8 +134,7 @@ public class RandomPageCacheTestHarness implements Closeable
      * <p>
      * Setting the probability factor to zero will disable that command.
      */
-    public void setCommandProbabilityFactor( Command command, double probabilityFactor )
-    {
+    public void setCommandProbabilityFactor(Command command, double probabilityFactor) {
         assert 0.0 <= probabilityFactor : "Probability factor cannot be negative";
         commandProbabilityFactors[command.ordinal()] = probabilityFactor;
     }
@@ -152,40 +145,35 @@ public class RandomPageCacheTestHarness implements Closeable
      * <p>
      * The default is "true".
      */
-    public void setUseAdversarialIO( boolean useAdversarialIO )
-    {
+    public void setUseAdversarialIO(boolean useAdversarialIO) {
         this.useAdversarialIO = useAdversarialIO;
     }
 
     /**
      * Set the PageCacheTracer that the page cache under test should be configured with.
      */
-    public void setTracer( PageCacheTracer tracer )
-    {
+    public void setTracer(PageCacheTracer tracer) {
         this.tracer = tracer;
     }
 
     /**
      * Set the mischief rate for the adversarial file system.
      */
-    public void setMischiefRate( double rate )
-    {
+    public void setMischiefRate(double rate) {
         mischiefRate = rate;
     }
 
     /**
      * Set the failure rate for the adversarial file system.
      */
-    public void setFailureRate( double rate )
-    {
+    public void setFailureRate(double rate) {
         failureRate = rate;
     }
 
     /**
      * Set the error rate for the adversarial file system.
      */
-    public void setErrorRate( double rate )
-    {
+    public void setErrorRate(double rate) {
         errorRate = rate;
     }
 
@@ -194,8 +182,7 @@ public class RandomPageCacheTestHarness implements Closeable
      * plan will execute non-deterministically. The description of the iteration that
      * {@link #describePreviousRun(PrintStream)} prints will include which thread performed which command.
      */
-    public void setConcurrencyLevel( int concurrencyLevel )
-    {
+    public void setConcurrencyLevel(int concurrencyLevel) {
         this.concurrencyLevel = concurrencyLevel;
     }
 
@@ -206,31 +193,26 @@ public class RandomPageCacheTestHarness implements Closeable
      * <p>
      * The default value is 2.
      */
-    public void setInitialMappedFiles( int initialMappedFiles )
-    {
+    public void setInitialMappedFiles(int initialMappedFiles) {
         this.initialMappedFiles = initialMappedFiles;
     }
 
-    public void setCachePageCount( int count )
-    {
+    public void setCachePageCount(int count) {
         this.cachePageCount = count;
     }
 
-    public void setFilePageCount( int count )
-    {
+    public void setFilePageCount(int count) {
         this.filePageCount = count;
     }
 
-    public void setFilePageSize( int size )
-    {
+    public void setFilePageSize(int size) {
         this.filePageSize = size;
     }
 
     /**
      * Set the number of commands to plan in each iteration.
      */
-    public void setCommandCount( int commandCount )
-    {
+    public void setCommandCount(int commandCount) {
         this.commandCount = commandCount;
     }
 
@@ -241,8 +223,7 @@ public class RandomPageCacheTestHarness implements Closeable
      * <p>
      * The preparation phase is executed before each iteration.
      */
-    public void setPreparation( Phase preparation )
-    {
+    public void setPreparation(Phase preparation) {
         this.preparation = preparation;
     }
 
@@ -252,16 +233,14 @@ public class RandomPageCacheTestHarness implements Closeable
      * <p>
      * The verification phase is executed after each iteration.
      */
-    public void setVerification( Phase verification )
-    {
+    public void setVerification(Phase verification) {
         this.verification = verification;
     }
 
     /**
      * Set the record format to use. The record format is used to read, write and verify file contents.
      */
-    public void setRecordFormat( RecordFormat recordFormat )
-    {
+    public void setRecordFormat(RecordFormat recordFormat) {
         this.recordFormat = recordFormat;
     }
 
@@ -270,19 +249,16 @@ public class RandomPageCacheTestHarness implements Closeable
      * <p>
      * If the random seed has not been configured, then each iteration will use a new seed.
      */
-    public void setRandomSeed( long randomSeed )
-    {
+    public void setRandomSeed(long randomSeed) {
         this.randomSeed = randomSeed;
         this.fixedRandomSeed = true;
     }
 
-    public void setFileSystem( FileSystemAbstraction fileSystem )
-    {
+    public void setFileSystem(FileSystemAbstraction fileSystem) {
         this.fs = fileSystem;
     }
 
-    public void setBasePath( Path basePath )
-    {
+    public void setBasePath(Path basePath) {
         this.basePath = basePath;
     }
 
@@ -290,30 +266,27 @@ public class RandomPageCacheTestHarness implements Closeable
      * Write out a textual description of the last run iteration, including the exact plan and what thread
      * executed which command, and the random seed that can be used to recreate that plan for improved repeatability.
      */
-    public void describePreviousRun( PrintStream out )
-    {
-        out.println( "randomSeed = " + randomSeed );
-        out.println( "commandCount = " + commandCount );
-        out.println( "concurrencyLevel (number of worker threads) = " + concurrencyLevel );
-        out.println( "initialMappedFiles = " + initialMappedFiles );
-        out.println( "cachePageCount = " + cachePageCount );
-        out.println( "tracer = " + tracer );
-        out.println( "useAdversarialIO = " + useAdversarialIO );
-        out.println( "mischeifRate = " + mischiefRate );
-        out.println( "failureRate = " + failureRate );
-        out.println( "errorRate = " + errorRate );
-        out.println( "Command probability factors:" );
+    public void describePreviousRun(PrintStream out) {
+        out.println("randomSeed = " + randomSeed);
+        out.println("commandCount = " + commandCount);
+        out.println("concurrencyLevel (number of worker threads) = " + concurrencyLevel);
+        out.println("initialMappedFiles = " + initialMappedFiles);
+        out.println("cachePageCount = " + cachePageCount);
+        out.println("tracer = " + tracer);
+        out.println("useAdversarialIO = " + useAdversarialIO);
+        out.println("mischeifRate = " + mischiefRate);
+        out.println("failureRate = " + failureRate);
+        out.println("errorRate = " + errorRate);
+        out.println("Command probability factors:");
         Command[] commands = Command.values();
-        for ( int i = 0; i < commands.length; i++ )
-        {
-            out.print( "  " );
-            out.print( commands[i] );
-            out.print( " = " );
-            out.println( commandProbabilityFactors[i] );
+        for (int i = 0; i < commands.length; i++) {
+            out.print("  ");
+            out.print(commands[i]);
+            out.print(" = ");
+            out.println(commandProbabilityFactors[i]);
         }
-        if ( plan != null )
-        {
-            plan.print( out );
+        if (plan != null) {
+            plan.print(out);
         }
     }
 
@@ -324,9 +297,8 @@ public class RandomPageCacheTestHarness implements Closeable
      * <p>
      * If the run fails, then a description will be printed to System.err.
      */
-    public void run( long iterationTimeout, TimeUnit unit ) throws Exception
-    {
-        run( 1, iterationTimeout, unit );
+    public void run(long iterationTimeout, TimeUnit unit) throws Exception {
+        run(1, iterationTimeout, unit);
     }
 
     /**
@@ -340,231 +312,188 @@ public class RandomPageCacheTestHarness implements Closeable
      * <p>
      * The run will stop at the first failure, if any, and print a description of it to System.err.
      */
-    public void run( int iterations, long iterationTimeout, TimeUnit unit ) throws Exception
-    {
-        try
-        {
-            for ( int i = 0; i < iterations; i++ )
-            {
-                runIteration( iterationTimeout, unit );
+    public void run(int iterations, long iterationTimeout, TimeUnit unit) throws Exception {
+        try {
+            for (int i = 0; i < iterations; i++) {
+                runIteration(iterationTimeout, unit);
             }
-        }
-        catch ( Exception e )
-        {
-            describePreviousRun( System.err );
+        } catch (Exception e) {
+            describePreviousRun(System.err);
             throw e;
         }
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         fs.close();
         executorService.shutdown();
     }
 
-    @SuppressWarnings( "unchecked" )
-    private void runIteration( long timeout, TimeUnit unit ) throws Exception
-    {
-        assert filePageSize % recordFormat.getRecordSize() == 0 :
-                "File page size must be a multiple of the record size";
+    @SuppressWarnings("unchecked")
+    private void runIteration(long timeout, TimeUnit unit) throws Exception {
+        assert filePageSize % recordFormat.getRecordSize() == 0
+                : "File page size must be a multiple of the record size";
 
-        if ( !fixedRandomSeed )
-        {
+        if (!fixedRandomSeed) {
             randomSeed = ThreadLocalRandom.current().nextLong();
         }
 
         FileSystemAbstraction fs = this.fs;
         Path[] files = buildFileNames();
 
-        RandomAdversary adversary = new RandomAdversary( mischiefRate, failureRate, errorRate );
-        adversary.setProbabilityFactor( 0.0 );
-        if ( useAdversarialIO )
-        {
-            adversary.setSeed( randomSeed );
-            fs = new AdversarialFileSystemAbstraction( adversary, fs );
+        RandomAdversary adversary = new RandomAdversary(mischiefRate, failureRate, errorRate);
+        adversary.setProbabilityFactor(0.0);
+        if (useAdversarialIO) {
+            adversary.setSeed(randomSeed);
+            fs = new AdversarialFileSystemAbstraction(adversary, fs);
         }
 
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer, EmptyMemoryTracker.INSTANCE );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory(fs, tracer, EmptyMemoryTracker.INSTANCE);
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
-        MuninnPageCache cache = new MuninnPageCache( swapperFactory, jobScheduler, MuninnPageCache.config( cachePageCount )
-                .pageCacheTracer( tracer ).reservedPageBytes( reservedPageBytes ) );
-        if ( filePageSize == 0 )
-        {
+        MuninnPageCache cache = new MuninnPageCache(
+                swapperFactory,
+                jobScheduler,
+                MuninnPageCache.config(cachePageCount).pageCacheTracer(tracer).reservedPageBytes(reservedPageBytes));
+        if (filePageSize == 0) {
             filePageSize = cache.pageSize();
         }
-        cache.setPrintExceptionsOnClose( false );
-        Map<Path,PagedFile> fileMap = new HashMap<>( files.length );
-        for ( int i = 0; i < Math.min( files.length, initialMappedFiles ); i++ )
-        {
+        cache.setPrintExceptionsOnClose(false);
+        Map<Path, PagedFile> fileMap = new HashMap<>(files.length);
+        for (int i = 0; i < Math.min(files.length, initialMappedFiles); i++) {
             Path file = files[i];
-            fileMap.put( file, cache.map( file, filePageSize, DEFAULT_DATABASE_NAME ) );
+            fileMap.put(file, cache.map(file, filePageSize, DEFAULT_DATABASE_NAME));
         }
 
-        plan = plan( cache, files, fileMap );
+        plan = plan(cache, files, fileMap);
 
         AtomicBoolean stopSignal = new AtomicBoolean();
-        Callable<Void> planRunner = new PlanRunner( plan, stopSignal );
+        Callable<Void> planRunner = new PlanRunner(plan, stopSignal);
         Future<Void>[] futures = new Future[concurrencyLevel];
-        for ( int i = 0; i < concurrencyLevel; i++ )
-        {
-            futures[i] = executorService.submit( planRunner );
+        for (int i = 0; i < concurrencyLevel; i++) {
+            futures[i] = executorService.submit(planRunner);
         }
 
-        if ( preparation != null )
-        {
-            preparation.run( cache, this.fs, plan.getFilesTouched() );
+        if (preparation != null) {
+            preparation.run(cache, this.fs, plan.getFilesTouched());
         }
 
-        adversary.setProbabilityFactor( 1.0 );
+        adversary.setProbabilityFactor(1.0);
 
         plan.start();
 
-        long deadlineMillis = System.currentTimeMillis() + unit.toMillis( timeout );
+        long deadlineMillis = System.currentTimeMillis() + unit.toMillis(timeout);
         long now;
-        try
-        {
-            for ( Future<Void> future : futures )
-            {
+        try {
+            for (Future<Void> future : futures) {
                 now = System.currentTimeMillis();
-                if ( deadlineMillis < now )
-                {
+                if (deadlineMillis < now) {
                     throw new TimeoutException();
                 }
-                future.get( deadlineMillis - now, TimeUnit.MILLISECONDS );
+                future.get(deadlineMillis - now, TimeUnit.MILLISECONDS);
             }
-            adversary.setProbabilityFactor( 0.0 );
-            runVerificationPhase( cache );
-        }
-        finally
-        {
-            stopSignal.set( true );
-            adversary.setProbabilityFactor( 0.0 );
-            try
-            {
-                for ( Future<Void> future : futures )
-                {
-                    future.get( 10, TimeUnit.SECONDS );
+            adversary.setProbabilityFactor(0.0);
+            runVerificationPhase(cache);
+        } finally {
+            stopSignal.set(true);
+            adversary.setProbabilityFactor(0.0);
+            try {
+                for (Future<Void> future : futures) {
+                    future.get(10, TimeUnit.SECONDS);
                 }
-            }
-            catch ( InterruptedException | TimeoutException e )
-            {
-                for ( Future<Void> future : futures )
-                {
-                    future.cancel( true );
+            } catch (InterruptedException | TimeoutException e) {
+                for (Future<Void> future : futures) {
+                    future.cancel(true);
                 }
-                throw new RuntimeException( e );
+                throw new RuntimeException(e);
             }
 
-            try
-            {
+            try {
                 plan.close();
                 cache.close();
                 jobScheduler.close();
 
-                if ( this.fs instanceof EphemeralFileSystemAbstraction )
-                {
+                if (this.fs instanceof EphemeralFileSystemAbstraction) {
                     this.fs.close();
                     this.fs = new EphemeralFileSystemAbstraction();
-                }
-                else
-                {
-                    for ( Path file : files )
-                    {
-                        Files.delete( file );
+                } else {
+                    for (Path file : files) {
+                        Files.delete(file);
                     }
                 }
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }
 
-    private void runVerificationPhase( MuninnPageCache cache ) throws Exception
-    {
-        if ( verification != null )
-        {
+    private void runVerificationPhase(MuninnPageCache cache) throws Exception {
+        if (verification != null) {
             cache.flushAndForce(); // Clears any stray evictor exceptions
-            verification.run( cache, this.fs, plan.getFilesTouched() );
+            verification.run(cache, this.fs, plan.getFilesTouched());
         }
     }
 
-    private Path[] buildFileNames() throws IOException
-    {
+    private Path[] buildFileNames() throws IOException {
         String s = "abcdefghijklmnopqrstuvwxyz";
         Path[] files = new Path[s.length()];
-        for ( int i = 0; i < s.length(); i++ )
-        {
-            files[i] = basePath.resolve( s.substring( i, i + 1 ) ).normalize();
-            fs.mkdirs( files[i].getParent() );
-            StoreChannel channel = fs.write( files[i] );
-            channel.truncate( 0 );
+        for (int i = 0; i < s.length(); i++) {
+            files[i] = basePath.resolve(s.substring(i, i + 1)).normalize();
+            fs.mkdirs(files[i].getParent());
+            StoreChannel channel = fs.write(files[i]);
+            channel.truncate(0);
             channel.close();
         }
         return files;
     }
 
-    private Plan plan( MuninnPageCache cache, Path[] files, Map<Path,PagedFile> fileMap )
-    {
+    private Plan plan(MuninnPageCache cache, Path[] files, Map<Path, PagedFile> fileMap) {
         Action[] plan = new Action[commandCount];
 
         int[] commandWeights = computeCommandWeights();
-        int commandWeightSum = sum( commandWeights );
-        Random rng = new Random( randomSeed );
-        CommandPrimer primer = new CommandPrimer(
-                rng, cache, files, fileMap, filePageCount, filePageSize, recordFormat );
+        int commandWeightSum = sum(commandWeights);
+        Random rng = new Random(randomSeed);
+        CommandPrimer primer = new CommandPrimer(rng, cache, files, fileMap, filePageCount, filePageSize, recordFormat);
 
-        for ( int i = 0; i < plan.length; i++ )
-        {
-            Command command = pickCommand( rng.nextInt( commandWeightSum ), commandWeights );
-            Action action = primer.prime( command );
+        for (int i = 0; i < plan.length; i++) {
+            Command command = pickCommand(rng.nextInt(commandWeightSum), commandWeights);
+            Action action = primer.prime(command);
             plan[i] = action;
-            if ( action == null )
-            {
+            if (action == null) {
                 i--;
             }
         }
 
-        return new Plan( plan, fileMap, primer.getMappedFiles(), primer.getFilesTouched() );
+        return new Plan(plan, fileMap, primer.getMappedFiles(), primer.getFilesTouched());
     }
 
-    private int[] computeCommandWeights()
-    {
+    private int[] computeCommandWeights() {
         Command[] commands = Command.values();
         int[] weights = new int[commands.length];
 
         int base = 100_000_000;
-        for ( int i = 0; i < commands.length; i++ )
-        {
+        for (int i = 0; i < commands.length; i++) {
             weights[i] = (int) (base * commandProbabilityFactors[i]);
         }
 
         return weights;
     }
 
-    private static int sum( int[] xs )
-    {
+    private static int sum(int[] xs) {
         int sum = 0;
-        for ( int x : xs )
-        {
+        for (int x : xs) {
             sum += x;
         }
         return sum;
     }
 
-    private static Command pickCommand( int randomPick, int[] commandWeights )
-    {
-        for ( int i = 0; i < commandWeights.length; i++ )
-        {
+    private static Command pickCommand(int randomPick, int[] commandWeights) {
+        for (int i = 0; i < commandWeights.length; i++) {
             randomPick -= commandWeights[i];
-            if ( randomPick < 0 )
-            {
+            if (randomPick < 0) {
                 return Command.values()[i];
             }
         }
         throw new AssertionError(
-                "Tried to pick randomPick = " + randomPick + " from weights = " + Arrays.toString( commandWeights ) );
+                "Tried to pick randomPick = " + randomPick + " from weights = " + Arrays.toString(commandWeights));
     }
 }

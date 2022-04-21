@@ -28,13 +28,17 @@ import org.neo4j.cypher.internal.util.attribution.Id
  * Will use [[OrderedGroupingAggTable]] if some grouping columns do not have a provided order and
  * [[OrderedNonGroupingAggTable]] if all grouping columns have a provided order.
  */
-case class OrderedAggregationPipe(source: Pipe,
-                                  tableFactory: OrderedAggregationTableFactory)
-                                 (val id: Id = Id.INVALID_ID)
-  extends AggregationPipe(source) with OrderedInputPipe {
+case class OrderedAggregationPipe(source: Pipe, tableFactory: OrderedAggregationTableFactory)(val id: Id =
+  Id.INVALID_ID)
+    extends AggregationPipe(source) with OrderedInputPipe {
   override def getReceiver(state: QueryState): OrderedChunkReceiver = tableFactory.table(state, rowFactory, id)
 }
 
 trait OrderedAggregationTableFactory extends AggregationTableFactory {
-  override def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver
+
+  override def table(
+    state: QueryState,
+    rowFactory: CypherRowFactory,
+    operatorId: Id
+  ): AggregationTable with OrderedChunkReceiver
 }

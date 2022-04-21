@@ -23,20 +23,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-public class CompilerInfo
-{
+public class CompilerInfo {
     private final String planner;
     private final String runtime;
     private final List<SchemaIndexUsage> indexes;
     private final List<RelationshipTypeIndexUsage> relationshipTypeIndexes;
     private final List<LookupIndexUsage> lookupIndexes;
 
-    public CompilerInfo( String planner,
-                         String runtime,
-                         List<SchemaIndexUsage> indexes,
-                         List<RelationshipTypeIndexUsage> relationshipTypeIndexes,
-                         List<LookupIndexUsage> lookupIndexes )
-    {
+    public CompilerInfo(
+            String planner,
+            String runtime,
+            List<SchemaIndexUsage> indexes,
+            List<RelationshipTypeIndexUsage> relationshipTypeIndexes,
+            List<LookupIndexUsage> lookupIndexes) {
         this.planner = planner;
         this.runtime = runtime;
         this.indexes = indexes;
@@ -44,33 +43,27 @@ public class CompilerInfo
         this.lookupIndexes = lookupIndexes;
     }
 
-    public CompilerInfo( String planner, String runtime, List<SchemaIndexUsage> indexes )
-    {
-        this( planner, runtime, indexes, Collections.emptyList(), Collections.emptyList() );
+    public CompilerInfo(String planner, String runtime, List<SchemaIndexUsage> indexes) {
+        this(planner, runtime, indexes, Collections.emptyList(), Collections.emptyList());
     }
 
-    public String planner()
-    {
-        return planner.toLowerCase( Locale.ROOT );
+    public String planner() {
+        return planner.toLowerCase(Locale.ROOT);
     }
 
-    public String runtime()
-    {
+    public String runtime() {
         return runtime.toLowerCase();
     }
 
-    public List<SchemaIndexUsage> indexes()
-    {
+    public List<SchemaIndexUsage> indexes() {
         return indexes;
     }
 
-    public List<RelationshipTypeIndexUsage> relationshipTypeIndexes()
-    {
+    public List<RelationshipTypeIndexUsage> relationshipTypeIndexes() {
         return relationshipTypeIndexes;
     }
 
-    public List<LookupIndexUsage> lookupIndexes()
-    {
+    public List<LookupIndexUsage> lookupIndexes() {
         return lookupIndexes;
     }
 }

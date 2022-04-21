@@ -20,38 +20,33 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Map;
-
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.values.storable.Value;
 
-public class NativeMinimalIndexAccessor implements MinimalIndexAccessor
-{
+public class NativeMinimalIndexAccessor implements MinimalIndexAccessor {
     private final IndexDescriptor descriptor;
     private final IndexFiles indexFiles;
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
-    public NativeMinimalIndexAccessor( IndexDescriptor descriptor, IndexFiles indexFiles, DatabaseReadOnlyChecker readOnlyChecker )
-    {
+    public NativeMinimalIndexAccessor(
+            IndexDescriptor descriptor, IndexFiles indexFiles, DatabaseReadOnlyChecker readOnlyChecker) {
         this.descriptor = descriptor;
         this.indexFiles = indexFiles;
         this.readOnlyChecker = readOnlyChecker;
     }
 
     @Override
-    public void drop()
-    {
-        if ( readOnlyChecker.isReadOnly() )
-        {
-            throw new IllegalStateException( "Cannot drop read-only index." );
+    public void drop() {
+        if (readOnlyChecker.isReadOnly()) {
+            throw new IllegalStateException("Cannot drop read-only index.");
         }
         indexFiles.clear();
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
+    public Map<String, Value> indexConfig() {
         return descriptor.getIndexConfig().asMap();
     }
 }

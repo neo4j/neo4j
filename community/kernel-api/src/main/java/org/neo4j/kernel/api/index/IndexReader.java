@@ -24,6 +24,4 @@ import org.neo4j.graphdb.Resource;
 /**
  * Reader for an index.
  */
-public interface IndexReader extends Resource
-{
-}
+public interface IndexReader extends Resource {}

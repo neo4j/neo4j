@@ -25,35 +25,27 @@ import org.neo4j.graphdb.PathExpander;
  * Selects {@link TraversalBranch}s according to postorder depth first pattern,
  * see http://en.wikipedia.org/wiki/Depth-first_search
  */
-class PostorderDepthFirstSelector implements BranchSelector
-{
+class PostorderDepthFirstSelector implements BranchSelector {
     private TraversalBranch current;
     private final PathExpander expander;
 
-    PostorderDepthFirstSelector( TraversalBranch startSource, PathExpander expander )
-    {
+    PostorderDepthFirstSelector(TraversalBranch startSource, PathExpander expander) {
         this.current = startSource;
         this.expander = expander;
     }
 
     @Override
-    public TraversalBranch next( TraversalContext metadata )
-    {
+    public TraversalBranch next(TraversalContext metadata) {
         TraversalBranch result = null;
-        while ( result == null )
-        {
-            if ( current == null )
-            {
+        while (result == null) {
+            if (current == null) {
                 return null;
             }
 
-            TraversalBranch next = current.next( expander, metadata );
-            if ( next != null )
-            {
+            TraversalBranch next = current.next(expander, metadata);
+            if (next != null) {
                 current = next;
-            }
-            else
-            {
+            } else {
                 result = current;
                 current = current.parent();
             }

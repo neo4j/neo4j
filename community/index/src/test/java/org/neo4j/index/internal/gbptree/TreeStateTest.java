@@ -19,110 +19,99 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.io.pagecache.PageCursor;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class TreeStateTest
-{
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.PageCursor;
+
+class TreeStateTest {
     private static final int PAGE_SIZE = 256;
     private PageAwareByteArrayCursor cursor;
 
     @BeforeEach
-    void initiateCursor()
-    {
-        cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+    void initiateCursor() {
+        cursor = new PageAwareByteArrayCursor(PAGE_SIZE);
         cursor.next();
     }
 
     @Test
-    void readEmptyStateShouldThrow()
-    {
+    void readEmptyStateShouldThrow() {
         // GIVEN empty state
 
         // WHEN
-        TreeState state = TreeState.read( cursor );
+        TreeState state = TreeState.read(cursor);
 
         // THEN
-        assertFalse( state.isValid() );
+        assertFalse(state.isValid());
     }
 
     @Test
-    void shouldReadValidPage()
-    {
+    void shouldReadValidPage() {
         // GIVEN valid state
         long pageId = cursor.getCurrentPageId();
-        TreeState expected = new TreeState( pageId, 1, 2, 3, 4, 5, 6, 7, 8, 9, true, true );
-        write( cursor, expected );
+        TreeState expected = new TreeState(pageId, 1, 2, 3, 4, 5, 6, 7, 8, 9, true, true);
+        write(cursor, expected);
         cursor.rewind();
 
         // WHEN
-        TreeState read = TreeState.read( cursor );
+        TreeState read = TreeState.read(cursor);
 
         // THEN
-        assertEquals( expected, read );
+        assertEquals(expected, read);
     }
 
     @Test
-    void readBrokenStateShouldFail()
-    {
+    void readBrokenStateShouldFail() {
         // GIVEN broken state
         long pageId = cursor.getCurrentPageId();
-        TreeState expected = new TreeState( pageId, 1, 2, 3, 4, 5, 6, 7, 8, 9, true, true );
-        write( cursor, expected );
+        TreeState expected = new TreeState(pageId, 1, 2, 3, 4, 5, 6, 7, 8, 9, true, true);
+        write(cursor, expected);
         cursor.rewind();
-        assertTrue( TreeState.read( cursor ).isValid() );
+        assertTrue(TreeState.read(cursor).isValid());
         cursor.rewind();
-        breakChecksum( cursor );
+        breakChecksum(cursor);
 
         // WHEN
-        TreeState state = TreeState.read( cursor );
+        TreeState state = TreeState.read(cursor);
 
         // THEN
-        assertFalse( state.isValid() );
+        assertFalse(state.isValid());
     }
 
     @Test
-    void shouldNotWriteInvalidStableGeneration()
-    {
+    void shouldNotWriteInvalidStableGeneration() {
         long generation = GenerationSafePointer.MAX_GENERATION + 1;
 
-        assertThrows( IllegalArgumentException.class, () ->
-        {
+        assertThrows(IllegalArgumentException.class, () -> {
             long pageId = cursor.getCurrentPageId();
-            write( cursor, new TreeState( pageId, generation, 2, 3, 4, 5, 6, 7, 8, 9, true, true ) );
-        } );
+            write(cursor, new TreeState(pageId, generation, 2, 3, 4, 5, 6, 7, 8, 9, true, true));
+        });
     }
 
     @Test
-    void shouldNotWriteInvalidUnstableGeneration()
-    {
+    void shouldNotWriteInvalidUnstableGeneration() {
         long generation = GenerationSafePointer.MAX_GENERATION + 1;
 
-        assertThrows( IllegalArgumentException.class, () ->
-        {
+        assertThrows(IllegalArgumentException.class, () -> {
             long pageId = cursor.getCurrentPageId();
-            write( cursor, new TreeState( pageId, 1, generation, 3, 4, 5, 6, 7, 8, 9, true, true ) );
-        } );
+            write(cursor, new TreeState(pageId, 1, generation, 3, 4, 5, 6, 7, 8, 9, true, true));
+        });
     }
 
-    private static void breakChecksum( PageCursor cursor )
-    {
+    private static void breakChecksum(PageCursor cursor) {
         // Doesn't matter which bits we destroy actually. Destroying the first ones requires
         // no additional knowledge about where checksum is stored
-        long existing = cursor.getLong( cursor.getOffset() );
-        cursor.putLong( cursor.getOffset(), ~existing );
+        long existing = cursor.getLong(cursor.getOffset());
+        cursor.putLong(cursor.getOffset(), ~existing);
     }
 
-    private static void write( PageCursor cursor, TreeState origin )
-    {
-        TreeState.write( cursor,
+    private static void write(PageCursor cursor, TreeState origin) {
+        TreeState.write(
+                cursor,
                 origin.stableGeneration(),
                 origin.unstableGeneration(),
                 origin.rootId(),
@@ -132,6 +121,6 @@ class TreeStateTest
                 origin.freeListReadPageId(),
                 origin.freeListWritePos(),
                 origin.freeListReadPos(),
-                origin.isClean() );
+                origin.isClean());
     }
 }

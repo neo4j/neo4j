@@ -21,27 +21,23 @@ package org.neo4j.tooling.procedure.messages;
 
 import javax.lang.model.element.Element;
 
-public class AggregationError implements CompilationMessage
-{
+public class AggregationError implements CompilationMessage {
 
     private final Element element;
     private final String contents;
 
-    public AggregationError( Element element, String contents, Object... args )
-    {
+    public AggregationError(Element element, String contents, Object... args) {
         this.element = element;
-        this.contents = String.format( contents, args );
+        this.contents = String.format(contents, args);
     }
 
     @Override
-    public Element getElement()
-    {
+    public Element getElement() {
         return element;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return contents;
     }
 }

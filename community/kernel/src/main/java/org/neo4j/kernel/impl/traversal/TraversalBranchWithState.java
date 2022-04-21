@@ -29,57 +29,49 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.internal.helpers.collection.Iterators;
 
-public class TraversalBranchWithState extends TraversalBranchImpl implements BranchState
-{
+public class TraversalBranchWithState extends TraversalBranchImpl implements BranchState {
     protected final Object stateForMe;
     protected Object stateForChildren;
 
-    public TraversalBranchWithState( TraversalBranch parent, int depth, Node source, Relationship toHere, Object inheritedState )
-    {
-        super( parent, depth, source, toHere );
+    public TraversalBranchWithState(
+            TraversalBranch parent, int depth, Node source, Relationship toHere, Object inheritedState) {
+        super(parent, depth, source, toHere);
         this.stateForMe = this.stateForChildren = inheritedState;
     }
 
-    public TraversalBranchWithState( TraversalBranch parent, Node source, InitialBranchState initialState )
-    {
-        super( parent, source );
-        this.stateForMe = this.stateForChildren = initialState.initialState( this );
+    public TraversalBranchWithState(TraversalBranch parent, Node source, InitialBranchState initialState) {
+        super(parent, source);
+        this.stateForMe = this.stateForChildren = initialState.initialState(this);
     }
 
     @Override
-    public void setState( Object state )
-    {
+    public void setState(Object state) {
         this.stateForChildren = state;
     }
 
     @Override
-    public Object getState()
-    {
+    public Object getState() {
         return this.stateForMe;
     }
 
     @Override
-    protected TraversalBranch newNextBranch( Node node, Relationship relationship )
-    {
-        return new TraversalBranchWithState( this, length() + 1, node, relationship, stateForChildren );
+    protected TraversalBranch newNextBranch(Node node, Relationship relationship) {
+        return new TraversalBranchWithState(this, length() + 1, node, relationship, stateForChildren);
     }
 
     @Override
-    protected ResourceIterator<Relationship> expandRelationshipsWithoutChecks( PathExpander expander )
-    {
-        Iterable expandIterable = expander.expand( this, this );
-        return Iterators.asResourceIterator( expandIterable );
+    protected ResourceIterator<Relationship> expandRelationshipsWithoutChecks(PathExpander expander) {
+        Iterable expandIterable = expander.expand(this, this);
+        return Iterators.asResourceIterator(expandIterable);
     }
 
     @Override
-    public Object state()
-    {
+    public Object state() {
         return this.stateForMe;
     }
 
     @Override
-    protected void evaluate( TraversalContext context )
-    {
-        setEvaluation( context.evaluate( this, this ) );
+    protected void evaluate(TraversalContext context) {
+        setEvaluation(context.evaluate(this, this));
     }
 }

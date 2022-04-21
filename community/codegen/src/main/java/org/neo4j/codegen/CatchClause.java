@@ -22,25 +22,20 @@ package org.neo4j.codegen;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class CatchClause
-{
+public class CatchClause {
     private final Parameter exception;
     private final List<Consumer<MethodWriter>> actions;
 
-    public CatchClause( Parameter exception, List<Consumer<MethodWriter>> actions )
-    {
+    public CatchClause(Parameter exception, List<Consumer<MethodWriter>> actions) {
         this.exception = exception;
         this.actions = actions;
     }
 
-    public Parameter exception()
-    {
+    public Parameter exception() {
         return exception;
     }
 
-    public List<Consumer<MethodWriter>> actions()
-    {
+    public List<Consumer<MethodWriter>> actions() {
         return actions;
     }
-
 }

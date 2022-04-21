@@ -24,28 +24,25 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
-class EventuallyConsistentIndexUpdater implements IndexUpdater
-{
+class EventuallyConsistentIndexUpdater implements IndexUpdater {
     private final DatabaseIndex<? extends IndexReader> index;
     private final IndexUpdater indexUpdater;
     private final IndexUpdateSink indexUpdateSink;
 
-    EventuallyConsistentIndexUpdater( DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater, IndexUpdateSink indexUpdateSink )
-    {
+    EventuallyConsistentIndexUpdater(
+            DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater, IndexUpdateSink indexUpdateSink) {
         this.index = index;
         this.indexUpdater = indexUpdater;
         this.indexUpdateSink = indexUpdateSink;
     }
 
     @Override
-    public void process( IndexEntryUpdate<?> update )
-    {
-        indexUpdateSink.enqueueUpdate( index, indexUpdater, update );
+    public void process(IndexEntryUpdate<?> update) {
+        indexUpdateSink.enqueueUpdate(index, indexUpdater, update);
     }
 
     @Override
-    public void close()
-    {
-        indexUpdateSink.closeUpdater( index, indexUpdater );
+    public void close() {
+        indexUpdateSink.closeUpdater(index, indexUpdater);
     }
 }

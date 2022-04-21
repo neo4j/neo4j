@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
-import java.lang.invoke.VarHandle;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
+import java.lang.invoke.VarHandle;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -32,10 +33,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-
-public class ThreadExecutionContext implements ExecutionContext, AutoCloseable
-{
+public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private static final String TRANSACTION_EXECUTION_TAG = "transactionExecution";
     private final CursorContext context;
     private final AccessMode accessMode;
@@ -44,74 +42,67 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable
     private final ThreadExecutionContextRead contextRead;
     private final StoreCursors storageCursors;
 
-    public ThreadExecutionContext( KernelTransactionImplementation ktx, CursorContextFactory contextFactory, StorageEngine storageEngine, Config config )
-    {
-        this.cursorTracer = new ExecutionContextCursorTracer( PageCacheTracer.NULL, TRANSACTION_EXECUTION_TAG );
+    public ThreadExecutionContext(
+            KernelTransactionImplementation ktx,
+            CursorContextFactory contextFactory,
+            StorageEngine storageEngine,
+            Config config) {
+        this.cursorTracer = new ExecutionContextCursorTracer(PageCacheTracer.NULL, TRANSACTION_EXECUTION_TAG);
         this.ktxContext = ktx.cursorContext();
-        this.context = contextFactory.create( cursorTracer );
+        this.context = contextFactory.create(cursorTracer);
         this.accessMode = ktx.securityContext().mode();
-        this.storageCursors = storageEngine.createStorageCursors( context );
-        this.contextRead = new ThreadExecutionContextRead( this, ktx.dataRead(), ktx.newStorageReader(), storageCursors, config );
+        this.storageCursors = storageEngine.createStorageCursors(context);
+        this.contextRead =
+                new ThreadExecutionContextRead(this, ktx.dataRead(), ktx.newStorageReader(), storageCursors, config);
     }
 
     @Override
-    public CursorContext cursorContext()
-    {
+    public CursorContext cursorContext() {
         return context;
     }
 
     @Override
-    public AccessMode accessMode()
-    {
+    public AccessMode accessMode() {
         return accessMode;
     }
 
     @Override
-    public Read dataRead()
-    {
+    public Read dataRead() {
         return contextRead;
     }
 
     @Override
-    public void complete()
-    {
-        closeAllUnchecked( contextRead, storageCursors );
+    public void complete() {
+        closeAllUnchecked(contextRead, storageCursors);
         cursorTracer.complete();
     }
 
     @Override
-    public void report()
-    {
-        mergeBlocked( cursorTracer );
+    public void report() {
+        mergeBlocked(cursorTracer);
     }
 
     @Override
-    public StoreCursors storeCursors()
-    {
+    public StoreCursors storeCursors() {
         return storageCursors;
     }
 
     @Override
-    public void close()
-    {
-        while ( !cursorTracer.isCompleted() )
-        {
+    public void close() {
+        while (!cursorTracer.isCompleted()) {
             Thread.onSpinWait();
         }
-        mergeUnblocked( cursorTracer );
+        mergeUnblocked(cursorTracer);
     }
 
-    private void mergeBlocked( ExecutionContextCursorTracer cursorTracer )
-    {
-        synchronized ( ktxContext )
-        {
-            mergeUnblocked( cursorTracer );
+    private void mergeBlocked(ExecutionContextCursorTracer cursorTracer) {
+        synchronized (ktxContext) {
+            mergeUnblocked(cursorTracer);
         }
         VarHandle.fullFence();
     }
 
-    private void mergeUnblocked( ExecutionContextCursorTracer cursorTracer )
-    {
-        ktxContext.merge( cursorTracer.snapshot() );
+    private void mergeUnblocked(ExecutionContextCursorTracer cursorTracer) {
+        ktxContext.merge(cursorTracer.snapshot());
     }
 }

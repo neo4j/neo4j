@@ -19,45 +19,37 @@
  */
 package org.neo4j.test.extension.dbms;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-public class DbmsExtensionCheckCallbackSignature
-{
+public class DbmsExtensionCheckCallbackSignature {
     @ExtensionCallback
-    int notVoid( TestDatabaseManagementServiceBuilder builder )
-    {
+    int notVoid(TestDatabaseManagementServiceBuilder builder) {
         return 0;
     }
 
     @ExtensionCallback
-    void wrongParameter( String builder )
-    {
-    }
+    void wrongParameter(String builder) {}
 
     @Test
-    @DbmsExtension( configurationCallback = "notVoid" )
-    void triggerNotVoid()
-    {
+    @DbmsExtension(configurationCallback = "notVoid")
+    void triggerNotVoid() {
         fail();
     }
 
     @Test
-    @DbmsExtension( configurationCallback = "wrongParameter" )
-    void triggerWrongParameter()
-    {
+    @DbmsExtension(configurationCallback = "wrongParameter")
+    void triggerWrongParameter() {
         fail();
     }
 
     @Test
-    @DbmsExtension( configurationCallback = "missingMethod" )
-    void triggerMissingMethod()
-    {
+    @DbmsExtension(configurationCallback = "missingMethod")
+    void triggerMissingMethod() {
         fail();
     }
 }

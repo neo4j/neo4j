@@ -28,43 +28,35 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
  * target collection such that the result is equivalent to just
  * executing the sequence of additions and removals in order.
  */
-public interface LongDiffSets
-{
-    LongDiffSets EMPTY = new LongDiffSets()
-    {
+public interface LongDiffSets {
+    LongDiffSets EMPTY = new LongDiffSets() {
         @Override
-        public boolean isAdded( long element )
-        {
+        public boolean isAdded(long element) {
             return false;
         }
 
         @Override
-        public boolean isRemoved( long element )
-        {
+        public boolean isRemoved(long element) {
             return false;
         }
 
         @Override
-        public LongSet getAdded()
-        {
+        public LongSet getAdded() {
             return LongSets.immutable.empty();
         }
 
         @Override
-        public LongSet getRemoved()
-        {
+        public LongSet getRemoved() {
             return LongSets.immutable.empty();
         }
 
         @Override
-        public boolean isEmpty()
-        {
+        public boolean isEmpty() {
             return true;
         }
 
         @Override
-        public int delta()
-        {
+        public int delta() {
             return 0;
         }
     };
@@ -74,14 +66,14 @@ public interface LongDiffSets
      * @param element element to check
      * @return true if added, false otherwise
      */
-    boolean isAdded( long element );
+    boolean isAdded(long element);
 
     /**
      * Check if provided element is removed in this collection
      * @param element element to check
      * @return true if removed, false otherwise
      */
-    boolean isRemoved( long element );
+    boolean isRemoved(long element);
 
     /**
      * All elements that added into this collection

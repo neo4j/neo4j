@@ -19,163 +19,143 @@
  */
 package org.neo4j.common;
 
-import org.junit.jupiter.api.Test;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import org.junit.jupiter.api.Test;
 
-import static java.lang.String.format;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class HexPrinterTest
-{
+class HexPrinterTest {
     @Test
-    void shouldPrintACoupleOfLines()
-    {
+    void shouldPrintACoupleOfLines() {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( outStream );
-        HexPrinter printer = new HexPrinter( out );
+        PrintStream out = new PrintStream(outStream);
+        HexPrinter printer = new HexPrinter(out);
 
         // WHEN
-        for ( byte value = 0; value < 40; value++ )
-        {
-            printer.append( value );
+        for (byte value = 0; value < 40; value++) {
+            printer.append(value);
         }
 
         // THEN
         out.flush();
-        assertEquals( format(
-                "00 01 02 03 04 05 06 07    08 09 0A 0B 0C 0D 0E 0F    " +
-                "10 11 12 13 14 15 16 17    18 19 1A 1B 1C 1D 1E 1F%n" +
-                "20 21 22 23 24 25 26 27" ),
-                outStream.toString() );
+        assertEquals(
+                format("00 01 02 03 04 05 06 07    08 09 0A 0B 0C 0D 0E 0F    "
+                        + "10 11 12 13 14 15 16 17    18 19 1A 1B 1C 1D 1E 1F%n"
+                        + "20 21 22 23 24 25 26 27"),
+                outStream.toString());
     }
 
     @Test
-    void shouldPrintUserSpecifiedBytesGroupingFormat()
-    {
+    void shouldPrintUserSpecifiedBytesGroupingFormat() {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( outStream );
-        HexPrinter printer = new HexPrinter( out ).withBytesGroupingFormat( 12, 4, ", " );
+        PrintStream out = new PrintStream(outStream);
+        HexPrinter printer = new HexPrinter(out).withBytesGroupingFormat(12, 4, ", ");
 
         // WHEN
-        for ( byte value = 0; value < 30; value++ )
-        {
-            printer.append( value );
+        for (byte value = 0; value < 30; value++) {
+            printer.append(value);
         }
 
         // THEN
         out.flush();
-        assertEquals( format(
-                "00 01 02 03, 04 05 06 07, 08 09 0A 0B%n" +
-                "0C 0D 0E 0F, 10 11 12 13, 14 15 16 17%n" +
-                "18 19 1A 1B, 1C 1D" ),
-                outStream.toString() );
+        assertEquals(
+                format("00 01 02 03, 04 05 06 07, 08 09 0A 0B%n" + "0C 0D 0E 0F, 10 11 12 13, 14 15 16 17%n"
+                        + "18 19 1A 1B, 1C 1D"),
+                outStream.toString());
     }
 
     @Test
-    void shouldNotGroupingWhenBytesPerGroupIsGreaterThanBytesPerLine()
-    {
+    void shouldNotGroupingWhenBytesPerGroupIsGreaterThanBytesPerLine() {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( outStream );
-        HexPrinter printer = new HexPrinter( out ).withBytesPerLine( 12 ).withBytesPerGroup( 100 );
+        PrintStream out = new PrintStream(outStream);
+        HexPrinter printer = new HexPrinter(out).withBytesPerLine(12).withBytesPerGroup(100);
 
         // WHEN
-        for ( byte value = 0; value < 30; value++ )
-        {
-            printer.append( value );
+        for (byte value = 0; value < 30; value++) {
+            printer.append(value);
         }
 
         // THEN
         out.flush();
-        assertEquals( format(
-                "00 01 02 03 04 05 06 07 08 09 0A 0B%n" +
-                "0C 0D 0E 0F 10 11 12 13 14 15 16 17%n" +
-                "18 19 1A 1B 1C 1D" ),
-                outStream.toString() );
+        assertEquals(
+                format("00 01 02 03 04 05 06 07 08 09 0A 0B%n" + "0C 0D 0E 0F 10 11 12 13 14 15 16 17%n"
+                        + "18 19 1A 1B 1C 1D"),
+                outStream.toString());
     }
 
     @Test
-    void shouldPrintUserSpecifiedLineNumberFormat()
-    {
+    void shouldPrintUserSpecifiedLineNumberFormat() {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( outStream );
-        HexPrinter printer = new HexPrinter( out ).withLineNumberFormat( 5, "[", "]" );
+        PrintStream out = new PrintStream(outStream);
+        HexPrinter printer = new HexPrinter(out).withLineNumberFormat(5, "[", "]");
 
         // WHEN
-        for ( byte value = 0; value < 40; value++ )
-        {
-            printer.append( value );
+        for (byte value = 0; value < 40; value++) {
+            printer.append(value);
         }
 
         // THEN
         out.flush();
-        assertEquals( format(
-                "[0x00000]" +
-                "00 01 02 03 04 05 06 07    08 09 0A 0B 0C 0D 0E 0F    " +
-                "10 11 12 13 14 15 16 17    18 19 1A 1B 1C 1D 1E 1F%n" +
-                "[0x00001]" +
-                "20 21 22 23 24 25 26 27" ),
-                outStream.toString() );
+        assertEquals(
+                format("[0x00000]" + "00 01 02 03 04 05 06 07    08 09 0A 0B 0C 0D 0E 0F    "
+                        + "10 11 12 13 14 15 16 17    18 19 1A 1B 1C 1D 1E 1F%n"
+                        + "[0x00001]"
+                        + "20 21 22 23 24 25 26 27"),
+                outStream.toString());
     }
 
     @Test
-    void shouldStartFromUserSpecifiedLineNumber()
-    {
+    void shouldStartFromUserSpecifiedLineNumber() {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( outStream );
-        HexPrinter printer = new HexPrinter( out ).withLineNumberDigits( 2 ).withLineNumberOffset( 0xA8 );
+        PrintStream out = new PrintStream(outStream);
+        HexPrinter printer = new HexPrinter(out).withLineNumberDigits(2).withLineNumberOffset(0xA8);
 
         // WHEN
-        for ( byte value = 0; value < 40; value++ )
-        {
-            printer.append( value );
+        for (byte value = 0; value < 40; value++) {
+            printer.append(value);
         }
 
         // THEN
         out.flush();
-        assertEquals( format(
-                "@ 0xA8: " +
-                "00 01 02 03 04 05 06 07    08 09 0A 0B 0C 0D 0E 0F    " +
-                "10 11 12 13 14 15 16 17    18 19 1A 1B 1C 1D 1E 1F%n" +
-                "@ 0xA9: " +
-                "20 21 22 23 24 25 26 27"  ),
-                outStream.toString() );
+        assertEquals(
+                format("@ 0xA8: " + "00 01 02 03 04 05 06 07    08 09 0A 0B 0C 0D 0E 0F    "
+                        + "10 11 12 13 14 15 16 17    18 19 1A 1B 1C 1D 1E 1F%n"
+                        + "@ 0xA9: "
+                        + "20 21 22 23 24 25 26 27"),
+                outStream.toString());
     }
 
     @Test
-    void shouldPrintPartOfByteBuffer()
-    {
-        ByteBuffer bytes = ByteBuffer.allocate( 1024 );
-        for ( byte value = 0; value < 33; value++ )
-        {
-            bytes.put( value );
+    void shouldPrintPartOfByteBuffer() {
+        ByteBuffer bytes = ByteBuffer.allocate(1024);
+        for (byte value = 0; value < 33; value++) {
+            bytes.put(value);
         }
-        String hexString = HexPrinter.hex( bytes, 3, 8 );
-        assertEquals( "03 04 05 06 07 08 09 0A", hexString );
+        String hexString = HexPrinter.hex(bytes, 3, 8);
+        assertEquals("03 04 05 06 07 08 09 0A", hexString);
     }
 
     @Test
-    void shouldOnlyPrintBytesWrittenToBuffer()
-    {
+    void shouldOnlyPrintBytesWrittenToBuffer() {
         // Given
-        ByteBuffer bytes = ByteBuffer.allocate( 1024 );
-        for ( byte value = 0; value < 10; value++ )
-        {
-            bytes.put( value );
+        ByteBuffer bytes = ByteBuffer.allocate(1024);
+        for (byte value = 0; value < 10; value++) {
+            bytes.put(value);
         }
         bytes.flip();
 
         // When
-        String hexString = HexPrinter.hex( bytes );
+        String hexString = HexPrinter.hex(bytes);
 
         // Then
-        assertEquals( "00 01 02 03 04 05 06 07    08 09", hexString );
+        assertEquals("00 01 02 03 04 05 06 07    08 09", hexString);
     }
 }

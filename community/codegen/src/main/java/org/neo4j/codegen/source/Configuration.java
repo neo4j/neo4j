@@ -29,118 +29,95 @@ import java.util.Locale;
 import java.util.Set;
 import javax.annotation.processing.Processor;
 import javax.tools.JavaCompiler;
-
 import org.neo4j.codegen.CodeGenerationStrategy;
 import org.neo4j.codegen.CodeGenerationStrategyNotSupportedException;
 import org.neo4j.codegen.TypeReference;
 
-class Configuration
-{
+class Configuration {
     private List<Processor> processors = new ArrayList<>();
-    private Set<SourceCode> flags = EnumSet.noneOf( SourceCode.class );
+    private Set<SourceCode> flags = EnumSet.noneOf(SourceCode.class);
     private List<String> options = new ArrayList<>();
     private List<SourceVisitor> sourceVisitors = new ArrayList<>();
     private List<WarningsHandler> warningsHandlers = new ArrayList<>();
     JavaSourceCompiler.Factory compiler = JdkCompiler.FACTORY;
 
-    public Configuration withAnnotationProcessor( Processor processor )
-    {
-        processors.add( processor );
+    public Configuration withAnnotationProcessor(Processor processor) {
+        processors.add(processor);
         return this;
     }
 
-    public Configuration withFlag( SourceCode flag )
-    {
-        flags.add( flag );
+    public Configuration withFlag(SourceCode flag) {
+        flags.add(flag);
         return this;
     }
 
-    public Configuration withOptions( String... opts )
-    {
-        if ( opts != null )
-        {
-            Collections.addAll( options, opts );
+    public Configuration withOptions(String... opts) {
+        if (opts != null) {
+            Collections.addAll(options, opts);
         }
         return this;
     }
 
-    public Configuration withSourceVisitor( SourceVisitor visitor )
-    {
-        sourceVisitors.add( visitor );
+    public Configuration withSourceVisitor(SourceVisitor visitor) {
+        sourceVisitors.add(visitor);
         return this;
     }
 
-    public Configuration withWarningsHandler( WarningsHandler handler )
-    {
-        warningsHandlers.add( handler );
+    public Configuration withWarningsHandler(WarningsHandler handler) {
+        warningsHandlers.add(handler);
         return this;
     }
 
-    public Iterable<String> options()
-    {
+    public Iterable<String> options() {
         return options;
     }
 
-    public void processors( JavaCompiler.CompilationTask task )
-    {
-        task.setProcessors( processors );
+    public void processors(JavaCompiler.CompilationTask task) {
+        task.setProcessors(processors);
     }
 
-    public Locale locale()
-    {
+    public Locale locale() {
         return null;
     }
 
-    public Charset charset()
-    {
+    public Charset charset() {
         return null;
     }
 
-    public Writer errorWriter()
-    {
+    public Writer errorWriter() {
         return null;
     }
 
-    public BaseUri sourceBase()
-    {
+    public BaseUri sourceBase() {
         return BaseUri.DEFAULT_SOURCE_BASE;
     }
 
-    public boolean isSet( SourceCode flag )
-    {
-        return flags != null && flags.contains( flag );
+    public boolean isSet(SourceCode flag) {
+        return flags != null && flags.contains(flag);
     }
 
-    public void visit( TypeReference reference, StringBuilder source )
-    {
-        for ( SourceVisitor visitor : sourceVisitors )
-        {
-            visitor.visitSource( reference, source );
+    public void visit(TypeReference reference, StringBuilder source) {
+        for (SourceVisitor visitor : sourceVisitors) {
+            visitor.visitSource(reference, source);
         }
     }
 
-    public WarningsHandler warningsHandler()
-    {
-        if ( warningsHandlers.isEmpty() )
-        {
+    public WarningsHandler warningsHandler() {
+        if (warningsHandlers.isEmpty()) {
             return WarningsHandler.NO_WARNINGS_HANDLER;
         }
-        if ( warningsHandlers.size() == 1 )
-        {
-            return warningsHandlers.get( 0 );
+        if (warningsHandlers.size() == 1) {
+            return warningsHandlers.get(0);
         }
-        return new WarningsHandler.Multiplex(
-                warningsHandlers.toArray( new WarningsHandler[0] ) );
+        return new WarningsHandler.Multiplex(warningsHandlers.toArray(new WarningsHandler[0]));
     }
 
-    public JavaSourceCompiler sourceCompilerFor( CodeGenerationStrategy<?> strategy )
-            throws CodeGenerationStrategyNotSupportedException
-    {
-        return compiler.sourceCompilerFor( this, strategy );
+    public JavaSourceCompiler sourceCompilerFor(CodeGenerationStrategy<?> strategy)
+            throws CodeGenerationStrategyNotSupportedException {
+        return compiler.sourceCompilerFor(this, strategy);
     }
 
-    public void useJdkJavaCompiler()
-    {
+    public void useJdkJavaCompiler() {
         compiler = null;
     }
 }

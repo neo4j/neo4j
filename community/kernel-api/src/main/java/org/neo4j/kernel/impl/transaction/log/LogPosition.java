@@ -19,25 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-public class LogPosition implements Comparable<LogPosition>
-{
-    public static final LogPosition UNSPECIFIED = new LogPosition( -1, -1 )
-    {
+public class LogPosition implements Comparable<LogPosition> {
+    public static final LogPosition UNSPECIFIED = new LogPosition(-1, -1) {
         @Override
-        public long getLogVersion()
-        {
+        public long getLogVersion() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long getByteOffset()
-        {
+        public long getByteOffset() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "UNSPECIFIED";
         }
     };
@@ -45,40 +40,30 @@ public class LogPosition implements Comparable<LogPosition>
     private final long logVersion;
     private final long byteOffset;
 
-    public LogPosition( long logVersion, long byteOffset )
-    {
+    public LogPosition(long logVersion, long byteOffset) {
         this.logVersion = logVersion;
         this.byteOffset = byteOffset;
     }
 
-    public long getLogVersion()
-    {
+    public long getLogVersion() {
         return logVersion;
     }
 
-    public long getByteOffset()
-    {
+    public long getByteOffset() {
         return byteOffset;
     }
 
     @Override
-    public String toString()
-    {
-        return "LogPosition{" +
-                "logVersion=" + logVersion +
-                ", byteOffset=" + byteOffset +
-                '}';
+    public String toString() {
+        return "LogPosition{" + "logVersion=" + logVersion + ", byteOffset=" + byteOffset + '}';
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
@@ -87,20 +72,17 @@ public class LogPosition implements Comparable<LogPosition>
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = (int) (logVersion ^ (logVersion >>> 32));
         result = 31 * result + (int) (byteOffset ^ (byteOffset >>> 32));
         return result;
     }
 
     @Override
-    public int compareTo( LogPosition o )
-    {
-        if ( logVersion != o.logVersion )
-        {
-            return Long.compare( logVersion, o.logVersion );
+    public int compareTo(LogPosition o) {
+        if (logVersion != o.logVersion) {
+            return Long.compare(logVersion, o.logVersion);
         }
-        return Long.compare( byteOffset, o.byteOffset );
+        return Long.compare(byteOffset, o.byteOffset);
     }
 }

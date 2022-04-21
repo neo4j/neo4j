@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
-
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -40,64 +38,57 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
  * and changes applying them via {@link LuceneIndexWriter#updateDocument(Term, Document)} to make sure no duplicated
  * documents are inserted.
  */
-public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
-{
+public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater {
     private final LuceneIndexWriter writer;
     private final IndexUpdateIgnoreStrategy ignoreStrategy;
 
-    public LuceneIndexPopulatingUpdater( LuceneIndexWriter writer, IndexUpdateIgnoreStrategy ignoreStrategy )
-    {
+    public LuceneIndexPopulatingUpdater(LuceneIndexWriter writer, IndexUpdateIgnoreStrategy ignoreStrategy) {
         this.writer = writer;
         this.ignoreStrategy = ignoreStrategy;
     }
 
     @Override
-    public void process( IndexEntryUpdate<?> update )
-    {
-        final var valueUpdate = asValueUpdate( update );
-        if ( valueUpdate == null )
-        {
+    public void process(IndexEntryUpdate<?> update) {
+        final var valueUpdate = asValueUpdate(update);
+        if (valueUpdate == null) {
             return;
         }
 
-        try
-        {
+        try {
             final var entityId = valueUpdate.getEntityId();
             final var values = valueUpdate.values();
             final var updateMode = valueUpdate.updateMode();
-            switch ( updateMode )
-            {
-            case ADDED:
-                added( valueUpdate );
-                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
-                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
-                break;
-            case CHANGED:
-                changed( valueUpdate );
-                writer.updateOrDeleteDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
-                                               LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
-                break;
-            case REMOVED:
-                removed( valueUpdate );
-                writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ) );
-                break;
-            default:
-                throw new IllegalStateException( "Unknown update mode " + updateMode + " for values " + Arrays.toString( values ) );
+            switch (updateMode) {
+                case ADDED:
+                    added(valueUpdate);
+                    writer.updateDocument(
+                            LuceneDocumentStructure.newTermForChangeOrRemove(entityId),
+                            LuceneDocumentStructure.documentRepresentingProperties(entityId, values));
+                    break;
+                case CHANGED:
+                    changed(valueUpdate);
+                    writer.updateOrDeleteDocument(
+                            LuceneDocumentStructure.newTermForChangeOrRemove(entityId),
+                            LuceneDocumentStructure.documentRepresentingProperties(entityId, values));
+                    break;
+                case REMOVED:
+                    removed(valueUpdate);
+                    writer.deleteDocuments(LuceneDocumentStructure.newTermForChangeOrRemove(entityId));
+                    break;
+                default:
+                    throw new IllegalStateException(
+                            "Unknown update mode " + updateMode + " for values " + Arrays.toString(values));
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate( IndexEntryUpdate<INDEX_KEY> update )
-    {
-        final var valueUpdate = IndexUpdater.super.asValueUpdate( update );
-        return !ignoreStrategy.ignore( valueUpdate )
-               ? ignoreStrategy.toEquivalentUpdate( valueUpdate )
-               : null;
+    public <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate(
+            IndexEntryUpdate<INDEX_KEY> update) {
+        final var valueUpdate = IndexUpdater.super.asValueUpdate(update);
+        return !ignoreStrategy.ignore(valueUpdate) ? ignoreStrategy.toEquivalentUpdate(valueUpdate) : null;
     }
 
     /**
@@ -105,19 +96,19 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
      *
      * @param update the update being processed.
      */
-    protected abstract void added( ValueIndexEntryUpdate<?> update );
+    protected abstract void added(ValueIndexEntryUpdate<?> update);
 
     /**
      * Method is invoked when {@link ValueIndexEntryUpdate} with {@link UpdateMode#CHANGED} is processed.
      *
      * @param update the update being processed.
      */
-    protected abstract void changed( ValueIndexEntryUpdate<?> update );
+    protected abstract void changed(ValueIndexEntryUpdate<?> update);
 
     /**
      * Method is invoked when {@link ValueIndexEntryUpdate} with {@link UpdateMode#REMOVED} is processed.
      *
      * @param update the update being processed.
      */
-    protected abstract void removed( ValueIndexEntryUpdate<?> update );
+    protected abstract void removed(ValueIndexEntryUpdate<?> update);
 }

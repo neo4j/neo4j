@@ -19,26 +19,24 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.USE_2B_OFFSET_PAGE_SIZE_LIMIT;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.utils.PageCacheConfig;
 
-import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.USE_2B_OFFSET_PAGE_SIZE_LIMIT;
-
-public class GBPTreeLargeDynamicKeysUnder2BLimitIT extends GBPTreeLargeDynamicKeysITBase
-{
+public class GBPTreeLargeDynamicKeysUnder2BLimitIT extends GBPTreeLargeDynamicKeysITBase {
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension =
-            new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( USE_2B_OFFSET_PAGE_SIZE_LIMIT >>> 1 ) );
+            new PageCacheSupportExtension(PageCacheConfig.config().withPageSize(USE_2B_OFFSET_PAGE_SIZE_LIMIT >>> 1));
+
     @Inject
     private PageCache pageCache;
 
     @Override
-    protected PageCache getPageCache()
-    {
+    protected PageCache getPageCache() {
         return pageCache;
     }
 }

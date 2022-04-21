@@ -35,11 +35,13 @@ class ChainerTest extends CypherFunSuite {
     override def name: String = "BB"
     override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
+
   private val BL = new Transformer[BaseContext, BaseState, LogicalPlanState] {
     override def transform(from: BaseState, context: BaseContext): LogicalPlanState = LogicalPlanState(from)
     override def name: String = "BL"
     override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
+
   private val LL = new Transformer[BaseContext, LogicalPlanState, LogicalPlanState] {
     override def transform(from: LogicalPlanState, context: BaseContext): LogicalPlanState = from
     override def name: String = "LL"
@@ -48,7 +50,10 @@ class ChainerTest extends CypherFunSuite {
 
   test("legal chain") {
     val init = InitialState(
-      "Q", None, IDPPlannerName, new AnonymousVariableNameGenerator
+      "Q",
+      None,
+      IDPPlannerName,
+      new AnonymousVariableNameGenerator
     )
     val r = Chainer
       .chainTransformers(Seq(BB, BL, LL))
@@ -59,7 +64,10 @@ class ChainerTest extends CypherFunSuite {
 
   test("illegal chain") {
     val init = InitialState(
-      "Q", None, IDPPlannerName, new AnonymousVariableNameGenerator
+      "Q",
+      None,
+      IDPPlannerName,
+      new AnonymousVariableNameGenerator
     )
     a[ClassCastException] should be thrownBy {
       Chainer

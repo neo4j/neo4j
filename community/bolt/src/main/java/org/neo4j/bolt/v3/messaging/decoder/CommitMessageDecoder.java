@@ -19,41 +19,34 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import java.io.IOException;
+import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 
-import org.neo4j.bolt.packstream.Neo4jPack;
+import java.io.IOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 
-import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
-
-public class CommitMessageDecoder implements RequestMessageDecoder
-{
+public class CommitMessageDecoder implements RequestMessageDecoder {
     private final BoltResponseHandler responseHandler;
 
-    public CommitMessageDecoder( BoltResponseHandler responseHandler )
-    {
+    public CommitMessageDecoder(BoltResponseHandler responseHandler) {
         this.responseHandler = responseHandler;
     }
 
     @Override
-    public int signature()
-    {
+    public int signature() {
         return CommitMessage.SIGNATURE;
     }
 
     @Override
-    public BoltResponseHandler responseHandler()
-    {
+    public BoltResponseHandler responseHandler() {
         return responseHandler;
     }
 
     @Override
-    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
+    public RequestMessage decode(Neo4jPack.Unpacker unpacker) throws IOException {
         return COMMIT_MESSAGE;
     }
 }
-

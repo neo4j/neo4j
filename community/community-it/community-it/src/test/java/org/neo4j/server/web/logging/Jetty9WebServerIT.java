@@ -19,10 +19,11 @@
  */
 package org.neo4j.server.web.logging;
 
+import static org.mockito.Mockito.mock;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -30,19 +31,19 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
-import static org.mockito.Mockito.mock;
-
-class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
-{
+class Jetty9WebServerIT extends ExclusiveWebContainerTestBase {
     private Jetty9WebServer webServer;
 
     @Test
-    void shouldBeAbleToUsePortZero() throws Exception
-    {
+    void shouldBeAbleToUsePortZero() throws Exception {
         // Given
-        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) );
+        webServer = new Jetty9WebServer(
+                NullLogProvider.getInstance(),
+                Config.defaults(),
+                NetworkConnectionTracker.NO_OP,
+                mock(ByteBufferPool.class));
 
-        webServer.setHttpAddress( new SocketAddress( "localhost", 0 ) );
+        webServer.setHttpAddress(new SocketAddress("localhost", 0));
 
         // When
         webServer.start();
@@ -51,11 +52,14 @@ class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    void shouldBeAbleToRestart() throws Throwable
-    {
+    void shouldBeAbleToRestart() throws Throwable {
         // given
-        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) );
-        webServer.setHttpAddress( new SocketAddress( "127.0.0.1", 7878 ) );
+        webServer = new Jetty9WebServer(
+                NullLogProvider.getInstance(),
+                Config.defaults(),
+                NetworkConnectionTracker.NO_OP,
+                mock(ByteBufferPool.class));
+        webServer.setHttpAddress(new SocketAddress("127.0.0.1", 7878));
 
         // when
         webServer.start();
@@ -66,18 +70,19 @@ class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    void shouldStopCleanlyEvenWhenItHasntBeenStarted()
-    {
-        new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) ).stop();
+    void shouldStopCleanlyEvenWhenItHasntBeenStarted() {
+        new Jetty9WebServer(
+                        NullLogProvider.getInstance(),
+                        Config.defaults(),
+                        NetworkConnectionTracker.NO_OP,
+                        mock(ByteBufferPool.class))
+                .stop();
     }
 
     @AfterEach
-    void cleanup()
-    {
-        if ( webServer != null )
-        {
+    void cleanup() {
+        if (webServer != null) {
             webServer.stop();
         }
     }
-
 }

@@ -20,30 +20,25 @@
 package org.neo4j.bolt.v44;
 
 import java.io.IOException;
-
 import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.messaging.RecordingByteChannel;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.packstream.Neo4jPack;
 
-public class BoltProtocolV44ComponentFactory
-{
+public class BoltProtocolV44ComponentFactory {
 
-    public static BoltRequestMessageWriter requestMessageWriter( Neo4jPack.Packer packer )
-    {
-        return new BoltRequestMessageWriterV44( packer );
+    public static BoltRequestMessageWriter requestMessageWriter(Neo4jPack.Packer packer) {
+        return new BoltRequestMessageWriterV44(packer);
     }
 
-    public static byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException
-    {
+    public static byte[] encode(Neo4jPack neo4jPack, RequestMessage... messages) throws IOException {
         RecordingByteChannel rawData = new RecordingByteChannel();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( new BufferedChannelOutput( rawData ) );
-        BoltRequestMessageWriter writer = requestMessageWriter( packer );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(new BufferedChannelOutput(rawData));
+        BoltRequestMessageWriter writer = requestMessageWriter(packer);
 
-        for ( RequestMessage message : messages )
-        {
-            writer.write( message );
+        for (RequestMessage message : messages) {
+            writer.write(message);
         }
         writer.flush();
 

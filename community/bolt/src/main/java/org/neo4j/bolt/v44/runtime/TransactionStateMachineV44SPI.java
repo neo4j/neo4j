@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v44.runtime;
 
 import java.time.Clock;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
@@ -33,34 +32,31 @@ import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public class TransactionStateMachineV44SPI extends TransactionStateMachineV4SPI
-{
-    public TransactionStateMachineV44SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel,
-                                          SystemNanoClock clock,
-                                          StatementProcessorReleaseManager resourceReleaseManager,
-                                          String transactionId )
-    {
-        super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId );
+public class TransactionStateMachineV44SPI extends TransactionStateMachineV4SPI {
+    public TransactionStateMachineV44SPI(
+            BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI,
+            BoltChannel boltChannel,
+            SystemNanoClock clock,
+            StatementProcessorReleaseManager resourceReleaseManager,
+            String transactionId) {
+        super(boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId);
     }
 
     @Override
-    protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
-    {
-        return new BoltResultHandleV44( statement, params, boltQueryExecutor );
+    protected BoltResultHandle newBoltResultHandle(
+            String statement, MapValue params, BoltQueryExecutor boltQueryExecutor) {
+        return new BoltResultHandleV44(statement, params, boltQueryExecutor);
     }
 
-    private class BoltResultHandleV44 extends AbstractBoltResultHandle
-    {
+    private class BoltResultHandleV44 extends AbstractBoltResultHandle {
 
-        BoltResultHandleV44( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
-        {
-            super( statement, params, boltQueryExecutor );
+        BoltResultHandleV44(String statement, MapValue params, BoltQueryExecutor boltQueryExecutor) {
+            super(statement, params, boltQueryExecutor);
         }
 
         @Override
-        protected BoltResult newBoltResult( QueryExecution result, BoltAdapterSubscriber subscriber, Clock clock )
-        {
-            return new CypherAdapterStreamV44( result, subscriber, clock, namedDatabaseId.name() );
+        protected BoltResult newBoltResult(QueryExecution result, BoltAdapterSubscriber subscriber, Clock clock) {
+            return new CypherAdapterStreamV44(result, subscriber, clock, namedDatabaseId.name());
         }
     }
 }

@@ -24,128 +24,105 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.Neo4jError;
 
-public class ExceptionRepresentation extends MappingRepresentation
-{
+public class ExceptionRepresentation extends MappingRepresentation {
     private final List<Neo4jError> errors = new LinkedList<>();
     private boolean includeLegacyRepresentation;
 
-    public ExceptionRepresentation( Throwable exception )
-    {
-        this( exception, true );
+    public ExceptionRepresentation(Throwable exception) {
+        this(exception, true);
     }
-    public ExceptionRepresentation( Throwable exception, boolean includeLegacyRepresentation )
-    {
-        super( RepresentationType.EXCEPTION );
-        this.errors.add( new Neo4jError( statusCode( exception ), exception ) );
+
+    public ExceptionRepresentation(Throwable exception, boolean includeLegacyRepresentation) {
+        super(RepresentationType.EXCEPTION);
+        this.errors.add(new Neo4jError(statusCode(exception), exception));
         this.includeLegacyRepresentation = includeLegacyRepresentation;
     }
 
-    public ExceptionRepresentation( Neo4jError ... errors )
-    {
-        super( RepresentationType.EXCEPTION );
-        this.errors.addAll( Arrays.asList( errors ) );
+    public ExceptionRepresentation(Neo4jError... errors) {
+        super(RepresentationType.EXCEPTION);
+        this.errors.addAll(Arrays.asList(errors));
     }
 
     @Override
-    protected void serialize( MappingSerializer serializer )
-    {
+    protected void serialize(MappingSerializer serializer) {
         // For legacy reasons, this actually serializes into two separate formats - the old format, which simply
         // serializes a single exception, and the new format which serializes multiple errors and provides simple
         // status codes.
-        if ( includeLegacyRepresentation )
-        {
-            renderWithLegacyFormat( errors.get( 0 ).cause(), serializer );
+        if (includeLegacyRepresentation) {
+            renderWithLegacyFormat(errors.get(0).cause(), serializer);
         }
 
-        renderWithStatusCodeFormat( serializer );
+        renderWithStatusCodeFormat(serializer);
     }
 
-    private void renderWithStatusCodeFormat( MappingSerializer serializer )
-    {
-        serializer.putList( "errors", ErrorEntryRepresentation.list( errors ) );
+    private void renderWithStatusCodeFormat(MappingSerializer serializer) {
+        serializer.putList("errors", ErrorEntryRepresentation.list(errors));
     }
 
-    private static void renderWithLegacyFormat( Throwable exception, MappingSerializer serializer )
-    {
+    private static void renderWithLegacyFormat(Throwable exception, MappingSerializer serializer) {
         String message = exception.getMessage();
-        if ( message != null )
-        {
-            serializer.putString( "message", message );
+        if (message != null) {
+            serializer.putString("message", message);
         }
-        serializer.putString( "exception", exception.getClass().getSimpleName() );
-        serializer.putString( "fullname", exception.getClass().getName() );
+        serializer.putString("exception", exception.getClass().getSimpleName());
+        serializer.putString("fullname", exception.getClass().getName());
         StackTraceElement[] trace = exception.getStackTrace();
-        if ( trace != null )
-        {
-            Collection<String> lines = new ArrayList<>( trace.length );
-            for ( StackTraceElement element : trace )
-            {
-                if ( element.toString().matches( ".*(jetty|jersey|sun\\.reflect|mortbay|javax\\.servlet).*" ) )
-                {
+        if (trace != null) {
+            Collection<String> lines = new ArrayList<>(trace.length);
+            for (StackTraceElement element : trace) {
+                if (element.toString().matches(".*(jetty|jersey|sun\\.reflect|mortbay|javax\\.servlet).*")) {
                     continue;
                 }
-                lines.add( element.toString() );
+                lines.add(element.toString());
             }
-            serializer.putList( "stackTrace", ListRepresentation.string( lines ) );
+            serializer.putList("stackTrace", ListRepresentation.string(lines));
         }
 
         Throwable cause = exception.getCause();
-        if ( cause != null )
-        {
-            serializer.putMapping( "cause", new ExceptionRepresentation( cause ) );
+        if (cause != null) {
+            serializer.putMapping("cause", new ExceptionRepresentation(cause));
         }
     }
 
-    private static class ErrorEntryRepresentation extends MappingRepresentation
-    {
+    private static class ErrorEntryRepresentation extends MappingRepresentation {
         private final Neo4jError error;
 
-        ErrorEntryRepresentation( Neo4jError error )
-        {
-            super( "error-entry" );
+        ErrorEntryRepresentation(Neo4jError error) {
+            super("error-entry");
             this.error = error;
         }
 
         @Override
-        protected void serialize( MappingSerializer serializer )
-        {
-            serializer.putString( "code", error.status().code().serialize() );
-            serializer.putString( "message", error.getMessage() );
-            if ( error.shouldSerializeStackTrace() )
-            {
-                serializer.putString( "stackTrace", error.getStackTraceAsString() );
+        protected void serialize(MappingSerializer serializer) {
+            serializer.putString("code", error.status().code().serialize());
+            serializer.putString("message", error.getMessage());
+            if (error.shouldSerializeStackTrace()) {
+                serializer.putString("stackTrace", error.getStackTraceAsString());
             }
         }
 
-        public static ListRepresentation list( Collection<Neo4jError> errors )
-        {
-            return new ListRepresentation( "error-list", new IterableWrapper<ErrorEntryRepresentation, Neo4jError>( errors )
-            {
-                @Override
-                protected ErrorEntryRepresentation underlyingObjectToObject( Neo4jError error )
-                {
-                    return new ErrorEntryRepresentation( error );
-                }
-            } );
+        public static ListRepresentation list(Collection<Neo4jError> errors) {
+            return new ListRepresentation(
+                    "error-list", new IterableWrapper<ErrorEntryRepresentation, Neo4jError>(errors) {
+                        @Override
+                        protected ErrorEntryRepresentation underlyingObjectToObject(Neo4jError error) {
+                            return new ErrorEntryRepresentation(error);
+                        }
+                    });
         }
     }
 
-    private static Status statusCode( Throwable current )
-    {
-        while ( current != null )
-        {
-            if ( current instanceof Status.HasStatus )
-            {
+    private static Status statusCode(Throwable current) {
+        while (current != null) {
+            if (current instanceof Status.HasStatus) {
                 return ((Status.HasStatus) current).status();
             }
-            if ( current instanceof ConstraintViolationException )
-            {
+            if (current instanceof ConstraintViolationException) {
                 return Status.Schema.ConstraintValidationFailed;
             }
             current = current.getCause();

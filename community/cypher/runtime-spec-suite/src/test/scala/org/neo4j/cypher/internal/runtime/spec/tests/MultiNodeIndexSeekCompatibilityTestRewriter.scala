@@ -34,8 +34,7 @@ import org.neo4j.cypher.internal.util.bottomUp
  * with node index seek. Since node index seeks can be rewritten to multi node
  * index seeks it's important that the two implementations stay compatible.
  */
-trait MultiNodeIndexSeekCompatibilityTestRewriter[CONTEXT <: RuntimeContext] extends RewritingRuntimeTest[CONTEXT]
-{
+trait MultiNodeIndexSeekCompatibilityTestRewriter[CONTEXT <: RuntimeContext] extends RewritingRuntimeTest[CONTEXT] {
   self: RuntimeTestSuite[CONTEXT] =>
 
   /**
@@ -50,9 +49,9 @@ trait MultiNodeIndexSeekCompatibilityTestRewriter[CONTEXT <: RuntimeContext] ext
     )
   }
 
-  private def stopper(a: AnyRef):Boolean = a match {
+  private def stopper(a: AnyRef): Boolean = a match {
     case _: MultiNodeIndexSeek => true
-    case _: LogicalPlan => false
-    case _ => true
+    case _: LogicalPlan        => false
+    case _                     => true
   }
 }

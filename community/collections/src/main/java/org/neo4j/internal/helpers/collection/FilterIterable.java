@@ -23,26 +23,22 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 
-class FilterIterable<T> implements Iterable<T>
-{
+class FilterIterable<T> implements Iterable<T> {
     private final Iterable<T> iterable;
 
     private final Predicate<? super T> specification;
 
-    FilterIterable( Iterable<T> iterable, Predicate<? super T> specification )
-    {
+    FilterIterable(Iterable<T> iterable, Predicate<? super T> specification) {
         this.iterable = iterable;
         this.specification = specification;
     }
 
     @Override
-    public Iterator<T> iterator()
-    {
-        return new FilterIterator<>( iterable.iterator(), specification );
+    public Iterator<T> iterator() {
+        return new FilterIterator<>(iterable.iterator(), specification);
     }
 
-    static class FilterIterator<T> implements Iterator<T>
-    {
+    static class FilterIterator<T> implements Iterator<T> {
         private final Iterator<T> iterator;
 
         private final Predicate<? super T> specification;
@@ -51,62 +47,49 @@ class FilterIterable<T> implements Iterable<T>
         boolean finished;
         boolean nextConsumed = true;
 
-        FilterIterator( Iterator<T> iterator, Predicate<? super T> specification )
-        {
+        FilterIterator(Iterator<T> iterator, Predicate<? super T> specification) {
             this.specification = specification;
             this.iterator = iterator;
         }
 
-        boolean moveToNextValid()
-        {
+        boolean moveToNextValid() {
             boolean found = false;
-            while ( !found && iterator.hasNext() )
-            {
+            while (!found && iterator.hasNext()) {
                 T currentValue = iterator.next();
-                boolean satisfies = specification.test( currentValue );
+                boolean satisfies = specification.test(currentValue);
 
-                if ( satisfies )
-                {
+                if (satisfies) {
                     found = true;
                     this.currentValue = currentValue;
                     nextConsumed = false;
                 }
             }
-            if ( !found )
-            {
+            if (!found) {
                 finished = true;
             }
             return found;
         }
 
         @Override
-        public T next()
-        {
-            if ( !nextConsumed )
-            {
+        public T next() {
+            if (!nextConsumed) {
                 nextConsumed = true;
                 return currentValue;
-            }
-            else
-            {
-                if ( !finished && moveToNextValid() )
-                {
+            } else {
+                if (!finished && moveToNextValid()) {
                     nextConsumed = true;
                     return currentValue;
                 }
             }
-            throw new NoSuchElementException( "This iterator is exhausted." );
+            throw new NoSuchElementException("This iterator is exhausted.");
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return !finished && (!nextConsumed || moveToNextValid());
         }
 
         @Override
-        public void remove()
-        {
-        }
+        public void remove() {}
     }
 }

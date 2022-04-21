@@ -19,39 +19,35 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public enum IndexUpdateMode
-{
+public enum IndexUpdateMode {
     /**
      * Used when the db is online
      */
-    ONLINE( false, true ),
+    ONLINE(false, true),
 
     /**
      * Used when flipping from populating to online
      */
-    ONLINE_IDEMPOTENT( true, true ),
+    ONLINE_IDEMPOTENT(true, true),
 
     /**
      * Used when the db is recovering
      */
-    RECOVERY( true, false );
+    RECOVERY(true, false);
 
     private final boolean idempotency;
     private final boolean refresh;
 
-    IndexUpdateMode( boolean idempotency, boolean refresh )
-    {
+    IndexUpdateMode(boolean idempotency, boolean refresh) {
         this.idempotency = idempotency;
         this.refresh = refresh;
     }
 
-    public boolean requiresIdempotency()
-    {
+    public boolean requiresIdempotency() {
         return idempotency;
     }
 
-    public boolean requiresRefresh()
-    {
+    public boolean requiresRefresh() {
         return refresh;
     }
 }

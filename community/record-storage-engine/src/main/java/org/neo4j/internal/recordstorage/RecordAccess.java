@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -30,11 +29,9 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 /**
  * Provides access to records, both for reading and for writing.
  */
-public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
-{
-    default RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData )
-    {
-        return getOrLoad( key, additionalData, RecordLoad.NORMAL );
+public interface RecordAccess<RECORD extends AbstractBaseRecord, ADDITIONAL> {
+    default RecordProxy<RECORD, ADDITIONAL> getOrLoad(long key, ADDITIONAL additionalData) {
+        return getOrLoad(key, additionalData, RecordLoad.NORMAL);
     }
 
     /**
@@ -47,11 +44,12 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load );
+    RecordProxy<RECORD, ADDITIONAL> getOrLoad(long key, ADDITIONAL additionalData, RecordLoad load);
 
-    RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key );
+    RecordProxy<RECORD, ADDITIONAL> getIfLoaded(long key);
 
-    RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, CursorContext cursorContext );
+    RecordProxy<RECORD, ADDITIONAL> setRecord(
+            long key, RECORD record, ADDITIONAL additionalData, CursorContext cursorContext);
 
     /**
      * Creates a new record with the given {@code key}. Any {@code additionalData} is set in the
@@ -61,18 +59,17 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, CursorContext cursorContext );
+    RecordProxy<RECORD, ADDITIONAL> create(long key, ADDITIONAL additionalData, CursorContext cursorContext);
 
     int changeSize();
 
-    Collection<? extends RecordProxy<RECORD,ADDITIONAL>> changes();
+    Collection<? extends RecordProxy<RECORD, ADDITIONAL>> changes();
 
     /**
      * A proxy for a record that encapsulates load/store actions to take, knowing when the underlying record is
      * requested for reading or for writing.
      */
-    interface RecordProxy<RECORD extends AbstractBaseRecord, ADDITIONAL>
-    {
+    interface RecordProxy<RECORD extends AbstractBaseRecord, ADDITIONAL> {
         long getKey();
 
         RECORD forChangingLinkage();
@@ -95,20 +92,18 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     /**
      * Hook for loading and creating records.
      */
-    interface Loader<RECORD extends AbstractBaseRecord,ADDITIONAL>
-    {
-        RECORD newUnused( long key, ADDITIONAL additionalData, MemoryTracker memoryTracker );
+    interface Loader<RECORD extends AbstractBaseRecord, ADDITIONAL> {
+        RECORD newUnused(long key, ADDITIONAL additionalData, MemoryTracker memoryTracker);
 
-        RECORD load( long key, ADDITIONAL additionalData, RecordLoad load, MemoryTracker memoryTracker );
+        RECORD load(long key, ADDITIONAL additionalData, RecordLoad load, MemoryTracker memoryTracker);
 
-        void ensureHeavy( RECORD record, StoreCursors storeCursors );
+        void ensureHeavy(RECORD record, StoreCursors storeCursors);
 
-        RECORD copy( RECORD record, MemoryTracker memoryTracker );
+        RECORD copy(RECORD record, MemoryTracker memoryTracker);
     }
 
-    interface LoadMonitor
-    {
-        void markedAsChanged( AbstractBaseRecord before );
+    interface LoadMonitor {
+        void markedAsChanged(AbstractBaseRecord before);
 
         LoadMonitor NULL_MONITOR = before -> {};
     }

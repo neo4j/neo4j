@@ -50,23 +50,58 @@ class PatternParserTest extends CypherFunSuite with TestName {
   }
 
   test("(a)-[:R]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern(
+      "a",
+      BOTH,
+      Seq(RelTypeName("R")(NONE)),
+      "UNNAMED1",
+      "b",
+      SimplePatternLength
+    ))
   }
 
   test("(a)-[r:R]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "r", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern(
+      "a",
+      BOTH,
+      Seq(RelTypeName("R")(NONE)),
+      "r",
+      "b",
+      SimplePatternLength
+    ))
   }
 
   test("(a)-[r2:R2]->(x2)") {
-    patternParser.parse(testName) should be(Pattern("a", OUTGOING, Seq(RelTypeName("R2")(NONE)), "r2", "x2", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern(
+      "a",
+      OUTGOING,
+      Seq(RelTypeName("R2")(NONE)),
+      "r2",
+      "x2",
+      SimplePatternLength
+    ))
   }
 
   test("(a)-[r:R|T]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE), RelTypeName("T")(NONE)), "r", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern(
+      "a",
+      BOTH,
+      Seq(RelTypeName("R")(NONE), RelTypeName("T")(NONE)),
+      "r",
+      "b",
+      SimplePatternLength
+    ))
   }
 
   test("(p)-[investigated:IS_BEING_INVESTIGATED|WAS_INVESTIGATED]->(agent)") {
-    patternParser.parse(testName) should be(Pattern("p", OUTGOING, Seq(RelTypeName("IS_BEING_INVESTIGATED")(NONE), RelTypeName("WAS_INVESTIGATED")(NONE)), "investigated", "agent", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern(
+      "p",
+      OUTGOING,
+      Seq(RelTypeName("IS_BEING_INVESTIGATED")(NONE), RelTypeName("WAS_INVESTIGATED")(NONE)),
+      "investigated",
+      "agent",
+      SimplePatternLength
+    ))
   }
 
   test("(a)-[*]-(b)") {
@@ -74,26 +109,68 @@ class PatternParserTest extends CypherFunSuite with TestName {
   }
 
   test("(a)-[:R*]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", VarPatternLength(1, None)))
+    patternParser.parse(testName) should be(Pattern(
+      "a",
+      BOTH,
+      Seq(RelTypeName("R")(NONE)),
+      "UNNAMED1",
+      "b",
+      VarPatternLength(1, None)
+    ))
   }
 
   test("(a)-[:R*2]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", VarPatternLength(2, Some(2))))
+    patternParser.parse(testName) should be(Pattern(
+      "a",
+      BOTH,
+      Seq(RelTypeName("R")(NONE)),
+      "UNNAMED1",
+      "b",
+      VarPatternLength(2, Some(2))
+    ))
   }
 
   test("(a)-[:R*1..2]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", VarPatternLength(1, Some(2))))
+    patternParser.parse(testName) should be(Pattern(
+      "a",
+      BOTH,
+      Seq(RelTypeName("R")(NONE)),
+      "UNNAMED1",
+      "b",
+      VarPatternLength(1, Some(2))
+    ))
   }
 
   test("(a)-[:R*..2]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", VarPatternLength(1, Some(2))))
+    patternParser.parse(testName) should be(Pattern(
+      "a",
+      BOTH,
+      Seq(RelTypeName("R")(NONE)),
+      "UNNAMED1",
+      "b",
+      VarPatternLength(1, Some(2))
+    ))
   }
 
   test("(a)-[:R*2..]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", VarPatternLength(2, None)))
+    patternParser.parse(testName) should be(Pattern(
+      "a",
+      BOTH,
+      Seq(RelTypeName("R")(NONE)),
+      "UNNAMED1",
+      "b",
+      VarPatternLength(2, None)
+    ))
   }
 
   test("(`anon_32`)--(anon_45)") {
-    patternParser.parse(testName) should be(Pattern("anon_32", BOTH, Seq.empty, "UNNAMED1", "anon_45", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern(
+      "anon_32",
+      BOTH,
+      Seq.empty,
+      "UNNAMED1",
+      "anon_45",
+      SimplePatternLength
+    ))
   }
 }

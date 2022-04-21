@@ -21,20 +21,16 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class UnspecifiedKernelException extends KernelException
-{
-    public UnspecifiedKernelException( Status statusCode, Throwable cause, String message, Object... parameters )
-    {
-        super( statusCode, cause, message, parameters );
+public class UnspecifiedKernelException extends KernelException {
+    public UnspecifiedKernelException(Status statusCode, Throwable cause, String message, Object... parameters) {
+        super(statusCode, cause, message, parameters);
     }
 
-    public UnspecifiedKernelException( Status statusCode, Throwable cause )
-    {
-        super( statusCode, cause );
+    public UnspecifiedKernelException(Status statusCode, Throwable cause) {
+        super(statusCode, cause);
     }
 
-    public UnspecifiedKernelException( Status statusCode, String message, Object... parameters )
-    {
-        super( statusCode, message, parameters );
+    public UnspecifiedKernelException(Status statusCode, String message, Object... parameters) {
+        super(statusCode, message, parameters);
     }
 }

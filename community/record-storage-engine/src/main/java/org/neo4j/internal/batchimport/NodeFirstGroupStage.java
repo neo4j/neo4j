@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Function;
+import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 
+import java.util.function.Function;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
@@ -34,24 +36,31 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-
 /**
  * Updates dense nodes with which will be the {@link NodeRecord#setNextRel(long) first group} to point to,
  * after a {@link RelationshipGroupDefragmenter} has been run.
  */
-public class NodeFirstGroupStage extends Stage
-{
+public class NodeFirstGroupStage extends Stage {
     public static final String NAME = "Node --> Group";
 
-    NodeFirstGroupStage( Configuration config, RecordStore<RelationshipGroupRecord> groupStore, NodeStore nodeStore, ByteArray cache,
-            CursorContextFactory contextFactory, Function<CursorContext,StoreCursors> storeCursorsCreator )
-    {
-        super( NAME, null, config, 0 );
-        add( new BatchFeedStep( control(), config, allIn( groupStore, config ), groupStore.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, true, groupStore, contextFactory ) );
-        add( new NodeSetFirstGroupStep( control(), config, nodeStore, cache, contextFactory ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence(), contextFactory, storeCursorsCreator, NODE_CURSOR ) );
+    NodeFirstGroupStage(
+            Configuration config,
+            RecordStore<RelationshipGroupRecord> groupStore,
+            NodeStore nodeStore,
+            ByteArray cache,
+            CursorContextFactory contextFactory,
+            Function<CursorContext, StoreCursors> storeCursorsCreator) {
+        super(NAME, null, config, 0);
+        add(new BatchFeedStep(control(), config, allIn(groupStore, config), groupStore.getRecordSize()));
+        add(new ReadRecordsStep<>(control(), config, true, groupStore, contextFactory));
+        add(new NodeSetFirstGroupStep(control(), config, nodeStore, cache, contextFactory));
+        add(new UpdateRecordsStep<>(
+                control(),
+                config,
+                nodeStore,
+                new StorePrepareIdSequence(),
+                contextFactory,
+                storeCursorsCreator,
+                NODE_CURSOR));
     }
 }

@@ -27,20 +27,24 @@ import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
 
 import java.util
+
 import scala.collection.mutable
 
 class InterpretedProfileInformation extends QueryProfile {
 
-  case class OperatorData(dbHits: Long,
-                          rows: Long,
-                          pageCacheHits: Long,
-                          pageCacheMisses: Long,
-                          maxAllocatedMemory: Long) extends OperatorProfile {
+  case class OperatorData(
+    dbHits: Long,
+    rows: Long,
+    pageCacheHits: Long,
+    pageCacheMisses: Long,
+    maxAllocatedMemory: Long
+  ) extends OperatorProfile {
 
     override def time: Long = OperatorProfile.NO_DATA
 
     override def hashCode: Int = util.Arrays.hashCode(
-      Array(this.time(), this.dbHits, this.rows, this.pageCacheHits, this.pageCacheMisses, this.maxAllocatedMemory))
+      Array(this.time(), this.dbHits, this.rows, this.pageCacheHits, this.pageCacheMisses, this.maxAllocatedMemory)
+    )
 
     override def equals(o: Any): Boolean = o match {
       case that: OperatorProfile =>
@@ -53,10 +57,11 @@ class InterpretedProfileInformation extends QueryProfile {
       case _ => false
     }
 
-    override def toString: String = s"Operator Profile { time: ${this.time}, dbHits: ${this.dbHits}, rows: ${this.rows}, page cache hits: ${this.pageCacheHits}, page cache misses: ${this.pageCacheMisses}, max allocated: ${this.maxAllocatedMemory} }"
+    override def toString: String =
+      s"Operator Profile { time: ${this.time}, dbHits: ${this.dbHits}, rows: ${this.rows}, page cache hits: ${this.pageCacheHits}, page cache misses: ${this.pageCacheMisses}, max allocated: ${this.maxAllocatedMemory} }"
   }
 
-  val pageCacheMap: mutable.Map[Id, PageCacheStats] = mutable.Map.empty.withDefault(_ => PageCacheStats(0,0))
+  val pageCacheMap: mutable.Map[Id, PageCacheStats] = mutable.Map.empty.withDefault(_ => PageCacheStats(0, 0))
   val dbHitsMap: mutable.Map[Id, Counter] = mutable.Map.empty
   val rowMap: mutable.Map[Id, ProfilingIterator] = mutable.Map.empty
 
@@ -70,7 +75,8 @@ class InterpretedProfileInformation extends QueryProfile {
     val rows = rowMap.get(id).map(_.count).getOrElse(0L)
     val dbHits = dbHitsMap.get(id).map(_.count).getOrElse(0L)
     val pageCacheStats = pageCacheMap(id)
-    val maxMemoryAllocated = MemoryTrackerForOperatorProvider.memoryAsProfileData(memoryTracker.heapHighWaterMarkOfOperator(operatorId))
+    val maxMemoryAllocated =
+      MemoryTrackerForOperatorProvider.memoryAsProfileData(memoryTracker.heapHighWaterMarkOfOperator(operatorId))
 
     OperatorData(dbHits, rows, pageCacheStats.hits, pageCacheStats.misses, maxMemoryAllocated)
   }
@@ -86,15 +92,16 @@ class InterpretedProfileInformation extends QueryProfile {
     InterpretedProfileInformationAggregatedSnapshot(aggregatedDbHits)
   }
 
-  override def maxAllocatedMemory(): Long = MemoryTrackerForOperatorProvider.memoryAsProfileData(memoryTracker.heapHighWaterMark)
+  override def maxAllocatedMemory(): Long =
+    MemoryTrackerForOperatorProvider.memoryAsProfileData(memoryTracker.heapHighWaterMark)
 }
 
-case class InterpretedProfileInformationSnapshot(dbHitsMap: collection.Map[Id, Long],
-                                                 rowsMap: collection.Map[Id, Long])
+case class InterpretedProfileInformationSnapshot(dbHitsMap: collection.Map[Id, Long], rowsMap: collection.Map[Id, Long])
 
 case class InterpretedProfileInformationAggregatedSnapshot(dbHits: Long)
 
 case class PageCacheStats(hits: Long, misses: Long) {
+
   def -(other: PageCacheStats): PageCacheStats = {
     PageCacheStats(this.hits - other.hits, this.misses - other.misses)
   }
@@ -103,5 +110,3 @@ case class PageCacheStats(hits: Long, misses: Long) {
     PageCacheStats(this.hits + other.hits, this.misses + other.misses)
   }
 }
-
-

@@ -19,10 +19,8 @@
  */
 package org.neo4j.consistency.checking.full;
 
-public class ConsistencyCheckIncompleteException extends Exception
-{
-    public ConsistencyCheckIncompleteException( Throwable cause )
-    {
-        super( "Full consistency check did not complete", cause );
+public class ConsistencyCheckIncompleteException extends Exception {
+    public ConsistencyCheckIncompleteException(Throwable cause) {
+        super("Full consistency check did not complete", cause);
     }
 }

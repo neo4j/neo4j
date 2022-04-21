@@ -21,17 +21,14 @@ package org.neo4j.exceptions;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A hint was used referring to an index that does not exist.
  */
-public class IndexHintException extends Neo4jException
-{
-    public enum IndexHintIndexType
-    {
+public class IndexHintException extends Neo4jException {
+    public enum IndexHintIndexType {
         ANY,
         BTREE,
         TEXT,
@@ -39,83 +36,84 @@ public class IndexHintException extends Neo4jException
         POINT
     }
 
-    public IndexHintException( String variableName,
-                               String labelOrRelType,
-                               List<String> properties,
-                               EntityType entityType,
-                               IndexHintIndexType indexType )
-    {
-        super( msg( variableName, labelOrRelType, properties, entityType, indexType ) );
+    public IndexHintException(
+            String variableName,
+            String labelOrRelType,
+            List<String> properties,
+            EntityType entityType,
+            IndexHintIndexType indexType) {
+        super(msg(variableName, labelOrRelType, properties, entityType, indexType));
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Schema.IndexNotFound;
     }
 
-    private static String msg( String variableName,
-                               String labelOrRelType,
-                               List<String> properties,
-                               EntityType entityType,
-                               IndexHintIndexType indexType )
-    {
-        return String.format( "No such index: %s", indexFormatString( variableName, labelOrRelType, properties, entityType, indexType ) );
+    private static String msg(
+            String variableName,
+            String labelOrRelType,
+            List<String> properties,
+            EntityType entityType,
+            IndexHintIndexType indexType) {
+        return String.format(
+                "No such index: %s",
+                indexFormatString(variableName, labelOrRelType, properties, entityType, indexType));
     }
 
-    public static String indexFormatString( String variableName,
-                                            String labelOrRelType,
-                                            List<String> properties,
-                                            EntityType entityType,
-                                            IndexHintIndexType indexType )
-    {
-        String escapedVarName = escape( variableName );
+    public static String indexFormatString(
+            String variableName,
+            String labelOrRelType,
+            List<String> properties,
+            EntityType entityType,
+            IndexHintIndexType indexType) {
+        String escapedVarName = escape(variableName);
 
-        String escapedLabelOrRelTypeName = escape( labelOrRelType );
+        String escapedLabelOrRelTypeName = escape(labelOrRelType);
 
-        String propertyNames = properties
-                .stream()
-                .map( propertyName -> escapedVarName + "." + escape( propertyName ) )
-                .collect( Collectors.joining( ", " ) );
+        String propertyNames = properties.stream()
+                .map(propertyName -> escapedVarName + "." + escape(propertyName))
+                .collect(Collectors.joining(", "));
 
         String typeString;
-        switch ( indexType )
-        {
-        case BTREE:
-            typeString = "BTREE ";
-            break;
-        case TEXT:
-            typeString = "TEXT ";
-            break;
-        case RANGE:
-            typeString = "RANGE ";
-            break;
-        case POINT:
-            typeString = "POINT ";
-            break;
-        default:
-            typeString = "";
-            break;
+        switch (indexType) {
+            case BTREE:
+                typeString = "BTREE ";
+                break;
+            case TEXT:
+                typeString = "TEXT ";
+                break;
+            case RANGE:
+                typeString = "RANGE ";
+                break;
+            case POINT:
+                typeString = "POINT ";
+                break;
+            default:
+                typeString = "";
+                break;
         }
 
         String indexFormatString;
-        switch ( entityType )
-        {
-        case NODE:
-            indexFormatString = String.format( "%sINDEX FOR (%s:%s) ON (%s)", typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames );
-            break;
-        case RELATIONSHIP:
-            indexFormatString = String.format( "%sINDEX FOR ()-[%s:%s]-() ON (%s)", typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames );
-            break;
-        default:
-            indexFormatString = "";
-            break;
+        switch (entityType) {
+            case NODE:
+                indexFormatString = String.format(
+                        "%sINDEX FOR (%s:%s) ON (%s)",
+                        typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames);
+                break;
+            case RELATIONSHIP:
+                indexFormatString = String.format(
+                        "%sINDEX FOR ()-[%s:%s]-() ON (%s)",
+                        typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames);
+                break;
+            default:
+                indexFormatString = "";
+                break;
         }
         return indexFormatString;
     }
 
-    private static String escape( String str )
-    {
-        return "`" + str.replace( "`", "``" ) + "`";
+    private static String escape(String str) {
+        return "`" + str.replace("`", "``") + "`";
     }
 }

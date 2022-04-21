@@ -25,39 +25,36 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.store.StoreFileListing;
 
-class DatabaseKernelModule
-{
+class DatabaseKernelModule {
     private final TransactionCommitProcess transactionCommitProcess;
     private final KernelImpl kernel;
     private final KernelTransactions kernelTransactions;
     private final StoreFileListing fileListing;
 
-    DatabaseKernelModule( TransactionCommitProcess transactionCommitProcess, KernelImpl kernel,
-            KernelTransactions kernelTransactions, StoreFileListing fileListing )
-    {
+    DatabaseKernelModule(
+            TransactionCommitProcess transactionCommitProcess,
+            KernelImpl kernel,
+            KernelTransactions kernelTransactions,
+            StoreFileListing fileListing) {
         this.transactionCommitProcess = transactionCommitProcess;
         this.kernel = kernel;
         this.kernelTransactions = kernelTransactions;
         this.fileListing = fileListing;
     }
 
-    public KernelImpl kernelAPI()
-    {
+    public KernelImpl kernelAPI() {
         return kernel;
     }
 
-    KernelTransactions kernelTransactions()
-    {
+    KernelTransactions kernelTransactions() {
         return kernelTransactions;
     }
 
-    StoreFileListing fileListing()
-    {
+    StoreFileListing fileListing() {
         return fileListing;
     }
 
-    public void satisfyDependencies( Dependencies dependencies )
-    {
-        dependencies.satisfyDependencies( transactionCommitProcess, kernel, kernelTransactions, fileListing );
+    public void satisfyDependencies(Dependencies dependencies) {
+        dependencies.satisfyDependencies(transactionCommitProcess, kernel, kernelTransactions, fileListing);
     }
 }

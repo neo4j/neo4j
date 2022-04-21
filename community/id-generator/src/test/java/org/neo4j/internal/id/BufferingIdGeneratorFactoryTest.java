@@ -19,12 +19,15 @@
  */
 package org.neo4j.internal.id;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -44,7 +47,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -66,26 +74,18 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.test.Race.throwing;
-
 @EphemeralPageCacheExtension
-@ExtendWith( LifeExtension.class )
-class BufferingIdGeneratorFactoryTest
-{
+@ExtendWith(LifeExtension.class)
+class BufferingIdGeneratorFactoryTest {
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory directory;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private LifeSupport life;
 
@@ -95,288 +95,284 @@ class BufferingIdGeneratorFactoryTest
     private IdGenerator idGenerator;
     private ScopedMemoryPool dbMemoryPool;
 
-    private void setup( boolean offHeap ) throws IOException
-    {
+    private void setup(boolean offHeap) throws IOException {
         actual = new MockedIdGeneratorFactory();
         boundaries = new ControllableSnapshotSupplier();
-        GlobalMemoryGroupTracker globalMemoryGroupTracker =
-                new GlobalMemoryGroupTracker( new MemoryPools(), MemoryGroup.OTHER, ByteUnit.mebiBytes( 1 ), true, true, null );
-        dbMemoryPool = globalMemoryGroupTracker.newDatabasePool( "test", ByteUnit.mebiBytes( 1 ), null );
-        bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
-        Config config = Config.defaults( GraphDatabaseInternalSettings.buffered_ids_offload, offHeap );
-        bufferingIdGeneratorFactory.initialize( fs, directory.file( "tmp-ids" ), config, boundaries, boundaries, dbMemoryPool.getPoolMemoryTracker() );
-        idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), TestIdType.TEST, () -> 0L, Integer.MAX_VALUE, writable(),
-                config, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), immutable.empty(), SINGLE_IDS );
-        life.add( bufferingIdGeneratorFactory );
+        GlobalMemoryGroupTracker globalMemoryGroupTracker = new GlobalMemoryGroupTracker(
+                new MemoryPools(), MemoryGroup.OTHER, ByteUnit.mebiBytes(1), true, true, null);
+        dbMemoryPool = globalMemoryGroupTracker.newDatabasePool("test", ByteUnit.mebiBytes(1), null);
+        bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(actual);
+        Config config = Config.defaults(GraphDatabaseInternalSettings.buffered_ids_offload, offHeap);
+        bufferingIdGeneratorFactory.initialize(
+                fs, directory.file("tmp-ids"), config, boundaries, boundaries, dbMemoryPool.getPoolMemoryTracker());
+        idGenerator = bufferingIdGeneratorFactory.open(
+                pageCache,
+                Path.of("doesnt-matter"),
+                TestIdType.TEST,
+                () -> 0L,
+                Integer.MAX_VALUE,
+                writable(),
+                config,
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                immutable.empty(),
+                SINGLE_IDS);
+        life.add(bufferingIdGeneratorFactory);
     }
 
-    @ValueSource( booleans = {true, false} )
+    @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void shouldDelayFreeingOfDeletedIds( boolean offHeap ) throws IOException
-    {
-        setup( offHeap );
+    void shouldDelayFreeingOfDeletedIds(boolean offHeap) throws IOException {
+        setup(offHeap);
 
         // WHEN
-        try ( Marker marker = idGenerator.marker( NULL_CONTEXT ) )
-        {
-            marker.markDeleted( 7, 2 );
+        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+            marker.markDeleted(7, 2);
         }
-        actual.markers.get( TestIdType.TEST ).verifyDeleted( 7, 2 );
-        actual.markers.get( TestIdType.TEST ).verifyClosed();
-        actual.markers.get( TestIdType.TEST ).verifyNoMoreMarks();
+        actual.markers.get(TestIdType.TEST).verifyDeleted(7, 2);
+        actual.markers.get(TestIdType.TEST).verifyClosed();
+        actual.markers.get(TestIdType.TEST).verifyNoMoreMarks();
 
         // after some maintenance and transaction still not closed
-        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
-        actual.markers.get( TestIdType.TEST ).verifyNoMoreMarks();
+        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+        actual.markers.get(TestIdType.TEST).verifyNoMoreMarks();
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
+        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
 
         // THEN
-        actual.markers.get( TestIdType.TEST ).verifyFreed( 7, 2 );
+        actual.markers.get(TestIdType.TEST).verifyFreed(7, 2);
     }
 
-    @ValueSource( booleans = {true, false} )
+    @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void shouldHandleDeletingAndFreeingConcurrently( boolean offHeap ) throws IOException
-    {
+    void shouldHandleDeletingAndFreeingConcurrently(boolean offHeap) throws IOException {
         // given
-        setup( offHeap );
+        setup(offHeap);
         AtomicLong nextId = new AtomicLong();
         AtomicInteger numMaintenanceCalls = new AtomicInteger();
-        Race race = new Race().withEndCondition( () -> numMaintenanceCalls.get() >= 10 || nextId.get() >= 1_000 );
-        race.addContestants( 4, () ->
-        {
-            int numIds = ThreadLocalRandom.current().nextInt( 1, 5 );
-            try ( Marker marker = idGenerator.marker( NULL_CONTEXT ) )
-            {
-                for ( int i = 0; i < numIds; i++ )
-                {
-                    marker.markDeleted( nextId.getAndIncrement(), 1 );
+        Race race = new Race().withEndCondition(() -> numMaintenanceCalls.get() >= 10 || nextId.get() >= 1_000);
+        race.addContestants(4, () -> {
+            int numIds = ThreadLocalRandom.current().nextInt(1, 5);
+            try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+                for (int i = 0; i < numIds; i++) {
+                    marker.markDeleted(nextId.getAndIncrement(), 1);
                 }
             }
-        } );
+        });
         Deque<IdController.TransactionSnapshot> conditions = new ConcurrentLinkedDeque<>();
-        race.addContestant( throwing( () ->
-        {
-            bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
-            if ( boundaries.mostRecentlyReturned == null )
-            {
+        race.addContestant(throwing(() -> {
+            bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+            if (boundaries.mostRecentlyReturned == null) {
                 return;
             }
 
             IdController.TransactionSnapshot condition = boundaries.mostRecentlyReturned;
             boundaries.mostRecentlyReturned = null;
-            if ( ThreadLocalRandom.current().nextBoolean() )
-            {
+            if (ThreadLocalRandom.current().nextBoolean()) {
                 // Chance to let this condition be true immediately
-                boundaries.enable( condition );
+                boundaries.enable(condition);
             }
-            if ( ThreadLocalRandom.current().nextBoolean() )
-            {
+            if (ThreadLocalRandom.current().nextBoolean()) {
                 // Chance to enable a previously disabled condition
-                for ( IdController.TransactionSnapshot olderCondition : conditions )
-                {
-                    if ( !boundaries.eligibleForFreeing( olderCondition ) )
-                    {
-                        boundaries.enable( olderCondition );
+                for (IdController.TransactionSnapshot olderCondition : conditions) {
+                    if (!boundaries.eligibleForFreeing(olderCondition)) {
+                        boundaries.enable(olderCondition);
                         break;
                     }
                 }
             }
-            conditions.add( condition );
+            conditions.add(condition);
             numMaintenanceCalls.incrementAndGet();
-        } ) );
+        }));
 
         // when
         race.goUnchecked();
-        for ( IdController.TransactionSnapshot condition : conditions )
-        {
-            boundaries.enable( condition );
+        for (IdController.TransactionSnapshot condition : conditions) {
+            boundaries.enable(condition);
         }
         boundaries.automaticallyEnableConditions = true;
-        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
+        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
         // the second maintenance call is because the first call will guarantee that the queued buffers will be freed,
         // making room to queue the last deleted IDs from the ID generator in the second call.
-        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
-        for ( long id = 0; id < nextId.get(); id++ )
-        {
-            actual.markers.get( TestIdType.TEST ).verifyFreed( id, 1 );
+        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+        for (long id = 0; id < nextId.get(); id++) {
+            actual.markers.get(TestIdType.TEST).verifyFreed(id, 1);
         }
     }
 
-    @ValueSource( booleans = {true, false} )
+    @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void shouldMemoryTrackBufferedIDs( boolean offHeap ) throws IOException
-    {
+    void shouldMemoryTrackBufferedIDs(boolean offHeap) throws IOException {
         // given
-        setup( offHeap );
+        setup(offHeap);
         long heapSizeBeforeDeleting = dbMemoryPool.usedHeap();
 
         // when deleting some IDs
-        try ( Marker marker = idGenerator.marker( NULL_CONTEXT ) )
-        {
-            for ( int i = 0; i < 100; i++ )
-            {
-                marker.markDeleted( i, 1 );
+        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+            for (int i = 0; i < 100; i++) {
+                marker.markDeleted(i, 1);
             }
         }
-        assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
-        // maintenance where transactions are still open. Here the buffered IDs should have been written to the page cache and the heap usage freed
-        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
-        if ( offHeap )
-        {
-            assertThat( dbMemoryPool.usedHeap() ).isEqualTo( heapSizeBeforeDeleting );
-        }
-        else
-        {
-            assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
+        assertThat(dbMemoryPool.usedHeap()).isGreaterThan(heapSizeBeforeDeleting);
+        // maintenance where transactions are still open. Here the buffered IDs should have been written to the page
+        // cache and the heap usage freed
+        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+        if (offHeap) {
+            assertThat(dbMemoryPool.usedHeap()).isEqualTo(heapSizeBeforeDeleting);
+        } else {
+            assertThat(dbMemoryPool.usedHeap()).isGreaterThan(heapSizeBeforeDeleting);
         }
         // maintenance where transactions are closed and i.e. the buffered IDs gets released
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
+        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
 
         // then heap usage should go down again
-        assertThat( dbMemoryPool.usedHeap() ).isEqualTo( heapSizeBeforeDeleting );
+        assertThat(dbMemoryPool.usedHeap()).isEqualTo(heapSizeBeforeDeleting);
     }
 
-    private static class ControllableSnapshotSupplier implements Supplier<IdController.TransactionSnapshot>, IdController.IdFreeCondition
-    {
+    private static class ControllableSnapshotSupplier
+            implements Supplier<IdController.TransactionSnapshot>, IdController.IdFreeCondition {
         boolean automaticallyEnableConditions;
         volatile IdController.TransactionSnapshot mostRecentlyReturned;
         private final Set<IdController.TransactionSnapshot> enabledSnapshots = new HashSet<>();
 
         @Override
-        public IdController.TransactionSnapshot get()
-        {
-            mostRecentlyReturned = new IdController.TransactionSnapshot( LongSets.immutable.empty(), 0, 0 );
-            if ( automaticallyEnableConditions )
-            {
-                enabledSnapshots.add( mostRecentlyReturned );
+        public IdController.TransactionSnapshot get() {
+            mostRecentlyReturned = new IdController.TransactionSnapshot(LongSets.immutable.empty(), 0, 0);
+            if (automaticallyEnableConditions) {
+                enabledSnapshots.add(mostRecentlyReturned);
             }
             return mostRecentlyReturned;
         }
 
         @Override
-        public boolean eligibleForFreeing( IdController.TransactionSnapshot snapshot )
-        {
-            return enabledSnapshots.contains( snapshot );
+        public boolean eligibleForFreeing(IdController.TransactionSnapshot snapshot) {
+            return enabledSnapshots.contains(snapshot);
         }
 
-        void enable( IdController.TransactionSnapshot snapshot )
-        {
-            enabledSnapshots.add( snapshot );
+        void enable(IdController.TransactionSnapshot snapshot) {
+            enabledSnapshots.add(snapshot);
         }
 
-        void setMostRecentlyReturnedSnapshotToAllClosed()
-        {
-            enabledSnapshots.add( mostRecentlyReturned );
+        void setMostRecentlyReturnedSnapshotToAllClosed() {
+            enabledSnapshots.add(mostRecentlyReturned);
         }
     }
 
-    private static class MockedIdGeneratorFactory implements IdGeneratorFactory
-    {
-        private final Map<IdType,IdGenerator> generators = new HashMap<>();
-        private final Map<IdType,MockedMarker> markers = new HashMap<>();
+    private static class MockedIdGeneratorFactory implements IdGeneratorFactory {
+        private final Map<IdType, IdGenerator> generators = new HashMap<>();
+        private final Map<IdType, MockedMarker> markers = new HashMap<>();
 
         @Override
-        public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
-                IdSlotDistribution slotDistribution )
-        {
-            IdGenerator idGenerator = mock( IdGenerator.class );
+        public IdGenerator open(
+                PageCache pageCache,
+                Path filename,
+                IdType idType,
+                LongSupplier highIdScanner,
+                long maxId,
+                DatabaseReadOnlyChecker readOnlyChecker,
+                Config config,
+                CursorContextFactory contextFactory,
+                ImmutableSet<OpenOption> openOptions,
+                IdSlotDistribution slotDistribution) {
+            IdGenerator idGenerator = mock(IdGenerator.class);
             MockedMarker marker = new MockedMarker();
-            generators.put( idType, idGenerator );
-            markers.put( idType, marker );
-            when( idGenerator.marker( NULL_CONTEXT ) ).thenReturn( marker );
+            generators.put(idType, idGenerator);
+            markers.put(idType, marker);
+            when(idGenerator.marker(NULL_CONTEXT)).thenReturn(marker);
             return idGenerator;
         }
 
         @Override
-        public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
-                IdSlotDistribution slotDistribution )
-        {
-            return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, contextFactory, openOptions, SINGLE_IDS );
+        public IdGenerator create(
+                PageCache pageCache,
+                Path filename,
+                IdType idType,
+                long highId,
+                boolean throwIfFileExists,
+                long maxId,
+                DatabaseReadOnlyChecker readOnlyChecker,
+                Config config,
+                CursorContextFactory contextFactory,
+                ImmutableSet<OpenOption> openOptions,
+                IdSlotDistribution slotDistribution) {
+            return open(
+                    pageCache,
+                    filename,
+                    idType,
+                    () -> highId,
+                    maxId,
+                    readOnlyChecker,
+                    config,
+                    contextFactory,
+                    openOptions,
+                    SINGLE_IDS);
         }
 
         @Override
-        public IdGenerator get( IdType idType )
-        {
-            return generators.get( idType );
+        public IdGenerator get(IdType idType) {
+            return generators.get(idType);
         }
 
         @Override
-        public void visit( Consumer<IdGenerator> visitor )
-        {
-            generators.values().forEach( visitor );
+        public void visit(Consumer<IdGenerator> visitor) {
+            generators.values().forEach(visitor);
         }
 
         @Override
-        public void clearCache( CursorContext cursorContext )
-        {
+        public void clearCache(CursorContext cursorContext) {
             // no-op
         }
 
         @Override
-        public Collection<Path> listIdFiles()
-        {
+        public Collection<Path> listIdFiles() {
             return Collections.emptyList();
         }
     }
 
-    private static class MockedMarker implements Marker
-    {
-        private final Set<Pair<Long,Integer>> used = ConcurrentHashMap.newKeySet();
-        private final Set<Pair<Long,Integer>> deleted = ConcurrentHashMap.newKeySet();
-        private final Set<Pair<Long,Integer>> freed = ConcurrentHashMap.newKeySet();
+    private static class MockedMarker implements Marker {
+        private final Set<Pair<Long, Integer>> used = ConcurrentHashMap.newKeySet();
+        private final Set<Pair<Long, Integer>> deleted = ConcurrentHashMap.newKeySet();
+        private final Set<Pair<Long, Integer>> freed = ConcurrentHashMap.newKeySet();
         private boolean closed;
 
         @Override
-        public void markUsed( long id, int numberOfIds )
-        {
-            used.add( Pair.of( id, numberOfIds ) );
+        public void markUsed(long id, int numberOfIds) {
+            used.add(Pair.of(id, numberOfIds));
         }
 
         @Override
-        public void markDeleted( long id, int numberOfIds )
-        {
-            deleted.add( Pair.of( id, numberOfIds ) );
+        public void markDeleted(long id, int numberOfIds) {
+            deleted.add(Pair.of(id, numberOfIds));
         }
 
         @Override
-        public void markFree( long id, int numberOfIds )
-        {
-            freed.add( Pair.of( id, numberOfIds ) );
+        public void markFree(long id, int numberOfIds) {
+            freed.add(Pair.of(id, numberOfIds));
         }
 
-        void verifyDeleted( long id, int numberOfIds )
-        {
-            assertThat( deleted.remove( Pair.of( id, numberOfIds ) ) ).isTrue();
+        void verifyDeleted(long id, int numberOfIds) {
+            assertThat(deleted.remove(Pair.of(id, numberOfIds))).isTrue();
         }
 
-        void verifyFreed( long id, int numberOfIds )
-        {
-            assertThat( freed.remove( Pair.of( id, numberOfIds ) ) ).isTrue();
+        void verifyFreed(long id, int numberOfIds) {
+            assertThat(freed.remove(Pair.of(id, numberOfIds))).isTrue();
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             closed = true;
         }
 
-        void verifyClosed()
-        {
-            assertThat( closed ).isTrue();
+        void verifyClosed() {
+            assertThat(closed).isTrue();
         }
 
-        void verifyNoMoreMarks()
-        {
-            assertThat( used ).isEmpty();
-            assertThat( deleted ).isEmpty();
-            assertThat( freed ).isEmpty();
+        void verifyNoMoreMarks() {
+            assertThat(used).isEmpty();
+            assertThat(deleted).isEmpty();
+            assertThat(freed).isEmpty();
         }
     }
 }

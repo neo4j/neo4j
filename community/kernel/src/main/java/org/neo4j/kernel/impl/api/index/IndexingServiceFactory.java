@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.nio.file.OpenOption;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -41,38 +39,58 @@ import org.neo4j.scheduler.JobScheduler;
 /**
  * Factory to create {@link IndexingService}
  */
-public final class IndexingServiceFactory
-{
-    private IndexingServiceFactory()
-    {
-    }
+public final class IndexingServiceFactory {
+    private IndexingServiceFactory() {}
 
-    public static IndexingService createIndexingService( Config config,
-                                                         JobScheduler scheduler,
-                                                         IndexProviderMap providerMap,
-                                                         IndexStoreViewFactory indexStoreViewFactory,
-                                                         TokenNameLookup tokenNameLookup,
-                                                         Iterable<IndexDescriptor> indexRules,
-                                                         InternalLogProvider internalLogProvider,
-                                                         IndexMonitor monitor,
-                                                         SchemaState schemaState,
-                                                         IndexStatisticsStore indexStatisticsStore,
-                                                         CursorContextFactory contextFactory,
-                                                         MemoryTracker memoryTracker,
-                                                         String databaseName,
-                                                         DatabaseReadOnlyChecker readOnlyChecker,
-                                                         ImmutableSet<OpenOption> openOptions )
-    {
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
+    public static IndexingService createIndexingService(
+            Config config,
+            JobScheduler scheduler,
+            IndexProviderMap providerMap,
+            IndexStoreViewFactory indexStoreViewFactory,
+            TokenNameLookup tokenNameLookup,
+            Iterable<IndexDescriptor> indexRules,
+            InternalLogProvider internalLogProvider,
+            IndexMonitor monitor,
+            SchemaState schemaState,
+            IndexStatisticsStore indexStatisticsStore,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker,
+            String databaseName,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            ImmutableSet<OpenOption> openOptions) {
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig(config);
         IndexMapReference indexMapRef = new IndexMapReference();
-        IndexSamplingControllerFactory factory = new IndexSamplingControllerFactory( samplingConfig, indexStatisticsStore, scheduler,
-                tokenNameLookup, internalLogProvider, contextFactory, config, databaseName );
-        IndexSamplingController indexSamplingController = factory.create( indexMapRef );
-        IndexProxyCreator proxySetup =
-                new IndexProxyCreator( samplingConfig, indexStatisticsStore, providerMap, tokenNameLookup, internalLogProvider, openOptions );
+        IndexSamplingControllerFactory factory = new IndexSamplingControllerFactory(
+                samplingConfig,
+                indexStatisticsStore,
+                scheduler,
+                tokenNameLookup,
+                internalLogProvider,
+                contextFactory,
+                config,
+                databaseName);
+        IndexSamplingController indexSamplingController = factory.create(indexMapRef);
+        IndexProxyCreator proxySetup = new IndexProxyCreator(
+                samplingConfig, indexStatisticsStore, providerMap, tokenNameLookup, internalLogProvider, openOptions);
 
-        return new IndexingService( proxySetup, providerMap, indexMapRef, indexStoreViewFactory, indexRules,
-                indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                internalLogProvider, monitor, indexStatisticsStore, contextFactory, memoryTracker, databaseName, readOnlyChecker, config, openOptions );
+        return new IndexingService(
+                proxySetup,
+                providerMap,
+                indexMapRef,
+                indexStoreViewFactory,
+                indexRules,
+                indexSamplingController,
+                tokenNameLookup,
+                scheduler,
+                schemaState,
+                internalLogProvider,
+                monitor,
+                indexStatisticsStore,
+                contextFactory,
+                memoryTracker,
+                databaseName,
+                readOnlyChecker,
+                config,
+                openOptions);
     }
 }

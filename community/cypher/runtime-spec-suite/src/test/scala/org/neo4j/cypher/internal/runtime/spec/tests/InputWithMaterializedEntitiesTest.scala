@@ -43,8 +43,10 @@ import org.neo4j.values.virtual.VirtualValues.relationshipValue
 
 import java.util.Collections
 
-abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                            runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
+abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite(edition, runtime) {
 
   test("node property access") {
     val node = given { createNode(1, "Person", Map("name" -> "Anna")) }
@@ -63,7 +65,8 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
   }
 
   test("relationship property access") {
-    val relationship = given { createRelationship(1, createNode(1), createNode(2), "AWESOME_RELATIONSHIP", Map("active" -> true)) }
+    val relationship =
+      given { createRelationship(1, createNode(1), createNode(2), "AWESOME_RELATIONSHIP", Map("active" -> true)) }
     val input = inputValues(Array(relationship))
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -219,7 +222,6 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
     val relationship = createRelationship(1, startNode, endNode, "AWESOME_RELATIONSHIP", Map("active" -> true))
     val input = inputValues(Array(relationship))
 
-
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("type")
       .projection("type(r) AS type")
@@ -232,14 +234,17 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
     runtimeResult should beColumns("type").withSingleRow("AWESOME_RELATIONSHIP")
   }
 
-  override protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
-                                                  edition: Edition[CONTEXT],
-                                                  workloadMode: Boolean,
-                                                  logProvider: InternalLogProvider): RuntimeTestSupport[CONTEXT] = {
+  override protected def createRuntimeTestSupport(
+    graphDb: GraphDatabaseService,
+    edition: Edition[CONTEXT],
+    workloadMode: Boolean,
+    logProvider: InternalLogProvider
+  ): RuntimeTestSupport[CONTEXT] = {
     new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider) {
 
       override protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {
-        runtimeContextManager.create(queryContext,
+        runtimeContextManager.create(
+          queryContext,
           queryContext.transactionalContext.schemaRead,
           MasterCompiler.CLOCK,
           CypherDebugOptions.default,
@@ -268,7 +273,13 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
     createNode(id, null, Map())
   }
 
-  private def createRelationship(id: Long, startNode: NodeValue, endNode: NodeValue, relType: String, properties: Map[String, Any]): RelationshipValue = {
+  private def createRelationship(
+    id: Long,
+    startNode: NodeValue,
+    endNode: NodeValue,
+    relType: String,
+    properties: Map[String, Any]
+  ): RelationshipValue = {
     relationshipValue(id, "r", null, startNode, endNode, Values.stringValue(relType), convertProperties(properties))
   }
 

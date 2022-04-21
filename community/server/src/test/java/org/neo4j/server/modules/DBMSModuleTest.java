@@ -19,13 +19,19 @@
  */
 package org.neo4j.server.modules;
 
+import static java.util.Collections.emptyList;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-
-import java.net.URI;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.NullLogProvider;
@@ -38,38 +44,32 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
-import static java.util.Collections.emptyList;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-public class DBMSModuleTest
-{
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+public class DBMSModuleTest {
     @Inject
     private SuppressOutput suppressOutput;
 
     @Test
-    public void shouldRegisterAtRootByDefault() throws Exception
-    {
-        WebServer webServer = mock( WebServer.class );
-        Config config = mock( Config.class );
+    public void shouldRegisterAtRootByDefault() throws Exception {
+        WebServer webServer = mock(WebServer.class);
+        Config config = mock(Config.class);
 
-        CommunityNeoWebServer neoServer = mock( CommunityNeoWebServer.class );
-        when( neoServer.getBaseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
-        when( neoServer.getWebServer() ).thenReturn( webServer );
-        when( config.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( true );
-        when( config.get( ServerSettings.http_paths_blacklist ) ).thenReturn( emptyList() );
+        CommunityNeoWebServer neoServer = mock(CommunityNeoWebServer.class);
+        when(neoServer.getBaseUri()).thenReturn(new URI("http://localhost:7575"));
+        when(neoServer.getWebServer()).thenReturn(webServer);
+        when(config.get(GraphDatabaseSettings.auth_enabled)).thenReturn(true);
+        when(config.get(ServerSettings.http_paths_blacklist)).thenReturn(emptyList());
 
-        var module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder( null ).build(),
-                NullLogProvider.getInstance(), new CommunityAuthConfigProvider() );
+        var module = new DBMSModule(
+                webServer,
+                config,
+                () -> new DiscoverableURIs.Builder(null).build(),
+                NullLogProvider.getInstance(),
+                new CommunityAuthConfigProvider());
 
         module.start();
 
-        verify( webServer ).addJAXRSClasses( anyList(), anyString(), isNull() );
+        verify(webServer).addJAXRSClasses(anyList(), anyString(), isNull());
     }
 }

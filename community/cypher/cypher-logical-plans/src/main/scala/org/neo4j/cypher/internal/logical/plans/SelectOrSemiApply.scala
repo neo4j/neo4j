@@ -38,8 +38,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * }
  * }}}
  */
-case class SelectOrSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, expression: Expression)(implicit idGen: IdGen)
-  extends AbstractSelectOrSemiApply(left)(idGen) {
+case class SelectOrSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, expression: Expression)(
+  implicit idGen: IdGen
+) extends AbstractSelectOrSemiApply(left)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 }
@@ -60,14 +61,18 @@ case class SelectOrSemiApply(override val left: LogicalPlan, override val right:
  * }
  *}}}
  */
-case class SelectOrAntiSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, expression: Expression)(implicit idGen: IdGen)
-  extends AbstractSelectOrSemiApply(left)(idGen) {
+case class SelectOrAntiSemiApply(
+  override val left: LogicalPlan,
+  override val right: LogicalPlan,
+  expression: Expression
+)(implicit idGen: IdGen)
+    extends AbstractSelectOrSemiApply(left)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 }
 
 abstract class AbstractSelectOrSemiApply(left: LogicalPlan)(idGen: IdGen)
-  extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
+    extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
 
   val availableSymbols: Set[String] = left.availableSymbols
 

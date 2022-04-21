@@ -22,7 +22,6 @@ package org.neo4j.procedure.impl;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
-interface NamingRestrictions
-{
-    void verify( QualifiedName name ) throws ProcedureException;
+interface NamingRestrictions {
+    void verify(QualifiedName name) throws ProcedureException;
 }

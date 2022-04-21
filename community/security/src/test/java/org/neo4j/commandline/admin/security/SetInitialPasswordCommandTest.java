@@ -19,14 +19,17 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -38,18 +41,13 @@ import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
+import picocli.CommandLine;
 
 @EphemeralTestDirectoryExtension
-class SetInitialPasswordCommandTest
-{
+class SetInitialPasswordCommandTest {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private TestDirectory testDir;
 
@@ -57,88 +55,85 @@ class SetInitialPasswordCommandTest
     private Path authInitFile;
 
     @BeforeEach
-    void setup()
-    {
-        command = new SetInitialPasswordCommand( new ExecutionContext( testDir.directory( "home" ),
-                                                                       testDir.directory( "conf" ), mock( PrintStream.class ), mock( PrintStream.class ),
-                                                                       fileSystem ) );
+    void setup() {
+        command = new SetInitialPasswordCommand(new ExecutionContext(
+                testDir.directory("home"),
+                testDir.directory("conf"),
+                mock(PrintStream.class),
+                mock(PrintStream.class),
+                fileSystem));
 
-        authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile( command.loadNeo4jConfig() );
+        authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile(command.loadNeo4jConfig());
     }
 
     @Test
-    void printUsageHelp()
-    {
+    void printUsageHelp() {
         final var baos = new ByteArrayOutputStream();
-        try ( var out = new PrintStream( baos ) )
-        {
-            CommandLine.usage( command, new PrintStream( out ), CommandLine.Help.Ansi.OFF );
+        try (var out = new PrintStream(baos)) {
+            CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
-        assertThat( baos.toString().trim() ).isEqualTo( String.format(
-                "USAGE%n" + "%n" +
-                        "set-initial-password [--expand-commands] [--require-password-change]%n" +
-                        "                     [--verbose] <password>%n" +
-                        "%n" + "DESCRIPTION%n" + "%n" +
-                        "Sets the initial password of the initial admin user ('neo4j'). And removes the%n" +
-                        "requirement to change password on first login. IMPORTANT: this change will only%n" +
-                        "take effect if performed before the database is started for the first time.%n" +
-                        "%n" + "PARAMETERS%n" + "%n" +
-                        "      <password>%n" + "%n" + "OPTIONS%n" + "%n" +
-                        "      --verbose           Enable verbose output.%n" +
-                        "      --expand-commands   Allow command expansion in config value evaluation.%n" +
-                        "      --require-password-change%n" +
-                        "                          Require the user to change their password on first%n" +
-                        "                            login." ) );
+        assertThat(baos.toString().trim())
+                .isEqualTo(String.format(
+                        "USAGE%n" + "%n" + "set-initial-password [--expand-commands] [--require-password-change]%n"
+                                + "                     [--verbose] <password>%n"
+                                + "%n"
+                                + "DESCRIPTION%n" + "%n"
+                                + "Sets the initial password of the initial admin user ('neo4j'). And removes the%n"
+                                + "requirement to change password on first login. IMPORTANT: this change will only%n"
+                                + "take effect if performed before the database is started for the first time.%n"
+                                + "%n"
+                                + "PARAMETERS%n" + "%n" + "      <password>%n"
+                                + "%n" + "OPTIONS%n" + "%n" + "      --verbose           Enable verbose output.%n"
+                                + "      --expand-commands   Allow command expansion in config value evaluation.%n"
+                                + "      --require-password-change%n"
+                                + "                          Require the user to change their password on first%n"
+                                + "                            login."));
     }
 
     @Test
-    void shouldSetInitialPassword() throws Throwable
-    {
+    void shouldSetInitialPassword() throws Throwable {
         // Given
-        assertFalse( fileSystem.fileExists( authInitFile ) );
+        assertFalse(fileSystem.fileExists(authInitFile));
 
         // When
-        CommandLine.populateCommand( command, "123" );
+        CommandLine.populateCommand(command, "123");
         command.execute();
 
         // Then
-        assertAuthIniFile( "123" );
+        assertAuthIniFile("123");
     }
 
     @Test
-    void shouldOverwriteInitialPasswordFileIfExists() throws Throwable
-    {
+    void shouldOverwriteInitialPasswordFileIfExists() throws Throwable {
         // Given
-        fileSystem.mkdirs( authInitFile.getParent() );
-        fileSystem.write( authInitFile );
+        fileSystem.mkdirs(authInitFile.getParent());
+        fileSystem.write(authInitFile);
 
         // When
-        CommandLine.populateCommand( command, "123" );
+        CommandLine.populateCommand(command, "123");
         command.execute();
 
         // Then
-        assertAuthIniFile( "123" );
+        assertAuthIniFile("123");
     }
 
     @Test
-    void shouldWorkAlsoWithSamePassword() throws Throwable
-    {
-        CommandLine.populateCommand( command, "neo4j" );
+    void shouldWorkAlsoWithSamePassword() throws Throwable {
+        CommandLine.populateCommand(command, "neo4j");
         command.execute();
 
         // Then
-        assertAuthIniFile( "neo4j" );
+        assertAuthIniFile("neo4j");
     }
 
-    private void assertAuthIniFile( String password ) throws Throwable
-    {
-        assertTrue( fileSystem.fileExists( authInitFile ) );
-        FileUserRepository userRepository = new FileUserRepository( fileSystem, authInitFile,
-                NullLogProvider.getInstance() );
+    private void assertAuthIniFile(String password) throws Throwable {
+        assertTrue(fileSystem.fileExists(authInitFile));
+        FileUserRepository userRepository =
+                new FileUserRepository(fileSystem, authInitFile, NullLogProvider.getInstance());
         userRepository.start();
-        User neo4j = userRepository.getUserByName( AuthManager.INITIAL_USER_NAME );
-        assertNotNull( neo4j );
-        assertTrue( neo4j.credentials().matchesPassword( UTF8.encode( password ) ) );
-        assertFalse( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
+        User neo4j = userRepository.getUserByName(AuthManager.INITIAL_USER_NAME);
+        assertNotNull(neo4j);
+        assertTrue(neo4j.credentials().matchesPassword(UTF8.encode(password)));
+        assertFalse(neo4j.hasFlag(User.PASSWORD_CHANGE_REQUIRED));
     }
 }

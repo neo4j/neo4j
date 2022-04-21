@@ -38,8 +38,7 @@ class ToIntegerFunctionTest extends CypherFunSuite with ScalaCheckDrivenProperty
   val tests: Seq[(Any => AnyValue, String)] =
     Seq((toInteger, "toInteger"), (toIntegerOrNull, "toIntegerOrNull"))
 
-  tests.foreach{ case (toIntegerFn, name)  =>
-
+  tests.foreach { case (toIntegerFn, name) =>
     test(s"$name should return null if argument is null") {
       assert(toIntegerFn(null) === NO_VALUE)
     }
@@ -85,7 +84,7 @@ class ToIntegerFunctionTest extends CypherFunSuite with ScalaCheckDrivenProperty
     }
 
     test(s"$name should handle floats larger than 2^31 - 1") {
-      //2^33 = 8589934592
+      // 2^33 = 8589934592
       toIntegerFn("8589934592.0") should equal(longValue(8589934592L))
     }
 
@@ -128,7 +127,9 @@ class ToIntegerFunctionTest extends CypherFunSuite with ScalaCheckDrivenProperty
     val caughtException = the[CypherTypeException] thrownBy toInteger(
       Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0)
     )
-    caughtException.getMessage should startWith("Invalid input for function 'toInteger()': Expected a String, Number or Boolean, got: point({x: 1.0, y: 0.0, crs: 'cartesian'})")
+    caughtException.getMessage should startWith(
+      "Invalid input for function 'toInteger()': Expected a String, Number or Boolean, got: point({x: 1.0, y: 0.0, crs: 'cartesian'})"
+    )
   }
 
   // ToIntegerOrNull
@@ -178,9 +179,11 @@ class ToIntegerFunctionTest extends CypherFunSuite with ScalaCheckDrivenProperty
       v <- Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double])
     } yield v
 
-    forAll(generator) { s => {
-        toIntegerOrNull(s) should (be (a [LongValue]) or equal(NO_VALUE))
-    }}
+    forAll(generator) { s =>
+      {
+        toIntegerOrNull(s) should (be(a[LongValue]) or equal(NO_VALUE))
+      }
+    }
   }
 
   private def toInteger(orig: Any) = {

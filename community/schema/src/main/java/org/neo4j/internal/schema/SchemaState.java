@@ -21,13 +21,12 @@ package org.neo4j.internal.schema;
 
 import java.util.function.Function;
 
-public interface SchemaState
-{
-    <K, V> V get( K key );
+public interface SchemaState {
+    <K, V> V get(K key);
 
-    <K, V> V getOrCreate( K key, Function<K, V> creator );
+    <K, V> V getOrCreate(K key, Function<K, V> creator);
 
-    <K, V> void put( K key, V value );
+    <K, V> void put(K key, V value);
 
     void clear();
 }

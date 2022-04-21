@@ -30,28 +30,27 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 /**
  * Caches {@link RelationshipGroupRecord} into {@link RelationshipGroupCache}.
  */
-public class CacheGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
-{
+public class CacheGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
     private final RelationshipGroupCache cache;
 
-    public CacheGroupsStep( StageControl control, Configuration config, RelationshipGroupCache cache, CursorContextFactory contextFactory,
-            StatsProvider... additionalStatsProviders )
-    {
-        super( control, "CACHE", config, 1, contextFactory, additionalStatsProviders );
+    public CacheGroupsStep(
+            StageControl control,
+            Configuration config,
+            RelationshipGroupCache cache,
+            CursorContextFactory contextFactory,
+            StatsProvider... additionalStatsProviders) {
+        super(control, "CACHE", config, 1, contextFactory, additionalStatsProviders);
         this.cache = cache;
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext )
-    {
+    protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext) {
         // These records are read page-wise forwards, but should be cached in reverse
         // since the records exists in the store in reverse order.
-        for ( int i = batch.length - 1; i >= 0; i-- )
-        {
+        for (int i = batch.length - 1; i >= 0; i--) {
             RelationshipGroupRecord record = batch[i];
-            if ( record.inUse() )
-            {
-                cache.put( record );
+            if (record.inUse()) {
+                cache.put(record);
             }
         }
     }

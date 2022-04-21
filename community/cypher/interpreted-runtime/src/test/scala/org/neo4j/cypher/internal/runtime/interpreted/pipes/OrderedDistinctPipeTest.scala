@@ -26,23 +26,27 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.DistinctSet
 
 class OrderedDistinctPipeTest extends CypherFunSuite {
+
   test("iterating should close seen sets") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
 
     val input = new FakePipe(Seq(
-      Map("a"->10, "b" -> 20),
-      Map("a"->10, "b" -> 20),
-      Map("a"->11, "b" -> 21),
-      Map("a"->11, "b" -> 21),
-      Map("a"->12, "b" -> 22),
-      Map("a"->12, "b" -> 22)
+      Map("a" -> 10, "b" -> 20),
+      Map("a" -> 10, "b" -> 20),
+      Map("a" -> 11, "b" -> 21),
+      Map("a" -> 11, "b" -> 21),
+      Map("a" -> 12, "b" -> 22),
+      Map("a" -> 12, "b" -> 22)
     ))
-    val pipe = OrderedDistinctPipe(input, Array(
-      DistinctPipe.GroupingCol("a", Variable("a"), ordered = true),
-      DistinctPipe.GroupingCol("b", Variable("b"))
-    ))()
-    val result =  pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
+    val pipe = OrderedDistinctPipe(
+      input,
+      Array(
+        DistinctPipe.GroupingCol("a", Variable("a"), ordered = true),
+        DistinctPipe.GroupingCol("b", Variable("b"))
+      )
+    )()
+    val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     monitor.closedResources.collect { case t: DistinctSet[_] => t } should have size 0
     result.next() // a=10, b=20
     monitor.closedResources.collect { case t: DistinctSet[_] => t } should have size 1
@@ -58,20 +62,23 @@ class OrderedDistinctPipeTest extends CypherFunSuite {
     val resourceManager = new ResourceManager(monitor)
 
     val input = new FakePipe(Seq(
-      Map("a"->10, "b" -> 20),
-      Map("a"->10, "b" -> 20),
-      Map("a"->11, "b" -> 21),
-      Map("a"->11, "b" -> 21),
-      Map("a"->12, "b" -> 22),
-      Map("a"->12, "b" -> 22)
+      Map("a" -> 10, "b" -> 20),
+      Map("a" -> 10, "b" -> 20),
+      Map("a" -> 11, "b" -> 21),
+      Map("a" -> 11, "b" -> 21),
+      Map("a" -> 12, "b" -> 22),
+      Map("a" -> 12, "b" -> 22)
     ))
-    val pipe = OrderedDistinctPipe(input, Array(
-      DistinctPipe.GroupingCol("a", Variable("a"), ordered = true),
-      DistinctPipe.GroupingCol("b", Variable("b"))
-    ))()
+    val pipe = OrderedDistinctPipe(
+      input,
+      Array(
+        DistinctPipe.GroupingCol("a", Variable("a"), ordered = true),
+        DistinctPipe.GroupingCol("b", Variable("b"))
+      )
+    )()
     val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     result.close()
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: DistinctSet[_] => t } should have size(1)
+    monitor.closedResources.collect { case t: DistinctSet[_] => t } should have size (1)
   }
 }

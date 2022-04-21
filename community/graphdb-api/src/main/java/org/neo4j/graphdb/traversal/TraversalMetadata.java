@@ -25,8 +25,7 @@ import org.neo4j.annotations.api.PublicApi;
  * Provides metadata about a traversal.
  */
 @PublicApi
-public interface TraversalMetadata
-{
+public interface TraversalMetadata {
     /**
      * @return number of paths returned up to this point in the traversal.
      */

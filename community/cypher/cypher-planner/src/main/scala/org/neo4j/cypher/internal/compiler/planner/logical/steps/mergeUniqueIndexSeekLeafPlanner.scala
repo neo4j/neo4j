@@ -46,10 +46,16 @@ import org.neo4j.cypher.internal.macros.AssertMacros
  *    /  \
  * (ui1) (ui2)
  */
-object mergeUniqueIndexSeekLeafPlanner extends NodeIndexLeafPlanner(Seq(nodeSingleUniqueIndexSeekPlanProvider), LeafPlanRestrictions.NoRestrictions) {
+object mergeUniqueIndexSeekLeafPlanner
+    extends NodeIndexLeafPlanner(Seq(nodeSingleUniqueIndexSeekPlanProvider), LeafPlanRestrictions.NoRestrictions) {
 
-  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] = {
-    def solvedQueryGraph(plan: LogicalPlan): QueryGraph = context.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
+  override def apply(
+    qg: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
+    def solvedQueryGraph(plan: LogicalPlan): QueryGraph =
+      context.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
 
     val resultPlans: Set[LogicalPlan] = super.apply(qg, interestingOrderConfig, context)
 
@@ -57,7 +63,10 @@ object mergeUniqueIndexSeekLeafPlanner extends NodeIndexLeafPlanner(Seq(nodeSing
       val solvedQG = solvedQueryGraph(p)
       val patternNodes = solvedQG.patternNodes
 
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(patternNodes.size == 1, "Node unique index plan solved more than one pattern node.")
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        patternNodes.size == 1,
+        "Node unique index plan solved more than one pattern node."
+      )
       patternNodes.head
     }
 
@@ -72,7 +81,13 @@ object mergeUniqueIndexSeekLeafPlanner extends NodeIndexLeafPlanner(Seq(nodeSing
 
 object nodeSingleUniqueIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
 
-  override def createPlans(indexMatches: Set[NodeIndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = for {
+  override def createPlans(
+    indexMatches: Set[NodeIndexMatch],
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    restrictions: LeafPlanRestrictions,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch.propertyPredicates, restrictions) && indexMatch.indexDescriptor.isUnique
     solution <- createSolution(indexMatch, hints, argumentIds, context)
@@ -97,8 +112,7 @@ object nodeSingleUniqueIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanPr
       solution.providedOrder,
       solution.indexOrder,
       context,
-      solution.indexType,
+      solution.indexType
     )
   }
 }
-

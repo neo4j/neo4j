@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicBoolean
-
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.graphdb.TransactionTerminatedException
 import org.neo4j.graphdb.TransientTransactionFailureException
@@ -32,6 +29,9 @@ import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.query.TransactionalContextFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
+
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 class KillQueryTest extends ExecutionEngineFunSuite {
   /*
@@ -86,9 +86,8 @@ class KillQueryTest extends ExecutionEngineFunSuite {
     e
   }
 
-  class QueryKiller(continue: AtomicBoolean,
-                    runners: IndexedSeq[QueryRunner],
-                    exLogger: Throwable => Unit) extends Runnable {
+  class QueryKiller(continue: AtomicBoolean, runners: IndexedSeq[QueryRunner], exLogger: Throwable => Unit)
+      extends Runnable {
 
     override def run(): Unit =
       try {
@@ -106,18 +105,20 @@ class KillQueryTest extends ExecutionEngineFunSuite {
                 continue.set(false)
             }
           }
-          i = (i+1) % runners.size
+          i = (i + 1) % runners.size
         }
       } finally {
         continue.set(false)
       }
   }
 
-  class QueryRunner(continue: AtomicBoolean,
-                    contextFactory: TransactionalContextFactory,
-                    query: String,
-                    engine: ExecutionEngine,
-                    exLogger: Throwable => Unit) extends Runnable {
+  class QueryRunner(
+    continue: AtomicBoolean,
+    contextFactory: TransactionalContextFactory,
+    query: String,
+    engine: ExecutionEngine,
+    exLogger: Throwable => Unit
+  ) extends Runnable {
 
     @volatile var tc: TransactionalContext = _
 
@@ -127,18 +128,19 @@ class KillQueryTest extends ExecutionEngineFunSuite {
         try {
           val transactionalContext: TransactionalContext = contextFactory.newContext(tx, query, EMPTY_MAP)
           tc = transactionalContext
-          val result = engine.execute(query,
+          val result = engine.execute(
+            query,
             EMPTY_MAP,
             transactionalContext,
             profile = false,
             prePopulate = false,
-            DO_NOTHING_SUBSCRIBER)
+            DO_NOTHING_SUBSCRIBER
+          )
           result.request(Long.MaxValue)
           result.await()
-        }
-        catch {
+        } catch {
           // These are the acceptable exceptions
-          case _: TransactionTerminatedException =>
+          case _: TransactionTerminatedException       =>
           case _: TransientTransactionFailureException =>
 
           case e: Throwable =>

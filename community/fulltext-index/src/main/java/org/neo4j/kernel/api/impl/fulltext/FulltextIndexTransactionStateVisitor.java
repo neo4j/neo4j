@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.eclipse.collections.api.IntIterable;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
+import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
-
+import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -43,14 +43,11 @@ import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
-
 /**
  * A {@link TxStateVisitor} that adds all entities to a {@link TransactionStateLuceneIndexWriter}, that matches the index according to the
  * {@link FulltextSchemaDescriptor}.
  */
-class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
-{
+class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter {
     private final String[] propertyNames;
     private final SchemaDescriptor schema;
     private final boolean visitingNodes;
@@ -65,9 +62,11 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
     private PropertyCursor propertyCursor;
     private RelationshipScanCursor relationshipCursor;
 
-    FulltextIndexTransactionStateVisitor( IndexDescriptor descriptor, String[] propertyNames, MutableLongSet modifiedEntityIdsInThisTransaction,
-            TransactionStateLuceneIndexWriter writer )
-    {
+    FulltextIndexTransactionStateVisitor(
+            IndexDescriptor descriptor,
+            String[] propertyNames,
+            MutableLongSet modifiedEntityIdsInThisTransaction,
+            TransactionStateLuceneIndexWriter writer) {
         this.propertyNames = propertyNames;
         this.schema = descriptor.schema();
         this.modifiedEntityIdsInThisTransaction = modifiedEntityIdsInThisTransaction;
@@ -77,16 +76,17 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
         int[] propertyIds = schema.getPropertyIds();
         propertyValues = new Value[propertyIds.length];
         propKeyToIndex = new IntIntHashMap();
-        for ( int i = 0; i < propertyIds.length; i++ )
-        {
-            propKeyToIndex.put( propertyIds[i], i );
+        for (int i = 0; i < propertyIds.length; i++) {
+            propKeyToIndex.put(propertyIds[i], i);
         }
-        this.indexedPropertySelection = PropertySelection.selection( propertyIds );
+        this.indexedPropertySelection = PropertySelection.selection(propertyIds);
     }
 
-    FulltextIndexTransactionStateVisitor init( Read read, NodeCursor nodeCursor, RelationshipScanCursor relationshipCursor,
-            PropertyCursor propertyCursor )
-    {
+    FulltextIndexTransactionStateVisitor init(
+            Read read,
+            NodeCursor nodeCursor,
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor) {
         this.read = read;
         this.nodeCursor = nodeCursor;
         this.relationshipCursor = relationshipCursor;
@@ -95,105 +95,93 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitCreatedNode( long id )
-    {
-        indexNode( id );
+    public void visitCreatedNode(long id) {
+        indexNode(id);
     }
 
     @Override
-    public void visitNodePropertyChanges( long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed, IntIterable removed )
-    {
-        indexNode( id );
+    public void visitNodePropertyChanges(
+            long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed, IntIterable removed) {
+        indexNode(id);
     }
 
     @Override
-    public void visitRelPropertyChanges( long id, int type, long startNode, long endNode, Iterable<StorageProperty> added, Iterable<StorageProperty> changed,
-            IntIterable removed )
-    {
-        indexRelationship( id );
+    public void visitRelPropertyChanges(
+            long id,
+            int type,
+            long startNode,
+            long endNode,
+            Iterable<StorageProperty> added,
+            Iterable<StorageProperty> changed,
+            IntIterable removed) {
+        indexRelationship(id);
     }
 
     @Override
-    public void visitDeletedNode( long id )
-    {
-        modifiedEntityIdsInThisTransaction.add( id );
+    public void visitDeletedNode(long id) {
+        modifiedEntityIdsInThisTransaction.add(id);
     }
 
     @Override
-    public void visitRelationshipModifications( RelationshipModifications modifications )
-    {
-        modifications.creations().forEach( ( id, type, startNode, endNode, addedProperties ) -> indexRelationship( id ) );
-        modifications.deletions().forEach( ( id, type, startNode, endNode, noProperties ) -> modifiedEntityIdsInThisTransaction.add( id ) );
+    public void visitRelationshipModifications(RelationshipModifications modifications) {
+        modifications.creations().forEach((id, type, startNode, endNode, addedProperties) -> indexRelationship(id));
+        modifications
+                .deletions()
+                .forEach((id, type, startNode, endNode, noProperties) -> modifiedEntityIdsInThisTransaction.add(id));
     }
 
     @Override
-    public void visitNodeLabelChanges( long id, LongSet added, LongSet removed )
-    {
-        indexNode( id );
-        if ( visitingNodes )
-        {
-            // Nodes that have had their indexed labels removed will not have their properties indexed, so 'indexNode' would skip them.
+    public void visitNodeLabelChanges(long id, LongSet added, LongSet removed) {
+        indexNode(id);
+        if (visitingNodes) {
+            // Nodes that have had their indexed labels removed will not have their properties indexed, so 'indexNode'
+            // would skip them.
             // However, we still need to make sure that they are not included in the result from the base index reader.
-            for ( int entityTokenId : entityTokenIds )
-            {
-                if ( removed.contains( entityTokenId ) )
-                {
-                    modifiedEntityIdsInThisTransaction.add( id );
+            for (int entityTokenId : entityTokenIds) {
+                if (removed.contains(entityTokenId)) {
+                    modifiedEntityIdsInThisTransaction.add(id);
                     break;
                 }
             }
         }
     }
 
-    private void indexNode( long id )
-    {
-        if ( visitingNodes )
-        {
-            read.singleNode( id, nodeCursor );
-            if ( nodeCursor.next() )
-            {
+    private void indexNode(long id) {
+        if (visitingNodes) {
+            read.singleNode(id, nodeCursor);
+            if (nodeCursor.next()) {
                 TokenSet labels = nodeCursor.labels();
-                if ( schema.isAffected( labels.all() ) )
-                {
-                    nodeCursor.properties( propertyCursor, indexedPropertySelection );
-                    indexProperties( id );
+                if (schema.isAffected(labels.all())) {
+                    nodeCursor.properties(propertyCursor, indexedPropertySelection);
+                    indexProperties(id);
                 }
             }
         }
     }
 
-    private void indexRelationship( long id )
-    {
-        if ( !visitingNodes )
-        {
-            read.singleRelationship( id, relationshipCursor );
-            if ( relationshipCursor.next() && schema.isAffected( new long[]{relationshipCursor.type()} ) )
-            {
-                relationshipCursor.properties( propertyCursor, indexedPropertySelection );
-                indexProperties( id );
+    private void indexRelationship(long id) {
+        if (!visitingNodes) {
+            read.singleRelationship(id, relationshipCursor);
+            if (relationshipCursor.next() && schema.isAffected(new long[] {relationshipCursor.type()})) {
+                relationshipCursor.properties(propertyCursor, indexedPropertySelection);
+                indexProperties(id);
             }
         }
     }
 
-    private void indexProperties( long id )
-    {
-        while ( propertyCursor.next() )
-        {
+    private void indexProperties(long id) {
+        while (propertyCursor.next()) {
             int propertyKey = propertyCursor.propertyKey();
-            int index = propKeyToIndex.get( propertyKey );
+            int index = propKeyToIndex.get(propertyKey);
             propertyValues[index] = propertyCursor.propertyValue();
         }
-        if ( modifiedEntityIdsInThisTransaction.add( id ) )
-        {
-            try
-            {
-                writer.nullableAddDocument( documentRepresentingProperties( id, propertyNames, propertyValues ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+        if (modifiedEntityIdsInThisTransaction.add(id)) {
+            try {
+                writer.nullableAddDocument(documentRepresentingProperties(id, propertyNames, propertyValues));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
-        Arrays.fill( propertyValues, null );
+        Arrays.fill(propertyValues, null);
     }
 }

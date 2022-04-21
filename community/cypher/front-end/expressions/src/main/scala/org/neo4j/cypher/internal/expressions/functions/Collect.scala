@@ -24,6 +24,12 @@ case object Collect extends AggregatingFunction {
   def name = "collect"
 
   override val signatures: Vector[TypeSignature] = Vector(
-    TypeSignature(this, CTAny, CTList(CTAny), "Returns a list containing the values returned by an expression.", Category.AGGREGATING)
+    TypeSignature(
+      this,
+      CTAny,
+      CTList(CTAny),
+      "Returns a list containing the values returned by an expression.",
+      Category.AGGREGATING
+    )
   )
 }

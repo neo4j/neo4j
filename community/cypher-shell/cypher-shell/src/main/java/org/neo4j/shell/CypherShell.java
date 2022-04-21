@@ -22,7 +22,6 @@ package org.neo4j.shell;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -41,8 +40,7 @@ import org.neo4j.shell.state.BoltStateHandler;
 /**
  * A possibly interactive shell for evaluating cypher statements.
  */
-public class CypherShell implements StatementExecuter, Connector, TransactionHandler, DatabaseManager
-{
+public class CypherShell implements StatementExecuter, Connector, TransactionHandler, DatabaseManager {
     private static final Logger log = Logger.create();
     private final ParameterService parameters;
     private final LinePrinter linePrinter;
@@ -51,11 +49,11 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     private CommandHelper commandHelper;
     private String lastNeo4jErrorCode;
 
-    public CypherShell( LinePrinter linePrinter,
-                        BoltStateHandler boltStateHandler,
-                        PrettyPrinter prettyPrinter,
-                        ParameterService parameters )
-    {
+    public CypherShell(
+            LinePrinter linePrinter,
+            BoltStateHandler boltStateHandler,
+            PrettyPrinter prettyPrinter,
+            ParameterService parameters) {
         this.linePrinter = linePrinter;
         this.boltStateHandler = boltStateHandler;
         this.prettyPrinter = prettyPrinter;
@@ -64,30 +62,23 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     }
 
     @Override
-    public void execute( final ParsedStatement statement ) throws ExitException, CommandException
-    {
-        if ( statement instanceof CommandStatement commandStatement )
-        {
-            executeCommand( commandStatement );
-        }
-        else if ( !statement.statement().isBlank() )
-        {
-            executeCypher( statement.statement() );
+    public void execute(final ParsedStatement statement) throws ExitException, CommandException {
+        if (statement instanceof CommandStatement commandStatement) {
+            executeCommand(commandStatement);
+        } else if (!statement.statement().isBlank()) {
+            executeCypher(statement.statement());
         }
     }
 
     @Override
-    public void execute( List<ParsedStatement> statements ) throws ExitException, CommandException
-    {
-        for ( var statement : statements )
-        {
-            execute( statement );
+    public void execute(List<ParsedStatement> statements) throws ExitException, CommandException {
+        for (var statement : statements) {
+            execute(statement);
         }
     }
 
     @Override
-    public String lastNeo4jErrorCode()
-    {
+    public String lastNeo4jErrorCode() {
         return lastNeo4jErrorCode;
     }
 
@@ -96,216 +87,176 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
      *
      * @param cypher non-empty cypher text to executeLine
      */
-    private void executeCypher( final String cypher ) throws CommandException
-    {
-        if ( !isConnected() )
-        {
-            throw new CommandException( "Not connected to Neo4j" );
+    private void executeCypher(final String cypher) throws CommandException {
+        if (!isConnected()) {
+            throw new CommandException("Not connected to Neo4j");
         }
 
-        try
-        {
-            final Optional<BoltResult> result = boltStateHandler.runCypher( cypher, parameters.parameterValues() );
-            result.ifPresent( boltResult ->
-                              {
-                                  prettyPrinter.format( boltResult, linePrinter );
-                                  boltStateHandler.updateActualDbName( boltResult.getSummary() );
-                              } );
+        try {
+            final Optional<BoltResult> result = boltStateHandler.runCypher(cypher, parameters.parameterValues());
+            result.ifPresent(boltResult -> {
+                prettyPrinter.format(boltResult, linePrinter);
+                boltStateHandler.updateActualDbName(boltResult.getSummary());
+            });
             lastNeo4jErrorCode = null;
-        }
-        catch ( Neo4jException e )
-        {
-            log.error( e );
-            lastNeo4jErrorCode = getErrorCode( e );
-            throw boltStateHandler.handleException( e );
+        } catch (Neo4jException e) {
+            log.error(e);
+            lastNeo4jErrorCode = getErrorCode(e);
+            throw boltStateHandler.handleException(e);
         }
     }
 
     @Override
-    public boolean isConnected()
-    {
+    public boolean isConnected() {
         return boltStateHandler.isConnected();
     }
 
-    private void executeCommand( final CommandStatement statement ) throws CommandException
-    {
-        var command = commandHelper.getCommand( statement.name() );
-        if ( command == null )
-        {
-            throw new CommandException( "Could not find command " + statement.name() + ", use :help to see available commands" );
+    private void executeCommand(final CommandStatement statement) throws CommandException {
+        var command = commandHelper.getCommand(statement.name());
+        if (command == null) {
+            throw new CommandException(
+                    "Could not find command " + statement.name() + ", use :help to see available commands");
         }
-        command.execute( statement.args() );
+        command.execute(statement.args());
     }
 
     /**
      * Open a session to Neo4j
      */
     @Override
-    public void connect( ConnectionConfig connectionConfig ) throws CommandException
-    {
-        boltStateHandler.connect( connectionConfig );
+    public void connect(ConnectionConfig connectionConfig) throws CommandException {
+        boltStateHandler.connect(connectionConfig);
     }
 
     @Override
-    public void connect( String user, String password, String database ) throws CommandException
-    {
-        boltStateHandler.connect( user, password, database );
+    public void connect(String user, String password, String database) throws CommandException {
+        boltStateHandler.connect(user, password, database);
     }
 
     @Override
-    public void impersonate( String impersonatedUser ) throws CommandException
-    {
-        boltStateHandler.impersonate( impersonatedUser );
+    public void impersonate(String impersonatedUser) throws CommandException {
+        boltStateHandler.impersonate(impersonatedUser);
     }
 
     @Override
-    public void reconnect() throws CommandException
-    {
+    public void reconnect() throws CommandException {
         boltStateHandler.reconnect();
     }
 
     @Override
-    public String getServerVersion()
-    {
+    public String getServerVersion() {
         return boltStateHandler.getServerVersion();
     }
 
     @Override
-    public String getProtocolVersion()
-    {
+    public String getProtocolVersion() {
         return boltStateHandler.getProtocolVersion();
     }
 
     @Override
-    public String username()
-    {
+    public String username() {
         return boltStateHandler.username();
     }
 
     @Override
-    public String driverUrl()
-    {
+    public String driverUrl() {
         return boltStateHandler.driverUrl();
     }
 
     @Override
-    public Optional<String> impersonatedUser()
-    {
+    public Optional<String> impersonatedUser() {
         return boltStateHandler.impersonatedUser();
     }
 
     @Override
-    public void beginTransaction() throws CommandException
-    {
+    public void beginTransaction() throws CommandException {
         boltStateHandler.beginTransaction();
     }
 
     @Override
-    public void commitTransaction() throws CommandException
-    {
-        try
-        {
+    public void commitTransaction() throws CommandException {
+        try {
             boltStateHandler.commitTransaction();
             lastNeo4jErrorCode = null;
-        }
-        catch ( Neo4jException e )
-        {
-            log.error( e );
-            lastNeo4jErrorCode = getErrorCode( e );
+        } catch (Neo4jException e) {
+            log.error(e);
+            lastNeo4jErrorCode = getErrorCode(e);
             throw e;
         }
     }
 
     @Override
-    public void rollbackTransaction() throws CommandException
-    {
+    public void rollbackTransaction() throws CommandException {
         boltStateHandler.rollbackTransaction();
     }
 
     @Override
-    public boolean isTransactionOpen()
-    {
+    public boolean isTransactionOpen() {
         return boltStateHandler.isTransactionOpen();
     }
 
     @Override
-    public Optional<BoltResult> runCypher( String cypher, Map<String,Object> queryParams ) throws CommandException
-    {
-        return boltStateHandler.runCypher( cypher, queryParams );
+    public Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams) throws CommandException {
+        return boltStateHandler.runCypher(cypher, queryParams);
     }
 
-    public void setCommandHelper( CommandHelper commandHelper )
-    {
+    public void setCommandHelper(CommandHelper commandHelper) {
         this.commandHelper = commandHelper;
     }
 
     @Override
-    public void reset()
-    {
+    public void reset() {
         boltStateHandler.reset();
     }
 
-    protected void addRuntimeHookToResetShell()
-    {
-        Runtime.getRuntime().addShutdownHook( new Thread( this::reset ) );
+    protected void addRuntimeHookToResetShell() {
+        Runtime.getRuntime().addShutdownHook(new Thread(this::reset));
     }
 
     @Override
-    public void setActiveDatabase( String databaseName ) throws CommandException
-    {
-        try
-        {
-            boltStateHandler.setActiveDatabase( databaseName );
+    public void setActiveDatabase(String databaseName) throws CommandException {
+        try {
+            boltStateHandler.setActiveDatabase(databaseName);
             lastNeo4jErrorCode = null;
-        }
-        catch ( Neo4jException e )
-        {
-            log.error( e );
-            lastNeo4jErrorCode = getErrorCode( e );
+        } catch (Neo4jException e) {
+            log.error(e);
+            lastNeo4jErrorCode = getErrorCode(e);
             throw e;
         }
     }
 
     @Override
-    public String getActiveDatabaseAsSetByUser()
-    {
+    public String getActiveDatabaseAsSetByUser() {
         return boltStateHandler.getActiveDatabaseAsSetByUser();
     }
 
     @Override
-    public String getActualDatabaseAsReportedByServer()
-    {
+    public String getActualDatabaseAsReportedByServer() {
         return boltStateHandler.getActualDatabaseAsReportedByServer();
     }
 
-    public void changePassword( ConnectionConfig connectionConfig, String newPassword )
-    {
-        boltStateHandler.changePassword( connectionConfig, newPassword );
+    public void changePassword(ConnectionConfig connectionConfig, String newPassword) {
+        boltStateHandler.changePassword(connectionConfig, newPassword);
     }
 
     @Override
-    public void disconnect()
-    {
+    public void disconnect() {
         boltStateHandler.disconnect();
     }
 
-    private static String getErrorCode( Neo4jException e )
-    {
+    private static String getErrorCode(Neo4jException e) {
         Neo4jException statusException = e;
 
         // If we encountered a later suppressed Neo4jException we use that as the basis for the status instead
         Throwable[] suppressed = e.getSuppressed();
-        for ( Throwable s : suppressed )
-        {
-            if ( s instanceof Neo4jException )
-            {
+        for (Throwable s : suppressed) {
+            if (s instanceof Neo4jException) {
                 statusException = (Neo4jException) s;
                 break;
             }
         }
 
-        if ( statusException instanceof ServiceUnavailableException || statusException instanceof DiscoveryException )
-        {
+        if (statusException instanceof ServiceUnavailableException || statusException instanceof DiscoveryException) {
             // Treat this the same way as a DatabaseUnavailable error for now.
             return DATABASE_UNAVAILABLE_ERROR_CODE;
         }

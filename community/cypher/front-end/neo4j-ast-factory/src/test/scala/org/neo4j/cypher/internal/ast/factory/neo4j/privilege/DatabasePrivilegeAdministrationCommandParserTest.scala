@@ -36,7 +36,6 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
     ("REVOKE", "FROM", revokeDatabasePrivilege: databasePrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, privilegeFunc: databasePrivilegeFunc) =>
-
       Seq(
         ("ACCESS", ast.AccessDatabaseAction),
         ("START", ast.StartDatabaseAction),
@@ -80,7 +79,6 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
         ("ALL DATABASE PRIVILEGES", ast.AllDatabaseAction)
       ).foreach {
         case (privilege: String, action: ast.DatabaseAction) =>
-
           test(s"$verb $privilege ON DATABASE * $preposition $$role") {
             yields(privilegeFunc(action, List(ast.AllDatabasesScope() _), Seq(paramRole)))
           }
@@ -102,7 +100,11 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb $privilege ON DATABASE more.Dots.more.Dots $preposition role") {
-            yields(privilegeFunc(action, List(ast.NamedDatabaseScope(literal("more.Dots.more.Dots")) _), Seq(literalRole)))
+            yields(privilegeFunc(
+              action,
+              List(ast.NamedDatabaseScope(literal("more.Dots.more.Dots")) _),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $privilege ON DATABASE foo $preposition `r:ole`") {
@@ -262,141 +264,310 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
     ("REVOKE", "FROM", revokeTransactionPrivilege: transactionPrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, privilegeFunc: transactionPrivilegeFunc) =>
-
       test(s"$verb SHOW TRANSACTION (*) ON DATABASE * $preposition role") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(ast.AllDatabasesScope() _), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTIONS (*) ON DATABASES foo $preposition role1, role2") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(databaseScopeFoo), List(ast.UserAllQualifier() _), Seq(literalRole1, literalRole2)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(databaseScopeFoo),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole1, literalRole2)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTIONS (*) ON DATABASES $$foo $preposition $$role1, $$role2") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(databaseScopeParamFoo), List(ast.UserAllQualifier() _), Seq(paramRole1, paramRole2)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(databaseScopeParamFoo),
+          List(ast.UserAllQualifier() _),
+          Seq(paramRole1, paramRole2)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTION (user) ON HOME DATABASE $preposition role") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(ast.HomeDatabaseScope() _), List(ast.UserQualifier(literalUser)_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(ast.HomeDatabaseScope() _),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTION ($$user) ON HOME DATABASE $preposition role") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(ast.HomeDatabaseScope() _), List(ast.UserQualifier(paramUser)_),Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(ast.HomeDatabaseScope() _),
+          List(ast.UserQualifier(paramUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTION (user) ON DEFAULT DATABASE $preposition role") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(ast.DefaultDatabaseScope() _), List(ast.UserQualifier(literalUser)_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(ast.DefaultDatabaseScope() _),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTION ($$user) ON DEFAULT DATABASE $preposition role") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(ast.DefaultDatabaseScope() _), List(ast.UserQualifier(paramUser)_),Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(ast.DefaultDatabaseScope() _),
+          List(ast.UserQualifier(paramUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTIONS (user1,user2) ON DATABASES * $preposition role1, role2") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(ast.AllDatabasesScope() _), List(ast.UserQualifier(literalUser1)_, ast.UserQualifier(literal("user2"))_), Seq(literalRole1, literalRole2)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserQualifier(literalUser1) _, ast.UserQualifier(literal("user2")) _),
+          Seq(literalRole1, literalRole2)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTIONS ON DATABASES * $preposition role") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(ast.AllDatabasesScope() _), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTION ON DATABASE foo, bar $preposition role") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(databaseScopeFoo, databaseScopeBar), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(databaseScopeFoo, databaseScopeBar),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb SHOW TRANSACTION (user) ON DATABASES foo, $$bar $preposition role") {
-        yields(privilegeFunc(ast.ShowTransactionAction, List(databaseScopeFoo, databaseScopeParamBar), List(ast.UserQualifier(literalUser)_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.ShowTransactionAction,
+          List(databaseScopeFoo, databaseScopeParamBar),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTION (*) ON DATABASE * $preposition $$role") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(ast.AllDatabasesScope() _), List(ast.UserAllQualifier() _), Seq(paramRole)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserAllQualifier() _),
+          Seq(paramRole)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTIONS (*) ON DATABASES foo $preposition role1, role2") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(databaseScopeFoo), List(ast.UserAllQualifier() _), Seq(literalRole1, literalRole2)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(databaseScopeFoo),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole1, literalRole2)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTIONS (*) ON DATABASES $$foo $preposition role") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(databaseScopeParamFoo), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(databaseScopeParamFoo),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTION (user) ON HOME DATABASE $preposition role") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(ast.HomeDatabaseScope() _), List(ast.UserQualifier(literalUser)_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(ast.HomeDatabaseScope() _),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTION (user) ON DEFAULT DATABASE $preposition role") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(ast.DefaultDatabaseScope() _), List(ast.UserQualifier(literalUser)_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(ast.DefaultDatabaseScope() _),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTIONS (user1,user2) ON DATABASES * $preposition role1, role2") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(ast.AllDatabasesScope() _), List(ast.UserQualifier(literalUser1)_,ast.UserQualifier(literal("user2"))_), Seq(literalRole1, literalRole2)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserQualifier(literalUser1) _, ast.UserQualifier(literal("user2")) _),
+          Seq(literalRole1, literalRole2)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTIONS ($$user1,$$user2) ON DATABASES * $preposition role1, role2") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(ast.AllDatabasesScope() _), List(ast.UserQualifier(param("user1")) _, ast.UserQualifier(param("user2"))_) , Seq(literalRole1, literalRole2)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserQualifier(param("user1")) _, ast.UserQualifier(param("user2")) _),
+          Seq(literalRole1, literalRole2)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTIONS ON DATABASES * $preposition role") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(ast.AllDatabasesScope() _), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTION ON DATABASE foo, bar $preposition role") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(databaseScopeFoo, databaseScopeBar), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(databaseScopeFoo, databaseScopeBar),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TERMINATE TRANSACTION (user) ON DATABASES foo, $$bar $preposition role") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, List(databaseScopeFoo, databaseScopeParamBar), List(ast.UserQualifier(literalUser)_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.TerminateTransactionAction,
+          List(databaseScopeFoo, databaseScopeParamBar),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION ON DATABASES * $preposition role1, role2") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(ast.AllDatabasesScope() _), List(ast.UserAllQualifier() _), Seq(literalRole1, literalRole2)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole1, literalRole2)
+        ))
       }
 
       test(s"$verb TRANSACTION (*) ON DATABASES foo $preposition role1, $$role2") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(databaseScopeFoo), List(ast.UserAllQualifier() _), Seq(literalRole1, paramRole2)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(databaseScopeFoo),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole1, paramRole2)
+        ))
       }
 
       test(s"$verb TRANSACTION (*) ON DATABASES $$foo $preposition role1, role2") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(databaseScopeParamFoo), List(ast.UserAllQualifier() _), Seq(literalRole1, literalRole2)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(databaseScopeParamFoo),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole1, literalRole2)
+        ))
       }
 
       test(s"$verb TRANSACTION (user) ON DATABASES * $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(ast.AllDatabasesScope() _), List(ast.UserQualifier(literalUser)_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION ON DATABASE foo, bar $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(databaseScopeFoo, databaseScopeBar), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(databaseScopeFoo, databaseScopeBar),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION (user) ON DATABASES foo, $$bar $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(databaseScopeFoo, databaseScopeParamBar), List(ast.UserQualifier(literalUser)_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(databaseScopeFoo, databaseScopeParamBar),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION MANAGEMENT ON HOME DATABASE $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(ast.HomeDatabaseScope() _), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(ast.HomeDatabaseScope() _),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION MANAGEMENT ON DEFAULT DATABASE $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(ast.DefaultDatabaseScope() _), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(ast.DefaultDatabaseScope() _),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION MANAGEMENT (*) ON DATABASE * $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(ast.AllDatabasesScope() _), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION MANAGEMENT (user) ON DATABASES * $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(ast.AllDatabasesScope() _), List(ast.UserQualifier(literalUser)_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION MANAGEMENT (user1, $$user2) ON DATABASES * $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(ast.AllDatabasesScope() _), List(ast.UserQualifier(literalUser1) _, ast.UserQualifier(param("user2"))_), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(ast.AllDatabasesScope() _),
+          List(ast.UserQualifier(literalUser1) _, ast.UserQualifier(param("user2")) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION MANAGEMENT ON DATABASE foo, bar $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(databaseScopeFoo, databaseScopeBar), List(ast.UserAllQualifier() _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(databaseScopeFoo, databaseScopeBar),
+          List(ast.UserAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION MANAGEMENT (user) ON DATABASES foo, $$bar $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, List(databaseScopeFoo, databaseScopeParamBar), List(ast.UserQualifier(literalUser) _), Seq(literalRole)))
+        yields(privilegeFunc(
+          ast.AllTransactionActions,
+          List(databaseScopeFoo, databaseScopeParamBar),
+          List(ast.UserQualifier(literalUser) _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb TRANSACTION ON DATABASE foo, * $preposition role") {

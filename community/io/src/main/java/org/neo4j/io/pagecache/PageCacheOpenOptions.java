@@ -20,17 +20,15 @@
 package org.neo4j.io.pagecache;
 
 import com.sun.nio.file.ExtendedOpenOption;
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 /**
  * {@link OpenOption}s that are specific to {@link PageCache#map(Path, int, String, ImmutableSet)},
  * and not normally supported by file systems.
  */
-public enum PageCacheOpenOptions implements OpenOption
-{
+public enum PageCacheOpenOptions implements OpenOption {
     /**
      * Map the file even if the specified file page size conflicts with an existing mapping of that file.
      * If so, the given file page size will be ignored and a {@link PagedFile} will be returned that uses the

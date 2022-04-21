@@ -19,13 +19,12 @@
  */
 package org.neo4j.server.web;
 
+import static java.util.Collections.unmodifiableMap;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.util.Collections.unmodifiableMap;
-
-public enum HttpMethod
-{
+public enum HttpMethod {
     OPTIONS,
     GET,
     HEAD,
@@ -36,21 +35,18 @@ public enum HttpMethod
     TRACE,
     CONNECT;
 
-    private static final Map<String,HttpMethod> methodsByName = indexMethodsByName();
+    private static final Map<String, HttpMethod> methodsByName = indexMethodsByName();
 
-    public static HttpMethod valueOfOrNull( String name )
-    {
-        return methodsByName.get( name );
+    public static HttpMethod valueOfOrNull(String name) {
+        return methodsByName.get(name);
     }
 
-    private static Map<String,HttpMethod> indexMethodsByName()
-    {
+    private static Map<String, HttpMethod> indexMethodsByName() {
         HttpMethod[] methods = HttpMethod.values();
-        Map<String,HttpMethod> result = new HashMap<>( methods.length * 2 );
-        for ( HttpMethod method : methods )
-        {
-            result.put( method.name(), method );
+        Map<String, HttpMethod> result = new HashMap<>(methods.length * 2);
+        for (HttpMethod method : methods) {
+            result.put(method.name(), method);
         }
-        return unmodifiableMap( result );
+        return unmodifiableMap(result);
     }
 }

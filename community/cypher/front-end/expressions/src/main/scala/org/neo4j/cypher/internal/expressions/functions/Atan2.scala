@@ -23,7 +23,13 @@ case object Atan2 extends Function {
   def name = "atan2"
 
   override val signatures = Vector(
-    FunctionTypeSignature(this, names = Vector("y", "x"), argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat,
-      description = "Returns the arctangent2 of a set of coordinates in radians.", category = Category.TRIGONOMETRIC)
+    FunctionTypeSignature(
+      this,
+      names = Vector("y", "x"),
+      argumentTypes = Vector(CTFloat, CTFloat),
+      outputType = CTFloat,
+      description = "Returns the arctangent2 of a set of coordinates in radians.",
+      category = Category.TRIGONOMETRIC
+    )
   )
 }

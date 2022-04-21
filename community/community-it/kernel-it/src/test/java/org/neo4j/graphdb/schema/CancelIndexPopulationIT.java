@@ -19,10 +19,12 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.Iterables.first;
 
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -37,13 +39,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.Iterables.first;
-
 @TestDirectoryExtension
-class CancelIndexPopulationIT
-{
+class CancelIndexPopulationIT {
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
 
@@ -51,87 +48,71 @@ class CancelIndexPopulationIT
     private TestDirectory directory;
 
     @Test
-    void shouldKeepIndexInPopulatingStateBetweenRestarts() throws InterruptedException
-    {
-        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() ).build();
-        try
-        {
-            GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
+    void shouldKeepIndexInPopulatingStateBetweenRestarts() throws InterruptedException {
+        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder(directory.homePath()).build();
+        try {
+            GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
 
             // given
-            Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
+            Monitors monitors = db.getDependencyResolver().resolveDependency(Monitors.class);
             Barrier.Control barrier = new Barrier.Control();
-            monitors.addMonitorListener( populationCompletionBlocker( barrier ) );
+            monitors.addMonitorListener(populationCompletionBlocker(barrier));
 
             // when
-            createRelevantNode( db );
-            createIndex( db );
+            createRelevantNode(db);
+            createIndex(db);
             barrier.await();
-        }
-        finally
-        {
+        } finally {
             // This call to shutdown will eventually make a call to populationCancelled on the monitor below
             dbms.shutdown();
         }
 
-        dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() ).build();
-        try
-        {
-            GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
+        dbms = new TestDatabaseManagementServiceBuilder(directory.homePath()).build();
+        try {
+            GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
 
             // then
-            assertEquals( Schema.IndexState.ONLINE, awaitAndGetIndexState( db ) );
-        }
-        finally
-        {
+            assertEquals(Schema.IndexState.ONLINE, awaitAndGetIndexState(db));
+        } finally {
             dbms.shutdown();
         }
     }
 
-    private static Schema.IndexState awaitAndGetIndexState( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            IndexDefinition indexDefinition = first( tx.schema().getIndexes( LABEL ) );
-            tx.schema().awaitIndexOnline( indexDefinition, 2, TimeUnit.MINUTES );
-            Schema.IndexState indexState = tx.schema().getIndexState( indexDefinition );
+    private static Schema.IndexState awaitAndGetIndexState(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
+            IndexDefinition indexDefinition = first(tx.schema().getIndexes(LABEL));
+            tx.schema().awaitIndexOnline(indexDefinition, 2, TimeUnit.MINUTES);
+            Schema.IndexState indexState = tx.schema().getIndexState(indexDefinition);
             tx.commit();
             return indexState;
         }
     }
 
-    private static void createIndex( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( KEY ).create();
+    private static void createIndex(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().indexFor(LABEL).on(KEY).create();
             tx.commit();
         }
     }
 
-    private static void createRelevantNode( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode( LABEL ).setProperty( KEY, "value" );
+    private static void createRelevantNode(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
+            tx.createNode(LABEL).setProperty(KEY, "value");
             tx.commit();
         }
     }
 
-    private static IndexMonitor.MonitorAdapter populationCompletionBlocker( Barrier.Control barrier )
-    {
-        return new IndexMonitor.MonitorAdapter()
-        {
+    private static IndexMonitor.MonitorAdapter populationCompletionBlocker(Barrier.Control barrier) {
+        return new IndexMonitor.MonitorAdapter() {
             @Override
-            public void indexPopulationScanComplete()
-            {
+            public void indexPopulationScanComplete() {
                 barrier.reached();
             }
 
             @Override
-            public void populationCancelled()
-            {
-                // When we get this call we know that the population is still active (due to being blocked in indexPopulationScanComplete())
+            public void populationCancelled() {
+                // When we get this call we know that the population is still active (due to being blocked in
+                // indexPopulationScanComplete())
                 // and have just gotten a call to being cancelled, which should now be known to index populators.
                 barrier.release();
             }

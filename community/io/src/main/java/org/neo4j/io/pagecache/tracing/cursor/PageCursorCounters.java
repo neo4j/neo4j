@@ -29,8 +29,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * @see PageCursorCounters
  * @see CursorContext
  */
-public interface PageCursorCounters
-{
+public interface PageCursorCounters {
     /**
      * @return The number of page faults observed thus far, both failed and successful.
      */

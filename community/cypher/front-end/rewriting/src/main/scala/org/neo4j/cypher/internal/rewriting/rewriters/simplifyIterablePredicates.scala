@@ -47,7 +47,8 @@ case object simplifyIterablePredicates extends Rewriter with StepSequencer.Step 
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case any @ AnyIterablePredicate(SimpleEqualsFilterScope(inLhs), list) => In(inLhs, list)(any.position)
-    case none @ NoneIterablePredicate(SimpleEqualsFilterScope(inLhs), list) => Not(In(inLhs, list)(none.position))(none.position)
+    case none @ NoneIterablePredicate(SimpleEqualsFilterScope(inLhs), list) =>
+      Not(In(inLhs, list)(none.position))(none.position)
   })
 
   override def apply(that: AnyRef): AnyRef = instance(that)
@@ -69,19 +70,21 @@ case object simplifyIterablePredicates extends Rewriter with StepSequencer.Step 
 }
 
 object SimpleEqualsFilterScope {
+
   def unapply(scope: FilterScope): Option[Expression] = scope match {
-    case FilterScope(scope, Some(EqualEquivalent(lhs, rhs)))
-      if scope == lhs && !rhs.dependencies.contains(scope) => Some(rhs)
-    case FilterScope(scope, Some(EqualEquivalent(lhs, rhs)))
-      if scope == rhs && !lhs.dependencies.contains(scope) => Some(lhs)
+    case FilterScope(scope, Some(EqualEquivalent(lhs, rhs))) if scope == lhs && !rhs.dependencies.contains(scope) =>
+      Some(rhs)
+    case FilterScope(scope, Some(EqualEquivalent(lhs, rhs))) if scope == rhs && !lhs.dependencies.contains(scope) =>
+      Some(lhs)
     case _ => None
   }
 }
 
 object EqualEquivalent {
+
   def unapply(expression: Expression): Option[(Expression, Expression)] = expression match {
-    case Equals(lhs, rhs) => Some((lhs, rhs))
+    case Equals(lhs, rhs)                      => Some((lhs, rhs))
     case In(lhs, ListLiteral(Seq(singleItem))) => Some((lhs, singleItem))
-    case _ => None
+    case _                                     => None
   }
 }

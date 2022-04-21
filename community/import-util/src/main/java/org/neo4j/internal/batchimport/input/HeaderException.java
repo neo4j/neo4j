@@ -19,15 +19,12 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-public class HeaderException extends InputException
-{
-    public HeaderException( String message )
-    {
-        super( message );
+public class HeaderException extends InputException {
+    public HeaderException(String message) {
+        super(message);
     }
 
-    public HeaderException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public HeaderException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

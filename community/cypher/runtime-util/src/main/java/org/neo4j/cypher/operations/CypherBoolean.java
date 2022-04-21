@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.operations;
 
+import static org.neo4j.values.storable.Values.FALSE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.TRUE;
+
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
 import org.neo4j.exceptions.CypherTypeException;
-import org.neo4j.exceptions.InternalException;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
@@ -50,301 +52,245 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.FALSE;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.storable.Values.TRUE;
-
 /**
  * This class contains static helper boolean methods used by the compiled expressions
  */
-@SuppressWarnings( {"ReferenceEquality"} )
-public final class CypherBoolean
-{
+@SuppressWarnings({"ReferenceEquality"})
+public final class CypherBoolean {
     private static final BooleanMapper BOOLEAN_MAPPER = new BooleanMapper();
 
-    private CypherBoolean()
-    {
-        throw new UnsupportedOperationException( "Do not instantiate" );
+    private CypherBoolean() {
+        throw new UnsupportedOperationException("Do not instantiate");
     }
 
     @CalledFromGeneratedCode
-    public static Value xor( AnyValue lhs, AnyValue rhs )
-    {
+    public static Value xor(AnyValue lhs, AnyValue rhs) {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return (lhs == TRUE) ^ (rhs == TRUE) ? TRUE : FALSE;
     }
 
     @CalledFromGeneratedCode
-    public static Value not( AnyValue in )
-    {
+    public static Value not(AnyValue in) {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return in != TRUE ? TRUE : FALSE;
     }
 
     @CalledFromGeneratedCode
-    public static Value equals( AnyValue lhs, AnyValue rhs )
-    {
+    public static Value equals(AnyValue lhs, AnyValue rhs) {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        Equality compare = lhs.ternaryEquals( rhs );
-        return switch ( compare )
-                {
-                    case TRUE -> Values.TRUE;
-                    case FALSE -> Values.FALSE;
-                    case UNDEFINED -> NO_VALUE;
-                };
+        Equality compare = lhs.ternaryEquals(rhs);
+        return switch (compare) {
+            case TRUE -> Values.TRUE;
+            case FALSE -> Values.FALSE;
+            case UNDEFINED -> NO_VALUE;
+        };
     }
 
     @CalledFromGeneratedCode
-    public static Value notEquals( AnyValue lhs, AnyValue rhs )
-    {
+    public static Value notEquals(AnyValue lhs, AnyValue rhs) {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        Equality compare = lhs.ternaryEquals( rhs );
-        return switch ( compare )
-                {
-                    case TRUE -> Values.FALSE;
-                    case FALSE -> Values.TRUE;
-                    case UNDEFINED -> NO_VALUE;
-                };
+        Equality compare = lhs.ternaryEquals(rhs);
+        return switch (compare) {
+            case TRUE -> Values.FALSE;
+            case FALSE -> Values.TRUE;
+            case UNDEFINED -> NO_VALUE;
+        };
     }
 
     @CalledFromGeneratedCode
-    public static BooleanValue regex( TextValue lhs, TextValue rhs )
-    {
+    public static BooleanValue regex(TextValue lhs, TextValue rhs) {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         String regexString = rhs.stringValue();
-        try
-        {
-            boolean matches = Pattern.compile( regexString ).matcher( lhs.stringValue() ).matches();
+        try {
+            boolean matches =
+                    Pattern.compile(regexString).matcher(lhs.stringValue()).matches();
             return matches ? TRUE : FALSE;
-        }
-        catch ( PatternSyntaxException e )
-        {
-            throw new InvalidSemanticsException( "Invalid Regex: " + e.getMessage(), null );
+        } catch (PatternSyntaxException e) {
+            throw new InvalidSemanticsException("Invalid Regex: " + e.getMessage(), null);
         }
     }
 
     @CalledFromGeneratedCode
-    public static BooleanValue regex( TextValue text, Pattern pattern )
-    {
+    public static BooleanValue regex(TextValue text, Pattern pattern) {
         assert text != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
-        boolean matches = pattern.matcher( text.stringValue() ).matches();
+        boolean matches = pattern.matcher(text.stringValue()).matches();
         return matches ? TRUE : FALSE;
     }
 
     @CalledFromGeneratedCode
-    public static Value lessThan( AnyValue lhs, AnyValue rhs )
-    {
-        if ( AnyValue.isNanAndNumber(lhs, rhs) )
-        {
+    public static Value lessThan(AnyValue lhs, AnyValue rhs) {
+        if (AnyValue.isNanAndNumber(lhs, rhs)) {
             return FALSE;
         }
-        Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
-        return switch ( comparison )
-                {
-                    case EQUAL -> {
-                        if ( lhs.isIncomparableType() )
-                        {
-                            yield NO_VALUE;
-                        }
-                        else
-                        {
-                            yield FALSE;
-                        }
-                    }
-                    case GREATER_THAN -> FALSE;
-                    case SMALLER_THAN -> TRUE;
-                    case UNDEFINED -> NO_VALUE;
-                };
+        Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare(lhs, rhs);
+        return switch (comparison) {
+            case EQUAL -> {
+                if (lhs.isIncomparableType()) {
+                    yield NO_VALUE;
+                } else {
+                    yield FALSE;
+                }
+            }
+            case GREATER_THAN -> FALSE;
+            case SMALLER_THAN -> TRUE;
+            case UNDEFINED -> NO_VALUE;
+        };
     }
 
     @CalledFromGeneratedCode
-    public static Value lessThanOrEqual( AnyValue lhs, AnyValue rhs )
-    {
-        if ( AnyValue.isNanAndNumber(lhs, rhs) )
-        {
+    public static Value lessThanOrEqual(AnyValue lhs, AnyValue rhs) {
+        if (AnyValue.isNanAndNumber(lhs, rhs)) {
             return FALSE;
         }
-        Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
-        return switch ( comparison )
-                {
-                    case GREATER_THAN -> FALSE;
-                    case EQUAL, SMALLER_THAN -> TRUE;
-                    case UNDEFINED -> NO_VALUE;
-                };
+        Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare(lhs, rhs);
+        return switch (comparison) {
+            case GREATER_THAN -> FALSE;
+            case EQUAL, SMALLER_THAN -> TRUE;
+            case UNDEFINED -> NO_VALUE;
+        };
     }
 
     @CalledFromGeneratedCode
-    public static Value greaterThan( AnyValue lhs, AnyValue rhs )
-    {
-        if ( AnyValue.isNanAndNumber(lhs, rhs) )
-        {
+    public static Value greaterThan(AnyValue lhs, AnyValue rhs) {
+        if (AnyValue.isNanAndNumber(lhs, rhs)) {
             return FALSE;
         }
-        Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
-        return switch ( comparison )
-                {
-                    case GREATER_THAN -> TRUE;
-                    case EQUAL -> {
-                        if ( lhs.isIncomparableType() )
-                        {
-                            yield NO_VALUE;
-                        }
-                        else
-                        {
-                            yield FALSE;
-                        }
-                    }
-                    case SMALLER_THAN -> FALSE;
-                    case UNDEFINED -> NO_VALUE;
-                };
+        Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare(lhs, rhs);
+        return switch (comparison) {
+            case GREATER_THAN -> TRUE;
+            case EQUAL -> {
+                if (lhs.isIncomparableType()) {
+                    yield NO_VALUE;
+                } else {
+                    yield FALSE;
+                }
+            }
+            case SMALLER_THAN -> FALSE;
+            case UNDEFINED -> NO_VALUE;
+        };
     }
 
     @CalledFromGeneratedCode
-    public static Value greaterThanOrEqual( AnyValue lhs, AnyValue rhs )
-    {
-        if ( AnyValue.isNanAndNumber(lhs, rhs) )
-        {
+    public static Value greaterThanOrEqual(AnyValue lhs, AnyValue rhs) {
+        if (AnyValue.isNanAndNumber(lhs, rhs)) {
             return FALSE;
         }
-        Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
-        return switch ( comparison )
-                {
-                    case GREATER_THAN, EQUAL -> TRUE;
-                    case SMALLER_THAN -> FALSE;
-                    case UNDEFINED -> NO_VALUE;
-                };
+        Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare(lhs, rhs);
+        return switch (comparison) {
+            case GREATER_THAN, EQUAL -> TRUE;
+            case SMALLER_THAN -> FALSE;
+            case UNDEFINED -> NO_VALUE;
+        };
     }
 
     @CalledFromGeneratedCode
-    public static Value coerceToBoolean( AnyValue value )
-    {
-        return value.map( BOOLEAN_MAPPER );
+    public static Value coerceToBoolean(AnyValue value) {
+        return value.map(BOOLEAN_MAPPER);
     }
 
     @CalledFromGeneratedCode
-    public static Value in( AnyValue lhs, AnyValue rhs )
-    {
+    public static Value in(AnyValue lhs, AnyValue rhs) {
         assert rhs != NO_VALUE;
 
-        ListValue anyValues = CypherFunctions.asList( rhs );
+        ListValue anyValues = CypherFunctions.asList(rhs);
 
         boolean seenUndefined = false;
-        for ( AnyValue value : anyValues )
-        {
-            switch ( lhs.ternaryEquals( value ) )
-            {
-            case TRUE:
-                return Values.TRUE;
-            case UNDEFINED:
-                seenUndefined = true;
-            case FALSE:
-                break;
-            default:
-                throw new IllegalStateException( "Unknown state" );
+        for (AnyValue value : anyValues) {
+            switch (lhs.ternaryEquals(value)) {
+                case TRUE:
+                    return Values.TRUE;
+                case UNDEFINED:
+                    seenUndefined = true;
+                case FALSE:
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown state");
             }
         }
 
         return seenUndefined ? NO_VALUE : Values.FALSE;
     }
 
-    private static final class BooleanMapper implements ValueMapper<Value>
-    {
+    private static final class BooleanMapper implements ValueMapper<Value> {
         @Override
-        public Value mapPath( VirtualPathValue value )
-        {
+        public Value mapPath(VirtualPathValue value) {
             return value.size() > 0 ? TRUE : FALSE;
         }
 
         @Override
-        public Value mapNode( VirtualNodeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapNode(VirtualNodeValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapRelationship( VirtualRelationshipValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapRelationship(VirtualRelationshipValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapMap( MapValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapMap(MapValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapNoValue()
-        {
+        public Value mapNoValue() {
             return NO_VALUE;
         }
 
         @Override
-        public Value mapSequence( SequenceValue value )
-        {
+        public Value mapSequence(SequenceValue value) {
             return value.length() > 0 ? TRUE : FALSE;
         }
 
         @Override
-        public Value mapText( TextValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapText(TextValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapBoolean( BooleanValue value )
-        {
+        public Value mapBoolean(BooleanValue value) {
             return value;
         }
 
         @Override
-        public Value mapNumber( NumberValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapNumber(NumberValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapDateTime( DateTimeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapDateTime(DateTimeValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapLocalDateTime( LocalDateTimeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapLocalDateTime(LocalDateTimeValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapDate( DateValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapDate(DateValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapTime( TimeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapTime(TimeValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapLocalTime( LocalTimeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapLocalTime(LocalTimeValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapDuration( DurationValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapDuration(DurationValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
 
         @Override
-        public Value mapPoint( PointValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
+        public Value mapPoint(PointValue value) {
+            throw new CypherTypeException("Don't know how to treat that as a boolean: " + value);
         }
     }
 }

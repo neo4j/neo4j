@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
@@ -28,41 +27,38 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class PointKeyStateFormatTest extends IndexKeyStateFormatTest<PointKey>
-{
+public class PointKeyStateFormatTest extends IndexKeyStateFormatTest<PointKey> {
     @Override
-    void populateValues( List<Value> values )
-    {
+    void populateValues(List<Value> values) {
         // Some points selected randomly. One for each crs.
-        values.add( Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 764544.2109309451, 181214.06418126775 ) );
-        values.add( Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, -19020.757072408567, 292885.859461074, -599001.3101378167 ) );
-        values.add( Values.pointValue( CoordinateReferenceSystem.WGS_84, -117.4416383571589, 66.28879082642959 ) );
-        values.add( Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, -62.00488758672253, 19.002727191347063, 600447.8589570583 ) );
+        values.add(Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 764544.2109309451, 181214.06418126775));
+        values.add(Values.pointValue(
+                CoordinateReferenceSystem.CARTESIAN_3D, -19020.757072408567, 292885.859461074, -599001.3101378167));
+        values.add(Values.pointValue(CoordinateReferenceSystem.WGS_84, -117.4416383571589, 66.28879082642959));
+        values.add(Values.pointValue(
+                CoordinateReferenceSystem.WGS_84_3D, -62.00488758672253, 19.002727191347063, 600447.8589570583));
     }
 
     @Override
-    Layout<PointKey,?> getLayout()
-    {
+    Layout<PointKey, ?> getLayout() {
         // Use default settings.
-        IndexSpecificSpaceFillingCurveSettings settings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-        return new PointLayout( settings );
+        IndexSpecificSpaceFillingCurveSettings settings =
+                IndexSpecificSpaceFillingCurveSettings.fromConfig(Config.defaults());
+        return new PointLayout(settings);
     }
 
     @Override
-    protected String zipName()
-    {
+    protected String zipName() {
         return "current-point-key-state-format.zip";
     }
 
     @Override
-    protected String storeFileName()
-    {
+    protected String storeFileName() {
         return "point-key-state-store";
     }
 
     @Override
-    String toDetailedString( PointKey key )
-    {
+    String toDetailedString(PointKey key) {
         return key.toString();
     }
 }

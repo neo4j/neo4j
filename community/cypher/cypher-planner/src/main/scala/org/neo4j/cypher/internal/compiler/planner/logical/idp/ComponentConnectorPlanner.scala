@@ -44,23 +44,26 @@ import scala.collection.immutable.BitSet
  * The input is a set of disconnected patterns and this class will find the
  * cheapest way to connect all components using IDP.
  */
-case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlannerTrait, config: IDPSolverConfig)
-                                    (monitor: IDPSolverMonitor)
-  extends JoinDisconnectedQueryGraphComponents {
+case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlannerTrait, config: IDPSolverConfig)(
+  monitor: IDPSolverMonitor
+) extends JoinDisconnectedQueryGraphComponents {
 
   private val cpConnector = CartesianProductComponentConnector
+
   private val joinConnectors = Seq(
     NestedIndexJoinComponentConnector(singleComponentPlanner),
-    ValueHashJoinComponentConnector,
+    ValueHashJoinComponentConnector
   )
   private val omConnector = OptionalMatchConnector
 
-  override def connectComponentsAndSolveOptionalMatch(components: Set[PlannedComponent],
-                                                      queryGraph: QueryGraph,
-                                                      interestingOrderConfig: InterestingOrderConfig,
-                                                      context: LogicalPlanningContext,
-                                                      kit: QueryPlannerKit,
-                                                      singleComponentPlanner: SingleComponentPlannerTrait): BestPlans = {
+  override def connectComponentsAndSolveOptionalMatch(
+    components: Set[PlannedComponent],
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit,
+    singleComponentPlanner: SingleComponentPlannerTrait
+  ): BestPlans = {
 
     // kit.select plans predicates and shortest path patterns. If nothing is left in this area, we can skip IDP.
     val allSolved = components.flatMap(_.queryGraph.selections.predicates)
@@ -73,27 +76,40 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
         // If there are no predicates left to be solved, that also means no joins are possible (because they would need to join on a predicate).
         // Also, the order of cartesian products does not need a search algorithm, since no Selections can be put in-between.
         // The best plan is a simple left-deep tree of cartesian products.
-        planLotsOfCartesianProducts(components, queryGraph, interestingOrderConfig, context, kit, considerSelections = false).plan
+        planLotsOfCartesianProducts(
+          components,
+          queryGraph,
+          interestingOrderConfig,
+          context,
+          kit,
+          considerSelections = false
+        ).plan
       }
     } else {
       connectWithIDP(components, queryGraph, interestingOrderConfig, context, kit)
     }
   }
 
-  private def connectWithIDP(components: Set[PlannedComponent],
-                             queryGraph: QueryGraph,
-                             interestingOrderConfig: InterestingOrderConfig,
-                             context: LogicalPlanningContext,
-                             kit: QueryPlannerKit): BestPlans = {
+  private def connectWithIDP(
+    components: Set[PlannedComponent],
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit
+  ): BestPlans = {
     val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrderConfig)
     val (goalBitAllocation, initialTodo) = GoalBitAllocation.create(components.map(_.queryGraph), queryGraph)
 
-    val joinSolverSteps = joinConnectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit, context))
-    val composedJoinSolverStep = IDPQueryGraphSolver.composeSolverSteps(queryGraph, interestingOrderConfig, kit, context, joinSolverSteps)
+    val joinSolverSteps =
+      joinConnectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit, context))
+    val composedJoinSolverStep =
+      IDPQueryGraphSolver.composeSolverSteps(queryGraph, interestingOrderConfig, kit, context, joinSolverSteps)
     val cpSolverStep = cpConnector.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit, context)
-    val composedCPSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, cpSolverStep)
+    val composedCPSolverStep =
+      IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, cpSolverStep)
     val omSolverStep = omConnector.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit, context)
-    val composedOmSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, omSolverStep)
+    val composedOmSolverStep =
+      IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, omSolverStep)
 
     // Only even generate CP plans if no joins are available, since joins will always be better.
     val generator = ((composedJoinSolverStep || composedCPSolverStep) ++ composedOmSolverStep)
@@ -119,7 +135,12 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
         case Some(outerPlan) =>
           // We pass in an empty Attributes, since we throw away these plans after cost-comparison.
           // There is no need to have all attributes correctly assigned.
-          val unnest = unnestApply(context.planningAttributes.solveds, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, Attributes(context.idGen))
+          val unnest = unnestApply(
+            context.planningAttributes.solveds,
+            context.planningAttributes.cardinalities,
+            context.planningAttributes.providedOrders,
+            Attributes(context.idGen)
+          )
           lp => {
             val connectedPlan = context.logicalPlanProducer.planTailApply(outerPlan, lp, context)
             connectedPlan.endoRewrite(unnest)
@@ -140,21 +161,24 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
 
     val seed: Seed[QueryGraph, LogicalPlan] = components.flatMap {
       case PlannedComponent(queryGraph, plan) => Set(
-        ((Set(queryGraph), false), plan.bestResult)
-      ) ++ plan.bestResultFulfillingReq.map { bestSortedResult =>
-        ((Set(queryGraph), true), bestSortedResult)
-      }
+          ((Set(queryGraph), false), plan.bestResult)
+        ) ++ plan.bestResultFulfillingReq.map { bestSortedResult =>
+          ((Set(queryGraph), true), bestSortedResult)
+        }
     }
     solver(seed, initialTodo, context)
   }
 }
 
 trait ComponentConnector {
-  def solverStep(goalBitAllocation: GoalBitAllocation,
-                 queryGraph: QueryGraph,
-                 interestingOrderConfig: InterestingOrderConfig,
-                 kit: QueryPlannerKit,
-                 context: LogicalPlanningContext): ComponentConnectorSolverStep
+
+  def solverStep(
+    goalBitAllocation: GoalBitAllocation,
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    kit: QueryPlannerKit,
+    context: LogicalPlanningContext
+  ): ComponentConnectorSolverStep
 }
 
 object GoalBitAllocation {
@@ -166,15 +190,17 @@ object GoalBitAllocation {
    * Given the components and the overall query graph, return a [[GoalBitAllocation]] and the initialTodo for the [[IDPSolver]].
    * Capture all dependencies from optional matches.
    */
-  def create(components: Set[QueryGraph],
-             queryGraph: QueryGraph): (GoalBitAllocation, Seq[QueryGraph]) = {
+  def create(components: Set[QueryGraph], queryGraph: QueryGraph): (GoalBitAllocation, Seq[QueryGraph]) = {
     val initialTodo = components.toSeq ++ queryGraph.optionalMatches
 
     // For each optional match, find dependencies to components and other optional matches
     val optionalMatchDependencies: IndexedSeq[BitSet] = queryGraph.optionalMatches.map { om =>
       om.argumentIds.iterator.map { arg =>
         val index = initialTodo.indexWhere(x => x.idsWithoutOptionalMatchesOrUpdates.contains(arg))
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(index >= 0, "Did not find which QG introduces dependency of optional match.")
+        AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+          index >= 0,
+          "Did not find which QG introduces dependency of optional match."
+        )
         startComponents + index
       }.to(BitSet)
     }

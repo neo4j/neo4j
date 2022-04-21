@@ -43,7 +43,11 @@ case object HardcodedGraphStatistics extends GraphStatistics {
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     labelId.map(_ => NODES_WITH_LABEL_CARDINALITY).getOrElse(Cardinality.SINGLE)
 
-  def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+  def patternStepCardinality(
+    fromLabel: Option[LabelId],
+    relTypeId: Option[RelTypeId],
+    toLabel: Option[LabelId]
+  ): Cardinality =
     PATTERN_STEP_CARDINALITY
 
   override def nodesAllCardinality(): Cardinality = NODES_CARDINALITY

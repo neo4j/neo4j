@@ -31,7 +31,8 @@ import org.neo4j.memory.HeapHighWaterMarkTracker
 /**
  * Empty result, as produced by a schema write.
  */
-case class SchemaRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber) extends EmptyQuerySubscription(subscriber) with RuntimeResult {
+case class SchemaRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber)
+    extends EmptyQuerySubscription(subscriber) with RuntimeResult {
 
   override def fieldNames(): Array[String] = Array.empty
 

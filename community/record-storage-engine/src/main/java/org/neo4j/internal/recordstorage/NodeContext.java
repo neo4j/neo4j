@@ -19,8 +19,13 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGroupMonitor.EMPTY;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.kernel.impl.store.record.Record.isNull;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -28,26 +33,19 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGroupMonitor.EMPTY;
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
-import static org.neo4j.kernel.impl.store.record.Record.isNull;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
-
 /**
  * Acts as a place to gather all context about locking and relevant data that has been read as {@link RelationshipModifier} goes through
  * and makes all necessary changes. This is partly performance optimization where some things that have been read can be cached
  * instead of read again, and partly to remember e.g. to what extent a particular node has been locked.
  */
-class NodeContext
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeContext.class );
+class NodeContext {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeContext.class);
 
     private final MemoryTracker memoryTracker;
     private boolean hasExclusiveGroupLock;
     private boolean hasAnyEmptyGroup;
     private boolean hasEmptyFirstGroup;
-    private RecordProxy<NodeRecord,Void> node;
+    private RecordProxy<NodeRecord, Void> node;
     private MutableIntObjectMap<DenseContext> denseContexts;
     /**
      * A relationship group ID which is a cached ID of how far a relationship group traversal has come for a node.
@@ -62,176 +60,148 @@ class NodeContext
      */
     private long groupStartingPrevId = NULL_REFERENCE.longValue();
 
-    static NodeContext createNodeContext( RecordProxy<NodeRecord,Void> node, MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap( SHALLOW_SIZE );
-        return new NodeContext( node, memoryTracker );
+    static NodeContext createNodeContext(RecordProxy<NodeRecord, Void> node, MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(SHALLOW_SIZE);
+        return new NodeContext(node, memoryTracker);
     }
 
-    private NodeContext( RecordProxy<NodeRecord,Void> node, MemoryTracker memoryTracker )
-    {
+    private NodeContext(RecordProxy<NodeRecord, Void> node, MemoryTracker memoryTracker) {
         this.node = node;
         this.groupStartingId = node.forReadingLinkage().getNextRel();
         this.memoryTracker = memoryTracker;
     }
 
-    DenseContext denseContext( int type )
-    {
-        if ( denseContexts == null )
-        {
-            denseContexts = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
+    DenseContext denseContext(int type) {
+        if (denseContexts == null) {
+            denseContexts = HeapTrackingCollections.newIntObjectHashMap(memoryTracker);
         }
-        return denseContexts.getIfAbsentPut( type, () -> new DenseContext( memoryTracker ) );
+        return denseContexts.getIfAbsentPut(type, () -> new DenseContext(memoryTracker));
     }
 
-    DenseContext denseContextIfExists( int type )
-    {
-        return denseContexts != null ? denseContexts.get( type ) : null;
+    DenseContext denseContextIfExists(int type) {
+        return denseContexts != null ? denseContexts.get(type) : null;
     }
 
-    void clearDenseContext()
-    {
-        if ( denseContexts != null )
-        {
-            denseContexts.forEachValue( ctx -> ctx.group = null );
+    void clearDenseContext() {
+        if (denseContexts != null) {
+            denseContexts.forEachValue(ctx -> ctx.group = null);
         }
         groupStartingPrevId = NULL_REFERENCE.longValue();
     }
 
-    void markExclusiveGroupLock()
-    {
+    void markExclusiveGroupLock() {
         hasExclusiveGroupLock = true;
         clearDenseContext();
     }
 
-    boolean hasExclusiveGroupLock()
-    {
+    boolean hasExclusiveGroupLock() {
         return hasExclusiveGroupLock;
     }
 
-    RecordProxy<NodeRecord,Void> node()
-    {
+    RecordProxy<NodeRecord, Void> node() {
         return node;
     }
 
-    void setNode( RecordProxy<NodeRecord,Void> node )
-    {
+    void setNode(RecordProxy<NodeRecord, Void> node) {
         this.node = node;
     }
 
-    void setCurrentGroup( RecordProxy<RelationshipGroupRecord,Integer> group )
-    {
-        if ( group != null )
-        {
+    void setCurrentGroup(RecordProxy<RelationshipGroupRecord, Integer> group) {
+        if (group != null) {
             groupStartingId = group.getKey();
             groupStartingPrevId = group.forReadingLinkage().getPrev();
-        }
-        else
-        {
+        } else {
             groupStartingId = NULL_REFERENCE.longValue();
             groupStartingPrevId = NULL_REFERENCE.longValue();
         }
     }
 
-    void checkEmptyGroup( RelationshipGroupRecord group )
-    {
-        if ( !group.isCreated() && group.inUse() && RelationshipGroupGetter.groupIsEmpty( group ) )
-        {
+    void checkEmptyGroup(RelationshipGroupRecord group) {
+        if (!group.isCreated() && group.inUse() && RelationshipGroupGetter.groupIsEmpty(group)) {
             hasAnyEmptyGroup = true;
-            if ( isNull( group.getPrev() ) )
-            {
+            if (isNull(group.getPrev())) {
                 hasEmptyFirstGroup = true;
             }
         }
     }
 
-    boolean hasAnyEmptyGroup()
-    {
+    boolean hasAnyEmptyGroup() {
         return hasAnyEmptyGroup;
     }
 
-    boolean hasEmptyFirstGroup()
-    {
+    boolean hasEmptyFirstGroup() {
         return hasEmptyFirstGroup;
     }
 
-    long groupStartingId()
-    {
+    long groupStartingId() {
         return groupStartingId;
     }
 
-    long groupStartingPrevId()
-    {
+    long groupStartingPrevId() {
         return groupStartingPrevId;
     }
 
     /**
      * Additional context for dense nodes, since dense nodes have split relationship chains by direction.
      */
-    static class DenseContext
-    {
+    static class DenseContext {
         private static final int NUM_INSERTION_POINTS = 3;
-        private static final long SHALLOW_SIZE = shallowSizeOfInstance( DenseContext.class ) + shallowSizeOfObjectArray( NUM_INSERTION_POINTS );
+        private static final long SHALLOW_SIZE =
+                shallowSizeOfInstance(DenseContext.class) + shallowSizeOfObjectArray(NUM_INSERTION_POINTS);
 
         /**
          * Places in each relationship chain (out, in, loop) that have been exclusive locked and suitable for inserting new relationships at.
          * The insertion point is between {@link RelationshipRecord#getId()} and {@link RelationshipRecord#getNextRel(long)}.
          * If an insertion point is {@code null} it means that the insertion point is first in the chain.
          */
-        private final RecordProxy<RelationshipRecord,Void>[] insertionPoints = new RecordProxy[NUM_INSERTION_POINTS];
-        private long groupId = NULL_REFERENCE.longValue();
-        private RecordProxy<RelationshipGroupRecord,Integer> group;
+        private final RecordProxy<RelationshipRecord, Void>[] insertionPoints = new RecordProxy[NUM_INSERTION_POINTS];
 
-        DenseContext( MemoryTracker memoryTracker )
-        {
-            memoryTracker.allocateHeap( SHALLOW_SIZE );
+        private long groupId = NULL_REFERENCE.longValue();
+        private RecordProxy<RelationshipGroupRecord, Integer> group;
+
+        DenseContext(MemoryTracker memoryTracker) {
+            memoryTracker.allocateHeap(SHALLOW_SIZE);
         }
 
-        RelationshipGroupRecord getOrLoadGroup( RelationshipGroupGetter relationshipGroupGetter, NodeRecord node, int type,
-                RecordAccess<RelationshipGroupRecord,Integer> relGroupRecords )
-        {
-            if ( group == null )
-            {
-                if ( !isNull( groupId ) )
-                {
-                    group = relGroupRecords.getOrLoad( groupId, null );
-                }
-                else
-                {
-                    setGroup( relationshipGroupGetter.getRelationshipGroup( node, type, relGroupRecords, EMPTY ).group() );
+        RelationshipGroupRecord getOrLoadGroup(
+                RelationshipGroupGetter relationshipGroupGetter,
+                NodeRecord node,
+                int type,
+                RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords) {
+            if (group == null) {
+                if (!isNull(groupId)) {
+                    group = relGroupRecords.getOrLoad(groupId, null);
+                } else {
+                    setGroup(relationshipGroupGetter
+                            .getRelationshipGroup(node, type, relGroupRecords, EMPTY)
+                            .group());
                 }
             }
             return group.forReadingLinkage();
         }
 
-        void setGroup( RecordProxy<RelationshipGroupRecord,Integer> group )
-        {
+        void setGroup(RecordProxy<RelationshipGroupRecord, Integer> group) {
             this.group = group;
             this.groupId = group.getKey();
         }
 
-        RecordProxy<RelationshipGroupRecord,Integer> group()
-        {
+        RecordProxy<RelationshipGroupRecord, Integer> group() {
             return group;
         }
 
-        RecordProxy<RelationshipRecord,Void> insertionPoint( int directionIndex )
-        {
+        RecordProxy<RelationshipRecord, Void> insertionPoint(int directionIndex) {
             return insertionPoints[directionIndex];
         }
 
-        void setInsertionPoint( int directionIndex, RecordProxy<RelationshipRecord,Void> insertionPoint )
-        {
+        void setInsertionPoint(int directionIndex, RecordProxy<RelationshipRecord, Void> insertionPoint) {
             insertionPoints[directionIndex] = insertionPoint;
         }
 
-        void markInsertionPointsAsChanged()
-        {
-            for ( RecordProxy<RelationshipRecord,Void> insertion : insertionPoints )
-            {
-                if ( insertion != null )
-                {
-                    // Since this insertion point may be used for other relationships, i.e. it may be loaded again for another
+        void markInsertionPointsAsChanged() {
+            for (RecordProxy<RelationshipRecord, Void> insertion : insertionPoints) {
+                if (insertion != null) {
+                    // Since this insertion point may be used for other relationships, i.e. it may be loaded again for
+                    // another
                     // insertion point, we have to pin the relationship so that they get the same proxy
                     insertion.forChangingData();
                 }

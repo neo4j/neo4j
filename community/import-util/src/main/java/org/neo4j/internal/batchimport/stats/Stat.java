@@ -22,8 +22,7 @@ package org.neo4j.internal.batchimport.stats;
 /**
  * Statistic about a particular thing.
  */
-public interface Stat
-{
+public interface Stat {
     DetailLevel detailLevel();
 
     long asLong();

@@ -17,9 +17,9 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 
 class ReplaceLiteralDynamicPropertyLookupsTest extends CypherFunSuite with AstConstructionTestSupport {
 

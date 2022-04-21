@@ -25,15 +25,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.time.SystemNanoClock;
 
-@Path( LegacyTransactionService.DB_TRANSACTION_PATH )
-public class LegacyTransactionService extends AbstractCypherResource
-{
+@Path(LegacyTransactionService.DB_TRANSACTION_PATH)
+public class LegacyTransactionService extends AbstractCypherResource {
     private static final String TRANSACTION = "transaction";
     static final String DB_TRANSACTION_PATH = "/" + TRANSACTION;
 
@@ -44,22 +42,25 @@ public class LegacyTransactionService extends AbstractCypherResource
             @Context UriInfo uriInfo,
             @Context MemoryPool memoryPool,
             @Context InternalLog log,
-            @Context SystemNanoClock clock )
-    {
-        super( httpTransactionManager, uriInfo, memoryPool, log, databaseResolver.defaultDatabase( request.getUserPrincipal().getName() ), clock );
+            @Context SystemNanoClock clock) {
+        super(
+                httpTransactionManager,
+                uriInfo,
+                memoryPool,
+                log,
+                databaseResolver.defaultDatabase(request.getUserPrincipal().getName()),
+                clock);
     }
 
     @Override
-    protected URI dbUri( UriInfo uriInfo, String databaseName )
-    {
+    protected URI dbUri(UriInfo uriInfo, String databaseName) {
         UriBuilder builder = uriInfo.getBaseUriBuilder();
         return builder.build();
     }
 
     @Override
-    protected URI cypherUri( UriInfo uriInfo, String databaseName )
-    {
+    protected URI cypherUri(UriInfo uriInfo, String databaseName) {
         UriBuilder builder = uriInfo.getBaseUriBuilder();
-        return builder.path( TRANSACTION ).build();
+        return builder.path(TRANSACTION).build();
     }
 }

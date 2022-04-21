@@ -19,6 +19,13 @@
  */
 package cypher.features
 
+import org.neo4j.cypher.testing.api.Incoming
+import org.neo4j.cypher.testing.api.Node
+import org.neo4j.cypher.testing.api.Outgoing
+import org.neo4j.cypher.testing.api.Path
+import org.neo4j.cypher.testing.api.Relationship
+import org.neo4j.values.storable.DurationValue
+
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -26,13 +33,6 @@ import java.time.OffsetTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAmount
-
-import org.neo4j.cypher.testing.api.Incoming
-import org.neo4j.cypher.testing.api.Node
-import org.neo4j.cypher.testing.api.Outgoing
-import org.neo4j.cypher.testing.api.Path
-import org.neo4j.cypher.testing.api.Relationship
-import org.neo4j.values.storable.DurationValue
 
 object CypherTestValueToString extends (Any => String) {
 
@@ -64,11 +64,9 @@ object CypherTestValueToString extends (Any => String) {
         val properties = m.map {
           case (k, v) => (k, CypherTestValueToString(v))
         }
-        s"{${
-          properties.map {
-            case (k, v) => s"$k: $v"
-          }.mkString(", ")
-        }}"
+        s"{${properties.map {
+          case (k, v) => s"$k: $v"
+        }.mkString(", ")}}"
 
       case path: Path =>
         val string = path.connections.foldLeft(CypherTestValueToString(path.startNode)) {
@@ -80,12 +78,12 @@ object CypherTestValueToString extends (Any => String) {
         s"<$string>"
 
       //  TCK values parser expects escaped backslashes or single quotes so we have to mirror that here
-      case s: String         => s"'${s.replace("\\", "\\\\").replace("'", "\\'")}'"
-      case l: Long           => l.toString
-      case i: Integer        => i.toString
-      case d: Double         => d.toString
-      case f: Float          => f.toString
-      case b: Boolean        => b.toString
+      case s: String  => s"'${s.replace("\\", "\\\\").replace("'", "\\'")}'"
+      case l: Long    => l.toString
+      case i: Integer => i.toString
+      case d: Double  => d.toString
+      case f: Float   => f.toString
+      case b: Boolean => b.toString
       // TODO workaround to escape date time strings until TCK error
       // with colons in unescaped strings is fixed.
       case x: LocalTime      => s"'${x.toString}'"
@@ -95,7 +93,12 @@ object CypherTestValueToString extends (Any => String) {
       case x: ZonedDateTime  => s"'${x.toString}'"
       case x: TemporalAmount =>
         // Cypher Duration type is represented as TemporalAmount and should always have these 4 fields:
-        val duration = DurationValue.duration(x.get(ChronoUnit.MONTHS), x.get(ChronoUnit.DAYS), x.get(ChronoUnit.SECONDS), x.get(ChronoUnit.NANOS))
+        val duration = DurationValue.duration(
+          x.get(ChronoUnit.MONTHS),
+          x.get(ChronoUnit.DAYS),
+          x.get(ChronoUnit.SECONDS),
+          x.get(ChronoUnit.NANOS)
+        )
         // The tests expect to string of the duration to be in a specific format, which DurationValue can produce
         s"'${duration.toString}'"
 

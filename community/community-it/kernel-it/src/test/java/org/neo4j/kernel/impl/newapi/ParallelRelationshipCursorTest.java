@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class ParallelRelationshipCursorTest extends ParallelRelationshipCursorTestBase<ReadTestSupport>
-{
+public class ParallelRelationshipCursorTest extends ParallelRelationshipCursorTestBase<ReadTestSupport> {
     @Override
-    public ReadTestSupport newTestSupport()
-    {
+    public ReadTestSupport newTestSupport() {
         return new ReadTestSupport();
     }
 }

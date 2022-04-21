@@ -37,14 +37,18 @@ import java.util.Comparator
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
-case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Comparator[ReadableRow])
-                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Comparator[ReadableRow])(val id: Id =
+  Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val limit = SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(countExpression, state, "LIMIT")
     if (limit == 0 || input.isEmpty) return ClosingIterator.empty
 
-    val scopedMemoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
+    val scopedMemoryTracker =
+      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     val topTable = new DefaultComparatorTopTable[CypherRow](comparator, limit, scopedMemoryTracker)
     state.query.resources.trace(topTable)
 
@@ -70,10 +74,13 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
  * Special case for when we only have one element, in this case it is no idea to store
  * an array, instead just store a single value.
  */
-case class Top1Pipe(source: Pipe, comparator: Comparator[ReadableRow])
-                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class Top1Pipe(source: Pipe, comparator: Comparator[ReadableRow])(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     if (input.isEmpty) ClosingIterator.empty
     else {
 
@@ -94,10 +101,13 @@ case class Top1Pipe(source: Pipe, comparator: Comparator[ReadableRow])
 /*
  * Special case for when we only want one element, and all others that have the same value (tied for first place)
  */
-case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
-                           (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     if (input.isEmpty)
       ClosingIterator.empty
     else {

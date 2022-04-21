@@ -19,23 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import org.neo4j.collection.RawIterator;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.internal.Version;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.virtual.VirtualValues;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,425 +34,428 @@ import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class SystemBuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBase
-{
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.internal.Version;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.VirtualValues;
+
+class SystemBuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBase {
     @Override
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         // This makes sure that "db" is always system in this file.
         // It is not initialized with the security model and you should never try to change to a user db
         return SYSTEM_DATABASE_NAME;
     }
 
     @Test
-    void databaseInfo() throws ProcedureException
-    {
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "info" ) ).id(), new AnyValue[0], EMPTY );
+    void databaseInfo() throws ProcedureException {
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("db", "info")).id(), new AnyValue[0], EMPTY);
 
-        var procedureResult = asList( stream );
-        assertFalse( procedureResult.isEmpty() );
-        var dbInfoRow = procedureResult.get( 0 );
-        assertThat( dbInfoRow ).contains( stringValue( SYSTEM_DATABASE_NAME ) );
-        assertThat( dbInfoRow ).hasSize( 3 );
+        var procedureResult = asList(stream);
+        assertFalse(procedureResult.isEmpty());
+        var dbInfoRow = procedureResult.get(0);
+        assertThat(dbInfoRow).contains(stringValue(SYSTEM_DATABASE_NAME));
+        assertThat(dbInfoRow).hasSize(3);
     }
 
     @Test
-    void dbmsInfo() throws ProcedureException
-    {
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "info" ) ).id(), new AnyValue[0], EMPTY );
+    void dbmsInfo() throws ProcedureException {
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("dbms", "info")).id(), new AnyValue[0], EMPTY);
 
-        var procedureResult = asList( stream );
-        assertFalse( procedureResult.isEmpty() );
-        var dbmsInfoRow = procedureResult.get( 0 );
-        assertThat( dbmsInfoRow ).contains( stringValue( SYSTEM_DATABASE_NAME ) );
-        assertThat( dbmsInfoRow ).hasSize( 3 );
+        var procedureResult = asList(stream);
+        assertFalse(procedureResult.isEmpty());
+        var dbmsInfoRow = procedureResult.get(0);
+        assertThat(dbmsInfoRow).contains(stringValue(SYSTEM_DATABASE_NAME));
+        assertThat(dbmsInfoRow).hasSize(3);
     }
 
     @Test
-    void listAllLabels() throws Throwable
-    {
+    void listAllLabels() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
         long nodeId = transaction.dataWrite().nodeCreate();
-        int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
-        transaction.dataWrite().nodeAddLabel( nodeId, labelId );
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName("MyLabel");
+        transaction.dataWrite().nodeAddLabel(nodeId, labelId);
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.labels" ).hasNext());
+            assertFalse(tx.execute("CALL db.labels").hasNext());
         }
     }
 
     @Test
-    void listPropertyKeys() throws Throwable
-    {
+    void listPropertyKeys() throws Throwable {
         // Given
         TokenWrite ops = tokenWriteInNewTransaction();
-        ops.propertyKeyGetOrCreateForName( "MyProp" );
+        ops.propertyKeyGetOrCreateForName("MyProp");
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.propertyKeys" ).hasNext());
+            assertFalse(tx.execute("CALL db.propertyKeys").hasNext());
         }
     }
 
     @Test
-    void listRelationshipTypes() throws Throwable
-    {
+    void listRelationshipTypes() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
-        int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "MyRelType" );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+        int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName("MyRelType");
         long startNodeId = transaction.dataWrite().nodeCreate();
         long endNodeId = transaction.dataWrite().nodeCreate();
-        transaction.dataWrite().relationshipCreate( startNodeId, relType, endNodeId );
+        transaction.dataWrite().relationshipCreate(startNodeId, relType, endNodeId);
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.relationshipTypes" ).hasNext());
+            assertFalse(tx.execute("CALL db.relationshipTypes").hasNext());
         }
     }
 
     @Test
-    void listAllComponentsShouldWork() throws Throwable
-    {
+    void listAllComponentsShouldWork() throws Throwable {
         // its NOT a dummy procedure on system
 
         // When
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new AnyValue[0], EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(procedureName("dbms", "components"))
+                                .id(),
+                        new AnyValue[0],
+                        EMPTY);
 
         // Then
-        assertThat( asList( stream ) ).containsExactly(
-                new AnyValue[]{stringValue( "Neo4j Kernel" ), VirtualValues.list( stringValue( Version.getNeo4jVersion() ) ), stringValue( "community" )} );
+        assertThat(asList(stream)).containsExactly(new AnyValue[] {
+            stringValue("Neo4j Kernel"),
+            VirtualValues.list(stringValue(Version.getNeo4jVersion())),
+            stringValue("community")
+        });
 
         commit();
     }
 
     @Test
-    void listAllIndexes() throws Throwable
-    {
+    void listAllIndexes() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
-        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
-        LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooBarDescriptor ).withName( "person foo bar index" ) );
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName("Age");
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
+        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName("bar");
+        LabelSchemaDescriptor personFooDescriptor = forLabel(labelId1, propertyKeyId1);
+        LabelSchemaDescriptor ageFooDescriptor = forLabel(labelId2, propertyKeyId1);
+        LabelSchemaDescriptor personFooBarDescriptor = forLabel(labelId1, propertyKeyId1, propertyKeyId2);
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooDescriptor).withName("person foo index"));
+        transaction
+                .schemaWrite()
+                .uniquePropertyConstraintCreate(
+                        uniqueForSchema(ageFooDescriptor).withName("constraint name"));
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooBarDescriptor).withName("person foo bar index"));
         commit();
 
-        //let indexes come online
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, MINUTES );
+        // let indexes come online
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, MINUTES);
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.indexes" ).hasNext());
+            assertFalse(tx.execute("CALL db.indexes").hasNext());
         }
     }
 
     @Test
-    void awaitIndexes() throws Throwable
-    {
+    void awaitIndexes() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
-        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
-        LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooBarDescriptor ).withName( "person foo bar index" ) );
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName("Age");
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
+        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName("bar");
+        LabelSchemaDescriptor personFooDescriptor = forLabel(labelId1, propertyKeyId1);
+        LabelSchemaDescriptor ageFooDescriptor = forLabel(labelId2, propertyKeyId1);
+        LabelSchemaDescriptor personFooBarDescriptor = forLabel(labelId1, propertyKeyId1, propertyKeyId2);
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooDescriptor).withName("person foo index"));
+        transaction
+                .schemaWrite()
+                .uniquePropertyConstraintCreate(
+                        uniqueForSchema(ageFooDescriptor).withName("constraint name"));
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooBarDescriptor).withName("person foo bar index"));
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
             // this will always be true because that procedure returns void BUT it proves that it runs on system
-            assertFalse( tx.execute( "CALL db.awaitIndexes(10)" ).hasNext());
+            assertFalse(tx.execute("CALL db.awaitIndexes(10)").hasNext());
         }
     }
 
     @Test
-    void awaitIndex() throws Throwable
-    {
+    void awaitIndex() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
+        LabelSchemaDescriptor personFooDescriptor = forLabel(labelId1, propertyKeyId1);
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooDescriptor).withName("person foo index"));
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
             // this will always be true because that procedure returns void BUT it proves that it runs on system
-            assertFalse( tx.execute( "CALL db.awaitIndex('person foo index',10)" ).hasNext());
+            assertFalse(tx.execute("CALL db.awaitIndex('person foo index',10)").hasNext());
         }
     }
 
     @Test
-    void listConstraints() throws Throwable
-    {
+    void listConstraints() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
         TokenWrite tokenWrite = transaction.tokenWrite();
-        int labelId = tokenWrite.labelGetOrCreateForName( "Label" );
-        int propId = tokenWrite.propertyKeyGetOrCreateForName( "property" );
+        int labelId = tokenWrite.labelGetOrCreateForName("Label");
+        int propId = tokenWrite.propertyKeyGetOrCreateForName("property");
         SchemaWrite schemaWrite = transaction.schemaWrite();
-        schemaWrite.uniquePropertyConstraintCreate( uniqueForSchema( forLabel( labelId, propId ) ).withName( "my_constraint" ) );
+        schemaWrite.uniquePropertyConstraintCreate(
+                uniqueForSchema(forLabel(labelId, propId)).withName("my_constraint"));
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.constraints" ).hasNext() );
+            assertFalse(tx.execute("CALL db.constraints").hasNext());
         }
     }
 
     @Test
-    void resampleIndex() throws Throwable
-    {
+    void resampleIndex() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
+        LabelSchemaDescriptor personFooDescriptor = forLabel(labelId1, propertyKeyId1);
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooDescriptor).withName("person foo index"));
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
             // this will always be true because that procedure returns void BUT it proves that it runs on system
-            assertFalse( tx.execute( "CALL db.resampleIndex('person foo index')" ).hasNext());
+            assertFalse(tx.execute("CALL db.resampleIndex('person foo index')").hasNext());
         }
     }
 
     @Test
-    void resampleOutdatedIndexes() throws Throwable
-    {
+    void resampleOutdatedIndexes() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
+        LabelSchemaDescriptor personFooDescriptor = forLabel(labelId1, propertyKeyId1);
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooDescriptor).withName("person foo index"));
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
             // this will always be true because that procedure returns void BUT it proves that it runs on system
-            assertFalse( tx.execute( "CALL db.resampleOutdatedIndexes" ).hasNext());
+            assertFalse(tx.execute("CALL db.resampleOutdatedIndexes").hasNext());
         }
     }
 
     @Test
-    void awaitEventuallyConsistentIndexRefresh() throws Throwable
-    {
+    void awaitEventuallyConsistentIndexRefresh() throws Throwable {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName("Person");
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
+        LabelSchemaDescriptor personFooDescriptor = forLabel(labelId1, propertyKeyId1);
+        transaction
+                .schemaWrite()
+                .indexCreate(IndexPrototype.forSchema(personFooDescriptor).withName("person foo index"));
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
             // this will always be true because that procedure returns void BUT it proves that it runs on system
-            assertFalse( tx.execute( "CALL db.index.fulltext.awaitEventuallyConsistentIndexRefresh" ).hasNext());
+            assertFalse(tx.execute("CALL db.index.fulltext.awaitEventuallyConsistentIndexRefresh")
+                    .hasNext());
         }
     }
 
     @Test
-    void queryNodes()
-    {
+    void queryNodes() {
         // Don't need any setup because creating those indexes is also faked on system so we cannot test against it
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.index.fulltext.queryNodes('businessNameIndex', 'pizza')" ).hasNext());
+            assertFalse(tx.execute("CALL db.index.fulltext.queryNodes('businessNameIndex', 'pizza')")
+                    .hasNext());
         }
     }
 
     @Test
-    void queryRelationships()
-    {
+    void queryRelationships() {
         // Don't need any setup because creating those indexes is also faked on system so we cannot test against it
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.index.fulltext.queryRelationships('businessNameIndex', 'pizza')" ).hasNext());
+            assertFalse(tx.execute("CALL db.index.fulltext.queryRelationships('businessNameIndex', 'pizza')")
+                    .hasNext());
         }
     }
 
     @Test
-    void nodeTypeProperties() throws Throwable
-    {
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+    void nodeTypeProperties() throws Throwable {
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
         long nodeId = transaction.dataWrite().nodeCreate();
         transaction.dataWrite().nodeCreate();
-        int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "greeting" );
-        transaction.dataWrite().nodeSetProperty( nodeId,propId, stringValue( "Hi!" ) );
+        int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName("greeting");
+        transaction.dataWrite().nodeSetProperty(nodeId, propId, stringValue("Hi!"));
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.schema.nodeTypeProperties" ).hasNext());
+            assertFalse(tx.execute("CALL db.schema.nodeTypeProperties").hasNext());
         }
     }
 
     @Test
-    void relTypeProperties() throws Throwable
-    {
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "REL" );
-        int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "greeting" );
+    void relTypeProperties() throws Throwable {
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName("REL");
+        int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName("greeting");
         long nodeId = transaction.dataWrite().nodeCreate();
-        long relId = transaction.dataWrite().relationshipCreate( nodeId, type, nodeId );
-        transaction.dataWrite().relationshipCreate( nodeId, type, nodeId );
-        transaction.dataWrite().relationshipSetProperty( relId,propId, stringValue( "Hi!" ) );
+        long relId = transaction.dataWrite().relationshipCreate(nodeId, type, nodeId);
+        transaction.dataWrite().relationshipCreate(nodeId, type, nodeId);
+        transaction.dataWrite().relationshipSetProperty(relId, propId, stringValue("Hi!"));
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.schema.relTypeProperties" ).hasNext());
+            assertFalse(tx.execute("CALL db.schema.relTypeProperties").hasNext());
         }
     }
 
     @Test
-    void schemaVisualization() throws Throwable
-    {
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "REL" );
-        int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "greeting" );
+    void schemaVisualization() throws Throwable {
+        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
+        int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName("REL");
+        int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName("greeting");
         long nodeId = transaction.dataWrite().nodeCreate();
-        long relId = transaction.dataWrite().relationshipCreate( nodeId, type, nodeId );
-        transaction.dataWrite().relationshipCreate( nodeId, type, nodeId );
-        transaction.dataWrite().relationshipSetProperty( relId,propId, stringValue( "Hi!" ) );
+        long relId = transaction.dataWrite().relationshipCreate(nodeId, type, nodeId);
+        transaction.dataWrite().relationshipCreate(nodeId, type, nodeId);
+        transaction.dataWrite().relationshipSetProperty(relId, propId, stringValue("Hi!"));
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.schema.visualization" ).hasNext());
+            assertFalse(tx.execute("CALL db.schema.visualization").hasNext());
         }
     }
 
     @Test
-    void stats()
-    {
+    void stats() {
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.stats.collect('QUERIES')" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.clear('QUERIES')" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.retrieve('TOKENS')" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.retrieveAllAnonymized('myGraphToken')" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.status" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.stop('QUERIES')" ).hasNext());
+            assertFalse(tx.execute("CALL db.stats.collect('QUERIES')").hasNext());
+            assertFalse(tx.execute("CALL db.stats.clear('QUERIES')").hasNext());
+            assertFalse(tx.execute("CALL db.stats.retrieve('TOKENS')").hasNext());
+            assertFalse(tx.execute("CALL db.stats.retrieveAllAnonymized('myGraphToken')")
+                    .hasNext());
+            assertFalse(tx.execute("CALL db.stats.status").hasNext());
+            assertFalse(tx.execute("CALL db.stats.stop('QUERIES')").hasNext());
         }
 
-        db.executeTransactionally( "CREATE USER bar SET PASSWORD 'f00' CHANGE NOT REQUIRED" );
+        db.executeTransactionally("CREATE USER bar SET PASSWORD 'f00' CHANGE NOT REQUIRED");
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
-            assertFalse( tx.execute( "CALL db.stats.collect('QUERIES')" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.clear('QUERIES')" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.retrieve('TOKENS')" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.retrieveAllAnonymized('myGraphToken')" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.status" ).hasNext());
-            assertFalse( tx.execute( "CALL db.stats.stop('QUERIES')" ).hasNext());
+            assertFalse(tx.execute("CALL db.stats.collect('QUERIES')").hasNext());
+            assertFalse(tx.execute("CALL db.stats.clear('QUERIES')").hasNext());
+            assertFalse(tx.execute("CALL db.stats.retrieve('TOKENS')").hasNext());
+            assertFalse(tx.execute("CALL db.stats.retrieveAllAnonymized('myGraphToken')")
+                    .hasNext());
+            assertFalse(tx.execute("CALL db.stats.status").hasNext());
+            assertFalse(tx.execute("CALL db.stats.stop('QUERIES')").hasNext());
         }
     }
 
     @Test
-    void prepareForReplanningShouldHaveEmptyResult()
-    {
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
+    void prepareForReplanningShouldHaveEmptyResult() {
+        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then
             // this will always be true because that procedure returns void BUT it proves that it runs on system
-            assertFalse( tx.execute( "CALL db.prepareForReplanning" ).hasNext());
+            assertFalse(tx.execute("CALL db.prepareForReplanning").hasNext());
         }
     }
 
     @Test
-    void checkCommunityProceduresThatAreNotAllowedOnSystem()
-    {
+    void checkCommunityProceduresThatAreNotAllowedOnSystem() {
         List<String> queries = List.of(
                 "CALL db.createLabel('Foo')",
                 "CALL db.createProperty('bar')",
                 "CALL db.createRelationshipType('BAZ')",
-                "CALL tx.setMetaData( { User: 'Sascha' } )" );
+                "CALL tx.setMetaData( { User: 'Sascha' } )");
 
         // First validate that all queries can actually run on normal db
-        final GraphDatabaseService defaultDb = openDatabase( DEFAULT_DATABASE_NAME );
-        for ( String q : queries )
-        {
-            try ( org.neo4j.graphdb.Transaction tx = defaultDb.beginTx() )
-            {
-                tx.execute( q ).close();
+        final GraphDatabaseService defaultDb = openDatabase(DEFAULT_DATABASE_NAME);
+        for (String q : queries) {
+            try (org.neo4j.graphdb.Transaction tx = defaultDb.beginTx()) {
+                tx.execute(q).close();
                 tx.commit();
             }
         }
 
-        for ( String q : queries )
-        {
-            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-            {
+        for (String q : queries) {
+            try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
                 // When & Then
-                RuntimeException exception = assertThrows( RuntimeException.class, () -> tx.execute( q ) );
-                assertTrue( exception.getMessage()
-                                .startsWith( "Not a recognised system command or procedure. This Cypher command can only be executed in a user database:" ),
-                        "Wrong error message for '" + q + "' => " + exception.getMessage() );
+                RuntimeException exception = assertThrows(RuntimeException.class, () -> tx.execute(q));
+                assertTrue(
+                        exception
+                                .getMessage()
+                                .startsWith(
+                                        "Not a recognised system command or procedure. This Cypher command can only be executed in a user database:"),
+                        "Wrong error message for '" + q + "' => " + exception.getMessage());
             }
         }
     }
 
     @Test
-    void failWhenCallingNonExistingProcedures()
-    {
-        assertThrows( ProcedureException.class, () -> procs().procedureCallDbms( -1, new AnyValue[0], EMPTY ) );
+    void failWhenCallingNonExistingProcedures() {
+        assertThrows(ProcedureException.class, () -> procs().procedureCallDbms(-1, new AnyValue[0], EMPTY));
     }
 
     @Test
-    void failWhenCallingNonSystemProcedures()
-    {
-        assertThrows( RuntimeException.class, () -> {
-            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-            {
-                tx.execute( "CALL db.createLabel('foo')" );
+    void failWhenCallingNonSystemProcedures() {
+        assertThrows(RuntimeException.class, () -> {
+            try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
+                tx.execute("CALL db.createLabel('foo')");
             }
-        } );
+        });
     }
 }

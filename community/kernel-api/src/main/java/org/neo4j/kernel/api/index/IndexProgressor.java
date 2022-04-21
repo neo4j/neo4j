@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.index;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
-
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.TokenSet;
@@ -54,8 +53,7 @@ import org.neo4j.values.storable.Value;
  *                 client <--------------
  *   <-----------
  */
-public interface IndexProgressor extends AutoCloseable
-{
+public interface IndexProgressor extends AutoCloseable {
     /**
      * Progress through the index until the next accepted entry. Entries are feed to a Client, which
      * is setup in an implementation specific way.
@@ -73,8 +71,7 @@ public interface IndexProgressor extends AutoCloseable
     /**
      * Client which accepts entities and some of their property values.
      */
-    interface EntityValueClient
-    {
+    interface EntityValueClient {
         /**
          * Setup the client for progressing using the supplied progressor. The values feed in accept map to the
          * propertyIds provided here. Called by index implementation.
@@ -89,8 +86,13 @@ public interface IndexProgressor extends AutoCloseable
          * property values together with entity ids.
          * @param query The query of this progression
          */
-        void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
-                         boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query );
+        void initialize(
+                IndexDescriptor descriptor,
+                IndexProgressor progressor,
+                AccessMode accessMode,
+                boolean indexIncludesTransactionState,
+                IndexQueryConstraints constraints,
+                PropertyIndexQuery... query);
 
         /**
          * Accept the entity id and values of a candidate index entry. Return true if the entry is
@@ -100,7 +102,7 @@ public interface IndexProgressor extends AutoCloseable
          * @param values the values of the candidate index entry
          * @return true if the entry is accepted, false otherwise
          */
-        boolean acceptEntity( long reference, float score, Value... values );
+        boolean acceptEntity(long reference, float score, Value... values);
 
         boolean needsValues();
     }
@@ -108,8 +110,7 @@ public interface IndexProgressor extends AutoCloseable
     /**
      * Client which accepts nodes and some of their labels.
      */
-    interface EntityTokenClient
-    {
+    interface EntityTokenClient {
         /**
          * Setup the client for progressing using the supplied progressor. The values fed in to acceptEntity map to the
          * tokenId provided here. Called by index implementation.
@@ -117,7 +118,7 @@ public interface IndexProgressor extends AutoCloseable
          * @param token The token id to query
          * @param order Required order the index should return entity ids in.
          */
-        void initialize( IndexProgressor progressor, int token, IndexOrder order );
+        void initialize(IndexProgressor progressor, int token, IndexOrder order);
 
         /**
          * Setup the client for progressing using the supplied progressor. The values fed in to acceptEntity map to the
@@ -130,7 +131,8 @@ public interface IndexProgressor extends AutoCloseable
          * @param removed Removed entities that should be excluded from the results.
          * @param accessMode security access mode
          */
-        void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode );
+        void initialize(
+                IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode);
 
         /**
          * Accept the entity id and (some) tokens of a candidate index entry. Return true if the entry
@@ -139,20 +141,17 @@ public interface IndexProgressor extends AutoCloseable
          * @param tokens some tokens of the candidate index entry
          * @return true if the entry is accepted, false otherwise
          */
-        boolean acceptEntity( long reference, TokenSet tokens );
+        boolean acceptEntity(long reference, TokenSet tokens);
     }
 
-    IndexProgressor EMPTY = new IndexProgressor()
-    {
+    IndexProgressor EMPTY = new IndexProgressor() {
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return false;
         }
 
         @Override
-        public void close()
-        {   // no-op
+        public void close() { // no-op
         }
     };
 }

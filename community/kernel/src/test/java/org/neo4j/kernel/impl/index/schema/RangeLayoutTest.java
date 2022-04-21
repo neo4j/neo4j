@@ -19,27 +19,25 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-class RangeLayoutTest
-{
+class RangeLayoutTest {
     @Test
-    void shouldHaveUniqueIdentifierForDifferentNumberOfSlots()
-    {
-        Map<Long,Integer> layouts = new HashMap<>();
-        for ( int i = 0; i < 100; i++ )
-        {
-            final RangeLayout rangeLayout = new RangeLayout( i );
-            final Integer previous = layouts.put( rangeLayout.identifier(), i );
-            assertNull( previous,
+    void shouldHaveUniqueIdentifierForDifferentNumberOfSlots() {
+        Map<Long, Integer> layouts = new HashMap<>();
+        for (int i = 0; i < 100; i++) {
+            final RangeLayout rangeLayout = new RangeLayout(i);
+            final Integer previous = layouts.put(rangeLayout.identifier(), i);
+            assertNull(
+                    previous,
                     String.format(
-                            "Expected identifier to be unique for layout with different number of slots, but two had the same identifier, " +
-                                    "firstSlotCount=%s, secondSlotCount=%s.", previous, i ) );
+                            "Expected identifier to be unique for layout with different number of slots, but two had the same identifier, "
+                                    + "firstSlotCount=%s, secondSlotCount=%s.",
+                            previous, i));
         }
     }
 }

@@ -19,116 +19,97 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import static java.lang.Integer.max;
+import static java.lang.String.format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.neo4j.internal.helpers.collection.Iterators;
-
-import static java.lang.Integer.max;
-import static java.lang.String.format;
 
 /**
  * Keeps data about how relationships are distributed between different types.
  */
-public class DataStatistics implements Iterable<DataStatistics.RelationshipTypeCount>
-{
+public class DataStatistics implements Iterable<DataStatistics.RelationshipTypeCount> {
     private final List<Client> clients = new ArrayList<>();
     private final DataImporter.Monitor entityCounts;
     private int opened;
     private RelationshipTypeCount[] typeCounts;
 
-    public DataStatistics( long nodeCount, long propertyCount, RelationshipTypeCount[] sortedTypes )
-    {
-        this( new DataImporter.Monitor(), sortedTypes );
-        entityCounts.nodesImported( nodeCount );
-        entityCounts.propertiesImported( propertyCount );
+    public DataStatistics(long nodeCount, long propertyCount, RelationshipTypeCount[] sortedTypes) {
+        this(new DataImporter.Monitor(), sortedTypes);
+        entityCounts.nodesImported(nodeCount);
+        entityCounts.propertiesImported(propertyCount);
     }
 
-    public DataStatistics( DataImporter.Monitor entityCounts, RelationshipTypeCount[] sortedTypes )
-    {
+    public DataStatistics(DataImporter.Monitor entityCounts, RelationshipTypeCount[] sortedTypes) {
         this.entityCounts = entityCounts;
         this.typeCounts = sortedTypes;
     }
 
     @Override
-    public Iterator<RelationshipTypeCount> iterator()
-    {
-        return Iterators.iterator( typeCounts );
+    public Iterator<RelationshipTypeCount> iterator() {
+        return Iterators.iterator(typeCounts);
     }
 
-    public int getNumberOfRelationshipTypes()
-    {
+    public int getNumberOfRelationshipTypes() {
         return typeCounts.length;
     }
 
-    public synchronized Client newClient()
-    {
+    public synchronized Client newClient() {
         Client client = new Client();
-        clients.add( client );
+        clients.add(client);
         opened++;
         return client;
     }
 
-    private synchronized void closeClient()
-    {
-        if ( --opened == 0 )
-        {
+    private synchronized void closeClient() {
+        if (--opened == 0) {
             int highestTypeId = 0;
-            for ( Client client : clients )
-            {
-                highestTypeId = max( highestTypeId, client.highestTypeId );
+            for (Client client : clients) {
+                highestTypeId = max(highestTypeId, client.highestTypeId);
             }
 
             long[] counts = new long[highestTypeId + 1];
-            for ( Client client : clients )
-            {
-                client.addTo( counts );
+            for (Client client : clients) {
+                client.addTo(counts);
             }
             typeCounts = new RelationshipTypeCount[counts.length];
-            for ( int i = 0; i < counts.length; i++ )
-            {
-                typeCounts[i] = new RelationshipTypeCount( i, counts[i] );
+            for (int i = 0; i < counts.length; i++) {
+                typeCounts[i] = new RelationshipTypeCount(i, counts[i]);
             }
-            Arrays.sort( typeCounts );
+            Arrays.sort(typeCounts);
         }
     }
 
-    public static class RelationshipTypeCount implements Comparable<RelationshipTypeCount>
-    {
+    public static class RelationshipTypeCount implements Comparable<RelationshipTypeCount> {
         private final int typeId;
         private final long count;
 
-        public RelationshipTypeCount( int typeId, long count )
-        {
+        public RelationshipTypeCount(int typeId, long count) {
             this.typeId = typeId;
             this.count = count;
         }
 
-        public int getTypeId()
-        {
+        public int getTypeId() {
             return typeId;
         }
 
-        public long getCount()
-        {
+        public long getCount() {
             return count;
         }
 
         @Override
-        public int compareTo( RelationshipTypeCount o )
-        {
-            return Long.compare( count, o.count );
+        public int compareTo(RelationshipTypeCount o) {
+            return Long.compare(count, o.count);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             final int prime = 31;
             int result = 1;
             result = prime * result + (int) (count ^ (count >>> 32));
@@ -137,14 +118,11 @@ public class DataStatistics implements Iterable<DataStatistics.RelationshipTypeC
         }
 
         @Override
-        public boolean equals( Object obj )
-        {
-            if ( this == obj )
-            {
+        public boolean equals(Object obj) {
+            if (this == obj) {
                 return true;
             }
-            if ( obj == null || getClass() != obj.getClass() )
-            {
+            if (obj == null || getClass() != obj.getClass()) {
                 return false;
             }
             RelationshipTypeCount other = (RelationshipTypeCount) obj;
@@ -152,83 +130,69 @@ public class DataStatistics implements Iterable<DataStatistics.RelationshipTypeC
         }
 
         @Override
-        public String toString()
-        {
-            return format( "%s[type:%d, count:%d]", getClass().getSimpleName(), typeId, count );
+        public String toString() {
+            return format("%s[type:%d, count:%d]", getClass().getSimpleName(), typeId, count);
         }
     }
 
-    public class Client implements AutoCloseable
-    {
+    public class Client implements AutoCloseable {
         private long[] counts = new long[8]; // index is relationship type id
         private int highestTypeId;
 
-        public void increment( int typeId )
-        {
-            if ( typeId >= counts.length )
-            {
-                counts = Arrays.copyOf( counts, max( counts.length * 2, typeId + 1 ) );
+        public void increment(int typeId) {
+            if (typeId >= counts.length) {
+                counts = Arrays.copyOf(counts, max(counts.length * 2, typeId + 1));
             }
             counts[typeId]++;
-            if ( typeId > highestTypeId )
-            {
+            if (typeId > highestTypeId) {
                 highestTypeId = typeId;
             }
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             closeClient();
         }
 
-        private void addTo( long[] counts )
-        {
-            for ( int i = 0; i <= highestTypeId; i++ )
-            {
+        private void addTo(long[] counts) {
+            for (int i = 0; i <= highestTypeId; i++) {
                 counts[i] += this.counts[i];
             }
         }
     }
 
-    public RelationshipTypeCount get( int index )
-    {
+    public RelationshipTypeCount get(int index) {
         return typeCounts[index];
     }
 
-    public IntSet types( int startingFromType, int upToType )
-    {
-        final MutableIntSet set = new IntHashSet( (upToType - startingFromType) * 2 );
-        for ( int i = startingFromType; i < upToType; i++ )
-        {
-            set.add( get( i ).getTypeId() );
+    public IntSet types(int startingFromType, int upToType) {
+        final MutableIntSet set = new IntHashSet((upToType - startingFromType) * 2);
+        for (int i = startingFromType; i < upToType; i++) {
+            set.add(get(i).getTypeId());
         }
         return set;
     }
 
-    public long getNodeCount()
-    {
+    public long getNodeCount() {
         return entityCounts.nodesImported();
     }
 
-    public long getPropertyCount()
-    {
+    public long getPropertyCount() {
         return entityCounts.propertiesImported();
     }
 
-    public long getRelationshipCount()
-    {
+    public long getRelationshipCount() {
         long sum = 0;
-        for ( RelationshipTypeCount type : typeCounts )
-        {
+        for (RelationshipTypeCount type : typeCounts) {
             sum += type.count;
         }
         return sum;
     }
 
     @Override
-    public String toString()
-    {
-        return format( "Imported:%n  %d nodes%n  %d relationships%n  %d properties", getNodeCount(), getRelationshipCount(), getPropertyCount() );
+    public String toString() {
+        return format(
+                "Imported:%n  %d nodes%n  %d relationships%n  %d properties",
+                getNodeCount(), getRelationshipCount(), getPropertyCount());
     }
 }

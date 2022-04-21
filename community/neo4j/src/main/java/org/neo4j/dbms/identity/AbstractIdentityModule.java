@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,57 +33,47 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.util.Id;
 
-public abstract class AbstractIdentityModule extends LifecycleAdapter implements DiagnosticsProvider, ServerIdentity
-{
-    protected static <T extends Id> T readOrGenerate( SimpleStorage<T> storage, InternalLog log, Class<T> type, Function<UUID,? extends T> creator,
-            Supplier<UUID> uuid )
-    {
+public abstract class AbstractIdentityModule extends LifecycleAdapter implements DiagnosticsProvider, ServerIdentity {
+    protected static <T extends Id> T readOrGenerate(
+            SimpleStorage<T> storage,
+            InternalLog log,
+            Class<T> type,
+            Function<UUID, ? extends T> creator,
+            Supplier<UUID> uuid) {
         T myself;
-        try
-        {
-            if ( storage.exists() )
-            {
+        try {
+            if (storage.exists()) {
                 myself = storage.readState();
-                if ( myself == null )
-                {
-                    throw new IllegalStateException(
-                            String.format( "%s storage was found on disk, but it could not be read correctly", type.getSimpleName() ) );
+                if (myself == null) {
+                    throw new IllegalStateException(String.format(
+                            "%s storage was found on disk, but it could not be read correctly", type.getSimpleName()));
+                } else {
+                    log.info(String.format("Found %s on disk: %s (%s)", type.getSimpleName(), myself, myself.uuid()));
                 }
-                else
-                {
-                    log.info( String.format( "Found %s on disk: %s (%s)", type.getSimpleName(), myself, myself.uuid() ) );
-                }
-            }
-            else
-            {
+            } else {
                 UUID newUuid = uuid.get();
-                myself = creator.apply( newUuid );
-                storage.writeState( myself );
+                myself = creator.apply(newUuid);
+                storage.writeState(myself);
 
-                log.info( String.format( "Generated new %s: %s (%s)", type.getSimpleName(), myself, newUuid ) );
+                log.info(String.format("Generated new %s: %s (%s)", type.getSimpleName(), myself, newUuid));
             }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return myself;
     }
 
-    protected static SimpleStorage<ServerId> createServerIdStorage( FileSystemAbstraction fs, Path serverIdFile )
-    {
-        return new SimpleFileStorage<>( fs, serverIdFile, ServerId.Marshal.INSTANCE );
+    protected static SimpleStorage<ServerId> createServerIdStorage(FileSystemAbstraction fs, Path serverIdFile) {
+        return new SimpleFileStorage<>(fs, serverIdFile, ServerId.Marshal.INSTANCE);
     }
 
     @Override
-    public String getDiagnosticsName()
-    {
+    public String getDiagnosticsName() {
         return "Global Server Identity";
     }
 
     @Override
-    public void dump( DiagnosticsLogger logger )
-    {
-        logger.log( String.format( "Registered %s", serverId() ) );
+    public void dump(DiagnosticsLogger logger) {
+        logger.log(String.format("Registered %s", serverId()));
     }
 }

@@ -24,38 +24,33 @@ import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.lock.LockTracer;
 
-public class DatabaseTracers
-{
-    public static final DatabaseTracers EMPTY = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, PageCacheTracer.NULL );
+public class DatabaseTracers {
+    public static final DatabaseTracers EMPTY =
+            new DatabaseTracers(DatabaseTracer.NULL, LockTracer.NONE, PageCacheTracer.NULL);
 
     private final DatabaseTracer databaseTracer;
     private final LockTracer lockTracer;
     private final PageCacheTracer pageCacheTracer;
 
-    public DatabaseTracers( Tracers tracers )
-    {
-        this( tracers.getDatabaseTracer(), tracers.getLockTracer(), tracers.getPageCacheTracer() );
+    public DatabaseTracers(Tracers tracers) {
+        this(tracers.getDatabaseTracer(), tracers.getLockTracer(), tracers.getPageCacheTracer());
     }
 
-    public DatabaseTracers( DatabaseTracer databaseTracer, LockTracer lockTracer, PageCacheTracer pageCacheTracer )
-    {
+    public DatabaseTracers(DatabaseTracer databaseTracer, LockTracer lockTracer, PageCacheTracer pageCacheTracer) {
         this.databaseTracer = databaseTracer;
         this.lockTracer = lockTracer;
         this.pageCacheTracer = pageCacheTracer;
     }
 
-    public DatabaseTracer getDatabaseTracer()
-    {
+    public DatabaseTracer getDatabaseTracer() {
         return databaseTracer;
     }
 
-    public LockTracer getLockTracer()
-    {
+    public LockTracer getLockTracer() {
         return lockTracer;
     }
 
-    public PageCacheTracer getPageCacheTracer()
-    {
+    public PageCacheTracer getPageCacheTracer() {
         return pageCacheTracer;
     }
 }

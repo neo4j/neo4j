@@ -24,8 +24,7 @@ package org.neo4j.values;
  * <p>
  * In a ternary equality check the result could either true, false or undefined
  */
-public enum Equality
-{
+public enum Equality {
     TRUE,
     FALSE,
     UNDEFINED;

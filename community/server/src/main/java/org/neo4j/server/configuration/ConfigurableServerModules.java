@@ -23,8 +23,7 @@ package org.neo4j.server.configuration;
  * Enumeration of the configurable server modules. There is no 1:1 correlation between a {@literal ConfigurableServerModules} and an implementation of {@link
  * org.neo4j.server.modules.ServerModule ServerModule}. A configurable module may consist of several implementing modules.
  */
-public enum ConfigurableServerModules
-{
+public enum ConfigurableServerModules {
     /**
      * Provides the transactional endpoints (Cypher and legacy endpoint).
      */

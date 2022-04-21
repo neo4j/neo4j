@@ -25,13 +25,12 @@ package org.neo4j.kernel.impl.query;
  * Used in conjunction with a {@link QuerySubscriber}. The client demands a number of records via {@link #request(long)},
  * data will then be streamed to the subscriber until the demand is met or the there is no more data to stream.
  */
-public interface QuerySubscription
-{
+public interface QuerySubscription {
     /**
      * Request a number of records.
      * @param numberOfRecords The number of records demanded.
      */
-    void request( long numberOfRecords ) throws Exception;
+    void request(long numberOfRecords) throws Exception;
 
     /**
      * Request the query to not send any more data.
@@ -49,9 +48,8 @@ public interface QuerySubscription
     /**
      * Consumes all results.
      */
-    default void consumeAll() throws Exception
-    {
-        request( Long.MAX_VALUE );
+    default void consumeAll() throws Exception {
+        request(Long.MAX_VALUE);
         await();
     }
 }

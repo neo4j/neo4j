@@ -19,18 +19,17 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.time.SystemNanoClock;
-
-import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 /**
  * An adaptive page pre-fetcher for sequential scans, for either forwards (increasing page id order) or backwards (decreasing page id order) scans.
@@ -47,8 +46,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * will wait in between checking on the progress of the scanner, are dynamically computed and updated based on how fast the scanner appears to be.
  * The pre-fetcher also automatically figures out if the scanner is scanning the file in a forward or backwards direction.
  */
-class PreFetcher implements Runnable, CancelListener
-{
+class PreFetcher implements Runnable, CancelListener {
     private static final String TRACER_PRE_FETCHER_TAG = "Pre-fetcher";
     private final MuninnPageCursor observedCursor;
     private final CursorFactory cursorFactory;
@@ -57,43 +55,36 @@ class PreFetcher implements Runnable, CancelListener
     private long startTime;
     private long deadline;
     private long tripCount;
-    private long pauseNanos = TimeUnit.MILLISECONDS.toNanos( 10 );
+    private long pauseNanos = TimeUnit.MILLISECONDS.toNanos(10);
 
-    PreFetcher( MuninnPageCursor observedCursor, CursorFactory cursorFactory, SystemNanoClock clock )
-    {
+    PreFetcher(MuninnPageCursor observedCursor, CursorFactory cursorFactory, SystemNanoClock clock) {
         this.observedCursor = observedCursor;
         this.cursorFactory = cursorFactory;
         this.clock = clock;
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         // Phase 1: Wait for observed cursor to start moving.
-        setDeadline( 150, TimeUnit.MILLISECONDS ); // Give up if nothing happens for 150 milliseconds.
+        setDeadline(150, TimeUnit.MILLISECONDS); // Give up if nothing happens for 150 milliseconds.
         long initialPageId;
-        while ( ( initialPageId = getCurrentObservedPageId() ) == UNBOUND_PAGE_ID )
-        {
+        while ((initialPageId = getCurrentObservedPageId()) == UNBOUND_PAGE_ID) {
             pause();
-            if ( pastDeadline() )
-            {
+            if (pastDeadline()) {
                 return; // Give up. Looks like this cursor is either already finished, or never started.
             }
         }
 
         // Phase 2: Wait for the cursor to move either forwards or backwards, to determine the prefetching direction.
-        setDeadline( 200, TimeUnit.MILLISECONDS ); // We will wait up to 200 milliseconds for this phase to complete.
+        setDeadline(200, TimeUnit.MILLISECONDS); // We will wait up to 200 milliseconds for this phase to complete.
         long secondPageId;
-        while ( ( secondPageId = getCurrentObservedPageId() ) == initialPageId )
-        {
+        while ((secondPageId = getCurrentObservedPageId()) == initialPageId) {
             pause();
-            if ( pastDeadline() )
-            {
+            if (pastDeadline()) {
                 return; // Okay, this is going too slow. Give up.
             }
         }
-        if ( secondPageId == UNBOUND_PAGE_ID )
-        {
+        if (secondPageId == UNBOUND_PAGE_ID) {
             return; // We're done. The observed cursor was closed.
         }
 
@@ -119,27 +110,20 @@ class PreFetcher implements Runnable, CancelListener
         // The initial value don't matter so much. Just same as offset, so we initially fetch one page.
         long jump = offset;
 
-        try ( var context = observedCursor.cursorContext.createRelatedContext( TRACER_PRE_FETCHER_TAG );
-               PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK, context ) )
-        {
+        try (var context = observedCursor.cursorContext.createRelatedContext(TRACER_PRE_FETCHER_TAG);
+                PageCursor prefetchCursor = cursorFactory.takeReadCursor(0, PF_SHARED_READ_LOCK, context)) {
             currentPageId = getCurrentObservedPageId();
-            while ( currentPageId != UNBOUND_PAGE_ID )
-            {
+            while (currentPageId != UNBOUND_PAGE_ID) {
                 cp = currentPageId + offset;
-                if ( forward )
-                {
+                if (forward) {
                     fromPage = cp;
                     toPage = cp + jump;
-                }
-                else
-                {
-                    fromPage = Math.max( 0, cp + jump );
+                } else {
+                    fromPage = Math.max(0, cp + jump);
                     toPage = cp;
                 }
-                while ( fromPage < toPage )
-                {
-                    if ( !prefetchCursor.next( fromPage ) || cancelled )
-                    {
+                while (fromPage < toPage) {
+                    if (!prefetchCursor.next(fromPage) || cancelled) {
                         return; // Reached the end of the file. Or got cancelled.
                     }
                     fromPage++;
@@ -148,87 +132,71 @@ class PreFetcher implements Runnable, CancelListener
                 // Phase 3.5: After each prefetch round, we wait for the cursor to move again.
                 // If it just stops somewhere for more than a second, then we quit.
                 nextPageId = getCurrentObservedPageId();
-                if ( nextPageId == currentPageId )
-                {
-                    setDeadline( 10, TimeUnit.SECONDS );
-                    while ( nextPageId == currentPageId )
-                    {
+                if (nextPageId == currentPageId) {
+                    setDeadline(10, TimeUnit.SECONDS);
+                    while (nextPageId == currentPageId) {
                         pause();
-                        if ( pastDeadline() )
-                        {
+                        if (pastDeadline()) {
                             return; // The cursor hasn't made any progress for a whole second. Leave it alone.
                         }
                         nextPageId = getCurrentObservedPageId();
                     }
                     madeProgress();
                 }
-                if ( nextPageId != UNBOUND_PAGE_ID )
-                {
+                if (nextPageId != UNBOUND_PAGE_ID) {
                     jump = (nextPageId - currentPageId) * 2;
                 }
                 currentPageId = nextPageId;
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private void setDeadline( long timeout, TimeUnit unit )
-    {
+    private void setDeadline(long timeout, TimeUnit unit) {
         startTime = clock.nanos();
-        deadline = unit.toNanos( timeout ) + startTime;
-        if ( tripCount != 0 )
-        {
+        deadline = unit.toNanos(timeout) + startTime;
+        if (tripCount != 0) {
             tripCount = 0;
         }
     }
 
-    private void pause()
-    {
-        if ( tripCount < 10 )
-        {
+    private void pause() {
+        if (tripCount < 10) {
             Thread.onSpinWait();
-        }
-        else
-        {
-            LockSupport.parkNanos( this, pauseNanos );
+        } else {
+            LockSupport.parkNanos(this, pauseNanos);
         }
         tripCount++;
     }
 
-    private boolean pastDeadline()
-    {
+    private boolean pastDeadline() {
         boolean past = clock.nanos() > deadline;
-        if ( past )
-        {
-            if ( tripCount != 0 )
-            {
+        if (past) {
+            if (tripCount != 0) {
                 tripCount = 0;
             }
         }
         return past || cancelled;
     }
 
-    private void madeProgress()
-    {
-        // Let our best guess of how long is good to pause, asymptotically approach how long we actually paused (this time).
+    private void madeProgress() {
+        // Let our best guess of how long is good to pause, asymptotically approach how long we actually paused (this
+        // time).
         long timeToProgressNanos = clock.nanos() - startTime;
         long pause = (pauseNanos * 3 + timeToProgressNanos * 5) / 8;
-        pauseNanos = Math.min( pause, TimeUnit.MILLISECONDS.toNanos( 10 ) );
+        pauseNanos = Math.min(pause, TimeUnit.MILLISECONDS.toNanos(10));
     }
 
-    private long getCurrentObservedPageId()
-    {
+    private long getCurrentObservedPageId() {
         // Read as volatile even though the field isn't volatile.
-        // We rely on the ordered-store of all writes to the current page id field, in order to weakly observe this value.
+        // We rely on the ordered-store of all writes to the current page id field, in order to weakly observe this
+        // value.
         return observedCursor.loadVolatileCurrentPageId();
     }
 
     @Override
-    public void cancelled()
-    {
+    public void cancelled() {
         cancelled = true;
     }
 }

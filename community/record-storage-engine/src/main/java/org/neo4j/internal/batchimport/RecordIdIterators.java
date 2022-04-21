@@ -22,16 +22,12 @@ package org.neo4j.internal.batchimport;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-public class RecordIdIterators
-{
-    static RecordIdIterator allIn( RecordStore<? extends AbstractBaseRecord> store, Configuration config )
-    {
-        return RecordIdIterator.forwards( store.getNumberOfReservedLowIds(), store.getHighId(), config );
+public class RecordIdIterators {
+    static RecordIdIterator allIn(RecordStore<? extends AbstractBaseRecord> store, Configuration config) {
+        return RecordIdIterator.forwards(store.getNumberOfReservedLowIds(), store.getHighId(), config);
     }
 
-    static RecordIdIterator allInReversed( RecordStore<? extends AbstractBaseRecord> store,
-            Configuration config )
-    {
-        return RecordIdIterator.backwards( store.getNumberOfReservedLowIds(), store.getHighId(), config );
+    static RecordIdIterator allInReversed(RecordStore<? extends AbstractBaseRecord> store, Configuration config) {
+        return RecordIdIterator.backwards(store.getNumberOfReservedLowIds(), store.getHighId(), config);
     }
 }

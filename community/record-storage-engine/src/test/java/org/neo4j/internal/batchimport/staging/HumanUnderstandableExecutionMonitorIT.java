@@ -19,14 +19,26 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
+import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
+import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.io.PrintStream;
 import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.Configuration;
@@ -60,61 +72,67 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
-import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
-import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-
 @Neo4jLayoutExtension
-@ExtendWith( {RandomExtension.class, DefaultFileSystemExtension.class, TestDirectorySupportExtension.class} )
-class HumanUnderstandableExecutionMonitorIT
-{
+@ExtendWith({RandomExtension.class, DefaultFileSystemExtension.class, TestDirectorySupportExtension.class})
+class HumanUnderstandableExecutionMonitorIT {
     private static final long NODE_COUNT = 1_000;
     private static final long RELATIONSHIP_COUNT = 10_000;
 
     @Inject
     private RandomSupport random;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private FileSystemAbstraction fileSystem;
 
     @Test
-    void shouldReportProgressOfNodeImport() throws Exception
-    {
+    void shouldReportProgressOfNodeImport() throws Exception {
         // given
         CapturingMonitor progress = new CapturingMonitor();
-        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( progress,
-                new PrintStream( NullOutputStream.NULL_OUTPUT_STREAM ) );
+        HumanUnderstandableExecutionMonitor monitor =
+                new HumanUnderstandableExecutionMonitor(progress, new PrintStream(NullOutputStream.NULL_OUTPUT_STREAM));
         IdType idType = IdType.INTEGER;
-        Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, random.seed(),
-                0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),
-                1, 1, 0, 0 );
-        Configuration configuration = new Configuration.Overridden( Configuration.DEFAULT )
-        {
+        Input input = new DataGeneratorInput(
+                NODE_COUNT,
+                RELATIONSHIP_COUNT,
+                idType,
+                random.seed(),
+                0,
+                bareboneNodeHeader(idType, new Extractors(';')),
+                bareboneRelationshipHeader(idType, new Extractors(';')),
+                1,
+                1,
+                0,
+                0);
+        Configuration configuration = new Configuration.Overridden(Configuration.DEFAULT) {
             @Override
-            public long pageCacheMemory()
-            {
-                return mebiBytes( 8 );
+            public long pageCacheMemory() {
+                return mebiBytes(8);
             }
         };
 
         // when
-        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
-        {
-            new ParallelBatchImporter( databaseLayout, fileSystem, NULL, configuration, NullLogService.getInstance(), monitor,
-                    EMPTY, EMPTY_LOG_TAIL, defaults(), Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
-                    LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE,
-                    NULL_CONTEXT_FACTORY ).doImport( input );
+        try (JobScheduler jobScheduler = new ThreadPoolJobScheduler()) {
+            new ParallelBatchImporter(
+                            databaseLayout,
+                            fileSystem,
+                            NULL,
+                            configuration,
+                            NullLogService.getInstance(),
+                            monitor,
+                            EMPTY,
+                            EMPTY_LOG_TAIL,
+                            defaults(),
+                            Monitor.NO_MONITOR,
+                            jobScheduler,
+                            Collector.EMPTY,
+                            LogFilesInitializer.NULL,
+                            IndexImporterFactory.EMPTY,
+                            EmptyMemoryTracker.INSTANCE,
+                            NULL_CONTEXT_FACTORY)
+                    .doImport(input);
 
             // then
             progress.assertAllProgressReachedEnd();
@@ -122,54 +140,48 @@ class HumanUnderstandableExecutionMonitorIT
     }
 
     @Test
-    void shouldStartFromNonFirstStage()
-    {
+    void shouldStartFromNonFirstStage() {
         // given
-        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( HumanUnderstandableExecutionMonitor.NO_MONITOR,
-                new PrintStream( NullOutputStream.NULL_OUTPUT_STREAM ) );
+        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor(
+                HumanUnderstandableExecutionMonitor.NO_MONITOR, new PrintStream(NullOutputStream.NULL_OUTPUT_STREAM));
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( Input.knownEstimates( 10, 10, 10, 10, 10, 10, 10 ) );
-        BatchingNeoStores neoStores = mock( BatchingNeoStores.class );
-        NodeStore nodeStore = mock( NodeStore.class );
-        RelationshipStore relationshipStore = mock( RelationshipStore.class );
-        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
-        when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
-        dependencies.satisfyDependency( neoStores );
-        dependencies.satisfyDependency( IdMappers.actual() );
-        dependencies.satisfyDependency( mock( PageCacheArrayFactoryMonitor.class ) );
-        dependencies.satisfyDependency( new DataStatistics( 10, 10, new DataStatistics.RelationshipTypeCount[0] ) );
-        monitor.initialize( dependencies );
+        dependencies.satisfyDependency(Input.knownEstimates(10, 10, 10, 10, 10, 10, 10));
+        BatchingNeoStores neoStores = mock(BatchingNeoStores.class);
+        NodeStore nodeStore = mock(NodeStore.class);
+        RelationshipStore relationshipStore = mock(RelationshipStore.class);
+        when(neoStores.getNodeStore()).thenReturn(nodeStore);
+        when(neoStores.getRelationshipStore()).thenReturn(relationshipStore);
+        dependencies.satisfyDependency(neoStores);
+        dependencies.satisfyDependency(IdMappers.actual());
+        dependencies.satisfyDependency(mock(PageCacheArrayFactoryMonitor.class));
+        dependencies.satisfyDependency(new DataStatistics(10, 10, new DataStatistics.RelationshipTypeCount[0]));
+        monitor.initialize(dependencies);
 
         // when/then
-        StageExecution execution = mock( StageExecution.class );
-        when( execution.getStageName() ).thenReturn( NodeDegreeCountStage.NAME );
-        assertThatCode( () -> monitor.start( execution ) ).doesNotThrowAnyException();
+        StageExecution execution = mock(StageExecution.class);
+        when(execution.getStageName()).thenReturn(NodeDegreeCountStage.NAME);
+        assertThatCode(() -> monitor.start(execution)).doesNotThrowAnyException();
     }
 
-    private static class CapturingMonitor implements HumanUnderstandableExecutionMonitor.Monitor
-    {
-        final EnumMap<ImportStage,AtomicInteger> progress = new EnumMap<>( ImportStage.class );
+    private static class CapturingMonitor implements HumanUnderstandableExecutionMonitor.Monitor {
+        final EnumMap<ImportStage, AtomicInteger> progress = new EnumMap<>(ImportStage.class);
 
         @Override
-        public void progress( ImportStage stage, int percent )
-        {
-            if ( percent > 100 )
-            {
-                fail( "Expected percentage to be 0..100% but was " + percent );
+        public void progress(ImportStage stage, int percent) {
+            if (percent > 100) {
+                fail("Expected percentage to be 0..100% but was " + percent);
             }
 
-            AtomicInteger stageProgress = progress.computeIfAbsent( stage, s -> new AtomicInteger() );
-            int previous = stageProgress.getAndSet( percent );
-            if ( previous > percent )
-            {
-                fail( "Progress should go forwards only, but went from " + previous + " to " + percent );
+            AtomicInteger stageProgress = progress.computeIfAbsent(stage, s -> new AtomicInteger());
+            int previous = stageProgress.getAndSet(percent);
+            if (previous > percent) {
+                fail("Progress should go forwards only, but went from " + previous + " to " + percent);
             }
         }
 
-        void assertAllProgressReachedEnd()
-        {
-            Assertions.assertEquals( ImportStage.values().length, progress.size() );
-            progress.values().forEach( p -> assertEquals( 100, p.get() ) );
+        void assertAllProgressReachedEnd() {
+            Assertions.assertEquals(ImportStage.values().length, progress.size());
+            progress.values().forEach(p -> assertEquals(100, p.get()));
         }
     }
 }

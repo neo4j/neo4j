@@ -19,84 +19,79 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptors;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertEquality;
 
-class SchemaIndexDescriptorFactoryTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
+
+class SchemaIndexDescriptorFactoryTest {
     private static final int LABEL_ID = 0;
 
     @Test
-    void shouldCreateIndexDescriptors()
-    {
+    void shouldCreateIndexDescriptors() {
         IndexDescriptor desc;
 
-        desc = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
-        assertFalse( desc.isUnique() );
-        assertThat( desc.schema() ).isEqualTo( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
+        desc = TestIndexDescriptorFactory.forLabel(LABEL_ID, 1);
+        assertFalse(desc.isUnique());
+        assertThat(desc.schema()).isEqualTo(SchemaDescriptors.forLabel(LABEL_ID, 1));
     }
 
     @Test
-    void shouldCreateUniqueIndexDescriptors()
-    {
+    void shouldCreateUniqueIndexDescriptors() {
         IndexDescriptor desc;
 
-        desc = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        assertTrue( desc.isUnique() );
-        assertThat( desc.schema() ).isEqualTo( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
+        desc = TestIndexDescriptorFactory.uniqueForLabel(LABEL_ID, 1);
+        assertTrue(desc.isUnique());
+        assertThat(desc.schema()).isEqualTo(SchemaDescriptors.forLabel(LABEL_ID, 1));
     }
 
     @Test
-    void shouldCreateIndexDescriptorsFromSchema()
-    {
+    void shouldCreateIndexDescriptorsFromSchema() {
         IndexDescriptor desc;
 
-        desc = TestIndexDescriptorFactory.forSchema( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
-        assertFalse( desc.isUnique() );
-        assertThat( desc.schema() ).isEqualTo( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
+        desc = TestIndexDescriptorFactory.forSchema(SchemaDescriptors.forLabel(LABEL_ID, 1));
+        assertFalse(desc.isUnique());
+        assertThat(desc.schema()).isEqualTo(SchemaDescriptors.forLabel(LABEL_ID, 1));
 
-        desc = TestIndexDescriptorFactory.uniqueForSchema( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
-        assertTrue( desc.isUnique() );
-        assertThat( desc.schema() ).isEqualTo( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
+        desc = TestIndexDescriptorFactory.uniqueForSchema(SchemaDescriptors.forLabel(LABEL_ID, 1));
+        assertTrue(desc.isUnique());
+        assertThat(desc.schema()).isEqualTo(SchemaDescriptors.forLabel(LABEL_ID, 1));
     }
 
     @Test
-    void shouldCreateEqualDescriptors()
-    {
+    void shouldCreateEqualDescriptors() {
         IndexDescriptor desc1;
         IndexDescriptor desc2;
-        desc1 = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
-        desc2 = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
-        assertEquality( desc1.schema(), desc2.schema() );
-        assertEquality( desc1.isUnique(), desc2.isUnique() );
+        desc1 = TestIndexDescriptorFactory.forLabel(LABEL_ID, 1);
+        desc2 = TestIndexDescriptorFactory.forLabel(LABEL_ID, 1);
+        assertEquality(desc1.schema(), desc2.schema());
+        assertEquality(desc1.isUnique(), desc2.isUnique());
 
-        desc1 = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        desc2 = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        assertEquality( desc1.schema(), desc2.schema() );
-        assertEquality( desc1.isUnique(), desc2.isUnique() );
+        desc1 = TestIndexDescriptorFactory.uniqueForLabel(LABEL_ID, 1);
+        desc2 = TestIndexDescriptorFactory.uniqueForLabel(LABEL_ID, 1);
+        assertEquality(desc1.schema(), desc2.schema());
+        assertEquality(desc1.isUnique(), desc2.isUnique());
     }
 
     @Test
-    void shouldGiveNiceUserDescriptions()
-    {
-        IndexDescriptor forLabel = TestIndexDescriptorFactory.forLabel( 1, 2 );
+    void shouldGiveNiceUserDescriptions() {
+        IndexDescriptor forLabel = TestIndexDescriptorFactory.forLabel(1, 2);
         long forLabelId = forLabel.getId();
-        IndexDescriptor uniqueForLabel = TestIndexDescriptorFactory.uniqueForLabel( 2, 4 );
+        IndexDescriptor uniqueForLabel = TestIndexDescriptorFactory.uniqueForLabel(2, 4);
         String providerName = forLabel.getIndexProvider().name();
         long uniqueForLabelId = uniqueForLabel.getId();
-        assertThat( forLabel.userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
-                "Index( id=" + forLabelId + ", name='index_" + forLabelId + "', type='GENERAL RANGE', schema=(:Label1 {property2}), indexProvider='" +
-                        providerName + "' )" );
-        assertThat( uniqueForLabel.userDescription( SIMPLE_NAME_LOOKUP ) ).isEqualTo(
-                "Index( id=" + uniqueForLabelId + ", name='index_" + uniqueForLabelId +
-                        "', type='UNIQUE RANGE', schema=(:Label2 {property4}), indexProvider='" + providerName + "' )" );
+        assertThat(forLabel.userDescription(SIMPLE_NAME_LOOKUP))
+                .isEqualTo("Index( id=" + forLabelId + ", name='index_" + forLabelId
+                        + "', type='GENERAL RANGE', schema=(:Label1 {property2}), indexProvider='" + providerName
+                        + "' )");
+        assertThat(uniqueForLabel.userDescription(SIMPLE_NAME_LOOKUP))
+                .isEqualTo("Index( id=" + uniqueForLabelId + ", name='index_" + uniqueForLabelId
+                        + "', type='UNIQUE RANGE', schema=(:Label2 {property4}), indexProvider='" + providerName
+                        + "' )");
     }
 }

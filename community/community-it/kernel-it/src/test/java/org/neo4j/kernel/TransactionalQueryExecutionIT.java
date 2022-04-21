@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 import java.util.Collections;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
@@ -31,67 +33,55 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-
 @DbmsExtension
-class TransactionalQueryExecutionIT
-{
+class TransactionalQueryExecutionIT {
     @Inject
     private GraphDatabaseService db;
 
     @Test
-    void executeQueryTransactionally()
-    {
-        final Label marker = Label.label( "MARKER" );
-        assertEquals( 0L, countMarkedNodes( marker ) );
-        db.executeTransactionally( "CREATE (n:MARKER)" );
-        db.executeTransactionally( "CREATE (n:MARKER)" );
-        db.executeTransactionally( "CREATE (n:MARKER)" );
-        assertEquals( 3L, countMarkedNodes( marker ) );
+    void executeQueryTransactionally() {
+        final Label marker = Label.label("MARKER");
+        assertEquals(0L, countMarkedNodes(marker));
+        db.executeTransactionally("CREATE (n:MARKER)");
+        db.executeTransactionally("CREATE (n:MARKER)");
+        db.executeTransactionally("CREATE (n:MARKER)");
+        assertEquals(3L, countMarkedNodes(marker));
     }
 
     @Test
-    void executeQueryAndConsumeResult()
-    {
-        db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
-        db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
-        db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
-        db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
-        assertEquals( 4, db.executeTransactionally( "MATCH (n:CONSUMABLE) RETURN n", Collections.emptyMap(), new CountingResultTransformer() ) );
+    void executeQueryAndConsumeResult() {
+        db.executeTransactionally("CREATE (n:CONSUMABLE)");
+        db.executeTransactionally("CREATE (n:CONSUMABLE)");
+        db.executeTransactionally("CREATE (n:CONSUMABLE)");
+        db.executeTransactionally("CREATE (n:CONSUMABLE)");
+        assertEquals(
+                4,
+                db.executeTransactionally(
+                        "MATCH (n:CONSUMABLE) RETURN n", Collections.emptyMap(), new CountingResultTransformer()));
     }
 
     @Test
-    void executeQueryWithParametersTransactionally()
-    {
-        db.executeTransactionally( "CREATE (n:NODE) SET n = $data RETURN n", map( "data", map( "key", "value" ) ) );
+    void executeQueryWithParametersTransactionally() {
+        db.executeTransactionally("CREATE (n:NODE) SET n = $data RETURN n", map("data", map("key", "value")));
 
-        try ( var transaction = db.beginTx() )
-        {
-            assertNotNull( transaction.findNode( Label.label( "NODE" ), "key", "value" ) );
+        try (var transaction = db.beginTx()) {
+            assertNotNull(transaction.findNode(Label.label("NODE"), "key", "value"));
         }
     }
 
-    private long countMarkedNodes( Label marker )
-    {
-        try ( var transaction = db.beginTx() )
-        {
-            return Iterators.count( transaction.findNodes( marker ) );
+    private long countMarkedNodes(Label marker) {
+        try (var transaction = db.beginTx()) {
+            return Iterators.count(transaction.findNodes(marker));
         }
     }
 
-    private static class CountingResultTransformer implements ResultTransformer<Integer>
-    {
+    private static class CountingResultTransformer implements ResultTransformer<Integer> {
         @Override
-        public Integer apply( Result result )
-        {
+        public Integer apply(Result result) {
             int nodeCounter = 0;
-            while ( result.hasNext() )
-            {
+            while (result.hasNext()) {
                 var row = result.next();
-                if ( row.get( "n" ) != null )
-                {
+                if (row.get("n") != null) {
                     nodeCounter++;
                 }
             }

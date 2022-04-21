@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -35,88 +34,73 @@ import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.internal.helpers.collection.NestingResourceIterator;
 import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
 
-public final class OrderedByTypeExpander extends StandardExpander.RegularExpander
-{
+public final class OrderedByTypeExpander extends StandardExpander.RegularExpander {
     private final Collection<DirectedRelationshipType> orderedTypes;
 
-    public OrderedByTypeExpander()
-    {
-        this( Collections.emptyList() );
+    public OrderedByTypeExpander() {
+        this(Collections.emptyList());
     }
 
-    private OrderedByTypeExpander( Collection<DirectedRelationshipType> orderedTypes )
-    {
-        super( Collections.emptyMap() );
+    private OrderedByTypeExpander(Collection<DirectedRelationshipType> orderedTypes) {
+        super(Collections.emptyMap());
         this.orderedTypes = orderedTypes;
     }
 
     @Override
-    public StandardExpander add( RelationshipType type, Direction direction )
-    {
-        Collection<DirectedRelationshipType> newTypes = new ArrayList<>( orderedTypes );
-        newTypes.add( new DirectedRelationshipType( type, direction ) );
-        return new OrderedByTypeExpander( newTypes );
+    public StandardExpander add(RelationshipType type, Direction direction) {
+        Collection<DirectedRelationshipType> newTypes = new ArrayList<>(orderedTypes);
+        newTypes.add(new DirectedRelationshipType(type, direction));
+        return new OrderedByTypeExpander(newTypes);
     }
 
     @Override
-    public StandardExpander remove( RelationshipType type )
-    {
+    public StandardExpander remove(RelationshipType type) {
         Collection<DirectedRelationshipType> newTypes = new ArrayList<>();
-        for ( DirectedRelationshipType directedType : orderedTypes )
-        {
-            if ( !type.name().equals( directedType.type.name() ) )
-            {
-                newTypes.add( directedType );
+        for (DirectedRelationshipType directedType : orderedTypes) {
+            if (!type.name().equals(directedType.type.name())) {
+                newTypes.add(directedType);
             }
         }
-        return new OrderedByTypeExpander( newTypes );
+        return new OrderedByTypeExpander(newTypes);
     }
 
     @Override
-    void buildString( StringBuilder result )
-    {
-        result.append( orderedTypes );
+    void buildString(StringBuilder result) {
+        result.append(orderedTypes);
     }
 
     @Override
-    public StandardExpander reverse()
-    {
-        Collection<DirectedRelationshipType> newTypes = new ArrayList<>( orderedTypes.size() );
-        for ( DirectedRelationshipType directedType : orderedTypes )
-        {
-            newTypes.add( directedType.reverse() );
+    public StandardExpander reverse() {
+        Collection<DirectedRelationshipType> newTypes = new ArrayList<>(orderedTypes.size());
+        for (DirectedRelationshipType directedType : orderedTypes) {
+            newTypes.add(directedType.reverse());
         }
-        return new OrderedByTypeExpander( newTypes );
+        return new OrderedByTypeExpander(newTypes);
     }
 
     @Override
-    RegularExpander createNew( Map<Direction, RelationshipType[]> newTypes )
-    {
+    RegularExpander createNew(Map<Direction, RelationshipType[]> newTypes) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    ResourceIterator<Relationship> doExpand( final Path path, BranchState state )
-    {
+    ResourceIterator<Relationship> doExpand(final Path path, BranchState state) {
         final Node node = path.endNode();
-        return new NestingResourceIterator<>( orderedTypes.iterator() )
-        {
+        return new NestingResourceIterator<>(orderedTypes.iterator()) {
             @Override
-            protected ResourceIterator<Relationship> createNestedIterator( DirectedRelationshipType directedType )
-            {
+            protected ResourceIterator<Relationship> createNestedIterator(DirectedRelationshipType directedType) {
                 RelationshipType type = directedType.type();
                 Direction dir = directedType.direction();
-                ResourceIterable<Relationship> relationships = (dir == Direction.BOTH) ? node.getRelationships( type ) : node.getRelationships( dir, type );
-                return ResourceClosingIterator.fromResourceIterable( relationships );
+                ResourceIterable<Relationship> relationships =
+                        (dir == Direction.BOTH) ? node.getRelationships(type) : node.getRelationships(dir, type);
+                return ResourceClosingIterator.fromResourceIterable(relationships);
             }
         };
     }
 
-    private record DirectedRelationshipType(RelationshipType type, Direction direction)
-    {
-        DirectedRelationshipType reverse()
-        {
-            return new DirectedRelationshipType( type, direction.reverse() );
+    private record DirectedRelationshipType(RelationshipType type, Direction direction) {
+        DirectedRelationshipType reverse() {
+            return new DirectedRelationshipType(type, direction.reverse());
         }
     }
 }

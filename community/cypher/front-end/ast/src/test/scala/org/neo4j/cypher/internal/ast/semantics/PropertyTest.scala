@@ -83,6 +83,9 @@ class PropertyTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
 
-    result.errors should equal(Seq(SemanticError("Type mismatch: expected Map, Node, Relationship, Point, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Integer", pos)))
+    result.errors should equal(Seq(SemanticError(
+      "Type mismatch: expected Map, Node, Relationship, Point, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Integer",
+      pos
+    )))
   }
 }

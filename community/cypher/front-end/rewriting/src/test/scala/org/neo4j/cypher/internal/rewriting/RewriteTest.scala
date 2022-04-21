@@ -35,7 +35,10 @@ trait RewriteTest {
 
   protected def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val (expected, result) = getRewrite(originalQuery, expectedQuery)
-    assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
+    assert(
+      result === expected,
+      s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
+    )
   }
 
   protected def getRewrite(originalQuery: String, expectedQuery: String): (Statement, AnyRef) = {
@@ -60,6 +63,9 @@ trait RewriteTest {
   protected def assertIsNotRewritten(query: String): Unit = {
     val original = JavaCCParser.parse(query, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
     val result = original.rewrite(rewriterUnderTest)
-    assert(result === original, s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
+    assert(
+      result === original,
+      s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
+    )
   }
 }

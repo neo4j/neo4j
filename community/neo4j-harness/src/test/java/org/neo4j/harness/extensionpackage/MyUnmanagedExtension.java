@@ -23,12 +23,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
-@Path( "/myExtension" )
-public class MyUnmanagedExtension
-{
+@Path("/myExtension")
+public class MyUnmanagedExtension {
     @GET
-    public Response doSomething()
-    {
+    public Response doSomething() {
         return Response.status(234).build();
     }
 }

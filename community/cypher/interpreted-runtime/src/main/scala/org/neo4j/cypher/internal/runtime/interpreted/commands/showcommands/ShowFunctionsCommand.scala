@@ -38,49 +38,70 @@ import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 // SHOW [ALL | BUILT IN | USER DEFINED] FUNCTION[S] [EXECUTABLE [BY {CURRENT USER | username}]] [WHERE clause | YIELD clause]
-case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
+case class ShowFunctionsCommand(
+  functionType: ShowFunctionType,
+  executableBy: Option[ExecutableBy],
+  verbose: Boolean,
+  columns: List[ShowColumn]
+) extends Command(columns) {
+
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val isCommunity = state.rowFactory.isInstanceOf[CommunityCypherRowFactory]
     lazy val systemGraph = state.query.systemGraph
 
-    val privileges = 
-      if (!isCommunity && (verbose || executableBy.isDefined)) ShowProcFuncCommandHelper.getPrivileges(systemGraph, "FUNCTION")
+    val privileges =
+      if (!isCommunity && (verbose || executableBy.isDefined))
+        ShowProcFuncCommandHelper.getPrivileges(systemGraph, "FUNCTION")
       else ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty)
 
     val txContext = state.query.transactionalContext
     val securityContext = txContext.securityContext
     val (userRoles, allRoles, alwaysExecutable) =
       if (!isCommunity) {
-        val (userRoles, alwaysExecutable) = ShowProcFuncCommandHelper.getRolesForExecutableByUser(securityContext, txContext.securityAuthorizationHandler, systemGraph, executableBy, "SHOW FUNCTIONS")
+        val (userRoles, alwaysExecutable) = ShowProcFuncCommandHelper.getRolesForExecutableByUser(
+          securityContext,
+          txContext.securityAuthorizationHandler,
+          systemGraph,
+          executableBy,
+          "SHOW FUNCTIONS"
+        )
         val allRoles =
-          if (functionType != UserDefinedFunctions && (verbose || executableBy.isDefined)) getAllRoles(systemGraph) // We will need roles column for built-in functions
+          if (functionType != UserDefinedFunctions && (verbose || executableBy.isDefined))
+            getAllRoles(systemGraph) // We will need roles column for built-in functions
           else Set.empty[String]
 
         (userRoles, allRoles, alwaysExecutable)
       } else {
         (Set.empty[String], Set.empty[String], true)
       }
-    val allowShowRoles: Boolean = if (!isCommunity && verbose)
-      securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)).allowsAccess()
-    else
-      false
+    val allowShowRoles: Boolean =
+      if (!isCommunity && verbose)
+        securityContext.allowsAdminAction(
+          new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)
+        ).allowsAccess()
+      else
+        false
 
     // gets you all functions provided by the query language
     val languageFunctions = functionType match {
-      case UserDefinedFunctions => List.empty // Will anyway filter out all built-in functions and all of these are built-in
+      case UserDefinedFunctions =>
+        List.empty // Will anyway filter out all built-in functions and all of these are built-in
       case _ => state.query.providedLanguageFunctions.map(f => FunctionInfo(f)).toList
     }
 
     // gets you all non-aggregating functions that are registered in the db (incl. those from libs like apoc)
-    val loadedFunctions = txContext.procedures.functionGetAll().iterator.asScala.map(f => FunctionInfo(f, aggregating = false)).toList
+    val loadedFunctions =
+      txContext.procedures.functionGetAll().iterator.asScala.map(f => FunctionInfo(f, aggregating = false)).toList
 
     // gets you all aggregation functions that are registered in the db (incl. those from libs like apoc)
-    val loadedAggregationFunctions = txContext.procedures.aggregationFunctionGetAll().iterator.asScala.map(f => FunctionInfo(f, aggregating = true)).toList
+    val loadedAggregationFunctions = txContext.procedures.aggregationFunctionGetAll().iterator.asScala.map(f =>
+      FunctionInfo(f, aggregating = true)
+    ).toList
 
     val allFunctions = languageFunctions ++ loadedFunctions ++ loadedAggregationFunctions
     val filteredFunctions = functionType match {
@@ -94,11 +115,18 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
       val (executeRoles, boostedExecuteRoles, allowedExecute) =
         if (!isCommunity && (verbose || executableBy.isDefined)) {
           if (func.isBuiltIn) (allRoles, Set.empty[String], userRoles.nonEmpty)
-          else ShowProcFuncCommandHelper.roles(func.name, isAdmin = false, privileges, userRoles) // There is no admin functions (only applicable to procedures)
+          else
+            ShowProcFuncCommandHelper.roles(
+              func.name,
+              isAdmin = false,
+              privileges,
+              userRoles
+            ) // There is no admin functions (only applicable to procedures)
         } else (Set.empty[String], Set.empty[String], isCommunity)
 
       executableBy match {
-        case Some(_) => getResultMap(func, alwaysExecutable || allowedExecute, executeRoles, boostedExecuteRoles, allowShowRoles)
+        case Some(_) =>
+          getResultMap(func, alwaysExecutable || allowedExecute, executeRoles, boostedExecuteRoles, allowShowRoles)
         case None => getResultMap(func, executeRoles, boostedExecuteRoles, allowShowRoles)
       }
     }.filter(m => m.nonEmpty)
@@ -106,29 +134,34 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
     ClosingIterator.apply(rows.iterator)
   }
 
-  private def getResultMap(func: FunctionInfo,
-                           allowedExecute: Boolean,
-                           executeRoles: Set[String],
-                           boostedExecuteRoles: Set[String],
-                           allowShowRoles: Boolean): Map[String, AnyValue] =
+  private def getResultMap(
+    func: FunctionInfo,
+    allowedExecute: Boolean,
+    executeRoles: Set[String],
+    boostedExecuteRoles: Set[String],
+    allowShowRoles: Boolean
+  ): Map[String, AnyValue] =
     if (allowedExecute) getResultMap(func, executeRoles, boostedExecuteRoles, allowShowRoles)
     else Map.empty[String, AnyValue]
 
-  private def getResultMap(func: FunctionInfo,
-                           executeRoles: Set[String],
-                           boostedExecuteRoles: Set[String],
-                           allowShowRoles: Boolean): Map[String, AnyValue] = {
+  private def getResultMap(
+    func: FunctionInfo,
+    executeRoles: Set[String],
+    boostedExecuteRoles: Set[String],
+    allowShowRoles: Boolean
+  ): Map[String, AnyValue] = {
     val briefResult = Map(
       // Name of the function, for example "my.func"
       "name" -> Values.stringValue(func.name),
       // Function category, for example Numeric or Temporal
       "category" -> Values.stringValue(func.category),
       // Function description or empty string
-      "description" -> Values.stringValue(func.description),
+      "description" -> Values.stringValue(func.description)
     )
     if (verbose) {
       val (rolesList, boostedRolesList) =
-        if (allowShowRoles) ShowProcFuncCommandHelper.roleValues(executeRoles, boostedExecuteRoles) else (Values.NO_VALUE, Values.NO_VALUE)
+        if (allowShowRoles) ShowProcFuncCommandHelper.roleValues(executeRoles, boostedExecuteRoles)
+        else (Values.NO_VALUE, Values.NO_VALUE)
 
       briefResult ++ Map(
         // Function signature
@@ -158,10 +191,19 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
     roleNames
   }
 
-  private case class FunctionInfo(name: String, category: String, description: String, signature: String, isBuiltIn: Boolean,
-                                  argDescr: List[Map[String, String]], retDescr: String, aggregating: Boolean)
+  private case class FunctionInfo(
+    name: String,
+    category: String,
+    description: String,
+    signature: String,
+    isBuiltIn: Boolean,
+    argDescr: List[Map[String, String]],
+    retDescr: String,
+    aggregating: Boolean
+  )
 
   private object FunctionInfo {
+
     def apply(info: UserFunctionSignature, aggregating: Boolean): FunctionInfo = {
       val name = info.name.toString
       val category = info.category.orElse("")

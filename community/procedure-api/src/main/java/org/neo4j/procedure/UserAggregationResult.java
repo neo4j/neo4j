@@ -23,7 +23,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -50,10 +49,7 @@ import org.neo4j.annotations.api.PublicApi;
  *     <li>{@link Object}, meaning any of the valid return types above</li>
  * </ul>
  */
-@Target( ElementType.METHOD )
-@Retention( RetentionPolicy.RUNTIME )
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
 @PublicApi
-public @interface UserAggregationResult
-{
-
-}
+public @interface UserAggregationResult {}

@@ -23,8 +23,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-public class BadRecordSimpleFieldType
-{
+public class BadRecordSimpleFieldType {
 
     public Integer wrongType;
     public String okType1;

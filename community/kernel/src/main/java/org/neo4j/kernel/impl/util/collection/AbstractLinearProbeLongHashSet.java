@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import java.io.IOException;
+import java.util.ConcurrentModificationException;
+import java.util.NoSuchElementException;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.LazyIterable;
 import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction;
@@ -35,15 +38,9 @@ import org.eclipse.collections.impl.SpreadFunctions;
 import org.eclipse.collections.impl.primitive.AbstractLongIterable;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
-import java.io.IOException;
-import java.util.ConcurrentModificationException;
-import java.util.NoSuchElementException;
-
 import org.neo4j.util.VisibleForTesting;
 
-abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable implements LongSet
-{
+abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable implements LongSet {
     private static final long EMPTY = 0;
     static final long REMOVED = 1;
 
@@ -54,13 +51,11 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
     boolean hasZero;
     boolean hasOne;
 
-    AbstractLinearProbeLongHashSet()
-    {
+    AbstractLinearProbeLongHashSet() {
         // nop
     }
 
-    AbstractLinearProbeLongHashSet( AbstractLinearProbeLongHashSet src )
-    {
+    AbstractLinearProbeLongHashSet(AbstractLinearProbeLongHashSet src) {
         this.memory = src.memory;
         this.capacity = src.capacity;
         this.hasZero = src.hasZero;
@@ -69,82 +64,66 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
     }
 
     @Override
-    public LongIterator longIterator()
-    {
+    public LongIterator longIterator() {
         return new FailFastIterator();
     }
 
     @Override
-    public long[] toArray()
-    {
+    public long[] toArray() {
         final MutableInt idx = new MutableInt();
         final long[] array = new long[size()];
-        each( element -> array[idx.getAndIncrement()] = element );
+        each(element -> array[idx.getAndIncrement()] = element);
         return array;
     }
 
     @Override
-    public boolean contains( long element )
-    {
-        if ( element == 0 )
-        {
+    public boolean contains(long element) {
+        if (element == 0) {
             return hasZero;
         }
-        if ( element == 1 )
-        {
+        if (element == 1) {
             return hasOne;
         }
 
-        int idx = indexOf( element );
-        return valueAt( idx ) == element;
+        int idx = indexOf(element);
+        return valueAt(idx) == element;
     }
 
     @Override
-    public void forEach( LongProcedure procedure )
-    {
-        each( procedure );
+    public void forEach(LongProcedure procedure) {
+        each(procedure);
     }
 
     @Override
-    public void each( LongProcedure procedure )
-    {
-        if ( hasZero )
-        {
-            procedure.accept( 0 );
+    public void each(LongProcedure procedure) {
+        if (hasZero) {
+            procedure.accept(0);
         }
-        if ( hasOne )
-        {
-            procedure.accept( 1 );
+        if (hasOne) {
+            procedure.accept(1);
         }
 
         int visited = 0;
-        for ( int i = 0; i < capacity && visited < elementsInMemory; i++ )
-        {
-            final long value = valueAt( i );
-            if ( isRealValue( value ) )
-            {
-                procedure.accept( value );
+        for (int i = 0; i < capacity && visited < elementsInMemory; i++) {
+            final long value = valueAt(i);
+            if (isRealValue(value)) {
+                procedure.accept(value);
                 ++visited;
             }
         }
     }
 
     @Override
-    public boolean anySatisfy( LongPredicate predicate )
-    {
-        if ( (hasZero && predicate.test( 0 )) || (hasOne && predicate.test( 1 )) )
-        {
+    public boolean anySatisfy(LongPredicate predicate) {
+        if ((hasZero && predicate.test(0)) || (hasOne && predicate.test(1))) {
             return true;
         }
 
         int visited = 0;
-        for ( int i = 0; i < capacity && visited < elementsInMemory; i++ )
-        {
-            final long value = valueAt( i );
-            if ( isRealValue( value ) )
-            {
-                if ( predicate.test( value ) )
-                {
+        for (int i = 0; i < capacity && visited < elementsInMemory; i++) {
+            final long value = valueAt(i);
+            if (isRealValue(value)) {
+                if (predicate.test(value)) {
                     return true;
                 }
                 ++visited;
@@ -154,21 +133,16 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
     }
 
     @Override
-    public boolean allSatisfy( LongPredicate predicate )
-    {
-        if ( (hasZero && !predicate.test( 0 )) || (hasOne && !predicate.test( 1 )) )
-        {
+    public boolean allSatisfy(LongPredicate predicate) {
+        if ((hasZero && !predicate.test(0)) || (hasOne && !predicate.test(1))) {
             return false;
         }
 
         int visited = 0;
-        for ( int i = 0; i < capacity && visited < elementsInMemory; i++ )
-        {
-            final long value = valueAt( i );
-            if ( isRealValue( value ) )
-            {
-                if ( !predicate.test( value ) )
-                {
+        for (int i = 0; i < capacity && visited < elementsInMemory; i++) {
+            final long value = valueAt(i);
+            if (isRealValue(value)) {
+                if (!predicate.test(value)) {
                     return false;
                 }
                 ++visited;
@@ -178,246 +152,201 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
     }
 
     @Override
-    public boolean noneSatisfy( LongPredicate predicate )
-    {
-        return !anySatisfy( predicate );
+    public boolean noneSatisfy(LongPredicate predicate) {
+        return !anySatisfy(predicate);
     }
 
     @Override
-    public long detectIfNone( LongPredicate predicate, long ifNone )
-    {
+    public long detectIfNone(LongPredicate predicate, long ifNone) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <T> T injectInto( T injectedValue, ObjectLongToObjectFunction<? super T, ? extends T> function )
-    {
+    public <T> T injectInto(T injectedValue, ObjectLongToObjectFunction<? super T, ? extends T> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int count( LongPredicate predicate )
-    {
+    public int count(LongPredicate predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long sum()
-    {
+    public long sum() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long max()
-    {
+    public long max() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long min()
-    {
+    public long min() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public LazyIterable<LongLongPair> cartesianProduct( LongSet set )
-    {
+    public LazyIterable<LongLongPair> cartesianProduct(LongSet set) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableLongSet select( LongPredicate predicate )
-    {
-        return select( predicate, new LongHashSet() );
+    public MutableLongSet select(LongPredicate predicate) {
+        return select(predicate, new LongHashSet());
     }
 
     @Override
-    public MutableLongSet reject( LongPredicate predicate )
-    {
-        return reject( predicate, new LongHashSet() );
+    public MutableLongSet reject(LongPredicate predicate) {
+        return reject(predicate, new LongHashSet());
     }
 
     @Override
-    public <V> MutableSet<V> collect( LongToObjectFunction<? extends V> function )
-    {
-        final MutableSet<V> result = new UnifiedSet<>( size() );
-        each( element -> result.add( function.apply( element ) ) );
+    public <V> MutableSet<V> collect(LongToObjectFunction<? extends V> function) {
+        final MutableSet<V> result = new UnifiedSet<>(size());
+        each(element -> result.add(function.apply(element)));
         return result;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         final MutableInt h = new MutableInt();
-        each( element -> h.add( (int) (element ^ element >>> 32) ) );
+        each(element -> h.add((int) (element ^ element >>> 32)));
         return h.intValue();
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
-        if ( !(obj instanceof final LongSet other) )
-        {
+        if (!(obj instanceof final LongSet other)) {
             return false;
         }
-        return size() == other.size() && containsAll( other );
+        return size() == other.size() && containsAll(other);
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return elementsInMemory + (hasZero ? 1 : 0) + (hasOne ? 1 : 0);
     }
 
     @Override
-    public void appendString( Appendable appendable, String start, String separator, String end )
-    {
-        try
-        {
-            appendable.append( start );
-            appendable.append( "offheap,size=" ).append( String.valueOf( size() ) ).append( "; " );
+    public void appendString(Appendable appendable, String start, String separator, String end) {
+        try {
+            appendable.append(start);
+            appendable.append("offheap,size=").append(String.valueOf(size())).append("; ");
 
             final LongIterator iterator = longIterator();
-            for ( int i = 0; i < 100 && iterator.hasNext(); i++ )
-            {
-                appendable.append( Long.toString( iterator.next() ) );
-                if ( iterator.hasNext() )
-                {
-                    appendable.append( ", " );
+            for (int i = 0; i < 100 && iterator.hasNext(); i++) {
+                appendable.append(Long.toString(iterator.next()));
+                if (iterator.hasNext()) {
+                    appendable.append(", ");
                 }
             }
 
-            if ( iterator.hasNext() )
-            {
-                appendable.append( "..." );
+            if (iterator.hasNext()) {
+                appendable.append("...");
             }
 
-            appendable.append( end );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+            appendable.append(end);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    static boolean isRealValue( long value )
-    {
+    static boolean isRealValue(long value) {
         return value != REMOVED && value != EMPTY;
     }
 
     @VisibleForTesting
-    int hashAndMask( long element )
-    {
-        final long h = SpreadFunctions.longSpreadOne( element );
+    int hashAndMask(long element) {
+        final long h = SpreadFunctions.longSpreadOne(element);
         return (int) h & (capacity - 1);
     }
 
-    long valueAt( int idx )
-    {
-        return memory.readLong( (long) idx * Long.BYTES );
+    long valueAt(int idx) {
+        return memory.readLong((long) idx * Long.BYTES);
     }
 
-    int indexOf( long element )
-    {
-        int idx = hashAndMask( element );
+    int indexOf(long element) {
+        int idx = hashAndMask(element);
         int firstRemovedIdx = -1;
 
-        for ( int i = 0; i < capacity; i++ )
-        {
-            final long valueAtIdx = valueAt( idx );
+        for (int i = 0; i < capacity; i++) {
+            final long valueAtIdx = valueAt(idx);
 
-            if ( valueAtIdx == element )
-            {
+            if (valueAtIdx == element) {
                 return idx;
             }
 
-            if ( valueAtIdx == EMPTY )
-            {
+            if (valueAtIdx == EMPTY) {
                 return firstRemovedIdx == -1 ? idx : firstRemovedIdx;
             }
 
-            if ( valueAtIdx == REMOVED && firstRemovedIdx == -1 )
-            {
+            if (valueAtIdx == REMOVED && firstRemovedIdx == -1) {
                 firstRemovedIdx = idx;
             }
 
             idx = (idx + 1) & (capacity - 1);
         }
 
-        throw new AssertionError( "Failed to determine index for " + element );
+        throw new AssertionError("Failed to determine index for " + element);
     }
 
-    class FailFastIterator implements MutableLongIterator
-    {
+    class FailFastIterator implements MutableLongIterator {
         private final long modCount;
         private int visited;
         private int idx;
         private boolean handledZero;
         private boolean handledOne;
 
-        FailFastIterator()
-        {
+        FailFastIterator() {
             this.modCount = AbstractLinearProbeLongHashSet.this.modCount;
         }
 
         @Override
-        public void remove()
-        {
+        public void remove() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long next()
-        {
-            if ( !hasNext() )
-            {
-                throw new NoSuchElementException( "iterator is exhausted" );
+        public long next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException("iterator is exhausted");
             }
 
             ++visited;
 
-            if ( !handledZero )
-            {
+            if (!handledZero) {
                 handledZero = true;
-                if ( hasZero )
-                {
+                if (hasZero) {
                     return 0;
                 }
             }
-            if ( !handledOne )
-            {
+            if (!handledOne) {
                 handledOne = true;
-                if ( hasOne )
-                {
+                if (hasOne) {
                     return 1;
                 }
             }
 
             long value;
-            do
-            {
-                value = valueAt( idx++ );
-            }
-            while ( !isRealValue( value ) );
+            do {
+                value = valueAt(idx++);
+            } while (!isRealValue(value));
 
             return value;
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             checkState();
             return visited < size();
         }
 
-        private void checkState()
-        {
-            if ( modCount != AbstractLinearProbeLongHashSet.this.modCount )
-            {
+        private void checkState() {
+            if (modCount != AbstractLinearProbeLongHashSet.this.modCount) {
                 throw new ConcurrentModificationException();
             }
         }

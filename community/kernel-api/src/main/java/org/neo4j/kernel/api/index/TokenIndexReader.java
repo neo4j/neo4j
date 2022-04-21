@@ -26,8 +26,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 import org.neo4j.kernel.impl.index.schema.TokenScan;
 
-public interface TokenIndexReader extends IndexReader
-{
+public interface TokenIndexReader extends IndexReader {
 
     /**
      * Queries all the entities and coordinates with the supplied {@link IndexProgressor.EntityTokenClient} to return the results
@@ -37,7 +36,11 @@ public interface TokenIndexReader extends IndexReader
      * @param query        the predicate to identify the tokens being queried
      * @param cursorContext underlying page cursor context
      */
-    void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, CursorContext cursorContext );
+    void query(
+            IndexProgressor.EntityTokenClient client,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            CursorContext cursorContext);
 
     /**
      * Queries a specific range of entities and coordinates with the supplied {@link IndexProgressor.EntityTokenClient} to return the results.
@@ -48,42 +51,45 @@ public interface TokenIndexReader extends IndexReader
      * @param range        the range of entities that should be queried.
      * @param cursorContext underlying page cursor context
      */
-    void query( IndexProgressor.EntityTokenClient client,
-                IndexQueryConstraints constraints, TokenPredicate query, EntityRange range, CursorContext cursorContext );
+    void query(
+            IndexProgressor.EntityTokenClient client,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            EntityRange range,
+            CursorContext cursorContext);
 
-    TokenScan entityTokenScan( int tokenId, CursorContext cursorContext );
+    TokenScan entityTokenScan(int tokenId, CursorContext cursorContext);
 
-    PartitionedTokenScan entityTokenScan( int desiredNumberOfPartitions, CursorContext context, TokenPredicate query );
+    PartitionedTokenScan entityTokenScan(int desiredNumberOfPartitions, CursorContext context, TokenPredicate query);
 
-    TokenIndexReader EMPTY = new TokenIndexReader()
-    {
+    TokenIndexReader EMPTY = new TokenIndexReader() {
         @Override
-        public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, CursorContext cursorContext )
-        {
+        public void query(
+                IndexProgressor.EntityTokenClient client,
+                IndexQueryConstraints constraints,
+                TokenPredicate query,
+                CursorContext cursorContext) {}
+
+        @Override
+        public void query(
+                IndexProgressor.EntityTokenClient client,
+                IndexQueryConstraints constraints,
+                TokenPredicate query,
+                EntityRange range,
+                CursorContext cursorContext) {}
+
+        @Override
+        public TokenScan entityTokenScan(int tokenId, CursorContext cursorContext) {
+            throw new UnsupportedOperationException("EMPTY implementation does not support this method.");
         }
 
         @Override
-        public void query( IndexProgressor.EntityTokenClient client,
-                           IndexQueryConstraints constraints, TokenPredicate query, EntityRange range, CursorContext cursorContext )
-        {
-
+        public PartitionedTokenScan entityTokenScan(
+                int desiredNumberOfPartitions, CursorContext context, TokenPredicate query) {
+            throw new UnsupportedOperationException("EMPTY implementation does not support this method.");
         }
 
         @Override
-        public TokenScan entityTokenScan( int tokenId, CursorContext cursorContext )
-        {
-            throw new UnsupportedOperationException( "EMPTY implementation does not support this method." );
-        }
-
-        @Override
-        public PartitionedTokenScan entityTokenScan( int desiredNumberOfPartitions, CursorContext context, TokenPredicate query )
-        {
-            throw new UnsupportedOperationException( "EMPTY implementation does not support this method." );
-        }
-
-        @Override
-        public void close()
-        {
-        }
+        public void close() {}
     };
 }

@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 
 class AndsTest extends SemanticFunSuite {
+
   test("should semantic check all expressions in ands") {
     val dummyExpr1 = DummyExpression(CTBoolean, DummyPosition(1))
     val dummyExpr2 = DummyExpression(CTBoolean, DummyPosition(2))
@@ -30,6 +31,6 @@ class AndsTest extends SemanticFunSuite {
     val result = SemanticExpressionCheck.simple(ands)(SemanticState.clean)
 
     result.errors shouldBe empty
-    result.state.typeTable.keySet.map(_.node) should contain allOf(dummyExpr1, dummyExpr2, dummyExpr3, ands)
+    result.state.typeTable.keySet.map(_.node) should contain allOf (dummyExpr1, dummyExpr2, dummyExpr3, ands)
   }
 }

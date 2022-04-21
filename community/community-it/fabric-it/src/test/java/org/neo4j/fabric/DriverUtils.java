@@ -21,7 +21,6 @@ package org.neo4j.fabric;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.driver.AuthTokens;
@@ -29,39 +28,31 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.internal.helpers.HostnamePort;
 
-public class DriverUtils
-{
-    public static Driver createDriver( ConnectorPortRegister portRegister )
-    {
+public class DriverUtils {
+    public static Driver createDriver(ConnectorPortRegister portRegister) {
         return GraphDatabase.driver(
-                getBoltRoutingUri( portRegister ),
+                getBoltRoutingUri(portRegister),
                 AuthTokens.none(),
                 org.neo4j.driver.Config.builder()
-                                       .withoutEncryption()
-                                       .withMaxConnectionPoolSize( 3 )
-                                       .build() );
+                        .withoutEncryption()
+                        .withMaxConnectionPoolSize(3)
+                        .build());
     }
 
-    private static URI getBoltRoutingUri( ConnectorPortRegister portRegister )
-    {
-        return getBoltUri( portRegister, "neo4j" );
+    private static URI getBoltRoutingUri(ConnectorPortRegister portRegister) {
+        return getBoltUri(portRegister, "neo4j");
     }
 
-    private static URI getBoltDirectUri( ConnectorPortRegister portRegister )
-    {
-        return getBoltUri( portRegister, "bolt" );
+    private static URI getBoltDirectUri(ConnectorPortRegister portRegister) {
+        return getBoltUri(portRegister, "bolt");
     }
 
-    private static URI getBoltUri( ConnectorPortRegister portRegister, String scheme )
-    {
-        HostnamePort hostPort = portRegister.getLocalAddress( BoltConnector.NAME );
-        try
-        {
-            return new URI( scheme, null, hostPort.getHost(), hostPort.getPort(), null, null, null );
-        }
-        catch ( URISyntaxException x )
-        {
-            throw new IllegalArgumentException( x.getMessage(), x );
+    private static URI getBoltUri(ConnectorPortRegister portRegister, String scheme) {
+        HostnamePort hostPort = portRegister.getLocalAddress(BoltConnector.NAME);
+        try {
+            return new URI(scheme, null, hostPort.getHost(), hostPort.getPort(), null, null, null);
+        } catch (URISyntaxException x) {
+            throw new IllegalArgumentException(x.getMessage(), x);
         }
     }
 }

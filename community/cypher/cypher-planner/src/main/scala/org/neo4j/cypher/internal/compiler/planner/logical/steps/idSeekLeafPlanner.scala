@@ -40,21 +40,24 @@ import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 
 case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
-  override def apply(queryGraph: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Set[LogicalPlan] = {
+  override def apply(
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     queryGraph.selections.flatPredicatesSet.flatMap { e =>
       val arguments: Set[LogicalVariable] = queryGraph.argumentIds.map(n => Variable(n)(null))
       val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
         // MATCH (a)-[r]-(b) WHERE id(r) IN expr
         // MATCH a WHERE id(a) IN {param}
-        case predicate@AsIdSeekable(seekable) if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
+        case predicate @ AsIdSeekable(seekable)
+          if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
           Some((predicate, seekable.ident, seekable.args))
         case _ => None
       }
 
       idSeekPredicates flatMap {
-        case (predicate, variable@Variable(id), idValues) if !queryGraph.argumentIds.contains(id) =>
+        case (predicate, variable @ Variable(id), idValues) if !queryGraph.argumentIds.contains(id) =>
           if (skipIDs.contains(id)) {
             None
           } else {
@@ -68,21 +71,29 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
                 ))
 
               case None =>
-                Some(context.logicalPlanProducer.planNodeByIdSeek(variable, idValues, Seq(predicate), queryGraph.argumentIds, context))
+                Some(context.logicalPlanProducer.planNodeByIdSeek(
+                  variable,
+                  idValues,
+                  Seq(predicate),
+                  queryGraph.argumentIds,
+                  context
+                ))
             }
           }
       }
     }
   }
 
-  private def planRelationshipByIdSeek(idExpr: Variable,
-                                       patternForLeafPlan: PatternRelationship,
-                                       originalPattern: PatternRelationship,
-                                       hiddenSelections: Seq[Expression],
-                                       idValues: SeekableArgs,
-                                       predicates: Seq[Expression],
-                                       argumentIds: Set[String],
-                                       context: LogicalPlanningContext): LogicalPlan = {
+  private def planRelationshipByIdSeek(
+    idExpr: Variable,
+    patternForLeafPlan: PatternRelationship,
+    originalPattern: PatternRelationship,
+    hiddenSelections: Seq[Expression],
+    idValues: SeekableArgs,
+    predicates: Seq[Expression],
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     val name = originalPattern.name
     val relTypeFilterHiddenSelection = relTypeFilter(idExpr, originalPattern.types.toList)
     context.logicalPlanProducer.planRelationshipByIdSeek(
@@ -119,4 +130,3 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
   private def typeOfRelExpr(idExpr: Variable) =
     FunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)
 }
-

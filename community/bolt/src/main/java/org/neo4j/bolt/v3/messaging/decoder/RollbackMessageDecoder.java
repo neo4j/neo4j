@@ -19,41 +19,34 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import java.io.IOException;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.messaging.RequestMessageDecoder;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.SIGNATURE;
 
-public class RollbackMessageDecoder implements RequestMessageDecoder
-{
+import java.io.IOException;
+import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+
+public class RollbackMessageDecoder implements RequestMessageDecoder {
     private final BoltResponseHandler responseHandler;
 
-    public RollbackMessageDecoder( BoltResponseHandler responseHandler )
-    {
+    public RollbackMessageDecoder(BoltResponseHandler responseHandler) {
         this.responseHandler = responseHandler;
     }
 
     @Override
-    public int signature()
-    {
+    public int signature() {
         return SIGNATURE;
     }
 
     @Override
-    public BoltResponseHandler responseHandler()
-    {
+    public BoltResponseHandler responseHandler() {
         return responseHandler;
     }
 
     @Override
-    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
+    public RequestMessage decode(Neo4jPack.Unpacker unpacker) throws IOException {
         return ROLLBACK_MESSAGE;
     }
 }
-

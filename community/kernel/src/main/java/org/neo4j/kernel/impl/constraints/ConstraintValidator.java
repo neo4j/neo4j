@@ -36,29 +36,58 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-public interface ConstraintValidator
-{
-    void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor, PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor,
-            TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException;
-
-    void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor, PropertyCursor propertyCursor,
-            LabelSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException;
-
-    void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor,
-            RelationTypeSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup )
+public interface ConstraintValidator {
+    void validateNodeKeyConstraint(
+            NodeLabelIndexCursor allNodes,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
             throws CreateConstraintFailureException;
 
-    void validateRelationshipPropertyExistenceConstraint( RelationshipTypeIndexCursor allRelationships, RelationshipScanCursor relationshipCursor,
-            PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup )
+    void validateNodePropertyExistenceConstraint(
+            NodeLabelIndexCursor allNodes,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
             throws CreateConstraintFailureException;
 
-    TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, Read read, CursorFactory cursorFactory, ReadableTransactionState state,
-            TxStateVisitor visitor, CursorContext cursorContext, MemoryTracker memoryTracker );
-
-    void validateNodePropertyExistenceConstraint( NodeCursor nodeCursor, PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor,
-                                                  TokenNameLookup tokenNameLookup )
+    void validateRelationshipPropertyExistenceConstraint(
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor,
+            RelationTypeSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
             throws CreateConstraintFailureException;
 
-    void validateNodeKeyConstraint( NodeCursor nodeCursor, PropertyCursor propertyCursor,
-                                    LabelSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException;
+    void validateRelationshipPropertyExistenceConstraint(
+            RelationshipTypeIndexCursor allRelationships,
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor,
+            RelationTypeSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
+
+    TxStateVisitor decorateTxStateVisitor(
+            StorageReader storageReader,
+            Read read,
+            CursorFactory cursorFactory,
+            ReadableTransactionState state,
+            TxStateVisitor visitor,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker);
+
+    void validateNodePropertyExistenceConstraint(
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
+
+    void validateNodeKeyConstraint(
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
 }

@@ -22,8 +22,7 @@ package org.neo4j.internal.batchimport.input;
 /**
  * Defines different types that input ids can come in. Enum names in here are user facing.
  */
-public enum IdType
-{
+public enum IdType {
     /**
      * Used when node ids int input data are any string identifier.
      */

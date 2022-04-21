@@ -19,53 +19,46 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.archive.Dumper;
+import picocli.CommandLine;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-class DumpCommandTest
-{
+class DumpCommandTest {
     @Test
-    void printUsageHelp()
-    {
+    void printUsageHelp() {
         final var baos = new ByteArrayOutputStream();
-        final var command = new DumpCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ), mock( Dumper.class ) );
-        try ( var out = new PrintStream( baos ) )
-        {
-            CommandLine.usage( command, new PrintStream( out ), CommandLine.Help.Ansi.OFF );
+        final var command = new DumpCommand(new ExecutionContext(Path.of("."), Path.of(".")), mock(Dumper.class));
+        try (var out = new PrintStream(baos)) {
+            CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
-        assertThat( baos.toString().trim() ).isEqualTo( String.format(
-                "Dump a database into a single-file archive.%n" +
-                "%n" +
-                "USAGE%n" +
-                "%n" +
-                "dump [--expand-commands] [--verbose] [--database=<database>] --to=<path>%n" +
-                "%n" +
-                "DESCRIPTION%n" +
-                "%n" +
-                "Dump a database into a single-file archive. The archive can be used by the load%n" +
-                "command. <destination-path> can be a file or directory (in which case a file%n" +
-                "called <database>.dump will be created), or '-' to use standard output. It is%n" +
-                "not possible to dump a database that is mounted in a running Neo4j server.%n" +
-                "%n" +
-                "OPTIONS%n" +
-                "%n" +
-                "      --verbose           Enable verbose output.%n" +
-                "      --expand-commands   Allow command expansion in config value evaluation.%n" +
-                "      --database=<database>%n" +
-                "                          Name of the database to dump.%n" +
-                "                            Default: neo4j%n" +
-                "      --to=<path>         Destination (file or folder or '-' for stdout) of%n" +
-                "                            database dump."
-        ) );
+        assertThat(baos.toString().trim())
+                .isEqualTo(String.format("Dump a database into a single-file archive.%n" + "%n"
+                        + "USAGE%n"
+                        + "%n"
+                        + "dump [--expand-commands] [--verbose] [--database=<database>] --to=<path>%n"
+                        + "%n"
+                        + "DESCRIPTION%n"
+                        + "%n"
+                        + "Dump a database into a single-file archive. The archive can be used by the load%n"
+                        + "command. <destination-path> can be a file or directory (in which case a file%n"
+                        + "called <database>.dump will be created), or '-' to use standard output. It is%n"
+                        + "not possible to dump a database that is mounted in a running Neo4j server.%n"
+                        + "%n"
+                        + "OPTIONS%n"
+                        + "%n"
+                        + "      --verbose           Enable verbose output.%n"
+                        + "      --expand-commands   Allow command expansion in config value evaluation.%n"
+                        + "      --database=<database>%n"
+                        + "                          Name of the database to dump.%n"
+                        + "                            Default: neo4j%n"
+                        + "      --to=<path>         Destination (file or folder or '-' for stdout) of%n"
+                        + "                            database dump."));
     }
 }

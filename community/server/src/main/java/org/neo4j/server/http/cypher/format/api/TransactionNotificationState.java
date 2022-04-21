@@ -22,8 +22,7 @@ package org.neo4j.server.http.cypher.format.api;
 /**
  * A state of the transaction used by the request at the end of the request execution and as presented by {@link TransactionInfoEvent} to the user.
  */
-public enum TransactionNotificationState
-{
+public enum TransactionNotificationState {
     /**
      * There was no transaction used by during the request processing.
      * <p>

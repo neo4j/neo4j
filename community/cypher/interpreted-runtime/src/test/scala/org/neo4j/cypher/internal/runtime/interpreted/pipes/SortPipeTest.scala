@@ -45,42 +45,52 @@ class SortPipeTest extends CypherFunSuite {
     val source = new FakePipe(list)
     val sortPipe = SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(Map("x" -> "A"), Map("x" -> "B")))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
+      Map("x" -> "A"),
+      Map("x" -> "B")
+    ))
   }
 
   test("sort by two columns") {
     val source = new FakePipe(List(
       mutable.Map[String, Any]("x" -> "B", "y" -> 20),
       mutable.Map[String, Any]("x" -> "A", "y" -> 100),
-      mutable.Map[String, Any]("x" -> "B", "y" -> 10)))
+      mutable.Map[String, Any]("x" -> "B", "y" -> 10)
+    ))
 
-    val sortPipe = SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"), Ascending("y"))))()
+    val sortPipe =
+      SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"), Ascending("y"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
       Map("x" -> "A", "y" -> 100),
       Map("x" -> "B", "y" -> 10),
-      Map("x" -> "B", "y" -> 20)))
+      Map("x" -> "B", "y" -> 20)
+    ))
   }
 
   test("sort by two columns with one descending") {
     val source = new FakePipe(List(
       mutable.Map[String, Any]("x" -> "B", "y" -> 20),
       mutable.Map[String, Any]("x" -> "A", "y" -> 100),
-      mutable.Map[String, Any]("x" -> "B", "y" -> 10)))
+      mutable.Map[String, Any]("x" -> "B", "y" -> 10)
+    ))
 
-    val sortPipe = SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"), Descending("y"))))()
+    val sortPipe =
+      SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"), Descending("y"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
       Map[String, Any]("x" -> "A", "y" -> 100),
       Map[String, Any]("x" -> "B", "y" -> 20),
-      Map[String, Any]("x" -> "B", "y" -> 10)))
+      Map[String, Any]("x" -> "B", "y" -> 10)
+    ))
   }
 
   test("should handle null values") {
     val list: Seq[mutable.Map[String, Any]] = List(
       mutable.Map("y" -> 1),
       mutable.Map("y" -> null),
-      mutable.Map("y" -> 2))
+      mutable.Map("y" -> 2)
+    )
     val source = new FakePipe(list)
 
     val sortPipe = SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("y"))))()
@@ -88,6 +98,7 @@ class SortPipeTest extends CypherFunSuite {
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
       Map("y" -> intValue(1)),
       Map("y" -> intValue(2)),
-      Map("y" -> Values.NO_VALUE)))
+      Map("y" -> Values.NO_VALUE)
+    ))
   }
 }

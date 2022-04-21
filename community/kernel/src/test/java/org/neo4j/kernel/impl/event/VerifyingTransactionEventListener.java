@@ -25,63 +25,50 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-public class VerifyingTransactionEventListener implements TransactionEventListener<Object>
-{
+public class VerifyingTransactionEventListener implements TransactionEventListener<Object> {
     private final ExpectedTransactionData expectedData;
     private boolean hasBeenCalled;
     private Throwable failure;
 
-    public VerifyingTransactionEventListener( ExpectedTransactionData expectedData )
-    {
+    public VerifyingTransactionEventListener(ExpectedTransactionData expectedData) {
         this.expectedData = expectedData;
     }
 
     @Override
-    public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
-    {
-        verify( data );
+    public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
+        verify(data);
     }
 
     @Override
-    public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
-    {
-    }
+    public void afterRollback(TransactionData data, Object state, GraphDatabaseService databaseService) {}
 
     @Override
-    public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
-    {
-        return verify( data );
+    public Object beforeCommit(TransactionData data, Transaction transaction, GraphDatabaseService databaseService) {
+        return verify(data);
     }
 
-    private Object verify( TransactionData data )
-    {
+    private Object verify(TransactionData data) {
         // TODO Hmm, makes me think... should we really call transaction event handlers
         // for these relationship type / property index transactions?
-        if ( Iterables.count( data.createdNodes() ) == 0 )
-        {
+        if (Iterables.count(data.createdNodes()) == 0) {
             return null;
         }
 
-        try
-        {
-            this.expectedData.compareTo( data );
+        try {
+            this.expectedData.compareTo(data);
             this.hasBeenCalled = true;
             return null;
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             failure = e;
             throw e;
         }
     }
 
-    boolean hasBeenCalled()
-    {
+    boolean hasBeenCalled() {
         return this.hasBeenCalled;
     }
 
-    Throwable failure()
-    {
+    Throwable failure() {
         return this.failure;
     }
 }

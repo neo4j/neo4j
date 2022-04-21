@@ -22,10 +22,8 @@ package org.neo4j.consistency.statistics;
 /**
  * Increments counts of different types, per thread. Able to sum a count for all threads as well.
  */
-public interface Counts
-{
-    enum Type
-    {
+public interface Counts {
+    enum Type {
         skipCheck,
         missCheck,
         checked,
@@ -50,27 +48,21 @@ public interface Counts
         nodeDense
     }
 
-    void incAndGet( Type type, int threadIndex );
+    void incAndGet(Type type, int threadIndex);
 
-    long sum( Type type );
+    long sum(Type type);
 
     void reset();
 
-    Counts NONE = new Counts()
-    {
+    Counts NONE = new Counts() {
         @Override
-        public void reset()
-        {
-        }
+        public void reset() {}
 
         @Override
-        public void incAndGet( Type type, int threadIndex )
-        {
-        }
+        public void incAndGet(Type type, int threadIndex) {}
 
         @Override
-        public long sum( Type type )
-        {
+        public long sum(Type type) {
             return 0;
         }
     };

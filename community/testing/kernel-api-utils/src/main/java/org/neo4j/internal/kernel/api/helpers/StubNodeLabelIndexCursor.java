@@ -20,42 +20,33 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Map;
-
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.TokenSet;
 
-public class StubNodeLabelIndexCursor extends DefaultCloseListenable implements NodeLabelIndexCursor
-{
+public class StubNodeLabelIndexCursor extends DefaultCloseListenable implements NodeLabelIndexCursor {
     private int offset = -1;
-    private final Map<Integer,long[]> lookup;
+    private final Map<Integer, long[]> lookup;
     private int label;
 
-    public StubNodeLabelIndexCursor( Map<Integer,long[]> lookup )
-    {
+    public StubNodeLabelIndexCursor(Map<Integer, long[]> lookup) {
         this.lookup = lookup;
     }
 
-    void initialize( int label )
-    {
+    void initialize(int label) {
         this.label = label;
         this.offset = -1;
     }
 
     @Override
-    public void node( NodeCursor cursor )
-    {
-
-    }
+    public void node(NodeCursor cursor) {}
 
     @Override
-    public long nodeReference()
-    {
-        long[] nodes = lookup.get( label );
-        if ( nodes == null )
-        {
+    public long nodeReference() {
+        long[] nodes = lookup.get(label);
+        if (nodes == null) {
             return -1L;
         }
 
@@ -63,43 +54,32 @@ public class StubNodeLabelIndexCursor extends DefaultCloseListenable implements 
     }
 
     @Override
-    public float score()
-    {
+    public float score() {
         return Float.NaN;
     }
 
     @Override
-    public TokenSet labels()
-    {
+    public TokenSet labels() {
         return null;
     }
 
     @Override
-    public boolean next()
-    {
-        long[] nodes = lookup.get( label );
+    public boolean next() {
+        long[] nodes = lookup.get(label);
         return nodes != null && ++offset < nodes.length;
     }
 
     @Override
-    public void closeInternal()
-    {
-
-    }
+    public void closeInternal() {}
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return false;
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-    }
+    public void setTracer(KernelReadTracer tracer) {}
 
     @Override
-    public void removeTracer()
-    {
-    }
+    public void removeTracer() {}
 }

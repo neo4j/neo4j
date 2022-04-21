@@ -20,41 +20,32 @@
 package org.neo4j.kernel.impl.api.tracer;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 
-class CountingLogRotateEvent implements LogRotateEvent
-{
+class CountingLogRotateEvent implements LogRotateEvent {
     private final AtomicLong rotationCounter = new AtomicLong();
     private final AtomicLong accumulatedRotationTimeMillis = new AtomicLong();
     private volatile long lastRotationTimeMillis;
 
     @Override
-    public void rotationCompleted( long rotationMillis )
-    {
+    public void rotationCompleted(long rotationMillis) {
         rotationCounter.incrementAndGet();
-        accumulatedRotationTimeMillis.addAndGet( rotationMillis );
+        accumulatedRotationTimeMillis.addAndGet(rotationMillis);
         lastRotationTimeMillis = rotationMillis;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {}
 
-    }
-
-    long numberOfLogRotations()
-    {
+    long numberOfLogRotations() {
         return rotationCounter.get();
     }
 
-    long logRotationAccumulatedTotalTimeMillis()
-    {
+    long logRotationAccumulatedTotalTimeMillis() {
         return accumulatedRotationTimeMillis.get();
     }
 
-    long lastLogRotationTimeMillis()
-    {
+    long lastLogRotationTimeMillis() {
         return lastRotationTimeMillis;
     }
 }

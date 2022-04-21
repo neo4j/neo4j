@@ -21,18 +21,16 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class ProfilerStatisticsNotReadyException extends Neo4jException
-{
-    private static final String ERROR_MSG = "This result has not been materialised yet. Iterate over it to get profiler stats.";
+public class ProfilerStatisticsNotReadyException extends Neo4jException {
+    private static final String ERROR_MSG =
+            "This result has not been materialised yet. Iterate over it to get profiler stats.";
 
-    public ProfilerStatisticsNotReadyException()
-    {
-        super( ERROR_MSG );
+    public ProfilerStatisticsNotReadyException() {
+        super(ERROR_MSG);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.ExecutionFailed;
     }
 }

@@ -46,7 +46,9 @@ trait PercentileTest {
 }
 
 class PercentileDiscTest extends CypherFunSuite with PercentileTest {
-  def createAggregator(inner: Expression, perc: Expression) = new PercentileDiscFunction(inner, perc, EmptyMemoryTracker.INSTANCE)
+
+  def createAggregator(inner: Expression, perc: Expression) =
+    new PercentileDiscFunction(inner, perc, EmptyMemoryTracker.INSTANCE)
 
   test("singleOne") {
     val values = List(1.0)
@@ -126,7 +128,9 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
 }
 
 class PercentileContTest extends CypherFunSuite with PercentileTest {
-  def createAggregator(inner: Expression, perc:Expression) = new PercentileContFunction(inner, perc, EmptyMemoryTracker.INSTANCE)
+
+  def createAggregator(inner: Expression, perc: Expression) =
+    new PercentileContFunction(inner, perc, EmptyMemoryTracker.INSTANCE)
 
   test("singleOne") {
     val values = List(1.0)

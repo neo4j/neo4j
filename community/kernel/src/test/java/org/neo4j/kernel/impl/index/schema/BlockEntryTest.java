@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -34,72 +34,64 @@ import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-@ExtendWith( RandomExtension.class )
-class BlockEntryTest
-{
+@ExtendWith(RandomExtension.class)
+class BlockEntryTest {
     @Inject
     RandomSupport rnd;
 
-    private static final PageCursor pageCursor = ByteArrayPageCursor.wrap( 1000 );
+    private static final PageCursor pageCursor = ByteArrayPageCursor.wrap(1000);
     private static SimpleLongLayout layout;
 
     @BeforeEach
-    void setup()
-    {
+    void setup() {
         layout = SimpleLongLayout.longLayout()
-                .withFixedSize( rnd.nextBoolean() )
-                .withKeyPadding( rnd.nextInt( 10 ) )
+                .withFixedSize(rnd.nextBoolean())
+                .withKeyPadding(rnd.nextInt(10))
                 .build();
     }
 
     @Test
-    void shouldReadWriteSingleEntry()
-    {
+    void shouldReadWriteSingleEntry() {
         // given
-        MutableLong writeKey = layout.key( rnd.nextLong() );
-        MutableLong writeValue = layout.value( rnd.nextLong() );
+        MutableLong writeKey = layout.key(rnd.nextLong());
+        MutableLong writeValue = layout.value(rnd.nextLong());
         int offset = pageCursor.getOffset();
-        BlockEntry.write( pageCursor, layout, writeKey, writeValue );
+        BlockEntry.write(pageCursor, layout, writeKey, writeValue);
 
         // when
         MutableLong readKey = layout.newKey();
         MutableLong readValue = layout.newValue();
-        pageCursor.setOffset( offset );
-        BlockEntry.read( pageCursor, layout, readKey, readValue );
+        pageCursor.setOffset(offset);
+        BlockEntry.read(pageCursor, layout, readKey, readValue);
 
         // then
-        assertEquals( 0, layout.compare( writeKey, readKey ) );
-        assertEquals( 0, layout.compare( writeValue, readValue ) );
+        assertEquals(0, layout.compare(writeKey, readKey));
+        assertEquals(0, layout.compare(writeValue, readValue));
     }
 
     @Test
-    void shouldReadWriteMultipleEntries()
-    {
-        List<BlockEntry<MutableLong,MutableLong>> expectedEntries = new ArrayList<>();
+    void shouldReadWriteMultipleEntries() {
+        List<BlockEntry<MutableLong, MutableLong>> expectedEntries = new ArrayList<>();
         int nbrOfEntries = 10;
         int offset = pageCursor.getOffset();
-        for ( int i = 0; i < nbrOfEntries; i++ )
-        {
-            MutableLong key = layout.key( rnd.nextLong() );
-            MutableLong value = layout.value( rnd.nextLong() );
-            BlockEntry<MutableLong,MutableLong> entry = new BlockEntry<>( key, value );
-            BlockEntry.write( pageCursor, layout, key, value );
-            expectedEntries.add( entry );
+        for (int i = 0; i < nbrOfEntries; i++) {
+            MutableLong key = layout.key(rnd.nextLong());
+            MutableLong value = layout.value(rnd.nextLong());
+            BlockEntry<MutableLong, MutableLong> entry = new BlockEntry<>(key, value);
+            BlockEntry.write(pageCursor, layout, key, value);
+            expectedEntries.add(entry);
         }
 
-        pageCursor.setOffset( offset );
-        for ( BlockEntry<MutableLong,MutableLong> expectedEntry : expectedEntries )
-        {
-            BlockEntry<MutableLong,MutableLong> actualEntry = BlockEntry.read( pageCursor, layout );
-            assertBlockEquals( expectedEntry, actualEntry );
+        pageCursor.setOffset(offset);
+        for (BlockEntry<MutableLong, MutableLong> expectedEntry : expectedEntries) {
+            BlockEntry<MutableLong, MutableLong> actualEntry = BlockEntry.read(pageCursor, layout);
+            assertBlockEquals(expectedEntry, actualEntry);
         }
     }
 
-    private static void assertBlockEquals( BlockEntry<MutableLong,MutableLong> expected, BlockEntry<MutableLong,MutableLong> actual )
-    {
-        assertEquals( 0, layout.compare( expected.key(), actual.key() ) );
-        assertEquals( 0, layout.compare( expected.value(), actual.value() ) );
+    private static void assertBlockEquals(
+            BlockEntry<MutableLong, MutableLong> expected, BlockEntry<MutableLong, MutableLong> actual) {
+        assertEquals(0, layout.compare(expected.key(), actual.key()));
+        assertEquals(0, layout.compare(expected.value(), actual.value()));
     }
 }

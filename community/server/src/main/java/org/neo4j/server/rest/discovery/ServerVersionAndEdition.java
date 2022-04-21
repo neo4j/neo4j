@@ -22,38 +22,31 @@ package org.neo4j.server.rest.discovery;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.server.NeoWebServer;
 
-public class ServerVersionAndEdition
-{
+public class ServerVersionAndEdition {
     private final Map<String, String> serverInfo;
 
-    ServerVersionAndEdition( NeoWebServer neoWebServer )
-    {
-        this( neoDatabaseVersion(), neoServerEdition( neoWebServer ) );
+    ServerVersionAndEdition(NeoWebServer neoWebServer) {
+        this(neoDatabaseVersion(), neoServerEdition(neoWebServer));
     }
 
-    public ServerVersionAndEdition( String version, String edition )
-    {
+    public ServerVersionAndEdition(String version, String edition) {
         serverInfo = new HashMap<>();
-        serverInfo.put( "neo4j_version", version );
-        serverInfo.put( "neo4j_edition", edition );
+        serverInfo.put("neo4j_version", version);
+        serverInfo.put("neo4j_edition", edition);
     }
 
-    public void forEach( BiConsumer<String,String> consumer )
-    {
-        serverInfo.forEach( consumer );
+    public void forEach(BiConsumer<String, String> consumer) {
+        serverInfo.forEach(consumer);
     }
 
-    private static String neoDatabaseVersion()
-    {
+    private static String neoDatabaseVersion() {
         return Version.getKernel().getReleaseVersion();
     }
 
-    private static String neoServerEdition( NeoWebServer neoWebServer )
-    {
+    private static String neoServerEdition(NeoWebServer neoWebServer) {
         return neoWebServer.getDbmsInfo().edition.toString();
     }
 }

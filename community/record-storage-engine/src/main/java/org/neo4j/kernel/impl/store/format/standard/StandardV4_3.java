@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format.standard;
 
+import static org.neo4j.kernel.impl.store.format.StoreVersion.STANDARD_V4_3;
+
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -34,89 +36,72 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Index44Compatibility;
 
-import static org.neo4j.kernel.impl.store.format.StoreVersion.STANDARD_V4_3;
-
-public class StandardV4_3 extends BaseRecordFormats
-{
+public class StandardV4_3 extends BaseRecordFormats {
     public static final String STORE_VERSION = STANDARD_V4_3.versionString();
     public static final RecordFormats RECORD_FORMATS = new StandardV4_3();
     public static final String NAME = FormatFamily.standard.name() + "V4_3";
 
-    public StandardV4_3()
-    {
-        super( STANDARD_V4_3, 0, 1,
-                FormatFamily.standard.formatCapability(), Index44Compatibility.INSTANCE );
+    public StandardV4_3() {
+        super(STANDARD_V4_3, 0, 1, FormatFamily.standard.formatCapability(), Index44Compatibility.INSTANCE);
     }
 
     @Override
-    public RecordFormat<NodeRecord> node()
-    {
+    public RecordFormat<NodeRecord> node() {
         return new NodeRecordFormat();
     }
 
     @Override
-    public RecordFormat<RelationshipGroupRecord> relationshipGroup()
-    {
+    public RecordFormat<RelationshipGroupRecord> relationshipGroup() {
         return new RelationshipGroupRecordFormat();
     }
 
     @Override
-    public RecordFormat<RelationshipRecord> relationship()
-    {
+    public RecordFormat<RelationshipRecord> relationship() {
         return new RelationshipRecordFormat();
     }
 
     @Override
-    public RecordFormat<PropertyRecord> property()
-    {
+    public RecordFormat<PropertyRecord> property() {
         return new PropertyRecordFormat();
     }
 
     @Override
-    public RecordFormat<LabelTokenRecord> labelToken()
-    {
+    public RecordFormat<LabelTokenRecord> labelToken() {
         return new LabelTokenRecordFormat();
     }
 
     @Override
-    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
-    {
+    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken() {
         return new PropertyKeyTokenRecordFormat();
     }
 
     @Override
-    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
-    {
+    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken() {
         return new RelationshipTypeTokenRecordFormat();
     }
 
     @Override
-    public RecordFormat<DynamicRecord> dynamic()
-    {
+    public RecordFormat<DynamicRecord> dynamic() {
         return new DynamicRecordFormat();
     }
 
     @Override
-    public FormatFamily getFormatFamily()
-    {
+    public FormatFamily getFormatFamily() {
         return FormatFamily.standard;
     }
 
     @Override
-    public RecordFormat<SchemaRecord> schema()
-    {
+    public RecordFormat<SchemaRecord> schema() {
         return new SchemaRecordFormat();
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return NAME;
     }
 
     @Override
-    public RecordFormats[] compatibleVersionsForRollingUpgrade()
-    {
+    public RecordFormats[] compatibleVersionsForRollingUpgrade() {
         // Technically this format is compatible with older formats in the same family.
         // But we will never roll to it in this version, an older version of the binaries is needed for that.
         return new RecordFormats[0];

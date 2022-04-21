@@ -19,17 +19,6 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.List;
-
-import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.parameter.ParameterService;
-import org.neo4j.shell.parameter.ParameterService.Parameter;
-import org.neo4j.shell.printer.Printer;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,140 +28,135 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class ParamsTest
-{
+import java.util.HashMap;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.parameter.ParameterService.Parameter;
+import org.neo4j.shell.printer.Printer;
+
+class ParamsTest {
     private HashMap<String, Parameter> vars;
     private Printer printer;
     private Params cmd;
 
     @BeforeEach
-    void setup()
-    {
+    void setup() {
         vars = new HashMap<>();
-        printer = mock( Printer.class );
-        ParameterService parameters = mock( ParameterService.class );
-        when( parameters.parameters() ).thenReturn( vars );
-        cmd = new Params( printer, parameters );
+        printer = mock(Printer.class);
+        ParameterService parameters = mock(ParameterService.class);
+        when(parameters.parameters()).thenReturn(vars);
+        cmd = new Params(printer, parameters);
     }
 
     @Test
-    void descriptionNotNull()
-    {
-        assertNotNull( cmd.metadata().description() );
+    void descriptionNotNull() {
+        assertNotNull(cmd.metadata().description());
     }
 
     @Test
-    void usageNotNull()
-    {
-        assertNotNull( cmd.metadata().usage() );
+    void usageNotNull() {
+        assertNotNull(cmd.metadata().usage());
     }
 
     @Test
-    void helpNotNull()
-    {
-        assertNotNull( cmd.metadata().help() );
+    void helpNotNull() {
+        assertNotNull(cmd.metadata().help());
     }
 
     @Test
-    void runCommand() throws CommandException
-    {
+    void runCommand() throws CommandException {
         // given
         String var = "var";
         int value = 9;
-        addParam( "var", 9 );
+        addParam("var", 9);
         // when
-        cmd.execute( List.of() );
+        cmd.execute(List.of());
         // then
-        verify( printer ).printOut( ":param var => 9" );
-        verifyNoMoreInteractions( printer );
+        verify(printer).printOut(":param var => 9");
+        verifyNoMoreInteractions(printer);
     }
 
     @Test
-    void runCommandAlignment() throws CommandException
-    {
+    void runCommandAlignment() throws CommandException {
         // given
-        addParam( "var", 9 );
-        addParam( "param", 99999 );
+        addParam("var", 9);
+        addParam("param", 99999);
         // when
-        cmd.execute( List.of() );
+        cmd.execute(List.of());
         // then
-        verify( printer ).printOut( ":param param => 99999" );
-        verify( printer ).printOut( ":param var   => 9" );
-        verifyNoMoreInteractions( printer );
+        verify(printer).printOut(":param param => 99999");
+        verify(printer).printOut(":param var   => 9");
+        verifyNoMoreInteractions(printer);
     }
 
     @Test
-    void runCommandWithArg() throws CommandException
-    {
+    void runCommandWithArg() throws CommandException {
         // given
-        addParam( "var", 9 );
-        addParam( "param", 9999 );
+        addParam("var", 9);
+        addParam("param", 9999);
         // when
-        cmd.execute( List.of( "var" ) );
+        cmd.execute(List.of("var"));
         // then
-        verify( printer ).printOut( ":param var => 9" );
-        verifyNoMoreInteractions( printer );
+        verify(printer).printOut(":param var => 9");
+        verifyNoMoreInteractions(printer);
     }
 
     @Test
-    void runCommandWithArgWithExtraSpace() throws CommandException
-    {
+    void runCommandWithArgWithExtraSpace() throws CommandException {
         // given
-        addParam( "var", 9 );
-        addParam( "param", 9999 );
+        addParam("var", 9);
+        addParam("param", 9999);
         // when
-        cmd.execute( List.of( " var" ) );
+        cmd.execute(List.of(" var"));
         // then
-        verify( printer ).printOut( ":param var => 9" );
-        verifyNoMoreInteractions( printer );
+        verify(printer).printOut(":param var => 9");
+        verifyNoMoreInteractions(printer);
     }
 
     @Test
-    void runCommandWithArgWithBackticks() throws CommandException
-    {
+    void runCommandWithArgWithBackticks() throws CommandException {
         // given
-        addParam( "var", 9 );
-        addParam( "param", 9999 );
+        addParam("var", 9);
+        addParam("param", 9999);
         // when
-        cmd.execute( List.of( "`var`" ) );
+        cmd.execute(List.of("`var`"));
         // then
-        verify( printer ).printOut( ":param `var` => 9" );
-        verifyNoMoreInteractions( printer );
+        verify(printer).printOut(":param `var` => 9");
+        verifyNoMoreInteractions(printer);
     }
 
     @Test
-    void runCommandWithSpecialCharacters() throws CommandException
-    {
+    void runCommandWithSpecialCharacters() throws CommandException {
         // given
-        addParam( "var `", 9 );
-        addParam( "param", 9999 );
+        addParam("var `", 9);
+        addParam("param", 9999);
         // when
-        cmd.execute( List.of( "`var ```" ) );
+        cmd.execute(List.of("`var ```"));
         // then
-        verify( printer ).printOut( ":param `var ``` => 9" );
-        verifyNoMoreInteractions( printer );
+        verify(printer).printOut(":param `var ``` => 9");
+        verifyNoMoreInteractions(printer);
     }
 
     @Test
-    void runCommandWithUnknownArg()
-    {
+    void runCommandWithUnknownArg() {
         // given
-        addParam( "var", 9 );
+        addParam("var", 9);
 
         // when
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob" ) ) );
-        assertThat( exception.getMessage(), containsString( "Unknown parameter: bob" ) );
+        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob")));
+        assertThat(exception.getMessage(), containsString("Unknown parameter: bob"));
     }
 
     @Test
-    void shouldNotAcceptMoreThanOneArgs()
-    {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob", "sob" ) ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+    void shouldNotAcceptMoreThanOneArgs() {
+        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob", "sob")));
+        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
     }
 
-    private void addParam( String name, int value )
-    {
-        vars.put( name, new Parameter( name, String.valueOf( value ), value ) );
+    private void addParam(String name, int value) {
+        vars.put(name, new Parameter(name, String.valueOf(value), value));
     }
 }

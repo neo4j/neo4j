@@ -19,6 +19,30 @@
  */
 package org.neo4j.server;
 
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.forced_kernel_id;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_rotation_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.helpers.collection.MapUtil.store;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.WebContainerTestUtils.getDefaultRelativeProperties;
+import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
+import static org.neo4j.test.assertion.Assert.assertEventually;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.AfterEach;
@@ -26,13 +50,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
@@ -53,42 +70,18 @@ import org.neo4j.test.conditions.Conditions;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.forced_kernel_id;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_rotation_threshold;
-import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.internal.helpers.collection.MapUtil.store;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.WebContainerTestUtils.getDefaultRelativeProperties;
-import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
-import static org.neo4j.test.assertion.Assert.assertEventually;
-
-
-public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
-{
+public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
     protected NeoBootstrapper bootstrapper;
 
     @BeforeEach
-    void before()
-    {
+    void before() {
         bootstrapper = newBootstrapper();
-        SelfSignedCertificateFactory.create( testDirectory.homePath() );
+        SelfSignedCertificateFactory.create(testDirectory.homePath());
     }
 
     @AfterEach
-    void after()
-    {
-        if ( bootstrapper != null )
-        {
+    void after() {
+        if (bootstrapper != null) {
             bootstrapper.stop();
         }
     }
@@ -96,264 +89,278 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     protected abstract NeoBootstrapper newBootstrapper();
 
     @Test
-    void shouldStartStopNeoServerWithoutAnyConfigFiles()
-    {
+    void shouldStartStopNeoServerWithoutAnyConfigFiles() {
         // When
-        int resultCode = NeoBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig( getAdditionalArguments() ) );
+        int resultCode =
+                NeoBootstrapper.start(bootstrapper, withConnectorsOnRandomPortsConfig(getAdditionalArguments()));
 
         // Then
-        assertEquals( NeoBootstrapper.OK, resultCode );
-        assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
+        assertEquals(NeoBootstrapper.OK, resultCode);
+        assertEventually("Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES);
     }
 
-    protected String[] getAdditionalArguments()
-    {
-        return new String[]{"--home-dir", testDirectory.directory( "home-dir" ).toAbsolutePath().toString(),
-                "-c", configOption( data_directory, testDirectory.absolutePath().toString() ),
-                "-c", configOption( logs_directory, testDirectory.absolutePath().toString() )};
+    protected String[] getAdditionalArguments() {
+        return new String[] {
+            "--home-dir",
+            testDirectory.directory("home-dir").toAbsolutePath().toString(),
+            "-c",
+            configOption(data_directory, testDirectory.absolutePath().toString()),
+            "-c",
+            configOption(logs_directory, testDirectory.absolutePath().toString())
+        };
     }
 
     @Test
-    void canSpecifyConfigFile() throws Throwable
-    {
+    void canSpecifyConfigFile() throws Throwable {
         // Given
-        Path configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
+        Path configFile = testDirectory.file(Config.DEFAULT_CONFIG_FILE_NAME);
 
-        Map<String,String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
-        properties.putAll( getDefaultRelativeProperties( testDirectory.homePath() ) );
-        properties.putAll( connectorsOnRandomPortsConfig() );
+        Map<String, String> properties = stringMap(forced_kernel_id.name(), "ourcustomvalue");
+        properties.putAll(getDefaultRelativeProperties(testDirectory.homePath()));
+        properties.putAll(connectorsOnRandomPortsConfig());
 
-        store( properties, configFile );
+        store(properties, configFile);
 
         // When
-        NeoBootstrapper.start( bootstrapper,
-                "--home-dir", testDirectory.directory( "home-dir" ).toAbsolutePath().toString(),
-                "--config-dir", configFile.getParent().toAbsolutePath().toString() );
+        NeoBootstrapper.start(
+                bootstrapper,
+                "--home-dir",
+                testDirectory.directory("home-dir").toAbsolutePath().toString(),
+                "--config-dir",
+                configFile.getParent().toAbsolutePath().toString());
 
         // Then
         var dependencyResolver = getDependencyResolver();
-        assertThat( dependencyResolver.resolveDependency( Config.class ).get( forced_kernel_id ) ).isEqualTo( "ourcustomvalue" );
+        assertThat(dependencyResolver.resolveDependency(Config.class).get(forced_kernel_id))
+                .isEqualTo("ourcustomvalue");
     }
 
     @Test
-    void canOverrideConfigValues() throws Throwable
-    {
+    void canOverrideConfigValues() throws Throwable {
         // Given
-        Path configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
+        Path configFile = testDirectory.file(Config.DEFAULT_CONFIG_FILE_NAME);
 
-        Map<String,String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
-        properties.putAll( getDefaultRelativeProperties( testDirectory.homePath() ) );
-        properties.putAll( connectorsOnRandomPortsConfig() );
+        Map<String, String> properties = stringMap(forced_kernel_id.name(), "thisshouldnotshowup");
+        properties.putAll(getDefaultRelativeProperties(testDirectory.homePath()));
+        properties.putAll(connectorsOnRandomPortsConfig());
 
-        store( properties, configFile );
+        store(properties, configFile);
 
         // When
-        NeoBootstrapper.start( bootstrapper,
-                "--home-dir", testDirectory.directory( "home-dir" ).toAbsolutePath().toString(),
-                "--config-dir", configFile.getParent().toAbsolutePath().toString(),
-                "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
+        NeoBootstrapper.start(
+                bootstrapper,
+                "--home-dir",
+                testDirectory.directory("home-dir").toAbsolutePath().toString(),
+                "--config-dir",
+                configFile.getParent().toAbsolutePath().toString(),
+                "-c",
+                configOption(forced_kernel_id, "mycustomvalue"));
 
         // Then
         var dependencyResolver = getDependencyResolver();
-        assertThat( dependencyResolver.resolveDependency( Config.class ).get( forced_kernel_id ) ).isEqualTo( "mycustomvalue" );
+        assertThat(dependencyResolver.resolveDependency(Config.class).get(forced_kernel_id))
+                .isEqualTo("mycustomvalue");
     }
 
     @Test
-    void shouldStartWithHttpHttpsAndBoltDisabled()
-    {
-        testStartupWithConnectors( false, false, false );
+    void shouldStartWithHttpHttpsAndBoltDisabled() {
+        testStartupWithConnectors(false, false, false);
     }
 
     @Test
-    void shouldStartWithHttpEnabledAndHttpsBoltDisabled()
-    {
-        testStartupWithConnectors( true, false, false );
+    void shouldStartWithHttpEnabledAndHttpsBoltDisabled() {
+        testStartupWithConnectors(true, false, false);
     }
 
     @Test
-    void shouldStartWithHttpsEnabledAndHttpBoltDisabled()
-    {
-        testStartupWithConnectors( false, true, false );
+    void shouldStartWithHttpsEnabledAndHttpBoltDisabled() {
+        testStartupWithConnectors(false, true, false);
     }
 
     @Test
-    void shouldStartWithBoltEnabledAndHttpHttpsDisabled()
-    {
-        testStartupWithConnectors( false, false, true );
+    void shouldStartWithBoltEnabledAndHttpHttpsDisabled() {
+        testStartupWithConnectors(false, false, true);
     }
 
     @Test
-    void shouldStartWithHttpHttpsEnabledAndBoltDisabled()
-    {
-        testStartupWithConnectors( true, true, false );
+    void shouldStartWithHttpHttpsEnabledAndBoltDisabled() {
+        testStartupWithConnectors(true, true, false);
     }
 
     @Test
-    void shouldStartWithHttpBoltEnabledAndHttpsDisabled()
-    {
-        testStartupWithConnectors( true, false, true );
+    void shouldStartWithHttpBoltEnabledAndHttpsDisabled() {
+        testStartupWithConnectors(true, false, true);
     }
 
     @Test
-    void shouldStartWithHttpsBoltEnabledAndHttpDisabled()
-    {
-        testStartupWithConnectors( false, true, true );
+    void shouldStartWithHttpsBoltEnabledAndHttpDisabled() {
+        testStartupWithConnectors(false, true, true);
     }
 
     @Test
-    void shouldHaveSameLayoutAsEmbedded()
-    {
-        Path serverDir = testDirectory.directory( "server-dir" );
-        NeoBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig( "--home-dir", serverDir.toAbsolutePath().toString() ) );
-        assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
-        var databaseAPI = (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database( DEFAULT_DATABASE_NAME );
+    void shouldHaveSameLayoutAsEmbedded() {
+        Path serverDir = testDirectory.directory("server-dir");
+        NeoBootstrapper.start(
+                bootstrapper,
+                withConnectorsOnRandomPortsConfig(
+                        "--home-dir", serverDir.toAbsolutePath().toString()));
+        assertEventually("Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES);
+        var databaseAPI =
+                (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database(DEFAULT_DATABASE_NAME);
         var serverLayout = databaseAPI.databaseLayout().getNeo4jLayout();
         bootstrapper.stop();
 
-        Path embeddedDir = testDirectory.directory( "embedded-dir" );
-        DatabaseManagementService dbms = newEmbeddedDbms( embeddedDir );
-        Neo4jLayout embeddedLayout = ((GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME )).databaseLayout().getNeo4jLayout();
+        Path embeddedDir = testDirectory.directory("embedded-dir");
+        DatabaseManagementService dbms = newEmbeddedDbms(embeddedDir);
+        Neo4jLayout embeddedLayout = ((GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME))
+                .databaseLayout()
+                .getNeo4jLayout();
         dbms.shutdown();
 
-        assertEquals( serverDir.relativize( serverLayout.homeDirectory() ), embeddedDir.relativize( embeddedLayout.homeDirectory() ) );
-        assertEquals( serverDir.relativize( serverLayout.databasesDirectory() ), embeddedDir.relativize( embeddedLayout.databasesDirectory() ) );
-        assertEquals( serverDir.relativize( serverLayout.transactionLogsRootDirectory() ),
-                embeddedDir.relativize( embeddedLayout.transactionLogsRootDirectory() ) );
+        assertEquals(
+                serverDir.relativize(serverLayout.homeDirectory()),
+                embeddedDir.relativize(embeddedLayout.homeDirectory()));
+        assertEquals(
+                serverDir.relativize(serverLayout.databasesDirectory()),
+                embeddedDir.relativize(embeddedLayout.databasesDirectory()));
+        assertEquals(
+                serverDir.relativize(serverLayout.transactionLogsRootDirectory()),
+                embeddedDir.relativize(embeddedLayout.transactionLogsRootDirectory()));
     }
 
     @Test
-    void shouldOnlyAllowCommandExpansionWhenProvidedAsArgument()
-    {
-        //Given
-        String setting = String.format( "%s=$(%s 100 * 1000)", log_queries_rotation_threshold.name(), IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr" );
-        String[] args = withConnectorsOnRandomPortsConfig( "--home-dir", testDirectory.homePath().toString(), "-c", setting );
-
-        //Then
-        assertThatThrownBy( () -> NeoBootstrapper.start( bootstrapper, args ) )
-                .hasMessageContaining( "is a command, but config is not explicitly told to expand it" );
-
-        //Also then
-        NeoBootstrapper.start( bootstrapper, Arrays.append( args, "--expand-commands" ) );
-
-        GraphDatabaseAPI db = (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database( DEFAULT_DATABASE_NAME );
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        assertThat( config.get( log_queries_rotation_threshold ) ).isEqualTo( 100000L );
-    }
-
-    @Test
-    @DisabledOnOs( OS.WINDOWS )
-    void shouldWriteAndDeletePidFile()
-    {
-        // When
-        int resultCode = NeoBootstrapper.start( bootstrapper, "--home-dir", testDirectory.homePath().toString() );
+    void shouldOnlyAllowCommandExpansionWhenProvidedAsArgument() {
+        // Given
+        String setting = String.format(
+                "%s=$(%s 100 * 1000)",
+                log_queries_rotation_threshold.name(), IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr");
+        String[] args = withConnectorsOnRandomPortsConfig(
+                "--home-dir", testDirectory.homePath().toString(), "-c", setting);
 
         // Then
-        assertEquals( NeoBootstrapper.OK, resultCode );
-        assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
-        Path pidFile = getDependencyResolver().resolveDependency( Config.class ).get( BootloaderSettings.pid_file );
-        assertTrue( Files.exists( pidFile ) );
+        assertThatThrownBy(() -> NeoBootstrapper.start(bootstrapper, args))
+                .hasMessageContaining("is a command, but config is not explicitly told to expand it");
 
-        //When
+        // Also then
+        NeoBootstrapper.start(bootstrapper, Arrays.append(args, "--expand-commands"));
+
+        GraphDatabaseAPI db =
+                (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database(DEFAULT_DATABASE_NAME);
+        Config config = db.getDependencyResolver().resolveDependency(Config.class);
+        assertThat(config.get(log_queries_rotation_threshold)).isEqualTo(100000L);
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void shouldWriteAndDeletePidFile() {
+        // When
+        int resultCode = NeoBootstrapper.start(
+                bootstrapper, "--home-dir", testDirectory.homePath().toString());
+
+        // Then
+        assertEquals(NeoBootstrapper.OK, resultCode);
+        assertEventually("Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES);
+        Path pidFile = getDependencyResolver().resolveDependency(Config.class).get(BootloaderSettings.pid_file);
+        assertTrue(Files.exists(pidFile));
+
+        // When
         bootstrapper.stop();
 
-        //Then
-        assertFalse( Files.exists( pidFile ) );
+        // Then
+        assertFalse(Files.exists(pidFile));
     }
 
-    protected abstract DatabaseManagementService newEmbeddedDbms( Path homeDir );
+    protected abstract DatabaseManagementService newEmbeddedDbms(Path homeDir);
 
-    private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
-    {
-        SslPolicyConfig httpsPolicy = SslPolicyConfig.forScope( SslPolicyScope.HTTPS );
-        if ( httpsEnabled )
-        {
-            //create self signed
-            SelfSignedCertificateFactory.create( testDirectory.absolutePath() );
+    private void testStartupWithConnectors(boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled) {
+        SslPolicyConfig httpsPolicy = SslPolicyConfig.forScope(SslPolicyScope.HTTPS);
+        if (httpsEnabled) {
+            // create self signed
+            SelfSignedCertificateFactory.create(testDirectory.absolutePath());
         }
 
-        String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.enabled, SettingValueParsers.TRUE ) : "",
-                "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.absolutePath().toString() ) : "",
+        String[] config = {
+            "-c",
+            httpsEnabled ? configOption(httpsPolicy.enabled, SettingValueParsers.TRUE) : "",
+            "-c",
+            httpsEnabled
+                    ? configOption(
+                            httpsPolicy.base_directory,
+                            testDirectory.absolutePath().toString())
+                    : "",
+            "-c",
+            HttpConnector.enabled.name() + "=" + httpEnabled,
+            "-c",
+            HttpConnector.listen_address.name() + "=localhost:0",
+            "-c",
+            HttpsConnector.enabled.name() + "=" + httpsEnabled,
+            "-c",
+            HttpsConnector.listen_address.name() + "=localhost:0",
+            "-c",
+            BoltConnector.enabled.name() + "=" + boltEnabled,
+            "-c",
+            BoltConnector.listen_address.name() + "=localhost:0"
+        };
+        var allConfigOptions = ArrayUtils.addAll(config, getAdditionalArguments());
+        int resultCode = NeoBootstrapper.start(bootstrapper, allConfigOptions);
 
-                "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
-                "-c", HttpConnector.listen_address.name() + "=localhost:0",
-
-                "-c", HttpsConnector.enabled.name() + "=" + httpsEnabled,
-                "-c", HttpsConnector.listen_address.name() + "=localhost:0",
-
-                "-c", BoltConnector.enabled.name() + "=" + boltEnabled,
-                "-c", BoltConnector.listen_address.name() + "=localhost:0" };
-        var allConfigOptions = ArrayUtils.addAll( config, getAdditionalArguments() );
-        int resultCode = NeoBootstrapper.start( bootstrapper, allConfigOptions );
-
-        assertEquals( NeoBootstrapper.OK, resultCode );
-        assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
+        assertEquals(NeoBootstrapper.OK, resultCode);
+        assertEventually("Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES);
         assertDbAccessibleAsEmbedded();
 
-        verifyConnector( db(), HttpConnector.NAME, httpEnabled );
-        verifyConnector( db(), HttpsConnector.NAME, httpsEnabled );
-        verifyConnector( db(), BoltConnector.NAME, boltEnabled );
+        verifyConnector(db(), HttpConnector.NAME, httpEnabled);
+        verifyConnector(db(), HttpsConnector.NAME, httpsEnabled);
+        verifyConnector(db(), BoltConnector.NAME, boltEnabled);
     }
 
-    protected static String configOption( Setting<?> setting, String value )
-    {
+    protected static String configOption(Setting<?> setting, String value) {
         return setting.name() + "=" + value;
     }
 
-    protected static String[] withConnectorsOnRandomPortsConfig( String... otherConfigs )
-    {
-        Stream<String> configs = Stream.of( otherConfigs );
+    protected static String[] withConnectorsOnRandomPortsConfig(String... otherConfigs) {
+        Stream<String> configs = Stream.of(otherConfigs);
 
-        Stream<String> connectorsConfig = connectorsOnRandomPortsConfig().entrySet()
-                .stream()
-                .map( entry -> entry.getKey() + "=" + entry.getValue() )
-                .flatMap( config -> Stream.of( "-c", config ) );
+        Stream<String> connectorsConfig = connectorsOnRandomPortsConfig().entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .flatMap(config -> Stream.of("-c", config));
 
-        return Stream.concat( configs, connectorsConfig ).toArray( String[]::new );
+        return Stream.concat(configs, connectorsConfig).toArray(String[]::new);
     }
 
-    protected static Map<String,String> connectorsOnRandomPortsConfig()
-    {
+    protected static Map<String, String> connectorsOnRandomPortsConfig() {
         return stringMap(
                 HttpConnector.listen_address.name(), "localhost:0",
                 HttpConnector.enabled.name(), SettingValueParsers.TRUE,
-
                 HttpsConnector.listen_address.name(), "localhost:0",
                 HttpsConnector.enabled.name(), FALSE,
-
                 BoltConnector.listen_address.name(), "localhost:0",
                 BoltConnector.encryption_level.name(), "DISABLED",
-                BoltConnector.enabled.name(), SettingValueParsers.TRUE
-        );
+                BoltConnector.enabled.name(), SettingValueParsers.TRUE);
     }
 
-    private void assertDbAccessibleAsEmbedded()
-    {
+    private void assertDbAccessibleAsEmbedded() {
         GraphDatabaseAPI db = db();
 
         Label label = () -> "Node";
         String propertyKey = "key";
         String propertyValue = "value";
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode( label ).setProperty( propertyKey, propertyValue );
+        try (Transaction tx = db.beginTx()) {
+            tx.createNode(label).setProperty(propertyKey, propertyValue);
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = single( tx.findNodes( label ) );
-            assertEquals( propertyValue, node.getProperty( propertyKey ) );
+        try (Transaction tx = db.beginTx()) {
+            Node node = single(tx.findNodes(label));
+            assertEquals(propertyValue, node.getProperty(propertyKey));
             tx.commit();
         }
     }
 
-    private GraphDatabaseAPI db()
-    {
-        return (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database( DEFAULT_DATABASE_NAME );
+    private GraphDatabaseAPI db() {
+        return (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database(DEFAULT_DATABASE_NAME);
     }
 
-    private DependencyResolver getDependencyResolver()
-    {
+    private DependencyResolver getDependencyResolver() {
         return db().getDependencyResolver();
     }
 }

@@ -64,24 +64,39 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("CREATE ALIAS $alias FOR DATABASE $target") {
-    assertAst(CreateDatabaseAlias(Right(Parameter("alias", CTString)(1, 14, 13)), Right(Parameter("target", CTString)(1, 34, 33)), IfExistsThrowError)(defaultPos))
+    assertAst(CreateDatabaseAlias(
+      Right(Parameter("alias", CTString)(1, 14, 13)),
+      Right(Parameter("target", CTString)(1, 34, 33)),
+      IfExistsThrowError
+    )(defaultPos))
   }
 
   test("CREATE ALIAS IF") {
-    assertFailsWithMessage(testName, """Invalid input '': expected ".", "FOR" or "IF" (line 1, column 16 (offset: 15))""")
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '': expected ".", "FOR" or "IF" (line 1, column 16 (offset: 15))"""
+    )
   }
 
   test("CREATE ALIAS") {
-    assertFailsWithMessage(testName, """Invalid input '': expected a parameter or an identifier (line 1, column 13 (offset: 12))""")
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '': expected a parameter or an identifier (line 1, column 13 (offset: 12))"""
+    )
   }
 
   test("CREATE ALIAS #Malmö FOR DATABASE db1") {
-    assertFailsWithMessage(testName,
-      s"""Invalid input '#': expected a parameter or an identifier (line 1, column 14 (offset: 13))""".stripMargin)
+    assertFailsWithMessage(
+      testName,
+      s"""Invalid input '#': expected a parameter or an identifier (line 1, column 14 (offset: 13))""".stripMargin
+    )
   }
 
   test("CREATE ALIAS Mal#mö FOR DATABASE db1") {
-    assertFailsWithMessage(testName, s"""Invalid input '#': expected ".", "FOR" or "IF" (line 1, column 17 (offset: 16))""".stripMargin)
+    assertFailsWithMessage(
+      testName,
+      s"""Invalid input '#': expected ".", "FOR" or "IF" (line 1, column 17 (offset: 16))""".stripMargin
+    )
   }
 
   test("CREATE ALIAS `Mal#mö` FOR DATABASE db1") {
@@ -93,8 +108,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("CREATE ALIAS name FOR DATABASE") {
-    assertFailsWithMessage(testName,
-      s"""Invalid input '': expected a parameter or an identifier (line 1, column 31 (offset: 30))""")
+    assertFailsWithMessage(
+      testName,
+      s"""Invalid input '': expected a parameter or an identifier (line 1, column 31 (offset: 30))"""
+    )
   }
 
   // DROP ALIAS
@@ -128,11 +145,19 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("ALTER ALIAS $name SET DATABASE TARGET $db") {
-    assertAst(AlterDatabaseAlias(Right(Parameter("name", CTString)(1, 13, 12)), Right(Parameter("db", CTString)(1, 39, 38)), ifExists = false)(defaultPos))
+    assertAst(AlterDatabaseAlias(
+      Right(Parameter("name", CTString)(1, 13, 12)),
+      Right(Parameter("db", CTString)(1, 39, 38)),
+      ifExists = false
+    )(defaultPos))
   }
 
   test("ALTER ALIAS $name if exists SET DATABASE TARGET $db") {
-    assertAst(AlterDatabaseAlias(Right(Parameter("name", CTString)(1, 13, 12)), Right(Parameter("db", CTString)(1, 49, 48)), ifExists = true)(defaultPos))
+    assertAst(AlterDatabaseAlias(
+      Right(Parameter("name", CTString)(1, 13, 12)),
+      Right(Parameter("db", CTString)(1, 49, 48)),
+      ifExists = true
+    )(defaultPos))
   }
 
   test("ALTER ALIAS name if exists SET db TARGET") {
@@ -140,14 +165,23 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("ALTER DATABASE ALIAS name SET TARGET db if exists") {
-    assertFailsWithMessage(testName, """Invalid input 'name': expected ".", "IF" or "SET" (line 1, column 22 (offset: 21))""")
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'name': expected ".", "IF" or "SET" (line 1, column 22 (offset: 21))"""
+    )
   }
 
   test("ALTER FUNCTION name SET TARGET db if exists") {
-    assertFailsWithMessage(testName, """Invalid input 'FUNCTION': expected "ALIAS", "CURRENT", "DATABASE" or "USER" (line 1, column 7 (offset: 6))""")
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'FUNCTION': expected "ALIAS", "CURRENT", "DATABASE" or "USER" (line 1, column 7 (offset: 6))"""
+    )
   }
 
   test("ALTER FUNCTION name SET TARGET db if not exists") {
-    assertFailsWithMessage(testName, """Invalid input 'FUNCTION': expected "ALIAS", "CURRENT", "DATABASE" or "USER" (line 1, column 7 (offset: 6))""")
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'FUNCTION': expected "ALIAS", "CURRENT", "DATABASE" or "USER" (line 1, column 7 (offset: 6))"""
+    )
   }
 }

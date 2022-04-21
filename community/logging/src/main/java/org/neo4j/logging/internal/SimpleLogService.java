@@ -25,8 +25,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
 
-public class SimpleLogService extends AbstractLogService implements Lifecycle
-{
+public class SimpleLogService extends AbstractLogService implements Lifecycle {
     private final InternalLogProvider userLogProvider;
     private final InternalLogProvider internalLogProvider;
 
@@ -36,8 +35,7 @@ public class SimpleLogService extends AbstractLogService implements Lifecycle
      *
      * @param commonLogProvider log provider
      */
-    public SimpleLogService( InternalLogProvider commonLogProvider )
-    {
+    public SimpleLogService(InternalLogProvider commonLogProvider) {
         this.userLogProvider = commonLogProvider;
         this.internalLogProvider = commonLogProvider;
     }
@@ -49,49 +47,37 @@ public class SimpleLogService extends AbstractLogService implements Lifecycle
      * @param userLogProvider     user log provider
      * @param internalLogProvider internal log provider
      */
-    public SimpleLogService( InternalLogProvider userLogProvider, InternalLogProvider internalLogProvider )
-    {
-        this.userLogProvider = new DuplicatingLogProvider( userLogProvider, internalLogProvider );
+    public SimpleLogService(InternalLogProvider userLogProvider, InternalLogProvider internalLogProvider) {
+        this.userLogProvider = new DuplicatingLogProvider(userLogProvider, internalLogProvider);
         this.internalLogProvider = internalLogProvider;
     }
 
-    public SimpleLogService( Neo4jLoggerContext ctx )
-    {
-        this( new Log4jLogProvider( ctx ) );
+    public SimpleLogService(Neo4jLoggerContext ctx) {
+        this(new Log4jLogProvider(ctx));
     }
 
     @Override
-    public InternalLogProvider getUserLogProvider()
-    {
+    public InternalLogProvider getUserLogProvider() {
         return this.userLogProvider;
     }
 
     @Override
-    public InternalLogProvider getInternalLogProvider()
-    {
+    public InternalLogProvider getInternalLogProvider() {
         return this.internalLogProvider;
     }
 
     @Override
-    public void init()
-    {
-    }
+    public void init() {}
 
     @Override
-    public void start()
-    {
-    }
+    public void start() {}
 
     @Override
-    public void stop()
-    {
-    }
+    public void stop() {}
 
     @Override
-    public void shutdown()
-    {
-        if ( internalLogProvider instanceof Log4jLogProvider )
-        {
+    public void shutdown() {
+        if (internalLogProvider instanceof Log4jLogProvider) {
             ((Log4jLogProvider) internalLogProvider).close();
         }
     }

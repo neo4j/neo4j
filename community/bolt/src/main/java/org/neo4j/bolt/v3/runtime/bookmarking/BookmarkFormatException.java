@@ -19,23 +19,25 @@
  */
 package org.neo4j.bolt.v3.runtime.bookmarking;
 
+import static org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix.BOOKMARK_TX_PREFIX;
+
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix.BOOKMARK_TX_PREFIX;
-
-class BookmarkFormatException extends BoltIOException
-{
-    BookmarkFormatException( String bookmarkString, NumberFormatException cause )
-    {
-        super( Status.Transaction.InvalidBookmark,
-                String.format( "Supplied bookmark [%s] does not conform to pattern %s; unable to parse transaction id", bookmarkString, BOOKMARK_TX_PREFIX ),
-                cause );
+class BookmarkFormatException extends BoltIOException {
+    BookmarkFormatException(String bookmarkString, NumberFormatException cause) {
+        super(
+                Status.Transaction.InvalidBookmark,
+                String.format(
+                        "Supplied bookmark [%s] does not conform to pattern %s; unable to parse transaction id",
+                        bookmarkString, BOOKMARK_TX_PREFIX),
+                cause);
     }
 
-    BookmarkFormatException( Object bookmarkObject )
-    {
-        super( Status.Transaction.InvalidBookmark,
-                String.format( "Supplied bookmark [%s] does not conform to pattern %s", bookmarkObject, BOOKMARK_TX_PREFIX ) );
+    BookmarkFormatException(Object bookmarkObject) {
+        super(
+                Status.Transaction.InvalidBookmark,
+                String.format(
+                        "Supplied bookmark [%s] does not conform to pattern %s", bookmarkObject, BOOKMARK_TX_PREFIX));
     }
 }

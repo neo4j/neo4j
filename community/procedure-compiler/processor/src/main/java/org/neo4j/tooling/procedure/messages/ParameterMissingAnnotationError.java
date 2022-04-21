@@ -22,35 +22,30 @@ package org.neo4j.tooling.procedure.messages;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 
-public class ParameterMissingAnnotationError implements CompilationMessage
-{
+public class ParameterMissingAnnotationError implements CompilationMessage {
     private final Element element;
     private final AnnotationMirror mirror;
     private final String errorMessage;
 
-    public ParameterMissingAnnotationError( Element element, AnnotationMirror mirror, String errorMessage,
-            Object... args )
-    {
+    public ParameterMissingAnnotationError(
+            Element element, AnnotationMirror mirror, String errorMessage, Object... args) {
         this.element = element;
         this.mirror = mirror;
-        this.errorMessage = String.format( errorMessage, args );
+        this.errorMessage = String.format(errorMessage, args);
     }
 
     @Override
-    public Element getElement()
-    {
+    public Element getElement() {
         return element;
     }
 
     @Override
-    public AnnotationMirror getMirror()
-    {
+    public AnnotationMirror getMirror() {
         return mirror;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return errorMessage;
     }
 }

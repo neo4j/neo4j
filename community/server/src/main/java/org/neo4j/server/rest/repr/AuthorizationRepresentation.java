@@ -20,37 +20,33 @@
 package org.neo4j.server.rest.repr;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.neo4j.kernel.impl.security.User;
 
-public class AuthorizationRepresentation
-{
-    @JsonProperty( "username" )
+public class AuthorizationRepresentation {
+    @JsonProperty("username")
     private final String userName;
-    @JsonProperty( "password_change_required" )
+
+    @JsonProperty("password_change_required")
     private final boolean passwordChangeRequired;
-    @JsonProperty( "password_change" )
+
+    @JsonProperty("password_change")
     private final String passwordChange;
 
-    public AuthorizationRepresentation( User user, String passwordChange )
-    {
+    public AuthorizationRepresentation(User user, String passwordChange) {
         this.userName = user.name();
         this.passwordChangeRequired = user.passwordChangeRequired();
         this.passwordChange = passwordChange;
     }
 
-    public String getUserName()
-    {
+    public String getUserName() {
         return userName;
     }
 
-    public boolean isPasswordChangeRequired()
-    {
+    public boolean isPasswordChangeRequired() {
         return passwordChangeRequired;
     }
 
-    public String getPasswordChange()
-    {
+    public String getPasswordChange() {
         return passwordChange;
     }
 }

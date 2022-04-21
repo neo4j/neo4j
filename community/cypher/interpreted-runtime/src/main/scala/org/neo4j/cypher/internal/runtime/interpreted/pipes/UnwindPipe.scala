@@ -29,15 +29,18 @@ import org.neo4j.values.AnyValue
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
-                     (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) with ListSupport {
+case class UnwindPipe(source: Pipe, collection: Expression, variable: String)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) with ListSupport {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     if (input.hasNext) new UnwindIterator(input, state) else ClosingIterator.empty
   }
 
-  private class UnwindIterator(input: ClosingIterator[CypherRow], state: QueryState) extends ClosingIterator[CypherRow] {
+  private class UnwindIterator(input: ClosingIterator[CypherRow], state: QueryState)
+      extends ClosingIterator[CypherRow] {
     private var context: CypherRow = _
     private var unwindIterator: Iterator[AnyValue] = _
     private var nextItem: CypherRow = _

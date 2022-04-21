@@ -23,41 +23,34 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
-public interface RecoveryMonitor
-{
-    default void recoveryRequired( LogPosition recoveryPosition )
-    {
+public interface RecoveryMonitor {
+    default void recoveryRequired(LogPosition recoveryPosition) {
         // noop
     }
 
-    default void transactionRecovered( long txId )
-    {
-        //noop
+    default void transactionRecovered(long txId) {
+        // noop
     }
 
-    default void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
-    {
-        //noop
+    default void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
+        // noop
     }
 
-    default void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
-    {
-        //noop
+    default void reverseStoreRecoveryCompleted(long lowestRecoveredTxId) {
+        // noop
     }
 
-    default void failToRecoverTransactionsAfterCommit( Throwable t, LogEntryCommit commitEntry,
-            LogPosition recoveryToPosition )
-    {
-        //noop
+    default void failToRecoverTransactionsAfterCommit(
+            Throwable t, LogEntryCommit commitEntry, LogPosition recoveryToPosition) {
+        // noop
     }
 
-    default void failToRecoverTransactionsAfterPosition( Throwable t, LogPosition recoveryFromPosition )
-    {
-        //noop
+    default void failToRecoverTransactionsAfterPosition(Throwable t, LogPosition recoveryFromPosition) {
+        // noop
     }
 
-    default void partialRecovery( RecoveryPredicate recoveryPredicate, CommittedTransactionRepresentation lastTransaction )
-    {
+    default void partialRecovery(
+            RecoveryPredicate recoveryPredicate, CommittedTransactionRepresentation lastTransaction) {
         // noop
     }
 }

@@ -19,94 +19,79 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.Comparator;
-
 import static org.neo4j.memory.HeapEstimator.shallowSizeOf;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.util.Preconditions.requireNoNullElements;
 import static org.neo4j.util.Preconditions.requireNonEmpty;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
+import java.util.Comparator;
+
 /**
  * A tuple of n values.
  */
-public class ValueTuple
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ValueTuple.class );
+public class ValueTuple {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(ValueTuple.class);
 
-    public static ValueTuple of( Value... values )
-    {
-        return new ValueTuple( values );
+    public static ValueTuple of(Value... values) {
+        return new ValueTuple(values);
     }
 
-    public static ValueTuple of( Object... objects )
-    {
+    public static ValueTuple of(Object... objects) {
         Value[] values = new Value[objects.length];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            values[i] = Values.of( objects[i], false );
+        for (int i = 0; i < values.length; i++) {
+            values[i] = Values.of(objects[i], false);
         }
-        return new ValueTuple( values );
+        return new ValueTuple(values);
     }
 
     private final Value[] values;
 
-    protected ValueTuple( Value[] values )
-    {
-        requireNonEmpty( values );
-        requireNoNullElements( values );
+    protected ValueTuple(Value[] values) {
+        requireNonEmpty(values);
+        requireNoNullElements(values);
         this.values = values;
     }
 
-    public int size()
-    {
+    public int size() {
         return values.length;
     }
 
-    public Value valueAt( int offset )
-    {
+    public Value valueAt(int offset) {
         return values[offset];
     }
 
     /**
      * WARNING: this method does not create a defensive copy. Do not modify the returned array.
      */
-    public Value[] getValues()
-    {
+    public Value[] getValues() {
         return values;
     }
 
     /**
      * Get the "shallow" size of the tuple, this includes the object overhead and the backing array, but not the retained values.
      */
-    public long getShallowSize()
-    {
-        return SHALLOW_SIZE + shallowSizeOf( values );
+    public long getShallowSize() {
+        return SHALLOW_SIZE + shallowSizeOf(values);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         ValueTuple that = (ValueTuple) o;
 
-        if ( that.values.length != values.length )
-        {
+        if (that.values.length != values.length) {
             return false;
         }
 
-        for ( int i = 0; i < values.length; i++ )
-        {
-            if ( !values[i].equals( that.values[i] ) )
-            {
+        for (int i = 0; i < values.length; i++) {
+            if (!values[i].equals(that.values[i])) {
                 return false;
             }
         }
@@ -114,50 +99,41 @@ public class ValueTuple
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = 1;
-        for ( Object value : values )
-        {
+        for (Object value : values) {
             result = HASH_CONSTANT * result + value.hashCode();
         }
         return result;
     }
 
-    public Value getOnlyValue()
-    {
+    public Value getOnlyValue() {
         assert values.length == 1 : "Assumed single value tuple, but had " + values.length;
         return values[0];
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         String sep = "( ";
-        for ( Value value : values )
-        {
-            sb.append( sep );
+        for (Value value : values) {
+            sb.append(sep);
             sep = ", ";
-            sb.append( value );
+            sb.append(value);
         }
-        sb.append( " )" );
+        sb.append(" )");
         return sb.toString();
     }
 
-    public static final Comparator<ValueTuple> COMPARATOR = ( left, right ) ->
-    {
-        if ( left.values.length != right.values.length )
-        {
-            throw new IllegalStateException( "Comparing two ValueTuples of different lengths!" );
+    public static final Comparator<ValueTuple> COMPARATOR = (left, right) -> {
+        if (left.values.length != right.values.length) {
+            throw new IllegalStateException("Comparing two ValueTuples of different lengths!");
         }
 
         int compare = 0;
-        for ( int i = 0; i < left.values.length; i++ )
-        {
-            compare = Values.COMPARATOR.compare( left.valueAt( i ), right.valueAt( i ) );
-            if ( compare != 0 )
-            {
+        for (int i = 0; i < left.values.length; i++) {
+            compare = Values.COMPARATOR.compare(left.valueAt(i), right.valueAt(i));
+            if (compare != 0) {
                 return compare;
             }
         }

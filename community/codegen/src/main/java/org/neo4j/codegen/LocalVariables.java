@@ -27,42 +27,35 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Repository of local variables.
  */
-public class LocalVariables
-{
-    private final AtomicInteger counter = new AtomicInteger( 0 );
-    private final Map<String,LocalVariable> localVariables = new HashMap<>();
+public class LocalVariables {
+    private final AtomicInteger counter = new AtomicInteger(0);
+    private final Map<String, LocalVariable> localVariables = new HashMap<>();
 
-    LocalVariable createNew( TypeReference type, String name )
-    {
-        if ( localVariables.containsKey( name ) )
-        {
-           throw new IllegalStateException( String.format( "Local variable %s already in scope", name ) );
+    LocalVariable createNew(TypeReference type, String name) {
+        if (localVariables.containsKey(name)) {
+            throw new IllegalStateException(String.format("Local variable %s already in scope", name));
         }
-        LocalVariable localVariable = new LocalVariable( type, name, counter.getAndIncrement() );
-        localVariables.put( name, localVariable );
-        //if 64 bit types we need to give it one more index
-        if ( type.simpleName().equals( "double" ) || type.simpleName().equals( "long" ) )
-        {
+        LocalVariable localVariable = new LocalVariable(type, name, counter.getAndIncrement());
+        localVariables.put(name, localVariable);
+        // if 64 bit types we need to give it one more index
+        if (type.simpleName().equals("double") || type.simpleName().equals("long")) {
             counter.incrementAndGet();
         }
         return localVariable;
     }
 
-    public LocalVariable get( String name )
-    {
-        LocalVariable localVariable = localVariables.get( name );
-        if ( localVariable == null )
-        {
-            throw new NoSuchElementException( "No variable '" + name + "' in scope" );
+    public LocalVariable get(String name) {
+        LocalVariable localVariable = localVariables.get(name);
+        if (localVariable == null) {
+            throw new NoSuchElementException("No variable '" + name + "' in scope");
         }
         return localVariable;
     }
 
-    public static LocalVariables copy( LocalVariables original )
-    {
+    public static LocalVariables copy(LocalVariables original) {
         LocalVariables variables = new LocalVariables();
-        variables.counter.set( original.counter.get() );
-        variables.localVariables.putAll( original.localVariables );
+        variables.counter.set(original.counter.get());
+        variables.localVariables.putAll(original.localVariables);
         return variables;
     }
 }

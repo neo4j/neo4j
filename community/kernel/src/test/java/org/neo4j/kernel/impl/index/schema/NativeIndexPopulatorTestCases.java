@@ -19,32 +19,41 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.factory.Sets;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
-
+import org.eclipse.collections.api.factory.Sets;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 
-import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-class NativeIndexPopulatorTestCases
-{
+class NativeIndexPopulatorTestCases {
     private static final Config config = Config.defaults();
 
-    static NativeIndexPopulatorTestCases.PopulatorFactory<RangeKey> rangeBlockBasedPopulatorFactory()
-    {
-        return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
-                new RangeBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, false,
-                                                   heapBufferFactory( 10 * 1024 ), config, INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+    static NativeIndexPopulatorTestCases.PopulatorFactory<RangeKey> rangeBlockBasedPopulatorFactory() {
+        return (nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup) ->
+                new RangeBlockBasedIndexPopulator(
+                        nativeIndexContext,
+                        storeFile,
+                        layout,
+                        descriptor,
+                        false,
+                        heapBufferFactory(10 * 1024),
+                        config,
+                        INSTANCE,
+                        tokenNameLookup,
+                        Sets.immutable.empty());
     }
 
     @FunctionalInterface
-    public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>>
-    {
-        NativeIndexPopulator<KEY> create( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
-                IndexDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws IOException;
+    public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>> {
+        NativeIndexPopulator<KEY> create(
+                DatabaseIndexContext databaseIndexContext,
+                IndexFiles indexFiles,
+                IndexLayout<KEY> layout,
+                IndexDescriptor descriptor,
+                TokenNameLookup tokenNameLookup)
+                throws IOException;
     }
 }

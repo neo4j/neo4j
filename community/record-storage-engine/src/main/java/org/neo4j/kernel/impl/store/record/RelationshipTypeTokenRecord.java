@@ -21,36 +21,30 @@ package org.neo4j.kernel.impl.store.record;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class RelationshipTypeTokenRecord extends TokenRecord
-{
-    public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipTypeTokenRecord.class );
+public class RelationshipTypeTokenRecord extends TokenRecord {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance(RelationshipTypeTokenRecord.class);
 
-    public RelationshipTypeTokenRecord( int id )
-    {
-        super( id );
+    public RelationshipTypeTokenRecord(int id) {
+        super(id);
     }
 
-    public RelationshipTypeTokenRecord( RelationshipTypeTokenRecord other )
-    {
-        super( other );
+    public RelationshipTypeTokenRecord(RelationshipTypeTokenRecord other) {
+        super(other);
     }
 
     @Override
-    public RelationshipTypeTokenRecord initialize( boolean inUse, int nameId )
-    {
-        super.initialize( inUse, nameId );
+    public RelationshipTypeTokenRecord initialize(boolean inUse, int nameId) {
+        super.initialize(inUse, nameId);
         return this;
     }
 
     @Override
-    protected String simpleName()
-    {
+    protected String simpleName() {
         return "RelationshipType";
     }
 
     @Override
-    public RelationshipTypeTokenRecord copy()
-    {
-        return new RelationshipTypeTokenRecord( this );
+    public RelationshipTypeTokenRecord copy() {
+        return new RelationshipTypeTokenRecord(this);
     }
 }

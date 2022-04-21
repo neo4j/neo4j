@@ -19,25 +19,23 @@
  */
 package org.neo4j.fabric.transaction;
 
+import static java.lang.String.format;
+import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
+
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 
-import static java.lang.String.format;
-import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
-
 /**
  * Report received exceptions into the appropriate log (console or debug) and delivery stacktraces to debug.log.
  */
-public class ErrorReporter
-{
+public class ErrorReporter {
     private final InternalLog userLog;
     private final InternalLog debugLog;
 
-    public ErrorReporter( LogService logging )
-    {
-        this.userLog = logging.getUserLog( ErrorReporter.class );
-        this.debugLog = logging.getInternalLog( ErrorReporter.class );
+    public ErrorReporter(LogService logging) {
+        this.userLog = logging.getUserLog(ErrorReporter.class);
+        this.debugLog = logging.getInternalLog(ErrorReporter.class);
     }
 
     /**
@@ -45,23 +43,21 @@ public class ErrorReporter
      * Short one-line message is written to both user and internal log.
      * Large message with stacktrace is written to internal log.
      */
-    public void report( String message, Throwable error, Status defaultStatus )
-    {
+    public void report(String message, Throwable error, Status defaultStatus) {
         Status status = defaultStatus;
-        if ( error instanceof Status.HasStatus )
-        {
+        if (error instanceof Status.HasStatus) {
             status = ((Status.HasStatus) error).status();
         }
 
-        if ( status.code().classification() == DatabaseError )
-        {
-            String logMessage = format( "Unexpected error [%s]: %s.", status.code().serialize(), message );
+        if (status.code().classification() == DatabaseError) {
+            String logMessage =
+                    format("Unexpected error [%s]: %s.", status.code().serialize(), message);
 
             // Writing to user log gets duplicated to the internal log
-            userLog.error( logMessage );
+            userLog.error(logMessage);
 
             // Write to internal log with full stack trace
-            debugLog.error( logMessage, error );
+            debugLog.error(logMessage, error);
         }
     }
 }

@@ -24,9 +24,22 @@ case object PercentileDisc extends AggregatingFunction {
   def name = "percentileDisc"
 
   override val signatures = Vector(
-    FunctionTypeSignature(function = this, names = Vector("input", "percentile"), argumentTypes = Vector(CTInteger, CTFloat), outputType = CTInteger,
-      description = "Returns the nearest integer value to the given percentile over a group using a rounding method.", category = Category.AGGREGATING),
-    FunctionTypeSignature(function = this, names = Vector("input", "percentile"), argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat,
-      description = "Returns the nearest floating point value to the given percentile over a group using a rounding method.", category = Category.AGGREGATING)
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("input", "percentile"),
+      argumentTypes = Vector(CTInteger, CTFloat),
+      outputType = CTInteger,
+      description = "Returns the nearest integer value to the given percentile over a group using a rounding method.",
+      category = Category.AGGREGATING
+    ),
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("input", "percentile"),
+      argumentTypes = Vector(CTFloat, CTFloat),
+      outputType = CTFloat,
+      description =
+        "Returns the nearest floating point value to the given percentile over a group using a rounding method.",
+      category = Category.AGGREGATING
+    )
   )
 }

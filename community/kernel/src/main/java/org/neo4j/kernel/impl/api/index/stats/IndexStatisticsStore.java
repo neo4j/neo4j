@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
@@ -30,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -54,13 +52,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * The store is accessible after {@link #init()} has been called.
  */
-public class IndexStatisticsStore extends LifecycleAdapter implements IndexStatisticsVisitor.Visitable, ConsistencyCheckable
-{
-    private static final ImmutableIndexStatistics EMPTY_STATISTICS = new ImmutableIndexStatistics( 0, 0, 0, 0 );
+public class IndexStatisticsStore extends LifecycleAdapter
+        implements IndexStatisticsVisitor.Visitable, ConsistencyCheckable {
+    private static final ImmutableIndexStatistics EMPTY_STATISTICS = new ImmutableIndexStatistics(0, 0, 0, 0);
 
     // Used in GBPTree.seek. Please don't use for writes
-    private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey( Long.MIN_VALUE );
-    private static final IndexStatisticsKey HIGHEST_KEY = new IndexStatisticsKey( Long.MAX_VALUE );
+    private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey(Long.MIN_VALUE);
+    private static final IndexStatisticsKey HIGHEST_KEY = new IndexStatisticsKey(Long.MAX_VALUE);
 
     private final PageCache pageCache;
     private final Path path;
@@ -68,187 +66,204 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private final String databaseName;
     private final IndexStatisticsLayout layout;
     private final DatabaseReadOnlyChecker readOnlyChecker;
-    private GBPTree<IndexStatisticsKey,IndexStatisticsValue> tree;
-    // Let IndexStatisticsValue be immutable in this map so that checkpoint doesn't have to coordinate with concurrent writers
+    private GBPTree<IndexStatisticsKey, IndexStatisticsValue> tree;
+    // Let IndexStatisticsValue be immutable in this map so that checkpoint doesn't have to coordinate with concurrent
+    // writers
     // It's assumed that the data in this map will be so small that everything can just be in it always.
-    private final ConcurrentHashMap<Long,ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
 
-    public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                 DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
-            throws IOException
-    {
-        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnlyChecker, databaseLayout.getDatabaseName(),
-                contextFactory, openOptions );
+    public IndexStatisticsStore(
+            PageCache pageCache,
+            DatabaseLayout databaseLayout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        this(
+                pageCache,
+                databaseLayout.indexStatisticsStore(),
+                recoveryCleanupWorkCollector,
+                readOnlyChecker,
+                databaseLayout.getDatabaseName(),
+                contextFactory,
+                openOptions);
     }
 
-    public IndexStatisticsStore( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
-            throws IOException
-    {
+    public IndexStatisticsStore(
+            PageCache pageCache,
+            Path path,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            String databaseName,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
         this.pageCache = pageCache;
         this.path = path;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.databaseName = databaseName;
         this.layout = new IndexStatisticsLayout();
         this.readOnlyChecker = readOnlyChecker;
-        initTree( contextFactory, openOptions );
+        initTree(contextFactory, openOptions);
     }
 
-    private void initTree( CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        try
-        {
-            tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                                  recoveryCleanupWorkCollector, readOnlyChecker, openOptions, databaseName, "Statistics store", contextFactory );
-            try ( var cursorContext = contextFactory.create( "indexStatisticScan" ) )
-            {
-                scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ), cursorContext );
+    private void initTree(CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        try {
+            tree = new GBPTree<>(
+                    pageCache,
+                    path,
+                    layout,
+                    GBPTree.NO_MONITOR,
+                    GBPTree.NO_HEADER_READER,
+                    GBPTree.NO_HEADER_WRITER,
+                    recoveryCleanupWorkCollector,
+                    readOnlyChecker,
+                    openOptions,
+                    databaseName,
+                    "Statistics store",
+                    contextFactory);
+            try (var cursorContext = contextFactory.create("indexStatisticScan")) {
+                scanTree(
+                        (key, value) -> cache.put(key.getIndexId(), new ImmutableIndexStatistics(value)),
+                        cursorContext);
             }
-        }
-        catch ( TreeFileNotFoundException e )
-        {
+        } catch (TreeFileNotFoundException e) {
             throw new IllegalStateException(
-                    "Index statistics store file could not be found, most likely this database needs to be recovered, file:" + path, e );
+                    "Index statistics store file could not be found, most likely this database needs to be recovered, file:"
+                            + path,
+                    e);
         }
     }
 
-    public IndexSample indexSample( long indexId )
-    {
-        ImmutableIndexStatistics value = cache.getOrDefault( indexId, EMPTY_STATISTICS );
-        return new IndexSample( value.indexSize, value.sampleUniqueValues, value.sampleSize, value.updatesCount );
+    public IndexSample indexSample(long indexId) {
+        ImmutableIndexStatistics value = cache.getOrDefault(indexId, EMPTY_STATISTICS);
+        return new IndexSample(value.indexSize, value.sampleUniqueValues, value.sampleSize, value.updatesCount);
     }
 
-    public void replaceStats( long indexId, IndexSample sample )
-    {
-        cache.put( indexId, new ImmutableIndexStatistics( sample.uniqueValues(), sample.sampleSize(), sample.updates(), sample.indexSize() ) );
+    public void replaceStats(long indexId, IndexSample sample) {
+        cache.put(
+                indexId,
+                new ImmutableIndexStatistics(
+                        sample.uniqueValues(), sample.sampleSize(), sample.updates(), sample.indexSize()));
     }
 
-    public void removeIndex( long indexId )
-    {
-        cache.remove( indexId );
+    public void removeIndex(long indexId) {
+        cache.remove(indexId);
     }
 
-    public void incrementIndexUpdates( long indexId, long delta )
-    {
-        cache.computeIfPresent( indexId, ( id, existing ) ->
-                new ImmutableIndexStatistics( existing.sampleUniqueValues, existing.sampleSize, existing.updatesCount + delta, existing.indexSize ) );
+    public void incrementIndexUpdates(long indexId, long delta) {
+        cache.computeIfPresent(
+                indexId,
+                (id, existing) -> new ImmutableIndexStatistics(
+                        existing.sampleUniqueValues,
+                        existing.sampleSize,
+                        existing.updatesCount + delta,
+                        existing.indexSize));
     }
 
     @Override
-    public void visit( IndexStatisticsVisitor visitor, CursorContext cursorContext )
-    {
-        try
-        {
-            scanTree( ( key, value ) -> visitor.visitIndexStatistics( key.getIndexId(),
-                    value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount(), value.getIndexSize() ), cursorContext );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public void visit(IndexStatisticsVisitor visitor, CursorContext cursorContext) {
+        try {
+            scanTree(
+                    (key, value) -> visitor.visitIndexStatistics(
+                            key.getIndexId(),
+                            value.getSampleUniqueValues(),
+                            value.getSampleSize(),
+                            value.getUpdatesCount(),
+                            value.getIndexSize()),
+                    cursorContext);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    public void checkpoint( CursorContext cursorContext ) throws IOException
-    {
+    public void checkpoint(CursorContext cursorContext) throws IOException {
         // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
-        clearTree( cursorContext );
-        writeCacheContentsIntoTree( cursorContext );
-        tree.checkpoint( cursorContext );
+        clearTree(cursorContext);
+        writeCacheContentsIntoTree(cursorContext);
+        tree.checkpoint(cursorContext);
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-    {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorContext );
+    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+        return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<IndexStatisticsKey> visitor, CursorContext cursorContext )
-    {
-        try
-        {
-            return tree.consistencyCheck( visitor, cursorContext );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    private boolean consistencyCheck(
+            GBPTreeConsistencyCheckVisitor<IndexStatisticsKey> visitor, CursorContext cursorContext) {
+        try {
+            return tree.consistencyCheck(visitor, cursorContext);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private void scanTree( BiConsumer<IndexStatisticsKey,IndexStatisticsValue> consumer, CursorContext cursorContext ) throws IOException
-    {
-        try ( Seeker<IndexStatisticsKey,IndexStatisticsValue> seek = tree.seek( LOWEST_KEY, HIGHEST_KEY, cursorContext ) )
-        {
-            while ( seek.next() )
-            {
-                IndexStatisticsKey key = layout.copyKey( seek.key(), new IndexStatisticsKey() );
+    private void scanTree(BiConsumer<IndexStatisticsKey, IndexStatisticsValue> consumer, CursorContext cursorContext)
+            throws IOException {
+        try (Seeker<IndexStatisticsKey, IndexStatisticsValue> seek =
+                tree.seek(LOWEST_KEY, HIGHEST_KEY, cursorContext)) {
+            while (seek.next()) {
+                IndexStatisticsKey key = layout.copyKey(seek.key(), new IndexStatisticsKey());
                 IndexStatisticsValue value = seek.value();
-                consumer.accept( key, value );
+                consumer.accept(key, value);
             }
         }
     }
 
-    private void clearTree( CursorContext cursorContext ) throws IOException
-    {
+    private void clearTree(CursorContext cursorContext) throws IOException {
         // Read all keys from the tree, we can't do this while having a writer since it will grab write lock on pages
-        List<IndexStatisticsKey> keys = new ArrayList<>( cache.size() );
-        scanTree( ( key, value ) -> keys.add( key ), cursorContext );
+        List<IndexStatisticsKey> keys = new ArrayList<>(cache.size());
+        scanTree((key, value) -> keys.add(key), cursorContext);
 
         // Remove all those read keys
-        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.unsafeWriter( cursorContext ) )
-        {
-            for ( IndexStatisticsKey key : keys )
-            {
+        try (Writer<IndexStatisticsKey, IndexStatisticsValue> writer = tree.unsafeWriter(cursorContext)) {
+            for (IndexStatisticsKey key : keys) {
                 // Idempotent operation
-                writer.remove( key );
+                writer.remove(key);
             }
         }
     }
 
-    private void writeCacheContentsIntoTree( CursorContext cursorContext ) throws IOException
-    {
-        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.unsafeWriter( cursorContext ) )
-        {
-            for ( Map.Entry<Long,ImmutableIndexStatistics> entry : cache.entrySet() )
-            {
+    private void writeCacheContentsIntoTree(CursorContext cursorContext) throws IOException {
+        try (Writer<IndexStatisticsKey, IndexStatisticsValue> writer = tree.unsafeWriter(cursorContext)) {
+            for (Map.Entry<Long, ImmutableIndexStatistics> entry : cache.entrySet()) {
                 ImmutableIndexStatistics stats = entry.getValue();
-                writer.put( new IndexStatisticsKey( entry.getKey() ),
-                        new IndexStatisticsValue( stats.sampleUniqueValues, stats.sampleSize, stats.updatesCount, stats.indexSize ) );
+                writer.put(
+                        new IndexStatisticsKey(entry.getKey()),
+                        new IndexStatisticsValue(
+                                stats.sampleUniqueValues, stats.sampleSize, stats.updatesCount, stats.indexSize));
             }
         }
     }
 
-    public Path storeFile()
-    {
+    public Path storeFile() {
         return path;
     }
 
     @Override
-    public void shutdown() throws IOException
-    {
-        if ( tree != null )
-        {
+    public void shutdown() throws IOException {
+        if (tree != null) {
             tree.close();
         }
     }
 
-    private static class ImmutableIndexStatistics
-    {
+    private static class ImmutableIndexStatistics {
         private final long sampleUniqueValues;
         private final long sampleSize;
         private final long updatesCount;
         private final long indexSize;
 
-        ImmutableIndexStatistics( long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize )
-        {
+        ImmutableIndexStatistics(long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize) {
             this.sampleUniqueValues = sampleUniqueValues;
             this.sampleSize = sampleSize;
             this.updatesCount = updatesCount;
             this.indexSize = indexSize;
         }
 
-        ImmutableIndexStatistics( IndexStatisticsValue value )
-        {
-            this( value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount(), value.getIndexSize() );
+        ImmutableIndexStatistics(IndexStatisticsValue value) {
+            this(value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount(), value.getIndexSize());
         }
     }
 }

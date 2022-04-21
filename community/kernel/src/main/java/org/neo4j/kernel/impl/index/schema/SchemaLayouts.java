@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
@@ -35,71 +33,59 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsLayout;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
-public class SchemaLayouts implements LayoutBootstrapper
-{
+public class SchemaLayouts implements LayoutBootstrapper {
     private final List<LayoutBootstrapper> allSchemaLayout;
 
-    public SchemaLayouts()
-    {
+    public SchemaLayouts() {
         allSchemaLayout = Arrays.asList(
                 genericLayout(),
                 idRangeLayout(),
-                ( indexFile, pageCache, meta ) -> new TokenScanLayout(),
-                ( indexFile, pageCache, meta ) -> new IndexStatisticsLayout(),
+                (indexFile, pageCache, meta) -> new TokenScanLayout(),
+                (indexFile, pageCache, meta) -> new IndexStatisticsLayout(),
                 rangeLayout(),
-                ( indexFile, pageCache, meta ) -> new PointLayout( IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() ) ) );
+                (indexFile, pageCache, meta) ->
+                        new PointLayout(IndexSpecificSpaceFillingCurveSettings.fromConfig(Config.defaults())));
     }
 
-    public static String[] layoutDescriptions()
-    {
-        return new String[]{
-                "Generic layout",
-                "Id range layout",
-                "Token scan layout",
-                "Index statistics layout",
-                "Range index layout",
-                "Point index layout"
+    public static String[] layoutDescriptions() {
+        return new String[] {
+            "Generic layout",
+            "Id range layout",
+            "Token scan layout",
+            "Index statistics layout",
+            "Range index layout",
+            "Point index layout"
         };
     }
 
     @Override
-    public Layout<?,?> create( Path indexFile, PageCache pageCache, Meta meta ) throws IOException
-    {
-        for ( LayoutBootstrapper factory : allSchemaLayout )
-        {
-            final Layout<?,?> layout = factory.create( indexFile, pageCache, meta );
-            if ( layout != null && matchingLayout( meta, layout ) )
-            {
+    public Layout<?, ?> create(Path indexFile, PageCache pageCache, Meta meta) throws IOException {
+        for (LayoutBootstrapper factory : allSchemaLayout) {
+            final Layout<?, ?> layout = factory.create(indexFile, pageCache, meta);
+            if (layout != null && matchingLayout(meta, layout)) {
                 return layout;
             }
         }
-        throw new RuntimeException( "Could not find any layout matching meta " + meta );
+        throw new RuntimeException("Could not find any layout matching meta " + meta);
     }
 
-    private static boolean matchingLayout( Meta meta, Layout<?,?> layout )
-    {
-        try
-        {
-            meta.verify( layout );
+    private static boolean matchingLayout(Meta meta, Layout<?, ?> layout) {
+        try {
+            meta.verify(layout);
             return true;
-        }
-        catch ( MetadataMismatchException e )
-        {
+        } catch (MetadataMismatchException e) {
             return false;
         }
     }
 
-    private static LayoutBootstrapper genericLayout()
-    {
-        return ( indexFile, pageCache, meta ) ->
-        {
-            final IndexSpecificSpaceFillingCurveSettings settings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
+    private static LayoutBootstrapper genericLayout() {
+        return (indexFile, pageCache, meta) -> {
+            final IndexSpecificSpaceFillingCurveSettings settings =
+                    IndexSpecificSpaceFillingCurveSettings.fromConfig(Config.defaults());
             int maxNumberOfSlots = 10;
-            for ( int numberOfSlots = 1; numberOfSlots < maxNumberOfSlots; numberOfSlots++ )
-            {
-                final GenericLayout genericLayout = new GenericLayout( numberOfSlots, settings );
-                if ( matchingLayout( meta, genericLayout ) )
-                {
+            for (int numberOfSlots = 1; numberOfSlots < maxNumberOfSlots; numberOfSlots++) {
+                final GenericLayout genericLayout = new GenericLayout(numberOfSlots, settings);
+                if (matchingLayout(meta, genericLayout)) {
                     return genericLayout;
                 }
             }
@@ -107,16 +93,12 @@ public class SchemaLayouts implements LayoutBootstrapper
         };
     }
 
-    private static LayoutBootstrapper rangeLayout()
-    {
-        return ( indexFile, pageCache, meta ) ->
-        {
+    private static LayoutBootstrapper rangeLayout() {
+        return (indexFile, pageCache, meta) -> {
             int maxNumberOfSlots = 10;
-            for ( int numberOfSlots = 1; numberOfSlots < maxNumberOfSlots; numberOfSlots++ )
-            {
-                final RangeLayout rangeLayout = new RangeLayout( numberOfSlots );
-                if ( matchingLayout( meta, rangeLayout ) )
-                {
+            for (int numberOfSlots = 1; numberOfSlots < maxNumberOfSlots; numberOfSlots++) {
+                final RangeLayout rangeLayout = new RangeLayout(numberOfSlots);
+                if (matchingLayout(meta, rangeLayout)) {
                     return rangeLayout;
                 }
             }
@@ -124,17 +106,13 @@ public class SchemaLayouts implements LayoutBootstrapper
         };
     }
 
-    private static LayoutBootstrapper idRangeLayout()
-    {
-        return ( indexFile, pageCache, meta ) ->
-        {
+    private static LayoutBootstrapper idRangeLayout() {
+        return (indexFile, pageCache, meta) -> {
             int maxExponent = 10;
-            for ( int exponent = 0; exponent < maxExponent; exponent++ )
-            {
+            for (int exponent = 0; exponent < maxExponent; exponent++) {
                 final int idsPerEntry = 1 << exponent;
-                final IdRangeLayout idRangeLayout = new IdRangeLayout( idsPerEntry );
-                if ( matchingLayout( meta, idRangeLayout ) )
-                {
+                final IdRangeLayout idRangeLayout = new IdRangeLayout(idsPerEntry);
+                if (matchingLayout(meta, idRangeLayout)) {
                     return idRangeLayout;
                 }
             }

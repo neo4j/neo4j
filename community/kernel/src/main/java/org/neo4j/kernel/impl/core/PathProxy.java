@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
-import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
-
-public class PathProxy implements Path
-{
+public class PathProxy implements Path {
     private final long[] nodes;
     private final long[] relationships;
     private final int[] directedTypes;
@@ -49,8 +47,7 @@ public class PathProxy implements Path
      *         has its start node at {@code i} and its end node at {@code i + 1}, and should be {@code ~typeId} if the
      *         relationship at {@code i} has its start node at {@code i + 1} and its end node at {@code i}.
      */
-    public PathProxy( InternalTransaction internalTransaction, long[] nodes, long[] relationships, int[] directedTypes )
-    {
+    public PathProxy(InternalTransaction internalTransaction, long[] nodes, long[] relationships, int[] directedTypes) {
         this.internalTransaction = internalTransaction;
         assert nodes.length == relationships.length + 1;
         assert relationships.length == directedTypes.length;
@@ -60,236 +57,186 @@ public class PathProxy implements Path
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder string = new StringBuilder();
-        string.append( '(' ).append( nodes[0] ).append( ')' );
+        string.append('(').append(nodes[0]).append(')');
         boolean inTx = true;
-        for ( int i = 0; i < relationships.length; i++ )
-        {
+        for (int i = 0; i < relationships.length; i++) {
             int type = directedTypes[i];
-            string.append( type < 0 ? "<-[" : "-[" );
-            string.append( relationships[i] );
-            if ( inTx )
-            {
-                try
-                {
-                    String name = internalTransaction.getRelationshipTypeById( type < 0 ? ~type : type ).name();
-                    string.append( ':' ).append( name );
-                }
-                catch ( Exception e )
-                {
+            string.append(type < 0 ? "<-[" : "-[");
+            string.append(relationships[i]);
+            if (inTx) {
+                try {
+                    String name = internalTransaction
+                            .getRelationshipTypeById(type < 0 ? ~type : type)
+                            .name();
+                    string.append(':').append(name);
+                } catch (Exception e) {
                     inTx = false;
                 }
             }
-            string.append( type < 0 ? "]-(" : "]->(" ).append( nodes[i + 1] ).append( ')' );
+            string.append(type < 0 ? "]-(" : "]->(").append(nodes[i + 1]).append(')');
         }
         return string.toString();
     }
 
     @Override
-    public int hashCode()
-    {
-        if ( relationships.length == 0 )
-        {
-            return Long.hashCode( nodes[0] );
-        }
-        else
-        {
-            return Arrays.hashCode( relationships );
+    public int hashCode() {
+        if (relationships.length == 0) {
+            return Long.hashCode(nodes[0]);
+        } else {
+            return Arrays.hashCode(relationships);
         }
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
-        if ( obj instanceof PathProxy that )
-        {
-            return Arrays.equals( this.nodes, that.nodes ) && Arrays.equals( this.relationships, that.relationships );
-        }
-        else if ( obj instanceof Path other )
-        {
-            if ( nodes[0] != other.startNode().getId() )
-            {
+        if (obj instanceof PathProxy that) {
+            return Arrays.equals(this.nodes, that.nodes) && Arrays.equals(this.relationships, that.relationships);
+        } else if (obj instanceof Path other) {
+            if (nodes[0] != other.startNode().getId()) {
                 return false;
             }
-            return iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
-        }
-        else
-        {
+            return iteratorsEqual(
+                    this.relationships().iterator(), other.relationships().iterator());
+        } else {
             return false;
         }
     }
 
     @Override
-    public Node startNode()
-    {
-        return new NodeEntity( internalTransaction, nodes[0] );
+    public Node startNode() {
+        return new NodeEntity(internalTransaction, nodes[0]);
     }
 
     @Override
-    public Node endNode()
-    {
-        return new NodeEntity( internalTransaction, nodes[nodes.length - 1] );
+    public Node endNode() {
+        return new NodeEntity(internalTransaction, nodes[nodes.length - 1]);
     }
 
     @Override
-    public Relationship lastRelationship()
-    {
-        return relationships.length == 0
-                ? null
-                : relationship( relationships.length - 1 );
+    public Relationship lastRelationship() {
+        return relationships.length == 0 ? null : relationship(relationships.length - 1);
     }
 
-    private RelationshipEntity relationship( int offset )
-    {
+    private RelationshipEntity relationship(int offset) {
         int type = directedTypes[offset];
-        if ( type >= 0 )
-        {
-            return new RelationshipEntity( internalTransaction, relationships[offset], nodes[offset], type, nodes[offset + 1] );
-        }
-        else
-        {
-            return new RelationshipEntity( internalTransaction, relationships[offset], nodes[offset + 1], ~type, nodes[offset] );
+        if (type >= 0) {
+            return new RelationshipEntity(
+                    internalTransaction, relationships[offset], nodes[offset], type, nodes[offset + 1]);
+        } else {
+            return new RelationshipEntity(
+                    internalTransaction, relationships[offset], nodes[offset + 1], ~type, nodes[offset]);
         }
     }
 
     @Override
-    public Iterable<Relationship> relationships()
-    {
-        return () -> new Iterator<>()
-        {
+    public Iterable<Relationship> relationships() {
+        return () -> new Iterator<>() {
             int i;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return i < relationships.length;
             }
 
             @Override
-            public Relationship next()
-            {
-                return relationship( i++ );
+            public Relationship next() {
+                return relationship(i++);
             }
         };
     }
 
     @Override
-    public Iterable<Relationship> reverseRelationships()
-    {
-        return () -> new Iterator<>()
-        {
+    public Iterable<Relationship> reverseRelationships() {
+        return () -> new Iterator<>() {
             int i = relationships.length;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return i > 0;
             }
 
             @Override
-            public Relationship next()
-            {
-                if ( !hasNext() )
-                {
+            public Relationship next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                return relationship( --i );
+                return relationship(--i);
             }
         };
     }
 
     @Override
-    public Iterable<Node> nodes()
-    {
-        return () -> new Iterator<>()
-        {
+    public Iterable<Node> nodes() {
+        return () -> new Iterator<>() {
             int i;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return i < nodes.length;
             }
 
             @Override
-            public Node next()
-            {
-                if ( !hasNext() )
-                {
+            public Node next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                return new NodeEntity( internalTransaction, nodes[i++] );
+                return new NodeEntity(internalTransaction, nodes[i++]);
             }
         };
     }
 
     @Override
-    public Iterable<Node> reverseNodes()
-    {
-        return () -> new Iterator<>()
-        {
+    public Iterable<Node> reverseNodes() {
+        return () -> new Iterator<>() {
             int i = nodes.length;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return i > 0;
             }
 
             @Override
-            public Node next()
-            {
-                if ( !hasNext() )
-                {
+            public Node next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                return new NodeEntity( internalTransaction, nodes[--i] );
+                return new NodeEntity(internalTransaction, nodes[--i]);
             }
         };
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         return relationships.length;
     }
 
     @Override
-    public Iterator<Entity> iterator()
-    {
-        return new Iterator<>()
-        {
+    public Iterator<Entity> iterator() {
+        return new Iterator<>() {
             int i;
             boolean relationship;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return i < relationships.length || !relationship;
             }
 
             @Override
-            public Entity next()
-            {
-                if ( !hasNext() )
-                {
+            public Entity next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                if ( relationship )
-                {
+                if (relationship) {
                     relationship = false;
-                    return relationship( i++ );
-                }
-                else
-                {
+                    return relationship(i++);
+                } else {
                     relationship = true;
-                    return new NodeEntity( internalTransaction, nodes[i] );
+                    return new NodeEntity(internalTransaction, nodes[i]);
                 }
             }
         };

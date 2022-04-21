@@ -22,36 +22,31 @@ package org.neo4j.tooling.procedure.messages;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 
-public class DuplicatedProcedureError implements CompilationMessage
-{
+public class DuplicatedProcedureError implements CompilationMessage {
 
     private final Element element;
     private final AnnotationMirror annotationMirror;
     private final String errorMessage;
 
-    public DuplicatedProcedureError( Element element, AnnotationMirror annotationMirror, String errorMessage,
-            Object... args )
-    {
+    public DuplicatedProcedureError(
+            Element element, AnnotationMirror annotationMirror, String errorMessage, Object... args) {
         this.element = element;
         this.annotationMirror = annotationMirror;
-        this.errorMessage = String.format( errorMessage, args );
+        this.errorMessage = String.format(errorMessage, args);
     }
 
     @Override
-    public Element getElement()
-    {
+    public Element getElement() {
         return element;
     }
 
     @Override
-    public AnnotationMirror getMirror()
-    {
+    public AnnotationMirror getMirror() {
         return annotationMirror;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return errorMessage;
     }
 }

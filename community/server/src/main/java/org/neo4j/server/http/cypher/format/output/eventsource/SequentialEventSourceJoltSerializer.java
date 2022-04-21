@@ -21,11 +21,9 @@ package org.neo4j.server.http.cypher.format.output.eventsource;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.ObjectCodec;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
-
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.OutputEvent;
 import org.neo4j.server.http.cypher.format.api.OutputEventSource;
@@ -38,66 +36,58 @@ import org.neo4j.server.http.cypher.format.input.json.InputStatement;
 /**
  * A serializer that serializes {@link OutputEvent OutputEvents} from a {@link OutputEventSource} into a stream of JSON documents in accordance with RFC 7464.
  */
-public class SequentialEventSourceJoltSerializer extends LineDelimitedEventSourceJoltSerializer
-{
+public class SequentialEventSourceJoltSerializer extends LineDelimitedEventSourceJoltSerializer {
 
     private static final byte RECORD_SEPARATOR = 0x1E;
 
-    public SequentialEventSourceJoltSerializer( Map<String,Object> parameters, Class<? extends ObjectCodec> classOfCodec,
-                                                boolean isStrictMode, JsonFactory jsonFactory, OutputStream output )
-    {
-        super( parameters, classOfCodec, isStrictMode, jsonFactory, output );
+    public SequentialEventSourceJoltSerializer(
+            Map<String, Object> parameters,
+            Class<? extends ObjectCodec> classOfCodec,
+            boolean isStrictMode,
+            JsonFactory jsonFactory,
+            OutputStream output) {
+        super(parameters, classOfCodec, isStrictMode, jsonFactory, output);
     }
 
-    private void writeRecordSeparator()
-    {
-        try
-        {
-            this.output.write( RECORD_SEPARATOR );
+    private void writeRecordSeparator() {
+        try {
+            this.output.write(RECORD_SEPARATOR);
+        } catch (IOException e) {
+            throw new ConnectionException("Failed to write to the connection", e);
         }
-        catch ( IOException e )
-        {
-            throw new ConnectionException( "Failed to write to the connection", e );
-        }
     }
 
     @Override
-    protected void writeStatementStart( StatementStartEvent statementStartEvent, InputStatement inputStatement )
-    {
+    protected void writeStatementStart(StatementStartEvent statementStartEvent, InputStatement inputStatement) {
         writeRecordSeparator();
 
-        super.writeStatementStart( statementStartEvent, inputStatement );
+        super.writeStatementStart(statementStartEvent, inputStatement);
     }
 
     @Override
-    protected void writeStatementEnd( StatementEndEvent statementEndEvent )
-    {
+    protected void writeStatementEnd(StatementEndEvent statementEndEvent) {
         writeRecordSeparator();
 
-        super.writeStatementEnd( statementEndEvent );
+        super.writeStatementEnd(statementEndEvent);
     }
 
     @Override
-    protected void writeRecord( RecordEvent recordEvent )
-    {
+    protected void writeRecord(RecordEvent recordEvent) {
         writeRecordSeparator();
 
-        super.writeRecord( recordEvent );
+        super.writeRecord(recordEvent);
     }
 
     @Override
-    protected void writeTransactionInfo( TransactionInfoEvent transactionInfoEvent )
-    {
+    protected void writeTransactionInfo(TransactionInfoEvent transactionInfoEvent) {
         writeRecordSeparator();
 
-        super.writeTransactionInfo( transactionInfoEvent );
+        super.writeTransactionInfo(transactionInfoEvent);
     }
 
     @Override
-    protected void writeErrorWrapper()
-    {
-        if ( errors.isEmpty() )
-        {
+    protected void writeErrorWrapper() {
+        if (errors.isEmpty()) {
             return;
         }
 

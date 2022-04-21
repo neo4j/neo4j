@@ -22,17 +22,14 @@ package org.neo4j.kernel.impl.factory;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 
 @FunctionalInterface
-public interface AccessCapabilityFactory
-{
-    AccessCapability newAccessCapability( DatabaseReadOnlyChecker databaseReadOnlyChecker );
+public interface AccessCapabilityFactory {
+    AccessCapability newAccessCapability(DatabaseReadOnlyChecker databaseReadOnlyChecker);
 
-    static AccessCapabilityFactory configDependent()
-    {
+    static AccessCapabilityFactory configDependent() {
         return checker -> checker.isReadOnly() ? ReadOnly.INSTANCE : CanWrite.INSTANCE;
     }
 
-    static AccessCapabilityFactory fixed( AccessCapability accessCapability )
-    {
+    static AccessCapabilityFactory fixed(AccessCapability accessCapability) {
         return ignore -> accessCapability;
     }
 }

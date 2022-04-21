@@ -26,34 +26,29 @@ import org.neo4j.kernel.api.exceptions.Status;
  *
  * For instance, if attempting to write with READ_ONLY rights.
  */
-public class AuthorizationViolationException extends RuntimeException implements Status.HasStatus
-{
+public class AuthorizationViolationException extends RuntimeException implements Status.HasStatus {
     public static final String PERMISSION_DENIED = "Permission denied.";
 
     private final Status statusCode;
 
-    public AuthorizationViolationException( String msg, Status statusCode )
-    {
-        super( msg );
+    public AuthorizationViolationException(String msg, Status statusCode) {
+        super(msg);
         this.statusCode = statusCode;
     }
 
-    public AuthorizationViolationException( String msg )
-    {
-        super( msg );
+    public AuthorizationViolationException(String msg) {
+        super(msg);
         statusCode = Status.Security.Forbidden;
     }
 
-    public AuthorizationViolationException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public AuthorizationViolationException(String msg, Throwable cause) {
+        super(msg, cause);
         statusCode = Status.Security.Forbidden;
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
-    public Status status()
-    {
+    public Status status() {
         return statusCode;
     }
 }

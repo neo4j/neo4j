@@ -28,7 +28,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.types.Entity;
@@ -42,462 +41,385 @@ import org.neo4j.driver.types.Type;
 /**
  * A fake value
  */
-class FakeValue implements Value
-{
+class FakeValue implements Value {
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return asString();
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return 0;
     }
 
     @Override
-    public Iterable<Value> values()
-    {
+    public Iterable<Value> values() {
         return null;
     }
 
     @Override
-    public <T> Iterable<T> values( Function<Value, T> mapFunction )
-    {
+    public <T> Iterable<T> values(Function<Value, T> mapFunction) {
         return null;
     }
 
     @Override
-    public Map<String, Object> asMap()
-    {
+    public Map<String, Object> asMap() {
         return null;
     }
 
     @Override
-    public <T> Map<String, T> asMap( Function<Value, T> mapFunction )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Map" );
+    public <T> Map<String, T> asMap(Function<Value, T> mapFunction) {
+        throw new Uncoercible(getClass().getSimpleName(), "Map");
     }
 
     @Override
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return false;
     }
 
     @Override
-    public Iterable<String> keys()
-    {
+    public Iterable<String> keys() {
         return null;
     }
 
     @Override
-    public boolean containsKey( String key )
-    {
+    public boolean containsKey(String key) {
         return false;
     }
 
     @Override
-    public Value get( String key )
-    {
+    public Value get(String key) {
         return null;
     }
 
     @Override
-    public Value get( int index )
-    {
+    public Value get(int index) {
         return null;
     }
 
     @Override
-    public Type type()
-    {
+    public Type type() {
         return null;
     }
 
     @Override
-    public boolean hasType( Type type )
-    {
+    public boolean hasType(Type type) {
         return false;
     }
 
     @Override
-    public boolean isTrue()
-    {
+    public boolean isTrue() {
         return false;
     }
 
     @Override
-    public boolean isFalse()
-    {
+    public boolean isFalse() {
         return false;
     }
 
     @Override
-    public boolean isNull()
-    {
+    public boolean isNull() {
         return false;
     }
 
     @Override
-    public Object asObject()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Object" );
+    public Object asObject() {
+        throw new Uncoercible(getClass().getSimpleName(), "Object");
     }
 
     @Override
-    public <T> T computeOrDefault( Function<Value, T> mapper, T defaultValue )
-    {
-        throw new UnsupportedOperationException( "No implementation" );
+    public <T> T computeOrDefault(Function<Value, T> mapper, T defaultValue) {
+        throw new UnsupportedOperationException("No implementation");
     }
 
     @Override
-    public boolean asBoolean()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Bool" );
+    public boolean asBoolean() {
+        throw new Uncoercible(getClass().getSimpleName(), "Bool");
     }
 
     @Override
-    public boolean asBoolean( boolean defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Bool" );
+    public boolean asBoolean(boolean defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "Bool");
     }
 
     @Override
-    public byte[] asByteArray()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Byte[]" );
+    public byte[] asByteArray() {
+        throw new Uncoercible(getClass().getSimpleName(), "Byte[]");
     }
 
     @Override
-    public byte[] asByteArray( byte[] defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Byte[]" );
+    public byte[] asByteArray(byte[] defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "Byte[]");
     }
 
     @Override
-    public String asString()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "String" );
+    public String asString() {
+        throw new Uncoercible(getClass().getSimpleName(), "String");
     }
 
     @Override
-    public String asString( String defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "String" );
+    public String asString(String defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "String");
     }
 
     @Override
-    public Number asNumber()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Number" );
+    public Number asNumber() {
+        throw new Uncoercible(getClass().getSimpleName(), "Number");
     }
 
     @Override
-    public long asLong()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Long" );
+    public long asLong() {
+        throw new Uncoercible(getClass().getSimpleName(), "Long");
     }
 
     @Override
-    public long asLong( long defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Long" );
+    public long asLong(long defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "Long");
     }
 
     @Override
-    public int asInt()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Int" );
+    public int asInt() {
+        throw new Uncoercible(getClass().getSimpleName(), "Int");
     }
 
     @Override
-    public int asInt( int defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Int" );
+    public int asInt(int defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "Int");
     }
 
     @Override
-    public double asDouble()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Double" );
+    public double asDouble() {
+        throw new Uncoercible(getClass().getSimpleName(), "Double");
     }
 
     @Override
-    public double asDouble( double defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Double" );
+    public double asDouble(double defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "Double");
     }
 
     @Override
-    public float asFloat()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Float" );
+    public float asFloat() {
+        throw new Uncoercible(getClass().getSimpleName(), "Float");
     }
 
     @Override
-    public float asFloat( float defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Float" );
+    public float asFloat(float defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "Float");
     }
 
     @Override
-    public List<Object> asList()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "List" );
+    public List<Object> asList() {
+        throw new Uncoercible(getClass().getSimpleName(), "List");
     }
 
     @Override
-    public List<Object> asList( List<Object> defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "List" );
+    public List<Object> asList(List<Object> defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "List");
     }
 
     @Override
-    public <T> List<T> asList( Function<Value, T> mapFunction )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "List" );
+    public <T> List<T> asList(Function<Value, T> mapFunction) {
+        throw new Uncoercible(getClass().getSimpleName(), "List");
     }
 
     @Override
-    public <T> List<T> asList( Function<Value, T> mapFunction, List<T> defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "List" );
+    public <T> List<T> asList(Function<Value, T> mapFunction, List<T> defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "List");
     }
 
     @Override
-    public Entity asEntity()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Entity" );
+    public Entity asEntity() {
+        throw new Uncoercible(getClass().getSimpleName(), "Entity");
     }
 
     @Override
-    public Node asNode()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Node" );
+    public Node asNode() {
+        throw new Uncoercible(getClass().getSimpleName(), "Node");
     }
 
     @Override
-    public Relationship asRelationship()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Relationship" );
+    public Relationship asRelationship() {
+        throw new Uncoercible(getClass().getSimpleName(), "Relationship");
     }
 
     @Override
-    public Path asPath()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Path" );
+    public Path asPath() {
+        throw new Uncoercible(getClass().getSimpleName(), "Path");
     }
 
     @Override
-    public LocalDate asLocalDate()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "LocalDate" );
+    public LocalDate asLocalDate() {
+        throw new Uncoercible(getClass().getSimpleName(), "LocalDate");
     }
 
     @Override
-    public OffsetTime asOffsetTime()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "OffsetTime" );
+    public OffsetTime asOffsetTime() {
+        throw new Uncoercible(getClass().getSimpleName(), "OffsetTime");
     }
 
     @Override
-    public LocalTime asLocalTime()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "LocalTime" );
+    public LocalTime asLocalTime() {
+        throw new Uncoercible(getClass().getSimpleName(), "LocalTime");
     }
 
     @Override
-    public LocalDateTime asLocalDateTime()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "LocalDateTime" );
+    public LocalDateTime asLocalDateTime() {
+        throw new Uncoercible(getClass().getSimpleName(), "LocalDateTime");
     }
 
     @Override
-    public OffsetDateTime asOffsetDateTime()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "OffsetDateTime" );
+    public OffsetDateTime asOffsetDateTime() {
+        throw new Uncoercible(getClass().getSimpleName(), "OffsetDateTime");
     }
 
     @Override
-    public ZonedDateTime asZonedDateTime()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "ZonedDateTime" );
+    public ZonedDateTime asZonedDateTime() {
+        throw new Uncoercible(getClass().getSimpleName(), "ZonedDateTime");
     }
 
     @Override
-    public IsoDuration asIsoDuration()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "IsoDuration" );
+    public IsoDuration asIsoDuration() {
+        throw new Uncoercible(getClass().getSimpleName(), "IsoDuration");
     }
 
     @Override
-    public Point asPoint()
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Point" );
+    public Point asPoint() {
+        throw new Uncoercible(getClass().getSimpleName(), "Point");
     }
 
     @Override
-    public LocalDate asLocalDate( LocalDate defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "LocalDate" );
+    public LocalDate asLocalDate(LocalDate defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "LocalDate");
     }
 
     @Override
-    public OffsetTime asOffsetTime( OffsetTime defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "OffsetTime" );
+    public OffsetTime asOffsetTime(OffsetTime defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "OffsetTime");
     }
 
     @Override
-    public LocalTime asLocalTime( LocalTime defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "LocalTime" );
+    public LocalTime asLocalTime(LocalTime defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "LocalTime");
     }
 
     @Override
-    public LocalDateTime asLocalDateTime( LocalDateTime defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "LocalDateTime" );
+    public LocalDateTime asLocalDateTime(LocalDateTime defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "LocalDateTime");
     }
 
     @Override
-    public OffsetDateTime asOffsetDateTime( OffsetDateTime defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "OffsetDateTime" );
+    public OffsetDateTime asOffsetDateTime(OffsetDateTime defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "OffsetDateTime");
     }
 
     @Override
-    public ZonedDateTime asZonedDateTime( ZonedDateTime defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "ZonedDateTime" );
+    public ZonedDateTime asZonedDateTime(ZonedDateTime defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "ZonedDateTime");
     }
 
     @Override
-    public IsoDuration asIsoDuration( IsoDuration defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "IsoDuration" );
+    public IsoDuration asIsoDuration(IsoDuration defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "IsoDuration");
     }
 
     @Override
-    public Point asPoint( Point defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Point" );
+    public Point asPoint(Point defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "Point");
     }
 
     @Override
-    public Map<String, Object> asMap( Map<String, Object> defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Map" );
+    public Map<String, Object> asMap(Map<String, Object> defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "Map");
     }
 
     @Override
-    public <T> Map<String, T> asMap( Function<Value, T> mapFunction, Map<String, T> defaultValue )
-    {
-        throw new Uncoercible( getClass().getSimpleName(), "Map" );
+    public <T> Map<String, T> asMap(Function<Value, T> mapFunction, Map<String, T> defaultValue) {
+        throw new Uncoercible(getClass().getSimpleName(), "Map");
     }
 
     @Override
-    public Value get( String key, Value defaultValue )
-    {
+    public Value get(String key, Value defaultValue) {
         return null;
     }
 
     @Override
-    public Object get( String key, Object defaultValue )
-    {
+    public Object get(String key, Object defaultValue) {
         return null;
     }
 
     @Override
-    public Number get( String key, Number defaultValue )
-    {
+    public Number get(String key, Number defaultValue) {
         return null;
     }
 
     @Override
-    public Entity get( String key, Entity defaultValue )
-    {
+    public Entity get(String key, Entity defaultValue) {
         return null;
     }
 
     @Override
-    public Node get( String key, Node defaultValue )
-    {
+    public Node get(String key, Node defaultValue) {
         return null;
     }
 
     @Override
-    public Path get( String key, Path defaultValue )
-    {
+    public Path get(String key, Path defaultValue) {
         return null;
     }
 
     @Override
-    public Relationship get( String key, Relationship defaultValue )
-    {
+    public Relationship get(String key, Relationship defaultValue) {
         return null;
     }
 
     @Override
-    public List<Object> get( String key, List<Object> defaultValue )
-    {
+    public List<Object> get(String key, List<Object> defaultValue) {
         return null;
     }
 
     @Override
-    public <T> List<T> get( String key, List<T> defaultValue, Function<Value, T> mapFunc )
-    {
+    public <T> List<T> get(String key, List<T> defaultValue, Function<Value, T> mapFunc) {
         return null;
     }
 
     @Override
-    public Map<String, Object> get( String key, Map<String, Object> defaultValue )
-    {
+    public Map<String, Object> get(String key, Map<String, Object> defaultValue) {
         return null;
     }
 
     @Override
-    public <T> Map<String, T> get( String key, Map<String, T> defaultValue, Function<Value, T> mapFunc )
-    {
+    public <T> Map<String, T> get(String key, Map<String, T> defaultValue, Function<Value, T> mapFunc) {
         return null;
     }
 
     @Override
-    public int get( String key, int defaultValue )
-    {
+    public int get(String key, int defaultValue) {
         return 0;
     }
 
     @Override
-    public long get( String key, long defaultValue )
-    {
+    public long get(String key, long defaultValue) {
         return 0;
     }
 
     @Override
-    public boolean get( String key, boolean defaultValue )
-    {
+    public boolean get(String key, boolean defaultValue) {
         return false;
     }
 
     @Override
-    public String get( String key, String defaultValue )
-    {
+    public String get(String key, String defaultValue) {
         return null;
     }
 
     @Override
-    public float get( String key, float defaultValue )
-    {
+    public float get(String key, float defaultValue) {
         return 0;
     }
 
     @Override
-    public double get( String key, double defaultValue )
-    {
+    public double get(String key, double defaultValue) {
         return 0;
     }
 }

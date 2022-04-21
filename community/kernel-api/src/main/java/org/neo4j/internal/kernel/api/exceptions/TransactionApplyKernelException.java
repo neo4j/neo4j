@@ -25,10 +25,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * A {@link KernelException} thrown by a {@link org.neo4j.storageengine.api.StorageEngine} if it failed to apply a transaction.
  */
-public class TransactionApplyKernelException extends KernelException
-{
-    public TransactionApplyKernelException( Throwable cause, String message, Object... parameters )
-    {
-        super( Status.General.UnknownError, cause, message, parameters );
+public class TransactionApplyKernelException extends KernelException {
+    public TransactionApplyKernelException(Throwable cause, String message, Object... parameters) {
+        super(Status.General.UnknownError, cause, message, parameters);
     }
 }

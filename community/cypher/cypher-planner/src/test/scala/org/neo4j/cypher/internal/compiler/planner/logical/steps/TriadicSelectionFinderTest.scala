@@ -160,7 +160,8 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     val ctx = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)<-[r2:B]-(c) WHERE (a)-[:A]->(c)")
     val (expand1, selection) = produceTriadicTestCase(r1Types = Seq("A"), r2Types = Seq("B"), r2Direction = INCOMING)
-    val triadic = produceTriadicTestPlan(expand1, predicateExpressionCase = true, r2Types = Seq("B"), r2Direction = INCOMING)
+    val triadic =
+      produceTriadicTestPlan(expand1, predicateExpressionCase = true, r2Types = Seq("B"), r2Direction = INCOMING)
 
     testTriadic(selection, plannerQuery.lastQueryGraph, ctx) should contain only triadic
   }
@@ -254,11 +255,13 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   // used to build plans that are passed to the triadicSelectionFinder. We need proper solveds thus
-  private def produceTriadicTestCase(aLabel: String = "X",
-                                     r1Types: Seq[String] = Seq.empty,
-                                     r2Types: Seq[String] = Seq.empty,
-                                     r2Direction: SemanticDirection = OUTGOING,
-                                     cLabels: Seq[String] = Seq.empty): (Expand, Selection) = {
+  private def produceTriadicTestCase(
+    aLabel: String = "X",
+    r1Types: Seq[String] = Seq.empty,
+    r2Types: Seq[String] = Seq.empty,
+    r2Direction: SemanticDirection = OUTGOING,
+    cLabels: Seq[String] = Seq.empty
+  ): (Expand, Selection) = {
     val lblScan = NodeByLabelScan("a", labelName(aLabel), Set.empty, IndexOrderNone)
     val expand1 = Expand(lblScan, "a", OUTGOING, r1Types.map(RelTypeName(_)(pos)), "b", "r1", ExpandAll)
     val expand2 = Expand(expand1, "b", r2Direction, r2Types.map(RelTypeName(_)(pos)), "c", "r2", ExpandAll)
@@ -269,11 +272,13 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   // used to build plan to assert an. Attributes can be ignored thus
-  private def produceTriadicTestPlan(expand1: Expand,
-                                     predicateExpressionCase: Boolean = false,
-                                     r2Types: Seq[String] = Seq.empty,
-                                     r2Direction: SemanticDirection = OUTGOING,
-                                     cLabels: Seq[String] = Seq.empty): TriadicSelection = {
+  private def produceTriadicTestPlan(
+    expand1: Expand,
+    predicateExpressionCase: Boolean = false,
+    r2Types: Seq[String] = Seq.empty,
+    r2Direction: SemanticDirection = OUTGOING,
+    cLabels: Seq[String] = Seq.empty
+  ): TriadicSelection = {
     val argument = Argument(Set("b", "r1"))
     val expand2B = Expand(argument, "b", r2Direction, r2Types.map(RelTypeName(_)(pos)), "c", "r2", ExpandAll)
     val relationshipUniqueness = not(equals(varFor("r1"), varFor("r2")))

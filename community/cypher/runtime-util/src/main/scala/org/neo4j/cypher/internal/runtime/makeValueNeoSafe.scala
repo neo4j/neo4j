@@ -24,9 +24,12 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 
 object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
+
   def apply(a: AnyValue): Value = a match {
     case value: Value => value
-    case IsList(l) => l.toStorableArray
-    case _ => throw new CypherTypeException(s"Property values can only be of primitive types or arrays thereof. Encountered: $a.")
+    case IsList(l)    => l.toStorableArray
+    case _ => throw new CypherTypeException(
+        s"Property values can only be of primitive types or arrays thereof. Encountered: $a."
+      )
   }
 }

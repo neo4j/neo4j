@@ -33,11 +33,15 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.values.virtual.VirtualValues
 
-case class DropUserExecutionPlanner(normalExecutionEngine: ExecutionEngine, securityAuthorizationHandler: SecurityAuthorizationHandler) {
+case class DropUserExecutionPlanner(
+  normalExecutionEngine: ExecutionEngine,
+  securityAuthorizationHandler: SecurityAuthorizationHandler
+) {
 
-  def planDropUser(userName: Either[String, Parameter], sourcePlan: Option[ExecutionPlan]) : ExecutionPlan = {
+  def planDropUser(userName: Either[String, Parameter], sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
-    UpdatingSystemCommandExecutionPlan("DropUser",
+    UpdatingSystemCommandExecutionPlan(
+      "DropUser",
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""MATCH (user:User {name: $$`${userNameFields.nameKey}`}) DETACH DELETE user
@@ -46,8 +50,14 @@ case class DropUserExecutionPlanner(normalExecutionEngine: ExecutionEngine, secu
       QueryHandler
         .handleError {
           case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-            new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified user '${runtimeStringValue(userName, p)}': $followerError", error)
-          case (error, p) => new IllegalStateException(s"Failed to delete the specified user '${runtimeStringValue(userName, p)}'.", error)
+            new DatabaseAdministrationOnFollowerException(
+              s"Failed to delete the specified user '${runtimeStringValue(userName, p)}': $followerError",
+              error
+            )
+          case (error, p) => new IllegalStateException(
+              s"Failed to delete the specified user '${runtimeStringValue(userName, p)}'.",
+              error
+            )
         },
       sourcePlan,
       parameterConverter = userNameFields.nameConverter

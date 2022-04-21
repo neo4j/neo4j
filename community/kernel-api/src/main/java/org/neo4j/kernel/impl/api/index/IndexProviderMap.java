@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.function.Consumer;
-
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -29,8 +28,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 /**
  * Contains mapping from {@link IndexProviderDescriptor} or provider name to {@link IndexProvider}.
  */
-public interface IndexProviderMap extends IndexConfigCompleter
-{
+public interface IndexProviderMap extends IndexConfigCompleter {
     /**
      * Looks up and returns the {@link IndexProvider} for the given {@link IndexProviderDescriptor}.
      *
@@ -38,7 +36,7 @@ public interface IndexProviderMap extends IndexConfigCompleter
      * @return the {@link IndexProvider} with the given {@link IndexProviderDescriptor}.
      * @throws IndexProviderNotFoundException if no such {@link IndexProvider} was found.
      */
-    IndexProvider lookup( IndexProviderDescriptor providerDescriptor ) throws IndexProviderNotFoundException;
+    IndexProvider lookup(IndexProviderDescriptor providerDescriptor) throws IndexProviderNotFoundException;
 
     /**
      * Looks up and returns the {@link IndexProvider} for the given index provider name. The name is what
@@ -48,7 +46,7 @@ public interface IndexProviderMap extends IndexConfigCompleter
      * @return the {@link IndexProvider} with the given name.
      * @throws IndexProviderNotFoundException if no such {@link IndexProvider} was found.
      */
-    IndexProvider lookup( String providerDescriptorName ) throws IndexProviderNotFoundException;
+    IndexProvider lookup(String providerDescriptorName) throws IndexProviderNotFoundException;
 
     /**
      * There's always a default {@link IndexProvider}, this method returns it.
@@ -93,67 +91,56 @@ public interface IndexProviderMap extends IndexConfigCompleter
      *
      * @param visitor {@link Consumer} visiting all the {@link IndexProvider index providers} in this map.
      */
-    void accept( Consumer<IndexProvider> visitor );
+    void accept(Consumer<IndexProvider> visitor);
 
-    IndexProviderMap EMPTY = new IndexProviderMap()
-    {
+    IndexProviderMap EMPTY = new IndexProviderMap() {
         @Override
-        public IndexDescriptor completeConfiguration( IndexDescriptor index )
-        {
+        public IndexDescriptor completeConfiguration(IndexDescriptor index) {
             return index;
         }
 
         @Override
-        public IndexProvider lookup( IndexProviderDescriptor descriptor ) throws IndexProviderNotFoundException
-        {
+        public IndexProvider lookup(IndexProviderDescriptor descriptor) throws IndexProviderNotFoundException {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider lookup( String providerDescriptorName ) throws IndexProviderNotFoundException
-        {
+        public IndexProvider lookup(String providerDescriptorName) throws IndexProviderNotFoundException {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider getDefaultProvider()
-        {
+        public IndexProvider getDefaultProvider() {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider getFulltextProvider()
-        {
+        public IndexProvider getFulltextProvider() {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider getTokenIndexProvider()
-        {
+        public IndexProvider getTokenIndexProvider() {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider getTextIndexProvider()
-        {
+        public IndexProvider getTextIndexProvider() {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider getBtreeIndexProvider()
-        {
+        public IndexProvider getBtreeIndexProvider() {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider getPointIndexProvider()
-        {
+        public IndexProvider getPointIndexProvider() {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public void accept( Consumer<IndexProvider> visitor )
-        {
+        public void accept(Consumer<IndexProvider> visitor) {
             // yey!
         }
     };

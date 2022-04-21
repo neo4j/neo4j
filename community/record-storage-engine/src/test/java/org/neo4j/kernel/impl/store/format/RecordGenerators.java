@@ -29,11 +29,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public interface RecordGenerators
-{
-    interface Generator<RECORD extends AbstractBaseRecord>
-    {
-        RECORD get( int recordSize, RecordFormat<RECORD> format, long id );
+public interface RecordGenerators {
+    interface Generator<RECORD extends AbstractBaseRecord> {
+        RECORD get(int recordSize, RecordFormat<RECORD> format, long id);
     }
 
     Generator<NodeRecord> node();

@@ -22,6 +22,4 @@ package org.neo4j.storageengine.api;
 /**
  * Marker interface for maintaining state for batched scans
  */
-interface Scan
-{
-}
+interface Scan {}

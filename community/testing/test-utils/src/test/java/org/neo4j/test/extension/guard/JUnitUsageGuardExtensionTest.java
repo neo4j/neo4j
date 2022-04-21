@@ -19,11 +19,6 @@
  */
 package org.neo4j.test.extension.guard;
 
-import org.junit.jupiter.api.Test;
-import org.junit.platform.commons.JUnitException;
-import org.junit.platform.testkit.engine.EngineTestKit;
-import org.junit.platform.testkit.engine.Events;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
@@ -32,55 +27,61 @@ import static org.junit.platform.testkit.engine.EventConditions.finishedWithFail
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
-class JUnitUsageGuardExtensionTest
-{
+import org.junit.jupiter.api.Test;
+import org.junit.platform.commons.JUnitException;
+import org.junit.platform.testkit.engine.EngineTestKit;
+import org.junit.platform.testkit.engine.Events;
+
+class JUnitUsageGuardExtensionTest {
     @Test
-    void detectIncorrectAssertUsage()
-    {
-        Events testEvents = executeTest( IncorrectAssertUsage.class );
+    void detectIncorrectAssertUsage() {
+        Events testEvents = executeTest(IncorrectAssertUsage.class);
 
-        verifyFailureMessage( testEvents, "Detected Junit 4 classes: [org.junit.Assert]" );
-    }
-
-    @Test
-    void detectIncorrectIgnoreNewTest()
-    {
-        Events testEvents = executeTest( IgnoreNewTestWithOldAnnotation.class );
-
-        verifyFailureMessage( testEvents, "Detected Junit 4 classes: [org.junit.Ignore]" );
+        verifyFailureMessage(testEvents, "Detected Junit 4 classes: [org.junit.Assert]");
     }
 
     @Test
-    void detectMixtureOfDifferentTests()
-    {
-        Events testEvents = executeTest( MixOfDifferentJUnits.class );
+    void detectIncorrectIgnoreNewTest() {
+        Events testEvents = executeTest(IgnoreNewTestWithOldAnnotation.class);
 
-        verifyFailureMessage( testEvents, "Detected Junit 4 classes: [org.junit.Test]" );
+        verifyFailureMessage(testEvents, "Detected Junit 4 classes: [org.junit.Ignore]");
     }
 
     @Test
-    void deleteOldRuleAndNewTest()
-    {
-        Events testEvents = executeTest( MixRuleAndNewJUnit.class );
+    void detectMixtureOfDifferentTests() {
+        Events testEvents = executeTest(MixOfDifferentJUnits.class);
 
-        verifyFailureMessage( testEvents, "Detected Junit 4 classes: [org.junit.Rule, org.junit.rules.ExpectedException]" );
+        verifyFailureMessage(testEvents, "Detected Junit 4 classes: [org.junit.Test]");
     }
 
     @Test
-    void validTestUsage()
-    {
-        Events testEvents = executeTest( ValidUsage.class );
-        assertEquals( 0, testEvents.failed().count() );
+    void deleteOldRuleAndNewTest() {
+        Events testEvents = executeTest(MixRuleAndNewJUnit.class);
+
+        verifyFailureMessage(
+                testEvents, "Detected Junit 4 classes: [org.junit.Rule, org.junit.rules.ExpectedException]");
     }
 
-    private static void verifyFailureMessage( Events testEvents, String expectedMessage )
-    {
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( JUnitException.class ), message( message -> message.contains( expectedMessage ) ) ) ) );
+    @Test
+    void validTestUsage() {
+        Events testEvents = executeTest(ValidUsage.class);
+        assertEquals(0, testEvents.failed().count());
     }
 
-    private static Events executeTest( Class<?> clazz )
-    {
-        return EngineTestKit.engine( ENGINE_ID ).selectors( selectClass( clazz ) ).execute().allEvents();
+    private static void verifyFailureMessage(Events testEvents, String expectedMessage) {
+        testEvents
+                .assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(finishedWithFailure(
+                                instanceOf(JUnitException.class),
+                                message(message -> message.contains(expectedMessage)))));
+    }
+
+    private static Events executeTest(Class<?> clazz) {
+        return EngineTestKit.engine(ENGINE_ID)
+                .selectors(selectClass(clazz))
+                .execute()
+                .allEvents();
     }
 }

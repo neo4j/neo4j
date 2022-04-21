@@ -30,10 +30,19 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-case class ShowUsersExecutionPlanner(normalExecutionEngine: ExecutionEngine, securityAuthorizationHandler: SecurityAuthorizationHandler) {
+case class ShowUsersExecutionPlanner(
+  normalExecutionEngine: ExecutionEngine,
+  securityAuthorizationHandler: SecurityAuthorizationHandler
+) {
 
-  def planShowUsers(symbols: List[String], yields: Option[Yield], returns: Option[Return], sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
-    SystemCommandExecutionPlan("ShowUsers",
+  def planShowUsers(
+    symbols: List[String],
+    yields: Option[Yield],
+    returns: Option[Return],
+    sourcePlan: Option[ExecutionPlan]
+  ): ExecutionPlan =
+    SystemCommandExecutionPlan(
+      "ShowUsers",
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""MATCH (u:User)
@@ -41,11 +50,13 @@ case class ShowUsersExecutionPlanner(normalExecutionEngine: ExecutionEngine, sec
          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
          |""".stripMargin,
       VirtualValues.EMPTY_MAP,
-      source = sourcePlan)
+      source = sourcePlan
+    )
 
   def planShowCurrentUser(symbols: List[String], yields: Option[Yield], returns: Option[Return]): ExecutionPlan = {
     val currentUserKey = internalKey("currentUser")
-    SystemCommandExecutionPlan("ShowCurrentUser",
+    SystemCommandExecutionPlan(
+      "ShowCurrentUser",
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""MATCH (u:User)
@@ -54,9 +65,11 @@ case class ShowUsersExecutionPlanner(normalExecutionEngine: ExecutionEngine, sec
          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
          |""".stripMargin,
       VirtualValues.EMPTY_MAP,
-      parameterGenerator = (_, securityContext) => VirtualValues.map(
-        Array(currentUserKey),
-        Array(Values.utf8Value(securityContext.subject().executingUser()))),
+      parameterGenerator = (_, securityContext) =>
+        VirtualValues.map(
+          Array(currentUserKey),
+          Array(Values.utf8Value(securityContext.subject().executingUser()))
+        )
     )
   }
 }

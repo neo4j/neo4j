@@ -38,6 +38,7 @@ object Category extends Enumeration {
 }
 
 object Function {
+
   private val knownFunctions: Seq[Function] = Vector(
     Abs,
     Acos,
@@ -131,7 +132,7 @@ object Function {
       f: Function =>
         f.signatures.flatMap {
           case signature: FunctionTypeSignature if !signature.deprecated => Some(signature)
-          case signature: FunctionTypeSignature if signature.deprecated => None
+          case signature: FunctionTypeSignature if signature.deprecated  => None
           case problem =>
             throw new IllegalStateException("Did not expect the following at this point: " + problem)
         }
@@ -144,7 +145,7 @@ abstract case class FunctionInfo(f: FunctionWithName) {
 
   def isAggregationFunction: Boolean = f match {
     case _: AggregatingFunction => true
-    case _ => false
+    case _                      => false
   }
 
   def getDescription: String
@@ -153,7 +154,8 @@ abstract case class FunctionInfo(f: FunctionWithName) {
 
   def getSignature: String
 
-  override def toString: String = getFunctionName + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
+  override def toString: String =
+    getFunctionName + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
 }
 
 /**
@@ -164,6 +166,7 @@ abstract case class FunctionInfo(f: FunctionWithName) {
  * a single call.
  */
 object DeterministicFunction {
+
   def unapply(f: Function): Option[Function] = {
     if (f == Rand || f == RandomUUID || f == UnresolvedFunction) {
       None
@@ -184,7 +187,8 @@ abstract class Function extends FunctionWithName with TypeSignatures {
     }
   }
 
-  def asInvocation(argument: Expression, distinct: Boolean = false)(implicit position: InputPosition): FunctionInvocation = {
+  def asInvocation(argument: Expression, distinct: Boolean = false)(implicit
+  position: InputPosition): FunctionInvocation = {
     val (namespace, functionName) = asFunctionName
     FunctionInvocation(namespace, functionName, distinct = distinct, IndexedSeq(argument))(position)
   }
@@ -204,7 +208,7 @@ abstract class Function extends FunctionWithName with TypeSignatures {
     val (namespace, functionName) = asFunctionName(InputPosition.NONE)
     arg match {
       case FunctionInvocation(ns, `functionName`, _, args) if ns == namespace => Some(args.head)
-      case _ => None
+      case _                                                                  => None
     }
   }
 }

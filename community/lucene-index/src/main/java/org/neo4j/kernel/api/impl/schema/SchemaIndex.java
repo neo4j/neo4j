@@ -25,6 +25,4 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 /**
  * Partitioned lucene schema index.
  */
-public interface SchemaIndex extends DatabaseIndex<ValueIndexReader>
-{
-}
+public interface SchemaIndex extends DatabaseIndex<ValueIndexReader> {}

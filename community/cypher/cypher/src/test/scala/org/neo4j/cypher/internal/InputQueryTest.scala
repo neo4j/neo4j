@@ -36,7 +36,8 @@ class InputQueryTest extends CypherFunSuite {
   private val preParser =
     new PreParser(
       CypherConfiguration.fromConfig(Config.defaults()),
-      new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 0))
+      new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 0)
+    )
 
   private def parser =
     CompilationPhases.parsing(ParsingConfig())

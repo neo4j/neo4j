@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -36,8 +35,7 @@ import org.neo4j.util.VisibleForTesting;
  *
  * @see org.neo4j.kernel.impl.api.index.IndexProxy
  */
-class ContractCheckingIndexProxy extends DelegatingIndexProxy
-{
+class ContractCheckingIndexProxy extends DelegatingIndexProxy {
     /**
      * State machine for {@link IndexProxy proxies}
      *
@@ -56,167 +54,129 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
      * to prevent calls to close() or drop() to go through while there are pending
      * commits.
      **/
-    private enum State
-    {
-        INIT, STARTING, STARTED, CLOSED
+    private enum State {
+        INIT,
+        STARTING,
+        STARTED,
+        CLOSED
     }
 
     private final AtomicReference<State> state;
     private final AtomicInteger openCalls;
 
-    ContractCheckingIndexProxy( IndexProxy delegate )
-    {
-        super( delegate );
-        this.state = new AtomicReference<>( State.INIT );
-        this.openCalls = new AtomicInteger( 0 );
+    ContractCheckingIndexProxy(IndexProxy delegate) {
+        super(delegate);
+        this.state = new AtomicReference<>(State.INIT);
+        this.openCalls = new AtomicInteger(0);
     }
 
     @Override
-    public void start()
-    {
-        if ( state.compareAndSet( State.INIT, State.STARTING ) )
-        {
-            try
-            {
+    public void start() {
+        if (state.compareAndSet(State.INIT, State.STARTING)) {
+            try {
                 super.start();
+            } finally {
+                this.state.set(State.STARTED);
             }
-            finally
-            {
-                this.state.set( State.STARTED );
-            }
-        }
-        else
-        {
-            throw new IllegalStateException( "An IndexProxy can only be started once" );
+        } else {
+            throw new IllegalStateException("An IndexProxy can only be started once");
         }
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
-        if ( IndexUpdateMode.ONLINE == mode )
-        {
-            if ( tryOpenCall() )
-            {
-                try
-                {
-                    return new DelegatingIndexUpdater( super.newUpdater( mode, cursorContext, parallel ) )
-                    {
+    public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+        if (IndexUpdateMode.ONLINE == mode) {
+            if (tryOpenCall()) {
+                try {
+                    return new DelegatingIndexUpdater(super.newUpdater(mode, cursorContext, parallel)) {
                         @Override
-                        public void close() throws IndexEntryConflictException
-                        {
-                            try
-                            {
+                        public void close() throws IndexEntryConflictException {
+                            try {
                                 delegate.close();
-                            }
-                            finally
-                            {
+                            } finally {
                                 closeCall();
                             }
                         }
                     };
-                }
-                catch ( Throwable e )
-                {
+                } catch (Throwable e) {
                     closeCall();
                     throw e;
                 }
             }
-            throw new IllegalStateException( "Cannot create new updater when index state is " + state.get() );
-        }
-        else
-        {
-            return super.newUpdater( mode, cursorContext, parallel );
+            throw new IllegalStateException("Cannot create new updater when index state is " + state.get());
+        } else {
+            return super.newUpdater(mode, cursorContext, parallel);
         }
     }
 
     @Override
-    public void force( CursorContext cursorContext ) throws IOException
-    {
-        if ( tryOpenCall() )
-        {
-            try
-            {
-                super.force( cursorContext );
-            }
-            finally
-            {
+    public void force(CursorContext cursorContext) throws IOException {
+        if (tryOpenCall()) {
+            try {
+                super.force(cursorContext);
+            } finally {
                 closeCall();
             }
         }
     }
 
     @Override
-    public void drop()
-    {
-        if ( state.compareAndSet( State.INIT, State.CLOSED ) )
-        {
+    public void drop() {
+        if (state.compareAndSet(State.INIT, State.CLOSED)) {
             super.drop();
             return;
         }
 
-        if ( State.STARTING == state.get() )
-        {
-            throw new IllegalStateException( "Concurrent drop while creating index" );
+        if (State.STARTING == state.get()) {
+            throw new IllegalStateException("Concurrent drop while creating index");
         }
 
-        if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
-        {
+        if (state.compareAndSet(State.STARTED, State.CLOSED)) {
             waitOpenCallsToClose();
             super.drop();
             return;
         }
 
-        throw new IllegalStateException( "IndexProxy already closed" );
+        throw new IllegalStateException("IndexProxy already closed");
     }
 
     @Override
-    public void close( CursorContext cursorContext ) throws IOException
-    {
-        if ( state.compareAndSet( State.INIT, State.CLOSED ) )
-        {
-            super.close( cursorContext );
+    public void close(CursorContext cursorContext) throws IOException {
+        if (state.compareAndSet(State.INIT, State.CLOSED)) {
+            super.close(cursorContext);
             return;
         }
 
-        if ( state.compareAndSet( State.STARTING, State.CLOSED ) )
-        {
-            throw new IllegalStateException( "Concurrent close while creating index" );
+        if (state.compareAndSet(State.STARTING, State.CLOSED)) {
+            throw new IllegalStateException("Concurrent close while creating index");
         }
 
-        if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
-        {
+        if (state.compareAndSet(State.STARTED, State.CLOSED)) {
             waitOpenCallsToClose();
-            super.close( cursorContext );
+            super.close(cursorContext);
             return;
         }
 
-        throw new IllegalStateException( "IndexProxy already closed" );
+        throw new IllegalStateException("IndexProxy already closed");
     }
 
-    private void waitOpenCallsToClose()
-    {
-        while ( openCalls.intValue() > 0 )
-        {
-            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+    private void waitOpenCallsToClose() {
+        while (openCalls.intValue() > 0) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
     }
 
     @VisibleForTesting
-    int getOpenCalls()
-    {
+    int getOpenCalls() {
         return openCalls.intValue();
     }
 
-    private boolean tryOpenCall()
-    {
+    private boolean tryOpenCall() {
         // do not open call unless we are in STARTED
-        if ( State.STARTED == state.get() )
-        {
+        if (State.STARTED == state.get()) {
             // increment openCalls for closers to see
             openCalls.incrementAndGet();
-            if ( State.STARTED == state.get() )
-            {
+            if (State.STARTED == state.get()) {
                 return true;
             }
             openCalls.decrementAndGet();
@@ -224,8 +184,7 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
         return false;
     }
 
-    private void closeCall()
-    {
+    private void closeCall() {
         // rollback once the call finished or failed
         openCalls.decrementAndGet();
     }

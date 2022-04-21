@@ -21,126 +21,89 @@ package org.neo4j.server.rest.repr;
 
 import java.util.Iterator;
 import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.FirstItemIterable;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 
-public class ObjectToRepresentationConverter
-{
-    public static Representation convert( final Object data )
-    {
-        if ( data instanceof Iterable )
-        {
-            return getListRepresentation( (Iterable) data );
+public class ObjectToRepresentationConverter {
+    public static Representation convert(final Object data) {
+        if (data instanceof Iterable) {
+            return getListRepresentation((Iterable) data);
         }
-        if ( data instanceof Iterator iterator )
-        {
-            return getIteratorRepresentation( iterator );
+        if (data instanceof Iterator iterator) {
+            return getIteratorRepresentation(iterator);
         }
-        if ( data instanceof Map )
-        {
-            return getMapRepresentation( (Map) data );
+        if (data instanceof Map) {
+            return getMapRepresentation((Map) data);
         }
-        return getSingleRepresentation( data );
+        return getSingleRepresentation(data);
     }
 
-    private ObjectToRepresentationConverter()
-    {
+    private ObjectToRepresentationConverter() {}
+
+    public static MappingRepresentation getMapRepresentation(Map data) {
+        return new MapRepresentation(data);
     }
 
-    public static MappingRepresentation getMapRepresentation( Map data )
-    {
-        return new MapRepresentation( data );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    static Representation getIteratorRepresentation( Iterator data )
-    {
+    @SuppressWarnings("unchecked")
+    static Representation getIteratorRepresentation(Iterator data) {
         final FirstItemIterable<Representation> results =
-                new FirstItemIterable<>( new IteratorWrapper<Representation,Object>( data )
-                {
+                new FirstItemIterable<>(new IteratorWrapper<Representation, Object>(data) {
                     @Override
-                    protected Representation underlyingObjectToObject( Object value )
-                    {
-                        if ( value instanceof Iterable )
-                        {
-                            FirstItemIterable<Representation> nested = convertValuesToRepresentations( (Iterable) value );
-                            return new ListRepresentation( getType( nested ), nested );
-                        }
-                        else
-                        {
-                            return getSingleRepresentation( value );
+                    protected Representation underlyingObjectToObject(Object value) {
+                        if (value instanceof Iterable) {
+                            FirstItemIterable<Representation> nested = convertValuesToRepresentations((Iterable) value);
+                            return new ListRepresentation(getType(nested), nested);
+                        } else {
+                            return getSingleRepresentation(value);
                         }
                     }
-                } );
-        return new ListRepresentation( getType( results ), results );
+                });
+        return new ListRepresentation(getType(results), results);
     }
 
-    public static ListRepresentation getListRepresentation( Iterable data )
-    {
-        final FirstItemIterable<Representation> results = convertValuesToRepresentations( data );
-        return new ServerListRepresentation( getType( results ), results );
+    public static ListRepresentation getListRepresentation(Iterable data) {
+        final FirstItemIterable<Representation> results = convertValuesToRepresentations(data);
+        return new ServerListRepresentation(getType(results), results);
     }
 
-    @SuppressWarnings( "unchecked" )
-    static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data )
-    {
-        return new FirstItemIterable<>( new IterableWrapper<Representation,Object>( data )
-        {
+    @SuppressWarnings("unchecked")
+    static FirstItemIterable<Representation> convertValuesToRepresentations(Iterable data) {
+        return new FirstItemIterable<>(new IterableWrapper<Representation, Object>(data) {
             @Override
-            protected Representation underlyingObjectToObject( Object value )
-            {
-                return convert( value );
+            protected Representation underlyingObjectToObject(Object value) {
+                return convert(value);
             }
-        } );
+        });
     }
 
-    static RepresentationType getType( FirstItemIterable<Representation> representations )
-    {
-        Representation  representation = representations.getFirst();
-        if ( representation == null )
-        {
+    static RepresentationType getType(FirstItemIterable<Representation> representations) {
+        Representation representation = representations.getFirst();
+        if (representation == null) {
             return RepresentationType.STRING;
         }
         return representation.getRepresentationType();
     }
 
-    static Representation getSingleRepresentation( Object result )
-    {
-        if ( result == null )
-        {
+    static Representation getSingleRepresentation(Object result) {
+        if (result == null) {
             return ValueRepresentation.ofNull();
-        }
-        else if ( result instanceof Node )
-        {
-            return new NodeRepresentation( (Node) result );
-        }
-        else if ( result instanceof Relationship )
-        {
-            return new RelationshipRepresentation( (Relationship) result );
-        }
-        else if ( result instanceof Double || result instanceof Float )
-        {
-            return ValueRepresentation.number( ( (Number) result ).doubleValue() );
-        }
-        else if ( result instanceof Long )
-        {
-            return ValueRepresentation.number( ( (Long) result ).longValue() );
-        }
-        else if ( result instanceof Integer )
-        {
-            return ValueRepresentation.number( ( (Integer) result ).intValue() );
-        }
-        else if ( result instanceof Boolean )
-        {
-            return ValueRepresentation.bool( ( (Boolean) result ).booleanValue()  );
-        }
-        else
-        {
-            return ValueRepresentation.string( result.toString() );
+        } else if (result instanceof Node) {
+            return new NodeRepresentation((Node) result);
+        } else if (result instanceof Relationship) {
+            return new RelationshipRepresentation((Relationship) result);
+        } else if (result instanceof Double || result instanceof Float) {
+            return ValueRepresentation.number(((Number) result).doubleValue());
+        } else if (result instanceof Long) {
+            return ValueRepresentation.number(((Long) result).longValue());
+        } else if (result instanceof Integer) {
+            return ValueRepresentation.number(((Integer) result).intValue());
+        } else if (result instanceof Boolean) {
+            return ValueRepresentation.bool(((Boolean) result).booleanValue());
+        } else {
+            return ValueRepresentation.string(result.toString());
         }
     }
 }

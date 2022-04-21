@@ -20,33 +20,28 @@
 package org.neo4j.values.storable;
 
 import java.time.temporal.Temporal;
-
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 
-public abstract class TemporalArray<T extends Temporal & Comparable<? super T>> extends NonPrimitiveArray<T>
-{
+public abstract class TemporalArray<T extends Temporal & Comparable<? super T>> extends NonPrimitiveArray<T> {
 
     @Override
-    public boolean equals( Geometry[] x )
-    {
+    public boolean equals(Geometry[] x) {
         return false;
     }
 
-    protected static <E extends Exception> void writeTo( ValueWriter<E> writer, ValueWriter.ArrayType type, Temporal[] values ) throws E
-    {
-        writer.beginArray( values.length, type );
-        for ( Temporal x : values )
-        {
-            Value value = Values.temporalValue( x );
-            value.writeTo( writer );
+    protected static <E extends Exception> void writeTo(
+            ValueWriter<E> writer, ValueWriter.ArrayType type, Temporal[] values) throws E {
+        writer.beginArray(values.length, type);
+        for (Temporal x : values) {
+            Value value = Values.temporalValue(x);
+            value.writeTo(writer);
         }
         writer.endArray();
     }
 
     @Override
-    public final AnyValue value( int offset )
-    {
-        return Values.temporalValue( value()[offset] );
+    public final AnyValue value(int offset) {
+        return Values.temporalValue(value()[offset]);
     }
 }

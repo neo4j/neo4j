@@ -25,8 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public interface JobHandle<T>
-{
+public interface JobHandle<T> {
     JobHandle<?> EMPTY = new NullJobHandle<>();
 
     void cancel();
@@ -38,7 +37,7 @@ public interface JobHandle<T>
      */
     void waitTermination() throws InterruptedException, ExecutionException;
 
-    void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException;
+    void waitTermination(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException;
 
     /**
      * Waits if necessary for the computation to complete, and then
@@ -50,31 +49,25 @@ public interface JobHandle<T>
      */
     T get() throws ExecutionException, InterruptedException;
 
-    default void registerCancelListener( CancelListener listener )
-    {
-        throw new UnsupportedOperationException( "Unsupported in this implementation" );
+    default void registerCancelListener(CancelListener listener) {
+        throw new UnsupportedOperationException("Unsupported in this implementation");
     }
 
-    class NullJobHandle<T> implements JobHandle<T>
-    {
+    class NullJobHandle<T> implements JobHandle<T> {
         @Override
-        public void cancel()
-        {   // no-op
+        public void cancel() { // no-op
         }
 
         @Override
-        public void waitTermination()
-        {   // no-op
+        public void waitTermination() { // no-op
         }
 
         @Override
-        public void waitTermination( long timeout, TimeUnit unit )
-        {   // no-op
+        public void waitTermination(long timeout, TimeUnit unit) { // no-op
         }
 
         @Override
-        public T get()
-        {
+        public T get() {
             return null;
         }
     }

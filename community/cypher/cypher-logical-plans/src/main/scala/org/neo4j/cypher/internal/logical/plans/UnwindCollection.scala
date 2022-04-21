@@ -28,8 +28,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * If 'expression' does evaluate to null, produce nothing.
  * If 'expression' does not evaluate to a list, produce a single row with the value.
  */
-case class UnwindCollection(override val source: LogicalPlan, variable: String, expression: Expression)(implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen)  {
+case class UnwindCollection(override val source: LogicalPlan, variable: String, expression: Expression)(implicit
+idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = source.availableSymbols + variable

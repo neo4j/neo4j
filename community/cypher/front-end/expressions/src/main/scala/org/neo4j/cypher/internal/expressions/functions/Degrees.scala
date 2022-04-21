@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.expressions.TypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
-case object Degrees extends Function  {
+case object Degrees extends Function {
   def name = "degrees"
 
   override val signatures = Vector(

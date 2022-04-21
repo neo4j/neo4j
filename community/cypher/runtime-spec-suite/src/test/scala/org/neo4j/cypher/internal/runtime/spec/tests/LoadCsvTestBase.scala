@@ -40,18 +40,19 @@ import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.graphdb.schema.IndexType
 
 import java.io.PrintWriter
+
 import scala.collection.immutable
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime)
-  with CreateTempFileTestSupport {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime)
+    with CreateTempFileTestSupport {
 
-  protected val testRange: immutable.Seq[Int] = 0 until sizeHint/2
+  protected val testRange: immutable.Seq[Int] = 0 until sizeHint / 2
   protected val testValueOffset = 10000
 
   def wrapInQuotations(c: String): String = "\"" + c + "\""
@@ -74,7 +75,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
         writer.println("a,b,c")
       }
       testRange.foreach { i =>
-        writer.println(s"${testValueOffset + i},${testValueOffset*2 + i},${testValueOffset*3 + i}")
+        writer.println(s"${testValueOffset + i},${testValueOffset * 2 + i},${testValueOffset * 3 + i}")
       }
     }).cypherEscape
     wrapInQuotations(url)
@@ -114,7 +115,9 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = testRange.map { i => Array(s"${testValueOffset + i}", s"${testValueOffset*2 + i}", s"${testValueOffset*3 + i}") }.toArray
+    val expected = testRange.map { i =>
+      Array(s"${testValueOffset + i}", s"${testValueOffset * 2 + i}", s"${testValueOffset * 3 + i}")
+    }.toArray
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
 
@@ -152,7 +155,9 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = testRange.map { i => Array(s"${testValueOffset + i}", s"${testValueOffset*2 + i}", s"${testValueOffset*3 + i}") }.toArray
+    val expected = testRange.map { i =>
+      Array(s"${testValueOffset + i}", s"${testValueOffset * 2 + i}", s"${testValueOffset * 3 + i}")
+    }.toArray
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
 
@@ -252,7 +257,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "a", "b")
       .valueHashJoin("x = y")
-      .|.projection("rline[0] as y",  "rline[2] as b")
+      .|.projection("rline[0] as y", "rline[2] as b")
       .|.loadCSV(url2, variableName = "rline", NoHeaders)
       .|.argument()
       .projection("lline.a as x", "lline.b as a")
@@ -264,7 +269,13 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = testRange.map { i =>
-      Array(s"${testValueOffset + i}", s"${testValueOffset + i}", s"${testValueOffset*2 + i}", s"${testValueOffset*3 + i}") }.toArray
+      Array(
+        s"${testValueOffset + i}",
+        s"${testValueOffset + i}",
+        s"${testValueOffset * 2 + i}",
+        s"${testValueOffset * 3 + i}"
+      )
+    }.toArray
     runtimeResult should beColumns("x", "y", "a", "b").withRows(expected)
   }
 
@@ -293,7 +304,13 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
         .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
 
       nodes.map { _.getAllProperties.asScala } should contain theSameElementsAs
-        testRange.map { i => Map("p1" -> s"${testValueOffset + i}", "p2" -> s"${testValueOffset*2 + i}", "p3" -> s"${testValueOffset*3 + i}") }
+        testRange.map { i =>
+          Map(
+            "p1" -> s"${testValueOffset + i}",
+            "p2" -> s"${testValueOffset * 2 + i}",
+            "p3" -> s"${testValueOffset * 3 + i}"
+          )
+        }
     } finally {
       allNodes.close()
     }
@@ -382,14 +399,13 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
    */
   def transactionsExpectedIfTransactionCountingAvailable(expectation: Int): Int = runtime.name.toUpperCase() match {
     case InterpretedRuntimeName.name | SlottedRuntimeName.name => expectation
-    case _ => 1 // transactionsCommitted default value
+    case _                                                     => 1 // transactionsCommitted default value
   }
 }
 
 // Currently not supported in pipelined
 trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
   self: LoadCsvTestBase[CONTEXT] =>
-
 
   test("should load csv create node with properties with call in tx") {
     // given an empty data base
@@ -486,11 +502,21 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .apply()
       .|.merge(Seq(createNodeWithProperties("b", Seq("L"), "{prop: row.b}")), Seq(), Seq(), Seq(), Set())
-      .|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .|.nodeIndexOperator(
+        "b:L(prop = ???)",
+        paramExpr = Some(prop("row", "b")),
+        argumentIds = Set("row"),
+        getValue = Map("prop" -> DoNotGetValue)
+      )
       .eager()
       .apply()
       .|.merge(Seq(createNodeWithProperties("a", Seq("L"), "{prop: row.a}")), Seq(), Seq(), Seq(), Set())
-      .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .|.nodeIndexOperator(
+        "a:L(prop = ???)",
+        paramExpr = Some(prop("row", "a")),
+        argumentIds = Set("row"),
+        getValue = Map("prop" -> DoNotGetValue)
+      )
       .loadCSV(url, "row", HasHeaders, None)
       .argument()
       .build(readOnly = false)
@@ -504,7 +530,11 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
 
     setupResult should beColumns("a", "b")
       .withRows(RowCount(testRange.size))
-      .withStatistics(nodesCreated = testRange.size * 2, labelsAdded = testRange.size * 2, propertiesSet = testRange.size * 2)
+      .withStatistics(
+        nodesCreated = testRange.size * 2,
+        labelsAdded = testRange.size * 2,
+        propertiesSet = testRange.size * 2
+      )
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this, hasLoadCsv = true)
@@ -516,8 +546,18 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
       .|.|.relationshipTypeScan("(aa)-[r:T]->(bb)", IndexOrderNone, "a", "b")
       .|.apply()
       .|.|.cartesianProduct()
-      .|.|.|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
-      .|.|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .|.|.|.nodeIndexOperator(
+        "b:L(prop = ???)",
+        paramExpr = Some(prop("row", "b")),
+        argumentIds = Set("row"),
+        getValue = Map("prop" -> DoNotGetValue)
+      )
+      .|.|.nodeIndexOperator(
+        "a:L(prop = ???)",
+        paramExpr = Some(prop("row", "a")),
+        argumentIds = Set("row"),
+        getValue = Map("prop" -> DoNotGetValue)
+      )
       .|.argument("row")
       .loadCSV(url, "row", HasHeaders)
       .argument()

@@ -22,17 +22,12 @@ package org.neo4j.internal.kernel.api.exceptions;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class ProcedureException extends KernelException
-{
-    public ProcedureException( Status statusCode, Throwable cause,
-                               String message, Object... parameters )
-    {
-        super( statusCode, cause, message, parameters );
+public class ProcedureException extends KernelException {
+    public ProcedureException(Status statusCode, Throwable cause, String message, Object... parameters) {
+        super(statusCode, cause, message, parameters);
     }
 
-    public ProcedureException( Status statusCode, String message,
-                               Object... parameters )
-    {
-        super( statusCode, message, parameters );
+    public ProcedureException(Status statusCode, String message, Object... parameters) {
+        super(statusCode, message, parameters);
     }
 }

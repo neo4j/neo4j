@@ -33,7 +33,10 @@ import org.neo4j.memory.MemoryTracker
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-class ResourceManager(val monitor: ResourceMonitor = ResourceMonitor.NOOP, memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE) extends CloseableResource with CloseListener {
+class ResourceManager(
+  val monitor: ResourceMonitor = ResourceMonitor.NOOP,
+  memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE
+) extends CloseableResource with CloseListener {
   protected val resources: ResourcePool = new SingleThreadedResourcePool(INITIAL_CAPACITY, monitor, memoryTracker)
 
   /**
@@ -73,7 +76,7 @@ class ResourceManager(val monitor: ResourceMonitor = ResourceMonitor.NOOP, memor
 }
 
 class ThreadSafeResourceManager(monitor: ResourceMonitor) extends ResourceManager(monitor) {
-  override protected val resources:ResourcePool = new ThreadSafeResourcePool(monitor)
+  override protected val resources: ResourcePool = new ThreadSafeResourcePool(monitor)
 }
 
 object ResourceManager {
@@ -87,6 +90,7 @@ trait ResourceMonitor {
 }
 
 object ResourceMonitor {
+
   val NOOP: ResourceMonitor = new ResourceMonitor {
     def trace(resource: AutoCloseablePlus): Unit = {}
     def untrace(resource: AutoCloseablePlus): Unit = {}
@@ -103,6 +107,7 @@ object ResourceMonitor {
  * The new factory and context will be used the next time cursors need to be allocated.
  */
 trait ResourceManagedCursorPool extends AutoCloseablePlus {
+
   /**
    * Close all cursors that are cached in the pool
    */
@@ -134,7 +139,8 @@ trait ResourcePool {
  * @param capacity the initial capacity of the pool
  * @param monitor the monitor to call on close
  */
-class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memoryTracker: MemoryTracker) extends ResourcePool {
+class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memoryTracker: MemoryTracker)
+    extends ResourcePool {
   private var highMark: Int = 0
   private var closeables: Array[AutoCloseablePlus] = new Array[AutoCloseablePlus](capacity)
   private var trackedSize = shallowSizeOfObjectArray(capacity)
@@ -154,7 +160,7 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
         throw new IllegalStateException(s"$resource does not match ${closeables(i)}")
       }
       closeables(i) = null
-      if (i == highMark - 1) { //we removed the last item, hence no holes
+      if (i == highMark - 1) { // we removed the last item, hence no holes
         highMark -= 1
       }
       true
@@ -202,8 +208,7 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
           resource.setCloseListener(null) // We don't want a call to onClosed any longer
           resource.close()
         }
-      }
-      catch {
+      } catch {
         case t: Throwable => error = Exceptions.chain(error, t)
       }
       i += 1
@@ -235,7 +240,8 @@ object SingleThreadedResourcePool {
 // TODO: Maybe this should be per worker (and if needed synchronize on close) instead of using ConcurrentLinkedQueue
 class ThreadSafeResourcePool(monitor: ResourceMonitor) extends ResourcePool {
 
-  val resources: java.util.Collection[AutoCloseablePlus] = new java.util.concurrent.ConcurrentLinkedQueue[AutoCloseablePlus]()
+  val resources: java.util.Collection[AutoCloseablePlus] =
+    new java.util.concurrent.ConcurrentLinkedQueue[AutoCloseablePlus]()
 
   override def add(resource: AutoCloseablePlus): Unit =
     resources.add(resource)
@@ -255,8 +261,7 @@ class ThreadSafeResourcePool(monitor: ResourceMonitor) extends ResourcePool {
         monitor.close(resource)
         resource.setCloseListener(null) // We don't want a call to onClosed any longer
         resource.close()
-      }
-      catch {
+      } catch {
         case t: Throwable => error = Exceptions.chain(error, t)
       }
     }

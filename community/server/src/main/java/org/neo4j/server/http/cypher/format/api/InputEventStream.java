@@ -19,10 +19,9 @@
  */
 package org.neo4j.server.http.cypher.format.api;
 
-import org.glassfish.jersey.internal.util.Producer;
-
 import java.util.Collections;
 import java.util.Map;
+import org.glassfish.jersey.internal.util.Producer;
 
 /**
  * A representation of a stream of events that are consumed by Cypher resource.
@@ -34,16 +33,15 @@ import java.util.Map;
  * <p>
  * (network) - [InputStream] -> (MessageBodyReader) - [InputEventStream] -> (CypherResource)
  */
-public class InputEventStream
-{
+public class InputEventStream {
 
     /**
      * An empty input stream used primarily for HTTP requests with no body.
      */
-    public static final InputEventStream EMPTY = new InputEventStream( Collections.emptyMap(), () -> null );
+    public static final InputEventStream EMPTY = new InputEventStream(Collections.emptyMap(), () -> null);
 
     private final Producer<Statement> statementProducer;
-    private final Map<String,Object> parameters;
+    private final Map<String, Object> parameters;
 
     /**
      * @param parameters parameters that will be passed to {@link OutputEventSource}. The parameters are useful primarily if an input format
@@ -52,8 +50,7 @@ public class InputEventStream
      * when this object is created, so this function serves as a callback for getting the statements.
      * The function should be blocking with {@code null} meaning end of the stream.
      */
-    public InputEventStream( Map<String,Object> parameters, Producer<Statement> statementProducer )
-    {
+    public InputEventStream(Map<String, Object> parameters, Producer<Statement> statementProducer) {
         this.parameters = parameters;
         this.statementProducer = statementProducer;
     }
@@ -65,13 +62,11 @@ public class InputEventStream
      *
      * @return the next statement or {@code null}.
      */
-    public Statement read()
-    {
+    public Statement read() {
         return statementProducer.call();
     }
 
-    public Map<String,Object> getParameters()
-    {
+    public Map<String, Object> getParameters() {
         return parameters;
     }
 }

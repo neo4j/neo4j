@@ -19,6 +19,30 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.TOKENS;
+import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.generateRandomTokens;
+import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.generateSomeRandomUpdates;
+import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.verifyUpdates;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Stream;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.list.primitive.LongList;
@@ -33,15 +57,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Stream;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -61,526 +76,457 @@ import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
-import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.TOKENS;
-import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.generateRandomTokens;
-import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.generateSomeRandomUpdates;
-import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.verifyUpdates;
-
-public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,TokenScanValue,TokenScanLayout>
-{
+public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, TokenScanValue, TokenScanLayout> {
     @Override
-    IndexAccessor createAccessor( PageCache pageCache )
-    {
+    IndexAccessor createAccessor(PageCache pageCache) {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
-        DatabaseIndexContext context =
-                DatabaseIndexContext.builder( pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
-        return new TokenIndexAccessor( context, indexFiles, indexDescriptor, cleanup, Sets.immutable.empty() );
+        DatabaseIndexContext context = DatabaseIndexContext.builder(
+                        pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME)
+                .withReadOnlyChecker(writable())
+                .build();
+        return new TokenIndexAccessor(context, indexFiles, indexDescriptor, cleanup, Sets.immutable.empty());
     }
 
     @Override
-    IndexDescriptor indexDescriptor()
-    {
-        return forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
+    IndexDescriptor indexDescriptor() {
+        return forSchema(forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+                .withName("index")
+                .materialise(0);
     }
 
     @Override
-    TokenScanLayout layout()
-    {
+    TokenScanLayout layout() {
         return new TokenScanLayout();
     }
 
     @Test
-    void processMustThrowAfterClose() throws Exception
-    {
+    void processMustThrowAfterClose() throws Exception {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false );
+        IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false);
         updater.close();
 
-        assertThrows( IllegalStateException.class, () -> updater.process( simpleUpdate() ) );
+        assertThrows(IllegalStateException.class, () -> updater.process(simpleUpdate()));
     }
 
     @Test
-    void shouldAddWithUpdater() throws IndexEntryConflictException, IOException
-    {
+    void shouldAddWithUpdater() throws IndexEntryConflictException, IOException {
         // Give
         MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
-        List<TokenIndexEntryUpdate<?>> updates = generateSomeRandomUpdates( entityTokens, random );
+        List<TokenIndexEntryUpdate<?>> updates = generateSomeRandomUpdates(entityTokens, random);
 
         // When
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-        {
-            for ( TokenIndexEntryUpdate<?> update : updates )
-            {
-                updater.process( update );
+        try (IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
+            for (TokenIndexEntryUpdate<?> update : updates) {
+                updater.process(update);
             }
         }
 
         // Then
         forceAndCloseAccessor();
-        verifyUpdates( entityTokens, layout, this::getTree );
+        verifyUpdates(entityTokens, layout, this::getTree);
     }
 
     @Test
-    void updaterShouldHandleRandomizedUpdates() throws Throwable
-    {
-        Executable additionalOperation = () -> {
-        };
-        updaterShouldHandleRandomizedUpdates( additionalOperation );
+    void updaterShouldHandleRandomizedUpdates() throws Throwable {
+        Executable additionalOperation = () -> {};
+        updaterShouldHandleRandomizedUpdates(additionalOperation);
     }
 
     @Test
-    void updaterShouldHandleRandomizedUpdatesWithRestart() throws Throwable
-    {
+    void updaterShouldHandleRandomizedUpdatesWithRestart() throws Throwable {
         Executable additionalOperation = this::maybeRestartAccessor;
-        updaterShouldHandleRandomizedUpdates( additionalOperation );
+        updaterShouldHandleRandomizedUpdates(additionalOperation);
     }
 
     @Test
-    void updaterShouldHandleRandomizedUpdatesWithCheckpoint() throws Throwable
-    {
+    void updaterShouldHandleRandomizedUpdatesWithCheckpoint() throws Throwable {
         Executable additionalOperation = this::maybeCheckpoint;
-        updaterShouldHandleRandomizedUpdates( additionalOperation );
+        updaterShouldHandleRandomizedUpdates(additionalOperation);
     }
 
-    private void updaterShouldHandleRandomizedUpdates( Executable additionalOperation ) throws Throwable
-    {
+    private void updaterShouldHandleRandomizedUpdates(Executable additionalOperation) throws Throwable {
         MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
-        doRandomizedUpdatesWithAdditionalOperation( additionalOperation, entityTokens );
+        doRandomizedUpdatesWithAdditionalOperation(additionalOperation, entityTokens);
         forceAndCloseAccessor();
-        verifyUpdates( entityTokens, layout, this::getTree );
+        verifyUpdates(entityTokens, layout, this::getTree);
     }
 
     @Test
-    void newValueReaderShouldThrow()
-    {
-        assertThatThrownBy( accessor::newValueReader ).isInstanceOf( UnsupportedOperationException.class );
+    void newValueReaderShouldThrow() {
+        assertThatThrownBy(accessor::newValueReader).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
-    void readerShouldFindNothingOnEmptyIndex() throws Exception
-    {
-        assertReaderFindsExpected( 1, LongLists.immutable.empty() );
+    void readerShouldFindNothingOnEmptyIndex() throws Exception {
+        assertReaderFindsExpected(1, LongLists.immutable.empty());
     }
 
     @Test
-    void readerShouldFindNothingBecauseNoMatchingToken() throws Exception
-    {
+    void readerShouldFindNothingBecauseNoMatchingToken() throws Exception {
         // Given
         int tokenId = 1;
         int otherTokenId = 2;
-        addToIndex( otherTokenId, 1 );
+        addToIndex(otherTokenId, 1);
 
         // When
-        assertReaderFindsExpected( tokenId, LongLists.immutable.empty() );
+        assertReaderFindsExpected(tokenId, LongLists.immutable.empty());
     }
 
     @Test
-    void readerShouldFindSingleWithNoOtherTokens() throws Exception
-    {
+    void readerShouldFindSingleWithNoOtherTokens() throws Exception {
         // Given
         int tokenId = 1;
         long entityId = 1;
-        addToIndex( tokenId, entityId );
-        LongList expectedIds = LongLists.immutable.of( entityId );
+        addToIndex(tokenId, entityId);
+        LongList expectedIds = LongLists.immutable.of(entityId);
 
         // When
-        assertReaderFindsExpected( tokenId, expectedIds );
+        assertReaderFindsExpected(tokenId, expectedIds);
     }
 
     @Test
-    void readerShouldFindSingleWithOtherTokens() throws Exception
-    {
+    void readerShouldFindSingleWithOtherTokens() throws Exception {
         // Given
         int tokenId = 1;
         long entityId = 1;
-        addToIndex( tokenId, entityId );
-        addToIndex( 2, 2 );
-        LongList expectedIds = LongLists.immutable.of( entityId );
+        addToIndex(tokenId, entityId);
+        addToIndex(2, 2);
+        LongList expectedIds = LongLists.immutable.of(entityId);
 
         // When
-        assertReaderFindsExpected( tokenId, expectedIds );
+        assertReaderFindsExpected(tokenId, expectedIds);
     }
 
     @ParameterizedTest
-    @EnumSource( IndexOrder.class )
-    void readerShouldFindManyWithNoOtherTokens( IndexOrder indexOrder ) throws Exception
-    {
+    @EnumSource(IndexOrder.class)
+    void readerShouldFindManyWithNoOtherTokens(IndexOrder indexOrder) throws Exception {
         // Given
         int tokenId = 1;
-        long[] entityIds = new long[]{1, 2, 3, 64, 65, 1000, 2000};
-        addToIndex( tokenId, entityIds );
-        LongList expectedIds = LongLists.immutable.of( entityIds );
+        long[] entityIds = new long[] {1, 2, 3, 64, 65, 1000, 2000};
+        addToIndex(tokenId, entityIds);
+        LongList expectedIds = LongLists.immutable.of(entityIds);
 
         // When
-        assertReaderFindsExpected( indexOrder, tokenId, expectedIds );
+        assertReaderFindsExpected(indexOrder, tokenId, expectedIds);
     }
 
     @ParameterizedTest
-    @EnumSource( IndexOrder.class )
-    void readerShouldFindManyWithOtherTokens( IndexOrder indexOrder ) throws Exception
-    {
+    @EnumSource(IndexOrder.class)
+    void readerShouldFindManyWithOtherTokens(IndexOrder indexOrder) throws Exception {
         // Given
         int tokenId = 1;
-        long[] entityIds =      new long[]{1, 2, 3,   64, 65,    1000,       2001};
-        long[] otherEntityIds = new long[]{1, 2,   4, 64,    66, 1000, 2000      };
-        addToIndex( tokenId, entityIds );
-        addToIndex( 2, otherEntityIds );
-        LongList expectedIds = LongLists.immutable.of( entityIds );
+        long[] entityIds = new long[] {1, 2, 3, 64, 65, 1000, 2001};
+        long[] otherEntityIds = new long[] {1, 2, 4, 64, 66, 1000, 2000};
+        addToIndex(tokenId, entityIds);
+        addToIndex(2, otherEntityIds);
+        LongList expectedIds = LongLists.immutable.of(entityIds);
 
         // When
-        assertReaderFindsExpected( indexOrder, tokenId, expectedIds );
+        assertReaderFindsExpected(indexOrder, tokenId, expectedIds);
     }
 
     @ParameterizedTest
-    @MethodSource( "orderCombinations" )
-    void readerShouldHandleNestedQueries( IndexOrder outerOrder, IndexOrder innerOrder ) throws Exception
-    {
+    @MethodSource("orderCombinations")
+    void readerShouldHandleNestedQueries(IndexOrder outerOrder, IndexOrder innerOrder) throws Exception {
         int outerTokenId = 1;
         int innerTokenId = 2;
-        long[] outerIds = new long[]{1, 2, 3,   64, 65,    1000,       2001};
-        long[] innerIds = new long[]{1, 2,   4, 64,    66, 1000, 2000      };
-        LongList outerExpectedIds = LongLists.immutable.of( outerIds );
-        LongList innerExpectedIds = LongLists.immutable.of( innerIds );
-        addToIndex( outerTokenId, outerIds );
-        addToIndex( innerTokenId, innerIds );
+        long[] outerIds = new long[] {1, 2, 3, 64, 65, 1000, 2001};
+        long[] innerIds = new long[] {1, 2, 4, 64, 66, 1000, 2000};
+        LongList outerExpectedIds = LongLists.immutable.of(outerIds);
+        LongList innerExpectedIds = LongLists.immutable.of(innerIds);
+        addToIndex(outerTokenId, outerIds);
+        addToIndex(innerTokenId, innerIds);
 
-        try ( var reader = accessor.newTokenReader() )
-        {
-            assertReaderFindsExpected( reader, outerOrder, outerTokenId, outerExpectedIds,
-                    indexReader -> assertReaderFindsExpected( indexReader, innerOrder, innerTokenId, innerExpectedIds, ThrowingConsumer.noop() ) );
+        try (var reader = accessor.newTokenReader()) {
+            assertReaderFindsExpected(
+                    reader,
+                    outerOrder,
+                    outerTokenId,
+                    outerExpectedIds,
+                    indexReader -> assertReaderFindsExpected(
+                            indexReader, innerOrder, innerTokenId, innerExpectedIds, ThrowingConsumer.noop()));
         }
     }
 
     @Test
-    void readerShouldFindRandomizedUpdates() throws Throwable
-    {
-        Executable additionalOperation = () -> {
-        };
-        readerShouldFindRandomizedUpdates( additionalOperation );
+    void readerShouldFindRandomizedUpdates() throws Throwable {
+        Executable additionalOperation = () -> {};
+        readerShouldFindRandomizedUpdates(additionalOperation);
     }
 
     @Test
-    void readerShouldFindRandomizedUpdatesWithCheckpoint() throws Throwable
-    {
+    void readerShouldFindRandomizedUpdatesWithCheckpoint() throws Throwable {
         Executable additionalOperation = this::maybeCheckpoint;
-        readerShouldFindRandomizedUpdates( additionalOperation );
+        readerShouldFindRandomizedUpdates(additionalOperation);
     }
 
     @Test
-    void readerShouldFindRandomizedUpdatesWithRestart() throws Throwable
-    {
+    void readerShouldFindRandomizedUpdatesWithRestart() throws Throwable {
         Executable additionalOperation = this::maybeRestartAccessor;
-        readerShouldFindRandomizedUpdates( additionalOperation );
+        readerShouldFindRandomizedUpdates(additionalOperation);
     }
 
     @Test
-    void readingAfterDropShouldThrow()
-    {
+    void readingAfterDropShouldThrow() {
         // given
         accessor.drop();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newTokenReader() );
+        assertThrows(IllegalStateException.class, () -> accessor.newTokenReader());
     }
 
     @Test
-    void readingAfterCloseShouldThrow()
-    {
+    void readingAfterCloseShouldThrow() {
         // given
         accessor.close();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newTokenReader() );
+        assertThrows(IllegalStateException.class, () -> accessor.newTokenReader());
     }
 
     @Test
-    void shouldScanSingleRange() throws IndexEntryConflictException
-    {
+    void shouldScanSingleRange() throws IndexEntryConflictException {
         // GIVEN
         int labelId1 = 1;
         int labelId2 = 2;
         long nodeId1 = 10;
         long nodeId2 = 11;
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-        {
-            indexUpdater.process( IndexEntryUpdate.change( nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );
-            indexUpdater.process( IndexEntryUpdate.change( nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
+        try (IndexUpdater indexUpdater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
+            indexUpdater.process(
+                    IndexEntryUpdate.change(nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {labelId1}));
+            indexUpdater.process(IndexEntryUpdate.change(
+                    nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2}));
         }
 
         // WHEN
-        BoundedIterable<EntityTokenRange> reader = accessor.newAllEntriesTokenReader( Long.MIN_VALUE, Long.MAX_VALUE, NULL_CONTEXT );
-        EntityTokenRange range = single( reader.iterator() );
+        BoundedIterable<EntityTokenRange> reader =
+                accessor.newAllEntriesTokenReader(Long.MIN_VALUE, Long.MAX_VALUE, NULL_CONTEXT);
+        EntityTokenRange range = single(reader.iterator());
 
         // THEN
-        assertThat( new long[]{nodeId1, nodeId2} ).isEqualTo( reducedNodes( range ) );
-        assertThat( new long[]{labelId1} ).isEqualTo( sorted( range.tokens( nodeId1 ) ) );
-        assertThat( new long[]{labelId1, labelId2} ).isEqualTo( sorted( range.tokens( nodeId2 ) ) );
+        assertThat(new long[] {nodeId1, nodeId2}).isEqualTo(reducedNodes(range));
+        assertThat(new long[] {labelId1}).isEqualTo(sorted(range.tokens(nodeId1)));
+        assertThat(new long[] {labelId1, labelId2}).isEqualTo(sorted(range.tokens(nodeId2)));
     }
 
     @Test
-    void shouldScanMultipleRanges() throws IndexEntryConflictException
-    {
+    void shouldScanMultipleRanges() throws IndexEntryConflictException {
         // GIVEN
         int labelId1 = 1;
         int labelId2 = 2;
         long nodeId1 = 10;
         long nodeId2 = 1280;
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-        {
-            indexUpdater.process( IndexEntryUpdate.change( nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );
-            indexUpdater.process( IndexEntryUpdate.change( nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
+        try (IndexUpdater indexUpdater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
+            indexUpdater.process(
+                    IndexEntryUpdate.change(nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {labelId1}));
+            indexUpdater.process(IndexEntryUpdate.change(
+                    nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2}));
         }
 
         // WHEN
-        BoundedIterable<EntityTokenRange> reader = accessor.newAllEntriesTokenReader( Long.MIN_VALUE, Long.MAX_VALUE, NULL_CONTEXT );
+        BoundedIterable<EntityTokenRange> reader =
+                accessor.newAllEntriesTokenReader(Long.MIN_VALUE, Long.MAX_VALUE, NULL_CONTEXT);
         Iterator<EntityTokenRange> iterator = reader.iterator();
         EntityTokenRange range1 = iterator.next();
         EntityTokenRange range2 = iterator.next();
-        assertFalse( iterator.hasNext() );
+        assertFalse(iterator.hasNext());
 
         // THEN
-        assertThat( new long[]{nodeId1} ).isEqualTo( reducedNodes( range1 ) );
-        assertThat( new long[]{nodeId2} ).isEqualTo( reducedNodes( range2 ) );
+        assertThat(new long[] {nodeId1}).isEqualTo(reducedNodes(range1));
+        assertThat(new long[] {nodeId2}).isEqualTo(reducedNodes(range2));
 
-        assertThat( new long[]{labelId1} ).isEqualTo( sorted( range1.tokens( nodeId1 ) ) );
-        assertThat( new long[]{labelId1, labelId2} ).isEqualTo( sorted( range2.tokens( nodeId2 ) ) );
+        assertThat(new long[] {labelId1}).isEqualTo(sorted(range1.tokens(nodeId1)));
+        assertThat(new long[] {labelId1, labelId2}).isEqualTo(sorted(range2.tokens(nodeId2)));
     }
 
-    private static long[] sorted( long[] input )
-    {
-        Arrays.sort( input );
+    private static long[] sorted(long[] input) {
+        Arrays.sort(input);
         return input;
     }
 
-    private static long[] reducedNodes( EntityTokenRange range )
-    {
+    private static long[] reducedNodes(EntityTokenRange range) {
         long[] nodes = range.entities();
         long[] result = new long[nodes.length];
         int cursor = 0;
-        for ( long node : nodes )
-        {
-            if ( range.tokens( node ).length > 0 )
-            {
+        for (long node : nodes) {
+            if (range.tokens(node).length > 0) {
                 result[cursor++] = node;
             }
         }
-        return Arrays.copyOf( result, cursor );
+        return Arrays.copyOf(result, cursor);
     }
 
-    private void readerShouldFindRandomizedUpdates( Executable additionalOperation ) throws Throwable
-    {
+    private void readerShouldFindRandomizedUpdates(Executable additionalOperation) throws Throwable {
         MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
-        doRandomizedUpdatesWithAdditionalOperation( additionalOperation, entityTokens );
-        verifyReaderSeesAllUpdates( convertToExpectedEntitiesPerToken( entityTokens ) );
+        doRandomizedUpdatesWithAdditionalOperation(additionalOperation, entityTokens);
+        verifyReaderSeesAllUpdates(convertToExpectedEntitiesPerToken(entityTokens));
     }
 
-    private void doRandomizedUpdatesWithAdditionalOperation( Executable additionalOperation, MutableLongObjectMap<long[]> trackingStructure ) throws Throwable
-    {
+    private void doRandomizedUpdatesWithAdditionalOperation(
+            Executable additionalOperation, MutableLongObjectMap<long[]> trackingStructure) throws Throwable {
         int numberOfEntities = 1_000;
         long currentMaxEntityId = 0;
 
-        while ( currentMaxEntityId < numberOfEntities )
-        {
-            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-            {
+        while (currentMaxEntityId < numberOfEntities) {
+            try (IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
                 // Simply add random token ids to a new batch of 100 entities
-                for ( int i = 0; i < 100; i++ )
-                {
-                    long[] afterTokens = generateRandomTokens( random );
-                    if ( afterTokens.length != 0 )
-                    {
-                        trackingStructure.put( currentMaxEntityId, Arrays.copyOf( afterTokens, afterTokens.length ) );
-                        updater.process( IndexEntryUpdate.change( currentMaxEntityId, null, EMPTY_LONG_ARRAY, afterTokens ) );
+                for (int i = 0; i < 100; i++) {
+                    long[] afterTokens = generateRandomTokens(random);
+                    if (afterTokens.length != 0) {
+                        trackingStructure.put(currentMaxEntityId, Arrays.copyOf(afterTokens, afterTokens.length));
+                        updater.process(
+                                IndexEntryUpdate.change(currentMaxEntityId, null, EMPTY_LONG_ARRAY, afterTokens));
                     }
                     currentMaxEntityId++;
                 }
             }
             additionalOperation.execute();
             // Interleave updates in id range lower than currentMaxEntityId
-            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-            {
-                for ( int i = 0; i < 100; i++ )
-                {
-                    long entityId = random.nextLong( currentMaxEntityId );
+            try (IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
+                for (int i = 0; i < 100; i++) {
+                    long entityId = random.nextLong(currentMaxEntityId);
                     // Current tokens for the entity in the tree
-                    long[] beforeTokens = trackingStructure.get( entityId );
-                    if ( beforeTokens == null )
-                    {
+                    long[] beforeTokens = trackingStructure.get(entityId);
+                    if (beforeTokens == null) {
                         beforeTokens = EMPTY_LONG_ARRAY;
                     }
-                    long[] afterTokens = generateRandomTokens( random );
-                    trackingStructure.put( entityId, Arrays.copyOf( afterTokens, afterTokens.length ) );
-                    updater.process( IndexEntryUpdate.change( entityId, null, beforeTokens, afterTokens ) );
+                    long[] afterTokens = generateRandomTokens(random);
+                    trackingStructure.put(entityId, Arrays.copyOf(afterTokens, afterTokens.length));
+                    updater.process(IndexEntryUpdate.change(entityId, null, beforeTokens, afterTokens));
                 }
             }
             additionalOperation.execute();
         }
     }
 
-    private static MutableLongObjectMap<MutableLongList> convertToExpectedEntitiesPerToken( MutableLongObjectMap<long[]> trackingStructure )
-    {
+    private static MutableLongObjectMap<MutableLongList> convertToExpectedEntitiesPerToken(
+            MutableLongObjectMap<long[]> trackingStructure) {
         MutableLongObjectMap<MutableLongList> entitiesPerToken = LongObjectMaps.mutable.empty();
-        trackingStructure.forEachKeyValue( ( entityId, tokens ) -> {
-            for ( long token : tokens )
-            {
-                MutableLongList entities = entitiesPerToken.getIfAbsentPut( token, LongLists.mutable.empty() );
-                entities.add( entityId );
+        trackingStructure.forEachKeyValue((entityId, tokens) -> {
+            for (long token : tokens) {
+                MutableLongList entities = entitiesPerToken.getIfAbsentPut(token, LongLists.mutable.empty());
+                entities.add(entityId);
             }
-        } );
+        });
         return entitiesPerToken;
     }
 
-    private void addToIndex( int tokenId, long... entityIds ) throws IndexEntryConflictException
-    {
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-        {
-            for ( long entityId : entityIds )
-            {
-                updater.process( IndexEntryUpdate.change( entityId, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{tokenId} ) );
+    private void addToIndex(int tokenId, long... entityIds) throws IndexEntryConflictException {
+        try (IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
+            for (long entityId : entityIds) {
+                updater.process(
+                        IndexEntryUpdate.change(entityId, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {tokenId}));
             }
         }
     }
 
-    private void verifyReaderSeesAllUpdates( MutableLongObjectMap<MutableLongList> entitiesPerToken ) throws Exception
-    {
-        for ( long token : TOKENS )
-        {
-            MutableLongList expectedEntities = entitiesPerToken.getIfAbsent( token, LongLists.mutable::empty );
-            assertReaderFindsExpected( token, expectedEntities );
+    private void verifyReaderSeesAllUpdates(MutableLongObjectMap<MutableLongList> entitiesPerToken) throws Exception {
+        for (long token : TOKENS) {
+            MutableLongList expectedEntities = entitiesPerToken.getIfAbsent(token, LongLists.mutable::empty);
+            assertReaderFindsExpected(token, expectedEntities);
         }
     }
 
-    private void assertReaderFindsExpected( long tokenId, LongList expectedIds ) throws Exception
-    {
-        assertReaderFindsExpected( IndexOrder.NONE, tokenId, expectedIds );
+    private void assertReaderFindsExpected(long tokenId, LongList expectedIds) throws Exception {
+        assertReaderFindsExpected(IndexOrder.NONE, tokenId, expectedIds);
     }
 
-    private void assertReaderFindsExpected( IndexOrder indexOrder, long tokenId, LongList expectedIds ) throws Exception
-    {
-        try ( var indexReader = accessor.newTokenReader() )
-        {
-            assertReaderFindsExpected( indexReader, indexOrder, tokenId, expectedIds, ThrowingConsumer.noop() );
+    private void assertReaderFindsExpected(IndexOrder indexOrder, long tokenId, LongList expectedIds) throws Exception {
+        try (var indexReader = accessor.newTokenReader()) {
+            assertReaderFindsExpected(indexReader, indexOrder, tokenId, expectedIds, ThrowingConsumer.noop());
         }
     }
 
-    private static void assertReaderFindsExpected( TokenIndexReader reader, IndexOrder indexOrder, long tokenId, LongList expectedIds,
-            ThrowingConsumer<TokenIndexReader,Exception> innerCalling )
-            throws Exception
-    {
-        if ( indexOrder.equals( IndexOrder.DESCENDING ) )
-        {
+    private static void assertReaderFindsExpected(
+            TokenIndexReader reader,
+            IndexOrder indexOrder,
+            long tokenId,
+            LongList expectedIds,
+            ThrowingConsumer<TokenIndexReader, Exception> innerCalling)
+            throws Exception {
+        if (indexOrder.equals(IndexOrder.DESCENDING)) {
             expectedIds = expectedIds.toReversed();
         }
-        try ( CollectingEntityTokenClient collectingEntityTokenClient = new CollectingEntityTokenClient( tokenId ) )
-        {
-            IndexQueryConstraints constraint = IndexQueryConstraints.constrained( indexOrder, false );
-            TokenPredicate query = new TokenPredicate( (int) tokenId );
-            reader.query( collectingEntityTokenClient, constraint, query, NULL_CONTEXT );
+        try (CollectingEntityTokenClient collectingEntityTokenClient = new CollectingEntityTokenClient(tokenId)) {
+            IndexQueryConstraints constraint = IndexQueryConstraints.constrained(indexOrder, false);
+            TokenPredicate query = new TokenPredicate((int) tokenId);
+            reader.query(collectingEntityTokenClient, constraint, query, NULL_CONTEXT);
 
             // Then
             int count = 0;
-            while ( collectingEntityTokenClient.next() )
-            {
-                innerCalling.accept( reader );
+            while (collectingEntityTokenClient.next()) {
+                innerCalling.accept(reader);
                 count++;
             }
-            assertThat( count ).isEqualTo( expectedIds.size() );
-            assertThat( collectingEntityTokenClient.actualIds ).isEqualTo( expectedIds );
+            assertThat(count).isEqualTo(expectedIds.size());
+            assertThat(collectingEntityTokenClient.actualIds).isEqualTo(expectedIds);
         }
     }
 
-    private void maybeRestartAccessor() throws IOException
-    {
-        if ( random.nextDouble() < 0.1 )
-        {
+    private void maybeRestartAccessor() throws IOException {
+        if (random.nextDouble() < 0.1) {
             forceAndCloseAccessor();
             setupAccessor();
         }
     }
 
-    private void maybeCheckpoint()
-    {
-        if ( random.nextBoolean() )
-        {
-            accessor.force( NULL_CONTEXT );
+    private void maybeCheckpoint() {
+        if (random.nextBoolean()) {
+            accessor.force(NULL_CONTEXT);
         }
     }
 
-    private void forceAndCloseAccessor()
-    {
-        accessor.force( NULL_CONTEXT );
+    private void forceAndCloseAccessor() {
+        accessor.force(NULL_CONTEXT);
         accessor.close();
     }
 
-    private TokenIndexEntryUpdate<IndexDescriptor> simpleUpdate()
-    {
-        return TokenIndexEntryUpdate.change( 0, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{0} );
+    private TokenIndexEntryUpdate<IndexDescriptor> simpleUpdate() {
+        return TokenIndexEntryUpdate.change(0, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {0});
     }
 
-    private static Stream<Arguments> orderCombinations()
-    {
+    private static Stream<Arguments> orderCombinations() {
         List<Arguments> arguments = new ArrayList<>();
-        for ( IndexOrder outer : IndexOrder.values() )
-        {
-            for ( IndexOrder inner : IndexOrder.values() )
-            {
-                arguments.add( Arguments.of( outer, inner ) );
+        for (IndexOrder outer : IndexOrder.values()) {
+            for (IndexOrder inner : IndexOrder.values()) {
+                arguments.add(Arguments.of(outer, inner));
             }
         }
         return arguments.stream();
     }
 
-    private static class CollectingEntityTokenClient implements IndexProgressor.EntityTokenClient, Closeable
-    {
+    private static class CollectingEntityTokenClient implements IndexProgressor.EntityTokenClient, Closeable {
         private final long expectedToken;
         private final MutableLongList actualIds = LongLists.mutable.empty();
         private IndexProgressor progressor;
 
-        private CollectingEntityTokenClient( long expectedToken )
-        {
+        private CollectingEntityTokenClient(long expectedToken) {
             this.expectedToken = expectedToken;
         }
 
         @Override
-        public void initialize( IndexProgressor progressor, int token, IndexOrder order )
-        {
-            assertThat( token ).isEqualTo( expectedToken );
+        public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
+            assertThat(token).isEqualTo(expectedToken);
             this.progressor = progressor;
         }
 
         @Override
-        public void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode )
-        {
-            throw new UnsupportedOperationException( "Did not expect to use this method" );
+        public void initialize(
+                IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode) {
+            throw new UnsupportedOperationException("Did not expect to use this method");
         }
 
         @Override
-        public boolean acceptEntity( long reference, TokenSet tokens )
-        {
-            actualIds.add( reference );
+        public boolean acceptEntity(long reference, TokenSet tokens) {
+            actualIds.add(reference);
             return true;
         }
 
-        boolean next()
-        {
+        boolean next() {
             return progressor.next();
         }
 
         @Override
-        public void close()
-        {
-            if ( progressor != null )
-            {
+        public void close() {
+            if (progressor != null) {
                 progressor.close();
             }
         }

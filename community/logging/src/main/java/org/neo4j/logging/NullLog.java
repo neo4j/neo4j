@@ -22,130 +22,83 @@ package org.neo4j.logging;
 /**
  * A {@link InternalLog} implementation that discards all messages
  */
-public final class NullLog implements InternalLog
-{
+public final class NullLog implements InternalLog {
     private static final NullLog INSTANCE = new NullLog();
 
-    private NullLog()
-    {
-    }
+    private NullLog() {}
 
     /**
      * @return A singleton {@link NullLog} instance
      */
-    public static NullLog getInstance()
-    {
+    public static NullLog getInstance() {
         return INSTANCE;
     }
 
     @Override
-    public boolean isDebugEnabled()
-    {
+    public boolean isDebugEnabled() {
         return false;
     }
 
     @Override
-    public void debug( String message )
-    {
-    }
+    public void debug(String message) {}
 
     @Override
-    public void debug( String message, Throwable throwable )
-    {
-    }
+    public void debug(String message, Throwable throwable) {}
 
     @Override
-    public void debug( String format, Object... arguments )
-    {
-    }
+    public void debug(String format, Object... arguments) {}
 
     @Override
-    public void info( String message )
-    {
-    }
+    public void info(String message) {}
 
     @Override
-    public void info( String message, Throwable throwable )
-    {
-    }
+    public void info(String message, Throwable throwable) {}
 
     @Override
-    public void info( String format, Object... arguments )
-    {
-    }
+    public void info(String format, Object... arguments) {}
 
     @Override
-    public void warn( String message )
-    {
-    }
+    public void warn(String message) {}
 
     @Override
-    public void warn( String message, Throwable throwable )
-    {
-    }
+    public void warn(String message, Throwable throwable) {}
 
     @Override
-    public void warn( String format, Object... arguments )
-    {
-    }
+    public void warn(String format, Object... arguments) {}
 
     @Override
-    public void error( String message )
-    {
-    }
+    public void error(String message) {}
 
     @Override
-    public void error( String message, Throwable throwable )
-    {
-    }
+    public void error(String message, Throwable throwable) {}
 
     @Override
-    public void error( String format, Object... arguments )
-    {
-    }
+    public void error(String format, Object... arguments) {}
 
     @Override
-    public void debug( Neo4jLogMessage message )
-    {
-    }
+    public void debug(Neo4jLogMessage message) {}
 
     @Override
-    public void debug( Neo4jMessageSupplier supplier )
-    {
-    }
+    public void debug(Neo4jMessageSupplier supplier) {}
 
     @Override
-    public void info( Neo4jLogMessage message )
-    {
-    }
+    public void info(Neo4jLogMessage message) {}
 
     @Override
-    public void info( Neo4jMessageSupplier supplier )
-    {
-    }
+    public void info(Neo4jMessageSupplier supplier) {}
 
     @Override
-    public void warn( Neo4jLogMessage message )
-    {
-    }
+    public void warn(Neo4jLogMessage message) {}
 
     @Override
-    public void warn( Neo4jMessageSupplier supplier )
-    {
-    }
+    public void warn(Neo4jMessageSupplier supplier) {}
 
     @Override
-    public void error( Neo4jLogMessage message )
-    {
-    }
+    public void error(Neo4jLogMessage message) {}
 
     @Override
-    public void error( Neo4jMessageSupplier supplier )
-    {
-    }
+    public void error(Neo4jMessageSupplier supplier) {}
 
     @Override
-    public void error( Neo4jLogMessage message, Throwable throwable )
-    {
-    }
+    public void error(Neo4jLogMessage message, Throwable throwable) {}
 }

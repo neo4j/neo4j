@@ -20,7 +20,6 @@
 package org.neo4j.graphalgo.impl.util;
 
 import java.util.Iterator;
-
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
@@ -29,92 +28,76 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-public class WeightedPathImpl implements WeightedPath
-{
+public class WeightedPathImpl implements WeightedPath {
     private final Path path;
     private final double weight;
 
-    public WeightedPathImpl( CostEvaluator<Double> costEvaluator, Path path )
-    {
+    public WeightedPathImpl(CostEvaluator<Double> costEvaluator, Path path) {
         this.path = path;
         double cost = 0;
-        for ( Relationship relationship : path.relationships() )
-        {
-            cost += costEvaluator.getCost( relationship, Direction.OUTGOING );
+        for (Relationship relationship : path.relationships()) {
+            cost += costEvaluator.getCost(relationship, Direction.OUTGOING);
         }
         this.weight = cost;
     }
 
-    public WeightedPathImpl( double weight, Path path )
-    {
+    public WeightedPathImpl(double weight, Path path) {
         this.path = path;
         this.weight = weight;
     }
 
     @Override
-    public double weight()
-    {
+    public double weight() {
         return weight;
     }
 
     @Override
-    public Node startNode()
-    {
+    public Node startNode() {
         return path.startNode();
     }
 
     @Override
-    public Node endNode()
-    {
+    public Node endNode() {
         return path.endNode();
     }
 
     @Override
-    public Relationship lastRelationship()
-    {
+    public Relationship lastRelationship() {
         return path.lastRelationship();
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         return path.length();
     }
 
     @Override
-    public Iterable<Node> nodes()
-    {
+    public Iterable<Node> nodes() {
         return path.nodes();
     }
 
     @Override
-    public Iterable<Node> reverseNodes()
-    {
+    public Iterable<Node> reverseNodes() {
         return path.reverseNodes();
     }
 
     @Override
-    public Iterable<Relationship> relationships()
-    {
+    public Iterable<Relationship> relationships() {
         return path.relationships();
     }
 
     @Override
-    public Iterable<Relationship> reverseRelationships()
-    {
+    public Iterable<Relationship> reverseRelationships() {
         return path.reverseRelationships();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return path + " weight:" + this.weight;
     }
 
     @Override
-    public Iterator<Entity> iterator()
-    {
+    public Iterator<Entity> iterator() {
         return path.iterator();
     }
-
 }

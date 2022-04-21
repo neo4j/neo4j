@@ -19,10 +19,6 @@
  */
 package org.neo4j.bolt.v3.messaging.request;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.messaging.BoltIOException;
-
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,35 +28,34 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-class MessageMetadataParserTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.BoltIOException;
+
+class MessageMetadataParserTest {
     @Test
-    void shouldAllowNoTransactionTimeout() throws Exception
-    {
-        assertNull( parseTransactionTimeout( EMPTY_MAP ) );
+    void shouldAllowNoTransactionTimeout() throws Exception {
+        assertNull(parseTransactionTimeout(EMPTY_MAP));
     }
 
     @Test
-    void shouldAllowNoTransactionMetadata() throws Exception
-    {
-        assertNull( parseTransactionMetadata( EMPTY_MAP ) );
+    void shouldAllowNoTransactionMetadata() throws Exception {
+        assertNull(parseTransactionMetadata(EMPTY_MAP));
     }
 
     @Test
-    void shouldThrowForIncorrectTransactionTimeout()
-    {
-        BoltIOException e = assertThrows( BoltIOException.class,
-                () -> parseTransactionTimeout( asMapValue( map( "tx_timeout", "15 minutes" ) ) ) );
+    void shouldThrowForIncorrectTransactionTimeout() {
+        BoltIOException e = assertThrows(
+                BoltIOException.class, () -> parseTransactionTimeout(asMapValue(map("tx_timeout", "15 minutes"))));
 
-        assertTrue( e.causesFailureMessage() );
+        assertTrue(e.causesFailureMessage());
     }
 
     @Test
-    void shouldThrowForIncorrectTransactionMetadata()
-    {
-        BoltIOException e = assertThrows( BoltIOException.class,
-                () -> parseTransactionMetadata( asMapValue( map( "tx_metadata", "{key1: 'value1', key2: 'value2'}" ) ) ) );
+    void shouldThrowForIncorrectTransactionMetadata() {
+        BoltIOException e = assertThrows(
+                BoltIOException.class,
+                () -> parseTransactionMetadata(asMapValue(map("tx_metadata", "{key1: 'value1', key2: 'value2'}"))));
 
-        assertTrue( e.causesFailureMessage() );
+        assertTrue(e.causesFailureMessage());
     }
 }

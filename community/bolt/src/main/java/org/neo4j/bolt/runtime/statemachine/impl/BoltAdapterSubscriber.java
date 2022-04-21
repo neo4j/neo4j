@@ -20,7 +20,6 @@
 package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.io.IOException;
-
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.exceptions.KernelException;
@@ -30,82 +29,64 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.values.AnyValue;
 
-public class BoltAdapterSubscriber implements QuerySubscriber
-{
+public class BoltAdapterSubscriber implements QuerySubscriber {
     private BoltResult.RecordConsumer recordConsumer;
     private Throwable error;
     private QueryStatistics statistics;
     private int numberOfFields;
 
     @Override
-    public void onResult( int numberOfFields )
-    {
+    public void onResult(int numberOfFields) {
         this.numberOfFields = numberOfFields;
     }
 
     @Override
-    public void onRecord() throws IOException
-    {
-        recordConsumer.beginRecord( numberOfFields );
+    public void onRecord() throws IOException {
+        recordConsumer.beginRecord(numberOfFields);
     }
 
     @Override
-    public void onField( int offset, AnyValue value ) throws IOException
-    {
-        recordConsumer.consumeField( value );
+    public void onField(int offset, AnyValue value) throws IOException {
+        recordConsumer.consumeField(value);
     }
 
     @Override
-    public void onRecordCompleted() throws Exception
-    {
+    public void onRecordCompleted() throws Exception {
         recordConsumer.endRecord();
     }
 
     @Override
-    public void onError( Throwable throwable ) throws IOException
-    {
-        if ( this.error == null )
-        {
+    public void onError(Throwable throwable) throws IOException {
+        if (this.error == null) {
             this.error = throwable;
         }
-        //error might occur before the recordConsumer was initialized
-        if ( recordConsumer != null )
-        {
+        // error might occur before the recordConsumer was initialized
+        if (recordConsumer != null) {
             recordConsumer.onError();
         }
     }
 
     @Override
-    public void onResultCompleted( QueryStatistics statistics )
-    {
+    public void onResultCompleted(QueryStatistics statistics) {
         this.statistics = statistics;
     }
 
-    public QueryStatistics queryStatistics()
-    {
+    public QueryStatistics queryStatistics() {
         return statistics;
     }
 
-    public void setRecordConsumer( BoltResult.RecordConsumer recordConsumer )
-    {
+    public void setRecordConsumer(BoltResult.RecordConsumer recordConsumer) {
         this.recordConsumer = recordConsumer;
     }
 
-    public void assertSucceeded() throws KernelException
-    {
-        if ( error != null )
-        {
-            if ( error instanceof KernelException )
-            {
+    public void assertSucceeded() throws KernelException {
+        if (error != null) {
+            if (error instanceof KernelException) {
                 throw (KernelException) error;
-            }
-            else if ( error instanceof Status.HasStatus )
-            {
-                throw new QueryExecutionKernelException( (Throwable & Status.HasStatus) error );
-            }
-            else
-            {
-                throw new QueryExecutionKernelException( new CypherExecutionException( error.getMessage(), error ) );
+            } else if (error instanceof Status.HasStatus) {
+                throw new QueryExecutionKernelException((Throwable & Status.HasStatus) error);
+            } else {
+                throw new QueryExecutionKernelException(new CypherExecutionException(error.getMessage(), error));
             }
         }
     }

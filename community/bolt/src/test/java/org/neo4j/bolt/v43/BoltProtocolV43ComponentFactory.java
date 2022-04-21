@@ -19,8 +19,9 @@
  */
 package org.neo4j.bolt.v43;
 
-import java.io.IOException;
+import static org.mockito.Mockito.mock;
 
+import java.io.IOException;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
@@ -38,39 +39,34 @@ import org.neo4j.bolt.v43.messaging.BoltRequestMessageReaderV43;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 
-import static org.mockito.Mockito.mock;
-
 /**
  * A helper factory to generate boltV43 component in tests
  */
-public class BoltProtocolV43ComponentFactory
-{
-    public static Neo4jPack newNeo4jPack()
-    {
+public class BoltProtocolV43ComponentFactory {
+    public static Neo4jPack newNeo4jPack() {
         return new Neo4jPackV2();
     }
 
-    public static BoltRequestMessageWriter requestMessageWriter( Neo4jPack.Packer packer )
-    {
-        return new BoltRequestMessageWriterV43( packer );
+    public static BoltRequestMessageWriter requestMessageWriter(Neo4jPack.Packer packer) {
+        return new BoltRequestMessageWriterV43(packer);
     }
 
-    public static BoltRequestMessageReader requestMessageReader( BoltStateMachine stateMachine )
-    {
-        return new BoltRequestMessageReaderV43( new SynchronousBoltConnection( stateMachine ), mock( BoltResponseMessageWriter.class ),
-                                                new BookmarksParserV4( mock( DatabaseIdRepository.class ), CustomBookmarkFormatParser.DEFAULT ),
-                                                mock( ChannelProtector.class ), NullLogService.getInstance() );
+    public static BoltRequestMessageReader requestMessageReader(BoltStateMachine stateMachine) {
+        return new BoltRequestMessageReaderV43(
+                new SynchronousBoltConnection(stateMachine),
+                mock(BoltResponseMessageWriter.class),
+                new BookmarksParserV4(mock(DatabaseIdRepository.class), CustomBookmarkFormatParser.DEFAULT),
+                mock(ChannelProtector.class),
+                NullLogService.getInstance());
     }
 
-    public static byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException
-    {
+    public static byte[] encode(Neo4jPack neo4jPack, RequestMessage... messages) throws IOException {
         RecordingByteChannel rawData = new RecordingByteChannel();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( new BufferedChannelOutput( rawData ) );
-        BoltRequestMessageWriter writer = requestMessageWriter( packer );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(new BufferedChannelOutput(rawData));
+        BoltRequestMessageWriter writer = requestMessageWriter(packer);
 
-        for ( RequestMessage message : messages )
-        {
-            writer.write( message );
+        for (RequestMessage message : messages) {
+            writer.write(message);
         }
         writer.flush();
 

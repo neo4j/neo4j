@@ -19,97 +19,86 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.storageengine.api.RelationshipDirection;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 
-@ExtendWith( RandomExtension.class )
-class NodeStateImplTest
-{
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+
+@ExtendWith(RandomExtension.class)
+class NodeStateImplTest {
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldReportNoAddedRelationshipsOnNoRelationshipsAdded()
-    {
+    void shouldReportNoAddedRelationshipsOnNoRelationshipsAdded() {
         // given
         NodeStateImpl state = newNodeState();
 
         // then
-        assertThat( state.hasAddedRelationships() ).isFalse();
+        assertThat(state.hasAddedRelationships()).isFalse();
     }
 
     @Test
-    void shouldReportAddedRelationshipsOnRelationshipsAdded()
-    {
+    void shouldReportAddedRelationshipsOnRelationshipsAdded() {
         // given
         NodeStateImpl state = newNodeState();
 
         // when
-        generateRandomRelationships().forEach( r -> state.addRelationship( r.id, r.type, r.direction ) );
+        generateRandomRelationships().forEach(r -> state.addRelationship(r.id, r.type, r.direction));
 
         // then
-        assertThat( state.hasAddedRelationships() ).isTrue();
+        assertThat(state.hasAddedRelationships()).isTrue();
     }
 
     @Test
-    void shouldReportNoAddedRelationshipsOnRelationshipsFirstAddedThenRemoved()
-    {
+    void shouldReportNoAddedRelationshipsOnRelationshipsFirstAddedThenRemoved() {
         // given
         NodeStateImpl state = newNodeState();
 
         // when
         List<AddedRelationship> relationships = generateRandomRelationships();
-        relationships.forEach( r -> state.addRelationship( r.id, r.type, r.direction ) );
+        relationships.forEach(r -> state.addRelationship(r.id, r.type, r.direction));
 
         // then
-        relationships.forEach( r ->
-        {
-            assertThat( state.hasAddedRelationships() ).isTrue();
-            state.removeRelationship( r.id, r.type, r.direction );
-        } );
-        assertThat( state.hasAddedRelationships() ).isFalse();
+        relationships.forEach(r -> {
+            assertThat(state.hasAddedRelationships()).isTrue();
+            state.removeRelationship(r.id, r.type, r.direction);
+        });
+        assertThat(state.hasAddedRelationships()).isFalse();
     }
 
-    private List<AddedRelationship> generateRandomRelationships()
-    {
+    private List<AddedRelationship> generateRandomRelationships() {
         RelationshipDirection[] possibleRelationshipDirections = {OUTGOING, INCOMING, LOOP};
-        int count = random.nextInt( 1, 10 );
+        int count = random.nextInt(1, 10);
         List<AddedRelationship> relationships = new ArrayList<>();
-        for ( int i = 0; i < count; i++ )
-        {
-            relationships.add( new AddedRelationship( random.nextLong( 100_000_000 ), random.nextInt( 10 ), random.among( possibleRelationshipDirections ) ) );
+        for (int i = 0; i < count; i++) {
+            relationships.add(new AddedRelationship(
+                    random.nextLong(100_000_000), random.nextInt(10), random.among(possibleRelationshipDirections)));
         }
         return relationships;
     }
 
-    private static NodeStateImpl newNodeState()
-    {
-        return NodeStateImpl.createNodeState( 99, false, INSTANCE, EmptyMemoryTracker.INSTANCE );
+    private static NodeStateImpl newNodeState() {
+        return NodeStateImpl.createNodeState(99, false, INSTANCE, EmptyMemoryTracker.INSTANCE);
     }
 
-    private static class AddedRelationship
-    {
+    private static class AddedRelationship {
         private final long id;
         private final int type;
         private final RelationshipDirection direction;
 
-        private AddedRelationship( long id, int type, RelationshipDirection direction )
-        {
+        private AddedRelationship(long id, int type, RelationshipDirection direction) {
             this.id = id;
             this.type = type;
             this.direction = direction;

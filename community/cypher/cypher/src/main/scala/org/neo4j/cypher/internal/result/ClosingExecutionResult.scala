@@ -44,10 +44,12 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
  * @param inner the actual result
  * @param innerMonitor monitor to report closing of the query to
  */
-class ClosingExecutionResult private(val query: ExecutingQuery,
-                                     val inner: InternalExecutionResult,
-                                     innerMonitor: QueryExecutionMonitor,
-                                     subscriber: QuerySubscriber) extends InternalExecutionResult {
+class ClosingExecutionResult private (
+  val query: ExecutingQuery,
+  val inner: InternalExecutionResult,
+  innerMonitor: QueryExecutionMonitor,
+  subscriber: QuerySubscriber
+) extends InternalExecutionResult {
 
   self =>
   private var error: Throwable = _
@@ -70,20 +72,21 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
       inner.executionPlanDescription()
     }
 
-  override def close(reason: CloseReason): Unit = try {
-    reason match {
-      case Success => monitor.beforeEnd(query, true)
-      case _ => monitor.beforeEnd(query, false)
+  override def close(reason: CloseReason): Unit =
+    try {
+      reason match {
+        case Success => monitor.beforeEnd(query, true)
+        case _       => monitor.beforeEnd(query, false)
+      }
+      inner.close(reason)
+      reason match {
+        case Success  => monitor.endSuccess(query)
+        case Failure  => monitor.endFailure(query)
+        case Error(t) => monitor.endFailure(query, t)
+      }
+    } catch {
+      case e: Throwable => handleErrorOnClose(reason)(e)
     }
-    inner.close(reason)
-    reason match {
-      case Success => monitor.endSuccess(query)
-      case Failure => monitor.endFailure(query)
-      case Error(t) => monitor.endFailure(query, t)
-    }
-  } catch {
-    case e: Throwable => handleErrorOnClose(reason)(e)
-  }
 
   override def queryType: InternalQueryType = safely { inner.queryType }
 
@@ -95,11 +98,12 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   // HELPERS
 
-  private def safely[T](body: => T): T = try {
-    body
-  } catch {
-    case e: Throwable => closeAndRethrowOnError(e)
-  }
+  private def safely[T](body: => T): T =
+    try {
+      body
+    } catch {
+      case e: Throwable => closeAndRethrowOnError(e)
+    }
 
   private def closeAndRethrowOnError[T](t: Throwable): T = {
     try {
@@ -140,30 +144,33 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   override def isClosed: Boolean = inner.isClosed
 
-  override def request(numberOfRows: Long): Unit = try {
-    inner.request(numberOfRows)
-  } catch {
-    case NonFatalCypherError(e) => closeAndCallOnError(e)
-  }
+  override def request(numberOfRows: Long): Unit =
+    try {
+      inner.request(numberOfRows)
+    } catch {
+      case NonFatalCypherError(e) => closeAndCallOnError(e)
+    }
 
-  override def cancel(): Unit =  try {
-    inner.cancel()
-    monitor.endSuccess(query)
-  } catch {
-    case NonFatalCypherError(e) => closeAndCallOnError(e)
-  }
+  override def cancel(): Unit =
+    try {
+      inner.cancel()
+      monitor.endSuccess(query)
+    } catch {
+      case NonFatalCypherError(e) => closeAndCallOnError(e)
+    }
 
   override def await(): Boolean = {
     if (error != null) {
       throw error
     }
-    val hasMore = try {
-      inner.await()
-    } catch {
-      case NonFatalCypherError(e) =>
-        closeAndCallOnError(e)
-        false
-    }
+    val hasMore =
+      try {
+        inner.await()
+      } catch {
+        case NonFatalCypherError(e) =>
+          closeAndCallOnError(e)
+          false
+      }
 
     if (!hasMore) {
       close()
@@ -174,10 +181,13 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 }
 
 object ClosingExecutionResult {
-  def wrapAndInitiate(query: ExecutingQuery,
-                      inner: InternalExecutionResult,
-                      innerMonitor: QueryExecutionMonitor,
-                      subscriber: QuerySubscriber): ClosingExecutionResult = {
+
+  def wrapAndInitiate(
+    query: ExecutingQuery,
+    inner: InternalExecutionResult,
+    innerMonitor: QueryExecutionMonitor,
+    subscriber: QuerySubscriber
+  ): ClosingExecutionResult = {
 
     val result = new ClosingExecutionResult(query, inner, innerMonitor, subscriber)
     result.initiate()

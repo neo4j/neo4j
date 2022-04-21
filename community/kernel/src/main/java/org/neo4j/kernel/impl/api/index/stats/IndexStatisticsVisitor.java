@@ -21,12 +21,11 @@ package org.neo4j.kernel.impl.api.index.stats;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public interface IndexStatisticsVisitor
-{
-    interface Visitable
-    {
-        void visit( IndexStatisticsVisitor visitor, CursorContext cursorContext );
+public interface IndexStatisticsVisitor {
+    interface Visitable {
+        void visit(IndexStatisticsVisitor visitor, CursorContext cursorContext);
     }
 
-    void visitIndexStatistics( long indexId, long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize );
+    void visitIndexStatistics(
+            long indexId, long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize);
 }

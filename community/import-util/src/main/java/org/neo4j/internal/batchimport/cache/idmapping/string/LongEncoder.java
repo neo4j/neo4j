@@ -27,30 +27,30 @@ import static org.neo4j.util.Preconditions.checkArgument;
  * {@link Encoder} that assumes that the entered strings can be parsed to {@link Long} directly.
  * The 8 higher-order bits are reserved for internal use and therefore the IDs cannot use the whole range of the long.
  */
-public class LongEncoder implements Encoder
-{
+public class LongEncoder implements Encoder {
     private static final long ID_BITS = 0x00FFFFFF_FFFFFFFFL;
     private static final long RESERVED_BITS = ~ID_BITS;
 
     @Override
-    public long encode( Object value )
-    {
-        long longValue = ((Number)value).longValue();
-        checkArgument( (longValue & RESERVED_BITS) == 0, "Invalid integer ID %d, it must be %d <= id <= 0", longValue, ID_BITS );
-        long length = numberOfDigits( longValue );
+    public long encode(Object value) {
+        long longValue = ((Number) value).longValue();
+        checkArgument(
+                (longValue & RESERVED_BITS) == 0,
+                "Invalid integer ID %d, it must be %d <= id <= 0",
+                longValue,
+                ID_BITS);
+        long length = numberOfDigits(longValue);
         length = length << 57;
         long returnVal = length | longValue;
         return returnVal;
     }
 
-    private static int numberOfDigits( long value )
-    {
-        return max( 1, (int)(log10( value ) + 1) );
+    private static int numberOfDigits(long value) {
+        return max(1, (int) (log10(value) + 1));
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName();
     }
 }

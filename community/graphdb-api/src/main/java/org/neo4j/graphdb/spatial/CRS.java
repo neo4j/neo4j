@@ -35,8 +35,7 @@ import org.neo4j.annotations.api.PublicApi;
  * </code>
  */
 @PublicApi
-public interface CRS
-{
+public interface CRS {
 
     /**
      * The numerical code associated with the CRS

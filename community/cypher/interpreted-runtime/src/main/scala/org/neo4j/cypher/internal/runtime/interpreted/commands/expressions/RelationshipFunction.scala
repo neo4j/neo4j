@@ -26,6 +26,7 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
+
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
     CypherFunctions.relationships(value)
 

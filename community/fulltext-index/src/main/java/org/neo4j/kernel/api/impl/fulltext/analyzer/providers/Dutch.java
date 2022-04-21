@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.nl.DutchAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Dutch extends AnalyzerProvider
-{
-    public Dutch()
-    {
-        super( "dutch" );
+public class Dutch extends AnalyzerProvider {
+    public Dutch() {
+        super("dutch");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new DutchAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Dutch analyzer with stemming and stop word filtering.";
     }
 }

@@ -38,7 +38,7 @@ import org.neo4j.fabric.planning.Use.Inherited
 import org.scalatest.Inside
 
 class FabricFragmenterTest
-  extends FabricTest
+    extends FabricTest
     with Inside
     with ProcedureSignatureResolverTestSupport
     with FragmentTestUtils
@@ -52,7 +52,8 @@ class FabricFragmenterTest
           """WITH 1 AS x
             |USE i
             |RETURN x
-            |""".stripMargin)
+            |""".stripMargin
+        )
       ).getMessage.should(include("USE can only appear at the beginning of a (sub-)query"))
 
     }
@@ -65,7 +66,8 @@ class FabricFragmenterTest
           |  RETURN 2 AS y
           |}
           |RETURN x
-          |""".stripMargin)
+          |""".stripMargin
+      )
 
       frag.as[Fragment.Leaf].use.shouldEqual(defaultUse)
       frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Declared(use("g")))
@@ -79,10 +81,13 @@ class FabricFragmenterTest
           |  RETURN 2 AS y
           |}
           |RETURN x
-          |""".stripMargin)
+          |""".stripMargin
+      )
 
       frag.as[Fragment.Leaf].use.shouldEqual(defaultUse)
-      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Inherited(defaultUse)(pos))
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Inherited(defaultUse)(
+        pos
+      ))
       frag.as[Fragment.Leaf].input.as[Fragment.Apply].input.as[Fragment.Leaf].use.shouldEqual(defaultUse)
     }
 
@@ -94,10 +99,13 @@ class FabricFragmenterTest
           |  RETURN 2 AS y
           |}
           |RETURN x
-          |""".stripMargin)
+          |""".stripMargin
+      )
 
       frag.as[Fragment.Leaf].use.shouldEqual(Declared(use("g")))
-      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Inherited(Declared(use("g")))(pos))
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Inherited(
+        Declared(use("g"))
+      )(pos))
       frag.as[Fragment.Leaf].input.as[Fragment.Apply].input.as[Fragment.Leaf].use.shouldEqual(Declared(use("g")))
     }
 
@@ -110,7 +118,8 @@ class FabricFragmenterTest
             |}
             |USE i
             |RETURN x
-            |""".stripMargin)
+            |""".stripMargin
+        )
       ).getMessage.should(include("USE can only appear at the beginning of a (sub-)query"))
     }
 
@@ -122,7 +131,8 @@ class FabricFragmenterTest
           |  RETURN 2 AS y
           |}
           |RETURN x
-          |""".stripMargin)
+          |""".stripMargin
+      )
 
       inside(frag) { case Leaf(Apply(_, inner: Leaf, _), _, _) =>
         inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
@@ -138,7 +148,8 @@ class FabricFragmenterTest
           |  RETURN 2 AS y
           |}
           |RETURN x
-          |""".stripMargin)
+          |""".stripMargin
+      )
 
       inside(frag) { case Leaf(Apply(_, inner: Leaf, _), _, _) =>
         inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
@@ -155,7 +166,8 @@ class FabricFragmenterTest
             |  RETURN 2 AS y
             |}
             |RETURN x
-            |""".stripMargin)
+            |""".stripMargin
+        )
       ).getMessage.should(include("Variable `z` not defined"))
     }
 
@@ -170,7 +182,8 @@ class FabricFragmenterTest
             |  RETURN 2 AS z
             |}
             |RETURN z
-            |""".stripMargin)
+            |""".stripMargin
+        )
       ).getMessage.should(include("Variable `y` not defined"))
     }
   }
@@ -212,8 +225,9 @@ class FabricFragmenterTest
       ).shouldEqual(
         init(defaultUse)
           .leaf(Seq(withLit(1, "a")), Seq("a"))
-          .apply(_ => init(Declared(use("g")), Seq("a"), Seq())
-            .leaf(Seq(use("g"), returnLit(2 -> "b")), Seq("b"))
+          .apply(_ =>
+            init(Declared(use("g")), Seq("a"), Seq())
+              .leaf(Seq(use("g"), returnLit(2 -> "b")), Seq("b"))
           )
           .leaf(Seq(returnVars("a", "b")), Seq("a", "b"))
       )
@@ -231,8 +245,9 @@ class FabricFragmenterTest
       ).shouldEqual(
         init(defaultUse)
           .leaf(Seq(withLit(1, "a")), Seq("a"))
-          .apply(use => init(Inherited(use)(pos), Seq("a"), Seq("a"))
-            .leaf(Seq(withVar("a"), returnAliased("a" -> "b")), Seq("b"))
+          .apply(use =>
+            init(Inherited(use)(pos), Seq("a"), Seq("a"))
+              .leaf(Seq(withVar("a"), returnAliased("a" -> "b")), Seq("b"))
           )
           .leaf(Seq(returnVars("a", "b")), Seq("a", "b"))
       )
@@ -258,15 +273,18 @@ class FabricFragmenterTest
       ).shouldEqual(
         init(defaultUse)
           .leaf(Seq(withLit(1, "x")), Seq("x"))
-          .apply(u => init(Inherited(u)(pos), Seq("x"))
-            .leaf(Seq(withLit(2, "y")), Seq("y"))
-            .apply(_ => init(Declared(use("foo")), Seq("y"))
-              .leaf(Seq(use("foo"), returnLit(3 -> "z")), Seq("z"))
-            )
-            .apply(u => init(Inherited(u)(pos), Seq("y", "z"), Seq("y"))
-              .leaf(Seq(withVar("y"), returnLit(4 -> "w")), Seq("w"))
-            )
-            .leaf(Seq(returnVars("w", "y", "z")), Seq("w", "y", "z"))
+          .apply(u =>
+            init(Inherited(u)(pos), Seq("x"))
+              .leaf(Seq(withLit(2, "y")), Seq("y"))
+              .apply(_ =>
+                init(Declared(use("foo")), Seq("y"))
+                  .leaf(Seq(use("foo"), returnLit(3 -> "z")), Seq("z"))
+              )
+              .apply(u =>
+                init(Inherited(u)(pos), Seq("y", "z"), Seq("y"))
+                  .leaf(Seq(withVar("y"), returnLit(4 -> "w")), Seq("w"))
+              )
+              .leaf(Seq(returnVars("w", "y", "z")), Seq("w", "y", "z"))
           )
           .leaf(Seq(returnVars("x", "w", "y", "z")), Seq("x", "w", "y", "z"))
       )
@@ -283,8 +301,9 @@ class FabricFragmenterTest
       ).shouldEqual(
         init(Declared(use("foo")))
           .leaf(Seq(use("foo")), Seq())
-          .apply(use => init(Inherited(use)(pos))
-            .leaf(Seq(returnLit(1 -> "a")), Seq("a"))
+          .apply(use =>
+            init(Inherited(use)(pos))
+              .leaf(Seq(returnLit(1 -> "a")), Seq("a"))
           )
           .leaf(Seq(returnVars("a")), Seq("a"))
       )
@@ -301,7 +320,7 @@ class FabricFragmenterTest
       ).shouldEqual(
         init(defaultUse).union(
           init(Declared(use("foo"))).leaf(Seq(use("foo"), returnLit(1 -> "y")), Seq("y")),
-          init(Declared(use("bar"))).leaf(Seq(use("bar"), returnLit(2 -> "y")), Seq("y")),
+          init(Declared(use("bar"))).leaf(Seq(use("bar"), returnLit(2 -> "y")), Seq("y"))
         )
       )
     }
@@ -326,7 +345,7 @@ class FabricFragmenterTest
               init(Declared(use("foo")), Seq("x"))
                 .leaf(Seq(use("foo"), returnLit(1 -> "y")), Seq("y")),
               init(Inherited(u)(pos), Seq("x"), Seq("x"))
-                .leaf(Seq(withVar("x"), returnLit(2 -> "y")), Seq("y")),
+                .leaf(Seq(withVar("x"), returnLit(2 -> "y")), Seq("y"))
             )
           )
           .leaf(Seq(returnVars("x", "y")), Seq("x", "y"))
@@ -348,14 +367,16 @@ class FabricFragmenterTest
           .leaf(Seq(withLit(1, "x")), Seq("x"))
           .apply(_ =>
             init(Declared(use("g")), Seq("x"))
-              .leaf(Seq(
-                use("g"),
-                call(Seq("some"), "procedure", yields = Some(Seq(varFor("z"), varFor("y")))),
-                returnVars("z", "y")
-              ), Seq("z", "y"))
+              .leaf(
+                Seq(
+                  use("g"),
+                  call(Seq("some"), "procedure", yields = Some(Seq(varFor("z"), varFor("y")))),
+                  returnVars("z", "y")
+                ),
+                Seq("z", "y")
+              )
           )
           .leaf(Seq(returnVars("x", "y", "z")), Seq("x", "y", "z"))
-
       )
     }
 
@@ -382,7 +403,14 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(match_(NodePattern(Some(varFor("n")), None, None, None)(pos)), with_(varFor("n").as("true")), returnVars("true")), Seq("true"))
+          .leaf(
+            Seq(
+              match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
+              with_(varFor("n").as("true")),
+              returnVars("true")
+            ),
+            Seq("true")
+          )
       )
     }
 
@@ -394,7 +422,14 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(match_(NodePattern(Some(varFor("n")), None, None, None)(pos)), with_(varFor("n").as("true")), returnLit(true -> "true")), Seq("true"))
+          .leaf(
+            Seq(
+              match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
+              with_(varFor("n").as("true")),
+              returnLit(true -> "true")
+            ),
+            Seq("true")
+          )
       )
     }
 
@@ -405,10 +440,13 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(
-            match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
-            create(NodePattern(Some(varFor("m")), None, None, None)(pos)),
-          ), Seq.empty)
+          .leaf(
+            Seq(
+              match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
+              create(NodePattern(Some(varFor("m")), None, None, None)(pos))
+            ),
+            Seq.empty
+          )
       )
     }
   }
@@ -421,10 +459,13 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(
-            resolved(call(Seq("my", "ns"), "myProcedure", Some(Seq()), Some(Seq(varFor("a"), varFor("b"))))),
-            returnVars("a", "b"),
-          ), Seq("a", "b"))
+          .leaf(
+            Seq(
+              resolved(call(Seq("my", "ns"), "myProcedure", Some(Seq()), Some(Seq(varFor("a"), varFor("b"))))),
+              returnVars("a", "b")
+            ),
+            Seq("a", "b")
+          )
       )
     }
 
@@ -434,10 +475,13 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(
-            resolved(call(Seq("my", "ns"), "myProcedure", Some(Seq()), Some(Seq(varFor("a"), varFor("b"))))),
-            returnVars("a", "b"),
-          ), Seq("a", "b"))
+          .leaf(
+            Seq(
+              resolved(call(Seq("my", "ns"), "myProcedure", Some(Seq()), Some(Seq(varFor("a"), varFor("b"))))),
+              returnVars("a", "b")
+            ),
+            Seq("a", "b")
+          )
       )
     }
 
@@ -447,10 +491,18 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(
-            resolved(call(Seq("my", "ns"), "myProcedure2", Some(Seq(coerceTo(literal(1), ct.any))), Some(Seq(varFor("a"), varFor("b"))))),
-            returnVars("a", "b"),
-          ), Seq("a", "b"))
+          .leaf(
+            Seq(
+              resolved(call(
+                Seq("my", "ns"),
+                "myProcedure2",
+                Some(Seq(coerceTo(literal(1), ct.any))),
+                Some(Seq(varFor("a"), varFor("b")))
+              )),
+              returnVars("a", "b")
+            ),
+            Seq("a", "b")
+          )
       )
     }
 
@@ -461,10 +513,13 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(
-            match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
-            resolved(call(Seq("my", "ns"), "unitProcedure", Some(Seq()), None)),
-          ), Seq.empty)
+          .leaf(
+            Seq(
+              match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
+              resolved(call(Seq("my", "ns"), "unitProcedure", Some(Seq()), None))
+            ),
+            Seq.empty
+          )
       )
     }
 
@@ -494,7 +549,10 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(return_(resolved(function(Seq("my", "ns"), "const0", coerceTo(literal(1), ct.any))).as("x"))), Seq("x"))
+          .leaf(
+            Seq(return_(resolved(function(Seq("my", "ns"), "const0", coerceTo(literal(1), ct.any))).as("x"))),
+            Seq("x")
+          )
       )
     }
 
@@ -527,9 +585,9 @@ class FabricFragmenterTest
           |""".stripMargin
       )
 
-     frag.as[Fragment.Union].pos.shouldEqual(InputPosition(14, 2, 1))
-     frag.as[Fragment.Union].lhs.as[Fragment.Leaf].pos.shouldEqual(InputPosition(0, 1, 1))
-     frag.as[Fragment.Union].rhs.as[Fragment.Leaf].pos.shouldEqual(InputPosition(20, 3, 1))
+      frag.as[Fragment.Union].pos.shouldEqual(InputPosition(14, 2, 1))
+      frag.as[Fragment.Union].lhs.as[Fragment.Leaf].pos.shouldEqual(InputPosition(0, 1, 1))
+      frag.as[Fragment.Union].rhs.as[Fragment.Leaf].pos.shouldEqual(InputPosition(20, 3, 1))
     }
 
     "Subquery" in {

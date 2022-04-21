@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.lv.LatvianAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Latvian extends AnalyzerProvider
-{
-    public Latvian()
-    {
-        super( "latvian" );
+public class Latvian extends AnalyzerProvider {
+    public Latvian() {
+        super("latvian");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
-        return new LatvianAnalyzer( cleanStopWordSet( LatvianAnalyzer.getDefaultStopSet() ) );
+    public Analyzer createAnalyzer() {
+        return new LatvianAnalyzer(cleanStopWordSet(LatvianAnalyzer.getDefaultStopSet()));
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Latvian analyzer with stemming and stop word filtering.";
     }
 }

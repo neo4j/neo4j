@@ -19,83 +19,68 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.util.Objects;
-
 import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 
-public class ThresholdConfigParser
-{
-    public static final class ThresholdConfigValue
-    {
-        static final ThresholdConfigValue NO_PRUNING = new ThresholdConfigValue( "false", -1 );
-        static final ThresholdConfigValue KEEP_LAST_FILE = new ThresholdConfigValue( "entries", 1 );
+import java.util.Objects;
+
+public class ThresholdConfigParser {
+    public static final class ThresholdConfigValue {
+        static final ThresholdConfigValue NO_PRUNING = new ThresholdConfigValue("false", -1);
+        static final ThresholdConfigValue KEEP_LAST_FILE = new ThresholdConfigValue("entries", 1);
 
         public final String type;
         public final long value;
 
-        ThresholdConfigValue( String type, long value )
-        {
+        ThresholdConfigValue(String type, long value) {
             this.type = type;
             this.value = value;
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             ThresholdConfigValue that = (ThresholdConfigValue) o;
-            return value == that.value && Objects.equals( type, that.type );
+            return value == that.value && Objects.equals(type, that.type);
         }
 
         @Override
-        public int hashCode()
-        {
-            return Objects.hash( type, value );
+        public int hashCode() {
+            return Objects.hash(type, value);
         }
     }
 
-    private ThresholdConfigParser()
-    {
-    }
+    private ThresholdConfigParser() {}
 
-    public static ThresholdConfigValue parse( String configValue )
-    {
-        String[] tokens = configValue.split( " " );
-        if ( tokens.length == 0 )
-        {
-            throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue + "'" );
+    public static ThresholdConfigValue parse(String configValue) {
+        String[] tokens = configValue.split(" ");
+        if (tokens.length == 0) {
+            throw new IllegalArgumentException("Invalid log pruning configuration value '" + configValue + "'");
         }
 
         final String boolOrNumber = tokens[0];
 
-        if ( tokens.length == 1 )
-        {
-            switch ( boolOrNumber )
-            {
-            case "keep_all":
-            case "true":
-                return ThresholdConfigValue.NO_PRUNING;
-            case "keep_none":
-            case "false":
-                return ThresholdConfigValue.KEEP_LAST_FILE;
-            default:
-                throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
-                        "'. The form is 'true', 'false' or '<number><unit> <type>'. For example, '100k txs' " +
-                        "will keep the 100 000 latest transactions." );
+        if (tokens.length == 1) {
+            switch (boolOrNumber) {
+                case "keep_all":
+                case "true":
+                    return ThresholdConfigValue.NO_PRUNING;
+                case "keep_none":
+                case "false":
+                    return ThresholdConfigValue.KEEP_LAST_FILE;
+                default:
+                    throw new IllegalArgumentException("Invalid log pruning configuration value '" + configValue
+                            + "'. The form is 'true', 'false' or '<number><unit> <type>'. For example, '100k txs' "
+                            + "will keep the 100 000 latest transactions.");
             }
-        }
-        else
-        {
-            long thresholdValue = parseLongWithUnit( boolOrNumber );
+        } else {
+            long thresholdValue = parseLongWithUnit(boolOrNumber);
             String thresholdType = tokens[1];
-            return new ThresholdConfigValue( thresholdType, thresholdValue );
+            return new ThresholdConfigValue(thresholdType, thresholdValue);
         }
     }
 }

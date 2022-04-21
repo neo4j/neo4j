@@ -25,9 +25,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * Lock for the {@link FreeIdScanner}. Only a single thread can perform a scan at any given time,
  * but the behaviour for threads that doesn't get the lock are configurable, which is why this abstraction exists.
  */
-abstract class ScanLock
-{
-    final ReentrantLock lock = new ReentrantLock( true );
+abstract class ScanLock {
+    final ReentrantLock lock = new ReentrantLock(true);
 
     /**
      * Tries to acquire the lock, returning {@code true} if it succeeds, otherwise {@code false}.
@@ -38,13 +37,11 @@ abstract class ScanLock
     /**
      * Releases the lock, if it was previous acquired in {@link #tryLock()}, i.e. if it returned {@code true}.
      */
-    void lock()
-    {
+    void lock() {
         lock.lock();
     }
 
-    void unlock()
-    {
+    void unlock() {
         lock.unlock();
     }
 
@@ -52,13 +49,10 @@ abstract class ScanLock
      * Optimistic {@link ScanLock} which will never block in {@link #tryLock()}, but simply return {@code false} if it was acquire by someone else.
      * @return an optimistic and lock-free {@link ScanLock}.
      */
-    static ScanLock lockFreeAndOptimistic()
-    {
-        return new ScanLock()
-        {
+    static ScanLock lockFreeAndOptimistic() {
+        return new ScanLock() {
             @Override
-            boolean tryLock()
-            {
+            boolean tryLock() {
                 return lock.tryLock();
             }
         };
@@ -68,13 +62,10 @@ abstract class ScanLock
      * Pessimistic {@link ScanLock} which may block if the lock is already acquired by someone else.
      * @return a pessimistic and blocking {@link ScanLock}.
      */
-    static ScanLock lockyAndPessimistic()
-    {
-        return new ScanLock()
-        {
+    static ScanLock lockyAndPessimistic() {
+        return new ScanLock() {
             @Override
-            boolean tryLock()
-            {
+            boolean tryLock() {
                 lock.lock();
                 return true;
             }

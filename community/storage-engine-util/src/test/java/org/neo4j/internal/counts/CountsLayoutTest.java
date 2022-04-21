@@ -19,33 +19,27 @@
  */
 package org.neo4j.internal.counts;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Set;
-import java.util.TreeSet;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 
-class CountsLayoutTest
-{
+import java.util.Set;
+import java.util.TreeSet;
+import org.junit.jupiter.api.Test;
+
+class CountsLayoutTest {
     @Test
-    void shouldDifferentiateBetweenRelationshipKeys()
-    {
+    void shouldDifferentiateBetweenRelationshipKeys() {
         // given
         CountsLayout layout = new CountsLayout();
-        Set<CountsKey> keys = new TreeSet<>( layout );
+        Set<CountsKey> keys = new TreeSet<>(layout);
 
         // when
-        for ( int s = -1; s < 10; s++ )
-        {
-            for ( int t = -1; t < 10; t++ )
-            {
-                for ( int e = -1; e < 10; e++ )
-                {
+        for (int s = -1; s < 10; s++) {
+            for (int t = -1; t < 10; t++) {
+                for (int e = -1; e < 10; e++) {
                     // then
-                    CountsKey key = relationshipKey( s, t, e );
-                    assertTrue( keys.add( key ) );
+                    CountsKey key = relationshipKey(s, t, e);
+                    assertTrue(keys.add(key));
                 }
             }
         }

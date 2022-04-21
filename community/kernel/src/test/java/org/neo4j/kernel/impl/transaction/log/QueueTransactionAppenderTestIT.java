@@ -19,18 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
-
+import org.apache.commons.lang3.ArrayUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -61,22 +65,18 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 @Neo4jLayoutExtension
-@ExtendWith( LifeExtension.class )
-class QueueTransactionAppenderTestIT
-{
+@ExtendWith(LifeExtension.class)
+class QueueTransactionAppenderTestIT {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private LifeSupport life;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     private ThreadPoolJobScheduler jobScheduler;
     private SimpleLogVersionRepository logVersionRepository;
     private SimpleTransactionIdStore transactionIdStore;
@@ -86,8 +86,7 @@ class QueueTransactionAppenderTestIT
     private NullLogProvider logProvider;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         jobScheduler = new ThreadPoolJobScheduler();
 
         logVersionRepository = new SimpleLogVersionRepository();
@@ -95,164 +94,168 @@ class QueueTransactionAppenderTestIT
         logProvider = NullLogProvider.getInstance();
         metadataCache = new TransactionMetadataCache();
         config = Config.defaults();
-        databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, logProvider.getLog( DatabaseHealth.class ) );
+        databaseHealth = new DatabaseHealth(PanicEventGenerator.NO_OP, logProvider.getLog(DatabaseHealth.class));
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         life.shutdown();
         jobScheduler.close();
     }
 
     @Test
-    void sequentialProcessingOfTransaction() throws IOException, ExecutionException, InterruptedException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void sequentialProcessingOfTransaction() throws IOException, ExecutionException, InterruptedException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
-        life.add( transactionAppender );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        life.add(transactionAppender);
 
         long txId = transactionIdStore.getLastCommittedTransactionId();
-        for ( int i = 0; i < 10; i++ )
-        {
+        for (int i = 0; i < 10; i++) {
             TransactionToApply transactionToApply = createTransaction();
-            assertEquals( ++txId, transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) );
+            assertEquals(++txId, transactionAppender.append(transactionToApply, LogAppendEvent.NULL));
         }
     }
 
     @Test
-    void failToProcessTransactionOnShutdownAppender() throws IOException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void failToProcessTransactionOnShutdownAppender() throws IOException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
-        life.add( transactionAppender );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        life.add(transactionAppender);
 
         TransactionToApply transactionToApply = createTransaction();
-        assertDoesNotThrow( () -> transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) );
+        assertDoesNotThrow(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL));
 
         life.shutdown();
 
-        assertThatThrownBy( () -> transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) ).isInstanceOf( DatabaseShutdownException.class );
+        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
+                .isInstanceOf(DatabaseShutdownException.class);
     }
 
     @Test
-    void failToProcessTransactionOnNotStartedAppender() throws IOException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void failToProcessTransactionOnNotStartedAppender() throws IOException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
 
         TransactionToApply transactionToApply = createTransaction();
-        assertThatThrownBy( () -> transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) ).isInstanceOf( DatabaseShutdownException.class );
+        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
+                .isInstanceOf(DatabaseShutdownException.class);
     }
 
     @Test
-    void publishTransactionAsCommittedOnProcessing() throws IOException, ExecutionException, InterruptedException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void publishTransactionAsCommittedOnProcessing() throws IOException, ExecutionException, InterruptedException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
-        life.add( transactionAppender );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        life.add(transactionAppender);
 
         long initialLastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
         long initialLastClosedTxId = transactionIdStore.getLastClosedTransactionId();
         int numberOfTransactions = 10;
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
+        for (int i = 0; i < numberOfTransactions; i++) {
             TransactionToApply transactionToApply = createTransaction();
-            transactionAppender.append( transactionToApply, LogAppendEvent.NULL );
+            transactionAppender.append(transactionToApply, LogAppendEvent.NULL);
         }
 
-        assertEquals( initialLastCommittedTxId + numberOfTransactions, transactionIdStore.getLastCommittedTransactionId() );
-        assertEquals( initialLastClosedTxId, transactionIdStore.getLastClosedTransactionId() );
+        assertEquals(
+                initialLastCommittedTxId + numberOfTransactions, transactionIdStore.getLastCommittedTransactionId());
+        assertEquals(initialLastClosedTxId, transactionIdStore.getLastClosedTransactionId());
     }
 
     @Test
-    void failToProcessTransactionOnNonHealthyDatabase() throws IOException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void failToProcessTransactionOnNonHealthyDatabase() throws IOException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
-        life.add( transactionAppender );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        life.add(transactionAppender);
 
-        RuntimeException panicException = new RuntimeException( "Don't panic, the answer is known!" );
-        databaseHealth.panic( panicException );
+        RuntimeException panicException = new RuntimeException("Don't panic, the answer is known!");
+        databaseHealth.panic(panicException);
 
         TransactionToApply transactionToApply = createTransaction();
-        assertThatThrownBy( () -> transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) ).hasRootCause( panicException );
+        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
+                .hasRootCause(panicException);
     }
 
     @Test
-    void processTransactionWithProperEvents() throws IOException, ExecutionException, InterruptedException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void processTransactionWithProperEvents() throws IOException, ExecutionException, InterruptedException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
-        life.add( transactionAppender );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        life.add(transactionAppender);
 
         TransactionToApply transactionToApply = createTransaction();
         RecordingLogAppendEvent logAppendEvent = new RecordingLogAppendEvent();
-        transactionAppender.append( transactionToApply, logAppendEvent );
-        assertThat( logAppendEvent.getEvents() ).containsExactly( EventType.BEGIN_APPEND, EventType.FILE_APPEND, EventType.CLOSE_APPEND,
-                EventType.ROTATED_FALSE, EventType.LOG_FORCE );
+        transactionAppender.append(transactionToApply, logAppendEvent);
+        assertThat(logAppendEvent.getEvents())
+                .containsExactly(
+                        EventType.BEGIN_APPEND,
+                        EventType.FILE_APPEND,
+                        EventType.CLOSE_APPEND,
+                        EventType.ROTATED_FALSE,
+                        EventType.LOG_FORCE);
     }
 
     @Test
-    void failureOnProcessingUpdatesDatabaseHealth() throws IOException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void failureOnProcessingUpdatesDatabaseHealth() throws IOException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
-        life.add( transactionAppender );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        life.add(transactionAppender);
 
-        RuntimeException criticalException = new RuntimeException( "The greatest teacher, failure is." );
+        RuntimeException criticalException = new RuntimeException("The greatest teacher, failure is.");
         TransactionToApply transactionToApply = createTransaction();
-        assertThatThrownBy( () -> transactionAppender.append( transactionToApply, new LogAppendEvent.Empty()
-        {
-            @Override
-            public LogForceEvent beginLogForce()
-            {
-                throw criticalException;
-            }
-        } ) ).getRootCause().hasMessageContaining( "failure is." );
+        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, new LogAppendEvent.Empty() {
+                    @Override
+                    public LogForceEvent beginLogForce() {
+                        throw criticalException;
+                    }
+                }))
+                .getRootCause()
+                .hasMessageContaining("failure is.");
 
-        assertFalse( databaseHealth.isHealthy() );
-        assertThat( databaseHealth.cause() ).isSameAs( criticalException );
+        assertFalse(databaseHealth.isHealthy());
+        assertThat(databaseHealth.cause()).isSameAs(criticalException);
 
-        assertThatThrownBy( () -> transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) ).getRootCause().hasMessageContaining( "failure is." );
+        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
+                .getRootCause()
+                .hasMessageContaining("failure is.");
     }
 
-    private QueueTransactionAppender createAppender( LogFiles logFiles )
-    {
-        var logQueue = new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider );
-        return new QueueTransactionAppender( logQueue );
+    private QueueTransactionAppender createAppender(LogFiles logFiles) {
+        var logQueue = new TransactionLogQueue(
+                logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider);
+        return new QueueTransactionAppender(logQueue);
     }
 
-    private static TransactionToApply createTransaction()
-    {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( List.of( new TestCommand() ) );
-        tx.setHeader( ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, AuthSubject.ANONYMOUS );
-        return new TransactionToApply( tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL );
+    private static TransactionToApply createTransaction() {
+        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(List.of(new TestCommand()));
+        tx.setHeader(ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, AuthSubject.ANONYMOUS);
+        return new TransactionToApply(tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL);
     }
 
-    private LogFiles buildLogFiles( SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore ) throws IOException
-    {
-        return LogFilesBuilder.builder( databaseLayout, fileSystem ).withLogVersionRepository( logVersionRepository ).withRotationThreshold(
-                ByteUnit.mebiBytes( 1 ) ).withTransactionIdStore( transactionIdStore ).withCommandReaderFactory( new TestCommandReaderFactory() ).withStoreId(
-                LegacyStoreId.UNKNOWN ).build();
+    private LogFiles buildLogFiles(
+            SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore)
+            throws IOException {
+        return LogFilesBuilder.builder(databaseLayout, fileSystem)
+                .withLogVersionRepository(logVersionRepository)
+                .withRotationThreshold(ByteUnit.mebiBytes(1))
+                .withTransactionIdStore(transactionIdStore)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withStoreId(LegacyStoreId.UNKNOWN)
+                .build();
     }
 
-    private enum EventType
-    {
+    private enum EventType {
         FILE_APPEND,
         ROTATE,
         ROTATED_TRUE,
@@ -264,76 +267,64 @@ class QueueTransactionAppenderTestIT
         CLOSE
     }
 
-    private static class RecordingLogAppendEvent implements LogAppendEvent
-    {
+    private static class RecordingLogAppendEvent implements LogAppendEvent {
         private final Queue<EventType> events = new LinkedBlockingQueue<>();
 
         @Override
-        public void appendToLogFile( LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend )
-        {
-            events.add( EventType.FILE_APPEND );
+        public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {
+            events.add(EventType.FILE_APPEND);
         }
 
         @Override
-        public void close()
-        {
-            events.add( EventType.CLOSE );
+        public void close() {
+            events.add(EventType.CLOSE);
         }
 
         @Override
-        public void setLogRotated( boolean logRotated )
-        {
+        public void setLogRotated(boolean logRotated) {
             var event = logRotated ? EventType.ROTATED_TRUE : EventType.ROTATED_FALSE;
-            events.add( event );
+            events.add(event);
         }
 
         @Override
-        public AppendTransactionEvent beginAppendTransaction( int appendItems )
-        {
-            events.add( EventType.BEGIN_APPEND );
-            return new RecordingTransactionAppendEvent( events );
+        public AppendTransactionEvent beginAppendTransaction(int appendItems) {
+            events.add(EventType.BEGIN_APPEND);
+            return new RecordingTransactionAppendEvent(events);
         }
 
         @Override
-        public LogForceWaitEvent beginLogForceWait()
-        {
-            events.add( EventType.LOG_FORCE_WAIT );
+        public LogForceWaitEvent beginLogForceWait() {
+            events.add(EventType.LOG_FORCE_WAIT);
             return LogForceWaitEvent.NULL;
         }
 
         @Override
-        public LogForceEvent beginLogForce()
-        {
-            events.add( EventType.LOG_FORCE );
+        public LogForceEvent beginLogForce() {
+            events.add(EventType.LOG_FORCE);
             return LogForceEvent.NULL;
         }
 
         @Override
-        public LogRotateEvent beginLogRotate()
-        {
-            events.add( EventType.ROTATE );
+        public LogRotateEvent beginLogRotate() {
+            events.add(EventType.ROTATE);
             return LogRotateEvent.NULL;
         }
 
-        public Queue<EventType> getEvents()
-        {
+        public Queue<EventType> getEvents() {
             return events;
         }
     }
 
-    private static class RecordingTransactionAppendEvent implements AppendTransactionEvent
-    {
+    private static class RecordingTransactionAppendEvent implements AppendTransactionEvent {
         private final Queue<EventType> events;
 
-        RecordingTransactionAppendEvent( Queue<EventType> events )
-        {
+        RecordingTransactionAppendEvent(Queue<EventType> events) {
             this.events = events;
         }
 
         @Override
-        public void close()
-        {
-            events.add( EventType.CLOSE_APPEND );
+        public void close() {
+            events.add(EventType.CLOSE_APPEND);
         }
     }
 }

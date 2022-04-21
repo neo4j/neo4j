@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.ports;
 
-public interface PortProvider
-{
-    int getNextFreePort( String trace );
+public interface PortProvider {
+    int getNextFreePort(String trace);
 }

@@ -20,36 +20,28 @@
 package org.neo4j.procedure.impl;
 
 import java.util.function.Function;
-
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
-final class CompositeConverter implements Function<String,DefaultParameterValue>
-{
+final class CompositeConverter implements Function<String, DefaultParameterValue> {
     private final Neo4jTypes.AnyType upCastTo;
-    private final Function<String,DefaultParameterValue>[] functions;
+    private final Function<String, DefaultParameterValue>[] functions;
 
     @SafeVarargs
-    CompositeConverter( Neo4jTypes.AnyType upCastTo, Function<String,DefaultParameterValue>... functions )
-    {
+    CompositeConverter(Neo4jTypes.AnyType upCastTo, Function<String, DefaultParameterValue>... functions) {
         this.upCastTo = upCastTo;
         this.functions = functions;
     }
 
     @Override
-    public DefaultParameterValue apply( String s )
-    {
+    public DefaultParameterValue apply(String s) {
         IllegalArgumentException lastException = null;
-        for ( Function<String,DefaultParameterValue> function : functions )
-        {
-            try
-            {
-                return function.apply( s ).castAs( upCastTo );
-            }
-            catch ( IllegalArgumentException invalidConversion )
-            {
-                lastException = Exceptions.chain( lastException, invalidConversion );
+        for (Function<String, DefaultParameterValue> function : functions) {
+            try {
+                return function.apply(s).castAs(upCastTo);
+            } catch (IllegalArgumentException invalidConversion) {
+                lastException = Exceptions.chain(lastException, invalidConversion);
             }
         }
 

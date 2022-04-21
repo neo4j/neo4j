@@ -55,7 +55,7 @@ class ComparablePredicateTest extends CypherFunSuite {
     Double.PositiveInfinity,
     null
   ).flatMap {
-    case null => Seq(null)
+    case null                               => Seq(null)
     case v: Number if v.doubleValue().isNaN => Seq[Number](v.doubleValue(), v.floatValue(), v)
     case v: Number =>
       Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
@@ -72,7 +72,7 @@ class ComparablePredicateTest extends CypherFunSuite {
     null,
     "\uD801\uDC37"
   ).flatMap {
-    case null => Seq(null)
+    case null      => Seq(null)
     case v: String => Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
   }
 
@@ -113,6 +113,7 @@ class ComparablePredicateTest extends CypherFunSuite {
   case class compareUsingGreaterThan(left: Any, right: Any) extends compareUsing(left, right, ">")
 
   class compareUsing(left: Any, right: Any, operator: String) extends Matcher[ComparablePredicate] {
+
     def apply(predicate: ComparablePredicate): MatchResult = {
       val actual = predicate.isMatch(CypherRow.empty, QueryStateHelper.empty)
 
@@ -122,10 +123,10 @@ class ComparablePredicateTest extends CypherFunSuite {
         assert(actual.isDefined, s"$left $operator $right")
         val expected = AnyValues.COMPARATOR.compare(Values.of(left), Values.of(right))
         val result = operator match {
-          case "<" => (expected < 0) == actual.get
+          case "<"  => (expected < 0) == actual.get
           case "<=" => (expected <= 0) == actual.get
           case ">=" => (expected >= 0) == actual.get
-          case ">" => (expected > 0) == actual.get
+          case ">"  => (expected > 0) == actual.get
         }
         buildResult(result, expected, actual)
       }
@@ -133,9 +134,9 @@ class ComparablePredicateTest extends CypherFunSuite {
 
     def isIncomparable(left: Any, right: Any): Boolean = {
       left == null || (left.isInstanceOf[Number] && left.asInstanceOf[Number].doubleValue().isNaN) ||
-        right == null || (right.isInstanceOf[Number] && right.asInstanceOf[Number].doubleValue().isNaN) ||
-        left.isInstanceOf[Number] && right.isInstanceOf[String] ||
-        left.isInstanceOf[String] && right.isInstanceOf[Number]
+      right == null || (right.isInstanceOf[Number] && right.asInstanceOf[Number].doubleValue().isNaN) ||
+      left.isInstanceOf[Number] && right.isInstanceOf[String] ||
+      left.isInstanceOf[String] && right.isInstanceOf[Number]
     }
 
     def buildResult(result: Boolean, expected: Any, actual: Any) = {
@@ -148,8 +149,3 @@ class ComparablePredicateTest extends CypherFunSuite {
   }
 
 }
-
-
-
-
-

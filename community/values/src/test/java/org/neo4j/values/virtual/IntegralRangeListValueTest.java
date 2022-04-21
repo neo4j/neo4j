@@ -19,82 +19,80 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.Values;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.range;
 
-class IntegralRangeListValueTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.Values;
+
+class IntegralRangeListValueTest {
     @Test
-    void shouldHandleRangeWithStepOne()
-    {
-        ListValue range = range( 5L, 11L, 1L );
+    void shouldHandleRangeWithStepOne() {
+        ListValue range = range(5L, 11L, 1L);
 
-        ListValue expected = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
-                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+        ListValue expected = list(
+                longValue(5L),
+                longValue(6L),
+                longValue(7L),
+                longValue(8L),
+                longValue(9L),
+                longValue(10L),
+                longValue(11L));
 
-        assertEquals( range, expected );
-        assertEquals( range.hashCode(), expected.hashCode() );
+        assertEquals(range, expected);
+        assertEquals(range.hashCode(), expected.hashCode());
     }
 
     @Test
-    void shouldHandleRangeWithBiggerSteps()
-    {
-        ListValue range = range( 5L, 11L, 3L );
+    void shouldHandleRangeWithBiggerSteps() {
+        ListValue range = range(5L, 11L, 3L);
 
-        ListValue expected = list( longValue( 5L ), longValue( 8L ), longValue( 11L ) );
+        ListValue expected = list(longValue(5L), longValue(8L), longValue(11L));
 
-        assertEquals( range, expected );
-        assertEquals( range.hashCode(), expected.hashCode() );
+        assertEquals(range, expected);
+        assertEquals(range.hashCode(), expected.hashCode());
     }
 
     @Test
-    void shouldHandleNegativeStep()
-    {
-        ListValue range = range( 11L, 5L, -3L );
+    void shouldHandleNegativeStep() {
+        ListValue range = range(11L, 5L, -3L);
 
-        ListValue expected = list( longValue( 11L ), longValue( 8L ), longValue( 5L ) );
+        ListValue expected = list(longValue(11L), longValue(8L), longValue(5L));
 
-        assertEquals( range, expected );
-        assertEquals( range.hashCode(), expected.hashCode() );
+        assertEquals(range, expected);
+        assertEquals(range.hashCode(), expected.hashCode());
     }
 
     @Test
-    void shouldHandleNegativeStepWithPositiveRange()
-    {
-        ListValue range = range( 2L, 8L, -1L );
+    void shouldHandleNegativeStepWithPositiveRange() {
+        ListValue range = range(2L, 8L, -1L);
 
         ListValue expected = EMPTY_LIST;
 
-        assertEquals( range, expected );
-        assertEquals( range.hashCode(), expected.hashCode() );
+        assertEquals(range, expected);
+        assertEquals(range.hashCode(), expected.hashCode());
     }
 
     @Test
-    void shouldHandlePositiveStepWithNegativeRange()
-    {
-        ListValue range = range( 8L, 2L, 1L );
+    void shouldHandlePositiveStepWithNegativeRange() {
+        ListValue range = range(8L, 2L, 1L);
 
         ListValue expected = EMPTY_LIST;
 
-        assertEquals( range, expected );
-        assertEquals( range.hashCode(), expected.hashCode() );
+        assertEquals(range, expected);
+        assertEquals(range.hashCode(), expected.hashCode());
     }
 
     @Test
-    void rangeListsAreStorable()
-    {
-        ListValue range = range( 5L, 11L, 2L );
+    void rangeListsAreStorable() {
+        ListValue range = range(5L, 11L, 2L);
 
-        ArrayValue expected = Values.longArray( new long[] {5,  7, 9, 11});
+        ArrayValue expected = Values.longArray(new long[] {5, 7, 9, 11});
 
-        assertEquals( expected, range.toStorableArray() );
+        assertEquals(expected, range.toStorableArray());
     }
 }

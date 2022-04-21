@@ -19,11 +19,6 @@
  */
 package org.neo4j.resources;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static java.lang.Thread.currentThread;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,30 +26,30 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.neo4j.resources.HeapAllocation.HEAP_ALLOCATION;
 import static org.neo4j.resources.HeapAllocation.NOT_AVAILABLE;
 
-class SunManagementHeapAllocationTest
-{
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class SunManagementHeapAllocationTest {
     @Test
-    void shouldLoadHeapAllocation()
-    {
-        assertNotSame( NOT_AVAILABLE, HEAP_ALLOCATION );
-        assertThat( HEAP_ALLOCATION ).isInstanceOf( SunManagementHeapAllocation.class );
+    void shouldLoadHeapAllocation() {
+        assertNotSame(NOT_AVAILABLE, HEAP_ALLOCATION);
+        assertThat(HEAP_ALLOCATION).isInstanceOf(SunManagementHeapAllocation.class);
     }
 
     @Test
-    void shouldMeasureAllocation()
-    {
+    void shouldMeasureAllocation() {
         // given
-        long allocatedBytes = HEAP_ALLOCATION.allocatedBytes( currentThread() );
+        long allocatedBytes = HEAP_ALLOCATION.allocatedBytes(currentThread());
 
         // when
         List<Object> objects = new ArrayList<>();
-        for ( int i = 0; i < 17; i++ )
-        {
-            objects.add( new Object() );
+        for (int i = 0; i < 17; i++) {
+            objects.add(new Object());
         }
 
         // then
-        assertThat( allocatedBytes ).isLessThan( HEAP_ALLOCATION.allocatedBytes( currentThread() ) );
-        assertEquals( 17, objects.size() );
+        assertThat(allocatedBytes).isLessThan(HEAP_ALLOCATION.allocatedBytes(currentThread()));
+        assertEquals(17, objects.size());
     }
 }

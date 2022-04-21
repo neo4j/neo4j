@@ -21,49 +21,41 @@ package org.neo4j.values.storable;
 
 import java.util.SplittableRandom;
 
-public class SplittableRandomGenerator implements Generator
-{
+public class SplittableRandomGenerator implements Generator {
     private final SplittableRandom random;
 
-    SplittableRandomGenerator( SplittableRandom random )
-    {
+    SplittableRandomGenerator(SplittableRandom random) {
         this.random = random;
     }
 
     @Override
-    public long nextLong()
-    {
+    public long nextLong() {
         return random.nextLong();
     }
 
     @Override
-    public boolean nextBoolean()
-    {
+    public boolean nextBoolean() {
         return random.nextBoolean();
     }
 
     @Override
-    public int nextInt()
-    {
+    public int nextInt() {
         return random.nextInt();
     }
 
     @Override
-    public int nextInt( int bound )
-    {
-        return random.nextInt( bound );
+    public int nextInt(int bound) {
+        return random.nextInt(bound);
     }
 
     @Override
-    public float nextFloat()
-    {
-        //this is a safe cast since nextDouble returns values in [0,1.0)
+    public float nextFloat() {
+        // this is a safe cast since nextDouble returns values in [0,1.0)
         return (float) random.nextDouble();
     }
 
     @Override
-    public double nextDouble()
-    {
+    public double nextDouble() {
         return random.nextDouble();
     }
 }

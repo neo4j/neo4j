@@ -27,7 +27,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.scheduler.CancelListener;
@@ -57,8 +56,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
  * otherwise its rescheduled for next execution.</li>
  * </ul>
  */
-final class ScheduledJobHandle<T> implements JobHandle<T>
-{
+final class ScheduledJobHandle<T> implements JobHandle<T> {
     // We extend AtomicInteger to inline our state field.
     // These are the possible state values:
     private static final int RUNNABLE = 0;
@@ -89,19 +87,19 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     private volatile JobHandle<?> latestHandle;
     private volatile Throwable lastException;
 
-    ScheduledJobHandle( TimeBasedTaskScheduler scheduler,
-                        Group group,
-                        Runnable task,
-                        long nextDeadlineNanos,
-                        long reschedulingDelayNanos,
-                        JobMonitoringParams jobMonitoringParams,
-                        long submittedMillis,
-                        Set<ScheduledJobHandle<?>> monitoredJobs,
-                        FailedJobRunsStore failedJobRunsStore,
-                        SystemNanoClock clock,
-                        long jobId,
-                        InternalLog log )
-    {
+    ScheduledJobHandle(
+            TimeBasedTaskScheduler scheduler,
+            Group group,
+            Runnable task,
+            long nextDeadlineNanos,
+            long reschedulingDelayNanos,
+            JobMonitoringParams jobMonitoringParams,
+            long submittedMillis,
+            Set<ScheduledJobHandle<?>> monitoredJobs,
+            FailedJobRunsStore failedJobRunsStore,
+            SystemNanoClock clock,
+            long jobId,
+            InternalLog log) {
         this.jobMonitoringParams = jobMonitoringParams;
         this.submittedMillis = submittedMillis;
         this.log = log;
@@ -116,186 +114,154 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
         handleRelease = new BinaryLatch();
         cancelListeners = new CopyOnWriteArrayList<>();
         boolean isRecurring = reschedulingDelayNanos > 0;
-        this.task = () ->
-        {
+        this.task = () -> {
             Instant executionStart = clock.instant();
-            try
-            {
-                if ( state.compareAndSet( SUBMITTED, EXECUTING ) )
-                {
+            try {
+                if (state.compareAndSet(SUBMITTED, EXECUTING)) {
                     task.run();
                 }
 
                 lastException = null;
-            }
-            catch ( Throwable e )
-            {
+            } catch (Throwable e) {
                 lastException = e;
-                if ( !isRecurring )
-                {
-                    state.set( FAILED );
+                if (!isRecurring) {
+                    state.set(FAILED);
                 }
-                recordFailedRun( executionStart, clock.instant(), e );
-            }
-            finally
-            {
+                recordFailedRun(executionStart, clock.instant(), e);
+            } finally {
                 // Use compareAndSet to avoid overriding any cancellation state.
-                if ( state.compareAndSet( EXECUTING, RUNNABLE ) && isRecurring  )
-                {
+                if (state.compareAndSet(EXECUTING, RUNNABLE) && isRecurring) {
                     // We only reschedule if the rescheduling delay is greater than zero.
                     // A rescheduling delay of zero means this is a delayed task.
                     // If the rescheduling delay is greater than zero, then this is a recurring task.
                     this.nextDeadlineNanos += reschedulingDelayNanos;
-                    scheduler.enqueueTask( this );
-                }
-                else
-                {
-                    monitoredJobs.remove( this );
+                    scheduler.enqueueTask(this);
+                } else {
+                    monitoredJobs.remove(this);
                 }
             }
         };
     }
 
-    void submitIfRunnable( ThreadPoolManager pools )
-    {
-        if ( state.compareAndSet( RUNNABLE, SUBMITTED ) )
-        {
-            latestHandle = pools.getThreadPool( group ).submit( JobMonitoringParams.NOT_MONITORED, task );
+    void submitIfRunnable(ThreadPoolManager pools) {
+        if (state.compareAndSet(RUNNABLE, SUBMITTED)) {
+            latestHandle = pools.getThreadPool(group).submit(JobMonitoringParams.NOT_MONITORED, task);
             handleRelease.release();
         }
     }
 
     @Override
-    public void cancel()
-    {
-        monitoredJobs.remove( this );
-        state.set( FAILED );
+    public void cancel() {
+        monitoredJobs.remove(this);
+        state.set(FAILED);
         var handle = latestHandle;
-        if ( handle != null )
-        {
+        if (handle != null) {
             handle.cancel();
         }
-        for ( CancelListener cancelListener : cancelListeners )
-        {
+        for (CancelListener cancelListener : cancelListeners) {
             cancelListener.cancelled();
         }
-        scheduler.cancelTask( this );
+        scheduler.cancelTask(this);
         // Release the handle to allow waitTermination() to observe the cancellation.
         handleRelease.release();
     }
 
     @Override
-    public void waitTermination() throws ExecutionException, InterruptedException
-    {
+    public void waitTermination() throws ExecutionException, InterruptedException {
         handleRelease.await();
         RuntimeException runtimeException = null;
-        try
-        {
+        try {
             var handleDelegate = this.latestHandle;
-            if ( handleDelegate != null )
-            {
+            if (handleDelegate != null) {
                 handleDelegate.waitTermination();
             }
-        }
-        catch ( RuntimeException t )
-        {
+        } catch (RuntimeException t) {
             runtimeException = t;
         }
-        if ( state.get() == FAILED )
-        {
+        if (state.get() == FAILED) {
             Throwable exception = this.lastException;
-            if ( exception != null )
-            {
-                var executionException = new ExecutionException( exception );
-                if ( runtimeException != null )
-                {
-                    executionException.addSuppressed( runtimeException );
+            if (exception != null) {
+                var executionException = new ExecutionException(exception);
+                if (runtimeException != null) {
+                    executionException.addSuppressed(runtimeException);
                 }
                 throw executionException;
-            }
-            else
-            {
-                throw Exceptions.chain( new CancellationException(), runtimeException );
+            } else {
+                throw Exceptions.chain(new CancellationException(), runtimeException);
             }
         }
     }
 
     @Override
-    public void waitTermination( long timeout, TimeUnit unit )
-    {
-        throw new UnsupportedOperationException( "Not supported for repeating tasks." );
+    public void waitTermination(long timeout, TimeUnit unit) {
+        throw new UnsupportedOperationException("Not supported for repeating tasks.");
     }
 
     @Override
-    public T get()
-    {
-        throw new UnsupportedOperationException( "Not supported for repeating tasks." );
+    public T get() {
+        throw new UnsupportedOperationException("Not supported for repeating tasks.");
     }
 
     @Override
-    public void registerCancelListener( CancelListener listener )
-    {
-        cancelListeners.add( listener );
+    public void registerCancelListener(CancelListener listener) {
+        cancelListeners.add(listener);
     }
 
-    MonitoredJobInfo getMonitoringInfo()
-    {
-        if ( JobMonitoringParams.NOT_MONITORED == jobMonitoringParams )
-        {
+    MonitoredJobInfo getMonitoringInfo() {
+        if (JobMonitoringParams.NOT_MONITORED == jobMonitoringParams) {
             return null;
         }
 
-        return new MonitoredJobInfo( jobId,
+        return new MonitoredJobInfo(
+                jobId,
                 group,
-                Instant.ofEpochMilli( submittedMillis ),
+                Instant.ofEpochMilli(submittedMillis),
                 jobMonitoringParams.getSubmitter(),
                 jobMonitoringParams.getTargetDatabaseName(),
                 jobMonitoringParams.getDescription(),
-                Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nextDeadlineNanos ) ),
-                reschedulingDelayNanos == 0 ? null : Duration.ofNanos( reschedulingDelayNanos ),
+                Instant.ofEpochMilli(TimeUnit.NANOSECONDS.toMillis(nextDeadlineNanos)),
+                reschedulingDelayNanos == 0 ? null : Duration.ofNanos(reschedulingDelayNanos),
                 getStatus(),
                 getJobType(),
-                jobMonitoringParams.getCurrentStateDescription() );
+                jobMonitoringParams.getCurrentStateDescription());
     }
 
-    private MonitoredJobInfo.State getStatus()
-    {
+    private MonitoredJobInfo.State getStatus() {
         var state = this.state.get();
-        return switch ( state )
-                {
-                    case RUNNABLE, SUBMITTED -> MonitoredJobInfo.State.SCHEDULED;
-                    // A job can be in failed state only for a glimpse between being marked
-                    // as failed and being removed from monitored jobs immediately after that.
-                    // Let's show such job as still executing as there is no point confusing
-                    // users with this esoteric state.
-                    case EXECUTING, FAILED -> MonitoredJobInfo.State.EXECUTING;
-                    default -> throw new IllegalStateException( "Unexpected job state: " + state );
-                };
+        return switch (state) {
+            case RUNNABLE, SUBMITTED -> MonitoredJobInfo.State.SCHEDULED;
+                // A job can be in failed state only for a glimpse between being marked
+                // as failed and being removed from monitored jobs immediately after that.
+                // Let's show such job as still executing as there is no point confusing
+                // users with this esoteric state.
+            case EXECUTING, FAILED -> MonitoredJobInfo.State.EXECUTING;
+            default -> throw new IllegalStateException("Unexpected job state: " + state);
+        };
     }
 
-    private void recordFailedRun( Instant executionStart, Instant failureTime, Throwable t )
-    {
-        log.error( "Unhandled exception in job " + jobId + " from group " + group + " with params " + jobMonitoringParams, t );
-        if ( jobMonitoringParams == JobMonitoringParams.NOT_MONITORED )
-        {
+    private void recordFailedRun(Instant executionStart, Instant failureTime, Throwable t) {
+        log.error(
+                "Unhandled exception in job " + jobId + " from group " + group + " with params " + jobMonitoringParams,
+                t);
+        if (jobMonitoringParams == JobMonitoringParams.NOT_MONITORED) {
             return;
         }
 
-        FailedJobRun failedJobRun = new FailedJobRun( jobId,
+        FailedJobRun failedJobRun = new FailedJobRun(
+                jobId,
                 group,
                 jobMonitoringParams.getSubmitter(),
                 jobMonitoringParams.getTargetDatabaseName(),
                 jobMonitoringParams.getDescription(),
                 getJobType(),
-                Instant.ofEpochMilli( submittedMillis ),
+                Instant.ofEpochMilli(submittedMillis),
                 executionStart,
                 failureTime,
-                t );
-        failedJobRunsStore.add( failedJobRun );
+                t);
+        failedJobRunsStore.add(failedJobRun);
     }
 
-    private JobType getJobType()
-    {
+    private JobType getJobType() {
         return reschedulingDelayNanos > 0 ? JobType.PERIODIC : JobType.DELAYED;
     }
 }

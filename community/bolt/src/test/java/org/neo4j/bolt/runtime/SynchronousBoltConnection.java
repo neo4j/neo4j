@@ -21,134 +21,100 @@ package org.neo4j.bolt.runtime;
 
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.SocketAddress;
-
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.packstream.ChunkedOutput;
 import org.neo4j.bolt.packstream.PackOutput;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 
-public class SynchronousBoltConnection implements BoltConnection
-{
+public class SynchronousBoltConnection implements BoltConnection {
     private final EmbeddedChannel channel;
     private final PackOutput output;
     private final BoltStateMachine machine;
 
     private boolean idle = true;
 
-    public SynchronousBoltConnection( BoltStateMachine machine )
-    {
+    public SynchronousBoltConnection(BoltStateMachine machine) {
         this.channel = new EmbeddedChannel();
-        this.output = new ChunkedOutput( this.channel, TransportThrottleGroup.NO_THROTTLE );
+        this.output = new ChunkedOutput(this.channel, TransportThrottleGroup.NO_THROTTLE);
         this.machine = machine;
     }
 
     @Override
-    public String id()
-    {
+    public String id() {
         return channel.id().asLongText();
     }
 
     @Override
-    public boolean idle()
-    {
+    public boolean idle() {
         return idle;
     }
 
     @Override
-    public SocketAddress localAddress()
-    {
+    public SocketAddress localAddress() {
         return channel.localAddress();
     }
 
     @Override
-    public SocketAddress remoteAddress()
-    {
+    public SocketAddress remoteAddress() {
         return channel.remoteAddress();
     }
 
     @Override
-    public Channel channel()
-    {
+    public Channel channel() {
         return channel;
     }
 
     @Override
-    public boolean hasPendingJobs()
-    {
+    public boolean hasPendingJobs() {
         return false;
     }
 
     @Override
-    public void start()
-    {
-
-    }
+    public void start() {}
 
     @Override
-    public void enqueue( Job job )
-    {
+    public void enqueue(Job job) {
         idle = false;
 
-        try
-        {
-            job.perform( machine );
-        }
-        catch ( BoltConnectionFatality connectionFatality )
-        {
-            throw new RuntimeException( connectionFatality );
-        }
-        finally
-        {
+        try {
+            job.perform(machine);
+        } catch (BoltConnectionFatality connectionFatality) {
+            throw new RuntimeException(connectionFatality);
+        } finally {
             idle = true;
         }
     }
 
     @Override
-    public boolean processNextBatch()
-    {
+    public boolean processNextBatch() {
         return true;
     }
 
     @Override
-    public void handleSchedulingError( Throwable t )
-    {
-
-    }
+    public void handleSchedulingError(Throwable t) {}
 
     @Override
-    public void interrupt()
-    {
+    public void interrupt() {
         machine.interrupt();
     }
 
     @Override
-    public void stop()
-    {
-        try
-        {
+    public void stop() {
+        try {
             channel.finishAndReleaseAll();
             output.close();
             machine.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void keepAlive()
-    {
-
-    }
+    public void keepAlive() {}
 
     @Override
-    public void initKeepAliveTimer()
-    {
-
-    }
+    public void initKeepAliveTimer() {}
 }

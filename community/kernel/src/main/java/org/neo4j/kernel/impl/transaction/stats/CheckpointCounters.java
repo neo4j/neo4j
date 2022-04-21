@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.stats;
 
-public interface CheckpointCounters
-{
+public interface CheckpointCounters {
     /**
      * Total number of checkpoints occurred
      * @return number of checkpoints

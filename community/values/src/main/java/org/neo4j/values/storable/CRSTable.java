@@ -19,56 +19,46 @@
  */
 package org.neo4j.values.storable;
 
-public enum CRSTable
-{
-    CUSTOM( "custom", 0 ),
-    EPSG( "epsg", 1 ),
-    SR_ORG( "sr-org", 2 );
+public enum CRSTable {
+    CUSTOM("custom", 0),
+    EPSG("epsg", 1),
+    SR_ORG("sr-org", 2);
 
     private static final CRSTable[] TYPES = CRSTable.values();
 
     private final String prefix;
 
-    public static CRSTable find( int tableId )
-    {
-        if ( tableId < TYPES.length )
-        {
+    public static CRSTable find(int tableId) {
+        if (tableId < TYPES.length) {
             return TYPES[tableId];
-        }
-        else
-        {
-            throw new IllegalArgumentException( "No known Coordinate Reference System table: " + tableId );
+        } else {
+            throw new IllegalArgumentException("No known Coordinate Reference System table: " + tableId);
         }
     }
 
     private final String name;
     private final int tableId;
 
-    CRSTable( String name, int tableId )
-    {
-        assert lowerCase( name );
+    CRSTable(String name, int tableId) {
+        assert lowerCase(name);
         this.name = name;
         this.tableId = tableId;
         this.prefix = tableId == 0 ? "crs://" + name + "/" : "http://spatialreference.org/ref/" + name + "/";
     }
 
-    public String href( int code )
-    {
+    public String href(int code) {
         return prefix + code + "/";
     }
 
-    private static boolean lowerCase( String string )
-    {
-        return string.toLowerCase().equals( string );
+    private static boolean lowerCase(String string) {
+        return string.toLowerCase().equals(string);
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public int getTableId()
-    {
+    public int getTableId() {
         return tableId;
     }
 }

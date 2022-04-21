@@ -19,64 +19,53 @@
  */
 package org.neo4j.internal.diagnostics;
 
-import org.neo4j.logging.InternalLog;
-
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.center;
+
+import org.neo4j.logging.InternalLog;
 
 /**
  * Manager that dumps information from independent available {@link DiagnosticsProvider}s.
  * Each independent diagnostics provider will be logged as table with caption and body, where caption will contain provider name
  * and body - information provided by diagnostic provider.
  */
-public final class DiagnosticsManager
-{
+public final class DiagnosticsManager {
     private static final int CAPTION_WIDTH = 80;
     private static final String NAME_START = "[ ";
     private static final String NAME_END = " ]";
 
-    private DiagnosticsManager( )
-    {
-    }
+    private DiagnosticsManager() {}
 
-    public static <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider, InternalLog errorLog, DiagnosticsLogger diagnosticsLog )
-    {
-        for ( E provider : enumProvider.getEnumConstants() )
-        {
-            dump( provider, errorLog, diagnosticsLog );
+    public static <E extends Enum & DiagnosticsProvider> void dump(
+            Class<E> enumProvider, InternalLog errorLog, DiagnosticsLogger diagnosticsLog) {
+        for (E provider : enumProvider.getEnumConstants()) {
+            dump(provider, errorLog, diagnosticsLog);
         }
     }
 
-    public static void dump( DiagnosticsProvider provider, InternalLog errorLog, DiagnosticsLogger diagnosticsLog )
-    {
-        try
-        {
-            header( diagnosticsLog, provider.getDiagnosticsName() );
-            provider.dump( diagnosticsLog );
-            diagnosticsLog.log( EMPTY );
-        }
-        catch ( Exception cause )
-        {
-            errorLog.error( "Failure while logging diagnostics for " + provider, cause );
+    public static void dump(DiagnosticsProvider provider, InternalLog errorLog, DiagnosticsLogger diagnosticsLog) {
+        try {
+            header(diagnosticsLog, provider.getDiagnosticsName());
+            provider.dump(diagnosticsLog);
+            diagnosticsLog.log(EMPTY);
+        } catch (Exception cause) {
+            errorLog.error("Failure while logging diagnostics for " + provider, cause);
         }
     }
 
-    public static void section( DiagnosticsLogger diagnosticsLog, String sectionName )
-    {
-        diagnosticsLog.log( "*".repeat( CAPTION_WIDTH ) );
-        diagnosticsLog.log( center( title( sectionName ), CAPTION_WIDTH ) );
-        diagnosticsLog.log( "*".repeat( CAPTION_WIDTH ) );
+    public static void section(DiagnosticsLogger diagnosticsLog, String sectionName) {
+        diagnosticsLog.log("*".repeat(CAPTION_WIDTH));
+        diagnosticsLog.log(center(title(sectionName), CAPTION_WIDTH));
+        diagnosticsLog.log("*".repeat(CAPTION_WIDTH));
     }
 
-    private static void header( DiagnosticsLogger diagnosticsLog, String caption )
-    {
-        diagnosticsLog.log( "-".repeat( CAPTION_WIDTH ) );
-        diagnosticsLog.log( center( title( caption ), CAPTION_WIDTH ) );
-        diagnosticsLog.log( "-".repeat( CAPTION_WIDTH ) );
+    private static void header(DiagnosticsLogger diagnosticsLog, String caption) {
+        diagnosticsLog.log("-".repeat(CAPTION_WIDTH));
+        diagnosticsLog.log(center(title(caption), CAPTION_WIDTH));
+        diagnosticsLog.log("-".repeat(CAPTION_WIDTH));
     }
 
-    private static String title( String name )
-    {
+    private static String title(String name) {
         return NAME_START + name + NAME_END;
     }
 }

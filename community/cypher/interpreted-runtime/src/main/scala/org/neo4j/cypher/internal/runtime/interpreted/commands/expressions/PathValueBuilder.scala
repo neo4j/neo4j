@@ -30,6 +30,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.function.Consumer
+
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVisitor] {
@@ -39,7 +40,7 @@ final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVis
 
   def result(): AnyValue = if (nulled) Values.NO_VALUE else VirtualValues.pathReference(nodes.toArray, rels.toArray)
 
-  def clear(): PathValueBuilder =  {
+  def clear(): PathValueBuilder = {
     nodes.clear()
     rels.clear()
     nulled = false
@@ -63,7 +64,7 @@ final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVis
     addRelationship(relOrNull.asInstanceOf[VirtualRelationshipValue])
   }
 
-  def addRelationship(rel: VirtualRelationshipValue): PathValueBuilder  = {
+  def addRelationship(rel: VirtualRelationshipValue): PathValueBuilder = {
     rels.add(rel.id())
     this
   }
@@ -116,7 +117,6 @@ final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVis
       while (i.hasNext)
         addUndirectedRelationship(i.next().asInstanceOf[VirtualRelationshipValue])
 
-
     if (relIterator.hasNext) {
       val first = relIterator.next().asInstanceOf[VirtualRelationshipValue]
       val previousNode = nodes.getLast
@@ -134,19 +134,18 @@ final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVis
   def correctDirection(rel: VirtualRelationshipValue, prevId: Long): Boolean = {
     val start = rel.startNodeId(this)
     val end = rel.endNodeId(this)
-    start == prevId ||end == prevId
+    start == prevId || end == prevId
   }
-
 
   override def accept(t: RelationshipVisitor): Unit = {
     val cursor = state.cursors.relationshipScanCursor
     state.query.singleRelationship(t.id(), cursor)
-    //This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
+    // This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
     cursor.next()
     t.visit(cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.`type`())
   }
 
-  private def nullCheck[A <: AnyRef](value: A)(f: => PathValueBuilder):PathValueBuilder = value match {
+  private def nullCheck[A <: AnyRef](value: A)(f: => PathValueBuilder): PathValueBuilder = value match {
     case x if (x == null) || (Values.NO_VALUE eq x) =>
       nulled = true
       this

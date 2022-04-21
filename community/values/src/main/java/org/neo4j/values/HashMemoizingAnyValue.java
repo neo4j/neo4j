@@ -27,18 +27,15 @@ import org.neo4j.values.storable.HashMemoizingValue;
  * <p>
  * In order for the hierarchy to work out this is a duplicate of {@link HashMemoizingValue} and {@link HashMemoizingScalarValue}
  */
-public abstract class HashMemoizingAnyValue extends AnyValue
-{
+public abstract class HashMemoizingAnyValue extends AnyValue {
     private int hash;
 
     @Override
-    protected final int computeHash()
-    {
-        //We will always recompute hashcode for values
-        //where `hashCode == 0`, e.g. empty strings and empty lists
-        //however that shouldn't be shouldn't be too costly
-        if ( hash == 0 )
-        {
+    protected final int computeHash() {
+        // We will always recompute hashcode for values
+        // where `hashCode == 0`, e.g. empty strings and empty lists
+        // however that shouldn't be shouldn't be too costly
+        if (hash == 0) {
             hash = computeHashToMemoize();
         }
         return hash;

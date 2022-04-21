@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-
 import org.neo4j.storageengine.api.StorageCommand;
 
 /**
@@ -29,33 +28,26 @@ import org.neo4j.storageengine.api.StorageCommand;
  * {@link #close()},
  * the appliers are closed in reversed order.
  */
-public class TransactionApplierFacade implements TransactionApplier
-{
+public class TransactionApplierFacade implements TransactionApplier {
     final TransactionApplier[] appliers;
 
-    TransactionApplierFacade( TransactionApplier... appliers )
-    {
+    TransactionApplierFacade(TransactionApplier... appliers) {
         this.appliers = appliers;
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         // Need to close in reverse order or LuceneRecoveryIT can hang on database shutdown, when
         // errors are thrown
-        for ( int i = appliers.length - 1; i >= 0; i-- )
-        {
+        for (int i = appliers.length - 1; i >= 0; i--) {
             appliers[i].close();
         }
     }
 
     @Override
-    public boolean visit( StorageCommand element ) throws IOException
-    {
-        for ( TransactionApplier applier : appliers )
-        {
-            if ( ((Command)element).handle( applier ) )
-            {
+    public boolean visit(StorageCommand element) throws IOException {
+        for (TransactionApplier applier : appliers) {
+            if (((Command) element).handle(applier)) {
                 return true;
             }
         }
@@ -63,75 +55,62 @@ public class TransactionApplierFacade implements TransactionApplier
     }
 
     @Override
-    public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitNodeCommand(Command.NodeCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitRelationshipCommand(Command.RelationshipCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitPropertyCommand(Command.PropertyCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitRelationshipGroupCommand(Command.RelationshipGroupCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command )
-            throws IOException
-    {
-        return visit( command );
+    public boolean visitRelationshipTypeTokenCommand(Command.RelationshipTypeTokenCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitLabelTokenCommand(Command.LabelTokenCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitPropertyKeyTokenCommand(Command.PropertyKeyTokenCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitSchemaRuleCommand(Command.SchemaRuleCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitNodeCountsCommand( Command.NodeCountsCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitNodeCountsCommand(Command.NodeCountsCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitRelationshipCountsCommand(Command.RelationshipCountsCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitMetaDataCommand( Command.MetaDataCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitMetaDataCommand(Command.MetaDataCommand command) throws IOException {
+        return visit(command);
     }
 
     @Override
-    public boolean visitGroupDegreeCommand( Command.GroupDegreeCommand command ) throws IOException
-    {
-        return visit( command );
+    public boolean visitGroupDegreeCommand(Command.GroupDegreeCommand command) throws IOException {
+        return visit(command);
     }
 }

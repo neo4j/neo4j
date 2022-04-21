@@ -19,13 +19,15 @@
  */
 package org.neo4j.internal.helpers;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -33,79 +35,70 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.values.storable.Values.intValue;
-import static org.neo4j.values.storable.Values.stringValue;
-
-class ValueUtilsTest
-{
+class ValueUtilsTest {
     @Test
-    void shouldHandleCollection()
-    {
+    void shouldHandleCollection() {
         // Given
-        Collection<Integer> collection = Arrays.asList( 1, 2, 3 );
+        Collection<Integer> collection = Arrays.asList(1, 2, 3);
 
         // When
-        AnyValue of = ValueUtils.of( collection );
+        AnyValue of = ValueUtils.of(collection);
 
         // Then
-        assertThat( of ).isInstanceOf( ListValue.class );
+        assertThat(of).isInstanceOf(ListValue.class);
         ListValue listValue = (ListValue) of;
-        assertThat( listValue.value( 0 ) ).isEqualTo( intValue( 1 ) );
-        assertThat( listValue.value( 1 ) ).isEqualTo( intValue( 2 ) );
-        assertThat( listValue.value( 2 ) ).isEqualTo( intValue( 3 ) );
-        assertThat( listValue.size() ).isEqualTo( 3 );
+        assertThat(listValue.value(0)).isEqualTo(intValue(1));
+        assertThat(listValue.value(1)).isEqualTo(intValue(2));
+        assertThat(listValue.value(2)).isEqualTo(intValue(3));
+        assertThat(listValue.size()).isEqualTo(3);
     }
 
     @Test
-    void shouldHandleIterator()
-    {
+    void shouldHandleIterator() {
         // Given
-        Iterator<Integer> iterator = Arrays.asList( 1, 2, 3 ).iterator();
+        Iterator<Integer> iterator = Arrays.asList(1, 2, 3).iterator();
 
         // When
-        AnyValue of = ValueUtils.of( iterator );
+        AnyValue of = ValueUtils.of(iterator);
 
         // Then
-        assertThat( of ).isInstanceOf( ListValue.class );
+        assertThat(of).isInstanceOf(ListValue.class);
         ListValue listValue = (ListValue) of;
-        assertThat( listValue.value( 0 ) ).isEqualTo( intValue( 1 ) );
-        assertThat( listValue.value( 1 ) ).isEqualTo( intValue( 2 ) );
-        assertThat( listValue.value( 2 ) ).isEqualTo( intValue( 3 ) );
-        assertThat( listValue.size() ).isEqualTo( 3 );
+        assertThat(listValue.value(0)).isEqualTo(intValue(1));
+        assertThat(listValue.value(1)).isEqualTo(intValue(2));
+        assertThat(listValue.value(2)).isEqualTo(intValue(3));
+        assertThat(listValue.size()).isEqualTo(3);
     }
 
     @Test
-    void shouldHandleMaps()
-    {
+    void shouldHandleMaps() {
         // Given
-        Map<String,Object> map = MapUtil.map( "a", Arrays.asList( "foo", 42 ) );
+        Map<String, Object> map = MapUtil.map("a", Arrays.asList("foo", 42));
 
         // When
-        AnyValue anyValue = ValueUtils.of( map );
+        AnyValue anyValue = ValueUtils.of(map);
 
         // Then
-        assertThat( anyValue ).isInstanceOf( MapValue.class );
+        assertThat(anyValue).isInstanceOf(MapValue.class);
         MapValue mapValue = (MapValue) anyValue;
-        assertThat( mapValue.get( "a" ) ).isEqualTo( VirtualValues.list( stringValue( "foo" ), intValue( 42 ) ) );
-        assertThat( mapValue.size() ).isEqualTo( 1 );
+        assertThat(mapValue.get("a")).isEqualTo(VirtualValues.list(stringValue("foo"), intValue(42)));
+        assertThat(mapValue.size()).isEqualTo(1);
     }
 
     @Test
-    void shouldHandleIterable()
-    {
+    void shouldHandleIterable() {
         // Given
-        Iterable<Integer> collection = Arrays.asList( 1, 2, 3 );
+        Iterable<Integer> collection = Arrays.asList(1, 2, 3);
 
         // When
-        AnyValue of = ValueUtils.of( collection );
+        AnyValue of = ValueUtils.of(collection);
 
         // Then
-        assertThat( of ).isInstanceOf( ListValue.class );
+        assertThat(of).isInstanceOf(ListValue.class);
         ListValue listValue = (ListValue) of;
-        assertThat( listValue.value( 0 ) ).isEqualTo( intValue( 1 ) );
-        assertThat( listValue.value( 1 ) ).isEqualTo( intValue( 2 ) );
-        assertThat( listValue.value( 2 ) ).isEqualTo( intValue( 3 ) );
-        assertThat( listValue.size() ).isEqualTo( 3 );
+        assertThat(listValue.value(0)).isEqualTo(intValue(1));
+        assertThat(listValue.value(1)).isEqualTo(intValue(2));
+        assertThat(listValue.value(2)).isEqualTo(intValue(3));
+        assertThat(listValue.size()).isEqualTo(3);
     }
 }

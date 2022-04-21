@@ -33,7 +33,12 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       nodeConstraints = Set(("A", Set("prop1")))
     } withLogicalPlanningContext { (_, context) =>
       val compatiblePredicates = NodeIndexLeafPlanner.findIndexCompatiblePredicates(
-        Set(hasLabels("n", "A")), Set.empty, context.semanticTable, context.planContext, context.indexCompatiblePredicatesProviderContext)
+        Set(hasLabels("n", "A")),
+        Set.empty,
+        context.semanticTable,
+        context.planContext,
+        context.indexCompatiblePredicatesProviderContext
+      )
       compatiblePredicates.size shouldBe 1
       val predicate = isNotNull(prop("n", "prop1"))
       compatiblePredicates.foreach { compatiblePredicate =>
@@ -48,7 +53,12 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       qg = QueryGraph()
     } withLogicalPlanningContext { (_, context) =>
       val compatiblePredicates = NodeIndexLeafPlanner.findIndexCompatiblePredicates(
-        Set(hasLabels("n", "A")), Set.empty, context.semanticTable, context.planContext, context.indexCompatiblePredicatesProviderContext)
+        Set(hasLabels("n", "A")),
+        Set.empty,
+        context.semanticTable,
+        context.planContext,
+        context.indexCompatiblePredicatesProviderContext
+      )
       compatiblePredicates shouldBe empty
     }
   }

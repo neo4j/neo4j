@@ -25,6 +25,4 @@ package org.neo4j.io.marshal;
  *
  * @param <STATE> The type of state marshalled.
  */
-public abstract class SafeStateMarshal<STATE> extends SafeChannelMarshal<STATE> implements StateMarshal<STATE>
-{
-}
+public abstract class SafeStateMarshal<STATE> extends SafeChannelMarshal<STATE> implements StateMarshal<STATE> {}

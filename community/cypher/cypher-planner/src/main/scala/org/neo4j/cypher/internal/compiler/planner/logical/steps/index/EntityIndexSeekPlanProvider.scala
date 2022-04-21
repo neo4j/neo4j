@@ -36,15 +36,18 @@ object EntityIndexSeekPlanProvider {
     val (exactPrefix, rest) = propertyPredicates.span(_.predicateExactness.isExact)
 
     val (seekablePrefix, nonSeekableSuffix) = rest match {
-      case Seq(next, tail@_*) if next.predicateExactness.isSeekable => (exactPrefix :+ next, tail)
-      case _                                                        => (exactPrefix, rest)
+      case Seq(next, tail @ _*) if next.predicateExactness.isSeekable => (exactPrefix :+ next, tail)
+      case _                                                          => (exactPrefix, rest)
     }
 
     seekablePrefix ++ nonSeekableSuffix.map(_.convertToScannable)
   }
 
   // Test if solving using this match is valid given the leaf plan restrictions
-  def isAllowedByRestrictions(propertyPredicates: Seq[IndexCompatiblePredicate], restrictions: LeafPlanRestrictions): Boolean = {
+  def isAllowedByRestrictions(
+    propertyPredicates: Seq[IndexCompatiblePredicate],
+    restrictions: LeafPlanRestrictions
+  ): Boolean = {
     def isAllowed(predicate: IndexCompatiblePredicate) = restrictions match {
       case LeafPlanRestrictions.NoRestrictions => true
 

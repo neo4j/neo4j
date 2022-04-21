@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 class EndsWithTest extends InfixExpressionTestBase(expressions.EndsWith(_, _)(DummyPosition(0))) {
+
   test("should combine strings and possible strings") {
     testValidTypes(CTString, CTString)(CTBoolean)
     testValidTypes(CTAny, CTString)(CTBoolean)

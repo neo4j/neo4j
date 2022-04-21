@@ -27,18 +27,22 @@ import org.neo4j.cypher.internal.runtime.ValuePopulation.populate
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
-case class ProduceResultsPipe(source: Pipe, columns: Array[String])
-                             (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class ProduceResultsPipe(source: Pipe, columns: Array[String])(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
   override def isRootPipe: Boolean = true
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats
     val subscriber = state.subscriber
     if (state.prePopulateResults) {
 
       val query = state.query
-      val cursors = query.createExpressionCursors() // NOTE: We need to create these through the QueryContext so that they get a profiling tracer if profiling is enabled
+      val cursors =
+        query.createExpressionCursors() // NOTE: We need to create these through the QueryContext so that they get a profiling tracer if profiling is enabled
       input.map {
         original =>
           produceAndPopulate(original, subscriber, query, cursors)
@@ -53,10 +57,12 @@ case class ProduceResultsPipe(source: Pipe, columns: Array[String])
     }
   }
 
-  private def produceAndPopulate(original: CypherRow,
-                                 subscriber: QuerySubscriber,
-                                 query: QueryContext,
-                                 cursors: ExpressionCursors): Unit = {
+  private def produceAndPopulate(
+    original: CypherRow,
+    subscriber: QuerySubscriber,
+    query: QueryContext,
+    cursors: ExpressionCursors
+  ): Unit = {
 
     val nodeCursor = cursors.nodeCursor
     val relCursor = cursors.relationshipScanCursor

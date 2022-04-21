@@ -21,37 +21,26 @@ package org.neo4j.server.web;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import org.neo4j.configuration.helpers.SocketAddress;
 
-public final class SimpleUriBuilder
-{
-    private SimpleUriBuilder()
-    {
-    }
+public final class SimpleUriBuilder {
+    private SimpleUriBuilder() {}
 
-    public static URI buildURI( SocketAddress address, boolean isSsl )
-    {
+    public static URI buildURI(SocketAddress address, boolean isSsl) {
         var scheme = "http";
-        if ( isSsl )
-        {
+        if (isSsl) {
             scheme += "s";
         }
 
-        try
-        {
+        try {
             int port = address.getPort();
-            if ( (!isSsl && port == 80) || (isSsl && port == 443) )
-            {
-                return new URI( scheme, address.getHostname(), "/", null );
+            if ((!isSsl && port == 80) || (isSsl && port == 443)) {
+                return new URI(scheme, address.getHostname(), "/", null);
             }
 
-            return new URI( scheme, null, address.getHostname(), port, "/", null, null );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
+            return new URI(scheme, null, address.getHostname(), port, "/", null, null);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
-
 }

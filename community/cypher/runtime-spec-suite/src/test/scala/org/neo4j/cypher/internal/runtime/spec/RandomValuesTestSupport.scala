@@ -35,19 +35,23 @@ trait RandomValuesTestSupport extends TestSuiteMixin with TestSuite {
   private val initialSeed = Random.nextLong()
 
   val random = new Random(initialSeed)
+
   val randomValues: RandomValues = {
     RandomValues.create(new java.util.Random(initialSeed), randomValuesConfiguration())
   }
 
   def randomValuesConfiguration(): RandomValues.Configuration = {
     new RandomValues.Default {
-      override def maxCodePoint(): Int = 10000 // Because characters outside BMP have inconsistent or non-deterministic ordering
+      override def maxCodePoint(): Int =
+        10000 // Because characters outside BMP have inconsistent or non-deterministic ordering
       override def minCodePoint(): Int = Character.MIN_CODE_POINT
     }
   }
 
   def randomValue(valueType: ValueType): Value = randomValues.nextValueOfType(valueType)
-  def randomValues(size: Int, valueTypes: ValueType*): Array[Value] = randomValues.nextValuesOfTypes(size, valueTypes:_*)
+
+  def randomValues(size: Int, valueTypes: ValueType*): Array[Value] =
+    randomValues.nextValuesOfTypes(size, valueTypes: _*)
   def randomAmong[T](values: Seq[T]): T = values(randomValues.nextInt(values.size))
   def shuffle[T](values: Seq[T]): Seq[T] = random.shuffle(values)
 

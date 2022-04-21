@@ -19,24 +19,21 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.do_parallel_recovery;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.do_parallel_recovery;
-
-class ParallelRecoveryIT extends RecoveryIT
-{
+class ParallelRecoveryIT extends RecoveryIT {
 
     @Override
-    void additionalConfiguration( Config config )
-    {
-        super.additionalConfiguration( config );
-        config.set( do_parallel_recovery, true );
+    void additionalConfiguration(Config config) {
+        super.additionalConfiguration(config);
+        config.set(do_parallel_recovery, true);
     }
 
     @Override
-    TestDatabaseManagementServiceBuilder additionalConfiguration( TestDatabaseManagementServiceBuilder builder )
-    {
-        return builder.setConfig( do_parallel_recovery, true );
+    TestDatabaseManagementServiceBuilder additionalConfiguration(TestDatabaseManagementServiceBuilder builder) {
+        return builder.setConfig(do_parallel_recovery, true);
     }
 }

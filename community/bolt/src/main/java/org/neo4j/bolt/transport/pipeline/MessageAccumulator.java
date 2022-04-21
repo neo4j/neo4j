@@ -23,50 +23,39 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.DecoderException;
-
 import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.memory.HeapEstimator;
 
-public class MessageAccumulator extends ByteToMessageDecoder
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( MessageAccumulator.class );
+public class MessageAccumulator extends ByteToMessageDecoder {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(MessageAccumulator.class);
 
     private boolean readMessageBoundary;
 
-    public MessageAccumulator( Config config )
-    {
-        if ( config.get( GraphDatabaseInternalSettings.netty_message_merge_cumulator ) )
-        {
-            setCumulator( MERGE_CUMULATOR );
-        }
-        else
-        {
-            setCumulator( COMPOSITE_CUMULATOR );
+    public MessageAccumulator(Config config) {
+        if (config.get(GraphDatabaseInternalSettings.netty_message_merge_cumulator)) {
+            setCumulator(MERGE_CUMULATOR);
+        } else {
+            setCumulator(COMPOSITE_CUMULATOR);
         }
     }
 
     @Override
-    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
-    {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf buf = (ByteBuf) msg;
 
-        if ( buf.readableBytes() == 0 )
-        {
+        if (buf.readableBytes() == 0) {
             assertNonEmptyMessage();
 
             readMessageBoundary = true;
         }
-        super.channelRead( ctx, msg );
+        super.channelRead(ctx, msg);
     }
 
     @Override
-    protected void decode( ChannelHandlerContext channelHandlerContext, ByteBuf in, List<Object> out )
-    {
-        if ( readMessageBoundary )
-        {
+    protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf in, List<Object> out) {
+        if (readMessageBoundary) {
             // now we have a complete message in the input buffer
 
             // increment ref count of the buffer and create it's duplicate that shares the content
@@ -74,20 +63,18 @@ public class MessageAccumulator extends ByteToMessageDecoder
             ByteBuf messageBuf = in.retainedDuplicate();
 
             // signal that whole message was read by making input buffer seem like it was fully read/consumed
-            in.readerIndex( in.readableBytes() );
+            in.readerIndex(in.readableBytes());
 
             // pass the full message to the next handler in the pipeline
-            out.add( messageBuf );
+            out.add(messageBuf);
 
             readMessageBoundary = false;
         }
     }
 
-    private void assertNonEmptyMessage()
-    {
-        if ( actualReadableBytes() == 0 )
-        {
-            throw new DecoderException( "Message boundary received when there's nothing to decode." );
+    private void assertNonEmptyMessage() {
+        if (actualReadableBytes() == 0) {
+            throw new DecoderException("Message boundary received when there's nothing to decode.");
         }
     }
 }

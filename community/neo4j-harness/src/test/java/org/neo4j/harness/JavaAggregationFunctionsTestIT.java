@@ -19,94 +19,80 @@
  */
 package org.neo4j.harness;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.server.HTTP;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
+import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
-class JavaAggregationFunctionsTestIT
-{
+class JavaAggregationFunctionsTestIT {
     @Inject
     private TestDirectory testDir;
 
-    public static class MyFunctions
-    {
+    public static class MyFunctions {
         @UserAggregationFunction
-        public EliteAggregator myFunc()
-        {
+        public EliteAggregator myFunc() {
             return new EliteAggregator();
         }
 
         @UserAggregationFunction
-        public EliteAggregator funcThatThrows()
-        {
-            throw new RuntimeException( "This is an exception" );
+        public EliteAggregator funcThatThrows() {
+            throw new RuntimeException("This is an exception");
         }
-
     }
 
-    public static class EliteAggregator
-    {
+    public static class EliteAggregator {
         @UserAggregationUpdate
-        public void update()
-        {
-        }
+        public void update() {}
 
         @UserAggregationResult
-        public long result()
-        {
+        public long result() {
             return 1337L;
         }
     }
 
     @Test
-    void shouldLaunchWithDeclaredFunctions() throws Exception
-    {
+    void shouldLaunchWithDeclaredFunctions() throws Exception {
         // When
-        try ( Neo4j server = createServer( MyFunctions.class ).build() )
-        {
+        try (Neo4j server = createServer(MyFunctions.class).build()) {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
-                    quotedJson(
-                            "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.myFunc() AS someNumber' } ] " +
-                            "}" ) );
+            HTTP.Response response = HTTP.POST(
+                    server.httpURI().resolve("db/neo4j/tx/commit").toString(),
+                    quotedJson("{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.myFunc() AS someNumber' } ] "
+                            + "}"));
 
-            JsonNode result = response.get( "results" ).get( 0 );
-            assertEquals( "someNumber", result.get( "columns" ).get( 0 ).asText() );
-            assertEquals( 1337, result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asInt() );
-            assertEquals( "[]", response.get( "errors" ).toString() );
+            JsonNode result = response.get("results").get(0);
+            assertEquals("someNumber", result.get("columns").get(0).asText());
+            assertEquals(1337, result.get("data").get(0).get("row").get(0).asInt());
+            assertEquals("[]", response.get("errors").toString());
         }
     }
 
     @Test
-    void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
-    {
+    void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception {
         // When
-        try ( Neo4j server = createServer( MyFunctions.class ).build() )
-        {
+        try (Neo4j server = createServer(MyFunctions.class).build()) {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
-                    quotedJson(
-                            "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.funcThatThrows()' } ] }" ) );
+            HTTP.Response response = HTTP.POST(
+                    server.httpURI().resolve("db/neo4j/tx/commit").toString(),
+                    quotedJson("{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.funcThatThrows()' } ] }"));
 
-            String error = response.get( "errors" ).get( 0 ).get( "message" ).asText();
-            assertEquals( "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang.RuntimeException: This is an exception",
-                    error );
+            String error = response.get("errors").get(0).get("message").asText();
+            assertEquals(
+                    "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang.RuntimeException: This is an exception",
+                    error);
         }
     }
 
-    private static Neo4jBuilder createServer( Class<?> functionClass )
-    {
-        return Neo4jBuilders.newInProcessBuilder().withAggregationFunction( functionClass );
+    private static Neo4jBuilder createServer(Class<?> functionClass) {
+        return Neo4jBuilders.newInProcessBuilder().withAggregationFunction(functionClass);
     }
 }

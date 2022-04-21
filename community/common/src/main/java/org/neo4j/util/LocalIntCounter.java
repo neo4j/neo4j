@@ -24,39 +24,33 @@ import org.apache.commons.lang3.mutable.MutableInt;
 /**
  * Used as a local counter, which manages its own counter as well as delegating changes to a global counter.
  */
-public class LocalIntCounter extends MutableInt
-{
+public class LocalIntCounter extends MutableInt {
     private final MutableInt global;
 
-    public LocalIntCounter( MutableInt globalCounter )
-    {
+    public LocalIntCounter(MutableInt globalCounter) {
         this.global = globalCounter;
     }
 
     @Override
-    public void increment()
-    {
+    public void increment() {
         super.increment();
         global.increment();
     }
 
     @Override
-    public void decrement()
-    {
+    public void decrement() {
         super.decrement();
         global.decrement();
     }
 
     @Override
-    public void add( int delta )
-    {
-        super.add( delta );
-        global.add( delta );
+    public void add(int delta) {
+        super.add(delta);
+        global.add(delta);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "local:" + super.toString() + ",global:" + global;
     }
 }

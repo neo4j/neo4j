@@ -24,46 +24,40 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
-public class OtherThreadExtension extends StatefulFieldExtension<OtherThread> implements BeforeEachCallback, AfterEachCallback
-{
+public class OtherThreadExtension extends StatefulFieldExtension<OtherThread>
+        implements BeforeEachCallback, AfterEachCallback {
     private static final String OTHER_THREAD = "otherThread";
-    private static final Namespace OTHER_THREAD_NAMESPACE = Namespace.create( "org", "neo4j", OTHER_THREAD );
+    private static final Namespace OTHER_THREAD_NAMESPACE = Namespace.create("org", "neo4j", OTHER_THREAD);
 
     @Override
-    protected String getFieldKey()
-    {
+    protected String getFieldKey() {
         return OTHER_THREAD;
     }
 
     @Override
-    protected Class<OtherThread> getFieldType()
-    {
+    protected Class<OtherThread> getFieldType() {
         return OtherThread.class;
     }
 
     @Override
-    protected OtherThread createField( ExtensionContext extensionContext )
-    {
+    protected OtherThread createField(ExtensionContext extensionContext) {
         return new OtherThread();
     }
 
     @Override
-    protected Namespace getNameSpace()
-    {
+    protected Namespace getNameSpace() {
         return OTHER_THREAD_NAMESPACE;
     }
 
     @Override
-    public void beforeEach( ExtensionContext context )
-    {
-        var otherThread = getStoredValue( context );
-        otherThread.beforeEach( context );
+    public void beforeEach(ExtensionContext context) {
+        var otherThread = getStoredValue(context);
+        otherThread.beforeEach(context);
     }
 
     @Override
-    public void afterEach( ExtensionContext context )
-    {
-        var otherThread = getStoredValue( context );
+    public void afterEach(ExtensionContext context) {
+        var otherThread = getStoredValue(context);
         otherThread.afterEach();
     }
 }

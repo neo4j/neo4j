@@ -19,38 +19,30 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.logging.AssertableLogProvider;
-
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-class LoggingMonitorTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.logging.AssertableLogProvider;
+
+class LoggingMonitorTest {
     @Test
-    void shouldNotIncludeStackTraceWhenNotDebugLevel()
-    {
-        AssertableLogProvider logProvider = new AssertableLogProvider( false );
-        LoggingMonitor monitor = new LoggingMonitor( logProvider.getLog( LoggingMonitorTest.class ) );
-        IndexDescriptor index = forSchema( forLabel( 1, 1 ) )
-                .withName( "index" )
-                .materialise( 1 );
-        monitor.failedToOpenIndex( index, "I'll do something about this.", new Exception( "Dammit Leroy!" ) );
-        assertThat( logProvider ).doesNotContainMessage( "java.lang.Exception: Dammit Leroy!" );
+    void shouldNotIncludeStackTraceWhenNotDebugLevel() {
+        AssertableLogProvider logProvider = new AssertableLogProvider(false);
+        LoggingMonitor monitor = new LoggingMonitor(logProvider.getLog(LoggingMonitorTest.class));
+        IndexDescriptor index = forSchema(forLabel(1, 1)).withName("index").materialise(1);
+        monitor.failedToOpenIndex(index, "I'll do something about this.", new Exception("Dammit Leroy!"));
+        assertThat(logProvider).doesNotContainMessage("java.lang.Exception: Dammit Leroy!");
     }
 
     @Test
-    void shouldIncludeStackTraceWhenDebugLevel()
-    {
-        AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        LoggingMonitor monitor = new LoggingMonitor( logProvider.getLog( LoggingMonitorTest.class ) );
-        IndexDescriptor index = forSchema( forLabel( 1, 1 ) )
-                .withName( "index" )
-                .materialise( 1 );
-        monitor.failedToOpenIndex( index, "I'll do something about this.", new Exception( "Dammit Leroy!" ) );
-        assertThat( logProvider ).containsMessages( "java.lang.Exception: Dammit Leroy!" );
+    void shouldIncludeStackTraceWhenDebugLevel() {
+        AssertableLogProvider logProvider = new AssertableLogProvider(true);
+        LoggingMonitor monitor = new LoggingMonitor(logProvider.getLog(LoggingMonitorTest.class));
+        IndexDescriptor index = forSchema(forLabel(1, 1)).withName("index").materialise(1);
+        monitor.failedToOpenIndex(index, "I'll do something about this.", new Exception("Dammit Leroy!"));
+        assertThat(logProvider).containsMessages("java.lang.Exception: Dammit Leroy!");
     }
 }

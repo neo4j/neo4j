@@ -35,98 +35,131 @@ trait DeprecationTestSupport extends Suite with Matchers {
   private val supportedCypherVersions_4_X = List("CYPHER 4.3", "CYPHER 4.4")
   private val supportedCypherVersions = lastMajorCypherVersion ++ supportedCypherVersions_4_X
 
-  def assertNotificationInSupportedVersions(query: String,
-                                            notificationCode: NotificationCode,
-                                            details: NotificationDetail*
-                                           ): Unit = {
+  def assertNotificationInSupportedVersions(
+    query: String,
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
     assertNotificationInSupportedVersions(Seq(query), notificationCode, details: _*)
   }
 
   def assertNotificationInSupportedVersions(
-                                             queries: Seq[String],
-                                             notificationCode: NotificationCode,
-                                             details: NotificationDetail*
-                                           ): Unit = {
-    assertNotification(supportedCypherVersions, queries, shouldContainNotification = true, notificationCode, details: _*)
+    queries: Seq[String],
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
+    assertNotification(
+      supportedCypherVersions,
+      queries,
+      shouldContainNotification = true,
+      notificationCode,
+      details: _*
+    )
   }
 
-  def assertNoNotificationInSupportedVersions(query: String,
-                                              notificationCode: NotificationCode,
-                                              details: NotificationDetail*
-                                             ): Unit = {
+  def assertNoNotificationInSupportedVersions(
+    query: String,
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
     assertNoNotificationInSupportedVersions(Seq(query), notificationCode, details: _*)
   }
 
   def assertNoNotificationInSupportedVersions(
-                                               queries: Seq[String],
-                                               notificationCode: NotificationCode,
-                                               details: NotificationDetail*
-                                             ): Unit = {
-    assertNotification(supportedCypherVersions, queries, shouldContainNotification = false, notificationCode, details: _*)
+    queries: Seq[String],
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
+    assertNotification(
+      supportedCypherVersions,
+      queries,
+      shouldContainNotification = false,
+      notificationCode,
+      details: _*
+    )
   }
 
   def assertNotificationInSupportedVersions_4_X(
-                                                 query: String,
-                                                 notificationCode: NotificationCode,
-                                                 details: NotificationDetail*
-                                               ): Unit = {
+    query: String,
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
     assertNotificationInSupportedVersions_4_X(Seq(query), notificationCode, details: _*)
   }
 
   def assertNotificationInSupportedVersions_4_X(
-                                                 queries: Seq[String],
-                                                 notificationCode: NotificationCode,
-                                                 details: NotificationDetail*
-                                               ): Unit = {
-    assertNotification(supportedCypherVersions_4_X, queries, shouldContainNotification = true, notificationCode, details: _*)
+    queries: Seq[String],
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
+    assertNotification(
+      supportedCypherVersions_4_X,
+      queries,
+      shouldContainNotification = true,
+      notificationCode,
+      details: _*
+    )
   }
 
   def assertNoNotificationInSupportedVersions_4_X(
-                                                   query: String,
-                                                   notificationCode: NotificationCode,
-                                                   details: NotificationDetail*
-                                                 ): Unit = {
-    assertNotification(supportedCypherVersions_4_X, Seq(query), shouldContainNotification = false, notificationCode, details: _*)
+    query: String,
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
+    assertNotification(
+      supportedCypherVersions_4_X,
+      Seq(query),
+      shouldContainNotification = false,
+      notificationCode,
+      details: _*
+    )
   }
 
   def assertNotificationInLastMajorVersion(
-                                            query: String,
-                                            notificationCode: NotificationCode,
-                                            details: NotificationDetail*
-                                          ): Unit = {
+    query: String,
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
     assertNotificationInLastMajorVersion(Seq(query), notificationCode, details: _*)
   }
 
   def assertNotificationInLastMajorVersion(
-                                            queries: Seq[String],
-                                            notificationCode: NotificationCode,
-                                            details: NotificationDetail*
-                                          ): Unit = {
+    queries: Seq[String],
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
     assertNotification(lastMajorCypherVersion, queries, shouldContainNotification = true, notificationCode, details: _*)
   }
 
   def assertNoNotificationInLastMajorVersion(
-                                              query: String,
-                                              notificationCode: NotificationCode,
-                                              details: NotificationDetail*
-                                            ): Unit = {
+    query: String,
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
     assertNoNotificationInLastMajorVersion(Seq(query), notificationCode, details: _*)
   }
 
   def assertNoNotificationInLastMajorVersion(
-                                              queries: Seq[String],
-                                              notificationCode: NotificationCode,
-                                              details: NotificationDetail*
-                                            ): Unit = {
-    assertNotification(lastMajorCypherVersion, queries, shouldContainNotification = false, notificationCode, details: _*)
+    queries: Seq[String],
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
+    assertNotification(
+      lastMajorCypherVersion,
+      queries,
+      shouldContainNotification = false,
+      notificationCode,
+      details: _*
+    )
   }
 
   private def assertNotification(
-                                  versions: List[String],
-                                  queries: Seq[String],
-                                  shouldContainNotification: Boolean,
-                                  notificationCode: NotificationCode,
-                                  details: NotificationDetail*): Unit = {
+    versions: List[String],
+    queries: Seq[String],
+    shouldContainNotification: Boolean,
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Unit = {
     queries.foreach(query => {
       versions.foreach(version => {
         withClue(s"Failed for query '$query' in version $version \n") {
@@ -134,7 +167,8 @@ trait DeprecationTestSupport extends Suite with Matchers {
           try {
             val result = transaction.execute(s"$version EXPLAIN $query")
             val notifications: Iterable[Notification] = result.getNotifications()
-            val hasNotification = notifications.exists(notification => matchesCode(notification, notificationCode, details: _*))
+            val hasNotification =
+              notifications.exists(notification => matchesCode(notification, notificationCode, details: _*))
             withClue(notifications) {
               hasNotification should be(shouldContainNotification)
             }
@@ -147,12 +181,13 @@ trait DeprecationTestSupport extends Suite with Matchers {
   }
 
   // this is hacky but we have no other way to probe the notification's status (`Status.Statement.FeatureDeprecationWarning`)
-  private def isDeprecation(notification: Notification): Boolean = notification.getTitle == "This feature is deprecated and will be removed in future versions."
+  private def isDeprecation(notification: Notification): Boolean =
+    notification.getTitle == "This feature is deprecated and will be removed in future versions."
 
   def assertNoDeprecations(
-                             queries: Seq[String],
-                             versions: List[String] = supportedCypherVersions,
-                           ): Unit = {
+    queries: Seq[String],
+    versions: List[String] = supportedCypherVersions
+  ): Unit = {
     queries.foreach(query =>
       versions.foreach(version => {
         withClue(s"Failed for query '$query' in version $version \n") {
@@ -163,7 +198,8 @@ trait DeprecationTestSupport extends Suite with Matchers {
             withClue(
               s"""Expected no notifications to be found but was:
                  |${deprecations.map(_.getDescription).mkString("'", "', '", "'")}
-                 |""".stripMargin) {
+                 |""".stripMargin
+            ) {
               deprecations shouldBe empty
             }
           } finally {
@@ -174,11 +210,15 @@ trait DeprecationTestSupport extends Suite with Matchers {
     )
   }
 
-  private def matchesCode(notification: Notification, notificationCode: NotificationCode, details: NotificationDetail*): Boolean = {
+  private def matchesCode(
+    notification: Notification,
+    notificationCode: NotificationCode,
+    details: NotificationDetail*
+  ): Boolean = {
     // In this test class we are not interested in the exact input position
     val expected = notificationCode.notification(InputPosition.empty, details: _*)
     notification.getCode.equals(expected.getCode) &&
-      notification.getDescription.equals(expected.getDescription) &&
-      notification.getSeverity.equals(expected.getSeverity)
+    notification.getDescription.equals(expected.getDescription) &&
+    notification.getSeverity.equals(expected.getSeverity)
   }
 }

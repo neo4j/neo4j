@@ -20,42 +20,38 @@
 package org.neo4j.tooling.procedure.visitors;
 
 import com.google.testing.compile.CompilationRule;
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
-import org.junit.Before;
-import org.junit.Rule;
-
 import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import org.junit.Before;
+import org.junit.Rule;
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
 
-public class ParameterTypeVisitorTest extends TypeValidationTestSuite
-{
+public class ParameterTypeVisitorTest extends TypeValidationTestSuite {
 
     @Rule
     public CompilationRule compilationRule = new CompilationRule();
+
     private Types types;
     private TypeMirrorUtils typeMirrorUtils;
     private TypeMirrorTestUtils typeMirrorTestUtils;
 
     @Before
-    public void prepare()
-    {
+    public void prepare() {
         Elements elements = compilationRule.getElements();
         types = compilationRule.getTypes();
-        typeMirrorUtils = new TypeMirrorUtils( types, elements );
-        typeMirrorTestUtils = new TypeMirrorTestUtils( compilationRule );
+        typeMirrorUtils = new TypeMirrorUtils(types, elements);
+        typeMirrorTestUtils = new TypeMirrorTestUtils(compilationRule);
     }
 
     @Override
-    protected TypeVisitor<Boolean,Void> visitor()
-    {
-        return new ParameterTypeVisitor( types, typeMirrorUtils );
+    protected TypeVisitor<Boolean, Void> visitor() {
+        return new ParameterTypeVisitor(types, typeMirrorUtils);
     }
 
     @Override
-    protected TypeMirrorTestUtils typeMirrorTestUtils()
-    {
+    protected TypeMirrorTestUtils typeMirrorTestUtils() {
         return typeMirrorTestUtils;
     }
 }

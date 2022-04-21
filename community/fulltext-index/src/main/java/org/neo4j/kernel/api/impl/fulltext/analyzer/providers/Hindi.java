@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.hi.HindiAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Hindi extends AnalyzerProvider
-{
-    public Hindi()
-    {
-        super( "hindi" );
+public class Hindi extends AnalyzerProvider {
+    public Hindi() {
+        super("hindi");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new HindiAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Hindi analyzer with stemming, normalization, and stop word filtering.";
     }
 }

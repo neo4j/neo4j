@@ -19,11 +19,9 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.parallel.ResourceLock;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,7 +31,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,27 +48,20 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
-
-@ResourceLock( SHARED_RESOURCE )
-public abstract class PageCacheTestSupport<T extends PageCache>
-{
+@ResourceLock(SHARED_RESOURCE)
+public abstract class PageCacheTestSupport<T extends PageCache> {
     protected static ExecutorService executor;
     protected long SHORT_TIMEOUT_MILLIS = 30_000;
     protected long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
     protected long LONG_TIMEOUT_MILLIS = 360_000;
 
     @BeforeAll
-    public static void startExecutor()
-    {
+    public static void startExecutor() {
         executor = Executors.newCachedThreadPool();
     }
 
     @AfterAll
-    public static void stopExecutor()
-    {
+    public static void stopExecutor() {
         executor.shutdown();
     }
 
@@ -90,90 +85,78 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     protected abstract Fixture<T> createFixture();
 
     @BeforeEach
-    public void setUp() throws IOException
-    {
+    public void setUp() throws IOException {
         fixture = createFixture();
         reservedBytes = fixture.getReservedBytes();
         //noinspection ResultOfMethodCallIgnored
         Thread.interrupted(); // Clear stray interrupts
         fs = createFileSystemAbstraction();
         jobScheduler = new ThreadPoolJobScheduler();
-        ensureExists( file( "a" ) );
+        ensureExists(file("a"));
     }
 
     @AfterEach
-    public void tearDown() throws Exception
-    {
+    public void tearDown() throws Exception {
         //noinspection ResultOfMethodCallIgnored
         Thread.interrupted(); // Clear stray interrupts
 
-        if ( pageCache != null )
-        {
-            tearDownPageCache( pageCache );
+        if (pageCache != null) {
+            tearDownPageCache(pageCache);
         }
         jobScheduler.close();
         fs.close();
     }
 
-    protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer )
-    {
-        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, jobScheduler, fixture.getBufferFactory() );
+    protected final T createPageCache(PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer) {
+        T pageCache =
+                fixture.createPageCache(swapperFactory, maxPages, tracer, jobScheduler, fixture.getBufferFactory());
         pageCachePageSize = pageCache.pageSize();
         pageCachePayloadSize = pageCache.payloadSize();
         recordsPerFilePage = pageCachePayloadSize / recordSize;
         recordCount = 5 * maxPages * recordsPerFilePage;
         filePayloadSize = recordsPerFilePage * recordSize;
         filePageSize = filePayloadSize + reservedBytes;
-        bufA = ByteBuffers.allocate( recordSize, INSTANCE );
+        bufA = ByteBuffers.allocate(recordSize, INSTANCE);
         return pageCache;
     }
 
-    protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer )
-    {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer, EmptyMemoryTracker.INSTANCE );
-        return createPageCache( swapperFactory, maxPages, tracer );
+    protected T createPageCache(FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer) {
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory(fs, tracer, EmptyMemoryTracker.INSTANCE);
+        return createPageCache(swapperFactory, maxPages, tracer);
     }
 
-    protected final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer )
-    {
-        if ( pageCache != null )
-        {
-            tearDownPageCache( pageCache );
+    protected final T getPageCache(FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer) {
+        if (pageCache != null) {
+            tearDownPageCache(pageCache);
         }
-        pageCache = createPageCache( fs, maxPages, tracer );
+        pageCache = createPageCache(fs, maxPages, tracer);
         return pageCache;
     }
 
-    protected void configureStandardPageCache()
-    {
-        getPageCache( fs, maxPages, PageCacheTracer.NULL );
+    protected void configureStandardPageCache() {
+        getPageCache(fs, maxPages, PageCacheTracer.NULL);
     }
 
-    protected final void tearDownPageCache( T pageCache )
-    {
-        fixture.tearDownPageCache( pageCache );
+    protected final void tearDownPageCache(T pageCache) {
+        fixture.tearDownPageCache(pageCache);
     }
 
-    protected final FileSystemAbstraction createFileSystemAbstraction()
-    {
+    protected final FileSystemAbstraction createFileSystemAbstraction() {
         return fixture.getFileSystemAbstraction();
     }
 
-    protected final Path file( String pathname ) throws IOException
-    {
-        return fixture.file( pathname );
+    protected final Path file(String pathname) throws IOException {
+        return fixture.file(pathname);
     }
 
-    protected void ensureExists( Path file ) throws IOException
-    {
-        fs.mkdirs( file.getParent() );
-        fs.write( file ).close();
+    protected void ensureExists(Path file) throws IOException {
+        fs.mkdirs(file.getParent());
+        fs.write(file).close();
     }
 
-    protected Path existingFile( String name ) throws IOException
-    {
-        Path file = file( name );
-        ensureExists( file );
+    protected Path existingFile(String name) throws IOException {
+        Path file = file(name);
+        ensureExists(file);
         return file;
     }
 
@@ -182,29 +165,25 @@ public abstract class PageCacheTestSupport<T extends PageCache>
      * <p>
      * This does the do-while-retry loop internally.
      */
-    protected void verifyRecordsMatchExpected( PageCursor cursor ) throws IOException
-    {
-        ByteBuffer expectedPageContents = ByteBuffers.allocate( filePageSize, INSTANCE );
-        ByteBuffer actualPageContents = ByteBuffers.allocate( filePageSize, INSTANCE );
+    protected void verifyRecordsMatchExpected(PageCursor cursor) throws IOException {
+        ByteBuffer expectedPageContents = ByteBuffers.allocate(filePageSize, INSTANCE);
+        ByteBuffer actualPageContents = ByteBuffers.allocate(filePageSize, INSTANCE);
         byte[] record = new byte[recordSize];
         long pageId = cursor.getCurrentPageId();
-        for ( int i = 0; i < recordsPerFilePage; i++ )
-        {
+        for (int i = 0; i < recordsPerFilePage; i++) {
             long recordId = (pageId * recordsPerFilePage) + i;
-            expectedPageContents.position( recordSize * i );
+            expectedPageContents.position(recordSize * i);
             ByteBuffer slice = expectedPageContents.slice();
-            slice.limit( recordSize );
-            generateRecordForId( recordId, slice );
-            do
-            {
-                cursor.setOffset( recordSize * i );
-                cursor.getBytes( record );
-            }
-            while ( cursor.shouldRetry() );
-            actualPageContents.position( recordSize * i );
-            actualPageContents.put( record );
+            slice.limit(recordSize);
+            generateRecordForId(recordId, slice);
+            do {
+                cursor.setOffset(recordSize * i);
+                cursor.getBytes(record);
+            } while (cursor.shouldRetry());
+            actualPageContents.position(recordSize * i);
+            actualPageContents.put(record);
         }
-        assertRecords( pageId, actualPageContents, expectedPageContents );
+        assertRecords(pageId, actualPageContents, expectedPageContents);
     }
 
     /**
@@ -212,189 +191,165 @@ public abstract class PageCacheTestSupport<T extends PageCache>
      * <p>
      * This does the do-while-retry loop internally.
      */
-    protected void verifyRecordsMatchExpected( long pageId, int offset, ByteBuffer actualPageContents )
-    {
-        ByteBuffer expectedPageContents = ByteBuffers.allocate( filePayloadSize, INSTANCE );
-        for ( int i = 0; i < recordsPerFilePage; i++ )
-        {
+    protected void verifyRecordsMatchExpected(long pageId, int offset, ByteBuffer actualPageContents) {
+        ByteBuffer expectedPageContents = ByteBuffers.allocate(filePayloadSize, INSTANCE);
+        for (int i = 0; i < recordsPerFilePage; i++) {
             long recordId = (pageId * recordsPerFilePage) + i;
-            expectedPageContents.position( recordSize * i );
+            expectedPageContents.position(recordSize * i);
             ByteBuffer slice = expectedPageContents.slice();
-            slice.limit( recordSize );
-            generateRecordForId( recordId, slice );
+            slice.limit(recordSize);
+            generateRecordForId(recordId, slice);
         }
         int len = actualPageContents.limit() - actualPageContents.position();
         byte[] actual = new byte[len];
         byte[] expected = new byte[len];
-        actualPageContents.get( actual );
-        expectedPageContents.position( offset );
-        expectedPageContents.get( expected );
-        assertRecords( pageId, actual, expected );
+        actualPageContents.get(actual);
+        expectedPageContents.position(offset);
+        expectedPageContents.get(expected);
+        assertRecords(pageId, actual, expected);
     }
 
-    protected static void assertRecords( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
-    {
+    protected static void assertRecords(long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents) {
         byte[] actualBytes = actualPageContents.array();
         byte[] expectedBytes = expectedPageContents.array();
-        assertRecords( pageId, actualBytes, expectedBytes );
+        assertRecords(pageId, actualBytes, expectedBytes);
     }
 
-    protected static void assertRecords( long pageId, byte[] actualBytes, byte[] expectedBytes )
-    {
-        int estimatedPageId = estimateId( actualBytes );
-        assertThat( actualBytes ).as( "Page id: " + pageId + " " + "(based on record data, it should have been " + estimatedPageId +
-                ", a difference of " + Math.abs( pageId - estimatedPageId ) + ")" ).containsExactly( expectedBytes );
+    protected static void assertRecords(long pageId, byte[] actualBytes, byte[] expectedBytes) {
+        int estimatedPageId = estimateId(actualBytes);
+        assertThat(actualBytes)
+                .as("Page id: " + pageId + " " + "(based on record data, it should have been " + estimatedPageId
+                        + ", a difference of " + Math.abs(pageId - estimatedPageId) + ")")
+                .containsExactly(expectedBytes);
     }
 
-    protected static int estimateId( byte[] record )
-    {
-        return ByteBuffer.wrap( record ).getInt() - 1;
+    protected static int estimateId(byte[] record) {
+        return ByteBuffer.wrap(record).getInt() - 1;
     }
 
     /**
      * Fill the page bound by the cursor with records that can be verified with
      * {@link #verifyRecordsMatchExpected(PageCursor)} or {@link #verifyRecordsInFile(Path, int)}.
      */
-    protected void writeRecords( PageCursor cursor )
-    {
-        cursor.setOffset( 0 );
-        for ( int i = 0; i < recordsPerFilePage; i++ )
-        {
+    protected void writeRecords(PageCursor cursor) {
+        cursor.setOffset(0);
+        for (int i = 0; i < recordsPerFilePage; i++) {
             long recordId = (cursor.getCurrentPageId() * recordsPerFilePage) + i;
-            generateRecordForId( recordId, bufA );
-            cursor.putBytes( bufA.array() );
+            generateRecordForId(recordId, bufA);
+            cursor.putBytes(bufA.array());
         }
     }
 
-    protected void generateFileWithRecords( Path file, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes ) throws IOException
-    {
-        try ( StoreChannel channel = fs.write( file ) )
-        {
-            generateFileWithRecords( channel, recordCount, recordSize, recordsPerFilePage, reservedBytes );
+    protected void generateFileWithRecords(
+            Path file, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes) throws IOException {
+        try (StoreChannel channel = fs.write(file)) {
+            generateFileWithRecords(channel, recordCount, recordSize, recordsPerFilePage, reservedBytes);
         }
     }
 
-    protected static void generateFileWithRecords( WritableByteChannel channel, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes )
-            throws IOException
-    {
-        ByteBuffer buf = ByteBuffers.allocate( recordSize, INSTANCE );
-        for ( int i = 0; i < recordCount; i++ )
-        {
-            if ( i % recordsPerFilePage == 0 )
-            {
-                writeBuffer( channel, ByteBuffer.allocate( reservedBytes ) );
+    protected static void generateFileWithRecords(
+            WritableByteChannel channel, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes)
+            throws IOException {
+        ByteBuffer buf = ByteBuffers.allocate(recordSize, INSTANCE);
+        for (int i = 0; i < recordCount; i++) {
+            if (i % recordsPerFilePage == 0) {
+                writeBuffer(channel, ByteBuffer.allocate(reservedBytes));
             }
-            generateRecordForId( i, buf );
-            writeBuffer( channel, buf );
+            generateRecordForId(i, buf);
+            writeBuffer(channel, buf);
         }
     }
 
-    private static void writeBuffer( WritableByteChannel channel, ByteBuffer buf ) throws IOException
-    {
+    private static void writeBuffer(WritableByteChannel channel, ByteBuffer buf) throws IOException {
         int rem = buf.remaining();
-        do
-        {
-            rem -= channel.write( buf );
-        }
-        while ( rem > 0 );
+        do {
+            rem -= channel.write(buf);
+        } while (rem > 0);
     }
 
-    protected static void generateRecordForId( long id, ByteBuffer buf )
-    {
-        buf.position( 0 );
+    protected static void generateRecordForId(long id, ByteBuffer buf) {
+        buf.position(0);
         int x = (int) (id + 1);
-        buf.putInt( x );
-        while ( buf.position() < buf.limit() )
-        {
+        buf.putInt(x);
+        while (buf.position() < buf.limit()) {
             x++;
-            buf.put( (byte) (x & 0xFF) );
+            buf.put((byte) (x & 0xFF));
         }
-        buf.position( 0 );
+        buf.position(0);
     }
 
-    protected void verifyRecordsInFile( Path file, int recordCount ) throws IOException
-    {
-        try ( StoreChannel channel = fs.read( file ) )
-        {
-            verifyRecordsInFile( channel, recordCount );
+    protected void verifyRecordsInFile(Path file, int recordCount) throws IOException {
+        try (StoreChannel channel = fs.read(file)) {
+            verifyRecordsInFile(channel, recordCount);
         }
     }
 
-    protected void verifyRecordsInFile( StoreChannel channel, int recordCount ) throws IOException
-    {
-        ByteBuffer buf = ByteBuffers.allocate( recordSize, INSTANCE );
-        ByteBuffer observation = ByteBuffers.allocate( recordSize, INSTANCE );
-        for ( int i = 0; i < recordCount; i++ )
-        {
-            if ( i % recordsPerFilePage == 0 )
-            {
-                channel.position( channel.position() + reservedBytes );
+    protected void verifyRecordsInFile(StoreChannel channel, int recordCount) throws IOException {
+        ByteBuffer buf = ByteBuffers.allocate(recordSize, INSTANCE);
+        ByteBuffer observation = ByteBuffers.allocate(recordSize, INSTANCE);
+        for (int i = 0; i < recordCount; i++) {
+            if (i % recordsPerFilePage == 0) {
+                channel.position(channel.position() + reservedBytes);
             }
-            generateRecordForId( i, buf );
-            observation.position( 0 );
-            channel.read( observation );
-            assertRecords( i, observation, buf );
+            generateRecordForId(i, buf);
+            observation.position(0);
+            channel.read(observation);
+            assertRecords(i, observation, buf);
         }
     }
 
-    protected static Runnable closePageFile( final PagedFile file )
-    {
+    protected static Runnable closePageFile(final PagedFile file) {
         return file::close;
     }
 
-    public abstract static class Fixture<T extends PageCache>
-    {
+    public abstract static class Fixture<T extends PageCache> {
         private Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier = EphemeralFileSystemAbstraction::new;
-        private Function<String,Path> fileConstructor = Path::of;
+        private Function<String, Path> fileConstructor = Path::of;
         private IOBufferFactory bufferFactory;
         private int reservedBytes = GraphDatabaseInternalSettings.reserved_page_header_bytes.defaultValue();
 
-        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
-                JobScheduler jobScheduler, IOBufferFactory bufferFactory );
+        public abstract T createPageCache(
+                PageSwapperFactory swapperFactory,
+                int maxPages,
+                PageCacheTracer tracer,
+                JobScheduler jobScheduler,
+                IOBufferFactory bufferFactory);
 
-        public abstract void tearDownPageCache( T pageCache );
+        public abstract void tearDownPageCache(T pageCache);
 
-        public final FileSystemAbstraction getFileSystemAbstraction()
-        {
+        public final FileSystemAbstraction getFileSystemAbstraction() {
             return fileSystemAbstractionSupplier.get();
         }
 
-        public IOBufferFactory getBufferFactory()
-        {
+        public IOBufferFactory getBufferFactory() {
             return bufferFactory;
         }
 
-        public int getReservedBytes()
-        {
+        public int getReservedBytes() {
             return reservedBytes;
         }
 
         public final Fixture<T> withFileSystemAbstraction(
-                Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier )
-        {
+                Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier) {
             this.fileSystemAbstractionSupplier = fileSystemAbstractionSupplier;
             return this;
         }
 
-        public final Path file( String pathname )
-        {
-            return fileConstructor.apply( pathname ).toAbsolutePath().normalize();
+        public final Path file(String pathname) {
+            return fileConstructor.apply(pathname).toAbsolutePath().normalize();
         }
 
-        public final Fixture<T> withBufferFactory( IOBufferFactory bufferFactory )
-        {
+        public final Fixture<T> withBufferFactory(IOBufferFactory bufferFactory) {
             this.bufferFactory = bufferFactory;
             return this;
         }
 
-        public final Fixture<T> withReservedBytes( int reservedBytes )
-        {
+        public final Fixture<T> withReservedBytes(int reservedBytes) {
             this.reservedBytes = reservedBytes;
             return this;
         }
 
-        public final Fixture<T> withFileConstructor( Function<String,Path> fileConstructor )
-        {
+        public final Fixture<T> withFileConstructor(Function<String, Path> fileConstructor) {
             this.fileConstructor = fileConstructor;
             return this;
         }

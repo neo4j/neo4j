@@ -21,11 +21,9 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.storageengine.api.AllNodeScan;
 
-final class RecordNodeScan extends BaseRecordScan<RecordNodeCursor> implements AllNodeScan
-{
+final class RecordNodeScan extends BaseRecordScan<RecordNodeCursor> implements AllNodeScan {
     @Override
-    boolean scanRange( RecordNodeCursor cursor, long start, long stopInclusive )
-    {
-        return cursor.scanRange( start, stopInclusive );
+    boolean scanRange(RecordNodeCursor cursor, long start, long stopInclusive) {
+        return cursor.scanRange(start, stopInclusive);
     }
 }

@@ -20,29 +20,24 @@
 package org.neo4j.server.http.cypher.format.api;
 
 import java.util.Map;
-
 import org.neo4j.memory.HeapEstimator;
 
-public class Statement
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( Statement.class );
+public class Statement {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(Statement.class);
 
     private final String statement;
-    private final Map<String,Object> parameters;
+    private final Map<String, Object> parameters;
 
-    public Statement( String statement, Map<String,Object> parameters )
-    {
+    public Statement(String statement, Map<String, Object> parameters) {
         this.statement = statement;
         this.parameters = parameters;
     }
 
-    public String getStatement()
-    {
+    public String getStatement() {
         return statement;
     }
 
-    public Map<String,Object> getParameters()
-    {
+    public Map<String, Object> getParameters() {
         return parameters;
     }
 }

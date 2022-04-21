@@ -20,47 +20,37 @@
 package org.neo4j.kernel.impl.api.index.stats;
 
 // this is a necessary evil for GBP tree
-@SuppressWarnings( {"NonFinalFieldReferenceInEquals", "NonFinalFieldReferencedInHashCode"} )
-class IndexStatisticsKey implements Comparable<IndexStatisticsKey>
-{
+@SuppressWarnings({"NonFinalFieldReferenceInEquals", "NonFinalFieldReferencedInHashCode"})
+class IndexStatisticsKey implements Comparable<IndexStatisticsKey> {
     static final int SIZE = Long.SIZE;
 
     private long indexId;
 
-    IndexStatisticsKey()
-    {
-    }
+    IndexStatisticsKey() {}
 
-    IndexStatisticsKey( long indexId )
-    {
+    IndexStatisticsKey(long indexId) {
         this.indexId = indexId;
     }
 
-    long getIndexId()
-    {
+    long getIndexId() {
         return indexId;
     }
 
-    void setIndexId( long indexId )
-    {
+    void setIndexId(long indexId) {
         this.indexId = indexId;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Long.hashCode( indexId );
+    public int hashCode() {
+        return Long.hashCode(indexId);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
@@ -69,14 +59,12 @@ class IndexStatisticsKey implements Comparable<IndexStatisticsKey>
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "[indexId:" + indexId + "]";
     }
 
     @Override
-    public int compareTo( IndexStatisticsKey other )
-    {
-        return Long.compare( indexId, other.indexId );
+    public int compareTo(IndexStatisticsKey other) {
+        return Long.compare(indexId, other.indexId);
     }
 }

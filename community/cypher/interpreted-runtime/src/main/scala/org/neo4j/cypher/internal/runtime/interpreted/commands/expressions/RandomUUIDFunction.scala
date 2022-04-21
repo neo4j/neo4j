@@ -27,11 +27,11 @@ import org.neo4j.values.AnyValue
 
 case class RandomUUIDFunction() extends Expression {
 
-    override def apply(row: ReadableRow, state: QueryState): AnyValue = CypherFunctions.randomUuid()
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = CypherFunctions.randomUuid()
 
-    override def arguments: Seq[Expression] = Seq.empty
+  override def arguments: Seq[Expression] = Seq.empty
 
-    override def children: Seq[AstNode[_]] = Seq.empty
+  override def children: Seq[AstNode[_]] = Seq.empty
 
-    override def rewrite(f: Expression => Expression): Expression = f(RandomUUIDFunction())
+  override def rewrite(f: Expression => Expression): Expression = f(RandomUUIDFunction())
 }

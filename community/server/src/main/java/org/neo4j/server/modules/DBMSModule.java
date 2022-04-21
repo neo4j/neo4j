@@ -19,12 +19,14 @@
  */
 package org.neo4j.server.modules;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import static java.util.Collections.singletonList;
+import static org.neo4j.server.configuration.ServerSettings.http_access_control_allow_origin;
+import static org.neo4j.server.web.Injectable.injectable;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.InternalLogProvider;
@@ -36,15 +38,10 @@ import org.neo4j.server.rest.web.AccessiblePathFilter;
 import org.neo4j.server.rest.web.CorsFilter;
 import org.neo4j.server.web.WebServer;
 
-import static java.util.Collections.singletonList;
-import static org.neo4j.server.configuration.ServerSettings.http_access_control_allow_origin;
-import static org.neo4j.server.web.Injectable.injectable;
-
 /**
  * Mounts the DBMS REST API.
  */
-public class DBMSModule implements ServerModule
-{
+public class DBMSModule implements ServerModule {
     private static final String ROOT_PATH = "/";
 
     private final WebServer webServer;
@@ -53,9 +50,12 @@ public class DBMSModule implements ServerModule
     private final InternalLogProvider logProvider;
     private final AuthConfigProvider authConfigProvider;
 
-    public DBMSModule( WebServer webServer, Config config, Supplier<DiscoverableURIs> discoverableURIs,
-            InternalLogProvider logProvider, AuthConfigProvider authConfigProvider )
-    {
+    public DBMSModule(
+            WebServer webServer,
+            Config config,
+            Supplier<DiscoverableURIs> discoverableURIs,
+            InternalLogProvider logProvider,
+            AuthConfigProvider authConfigProvider) {
         this.webServer = webServer;
         this.config = config;
         this.discoverableURIs = discoverableURIs;
@@ -64,31 +64,30 @@ public class DBMSModule implements ServerModule
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         webServer.addJAXRSClasses(
-                singletonList( DiscoveryService.class ), ROOT_PATH,
-                List.of( injectable( DiscoverableURIs.class, discoverableURIs.get() ),
-                    injectable( AuthConfigProvider.class, authConfigProvider ) ) );
+                singletonList(DiscoveryService.class),
+                ROOT_PATH,
+                List.of(
+                        injectable(DiscoverableURIs.class, discoverableURIs.get()),
+                        injectable(AuthConfigProvider.class, authConfigProvider)));
 
-        webServer.addJAXRSClasses( jaxRsClasses(), ROOT_PATH, null );
+        webServer.addJAXRSClasses(jaxRsClasses(), ROOT_PATH, null);
 
         // add filters:
-        webServer.addFilter( new CorsFilter( logProvider, config.get( http_access_control_allow_origin ) ), "/*" );
-        webServer.addFilter( new AccessiblePathFilter( logProvider, config.get( ServerSettings.http_paths_blacklist ) ), "/*" );
+        webServer.addFilter(new CorsFilter(logProvider, config.get(http_access_control_allow_origin)), "/*");
+        webServer.addFilter(
+                new AccessiblePathFilter(logProvider, config.get(ServerSettings.http_paths_blacklist)), "/*");
     }
 
     @Override
-    public void stop()
-    {
-        webServer.removeJAXRSClasses( jaxRsClasses(), ROOT_PATH );
+    public void stop() {
+        webServer.removeJAXRSClasses(jaxRsClasses(), ROOT_PATH);
     }
 
-    private List<Class<?>> jaxRsClasses()
-    {
-        if ( config.get( GraphDatabaseSettings.auth_enabled ) )
-        {
-            return singletonList( JacksonJsonProvider.class );
+    private List<Class<?>> jaxRsClasses() {
+        if (config.get(GraphDatabaseSettings.auth_enabled)) {
+            return singletonList(JacksonJsonProvider.class);
         }
         return Collections.emptyList();
     }

@@ -19,104 +19,89 @@
  */
 package org.neo4j.fabric.stream;
 
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
+import org.neo4j.fabric.stream.summary.Summary;
+import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
+public final class StatementResults {
+    private StatementResults() {}
 
-import org.neo4j.fabric.stream.summary.Summary;
-import org.neo4j.graphdb.QueryExecutionType;
-import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.query.QueryExecution;
-import org.neo4j.kernel.impl.query.QuerySubscriber;
-
-public final class StatementResults
-{
-    private StatementResults()
-    {
+    public static StatementResult map(StatementResult statementResult, UnaryOperator<Flux<Record>> func) {
+        return new BasicStatementResult(
+                statementResult.columns(),
+                func.apply(statementResult.records()),
+                statementResult.summary(),
+                statementResult.executionType());
     }
 
-    public static StatementResult map( StatementResult statementResult, UnaryOperator<Flux<Record>> func )
-    {
-        return new BasicStatementResult( statementResult.columns(),
-                                         func.apply( statementResult.records() ),
-                                         statementResult.summary(),
-                                         statementResult.executionType() );
+    public static StatementResult initial() {
+        return new BasicStatementResult(Flux.empty(), Flux.just(Records.empty()), Mono.empty(), Mono.empty());
     }
 
-    public static StatementResult initial()
-    {
-        return new BasicStatementResult( Flux.empty(), Flux.just( Records.empty() ), Mono.empty(), Mono.empty() );
-    }
-
-    public static StatementResult connectVia( SubscribableExecution execution, QuerySubject subject )
-    {
-        QueryExecution queryExecution = execution.subscribe( subject );
-        subject.setQueryExecution( queryExecution );
+    public static StatementResult connectVia(SubscribableExecution execution, QuerySubject subject) {
+        QueryExecution queryExecution = execution.subscribe(subject);
+        subject.setQueryExecution(queryExecution);
         return create(
-                Flux.fromArray( queryExecution.fieldNames() ),
-                Flux.from( subject ),
+                Flux.fromArray(queryExecution.fieldNames()),
+                Flux.from(subject),
                 subject.getSummary(),
-                Mono.just( queryExecution.executionType() )
-        );
+                Mono.just(queryExecution.executionType()));
     }
 
-    public static StatementResult create( Flux<String> columns, Flux<Record> records, Mono<Summary> summary, Mono<QueryExecutionType> executionType )
-    {
-        return new BasicStatementResult( columns, records, summary, executionType );
+    public static StatementResult create(
+            Flux<String> columns, Flux<Record> records, Mono<Summary> summary, Mono<QueryExecutionType> executionType) {
+        return new BasicStatementResult(columns, records, summary, executionType);
     }
 
-    public static <E extends Throwable> StatementResult withErrorMapping( StatementResult statementResult, Class<E> type,
-            Function<? super E,? extends Throwable> mapper )
-    {
-        var columns = statementResult.columns().onErrorMap( type, mapper );
-        var records = statementResult.records().onErrorMap( type, mapper );
-        var summary = statementResult.summary().onErrorMap( type, mapper );
-        var executionType = statementResult.executionType().onErrorMap( type, mapper );
+    public static <E extends Throwable> StatementResult withErrorMapping(
+            StatementResult statementResult, Class<E> type, Function<? super E, ? extends Throwable> mapper) {
+        var columns = statementResult.columns().onErrorMap(type, mapper);
+        var records = statementResult.records().onErrorMap(type, mapper);
+        var summary = statementResult.summary().onErrorMap(type, mapper);
+        var executionType = statementResult.executionType().onErrorMap(type, mapper);
 
-        return create( columns, records, summary, executionType );
+        return create(columns, records, summary, executionType);
     }
 
-    public static StatementResult error( Throwable err )
-    {
-        return new BasicStatementResult( Flux.error( err ), Flux.error( err ), Mono.error( err ), Mono.error( err ) );
+    public static StatementResult error(Throwable err) {
+        return new BasicStatementResult(Flux.error(err), Flux.error(err), Mono.error(err), Mono.error(err));
     }
 
-    public static StatementResult trace( StatementResult input )
-    {
+    public static StatementResult trace(StatementResult input) {
         return new BasicStatementResult(
                 input.columns(),
-                input.records().doOnEach( signal ->
-                {
-                    if ( signal.hasValue() )
-                    {
-                        System.out.println( String.join( ", ", signal.getType().toString(), Records.show( signal.get() ) ) );
+                input.records().doOnEach(signal -> {
+                    if (signal.hasValue()) {
+                        System.out.println(String.join(", ", signal.getType().toString(), Records.show(signal.get())));
+                    } else if (signal.hasError()) {
+                        System.out.println(String.join(
+                                ", ",
+                                signal.getType().toString(),
+                                signal.getThrowable().toString()));
+                    } else {
+                        System.out.println(String.join(", ", signal.getType().toString()));
                     }
-                    else if ( signal.hasError() )
-                    {
-                        System.out.println( String.join( ", ", signal.getType().toString(), signal.getThrowable().toString() ) );
-                    }
-                    else
-                    {
-                        System.out.println( String.join( ", ", signal.getType().toString() ) );
-                    }
-                } ),
+                }),
                 input.summary(),
-                input.executionType() );
+                input.executionType());
     }
 
-    private static class BasicStatementResult implements StatementResult
-    {
+    private static class BasicStatementResult implements StatementResult {
         private final Flux<String> columns;
         private final Flux<Record> records;
         private final Mono<Summary> summary;
         private final Mono<QueryExecutionType> executionType;
 
-        BasicStatementResult( Flux<String> columns, Flux<Record> records, Mono<Summary> summary,
-                              Mono<QueryExecutionType> executionType )
-        {
+        BasicStatementResult(
+                Flux<String> columns,
+                Flux<Record> records,
+                Mono<Summary> summary,
+                Mono<QueryExecutionType> executionType) {
             this.columns = columns;
             this.records = records;
             this.summary = summary;
@@ -124,33 +109,28 @@ public final class StatementResults
         }
 
         @Override
-        public Flux<String> columns()
-        {
+        public Flux<String> columns() {
             return columns;
         }
 
         @Override
-        public Flux<Record> records()
-        {
+        public Flux<Record> records() {
             return records;
         }
 
         @Override
-        public Mono<Summary> summary()
-        {
+        public Mono<Summary> summary() {
             return summary;
         }
 
         @Override
-        public Mono<QueryExecutionType> executionType()
-        {
+        public Mono<QueryExecutionType> executionType() {
             return executionType;
         }
     }
 
     @FunctionalInterface
-    public interface SubscribableExecution
-    {
-        QueryExecution subscribe( QuerySubscriber subscriber );
+    public interface SubscribableExecution {
+        QueryExecution subscribe(QuerySubscriber subscriber);
     }
 }

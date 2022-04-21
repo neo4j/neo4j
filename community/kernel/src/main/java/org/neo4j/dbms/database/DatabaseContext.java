@@ -19,14 +19,13 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.Mode;
+
 import org.neo4j.collection.Dependencies;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.Mode;
-
-public interface DatabaseContext
-{
+public interface DatabaseContext {
     Database database();
 
     /**
@@ -38,8 +37,7 @@ public interface DatabaseContext
      *
      * @return dependencies service for this database
      */
-    default Dependencies dependencies()
-    {
+    default Dependencies dependencies() {
         return database().getDependencyResolver();
     }
 

@@ -22,35 +22,28 @@ package org.neo4j.hashing;
 /**
  * @see HashFunction#xorShift32()
  */
-class XorShift32HashFunction implements HashFunction
-{
+class XorShift32HashFunction implements HashFunction {
     static final XorShift32HashFunction INSTANCE = new XorShift32HashFunction();
 
-    private XorShift32HashFunction()
-    {
-    }
+    private XorShift32HashFunction() {}
 
     @Override
-    public long initialise( long seed )
-    {
+    public long initialise(long seed) {
         return 0;
     }
 
     @Override
-    public long update( long intermediateHash, long value )
-    {
-        return hashSingleValueToInt( intermediateHash + value );
+    public long update(long intermediateHash, long value) {
+        return hashSingleValueToInt(intermediateHash + value);
     }
 
     @Override
-    public long finalise( long intermediateHash )
-    {
+    public long finalise(long intermediateHash) {
         return intermediateHash;
     }
 
     @Override
-    public int hashSingleValueToInt( long value )
-    {
+    public int hashSingleValueToInt(long value) {
         value ^= value << 21;
         value ^= value >>> 35;
         value ^= value << 4;

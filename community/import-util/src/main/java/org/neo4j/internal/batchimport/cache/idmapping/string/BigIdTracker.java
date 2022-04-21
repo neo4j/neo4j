@@ -20,57 +20,50 @@
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import java.util.Arrays;
-
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.LongBitsManipulator;
 
 /**
  * {@link Tracker} capable of keeping 6B range values, using {@link ByteArray}.
  */
-public class BigIdTracker extends AbstractTracker<ByteArray>
-{
+public class BigIdTracker extends AbstractTracker<ByteArray> {
     static final int SIZE = 5;
     static final int ID_BITS = (Byte.SIZE * SIZE) - 1;
     static final byte[] DEFAULT_VALUE;
     public static final long MAX_ID = 1L << ID_BITS - 1;
-    private static final LongBitsManipulator BITS = new LongBitsManipulator( ID_BITS, 1 );
-    static
-    {
+    private static final LongBitsManipulator BITS = new LongBitsManipulator(ID_BITS, 1);
+
+    static {
         DEFAULT_VALUE = new byte[SIZE];
-        Arrays.fill( DEFAULT_VALUE, (byte) -1 );
+        Arrays.fill(DEFAULT_VALUE, (byte) -1);
     }
 
-    public BigIdTracker( ByteArray array )
-    {
-        super( array );
-    }
-
-    @Override
-    public long get( long index )
-    {
-        return BITS.get( array.get5ByteLong( index, 0 ), 0 );
+    public BigIdTracker(ByteArray array) {
+        super(array);
     }
 
     @Override
-    public void set( long index, long value )
-    {
-        long field = array.get5ByteLong( index, 0 );
-        field = BITS.set( field, 0, value );
-        array.set5ByteLong( index, 0, field );
+    public long get(long index) {
+        return BITS.get(array.get5ByteLong(index, 0), 0);
     }
 
     @Override
-    public void markAsDuplicate( long index )
-    {
-        long field = array.get5ByteLong( index, 0 );
-        field = BITS.set( field, 1, 0 );
-        array.set5ByteLong( index, 0, field );
+    public void set(long index, long value) {
+        long field = array.get5ByteLong(index, 0);
+        field = BITS.set(field, 0, value);
+        array.set5ByteLong(index, 0, field);
     }
 
     @Override
-    public boolean isMarkedAsDuplicate( long index )
-    {
-        long field = array.get5ByteLong( index, 0 );
-        return BITS.get( field, 1 ) == 0;
+    public void markAsDuplicate(long index) {
+        long field = array.get5ByteLong(index, 0);
+        field = BITS.set(field, 1, 0);
+        array.set5ByteLong(index, 0, field);
+    }
+
+    @Override
+    public boolean isMarkedAsDuplicate(long index) {
+        long field = array.get5ByteLong(index, 0);
+        return BITS.get(field, 1) == 0;
     }
 }

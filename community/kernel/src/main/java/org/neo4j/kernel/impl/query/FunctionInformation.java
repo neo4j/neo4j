@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
-public interface FunctionInformation
-{
+public interface FunctionInformation {
     String getFunctionName();
 
     String getDescription();

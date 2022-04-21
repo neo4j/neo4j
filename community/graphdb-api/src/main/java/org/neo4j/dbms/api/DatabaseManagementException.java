@@ -27,40 +27,32 @@ import org.neo4j.kernel.api.exceptions.Status;
  * @see DatabaseManagementService
  */
 @PublicApi
-public class DatabaseManagementException extends RuntimeException implements Status.HasStatus
-{
-    public DatabaseManagementException()
-    {
+public class DatabaseManagementException extends RuntimeException implements Status.HasStatus {
+    public DatabaseManagementException() {
         super();
     }
 
-    public DatabaseManagementException( String message )
-    {
-        super( message );
+    public DatabaseManagementException(String message) {
+        super(message);
     }
 
-    public DatabaseManagementException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public DatabaseManagementException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public DatabaseManagementException( Throwable cause )
-    {
-        super( cause );
+    public DatabaseManagementException(Throwable cause) {
+        super(cause);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Database.Unknown;
     }
 
-    public static DatabaseManagementException wrap( Throwable toWrap )
-    {
-        if ( toWrap instanceof DatabaseManagementException )
-        {
+    public static DatabaseManagementException wrap(Throwable toWrap) {
+        if (toWrap instanceof DatabaseManagementException) {
             return (DatabaseManagementException) toWrap;
         }
-        return new DatabaseManagementException( toWrap.getMessage(), toWrap );
+        return new DatabaseManagementException(toWrap.getMessage(), toWrap);
     }
 }

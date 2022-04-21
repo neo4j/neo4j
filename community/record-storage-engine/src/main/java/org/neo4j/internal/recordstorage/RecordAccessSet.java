@@ -30,8 +30,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
-public interface RecordAccessSet
-{
+public interface RecordAccessSet {
     RecordAccess<NodeRecord, Void> getNodeRecords();
 
     RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords();

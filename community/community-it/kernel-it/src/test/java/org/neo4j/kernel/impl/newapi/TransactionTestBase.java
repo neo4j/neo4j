@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
@@ -31,156 +35,134 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
-abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
-{
+abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G> {
     @Test
-    void shouldRollbackWhenTxIsNotSuccess() throws Exception
-    {
+    void shouldRollbackWhenTxIsNotSuccess() throws Exception {
         // GIVEN
         long nodeId;
         int labelId;
-        try ( KernelTransaction tx = beginTransaction() )
-        {
+        try (KernelTransaction tx = beginTransaction()) {
             // WHEN
             nodeId = tx.dataWrite().nodeCreate();
-            labelId = tx.tokenWrite().labelGetOrCreateForName( "labello" );
-            tx.dataWrite().nodeAddLabel( nodeId, labelId );
+            labelId = tx.tokenWrite().labelGetOrCreateForName("labello");
+            tx.dataWrite().nodeAddLabel(nodeId, labelId);
 
             // OBS: not marked as tx.success();
         }
 
         // THEN
-        assertNoNode( nodeId );
+        assertNoNode(nodeId);
     }
 
     @Test
-    void shouldRollbackWhenTxIsFailed() throws Exception
-    {
+    void shouldRollbackWhenTxIsFailed() throws Exception {
         // GIVEN
         long nodeId;
         int labelId;
-        try ( KernelTransaction tx = beginTransaction() )
-        {
+        try (KernelTransaction tx = beginTransaction()) {
             // WHEN
             nodeId = tx.dataWrite().nodeCreate();
-            labelId = tx.tokenWrite().labelGetOrCreateForName( "labello" );
-            tx.dataWrite().nodeAddLabel( nodeId, labelId );
+            labelId = tx.tokenWrite().labelGetOrCreateForName("labello");
+            tx.dataWrite().nodeAddLabel(nodeId, labelId);
 
             tx.rollback();
         }
 
         // THEN
-        assertNoNode( nodeId );
+        assertNoNode(nodeId);
     }
 
     @Test
-    void shouldFreezeLockInteractions() throws Exception
-    {
+    void shouldFreezeLockInteractions() throws Exception {
         // GIVEN
         int label;
         int propertyKey;
         LabelSchemaDescriptor schema;
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
-            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            schema = SchemaDescriptors.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
+        try (KernelTransaction tx = beginTransaction()) {
+            label = tx.tokenWrite().labelGetOrCreateForName("Label");
+            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName("prop");
+            schema = SchemaDescriptors.forLabel(label, propertyKey);
+            tx.schemaWrite().indexCreate(IndexPrototype.forSchema(schema).withName("my index"));
             tx.commit();
         }
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            assertAllowedLocks( tx, schema );
+        try (KernelTransaction tx = beginTransaction()) {
+            assertAllowedLocks(tx, schema);
 
             // WHEN
             tx.freezeLocks();
 
             // THEN
-            assertFrozenLocks( tx, schema );
+            assertFrozenLocks(tx, schema);
         }
     }
 
     @Test
-    void shouldThawLockInteractions() throws Exception
-    {
+    void shouldThawLockInteractions() throws Exception {
         // GIVEN
         int label;
         int propertyKey;
         LabelSchemaDescriptor schema;
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
-            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            schema = SchemaDescriptors.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
+        try (KernelTransaction tx = beginTransaction()) {
+            label = tx.tokenWrite().labelGetOrCreateForName("Label");
+            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName("prop");
+            schema = SchemaDescriptors.forLabel(label, propertyKey);
+            tx.schemaWrite().indexCreate(IndexPrototype.forSchema(schema).withName("my index"));
             tx.commit();
         }
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
+        try (KernelTransaction tx = beginTransaction()) {
             // WHEN
             tx.freezeLocks();
             tx.thawLocks();
 
             // THEN
-            assertAllowedLocks( tx, schema );
+            assertAllowedLocks(tx, schema);
         }
     }
 
     @Test
-    void shouldThrowOnThawOfNotFrozenLocks() throws Exception
-    {
+    void shouldThrowOnThawOfNotFrozenLocks() throws Exception {
         // GIVEN
         int label;
         int propertyKey;
         LabelSchemaDescriptor schema;
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
-            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            schema = SchemaDescriptors.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
+        try (KernelTransaction tx = beginTransaction()) {
+            label = tx.tokenWrite().labelGetOrCreateForName("Label");
+            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName("prop");
+            schema = SchemaDescriptors.forLabel(label, propertyKey);
+            tx.schemaWrite().indexCreate(IndexPrototype.forSchema(schema).withName("my index"));
             tx.commit();
         }
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
+        try (KernelTransaction tx = beginTransaction()) {
             // WHEN
-            assertThrows( LocksNotFrozenException.class, tx::thawLocks );
+            assertThrows(LocksNotFrozenException.class, tx::thawLocks);
 
             // THEN
-            assertAllowedLocks( tx, schema );
+            assertAllowedLocks(tx, schema);
         }
     }
 
     @Test
-    void shouldNestFreezeLocks() throws Exception
-    {
+    void shouldNestFreezeLocks() throws Exception {
         // GIVEN
         int label;
         int propertyKey;
         LabelSchemaDescriptor schema;
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
-            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            schema = SchemaDescriptors.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
+        try (KernelTransaction tx = beginTransaction()) {
+            label = tx.tokenWrite().labelGetOrCreateForName("Label");
+            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName("prop");
+            schema = SchemaDescriptors.forLabel(label, propertyKey);
+            tx.schemaWrite().indexCreate(IndexPrototype.forSchema(schema).withName("my index"));
             tx.commit();
         }
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
+        try (KernelTransaction tx = beginTransaction()) {
             // WHEN
             tx.freezeLocks();
             tx.freezeLocks();
@@ -188,36 +170,34 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             tx.freezeLocks();
 
             // THEN
-            assertFrozenLocks( tx, schema );
+            assertFrozenLocks(tx, schema);
 
             // WHEN
             tx.thawLocks();
-            assertFrozenLocks( tx, schema );
+            assertFrozenLocks(tx, schema);
             tx.thawLocks();
-            assertFrozenLocks( tx, schema );
+            assertFrozenLocks(tx, schema);
             tx.thawLocks();
-            assertFrozenLocks( tx, schema );
+            assertFrozenLocks(tx, schema);
             tx.thawLocks();
 
             // THEN
-            assertAllowedLocks( tx, schema );
+            assertAllowedLocks(tx, schema);
 
             // WHEN
             tx.freezeLocks();
 
             // THEN
-            assertFrozenLocks( tx, schema );
+            assertFrozenLocks(tx, schema);
         }
     }
 
     @Test
-    void shouldCommitOnFrozenLocks() throws Exception
-    {
+    void shouldCommitOnFrozenLocks() throws Exception {
         // GIVEN
         long node;
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
+        try (KernelTransaction tx = beginTransaction()) {
             node = tx.dataWrite().nodeCreate();
 
             // WHEN
@@ -226,38 +206,35 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
         }
 
         // THEN
-        assertNodeExists( node );
+        assertNodeExists(node);
     }
 
     // HELPERS
 
-    private static void assertAllowedLocks( KernelTransaction tx, SchemaDescriptor schema )
-    {
-        tx.schemaRead().index( schema ).forEachRemaining( index -> {} ); // acquires shared schema lock, but that's fine again
+    private static void assertAllowedLocks(KernelTransaction tx, SchemaDescriptor schema) {
+        tx.schemaRead()
+                .index(schema)
+                .forEachRemaining(index -> {}); // acquires shared schema lock, but that's fine again
     }
 
-    private static void assertFrozenLocks( KernelTransaction tx, SchemaDescriptor schema )
-    {
-        assertThrows( FrozenLocksException.class, () -> tx.schemaRead().index( schema ).forEachRemaining( index -> { } ) );
+    private static void assertFrozenLocks(KernelTransaction tx, SchemaDescriptor schema) {
+        assertThrows(
+                FrozenLocksException.class, () -> tx.schemaRead().index(schema).forEachRemaining(index -> {}));
     }
 
-    private static void assertNoNode( long nodeId ) throws TransactionFailureException
-    {
-        try ( KernelTransaction tx = beginTransaction();
-                NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL_CONTEXT ) )
-        {
-            tx.dataRead().singleNode( nodeId, cursor );
-            assertFalse( cursor.next() );
+    private static void assertNoNode(long nodeId) throws TransactionFailureException {
+        try (KernelTransaction tx = beginTransaction();
+                NodeCursor cursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT)) {
+            tx.dataRead().singleNode(nodeId, cursor);
+            assertFalse(cursor.next());
         }
     }
 
-    private static void assertNodeExists( long nodeId ) throws TransactionFailureException
-    {
-        try ( KernelTransaction tx = beginTransaction();
-                NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL_CONTEXT ) )
-        {
-            tx.dataRead().singleNode( nodeId, cursor );
-            assertTrue( cursor.next() );
+    private static void assertNodeExists(long nodeId) throws TransactionFailureException {
+        try (KernelTransaction tx = beginTransaction();
+                NodeCursor cursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT)) {
+            tx.dataRead().singleNode(nodeId, cursor);
+            assertTrue(cursor.next());
         }
     }
 }

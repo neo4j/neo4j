@@ -23,29 +23,26 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
-abstract class AbstractConstraintCreator
-{
+abstract class AbstractConstraintCreator {
     protected final InternalSchemaActions actions;
     protected final String name;
     protected final IndexType indexType;
     protected final IndexConfig indexConfig;
 
-    AbstractConstraintCreator( InternalSchemaActions actions, String name, IndexType indexType, IndexConfig indexConfig )
-    {
+    AbstractConstraintCreator(
+            InternalSchemaActions actions, String name, IndexType indexType, IndexConfig indexConfig) {
         this.actions = actions;
         this.name = name;
         this.indexType = indexType;
         this.indexConfig = indexConfig;
     }
 
-    public ConstraintDefinition create()
-    {
+    public ConstraintDefinition create() {
         assertInUnterminatedTransaction();
-        throw new IllegalStateException( "No constraint assertions specified" );
+        throw new IllegalStateException("No constraint assertions specified");
     }
 
-    protected final void assertInUnterminatedTransaction()
-    {
+    protected final void assertInUnterminatedTransaction() {
         actions.assertInOpenTransaction();
     }
 }

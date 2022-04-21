@@ -32,63 +32,46 @@ import java.util.concurrent.CountDownLatch;
  *                        {@link #reached() T2 reached()}
  * </pre>
  */
-public interface Barrier
-{
+public interface Barrier {
     void reached();
 
-    class Control implements Barrier
-    {
-        private final CountDownLatch reached = new CountDownLatch( 1 );
-        private final CountDownLatch released = new CountDownLatch( 1 );
+    class Control implements Barrier {
+        private final CountDownLatch reached = new CountDownLatch(1);
+        private final CountDownLatch released = new CountDownLatch(1);
 
         @Override
-        public void reached()
-        {
-            try
-            {
+        public void reached() {
+            try {
                 reached.countDown();
                 released.await();
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
 
-        public void await() throws InterruptedException
-        {
+        public void await() throws InterruptedException {
             reached.await();
         }
 
-        public void awaitUninterruptibly()
-        {
+        public void awaitUninterruptibly() {
             boolean interrupted = false;
-            try
-            {
-                while ( true )
-                {
-                    try
-                    {
+            try {
+                while (true) {
+                    try {
                         await();
                         return;
-                    }
-                    catch ( InterruptedException e )
-                    {
+                    } catch (InterruptedException e) {
                         interrupted = true;
                     }
                 }
-            }
-            finally
-            {
-                if ( interrupted )
-                {
+            } finally {
+                if (interrupted) {
                     Thread.currentThread().interrupt();
                 }
             }
         }
 
-        public void release()
-        {
+        public void release() {
             released.countDown();
         }
     }

@@ -19,43 +19,38 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
-import org.junit.jupiter.api.extension.ExtensionConfigurationException;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import static java.lang.String.format;
+import static org.junit.platform.commons.support.AnnotationSupport.findAnnotatedFields;
+import static org.junit.platform.commons.util.ReflectionUtils.tryToReadFieldValue;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
-
-import static java.lang.String.format;
-import static org.junit.platform.commons.support.AnnotationSupport.findAnnotatedFields;
-import static org.junit.platform.commons.util.ReflectionUtils.tryToReadFieldValue;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.ExtensionConfigurationException;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
  * Validation junit extension to verify that all fields that were marked as injectable with @{@link Inject} annotation were assigned by test container.
  * In case if field is still null right before test execution its a signal that extension misconfiguration is in place and validation exception will be thrown.
  */
-public class TestInstanceValidationExtension implements BeforeTestExecutionCallback
-{
+public class TestInstanceValidationExtension implements BeforeTestExecutionCallback {
     @Override
-    public void beforeTestExecution( ExtensionContext context )
-    {
+    public void beforeTestExecution(ExtensionContext context) {
         Optional<Object> testInstance = context.getTestInstance();
-        testInstance.ifPresent( instance ->
-        {
+        testInstance.ifPresent(instance -> {
             Class<?> instanceClass = instance.getClass();
-            List<Field> annotatedFields = findAnnotatedFields( instanceClass, Inject.class );
-            for ( Field annotatedField : annotatedFields )
-            {
-                Optional<Object> fieldValue = tryToReadFieldValue( annotatedField, instance ).toOptional();
-                if ( fieldValue.isEmpty() )
-                {
-                    throw new ExtensionConfigurationException( format( "Field %s that is marked for injection in class %s is null. " +
-                                    "Please check that you have configured all desired extensions or double check fields that should be injected.",
-                            annotatedField.getName(), instanceClass.getName() ) );
+            List<Field> annotatedFields = findAnnotatedFields(instanceClass, Inject.class);
+            for (Field annotatedField : annotatedFields) {
+                Optional<Object> fieldValue =
+                        tryToReadFieldValue(annotatedField, instance).toOptional();
+                if (fieldValue.isEmpty()) {
+                    throw new ExtensionConfigurationException(format(
+                            "Field %s that is marked for injection in class %s is null. "
+                                    + "Please check that you have configured all desired extensions or double check fields that should be injected.",
+                            annotatedField.getName(), instanceClass.getName()));
                 }
             }
-        } );
+        });
     }
 }
-

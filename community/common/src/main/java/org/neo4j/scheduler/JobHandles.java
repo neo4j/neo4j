@@ -23,29 +23,21 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import org.neo4j.internal.helpers.Exceptions;
 
-public class JobHandles
-{
-    public static <T> List<T> getAllResults( Collection<JobHandle<T>> handles ) throws ExecutionException
-    {
-        List<T> result = new ArrayList<>( handles.size() );
+public class JobHandles {
+    public static <T> List<T> getAllResults(Collection<JobHandle<T>> handles) throws ExecutionException {
+        List<T> result = new ArrayList<>(handles.size());
         Throwable finalError = null;
-        for ( JobHandle<T> handle : handles )
-        {
-            try
-            {
-                result.add( handle.get() );
-            }
-            catch ( Throwable e )
-            {
-                finalError = Exceptions.chain( finalError, e );
+        for (JobHandle<T> handle : handles) {
+            try {
+                result.add(handle.get());
+            } catch (Throwable e) {
+                finalError = Exceptions.chain(finalError, e);
             }
         }
-        if ( finalError != null )
-        {
-            throw new ExecutionException( finalError );
+        if (finalError != null) {
+            throw new ExecutionException(finalError);
         }
         return result;
     }

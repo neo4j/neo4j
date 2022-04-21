@@ -27,23 +27,20 @@ import org.neo4j.storageengine.api.format.Capability;
  * Two formats in different versions should have same format family.
  * Family is one of the criteria that will determine if migration between formats is possible.
  */
-public enum FormatFamily
-{
-    standard( 0 ),
-    aligned( 1 ),
-    high_limit( 2 );
+public enum FormatFamily {
+    standard(0),
+    aligned(1),
+    high_limit(2);
 
     private final int rank;
     private final Capability formatCapability;
 
-    FormatFamily( int rank )
-    {
+    FormatFamily(int rank) {
         this.rank = rank;
-        this.formatCapability = new RecordFormatFamilyCapability( this );
+        this.formatCapability = new RecordFormatFamilyCapability(this);
     }
 
-    public Capability formatCapability()
-    {
+    public Capability formatCapability() {
         return formatCapability;
     }
 
@@ -53,18 +50,15 @@ public enum FormatFamily
      * @param other family to compare with.
      * @return {@code true} if this family is higher ranked than {@code other}.
      */
-    public boolean isHigherThan( FormatFamily other )
-    {
+    public boolean isHigherThan(FormatFamily other) {
         return rank > other.rank;
     }
 
-    public GraphDatabaseSettings.DatabaseRecordFormat databaseRecordFormat()
-    {
-        return switch ( this )
-                {
-                    case standard -> GraphDatabaseSettings.DatabaseRecordFormat.standard;
-                    case aligned -> GraphDatabaseSettings.DatabaseRecordFormat.aligned;
-                    case high_limit -> GraphDatabaseSettings.DatabaseRecordFormat.high_limit;
-                };
+    public GraphDatabaseSettings.DatabaseRecordFormat databaseRecordFormat() {
+        return switch (this) {
+            case standard -> GraphDatabaseSettings.DatabaseRecordFormat.standard;
+            case aligned -> GraphDatabaseSettings.DatabaseRecordFormat.aligned;
+            case high_limit -> GraphDatabaseSettings.DatabaseRecordFormat.high_limit;
+        };
     }
 }

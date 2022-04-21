@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 class LiteralTest extends SemanticFunSuite {
+
   test("has type CTString") {
     val literal = StringLiteral("foo")(pos)
     val result = SemanticExpressionCheck.simple(literal)(SemanticState.clean)

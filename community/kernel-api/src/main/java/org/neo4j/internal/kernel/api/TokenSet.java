@@ -27,41 +27,35 @@ import java.util.NoSuchElementException;
  * Modifications are not reflected in the TokenSet and there is no guaranteed
  * order.
  */
-public interface TokenSet
-{
+public interface TokenSet {
     int numberOfTokens();
 
-    int token( int offset );
+    int token(int offset);
 
-    boolean contains( int token );
+    boolean contains(int token);
 
     long[] all();
 
-    TokenSet NONE = new TokenSet()
-    {
+    TokenSet NONE = new TokenSet() {
         private final long[] EMPTY = new long[0];
 
         @Override
-        public int numberOfTokens()
-        {
+        public int numberOfTokens() {
             return 0;
         }
 
         @Override
-        public int token( int offset )
-        {
+        public int token(int offset) {
             throw new NoSuchElementException();
         }
 
         @Override
-        public boolean contains( int token )
-        {
+        public boolean contains(int token) {
             return false;
         }
 
         @Override
-        public long[] all()
-        {
+        public long[] all() {
             return EMPTY;
         }
     };

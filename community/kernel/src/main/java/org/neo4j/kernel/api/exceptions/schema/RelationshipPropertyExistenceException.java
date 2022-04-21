@@ -19,33 +19,37 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import static java.lang.String.format;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
-import static java.lang.String.format;
-
-public class RelationshipPropertyExistenceException extends ConstraintValidationException
-{
+public class RelationshipPropertyExistenceException extends ConstraintValidationException {
     private final RelationTypeSchemaDescriptor schema;
     private final long relationshipId;
 
-    public RelationshipPropertyExistenceException( RelationTypeSchemaDescriptor schema, ConstraintValidationException.Phase phase, long relationshipId,
-            TokenNameLookup tokenNameLookup )
-    {
-        super( ConstraintDescriptorFactory.existsForSchema( schema ),
-                phase, format( "Relationship(%s)", relationshipId ), tokenNameLookup );
+    public RelationshipPropertyExistenceException(
+            RelationTypeSchemaDescriptor schema,
+            ConstraintValidationException.Phase phase,
+            long relationshipId,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                ConstraintDescriptorFactory.existsForSchema(schema),
+                phase,
+                format("Relationship(%s)", relationshipId),
+                tokenNameLookup);
         this.schema = schema;
         this.relationshipId = relationshipId;
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
-        return format( "Relationship(%s) with type `%s` must have the property `%s`",
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
+        return format(
+                "Relationship(%s) with type `%s` must have the property `%s`",
                 relationshipId,
-                tokenNameLookup.relationshipTypeGetName( schema.getRelTypeId() ),
-                tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) );
+                tokenNameLookup.relationshipTypeGetName(schema.getRelTypeId()),
+                tokenNameLookup.propertyKeyGetName(schema.getPropertyId()));
     }
 }

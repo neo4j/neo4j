@@ -33,7 +33,8 @@ case object DeprecatedSyntaxReplaced extends Condition
 /**
  * Find deprecated Cypher constructs, generate warnings for them, and replace deprecated syntax with currently accepted syntax.
  */
-case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations) extends Phase[BaseContext, BaseState, BaseState] {
+case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations)
+    extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(state: BaseState, context: BaseContext): BaseState = {
     val allDeprecations = deprecations match {
@@ -45,7 +46,9 @@ case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations) 
         foundWithoutContext ++ foundWithContext
       case semanticDeprecations: SemanticDeprecations =>
         val semanticTable = state.maybeSemanticTable.getOrElse(
-          throw new IllegalStateException(s"Got semantic deprecations ${semanticDeprecations.getClass.getSimpleName} but no SemanticTable")
+          throw new IllegalStateException(
+            s"Got semantic deprecations ${semanticDeprecations.getClass.getSimpleName} but no SemanticTable"
+          )
         )
 
         state.statement().folder.fold(Set.empty[Deprecation]) {

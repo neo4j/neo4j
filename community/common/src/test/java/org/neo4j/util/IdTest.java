@@ -19,50 +19,44 @@
  */
 package org.neo4j.util;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class IdTest
-{
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class IdTest {
     @Test
-    void idsAreEqualIfSameUuid()
-    {
+    void idsAreEqualIfSameUuid() {
         var uuid = UUID.randomUUID();
 
-        var id1 = new Id( uuid );
-        var id2 = new Id( uuid );
+        var id1 = new Id(uuid);
+        var id2 = new Id(uuid);
 
-        assertEquals( id1, id2 );
+        assertEquals(id1, id2);
     }
 
     @Test
-    void idsAreNotEqualIfDifferentUuid()
-    {
-        var id1 = new Id( UUID.randomUUID() );
-        var id2 = new Id( UUID.randomUUID() );
+    void idsAreNotEqualIfDifferentUuid() {
+        var id1 = new Id(UUID.randomUUID());
+        var id2 = new Id(UUID.randomUUID());
 
-        assertNotEquals( id1, id2 );
+        assertNotEquals(id1, id2);
     }
 
     @Test
-    void shouldPrintShortName()
-    {
+    void shouldPrintShortName() {
         var uuid = UUID.randomUUID();
-        var id = new Id( uuid );
+        var id = new Id(uuid);
 
-        assertEquals( uuid.toString().substring( 0, 8 ), id.toString() );
+        assertEquals(uuid.toString().substring(0, 8), id.toString());
     }
 
     @Test
-    void shouldNotAllowNull()
-    {
-        var nullPointerException = assertThrows( NullPointerException.class, () -> new Id( null ) );
+    void shouldNotAllowNull() {
+        var nullPointerException = assertThrows(NullPointerException.class, () -> new Id(null));
 
-        assertEquals( nullPointerException.getMessage(), "UUID should be not null." );
+        assertEquals(nullPointerException.getMessage(), "UUID should be not null.");
     }
 }

@@ -19,23 +19,23 @@
  */
 package org.neo4j.server.rest.dbms;
 
+import static java.util.Collections.singletonList;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
-
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.web.AbstractFilter;
 
-import static java.util.Collections.singletonList;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-
-public abstract class AuthorizationFilter extends AbstractFilter
-{
-    protected static ThrowingConsumer<HttpServletResponse, IOException> unauthorizedAccess( final String message )
-    {
-        return error( 403,
-                map( "errors", singletonList( map(
-                        "code", Status.Security.Forbidden.code().serialize(),
-                        "message", String.format("Unauthorized access violation: %s.", message ) ) ) ) );
+public abstract class AuthorizationFilter extends AbstractFilter {
+    protected static ThrowingConsumer<HttpServletResponse, IOException> unauthorizedAccess(final String message) {
+        return error(
+                403,
+                map(
+                        "errors",
+                        singletonList(map(
+                                "code", Status.Security.Forbidden.code().serialize(),
+                                "message", String.format("Unauthorized access violation: %s.", message)))));
     }
 }

@@ -21,12 +21,10 @@ package org.neo4j.server.config;
 
 import org.neo4j.server.rest.repr.MappingRepresentation;
 
-public interface AuthConfigProvider
-{
+public interface AuthConfigProvider {
     MappingRepresentation getRepresentation();
 
-    default byte[] getRepresentationAsBytes()
-    {
+    default byte[] getRepresentationAsBytes() {
         return null;
     }
 }

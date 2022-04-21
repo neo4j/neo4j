@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.storageengine.api.LegacyStoreId;
 
-public class LogVersions
-{
-    private LogVersions()
-    {
+public class LogVersions {
+    private LogVersions() {
         // no instances are allowed
     }
 

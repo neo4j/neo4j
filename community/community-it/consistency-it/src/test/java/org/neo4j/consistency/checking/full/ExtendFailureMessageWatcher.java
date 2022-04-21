@@ -19,23 +19,19 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-import java.util.function.Supplier;
-
-public class ExtendFailureMessageWatcher implements TestWatcher
-{
+public class ExtendFailureMessageWatcher implements TestWatcher {
     private final Supplier<String> getter;
 
-    public ExtendFailureMessageWatcher( Supplier<String> getter )
-    {
+    public ExtendFailureMessageWatcher(Supplier<String> getter) {
         this.getter = getter;
     }
 
     @Override
-    public void testFailed( ExtensionContext context, Throwable cause )
-    {
-        cause.addSuppressed( new Exception( getter.get() + cause.getMessage() ) );
+    public void testFailed(ExtensionContext context, Throwable cause) {
+        cause.addSuppressed(new Exception(getter.get() + cause.getMessage()));
     }
 }

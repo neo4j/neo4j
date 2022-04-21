@@ -38,8 +38,7 @@ import java.util.Objects;
  *
  * For features that the user is ever expected to touch, feature toggles is the wrong abstraction!
  */
-public final class FeatureToggles
-{
+public final class FeatureToggles {
     /**
      * Get the value of a {@code boolean} system property.
      *
@@ -50,9 +49,8 @@ public final class FeatureToggles
      * @param defaultValue the default value of the flag if the system property is not assigned.
      * @return the parsed value of the system property, or the default value.
      */
-    public static boolean flag( Class<?> location, String name, boolean defaultValue )
-    {
-        return booleanProperty( name( location, name ), defaultValue );
+    public static boolean flag(Class<?> location, String name, boolean defaultValue) {
+        return booleanProperty(name(location, name), defaultValue);
     }
 
     /**
@@ -65,9 +63,8 @@ public final class FeatureToggles
      * @param defaultValue the default value of the flag if the system property is not assigned.
      * @return the parsed value of the system property, or the default value.
      */
-    public static boolean packageFlag( Class<?> location, String name, boolean defaultValue )
-    {
-        return booleanProperty( name( location.getPackage(), name ), defaultValue );
+    public static boolean packageFlag(Class<?> location, String name, boolean defaultValue) {
+        return booleanProperty(name(location.getPackage(), name), defaultValue);
     }
 
     /**
@@ -80,9 +77,8 @@ public final class FeatureToggles
      * @param defaultValue the default value of the flag if the system property is not assigned.
      * @return the parsed value of the system property, or the default value.
      */
-    public static long getLong( Class<?> location, String name, long defaultValue )
-    {
-        return Long.getLong( name( location, name ), defaultValue );
+    public static long getLong(Class<?> location, String name, long defaultValue) {
+        return Long.getLong(name(location, name), defaultValue);
     }
 
     /**
@@ -95,9 +91,8 @@ public final class FeatureToggles
      * @param defaultValue the default value of the flag if the system property is not assigned.
      * @return the parsed value of the system property, or the default value.
      */
-    public static int getInteger( Class<?> location, String name, int defaultValue )
-    {
-        return Integer.getInteger( name( location, name ), defaultValue );
+    public static int getInteger(Class<?> location, String name, int defaultValue) {
+        return Integer.getInteger(name(location, name), defaultValue);
     }
 
     /**
@@ -110,18 +105,13 @@ public final class FeatureToggles
      * @param defaultValue the default value of the flag if the system property is not assigned.
      * @return the parsed value of the system property, or the default value.
      */
-    public static double getDouble( Class<?> location, String name, double defaultValue )
-    {
-        try
-        {
-            String propertyValue = System.getProperty( name( location, name ) );
-            if ( propertyValue != null && !propertyValue.isEmpty() )
-            {
-                return Double.parseDouble( propertyValue );
+    public static double getDouble(Class<?> location, String name, double defaultValue) {
+        try {
+            String propertyValue = System.getProperty(name(location, name));
+            if (propertyValue != null && !propertyValue.isEmpty()) {
+                return Double.parseDouble(propertyValue);
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             // ignored
         }
         return defaultValue;
@@ -137,9 +127,8 @@ public final class FeatureToggles
      * @param defaultValue the default value of the flag if the system property is not assigned.
      * @return the parsed value of the system property, or the default value.
      */
-    public static String getString( Class<?> location, String name, String defaultValue )
-    {
-        String propertyValue = System.getProperty( name( location, name ) );
+    public static String getString(Class<?> location, String name, String defaultValue) {
+        String propertyValue = System.getProperty(name(location, name));
         return propertyValue == null || propertyValue.isEmpty() ? defaultValue : propertyValue;
     }
 
@@ -154,9 +143,8 @@ public final class FeatureToggles
      * @param <E> the enum value type.
      * @return the parsed value of the system property, or the default value.
      */
-    public static <E extends Enum<E>> E flag( Class<?> location, String name, E defaultValue )
-    {
-        return enumProperty( defaultValue.getDeclaringClass(), name( location, name ), defaultValue );
+    public static <E extends Enum<E>> E flag(Class<?> location, String name, E defaultValue) {
+        return enumProperty(defaultValue.getDeclaringClass(), name(location, name), defaultValue);
     }
 
     /**
@@ -168,9 +156,8 @@ public final class FeatureToggles
      * @param name the local name of the flag.
      * @param value the value to assign to the system property.
      */
-    public static void set( Class<?> location, String name, Object value )
-    {
-        System.setProperty( name( location, name ), Objects.toString( value ) );
+    public static void set(Class<?> location, String name, Object value) {
+        System.setProperty(name(location, name), Objects.toString(value));
     }
 
     /**
@@ -181,43 +168,32 @@ public final class FeatureToggles
      * @param location the class that owns the flag.
      * @param name the local name of the flag.
      */
-    public static void clear( Class<?> location, String name )
-    {
-        System.clearProperty( name( location, name ) );
+    public static void clear(Class<?> location, String name) {
+        System.clearProperty(name(location, name));
     }
 
-    private FeatureToggles()
-    {
-    }
+    private FeatureToggles() {}
 
-    private static String name( Class<?> location, String name )
-    {
+    private static String name(Class<?> location, String name) {
         return location.getCanonicalName() + "." + name;
     }
 
-    private static String name( Package location, String name )
-    {
+    private static String name(Package location, String name) {
         return location.getName() + "." + name;
     }
 
-    private static boolean booleanProperty( String flag, boolean defaultValue )
-    {
-        return parseBoolean( System.getProperty( flag ), defaultValue );
+    private static boolean booleanProperty(String flag, boolean defaultValue) {
+        return parseBoolean(System.getProperty(flag), defaultValue);
     }
 
-    private static boolean parseBoolean( String value, boolean defaultValue )
-    {
-        return defaultValue ? !"false".equalsIgnoreCase( value ) : "true".equalsIgnoreCase( value );
+    private static boolean parseBoolean(String value, boolean defaultValue) {
+        return defaultValue ? !"false".equalsIgnoreCase(value) : "true".equalsIgnoreCase(value);
     }
 
-    private static <E extends Enum<E>> E enumProperty( Class<E> enumClass, String name, E defaultValue )
-    {
-        try
-        {
-            return Enum.valueOf( enumClass, System.getProperty( name, defaultValue.name() ) );
-        }
-        catch ( IllegalArgumentException e )
-        {
+    private static <E extends Enum<E>> E enumProperty(Class<E> enumClass, String name, E defaultValue) {
+        try {
+            return Enum.valueOf(enumClass, System.getProperty(name, defaultValue.name()));
+        } catch (IllegalArgumentException e) {
             return defaultValue;
         }
     }

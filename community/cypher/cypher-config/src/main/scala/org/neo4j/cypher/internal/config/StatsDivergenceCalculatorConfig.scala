@@ -35,10 +35,9 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherReplanAlgorit
  *                             See [[org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_replan_interval_target]]
  */
 case class StatsDivergenceCalculatorConfig(
-                                            algorithm: CypherReplanAlgorithm,
-                                            initialThreshold: Double,
-                                            targetThreshold: Double,
-                                            minReplanInterval: Long,
-                                            targetReplanInterval: Long,
+  algorithm: CypherReplanAlgorithm,
+  initialThreshold: Double,
+  targetThreshold: Double,
+  minReplanInterval: Long,
+  targetReplanInterval: Long
 )
-

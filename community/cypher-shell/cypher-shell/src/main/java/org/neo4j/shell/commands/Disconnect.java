@@ -20,7 +20,6 @@
 package org.neo4j.shell.commands;
 
 import java.util.List;
-
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
@@ -28,35 +27,29 @@ import org.neo4j.shell.exception.ExitException;
 /**
  * Disconnects from a database
  */
-public class Disconnect implements Command
-{
+public class Disconnect implements Command {
     private static final String COMMAND_NAME = ":disconnect";
     private final CypherShell cypherShell;
 
-    public Disconnect( CypherShell cypherShell )
-    {
+    public Disconnect(CypherShell cypherShell) {
         this.cypherShell = cypherShell;
     }
 
     @Override
-    public void execute( final List<String> args ) throws ExitException, CommandException
-    {
-        requireArgumentCount( args, 0 );
+    public void execute(final List<String> args) throws ExitException, CommandException {
+        requireArgumentCount(args, 0);
         cypherShell.disconnect();
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
-            return new Metadata( ":disconnect", "Disconnects from database", "", "Disconnects from database", List.of() );
+        public Metadata metadata() {
+            return new Metadata(":disconnect", "Disconnects from database", "", "Disconnects from database", List.of());
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
-            return new Disconnect( args.cypherShell() );
+        public Command executor(Arguments args) {
+            return new Disconnect(args.cypherShell());
         }
     }
 }

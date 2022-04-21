@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -33,11 +33,8 @@ import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DbmsExtension
-class PropertyKeyTest
-{
+class PropertyKeyTest {
     @Inject
     private GraphDatabaseService db;
 
@@ -45,40 +42,35 @@ class PropertyKeyTest
     DbmsController dbmsController;
 
     @Test
-    void lazyLoadWithinWriteTransaction() throws IOException
-    {
+    void lazyLoadWithinWriteTransaction() throws IOException {
         int count = 3000;
 
         long nodeId = -1;
-        try ( var tx = db.beginTx() )
-        {
+        try (var tx = db.beginTx()) {
             var node = tx.createNode();
-            mapWithManyProperties( count ).forEach( node::setProperty );
+            mapWithManyProperties(count).forEach(node::setProperty);
             nodeId = node.getId();
             tx.commit();
         }
 
         dbmsController.restartDbms();
-        assertThat( db.isAvailable( TimeUnit.MINUTES.toMillis( 5 ) ) ).isTrue();
+        assertThat(db.isAvailable(TimeUnit.MINUTES.toMillis(5))).isTrue();
 
         // When
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
-            Node node = tx.getNodeById( nodeId );
+            Node node = tx.getNodeById(nodeId);
 
             // Then
-            assertThat( node.getPropertyKeys( ) ).hasSize( count );
+            assertThat(node.getPropertyKeys()).hasSize(count);
             tx.commit();
         }
     }
 
-    private static Map<String, Object> mapWithManyProperties( int count )
-    {
+    private static Map<String, Object> mapWithManyProperties(int count) {
         Map<String, Object> properties = new HashMap<>();
-        for ( int i = 0; i < count; i++ )
-        {
-            properties.put( "key:" + i, "value" );
+        for (int i = 0; i < count; i++) {
+            properties.put("key:" + i, "value");
         }
         return properties;
     }

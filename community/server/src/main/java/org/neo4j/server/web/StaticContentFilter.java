@@ -29,33 +29,26 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class StaticContentFilter implements Filter
-{
+public class StaticContentFilter implements Filter {
     @Override
-    public void init( FilterConfig filterConfig )
-    {
-    }
+    public void init(FilterConfig filterConfig) {}
 
     @Override
-    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain )
-            throws IOException, ServletException
-    {
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
+            throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        if ( request.getServletPath() != null && request.getServletPath().endsWith( ".html" ) )
-        {
-            response.addHeader( "Cache-Control", "private, no-cache, no-store, proxy-revalidate, no-transform" );
-            response.addHeader( "Pragma", "no-cache" );
-            response.addHeader( "Content-Security-Policy", "frame-ancestors 'none'" );
-            response.addHeader( "X-Frame-Options", "DENY" );
-            response.addHeader( "X-Content-Type-Options", "nosniff" );
-            response.addHeader( "X-XSS-Protection", "1; mode=block" );
+        if (request.getServletPath() != null && request.getServletPath().endsWith(".html")) {
+            response.addHeader("Cache-Control", "private, no-cache, no-store, proxy-revalidate, no-transform");
+            response.addHeader("Pragma", "no-cache");
+            response.addHeader("Content-Security-Policy", "frame-ancestors 'none'");
+            response.addHeader("X-Frame-Options", "DENY");
+            response.addHeader("X-Content-Type-Options", "nosniff");
+            response.addHeader("X-XSS-Protection", "1; mode=block");
         }
-        filterChain.doFilter( servletRequest, servletResponse);
+        filterChain.doFilter(servletRequest, servletResponse);
     }
 
     @Override
-    public void destroy()
-    {
-    }
+    public void destroy() {}
 }

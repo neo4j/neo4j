@@ -30,7 +30,10 @@ class AggregationHelperTest extends CypherFunSuite with AstConstructionTestSuppo
     extractPropertyForValue(prop("x", "prop"), Map.empty) should be(Some(prop("x", "prop")))
     extractPropertyForValue(prop("x", "prop"), Map("x" -> varFor("y"))) should be(Some(prop("y", "prop")))
     extractPropertyForValue(varFor("x"), Map("x" -> prop("y", "prop"))) should be(Some(prop("y", "prop")))
-    extractPropertyForValue(varFor("x"), Map("x" -> varFor("z"),  "z" -> prop("y", "prop"))) should be(Some(prop("y", "prop")))
+    extractPropertyForValue(varFor("x"), Map("x" -> varFor("z"), "z" -> prop("y", "prop"))) should be(Some(prop(
+      "y",
+      "prop"
+    )))
     extractPropertyForValue(function("foo", prop("x", "prop")), Map.empty) should be(Some(prop("x", "prop")))
     extractPropertyForValue(function("foo", varFor("x"), prop("x", "prop")), Map.empty) should be(None)
     extractPropertyForValue(function("foo", function("bar", prop("x", "prop"))), Map.empty) should be(None)

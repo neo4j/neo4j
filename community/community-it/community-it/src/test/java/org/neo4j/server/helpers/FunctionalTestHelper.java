@@ -20,47 +20,38 @@
 package org.neo4j.server.helpers;
 
 import java.net.URI;
-
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-public final class FunctionalTestHelper
-{
+public final class FunctionalTestHelper {
     private final TestWebContainer server;
     private final GraphDbHelper helper;
 
-    public FunctionalTestHelper( TestWebContainer container )
-    {
-        this.helper = new GraphDbHelper( container.getDefaultDatabase() );
+    public FunctionalTestHelper(TestWebContainer container) {
+        this.helper = new GraphDbHelper(container.getDefaultDatabase());
         this.server = container;
     }
 
-    public GraphDbHelper getGraphDbHelper()
-    {
+    public GraphDbHelper getGraphDbHelper() {
         return helper;
     }
 
-    private String databaseUri()
-    {
-        return databaseUri( "neo4j" );
+    private String databaseUri() {
+        return databaseUri("neo4j");
     }
 
-    private String databaseUri( String databaseName )
-    {
-        return String.format( "%sdb/%s/", server.getBaseUri(), databaseName );
+    private String databaseUri(String databaseName) {
+        return String.format("%sdb/%s/", server.getBaseUri(), databaseName);
     }
 
-    public URI baseUri()
-    {
+    public URI baseUri() {
         return server.getBaseUri();
     }
 
-    public String txCommitUri()
-    {
+    public String txCommitUri() {
         return databaseUri() + "tx/commit";
     }
 
-    public String txCommitUri( String databaseName )
-    {
-        return databaseUri( databaseName ) + "tx/commit";
+    public String txCommitUri(String databaseName) {
+        return databaseUri(databaseName) + "tx/commit";
     }
 }

@@ -19,14 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.storageengine.api.CommandsToApply;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
@@ -34,8 +26,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
-class TransactionApplierFactoryChainTest
-{
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.storageengine.api.CommandsToApply;
+
+class TransactionApplierFactoryChainTest {
     private TransactionApplierFactoryChain facade;
     private TransactionApplierFactory applier1;
     private TransactionApplierFactory applier2;
@@ -45,66 +43,67 @@ class TransactionApplierFactoryChainTest
     private TransactionApplier txApplier3;
 
     @BeforeEach
-    void setUp() throws Exception
-    {
-        txApplier1 = mock( TransactionApplier.class );
-        applier1 = mock( TransactionApplierFactory.class );
-        when( applier1.startTx( any( CommandsToApply.class ), any( BatchContext.class ) ) ).thenReturn( txApplier1 );
+    void setUp() throws Exception {
+        txApplier1 = mock(TransactionApplier.class);
+        applier1 = mock(TransactionApplierFactory.class);
+        when(applier1.startTx(any(CommandsToApply.class), any(BatchContext.class)))
+                .thenReturn(txApplier1);
 
-        txApplier2 = mock( TransactionApplier.class );
-        applier2 = mock( TransactionApplierFactory.class );
-        when( applier2.startTx( any( CommandsToApply.class ), any( BatchContext.class ) ) ).thenReturn( txApplier2 );
+        txApplier2 = mock(TransactionApplier.class);
+        applier2 = mock(TransactionApplierFactory.class);
+        when(applier2.startTx(any(CommandsToApply.class), any(BatchContext.class)))
+                .thenReturn(txApplier2);
 
-        txApplier3 = mock( TransactionApplier.class );
-        applier3 = mock( TransactionApplierFactory.class );
-        when( applier3.startTx( any( CommandsToApply.class ), any( BatchContext.class ) ) ).thenReturn( txApplier3 );
+        txApplier3 = mock(TransactionApplier.class);
+        applier3 = mock(TransactionApplierFactory.class);
+        when(applier3.startTx(any(CommandsToApply.class), any(BatchContext.class)))
+                .thenReturn(txApplier3);
 
-        facade = new TransactionApplierFactoryChain( w -> w.newBatch( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ), applier1, applier2, applier3 );
+        facade = new TransactionApplierFactoryChain(
+                w -> w.newBatch(new CursorContextFactory(PageCacheTracer.NULL, EMPTY)), applier1, applier2, applier3);
     }
 
     @Test
-    void testStartTxCorrectOrder() throws Exception
-    {
+    void testStartTxCorrectOrder() throws Exception {
         // GIVEN
-        var tx = mock( CommandsToApply.class );
-        var batchContext = mock( BatchContext.class );
+        var tx = mock(CommandsToApply.class);
+        var batchContext = mock(BatchContext.class);
 
         // WHEN
-        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx( tx, batchContext );
+        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx(tx, batchContext);
 
         // THEN
-        InOrder inOrder = inOrder( applier1, applier2, applier3 );
+        InOrder inOrder = inOrder(applier1, applier2, applier3);
 
-        inOrder.verify( applier1 ).startTx( tx, batchContext );
-        inOrder.verify( applier2 ).startTx( tx, batchContext );
-        inOrder.verify( applier3 ).startTx( tx, batchContext );
+        inOrder.verify(applier1).startTx(tx, batchContext);
+        inOrder.verify(applier2).startTx(tx, batchContext);
+        inOrder.verify(applier3).startTx(tx, batchContext);
 
-        assertEquals( txApplier1, result.appliers[0] );
-        assertEquals( txApplier2, result.appliers[1] );
-        assertEquals( txApplier3, result.appliers[2] );
-        assertEquals( 3, result.appliers.length );
+        assertEquals(txApplier1, result.appliers[0]);
+        assertEquals(txApplier2, result.appliers[1]);
+        assertEquals(txApplier3, result.appliers[2]);
+        assertEquals(3, result.appliers.length);
     }
 
     @Test
-    void testStartTxCorrectOrderWithLockGroup() throws Exception
-    {
+    void testStartTxCorrectOrderWithLockGroup() throws Exception {
         // GIVEN
-        CommandsToApply tx = mock( CommandsToApply.class );
-        var batchContext = mock( BatchContext.class );
+        CommandsToApply tx = mock(CommandsToApply.class);
+        var batchContext = mock(BatchContext.class);
 
         // WHEN
-        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx( tx, batchContext );
+        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx(tx, batchContext);
 
         // THEN
-        InOrder inOrder = inOrder( applier1, applier2, applier3 );
+        InOrder inOrder = inOrder(applier1, applier2, applier3);
 
-        inOrder.verify( applier1 ).startTx( tx, batchContext );
-        inOrder.verify( applier2 ).startTx( tx, batchContext );
-        inOrder.verify( applier3 ).startTx( tx, batchContext );
+        inOrder.verify(applier1).startTx(tx, batchContext);
+        inOrder.verify(applier2).startTx(tx, batchContext);
+        inOrder.verify(applier3).startTx(tx, batchContext);
 
-        assertEquals( txApplier1, result.appliers[0] );
-        assertEquals( txApplier2, result.appliers[1] );
-        assertEquals( txApplier3, result.appliers[2] );
-        assertEquals( 3, result.appliers.length );
+        assertEquals(txApplier1, result.appliers[0]);
+        assertEquals(txApplier2, result.appliers[1]);
+        assertEquals(txApplier3, result.appliers[2]);
+        assertEquals(3, result.appliers.length);
     }
 }

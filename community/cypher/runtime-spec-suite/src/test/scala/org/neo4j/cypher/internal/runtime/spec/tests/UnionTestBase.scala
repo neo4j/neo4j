@@ -31,10 +31,10 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.RelationshipType
 
 abstract class UnionTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                        ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should union single variable") {
     // when
@@ -185,7 +185,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x", "y").withRows(
       nodes.map(n => Array(n, "left")) ++
-      nodes.map(n => Array(n, "right"))
+        nodes.map(n => Array(n, "right"))
     )
   }
 
@@ -208,7 +208,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x", "r").withRows(
       rels.map(r => Array(r.getStartNode, r)) ++
-      rels.map(r => Array(r.getEndNode, r))
+        rels.map(r => Array(r.getEndNode, r))
     )
   }
 
@@ -249,7 +249,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "z").withRows(
-      (1 to 9).map(a => Array[Any](a+10, a+20, a+30)) :+
+      (1 to 9).map(a => Array[Any](a + 10, a + 20, a + 30)) :+
         Array("hi", "ho", "humbug")
     )
   }
@@ -270,14 +270,14 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "z").withRows(
-      (1 to 9).map(a => Array[Any](a+10, a+20, a+30)) :+
+      (1 to 9).map(a => Array[Any](a + 10, a + 20, a + 30)) :+
         Array("hi", "ho", "humbug")
     )
   }
 
   test("should union cached properties") {
     val size = sizeHint / 2
-    given { nodePropertyGraph(size, { case i => Map("prop" -> i)}) }
+    given { nodePropertyGraph(size, { case i => Map("prop" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -382,7 +382,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit on RHS") {
     val size = sizeHint / 2
-    given { nodeGraph(size)}
+    given { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -403,7 +403,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit on LHS") {
     val size = sizeHint / 2
-    given { nodeGraph(size)}
+    given { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -499,7 +499,9 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .|.limit(1)
       .|.distinct("a AS a")
       .|.union()
-      .|.|.filter("id(a) % 10 >= 5") // With this filter the lowest argument ids through union in will come only from LHS
+      .|.|.filter(
+        "id(a) % 10 >= 5"
+      ) // With this filter the lowest argument ids through union in will come only from LHS
       .|.|.allNodeScan("a")
       .|.argument()
       .allNodeScan("a")
@@ -641,9 +643,12 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should union with alias on RHS") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -666,9 +671,12 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should union with alias on LHS") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -805,7 +813,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with non-fused limit") {
     val size = sizeHint / 2
-    given { nodeGraph(size)}
+    given { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -898,7 +906,6 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       nodeA
     }
 
-
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .optional()
@@ -909,7 +916,6 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .aggregation(Seq(), Seq("collect(nB) AS c"))
       .nodeByLabelScan("nB", "B")
       .build()
-
 
     val runtimeResult = execute(logicalQuery, runtime)
 

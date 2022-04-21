@@ -19,54 +19,45 @@
  */
 package org.neo4j.kernel.impl.newapi.index;
 
-class NativeBtree10IndexParams implements IndexParams
-{
+class NativeBtree10IndexParams implements IndexParams {
 
     @Override
-    public String providerKey()
-    {
+    public String providerKey() {
         return "native-btree";
     }
 
     @Override
-    public String providerVersion()
-    {
+    public String providerVersion() {
         return "1.0";
     }
 
     @Override
-    public boolean indexProvidesStringValues()
-    {
+    public boolean indexProvidesStringValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesNumericValues()
-    {
+    public boolean indexProvidesNumericValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesAllValues()
-    {
+    public boolean indexProvidesAllValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesArrayValues()
-    {
+    public boolean indexProvidesArrayValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesBooleanValues()
-    {
+    public boolean indexProvidesBooleanValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesSpatialValues()
-    {
+    public boolean indexProvidesSpatialValues() {
         return true;
     }
 }

@@ -37,16 +37,20 @@ import org.neo4j.logging.InternalLog
 import java.lang.Math.min
 
 object TransactionBoundGraphStatistics {
+
   def apply(transactionalContext: TransactionalContext, log: InternalLog): MinimumGraphStatistics =
-    apply(transactionalContext.kernelTransaction().dataRead(),
+    apply(
+      transactionalContext.kernelTransaction().dataRead(),
       transactionalContext.kernelTransaction().schemaRead(),
-      log)
+      log
+    )
 
   def apply(read: Read, schemaRead: SchemaRead, log: InternalLog): MinimumGraphStatistics = {
     new MinimumGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead, log))
   }
 
-  private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead, log: InternalLog) extends GraphStatistics with IndexDescriptorCompatibility {
+  private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead, log: InternalLog)
+      extends GraphStatistics with IndexDescriptorCompatibility {
 
     override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
@@ -55,7 +59,6 @@ object TransactionBoundGraphStatistics {
           val indexSize = schemaRead.indexSize(indexDescriptor)
           if (indexSize == 0)
             Selectivity.ZERO
-
           else {
             // Probability of any entity in the index, to have a property with a given value
             val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(indexDescriptor)
@@ -71,8 +74,7 @@ object TransactionBoundGraphStatistics {
             }
           }
         }
-      }
-      catch {
+      } catch {
         case e: IndexNotFoundKernelException =>
           log.debug("Index not found for uniqueValueSelectivity", e)
           None
@@ -96,13 +98,12 @@ object TransactionBoundGraphStatistics {
             val indexSize = schemaRead.indexSize(indexDescriptor)
             val indexSelectivity = indexSize / entitiesCount
 
-            //Even though semantically impossible the index can get into a state where
-            //the indexSize > entitiesCount
+            // Even though semantically impossible the index can get into a state where
+            // the indexSize > entitiesCount
             Selectivity(min(indexSelectivity, 1.0))
           }
         }
-      }
-      catch {
+      } catch {
         case e: IndexNotFoundKernelException =>
           log.debug("Index not found for indexPropertyExistsSelectivity", e)
           None
@@ -116,7 +117,11 @@ object TransactionBoundGraphStatistics {
       Cardinality(count)
     }
 
-    override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    override def patternStepCardinality(
+      fromLabel: Option[LabelId],
+      relTypeId: Option[RelTypeId],
+      toLabel: Option[LabelId]
+    ): Cardinality =
       Cardinality(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
 
     private def maybeKernelIndexDescriptor(indexDescriptor: IndexDescriptor): Option[schema.IndexDescriptor] = {

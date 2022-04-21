@@ -19,22 +19,20 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
+import static org.neo4j.kernel.impl.index.schema.IndexUpdateStorage.STOP_TYPE;
 
+import java.io.IOException;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.storageengine.api.UpdateMode;
-
-import static org.neo4j.kernel.impl.index.schema.IndexUpdateStorage.STOP_TYPE;
 
 /**
  * Cursor over serialized {@link org.neo4j.storageengine.api.IndexEntryUpdate} represented by {@link UpdateMode}, 2x{@link KEY} and {@link VALUE}.
  * Reads the updates in sequential order. Field instances are reused, so consumer is responsible for creating copies if result needs to be cached.
  */
-public class IndexUpdateCursor<KEY, VALUE> implements BlockEntryCursor<KEY,VALUE>
-{
+public class IndexUpdateCursor<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE> {
     private final PageCursor cursor;
-    private final Layout<KEY,VALUE> layout;
+    private final Layout<KEY, VALUE> layout;
 
     // Fields for the last entry
     private UpdateMode updateMode;
@@ -42,8 +40,7 @@ public class IndexUpdateCursor<KEY, VALUE> implements BlockEntryCursor<KEY,VALUE
     private final KEY key2;
     private final VALUE value;
 
-    IndexUpdateCursor( PageCursor cursor, Layout<KEY,VALUE> layout )
-    {
+    IndexUpdateCursor(PageCursor cursor, Layout<KEY, VALUE> layout) {
         this.cursor = cursor;
         this.layout = layout;
         this.key1 = layout.newKey();
@@ -52,44 +49,37 @@ public class IndexUpdateCursor<KEY, VALUE> implements BlockEntryCursor<KEY,VALUE
     }
 
     @Override
-    public boolean next() throws IOException
-    {
+    public boolean next() throws IOException {
         byte updateModeType = cursor.getByte();
-        if ( updateModeType == STOP_TYPE )
-        {
+        if (updateModeType == STOP_TYPE) {
             return false;
         }
 
         updateMode = UpdateMode.MODES[updateModeType];
-        IndexUpdateEntry.read( cursor, layout, updateMode, key1, key2, value );
+        IndexUpdateEntry.read(cursor, layout, updateMode, key1, key2, value);
         return true;
     }
 
     @Override
-    public KEY key()
-    {
+    public KEY key() {
         return key1;
     }
 
     @Override
-    public VALUE value()
-    {
+    public VALUE value() {
         return value;
     }
 
-    public KEY key2()
-    {
+    public KEY key2() {
         return key2;
     }
 
-    public UpdateMode updateMode()
-    {
+    public UpdateMode updateMode() {
         return updateMode;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         cursor.close();
     }
 }

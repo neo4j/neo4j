@@ -115,10 +115,10 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 }
 
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
-  extends NullInNullOutExpression(orig) {
+    extends NullInNullOutExpression(orig) {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = length match {
-    case None => CypherFunctions.substring(value, start(ctx, state))
+    case None       => CypherFunctions.substring(value, start(ctx, state))
     case Some(func) => CypherFunctions.substring(value, start(ctx, state), func(ctx, state))
   }
 
@@ -127,18 +127,19 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
   override def children: Seq[AstNode[_]] = arguments
 
   override def rewrite(f: Expression => Expression): Expression = f(
-    SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
+    SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f)))
+  )
 
 }
 
 case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
-  extends NullInNullOutExpression(orig) {
+    extends NullInNullOutExpression(orig) {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = {
-      val searchVal = search(ctx, state)
-      val replaceWithVal = replaceWith(ctx, state)
-      if ((searchVal eq NO_VALUE) || (replaceWithVal eq NO_VALUE)) NO_VALUE
-      else CypherFunctions.replace(value, searchVal, replaceWithVal)
+    val searchVal = search(ctx, state)
+    val replaceWithVal = replaceWith(ctx, state)
+    if ((searchVal eq NO_VALUE) || (replaceWithVal eq NO_VALUE)) NO_VALUE
+    else CypherFunctions.replace(value, searchVal, replaceWithVal)
   }
 
   override def arguments: Seq[Expression] = Seq(orig, search, replaceWith)
@@ -146,12 +147,13 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
   override def children: Seq[AstNode[_]] = arguments
 
   override def rewrite(f: Expression => Expression): Expression = f(
-    ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
+    ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f))
+  )
 
 }
 
 case class SplitFunction(orig: Expression, separator: Expression)
-  extends NullInNullOutExpression(orig) {
+    extends NullInNullOutExpression(orig) {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = {
     val sep = separator(ctx, state)
@@ -162,11 +164,12 @@ case class SplitFunction(orig: Expression, separator: Expression)
 
   override def children: Seq[AstNode[_]] = arguments
 
-  override def rewrite(f: Expression => Expression): Expression = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
 }
 
 case class LeftFunction(orig: Expression, length: Expression)
-  extends NullInNullOutExpression(orig) {
+    extends NullInNullOutExpression(orig) {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
     CypherFunctions.left(value, length(ctx, state))
@@ -180,7 +183,7 @@ case class LeftFunction(orig: Expression, length: Expression)
 }
 
 case class RightFunction(orig: Expression, length: Expression)
-  extends NullInNullOutExpression(orig) {
+    extends NullInNullOutExpression(orig) {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
     CypherFunctions.right(value, length(ctx, state))

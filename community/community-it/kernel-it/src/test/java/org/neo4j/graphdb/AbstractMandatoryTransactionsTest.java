@@ -19,57 +19,47 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.function.Consumer;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.function.Consumer;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @DbmsExtension
-public abstract class AbstractMandatoryTransactionsTest<T>
-{
+public abstract class AbstractMandatoryTransactionsTest<T> {
     @Inject
     public GraphDatabaseService db;
 
-    public T obtainEntity()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            T result = obtainEntityInTransaction( tx );
+    public T obtainEntity() {
+        try (Transaction tx = db.beginTx()) {
+            T result = obtainEntityInTransaction(tx);
             tx.commit();
 
             return result;
         }
     }
 
-    public void obtainEntityInTerminatedTransaction( Consumer<T> f )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            T result = obtainEntityInTransaction( tx );
+    public void obtainEntityInTerminatedTransaction(Consumer<T> f) {
+        try (Transaction tx = db.beginTx()) {
+            T result = obtainEntityInTransaction(tx);
             tx.terminate();
 
             f.accept(result);
         }
     }
 
-    protected abstract T obtainEntityInTransaction( Transaction transaction );
+    protected abstract T obtainEntityInTransaction(Transaction transaction);
 
-    public static <T> void assertFacadeMethodsThrowNotInTransaction( T entity, Consumer<T>[] methods )
-    {
-        for ( Consumer<T> method : methods )
-        {
-            assertThrows( NotInTransactionException.class, () -> method.accept( entity ), method::toString );
+    public static <T> void assertFacadeMethodsThrowNotInTransaction(T entity, Consumer<T>[] methods) {
+        for (Consumer<T> method : methods) {
+            assertThrows(NotInTransactionException.class, () -> method.accept(entity), method::toString);
         }
     }
 
-    public void assertFacadeMethodsThrowAfterTerminate( Consumer<T>[] methods )
-    {
-        for ( final Consumer<T> method : methods )
-        {
-            obtainEntityInTerminatedTransaction(
-                    entity -> assertThrows( TransactionTerminatedException.class, () -> method.accept( entity ), method::toString ) );
+    public void assertFacadeMethodsThrowAfterTerminate(Consumer<T>[] methods) {
+        for (final Consumer<T> method : methods) {
+            obtainEntityInTerminatedTransaction(entity ->
+                    assertThrows(TransactionTerminatedException.class, () -> method.accept(entity), method::toString));
         }
     }
 }

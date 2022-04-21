@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
-public interface LogFileFlushEvent extends AutoCloseable
-{
+public interface LogFileFlushEvent extends AutoCloseable {
     LogFileFlushEvent NULL = () -> {};
 
     @Override

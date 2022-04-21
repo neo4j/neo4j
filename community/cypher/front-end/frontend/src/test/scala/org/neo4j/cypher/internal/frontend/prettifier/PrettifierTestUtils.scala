@@ -55,15 +55,16 @@ trait PrettifierTestUtils extends Matchers {
 
   def roundTripCheck(original: Statement): Assertion = {
     val pretty = prettifier.asString(original)
-    val parsed = try {
-      parse(pretty)
-    } catch {
-      case e: Exception =>
-        println("-- failure --------------------------------------")
-        println(pretty)
-        printComparison(original, None)
-        throw e
-    }
+    val parsed =
+      try {
+        parse(pretty)
+      } catch {
+        case e: Exception =>
+          println("-- failure --------------------------------------")
+          println(pretty)
+          printComparison(original, None)
+          throw e
+      }
     val clean = dropQuotedSyntax(parsed)
     try {
       original shouldEqual clean

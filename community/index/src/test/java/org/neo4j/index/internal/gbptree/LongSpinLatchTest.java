@@ -19,86 +19,77 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.neo4j.test.Race;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.Race.throwing;
 
-class LongSpinLatchTest extends LatchTestBase
-{
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.Test;
+import org.neo4j.test.Race;
+
+class LongSpinLatchTest extends LatchTestBase {
     private final LongCapture removeAction = new LongCapture();
 
     @Test
-    void shouldAcquireAndReleaseRead()
-    {
+    void shouldAcquireAndReleaseRead() {
         // given
         LongSpinLatch latch = latch();
         int countAfterAcquired = latch.acquireRead();
-        assertThat( countAfterAcquired ).isOne();
-        assertThat( removeAction.count.get() ).isZero();
+        assertThat(countAfterAcquired).isOne();
+        assertThat(removeAction.count.get()).isZero();
 
         // when
         int countAfterReleased = latch.releaseRead();
 
         // then good
-        assertThat( countAfterReleased ).isZero();
-        assertThat( removeAction.count.get() ).isOne();
+        assertThat(countAfterReleased).isZero();
+        assertThat(removeAction.count.get()).isOne();
     }
 
     @Test
-    void shouldAcquireMultipleTimesAndReleaseRead()
-    {
+    void shouldAcquireMultipleTimesAndReleaseRead() {
         // given
         LongSpinLatch latch = latch();
         int times = 5;
-        for ( int i = 0; i < times; i++ )
-        {
+        for (int i = 0; i < times; i++) {
             int countAfterAcquired = latch.acquireRead();
-            assertEquals( i + 1, countAfterAcquired );
+            assertEquals(i + 1, countAfterAcquired);
         }
 
         // when/then
-        for ( int i = 5; i >= times; i-- )
-        {
+        for (int i = 5; i >= times; i--) {
             int countAfterReleased = latch.releaseRead();
-            assertEquals( i - 1, countAfterReleased );
+            assertEquals(i - 1, countAfterReleased);
         }
     }
 
     @Test
-    void shouldAcquireAndReleaseWrite()
-    {
+    void shouldAcquireAndReleaseWrite() {
         // given
         LongSpinLatch latch = latch();
 
         // when
         boolean acquired = latch.acquireWrite();
-        assertTrue( acquired );
+        assertTrue(acquired);
 
         // then good
         latch.releaseWrite();
     }
 
     @Test
-    void shouldAcquireReadAfterWriteReleased() throws TimeoutException, ExecutionException, InterruptedException
-    {
+    void shouldAcquireReadAfterWriteReleased() throws TimeoutException, ExecutionException, InterruptedException {
         // given
         LongSpinLatch latch = latch();
         latch.acquireWrite();
 
         // when
-        Future<Void> readAcquisition = beginAndAwaitLatchAcquisition( latch::acquireRead );
+        Future<Void> readAcquisition = beginAndAwaitLatchAcquisition(latch::acquireRead);
         latch.releaseWrite();
 
         // then good
@@ -107,14 +98,14 @@ class LongSpinLatchTest extends LatchTestBase
     }
 
     @Test
-    void shouldAcquireAnotherWriteAfterWriteReleased() throws TimeoutException, ExecutionException, InterruptedException
-    {
+    void shouldAcquireAnotherWriteAfterWriteReleased()
+            throws TimeoutException, ExecutionException, InterruptedException {
         // given
         LongSpinLatch latch = latch();
         latch.acquireWrite();
 
         // when
-        Future<Void> writeAcquisition = beginAndAwaitLatchAcquisition( latch::acquireWrite );
+        Future<Void> writeAcquisition = beginAndAwaitLatchAcquisition(latch::acquireWrite);
         latch.releaseWrite();
 
         // then good
@@ -123,89 +114,88 @@ class LongSpinLatchTest extends LatchTestBase
     }
 
     @Test
-    void shouldAcquireReadFromMultipleThreadsWithoutBlocking() throws Throwable
-    {
+    void shouldAcquireReadFromMultipleThreadsWithoutBlocking() throws Throwable {
         // given
         Race race = new Race();
         LongSpinLatch latch = latch();
         int numThreads = Runtime.getRuntime().availableProcessors();
-        CountDownLatch countDownLatch = new CountDownLatch( numThreads );
-        race.addContestants( numThreads, throwing( () ->
-        {
-            int result = latch.acquireRead();
-            assertThat( result ).isGreaterThan( 0 );
-            countDownLatch.countDown();
-            countDownLatch.await();
-            latch.releaseRead();
-            assertThat( result ).isGreaterThanOrEqualTo( 0 );
-        } ), 1 );
+        CountDownLatch countDownLatch = new CountDownLatch(numThreads);
+        race.addContestants(
+                numThreads,
+                throwing(() -> {
+                    int result = latch.acquireRead();
+                    assertThat(result).isGreaterThan(0);
+                    countDownLatch.countDown();
+                    countDownLatch.await();
+                    latch.releaseRead();
+                    assertThat(result).isGreaterThanOrEqualTo(0);
+                }),
+                1);
 
         // when
         race.go();
     }
 
     @Test
-    void shouldTakeTurnAcquireWrite() throws Throwable
-    {
+    void shouldTakeTurnAcquireWrite() throws Throwable {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
         long nodeId = 99;
         Race race = new Race();
         AtomicBoolean singleHolder = new AtomicBoolean();
-        race.addContestants( Runtime.getRuntime().availableProcessors(), throwing( () ->
-        {
-            LongSpinLatch latch = service.acquireWrite( nodeId );
-            assertThat( singleHolder.getAndSet( true ) ).isFalse();
-            Thread.sleep( 1 );
-            assertThat( singleHolder.getAndSet( false ) ).isTrue();
-            latch.releaseWrite();
-        } ), 10 );
+        race.addContestants(
+                Runtime.getRuntime().availableProcessors(),
+                throwing(() -> {
+                    LongSpinLatch latch = service.acquireWrite(nodeId);
+                    assertThat(singleHolder.getAndSet(true)).isFalse();
+                    Thread.sleep(1);
+                    assertThat(singleHolder.getAndSet(false)).isTrue();
+                    latch.releaseWrite();
+                }),
+                10);
 
         // when
         race.go();
     }
 
     @Test
-    void shouldNotReadAcquireDeadLatch()
-    {
+    void shouldNotReadAcquireDeadLatch() {
         // given
         LongCapture removeAction = new LongCapture();
         long treeNodeId = 101L;
-        LongSpinLatch latch = new LongSpinLatch( treeNodeId, removeAction );
+        LongSpinLatch latch = new LongSpinLatch(treeNodeId, removeAction);
         latch.acquireRead();
         latch.releaseRead();
-        assertEquals( 1, removeAction.count.get() );
-        assertEquals( treeNodeId, removeAction.captured );
+        assertEquals(1, removeAction.count.get());
+        assertEquals(treeNodeId, removeAction.captured);
 
         // when
         int result = latch.acquireRead();
 
         // then
-        assertEquals( 0, result );
+        assertEquals(0, result);
     }
 
     @Test
-    void shouldNotWriteAcquireDeadLatch()
-    {
+    void shouldNotWriteAcquireDeadLatch() {
         // given
         LongCapture removeAction = new LongCapture();
         long treeNodeId = 101L;
-        LongSpinLatch latch = new LongSpinLatch( treeNodeId, removeAction );
+        LongSpinLatch latch = new LongSpinLatch(treeNodeId, removeAction);
         latch.acquireWrite();
         latch.releaseWrite();
-        assertEquals( 1, removeAction.count.get() );
-        assertEquals( treeNodeId, removeAction.captured );
+        assertEquals(1, removeAction.count.get());
+        assertEquals(treeNodeId, removeAction.captured);
 
         // when
         boolean result = latch.acquireWrite();
 
         // then
-        assertFalse( result );
+        assertFalse(result);
     }
 
     @Test
-    void shouldUpgradeRead()
-    {
+    void shouldUpgradeRead() {
         // given
         LongSpinLatch latch = latch();
         latch.acquireRead();
@@ -214,13 +204,12 @@ class LongSpinLatchTest extends LatchTestBase
         boolean upgraded = latch.tryUpgradeToWrite();
 
         // then
-        assertTrue( upgraded );
+        assertTrue(upgraded);
         latch.releaseWrite();
     }
 
     @Test
-    void shouldFailUpgradeReadOnAnotherReadHeld()
-    {
+    void shouldFailUpgradeReadOnAnotherReadHeld() {
         // given
         LongSpinLatch latch = latch();
         latch.acquireRead();
@@ -230,13 +219,12 @@ class LongSpinLatchTest extends LatchTestBase
         boolean upgraded = latch.tryUpgradeToWrite();
 
         // then
-        assertFalse( upgraded );
+        assertFalse(upgraded);
         latch.releaseRead();
         latch.releaseRead();
     }
 
-    private LongSpinLatch latch()
-    {
-        return new LongSpinLatch( 1, removeAction );
+    private LongSpinLatch latch() {
+        return new LongSpinLatch(1, removeAction);
     }
 }

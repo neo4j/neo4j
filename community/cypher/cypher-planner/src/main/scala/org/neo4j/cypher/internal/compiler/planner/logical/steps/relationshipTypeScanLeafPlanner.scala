@@ -36,18 +36,22 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
-  override def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] = {
+  override def apply(
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship) =
       !context.planContext.canLookupRelationshipsByType ||
-      queryGraph.argumentIds.contains(pattern.name) ||
-      skipIDs.contains(pattern.name) ||
-      skipIDs.contains(pattern.left) ||
-      skipIDs.contains(pattern.right)
+        queryGraph.argumentIds.contains(pattern.name) ||
+        skipIDs.contains(pattern.name) ||
+        skipIDs.contains(pattern.left) ||
+        skipIDs.contains(pattern.right)
 
     queryGraph.patternRelationships.flatMap {
 
-      case relationship@PatternRelationship(name, (_, _), _, Seq(typ), SimplePatternLength) if !shouldIgnore(relationship) =>
-
+      case relationship @ PatternRelationship(name, (_, _), _, Seq(typ), SimplePatternLength)
+        if !shouldIgnore(relationship) =>
         Some(planHiddenSelectionAndRelationshipLeafPlan(
           queryGraph.argumentIds,
           relationship,
@@ -59,15 +63,21 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
     }
   }
 
-  private def planRelationshipTypeScan(name: String,
-                                       typ: RelTypeName,
-                                       patternForLeafPlan: PatternRelationship,
-                                       originalPattern: PatternRelationship,
-                                       hiddenSelections: Seq[Expression],
-                                       queryGraph: QueryGraph,
-                                       interestingOrderConfig: InterestingOrderConfig,
-                                       context: LogicalPlanningContext): LogicalPlan = {
-    def providedOrderFor = ResultOrdering.providedOrderForRelationshipTypeScan(interestingOrderConfig.orderToSolve, _, context.providedOrderFactory)
+  private def planRelationshipTypeScan(
+    name: String,
+    typ: RelTypeName,
+    patternForLeafPlan: PatternRelationship,
+    originalPattern: PatternRelationship,
+    hiddenSelections: Seq[Expression],
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    def providedOrderFor = ResultOrdering.providedOrderForRelationshipTypeScan(
+      interestingOrderConfig.orderToSolve,
+      _,
+      context.providedOrderFactory
+    )
     context.logicalPlanProducer.planRelationshipByTypeScan(
       name,
       typ,
@@ -83,7 +93,7 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
 
   private def hint(queryGraph: QueryGraph, patternRelationship: PatternRelationship): Option[UsingScanHint] = {
     queryGraph.hints.collectFirst {
-      case hint@UsingScanHint(Variable(patternRelationship.name), LabelOrRelTypeName(relTypeName))
+      case hint @ UsingScanHint(Variable(patternRelationship.name), LabelOrRelTypeName(relTypeName))
         if relTypeName == patternRelationship.types.head.name => hint
     }
   }

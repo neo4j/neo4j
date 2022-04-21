@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 
 /**
@@ -29,115 +28,97 @@ import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
  *
  * Useful for overriding specific functionality in a sub-class.
  */
-public class DelegatingPageSwapper implements PageSwapper
-{
+public class DelegatingPageSwapper implements PageSwapper {
     private final PageSwapper delegate;
 
-    public DelegatingPageSwapper( PageSwapper delegate )
-    {
+    public DelegatingPageSwapper(PageSwapper delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public long read( long filePageId, long bufferAddress ) throws IOException
-    {
-        return delegate.read( filePageId, bufferAddress );
+    public long read(long filePageId, long bufferAddress) throws IOException {
+        return delegate.read(filePageId, bufferAddress);
     }
 
     @Override
-    public long read( long filePageId, long bufferAddress, int bufferLength ) throws IOException
-    {
-        return delegate.read( filePageId, bufferAddress, bufferLength );
+    public long read(long filePageId, long bufferAddress, int bufferLength) throws IOException {
+        return delegate.read(filePageId, bufferAddress, bufferLength);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         delegate.close();
     }
 
     @Override
-    public void evicted( long filePageId )
-    {
-        delegate.evicted( filePageId );
+    public void evicted(long filePageId) {
+        delegate.evicted(filePageId);
     }
 
     @Override
-    public void force() throws IOException
-    {
+    public void force() throws IOException {
         delegate.force();
     }
 
     @Override
-    public Path path()
-    {
+    public Path path() {
         return delegate.path();
     }
 
     @Override
-    public long write( long filePageId, long bufferAddress ) throws IOException
-    {
-        return delegate.write( filePageId, bufferAddress );
+    public long write(long filePageId, long bufferAddress) throws IOException {
+        return delegate.write(filePageId, bufferAddress);
     }
 
     @Override
-    public long write( long filePageId, long bufferAddress, int bufferLength ) throws IOException
-    {
-        return delegate.write( filePageId, bufferAddress, bufferLength );
+    public long write(long filePageId, long bufferAddress, int bufferLength) throws IOException {
+        return delegate.write(filePageId, bufferAddress, bufferLength);
     }
 
     @Override
-    public long getLastPageId() throws IOException
-    {
+    public long getLastPageId() throws IOException {
         return delegate.getLastPageId();
     }
 
     @Override
-    public void truncate() throws IOException
-    {
+    public void truncate() throws IOException {
         delegate.truncate();
     }
 
     @Override
-    public boolean canAllocate()
-    {
+    public boolean canAllocate() {
         return delegate.canAllocate();
     }
 
     @Override
-    public void allocate( long newFileSize ) throws IOException
-    {
-        delegate.allocate( newFileSize );
+    public void allocate(long newFileSize) throws IOException {
+        delegate.allocate(newFileSize);
     }
 
     @Override
-    public int swapperId()
-    {
+    public int swapperId() {
         return delegate.swapperId();
     }
 
     @Override
-    public PageFileSwapperTracer fileSwapperTracer()
-    {
+    public PageFileSwapperTracer fileSwapperTracer() {
         return delegate.fileSwapperTracer();
     }
 
     @Override
-    public void closeAndDelete() throws IOException
-    {
+    public void closeAndDelete() throws IOException {
         delegate.closeAndDelete();
     }
 
     @Override
-    public long read( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length ) throws IOException
-    {
-        return delegate.read( startFilePageId, bufferAddresses, bufferLengths, length );
+    public long read(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length) throws IOException {
+        return delegate.read(startFilePageId, bufferAddresses, bufferLengths, length);
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages )
-            throws IOException
-    {
-        return delegate.write( startFilePageId, bufferAddresses, bufferLengths, length, totalAffectedPages );
+    public long write(
+            long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages)
+            throws IOException {
+        return delegate.write(startFilePageId, bufferAddresses, bufferLengths, length, totalAffectedPages);
     }
 }

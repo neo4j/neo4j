@@ -20,66 +20,49 @@
 package org.neo4j.shell.test.bolt;
 
 import java.util.Map;
-
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 
-public class FakeTransaction implements Transaction
-{
+public class FakeTransaction implements Transaction {
     @Override
-    public void commit()
-    {
-
-    }
+    public void commit() {}
 
     @Override
-    public void rollback()
-    {
-
-    }
+    public void rollback() {}
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return true;
     }
 
     @Override
-    public void close()
-    {
-
-    }
+    public void close() {}
 
     @Override
-    public Result run( String query, Value parameters )
-    {
+    public Result run(String query, Value parameters) {
         return null;
     }
 
     @Override
-    public Result run( String query, Map<String, Object> parameters )
-    {
+    public Result run(String query, Map<String, Object> parameters) {
         return null;
     }
 
     @Override
-    public Result run( String query, Record parameters )
-    {
+    public Result run(String query, Record parameters) {
         return null;
     }
 
     @Override
-    public Result run( String query )
-    {
+    public Result run(String query) {
         return null;
     }
 
     @Override
-    public Result run( Query query )
-    {
+    public Result run(Query query) {
         return null;
     }
 }

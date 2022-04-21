@@ -38,13 +38,17 @@ import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
 
-
 /**
  * Traverse the LogicalPlan and update cardinalities to "effective cardinalities". The update is meant to represent how we, in certain cases, "push down" a
  * LIMIT to earlier operations.
  *
  */
-case class recordEffectiveOutputCardinality(executionModel: ExecutionModel, cardinalities: Cardinalities, effectiveCardinalities: EffectiveCardinalities, providedOrders: ProvidedOrders) extends Rewriter {
+case class recordEffectiveOutputCardinality(
+  executionModel: ExecutionModel,
+  cardinalities: Cardinalities,
+  effectiveCardinalities: EffectiveCardinalities,
+  providedOrders: ProvidedOrders
+) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = {
 
@@ -61,7 +65,8 @@ case class recordEffectiveOutputCardinality(executionModel: ExecutionModel, card
 
           val effectiveBatchSize = CardinalityCostModel.getEffectiveBatchSize(batchSize, p, providedOrders)
 
-          val theseEffectiveCardinalities = CardinalityCostModel.effectiveCardinalities(p, reduction, effectiveBatchSize, cardinalities)
+          val theseEffectiveCardinalities =
+            CardinalityCostModel.effectiveCardinalities(p, reduction, effectiveBatchSize, cardinalities)
           p.lhs.foreach { lhs => workReductions += (lhs.id -> theseEffectiveCardinalities.lhsReduction) }
           p.rhs.foreach { rhs => workReductions += (rhs.id -> theseEffectiveCardinalities.rhsReduction) }
 
@@ -71,18 +76,24 @@ case class recordEffectiveOutputCardinality(executionModel: ExecutionModel, card
             val rhsInvocations = batchSize.numBatchesFor(lhsEffective)
             // If nested, we want to multiply the new multiplier with any previous multiplier
             val rhsMultiplier = rhsInvocations * rhsMultipliers(right.id)
-            right.flatten.foreach{c => rhsMultipliers(c.id) = rhsMultiplier}
+            right.flatten.foreach { c => rhsMultipliers(c.id) = rhsMultiplier }
           }
 
           p match {
             case CartesianProduct(left, right, _) =>
               findRHSMultipliers(left, right, effectiveBatchSize)
-            case a:ApplyPlan =>
+            case a: ApplyPlan =>
               findRHSMultipliers(a.left, a.right, VolcanoBatchSize)
             case _ =>
           }
 
-          effectiveCardinalities.set(p.id, EffectiveCardinality((theseEffectiveCardinalities.outputCardinality * multiplier).amount, Some(cardinalities.get(p.id))))
+          effectiveCardinalities.set(
+            p.id,
+            EffectiveCardinality(
+              (theseEffectiveCardinalities.outputCardinality * multiplier).amount,
+              Some(cardinalities.get(p.id))
+            )
+          )
 
           p
       })

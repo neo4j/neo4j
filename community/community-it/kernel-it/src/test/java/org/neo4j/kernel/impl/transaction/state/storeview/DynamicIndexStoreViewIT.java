@@ -19,11 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
+import static org.neo4j.graphdb.IndexingTestUtil.dropTokenIndexes;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -45,151 +51,143 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.token.TokenHolders;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
-import static org.neo4j.graphdb.IndexingTestUtil.dropTokenIndexes;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@ExtendWith( RandomExtension.class )
+@ExtendWith(RandomExtension.class)
 @DbmsExtension
-public class DynamicIndexStoreViewIT
-{
-    private static final Label PERSON = Label.label( "person" );
-    private static final RelationshipType FRIEND = RelationshipType.withName( "friend" );
+public class DynamicIndexStoreViewIT {
+    private static final Label PERSON = Label.label("person");
+    private static final RelationshipType FRIEND = RelationshipType.withName("friend");
 
     @Inject
     private RandomSupport random;
+
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private LockService lockService;
+
     @Inject
     private Locks locks;
+
     @Inject
     private IndexingService indexingService;
+
     @Inject
     private StorageEngine storageEngine;
+
     @Inject
     private TokenHolders tokenHolders;
+
     @Inject
     private JobScheduler scheduler;
 
     private DynamicIndexStoreView storeView;
 
     @BeforeEach
-    void setUp()
-    {
-        assertOnlyDefaultTokenIndexesExists( database );
+    void setUp() {
+        assertOnlyDefaultTokenIndexesExists(database);
         storeView = new DynamicIndexStoreView(
-                new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), scheduler ),
-                locks, lockService, Config.defaults(), indexDescriptor -> indexingService.getIndexProxy( indexDescriptor ),
-                storageEngine::newReader, storageEngine::createStorageCursors, NullLogProvider.getInstance() );
+                new FullScanStoreView(
+                        lockService,
+                        storageEngine::newReader,
+                        storageEngine::createStorageCursors,
+                        Config.defaults(),
+                        scheduler),
+                locks,
+                lockService,
+                Config.defaults(),
+                indexDescriptor -> indexingService.getIndexProxy(indexDescriptor),
+                storageEngine::newReader,
+                storageEngine::createStorageCursors,
+                NullLogProvider.getInstance());
     }
 
-    @Disabled( "disabled until we have token indexes on by default" )
+    @Disabled("disabled until we have token indexes on by default")
     @Test
-    void shouldHandleConcurrentDeletionOfTokenIndexDuringNodeScan() throws Throwable
-    {
-        //Given
+    void shouldHandleConcurrentDeletionOfTokenIndexDuringNodeScan() throws Throwable {
+        // Given
         var nodes = populateNodes();
         var consumer = new TestTokenScanConsumer();
-        var storeScan = nodeStoreScan( consumer );
+        var storeScan = nodeStoreScan(consumer);
 
-        //When
+        // When
         Race race = new Race();
-        race.addContestant( () -> storeScan.run( new ContainsExternalUpdates() ) );
-        race.addContestant( () -> dropTokenIndexes( database ), 5 );
+        race.addContestant(() -> storeScan.run(new ContainsExternalUpdates()));
+        race.addContestant(() -> dropTokenIndexes(database), 5);
         race.go();
 
-        //Then
-        assertThat( storeScan.getProgress().getTotal() ).isEqualTo( nodes );
-        assertThat( consumer.consumedEntities() ).isEqualTo( nodes );
+        // Then
+        assertThat(storeScan.getProgress().getTotal()).isEqualTo(nodes);
+        assertThat(consumer.consumedEntities()).isEqualTo(nodes);
         storeScan.stop();
     }
 
-    @Disabled( "disabled until we have token indexes on by default" )
+    @Disabled("disabled until we have token indexes on by default")
     @Test
-    void shouldHandleConcurrentDeletionOfTokenIndexDuringRelationshipScan() throws Throwable
-    {
-        //Given
+    void shouldHandleConcurrentDeletionOfTokenIndexDuringRelationshipScan() throws Throwable {
+        // Given
         var relationships = populateRelationships();
         var consumer = new TestTokenScanConsumer();
-        var storeScan = relationshipStoreScan( consumer );
+        var storeScan = relationshipStoreScan(consumer);
 
-        //When
+        // When
         Race race = new Race();
-        race.addContestant( () -> storeScan.run( new ContainsExternalUpdates() ) );
-        race.addContestant( () -> dropTokenIndexes( database ), 5 );
+        race.addContestant(() -> storeScan.run(new ContainsExternalUpdates()));
+        race.addContestant(() -> dropTokenIndexes(database), 5);
         race.go();
 
-        //Then
-        assertThat( storeScan.getProgress().getTotal() ).isEqualTo( relationships );
-        assertThat( consumer.consumedEntities() ).isEqualTo( relationships );
+        // Then
+        assertThat(storeScan.getProgress().getTotal()).isEqualTo(relationships);
+        assertThat(consumer.consumedEntities()).isEqualTo(relationships);
         storeScan.stop();
     }
 
-    private class ContainsExternalUpdates implements StoreScan.ExternalUpdatesCheck
-    {
+    private class ContainsExternalUpdates implements StoreScan.ExternalUpdatesCheck {
         @Override
-        public boolean needToApplyExternalUpdates()
-        {
+        public boolean needToApplyExternalUpdates() {
             return random.nextBoolean();
         }
 
         @Override
-        public void applyExternalUpdates( long id )
-        {
-        }
+        public void applyExternalUpdates(long id) {}
     }
 
-    private StoreScan nodeStoreScan( TestTokenScanConsumer consumer )
-    {
-        CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+    private StoreScan nodeStoreScan(TestTokenScanConsumer consumer) {
+        CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         return storeView.visitNodes(
-                getLabelIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE );
+                getLabelIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE);
     }
 
-    private StoreScan relationshipStoreScan( TestTokenScanConsumer consumer )
-    {
-        CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+    private StoreScan relationshipStoreScan(TestTokenScanConsumer consumer) {
+        CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         return storeView.visitRelationships(
-                getRelationTypeIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE );
+                getRelationTypeIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE);
     }
 
-    private int[] getLabelIds()
-    {
-        return new int[]{tokenHolders.labelTokens().getIdByName( PERSON.name() )};
+    private int[] getLabelIds() {
+        return new int[] {tokenHolders.labelTokens().getIdByName(PERSON.name())};
     }
 
-    private int[] getRelationTypeIds()
-    {
-        return new int[]{tokenHolders.relationshipTypeTokens().getIdByName( FRIEND.name() )};
+    private int[] getRelationTypeIds() {
+        return new int[] {tokenHolders.relationshipTypeTokens().getIdByName(FRIEND.name())};
     }
 
-    private long populateNodes()
-    {
+    private long populateNodes() {
         long nodes = Configuration.DEFAULT.batchSize() + 100;
-        try ( var tx = database.beginTx() )
-        {
-            for ( int i = 0; i < nodes; i++ )
-            {
-                tx.createNode( PERSON );
+        try (var tx = database.beginTx()) {
+            for (int i = 0; i < nodes; i++) {
+                tx.createNode(PERSON);
             }
             tx.commit();
         }
         return nodes;
     }
 
-    private long populateRelationships()
-    {
+    private long populateRelationships() {
         long relations = Configuration.DEFAULT.batchSize() + 100;
-        try ( var tx = database.beginTx() )
-        {
-            for ( int i = 0; i < relations; i++ )
-            {
-                tx.createNode( PERSON ).createRelationshipTo( tx.createNode( PERSON ), FRIEND );
+        try (var tx = database.beginTx()) {
+            for (int i = 0; i < relations; i++) {
+                tx.createNode(PERSON).createRelationshipTo(tx.createNode(PERSON), FRIEND);
             }
             tx.commit();
         }

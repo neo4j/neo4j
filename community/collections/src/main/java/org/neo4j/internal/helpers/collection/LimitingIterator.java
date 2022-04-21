@@ -26,8 +26,7 @@ import java.util.Iterator;
  *
  * @param <T> the type of items in this {@link Iterator}.
  */
-public class LimitingIterator<T> extends PrefetchingIterator<T>
-{
+public class LimitingIterator<T> extends PrefetchingIterator<T> {
     private int returned;
     private final Iterator<T> source;
     private final int limit;
@@ -40,25 +39,19 @@ public class LimitingIterator<T> extends PrefetchingIterator<T>
      * @param source the source of items.
      * @param limit the limit, i.e. the max number of items to return.
      */
-    LimitingIterator( Iterator<T> source, int limit )
-    {
+    LimitingIterator(Iterator<T> source, int limit) {
         this.source = source;
         this.limit = limit;
     }
 
     @Override
-    protected T fetchNextOrNull()
-    {
-        if ( !source.hasNext() || returned >= limit )
-        {
+    protected T fetchNextOrNull() {
+        if (!source.hasNext() || returned >= limit) {
             return null;
         }
-        try
-        {
+        try {
             return source.next();
-        }
-        finally
-        {
+        } finally {
             returned++;
         }
     }

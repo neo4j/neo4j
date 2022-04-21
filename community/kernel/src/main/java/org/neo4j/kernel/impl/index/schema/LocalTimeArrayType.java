@@ -22,53 +22,48 @@ package org.neo4j.kernel.impl.index.schema;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.StringJoiner;
-
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 
-class LocalTimeArrayType extends AbstractArrayType<LocalTime>
-{
+class LocalTimeArrayType extends AbstractArrayType<LocalTime> {
     // Affected key state:
     // long0Array (nanoOfDay)
 
-    LocalTimeArrayType( byte typeId )
-    {
-        super( ValueGroup.LOCAL_TIME_ARRAY, typeId, ( o1, o2, i ) -> LocalTimeType.compare(
-                        o1.long0Array[i],
-                        o2.long0Array[i] ),
-                ( k, i ) -> LocalTimeType.asValueRaw( k.long0Array[i] ),
-                ( c, k, i ) -> LocalTimeType.put( c, k.long0Array[i] ),
-                LocalTimeType::read, LocalTime[]::new, ValueWriter.ArrayType.LOCAL_TIME );
+    LocalTimeArrayType(byte typeId) {
+        super(
+                ValueGroup.LOCAL_TIME_ARRAY,
+                typeId,
+                (o1, o2, i) -> LocalTimeType.compare(o1.long0Array[i], o2.long0Array[i]),
+                (k, i) -> LocalTimeType.asValueRaw(k.long0Array[i]),
+                (c, k, i) -> LocalTimeType.put(c, k.long0Array[i]),
+                LocalTimeType::read,
+                LocalTime[]::new,
+                ValueWriter.ArrayType.LOCAL_TIME);
     }
 
     @Override
-    int valueSize( GenericKey<?> state )
-    {
-        return arrayKeySize( state, Types.SIZE_LOCAL_TIME );
+    int valueSize(GenericKey<?> state) {
+        return arrayKeySize(state, Types.SIZE_LOCAL_TIME);
     }
 
     @Override
-    void copyValue( GenericKey<?> to, GenericKey<?> from, int length )
-    {
-        initializeArray( to, length, null );
-        System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
+    void copyValue(GenericKey<?> to, GenericKey<?> from, int length) {
+        initializeArray(to, length, null);
+        System.arraycopy(from.long0Array, 0, to.long0Array, 0, length);
     }
 
     @Override
-    void initializeArray( GenericKey<?> key, int length, ValueWriter.ArrayType arrayType )
-    {
-        key.long0Array = ensureBigEnough( key.long0Array, length );
+    void initializeArray(GenericKey<?> key, int length, ValueWriter.ArrayType arrayType) {
+        key.long0Array = ensureBigEnough(key.long0Array, length);
     }
 
-    static void write( GenericKey<?> state, int offset, long nanoOfDay )
-    {
+    static void write(GenericKey<?> state, int offset, long nanoOfDay) {
         state.long0Array[offset] = nanoOfDay;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
-    {
-        joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
-        super.addTypeSpecificDetails( joiner, state );
+    protected void addTypeSpecificDetails(StringJoiner joiner, GenericKey<?> state) {
+        joiner.add("long0Array=" + Arrays.toString(state.long0Array));
+        super.addTypeSpecificDetails(joiner, state);
     }
 }

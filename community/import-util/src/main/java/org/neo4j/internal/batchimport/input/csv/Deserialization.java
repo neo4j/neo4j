@@ -29,13 +29,12 @@ package org.neo4j.internal.batchimport.input.csv;
  * <li>{@link #clear()} to prepare for the next entity</li>
  * </ol>
  */
-public interface Deserialization<ENTITY>
-{
+public interface Deserialization<ENTITY> {
     /**
      * Handles one value of a type described by the {@code entry}. One or more values will be able to
      * {@link #materialize()} into an entity later on.
      */
-    void handle( Header.Entry entry, Object value );
+    void handle(Header.Entry entry, Object value);
 
     /**
      * Takes values received in {@link #handle(Header.Entry, Object)}

@@ -19,56 +19,48 @@
  */
 package org.neo4j.messages;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.util.HashSet;
 import java.util.Set;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * validate exception messages to prevent accidental changes
  */
-public class MessageUtilTest
-{
+public class MessageUtilTest {
     @Test
-    void createNodeDenied()
-    {
-        Assertions.assertThat( MessageUtil.createNodeWithLabelsDenied( "label", "db", "userDesc" ) )
-                  .isEqualTo( "Create node with labels 'label' on database 'db' is not allowed for userDesc." );
+    void createNodeDenied() {
+        Assertions.assertThat(MessageUtil.createNodeWithLabelsDenied("label", "db", "userDesc"))
+                .isEqualTo("Create node with labels 'label' on database 'db' is not allowed for userDesc.");
     }
 
     @Test
-    void withUser()
-    {
-        Assertions.assertThat( MessageUtil.withUser( "user", "mode" ) ).isEqualTo( "user 'user' with mode" );
+    void withUser() {
+        Assertions.assertThat(MessageUtil.withUser("user", "mode")).isEqualTo("user 'user' with mode");
     }
 
     @Test
-    void overridenMode()
-    {
-        Assertions.assertThat( MessageUtil.overridenMode( "origin", "wrapping" ) )
-                  .isEqualTo( "origin overridden by wrapping" );
+    void overridenMode() {
+        Assertions.assertThat(MessageUtil.overridenMode("origin", "wrapping"))
+                .isEqualTo("origin overridden by wrapping");
     }
 
     @Test
-    void restrictedMode()
-    {
-        Assertions.assertThat( MessageUtil.restrictedMode( "origin", "wrapping" ) )
-                  .isEqualTo( "origin restricted to wrapping" );
+    void restrictedMode() {
+        Assertions.assertThat(MessageUtil.restrictedMode("origin", "wrapping"))
+                .isEqualTo("origin restricted to wrapping");
     }
 
     @Test
-    void authDisabled()
-    {
-        Assertions.assertThat( MessageUtil.authDisabled( "mode" ) ).isEqualTo( "AUTH_DISABLED with mode" );
+    void authDisabled() {
+        Assertions.assertThat(MessageUtil.authDisabled("mode")).isEqualTo("AUTH_DISABLED with mode");
     }
 
     @Test
-    void StandardMode()
-    {
-        Assertions.assertThat( MessageUtil.standardMode( new HashSet<>() ) ).isEqualTo( "no roles" );
-        Assertions.assertThat( MessageUtil.standardMode( Set.of( "role1") ) ).isEqualTo( "roles [role1]" );
-        Assertions.assertThat( MessageUtil.standardMode( Set.of( "role1", "role2") ) ).isEqualTo( "roles [role1, role2]" );
-
+    void StandardMode() {
+        Assertions.assertThat(MessageUtil.standardMode(new HashSet<>())).isEqualTo("no roles");
+        Assertions.assertThat(MessageUtil.standardMode(Set.of("role1"))).isEqualTo("roles [role1]");
+        Assertions.assertThat(MessageUtil.standardMode(Set.of("role1", "role2")))
+                .isEqualTo("roles [role1, role2]");
     }
 }

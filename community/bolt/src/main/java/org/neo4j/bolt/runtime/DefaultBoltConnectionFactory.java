@@ -19,8 +19,10 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.time.Clock;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.bolt.runtime.DefaultBoltConnection.DEFAULT_MAX_BATCH_SIZE;
 
+import java.time.Clock;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
@@ -36,69 +38,71 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.bolt.runtime.DefaultBoltConnection.DEFAULT_MAX_BATCH_SIZE;
-
-public class DefaultBoltConnectionFactory implements BoltConnectionFactory
-{
+public class DefaultBoltConnectionFactory implements BoltConnectionFactory {
     private final BoltSchedulerProvider schedulerProvider;
     private final LogService logService;
     private final Clock clock;
     private final Config config;
     private final BoltConnectionMetricsMonitor metricsMonitor;
 
-    public DefaultBoltConnectionFactory( BoltSchedulerProvider schedulerProvider, Config config, LogService logService,
-            Clock clock, Monitors monitors )
-    {
+    public DefaultBoltConnectionFactory(
+            BoltSchedulerProvider schedulerProvider,
+            Config config,
+            LogService logService,
+            Clock clock,
+            Monitors monitors) {
         this.schedulerProvider = schedulerProvider;
         this.config = config;
         this.logService = logService;
         this.clock = clock;
-        this.metricsMonitor = monitors.newMonitor( BoltConnectionMetricsMonitor.class );
+        this.metricsMonitor = monitors.newMonitor(BoltConnectionMetricsMonitor.class);
     }
 
     @Override
-    public BoltConnection newConnection( BoltChannel channel, BoltStateMachine stateMachine,
-            BoltResponseMessageWriter messageWriter )
-    {
-        requireNonNull( channel );
-        requireNonNull( stateMachine );
+    public BoltConnection newConnection(
+            BoltChannel channel, BoltStateMachine stateMachine, BoltResponseMessageWriter messageWriter) {
+        requireNonNull(channel);
+        requireNonNull(stateMachine);
 
-        BoltScheduler scheduler = schedulerProvider.get( channel );
-        BoltConnectionReadLimiter readLimiter = createReadLimiter( config, logService );
-        BoltConnectionQueueMonitor connectionQueueMonitor = new BoltConnectionQueueMonitorAggregate( scheduler, readLimiter );
+        BoltScheduler scheduler = schedulerProvider.get(channel);
+        BoltConnectionReadLimiter readLimiter = createReadLimiter(config, logService);
+        BoltConnectionQueueMonitor connectionQueueMonitor =
+                new BoltConnectionQueueMonitorAggregate(scheduler, readLimiter);
 
-        var keepAliveHandler = createKeepAliveHandler( config, messageWriter );
-        if ( keepAliveHandler != null )
-        {
-            channel.rawChannel().pipeline()
-                   .addLast( keepAliveHandler );
+        var keepAliveHandler = createKeepAliveHandler(config, messageWriter);
+        if (keepAliveHandler != null) {
+            channel.rawChannel().pipeline().addLast(keepAliveHandler);
         }
 
         BoltConnection connection = new DefaultBoltConnection(
-                channel, messageWriter, stateMachine, logService, scheduler, connectionQueueMonitor, DEFAULT_MAX_BATCH_SIZE, keepAliveHandler, metricsMonitor,
-                clock );
+                channel,
+                messageWriter,
+                stateMachine,
+                logService,
+                scheduler,
+                connectionQueueMonitor,
+                DEFAULT_MAX_BATCH_SIZE,
+                keepAliveHandler,
+                metricsMonitor,
+                clock);
         connection.start();
 
         return connection;
     }
 
-    private static BoltConnectionReadLimiter createReadLimiter( Config config, LogService logService )
-    {
-        int lowWatermark = config.get( GraphDatabaseInternalSettings.bolt_inbound_message_throttle_low_water_mark );
-        int highWatermark = config.get( GraphDatabaseInternalSettings.bolt_inbound_message_throttle_high_water_mark );
-        return new BoltConnectionReadLimiter( logService, lowWatermark, highWatermark );
+    private static BoltConnectionReadLimiter createReadLimiter(Config config, LogService logService) {
+        int lowWatermark = config.get(GraphDatabaseInternalSettings.bolt_inbound_message_throttle_low_water_mark);
+        int highWatermark = config.get(GraphDatabaseInternalSettings.bolt_inbound_message_throttle_high_water_mark);
+        return new BoltConnectionReadLimiter(logService, lowWatermark, highWatermark);
     }
 
-    private static KeepAliveHandler createKeepAliveHandler( Config config, BoltResponseMessageWriter messageWriter )
-    {
-        var mechanism = config.get( BoltConnector.connection_keep_alive_type );
-        if ( mechanism != BoltConnector.KeepAliveRequestType.ALL )
-        {
+    private static KeepAliveHandler createKeepAliveHandler(Config config, BoltResponseMessageWriter messageWriter) {
+        var mechanism = config.get(BoltConnector.connection_keep_alive_type);
+        if (mechanism != BoltConnector.KeepAliveRequestType.ALL) {
             return null;
         }
 
-        var interval = config.get( BoltConnector.connection_keep_alive ).toMillis();
-        return new KeepAliveHandler( interval, messageWriter );
+        var interval = config.get(BoltConnector.connection_keep_alive).toMillis();
+        return new KeepAliveHandler(interval, messageWriter);
     }
 }

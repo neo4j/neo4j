@@ -19,85 +19,67 @@
  */
 package org.neo4j.dbms.archive.printer;
 
-import java.io.PrintStream;
-
-import org.neo4j.logging.InternalLog;
-
 import static java.util.Objects.requireNonNull;
 
-public class ProgressPrinters
-{
-    private ProgressPrinters()
-    {
+import java.io.PrintStream;
+import org.neo4j.logging.InternalLog;
+
+public class ProgressPrinters {
+    private ProgressPrinters() {}
+
+    public static OutputProgressPrinter printStreamPrinter(PrintStream printStream) {
+        requireNonNull(printStream);
+        return new PrintStreamOutputProgressPrinter(printStream);
     }
 
-    public static OutputProgressPrinter printStreamPrinter( PrintStream printStream )
-    {
-        requireNonNull( printStream );
-        return new PrintStreamOutputProgressPrinter( printStream );
-    }
-
-    public static OutputProgressPrinter emptyPrinter()
-    {
+    public static OutputProgressPrinter emptyPrinter() {
         return new EmptyOutputProgressPrinter();
     }
 
-    public static OutputProgressPrinter logProviderPrinter( InternalLog log )
-    {
-        requireNonNull( log );
-        return new LogOutputProgressPrinter( log );
+    public static OutputProgressPrinter logProviderPrinter(InternalLog log) {
+        requireNonNull(log);
+        return new LogOutputProgressPrinter(log);
     }
 
-    private static class EmptyOutputProgressPrinter implements OutputProgressPrinter
-    {
+    private static class EmptyOutputProgressPrinter implements OutputProgressPrinter {
         @Override
-        public void print( String message )
-        {
-        }
+        public void print(String message) {}
     }
 
-    private static class PrintStreamOutputProgressPrinter implements OutputProgressPrinter
-    {
+    private static class PrintStreamOutputProgressPrinter implements OutputProgressPrinter {
         private final PrintStream printStream;
         private final boolean interactive;
 
-        PrintStreamOutputProgressPrinter( PrintStream printStream )
-        {
+        PrintStreamOutputProgressPrinter(PrintStream printStream) {
             this.printStream = printStream;
             this.interactive = System.console() != null;
         }
 
         @Override
-        public void print( String message )
-        {
-            printStream.print( lineSeparator() + message );
+        public void print(String message) {
+            printStream.print(lineSeparator() + message);
         }
 
         @Override
-        public void complete()
-        {
-            printStream.print( System.lineSeparator() );
+        public void complete() {
+            printStream.print(System.lineSeparator());
         }
 
-        private char lineSeparator()
-        {
+        private char lineSeparator() {
             return interactive ? '\r' : '\n';
         }
     }
 
-    private static class LogOutputProgressPrinter implements OutputProgressPrinter
-    {
+    private static class LogOutputProgressPrinter implements OutputProgressPrinter {
         private final InternalLog log;
 
-        LogOutputProgressPrinter( InternalLog log )
-        {
+        LogOutputProgressPrinter(InternalLog log) {
             this.log = log;
         }
 
         @Override
-        public void print( String message )
-        {
-            log.info( message );
+        public void print(String message) {
+            log.info(message);
         }
     }
 }

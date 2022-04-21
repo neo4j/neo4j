@@ -22,34 +22,27 @@ package org.neo4j.internal.batchimport.cache;
 /**
  * Convenient way of selecting nodes based on their dense status.
  */
-public class NodeType
-{
+public class NodeType {
     public static final int NODE_TYPE_DENSE = 0x1;
     public static final int NODE_TYPE_SPARSE = 0x2;
     public static final int NODE_TYPE_ALL = NODE_TYPE_DENSE | NODE_TYPE_SPARSE;
 
-    private NodeType()
-    {
+    private NodeType() {}
+
+    public static boolean isDense(int nodeTypes) {
+        return has(nodeTypes, NODE_TYPE_DENSE);
     }
 
-    public static boolean isDense( int nodeTypes )
-    {
-        return has( nodeTypes, NODE_TYPE_DENSE );
+    public static boolean isSparse(int nodeTypes) {
+        return has(nodeTypes, NODE_TYPE_SPARSE);
     }
 
-    public static boolean isSparse( int nodeTypes )
-    {
-        return has( nodeTypes, NODE_TYPE_SPARSE );
-    }
-
-    private static boolean has( int nodeTypes, int mask )
-    {
+    private static boolean has(int nodeTypes, int mask) {
         return (nodeTypes & mask) != 0;
     }
 
-    public static boolean matchesDense( int nodeTypes, boolean isDense )
-    {
+    public static boolean matchesDense(int nodeTypes, boolean isDense) {
         int mask = isDense ? NODE_TYPE_DENSE : NODE_TYPE_SPARSE;
-        return has( nodeTypes, mask );
+        return has(nodeTypes, mask);
     }
 }

@@ -19,8 +19,12 @@
  */
 package org.neo4j.test.storage;
 
-import java.util.function.Function;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
+import java.util.function.Function;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.config.Setting;
@@ -57,11 +61,6 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.mockito.Mockito.mock;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
  * {@link PageCache}, which usually are managed by test rules themselves. That's why they are passed in
@@ -70,168 +69,206 @@ import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TA
  * <p>
  * Keep in mind that this rule must be created BEFORE page cache rule and any file system rule so that shutdown order gets correct.
  */
-public class RecordStorageEngineSupport
-{
+public class RecordStorageEngineSupport {
     private final LifeSupport life = new LifeSupport();
 
-    public void before() throws Throwable
-    {
+    public void before() throws Throwable {
         life.start();
     }
 
-    public Builder getWith( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout )
-    {
-        return new Builder( fs, pageCache, databaseLayout );
+    public Builder getWith(FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout) {
+        return new Builder(fs, pageCache, databaseLayout);
     }
 
-    private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, Health databaseHealth,
-            RecordDatabaseLayout databaseLayout, Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer,
-            IndexUpdateListener indexUpdateListener, LockService lockService, TokenHolders tokenHolders,
-            Config config, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter )
-    {
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
+    private RecordStorageEngine get(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Health databaseHealth,
+            RecordDatabaseLayout databaseLayout,
+            Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain> transactionApplierTransformer,
+            IndexUpdateListener indexUpdateListener,
+            LockService lockService,
+            TokenHolders tokenHolders,
+            Config config,
+            ConstraintRuleAccessor constraintSemantics,
+            IndexConfigCompleter indexConfigCompleter) {
+        IdGeneratorFactory idGeneratorFactory =
+                new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName());
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        RecordStorageEngine engine = new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, nullLogProvider, tokenHolders,
-                mock( SchemaState.class ), constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory,
-                transactionApplierTransformer );
-        engine.addIndexUpdateListener( indexUpdateListener );
-        life.add( engine );
+        RecordStorageEngine engine = new ExtendedRecordStorageEngine(
+                databaseLayout,
+                config,
+                pageCache,
+                fs,
+                nullLogProvider,
+                nullLogProvider,
+                tokenHolders,
+                mock(SchemaState.class),
+                constraintSemantics,
+                indexConfigCompleter,
+                lockService,
+                databaseHealth,
+                idGeneratorFactory,
+                transactionApplierTransformer);
+        engine.addIndexUpdateListener(indexUpdateListener);
+        life.add(engine);
         return engine;
     }
 
-    public void after( boolean successful ) throws Throwable
-    {
+    public void after(boolean successful) throws Throwable {
         life.shutdown();
     }
 
-    public class Builder
-    {
+    public class Builder {
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
-        private Health databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
+        private Health databaseHealth = new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance());
         private final RecordDatabaseLayout databaseLayout;
-        private Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer =
+        private Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain> transactionApplierTransformer =
                 applierFacade -> applierFacade;
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
         private LockService lockService = new ReentrantLockService();
-        private TokenHolders tokenHolders = new TokenHolders( mock( TokenHolder.class ), mock( TokenHolder.class ), mock( TokenHolder.class ) );
+        private TokenHolders tokenHolders =
+                new TokenHolders(mock(TokenHolder.class), mock(TokenHolder.class), mock(TokenHolder.class));
         private Config config = Config.defaults();
-        private ConstraintRuleAccessor constraintSemantics = new ConstraintRuleAccessor()
-        {
+        private ConstraintRuleAccessor constraintSemantics = new ConstraintRuleAccessor() {
             @Override
-            public ConstraintDescriptor readConstraint( ConstraintDescriptor rule )
-            {
+            public ConstraintDescriptor readConstraint(ConstraintDescriptor rule) {
                 return rule;
             }
 
             @Override
-            public ConstraintDescriptor createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
-            {
-                return descriptor.withId( ruleId ).withOwnedIndexId( indexId );
+            public ConstraintDescriptor createUniquenessConstraintRule(
+                    long ruleId, UniquenessConstraintDescriptor descriptor, long indexId) {
+                return descriptor.withId(ruleId).withOwnedIndexId(indexId);
             }
 
             @Override
-            public ConstraintDescriptor createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
-            {
-                throw new UnsupportedOperationException( "Not needed a.t.m." );
+            public ConstraintDescriptor createNodeKeyConstraintRule(
+                    long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId) {
+                throw new UnsupportedOperationException("Not needed a.t.m.");
             }
 
             @Override
-            public ConstraintDescriptor createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
-            {
-                throw new UnsupportedOperationException( "Not needed a.t.m." );
+            public ConstraintDescriptor createExistenceConstraint(long ruleId, ConstraintDescriptor descriptor) {
+                throw new UnsupportedOperationException("Not needed a.t.m.");
             }
         };
         private IndexConfigCompleter indexConfigCompleter = index -> index;
 
-        public Builder( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout )
-        {
+        public Builder(FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout) {
             this.fs = fs;
             this.pageCache = pageCache;
             this.databaseLayout = databaseLayout;
         }
 
         public Builder transactionApplierTransformer(
-                Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer )
-        {
+                Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain>
+                        transactionApplierTransformer) {
             this.transactionApplierTransformer = transactionApplierTransformer;
             return this;
         }
 
-        public Builder databaseHealth( Health databaseHealth )
-        {
+        public Builder databaseHealth(Health databaseHealth) {
             this.databaseHealth = databaseHealth;
             return this;
         }
 
-        public Builder indexUpdateListener( IndexUpdateListener indexUpdateListener )
-        {
+        public Builder indexUpdateListener(IndexUpdateListener indexUpdateListener) {
             this.indexUpdateListener = indexUpdateListener;
             return this;
         }
 
-        public Builder lockService( LockService lockService )
-        {
+        public Builder lockService(LockService lockService) {
             this.lockService = lockService;
             return this;
         }
 
-        public Builder tokenHolders( TokenHolders tokenHolders )
-        {
+        public Builder tokenHolders(TokenHolders tokenHolders) {
             this.tokenHolders = tokenHolders;
             return this;
         }
 
-        public <T> Builder setting( Setting<T> setting, T value )
-        {
-            config.set( setting, value );
+        public <T> Builder setting(Setting<T> setting, T value) {
+            config.set(setting, value);
             return this;
         }
 
-        public Builder constraintSemantics( ConstraintRuleAccessor constraintSemantics )
-        {
+        public Builder constraintSemantics(ConstraintRuleAccessor constraintSemantics) {
             this.constraintSemantics = constraintSemantics;
             return this;
         }
 
-        public Builder indexConfigCompleter( IndexConfigCompleter indexConfigCompleter )
-        {
+        public Builder indexConfigCompleter(IndexConfigCompleter indexConfigCompleter) {
             this.indexConfigCompleter = indexConfigCompleter;
             return this;
         }
 
-        public RecordStorageEngine build()
-        {
-            return get( fs, pageCache, databaseHealth, databaseLayout, transactionApplierTransformer, indexUpdateListener,
-                    lockService, tokenHolders, config, constraintSemantics, indexConfigCompleter );
+        public RecordStorageEngine build() {
+            return get(
+                    fs,
+                    pageCache,
+                    databaseHealth,
+                    databaseLayout,
+                    transactionApplierTransformer,
+                    indexUpdateListener,
+                    lockService,
+                    tokenHolders,
+                    config,
+                    constraintSemantics,
+                    indexConfigCompleter);
         }
     }
 
-    private static class ExtendedRecordStorageEngine extends RecordStorageEngine
-    {
-        private final Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain>
+    private static class ExtendedRecordStorageEngine extends RecordStorageEngine {
+        private final Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain>
                 transactionApplierTransformer;
 
-        ExtendedRecordStorageEngine( RecordDatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
-                InternalLogProvider internalLogProvider, InternalLogProvider userLogProvider, TokenHolders tokenHolders, SchemaState schemaState,
+        ExtendedRecordStorageEngine(
+                RecordDatabaseLayout databaseLayout,
+                Config config,
+                PageCache pageCache,
+                FileSystemAbstraction fs,
+                InternalLogProvider internalLogProvider,
+                InternalLogProvider userLogProvider,
+                TokenHolders tokenHolders,
+                SchemaState schemaState,
                 ConstraintRuleAccessor constraintSemantics,
                 IndexConfigCompleter indexConfigCompleter,
-                LockService lockService, Health databaseHealth,
+                LockService lockService,
+                Health databaseHealth,
                 IdGeneratorFactory idGeneratorFactory,
-                Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer )
-        {
-            super( databaseLayout, config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState, constraintSemantics,
-                    indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, RecoveryCleanupWorkCollector.immediate(),
-                     true, EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(), EMPTY_LOG_TAIL,
-                    CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+                Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain>
+                        transactionApplierTransformer) {
+            super(
+                    databaseLayout,
+                    config,
+                    pageCache,
+                    fs,
+                    internalLogProvider,
+                    userLogProvider,
+                    tokenHolders,
+                    schemaState,
+                    constraintSemantics,
+                    indexConfigCompleter,
+                    lockService,
+                    databaseHealth,
+                    idGeneratorFactory,
+                    RecoveryCleanupWorkCollector.immediate(),
+                    true,
+                    EmptyMemoryTracker.INSTANCE,
+                    DatabaseReadOnlyChecker.writable(),
+                    EMPTY_LOG_TAIL,
+                    CommandLockVerification.Factory.IGNORE,
+                    LockVerificationMonitor.Factory.IGNORE,
+                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 
         @Override
-        protected TransactionApplierFactoryChain applierChain( TransactionApplicationMode mode )
-        {
-            TransactionApplierFactoryChain recordEngineApplier = super.applierChain( mode );
-            return transactionApplierTransformer.apply( recordEngineApplier );
+        protected TransactionApplierFactoryChain applierChain(TransactionApplicationMode mode) {
+            TransactionApplierFactoryChain recordEngineApplier = super.applierChain(mode);
+            return transactionApplierTransformer.apply(recordEngineApplier);
         }
     }
 }

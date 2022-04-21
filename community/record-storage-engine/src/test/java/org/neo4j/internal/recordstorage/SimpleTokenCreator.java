@@ -20,16 +20,13 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.token.TokenCreator;
 
-public class SimpleTokenCreator implements TokenCreator
-{
-    private final AtomicInteger highId = new AtomicInteger( 1 );
+public class SimpleTokenCreator implements TokenCreator {
+    private final AtomicInteger highId = new AtomicInteger(1);
 
     @Override
-    public int createToken( String name, boolean internal )
-    {
+    public int createToken(String name, boolean internal) {
         return highId.incrementAndGet();
     }
 }

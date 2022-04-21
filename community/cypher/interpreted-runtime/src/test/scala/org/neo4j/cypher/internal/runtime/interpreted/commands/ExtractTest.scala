@@ -31,6 +31,7 @@ import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues.list
 
 class ExtractTest extends CypherFunSuite {
+
   test("canReturnSomethingFromAnIterable") {
     val l = Seq("x", "xxx", "xx")
     val expression = SizeFunction(ExpressionVariable(0, "n"))
@@ -39,6 +40,10 @@ class ExtractTest extends CypherFunSuite {
 
     val extract = ExtractFunction(collection, "n", 0, expression)
 
-    extract.apply(m, QueryStateHelper.emptyWith(expressionVariables = new Array(1))) should equal(list(intValue(1), intValue(3), intValue(2)))
+    extract.apply(m, QueryStateHelper.emptyWith(expressionVariables = new Array(1))) should equal(list(
+      intValue(1),
+      intValue(3),
+      intValue(2)
+    ))
   }
 }

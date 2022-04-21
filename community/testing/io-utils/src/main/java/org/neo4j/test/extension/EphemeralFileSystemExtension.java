@@ -20,20 +20,16 @@
 package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
-
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 
-public class EphemeralFileSystemExtension extends FileSystemExtension<EphemeralFileSystemAbstraction>
-{
+public class EphemeralFileSystemExtension extends FileSystemExtension<EphemeralFileSystemAbstraction> {
     @Override
-    protected Class<EphemeralFileSystemAbstraction> getFieldType()
-    {
+    protected Class<EphemeralFileSystemAbstraction> getFieldType() {
         return EphemeralFileSystemAbstraction.class;
     }
 
     @Override
-    protected EphemeralFileSystemAbstraction createField( ExtensionContext extensionContext )
-    {
+    protected EphemeralFileSystemAbstraction createField(ExtensionContext extensionContext) {
         return new EphemeralFileSystemAbstraction();
     }
 }

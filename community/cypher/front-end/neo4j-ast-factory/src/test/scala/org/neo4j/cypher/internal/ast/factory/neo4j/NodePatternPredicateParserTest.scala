@@ -85,7 +85,7 @@ class NodePatternPredicateParserTest extends CypherFunSuite with TestName with J
         None,
         None,
         Some(lessThan(prop("end", "prop"), literalInt(42)))
-      )(pos),
+      )(pos)
     )
   }
 
@@ -102,7 +102,7 @@ class NodePatternPredicateParserTest extends CypherFunSuite with TestName with J
         None,
         None,
         Some(equals(prop("end", "prop"), literalInt(42)))
-      )(pos),
+      )(pos)
     )
   }
 

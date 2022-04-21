@@ -30,9 +30,9 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
 abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
-                                                                   edition: Edition[CONTEXT],
-                                                                   runtime: CypherRuntime[CONTEXT]
-                                                                 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should fail correctly on onResult exception") {
     // when
@@ -118,13 +118,14 @@ abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
   class Kaboom extends Exception("kaboom")
 
   case class ExplodingSubscriber(
-                                 explodeOnResult: Boolean = false,
-                                 explodeOnRecord: Boolean = false,
-                                 explodeOnField: Boolean = false,
-                                 explodeOnRecordCompleted: Boolean = false,
-                                 explodeOnError: Boolean = false,
-                                 explodeOnResultCompleted: Boolean = false
-                               ) extends QuerySubscriber {
+    explodeOnResult: Boolean = false,
+    explodeOnRecord: Boolean = false,
+    explodeOnField: Boolean = false,
+    explodeOnRecordCompleted: Boolean = false,
+    explodeOnError: Boolean = false,
+    explodeOnResultCompleted: Boolean = false
+  ) extends QuerySubscriber {
+
     override def onResult(numberOfFields: Int): Unit =
       if (explodeOnResult) throw new Kaboom
 

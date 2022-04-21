@@ -65,52 +65,63 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r]->(b)
-       RETURN distinct a as a""") {
+       RETURN distinct a as a"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
-         RETURN distinct a as a""")
+         RETURN distinct a as a"""
+    )
   }
 
   test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r]->(b)-[r2]-(c)
-       RETURN distinct a as a""") {
+       RETURN distinct a as a"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
-         RETURN distinct a as a""")
+         RETURN distinct a as a"""
+    )
   }
 
   test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r]->(b), (a)-[r2]-(c)
-       RETURN distinct a as a""") {
+       RETURN distinct a as a"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
-         RETURN distinct a as a""")
+         RETURN distinct a as a"""
+    )
   }
 
   test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]-(c)
-       RETURN distinct a as a""") {
+       RETURN distinct a as a"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
-         RETURN distinct a as a""")
+         RETURN distinct a as a"""
+    )
   }
 
   test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]-(c)
-       RETURN distinct a as a""") {
+       RETURN distinct a as a"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
-         RETURN distinct a as a""")
+         RETURN distinct a as a"""
+    )
   }
 
   test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)
-        RETURN DISTINCT a as a, b as b""") {
+        RETURN DISTINCT a as a, b as b"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -118,7 +129,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
-        RETURN DISTINCT c as c""") {
+        RETURN DISTINCT c as c"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -127,14 +139,16 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
         OPTIONAL MATCH (a)-[r]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
         OPTIONAL MATCH (c)-[r3]->(d)
-        RETURN DISTINCT d as d""") {
+        RETURN DISTINCT d as d"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)-[r2]->(c)-[r3]->(d)
-        RETURN DISTINCT d as d""") {
+        RETURN DISTINCT d as d"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -143,7 +157,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
         OPTIONAL MATCH (a)-[r1]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
         OPTIONAL MATCH (a)-[r3]->(d)
-        RETURN DISTINCT d as d""") {
+        RETURN DISTINCT d as d"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
         OPTIONAL MATCH (a)-[r3]->(d)
@@ -156,11 +171,13 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
         OPTIONAL MATCH (a)-[r1]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
         OPTIONAL MATCH (a)-[r3]->(d)
-        RETURN count(distinct d) as x""") {
+        RETURN count(distinct d) as x"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
         OPTIONAL MATCH (a)-[r3]->(d)
-        RETURN count(distinct d) as x""")
+        RETURN count(distinct d) as x"""
+    )
   }
 
   test(
@@ -168,7 +185,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
         OPTIONAL MATCH (a)-[r1]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
         OPTIONAL MATCH (a)-[r3]->(d) WHERE c.prop = d.prop
-        RETURN DISTINCT d as d""") {
+        RETURN DISTINCT d as d"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -176,124 +194,145 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
         OPTIONAL MATCH (a)-[r1]->(b)-[r2]->(c)
         OPTIONAL MATCH (a)-[r3]->(d) WHERE c.prop = d.prop
-        RETURN DISTINCT d as d""") {
+        RETURN DISTINCT d as d"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """MATCH (a), (b)
        OPTIONAL MATCH (a)-[r]->(b)
-       RETURN DISTINCT a as a, b as b""") {
+       RETURN DISTINCT a as a, b as b"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a), (b)
-         RETURN DISTINCT a as a, b as b""")
+         RETURN DISTINCT a as a, b as b"""
+    )
   }
 
   test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)
-        RETURN DISTINCT a as a, r as r""") {
+        RETURN DISTINCT a as a, r as r"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r]->(b)
-       RETURN count(distinct a) as x""") {
+       RETURN count(distinct a) as x"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
-         RETURN count(distinct a) as x""")
+         RETURN count(distinct a) as x"""
+    )
   }
 
   test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r]->(b)-[r2]->(c) WHERE c.prop = b.prop
-       RETURN DISTINCT b as b""") {
+       RETURN DISTINCT b as b"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """OPTIONAL MATCH (f:DoesExist)
        OPTIONAL MATCH (n:DoesNotExist)
-       RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b """) {
+       RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b """
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """OPTIONAL MATCH (f:DoesExist&Foo)
        OPTIONAL MATCH (n:DoesNotExist&Foo)
-       RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b """) {
+       RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b """
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c)
-          RETURN DISTINCT b as b""") {
+          RETURN DISTINCT b as b"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED1`)
-          RETURN DISTINCT b as b""")
+          RETURN DISTINCT b as b"""
+    )
   }
 
   test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c)-[r3:T2]->(d)
-          RETURN DISTINCT b as b, c AS c""") {
+          RETURN DISTINCT b as b, c AS c"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c)-[r3:T2]->(d)
-          RETURN DISTINCT b as b, d AS d""") {
+          RETURN DISTINCT b as b, d AS d"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE b:B
-          RETURN DISTINCT b as b""") {
+          RETURN DISTINCT b as b"""
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B AND (b)-[`  UNNAMED0`:T2]->(`  UNNAMED1`)
-          RETURN DISTINCT b as b""")
+          RETURN DISTINCT b as b"""
+    )
   }
 
   test(
     """MATCH (a)
             OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c.age <> 42
-            RETURN DISTINCT b as b""") {
+            RETURN DISTINCT b as b"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c:A:B AND c.id = 42 AND c.foo = 'apa'
-          RETURN DISTINCT b as b""") {
+          RETURN DISTINCT b as b"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c:A:B AND r2.id = 42 AND r2.foo = 'apa'
-          RETURN DISTINCT b as b""") {
+          RETURN DISTINCT b as b"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """MATCH (a:A)
       |OPTIONAL MATCH (z)-[IS_A]->(thing) WHERE z:Z
-      |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin) {
+      |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """MATCH (a:A)
         |OPTIONAL MATCH (z) WHERE (z)-[`  UNNAMED0`]->(`  UNNAMED1`) AND z:Z
-        |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin)
+        |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin
+    )
   }
 
   test(
     """OPTIONAL MATCH (a)-[r1]->(b)-[r2]->(c) WHERE a:A AND b:B AND c:C AND a <> b
-          RETURN DISTINCT c as c""") {
+          RETURN DISTINCT c as c"""
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -301,7 +340,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |DELETE r
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -309,7 +349,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |SET b.foo = 1
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -317,7 +358,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |SET a.foo = b.foo
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -325,7 +367,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |SET r.foo = 1
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -333,7 +376,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |SET b:FOO
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -341,7 +385,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |CREATE (c {id: b.prop})
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -349,7 +394,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |CREATE (a)-[r:T]->(b)
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -357,7 +403,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |MERGE (c:X {id: b.prop})
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -365,7 +412,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |MERGE (a)-[r:T]->(b)
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -374,13 +422,15 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |FOREACH( x in b.collectionProp |
       |  CREATE (z) )
-      |RETURN DISTINCT a AS a""".stripMargin) {
+      |RETURN DISTINCT a AS a""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """OPTIONAL MATCH (a)-[r]->(b) WHERE a:A AND b:B
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a) WHERE a:A AND (a)-[`  UNNAMED0`]->(`  UNNAMED1`:B)
         |RETURN COUNT(DISTINCT a) as count
@@ -390,19 +440,22 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r]->(b)-[r2]->(c)
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """OPTIONAL MATCH (a)-[r]->(b), (a)-[r2]->(c)
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:B AND c:C
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
@@ -411,7 +464,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:B|C AND c:C
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B|C) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
@@ -420,7 +474,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:B&C AND c:C
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B&C) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
@@ -429,7 +484,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:!(B&C) AND c:C
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:!(B&C)) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
@@ -438,7 +494,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:(B&C)|D AND c:C
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:(B&C)|D) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
@@ -447,13 +504,15 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE (b:B OR c:B) AND c:C
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE (b:B OR b.prop = 42) AND c:C
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)-[r:R]->(b) WHERE (a)-[`  UNNAMED0`:R2]->(`  UNNAMED1`:C) AND (b:B OR b.prop = 42)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
@@ -462,7 +521,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE (b:B OR b:C) AND c:C
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B|C) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
@@ -471,19 +531,22 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (b)-[r3:R3]-(d)
-      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d) WHERE b:B AND c:C AND d:D
-      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)-[r:R]->(b) WHERE b:B AND (b)-[`  UNNAMED0`:R2]->(`  UNNAMED1`:C) AND (a)-[`  UNNAMED4`:R3]-(`  UNNAMED5`:D)
         |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
@@ -492,7 +555,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)-[r3:R3]-(d), (a)-[r4:R4]-(e) WHERE b:B AND c:C AND d:D
-      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)-[r3:R3]-(d) WHERE b:B AND c:C AND d:D AND (a)-[`  UNNAMED0`:R4]-(`  UNNAMED1`)
         |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
@@ -501,7 +565,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)-[r3:R3]-(d), (a)-[r4:R4]-(e)-[r5:R5]-(f) WHERE b:B AND c:C AND d:D AND f:F
-      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -509,7 +574,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d), (b)-[r4:R4]-(e), (c)-[r5:R5]-(f)
       |WHERE a:A AND b:B AND c:C AND d:D AND e:E AND f:F
       |  AND a.prop = 0 AND b.prop = 1 AND c.prop = 2
-      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)
         |WHERE a:A
@@ -529,7 +595,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d), (b)-[r4:R4]-(e), (c)-[r5:R5]-(f)
       |WHERE a:A AND b:B AND c:C AND d:D AND e:E AND f:F
       |  AND a.prop = 0 AND b.prop = 1 AND c.prop = 2 AND d.prop = 3 AND e.prop = 4 AND f.prop = 5
-      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -538,7 +605,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |WHERE a:A AND b:B AND c:C AND d:D AND e:E AND f:F
       |  AND a.prop = 0 AND b.prop = 1 AND c.prop = 2 AND d.prop = 3 AND e.prop = 4 AND f.prop = 5
       |  AND r.prop = 0 AND r2.prop = 1 AND r3.prop = 2 AND r4.prop = 3 AND r5.prop = 4
-      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin) {
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin
+  ) {
     assert_that(testName).is_not_rewritten()
   }
 
@@ -547,7 +615,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |MATCH (a)
       |OPTIONAL MATCH (a)
       |RETURN a AS res
-      |""".stripMargin) {
+      |""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)
         |MATCH (a)
@@ -561,7 +630,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |MATCH (a:A&B)
       |OPTIONAL MATCH (a:A&B)
       |RETURN a AS res
-      |""".stripMargin) {
+      |""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a:A&B)
         |MATCH (a:A&B)
@@ -577,7 +647,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |OPTIONAL MATCH (a)
       |OPTIONAL MATCH (c)
       |RETURN a AS res
-      |""".stripMargin) {
+      |""".stripMargin
+  ) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)
         |MATCH (a)
@@ -635,7 +706,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = smallestGraphIncluding(qg, Set(n, m))
     result should contain(n)
     result should contain(m)
-    result should contain oneOf(r1, r2)
+    result should contain oneOf (r1, r2)
   }
 
   test("finds shortest path starting from two nodes with an intermediate relationship in the QG") {
@@ -644,7 +715,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m, c))
 
     smallestGraphIncluding(qg, Set(n, c)) should equal(
-      Set(n, m, c, r1, r2))
+      Set(n, m, c, r1, r2)
+    )
   }
 
   test("find smallest graph that connect three nodes") { // MATCH (n)-[r1]-(m), (n)-[r2]->(c), (n)-[r3]->(x)
@@ -653,20 +725,24 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val pattRel3 = PatternRelationship(r3, (n, x), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattRel1, pattRel2, pattRel3),
-      patternNodes = Set(n, m, c, x))
+      patternNodes = Set(n, m, c, x)
+    )
 
     smallestGraphIncluding(qg, Set(n, m, c)) should equal(
-      Set(n, m, c, r1, r2))
+      Set(n, m, c, r1, r2)
+    )
   }
 
   test("find smallest graph if mustInclude has the only relationship") { // MATCH (n)-[r1]-(m)
     val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattRel1),
-      patternNodes = Set(n, m))
+      patternNodes = Set(n, m)
+    )
 
     smallestGraphIncluding(qg, Set(n, r1)) should equal(
-      Set(n, m, r1))
+      Set(n, m, r1)
+    )
   }
 
   test("find smallest graph if mustInclude has one of two relationships") { // MATCH (n)-[r1]-(m), (n)-[r2]->(c)
@@ -674,10 +750,12 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val pattRel2 = PatternRelationship(r2, (n, c), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattRel1, pattRel2),
-      patternNodes = Set(n, m, c))
+      patternNodes = Set(n, m, c)
+    )
 
     smallestGraphIncluding(qg, Set(n, r1)) should equal(
-      Set(n, m, r1))
+      Set(n, m, r1)
+    )
   }
 
   test("find smallest graph if mustInclude has all but one of many relationships") { // MATCH (n)-[r1]->(m)-[r2]->(c)-[r3:R3]-(d), (n)-[r4]-(e)
@@ -687,10 +765,12 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val pattRel4 = PatternRelationship(r4, (n, e), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattRel1, pattRel2, pattRel3, pattRel4),
-      patternNodes = Set(n, m, c, d, e))
+      patternNodes = Set(n, m, c, d, e)
+    )
 
     smallestGraphIncluding(qg, Set(n, r1, m, r2, c, r3, d)) should equal(
-      Set(n, r1, m, r2, c, r3, d))
+      Set(n, r1, m, r2, c, r3, d)
+    )
   }
 
   test("querygraphs containing only nodes") {
@@ -700,6 +780,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   case class RewriteTester(originalQuery: String) {
+
     def is_rewritten_to(newQuery: String): Unit = {
       val expectedGen = new AnonymousVariableNameGenerator()
       val actualGen = new AnonymousVariableNameGenerator()
@@ -720,7 +801,10 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   private def assert_that(originalQuery: String): RewriteTester = RewriteTester(originalQuery)
 
-  private def getTheWholePlannerQueryFrom(query: String, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQuery = {
+  private def getTheWholePlannerQueryFrom(
+    query: String,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): PlannerQuery = {
     val astOriginal = parseForRewriting(query)
     val orgAstState = SemanticChecker.check(astOriginal).state
     val ast = astOriginal.endoRewrite(inSequence(
@@ -735,9 +819,16 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val result = SemanticChecker.check(ast)
     onError(result.errors)
-    val table = SemanticTable(types = result.state.typeTable, recordedScopes = result.state.recordedScopes.view.mapValues(_.scope).toMap)
+    val table = SemanticTable(
+      types = result.state.typeTable,
+      recordedScopes = result.state.recordedScopes.view.mapValues(_.scope).toMap
+    )
     StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table, anonymousVariableNameGenerator)
   }
 
-  private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"), Neo4jCypherExceptionFactory(queryText, None), new AnonymousVariableNameGenerator)
+  private def parseForRewriting(queryText: String) = parser.parse(
+    queryText.replace("\r\n", "\n"),
+    Neo4jCypherExceptionFactory(queryText, None),
+    new AnonymousVariableNameGenerator
+  )
 }

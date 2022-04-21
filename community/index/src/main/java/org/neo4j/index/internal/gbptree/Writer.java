@@ -30,8 +30,7 @@ import java.io.UncheckedIOException;
  * @param <KEY> type of keys
  * @param <VALUE> type of values
  */
-public interface Writer<KEY,VALUE> extends Closeable
-{
+public interface Writer<KEY, VALUE> extends Closeable {
     /**
      * Associate given {@code key} with given {@code value}.
      * Any existing {@code value} associated with {@code key} will be overwritten.
@@ -40,7 +39,7 @@ public interface Writer<KEY,VALUE> extends Closeable
      * @param value value to associate with key
      * @throws UncheckedIOException on index access error.
      */
-    void put( KEY key, VALUE value );
+    void put(KEY key, VALUE value);
 
     /**
      * If the {@code key} doesn't already exist in the index the {@code key} will be added and the {@code value}
@@ -53,7 +52,7 @@ public interface Writer<KEY,VALUE> extends Closeable
      * @throws UncheckedIOException on index access error.
      * @see ValueMerger#merge(Object, Object, Object, Object)
      */
-    void merge( KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger );
+    void merge(KEY key, VALUE value, ValueMerger<KEY, VALUE> valueMerger);
 
     /**
      * If the {@code key} already exists then its existing {@code value} will be merged with the given {@code value}, using the {@link ValueMerger}.
@@ -65,7 +64,7 @@ public interface Writer<KEY,VALUE> extends Closeable
      * @throws UncheckedIOException on index access error.
      * @see ValueMerger#merge(Object, Object, Object, Object)
      */
-    void mergeIfExists( KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger );
+    void mergeIfExists(KEY key, VALUE value, ValueMerger<KEY, VALUE> valueMerger);
 
     /**
      * Removes a key, returning it's associated value, if found.
@@ -74,5 +73,5 @@ public interface Writer<KEY,VALUE> extends Closeable
      * @return value which was associated with the removed key, if found, otherwise {@code null}.
      * @throws UncheckedIOException on index access error.
      */
-    VALUE remove( KEY key );
+    VALUE remove(KEY key);
 }

@@ -21,11 +21,10 @@ package org.neo4j.server.http.cypher.format.api;
 
 import java.net.URI;
 
-public interface TransactionUriScheme
-{
-    URI txUri( long id );
+public interface TransactionUriScheme {
+    URI txUri(long id);
 
-    URI txCommitUri( long id );
+    URI txCommitUri(long id);
 
     URI dbUri();
 }

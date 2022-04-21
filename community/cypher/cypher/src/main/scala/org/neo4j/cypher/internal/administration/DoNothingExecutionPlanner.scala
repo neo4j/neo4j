@@ -38,15 +38,20 @@ import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
-case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
-                                     securityAuthorizationHandler: SecurityAuthorizationHandler) {
+case class DoNothingExecutionPlanner(
+  normalExecutionEngine: ExecutionEngine,
+  securityAuthorizationHandler: SecurityAuthorizationHandler
+) {
 
-  def planDoNothingIfNotExists(label: String,
-                               name: Either[String, Parameter],
-                               valueMapper: String => String,
-                               operation: String,
-                               sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
-    planDoNothing("DoNothingIfNotExists",
+  def planDoNothingIfNotExists(
+    label: String,
+    name: Either[String, Parameter],
+    valueMapper: String => String,
+    operation: String,
+    sourcePlan: Option[ExecutionPlan]
+  ): ExecutionPlan =
+    planDoNothing(
+      "DoNothingIfNotExists",
       label,
       name,
       valueMapper,
@@ -56,24 +61,31 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
       sourcePlan
     )
 
-  def planDoNothingIfExists(label: String,
-                            name: Either[String, Parameter],
-                            valueMapper: String => String,
-                            sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
-    planDoNothing("DoNothingIfExists",
+  def planDoNothingIfExists(
+    label: String,
+    name: Either[String, Parameter],
+    valueMapper: String => String,
+    sourcePlan: Option[ExecutionPlan]
+  ): ExecutionPlan =
+    planDoNothing(
+      "DoNothingIfExists",
       label,
       name,
       valueMapper,
       QueryHandler
         .ignoreOnResult()
         .handleError(handleErrorFn("create", label, name)),
-      sourcePlan)
+      sourcePlan
+    )
 
-  def planDoNothingIfDatabaseNotExists(name: Either[String, Parameter],
-                                       valueMapper: String => String,
-                                       operation: String,
-                                       sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
-    planDoNothingDatabase("DoNothingIfDatabaseNotExists",
+  def planDoNothingIfDatabaseNotExists(
+    name: Either[String, Parameter],
+    valueMapper: String => String,
+    operation: String,
+    sourcePlan: Option[ExecutionPlan]
+  ): ExecutionPlan = {
+    planDoNothingDatabase(
+      "DoNothingIfDatabaseNotExists",
       name,
       valueMapper,
       QueryHandler
@@ -83,25 +95,32 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
     )
   }
 
-  def planDoNothingIfDatabaseExists(name: Either[String, Parameter],
-                                    valueMapper: String => String,
-                                    sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
-    planDoNothingDatabase("DoNothingIfDatabaseExists",
+  def planDoNothingIfDatabaseExists(
+    name: Either[String, Parameter],
+    valueMapper: String => String,
+    sourcePlan: Option[ExecutionPlan]
+  ): ExecutionPlan =
+    planDoNothingDatabase(
+      "DoNothingIfDatabaseExists",
       name,
       valueMapper,
       QueryHandler
         .ignoreOnResult()
         .handleError(handleErrorFn("create", DATABASE, name)),
-      sourcePlan)
+      sourcePlan
+    )
 
-  private def planDoNothing(planName: String,
-                            label: String,
-                            name: Either[String, Parameter],
-                            valueMapper: String => String,
-                            queryHandler: QueryHandler,
-                            sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
+  private def planDoNothing(
+    planName: String,
+    label: String,
+    name: Either[String, Parameter],
+    valueMapper: String => String,
+    queryHandler: QueryHandler,
+    sourcePlan: Option[ExecutionPlan]
+  ): ExecutionPlan = {
     val nameFields = getNameFields("name", name, valueMapper = valueMapper)
-    UpdatingSystemCommandExecutionPlan(planName,
+    UpdatingSystemCommandExecutionPlan(
+      planName,
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""
@@ -115,13 +134,16 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
     )
   }
 
-  private def planDoNothingDatabase(planName: String,
-                                    name: Either[String, Parameter],
-                                    valueMapper: String => String,
-                                    queryHandler: QueryHandler,
-                                    sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
+  private def planDoNothingDatabase(
+    planName: String,
+    name: Either[String, Parameter],
+    valueMapper: String => String,
+    queryHandler: QueryHandler,
+    sourcePlan: Option[ExecutionPlan]
+  ): ExecutionPlan = {
     val nameFields = getNameFields("name", name, valueMapper = valueMapper)
-    UpdatingSystemCommandExecutionPlan(planName,
+    UpdatingSystemCommandExecutionPlan(
+      planName,
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""
@@ -136,11 +158,19 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
     )
   }
 
-  private def handleErrorFn(operation: String,
-                            labelDescription: String,
-                            name: Either[String, Parameter]): (Throwable, MapValue) => Throwable = {
+  private def handleErrorFn(
+    operation: String,
+    labelDescription: String,
+    name: Either[String, Parameter]
+  ): (Throwable, MapValue) => Throwable = {
     case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-      new DatabaseAdministrationOnFollowerException(s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
-    case (error, p) => new IllegalStateException(s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
+      new DatabaseAdministrationOnFollowerException(
+        s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $followerError",
+        error
+      )
+    case (error, p) => new IllegalStateException(
+        s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}'.",
+        error
+      ) // should not get here but need a default case
   }
 }

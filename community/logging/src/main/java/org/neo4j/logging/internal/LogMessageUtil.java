@@ -20,16 +20,12 @@
 package org.neo4j.logging.internal;
 
 import java.util.regex.Pattern;
-
 import org.neo4j.logging.InternalLog;
 
-public final class LogMessageUtil
-{
-    private static final Pattern SLF4J_PLACEHOLDER = Pattern.compile( "\\{}" );
+public final class LogMessageUtil {
+    private static final Pattern SLF4J_PLACEHOLDER = Pattern.compile("\\{}");
 
-    private LogMessageUtil()
-    {
-    }
+    private LogMessageUtil() {}
 
     /**
      * Replace SLF4J-style placeholders like {@code {}} with {@link String#format(String, Object...)} placeholders like {@code %s} in the given string.
@@ -38,8 +34,7 @@ public final class LogMessageUtil
      * @param template the message template to modify.
      * @return new message template which can be safely formatted using {@link String#format(String, Object...)}.
      */
-    public static String slf4jToStringFormatPlaceholders( String template )
-    {
-        return SLF4J_PLACEHOLDER.matcher( template ).replaceAll( "%s" );
+    public static String slf4jToStringFormatPlaceholders(String template) {
+        return SLF4J_PLACEHOLDER.matcher(template).replaceAll("%s");
     }
 }

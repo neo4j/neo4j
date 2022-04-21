@@ -23,67 +23,52 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public interface IdUpdateListener extends AutoCloseable
-{
-    void markIdAsUsed( IdGenerator idGenerator, long id, int size, CursorContext cursorContext );
+public interface IdUpdateListener extends AutoCloseable {
+    void markIdAsUsed(IdGenerator idGenerator, long id, int size, CursorContext cursorContext);
 
-    void markIdAsUnused( IdGenerator idGenerator, long id, int size, CursorContext cursorContext );
+    void markIdAsUnused(IdGenerator idGenerator, long id, int size, CursorContext cursorContext);
 
-    default void markId( IdGenerator idGenerator, long id, int size, boolean used, CursorContext cursorContext )
-    {
-        if ( used )
-        {
-            markIdAsUsed( idGenerator, id, size, cursorContext );
-        }
-        else
-        {
-            markIdAsUnused( idGenerator, id, size, cursorContext );
+    default void markId(IdGenerator idGenerator, long id, int size, boolean used, CursorContext cursorContext) {
+        if (used) {
+            markIdAsUsed(idGenerator, id, size, cursorContext);
+        } else {
+            markIdAsUnused(idGenerator, id, size, cursorContext);
         }
     }
 
-    IdUpdateListener DIRECT = new IdUpdateListener()
-    {
+    IdUpdateListener DIRECT = new IdUpdateListener() {
         @Override
-        public void close()
-        {
+        public void close() {
             // no-op
         }
 
         @Override
-        public void markIdAsUsed( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
-        {
-            try ( Marker marker = idGenerator.marker( cursorContext ) )
-            {
-                marker.markUsed( id, size );
+        public void markIdAsUsed(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
+            try (Marker marker = idGenerator.marker(cursorContext)) {
+                marker.markUsed(id, size);
             }
         }
 
         @Override
-        public void markIdAsUnused( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
-        {
-            try ( Marker marker = idGenerator.marker( cursorContext ) )
-            {
-                marker.markDeleted( id, size );
+        public void markIdAsUnused(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
+            try (Marker marker = idGenerator.marker(cursorContext)) {
+                marker.markDeleted(id, size);
             }
         }
     };
 
-    IdUpdateListener IGNORE = new IdUpdateListener()
-    {
+    IdUpdateListener IGNORE = new IdUpdateListener() {
         @Override
-        public void close()
-        {
+        public void close() {
             // no-op
         }
 
         @Override
-        public void markIdAsUsed( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
-        {   // no-op
+        public void markIdAsUsed(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) { // no-op
         }
 
         @Override
-        public void markIdAsUnused( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
-        {   // no-op
+        public void markIdAsUnused(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) { // no-op
         }
     };
 }

@@ -19,7 +19,10 @@
  */
 package org.neo4j.server;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.conditions.Conditions.FALSE;
+import static org.neo4j.test.conditions.Conditions.TRUE;
 
 import java.nio.file.Path;
 import java.util.Collections;
@@ -27,90 +30,82 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.test.assertion.Assert.assertEventually;
-import static org.neo4j.test.conditions.Conditions.FALSE;
-import static org.neo4j.test.conditions.Conditions.TRUE;
-
 @Neo4jLayoutExtension
-class BlockingBootstrapperTest
-{
+class BlockingBootstrapperTest {
     @Inject
     private TestDirectory homeDir;
 
     @Test
-    void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful()
-    {
+    void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful() {
         AtomicInteger status = new AtomicInteger();
-        AtomicBoolean exited = new AtomicBoolean( false );
-        AtomicBoolean running = new AtomicBoolean( false );
+        AtomicBoolean exited = new AtomicBoolean(false);
+        AtomicBoolean running = new AtomicBoolean(false);
 
-        BlockingBootstrapper bootstrapper = new BlockingBootstrapper( new Bootstrapper()
-        {
+        BlockingBootstrapper bootstrapper = new BlockingBootstrapper(new Bootstrapper() {
             @Override
-            public int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands )
-            {
-                running.set( true );
+            public int start(
+                    Path homeDir, Path configFile, Map<String, String> configOverrides, boolean expandCommands) {
+                running.set(true);
                 return 0;
             }
 
             @Override
-            public int stop()
-            {
-                running.set( false );
+            public int stop() {
+                running.set(false);
                 return 0;
             }
-        } );
+        });
 
-        new Thread( () ->
-        {
-            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), Collections.emptyMap() ) );
-            exited.set( true );
-        } ).start();
+        new Thread(() -> {
+                    status.set(bootstrapper.start(homeDir.directory("home-dir"), Collections.emptyMap()));
+                    exited.set(true);
+                })
+                .start();
 
-        assertEventually( "Wrapped was not started", running::get, TRUE, 10, TimeUnit.SECONDS );
-        assertThat( exited.get() ).as( "Bootstrapper exited early" ).isEqualTo( false );
+        assertEventually("Wrapped was not started", running::get, TRUE, 10, TimeUnit.SECONDS);
+        assertThat(exited.get()).as("Bootstrapper exited early").isEqualTo(false);
 
         bootstrapper.stop();
 
-        assertEventually( "Wrapped was not stopped", running::get, FALSE, 10, TimeUnit.SECONDS );
-        assertEventually( "Bootstrapper did not exit", exited::get, TRUE, 10, TimeUnit.SECONDS );
-        assertThat( status.get() ).as( "Bootstrapper did not propagate exit status" ).isEqualTo( 0 );
+        assertEventually("Wrapped was not stopped", running::get, FALSE, 10, TimeUnit.SECONDS);
+        assertEventually("Bootstrapper did not exit", exited::get, TRUE, 10, TimeUnit.SECONDS);
+        assertThat(status.get())
+                .as("Bootstrapper did not propagate exit status")
+                .isEqualTo(0);
     }
 
     @Test
-    void shouldNotBlockIfTheWrappedStartIsUnsuccessful()
-    {
+    void shouldNotBlockIfTheWrappedStartIsUnsuccessful() {
         AtomicInteger status = new AtomicInteger();
-        AtomicBoolean exited = new AtomicBoolean( false );
+        AtomicBoolean exited = new AtomicBoolean(false);
 
-        BlockingBootstrapper bootstrapper = new BlockingBootstrapper( new Bootstrapper()
-        {
+        BlockingBootstrapper bootstrapper = new BlockingBootstrapper(new Bootstrapper() {
             @Override
-            public int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands )
-            {
+            public int start(
+                    Path homeDir, Path configFile, Map<String, String> configOverrides, boolean expandCommands) {
                 return 1;
             }
 
             @Override
-            public int stop()
-            {
+            public int stop() {
                 return 0;
             }
-        } );
+        });
 
-        new Thread( () ->
-        {
-            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null, Collections.emptyMap(), false ) );
-            exited.set( true );
-        } ).start();
+        new Thread(() -> {
+                    status.set(bootstrapper.start(homeDir.directory("home-dir"), null, Collections.emptyMap(), false));
+                    exited.set(true);
+                })
+                .start();
 
-        assertEventually( "Blocked unexpectedly", exited::get, TRUE, 10, TimeUnit.SECONDS );
-        assertThat( status.get() ).as( "Bootstrapper did not propagate exit status" ).isEqualTo( 1 );
+        assertEventually("Blocked unexpectedly", exited::get, TRUE, 10, TimeUnit.SECONDS);
+        assertThat(status.get())
+                .as("Bootstrapper did not propagate exit status")
+                .isEqualTo(1);
     }
 }

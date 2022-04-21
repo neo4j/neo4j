@@ -36,59 +36,65 @@ import org.neo4j.values.storable.ValueTuple;
  * This naming convention helps deciding where to set {@link #hasChanges()} in the
  * {@link org.neo4j.kernel.impl.api.state.TxState main implementation class}.
  */
-public interface TransactionState extends ReadableTransactionState
-{
+public interface TransactionState extends ReadableTransactionState {
     // ENTITY RELATED
 
-    void relationshipDoCreate( long id, int relationshipTypeId, long startNodeId, long endNodeId );
+    void relationshipDoCreate(long id, int relationshipTypeId, long startNodeId, long endNodeId);
 
-    void nodeDoCreate( long id );
+    void nodeDoCreate(long id);
 
-    void relationshipDoDelete( long relationshipId, int type, long startNode, long endNode );
+    void relationshipDoDelete(long relationshipId, int type, long startNode, long endNode);
 
-    void relationshipDoDeleteAddedInThisTx( long relationshipId );
+    void relationshipDoDeleteAddedInThisTx(long relationshipId);
 
-    void nodeDoDelete( long nodeId );
+    void nodeDoDelete(long nodeId);
 
-    void nodeDoAddProperty( long nodeId, int newPropertyKeyId, Value value );
+    void nodeDoAddProperty(long nodeId, int newPropertyKeyId, Value value);
 
-    void nodeDoChangeProperty( long nodeId, int propertyKeyId, Value newValue );
+    void nodeDoChangeProperty(long nodeId, int propertyKeyId, Value newValue);
 
-    void relationshipDoReplaceProperty( long relationshipId, int type, long startNode, long endNode, int propertyKeyId, Value replacedValue, Value newValue );
+    void relationshipDoReplaceProperty(
+            long relationshipId,
+            int type,
+            long startNode,
+            long endNode,
+            int propertyKeyId,
+            Value replacedValue,
+            Value newValue);
 
-    void nodeDoRemoveProperty( long nodeId, int propertyKeyId );
+    void nodeDoRemoveProperty(long nodeId, int propertyKeyId);
 
-    void relationshipDoRemoveProperty( long relationshipId, int type, long startNode, long endNode, int propertyKeyId );
+    void relationshipDoRemoveProperty(long relationshipId, int type, long startNode, long endNode, int propertyKeyId);
 
-    void nodeDoAddLabel( long labelId, long nodeId );
+    void nodeDoAddLabel(long labelId, long nodeId);
 
-    void nodeDoRemoveLabel( long labelId, long nodeId );
+    void nodeDoRemoveLabel(long labelId, long nodeId);
 
     // TOKEN RELATED
 
-    void labelDoCreateForName( String labelName, boolean internal, long id );
+    void labelDoCreateForName(String labelName, boolean internal, long id);
 
-    void propertyKeyDoCreateForName( String propertyKeyName, boolean internal, int id );
+    void propertyKeyDoCreateForName(String propertyKeyName, boolean internal, int id);
 
-    void relationshipTypeDoCreateForName( String relationshipTypeName, boolean internal, int id );
+    void relationshipTypeDoCreateForName(String relationshipTypeName, boolean internal, int id);
 
     // SCHEMA RELATED
 
-    void indexDoAdd( IndexDescriptor index );
+    void indexDoAdd(IndexDescriptor index);
 
-    void indexDoDrop( IndexDescriptor index );
+    void indexDoDrop(IndexDescriptor index);
 
-    boolean indexDoUnRemove( IndexDescriptor index );
+    boolean indexDoUnRemove(IndexDescriptor index);
 
-    void constraintDoAdd( ConstraintDescriptor constraint );
+    void constraintDoAdd(ConstraintDescriptor constraint);
 
-    void constraintDoAdd( IndexBackedConstraintDescriptor constraint, IndexDescriptor index );
+    void constraintDoAdd(IndexBackedConstraintDescriptor constraint, IndexDescriptor index);
 
-    void constraintDoDrop( ConstraintDescriptor constraint );
+    void constraintDoDrop(ConstraintDescriptor constraint);
 
-    boolean constraintDoUnRemove( ConstraintDescriptor constraint );
+    boolean constraintDoUnRemove(ConstraintDescriptor constraint);
 
-    void indexDoUpdateEntry( SchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after );
+    void indexDoUpdateEntry(SchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after);
 
     // MEMORY TRACKING
 

@@ -19,18 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
-import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobHandle;
-import org.neo4j.scheduler.JobMonitoringParams;
-import org.neo4j.scheduler.JobScheduler;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,26 +26,45 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class KernelTransactionTimeoutMonitorSchedulerTest
-{
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
+import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.JobScheduler;
 
-    private final KernelTransactionMonitor transactionMonitor = mock( KernelTransactionMonitor.class );
-    private final JobScheduler jobScheduler = mock( JobScheduler.class );
+class KernelTransactionTimeoutMonitorSchedulerTest {
+
+    private final KernelTransactionMonitor transactionMonitor = mock(KernelTransactionMonitor.class);
+    private final JobScheduler jobScheduler = mock(JobScheduler.class);
 
     @Test
-    void startJobTransactionMonitor()
-    {
-        JobHandle jobHandle = Mockito.mock( JobHandle.class );
-        when( jobScheduler.scheduleRecurring( eq( Group.TRANSACTION_TIMEOUT_MONITOR ), any( JobMonitoringParams.class ), eq( transactionMonitor ), anyLong(),
-                any( TimeUnit.class ) ) ).thenReturn( jobHandle );
+    void startJobTransactionMonitor() {
+        JobHandle jobHandle = Mockito.mock(JobHandle.class);
+        when(jobScheduler.scheduleRecurring(
+                        eq(Group.TRANSACTION_TIMEOUT_MONITOR),
+                        any(JobMonitoringParams.class),
+                        eq(transactionMonitor),
+                        anyLong(),
+                        any(TimeUnit.class)))
+                .thenReturn(jobHandle);
 
-        TransactionMonitorScheduler monitorScheduler = new TransactionMonitorScheduler( transactionMonitor, jobScheduler, 7, "test database" );
+        TransactionMonitorScheduler monitorScheduler =
+                new TransactionMonitorScheduler(transactionMonitor, jobScheduler, 7, "test database");
 
         monitorScheduler.start();
-        verify( jobScheduler ).scheduleRecurring( eq( Group.TRANSACTION_TIMEOUT_MONITOR ), any( JobMonitoringParams.class ), eq( transactionMonitor ),
-                eq( 7L ), eq( TimeUnit.MILLISECONDS ) );
+        verify(jobScheduler)
+                .scheduleRecurring(
+                        eq(Group.TRANSACTION_TIMEOUT_MONITOR),
+                        any(JobMonitoringParams.class),
+                        eq(transactionMonitor),
+                        eq(7L),
+                        eq(TimeUnit.MILLISECONDS));
 
         monitorScheduler.stop();
-        verify( jobHandle ).cancel();
+        verify(jobHandle).cancel();
     }
 }

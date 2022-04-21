@@ -35,8 +35,7 @@ import org.neo4j.annotations.api.PublicApi;
  * @param <T> The data type the edge weights are represented by.
  */
 @PublicApi
-public interface CostAccumulator<T>
-{
+public interface CostAccumulator<T> {
     /**
      * This is the accumulating method. This should return the results of
      * "adding" two path costs with each other.
@@ -45,5 +44,5 @@ public interface CostAccumulator<T>
      * @param c2 The other cost.
      * @return The resulting cost.
      */
-    T addCosts( T c1, T c2 );
+    T addCosts(T c1, T c2);
 }

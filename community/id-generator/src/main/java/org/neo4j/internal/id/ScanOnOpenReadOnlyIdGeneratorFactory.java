@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.id;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -29,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
@@ -42,54 +40,74 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
  * IdSlotDistribution)}, instantiating {@link IdGenerator} that will return that highId and do nothing else.
  * This is of great convenience when migrating between id file formats.
  */
-public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
-{
-    private final Map<IdType,ReadOnlyHighIdGenerator> idGenerators = new HashMap<>();
+public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory {
+    private final Map<IdType, ReadOnlyHighIdGenerator> idGenerators = new HashMap<>();
 
     @Override
-    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
-    {
+    public IdGenerator open(
+            PageCache pageCache,
+            Path filename,
+            IdType idType,
+            LongSupplier highIdScanner,
+            long maxId,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution) {
         long highId = highIdScanner.getAsLong();
-        ReadOnlyHighIdGenerator idGenerator = new ReadOnlyHighIdGenerator( highId, idType );
-        idGenerators.put( idType, idGenerator );
+        ReadOnlyHighIdGenerator idGenerator = new ReadOnlyHighIdGenerator(highId, idType);
+        idGenerators.put(idType, idGenerator);
         return idGenerator;
     }
 
     @Override
-    public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
-            IdSlotDistribution slotDistribution )
-    {
-        return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, contextFactory, openOptions, slotDistribution );
+    public IdGenerator create(
+            PageCache pageCache,
+            Path filename,
+            IdType idType,
+            long highId,
+            boolean throwIfFileExists,
+            long maxId,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution) {
+        return open(
+                pageCache,
+                filename,
+                idType,
+                () -> highId,
+                maxId,
+                readOnlyChecker,
+                config,
+                contextFactory,
+                openOptions,
+                slotDistribution);
     }
 
     @Override
-    public IdGenerator get( IdType idType )
-    {
-        ReadOnlyHighIdGenerator idGenerator = idGenerators.get( idType );
-        if ( idGenerator == null )
-        {
-            throw new IllegalStateException( "IdGenerator for " + idType + " not opened" );
+    public IdGenerator get(IdType idType) {
+        ReadOnlyHighIdGenerator idGenerator = idGenerators.get(idType);
+        if (idGenerator == null) {
+            throw new IllegalStateException("IdGenerator for " + idType + " not opened");
         }
         return idGenerator;
     }
 
     @Override
-    public void visit( Consumer<IdGenerator> visitor )
-    {
-        idGenerators.values().forEach( visitor );
+    public void visit(Consumer<IdGenerator> visitor) {
+        idGenerators.values().forEach(visitor);
     }
 
     @Override
-    public void clearCache( CursorContext cursorContext )
-    {
-        idGenerators.values().forEach( idGenerator -> idGenerator.clearCache( cursorContext ) );
+    public void clearCache(CursorContext cursorContext) {
+        idGenerators.values().forEach(idGenerator -> idGenerator.clearCache(cursorContext));
     }
 
     @Override
-    public Collection<Path> listIdFiles()
-    {
+    public Collection<Path> listIdFiles() {
         return Collections.emptyList();
     }
 }

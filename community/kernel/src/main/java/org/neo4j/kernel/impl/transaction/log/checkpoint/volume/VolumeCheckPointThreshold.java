@@ -19,51 +19,44 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint.volume;
 
-import java.util.concurrent.TimeUnit;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
+import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.AbstractCheckPointThreshold;
 
-import static org.neo4j.io.ByteUnit.bytesToString;
-
-public class VolumeCheckPointThreshold extends AbstractCheckPointThreshold
-{
+public class VolumeCheckPointThreshold extends AbstractCheckPointThreshold {
     private final long volumeBytes;
     private final long fileSizeBytes;
     private volatile LogPosition checkpointLogPosition;
 
-    public VolumeCheckPointThreshold( long volumeBytes, long fileSizeBytes )
-    {
-        super( "every " + bytesToString( volumeBytes ) + " of transaction logs." );
+    public VolumeCheckPointThreshold(long volumeBytes, long fileSizeBytes) {
+        super("every " + bytesToString(volumeBytes) + " of transaction logs.");
         this.volumeBytes = volumeBytes;
         this.fileSizeBytes = fileSizeBytes;
     }
 
     @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId, LogPosition logPosition )
-    {
+    protected boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition) {
         var previousLogPosition = checkpointLogPosition;
-        long files = Math.abs( logPosition.getLogVersion() - previousLogPosition.getLogVersion() );
+        long files = Math.abs(logPosition.getLogVersion() - previousLogPosition.getLogVersion());
         long offset = logPosition.getByteOffset() - previousLogPosition.getByteOffset();
-        long bytesDiff = Math.abs( files * fileSizeBytes + offset );
+        long bytesDiff = Math.abs(files * fileSizeBytes + offset);
         return volumeBytes < bytesDiff;
     }
 
     @Override
-    public void initialize( long transactionId, LogPosition logPosition )
-    {
+    public void initialize(long transactionId, LogPosition logPosition) {
         checkpointLogPosition = logPosition;
     }
 
     @Override
-    public void checkPointHappened( long transactionId, LogPosition logPosition )
-    {
+    public void checkPointHappened(long transactionId, LogPosition logPosition) {
         checkpointLogPosition = logPosition;
     }
 
     @Override
-    public long checkFrequencyMillis()
-    {
-        return TimeUnit.SECONDS.toMillis( 1 );
+    public long checkFrequencyMillis() {
+        return TimeUnit.SECONDS.toMillis(1);
     }
 }

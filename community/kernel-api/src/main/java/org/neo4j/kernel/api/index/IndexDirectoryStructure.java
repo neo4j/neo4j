@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.index;
 
 import java.nio.file.Path;
-
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 
 /**
@@ -32,35 +31,29 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
  * These instances are created from a {@link Factory} which typically gets passed into an IndexProvider constructor,
  * which then creates a {@link IndexDirectoryStructure} given its {@link IndexProviderDescriptor}.
  */
-public abstract class IndexDirectoryStructure
-{
+public abstract class IndexDirectoryStructure {
     /**
      * Creates an {@link IndexDirectoryStructure} for a {@link IndexProviderDescriptor} for an IndexProvider.
      */
-    public interface Factory
-    {
-        IndexDirectoryStructure forProvider( IndexProviderDescriptor descriptor );
+    public interface Factory {
+        IndexDirectoryStructure forProvider(IndexProviderDescriptor descriptor);
     }
 
-    private static class SubDirectoryByIndexId extends IndexDirectoryStructure
-    {
+    private static class SubDirectoryByIndexId extends IndexDirectoryStructure {
         private final Path providerRootFolder;
 
-        private SubDirectoryByIndexId( Path providerRootFolder )
-        {
+        private SubDirectoryByIndexId(Path providerRootFolder) {
             this.providerRootFolder = providerRootFolder;
         }
 
         @Override
-        public Path rootDirectory()
-        {
+        public Path rootDirectory() {
             return providerRootFolder;
         }
 
         @Override
-        public Path directoryForIndex( long indexId )
-        {
-            return providerRootFolder.resolve( String.valueOf( indexId ) );
+        public Path directoryForIndex(long indexId) {
+            return providerRootFolder.resolve(String.valueOf(indexId));
         }
     }
 
@@ -74,9 +67,8 @@ public abstract class IndexDirectoryStructure
      * @param databaseStoreDir database store directory, i.e. {@code db} in the example above, where e.g. {@code nodestore} lives.
      * @return the base directory of schema indexing.
      */
-    public static Path baseSchemaIndexFolder( Path databaseStoreDir )
-    {
-        return databaseStoreDir.resolve( "schema" ).resolve( "index" );
+    public static Path baseSchemaIndexFolder(Path databaseStoreDir) {
+        return databaseStoreDir.resolve("schema").resolve("index");
     }
 
     /**
@@ -87,17 +79,16 @@ public abstract class IndexDirectoryStructure
      * &lt;db&gt;/schema/index/&lt;providerKey&gt;-&lt;providerVersion&gt;/&lt;indexId&gt;/
      * </pre>
      */
-    public static Factory directoriesByProvider( Path databaseStoreDir )
-    {
-        return descriptor -> new SubDirectoryByIndexId( baseSchemaIndexFolder( databaseStoreDir ).resolve( fileNameFriendly( descriptor ) ) );
+    public static Factory directoriesByProvider(Path databaseStoreDir) {
+        return descriptor -> new SubDirectoryByIndexId(
+                baseSchemaIndexFolder(databaseStoreDir).resolve(fileNameFriendly(descriptor)));
     }
 
     /**
      * @param directoryStructure existing {@link IndexDirectoryStructure}.
      * @return a {@link Factory} returning an already existing {@link IndexDirectoryStructure}.
      */
-    public static Factory given( IndexDirectoryStructure directoryStructure )
-    {
+    public static Factory given(IndexDirectoryStructure directoryStructure) {
         return descriptor -> directoryStructure;
     }
 
@@ -111,45 +102,36 @@ public abstract class IndexDirectoryStructure
      * &lt;db&gt;/schema/index/.../&lt;indexId&gt;/&lt;childProviderKey&gt;-&lt;childProviderVersion&gt;/
      * </pre>
      */
-    public static Factory directoriesBySubProvider( IndexDirectoryStructure parentStructure )
-    {
-        return descriptor -> new IndexDirectoryStructure()
-        {
+    public static Factory directoriesBySubProvider(IndexDirectoryStructure parentStructure) {
+        return descriptor -> new IndexDirectoryStructure() {
             @Override
-            public Path rootDirectory()
-            {
+            public Path rootDirectory() {
                 return parentStructure.rootDirectory();
             }
 
             @Override
-            public Path directoryForIndex( long indexId )
-            {
-                return parentStructure.directoryForIndex( indexId ).resolve( fileNameFriendly( descriptor ) );
+            public Path directoryForIndex(long indexId) {
+                return parentStructure.directoryForIndex(indexId).resolve(fileNameFriendly(descriptor));
             }
         };
     }
 
-    public static String fileNameFriendly( String name )
-    {
-        return name.replaceAll( "\\+", "_" );
+    public static String fileNameFriendly(String name) {
+        return name.replaceAll("\\+", "_");
     }
 
-    static String fileNameFriendly( IndexProviderDescriptor descriptor )
-    {
-        return fileNameFriendly( descriptor.getKey() + "-" + descriptor.getVersion() );
+    static String fileNameFriendly(IndexProviderDescriptor descriptor) {
+        return fileNameFriendly(descriptor.getKey() + "-" + descriptor.getVersion());
     }
 
-    private static final IndexDirectoryStructure NO_DIRECTORY_STRUCTURE = new IndexDirectoryStructure()
-    {
+    private static final IndexDirectoryStructure NO_DIRECTORY_STRUCTURE = new IndexDirectoryStructure() {
         @Override
-        public Path rootDirectory()
-        {
+        public Path rootDirectory() {
             return null; // meaning there's no persistent storage
         }
 
         @Override
-        public Path directoryForIndex( long indexId )
-        {
+        public Path directoryForIndex(long indexId) {
             return null; // meaning there's no persistent storage
         }
     };
@@ -185,5 +167,5 @@ public abstract class IndexDirectoryStructure
      * @return {@link Path} denoting directory for the specific {@code indexId} for this provider.
      * May return {@code null} if there's no root directory, i.e. no persistent storage at all.
      */
-    public abstract Path directoryForIndex( long indexId );
+    public abstract Path directoryForIndex(long indexId);
 }

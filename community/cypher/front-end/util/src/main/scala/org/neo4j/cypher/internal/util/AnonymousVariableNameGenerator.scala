@@ -31,7 +31,7 @@ class AnonymousVariableNameGenerator() {
 
 object AnonymousVariableNameGenerator {
   val generatorName = "UNNAMED"
-  private val prefix =  s"  $generatorName"
+  private val prefix = s"  $generatorName"
 
   def isNamed(x: String): Boolean = !notNamed(x)
   def notNamed(x: String): Boolean = x.startsWith(prefix)

@@ -21,23 +21,18 @@ package org.neo4j.bolt.v3.messaging.request;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 
-public class InterruptSignal implements RequestMessage
-{
+public class InterruptSignal implements RequestMessage {
     public static final InterruptSignal INSTANCE = new InterruptSignal();
 
-    private InterruptSignal()
-    {
-    }
+    private InterruptSignal() {}
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return false;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "INTERRUPT";
     }
 }

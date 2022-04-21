@@ -19,144 +19,130 @@
  */
 package org.neo4j.bolt.txtracking;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-class DefaultReconciledTransactionTrackerTest
-{
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+class DefaultReconciledTransactionTrackerTest {
     private DefaultReconciledTransactionTracker tracker;
 
     @BeforeEach
-    void beforeEach()
-    {
-        tracker = new DefaultReconciledTransactionTracker( new SimpleLogService(
-                new Log4jLogProvider( System.out ) ) );
+    void beforeEach() {
+        tracker = new DefaultReconciledTransactionTracker(new SimpleLogService(new Log4jLogProvider(System.out)));
     }
 
     @Test
-    void shouldReturnDummyReconciledTransactionIdWhenNotInitialized()
-    {
-        assertEquals( -1, tracker.getLastReconciledTransactionId() );
+    void shouldReturnDummyReconciledTransactionIdWhenNotInitialized() {
+        assertEquals(-1, tracker.getLastReconciledTransactionId());
     }
 
     @Test
-    void shouldReturnReconciledTransactionIdWhenInitializedButNeverUpdated()
-    {
-        tracker.enable( 42 );
+    void shouldReturnReconciledTransactionIdWhenInitializedButNeverUpdated() {
+        tracker.enable(42);
 
-        assertEquals( 42, tracker.getLastReconciledTransactionId() );
+        assertEquals(42, tracker.getLastReconciledTransactionId());
     }
 
     @Test
-    void shouldReturnReconciledTransactionIdWhenReInitialized()
-    {
-        tracker.enable( 42 );
-        tracker.enable( 4242 );
-        tracker.enable( 424242 );
+    void shouldReturnReconciledTransactionIdWhenReInitialized() {
+        tracker.enable(42);
+        tracker.enable(4242);
+        tracker.enable(424242);
 
-        assertEquals( 424242, tracker.getLastReconciledTransactionId() );
+        assertEquals(424242, tracker.getLastReconciledTransactionId());
     }
 
     @Test
-    void shouldReturnReconciledTransactionIdWhenInitializedAndUpdated()
-    {
-        tracker.enable( 1 );
+    void shouldReturnReconciledTransactionIdWhenInitializedAndUpdated() {
+        tracker.enable(1);
 
-        tracker.offerReconciledTransactionId( 7 );
-        tracker.offerReconciledTransactionId( 2 );
-        tracker.offerReconciledTransactionId( 3 );
-        tracker.offerReconciledTransactionId( 5 );
-        tracker.offerReconciledTransactionId( 4 );
+        tracker.offerReconciledTransactionId(7);
+        tracker.offerReconciledTransactionId(2);
+        tracker.offerReconciledTransactionId(3);
+        tracker.offerReconciledTransactionId(5);
+        tracker.offerReconciledTransactionId(4);
 
-        assertEquals( 5, tracker.getLastReconciledTransactionId() );
+        assertEquals(5, tracker.getLastReconciledTransactionId());
     }
 
     @Test
-    void shouldFailToInitializeWithNegativeTransactionId()
-    {
-        assertThrows( IllegalArgumentException.class, () -> tracker.enable( -42 ) );
+    void shouldFailToInitializeWithNegativeTransactionId() {
+        assertThrows(IllegalArgumentException.class, () -> tracker.enable(-42));
     }
 
     @Test
-    void shouldFailToUpdateWithNegativeTransactionId()
-    {
-        tracker.enable( 42 );
+    void shouldFailToUpdateWithNegativeTransactionId() {
+        tracker.enable(42);
 
-        assertThrows( IllegalArgumentException.class, () -> tracker.offerReconciledTransactionId( -42 ) );
+        assertThrows(IllegalArgumentException.class, () -> tracker.offerReconciledTransactionId(-42));
     }
 
     @Test
-    void shouldApplyQueueWhenFirstEnabled()
-    {
-        tracker.offerReconciledTransactionId( 42 );
-        tracker.offerReconciledTransactionId( 43 );
-        tracker.offerReconciledTransactionId( 44 );
-        tracker.offerReconciledTransactionId( 45 );
-        assertEquals( -1, tracker.getLastReconciledTransactionId() );
+    void shouldApplyQueueWhenFirstEnabled() {
+        tracker.offerReconciledTransactionId(42);
+        tracker.offerReconciledTransactionId(43);
+        tracker.offerReconciledTransactionId(44);
+        tracker.offerReconciledTransactionId(45);
+        assertEquals(-1, tracker.getLastReconciledTransactionId());
 
-        tracker.enable( 41 );
-        assertEquals( 45, tracker.getLastReconciledTransactionId() );
+        tracker.enable(41);
+        assertEquals(45, tracker.getLastReconciledTransactionId());
     }
 
     @Test
-    void shouldKeepLastValueWhenDisabledAndApplyQueueWhenEnabled()
-    {
-        tracker.enable( 42 );
+    void shouldKeepLastValueWhenDisabledAndApplyQueueWhenEnabled() {
+        tracker.enable(42);
 
-        tracker.offerReconciledTransactionId( 43 );
-        tracker.offerReconciledTransactionId( 44 );
+        tracker.offerReconciledTransactionId(43);
+        tracker.offerReconciledTransactionId(44);
 
         tracker.disable();
-        assertEquals( 44, tracker.getLastReconciledTransactionId() );
+        assertEquals(44, tracker.getLastReconciledTransactionId());
 
-        tracker.offerReconciledTransactionId( 52 );
-        tracker.offerReconciledTransactionId( 51 );
-        tracker.offerReconciledTransactionId( 50 );
-        tracker.offerReconciledTransactionId( 49 );
-        tracker.offerReconciledTransactionId( 48 );
-        assertEquals( 44, tracker.getLastReconciledTransactionId() );
+        tracker.offerReconciledTransactionId(52);
+        tracker.offerReconciledTransactionId(51);
+        tracker.offerReconciledTransactionId(50);
+        tracker.offerReconciledTransactionId(49);
+        tracker.offerReconciledTransactionId(48);
+        assertEquals(44, tracker.getLastReconciledTransactionId());
 
-        tracker.enable( 49 );
-        assertEquals( 52, tracker.getLastReconciledTransactionId() );
+        tracker.enable(49);
+        assertEquals(52, tracker.getLastReconciledTransactionId());
     }
 
     @Test
-    void shouldFailToUpdateWithNonIncreasingTransactionId()
-    {
-        tracker.enable( 1 );
+    void shouldFailToUpdateWithNonIncreasingTransactionId() {
+        tracker.enable(1);
 
-        tracker.offerReconciledTransactionId( 2 );
-        tracker.offerReconciledTransactionId( 3 );
-        tracker.offerReconciledTransactionId( 4 );
+        tracker.offerReconciledTransactionId(2);
+        tracker.offerReconciledTransactionId(3);
+        tracker.offerReconciledTransactionId(4);
 
-        assertThrows( IllegalArgumentException.class, () -> tracker.offerReconciledTransactionId( 2 ) );
+        assertThrows(IllegalArgumentException.class, () -> tracker.offerReconciledTransactionId(2));
     }
 
     @Test
-    void shouldIgnorePreInitializationIds()
-    {
-        tracker.enable( 1 );
-        tracker.offerReconciledTransactionId( 0 );
-        assertEquals( 1, tracker.getLastReconciledTransactionId() );
+    void shouldIgnorePreInitializationIds() {
+        tracker.enable(1);
+        tracker.offerReconciledTransactionId(0);
+        assertEquals(1, tracker.getLastReconciledTransactionId());
 
-        tracker.enable( 42 );
-        tracker.offerReconciledTransactionId( 40 );
-        tracker.offerReconciledTransactionId( 41 );
-        assertEquals( 42, tracker.getLastReconciledTransactionId() );
+        tracker.enable(42);
+        tracker.offerReconciledTransactionId(40);
+        tracker.offerReconciledTransactionId(41);
+        assertEquals(42, tracker.getLastReconciledTransactionId());
 
-        tracker.offerReconciledTransactionId( 43 );
-        assertEquals( 43, tracker.getLastReconciledTransactionId() );
+        tracker.offerReconciledTransactionId(43);
+        assertEquals(43, tracker.getLastReconciledTransactionId());
     }
 }

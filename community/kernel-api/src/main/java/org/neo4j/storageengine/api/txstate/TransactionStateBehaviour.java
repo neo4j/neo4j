@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-public interface TransactionStateBehaviour
-{
+public interface TransactionStateBehaviour {
     TransactionStateBehaviour DEFAULT_BEHAVIOUR = () -> false;
 
     /**

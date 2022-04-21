@@ -21,29 +21,24 @@ package org.neo4j.counts;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public interface CountsVisitor
-{
+public interface CountsVisitor {
     @FunctionalInterface
-    interface Visitable
-    {
-        void accept( CountsVisitor visitor, CursorContext cursorContext );
+    interface Visitable {
+        void accept(CountsVisitor visitor, CursorContext cursorContext);
     }
 
-    void visitNodeCount( int labelId, long count );
+    void visitNodeCount(int labelId, long count);
 
-    void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
+    void visitRelationshipCount(int startLabelId, int typeId, int endLabelId, long count);
 
-    class Adapter implements CountsVisitor
-    {
+    class Adapter implements CountsVisitor {
         @Override
-        public void visitNodeCount( int labelId, long count )
-        {
+        public void visitNodeCount(int labelId, long count) {
             // override in subclasses
         }
 
         @Override
-        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
-        {
+        public void visitRelationshipCount(int startLabelId, int typeId, int endLabelId, long count) {
             // override in subclasses
         }
     }

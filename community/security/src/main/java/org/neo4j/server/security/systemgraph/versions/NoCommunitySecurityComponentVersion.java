@@ -19,39 +19,33 @@
  */
 package org.neo4j.server.security.systemgraph.versions;
 
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_UNKNOWN_VERSION;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_UNKNOWN_VERSION;
-
-public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion
-{
-    public NoCommunitySecurityComponentVersion()
-    {
-        super( COMMUNITY_SECURITY_UNKNOWN_VERSION, CommunitySecurityLog.NULL_LOG );
+public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion {
+    public NoCommunitySecurityComponentVersion() {
+        super(COMMUNITY_SECURITY_UNKNOWN_VERSION, CommunitySecurityLog.NULL_LOG);
     }
 
     @Override
-    public void setupUsers( Transaction tx )
-    {
+    public void setupUsers(Transaction tx) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateInitialUserPassword( Transaction tx )
-    {
+    public void updateInitialUserPassword(Transaction tx) {
         throw unsupported();
     }
 
     @Override
-    public void upgradeSecurityGraph( Transaction tx, int fromVersion )
-    {
+    public void upgradeSecurityGraph(Transaction tx, int fromVersion) {
         throw unsupported();
     }
 
     @Override
-    public void upgradeSecurityGraphSchema( Transaction tx, int fromVersion )
-    {
+    public void upgradeSecurityGraphSchema(Transaction tx, int fromVersion) {
         throw unsupported();
     }
 }

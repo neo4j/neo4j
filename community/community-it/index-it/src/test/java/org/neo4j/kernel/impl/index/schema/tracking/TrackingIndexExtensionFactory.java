@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema.tracking;
 
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.Database;
@@ -31,37 +30,31 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.BuiltInDelegatingIndexProviderFactory;
 
-public class TrackingIndexExtensionFactory extends ExtensionFactory<TrackingIndexExtensionFactory.Dependencies>
-{
-    private final ConcurrentHashMap<String,TrackingReadersIndexProvider> indexProvider = new ConcurrentHashMap<>();
+public class TrackingIndexExtensionFactory extends ExtensionFactory<TrackingIndexExtensionFactory.Dependencies> {
+    private final ConcurrentHashMap<String, TrackingReadersIndexProvider> indexProvider = new ConcurrentHashMap<>();
     private final BuiltInDelegatingIndexProviderFactory delegate;
 
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "tracking-index", "0.5" );
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("tracking-index", "0.5");
 
-    public TrackingIndexExtensionFactory( AbstractIndexProviderFactory<?> delegate )
-    {
-        super( ExtensionType.DATABASE, DESCRIPTOR.getKey() );
-        this.delegate = new BuiltInDelegatingIndexProviderFactory( delegate, DESCRIPTOR );
+    public TrackingIndexExtensionFactory(AbstractIndexProviderFactory<?> delegate) {
+        super(ExtensionType.DATABASE, DESCRIPTOR.getKey());
+        this.delegate = new BuiltInDelegatingIndexProviderFactory(delegate, DESCRIPTOR);
     }
 
-    public interface Dependencies extends BuiltInDelegatingIndexProviderFactory.Dependencies
-    {
+    public interface Dependencies extends BuiltInDelegatingIndexProviderFactory.Dependencies {
         Database database();
     }
 
     @Override
-    public synchronized IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
-    {
+    public synchronized IndexProvider newInstance(ExtensionContext context, Dependencies dependencies) {
         NamedDatabaseId namedDatabaseId = dependencies.database().getNamedDatabaseId();
-        return indexProvider.computeIfAbsent( namedDatabaseId.name(), s ->
-        {
-            IndexProvider indexProvider = delegate.newInstance( context, dependencies );
-            return new TrackingReadersIndexProvider( indexProvider );
-        } );
+        return indexProvider.computeIfAbsent(namedDatabaseId.name(), s -> {
+            IndexProvider indexProvider = delegate.newInstance(context, dependencies);
+            return new TrackingReadersIndexProvider(indexProvider);
+        });
     }
 
-    public TrackingReadersIndexProvider getIndexProvider( String databaseName )
-    {
-        return indexProvider.get( databaseName );
+    public TrackingReadersIndexProvider getIndexProvider(String databaseName) {
+        return indexProvider.get(databaseName);
     }
 }

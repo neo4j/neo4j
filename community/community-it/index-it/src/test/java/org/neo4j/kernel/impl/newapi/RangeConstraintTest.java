@@ -24,24 +24,20 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
-public class RangeConstraintTest extends ConstraintTestBase<WriteTestSupport>
-{
+public class RangeConstraintTest extends ConstraintTestBase<WriteTestSupport> {
 
     @Override
-    public WriteTestSupport newTestSupport()
-    {
+    public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();
     }
 
     @Override
-    protected LabelSchemaDescriptor labelSchemaDescriptor( int labelId, int... propertyIds )
-    {
-        return SchemaDescriptors.forLabel( labelId, propertyIds );
+    protected LabelSchemaDescriptor labelSchemaDescriptor(int labelId, int... propertyIds) {
+        return SchemaDescriptors.forLabel(labelId, propertyIds);
     }
 
     @Override
-    protected ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds )
-    {
-        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds );
+    protected ConstraintDescriptor uniqueConstraintDescriptor(int labelId, int... propertyIds) {
+        return ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyIds);
     }
 }

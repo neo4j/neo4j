@@ -19,13 +19,25 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -44,27 +56,15 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.test.utils.PageCacheConfig.config;
-
 @EphemeralNeo4jLayoutExtension
-class PropertyStoreTest
-{
+class PropertyStoreTest {
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withInconsistentReads( false ) );
+    static PageCacheSupportExtension pageCacheExtension =
+            new PageCacheSupportExtension(config().withInconsistentReads(false));
+
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
@@ -72,75 +72,80 @@ class PropertyStoreTest
     private Path idFile;
 
     @BeforeEach
-    void setup()
-    {
+    void setup() {
         storeFile = databaseLayout.propertyStore();
         idFile = databaseLayout.idPropertyStore();
     }
 
     @Test
-    void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord() throws IOException
-    {
+    void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord() throws IOException {
         // given
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs ) )
-        {
+        try (PageCache pageCache = pageCacheExtension.getPageCache(fs)) {
             Config config = Config.defaults();
 
-            DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
+            DynamicStringStore stringPropertyStore = mock(DynamicStringStore.class);
 
-            try ( var store = new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                    pageCache, NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
-                    RecordFormatSelector.defaultFormat(), writable(), databaseLayout.getDatabaseName(), immutable.empty() ) )
-            {
-                store.initialise( true, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
-                store.start( NULL_CONTEXT );
-                final long propertyRecordId = store.nextId( NULL_CONTEXT );
+            try (var store = new PropertyStore(
+                    storeFile,
+                    idFile,
+                    config,
+                    new DefaultIdGeneratorFactory(fs, immediate(), databaseLayout.getDatabaseName()),
+                    pageCache,
+                    NullLogProvider.getInstance(),
+                    stringPropertyStore,
+                    mock(PropertyKeyTokenStore.class),
+                    mock(DynamicArrayStore.class),
+                    RecordFormatSelector.defaultFormat(),
+                    writable(),
+                    databaseLayout.getDatabaseName(),
+                    immutable.empty())) {
+                store.initialise(true, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+                store.start(NULL_CONTEXT);
+                final long propertyRecordId = store.nextId(NULL_CONTEXT);
 
-                PropertyRecord record = new PropertyRecord( propertyRecordId );
-                record.setInUse( true );
+                PropertyRecord record = new PropertyRecord(propertyRecordId);
+                record.setInUse(true);
 
                 DynamicRecord dynamicRecord = dynamicRecord();
-                PropertyBlock propertyBlock = propertyBlockWith( dynamicRecord );
-                record.addPropertyBlock( propertyBlock );
+                PropertyBlock propertyBlock = propertyBlockWith(dynamicRecord);
+                record.addPropertyBlock(propertyBlock);
 
-                doAnswer( invocation ->
-                {
-                    try ( var cursor = store.openPageCursorForReading( propertyRecordId, NULL_CONTEXT ) )
-                    {
-                        PropertyRecord recordBeforeWrite = store.getRecordByCursor( propertyRecordId, store.newRecord(), FORCE, cursor );
-                        assertFalse( recordBeforeWrite.inUse() );
-                        return null;
-                    }
-                } ).when( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any(), any() );
+                doAnswer(invocation -> {
+                            try (var cursor = store.openPageCursorForReading(propertyRecordId, NULL_CONTEXT)) {
+                                PropertyRecord recordBeforeWrite =
+                                        store.getRecordByCursor(propertyRecordId, store.newRecord(), FORCE, cursor);
+                                assertFalse(recordBeforeWrite.inUse());
+                                return null;
+                            }
+                        })
+                        .when(stringPropertyStore)
+                        .updateRecord(eq(dynamicRecord), any(), any(), any());
 
                 // when
-                try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
-                {
-                    store.updateRecord( record, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
+                try (var storeCursor = store.openPageCursorForWriting(0, NULL_CONTEXT)) {
+                    store.updateRecord(record, storeCursor, NULL_CONTEXT, StoreCursors.NULL);
                 }
 
                 // then verify that our mocked method above, with the assert, was actually called
-                verify( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any(), any(), any() );
+                verify(stringPropertyStore).updateRecord(eq(dynamicRecord), any(), any(), any(), any());
             }
         }
     }
 
-    private static DynamicRecord dynamicRecord()
-    {
-        DynamicRecord dynamicRecord = new DynamicRecord( 42 );
-        dynamicRecord.setType( PropertyType.STRING.intValue() );
+    private static DynamicRecord dynamicRecord() {
+        DynamicRecord dynamicRecord = new DynamicRecord(42);
+        dynamicRecord.setType(PropertyType.STRING.intValue());
         dynamicRecord.setCreated();
         return dynamicRecord;
     }
 
-    private static PropertyBlock propertyBlockWith( DynamicRecord dynamicRecord )
-    {
+    private static PropertyBlock propertyBlockWith(DynamicRecord dynamicRecord) {
         PropertyBlock propertyBlock = new PropertyBlock();
 
-        PropertyKeyTokenRecord key = new PropertyKeyTokenRecord( 10 );
-        propertyBlock.setSingleBlock( key.getId() | (((long) PropertyType.STRING.intValue()) << 24) | (dynamicRecord
-                .getId() << 28) );
-        propertyBlock.addValueRecord( dynamicRecord );
+        PropertyKeyTokenRecord key = new PropertyKeyTokenRecord(10);
+        propertyBlock.setSingleBlock(
+                key.getId() | (((long) PropertyType.STRING.intValue()) << 24) | (dynamicRecord.getId() << 28));
+        propertyBlock.addValueRecord(dynamicRecord);
 
         return propertyBlock;
     }

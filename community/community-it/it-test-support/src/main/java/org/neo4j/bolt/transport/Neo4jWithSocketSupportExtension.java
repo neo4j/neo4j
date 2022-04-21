@@ -19,63 +19,57 @@
  */
 package org.neo4j.bolt.transport;
 
+import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY;
+import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE;
+
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsSupportExtension;
 import org.neo4j.test.extension.StatefulFieldExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY;
-import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE;
-
-public class Neo4jWithSocketSupportExtension extends StatefulFieldExtension<Neo4jWithSocket> implements AfterEachCallback
-{
+public class Neo4jWithSocketSupportExtension extends StatefulFieldExtension<Neo4jWithSocket>
+        implements AfterEachCallback {
     private static final String FIELD_KEY = "neo4jWithSocket";
-    private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create( "org", "neo4j", FIELD_KEY );
+    private static final ExtensionContext.Namespace NAMESPACE =
+            ExtensionContext.Namespace.create("org", "neo4j", FIELD_KEY);
 
     @Override
-    protected String getFieldKey()
-    {
+    protected String getFieldKey() {
         return FIELD_KEY;
     }
 
     @Override
-    protected Class<Neo4jWithSocket> getFieldType()
-    {
+    protected Class<Neo4jWithSocket> getFieldType() {
         return Neo4jWithSocket.class;
     }
 
     @Override
-    protected Neo4jWithSocket createField( ExtensionContext context )
-    {
-        var testDirectory = getTestDirectory( context );
-        return new Neo4jWithSocket( new TestDatabaseManagementServiceBuilder(), () -> testDirectory, settings -> {} );
+    protected Neo4jWithSocket createField(ExtensionContext context) {
+        var testDirectory = getTestDirectory(context);
+        return new Neo4jWithSocket(new TestDatabaseManagementServiceBuilder(), () -> testDirectory, settings -> {});
     }
 
-    public static TestDirectory getTestDirectory( ExtensionContext context )
-    {
-        var testDir = context.getStore( TEST_DIRECTORY_NAMESPACE ).get( TEST_DIRECTORY, TestDirectory.class );
-        if ( testDir == null )
-        {
+    public static TestDirectory getTestDirectory(ExtensionContext context) {
+        var testDir = context.getStore(TEST_DIRECTORY_NAMESPACE).get(TEST_DIRECTORY, TestDirectory.class);
+        if (testDir == null) {
             var tdClassName = TestDirectorySupportExtension.class.getSimpleName();
             var dbClassName = DbmsSupportExtension.class.getSimpleName();
-            throw new IllegalStateException( tdClassName + " not in scope, make sure to add it before the relevant " + dbClassName );
+            throw new IllegalStateException(
+                    tdClassName + " not in scope, make sure to add it before the relevant " + dbClassName);
         }
         return testDir;
     }
 
     @Override
-    protected ExtensionContext.Namespace getNameSpace()
-    {
+    protected ExtensionContext.Namespace getNameSpace() {
         return NAMESPACE;
     }
 
     @Override
-    public void afterEach( ExtensionContext context )
-    {
-        getStoredValue( context ).shutdownDatabase();
+    public void afterEach(ExtensionContext context) {
+        getStoredValue(context).shutdownDatabase();
     }
 }

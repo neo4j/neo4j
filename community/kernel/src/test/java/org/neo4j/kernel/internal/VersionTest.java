@@ -19,66 +19,58 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.internal.Version.CUSTOM_VERSION_SETTING;
 
-class VersionTest
-{
+import org.junit.jupiter.api.Test;
+
+class VersionTest {
     @Test
-    void shouldExposeCleanAndDetailedVersions()
-    {
-        assertThat( version( "1.2.3-M01,abcdef012345" ).getReleaseVersion() ).isEqualTo( "1.2.3-M01" );
-        assertThat( version( "1.2.3-M01,abcdef012345" ).getVersion() ).isEqualTo( "1.2.3-M01,abcdef012345" );
-        assertThat( version( "1.2.3-M01,abcdef012345-dirty" ).getVersion() ).isEqualTo( "1.2.3-M01,abcdef012345-dirty" );
+    void shouldExposeCleanAndDetailedVersions() {
+        assertThat(version("1.2.3-M01,abcdef012345").getReleaseVersion()).isEqualTo("1.2.3-M01");
+        assertThat(version("1.2.3-M01,abcdef012345").getVersion()).isEqualTo("1.2.3-M01,abcdef012345");
+        assertThat(version("1.2.3-M01,abcdef012345-dirty").getVersion()).isEqualTo("1.2.3-M01,abcdef012345-dirty");
 
-        assertThat( version( "1.2.3,abcdef012345" ).getReleaseVersion() ).isEqualTo( "1.2.3" );
-        assertThat( version( "1.2.3,abcdef012345" ).getVersion() ).isEqualTo( "1.2.3,abcdef012345" );
-        assertThat( version( "1.2.3,abcdef012345-dirty" ).getVersion() ).isEqualTo( "1.2.3,abcdef012345-dirty" );
+        assertThat(version("1.2.3,abcdef012345").getReleaseVersion()).isEqualTo("1.2.3");
+        assertThat(version("1.2.3,abcdef012345").getVersion()).isEqualTo("1.2.3,abcdef012345");
+        assertThat(version("1.2.3,abcdef012345-dirty").getVersion()).isEqualTo("1.2.3,abcdef012345-dirty");
 
-        assertThat( version( "1.2.3-GA,abcdef012345" ).getReleaseVersion() ).isEqualTo( "1.2.3-GA" );
-        assertThat( version( "1.2.3-GA,abcdef012345" ).getVersion() ).isEqualTo( "1.2.3-GA,abcdef012345" );
-        assertThat( version( "1.2.3-GA,abcdef012345-dirty" ).getVersion() ).isEqualTo( "1.2.3-GA,abcdef012345-dirty" );
+        assertThat(version("1.2.3-GA,abcdef012345").getReleaseVersion()).isEqualTo("1.2.3-GA");
+        assertThat(version("1.2.3-GA,abcdef012345").getVersion()).isEqualTo("1.2.3-GA,abcdef012345");
+        assertThat(version("1.2.3-GA,abcdef012345-dirty").getVersion()).isEqualTo("1.2.3-GA,abcdef012345-dirty");
 
-        assertThat( version( "1.2.3M01,abcdef012345" ).getReleaseVersion() ).isEqualTo( "1.2.3M01" );
-        assertThat( version( "1.2.3M01,abcdef012345" ).getVersion() ).isEqualTo( "1.2.3M01,abcdef012345" );
-        assertThat( version( "1.2.3M01,abcdef012345-dirty" ).getVersion() ).isEqualTo( "1.2.3M01,abcdef012345-dirty" );
+        assertThat(version("1.2.3M01,abcdef012345").getReleaseVersion()).isEqualTo("1.2.3M01");
+        assertThat(version("1.2.3M01,abcdef012345").getVersion()).isEqualTo("1.2.3M01,abcdef012345");
+        assertThat(version("1.2.3M01,abcdef012345-dirty").getVersion()).isEqualTo("1.2.3M01,abcdef012345-dirty");
 
-        assertThat( version( "1.2" ).getReleaseVersion() ).isEqualTo( "1.2" );
-        assertThat( version( "1.2" ).getVersion() ).isEqualTo( "1.2" );
+        assertThat(version("1.2").getReleaseVersion()).isEqualTo("1.2");
+        assertThat(version("1.2").getVersion()).isEqualTo("1.2");
 
-        assertThat( version( "0" ).getReleaseVersion() ).isEqualTo( "0" );
-        assertThat( version( "0" ).getVersion() ).isEqualTo( "0" );
+        assertThat(version("0").getReleaseVersion()).isEqualTo("0");
+        assertThat(version("0").getVersion()).isEqualTo("0");
     }
 
     @Test
-    void versionWithCustomString()
-    {
+    void versionWithCustomString() {
         var planetExpress = "planetExpress";
-        var planetExpressVersion = version( planetExpress );
-        assertThat( planetExpressVersion.getVersion() ).isEqualTo( planetExpress );
-        assertThat( planetExpressVersion.getReleaseVersion() ).isEqualTo( planetExpress );
+        var planetExpressVersion = version(planetExpress);
+        assertThat(planetExpressVersion.getVersion()).isEqualTo(planetExpress);
+        assertThat(planetExpressVersion.getReleaseVersion()).isEqualTo(planetExpress);
     }
 
     @Test
-    void versionStringSelection()
-    {
+    void versionStringSelection() {
         var planetExpress = "planetExpress";
-        try
-        {
-            System.setProperty( CUSTOM_VERSION_SETTING, planetExpress );
-            assertEquals( planetExpress, Version.selectVersion() );
-        }
-        finally
-        {
-            System.clearProperty( CUSTOM_VERSION_SETTING );
+        try {
+            System.setProperty(CUSTOM_VERSION_SETTING, planetExpress);
+            assertEquals(planetExpress, Version.selectVersion());
+        } finally {
+            System.clearProperty(CUSTOM_VERSION_SETTING);
         }
     }
 
-    private static Version version( String version )
-    {
-        return new Version( "test-component", version );
+    private static Version version(String version) {
+        return new Version("test-component", version);
     }
 }

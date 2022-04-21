@@ -27,10 +27,10 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
 
 case class PointDistanceSeekRangeExpression(range: PointDistanceRange[Expression])
-  extends Expression {
+    extends Expression {
 
-  override def apply(row: ReadableRow, state: QueryState): AnyValue = throw new
-      InternalException("This should never be called")
+  override def apply(row: ReadableRow, state: QueryState): AnyValue =
+    throw new InternalException("This should never be called")
 
   override def rewrite(f: Expression => Expression): Expression = f(this)
 

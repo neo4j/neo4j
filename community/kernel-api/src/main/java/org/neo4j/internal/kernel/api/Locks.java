@@ -24,33 +24,32 @@ import org.neo4j.common.EntityType;
 /**
  * Methods for acquiring and releasing locks.
  */
-public interface Locks
-{
-    void acquireExclusiveNodeLock( long... ids );
+public interface Locks {
+    void acquireExclusiveNodeLock(long... ids);
 
-    void acquireExclusiveRelationshipLock( long... ids );
+    void acquireExclusiveRelationshipLock(long... ids);
 
-    void releaseExclusiveNodeLock( long... ids );
+    void releaseExclusiveNodeLock(long... ids);
 
-    void releaseExclusiveRelationshipLock( long... ids );
+    void releaseExclusiveRelationshipLock(long... ids);
 
-    void acquireSharedNodeLock( long... ids );
+    void acquireSharedNodeLock(long... ids);
 
-    void acquireSharedRelationshipLock( long... ids );
+    void acquireSharedRelationshipLock(long... ids);
 
-    void acquireSharedRelationshipTypeLock( long... ids );
+    void acquireSharedRelationshipTypeLock(long... ids);
 
-    void acquireSharedLabelLock( long... ids );
+    void acquireSharedLabelLock(long... ids);
 
-    void releaseSharedNodeLock( long... ids );
+    void releaseSharedNodeLock(long... ids);
 
-    void releaseSharedRelationshipLock( long... ids );
+    void releaseSharedRelationshipLock(long... ids);
 
-    void releaseSharedLabelLock( long... ids );
+    void releaseSharedLabelLock(long... ids);
 
-    void releaseSharedRelationshipTypeLock( long... ids );
+    void releaseSharedRelationshipTypeLock(long... ids);
 
-    void acquireSharedLookupLock( EntityType entityType );
+    void acquireSharedLookupLock(EntityType entityType);
 
-    void releaseSharedLookupLock( EntityType entityType );
+    void releaseSharedLookupLock(EntityType entityType);
 }

@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.schema;
 
 import java.util.Map;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -29,8 +28,7 @@ import org.neo4j.graphdb.RelationshipType;
  * Definition for an index.
  */
 @PublicApi
-public interface IndexDefinition
-{
+public interface IndexDefinition {
     /**
      * Return the set of node labels (in no particular order) that this index applies to. This method works for both {@link #isMultiTokenIndex() multi-token}
      * indexes, and "single-token" indexes.
@@ -127,5 +125,5 @@ public interface IndexDefinition
      * Get the index configuration that this index was created with.
      * @return The index configuration as a read-only map.
      */
-    Map<IndexSetting,Object> getIndexConfiguration();
+    Map<IndexSetting, Object> getIndexConfiguration();
 }

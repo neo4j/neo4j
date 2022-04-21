@@ -27,19 +27,16 @@ import org.neo4j.server.rest.Neo4jError;
  * <p>
  * This invocation should be used to produce response body for responses with 4** and 5** codes.
  */
-class ErrorInvocation
-{
+class ErrorInvocation {
 
     private final Neo4jError neo4jError;
 
-    ErrorInvocation( Neo4jError neo4jError )
-    {
+    ErrorInvocation(Neo4jError neo4jError) {
         this.neo4jError = neo4jError;
     }
 
-    void execute( OutputEventStream outputEventStream )
-    {
-        outputEventStream.writeFailure( neo4jError.status(), neo4jError.getMessage() );
-        outputEventStream.writeTransactionInfo( TransactionNotificationState.NO_TRANSACTION, null, -1 );
+    void execute(OutputEventStream outputEventStream) {
+        outputEventStream.writeFailure(neo4jError.status(), neo4jError.getMessage());
+        outputEventStream.writeTransactionInfo(TransactionNotificationState.NO_TRANSACTION, null, -1);
     }
 }

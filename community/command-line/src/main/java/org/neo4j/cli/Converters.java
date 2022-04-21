@@ -19,84 +19,62 @@
  */
 package org.neo4j.cli;
 
-import picocli.CommandLine.ITypeConverter;
-import picocli.CommandLine.TypeConversionException;
-
-import org.neo4j.configuration.helpers.DatabaseNamePattern;
-import org.neo4j.configuration.helpers.FromPaths;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
-import org.neo4j.io.ByteUnit;
-
 import static java.lang.String.format;
 import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateInternalDatabaseName;
 
-public interface Converters
-{
+import org.neo4j.configuration.helpers.DatabaseNamePattern;
+import org.neo4j.configuration.helpers.FromPaths;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
+import picocli.CommandLine.ITypeConverter;
+import picocli.CommandLine.TypeConversionException;
 
-    class ByteUnitConverter implements ITypeConverter<Long>
-    {
+public interface Converters {
+
+    class ByteUnitConverter implements ITypeConverter<Long> {
         @Override
-        public Long convert( String value )
-        {
-            try
-            {
-                return ByteUnit.parse( value );
-            }
-            catch ( Exception e )
-            {
-                throw new TypeConversionException( format( "cannot convert '%s' to byte units (%s)", value, e ) );
+        public Long convert(String value) {
+            try {
+                return ByteUnit.parse(value);
+            } catch (Exception e) {
+                throw new TypeConversionException(format("cannot convert '%s' to byte units (%s)", value, e));
             }
         }
     }
 
-    class DatabaseNameConverter implements ITypeConverter<NormalizedDatabaseName>
-    {
+    class DatabaseNameConverter implements ITypeConverter<NormalizedDatabaseName> {
         @Override
-        public NormalizedDatabaseName convert( String name )
-        {
-            try
-            {
-                var databaseName = new NormalizedDatabaseName( name );
-                validateInternalDatabaseName( databaseName );
+        public NormalizedDatabaseName convert(String name) {
+            try {
+                var databaseName = new NormalizedDatabaseName(name);
+                validateInternalDatabaseName(databaseName);
                 return databaseName;
-            }
-            catch ( Exception e )
-            {
-                throw new TypeConversionException( format( "Invalid database name '%s'. (%s)", name, e ) );
+            } catch (Exception e) {
+                throw new TypeConversionException(format("Invalid database name '%s'. (%s)", name, e));
             }
         }
     }
 
-    class FromPathsConverter implements ITypeConverter<FromPaths>
-    {
+    class FromPathsConverter implements ITypeConverter<FromPaths> {
 
         @Override
-        public FromPaths convert( String value ) throws Exception
-        {
-            try
-            {
-                return new FromPaths( value );
-            }
-            catch ( Exception ex )
-            {
-                throw new TypeConversionException( format( "Invalid from parameter '%s'. (%s)", value, ex ) );
+        public FromPaths convert(String value) throws Exception {
+            try {
+                return new FromPaths(value);
+            } catch (Exception ex) {
+                throw new TypeConversionException(format("Invalid from parameter '%s'. (%s)", value, ex));
             }
         }
     }
 
-    class DatabaseNamePatternConverter implements ITypeConverter<DatabaseNamePattern>
-    {
+    class DatabaseNamePatternConverter implements ITypeConverter<DatabaseNamePattern> {
 
         @Override
-        public DatabaseNamePattern convert( String name )
-        {
-            try
-            {
-                return new DatabaseNamePattern( name );
-            }
-            catch ( Exception ex )
-            {
-                throw new TypeConversionException( format( "Invalid database name '%s'. (%s)", name, ex ) );
+        public DatabaseNamePattern convert(String name) {
+            try {
+                return new DatabaseNamePattern(name);
+            } catch (Exception ex) {
+                throw new TypeConversionException(format("Invalid database name '%s'. (%s)", name, ex));
             }
         }
     }

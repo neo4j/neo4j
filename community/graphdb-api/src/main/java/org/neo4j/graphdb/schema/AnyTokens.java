@@ -26,8 +26,7 @@ import org.neo4j.annotations.api.PublicApi;
  * Type of tokens to use with {@link Schema#indexFor(AnyTokens)} to create {@link IndexType#LOOKUP} indexes.
  */
 @PublicApi
-public enum AnyTokens
-{
+public enum AnyTokens {
     ANY_LABELS,
     ANY_RELATIONSHIP_TYPES
 }

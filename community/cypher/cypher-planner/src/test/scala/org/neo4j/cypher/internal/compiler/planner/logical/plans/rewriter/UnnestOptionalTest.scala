@@ -38,22 +38,34 @@ import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("should rewrite Apply/Optional/Expand to OptionalExpand when lhs of expand is single row") {
     val argument: LogicalPlan = Argument(Set("a"))
-    val rhs:LogicalPlan =
+    val rhs: LogicalPlan =
       Optional(
-        Expand(argument, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"
-        ))
+        Expand(argument, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+      )
     val lhs = newMockedLogicalPlan("a")
     val input = Apply(lhs, rhs)
 
     input.endoRewrite(unnestOptional) should equal(
-      OptionalExpand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll, None))
+      OptionalExpand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll, None)
+    )
   }
 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
     val argument: LogicalPlan = Argument(Set("a"))
-    val expand = VarExpand(argument, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll)
+    val expand = VarExpand(
+      argument,
+      "a",
+      SemanticDirection.OUTGOING,
+      SemanticDirection.OUTGOING,
+      Seq.empty,
+      "b",
+      "r",
+      VarPatternLength(1, None),
+      ExpandAll
+    )
     val predicate = propEquality("b", "prop", 1)
     val selection = Selection(Seq(predicate), expand)
     val rhs: LogicalPlan = Optional(selection)
@@ -65,14 +77,20 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   test("should not rewrite plans containing merges") {
     val argument: LogicalPlan = Argument(Set("a"))
-    val rhs:LogicalPlan =
+    val rhs: LogicalPlan =
       Optional(
-        Expand(argument, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"
-        ))
+        Expand(argument, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+      )
     val lhs = newMockedLogicalPlan("a")
     val apply = Apply(lhs, rhs)
-    val mergeRel = Merge(Argument(), Seq.empty,
-      Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)), Seq.empty, Seq.empty, Set.empty)
+    val mergeRel = Merge(
+      Argument(),
+      Seq.empty,
+      Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
+      Seq.empty,
+      Seq.empty,
+      Set.empty
+    )
 
     val input = AntiConditionalApply(apply, mergeRel, Seq.empty)
 

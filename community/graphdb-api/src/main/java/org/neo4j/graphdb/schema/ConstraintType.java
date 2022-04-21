@@ -26,8 +26,7 @@ import org.neo4j.annotations.api.PublicApi;
  * of which type a constraint is.
  */
 @PublicApi
-public enum ConstraintType
-{
+public enum ConstraintType {
     UNIQUENESS,
     NODE_PROPERTY_EXISTENCE,
     RELATIONSHIP_PROPERTY_EXISTENCE,

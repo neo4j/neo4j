@@ -22,40 +22,40 @@ package org.neo4j.kernel.impl.store.record;
 /**
  * Various constants used in records for different stores.
  */
-public enum Record
-{
+public enum Record {
     /**
      * Generic value of a reference not pointing to anything.
      */
-    NULL_REFERENCE( (byte) -1, -1 ),
+    NULL_REFERENCE((byte) -1, -1),
 
-    NOT_IN_USE( (byte) 0, 0 ),
-    IN_USE( (byte) 1, 1 ),
-    RESERVED( (byte) -1, -1 ),
-    NO_NEXT_PROPERTY( NULL_REFERENCE ),
-    NO_PREVIOUS_PROPERTY( NULL_REFERENCE ),
-    NO_NEXT_RELATIONSHIP( NULL_REFERENCE ),
-    NO_PREV_RELATIONSHIP( NULL_REFERENCE ),
-    NO_NEXT_BLOCK( NULL_REFERENCE ),
+    NOT_IN_USE((byte) 0, 0),
+    IN_USE((byte) 1, 1),
+    RESERVED((byte) -1, -1),
+    NO_NEXT_PROPERTY(NULL_REFERENCE),
+    NO_PREVIOUS_PROPERTY(NULL_REFERENCE),
+    NO_NEXT_RELATIONSHIP(NULL_REFERENCE),
+    NO_PREV_RELATIONSHIP(NULL_REFERENCE),
+    NO_NEXT_BLOCK(NULL_REFERENCE),
 
-    NODE_PROPERTY( (byte) 0, 0 ),
-    REL_PROPERTY( (byte) 2, 2 ),
+    NODE_PROPERTY((byte) 0, 0),
+    REL_PROPERTY((byte) 2, 2),
 
-    NO_LABELS_FIELD( (byte)0, 0 );
+    NO_LABELS_FIELD((byte) 0, 0);
 
     public static final int CREATED_IN_TX = 0b0000_0010;
     public static final int REQUIRE_SECONDARY_UNIT = 0b0000_0100;
     public static final int HAS_SECONDARY_UNIT = 0b0000_1000;
     public static final int USES_FIXED_REFERENCE_FORMAT = 0b0001_0000;
-    // Named a bit more generically and elusive because this flag is used for different things depending on which type of record it is
+    // Named a bit more generically and elusive because this flag is used for different things depending on which type
+    // of record it is
     public static final int ADDITIONAL_FLAG_1 = 0b0010_0000;
     public static final int ADDITIONAL_FLAG_2 = 0b0100_0000;
     public static final int ADDITIONAL_FLAG_3 = 0b1000_0000;
 
     // Beware using these flags together and with ADDITIONAL_FLAG_*
     public static final int SECONDARY_UNIT_CREATED_IN_TX = ADDITIONAL_FLAG_1;
-    public static final int TOKEN_INTERNAL =  ADDITIONAL_FLAG_1;
-    public static final int DYNAMIC_RECORD_START_RECORD =  ADDITIONAL_FLAG_1;
+    public static final int TOKEN_INTERNAL = ADDITIONAL_FLAG_1;
+    public static final int DYNAMIC_RECORD_START_RECORD = ADDITIONAL_FLAG_1;
     public static final int PROPERTY_OWNED_BY_NODE = ADDITIONAL_FLAG_2;
     public static final int PROPERTY_OWNED_BY_RELATIONSHIP = ADDITIONAL_FLAG_3;
 
@@ -71,13 +71,11 @@ public enum Record
     private final byte byteValue;
     private final int intValue;
 
-    Record( Record from )
-    {
-        this( from.byteValue, from.intValue );
+    Record(Record from) {
+        this(from.byteValue, from.intValue);
     }
 
-    Record( byte byteValue, int intValue )
-    {
+    Record(byte byteValue, int intValue) {
         this.byteValue = byteValue;
         this.intValue = intValue;
     }
@@ -87,8 +85,7 @@ public enum Record
      *
      * @return The byte value for this record type
      */
-    public byte byteValue()
-    {
+    public byte byteValue() {
         return byteValue;
     }
 
@@ -97,23 +94,19 @@ public enum Record
      *
      * @return The int value for this record type
      */
-    public int intValue()
-    {
+    public int intValue() {
         return intValue;
     }
 
-    public long longValue()
-    {
+    public long longValue() {
         return intValue;
     }
 
-    public boolean is( long value )
-    {
+    public boolean is(long value) {
         return value == intValue;
     }
 
-    public static boolean isNull( long id )
-    {
-        return NULL_REFERENCE.is( id );
+    public static boolean isNull(long id) {
+        return NULL_REFERENCE.is(id);
     }
 }

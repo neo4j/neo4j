@@ -28,17 +28,19 @@ import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 
 abstract class AggregationExpression extends Expression {
+
   def apply(row: ReadableRow, state: QueryState): AnyValue =
     throw new UnsupportedOperationException("Aggregations should not be used like this.")
 
   def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction
 }
 
-abstract class AggregationWithInnerExpression(inner:Expression) extends AggregationExpression {
-  if(inner.containsAggregate)
+abstract class AggregationWithInnerExpression(inner: Expression) extends AggregationExpression {
+
+  if (inner.containsAggregate)
     throw new SyntaxException("Can't use aggregate functions inside of aggregate functions.")
 
-  if(! inner.isDeterministic)
+  if (!inner.isDeterministic)
     throw new SyntaxException("Can't use non-deterministic (random) functions inside of aggregate functions.")
 
   def expectedInnerType: CypherType

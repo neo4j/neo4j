@@ -22,8 +22,7 @@ package org.neo4j.kernel.database;
 import java.util.UUID;
 
 @FunctionalInterface
-public interface DatabaseUUIDGenerator
-{
+public interface DatabaseUUIDGenerator {
     DatabaseUUIDGenerator DEFAULT = UUID::randomUUID;
 
     UUID generateDatabaseUUID();

@@ -21,8 +21,8 @@ package org.neo4j.collection;
 
 import java.util.NoSuchElementException;
 
-public abstract class AbstractPrefetchingRawIterator<T, EXCEPTION extends Exception> implements RawIterator<T, EXCEPTION>
-{
+public abstract class AbstractPrefetchingRawIterator<T, EXCEPTION extends Exception>
+        implements RawIterator<T, EXCEPTION> {
     private boolean hasFetchedNext;
     private T nextObject;
 
@@ -31,8 +31,7 @@ public abstract class AbstractPrefetchingRawIterator<T, EXCEPTION extends Except
      * call to {@link #next()}.
      */
     @Override
-    public boolean hasNext() throws EXCEPTION
-    {
+    public boolean hasNext() throws EXCEPTION {
         return peek() != null;
     }
 
@@ -40,10 +39,8 @@ public abstract class AbstractPrefetchingRawIterator<T, EXCEPTION extends Except
      * @return the next element that will be returned from {@link #next()} without
      * actually advancing the iterator
      */
-    public T peek() throws EXCEPTION
-    {
-        if ( hasFetchedNext )
-        {
+    public T peek() throws EXCEPTION {
+        if (hasFetchedNext) {
             return nextObject;
         }
 
@@ -60,10 +57,8 @@ public abstract class AbstractPrefetchingRawIterator<T, EXCEPTION extends Except
      * {@link java.util.NoSuchElementException} if there's no more items to return.
      */
     @Override
-    public T next() throws EXCEPTION
-    {
-        if ( !hasNext() )
-        {
+    public T next() throws EXCEPTION {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
         T result = nextObject;
@@ -75,8 +70,7 @@ public abstract class AbstractPrefetchingRawIterator<T, EXCEPTION extends Except
     protected abstract T fetchNextOrNull() throws EXCEPTION;
 
     @Override
-    public void remove()
-    {
+    public void remove() {
         throw new UnsupportedOperationException();
     }
 }

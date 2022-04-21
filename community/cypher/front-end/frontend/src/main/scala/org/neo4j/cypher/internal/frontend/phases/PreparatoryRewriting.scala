@@ -36,13 +36,18 @@ import org.neo4j.cypher.internal.util.inSequence
  */
 case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
-  val AccumulatedSteps(orderedSteps, _) = new StepSequencer(ListStepAccumulator[StepSequencer.Step with PreparatoryRewritingRewriterFactory]()).orderSteps(Set(
-    normalizeWithAndReturnClauses,
-    insertWithBetweenOptionalMatchAndMatch,
-    expandCallWhere,
-    expandShowWhere,
-    rewriteShowQuery,
-    mergeInPredicates), initialConditions = Set(LiteralsAreAvailable))
+  val AccumulatedSteps(orderedSteps, _) =
+    new StepSequencer(ListStepAccumulator[StepSequencer.Step with PreparatoryRewritingRewriterFactory]()).orderSteps(
+      Set(
+        normalizeWithAndReturnClauses,
+        insertWithBetweenOptionalMatchAndMatch,
+        expandCallWhere,
+        expandShowWhere,
+        rewriteShowQuery,
+        mergeInPredicates
+      ),
+      initialConditions = Set(LiteralsAreAvailable)
+    )
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
@@ -60,4 +65,3 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 }
-

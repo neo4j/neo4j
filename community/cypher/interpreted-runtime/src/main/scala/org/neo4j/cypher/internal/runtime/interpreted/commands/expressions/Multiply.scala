@@ -26,11 +26,11 @@ import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-case class Multiply(a: Expression, b: Expression) extends Expression  {
+case class Multiply(a: Expression, b: Expression) extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = (a(row, state), b(row, state)) match {
     case (x, y) if (x eq Values.NO_VALUE) || (y eq Values.NO_VALUE) => Values.NO_VALUE
-    case (x,y) => CypherMath.multiply(x, y)
+    case (x, y)                                                     => CypherMath.multiply(x, y)
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(Multiply(a.rewrite(f), b.rewrite(f)))

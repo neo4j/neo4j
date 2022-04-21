@@ -21,19 +21,17 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
 
 /**
  * Base class for iterator and index-progressor of token scans.
  */
-abstract class TokenScanValueIndexAccessor
-{
+abstract class TokenScanValueIndexAccessor {
     /**
      * {@link Seeker} to lazily read new {@link TokenScanValue} from.
      */
-    protected final Seeker<TokenScanKey,TokenScanValue> cursor;
+    protected final Seeker<TokenScanKey, TokenScanValue> cursor;
 
     /**
      * Current base entityId, i.e. the {@link TokenScanKey#idRange} of the current {@link TokenScanKey}.
@@ -56,30 +54,27 @@ abstract class TokenScanValueIndexAccessor
      */
     protected boolean closed;
 
-    TokenScanValueIndexAccessor( Seeker<TokenScanKey,TokenScanValue> cursor )
-    {
+    TokenScanValueIndexAccessor(Seeker<TokenScanKey, TokenScanValue> cursor) {
         this.cursor = cursor;
     }
 
-    boolean keysInOrder( TokenScanKey key, IndexOrder order )
-    {
-        if ( order == IndexOrder.NONE )
-        {
+    boolean keysInOrder(TokenScanKey key, IndexOrder order) {
+        if (order == IndexOrder.NONE) {
             return true;
-        }
-        else if ( prevToken != -1 && prevRange != -1 && order == IndexOrder.ASCENDING )
-        {
-            assert key.tokenId >= prevToken : "Expected to get ascending ordered results, got " + key +
-                                              " where previous token was " + prevToken;
-            assert key.idRange > prevRange : "Expected to get ascending ordered results, got " + key +
-                                             " where previous range was " + prevRange;
-        }
-        else if ( prevToken != -1 && prevRange != -1 && order == IndexOrder.DESCENDING )
-        {
-            assert key.tokenId <= prevToken : "Expected to get descending ordered results, got " + key +
-                                              " where previous token was " + prevToken;
-            assert key.idRange < prevRange : "Expected to get descending ordered results, got " + key +
-                                             " where previous range was " + prevRange;
+        } else if (prevToken != -1 && prevRange != -1 && order == IndexOrder.ASCENDING) {
+            assert key.tokenId >= prevToken
+                    : "Expected to get ascending ordered results, got " + key + " where previous token was "
+                            + prevToken;
+            assert key.idRange > prevRange
+                    : "Expected to get ascending ordered results, got " + key + " where previous range was "
+                            + prevRange;
+        } else if (prevToken != -1 && prevRange != -1 && order == IndexOrder.DESCENDING) {
+            assert key.tokenId <= prevToken
+                    : "Expected to get descending ordered results, got " + key + " where previous token was "
+                            + prevToken;
+            assert key.idRange < prevRange
+                    : "Expected to get descending ordered results, got " + key + " where previous range was "
+                            + prevRange;
         }
         prevToken = key.tokenId;
         prevRange = key.idRange;
@@ -87,20 +82,13 @@ abstract class TokenScanValueIndexAccessor
         return true;
     }
 
-    public void close()
-    {
-        if ( !closed )
-        {
-            try
-            {
+    public void close() {
+        if (!closed) {
+            try {
                 cursor.close();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-            finally
-            {
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            } finally {
                 closed = true;
             }
         }

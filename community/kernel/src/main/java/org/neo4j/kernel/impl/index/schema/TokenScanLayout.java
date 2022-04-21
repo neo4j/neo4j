@@ -36,11 +36,9 @@ import org.neo4j.io.pagecache.PageCursor;
  * </li>
  * </ul>
  */
-public class TokenScanLayout extends Layout.Adapter<TokenScanKey,TokenScanValue>
-{
-    public TokenScanLayout()
-    {
-        super( true, Layout.namedIdentifier( IDENTIFIER_NAME, TokenScanValue.RANGE_SIZE ), 0, 1 );
+public class TokenScanLayout extends Layout.Adapter<TokenScanKey, TokenScanValue> {
+    public TokenScanLayout() {
+        super(true, Layout.namedIdentifier(IDENTIFIER_NAME, TokenScanValue.RANGE_SIZE), 0, 1);
     }
 
     /**
@@ -51,98 +49,84 @@ public class TokenScanLayout extends Layout.Adapter<TokenScanKey,TokenScanValue>
     /**
      * Size of each {@link TokenScanKey}.
      */
-    private static final int KEY_SIZE = Integer.BYTES/*tokenId*/ + 6/*idRange*/;
+    private static final int KEY_SIZE = Integer.BYTES /*tokenId*/ + 6 /*idRange*/;
 
     /**
      * Compares {@link TokenScanKey}, giving ascending order of {@code tokenId} then {@code entityIdRange}.
      */
     @Override
-    public int compare( TokenScanKey o1, TokenScanKey o2 )
-    {
-        int tokenComparison = Integer.compare( o1.tokenId, o2.tokenId );
-        return tokenComparison != 0 ? tokenComparison : Long.compare( o1.idRange, o2.idRange );
+    public int compare(TokenScanKey o1, TokenScanKey o2) {
+        int tokenComparison = Integer.compare(o1.tokenId, o2.tokenId);
+        return tokenComparison != 0 ? tokenComparison : Long.compare(o1.idRange, o2.idRange);
     }
 
     @Override
-    public TokenScanKey newKey()
-    {
+    public TokenScanKey newKey() {
         return new TokenScanKey();
     }
 
     @Override
-    public TokenScanKey copyKey( TokenScanKey key, TokenScanKey into )
-    {
+    public TokenScanKey copyKey(TokenScanKey key, TokenScanKey into) {
         into.tokenId = key.tokenId;
         into.idRange = key.idRange;
         return into;
     }
 
     @Override
-    public TokenScanValue newValue()
-    {
+    public TokenScanValue newValue() {
         return new TokenScanValue();
     }
 
     @Override
-    public int keySize( TokenScanKey key )
-    {
+    public int keySize(TokenScanKey key) {
         return KEY_SIZE;
     }
 
     @Override
-    public int valueSize( TokenScanValue value )
-    {
+    public int valueSize(TokenScanValue value) {
         return TokenScanValue.RANGE_SIZE_BYTES;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, TokenScanKey key )
-    {
-        cursor.putInt( key.tokenId );
-        put6ByteLong( cursor, key.idRange );
+    public void writeKey(PageCursor cursor, TokenScanKey key) {
+        cursor.putInt(key.tokenId);
+        put6ByteLong(cursor, key.idRange);
     }
 
-    private static void put6ByteLong( PageCursor cursor, long value )
-    {
-        cursor.putInt( (int) value );
-        cursor.putShort( (short) (value >>> Integer.SIZE) );
-    }
-
-    @Override
-    public void writeValue( PageCursor cursor, TokenScanValue value )
-    {
-        cursor.putLong( value.bits );
+    private static void put6ByteLong(PageCursor cursor, long value) {
+        cursor.putInt((int) value);
+        cursor.putShort((short) (value >>> Integer.SIZE));
     }
 
     @Override
-    public void readKey( PageCursor cursor, TokenScanKey into, int keySize )
-    {
+    public void writeValue(PageCursor cursor, TokenScanValue value) {
+        cursor.putLong(value.bits);
+    }
+
+    @Override
+    public void readKey(PageCursor cursor, TokenScanKey into, int keySize) {
         into.tokenId = cursor.getInt();
-        into.idRange = get6ByteLong( cursor );
+        into.idRange = get6ByteLong(cursor);
     }
 
-    private static long get6ByteLong( PageCursor cursor )
-    {
+    private static long get6ByteLong(PageCursor cursor) {
         long low4b = cursor.getInt() & 0xFFFFFFFFL;
         long high2b = cursor.getShort();
         return low4b | (high2b << Integer.SIZE);
     }
 
     @Override
-    public void readValue( PageCursor cursor, TokenScanValue into, int valueSize )
-    {
+    public void readValue(PageCursor cursor, TokenScanValue into, int valueSize) {
         into.bits = cursor.getLong();
     }
 
     @Override
-    public void initializeAsLowest( TokenScanKey key )
-    {
-        key.set( Integer.MIN_VALUE, Long.MIN_VALUE );
+    public void initializeAsLowest(TokenScanKey key) {
+        key.set(Integer.MIN_VALUE, Long.MIN_VALUE);
     }
 
     @Override
-    public void initializeAsHighest( TokenScanKey key )
-    {
-        key.set( Integer.MAX_VALUE, Long.MAX_VALUE );
+    public void initializeAsHighest(TokenScanKey key) {
+        key.set(Integer.MAX_VALUE, Long.MAX_VALUE);
     }
 }

@@ -23,12 +23,15 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
-case class SetNodeProperties(override val source: LogicalPlan,
-                             idName: String,
-                             items: Seq[(PropertyKeyName, Expression)]
-                          )(implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen) with UpdatingPlan {
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
+case class SetNodeProperties(
+  override val source: LogicalPlan,
+  idName: String,
+  items: Seq[(PropertyKeyName, Expression)]
+)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
+    copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols + idName
 }

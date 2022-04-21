@@ -26,6 +26,4 @@ import org.neo4j.util.MarkerInterface;
  * and match index updates with {@link PropertySchemaType#ENTITY_TOKENS any entity tokens}.
  */
 @MarkerInterface
-public interface AnyTokenSchemaDescriptor extends SchemaDescriptor
-{
-}
+public interface AnyTokenSchemaDescriptor extends SchemaDescriptor {}

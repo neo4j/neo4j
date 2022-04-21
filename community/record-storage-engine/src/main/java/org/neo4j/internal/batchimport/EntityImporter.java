@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.Arrays;
+import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
+import java.util.Arrays;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
@@ -44,13 +45,10 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
-
 /**
  * Abstract class containing logic for importing properties for an entity (node/relationship).
  */
-abstract class EntityImporter extends InputEntityVisitor.Adapter
-{
+abstract class EntityImporter extends InputEntityVisitor.Adapter {
     private static final String ENTITY_IMPORTER_TAG = "entityImporter";
     private final BatchingTokenRepository.BatchingPropertyKeyTokenRepository propertyKeyTokenRepository;
     private final PropertyStore propertyStore;
@@ -73,47 +71,48 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private final DynamicRecordAllocator dynamicArrayRecordAllocator;
     protected final CursorContext cursorContext;
 
-    EntityImporter( BatchingNeoStores stores, Monitor monitor, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
-        this.cursorContext = contextFactory.create( ENTITY_IMPORTER_TAG );
-        this.storeCursors = new CachedStoreCursors( stores.getNeoStores(), cursorContext );
-        this.tempStoreCursors = new CachedStoreCursors( stores.getTemporaryNeoStores(), cursorContext );
+    EntityImporter(
+            BatchingNeoStores stores,
+            Monitor monitor,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        this.cursorContext = contextFactory.create(ENTITY_IMPORTER_TAG);
+        this.storeCursors = new CachedStoreCursors(stores.getNeoStores(), cursorContext);
+        this.tempStoreCursors = new CachedStoreCursors(stores.getTemporaryNeoStores(), cursorContext);
         this.propertyStore = stores.getPropertyStore();
         this.propertyKeyTokenRepository = stores.getPropertyKeyRepository();
         this.monitor = monitor;
         this.memoryTracker = memoryTracker;
-        for ( int i = 0; i < propertyBlocks.length; i++ )
-        {
+        for (int i = 0; i < propertyBlocks.length; i++) {
             propertyBlocks[i] = new PropertyBlock();
         }
         this.propertyRecord = propertyStore.newRecord();
-        this.propertyIds = new BatchingIdGetter( propertyStore );
-        this.stringPropertyIds = new BatchingIdGetter( propertyStore.getStringStore() );
-        this.dynamicStringRecordAllocator = new StandardDynamicRecordAllocator( stringPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
-        this.arrayPropertyIds = new BatchingIdGetter( propertyStore.getArrayStore() );
-        this.dynamicArrayRecordAllocator = new StandardDynamicRecordAllocator( arrayPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
-        this.propertyUpdateCursor = propertyStore.openPageCursorForWriting( 0, cursorContext );
+        this.propertyIds = new BatchingIdGetter(propertyStore);
+        this.stringPropertyIds = new BatchingIdGetter(propertyStore.getStringStore());
+        this.dynamicStringRecordAllocator = new StandardDynamicRecordAllocator(
+                stringPropertyIds, propertyStore.getStringStore().getRecordDataSize());
+        this.arrayPropertyIds = new BatchingIdGetter(propertyStore.getArrayStore());
+        this.dynamicArrayRecordAllocator = new StandardDynamicRecordAllocator(
+                arrayPropertyIds, propertyStore.getStringStore().getRecordDataSize());
+        this.propertyUpdateCursor = propertyStore.openPageCursorForWriting(0, cursorContext);
     }
 
     @Override
-    public boolean property( String key, Object value )
-    {
+    public boolean property(String key, Object value) {
         assert !hasPropertyId;
-        return property( propertyKeyTokenRepository.getOrCreateId( key ), value );
+        return property(propertyKeyTokenRepository.getOrCreateId(key), value);
     }
 
     @Override
-    public boolean property( int propertyKeyId, Object value )
-    {
+    public boolean property(int propertyKeyId, Object value) {
         assert !hasPropertyId;
-        encodeProperty( nextPropertyBlock(), propertyKeyId, value );
+        encodeProperty(nextPropertyBlock(), propertyKeyId, value);
         entityPropertyCount++;
         return true;
     }
 
     @Override
-    public boolean propertyId( long nextProp )
-    {
+    public boolean propertyId(long nextProp) {
         assert !hasPropertyId;
         hasPropertyId = true;
         propertyId = nextProp;
@@ -121,68 +120,64 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     }
 
     @Override
-    public void endOfEntity()
-    {
+    public void endOfEntity() {
         propertyBlocksCursor = 0;
         hasPropertyId = false;
         propertyCount += entityPropertyCount;
         entityPropertyCount = 0;
     }
 
-    private PropertyBlock nextPropertyBlock()
-    {
-        if ( propertyBlocksCursor == propertyBlocks.length )
-        {
-            propertyBlocks = Arrays.copyOf( propertyBlocks, propertyBlocksCursor * 2 );
-            for ( int i = propertyBlocksCursor; i < propertyBlocks.length; i++ )
-            {
+    private PropertyBlock nextPropertyBlock() {
+        if (propertyBlocksCursor == propertyBlocks.length) {
+            propertyBlocks = Arrays.copyOf(propertyBlocks, propertyBlocksCursor * 2);
+            for (int i = propertyBlocksCursor; i < propertyBlocks.length; i++) {
                 propertyBlocks[i] = new PropertyBlock();
             }
         }
         return propertyBlocks[propertyBlocksCursor++];
     }
 
-    private void encodeProperty( PropertyBlock block, int key, Object property )
-    {
-        Value value = property instanceof Value ? (Value) property : Values.of( property );
-        PropertyStore.encodeValue( block, key, value, dynamicStringRecordAllocator, dynamicArrayRecordAllocator, cursorContext, memoryTracker );
+    private void encodeProperty(PropertyBlock block, int key, Object property) {
+        Value value = property instanceof Value ? (Value) property : Values.of(property);
+        PropertyStore.encodeValue(
+                block,
+                key,
+                value,
+                dynamicStringRecordAllocator,
+                dynamicArrayRecordAllocator,
+                cursorContext,
+                memoryTracker);
     }
 
-    long createAndWritePropertyChain( CursorContext cursorContext )
-    {
-        if ( hasPropertyId )
-        {
+    long createAndWritePropertyChain(CursorContext cursorContext) {
+        if (hasPropertyId) {
             return propertyId;
         }
 
-        if ( propertyBlocksCursor == 0 )
-        {
+        if (propertyBlocksCursor == 0) {
             return Record.NO_NEXT_PROPERTY.longValue();
         }
 
-        PropertyRecord currentRecord = propertyRecord( propertyIds.nextId( cursorContext ) );
+        PropertyRecord currentRecord = propertyRecord(propertyIds.nextId(cursorContext));
         long firstRecordId = currentRecord.getId();
-        for ( int i = 0; i < propertyBlocksCursor; i++ )
-        {
+        for (int i = 0; i < propertyBlocksCursor; i++) {
             PropertyBlock block = propertyBlocks[i];
-            if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
-            {
+            if (currentRecord.size() + block.getSize() > PropertyType.getPayloadSize()) {
                 // This record is full or couldn't fit this block, write it to property store
-                long nextPropertyId = propertyIds.nextId( cursorContext );
+                long nextPropertyId = propertyIds.nextId(cursorContext);
                 long prevId = currentRecord.getId();
-                currentRecord.setNextProp( nextPropertyId );
-                propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorContext, storeCursors );
-                currentRecord = propertyRecord( nextPropertyId );
-                currentRecord.setPrevProp( prevId );
+                currentRecord.setNextProp(nextPropertyId);
+                propertyStore.updateRecord(currentRecord, IGNORE, propertyUpdateCursor, cursorContext, storeCursors);
+                currentRecord = propertyRecord(nextPropertyId);
+                currentRecord.setPrevProp(prevId);
             }
 
             // Add this block, there's room for it
-            currentRecord.addPropertyBlock( block );
+            currentRecord.addPropertyBlock(block);
         }
 
-        if ( currentRecord.size() > 0 )
-        {
-            propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorContext, storeCursors );
+        if (currentRecord.size() > 0) {
+            propertyStore.updateRecord(currentRecord, IGNORE, propertyUpdateCursor, cursorContext, storeCursors);
         }
 
         return firstRecordId;
@@ -190,38 +185,33 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
     protected abstract PrimitiveRecord primitiveRecord();
 
-    private PropertyRecord propertyRecord( long nextPropertyId )
-    {
+    private PropertyRecord propertyRecord(long nextPropertyId) {
         propertyRecord.clear();
-        propertyRecord.setInUse( true );
-        propertyRecord.setId( nextPropertyId );
-        primitiveRecord().setIdTo( propertyRecord );
+        propertyRecord.setInUse(true);
+        propertyRecord.setId(nextPropertyId);
+        primitiveRecord().setIdTo(propertyRecord);
         propertyRecord.setCreated();
         return propertyRecord;
     }
 
     @Override
-    public void close()
-    {
-        monitor.propertiesImported( propertyCount );
+    public void close() {
+        monitor.propertiesImported(propertyCount);
         propertyUpdateCursor.close();
         storeCursors.close();
         tempStoreCursors.close();
     }
 
-    void freeUnusedIds()
-    {
-        freeUnusedIds( propertyStore, propertyIds, cursorContext );
-        freeUnusedIds( propertyStore.getStringStore(), stringPropertyIds, cursorContext );
-        freeUnusedIds( propertyStore.getArrayStore(), arrayPropertyIds, cursorContext );
+    void freeUnusedIds() {
+        freeUnusedIds(propertyStore, propertyIds, cursorContext);
+        freeUnusedIds(propertyStore.getStringStore(), stringPropertyIds, cursorContext);
+        freeUnusedIds(propertyStore.getArrayStore(), arrayPropertyIds, cursorContext);
     }
 
-    static void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch, CursorContext cursorContext )
-    {
+    static void freeUnusedIds(CommonAbstractStore<?, ?> store, BatchingIdGetter idBatch, CursorContext cursorContext) {
         // Free unused property ids still in the last pre-allocated batch
-        try ( Marker marker = store.getIdGenerator().marker( cursorContext ) )
-        {
-            idBatch.visitUnused( marker::markDeleted );
+        try (Marker marker = store.getIdGenerator().marker(cursorContext)) {
+            idBatch.visitUnused(marker::markDeleted);
         }
     }
 }

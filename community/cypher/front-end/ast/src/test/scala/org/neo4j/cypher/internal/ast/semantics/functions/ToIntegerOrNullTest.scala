@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class ToIntegerOrNullTest extends FunctionTestBase("toIntegerOrNull")  {
+class ToIntegerOrNullTest extends FunctionTestBase("toIntegerOrNull") {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTString)(CTInteger)

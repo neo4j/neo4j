@@ -22,66 +22,57 @@ package org.neo4j.kernel.impl.api.index;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 
-public class IndexSamplingConfig
-{
+public class IndexSamplingConfig {
     private final int sampleSizeLimit;
     private final double updateRatio;
     private final boolean backgroundSampling;
 
-    public IndexSamplingConfig( Config config )
-    {
-        this( config.get( GraphDatabaseSettings.index_sample_size_limit ),
-                          config.get( GraphDatabaseSettings.index_sampling_update_percentage ) / 100.0d,
-                          config.get( GraphDatabaseSettings.index_background_sampling_enabled ) );
+    public IndexSamplingConfig(Config config) {
+        this(
+                config.get(GraphDatabaseSettings.index_sample_size_limit),
+                config.get(GraphDatabaseSettings.index_sampling_update_percentage) / 100.0d,
+                config.get(GraphDatabaseSettings.index_background_sampling_enabled));
     }
 
-    public IndexSamplingConfig( int sampleSizeLimit, double updateRatio, boolean backgroundSampling )
-    {
+    public IndexSamplingConfig(int sampleSizeLimit, double updateRatio, boolean backgroundSampling) {
         this.sampleSizeLimit = sampleSizeLimit;
         this.updateRatio = updateRatio;
         this.backgroundSampling = backgroundSampling;
     }
 
-    public int sampleSizeLimit()
-    {
+    public int sampleSizeLimit() {
         return sampleSizeLimit;
     }
 
-    public double updateRatio()
-    {
+    public double updateRatio() {
         return updateRatio;
     }
 
-    public boolean backgroundSampling()
-    {
+    public boolean backgroundSampling() {
         return backgroundSampling;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
 
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         IndexSamplingConfig that = (IndexSamplingConfig) o;
 
-        return backgroundSampling == that.backgroundSampling &&
-               sampleSizeLimit == that.sampleSizeLimit &&
-               Double.compare( that.updateRatio, updateRatio ) == 0;
+        return backgroundSampling == that.backgroundSampling
+                && sampleSizeLimit == that.sampleSizeLimit
+                && Double.compare(that.updateRatio, updateRatio) == 0;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = sampleSizeLimit;
-        long temp = Double.doubleToLongBits( updateRatio );
+        long temp = Double.doubleToLongBits(updateRatio);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         result = 31 * result + (backgroundSampling ? 1 : 0);
         return result;

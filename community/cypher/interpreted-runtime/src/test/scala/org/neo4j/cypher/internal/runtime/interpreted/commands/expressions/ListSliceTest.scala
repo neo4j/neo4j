@@ -63,7 +63,7 @@ class ListSliceTest extends CypherFunSuite {
   }
 
   private val ctx = CypherRow.empty
-  private implicit val state = QueryStateHelper.empty
+  implicit private val state = QueryStateHelper.empty
   private val NO_VALUE = -666
 
   private def slice(from: Int = NO_VALUE, to: Int = NO_VALUE)(implicit collection: Expression) = {

@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.recovery;
 
-public class RecoveryPredicateException extends Exception
-{
-    public RecoveryPredicateException( String message )
-    {
-        super( message );
+public class RecoveryPredicateException extends Exception {
+    public RecoveryPredicateException(String message) {
+        super(message);
     }
 
-    public RecoveryPredicateException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public RecoveryPredicateException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

@@ -20,10 +20,10 @@ import org.neo4j.cypher.internal.expressions.CanonicalStringHelper.nodeRelationC
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class GetDegree(
-                      node: Expression,
-                      relType: Option[RelTypeName],
-                      dir: SemanticDirection
-                    )(val position: InputPosition) extends Expression {
+  node: Expression,
+  relType: Option[RelTypeName],
+  dir: SemanticDirection
+)(val position: InputPosition) extends Expression {
 
   override def asCanonicalStringVal: String =
     s"size(${nodeRelationCanonicalString(node, relType, dir)})"

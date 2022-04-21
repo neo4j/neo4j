@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.store;
 
 @FunctionalInterface
-public interface FileStoreProviderRegistry
-{
+public interface FileStoreProviderRegistry {
     FileStoreProviderRegistry EMPTY = provider -> {};
 
-    void registerStoreFileProvider( StoreFileProvider provider );
+    void registerStoreFileProvider(StoreFileProvider provider);
 }

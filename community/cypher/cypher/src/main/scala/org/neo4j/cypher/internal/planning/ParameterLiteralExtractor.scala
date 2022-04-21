@@ -37,9 +37,11 @@ class ParameterLiteralExtractor extends LiteralExtractor {
     require(stack.size() == 1)
     stack.peek().value
   }
+
   override def writeLong(value: Long): Unit = {
     write(longValue(value))
   }
+
   override def writeBoolean(value: Boolean): Unit = {
     write(Values.booleanValue(value))
   }
@@ -81,6 +83,7 @@ sealed trait Writer {
 
 class NormalWriter extends Writer {
   private var _value: AnyValue = _
+
   override def write(value: AnyValue): Unit = {
     _value = value
   }
@@ -90,11 +93,13 @@ class NormalWriter extends Writer {
 class ListWriter(size: Int) extends Writer {
   private val array = new Array[AnyValue](size)
   private var index = 0
+
   override def write(value: AnyValue): Unit = {
     array(index) = value
     index += 1
   }
+
   override def value: AnyValue = {
-    VirtualValues.list(array:_*)
+    VirtualValues.list(array: _*)
   }
 }

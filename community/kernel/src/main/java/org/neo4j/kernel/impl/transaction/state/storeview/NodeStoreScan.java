@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static org.neo4j.lock.LockType.SHARED;
+
 import java.util.function.Function;
 import java.util.function.IntPredicate;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -36,8 +37,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.lock.LockType.SHARED;
-
 /**
  * Scan the node store and produce {@link EntityUpdates updates for indexes} and/or {@link TokenIndexEntryUpdate updates for label index}
  * depending on which scan consumer ({@link TokenScanConsumer}, {@link PropertyScanConsumer} or both) is used.
@@ -45,25 +44,42 @@ import static org.neo4j.lock.LockType.SHARED;
  * {@code labelIds} and {@code propertyKeyIdFilter} are relevant only for {@link PropertyScanConsumer} and don't influence
  * {@link TokenScanConsumer}.
  */
-public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCursor>
-{
+public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCursor> {
     private static final String TRACER_TAG = "NodeStoreScan_getNodeCount";
 
-    public NodeStoreScan( Config config, StorageReader storageReader, Function<CursorContext,StoreCursors> storeCursorsFactory, LockService locks,
-            TokenScanConsumer labelScanConsumer, PropertyScanConsumer propertyScanConsumer,
-            int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
-            JobScheduler scheduler, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
-        super( config, storageReader, storeCursorsFactory, getNodeCount( storageReader, contextFactory ), labelIds, propertyKeyIdFilter, propertyScanConsumer,
-                labelScanConsumer, id -> locks.acquireNodeLock( id, SHARED ), new NodeCursorBehaviour( storageReader ), parallelWrite, scheduler,
-                contextFactory, memoryTracker );
+    public NodeStoreScan(
+            Config config,
+            StorageReader storageReader,
+            Function<CursorContext, StoreCursors> storeCursorsFactory,
+            LockService locks,
+            TokenScanConsumer labelScanConsumer,
+            PropertyScanConsumer propertyScanConsumer,
+            int[] labelIds,
+            IntPredicate propertyKeyIdFilter,
+            boolean parallelWrite,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        super(
+                config,
+                storageReader,
+                storeCursorsFactory,
+                getNodeCount(storageReader, contextFactory),
+                labelIds,
+                propertyKeyIdFilter,
+                propertyScanConsumer,
+                labelScanConsumer,
+                id -> locks.acquireNodeLock(id, SHARED),
+                new NodeCursorBehaviour(storageReader),
+                parallelWrite,
+                scheduler,
+                contextFactory,
+                memoryTracker);
     }
 
-    private static long getNodeCount( StorageReader storageReader, CursorContextFactory contextFactory )
-    {
-        try ( CursorContext cursorContext = contextFactory.create( TRACER_TAG ) )
-        {
-            return storageReader.nodesGetCount( cursorContext );
+    private static long getNodeCount(StorageReader storageReader, CursorContextFactory contextFactory) {
+        try (CursorContext cursorContext = contextFactory.create(TRACER_TAG)) {
+            return storageReader.nodesGetCount(cursorContext);
         }
     }
 }

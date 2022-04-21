@@ -24,31 +24,26 @@ import java.util.List;
 /**
  * An event that marks a start of statement's execution output stream.
  */
-public class StatementStartEvent implements OutputEvent
-{
+public class StatementStartEvent implements OutputEvent {
 
     private final List<String> columns;
     private final Statement statement;
 
-    public StatementStartEvent( Statement statement, List<String> columns )
-    {
+    public StatementStartEvent(Statement statement, List<String> columns) {
         this.statement = statement;
         this.columns = columns;
     }
 
     @Override
-    public Type getType()
-    {
+    public Type getType() {
         return Type.STATEMENT_START;
     }
 
-    public Statement getStatement()
-    {
+    public Statement getStatement() {
         return statement;
     }
 
-    public List<String> getColumns()
-    {
+    public List<String> getColumns() {
         return columns;
     }
 }

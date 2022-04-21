@@ -20,78 +20,64 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import java.io.IOException;
-
 import org.neo4j.csv.reader.Chunker;
 import org.neo4j.csv.reader.Source;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
-class EagerCsvInputChunk implements CsvInputChunk, Source.Chunk
-{
+class EagerCsvInputChunk implements CsvInputChunk, Source.Chunk {
     private InputEntity[] entities;
     private int cursor;
 
-    void initialize( InputEntity[] entities )
-    {
+    void initialize(InputEntity[] entities) {
         this.entities = entities;
         this.cursor = 0;
     }
 
     @Override
-    public boolean next( InputEntityVisitor visitor ) throws IOException
-    {
-        if ( cursor < entities.length )
-        {
-            entities[cursor++].replayOnto( visitor );
+    public boolean next(InputEntityVisitor visitor) throws IOException {
+        if (cursor < entities.length) {
+            entities[cursor++].replayOnto(visitor);
             return true;
         }
         return false;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {}
+
+    @Override
+    public boolean fillFrom(Chunker chunker) throws IOException {
+        return chunker.nextChunk(this);
     }
 
     @Override
-    public boolean fillFrom( Chunker chunker ) throws IOException
-    {
-        return chunker.nextChunk( this );
-    }
-
-    @Override
-    public char[] data()
-    {
+    public char[] data() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int maxFieldSize()
-    {
+    public int maxFieldSize() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public String sourceDescription()
-    {
+    public String sourceDescription() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int startPosition()
-    {
+    public int startPosition() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int backPosition()
-    {
+    public int backPosition() {
         throw new UnsupportedOperationException();
     }
 }

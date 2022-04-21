@@ -32,7 +32,10 @@ import org.neo4j.graphdb.schema.IndexType
 
 import scala.util.Random
 
-abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT], runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
   private val ITERATIONS = 20
   private val PROP_KEY = "id"
   private val VAR_TO_FIND = "idA"
@@ -45,45 +48,54 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     testNode(builder =>
       builder
         .|.filter(s"$NODE.$PROP_KEY = $VAR_TO_FIND", s"$NODE:$LABEL")
-        .|.allNodeScan(NODE))
+        .|.allNodeScan(NODE)
+    )
   }
 
   test("labelscan + filter") {
     testNode(builder =>
       builder
         .|.filter(s"$NODE.$PROP_KEY = $VAR_TO_FIND")
-        .|.nodeByLabelScan(NODE, LABEL))
+        .|.nodeByLabelScan(NODE, LABEL)
+    )
   }
+
   test("node index seek") {
-    given{
+    given {
       nodeIndex(LABEL, PROP_KEY)
     }
 
     testNode(builder =>
       builder
-        .|.nodeIndexOperator(s"$NODE:$LABEL($PROP_KEY = ???)", paramExpr = Some(varFor(VAR_TO_FIND))))
+        .|.nodeIndexOperator(s"$NODE:$LABEL($PROP_KEY = ???)", paramExpr = Some(varFor(VAR_TO_FIND)))
+    )
   }
 
   test("typescan + filter") {
     testRelationship(builder =>
       builder
         .|.filter(s"$REL.$PROP_KEY = $VAR_TO_FIND")
-        .|.relationshipTypeScan(s"($NODE)-[$REL:$TYPE]->($NODE)"))
+        .|.relationshipTypeScan(s"($NODE)-[$REL:$TYPE]->($NODE)")
+    )
   }
 
   test("relationship index seek") {
-    given{
+    given {
       relationshipIndex(TYPE, PROP_KEY)
     }
 
     testRelationship(builder =>
       builder
-        .|.relationshipIndexOperator(s"($NODE)-[$REL:$TYPE($PROP_KEY = ???)]->($NODE)",  paramExpr = Some(varFor(VAR_TO_FIND))))
+        .|.relationshipIndexOperator(
+          s"($NODE)-[$REL:$TYPE($PROP_KEY = ???)]->($NODE)",
+          paramExpr = Some(varFor(VAR_TO_FIND))
+        )
+    )
   }
 
   private def testNode(operator: LogicalQueryBuilder => LogicalQueryBuilder): Unit = {
 
-    (1 to ITERATIONS).foreach {_ =>
+    (1 to ITERATIONS).foreach { _ =>
       val unwindA = Random.nextInt(ITERATIONS)
       val unwindB = Random.nextInt(ITERATIONS)
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -103,14 +115,18 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
         consume(runtimeResult)
         val inner = (1 to unwindB).map(i => Array[Any](i))
         val expected = (1 to unwindA).flatMap(_ => inner)
-        runtimeResult should beColumns("idB").withRows(expected).withStatistics(nodesCreated = unwindA, labelsAdded = unwindA, propertiesSet = unwindA)
+        runtimeResult should beColumns("idB").withRows(expected).withStatistics(
+          nodesCreated = unwindA,
+          labelsAdded = unwindA,
+          propertiesSet = unwindA
+        )
       }
     }
   }
 
   private def testRelationship(operator: LogicalQueryBuilder => LogicalQueryBuilder): Unit = {
 
-    (1 to ITERATIONS).foreach {_ =>
+    (1 to ITERATIONS).foreach { _ =>
       val unwindA = Random.nextInt(ITERATIONS)
       val unwindB = Random.nextInt(ITERATIONS)
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -118,8 +134,11 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
         .nonFuseable() // force pipeline break so we get continuations
         .unwind(s"${(1 to unwindB).mkString("[", ",", "]")} AS idB")
         .apply()
-        .|.merge(nodes = Seq(createNode(NODE)),
-                 relationships = Seq(createRelationship(REL, NODE, TYPE, NODE, properties = Some(s"{$PROP_KEY: $VAR_TO_FIND}"))))
+        .|.merge(
+          nodes = Seq(createNode(NODE)),
+          relationships =
+            Seq(createRelationship(REL, NODE, TYPE, NODE, properties = Some(s"{$PROP_KEY: $VAR_TO_FIND}")))
+        )
         .theOperator(operator)
         .unwind(s"${(1 to unwindA).mkString("[", ",", "]")} AS $VAR_TO_FIND")
         .argument()
@@ -131,18 +150,20 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
         consume(runtimeResult)
         val inner = (1 to unwindB).map(i => Array[Any](i))
         val expected = (1 to unwindA).flatMap(_ => inner)
-        runtimeResult should beColumns("idB").withRows(expected).withStatistics(nodesCreated = unwindA, relationshipsCreated = unwindA, propertiesSet = unwindA)
+        runtimeResult should beColumns("idB").withRows(expected).withStatistics(
+          nodesCreated = unwindA,
+          relationshipsCreated = unwindA,
+          propertiesSet = unwindA
+        )
       }
     }
   }
 
   implicit class RichLogicalQueryBuilder(inner: LogicalQueryBuilder) {
+
     def theOperator(op: LogicalQueryBuilder => LogicalQueryBuilder): LogicalQueryBuilder = {
       op(inner)
     }
   }
 
 }
-
-
-

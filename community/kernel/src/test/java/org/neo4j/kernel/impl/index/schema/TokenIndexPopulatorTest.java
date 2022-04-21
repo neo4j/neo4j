@@ -19,27 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.factory.Sets;
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.neo4j.common.EntityType;
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,115 +32,126 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
-class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScanValue,TokenScanLayout>
-{
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
+import org.junit.jupiter.api.Test;
+import org.neo4j.common.EntityType;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
+
+class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenScanValue, TokenScanLayout> {
 
     @Override
-    IndexDescriptor indexDescriptor()
-    {
-        return forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
+    IndexDescriptor indexDescriptor() {
+        return forSchema(forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+                .withName("index")
+                .materialise(0);
     }
 
     @Override
-    TokenScanLayout layout()
-    {
+    TokenScanLayout layout() {
         return new TokenScanLayout();
     }
 
     @Override
-    byte failureByte()
-    {
+    byte failureByte() {
         return TokenIndex.FAILED;
     }
 
     @Override
-    byte populatingByte()
-    {
+    byte populatingByte() {
         return TokenIndex.POPULATING;
     }
 
     @Override
-    byte onlineByte()
-    {
+    byte onlineByte() {
         return TokenIndex.ONLINE;
     }
 
     @Override
-    TokenIndexPopulator createPopulator( PageCache pageCache )
-    {
-        return createPopulator( pageCache, new Monitors(), "" );
+    TokenIndexPopulator createPopulator(PageCache pageCache) {
+        return createPopulator(pageCache, new Monitors(), "");
     }
 
-    private TokenIndexPopulator createPopulator( PageCache pageCache, Monitors monitors, String monitorTag )
-    {
-        DatabaseIndexContext context =
-                DatabaseIndexContext.builder( pageCache, fs, NULL_CONTEXT_FACTORY,
-                        DEFAULT_DATABASE_NAME ).withMonitors( monitors ).withTag( monitorTag ).withReadOnlyChecker( writable() ).build();
-        return new TokenIndexPopulator( context, indexFiles, indexDescriptor, Sets.immutable.empty() );
+    private TokenIndexPopulator createPopulator(PageCache pageCache, Monitors monitors, String monitorTag) {
+        DatabaseIndexContext context = DatabaseIndexContext.builder(
+                        pageCache, fs, NULL_CONTEXT_FACTORY, DEFAULT_DATABASE_NAME)
+                .withMonitors(monitors)
+                .withTag(monitorTag)
+                .withReadOnlyChecker(writable())
+                .build();
+        return new TokenIndexPopulator(context, indexFiles, indexDescriptor, Sets.immutable.empty());
     }
 
     @Test
-    void addShouldApplyAllUpdatesOnce() throws Exception
-    {
+    void addShouldApplyAllUpdatesOnce() throws Exception {
         // Give
         MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
 
         populator.create();
 
-        List<TokenIndexEntryUpdate<?>> updates = TokenIndexUtility.generateSomeRandomUpdates( entityTokens, random );
+        List<TokenIndexEntryUpdate<?>> updates = TokenIndexUtility.generateSomeRandomUpdates(entityTokens, random);
         // Add updates to populator
-        populator.add( updates, NULL_CONTEXT );
+        populator.add(updates, NULL_CONTEXT);
 
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-        populator.close( true, NULL_CONTEXT );
+        populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+        populator.close(true, NULL_CONTEXT);
 
-        TokenIndexUtility.verifyUpdates( entityTokens, layout, this::getTree );
+        TokenIndexUtility.verifyUpdates(entityTokens, layout, this::getTree);
     }
 
     @Test
-    void updaterShouldApplyUpdates() throws Exception
-    {
+    void updaterShouldApplyUpdates() throws Exception {
         // Give
         MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
 
         populator.create();
 
-        List<TokenIndexEntryUpdate<?>> updates = TokenIndexUtility.generateSomeRandomUpdates( entityTokens, random );
+        List<TokenIndexEntryUpdate<?>> updates = TokenIndexUtility.generateSomeRandomUpdates(entityTokens, random);
 
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
-        {
-            for ( TokenIndexEntryUpdate<?> update : updates )
-            {
-                updater.process( update );
+        try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+            for (TokenIndexEntryUpdate<?> update : updates) {
+                updater.process(update);
             }
         }
 
         // then
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-        populator.close( true, NULL_CONTEXT );
-        TokenIndexUtility.verifyUpdates( entityTokens, layout, this::getTree );
+        populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+        populator.close(true, NULL_CONTEXT);
+        TokenIndexUtility.verifyUpdates(entityTokens, layout, this::getTree);
     }
 
     @Test
-    void updaterMustThrowIfProcessAfterClose() throws Exception
-    {
+    void updaterMustThrowIfProcessAfterClose() throws Exception {
         // given
         populator.create();
-        IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT );
+        IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT);
 
         // when
         updater.close();
 
-        IllegalStateException e = assertThrows( IllegalStateException.class,
-                () -> updater
-                        .process( IndexEntryUpdate.change( random.nextInt(), null, EMPTY_LONG_ARRAY, TokenIndexUtility.generateRandomTokens( random ) ) ) );
-        assertThat( e ).hasMessageContaining( "Updater has been closed" );
-        populator.close( true, NULL_CONTEXT );
+        IllegalStateException e = assertThrows(
+                IllegalStateException.class,
+                () -> updater.process(IndexEntryUpdate.change(
+                        random.nextInt(), null, EMPTY_LONG_ARRAY, TokenIndexUtility.generateRandomTokens(random))));
+        assertThat(e).hasMessageContaining("Updater has been closed");
+        populator.close(true, NULL_CONTEXT);
     }
 
     @Test
-    void shouldHandleInterleavedRandomizedUpdates() throws IndexEntryConflictException, IOException
-    {
+    void shouldHandleInterleavedRandomizedUpdates() throws IndexEntryConflictException, IOException {
         // Give
         int numberOfEntities = 1_000;
         long currentScanId = 0;
@@ -169,104 +159,93 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
 
         populator.create();
 
-        while ( currentScanId < numberOfEntities )
-        {
+        while (currentScanId < numberOfEntities) {
             // Collect a batch of max 100 updates from scan
             List<TokenIndexEntryUpdate<?>> updates = new ArrayList<>();
-            for ( int i = 0; i < 100 && currentScanId < numberOfEntities; i++ )
-            {
-                TokenIndexUtility.generateRandomUpdate( currentScanId, entityTokens, updates, random );
+            for (int i = 0; i < 100 && currentScanId < numberOfEntities; i++) {
+                TokenIndexUtility.generateRandomUpdate(currentScanId, entityTokens, updates, random);
 
                 // Advance scan
                 currentScanId++;
             }
             // Add updates to populator
-            populator.add( updates, NULL_CONTEXT );
+            populator.add(updates, NULL_CONTEXT);
 
             // Interleave external updates in id range lower than currentScanId
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
-            {
-                for ( int i = 0; i < 100; i++ )
-                {
-                    long entityId = random.nextLong( currentScanId );
+            try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+                for (int i = 0; i < 100; i++) {
+                    long entityId = random.nextLong(currentScanId);
                     // Current tokens for the entity in the tree
-                    long[] beforeTokens = entityTokens.get( entityId );
-                    if ( beforeTokens == null )
-                    {
+                    long[] beforeTokens = entityTokens.get(entityId);
+                    if (beforeTokens == null) {
                         beforeTokens = EMPTY_LONG_ARRAY;
                     }
-                    long[] afterTokens = TokenIndexUtility.generateRandomTokens( random );
-                    entityTokens.put( entityId, Arrays.copyOf( afterTokens, afterTokens.length ) );
-                    updater.process( IndexEntryUpdate.change( entityId, null, beforeTokens, afterTokens ) );
+                    long[] afterTokens = TokenIndexUtility.generateRandomTokens(random);
+                    entityTokens.put(entityId, Arrays.copyOf(afterTokens, afterTokens.length));
+                    updater.process(IndexEntryUpdate.change(entityId, null, beforeTokens, afterTokens));
                 }
             }
         }
 
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-        populator.close( true, NULL_CONTEXT );
+        populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+        populator.close(true, NULL_CONTEXT);
 
-        TokenIndexUtility.verifyUpdates( entityTokens, layout, this::getTree );
+        TokenIndexUtility.verifyUpdates(entityTokens, layout, this::getTree);
     }
 
     @Test
-    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithoutTag() throws IOException
-    {
+    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithoutTag() throws IOException {
         // Given
         AtomicBoolean checkpointCompletedCall = new AtomicBoolean();
         Monitors monitors = new Monitors();
-        monitors.addMonitorListener( getCheckpointCompletedListener( checkpointCompletedCall ) );
-        populator = createPopulator( pageCache, monitors, "tag" );
+        monitors.addMonitorListener(getCheckpointCompletedListener(checkpointCompletedCall));
+        populator = createPopulator(pageCache, monitors, "tag");
 
         // When
         populator.create();
-        populator.close( true, NULL_CONTEXT );
+        populator.close(true, NULL_CONTEXT);
 
         // Then
-        assertTrue( checkpointCompletedCall.get() );
+        assertTrue(checkpointCompletedCall.get());
     }
 
     @Test
-    void shouldNotRelayMonitorCallsToRegisteredGBPTreeMonitorWithDifferentTag() throws IOException
-    {
+    void shouldNotRelayMonitorCallsToRegisteredGBPTreeMonitorWithDifferentTag() throws IOException {
         // Given
         AtomicBoolean checkpointCompletedCall = new AtomicBoolean();
         Monitors monitors = new Monitors();
-        monitors.addMonitorListener( getCheckpointCompletedListener( checkpointCompletedCall ), "differentTag" );
-        populator = createPopulator( pageCache, monitors, "tag" );
+        monitors.addMonitorListener(getCheckpointCompletedListener(checkpointCompletedCall), "differentTag");
+        populator = createPopulator(pageCache, monitors, "tag");
 
         // When
         populator.create();
-        populator.close( true, NULL_CONTEXT );
+        populator.close(true, NULL_CONTEXT);
 
         // Then
-        assertFalse( checkpointCompletedCall.get() );
+        assertFalse(checkpointCompletedCall.get());
     }
 
     @Test
-    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithTag() throws IOException
-    {
+    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithTag() throws IOException {
         // Given
         AtomicBoolean checkpointCompletedCall = new AtomicBoolean();
         Monitors monitors = new Monitors();
-        monitors.addMonitorListener( getCheckpointCompletedListener( checkpointCompletedCall ), "tag" );
-        populator = createPopulator( pageCache, monitors, "tag" );
+        monitors.addMonitorListener(getCheckpointCompletedListener(checkpointCompletedCall), "tag");
+        populator = createPopulator(pageCache, monitors, "tag");
 
         // When
         populator.create();
-        populator.close( true, NULL_CONTEXT );
+        populator.close(true, NULL_CONTEXT);
 
         // Then
-        assertTrue( checkpointCompletedCall.get() );
+        assertTrue(checkpointCompletedCall.get());
     }
 
-    private static GBPTree.Monitor.Adaptor getCheckpointCompletedListener( AtomicBoolean checkpointCompletedCall )
-    {
-        return new GBPTree.Monitor.Adaptor()
-        {
+    private static GBPTree.Monitor.Adaptor getCheckpointCompletedListener(AtomicBoolean checkpointCompletedCall) {
+        return new GBPTree.Monitor.Adaptor() {
             @Override
-            public void checkpointCompleted()
-            {
-                checkpointCompletedCall.set( true );
+            public void checkpointCompleted() {
+                checkpointCompletedCall.set(true);
             }
         };
     }

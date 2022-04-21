@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
+
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
@@ -27,8 +29,6 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-
-import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 /**
  * Stage for counting groups per node, populates {@link RelationshipGroupCache}. Steps:
@@ -40,16 +40,18 @@ import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
  * in a {@link ScanAndCacheGroupsStage later stage}.</li>
  * </ol>
  */
-public class CountGroupsStage extends Stage
-{
+public class CountGroupsStage extends Stage {
     public static final String NAME = "Count groups";
 
-    public CountGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
-            RelationshipGroupCache groupCache, CursorContextFactory contextFactory, StatsProvider... additionalStatsProviders )
-    {
-        super( NAME, null, config, Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, allIn( store, config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store, contextFactory ) );
-        add( new CountGroupsStep( control(), config, groupCache, contextFactory, additionalStatsProviders ) );
+    public CountGroupsStage(
+            Configuration config,
+            RecordStore<RelationshipGroupRecord> store,
+            RelationshipGroupCache groupCache,
+            CursorContextFactory contextFactory,
+            StatsProvider... additionalStatsProviders) {
+        super(NAME, null, config, Step.RECYCLE_BATCHES);
+        add(new BatchFeedStep(control(), config, allIn(store, config), store.getRecordSize()));
+        add(new ReadRecordsStep<>(control(), config, false, store, contextFactory));
+        add(new CountGroupsStep(control(), config, groupCache, contextFactory, additionalStatsProviders));
     }
 }

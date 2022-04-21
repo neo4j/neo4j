@@ -79,14 +79,16 @@ class BuildUp(list: ListValue, memoryTracker: MemoryTracker = EmptyMemoryTracker
 
       foundMatch match {
         case Equality.TRUE => (Some(true), nextState)
-        case Equality.FALSE if (value.isInstanceOf[SequenceValue] || value.isInstanceOf[MapValue]) && falseResult.isDefined =>
-          val undefinedEquality = cachedSet.stream().anyMatch(setValue => value.ternaryEquals(setValue) eq Equality.UNDEFINED)
+        case Equality.FALSE
+          if (value.isInstanceOf[SequenceValue] || value.isInstanceOf[MapValue]) && falseResult.isDefined =>
+          val undefinedEquality =
+            cachedSet.stream().anyMatch(setValue => value.ternaryEquals(setValue) eq Equality.UNDEFINED)
           if (undefinedEquality) {
             (None, nextState)
           } else {
             (Some(false), nextState)
           }
-        case Equality.FALSE => (falseResult, nextState)
+        case Equality.FALSE     => (falseResult, nextState)
         case Equality.UNDEFINED => (None, nextState)
       }
     }
@@ -115,7 +117,11 @@ case object NullListChecker extends Checker {
  * @param falseResult return value if `cachedSet` does not match. Note, not valid for sequence values or map values.
  * @param resource resource
  */
-class SetChecker(cachedSet: java.util.Set[AnyValue], falseResult: Option[Boolean], resource: Option[AutoCloseable] = None) extends Checker {
+class SetChecker(
+  cachedSet: java.util.Set[AnyValue],
+  falseResult: Option[Boolean],
+  resource: Option[AutoCloseable] = None
+) extends Checker {
 
   checkOnlyWhenAssertionsAreEnabled(!cachedSet.isEmpty)
 
@@ -127,7 +133,8 @@ class SetChecker(cachedSet: java.util.Set[AnyValue], falseResult: Option[Boolean
     } else if (falseResult.isEmpty) {
       (falseResult, this)
     } else if (value.isInstanceOf[SequenceValue] || value.isInstanceOf[MapValue]) {
-      val undefinedEquality = cachedSet.stream().anyMatch(setValue => value.ternaryEquals(setValue) eq Equality.UNDEFINED)
+      val undefinedEquality =
+        cachedSet.stream().anyMatch(setValue => value.ternaryEquals(setValue) eq Equality.UNDEFINED)
       if (undefinedEquality) {
         (None, this)
       } else {

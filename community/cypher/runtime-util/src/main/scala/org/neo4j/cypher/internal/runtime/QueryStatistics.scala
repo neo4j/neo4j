@@ -27,22 +27,22 @@ import scala.beans.BeanProperty
 // org.neo4j.cypher.QueryStatisticsTestSupport
 
 case class QueryStatistics(
-                            @BeanProperty nodesCreated: Int = 0,
-                            @BeanProperty relationshipsCreated: Int = 0,
-                            @BeanProperty propertiesSet: Int = 0,
-                            @BeanProperty nodesDeleted: Int = 0,
-                            @BeanProperty relationshipsDeleted: Int = 0,
-                            @BeanProperty labelsAdded: Int = 0,
-                            @BeanProperty labelsRemoved: Int = 0,
-                            @BeanProperty indexesAdded: Int = 0,
-                            @BeanProperty indexesRemoved: Int = 0,
-                            uniqueConstraintsAdded: Int = 0,
-                            existenceConstraintsAdded: Int = 0,
-                            nodekeyConstraintsAdded: Int = 0,
-                            @BeanProperty constraintsRemoved: Int = 0,
-                            transactionsCommitted: Int = 0,
-                            @BeanProperty systemUpdates: Int = 0,
-                          ) extends org.neo4j.graphdb.QueryStatistics {
+  @BeanProperty nodesCreated: Int = 0,
+  @BeanProperty relationshipsCreated: Int = 0,
+  @BeanProperty propertiesSet: Int = 0,
+  @BeanProperty nodesDeleted: Int = 0,
+  @BeanProperty relationshipsDeleted: Int = 0,
+  @BeanProperty labelsAdded: Int = 0,
+  @BeanProperty labelsRemoved: Int = 0,
+  @BeanProperty indexesAdded: Int = 0,
+  @BeanProperty indexesRemoved: Int = 0,
+  uniqueConstraintsAdded: Int = 0,
+  existenceConstraintsAdded: Int = 0,
+  nodekeyConstraintsAdded: Int = 0,
+  @BeanProperty constraintsRemoved: Int = 0,
+  transactionsCommitted: Int = 0,
+  @BeanProperty systemUpdates: Int = 0
+) extends org.neo4j.graphdb.QueryStatistics {
 
   @BeanProperty
   val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded + nodekeyConstraintsAdded
@@ -108,7 +108,7 @@ case class QueryStatistics(
       nodekeyConstraintsAdded = this.nodekeyConstraintsAdded + other.nodekeyConstraintsAdded,
       constraintsRemoved = this.constraintsRemoved + other.constraintsRemoved,
       transactionsCommitted = this.transactionsCommitted + other.transactionsCommitted,
-      systemUpdates = this.systemUpdates + other.systemUpdates,
+      systemUpdates = this.systemUpdates + other.systemUpdates
     )
   }
 }
@@ -131,7 +131,7 @@ object QueryStatistics {
         indexesRemoved = statistics.getIndexesRemoved,
         uniqueConstraintsAdded = statistics.getConstraintsAdded,
         constraintsRemoved = statistics.getConstraintsRemoved,
-        systemUpdates = statistics.getSystemUpdates,
+        systemUpdates = statistics.getSystemUpdates
       )
   }
 }

@@ -21,8 +21,7 @@ package org.neo4j.logging;
 
 import org.apache.logging.log4j.util.MessageSupplier;
 
-public interface Neo4jMessageSupplier extends MessageSupplier
-{
+public interface Neo4jMessageSupplier extends MessageSupplier {
     @Override
     Neo4jLogMessage get();
 
@@ -32,33 +31,27 @@ public interface Neo4jMessageSupplier extends MessageSupplier
      *     {@code log.info( () -> Neo4jMessageSupplier.forMessage( "My log message %s", computeBigStringArg() ) ); }
      * </pre>
      */
-    static Neo4jLogMessage forMessage( String format, Object... args )
-    {
-        return new Neo4jLogMessage()
-        {
-            private final String formattedMessage = String.format( format, args );
+    static Neo4jLogMessage forMessage(String format, Object... args) {
+        return new Neo4jLogMessage() {
+            private final String formattedMessage = String.format(format, args);
 
             @Override
-            public String getFormattedMessage()
-            {
+            public String getFormattedMessage() {
                 return formattedMessage;
             }
 
             @Override
-            public String getFormat()
-            {
+            public String getFormat() {
                 return format;
             }
 
             @Override
-            public Object[] getParameters()
-            {
+            public Object[] getParameters() {
                 return args;
             }
 
             @Override
-            public Throwable getThrowable()
-            {
+            public Throwable getThrowable() {
                 return null;
             }
         };

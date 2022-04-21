@@ -21,7 +21,6 @@ package org.neo4j.dbms.api;
 
 import java.nio.file.Path;
 import java.util.Map;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
@@ -36,8 +35,7 @@ import org.neo4j.logging.LogProvider;
  * @see DatabaseEventListener
  */
 @PublicApi
-public interface Neo4jDatabaseManagementServiceBuilder
-{
+public interface Neo4jDatabaseManagementServiceBuilder {
     /**
      * Construct the service matching the configuration in this builder.
      *
@@ -52,7 +50,7 @@ public interface Neo4jDatabaseManagementServiceBuilder
      * @param databaseEventListener the event listener to be invoked on events.
      * @return the builder.
      */
-    Neo4jDatabaseManagementServiceBuilder addDatabaseListener( DatabaseEventListener databaseEventListener );
+    Neo4jDatabaseManagementServiceBuilder addDatabaseListener(DatabaseEventListener databaseEventListener);
 
     /**
      * Set a specific log provider for the service. This will not affect the {@code debug.log} that is configured
@@ -61,7 +59,7 @@ public interface Neo4jDatabaseManagementServiceBuilder
      * @param userLogProvider a log provider that will handle logging of user events/messages.
      * @return the builder.
      */
-    Neo4jDatabaseManagementServiceBuilder setUserLogProvider( LogProvider userLogProvider );
+    Neo4jDatabaseManagementServiceBuilder setUserLogProvider(LogProvider userLogProvider);
 
     /**
      * Configure a specific setting.
@@ -71,7 +69,7 @@ public interface Neo4jDatabaseManagementServiceBuilder
      * @param <T> the type of the value.
      * @return the builder.
      */
-    <T> Neo4jDatabaseManagementServiceBuilder setConfig( Setting<T> setting, T value );
+    <T> Neo4jDatabaseManagementServiceBuilder setConfig(Setting<T> setting, T value);
 
     /**
      * Configure a set of different settings.
@@ -79,7 +77,7 @@ public interface Neo4jDatabaseManagementServiceBuilder
      * @param config a map with settings to configure.
      * @return the builder.
      */
-    Neo4jDatabaseManagementServiceBuilder setConfig( Map<Setting<?>, Object> config );
+    Neo4jDatabaseManagementServiceBuilder setConfig(Map<Setting<?>, Object> config);
 
     /**
      * Read configuration from a file.
@@ -90,5 +88,5 @@ public interface Neo4jDatabaseManagementServiceBuilder
      * @param path to a file containing neo4j configuration statements.
      * @return the builder.
      */
-    Neo4jDatabaseManagementServiceBuilder loadPropertiesFromFile( Path path );
+    Neo4jDatabaseManagementServiceBuilder loadPropertiesFromFile(Path path);
 }

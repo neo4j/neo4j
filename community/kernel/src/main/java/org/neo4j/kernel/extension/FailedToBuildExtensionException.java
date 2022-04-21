@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.extension;
 
-class FailedToBuildExtensionException extends RuntimeException
-{
-    FailedToBuildExtensionException( String message, Throwable cause )
-    {
-        super( message, cause );
+class FailedToBuildExtensionException extends RuntimeException {
+    FailedToBuildExtensionException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

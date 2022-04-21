@@ -19,8 +19,10 @@
  */
 package org.neo4j.dbms.diagnostics.jmx;
 
-import com.sun.management.HotSpotDiagnosticMXBean;
+import static java.nio.file.Files.createTempFile;
+import static java.nio.file.Files.deleteIfExists;
 
+import com.sun.management.HotSpotDiagnosticMXBean;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -42,37 +44,29 @@ import javax.management.ReflectionException;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-
 import org.neo4j.internal.utils.DumpUtils;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 
-import static java.nio.file.Files.createTempFile;
-import static java.nio.file.Files.deleteIfExists;
-
 /**
  * Encapsulates remoting functionality for collecting diagnostics information on running instances.
  */
-public class JmxDump
-{
+public class JmxDump {
     private final MBeanServerConnection mBeanServer;
     private Properties systemProperties;
 
-    private JmxDump( MBeanServerConnection mBeanServer )
-    {
+    private JmxDump(MBeanServerConnection mBeanServer) {
         this.mBeanServer = mBeanServer;
     }
 
-    public static JmxDump connectTo( String jmxAddress ) throws IOException
-    {
-        JMXServiceURL url = new JMXServiceURL( jmxAddress );
-        JMXConnector connect = JMXConnectorFactory.connect( url );
+    public static JmxDump connectTo(String jmxAddress) throws IOException {
+        JMXServiceURL url = new JMXServiceURL(jmxAddress);
+        JMXConnector connect = JMXConnectorFactory.connect(url);
 
-        return new JmxDump( connect.getMBeanServerConnection() );
+        return new JmxDump(connect.getMBeanServerConnection());
     }
 
-    public void attachSystemProperties( Properties systemProperties )
-    {
+    public void attachSystemProperties(Properties systemProperties) {
         this.systemProperties = systemProperties;
     }
 
@@ -81,26 +75,27 @@ public class JmxDump
      *
      * @return a diagnostics source the will emit a thread dump.
      */
-    public DiagnosticsReportSource threadDump()
-    {
-        return DiagnosticsReportSources.newDiagnosticsString( "threaddump.txt", () ->
-        {
+    public DiagnosticsReportSource threadDump() {
+        return DiagnosticsReportSources.newDiagnosticsString("threaddump.txt", () -> {
             String result;
-            try
-            {
+            try {
                 // Try to invoke real thread dump
-                result = (String) mBeanServer
-                        .invoke( new ObjectName( "com.sun.management:type=DiagnosticCommand" ), "threadPrint",
-                                new Object[]{null}, new String[]{String[].class.getName()} );
-            }
-            catch ( InstanceNotFoundException | ReflectionException | MBeanException | MalformedObjectNameException | IOException exception )
-            {
+                result = (String) mBeanServer.invoke(
+                        new ObjectName("com.sun.management:type=DiagnosticCommand"),
+                        "threadPrint",
+                        new Object[] {null},
+                        new String[] {String[].class.getName()});
+            } catch (InstanceNotFoundException
+                    | ReflectionException
+                    | MBeanException
+                    | MalformedObjectNameException
+                    | IOException exception) {
                 // Failed, do a poor mans attempt
                 result = getMXThreadDump();
             }
 
             return result;
-        } );
+        });
     }
 
     /**
@@ -109,62 +104,51 @@ public class JmxDump
      *
      * @return a thread dump.
      */
-    private String getMXThreadDump()
-    {
+    private String getMXThreadDump() {
         ThreadMXBean threadMxBean;
-        try
-        {
-            threadMxBean = ManagementFactory.getPlatformMXBean( mBeanServer, ThreadMXBean.class );
-        }
-        catch ( IOException e )
-        {
+        try {
+            threadMxBean = ManagementFactory.getPlatformMXBean(mBeanServer, ThreadMXBean.class);
+        } catch (IOException e) {
             return "ERROR: Unable to produce any thread dump";
         }
 
-        return DumpUtils.threadDump( threadMxBean, systemProperties );
+        return DumpUtils.threadDump(threadMxBean, systemProperties);
     }
 
-    public DiagnosticsReportSource heapDump()
-    {
-        return new DiagnosticsReportSource()
-        {
+    public DiagnosticsReportSource heapDump() {
+        return new DiagnosticsReportSource() {
             @Override
-            public String destinationPath()
-            {
+            public String destinationPath() {
                 return "heapdump.hprof";
             }
 
             @Override
-            public InputStream newInputStream() throws IOException
-            {
-                final Path heapdumpFile = createTempFile( "neo4j-heapdump", ".hprof" ).toAbsolutePath();
-                deleteIfExists( heapdumpFile );
-                heapDump( heapdumpFile.toString() );
-                return new FileInputStream( heapdumpFile.toFile() )
-                {
+            public InputStream newInputStream() throws IOException {
+                final Path heapdumpFile =
+                        createTempFile("neo4j-heapdump", ".hprof").toAbsolutePath();
+                deleteIfExists(heapdumpFile);
+                heapDump(heapdumpFile.toString());
+                return new FileInputStream(heapdumpFile.toFile()) {
                     @Override
-                    public void close() throws IOException
-                    {
+                    public void close() throws IOException {
                         super.close();
-                        deleteIfExists( heapdumpFile );
+                        deleteIfExists(heapdumpFile);
                     }
                 };
             }
 
             @Override
-            public long estimatedSize()
-            {
-                try
-                {
-                    final MemoryMXBean bean = ManagementFactory.getPlatformMXBean( mBeanServer, MemoryMXBean.class );
-                    final long totalMemory = bean.getHeapMemoryUsage().getCommitted() + bean.getNonHeapMemoryUsage().getCommitted();
+            public long estimatedSize() {
+                try {
+                    final MemoryMXBean bean = ManagementFactory.getPlatformMXBean(mBeanServer, MemoryMXBean.class);
+                    final long totalMemory = bean.getHeapMemoryUsage().getCommitted()
+                            + bean.getNonHeapMemoryUsage().getCommitted();
 
-                    // We first write raw to disk then write to archive, 5x compression is a reasonable worst case estimation
+                    // We first write raw to disk then write to archive, 5x compression is a reasonable worst case
+                    // estimation
                     return (long) (totalMemory * 1.2);
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
             }
         };
@@ -173,34 +157,28 @@ public class JmxDump
     /**
      * @param destination file path to send heap dump to, has to end with ".hprof"
      */
-    private void heapDump( String destination ) throws IOException
-    {
+    private void heapDump(String destination) throws IOException {
         HotSpotDiagnosticMXBean hotSpotDiagnosticMXBean =
-                ManagementFactory.getPlatformMXBean( mBeanServer, HotSpotDiagnosticMXBean.class );
-        hotSpotDiagnosticMXBean.dumpHeap( destination, false );
+                ManagementFactory.getPlatformMXBean(mBeanServer, HotSpotDiagnosticMXBean.class);
+        hotSpotDiagnosticMXBean.dumpHeap(destination, false);
     }
 
-    public DiagnosticsReportSource systemProperties()
-    {
-        return new DiagnosticsReportSource()
-        {
+    public DiagnosticsReportSource systemProperties() {
+        return new DiagnosticsReportSource() {
             @Override
-            public String destinationPath()
-            {
+            public String destinationPath() {
                 return "vm.prop";
             }
 
             @Override
-            public InputStream newInputStream()
-            {
+            public InputStream newInputStream() {
                 final ByteArrayOutputStream out = new ByteArrayOutputStream();
-                systemProperties.list( new PrintStream( out, true ) );
-                return new ByteArrayInputStream( out.toByteArray() );
+                systemProperties.list(new PrintStream(out, true));
+                return new ByteArrayInputStream(out.toByteArray());
             }
 
             @Override
-            public long estimatedSize()
-            {
+            public long estimatedSize() {
                 return 0;
             }
         };

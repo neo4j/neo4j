@@ -23,8 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public abstract class TokenRecord extends AbstractBaseRecord
-{
+public abstract class TokenRecord extends AbstractBaseRecord {
     private int nameId;
     private List<DynamicRecord> nameRecords;
     /**
@@ -32,127 +31,106 @@ public abstract class TokenRecord extends AbstractBaseRecord
      */
     private boolean internal;
 
-    public TokenRecord( long id )
-    {
-        super( id );
+    public TokenRecord(long id) {
+        super(id);
     }
 
-    public TokenRecord( TokenRecord other )
-    {
-        super( other );
+    public TokenRecord(TokenRecord other) {
+        super(other);
         this.nameId = other.nameId;
-        this.nameRecords = new ArrayList<>( other.nameRecords.size() );
-        for ( DynamicRecord record : other.nameRecords )
-        {
-            this.nameRecords.add( new DynamicRecord( record ) );
+        this.nameRecords = new ArrayList<>(other.nameRecords.size());
+        for (DynamicRecord record : other.nameRecords) {
+            this.nameRecords.add(new DynamicRecord(record));
         }
         this.internal = other.internal;
     }
 
-    public TokenRecord initialize( boolean inUse, int nameId )
-    {
-        super.initialize( inUse );
+    public TokenRecord initialize(boolean inUse, int nameId) {
+        super.initialize(inUse);
         this.nameId = nameId;
-        this.nameRecords = new ArrayList<>( 1 );
+        this.nameRecords = new ArrayList<>(1);
         return this;
     }
 
     @Override
-    public void clear()
-    {
-        initialize( false, Record.NO_NEXT_BLOCK.intValue() );
+    public void clear() {
+        initialize(false, Record.NO_NEXT_BLOCK.intValue());
     }
 
-    public boolean isLight()
-    {
+    public boolean isLight() {
         return nameRecords == null || nameRecords.isEmpty();
     }
 
-    public int getNameId()
-    {
+    public int getNameId() {
         return nameId;
     }
 
-    public void setNameId( int blockId )
-    {
+    public void setNameId(int blockId) {
         this.nameId = blockId;
     }
 
-    public List<DynamicRecord> getNameRecords()
-    {
+    public List<DynamicRecord> getNameRecords() {
         return nameRecords;
     }
 
-    public void addNameRecord( DynamicRecord record )
-    {
-        nameRecords.add( record );
+    public void addNameRecord(DynamicRecord record) {
+        nameRecords.add(record);
     }
 
-    public void addNameRecords( Iterable<DynamicRecord> records )
-    {
-        for ( DynamicRecord record : records )
-        {
-            addNameRecord( record );
+    public void addNameRecords(Iterable<DynamicRecord> records) {
+        for (DynamicRecord record : records) {
+            addNameRecord(record);
         }
     }
 
-    public boolean isInternal()
-    {
+    public boolean isInternal() {
         return internal;
     }
 
-    public void setInternal( boolean internal )
-    {
+    public void setInternal(boolean internal) {
         this.internal = internal;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        if ( !super.equals( o ) )
-        {
+        if (!super.equals(o)) {
             return false;
         }
         TokenRecord that = (TokenRecord) o;
-        return getNameId() == that.getNameId() && isInternal() == that.isInternal() && Objects.equals( getNameRecords(), that.getNameRecords() );
+        return getNameId() == that.getNameId()
+                && isInternal() == that.isInternal()
+                && Objects.equals(getNameRecords(), that.getNameRecords());
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( super.hashCode(), getNameId(), getNameRecords(), isInternal() );
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), getNameId(), getNameRecords(), isInternal());
     }
 
     @Override
-    public String toString()
-    {
-        StringBuilder buf = new StringBuilder().append( simpleName() ).append( '[' );
-        buf.append( getId() ).append( ',' ).append( inUse() ? "in" : "no" ).append( " use" );
-        buf.append( ",nameId=" ).append( nameId );
-        buf.append( ",internal=" ).append( internal );
-        additionalToString( buf );
-        if ( !isLight() )
-        {
-            for ( DynamicRecord dyn : nameRecords )
-            {
-                buf.append( ',' ).append( dyn );
+    public String toString() {
+        StringBuilder buf = new StringBuilder().append(simpleName()).append('[');
+        buf.append(getId()).append(',').append(inUse() ? "in" : "no").append(" use");
+        buf.append(",nameId=").append(nameId);
+        buf.append(",internal=").append(internal);
+        additionalToString(buf);
+        if (!isLight()) {
+            for (DynamicRecord dyn : nameRecords) {
+                buf.append(',').append(dyn);
             }
         }
-        return buf.append( ']' ).toString();
+        return buf.append(']').toString();
     }
 
     protected abstract String simpleName();
 
-    protected void additionalToString( StringBuilder buf )
-    {
+    protected void additionalToString(StringBuilder buf) {
         // default: nothing additional
     }
 }

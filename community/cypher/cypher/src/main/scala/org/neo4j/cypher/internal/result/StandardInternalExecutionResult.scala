@@ -35,14 +35,15 @@ import org.neo4j.exceptions.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
-class StandardInternalExecutionResult(runtimeResult: RuntimeResult,
-                                      taskCloser: TaskCloser,
-                                      override val queryType: InternalQueryType,
-                                      override val executionMode: ExecutionMode,
-                                      planDescriptionBuilder: PlanDescriptionBuilder,
-                                      subscriber: QuerySubscriber,
-                                      val internalNotifications: Seq[InternalNotification])
-  extends InternalExecutionResult {
+class StandardInternalExecutionResult(
+  runtimeResult: RuntimeResult,
+  taskCloser: TaskCloser,
+  override val queryType: InternalQueryType,
+  override val executionMode: ExecutionMode,
+  planDescriptionBuilder: PlanDescriptionBuilder,
+  subscriber: QuerySubscriber,
+  val internalNotifications: Seq[InternalNotification]
+) extends InternalExecutionResult {
 
   self =>
 
@@ -70,7 +71,7 @@ class StandardInternalExecutionResult(runtimeResult: RuntimeResult,
           close(Success)
         }
 
-      case _ => //do nothing
+      case _ => // do nothing
     }
   }
 
@@ -118,7 +119,3 @@ class StandardInternalExecutionResult(runtimeResult: RuntimeResult,
 
   override def notifications: Iterable[Notification] = Set.empty
 }
-
-
-
-

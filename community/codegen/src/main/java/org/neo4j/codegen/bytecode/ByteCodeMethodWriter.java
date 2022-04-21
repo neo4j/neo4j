@@ -19,23 +19,6 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.function.Consumer;
-
-import org.neo4j.codegen.Expression;
-import org.neo4j.codegen.ExpressionVisitor;
-import org.neo4j.codegen.FieldReference;
-import org.neo4j.codegen.LocalVariable;
-import org.neo4j.codegen.MethodDeclaration;
-import org.neo4j.codegen.MethodWriter;
-import org.neo4j.codegen.Parameter;
-import org.neo4j.codegen.TypeReference;
-
 import static org.neo4j.codegen.ByteCodeUtils.byteCodeName;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.exceptions;
@@ -60,262 +43,237 @@ import static org.objectweb.asm.Opcodes.PUTFIELD;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
 
-class ByteCodeMethodWriter implements MethodWriter
-{
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.function.Consumer;
+import org.neo4j.codegen.Expression;
+import org.neo4j.codegen.ExpressionVisitor;
+import org.neo4j.codegen.FieldReference;
+import org.neo4j.codegen.LocalVariable;
+import org.neo4j.codegen.MethodDeclaration;
+import org.neo4j.codegen.MethodWriter;
+import org.neo4j.codegen.Parameter;
+import org.neo4j.codegen.TypeReference;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+
+class ByteCodeMethodWriter implements MethodWriter {
     private final MethodVisitor methodVisitor;
     private final MethodDeclaration declaration;
     private final ExpressionVisitor expressionVisitor;
     private Deque<Block> stateStack = new LinkedList<>();
 
-    ByteCodeMethodWriter( ClassVisitor classVisitor, MethodDeclaration declaration, TypeReference ignore )
-    {
+    ByteCodeMethodWriter(ClassVisitor classVisitor, MethodDeclaration declaration, TypeReference ignore) {
         this.declaration = declaration;
-        for ( Parameter parameter : declaration.parameters() )
-        {
+        for (Parameter parameter : declaration.parameters()) {
             TypeReference type = parameter.type();
-            if ( type.isInnerClass() && !type.isArray() )
-            {
-                classVisitor.visitInnerClass( byteCodeName( type ), outerName( type ),
-                        type.simpleName(), type.modifiers() );
+            if (type.isInnerClass() && !type.isArray()) {
+                classVisitor.visitInnerClass(byteCodeName(type), outerName(type), type.simpleName(), type.modifiers());
             }
         }
         int access = declaration.isStatic() ? ACC_PUBLIC + ACC_STATIC : ACC_PUBLIC;
-        this.methodVisitor = classVisitor.visitMethod( access, declaration.name(), desc( declaration ),
-                signature( declaration ), exceptions( declaration ) );
+        this.methodVisitor = classVisitor.visitMethod(
+                access, declaration.name(), desc(declaration), signature(declaration), exceptions(declaration));
         this.methodVisitor.visitCode();
-        this.expressionVisitor = new ByteCodeExpressionVisitor( this.methodVisitor );
-        stateStack.push( new Method( methodVisitor, declaration.returnType().isVoid() ) );
+        this.expressionVisitor = new ByteCodeExpressionVisitor(this.methodVisitor);
+        stateStack.push(new Method(methodVisitor, declaration.returnType().isVoid()));
     }
 
     @Override
-    public boolean isStatic()
-    {
+    public boolean isStatic() {
         return declaration.isStatic();
     }
 
     @Override
-    public void done()
-    {
+    public void done() {
         methodVisitor.visitEnd();
     }
 
     @Override
-    public void expression( Expression expression )
-    {
-        expression.accept( expressionVisitor );
+    public void expression(Expression expression) {
+        expression.accept(expressionVisitor);
     }
 
     @Override
-    public void put( Expression target, FieldReference field, Expression value )
-    {
-        target.accept( expressionVisitor );
-        value.accept( expressionVisitor );
-        methodVisitor
-                .visitFieldInsn( PUTFIELD, byteCodeName( field.owner() ), field.name(), typeName( field.type() ) );
+    public void put(Expression target, FieldReference field, Expression value) {
+        target.accept(expressionVisitor);
+        value.accept(expressionVisitor);
+        methodVisitor.visitFieldInsn(PUTFIELD, byteCodeName(field.owner()), field.name(), typeName(field.type()));
     }
 
     @Override
-    public void putStatic( FieldReference field, Expression value )
-    {
-        value.accept( expressionVisitor );
-        methodVisitor.visitFieldInsn( PUTSTATIC, byteCodeName( field.owner() ), field.name(), typeName( field.type() ) );
+    public void putStatic(FieldReference field, Expression value) {
+        value.accept(expressionVisitor);
+        methodVisitor.visitFieldInsn(PUTSTATIC, byteCodeName(field.owner()), field.name(), typeName(field.type()));
     }
 
     @Override
-    public void returns()
-    {
-        methodVisitor.visitInsn( RETURN );
+    public void returns() {
+        methodVisitor.visitInsn(RETURN);
     }
 
     @Override
-    public void returns( Expression value )
-    {
-        value.accept( expressionVisitor );
-        if ( declaration.returnType().isPrimitive() )
-        {
-            switch ( declaration.returnType().name() )
-            {
-            case "int":
-            case "byte":
-            case "short":
-            case "char":
-            case "boolean":
-                methodVisitor.visitInsn( IRETURN );
-                break;
-            case "long":
-                methodVisitor.visitInsn( LRETURN );
-                break;
-            case "float":
-                methodVisitor.visitInsn( FRETURN );
-                break;
-            case "double":
-                methodVisitor.visitInsn( DRETURN );
-                break;
-            default:
-                methodVisitor.visitInsn( ARETURN );
+    public void returns(Expression value) {
+        value.accept(expressionVisitor);
+        if (declaration.returnType().isPrimitive()) {
+            switch (declaration.returnType().name()) {
+                case "int":
+                case "byte":
+                case "short":
+                case "char":
+                case "boolean":
+                    methodVisitor.visitInsn(IRETURN);
+                    break;
+                case "long":
+                    methodVisitor.visitInsn(LRETURN);
+                    break;
+                case "float":
+                    methodVisitor.visitInsn(FRETURN);
+                    break;
+                case "double":
+                    methodVisitor.visitInsn(DRETURN);
+                    break;
+                default:
+                    methodVisitor.visitInsn(ARETURN);
             }
-        }
-        else
-        {
-            methodVisitor.visitInsn( ARETURN );
+        } else {
+            methodVisitor.visitInsn(ARETURN);
         }
     }
 
     @Override
-    public void continues()
-    {
-        for ( Block block : stateStack )
-        {
-            if ( block instanceof While )
-            {
-                ((While)block).continueBlock();
+    public void continues() {
+        for (Block block : stateStack) {
+            if (block instanceof While) {
+                ((While) block).continueBlock();
                 return;
             }
         }
-        throw new IllegalStateException( "Found no block to continue" );
+        throw new IllegalStateException("Found no block to continue");
     }
 
     @Override
-    public void breaks( String labelName )
-    {
-        for ( Block block : stateStack )
-        {
-            if ( block instanceof While )
-            {
-                if ( ((While)block).breakBlock( labelName ) )
-                {
+    public void breaks(String labelName) {
+        for (Block block : stateStack) {
+            if (block instanceof While) {
+                if (((While) block).breakBlock(labelName)) {
                     return;
                 }
             }
         }
-        throw new IllegalStateException( "Found no block to break out of with label " + labelName );
+        throw new IllegalStateException("Found no block to break out of with label " + labelName);
     }
 
     @Override
-    public void assign( LocalVariable variable, Expression value )
-    {
-        value.accept( expressionVisitor );
-        if ( variable.type().isPrimitive() )
-        {
-            switch ( variable.type().name() )
-            {
-            case "int":
-            case "byte":
-            case "short":
-            case "char":
-            case "boolean":
-                methodVisitor.visitVarInsn( ISTORE, variable.index() );
-                break;
-            case "long":
-                methodVisitor.visitVarInsn( LSTORE, variable.index() );
-                break;
-            case "float":
-                methodVisitor.visitVarInsn( FSTORE, variable.index() );
-                break;
-            case "double":
-                methodVisitor.visitVarInsn( DSTORE, variable.index() );
-                break;
-            default:
-                methodVisitor.visitVarInsn( ASTORE, variable.index() );
+    public void assign(LocalVariable variable, Expression value) {
+        value.accept(expressionVisitor);
+        if (variable.type().isPrimitive()) {
+            switch (variable.type().name()) {
+                case "int":
+                case "byte":
+                case "short":
+                case "char":
+                case "boolean":
+                    methodVisitor.visitVarInsn(ISTORE, variable.index());
+                    break;
+                case "long":
+                    methodVisitor.visitVarInsn(LSTORE, variable.index());
+                    break;
+                case "float":
+                    methodVisitor.visitVarInsn(FSTORE, variable.index());
+                    break;
+                case "double":
+                    methodVisitor.visitVarInsn(DSTORE, variable.index());
+                    break;
+                default:
+                    methodVisitor.visitVarInsn(ASTORE, variable.index());
             }
-        }
-        else
-        {
-            methodVisitor.visitVarInsn( ASTORE, variable.index() );
+        } else {
+            methodVisitor.visitVarInsn(ASTORE, variable.index());
         }
     }
 
     @Override
-    public void beginWhile( Expression test, String labelName )
-    {
+    public void beginWhile(Expression test, String labelName) {
         Label repeat = new Label();
         Label done = new Label();
-        methodVisitor.visitLabel( repeat );
-        test.accept( new JumpVisitor( expressionVisitor, methodVisitor, done ) );
+        methodVisitor.visitLabel(repeat);
+        test.accept(new JumpVisitor(expressionVisitor, methodVisitor, done));
 
-        stateStack.push( new While( methodVisitor, repeat, done, labelName ) );
+        stateStack.push(new While(methodVisitor, repeat, done, labelName));
     }
 
     @Override
-    public void beginIf( Expression test )
-    {
+    public void beginIf(Expression test) {
         Label after = new Label();
-        test.accept( new JumpVisitor( expressionVisitor, methodVisitor, after ) );
-        stateStack.push( new If( methodVisitor, after ) );
+        test.accept(new JumpVisitor(expressionVisitor, methodVisitor, after));
+        stateStack.push(new If(methodVisitor, after));
     }
 
     @Override
-    public <T> void ifElseStatement( Expression test, Consumer<T> onTrue, Consumer<T> onFalse, T block )
-    {
+    public <T> void ifElseStatement(Expression test, Consumer<T> onTrue, Consumer<T> onFalse, T block) {
         Label onFailLabel = new Label();
         Label doneLabel = new Label();
-        test.accept( new JumpVisitor( expressionVisitor, methodVisitor, onFailLabel ) );
-        //test true, evaluate and GOTO done
-        onTrue.accept( block );
-        methodVisitor.visitJumpInsn( GOTO, doneLabel );
+        test.accept(new JumpVisitor(expressionVisitor, methodVisitor, onFailLabel));
+        // test true, evaluate and GOTO done
+        onTrue.accept(block);
+        methodVisitor.visitJumpInsn(GOTO, doneLabel);
 
-        //test false, go to here
-        methodVisitor.visitLabel( onFailLabel );
-        onFalse.accept( block );
+        // test false, go to here
+        methodVisitor.visitLabel(onFailLabel);
+        onFalse.accept(block);
 
-        //goto here when onTrue body is done
-        methodVisitor.visitLabel( doneLabel );
+        // goto here when onTrue body is done
+        methodVisitor.visitLabel(doneLabel);
     }
 
     @Override
-    public void beginBlock()
-    {
-        stateStack.push( () -> {} );
+    public void beginBlock() {
+        stateStack.push(() -> {});
     }
 
     @Override
-    public void endBlock()
-    {
-        if ( stateStack.isEmpty() )
-        {
-            throw new IllegalStateException( "Unbalanced blocks" );
+    public void endBlock() {
+        if (stateStack.isEmpty()) {
+            throw new IllegalStateException("Unbalanced blocks");
         }
         stateStack.pop().endBlock();
     }
 
     @Override
-    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
-    {
+    public <T> void tryCatchBlock(Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block) {
         Label start = new Label();
         Label end = new Label();
         Label handle = new Label();
         Label after = new Label();
-        methodVisitor.visitTryCatchBlock( start, end, handle,
-                byteCodeName( exception.type() ) );
-        methodVisitor.visitLabel( start );
-        body.accept( block );
-        methodVisitor.visitLabel( end );
-        methodVisitor.visitJumpInsn( GOTO, after );
-        //handle catch
-        methodVisitor.visitLabel( handle );
-        methodVisitor.visitVarInsn( ASTORE, exception.index() );
+        methodVisitor.visitTryCatchBlock(start, end, handle, byteCodeName(exception.type()));
+        methodVisitor.visitLabel(start);
+        body.accept(block);
+        methodVisitor.visitLabel(end);
+        methodVisitor.visitJumpInsn(GOTO, after);
+        // handle catch
+        methodVisitor.visitLabel(handle);
+        methodVisitor.visitVarInsn(ASTORE, exception.index());
 
-        handler.accept( block );
-        methodVisitor.visitLabel( after );
+        handler.accept(block);
+        methodVisitor.visitLabel(after);
     }
 
     @Override
-    public void throwException( Expression exception )
-    {
-        exception.accept( expressionVisitor );
-        methodVisitor.visitInsn( ATHROW );
+    public void throwException(Expression exception) {
+        exception.accept(expressionVisitor);
+        methodVisitor.visitInsn(ATHROW);
     }
 
     @Override
-    public void declare( LocalVariable local )
-    {
-        //declare is a noop bytecode wise
+    public void declare(LocalVariable local) {
+        // declare is a noop bytecode wise
     }
 
     @Override
-    public void assignVariableInScope( LocalVariable local, Expression value )
-    {
-        //these are equivalent when it comes to bytecode
-        assign( local, value );
+    public void assignVariableInScope(LocalVariable local, Expression value) {
+        // these are equivalent when it comes to bytecode
+        assign(local, value);
     }
 }

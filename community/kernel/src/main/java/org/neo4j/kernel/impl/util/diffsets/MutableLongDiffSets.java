@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
-public interface MutableLongDiffSets extends LongDiffSets
-{
-    void add( long element );
+public interface MutableLongDiffSets extends LongDiffSets {
+    void add(long element);
 
-    boolean remove( long element );
+    boolean remove(long element);
 }

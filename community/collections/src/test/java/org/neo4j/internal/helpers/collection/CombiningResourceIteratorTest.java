@@ -19,10 +19,6 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.graphdb.ResourceIterator;
-
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
@@ -31,18 +27,19 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
-class CombiningResourceIteratorTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.ResourceIterator;
+
+class CombiningResourceIteratorTest {
     @Test
-    void shouldNotCloseDuringIteration()
-    {
+    void shouldNotCloseDuringIteration() {
         // Given
-        ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1L, 2L, 3L ) ) );
-        ResourceIterator<Long> it2 = spy( asResourceIterator( iterator( 5L, 6L, 7L ) ) );
-        CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>( iterator(it1, it2) );
+        ResourceIterator<Long> it1 = spy(asResourceIterator(iterator(1L, 2L, 3L)));
+        ResourceIterator<Long> it2 = spy(asResourceIterator(iterator(5L, 6L, 7L)));
+        CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>(iterator(it1, it2));
 
         // When I iterate through it, things come back in the right order
-        assertThat( combingIterator ).toIterable().containsExactly( 1L, 2L, 3L, 5L, 6L, 7L );
+        assertThat(combingIterator).toIterable().containsExactly(1L, 2L, 3L, 5L, 6L, 7L);
 
         // Then
         verify(it1, never()).close();
@@ -50,17 +47,15 @@ class CombiningResourceIteratorTest
     }
 
     @Test
-    void closesAllIteratorsOnShutdown()
-    {
+    void closesAllIteratorsOnShutdown() {
         // Given
-        ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1L, 2L, 3L ) ) );
-        ResourceIterator<Long> it2 = spy( asResourceIterator( iterator( 5L, 6L, 7L ) ) );
-        CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>( iterator(it1, it2) );
+        ResourceIterator<Long> it1 = spy(asResourceIterator(iterator(1L, 2L, 3L)));
+        ResourceIterator<Long> it2 = spy(asResourceIterator(iterator(5L, 6L, 7L)));
+        CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>(iterator(it1, it2));
 
         // Given I iterate through half of it
         int iterations = 4;
-        while ( iterations-- > 0 )
-        {
+        while (iterations-- > 0) {
             combingIterator.next();
         }
 
@@ -73,14 +68,13 @@ class CombiningResourceIteratorTest
     }
 
     @Test
-    void shouldHandleSingleItemIterators()
-    {
+    void shouldHandleSingleItemIterators() {
         // Given
-        ResourceIterator<Long> it1 = asResourceIterator( iterator( 1L ) );
-        ResourceIterator<Long> it2 = asResourceIterator( iterator( 5L, 6L, 7L ) );
-        CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>( iterator(it1, it2) );
+        ResourceIterator<Long> it1 = asResourceIterator(iterator(1L));
+        ResourceIterator<Long> it2 = asResourceIterator(iterator(5L, 6L, 7L));
+        CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>(iterator(it1, it2));
 
         // When I iterate through it, things come back in the right order
-        assertThat( Iterators.asList( combingIterator ) ).isEqualTo( asList( 1L, 5L, 6L, 7L ) );
+        assertThat(Iterators.asList(combingIterator)).isEqualTo(asList(1L, 5L, 6L, 7L));
     }
 }

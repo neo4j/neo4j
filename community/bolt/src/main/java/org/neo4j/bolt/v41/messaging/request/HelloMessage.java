@@ -20,30 +20,25 @@
 package org.neo4j.bolt.v41.messaging.request;
 
 import java.util.Map;
-
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 
-public class HelloMessage extends org.neo4j.bolt.v3.messaging.request.HelloMessage
-{
+public class HelloMessage extends org.neo4j.bolt.v3.messaging.request.HelloMessage {
     public static final String ROUTING = "routing";
     private final RoutingContext routingContext;
-    private final Map<String,Object> authToken;
+    private final Map<String, Object> authToken;
 
-    public HelloMessage( Map<String,Object> meta, RoutingContext routingContext, Map<String,Object> authToken )
-    {
-        super( meta );
+    public HelloMessage(Map<String, Object> meta, RoutingContext routingContext, Map<String, Object> authToken) {
+        super(meta);
         this.routingContext = routingContext;
         this.authToken = authToken;
     }
 
     @Override
-    public Map<String,Object> authToken()
-    {
+    public Map<String, Object> authToken() {
         return authToken;
     }
 
-    public RoutingContext routingContext()
-    {
+    public RoutingContext routingContext() {
         return routingContext;
     }
 }

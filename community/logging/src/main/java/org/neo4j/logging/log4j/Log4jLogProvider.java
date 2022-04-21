@@ -21,7 +21,6 @@ package org.neo4j.logging.log4j;
 
 import java.io.Closeable;
 import java.io.OutputStream;
-
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Level;
@@ -29,45 +28,37 @@ import org.neo4j.logging.Level;
 /**
  * A {@link InternalLogProvider} implementation that uses the Log4j configuration ctx is connected to.
  */
-public class Log4jLogProvider implements InternalLogProvider, Closeable
-{
+public class Log4jLogProvider implements InternalLogProvider, Closeable {
     private final Neo4jLoggerContext ctx;
 
-    public Log4jLogProvider( Neo4jLoggerContext ctx )
-    {
+    public Log4jLogProvider(Neo4jLoggerContext ctx) {
         this.ctx = ctx;
     }
 
-    public Log4jLogProvider( OutputStream out )
-    {
-        this( out, Level.INFO );
+    public Log4jLogProvider(OutputStream out) {
+        this(out, Level.INFO);
     }
 
-    public Log4jLogProvider( OutputStream out, Level level )
-    {
-        this( LogConfig.createBuilder( out, level ).build() );
+    public Log4jLogProvider(OutputStream out, Level level) {
+        this(LogConfig.createBuilder(out, level).build());
     }
 
-    public void updateLogLevel( Level newLevel )
-    {
-        LogConfig.updateLogLevel( newLevel, ctx );
+    public void updateLogLevel(Level newLevel) {
+        LogConfig.updateLogLevel(newLevel, ctx);
     }
 
     @Override
-    public InternalLog getLog( Class<?> loggingClass )
-    {
-        return new Log4jLog( ctx.getLogger( loggingClass ) );
+    public InternalLog getLog(Class<?> loggingClass) {
+        return new Log4jLog(ctx.getLogger(loggingClass));
     }
 
     @Override
-    public InternalLog getLog( String name )
-    {
-        return new Log4jLog( ctx.getLogger( name ) );
+    public InternalLog getLog(String name) {
+        return new Log4jLog(ctx.getLogger(name));
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         ctx.close();
     }
 }

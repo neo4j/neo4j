@@ -24,12 +24,10 @@ package org.neo4j.kernel.impl.api;
  * where the instances themselves form the linked list. This utility is just for easily being able
  * to append to the end and then at regular intervals batch through the whole queue.
  */
-public class TransactionQueue
-{
+public class TransactionQueue {
     @FunctionalInterface
-    public interface Applier
-    {
-        void apply( TransactionToApply first, TransactionToApply last ) throws Exception;
+    public interface Applier {
+        void apply(TransactionToApply first, TransactionToApply last) throws Exception;
     }
 
     private final int maxSize;
@@ -38,58 +36,45 @@ public class TransactionQueue
     private TransactionToApply last;
     private int size;
 
-    public TransactionQueue( int maxSize, Applier applier )
-    {
+    public TransactionQueue(int maxSize, Applier applier) {
         this.maxSize = maxSize;
         this.applier = applier;
     }
 
-    public void queue( TransactionToApply transaction ) throws Exception
-    {
-        if ( isEmpty() )
-        {
+    public void queue(TransactionToApply transaction) throws Exception {
+        if (isEmpty()) {
             first = last = transaction;
-        }
-        else
-        {
-            last.next( transaction );
+        } else {
+            last.next(transaction);
             last = transaction;
         }
-        if ( ++size == maxSize )
-        {
+        if (++size == maxSize) {
             empty();
         }
     }
 
-    public void empty() throws Exception
-    {
-        if ( size > 0 )
-        {
-            applier.apply( first, last );
+    public void empty() throws Exception {
+        if (size > 0) {
+            applier.apply(first, last);
             first = last = null;
             size = 0;
         }
     }
 
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return size == 0;
     }
 
-    public TransactionToApply first()
-    {
-        if ( isEmpty() )
-        {
-            throw new IllegalStateException( "Nothing in queue" );
+    public TransactionToApply first() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Nothing in queue");
         }
         return first;
     }
 
-    public TransactionToApply last()
-    {
-        if ( isEmpty() )
-        {
-            throw new IllegalStateException( "Nothing in queue" );
+    public TransactionToApply last() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Nothing in queue");
         }
         return last;
     }

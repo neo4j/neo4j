@@ -26,8 +26,7 @@ package org.neo4j.internal.kernel.api.procs;
  * This should also move to replace the specialized type handling in packstream, or be tied to it in some
  * way to ensure a strict mapping.
  */
-public final class Neo4jTypes
-{
+public final class Neo4jTypes {
     public static final AnyType NTAny = new AnyType();
     public static final TextType NTString = new TextType();
     public static final NumberType NTNumber = new NumberType();
@@ -48,230 +47,177 @@ public final class Neo4jTypes
     public static final LocalTimeType NTLocalTime = new LocalTimeType();
     public static final DurationType NTDuration = new DurationType();
 
-    private Neo4jTypes()
-    {
+    private Neo4jTypes() {}
+
+    public static ListType NTList(AnyType innerType) {
+        return new ListType(innerType);
     }
 
-    public static ListType NTList( AnyType innerType )
-    {
-        return new ListType( innerType );
-    }
-
-    public static class AnyType
-    {
+    public static class AnyType {
         private final String name;
 
-        public AnyType()
-        {
-            this( "ANY?" );
+        public AnyType() {
+            this("ANY?");
         }
 
-        protected AnyType( String name )
-        {
+        protected AnyType(String name) {
             this.name = name;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return name;
         }
     }
 
-    public static class TextType extends AnyType
-    {
-        public TextType()
-        {
-            super( "STRING?" );
+    public static class TextType extends AnyType {
+        public TextType() {
+            super("STRING?");
         }
     }
 
-    public static class NumberType extends AnyType
-    {
-        public NumberType()
-        {
-            super( "NUMBER?" );
+    public static class NumberType extends AnyType {
+        public NumberType() {
+            super("NUMBER?");
         }
 
-        protected NumberType( String name )
-        {
-            super( name );
+        protected NumberType(String name) {
+            super(name);
         }
     }
 
-    public static class IntegerType extends NumberType
-    {
-        public IntegerType()
-        {
-            super( "INTEGER?" );
+    public static class IntegerType extends NumberType {
+        public IntegerType() {
+            super("INTEGER?");
         }
     }
 
-    public static class FloatType extends NumberType
-    {
-        public FloatType()
-        {
-            super( "FLOAT?" );
+    public static class FloatType extends NumberType {
+        public FloatType() {
+            super("FLOAT?");
         }
     }
 
-    public static class BooleanType extends AnyType
-    {
-        public BooleanType()
-        {
-            super( "BOOLEAN?" );
+    public static class BooleanType extends AnyType {
+        public BooleanType() {
+            super("BOOLEAN?");
         }
     }
 
-    public static class ListType extends AnyType
-    {
+    public static class ListType extends AnyType {
         /** The type of values in this collection */
         private final AnyType innerType;
 
-        public ListType( AnyType innerType )
-        {
-            super( "LIST? OF " + innerType );
+        public ListType(AnyType innerType) {
+            super("LIST? OF " + innerType);
             this.innerType = innerType;
         }
 
-        public AnyType innerType()
-        {
+        public AnyType innerType() {
             return innerType;
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             ListType listType = (ListType) o;
-            return innerType.equals( listType.innerType );
+            return innerType.equals(listType.innerType);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return innerType.hashCode();
         }
     }
 
-    public static class MapType extends AnyType
-    {
-        public MapType()
-        {
-            super( "MAP?" );
+    public static class MapType extends AnyType {
+        public MapType() {
+            super("MAP?");
         }
 
-        protected MapType( String name )
-        {
-            super( name );
+        protected MapType(String name) {
+            super(name);
         }
     }
 
-    public static class ByteArrayType extends AnyType
-    {
-        public ByteArrayType()
-        {
-            super( "BYTEARRAY?" );
+    public static class ByteArrayType extends AnyType {
+        public ByteArrayType() {
+            super("BYTEARRAY?");
         }
 
-        protected ByteArrayType( String name )
-        {
-            super( name );
+        protected ByteArrayType(String name) {
+            super(name);
         }
     }
 
-    public static class NodeType extends MapType
-    {
-        public NodeType()
-        {
-            super( "NODE?" );
+    public static class NodeType extends MapType {
+        public NodeType() {
+            super("NODE?");
         }
     }
 
-    public static class RelationshipType extends MapType
-    {
-        public RelationshipType()
-        {
-            super( "RELATIONSHIP?" );
+    public static class RelationshipType extends MapType {
+        public RelationshipType() {
+            super("RELATIONSHIP?");
         }
     }
 
-    public static class PathType extends AnyType
-    {
-        public PathType()
-        {
-            super( "PATH?" );
+    public static class PathType extends AnyType {
+        public PathType() {
+            super("PATH?");
         }
     }
 
-    public static class GeometryType extends AnyType
-    {
-        public GeometryType()
-        {
-            super( "GEOMETRY?" );
+    public static class GeometryType extends AnyType {
+        public GeometryType() {
+            super("GEOMETRY?");
         }
     }
 
-    public static class PointType extends AnyType
-    {
-        public PointType()
-        {
-            super( "POINT?" );
+    public static class PointType extends AnyType {
+        public PointType() {
+            super("POINT?");
         }
     }
 
-    public static class DateTimeType extends AnyType
-    {
-        public DateTimeType()
-        {
-            super( "DATETIME?" );
+    public static class DateTimeType extends AnyType {
+        public DateTimeType() {
+            super("DATETIME?");
         }
     }
 
-    public static class LocalDateTimeType extends AnyType
-    {
-        public LocalDateTimeType()
-        {
-            super( "LOCALDATETIME?" );
+    public static class LocalDateTimeType extends AnyType {
+        public LocalDateTimeType() {
+            super("LOCALDATETIME?");
         }
     }
 
-    public static class DateType extends AnyType
-    {
-        public DateType()
-        {
-            super( "DATE?" );
+    public static class DateType extends AnyType {
+        public DateType() {
+            super("DATE?");
         }
     }
 
-    public static class TimeType extends AnyType
-    {
-        public TimeType()
-        {
-            super( "TIME?" );
+    public static class TimeType extends AnyType {
+        public TimeType() {
+            super("TIME?");
         }
     }
 
-    public static class LocalTimeType extends AnyType
-    {
-        public LocalTimeType()
-        {
-            super( "LOCALTIME?" );
+    public static class LocalTimeType extends AnyType {
+        public LocalTimeType() {
+            super("LOCALTIME?");
         }
     }
 
-    public static class DurationType extends AnyType
-    {
-        public DurationType()
-        {
-            super( "DURATION?" );
+    public static class DurationType extends AnyType {
+        public DurationType() {
+            super("DURATION?");
         }
     }
 }

@@ -19,78 +19,70 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@ExtendWith( RandomExtension.class )
-class ConcurrentSparseLongBitSetTest
-{
+@ExtendWith(RandomExtension.class)
+class ConcurrentSparseLongBitSetTest {
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldSetSomeBits()
-    {
+    void shouldSetSomeBits() {
         // given
-        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );
-        BitSet key = new BitSet( 128 );
+        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet(128);
+        BitSet key = new BitSet(128);
 
         // when
-        set( set, key, 5, 6, true );
-        set( set, key, 62, 4, true );
-        set( set, key, 70, 7, true );
+        set(set, key, 5, 6, true);
+        set(set, key, 62, 4, true);
+        set(set, key, 70, 7, true);
         long[] snapshot = new long[2];
-        set.snapshotRange( 0, snapshot );
+        set.snapshotRange(0, snapshot);
 
         // then
-        for ( int i = 0; i < 128; i++ )
-        {
+        for (int i = 0; i < 128; i++) {
             int arrayIndex = i / Long.SIZE;
             int offset = i % Long.SIZE;
-            assertEquals( key.get( i ), (snapshot[arrayIndex] & (1L << offset)) != 0 );
+            assertEquals(key.get(i), (snapshot[arrayIndex] & (1L << offset)) != 0);
         }
     }
 
     @Test
-    void shouldSetRemoveSet()
-    {
+    void shouldSetRemoveSet() {
         // given
-        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );
-        assertTrue( set.set( 0, 8, true ) );
-        assertTrue( set.set( 0, 8, false ) );
+        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet(128);
+        assertTrue(set.set(0, 8, true));
+        assertTrue(set.set(0, 8, false));
 
         // when
-        boolean reset = set.set( 0, 8, true );
+        boolean reset = set.set(0, 8, true);
 
         // then
-        assertTrue( reset );
+        assertTrue(reset);
     }
 
     @Test
-    void shouldSetNonConflictingBitsConcurrently() throws Throwable
-    {
+    void shouldSetNonConflictingBitsConcurrently() throws Throwable {
         // given
-        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );
-        Race race = new Race().withMaxDuration( 10, SECONDS );
+        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet(128);
+        Race race = new Race().withMaxDuration(10, SECONDS);
         int numberOfThreads = 10;
-        int idsPerChunk = 1 << random.nextInt( 4 );
-        for ( int i = 0; i < numberOfThreads; i++ )
-        {
-            race.addContestant( setter( set, idsPerChunk, i, numberOfThreads, random.nextLong() ), 1_000_000 );
+        int idsPerChunk = 1 << random.nextInt(4);
+        for (int i = 0; i < numberOfThreads; i++) {
+            race.addContestant(setter(set, idsPerChunk, i, numberOfThreads, random.nextLong()), 1_000_000);
         }
 
         // when
@@ -100,107 +92,94 @@ class ConcurrentSparseLongBitSetTest
     }
 
     @Test
-    void shouldSetConflictingBitsConcurrently() throws Throwable
-    {
+    void shouldSetConflictingBitsConcurrently() throws Throwable {
         // given
-        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );
-        Race race = new Race().withMaxDuration( 10, SECONDS );
+        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet(128);
+        Race race = new Race().withMaxDuration(10, SECONDS);
         AtomicBoolean isSet = new AtomicBoolean();
-        race.addContestants( 10, () ->
-        {
-            boolean wasSet = set.set( 3, 10, true );
-            if ( wasSet )
-            {
-                assertTrue( isSet.compareAndSet( false, true ) );
-            }
-        }, 1 );
+        race.addContestants(
+                10,
+                () -> {
+                    boolean wasSet = set.set(3, 10, true);
+                    if (wasSet) {
+                        assertTrue(isSet.compareAndSet(false, true));
+                    }
+                },
+                1);
 
         // when
         race.go();
 
         // then
-        assertTrue( isSet.get() );
+        assertTrue(isSet.get());
     }
 
     @Test
-    void shouldRemoveEmptyRanges()
-    {
+    void shouldRemoveEmptyRanges() {
         // given
-        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );
-        set.set( 5, 2, true );
-        set.set( 7, 2, true );
-        assertEquals( 1, set.size() );
+        ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet(128);
+        set.set(5, 2, true);
+        set.set(7, 2, true);
+        assertEquals(1, set.size());
 
         // when
-        set.set( 5, 4, false );
+        set.set(5, 4, false);
 
         // then
-        assertEquals( 0, set.size() );
+        assertEquals(0, set.size());
 
         // and when
-        set.set( 9, 5, true );
-        assertEquals( 1, set.size() );
+        set.set(9, 5, true);
+        assertEquals(1, set.size());
     }
 
-    private static Runnable setter( ConcurrentSparseLongBitSet set, int idsPerChunk, int i, int numberOfThreads, long seed )
-    {
-        return new Runnable()
-        {
+    private static Runnable setter(
+            ConcurrentSparseLongBitSet set, int idsPerChunk, int i, int numberOfThreads, long seed) {
+        return new Runnable() {
             private final BitSet key = new BitSet();
             private final long[] reader = new long[2];
             private final long[] temp = new long[2];
-            private final Random random = new Random( seed );
+            private final Random random = new Random(seed);
 
             @Override
-            public void run()
-            {
-                int chunk = random.nextInt( 1024 );
+            public void run() {
+                int chunk = random.nextInt(1024);
                 int id = (chunk * numberOfThreads + i) * idsPerChunk;
-                boolean isSet = key.get( chunk );
+                boolean isSet = key.get(chunk);
 
                 // read
-                set.snapshotRange( id / set.getIdsPerEntry(), reader );
-                Arrays.fill( temp, 0 );
-                BitsUtil.setBits( temp, id % set.getIdsPerEntry(), idsPerChunk, 0 );
-                assertTrue( bitsMatches( reader, temp, isSet ) );
+                set.snapshotRange(id / set.getIdsPerEntry(), reader);
+                Arrays.fill(temp, 0);
+                BitsUtil.setBits(temp, id % set.getIdsPerEntry(), idsPerChunk, 0);
+                assertTrue(bitsMatches(reader, temp, isSet));
 
                 // write
-                boolean actuallySet = set.set( id, idsPerChunk, !isSet );
-                assertTrue( actuallySet );
-                key.set( chunk, !isSet );
+                boolean actuallySet = set.set(id, idsPerChunk, !isSet);
+                assertTrue(actuallySet);
+                key.set(chunk, !isSet);
             }
         };
     }
 
-    private static void set( ConcurrentSparseLongBitSet set, BitSet key, long id, int slots, boolean value )
-    {
-        boolean actuallySet = set.set( id, slots, value );
-        assertTrue( actuallySet );
-        for ( int i = 0; i < slots; i++ )
-        {
-            key.set( (int) (id + i), value );
+    private static void set(ConcurrentSparseLongBitSet set, BitSet key, long id, int slots, boolean value) {
+        boolean actuallySet = set.set(id, slots, value);
+        assertTrue(actuallySet);
+        for (int i = 0; i < slots; i++) {
+            key.set((int) (id + i), value);
         }
     }
 
-    static boolean bitsMatches( long[] bits, long[] mask, boolean value )
-    {
+    static boolean bitsMatches(long[] bits, long[] mask, boolean value) {
         assert bits.length == mask.length;
-        if ( value )
-        {
-            for ( int i = 0; i < bits.length; i++ )
-            {
-                if ( (bits[i] & mask[i]) != mask[i] )
-                {
+        if (value) {
+            for (int i = 0; i < bits.length; i++) {
+                if ((bits[i] & mask[i]) != mask[i]) {
                     return false;
                 }
             }
-        }
-        else
-        {
-            for ( int i = 0; i < bits.length; i++ )
-            {
-                if ( (bits[i] & mask[i]) != 0 )
-                {
+        } else {
+            for (int i = 0; i < bits.length; i++) {
+                if ((bits[i] & mask[i]) != 0) {
                     return false;
                 }
             }

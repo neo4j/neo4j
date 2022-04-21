@@ -19,72 +19,66 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.test.extension.SuppressOutputExtension;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.batchimport.executor.ProcessorScheduler.SPAWN_THREAD;
 
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-class LonelyProcessingStepTest
-{
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.test.extension.SuppressOutputExtension;
+
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+class LonelyProcessingStepTest {
     @Test
-    void issuePanicBeforeCompletionOnError() throws Exception
-    {
+    void issuePanicBeforeCompletionOnError() throws Exception {
         List<Step<?>> stepsPipeline = new ArrayList<>();
         TrackingPanicMonitor panicMonitor = new TrackingPanicMonitor();
-        FaultyLonelyProcessingStepTest faultyStep = new FaultyLonelyProcessingStepTest( stepsPipeline, panicMonitor );
-        stepsPipeline.add( faultyStep );
+        FaultyLonelyProcessingStepTest faultyStep = new FaultyLonelyProcessingStepTest(stepsPipeline, panicMonitor);
+        stepsPipeline.add(faultyStep);
 
-        faultyStep.receive( 1, null );
+        faultyStep.receive(1, null);
         faultyStep.awaitCompleted();
 
-        assertTrue( faultyStep.endOfUpstreamCalled );
+        assertTrue(faultyStep.endOfUpstreamCalled);
         assertTrue(
-            faultyStep.isPanicOnEndUpstream(), "On upstream end step should be already on panic in case of exception" );
-        assertTrue( faultyStep.isPanic() );
-        assertFalse( faultyStep.stillWorking() );
-        assertTrue( faultyStep.isCompleted() );
-        assertTrue( panicMonitor.hasReceivedPanic() );
+                faultyStep.isPanicOnEndUpstream(),
+                "On upstream end step should be already on panic in case of exception");
+        assertTrue(faultyStep.isPanic());
+        assertFalse(faultyStep.stillWorking());
+        assertTrue(faultyStep.isCompleted());
+        assertTrue(panicMonitor.hasReceivedPanic());
     }
 
-    private static class FaultyLonelyProcessingStepTest extends LonelyProcessingStep
-    {
+    private static class FaultyLonelyProcessingStepTest extends LonelyProcessingStep {
         private volatile boolean endOfUpstreamCalled;
         private volatile boolean panicOnEndUpstream;
 
-        FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine, TrackingPanicMonitor panicMonitor )
-        {
-            super( new StageExecution( "Faulty", null, Configuration.DEFAULT, pipeLine, 0, SPAWN_THREAD, panicMonitor ),
-                    "Faulty", Configuration.DEFAULT );
+        FaultyLonelyProcessingStepTest(List<Step<?>> pipeLine, TrackingPanicMonitor panicMonitor) {
+            super(
+                    new StageExecution("Faulty", null, Configuration.DEFAULT, pipeLine, 0, SPAWN_THREAD, panicMonitor),
+                    "Faulty",
+                    Configuration.DEFAULT);
         }
 
         @Override
-        protected void process()
-        {
-            throw new RuntimeException( "Process exception" );
+        protected void process() {
+            throw new RuntimeException("Process exception");
         }
 
         @Override
-        public void endOfUpstream()
-        {
+        public void endOfUpstream() {
             endOfUpstreamCalled = true;
             panicOnEndUpstream = isPanic();
             super.endOfUpstream();
         }
 
-        private boolean isPanicOnEndUpstream()
-        {
+        private boolean isPanicOnEndUpstream() {
             return panicOnEndUpstream;
         }
     }

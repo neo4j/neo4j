@@ -19,14 +19,22 @@
  */
 package org.neo4j.shell.cli;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatcher;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Reader;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatcher;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.StatementExecuter;
@@ -38,35 +46,22 @@ import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.printer.Printer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-class NonInteractiveShellRunnerTest
-{
-    private final Printer printer = mock( Printer.class );
-    private final StatementExecuter cmdExecuter = mock( StatementExecuter.class );
+class NonInteractiveShellRunnerTest {
+    private final Printer printer = mock(Printer.class);
+    private final StatementExecuter cmdExecuter = mock(StatementExecuter.class);
     private StatementParser statementParser;
     private ClientException badLineError;
 
     @BeforeEach
-    void setup() throws CommandException
-    {
+    void setup() throws CommandException {
         statementParser = new ShellStatementParser();
-        badLineError = new ClientException( "Found a bad line" );
-        doThrow( badLineError ).when( cmdExecuter )
-                .execute( argThat( (ArgumentMatcher<ParsedStatement>) statement -> statement.statement().contains( "bad" ) ) );
+        badLineError = new ClientException("Found a bad line");
+        doThrow(badLineError).when(cmdExecuter).execute(argThat((ArgumentMatcher<ParsedStatement>)
+                statement -> statement.statement().contains("bad")));
     }
 
     @Test
-    void testSimple()
-    {
+    void testSimple() {
         String input = """
                 good1;
                 good2;
@@ -74,135 +69,145 @@ class NonInteractiveShellRunnerTest
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_FAST,
                 cmdExecuter,
-                printer, statementParser,
-                new ByteArrayInputStream( input.getBytes() ) );
+                printer,
+                statementParser,
+                new ByteArrayInputStream(input.getBytes()));
         int code = runner.runUntilEnd();
 
-        assertEquals( 0, code, "Exit code incorrect" );
-        verify( printer, times( 0 ) ).printError( anyString() );
+        assertEquals(0, code, "Exit code incorrect");
+        verify(printer, times(0)).printError(anyString());
     }
 
     @Test
-    void testFailFast()
-    {
-        String input = """
+    void testFailFast() {
+        String input =
+                """
                 good1;
                 bad;
                 good2;
                 bad;
                 """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
-                FailBehavior.FAIL_FAST, cmdExecuter,
-                printer, statementParser,
-                new ByteArrayInputStream( input.getBytes() ) );
+                FailBehavior.FAIL_FAST,
+                cmdExecuter,
+                printer,
+                statementParser,
+                new ByteArrayInputStream(input.getBytes()));
 
         int code = runner.runUntilEnd();
 
-        assertEquals( 1, code, "Exit code incorrect" );
-        verify( printer ).printError( badLineError );
+        assertEquals(1, code, "Exit code incorrect");
+        verify(printer).printError(badLineError);
     }
 
     @Test
-    void testFailAtEnd()
-    {
-        String input = """
+    void testFailAtEnd() {
+        String input =
+                """
                 good1;
                 bad;
                 good2;
                 bad;
                 """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
-                FailBehavior.FAIL_AT_END, cmdExecuter,
-                printer, statementParser,
-                new ByteArrayInputStream( input.getBytes() ) );
+                FailBehavior.FAIL_AT_END,
+                cmdExecuter,
+                printer,
+                statementParser,
+                new ByteArrayInputStream(input.getBytes()));
 
         int code = runner.runUntilEnd();
 
-        assertEquals( 1, code, "Exit code incorrect" );
-        verify( printer, times( 2 ) ).printError( badLineError );
+        assertEquals(1, code, "Exit code incorrect");
+        verify(printer, times(2)).printError(badLineError);
     }
 
     @Test
-    void runUntilEndExitsImmediatelyOnParseError() throws IOException
-    {
+    void runUntilEndExitsImmediatelyOnParseError() throws IOException {
         // given
-        StatementParser statementParser = mock( StatementParser.class );
-        RuntimeException boom = new RuntimeException( "BOOM" );
-        doThrow( boom ).when( statementParser ).parse( any( Reader.class ) );
+        StatementParser statementParser = mock(StatementParser.class);
+        RuntimeException boom = new RuntimeException("BOOM");
+        doThrow(boom).when(statementParser).parse(any(Reader.class));
 
-        String input = """
+        String input =
+                """
                 good1;
                 bad;
                 good2;
                 bad;
                 """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
-                FailBehavior.FAIL_AT_END, cmdExecuter,
-                printer, statementParser,
-                new ByteArrayInputStream( input.getBytes() ) );
+                FailBehavior.FAIL_AT_END,
+                cmdExecuter,
+                printer,
+                statementParser,
+                new ByteArrayInputStream(input.getBytes()));
 
         // when
         int code = runner.runUntilEnd();
 
         // then
-        assertEquals( 1, code );
-        verify( printer ).printError( boom );
+        assertEquals(1, code);
+        verify(printer).printError(boom);
     }
 
     @Test
-    void runUntilEndExitsImmediatelyOnExitCommand() throws Exception
-    {
+    void runUntilEndExitsImmediatelyOnExitCommand() throws Exception {
         // given
-        String input = """
+        String input =
+                """
                 good1;
                 bad;
                 good2;
                 bad;
                 """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
-                FailBehavior.FAIL_AT_END, cmdExecuter,
-                printer, statementParser,
-                new ByteArrayInputStream( input.getBytes() ) );
+                FailBehavior.FAIL_AT_END,
+                cmdExecuter,
+                printer,
+                statementParser,
+                new ByteArrayInputStream(input.getBytes()));
 
         // when
-        doThrow( new ExitException( 99 ) ).when( cmdExecuter ).execute( any( ParsedStatement.class ) );
+        doThrow(new ExitException(99)).when(cmdExecuter).execute(any(ParsedStatement.class));
 
         int code = runner.runUntilEnd();
 
         // then
-        assertEquals( 99, code );
-        verify( cmdExecuter ).execute( new CypherStatement( "good1;", true, 0, 5 ) );
-        verifyNoMoreInteractions( cmdExecuter );
+        assertEquals(99, code);
+        verify(cmdExecuter).execute(new CypherStatement("good1;", true, 0, 5));
+        verifyNoMoreInteractions(cmdExecuter);
     }
 
     @Test
-    void nonInteractiveHasNoHistory()
-    {
+    void nonInteractiveHasNoHistory() {
         // given
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
-                FailBehavior.FAIL_AT_END, cmdExecuter,
-                printer, statementParser,
-                new ByteArrayInputStream( "".getBytes() ) );
+                FailBehavior.FAIL_AT_END,
+                cmdExecuter,
+                printer,
+                statementParser,
+                new ByteArrayInputStream("".getBytes()));
 
         // when then
-        assertEquals( Historian.empty, runner.getHistorian() );
+        assertEquals(Historian.empty, runner.getHistorian());
     }
 
     @Test
-    void shouldTryToExecuteIncompleteStatements() throws CommandException
-    {
+    void shouldTryToExecuteIncompleteStatements() throws CommandException {
         String input = "good1;\nno semicolon here\n// A comment at end";
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_FAST,
                 cmdExecuter,
-                printer, statementParser,
-                new ByteArrayInputStream( input.getBytes() ) );
+                printer,
+                statementParser,
+                new ByteArrayInputStream(input.getBytes()));
         int code = runner.runUntilEnd();
 
-        assertEquals( 0, code, "Exit code incorrect" );
-        verify( printer, times( 0 ) ).printError( anyString() );
-        verify( cmdExecuter ).execute( new CypherStatement( "good1;", true, 0, 5 ) );
-        verify( cmdExecuter ).execute( new CypherStatement( "no semicolon here\n// A comment at end", false, 7, 43 ) );
-        verifyNoMoreInteractions( cmdExecuter );
+        assertEquals(0, code, "Exit code incorrect");
+        verify(printer, times(0)).printError(anyString());
+        verify(cmdExecuter).execute(new CypherStatement("good1;", true, 0, 5));
+        verify(cmdExecuter).execute(new CypherStatement("no semicolon here\n// A comment at end", false, 7, 43));
+        verifyNoMoreInteractions(cmdExecuter);
     }
 }

@@ -72,8 +72,7 @@ trait Attribute[KEY, VALUE] {
 
     private def fetchNext(): Unit = {
       nextTup = null
-      while (nextTup == null &&
-        {currentId = currentId + 1; currentId} < array.size) {
+      while (nextTup == null && { currentId = currentId + 1; currentId } < array.size) {
         val c = array(currentId)
         if (c.hasValue) {
           nextTup = (Id(currentId), c.value)
@@ -107,8 +106,8 @@ trait Attribute[KEY, VALUE] {
 
   def apply(id: Id): VALUE = get(id)
 
-  def copy(from:Id, to:Id): Unit = {
-    if(isDefinedAt(from))
+  def copy(from: Id, to: Id): Unit = {
+    if (isDefinedAt(from))
       set(to, get(from))
   }
 
@@ -140,12 +139,13 @@ trait Attribute[KEY, VALUE] {
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case that:Attribute[KEY, VALUE] =>
+      case that: Attribute[KEY, VALUE] =>
         if (this eq that) return true
         this.array.equals(that.array)
       case _ => false
     }
-  }}
+  }
+}
 
 /**
  * Mixin trait to override behavior of `get`. Does not alter behavior of other methods.
@@ -161,7 +161,8 @@ trait Default[KEY <: Identifiable, VALUE] extends Attribute[KEY, VALUE] {
  * Use this to signal that an Attribute is not required to be set for all KEYs
  * @param defaultValue the default value if the Attribute is not set.
  */
-abstract class PartialAttribute[KEY <: Identifiable, VALUE](override val defaultValue: VALUE) extends Default[KEY, VALUE]
+abstract class PartialAttribute[KEY <: Identifiable, VALUE](override val defaultValue: VALUE)
+    extends Default[KEY, VALUE]
 
 /**
  * This class encapsulates attributes and allows to copy them from one ID to another without having explicit
@@ -171,7 +172,9 @@ abstract class PartialAttribute[KEY <: Identifiable, VALUE](override val default
  * @param attributes the attributes encapsulated
  */
 case class Attributes[KEY <: Identifiable](idGen: IdGen, private val attributes: Attribute[KEY, _]*) {
+
   def copy(from: Id): IdGen = new IdGen {
+
     override def id(): Id = {
       val to = idGen.id()
       for (a <- attributes) {
@@ -181,7 +184,7 @@ case class Attributes[KEY <: Identifiable](idGen: IdGen, private val attributes:
     }
   }
 
-  def withAlso(attributes: Attribute[KEY, _]*) : Attributes[KEY] = {
+  def withAlso(attributes: Attribute[KEY, _]*): Attributes[KEY] = {
     Attributes(this.idGen, this.attributes ++ attributes: _*)
   }
 }

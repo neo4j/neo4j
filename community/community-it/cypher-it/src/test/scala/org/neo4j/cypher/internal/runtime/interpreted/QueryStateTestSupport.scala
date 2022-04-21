@@ -31,10 +31,15 @@ trait QueryStateTestSupport {
   def withQueryState[T](f: QueryState => T) = {
     val tx = graph.beginTransaction(Type.EXPLICIT, AUTH_DISABLED)
     try {
-      QueryStateHelper.withQueryState(graph, tx, Array.empty, queryState => {
-        queryState.setExecutionContextFactory(CommunityCypherRowFactory())
-        f(queryState)
-      })
+      QueryStateHelper.withQueryState(
+        graph,
+        tx,
+        Array.empty,
+        queryState => {
+          queryState.setExecutionContextFactory(CommunityCypherRowFactory())
+          f(queryState)
+        }
+      )
     } finally {
       tx.close()
     }
@@ -43,12 +48,16 @@ trait QueryStateTestSupport {
   def withCountsQueryState[T](f: QueryState => T) = {
     val tx = graph.beginTransaction(Type.EXPLICIT, AUTH_DISABLED)
     try {
-      QueryStateHelper.withQueryState(graph, tx, Array.empty, queryState =>
-        {
+      QueryStateHelper.withQueryState(
+        graph,
+        tx,
+        Array.empty,
+        queryState => {
           val state = QueryStateHelper.countStats(queryState)
           state.setExecutionContextFactory(CommunityCypherRowFactory())
           f(state)
-        })
+        }
+      )
     } finally {
       tx.close()
     }

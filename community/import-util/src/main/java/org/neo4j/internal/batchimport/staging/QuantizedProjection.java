@@ -25,16 +25,14 @@ import static java.lang.Math.round;
  * Takes a value range and projects it to a very discrete number of integer values, quantizing based
  * on float precision.
  */
-public class QuantizedProjection
-{
+public class QuantizedProjection {
     private final long max;
     private final long projectedMax;
 
     private double absoluteWay;
     private long step;
 
-    public QuantizedProjection( long max, long projectedMax )
-    {
+    public QuantizedProjection(long max, long projectedMax) {
         this.max = max;
         this.projectedMax = projectedMax;
     }
@@ -44,24 +42,21 @@ public class QuantizedProjection
      * @return {@code true} if the total so far including {@code step} is equal to or less than the max allowed,
      * otherwise {@code false} -- meaning that we stepped beyond max.
      */
-    public boolean next( long step )
-    {
-        double absoluteStep = (double)step / (double)max;
-        if ( absoluteWay + absoluteStep > 1f )
-        {
+    public boolean next(long step) {
+        double absoluteStep = (double) step / (double) max;
+        if (absoluteWay + absoluteStep > 1f) {
             return false;
         }
 
-        long prevProjection = round( absoluteWay * projectedMax );
+        long prevProjection = round(absoluteWay * projectedMax);
         absoluteWay += absoluteStep;
-        long projection = round( absoluteWay * projectedMax );
+        long projection = round(absoluteWay * projectedMax);
         this.step = projection - prevProjection;
 
         return true;
     }
 
-    public long step()
-    {
+    public long step() {
         return step;
     }
 }

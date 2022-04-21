@@ -19,84 +19,67 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
-
-import java.util.Set;
-
-import org.neo4j.lock.LockType;
-
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
-class ExclusiveLock implements ForsetiLockManager.Lock
-{
+import java.util.Set;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.neo4j.lock.LockType;
+
+class ExclusiveLock implements ForsetiLockManager.Lock {
     private final ForsetiClient owner;
     private volatile boolean closed;
 
-    ExclusiveLock( ForsetiClient owner )
-    {
+    ExclusiveLock(ForsetiClient owner) {
         this.owner = owner;
     }
 
     @Override
-    public void copyHolderWaitListsInto( Set<ForsetiClient> waitList )
-    {
-        owner.copyWaitListTo( waitList );
+    public void copyHolderWaitListsInto(Set<ForsetiClient> waitList) {
+        owner.copyWaitListTo(waitList);
     }
 
     @Override
-    public ForsetiClient detectDeadlock( ForsetiClient client )
-    {
-        return !this.closed && owner.isWaitingFor( client ) ? owner : null;
+    public ForsetiClient detectDeadlock(ForsetiClient client) {
+        return !this.closed && owner.isWaitingFor(client) ? owner : null;
     }
 
     @Override
-    public String describeWaitList()
-    {
+    public String describeWaitList() {
         return "ExclusiveLock[" + owner.describeWaitList() + "]";
     }
 
     @Override
-    public void collectOwners( Set<ForsetiClient> owners )
-    {
-        owners.add( owner );
+    public void collectOwners(Set<ForsetiClient> owners) {
+        owners.add(owner);
     }
 
     @Override
-    public boolean isOwnedBy( ForsetiClient client )
-    {
-        return owner.equals( client );
+    public boolean isOwnedBy(ForsetiClient client) {
+        return owner.equals(client);
     }
 
     @Override
-    public LockType type()
-    {
+    public LockType type() {
         return EXCLUSIVE;
     }
 
     @Override
-    public LongSet transactionIds()
-    {
-        return LongSets.immutable.of( owner.transactionId() );
+    public LongSet transactionIds() {
+        return LongSets.immutable.of(owner.transactionId());
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return closed;
     }
 
     @Override
-    public String toString()
-    {
-        return "ExclusiveLock{" +
-               "owner=" + owner +
-               '}';
+    public String toString() {
+        return "ExclusiveLock{" + "owner=" + owner + '}';
     }
 
-    void close()
-    {
+    void close() {
         closed = true;
     }
-
 }

@@ -20,13 +20,10 @@
 package org.neo4j.configuration;
 
 import java.util.function.BiConsumer;
-
 import org.neo4j.graphdb.config.Setting;
 
 /**
  * A listener for value updates of a specific {@link Setting} in a specific {@link Config}
  * @param <V> The type of the value of the Setting
  */
-public interface SettingChangeListener<V> extends BiConsumer<V, V>
-{
-}
+public interface SettingChangeListener<V> extends BiConsumer<V, V> {}

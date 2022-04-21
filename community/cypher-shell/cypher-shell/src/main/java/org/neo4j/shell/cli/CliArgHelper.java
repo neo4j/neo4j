@@ -19,6 +19,19 @@
  */
 package org.neo4j.shell.cli;
 
+import static java.lang.String.format;
+import static java.util.Arrays.stream;
+import static org.neo4j.shell.cli.CliArgs.DEFAULT_SCHEME;
+import static org.neo4j.shell.cli.FailBehavior.FAIL_AT_END;
+import static org.neo4j.shell.cli.FailBehavior.FAIL_FAST;
+
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Stream;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.impl.action.StoreConstArgumentAction;
@@ -32,55 +45,33 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.ArgumentType;
 import net.sourceforge.argparse4j.inf.MutuallyExclusiveGroup;
 import net.sourceforge.argparse4j.inf.Namespace;
-
-import java.io.PrintWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Stream;
-
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
-import static java.lang.String.format;
-import static java.util.Arrays.stream;
-import static org.neo4j.shell.cli.CliArgs.DEFAULT_SCHEME;
-import static org.neo4j.shell.cli.FailBehavior.FAIL_AT_END;
-import static org.neo4j.shell.cli.FailBehavior.FAIL_FAST;
-
 /**
  * Command line argument parsing and related stuff
  */
-public class CliArgHelper
-{
+public class CliArgHelper {
     private static final Logger log = Logger.create();
 
     /**
      * @param args to parse
      * @return null in case of error, commandline arguments otherwise
      */
-    public static CliArgs parse( String... args )
-    {
-        try
-        {
-            return parseAndThrow( args );
-        }
-        catch ( ArgumentParserException e )
-        {
-            e.getParser().handleError( e );
+    public static CliArgs parse(String... args) {
+        try {
+            return parseAndThrow(args);
+        } catch (ArgumentParserException e) {
+            e.getParser().handleError(e);
             return null;
         }
     }
 
-    private static void preValidateArguments( ArgumentParser parser, String... args ) throws ArgumentParserException
-    {
-        if ( Arrays.asList( args ).contains( "-file" ) )
-        {
-            throw new ArgumentParserException( "Unrecognized argument '-file', did you mean --file?", parser );
+    private static void preValidateArguments(ArgumentParser parser, String... args) throws ArgumentParserException {
+        if (Arrays.asList(args).contains("-file")) {
+            throw new ArgumentParserException("Unrecognized argument '-file', did you mean --file?", parser);
         }
     }
 
@@ -89,274 +80,258 @@ public class CliArgHelper
      * @return commandline arguments
      * @throws ArgumentParserException if an argument can't be parsed.
      */
-    public static CliArgs parseAndThrow( String... args ) throws ArgumentParserException
-    {
+    public static CliArgs parseAndThrow(String... args) throws ArgumentParserException {
         final CliArgs cliArgs = new CliArgs();
         final ArgumentParser parser = setupParser();
-        preValidateArguments( parser, args );
-        final Namespace ns = parser.parseArgs( args );
-        return getCliArgs( cliArgs, parser, ns );
+        preValidateArguments(parser, args);
+        final Namespace ns = parser.parseArgs(args);
+        return getCliArgs(cliArgs, parser, ns);
     }
 
-    private static CliArgs getCliArgs( CliArgs cliArgs, ArgumentParser parser, Namespace ns )
-    {
+    private static CliArgs getCliArgs(CliArgs cliArgs, ArgumentParser parser, Namespace ns) {
         // Parse address string, returns null on error
-        final URI uri = parseURI( parser, ns.getString( "address" ) );
+        final URI uri = parseURI(parser, ns.getString("address"));
 
-        if ( uri == null )
-        {
+        if (uri == null) {
             return null;
         }
 
-        //---------------------
+        // ---------------------
         // Connection arguments
-        cliArgs.setScheme( uri.getScheme(), "bolt" );
-        cliArgs.setHost( uri.getHost(), "localhost" );
+        cliArgs.setScheme(uri.getScheme(), "bolt");
+        cliArgs.setHost(uri.getHost(), "localhost");
 
         int port = uri.getPort();
-        cliArgs.setPort( port == -1 ? 7687 : port );
+        cliArgs.setPort(port == -1 ? 7687 : port);
         // Also parse username and password from address if available
-        parseUserInfo( uri, cliArgs );
+        parseUserInfo(uri, cliArgs);
 
         // Only overwrite user/pass from address string if the arguments were specified
-        String user = ns.getString( "username" );
-        if ( !user.isEmpty() )
-        {
-            cliArgs.setUsername( user, cliArgs.getUsername() );
+        String user = ns.getString("username");
+        if (!user.isEmpty()) {
+            cliArgs.setUsername(user, cliArgs.getUsername());
         }
 
-        String impersonatedUser = ns.getString( "impersonate" );
-        if ( impersonatedUser != null )
-        {
-            cliArgs.setImpersonatedUser( impersonatedUser );
+        String impersonatedUser = ns.getString("impersonate");
+        if (impersonatedUser != null) {
+            cliArgs.setImpersonatedUser(impersonatedUser);
         }
 
-        String pass = ns.getString( "password" );
-        if ( !pass.isEmpty() )
-        {
-            cliArgs.setPassword( pass, cliArgs.getPassword() );
+        String pass = ns.getString("password");
+        if (!pass.isEmpty()) {
+            cliArgs.setPassword(pass, cliArgs.getPassword());
         }
-        cliArgs.setEncryption( Encryption.parse( ns.get( "encryption" ) ) );
-        cliArgs.setDatabase( ns.getString( "database" ) );
-        cliArgs.setInputFilename( ns.getString( "file" ) );
+        cliArgs.setEncryption(Encryption.parse(ns.get("encryption")));
+        cliArgs.setDatabase(ns.getString("database"));
+        cliArgs.setInputFilename(ns.getString("file"));
 
-        //----------------
+        // ----------------
         // Other arguments
         // cypher string might not be given, represented by null
-        cliArgs.setCypher( ns.getString( "cypher" ) );
+        cliArgs.setCypher(ns.getString("cypher"));
         // Fail behavior as sensible default and returns a proper type
-        cliArgs.setFailBehavior( ns.get( "fail-behavior" ) );
+        cliArgs.setFailBehavior(ns.get("fail-behavior"));
 
-        //Set Output format
-        cliArgs.setFormat( Format.parse( ns.get( "format" ) ) );
+        // Set Output format
+        cliArgs.setFormat(Format.parse(ns.get("format")));
 
-        cliArgs.setParameters( ns.getList( "param" ) );
+        cliArgs.setParameters(ns.getList("param"));
 
-        cliArgs.setNonInteractive( ns.getBoolean( "force-non-interactive" ) );
+        cliArgs.setNonInteractive(ns.getBoolean("force-non-interactive"));
 
-        cliArgs.setWrap( ns.getBoolean( "wrap" ) );
+        cliArgs.setWrap(ns.getBoolean("wrap"));
 
-        cliArgs.setNumSampleRows( ns.getInt( "sample-rows" ) );
+        cliArgs.setNumSampleRows(ns.getInt("sample-rows"));
 
-        cliArgs.setVersion( ns.getBoolean( "version" ) );
+        cliArgs.setVersion(ns.getBoolean("version"));
 
-        cliArgs.setDriverVersion( ns.getBoolean( "driver-version" ) );
+        cliArgs.setDriverVersion(ns.getBoolean("driver-version"));
 
-        cliArgs.setChangePassword( ns.getBoolean( "change-password" ) );
+        cliArgs.setChangePassword(ns.getBoolean("change-password"));
 
-        cliArgs.setLogLevel( ns.get( "log-level" ) );
+        cliArgs.setLogLevel(ns.get("log-level"));
 
         return cliArgs;
     }
 
-    private static void parseUserInfo( URI uri, CliArgs cliArgs )
-    {
+    private static void parseUserInfo(URI uri, CliArgs cliArgs) {
         String userInfo = uri.getUserInfo();
         String user = null;
         String password = null;
-        if ( userInfo != null )
-        {
-            String[] split = userInfo.split( ":" );
-            if ( split.length == 0 )
-            {
+        if (userInfo != null) {
+            String[] split = userInfo.split(":");
+            if (split.length == 0) {
                 user = userInfo;
-            }
-            else if ( split.length == 2 )
-            {
+            } else if (split.length == 2) {
                 user = split[0];
                 password = split[1];
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Cannot parse user and password from " + userInfo );
+            } else {
+                throw new IllegalArgumentException("Cannot parse user and password from " + userInfo);
             }
         }
-        cliArgs.setUsername( user, "" );
-        cliArgs.setPassword( password, "" );
+        cliArgs.setUsername(user, "");
+        cliArgs.setPassword(password, "");
     }
 
-    static URI parseURI( ArgumentParser parser, String address )
-    {
-        try
-        {
-            String[] schemeSplit = address.split( "://" );
-            if ( schemeSplit.length == 1 )
-            {
+    static URI parseURI(ArgumentParser parser, String address) {
+        try {
+            String[] schemeSplit = address.split("://");
+            if (schemeSplit.length == 1) {
                 // URI can't parse addresses without scheme, prepend fake "bolt://" to reuse the parsing facility
                 address = DEFAULT_SCHEME + "://" + address;
             }
-            return new URI( address );
-        }
-        catch ( URISyntaxException e )
-        {
-            log.error( e );
-            PrintWriter printWriter = new PrintWriter( System.err );
-            parser.printUsage( printWriter );
-            printWriter.println( "cypher-shell: error: Failed to parse address: '" + address + "'" );
-            printWriter.println( "\n  Address should be of the form: [scheme://][username:password@][host][:port]" );
+            return new URI(address);
+        } catch (URISyntaxException e) {
+            log.error(e);
+            PrintWriter printWriter = new PrintWriter(System.err);
+            parser.printUsage(printWriter);
+            printWriter.println("cypher-shell: error: Failed to parse address: '" + address + "'");
+            printWriter.println("\n  Address should be of the form: [scheme://][username:password@][host][:port]");
             printWriter.flush();
             return null;
         }
     }
 
-    private static ArgumentParser setupParser()
-    {
-        ArgumentParser parser = ArgumentParsers.newFor( "cypher-shell" ).build()
-                .defaultHelp( true )
-                .description( format(
-                        "A command line shell where you can execute Cypher against an instance of Neo4j. " +
-                        "By default the shell is interactive but you can use it for scripting by passing cypher " +
-                        "directly on the command line or by piping a file with cypher statements (requires Powershell on Windows)." +
-                        "%n%n" +
-                        "example of piping a file:%n" +
-                        "  cat some-cypher.txt | cypher-shell" ) );
+    private static ArgumentParser setupParser() {
+        ArgumentParser parser = ArgumentParsers.newFor("cypher-shell")
+                .build()
+                .defaultHelp(true)
+                .description(format("A command line shell where you can execute Cypher against an instance of Neo4j. "
+                        + "By default the shell is interactive but you can use it for scripting by passing cypher "
+                        + "directly on the command line or by piping a file with cypher statements (requires Powershell on Windows)."
+                        + "%n%n"
+                        + "example of piping a file:%n"
+                        + "  cat some-cypher.txt | cypher-shell"));
 
-        ArgumentGroup connGroup = parser.addArgumentGroup( "connection arguments" );
-        connGroup.addArgument( "-a", "--address" )
-                 .help( "address and port to connect to" )
-                 .setDefault( String.format( "%s://%s:%d", CliArgs.DEFAULT_SCHEME, CliArgs.DEFAULT_HOST, CliArgs.DEFAULT_PORT ) );
-        connGroup.addArgument( "-u", "--username" )
-                 .setDefault( "" )
-                 .help( "username to connect as. Can also be specified using environment variable " + ConnectionConfig.USERNAME_ENV_VAR );
-        connGroup.addArgument( "--impersonate" )
-                 .help( "user to impersonate." );
-        connGroup.addArgument( "-p", "--password" )
-                 .setDefault( "" )
-                 .help( "password to connect with. Can also be specified using environment variable " + ConnectionConfig.PASSWORD_ENV_VAR );
-        connGroup.addArgument( "--encryption" )
-                 .help( "whether the connection to Neo4j should be encrypted. This must be consistent with Neo4j's " +
-                        "configuration. If choosing '" + Encryption.DEFAULT.name().toLowerCase() +
-                        "' the encryption setting is deduced from the specified address. " +
-                        "For example the 'neo4j+ssc' protocol would use encryption." )
-                 .choices( new CollectionArgumentChoice<>(
-                         Encryption.TRUE.name().toLowerCase(),
-                         Encryption.FALSE.name().toLowerCase(),
-                         Encryption.DEFAULT.name().toLowerCase() ) )
-                 .setDefault( Encryption.DEFAULT.name().toLowerCase() );
-        connGroup.addArgument( "-d", "--database" )
-                 .help( "database to connect to. Can also be specified using environment variable " + ConnectionConfig.DATABASE_ENV_VAR )
-                 .setDefault( "" );
+        ArgumentGroup connGroup = parser.addArgumentGroup("connection arguments");
+        connGroup
+                .addArgument("-a", "--address")
+                .help("address and port to connect to")
+                .setDefault(String.format(
+                        "%s://%s:%d", CliArgs.DEFAULT_SCHEME, CliArgs.DEFAULT_HOST, CliArgs.DEFAULT_PORT));
+        connGroup
+                .addArgument("-u", "--username")
+                .setDefault("")
+                .help("username to connect as. Can also be specified using environment variable "
+                        + ConnectionConfig.USERNAME_ENV_VAR);
+        connGroup.addArgument("--impersonate").help("user to impersonate.");
+        connGroup
+                .addArgument("-p", "--password")
+                .setDefault("")
+                .help("password to connect with. Can also be specified using environment variable "
+                        + ConnectionConfig.PASSWORD_ENV_VAR);
+        connGroup
+                .addArgument("--encryption")
+                .help("whether the connection to Neo4j should be encrypted. This must be consistent with Neo4j's "
+                        + "configuration. If choosing '"
+                        + Encryption.DEFAULT.name().toLowerCase()
+                        + "' the encryption setting is deduced from the specified address. "
+                        + "For example the 'neo4j+ssc' protocol would use encryption.")
+                .choices(new CollectionArgumentChoice<>(
+                        Encryption.TRUE.name().toLowerCase(),
+                        Encryption.FALSE.name().toLowerCase(),
+                        Encryption.DEFAULT.name().toLowerCase()))
+                .setDefault(Encryption.DEFAULT.name().toLowerCase());
+        connGroup
+                .addArgument("-d", "--database")
+                .help("database to connect to. Can also be specified using environment variable "
+                        + ConnectionConfig.DATABASE_ENV_VAR)
+                .setDefault("");
 
         MutuallyExclusiveGroup failGroup = parser.addMutuallyExclusiveGroup();
-        failGroup.addArgument( "--fail-fast" )
-                 .help( "exit and report failure on first error when reading from file (this is the default behavior)" )
-                 .dest( "fail-behavior" )
-                 .setConst( FAIL_FAST )
-                 .action( new StoreConstArgumentAction() );
-        failGroup.addArgument( "--fail-at-end" )
-                 .help( "exit and report failures at end of input when reading from file" )
-                 .dest( "fail-behavior" )
-                 .setConst( FAIL_AT_END )
-                 .action( new StoreConstArgumentAction() );
-        parser.setDefault( "fail-behavior", FAIL_FAST );
+        failGroup
+                .addArgument("--fail-fast")
+                .help("exit and report failure on first error when reading from file (this is the default behavior)")
+                .dest("fail-behavior")
+                .setConst(FAIL_FAST)
+                .action(new StoreConstArgumentAction());
+        failGroup
+                .addArgument("--fail-at-end")
+                .help("exit and report failures at end of input when reading from file")
+                .dest("fail-behavior")
+                .setConst(FAIL_AT_END)
+                .action(new StoreConstArgumentAction());
+        parser.setDefault("fail-behavior", FAIL_FAST);
 
-        parser.addArgument( "--format" )
-              .help( "desired output format, verbose displays results in tabular format and prints statistics, " +
-                     "plain displays data with minimal formatting" )
-              .choices( new CollectionArgumentChoice<>(
-                      Format.AUTO.name().toLowerCase(),
-                      Format.VERBOSE.name().toLowerCase(),
-                      Format.PLAIN.name().toLowerCase() ) )
-              .setDefault( Format.AUTO.name().toLowerCase() );
+        parser.addArgument("--format")
+                .help("desired output format, verbose displays results in tabular format and prints statistics, "
+                        + "plain displays data with minimal formatting")
+                .choices(new CollectionArgumentChoice<>(
+                        Format.AUTO.name().toLowerCase(),
+                        Format.VERBOSE.name().toLowerCase(),
+                        Format.PLAIN.name().toLowerCase()))
+                .setDefault(Format.AUTO.name().toLowerCase());
 
-        parser.addArgument( "-P", "--param" )
-              .help( "Add a parameter to this session. Example: `-P \"number => 3\"` or `-P \"country => 'Spain'\"`. " +
-                      "This argument can be specified multiple times." )
-              .action( new AddParamArgumentAction( ParameterService.createParser() ) )
-              .setDefault( new ArrayList<RawParameter>() );
+        parser.addArgument("-P", "--param")
+                .help("Add a parameter to this session. Example: `-P \"number => 3\"` or `-P \"country => 'Spain'\"`. "
+                        + "This argument can be specified multiple times.")
+                .action(new AddParamArgumentAction(ParameterService.createParser()))
+                .setDefault(new ArrayList<RawParameter>());
 
-        parser.addArgument( "--non-interactive" )
-              .help( "force non-interactive mode, only useful if auto-detection fails (like on Windows)" )
-              .dest( "force-non-interactive" )
-              .action( new StoreTrueArgumentAction() );
+        parser.addArgument("--non-interactive")
+                .help("force non-interactive mode, only useful if auto-detection fails (like on Windows)")
+                .dest("force-non-interactive")
+                .action(new StoreTrueArgumentAction());
 
-        parser.addArgument( "--sample-rows" )
-              .help( "number of rows sampled to compute table widths (only for format=VERBOSE)" )
-              .type( new PositiveIntegerType() )
-              .dest( "sample-rows" )
-              .setDefault( CliArgs.DEFAULT_NUM_SAMPLE_ROWS );
+        parser.addArgument("--sample-rows")
+                .help("number of rows sampled to compute table widths (only for format=VERBOSE)")
+                .type(new PositiveIntegerType())
+                .dest("sample-rows")
+                .setDefault(CliArgs.DEFAULT_NUM_SAMPLE_ROWS);
 
-        parser.addArgument( "--wrap" )
-              .help( "wrap table column values if column is too narrow (only for format=VERBOSE)" )
-              .type( new BooleanArgumentType() )
-              .setDefault( true );
+        parser.addArgument("--wrap")
+                .help("wrap table column values if column is too narrow (only for format=VERBOSE)")
+                .type(new BooleanArgumentType())
+                .setDefault(true);
 
-        parser.addArgument( "-v", "--version" )
-              .help( "print version of cypher-shell and exit" )
-              .action( new StoreTrueArgumentAction() );
+        parser.addArgument("-v", "--version")
+                .help("print version of cypher-shell and exit")
+                .action(new StoreTrueArgumentAction());
 
-        parser.addArgument( "--driver-version" )
-              .help( "print version of the Neo4j Driver used and exit" )
-              .dest( "driver-version" )
-              .action( new StoreTrueArgumentAction() );
+        parser.addArgument("--driver-version")
+                .help("print version of the Neo4j Driver used and exit")
+                .dest("driver-version")
+                .action(new StoreTrueArgumentAction());
 
-        parser.addArgument( "cypher" )
-              .nargs( "?" )
-              .help( "an optional string of cypher to execute and then exit" );
-        parser.addArgument( "-f", "--file" )
-              .help( "Pass a file with cypher statements to be executed. After the statements have been executed cypher-shell will be shutdown" );
+        parser.addArgument("cypher").nargs("?").help("an optional string of cypher to execute and then exit");
+        parser.addArgument("-f", "--file")
+                .help(
+                        "Pass a file with cypher statements to be executed. After the statements have been executed cypher-shell will be shutdown");
 
-        parser.addArgument( "--change-password" )
-              .action( Arguments.storeTrue() )
-              .dest( "change-password" )
-              .help( "change neo4j user password and exit" );
+        parser.addArgument("--change-password")
+                .action(Arguments.storeTrue())
+                .dest("change-password")
+                .help("change neo4j user password and exit");
 
-        parser.addArgument( "--log" )
-              .choices( new CollectionArgumentChoice<>( logChoices() ) )
-              .nargs( "?" )
-              .action( new LogLevelArgumentAction() )
-              .dest( "log-level" )
-              .help( "Enable logging to standard error output stream.\n" + LogLevelArgumentAction.usage() )
-              .setDefault( Logger.Level.OFF )
-              .setConst( Logger.Level.defaultActiveLevel() );
+        parser.addArgument("--log")
+                .choices(new CollectionArgumentChoice<>(logChoices()))
+                .nargs("?")
+                .action(new LogLevelArgumentAction())
+                .dest("log-level")
+                .help("Enable logging to standard error output stream.\n" + LogLevelArgumentAction.usage())
+                .setDefault(Logger.Level.OFF)
+                .setConst(Logger.Level.defaultActiveLevel());
 
         return parser;
     }
 
-    private static Collection<String> logChoices()
-    {
-        final var levels = stream( Logger.Level.values() ).map( l -> l.name().toLowerCase() );
-        return Stream.concat( Stream.of( "" ), levels ).toList();
+    private static Collection<String> logChoices() {
+        final var levels = stream(Logger.Level.values()).map(l -> l.name().toLowerCase());
+        return Stream.concat(Stream.of(""), levels).toList();
     }
 
-    private static class PositiveIntegerType implements ArgumentType<Integer>
-    {
+    private static class PositiveIntegerType implements ArgumentType<Integer> {
         @Override
-        public Integer convert( ArgumentParser parser, Argument arg, String value ) throws ArgumentParserException
-        {
-            try
-            {
-                int result = Integer.parseInt( value );
-                if ( result < 1 )
-                {
-                    throw new NumberFormatException( value );
+        public Integer convert(ArgumentParser parser, Argument arg, String value) throws ArgumentParserException {
+            try {
+                int result = Integer.parseInt(value);
+                if (result < 1) {
+                    throw new NumberFormatException(value);
                 }
                 return result;
-            }
-            catch ( NumberFormatException nfe )
-            {
-                log.error( nfe );
-                throw new ArgumentParserException( "Invalid value: " + value, parser );
+            } catch (NumberFormatException nfe) {
+                log.error(nfe);
+                throw new ArgumentParserException("Invalid value: " + value, parser);
             }
         }
     }

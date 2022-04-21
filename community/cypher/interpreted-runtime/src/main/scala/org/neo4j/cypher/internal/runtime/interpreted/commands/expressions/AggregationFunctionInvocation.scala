@@ -30,7 +30,7 @@ import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 
 abstract class AggregationFunctionInvocation(arguments: IndexedSeq[Expression])
-  extends AggregationExpression {
+    extends AggregationExpression {
 
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
     memoryTracker.allocateHeap(AggregationFunctionInvocation.SHALLOW_SIZE)
@@ -73,18 +73,24 @@ object AggregationFunctionInvocation {
   // This should give a low-end approximate.
   final val SHALLOW_SIZE: Long =
     shallowSizeOfInstanceWithObjectReferences(2) + // AggregationFunction: 1 ref + 1 $outer
-    shallowSizeOfInstanceWithObjectReferences(1) + // UserDefinedAggregator: 1 ref
-    shallowSizeOfInstanceWithObjectReferences(3)   // UserAggregator: 2 refs + 1 this$0 (one is a new SecurityContext, but not counted)
+      shallowSizeOfInstanceWithObjectReferences(1) + // UserDefinedAggregator: 1 ref
+      shallowSizeOfInstanceWithObjectReferences(
+        3
+      ) // UserAggregator: 2 refs + 1 this$0 (one is a new SecurityContext, but not counted)
 }
 
-case class UserAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression]) extends AggregationFunctionInvocation(arguments) {
+case class UserAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression])
+    extends AggregationFunctionInvocation(arguments) {
+
   override def rewrite(f: Expression => Expression): Expression =
     f(UserAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f))))
 
   override protected def call(state: QueryState): UserDefinedAggregator = state.query.aggregateFunction(fcnId)
 }
 
-case class BuiltInAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression]) extends AggregationFunctionInvocation(arguments) {
+case class BuiltInAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression])
+    extends AggregationFunctionInvocation(arguments) {
+
   override def rewrite(f: Expression => Expression): Expression =
     f(BuiltInAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f))))
 

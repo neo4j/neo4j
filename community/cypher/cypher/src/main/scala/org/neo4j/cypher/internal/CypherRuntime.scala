@@ -83,17 +83,19 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
  * @param hasLoadCSV a flag showing if the query contains a load csv, used for tracking line numbers
  * @param doProfile `true` if a profiling query otherwise `false`
  */
-case class LogicalQuery(logicalPlan: LogicalPlan,
-                        queryText: String,
-                        readOnly: Boolean,
-                        resultColumns: Array[String],
-                        semanticTable: SemanticTable,
-                        effectiveCardinalities: EffectiveCardinalities,
-                        providedOrders: ProvidedOrders,
-                        leveragedOrders: LeveragedOrders,
-                        hasLoadCSV: Boolean,
-                        idGen: IdGen,
-                        doProfile: Boolean)
+case class LogicalQuery(
+  logicalPlan: LogicalPlan,
+  queryText: String,
+  readOnly: Boolean,
+  resultColumns: Array[String],
+  semanticTable: SemanticTable,
+  effectiveCardinalities: EffectiveCardinalities,
+  providedOrders: ProvidedOrders,
+  leveragedOrders: LeveragedOrders,
+  hasLoadCSV: Boolean,
+  idGen: IdGen,
+  doProfile: Boolean
+)
 
 /**
  * Context in which the Runtime performs physical planning
@@ -117,16 +119,17 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
   /**
    * Create a new runtime context.
    */
-  def create(tokenContext: ReadTokenContext,
-             schemaRead: SchemaRead,
-             clock: Clock,
-             debugOptions: CypherDebugOptions,
-             compileExpressions: Boolean,
-             materializedEntitiesMode: Boolean,
-             operatorEngine: CypherOperatorEngineOption,
-             interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
-             anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-            ): CONTEXT
+  def create(
+    tokenContext: ReadTokenContext,
+    schemaRead: SchemaRead,
+    clock: Clock,
+    debugOptions: CypherDebugOptions,
+    compileExpressions: Boolean,
+    materializedEntitiesMode: Boolean,
+    operatorEngine: CypherOperatorEngineOption,
+    interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): CONTEXT
 
   def config: CypherRuntimeConfiguration
 
@@ -171,8 +174,10 @@ case class UnknownRuntime(requestedRuntime: String) extends CypherRuntime[Runtim
  * @param runtimes the runtimes to attempt to compile with, in order of priority
  * @param requestedRuntime the requested runtime, used to provide error messages
  */
-class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CONTEXT]],
-                                                 requestedRuntime: CypherRuntimeOption) extends CypherRuntime[CONTEXT] {
+class FallbackRuntime[CONTEXT <: RuntimeContext](
+  runtimes: Seq[CypherRuntime[CONTEXT]],
+  requestedRuntime: CypherRuntimeOption
+) extends CypherRuntime[CONTEXT] {
 
   override def name: String = "fallback"
 
@@ -206,13 +211,16 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
         case e: Exception =>
           lastException = e
           // That is unexpected. Let's log, but continue trying other runtimes
-          context.log.debug(s"Runtime ${runtime.getClass.getSimpleName} failed to compile query ${logicalQuery.queryText}", e)
+          context.log.debug(
+            s"Runtime ${runtime.getClass.getSimpleName} failed to compile query ${logicalQuery.queryText}",
+            e
+          )
       }
       i += 1
     }
     // All runtimes failed
     lastException match {
-      case e:CantCompileQueryException =>
+      case e: CantCompileQueryException =>
         throw publicCannotCompile(e)
       case e =>
         throw e
@@ -222,6 +230,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
 }
 
 object CypherRuntimeConfiguration {
+
   def fromCypherConfiguration(config: CypherConfiguration): CypherRuntimeConfiguration = {
     CypherRuntimeConfiguration(
       pipelinedBatchSizeSmall = config.pipelinedBatchSizeSmall,
@@ -241,22 +250,28 @@ object CypherRuntimeConfiguration {
     fromCypherConfiguration(CypherConfiguration.fromConfig(Config.defaults()))
 }
 
-case class CypherRuntimeConfiguration(pipelinedBatchSizeSmall: Int,
-                                      pipelinedBatchSizeBig: Int,
-                                      operatorFusionOverPipelineLimit: Int,
-                                      schedulerTracing: SchedulerTracingConfiguration,
-                                      lenientCreateRelationship: Boolean,
-                                      memoryTrackingController: MemoryTrackingController,
-                                      enableMonitors: Boolean,
-                                      executionPlanCacheSize: Int,
-                                      renderPlanDescription: Boolean,
-                                      varExpandRelationshipIdSetThreshold: Int) {
+case class CypherRuntimeConfiguration(
+  pipelinedBatchSizeSmall: Int,
+  pipelinedBatchSizeBig: Int,
+  operatorFusionOverPipelineLimit: Int,
+  schedulerTracing: SchedulerTracingConfiguration,
+  lenientCreateRelationship: Boolean,
+  memoryTrackingController: MemoryTrackingController,
+  enableMonitors: Boolean,
+  executionPlanCacheSize: Int,
+  renderPlanDescription: Boolean,
+  varExpandRelationshipIdSetThreshold: Int
+) {
 
-  Preconditions.checkArgument(pipelinedBatchSizeSmall <= pipelinedBatchSizeBig, s"pipelinedBatchSizeSmall (got $pipelinedBatchSizeSmall) must be <= pipelinedBatchSizeBig (got $pipelinedBatchSizeBig)")
+  Preconditions.checkArgument(
+    pipelinedBatchSizeSmall <= pipelinedBatchSizeBig,
+    s"pipelinedBatchSizeSmall (got $pipelinedBatchSizeSmall) must be <= pipelinedBatchSizeBig (got $pipelinedBatchSizeBig)"
+  )
 
 }
 
 object SchedulerTracingConfiguration {
+
   def fromCypherConfiguration(config: CypherConfiguration): SchedulerTracingConfiguration =
     if (config.doSchedulerTracing)
       if (config.schedulerTracingFile.getName == "stdOut") StdOutSchedulerTracing
@@ -269,7 +284,8 @@ case object NoSchedulerTracing extends SchedulerTracingConfiguration
 case object StdOutSchedulerTracing extends SchedulerTracingConfiguration
 case class FileSchedulerTracing(file: File) extends SchedulerTracingConfiguration
 
-case class ExecutionPlanWithNotifications(inner: ExecutionPlan, extraNotifications: Set[InternalNotification]) extends DelegatingExecutionPlan(inner) {
+case class ExecutionPlanWithNotifications(inner: ExecutionPlan, extraNotifications: Set[InternalNotification])
+    extends DelegatingExecutionPlan(inner) {
 
   override def notifications: Set[InternalNotification] = inner.notifications ++ extraNotifications
 }

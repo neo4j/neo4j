@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.nio.file.Path;
+import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
+import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -38,42 +40,51 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
-import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-
-public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<FulltextIndexProvider>
-{
+public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<FulltextIndexProvider> {
     private static final String KEY = "fulltext";
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, "1.0" );
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor(KEY, "1.0");
 
     @Override
-    protected Class<?> loggingClass()
-    {
+    protected Class<?> loggingClass() {
         return FulltextIndexProvider.class;
     }
 
     @Override
-    public IndexProviderDescriptor descriptor()
-    {
+    public IndexProviderDescriptor descriptor() {
         return DESCRIPTOR;
     }
 
     @Override
-    protected FulltextIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
-                                                    Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
-                                                    RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
-                                                    InternalLog log, TokenHolders tokenHolders,
-                                                    JobScheduler scheduler, CursorContextFactory contextFactory )
-    {
-        boolean ephemeral = config.get( GraphDatabaseInternalSettings.ephemeral_lucene );
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral );
-        IndexDirectoryStructure.Factory directoryStructureFactory = subProviderDirectoryStructure( databaseLayout.databaseDirectory() );
-        return new FulltextIndexProvider( DESCRIPTOR, directoryStructureFactory, fs, config, tokenHolders,
-                                          directoryFactory, readOnlyDatabaseChecker, scheduler, log );
+    protected FulltextIndexProvider internalCreate(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            Monitors monitors,
+            String monitorTag,
+            Config config,
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseLayout databaseLayout,
+            InternalLog log,
+            TokenHolders tokenHolders,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory) {
+        boolean ephemeral = config.get(GraphDatabaseInternalSettings.ephemeral_lucene);
+        DirectoryFactory directoryFactory = directoryFactory(ephemeral);
+        IndexDirectoryStructure.Factory directoryStructureFactory =
+                subProviderDirectoryStructure(databaseLayout.databaseDirectory());
+        return new FulltextIndexProvider(
+                DESCRIPTOR,
+                directoryStructureFactory,
+                fs,
+                config,
+                tokenHolders,
+                directoryFactory,
+                readOnlyDatabaseChecker,
+                scheduler,
+                log);
     }
 
-    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( Path storeDir )
-    {
-        return directoriesByProvider( storeDir );
+    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure(Path storeDir) {
+        return directoriesByProvider(storeDir);
     }
 }

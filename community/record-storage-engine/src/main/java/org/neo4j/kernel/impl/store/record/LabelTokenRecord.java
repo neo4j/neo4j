@@ -21,36 +21,30 @@ package org.neo4j.kernel.impl.store.record;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class LabelTokenRecord extends TokenRecord
-{
-    public static final long SHALLOW_SIZE = shallowSizeOfInstance( LabelTokenRecord.class );
+public class LabelTokenRecord extends TokenRecord {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance(LabelTokenRecord.class);
 
-    public LabelTokenRecord( long id )
-    {
-        super( id );
+    public LabelTokenRecord(long id) {
+        super(id);
     }
 
-    public LabelTokenRecord( LabelTokenRecord other )
-    {
-        super( other );
+    public LabelTokenRecord(LabelTokenRecord other) {
+        super(other);
     }
 
     @Override
-    public LabelTokenRecord initialize( boolean inUse, int nameId )
-    {
-        super.initialize( inUse, nameId );
+    public LabelTokenRecord initialize(boolean inUse, int nameId) {
+        super.initialize(inUse, nameId);
         return this;
     }
 
     @Override
-    protected String simpleName()
-    {
+    protected String simpleName() {
         return "Label";
     }
 
     @Override
-    public LabelTokenRecord copy()
-    {
-        return new LabelTokenRecord( this );
+    public LabelTokenRecord copy() {
+        return new LabelTokenRecord(this);
     }
 }

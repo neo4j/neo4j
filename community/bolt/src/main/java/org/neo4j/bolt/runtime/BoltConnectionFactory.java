@@ -23,8 +23,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 
-public interface BoltConnectionFactory
-{
+public interface BoltConnectionFactory {
     /**
      * Create a new connection bound to the specified channel
      *
@@ -33,7 +32,6 @@ public interface BoltConnectionFactory
      * @param messageWriter holds the protocol specific message writer
      * @return the newly created connection instance
      */
-    BoltConnection newConnection( BoltChannel channel, BoltStateMachine boltStateMachine,
-            BoltResponseMessageWriter messageWriter );
-
+    BoltConnection newConnection(
+            BoltChannel channel, BoltStateMachine boltStateMachine, BoltResponseMessageWriter messageWriter);
 }

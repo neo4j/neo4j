@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
+import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
+
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -27,16 +32,9 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
-import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
-
-public final class Cursors
-{
-    private Cursors()
-    {
-        throw new UnsupportedOperationException( "Don't instantiate" );
+public final class Cursors {
+    private Cursors() {
+        throw new UnsupportedOperationException("Don't instantiate");
     }
 
     /**
@@ -47,137 +45,102 @@ public final class Cursors
      * property cursor could end up in an undefined state that lead to errors
      * in some cases.
      */
-    public static RelationshipTraversalCursor emptyTraversalCursor( org.neo4j.internal.kernel.api.Read read )
-    {
-        return new EmptyTraversalCursor( read );
+    public static RelationshipTraversalCursor emptyTraversalCursor(org.neo4j.internal.kernel.api.Read read) {
+        return new EmptyTraversalCursor(read);
     }
 
-    public static class EmptyTraversalCursor implements RelationshipTraversalCursor
-    {
+    public static class EmptyTraversalCursor implements RelationshipTraversalCursor {
         private final org.neo4j.internal.kernel.api.Read read;
 
-        private EmptyTraversalCursor( org.neo4j.internal.kernel.api.Read read )
-        {
+        private EmptyTraversalCursor(org.neo4j.internal.kernel.api.Read read) {
             this.read = read;
         }
 
         @Override
-        public void otherNode( NodeCursor cursor )
-        {
-            read.singleNode( NO_SUCH_NODE, cursor );
+        public void otherNode(NodeCursor cursor) {
+            read.singleNode(NO_SUCH_NODE, cursor);
         }
 
         @Override
-        public long otherNodeReference()
-        {
+        public long otherNodeReference() {
             return NO_SUCH_NODE;
         }
 
         @Override
-        public long originNodeReference()
-        {
+        public long originNodeReference() {
             return NO_SUCH_NODE;
         }
 
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return false;
         }
 
         @Override
-        public void setTracer( KernelReadTracer tracer )
-        {
-
-        }
+        public void setTracer(KernelReadTracer tracer) {}
 
         @Override
-        public void removeTracer()
-        {
-
-        }
+        public void removeTracer() {}
 
         @Override
-        public void close()
-        {
-
-        }
+        public void close() {}
 
         @Override
-        public void closeInternal()
-        {
-
-        }
+        public void closeInternal() {}
 
         @Override
-        public boolean isClosed()
-        {
+        public boolean isClosed() {
             return false;
         }
 
         @Override
-        public void setCloseListener( CloseListener closeListener )
-        {
-
-        }
+        public void setCloseListener(CloseListener closeListener) {}
 
         @Override
-        public void setToken( int token )
-        {
-
-        }
+        public void setToken(int token) {}
 
         @Override
-        public int getToken()
-        {
+        public int getToken() {
             return -1;
         }
 
         @Override
-        public long relationshipReference()
-        {
+        public long relationshipReference() {
             return NO_SUCH_RELATIONSHIP;
         }
 
         @Override
-        public int type()
-        {
+        public int type() {
             return NO_SUCH_RELATIONSHIP_TYPE;
         }
 
         @Override
-        public void source( NodeCursor cursor )
-        {
-            read.singleNode( NO_SUCH_NODE, cursor );
+        public void source(NodeCursor cursor) {
+            read.singleNode(NO_SUCH_NODE, cursor);
         }
 
         @Override
-        public void target( NodeCursor cursor )
-        {
-            read.singleNode( NO_SUCH_NODE, cursor );
+        public void target(NodeCursor cursor) {
+            read.singleNode(NO_SUCH_NODE, cursor);
         }
 
         @Override
-        public void properties( PropertyCursor cursor, PropertySelection selection )
-        {
-            ((DefaultPropertyCursor) cursor).initEmptyRelationship( null, () -> {} );
+        public void properties(PropertyCursor cursor, PropertySelection selection) {
+            ((DefaultPropertyCursor) cursor).initEmptyRelationship(null, () -> {});
         }
 
         @Override
-        public long sourceNodeReference()
-        {
+        public long sourceNodeReference() {
             return NO_SUCH_NODE;
         }
 
         @Override
-        public long targetNodeReference()
-        {
+        public long targetNodeReference() {
             return NO_SUCH_NODE;
         }
 
         @Override
-        public Reference propertiesReference()
-        {
+        public Reference propertiesReference() {
             return NULL_REFERENCE;
         }
     }

@@ -24,13 +24,11 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.utils.TemporalValueWriterAdapter;
 
-abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends TemporalValueWriterAdapter<RuntimeException>
-{
+abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends TemporalValueWriterAdapter<RuntimeException> {
     public static final int ENTITY_ID_SIZE = Long.BYTES;
     static final int NO_ENTITY_ID = -1;
 
-    enum Inclusion
-    {
+    enum Inclusion {
         LOW,
         NEUTRAL,
         HIGH
@@ -48,35 +46,30 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
      * <p>
      * Note that {@code compareId} is only an in memory state.
      */
-    void setCompareId( boolean compareId )
-    {
+    void setCompareId(boolean compareId) {
         this.compareId = compareId;
     }
 
-    boolean getCompareId()
-    {
+    boolean getCompareId() {
         return compareId;
     }
 
-    long getEntityId()
-    {
+    long getEntityId() {
         return entityId;
     }
 
-    void setEntityId( long entityId )
-    {
+    void setEntityId(long entityId) {
         this.entityId = entityId;
     }
 
-    final void initFromValue( int stateSlot, Value value, Inclusion inclusion )
-    {
-        assertValidValue( stateSlot, value );
-        writeValue( stateSlot, value, inclusion );
+    final void initFromValue(int stateSlot, Value value, Inclusion inclusion) {
+        assertValidValue(stateSlot, value);
+        writeValue(stateSlot, value, inclusion);
     }
 
-    abstract void writeValue( int stateSlot, Value value, Inclusion inclusion );
+    abstract void writeValue(int stateSlot, Value value, Inclusion inclusion);
 
-    abstract void assertValidValue( int stateSlot, Value value );
+    abstract void assertValidValue(int stateSlot, Value value);
 
     /**
      * Initializes this key with entity id and resets other flags to default values.
@@ -84,35 +77,30 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
      *
      * @param entityId entity id to set for this key.
      */
-    void initialize( long entityId )
-    {
+    void initialize(long entityId) {
         this.compareId = DEFAULT_COMPARE_ID;
-        setEntityId( entityId );
+        setEntityId(entityId);
     }
 
     abstract Value[] asValues();
 
-    abstract void initValueAsLowest( int stateSlot, ValueGroup valueGroup );
+    abstract void initValueAsLowest(int stateSlot, ValueGroup valueGroup);
 
-    abstract void initValueAsHighest( int stateSlot, ValueGroup valueGroup );
+    abstract void initValueAsHighest(int stateSlot, ValueGroup valueGroup);
 
     abstract int numberOfStateSlots();
 
-    final void initValuesAsLowest()
-    {
+    final void initValuesAsLowest() {
         int slots = numberOfStateSlots();
-        for ( int i = 0; i < slots; i++ )
-        {
-            initValueAsLowest( i, ValueGroup.UNKNOWN );
+        for (int i = 0; i < slots; i++) {
+            initValueAsLowest(i, ValueGroup.UNKNOWN);
         }
     }
 
-    final void initValuesAsHighest()
-    {
+    final void initValuesAsHighest() {
         int slots = numberOfStateSlots();
-        for ( int i = 0; i < slots; i++ )
-        {
-            initValueAsHighest( i, ValueGroup.UNKNOWN );
+        for (int i = 0; i < slots; i++) {
+            initValueAsHighest(i, ValueGroup.UNKNOWN);
         }
     }
 
@@ -123,5 +111,5 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
      * @param other the key to compare to.
      * @return comparison against the {@code other} key.
      */
-    abstract int compareValueTo( SELF other );
+    abstract int compareValueTo(SELF other);
 }

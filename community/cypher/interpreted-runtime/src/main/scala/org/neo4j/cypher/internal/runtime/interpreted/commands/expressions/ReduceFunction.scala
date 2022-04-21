@@ -19,19 +19,20 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.values.AnyValue
 
-case class ReduceFunction(collection: Expression,
-                          innerVariableName: String,
-                          innerVariableOffset: Int,
-                          expression: Expression,
-                          accVariableName: String,
-                          accVariableOffset: Int,
-                          init: Expression)
-  extends NullInNullOutExpression(collection) with ListSupport {
+case class ReduceFunction(
+  collection: Expression,
+  innerVariableName: String,
+  innerVariableOffset: Int,
+  expression: Expression,
+  accVariableName: String,
+  accVariableOffset: Int,
+  init: Expression
+) extends NullInNullOutExpression(collection) with ListSupport {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = {
     val list = makeTraversable(value)
@@ -39,7 +40,7 @@ case class ReduceFunction(collection: Expression,
     val initialAcc = init(ctx, state)
 
     state.expressionVariables(accVariableOffset) = initialAcc
-    while(iterator.hasNext) {
+    while (iterator.hasNext) {
       state.expressionVariables(innerVariableOffset) = iterator.next()
       state.expressionVariables(accVariableOffset) = expression(ctx, state)
     }
@@ -47,13 +48,15 @@ case class ReduceFunction(collection: Expression,
   }
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(ReduceFunction(collection.rewrite(f),
-                     innerVariableName,
-                     innerVariableOffset,
-                     expression.rewrite(f),
-                     accVariableName,
-                     accVariableOffset,
-                     init.rewrite(f)))
+    f(ReduceFunction(
+      collection.rewrite(f),
+      innerVariableName,
+      innerVariableOffset,
+      expression.rewrite(f),
+      accVariableName,
+      accVariableOffset,
+      init.rewrite(f)
+    ))
 
   override def arguments: Seq[Expression] = Seq(collection, init)
 

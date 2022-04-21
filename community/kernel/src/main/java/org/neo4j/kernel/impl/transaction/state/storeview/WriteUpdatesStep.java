@@ -26,16 +26,16 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
-public class WriteUpdatesStep extends ProcessorStep<GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates>
-{
-    public WriteUpdatesStep( StageControl control, Configuration config, CursorContextFactory contextFactory )
-    {
-        super( control, "write updates", config, 1, contextFactory );
+public class WriteUpdatesStep extends ProcessorStep<GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates> {
+    public WriteUpdatesStep(StageControl control, Configuration config, CursorContextFactory contextFactory) {
+        super(control, "write updates", config, 1, contextFactory);
     }
 
     @Override
-    protected void process( GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates updates, BatchSender sender, CursorContext cursorContext )
-    {
+    protected void process(
+            GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates updates,
+            BatchSender sender,
+            CursorContext cursorContext) {
         updates.completeBatch();
     }
 }

@@ -29,8 +29,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 
-public interface ValueIndexReader extends IndexReader
-{
+public interface ValueIndexReader extends IndexReader {
     /**
      * @param entityId entity id to match.
      * @param cursorContext underlying page cursor context
@@ -38,7 +37,8 @@ public interface ValueIndexReader extends IndexReader
      * @param propertyValues property values to match.
      * @return number of index entries for the given {@code entityId} and {@code propertyValues}.
      */
-    long countIndexedEntities( long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues );
+    long countIndexedEntities(
+            long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues);
 
     IndexSampler createSampler();
 
@@ -49,8 +49,13 @@ public interface ValueIndexReader extends IndexReader
      * @param constraints constraints upon the query result, like ordering and whether the index should fetch property values alongside the entity ids.
      * @param query the query so serve.
      */
-    void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
-                IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws IndexNotApplicableKernelException;
+    void query(
+            IndexProgressor.EntityValueClient client,
+            QueryContext context,
+            AccessMode accessMode,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query)
+            throws IndexNotApplicableKernelException;
 
     /**
      * Create a partitioning over the result set for the given query. The partitions can be processed in parallel.
@@ -59,39 +64,39 @@ public interface ValueIndexReader extends IndexReader
      * @param query the query to serve.
      * @return The {@link PartitionedValueSeek} from which partitions can be reserved.
      */
-    PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query );
+    PartitionedValueSeek valueSeek(
+            int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query);
 
-    ValueIndexReader EMPTY = new ValueIndexReader()
-    {
+    ValueIndexReader EMPTY = new ValueIndexReader() {
         // Used for checking index correctness
         @Override
-        public long countIndexedEntities( long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues )
-        {
+        public long countIndexedEntities(
+                long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues) {
             return 0;
         }
 
         @Override
-        public IndexSampler createSampler()
-        {
+        public IndexSampler createSampler() {
             return IndexSampler.EMPTY;
         }
 
         @Override
-        public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
-                           IndexQueryConstraints constraints, PropertyIndexQuery... query )
-        {
+        public void query(
+                IndexProgressor.EntityValueClient client,
+                QueryContext context,
+                AccessMode accessMode,
+                IndexQueryConstraints constraints,
+                PropertyIndexQuery... query) {
             // do nothing
         }
 
         @Override
-        public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query )
-        {
-            throw new UnsupportedOperationException( "EMPTY implementation does not support this method." );
+        public PartitionedValueSeek valueSeek(
+                int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query) {
+            throw new UnsupportedOperationException("EMPTY implementation does not support this method.");
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     };
 }

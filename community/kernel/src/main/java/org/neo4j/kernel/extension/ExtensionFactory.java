@@ -19,33 +19,29 @@
  */
 package org.neo4j.kernel.extension;
 
+import static java.lang.String.format;
+
 import org.neo4j.annotations.service.Service;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.service.NamedService;
 
-import static java.lang.String.format;
-
 @Service
-public abstract class ExtensionFactory<DEPENDENCIES> implements NamedService
-{
+public abstract class ExtensionFactory<DEPENDENCIES> implements NamedService {
     private final ExtensionType extensionType;
     private final String name;
 
-    protected ExtensionFactory( String name )
-    {
-        this( ExtensionType.GLOBAL, name );
+    protected ExtensionFactory(String name) {
+        this(ExtensionType.GLOBAL, name);
     }
 
-    protected ExtensionFactory( ExtensionType extensionType, String name )
-    {
+    protected ExtensionFactory(ExtensionType extensionType, String name) {
         this.extensionType = extensionType;
         this.name = name;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
@@ -56,37 +52,31 @@ public abstract class ExtensionFactory<DEPENDENCIES> implements NamedService
      * @param dependencies deprecated
      * @return the {@link Lifecycle} for the extension
      */
-    public abstract Lifecycle newInstance( ExtensionContext context, DEPENDENCIES dependencies );
+    public abstract Lifecycle newInstance(ExtensionContext context, DEPENDENCIES dependencies);
 
     @Override
-    public String toString()
-    {
-        return format( "Extension:%s[%s]", getClass().getSimpleName(), name );
+    public String toString() {
+        return format("Extension:%s[%s]", getClass().getSimpleName(), name);
     }
 
-    ExtensionType getExtensionType()
-    {
+    ExtensionType getExtensionType() {
         return extensionType;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return name.hashCode();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         final ExtensionFactory<?> that = (ExtensionFactory<?>) o;
-        return name.equals( that.name );
+        return name.equals(that.name);
     }
 }

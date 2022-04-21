@@ -20,38 +20,32 @@
 package org.neo4j.kernel.api.impl.index;
 
 import java.util.Map;
-
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.values.storable.Value;
 
-public class LuceneMinimalIndexAccessor<READER extends ValueIndexReader> implements MinimalIndexAccessor
-{
+public class LuceneMinimalIndexAccessor<READER extends ValueIndexReader> implements MinimalIndexAccessor {
     private final IndexDescriptor indexDescriptor;
     private final DatabaseIndex<READER> index;
     private final boolean readOnly;
 
-    public LuceneMinimalIndexAccessor( IndexDescriptor indexDescriptor, DatabaseIndex<READER> index, boolean readOnly )
-    {
+    public LuceneMinimalIndexAccessor(IndexDescriptor indexDescriptor, DatabaseIndex<READER> index, boolean readOnly) {
         this.indexDescriptor = indexDescriptor;
         this.index = index;
         this.readOnly = readOnly;
     }
 
     @Override
-    public void drop()
-    {
-        if ( readOnly )
-        {
-            throw new IllegalStateException( "Cannot drop read-only index." );
+    public void drop() {
+        if (readOnly) {
+            throw new IllegalStateException("Cannot drop read-only index.");
         }
         index.drop();
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
+    public Map<String, Value> indexConfig() {
         return indexDescriptor.getIndexConfig().asMap();
     }
 }

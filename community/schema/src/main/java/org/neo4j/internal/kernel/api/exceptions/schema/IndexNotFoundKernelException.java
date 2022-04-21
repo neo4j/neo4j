@@ -24,32 +24,25 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class IndexNotFoundKernelException extends KernelException
-{
+public class IndexNotFoundKernelException extends KernelException {
     private final IndexDescriptor index;
 
-    public IndexNotFoundKernelException( String msg )
-    {
-        super( Status.Schema.IndexNotFound, msg );
+    public IndexNotFoundKernelException(String msg) {
+        super(Status.Schema.IndexNotFound, msg);
         this.index = null;
     }
 
-    public IndexNotFoundKernelException( String msg, IndexDescriptor index )
-    {
-        super( Status.Schema.IndexNotFound, msg );
+    public IndexNotFoundKernelException(String msg, IndexDescriptor index) {
+        super(Status.Schema.IndexNotFound, msg);
         this.index = index;
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
-        if ( index == null )
-        {
-            return super.getUserMessage( tokenNameLookup );
-        }
-        else
-        {
-            return super.getUserMessage( tokenNameLookup ) + index.userDescription( tokenNameLookup );
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
+        if (index == null) {
+            return super.getUserMessage(tokenNameLookup);
+        } else {
+            return super.getUserMessage(tokenNameLookup) + index.userDescription(tokenNameLookup);
         }
     }
 }

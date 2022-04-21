@@ -19,41 +19,29 @@
  */
 package org.neo4j.kernel.api.impl;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.Query;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.Query;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class LuceneTestUtil
-{
-    public static List<Value[]> valueTupleList( Object... objects )
-    {
-        return Arrays.stream( objects )
-                .map( LuceneTestUtil::valueTuple )
-                .collect( Collectors.toList() );
+public class LuceneTestUtil {
+    public static List<Value[]> valueTupleList(Object... objects) {
+        return Arrays.stream(objects).map(LuceneTestUtil::valueTuple).collect(Collectors.toList());
     }
 
-    public static Value[] valueTuple( Object object )
-    {
-        return new Value[]{Values.of( object )};
+    public static Value[] valueTuple(Object object) {
+        return new Value[] {Values.of(object)};
     }
 
-    public static Document documentRepresentingProperties( long nodeId, Object... objects )
-    {
-        return LuceneDocumentStructure.documentRepresentingProperties(
-                nodeId,
-                Values.values( objects )
-        );
+    public static Document documentRepresentingProperties(long nodeId, Object... objects) {
+        return LuceneDocumentStructure.documentRepresentingProperties(nodeId, Values.values(objects));
     }
 
-    public static Query newSeekQuery( Object... objects )
-    {
-        return LuceneDocumentStructure.newSeekQuery( Values.values( objects ) );
+    public static Query newSeekQuery(Object... objects) {
+        return LuceneDocumentStructure.newSeekQuery(Values.values(objects));
     }
 }

@@ -19,60 +19,50 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class QueryIdTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+
+class QueryIdTest {
     @Test
-    void printsQueryIds() throws InvalidArgumentsException
-    {
-        assertThat( new QueryId( 12L ).toString() ).isEqualTo( "query-12" );
+    void printsQueryIds() throws InvalidArgumentsException {
+        assertThat(new QueryId(12L).toString()).isEqualTo("query-12");
     }
 
     @Test
-    void doesNotConstructNegativeQueryIds()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> new QueryId( -15L ) );
+    void doesNotConstructNegativeQueryIds() {
+        assertThrows(InvalidArgumentsException.class, () -> new QueryId(-15L));
     }
 
     @Test
-    void parsesQueryIds() throws InvalidArgumentsException
-    {
-        assertThat( QueryId.parse( "query-14" ) ).isEqualTo( new QueryId( 14L ) );
+    void parsesQueryIds() throws InvalidArgumentsException {
+        assertThat(QueryId.parse("query-14")).isEqualTo(new QueryId(14L));
     }
 
     @Test
-    void doesNotParseNegativeQueryIds()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> QueryId.parse( "query--12" ) );
+    void doesNotParseNegativeQueryIds() {
+        assertThrows(InvalidArgumentsException.class, () -> QueryId.parse("query--12"));
     }
 
     @Test
-    void doesNotParseWrongPrefix()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> QueryId.parse( "querr-12" ) );
+    void doesNotParseWrongPrefix() {
+        assertThrows(InvalidArgumentsException.class, () -> QueryId.parse("querr-12"));
     }
 
     @Test
-    void doesNotParseRandomText()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> QueryId.parse( "blarglbarf" ) );
+    void doesNotParseRandomText() {
+        assertThrows(InvalidArgumentsException.class, () -> QueryId.parse("blarglbarf"));
     }
 
     @Test
-    void doesNotParseTrailingRandomText()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> QueryId.parse( "query-12  " ) );
+    void doesNotParseTrailingRandomText() {
+        assertThrows(InvalidArgumentsException.class, () -> QueryId.parse("query-12  "));
     }
 
     @Test
-    void doesNotParseEmptyText()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> QueryId.parse( "" ) );
+    void doesNotParseEmptyText() {
+        assertThrows(InvalidArgumentsException.class, () -> QueryId.parse(""));
     }
 }

@@ -157,7 +157,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
 
-    val thrown = the [ConstraintViolationException] thrownBy restartTx()
+    val thrown = the[ConstraintViolationException] thrownBy restartTx()
     thrown.getMessage should include regex "Cannot delete.*because it still has relationships"
 
     val tx = runtimeTestSupport.startNewTx()

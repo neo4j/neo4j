@@ -438,7 +438,7 @@ class ClosingIteratorTest extends CypherFunSuite {
     // given
     val outer = ClosingIterator.empty
 
-    //when
+    // when
     val collected = outer.collect {
       case _ => fail("should not call inner lambda")
     }

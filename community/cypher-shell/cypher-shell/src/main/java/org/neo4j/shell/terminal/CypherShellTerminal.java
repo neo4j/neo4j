@@ -20,7 +20,6 @@
 package org.neo4j.shell.terminal;
 
 import java.io.File;
-
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
@@ -30,8 +29,7 @@ import org.neo4j.shell.printer.AnsiFormattedText;
 /**
  * Handles user input and output.
  */
-public interface CypherShellTerminal
-{
+public interface CypherShellTerminal {
     int PROMPT_MAX_LENGTH = 50;
 
     /** Read from terminal */
@@ -47,12 +45,11 @@ public interface CypherShellTerminal
     Historian getHistory();
 
     /** If set history will be saved to the specified file */
-    void setHistoryFile( File file );
+    void setHistoryFile(File file);
 
-    void bindUserInterruptHandler( UserInterruptHandler handler );
+    void bindUserInterruptHandler(UserInterruptHandler handler);
 
-    interface Reader
-    {
+    interface Reader {
         /**
          * Reads cypher shell statements from the terminal.
          *
@@ -61,7 +58,7 @@ public interface CypherShellTerminal
          * @throws NoMoreInputException if there is no more input (user press ctrl+d for example)
          * @throws UserInterruptException if user interrupted input (user press ctrl+c for example)
          */
-        ParsedStatements readStatement( AnsiFormattedText prompt ) throws NoMoreInputException, UserInterruptException;
+        ParsedStatements readStatement(AnsiFormattedText prompt) throws NoMoreInputException, UserInterruptException;
 
         /**
          * Reads any string from the terminal.
@@ -72,22 +69,19 @@ public interface CypherShellTerminal
          * @throws NoMoreInputException if there is no more input (user press ctrl+d for example)
          * @throws UserInterruptException if user interrupted input (user press ctrl+c for example)
          */
-        String simplePrompt( String prompt, Character mask ) throws NoMoreInputException, UserInterruptException;
+        String simplePrompt(String prompt, Character mask) throws NoMoreInputException, UserInterruptException;
     }
 
-    interface Writer
-    {
+    interface Writer {
         /** Prints the specified line to the terminal. */
-        void println( String line );
+        void println(String line);
 
-        default void println()
-        {
-            println( "" );
+        default void println() {
+            println("");
         }
     }
 
-    interface UserInterruptHandler
-    {
+    interface UserInterruptHandler {
         void handleUserInterrupt();
     }
 }

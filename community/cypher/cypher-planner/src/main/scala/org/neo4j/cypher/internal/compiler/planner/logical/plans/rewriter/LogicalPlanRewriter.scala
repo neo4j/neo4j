@@ -50,12 +50,15 @@ case object AndedPropertyInequalitiesRemoved extends StepSequencer.Condition
  * to disable any and all of these rewriters, and still produce correct behavior.
  */
 case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
-  override def instance(context: PlannerContext,
-                        solveds: Solveds,
-                        cardinalities: Cardinalities,
-                        effectiveCardinalities: EffectiveCardinalities,
-                        providedOrders: ProvidedOrders,
-                        otherAttributes: Attributes[LogicalPlan]): Rewriter =
+
+  override def instance(
+    context: PlannerContext,
+    solveds: Solveds,
+    cardinalities: Cardinalities,
+    effectiveCardinalities: EffectiveCardinalities,
+    providedOrders: ProvidedOrders,
+    otherAttributes: Attributes[LogicalPlan]
+  ): Rewriter =
     fixedPoint(context.cancellationChecker)(
       inSequence(context.cancellationChecker)(
         fuseSelections,
@@ -64,13 +67,20 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
         simplifyPredicates,
         unnestOptional,
-        predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes.withAlso(effectiveCardinalities, providedOrders)),
+        predicateRemovalThroughJoins(
+          solveds,
+          cardinalities,
+          otherAttributes.withAlso(effectiveCardinalities, providedOrders)
+        ),
         removeIdenticalPlans(otherAttributes.withAlso(cardinalities, effectiveCardinalities, solveds, providedOrders)),
         pruningVarExpander,
         useTop,
         skipInPartialSort,
         simplifySelections,
-        limitNestedPlanExpressions(cardinalities, otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders)),
+        limitNestedPlanExpressions(
+          cardinalities,
+          otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders)
+        ),
         combineHasLabels
       )
     )
@@ -83,7 +93,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
   override def postConditions: Set[StepSequencer.Condition] = Set(
     LogicalPlanRewritten,
     // This belongs to simplifyPredicates
-    AndedPropertyInequalitiesRemoved,
+    AndedPropertyInequalitiesRemoved
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
@@ -91,8 +101,10 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     PlanIDsAreCompressed
   )
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): LogicalPlanRewriter = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): LogicalPlanRewriter = this
 }
 
 trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
@@ -100,18 +112,28 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
 
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
-  def instance(context: PlannerContext,
-               solveds: Solveds,
-               cardinalities: Cardinalities,
-               effectiveCardinalities: EffectiveCardinalities,
-               providedOrders: ProvidedOrders,
-               otherAttributes: Attributes[LogicalPlan]): Rewriter
+  def instance(
+    context: PlannerContext,
+    solveds: Solveds,
+    cardinalities: Cardinalities,
+    effectiveCardinalities: EffectiveCardinalities,
+    providedOrders: ProvidedOrders,
+    otherAttributes: Attributes[LogicalPlan]
+  ): Rewriter
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val idGen = context.logicalPlanIdGen
     val otherAttributes = Attributes[LogicalPlan](idGen, from.planningAttributes.leveragedOrders)
     val rewritten = from.logicalPlan.endoRewrite(
-      instance(context, from.planningAttributes.solveds, from.planningAttributes.cardinalities, from.planningAttributes.effectiveCardinalities, from.planningAttributes.providedOrders, otherAttributes))
+      instance(
+        context,
+        from.planningAttributes.solveds,
+        from.planningAttributes.cardinalities,
+        from.planningAttributes.effectiveCardinalities,
+        from.planningAttributes.providedOrders,
+        otherAttributes
+      )
+    )
     from.copy(maybeLogicalPlan = Some(rewritten))
   }
 }

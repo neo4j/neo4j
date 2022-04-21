@@ -19,31 +19,30 @@
  */
 package org.neo4j.capabilities;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
-
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.contains;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+
 /**
  * Used for hierarchical naming of capabilities, each namespace component separated by '.'.
  */
-public final class Name
-{
-    private static final Predicate<String> NAME_VALIDATOR = Pattern.compile( "^\\w+(\\.\\w+)*$" ).asMatchPredicate();
+public final class Name {
+    private static final Predicate<String> NAME_VALIDATOR =
+            Pattern.compile("^\\w+(\\.\\w+)*$").asMatchPredicate();
     private static final String SINGLE_ENTRY_PATTERN = "\\w{0,}";
     private static final String MULTIPLE_ENTRY_PATTERN = "(\\w{0,}(\\.)?){0,}";
     private static final String SEPARATOR = ".";
 
     private final String fullName;
 
-    private Name( String fullName )
-    {
-        this.fullName = validateName( Objects.requireNonNull( fullName ) );
+    private Name(String fullName) {
+        this.fullName = validateName(Objects.requireNonNull(fullName));
     }
 
     /**
@@ -51,8 +50,7 @@ public final class Name
      *
      * @return full name.
      */
-    public String fullName()
-    {
+    public String fullName() {
         return fullName;
     }
 
@@ -63,19 +61,16 @@ public final class Name
      * @return new name instance.
      * @throws IllegalArgumentException if name is empty or contains '.'.
      */
-    public Name child( String name )
-    {
-        if ( isBlank( name ) || contains( name, SEPARATOR ) )
-        {
-            throw new IllegalArgumentException( String.format( "'%s' is not a valid name", name ) );
+    public Name child(String name) {
+        if (isBlank(name) || contains(name, SEPARATOR)) {
+            throw new IllegalArgumentException(String.format("'%s' is not a valid name", name));
         }
 
-        if ( isBlank( this.fullName ) )
-        {
-            return new Name( name );
+        if (isBlank(this.fullName)) {
+            return new Name(name);
         }
 
-        return new Name( this.fullName + SEPARATOR + Objects.requireNonNull( name ) );
+        return new Name(this.fullName + SEPARATOR + Objects.requireNonNull(name));
     }
 
     /**
@@ -84,16 +79,14 @@ public final class Name
      * @param namespace namespace to check
      * @return true if this name lies in the given namespace, false otherwise.
      */
-    public boolean isIn( String namespace )
-    {
-        var validated = validateName( namespace );
+    public boolean isIn(String namespace) {
+        var validated = validateName(namespace);
 
-        if ( isBlank( validated ) || validated.equals( fullName ) )
-        {
+        if (isBlank(validated) || validated.equals(fullName)) {
             return true;
         }
 
-        return fullName.startsWith( validated + SEPARATOR );
+        return fullName.startsWith(validated + SEPARATOR);
     }
 
     /**
@@ -102,66 +95,54 @@ public final class Name
      * @param name name to check
      * @return true if this name lies in the given name's scope, false otherwise.
      */
-    public boolean isIn( Name name )
-    {
-        return isIn( name.fullName );
+    public boolean isIn(Name name) {
+        return isIn(name.fullName);
     }
 
-    public boolean matches( String pattern )
-    {
-        var transformed = pattern
-                .replace( ".", "\\." ) // escape dots
-                .replace( "**", MULTIPLE_ENTRY_PATTERN ) // convert ** into multiple entry pattern
-                .replace( "*", SINGLE_ENTRY_PATTERN ); // convert * into single entry pattern
+    public boolean matches(String pattern) {
+        var transformed = pattern.replace(".", "\\.") // escape dots
+                .replace("**", MULTIPLE_ENTRY_PATTERN) // convert ** into multiple entry pattern
+                .replace("*", SINGLE_ENTRY_PATTERN); // convert * into single entry pattern
 
-        return Pattern.matches( transformed, fullName );
+        return Pattern.matches(transformed, fullName);
     }
 
-    public boolean matches( List<String> patterns )
-    {
-        return patterns.stream().anyMatch( this::matches );
+    public boolean matches(List<String> patterns) {
+        return patterns.stream().anyMatch(this::matches);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
 
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         Name other = (Name) o;
-        return this.fullName.equals( other.fullName );
+        return this.fullName.equals(other.fullName);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( fullName );
+    public int hashCode() {
+        return Objects.hash(fullName);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return fullName;
     }
 
-    private static String validateName( String fullName )
-    {
-        if ( isEmpty( fullName ) )
-        {
+    private static String validateName(String fullName) {
+        if (isEmpty(fullName)) {
             return fullName;
         }
 
-        var valid = NAME_VALIDATOR.test( fullName );
-        if ( !valid )
-        {
-            throw new IllegalArgumentException( format( "'%s' is not a valid name.", fullName ) );
+        var valid = NAME_VALIDATOR.test(fullName);
+        if (!valid) {
+            throw new IllegalArgumentException(format("'%s' is not a valid name.", fullName));
         }
         return fullName;
     }
@@ -172,8 +153,7 @@ public final class Name
      * @param name name.
      * @return a new name instance.
      */
-    public static Name of( String name )
-    {
-        return new Name( name );
+    public static Name of(String name) {
+        return new Name(name);
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.string;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.nio.charset.Charset;
 import java.security.Key;
 import java.security.SecureRandom;
@@ -26,14 +28,10 @@ import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
 import org.neo4j.annotations.api.PublicApi;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 @PublicApi
-public class SecureString
-{
+public class SecureString {
     private static final SecureRandom random = new SecureRandom();
     private Cipher cipher;
 
@@ -44,112 +42,90 @@ public class SecureString
     private static final Charset encoding = UTF_8;
     private static final int KEY_SIZE = 16;
 
-    public SecureString( String stringToSecure )
-    {
-        this( stringToSecure, true );
+    public SecureString(String stringToSecure) {
+        this(stringToSecure, true);
     }
 
-    SecureString( String stringToSecure, boolean tryUseEncryption )
-    {
-        this( stringToSecure != null ? stringToSecure.getBytes( encoding ) : null, tryUseEncryption );
+    SecureString(String stringToSecure, boolean tryUseEncryption) {
+        this(stringToSecure != null ? stringToSecure.getBytes(encoding) : null, tryUseEncryption);
     }
 
-    private SecureString( byte[] dataToSecure, boolean tryUseEncryption )
-    {
-        if ( dataToSecure != null )
-        {
-            if ( tryUseEncryption )
-            {
-                try
-                {
+    private SecureString(byte[] dataToSecure, boolean tryUseEncryption) {
+        if (dataToSecure != null) {
+            if (tryUseEncryption) {
+                try {
                     // Setup key
                     final byte[] key = new byte[KEY_SIZE];
-                    random.nextBytes( key );
-                    final Key aesKey = new SecretKeySpec( key, "AES" );
-                    Arrays.fill( key, (byte) 0 );
+                    random.nextBytes(key);
+                    final Key aesKey = new SecretKeySpec(key, "AES");
+                    Arrays.fill(key, (byte) 0);
 
                     // Setup iv
                     final byte[] iv = new byte[12];
-                    random.nextBytes( iv );
-                    GCMParameterSpec parameterSpec = new GCMParameterSpec( 128, iv );
-                    Arrays.fill( iv, (byte) 0 );
+                    random.nextBytes(iv);
+                    GCMParameterSpec parameterSpec = new GCMParameterSpec(128, iv);
+                    Arrays.fill(iv, (byte) 0);
 
                     // Init cypher and encode
-                    cipher = Cipher.getInstance( "AES/GCM/NoPadding" );
-                    cipher.init( Cipher.ENCRYPT_MODE, aesKey, parameterSpec );
-                    encryptedData = cipher.doFinal( dataToSecure );
+                    cipher = Cipher.getInstance("AES/GCM/NoPadding");
+                    cipher.init(Cipher.ENCRYPT_MODE, aesKey, parameterSpec);
+                    encryptedData = cipher.doFinal(dataToSecure);
 
                     // Swap to decode mode
-                    cipher.init( Cipher.DECRYPT_MODE, aesKey, parameterSpec );
+                    cipher.init(Cipher.DECRYPT_MODE, aesKey, parameterSpec);
                     encryptionAvailable = true;
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     encryptionAvailable = false;
                 }
             }
 
-            if ( !encryptionAvailable )
-            {
-                //Using simple obfuscation
+            if (!encryptionAvailable) {
+                // Using simple obfuscation
                 obfuscationKey = new byte[KEY_SIZE];
-                random.nextBytes( obfuscationKey );
-                encryptedData = XOR( dataToSecure, obfuscationKey );
+                random.nextBytes(obfuscationKey);
+                encryptedData = XOR(dataToSecure, obfuscationKey);
             }
-        }
-        else
-        {
+        } else {
             encryptedData = null;
             encryptionAvailable = tryUseEncryption;
         }
     }
 
-    boolean encryptionAvailable()
-    {
+    boolean encryptionAvailable() {
         return encryptionAvailable;
     }
 
-    private byte[] getData()
-    {
-        if ( encryptedData == null )
-        {
+    private byte[] getData() {
+        if (encryptedData == null) {
             return null;
         }
 
-        if ( encryptionAvailable() )
-        {
-            try
-            {
-                return cipher.doFinal( encryptedData );
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( "Data corruption, could not decrypt data", e );
+        if (encryptionAvailable()) {
+            try {
+                return cipher.doFinal(encryptedData);
+            } catch (Exception e) {
+                throw new RuntimeException("Data corruption, could not decrypt data", e);
             }
         }
-        return XOR( encryptedData, obfuscationKey );
+        return XOR(encryptedData, obfuscationKey);
     }
 
-    private static byte[] XOR( final byte[] input, final byte[] key )
-    {
-        byte[] output = Arrays.copyOf( input, input.length );
-        for ( int i = 0; i < input.length; i++ )
-        {
+    private static byte[] XOR(final byte[] input, final byte[] key) {
+        byte[] output = Arrays.copyOf(input, input.length);
+        for (int i = 0; i < input.length; i++) {
             output[i] = (byte) (input[i] ^ key[i % key.length]);
         }
 
         return output;
     }
 
-    public String getString()
-    {
+    public String getString() {
         byte[] data = getData();
-        return data != null ? new String( data, encoding ) : null;
+        return data != null ? new String(data, encoding) : null;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "################";
     }
 }

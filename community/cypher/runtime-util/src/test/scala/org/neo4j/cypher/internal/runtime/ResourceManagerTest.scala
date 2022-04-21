@@ -140,36 +140,32 @@ class ResourceManagerTest extends CypherFunSuite {
   }
 
   test("Resource pool should be able to grow beyond initial capacity") {
-    //given
+    // given
     val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)
 
-    //when
+    // when
     pool.add(mock[AutoCloseablePlus])
     pool.add(mock[AutoCloseablePlus])
     pool.add(mock[AutoCloseablePlus])
     pool.add(mock[AutoCloseablePlus])
     pool.add(mock[AutoCloseablePlus])
 
-    //then
+    // then
     pool.all().size shouldBe 5
   }
 
   test("Should be able to remove resource") {
-    val resources = Array(new DummyResource,
-                          new DummyResource,
-                          new DummyResource,
-                          new DummyResource,
-                          new DummyResource)
+    val resources = Array(new DummyResource, new DummyResource, new DummyResource, new DummyResource, new DummyResource)
     for (i <- resources.indices) {
-      //given
+      // given
       val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)
       resources.foreach(pool.add)
       val toRemove = resources(i)
 
-      //when
+      // when
       pool.remove(toRemove)
 
-      //then
+      // then
       val closeables = pool.all().toList
       closeables.size shouldBe 4
       closeables shouldNot contain(toRemove)
@@ -177,7 +173,7 @@ class ResourceManagerTest extends CypherFunSuite {
   }
 
   test("Should be able to clear") {
-    //given
+    // given
     val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)
     pool.add(mock[AutoCloseablePlus])
     pool.add(mock[AutoCloseablePlus])
@@ -185,30 +181,27 @@ class ResourceManagerTest extends CypherFunSuite {
     pool.add(mock[AutoCloseablePlus])
     pool.add(mock[AutoCloseablePlus])
 
-    //when
+    // when
     pool.clear()
 
-    //then
+    // then
     pool.all() shouldBe empty
   }
 
   test("Should not call close on removed item") {
-    for(i <- 0 until 5) {
-      //given
-      val resources = Array(new DummyResource,
-                            new DummyResource,
-                            new DummyResource,
-                            new DummyResource,
-                            new DummyResource)
+    for (i <- 0 until 5) {
+      // given
+      val resources =
+        Array(new DummyResource, new DummyResource, new DummyResource, new DummyResource, new DummyResource)
       val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)
       resources.foreach(pool.add)
       pool.remove(resources(i))
 
-      //when
+      // when
       pool.closeAll()
 
-      //then
-      for(j <- 0 until 5) {
+      // then
+      for (j <- 0 until 5) {
         if (i == j) {
           resources(j).isClosed shouldBe false
         } else {
@@ -262,14 +255,17 @@ class ResourceManagerTest extends CypherFunSuite {
     override def close(): Unit = {
       this.closed = true
     }
+
     override def closeInternal(): Unit = {
       close()
     }
     override def isClosed: Boolean = closed
+
     override def setCloseListener(closeListener: CloseListener): Unit = {
       this.listener = closeListener
     }
     def getCloseListener: CloseListener = listener
+
     override def setToken(token: Int): Unit = {
       this.token = token
     }

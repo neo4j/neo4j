@@ -19,14 +19,12 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import java.io.IOException;
-
-import org.neo4j.io.pagecache.PageCursor;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RecordFormat
-{
+import java.io.IOException;
+import org.neo4j.io.pagecache.PageCursor;
+
+public class RecordFormat {
     private final int numberOfThreads;
     private final int payloadSize;
     private final int fieldSize;
@@ -34,8 +32,7 @@ public class RecordFormat
     private final int recordSize;
     private final int reservedBytes;
 
-    public RecordFormat( int numberOfThreads, int cachePageSize, int payloadSize )
-    {
+    public RecordFormat(int numberOfThreads, int cachePageSize, int payloadSize) {
         this.numberOfThreads = numberOfThreads;
         this.payloadSize = payloadSize;
         this.reservedBytes = cachePageSize - payloadSize;
@@ -44,79 +41,66 @@ public class RecordFormat
         this.recordSize = checksumFieldOffset + fieldSize; // extra field for keeping the checksum.
     }
 
-    public int getRecordSize()
-    {
+    public int getRecordSize() {
         return recordSize;
     }
 
-    public int getRecordsPerPage()
-    {
+    public int getRecordsPerPage() {
         return payloadSize / getRecordSize();
     }
 
-    public int getFilePageSize()
-    {
+    public int getFilePageSize() {
         return reservedBytes + getRecordsPerPage() * getRecordSize();
     }
 
     /**
      * Assume the given cursor is writable and has already been positioned at the record offset.
      */
-    public long incrementCounter( PageCursor cursor, int threadId )
-    {
+    public long incrementCounter(PageCursor cursor, int threadId) {
         int recordOffset = cursor.getOffset();
         int fieldOffset = recordOffset + (fieldSize * threadId);
         int checksumOffset = recordOffset + checksumFieldOffset;
 
-        long newValue = 1 + cursor.getLong( fieldOffset );
-        cursor.putLong( fieldOffset, newValue );
-        cursor.putLong( checksumOffset, 1 + cursor.getLong( checksumOffset ) );
+        long newValue = 1 + cursor.getLong(fieldOffset);
+        cursor.putLong(fieldOffset, newValue);
+        cursor.putLong(checksumOffset, 1 + cursor.getLong(checksumOffset));
         return newValue;
     }
 
     /**
      * Sum up the fields for the given thread for all records on the given page.
      */
-    public long sumCountsForThread( PageCursor cursor, int threadId ) throws IOException
-    {
+    public long sumCountsForThread(PageCursor cursor, int threadId) throws IOException {
         int recordsPerPage = getRecordsPerPage();
         int fieldOffset = fieldSize * threadId;
         long sum;
-        do
-        {
+        do {
             sum = 0;
-            for ( int i = 0; i < recordsPerPage; i++ )
-            {
-                sum += cursor.getLong( (i * recordSize) + fieldOffset );
+            for (int i = 0; i < recordsPerPage; i++) {
+                sum += cursor.getLong((i * recordSize) + fieldOffset);
             }
-        }
-        while ( cursor.shouldRetry() );
+        } while (cursor.shouldRetry());
         return sum;
     }
 
     /**
      * Verify the checksums on all the records on the given page
      */
-    public void verifyCheckSums( PageCursor cursor ) throws IOException
-    {
+    public void verifyCheckSums(PageCursor cursor) throws IOException {
         int recordsPerPage = getRecordsPerPage();
-        for ( int i = 0; i < recordsPerPage; i++ )
-        {
+        for (int i = 0; i < recordsPerPage; i++) {
             int recordOffset = i * recordSize;
             long expectedChecksum;
             long actualChecksum;
-            do
-            {
+            do {
                 actualChecksum = 0;
-                for ( int j = 0; j < numberOfThreads; j++ )
-                {
-                    actualChecksum += cursor.getLong( recordOffset + (j * fieldSize) );
+                for (int j = 0; j < numberOfThreads; j++) {
+                    actualChecksum += cursor.getLong(recordOffset + (j * fieldSize));
                 }
-                expectedChecksum = cursor.getLong( recordOffset + checksumFieldOffset );
-            }
-            while ( cursor.shouldRetry() );
+                expectedChecksum = cursor.getLong(recordOffset + checksumFieldOffset);
+            } while (cursor.shouldRetry());
             String msg = "Checksum for record " + i + " on page " + cursor.getCurrentPageId();
-            assertThat( actualChecksum ).describedAs( msg ).isEqualTo( expectedChecksum );
+            assertThat(actualChecksum).describedAs(msg).isEqualTo(expectedChecksum);
         }
     }
 }

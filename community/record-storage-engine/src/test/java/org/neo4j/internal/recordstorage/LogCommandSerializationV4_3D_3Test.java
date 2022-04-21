@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
@@ -31,92 +31,94 @@ import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@ExtendWith( RandomExtension.class )
-class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
-{
+@ExtendWith(RandomExtension.class)
+class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test {
     @Test
-    void shouldReadAndWriteMetaDataCommand() throws IOException
-    {
+    void shouldReadAndWriteMetaDataCommand() throws IOException {
         // Given
         MetaDataRecord before = new MetaDataRecord();
         MetaDataRecord after = new MetaDataRecord();
-        after.initialize( true, 999 );
+        after.initialize(true, 999);
 
-        byte[] bytes = new byte[]{ 19, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 3, -25 };
-        InMemoryClosableChannel channel = new InMemoryClosableChannel( bytes, true, true );
+        byte[] bytes = new byte[] {
+            19, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 3, -25
+        };
+        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.MetaDataCommand );
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.MetaDataCommand);
 
         Command.MetaDataCommand readCommand = (Command.MetaDataCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( readCommand, before, after );
+        assertBeforeAndAfterEquals(readCommand, before, after);
     }
 
     @Test
-    void shouldReadRelationshipGroupCommandIncludingExternalDegrees() throws Throwable
-    {
+    void shouldReadRelationshipGroupCommandIncludingExternalDegrees() throws Throwable {
         // Given
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
-        after.setHasExternalDegreesOut( true );
-        after.setHasExternalDegreesIn( false );
-        after.setHasExternalDegreesLoop( true );
+        RelationshipGroupRecord before =
+                new RelationshipGroupRecord(42).initialize(false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF);
+        RelationshipGroupRecord after = new RelationshipGroupRecord(42).initialize(true, 3, 4, 5, 6, 7, 8);
+        after.setHasExternalDegreesOut(true);
+        after.setHasExternalDegreesIn(false);
+        after.setHasExternalDegreesLoop(true);
         after.setCreated();
 
-        byte[] bytes =
-                new byte[]{9, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                           -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -95, 0, 3, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0,
-                           0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 7};
-        InMemoryClosableChannel channel = new InMemoryClosableChannel( bytes, true, true );
+        byte[] bytes = new byte[] {
+            9, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -95, 0, 3, 0, 0, 0,
+            0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0,
+            7
+        };
+        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand);
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
     }
 
     @Test
-    void shouldReadRelationshipGroupExtendedCommandIncludingExternalDegrees() throws Throwable
-    {
+    void shouldReadRelationshipGroupExtendedCommandIncludingExternalDegrees() throws Throwable {
         // Given
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8 );
-        after.setHasExternalDegreesOut( false );
-        after.setHasExternalDegreesIn( true );
-        after.setHasExternalDegreesLoop( false );
+        RelationshipGroupRecord before =
+                new RelationshipGroupRecord(42).initialize(false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF);
+        RelationshipGroupRecord after =
+                new RelationshipGroupRecord(42).initialize(true, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8);
+        after.setHasExternalDegreesOut(false);
+        after.setHasExternalDegreesIn(true);
+        after.setHasExternalDegreesLoop(false);
         after.setCreated();
 
-        byte[] bytes =
-                new byte[]{21, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 3, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                           -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 65, 0, 10, 1, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0,
-                           0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 7};
-        InMemoryClosableChannel channel = new InMemoryClosableChannel( bytes, true, true );
+        byte[] bytes = new byte[] {
+            21, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 3, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 65, 0, 10, 1, 0,
+            0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0,
+            0, 0, 7
+        };
+        InMemoryClosableChannel channel = new InMemoryClosableChannel(bytes, true, true);
 
         // When
         CommandReader reader = createReader();
-        StorageCommand command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand);
+        StorageCommand command = reader.read(channel);
+        assertTrue(command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+        assertBeforeAndAfterEquals(relationshipGroupCommand, before, after);
     }
 
     @Override
-    protected CommandReader createReader()
-    {
+    protected CommandReader createReader() {
         return new LogCommandSerializationV4_3_D3();
     }
 }

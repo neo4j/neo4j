@@ -26,26 +26,23 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
 @FunctionalInterface
-public interface IndexUpdateIgnoreStrategy
-{
+public interface IndexUpdateIgnoreStrategy {
     /**
      * @param values to process
      * @return true if values should be ignored by the updater
      */
-    boolean ignore( Value[] values );
+    boolean ignore(Value[] values);
 
     /**
      * Default: check the before and after values for a change; otherwise the values
      * @param update the update to process
      * @return true if update should be ignored by updater
      */
-    default <INDEX_KEY extends SchemaDescriptorSupplier> boolean ignore( ValueIndexEntryUpdate<INDEX_KEY> update )
-    {
-        if ( update.updateMode() == UpdateMode.CHANGED )
-        {
-            return ignore( update.beforeValues() ) && ignore( update.values() );
+    default <INDEX_KEY extends SchemaDescriptorSupplier> boolean ignore(ValueIndexEntryUpdate<INDEX_KEY> update) {
+        if (update.updateMode() == UpdateMode.CHANGED) {
+            return ignore(update.beforeValues()) && ignore(update.values());
         }
-        return ignore( update.values() );
+        return ignore(update.values());
     }
 
     /**
@@ -56,61 +53,55 @@ public interface IndexUpdateIgnoreStrategy
      * @param update a {@link ValueIndexEntryUpdate} to convert
      * @return an equivalent {@link ValueIndexEntryUpdate}
      */
-    default <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> toEquivalentUpdate( ValueIndexEntryUpdate<INDEX_KEY> update )
-    {
+    default <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> toEquivalentUpdate(
+            ValueIndexEntryUpdate<INDEX_KEY> update) {
         // Only CHANGED may need replacing
-        if ( update.updateMode() != UpdateMode.CHANGED )
-        {
+        if (update.updateMode() != UpdateMode.CHANGED) {
             return update;
         }
 
         final var beforeValues = update.beforeValues();
         final var afterValues = update.values();
 
-        final var shouldRemove = !ignore( beforeValues );
-        final var shouldAdd = !ignore( afterValues );
+        final var shouldRemove = !ignore(beforeValues);
+        final var shouldAdd = !ignore(afterValues);
 
-        if ( shouldRemove && shouldAdd )
-        {
+        if (shouldRemove && shouldAdd) {
             return update;
         }
 
         final var key = update.indexKey();
         final var entityId = update.getEntityId();
 
-        if ( shouldRemove )
-        {
-            return IndexEntryUpdate.remove( entityId, key, beforeValues );
+        if (shouldRemove) {
+            return IndexEntryUpdate.remove(entityId, key, beforeValues);
         }
 
-        if ( shouldAdd )
-        {
-            return IndexEntryUpdate.add( entityId, key, afterValues );
+        if (shouldAdd) {
+            return IndexEntryUpdate.add(entityId, key, afterValues);
         }
 
-        throw new IllegalStateException( "Attempted a " + UpdateMode.CHANGED + " update, which was not applicable to the index" );
+        throw new IllegalStateException(
+                "Attempted a " + UpdateMode.CHANGED + " update, which was not applicable to the index");
     }
 
     /**
      * Ignores nothing
      */
-    IndexUpdateIgnoreStrategy NO_IGNORE = new IndexUpdateIgnoreStrategy()
-    {
+    IndexUpdateIgnoreStrategy NO_IGNORE = new IndexUpdateIgnoreStrategy() {
         @Override
-        public boolean ignore( Value[] values )
-        {
+        public boolean ignore(Value[] values) {
             return false;
         }
 
         @Override
-        public <INDEX_KEY extends SchemaDescriptorSupplier> boolean ignore( ValueIndexEntryUpdate<INDEX_KEY> update )
-        {
+        public <INDEX_KEY extends SchemaDescriptorSupplier> boolean ignore(ValueIndexEntryUpdate<INDEX_KEY> update) {
             return false;
         }
 
         @Override
-        public <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> toEquivalentUpdate( ValueIndexEntryUpdate<INDEX_KEY> update )
-        {
+        public <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> toEquivalentUpdate(
+                ValueIndexEntryUpdate<INDEX_KEY> update) {
             return update;
         }
     };

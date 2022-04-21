@@ -30,12 +30,17 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 /**
  * Normalize the AST into a form easier for the planner to work with.
  */
-case class AstRewriting(parameterTypeMapping : Map[String, CypherType] = Map.empty
-) extends Phase[BaseContext, BaseState, BaseState] {
-
+case class AstRewriting(parameterTypeMapping: Map[String, CypherType] = Map.empty)
+    extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    val rewrittenStatement = ASTRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory, in.anonymousVariableNameGenerator)
+    val rewrittenStatement = ASTRewriter.rewrite(
+      in.statement(),
+      in.semantics(),
+      parameterTypeMapping,
+      context.cypherExceptionFactory,
+      in.anonymousVariableNameGenerator
+    )
     in.withStatement(rewrittenStatement)
   }
 

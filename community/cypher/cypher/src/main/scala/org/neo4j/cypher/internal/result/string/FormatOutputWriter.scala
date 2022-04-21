@@ -28,6 +28,7 @@ trait FormatOutputWriter {
 
 case class StringBuilderWrapper(sb: StringBuilder) extends FormatOutputWriter {
   override def print(str: String): Unit = sb ++= str
+
   override def println(str: String): Unit = {
     sb ++= str
     sb ++= System.lineSeparator()

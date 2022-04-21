@@ -24,40 +24,30 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
-
 import org.neo4j.memory.HeapEstimator;
 
 /**
  * Translates websocket frames to bytebufs, and bytebufs to frames. Intermediary layer between our binary protocol
  * and nettys built-in websocket handlers.
  */
-public class WebSocketFrameTranslator extends ChannelDuplexHandler
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( WebSocketFrameTranslator.class );
+public class WebSocketFrameTranslator extends ChannelDuplexHandler {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(WebSocketFrameTranslator.class);
 
     @Override
-    public void channelRead( ChannelHandlerContext ctx, Object msg )
-    {
-        if ( msg instanceof BinaryWebSocketFrame )
-        {
-            ctx.fireChannelRead( ((BinaryWebSocketFrame) msg).content() );
-        }
-        else
-        {
-            ctx.fireChannelRead( msg );
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        if (msg instanceof BinaryWebSocketFrame) {
+            ctx.fireChannelRead(((BinaryWebSocketFrame) msg).content());
+        } else {
+            ctx.fireChannelRead(msg);
         }
     }
 
     @Override
-    public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
-    {
-        if ( msg instanceof ByteBuf )
-        {
-            ctx.write( new BinaryWebSocketFrame( (ByteBuf) msg ), promise );
-        }
-        else
-        {
-            ctx.write( msg, promise );
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        if (msg instanceof ByteBuf) {
+            ctx.write(new BinaryWebSocketFrame((ByteBuf) msg), promise);
+        } else {
+            ctx.write(msg, promise);
         }
     }
 }

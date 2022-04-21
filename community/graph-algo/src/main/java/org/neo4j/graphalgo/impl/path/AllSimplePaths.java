@@ -23,16 +23,13 @@ import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.Uniqueness;
 
-public class AllSimplePaths extends AllPaths
-{
-    public AllSimplePaths( EvaluationContext context, int maxDepth, PathExpander expander )
-    {
-        super( context, maxDepth, expander );
+public class AllSimplePaths extends AllPaths {
+    public AllSimplePaths(EvaluationContext context, int maxDepth, PathExpander expander) {
+        super(context, maxDepth, expander);
     }
 
     @Override
-    protected Uniqueness uniqueness()
-    {
+    protected Uniqueness uniqueness() {
         return Uniqueness.NODE_PATH;
     }
 }

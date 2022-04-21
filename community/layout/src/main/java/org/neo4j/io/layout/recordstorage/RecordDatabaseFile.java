@@ -19,16 +19,14 @@
  */
 package org.neo4j.io.layout.recordstorage;
 
-import org.apache.commons.lang3.ArrayUtils;
+import static java.util.Objects.requireNonNull;
 
 import java.util.Optional;
-
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Enumeration of storage implementation specific files for particular database.
@@ -40,62 +38,57 @@ import static java.util.Objects.requireNonNull;
  * @see DatabaseLayout
  * @see Neo4jLayout
  */
-public enum RecordDatabaseFile implements DatabaseFile
-{
-    NODE_STORE( RecordDatabaseFileNames.NODE_STORE ),
+public enum RecordDatabaseFile implements DatabaseFile {
+    NODE_STORE(RecordDatabaseFileNames.NODE_STORE),
 
-    NODE_LABEL_STORE( RecordDatabaseFileNames.NODE_LABELS_STORE ),
+    NODE_LABEL_STORE(RecordDatabaseFileNames.NODE_LABELS_STORE),
 
-    PROPERTY_STORE( RecordDatabaseFileNames.PROPERTY_STORE ),
+    PROPERTY_STORE(RecordDatabaseFileNames.PROPERTY_STORE),
 
-    PROPERTY_ARRAY_STORE( RecordDatabaseFileNames.PROPERTY_ARRAY_STORE ),
+    PROPERTY_ARRAY_STORE(RecordDatabaseFileNames.PROPERTY_ARRAY_STORE),
 
-    PROPERTY_STRING_STORE( RecordDatabaseFileNames.PROPERTY_STRING_STORE ),
+    PROPERTY_STRING_STORE(RecordDatabaseFileNames.PROPERTY_STRING_STORE),
 
-    PROPERTY_KEY_TOKEN_STORE( RecordDatabaseFileNames.PROPERTY_KEY_TOKEN_STORE ),
+    PROPERTY_KEY_TOKEN_STORE(RecordDatabaseFileNames.PROPERTY_KEY_TOKEN_STORE),
 
-    PROPERTY_KEY_TOKEN_NAMES_STORE( RecordDatabaseFileNames.PROPERTY_KEY_TOKEN_NAMES_STORE ),
+    PROPERTY_KEY_TOKEN_NAMES_STORE(RecordDatabaseFileNames.PROPERTY_KEY_TOKEN_NAMES_STORE),
 
-    RELATIONSHIP_STORE( RecordDatabaseFileNames.RELATIONSHIP_STORE ),
+    RELATIONSHIP_STORE(RecordDatabaseFileNames.RELATIONSHIP_STORE),
 
-    RELATIONSHIP_GROUP_STORE( RecordDatabaseFileNames.RELATIONSHIP_GROUP_STORE ),
+    RELATIONSHIP_GROUP_STORE(RecordDatabaseFileNames.RELATIONSHIP_GROUP_STORE),
 
-    RELATIONSHIP_TYPE_TOKEN_STORE( RecordDatabaseFileNames.RELATIONSHIP_TYPE_TOKEN_STORE ),
+    RELATIONSHIP_TYPE_TOKEN_STORE(RecordDatabaseFileNames.RELATIONSHIP_TYPE_TOKEN_STORE),
 
-    RELATIONSHIP_TYPE_TOKEN_NAMES_STORE( RecordDatabaseFileNames.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE ),
+    RELATIONSHIP_TYPE_TOKEN_NAMES_STORE(RecordDatabaseFileNames.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE),
 
-    LABEL_TOKEN_STORE( RecordDatabaseFileNames.LABEL_TOKEN_STORE ),
+    LABEL_TOKEN_STORE(RecordDatabaseFileNames.LABEL_TOKEN_STORE),
 
-    LABEL_TOKEN_NAMES_STORE( RecordDatabaseFileNames.LABEL_TOKEN_NAMES_STORE ),
+    LABEL_TOKEN_NAMES_STORE(RecordDatabaseFileNames.LABEL_TOKEN_NAMES_STORE),
 
-    SCHEMA_STORE( RecordDatabaseFileNames.SCHEMA_STORE ),
+    SCHEMA_STORE(RecordDatabaseFileNames.SCHEMA_STORE),
 
-    COUNTS_STORE( RecordDatabaseFileNames.COUNTS_STORE, false ),
+    COUNTS_STORE(RecordDatabaseFileNames.COUNTS_STORE, false),
 
-    RELATIONSHIP_GROUP_DEGREES_STORE( RecordDatabaseFileNames.RELATIONSHIP_GROUP_DEGREES_STORE, false );
+    RELATIONSHIP_GROUP_DEGREES_STORE(RecordDatabaseFileNames.RELATIONSHIP_GROUP_DEGREES_STORE, false);
     private final String name;
     private final boolean hasIdFile;
 
-    RecordDatabaseFile( String name )
-    {
-        this( name, true );
+    RecordDatabaseFile(String name) {
+        this(name, true);
     }
 
-    RecordDatabaseFile( String name, boolean hasIdFile )
-    {
+    RecordDatabaseFile(String name, boolean hasIdFile) {
         this.name = name;
         this.hasIdFile = hasIdFile;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     @Override
-    public boolean hasIdFile()
-    {
+    public boolean hasIdFile() {
         return hasIdFile;
     }
 
@@ -106,22 +99,19 @@ public enum RecordDatabaseFile implements DatabaseFile
      * @return an {@link Optional} that wraps the matching database file that matches to the specified name,
      * or {@link Optional#empty()} if the given file name does not match to any of database files.
      */
-    public static Optional<DatabaseFile> fileOf( String name )
-    {
-        requireNonNull( name );
+    public static Optional<DatabaseFile> fileOf(String name) {
+        requireNonNull(name);
         DatabaseFile[] databaseFiles = allValues();
-        for ( DatabaseFile databaseFile : databaseFiles )
-        {
-            if ( databaseFile.getName().equals( name ) )
-            {
-                return Optional.of( databaseFile );
+        for (DatabaseFile databaseFile : databaseFiles) {
+            if (databaseFile.getName().equals(name)) {
+                return Optional.of(databaseFile);
             }
         }
         return Optional.empty();
     }
 
-    public static DatabaseFile[] allValues()
-    {
-        return ArrayUtils.addAll( ArrayUtils.addAll( new DatabaseFile[0], CommonDatabaseFile.values() ), RecordDatabaseFile.values() );
+    public static DatabaseFile[] allValues() {
+        return ArrayUtils.addAll(
+                ArrayUtils.addAll(new DatabaseFile[0], CommonDatabaseFile.values()), RecordDatabaseFile.values());
     }
 }

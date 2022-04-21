@@ -19,24 +19,22 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.eclipse.collections.api.block.function.Function;
-import org.eclipse.collections.api.block.function.Function2;
-import org.eclipse.collections.api.block.procedure.Procedure;
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-
+import org.eclipse.collections.api.block.function.Function;
+import org.eclipse.collections.api.block.function.Function2;
+import org.eclipse.collections.api.block.procedure.Procedure;
 import org.neo4j.collection.trackable.HeapTrackingUnifiedMap;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.CalledFromGeneratedCode;
-
-import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
-import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 
 /**
  * A heap tracking, ordered, append-only, map. It only tracks the internal structure, not the elements within.
@@ -47,31 +45,29 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
  * @param <K> key type
  * @param <V> value type
  */
-public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingOrderedAppendMap.class );
-    private static final int INITIAL_CHUNK_SIZE = 32; // Must be even, preferably a power of 2 (32 matches the HeapTrackingUnifiedMap initial size)
+public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingOrderedAppendMap.class);
+    private static final int INITIAL_CHUNK_SIZE =
+            32; // Must be even, preferably a power of 2 (32 matches the HeapTrackingUnifiedMap initial size)
     private static final int MAX_CHUNK_SIZE = 8192; // Must be even, preferably a power of 2
 
     private final MemoryTracker scopedMemoryTracker;
-    private HeapTrackingUnifiedMap<K,V> map;
+    private HeapTrackingUnifiedMap<K, V> map;
 
     // Linked chunk list used to store key-value pairs in order
     private Chunk first;
     private Chunk current;
 
-    public static <K, V> HeapTrackingOrderedAppendMap<K,V> createOrderedMap( MemoryTracker memoryTracker )
-    {
+    public static <K, V> HeapTrackingOrderedAppendMap<K, V> createOrderedMap(MemoryTracker memoryTracker) {
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
-        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
-        return new HeapTrackingOrderedAppendMap<>( scopedMemoryTracker );
+        scopedMemoryTracker.allocateHeap(SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
+        return new HeapTrackingOrderedAppendMap<>(scopedMemoryTracker);
     }
 
-    private HeapTrackingOrderedAppendMap( MemoryTracker scopedMemoryTracker )
-    {
+    private HeapTrackingOrderedAppendMap(MemoryTracker scopedMemoryTracker) {
         this.scopedMemoryTracker = scopedMemoryTracker;
-        this.map = newMap( scopedMemoryTracker );
-        first = new Chunk( INITIAL_CHUNK_SIZE, scopedMemoryTracker );
+        this.map = newMap(scopedMemoryTracker);
+        first = new Chunk(INITIAL_CHUNK_SIZE, scopedMemoryTracker);
         current = first;
     }
 
@@ -84,15 +80,16 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
      * @param function A function that takes a memory tracker and returns a value.
      * @return The value for the given key
      */
-    public V getIfAbsentPutWithMemoryTracker( K key, Function<MemoryTracker,? extends V> function )
-    {
-        return map.getIfAbsentPutWith( key, p ->
-        {
-            MemoryTracker memoryTracker = scopedMemoryTracker;
-            V value = p.valueOf( memoryTracker );
-            addToBuffer( key, value );
-            return value;
-        }, function );
+    public V getIfAbsentPutWithMemoryTracker(K key, Function<MemoryTracker, ? extends V> function) {
+        return map.getIfAbsentPutWith(
+                key,
+                p -> {
+                    MemoryTracker memoryTracker = scopedMemoryTracker;
+                    V value = p.valueOf(memoryTracker);
+                    addToBuffer(key, value);
+                    return value;
+                },
+                function);
     }
 
     /**
@@ -104,26 +101,24 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
      * @param function A function that takes the key and a memory tracker and returns a value.
      * @return The value for the given key
      */
-    public V getIfAbsentPutWithMemoryTracker2( K key, Function2<K, MemoryTracker,? extends V> function )
-    {
-        // NOTE: Based on profiling it seems that because of the overhead of creating an linking a lambda in this method it is faster to do
+    public V getIfAbsentPutWithMemoryTracker2(K key, Function2<K, MemoryTracker, ? extends V> function) {
+        // NOTE: Based on profiling it seems that because of the overhead of creating an linking a lambda in this method
+        // it is faster to do
         //       separate gets and puts, especially when we expect more gets to happen on existing values.
-        V value = map.get( key );
-        if ( value != null )
-        {
+        V value = map.get(key);
+        if (value != null) {
             return value;
         }
         // Put a new value
-        V newValue = function.value( key, scopedMemoryTracker );
-        map.put( key, newValue );
-        addToBuffer( key, newValue );
+        V newValue = function.value(key, scopedMemoryTracker);
+        map.put(key, newValue);
+        addToBuffer(key, newValue);
         return newValue;
     }
 
     @CalledFromGeneratedCode
-    public V get( K key )
-    {
-        return map.get( key );
+    public V get(K key) {
+        return map.get(key);
     }
 
     /**
@@ -132,28 +127,23 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
      *          (This is to avoid having to unnecessarily implement a slow linear scan through the singly-linked list to find and replace the entry)
      */
     @CalledFromGeneratedCode
-    public void put( K key, V value )
-    {
-        addToBuffer( key, value );
-        if ( map.put( key, value ) != null )
-        {
-            throw new UnsupportedOperationException( "Replacing an existing value is not supported." );
+    public void put(K key, V value) {
+        addToBuffer(key, value);
+        if (map.put(key, value) != null) {
+            throw new UnsupportedOperationException("Replacing an existing value is not supported.");
         }
     }
 
     /**
      * Apply the procedure for each value in the map.
      */
-    @SuppressWarnings( "unchecked" )
-    public void forEachValue( Procedure<? super V> p )
-    {
+    @SuppressWarnings("unchecked")
+    public void forEachValue(Procedure<? super V> p) {
         Chunk chunk = first;
-        while ( chunk != null )
-        {
+        while (chunk != null) {
             // Value is at odd indicies (1, 3, 5, ...)
-            for ( int i = 1; i < chunk.cursor; i += 2 )
-            {
-                p.accept( (V) chunk.elements[i] );
+            for (int i = 1; i < chunk.cursor; i += 2) {
+                p.accept((V) chunk.elements[i]);
             }
             chunk = chunk.next;
         }
@@ -169,8 +159,7 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
      *
      * WARNING: The entries returned by next() are transient and must be consumed before calling next() again!
      */
-    public Iterator<Map.Entry<K, V>> autoClosingEntryIterator()
-    {
+    public Iterator<Map.Entry<K, V>> autoClosingEntryIterator() {
         // At this point we are not expecting updates so we do not need the map anymore
         map.close();
         map = null;
@@ -178,14 +167,12 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
         return new AutoClosingTransientEntryIterator();
     }
 
-    public MemoryTracker scopedMemoryTracker()
-    {
+    public MemoryTracker scopedMemoryTracker() {
         return scopedMemoryTracker;
     }
 
     @Override
-    public void closeInternal()
-    {
+    public void closeInternal() {
         map = null;
         first = null;
         current = null;
@@ -193,25 +180,21 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return first == null;
     }
 
-    public void addToBuffer( Object key, Object value )
-    {
-        if ( !current.add( key, value ) )
-        {
-            int newChunkSize = grow( current.elements.length );
-            Chunk newChunk = new Chunk( newChunkSize, scopedMemoryTracker );
+    public void addToBuffer(Object key, Object value) {
+        if (!current.add(key, value)) {
+            int newChunkSize = grow(current.elements.length);
+            Chunk newChunk = new Chunk(newChunkSize, scopedMemoryTracker);
             current.next = newChunk;
             current = newChunk;
-            current.add( key, value );
+            current.add(key, value);
         }
     }
 
-    private class AutoClosingTransientEntryIterator implements Iterator<Map.Entry<K,V>>, Map.Entry<K,V>
-    {
+    private class AutoClosingTransientEntryIterator implements Iterator<Map.Entry<K, V>>, Map.Entry<K, V> {
         private Chunk chunk;
         private Chunk nextChunk;
         private int index;
@@ -224,10 +207,8 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
         }
 
         @Override
-        public boolean hasNext()
-        {
-            if ( nextChunk == null || nextIndex >= nextChunk.cursor )
-            {
+        public boolean hasNext() {
+            if (nextChunk == null || nextIndex >= nextChunk.cursor) {
                 close();
                 return false;
             }
@@ -235,10 +216,8 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
         }
 
         @Override
-        public Map.Entry<K,V> next()
-        {
-            if ( nextChunk == null )
-            {
+        public Map.Entry<K, V> next() {
+            if (nextChunk == null) {
                 throw new NoSuchElementException();
             }
 
@@ -248,8 +227,7 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
 
             // Advance next entry
             nextIndex += 2;
-            if ( nextIndex >= nextChunk.cursor )
-            {
+            if (nextIndex >= nextChunk.cursor) {
                 nextChunk = nextChunk.next;
                 nextIndex = 0;
             }
@@ -259,76 +237,64 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
         }
 
         @Override
-        @SuppressWarnings( "unchecked" )
-        public K getKey()
-        {
+        @SuppressWarnings("unchecked")
+        public K getKey() {
             return (K) chunk.elements[index];
         }
 
         @Override
-        @SuppressWarnings( "unchecked" )
-        public V getValue()
-        {
+        @SuppressWarnings("unchecked")
+        public V getValue() {
             return (V) chunk.elements[index + 1];
         }
 
         @Override
-        public V setValue( V value )
-        {
+        public V setValue(V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( o instanceof Map.Entry<?,?> that )
-            {
-                return Objects.equals( this.getKey(), that.getKey() ) && Objects.equals( this.getValue(), that.getValue() );
+        public boolean equals(Object o) {
+            if (o instanceof Map.Entry<?, ?> that) {
+                return Objects.equals(this.getKey(), that.getKey()) && Objects.equals(this.getValue(), that.getValue());
             }
             return false;
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             K key = this.getKey();
             V value = this.getValue();
             return (key == null ? 0 : key.hashCode()) ^ (value == null ? 0 : value.hashCode());
         }
     }
 
-    private static int grow( int size )
-    {
-        if ( size == MAX_CHUNK_SIZE )
-        {
+    private static int grow(int size) {
+        if (size == MAX_CHUNK_SIZE) {
             return size;
         }
         int newSize = size << 1;
-        if ( newSize <= 0 || newSize > MAX_CHUNK_SIZE ) // Check overflow
+        if (newSize <= 0 || newSize > MAX_CHUNK_SIZE) // Check overflow
         {
             return MAX_CHUNK_SIZE;
         }
         return newSize;
     }
 
-    private static class Chunk
-    {
-        private static final long SHALLOW_SIZE = shallowSizeOfInstance( Chunk.class );
+    private static class Chunk {
+        private static final long SHALLOW_SIZE = shallowSizeOfInstance(Chunk.class);
 
         private final Object[] elements;
         private Chunk next;
         private int cursor;
 
-        Chunk( int size, MemoryTracker memoryTracker )
-        {
-            memoryTracker.allocateHeap( SHALLOW_SIZE + shallowSizeOfObjectArray( size ) );
+        Chunk(int size, MemoryTracker memoryTracker) {
+            memoryTracker.allocateHeap(SHALLOW_SIZE + shallowSizeOfObjectArray(size));
             elements = new Object[size];
         }
 
-        boolean add( Object key, Object value )
-        {
-            if ( cursor < elements.length )
-            {
+        boolean add(Object key, Object value) {
+            if (cursor < elements.length) {
                 elements[cursor] = key;
                 elements[cursor + 1] = value;
                 cursor += 2;

@@ -19,44 +19,40 @@
  */
 package org.neo4j.server.security.auth;
 
+import static java.util.Collections.emptyList;
+import static org.neo4j.kernel.impl.security.User.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.procedure.Mode.DBMS;
+
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Procedure;
 
-import static java.util.Collections.emptyList;
-import static org.neo4j.kernel.impl.security.User.PASSWORD_CHANGE_REQUIRED;
-import static org.neo4j.procedure.Mode.DBMS;
-
-@SuppressWarnings( {"unused", "WeakerAccess"} )
-public class AuthProcedures
-{
+@SuppressWarnings({"unused", "WeakerAccess"})
+public class AuthProcedures {
     @Context
     public SecurityContext securityContext;
 
     @SystemProcedure
-    @Description( "Show the current user." )
-    @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
-    public Stream<UserResult> showCurrentUser()
-    {
+    @Description("Show the current user.")
+    @Procedure(name = "dbms.showCurrentUser", mode = DBMS)
+    public Stream<UserResult> showCurrentUser() {
         String username = securityContext.subject().executingUser();
-        return Stream.of( new UserResult( username, false ) );
+        return Stream.of(new UserResult(username, false));
     }
 
-    private static final List<String> changeRequiredList = List.of( PASSWORD_CHANGE_REQUIRED );
+    private static final List<String> changeRequiredList = List.of(PASSWORD_CHANGE_REQUIRED);
 
-    public static class UserResult
-    {
+    public static class UserResult {
         public final String username;
-        public final List<String> roles = null; // this is just so that the community version has the same signature as in enterprise
+        public final List<String> roles =
+                null; // this is just so that the community version has the same signature as in enterprise
         public final List<String> flags;
 
-        UserResult( String username, boolean changeRequired )
-        {
+        UserResult(String username, boolean changeRequired) {
             this.username = username;
             this.flags = changeRequired ? changeRequiredList : emptyList();
         }

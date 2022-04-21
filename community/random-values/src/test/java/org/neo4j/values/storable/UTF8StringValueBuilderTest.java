@@ -19,78 +19,73 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-class UTF8StringValueBuilderTest
-{
+import org.junit.jupiter.api.Test;
+
+class UTF8StringValueBuilderTest {
 
     @Test
-    void shouldHandleSingleByteCodePoints()
-    {
+    void shouldHandleSingleByteCodePoints() {
         // Given
         UTF8StringValueBuilder builder = new UTF8StringValueBuilder();
-        int codepoint = "$".codePointAt( 0 );
+        int codepoint = "$".codePointAt(0);
 
         // When
-        builder.addCodePoint( codepoint );
-        builder.addCodePoint( codepoint );
-        builder.addCodePoint( codepoint );
+        builder.addCodePoint(codepoint);
+        builder.addCodePoint(codepoint);
+        builder.addCodePoint(codepoint);
 
         // Then
         TextValue textValue = builder.build();
-        assertThat( textValue.stringValue() ).isEqualTo( "$$$" );
+        assertThat(textValue.stringValue()).isEqualTo("$$$");
     }
 
     @Test
-    void shouldHandleTwoByteCodePoints()
-    {
+    void shouldHandleTwoByteCodePoints() {
         // Given
         UTF8StringValueBuilder builder = new UTF8StringValueBuilder();
-        int codepoint = "¢".codePointAt( 0 );
+        int codepoint = "¢".codePointAt(0);
 
         // When
-        builder.addCodePoint( codepoint );
-        builder.addCodePoint( codepoint );
-        builder.addCodePoint( codepoint );
+        builder.addCodePoint(codepoint);
+        builder.addCodePoint(codepoint);
+        builder.addCodePoint(codepoint);
 
         // Then
         TextValue textValue = builder.build();
-        assertThat( textValue.stringValue() ).isEqualTo( "¢¢¢" );
+        assertThat(textValue.stringValue()).isEqualTo("¢¢¢");
     }
 
     @Test
-    void shouldHandleThreeByteCodePoints()
-    {
+    void shouldHandleThreeByteCodePoints() {
         // Given
         UTF8StringValueBuilder builder = new UTF8StringValueBuilder();
-        int codepoint = "€".codePointAt( 0 );
+        int codepoint = "€".codePointAt(0);
 
         // When
-        builder.addCodePoint( codepoint );
-        builder.addCodePoint( codepoint );
-        builder.addCodePoint( codepoint );
+        builder.addCodePoint(codepoint);
+        builder.addCodePoint(codepoint);
+        builder.addCodePoint(codepoint);
 
         // Then
         TextValue textValue = builder.build();
-        assertThat( textValue.stringValue() ).isEqualTo( "€€€" );
+        assertThat(textValue.stringValue()).isEqualTo("€€€");
     }
 
     @Test
-    void shouldHandleFourByteCodePoints()
-    {
+    void shouldHandleFourByteCodePoints() {
         // Given
         UTF8StringValueBuilder builder = new UTF8StringValueBuilder();
-        int codepoint = "\uD800\uDF48".codePointAt( 0 );
+        int codepoint = "\uD800\uDF48".codePointAt(0);
 
         // When
-        builder.addCodePoint( codepoint );
-        builder.addCodePoint( codepoint );
-        builder.addCodePoint( codepoint );
+        builder.addCodePoint(codepoint);
+        builder.addCodePoint(codepoint);
+        builder.addCodePoint(codepoint);
 
         // Then
         TextValue textValue = builder.build();
-        assertThat( textValue.stringValue() ).isEqualTo( "\uD800\uDF48\uD800\uDF48\uD800\uDF48" );
+        assertThat(textValue.stringValue()).isEqualTo("\uD800\uDF48\uD800\uDF48\uD800\uDF48");
     }
 }

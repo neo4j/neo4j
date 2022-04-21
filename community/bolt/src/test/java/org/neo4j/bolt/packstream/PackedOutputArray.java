@@ -24,105 +24,82 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class PackedOutputArray implements PackOutput
-{
+public class PackedOutputArray implements PackOutput {
     ByteArrayOutputStream raw;
     DataOutputStream data;
 
-    public PackedOutputArray()
-    {
+    public PackedOutputArray() {
         raw = new ByteArrayOutputStream();
-        data = new DataOutputStream( raw );
+        data = new DataOutputStream(raw);
     }
 
     @Override
-    public void beginMessage()
-    {
-    }
+    public void beginMessage() {}
 
     @Override
-    public void messageSucceeded()
-    {
-    }
+    public void messageSucceeded() {}
 
     @Override
-    public void messageFailed()
-    {
-    }
+    public void messageFailed() {}
 
     @Override
-    public void messageReset()
-    {
-
-    }
+    public void messageReset() {}
 
     @Override
-    public PackOutput flush()
-    {
+    public PackOutput flush() {
         return this;
     }
 
     @Override
-    public PackOutput writeByte( byte value ) throws IOException
-    {
-        data.write( value );
+    public PackOutput writeByte(byte value) throws IOException {
+        data.write(value);
         return this;
     }
 
     @Override
-    public PackOutput writeBytes( ByteBuffer buffer ) throws IOException
-    {
-        while ( buffer.remaining() > 0 )
-        {
-            data.writeByte( buffer.get() );
+    public PackOutput writeBytes(ByteBuffer buffer) throws IOException {
+        while (buffer.remaining() > 0) {
+            data.writeByte(buffer.get());
         }
         return this;
     }
 
     @Override
-    public PackOutput writeBytes( byte[] bytes, int offset, int amountToWrite ) throws IOException
-    {
-        data.write( bytes, offset, amountToWrite );
+    public PackOutput writeBytes(byte[] bytes, int offset, int amountToWrite) throws IOException {
+        data.write(bytes, offset, amountToWrite);
         return this;
     }
 
     @Override
-    public PackOutput writeShort( short value ) throws IOException
-    {
-        data.writeShort( value );
+    public PackOutput writeShort(short value) throws IOException {
+        data.writeShort(value);
         return this;
     }
 
     @Override
-    public PackOutput writeInt( int value ) throws IOException
-    {
-        data.writeInt( value );
+    public PackOutput writeInt(int value) throws IOException {
+        data.writeInt(value);
         return this;
     }
 
     @Override
-    public PackOutput writeLong( long value ) throws IOException
-    {
-        data.writeLong( value );
+    public PackOutput writeLong(long value) throws IOException {
+        data.writeLong(value);
         return this;
     }
 
     @Override
-    public PackOutput writeDouble( double value ) throws IOException
-    {
-        data.writeDouble( value );
+    public PackOutput writeDouble(double value) throws IOException {
+        data.writeDouble(value);
         return this;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         data.close();
     }
 
-    public byte[] bytes()
-    {
+    public byte[] bytes() {
         return raw.toByteArray();
     }
-
 }

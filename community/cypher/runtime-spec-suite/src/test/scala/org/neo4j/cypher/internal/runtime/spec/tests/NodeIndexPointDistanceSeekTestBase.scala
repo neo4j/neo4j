@@ -33,28 +33,39 @@ import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D
 import org.neo4j.values.storable.Values.pointValue
 
 abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
-                                                                              edition: Edition[CONTEXT],
-                                                                              runtime: CypherRuntime[CONTEXT],
-                                                                              sizeHint: Int
-                                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should seek 2d cartesian points (inclusively)") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN, i, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, indexType = IndexType.POINT, inclusive = true)
+      .pointDistanceNodeIndexSeek(
+        "n",
+        "Place",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        2,
+        indexType = IndexType.POINT,
+        inclusive = true
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
   }
@@ -62,20 +73,31 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   test("should seek 2d cartesian points (non-inclusively)") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN, i, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, indexType = IndexType.POINT, inclusive = false)
+      .pointDistanceNodeIndexSeek(
+        "n",
+        "Place",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        2,
+        indexType = IndexType.POINT,
+        inclusive = false
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1)))
   }
@@ -83,20 +105,31 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   test("should seek 3d cartesian points (inclusively)") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, indexType = IndexType.POINT, inclusive = true)
+      .pointDistanceNodeIndexSeek(
+        "n",
+        "Place",
+        "location",
+        "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}",
+        2,
+        indexType = IndexType.POINT,
+        inclusive = true
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
   }
@@ -104,20 +137,31 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   test("should seek 3d cartesian points (non-inclusively)") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, indexType = IndexType.POINT, inclusive = false)
+      .pointDistanceNodeIndexSeek(
+        "n",
+        "Place",
+        "location",
+        "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}",
+        2,
+        indexType = IndexType.POINT,
+        inclusive = false
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1)))
   }
@@ -125,75 +169,104 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   test("should seek 2d geographic points") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(180, {
-        case i => Map("location" -> pointValue(WGS_84, i % 180, 0))
-      }, "Place")
+      nodePropertyGraph(
+        180,
+        {
+          case i => Map("location" -> pointValue(WGS_84, i % 180, 0))
+        },
+        "Place"
+      )
     }
 
     // when
-    val d = WGS_84.getCalculator.distance( pointValue(WGS_84, 0, 0),
-                                          pointValue(WGS_84, 10, 0))
+    val d = WGS_84.getCalculator.distance(pointValue(WGS_84, 0, 0), pointValue(WGS_84, 10, 0))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
-      .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", d, indexType = IndexType.POINT, inclusive = true)
+      .pointDistanceNodeIndexSeek(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}",
+        d,
+        indexType = IndexType.POINT,
+        inclusive = true
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5 , 6, 7, 8, 9, 10)))
+    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
   }
 
   test("should seek 3d geographic points") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(180, {
-        case i => Map("location" -> pointValue(WGS_84_3D, i % 180, 0, 0))
-      }, "Place")
+      nodePropertyGraph(
+        180,
+        {
+          case i => Map("location" -> pointValue(WGS_84_3D, i % 180, 0, 0))
+        },
+        "Place"
+      )
     }
 
     // when
-    val d = WGS_84_3D.getCalculator.distance( pointValue(WGS_84_3D, 0, 0, 0),
-                                             pointValue(WGS_84_3D, 10, 0, 0))
+    val d = WGS_84_3D.getCalculator.distance(pointValue(WGS_84_3D, 0, 0, 0), pointValue(WGS_84_3D, 10, 0, 0))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
-      .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}", d, indexType = IndexType.POINT, inclusive = true)
+      .pointDistanceNodeIndexSeek(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
+        d,
+        indexType = IndexType.POINT,
+        inclusive = true
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5 , 6, 7, 8, 9, 10)))
+    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
   }
-
 
   test("should cache properties") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN, i, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("cache[n.location] AS location")
-      .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}",
-                              2,
-                              indexType = IndexType.POINT,
-                              inclusive = true,
-                              getValue = GetValue)
+      .pointDistanceNodeIndexSeek(
+        "n",
+        "Place",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        2,
+        indexType = IndexType.POINT,
+        inclusive = true,
+        getValue = GetValue
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location")
-      .withRows(singleColumn(List(pointValue(CARTESIAN, 0, 0),
-                                  pointValue(CARTESIAN, 1, 0),
-                                  pointValue(CARTESIAN, 2, 0))))
+      .withRows(singleColumn(List(
+        pointValue(CARTESIAN, 0, 0),
+        pointValue(CARTESIAN, 1, 0),
+        pointValue(CARTESIAN, 2, 0)
+      )))
   }
 }

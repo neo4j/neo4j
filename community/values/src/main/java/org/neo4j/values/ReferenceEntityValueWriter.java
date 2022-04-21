@@ -26,23 +26,21 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * AnyValueWriter that only supports entity references.
  */
-public abstract class ReferenceEntityValueWriter<E extends Exception> implements AnyValueWriter<E>
-{
+public abstract class ReferenceEntityValueWriter<E extends Exception> implements AnyValueWriter<E> {
     @Override
-    public final EntityMode entityMode()
-    {
+    public final EntityMode entityMode() {
         return EntityMode.REFERENCE;
     }
 
     @Override
-    public final void writeNode( long nodeId, TextArray labels, MapValue properties, boolean isDeleted ) throws E
-    {
-        throw new IllegalStateException( "Cannot write full node to ReferenceEntityValueWriter" );
+    public final void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) throws E {
+        throw new IllegalStateException("Cannot write full node to ReferenceEntityValueWriter");
     }
 
     @Override
-    public final void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted ) throws E
-    {
-        throw new IllegalStateException( "Cannot write full node to ReferenceEntityValueWriter" );
+    public final void writeRelationship(
+            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted)
+            throws E {
+        throw new IllegalStateException("Cannot write full node to ReferenceEntityValueWriter");
     }
 }

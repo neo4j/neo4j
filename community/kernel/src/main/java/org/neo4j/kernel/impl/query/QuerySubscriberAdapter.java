@@ -22,41 +22,22 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.values.AnyValue;
 
-public abstract class QuerySubscriberAdapter implements QuerySubscriber
-{
+public abstract class QuerySubscriberAdapter implements QuerySubscriber {
     @Override
-    public void onResult( int numberOfFields )
-    {
-
-    }
+    public void onResult(int numberOfFields) {}
 
     @Override
-    public void onRecord()
-    {
-
-    }
+    public void onRecord() {}
 
     @Override
-    public void onField( int offset, AnyValue value )
-    {
-
-    }
+    public void onField(int offset, AnyValue value) {}
 
     @Override
-    public void onRecordCompleted()
-    {
-
-    }
+    public void onRecordCompleted() {}
 
     @Override
-    public void onError( Throwable throwable )
-    {
-
-    }
+    public void onError(Throwable throwable) {}
 
     @Override
-    public void onResultCompleted( QueryStatistics statistics )
-    {
-
-    }
+    public void onResultCompleted(QueryStatistics statistics) {}
 }

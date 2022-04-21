@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class RelationshipTypeIndexCursorTest extends RelationshipTypeIndexCursorTestBase<WriteTestSupport>
-{
+public class RelationshipTypeIndexCursorTest extends RelationshipTypeIndexCursorTestBase<WriteTestSupport> {
     @Override
-    public WriteTestSupport newTestSupport()
-    {
+    public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();
     }
 }

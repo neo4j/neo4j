@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api;
 
 @FunctionalInterface
-public interface RelTypeSupplier
-{
+public interface RelTypeSupplier {
     int getRelType();
 }

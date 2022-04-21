@@ -43,47 +43,54 @@ import org.neo4j.token.TokenHolders;
  * IndexProviderFactory that can be loaded as extension and delegates to built in index provider.
  * It needs to override descriptor to avoid clash with builtin descriptors.
  */
-public class BuiltInDelegatingIndexProviderFactory extends ExtensionFactory<BuiltInDelegatingIndexProviderFactory.Dependencies>
-{
+public class BuiltInDelegatingIndexProviderFactory
+        extends ExtensionFactory<BuiltInDelegatingIndexProviderFactory.Dependencies> {
 
     private final AbstractIndexProviderFactory<?> delegate;
     private final IndexProviderDescriptor descriptorOverride;
 
-    public BuiltInDelegatingIndexProviderFactory( AbstractIndexProviderFactory<?> delegate, IndexProviderDescriptor descriptorOverride )
-    {
-        super( ExtensionType.DATABASE, descriptorOverride.getKey() );
+    public BuiltInDelegatingIndexProviderFactory(
+            AbstractIndexProviderFactory<?> delegate, IndexProviderDescriptor descriptorOverride) {
+        super(ExtensionType.DATABASE, descriptorOverride.getKey());
         this.delegate = delegate;
         this.descriptorOverride = descriptorOverride;
     }
 
     @Override
-    public IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
-    {
+    public IndexProvider newInstance(ExtensionContext context, Dependencies dependencies) {
         var provider = delegate.create(
-                dependencies.pageCache(), dependencies.fileSystem(), dependencies.getLogService(), dependencies.monitors(), dependencies.getConfig(),
-                dependencies.readOnlyChecker(), context.dbmsInfo(), dependencies.recoveryCleanupWorkCollector(),
-                dependencies.databaseLayout(), dependencies.tokenHolders(), dependencies.jobScheduler(),
-                dependencies.contextFactory() );
-        return new IndexProvider.Delegating( provider )
-        {
+                dependencies.pageCache(),
+                dependencies.fileSystem(),
+                dependencies.getLogService(),
+                dependencies.monitors(),
+                dependencies.getConfig(),
+                dependencies.readOnlyChecker(),
+                context.dbmsInfo(),
+                dependencies.recoveryCleanupWorkCollector(),
+                dependencies.databaseLayout(),
+                dependencies.tokenHolders(),
+                dependencies.jobScheduler(),
+                dependencies.contextFactory());
+        return new IndexProvider.Delegating(provider) {
             @Override
-            public IndexProviderDescriptor getProviderDescriptor()
-            {
+            public IndexProviderDescriptor getProviderDescriptor() {
                 return descriptorOverride;
             }
 
             @Override
-            public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
-                                                                        StorageEngineFactory storageEngineFactory, CursorContextFactory contextFactory )
-            {
-                return new NameOverridingStoreMigrationParticipant( super.storeMigrationParticipant( fs, pageCache, storageEngineFactory, contextFactory ),
-                                                                    descriptorOverride.name() );
+            public StoreMigrationParticipant storeMigrationParticipant(
+                    FileSystemAbstraction fs,
+                    PageCache pageCache,
+                    StorageEngineFactory storageEngineFactory,
+                    CursorContextFactory contextFactory) {
+                return new NameOverridingStoreMigrationParticipant(
+                        super.storeMigrationParticipant(fs, pageCache, storageEngineFactory, contextFactory),
+                        descriptorOverride.name());
             }
         };
     }
 
-    public interface Dependencies
-    {
+    public interface Dependencies {
         PageCache pageCache();
 
         FileSystemAbstraction fileSystem();

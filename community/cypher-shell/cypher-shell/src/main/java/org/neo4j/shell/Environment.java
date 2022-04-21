@@ -21,22 +21,18 @@ package org.neo4j.shell;
 
 import java.util.Map;
 
-public class Environment
-{
-    private final Map<String,String> env;
+public class Environment {
+    private final Map<String, String> env;
 
-    public Environment()
-    {
-        this( System.getenv() );
+    public Environment() {
+        this(System.getenv());
     }
 
-    public Environment( Map<String,String> env )
-    {
+    public Environment(Map<String, String> env) {
         this.env = env;
     }
 
-    String getVariable( String name )
-    {
-        return env.get( name );
+    String getVariable(String name) {
+        return env.get(name);
     }
 }

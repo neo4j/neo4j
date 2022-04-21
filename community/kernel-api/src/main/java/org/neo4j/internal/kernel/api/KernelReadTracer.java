@@ -32,15 +32,14 @@ import org.neo4j.storageengine.api.ReadTracer;
  *       add additional callback, extend some callbacks with more details, or
  *       differentiate callbacks (e.g. onNode) depending on the underlying read.
  */
-public interface KernelReadTracer extends ReadTracer
-{
+public interface KernelReadTracer extends ReadTracer {
     /**
      * Called just before {@link NodeCursor#next()} returns true.
      *
      * @param nodeReference the node reference that will be available.
      */
     @Override
-    void onNode( long nodeReference );
+    void onNode(long nodeReference);
 
     /**
      * Called on {@link Read#allNodesScan(NodeCursor)}.
@@ -51,12 +50,12 @@ public interface KernelReadTracer extends ReadTracer
     /**
      * Called on {@link Read#nodeLabelScan(int, NodeLabelIndexCursor, IndexOrder)}.
      */
-    void onLabelScan( int label );
+    void onLabelScan(int label);
 
     /**
      * Called on {@link Read#relationshipTypeScan(TokenReadSession, RelationshipTypeIndexCursor, IndexQueryConstraints, TokenPredicate)}.
      */
-    void onRelationshipTypeScan( int type );
+    void onRelationshipTypeScan(int type);
 
     /**
      * Called on {@link Read#nodeIndexSeek(IndexReadSession, NodeValueIndexCursor, IndexQueryConstraints, PropertyIndexQuery...)}.
@@ -69,7 +68,7 @@ public interface KernelReadTracer extends ReadTracer
      * @param relationshipReference the relationship reference that will be available.
      */
     @Override
-    void onRelationship( long relationshipReference );
+    void onRelationship(long relationshipReference);
 
     /**
      * Called just before {@link PropertyCursor#next()} returns true.
@@ -77,11 +76,11 @@ public interface KernelReadTracer extends ReadTracer
      * @param propertyKey the property key of the next property.
      */
     @Override
-    void onProperty( int propertyKey );
+    void onProperty(int propertyKey);
 
     /**
      * Called just before {@link NodeCursor#hasLabel(int)} returns.
      */
     @Override
-    void onHasLabel( int label );
+    void onHasLabel(int label);
 }

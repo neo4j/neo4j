@@ -22,6 +22,4 @@ package org.neo4j.storageengine.api;
 /**
  * Marker interface for maintaining state for batched all-node scans
  */
-public interface AllNodeScan extends Scan
-{
-}
+public interface AllNodeScan extends Scan {}

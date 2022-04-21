@@ -19,24 +19,27 @@
  */
 package org.neo4j.fabric.executor;
 
-import reactor.core.publisher.Mono;
-
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.transaction.CompositeTransaction;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.values.virtual.MapValue;
+import reactor.core.publisher.Mono;
 
-public interface FabricRemoteExecutor
-{
-    RemoteTransactionContext startTransactionContext( CompositeTransaction compositeTransaction,
+public interface FabricRemoteExecutor {
+    RemoteTransactionContext startTransactionContext(
+            CompositeTransaction compositeTransaction,
             FabricTransactionInfo transactionInfo,
-            TransactionBookmarkManager bookmarkManager );
+            TransactionBookmarkManager bookmarkManager);
 
-    interface RemoteTransactionContext extends AutoCloseable
-    {
-        Mono<StatementResult> run( Location.Remote location, ExecutionOptions options, String query, TransactionMode transactionMode, MapValue params );
+    interface RemoteTransactionContext extends AutoCloseable {
+        Mono<StatementResult> run(
+                Location.Remote location,
+                ExecutionOptions options,
+                String query,
+                TransactionMode transactionMode,
+                MapValue params);
 
         boolean isEmptyContext();
 

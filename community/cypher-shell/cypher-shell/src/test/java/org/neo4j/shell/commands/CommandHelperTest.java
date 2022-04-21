@@ -19,8 +19,11 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.parameter.ParameterService;
@@ -29,36 +32,30 @@ import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.printer.AnsiPrinter;
 import org.neo4j.shell.state.BoltStateHandler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-
-class CommandHelperTest
-{
+class CommandHelperTest {
     private final AnsiPrinter logger = new AnsiPrinter();
-    private final ParameterService parameters = mock( ParameterService.class );
-    private final BoltStateHandler boltStateHandler = mock( BoltStateHandler.class );
-    private final CypherShell shell = new CypherShell( logger, boltStateHandler, new PrettyPrinter( PrettyConfig.DEFAULT ), parameters );
+    private final ParameterService parameters = mock(ParameterService.class);
+    private final BoltStateHandler boltStateHandler = mock(BoltStateHandler.class);
+    private final CypherShell shell =
+            new CypherShell(logger, boltStateHandler, new PrettyPrinter(PrettyConfig.DEFAULT), parameters);
 
     @Test
-    void shouldIgnoreCaseForCommands()
-    {
+    void shouldIgnoreCaseForCommands() {
         // Given
-        CommandHelper commandHelper =
-                new CommandHelper( logger, Historian.empty, shell, null, null );
+        CommandHelper commandHelper = new CommandHelper(logger, Historian.empty, shell, null, null);
 
         // When
-        Command begin = commandHelper.getCommand( ":BEGIN" );
+        Command begin = commandHelper.getCommand(":BEGIN");
 
         // Then
-        assertTrue( begin instanceof Begin );
+        assertTrue(begin instanceof Begin);
     }
 
     @Test
-    void internalStateSanityTest()
-    {
-        var args = new Command.Factory.Arguments( logger, Historian.empty, shell, null, null );
+    void internalStateSanityTest() {
+        var args = new Command.Factory.Arguments(logger, Historian.empty, shell, null, null);
         var factories = new CommandHelper.CommandFactoryHelper().factoryByClass();
-        factories.forEach( ( cls, factory ) -> assertEquals( cls, factory.executor( args ).getClass() ) );
+        factories.forEach(
+                (cls, factory) -> assertEquals(cls, factory.executor(args).getClass()));
     }
 }

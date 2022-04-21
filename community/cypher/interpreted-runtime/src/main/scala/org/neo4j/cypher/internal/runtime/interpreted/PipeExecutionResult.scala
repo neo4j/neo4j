@@ -29,14 +29,14 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
-class PipeExecutionResult(pipe: Pipe,
-                          val fieldNames: Array[String],
-                          val state: QueryState,
-                          override val queryProfile: QueryProfile,
-                          subscriber: QuerySubscriber,
-                          startsTransactions: Boolean,
-                         )
-  extends RuntimeResult {
+class PipeExecutionResult(
+  pipe: Pipe,
+  val fieldNames: Array[String],
+  val state: QueryState,
+  override val queryProfile: QueryProfile,
+  subscriber: QuerySubscriber,
+  startsTransactions: Boolean
+) extends RuntimeResult {
 
   private var demand = 0L
   private var cancelled = false

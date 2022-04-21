@@ -34,12 +34,14 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
 import org.scalatest.FunSuiteLike
 
-abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseOverPipelines: Boolean,
-                                                                        edition: Edition[CONTEXT],
-                                                                        runtime: CypherRuntime[CONTEXT]
-                                                                       ) extends RuntimeTestSuite[CONTEXT](
-  edition.copyWith(GraphDatabaseSettings.pagecache_memory -> Long.box(164480)), // 20 pages
-  runtime) {
+abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
+  canFuseOverPipelines: Boolean,
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith(GraphDatabaseSettings.pagecache_memory -> Long.box(164480)), // 20 pages
+      runtime
+    ) {
 
   // This needs to be big enough to trigger some page cache hits & misses
   protected val SIZE = 5000
@@ -50,9 +52,12 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
 
   test("should profile page cache stats of linear plan") {
     given {
-      nodePropertyGraph(SIZE, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
       () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
     }
 
@@ -68,23 +73,27 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] = if (canFuseOverPipelines) {
-      Map(0 -> NoEntryInPageCacheStat, // ProduceResults is part of a fused pipeline
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
+      if (canFuseOverPipelines) {
+        Map(
+          0 -> NoEntryInPageCacheStat, // ProduceResults is part of a fused pipeline
           1 -> NoEntryInPageCacheStat, // Projection is part of a fused pipeline
-          2 -> NoEntryInPageCacheStat) // Filer is part of a fused pipeline
-    } else {
-      Map(0 -> PageCacheIsNotUsed) // Projection of a previous row should not access store
-    }
-    checkProfilerStatsMakeSense(runtimeResult, 4,
-      expectedOperatorPageCacheStats
-    )
+          2 -> NoEntryInPageCacheStat
+        ) // Filer is part of a fused pipeline
+      } else {
+        Map(0 -> PageCacheIsNotUsed) // Projection of a previous row should not access store
+      }
+    checkProfilerStatsMakeSense(runtimeResult, 4, expectedOperatorPageCacheStats)
   }
 
   test("should profile page cache stats of linear plan with breaks") {
     given {
-      nodePropertyGraph(SIZE, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
       () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
     }
 
@@ -101,25 +110,30 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] = if (canFuseOverPipelines) {
-      Map(1 -> NoEntryInPageCacheStat, // Aggregation is part of a fused pipeline
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
+      if (canFuseOverPipelines) {
+        Map(
+          1 -> NoEntryInPageCacheStat, // Aggregation is part of a fused pipeline
           2 -> NoEntryInPageCacheStat, // Projection is part of a fused pipeline
-          3 -> NoEntryInPageCacheStat  // Filter is part of a fused pipeline
-      )
-    } else {
-      Map.empty
-    }
-    checkProfilerStatsMakeSense(runtimeResult, 5,
-      expectedOperatorPageCacheStats
-    )
+          3 -> NoEntryInPageCacheStat // Filter is part of a fused pipeline
+        )
+      } else {
+        Map.empty
+      }
+    checkProfilerStatsMakeSense(runtimeResult, 5, expectedOperatorPageCacheStats)
   }
 
   test("should profile page cache stats of branched plan") {
     given {
       nodeIndex("M", "prop")
-      nodePropertyGraph(SIZE, {
-        case i => Map("prop" -> i)
-      }, "N", "M")
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        },
+        "N",
+        "M"
+      )
       () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
     }
     // when
@@ -138,30 +152,36 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] = if (canFuseOverPipelines) {
-      Map(2 -> PageCacheIsNotUsed, // A join should not access store
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
+      if (canFuseOverPipelines) {
+        Map(
+          2 -> PageCacheIsNotUsed, // A join should not access store
           3 -> PageCacheIsNotUsed, // Apply does not do anything
           4 -> NoEntryInPageCacheStat, // Aggregation is part of a fused pipeline
-          5 -> PageCacheIsNotUsed, // Argument does not do anything
-      )
-    } else {
-      Map(2 -> PageCacheIsNotUsed, // A join should not access store
+          5 -> PageCacheIsNotUsed // Argument does not do anything
+        )
+      } else {
+        Map(
+          2 -> PageCacheIsNotUsed, // A join should not access store
           3 -> PageCacheIsNotUsed, // Apply does not do anything
           4 -> PageCacheIsNotUsed, // Aggregation should not access store
-          5 -> PageCacheIsNotUsed, // Argument does not do anything
-      )
-    }
-    checkProfilerStatsMakeSense(runtimeResult, 8,
-      expectedOperatorPageCacheStats
-    )
+          5 -> PageCacheIsNotUsed // Argument does not do anything
+        )
+      }
+    checkProfilerStatsMakeSense(runtimeResult, 8, expectedOperatorPageCacheStats)
   }
 
   test("should profile page cache stats of plan with apply over aggregation") {
     given {
       nodeIndex("M", "prop")
-      nodePropertyGraph(SIZE, {
-        case i => Map("prop" -> i)
-      }, "N", "M")
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        },
+        "N",
+        "M"
+      )
       () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
     }
     // when
@@ -178,31 +198,32 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] = if (canFuseOverPipelines) {
-      Map(
-        0 -> PageCacheIsNotUsed, // Produce result should not access store
-        1 -> PageCacheIsNotUsed, // Apply does not do anything
-        // TODO Shouldn't it be like this: 3 -> NoEntryInPageCacheStat // Expand all is part of a fused pipeline
-      )
-    } else {
-      Map(
-        0 -> PageCacheIsNotUsed, // Produce result should not access store
-        1 -> PageCacheIsNotUsed // Apply does not do anything
-      )
-    }
-    checkProfilerStatsMakeSense(runtimeResult, 8,
-      expectedOperatorPageCacheStats
-    )
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
+      if (canFuseOverPipelines) {
+        Map(
+          0 -> PageCacheIsNotUsed, // Produce result should not access store
+          1 -> PageCacheIsNotUsed // Apply does not do anything
+          // TODO Shouldn't it be like this: 3 -> NoEntryInPageCacheStat // Expand all is part of a fused pipeline
+        )
+      } else {
+        Map(
+          0 -> PageCacheIsNotUsed, // Produce result should not access store
+          1 -> PageCacheIsNotUsed // Apply does not do anything
+        )
+      }
+    checkProfilerStatsMakeSense(runtimeResult, 8, expectedOperatorPageCacheStats)
   }
 
-  protected def checkProfilerStatsMakeSense(runtimeResult: RecordingRuntimeResult,
-                                            numberOfOperators: Int,
-                                            expectedOperatorPageCacheStats: Map[Int, PageCacheStats] = Map.empty,
-                                            isOnlyOneTransaction: Boolean = true): Unit = {
+  protected def checkProfilerStatsMakeSense(
+    runtimeResult: RecordingRuntimeResult,
+    numberOfOperators: Int,
+    expectedOperatorPageCacheStats: Map[Int, PageCacheStats] = Map.empty,
+    isOnlyOneTransaction: Boolean = true
+  ): Unit = {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     var accHits = 0L
     var accMisses = 0L
-    for(i <- 0 until numberOfOperators) {
+    for (i <- 0 until numberOfOperators) {
       val op = queryProfile.operatorProfile(i)
       val hits = op.pageCacheHits()
       val misses = op.pageCacheMisses()
@@ -245,15 +266,20 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
   }
 }
 
-trait UpdatingProfilePageCacheStatsTestBase [CONTEXT <: RuntimeContext] {
+trait UpdatingProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfilePageCacheStatsTestBase[CONTEXT] =>
 
   test("should profile page cache stats of create with new label") {
     given {
       uniqueIndex("M", "prop")
-      nodePropertyGraph(SIZE, {
-        case i => Map("prop" -> i)
-      }, "N", "M")
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        },
+        "N",
+        "M"
+      )
       () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
     }
 
@@ -276,11 +302,14 @@ trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extend
   self: ProfilePageCacheStatsTestBase[CONTEXT] =>
 
   test("should profile page cache stats of plan with transactionForeach") {
-    givenWithTransactionType (
+    givenWithTransactionType(
       {
-        nodePropertyGraph(SIZE, {
-          case i => Map("prop" -> i)
-        })
+        nodePropertyGraph(
+          SIZE,
+          {
+            case i => Map("prop" -> i)
+          }
+        )
         () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
       },
       KernelTransaction.Type.IMPLICIT
@@ -307,7 +336,7 @@ trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extend
         2 -> PageCacheIsNotUsed, // emptyResult
         // 3 is allNodeScan which may incur page cache hits/misses
         4 -> PageCacheIsNotUsed, // unwind
-        5 -> PageCacheIsNotUsed, // argument
+        5 -> PageCacheIsNotUsed // argument
       )
 
     checkProfilerStatsMakeSense(runtimeResult, 6, expectedOperatorPageCacheStats, isOnlyOneTransaction = false)

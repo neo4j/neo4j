@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static java.lang.Math.toIntExact;
+
 import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.id.BatchingIdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -26,15 +28,12 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
-import static java.lang.Math.toIntExact;
-
 /**
  * Calculates record size that property values will occupy if encoded into a {@link PropertyStore}.
  * Contains state and is designed for multiple uses from a single thread only.
  * Does actual encoding of property values, dry-run style.
  */
-public class PropertyValueRecordSizeCalculator implements PropertySizeCalculator
-{
+public class PropertyValueRecordSizeCalculator implements PropertySizeCalculator {
     private final BatchingIdSequence stringRecordIds = new BatchingIdSequence();
     private final DynamicRecordAllocator stringRecordCounter;
     private final BatchingIdSequence arrayRecordIds = new BatchingIdSequence();
@@ -44,38 +43,46 @@ public class PropertyValueRecordSizeCalculator implements PropertySizeCalculator
     private final int stringRecordSize;
     private final int arrayRecordSize;
 
-    public PropertyValueRecordSizeCalculator( PropertyStore propertyStore )
-    {
-        this( propertyStore.getRecordSize(),
-                propertyStore.getStringStore().getRecordSize(), propertyStore.getStringStore().getRecordDataSize(),
-                propertyStore.getArrayStore().getRecordSize(), propertyStore.getArrayStore().getRecordDataSize() );
+    public PropertyValueRecordSizeCalculator(PropertyStore propertyStore) {
+        this(
+                propertyStore.getRecordSize(),
+                propertyStore.getStringStore().getRecordSize(),
+                propertyStore.getStringStore().getRecordDataSize(),
+                propertyStore.getArrayStore().getRecordSize(),
+                propertyStore.getArrayStore().getRecordDataSize());
     }
 
-    public PropertyValueRecordSizeCalculator( int propertyRecordSize,
-            int stringRecordSize, int stringRecordDataSize,
-            int arrayRecordSize, int arrayRecordDataSize )
-    {
+    public PropertyValueRecordSizeCalculator(
+            int propertyRecordSize,
+            int stringRecordSize,
+            int stringRecordDataSize,
+            int arrayRecordSize,
+            int arrayRecordDataSize) {
         this.propertyRecordSize = propertyRecordSize;
         this.stringRecordSize = stringRecordSize;
         this.arrayRecordSize = arrayRecordSize;
-        this.stringRecordCounter = new StandardDynamicRecordAllocator( stringRecordIds, stringRecordDataSize );
-        this.arrayRecordCounter = new StandardDynamicRecordAllocator( arrayRecordIds, arrayRecordDataSize );
+        this.stringRecordCounter = new StandardDynamicRecordAllocator(stringRecordIds, stringRecordDataSize);
+        this.arrayRecordCounter = new StandardDynamicRecordAllocator(arrayRecordIds, arrayRecordDataSize);
     }
 
     @Override
-    public int calculateSize( Value[] values, CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
+    public int calculateSize(Value[] values, CursorContext cursorContext, MemoryTracker memoryTracker) {
         stringRecordIds.reset();
         arrayRecordIds.reset();
 
         int propertyRecordsUsed = 0;
         int freeBlocksInCurrentRecord = 0;
-        for ( Value value : values )
-        {
+        for (Value value : values) {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, 0 /*doesn't matter*/, value, stringRecordCounter, arrayRecordCounter, cursorContext, memoryTracker );
-            if ( block.getValueBlocks().length > freeBlocksInCurrentRecord )
-            {
+            PropertyStore.encodeValue(
+                    block,
+                    0 /*doesn't matter*/,
+                    value,
+                    stringRecordCounter,
+                    arrayRecordCounter,
+                    cursorContext,
+                    memoryTracker);
+            if (block.getValueBlocks().length > freeBlocksInCurrentRecord) {
                 propertyRecordsUsed++;
                 freeBlocksInCurrentRecord = PropertyType.getPayloadSizeLongs();
             }
@@ -83,8 +90,8 @@ public class PropertyValueRecordSizeCalculator implements PropertySizeCalculator
         }
 
         int size = propertyRecordsUsed * propertyRecordSize;
-        size += toIntExact( stringRecordIds.peek() ) * stringRecordSize;
-        size += toIntExact( arrayRecordIds.peek() ) * arrayRecordSize;
+        size += toIntExact(stringRecordIds.peek()) * stringRecordSize;
+        size += toIntExact(arrayRecordIds.peek()) * arrayRecordSize;
         return size;
     }
 }

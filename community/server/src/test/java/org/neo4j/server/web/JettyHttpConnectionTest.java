@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -26,62 +32,49 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-class JettyHttpConnectionTest
-{
+class JettyHttpConnectionTest {
     @Test
-    void shouldHaveId()
-    {
-        Connector connector = connectorMock( "https" );
-        JettyHttpConnection connection = newConnection( connector );
+    void shouldHaveId() {
+        Connector connector = connectorMock("https");
+        JettyHttpConnection connection = newConnection(connector);
 
-        assertEquals( "http-1", connection.id() );
+        assertEquals("http-1", connection.id());
     }
 
     @Test
-    void shouldHaveConnectTime()
-    {
-        JettyHttpConnection connection = newConnection( connectorMock( "http" ) );
+    void shouldHaveConnectTime() {
+        JettyHttpConnection connection = newConnection(connectorMock("http"));
 
-        assertThat( connection.connectTime() ).isGreaterThan( 0L );
+        assertThat(connection.connectTime()).isGreaterThan(0L);
     }
 
     @Test
-    void shouldHaveConnector()
-    {
-        JettyHttpConnection connection = newConnection( connectorMock( "http+routing" ) );
+    void shouldHaveConnector() {
+        JettyHttpConnection connection = newConnection(connectorMock("http+routing"));
 
-        assertEquals( "http+routing", connection.connector() );
+        assertEquals("http+routing", connection.connector());
     }
 
     @Test
-    void shouldHaveUsernameAndUserAgent()
-    {
-        JettyHttpConnection connection = newConnection( connectorMock( "http+routing" ) );
+    void shouldHaveUsernameAndUserAgent() {
+        JettyHttpConnection connection = newConnection(connectorMock("http+routing"));
 
-        assertNull( connection.username() );
-        connection.updateUser( "hello", "my-http-driver/1.2.3" );
-        assertEquals( "hello", connection.username() );
-        assertEquals( "my-http-driver/1.2.3", connection.userAgent() );
+        assertNull(connection.username());
+        connection.updateUser("hello", "my-http-driver/1.2.3");
+        assertEquals("hello", connection.username());
+        assertEquals("my-http-driver/1.2.3", connection.userAgent());
     }
 
-    private static JettyHttpConnection newConnection( Connector connector )
-    {
-        return new JettyHttpConnection( "http-1", new HttpConfiguration(), connector, mock( EndPoint.class ),
-                HttpCompliance.LEGACY, false );
+    private static JettyHttpConnection newConnection(Connector connector) {
+        return new JettyHttpConnection(
+                "http-1", new HttpConfiguration(), connector, mock(EndPoint.class), HttpCompliance.LEGACY, false);
     }
 
-    private static Connector connectorMock( String name )
-    {
-        Connector connector = mock( Connector.class );
-        when( connector.getName() ).thenReturn( name );
-        when( connector.getExecutor() ).thenReturn( Runnable::run );
-        when( connector.getServer() ).thenReturn( new Server() );
+    private static Connector connectorMock(String name) {
+        Connector connector = mock(Connector.class);
+        when(connector.getName()).thenReturn(name);
+        when(connector.getExecutor()).thenReturn(Runnable::run);
+        when(connector.getServer()).thenReturn(new Server());
         return connector;
     }
 }

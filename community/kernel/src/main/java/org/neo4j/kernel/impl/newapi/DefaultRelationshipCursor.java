@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
@@ -29,11 +31,8 @@ import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
-
 abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor> extends TraceableCursor<SELF>
-        implements RelationshipDataAccessor
-{
+        implements RelationshipDataAccessor {
     protected boolean hasChanges;
     boolean checkHasChanges;
     AccessMode accessMode;
@@ -47,14 +46,12 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
     long txStateSourceNodeReference;
     long txStateTargetNodeReference;
 
-    DefaultRelationshipCursor( StorageRelationshipCursor storeCursor, CursorPool<SELF> pool )
-    {
-        super( pool );
+    DefaultRelationshipCursor(StorageRelationshipCursor storeCursor, CursorPool<SELF> pool) {
+        super(pool);
         this.storeCursor = storeCursor;
     }
 
-    protected void init( Read read )
-    {
+    protected void init(Read read) {
         this.currentAddedInTx = NO_ID;
         this.read = read;
         this.checkHasChanges = true;
@@ -62,57 +59,48 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
     }
 
     @Override
-    public long relationshipReference()
-    {
+    public long relationshipReference() {
         return currentAddedInTx != NO_ID ? currentAddedInTx : storeCursor.entityReference();
     }
 
     @Override
-    public int type()
-    {
+    public int type() {
         return currentAddedInTx != NO_ID ? txStateTypeId : storeCursor.type();
     }
 
     @Override
-    public void source( NodeCursor cursor )
-    {
-        read.singleNode( sourceNodeReference(), cursor );
+    public void source(NodeCursor cursor) {
+        read.singleNode(sourceNodeReference(), cursor);
     }
 
     @Override
-    public void target( NodeCursor cursor )
-    {
-        read.singleNode( targetNodeReference(), cursor );
+    public void target(NodeCursor cursor) {
+        read.singleNode(targetNodeReference(), cursor);
     }
 
     @Override
-    public void properties( PropertyCursor cursor, PropertySelection selection )
-    {
-        ((DefaultPropertyCursor) cursor).initRelationship( this, selection, read, read );
+    public void properties(PropertyCursor cursor, PropertySelection selection) {
+        ((DefaultPropertyCursor) cursor).initRelationship(this, selection, read, read);
     }
 
     @Override
-    public long sourceNodeReference()
-    {
+    public long sourceNodeReference() {
         return currentAddedInTx != NO_ID ? txStateSourceNodeReference : storeCursor.sourceNodeReference();
     }
 
     @Override
-    public long targetNodeReference()
-    {
+    public long targetNodeReference() {
         return currentAddedInTx != NO_ID ? txStateTargetNodeReference : storeCursor.targetNodeReference();
     }
 
     @Override
-    public Reference propertiesReference()
-    {
+    public Reference propertiesReference() {
         return currentAddedInTx != NO_ID ? LongReference.NULL_REFERENCE : storeCursor.propertiesReference();
     }
 
     protected abstract void collectAddedTxStateSnapshot();
 
-    protected boolean currentRelationshipIsAddedInTx()
-    {
+    protected boolean currentRelationshipIsAddedInTx() {
         return currentAddedInTx != NO_ID;
     }
 
@@ -120,13 +108,10 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
      * RelationshipCursor should only see changes that are there from the beginning
      * otherwise it will not be stable.
      */
-    protected boolean hasChanges()
-    {
-        if ( checkHasChanges )
-        {
+    protected boolean hasChanges() {
+        if (checkHasChanges) {
             hasChanges = read.hasTxStateWithChanges();
-            if ( hasChanges )
-            {
+            if (hasChanges) {
                 collectAddedTxStateSnapshot();
             }
             checkHasChanges = false;
@@ -135,11 +120,9 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
         return hasChanges;
     }
 
-    private class TxStateDataVisitor implements RelationshipVisitor<RuntimeException>
-    {
+    private class TxStateDataVisitor implements RelationshipVisitor<RuntimeException> {
         @Override
-        public void visit( long relationshipId, int typeId, long sourceNodeReference, long targetNodeReference )
-        {
+        public void visit(long relationshipId, int typeId, long sourceNodeReference, long targetNodeReference) {
             currentAddedInTx = relationshipId;
             txStateTypeId = typeId;
             txStateSourceNodeReference = sourceNodeReference;

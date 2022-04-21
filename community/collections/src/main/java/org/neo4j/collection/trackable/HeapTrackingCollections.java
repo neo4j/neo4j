@@ -20,72 +20,56 @@
 package org.neo4j.collection.trackable;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-
 import org.neo4j.memory.MemoryTracker;
 
-public final class HeapTrackingCollections
-{
-    private HeapTrackingCollections()
-    {
+public final class HeapTrackingCollections {
+    private HeapTrackingCollections() {}
+
+    public static <V> MutableIntObjectMap<V> newIntObjectHashMap(MemoryTracker memoryTracker) {
+        return HeapTrackingIntObjectHashMap.createIntObjectHashMap(memoryTracker);
     }
 
-    public static <V> MutableIntObjectMap<V> newIntObjectHashMap( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingIntObjectHashMap.createIntObjectHashMap( memoryTracker );
+    public static HeapTrackingLongHashSet newLongSet(MemoryTracker memoryTracker) {
+        return HeapTrackingLongHashSet.createLongHashSet(memoryTracker);
     }
 
-    public static HeapTrackingLongHashSet newLongSet( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingLongHashSet.createLongHashSet( memoryTracker );
+    public static HeapTrackingLongHashSet newLongSet(MemoryTracker memoryTracker, int initialCapacity) {
+        return HeapTrackingLongHashSet.createLongHashSet(memoryTracker, initialCapacity);
     }
 
-    public static HeapTrackingLongHashSet newLongSet( MemoryTracker memoryTracker, int initialCapacity )
-    {
-        return HeapTrackingLongHashSet.createLongHashSet( memoryTracker, initialCapacity );
+    public static <V> HeapTrackingLongObjectHashMap<V> newLongObjectMap(MemoryTracker memoryTracker) {
+        return HeapTrackingLongObjectHashMap.createLongObjectHashMap(memoryTracker);
     }
 
-    public static <V> HeapTrackingLongObjectHashMap<V> newLongObjectMap( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingLongObjectHashMap.createLongObjectHashMap( memoryTracker );
+    public static HeapTrackingLongIntHashMap newLongIntMap(MemoryTracker memoryTracker) {
+        return HeapTrackingLongIntHashMap.createLongIntHashMap(memoryTracker);
     }
 
-    public static HeapTrackingLongIntHashMap newLongIntMap( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingLongIntHashMap.createLongIntHashMap( memoryTracker );
+    public static <K, V> HeapTrackingUnifiedMap<K, V> newMap(MemoryTracker memoryTracker) {
+        return HeapTrackingUnifiedMap.createUnifiedMap(memoryTracker);
     }
 
-    public static <K,V> HeapTrackingUnifiedMap<K,V> newMap( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingUnifiedMap.createUnifiedMap( memoryTracker );
+    public static <T> HeapTrackingUnifiedSet<T> newSet(MemoryTracker memoryTracker) {
+        return HeapTrackingUnifiedSet.createUnifiedSet(memoryTracker);
     }
 
-    public static <T> HeapTrackingUnifiedSet<T> newSet( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingUnifiedSet.createUnifiedSet( memoryTracker );
+    public static <T> HeapTrackingArrayList<T> newArrayList(int initialSize, MemoryTracker memoryTracker) {
+        return HeapTrackingArrayList.newArrayList(initialSize, memoryTracker);
     }
 
-    public static <T> HeapTrackingArrayList<T> newArrayList( int initialSize, MemoryTracker memoryTracker )
-    {
-        return HeapTrackingArrayList.newArrayList( initialSize, memoryTracker );
+    public static <T> HeapTrackingArrayList<T> newArrayList(MemoryTracker memoryTracker) {
+        return HeapTrackingArrayList.newArrayList(memoryTracker);
     }
 
-    public static <T> HeapTrackingArrayList<T> newArrayList( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingArrayList.newArrayList( memoryTracker );
+    public static HeapTrackingLongStack newLongStack(MemoryTracker memoryTracker) {
+        return new HeapTrackingLongStack(HeapTrackingLongArrayList.newLongArrayList(memoryTracker));
     }
 
-    public static HeapTrackingLongStack newLongStack( MemoryTracker memoryTracker )
-    {
-        return new HeapTrackingLongStack( HeapTrackingLongArrayList.newLongArrayList( memoryTracker ) );
+    public static <T> HeapTrackingStack<T> newStack(MemoryTracker memoryTracker) {
+        return new HeapTrackingStack<>(HeapTrackingArrayList.newArrayList(memoryTracker));
     }
 
-    public static <T> HeapTrackingStack<T> newStack( MemoryTracker memoryTracker )
-    {
-        return new HeapTrackingStack<>( HeapTrackingArrayList.newArrayList( memoryTracker ) );
-    }
-
-    public static <T> HeapTrackingArrayDeque<T> newArrayDeque( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingArrayDeque.newArrayDeque( memoryTracker );
+    public static <T> HeapTrackingArrayDeque<T> newArrayDeque(MemoryTracker memoryTracker) {
+        return HeapTrackingArrayDeque.newArrayDeque(memoryTracker);
     }
 }

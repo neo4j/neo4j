@@ -24,9 +24,8 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.Values
 
-case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
-                       (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class OptionalPipe(nullableVariables: Set[String], source: Pipe)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
   private def notFoundExecutionContext(initialContext: Option[CypherRow]): CypherRow = {
     val context = initialContext.getOrElse(CypherRow.empty)
@@ -34,7 +33,10 @@ case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
     context
   }
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] =
     if (input.isEmpty) ClosingIterator.single(notFoundExecutionContext(state.initialContext))
     else input
 }

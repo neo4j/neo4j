@@ -21,69 +21,56 @@ package org.neo4j.kernel.internal.event;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 
-public class TransactionListenersState
-{
+public class TransactionListenersState {
     private final TransactionData txData;
     private final List<ListenerState<?>> states = new ArrayList<>();
     private Throwable error;
 
-    TransactionListenersState( TransactionData txData )
-    {
+    TransactionListenersState(TransactionData txData) {
         this.txData = txData;
     }
 
-    public void failed( Throwable error )
-    {
+    public void failed(Throwable error) {
         this.error = error;
     }
 
-    public boolean isFailed()
-    {
+    public boolean isFailed() {
         return error != null;
     }
 
-    public Throwable failure()
-    {
+    public Throwable failure() {
         return error;
     }
 
-    void addListenerState( TransactionEventListener<?> handler, Object state )
-    {
-        states.add( new ListenerState( handler, state ) );
+    void addListenerState(TransactionEventListener<?> handler, Object state) {
+        states.add(new ListenerState(handler, state));
     }
 
-    TransactionData getTxData()
-    {
+    TransactionData getTxData() {
         return txData;
     }
 
-    public List<ListenerState<?>> getStates()
-    {
+    public List<ListenerState<?>> getStates() {
         return states;
     }
 
-    static class ListenerState<T>
-    {
+    static class ListenerState<T> {
         private final TransactionEventListener<T> listener;
         private final T state;
 
-        ListenerState( TransactionEventListener<T> listener, T state )
-        {
+        ListenerState(TransactionEventListener<T> listener, T state) {
             this.listener = listener;
             this.state = state;
         }
 
-        public TransactionEventListener<T> getListener()
-        {
+        public TransactionEventListener<T> getListener() {
             return listener;
         }
 
-        public T getState()
-        {
+        public T getState() {
             return state;
         }
     }

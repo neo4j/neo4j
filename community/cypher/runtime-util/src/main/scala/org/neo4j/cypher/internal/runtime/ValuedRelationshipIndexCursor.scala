@@ -26,7 +26,8 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.values.storable.Value
 
-class ValuedRelationshipIndexCursor(val inner: RelationshipValueIndexCursor, values: Array[Value]) extends DefaultCloseListenable with RelationshipValueIndexCursor {
+class ValuedRelationshipIndexCursor(val inner: RelationshipValueIndexCursor, values: Array[Value])
+    extends DefaultCloseListenable with RelationshipValueIndexCursor {
 
   override def numberOfProperties(): Int = values.length
 

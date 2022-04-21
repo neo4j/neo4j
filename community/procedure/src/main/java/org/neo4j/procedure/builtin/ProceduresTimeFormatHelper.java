@@ -19,37 +19,30 @@
  */
 package org.neo4j.procedure.builtin;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class ProceduresTimeFormatHelper
-{
-    public static String formatTime( final Instant instant, ZoneId zoneId )
-    {
-        return OffsetDateTime
-                .ofInstant( instant, zoneId )
-                .format( ISO_OFFSET_DATE_TIME );
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+
+public class ProceduresTimeFormatHelper {
+    public static String formatTime(final Instant instant, ZoneId zoneId) {
+        return OffsetDateTime.ofInstant(instant, zoneId).format(ISO_OFFSET_DATE_TIME);
     }
 
-    public static String formatTime( final long startTime, ZoneId zoneId )
-    {
-        return formatTime( Instant.ofEpochMilli( startTime ), zoneId );
+    public static String formatTime(final long startTime, ZoneId zoneId) {
+        return formatTime(Instant.ofEpochMilli(startTime), zoneId);
     }
 
-    public static String formatInterval( final long l )
-    {
-        final long hr = MILLISECONDS.toHours( l );
-        final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );
-        final long sec = MILLISECONDS.toSeconds( l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) );
-        final long ms = l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) - SECONDS.toMillis( sec );
-        return String.format( "%02d:%02d:%02d.%03d", hr, min, sec, ms );
+    public static String formatInterval(final long l) {
+        final long hr = MILLISECONDS.toHours(l);
+        final long min = MILLISECONDS.toMinutes(l - HOURS.toMillis(hr));
+        final long sec = MILLISECONDS.toSeconds(l - HOURS.toMillis(hr) - MINUTES.toMillis(min));
+        final long ms = l - HOURS.toMillis(hr) - MINUTES.toMillis(min) - SECONDS.toMillis(sec);
+        return String.format("%02d:%02d:%02d.%03d", hr, min, sec, ms);
     }
-
 }

@@ -19,8 +19,14 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.util.function.Function;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
+import static org.neo4j.configuration.SettingValueParsers.BYTES;
+import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
+import static org.neo4j.memory.MemoryGroup.PAGE_CACHE;
 
+import java.util.function.Function;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.internal.unsafe.UnsafeUtil;
@@ -40,15 +46,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
-import static org.neo4j.configuration.SettingValueParsers.BYTES;
-import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
-import static org.neo4j.memory.MemoryGroup.PAGE_CACHE;
-
-public class ConfiguringPageCacheFactory
-{
+public class ConfiguringPageCacheFactory {
     private final FileSystemAbstraction fs;
     private final Config config;
     private final PageCacheTracer pageCacheTracer;
@@ -57,12 +55,17 @@ public class ConfiguringPageCacheFactory
     private final JobScheduler scheduler;
     private final SystemNanoClock clock;
     private final MemoryPools memoryPools;
-    private final Function<MuninnPageCache.Configuration,MuninnPageCache.Configuration> pageCacheConfigurator;
+    private final Function<MuninnPageCache.Configuration, MuninnPageCache.Configuration> pageCacheConfigurator;
 
-    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, InternalLog log, JobScheduler scheduler,
-            SystemNanoClock clock, MemoryPools memoryPools )
-    {
-        this( fs, config, pageCacheTracer, log, scheduler, clock, memoryPools, c -> c );
+    public ConfiguringPageCacheFactory(
+            FileSystemAbstraction fs,
+            Config config,
+            PageCacheTracer pageCacheTracer,
+            InternalLog log,
+            JobScheduler scheduler,
+            SystemNanoClock clock,
+            MemoryPools memoryPools) {
+        this(fs, config, pageCacheTracer, log, scheduler, clock, memoryPools, c -> c);
     }
 
     /**
@@ -76,9 +79,15 @@ public class ConfiguringPageCacheFactory
      * @param memoryPools database memory pools to register page cache specific instance
      * @param pageCacheConfigurator additional configuration for the page cache
      */
-    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, InternalLog log, JobScheduler scheduler,
-            SystemNanoClock clock, MemoryPools memoryPools, Function<MuninnPageCache.Configuration,MuninnPageCache.Configuration> pageCacheConfigurator )
-    {
+    public ConfiguringPageCacheFactory(
+            FileSystemAbstraction fs,
+            Config config,
+            PageCacheTracer pageCacheTracer,
+            InternalLog log,
+            JobScheduler scheduler,
+            SystemNanoClock clock,
+            MemoryPools memoryPools,
+            Function<MuninnPageCache.Configuration, MuninnPageCache.Configuration> pageCacheConfigurator) {
         this.fs = fs;
         this.config = config;
         this.pageCacheTracer = pageCacheTracer;
@@ -89,83 +98,72 @@ public class ConfiguringPageCacheFactory
         this.pageCacheConfigurator = pageCacheConfigurator;
     }
 
-    public synchronized PageCache getOrCreatePageCache()
-    {
-        if ( pageCache == null )
-        {
+    public synchronized PageCache getOrCreatePageCache() {
+        if (pageCache == null) {
 
             this.pageCache = createPageCache();
         }
         return pageCache;
     }
 
-    private PageCache createPageCache()
-    {
-        long pageCacheMaxMemory = getPageCacheMaxMemory( config );
-        var memoryPool = memoryPools.pool( PAGE_CACHE, pageCacheMaxMemory, false, null );
+    private PageCache createPageCache() {
+        long pageCacheMaxMemory = getPageCacheMaxMemory(config);
+        var memoryPool = memoryPools.pool(PAGE_CACHE, pageCacheMaxMemory, false, null);
         var memoryTracker = memoryPool.getPoolMemoryTracker();
-        var swapperFactory = createAndConfigureSwapperFactory( fs, pageCacheTracer, memoryTracker, log );
-        MemoryAllocator memoryAllocator = buildMemoryAllocator( pageCacheMaxMemory, memoryTracker );
-        var bufferFactory = new ConfigurableIOBufferFactory( config, memoryTracker );
-        MuninnPageCache.Configuration configuration = MuninnPageCache.config( memoryAllocator )
-                .memoryTracker( memoryTracker )
-                .bufferFactory( bufferFactory )
-                .reservedPageBytes( config.get( reserved_page_header_bytes ) )
-                .preallocateStoreFiles( config.get( preallocate_store_files ) )
-                .clock( clock )
-                .pageCacheTracer( pageCacheTracer );
-        configuration = pageCacheConfigurator.apply( configuration );
-        return new MuninnPageCache( swapperFactory, scheduler, configuration );
+        var swapperFactory = createAndConfigureSwapperFactory(fs, pageCacheTracer, memoryTracker, log);
+        MemoryAllocator memoryAllocator = buildMemoryAllocator(pageCacheMaxMemory, memoryTracker);
+        var bufferFactory = new ConfigurableIOBufferFactory(config, memoryTracker);
+        MuninnPageCache.Configuration configuration = MuninnPageCache.config(memoryAllocator)
+                .memoryTracker(memoryTracker)
+                .bufferFactory(bufferFactory)
+                .reservedPageBytes(config.get(reserved_page_header_bytes))
+                .preallocateStoreFiles(config.get(preallocate_store_files))
+                .clock(clock)
+                .pageCacheTracer(pageCacheTracer);
+        configuration = pageCacheConfigurator.apply(configuration);
+        return new MuninnPageCache(swapperFactory, scheduler, configuration);
     }
 
-    private static MemoryAllocator buildMemoryAllocator( long pageCacheMaxMemory, MemoryTracker memoryTracker )
-    {
-        return createAllocator( pageCacheMaxMemory, memoryTracker );
+    private static MemoryAllocator buildMemoryAllocator(long pageCacheMaxMemory, MemoryTracker memoryTracker) {
+        return createAllocator(pageCacheMaxMemory, memoryTracker);
     }
 
-    private long getPageCacheMaxMemory( Config config )
-    {
-        Long pageCacheMemorySetting = config.get( pagecache_memory );
-        if ( pageCacheMemorySetting == null )
-        {
-            long heuristic = defaultHeuristicPageCacheMemory( MachineMemory.DEFAULT );
-            log.warn( "The " + pagecache_memory.name() + " setting has not been configured. It is recommended that this " +
-                      "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
-                      "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " +
-                      "Run `neo4j-admin memrec` for memory configuration suggestions." );
+    private long getPageCacheMaxMemory(Config config) {
+        Long pageCacheMemorySetting = config.get(pagecache_memory);
+        if (pageCacheMemorySetting == null) {
+            long heuristic = defaultHeuristicPageCacheMemory(MachineMemory.DEFAULT);
+            log.warn("The " + pagecache_memory.name() + " setting has not been configured. It is recommended that this "
+                    + "setting is always explicitly configured, to ensure the system has a balanced configuration. "
+                    + "Until then, a computed heuristic value of "
+                    + heuristic + " bytes will be used instead. "
+                    + "Run `neo4j-admin memrec` for memory configuration suggestions.");
             pageCacheMemorySetting = heuristic;
         }
         return pageCacheMemorySetting;
     }
 
-    public static long defaultHeuristicPageCacheMemory( MachineMemory machineMemory )
-    {
+    public static long defaultHeuristicPageCacheMemory(MachineMemory machineMemory) {
         // First check if we have a default override...
-        String defaultMemoryOverride = System.getProperty( "dbms.pagecache.memory.default.override" );
-        if ( defaultMemoryOverride != null )
-        {
-            return BYTES.parse( defaultMemoryOverride );
+        String defaultMemoryOverride = System.getProperty("dbms.pagecache.memory.default.override");
+        if (defaultMemoryOverride != null) {
+            return BYTES.parse(defaultMemoryOverride);
         }
 
         double ratioOfFreeMem = 0.50;
-        String defaultMemoryRatioOverride = System.getProperty( "dbms.pagecache.memory.ratio.default.override" );
-        if ( defaultMemoryRatioOverride != null )
-        {
-            ratioOfFreeMem = Double.parseDouble( defaultMemoryRatioOverride );
+        String defaultMemoryRatioOverride = System.getProperty("dbms.pagecache.memory.ratio.default.override");
+        if (defaultMemoryRatioOverride != null) {
+            ratioOfFreeMem = Double.parseDouble(defaultMemoryRatioOverride);
         }
 
         // Try to compute (RAM - maxheap) * 0.50 if we can get reliable numbers...
         long maxHeapMemory = machineMemory.getHeapMemoryUsage().getMax();
-        if ( 0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE )
-        {
-            try
-            {
+        if (0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE) {
+            try {
                 long physicalMemory = machineMemory.getTotalPhysicalMemory();
-                if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
-                {
+                if (0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory) {
                     long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
-                    long min = ByteUnit.mebiBytes( 32 ); // We'd like at least 32 MiBs.
-                    long max = Math.min( maxHeapMemory * 70, ByteUnit.gibiBytes( 20 ) );
+                    long min = ByteUnit.mebiBytes(32); // We'd like at least 32 MiBs.
+                    long max = Math.min(maxHeapMemory * 70, ByteUnit.gibiBytes(20));
                     // Don't heuristically take more than 20 GiBs, and don't take more than 70 times our max heap.
                     // 20 GiBs of page cache memory is ~2.6 million 8 KiB pages. If each page has an overhead of
                     // 72 bytes, then this will take up ~175 MiBs of heap memory. We should be able to tolerate that
@@ -173,41 +171,40 @@ public class ConfiguringPageCacheFactory
                     // the per page overhead, 8192 / 72 ~= 114, plus leaving some extra room on the heap for the rest
                     // of the system. This means that we won't heuristically try to create a page cache that is too
                     // large to fit on the heap.
-                    return Math.min( max, Math.max( min, heuristic ) );
+                    return Math.min(max, Math.max(min, heuristic));
                 }
-            }
-            catch ( Exception ignore )
-            {
+            } catch (Exception ignore) {
             }
         }
         // ... otherwise we just go with 2 GiBs.
-        return ByteUnit.gibiBytes( 2 );
+        return ByteUnit.gibiBytes(2);
     }
 
-    public void dumpConfiguration()
-    {
-        Long pageCacheMemoryBytes = config.get( pagecache_memory );
-        String pageCacheMemory = pageCacheMemoryBytes != null ? ByteUnit.bytesToStringWithoutScientificNotation( pageCacheMemoryBytes ) : "<not specified>";
+    public void dumpConfiguration() {
+        Long pageCacheMemoryBytes = config.get(pagecache_memory);
+        String pageCacheMemory = pageCacheMemoryBytes != null
+                ? ByteUnit.bytesToStringWithoutScientificNotation(pageCacheMemoryBytes)
+                : "<not specified>";
         long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
         String totalPhysicalMem = (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE)
-                                    ? "?" : "" + ByteUnit.bytesToString( totalPhysicalMemory );
-        String maxVmMem = ByteUnit.bytesToStringWithoutScientificNotation( Runtime.getRuntime().maxMemory() );
-        String msg = "Physical mem: " + totalPhysicalMem +
-                     " Heap size: " + maxVmMem +
-                     " Page cache: " + pageCacheMemory + ".";
+                ? "?"
+                : "" + ByteUnit.bytesToString(totalPhysicalMemory);
+        String maxVmMem = ByteUnit.bytesToStringWithoutScientificNotation(
+                Runtime.getRuntime().maxMemory());
+        String msg = "Physical mem: " + totalPhysicalMem + " Heap size: "
+                + maxVmMem + " Page cache: "
+                + pageCacheMemory + ".";
 
-        log.info( msg );
+        log.info(msg);
     }
 
-    private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, PageCacheTracer pageCacheTracer,
-                                                                        MemoryTracker memoryTracker, InternalLog log )
-    {
-        if ( !UnsafeUtil.unsafeByteBufferAccessAvailable() )
-        {
-            log.warn( "Reflection access to java.nio.DirectByteBuffer is not available, using fallback mode. " +
-                      "This could have negative impact on performance and memory usage. " +
-                      "Consider adding --add-opens=java.base/java.nio=ALL-UNNAMED to VM options." );
+    private static PageSwapperFactory createAndConfigureSwapperFactory(
+            FileSystemAbstraction fs, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, InternalLog log) {
+        if (!UnsafeUtil.unsafeByteBufferAccessAvailable()) {
+            log.warn("Reflection access to java.nio.DirectByteBuffer is not available, using fallback mode. "
+                    + "This could have negative impact on performance and memory usage. "
+                    + "Consider adding --add-opens=java.base/java.nio=ALL-UNNAMED to VM options.");
         }
-        return new SingleFilePageSwapperFactory( fs, pageCacheTracer, memoryTracker );
+        return new SingleFilePageSwapperFactory(fs, pageCacheTracer, memoryTracker);
     }
 }

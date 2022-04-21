@@ -19,28 +19,24 @@
  */
 package org.neo4j.kernel.api.impl.index.partition;
 
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.Directory;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
 
 /**
  * Factory to create writable partitions for partitioned index.
  */
-public class WritableIndexPartitionFactory implements IndexPartitionFactory
-{
+public class WritableIndexPartitionFactory implements IndexPartitionFactory {
     private final Supplier<IndexWriterConfig> writerConfigFactory;
 
-    public WritableIndexPartitionFactory( Supplier<IndexWriterConfig> writerConfigFactory )
-    {
+    public WritableIndexPartitionFactory(Supplier<IndexWriterConfig> writerConfigFactory) {
         this.writerConfigFactory = writerConfigFactory;
     }
 
     @Override
-    public AbstractIndexPartition createPartition( Path partitionFolder, Directory directory ) throws IOException
-    {
-        return new WritableIndexPartition( partitionFolder, directory, writerConfigFactory.get() );
+    public AbstractIndexPartition createPartition(Path partitionFolder, Directory directory) throws IOException {
+        return new WritableIndexPartition(partitionFolder, directory, writerConfigFactory.get());
     }
 }

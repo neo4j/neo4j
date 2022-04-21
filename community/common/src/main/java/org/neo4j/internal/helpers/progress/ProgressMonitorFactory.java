@@ -26,109 +26,98 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.neo4j.time.Clocks;
 import org.neo4j.util.Preconditions;
 
-public abstract class ProgressMonitorFactory
-{
-    public static final ProgressMonitorFactory NONE = new ProgressMonitorFactory()
-    {
+public abstract class ProgressMonitorFactory {
+    public static final ProgressMonitorFactory NONE = new ProgressMonitorFactory() {
         @Override
-        protected Indicator newIndicator( String process )
-        {
+        protected Indicator newIndicator(String process) {
             return Indicator.NONE;
         }
     };
 
-    public static ProgressMonitorFactory textual( final OutputStream out )
-    {
-        return textual( new OutputStreamWriter( out, StandardCharsets.UTF_8 ), false, Indicator.Textual.DEFAULT_DOTS_PER_LINE,
-                Indicator.Textual.DEFAULT_NUM_LINES );
+    public static ProgressMonitorFactory textual(final OutputStream out) {
+        return textual(
+                new OutputStreamWriter(out, StandardCharsets.UTF_8),
+                false,
+                Indicator.Textual.DEFAULT_DOTS_PER_LINE,
+                Indicator.Textual.DEFAULT_NUM_LINES);
     }
 
-    public static ProgressMonitorFactory textual( final Writer out )
-    {
-        return textual( out, false, Indicator.Textual.DEFAULT_DOTS_PER_LINE, Indicator.Textual.DEFAULT_NUM_LINES );
+    public static ProgressMonitorFactory textual(final Writer out) {
+        return textual(out, false, Indicator.Textual.DEFAULT_DOTS_PER_LINE, Indicator.Textual.DEFAULT_NUM_LINES);
     }
 
-    public static ProgressMonitorFactory textual( final OutputStream out, boolean deltaTimes, int dotsPerLine, int numLines )
-    {
-        return textual( new OutputStreamWriter( out, StandardCharsets.UTF_8 ), deltaTimes, dotsPerLine, numLines );
+    public static ProgressMonitorFactory textual(
+            final OutputStream out, boolean deltaTimes, int dotsPerLine, int numLines) {
+        return textual(new OutputStreamWriter(out, StandardCharsets.UTF_8), deltaTimes, dotsPerLine, numLines);
     }
 
-    public static ProgressMonitorFactory textual( final Writer out, boolean deltaTimes, int dotsPerLine, int numLines )
-    {
-        return new ProgressMonitorFactory()
-        {
+    public static ProgressMonitorFactory textual(final Writer out, boolean deltaTimes, int dotsPerLine, int numLines) {
+        return new ProgressMonitorFactory() {
             @Override
-            protected Indicator newIndicator( String process )
-            {
-                return new Indicator.Textual( process, writer(), deltaTimes, Clocks.nanoClock(), Indicator.Textual.DEFAULT_DELTA_CHARACTER,
-                        dotsPerLine, numLines );
+            protected Indicator newIndicator(String process) {
+                return new Indicator.Textual(
+                        process,
+                        writer(),
+                        deltaTimes,
+                        Clocks.nanoClock(),
+                        Indicator.Textual.DEFAULT_DELTA_CHARACTER,
+                        dotsPerLine,
+                        numLines);
             }
 
-            private PrintWriter writer()
-            {
-                return out instanceof PrintWriter ? (PrintWriter) out : new PrintWriter( out );
+            private PrintWriter writer() {
+                return out instanceof PrintWriter ? (PrintWriter) out : new PrintWriter(out);
             }
         };
     }
 
-    public final MultiPartBuilder multipleParts( String process )
-    {
-        return new MultiPartBuilder( this, process );
+    public final MultiPartBuilder multipleParts(String process) {
+        return new MultiPartBuilder(this, process);
     }
 
-    public final ProgressListener singlePart( String process, long totalCount )
-    {
-        return new ProgressListener.SinglePartProgressListener( newIndicator( process ), totalCount );
+    public final ProgressListener singlePart(String process, long totalCount) {
+        return new ProgressListener.SinglePartProgressListener(newIndicator(process), totalCount);
     }
 
-    protected abstract Indicator newIndicator( String process );
+    protected abstract Indicator newIndicator(String process);
 
-    public static class MultiPartBuilder
-    {
+    public static class MultiPartBuilder {
         private Aggregator aggregator;
         private Set<String> parts = new HashSet<>();
 
-        private MultiPartBuilder( ProgressMonitorFactory factory, String process )
-        {
-            this.aggregator = new Aggregator( factory.newIndicator( process ) );
+        private MultiPartBuilder(ProgressMonitorFactory factory, String process) {
+            this.aggregator = new Aggregator(factory.newIndicator(process));
         }
 
-        public ProgressListener progressForPart( String part, long totalCount )
-        {
+        public ProgressListener progressForPart(String part, long totalCount) {
             assertNotBuilt();
-            assertUniquePart( part );
+            assertUniquePart(part);
             ProgressListener.MultiPartProgressListener progress =
-                    new ProgressListener.MultiPartProgressListener( aggregator, part, totalCount );
-            aggregator.add( progress, totalCount );
+                    new ProgressListener.MultiPartProgressListener(aggregator, part, totalCount);
+            aggregator.add(progress, totalCount);
             return progress;
         }
 
-        public ProgressListener progressForUnknownPart( String part )
-        {
+        public ProgressListener progressForUnknownPart(String part) {
             assertNotBuilt();
-            assertUniquePart( part );
+            assertUniquePart(part);
             ProgressListener progress = ProgressListener.NONE;
-            aggregator.add( progress, 0 );
+            aggregator.add(progress, 0);
             return progress;
         }
 
-        private void assertUniquePart( String part )
-        {
-            if ( !parts.add( part ) )
-            {
-                throw new IllegalArgumentException( String.format( "Part '%s' has already been defined.", part ) );
+        private void assertUniquePart(String part) {
+            if (!parts.add(part)) {
+                throw new IllegalArgumentException(String.format("Part '%s' has already been defined.", part));
             }
         }
 
-        private void assertNotBuilt()
-        {
-            if ( aggregator == null )
-            {
-                throw new IllegalStateException( "Builder has been completed." );
+        private void assertNotBuilt() {
+            if (aggregator == null) {
+                throw new IllegalStateException("Builder has been completed.");
             }
         }
 
@@ -136,9 +125,8 @@ public abstract class ProgressMonitorFactory
          * Have to be called after all individual progresses have been added.
          * @return a {@link Completer} which can be called do issue {@link ProgressListener#done()} for all individual progress parts.
          */
-        public Completer build()
-        {
-            Preconditions.checkState( aggregator != null, "Already built" );
+        public Completer build() {
+            Preconditions.checkState(aggregator != null, "Already built");
             Completer completer = aggregator.initialize();
             aggregator = null;
             parts = null;
@@ -148,14 +136,12 @@ public abstract class ProgressMonitorFactory
         /**
          * Can be called to invoke all individual {@link ProgressListener#done()}.
          */
-        public void done()
-        {
+        public void done() {
             aggregator.done();
         }
     }
 
-    public interface Completer extends AutoCloseable
-    {
+    public interface Completer extends AutoCloseable {
         @Override
         void close();
     }

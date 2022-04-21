@@ -20,25 +20,21 @@
 package org.neo4j.tooling.procedure.procedures.invalid.missing_name;
 
 import java.util.stream.Stream;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 
-public class MissingNameSproc
-{
+public class MissingNameSproc {
 
     @Context
     public GraphDatabaseService db;
 
     @Procedure
-    public Stream<GoodRecord> niceSproc( String parameter, String otherParam )
-    {
+    public Stream<GoodRecord> niceSproc(String parameter, String otherParam) {
         return Stream.empty();
     }
 
-    public static class GoodRecord
-    {
+    public static class GoodRecord {
         public long age;
     }
 }

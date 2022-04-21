@@ -19,62 +19,56 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.List;
+import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 
+import java.util.List;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
-
 /**
  * A version of {@link} DbmsRuntimeRepository for standalone editions.
  */
-public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository implements TransactionEventListener<Object>
-{
+public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository implements TransactionEventListener<Object> {
 
-    public StandaloneDbmsRuntimeRepository( DatabaseManager<?> databaseManager, DbmsRuntimeSystemGraphComponent component )
-    {
-        super( databaseManager, component );
+    public StandaloneDbmsRuntimeRepository(
+            DatabaseManager<?> databaseManager, DbmsRuntimeSystemGraphComponent component) {
+        super(databaseManager, component);
     }
 
     @Override
-    public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
-    {
+    public Object beforeCommit(TransactionData data, Transaction transaction, GraphDatabaseService databaseService)
+            throws Exception {
         // not interested in this event
         return null;
     }
 
     @Override
-    public void afterCommit( TransactionData transactionData, Object state, GraphDatabaseService databaseService )
-    {
+    public void afterCommit(TransactionData transactionData, Object state, GraphDatabaseService databaseService) {
         // no check is needed if we are at the latest version, because downgrade is not supported
-        if ( transactionData == null || getVersion().isCurrent() )
-        {
+        if (transactionData == null || getVersion().isCurrent()) {
             return;
         }
 
-        List<Long> nodesWithChangedProperties = Iterables.stream( transactionData.assignedNodeProperties() )
-                                                         .map( nodePropertyEntry -> nodePropertyEntry.entity().getId() )
-                                                         .toList();
+        List<Long> nodesWithChangedProperties = Iterables.stream(transactionData.assignedNodeProperties())
+                .map(nodePropertyEntry -> nodePropertyEntry.entity().getId())
+                .toList();
 
         var systemDatabase = getSystemDb();
-        try ( var tx = systemDatabase.beginTx() )
-        {
+        try (var tx = systemDatabase.beginTx()) {
             nodesWithChangedProperties.stream()
-                                      .map( tx::getNodeById )
-                                      .filter( node -> node.hasLabel( VERSION_LABEL ) && node.hasProperty( component.componentName() ) )
-                                      .map( dbmRuntime -> (int) dbmRuntime.getProperty( component.componentName() ) )
-                                      .map( DbmsRuntimeVersion::fromVersionNumber )
-                                      .forEach( this::setVersion );
+                    .map(tx::getNodeById)
+                    .filter(node -> node.hasLabel(VERSION_LABEL) && node.hasProperty(component.componentName()))
+                    .map(dbmRuntime -> (int) dbmRuntime.getProperty(component.componentName()))
+                    .map(DbmsRuntimeVersion::fromVersionNumber)
+                    .forEach(this::setVersion);
         }
     }
 
     @Override
-    public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
-    {
+    public void afterRollback(TransactionData data, Object state, GraphDatabaseService databaseService) {
         // not interested in this event
     }
 }

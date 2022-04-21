@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.security;
 
-class SecureHasherConfiguration
-{
+class SecureHasherConfiguration {
     final String algorithm;
     final int iterations;
 
-    SecureHasherConfiguration( String algorithm, int iterations )
-    {
+    SecureHasherConfiguration(String algorithm, int iterations) {
         this.algorithm = algorithm;
         this.iterations = iterations;
     }

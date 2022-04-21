@@ -19,26 +19,21 @@
  */
 package org.neo4j.shell.exception;
 
-
 import org.neo4j.shell.printer.AnsiFormattedText;
 
 /**
  * And exception indicating that a command invocation failed.
  */
-public class CommandException extends AnsiFormattedException
-{
-    public CommandException( String msg )
-    {
-        super( msg );
+public class CommandException extends AnsiFormattedException {
+    public CommandException(String msg) {
+        super(msg);
     }
 
-    public CommandException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public CommandException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 
-    public CommandException( AnsiFormattedText append )
-    {
-        super( append );
+    public CommandException(AnsiFormattedText append) {
+        super(append);
     }
 }

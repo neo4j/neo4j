@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import scala.collection.mutable.ArrayBuffer
 
 case class SimpleResolver(
-                           labels: ArrayBuffer[String] = new ArrayBuffer[String](),
-                           properties: ArrayBuffer[String] = new ArrayBuffer[String](),
-                           relTypes: ArrayBuffer[String] = new ArrayBuffer[String](),
-                           procedures: Set[ProcedureSignature] = Set.empty
-                         ) extends Resolver {
+  labels: ArrayBuffer[String] = new ArrayBuffer[String](),
+  properties: ArrayBuffer[String] = new ArrayBuffer[String](),
+  relTypes: ArrayBuffer[String] = new ArrayBuffer[String](),
+  procedures: Set[ProcedureSignature] = Set.empty
+) extends Resolver {
 
   override def getLabelId(label: String): Int = {
     safeIndexOf(label, labels)
@@ -54,7 +54,8 @@ case class SimpleResolver(
     }
   }
 
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = procedures.find(_.name == name).getOrElse(throw new IllegalStateException(s"No procedure signature for $name"))
+  override def procedureSignature(name: QualifiedName): ProcedureSignature =
+    procedures.find(_.name == name).getOrElse(throw new IllegalStateException(s"No procedure signature for $name"))
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???
 }

@@ -22,8 +22,7 @@ package org.neo4j.hashing;
 /**
  * @see HashFunction#incrementalXXH64()
  */
-class IncrementalXXH64 implements HashFunction
-{
+class IncrementalXXH64 implements HashFunction {
     static final HashFunction INSTANCE = new IncrementalXXH64();
 
     private static final long Prime1 = -7046029288634856825L;
@@ -32,31 +31,26 @@ class IncrementalXXH64 implements HashFunction
     private static final long Prime4 = -8796714831421723037L;
     private static final long Prime5 = 2870177450012600261L;
 
-    private IncrementalXXH64()
-    {
-    }
+    private IncrementalXXH64() {}
 
     @Override
-    public long initialise( long seed )
-    {
+    public long initialise(long seed) {
         return seed + Prime5;
     }
 
     @Override
-    public long update( long hash, long block )
-    {
+    public long update(long hash, long block) {
         hash += 8;
         block *= Prime2;
-        block = Long.rotateLeft( block, 31 );
+        block = Long.rotateLeft(block, 31);
         block *= Prime1;
         hash ^= block;
-        hash = Long.rotateLeft( hash, 27 ) * Prime1 + Prime4;
+        hash = Long.rotateLeft(hash, 27) * Prime1 + Prime4;
         return hash;
     }
 
     @Override
-    public long finalise( long hash )
-    {
+    public long finalise(long hash) {
         hash ^= hash >>> 33;
         hash *= Prime2;
         hash ^= hash >>> 29;

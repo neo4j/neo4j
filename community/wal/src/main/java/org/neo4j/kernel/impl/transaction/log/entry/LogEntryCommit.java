@@ -19,61 +19,50 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.util.Objects;
-
-import org.neo4j.kernel.KernelVersion;
-
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
-public class LogEntryCommit extends AbstractLogEntry
-{
+import java.util.Objects;
+import org.neo4j.kernel.KernelVersion;
+
+public class LogEntryCommit extends AbstractLogEntry {
     private final long txId;
     private final long timeWritten;
     private final int checksum;
 
-    public LogEntryCommit( long txId, long timeWritten, int checksum )
-    {
-        this( KernelVersion.LATEST, txId, timeWritten, checksum );
+    public LogEntryCommit(long txId, long timeWritten, int checksum) {
+        this(KernelVersion.LATEST, txId, timeWritten, checksum);
     }
 
-    public LogEntryCommit( KernelVersion version, long txId, long timeWritten, int checksum )
-    {
-        super( version, TX_COMMIT );
+    public LogEntryCommit(KernelVersion version, long txId, long timeWritten, int checksum) {
+        super(version, TX_COMMIT);
         this.txId = txId;
         this.timeWritten = timeWritten;
         this.checksum = checksum;
     }
 
-    public long getTxId()
-    {
+    public long getTxId() {
         return txId;
     }
 
-    public long getTimeWritten()
-    {
+    public long getTimeWritten() {
         return timeWritten;
     }
 
-    public int getChecksum()
-    {
+    public int getChecksum() {
         return checksum;
     }
 
     @Override
-    public String toString()
-    {
-        return "Commit[txId=" + getTxId() + ", " + timestamp( getTimeWritten() ) + ", checksum=" + checksum + "]";
+    public String toString() {
+        return "Commit[txId=" + getTxId() + ", " + timestamp(getTimeWritten()) + ", checksum=" + checksum + "]";
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         LogEntryCommit that = (LogEntryCommit) o;
@@ -81,8 +70,7 @@ public class LogEntryCommit extends AbstractLogEntry
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( txId, timeWritten, checksum );
+    public int hashCode() {
+        return Objects.hash(txId, timeWritten, checksum);
     }
 }

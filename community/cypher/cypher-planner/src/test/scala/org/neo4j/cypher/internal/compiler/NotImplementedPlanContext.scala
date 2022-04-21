@@ -92,9 +92,15 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def getRelTypeId(relType: String): Int = ???
 
-  override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+  override def textIndexGetForLabelAndProperties(
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = ???
 
-  override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+  override def textIndexGetForRelTypeAndProperties(
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = ???
 
   override def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = ???
 
@@ -102,18 +108,30 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = ???
 
-  override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+  override def rangeIndexGetForRelTypeAndProperties(
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = ???
 
   override def rangeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = ???
 
-  override def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+  override def rangeIndexGetForLabelAndProperties(
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = ???
 
   override def pointIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = ???
 
-  override def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+  override def pointIndexGetForRelTypeAndProperties(
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = ???
 
   override def pointIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = ???
 
-  override def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+  override def pointIndexGetForLabelAndProperties(
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = ???
 
 }

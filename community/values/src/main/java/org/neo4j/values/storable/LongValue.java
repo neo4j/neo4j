@@ -19,96 +19,81 @@
  */
 package org.neo4j.values.storable;
 
-import org.neo4j.values.ValueMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public final class LongValue extends IntegralValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( LongValue.class );
+import org.neo4j.values.ValueMapper;
+
+public final class LongValue extends IntegralValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(LongValue.class);
 
     private final long value;
 
-    LongValue( long value )
-    {
+    LongValue(long value) {
         this.value = value;
     }
 
-    public long value()
-    {
+    public long value() {
         return value;
     }
 
     @Override
-    public long longValue()
-    {
+    public long longValue() {
         return value;
     }
 
     @Override
-    public int intValue()
-    {
-        throw new IllegalStateException( "A 64 bit integer doesn't fit in a 32 bit value" );
+    public int intValue() {
+        throw new IllegalStateException("A 64 bit integer doesn't fit in a 32 bit value");
     }
 
     @Override
-    public short shortValue()
-    {
-        throw new IllegalStateException( "A 64 bit integer doesn't fit in a 16 bit value" );
+    public short shortValue() {
+        throw new IllegalStateException("A 64 bit integer doesn't fit in a 16 bit value");
     }
 
     @Override
-    public byte byteValue()
-    {
-        throw new IllegalStateException( "A 64 bit integer doesn't fit in a 8 bit value" );
+    public byte byteValue() {
+        throw new IllegalStateException("A 64 bit integer doesn't fit in a 8 bit value");
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeInteger( value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeInteger(value);
     }
 
     @Override
-    public Long asObjectCopy()
-    {
+    public Long asObjectCopy() {
         return value;
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return Long.toString( value );
+    public String prettyPrint() {
+        return Long.toString(value);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s(%d)", getTypeName(), value );
+    public String toString() {
+        return format("%s(%d)", getTypeName(), value);
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapLong( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapLong(this);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Long";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return SHALLOW_SIZE;
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.INT64;
     }
 }

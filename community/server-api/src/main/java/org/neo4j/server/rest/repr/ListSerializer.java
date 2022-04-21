@@ -21,51 +21,40 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 
-public class ListSerializer extends Serializer
-{
+public class ListSerializer extends Serializer {
     final ListWriter writer;
 
-    ListSerializer( ListWriter writer, URI baseUri )
-    {
-        super( baseUri );
+    ListSerializer(ListWriter writer, URI baseUri) {
+        super(baseUri);
         this.writer = writer;
     }
 
-    public void addUri( String path )
-    {
-        writer.writeValue( RepresentationType.URI, relativeUri( path ) );
+    public void addUri(String path) {
+        writer.writeValue(RepresentationType.URI, relativeUri(path));
     }
 
-    public void addUriTemplate( String template )
-    {
-        writer.writeValue( RepresentationType.TEMPLATE, relativeTemplate( template ) );
+    public void addUriTemplate(String template) {
+        writer.writeValue(RepresentationType.TEMPLATE, relativeTemplate(template));
     }
 
-    public void addString( String value )
-    {
-        writer.writeString( value );
+    public void addString(String value) {
+        writer.writeString(value);
     }
 
-    public void addMapping( MappingRepresentation value )
-    {
-        serialize( writer.newMapping( value.type ), value );
+    public void addMapping(MappingRepresentation value) {
+        serialize(writer.newMapping(value.type), value);
     }
 
-    public void addList( ListRepresentation value )
-    {
-        serialize( writer.newList( value.type ), value );
+    public void addList(ListRepresentation value) {
+        serialize(writer.newList(value.type), value);
     }
 
-    public final void addNumber( Number value )
-    {
-        if ( value instanceof Double || value instanceof Float )
-        {
-            writer.writeFloatingPointNumber( RepresentationType.valueOf( value.getClass() ), value.doubleValue() );
-        }
-        else
-        {
-            checkThatItIsBuiltInType( value );
-            writer.writeInteger( RepresentationType.valueOf( value.getClass() ), value.longValue() );
+    public final void addNumber(Number value) {
+        if (value instanceof Double || value instanceof Float) {
+            writer.writeFloatingPointNumber(RepresentationType.valueOf(value.getClass()), value.doubleValue());
+        } else {
+            checkThatItIsBuiltInType(value);
+            writer.writeInteger(RepresentationType.valueOf(value.getClass()), value.longValue());
         }
     }
 }

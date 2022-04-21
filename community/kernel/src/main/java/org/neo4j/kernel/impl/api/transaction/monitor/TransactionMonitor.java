@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.transaction.monitor;
 
 import java.util.Set;
-
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
@@ -30,52 +29,44 @@ import org.neo4j.time.SystemNanoClock;
  * Transaction monitor that check transactions with a configured timeout for expiration.
  * In case if transaction timed out it will be terminated.
  */
-public abstract class TransactionMonitor implements Runnable
-{
+public abstract class TransactionMonitor implements Runnable {
     private final SystemNanoClock clock;
     private final InternalLog log;
 
-    public TransactionMonitor( SystemNanoClock clock, LogService logService )
-    {
+    public TransactionMonitor(SystemNanoClock clock, LogService logService) {
         this.clock = clock;
-        this.log = logService.getInternalLog( TransactionMonitor.class );
+        this.log = logService.getInternalLog(TransactionMonitor.class);
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         long nowNanos = clock.nanos();
         Set<MonitoredTransaction> activeTransactions = getActiveTransactions();
-        checkExpiredTransactions( activeTransactions, nowNanos );
+        checkExpiredTransactions(activeTransactions, nowNanos);
     }
 
     protected abstract Set<MonitoredTransaction> getActiveTransactions();
 
-    private void checkExpiredTransactions( Set<MonitoredTransaction> activeTransactions, long nowNanos )
-    {
-        for ( MonitoredTransaction activeTransaction : activeTransactions )
-        {
+    private void checkExpiredTransactions(Set<MonitoredTransaction> activeTransactions, long nowNanos) {
+        for (MonitoredTransaction activeTransaction : activeTransactions) {
             long transactionTimeoutNanos = activeTransaction.timeoutNanos();
-            if ( transactionTimeoutNanos > 0 )
-            {
-                if ( isTransactionExpired( activeTransaction, nowNanos, transactionTimeoutNanos ) && !activeTransaction.isSchemaTransaction() )
-                {
-                    if ( activeTransaction.markForTermination( Status.Transaction.TransactionTimedOut ) )
-                    {
-                        log.warn( "Transaction %s timeout.", activeTransaction.getIdentifyingDescription() );
+            if (transactionTimeoutNanos > 0) {
+                if (isTransactionExpired(activeTransaction, nowNanos, transactionTimeoutNanos)
+                        && !activeTransaction.isSchemaTransaction()) {
+                    if (activeTransaction.markForTermination(Status.Transaction.TransactionTimedOut)) {
+                        log.warn("Transaction %s timeout.", activeTransaction.getIdentifyingDescription());
                     }
                 }
             }
         }
     }
 
-    private static boolean isTransactionExpired( MonitoredTransaction activeTransaction, long nowNanos, long transactionTimeoutNanos )
-    {
+    private static boolean isTransactionExpired(
+            MonitoredTransaction activeTransaction, long nowNanos, long transactionTimeoutNanos) {
         return nowNanos - activeTransaction.startTimeNanos() > transactionTimeoutNanos;
     }
 
-    public interface MonitoredTransaction
-    {
+    public interface MonitoredTransaction {
         long startTimeNanos();
 
         long timeoutNanos();
@@ -89,7 +80,7 @@ public abstract class TransactionMonitor implements Runnable
          * @return {@code true} if the underlying transaction was marked for termination, {@code false} otherwise
          * (when this handle represents an old transaction that has been closed).
          */
-        boolean markForTermination( Status reason );
+        boolean markForTermination(Status reason);
 
         /**
          * A meaningful description used in log messages related to this transaction.

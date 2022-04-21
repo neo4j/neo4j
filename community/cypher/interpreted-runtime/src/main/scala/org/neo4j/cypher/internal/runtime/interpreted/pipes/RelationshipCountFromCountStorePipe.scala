@@ -25,9 +25,12 @@ import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.Values
 
-case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option[LazyLabel],
-                                               types: RelationshipTypes, endLabel: Option[LazyLabel])
-                                              (val id: Id = Id.INVALID_ID) extends Pipe {
+case class RelationshipCountFromCountStorePipe(
+  ident: String,
+  startLabel: Option[LazyLabel],
+  types: RelationshipTypes,
+  endLabel: Option[LazyLabel]
+)(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val maybeStartLabelId = getLabelId(startLabel, state)
@@ -62,7 +65,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
       var i = 0
       var count = 0L
       while (i < ts.length) {
-        count +=  state.query.relationshipCountByCountStore(startLabelId, ts(i), endLabelId)
+        count += state.query.relationshipCountByCountStore(startLabelId, ts(i), endLabelId)
         i += 1
       }
       count

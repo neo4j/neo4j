@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class NodeWriteTest extends NodeWriteTestBase<WriteTestSupport>
-{
+public class NodeWriteTest extends NodeWriteTestBase<WriteTestSupport> {
     @Override
-    public WriteTestSupport newTestSupport()
-    {
+    public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();
     }
 }

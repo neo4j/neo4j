@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.traversal;
 
 import java.util.Iterator;
-
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -29,49 +28,37 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-public class DefaultTraverser implements Traverser
-{
+public class DefaultTraverser implements Traverser {
     private final Factory<TraverserIterator> traverserIteratorFactory;
 
     private TraversalMetadata lastIterator;
 
-    DefaultTraverser( Factory<TraverserIterator> traverserIteratorFactory )
-    {
+    DefaultTraverser(Factory<TraverserIterator> traverserIteratorFactory) {
         this.traverserIteratorFactory = traverserIteratorFactory;
     }
 
     @Override
-    public Iterable<Node> nodes()
-    {
-        return new PathIterableWrapper<>( this )
-        {
+    public Iterable<Node> nodes() {
+        return new PathIterableWrapper<>(this) {
             @Override
-            protected Node convert( Path path )
-            {
+            protected Node convert(Path path) {
                 return path.endNode();
             }
         };
     }
 
     @Override
-    public Iterable<Relationship> relationships()
-    {
-        return new PathIterableWrapper<>( this )
-        {
+    public Iterable<Relationship> relationships() {
+        return new PathIterableWrapper<>(this) {
             @Override
-            public Iterator<Relationship> iterator()
-            {
+            public Iterator<Relationship> iterator() {
                 var pathIterator = pathIterator();
-                return new PrefetchingIterator<>()
-                {
+                return new PrefetchingIterator<>() {
                     @Override
-                    protected Relationship fetchNextOrNull()
-                    {
-                        while ( pathIterator.hasNext() )
-                        {
+                    protected Relationship fetchNextOrNull() {
+                        while (pathIterator.hasNext()) {
                             Path path = pathIterator.next();
-                            if ( path.length() > 0 )
-                            {
+                            if (path.length() > 0) {
                                 return path.lastRelationship();
                             }
                         }
@@ -81,55 +68,46 @@ public class DefaultTraverser implements Traverser
             }
 
             @Override
-            protected Relationship convert( Path path )
-            {
+            protected Relationship convert(Path path) {
                 return path.lastRelationship();
             }
         };
     }
 
     @Override
-    public Iterator<Path> iterator()
-    {
+    public Iterator<Path> iterator() {
         TraverserIterator traverserIterator = traverserIteratorFactory.newInstance();
         lastIterator = traverserIterator;
         return traverserIterator;
     }
 
     @Override
-    public TraversalMetadata metadata()
-    {
+    public TraversalMetadata metadata() {
         return lastIterator;
     }
 
-    private abstract static class PathIterableWrapper<T> implements Iterable<T>
-    {
+    private abstract static class PathIterableWrapper<T> implements Iterable<T> {
         private final Iterable<Path> iterableToWrap;
 
-        PathIterableWrapper( Iterable<Path> iterableToWrap )
-        {
+        PathIterableWrapper(Iterable<Path> iterableToWrap) {
             this.iterableToWrap = iterableToWrap;
         }
 
-        Iterator<Path> pathIterator()
-        {
+        Iterator<Path> pathIterator() {
             return iterableToWrap.iterator();
         }
 
         @Override
-        public Iterator<T> iterator()
-        {
+        public Iterator<T> iterator() {
             var iterator = pathIterator();
-            return new PrefetchingIterator<>()
-            {
+            return new PrefetchingIterator<>() {
                 @Override
-                protected T fetchNextOrNull()
-                {
-                    return iterator.hasNext() ? convert( iterator.next() ) : null;
+                protected T fetchNextOrNull() {
+                    return iterator.hasNext() ? convert(iterator.next()) : null;
                 }
             };
         }
 
-        protected abstract T convert( Path path );
+        protected abstract T convert(Path path);
     }
 }

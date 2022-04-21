@@ -21,7 +21,6 @@ package org.neo4j.dbms.database;
 
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 
-public interface DefaultDatabaseContextFactoryComponents
-{
+public interface DefaultDatabaseContextFactoryComponents {
     ReadOnlyDatabases readOnlyDatabases();
 }

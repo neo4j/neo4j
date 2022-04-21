@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport.staging;
 
 import java.util.Collection;
-
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.IoThroughputStat;
 import org.neo4j.internal.batchimport.stats.Key;
@@ -32,13 +31,11 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
  * Step that generally sits first in a {@link Stage} and produces batches that will flow downstream
  * to other {@link Step steps}.
  */
-public abstract class ProducerStep extends AbstractStep<Void> implements StatsProvider
-{
+public abstract class ProducerStep extends AbstractStep<Void> implements StatsProvider {
     protected final int batchSize;
 
-    public ProducerStep( StageControl control, Configuration config )
-    {
-        super( control, ">", config );
+    public ProducerStep(StageControl control, Configuration config) {
+        super(control, ">", config);
         this.batchSize = config.batchSize();
     }
 
@@ -46,56 +43,49 @@ public abstract class ProducerStep extends AbstractStep<Void> implements StatsPr
      * Merely receives one call, like a start signal from the staging framework.
      */
     @Override
-    public long receive( long ticket, Void batch )
-    {
+    public long receive(long ticket, Void batch) {
         // It's fine to not store a reference to this thread here because either it completes and exits
         // normally, notices a panic and exits via an exception.
-        control.scheduler().schedule( () ->
-        {
-            assertHealthy();
-            try
-            {
-                process();
-                endOfUpstream();
-            }
-            catch ( Throwable e )
-            {
-                issuePanic( e, false );
-            }
-        }, name() );
+        control.scheduler()
+                .schedule(
+                        () -> {
+                            assertHealthy();
+                            try {
+                                process();
+                                endOfUpstream();
+                            } catch (Throwable e) {
+                                issuePanic(e, false);
+                            }
+                        },
+                        name());
         return 0;
     }
 
     protected abstract void process();
 
-    @SuppressWarnings( "unchecked" )
-    protected void sendDownstream( Object batch )
-    {
-        long time = downstream.receive( doneBatches.getAndIncrement(), batch );
-        downstreamIdleTime.add( time );
+    @SuppressWarnings("unchecked")
+    protected void sendDownstream(Object batch) {
+        long time = downstream.receive(doneBatches.getAndIncrement(), batch);
+        downstreamIdleTime.add(time);
     }
 
     @Override
-    protected void collectStatsProviders( Collection<StatsProvider> into )
-    {
-        super.collectStatsProviders( into );
-        into.add( this );
+    protected void collectStatsProviders(Collection<StatsProvider> into) {
+        super.collectStatsProviders(into);
+        into.add(this);
     }
 
     @Override
-    public Stat stat( Key key )
-    {
-        if ( key == Keys.io_throughput )
-        {
-            return new IoThroughputStat( startTime, endTime, position() );
+    public Stat stat(Key key) {
+        if (key == Keys.io_throughput) {
+            return new IoThroughputStat(startTime, endTime, position());
         }
         return null;
     }
 
     @Override
-    public Key[] keys()
-    {
-        return new Key[] { Keys.io_throughput };
+    public Key[] keys() {
+        return new Key[] {Keys.io_throughput};
     }
 
     /**

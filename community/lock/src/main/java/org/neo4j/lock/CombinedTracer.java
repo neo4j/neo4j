@@ -28,62 +28,50 @@ import java.util.Arrays;
  * This is used for when there is a stack of queries in a transaction, or when a system-configured tracer combines with
  * the query specific tracers.
  */
-final class CombinedTracer implements LockTracer
-{
+final class CombinedTracer implements LockTracer {
     private final LockTracer[] tracers;
 
-    CombinedTracer( LockTracer... tracers )
-    {
+    CombinedTracer(LockTracer... tracers) {
         this.tracers = tracers;
     }
 
     @Override
-    public LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long transactionId, long... resourceIds )
-    {
+    public LockWaitEvent waitForLock(
+            LockType lockType, ResourceType resourceType, long transactionId, long... resourceIds) {
         LockWaitEvent[] events = new LockWaitEvent[tracers.length];
-        for ( int i = 0; i < events.length; i++ )
-        {
-            events[i] = tracers[i].waitForLock( lockType, resourceType, transactionId, resourceIds );
+        for (int i = 0; i < events.length; i++) {
+            events[i] = tracers[i].waitForLock(lockType, resourceType, transactionId, resourceIds);
         }
-        return new CombinedEvent( events );
+        return new CombinedEvent(events);
     }
 
     @Override
-    public LockTracer combine( LockTracer tracer )
-    {
-        if ( tracer == NONE )
-        {
+    public LockTracer combine(LockTracer tracer) {
+        if (tracer == NONE) {
             return this;
         }
         LockTracer[] tracers;
-        if ( tracer instanceof CombinedTracer )
-        {
+        if (tracer instanceof CombinedTracer) {
             LockTracer[] those = ((CombinedTracer) tracer).tracers;
-            tracers = Arrays.copyOf( this.tracers, this.tracers.length + those.length );
-            System.arraycopy( those, 0, tracers, this.tracers.length, those.length );
-        }
-        else
-        {
-            tracers = Arrays.copyOf( this.tracers, this.tracers.length + 1 );
+            tracers = Arrays.copyOf(this.tracers, this.tracers.length + those.length);
+            System.arraycopy(those, 0, tracers, this.tracers.length, those.length);
+        } else {
+            tracers = Arrays.copyOf(this.tracers, this.tracers.length + 1);
             tracers[this.tracers.length] = tracer;
         }
-        return new CombinedTracer( tracers );
+        return new CombinedTracer(tracers);
     }
 
-    private static class CombinedEvent implements LockWaitEvent
-    {
+    private static class CombinedEvent implements LockWaitEvent {
         private final LockWaitEvent[] events;
 
-        CombinedEvent( LockWaitEvent[] events )
-        {
+        CombinedEvent(LockWaitEvent[] events) {
             this.events = events;
         }
 
         @Override
-        public void close()
-        {
-            for ( LockWaitEvent event : events )
-            {
+        public void close() {
+            for (LockWaitEvent event : events) {
                 event.close();
             }
         }

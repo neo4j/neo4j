@@ -26,56 +26,46 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class DropConstraintFailureException extends SchemaKernelException
-{
+public class DropConstraintFailureException extends SchemaKernelException {
     private final SchemaDescriptorSupplier constraint;
     private final String nameOrSchema;
 
-    public DropConstraintFailureException( SchemaDescriptorSupplier constraint, Throwable cause )
-    {
-        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint: " + cause.getMessage() );
+    public DropConstraintFailureException(SchemaDescriptorSupplier constraint, Throwable cause) {
+        super(Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint: " + cause.getMessage());
         this.constraint = constraint;
         this.nameOrSchema = null;
     }
 
-    public DropConstraintFailureException( SchemaDescriptor constraint, Throwable cause )
-    {
-        this( () -> constraint, cause );
+    public DropConstraintFailureException(SchemaDescriptor constraint, Throwable cause) {
+        this(() -> constraint, cause);
     }
 
-    public DropConstraintFailureException( String nameOrSchema, Throwable cause )
-    {
+    public DropConstraintFailureException(String nameOrSchema, Throwable cause) {
         // nameOrSchema is just 'name' or 'on schema'
-        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint `" + nameOrSchema + "`: " + cause.getMessage() );
+        super(
+                Status.Schema.ConstraintDropFailed,
+                cause,
+                "Unable to drop constraint `" + nameOrSchema + "`: " + cause.getMessage());
         this.nameOrSchema = nameOrSchema;
         this.constraint = null;
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
         String message;
-        if ( constraint != null )
-        {
-            message = "Unable to drop constraint on " + constraint.userDescription( tokenNameLookup ) + ": ";
+        if (constraint != null) {
+            message = "Unable to drop constraint on " + constraint.userDescription(tokenNameLookup) + ": ";
 
-        }
-        else if ( nameOrSchema != null )
-        {
+        } else if (nameOrSchema != null) {
             message = "Unable to drop constraint `" + nameOrSchema + "`: ";
-        }
-        else
-        {
+        } else {
             return getMessage();
         }
 
         Throwable cause = getCause();
-        if ( cause instanceof KernelException exception )
-        {
-            message += exception.getUserMessage( tokenNameLookup );
-        }
-        else
-        {
+        if (cause instanceof KernelException exception) {
+            message += exception.getUserMessage(tokenNameLookup);
+        } else {
             message += cause.getMessage();
         }
 

@@ -53,9 +53,15 @@ class MakeValuesNeoSafeTest extends CypherFunSuite {
   }
 
   test("retains type of primitive arrays") {
-    Seq(longArray(emptyLongArray), shortArray(emptyShortArray), byteArray(emptyByteArray), intArray(emptyIntArray),
-        doubleArray(emptyDoubleArray), floatArray(emptyFloatArray), booleanArray(emptyBooleanArray)).foreach { array =>
-
+    Seq(
+      longArray(emptyLongArray),
+      shortArray(emptyShortArray),
+      byteArray(emptyByteArray),
+      intArray(emptyIntArray),
+      doubleArray(emptyDoubleArray),
+      floatArray(emptyFloatArray),
+      booleanArray(emptyBooleanArray)
+    ).foreach { array =>
       makeValueNeoSafe(array) should equal(array)
     }
   }

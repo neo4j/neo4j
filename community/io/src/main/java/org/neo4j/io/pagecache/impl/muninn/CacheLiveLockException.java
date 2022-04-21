@@ -26,10 +26,8 @@ import java.io.IOException;
  * pages are currently locked by page cursors, and you try to lock one more page. Then the pin would get stuck trying
  * to find a page to evict and then fault. Except this exception will eventually get thrown to escape the infinite loop.
  */
-public class CacheLiveLockException extends IOException
-{
-    public CacheLiveLockException( String msg )
-    {
-        super( msg );
+public class CacheLiveLockException extends IOException {
+    public CacheLiveLockException(String msg) {
+        super(msg);
     }
 }

@@ -28,11 +28,8 @@ import java.nio.channels.ReadableByteChannel;
  * and not enough bytes ({@link ByteBuffer#limit()}) could be read.
  * Also used when reading from {@link ReadableChannel}.
  */
-public final class ReadPastEndException extends IOException
-{
+public final class ReadPastEndException extends IOException {
     public static final ReadPastEndException INSTANCE = new ReadPastEndException();
 
-    private ReadPastEndException()
-    {
-    }
+    private ReadPastEndException() {}
 }

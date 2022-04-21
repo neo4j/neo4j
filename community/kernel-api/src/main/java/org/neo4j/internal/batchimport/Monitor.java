@@ -19,50 +19,43 @@
  */
 package org.neo4j.internal.batchimport;
 
-public interface Monitor
-{
-    Monitor NO_MONITOR = new Monitor()
-    {
+public interface Monitor {
+    Monitor NO_MONITOR = new Monitor() {
         @Override
-        public void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount )
-        {   // no-op
+        public void mayExceedRelationshipIdCapacity(long capacity, long estimatedCount) { // no-op
         }
 
         @Override
-        public void mayExceedNodeIdCapacity( long capacity, long estimatedCount )
-        {   // no-op
+        public void mayExceedNodeIdCapacity(long capacity, long estimatedCount) { // no-op
         }
 
         @Override
-        public void doubleRelationshipRecordUnitsEnabled()
-        {   // no-op
+        public void doubleRelationshipRecordUnitsEnabled() { // no-op
         }
 
         @Override
-        public void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize )
-        {   // no-op
+        public void insufficientHeapSize(long optimalMinimalHeapSize, long heapSize) { // no-op
         }
 
         @Override
-        public void abundantHeapSize( long optimalMinimalHeapSize, long heapSize )
-        {   // no-op
+        public void abundantHeapSize(long optimalMinimalHeapSize, long heapSize) { // no-op
         }
 
         @Override
-        public void insufficientAvailableMemory( long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory )
-        {   // no-op
+        public void insufficientAvailableMemory(
+                long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory) { // no-op
         }
     };
 
     void doubleRelationshipRecordUnitsEnabled();
 
-    void mayExceedNodeIdCapacity( long capacity, long estimatedCount );
+    void mayExceedNodeIdCapacity(long capacity, long estimatedCount);
 
-    void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount );
+    void mayExceedRelationshipIdCapacity(long capacity, long estimatedCount);
 
-    void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize );
+    void insufficientHeapSize(long optimalMinimalHeapSize, long heapSize);
 
-    void abundantHeapSize( long optimalMinimalHeapSize, long heapSize );
+    void abundantHeapSize(long optimalMinimalHeapSize, long heapSize);
 
-    void insufficientAvailableMemory( long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory );
+    void insufficientAvailableMemory(long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory);
 }

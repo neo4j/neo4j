@@ -19,64 +19,63 @@
  */
 package org.neo4j.importer;
 
-import java.io.PrintStream;
-
-import org.neo4j.internal.batchimport.Monitor;
-
 import static org.neo4j.io.ByteUnit.bytesToString;
 
-class PrintingImportLogicMonitor implements Monitor
-{
+import java.io.PrintStream;
+import org.neo4j.internal.batchimport.Monitor;
+
+class PrintingImportLogicMonitor implements Monitor {
     private final PrintStream out;
     private final PrintStream err;
 
-    PrintingImportLogicMonitor( PrintStream out, PrintStream err )
-    {
+    PrintingImportLogicMonitor(PrintStream out, PrintStream err) {
         this.out = out;
         this.err = err;
     }
 
     @Override
-    public void doubleRelationshipRecordUnitsEnabled()
-    {
-        out.println( "Will use double record units for all relationships" );
+    public void doubleRelationshipRecordUnitsEnabled() {
+        out.println("Will use double record units for all relationships");
     }
 
     @Override
-    public void mayExceedNodeIdCapacity( long capacity, long estimatedCount )
-    {
-        err.printf( "WARNING: estimated number of relationships %d may exceed capacity %d of selected record format%n",
-                estimatedCount, capacity );
+    public void mayExceedNodeIdCapacity(long capacity, long estimatedCount) {
+        err.printf(
+                "WARNING: estimated number of relationships %d may exceed capacity %d of selected record format%n",
+                estimatedCount, capacity);
     }
 
     @Override
-    public void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount )
-    {
-        err.printf( "WARNING: estimated number of nodes %d may exceed capacity %d of selected record format%n",
-                estimatedCount, capacity );
+    public void mayExceedRelationshipIdCapacity(long capacity, long estimatedCount) {
+        err.printf(
+                "WARNING: estimated number of nodes %d may exceed capacity %d of selected record format%n",
+                estimatedCount, capacity);
     }
 
     @Override
-    public void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize )
-    {
-        err.printf( "WARNING: heap size %s may be too small to complete this import. Suggested heap size is %s",
-                bytesToString( heapSize ), bytesToString( optimalMinimalHeapSize ) );
+    public void insufficientHeapSize(long optimalMinimalHeapSize, long heapSize) {
+        err.printf(
+                "WARNING: heap size %s may be too small to complete this import. Suggested heap size is %s",
+                bytesToString(heapSize), bytesToString(optimalMinimalHeapSize));
     }
 
     @Override
-    public void abundantHeapSize( long optimalMinimalHeapSize, long heapSize )
-    {
-        err.printf( "WARNING: heap size %s is unnecessarily large for completing this import.%n" +
-                "The abundant heap memory will leave less memory for off-heap importer caches. Suggested heap size is %s",
-                bytesToString( heapSize ), bytesToString( optimalMinimalHeapSize ) );
+    public void abundantHeapSize(long optimalMinimalHeapSize, long heapSize) {
+        err.printf(
+                "WARNING: heap size %s is unnecessarily large for completing this import.%n"
+                        + "The abundant heap memory will leave less memory for off-heap importer caches. Suggested heap size is %s",
+                bytesToString(heapSize), bytesToString(optimalMinimalHeapSize));
     }
 
     @Override
-    public void insufficientAvailableMemory( long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory )
-    {
-        err.printf( "WARNING: %s memory may not be sufficient to complete this import. Suggested memory distribution is:%n" +
-                "heap size: %s%n" +
-                "minimum free and available memory excluding heap size: %s",
-                bytesToString( availableMemory ), bytesToString( optimalMinimalHeapSize ), bytesToString( estimatedCacheSize ) );
+    public void insufficientAvailableMemory(
+            long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory) {
+        err.printf(
+                "WARNING: %s memory may not be sufficient to complete this import. Suggested memory distribution is:%n"
+                        + "heap size: %s%n"
+                        + "minimum free and available memory excluding heap size: %s",
+                bytesToString(availableMemory),
+                bytesToString(optimalMinimalHeapSize),
+                bytesToString(estimatedCacheSize));
     }
 }

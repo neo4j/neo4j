@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.ExecutionException;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -33,161 +35,128 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-
 @ImpermanentDbmsExtension
-class ManualAcquireLockTest
-{
+class ManualAcquireLockTest {
     @Inject
     private GraphDatabaseService db;
 
     private Worker worker;
 
     @BeforeEach
-    void doBefore()
-    {
+    void doBefore() {
         worker = new Worker();
     }
 
     @AfterEach
-    void doAfter()
-    {
+    void doAfter() {
         worker.close();
     }
 
     @Test
-    void releaseReleaseManually() throws Exception
-    {
+    void releaseReleaseManually() throws Exception {
         String key = "name";
         Node node = createNode();
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Lock nodeLock = transaction.acquireWriteLock( node );
+        try (Transaction transaction = db.beginTx()) {
+            Lock nodeLock = transaction.acquireWriteLock(node);
             worker.beginTx();
-            try
-            {
-                worker.setProperty( node, key, "ksjd" );
-                fail( "Shouldn't be able to grab it" );
-            }
-            catch ( Exception ignored )
-            {
+            try {
+                worker.setProperty(node, key, "ksjd");
+                fail("Shouldn't be able to grab it");
+            } catch (Exception ignored) {
             }
             nodeLock.release();
-            worker.setProperty( node, key, "yo" );
+            worker.setProperty(node, key, "yo");
 
-            try
-            {
+            try {
                 worker.finishTx();
-            }
-            catch ( ExecutionException e )
-            {
+            } catch (ExecutionException e) {
                 // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
             }
         }
     }
 
     @Test
-    void canOnlyReleaseOnce()
-    {
+    void canOnlyReleaseOnce() {
         Node node = createNode();
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Lock nodeLock = transaction.acquireWriteLock( node );
+        try (Transaction transaction = db.beginTx()) {
+            Lock nodeLock = transaction.acquireWriteLock(node);
             nodeLock.release();
-            try
-            {
+            try {
                 nodeLock.release();
-                fail( "Shouldn't be able to release more than once" );
-            }
-            catch ( IllegalStateException e )
-            { // Good
+                fail("Shouldn't be able to release more than once");
+            } catch (IllegalStateException e) { // Good
             }
         }
     }
 
     @Test
-    void makeSureNodeStaysLockedEvenAfterManualRelease() throws Exception
-    {
+    void makeSureNodeStaysLockedEvenAfterManualRelease() throws Exception {
         String key = "name";
         Node node = createNode();
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            var txNode = transaction.getNodeById( node.getId() );
-            Lock nodeLock = transaction.acquireWriteLock( txNode );
-            txNode.setProperty( key, "value" );
+        try (Transaction transaction = db.beginTx()) {
+            var txNode = transaction.getNodeById(node.getId());
+            Lock nodeLock = transaction.acquireWriteLock(txNode);
+            txNode.setProperty(key, "value");
             nodeLock.release();
 
             worker.beginTx();
-            assertThrows( Exception.class, () -> worker.setProperty( txNode, key, "ksjd" ) );
+            assertThrows(Exception.class, () -> worker.setProperty(txNode, key, "ksjd"));
             transaction.commit();
         }
 
-        try
-        {
+        try {
             worker.finishTx();
-        }
-        catch ( ExecutionException e )
-        {
+        } catch (ExecutionException e) {
             // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
         }
     }
 
-    private Node createNode()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
+    private Node createNode() {
+        try (Transaction transaction = db.beginTx()) {
             Node node = transaction.createNode();
             transaction.commit();
             return node;
         }
     }
 
-    private GraphDatabaseService getGraphDb()
-    {
+    private GraphDatabaseService getGraphDb() {
         return db;
     }
 
-    private class Worker extends OtherThreadExecutor
-    {
+    private class Worker extends OtherThreadExecutor {
         private final GraphDatabaseService graphDb;
         private Transaction tx;
 
-        Worker()
-        {
-            super( "other thread" );
+        Worker() {
+            super("other thread");
             graphDb = getGraphDb();
         }
 
-        void beginTx() throws Exception
-        {
-            execute( () ->
-            {
+        void beginTx() throws Exception {
+            execute(() -> {
                 tx = graphDb.beginTx();
                 return null;
-            } );
+            });
         }
 
-        void finishTx() throws Exception
-        {
-            execute( () ->
-            {
+        void finishTx() throws Exception {
+            execute(() -> {
                 tx.commit();
                 return null;
-            } );
+            });
         }
 
-        void setProperty( final Node node, final String key, final Object value ) throws Exception
-        {
-            execute( () ->
-            {
-                tx.getNodeById( node.getId() ).setProperty( key, value );
-                return null;
-            }, 2, SECONDS );
+        void setProperty(final Node node, final String key, final Object value) throws Exception {
+            execute(
+                    () -> {
+                        tx.getNodeById(node.getId()).setProperty(key, value);
+                        return null;
+                    },
+                    2,
+                    SECONDS);
         }
     }
 }

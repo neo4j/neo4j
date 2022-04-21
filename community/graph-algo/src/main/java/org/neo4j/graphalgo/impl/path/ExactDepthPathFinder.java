@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+
 import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.impl.util.LiteDepthFirstSelector;
 import org.neo4j.graphdb.Node;
@@ -26,9 +29,6 @@ import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
-
-import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 
 /**
  * Tries to find paths in a graph from a start node to an end node where the
@@ -39,16 +39,15 @@ import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
  * queue for later traversal. This makes it possible to find paths w/o having to
  * traverse heavy super nodes.
  */
-public class ExactDepthPathFinder extends TraversalPathFinder
-{
+public class ExactDepthPathFinder extends TraversalPathFinder {
     private final EvaluationContext context;
     private final PathExpander expander;
     private final int onDepth;
     private final int startThreshold;
     private final Uniqueness uniqueness;
 
-    public ExactDepthPathFinder( EvaluationContext context, PathExpander expander, int onDepth, int startThreshold, boolean allowLoops )
-    {
+    public ExactDepthPathFinder(
+            EvaluationContext context, PathExpander expander, int onDepth, int startThreshold, boolean allowLoops) {
         this.context = context;
         this.expander = expander;
         this.onDepth = onDepth;
@@ -57,17 +56,20 @@ public class ExactDepthPathFinder extends TraversalPathFinder
     }
 
     @Override
-    protected Traverser instantiateTraverser( Node start, Node end )
-    {
+    protected Traverser instantiateTraverser(Node start, Node end) {
         var transaction = context.transaction();
-        TraversalDescription side =
-                transaction.traversalDescription().breadthFirst().uniqueness( uniqueness ).order(
-                        ( startSource, expander ) -> new LiteDepthFirstSelector( startSource, startThreshold, expander ) );
-        return transaction.bidirectionalTraversalDescription().startSide( side.expand( expander ).evaluator( toDepth( onDepth / 2 ) ) )
-                .endSide( side.expand( expander.reverse() ).evaluator( toDepth( onDepth - onDepth / 2 ) ) )
-                .collisionEvaluator( atDepth( onDepth ) )
+        TraversalDescription side = transaction
+                .traversalDescription()
+                .breadthFirst()
+                .uniqueness(uniqueness)
+                .order((startSource, expander) -> new LiteDepthFirstSelector(startSource, startThreshold, expander));
+        return transaction
+                .bidirectionalTraversalDescription()
+                .startSide(side.expand(expander).evaluator(toDepth(onDepth / 2)))
+                .endSide(side.expand(expander.reverse()).evaluator(toDepth(onDepth - onDepth / 2)))
+                .collisionEvaluator(atDepth(onDepth))
                 // TODO Level side selector will make the traversal return wrong result, why?
                 //                .sideSelector( SideSelectorPolicies.LEVEL, onDepth )
-                .traverse( start, end );
+                .traverse(start, end);
     }
 }

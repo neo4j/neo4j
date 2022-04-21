@@ -19,14 +19,18 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -39,244 +43,217 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.PageCacheConfig;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
 @EphemeralTestDirectoryExtension
-class GBPTreeWriterTest
-{
+class GBPTreeWriterTest {
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( 512 ) );
+    static PageCacheSupportExtension pageCacheExtension =
+            new PageCacheSupportExtension(PageCacheConfig.config().withPageSize(512));
+
     @Inject
     private TestDirectory directory;
+
     @Inject
     private PageCache pageCache;
-    private SimpleLongLayout layout = SimpleLongLayout.longLayout().withFixedSize( true ).build();
+
+    private SimpleLongLayout layout =
+            SimpleLongLayout.longLayout().withFixedSize(true).build();
 
     @Test
-    void shouldReInitializeTreeLogicWithSameSplitRatioAsInitiallySet0() throws IOException
-    {
+    void shouldReInitializeTreeLogicWithSameSplitRatioAsInitiallySet0() throws IOException {
         TreeHeightTracker treeHeightTracker = new TreeHeightTracker();
-        try ( GBPTree<MutableLong,MutableLong> gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout )
-                .with( treeHeightTracker )
-                .build();
-              Writer<MutableLong,MutableLong> writer = gbpTree.writer( 0, NULL_CONTEXT ) )
-        {
-            MutableLong dontCare = layout.value( 0 );
+        try (GBPTree<MutableLong, MutableLong> gbpTree = new GBPTreeBuilder<>(
+                                pageCache, directory.file("index"), layout)
+                        .with(treeHeightTracker)
+                        .build();
+                Writer<MutableLong, MutableLong> writer = gbpTree.writer(0, NULL_CONTEXT)) {
+            MutableLong dontCare = layout.value(0);
 
             long keySeed = 10_000;
-            while ( treeHeightTracker.treeHeight < 5 )
-            {
-                MutableLong key = layout.key( keySeed-- );
-                writer.put( key, dontCare );
+            while (treeHeightTracker.treeHeight < 5) {
+                MutableLong key = layout.key(keySeed--);
+                writer.put(key, dontCare);
             }
             // We now have a tree with height 6.
             // The leftmost node on all levels should have only a single key.
             KeyCountingVisitor keyCountingVisitor = new KeyCountingVisitor();
-            gbpTree.visit( keyCountingVisitor, NULL_CONTEXT );
-            for ( Integer leftmostKeyCount : keyCountingVisitor.keyCountOnLeftmostPerLevel )
-            {
-                assertEquals( 1, leftmostKeyCount.intValue() );
+            gbpTree.visit(keyCountingVisitor, NULL_CONTEXT);
+            for (Integer leftmostKeyCount : keyCountingVisitor.keyCountOnLeftmostPerLevel) {
+                assertEquals(1, leftmostKeyCount.intValue());
             }
         }
     }
 
     @Test
-    void shouldReInitializeTreeLogicWithSameSplitRatioAsInitiallySet1() throws IOException
-    {
+    void shouldReInitializeTreeLogicWithSameSplitRatioAsInitiallySet1() throws IOException {
         TreeHeightTracker treeHeightTracker = new TreeHeightTracker();
-        try ( GBPTree<MutableLong,MutableLong> gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout )
-                .with( treeHeightTracker )
-                .build();
-              Writer<MutableLong,MutableLong> writer = gbpTree.writer( 1, NULL_CONTEXT ) )
-        {
-            MutableLong dontCare = layout.value( 0 );
+        try (GBPTree<MutableLong, MutableLong> gbpTree = new GBPTreeBuilder<>(
+                                pageCache, directory.file("index"), layout)
+                        .with(treeHeightTracker)
+                        .build();
+                Writer<MutableLong, MutableLong> writer = gbpTree.writer(1, NULL_CONTEXT)) {
+            MutableLong dontCare = layout.value(0);
 
             long keySeed = 0;
-            while ( treeHeightTracker.treeHeight < 5 )
-            {
-                MutableLong key = layout.key( keySeed++ );
-                writer.put( key, dontCare );
+            while (treeHeightTracker.treeHeight < 5) {
+                MutableLong key = layout.key(keySeed++);
+                writer.put(key, dontCare);
             }
             // We now have a tree with height 6.
             // The rightmost node on all levels should have either one or zero key (zero for internal nodes).
             KeyCountingVisitor keyCountingVisitor = new KeyCountingVisitor();
-            gbpTree.visit( keyCountingVisitor, NULL_CONTEXT );
-            for ( Integer rightmostKeyCount : keyCountingVisitor.keyCountOnRightmostPerLevel )
-            {
-                assertTrue( rightmostKeyCount == 0 || rightmostKeyCount == 1 );
+            gbpTree.visit(keyCountingVisitor, NULL_CONTEXT);
+            for (Integer rightmostKeyCount : keyCountingVisitor.keyCountOnRightmostPerLevel) {
+                assertTrue(rightmostKeyCount == 0 || rightmostKeyCount == 1);
             }
         }
     }
 
     @Test
-    void trackPageCacheAccessOnMerge() throws IOException
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        var cursorContext = contextFactory.create( "trackPageCacheAccessOnMerge" );
+    void trackPageCacheAccessOnMerge() throws IOException {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var cursorContext = contextFactory.create("trackPageCacheAccessOnMerge");
 
-        assertZeroCursor( cursorContext );
+        assertZeroCursor(cursorContext);
 
-        try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorContext ) )
-        {
-            treeWriter.merge( new MutableLong( 0 ), new MutableLong( 1 ), ValueMergers.overwrite() );
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+                var treeWriter = gbpTree.writer(0, cursorContext)) {
+            treeWriter.merge(new MutableLong(0), new MutableLong(1), ValueMergers.overwrite());
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 4 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 3 );
-            assertThat( cursorTracer.faults() ).isEqualTo( 1 );
+            assertThat(cursorTracer.pins()).isEqualTo(4);
+            assertThat(cursorTracer.unpins()).isEqualTo(3);
+            assertThat(cursorTracer.hits()).isEqualTo(3);
+            assertThat(cursorTracer.faults()).isEqualTo(1);
         }
     }
 
     @Test
-    void trackPageCacheAccessOnPut() throws IOException
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        var cursorContext = contextFactory.create( "trackPageCacheAccessOnPut" );
+    void trackPageCacheAccessOnPut() throws IOException {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var cursorContext = contextFactory.create("trackPageCacheAccessOnPut");
 
-        assertZeroCursor( cursorContext );
+        assertZeroCursor(cursorContext);
 
-        try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorContext ) )
-        {
-            treeWriter.put( new MutableLong( 0 ), new MutableLong( 1 ) );
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+                var treeWriter = gbpTree.writer(0, cursorContext)) {
+            treeWriter.put(new MutableLong(0), new MutableLong(1));
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 4 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 3 );
-            assertThat( cursorTracer.faults() ).isEqualTo( 1 );
+            assertThat(cursorTracer.pins()).isEqualTo(4);
+            assertThat(cursorTracer.unpins()).isEqualTo(3);
+            assertThat(cursorTracer.hits()).isEqualTo(3);
+            assertThat(cursorTracer.faults()).isEqualTo(1);
         }
     }
 
     @Test
-    void trackPageCacheAccessOnRemove() throws IOException
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        var cursorContext = contextFactory.create( "trackPageCacheAccessOnRemove" );
+    void trackPageCacheAccessOnRemove() throws IOException {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var cursorContext = contextFactory.create("trackPageCacheAccessOnRemove");
 
-        try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorContext ) )
-        {
-            treeWriter.put( new MutableLong( 0 ), new MutableLong( 0 ) );
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+                var treeWriter = gbpTree.writer(0, cursorContext)) {
+            treeWriter.put(new MutableLong(0), new MutableLong(0));
             var cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 4 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 3 );
-            assertThat( cursorTracer.faults() ).isEqualTo( 1 );
+            assertThat(cursorTracer.pins()).isEqualTo(4);
+            assertThat(cursorTracer.unpins()).isEqualTo(3);
+            assertThat(cursorTracer.hits()).isEqualTo(3);
+            assertThat(cursorTracer.faults()).isEqualTo(1);
 
-            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );
+            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck(true);
             cursorTracer.reportEvents();
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
 
             // we are on the same page and we do not expect any cursor events to be registered
-            treeWriter.remove( new MutableLong( 0 ) );
+            treeWriter.remove(new MutableLong(0));
 
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
         }
     }
 
     @Test
-    void trackPageCacheAccessOnRemoveWhenNothingToRemove() throws IOException
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        var cursorContext = contextFactory.create( "trackPageCacheAccessOnRemoveWhenNothingToRemove" );
+    void trackPageCacheAccessOnRemoveWhenNothingToRemove() throws IOException {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var cursorContext = contextFactory.create("trackPageCacheAccessOnRemoveWhenNothingToRemove");
 
-        assertZeroCursor( cursorContext );
+        assertZeroCursor(cursorContext);
 
-        try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorContext ) )
-        {
-            treeWriter.remove( new MutableLong( 0 ) );
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+                var treeWriter = gbpTree.writer(0, cursorContext)) {
+            treeWriter.remove(new MutableLong(0));
             var cursorTracer = cursorContext.getCursorTracer();
-            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
-            assertThat( cursorTracer.faults() ).isEqualTo( 0 );
+            assertThat(cursorTracer.pins()).isEqualTo(1);
+            assertThat(cursorTracer.hits()).isEqualTo(1);
+            assertThat(cursorTracer.unpins()).isEqualTo(0);
+            assertThat(cursorTracer.faults()).isEqualTo(0);
         }
     }
 
     @Test
-    void trackPageCacheAccessOnClose() throws IOException
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        var cursorContext = contextFactory.create( "trackPageCacheAccessOnClose" );
+    void trackPageCacheAccessOnClose() throws IOException {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var cursorContext = contextFactory.create("trackPageCacheAccessOnClose");
 
-        assertZeroCursor( cursorContext );
+        assertZeroCursor(cursorContext);
 
-        try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorContext ) )
-        {
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+                var treeWriter = gbpTree.writer(0, cursorContext)) {
             // empty, we check that closing everything register unpins event
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.faults() ).isEqualTo( 0 );
+        assertThat(cursorTracer.pins()).isEqualTo(1);
+        assertThat(cursorTracer.hits()).isEqualTo(1);
+        assertThat(cursorTracer.unpins()).isEqualTo(1);
+        assertThat(cursorTracer.faults()).isEqualTo(0);
     }
 
-    private static void assertZeroCursor( CursorContext cursorContext )
-    {
+    private static void assertZeroCursor(CursorContext cursorContext) {
         var cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
-        assertThat( cursorTracer.hits() ).isZero();
-        assertThat( cursorTracer.faults() ).isZero();
+        assertThat(cursorTracer.pins()).isZero();
+        assertThat(cursorTracer.unpins()).isZero();
+        assertThat(cursorTracer.hits()).isZero();
+        assertThat(cursorTracer.faults()).isZero();
     }
 
-    private static class KeyCountingVisitor extends GBPTreeVisitor.Adaptor<MutableLong,MutableLong>
-    {
+    private static class KeyCountingVisitor extends GBPTreeVisitor.Adaptor<MutableLong, MutableLong> {
         private boolean newLevel;
         private final List<Integer> keyCountOnLeftmostPerLevel = new ArrayList<>();
         private final List<Integer> keyCountOnRightmostPerLevel = new ArrayList<>();
         private int rightmostKeyCountOnLevelSoFar;
 
         @Override
-        public void beginLevel( int level )
-        {
+        public void beginLevel(int level) {
             newLevel = true;
             rightmostKeyCountOnLevelSoFar = -1;
         }
 
         @Override
-        public void endLevel( int level )
-        {
-            keyCountOnRightmostPerLevel.add( rightmostKeyCountOnLevelSoFar );
+        public void endLevel(int level) {
+            keyCountOnRightmostPerLevel.add(rightmostKeyCountOnLevelSoFar);
         }
 
         @Override
-        public void beginNode( long pageId, boolean isLeaf, long generation, int keyCount )
-        {
-            if ( newLevel )
-            {
+        public void beginNode(long pageId, boolean isLeaf, long generation, int keyCount) {
+            if (newLevel) {
                 newLevel = false;
-                keyCountOnLeftmostPerLevel.add( keyCount );
+                keyCountOnLeftmostPerLevel.add(keyCount);
             }
             rightmostKeyCountOnLevelSoFar = keyCount;
         }
     }
 
-    private static class TreeHeightTracker extends GBPTree.Monitor.Adaptor
-    {
+    private static class TreeHeightTracker extends GBPTree.Monitor.Adaptor {
         int treeHeight;
 
         @Override
-        public void treeGrowth()
-        {
+        public void treeGrowth() {
             treeHeight++;
         }
 
         @Override
-        public void treeShrink()
-        {
+        public void treeShrink() {
             treeHeight--;
         }
     }

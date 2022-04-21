@@ -21,55 +21,45 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Objects;
 
-public class KernelTransactionStamp
-{
+public class KernelTransactionStamp {
     private final KernelTransactionImplementation ktx;
     private final long userTransactionId;
 
-    public KernelTransactionStamp( KernelTransactionImplementation ktx )
-    {
+    public KernelTransactionStamp(KernelTransactionImplementation ktx) {
         this.userTransactionId = ktx.getUserTransactionId();
         this.ktx = ktx;
     }
 
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return ktx.isOpen() && userTransactionId == ktx.getUserTransactionId();
     }
 
-    public boolean isClosing()
-    {
+    public boolean isClosing() {
         return ktx.isClosing() && userTransactionId == ktx.getUserTransactionId();
     }
 
-    long getUserTransactionId()
-    {
+    long getUserTransactionId() {
         return userTransactionId;
     }
 
-    public boolean isNotExpired()
-    {
+    public boolean isNotExpired() {
         return userTransactionId == ktx.getUserTransactionId();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         KernelTransactionStamp that = (KernelTransactionStamp) o;
-        return userTransactionId == that.userTransactionId && Objects.equals( ktx, that.ktx );
+        return userTransactionId == that.userTransactionId && Objects.equals(ktx, that.ktx);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( ktx, userTransactionId );
+    public int hashCode() {
+        return Objects.hash(ktx, userTransactionId);
     }
 }

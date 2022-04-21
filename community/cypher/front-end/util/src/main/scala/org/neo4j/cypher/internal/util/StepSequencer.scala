@@ -33,6 +33,7 @@ import scala.util.Random
  *
  */
 case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC]) {
+
   /**
    * Order a set of steps and combine them using the classes stepAccumulator.
    *
@@ -48,24 +49,37 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
    *                          of the returned sequence.
    * @param fixedSeed         optionally a fixed seed for the random ordering
    */
-  def orderSteps(steps: Set[S],
-                 initialConditions: Set[Condition] = Set.empty,
-                 printGraph: Boolean = false,
-                 fixedSeed: Option[Long] = None): AccumulatedSteps[ACC] = {
+  def orderSteps(
+    steps: Set[S],
+    initialConditions: Set[Condition] = Set.empty,
+    printGraph: Boolean = false,
+    fixedSeed: Option[Long] = None
+  ): AccumulatedSteps[ACC] = {
     // Abort if there is a negated initial condition
     initialConditions.foreach {
       case n: NegatedCondition => throw new IllegalArgumentException(s"Initial conditions cannot be negated: $n.")
-      case _ => // OK
+      case _                   => // OK
     }
 
     // For each post-condition, find the step that introduces it
     val introducingSteps: Map[Condition, Either[StepSequencer.ByInitialCondition.type, S]] = {
       val is = for {
         step <- steps.toSeq
-        _ = { if (step.postConditions.isEmpty) throw new IllegalArgumentException(s"Step $step has no post-conditions. That is not allowed.") }
+        _ = {
+          if (step.postConditions.isEmpty)
+            throw new IllegalArgumentException(s"Step $step has no post-conditions. That is not allowed.")
+        }
         postCondition <- step.postConditions
-        _ = { if (postCondition.isInstanceOf[NegatedCondition]) throw new IllegalArgumentException(s"Step $step has a negated post-condition: $postCondition. That is not allowed.") }
-        _ = { if (initialConditions.contains(postCondition)) throw new IllegalArgumentException(s"Step $step introduces $postCondition, which is an initial condition. That is currently not allowed.") }
+        _ = {
+          if (postCondition.isInstanceOf[NegatedCondition]) throw new IllegalArgumentException(
+            s"Step $step has a negated post-condition: $postCondition. That is not allowed."
+          )
+        }
+        _ = {
+          if (initialConditions.contains(postCondition)) throw new IllegalArgumentException(
+            s"Step $step introduces $postCondition, which is an initial condition. That is currently not allowed."
+          )
+        }
       } yield postCondition -> Right(step)
 
       is.groupBy(_._1)
@@ -84,7 +98,11 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
       val is = for {
         step <- steps.toSeq
         invalidatedCondition <- step.invalidatedConditions
-        _ = { if (invalidatedCondition.isInstanceOf[NegatedCondition]) throw new IllegalArgumentException(s"Step $step has an negated invalidated condition: $invalidatedCondition. That is not allowed.") }
+        _ = {
+          if (invalidatedCondition.isInstanceOf[NegatedCondition]) throw new IllegalArgumentException(
+            s"Step $step has an negated invalidated condition: $invalidatedCondition. That is not allowed."
+          )
+        }
       } yield invalidatedCondition -> step
       is.groupBy(_._1)
         .view
@@ -112,16 +130,21 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     steps.foreach { step =>
       // (a)-->(b) means a needs to happen before b
       step.preConditions.foreach {
-        case n@NegatedCondition(inner) =>
-        // For a negated precondition it is OK if there is no step that introduces it.
+        case n @ NegatedCondition(inner) =>
+          // For a negated precondition it is OK if there is no step that introduces it.
           introducingSteps.get(inner).foreach {
-            case Left(ByInitialCondition) => throw new IllegalArgumentException(s"$step has $n as a pre-condition, but $inner is an initial condition. That is currently not allowed.")
+            case Left(ByInitialCondition) => throw new IllegalArgumentException(
+                s"$step has $n as a pre-condition, but $inner is an initial condition. That is currently not allowed."
+              )
             case Right(introducingStep) =>
               // The step with the negated pre-condition needs to happen before the introducing step.
               graph.connect(step, introducingStep)
           }
         case condition =>
-          introducingSteps.getOrElse(condition, throw new IllegalArgumentException(s"There is no step introducing $condition. That is not allowed.")) match {
+          introducingSteps.getOrElse(
+            condition,
+            throw new IllegalArgumentException(s"There is no step introducing $condition. That is not allowed.")
+          ) match {
             case Left(ByInitialCondition) =>
               // Initial conditions cannot be re-enabled by any step.
               // Therefore, there is hard requirement that a step that has an initial condition as a pre-condition runs before any steps that invalidate it.
@@ -142,7 +165,8 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     }
 
     // Sort steps topologically
-    val AccumulatedSteps(sortedSteps, postConditions) = StepSequencer.sort(graph, introducingStepsNotByInitial, steps.toSeq, initialConditions, fixedSeed)
+    val AccumulatedSteps(sortedSteps, postConditions) =
+      StepSequencer.sort(graph, introducingStepsNotByInitial, steps.toSeq, initialConditions, fixedSeed)
 
     // Put steps together
     AccumulatedSteps(sortedSteps.foldLeft(stepAccumulator.empty)(stepAccumulator.addNext), postConditions)
@@ -163,6 +187,7 @@ object StepSequencer {
   }
 
   trait Step {
+
     /**
      * @return the conditions that needs to be met before this step can be allowed to run.
      */
@@ -195,6 +220,7 @@ object StepSequencer {
   private case class AdjacencyList[S](outgoing: mutable.Set[S], incoming: mutable.Set[S])
 
   private object MutableDirectedGraph {
+
     def copyOf[S](other: MutableDirectedGraph[S]): MutableDirectedGraph[S] = {
       val res = new MutableDirectedGraph[S]
       other.allNodes.foreach(res.add)
@@ -253,9 +279,8 @@ object StepSequencer {
 
     override def toString: String = {
       val nodes = allNodes.map(node => s"""  "$node";""").mkString("\n")
-      val edges = allNodes.map(
-        node => outgoing(node).map(other => s"""  "$node" -> "$other";""").mkString("\n")
-      ).mkString("\n")
+      val edges =
+        allNodes.map(node => outgoing(node).map(other => s"""  "$node" -> "$other";""").mkString("\n")).mkString("\n")
       s"digraph G {\n$nodes\n$edges\n}"
     }
   }
@@ -270,10 +295,12 @@ object StepSequencer {
    *
    * @param fixedSeed optionally a fixed seed for the random ordering
    */
-  private def heuristicStepOrdering[S <: Step](numberOfTimesEachStepIsInvalidated: Map[S, Int],
-                                               allSteps: Seq[S],
-                                               fixedSeed: Option[Long]): Ordering[S] = {
-    val seed = fixedSeed getOrElse  {
+  private def heuristicStepOrdering[S <: Step](
+    numberOfTimesEachStepIsInvalidated: Map[S, Int],
+    allSteps: Seq[S],
+    fixedSeed: Option[Long]
+  ): Ordering[S] = {
+    val seed = fixedSeed getOrElse {
       if (AssertionRunner.isAssertionsEnabled) {
         // If tests start failing because of a wrong order, print the seed here and use to reproduce the same order.
         // Putting the steps in a random order in test setup will help us discover dependencies we didn't know about.
@@ -314,11 +341,13 @@ object StepSequencer {
    * @param initialConditions all initially holding conditions
    * @param fixedSeed         optionally a fixed seed for the random ordering
    */
-  private def sort[S <: Step](graph: MutableDirectedGraph[S],
-                              introducingSteps: Map[Condition, S],
-                              allSteps: Seq[S],
-                              initialConditions: Set[Condition],
-                              fixedSeed: Option[Long]): AccumulatedSteps[Seq[S]] = {
+  private def sort[S <: Step](
+    graph: MutableDirectedGraph[S],
+    introducingSteps: Map[Condition, S],
+    allSteps: Seq[S],
+    initialConditions: Set[Condition],
+    fixedSeed: Option[Long]
+  ): AccumulatedSteps[Seq[S]] = {
     val allPostConditions: Set[Condition] = allSteps.iterator.flatMap(_.postConditions).to(Set)
 
     val numberOfTimesEachStepIsInvalidated = allSteps
@@ -347,7 +376,9 @@ object StepSequencer {
         for (r <- stepsThatHaveTheirWorkUndone) {
           // Go through the original outgoing edges of r and restore them
           graph.outgoing(r)
-            .filterNot(step => step.postConditions.subsetOf(currentConditions)) // All things which either haven't run or need to re-run
+            .filterNot(step =>
+              step.postConditions.subsetOf(currentConditions)
+            ) // All things which either haven't run or need to re-run
             .foreach { rDep =>
               workingGraph.connect(r, rDep)
               // make sure to remove all dependencies of r from startPoints, since they now have incoming edges again
@@ -367,8 +398,10 @@ object StepSequencer {
         throw new IllegalStateException(s"The step sequence $result did not include all steps from $allSteps.")
       }
       if (!allPostConditions.subsetOf(currentConditions)) {
-        throw new IllegalStateException(s"The step sequence $result did not lead to a state where all conditions $allPostConditions are met. " +
-          s"Only meeting $currentConditions.")
+        throw new IllegalStateException(
+          s"The step sequence $result did not lead to a state where all conditions $allPostConditions are met. " +
+            s"Only meeting $currentConditions."
+        )
       }
     }
 
@@ -385,9 +418,11 @@ object StepSequencer {
    *                       The callback is allowed to modify the startPoints.
    * @return a topological sort of the graph.
    */
-  private def topologicalSort[S](graph: MutableDirectedGraph[S],
-                                 order: Option[Ordering[S]],
-                                 nextStepChosen: (S, mutable.Set[S]) => Unit): Seq[S] = {
+  private def topologicalSort[S](
+    graph: MutableDirectedGraph[S],
+    order: Option[Ordering[S]],
+    nextStepChosen: (S, mutable.Set[S]) => Unit
+  ): Seq[S] = {
     // Empty list that will contain the sorted elements
     val result = new ArrayBuffer[S]()
 

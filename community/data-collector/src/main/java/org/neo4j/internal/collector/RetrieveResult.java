@@ -18,15 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.internal.collector;
+
 import java.util.Map;
 
-@SuppressWarnings( "WeakerAccess" )
-public class RetrieveResult
-{
+@SuppressWarnings("WeakerAccess")
+public class RetrieveResult {
     public final String section;
     public final Map<String, Object> data;
-    public RetrieveResult( String section, Map<String,Object> data )
-    {
+
+    public RetrieveResult(String section, Map<String, Object> data) {
         this.section = section;
         this.data = data;
     }

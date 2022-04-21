@@ -19,59 +19,41 @@
  */
 package org.neo4j.internal.helpers.progress;
 
-import java.io.PrintWriter;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.time.SystemNanoClock;
-
 import static org.neo4j.internal.helpers.Format.duration;
 
-public abstract class Indicator
-{
-    public static final Indicator NONE = new Indicator( 1 )
-    {
+import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
+import org.neo4j.time.SystemNanoClock;
+
+public abstract class Indicator {
+    public static final Indicator NONE = new Indicator(1) {
         @Override
-        protected void progress( int from, int to )
-        {
-        }
+        protected void progress(int from, int to) {}
     };
 
     private final int reportResolution;
 
-    public Indicator( int reportResolution )
-    {
+    public Indicator(int reportResolution) {
         this.reportResolution = reportResolution;
     }
 
-    protected abstract void progress( int from, int to );
+    protected abstract void progress(int from, int to);
 
-    int reportResolution()
-    {
+    int reportResolution() {
         return reportResolution;
     }
 
-    public void startProcess( long totalCount )
-    {
-    }
+    public void startProcess(long totalCount) {}
 
-    public void startPart( String part, long totalCount )
-    {
-    }
+    public void startPart(String part, long totalCount) {}
 
-    public void completePart( String part )
-    {
-    }
+    public void completePart(String part) {}
 
-    public void completeProcess()
-    {
-    }
+    public void completeProcess() {}
 
-    public void failure( Throwable cause )
-    {
-    }
+    public void failure(Throwable cause) {}
 
-    static class Textual extends Indicator
-    {
+    static class Textual extends Indicator {
         static final int DEFAULT_DOTS_PER_LINE = 20;
         static final int DEFAULT_NUM_LINES = 10;
         static final char DEFAULT_DELTA_CHARACTER = '∆';
@@ -84,9 +66,15 @@ public abstract class Indicator
         private final int dotsPerLine;
         private long lastReportTime;
 
-        Textual( String process, PrintWriter out, boolean deltaTimes, SystemNanoClock clock, char deltaCharacter, int dotsPerLine, int numLines )
-        {
-            super( dotsPerLine * numLines );
+        Textual(
+                String process,
+                PrintWriter out,
+                boolean deltaTimes,
+                SystemNanoClock clock,
+                char deltaCharacter,
+                int dotsPerLine,
+                int numLines) {
+            super(dotsPerLine * numLines);
             this.process = process;
             this.out = out;
             this.deltaTimes = deltaTimes;
@@ -96,42 +84,35 @@ public abstract class Indicator
         }
 
         @Override
-        public void startProcess( long totalCount )
-        {
-            out.println( process );
+        public void startProcess(long totalCount) {
+            out.println(process);
             out.flush();
             lastReportTime = clock.nanos();
         }
 
         @Override
-        protected void progress( int from, int to )
-        {
-            for ( int i = from; i < to; )
-            {
-                printProgress( ++i );
+        protected void progress(int from, int to) {
+            for (int i = from; i < to; ) {
+                printProgress(++i);
             }
             out.flush();
         }
 
         @Override
-        public void failure( Throwable cause )
-        {
-            cause.printStackTrace( out );
+        public void failure(Throwable cause) {
+            cause.printStackTrace(out);
         }
 
-        private void printProgress( int progress )
-        {
-            out.print( '.' );
-            if ( progress % dotsPerLine == 0 )
-            {
+        private void printProgress(int progress) {
+            out.print('.');
+            if (progress % dotsPerLine == 0) {
                 long currentTime = clock.nanos();
                 long time = currentTime - lastReportTime;
-                out.printf( " %3d%%", progress * 100 / reportResolution() );
-                if ( deltaTimes )
-                {
-                    out.printf( " %c%s", deltaCharacter, duration( TimeUnit.NANOSECONDS.toMillis( time ) ) );
+                out.printf(" %3d%%", progress * 100 / reportResolution());
+                if (deltaTimes) {
+                    out.printf(" %c%s", deltaCharacter, duration(TimeUnit.NANOSECONDS.toMillis(time)));
                 }
-                out.printf( "%n" );
+                out.printf("%n");
                 lastReportTime = currentTime;
             }
         }

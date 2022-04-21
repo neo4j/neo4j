@@ -21,7 +21,6 @@ package org.neo4j.bolt.v43.runtime;
 
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
-
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.routing.RoutingTableGetter;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
@@ -33,47 +32,46 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * Extends the behaviour of a given State by adding the capacity of handle the {@link RouteMessage}
  */
-public class ReadyState extends org.neo4j.bolt.v4.runtime.ReadyState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ReadyState.class );
+public class ReadyState extends org.neo4j.bolt.v4.runtime.ReadyState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ReadyState.class);
     private static final String ROUTING_TABLE_KEY = "rt";
 
     private final RoutingTableGetter routingTableGetter;
 
-    public ReadyState( RoutingTableGetter routingTableGetter )
-    {
+    public ReadyState(RoutingTableGetter routingTableGetter) {
         this.routingTableGetter = routingTableGetter;
     }
 
     @Override
-    public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Exception
-    {
-        if ( message instanceof RouteMessage )
-        {
-            return this.processRouteMessage( (RouteMessage) message, context );
+    public BoltStateMachineState processUnsafe(RequestMessage message, StateMachineContext context) throws Exception {
+        if (message instanceof RouteMessage) {
+            return this.processRouteMessage((RouteMessage) message, context);
         }
 
-        return super.processUnsafe( message, context );
+        return super.processUnsafe(message, context);
     }
 
-    protected BoltStateMachineState processRouteMessage( RouteMessage message, StateMachineContext context ) throws Exception
-    {
+    protected BoltStateMachineState processRouteMessage(RouteMessage message, StateMachineContext context)
+            throws Exception {
         var programId = UUID.randomUUID().toString();
-        context.connectionState().setCurrentTransactionId( programId );
+        context.connectionState().setCurrentTransactionId(programId);
 
-        try
-        {
-            routingTableGetter.get( programId, context.getLoginContext(), context.getTransactionManager(), message.getRequestContext(),
-                                    message.getBookmarks(), message.getDatabaseName(), context.connectionId() )
-                              .thenAccept( routingTable -> this.onRoutingTableReceived( context, message, routingTable ) )
-                              .join();
-        }
-        catch ( CompletionException ex )
-        {
+        try {
+            routingTableGetter
+                    .get(
+                            programId,
+                            context.getLoginContext(),
+                            context.getTransactionManager(),
+                            message.getRequestContext(),
+                            message.getBookmarks(),
+                            message.getDatabaseName(),
+                            context.connectionId())
+                    .thenAccept(routingTable -> this.onRoutingTableReceived(context, message, routingTable))
+                    .join();
+        } catch (CompletionException ex) {
             var cause = ex.getCause();
-            if ( cause != null )
-            {
-                context.handleFailure( cause, false );
+            if (cause != null) {
+                context.handleFailure(cause, false);
                 return this.failedState;
             }
 
@@ -83,8 +81,7 @@ public class ReadyState extends org.neo4j.bolt.v4.runtime.ReadyState
         return this;
     }
 
-    protected void onRoutingTableReceived( StateMachineContext context, RouteMessage message, MapValue routingTable )
-    {
-        context.connectionState().onMetadata( ROUTING_TABLE_KEY, routingTable );
+    protected void onRoutingTableReceived(StateMachineContext context, RouteMessage message, MapValue routingTable) {
+        context.connectionState().onMetadata(ROUTING_TABLE_KEY, routingTable);
     }
 }

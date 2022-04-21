@@ -23,20 +23,24 @@ import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.InternalLog;
 
-public class DumpLocksVisitor implements Locks.Visitor
-{
+public class DumpLocksVisitor implements Locks.Visitor {
     private final InternalLog log;
 
-    public DumpLocksVisitor( InternalLog log )
-    {
+    public DumpLocksVisitor(InternalLog log) {
         this.log = log;
     }
 
     @Override
-    public void visit( LockType lockType, ResourceType resourceType, long transactionId, long resourceId, String description, long estimatedWaitTime,
-            long lockIdentityHashCode )
-    {
-        log.info( "%s{id=%d, txId=%d, waitTime=%d, description=%s, lockHash=%d}", resourceType, resourceId, transactionId, estimatedWaitTime,
-                description, lockIdentityHashCode );
+    public void visit(
+            LockType lockType,
+            ResourceType resourceType,
+            long transactionId,
+            long resourceId,
+            String description,
+            long estimatedWaitTime,
+            long lockIdentityHashCode) {
+        log.info(
+                "%s{id=%d, txId=%d, waitTime=%d, description=%s, lockHash=%d}",
+                resourceType, resourceId, transactionId, estimatedWaitTime, description, lockIdentityHashCode);
     }
 }

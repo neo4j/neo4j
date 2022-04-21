@@ -28,63 +28,50 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
-public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
-{
+public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD> {
     @Override
-    public RECORD newRecord()
-    {
+    public RECORD newRecord() {
         return null;
     }
 
     @Override
-    public int getRecordSize( StoreHeader storeHeader )
-    {
+    public int getRecordSize(StoreHeader storeHeader) {
         return NO_RECORD_SIZE;
     }
 
     @Override
-    public int getRecordHeaderSize()
-    {
+    public int getRecordHeaderSize() {
         return 0;
     }
 
     @Override
-    public boolean isInUse( PageCursor cursor )
-    {
+    public boolean isInUse(PageCursor cursor) {
         return false;
     }
 
     @Override
-    public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
-    {
+    public void read(RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
         record.clear();
     }
 
     @Override
-    public void prepare( RECORD record, int recordSize, IdSequence idSequence, CursorContext cursorContext )
-    {
-    }
+    public void prepare(RECORD record, int recordSize, IdSequence idSequence, CursorContext cursorContext) {}
 
     @Override
-    public void write( RECORD record, PageCursor cursor, int recordSize, int recordsPerPage )
-    {
-    }
+    public void write(RECORD record, PageCursor cursor, int recordSize, int recordsPerPage) {}
 
     @Override
-    public long getNextRecordReference( RECORD record )
-    {
+    public long getNextRecordReference(RECORD record) {
         return Record.NULL_REFERENCE.intValue();
     }
 
     @Override
-    public int getFilePageSize( int pageSize, int recordSize )
-    {
+    public int getFilePageSize(int pageSize, int recordSize) {
         return pageSize;
     }
 
     @Override
-    public long getMaxId()
-    {
+    public long getMaxId() {
         return -1;
     }
 }

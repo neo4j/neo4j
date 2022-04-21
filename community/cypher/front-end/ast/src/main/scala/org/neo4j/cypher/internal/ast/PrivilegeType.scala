@@ -20,8 +20,10 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 abstract class PrivilegeType(val name: String)
 
-final case class GraphPrivilege(action: GraphAction, scope: List[GraphScope])(val position: InputPosition) extends PrivilegeType(action.name)
+final case class GraphPrivilege(action: GraphAction, scope: List[GraphScope])(val position: InputPosition)
+    extends PrivilegeType(action.name)
 
-final case class DatabasePrivilege(action: DatabaseAction, scope: List[DatabaseScope])(val position: InputPosition) extends PrivilegeType(action.name)
+final case class DatabasePrivilege(action: DatabaseAction, scope: List[DatabaseScope])(val position: InputPosition)
+    extends PrivilegeType(action.name)
 
 final case class DbmsPrivilege(action: DbmsAction)(val position: InputPosition) extends PrivilegeType(action.name)

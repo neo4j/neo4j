@@ -21,18 +21,15 @@ package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 
-public class InconsistentStoreException extends Throwable
-{
+public class InconsistentStoreException extends Throwable {
     private final ConsistencySummaryStatistics summary;
 
-    public InconsistentStoreException( ConsistencySummaryStatistics summary )
-    {
-        super( summary.toString() );
+    public InconsistentStoreException(ConsistencySummaryStatistics summary) {
+        super(summary.toString());
         this.summary = summary;
     }
 
-    public ConsistencySummaryStatistics summary()
-    {
+    public ConsistencySummaryStatistics summary() {
         return summary;
     }
 }

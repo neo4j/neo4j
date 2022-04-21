@@ -26,16 +26,15 @@ import java.util.stream.Stream;
  * have a YIELD clause with only a few of the available fields requested, in which case procedure authors can optimize their procedures to
  * skip calculating and returning the unused fields.
  */
-public class ProcedureCallContext
-{
+public class ProcedureCallContext {
     private final int id;
     private final String[] outputFieldNames;
     private final boolean calledFromCypher;
     private final String database;
     private final boolean isSystemDatabase;
 
-    public ProcedureCallContext( int id, String[] outputFieldNames, boolean calledFromCypher, String database, boolean isSystemDatabase )
-    {
+    public ProcedureCallContext(
+            int id, String[] outputFieldNames, boolean calledFromCypher, String database, boolean isSystemDatabase) {
         this.id = id;
         this.outputFieldNames = outputFieldNames;
         this.calledFromCypher = calledFromCypher;
@@ -46,9 +45,8 @@ public class ProcedureCallContext
     /*
      * Get a stream of all the field names the procedure was requested to yield
      */
-    public Stream<String> outputFields()
-    {
-        return Stream.of( outputFieldNames );
+    public Stream<String> outputFields() {
+        return Stream.of(outputFieldNames);
     }
 
     /*
@@ -56,26 +54,22 @@ public class ProcedureCallContext
      * Check this to make sure you are not in a testing environment.
      * When this is false, we cannot make use of the information in outputFields().
      */
-    public boolean isCalledFromCypher()
-    {
+    public boolean isCalledFromCypher() {
         return calledFromCypher;
     }
 
-    public String databaseName()
-    {
+    public String databaseName() {
         return database;
     }
 
-    public boolean isSystemDatabase()
-    {
+    public boolean isSystemDatabase() {
         return isSystemDatabase;
     }
 
     /* Can be used for testing purposes */
-    public static final ProcedureCallContext EMPTY = new ProcedureCallContext( -1, new String[]{}, false, "", false );
+    public static final ProcedureCallContext EMPTY = new ProcedureCallContext(-1, new String[] {}, false, "", false);
 
-    public int id()
-    {
+    public int id() {
         return id;
     }
 }

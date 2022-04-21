@@ -38,8 +38,7 @@ class UnnestCartesianProductTest extends CypherFunSuite with LogicalPlanningTest
     rewrite(input) should equal(new LogicalPlanBuilder()
       .produceResults("x")
       .fakeLeafPlan("x")
-      .build()
-    )
+      .build())
   }
 
   test("should unnest cartesian product with a single Argument on the rhs") {
@@ -53,8 +52,7 @@ class UnnestCartesianProductTest extends CypherFunSuite with LogicalPlanningTest
     rewrite(input) should equal(new LogicalPlanBuilder()
       .produceResults("x")
       .fakeLeafPlan("x")
-      .build()
-    )
+      .build())
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =

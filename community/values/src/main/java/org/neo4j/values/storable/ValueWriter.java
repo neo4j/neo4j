@@ -33,10 +33,8 @@ import java.time.ZonedDateTime;
  *
  * @param <E> type of {@link Exception} thrown from writer methods.
  */
-public interface ValueWriter<E extends Exception>
-{
-    enum ArrayType
-    {
+public interface ValueWriter<E extends Exception> {
+    enum ArrayType {
         BYTE,
         SHORT,
         INT,
@@ -57,149 +55,127 @@ public interface ValueWriter<E extends Exception>
 
     void writeNull() throws E;
 
-    void writeBoolean( boolean value ) throws E;
+    void writeBoolean(boolean value) throws E;
 
-    void writeInteger( byte value ) throws E;
+    void writeInteger(byte value) throws E;
 
-    void writeInteger( short value ) throws E;
+    void writeInteger(short value) throws E;
 
-    void writeInteger( int value ) throws E;
+    void writeInteger(int value) throws E;
 
-    void writeInteger( long value ) throws E;
+    void writeInteger(long value) throws E;
 
-    void writeFloatingPoint( float value ) throws E;
+    void writeFloatingPoint(float value) throws E;
 
-    void writeFloatingPoint( double value ) throws E;
+    void writeFloatingPoint(double value) throws E;
 
-    void writeString( String value ) throws E;
+    void writeString(String value) throws E;
 
-    void writeString( char value ) throws E;
+    void writeString(char value) throws E;
 
-    default void writeUTF8( byte[] bytes, int offset, int length ) throws E
-    {
-        writeString( new String( bytes, offset, length, StandardCharsets.UTF_8 ) );
+    default void writeUTF8(byte[] bytes, int offset, int length) throws E {
+        writeString(new String(bytes, offset, length, StandardCharsets.UTF_8));
     }
 
-    void beginArray( int size, ArrayType arrayType ) throws E;
+    void beginArray(int size, ArrayType arrayType) throws E;
 
     void endArray() throws E;
 
-    void writeByteArray( byte[] value ) throws E;
+    void writeByteArray(byte[] value) throws E;
 
-    void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E;
+    void writePoint(CoordinateReferenceSystem crs, double[] coordinate) throws E;
 
-    void writeDuration( long months, long days, long seconds, int nanos ) throws E;
+    void writeDuration(long months, long days, long seconds, int nanos) throws E;
 
-    void writeDate( LocalDate localDate ) throws E;
+    void writeDate(LocalDate localDate) throws E;
 
-    void writeLocalTime( LocalTime localTime ) throws E;
+    void writeLocalTime(LocalTime localTime) throws E;
 
-    void writeTime( OffsetTime offsetTime ) throws E;
+    void writeTime(OffsetTime offsetTime) throws E;
 
-    void writeLocalDateTime( LocalDateTime localDateTime ) throws E;
+    void writeLocalDateTime(LocalDateTime localDateTime) throws E;
 
-    void writeDateTime( ZonedDateTime zonedDateTime ) throws E;
+    void writeDateTime(ZonedDateTime zonedDateTime) throws E;
 
-    class Adapter<E extends Exception> implements ValueWriter<E>
-    {
+    class Adapter<E extends Exception> implements ValueWriter<E> {
         @Override
-        public void writeNull() throws E
-        {   // no-op
+        public void writeNull() throws E { // no-op
         }
 
         @Override
-        public void writeBoolean( boolean value ) throws E
-        {   // no-op
+        public void writeBoolean(boolean value) throws E { // no-op
         }
 
         @Override
-        public void writeInteger( byte value ) throws E
-        {   // no-op
+        public void writeInteger(byte value) throws E { // no-op
         }
 
         @Override
-        public void writeInteger( short value ) throws E
-        {   // no-op
+        public void writeInteger(short value) throws E { // no-op
         }
 
         @Override
-        public void writeInteger( int value ) throws E
-        {   // no-op
+        public void writeInteger(int value) throws E { // no-op
         }
 
         @Override
-        public void writeInteger( long value ) throws E
-        {   // no-op
+        public void writeInteger(long value) throws E { // no-op
         }
 
         @Override
-        public void writeFloatingPoint( float value ) throws E
-        {   // no-op
+        public void writeFloatingPoint(float value) throws E { // no-op
         }
 
         @Override
-        public void writeFloatingPoint( double value ) throws E
-        {   // no-op
+        public void writeFloatingPoint(double value) throws E { // no-op
         }
 
         @Override
-        public void writeString( String value ) throws E
-        {   // no-op
+        public void writeString(String value) throws E { // no-op
         }
 
         @Override
-        public void writeString( char value ) throws E
-        {   // no-op
+        public void writeString(char value) throws E { // no-op
         }
 
         @Override
-        public void beginArray( int size, ArrayType arrayType ) throws E
-        {   // no-op
+        public void beginArray(int size, ArrayType arrayType) throws E { // no-op
         }
 
         @Override
-        public void endArray() throws E
-        {   // no-opa
+        public void endArray() throws E { // no-opa
         }
 
         @Override
-        public void writeByteArray( byte[] value ) throws E
-        {   // no-op
+        public void writeByteArray(byte[] value) throws E { // no-op
         }
 
         @Override
-        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
-        {   // no-op
+        public void writePoint(CoordinateReferenceSystem crs, double[] coordinate) throws E { // no-op
         }
 
         @Override
-        public void writeDuration( long months, long days, long seconds, int nanos )
-        {   // no-op
+        public void writeDuration(long months, long days, long seconds, int nanos) { // no-op
         }
 
         @Override
-        public void writeDate( LocalDate localDate ) throws E
-        {   // no-op
+        public void writeDate(LocalDate localDate) throws E { // no-op
         }
 
         @Override
-        public void writeLocalTime( LocalTime localTime ) throws E
-        {   // no-op
+        public void writeLocalTime(LocalTime localTime) throws E { // no-op
         }
 
         @Override
-        public void writeTime( OffsetTime offsetTime ) throws E
-        {   // no-op
+        public void writeTime(OffsetTime offsetTime) throws E { // no-op
         }
 
         @Override
-        public void writeLocalDateTime( LocalDateTime localDateTime ) throws E
-        {   // no-op
+        public void writeLocalDateTime(LocalDateTime localDateTime) throws E { // no-op
         }
 
         @Override
-        public void writeDateTime( ZonedDateTime zonedDateTime ) throws E
-        {   // no-op
+        public void writeDateTime(ZonedDateTime zonedDateTime) throws E { // no-op
         }
     }
 }

@@ -27,8 +27,6 @@ import java.lang.annotation.Target;
 /**
  * Annotation for removing unused warnings for methods called by reflection.
  */
-@Target( ElementType.METHOD )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface ExtensionCallback
-{
-}
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ExtensionCallback {}

@@ -19,72 +19,65 @@
  */
 package org.neo4j.values.utils;
 
-import org.junit.jupiter.api.Test;
+import static java.time.temporal.ChronoUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
+import org.junit.jupiter.api.Test;
 
-import static java.time.temporal.ChronoUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class TemporalUtilTest
-{
+class TemporalUtilTest {
     @Test
-    void shouldDoNothingForOffsetWithoutSeconds()
-    {
-        OffsetTime time = OffsetTime.of( 23, 30, 10, 0, ZoneOffset.ofHoursMinutes( -5, -30 ) );
+    void shouldDoNothingForOffsetWithoutSeconds() {
+        OffsetTime time = OffsetTime.of(23, 30, 10, 0, ZoneOffset.ofHoursMinutes(-5, -30));
 
-        OffsetTime truncatedTime = TemporalUtil.truncateOffsetToMinutes( time );
+        OffsetTime truncatedTime = TemporalUtil.truncateOffsetToMinutes(time);
 
-        assertEquals( time, truncatedTime );
+        assertEquals(time, truncatedTime);
     }
 
     @Test
-    void shouldTruncateOffsetSeconds()
-    {
-        OffsetTime time = OffsetTime.of( 14, 55, 50, 0, ZoneOffset.ofHoursMinutesSeconds( 2, 15, 45 ) );
+    void shouldTruncateOffsetSeconds() {
+        OffsetTime time = OffsetTime.of(14, 55, 50, 0, ZoneOffset.ofHoursMinutesSeconds(2, 15, 45));
 
-        OffsetTime truncatedTime = TemporalUtil.truncateOffsetToMinutes( time );
+        OffsetTime truncatedTime = TemporalUtil.truncateOffsetToMinutes(time);
 
-        assertEquals( OffsetTime.of( 14, 55, 5, 0, ZoneOffset.ofHoursMinutes( 2, 15 ) ), truncatedTime );
+        assertEquals(OffsetTime.of(14, 55, 5, 0, ZoneOffset.ofHoursMinutes(2, 15)), truncatedTime);
     }
 
     @Test
-    void shouldConvertNanosOfDayToUTCWhenOffsetIsZero()
-    {
+    void shouldConvertNanosOfDayToUTCWhenOffsetIsZero() {
         int nanosOfDayLocal = 42;
 
-        long nanosOfDayUTC = TemporalUtil.nanosOfDayToUTC( nanosOfDayLocal, 0 );
+        long nanosOfDayUTC = TemporalUtil.nanosOfDayToUTC(nanosOfDayLocal, 0);
 
-        assertEquals( nanosOfDayLocal, nanosOfDayUTC );
+        assertEquals(nanosOfDayLocal, nanosOfDayUTC);
     }
 
     @Test
-    void shouldConvertNanosOfDayToUTC()
-    {
+    void shouldConvertNanosOfDayToUTC() {
         int nanosOfDayLocal = 42;
-        Duration offsetDuration = Duration.ofMinutes( 35 );
+        Duration offsetDuration = Duration.ofMinutes(35);
 
-        long nanosOfDayUTC = TemporalUtil.nanosOfDayToUTC( nanosOfDayLocal, (int) offsetDuration.getSeconds() );
+        long nanosOfDayUTC = TemporalUtil.nanosOfDayToUTC(nanosOfDayLocal, (int) offsetDuration.getSeconds());
 
-        assertEquals( nanosOfDayLocal - offsetDuration.toNanos(), nanosOfDayUTC );
+        assertEquals(nanosOfDayLocal - offsetDuration.toNanos(), nanosOfDayUTC);
     }
 
     @Test
-    void shouldGetNanosOfDayUTC()
-    {
-        LocalTime localTime = LocalTime.of( 14, 19, 18, 123999 );
-        ZoneOffset offset = ZoneOffset.ofHours( -12 );
-        OffsetTime time = OffsetTime.of( localTime, offset );
+    void shouldGetNanosOfDayUTC() {
+        LocalTime localTime = LocalTime.of(14, 19, 18, 123999);
+        ZoneOffset offset = ZoneOffset.ofHours(-12);
+        OffsetTime time = OffsetTime.of(localTime, offset);
 
-        long nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC( time );
+        long nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC(time);
 
-        long expectedNanosOfDayUTC = Duration.ofSeconds( localTime.toSecondOfDay() )
-                .minus( offset.getTotalSeconds(), SECONDS )
+        long expectedNanosOfDayUTC = Duration.ofSeconds(localTime.toSecondOfDay())
+                .minus(offset.getTotalSeconds(), SECONDS)
                 .toNanos();
 
-        assertEquals( expectedNanosOfDayUTC + localTime.getNano(), nanosOfDayUTC );
+        assertEquals(expectedNanosOfDayUTC + localTime.getNano(), nanosOfDayUTC);
     }
 }

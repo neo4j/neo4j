@@ -20,20 +20,17 @@
 
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DbmsExtension
-public class DefaultIndexesIT
-{
+public class DefaultIndexesIT {
 
     @Inject
     private GraphDatabaseService db;
@@ -42,27 +39,23 @@ public class DefaultIndexesIT
     DbmsController dbmsController;
 
     @Test
-    void defaultIndexesCreatedOnFirstStart()
-    {
-        IndexingTestUtil.assertOnlyDefaultTokenIndexesExists( db );
+    void defaultIndexesCreatedOnFirstStart() {
+        IndexingTestUtil.assertOnlyDefaultTokenIndexesExists(db);
     }
 
     @Test
-    void defaultIndexesAreNotRecreatedAfterDropAndRestart()
-    {
-        try ( var tx = db.beginTx() )
-        {
-            tx.schema().getIndexes().forEach( IndexDefinition::drop );
+    void defaultIndexesAreNotRecreatedAfterDropAndRestart() {
+        try (var tx = db.beginTx()) {
+            tx.schema().getIndexes().forEach(IndexDefinition::drop);
             tx.commit();
         }
 
         dbmsController.restartDbms();
 
-        assertThat( db.isAvailable( TimeUnit.MINUTES.toMillis( 5 ) ) ).isTrue();
+        assertThat(db.isAvailable(TimeUnit.MINUTES.toMillis(5))).isTrue();
 
-        try ( var tx = db.beginTx() )
-        {
-            assertThat( tx.schema().getIndexes() ).isEmpty();
+        try (var tx = db.beginTx()) {
+            assertThat(tx.schema().getIndexes()).isEmpty();
         }
     }
 }

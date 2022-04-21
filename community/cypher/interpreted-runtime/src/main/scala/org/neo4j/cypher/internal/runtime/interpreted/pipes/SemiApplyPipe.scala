@@ -24,8 +24,12 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class SemiApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+    extends PipeWithSource(source) {
+
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.filter {
       outerContext =>
         val innerState = state.withInitialContext(outerContext)
@@ -38,8 +42,12 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID)
 }
 
 case class AntiSemiApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+    extends PipeWithSource(source) {
+
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.filter {
       outerContext =>
         val innerState = state.withInitialContext(outerContext)

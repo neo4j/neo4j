@@ -19,23 +19,21 @@
  */
 package org.neo4j.internal.kernel.api.procs;
 
+import static java.util.Collections.unmodifiableList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.procedure.Mode;
-
-import static java.util.Collections.unmodifiableList;
 
 /**
  * This describes the signature of a procedure, made up of its namespace, name, and input/output description. Procedure uniqueness is currently *only* on the
  * namespace/name level - no procedure overloading allowed (yet).
  */
-public class ProcedureSignature
-{
-    public static final List<FieldSignature> VOID = unmodifiableList( new ArrayList<>() );
+public class ProcedureSignature {
+    public static final List<FieldSignature> VOID = unmodifiableList(new ArrayList<>());
 
     private final QualifiedName name;
     private final List<FieldSignature> inputSignature;
@@ -51,8 +49,8 @@ public class ProcedureSignature
     private final boolean internal;
     private final boolean allowExpiredCredentials;
 
-    @Deprecated( forRemoval = true )
-    @SuppressWarnings( "unused" )
+    @Deprecated(forRemoval = true)
+    @SuppressWarnings("unused")
     public ProcedureSignature(
             QualifiedName name,
             List<FieldSignature> inputSignature,
@@ -67,10 +65,21 @@ public class ProcedureSignature
             boolean caseInsensitive,
             boolean systemProcedure,
             boolean internal,
-            boolean allowExpiredCredentials )
-    {
-        this( name, inputSignature, outputSignature, mode, admin, deprecated, description, warning, eager, caseInsensitive, systemProcedure, internal,
-              allowExpiredCredentials );
+            boolean allowExpiredCredentials) {
+        this(
+                name,
+                inputSignature,
+                outputSignature,
+                mode,
+                admin,
+                deprecated,
+                description,
+                warning,
+                eager,
+                caseInsensitive,
+                systemProcedure,
+                internal,
+                allowExpiredCredentials);
     }
 
     public ProcedureSignature(
@@ -86,11 +95,10 @@ public class ProcedureSignature
             boolean caseInsensitive,
             boolean systemProcedure,
             boolean internal,
-            boolean allowExpiredCredentials )
-    {
+            boolean allowExpiredCredentials) {
         this.name = name;
-        this.inputSignature = unmodifiableList( inputSignature );
-        this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList( outputSignature );
+        this.inputSignature = unmodifiableList(inputSignature);
+        this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList(outputSignature);
         this.mode = mode;
         this.admin = admin;
         this.deprecated = deprecated;
@@ -103,116 +111,95 @@ public class ProcedureSignature
         this.allowExpiredCredentials = allowExpiredCredentials;
     }
 
-    public QualifiedName name()
-    {
+    public QualifiedName name() {
         return name;
     }
 
-    public Mode mode()
-    {
+    public Mode mode() {
         return mode;
     }
 
-    public boolean admin()
-    {
+    public boolean admin() {
         return admin;
     }
 
-    public Optional<String> deprecated()
-    {
-        return Optional.ofNullable( deprecated );
+    public Optional<String> deprecated() {
+        return Optional.ofNullable(deprecated);
     }
 
-    public boolean caseInsensitive()
-    {
+    public boolean caseInsensitive() {
         return caseInsensitive;
     }
 
-    public List<FieldSignature> inputSignature()
-    {
+    public List<FieldSignature> inputSignature() {
         return inputSignature;
     }
 
-    public List<FieldSignature> outputSignature()
-    {
+    public List<FieldSignature> outputSignature() {
         return outputSignature;
     }
 
-    public boolean isVoid()
-    {
+    public boolean isVoid() {
         return outputSignature == VOID;
     }
 
-    public Optional<String> description()
-    {
-        return Optional.ofNullable( description );
+    public Optional<String> description() {
+        return Optional.ofNullable(description);
     }
 
-    public Optional<String> warning()
-    {
-        return Optional.ofNullable( warning );
+    public Optional<String> warning() {
+        return Optional.ofNullable(warning);
     }
 
-    public boolean eager()
-    {
+    public boolean eager() {
         return eager;
     }
 
-    public boolean systemProcedure()
-    {
+    public boolean systemProcedure() {
         return systemProcedure;
     }
 
-    public boolean internal()
-    {
+    public boolean internal() {
         return internal;
     }
 
-    public boolean allowedExpiredCredentials()
-    {
+    public boolean allowedExpiredCredentials() {
         return allowExpiredCredentials;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         ProcedureSignature that = (ProcedureSignature) o;
-        return name.equals( that.name ) && inputSignature.equals( that.inputSignature ) &&
-                outputSignature.equals( that.outputSignature ) && isVoid() == that.isVoid();
+        return name.equals(that.name)
+                && inputSignature.equals(that.inputSignature)
+                && outputSignature.equals(that.outputSignature)
+                && isVoid() == that.isVoid();
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return name.hashCode();
     }
 
     @Override
-    public String toString()
-    {
-        String strInSig = inputSignature == null ? "..." : Iterables.toString( inputSignature, ", " );
-        if ( isVoid() )
-        {
-            return String.format( "%s(%s) :: VOID", name, strInSig );
-        }
-        else
-        {
-            String strOutSig = outputSignature == null ? "..." : Iterables.toString( outputSignature, ", " );
-            return String.format( "%s(%s) :: (%s)", name, strInSig, strOutSig );
+    public String toString() {
+        String strInSig = inputSignature == null ? "..." : Iterables.toString(inputSignature, ", ");
+        if (isVoid()) {
+            return String.format("%s(%s) :: VOID", name, strInSig);
+        } else {
+            String strOutSig = outputSignature == null ? "..." : Iterables.toString(outputSignature, ", ");
+            return String.format("%s(%s) :: (%s)", name, strInSig, strOutSig);
         }
     }
 
-    public static class Builder
-    {
+    public static class Builder {
         private final QualifiedName name;
         private final List<FieldSignature> inputSignature = new ArrayList<>();
         private List<FieldSignature> outputSignature = new ArrayList<>();
@@ -226,118 +213,112 @@ public class ProcedureSignature
         private boolean internal;
         private boolean allowExpiredCredentials;
 
-        public Builder( String[] namespace, String name )
-        {
-            this.name = new QualifiedName( namespace, name );
+        public Builder(String[] namespace, String name) {
+            this.name = new QualifiedName(namespace, name);
         }
 
-        public Builder mode( Mode mode )
-        {
+        public Builder mode(Mode mode) {
             this.mode = mode;
             return this;
         }
 
-        public Builder description( String description )
-        {
+        public Builder description(String description) {
             this.description = description;
             return this;
         }
 
-        public Builder deprecatedBy( String deprecated )
-        {
+        public Builder deprecatedBy(String deprecated) {
             this.deprecated = deprecated;
             return this;
         }
 
         /** Define an input field */
-        public Builder in( String name, Neo4jTypes.AnyType type )
-        {
-            inputSignature.add( FieldSignature.inputField( name, type ) );
+        public Builder in(String name, Neo4jTypes.AnyType type) {
+            inputSignature.add(FieldSignature.inputField(name, type));
             return this;
         }
 
-        public Builder in( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue )
-        {
-            inputSignature.add( FieldSignature.inputField( name, type, defaultValue ) );
+        public Builder in(String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue) {
+            inputSignature.add(FieldSignature.inputField(name, type, defaultValue));
             return this;
         }
 
         /** Define an output field */
-        public Builder out( String name, Neo4jTypes.AnyType type )
-        {
-            outputSignature.add( FieldSignature.outputField( name, type ) );
+        public Builder out(String name, Neo4jTypes.AnyType type) {
+            outputSignature.add(FieldSignature.outputField(name, type));
             return this;
         }
 
-        public Builder out( List<FieldSignature> fields )
-        {
+        public Builder out(List<FieldSignature> fields) {
             outputSignature = fields;
             return this;
         }
 
-        public Builder admin( boolean admin )
-        {
+        public Builder admin(boolean admin) {
             this.admin = admin;
             return this;
         }
 
-        public Builder warning( String warning )
-        {
+        public Builder warning(String warning) {
             this.warning = warning;
             return this;
         }
 
-        public Builder eager( boolean eager )
-        {
+        public Builder eager(boolean eager) {
             this.eager = eager;
             return this;
         }
 
-        public Builder systemProcedure()
-        {
+        public Builder systemProcedure() {
             this.systemProcedure = true;
             return this;
         }
 
-        public Builder internal()
-        {
+        public Builder internal() {
             this.internal = true;
             return this;
         }
 
-        public Builder allowExpiredCredentials()
-        {
+        public Builder allowExpiredCredentials() {
             this.allowExpiredCredentials = true;
             return this;
         }
 
-        public ProcedureSignature build()
-        {
-            return new ProcedureSignature( name, inputSignature, outputSignature, mode, admin, deprecated,
-                                           description, warning, eager, false, systemProcedure, internal, allowExpiredCredentials );
+        public ProcedureSignature build() {
+            return new ProcedureSignature(
+                    name,
+                    inputSignature,
+                    outputSignature,
+                    mode,
+                    admin,
+                    deprecated,
+                    description,
+                    warning,
+                    eager,
+                    false,
+                    systemProcedure,
+                    internal,
+                    allowExpiredCredentials);
         }
     }
 
-    public static Builder procedureSignature( String... namespaceAndName )
-    {
-        String[] namespace = namespaceAndName.length > 1 ?
-                             Arrays.copyOf( namespaceAndName, namespaceAndName.length - 1 ) : new String[0];
+    public static Builder procedureSignature(String... namespaceAndName) {
+        String[] namespace = namespaceAndName.length > 1
+                ? Arrays.copyOf(namespaceAndName, namespaceAndName.length - 1)
+                : new String[0];
         String name = namespaceAndName[namespaceAndName.length - 1];
-        return procedureSignature( namespace, name );
+        return procedureSignature(namespace, name);
     }
 
-    public static Builder procedureSignature( QualifiedName name )
-    {
-        return new Builder( name.namespace(), name.name() );
+    public static Builder procedureSignature(QualifiedName name) {
+        return new Builder(name.namespace(), name.name());
     }
 
-    public static Builder procedureSignature( String[] namespace, String name )
-    {
-        return new Builder( namespace, name );
+    public static Builder procedureSignature(String[] namespace, String name) {
+        return new Builder(namespace, name);
     }
 
-    public static QualifiedName procedureName( String... namespaceAndName )
-    {
-        return procedureSignature( namespaceAndName ).build().name();
+    public static QualifiedName procedureName(String... namespaceAndName) {
+        return procedureSignature(namespaceAndName).build().name();
     }
 }

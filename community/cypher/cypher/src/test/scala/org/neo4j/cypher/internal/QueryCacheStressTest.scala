@@ -36,7 +36,6 @@ import scala.concurrent.duration.DurationInt
 
 class QueryCacheStressTest extends CypherFunSuite {
 
-
   test("should recompile at least once when running from multiple threads") {
     // Given
     val tracer = newTracer()
@@ -44,9 +43,11 @@ class QueryCacheStressTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    val futures = Future.sequence((1 to 100).map(_ => Future {
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
-    }))
+    val futures = Future.sequence((1 to 100).map(_ =>
+      Future {
+        cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+      }
+    ))
 
     // Then
     Await.ready(futures, 60.seconds)
@@ -60,9 +61,11 @@ class QueryCacheStressTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    val futures = Future.sequence((1 to 100).map(_ => Future {
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
-    }))
+    val futures = Future.sequence((1 to 100).map(_ =>
+      Future {
+        cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+      }
+    ))
 
     // Then
     Await.result(futures, 60.seconds)

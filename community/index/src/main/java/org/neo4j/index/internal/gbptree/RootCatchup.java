@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 @FunctionalInterface
-public interface RootCatchup
-{
-    Root catchupFrom( long pageId );
+public interface RootCatchup {
+    Root catchupFrom(long pageId);
 }

@@ -19,17 +19,14 @@
  */
 package org.neo4j.bolt.transaction;
 
-public class CleanUpConnectionContext
-{
+public class CleanUpConnectionContext {
     private final String connectionId;
 
-    public CleanUpConnectionContext( String connectionId )
-    {
+    public CleanUpConnectionContext(String connectionId) {
         this.connectionId = connectionId;
     }
 
-    public String connectionId()
-    {
+    public String connectionId() {
         return connectionId;
     }
 }

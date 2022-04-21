@@ -26,8 +26,7 @@ import javax.net.ssl.SSLParameters;
 /**
  * Client side modifier for SSLEngine to mandate hostname verification
  */
-public class ClientSideHostnameVerificationEngineModification implements Function<SSLEngine,SSLEngine>
-{
+public class ClientSideHostnameVerificationEngineModification implements Function<SSLEngine, SSLEngine> {
     /**
      * Apply modifications to engine to enable hostname verification (client side only)
      *
@@ -35,35 +34,30 @@ public class ClientSideHostnameVerificationEngineModification implements Functio
      * @return the updated sslEngine that allows client side hostname verification
      */
     @Override
-    public SSLEngine apply( SSLEngine sslEngine )
-    {
+    public SSLEngine apply(SSLEngine sslEngine) {
         SSLParameters sslParameters = sslEngine.getSSLParameters();
-        sslParameters.setEndpointIdentificationAlgorithm( VerificationAlgorithm.HTTPS.getValue() );
-        sslEngine.setSSLParameters( sslParameters );
+        sslParameters.setEndpointIdentificationAlgorithm(VerificationAlgorithm.HTTPS.getValue());
+        sslEngine.setSSLParameters(sslParameters);
         return sslEngine;
     }
 
-    private enum VerificationAlgorithm
-    {
+    private enum VerificationAlgorithm {
         /*
         Endpoint identification algorithms
         HTTPS http://www.ietf.org/rfc/rfc2818.txt
         LDAPS http://www.ietf.org/rfc/rfc2830.txt
          */
-        HTTPS( "HTTPS" ),
-        LDAPS( "LDAPS" );
+        HTTPS("HTTPS"),
+        LDAPS("LDAPS");
 
         private final String value;
 
-        VerificationAlgorithm( String value )
-        {
+        VerificationAlgorithm(String value) {
             this.value = value;
         }
 
-        public String getValue()
-        {
+        public String getValue() {
             return value;
         }
     }
-
 }

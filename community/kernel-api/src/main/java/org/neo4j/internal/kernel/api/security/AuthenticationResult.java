@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public enum AuthenticationResult
-{
+public enum AuthenticationResult {
     SUCCESS,
     FAILURE,
     TOO_MANY_ATTEMPTS,

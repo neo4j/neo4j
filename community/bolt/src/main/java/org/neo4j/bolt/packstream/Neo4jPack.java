@@ -20,7 +20,6 @@
 package org.neo4j.bolt.packstream;
 
 import java.io.IOException;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -28,25 +27,22 @@ import org.neo4j.values.virtual.MapValue;
  * Represents a single Bolt message format by exposing a {@link Packer packer} and {@link Unpacker unpacker}
  * for primitives of this format.
  */
-public interface Neo4jPack extends PackProvider, UnpackerProvider
-{
-    interface Packer
-    {
-        void pack( String value ) throws IOException;
+public interface Neo4jPack extends PackProvider, UnpackerProvider {
+    interface Packer {
+        void pack(String value) throws IOException;
 
-        void pack( AnyValue value ) throws IOException;
+        void pack(AnyValue value) throws IOException;
 
-        void packStructHeader( int size, byte signature ) throws IOException;
+        void packStructHeader(int size, byte signature) throws IOException;
 
-        void packMapHeader( int size ) throws IOException;
+        void packMapHeader(int size) throws IOException;
 
-        void packListHeader( int size ) throws IOException;
+        void packListHeader(int size) throws IOException;
 
         void flush() throws IOException;
     }
 
-    interface Unpacker
-    {
+    interface Unpacker {
         AnyValue unpack() throws IOException;
 
         String unpackString() throws IOException;
@@ -59,5 +55,6 @@ public interface Neo4jPack extends PackProvider, UnpackerProvider
 
         long unpackListHeader() throws IOException;
     }
+
     long version();
 }

@@ -33,8 +33,8 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    //all integer operations should result in longs
-    result shouldBe a [LongValue]
+    // all integer operations should result in longs
+    result shouldBe a[LongValue]
   }
 
   test("plus double int") {
@@ -42,7 +42,7 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [DoubleValue]
+    result shouldBe a[DoubleValue]
   }
 
   test("minus int int") {
@@ -50,8 +50,8 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    //all integer operations should result in longs
-    result shouldBe a [LongValue]
+    // all integer operations should result in longs
+    result shouldBe a[LongValue]
   }
 
   test("minus double int") {
@@ -59,7 +59,7 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [DoubleValue]
+    result shouldBe a[DoubleValue]
   }
 
   test("multiply int int") {
@@ -67,8 +67,8 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    //all integer operations should result in longs
-    result shouldBe a [LongValue]
+    // all integer operations should result in longs
+    result shouldBe a[LongValue]
   }
 
   test("multiply double int") {
@@ -76,7 +76,7 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [DoubleValue]
+    result shouldBe a[DoubleValue]
   }
 
   test("divide int int") {
@@ -84,7 +84,7 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [LongValue]
+    result shouldBe a[LongValue]
   }
 
   test("divide double int") {
@@ -92,8 +92,8 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [DoubleValue]
+    result shouldBe a[DoubleValue]
   }
 
-  private def calc(e:Expression) = e.apply(CypherRow.empty, QueryStateHelper.empty)
+  private def calc(e: Expression) = e.apply(CypherRow.empty, QueryStateHelper.empty)
 }

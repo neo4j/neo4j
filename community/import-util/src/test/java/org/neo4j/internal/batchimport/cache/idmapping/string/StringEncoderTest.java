@@ -19,30 +19,27 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class StringEncoderTest
-{
+class StringEncoderTest {
     @Test
-    void shouldEncodeStringWithZeroLength()
-    {
+    void shouldEncodeStringWithZeroLength() {
         // GIVEN
         Encoder encoder = new StringEncoder();
 
         // WHEN
-        long eId = encoder.encode( "" );
+        long eId = encoder.encode("");
 
         // THEN
-        assertTrue( eId != 0 );
+        assertTrue(eId != 0);
     }
 
     @Test
-    void shouldEncodeStringWithAnyLength()
-    {
+    void shouldEncodeStringWithAnyLength() {
         // GIVEN
         Encoder encoder = new StringEncoder();
 
@@ -50,27 +47,23 @@ class StringEncoderTest
         MutableLongSet encoded = new LongHashSet();
         int total = 1_000;
         int duplicates = 0;
-        for ( int i = 0; i < total; i++ )
-        {
+        for (int i = 0; i < total; i++) {
             // THEN
-            long encode = encoder.encode( abcStringOfLength( i ) );
-            assertTrue( encode != 0 );
-            if ( !encoded.add( encode ) )
-            {
+            long encode = encoder.encode(abcStringOfLength(i));
+            assertTrue(encode != 0);
+            if (!encoded.add(encode)) {
                 duplicates++;
             }
         }
-        assertTrue( ((float) duplicates / (float) total) < 0.01f );
+        assertTrue(((float) duplicates / (float) total) < 0.01f);
     }
 
-    private static String abcStringOfLength( int length )
-    {
+    private static String abcStringOfLength(int length) {
         char[] chars = new char[length];
-        for ( int i = 0; i < length; i++ )
-        {
+        for (int i = 0; i < length; i++) {
             int ch = 'a' + (i % 20);
             chars[i] = (char) ch;
         }
-        return new String( chars );
+        return new String(chars);
     }
 }

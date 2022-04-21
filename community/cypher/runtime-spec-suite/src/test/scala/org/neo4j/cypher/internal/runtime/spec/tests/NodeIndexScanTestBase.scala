@@ -38,18 +38,21 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime)
-  with PropertyIndexTestSupport[CONTEXT]
-  with RandomValuesTestSupport
-{
+    with PropertyIndexTestSupport[CONTEXT]
+    with RandomValuesTestSupport {
 
   testWithIndex(_.supports(EXISTS), "should scan all nodes of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(EXISTS))
     val nodes = given {
       nodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("calories" -> randomValue(propertyType).asObject())
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 => Map("calories" -> randomValue(propertyType).asObject())
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -71,11 +74,15 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
       uniqueNodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
       val seen = mutable.Set.empty[Value]
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 =>
-          val value = randomValue(propertyType)
-          if (seen.add(value)) Map("calories" -> value.asObject()) else Map.empty
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 =>
+            val value = randomValue(propertyType)
+            if (seen.add(value)) Map("calories" -> value.asObject()) else Map.empty
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -98,10 +105,14 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val nodes = given {
       nodeIndex(index.indexType, "Honey", "calories", "taste")
       nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("calories" -> i, "taste" -> i)
-        case i if i % 5 == 0 => Map("calories" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 => Map("calories" -> i, "taste" -> i)
+          case i if i % 5 == 0  => Map("calories" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -117,14 +128,18 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
-  testWithIndex(_.supportsValues(EXISTS),"should cache properties") { index =>
+  testWithIndex(_.supportsValues(EXISTS), "should cache properties") { index =>
     val propertyType = randomAmong(index.provideValueSupport(EXISTS))
     val nodes = given {
       nodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("calories" -> randomValue(propertyType).asObject())
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 => Map("calories" -> randomValue(propertyType).asObject())
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -149,11 +164,15 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
       uniqueNodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
       val seen = mutable.Set.empty[Value]
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 =>
-          val value = randomValue(propertyType)
-          if (seen.add(value)) Map("calories" -> value.asObject()) else Map.empty
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 =>
+            val value = randomValue(propertyType)
+            if (seen.add(value)) Map("calories" -> value.asObject()) else Map.empty
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -166,7 +185,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.collect{
+    val expected = nodes.collect {
       case n if n.hasProperty("calories") => Array(n, n.getProperty("calories"))
     }
     runtimeResult should beColumns("x", "calories").withRows(expected)

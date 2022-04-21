@@ -19,9 +19,13 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static java.lang.Math.min;
+import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.encodeDense;
+import static org.neo4j.storageengine.api.LongReference.longReference;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
+
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -43,13 +47,7 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static java.lang.Math.min;
-import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.encodeDense;
-import static org.neo4j.storageengine.api.LongReference.longReference;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
-
-public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
-{
+public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     private final NodeStore read;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final CursorContext cursorContext;
@@ -67,10 +65,14 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private RecordRelationshipScanCursor relationshipScanCursor;
     private RecordLoadOverride loadMode;
 
-    RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RelationshipGroupDegreesStore groupDegreesStore,
-            CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        super( NO_ID );
+    RecordNodeCursor(
+            NodeStore read,
+            RelationshipStore relationshipStore,
+            RelationshipGroupStore groupStore,
+            RelationshipGroupDegreesStore groupDegreesStore,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
+        super(NO_ID);
         this.read = read;
         this.groupDegreesStore = groupDegreesStore;
         this.cursorContext = cursorContext;
@@ -81,15 +83,12 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public void scan()
-    {
-        if ( getId() != NO_ID )
-        {
+    public void scan() {
+        if (getId() != NO_ID) {
             resetState();
         }
-        if ( pageCursor == null )
-        {
-            pageCursor = nodePage( 0 );
+        if (pageCursor == null) {
+            pageCursor = nodePage(0);
         }
         this.next = 0;
         this.highMark = nodeHighMark();
@@ -99,18 +98,15 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public void single( long reference )
-    {
-        if ( getId() != NO_ID )
-        {
+    public void single(long reference) {
+        if (getId() != NO_ID) {
             resetState();
         }
-        if ( pageCursor == null )
-        {
-            pageCursor = nodePage( reference );
+        if (pageCursor == null) {
+            pageCursor = nodePage(reference);
         }
         this.next = reference >= 0 ? reference : NO_ID;
-        //This marks the cursor as a "single cursor"
+        // This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
         this.nextStoreReference = NO_ID;
         this.open = true;
@@ -118,224 +114,182 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public boolean scanBatch( AllNodeScan scan, int sizeHint )
-    {
-        if ( getId() != NO_ID )
-        {
+    public boolean scanBatch(AllNodeScan scan, int sizeHint) {
+        if (getId() != NO_ID) {
             reset();
         }
         this.batched = true;
         this.open = true;
         this.nextStoreReference = NO_ID;
 
-        return ((RecordNodeScan) scan).scanBatch( sizeHint , this);
+        return ((RecordNodeScan) scan).scanBatch(sizeHint, this);
     }
 
-    boolean scanRange( long start, long stop )
-    {
+    boolean scanRange(long start, long stop) {
         long max = nodeHighMark();
-        if ( start > max )
-        {
+        if (start > max) {
             reset();
             return false;
         }
-        if ( start > stop )
-        {
+        if (start > stop) {
             reset();
             return true;
         }
-        if ( pageCursor == null )
-        {
-            pageCursor = nodePage( start );
+        if (pageCursor == null) {
+            pageCursor = nodePage(start);
         }
         next = start;
-        highMark = min( stop, max );
+        highMark = min(stop, max);
         return true;
     }
 
     @Override
-    public long entityReference()
-    {
+    public long entityReference() {
         return getId();
     }
 
     @Override
-    public long[] labels()
-    {
-        return NodeLabelsField.get( this, read, storeCursors );
+    public long[] labels() {
+        return NodeLabelsField.get(this, read, storeCursors);
     }
 
     @Override
-    public boolean hasLabel( int label )
-    {
-        return NodeLabelsField.hasLabel( this, read, storeCursors, label );
+    public boolean hasLabel(int label) {
+        return NodeLabelsField.hasLabel(this, read, storeCursors, label);
     }
 
     @Override
-    public boolean hasProperties()
-    {
+    public boolean hasProperties() {
         return nextProp != NO_ID;
     }
 
     @Override
-    public long relationshipsReference()
-    {
-        return relationshipsReferenceWithDenseMarker( getNextRel(), isDense() );
+    public long relationshipsReference() {
+        return relationshipsReferenceWithDenseMarker(getNextRel(), isDense());
     }
 
     /**
      * Marks a relationships reference with a special flag if the node is dense, because if that case the reference actually points
      * to a relationship group record.
      */
-    static long relationshipsReferenceWithDenseMarker( long nextRel, boolean isDense )
-    {
-        return isDense ? encodeDense( nextRel ) : nextRel;
+    static long relationshipsReferenceWithDenseMarker(long nextRel, boolean isDense) {
+        return isDense ? encodeDense(nextRel) : nextRel;
     }
 
     @Override
-    public void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection )
-    {
-        ((RecordRelationshipTraversalCursor) traversalCursor).init( this, selection );
+    public void relationships(StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection) {
+        ((RecordRelationshipTraversalCursor) traversalCursor).init(this, selection);
     }
 
     @Override
-    public boolean supportsFastRelationshipsTo()
-    {
+    public boolean supportsFastRelationshipsTo() {
         return false;
     }
 
     @Override
-    public void relationshipsTo( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection, long neighbourNodeReference )
-    {
+    public void relationshipsTo(
+            StorageRelationshipTraversalCursor traversalCursor,
+            RelationshipSelection selection,
+            long neighbourNodeReference) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int[] relationshipTypes()
-    {
+    public int[] relationshipTypes() {
         MutableIntSet types = IntSets.mutable.empty();
-        if ( !isDense() )
-        {
+        if (!isDense()) {
             ensureRelationshipTraversalCursorInitialized();
-            relationshipCursor.init( this, ALL_RELATIONSHIPS );
-            while ( relationshipCursor.next() )
-            {
-                types.add( relationshipCursor.type() );
+            relationshipCursor.init(this, ALL_RELATIONSHIPS);
+            while (relationshipCursor.next()) {
+                types.add(relationshipCursor.type());
             }
-        }
-        else
-        {
-            if ( groupCursor == null )
-            {
-                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext );
+        } else {
+            if (groupCursor == null) {
+                groupCursor = new RecordRelationshipGroupCursor(
+                        relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext);
             }
-            groupCursor.init( entityReference(), getNextRel(), true );
-            while ( groupCursor.next() )
-            {
-                types.add( groupCursor.getType() );
+            groupCursor.init(entityReference(), getNextRel(), true);
+            while (groupCursor.next()) {
+                types.add(groupCursor.getType());
             }
         }
         return types.toArray();
     }
 
-    private void ensureRelationshipTraversalCursorInitialized()
-    {
-        if ( relationshipCursor == null )
-        {
-            relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, groupDegreesStore, cursorContext );
+    private void ensureRelationshipTraversalCursorInitialized() {
+        if (relationshipCursor == null) {
+            relationshipCursor = new RecordRelationshipTraversalCursor(
+                    relationshipStore, groupStore, groupDegreesStore, cursorContext);
         }
     }
 
-    private void ensureRelationshipScanCursorInitialized()
-    {
-        if ( relationshipScanCursor == null )
-        {
-            relationshipScanCursor = new RecordRelationshipScanCursor( relationshipStore, cursorContext );
+    private void ensureRelationshipScanCursorInitialized() {
+        if (relationshipScanCursor == null) {
+            relationshipScanCursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext);
         }
     }
 
     @Override
-    public void degrees( RelationshipSelection selection, Degrees.Mutator mutator )
-    {
-        if ( !mutator.isSplit() && !isDense() && !selection.isLimited() )
-        {
+    public void degrees(RelationshipSelection selection, Degrees.Mutator mutator) {
+        if (!mutator.isSplit() && !isDense() && !selection.isLimited()) {
             // There's an optimization for getting only the total degree directly and we're not limited by security
             ensureRelationshipScanCursorInitialized();
-            relationshipScanCursor.single( getNextRel() );
-            if ( relationshipScanCursor.next() )
-            {
+            relationshipScanCursor.single(getNextRel());
+            if (relationshipScanCursor.next()) {
                 int degree = relationshipScanCursor.sourceNodeReference() == getId()
                         ? (int) relationshipScanCursor.getFirstPrevRel()
                         : (int) relationshipScanCursor.getSecondPrevRel();
-                mutator.add( -1, degree, 0, 0 );
+                mutator.add(-1, degree, 0, 0);
             }
             return;
         }
 
-        if ( !isDense() )
-        {
+        if (!isDense()) {
             ensureRelationshipTraversalCursorInitialized();
-            relationshipCursor.init( this, ALL_RELATIONSHIPS );
-            while ( relationshipCursor.next() )
-            {
-                if ( selection.test( relationshipCursor.type() ) )
-                {
+            relationshipCursor.init(this, ALL_RELATIONSHIPS);
+            while (relationshipCursor.next()) {
+                if (selection.test(relationshipCursor.type())) {
                     int outgoing = 0;
                     int incoming = 0;
                     int loop = 0;
-                    if ( relationshipCursor.sourceNodeReference() == entityReference() )
-                    {
-                        if ( relationshipCursor.targetNodeReference() == entityReference() )
-                        {
+                    if (relationshipCursor.sourceNodeReference() == entityReference()) {
+                        if (relationshipCursor.targetNodeReference() == entityReference()) {
                             loop++;
-                        }
-                        else if ( selection.test( RelationshipDirection.OUTGOING ) )
-                        {
+                        } else if (selection.test(RelationshipDirection.OUTGOING)) {
                             outgoing++;
                         }
-                    }
-                    else if ( selection.test( RelationshipDirection.INCOMING ) )
-                    {
+                    } else if (selection.test(RelationshipDirection.INCOMING)) {
                         incoming++;
                     }
-                    if ( !mutator.add( relationshipCursor.type(), outgoing, incoming, loop ) )
-                    {
+                    if (!mutator.add(relationshipCursor.type(), outgoing, incoming, loop)) {
                         return;
                     }
                 }
             }
-        }
-        else
-        {
-            if ( groupCursor == null )
-            {
-                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext );
+        } else {
+            if (groupCursor == null) {
+                groupCursor = new RecordRelationshipGroupCursor(
+                        relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext);
             }
-            groupCursor.init( entityReference(), getNextRel(), isDense() );
+            groupCursor.init(entityReference(), getNextRel(), isDense());
             int criteriaMet = 0;
             boolean typeLimited = selection.isTypeLimited();
             int numCriteria = selection.numberOfCriteria();
-            while ( groupCursor.next() )
-            {
-                if ( selection.test( groupCursor.getType() ) )
-                {
+            while (groupCursor.next()) {
+                if (selection.test(groupCursor.getType())) {
                     int outgoing = 0;
                     int incoming = 0;
                     int loop = groupCursor.loopCount();
-                    if ( selection.test( RelationshipDirection.OUTGOING ) )
-                    {
+                    if (selection.test(RelationshipDirection.OUTGOING)) {
                         outgoing = groupCursor.outgoingCount();
                     }
-                    if ( selection.test( RelationshipDirection.INCOMING ) )
-                    {
+                    if (selection.test(RelationshipDirection.INCOMING)) {
                         incoming = groupCursor.incomingCount();
                     }
-                    if ( !mutator.add( groupCursor.getType(), outgoing, incoming, loop ) )
-                    {
+                    if (!mutator.add(groupCursor.getType(), outgoing, incoming, loop)) {
                         return;
                     }
-                    if ( typeLimited && ++criteriaMet >= numCriteria )
-                    {
+                    if (typeLimited && ++criteriaMet >= numCriteria) {
                         break;
                     }
                 }
@@ -344,173 +298,138 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public boolean supportsFastDegreeLookup()
-    {
+    public boolean supportsFastDegreeLookup() {
         return isDense();
     }
 
     @Override
-    public void setForceLoad()
-    {
+    public void setForceLoad() {
         this.loadMode = RecordLoadOverride.FORCE;
-        if ( groupCursor != null )
-        {
+        if (groupCursor != null) {
             groupCursor.loadMode = RecordLoadOverride.FORCE;
         }
     }
 
     @Override
-    public Reference propertiesReference()
-    {
-        return longReference( getNextProp() );
+    public Reference propertiesReference() {
+        return longReference(getNextProp());
     }
 
     @Override
-    public void properties( StoragePropertyCursor propertyCursor, PropertySelection selection )
-    {
-        propertyCursor.initNodeProperties( longReference( getNextProp() ), selection );
+    public void properties(StoragePropertyCursor propertyCursor, PropertySelection selection) {
+        propertyCursor.initNodeProperties(longReference(getNextProp()), selection);
     }
 
     @Override
-    public boolean next()
-    {
-        if ( next == NO_ID )
-        {
+    public boolean next() {
+        if (next == NO_ID) {
             resetState();
             return false;
         }
 
-        do
-        {
-            if ( nextStoreReference == next )
-            {
-                nodeAdvance( this, pageCursor );
+        do {
+            if (nextStoreReference == next) {
+                nodeAdvance(this, pageCursor);
                 next++;
                 nextStoreReference++;
-            }
-            else
-            {
-                node( this, next++, pageCursor );
+            } else {
+                node(this, next++, pageCursor);
                 nextStoreReference = next;
             }
 
-            if ( next > highMark )
-            {
-                if ( isSingle() || batched )
-                {
-                    //we are a "single cursor" or a "batched scan"
-                    //we don't want to set a new highMark
+            if (next > highMark) {
+                if (isSingle() || batched) {
+                    // we are a "single cursor" or a "batched scan"
+                    // we don't want to set a new highMark
                     next = NO_ID;
                     return inUse();
-                }
-                else
-                {
-                    //we are a "scan cursor"
-                    //Check if there is a new high mark
+                } else {
+                    // we are a "scan cursor"
+                    // Check if there is a new high mark
                     highMark = nodeHighMark();
-                    if ( next > highMark )
-                    {
+                    if (next > highMark) {
                         next = NO_ID;
                         return inUse();
                     }
                 }
             }
-        }
-        while ( !inUse() );
+        } while (!inUse());
         return true;
     }
 
     @Override
-    public void reset()
-    {
-        if ( open )
-        {
+    public void reset() {
+        if (open) {
             open = false;
             resetState();
         }
     }
 
-    private void resetState()
-    {
+    private void resetState() {
         next = NO_ID;
-        setId( NO_ID );
+        setId(NO_ID);
         clear();
         this.loadMode = RecordLoadOverride.none();
-        if ( groupCursor != null )
-        {
+        if (groupCursor != null) {
             groupCursor.loadMode = RecordLoadOverride.none();
         }
     }
 
-    private boolean isSingle()
-    {
+    private boolean isSingle() {
         return highMark == NO_ID;
     }
 
     @Override
-    public RecordNodeCursor copy()
-    {
-        throw new UnsupportedOperationException( "Record cursors are not copyable." );
+    public RecordNodeCursor copy() {
+        throw new UnsupportedOperationException("Record cursors are not copyable.");
     }
 
     @Override
-    public String toString()
-    {
-        if ( !open )
-        {
+    public String toString() {
+        if (!open) {
             return "RecordNodeCursor[closed state]";
-        }
-        else
-        {
-            return "RecordNodeCursor[id=" + getId() +
-                    ", open state with: highMark=" + highMark +
-                    ", next=" + next +
-                    ", underlying record=" + super.toString() + "]";
+        } else {
+            return "RecordNodeCursor[id=" + getId() + ", open state with: highMark="
+                    + highMark + ", next="
+                    + next + ", underlying record="
+                    + super.toString() + "]";
         }
     }
 
     @Override
-    public void close()
-    {
-        if ( pageCursor != null )
-        {
+    public void close() {
+        if (pageCursor != null) {
             pageCursor.close();
             pageCursor = null;
         }
-        if ( groupCursor != null )
-        {
+        if (groupCursor != null) {
             groupCursor.close();
             groupCursor = null;
         }
-        if ( relationshipCursor != null )
-        {
+        if (relationshipCursor != null) {
             relationshipCursor.close();
             relationshipCursor = null;
         }
-        if ( relationshipScanCursor != null )
-        {
+        if (relationshipScanCursor != null) {
             relationshipScanCursor.close();
             relationshipScanCursor = null;
         }
     }
 
-    private PageCursor nodePage( long reference )
-    {
-        return read.openPageCursorForReading( reference, cursorContext );
+    private PageCursor nodePage(long reference) {
+        return read.openPageCursorForReading(reference, cursorContext);
     }
 
-    private long nodeHighMark()
-    {
-        return read.getHighestPossibleIdInUse( cursorContext );
+    private long nodeHighMark() {
+        return read.getHighestPossibleIdInUse(cursorContext);
     }
 
-    private void node( NodeRecord record, long reference, PageCursor pageCursor )
-    {
-        read.getRecordByCursor( reference, record, loadMode.orElse( RecordLoad.CHECK ).lenient(), pageCursor );
+    private void node(NodeRecord record, long reference, PageCursor pageCursor) {
+        read.getRecordByCursor(
+                reference, record, loadMode.orElse(RecordLoad.CHECK).lenient(), pageCursor);
     }
 
-    private void nodeAdvance( NodeRecord record, PageCursor pageCursor )
-    {
-        read.nextRecordByCursor( record, loadMode.orElse( RecordLoad.CHECK ).lenient(), pageCursor );
+    private void nodeAdvance(NodeRecord record, PageCursor pageCursor) {
+        read.nextRecordByCursor(record, loadMode.orElse(RecordLoad.CHECK).lenient(), pageCursor);
     }
 }

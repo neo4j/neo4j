@@ -19,13 +19,28 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.singleton;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -54,34 +69,24 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.singleton;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
-import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
-
 @PageCacheExtension
-abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KEY>>
-{
-    final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).withName( "index" ).withIndexType( indexType() ).materialise( 1 );
-    private final IndexDescriptor UNIQUE_INDEX_DESCRIPTOR =
-            uniqueForSchema( forLabel( 1, 1 ) ).withName( "constraint" ).withIndexType( indexType() ).materialise( 1 );
+abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KEY>> {
+    final IndexDescriptor INDEX_DESCRIPTOR = forSchema(forLabel(1, 1))
+            .withName("index")
+            .withIndexType(indexType())
+            .materialise(1);
+    private final IndexDescriptor UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema(forLabel(1, 1))
+            .withName("constraint")
+            .withIndexType(indexType())
+            .materialise(1);
     final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
+
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory directory;
+
     @Inject
     private PageCache pageCache;
 
@@ -91,207 +96,181 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
 
     abstract IndexType indexType();
-    abstract BlockBasedIndexPopulator<KEY> instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException;
-    abstract Value supportedValue( int identifier );
+
+    abstract BlockBasedIndexPopulator<KEY> instantiatePopulator(IndexDescriptor indexDescriptor) throws IOException;
+
+    abstract Value supportedValue(int identifier);
 
     @BeforeEach
-    void setup()
-    {
-        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
-        IndexDirectoryStructure directoryStructure = directoriesByProvider( directory.homePath() ).forProvider( providerDescriptor );
-        indexFiles = new IndexFiles.Directory( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
-        databaseIndexContext =
-                DatabaseIndexContext.builder( pageCache, fs, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), DEFAULT_DATABASE_NAME ).build();
+    void setup() {
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor("test", "v1");
+        IndexDirectoryStructure directoryStructure =
+                directoriesByProvider(directory.homePath()).forProvider(providerDescriptor);
+        indexFiles = new IndexFiles.Directory(fs, directoryStructure, INDEX_DESCRIPTOR.getId());
+        databaseIndexContext = DatabaseIndexContext.builder(
+                        pageCache, fs, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), DEFAULT_DATABASE_NAME)
+                .build();
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
-        {
+        populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler() {
 
             @Override
-            public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
-            {
-                return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, new JobMonitoringParams( null, null, null ), job );
+            public <T> JobHandle<T> schedule(
+                    IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job) {
+                return jobScheduler.schedule(
+                        Group.INDEX_POPULATION_WORK, new JobMonitoringParams(null, null, null), job);
             }
         };
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
+    void tearDown() throws Exception {
         jobScheduler.shutdown();
     }
 
     @Test
-    void shouldSeeExternalUpdateBothBeforeAndAfterScanCompleted() throws IndexEntryConflictException, IOException
-    {
+    void shouldSeeExternalUpdateBothBeforeAndAfterScanCompleted() throws IndexEntryConflictException, IOException {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
-        try
-        {
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(INDEX_DESCRIPTOR);
+        try {
             // when
-            Value first = supportedValue( 1 );
-            Value second = supportedValue( 2 );
+            Value first = supportedValue(1);
+            Value second = supportedValue(2);
             int firstId = 1;
             int secondId = 2;
-            externalUpdate( populator, first, firstId );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
-            externalUpdate( populator, second, secondId );
+            externalUpdate(populator, first, firstId);
+            populator.scanCompleted(nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);
+            externalUpdate(populator, second, secondId);
 
             // then
-            assertMatch( populator, first, firstId );
-            assertMatch( populator, second, secondId );
-        }
-        finally
-        {
-            populator.close( true, CursorContext.NULL_CONTEXT );
+            assertMatch(populator, first, firstId);
+            assertMatch(populator, second, secondId);
+        } finally {
+            populator.close(true, CursorContext.NULL_CONTEXT);
         }
     }
 
     @Test
-    void shouldThrowOnDuplicatedValuesFromScan() throws IOException
-    {
+    void shouldThrowOnDuplicatedValuesFromScan() throws IOException {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        try
-        {
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(UNIQUE_INDEX_DESCRIPTOR);
+        try {
             // when
-            Value duplicate = supportedValue( 1 );
-            ValueIndexEntryUpdate<?> firstScanUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
-            ValueIndexEntryUpdate<?> secondScanUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
-            assertThrows( IndexEntryConflictException.class, () ->
-            {
-                populator.add( singleton( firstScanUpdate ), CursorContext.NULL_CONTEXT );
-                populator.add( singleton( secondScanUpdate ), CursorContext.NULL_CONTEXT );
-                populator.scanCompleted( nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
-            } );
-        }
-        finally
-        {
-            populator.close( true, CursorContext.NULL_CONTEXT );
+            Value duplicate = supportedValue(1);
+            ValueIndexEntryUpdate<?> firstScanUpdate = ValueIndexEntryUpdate.add(1, INDEX_DESCRIPTOR, duplicate);
+            ValueIndexEntryUpdate<?> secondScanUpdate = ValueIndexEntryUpdate.add(2, INDEX_DESCRIPTOR, duplicate);
+            assertThrows(IndexEntryConflictException.class, () -> {
+                populator.add(singleton(firstScanUpdate), CursorContext.NULL_CONTEXT);
+                populator.add(singleton(secondScanUpdate), CursorContext.NULL_CONTEXT);
+                populator.scanCompleted(nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);
+            });
+        } finally {
+            populator.close(true, CursorContext.NULL_CONTEXT);
         }
     }
 
     @Test
-    void shouldThrowOnDuplicatedValuesFromExternalUpdates() throws IOException
-    {
+    void shouldThrowOnDuplicatedValuesFromExternalUpdates() throws IOException {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        try
-        {
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(UNIQUE_INDEX_DESCRIPTOR);
+        try {
             // when
-            Value duplicate = supportedValue( 1 );
-            ValueIndexEntryUpdate<?> firstExternalUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
-            ValueIndexEntryUpdate<?> secondExternalUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
-            assertThrows( IndexEntryConflictException.class, () ->
-            {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
-                {
-                    updater.process( firstExternalUpdate );
-                    updater.process( secondExternalUpdate );
+            Value duplicate = supportedValue(1);
+            ValueIndexEntryUpdate<?> firstExternalUpdate = ValueIndexEntryUpdate.add(1, INDEX_DESCRIPTOR, duplicate);
+            ValueIndexEntryUpdate<?> secondExternalUpdate = ValueIndexEntryUpdate.add(2, INDEX_DESCRIPTOR, duplicate);
+            assertThrows(IndexEntryConflictException.class, () -> {
+                try (IndexUpdater updater = populator.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {
+                    updater.process(firstExternalUpdate);
+                    updater.process(secondExternalUpdate);
                 }
-                populator.scanCompleted( nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
-            } );
-        }
-        finally
-        {
-            populator.close( true, CursorContext.NULL_CONTEXT );
+                populator.scanCompleted(nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);
+            });
+        } finally {
+            populator.close(true, CursorContext.NULL_CONTEXT);
         }
     }
 
     @Test
-    void shouldThrowOnDuplicatedValuesFromScanAndExternalUpdates() throws IOException
-    {
+    void shouldThrowOnDuplicatedValuesFromScanAndExternalUpdates() throws IOException {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        try
-        {
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(UNIQUE_INDEX_DESCRIPTOR);
+        try {
             // when
-            Value duplicate = supportedValue( 1 );
-            ValueIndexEntryUpdate<?> externalUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
-            ValueIndexEntryUpdate<?> scanUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
-            assertThrows( IndexEntryConflictException.class, () ->
-            {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
-                {
-                    updater.process( externalUpdate );
+            Value duplicate = supportedValue(1);
+            ValueIndexEntryUpdate<?> externalUpdate = ValueIndexEntryUpdate.add(1, INDEX_DESCRIPTOR, duplicate);
+            ValueIndexEntryUpdate<?> scanUpdate = ValueIndexEntryUpdate.add(2, INDEX_DESCRIPTOR, duplicate);
+            assertThrows(IndexEntryConflictException.class, () -> {
+                try (IndexUpdater updater = populator.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {
+                    updater.process(externalUpdate);
                 }
-                populator.add( singleton( scanUpdate ), CursorContext.NULL_CONTEXT );
-                populator.scanCompleted( nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
-            } );
-        }
-        finally
-        {
-            populator.close( true, CursorContext.NULL_CONTEXT );
+                populator.add(singleton(scanUpdate), CursorContext.NULL_CONTEXT);
+                populator.scanCompleted(nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);
+            });
+        } finally {
+            populator.close(true, CursorContext.NULL_CONTEXT);
         }
     }
 
     @Test
-    void shouldNotThrowOnDuplicationsLaterFixedByExternalUpdates() throws IndexEntryConflictException, IOException
-    {
+    void shouldNotThrowOnDuplicationsLaterFixedByExternalUpdates() throws IndexEntryConflictException, IOException {
         // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        try
-        {
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(UNIQUE_INDEX_DESCRIPTOR);
+        try {
             // when
-            Value duplicate = supportedValue( 1 );
-            Value unique = supportedValue( 2 );
-            ValueIndexEntryUpdate<?> firstScanUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
-            ValueIndexEntryUpdate<?> secondScanUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
-            ValueIndexEntryUpdate<?> externalUpdate = ValueIndexEntryUpdate.change( 1, INDEX_DESCRIPTOR, duplicate, unique );
-            populator.add( singleton( firstScanUpdate ), CursorContext.NULL_CONTEXT );
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
-            {
-                updater.process( externalUpdate );
+            Value duplicate = supportedValue(1);
+            Value unique = supportedValue(2);
+            ValueIndexEntryUpdate<?> firstScanUpdate = ValueIndexEntryUpdate.add(1, INDEX_DESCRIPTOR, duplicate);
+            ValueIndexEntryUpdate<?> secondScanUpdate = ValueIndexEntryUpdate.add(2, INDEX_DESCRIPTOR, duplicate);
+            ValueIndexEntryUpdate<?> externalUpdate =
+                    ValueIndexEntryUpdate.change(1, INDEX_DESCRIPTOR, duplicate, unique);
+            populator.add(singleton(firstScanUpdate), CursorContext.NULL_CONTEXT);
+            try (IndexUpdater updater = populator.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {
+                updater.process(externalUpdate);
             }
-            populator.add( singleton( secondScanUpdate ), CursorContext.NULL_CONTEXT );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
+            populator.add(singleton(secondScanUpdate), CursorContext.NULL_CONTEXT);
+            populator.scanCompleted(nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);
 
             // then
-            assertHasEntry( populator, unique, 1 );
-            assertHasEntry( populator, duplicate, 2 );
-        }
-        finally
-        {
-            populator.close( true, CursorContext.NULL_CONTEXT );
+            assertHasEntry(populator, unique, 1);
+            assertHasEntry(populator, duplicate, 2);
+        } finally {
+            populator.close(true, CursorContext.NULL_CONTEXT);
         }
     }
 
-    void assertHasEntry( BlockBasedIndexPopulator<KEY> populator, Value entry, int expectedId )
-    {
-        try ( NativeIndexReader<KEY> reader = populator.newReader() )
-        {
+    void assertHasEntry(BlockBasedIndexPopulator<KEY> populator, Value entry, int expectedId) {
+        try (NativeIndexReader<KEY> reader = populator.newReader()) {
             SimpleEntityValueClient valueClient = new SimpleEntityValueClient();
-            PropertyIndexQuery.ExactPredicate exact = PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), entry );
-            reader.query( valueClient, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), exact );
-            assertTrue( valueClient.next() );
+            PropertyIndexQuery.ExactPredicate exact =
+                    PropertyIndexQuery.exact(INDEX_DESCRIPTOR.schema().getPropertyId(), entry);
+            reader.query(valueClient, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), exact);
+            assertTrue(valueClient.next());
             long id = valueClient.reference;
-            assertEquals( expectedId, id );
+            assertEquals(expectedId, id);
         }
     }
 
-    void externalUpdate( BlockBasedIndexPopulator<KEY> populator, Value value, int entityId )
-    {
-        try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
-        {
+    void externalUpdate(BlockBasedIndexPopulator<KEY> populator, Value value, int entityId) {
+        try (IndexUpdater indexUpdater = populator.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {
             // After scanCompleted
-            indexUpdater.process( add( entityId, INDEX_DESCRIPTOR, value ) );
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
+            indexUpdater.process(add(entityId, INDEX_DESCRIPTOR, value));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private void assertMatch( BlockBasedIndexPopulator<KEY> populator, Value value, long id )
-    {
-        try ( NativeIndexReader<KEY> reader = populator.newReader() )
-        {
+    private void assertMatch(BlockBasedIndexPopulator<KEY> populator, Value value, long id) {
+        try (NativeIndexReader<KEY> reader = populator.newReader()) {
             SimpleEntityValueClient cursor = new SimpleEntityValueClient();
-            reader.query( cursor, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(),
-                          PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
-            assertTrue( cursor.next() );
-            assertEquals( id, cursor.reference );
-            assertEquals( value, cursor.values[0] );
-            assertFalse( cursor.next() );
+            reader.query(
+                    cursor,
+                    QueryContext.NULL_CONTEXT,
+                    AccessMode.Static.READ,
+                    unorderedValues(),
+                    PropertyIndexQuery.exact(INDEX_DESCRIPTOR.schema().getPropertyId(), value));
+            assertTrue(cursor.next());
+            assertEquals(id, cursor.reference);
+            assertEquals(value, cursor.values[0]);
+            assertFalse(cursor.next());
         }
     }
 }

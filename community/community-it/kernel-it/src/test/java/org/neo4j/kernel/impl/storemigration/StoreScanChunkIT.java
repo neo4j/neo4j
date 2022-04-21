@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -35,65 +39,56 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @TestDirectoryExtension
-class StoreScanChunkIT
-{
+class StoreScanChunkIT {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void differentChunksHaveDifferentCursors()
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            RecordStorageEngine recordStorageEngine = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+    void differentChunksHaveDifferentCursors() {
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
+            RecordStorageEngine recordStorageEngine =
+                    database.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
             NeoStores neoStores = recordStorageEngine.testAccessNeoStores();
-            RecordStorageReader storageReader = new RecordStorageReader( neoStores );
-            TestStoreScanChunk scanChunk1 = new TestStoreScanChunk( storageReader, false );
-            TestStoreScanChunk scanChunk2 = new TestStoreScanChunk( storageReader, false );
-            assertNotSame( scanChunk1.getCursor(), scanChunk2.getCursor() );
-            assertNotSame( scanChunk1.getStorePropertyCursor(), scanChunk2.getStorePropertyCursor() );
-        }
-        finally
-        {
+            RecordStorageReader storageReader = new RecordStorageReader(neoStores);
+            TestStoreScanChunk scanChunk1 = new TestStoreScanChunk(storageReader, false);
+            TestStoreScanChunk scanChunk2 = new TestStoreScanChunk(storageReader, false);
+            assertNotSame(scanChunk1.getCursor(), scanChunk2.getCursor());
+            assertNotSame(scanChunk1.getStorePropertyCursor(), scanChunk2.getStorePropertyCursor());
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private static class TestStoreScanChunk extends StoreScanChunk<StorageNodeCursor>
-    {
-        TestStoreScanChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
-        {
-            super( storageReader.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL ), storageReader, requiresPropertyMigration, NULL_CONTEXT,
-                    StoreCursors.NULL, INSTANCE );
+    private static class TestStoreScanChunk extends StoreScanChunk<StorageNodeCursor> {
+        TestStoreScanChunk(RecordStorageReader storageReader, boolean requiresPropertyMigration) {
+            super(
+                    storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL),
+                    storageReader,
+                    requiresPropertyMigration,
+                    NULL_CONTEXT,
+                    StoreCursors.NULL,
+                    INSTANCE);
         }
 
         @Override
-        protected void read( StorageNodeCursor cursor, long id )
-        {
-            cursor.single( id );
+        protected void read(StorageNodeCursor cursor, long id) {
+            cursor.single(id);
         }
 
         @Override
-        void visitRecord( StorageNodeCursor record, InputEntityVisitor visitor )
-        {
+        void visitRecord(StorageNodeCursor record, InputEntityVisitor visitor) {
             // empty
         }
 
-        StorageNodeCursor getCursor()
-        {
+        StorageNodeCursor getCursor() {
             return cursor;
         }
 
-        StoragePropertyCursor getStorePropertyCursor()
-        {
+        StoragePropertyCursor getStorePropertyCursor() {
             return storePropertyCursor;
         }
     }

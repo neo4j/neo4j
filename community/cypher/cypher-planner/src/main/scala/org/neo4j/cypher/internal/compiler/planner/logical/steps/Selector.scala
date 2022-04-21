@@ -30,23 +30,29 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 
-case class Selector(pickBestFactory: CandidateSelectorFactory,
-                    candidateGeneratorFactories: SelectionCandidateGeneratorFactory*) extends PlanSelector {
+case class Selector(
+  pickBestFactory: CandidateSelectorFactory,
+  candidateGeneratorFactories: SelectionCandidateGeneratorFactory*
+) extends PlanSelector {
 
   /**
    * Given a plan, using SelectionCandidateGenerators, plan all selections currently possible in the order cheapest first and return the resulting plan.
    */
-  override def apply(input: LogicalPlan,
-                     queryGraph: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(
+    input: LogicalPlan,
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     val pickBest = pickBestFactory(context)
     val candidateGenerators = candidateGeneratorFactories.map(_.generator())
 
     val unsolvedPredicates = unsolvedPreds(context.planningAttributes.solveds, queryGraph.selections, input)
 
     def selectIt(plan: LogicalPlan, stillUnsolvedPredicates: Set[Expression]): LogicalPlan = {
-      val candidates = candidateGenerators.flatMap(generator => generator(plan, stillUnsolvedPredicates, queryGraph, interestingOrderConfig, context))
+      val candidates = candidateGenerators.flatMap(generator =>
+        generator(plan, stillUnsolvedPredicates, queryGraph, interestingOrderConfig, context)
+      )
 
       def stringifiedSolvedPredicates(e: Set[Expression]) = {
         val es = ExpressionStringifier(e => e.asCanonicalStringVal)
@@ -54,26 +60,32 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
       }
 
       candidates match {
-        case Seq() => plan
+        case Seq()          => plan
         case Seq(candidate) => candidate.plan
-        case Seq(_, _) =>
+        case Seq(_, _)      =>
           // If we have only 2 candidates we can cost compare all alternative orders of applying the selections.
           val candidatesWithAllSelectionsApplied = candidates.map {
-            case SelectionCandidate(plan, solvedPredicates) => selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
+            case SelectionCandidate(plan, solvedPredicates) =>
+              selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
           }
-          pickBest(candidatesWithAllSelectionsApplied, s"best selection candidate for ${stringifiedSolvedPredicates(stillUnsolvedPredicates)}").get
+          pickBest(
+            candidatesWithAllSelectionsApplied,
+            s"best selection candidate for ${stringifiedSolvedPredicates(stillUnsolvedPredicates)}"
+          ).get
         case _ =>
           // If we have more than 2 candidates we pick the cheapest first greedily and then recurse.
           pickBest.applyWithResolvedPerPlan[SelectionCandidate](
             _.plan,
             candidates,
             s"greedily cheapest selection candidate for ${stringifiedSolvedPredicates(stillUnsolvedPredicates)}",
-            plan => "Solved predicates: " + stringifiedSolvedPredicates(candidates.collectFirst {
-              case SelectionCandidate(`plan`, solvedPredicates) => solvedPredicates
-            }.get),
+            plan =>
+              "Solved predicates: " + stringifiedSolvedPredicates(candidates.collectFirst {
+                case SelectionCandidate(`plan`, solvedPredicates) => solvedPredicates
+              }.get),
             SelectorHeuristic.constant
           ) match {
-            case Some(SelectionCandidate(plan, solvedPredicates)) => selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
+            case Some(SelectionCandidate(plan, solvedPredicates)) =>
+              selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
             case None => plan
           }
       }
@@ -86,9 +98,11 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
    * All unsolved predicates. Includes scalar and pattern predicates.
    */
   private def unsolvedPreds(solveds: Solveds, s: Selections, l: LogicalPlan): Set[Expression] =
-      s.predicatesGiven(l.availableSymbols)
-        .filterNot(predicate => solveds.get(l.id).asSinglePlannerQuery.exists(_.queryGraph.selections.contains(predicate)))
-        .toSet
+    s.predicatesGiven(l.availableSymbols)
+      .filterNot(predicate =>
+        solveds.get(l.id).asSinglePlannerQuery.exists(_.queryGraph.selections.contains(predicate))
+      )
+      .toSet
 
 }
 
@@ -97,6 +111,7 @@ trait SelectionCandidateGeneratorFactory {
 }
 
 trait SelectionCandidateGenerator extends {
+
   /**
    * Generate candidates which solve a predicate.
    * @param input the current plan
@@ -104,11 +119,13 @@ trait SelectionCandidateGenerator extends {
    * @param queryGraph the query graph to solve
    * @return candidates, where each candidate is a plan building on top of input that solves some predicates.
    */
-  def apply(input: LogicalPlan,
-            unsolvedPredicates: Set[Expression],
-            queryGraph: QueryGraph,
-            interestingOrderConfig: InterestingOrderConfig,
-            context: LogicalPlanningContext): Iterator[SelectionCandidate]
+  def apply(
+    input: LogicalPlan,
+    unsolvedPredicates: Set[Expression],
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Iterator[SelectionCandidate]
 }
 
 case class SelectionCandidate(plan: LogicalPlan, solvedPredicates: Set[Expression])

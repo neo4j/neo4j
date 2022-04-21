@@ -22,23 +22,21 @@ package org.neo4j.index.internal.gbptree;
 /**
  * Common {@link ValueMerger} implementations.
  */
-public class ValueMergers
-{
-    private static final ValueMerger OVERWRITE = ( existingKey, newKey, existingValue, newValue ) -> ValueMerger.MergeResult.REPLACED;
+public class ValueMergers {
+    private static final ValueMerger OVERWRITE =
+            (existingKey, newKey, existingValue, newValue) -> ValueMerger.MergeResult.REPLACED;
 
-    private static final ValueMerger KEEP_EXISTING = ( existingKey, newKey, existingValue, newValue ) -> ValueMerger.MergeResult.UNCHANGED;
+    private static final ValueMerger KEEP_EXISTING =
+            (existingKey, newKey, existingValue, newValue) -> ValueMerger.MergeResult.UNCHANGED;
 
-    private ValueMergers()
-    {
-    }
+    private ValueMergers() {}
 
     /**
      * @return {@link ValueMerger} which overwrites value for existing key when inserting.
      * This merger guarantees unique keys in index.
      */
-    @SuppressWarnings( "unchecked" )
-    public static <KEY,VALUE> ValueMerger<KEY,VALUE> overwrite()
-    {
+    @SuppressWarnings("unchecked")
+    public static <KEY, VALUE> ValueMerger<KEY, VALUE> overwrite() {
         return OVERWRITE;
     }
 
@@ -46,9 +44,8 @@ public class ValueMergers
      * @return {@link ValueMerger} which keeps existing key/value otherwise adds new key/value pair.
      * This merger guarantees unique keys in index.
      */
-    @SuppressWarnings( "unchecked" )
-    public static <KEY,VALUE> ValueMerger<KEY,VALUE> keepExisting()
-    {
+    @SuppressWarnings("unchecked")
+    public static <KEY, VALUE> ValueMerger<KEY, VALUE> keepExisting() {
         return KEEP_EXISTING;
     }
 }

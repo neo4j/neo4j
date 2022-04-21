@@ -39,7 +39,8 @@ case object devNullLogger extends InternalNotificationLogger {
 /**
  * NotificationLogger that records all notifications for later retrieval.
  */
-class RecordingNotificationLogger(override val offset: Option[InputPosition] = None) extends InternalNotificationLogger {
+class RecordingNotificationLogger(override val offset: Option[InputPosition] = None)
+    extends InternalNotificationLogger {
   private val builder = Set.newBuilder[InternalNotification]
 
   def clear(): Unit = builder.clear()

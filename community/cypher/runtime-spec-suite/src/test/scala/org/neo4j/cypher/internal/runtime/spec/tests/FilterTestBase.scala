@@ -26,17 +26,20 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class FilterTestBase[CONTEXT <: RuntimeContext](
-                                                          edition: Edition[CONTEXT],
-                                                          runtime: CypherRuntime[CONTEXT],
-                                                          sizeHint: Int
-                                                        ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should filter with (cached) IN expression") {
     // given
     given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("list" -> Array(1,i), "key" -> 1)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("list" -> Array(1, i), "key" -> 1)
+        }
+      )
     }
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -56,7 +59,7 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter by one predicate") {
     // given
-    val input = inputValues((0 until sizeHint).map(Array[Any](_)):_*)
+    val input = inputValues((0 until sizeHint).map(Array[Any](_)): _*)
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("i")
@@ -73,7 +76,7 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter by multiple predicate") {
     // given
-    val input = inputValues((0 until sizeHint).map(Array[Any](_)):_*)
+    val input = inputValues((0 until sizeHint).map(Array[Any](_)): _*)
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("i")
@@ -107,9 +110,12 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
   test("should filter on cached property predicate") {
     // given
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -124,7 +130,7 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = 0 until sizeHint/2
+    val expected = 0 until sizeHint / 2
     runtimeResult should beColumns("prop").withRows(singleColumn(expected))
   }
 }

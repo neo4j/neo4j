@@ -25,12 +25,13 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class TransactionForeachPipe(source: Pipe,
-                                  inner: Pipe,
-                                  batchSize: Expression
-                                 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with TransactionPipe {
+case class TransactionForeachPipe(source: Pipe, inner: Pipe, batchSize: Expression)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) with TransactionPipe {
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val batchSizeLong = evaluateBatchSize(batchSize, state)
 
     input.grouped(batchSizeLong).flatMap { batch =>

@@ -74,33 +74,36 @@ case object ExpressionsInOrderByAndWhereUseAliases extends Condition
  * WITH n.prop AS prop ORDER BY prop DESC
  * RETURN prop AS prop
  */
-case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger) extends Rewriter {
+case class normalizeWithAndReturnClauses(
+  cypherExceptionFactory: CypherExceptionFactory,
+  notificationLogger: InternalNotificationLogger
+) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = that match {
-    case q@Query(queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
+    case q @ Query(queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
 
-    case s@ShowPrivileges(_, Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
+    case s @ ShowPrivileges(_, Some(Left((yields, returns))), _) =>
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
-    case s@ShowPrivilegeCommands(_, _, Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
+    case s @ ShowPrivilegeCommands(_, _, Some(Left((yields, returns))), _) =>
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
-    case s@ShowDatabase(_, Some(Left((yields, returns))), _) =>
-      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
+    case s @ ShowDatabase(_, Some(Left((yields, returns))), _) =>
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
-    case s@ShowCurrentUser(Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
+    case s @ ShowCurrentUser(Some(Left((yields, returns))), _) =>
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
-    case s@ShowUsers(Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
+    case s @ ShowUsers(Some(Left((yields, returns))), _) =>
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
-    case s@ShowRoles(_, _, Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
+    case s @ ShowRoles(_, _, Some(Left((yields, returns))), _) =>
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
     case x => x
@@ -111,10 +114,13 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
    * It does not rewrite query parts in subqueries.
    */
   private def rewriteTopLevelQueryPart(queryPart: QueryPart): QueryPart = queryPart match {
-    case sq:SingleQuery => rewriteTopLevelSingleQuery(sq)
-    case union@UnionAll(part, query) => union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
-    case union@UnionDistinct(part, query) => union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
-    case _: ProjectingUnion => throw new IllegalStateException("Didn't expect ProjectingUnion, only SingleQuery, UnionAll, or UnionDistinct.")
+    case sq: SingleQuery => rewriteTopLevelSingleQuery(sq)
+    case union @ UnionAll(part, query) =>
+      union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
+    case union @ UnionDistinct(part, query) =>
+      union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
+    case _: ProjectingUnion =>
+      throw new IllegalStateException("Didn't expect ProjectingUnion, only SingleQuery, UnionAll, or UnionDistinct.")
   }
 
   /**
@@ -124,13 +130,16 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
   private def rewriteTopLevelSingleQuery(singleQuery: SingleQuery): SingleQuery = {
     val newClauses = singleQuery.clauses.map {
       case r: Return => addAliasesToReturn(r)
-      case x => x
+      case x         => x
     }
     singleQuery.copy(clauses = newClauses)(singleQuery.position).endoRewrite(rewriteProjectionsRecursively)
   }
 
-  private def addAliasesToReturn(r: Return): Return = r.copy(returnItems = aliasUnaliasedReturnItems(r.returnItems))(r.position)
-  private def addAliasesToYield(y: Yield): Yield = y.copy(returnItems = aliasUnaliasedReturnItems(y.returnItems))(y.position)
+  private def addAliasesToReturn(r: Return): Return =
+    r.copy(returnItems = aliasUnaliasedReturnItems(r.returnItems))(r.position)
+
+  private def addAliasesToYield(y: Yield): Yield =
+    y.copy(returnItems = aliasUnaliasedReturnItems(y.returnItems))(y.position)
 
   /**
    * Convert all UnaliasedReturnItems to AliasedReturnItems.
@@ -162,11 +171,11 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
 
   private val rewriteProjectionsRecursively: Rewriter = topDown(Rewriter.lift {
     // Only alias return items
-    case clause@ProjectionClause(_, ri: ReturnItems, None, _, _, None) =>
+    case clause @ ProjectionClause(_, ri: ReturnItems, None, _, _, None) =>
       clause.copyProjection(returnItems = aliasImplicitlyAliasedReturnItems(ri))
 
     // Alias return items and rewrite ORDER BY and WHERE
-    case clause@ProjectionClause(_, ri: ReturnItems, orderBy, _, _, where) =>
+    case clause @ ProjectionClause(_, ri: ReturnItems, orderBy, _, _, where) =>
       clause.verifyOrderByAggregationUse((s, i) => throw cypherExceptionFactory.syntaxException(s, i))
 
       val existingAliases = ri.items.collect {
@@ -176,14 +185,18 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
       val updatedOrderBy = orderBy.map(aliasOrderBy(existingAliases, _))
       val updatedWhere = where.map(aliasWhere(existingAliases, _))
 
-      clause.copyProjection(returnItems = aliasImplicitlyAliasedReturnItems(ri), orderBy = updatedOrderBy, where = updatedWhere)
+      clause.copyProjection(
+        returnItems = aliasImplicitlyAliasedReturnItems(ri),
+        orderBy = updatedOrderBy,
+        where = updatedWhere
+      )
   })
 
   /**
    * Given a list of existing aliases, this rewrites an OrderBy to use these where possible.
    */
   private def aliasOrderBy(existingAliases: Map[Expression, LogicalVariable], originalOrderBy: OrderBy): OrderBy = {
-    val updatedSortItems = originalOrderBy.sortItems.map { aliasSortItem(existingAliases, _)}
+    val updatedSortItems = originalOrderBy.sortItems.map { aliasSortItem(existingAliases, _) }
     OrderBy(updatedSortItems)(originalOrderBy.position)
   }
 
@@ -192,8 +205,10 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
    */
   private def aliasSortItem(existingAliases: Map[Expression, LogicalVariable], sortItem: SortItem): SortItem = {
     sortItem match {
-      case AscSortItem(expression) => AscSortItem(aliasExpression(existingAliases, expression))(sortItem.position, sortItem.originalExpression)
-      case DescSortItem(expression) => DescSortItem(aliasExpression(existingAliases, expression))(sortItem.position, sortItem.originalExpression)
+      case AscSortItem(expression) =>
+        AscSortItem(aliasExpression(existingAliases, expression))(sortItem.position, sortItem.originalExpression)
+      case DescSortItem(expression) =>
+        DescSortItem(aliasExpression(existingAliases, expression))(sortItem.position, sortItem.originalExpression)
     }
   }
 
@@ -216,7 +231,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
           case subExpression: Expression =>
             existingAliases.get(subExpression) match {
               case Some(subAlias) if !existingAliases.valuesIterator.contains(subExpression) => subAlias.copyId
-              case _ => subExpression
+              case _                                                                         => subExpression
             }
         }))
         newExpression
@@ -225,13 +240,18 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
 }
 
 object normalizeWithAndReturnClauses extends Step with PreparatoryRewritingRewriterFactory {
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger): Rewriter = {
+
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    notificationLogger: InternalNotificationLogger
+  ): Rewriter = {
     normalizeWithAndReturnClauses(cypherExceptionFactory, notificationLogger)
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(ReturnItemsAreAliased, ExpressionsInOrderByAndWhereUseAliases)
+  override def postConditions: Set[StepSequencer.Condition] =
+    Set(ReturnItemsAreAliased, ExpressionsInOrderByAndWhereUseAliases)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 }

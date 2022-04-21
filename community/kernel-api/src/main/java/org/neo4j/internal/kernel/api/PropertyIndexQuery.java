@@ -19,13 +19,16 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNullElse;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.utf8Value;
+
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-
-import java.util.Objects;
-
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -39,20 +42,13 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNullElse;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.storable.Values.utf8Value;
-
-public abstract class PropertyIndexQuery implements IndexQuery
-{
+public abstract class PropertyIndexQuery implements IndexQuery {
     /**
      * Scans over the whole index
      *
      * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
-    public static AllEntriesPredicate allEntries()
-    {
+    public static AllEntriesPredicate allEntries() {
         return new AllEntriesPredicate();
     }
 
@@ -62,9 +58,8 @@ public abstract class PropertyIndexQuery implements IndexQuery
      * @param propertyKeyId the property ID to match.
      * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
-    public static ExistsPredicate exists( int propertyKeyId )
-    {
-        return new ExistsPredicate( propertyKeyId );
+    public static ExistsPredicate exists(int propertyKeyId) {
+        return new ExistsPredicate(propertyKeyId);
     }
 
     /**
@@ -74,9 +69,8 @@ public abstract class PropertyIndexQuery implements IndexQuery
      * @param value the property value to search for.
      * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
-    public static ExactPredicate exact( int propertyKeyId, Object value )
-    {
-        return new ExactPredicate( propertyKeyId, value );
+    public static ExactPredicate exact(int propertyKeyId, Object value) {
+        return new ExactPredicate(propertyKeyId, value);
     }
 
     /**
@@ -89,74 +83,62 @@ public abstract class PropertyIndexQuery implements IndexQuery
      * @param toInclusive the upper bound is inclusive if true.
      * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
-    public static RangePredicate<?> range( int propertyKeyId,
-                                           Number from, boolean fromInclusive,
-                                           Number to, boolean toInclusive )
-    {
-        return new NumberRangePredicate( propertyKeyId,
-                                         from == null ? null : Values.numberValue( from ), fromInclusive,
-                                         to == null ? null : Values.numberValue( to ), toInclusive );
+    public static RangePredicate<?> range(
+            int propertyKeyId, Number from, boolean fromInclusive, Number to, boolean toInclusive) {
+        return new NumberRangePredicate(
+                propertyKeyId,
+                from == null ? null : Values.numberValue(from),
+                fromInclusive,
+                to == null ? null : Values.numberValue(to),
+                toInclusive);
     }
 
-    public static RangePredicate<?> range( int propertyKeyId,
-                                           String from, boolean fromInclusive,
-                                           String to, boolean toInclusive )
-    {
-        return new TextRangePredicate( propertyKeyId,
-                                       from == null ? null : Values.stringValue( from ), fromInclusive,
-                                       to == null ? null : Values.stringValue( to ), toInclusive );
+    public static RangePredicate<?> range(
+            int propertyKeyId, String from, boolean fromInclusive, String to, boolean toInclusive) {
+        return new TextRangePredicate(
+                propertyKeyId,
+                from == null ? null : Values.stringValue(from),
+                fromInclusive,
+                to == null ? null : Values.stringValue(to),
+                toInclusive);
     }
 
-    public static <VALUE extends Value> RangePredicate<?> range( int propertyKeyId,
-                                                                 VALUE from, boolean fromInclusive,
-                                                                 VALUE to, boolean toInclusive )
-    {
-        if ( from == null && to == null )
-        {
-            throw new IllegalArgumentException( "Cannot create RangePredicate without at least one bound" );
+    public static <VALUE extends Value> RangePredicate<?> range(
+            int propertyKeyId, VALUE from, boolean fromInclusive, VALUE to, boolean toInclusive) {
+        if (from == null && to == null) {
+            throw new IllegalArgumentException("Cannot create RangePredicate without at least one bound");
         }
 
-        ValueGroup valueGroup = requireNonNullElse( from, to ).valueGroup();
-        return switch ( valueGroup )
-        {
-            case NUMBER -> new NumberRangePredicate( propertyKeyId,
-                                                     (NumberValue) from, fromInclusive,
-                                                     (NumberValue) to, toInclusive );
+        ValueGroup valueGroup = requireNonNullElse(from, to).valueGroup();
+        return switch (valueGroup) {
+            case NUMBER -> new NumberRangePredicate(
+                    propertyKeyId, (NumberValue) from, fromInclusive, (NumberValue) to, toInclusive);
 
-            case TEXT -> new TextRangePredicate( propertyKeyId,
-                                                 (TextValue) from, fromInclusive,
-                                                 (TextValue) to, toInclusive );
+            case TEXT -> new TextRangePredicate(
+                    propertyKeyId, (TextValue) from, fromInclusive, (TextValue) to, toInclusive);
 
-            case DURATION,
-                    DURATION_ARRAY,
-                    GEOMETRY,
-                    GEOMETRY_ARRAY -> {
-                if ( fromInclusive && to == null )
-                {
-                    yield new RangePredicate<>( propertyKeyId, valueGroup, from, true, from, true );
-                }
-                else if ( toInclusive && from == null )
-                {
-                    yield new RangePredicate<>( propertyKeyId, valueGroup, to, true, to, true );
-                }
-                else
-                {
-                    yield new IncomparableRangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
+            case DURATION, DURATION_ARRAY, GEOMETRY, GEOMETRY_ARRAY -> {
+                if (fromInclusive && to == null) {
+                    yield new RangePredicate<>(propertyKeyId, valueGroup, from, true, from, true);
+                } else if (toInclusive && from == null) {
+                    yield new RangePredicate<>(propertyKeyId, valueGroup, to, true, to, true);
+                } else {
+                    yield new IncomparableRangePredicate<>(
+                            propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive);
                 }
             }
 
-            default -> new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
+            default -> new RangePredicate<>(propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive);
         };
     }
 
-    public static BoundingBoxPredicate boundingBox( int propertyKeyId, PointValue from, PointValue to )
-    {
-        return new BoundingBoxPredicate( propertyKeyId, from, to );
+    public static BoundingBoxPredicate boundingBox(int propertyKeyId, PointValue from, PointValue to) {
+        return new BoundingBoxPredicate(propertyKeyId, from, to);
     }
 
-    public static BoundingBoxPredicate boundingBox( int propertyKeyId, PointValue from, PointValue to, boolean inclusive )
-    {
-        return new BoundingBoxPredicate( propertyKeyId, from, to, inclusive );
+    public static BoundingBoxPredicate boundingBox(
+            int propertyKeyId, PointValue from, PointValue to, boolean inclusive) {
+        return new BoundingBoxPredicate(propertyKeyId, from, to, inclusive);
     }
 
     /**
@@ -166,9 +148,8 @@ public abstract class PropertyIndexQuery implements IndexQuery
      * @param prefix the string prefix to search for.
      * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
-    public static StringPrefixPredicate stringPrefix( int propertyKeyId, TextValue prefix )
-    {
-        return new StringPrefixPredicate( propertyKeyId, prefix );
+    public static StringPrefixPredicate stringPrefix(int propertyKeyId, TextValue prefix) {
+        return new StringPrefixPredicate(propertyKeyId, prefix);
     }
 
     /**
@@ -178,9 +159,8 @@ public abstract class PropertyIndexQuery implements IndexQuery
      * @param contains the string to search for.
      * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
-    public static StringContainsPredicate stringContains( int propertyKeyId, TextValue contains )
-    {
-        return new StringContainsPredicate( propertyKeyId, contains );
+    public static StringContainsPredicate stringContains(int propertyKeyId, TextValue contains) {
+        return new StringContainsPredicate(propertyKeyId, contains);
     }
 
     /**
@@ -190,66 +170,56 @@ public abstract class PropertyIndexQuery implements IndexQuery
      * @param suffix the string suffix to search for.
      * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
-    public static StringSuffixPredicate stringSuffix( int propertyKeyId, TextValue suffix )
-    {
-        return new StringSuffixPredicate( propertyKeyId, suffix );
+    public static StringSuffixPredicate stringSuffix(int propertyKeyId, TextValue suffix) {
+        return new StringSuffixPredicate(propertyKeyId, suffix);
     }
 
-    public static PropertyIndexQuery fulltextSearch( String query )
-    {
-        return new FulltextSearchPredicate( query );
+    public static PropertyIndexQuery fulltextSearch(String query) {
+        return new FulltextSearchPredicate(query);
     }
 
-    public static ValueTuple asValueTuple( PropertyIndexQuery.ExactPredicate... query )
-    {
+    public static ValueTuple asValueTuple(PropertyIndexQuery.ExactPredicate... query) {
         Value[] values = new Value[query.length];
-        for ( int i = 0; i < query.length; i++ )
-        {
+        for (int i = 0; i < query.length; i++) {
             values[i] = query[i].value();
         }
-        return ValueTuple.of( values );
+        return ValueTuple.of(values);
     }
 
     private final int propertyKeyId;
 
-    protected PropertyIndexQuery( int propertyKeyId )
-    {
+    protected PropertyIndexQuery(int propertyKeyId) {
         this.propertyKeyId = propertyKeyId;
     }
 
-    @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" )
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     @Override
-    public final boolean equals( Object other )
-    {
+    public final boolean equals(Object other) {
         // equals() and hashcode() are only used for testing so we don't care that they are a bit slow.
-        return EqualsBuilder.reflectionEquals( this, other );
+        return EqualsBuilder.reflectionEquals(this, other);
     }
 
     @Override
-    public final int hashCode()
-    {
+    public final int hashCode() {
         // equals() and hashcode() are only used for testing so we don't care that they are a bit slow.
-        return HashCodeBuilder.reflectionHashCode( this, false );
+        return HashCodeBuilder.reflectionHashCode(this, false);
     }
 
     @Override
-    public final String toString()
-    {
+    public final String toString() {
         // Only used to debugging, it's okay to be a bit slow.
-        return ToStringBuilder.reflectionToString( this, ToStringStyle.SHORT_PREFIX_STYLE );
+        return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
     }
 
     /**
      * @return The ID of the property key, this queries against.
      */
-    public final int propertyKeyId()
-    {
+    public final int propertyKeyId() {
         return propertyKeyId;
     }
 
     @Override
-    public final int queriedId()
-    {
+    public final int queriedId() {
         return propertyKeyId();
     }
 
@@ -257,11 +227,10 @@ public abstract class PropertyIndexQuery implements IndexQuery
      * @param value to test against the query.
      * @return true if the {@code value} satisfies the query; false otherwise.
      */
-    public abstract boolean acceptsValue( Value value );
+    public abstract boolean acceptsValue(Value value);
 
-    public boolean acceptsValueAt( PropertyCursor property )
-    {
-        return acceptsValue( property.propertyValue() );
+    public boolean acceptsValueAt(PropertyCursor property) {
+        return acceptsValue(property.propertyValue());
     }
 
     /**
@@ -273,116 +242,95 @@ public abstract class PropertyIndexQuery implements IndexQuery
      * @return Target {@link ValueCategory} for query
      */
     @Override
-    public ValueCategory valueCategory()
-    {
+    public ValueCategory valueCategory() {
         return valueGroup().category();
     }
 
-    public static final class AllEntriesPredicate extends PropertyIndexQuery
-    {
-        private AllEntriesPredicate()
-        {
-            super( TokenConstants.ANY_PROPERTY_KEY );
+    public static final class AllEntriesPredicate extends PropertyIndexQuery {
+        private AllEntriesPredicate() {
+            super(TokenConstants.ANY_PROPERTY_KEY);
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
+        public boolean acceptsValue(Value value) {
             return value != null && value != NO_VALUE;
         }
 
         @Override
-        public ValueGroup valueGroup()
-        {
+        public ValueGroup valueGroup() {
             return ValueGroup.UNKNOWN;
         }
 
         @Override
-        public IndexQueryType type()
-        {
+        public IndexQueryType type() {
             return IndexQueryType.ALL_ENTRIES;
         }
     }
 
-    public static final class ExistsPredicate extends PropertyIndexQuery
-    {
-        private ExistsPredicate( int propertyKeyId )
-        {
-            super( propertyKeyId );
+    public static final class ExistsPredicate extends PropertyIndexQuery {
+        private ExistsPredicate(int propertyKeyId) {
+            super(propertyKeyId);
         }
 
         @Override
-        public IndexQueryType type()
-        {
+        public IndexQueryType type() {
             return IndexQueryType.EXISTS;
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
+        public boolean acceptsValue(Value value) {
             return value != null && value != NO_VALUE;
         }
 
         @Override
-        public boolean acceptsValueAt( PropertyCursor property )
-        {
+        public boolean acceptsValueAt(PropertyCursor property) {
             return true;
         }
 
         @Override
-        public ValueGroup valueGroup()
-        {
+        public ValueGroup valueGroup() {
             return ValueGroup.UNKNOWN;
         }
     }
 
-    public static final class ExactPredicate extends PropertyIndexQuery
-    {
+    public static final class ExactPredicate extends PropertyIndexQuery {
         private final Value exactValue;
 
-        private ExactPredicate( int propertyKeyId, Object value )
-        {
-            super( propertyKeyId );
-            this.exactValue = value instanceof Value ? (Value)value : Values.of( value );
+        private ExactPredicate(int propertyKeyId, Object value) {
+            super(propertyKeyId);
+            this.exactValue = value instanceof Value ? (Value) value : Values.of(value);
         }
 
         @Override
-        public IndexQueryType type()
-        {
+        public IndexQueryType type() {
             return IndexQueryType.EXACT;
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
-            return exactValue.equals( value );
+        public boolean acceptsValue(Value value) {
+            return exactValue.equals(value);
         }
 
         @Override
-        public ValueGroup valueGroup()
-        {
+        public ValueGroup valueGroup() {
             return exactValue.valueGroup();
         }
 
-        public Value value()
-        {
+        public Value value() {
             return exactValue;
         }
     }
 
-    public static class RangePredicate<T extends Value> extends PropertyIndexQuery
-    {
+    public static class RangePredicate<T extends Value> extends PropertyIndexQuery {
         protected final T from;
         protected final boolean fromInclusive;
         protected final T to;
         protected final boolean toInclusive;
         protected final ValueGroup valueGroup;
 
-        private RangePredicate( int propertyKeyId, ValueGroup valueGroup,
-                                T from, boolean fromInclusive,
-                                T to, boolean toInclusive )
-        {
-            super( propertyKeyId );
+        private RangePredicate(
+                int propertyKeyId, ValueGroup valueGroup, T from, boolean fromInclusive, T to, boolean toInclusive) {
+            super(propertyKeyId);
             this.valueGroup = valueGroup;
             this.from = from;
             this.fromInclusive = fromInclusive;
@@ -391,174 +339,143 @@ public abstract class PropertyIndexQuery implements IndexQuery
         }
 
         @Override
-        public IndexQueryType type()
-        {
+        public IndexQueryType type() {
             return IndexQueryType.RANGE;
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
-            if ( value == null || value == NO_VALUE || value.valueGroup() != valueGroup )
-            {
+        public boolean acceptsValue(Value value) {
+            if (value == null || value == NO_VALUE || value.valueGroup() != valueGroup) {
                 return false;
             }
-            if ( from != null )
-            {
-                int compare = Values.COMPARATOR.compare( value, from );
-                if ( compare < 0 || !fromInclusive && compare == 0 )
-                {
+            if (from != null) {
+                int compare = Values.COMPARATOR.compare(value, from);
+                if (compare < 0 || !fromInclusive && compare == 0) {
                     return false;
                 }
             }
-            if ( to != null )
-            {
-                int compare = Values.COMPARATOR.compare( value, to );
+            if (to != null) {
+                int compare = Values.COMPARATOR.compare(value, to);
                 return compare <= 0 && (toInclusive || compare != 0);
             }
             return true;
         }
 
         @Override
-        public ValueGroup valueGroup()
-        {
+        public ValueGroup valueGroup() {
             return valueGroup;
         }
 
-        public Value fromValue()
-        {
+        public Value fromValue() {
             return from == null ? NO_VALUE : from;
         }
 
-        public Value toValue()
-        {
+        public Value toValue() {
             return to == null ? NO_VALUE : to;
         }
 
-        public boolean fromInclusive()
-        {
+        public boolean fromInclusive() {
             return fromInclusive;
         }
 
-        public boolean toInclusive()
-        {
+        public boolean toInclusive() {
             return toInclusive;
         }
     }
 
-    public static final class NumberRangePredicate extends RangePredicate<NumberValue>
-    {
-        private NumberRangePredicate( int propertyKeyId,
-                                      NumberValue from, boolean fromInclusive,
-                                      NumberValue to, boolean toInclusive )
-        {
+    public static final class NumberRangePredicate extends RangePredicate<NumberValue> {
+        private NumberRangePredicate(
+                int propertyKeyId, NumberValue from, boolean fromInclusive, NumberValue to, boolean toInclusive) {
             // For range queries with numbers we need to redefine the upper bound from NaN to positive infinity.
             // The reason is that we do not want to find NaNs for seeks, but for full scans we do.
-            super( propertyKeyId, ValueGroup.NUMBER,
-                   from, fromInclusive,
-                   requireNonNullElse( to, Values.doubleValue( Double.POSITIVE_INFINITY ) ), to == null || toInclusive );
+            super(
+                    propertyKeyId,
+                    ValueGroup.NUMBER,
+                    from,
+                    fromInclusive,
+                    requireNonNullElse(to, Values.doubleValue(Double.POSITIVE_INFINITY)),
+                    to == null || toInclusive);
         }
 
-        public Number from()
-        {
+        public Number from() {
             return from == null ? null : from.asObject();
         }
 
-        public Number to()
-        {
+        public Number to() {
             return to.asObject();
         }
     }
 
-    public static final class TextRangePredicate extends RangePredicate<TextValue>
-    {
-        private TextRangePredicate( int propertyKeyId,
-                                    TextValue from, boolean fromInclusive,
-                                    TextValue to, boolean toInclusive )
-        {
-            super( propertyKeyId, ValueGroup.TEXT, from, fromInclusive, to, toInclusive );
+    public static final class TextRangePredicate extends RangePredicate<TextValue> {
+        private TextRangePredicate(
+                int propertyKeyId, TextValue from, boolean fromInclusive, TextValue to, boolean toInclusive) {
+            super(propertyKeyId, ValueGroup.TEXT, from, fromInclusive, to, toInclusive);
         }
 
-        public String from()
-        {
+        public String from() {
             return from == null ? null : from.stringValue();
         }
 
-        public String to()
-        {
+        public String to() {
             return to == null ? null : to.stringValue();
         }
     }
 
-    public static final class BoundingBoxPredicate extends PropertyIndexQuery
-    {
+    public static final class BoundingBoxPredicate extends PropertyIndexQuery {
         private final CoordinateReferenceSystem crs;
         private final PointValue from;
         private final PointValue to;
         private final boolean inclusive;
 
-        private BoundingBoxPredicate( int propertyKeyId,
-                                      PointValue from,
-                                      PointValue to,
-                                      boolean inclusive )
-        {
-            super( propertyKeyId );
+        private BoundingBoxPredicate(int propertyKeyId, PointValue from, PointValue to, boolean inclusive) {
+            super(propertyKeyId);
             // The only user of this predicate is Cypher's BB function,
             // which does not allow null 'corners'.
-            Objects.requireNonNull( from );
-            Objects.requireNonNull( to );
+            Objects.requireNonNull(from);
+            Objects.requireNonNull(to);
             this.crs = from.getCoordinateReferenceSystem();
             this.from = from;
             this.to = to;
             this.inclusive = inclusive;
         }
 
-        private BoundingBoxPredicate( int propertyKeyId, PointValue from, PointValue to )
-        {
-            this( propertyKeyId, from, to, true );
+        private BoundingBoxPredicate(int propertyKeyId, PointValue from, PointValue to) {
+            this(propertyKeyId, from, to, true);
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
-            if ( !(value instanceof final PointValue point) )
-            {
+        public boolean acceptsValue(Value value) {
+            if (!(value instanceof final PointValue point)) {
                 return false;
             }
 
             CoordinateReferenceSystem crs = point.getCoordinateReferenceSystem();
-            if ( !crs.equals( this.crs ) )
-            {
+            if (!crs.equals(this.crs)) {
                 return false;
             }
 
-            return crs.getCalculator().withinBBox( point, from, to, inclusive );
+            return crs.getCalculator().withinBBox(point, from, to, inclusive);
         }
 
         @Override
-        public ValueGroup valueGroup()
-        {
+        public ValueGroup valueGroup() {
             return ValueGroup.GEOMETRY;
         }
 
-        public CoordinateReferenceSystem crs()
-        {
+        public CoordinateReferenceSystem crs() {
             return crs;
         }
 
-        public PointValue from()
-        {
+        public PointValue from() {
             return from;
         }
 
-        public PointValue to()
-        {
+        public PointValue to() {
             return to;
         }
 
         @Override
-        public IndexQueryType type()
-        {
+        public IndexQueryType type() {
             return IndexQueryType.BOUNDING_BOX;
         }
     }
@@ -575,158 +492,129 @@ public abstract class PropertyIndexQuery implements IndexQuery
      *     <li>{@link ValueGroup#GEOMETRY_ARRAY}</li>
      * </ul>
      */
-    public static class IncomparableRangePredicate<T extends Value> extends RangePredicate<Value>
-    {
-        private IncomparableRangePredicate( int propertyKeyId, ValueGroup valueGroup, T from, boolean fromInclusive, T to,
-                boolean toInclusive )
-        {
-            super( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
+    public static class IncomparableRangePredicate<T extends Value> extends RangePredicate<Value> {
+        private IncomparableRangePredicate(
+                int propertyKeyId, ValueGroup valueGroup, T from, boolean fromInclusive, T to, boolean toInclusive) {
+            super(propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive);
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
+        public boolean acceptsValue(Value value) {
             return false;
         }
     }
 
-    public abstract static class StringPredicate extends PropertyIndexQuery
-    {
-        private StringPredicate( int propertyKeyId )
-        {
-            super( propertyKeyId );
+    public abstract static class StringPredicate extends PropertyIndexQuery {
+        private StringPredicate(int propertyKeyId) {
+            super(propertyKeyId);
         }
 
         @Override
-        public ValueGroup valueGroup()
-        {
+        public ValueGroup valueGroup() {
             return ValueGroup.TEXT;
         }
 
-        protected static TextValue asUTF8StringValue( TextValue in )
-        {
-            if ( in instanceof UTF8StringValue )
-            {
+        protected static TextValue asUTF8StringValue(TextValue in) {
+            if (in instanceof UTF8StringValue) {
                 return in;
-            }
-            else
-            {
-                return utf8Value( in.stringValue().getBytes( UTF_8 ) );
+            } else {
+                return utf8Value(in.stringValue().getBytes(UTF_8));
             }
         }
     }
 
-    public static final class StringPrefixPredicate extends StringPredicate
-    {
+    public static final class StringPrefixPredicate extends StringPredicate {
         private final TextValue prefix;
 
-        private StringPrefixPredicate( int propertyKeyId, TextValue prefix )
-        {
-            super( propertyKeyId );
-            //we know utf8 values are coming from the index so optimize for that
-            this.prefix = asUTF8StringValue( prefix );
+        private StringPrefixPredicate(int propertyKeyId, TextValue prefix) {
+            super(propertyKeyId);
+            // we know utf8 values are coming from the index so optimize for that
+            this.prefix = asUTF8StringValue(prefix);
         }
 
         @Override
-        public IndexQueryType type()
-        {
+        public IndexQueryType type() {
             return IndexQueryType.STRING_PREFIX;
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
-            return Values.isTextValue( value ) && ((TextValue) value).startsWith( prefix );
+        public boolean acceptsValue(Value value) {
+            return Values.isTextValue(value) && ((TextValue) value).startsWith(prefix);
         }
 
-        public TextValue prefix()
-        {
+        public TextValue prefix() {
             return prefix;
         }
     }
 
-    public static final class StringContainsPredicate extends StringPredicate
-    {
+    public static final class StringContainsPredicate extends StringPredicate {
         private final TextValue contains;
 
-        private StringContainsPredicate( int propertyKeyId, TextValue contains )
-        {
-            super( propertyKeyId );
-            //we know utf8 values are coming from the index so optimize for that
-            this.contains = asUTF8StringValue( contains );
+        private StringContainsPredicate(int propertyKeyId, TextValue contains) {
+            super(propertyKeyId);
+            // we know utf8 values are coming from the index so optimize for that
+            this.contains = asUTF8StringValue(contains);
         }
 
         @Override
-        public IndexQueryType type()
-        {
+        public IndexQueryType type() {
             return IndexQueryType.STRING_CONTAINS;
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
-            return Values.isTextValue( value ) && ((TextValue) value).contains( contains );
+        public boolean acceptsValue(Value value) {
+            return Values.isTextValue(value) && ((TextValue) value).contains(contains);
         }
 
-        public TextValue contains()
-        {
+        public TextValue contains() {
             return contains;
         }
     }
 
-    public static final class StringSuffixPredicate extends StringPredicate
-    {
+    public static final class StringSuffixPredicate extends StringPredicate {
         private final TextValue suffix;
 
-        private StringSuffixPredicate( int propertyKeyId, TextValue suffix )
-        {
-            super( propertyKeyId );
-            //we know utf8 values are coming from the index so optimize for that
-            this.suffix = asUTF8StringValue( suffix );
+        private StringSuffixPredicate(int propertyKeyId, TextValue suffix) {
+            super(propertyKeyId);
+            // we know utf8 values are coming from the index so optimize for that
+            this.suffix = asUTF8StringValue(suffix);
         }
 
         @Override
-        public IndexQueryType type()
-        {
+        public IndexQueryType type() {
             return IndexQueryType.STRING_SUFFIX;
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
-            return Values.isTextValue( value ) && ((TextValue) value).endsWith( suffix );
+        public boolean acceptsValue(Value value) {
+            return Values.isTextValue(value) && ((TextValue) value).endsWith(suffix);
         }
 
-        public TextValue suffix()
-        {
+        public TextValue suffix() {
             return suffix;
         }
     }
 
-    public static final class FulltextSearchPredicate extends StringPredicate
-    {
+    public static final class FulltextSearchPredicate extends StringPredicate {
         private final String query;
 
-        private FulltextSearchPredicate( String query )
-        {
-            super( TokenRead.NO_TOKEN );
+        private FulltextSearchPredicate(String query) {
+            super(TokenRead.NO_TOKEN);
             this.query = query;
         }
 
         @Override
-        public IndexQueryType type()
-        {
+        public IndexQueryType type() {
             return IndexQueryType.FULLTEXT_SEARCH;
         }
 
         @Override
-        public boolean acceptsValue( Value value )
-        {
-            throw new UnsupportedOperationException( "Fulltext search predicates do not know how to evaluate themselves." );
+        public boolean acceptsValue(Value value) {
+            throw new UnsupportedOperationException(
+                    "Fulltext search predicates do not know how to evaluate themselves.");
         }
 
-        public String query()
-        {
+        public String query() {
             return query;
         }
     }

@@ -29,13 +29,16 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 object SimpleMetricsFactory extends MetricsFactory {
   override def newCostModel(executionModel: ExecutionModel): CostModel = CardinalityCostModel(executionModel)
 
-  override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                                       selectivityCalculator: SelectivityCalculator,
-                                       expressionEvaluator: ExpressionEvaluator): StatisticsBackedCardinalityModel =
+  override def newCardinalityEstimator(
+    queryGraphCardinalityModel: QueryGraphCardinalityModel,
+    selectivityCalculator: SelectivityCalculator,
+    expressionEvaluator: ExpressionEvaluator
+  ): StatisticsBackedCardinalityModel =
     new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
 
-  override def newQueryGraphCardinalityModel(planContext: PlanContext,
-                                             selectivityCalculator: SelectivityCalculator
-                                            ): QueryGraphCardinalityModel =
+  override def newQueryGraphCardinalityModel(
+    planContext: PlanContext,
+    selectivityCalculator: SelectivityCalculator
+  ): QueryGraphCardinalityModel =
     QueryGraphCardinalityModel.default(planContext, selectivityCalculator)
 }

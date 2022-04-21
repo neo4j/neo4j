@@ -19,48 +19,44 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.SummaryCounters;
-import org.neo4j.shell.cli.Format;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class StatisticsCollectorTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.summary.SummaryCounters;
+import org.neo4j.shell.cli.Format;
+
+class StatisticsCollectorTest {
 
     @Test
-    void returnEmptyStringForPlainFormatting()
-    {
+    void returnEmptyStringForPlainFormatting() {
         // given
-        ResultSummary result = mock( ResultSummary.class );
+        ResultSummary result = mock(ResultSummary.class);
 
         // when
-        String actual = new StatisticsCollector( Format.PLAIN ).collect( result );
+        String actual = new StatisticsCollector(Format.PLAIN).collect(result);
 
         // then
-        assertThat( actual, is( "" ) );
+        assertThat(actual, is(""));
     }
 
     @Test
-    void returnStatisticsForDefaultFormatting()
-    {
+    void returnStatisticsForDefaultFormatting() {
         // given
-        ResultSummary resultSummary = mock( ResultSummary.class );
-        SummaryCounters summaryCounters = mock( SummaryCounters.class );
+        ResultSummary resultSummary = mock(ResultSummary.class);
+        SummaryCounters summaryCounters = mock(SummaryCounters.class);
 
-        when( resultSummary.counters() ).thenReturn( summaryCounters );
-        when( summaryCounters.labelsAdded() ).thenReturn( 1 );
-        when( summaryCounters.nodesCreated() ).thenReturn( 10 );
+        when(resultSummary.counters()).thenReturn(summaryCounters);
+        when(summaryCounters.labelsAdded()).thenReturn(1);
+        when(summaryCounters.nodesCreated()).thenReturn(10);
 
         // when
-        String actual = new StatisticsCollector( Format.VERBOSE ).collect( resultSummary );
+        String actual = new StatisticsCollector(Format.VERBOSE).collect(resultSummary);
 
         // then
-        assertThat( actual, is( "Added 10 nodes, Added 1 labels" ) );
+        assertThat(actual, is("Added 10 nodes, Added 1 labels"));
     }
 }

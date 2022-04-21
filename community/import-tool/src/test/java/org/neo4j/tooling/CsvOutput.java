@@ -19,6 +19,8 @@
  */
 package org.neo4j.tooling;
 
+import static org.neo4j.io.ByteUnit.mebiBytes;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -28,7 +30,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.InputIterator;
@@ -41,13 +42,9 @@ import org.neo4j.internal.batchimport.input.csv.Deserialization;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.StringDeserialization;
 
-import static org.neo4j.io.ByteUnit.mebiBytes;
-
-public class CsvOutput implements BatchImporter
-{
-    private interface Deserializer
-    {
-        String apply( InputEntity entity, Deserialization<String> deserialization, Header header );
+public class CsvOutput implements BatchImporter {
+    private interface Deserializer {
+        String apply(InputEntity entity, Deserialization<String> deserialization, Header header);
     }
 
     private final Path targetDirectory;
@@ -56,77 +53,70 @@ public class CsvOutput implements BatchImporter
     private Configuration config;
     private final Deserialization<String> deserialization;
 
-    public CsvOutput( Path targetDirectory, Header nodeHeader, Header relationshipHeader, Configuration config ) throws IOException
-    {
+    public CsvOutput(Path targetDirectory, Header nodeHeader, Header relationshipHeader, Configuration config)
+            throws IOException {
         this.targetDirectory = targetDirectory;
-        assert Files.isDirectory( targetDirectory );
+        assert Files.isDirectory(targetDirectory);
         this.nodeHeader = nodeHeader;
         this.relationshipHeader = relationshipHeader;
         this.config = config;
-        this.deserialization = new StringDeserialization( config );
-        Files.createDirectories( targetDirectory );
+        this.deserialization = new StringDeserialization(config);
+        Files.createDirectories(targetDirectory);
     }
 
     @Override
-    public void doImport( Input input ) throws IOException
-    {
-        consume( "nodes", input.nodes( Collector.EMPTY ).iterator(), nodeHeader, RandomEntityDataGenerator::convert );
-        consume( "relationships", input.relationships( Collector.EMPTY ).iterator(), relationshipHeader, RandomEntityDataGenerator::convert );
+    public void doImport(Input input) throws IOException {
+        consume("nodes", input.nodes(Collector.EMPTY).iterator(), nodeHeader, RandomEntityDataGenerator::convert);
+        consume(
+                "relationships",
+                input.relationships(Collector.EMPTY).iterator(),
+                relationshipHeader,
+                RandomEntityDataGenerator::convert);
     }
 
-    private void consume( String name, InputIterator entities, Header header, Deserializer deserializer ) throws IOException
-    {
-        try ( PrintStream out = file( name + "header.csv" ) )
-        {
-            serialize( out, header );
+    private void consume(String name, InputIterator entities, Header header, Deserializer deserializer)
+            throws IOException {
+        try (PrintStream out = file(name + "header.csv")) {
+            serialize(out, header);
         }
 
-        try
-        {
+        try {
             int threads = Runtime.getRuntime().availableProcessors();
-            ExecutorService executor = Executors.newFixedThreadPool( threads );
-            for ( int i = 0; i < threads; i++ )
-            {
+            ExecutorService executor = Executors.newFixedThreadPool(threads);
+            for (int i = 0; i < threads; i++) {
                 int id = i;
-                executor.submit( (Callable<Void>) () -> {
-                    StringDeserialization deserialization = new StringDeserialization( config );
-                    try ( PrintStream out = file( name + "-" + id + ".csv" );
-                          InputChunk chunk = entities.newChunk() )
-                    {
+                executor.submit((Callable<Void>) () -> {
+                    StringDeserialization deserialization = new StringDeserialization(config);
+                    try (PrintStream out = file(name + "-" + id + ".csv");
+                            InputChunk chunk = entities.newChunk()) {
                         InputEntity entity = new InputEntity();
-                        while ( entities.next( chunk ) )
-                        {
-                            while ( chunk.next( entity ) )
-                            {
-                                out.println( deserializer.apply( entity, deserialization, header ) );
+                        while (entities.next(chunk)) {
+                            while (chunk.next(entity)) {
+                                out.println(deserializer.apply(entity, deserialization, header));
                             }
                         }
                     }
                     return null;
-                } );
+                });
             }
             executor.shutdown();
-            executor.awaitTermination( 10, TimeUnit.MINUTES );
-        }
-        catch ( InterruptedException e )
-        {
+            executor.awaitTermination(10, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException( e );
+            throw new IOException(e);
         }
     }
 
-    private void serialize( PrintStream out, Header header )
-    {
+    private void serialize(PrintStream out, Header header) {
         deserialization.clear();
-        for ( Header.Entry entry : header.entries() )
-        {
-            deserialization.handle( entry, entry.toString() );
+        for (Header.Entry entry : header.entries()) {
+            deserialization.handle(entry, entry.toString());
         }
-        out.println( deserialization.materialize() );
+        out.println(deserialization.materialize());
     }
 
-    private PrintStream file( String name ) throws IOException
-    {
-        return new PrintStream( new BufferedOutputStream( Files.newOutputStream( targetDirectory.resolve( name ) ), (int) mebiBytes( 1 ) ) );
+    private PrintStream file(String name) throws IOException {
+        return new PrintStream(
+                new BufferedOutputStream(Files.newOutputStream(targetDirectory.resolve(name)), (int) mebiBytes(1)));
     }
 }

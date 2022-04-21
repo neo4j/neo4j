@@ -36,9 +36,11 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   private val idName = "n"
   private val labelId = LabelId(12)
+
   private val qg = QueryGraph(
     selections = Selections(Set(Predicate(Set(idName), hasLabels(idName, "Awesome")))),
-    patternNodes = Set(idName))
+    patternNodes = Set(idName)
+  )
 
   test("simple label scan without compile-time label id") {
     // given
@@ -51,8 +53,8 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Set(
-      NodeByLabelScan(idName, labelName("Awesome"), Set.empty, IndexOrderNone))
-    )
+      NodeByLabelScan(idName, labelName("Awesome"), Set.empty, IndexOrderNone)
+    ))
   }
 
   test("simple label scan with a compile-time label ID") {
@@ -67,8 +69,8 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Set(
-      NodeByLabelScan(idName, labelName("Awesome"), Set.empty, IndexOrderNone))
-    )
+      NodeByLabelScan(idName, labelName("Awesome"), Set.empty, IndexOrderNone)
+    ))
   }
 
   test("should not plan label scan for skipped id") {

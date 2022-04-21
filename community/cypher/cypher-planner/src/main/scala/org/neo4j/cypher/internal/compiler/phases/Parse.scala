@@ -33,7 +33,11 @@ import org.neo4j.cypher.internal.frontend.phases.Phase
 case object Parse extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    in.withStatement(JavaCCParser.parse(in.queryText, context.cypherExceptionFactory, in.anonymousVariableNameGenerator))
+    in.withStatement(JavaCCParser.parse(
+      in.queryText,
+      context.cypherExceptionFactory,
+      in.anonymousVariableNameGenerator
+    ))
   }
 
   override val phase = PARSING

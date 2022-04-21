@@ -40,12 +40,15 @@ case class DriverStatementResult(private val driverResult: Result) extends State
 
   override def getNotifications(): List[Notification] =
     driverResult.consume().notifications().asScala.toList
-      .map(n => NotificationImpl.fromRaw(
-        n.code,
-        n.title,
-        n.description,
-        n.severity,
-        Option(n.position())
-          .map(pos => new InputPosition(pos.offset(), pos.line(), pos.column()))
-          .getOrElse(InputPosition.empty)))
+      .map(n =>
+        NotificationImpl.fromRaw(
+          n.code,
+          n.title,
+          n.description,
+          n.severity,
+          Option(n.position())
+            .map(pos => new InputPosition(pos.offset(), pos.line(), pos.column()))
+            .getOrElse(InputPosition.empty)
+        )
+      )
 }

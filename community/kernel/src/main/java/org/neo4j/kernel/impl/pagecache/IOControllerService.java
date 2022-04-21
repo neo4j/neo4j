@@ -26,7 +26,6 @@ import org.neo4j.service.PrioritizedService;
 import org.neo4j.time.SystemNanoClock;
 
 @Service
-public interface IOControllerService extends PrioritizedService
-{
-    IOController createIOController( Config config, SystemNanoClock clock );
+public interface IOControllerService extends PrioritizedService {
+    IOController createIOController(Config config, SystemNanoClock clock);
 }

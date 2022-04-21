@@ -31,17 +31,28 @@ import java.time.Clock
  * @param lastCommittedTxId   highest seen committed transaction id when this fingerprint was created.
  * @param snapshot            a snapshot of the statistics used to compute the plan in a cache
  */
-case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, lastCommittedTxId: Long, snapshot: GraphStatisticsSnapshot) {
+case class PlanFingerprint(
+  creationTimeMillis: Long,
+  lastCheckTimeMillis: Long,
+  lastCommittedTxId: Long,
+  snapshot: GraphStatisticsSnapshot
+) {
+
   if (snapshot.statsValues.isEmpty) {
     throw new IllegalArgumentException("Cannot create plan fingerprint with empty graph statistics snapshot")
   }
 }
 
 object PlanFingerprint {
+
   def apply(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot): PlanFingerprint =
     PlanFingerprint(creationTimeMillis, creationTimeMillis, txId, snapshot)
 
-  def take(clock: Clock, lastCommittedTxIdProvider: () => Long, graphStatistics: InstrumentedGraphStatistics): PlanFingerprint =
+  def take(
+    clock: Clock,
+    lastCommittedTxIdProvider: () => Long,
+    graphStatistics: InstrumentedGraphStatistics
+  ): PlanFingerprint =
     PlanFingerprint(clock.millis(), lastCommittedTxIdProvider(), graphStatistics.snapshot.freeze)
 }
 

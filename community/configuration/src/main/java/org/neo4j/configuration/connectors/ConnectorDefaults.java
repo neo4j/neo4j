@@ -19,14 +19,13 @@
  */
 package org.neo4j.configuration.connectors;
 
-import java.util.Map;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
 
+import java.util.Map;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.util.VisibleForTesting;
-
-import static org.neo4j.configuration.SettingImpl.newBuilder;
-import static org.neo4j.configuration.SettingValueParsers.BOOL;
 
 /**
  * This is introduced to break the circular dependency between {@link GraphDatabaseSettings}
@@ -34,17 +33,19 @@ import static org.neo4j.configuration.SettingValueParsers.BOOL;
  * WARNING! None of these fields should be accessed outside the classes mentioned above.
  * Can be properly fixed in next major release (5.0) when the public API can be changed.
  */
-@Deprecated( forRemoval = true )
-public class ConnectorDefaults
-{
+@Deprecated(forRemoval = true)
+public class ConnectorDefaults {
     @VisibleForTesting
-    public static final Setting<Boolean> http_enabled = newBuilder( "dbms.connector.http.enabled", BOOL, false ).build();
-    static final Setting<Boolean> https_enabled = newBuilder( "dbms.connector.https.enabled", BOOL, false ).build();
-    static final Setting<Boolean> bolt_enabled = newBuilder( "dbms.connector.bolt.enabled", BOOL, false ).build();
+    public static final Setting<Boolean> http_enabled =
+            newBuilder("dbms.connector.http.enabled", BOOL, false).build();
 
-    public static final Map<Setting<?>,Object> SERVER_CONNECTOR_DEFAULTS = Map.of(
+    static final Setting<Boolean> https_enabled =
+            newBuilder("dbms.connector.https.enabled", BOOL, false).build();
+    static final Setting<Boolean> bolt_enabled =
+            newBuilder("dbms.connector.bolt.enabled", BOOL, false).build();
+
+    public static final Map<Setting<?>, Object> SERVER_CONNECTOR_DEFAULTS = Map.of(
             http_enabled, true,
             https_enabled, false,
-            bolt_enabled, true
-    );
+            bolt_enabled, true);
 }

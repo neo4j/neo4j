@@ -21,15 +21,14 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.IOException;
 
-public interface LogPruning
-{
+public interface LogPruning {
     /**
      * Prunes logs that have version less than {@code currentVersion}. This is a best effort service and there is no
      * guarantee that any logs will be removed.
      *
      * @param currentVersion The lowest version expected to remain after pruning completes.
      */
-    void pruneLogs( long currentVersion ) throws IOException;
+    void pruneLogs(long currentVersion) throws IOException;
 
     /**
      * Check if there might be a desire to prune logs. This could be used as a hint to schedule some log pruning soon,
@@ -39,29 +38,24 @@ public interface LogPruning
      * Otherwise {@code false} if we are pretty sure that we don't need to prune any logs right now.
      * @param upperVersion check up to this version.
      */
-    boolean mightHaveLogsToPrune( long upperVersion );
+    boolean mightHaveLogsToPrune(long upperVersion);
 
     /**
      * @return A textual representation of the current log pruning strategy, for logging and debugging purposes.
      */
     String describeCurrentStrategy();
 
-    LogPruning NO_PRUNING = new LogPruning()
-    {
+    LogPruning NO_PRUNING = new LogPruning() {
         @Override
-        public void pruneLogs( long currentVersion )
-        {
-        }
+        public void pruneLogs(long currentVersion) {}
 
         @Override
-        public boolean mightHaveLogsToPrune( long upperVersion )
-        {
+        public boolean mightHaveLogsToPrune(long upperVersion) {
             return false;
         }
 
         @Override
-        public String describeCurrentStrategy()
-        {
+        public String describeCurrentStrategy() {
             return LogPruneStrategyFactory.NO_PRUNING.toString();
         }
     };

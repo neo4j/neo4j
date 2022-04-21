@@ -19,22 +19,18 @@
  */
 package org.neo4j.tooling.procedure.testutils;
 
+import com.google.testing.compile.JavaFileObjects;
 import java.net.URL;
 import javax.tools.JavaFileObject;
 
-import com.google.testing.compile.JavaFileObjects;
-
-public enum JavaFileObjectUtils
-{
+public enum JavaFileObjectUtils {
     INSTANCE;
 
-    public JavaFileObject procedureSource( String relativePath )
-    {
-        return JavaFileObjects.forResource( resolveUrl( relativePath ) );
+    public JavaFileObject procedureSource(String relativePath) {
+        return JavaFileObjects.forResource(resolveUrl(relativePath));
     }
 
-    private URL resolveUrl( String relativePath )
-    {
-        return this.getClass().getResource( "/org/neo4j/tooling/procedure/procedures/" + relativePath );
+    private URL resolveUrl(String relativePath) {
+        return this.getClass().getResource("/org/neo4j/tooling/procedure/procedures/" + relativePath);
     }
 }

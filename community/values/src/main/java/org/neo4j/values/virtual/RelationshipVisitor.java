@@ -19,8 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
-public interface RelationshipVisitor
-{
+public interface RelationshipVisitor {
     long id();
-    void visit( long startNode, long endNode, int type );
+
+    void visit(long startNode, long endNode, int type);
 }

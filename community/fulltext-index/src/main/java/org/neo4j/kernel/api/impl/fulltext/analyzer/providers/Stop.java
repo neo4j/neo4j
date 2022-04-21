@@ -22,28 +22,23 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Stop extends AnalyzerProvider
-{
-    public Stop()
-    {
-        super( "stop" );
+public class Stop extends AnalyzerProvider {
+    public Stop() {
+        super("stop");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
-        return new StopAnalyzer( EnglishAnalyzer.getDefaultStopSet() );
+    public Analyzer createAnalyzer() {
+        return new StopAnalyzer(EnglishAnalyzer.getDefaultStopSet());
     }
 
     @Override
-    public String description()
-    {
-        return "Stop analyzer tokenizes at non-letter characters, and filters out English stop words. This differs from the 'classic' and 'standard' " +
-                "analyzers in that it makes no effort to recognize special terms, like likely product names, URLs or email addresses.";
+    public String description() {
+        return "Stop analyzer tokenizes at non-letter characters, and filters out English stop words. This differs from the 'classic' and 'standard' "
+                + "analyzers in that it makes no effort to recognize special terms, like likely product names, URLs or email addresses.";
     }
 }

@@ -21,11 +21,9 @@ package org.neo4j.scheduler;
 
 import java.time.Duration;
 import java.time.Instant;
-
 import org.neo4j.common.Subject;
 
-public class MonitoredJobInfo
-{
+public class MonitoredJobInfo {
     private final long id;
     private final Group group;
     private final Subject submitter;
@@ -38,9 +36,18 @@ public class MonitoredJobInfo
     private final JobType type;
     private final String currentStateDescription;
 
-    public MonitoredJobInfo( long id, Group group, Instant submitted, Subject submitter, String targetDatabaseName, String description,
-            Instant nextDeadline, Duration period, State state, JobType type, String currentStateDescription )
-    {
+    public MonitoredJobInfo(
+            long id,
+            Group group,
+            Instant submitted,
+            Subject submitter,
+            String targetDatabaseName,
+            String description,
+            Instant nextDeadline,
+            Duration period,
+            State state,
+            JobType type,
+            String currentStateDescription) {
         this.id = id;
         this.group = group;
         this.submitter = submitter;
@@ -54,63 +61,51 @@ public class MonitoredJobInfo
         this.currentStateDescription = currentStateDescription;
     }
 
-    public long getId()
-    {
+    public long getId() {
         return id;
     }
 
-    public Group getGroup()
-    {
+    public Group getGroup() {
         return group;
     }
 
-    public Subject getSubmitter()
-    {
+    public Subject getSubmitter() {
         return submitter;
     }
 
-    public String getTargetDatabaseName()
-    {
+    public String getTargetDatabaseName() {
         return targetDatabaseName;
     }
 
-    public Instant getSubmitted()
-    {
+    public Instant getSubmitted() {
         return submitted;
     }
 
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
-    public Instant getNextDeadline()
-    {
+    public Instant getNextDeadline() {
         return nextDeadline;
     }
 
-    public Duration getPeriod()
-    {
+    public Duration getPeriod() {
         return period;
     }
 
-    public State getState()
-    {
+    public State getState() {
         return state;
     }
 
-    public JobType getType()
-    {
+    public JobType getType() {
         return type;
     }
 
-    public String getCurrentStateDescription()
-    {
+    public String getCurrentStateDescription() {
         return currentStateDescription;
     }
 
-    public enum State
-    {
+    public enum State {
         /**
          * Scheduled for an execution at a point in the future.
          * Only {@link JobType#DELAYED} and {@link JobType#PERIODIC} can be in this state.

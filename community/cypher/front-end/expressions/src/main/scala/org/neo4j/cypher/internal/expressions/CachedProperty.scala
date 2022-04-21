@@ -30,6 +30,7 @@ case object RELATIONSHIP_TYPE extends EntityType
  * and its slotted specializations.
  */
 trait ASTCachedProperty extends LogicalProperty {
+
   /**
    * @return the type of the entity for which a property is cached.
    */
@@ -70,10 +71,10 @@ object ASTCachedProperty {
   /**
    * Used to match equivalent cached properties at runtime.
    */
-  case class RuntimeKey(originalEntityName: String,
-                        propertyKey: PropertyKeyName,
-                        entityType: EntityType)
-                       (val entityName: String) {
+  case class RuntimeKey(originalEntityName: String, propertyKey: PropertyKeyName, entityType: EntityType)(
+    val entityName: String
+  ) {
+
     /**
      * @return a textual representation of the entity and the property in the form `n.prop`
      */
@@ -94,11 +95,13 @@ object ASTCachedProperty {
  * @param knownToAccessStore `true` if we know that the evaluation of this CachedProperty will access the store, `false` otherwise.
  *                           This is purely used for Cost estimation and has no effect on the runtime.
  */
-case class CachedProperty(override val originalEntityName: String,
-                          entityVariable: LogicalVariable,
-                          override val propertyKey: PropertyKeyName,
-                          override val entityType: EntityType,
-                          knownToAccessStore: Boolean = false)(val position: InputPosition) extends ASTCachedProperty {
+case class CachedProperty(
+  override val originalEntityName: String,
+  entityVariable: LogicalVariable,
+  override val propertyKey: PropertyKeyName,
+  override val entityType: EntityType,
+  knownToAccessStore: Boolean = false
+)(val position: InputPosition) extends ASTCachedProperty {
 
   override val entityName: String = entityVariable.name
 
@@ -113,11 +116,13 @@ case class CachedProperty(override val originalEntityName: String,
  * @param entityVariable     the variable how it appeared in this particular Property. It can have a different name than `originalEntityName`,
  *                           if the variable name was changed in between.
  */
-case class CachedHasProperty(override val originalEntityName: String,
-                             entityVariable: LogicalVariable,
-                             override val propertyKey: PropertyKeyName,
-                             override val entityType: EntityType,
-                             knownToAccessStore: Boolean = false)(val position: InputPosition) extends ASTCachedProperty {
+case class CachedHasProperty(
+  override val originalEntityName: String,
+  entityVariable: LogicalVariable,
+  override val propertyKey: PropertyKeyName,
+  override val entityType: EntityType,
+  knownToAccessStore: Boolean = false
+)(val position: InputPosition) extends ASTCachedProperty {
 
   override val entityName: String = entityVariable.name
 

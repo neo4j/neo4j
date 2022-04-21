@@ -22,19 +22,22 @@ package org.neo4j.kernel.impl.locking;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 
-public class LockCountVisitor implements Locks.Visitor
-{
+public class LockCountVisitor implements Locks.Visitor {
     private int lockCount;
 
     @Override
-    public void visit( LockType lockType, ResourceType resourceType, long transactionId, long resourceId, String description, long estimatedWaitTime,
-            long lockIdentityHashCode )
-    {
+    public void visit(
+            LockType lockType,
+            ResourceType resourceType,
+            long transactionId,
+            long resourceId,
+            String description,
+            long estimatedWaitTime,
+            long lockIdentityHashCode) {
         lockCount++;
     }
 
-    public int getLockCount()
-    {
+    public int getLockCount() {
         return lockCount;
     }
 }

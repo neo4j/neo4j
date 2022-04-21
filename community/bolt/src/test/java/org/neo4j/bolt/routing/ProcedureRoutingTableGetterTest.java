@@ -19,26 +19,6 @@
  */
 package org.neo4j.bolt.routing;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.bolt.messaging.ResultConsumer;
-import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
-import org.neo4j.bolt.transaction.DefaultProgramResultReference;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.ListValueBuilder;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.MapValueBuilder;
-
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -56,204 +36,232 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class ProcedureRoutingTableGetterTest
-{
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.ResultConsumer;
+import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
+import org.neo4j.bolt.transaction.DefaultProgramResultReference;
+import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
+
+class ProcedureRoutingTableGetterTest {
     private final ProcedureRoutingTableGetter getter;
 
-    ProcedureRoutingTableGetterTest()
-    {
+    ProcedureRoutingTableGetterTest() {
         getter = new ProcedureRoutingTableGetter();
     }
 
     @Test
-    void shouldRunTheStateWithTheCorrectParams() throws Exception
-    {
+    void shouldRunTheStateWithTheCorrectParams() throws Exception {
         var loginContext = LoginContext.AUTH_DISABLED;
-        var transactionManager = mock( TransactionManager.class );
+        var transactionManager = mock(TransactionManager.class);
         var routingTableContext = getRoutingTableContext();
         var databaseName = "dbName";
-        var metadata = mock( StatementMetadata.class );
-        var programResult = new DefaultProgramResultReference( "123", metadata );
+        var metadata = mock(StatementMetadata.class);
+        var programResult = new DefaultProgramResultReference("123", metadata);
 
-        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), any(), anyString(), anyString(), any(), any(),
-                                                                         anyBoolean(), any(), any(), any() );
+        doReturn(programResult)
+                .when(transactionManager)
+                .runProgram(
+                        anyString(), any(), anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any());
 
-        getter.get( "123", loginContext, transactionManager, routingTableContext, List.of(), databaseName, "123" );
+        getter.get("123", loginContext, transactionManager, routingTableContext, List.of(), databaseName, "123");
 
-        verify( transactionManager )
-                .runProgram( anyString(), eq( loginContext ), eq( "system" ), eq( "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)" ),
-                             eq( getExpectedParams( routingTableContext, databaseName ) ),
-                             eq( emptyList() ), eq( true ), eq( Map.of() ), eq( null ), eq( "123" ) );
+        verify(transactionManager)
+                .runProgram(
+                        anyString(),
+                        eq(loginContext),
+                        eq("system"),
+                        eq("CALL dbms.routing.getRoutingTable($routingContext, $databaseName)"),
+                        eq(getExpectedParams(routingTableContext, databaseName)),
+                        eq(emptyList()),
+                        eq(true),
+                        eq(Map.of()),
+                        eq(null),
+                        eq("123"));
     }
 
     @Test
-    void shouldCompleteWithOneRecordFromTheResultQuery() throws Throwable
-    {
+    void shouldCompleteWithOneRecordFromTheResultQuery() throws Throwable {
         var loginContext = LoginContext.AUTH_DISABLED;
-        var transactionManager = mock( TransactionManager.class );
+        var transactionManager = mock(TransactionManager.class);
         var queryId = 123;
-        var statementMetadata = mock( StatementMetadata.class );
-        var programResult = new DefaultProgramResultReference( "123", statementMetadata );
-        var boltResult = mock( BoltResult.class );
+        var statementMetadata = mock(StatementMetadata.class);
+        var programResult = new DefaultProgramResultReference("123", statementMetadata);
+        var boltResult = mock(BoltResult.class);
         var expectedRoutingTable = routingTable();
 
-        doReturn( programResult ).when( transactionManager )
-                                 .runProgram( anyString(), any(), anyString(), anyString(), any( MapValue.class ), anyList(), anyBoolean(), anyMap(), any(),
-                                              anyString() );
-        doReturn( queryId ).when( statementMetadata ).queryId();
-        doReturn( getFieldNames() ).when( boltResult ).fieldNames();
-        mockStreamResult( transactionManager, boltResult, recordConsumer ->
-        {
-            recordConsumer.beginRecord( 2 );
-            recordConsumer.consumeField( expectedRoutingTable.get( "ttl" ) );
-            recordConsumer.consumeField( expectedRoutingTable.get( "servers" ) );
+        doReturn(programResult)
+                .when(transactionManager)
+                .runProgram(
+                        anyString(),
+                        any(),
+                        anyString(),
+                        anyString(),
+                        any(MapValue.class),
+                        anyList(),
+                        anyBoolean(),
+                        anyMap(),
+                        any(),
+                        anyString());
+        doReturn(queryId).when(statementMetadata).queryId();
+        doReturn(getFieldNames()).when(boltResult).fieldNames();
+        mockStreamResult(transactionManager, boltResult, recordConsumer -> {
+            recordConsumer.beginRecord(2);
+            recordConsumer.consumeField(expectedRoutingTable.get("ttl"));
+            recordConsumer.consumeField(expectedRoutingTable.get("servers"));
             recordConsumer.endRecord();
-        } );
+        });
 
-        var future = getter.get( "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
+        var future = getter.get(
+                "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123");
 
-        var routingTable = future.get( 100, TimeUnit.MILLISECONDS );
+        var routingTable = future.get(100, TimeUnit.MILLISECONDS);
 
-        assertEquals( expectedRoutingTable, routingTable );
+        assertEquals(expectedRoutingTable, routingTable);
     }
 
     @Test
-    void shouldCompleteFailureIfSomeErrorOccurDuringRecordConsumer() throws Throwable
-    {
+    void shouldCompleteFailureIfSomeErrorOccurDuringRecordConsumer() throws Throwable {
         var loginContext = LoginContext.AUTH_DISABLED;
-        var transactionManager = mock( TransactionManager.class );
+        var transactionManager = mock(TransactionManager.class);
         var queryId = 123;
-        var statementMetadata = mock( StatementMetadata.class );
-        var programResult = new DefaultProgramResultReference( "123", statementMetadata );
-        var boltResult = mock( BoltResult.class );
+        var statementMetadata = mock(StatementMetadata.class);
+        var programResult = new DefaultProgramResultReference("123", statementMetadata);
+        var boltResult = mock(BoltResult.class);
 
-        doReturn( programResult ).when( transactionManager )
-                                 .runProgram( anyString(), any(), anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any() );
-        doReturn( queryId ).when( statementMetadata ).queryId();
-        doReturn( getFieldNames() ).when( boltResult ).fieldNames();
-        mockStreamResult( transactionManager, boltResult, recordConsumer ->
-        {
-            recordConsumer.beginRecord( 2 );
+        doReturn(programResult)
+                .when(transactionManager)
+                .runProgram(
+                        anyString(), any(), anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any());
+        doReturn(queryId).when(statementMetadata).queryId();
+        doReturn(getFieldNames()).when(boltResult).fieldNames();
+        mockStreamResult(transactionManager, boltResult, recordConsumer -> {
+            recordConsumer.beginRecord(2);
             recordConsumer.onError();
-        } );
+        });
 
-        var future = getter.get( "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
+        var future = getter.get(
+                "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123");
 
-        try
-        {
+        try {
             future.join();
-            fail( "The method should throws an exception" );
-        }
-        catch ( CompletionException exception )
-        {
-            assertEquals( RuntimeException.class, exception.getCause().getClass() );
+            fail("The method should throws an exception");
+        } catch (CompletionException exception) {
+            assertEquals(RuntimeException.class, exception.getCause().getClass());
         }
     }
 
     @Test
-    void shouldCompleteWithFailureIfTheRunMethodThrowsException() throws Throwable
-    {
+    void shouldCompleteWithFailureIfTheRunMethodThrowsException() throws Throwable {
         var loginContext = LoginContext.AUTH_DISABLED;
-        var transactionManager = mock( TransactionManager.class );
-        var expectedException = new TransactionFailureException( "Something wrong", new RuntimeException() );
+        var transactionManager = mock(TransactionManager.class);
+        var expectedException = new TransactionFailureException("Something wrong", new RuntimeException());
 
-        doThrow( expectedException ).when( transactionManager ).runProgram( anyString(), any(), anyString(), anyString(), any(),
-                                                                            any(), anyBoolean(), any(), any(), any() );
+        doThrow(expectedException)
+                .when(transactionManager)
+                .runProgram(
+                        anyString(), any(), anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any());
 
-        var future = getter.get( "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
+        var future = getter.get(
+                "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123");
 
-        try
-        {
+        try {
             future.join();
-            fail( "The method should throws an exception" );
-        }
-        catch ( CompletionException exception )
-        {
-            assertEquals( expectedException, exception.getCause() );
+            fail("The method should throws an exception");
+        } catch (CompletionException exception) {
+            assertEquals(expectedException, exception.getCause());
         }
     }
 
     @Test
-    void shouldCompleteWithFailureIfTheStreamResultMethodThrowsException() throws Throwable
-    {
+    void shouldCompleteWithFailureIfTheStreamResultMethodThrowsException() throws Throwable {
         var loginContext = LoginContext.AUTH_DISABLED;
-        var transactionManager = mock( TransactionManager.class );
+        var transactionManager = mock(TransactionManager.class);
         var queryId = 123;
-        var statementMetadata = mock( StatementMetadata.class );
-        var programResult = new DefaultProgramResultReference( "123", statementMetadata );
-        var expectedException = new RuntimeException( new TransactionFailureException( "Something wrong", new RuntimeException() ) );
+        var statementMetadata = mock(StatementMetadata.class);
+        var programResult = new DefaultProgramResultReference("123", statementMetadata);
+        var expectedException =
+                new RuntimeException(new TransactionFailureException("Something wrong", new RuntimeException()));
 
-        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), any(), anyString(), anyString(), any(),
-                                                                         any(), anyBoolean(), any(), any(), any() );
-        doReturn( queryId ).when( statementMetadata ).queryId();
-        doThrow( expectedException ).when( transactionManager ).pullData( anyString(), anyInt(), anyLong(), any( ResultConsumer.class ) );
+        doReturn(programResult)
+                .when(transactionManager)
+                .runProgram(
+                        anyString(), any(), anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any());
+        doReturn(queryId).when(statementMetadata).queryId();
+        doThrow(expectedException)
+                .when(transactionManager)
+                .pullData(anyString(), anyInt(), anyLong(), any(ResultConsumer.class));
 
-        var future = getter.get( "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
+        var future = getter.get(
+                "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123");
 
-        try
-        {
+        try {
             future.join();
-            fail( "The method should throws an exception" );
-        }
-        catch ( CompletionException exception )
-        {
-            assertEquals( expectedException, exception.getCause() );
+            fail("The method should throws an exception");
+        } catch (CompletionException exception) {
+            assertEquals(expectedException, exception.getCause());
         }
     }
 
-    private void mockStreamResult( TransactionManager transactionManager, BoltResult boltResult, UnsafeConsumer<BoltResult.RecordConsumer> answer )
-            throws Throwable
-    {
-        doAnswer( invocationOnMock ->
-                  {
-                      var consumer = invocationOnMock.getArgument( 0, BoltResult.RecordConsumer.class );
-                      answer.accept( consumer );
-                      return true;
-                  } )
-                .when( boltResult )
-                .handleRecords( any(), eq( 1L ) );
+    private void mockStreamResult(
+            TransactionManager transactionManager,
+            BoltResult boltResult,
+            UnsafeConsumer<BoltResult.RecordConsumer> answer)
+            throws Throwable {
+        doAnswer(invocationOnMock -> {
+                    var consumer = invocationOnMock.getArgument(0, BoltResult.RecordConsumer.class);
+                    answer.accept(consumer);
+                    return true;
+                })
+                .when(boltResult)
+                .handleRecords(any(), eq(1L));
 
-        doAnswer( invocationOnMock ->
-                  {
-                      var resultHandler = invocationOnMock.getArgument( 3, ResultConsumer.class );
-                      resultHandler.consume( boltResult );
-                      return mock( Bookmark.class );
-                  } )
-                .when( transactionManager )
-                .pullData( any( String.class ), any( Integer.class ), any( Long.class ), any( ResultConsumer.class ) );
+        doAnswer(invocationOnMock -> {
+                    var resultHandler = invocationOnMock.getArgument(3, ResultConsumer.class);
+                    resultHandler.consume(boltResult);
+                    return mock(Bookmark.class);
+                })
+                .when(transactionManager)
+                .pullData(any(String.class), any(Integer.class), any(Long.class), any(ResultConsumer.class));
     }
 
-    private static MapValue routingTable()
-    {
+    private static MapValue routingTable() {
         var builder = new MapValueBuilder();
-        builder.add( "ttl", Values.intValue( 300 ) );
+        builder.add("ttl", Values.intValue(300));
         var serversBuilder = ListValueBuilder.newListBuilder();
-        builder.add( "servers", serversBuilder.build() );
+        builder.add("servers", serversBuilder.build());
         return builder.build();
     }
 
-    private static String[] getFieldNames()
-    {
-        return new String[]{"ttl", "servers"};
+    private static String[] getFieldNames() {
+        return new String[] {"ttl", "servers"};
     }
 
-    private static MapValue getExpectedParams( MapValue routingContext, String databaseName )
-    {
+    private static MapValue getExpectedParams(MapValue routingContext, String databaseName) {
         var builder = new MapValueBuilder();
-        builder.add( "routingContext", routingContext );
-        builder.add( "databaseName", Values.stringOrNoValue( databaseName ) );
+        builder.add("routingContext", routingContext);
+        builder.add("databaseName", Values.stringOrNoValue(databaseName));
         return builder.build();
     }
 
-    private static MapValue getRoutingTableContext()
-    {
+    private static MapValue getRoutingTableContext() {
         var builder = new MapValueBuilder();
-        builder.add( "context", Values.stringOrNoValue( "give me some context" ) );
+        builder.add("context", Values.stringOrNoValue("give me some context"));
         return builder.build();
     }
 
-    interface UnsafeConsumer<T>
-    {
-        void accept( T value ) throws Throwable;
+    interface UnsafeConsumer<T> {
+        void accept(T value) throws Throwable;
     }
 }

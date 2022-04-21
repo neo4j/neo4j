@@ -19,16 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -57,8 +61,8 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
@@ -66,158 +70,141 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @Neo4jLayoutExtension
-@ExtendWith( LifeExtension.class )
-class TransactionAppenderRotationIT
-{
+@ExtendWith(LifeExtension.class)
+class TransactionAppenderRotationIT {
     @Inject
     private DatabaseLayout layout;
+
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private LifeSupport life;
+
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final Monitors monitors = new Monitors();
     private ThreadPoolJobScheduler jobScheduler;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         jobScheduler = new ThreadPoolJobScheduler();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         life.shutdown();
         jobScheduler.close();
     }
 
     @Test
-    void correctLastAppliedToPreviousLogTransactionInHeaderOnLogFileRotation() throws IOException, ExecutionException, InterruptedException
-    {
-        LogFiles logFiles = getLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void correctLastAppliedToPreviousLogTransactionInHeaderOnLogFileRotation()
+            throws IOException, ExecutionException, InterruptedException {
+        LogFiles logFiles = getLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
         Health databaseHealth = getDatabaseHealth();
 
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
-        TransactionAppender transactionAppender =
-                createTransactionAppender( logFiles, databaseHealth, transactionMetadataCache, transactionIdStore, jobScheduler );
+        TransactionAppender transactionAppender = createTransactionAppender(
+                logFiles, databaseHealth, transactionMetadataCache, transactionIdStore, jobScheduler);
 
-        life.add( transactionAppender );
+        life.add(transactionAppender);
 
-        LogAppendEvent logAppendEvent = new RotationLogAppendEvent( logFiles.getLogFile().getLogRotation() );
+        LogAppendEvent logAppendEvent =
+                new RotationLogAppendEvent(logFiles.getLogFile().getLogRotation());
         TransactionToApply transactionToApply = prepareTransaction();
-        transactionAppender.append( transactionToApply, logAppendEvent );
+        transactionAppender.append(transactionToApply, logAppendEvent);
 
         LogFile logFile = logFiles.getLogFile();
-        assertEquals( 1, logFile.getHighestLogVersion() );
+        assertEquals(1, logFile.getHighestLogVersion());
         Path highestLogFile = logFile.getHighestLogFile();
-        LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, highestLogFile, INSTANCE );
-        assertEquals( 2, logHeader.getLastCommittedTxId() );
+        LogHeader logHeader = LogHeaderReader.readLogHeader(fileSystem, highestLogFile, INSTANCE);
+        assertEquals(2, logHeader.getLastCommittedTxId());
     }
 
-    private static TransactionAppender createTransactionAppender( LogFiles logFiles, Health databaseHealth,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore, JobScheduler scheduler )
-    {
-        return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, Config.defaults(),
-                databaseHealth, scheduler, NullLogProvider.getInstance() );
+    private static TransactionAppender createTransactionAppender(
+            LogFiles logFiles,
+            Health databaseHealth,
+            TransactionMetadataCache transactionMetadataCache,
+            TransactionIdStore transactionIdStore,
+            JobScheduler scheduler) {
+        return TransactionAppenderFactory.createTransactionAppender(
+                logFiles,
+                transactionIdStore,
+                transactionMetadataCache,
+                Config.defaults(),
+                databaseHealth,
+                scheduler,
+                NullLogProvider.getInstance());
     }
 
-    private static TransactionToApply prepareTransaction()
-    {
+    private static TransactionToApply prepareTransaction() {
         List<StorageCommand> commands = createCommands();
-        PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation( commands );
-        transactionRepresentation.setHeader( new byte[0], 0, 0, 0, 0, ANONYMOUS );
-        return new TransactionToApply( transactionRepresentation, NULL_CONTEXT, StoreCursors.NULL );
+        PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(commands);
+        transactionRepresentation.setHeader(new byte[0], 0, 0, 0, 0, ANONYMOUS);
+        return new TransactionToApply(transactionRepresentation, NULL_CONTEXT, StoreCursors.NULL);
     }
 
-    private static List<StorageCommand> createCommands()
-    {
-        return singletonList( new TestCommand() );
+    private static List<StorageCommand> createCommands() {
+        return singletonList(new TestCommand());
     }
 
-    private LogFiles getLogFiles( SimpleLogVersionRepository logVersionRepository,
-            SimpleTransactionIdStore transactionIdStore ) throws IOException
-    {
-        return LogFilesBuilder.builder( layout, fileSystem )
-                .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
-                .withLogVersionRepository( logVersionRepository )
-                .withTransactionIdStore( transactionIdStore )
-                .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( LegacyStoreId.UNKNOWN )
+    private LogFiles getLogFiles(
+            SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore)
+            throws IOException {
+        return LogFilesBuilder.builder(layout, fileSystem)
+                .withRotationThreshold(ByteUnit.mebiBytes(1))
+                .withLogVersionRepository(logVersionRepository)
+                .withTransactionIdStore(transactionIdStore)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withStoreId(LegacyStoreId.UNKNOWN)
                 .build();
     }
 
-    private static Health getDatabaseHealth()
-    {
-        return new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
+    private static Health getDatabaseHealth() {
+        return new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance());
     }
 
-    private static class RotationLogAppendEvent implements LogAppendEvent
-    {
+    private static class RotationLogAppendEvent implements LogAppendEvent {
         private final LogRotation logRotation;
 
-        RotationLogAppendEvent( LogRotation logRotation )
-        {
+        RotationLogAppendEvent(LogRotation logRotation) {
             this.logRotation = logRotation;
         }
 
         @Override
-        public LogForceWaitEvent beginLogForceWait()
-        {
+        public LogForceWaitEvent beginLogForceWait() {
             return null;
         }
 
         @Override
-        public LogForceEvent beginLogForce()
-        {
+        public LogForceEvent beginLogForce() {
             return null;
         }
 
         @Override
-        public void appendToLogFile( LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend )
-        {
-
-        }
+        public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public void setLogRotated( boolean logRotated )
-        {
-
-        }
+        public void setLogRotated(boolean logRotated) {}
 
         @Override
-        public LogRotateEvent beginLogRotate()
-        {
+        public LogRotateEvent beginLogRotate() {
             return null;
         }
 
         @Override
-        public AppendTransactionEvent beginAppendTransaction( int appendItems )
-        {
-            return () ->
-            {
-                try
-                {
-                    logRotation.rotateLogFile( LogAppendEvent.NULL );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( "Should be able to rotate file", e );
+        public AppendTransactionEvent beginAppendTransaction(int appendItems) {
+            return () -> {
+                try {
+                    logRotation.rotateLogFile(LogAppendEvent.NULL);
+                } catch (IOException e) {
+                    throw new RuntimeException("Should be able to rotate file", e);
                 }
             };
         }

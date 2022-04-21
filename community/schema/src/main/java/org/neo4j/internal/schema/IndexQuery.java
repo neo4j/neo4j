@@ -24,8 +24,7 @@ import org.neo4j.values.storable.ValueCategory;
 /**
  * Provides a minimal interface for property index queries.
  */
-public interface IndexQuery
-{
+public interface IndexQuery {
     /**
      * @return The ID, this queries against.
      */
@@ -35,8 +34,7 @@ public interface IndexQuery
 
     ValueCategory valueCategory();
 
-    enum IndexQueryType
-    {
+    enum IndexQueryType {
         TOKEN_LOOKUP,
         ALL_ENTRIES,
         EXISTS,

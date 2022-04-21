@@ -32,17 +32,18 @@ import org.neo4j.graphdb.schema.IndexType
  *
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
-case class DirectedRelationshipIndexContainsScan(idName: String,
-                                                 startNode: String,
-                                                 endNode: String,
-                                                 override val typeToken: RelationshipTypeToken,
-                                                 property: IndexedProperty,
-                                                 valueExpr: Expression,
-                                                 argumentIds: Set[String],
-                                                 indexOrder: IndexOrder,
-                                                 override val indexType: IndexType)
-                                                (implicit idGen: IdGen)
-  extends RelationshipIndexLeafPlan(idGen) {
+case class DirectedRelationshipIndexContainsScan(
+  idName: String,
+  startNode: String,
+  endNode: String,
+  override val typeToken: RelationshipTypeToken,
+  property: IndexedProperty,
+  valueExpr: Expression,
+  argumentIds: Set[String],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType
+)(implicit idGen: IdGen)
+    extends RelationshipIndexLeafPlan(idGen) {
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
@@ -50,7 +51,8 @@ case class DirectedRelationshipIndexContainsScan(idName: String,
 
   override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexContainsScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexContainsScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexContainsScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))

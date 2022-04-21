@@ -19,33 +19,27 @@
  */
 package org.neo4j.server.startup;
 
-class BootFailureException extends RuntimeException
-{
+class BootFailureException extends RuntimeException {
     private final int exitCode;
 
-    BootFailureException( String msg )
-    {
-        this( msg, 1 );
+    BootFailureException(String msg) {
+        this(msg, 1);
     }
 
-    BootFailureException( String msg, int exitCode )
-    {
-        this( msg, exitCode, null );
+    BootFailureException(String msg, int exitCode) {
+        this(msg, exitCode, null);
     }
 
-    BootFailureException( String msg, Throwable cause )
-    {
-        this( msg, 1, cause );
+    BootFailureException(String msg, Throwable cause) {
+        this(msg, 1, cause);
     }
 
-    BootFailureException( String msg, int exitCode, Throwable cause )
-    {
-        super( msg, cause );
+    BootFailureException(String msg, int exitCode, Throwable cause) {
+        super(msg, cause);
         this.exitCode = exitCode;
     }
 
-    int getExitCode()
-    {
+    int getExitCode() {
         return exitCode;
     }
 }

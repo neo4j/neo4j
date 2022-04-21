@@ -19,35 +19,30 @@
  */
 package org.neo4j.test.extension.guard;
 
+import java.util.Set;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.TypePath;
 
-import java.util.Set;
-
-public class FieldClassCollectorVisitor extends FieldVisitor
-{
+public class FieldClassCollectorVisitor extends FieldVisitor {
     private final Set<String> descriptors;
     private final AnnotationVisitor annotationVisitor;
 
-    FieldClassCollectorVisitor( int apiVersion, Set<String> descriptors, AnnotationVisitor annotationVisitor )
-    {
-        super( apiVersion );
+    FieldClassCollectorVisitor(int apiVersion, Set<String> descriptors, AnnotationVisitor annotationVisitor) {
+        super(apiVersion);
         this.descriptors = descriptors;
         this.annotationVisitor = annotationVisitor;
     }
 
     @Override
-    public AnnotationVisitor visitAnnotation( String descriptor, boolean visible )
-    {
-        descriptors.add( descriptor );
+    public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+        descriptors.add(descriptor);
         return annotationVisitor;
     }
 
     @Override
-    public AnnotationVisitor visitTypeAnnotation( int typeRef, TypePath typePath, String descriptor, boolean visible )
-    {
-        descriptors.add( descriptor );
+    public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
+        descriptors.add(descriptor);
         return annotationVisitor;
     }
 }

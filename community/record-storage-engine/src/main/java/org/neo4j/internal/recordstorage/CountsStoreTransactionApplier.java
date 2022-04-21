@@ -25,8 +25,7 @@ import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.storageengine.api.CommandsToApply;
 
-class CountsStoreTransactionApplier extends TransactionApplier.Adapter
-{
+class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     private final CountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final CommandsToApply transaction;
@@ -36,40 +35,36 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     private boolean countsUpdaterClosed;
     private boolean degreesUpdaterClosed;
 
-    CountsStoreTransactionApplier( CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, CommandsToApply transaction )
-    {
+    CountsStoreTransactionApplier(
+            CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, CommandsToApply transaction) {
         this.countsStore = countsStore;
         this.groupDegreesStore = groupDegreesStore;
         this.transaction = transaction;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         closeCountsUpdatersIfOpen();
     }
 
-    private void closeCountsUpdatersIfOpen()
-    {
-        // It's important to call the countsUpdater() method which opens the updater if it wasn't already open, this is because
+    private void closeCountsUpdatersIfOpen() {
+        // It's important to call the countsUpdater() method which opens the updater if it wasn't already open, this is
+        // because
         // we need to register all transactions to the counts store even if they don't apply any counts changes.
-        if ( !countsUpdaterClosed )
-        {
+        if (!countsUpdaterClosed) {
             countsUpdater().close();
             countsUpdaterClosed = true;
         }
-        if ( !degreesUpdaterClosed )
-        {
+        if (!degreesUpdaterClosed) {
             degreesUpdater().close();
             degreesUpdaterClosed = true;
         }
     }
 
     @Override
-    public boolean visitNodeCountsCommand( Command.NodeCountsCommand command )
-    {
+    public boolean visitNodeCountsCommand(Command.NodeCountsCommand command) {
         haveUpdates = true;
-        countsUpdater().incrementNodeCount( command.labelId(), command.delta() );
+        countsUpdater().incrementNodeCount(command.labelId(), command.delta());
         return false;
     }
 
@@ -78,50 +73,46 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter
      * affects the window of time that all counts-updating transactions will need to block during a checkpoint. So instead of opening this updater
      * when the transaction starts to apply then open it when it gets to changing counts, if at all.
      */
-    private CountsAccessor.Updater countsUpdater()
-    {
-        if ( countsUpdater == null )
-        {
-            countsUpdater = countsStore.apply( transaction.transactionId(), transaction.cursorContext() );
+    private CountsAccessor.Updater countsUpdater() {
+        if (countsUpdater == null) {
+            countsUpdater = countsStore.apply(transaction.transactionId(), transaction.cursorContext());
         }
         return countsUpdater;
     }
 
-    private RelationshipGroupDegreesStore.Updater degreesUpdater()
-    {
-        if ( degreesUpdater == null )
-        {
-            degreesUpdater = groupDegreesStore.apply( transaction.transactionId(), transaction.cursorContext() );
+    private RelationshipGroupDegreesStore.Updater degreesUpdater() {
+        if (degreesUpdater == null) {
+            degreesUpdater = groupDegreesStore.apply(transaction.transactionId(), transaction.cursorContext());
         }
         return degreesUpdater;
     }
 
     @Override
-    public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command )
-    {
+    public boolean visitRelationshipCountsCommand(Command.RelationshipCountsCommand command) {
         haveUpdates = true;
-        countsUpdater().incrementRelationshipCount( command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
+        countsUpdater()
+                .incrementRelationshipCount(
+                        command.startLabelId(), command.typeId(), command.endLabelId(), command.delta());
         return false;
     }
 
     @Override
-    public boolean visitSchemaRuleCommand( SchemaRuleCommand command )
-    {
+    public boolean visitSchemaRuleCommand(SchemaRuleCommand command) {
         // This shows that this transaction is a schema transaction, so it cannot have commands
         // updating any counts anyway. Therefore the counts updater is closed right away.
         // This also breaks an otherwise deadlocking scenario between check pointer, this applier
         // and an index population thread wanting to apply index sampling to the counts store.
-        assert !haveUpdates : "Assumed that a schema transaction wouldn't also contain data commands affecting " +
-                "counts store, but was proven wrong with this transaction";
+        assert !haveUpdates
+                : "Assumed that a schema transaction wouldn't also contain data commands affecting "
+                        + "counts store, but was proven wrong with this transaction";
         closeCountsUpdatersIfOpen();
         return false;
     }
 
     @Override
-    public boolean visitGroupDegreeCommand( Command.GroupDegreeCommand command )
-    {
+    public boolean visitGroupDegreeCommand(Command.GroupDegreeCommand command) {
         haveUpdates = true;
-        degreesUpdater().increment( command.groupId(), command.direction(), command.delta() );
+        degreesUpdater().increment(command.groupId(), command.direction(), command.delta());
         return false;
     }
 }

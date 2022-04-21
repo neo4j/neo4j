@@ -19,14 +19,6 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.junit.platform.testkit.engine.EngineTestKit;
-import org.junit.platform.testkit.engine.Events;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
@@ -35,77 +27,84 @@ import static org.junit.platform.testkit.engine.EventConditions.finishedWithFail
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
-class SuppressOutputExtensionTest
-{
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.platform.testkit.engine.EngineTestKit;
+import org.junit.platform.testkit.engine.Events;
+
+class SuppressOutputExtensionTest {
     @Test
-    void shouldThrowExceptionOnMissingResourceLock()
-    {
-        Events testEvents = EngineTestKit.engine( ENGINE_ID )
-                .selectors( selectClass( SuppressOutputExtensionIncorrectUsage.class ) )
+    void shouldThrowExceptionOnMissingResourceLock() {
+        Events testEvents = EngineTestKit.engine(ENGINE_ID)
+                .selectors(selectClass(SuppressOutputExtensionIncorrectUsage.class))
                 .execute()
                 .testEvents();
 
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( IllegalStateException.class ),
-                        message( message -> message.contains( "SuppressOutputExtension requires `@ResourceLock( Resources.SYSTEM_OUT )` annotation." ) ) ) ) );
+        testEvents
+                .assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(
+                                finishedWithFailure(
+                                        instanceOf(IllegalStateException.class),
+                                        message(
+                                                message -> message.contains(
+                                                        "SuppressOutputExtension requires `@ResourceLock( Resources.SYSTEM_OUT )` annotation.")))));
     }
 
     @Nested
-    @ExtendWith( SuppressOutputExtension.class )
-    @ResourceLock( Resources.SYSTEM_OUT )
-    class HasLock
-    {
+    @ExtendWith(SuppressOutputExtension.class)
+    @ResourceLock(Resources.SYSTEM_OUT)
+    class HasLock {
         @Inject
         private SuppressOutput output;
+
         @Test
-        void shouldSucceedWithLockPresent()
-        {
-            verifySuppressOutputWorks( output );
+        void shouldSucceedWithLockPresent() {
+            verifySuppressOutputWorks(output);
         }
 
         @Nested
-        class NestedLock
-        {
+        class NestedLock {
             @Test
-            void shouldSucceedWithNestedLock()
-            {
-                verifySuppressOutputWorks( output );
+            void shouldSucceedWithNestedLock() {
+                verifySuppressOutputWorks(output);
             }
         }
     }
 
     @Nested
-    class InheritedLock extends HasLock
-    {
+    class InheritedLock extends HasLock {
         @Inject
         private SuppressOutput output;
+
         @Test
-        void shouldFindInheritedLock()
-        {
-            verifySuppressOutputWorks( output );
+        void shouldFindInheritedLock() {
+            verifySuppressOutputWorks(output);
         }
     }
 
     @Nested
-    @ExtendWith( SuppressOutputExtension.class )
-    @ResourceLock( "SuppressOutputTest.foo" )
-    @ResourceLock( "SuppressOutputTest.bar" )
-    @ResourceLock( Resources.SYSTEM_OUT )
-    class RepeatedLock
-    {
+    @ExtendWith(SuppressOutputExtension.class)
+    @ResourceLock("SuppressOutputTest.foo")
+    @ResourceLock("SuppressOutputTest.bar")
+    @ResourceLock(Resources.SYSTEM_OUT)
+    class RepeatedLock {
         @Inject
         private SuppressOutput output;
+
         @Test
-        void shouldFindRepeatedLock()
-        {
-            verifySuppressOutputWorks( output );
+        void shouldFindRepeatedLock() {
+            verifySuppressOutputWorks(output);
         }
     }
 
-    static void verifySuppressOutputWorks( SuppressOutput output )
-    {
-        System.out.println( "foo" );
-        System.out.println( "bar" );
-        assertThat( output.getOutputVoice().lines() ).containsExactly( "foo", "bar" );
+    static void verifySuppressOutputWorks(SuppressOutput output) {
+        System.out.println("foo");
+        System.out.println("bar");
+        assertThat(output.getOutputVoice().lines()).containsExactly("foo", "bar");
     }
 }

@@ -37,7 +37,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
         None,
         None,
         Some(greaterThan(prop("r", "prop"), literalInt(123))),
-        OUTGOING,
+        OUTGOING
       )(pos)
     )
   }
@@ -50,7 +50,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
         Some(Some(range(Some(1), Some(5)))),
         Some(mapOf("prop" -> literalString("test"))),
         Some(greaterThan(prop("r", "otherProp"), literalInt(123))),
-        OUTGOING,
+        OUTGOING
       )(pos)
     )
   }
@@ -63,7 +63,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
         None,
         Some(mapOf("prop" -> literal(42))),
         Some(greaterThan(prop("r", "otherProp"), literalInt(123))),
-        OUTGOING,
+        OUTGOING
       )(pos)
     )
   }
@@ -76,7 +76,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
         None,
         None,
         Some(greaterThan(prop("WHERE", "prop"), literalInt(123))),
-        OUTGOING,
+        OUTGOING
       )(pos)
     )
   }
@@ -89,7 +89,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
         None,
         None,
         Some(greaterThan(prop("r", "prop"), literalInt(123))),
-        OUTGOING,
+        OUTGOING
       )(pos)
     )
   }
@@ -102,7 +102,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
         None,
         Some(mapOf("prop" -> literal("test"))),
         Some(equals(prop("r", "otherProp"), literalInt(123))),
-        OUTGOING,
+        OUTGOING
       )(pos)
     )
   }

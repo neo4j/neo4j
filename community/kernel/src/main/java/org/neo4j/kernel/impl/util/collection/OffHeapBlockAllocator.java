@@ -21,24 +21,21 @@ package org.neo4j.kernel.impl.util.collection;
 
 import org.neo4j.memory.MemoryTracker;
 
-public interface OffHeapBlockAllocator
-{
+public interface OffHeapBlockAllocator {
     /**
      * @return memory block of requested size; there's no guarantee whether allocated memory is zero-filled or dirty
      */
-    MemoryBlock allocate( long size, MemoryTracker tracker );
+    MemoryBlock allocate(long size, MemoryTracker tracker);
 
-    void free( MemoryBlock block, MemoryTracker tracker );
+    void free(MemoryBlock block, MemoryTracker tracker);
 
     void release();
 
-    class MemoryBlock
-    {
+    class MemoryBlock {
         final long addr;
         final long size;
 
-        MemoryBlock( long addr, long size )
-        {
+        MemoryBlock(long addr, long size) {
             this.size = size;
             this.addr = addr;
         }

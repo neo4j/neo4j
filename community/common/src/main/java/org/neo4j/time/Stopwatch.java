@@ -19,31 +19,28 @@
  */
 package org.neo4j.time;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * This class can be used to track elapsed time.
  *
  * @implNote It's using the highest resolution monotonic time source available. See {@link System#nanoTime()}.
  */
-public class Stopwatch
-{
+public class Stopwatch {
     private final long startTimeNano;
     private final Ticker ticker;
 
     /**
      * Creates a default stop watch that will use {@link System#nanoTime()} as a source.
      */
-    public static Stopwatch start()
-    {
-        return new Stopwatch( System::nanoTime );
+    public static Stopwatch start() {
+        return new Stopwatch(System::nanoTime);
     }
 
-    Stopwatch( Ticker ticker )
-    {
+    Stopwatch(Ticker ticker) {
         this.ticker = ticker;
         startTimeNano = ticker.get();
     }
@@ -52,9 +49,8 @@ public class Stopwatch
      * Returned the elapsed time from the moment the stopwatch was created.
      * @return the elapsed time since the stopwatch was started.
      */
-    public Duration elapsed()
-    {
-        return Duration.ofNanos( elapsed( NANOSECONDS ) );
+    public Duration elapsed() {
+        return Duration.ofNanos(elapsed(NANOSECONDS));
     }
 
     /**
@@ -62,9 +58,8 @@ public class Stopwatch
      * @param unit the desired time unit.
      * @return the elapsed time since the stopwatch was started, in the provided unit.
      */
-    public long elapsed( TimeUnit unit )
-    {
-        return unit.convert( ticker.get() - startTimeNano, NANOSECONDS );
+    public long elapsed(TimeUnit unit) {
+        return unit.convert(ticker.get() - startTimeNano, NANOSECONDS);
     }
 
     /**
@@ -73,9 +68,8 @@ public class Stopwatch
      * @param timeout the timeout duration.
      * @return {@code true} if the timeout duration is greater or equals to the elapsed time.
      */
-    public boolean hasTimedOut( Duration timeout )
-    {
-        return elapsed( NANOSECONDS ) >= timeout.toNanos();
+    public boolean hasTimedOut(Duration timeout) {
+        return elapsed(NANOSECONDS) >= timeout.toNanos();
     }
 
     /**
@@ -85,16 +79,14 @@ public class Stopwatch
      * @param unit time unit the duration is specified in.
      * @return {@code true} if the timeout duration is greater or equals to the elapsed time.
      */
-    public boolean hasTimedOut( long duration, TimeUnit unit )
-    {
-        return elapsed( NANOSECONDS ) >= unit.toNanos( duration );
+    public boolean hasTimedOut(long duration, TimeUnit unit) {
+        return elapsed(NANOSECONDS) >= unit.toNanos(duration);
     }
 
     /**
      * Represents a source of time.
      */
-    interface Ticker
-    {
+    interface Ticker {
         /**
          * @return current time in nanoseconds.
          */

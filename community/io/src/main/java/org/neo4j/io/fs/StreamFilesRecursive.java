@@ -19,19 +19,17 @@
  */
 package org.neo4j.io.fs;
 
+import static java.util.stream.Collectors.toList;
+import static org.neo4j.io.IOUtils.uncheckedFunction;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
-import static org.neo4j.io.IOUtils.uncheckedFunction;
-
-public final class StreamFilesRecursive
-{
-    private StreamFilesRecursive()
-    {
-        //This is a helper class, do not instantiate it.
+public final class StreamFilesRecursive {
+    private StreamFilesRecursive() {
+        // This is a helper class, do not instantiate it.
     }
 
     /**
@@ -56,25 +54,22 @@ public final class StreamFilesRecursive
      * @param fs The {@link FileSystemAbstraction} to use for manipulating files.
      * @return A {@link Stream} of {@link FileHandle}s
      */
-    public static Stream<FileHandle> streamFilesRecursive( Path directory, FileSystemAbstraction fs ) throws IOException
-    {
+    public static Stream<FileHandle> streamFilesRecursive(Path directory, FileSystemAbstraction fs) throws IOException {
         Path canonicalizedDirectory = directory.toAbsolutePath().normalize();
         // We grab a snapshot of the file tree to avoid seeing the same file twice or more due to renames.
-        List<Path> snapshot = streamFilesRecursiveInner( canonicalizedDirectory, fs ).collect( toList() );
-        return snapshot.stream().map( f -> new WrappingFileHandle( f, canonicalizedDirectory, fs ) );
+        List<Path> snapshot =
+                streamFilesRecursiveInner(canonicalizedDirectory, fs).collect(toList());
+        return snapshot.stream().map(f -> new WrappingFileHandle(f, canonicalizedDirectory, fs));
     }
 
-    private static Stream<Path> streamFilesRecursiveInner( Path directory, FileSystemAbstraction fs ) throws IOException
-    {
-        if ( !fs.fileExists( directory ) )
-        {
+    private static Stream<Path> streamFilesRecursiveInner(Path directory, FileSystemAbstraction fs) throws IOException {
+        if (!fs.fileExists(directory)) {
             return Stream.empty();
         }
-        if ( !fs.isDirectory( directory ) )
-        {
-            return Stream.of( directory );
+        if (!fs.isDirectory(directory)) {
+            return Stream.of(directory);
         }
-        return Stream.of( fs.listFiles( directory ) )
-                     .flatMap( uncheckedFunction( f -> fs.isDirectory( f ) ? streamFilesRecursiveInner( f, fs ) : Stream.of( f ) ) );
+        return Stream.of(fs.listFiles(directory))
+                .flatMap(uncheckedFunction(f -> fs.isDirectory(f) ? streamFilesRecursiveInner(f, fs) : Stream.of(f)));
     }
 }

@@ -19,8 +19,9 @@
  */
 package org.neo4j.fabric.bolt;
 
-import java.util.Optional;
+import static java.lang.String.format;
 
+import java.util.Optional;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
@@ -35,10 +36,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.lang.String.format;
-
-public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseManagementServiceSPI
-{
+public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseManagementServiceSPI {
     private final FabricBookmarkParser fabricBookmarkParser = new FabricBookmarkParser();
     private final FabricExecutor fabricExecutor;
     private final FabricConfig config;
@@ -47,10 +45,13 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
     private final LocalGraphTransactionIdTracker transactionIdTracker;
     private final TransactionBookmarkManagerFactory transactionBookmarkManagerFactory;
 
-    public BoltFabricDatabaseManagementService( FabricExecutor fabricExecutor, FabricConfig config, TransactionManager transactionManager,
-                                                FabricDatabaseManager fabricDatabaseManager, LocalGraphTransactionIdTracker transactionIdTracker,
-                                                TransactionBookmarkManagerFactory transactionBookmarkManagerFactory )
-    {
+    public BoltFabricDatabaseManagementService(
+            FabricExecutor fabricExecutor,
+            FabricConfig config,
+            TransactionManager transactionManager,
+            FabricDatabaseManager fabricDatabaseManager,
+            LocalGraphTransactionIdTracker transactionIdTracker,
+            TransactionBookmarkManagerFactory transactionBookmarkManagerFactory) {
         this.fabricExecutor = fabricExecutor;
         this.config = config;
         this.transactionManager = transactionManager;
@@ -60,31 +61,33 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
     }
 
     @Override
-    public BoltGraphDatabaseServiceSPI database( String databaseName, MemoryTracker memoryTracker ) throws UnavailableException, DatabaseNotFoundException
-    {
-        try
-        {
-            return getDatabase( databaseName, memoryTracker );
-        }
-        catch ( DatabaseShutdownException | UnavailableException e )
-        {
+    public BoltGraphDatabaseServiceSPI database(String databaseName, MemoryTracker memoryTracker)
+            throws UnavailableException, DatabaseNotFoundException {
+        try {
+            return getDatabase(databaseName, memoryTracker);
+        } catch (DatabaseShutdownException | UnavailableException e) {
             // The failure expected over bolt
-            throw new UnavailableException( format( "Database '%s' is unavailable.", databaseName ) );
+            throw new UnavailableException(format("Database '%s' is unavailable.", databaseName));
         }
     }
 
-    public BoltGraphDatabaseServiceSPI getDatabase( String databaseName, MemoryTracker memoryTracker ) throws UnavailableException, DatabaseNotFoundException
-    {
-        memoryTracker.allocateHeap( BoltFabricDatabaseService.SHALLOW_SIZE );
+    public BoltGraphDatabaseServiceSPI getDatabase(String databaseName, MemoryTracker memoryTracker)
+            throws UnavailableException, DatabaseNotFoundException {
+        memoryTracker.allocateHeap(BoltFabricDatabaseService.SHALLOW_SIZE);
 
-        var database = fabricDatabaseManager.getDatabase( databaseName );
-        return new BoltFabricDatabaseService( database.databaseId(), fabricExecutor, config, transactionManager, transactionIdTracker,
-                                              transactionBookmarkManagerFactory, memoryTracker );
+        var database = fabricDatabaseManager.getDatabase(databaseName);
+        return new BoltFabricDatabaseService(
+                database.databaseId(),
+                fabricExecutor,
+                config,
+                transactionManager,
+                transactionIdTracker,
+                transactionBookmarkManagerFactory,
+                memoryTracker);
     }
 
     @Override
-    public Optional<CustomBookmarkFormatParser> getCustomBookmarkFormatParser()
-    {
-        return Optional.of( fabricBookmarkParser );
+    public Optional<CustomBookmarkFormatParser> getCustomBookmarkFormatParser() {
+        return Optional.of(fabricBookmarkParser);
     }
 }

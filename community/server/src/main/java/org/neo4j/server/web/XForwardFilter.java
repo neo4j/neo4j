@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.web;
 
+import static org.neo4j.server.web.XForwardUtil.X_FORWARD_HOST_HEADER_KEY;
+import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
+
 import java.net.URI;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.UriInfo;
-
-import static org.neo4j.server.web.XForwardUtil.X_FORWARD_HOST_HEADER_KEY;
-import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
 
 /**
  * Changes the value of the base and request URIs to match the provided
@@ -36,19 +36,17 @@ import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
  * actual request URIs.
  */
 @PreMatching
-public class XForwardFilter implements ContainerRequestFilter
-{
+public class XForwardFilter implements ContainerRequestFilter {
     @Override
-    public void filter( ContainerRequestContext requestContext )
-    {
-        String xForwardedHost = requestContext.getHeaderString( X_FORWARD_HOST_HEADER_KEY );
-        String xForwardedProto = requestContext.getHeaderString( X_FORWARD_PROTO_HEADER_KEY );
+    public void filter(ContainerRequestContext requestContext) {
+        String xForwardedHost = requestContext.getHeaderString(X_FORWARD_HOST_HEADER_KEY);
+        String xForwardedProto = requestContext.getHeaderString(X_FORWARD_PROTO_HEADER_KEY);
 
         UriInfo uriInfo = requestContext.getUriInfo();
 
-        URI externalBaseUri = XForwardUtil.externalUri( uriInfo.getBaseUri(), xForwardedHost, xForwardedProto );
-        URI externalRequestUri = XForwardUtil.externalUri( uriInfo.getRequestUri(), xForwardedHost, xForwardedProto );
+        URI externalBaseUri = XForwardUtil.externalUri(uriInfo.getBaseUri(), xForwardedHost, xForwardedProto);
+        URI externalRequestUri = XForwardUtil.externalUri(uriInfo.getRequestUri(), xForwardedHost, xForwardedProto);
 
-        requestContext.setRequestUri( externalBaseUri, externalRequestUri );
+        requestContext.setRequestUri(externalBaseUri, externalRequestUri);
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.exceptions.InvalidSemanticsException
 
 object ExecutionMode {
+
   def cantMixProfileAndExplain: Nothing =
     throw new InvalidSemanticsException("Can't mix PROFILE and EXPLAIN")
 }
@@ -35,15 +36,17 @@ case object NormalMode extends ExecutionMode {
 }
 
 case object ExplainMode extends ExecutionMode {
+
   def combineWith(other: ExecutionMode) = other match {
     case ProfileMode => ExecutionMode.cantMixProfileAndExplain
-    case _ => this
+    case _           => this
   }
 }
 
 case object ProfileMode extends ExecutionMode {
+
   def combineWith(other: ExecutionMode) = other match {
     case ExplainMode => ExecutionMode.cantMixProfileAndExplain
-    case _ => this
+    case _           => this
   }
 }

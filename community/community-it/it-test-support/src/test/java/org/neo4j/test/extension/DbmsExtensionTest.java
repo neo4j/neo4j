@@ -19,15 +19,6 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtensionContextException;
-import org.junit.platform.testkit.engine.EngineTestKit;
-import org.junit.platform.testkit.engine.Events;
-
-import org.neo4j.test.extension.dbms.DbmsExtensionCheckCallbackSignature;
-import org.neo4j.test.extension.dbms.DbmsExtensionEnforceAnnotations;
-import org.neo4j.test.extension.dbms.DbmsExtensionMixImpermanent;
-
 import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 import static org.junit.platform.testkit.engine.EventConditions.event;
@@ -35,46 +26,71 @@ import static org.junit.platform.testkit.engine.EventConditions.finishedWithFail
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
-class DbmsExtensionTest
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContextException;
+import org.junit.platform.testkit.engine.EngineTestKit;
+import org.junit.platform.testkit.engine.Events;
+import org.neo4j.test.extension.dbms.DbmsExtensionCheckCallbackSignature;
+import org.neo4j.test.extension.dbms.DbmsExtensionEnforceAnnotations;
+import org.neo4j.test.extension.dbms.DbmsExtensionMixImpermanent;
+
+class DbmsExtensionTest {
     @Test
-    void enforceAnnotation()
-    {
-        Events testEvents = EngineTestKit.engine( ENGINE_ID )
-                .selectors( selectClass( DbmsExtensionEnforceAnnotations.class ) ).execute()
+    void enforceAnnotation() {
+        Events testEvents = EngineTestKit.engine(ENGINE_ID)
+                .selectors(selectClass(DbmsExtensionEnforceAnnotations.class))
+                .execute()
                 .testEvents();
 
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( IllegalArgumentException.class ),
-                        message( message -> message.contains( "must be annotated" ) ) ) ) );
+        testEvents
+                .assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(finishedWithFailure(
+                                instanceOf(IllegalArgumentException.class),
+                                message(message -> message.contains("must be annotated")))));
     }
 
     @Test
-    void checkCallbackSignature()
-    {
-        Events testEvents = EngineTestKit.engine( ENGINE_ID )
-                .selectors( selectClass( DbmsExtensionCheckCallbackSignature.class ) ).execute()
+    void checkCallbackSignature() {
+        Events testEvents = EngineTestKit.engine(ENGINE_ID)
+                .selectors(selectClass(DbmsExtensionCheckCallbackSignature.class))
+                .execute()
                 .testEvents();
 
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( IllegalArgumentException.class ),
-                        message( message -> message.contains( "must return void" ) ) ) ) );
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( IllegalArgumentException.class ),
-                        message( message -> message.contains( "must take one parameter that is assignable from" ) ) ) ) );
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( IllegalArgumentException.class ),
-                        message( message -> message.contains( "cannot be found." ) ) ) ) );
+        testEvents
+                .assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(finishedWithFailure(
+                                instanceOf(IllegalArgumentException.class),
+                                message(message -> message.contains("must return void")))));
+        testEvents
+                .assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(finishedWithFailure(
+                                instanceOf(IllegalArgumentException.class),
+                                message(message ->
+                                        message.contains("must take one parameter that is assignable from")))));
+        testEvents
+                .assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(finishedWithFailure(
+                                instanceOf(IllegalArgumentException.class),
+                                message(message -> message.contains("cannot be found.")))));
     }
 
     @Test
-    void mixImpermanent()
-    {
-        Events testEvents = EngineTestKit.engine( ENGINE_ID )
-                .selectors( selectClass( DbmsExtensionMixImpermanent.class ) ).execute()
+    void mixImpermanent() {
+        Events testEvents = EngineTestKit.engine(ENGINE_ID)
+                .selectors(selectClass(DbmsExtensionMixImpermanent.class))
+                .execute()
                 .testEvents();
 
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( ExtensionContextException.class ) ) ) );
+        testEvents
+                .assertThatEvents()
+                .haveExactly(1, event(finishedWithFailure(instanceOf(ExtensionContextException.class))));
     }
 }

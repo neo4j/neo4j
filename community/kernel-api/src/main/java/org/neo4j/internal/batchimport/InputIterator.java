@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.InputChunk;
@@ -30,8 +29,7 @@ import org.neo4j.internal.batchimport.input.InputChunk;
  * A {@link ResourceIterator} with added methods suitable for {@link Input} into a {@link BatchImporter}.
  * WARNING: Implementations must be thread safe
  */
-public interface InputIterator extends Closeable
-{
+public interface InputIterator extends Closeable {
     /**
      * Called by each thread that will be reading input data and the returned instances will be local to that thread.
      * @return an instance which is capable of receiving data in chunks when passed into {@link #next(InputChunk)}.
@@ -44,5 +42,5 @@ public interface InputIterator extends Closeable
      * @return {@code true} if data was retreived into the chunk, otherwise {@code false} if there was no more data to be read.
      * @throws IOException on I/O error.
      */
-    boolean next( InputChunk chunk ) throws IOException;
+    boolean next(InputChunk chunk) throws IOException;
 }

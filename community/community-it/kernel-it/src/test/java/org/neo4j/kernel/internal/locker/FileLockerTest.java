@@ -19,16 +19,21 @@
  */
 package org.neo4j.kernel.internal.locker;
 
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -42,273 +47,221 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @TestDirectoryExtension
-class FileLockerTest
-{
+class FileLockerTest {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private FileSystemAbstraction fileSystem;
 
-    static Stream<LockerFactory> lockerFactories()
-    {
-        return Stream.of( ( fs, directory ) -> new GlobalLocker( fs, Neo4jLayout.of( directory.homePath() ) ),
-                ( fs, directory ) -> new DatabaseLocker( fs, Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ) ) );
+    static Stream<LockerFactory> lockerFactories() {
+        return Stream.of(
+                (fs, directory) -> new GlobalLocker(fs, Neo4jLayout.of(directory.homePath())),
+                (fs, directory) -> new DatabaseLocker(
+                        fs, Neo4jLayout.of(directory.homePath()).databaseLayout(DEFAULT_DATABASE_NAME)));
     }
 
     @ParameterizedTest
-    @MethodSource( "lockerFactories" )
-    void shouldUseAlreadyOpenedFileChannel( LockerFactory lockerFactory ) throws Exception
-    {
-        StoreChannel channel = mock( StoreChannel.class );
-        CustomChannelFileSystemAbstraction fileSystemAbstraction = new CustomChannelFileSystemAbstraction( fileSystem, channel );
+    @MethodSource("lockerFactories")
+    void shouldUseAlreadyOpenedFileChannel(LockerFactory lockerFactory) throws Exception {
+        StoreChannel channel = mock(StoreChannel.class);
+        CustomChannelFileSystemAbstraction fileSystemAbstraction =
+                new CustomChannelFileSystemAbstraction(fileSystem, channel);
         MutableInt numberOfCallesToOpen = new MutableInt();
-        assertThrows( FileLockException.class, () -> {
-            try ( Locker locker = lockerFactory.createLocker( fileSystemAbstraction, testDirectory ) )
-            {
-                assertThrows( FileLockException.class, locker::checkLock );
-                numberOfCallesToOpen.setValue( fileSystemAbstraction.getNumberOfCallsToOpen() );
+        assertThrows(FileLockException.class, () -> {
+            try (Locker locker = lockerFactory.createLocker(fileSystemAbstraction, testDirectory)) {
+                assertThrows(FileLockException.class, locker::checkLock);
+                numberOfCallesToOpen.setValue(fileSystemAbstraction.getNumberOfCallsToOpen());
                 // Try to grab lock a second time
                 locker.checkLock();
             }
-        } );
+        });
 
-        assertEquals( numberOfCallesToOpen.intValue(), fileSystemAbstraction
-                .getNumberOfCallsToOpen(), "Expect that number of open channels will remain the same for " );
+        assertEquals(
+                numberOfCallesToOpen.intValue(),
+                fileSystemAbstraction.getNumberOfCallsToOpen(),
+                "Expect that number of open channels will remain the same for ");
     }
 
     @ParameterizedTest
-    @MethodSource( "lockerFactories" )
-    void shouldAllowMultipleCallsToCheckLock( LockerFactory lockerFactory ) throws Exception
-    {
-        try ( Locker locker = lockerFactory.createLocker( fileSystem, testDirectory ) )
-        {
+    @MethodSource("lockerFactories")
+    void shouldAllowMultipleCallsToCheckLock(LockerFactory lockerFactory) throws Exception {
+        try (Locker locker = lockerFactory.createLocker(fileSystem, testDirectory)) {
             locker.checkLock();
             locker.checkLock();
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "lockerFactories" )
-    void keepLockWhenOtherTryToTakeLock( LockerFactory lockerFactory ) throws Exception
-    {
-        Locker locker = lockerFactory.createLocker( fileSystem, testDirectory );
+    @MethodSource("lockerFactories")
+    void keepLockWhenOtherTryToTakeLock(LockerFactory lockerFactory) throws Exception {
+        Locker locker = lockerFactory.createLocker(fileSystem, testDirectory);
         locker.checkLock();
 
-        assertThrows( FileLockException.class, () ->
-        {
-            try ( Locker locker1 = lockerFactory.createLocker( fileSystem, testDirectory ) )
-            {
+        assertThrows(FileLockException.class, () -> {
+            try (Locker locker1 = lockerFactory.createLocker(fileSystem, testDirectory)) {
                 locker1.checkLock();
             }
-        } );
+        });
 
         // Initial locker should still have a valid lock
-        assertThrows( FileLockException.class, () ->
-        {
-            try ( Locker locker1 = lockerFactory.createLocker( fileSystem, testDirectory ) )
-            {
+        assertThrows(FileLockException.class, () -> {
+            try (Locker locker1 = lockerFactory.createLocker(fileSystem, testDirectory)) {
                 locker1.checkLock();
             }
-        } );
+        });
 
         locker.close();
     }
 
     @ParameterizedTest
-    @MethodSource( "lockerFactories" )
-    void shouldObtainLockWhenFileNotLocked( LockerFactory lockerFactory )
-    {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
-        {
+    @MethodSource("lockerFactories")
+    void shouldObtainLockWhenFileNotLocked(LockerFactory lockerFactory) {
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction(fileSystem) {
             @Override
-            public boolean fileExists( Path file )
-            {
-                return fileSystem.fileExists( file );
+            public boolean fileExists(Path file) {
+                return fileSystem.fileExists(file);
             }
         };
 
-        assertDoesNotThrow( () ->
-        {
-            try ( Locker locker = lockerFactory.createLocker( fileSystemAbstraction, testDirectory ) )
-            {
+        assertDoesNotThrow(() -> {
+            try (Locker locker = lockerFactory.createLocker(fileSystemAbstraction, testDirectory)) {
                 locker.checkLock();
             }
-        } );
+        });
     }
 
     @ParameterizedTest
-    @MethodSource( "lockerFactories" )
-    void shouldCreateDirAndObtainLockWhenDirDoesNotExist( LockerFactory lockerFactory ) throws Exception
-    {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
-        {
+    @MethodSource("lockerFactories")
+    void shouldCreateDirAndObtainLockWhenDirDoesNotExist(LockerFactory lockerFactory) throws Exception {
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction(fileSystem) {
             @Override
-            public boolean fileExists( Path file )
-            {
+            public boolean fileExists(Path file) {
                 return false;
             }
         };
 
-        try ( Locker locker = lockerFactory.createLocker( fileSystemAbstraction, testDirectory ) )
-        {
+        try (Locker locker = lockerFactory.createLocker(fileSystemAbstraction, testDirectory)) {
             locker.checkLock();
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "lockerFactories" )
-    void shouldNotObtainLockWhenDirCannotBeCreated( LockerFactory lockerFactory )
-    {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
-        {
+    @MethodSource("lockerFactories")
+    void shouldNotObtainLockWhenDirCannotBeCreated(LockerFactory lockerFactory) {
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction(fileSystem) {
             @Override
-            public void mkdirs( Path fileName ) throws IOException
-            {
-                throw new IOException( "store dir could not be created" );
+            public void mkdirs(Path fileName) throws IOException {
+                throw new IOException("store dir could not be created");
             }
 
             @Override
-            public boolean fileExists( Path file )
-            {
+            public boolean fileExists(Path file) {
                 return false;
             }
         };
 
-        FileLockException fileLockException = assertThrows( FileLockException.class, () ->
-        {
-            try ( Locker storeLocker = lockerFactory.createLocker( fileSystemAbstraction, testDirectory ) )
-            {
+        FileLockException fileLockException = assertThrows(FileLockException.class, () -> {
+            try (Locker storeLocker = lockerFactory.createLocker(fileSystemAbstraction, testDirectory)) {
                 storeLocker.checkLock();
             }
-        } );
-        assertThat( fileLockException.getMessage() ).startsWith( "Unable to create path for dir: " );
+        });
+        assertThat(fileLockException.getMessage()).startsWith("Unable to create path for dir: ");
     }
 
     @ParameterizedTest
-    @MethodSource( "lockerFactories" )
-    void shouldNotObtainLockWhenUnableToOpenLockFile( LockerFactory lockerFactory )
-    {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
-        {
+    @MethodSource("lockerFactories")
+    void shouldNotObtainLockWhenUnableToOpenLockFile(LockerFactory lockerFactory) {
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction(fileSystem) {
             @Override
-            public StoreChannel write( Path fileName ) throws IOException
-            {
-                throw new IOException( "cannot open lock file" );
+            public StoreChannel write(Path fileName) throws IOException {
+                throw new IOException("cannot open lock file");
             }
 
             @Override
-            public boolean fileExists( Path file )
-            {
+            public boolean fileExists(Path file) {
                 return false;
             }
         };
 
-        FileLockException fileLockException = assertThrows( FileLockException.class, () ->
-        {
-            try ( Locker storeLocker = lockerFactory.createLocker( fileSystemAbstraction, testDirectory ) )
-            {
+        FileLockException fileLockException = assertThrows(FileLockException.class, () -> {
+            try (Locker storeLocker = lockerFactory.createLocker(fileSystemAbstraction, testDirectory)) {
                 storeLocker.checkLock();
             }
-        } );
-        assertThat( fileLockException.getMessage() ).startsWith( "Unable to obtain lock on file:" );
+        });
+        assertThat(fileLockException.getMessage()).startsWith("Unable to obtain lock on file:");
     }
 
     @ParameterizedTest
-    @MethodSource( "lockerFactories" )
-    void shouldNotObtainLockWhenAlreadyInUse( LockerFactory lockerFactory )
-    {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
-        {
+    @MethodSource("lockerFactories")
+    void shouldNotObtainLockWhenAlreadyInUse(LockerFactory lockerFactory) {
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction(fileSystem) {
             @Override
-            public boolean fileExists( Path file )
-            {
+            public boolean fileExists(Path file) {
                 return false;
             }
 
             @Override
-            public StoreChannel write( Path fileName ) throws IOException
-            {
-                return new DelegatingStoreChannel( super.write( fileName ) )
-                {
+            public StoreChannel write(Path fileName) throws IOException {
+                return new DelegatingStoreChannel(super.write(fileName)) {
                     @Override
-                    public FileLock tryLock()
-                    {
+                    public FileLock tryLock() {
                         return null; // 'null' implies that the file has been externally locked
                     }
                 };
             }
         };
 
-        FileLockException fileLockException = assertThrows( FileLockException.class, () ->
-        {
-            try ( Locker storeLocker = lockerFactory.createLocker( fileSystemAbstraction, testDirectory ) )
-            {
+        FileLockException fileLockException = assertThrows(FileLockException.class, () -> {
+            try (Locker storeLocker = lockerFactory.createLocker(fileSystemAbstraction, testDirectory)) {
                 storeLocker.checkLock();
             }
-        } );
-        assertThat( fileLockException.getMessage() ).contains( "Lock file has been locked by another process" );
+        });
+        assertThat(fileLockException.getMessage()).contains("Lock file has been locked by another process");
     }
 
     @Test
-    void mustPreventMultipleInstancesFromStartingOnSameStore()
-    {
+    void mustPreventMultipleInstancesFromStartingOnSameStore() {
         Path storeDir = testDirectory.homePath();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
-        try
-        {
-            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-            try ( Transaction tx = db.beginTx() )
-            {
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir).build();
+        try {
+            GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+            try (Transaction tx = db.beginTx()) {
                 tx.createNode();
                 tx.commit();
             }
 
-            assertThrows( Exception.class, () ->
-            {
-                new TestDatabaseManagementServiceBuilder( storeDir ).build();
-            } );
-        }
-        finally
-        {
+            assertThrows(Exception.class, () -> {
+                new TestDatabaseManagementServiceBuilder(storeDir).build();
+            });
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private static class CustomChannelFileSystemAbstraction extends DelegatingFileSystemAbstraction
-    {
+    private static class CustomChannelFileSystemAbstraction extends DelegatingFileSystemAbstraction {
         private final StoreChannel channel;
         private int numberOfCallsToOpen;
 
-        CustomChannelFileSystemAbstraction( FileSystemAbstraction delegate, StoreChannel channel )
-        {
-            super( delegate );
+        CustomChannelFileSystemAbstraction(FileSystemAbstraction delegate, StoreChannel channel) {
+            super(delegate);
             this.channel = channel;
         }
 
         @Override
-        public StoreChannel write( Path fileName )
-        {
+        public StoreChannel write(Path fileName) {
             numberOfCallsToOpen++;
             return channel;
         }
 
-        int getNumberOfCallsToOpen()
-        {
+        int getNumberOfCallsToOpen() {
             return numberOfCallsToOpen;
         }
     }
 
     @FunctionalInterface
-    private interface LockerFactory
-    {
-        Locker createLocker( FileSystemAbstraction fs, TestDirectory directory );
+    private interface LockerFactory {
+        Locker createLocker(FileSystemAbstraction fs, TestDirectory directory);
     }
 }

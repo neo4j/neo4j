@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.LongFunction;
+import static java.lang.String.format;
+import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
+import java.util.function.LongFunction;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
@@ -39,14 +41,10 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.lang.String.format;
-import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
-
 /**
  * Imports relationships using data from {@link InputChunk}.
  */
-public class RelationshipImporter extends EntityImporter
-{
+public class RelationshipImporter extends EntityImporter {
     private final BatchingTokenRepository.BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository;
     private final IdMapper idMapper;
     private final RelationshipStore relationshipStore;
@@ -68,11 +66,17 @@ public class RelationshipImporter extends EntityImporter
     private Group endIdGroup;
     private String type;
 
-    protected RelationshipImporter( BatchingNeoStores stores, IdMapper idMapper, DataStatistics typeDistribution,
-            DataImporter.Monitor monitor, Collector badCollector, boolean validateRelationshipData, boolean doubleRecordUnits,
-            CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
-        super( stores, monitor, contextFactory, memoryTracker );
+    protected RelationshipImporter(
+            BatchingNeoStores stores,
+            IdMapper idMapper,
+            DataStatistics typeDistribution,
+            DataImporter.Monitor monitor,
+            Collector badCollector,
+            boolean validateRelationshipData,
+            boolean doubleRecordUnits,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        super(stores, monitor, contextFactory, memoryTracker);
         this.doubleRecordUnits = doubleRecordUnits;
         this.relationshipTypeTokenRepository = stores.getRelationshipTypeRepository();
         this.idMapper = idMapper;
@@ -80,61 +84,54 @@ public class RelationshipImporter extends EntityImporter
         this.validateRelationshipData = validateRelationshipData;
         this.relationshipStore = stores.getRelationshipStore();
         this.relationshipRecord = relationshipStore.newRecord();
-        this.relationshipIds = new BatchingIdGetter( relationshipStore );
+        this.relationshipIds = new BatchingIdGetter(relationshipStore);
         this.typeCounts = typeDistribution.newClient();
-        this.prepareIdSequence = PrepareIdSequence.of( doubleRecordUnits ).apply( stores.getRelationshipStore() );
-        this.relationshipUpdateCursor = relationshipStore.openPageCursorForWriting( 0, cursorContext );
-        relationshipRecord.setInUse( true );
+        this.prepareIdSequence = PrepareIdSequence.of(doubleRecordUnits).apply(stores.getRelationshipStore());
+        this.relationshipUpdateCursor = relationshipStore.openPageCursorForWriting(0, cursorContext);
+        relationshipRecord.setInUse(true);
     }
 
     @Override
-    protected PrimitiveRecord primitiveRecord()
-    {
+    protected PrimitiveRecord primitiveRecord() {
         return relationshipRecord;
     }
 
     @Override
-    public boolean startId( long id )
-    {
-        relationshipRecord.setFirstNode( id );
+    public boolean startId(long id) {
+        relationshipRecord.setFirstNode(id);
         return true;
     }
 
     @Override
-    public boolean startId( Object id, Group group )
-    {
+    public boolean startId(Object id, Group group) {
         this.startId = id;
         this.startIdGroup = group;
 
-        long nodeId = nodeId( id, group );
-        relationshipRecord.setFirstNode( nodeId );
+        long nodeId = nodeId(id, group);
+        relationshipRecord.setFirstNode(nodeId);
         return true;
     }
 
     @Override
-    public boolean endId( long id )
-    {
-        relationshipRecord.setSecondNode( id );
+    public boolean endId(long id) {
+        relationshipRecord.setSecondNode(id);
         return true;
     }
 
     @Override
-    public boolean endId( Object id, Group group )
-    {
+    public boolean endId(Object id, Group group) {
         this.endId = id;
         this.endIdGroup = group;
 
-        long nodeId = nodeId( id, group );
-        relationshipRecord.setSecondNode( nodeId );
+        long nodeId = nodeId(id, group);
+        relationshipRecord.setSecondNode(nodeId);
         return true;
     }
 
-    private long nodeId( Object id, Group group )
-    {
-        long nodeId = idMapper.get( id, group );
-        if ( nodeId == IdMapper.ID_NOT_FOUND )
-        {
-            relationshipRecord.setInUse( false );
+    private long nodeId(Object id, Group group) {
+        long nodeId = idMapper.get(id, group);
+        if (nodeId == IdMapper.ID_NOT_FOUND) {
+            relationshipRecord.setInUse(false);
             return IdMapper.ID_NOT_FOUND;
         }
 
@@ -142,64 +139,62 @@ public class RelationshipImporter extends EntityImporter
     }
 
     @Override
-    public boolean type( int typeId )
-    {
-        relationshipRecord.setType( typeId );
+    public boolean type(int typeId) {
+        relationshipRecord.setType(typeId);
         return true;
     }
 
     @Override
-    public boolean type( String type )
-    {
+    public boolean type(String type) {
         this.type = type;
-        int typeId = relationshipTypeTokenRepository.getOrCreateId( type );
-        return type( typeId );
+        int typeId = relationshipTypeTokenRepository.getOrCreateId(type);
+        return type(typeId);
     }
 
     @Override
-    public void endOfEntity()
-    {
-        if ( relationshipRecord.inUse() &&
-                relationshipRecord.getFirstNode() != IdMapper.ID_NOT_FOUND &&
-                relationshipRecord.getSecondNode() != IdMapper.ID_NOT_FOUND &&
-                relationshipRecord.getType() != -1 )
-        {
-            relationshipRecord.setId( relationshipIds.nextId( cursorContext ) );
-            if ( doubleRecordUnits )
-            {
+    public void endOfEntity() {
+        if (relationshipRecord.inUse()
+                && relationshipRecord.getFirstNode() != IdMapper.ID_NOT_FOUND
+                && relationshipRecord.getSecondNode() != IdMapper.ID_NOT_FOUND
+                && relationshipRecord.getType() != -1) {
+            relationshipRecord.setId(relationshipIds.nextId(cursorContext));
+            if (doubleRecordUnits) {
                 // simply reserve one id for this relationship to grow during linking stage
-                relationshipIds.nextId( cursorContext );
+                relationshipIds.nextId(cursorContext);
             }
-            relationshipRecord.setNextProp( createAndWritePropertyChain( cursorContext ) );
-            relationshipRecord.setFirstInFirstChain( false );
-            relationshipRecord.setFirstInSecondChain( false );
-            relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
-            relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
+            relationshipRecord.setNextProp(createAndWritePropertyChain(cursorContext));
+            relationshipRecord.setFirstInFirstChain(false);
+            relationshipRecord.setFirstInSecondChain(false);
+            relationshipRecord.setFirstPrevRel(Record.NO_NEXT_RELATIONSHIP.intValue());
+            relationshipRecord.setSecondPrevRel(Record.NO_NEXT_RELATIONSHIP.intValue());
 
-            relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ), cursorContext );
-            relationshipStore.updateRecord( relationshipRecord, IGNORE, relationshipUpdateCursor, cursorContext, storeCursors );
+            relationshipStore.prepareForCommit(
+                    relationshipRecord, prepareIdSequence.apply(relationshipRecord.getId()), cursorContext);
+            relationshipStore.updateRecord(
+                    relationshipRecord, IGNORE, relationshipUpdateCursor, cursorContext, storeCursors);
             relationshipCount++;
-            typeCounts.increment( relationshipRecord.getType() );
-        }
-        else
-        {
-            if ( validateRelationshipData )
-            {
-                validateNode( startId, Type.START_ID );
-                validateNode( endId, Type.END_ID );
-                if ( relationshipRecord.getType() == -1 )
-                {
-                    throw new MissingRelationshipDataException( Type.TYPE,
-                            relationshipDataString() + " is missing " + Type.TYPE + " field" );
+            typeCounts.increment(relationshipRecord.getType());
+        } else {
+            if (validateRelationshipData) {
+                validateNode(startId, Type.START_ID);
+                validateNode(endId, Type.END_ID);
+                if (relationshipRecord.getType() == -1) {
+                    throw new MissingRelationshipDataException(
+                            Type.TYPE, relationshipDataString() + " is missing " + Type.TYPE + " field");
                 }
             }
-            badCollector.collectBadRelationship( startId, group( startIdGroup ).name(), type, endId, group( endIdGroup ).name(),
-                    relationshipRecord.getFirstNode() == IdMapper.ID_NOT_FOUND ? startId : endId );
+            badCollector.collectBadRelationship(
+                    startId,
+                    group(startIdGroup).name(),
+                    type,
+                    endId,
+                    group(endIdGroup).name(),
+                    relationshipRecord.getFirstNode() == IdMapper.ID_NOT_FOUND ? startId : endId);
             entityPropertyCount = 0;
         }
 
         relationshipRecord.clear();
-        relationshipRecord.setInUse( true );
+        relationshipRecord.setInUse(true);
         startId = null;
         startIdGroup = null;
         endId = null;
@@ -208,40 +203,39 @@ public class RelationshipImporter extends EntityImporter
         super.endOfEntity();
     }
 
-    private static Group group( Group group )
-    {
+    private static Group group(Group group) {
         return group != null ? group : Group.GLOBAL;
     }
 
-    private void validateNode( Object id, Type fieldType )
-    {
-        if ( id == null )
-        {
-            throw new MissingRelationshipDataException( fieldType, relationshipDataString() +
-                    " is missing " + fieldType + " field" );
+    private void validateNode(Object id, Type fieldType) {
+        if (id == null) {
+            throw new MissingRelationshipDataException(
+                    fieldType, relationshipDataString() + " is missing " + fieldType + " field");
         }
     }
 
-    private String relationshipDataString()
-    {
-        return format( "start:%s (%s) type:%s end:%s (%s)",
-                startId, group( startIdGroup ).name(), type, endId, group( endIdGroup ).name() );
+    private String relationshipDataString() {
+        return format(
+                "start:%s (%s) type:%s end:%s (%s)",
+                startId,
+                group(startIdGroup).name(),
+                type,
+                endId,
+                group(endIdGroup).name());
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         super.close();
         typeCounts.close();
-        monitor.relationshipsImported( relationshipCount );
+        monitor.relationshipsImported(relationshipCount);
         relationshipUpdateCursor.close();
         cursorContext.close();
     }
 
     @Override
-    void freeUnusedIds()
-    {
+    void freeUnusedIds() {
         super.freeUnusedIds();
-        freeUnusedIds( relationshipStore, relationshipIds, cursorContext );
+        freeUnusedIds(relationshipStore, relationshipIds, cursorContext);
     }
 }

@@ -20,24 +20,26 @@
 package org.neo4j.dbms;
 
 import java.util.Optional;
-
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public final class CommunityDatabaseState implements DatabaseState
-{
+public final class CommunityDatabaseState implements DatabaseState {
     private final NamedDatabaseId namedDatabaseId;
     private final boolean unknown;
     private final boolean isStarted;
     private final boolean hasFailed;
     private final Throwable failureCause;
 
-    public CommunityDatabaseState( NamedDatabaseId namedDatabaseId, boolean isStarted, boolean hasFailed, Throwable failureCause )
-    {
-        this( namedDatabaseId, isStarted, hasFailed, false, failureCause );
+    public CommunityDatabaseState(
+            NamedDatabaseId namedDatabaseId, boolean isStarted, boolean hasFailed, Throwable failureCause) {
+        this(namedDatabaseId, isStarted, hasFailed, false, failureCause);
     }
 
-    private CommunityDatabaseState( NamedDatabaseId namedDatabaseId, boolean isStarted, boolean hasFailed, boolean unknown, Throwable failureCause )
-    {
+    private CommunityDatabaseState(
+            NamedDatabaseId namedDatabaseId,
+            boolean isStarted,
+            boolean hasFailed,
+            boolean unknown,
+            Throwable failureCause) {
         this.namedDatabaseId = namedDatabaseId;
         this.isStarted = isStarted;
         this.hasFailed = hasFailed;
@@ -45,33 +47,29 @@ public final class CommunityDatabaseState implements DatabaseState
         this.unknown = unknown;
     }
 
-    public static CommunityDatabaseState unknown( NamedDatabaseId namedDatabaseId )
-    {
-        return new CommunityDatabaseState( namedDatabaseId, false, false, true, null );
+    public static CommunityDatabaseState unknown(NamedDatabaseId namedDatabaseId) {
+        return new CommunityDatabaseState(namedDatabaseId, false, false, true, null);
     }
 
     @Override
-    public NamedDatabaseId databaseId()
-    {
+    public NamedDatabaseId databaseId() {
         return namedDatabaseId;
     }
 
     @Override
-    public OperatorState operatorState()
-    {
-        return unknown ? DefaultOperatorState.UNKNOWN :
-               isStarted ? DefaultOperatorState.STARTED : DefaultOperatorState.STOPPED;
+    public OperatorState operatorState() {
+        return unknown
+                ? DefaultOperatorState.UNKNOWN
+                : isStarted ? DefaultOperatorState.STARTED : DefaultOperatorState.STOPPED;
     }
 
     @Override
-    public boolean hasFailed()
-    {
+    public boolean hasFailed() {
         return hasFailed;
     }
 
     @Override
-    public Optional<Throwable> failure()
-    {
-        return Optional.ofNullable( failureCause );
+    public Optional<Throwable> failure() {
+        return Optional.ofNullable(failureCause);
     }
 }

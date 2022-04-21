@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator.MemoryBlock;
-import org.neo4j.memory.MemoryTracker;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,37 +26,40 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class CapacityLimitingBlockAllocatorDecoratorTest
-{
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator.MemoryBlock;
+import org.neo4j.memory.MemoryTracker;
+
+class CapacityLimitingBlockAllocatorDecoratorTest {
     @Test
-    void maxMemoryLimit()
-    {
-        final MemoryTracker tracker = mock( MemoryTracker.class );
-        final OffHeapBlockAllocator allocator = mock( OffHeapBlockAllocator.class );
-        when( allocator.allocate( anyLong(), any( MemoryTracker.class ) ) ).then( invocation ->
-        {
-            final long size = invocation.<Long>getArgument( 0 );
-            return new MemoryBlock( 0, size );
-        } );
-        final CapacityLimitingBlockAllocatorDecorator decorator = new CapacityLimitingBlockAllocatorDecorator( allocator, 1024 );
+    void maxMemoryLimit() {
+        final MemoryTracker tracker = mock(MemoryTracker.class);
+        final OffHeapBlockAllocator allocator = mock(OffHeapBlockAllocator.class);
+        when(allocator.allocate(anyLong(), any(MemoryTracker.class))).then(invocation -> {
+            final long size = invocation.<Long>getArgument(0);
+            return new MemoryBlock(0, size);
+        });
+        final CapacityLimitingBlockAllocatorDecorator decorator =
+                new CapacityLimitingBlockAllocatorDecorator(allocator, 1024);
 
         final List<MemoryBlock> blocks = new ArrayList<>();
-        for ( int i = 0; i < 8; i++ )
-        {
-            final MemoryBlock block = decorator.allocate( 128, tracker );
-            blocks.add( block );
+        for (int i = 0; i < 8; i++) {
+            final MemoryBlock block = decorator.allocate(128, tracker);
+            blocks.add(block);
         }
 
-        assertThrows( MemoryAllocationLimitException.class, () -> decorator.allocate( 128, tracker ) );
+        assertThrows(MemoryAllocationLimitException.class, () -> decorator.allocate(128, tracker));
 
-        decorator.free( blocks.remove( 0 ), tracker );
-        assertDoesNotThrow( () -> decorator.allocate( 128, tracker ) );
+        decorator.free(blocks.remove(0), tracker);
+        assertDoesNotThrow(() -> decorator.allocate(128, tracker));
 
-        assertThrows( MemoryAllocationLimitException.class, () -> decorator.allocate( 256, tracker ) );
-        decorator.free( blocks.remove( 0 ), tracker );
-        assertThrows( MemoryAllocationLimitException.class, () -> decorator.allocate( 256, tracker ) );
+        assertThrows(MemoryAllocationLimitException.class, () -> decorator.allocate(256, tracker));
+        decorator.free(blocks.remove(0), tracker);
+        assertThrows(MemoryAllocationLimitException.class, () -> decorator.allocate(256, tracker));
 
-        decorator.free( blocks.remove( 0 ), tracker );
-        assertDoesNotThrow( () -> decorator.allocate( 256, tracker ) );
+        decorator.free(blocks.remove(0), tracker);
+        assertDoesNotThrow(() -> decorator.allocate(256, tracker));
     }
 }

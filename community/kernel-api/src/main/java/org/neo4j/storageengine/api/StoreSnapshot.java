@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.neo4j.graphdb.Resource;
 
 /**
@@ -47,17 +46,19 @@ import org.neo4j.graphdb.Resource;
  * checkpointer when creating a StoreSnapshot. This lock is released when calling {@link #close()}. The stream
  * of unrecoverable files should be exhausted, and the snapshot closed, as fast as possible.
  */
-public final class StoreSnapshot implements AutoCloseable
-{
+public final class StoreSnapshot implements AutoCloseable {
     private final Stream<StoreResource> unrecoverableFiles;
     private final Path[] recoverableFiles;
     private final long lastAppliedTransactionId;
     private final LegacyStoreId storeId;
     private final Resource checkPointMutex;
 
-    public StoreSnapshot( Stream<StoreResource> unrecoverableFiles, Path[] recoverableFiles,
-            long lastAppliedTransactionId, LegacyStoreId storeId, Resource checkPointMutex )
-    {
+    public StoreSnapshot(
+            Stream<StoreResource> unrecoverableFiles,
+            Path[] recoverableFiles,
+            long lastAppliedTransactionId,
+            LegacyStoreId storeId,
+            Resource checkPointMutex) {
         this.unrecoverableFiles = unrecoverableFiles;
         this.recoverableFiles = recoverableFiles;
         this.lastAppliedTransactionId = lastAppliedTransactionId;
@@ -68,45 +69,39 @@ public final class StoreSnapshot implements AutoCloseable
     /**
      * @return a stream of store files which are not updated transactionally
      */
-    public Stream<StoreResource> unrecoverableFiles()
-    {
+    public Stream<StoreResource> unrecoverableFiles() {
         return unrecoverableFiles;
     }
 
     /**
      * @return a collection of the store files which existed at the time this snapshot is created
      */
-    public Path[] recoverableFiles()
-    {
+    public Path[] recoverableFiles() {
         return recoverableFiles;
     }
 
     /**
      * @return the id of the store files
      */
-    public LegacyStoreId storeId()
-    {
+    public LegacyStoreId storeId() {
         return storeId;
     }
 
     /**
      * @return the latest transaction id to be closed/applied at the time this snapshot is created
      */
-    public long lastAppliedTransactionId()
-    {
+    public long lastAppliedTransactionId() {
         return lastAppliedTransactionId;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         unrecoverableFiles.close();
         checkPointMutex.close();
     }
 
     @FunctionalInterface
-    public interface Factory
-    {
+    public interface Factory {
         /**
          * @return a snapshot of the store files for this database, if available
          */

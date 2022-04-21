@@ -79,13 +79,14 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     }
   )
 
-  private implicit val defaultIdGen: IdGen = defaultState.idGen
+  implicit private val defaultIdGen: IdGen = defaultState.idGen
 
   private def notImplementedPlanContext(stats: GraphStatistics) = {
     new NotImplementedPlanContext {
       override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(
         stats,
-        new MutableGraphStatisticsSnapshot())
+        new MutableGraphStatisticsSnapshot()
+      )
 
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
     }
@@ -94,7 +95,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   test("ProduceResult") {
     val plan = ProduceResult(Argument(), Seq.empty)
 
-    val c = CardinalityCalculator.produceResultCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.produceResultCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(defaultSourceCardinality)
   }
 
@@ -104,7 +110,8 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
       override def nodesAllCardinality(): Cardinality = Cardinality(321)
     }
 
-    val c = CardinalityCalculator.allNodesScanCardinality(plan, defaultState, notImplementedPlanContext(stats), Map.empty)
+    val c =
+      CardinalityCalculator.allNodesScanCardinality(plan, defaultState, notImplementedPlanContext(stats), Map.empty)
     c should equal(stats.nodesAllCardinality())
   }
 
@@ -131,7 +138,8 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
       }
     }
 
-    val c = CardinalityCalculator.nodeByLabelScanCardinality(plan, defaultState, notImplementedPlanContext(stats), labelIds)
+    val c =
+      CardinalityCalculator.nodeByLabelScanCardinality(plan, defaultState, notImplementedPlanContext(stats), labelIds)
     c should equal(labelCardinality)
   }
 
@@ -142,7 +150,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
     val labelIds = Map("Label" -> 1)
     val stats = new TestGraphStatistics {
-      override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality ={
+      override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = {
         labelId.get.id should be(labelIds("Label"))
         labelCardinality
       }
@@ -154,7 +162,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
 
   test("Argument") {
     val plan = Argument()
-    val c = CardinalityCalculator.argumentCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.argumentCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality.SINGLE)
   }
 
@@ -163,13 +176,23 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val multiplier = Cardinality(10)
     val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
 
-    val c = CardinalityCalculator.argumentCardinality(plan, state, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.argumentCardinality(
+      plan,
+      state,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(multiplier)
   }
 
   test("NodeCountFromCountStore") {
     val plan = NodeCountFromCountStore("", List.empty, Set.empty)
-    val c = CardinalityCalculator.nodeCountFromCountStoreCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.nodeCountFromCountStoreCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality.SINGLE)
   }
 
@@ -178,7 +201,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val multiplier = Cardinality(10)
     val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
 
-    val c = CardinalityCalculator.nodeCountFromCountStoreCardinality(plan, state, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.nodeCountFromCountStoreCardinality(
+      plan,
+      state,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(multiplier)
   }
 
@@ -200,13 +228,17 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
       override def nodesAllCardinality(): Cardinality =
         Cardinality(allNodesCount)
 
-      override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
+      override def patternStepCardinality(
+        fromLabel: Option[LabelId],
+        relTypeId: Option[RelTypeId],
+        toLabel: Option[LabelId]
+      ): Cardinality = {
         fromLabel should be(empty)
         toLabel should be(empty)
 
         relTypeId match {
           case Some(_) => Cardinality(individualRelCount)
-          case None => Cardinality(individualRelCount * rels.size)
+          case None    => Cardinality(individualRelCount * rels.size)
         }
       }
     }
@@ -221,7 +253,8 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
         val plan = Expand(Argument(), "from", SemanticDirection.OUTGOING, relTypes, "to", "rel")
 
         val expectedAmountApprox = avgRelsPerNode * defaultSourceCardinality.amount
-        val Cardinality(actualAmount) = CardinalityCalculator.expandCardinality(plan, state, notImplementedPlanContext(stats), Map.empty)
+        val Cardinality(actualAmount) =
+          CardinalityCalculator.expandCardinality(plan, state, notImplementedPlanContext(stats), Map.empty)
 
         val marginOfError = expectedAmountApprox * 0.01
         actualAmount should equal(expectedAmountApprox +- marginOfError)
@@ -251,17 +284,21 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
         Cardinality(allNodesCount)
 
       override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = {
-        labelId.get.id should be (labelIds("Label"))
+        labelId.get.id should be(labelIds("Label"))
         Cardinality(labeledNodesCount)
       }
 
-      override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
+      override def patternStepCardinality(
+        fromLabel: Option[LabelId],
+        relTypeId: Option[RelTypeId],
+        toLabel: Option[LabelId]
+      ): Cardinality = {
         fromLabel.get.id should be(labelIds("Label"))
         toLabel should be(empty)
 
         relTypeId match {
           case Some(_) => Cardinality(individualRelCount)
-          case None => Cardinality(individualRelCount * rels.size)
+          case None    => Cardinality(individualRelCount * rels.size)
         }
       }
     }
@@ -276,7 +313,8 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
         val plan = Expand(Argument(), "from", SemanticDirection.OUTGOING, relTypes, "to", "rel")
 
         val expectedAmountApprox = avgRelsPerLabeledNode * defaultSourceCardinality.amount
-        val Cardinality(actualAmount) = CardinalityCalculator.expandCardinality(plan, state, notImplementedPlanContext(stats), Map.empty)
+        val Cardinality(actualAmount) =
+          CardinalityCalculator.expandCardinality(plan, state, notImplementedPlanContext(stats), Map.empty)
 
         val marginOfError = expectedAmountApprox * 0.01
         actualAmount should equal(expectedAmountApprox +- marginOfError)
@@ -287,7 +325,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val relIds = ManySeekableArgs(ListLiteral(Seq.empty)(pos))
     val plan = DirectedRelationshipByIdSeek("idName", relIds, "left", "right", Set.empty)
 
-    val c = CardinalityCalculator.directedRelationshipByIdSeek(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.directedRelationshipByIdSeek(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality.EMPTY)
   }
 
@@ -297,7 +340,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val seekableArgs = ManySeekableArgs(ListLiteral(relIds)(pos))
     val plan = DirectedRelationshipByIdSeek("idName", seekableArgs, "left", "right", Set.empty)
 
-    val c = CardinalityCalculator.directedRelationshipByIdSeek(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.directedRelationshipByIdSeek(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality(relIdsSize))
   }
 
@@ -305,7 +353,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val relIds = ManySeekableArgs(ListLiteral(Seq.empty)(pos))
     val plan = UndirectedRelationshipByIdSeek("idName", relIds, "left", "right", Set.empty)
 
-    val c = CardinalityCalculator.undirectedRelationshipByIdSeek(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.undirectedRelationshipByIdSeek(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality.EMPTY)
   }
 
@@ -315,7 +368,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val seekableArgs = ManySeekableArgs(ListLiteral(relIds)(pos))
     val plan = UndirectedRelationshipByIdSeek("idName", seekableArgs, "left", "right", Set.empty)
 
-    val c = CardinalityCalculator.undirectedRelationshipByIdSeek(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.undirectedRelationshipByIdSeek(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality(relIdsSize * 2))
   }
 
@@ -327,7 +385,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val leafCardinalityMultiplier = Cardinality(5)
 
     val state = defaultState.pushLeafCardinalityMultiplier(leafCardinalityMultiplier)
-    val c = CardinalityCalculator.undirectedRelationshipByIdSeek(plan, state, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.undirectedRelationshipByIdSeek(
+      plan,
+      state,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality(relIdsSize * 2) * leafCardinalityMultiplier)
   }
 
@@ -335,7 +398,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val limitAmount = 100
     val plan = Limit(Argument(), SignedDecimalIntegerLiteral(limitAmount.toString)(pos))
 
-    val c = CardinalityCalculator.limitCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.limitCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality(limitAmount))
   }
 
@@ -343,7 +411,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val limitAmount = 1000
     val plan = Limit(Argument(), SignedDecimalIntegerLiteral(limitAmount.toString)(pos))
 
-    val c = CardinalityCalculator.limitCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.limitCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(defaultSourceCardinality)
   }
 
@@ -351,7 +424,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val skipAmount = 100
     val plan = Skip(Argument(), SignedDecimalIntegerLiteral(skipAmount.toString)(pos))
 
-    val c = CardinalityCalculator.skipCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.skipCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(defaultSourceCardinality.map(_ - skipAmount))
   }
 
@@ -359,35 +437,60 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val skipAmount = 1000
     val plan = Skip(Argument(), SignedDecimalIntegerLiteral(skipAmount.toString)(pos))
 
-    val c = CardinalityCalculator.skipCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.skipCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality.EMPTY)
   }
 
   test("Projection") {
     val plan = Projection(Argument(), Map.empty)
 
-    val c = CardinalityCalculator.projectionCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.projectionCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(defaultSourceCardinality)
   }
 
   test("Aggregation without grouping") {
     val plan = Aggregation(Argument(), Map.empty, Map.empty)
 
-    val c = CardinalityCalculator.aggregationCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.aggregationCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality.SINGLE)
   }
 
   test("Aggregation with grouping") {
     val plan = Aggregation(Argument(), Map("x" -> CountStar()(pos)), Map.empty)
 
-    val c = CardinalityCalculator.aggregationCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.aggregationCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality.sqrt(defaultSourceCardinality))
   }
 
   test("Apply") {
     val plan = Apply(Argument(), Argument())
 
-    val c = CardinalityCalculator.applyCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.applyCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(defaultSourceCardinality)
   }
 
@@ -395,14 +498,24 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = SemiApply(Argument(), Argument())
     defaultState.cardinalities.set(plan.lhs.get.id, Cardinality.EMPTY)
 
-    val c = CardinalityCalculator.semiApplyCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.semiApplyCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality.EMPTY)
   }
 
   test("SemiApply lhs non empty") {
     val plan = SemiApply(Argument(), Argument())
 
-    val c = CardinalityCalculator.semiApplyCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.semiApplyCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(defaultSourceCardinality * PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY)
   }
 
@@ -410,28 +523,48 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = AntiSemiApply(Argument(), Argument())
     defaultState.cardinalities.set(plan.lhs.get.id, Cardinality.EMPTY)
 
-    val c = CardinalityCalculator.antiSemiApplyCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.antiSemiApplyCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(Cardinality.EMPTY)
   }
 
   test("AntiSemiApply lhs non empty") {
     val plan = AntiSemiApply(Argument(), Argument())
 
-    val c = CardinalityCalculator.antiSemiApplyCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.antiSemiApplyCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(defaultSourceCardinality * PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY)
   }
 
   test("CartesianProduct") {
     val plan = CartesianProduct(Argument(), Argument())
 
-    val c = CardinalityCalculator.cartesianProductCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.cartesianProductCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(defaultSourceCardinality * defaultSourceCardinality)
   }
 
   test("Distinct non-empty source") {
     val plan = Distinct(Argument(), Map.empty)
 
-    val c = CardinalityCalculator.distinctCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.distinctCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should be < defaultSourceCardinality
   }
 
@@ -439,14 +572,24 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = Distinct(Argument(), Map.empty)
 
     defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
-    val c = CardinalityCalculator.distinctCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.distinctCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c shouldBe Cardinality.EMPTY
   }
 
   test("Optional non-empty source") {
     val plan = Optional(Argument(), Set.empty)
 
-    val c = CardinalityCalculator.optionalCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.optionalCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c shouldBe defaultSourceCardinality
   }
 
@@ -454,7 +597,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = Optional(Argument(), Set.empty)
 
     defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
-    val c = CardinalityCalculator.optionalCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.optionalCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c shouldBe Cardinality.SINGLE
   }
 
@@ -463,14 +611,20 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = Top(Argument(), Seq.empty, SignedDecimalIntegerLiteral(topAmount.toString)(pos))
     val state = defaultState.copy(leafCardinalityMultipliersStack = List.empty)
 
-    val c = CardinalityCalculator.topCardinality(plan, state, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c =
+      CardinalityCalculator.topCardinality(plan, state, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
     c should equal(Cardinality(topAmount))
   }
 
   test("Union") {
     val plan = Union(Argument(), Argument())
 
-    val c = CardinalityCalculator.unionCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.unionCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should equal(defaultSourceCardinality + defaultSourceCardinality)
   }
 
@@ -479,14 +633,20 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = Top(Argument(), Seq.empty, SignedDecimalIntegerLiteral(topAmount.toString)(pos))
     val state = defaultState.pushLeafCardinalityMultiplier(Cardinality(10))
 
-    val c = CardinalityCalculator.topCardinality(plan, state, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c =
+      CardinalityCalculator.topCardinality(plan, state, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
     c should equal(defaultSourceCardinality)
   }
 
   test("Selection non-empty source") {
     val plan = Selection(Seq(Variable("x")(InputPosition.NONE)), Argument())
 
-    val c = CardinalityCalculator.selectionCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.selectionCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should be < defaultSourceCardinality
   }
 
@@ -494,14 +654,24 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = Selection(Seq(Variable("x")(InputPosition.NONE)), Argument())
 
     defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
-    val c = CardinalityCalculator.selectionCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.selectionCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c shouldBe Cardinality.EMPTY
   }
 
   test("UnwindCollection non-empty source") {
     val plan = UnwindCollection(Argument(), "n", Variable("x")(InputPosition.NONE))
 
-    val c = CardinalityCalculator.unwindCollectionCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.unwindCollectionCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should be > defaultSourceCardinality
   }
 
@@ -509,14 +679,24 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = UnwindCollection(Argument(), "n", Variable("x")(InputPosition.NONE))
 
     defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
-    val c = CardinalityCalculator.unwindCollectionCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.unwindCollectionCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c shouldBe Cardinality.EMPTY
   }
 
   test("ValueHashJoin") {
     val plan = ValueHashJoin(Argument(), Argument(), equals(trueLiteral, trueLiteral))
 
-    val c = CardinalityCalculator.valueHashJoinCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.valueHashJoinCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c should be > defaultSourceCardinality
     c should be < defaultSourceCardinality * defaultSourceCardinality
   }
@@ -525,7 +705,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = ValueHashJoin(Argument(), Argument(), equals(trueLiteral, trueLiteral))
     defaultState.cardinalities.set(plan.lhs.get.id, Cardinality.EMPTY)
 
-    val c = CardinalityCalculator.valueHashJoinCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.valueHashJoinCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c shouldBe Cardinality.EMPTY
   }
 
@@ -533,7 +718,12 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val plan = ValueHashJoin(Argument(), Argument(), equals(trueLiteral, trueLiteral))
     defaultState.cardinalities.set(plan.rhs.get.id, Cardinality.EMPTY)
 
-    val c = CardinalityCalculator.valueHashJoinCardinality(plan, defaultState, notImplementedPlanContext(new TestGraphStatistics), Map.empty)
+    val c = CardinalityCalculator.valueHashJoinCardinality(
+      plan,
+      defaultState,
+      notImplementedPlanContext(new TestGraphStatistics),
+      Map.empty
+    )
     c shouldBe Cardinality.EMPTY
   }
 }

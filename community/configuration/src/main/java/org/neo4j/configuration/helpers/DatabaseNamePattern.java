@@ -19,48 +19,39 @@
  */
 package org.neo4j.configuration.helpers;
 
+import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateDatabaseNamePattern;
+
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateDatabaseNamePattern;
-
-public class DatabaseNamePattern
-{
+public class DatabaseNamePattern {
     private final Optional<Pattern> regexPattern;
     private final String databaseName;
 
-    public DatabaseNamePattern( String name )
-    {
-        validateDatabaseNamePattern( name );
-        this.regexPattern = ConfigPatternBuilder.optionalPatternFromConfigString( name.toLowerCase(), Pattern.CASE_INSENSITIVE );
+    public DatabaseNamePattern(String name) {
+        validateDatabaseNamePattern(name);
+        this.regexPattern =
+                ConfigPatternBuilder.optionalPatternFromConfigString(name.toLowerCase(), Pattern.CASE_INSENSITIVE);
         this.databaseName = name;
     }
 
-    public boolean matches( String value )
-    {
-        return regexPattern.map( p -> p.matcher( value ).matches() )
-                           .orElse( databaseName.equals( value ) );
+    public boolean matches(String value) {
+        return regexPattern.map(p -> p.matcher(value).matches()).orElse(databaseName.equals(value));
     }
 
-    public boolean containsPattern()
-    {
+    public boolean containsPattern() {
         return regexPattern.isPresent();
     }
 
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return databaseName;
     }
 
     @Override
-    public String toString()
-    {
-        if ( containsPattern() )
-        {
+    public String toString() {
+        if (containsPattern()) {
             return "Database name pattern=" + databaseName;
-        }
-        else
-        {
+        } else {
             return "Database name=" + databaseName;
         }
     }

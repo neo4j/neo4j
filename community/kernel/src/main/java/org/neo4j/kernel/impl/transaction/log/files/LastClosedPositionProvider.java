@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 @FunctionalInterface
-public interface LastClosedPositionProvider
-{
-    LogPosition lastClosedPosition( LogFiles logFiles );
+public interface LastClosedPositionProvider {
+    LogPosition lastClosedPosition(LogFiles logFiles);
 }

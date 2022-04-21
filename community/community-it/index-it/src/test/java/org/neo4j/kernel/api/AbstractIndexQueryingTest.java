@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.api;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -36,48 +38,52 @@ import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestSupport;
 import org.neo4j.memory.EmptyMemoryTracker;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
-public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<S>
-{
+public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<S> {
     @Override
-    public void createTestGraph( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( "CREATE FULLTEXT INDEX ftsNodes FOR (n:Label) ON EACH [n.prop]" ).close();
-            tx.execute( "CREATE FULLTEXT INDEX ftsRels FOR ()-[r:Type]-() ON EACH [r.prop]" ).close();
+    public void createTestGraph(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
+            tx.execute("CREATE FULLTEXT INDEX ftsNodes FOR (n:Label) ON EACH [n.prop]")
+                    .close();
+            tx.execute("CREATE FULLTEXT INDEX ftsRels FOR ()-[r:Type]-() ON EACH [r.prop]")
+                    .close();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
     }
 
     @Test
-    void nodeIndexSeekMustThrowOnWrongIndexEntityType() throws Exception
-    {
-        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( "ftsRels" ) );
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
-        {
-            assertThrows( IndexNotApplicableKernelException.class, () ->
-                    read.nodeIndexSeek( tx.queryContext(), index, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "search" ) ) );
+    void nodeIndexSeekMustThrowOnWrongIndexEntityType() throws Exception {
+        IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName("ftsRels"));
+        try (NodeValueIndexCursor cursor =
+                cursors.allocateNodeValueIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+            assertThrows(
+                    IndexNotApplicableKernelException.class,
+                    () -> read.nodeIndexSeek(
+                            tx.queryContext(),
+                            index,
+                            cursor,
+                            unconstrained(),
+                            PropertyIndexQuery.fulltextSearch("search")));
         }
     }
 
     @Test
-    void relationshipIndexSeekMustThrowOnWrongIndexEntityType() throws IndexNotFoundKernelException
-    {
-        IndexDescriptor index = schemaRead.indexGetForName( "ftsNodes" );
-        IndexReadSession indexReadSession = read.indexReadSession( index );
-        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
-        {
-            assertThrows( IndexNotApplicableKernelException.class, () ->
-                    read.relationshipIndexSeek( tx.queryContext(), indexReadSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "search" ) ) );
+    void relationshipIndexSeekMustThrowOnWrongIndexEntityType() throws IndexNotFoundKernelException {
+        IndexDescriptor index = schemaRead.indexGetForName("ftsNodes");
+        IndexReadSession indexReadSession = read.indexReadSession(index);
+        try (RelationshipValueIndexCursor cursor =
+                cursors.allocateRelationshipValueIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+            assertThrows(
+                    IndexNotApplicableKernelException.class,
+                    () -> read.relationshipIndexSeek(
+                            tx.queryContext(),
+                            indexReadSession,
+                            cursor,
+                            unconstrained(),
+                            PropertyIndexQuery.fulltextSearch("search")));
         }
     }
 }

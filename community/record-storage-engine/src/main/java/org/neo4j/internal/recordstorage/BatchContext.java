@@ -20,12 +20,10 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
-public interface BatchContext extends AutoCloseable
-{
+public interface BatchContext extends AutoCloseable {
     LockGroup getLockGroup();
 
     IndexActivator getIndexActivator();

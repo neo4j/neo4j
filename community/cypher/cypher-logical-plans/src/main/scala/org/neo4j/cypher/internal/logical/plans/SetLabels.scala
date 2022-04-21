@@ -26,9 +26,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * For each source row, add the labels in 'labelNamed' to the node 'idName'.
  * The source row is produced.
  */
-case class SetLabels(override val source: LogicalPlan, idName: String, labelNames: Seq[LabelName])(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+case class SetLabels(override val source: LogicalPlan, idName: String, labelNames: Seq[LabelName])(implicit
+idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
+    copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols + idName
 }

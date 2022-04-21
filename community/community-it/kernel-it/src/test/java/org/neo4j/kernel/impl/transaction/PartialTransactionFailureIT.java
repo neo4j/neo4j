@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
@@ -51,52 +54,42 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 /**
  * Here we are verifying that even if we get an exception from the storage layer during commit,
  * we should still be able to recover to a consistent state.
  */
 @TestDirectoryExtension
-class PartialTransactionFailureIT
-{
+class PartialTransactionFailureIT {
     @Inject
     private TestDirectory testDirectory;
+
     private DatabaseManagementService managementService;
 
     @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
+    void tearDown() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
 
     @Test
-    void concurrentlyCommittingTransactionsMustNotRotateOutLoggedCommandsOfFailingTransaction() throws Exception
-    {
-        final ClassGuardedAdversary adversary = new ClassGuardedAdversary(
-                new CountingAdversary( 1, false ),
-                Command.RelationshipCommand.class );
+    void concurrentlyCommittingTransactionsMustNotRotateOutLoggedCommandsOfFailingTransaction() throws Exception {
+        final ClassGuardedAdversary adversary =
+                new ClassGuardedAdversary(new CountingAdversary(1, false), Command.RelationshipCommand.class);
         adversary.disable();
 
         Path storeDir = testDirectory.homePath();
-        final Map<Setting<?>,Object> params = Map.of( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir )
-                .setFileSystem( new AdversarialFileSystemAbstraction( adversary ) )
-                .setConfig( params )
+        final Map<Setting<?>, Object> params = Map.of(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
+        managementService = new TestDatabaseManagementServiceBuilder(storeDir)
+                .setFileSystem(new AdversarialFileSystemAbstraction(adversary))
+                .setConfig(params)
                 .build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         Node a;
         Node b;
         Node c;
         Node d;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             a = tx.createNode();
             b = tx.createNode();
             c = tx.createNode();
@@ -105,86 +98,73 @@ class PartialTransactionFailureIT
         }
 
         adversary.enable();
-        CountDownLatch latch = new CountDownLatch( 1 );
-        Thread t1 = new Thread( createRelationship( db, a, b, latch ), "T1" );
-        Thread t2 = new Thread( createRelationship( db, c, d, latch ), "T2" );
+        CountDownLatch latch = new CountDownLatch(1);
+        Thread t1 = new Thread(createRelationship(db, a, b, latch), "T1");
+        Thread t2 = new Thread(createRelationship(db, c, d, latch), "T2");
         t1.start();
         t2.start();
         // Wait for both threads to get going
-        t1.join( 10 );
-        t2.join( 10 );
+        t1.join(10);
+        t2.join(10);
         latch.countDown();
 
         // Wait for the transactions to finish
-        t1.join( 25000 );
-        t2.join( 25000 );
+        t1.join(25000);
+        t2.join(25000);
         managementService.shutdown();
 
         // We should observe the store in a consistent state
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( params ).build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = database.beginTx() )
-        {
-            Node x = tx.getNodeById( a.getId() );
-            Node y = tx.getNodeById( b.getId() );
-            Node z = tx.getNodeById( c.getId() );
-            Node w = tx.getNodeById( d.getId() );
+        managementService = new TestDatabaseManagementServiceBuilder(storeDir)
+                .setConfig(params)
+                .build();
+        GraphDatabaseService database = managementService.database(DEFAULT_DATABASE_NAME);
+        try (Transaction tx = database.beginTx()) {
+            Node x = tx.getNodeById(a.getId());
+            Node y = tx.getNodeById(b.getId());
+            Node z = tx.getNodeById(c.getId());
+            Node w = tx.getNodeById(d.getId());
 
-            try ( ResourceIterable<Relationship> relsW = w.getRelationships();
-                  ResourceIterator<Relationship> itrRelW = relsW.iterator();
-
-                  ResourceIterable<Relationship> relsX = x.getRelationships();
-                  ResourceIterator<Relationship> itrRelX = relsX.iterator();
-
-                  ResourceIterable<Relationship> relsY = y.getRelationships();
-                  ResourceIterator<Relationship> itrRelY = relsY.iterator();
-
-                  ResourceIterable<Relationship> relsZ = z.getRelationships();
-                  ResourceIterator<Relationship> itrRelZ = relsZ.iterator() )
-            {
-                if ( itrRelX.hasNext() != itrRelY.hasNext() )
-                {
-                    fail( "Node x and y have inconsistent relationship counts" );
-                }
-                else if ( itrRelX.hasNext() )
-                {
+            try (ResourceIterable<Relationship> relsW = w.getRelationships();
+                    ResourceIterator<Relationship> itrRelW = relsW.iterator();
+                    ResourceIterable<Relationship> relsX = x.getRelationships();
+                    ResourceIterator<Relationship> itrRelX = relsX.iterator();
+                    ResourceIterable<Relationship> relsY = y.getRelationships();
+                    ResourceIterator<Relationship> itrRelY = relsY.iterator();
+                    ResourceIterable<Relationship> relsZ = z.getRelationships();
+                    ResourceIterator<Relationship> itrRelZ = relsZ.iterator()) {
+                if (itrRelX.hasNext() != itrRelY.hasNext()) {
+                    fail("Node x and y have inconsistent relationship counts");
+                } else if (itrRelX.hasNext()) {
                     Relationship rel = itrRelX.next();
-                    assertEquals( rel, itrRelY.next() );
-                    assertFalse( itrRelX.hasNext() );
-                    assertFalse( itrRelY.hasNext() );
+                    assertEquals(rel, itrRelY.next());
+                    assertFalse(itrRelX.hasNext());
+                    assertFalse(itrRelY.hasNext());
                 }
 
-                if ( itrRelZ.hasNext() != itrRelW.hasNext() )
-                {
-                    fail( "Node z and w have inconsistent relationship counts" );
-                }
-                else if ( itrRelZ.hasNext() )
-                {
+                if (itrRelZ.hasNext() != itrRelW.hasNext()) {
+                    fail("Node z and w have inconsistent relationship counts");
+                } else if (itrRelZ.hasNext()) {
                     Relationship rel = itrRelZ.next();
-                    assertEquals( rel, itrRelW.next() );
-                    assertFalse( itrRelZ.hasNext() );
-                    assertFalse( itrRelW.hasNext() );
+                    assertEquals(rel, itrRelW.next());
+                    assertFalse(itrRelZ.hasNext());
+                    assertFalse(itrRelW.hasNext());
                 }
             }
         }
     }
 
-    private static Runnable createRelationship( GraphDatabaseAPI db, final Node x, final Node y, final CountDownLatch latch )
-    {
-        return () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                x.createRelationshipTo( y, RelationshipType.withName( "r" ) );
+    private static Runnable createRelationship(
+            GraphDatabaseAPI db, final Node x, final Node y, final CountDownLatch latch) {
+        return () -> {
+            try (Transaction tx = db.beginTx()) {
+                x.createRelationshipTo(y, RelationshipType.withName("r"));
                 tx.commit();
                 latch.await();
-                db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
-                db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                        new SimpleTriggerInfo( "test" )
-                );
-            }
-            catch ( Exception ignore )
-            {
+                db.getDependencyResolver().resolveDependency(LogRotation.class).rotateLogFile(LogAppendEvent.NULL);
+                db.getDependencyResolver()
+                        .resolveDependency(CheckPointer.class)
+                        .forceCheckPoint(new SimpleTriggerInfo("test"));
+            } catch (Exception ignore) {
                 // We don't care about our transactions failing, as long as we
                 // can recover our database to a consistent state.
             }

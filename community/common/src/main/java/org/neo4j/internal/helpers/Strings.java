@@ -19,85 +19,57 @@
  */
 package org.neo4j.internal.helpers;
 
+import static java.util.stream.Collectors.joining;
+
 import java.io.IOException;
 import java.util.Arrays;
-import static java.util.stream.Collectors.joining;
 import java.util.Map;
 
 /**
  * Helper functions for working with strings.
  */
-public final class Strings
-{
+public final class Strings {
     public static final String TAB = "\t";
 
-    private Strings()
-    {
-    }
+    private Strings() {}
 
-    public static String prettyPrint( Object o )
-    {
-        if ( o == null )
-        {
+    public static String prettyPrint(Object o) {
+        if (o == null) {
             return "null";
         }
 
         Class<?> clazz = o.getClass();
-        if ( clazz.isArray() )
-        {
-            if ( clazz == byte[].class )
-            {
-                return Arrays.toString( (byte[]) o );
+        if (clazz.isArray()) {
+            if (clazz == byte[].class) {
+                return Arrays.toString((byte[]) o);
+            } else if (clazz == short[].class) {
+                return Arrays.toString((short[]) o);
+            } else if (clazz == int[].class) {
+                return Arrays.toString((int[]) o);
+            } else if (clazz == long[].class) {
+                return Arrays.toString((long[]) o);
+            } else if (clazz == float[].class) {
+                return Arrays.toString((float[]) o);
+            } else if (clazz == double[].class) {
+                return Arrays.toString((double[]) o);
+            } else if (clazz == char[].class) {
+                return Arrays.toString((char[]) o);
+            } else if (clazz == boolean[].class) {
+                return Arrays.toString((boolean[]) o);
+            } else {
+                return Arrays.deepToString((Object[]) o);
             }
-            else if ( clazz == short[].class )
-            {
-                return Arrays.toString( (short[]) o );
-            }
-            else if ( clazz == int[].class )
-            {
-                return Arrays.toString( (int[]) o );
-            }
-            else if ( clazz == long[].class )
-            {
-                return Arrays.toString( (long[]) o );
-            }
-            else if ( clazz == float[].class )
-            {
-                return Arrays.toString( (float[]) o );
-            }
-            else if ( clazz == double[].class )
-            {
-                return Arrays.toString( (double[]) o );
-            }
-            else if ( clazz == char[].class )
-            {
-                return Arrays.toString( (char[]) o );
-            }
-            else if ( clazz == boolean[].class )
-            {
-                return Arrays.toString( (boolean[]) o );
-            }
-            else
-            {
-                return Arrays.deepToString( (Object[]) o );
-            }
-        }
-        else
-        {
-            return String.valueOf( o );
+        } else {
+            return String.valueOf(o);
         }
     }
 
-    public static String escape( String arg )
-    {
-        StringBuilder builder = new StringBuilder( arg.length() );
-        try
-        {
-            escape( builder, arg );
-        }
-        catch ( IOException e )
-        {
-            throw new AssertionError( "IOException from using StringBuilder", e );
+    public static String escape(String arg) {
+        StringBuilder builder = new StringBuilder(arg.length());
+        try {
+            escape(builder, arg);
+        } catch (IOException e) {
+            throw new AssertionError("IOException from using StringBuilder", e);
         }
         return builder.toString();
     }
@@ -108,60 +80,55 @@ public final class Strings
      * @param elements - lines to join
      * @return joined line
      */
-    public static String joinAsLines( String... elements )
-    {
-        return String.join( System.lineSeparator(), elements );
+    public static String joinAsLines(String... elements) {
+        return String.join(System.lineSeparator(), elements);
     }
 
-    public static void escape( Appendable output, String arg ) throws IOException
-    {
+    public static void escape(Appendable output, String arg) throws IOException {
         int len = arg.length();
-        for ( int i = 0; i < len; i++ )
-        {
-            char ch = arg.charAt( i );
-            switch ( ch )
-            {
+        for (int i = 0; i < len; i++) {
+            char ch = arg.charAt(i);
+            switch (ch) {
                 case '"':
-                    output.append( "\\\"" );
+                    output.append("\\\"");
                     break;
 
                 case '\'':
-                    output.append( "\\\'" );
+                    output.append("\\\'");
                     break;
 
                 case '\\':
-                    output.append( "\\\\" );
+                    output.append("\\\\");
                     break;
 
                 case '\n':
-                    output.append( "\\n" );
+                    output.append("\\n");
                     break;
 
                 case '\t':
-                    output.append( "\\t" );
+                    output.append("\\t");
                     break;
 
                 case '\r':
-                    output.append( "\\r" );
+                    output.append("\\r");
                     break;
 
                 case '\b':
-                    output.append( "\\b" );
+                    output.append("\\b");
                     break;
 
                 case '\f':
-                    output.append( "\\f" );
+                    output.append("\\f");
                     break;
 
                 default:
-                    output.append( ch );
+                    output.append(ch);
                     break;
             }
         }
     }
 
-    public static String printMap( Map<?,?> map, String entrySeparator )
-    {
-        return map.entrySet().stream().map( Object::toString ).collect( joining( entrySeparator ) );
+    public static String printMap(Map<?, ?> map, String entrySeparator) {
+        return map.entrySet().stream().map(Object::toString).collect(joining(entrySeparator));
     }
 }

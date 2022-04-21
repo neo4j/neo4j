@@ -21,80 +21,69 @@ package org.neo4j.kernel.api.index;
 
 import java.util.Arrays;
 
-public final class IndexSample
-{
+public final class IndexSample {
     private final long indexSize;
     private final long uniqueValues;
     private final long sampleSize;
     private final long updates;
 
-    public IndexSample()
-    {
-        this( 0, 0, 0 );
+    public IndexSample() {
+        this(0, 0, 0);
     }
 
-    public IndexSample( long indexSize, long uniqueValues, long sampleSize )
-    {
-        this( indexSize, uniqueValues, sampleSize, 0 );
+    public IndexSample(long indexSize, long uniqueValues, long sampleSize) {
+        this(indexSize, uniqueValues, sampleSize, 0);
     }
 
-    public IndexSample( long indexSize, long uniqueValues, long sampleSize, long updates )
-    {
+    public IndexSample(long indexSize, long uniqueValues, long sampleSize, long updates) {
         this.indexSize = indexSize;
         this.uniqueValues = uniqueValues;
         this.sampleSize = sampleSize;
         this.updates = updates;
     }
 
-    public long indexSize()
-    {
+    public long indexSize() {
         return indexSize;
     }
 
-    public long uniqueValues()
-    {
+    public long uniqueValues() {
         return uniqueValues;
     }
 
-    public long sampleSize()
-    {
+    public long sampleSize() {
         return sampleSize;
     }
 
-    public long updates()
-    {
+    public long updates() {
         return updates;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         IndexSample that = (IndexSample) o;
-        return indexSize == that.indexSize && uniqueValues == that.uniqueValues && sampleSize == that.sampleSize && updates == that.updates;
+        return indexSize == that.indexSize
+                && uniqueValues == that.uniqueValues
+                && sampleSize == that.sampleSize
+                && updates == that.updates;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Arrays.hashCode( new long[]{indexSize, uniqueValues, sampleSize, updates} );
+    public int hashCode() {
+        return Arrays.hashCode(new long[] {indexSize, uniqueValues, sampleSize, updates});
     }
 
     @Override
-    public String toString()
-    {
-        return "IndexSample{" +
-               "indexSize=" + indexSize +
-               ", uniqueValues=" + uniqueValues +
-               ", sampleSize=" + sampleSize +
-               ", updates=" + updates +
-               '}';
+    public String toString() {
+        return "IndexSample{" + "indexSize="
+                + indexSize + ", uniqueValues="
+                + uniqueValues + ", sampleSize="
+                + sampleSize + ", updates="
+                + updates + '}';
     }
 }

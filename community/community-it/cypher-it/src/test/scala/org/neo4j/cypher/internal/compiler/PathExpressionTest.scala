@@ -48,7 +48,8 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
       allowZeroLength = false,
       maxDepth = None,
       single = true,
-      relIterator = None)
+      relIterator = None
+    )
 
     val expression = ShortestPathExpression(pattern)
 

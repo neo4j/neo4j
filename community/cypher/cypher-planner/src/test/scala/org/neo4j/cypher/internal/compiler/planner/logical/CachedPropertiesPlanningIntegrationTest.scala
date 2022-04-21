@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   test("should cache node property on multiple usages") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
@@ -118,11 +119,14 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should cache with byzantine renaming: n AS m, m AS x") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
-    val plan = cfg.plan("MATCH (n), (m) WHERE n.prop1 > 42 AND m.prop1 > 42 WITH n AS m, m AS x RETURN m.prop1, x.prop1").stripProduceResults
+    val plan = cfg.plan(
+      "MATCH (n), (m) WHERE n.prop1 > 42 AND m.prop1 > 42 WITH n AS m, m AS x RETURN m.prop1, x.prop1"
+    ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection(Map(
         "m.prop1" -> cachedNodeProp("n", "prop1", "m"),
-        "x.prop1" -> cachedNodeProp("m", "prop1", "x")))
+        "x.prop1" -> cachedNodeProp("m", "prop1", "x")
+      ))
       .projection("n AS m", "m AS x")
       .cartesianProduct()
       .|.filter("cacheNFromStore[m.prop1] > 42")
@@ -155,7 +159,8 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
         |  RETURN m, o
         |}
         |RETURN m.prop
-        |""".stripMargin)
+        |""".stripMargin
+    )
 
     val cachePropertyPlans = plan.folder.treeCount {
       case _: CacheProperties => true
@@ -178,7 +183,8 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
       """MATCH (n:N)-[rel]->(m)
         |WITH * LIMIT 10
         |RETURN n.prop AS foo
-        |""".stripMargin)
+        |""".stripMargin
+    )
 
     plan shouldEqual cfg.planBuilder()
       .produceResults("foo")
@@ -216,7 +222,8 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
       .setRelationshipCardinality("()-[]-()", 50)
       .build()
 
-    val plan = cfg.plan("MATCH (a)-[r]-(b) WHERE r.prop1 IS NOT NULL RETURN r.prop1 IS NOT NULL AS foo").stripProduceResults
+    val plan =
+      cfg.plan("MATCH (a)-[r]-(b) WHERE r.prop1 IS NOT NULL RETURN r.prop1 IS NOT NULL AS foo").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheRHasProperty[r.prop1] IS NOT NULL AS foo")
       .filter("cacheRHasPropertyFromStore[r.prop1] IS NOT NULL")

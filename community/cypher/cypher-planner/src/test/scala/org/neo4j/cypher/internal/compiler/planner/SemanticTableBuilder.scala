@@ -38,5 +38,3 @@ class SemanticTableBuilder {
 
   def result() = SemanticTable(types = ASTAnnotationMap(typeBuilder.result(): _*))
 }
-
-

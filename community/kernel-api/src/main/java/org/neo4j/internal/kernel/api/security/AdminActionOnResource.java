@@ -19,44 +19,39 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public class AdminActionOnResource
-{
+public class AdminActionOnResource {
     private final PrivilegeAction action;
     private final DatabaseScope databaseScope;
     private final Segment segment;
 
-    public AdminActionOnResource( PrivilegeAction action, DatabaseScope databaseScope, Segment segment )
-    {
+    public AdminActionOnResource(PrivilegeAction action, DatabaseScope databaseScope, Segment segment) {
         this.action = action;
         this.databaseScope = databaseScope;
         this.segment = segment;
     }
 
-    public boolean matches( AdminActionOnResource request )
-    {
-        return action.satisfies( request.action ) &&
-               (databaseScope.all || databaseScope.name.equals( request.databaseScope.name )) &&
-               segment.satisfies( request.segment );
+    public boolean matches(AdminActionOnResource request) {
+        return action.satisfies(request.action)
+                && (databaseScope.all || databaseScope.name.equals(request.databaseScope.name))
+                && segment.satisfies(request.segment);
     }
 
-    public static final AdminActionOnResource ALL = new AdminActionOnResource( PrivilegeAction.ADMIN, DatabaseScope.ALL, Segment.ALL );
+    public static final AdminActionOnResource ALL =
+            new AdminActionOnResource(PrivilegeAction.ADMIN, DatabaseScope.ALL, Segment.ALL);
 
-    public static class DatabaseScope
-    {
+    public static class DatabaseScope {
         private final String name;
         private final boolean all;
 
-        public DatabaseScope( String name )
-        {
-            this( name, false );
+        public DatabaseScope(String name) {
+            this(name, false);
         }
 
-        private DatabaseScope( String name, boolean all )
-        {
+        private DatabaseScope(String name, boolean all) {
             this.name = name;
             this.all = all;
         }
 
-        public static final DatabaseScope ALL = new DatabaseScope( "*", true );
+        public static final DatabaseScope ALL = new DatabaseScope("*", true);
     }
 }

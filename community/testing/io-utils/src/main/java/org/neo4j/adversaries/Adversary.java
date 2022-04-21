@@ -21,18 +21,17 @@ package org.neo4j.adversaries;
 
 import java.util.Optional;
 
-public interface Adversary
-{
+public interface Adversary {
     /**
      * Will randomly choose one of the given failures to throw, or not!
      */
-    void injectFailure( Class<? extends Throwable>... failureTypes );
+    void injectFailure(Class<? extends Throwable>... failureTypes);
 
     /**
      * Will randomly choose one of the given failures to throw, or return <code>true</code> if
      * other kinds of mischeif should happen, or <code>false</code> if nothing bad should happen.
      */
-    boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes );
+    boolean injectFailureOrMischief(Class<? extends Throwable>... failureTypes);
 
     /**
      * @return return exception that was thrown last by adversary if any

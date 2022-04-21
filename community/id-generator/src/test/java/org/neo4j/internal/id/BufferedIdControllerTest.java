@@ -19,13 +19,21 @@
  */
 package org.neo4j.internal.id;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+
+import java.io.IOException;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.IOException;
-
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.MethodGuardedAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
@@ -46,65 +54,73 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
 @EphemeralPageCacheExtension
-@ExtendWith( LifeExtension.class )
-class BufferedIdControllerTest
-{
+@ExtendWith(LifeExtension.class)
+class BufferedIdControllerTest {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private LifeSupport life;
 
     private BufferingIdGeneratorFactory idGeneratorFactory;
     private BufferedIdController controller;
 
-    void setUp( CursorContextFactory contextFactory, FileSystemAbstraction filesystem ) throws IOException
-    {
-        idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( filesystem, immediate(), DEFAULT_DATABASE_NAME ) );
-        controller = new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler(), contextFactory, "test db", NullLogService.getInstance() );
-        controller.initialize( filesystem, testDirectory.file( "buffer" ), Config.defaults(),
-                               () -> new IdController.TransactionSnapshot( LongSets.immutable.empty(), 0, 0 ), s -> true, EmptyMemoryTracker.INSTANCE );
-        life.add( controller );
+    void setUp(CursorContextFactory contextFactory, FileSystemAbstraction filesystem) throws IOException {
+        idGeneratorFactory = new BufferingIdGeneratorFactory(
+                new DefaultIdGeneratorFactory(filesystem, immediate(), DEFAULT_DATABASE_NAME));
+        controller = new BufferedIdController(
+                idGeneratorFactory,
+                new OnDemandJobScheduler(),
+                contextFactory,
+                "test db",
+                NullLogService.getInstance());
+        controller.initialize(
+                filesystem,
+                testDirectory.file("buffer"),
+                Config.defaults(),
+                () -> new IdController.TransactionSnapshot(LongSets.immutable.empty(), 0, 0),
+                s -> true,
+                EmptyMemoryTracker.INSTANCE);
+        life.add(controller);
     }
 
     @Test
-    void shouldStopWhenNotStarted() throws IOException
-    {
-        setUp( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), fs );
+    void shouldStopWhenNotStarted() throws IOException {
+        setUp(new CursorContextFactory(PageCacheTracer.NULL, EMPTY), fs);
 
-        assertDoesNotThrow( controller::stop );
+        assertDoesNotThrow(controller::stop);
     }
 
     @Test
-    void reportPageCacheMetricsOnMaintenance() throws IOException
-    {
+    void reportPageCacheMetricsOnMaintenance() throws IOException {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        setUp( contextFactory, fs );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        setUp(contextFactory, fs);
 
-        try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), TestIdType.TEST, 100L, true, 1000L, writable(),
-                Config.defaults(), contextFactory, immutable.empty(), SINGLE_IDS ) )
-        {
-            idGenerator.start( FreeIds.NO_FREE_IDS, NULL_CONTEXT );
-            try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
-            {
-                marker.markDeleted( 1L );
+        try (var idGenerator = idGeneratorFactory.create(
+                pageCache,
+                testDirectory.file("foo"),
+                TestIdType.TEST,
+                100L,
+                true,
+                1000L,
+                writable(),
+                Config.defaults(),
+                contextFactory,
+                immutable.empty(),
+                SINGLE_IDS)) {
+            idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
+            try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+                marker.markDeleted(1L);
             }
-            idGenerator.clearCache( NULL_CONTEXT );
+            idGenerator.clearCache(NULL_CONTEXT);
 
             long initialPins = pageCacheTracer.pins();
             long initialUnpins = pageCacheTracer.unpins();
@@ -112,68 +128,76 @@ class BufferedIdControllerTest
 
             controller.maintenance();
 
-            assertThat( pageCacheTracer.pins() - initialPins ).isEqualTo( 3 );
-            assertThat( pageCacheTracer.unpins() - initialUnpins ).isEqualTo( 3 );
-            assertThat( pageCacheTracer.hits() - initialHits ).isEqualTo( 3 );
+            assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(3);
+            assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(3);
+            assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(3);
         }
     }
 
-    @RepeatedTest( 10 )
-    void concurrentMaintanenceAndClose() throws Throwable
-    {
+    @RepeatedTest(10)
+    void concurrentMaintanenceAndClose() throws Throwable {
         var race = new Race();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        setUp( contextFactory, fs );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        setUp(contextFactory, fs);
         life.start();
-        try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), TestIdType.TEST, 100L, true, 1000L, writable(),
-                                                           Config.defaults(), contextFactory, immutable.empty(), SINGLE_IDS ) )
-        {
+        try (var idGenerator = idGeneratorFactory.create(
+                pageCache,
+                testDirectory.file("foo"),
+                TestIdType.TEST,
+                100L,
+                true,
+                1000L,
+                writable(),
+                Config.defaults(),
+                contextFactory,
+                immutable.empty(),
+                SINGLE_IDS)) {
 
-            idGenerator.start( FreeIds.NO_FREE_IDS, NULL_CONTEXT);
-            try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
-            {
-                for ( int i = 0; i < 1000; i++ )
-                {
-                    marker.markUsed( i );
-                    marker.markDeleted( i );
+            idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
+            try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+                for (int i = 0; i < 1000; i++) {
+                    marker.markUsed(i);
+                    marker.markDeleted(i);
                 }
             }
 
-            race.addContestant( controller::maintenance );
-            race.addContestant( () ->
-                                {
-                                    try
-                                    {
-                                        life.shutdown();
-                                    }
-                                    catch ( Exception e )
-                                    {
-                                        throw new RuntimeException( e );
-                                    }
-                                } );
+            race.addContestant(controller::maintenance);
+            race.addContestant(() -> {
+                try {
+                    life.shutdown();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
             race.go();
         }
     }
 
     @Test
-    void maintanenceAfterClose() throws Throwable
-    {
+    void maintanenceAfterClose() throws Throwable {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        setUp( contextFactory, fs );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        setUp(contextFactory, fs);
         life.start();
-        try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), TestIdType.TEST, 100L, true, 1000L, writable(),
-                                                           Config.defaults(), contextFactory, immutable.empty(), SINGLE_IDS ) )
-        {
+        try (var idGenerator = idGeneratorFactory.create(
+                pageCache,
+                testDirectory.file("foo"),
+                TestIdType.TEST,
+                100L,
+                true,
+                1000L,
+                writable(),
+                Config.defaults(),
+                contextFactory,
+                immutable.empty(),
+                SINGLE_IDS)) {
 
-            idGenerator.start( FreeIds.NO_FREE_IDS, NULL_CONTEXT);
-            try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
-            {
-                for ( int i = 0; i < 1000; i++ )
-                {
-                    marker.markUsed( i );
-                    marker.markDeleted( i );
+            idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
+            try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+                for (int i = 0; i < 1000; i++) {
+                    marker.markUsed(i);
+                    marker.markDeleted(i);
                 }
             }
 
@@ -183,27 +207,34 @@ class BufferedIdControllerTest
     }
 
     @Test
-    void maintanenceWithAdversary() throws Throwable
-    {
-        var adversary = new MethodGuardedAdversary( new CountingAdversary( 1, false ),
-                                                    DiskBufferedIds.class.getDeclaredMethod( "processChunk", BufferedIds.BufferedIdVisitor.class,
-                                                                                             ReadAheadChannel.class ) );
+    void maintanenceWithAdversary() throws Throwable {
+        var adversary = new MethodGuardedAdversary(
+                new CountingAdversary(1, false),
+                DiskBufferedIds.class.getDeclaredMethod(
+                        "processChunk", BufferedIds.BufferedIdVisitor.class, ReadAheadChannel.class));
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        var adversarialFs = new AdversarialFileSystemAbstraction( adversary, fs );
-        setUp( contextFactory, adversarialFs );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var adversarialFs = new AdversarialFileSystemAbstraction(adversary, fs);
+        setUp(contextFactory, adversarialFs);
         life.start();
-        try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), TestIdType.TEST, 100L, true, 1000L, writable(),
-                                                           Config.defaults(), contextFactory, immutable.empty(), SINGLE_IDS ) )
-        {
+        try (var idGenerator = idGeneratorFactory.create(
+                pageCache,
+                testDirectory.file("foo"),
+                TestIdType.TEST,
+                100L,
+                true,
+                1000L,
+                writable(),
+                Config.defaults(),
+                contextFactory,
+                immutable.empty(),
+                SINGLE_IDS)) {
 
-            idGenerator.start( FreeIds.NO_FREE_IDS, NULL_CONTEXT);
-            try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
-            {
-                for ( int i = 0; i < 1000; i++ )
-                {
-                    marker.markUsed( i );
-                    marker.markDeleted( i );
+            idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
+            try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+                for (int i = 0; i < 1000; i++) {
+                    marker.markUsed(i);
+                    marker.markDeleted(i);
                 }
             }
 

@@ -23,199 +23,165 @@ import java.time.Clock;
 import java.util.EnumMap;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
-public class LoggingPhaseTracker implements PhaseTracker
-{
+public class LoggingPhaseTracker implements PhaseTracker {
     private static final String MESSAGE_PREFIX = "TIME/PHASE ";
-    static final int PERIOD_INTERVAL = FeatureToggles.getInteger( LoggingPhaseTracker.class, "period_interval", 600 );
+    static final int PERIOD_INTERVAL = FeatureToggles.getInteger(LoggingPhaseTracker.class, "period_interval", 600);
 
     private final long periodInterval;
     private final InternalLog log;
     private final Clock clock;
 
-    private final EnumMap<Phase,Logger> times = new EnumMap<>( Phase.class );
+    private final EnumMap<Phase, Logger> times = new EnumMap<>(Phase.class);
     private Phase currentPhase;
     private long timeEnterPhase;
     private boolean stopped;
     private long lastPeriodReport = -1;
 
-    LoggingPhaseTracker( InternalLog log )
-    {
-        this( PERIOD_INTERVAL, log, Clock.systemUTC() );
+    LoggingPhaseTracker(InternalLog log) {
+        this(PERIOD_INTERVAL, log, Clock.systemUTC());
     }
 
     @VisibleForTesting
-    LoggingPhaseTracker( long periodIntervalInSeconds, InternalLog log, Clock clock )
-    {
-        this.periodInterval = TimeUnit.SECONDS.toMillis( periodIntervalInSeconds );
+    LoggingPhaseTracker(long periodIntervalInSeconds, InternalLog log, Clock clock) {
+        this.periodInterval = TimeUnit.SECONDS.toMillis(periodIntervalInSeconds);
         this.log = log;
         this.clock = clock;
-        for ( Phase phase : Phase.values() )
-        {
-            times.put( phase, new Logger( phase ) );
+        for (Phase phase : Phase.values()) {
+            times.put(phase, new Logger(phase));
         }
     }
 
     @Override
-    public void enterPhase( Phase phase )
-    {
-        if ( stopped )
-        {
-            throw new IllegalStateException( "Trying to report a new phase after phase tracker has been stopped." );
+    public void enterPhase(Phase phase) {
+        if (stopped) {
+            throw new IllegalStateException("Trying to report a new phase after phase tracker has been stopped.");
         }
-        if ( phase != currentPhase )
-        {
+        if (phase != currentPhase) {
             long now = logCurrentTime();
             currentPhase = phase;
             timeEnterPhase = now;
 
-            if ( lastPeriodReport == -1 )
-            {
+            if (lastPeriodReport == -1) {
                 lastPeriodReport = now;
             }
 
             long millisSinceLastPeriodReport = now - lastPeriodReport;
-            if ( millisSinceLastPeriodReport >= periodInterval )
-            {
+            if (millisSinceLastPeriodReport >= periodInterval) {
                 // Report period
-                periodReport( millisSinceLastPeriodReport );
+                periodReport(millisSinceLastPeriodReport);
                 lastPeriodReport = now;
             }
         }
     }
 
     @Override
-    public void registerTime( Phase phase, long millis )
-    {
-        Preconditions.checkState( !stopped, "Trying to report a new phase after phase tracker has been stopped." );
-        logTime( phase, millis );
+    public void registerTime(Phase phase, long millis) {
+        Preconditions.checkState(!stopped, "Trying to report a new phase after phase tracker has been stopped.");
+        logTime(phase, millis);
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         stopped = true;
         logCurrentTime();
         currentPhase = null;
         finalReport();
     }
 
-    EnumMap<Phase,Logger> times()
-    {
+    EnumMap<Phase, Logger> times() {
         return times;
     }
 
-    private void finalReport()
-    {
-        log.debug( MESSAGE_PREFIX + mainReportString( "Final" ) );
+    private void finalReport() {
+        log.debug(MESSAGE_PREFIX + mainReportString("Final"));
     }
 
-    private void periodReport( long millisSinceLastPeriodReport )
-    {
-        String periodReportString = periodReportString( millisSinceLastPeriodReport );
-        String mainReportString = mainReportString( "Total" );
-        log.debug( MESSAGE_PREFIX + mainReportString + ", " + periodReportString );
+    private void periodReport(long millisSinceLastPeriodReport) {
+        String periodReportString = periodReportString(millisSinceLastPeriodReport);
+        String mainReportString = mainReportString("Total");
+        log.debug(MESSAGE_PREFIX + mainReportString + ", " + periodReportString);
     }
 
-    private String mainReportString( String title )
-    {
-        StringJoiner joiner = new StringJoiner( ", ", title + ": ", "" );
-        times.values().forEach( logger -> reportToJoiner( joiner, logger ) );
+    private String mainReportString(String title) {
+        StringJoiner joiner = new StringJoiner(", ", title + ": ", "");
+        times.values().forEach(logger -> reportToJoiner(joiner, logger));
         return joiner.toString();
     }
 
-    private String periodReportString( long millisSinceLastPeriodReport )
-    {
-        long secondsSinceLastPeriodReport = TimeUnit.MILLISECONDS.toSeconds( millisSinceLastPeriodReport );
-        StringJoiner joiner = new StringJoiner( ", ", "Last " + secondsSinceLastPeriodReport + " sec: ", "" );
-        times.values().stream()
-                .map( Logger::period )
-                .forEach( period ->
-                {
-                    reportToJoiner( joiner, period );
-                    period.reset();
-
-                } );
+    private String periodReportString(long millisSinceLastPeriodReport) {
+        long secondsSinceLastPeriodReport = TimeUnit.MILLISECONDS.toSeconds(millisSinceLastPeriodReport);
+        StringJoiner joiner = new StringJoiner(", ", "Last " + secondsSinceLastPeriodReport + " sec: ", "");
+        times.values().stream().map(Logger::period).forEach(period -> {
+            reportToJoiner(joiner, period);
+            period.reset();
+        });
         return joiner.toString();
     }
 
-    private static void reportToJoiner( StringJoiner joiner, Counter counter )
-    {
-        if ( counter.nbrOfReports > 0 )
-        {
-            joiner.add( counter.toString() );
+    private static void reportToJoiner(StringJoiner joiner, Counter counter) {
+        if (counter.nbrOfReports > 0) {
+            joiner.add(counter.toString());
         }
     }
 
-    private long logCurrentTime()
-    {
+    private long logCurrentTime() {
         long now = clock.millis();
-        if ( currentPhase != null )
-        {
-            logTime( currentPhase, now - timeEnterPhase );
+        if (currentPhase != null) {
+            logTime(currentPhase, now - timeEnterPhase);
         }
         return now;
     }
 
-    private void logTime( Phase phase, long timeMillis )
-    {
-        Logger logger = times.get( phase );
-        logger.log( timeMillis );
+    private void logTime(Phase phase, long timeMillis) {
+        Logger logger = times.get(phase);
+        logger.log(timeMillis);
     }
 
-    public static class Logger extends Counter
-    {
+    public static class Logger extends Counter {
         final Counter periodCounter;
 
-        private Logger( Phase phase )
-        {
-            super( phase );
-            periodCounter = new Counter( phase );
+        private Logger(Phase phase) {
+            super(phase);
+            periodCounter = new Counter(phase);
             periodCounter.reset();
         }
 
         @Override
-        void log( long timeMillis )
-        {
-            super.log( timeMillis );
-            periodCounter.log( timeMillis );
+        void log(long timeMillis) {
+            super.log(timeMillis);
+            periodCounter.log(timeMillis);
         }
 
-        Counter period()
-        {
+        Counter period() {
             return periodCounter;
         }
     }
 
-    public static class Counter
-    {
+    public static class Counter {
         private final Phase phase;
         long totalTime;
         long nbrOfReports;
         long maxTime;
         long minTime;
 
-        Counter( Phase phase )
-        {
+        Counter(Phase phase) {
             this.phase = phase;
         }
 
-        void log( long timeMillis )
-        {
+        void log(long timeMillis) {
             totalTime += timeMillis;
             nbrOfReports++;
-            maxTime = Math.max( maxTime, timeMillis );
-            minTime = Math.min( minTime, timeMillis );
+            maxTime = Math.max(maxTime, timeMillis);
+            minTime = Math.min(minTime, timeMillis);
         }
 
-        void reset()
-        {
+        void reset() {
             totalTime = 0;
             nbrOfReports = 0;
             maxTime = Long.MIN_VALUE;
@@ -223,42 +189,32 @@ public class LoggingPhaseTracker implements PhaseTracker
         }
 
         @Override
-        public String toString()
-        {
-            StringJoiner joiner = new StringJoiner( ", ", phase + "[", "]" );
-            if ( nbrOfReports == 0 )
-            {
-                addToString( "nbrOfReports", nbrOfReports, joiner, false );
-            }
-            else if ( nbrOfReports == 1 )
-            {
-                addToString( "totalTime", totalTime, joiner, true );
-            }
-            else
-            {
+        public String toString() {
+            StringJoiner joiner = new StringJoiner(", ", phase + "[", "]");
+            if (nbrOfReports == 0) {
+                addToString("nbrOfReports", nbrOfReports, joiner, false);
+            } else if (nbrOfReports == 1) {
+                addToString("totalTime", totalTime, joiner, true);
+            } else {
                 long avgTime = totalTime / nbrOfReports;
-                addToString( "totalTime", totalTime, joiner, true );
-                addToString( "avgTime", avgTime, joiner, true );
-                addToString( "minTime", minTime, joiner, true );
-                addToString( "maxTime", maxTime, joiner, true );
-                addToString( "nbrOfReports", nbrOfReports, joiner, false );
+                addToString("totalTime", totalTime, joiner, true);
+                addToString("avgTime", avgTime, joiner, true);
+                addToString("minTime", minTime, joiner, true);
+                addToString("maxTime", maxTime, joiner, true);
+                addToString("nbrOfReports", nbrOfReports, joiner, false);
             }
             return joiner.toString();
         }
 
-        static void addToString( String name, long measurement, StringJoiner joiner, boolean isTime )
-        {
+        static void addToString(String name, long measurement, StringJoiner joiner, boolean isTime) {
             String measurementString;
-            if ( isTime )
-            {
-                long timeInNanos = TimeUnit.MILLISECONDS.toNanos( measurement );
-                measurementString = TimeUtil.nanosToString( timeInNanos );
+            if (isTime) {
+                long timeInNanos = TimeUnit.MILLISECONDS.toNanos(measurement);
+                measurementString = TimeUtil.nanosToString(timeInNanos);
+            } else {
+                measurementString = Long.toString(measurement);
             }
-            else
-            {
-                measurementString = Long.toString( measurement );
-            }
-            joiner.add( String.format( "%s=%s", name, measurementString ) );
+            joiner.add(String.format("%s=%s", name, measurementString));
         }
     }
 }

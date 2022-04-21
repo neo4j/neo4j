@@ -35,8 +35,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *   }
  * }
  */
-case class ConditionalApply(override val left: LogicalPlan, override val right: LogicalPlan, items: Seq[String])
-                           (implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) with ApplyPlan {
+case class ConditionalApply(override val left: LogicalPlan, override val right: LogicalPlan, items: Seq[String])(
+  implicit idGen: IdGen
+) extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)

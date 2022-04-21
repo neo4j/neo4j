@@ -19,12 +19,15 @@
  */
 package org.neo4j.index;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,77 +40,64 @@ import org.neo4j.kernel.impl.index.schema.NativeIndexHeaderWriter;
 import org.neo4j.kernel.impl.index.schema.NativeIndexes;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
-public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
-{
+public class SetInitialStateInNativeIndex extends NativeIndexRestartAction {
     private final byte targetInitialState;
 
-    public SetInitialStateInNativeIndex( byte targetInitialState, IndexProviderDescriptor providerDescriptor )
-    {
-        super( providerDescriptor );
+    public SetInitialStateInNativeIndex(byte targetInitialState, IndexProviderDescriptor providerDescriptor) {
+        super(providerDescriptor);
         this.targetInitialState = targetInitialState;
     }
 
     @Override
-    protected void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure,
-                                            ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        var config = MuninnPageCache.config( 100 ).reservedPageBytes( reserved_page_header_bytes.defaultValue() );
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, JobSchedulerFactory.createInitialisedScheduler(), PageCacheTracer.NULL,
-                config ) )
-        {
-            int filesChanged = setInitialState( fs, indexDirectoryStructure.rootDirectory(), pageCache, openOptions );
-            assertThat( filesChanged ).as( "couldn't find any index to set state on" ).isGreaterThanOrEqualTo( 1 );
+    protected void runOnDirectoryStructure(
+            FileSystemAbstraction fs,
+            IndexDirectoryStructure indexDirectoryStructure,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        var config = MuninnPageCache.config(100).reservedPageBytes(reserved_page_header_bytes.defaultValue());
+        try (PageCache pageCache = StandalonePageCacheFactory.createPageCache(
+                fs, JobSchedulerFactory.createInitialisedScheduler(), PageCacheTracer.NULL, config)) {
+            int filesChanged = setInitialState(fs, indexDirectoryStructure.rootDirectory(), pageCache, openOptions);
+            assertThat(filesChanged)
+                    .as("couldn't find any index to set state on")
+                    .isGreaterThanOrEqualTo(1);
         }
     }
 
-    private int setInitialState( FileSystemAbstraction fs, Path fileOrDir, PageCache pageCache,
-                                 ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        if ( fs.isDirectory( fileOrDir ) )
-        {
+    private int setInitialState(
+            FileSystemAbstraction fs, Path fileOrDir, PageCache pageCache, ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        if (fs.isDirectory(fileOrDir)) {
             int count = 0;
-            Path[] children = fs.listFiles( fileOrDir );
-            for ( Path child : children )
-            {
-                count += setInitialState( fs, child, pageCache, openOptions );
+            Path[] children = fs.listFiles(fileOrDir);
+            for (Path child : children) {
+                count += setInitialState(fs, child, pageCache, openOptions);
             }
 
             return count;
-        }
-        else
-        {
-            if ( isNativeIndexFile( fileOrDir, pageCache, openOptions ) )
-            {
-                overwriteState( pageCache, fileOrDir, targetInitialState, openOptions );
+        } else {
+            if (isNativeIndexFile(fileOrDir, pageCache, openOptions)) {
+                overwriteState(pageCache, fileOrDir, targetInitialState, openOptions);
             }
             return 1;
         }
     }
 
-    private static boolean isNativeIndexFile( Path fileOrDir, PageCache pageCache, ImmutableSet<OpenOption> openOptions )
-    {
-        try
-        {
+    private static boolean isNativeIndexFile(
+            Path fileOrDir, PageCache pageCache, ImmutableSet<OpenOption> openOptions) {
+        try {
             // Try and read initial state, if we succeed then we know this file is a native index file
             // and we overwrite initial state with target.
-            NativeIndexes.readState( pageCache, fileOrDir, DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions );
+            NativeIndexes.readState(pageCache, fileOrDir, DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions);
             return true;
-        }
-        catch ( Throwable t )
-        {
+        } catch (Throwable t) {
             return false;
         }
     }
 
-    private static void overwriteState( PageCache pageCache, Path indexFile, byte state, ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        NativeIndexHeaderWriter stateWriter = new NativeIndexHeaderWriter( state );
-        GBPTree.overwriteHeader( pageCache, indexFile, stateWriter, DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions );
+    private static void overwriteState(
+            PageCache pageCache, Path indexFile, byte state, ImmutableSet<OpenOption> openOptions) throws IOException {
+        NativeIndexHeaderWriter stateWriter = new NativeIndexHeaderWriter(state);
+        GBPTree.overwriteHeader(pageCache, indexFile, stateWriter, DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions);
     }
 }

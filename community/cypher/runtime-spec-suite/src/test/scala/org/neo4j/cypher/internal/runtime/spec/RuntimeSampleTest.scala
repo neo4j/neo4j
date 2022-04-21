@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.InterpretedRuntime
 /**
  * Sample tests to demonstrate the runtime acceptance test framework. Remove eventually?
  */
-class RuntimeSampleTest extends RuntimeTestSuite(COMMUNITY.EDITION, InterpretedRuntime)
-{
+class RuntimeSampleTest extends RuntimeTestSuite(COMMUNITY.EDITION, InterpretedRuntime) {
 
   test("sample test I - simple all nodes scan") {
     // given

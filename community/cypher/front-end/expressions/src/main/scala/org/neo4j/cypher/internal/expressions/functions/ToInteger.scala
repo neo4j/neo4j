@@ -28,6 +28,12 @@ case object ToInteger extends Function {
   override val signatures = Vector(
     TypeSignature(this, CTString, CTInteger, "Converts a string value to an integer value.", Category.SCALAR),
     TypeSignature(this, CTNumber, CTInteger, "Converts a floating point value to an integer value.", Category.SCALAR),
-    TypeSignature(this, CTBoolean, CTInteger, "Converts a boolean to an integer value. TRUE is defined to be 1 and FALSE is defined to be 0.", Category.SCALAR)
+    TypeSignature(
+      this,
+      CTBoolean,
+      CTInteger,
+      "Converts a boolean to an integer value. TRUE is defined to be 1 and FALSE is defined to be 0.",
+      Category.SCALAR
+    )
   )
 }

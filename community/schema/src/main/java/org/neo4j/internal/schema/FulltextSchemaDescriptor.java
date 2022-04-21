@@ -26,6 +26,4 @@ import org.neo4j.util.MarkerInterface;
  * {@link PropertySchemaType#PARTIAL_ANY_TOKEN}.
  */
 @MarkerInterface
-public interface FulltextSchemaDescriptor extends SchemaDescriptor
-{
-}
+public interface FulltextSchemaDescriptor extends SchemaDescriptor {}

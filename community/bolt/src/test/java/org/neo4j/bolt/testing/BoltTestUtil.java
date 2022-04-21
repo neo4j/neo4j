@@ -19,53 +19,40 @@
  */
 package org.neo4j.bolt.testing;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+public final class BoltTestUtil {
+    private BoltTestUtil() {}
 
-public final class BoltTestUtil
-{
-    private BoltTestUtil()
-    {
+    public static BoltChannel newTestBoltChannel() {
+        return newTestBoltChannel("bolt-1");
     }
 
-    public static BoltChannel newTestBoltChannel()
-    {
-        return newTestBoltChannel( "bolt-1" );
+    public static BoltChannel newTestBoltChannel(String id) {
+        return new BoltChannel(id, "bolt", new EmbeddedChannel(), ChannelProtector.NULL);
     }
 
-    public static BoltChannel newTestBoltChannel( String id )
-    {
-        return new BoltChannel( id, "bolt", new EmbeddedChannel(), ChannelProtector.NULL );
+    public static BoltChannel newTestBoltChannel(Channel ch) {
+        return new BoltChannel("bolt-1", "bolt", ch, ChannelProtector.NULL);
     }
 
-    public static BoltChannel newTestBoltChannel( Channel ch )
-    {
-        return new BoltChannel( "bolt-1", "bolt", ch, ChannelProtector.NULL );
-    }
-
-    public static void assertByteBufEquals( ByteBuf expected, ByteBuf actual )
-    {
-        try
-        {
-            assertEquals( expected, actual );
-        }
-        finally
-        {
-            releaseIfPossible( expected );
-            releaseIfPossible( actual );
+    public static void assertByteBufEquals(ByteBuf expected, ByteBuf actual) {
+        try {
+            assertEquals(expected, actual);
+        } finally {
+            releaseIfPossible(expected);
+            releaseIfPossible(actual);
         }
     }
 
-    private static void releaseIfPossible( ByteBuf buf )
-    {
-        if ( buf.refCnt() > 0 )
-        {
+    private static void releaseIfPossible(ByteBuf buf) {
+        if (buf.refCnt() > 0) {
             buf.release();
         }
     }

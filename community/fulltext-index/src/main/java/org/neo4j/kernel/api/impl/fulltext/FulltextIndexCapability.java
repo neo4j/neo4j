@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.util.Arrays;
-
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -30,61 +29,54 @@ import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
-class FulltextIndexCapability implements IndexCapability
-{
-    private static final IndexBehaviour[] EVENTUALLY_CONSISTENT_BEHAVIOUR = {IndexBehaviour.EVENTUALLY_CONSISTENT, IndexBehaviour.SKIP_AND_LIMIT};
+class FulltextIndexCapability implements IndexCapability {
+    private static final IndexBehaviour[] EVENTUALLY_CONSISTENT_BEHAVIOUR = {
+        IndexBehaviour.EVENTUALLY_CONSISTENT, IndexBehaviour.SKIP_AND_LIMIT
+    };
     private static final IndexBehaviour[] NORMAL_BEHAVIOUR = {IndexBehaviour.SKIP_AND_LIMIT};
 
     private final boolean isEventuallyConsistent;
 
-    FulltextIndexCapability( boolean isEventuallyConsistent )
-    {
+    FulltextIndexCapability(boolean isEventuallyConsistent) {
         this.isEventuallyConsistent = isEventuallyConsistent;
     }
 
     @Override
-    public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
-    {
+    public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
         return IndexOrderCapability.NONE;
     }
 
     @Override
-    public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-    {
+    public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
         return IndexValueCapability.NO;
     }
 
     @Override
-    public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
-    {
-        Preconditions.requireNonEmpty( valueCategories );
-        Preconditions.requireNoNullElements( valueCategories );
-        return Arrays.stream( valueCategories ).allMatch( ValueCategory.TEXT::equals );
+    public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
+        Preconditions.requireNonEmpty(valueCategories);
+        Preconditions.requireNoNullElements(valueCategories);
+        return Arrays.stream(valueCategories).allMatch(ValueCategory.TEXT::equals);
     }
 
     @Override
-    public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
-    {
-        return queryType == IndexQueryType.FULLTEXT_SEARCH && areValueCategoriesAccepted( valueCategory );
+    public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
+        return queryType == IndexQueryType.FULLTEXT_SEARCH && areValueCategoriesAccepted(valueCategory);
     }
 
     @Override
-    public double getCostMultiplier( IndexQueryType... queryTypes )
-    {
+    public double getCostMultiplier(IndexQueryType... queryTypes) {
         return 1.0;
     }
 
     @Override
-    public boolean supportPartitionedScan( IndexQuery... queries )
-    {
-        Preconditions.requireNonEmpty( queries );
-        Preconditions.requireNoNullElements( queries );
+    public boolean supportPartitionedScan(IndexQuery... queries) {
+        Preconditions.requireNonEmpty(queries);
+        Preconditions.requireNoNullElements(queries);
         return false;
     }
 
     @Override
-    public IndexBehaviour[] behaviours()
-    {
+    public IndexBehaviour[] behaviours() {
         return isEventuallyConsistent ? EVENTUALLY_CONSISTENT_BEHAVIOUR : NORMAL_BEHAVIOUR;
     }
 }

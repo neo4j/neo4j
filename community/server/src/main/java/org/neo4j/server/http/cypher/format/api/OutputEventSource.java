@@ -31,8 +31,7 @@ import java.util.function.Consumer;
  * <p>
  * (CypherResource) - [OutputEventSource producing OutputEvents] -> (MessageBodyWriter) - [OutputStream] -> (network)
  */
-public interface OutputEventSource
-{
+public interface OutputEventSource {
     /**
      * Producing output events.
      * <p>
@@ -40,7 +39,7 @@ public interface OutputEventSource
      *
      * @param eventListener consumer of the produced events.
      */
-    void produceEvents( Consumer<OutputEvent> eventListener );
+    void produceEvents(Consumer<OutputEvent> eventListener);
 
     /**
      * Gets parameters passed to this object from {@link InputEventStream}. The parameters are useful primarily if an input format
@@ -48,7 +47,7 @@ public interface OutputEventSource
      *
      * @return parameters.
      */
-    Map<String,Object> getParameters();
+    Map<String, Object> getParameters();
 
     TransactionUriScheme getUriInfo();
 }

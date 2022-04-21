@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import scala.reflect.ClassTag
 
 case class BaseContains[T: ClassTag]()(implicit manifest: Manifest[T]) extends ValidatingCondition {
+
   private val acceptableTypes: Set[Class[_]] = Set(
     classOf[Statement],
     classOf[SemanticState]
@@ -33,9 +34,9 @@ case class BaseContains[T: ClassTag]()(implicit manifest: Manifest[T]) extends V
   override def apply(in: Any): Seq[String] = in match {
     case state: BaseState =>
       manifest.runtimeClass match {
-        case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
+        case x if classOf[Statement] == x && state.maybeStatement.isEmpty     => Seq("Statement missing")
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
-        case _ => Seq.empty
+        case _                                                                => Seq.empty
       }
     case x => throw new IllegalStateException(s"Unknown state: $x")
   }

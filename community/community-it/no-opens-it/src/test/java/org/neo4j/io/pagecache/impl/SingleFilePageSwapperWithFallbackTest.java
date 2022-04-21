@@ -19,15 +19,13 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import org.junit.jupiter.api.BeforeAll;
-
 import static org.neo4j.noopens.NoOpensIT.assertByteBufferClosed;
 
-public class SingleFilePageSwapperWithFallbackTest extends SingleFilePageSwapperTest
-{
+import org.junit.jupiter.api.BeforeAll;
+
+public class SingleFilePageSwapperWithFallbackTest extends SingleFilePageSwapperTest {
     @BeforeAll
-    static void before()
-    {
+    static void before() {
         assertByteBufferClosed();
     }
 }

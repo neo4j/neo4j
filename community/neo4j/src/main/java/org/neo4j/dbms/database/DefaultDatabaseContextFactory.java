@@ -19,8 +19,9 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.function.Supplier;
+import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 
+import java.util.function.Supplier;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -36,49 +37,49 @@ import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 
-import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
-
-public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactory<StandaloneDatabaseContext>
-{
+public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactory<StandaloneDatabaseContext> {
     private final DatabaseTransactionStats.Factory transactionStatsFactory;
     private final Supplier<Locks> locksSupplier;
     private final CommitProcessFactory commitProcessFactory;
     private final DefaultDatabaseContextFactoryComponents components;
 
-    public DefaultDatabaseContextFactory( GlobalModule globalModule,
-                                          DatabaseTransactionStats.Factory transactionStatsFactory,
-                                          IdContextFactory idContextFactory,
-                                          CommitProcessFactory commitProcessFactory,
-                                          DefaultDatabaseContextFactoryComponents components )
-    {
-        super( globalModule, idContextFactory );
+    public DefaultDatabaseContextFactory(
+            GlobalModule globalModule,
+            DatabaseTransactionStats.Factory transactionStatsFactory,
+            IdContextFactory idContextFactory,
+            CommitProcessFactory commitProcessFactory,
+            DefaultDatabaseContextFactoryComponents components) {
+        super(globalModule, idContextFactory);
         this.transactionStatsFactory = transactionStatsFactory;
-        this.locksSupplier = createLockSupplier( globalModule, createLockFactory( globalModule.getGlobalConfig(), globalModule.getLogService() ) );
+        this.locksSupplier = createLockSupplier(
+                globalModule, createLockFactory(globalModule.getGlobalConfig(), globalModule.getLogService()));
         this.commitProcessFactory = commitProcessFactory;
         this.components = components;
     }
 
     @Override
-    public StandaloneDatabaseContext create( NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions )
-    {
-        var databaseConfig = new DatabaseConfig( databaseOptions.settings(), globalModule.getGlobalConfig(), namedDatabaseId );
-        var contextFactory = createContextFactory( databaseConfig, namedDatabaseId );
-        var databaseCreationContext = new ModularDatabaseCreationContext( namedDatabaseId,
-                                                                          globalModule,
-                                                                          globalModule.getGlobalDependencies(),
-                                                                          databaseConfig, contextFactory,
-                                                                          new StandardConstraintSemantics(),
-                                                                          new CommunityCypherEngineProvider(),
-                                                                          transactionStatsFactory.create(),
-                                                                          ModularDatabaseCreationContext.defaultFileWatcherFilter(),
-                                                                          AccessCapabilityFactory.configDependent(),
-                                                                          ExternalIdReuseConditionProvider.NONE,
-                                                                          locksSupplier.get(),
-                                                                          idContextFactory.createIdContext( namedDatabaseId, contextFactory ),
-                                                                          commitProcessFactory,
-                                                                          createTokenHolderProvider( globalModule, namedDatabaseId ),
-                                                                          new GlobalAvailabilityGuardController( globalModule.getGlobalAvailabilityGuard() ),
-                                                                          components.readOnlyDatabases() );
-        return new StandaloneDatabaseContext( new Database( databaseCreationContext ) );
+    public StandaloneDatabaseContext create(NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions) {
+        var databaseConfig =
+                new DatabaseConfig(databaseOptions.settings(), globalModule.getGlobalConfig(), namedDatabaseId);
+        var contextFactory = createContextFactory(databaseConfig, namedDatabaseId);
+        var databaseCreationContext = new ModularDatabaseCreationContext(
+                namedDatabaseId,
+                globalModule,
+                globalModule.getGlobalDependencies(),
+                databaseConfig,
+                contextFactory,
+                new StandardConstraintSemantics(),
+                new CommunityCypherEngineProvider(),
+                transactionStatsFactory.create(),
+                ModularDatabaseCreationContext.defaultFileWatcherFilter(),
+                AccessCapabilityFactory.configDependent(),
+                ExternalIdReuseConditionProvider.NONE,
+                locksSupplier.get(),
+                idContextFactory.createIdContext(namedDatabaseId, contextFactory),
+                commitProcessFactory,
+                createTokenHolderProvider(globalModule, namedDatabaseId),
+                new GlobalAvailabilityGuardController(globalModule.getGlobalAvailabilityGuard()),
+                components.readOnlyDatabases());
+        return new StandaloneDatabaseContext(new Database(databaseCreationContext));
     }
 }

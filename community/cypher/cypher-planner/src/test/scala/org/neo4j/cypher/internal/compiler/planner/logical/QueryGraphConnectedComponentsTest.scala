@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QueryGraphConnectedComponentsTest
-  extends CypherFunSuite with LogicalPlanningTestSupport {
+    extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private val A = "a"
   private val B = "b"
@@ -120,8 +120,9 @@ class QueryGraphConnectedComponentsTest
       patternNodes = Set(A, B),
       selections = Selections.from(Seq(
         hasLabels(A, "Label"),
-        hasLabels(B, "Label"))
+        hasLabels(B, "Label")
       ))
+    )
 
     graph.connectedComponents should equal(Seq(
       QueryGraph(patternNodes = Set(A), selections = Selections.from(hasLabels(A, "Label"))),
@@ -183,7 +184,8 @@ class QueryGraphConnectedComponentsTest
     val graph = QueryGraph(
       patternNodes = Set(A, B),
       patternRelationships = Set(B_to_A),
-      shortestPathPatterns = Set(shortestPath))
+      shortestPathPatterns = Set(shortestPath)
+    )
 
     graph.connectedComponents should equal(Seq(graph))
   }
@@ -198,9 +200,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("nodes solved by argument should be in the same component") {
-    val graph = QueryGraph.empty.
-      addPatternNodes(A, B).
-      addArgumentIds(Seq(A, B))
+    val graph = QueryGraph.empty.addPatternNodes(A, B).addArgumentIds(Seq(A, B))
 
     graph.connectedComponents should equal(Seq(graph))
   }

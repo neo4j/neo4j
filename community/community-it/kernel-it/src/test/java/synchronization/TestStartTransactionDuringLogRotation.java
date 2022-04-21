@@ -19,10 +19,8 @@
  */
 package synchronization;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.dedicated_transaction_appender;
+import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -30,7 +28,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
@@ -47,17 +48,15 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.dedicated_transaction_appender;
-import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
-
-@DbmsExtension( configurationCallback = "configure" )
-@ExtendWith( OtherThreadExtension.class )
-public class TestStartTransactionDuringLogRotation
-{
+@DbmsExtension(configurationCallback = "configure")
+@ExtendWith(OtherThreadExtension.class)
+public class TestStartTransactionDuringLogRotation {
     @Inject
     public GraphDatabaseAPI database;
+
     @Inject
     private OtherThread t2;
+
     @Inject
     private Monitors monitors;
 
@@ -69,41 +68,34 @@ public class TestStartTransactionDuringLogRotation
     private Future<Void> rotationFuture;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
-               .setConfig( dedicated_transaction_appender, false );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(logical_log_rotation_threshold, ByteUnit.mebiBytes(1))
+                .setConfig(dedicated_transaction_appender, false);
     }
 
     @BeforeEach
-    void setUp() throws InterruptedException
-    {
+    void setUp() throws InterruptedException {
         executor = Executors.newCachedThreadPool();
-        startLogRotationLatch = new CountDownLatch( 1 );
-        completeLogRotationLatch = new CountDownLatch( 1 );
+        startLogRotationLatch = new CountDownLatch(1);
+        completeLogRotationLatch = new CountDownLatch(1);
         writerStopped = new AtomicBoolean();
 
-        LogRotationMonitor rotationListener = new LogRotationMonitorAdapter()
-        {
+        LogRotationMonitor rotationListener = new LogRotationMonitorAdapter() {
             @Override
-            public void startRotation( long currentLogVersion )
-            {
+            public void startRotation(long currentLogVersion) {
                 startLogRotationLatch.countDown();
-                try
-                {
+                try {
                     completeLogRotationLatch.await();
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             }
         };
 
-        monitors.addMonitorListener( rotationListener );
-        label = Label.label( "Label" );
+        monitors.addMonitorListener(rotationListener);
+        label = Label.label("Label");
 
-        rotationFuture = t2.execute( forceLogRotation( database ) );
+        rotationFuture = t2.execute(forceLogRotation(database));
 
         // Waiting for the writer task to start a log rotation
         startLogRotationLatch.await();
@@ -113,45 +105,41 @@ public class TestStartTransactionDuringLogRotation
         // The test passes when transaction.close completes within the test timeout, that is, it didn't deadlock.
     }
 
-    private Callable<Void> forceLogRotation( GraphDatabaseAPI db )
-    {
-        return () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.createNode( label ).setProperty( "a", 1 );
+    private Callable<Void> forceLogRotation(GraphDatabaseAPI db) {
+        return () -> {
+            try (Transaction tx = db.beginTx()) {
+                tx.createNode(label).setProperty("a", 1);
                 tx.commit();
             }
 
-            db.getDependencyResolver().resolveDependency( LogFiles.class ).getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
+            db.getDependencyResolver()
+                    .resolveDependency(LogFiles.class)
+                    .getLogFile()
+                    .getLogRotation()
+                    .rotateLogFile(LogAppendEvent.NULL);
             return null;
         };
     }
 
     @AfterEach
-    public void tearDown() throws Exception
-    {
+    public void tearDown() throws Exception {
         rotationFuture.get();
-        writerStopped.set( true );
+        writerStopped.set(true);
         executor.shutdown();
     }
 
     @Test
-    void logRotationMustNotObstructStartingReadTransaction()
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
-            tx.getNodeById( 0 );
+    void logRotationMustNotObstructStartingReadTransaction() {
+        try (Transaction tx = database.beginTx()) {
+            tx.getNodeById(0);
             completeLogRotationLatch.countDown();
             tx.commit();
         }
     }
 
     @Test
-    void logRotationMustNotObstructStartingWriteTransaction()
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
+    void logRotationMustNotObstructStartingWriteTransaction() {
+        try (Transaction tx = database.beginTx()) {
             tx.createNode();
             completeLogRotationLatch.countDown();
             tx.commit();

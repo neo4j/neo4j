@@ -19,21 +19,18 @@
  */
 package org.neo4j.procedure.builtin;
 
-public class ConnectionTerminationResult
-{
+public class ConnectionTerminationResult {
     private static final String SUCCESS_MESSAGE = "Connection found";
 
     public final String connectionId;
     public final String username;
     public final String message;
 
-    ConnectionTerminationResult( String connectionId, String username )
-    {
-        this( connectionId, username, SUCCESS_MESSAGE );
+    ConnectionTerminationResult(String connectionId, String username) {
+        this(connectionId, username, SUCCESS_MESSAGE);
     }
 
-    ConnectionTerminationResult( String connectionId, String username, String message )
-    {
+    ConnectionTerminationResult(String connectionId, String username, String message) {
         this.connectionId = connectionId;
         this.username = username;
         this.message = message;

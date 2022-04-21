@@ -21,42 +21,34 @@ package org.neo4j.bolt.v3.messaging.response;
 
 import org.neo4j.bolt.messaging.ResponseMessage;
 
-public class IgnoredMessage implements ResponseMessage
-{
+public class IgnoredMessage implements ResponseMessage {
     public static final byte SIGNATURE = 0x7E;
     public static final IgnoredMessage IGNORED_MESSAGE = new IgnoredMessage();
 
-    private IgnoredMessage()
-    {
-    }
+    private IgnoredMessage() {}
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public ResponseMessage copy()
-    {
+    public ResponseMessage copy() {
         return this;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
+    public boolean equals(Object o) {
         return this == o || !(o == null || getClass() != o.getClass());
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return 1;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "IGNORED";
     }
 }

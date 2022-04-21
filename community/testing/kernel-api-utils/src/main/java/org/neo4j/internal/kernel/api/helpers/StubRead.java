@@ -36,259 +36,254 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
-public class StubRead implements Read
-{
+public class StubRead implements Read {
     @Override
-    public IndexReadSession indexReadSession( IndexDescriptor index )
-    {
+    public IndexReadSession indexReadSession(IndexDescriptor index) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public TokenReadSession tokenReadSession( IndexDescriptor index )
-    {
+    public TokenReadSession tokenReadSession(IndexDescriptor index) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void nodeIndexSeek( QueryContext queryContext, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints,
-            PropertyIndexQuery... query )
-    {
+    public void nodeIndexSeek(
+            QueryContext queryContext,
+            IndexReadSession index,
+            NodeValueIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
-                                                                QueryContext queryContext, PropertyIndexQuery... query )
-    {
+    public PartitionedScan<NodeValueIndexCursor> nodeIndexSeek(
+            IndexReadSession index,
+            int desiredNumberOfPartitions,
+            QueryContext queryContext,
+            PropertyIndexQuery... query) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relationshipIndexSeek( QueryContext queryContext, IndexReadSession index, RelationshipValueIndexCursor cursor,
-            IndexQueryConstraints constraints, PropertyIndexQuery... query )
-    {
+    public void relationshipIndexSeek(
+            QueryContext queryContext,
+            IndexReadSession index,
+            RelationshipValueIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
-                                                                                QueryContext queryContext, PropertyIndexQuery... query )
-    {
+    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexSeek(
+            IndexReadSession index,
+            int desiredNumberOfPartitions,
+            QueryContext queryContext,
+            PropertyIndexQuery... query) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long lockingNodeUniqueIndexSeek( IndexDescriptor index,
-                                            NodeValueIndexCursor cursor,
-                                            PropertyIndexQuery.ExactPredicate... predicates )
-    {
+    public long lockingNodeUniqueIndexSeek(
+            IndexDescriptor index, NodeValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints )
-    {
+    public void nodeIndexScan(IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PartitionedScan<NodeValueIndexCursor> nodeIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
-    {
+    public PartitionedScan<NodeValueIndexCursor> nodeIndexScan(
+            IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relationshipIndexScan( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints )
-    {
+    public void relationshipIndexScan(
+            IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions,
-                                                                                QueryContext queryContext )
-    {
+    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan(
+            IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
-    {
+    public Scan<NodeLabelIndexCursor> nodeLabelScan(int label) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, int desiredNumberOfPartitions,
-                                                                CursorContext cursorContext, TokenPredicate query )
-    {
+    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate query) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
-            CursorContext cursorContext )
-    {
+    public void nodeLabelScan(
+            TokenReadSession session,
+            NodeLabelIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            CursorContext cursorContext) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void allNodesScan( NodeCursor cursor )
-    {
+    public void allNodesScan(NodeCursor cursor) {
         ((StubNodeCursor) cursor).scan();
     }
 
     @Override
-    public Scan<NodeCursor> allNodesScan()
-    {
+    public Scan<NodeCursor> allNodesScan() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void singleNode( long reference, NodeCursor cursor )
-    {
-        ((StubNodeCursor) cursor).single( reference );
+    public void singleNode(long reference, NodeCursor cursor) {
+        ((StubNodeCursor) cursor).single(reference);
     }
 
     @Override
-    public boolean nodeExists( long id )
-    {
+    public boolean nodeExists(long id) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long countsForNode( int labelId )
-    {
+    public long countsForNode(int labelId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long countsForNodeWithoutTxState( int labelId )
-    {
+    public long countsForNodeWithoutTxState(int labelId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
-    {
+    public long countsForRelationship(int startLabelId, int typeId, int endLabelId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
-    {
+    public long countsForRelationshipWithoutTxState(int startLabelId, int typeId, int endLabelId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long nodesGetCount()
-    {
+    public long nodesGetCount() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long relationshipsGetCount()
-    {
+    public long relationshipsGetCount() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void singleRelationship( long reference, RelationshipScanCursor cursor )
-    {
+    public void singleRelationship(long reference, RelationshipScanCursor cursor) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void singleRelationship( long reference, long sourceNodeReference, int type, long targetNodeReference, RelationshipScanCursor cursor )
-    {
+    public void singleRelationship(
+            long reference,
+            long sourceNodeReference,
+            int type,
+            long targetNodeReference,
+            RelationshipScanCursor cursor) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean relationshipExists( long reference )
-    {
+    public boolean relationshipExists(long reference) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void allRelationshipsScan( RelationshipScanCursor cursor )
-    {
+    public void allRelationshipsScan(RelationshipScanCursor cursor) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Scan<RelationshipScanCursor> allRelationshipsScan()
-    {
+    public Scan<RelationshipScanCursor> allRelationshipsScan() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, int desiredNumberOfPartitions,
-                                                                              CursorContext cursorContext, TokenPredicate query )
-    {
+    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate query) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
-            CursorContext cursorContext )
-    {
+    public void relationshipTypeScan(
+            TokenReadSession session,
+            RelationshipTypeIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            CursorContext cursorContext) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relationships( long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor )
-    {
+    public void relationships(
+            long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void nodeProperties( long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor )
-    {
+    public void nodeProperties(
+            long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relationshipProperties( long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor )
-    {
+    public void relationshipProperties(
+            long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean nodeDeletedInTransaction( long node )
-    {
+    public boolean nodeDeletedInTransaction(long node) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean relationshipDeletedInTransaction( long relationship )
-    {
+    public boolean relationshipDeletedInTransaction(long relationship) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId )
-    {
+    public Value nodePropertyChangeInTransactionOrNull(long node, int propertyKeyId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Value relationshipPropertyChangeInTransactionOrNull( long relationship, int propertyKeyId )
-    {
+    public Value relationshipPropertyChangeInTransactionOrNull(long relationship, int propertyKeyId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean transactionStateHasChanges()
-    {
+    public boolean transactionStateHasChanges() {
         throw new UnsupportedOperationException();
     }
 }

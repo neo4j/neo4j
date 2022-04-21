@@ -23,17 +23,20 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
-class FailedExecutionResult(fieldNames: Array[String],
-                            queryType: InternalQueryType,
-                            subscriber: QuerySubscriber)
-  extends EmptyExecutionResult(fieldNames, InternalPlanDescription.error("Query has failed, no plan available"), queryType, Set.empty) {
+class FailedExecutionResult(fieldNames: Array[String], queryType: InternalQueryType, subscriber: QuerySubscriber)
+    extends EmptyExecutionResult(
+      fieldNames,
+      InternalPlanDescription.error("Query has failed, no plan available"),
+      queryType,
+      Set.empty
+    ) {
 
   override def request(numberOfRecords: Long): Unit = {
-    //do nothing
+    // do nothing
   }
 
   override def cancel(): Unit = {
-    //do nothing
+    // do nothing
   }
 
   override def await(): Boolean = false

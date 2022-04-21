@@ -19,14 +19,18 @@
  */
 package org.neo4j.server;
 
-import org.dummy.web.service.DummyThirdPartyWebService;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static java.net.http.HttpClient.Redirect.NORMAL;
+import static java.net.http.HttpClient.newBuilder;
+import static java.net.http.HttpResponse.BodyHandlers.discarding;
+import static java.net.http.HttpResponse.BodyHandlers.ofString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-
+import org.dummy.web.service.DummyThirdPartyWebService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
@@ -38,93 +42,80 @@ import org.neo4j.server.helpers.Transactor;
 import org.neo4j.server.helpers.WebContainerHelper;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
-import static java.net.http.HttpClient.Redirect.NORMAL;
-import static java.net.http.HttpClient.newBuilder;
-import static java.net.http.HttpResponse.BodyHandlers.discarding;
-import static java.net.http.HttpResponse.BodyHandlers.ofString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
-{
+class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase {
     private TestWebContainer testWebContainer;
 
     @AfterEach
-    void stopServer()
-    {
-        if ( testWebContainer != null )
-        {
+    void stopServer() {
+        if (testWebContainer != null) {
             testWebContainer.shutdown();
         }
     }
 
     @Test
-    void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception
-    {
+    void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception {
         var serverBuilder = CommunityWebContainerBuilder.builder();
-        testWebContainer = WebContainerHelper.createNonPersistentContainer( serverBuilder );
-        var functionalTestHelper = new FunctionalTestHelper( testWebContainer );
+        testWebContainer = WebContainerHelper.createNonPersistentContainer(serverBuilder);
+        var functionalTestHelper = new FunctionalTestHelper(testWebContainer);
 
-        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() ).GET().build();
-        var httpClient = HttpClient.newBuilder().followRedirects( NORMAL ).build();
-        var response = httpClient.send( request, discarding() );
-        assertEquals( 200, response.statusCode() );
+        var request =
+                HttpRequest.newBuilder(functionalTestHelper.baseUri()).GET().build();
+        var httpClient = HttpClient.newBuilder().followRedirects(NORMAL).build();
+        var response = httpClient.send(request, discarding());
+        assertEquals(200, response.statusCode());
     }
 
     @Test
-    void shouldLoadThirdPartyJaxRsClasses() throws Exception
-    {
+    void shouldLoadThirdPartyJaxRsClasses() throws Exception {
         testWebContainer = CommunityWebContainerBuilder.serverOnRandomPorts()
-                .withThirdPartyJaxRsPackage( "org.dummy.web.service",
-                        DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
+                .withThirdPartyJaxRsPackage(
+                        "org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
                 .build();
 
-        var httpClient = newBuilder().followRedirects( NORMAL ).build();
+        var httpClient = newBuilder().followRedirects(NORMAL).build();
 
-        var thirdPartyServiceUri = new URI( testWebContainer.getBaseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT ).normalize();
+        var thirdPartyServiceUri = new URI(
+                        testWebContainer.getBaseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
+                .normalize();
 
-        var request = HttpRequest.newBuilder( thirdPartyServiceUri ).GET().build();
-        var response = httpClient.send( request, ofString() ).body();
-        assertEquals( "hello", response );
+        var request = HttpRequest.newBuilder(thirdPartyServiceUri).GET().build();
+        var response = httpClient.send(request, ofString()).body();
+        assertEquals("hello", response);
 
         // Assert that extensions gets initialized
-        var nodesCreated = createSimpleDatabase( testWebContainer.getDefaultDatabase() );
-        thirdPartyServiceUri =
-                new URI( testWebContainer.getBaseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
-        request = HttpRequest.newBuilder( thirdPartyServiceUri ).GET().build();
-        response = httpClient.send( request, ofString() ).body();
-        assertEquals( String.valueOf( nodesCreated ), response, response );
+        var nodesCreated = createSimpleDatabase(testWebContainer.getDefaultDatabase());
+        thirdPartyServiceUri = new URI(testWebContainer.getBaseUri()
+                        + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test")
+                .normalize();
+        request = HttpRequest.newBuilder(thirdPartyServiceUri).GET().build();
+        response = httpClient.send(request, ofString()).body();
+        assertEquals(String.valueOf(nodesCreated), response, response);
     }
 
-    private static int createSimpleDatabase( final GraphDatabaseAPI graph )
-    {
+    private static int createSimpleDatabase(final GraphDatabaseAPI graph) {
         final var numberOfNodes = 10;
-        new Transactor( graph, tx ->
-        {
-            for ( var i = 0; i < numberOfNodes; i++ )
-            {
-                tx.createNode();
-            }
+        new Transactor(graph, tx -> {
+                    for (var i = 0; i < numberOfNodes; i++) {
+                        tx.createNode();
+                    }
 
-            try ( ResourceIterable<Node> allNodes1 = tx.getAllNodes() )
-            {
-                for ( var node1 : allNodes1 )
-                {
-                    try ( ResourceIterable<Node> allNodes2 = tx.getAllNodes() )
-                    {
-                        for ( var node2 : allNodes2 )
-                        {
-                            if ( node1.equals( node2 ) )
-                            {
-                                continue;
+                    try (ResourceIterable<Node> allNodes1 = tx.getAllNodes()) {
+                        for (var node1 : allNodes1) {
+                            try (ResourceIterable<Node> allNodes2 = tx.getAllNodes()) {
+                                for (var node2 : allNodes2) {
+                                    if (node1.equals(node2)) {
+                                        continue;
+                                    }
+
+                                    node1.createRelationshipTo(node2, RelationshipType.withName("REL"));
+                                }
                             }
-
-                            node1.createRelationshipTo( node2, RelationshipType.withName( "REL" ) );
                         }
                     }
-                }
-            }
-        } ).execute();
+                })
+                .execute();
 
         return numberOfNodes;
     }

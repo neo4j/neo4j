@@ -27,8 +27,7 @@ import org.neo4j.annotations.api.PublicApi;
  * A notification can be visualized in a client pinpointing problems or other information about the query.
  */
 @PublicApi
-public interface Notification
-{
+public interface Notification {
     /**
      * Returns a notification code for the discovered issue.
      * @return the notification code

@@ -41,7 +41,9 @@ trait IDPCache[Result] {
 }
 
 object IDPCache {
+
   case class Results[Result](result: Option[Result], sortedResult: Option[Result]) {
+
     /**
      * Returns iterator over all unique results
      */

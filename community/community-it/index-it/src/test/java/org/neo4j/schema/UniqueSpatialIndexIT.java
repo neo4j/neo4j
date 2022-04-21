@@ -19,11 +19,15 @@
  */
 package org.neo4j.schema;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,136 +40,115 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.PointValue;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.test.TestLabels.LABEL_ONE;
-
 @DbmsExtension
-class UniqueSpatialIndexIT
-{
+class UniqueSpatialIndexIT {
     private static final String KEY = "prop";
 
     @Inject
     private GraphDatabaseService db;
+
     private PointValue point1;
     private PointValue point2;
 
     @BeforeEach
-    void setup()
-    {
-        Pair<PointValue,PointValue> collidingPoints = SpatialIndexValueTestUtil.pointsWithSameValueOnSpaceFillingCurve( Config.defaults() );
+    void setup() {
+        Pair<PointValue, PointValue> collidingPoints =
+                SpatialIndexValueTestUtil.pointsWithSameValueOnSpaceFillingCurve(Config.defaults());
         point1 = collidingPoints.first();
         point2 = collidingPoints.other();
     }
 
     @Test
-    void shouldPopulateIndexWithUniquePointsThatCollideOnSpaceFillingCurve()
-    {
+    void shouldPopulateIndexWithUniquePointsThatCollideOnSpaceFillingCurve() {
         // given
-        Pair<Long,Long> nodeIds = createUniqueNodes();
+        Pair<Long, Long> nodeIds = createUniqueNodes();
 
         // when
         createUniquenessConstraint();
 
         // then
-        assertBothNodesArePresent( nodeIds );
+        assertBothNodesArePresent(nodeIds);
     }
 
     @Test
-    void shouldAddPointsThatCollideOnSpaceFillingCurveToUniqueIndexInSameTx()
-    {
+    void shouldAddPointsThatCollideOnSpaceFillingCurveToUniqueIndexInSameTx() {
         // given
         createUniquenessConstraint();
 
         // when
-        Pair<Long,Long> nodeIds = createUniqueNodes();
+        Pair<Long, Long> nodeIds = createUniqueNodes();
 
         // then
-        assertBothNodesArePresent( nodeIds );
+        assertBothNodesArePresent(nodeIds);
     }
 
     @Test
-    void shouldThrowWhenPopulatingWithNonUniquePoints()
-    {
+    void shouldThrowWhenPopulatingWithNonUniquePoints() {
         // given
         createNonUniqueNodes();
 
         // then
-        assertThrows( ConstraintViolationException.class, this::createUniquenessConstraint );
+        assertThrows(ConstraintViolationException.class, this::createUniquenessConstraint);
     }
 
     @Test
-    void shouldThrowWhenAddingNonUniquePoints()
-    {
+    void shouldThrowWhenAddingNonUniquePoints() {
         // given
         createUniquenessConstraint();
 
         // when
-        assertThrows( ConstraintViolationException.class, this::createNonUniqueNodes );
+        assertThrows(ConstraintViolationException.class, this::createNonUniqueNodes);
     }
 
-    private void createNonUniqueNodes()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node originNode = tx.createNode( LABEL_ONE );
-            originNode.setProperty( KEY, point1 );
-            Node centerNode = tx.createNode( LABEL_ONE );
-            centerNode.setProperty( KEY, point1 );
+    private void createNonUniqueNodes() {
+        try (Transaction tx = db.beginTx()) {
+            Node originNode = tx.createNode(LABEL_ONE);
+            originNode.setProperty(KEY, point1);
+            Node centerNode = tx.createNode(LABEL_ONE);
+            centerNode.setProperty(KEY, point1);
             tx.commit();
         }
     }
 
-    private Pair<Long,Long> createUniqueNodes()
-    {
-        Pair<Long,Long> nodeIds;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node originNode = tx.createNode( LABEL_ONE );
-            originNode.setProperty( KEY, point1 );
-            Node centerNode = tx.createNode( LABEL_ONE );
-            centerNode.setProperty( KEY, point2 );
+    private Pair<Long, Long> createUniqueNodes() {
+        Pair<Long, Long> nodeIds;
+        try (Transaction tx = db.beginTx()) {
+            Node originNode = tx.createNode(LABEL_ONE);
+            originNode.setProperty(KEY, point1);
+            Node centerNode = tx.createNode(LABEL_ONE);
+            centerNode.setProperty(KEY, point2);
 
-            nodeIds = Pair.of( originNode.getId(), centerNode.getId() );
+            nodeIds = Pair.of(originNode.getId(), centerNode.getId());
             tx.commit();
         }
         return nodeIds;
     }
 
-    private void assertBothNodesArePresent( Pair<Long,Long> nodeIds )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            try ( ResourceIterator<Node> origin = tx.findNodes( LABEL_ONE, KEY, point1 ) )
-            {
-                assertTrue( origin.hasNext() );
-                assertEquals( nodeIds.first().longValue(), origin.next().getId() );
-                assertFalse( origin.hasNext() );
+    private void assertBothNodesArePresent(Pair<Long, Long> nodeIds) {
+        try (Transaction tx = db.beginTx()) {
+            try (ResourceIterator<Node> origin = tx.findNodes(LABEL_ONE, KEY, point1)) {
+                assertTrue(origin.hasNext());
+                assertEquals(nodeIds.first().longValue(), origin.next().getId());
+                assertFalse(origin.hasNext());
             }
 
-            try ( ResourceIterator<Node> center = tx.findNodes( LABEL_ONE, KEY, point2 ) )
-            {
-                assertTrue( center.hasNext() );
-                assertEquals( nodeIds.other().longValue(), center.next().getId() );
-                assertFalse( center.hasNext() );
+            try (ResourceIterator<Node> center = tx.findNodes(LABEL_ONE, KEY, point2)) {
+                assertTrue(center.hasNext());
+                assertEquals(nodeIds.other().longValue(), center.next().getId());
+                assertFalse(center.hasNext());
             }
 
             tx.commit();
         }
     }
 
-    private void createUniquenessConstraint()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( LABEL_ONE ).assertPropertyIsUnique( KEY ).create();
+    private void createUniquenessConstraint() {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().constraintFor(LABEL_ONE).assertPropertyIsUnique(KEY).create();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
     }

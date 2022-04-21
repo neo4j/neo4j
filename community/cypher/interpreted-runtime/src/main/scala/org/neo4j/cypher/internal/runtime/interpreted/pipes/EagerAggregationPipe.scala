@@ -27,12 +27,13 @@ import org.neo4j.cypher.internal.util.attribution.Id
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
-case class EagerAggregationPipe(source: Pipe,
-                                tableFactory: AggregationTableFactory)
-                               (val id: Id = Id.INVALID_ID)
-  extends AggregationPipe(source) {
+case class EagerAggregationPipe(source: Pipe, tableFactory: AggregationTableFactory)(val id: Id = Id.INVALID_ID)
+    extends AggregationPipe(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val table = tableFactory.table(state, rowFactory, id)
     table.clear()
     while (input.hasNext) {

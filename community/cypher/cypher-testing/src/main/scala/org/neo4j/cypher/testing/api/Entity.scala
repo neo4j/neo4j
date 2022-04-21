@@ -23,4 +23,5 @@ abstract class Entity(id: Long, properties: Map[String, AnyRef])
 
 case class Node(id: Long, labels: Seq[String], properties: Map[String, AnyRef]) extends Entity(id, properties)
 
-case class Relationship(id: Long, relType: String, properties: Map[String, AnyRef], startNodeId: Long, endNodeId: Long) extends Entity(id, properties)
+case class Relationship(id: Long, relType: String, properties: Map[String, AnyRef], startNodeId: Long, endNodeId: Long)
+    extends Entity(id, properties)

@@ -19,13 +19,20 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -47,24 +54,17 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@ExtendWith( RandomExtension.class )
+@ExtendWith(RandomExtension.class)
 @EphemeralPageCacheExtension
-class RecordNodeCursorIT
-{
+class RecordNodeCursorIT {
     private static final int HIGH_LABEL_ID = 0x10000;
 
     @Inject
     private PageCache pageCache;
+
     @Inject
     private TestDirectory directory;
+
     @Inject
     private RandomSupport random;
 
@@ -73,68 +73,76 @@ class RecordNodeCursorIT
     private CachedStoreCursors storeCursors;
 
     @BeforeEach
-    void startNeoStores()
-    {
-        neoStores = new StoreFactory( RecordDatabaseLayout.ofFlat( directory.homePath() ), Config.defaults(),
-                new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), "db" ), pageCache, directory.getFileSystem(),
-                NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                DatabaseReadOnlyChecker.writable(), EMPTY_LOG_TAIL ).openAllNeoStores( true );
+    void startNeoStores() {
+        neoStores = new StoreFactory(
+                        RecordDatabaseLayout.ofFlat(directory.homePath()),
+                        Config.defaults(),
+                        new DefaultIdGeneratorFactory(directory.getFileSystem(), immediate(), "db"),
+                        pageCache,
+                        directory.getFileSystem(),
+                        NullLogProvider.getInstance(),
+                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        DatabaseReadOnlyChecker.writable(),
+                        EMPTY_LOG_TAIL)
+                .openAllNeoStores(true);
         nodeStore = neoStores.getNodeStore();
-        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
+        storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
 
     @AfterEach
-    void stopNeoStores()
-    {
+    void stopNeoStores() {
         storeCursors.close();
         neoStores.close();
     }
 
-    @RepeatedTest( 10 )
-    void shouldProperlyReturnHasLabel()
-    {
+    @RepeatedTest(10)
+    void shouldProperlyReturnHasLabel() {
         // given/when
         MutableLongSet labels = LongSets.mutable.empty();
-        long nodeId = createNodeWithRandomLabels( labels );
+        long nodeId = createNodeWithRandomLabels(labels);
 
         // then
-        try ( RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null,
-                NULL_CONTEXT, storeCursors ) )
-        {
-            nodeCursor.single( nodeId );
-            assertThat( nodeCursor.next() ).isTrue();
-            for ( int labelId = 0; labelId < HIGH_LABEL_ID; labelId++ )
-            {
-                boolean fromCursor = nodeCursor.hasLabel( labelId );
-                boolean fromSet = labels.contains( labelId );
-                assertThat( fromCursor ).as( "Label " + labelId ).isEqualTo( fromSet );
+        try (RecordNodeCursor nodeCursor = new RecordNodeCursor(
+                nodeStore,
+                neoStores.getRelationshipStore(),
+                neoStores.getRelationshipGroupStore(),
+                null,
+                NULL_CONTEXT,
+                storeCursors)) {
+            nodeCursor.single(nodeId);
+            assertThat(nodeCursor.next()).isTrue();
+            for (int labelId = 0; labelId < HIGH_LABEL_ID; labelId++) {
+                boolean fromCursor = nodeCursor.hasLabel(labelId);
+                boolean fromSet = labels.contains(labelId);
+                assertThat(fromCursor).as("Label " + labelId).isEqualTo(fromSet);
             }
         }
     }
 
-    private long createNodeWithRandomLabels( MutableLongSet labelsSet )
-    {
-        long[] labels = randomLabels( labelsSet );
+    private long createNodeWithRandomLabels(MutableLongSet labelsSet) {
+        long[] labels = randomLabels(labelsSet);
         NodeRecord nodeRecord = nodeStore.newRecord();
-        nodeRecord.setId( nodeStore.nextId( NULL_CONTEXT ) );
-        nodeRecord.initialize( true, Record.NO_NEXT_PROPERTY.longValue(), false, Record.NO_NEXT_RELATIONSHIP.longValue(), Record.NO_LABELS_FIELD.longValue() );
+        nodeRecord.setId(nodeStore.nextId(NULL_CONTEXT));
+        nodeRecord.initialize(
+                true,
+                Record.NO_NEXT_PROPERTY.longValue(),
+                false,
+                Record.NO_NEXT_RELATIONSHIP.longValue(),
+                Record.NO_LABELS_FIELD.longValue());
         nodeRecord.setCreated();
-        NodeLabelsField.parseLabelsField( nodeRecord ).put( labels, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, storeCursors, INSTANCE );
-        try ( var writeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
-        {
-            nodeStore.updateRecord( nodeRecord, writeCursor, NULL_CONTEXT, storeCursors );
+        NodeLabelsField.parseLabelsField(nodeRecord)
+                .put(labels, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, storeCursors, INSTANCE);
+        try (var writeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
+            nodeStore.updateRecord(nodeRecord, writeCursor, NULL_CONTEXT, storeCursors);
         }
         return nodeRecord.getId();
     }
 
-    private long[] randomLabels( MutableLongSet labelsSet )
-    {
-        int count = random.nextInt( 0, 100 );
+    private long[] randomLabels(MutableLongSet labelsSet) {
+        int count = random.nextInt(0, 100);
         int highId = random.nextBoolean() ? HIGH_LABEL_ID : count * 3;
-        for ( int i = 0; i < count; i++ )
-        {
-            if ( !labelsSet.add( random.nextInt( highId ) ) )
-            {
+        for (int i = 0; i < count; i++) {
+            if (!labelsSet.add(random.nextInt(highId))) {
                 i--;
             }
         }

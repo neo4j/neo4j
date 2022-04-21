@@ -26,31 +26,25 @@ import org.neo4j.kernel.api.exceptions.Status;
  * A {@link DatabaseManagementService} tried to perform some operation on a database, but no database with that name currently exists.
  */
 @PublicApi
-public class DatabaseNotFoundException extends DatabaseManagementException
-{
-    public DatabaseNotFoundException()
-    {
+public class DatabaseNotFoundException extends DatabaseManagementException {
+    public DatabaseNotFoundException() {
         super();
     }
 
-    public DatabaseNotFoundException( String message )
-    {
-        super( message );
+    public DatabaseNotFoundException(String message) {
+        super(message);
     }
 
-    public DatabaseNotFoundException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public DatabaseNotFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public DatabaseNotFoundException( Throwable cause )
-    {
-        super( cause );
+    public DatabaseNotFoundException(Throwable cause) {
+        super(cause);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Database.DatabaseNotFound;
     }
 }

@@ -64,51 +64,152 @@ import org.scalatest.prop.TableDrivenPropertyChecks.forAll
 import org.scalatest.prop.TableFor5
 
 import java.time.Clock
+
 import scala.collection.mutable
 
 class CypherPlannerTest extends CypherFunSuite {
+
   /**
    * This test is here to remind us that the customPlanContextCreator can be changed for
    * debugging purposes, but that change should never be committed.
    */
   test("customPlanContextCreator should be None") {
-    CypherPlanner.customPlanContextCreator should be (None)
+    CypherPlanner.customPlanContextCreator should be(None)
   }
 
-  private def shouldBeIDPComponentConnectorPlanner(expectedMaxTableSize: Int, expectedIterationDurationLimit: Long)(componentConnector: JoinDisconnectedQueryGraphComponents): Assertion =
+  private def shouldBeIDPComponentConnectorPlanner(
+    expectedMaxTableSize: Int,
+    expectedIterationDurationLimit: Long
+  )(componentConnector: JoinDisconnectedQueryGraphComponents): Assertion =
     componentConnector match {
-      case ccp:ComponentConnectorPlanner =>
+      case ccp: ComponentConnectorPlanner =>
         ccp.config.maxTableSize should equal(expectedMaxTableSize)
         ccp.config.iterationDurationLimit should equal(expectedIterationDurationLimit)
       case x =>
         fail(s"Expected a ComponentConnectorPlanner but got: $x")
     }
 
-  private def shouldBeGreedyComponentConnectorPlanner(expectedMaxTableSize: Int, expectedIterationDurationLimit: Long)(componentConnector: JoinDisconnectedQueryGraphComponents): Assertion =
+  private def shouldBeGreedyComponentConnectorPlanner(
+    expectedMaxTableSize: Int,
+    expectedIterationDurationLimit: Long
+  )(componentConnector: JoinDisconnectedQueryGraphComponents): Assertion =
     componentConnector should be(cartesianProductsOrValueJoins)
 
-  private val configOptions: TableFor5[CypherPlannerOption, CypherConnectComponentsPlannerOption, Int, Long, (Int, Long) => JoinDisconnectedQueryGraphComponents => Assertion] = Table(
-    ("planner",                   "componentConnector",                         "expectedMaxTableSize",              "expectedIterationDurationLimit",              "componentConnectorAssertion"),
-    (CypherPlannerOption.default, CypherConnectComponentsPlannerOption.default, DefaultIDPSolverConfig.maxTableSize, DefaultIDPSolverConfig.iterationDurationLimit, shouldBeIDPComponentConnectorPlanner),
-    (CypherPlannerOption.idp,     CypherConnectComponentsPlannerOption.default, DefaultIDPSolverConfig.maxTableSize, DefaultIDPSolverConfig.iterationDurationLimit, shouldBeIDPComponentConnectorPlanner),
-    (CypherPlannerOption.cost,    CypherConnectComponentsPlannerOption.default, DefaultIDPSolverConfig.maxTableSize, DefaultIDPSolverConfig.iterationDurationLimit, shouldBeIDPComponentConnectorPlanner),
-    (CypherPlannerOption.dp,      CypherConnectComponentsPlannerOption.default, DPSolverConfig.maxTableSize,         DPSolverConfig.iterationDurationLimit,         shouldBeIDPComponentConnectorPlanner),
-
-    (CypherPlannerOption.default, CypherConnectComponentsPlannerOption.idp,     DefaultIDPSolverConfig.maxTableSize, DefaultIDPSolverConfig.iterationDurationLimit, shouldBeIDPComponentConnectorPlanner),
-    (CypherPlannerOption.idp,     CypherConnectComponentsPlannerOption.idp,     DefaultIDPSolverConfig.maxTableSize, DefaultIDPSolverConfig.iterationDurationLimit, shouldBeIDPComponentConnectorPlanner),
-    (CypherPlannerOption.cost,    CypherConnectComponentsPlannerOption.idp,     DefaultIDPSolverConfig.maxTableSize, DefaultIDPSolverConfig.iterationDurationLimit, shouldBeIDPComponentConnectorPlanner),
-    (CypherPlannerOption.dp,      CypherConnectComponentsPlannerOption.idp,     DPSolverConfig.maxTableSize,         DPSolverConfig.iterationDurationLimit,         shouldBeIDPComponentConnectorPlanner),
-
-    (CypherPlannerOption.default, CypherConnectComponentsPlannerOption.greedy,  DefaultIDPSolverConfig.maxTableSize, DefaultIDPSolverConfig.iterationDurationLimit, shouldBeGreedyComponentConnectorPlanner),
-    (CypherPlannerOption.idp,     CypherConnectComponentsPlannerOption.greedy,  DefaultIDPSolverConfig.maxTableSize, DefaultIDPSolverConfig.iterationDurationLimit, shouldBeGreedyComponentConnectorPlanner),
-    (CypherPlannerOption.cost,    CypherConnectComponentsPlannerOption.greedy,  DefaultIDPSolverConfig.maxTableSize, DefaultIDPSolverConfig.iterationDurationLimit, shouldBeGreedyComponentConnectorPlanner),
-    (CypherPlannerOption.dp,      CypherConnectComponentsPlannerOption.greedy,  DPSolverConfig.maxTableSize,         DPSolverConfig.iterationDurationLimit,         shouldBeGreedyComponentConnectorPlanner),
+  private val configOptions: TableFor5[
+    CypherPlannerOption,
+    CypherConnectComponentsPlannerOption,
+    Int,
+    Long,
+    (Int, Long) => JoinDisconnectedQueryGraphComponents => Assertion
+  ] = Table(
+    (
+      "planner",
+      "componentConnector",
+      "expectedMaxTableSize",
+      "expectedIterationDurationLimit",
+      "componentConnectorAssertion"
+    ),
+    (
+      CypherPlannerOption.default,
+      CypherConnectComponentsPlannerOption.default,
+      DefaultIDPSolverConfig.maxTableSize,
+      DefaultIDPSolverConfig.iterationDurationLimit,
+      shouldBeIDPComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.idp,
+      CypherConnectComponentsPlannerOption.default,
+      DefaultIDPSolverConfig.maxTableSize,
+      DefaultIDPSolverConfig.iterationDurationLimit,
+      shouldBeIDPComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.cost,
+      CypherConnectComponentsPlannerOption.default,
+      DefaultIDPSolverConfig.maxTableSize,
+      DefaultIDPSolverConfig.iterationDurationLimit,
+      shouldBeIDPComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.dp,
+      CypherConnectComponentsPlannerOption.default,
+      DPSolverConfig.maxTableSize,
+      DPSolverConfig.iterationDurationLimit,
+      shouldBeIDPComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.default,
+      CypherConnectComponentsPlannerOption.idp,
+      DefaultIDPSolverConfig.maxTableSize,
+      DefaultIDPSolverConfig.iterationDurationLimit,
+      shouldBeIDPComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.idp,
+      CypherConnectComponentsPlannerOption.idp,
+      DefaultIDPSolverConfig.maxTableSize,
+      DefaultIDPSolverConfig.iterationDurationLimit,
+      shouldBeIDPComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.cost,
+      CypherConnectComponentsPlannerOption.idp,
+      DefaultIDPSolverConfig.maxTableSize,
+      DefaultIDPSolverConfig.iterationDurationLimit,
+      shouldBeIDPComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.dp,
+      CypherConnectComponentsPlannerOption.idp,
+      DPSolverConfig.maxTableSize,
+      DPSolverConfig.iterationDurationLimit,
+      shouldBeIDPComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.default,
+      CypherConnectComponentsPlannerOption.greedy,
+      DefaultIDPSolverConfig.maxTableSize,
+      DefaultIDPSolverConfig.iterationDurationLimit,
+      shouldBeGreedyComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.idp,
+      CypherConnectComponentsPlannerOption.greedy,
+      DefaultIDPSolverConfig.maxTableSize,
+      DefaultIDPSolverConfig.iterationDurationLimit,
+      shouldBeGreedyComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.cost,
+      CypherConnectComponentsPlannerOption.greedy,
+      DefaultIDPSolverConfig.maxTableSize,
+      DefaultIDPSolverConfig.iterationDurationLimit,
+      shouldBeGreedyComponentConnectorPlanner
+    ),
+    (
+      CypherPlannerOption.dp,
+      CypherConnectComponentsPlannerOption.greedy,
+      DPSolverConfig.maxTableSize,
+      DPSolverConfig.iterationDurationLimit,
+      shouldBeGreedyComponentConnectorPlanner
+    )
   )
 
   test("should use correct solvers") {
     forAll(configOptions) {
-      (planner: CypherPlannerOption, componentConnector: CypherConnectComponentsPlannerOption, expectedMaxTableSize: Int, expectedIterationDurationLimit: Long, componentConnectorAssertion: (Int, Long) => JoinDisconnectedQueryGraphComponents => Assertion) =>
-        val qgSolver = CypherPlanner.createQueryGraphSolver(CypherPlannerConfiguration.defaults(), planner, componentConnector, mock[Monitors])
+      (
+        planner: CypherPlannerOption,
+        componentConnector: CypherConnectComponentsPlannerOption,
+        expectedMaxTableSize: Int,
+        expectedIterationDurationLimit: Long,
+        componentConnectorAssertion: (Int, Long) => JoinDisconnectedQueryGraphComponents => Assertion
+      ) =>
+        val qgSolver = CypherPlanner.createQueryGraphSolver(
+          CypherPlannerConfiguration.defaults(),
+          planner,
+          componentConnector,
+          mock[Monitors]
+        )
 
         qgSolver.singleComponentSolver.solverConfig.maxTableSize should equal(expectedMaxTableSize)
         qgSolver.singleComponentSolver.solverConfig.iterationDurationLimit should equal(expectedIterationDurationLimit)
@@ -116,7 +217,9 @@ class CypherPlannerTest extends CypherFunSuite {
     }
   }
 
-  test("CompilationPhases.parsing anonymous names should not clash with CompilationPhases.planPipeLine anonymous names") {
+  test(
+    "CompilationPhases.parsing anonymous names should not clash with CompilationPhases.planPipeLine anonymous names"
+  ) {
     // AddUniquenessPredicates is part of CompilationPhases.parsing and isolateAggregation is part of CompilationPhases.planPipeLine
     // These two phases both make use of the AnonymousVariableNameGenerator. This test is to show that they use the same AnonymousVariableNameGenerator
     // and no clashing names are generated.
@@ -124,15 +227,21 @@ class CypherPlannerTest extends CypherFunSuite {
     val stats = new GraphStatistics {
       override def nodesAllCardinality(): Cardinality = Cardinality.EMPTY
       override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = Cardinality.EMPTY
-      override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = Cardinality.EMPTY
+      override def patternStepCardinality(
+        fromLabel: Option[LabelId],
+        relTypeId: Option[RelTypeId],
+        toLabel: Option[LabelId]
+      ): Cardinality = Cardinality.EMPTY
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = Some(Selectivity.ZERO)
-      override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = Some(Selectivity.ZERO)
+      override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
+        Some(Selectivity.ZERO)
     }
 
     val getTx = () => 1L
     val planContext = new NotImplementedPlanContext {
       override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(
-        stats, new MutableGraphStatisticsSnapshot(mutable.Map(NodesAllCardinality -> 1.0))
+        stats,
+        new MutableGraphStatisticsSnapshot(mutable.Map(NodesAllCardinality -> 1.0))
       )
       override def getPropertiesWithExistenceConstraint: Set[String] = Set.empty
       override def canLookupNodesByLabel: Boolean = true
@@ -150,17 +259,19 @@ class CypherPlannerTest extends CypherFunSuite {
       TestExecutorCaffeineCacheFactory,
       Clock.systemUTC(),
       monitors,
-      NullLogProvider.getInstance(),
+      NullLogProvider.getInstance()
     )
 
-    val planner = CypherPlanner(CypherPlannerConfiguration.defaults(),
+    val planner = CypherPlanner(
+      CypherPlannerConfiguration.defaults(),
       Clock.systemUTC(),
       monitors,
       NullLog.getInstance(),
       caches,
       CypherPlannerOption.default,
       CypherUpdateStrategy.default,
-      compatibilityMode = Compatibility4_3)
+      compatibilityMode = Compatibility4_3
+    )
 
     val query =
       """MATCH (n)

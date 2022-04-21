@@ -22,10 +22,8 @@ package org.neo4j.bolt.runtime;
 /**
  * Indicates that bolt connection has been fatally misused and therefore the server should close the connection.
  */
-public class BoltProtocolBreachFatality extends BoltConnectionFatality
-{
-    public BoltProtocolBreachFatality( String message )
-    {
-        super( message, null );
+public class BoltProtocolBreachFatality extends BoltConnectionFatality {
+    public BoltProtocolBreachFatality(String message) {
+        super(message, null);
     }
 }

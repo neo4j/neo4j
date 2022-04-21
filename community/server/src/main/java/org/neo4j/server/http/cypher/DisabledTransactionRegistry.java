@@ -19,45 +19,34 @@
  */
 package org.neo4j.server.http.cypher;
 
-public class DisabledTransactionRegistry implements TransactionRegistry
-{
+public class DisabledTransactionRegistry implements TransactionRegistry {
     public static final TransactionRegistry INSTANCE = new DisabledTransactionRegistry();
 
-    private DisabledTransactionRegistry()
-    {
-    }
+    private DisabledTransactionRegistry() {}
 
     @Override
-    public long begin( TransactionHandle handle )
-    {
+    public long begin(TransactionHandle handle) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long release( long id, TransactionHandle transactionHandle )
-    {
+    public long release(long id, TransactionHandle transactionHandle) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public TransactionHandle acquire( long id )
-    {
+    public TransactionHandle acquire(long id) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void forget( long id )
-    {
-    }
+    public void forget(long id) {}
 
     @Override
-    public TransactionHandle terminate( long id )
-    {
+    public TransactionHandle terminate(long id) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void rollbackAllSuspendedTransactions()
-    {
-    }
+    public void rollbackAllSuspendedTransactions() {}
 }

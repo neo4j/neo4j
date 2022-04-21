@@ -19,49 +19,41 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import static java.lang.String.format;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static java.lang.String.format;
-
-public class NoSuchConstraintException extends SchemaKernelException
-{
+public class NoSuchConstraintException extends SchemaKernelException {
     private final SchemaDescriptorSupplier constraint;
     private final String name;
     private static final String MESSAGE = "No such constraint %s.";
 
-    public NoSuchConstraintException( SchemaDescriptorSupplier constraint, TokenNameLookup lookup )
-    {
-        super( Status.Schema.ConstraintNotFound, format( MESSAGE, constraint.userDescription( lookup ) ) );
+    public NoSuchConstraintException(SchemaDescriptorSupplier constraint, TokenNameLookup lookup) {
+        super(Status.Schema.ConstraintNotFound, format(MESSAGE, constraint.userDescription(lookup)));
         this.constraint = constraint;
         this.name = "";
     }
 
-    public NoSuchConstraintException( SchemaDescriptor constraint, TokenNameLookup lookup )
-    {
-        this( () -> constraint, lookup );
+    public NoSuchConstraintException(SchemaDescriptor constraint, TokenNameLookup lookup) {
+        this(() -> constraint, lookup);
     }
 
-    public NoSuchConstraintException( String name )
-    {
-        super( Status.Schema.ConstraintNotFound, format( MESSAGE, name ) );
+    public NoSuchConstraintException(String name) {
+        super(Status.Schema.ConstraintNotFound, format(MESSAGE, name));
         this.constraint = null;
         this.name = name;
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
-        if ( constraint == null )
-        {
-            return format( MESSAGE, name );
-        }
-        else
-        {
-            return format( MESSAGE, constraint.userDescription( tokenNameLookup ) );
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
+        if (constraint == null) {
+            return format(MESSAGE, name);
+        } else {
+            return format(MESSAGE, constraint.userDescription(tokenNameLookup));
         }
     }
 }

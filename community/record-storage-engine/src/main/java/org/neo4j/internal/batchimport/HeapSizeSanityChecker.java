@@ -19,66 +19,61 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.LongSupplier;
+import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
+import java.util.function.LongSupplier;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 
-import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
-
 /**
  * Sanity checking of {@link Input.Estimates} against heap size and free memory.
  * Registers warnings onto a {@link Monitor}.
  */
-class HeapSizeSanityChecker
-{
+class HeapSizeSanityChecker {
     private final Monitor monitor;
     private final LongSupplier freeMemoryLookup;
     private final LongSupplier actualHeapSizeLookup;
 
-    HeapSizeSanityChecker( Monitor monitor )
-    {
-        this( monitor, OsBeanUtil::getFreePhysicalMemory, Runtime.getRuntime()::maxMemory );
+    HeapSizeSanityChecker(Monitor monitor) {
+        this(monitor, OsBeanUtil::getFreePhysicalMemory, Runtime.getRuntime()::maxMemory);
     }
 
-    HeapSizeSanityChecker( Monitor monitor, LongSupplier freeMemoryLookup, LongSupplier actualHeapSizeLookup )
-    {
+    HeapSizeSanityChecker(Monitor monitor, LongSupplier freeMemoryLookup, LongSupplier actualHeapSizeLookup) {
         this.monitor = monitor;
         this.freeMemoryLookup = freeMemoryLookup;
         this.actualHeapSizeLookup = actualHeapSizeLookup;
     }
 
-    void sanityCheck( Input.Estimates inputEstimates, RecordFormats recordFormats, MemoryStatsVisitor.Visitable baseMemory,
-            MemoryStatsVisitor.Visitable... memoryVisitables )
-    {
+    void sanityCheck(
+            Input.Estimates inputEstimates,
+            RecordFormats recordFormats,
+            MemoryStatsVisitor.Visitable baseMemory,
+            MemoryStatsVisitor.Visitable... memoryVisitables) {
         // At this point in time the store hasn't started so it won't show up in free memory reported from OS,
         // i.e. we have to include it here in the calculations.
-        long estimatedCacheSize = ImportMemoryCalculator.estimatedCacheSize( baseMemory, memoryVisitables );
+        long estimatedCacheSize = ImportMemoryCalculator.estimatedCacheSize(baseMemory, memoryVisitables);
         long freeMemory = freeMemoryLookup.getAsLong();
-        long optimalMinimalHeapSize = ImportMemoryCalculator.optimalMinimalHeapSize( inputEstimates, recordFormats );
+        long optimalMinimalHeapSize = ImportMemoryCalculator.optimalMinimalHeapSize(inputEstimates, recordFormats);
         long actualHeapSize = actualHeapSizeLookup.getAsLong();
         boolean freeMemoryIsKnown = freeMemory != VALUE_UNAVAILABLE;
 
         // Check if there's enough memory for the import
-        if ( freeMemoryIsKnown && actualHeapSize + freeMemory < estimatedCacheSize + optimalMinimalHeapSize )
-        {
-            monitor.insufficientAvailableMemory( estimatedCacheSize, optimalMinimalHeapSize, freeMemory );
+        if (freeMemoryIsKnown && actualHeapSize + freeMemory < estimatedCacheSize + optimalMinimalHeapSize) {
+            monitor.insufficientAvailableMemory(estimatedCacheSize, optimalMinimalHeapSize, freeMemory);
             return; // there's likely not available memory, no need to warn about anything else
         }
 
         // Check if the heap is big enough to handle the import
-        if ( actualHeapSize < optimalMinimalHeapSize )
-        {
-            monitor.insufficientHeapSize( optimalMinimalHeapSize, actualHeapSize );
+        if (actualHeapSize < optimalMinimalHeapSize) {
+            monitor.insufficientHeapSize(optimalMinimalHeapSize, actualHeapSize);
             return; // user have been warned about heap size issue
         }
 
         // Check if heap size could be tweaked
-        if ( (!freeMemoryIsKnown || freeMemory < estimatedCacheSize) && actualHeapSize > optimalMinimalHeapSize * 1.2 )
-        {
-            monitor.abundantHeapSize( optimalMinimalHeapSize, actualHeapSize );
+        if ((!freeMemoryIsKnown || freeMemory < estimatedCacheSize) && actualHeapSize > optimalMinimalHeapSize * 1.2) {
+            monitor.abundantHeapSize(optimalMinimalHeapSize, actualHeapSize);
         }
     }
 }

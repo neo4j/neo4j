@@ -41,46 +41,38 @@ package org.neo4j.lock;
  *
  * @see AbstractLockService for implementation details.
  */
-public interface LockService
-{
-    Lock acquireNodeLock( long nodeId, LockType type );
+public interface LockService {
+    Lock acquireNodeLock(long nodeId, LockType type);
 
-    Lock acquireRelationshipLock( long relationshipId, LockType type );
+    Lock acquireRelationshipLock(long relationshipId, LockType type);
 
-    Lock acquireCustomLock( int resourceType, long id, LockType type );
+    Lock acquireCustomLock(int resourceType, long id, LockType type);
 
-    Lock NO_LOCK = new Lock()
-    {
+    Lock NO_LOCK = new Lock() {
         @Override
-        public void release()
-        {
-           // Nothing to release, I'm not a lock, mind you
+        public void release() {
+            // Nothing to release, I'm not a lock, mind you
         }
     };
 
-    LockService NO_LOCK_SERVICE = new LockService()
-    {
+    LockService NO_LOCK_SERVICE = new LockService() {
         @Override
-        public Lock acquireNodeLock( long nodeId, LockType type )
-        {
+        public Lock acquireNodeLock(long nodeId, LockType type) {
             return NO_LOCK;
         }
 
         @Override
-        public Lock acquireRelationshipLock( long relationshipId, LockType type )
-        {
+        public Lock acquireRelationshipLock(long relationshipId, LockType type) {
             return NO_LOCK;
         }
 
         @Override
-        public Lock acquireCustomLock( int resourceType, long id, LockType type )
-        {
+        public Lock acquireCustomLock(int resourceType, long id, LockType type) {
             return NO_LOCK;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "NO_LOCK_SERVICE";
         }
     };

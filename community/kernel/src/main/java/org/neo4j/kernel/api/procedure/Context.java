@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.procedure;
 
 import java.time.Clock;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -37,8 +36,7 @@ import org.neo4j.values.ValueMapper;
  * The context is entirely defined by the caller of the procedure,
  * so what is available in the context depends on the context of the call.
  */
-public interface Context
-{
+public interface Context {
     /**
      * Returns the value mapper of this context.
      * <p>

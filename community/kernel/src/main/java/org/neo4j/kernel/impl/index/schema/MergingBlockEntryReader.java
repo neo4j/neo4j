@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.io.IOUtils.closeAll;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.index.internal.gbptree.Layout;
-
-import static org.neo4j.io.IOUtils.closeAll;
 
 /**
  * Take multiple {@link BlockEntryCursor} that each by themselves provide block entries in sorted order and lazily merge join, providing a view over all
@@ -35,8 +34,7 @@ import static org.neo4j.io.IOUtils.closeAll;
  * {@link BlockEntryCursor#key()} (current key on each cursor).
  * Instances handed out from {@link #key()} and {@link #value()} are reused, consumer is responsible for creating copy if there is a need to cache results.
  */
-public class MergingBlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
-{
+public class MergingBlockEntryReader<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE> {
     // Means that a cursor needs to be advanced, i.e. its current head has already been used, or that it has no head yet
     private static final byte STATE_NEED_ADVANCE = 0;
     // Means that a cursor has been advanced and its current key() contains its current head
@@ -44,39 +42,33 @@ public class MergingBlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,
     // Means that a cursor has been exhausted and has no more entries in it
     private static final byte STATE_EXHAUSTED = 2;
 
-    private final Layout<KEY,VALUE> layout;
+    private final Layout<KEY, VALUE> layout;
     private List<Source> sources = new ArrayList<>();
     private Source lastReturned;
 
-    MergingBlockEntryReader( Layout<KEY,VALUE> layout )
-    {
+    MergingBlockEntryReader(Layout<KEY, VALUE> layout) {
         this.layout = layout;
     }
 
-    void addSource( BlockEntryCursor<KEY,VALUE> source )
-    {
-        sources.add( new Source( source ) );
+    void addSource(BlockEntryCursor<KEY, VALUE> source) {
+        sources.add(new Source(source));
     }
 
     @Override
-    public boolean next() throws IOException
-    {
+    public boolean next() throws IOException {
         // Figure out lowest among cursor heads
         KEY lowest = null;
         Source lowestSource = null;
-        for ( Source source : sources )
-        {
+        for (Source source : sources) {
             KEY candidate = source.tryNext();
-            if ( candidate != null && (lowest == null || layout.compare( candidate, lowest ) < 0) )
-            {
+            if (candidate != null && (lowest == null || layout.compare(candidate, lowest) < 0)) {
                 lowest = candidate;
                 lowestSource = source;
             }
         }
 
         // Make state transitions so that this entry is now considered used
-        if ( lowest != null )
-        {
+        if (lowest != null) {
             lastReturned = lowestSource.takeHead();
             return true;
         }
@@ -84,63 +76,49 @@ public class MergingBlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,
     }
 
     @Override
-    public KEY key()
-    {
+    public KEY key() {
         return lastReturned.cursor.key();
     }
 
     @Override
-    public VALUE value()
-    {
+    public VALUE value() {
         return lastReturned.cursor.value();
     }
 
     @Override
-    public void close() throws IOException
-    {
-        closeAll( sources );
+    public void close() throws IOException {
+        closeAll(sources);
     }
 
-    private class Source implements Closeable
-    {
-        private final BlockEntryCursor<KEY,VALUE> cursor;
+    private class Source implements Closeable {
+        private final BlockEntryCursor<KEY, VALUE> cursor;
         private byte state;
 
-        Source( BlockEntryCursor<KEY,VALUE> cursor )
-        {
+        Source(BlockEntryCursor<KEY, VALUE> cursor) {
             this.cursor = cursor;
         }
 
-        KEY tryNext() throws IOException
-        {
-            if ( state == STATE_NEED_ADVANCE )
-            {
-                if ( cursor.next() )
-                {
+        KEY tryNext() throws IOException {
+            if (state == STATE_NEED_ADVANCE) {
+                if (cursor.next()) {
                     state = STATE_HAS;
                     return cursor.key();
-                }
-                else
-                {
+                } else {
                     state = STATE_EXHAUSTED;
                 }
-            }
-            else if ( state == STATE_HAS )
-            {
+            } else if (state == STATE_HAS) {
                 return cursor.key();
             }
             return null;
         }
 
-        Source takeHead()
-        {
+        Source takeHead() {
             state = STATE_NEED_ADVANCE;
             return this;
         }
 
         @Override
-        public void close() throws IOException
-        {
+        public void close() throws IOException {
             cursor.close();
         }
     }

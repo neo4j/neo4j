@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public class UpdatesTracker
-{
+public class UpdatesTracker {
     private int created;
     private int updated;
     private int deleted;
@@ -29,25 +28,20 @@ public class UpdatesTracker
     private int deletedDuringPopulation;
     private boolean populationCompleted;
 
-    public void increaseCreated( int num )
-    {
+    public void increaseCreated(int num) {
         created += num;
     }
 
-    public void increaseDeleted( int num )
-    {
+    public void increaseDeleted(int num) {
         deleted += num;
     }
 
-    public void increaseUpdated( int num )
-    {
+    public void increaseUpdated(int num) {
         updated += num;
     }
 
-    void notifyPopulationCompleted()
-    {
-        if ( populationCompleted )
-        {
+    void notifyPopulationCompleted() {
+        if (populationCompleted) {
             return;
         }
 
@@ -57,58 +51,47 @@ public class UpdatesTracker
         deletedDuringPopulation = deleted;
     }
 
-    public boolean isPopulationCompleted()
-    {
+    public boolean isPopulationCompleted() {
         return populationCompleted;
     }
 
-    public int created()
-    {
+    public int created() {
         return created;
     }
 
-    public int deleted()
-    {
+    public int deleted() {
         return deleted;
     }
 
-    public int getUpdated()
-    {
+    public int getUpdated() {
         return updated;
     }
 
-    public int createdDuringPopulation()
-    {
+    public int createdDuringPopulation() {
         return createdDuringPopulation;
     }
 
-    public int deletedDuringPopulation()
-    {
+    public int deletedDuringPopulation() {
         return deletedDuringPopulation;
     }
 
-    public int getUpdatedDuringPopulation()
-    {
+    public int getUpdatedDuringPopulation() {
         return updatedDuringPopulation;
     }
 
-    public int createdAfterPopulation()
-    {
+    public int createdAfterPopulation() {
         return created - createdDuringPopulation;
     }
 
-    public int deletedAfterPopulation()
-    {
+    public int deletedAfterPopulation() {
         return deleted - deletedDuringPopulation;
     }
 
-    public int updatedAfterPopulation()
-    {
+    public int updatedAfterPopulation() {
         return updated - updatedDuringPopulation;
     }
 
-    public void add( UpdatesTracker updatesTracker )
-    {
+    public void add(UpdatesTracker updatesTracker) {
         assert isPopulationCompleted();
         assert updatesTracker.isPopulationCompleted();
         this.created += updatesTracker.created;
@@ -120,18 +103,16 @@ public class UpdatesTracker
     }
 
     @Override
-    public String toString()
-    {
-        return "UpdatesTracker{" +
-               "created=" + created +
-               ", deleted=" + deleted +
-               ", createdDuringPopulation=" + createdDuringPopulation +
-               ", updatedDuringPopulation=" + updatedDuringPopulation +
-               ", deletedDuringPopulation=" + deletedDuringPopulation +
-               ", createdAfterPopulation=" + createdAfterPopulation() +
-               ", updatedAfterPopulation=" + updatedAfterPopulation() +
-               ", deletedAfterPopulation=" + deletedAfterPopulation() +
-               ", populationCompleted=" + populationCompleted +
-               '}';
+    public String toString() {
+        return "UpdatesTracker{" + "created="
+                + created + ", deleted="
+                + deleted + ", createdDuringPopulation="
+                + createdDuringPopulation + ", updatedDuringPopulation="
+                + updatedDuringPopulation + ", deletedDuringPopulation="
+                + deletedDuringPopulation + ", createdAfterPopulation="
+                + createdAfterPopulation() + ", updatedAfterPopulation="
+                + updatedAfterPopulation() + ", deletedAfterPopulation="
+                + deletedAfterPopulation() + ", populationCompleted="
+                + populationCompleted + '}';
     }
 }

@@ -19,102 +19,87 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import java.util.Collections;
-
-import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.stats.Keys;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CoarseBoundedProgressExecutionMonitorTest
-{
+import java.util.Collections;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.stats.Keys;
+
+class CoarseBoundedProgressExecutionMonitorTest {
     @ParameterizedTest
-    @ValueSource( ints = {1, 10, 123} )
-    void shouldReportProgressOnSingleExecution( int batchSize )
-    {
+    @ValueSource(ints = {1, 10, 123})
+    void shouldReportProgressOnSingleExecution(int batchSize) {
         // GIVEN
-        Configuration config = config( batchSize );
-        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor( batchSize, config( batchSize ) );
+        Configuration config = config(batchSize);
+        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor(batchSize, config(batchSize));
 
         // WHEN
-        long total = monitorSingleStageExecution( progressExecutionMonitor, config );
+        long total = monitorSingleStageExecution(progressExecutionMonitor, config);
 
         // THEN
-        assertEquals( total, progressExecutionMonitor.getProgress() );
+        assertEquals(total, progressExecutionMonitor.getProgress());
     }
 
     @ParameterizedTest
-    @ValueSource( ints = {1, 10, 123} )
-    void progressOnMultipleExecutions( int batchSize )
-    {
-        Configuration config = config( batchSize );
-        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor( batchSize, config );
+    @ValueSource(ints = {1, 10, 123})
+    void progressOnMultipleExecutions(int batchSize) {
+        Configuration config = config(batchSize);
+        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor(batchSize, config);
 
         long total = progressExecutionMonitor.total();
 
-        for ( int i = 0; i < 4; i++ )
-        {
-            progressExecutionMonitor.start( execution( 0, config ) );
-            progressExecutionMonitor.check( execution( total / 4, config ) );
+        for (int i = 0; i < 4; i++) {
+            progressExecutionMonitor.start(execution(0, config));
+            progressExecutionMonitor.check(execution(total / 4, config));
         }
-        progressExecutionMonitor.done( true, 0, "Completed" );
+        progressExecutionMonitor.done(true, 0, "Completed");
 
-        assertEquals( total, progressExecutionMonitor.getProgress(), "Each item should be completed" );
+        assertEquals(total, progressExecutionMonitor.getProgress(), "Each item should be completed");
     }
 
-    private static long monitorSingleStageExecution( ProgressExecutionMonitor progressExecutionMonitor, Configuration config )
-    {
-        progressExecutionMonitor.start( execution( 0, config ) );
+    private static long monitorSingleStageExecution(
+            ProgressExecutionMonitor progressExecutionMonitor, Configuration config) {
+        progressExecutionMonitor.start(execution(0, config));
         long total = progressExecutionMonitor.total();
         long part = total / 10;
-        for ( int i = 0; i < 9; i++ )
-        {
-            progressExecutionMonitor.check( execution( part * (i + 1), config ) );
-            assertTrue( progressExecutionMonitor.getProgress() < total );
+        for (int i = 0; i < 9; i++) {
+            progressExecutionMonitor.check(execution(part * (i + 1), config));
+            assertTrue(progressExecutionMonitor.getProgress() < total);
         }
-        progressExecutionMonitor.done( true, 0, "Test" );
+        progressExecutionMonitor.done(true, 0, "Test");
         return total;
     }
 
-    private static StageExecution execution( long doneBatches, Configuration config )
-    {
-        Step<?> step = ControlledStep.stepWithStats( "Test", 0, Keys.done_batches, doneBatches );
-        return new StageExecution( "Test", null, config, Collections.singletonList( step ), 0 );
+    private static StageExecution execution(long doneBatches, Configuration config) {
+        Step<?> step = ControlledStep.stepWithStats("Test", 0, Keys.done_batches, doneBatches);
+        return new StageExecution("Test", null, config, Collections.singletonList(step), 0);
     }
 
-    private static Configuration config( int batchSize )
-    {
-        return new Configuration.Overridden( Configuration.DEFAULT )
-        {
+    private static Configuration config(int batchSize) {
+        return new Configuration.Overridden(Configuration.DEFAULT) {
             @Override
-            public int batchSize()
-            {
+            public int batchSize() {
                 return batchSize;
             }
         };
     }
 
-    private static class ProgressExecutionMonitor extends CoarseBoundedProgressExecutionMonitor
-    {
+    private static class ProgressExecutionMonitor extends CoarseBoundedProgressExecutionMonitor {
         private long progress;
 
-        ProgressExecutionMonitor( int batchSize, Configuration configuration )
-        {
-            super( 100 * batchSize, 100 * batchSize, configuration );
+        ProgressExecutionMonitor(int batchSize, Configuration configuration) {
+            super(100 * batchSize, 100 * batchSize, configuration);
         }
 
         @Override
-        protected void progress( long progress )
-        {
+        protected void progress(long progress) {
             this.progress += progress;
         }
 
-        long getProgress()
-        {
+        long getProgress() {
             return progress;
         }
     }

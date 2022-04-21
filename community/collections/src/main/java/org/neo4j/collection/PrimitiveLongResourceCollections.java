@@ -19,90 +19,77 @@
  */
 package org.neo4j.collection;
 
-import java.util.Arrays;
+import static org.neo4j.collection.PrimitiveLongCollections.resourceIterator;
 
+import java.util.Arrays;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceUtils;
 
-import static org.neo4j.collection.PrimitiveLongCollections.resourceIterator;
-
-public class PrimitiveLongResourceCollections
-{
-    private static final PrimitiveLongResourceIterator EMPTY = new AbstractPrimitiveLongBaseResourceIterator( null )
-    {
+public class PrimitiveLongResourceCollections {
+    private static final PrimitiveLongResourceIterator EMPTY = new AbstractPrimitiveLongBaseResourceIterator(null) {
         @Override
-        protected boolean fetchNext()
-        {
+        protected boolean fetchNext() {
             return false;
         }
     };
 
-    public static PrimitiveLongResourceIterator emptyIterator()
-    {
+    public static PrimitiveLongResourceIterator emptyIterator() {
         return EMPTY;
     }
 
-    public static PrimitiveLongResourceIterator iterator( Resource resource, final long... items )
-    {
-        return resourceIterator( PrimitiveLongCollections.iterator( items ), resource );
+    public static PrimitiveLongResourceIterator iterator(Resource resource, final long... items) {
+        return resourceIterator(PrimitiveLongCollections.iterator(items), resource);
     }
 
-    public static PrimitiveLongResourceIterator concat( PrimitiveLongResourceIterator... primitiveLongResourceIterators )
-    {
-        return concat( Arrays.asList( primitiveLongResourceIterators ) );
+    public static PrimitiveLongResourceIterator concat(
+            PrimitiveLongResourceIterator... primitiveLongResourceIterators) {
+        return concat(Arrays.asList(primitiveLongResourceIterators));
     }
 
-    public static PrimitiveLongResourceIterator concat( Iterable<PrimitiveLongResourceIterator> primitiveLongResourceIterators )
-    {
-        return new PrimitiveLongConcatenatingResourceIterator( primitiveLongResourceIterators );
+    public static PrimitiveLongResourceIterator concat(
+            Iterable<PrimitiveLongResourceIterator> primitiveLongResourceIterators) {
+        return new PrimitiveLongConcatenatingResourceIterator(primitiveLongResourceIterators);
     }
 
-    public abstract static class AbstractPrimitiveLongBaseResourceIterator extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator
-            implements PrimitiveLongResourceIterator
-    {
+    public abstract static class AbstractPrimitiveLongBaseResourceIterator
+            extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator
+            implements PrimitiveLongResourceIterator {
         private Resource resource;
 
-        public AbstractPrimitiveLongBaseResourceIterator( Resource resource )
-        {
+        public AbstractPrimitiveLongBaseResourceIterator(Resource resource) {
             this.resource = resource;
         }
 
         @Override
-        public void close()
-        {
-            if ( resource != null )
-            {
+        public void close() {
+            if (resource != null) {
                 resource.close();
                 resource = null;
             }
         }
     }
 
-    private static final class PrimitiveLongConcatenatingResourceIterator extends PrimitiveLongCollections.PrimitiveLongConcatenatingIterator
-            implements PrimitiveLongResourceIterator
-    {
+    private static final class PrimitiveLongConcatenatingResourceIterator
+            extends PrimitiveLongCollections.PrimitiveLongConcatenatingIterator
+            implements PrimitiveLongResourceIterator {
         private final Iterable<PrimitiveLongResourceIterator> iterators;
         private volatile boolean closed;
 
-        private PrimitiveLongConcatenatingResourceIterator( Iterable<PrimitiveLongResourceIterator> iterators )
-        {
-            super( iterators.iterator() );
+        private PrimitiveLongConcatenatingResourceIterator(Iterable<PrimitiveLongResourceIterator> iterators) {
+            super(iterators.iterator());
             this.iterators = iterators;
         }
 
         @Override
-        protected boolean fetchNext()
-        {
+        protected boolean fetchNext() {
             return !closed && super.fetchNext();
         }
 
         @Override
-        public void close()
-        {
-            if ( !closed )
-            {
+        public void close() {
+            if (!closed) {
                 closed = true;
-                ResourceUtils.closeAll( iterators );
+                ResourceUtils.closeAll(iterators);
             }
         }
     }

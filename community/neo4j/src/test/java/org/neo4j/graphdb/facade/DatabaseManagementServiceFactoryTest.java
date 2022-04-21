@@ -19,9 +19,17 @@
  */
 package org.neo4j.graphdb.facade;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -34,73 +42,54 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 @EphemeralTestDirectoryExtension
-class DatabaseManagementServiceFactoryTest
-{
+class DatabaseManagementServiceFactoryTest {
     @Inject
     private TestDirectory testDirectory;
 
-    private final ExternalDependencies deps = mock( ExternalDependencies.class, RETURNS_MOCKS );
+    private final ExternalDependencies deps = mock(ExternalDependencies.class, RETURNS_MOCKS);
 
     @BeforeEach
-    void setup()
-    {
-        when( deps.monitors() ).thenReturn( new Monitors() );
-        when( deps.dependencies() ).thenReturn( null );
+    void setup() {
+        when(deps.monitors()).thenReturn(new Monitors());
+        when(deps.dependencies()).thenReturn(null);
     }
 
     @Test
-    void shouldThrowAppropriateExceptionIfStartFails()
-    {
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath() );
+    void shouldThrowAppropriateExceptionIfStartFails() {
+        Config config = Config.defaults(GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath());
         RuntimeException startupError = new RuntimeException();
-        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupError, null );
-        RuntimeException startException =
-                assertThrows( RuntimeException.class, () -> factory.build( config, deps ) );
-        assertEquals( startupError, getRootCause( startException ) );
+        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory(startupError, null);
+        RuntimeException startException = assertThrows(RuntimeException.class, () -> factory.build(config, deps));
+        assertEquals(startupError, getRootCause(startException));
     }
 
     @Test
-    void shouldThrowAppropriateExceptionIfBothStartAndShutdownFail()
-    {
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath() );
+    void shouldThrowAppropriateExceptionIfBothStartAndShutdownFail() {
+        Config config = Config.defaults(GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath());
         RuntimeException startupException = new RuntimeException();
         RuntimeException shutdownException = new RuntimeException();
 
-        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupException, shutdownException );
-        RuntimeException initException =
-                assertThrows( RuntimeException.class, () -> factory.build( config, deps ) );
+        DatabaseManagementServiceFactory factory =
+                newFaultyGraphDatabaseFacadeFactory(startupException, shutdownException);
+        RuntimeException initException = assertThrows(RuntimeException.class, () -> factory.build(config, deps));
 
-        assertTrue( initException.getMessage().startsWith( "Error starting " ) );
-        assertThat( initException ).hasRootCause( startupException );
-        assertThat( initException.getSuppressed()[0] ).hasRootCause( shutdownException );
+        assertTrue(initException.getMessage().startsWith("Error starting "));
+        assertThat(initException).hasRootCause(startupException);
+        assertThat(initException.getSuppressed()[0]).hasRootCause(shutdownException);
     }
 
-    private static DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError,
-            RuntimeException shutdownError )
-    {
-        return new DatabaseManagementServiceFactory( DbmsInfo.UNKNOWN, CommunityEditionModule::new )
-        {
+    private static DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory(
+            final RuntimeException startupError, RuntimeException shutdownError) {
+        return new DatabaseManagementServiceFactory(DbmsInfo.UNKNOWN, CommunityEditionModule::new) {
             @Override
-            protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
-            {
+            protected GlobalModule createGlobalModule(Config config, ExternalDependencies dependencies) {
                 LifeSupport lifeSupport = new LifeSupport();
-                lifeSupport.add( new PoisonedLifecycleMember( startupError, shutdownError ) );
+                lifeSupport.add(new PoisonedLifecycleMember(startupError, shutdownError));
 
-                return new GlobalModule( config, dbmsInfo, dependencies )
-                {
+                return new GlobalModule(config, dbmsInfo, dependencies) {
                     @Override
-                    public LifeSupport createLife()
-                    {
+                    public LifeSupport createLife() {
                         return lifeSupport;
                     }
                 };
@@ -108,28 +97,23 @@ class DatabaseManagementServiceFactoryTest
         };
     }
 
-    private static class PoisonedLifecycleMember extends LifecycleAdapter
-    {
+    private static class PoisonedLifecycleMember extends LifecycleAdapter {
         private final RuntimeException startupException;
         private final RuntimeException shutdownException;
 
-        private PoisonedLifecycleMember( RuntimeException startupException, RuntimeException shutdownException )
-        {
+        private PoisonedLifecycleMember(RuntimeException startupException, RuntimeException shutdownException) {
             this.startupException = startupException;
             this.shutdownException = shutdownException;
         }
 
         @Override
-        public void start()
-        {
+        public void start() {
             throw startupException;
         }
 
         @Override
-        public void shutdown()
-        {
-            if ( shutdownException != null )
-            {
+        public void shutdown() {
+            if (shutdownException != null) {
                 throw shutdownException;
             }
         }

@@ -32,7 +32,6 @@ class SubtractTest extends CypherFunSuite {
   val m = CypherRow.empty
   val s = QueryStateHelper.empty
 
-
   test("numbers") {
     val expr = Subtract(literal(2), literal(1))
     expr(m, s) should equal(longValue(1))

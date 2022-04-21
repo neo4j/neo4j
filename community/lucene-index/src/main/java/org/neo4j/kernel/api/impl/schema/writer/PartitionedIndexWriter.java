@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.schema.writer;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
@@ -42,8 +40,7 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
  * or {@link #DEFAULT_MAXIMUM_PARTITION_SIZE} otherwise.
  * First observable partition that satisfy writer criteria is used for writing.
  */
-public class PartitionedIndexWriter implements LuceneIndexWriter
-{
+public class PartitionedIndexWriter implements LuceneIndexWriter {
     // by default we still keep a spare of 10% to the maximum partition size: During concurrent updates
     // it could happen that 2 threads reserve space in a partition (without claiming it by doing addDocument):
     private static final Integer DEFAULT_MAXIMUM_PARTITION_SIZE = IndexWriter.MAX_DOCS - (IndexWriter.MAX_DOCS / 10);
@@ -51,84 +48,70 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     private final WritableAbstractDatabaseIndex index;
     private final int maximumPartitionSize;
 
-    public PartitionedIndexWriter( WritableAbstractDatabaseIndex index, Config config )
-    {
+    public PartitionedIndexWriter(WritableAbstractDatabaseIndex index, Config config) {
         this.index = index;
-        var configuredMaxPartitionSize = config.get( GraphDatabaseInternalSettings.lucene_max_partition_size );
-        maximumPartitionSize = Objects.requireNonNullElse( configuredMaxPartitionSize, DEFAULT_MAXIMUM_PARTITION_SIZE );
+        var configuredMaxPartitionSize = config.get(GraphDatabaseInternalSettings.lucene_max_partition_size);
+        maximumPartitionSize = Objects.requireNonNullElse(configuredMaxPartitionSize, DEFAULT_MAXIMUM_PARTITION_SIZE);
     }
 
     @Override
-    public void addDocument( Document doc ) throws IOException
-    {
-        getIndexWriter( 1 ).addDocument( doc );
+    public void addDocument(Document doc) throws IOException {
+        getIndexWriter(1).addDocument(doc);
     }
 
     @Override
-    public void addDocuments( int numDocs, Iterable<Document> documents ) throws IOException
-    {
-        getIndexWriter( numDocs ).addDocuments( documents );
+    public void addDocuments(int numDocs, Iterable<Document> documents) throws IOException {
+        getIndexWriter(numDocs).addDocuments(documents);
     }
 
     @Override
-    public void updateDocument( Term term, Document doc ) throws IOException
-    {
+    public void updateDocument(Term term, Document doc) throws IOException {
         List<AbstractIndexPartition> partitions = index.getPartitions();
-        if ( WritableAbstractDatabaseIndex.hasSinglePartition( partitions ) &&
-                writablePartition( WritableAbstractDatabaseIndex.getFirstPartition( partitions ), 1 ) )
-        {
-            WritableAbstractDatabaseIndex.getFirstPartition( partitions ).getIndexWriter().updateDocument( term, doc );
-        }
-        else
-        {
-            deleteDocuments( term );
-            addDocument( doc );
-        }
-    }
-
-    @Override
-    public void deleteDocuments( Query query ) throws IOException
-    {
-        List<AbstractIndexPartition> partitions = index.getPartitions();
-        for ( AbstractIndexPartition partition : partitions )
-        {
-            partition.getIndexWriter().deleteDocuments( query );
+        if (WritableAbstractDatabaseIndex.hasSinglePartition(partitions)
+                && writablePartition(WritableAbstractDatabaseIndex.getFirstPartition(partitions), 1)) {
+            WritableAbstractDatabaseIndex.getFirstPartition(partitions)
+                    .getIndexWriter()
+                    .updateDocument(term, doc);
+        } else {
+            deleteDocuments(term);
+            addDocument(doc);
         }
     }
 
     @Override
-    public void deleteDocuments( Term term ) throws IOException
-    {
+    public void deleteDocuments(Query query) throws IOException {
         List<AbstractIndexPartition> partitions = index.getPartitions();
-        for ( AbstractIndexPartition partition : partitions )
-        {
-            partition.getIndexWriter().deleteDocuments( term );
+        for (AbstractIndexPartition partition : partitions) {
+            partition.getIndexWriter().deleteDocuments(query);
         }
     }
 
-    private IndexWriter getIndexWriter( int numDocs ) throws IOException
-    {
-        synchronized ( index )
-        {
+    @Override
+    public void deleteDocuments(Term term) throws IOException {
+        List<AbstractIndexPartition> partitions = index.getPartitions();
+        for (AbstractIndexPartition partition : partitions) {
+            partition.getIndexWriter().deleteDocuments(term);
+        }
+    }
+
+    private IndexWriter getIndexWriter(int numDocs) throws IOException {
+        synchronized (index) {
             // We synchronise on the index to coordinate with all writers about how many partitions we
             // have, and when new ones are created. The discovery that a new partition needs to be added,
             // and the call to index.addNewPartition() must be atomic.
-            return unsafeGetIndexWriter( numDocs );
+            return unsafeGetIndexWriter(numDocs);
         }
     }
 
-    private IndexWriter unsafeGetIndexWriter( int numDocs ) throws IOException
-    {
+    private IndexWriter unsafeGetIndexWriter(int numDocs) throws IOException {
         List<AbstractIndexPartition> indexPartitions = index.getPartitions();
         int size = indexPartitions.size();
         //noinspection ForLoopReplaceableByForEach
-        for ( int i = 0; i < size; i++ )
-        {
+        for (int i = 0; i < size; i++) {
             // We should find the *first* writable partition, so we can fill holes left by index deletes,
             // after they were merged away:
-            AbstractIndexPartition partition = indexPartitions.get( i );
-            if ( writablePartition( partition, numDocs ) )
-            {
+            AbstractIndexPartition partition = indexPartitions.get(i);
+            if (writablePartition(partition, numDocs)) {
                 return partition.getIndexWriter();
             }
         }
@@ -136,9 +119,7 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
         return indexPartition.getIndexWriter();
     }
 
-    private boolean writablePartition( AbstractIndexPartition partition, int numDocs )
-    {
+    private boolean writablePartition(AbstractIndexPartition partition, int numDocs) {
         return maximumPartitionSize - partition.getIndexWriter().getDocStats().maxDoc >= numDocs;
     }
 }
-

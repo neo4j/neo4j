@@ -21,15 +21,13 @@ package org.neo4j.fabric.transaction;
 
 import java.time.Duration;
 import java.util.Map;
-
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public class FabricTransactionInfo
-{
+public class FabricTransactionInfo {
     private final AccessMode accessMode;
     private final LoginContext loginContext;
     private final ClientConnectionInfo clientConnectionInfo;
@@ -37,17 +35,17 @@ public class FabricTransactionInfo
     private final boolean implicitTransaction;
     private final Duration txTimeout;
     private final RoutingContext routingContext;
-    private Map<String,Object> txMetadata;
+    private Map<String, Object> txMetadata;
 
-    public FabricTransactionInfo( AccessMode accessMode,
+    public FabricTransactionInfo(
+            AccessMode accessMode,
             LoginContext loginContext,
             ClientConnectionInfo clientConnectionInfo,
             NamedDatabaseId sessionDatabaseId,
             boolean implicitTransaction,
             Duration txTimeout,
-            Map<String,Object> txMetadata,
-            RoutingContext routingContext )
-    {
+            Map<String, Object> txMetadata,
+            RoutingContext routingContext) {
         this.accessMode = accessMode;
         this.loginContext = loginContext;
         this.clientConnectionInfo = clientConnectionInfo;
@@ -58,48 +56,39 @@ public class FabricTransactionInfo
         this.routingContext = routingContext;
     }
 
-    public AccessMode getAccessMode()
-    {
+    public AccessMode getAccessMode() {
         return accessMode;
     }
 
-    public LoginContext getLoginContext()
-    {
+    public LoginContext getLoginContext() {
         return loginContext;
     }
 
-    public ClientConnectionInfo getClientConnectionInfo()
-    {
+    public ClientConnectionInfo getClientConnectionInfo() {
         return clientConnectionInfo;
     }
 
-    public NamedDatabaseId getSessionDatabaseId()
-    {
+    public NamedDatabaseId getSessionDatabaseId() {
         return sessionDatabaseId;
     }
 
-    public boolean isImplicitTransaction()
-    {
+    public boolean isImplicitTransaction() {
         return implicitTransaction;
     }
 
-    public Duration getTxTimeout()
-    {
+    public Duration getTxTimeout() {
         return txTimeout;
     }
 
-    public Map<String,Object> getTxMetadata()
-    {
+    public Map<String, Object> getTxMetadata() {
         return txMetadata;
     }
 
-    public void setMetaData( Map<String,Object> txMeta )
-    {
+    public void setMetaData(Map<String, Object> txMeta) {
         txMetadata = txMeta;
     }
 
-    public RoutingContext getRoutingContext()
-    {
+    public RoutingContext getRoutingContext() {
         return routingContext;
     }
 }

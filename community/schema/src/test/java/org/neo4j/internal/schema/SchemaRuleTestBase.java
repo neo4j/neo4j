@@ -21,8 +21,7 @@ package org.neo4j.internal.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-abstract class SchemaRuleTestBase
-{
+abstract class SchemaRuleTestBase {
     static final long RULE_ID = 1;
     static final long RULE_ID_2 = 2;
     static final int LABEL_ID = 10;
@@ -32,33 +31,29 @@ abstract class SchemaRuleTestBase
 
     private static final String PROVIDER_KEY = "index-provider";
     private static final String PROVIDER_VERSION = "1.0";
-    static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( PROVIDER_KEY, PROVIDER_VERSION );
+    static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor(PROVIDER_KEY, PROVIDER_VERSION);
 
-    static void assertEquality( Object o1, Object o2 )
-    {
-        assertThat( o1 ).isEqualTo( o2 );
-        assertThat( o2 ).isEqualTo( o1 );
-        assertThat( o1.hashCode() ).isEqualTo( o2.hashCode() );
+    static void assertEquality(Object o1, Object o2) {
+        assertThat(o1).isEqualTo(o2);
+        assertThat(o2).isEqualTo(o1);
+        assertThat(o1.hashCode()).isEqualTo(o2.hashCode());
     }
 
-    static void assertInequality( Object o1, Object o2 )
-    {
-        assertThat( o1 ).isNotEqualTo( o2 );
-        assertThat( o2 ).isNotEqualTo( o1 );
+    static void assertInequality(Object o1, Object o2) {
+        assertThat(o1).isNotEqualTo(o2);
+        assertThat(o2).isNotEqualTo(o1);
     }
 
-    static IndexPrototype forLabel( int labelId, int... propertyIds )
-    {
-        return IndexPrototype.forSchema( SchemaDescriptors.forLabel( labelId, propertyIds ), PROVIDER );
+    static IndexPrototype forLabel(int labelId, int... propertyIds) {
+        return IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyIds), PROVIDER);
     }
 
-    static IndexPrototype uniqueForLabel( int labelId, int... propertyIds )
-    {
-        return IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ), PROVIDER );
+    static IndexPrototype uniqueForLabel(int labelId, int... propertyIds) {
+        return IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), PROVIDER);
     }
 
-    static IndexPrototype namedUniqueForLabel( String name, int labelId, int... propertyIds )
-    {
-        return IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ), PROVIDER ).withName( name );
+    static IndexPrototype namedUniqueForLabel(String name, int labelId, int... propertyIds) {
+        return IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), PROVIDER)
+                .withName(name);
     }
 }

@@ -25,33 +25,24 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
-
 import java.net.SocketAddress;
 import java.util.concurrent.ThreadFactory;
 
-public class EpollConfigurationProvider implements ServerConfigurationProvider
-{
+public class EpollConfigurationProvider implements ServerConfigurationProvider {
     public static final EpollConfigurationProvider INSTANCE = new EpollConfigurationProvider();
 
-    private EpollConfigurationProvider()
-    {
+    private EpollConfigurationProvider() {}
+
+    @Override
+    public EventLoopGroup createEventLoopGroup(ThreadFactory threadFactory) {
+        return new EpollEventLoopGroup(0, threadFactory);
     }
 
     @Override
-    public EventLoopGroup createEventLoopGroup( ThreadFactory threadFactory )
-    {
-        return new EpollEventLoopGroup( 0, threadFactory );
-    }
-
-    @Override
-    public Class<? extends ServerChannel> getChannelClass( SocketAddress socketAddress )
-    {
-        if ( socketAddress instanceof DomainSocketAddress )
-        {
+    public Class<? extends ServerChannel> getChannelClass(SocketAddress socketAddress) {
+        if (socketAddress instanceof DomainSocketAddress) {
             return EpollServerDomainSocketChannel.class;
-        }
-        else
-        {
+        } else {
             return EpollServerSocketChannel.class;
         }
     }

@@ -19,11 +19,19 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.Test;
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
@@ -46,290 +54,238 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
-@DbmsExtension( configurationCallback = "configure" )
-class NeoStoresIT
-{
+@DbmsExtension(configurationCallback = "configure")
+class NeoStoresIT {
     @Inject
     private GraphDatabaseAPI db;
 
-    private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
-    private static final String LONG_STRING_VALUE = randomAscii( 2048 );
-    private final CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+    private static final RelationshipType FRIEND = RelationshipType.withName("FRIEND");
+    private static final String LONG_STRING_VALUE = randomAscii(2048);
+    private final CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME);
+        builder.setConfig(GraphDatabaseSettings.dense_node_threshold, 1);
     }
 
     @Test
-    void tracePageCacheAccessOnHighIdScan()
-    {
-        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+    void tracePageCacheAccessOnHighIdScan() {
+        var storageEngine = db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
         var neoStores = storageEngine.testAccessNeoStores();
         var propertyStore = neoStores.getPropertyStore();
 
-        for ( int i = 0; i < 1000; i++ )
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
+        for (int i = 0; i < 1000; i++) {
+            try (Transaction transaction = db.beginTx()) {
                 var node = transaction.createNode();
-                node.setProperty( "a", randomAscii( 1024 ) );
+                node.setProperty("a", randomAscii(1024));
                 transaction.commit();
             }
         }
 
-        var cursorContext = contextFactory.create( "tracePageCacheAccessOnHighIdScan" );
-        propertyStore.scanForHighId( cursorContext );
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnHighIdScan");
+        propertyStore.scanForHighId(cursorContext);
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 1, cursorTracer.hits() );
-        assertEquals( 1, cursorTracer.pins() );
-        assertEquals( 1, cursorTracer.unpins() );
+        assertEquals(1, cursorTracer.hits());
+        assertEquals(1, cursorTracer.pins());
+        assertEquals(1, cursorTracer.unpins());
     }
 
     @Test
-    void tracePageCacheAccessOnGetRawRecordData() throws IOException
-    {
-        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+    void tracePageCacheAccessOnGetRawRecordData() throws IOException {
+        var storageEngine = db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
         var neoStores = storageEngine.testAccessNeoStores();
         var propertyStore = neoStores.getPropertyStore();
 
-        try ( Transaction transaction = db.beginTx() )
-        {
+        try (Transaction transaction = db.beginTx()) {
             var node = transaction.createNode();
-            node.setProperty( "a", "b" );
+            node.setProperty("a", "b");
             transaction.commit();
         }
 
-        var cursorContext = contextFactory.create( "tracePageCacheAccessOnGetRawRecordData" );
-        try ( var storeCursors = storageEngine.createStorageCursors( cursorContext ) )
-        {
-            propertyStore.getRawRecordData( 1L, storeCursors.readCursor( PROPERTY_CURSOR ) );
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnGetRawRecordData");
+        try (var storeCursors = storageEngine.createStorageCursors(cursorContext)) {
+            propertyStore.getRawRecordData(1L, storeCursors.readCursor(PROPERTY_CURSOR));
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 1, cursorTracer.hits() );
-        assertEquals( 1, cursorTracer.pins() );
-        assertEquals( 1, cursorTracer.unpins() );
+        assertEquals(1, cursorTracer.hits());
+        assertEquals(1, cursorTracer.pins());
+        assertEquals(1, cursorTracer.unpins());
     }
 
     @Test
-    void tracePageCacheAccessOnInUseCheck()
-    {
-        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+    void tracePageCacheAccessOnInUseCheck() {
+        var storageEngine = db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
         var neoStores = storageEngine.testAccessNeoStores();
         var propertyStore = neoStores.getPropertyStore();
 
-        try ( Transaction transaction = db.beginTx() )
-        {
+        try (Transaction transaction = db.beginTx()) {
             var node = transaction.createNode();
-            node.setProperty( "a", "b" );
+            node.setProperty("a", "b");
             transaction.commit();
         }
 
-        var cursorContext = contextFactory.create( "tracePageCacheAccessOnInUseCheck" );
-        try ( var cursor = propertyStore.openPageCursorForReading( 1L, cursorContext ) )
-        {
-            propertyStore.isInUse( 1L, cursor );
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnInUseCheck");
+        try (var cursor = propertyStore.openPageCursorForReading(1L, cursorContext)) {
+            propertyStore.isInUse(1L, cursor);
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 1, cursorTracer.hits() );
-        assertEquals( 1, cursorTracer.pins() );
-        assertEquals( 1, cursorTracer.unpins() );
+        assertEquals(1, cursorTracer.hits());
+        assertEquals(1, cursorTracer.pins());
+        assertEquals(1, cursorTracer.unpins());
     }
 
     @Test
-    void tracePageCacheAccessOnGetRecord()
-    {
-        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+    void tracePageCacheAccessOnGetRecord() {
+        var storageEngine = db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
         var neoStores = storageEngine.testAccessNeoStores();
         var nodeStore = neoStores.getNodeStore();
 
         long nodeId;
-        try ( Transaction transaction = db.beginTx() )
-        {
+        try (Transaction transaction = db.beginTx()) {
             var node = transaction.createNode();
-            node.setProperty( "a", "b" );
+            node.setProperty("a", "b");
             nodeId = node.getId();
             transaction.commit();
         }
 
-        var cursorContext = contextFactory.create( "tracePageCacheAccessOnGetRecord" );
-        NodeRecord nodeRecord = new NodeRecord( nodeId );
-        try ( var cursor = nodeStore.openPageCursorForReading( nodeId, cursorContext ) )
-        {
-            nodeStore.getRecordByCursor( nodeId, nodeRecord, RecordLoad.NORMAL, cursor );
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnGetRecord");
+        NodeRecord nodeRecord = new NodeRecord(nodeId);
+        try (var cursor = nodeStore.openPageCursorForReading(nodeId, cursorContext)) {
+            nodeStore.getRecordByCursor(nodeId, nodeRecord, RecordLoad.NORMAL, cursor);
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 1, cursorTracer.hits() );
-        assertEquals( 1, cursorTracer.pins() );
-        assertEquals( 1, cursorTracer.unpins() );
+        assertEquals(1, cursorTracer.hits());
+        assertEquals(1, cursorTracer.pins());
+        assertEquals(1, cursorTracer.unpins());
     }
 
     @Test
-    void tracePageCacheAccessOnUpdateRecord()
-    {
-        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+    void tracePageCacheAccessOnUpdateRecord() {
+        var storageEngine = db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
         var neoStores = storageEngine.testAccessNeoStores();
-        var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT );
+        var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
         var nodeStore = neoStores.getNodeStore();
 
         long nodeId;
-        try ( Transaction transaction = db.beginTx() )
-        {
+        try (Transaction transaction = db.beginTx()) {
             var node = transaction.createNode();
-            node.setProperty( "a", "b" );
+            node.setProperty("a", "b");
             nodeId = node.getId();
             transaction.commit();
         }
 
-        var cursorContext = contextFactory.create( "tracePageCacheAccessOnUpdateRecord" );
-        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
-        {
-            nodeStore.updateRecord( new NodeRecord( nodeId ), storeCursor, cursorContext, storeCursors );
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnUpdateRecord");
+        try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
+            nodeStore.updateRecord(new NodeRecord(nodeId), storeCursor, cursorContext, storeCursors);
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 3, cursorTracer.hits() );
-        assertEquals( 4, cursorTracer.pins() );
-        assertEquals( 4, cursorTracer.unpins() );
+        assertEquals(3, cursorTracer.hits());
+        assertEquals(4, cursorTracer.pins());
+        assertEquals(4, cursorTracer.unpins());
     }
 
     @Test
-    void tracePageCacheAccessOnTokenReads()
-    {
-        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+    void tracePageCacheAccessOnTokenReads() {
+        var storageEngine = db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
         var neoStores = storageEngine.testAccessNeoStores();
         var propertyKeys = neoStores.getPropertyKeyTokenStore();
 
-        try ( Transaction transaction = db.beginTx() )
-        {
+        try (Transaction transaction = db.beginTx()) {
             var node = transaction.createNode();
-            node.setProperty( "a", "b" );
+            node.setProperty("a", "b");
             transaction.commit();
         }
 
-        var cursorContext = contextFactory.create( "tracePageCacheAccessOnTokenReads" );
-        try ( StoreCursors storageCursors = storageEngine.createStorageCursors( cursorContext ) )
-        {
-            propertyKeys.getAllReadableTokens( storageCursors );
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnTokenReads");
+        try (StoreCursors storageCursors = storageEngine.createStorageCursors(cursorContext)) {
+            propertyKeys.getAllReadableTokens(storageCursors);
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 2, cursorTracer.hits() );
-        assertEquals( 2, cursorTracer.pins() );
-        assertEquals( 2, cursorTracer.unpins() );
+        assertEquals(2, cursorTracer.hits());
+        assertEquals(2, cursorTracer.pins());
+        assertEquals(2, cursorTracer.unpins());
     }
 
     @Test
-    void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
-            throws Throwable
-    {
+    void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord() throws Throwable {
         Race race = new Race();
         long[] latestNodeId = new long[1];
         AtomicLong writes = new AtomicLong();
         AtomicLong reads = new AtomicLong();
-        long endTime = currentTimeMillis() + SECONDS.toMillis( 2 );
-        race.withEndCondition( () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime );
-        race.addContestant( () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
+        long endTime = currentTimeMillis() + SECONDS.toMillis(2);
+        race.withEndCondition(() -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime);
+        race.addContestant(() -> {
+            try (Transaction tx = db.beginTx()) {
                 Node node = tx.createNode();
                 latestNodeId[0] = node.getId();
-                node.setProperty( "largeProperty", LONG_STRING_VALUE );
+                node.setProperty("largeProperty", LONG_STRING_VALUE);
                 tx.commit();
             }
             writes.incrementAndGet();
-        } );
-        race.addContestant( () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node = tx.getNodeById( latestNodeId[0] );
-                for ( String propertyKey : node.getPropertyKeys() )
-                {
-                    node.getProperty( propertyKey );
+        });
+        race.addContestant(() -> {
+            try (Transaction tx = db.beginTx()) {
+                Node node = tx.getNodeById(latestNodeId[0]);
+                for (String propertyKey : node.getPropertyKeys()) {
+                    node.getProperty(propertyKey);
                 }
                 tx.commit();
-            }
-            catch ( NotFoundException e )
-            {
+            } catch (NotFoundException e) {
                 // This will catch nodes not found (expected) and also PropertyRecords not found (shouldn't happen
                 // but handled in shouldWriteOutThePropertyRecordBeforeReferencingItFromANodeRecord)
             }
             reads.incrementAndGet();
-        } );
+        });
         race.go();
     }
 
     @Test
-    void shouldWriteOutThePropertyRecordBeforeReferencingItFromANodeRecord()
-            throws Throwable
-    {
+    void shouldWriteOutThePropertyRecordBeforeReferencingItFromANodeRecord() throws Throwable {
         Race race = new Race();
         long[] latestNodeId = new long[1];
         AtomicLong writes = new AtomicLong();
         AtomicLong reads = new AtomicLong();
-        long endTime = currentTimeMillis() + SECONDS.toMillis( 2 );
-        race.withEndCondition( () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime );
-        race.addContestant( () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
+        long endTime = currentTimeMillis() + SECONDS.toMillis(2);
+        race.withEndCondition(() -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime);
+        race.addContestant(() -> {
+            try (Transaction tx = db.beginTx()) {
                 Node node = tx.createNode();
                 latestNodeId[0] = node.getId();
-                node.setProperty( "largeProperty", LONG_STRING_VALUE );
+                node.setProperty("largeProperty", LONG_STRING_VALUE);
                 tx.commit();
             }
             writes.incrementAndGet();
-        } );
-        race.addContestant( () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node = tx.getNodeById( latestNodeId[0] );
+        });
+        race.addContestant(() -> {
+            try (Transaction tx = db.beginTx()) {
+                Node node = tx.getNodeById(latestNodeId[0]);
 
-                for ( String propertyKey : node.getPropertyKeys() )
-                {
-                    node.getProperty( propertyKey );
+                for (String propertyKey : node.getPropertyKeys()) {
+                    node.getProperty(propertyKey);
                 }
                 tx.commit();
-            }
-            catch ( NotFoundException e )
-            {
-                if ( indexOfThrowable( e, InvalidRecordException.class ) != -1 )
-                {
+            } catch (NotFoundException e) {
+                if (indexOfThrowable(e, InvalidRecordException.class) != -1) {
                     throw e;
                 }
             }
             reads.incrementAndGet();
-        } );
+        });
         race.go();
     }
 
     @Test
-    void shouldWriteOutThePropertyRecordBeforeReferencingItFromARelationshipRecord()
-            throws Throwable
-    {
+    void shouldWriteOutThePropertyRecordBeforeReferencingItFromARelationshipRecord() throws Throwable {
         final long node1Id;
         final long node2Id;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             Node node1 = tx.createNode();
             node1Id = node1.getId();
 
@@ -343,44 +299,36 @@ class NeoStoresIT
         final long[] latestRelationshipId = new long[1];
         AtomicLong writes = new AtomicLong();
         AtomicLong reads = new AtomicLong();
-        long endTime = currentTimeMillis() + SECONDS.toMillis( 2 );
-        race.withEndCondition( () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime );
-        race.addContestant( () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node1 = tx.getNodeById( node1Id );
-                Node node2 = tx.getNodeById( node2Id );
+        long endTime = currentTimeMillis() + SECONDS.toMillis(2);
+        race.withEndCondition(() -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime);
+        race.addContestant(() -> {
+            try (Transaction tx = db.beginTx()) {
+                Node node1 = tx.getNodeById(node1Id);
+                Node node2 = tx.getNodeById(node2Id);
 
-                Relationship rel = node1.createRelationshipTo( node2, FRIEND );
+                Relationship rel = node1.createRelationshipTo(node2, FRIEND);
                 latestRelationshipId[0] = rel.getId();
-                rel.setProperty( "largeProperty", LONG_STRING_VALUE );
+                rel.setProperty("largeProperty", LONG_STRING_VALUE);
 
                 tx.commit();
             }
             writes.incrementAndGet();
-        } );
-        race.addContestant( () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Relationship rel = tx.getRelationshipById( latestRelationshipId[0] );
+        });
+        race.addContestant(() -> {
+            try (Transaction tx = db.beginTx()) {
+                Relationship rel = tx.getRelationshipById(latestRelationshipId[0]);
 
-                for ( String propertyKey : rel.getPropertyKeys() )
-                {
-                    rel.getProperty( propertyKey );
+                for (String propertyKey : rel.getPropertyKeys()) {
+                    rel.getProperty(propertyKey);
                 }
                 tx.commit();
-            }
-            catch ( NotFoundException e )
-            {
-                if ( indexOfThrowable( e, InvalidRecordException.class ) != -1 )
-                {
+            } catch (NotFoundException e) {
+                if (indexOfThrowable(e, InvalidRecordException.class) != -1) {
                     throw e;
                 }
             }
             reads.incrementAndGet();
-        } );
+        });
         race.go();
     }
 }

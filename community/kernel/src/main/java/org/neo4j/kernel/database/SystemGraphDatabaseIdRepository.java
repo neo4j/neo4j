@@ -25,61 +25,52 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.database.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 
-public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository
-{
+public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository {
     private final Supplier<DatabaseContext> systemDatabaseSupplier;
 
-    public SystemGraphDatabaseIdRepository( Supplier<DatabaseContext> systemDatabaseSupplier )
-    {
+    public SystemGraphDatabaseIdRepository(Supplier<DatabaseContext> systemDatabaseSupplier) {
         this.systemDatabaseSupplier = systemDatabaseSupplier;
     }
 
     @Override
-    public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName normalizedDatabaseName )
-    {
-        return execute( model -> model.getDatabaseIdByAlias( normalizedDatabaseName.name() ) );
+    public Optional<NamedDatabaseId> getByName(NormalizedDatabaseName normalizedDatabaseName) {
+        return execute(model -> model.getDatabaseIdByAlias(normalizedDatabaseName.name()));
     }
 
     @Override
-    public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
-    {
-        return execute( model -> model.getDatabaseIdByUUID( databaseId.uuid() ) );
+    public Optional<NamedDatabaseId> getById(DatabaseId databaseId) {
+        return execute(model -> model.getDatabaseIdByUUID(databaseId.uuid()));
     }
 
     @Override
-    public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
-    {
-        var aliases = execute( TopologyGraphDbmsModel::getAllDatabaseAliases );
+    public Map<NormalizedDatabaseName, NamedDatabaseId> getAllDatabaseAliases() {
+        var aliases = execute(TopologyGraphDbmsModel::getAllDatabaseAliases);
         return aliases.entrySet().stream()
-                      .map( e -> Map.entry( new NormalizedDatabaseName( e.getKey() ), e.getValue() ) )
-                      .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+                .map(e -> Map.entry(new NormalizedDatabaseName(e.getKey()), e.getValue()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
-    public Set<NamedDatabaseId> getAllDatabaseIds()
-    {
-        return execute( TopologyGraphDbmsModel::getAllDatabaseIds );
+    public Set<NamedDatabaseId> getAllDatabaseIds() {
+        return execute(TopologyGraphDbmsModel::getAllDatabaseIds);
     }
 
-    private <T> T execute( Function<TopologyGraphDbmsModel,T> operation )
-    {
+    private <T> T execute(Function<TopologyGraphDbmsModel, T> operation) {
         var databaseContext = systemDatabaseSupplier.get();
         var systemDb = databaseContext.databaseFacade();
-        if ( !systemDb.isAvailable( 100 ) )
-        {
-            throw new DatabaseShutdownException( new DatabaseManagementException( "System database is not (yet) available" ) );
+        if (!systemDb.isAvailable(100)) {
+            throw new DatabaseShutdownException(
+                    new DatabaseManagementException("System database is not (yet) available"));
         }
-        try ( var tx = systemDb.beginTx() )
-        {
-            var model = new CommunityTopologyGraphDbmsModel( tx );
-            return operation.apply( model );
+        try (var tx = systemDb.beginTx()) {
+            var model = new CommunityTopologyGraphDbmsModel(tx);
+            return operation.apply(model);
         }
     }
 }

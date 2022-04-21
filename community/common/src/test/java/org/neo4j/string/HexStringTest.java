@@ -19,39 +19,36 @@
  */
 package org.neo4j.string;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class HexStringTest
-{
+import org.junit.jupiter.api.Test;
+
+class HexStringTest {
     @Test
-    void shouldEncodeBytesToString()
-    {
-        String result = HexString.encodeHexString( new byte[]{(byte) 0xFF, (byte) 0x94, (byte) 0x5C, (byte) 0x00, (byte) 0x3D} );
-        assertEquals( "FF945C003D", result );
+    void shouldEncodeBytesToString() {
+        String result =
+                HexString.encodeHexString(new byte[] {(byte) 0xFF, (byte) 0x94, (byte) 0x5C, (byte) 0x00, (byte) 0x3D});
+        assertEquals("FF945C003D", result);
     }
 
     @Test
-    void shouldEncodeEmptyBytesToEmptyString()
-    {
-        String result = HexString.encodeHexString( new byte[]{} );
-        assertEquals( "", result );
+    void shouldEncodeEmptyBytesToEmptyString() {
+        String result = HexString.encodeHexString(new byte[] {});
+        assertEquals("", result);
     }
 
     @Test
-    void shouldDecodeStringToBytes()
-    {
-        byte[] result = HexString.decodeHexString( "00f34CEFFF3e02" );
-        byte[] expected = new byte[] {(byte) 0x00, (byte) 0xF3, (byte) 0x4C, (byte) 0xEF, (byte) 0xFF, (byte) 0x3E, (byte) 0x02 };
-        assertArrayEquals( expected, result );
+    void shouldDecodeStringToBytes() {
+        byte[] result = HexString.decodeHexString("00f34CEFFF3e02");
+        byte[] expected =
+                new byte[] {(byte) 0x00, (byte) 0xF3, (byte) 0x4C, (byte) 0xEF, (byte) 0xFF, (byte) 0x3E, (byte) 0x02};
+        assertArrayEquals(expected, result);
     }
 
     @Test
-    void shouldDecodeEmptyStringToEmptyBytes()
-    {
-        byte[] result = HexString.decodeHexString( "" );
-        assertArrayEquals( new byte[]{}, result );
+    void shouldDecodeEmptyStringToEmptyBytes() {
+        byte[] result = HexString.decodeHexString("");
+        assertArrayEquals(new byte[] {}, result);
     }
 }

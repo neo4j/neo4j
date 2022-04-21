@@ -22,10 +22,8 @@ package org.neo4j.server.http.cypher.format.api;
 /**
  * An exception that should be thrown when a reading from or writing to a network connection has failed.
  */
-public class ConnectionException extends RuntimeException
-{
-    public ConnectionException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class ConnectionException extends RuntimeException {
+    public ConnectionException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

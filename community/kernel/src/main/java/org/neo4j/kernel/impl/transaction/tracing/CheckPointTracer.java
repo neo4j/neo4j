@@ -21,31 +21,25 @@ package org.neo4j.kernel.impl.transaction.tracing;
 
 import org.neo4j.kernel.impl.transaction.stats.CheckpointCounters;
 
-public interface CheckPointTracer extends CheckpointCounters
-{
-    CheckPointTracer NULL = new CheckPointTracer()
-    {
+public interface CheckPointTracer extends CheckpointCounters {
+    CheckPointTracer NULL = new CheckPointTracer() {
         @Override
-        public LogCheckPointEvent beginCheckPoint()
-        {
+        public LogCheckPointEvent beginCheckPoint() {
             return LogCheckPointEvent.NULL;
         }
 
         @Override
-        public long numberOfCheckPoints()
-        {
+        public long numberOfCheckPoints() {
             return 0;
         }
 
         @Override
-        public long checkPointAccumulatedTotalTimeMillis()
-        {
+        public long checkPointAccumulatedTotalTimeMillis() {
             return 0;
         }
 
         @Override
-        public long lastCheckpointTimeMillis()
-        {
+        public long lastCheckpointTimeMillis() {
             return 0;
         }
     };

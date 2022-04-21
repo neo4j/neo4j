@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.packstream;
 
-public interface PackProvider
-{
-    Neo4jPack.Packer newPacker( PackOutput output );
+public interface PackProvider {
+    Neo4jPack.Packer newPacker(PackOutput output);
 }

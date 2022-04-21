@@ -26,16 +26,13 @@ package org.neo4j.io.pagecache.impl.muninn;
  *
  * @see MuninnPageCache#continuouslySweepPages()
  */
-final class EvictionTask extends BackgroundTask
-{
-    EvictionTask( MuninnPageCache pageCache )
-    {
-        super( pageCache );
+final class EvictionTask extends BackgroundTask {
+    EvictionTask(MuninnPageCache pageCache) {
+        super(pageCache);
     }
 
     @Override
-    protected void run( MuninnPageCache pageCache )
-    {
+    protected void run(MuninnPageCache pageCache) {
         pageCache.continuouslySweepPages();
     }
 }

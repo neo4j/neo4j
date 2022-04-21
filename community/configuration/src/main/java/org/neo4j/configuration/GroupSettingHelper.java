@@ -19,13 +19,8 @@
  */
 package org.neo4j.configuration;
 
-
-
-public final class GroupSettingHelper
-{
-    private GroupSettingHelper()
-    {
-    }
+public final class GroupSettingHelper {
+    private GroupSettingHelper() {}
 
     /**
      * Helper method when creating settings for this group.
@@ -37,9 +32,9 @@ public final class GroupSettingHelper
      * @param <T> the type of the objects represented by the setting
      * @return the builder of the setting
      */
-    public static <T> SettingBuilder<T> getBuilder( String prefix, String name, String suffix, SettingValueParser<T> parser, T defaultValue )
-    {
-        return SettingImpl.newBuilder( String.format( "%s.%s.%s", prefix, name, suffix ), parser, defaultValue );
+    public static <T> SettingBuilder<T> getBuilder(
+            String prefix, String name, String suffix, SettingValueParser<T> parser, T defaultValue) {
+        return SettingImpl.newBuilder(String.format("%s.%s.%s", prefix, name, suffix), parser, defaultValue);
     }
 
     /**
@@ -51,8 +46,8 @@ public final class GroupSettingHelper
      * @param <T> the type of the objects represented by the setting
      * @return the builder of the setting
      */
-    public static <T> SettingBuilder<T> getBuilder( String prefix, String name, SettingValueParser<T> parser, T defaultValue )
-    {
-        return SettingImpl.newBuilder( String.format( "%s.%s", prefix, name ), parser, defaultValue );
+    public static <T> SettingBuilder<T> getBuilder(
+            String prefix, String name, SettingValueParser<T> parser, T defaultValue) {
+        return SettingImpl.newBuilder(String.format("%s.%s", prefix, name), parser, defaultValue);
     }
 }

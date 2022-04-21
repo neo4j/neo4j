@@ -54,6 +54,7 @@ import scala.util.Try
 case class Neo4jValueRecords(header: List[String], rows: List[Array[AnyRef]])
 
 object Neo4jValueRecords {
+
   def apply(record: CypherValueRecords): Neo4jValueRecords = {
     val tableValues = record.rows.map {
       row: Map[String, CypherValue] =>
@@ -93,9 +94,11 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
     val kernelSignature = asKernelSignature(parsedSignature)
     val rows = neo4jValues.rows.map(_.map(ValueUtils.of))
     val kernelProcedure = new BasicProcedure(kernelSignature) {
-      override def apply(ctx: Context,
-                         input: Array[AnyValue],
-                         resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
         // For example of usage see ProcedureCallAcceptance.feature e.g. "Standalone call to procedure with explicit arguments"
         val rowsWithMatchingInput = rows.filter { row =>
           row.startsWith(input)

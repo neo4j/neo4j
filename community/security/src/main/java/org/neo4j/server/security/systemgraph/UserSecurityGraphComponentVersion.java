@@ -19,12 +19,11 @@
  */
 package org.neo4j.server.security.systemgraph;
 
-import org.neo4j.dbms.database.ComponentVersion;
-
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
 
-public enum UserSecurityGraphComponentVersion implements ComponentVersion
-{
+import org.neo4j.dbms.database.ComponentVersion;
+
+public enum UserSecurityGraphComponentVersion implements ComponentVersion {
     /**
      * Version scheme of SECURITY_USER_COMPONENT with breaking changes to the schema:
      * <p>
@@ -37,62 +36,59 @@ public enum UserSecurityGraphComponentVersion implements ComponentVersion
      * <p>
      * Version 4 (Neo4j 5.0): - Add constraint for user ids
      */
-    COMMUNITY_SECURITY_40( 1, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_40 ),
-    COMMUNITY_SECURITY_41( 2, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_41 ),
-    COMMUNITY_SECURITY_43D4( 3, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_43D4 ),
-    COMMUNITY_SECURITY_50( 4, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_50 ),
+    COMMUNITY_SECURITY_40(1, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_40),
+    COMMUNITY_SECURITY_41(2, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_41),
+    COMMUNITY_SECURITY_43D4(3, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_43D4),
+    COMMUNITY_SECURITY_50(4, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_50),
 
-    COMMUNITY_SECURITY_UNKNOWN_VERSION( UNKNOWN_VERSION, SECURITY_USER_COMPONENT, String.format( "no '%s' graph found", SECURITY_USER_COMPONENT ) );
+    COMMUNITY_SECURITY_UNKNOWN_VERSION(
+            UNKNOWN_VERSION, SECURITY_USER_COMPONENT, String.format("no '%s' graph found", SECURITY_USER_COMPONENT));
 
     // Static variables for SECURITY_USER_COMPONENT versions
     public static final int FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_40.getVersion();
-    public static final int FIRST_RUNTIME_SUPPORTED_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_40.getVersion();
+    public static final int FIRST_RUNTIME_SUPPORTED_COMMUNITY_SECURITY_COMPONENT_VERSION =
+            COMMUNITY_SECURITY_40.getVersion();
     public static final int LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_50.getVersion();
 
     private final String componentName;
     private final int version;
     private final String description;
 
-    UserSecurityGraphComponentVersion( int version, String componentName, String description )
-    {
+    UserSecurityGraphComponentVersion(int version, String componentName, String description) {
         this.version = version;
         this.componentName = componentName;
         this.description = description;
     }
 
     @Override
-    public int getVersion()
-    {
+    public int getVersion() {
         return version;
     }
 
     @Override
-    public String getComponentName()
-    {
+    public String getComponentName() {
         return componentName;
     }
 
     @Override
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
     @Override
-    public boolean isCurrent()
-    {
+    public boolean isCurrent() {
         return version == LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
     }
 
     @Override
-    public boolean migrationSupported()
-    {
-        return version >= FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION && version <= LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
+    public boolean migrationSupported() {
+        return version >= FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION
+                && version <= LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
     }
 
     @Override
-    public boolean runtimeSupported()
-    {
-        return version >= FIRST_RUNTIME_SUPPORTED_COMMUNITY_SECURITY_COMPONENT_VERSION && version <= LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
+    public boolean runtimeSupported() {
+        return version >= FIRST_RUNTIME_SUPPORTED_COMMUNITY_SECURITY_COMPONENT_VERSION
+                && version <= LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
     }
 }

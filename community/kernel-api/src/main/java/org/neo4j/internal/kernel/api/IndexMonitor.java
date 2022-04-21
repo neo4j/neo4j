@@ -22,74 +22,63 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
 
-public interface IndexMonitor
-{
+public interface IndexMonitor {
     IndexMonitor NO_MONITOR = new MonitorAdapter();
 
-    void initialState( String databaseName, IndexDescriptor descriptor, InternalIndexState state );
+    void initialState(String databaseName, IndexDescriptor descriptor, InternalIndexState state);
 
-    void populationCompleteOn( IndexDescriptor descriptor );
+    void populationCompleteOn(IndexDescriptor descriptor);
 
     void indexPopulationScanStarting();
 
     void indexPopulationScanComplete();
 
-    void awaitingPopulationOfRecoveredIndex( IndexDescriptor descriptor );
+    void awaitingPopulationOfRecoveredIndex(IndexDescriptor descriptor);
 
-    void indexSamplingTriggered( IndexSamplingMode mode );
+    void indexSamplingTriggered(IndexSamplingMode mode);
 
     void populationCancelled();
 
-    void populationJobCompleted( long peakDirectMemoryUsage );
+    void populationJobCompleted(long peakDirectMemoryUsage);
 
-    void queried( IndexDescriptor descriptor );
+    void queried(IndexDescriptor descriptor);
 
-    class MonitorAdapter implements IndexMonitor
-    {
+    class MonitorAdapter implements IndexMonitor {
         @Override
-        public void initialState( String databaseName, IndexDescriptor descriptor, InternalIndexState state )
-        {   // Do nothing
+        public void initialState(
+                String databaseName, IndexDescriptor descriptor, InternalIndexState state) { // Do nothing
         }
 
         @Override
-        public void populationCompleteOn( IndexDescriptor descriptor )
-        {   // Do nothing
+        public void populationCompleteOn(IndexDescriptor descriptor) { // Do nothing
         }
 
         @Override
-        public void indexPopulationScanStarting()
-        {   // Do nothing
+        public void indexPopulationScanStarting() { // Do nothing
         }
 
         @Override
-        public void indexPopulationScanComplete()
-        {   // Do nothing
+        public void indexPopulationScanComplete() { // Do nothing
         }
 
         @Override
-        public void awaitingPopulationOfRecoveredIndex( IndexDescriptor descriptor )
-        {   // Do nothing
+        public void awaitingPopulationOfRecoveredIndex(IndexDescriptor descriptor) { // Do nothing
         }
 
         @Override
-        public void indexSamplingTriggered( IndexSamplingMode mode )
-        {   // Do nothing
+        public void indexSamplingTriggered(IndexSamplingMode mode) { // Do nothing
         }
 
         @Override
-        public void populationCancelled()
-        {   // Do nothing
+        public void populationCancelled() { // Do nothing
         }
 
         @Override
-        public void populationJobCompleted( long peakDirectMemoryUsage )
-        {   // Do nothing
+        public void populationJobCompleted(long peakDirectMemoryUsage) { // Do nothing
         }
 
         @Override
-        public void queried( IndexDescriptor descriptor )
-        {   // Do nothing
-
+        public void queried(IndexDescriptor descriptor) { // Do nothing
         }
     }
 }

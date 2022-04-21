@@ -20,32 +20,27 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
-
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 
-public abstract class CommandReading
-{
-    public interface DynamicRecordAdder<T>
-    {
-        void add( T target, DynamicRecord record );
+public abstract class CommandReading {
+    public interface DynamicRecordAdder<T> {
+        void add(T target, DynamicRecord record);
     }
 
-    public static final DynamicRecordAdder<PropertyBlock> PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER = ( target, record ) ->
-    {
+    public static final DynamicRecordAdder<PropertyBlock> PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER = (target, record) -> {
         record.setCreated();
-        target.addValueRecord( record );
+        target.addValueRecord(record);
     };
 
     public static final DynamicRecordAdder<Collection<DynamicRecord>> COLLECTION_DYNAMIC_RECORD_ADDER = Collection::add;
 
-    public static final DynamicRecordAdder<PropertyRecord> PROPERTY_DELETED_DYNAMIC_RECORD_ADDER = ( target, record ) ->
-    {
+    public static final DynamicRecordAdder<PropertyRecord> PROPERTY_DELETED_DYNAMIC_RECORD_ADDER = (target, record) -> {
         assert !record.inUse() : record + " is kinda weird";
-        target.addDeletedRecord( record );
+        target.addDeletedRecord(record);
     };
 
     public static final DynamicRecordAdder<PropertyKeyTokenRecord> PROPERTY_INDEX_DYNAMIC_RECORD_ADDER =

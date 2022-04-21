@@ -48,7 +48,11 @@ case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, 
     from.withObfuscationMetadata(ObfuscationMetadata(offsets, sensitiveParams))
   }
 
-  private def collectSensitiveLiteralOffsets(statement: Statement, extractedParamNames: Set[String], preParserOffset: Int): Vector[LiteralOffset] =
+  private def collectSensitiveLiteralOffsets(
+    statement: Statement,
+    extractedParamNames: Set[String],
+    preParserOffset: Int
+  ): Vector[LiteralOffset] =
     statement.folder.treeFold(Vector.empty[LiteralOffset]) {
       case literal: SensitiveLiteral =>
         acc => SkipChildren(acc :+ LiteralOffset(preParserOffset + literal.position.offset, literal.literalLength))
@@ -57,6 +61,9 @@ case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, 
 
     }.distinct.sortBy(_.start)
 
-  private def collectSensitiveParameterNames(queryParams: Seq[Parameter], extractedParamNames: Set[String]): Set[String] =
+  private def collectSensitiveParameterNames(
+    queryParams: Seq[Parameter],
+    extractedParamNames: Set[String]
+  ): Set[String] =
     queryParams.folder.findAllByClass[SensitiveParameter].map(_.name).toSet -- extractedParamNames
 }

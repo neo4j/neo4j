@@ -35,15 +35,16 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
-case class PruningVarLengthExpandPipe(source: Pipe,
-                                      fromName: String,
-                                      toName: String,
-                                      types: RelationshipTypes,
-                                      dir: SemanticDirection,
-                                      min: Int,
-                                      max: Int,
-                                      filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
-                                     (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
+case class PruningVarLengthExpandPipe(
+  source: Pipe,
+  fromName: String,
+  toName: String,
+  types: RelationshipTypes,
+  dir: SemanticDirection,
+  min: Int,
+  max: Int,
+  filteringStep: VarLengthPredicate = VarLengthPredicate.NONE
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
   require(min <= max)
@@ -85,15 +86,17 @@ case class PruningVarLengthExpandPipe(source: Pipe,
    * node, while outgoing relationships are all other relationships connected to this
    * node.
    **/
-  class PruningDFS(val state: FullPruneState,
-                   val node: VirtualNodeValue,
-                   val path: Array[Long],
-                   val pathLength: Int,
-                   val queryState: QueryState,
-                   val row: CypherRow,
-                   val expandMap: MutableLongObjectMap[NodeState],
-                   val prevLocalRelIndex: Int,
-                   val prevNodeState: NodeState ) {
+  class PruningDFS(
+    val state: FullPruneState,
+    val node: VirtualNodeValue,
+    val path: Array[Long],
+    val pathLength: Int,
+    val queryState: QueryState,
+    val row: CypherRow,
+    val expandMap: MutableLongObjectMap[NodeState],
+    val prevLocalRelIndex: Int,
+    val prevNodeState: NodeState
+  ) {
 
     var nodeState: NodeState = NodeState.UNINITIALIZED
     var relationshipCursor = 0
@@ -113,11 +116,13 @@ case class PruningVarLengthExpandPipe(source: Pipe,
             val relId = rel.id()
             if (!seenRelationshipInPath(relId)) {
               path(pathLength) = relId
-              val endNode = state.push( node = nextNode,
-                                        pathLength = pathLength + 1,
-                                        expandMap = expandMap,
-                                        prevLocalRelIndex = currentRelIdx,
-                                        prevNodeState = nodeState )
+              val endNode = state.push(
+                node = nextNode,
+                pathLength = pathLength + 1,
+                expandMap = expandMap,
+                prevLocalRelIndex = currentRelIdx,
+                prevNodeState = nodeState
+              )
 
               if (endNode != null)
                 return endNode
@@ -162,7 +167,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     }
 
     private def updatePrevFullExpandDepth(): Unit = {
-      if ( pathLength > 0 ) {
+      if (pathLength > 0) {
         val requiredStepsFromPrev = math.max(0, self.min - pathLength + 1)
         if (requiredStepsFromPrev <= 1 || nodeState.isEmitted) {
           prevNodeState.updateFullExpandDepth(prevLocalRelIndex, currentOutgoingFullExpandDepth() + 1)
@@ -216,7 +221,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     var relAndNext: Array[(VirtualRelationshipValue, VirtualNodeValue)] = _
 
     // The fully expanded depth for each relationship in rels
-    var depths:Array[Byte] = _
+    var depths: Array[Byte] = _
 
     // True if this node has been emitted before
     var isEmitted = false
@@ -240,7 +245,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       min
     }
 
-    def updateFullExpandDepth(relIndex:Int, depth:Int ): Unit = {
+    def updateFullExpandDepth(relIndex: Int, depth: Int): Unit = {
       depths(relIndex) = depth.toByte
     }
 
@@ -248,22 +253,27 @@ case class PruningVarLengthExpandPipe(source: Pipe,
      * If not already done, list all relationships of a node, given the predicates of this pipe.
      */
     def ensureExpanded(queryState: QueryState, row: CypherRow, node: VirtualNodeValue): Unit = {
-      if ( relAndNext == null ) {
+      if (relAndNext == null) {
         val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query))
         val builder = Array.newBuilder[(VirtualRelationshipValue, VirtualNodeValue)]
         // Immediately exhausting allRels. No ClosingIterator needed for connecting them to the outside.
         while (allRels.hasNext) {
-          val rel = VirtualValues.relationship(allRels.next(), allRels.startNodeId(), allRels.endNodeId(), allRels.typeId())
+          val rel =
+            VirtualValues.relationship(allRels.next(), allRels.startNodeId(), allRels.endNodeId(), allRels.typeId())
           val otherNode = VirtualValues.node(allRels.otherNodeId(node.id()))
-          if (filteringStep.filterRelationship(row, queryState)(rel) &&
-            filteringStep.filterNode(row, queryState)(otherNode)) {
+          if (
+            filteringStep.filterRelationship(row, queryState)(rel) &&
+            filteringStep.filterNode(row, queryState)(otherNode)
+          ) {
             builder += ((rel, otherNode))
             memoryTracker.allocateHeap(rel.estimatedHeapUsage)
           }
         }
         relAndNext = builder.result()
         depths = new Array[Byte](relAndNext.length)
-        memoryTracker.allocateHeap(HeapEstimator.shallowSizeOfObjectArray(relAndNext.length) + HeapEstimator.sizeOf(depths))
+        memoryTracker.allocateHeap(
+          HeapEstimator.shallowSizeOfObjectArray(relAndNext.length) + HeapEstimator.sizeOf(depths)
+        )
       }
     }
   }
@@ -272,18 +282,19 @@ case class PruningVarLengthExpandPipe(source: Pipe,
    * The overall state of the full pruning var expand. Mostly manages stack of PruningDFS nodes.
    */
   class FullPruneState(queryState: QueryState, val memoryTracker: MemoryTracker) {
-    private var inputRow:CypherRow = _
+    private var inputRow: CypherRow = _
     private val nodeState = new Array[PruningDFS](self.max + 1)
     private val path = new Array[Long](max)
     memoryTracker.allocateHeap(HeapEstimator.shallowSizeOfObjectArray(nodeState.length) + HeapEstimator.sizeOf(path))
     private var depth = -1
 
-    def startRow( inputRow:CypherRow ): Unit = {
+    def startRow(inputRow: CypherRow): Unit = {
       memoryTracker.reset() // We build up a new state for each input row
       this.inputRow = inputRow
       depth = -1
     }
     def canContinue: Boolean = inputRow != null
+
     def next(): CypherRow = {
       val endNode =
         if (depth == -1) {
@@ -300,7 +311,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
           }
         } else {
           var maybeEndNode: VirtualNodeValue = null
-          while ( depth >= 0 && maybeEndNode == null ) {
+          while (depth >= 0 && maybeEndNode == null) {
             maybeEndNode = nodeState(depth).nextEndNode()
             if (maybeEndNode == null) pop()
           }
@@ -309,27 +320,30 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       if (endNode == null) {
         inputRow = null
         null
-      }
-      else rowFactory.copyWith(inputRow, self.toName, endNode)
+      } else rowFactory.copyWith(inputRow, self.toName, endNode)
     }
 
     def pushStartNode(node: VirtualNodeValue): VirtualNodeValue = {
-      if(filteringStep.filterNode(inputRow, queryState)(node)) {
-        push(node,
+      if (filteringStep.filterNode(inputRow, queryState)(node)) {
+        push(
+          node,
           pathLength = 0,
           expandMap = HeapTrackingCollections.newLongObjectMap[NodeState](memoryTracker),
           prevLocalRelIndex = -1,
-          prevNodeState = NodeState.NOOP)
+          prevNodeState = NodeState.NOOP
+        )
       } else {
         null
       }
     }
 
-    def push(node: VirtualNodeValue,
-             pathLength: Int,
-             expandMap: MutableLongObjectMap[NodeState],
-             prevLocalRelIndex: Int,
-             prevNodeState: NodeState): VirtualNodeValue = {
+    def push(
+      node: VirtualNodeValue,
+      pathLength: Int,
+      expandMap: MutableLongObjectMap[NodeState],
+      prevLocalRelIndex: Int,
+      prevNodeState: NodeState
+    ): VirtualNodeValue = {
       depth += 1
       nodeState(depth) =
         new PruningDFS(this, node, path, pathLength, queryState, inputRow, expandMap, prevLocalRelIndex, prevNodeState)
@@ -346,11 +360,12 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   }
 
   class FullyPruningIterator(
-                              private val input: ClosingIterator[CypherRow],
-                              private val queryState: QueryState
+    private val input: ClosingIterator[CypherRow],
+    private val queryState: QueryState
   ) extends ClosingIterator[CypherRow] {
 
-    private val memoryTracker = queryState.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
+    private val memoryTracker =
+      queryState.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     private var outputRow: CypherRow = _
     private var fullPruneState: FullPruneState = new FullPruneState(queryState, memoryTracker)
     private var hasPrefetched = false
@@ -403,7 +418,10 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     }
   }
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     new FullyPruningIterator(input, state)
   }
 }

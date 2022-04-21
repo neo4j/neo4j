@@ -21,28 +21,21 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class CypherExecutionException extends Neo4jException
-{
-    public CypherExecutionException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class CypherExecutionException extends Neo4jException {
+    public CypherExecutionException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public CypherExecutionException( String message )
-    {
-        super( message );
+    public CypherExecutionException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         Throwable cause = getCause();
-        if ( cause instanceof Status.HasStatus )
-        {
+        if (cause instanceof Status.HasStatus) {
             return ((Status.HasStatus) cause).status();
-        }
-        else
-        {
+        } else {
             return Status.Statement.ExecutionFailed;
         }
     }

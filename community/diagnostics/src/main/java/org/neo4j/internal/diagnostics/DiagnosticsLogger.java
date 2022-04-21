@@ -20,7 +20,6 @@
 package org.neo4j.internal.diagnostics;
 
 @FunctionalInterface
-public interface DiagnosticsLogger
-{
-    void log( String logMessage );
+public interface DiagnosticsLogger {
+    void log(String logMessage);
 }

@@ -20,37 +20,30 @@
 package org.neo4j.server.web;
 
 import org.eclipse.jetty.io.Connection;
-
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 
 /**
  * Connection listener that notifies {@link NetworkConnectionTracker} about open and closed {@link JettyHttpConnection}s.
  * All other types of connections are ignored.
  */
-public class JettyHttpConnectionListener implements Connection.Listener
-{
+public class JettyHttpConnectionListener implements Connection.Listener {
     private final NetworkConnectionTracker connectionTracker;
 
-    public JettyHttpConnectionListener( NetworkConnectionTracker connectionTracker )
-    {
+    public JettyHttpConnectionListener(NetworkConnectionTracker connectionTracker) {
         this.connectionTracker = connectionTracker;
     }
 
     @Override
-    public void onOpened( Connection connection )
-    {
-        if ( connection instanceof JettyHttpConnection )
-        {
-            connectionTracker.add( (JettyHttpConnection) connection );
+    public void onOpened(Connection connection) {
+        if (connection instanceof JettyHttpConnection) {
+            connectionTracker.add((JettyHttpConnection) connection);
         }
     }
 
     @Override
-    public void onClosed( Connection connection )
-    {
-        if ( connection instanceof JettyHttpConnection )
-        {
-            connectionTracker.remove( (JettyHttpConnection) connection );
+    public void onClosed(Connection connection) {
+        if (connection instanceof JettyHttpConnection) {
+            connectionTracker.remove((JettyHttpConnection) connection);
         }
     }
 }

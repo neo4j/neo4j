@@ -19,68 +19,53 @@
  */
 package org.neo4j.procedure.impl;
 
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntList;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.function.Function;
-
 import org.neo4j.cypher.internal.evaluator.EvaluationException;
 import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
-import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntList;
-
-public class ListConverter implements Function<String,DefaultParameterValue>
-{
+public class ListConverter implements Function<String, DefaultParameterValue> {
     private final Neo4jTypes.AnyType neoType;
     private final ExpressionEvaluator evaluator;
     private final Type type;
 
-    ListConverter( Type type, Neo4jTypes.AnyType neoType, ExpressionEvaluator evaluator )
-    {
+    ListConverter(Type type, Neo4jTypes.AnyType neoType, ExpressionEvaluator evaluator) {
         this.type = type;
         this.neoType = neoType;
         this.evaluator = evaluator;
     }
 
     @Override
-    public DefaultParameterValue apply( String s )
-    {
-        try
-        {
-            List<?> list = evaluator.evaluate( s, List.class );
-            typeCheck( list, type );
-            return ntList( list, neoType );
-        }
-        catch ( EvaluationException e )
-        {
-            throw new IllegalArgumentException( String.format( "%s is not a valid list expression", s ), e );
+    public DefaultParameterValue apply(String s) {
+        try {
+            List<?> list = evaluator.evaluate(s, List.class);
+            typeCheck(list, type);
+            return ntList(list, neoType);
+        } catch (EvaluationException e) {
+            throw new IllegalArgumentException(String.format("%s is not a valid list expression", s), e);
         }
     }
 
-    private static void typeCheck( List<?> list, Type innerType )
-    {
-        if ( list == null )
-        {
+    private static void typeCheck(List<?> list, Type innerType) {
+        if (list == null) {
             return;
         }
-        for ( Object obj : list )
-        {
-            if ( obj != null )
-            {
-                if ( innerType instanceof Class<?> clazz )
-                {
-                    if ( !clazz.isAssignableFrom( obj.getClass() ) )
-                    {
-                        throw new IllegalArgumentException(
-                                String.format( "Expects a list of %s but got a list of %s", clazz.getSimpleName(),
-                                        obj.getClass().getSimpleName() ) );
+        for (Object obj : list) {
+            if (obj != null) {
+                if (innerType instanceof Class<?> clazz) {
+                    if (!clazz.isAssignableFrom(obj.getClass())) {
+                        throw new IllegalArgumentException(String.format(
+                                "Expects a list of %s but got a list of %s",
+                                clazz.getSimpleName(), obj.getClass().getSimpleName()));
                     }
-                }
-                else if ( List.class.isAssignableFrom( obj.getClass() ) && innerType instanceof ParameterizedType )
-                {
-                    typeCheck( (List<?>) obj, ((ParameterizedType) innerType).getActualTypeArguments()[0] );
+                } else if (List.class.isAssignableFrom(obj.getClass()) && innerType instanceof ParameterizedType) {
+                    typeCheck((List<?>) obj, ((ParameterizedType) innerType).getActualTypeArguments()[0]);
                 }
             }
         }

@@ -19,10 +19,8 @@
  */
 package org.neo4j.codegen;
 
-public abstract class CodeGenerationNotSupportedException extends Exception
-{
-    public CodeGenerationNotSupportedException( Throwable cause, String format, Object... parameters )
-    {
-        super( String.format( format, parameters ), cause );
+public abstract class CodeGenerationNotSupportedException extends Exception {
+    public CodeGenerationNotSupportedException(Throwable cause, String format, Object... parameters) {
+        super(String.format(format, parameters), cause);
     }
 }

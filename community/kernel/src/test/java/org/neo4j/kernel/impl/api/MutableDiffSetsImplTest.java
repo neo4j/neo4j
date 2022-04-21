@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.function.Predicate;
-
-import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
-import org.neo4j.kernel.impl.util.diffsets.MutableDiffSetsImpl;
-import org.neo4j.memory.EmptyMemoryTracker;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,127 +28,122 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
-class MutableDiffSetsImplTest
-{
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableDiffSetsImpl;
+import org.neo4j.memory.EmptyMemoryTracker;
+
+class MutableDiffSetsImplTest {
     private static final Predicate<Long> ODD_FILTER = item -> item % 2 != 0;
 
-    private final MutableDiffSets<Long> diffSets = MutableDiffSetsImpl.newMutableDiffSets( EmptyMemoryTracker.INSTANCE );
+    private final MutableDiffSets<Long> diffSets = MutableDiffSetsImpl.newMutableDiffSets(EmptyMemoryTracker.INSTANCE);
 
     @Test
-    void testAdd()
-    {
+    void testAdd() {
         // WHEN
-        diffSets.add( 1L );
-        diffSets.add( 2L );
+        diffSets.add(1L);
+        diffSets.add(2L);
 
         // THEN
-        assertEquals( asSet( 1L, 2L ), diffSets.getAdded() );
-        assertTrue( diffSets.getRemoved().isEmpty() );
+        assertEquals(asSet(1L, 2L), diffSets.getAdded());
+        assertTrue(diffSets.getRemoved().isEmpty());
     }
 
     @Test
-    void testRemove()
-    {
+    void testRemove() {
         // WHEN
-        diffSets.add( 1L );
-        diffSets.remove( 2L );
+        diffSets.add(1L);
+        diffSets.remove(2L);
 
         // THEN
-        assertEquals( asSet( 1L ), diffSets.getAdded() );
-        assertEquals( asSet( 2L ), diffSets.getRemoved() );
+        assertEquals(asSet(1L), diffSets.getAdded());
+        assertEquals(asSet(2L), diffSets.getRemoved());
     }
 
     @Test
-    void testAddRemove()
-    {
+    void testAddRemove() {
         // WHEN
-        diffSets.add( 1L );
-        diffSets.remove( 1L );
+        diffSets.add(1L);
+        diffSets.remove(1L);
 
         // THEN
-        assertTrue( diffSets.getAdded().isEmpty() );
-        assertTrue( diffSets.getRemoved().isEmpty() );
+        assertTrue(diffSets.getAdded().isEmpty());
+        assertTrue(diffSets.getRemoved().isEmpty());
     }
 
     @Test
-    void testRemoveAdd()
-    {
+    void testRemoveAdd() {
         // WHEN
-        diffSets.remove( 1L );
-        diffSets.add( 1L );
+        diffSets.remove(1L);
+        diffSets.add(1L);
 
         // THEN
-        assertTrue( diffSets.getAdded().isEmpty() );
-        assertTrue( diffSets.getRemoved().isEmpty() );
+        assertTrue(diffSets.getAdded().isEmpty());
+        assertTrue(diffSets.getRemoved().isEmpty());
     }
 
     @Test
-    void testIsAddedOrRemoved()
-    {
+    void testIsAddedOrRemoved() {
         // WHEN
-        diffSets.add( 1L );
-        diffSets.remove( 10L );
+        diffSets.add(1L);
+        diffSets.remove(10L);
 
         // THEN
-        assertTrue( diffSets.isAdded( 1L ) );
-        assertFalse( diffSets.isAdded( 2L ) );
-        assertTrue( diffSets.isRemoved( 10L ) );
-        assertFalse( diffSets.isRemoved( 2L ) );
+        assertTrue(diffSets.isAdded(1L));
+        assertFalse(diffSets.isAdded(2L));
+        assertTrue(diffSets.isRemoved(10L));
+        assertFalse(diffSets.isRemoved(2L));
     }
 
     @Test
-    void testReturnSourceFromApplyWithEmptyDiffSets()
-    {
+    void testReturnSourceFromApplyWithEmptyDiffSets() {
         // WHEN
-        Iterator<Long> result = diffSets.apply( singletonList( 18L ).iterator() );
+        Iterator<Long> result = diffSets.apply(singletonList(18L).iterator());
 
         // THEN
-        assertEquals( singletonList( 18L ), asCollection( result ) );
-
+        assertEquals(singletonList(18L), asCollection(result));
     }
 
     @Test
-    void testAppendAddedToSourceInApply()
-    {
+    void testAppendAddedToSourceInApply() {
         // GIVEN
-        diffSets.add( 52L );
-        diffSets.remove( 43L );
+        diffSets.add(52L);
+        diffSets.remove(43L);
 
         // WHEN
-        Iterator<Long> result = diffSets.apply( singletonList( 18L ).iterator() );
+        Iterator<Long> result = diffSets.apply(singletonList(18L).iterator());
 
         // THEN
-        assertEquals( asList( 18L, 52L ), asCollection( result ) );
-
+        assertEquals(asList(18L, 52L), asCollection(result));
     }
 
     @Test
-    void testFilterRemovedFromSourceInApply()
-    {
+    void testFilterRemovedFromSourceInApply() {
         // GIVEN
-        diffSets.remove( 43L );
+        diffSets.remove(43L);
 
         // WHEN
-        Iterator<Long> result = diffSets.apply( asList( 42L, 43L, 44L ).iterator() );
+        Iterator<Long> result = diffSets.apply(asList(42L, 43L, 44L).iterator());
 
         // THEN
-        assertEquals( asList( 42L, 44L ), asCollection( result ) );
-
+        assertEquals(asList(42L, 44L), asCollection(result));
     }
 
     @Test
-    void testFilterAddedFromSourceInApply()
-    {
+    void testFilterAddedFromSourceInApply() {
         // GIVEN
-        diffSets.add( 42L );
-        diffSets.add( 44L );
+        diffSets.add(42L);
+        diffSets.add(44L);
 
         // WHEN
-        Iterator<Long> result = diffSets.apply( asList( 42L, 43L ).iterator() );
+        Iterator<Long> result = diffSets.apply(asList(42L, 43L).iterator());
 
         // THEN
-        Collection<Long> collectedResult = asCollection( result );
-        assertEquals( 3, collectedResult.size() );
-        assertThat( collectedResult ).contains( 43L, 42L, 44L );
+        Collection<Long> collectedResult = asCollection(result);
+        assertEquals(3, collectedResult.size());
+        assertThat(collectedResult).contains(43L, 42L, 44L);
     }
 }

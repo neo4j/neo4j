@@ -19,55 +19,43 @@
  */
 package org.neo4j.server.rest.dbms;
 
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Base64;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class AuthorizationHeaders
-{
-    private AuthorizationHeaders()
-    {
-    }
+import java.util.Base64;
+import org.apache.commons.lang3.StringUtils;
+
+public class AuthorizationHeaders {
+    private AuthorizationHeaders() {}
 
     /**
      * Extract the encoded username and password from a HTTP Authorization header value.
      */
-    public static String[] decode( String authorizationHeader )
-    {
-        String[] parts = authorizationHeader.trim().split( " " );
+    public static String[] decode(String authorizationHeader) {
+        String[] parts = authorizationHeader.trim().split(" ");
         String tokenSegment = parts[parts.length - 1];
 
-        if ( tokenSegment.isBlank() )
-        {
+        if (tokenSegment.isBlank()) {
             return null;
         }
 
-        String decoded = decodeBase64( tokenSegment );
-        if ( decoded.isEmpty() )
-        {
+        String decoded = decodeBase64(tokenSegment);
+        if (decoded.isEmpty()) {
             return null;
         }
 
-        String[] userAndPassword = decoded.split( ":", 2 );
-        if ( userAndPassword.length != 2 )
-        {
+        String[] userAndPassword = decoded.split(":", 2);
+        if (userAndPassword.length != 2) {
             return null;
         }
 
         return userAndPassword;
     }
 
-    private static String decodeBase64( String base64 )
-    {
-        try
-        {
-            byte[] decodedBytes = Base64.getDecoder().decode( base64 );
-            return new String( decodedBytes, UTF_8 );
-        }
-        catch ( IllegalArgumentException e )
-        {
+    private static String decodeBase64(String base64) {
+        try {
+            byte[] decodedBytes = Base64.getDecoder().decode(base64);
+            return new String(decodedBytes, UTF_8);
+        } catch (IllegalArgumentException e) {
             return StringUtils.EMPTY;
         }
     }

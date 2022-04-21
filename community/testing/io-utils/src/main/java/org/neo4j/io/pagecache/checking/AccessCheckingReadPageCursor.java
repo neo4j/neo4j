@@ -20,127 +20,107 @@
 package org.neo4j.io.pagecache.checking;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
-public class AccessCheckingReadPageCursor extends DelegatingPageCursor
-{
+public class AccessCheckingReadPageCursor extends DelegatingPageCursor {
     private boolean hasReadWithoutShouldRetry;
 
-    public AccessCheckingReadPageCursor( PageCursor delegate )
-    {
-        super( delegate );
+    public AccessCheckingReadPageCursor(PageCursor delegate) {
+        super(delegate);
     }
 
     @Override
-    public byte getByte()
-    {
+    public byte getByte() {
         markAsRead();
         return super.getByte();
     }
 
     @Override
-    public void getBytes( byte[] data )
-    {
+    public void getBytes(byte[] data) {
         markAsRead();
-        super.getBytes( data );
+        super.getBytes(data);
     }
 
     @Override
-    public short getShort()
-    {
+    public short getShort() {
         markAsRead();
         return super.getShort();
     }
 
     @Override
-    public short getShort( int offset )
-    {
+    public short getShort(int offset) {
         markAsRead();
-        return super.getShort( offset );
+        return super.getShort(offset);
     }
 
     @Override
-    public long getLong()
-    {
+    public long getLong() {
         markAsRead();
         return super.getLong();
     }
 
     @Override
-    public long getLong( int offset )
-    {
+    public long getLong(int offset) {
         markAsRead();
-        return super.getLong( offset );
+        return super.getLong(offset);
     }
 
     @Override
-    public void getBytes( byte[] data, int arrayOffset, int length )
-    {
+    public void getBytes(byte[] data, int arrayOffset, int length) {
         markAsRead();
-        super.getBytes( data, arrayOffset, length );
+        super.getBytes(data, arrayOffset, length);
     }
 
     @Override
-    public int getInt( int offset )
-    {
+    public int getInt(int offset) {
         markAsRead();
-        return super.getInt( offset );
+        return super.getInt(offset);
     }
 
     @Override
-    public byte getByte( int offset )
-    {
+    public byte getByte(int offset) {
         markAsRead();
-        return super.getByte( offset );
+        return super.getByte(offset);
     }
 
     @Override
-    public int getInt()
-    {
+    public int getInt() {
         markAsRead();
         return super.getInt();
     }
 
-    private void markAsRead()
-    {
+    private void markAsRead() {
         hasReadWithoutShouldRetry = true;
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
-    {
+    public boolean shouldRetry() throws IOException {
         hasReadWithoutShouldRetry = false;
         return super.shouldRetry();
     }
 
     @Override
-    public boolean next() throws IOException
-    {
+    public boolean next() throws IOException {
         assertNoReadWithoutShouldRetry();
         return super.next();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         assertNoReadWithoutShouldRetry();
         super.close();
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
-    {
+    public boolean next(long pageId) throws IOException {
         assertNoReadWithoutShouldRetry();
-        return super.next( pageId );
+        return super.next(pageId);
     }
 
-    private void assertNoReadWithoutShouldRetry()
-    {
-        if ( hasReadWithoutShouldRetry )
-        {
-            throw new AssertionError( "Performed read from a read cursor without shouldRetry" );
+    private void assertNoReadWithoutShouldRetry() {
+        if (hasReadWithoutShouldRetry) {
+            throw new AssertionError("Performed read from a read cursor without shouldRetry");
         }
     }
 }

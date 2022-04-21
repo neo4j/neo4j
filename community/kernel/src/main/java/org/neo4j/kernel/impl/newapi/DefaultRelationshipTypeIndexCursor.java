@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.set.primitive.LongSet;
-
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -29,120 +28,107 @@ import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
-public class DefaultRelationshipTypeIndexCursor extends DefaultEntityTokenIndexCursor<DefaultRelationshipTypeIndexCursor> implements RelationshipTypeIndexCursor
-{
+public class DefaultRelationshipTypeIndexCursor
+        extends DefaultEntityTokenIndexCursor<DefaultRelationshipTypeIndexCursor>
+        implements RelationshipTypeIndexCursor {
 
     private final DefaultRelationshipScanCursor relationshipSecurityCursor;
 
-    DefaultRelationshipTypeIndexCursor( CursorPool<DefaultRelationshipTypeIndexCursor> pool, DefaultRelationshipScanCursor relationshipSecurityCursor )
-    {
-        super( pool );
+    DefaultRelationshipTypeIndexCursor(
+            CursorPool<DefaultRelationshipTypeIndexCursor> pool,
+            DefaultRelationshipScanCursor relationshipSecurityCursor) {
+        super(pool);
         this.relationshipSecurityCursor = relationshipSecurityCursor;
     }
 
     @Override
-    LongSet createAddedInTxState( TransactionState txState, int token )
-    {
-        return txState.relationshipsWithTypeChanged( token ).getAdded().freeze();
+    LongSet createAddedInTxState(TransactionState txState, int token) {
+        return txState.relationshipsWithTypeChanged(token).getAdded().freeze();
     }
 
     @Override
-    LongSet createDeletedInTxState( TransactionState txState, int token )
-    {
+    LongSet createDeletedInTxState(TransactionState txState, int token) {
         return txState.addedAndRemovedRelationships().getRemoved().freeze();
     }
 
     @Override
-    void traceScan( KernelReadTracer tracer, int token )
-    {
-        tracer.onRelationshipTypeScan( token );
+    void traceScan(KernelReadTracer tracer, int token) {
+        tracer.onRelationshipTypeScan(token);
     }
 
     @Override
-    void traceNext( KernelReadTracer tracer, long entity )
-    {
-        tracer.onRelationship( entity );
+    void traceNext(KernelReadTracer tracer, long entity) {
+        tracer.onRelationship(entity);
     }
 
     @Override
-    boolean allowedToSeeAllEntitiesWithToken( AccessMode accessMode, int token )
-    {
-        return accessMode.allowsTraverseRelType( token ) && accessMode.allowsTraverseAllLabels();
+    boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token) {
+        return accessMode.allowsTraverseRelType(token) && accessMode.allowsTraverseAllLabels();
     }
 
     @Override
-    boolean allowedToSeeEntity( AccessMode accessMode, long entityReference, TokenSet tokens )
-    {
-        readEntity( read -> read.singleRelationship( entityReference, relationshipSecurityCursor ) );
+    boolean allowedToSeeEntity(AccessMode accessMode, long entityReference, TokenSet tokens) {
+        readEntity(read -> read.singleRelationship(entityReference, relationshipSecurityCursor));
         return relationshipSecurityCursor.next();
     }
 
     @Override
-    public void relationship( RelationshipScanCursor cursor )
-    {
-        readEntity( read -> read.singleRelationship( entityReference(), cursor ) );
+    public void relationship(RelationshipScanCursor cursor) {
+        readEntity(read -> read.singleRelationship(entityReference(), cursor));
     }
 
     @Override
-    public void sourceNode( NodeCursor cursor )
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor." );
+    public void sourceNode(NodeCursor cursor) {
+        throw new UnsupportedOperationException(
+                "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor.");
     }
 
     @Override
-    public void targetNode( NodeCursor cursor )
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor." );
+    public void targetNode(NodeCursor cursor) {
+        throw new UnsupportedOperationException(
+                "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor.");
     }
 
     @Override
-    public int type()
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the type in the relationship type index cursor." );
+    public int type() {
+        throw new UnsupportedOperationException(
+                "We have not yet implemented tracking of the type in the relationship type index cursor.");
     }
 
     @Override
-    public long sourceNodeReference()
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor." );
+    public long sourceNodeReference() {
+        throw new UnsupportedOperationException(
+                "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor.");
     }
 
     @Override
-    public long targetNodeReference()
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor." );
+    public long targetNodeReference() {
+        throw new UnsupportedOperationException(
+                "We have not yet implemented tracking of the relationship end nodes in the relationship type index cursor.");
     }
 
     @Override
-    public long relationshipReference()
-    {
+    public long relationshipReference() {
         return entityReference();
     }
 
     @Override
-    public float score()
-    {
+    public float score() {
         return Float.NaN;
     }
 
-    public void release()
-    {
-        if ( relationshipSecurityCursor != null )
-        {
+    public void release() {
+        if (relationshipSecurityCursor != null) {
             relationshipSecurityCursor.close();
             relationshipSecurityCursor.release();
         }
     }
 
     @Override
-    public String toString()
-    {
-        if ( isClosed() )
-        {
+    public String toString() {
+        if (isClosed()) {
             return "RelationshipTypeIndexCursor[closed state]";
-        }
-        else
-        {
+        } else {
             return "RelationshipTypeIndexCursor[relationship=" + entityReference() + "]";
         }
     }

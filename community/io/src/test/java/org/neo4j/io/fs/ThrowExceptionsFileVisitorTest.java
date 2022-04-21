@@ -19,33 +19,31 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.FileVisitor;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.fs.FileVisitors.throwExceptions;
 
-@SuppressWarnings( "unchecked" )
-class ThrowExceptionsFileVisitorTest
-{
+import java.io.IOException;
+import java.nio.file.FileVisitor;
+import org.junit.jupiter.api.Test;
+
+@SuppressWarnings("unchecked")
+class ThrowExceptionsFileVisitorTest {
 
     @Test
-    void shouldThrowExceptionFromVisitFileFailed()
-    {
-        var exception = new IOException( "test" );
-        var actual = assertThrows( Exception.class, () -> throwExceptions( mock( FileVisitor.class ) ).visitFileFailed( null, exception ) );
-        assertEquals( exception, actual );
+    void shouldThrowExceptionFromVisitFileFailed() {
+        var exception = new IOException("test");
+        var actual = assertThrows(
+                Exception.class, () -> throwExceptions(mock(FileVisitor.class)).visitFileFailed(null, exception));
+        assertEquals(exception, actual);
     }
 
     @Test
-    void shouldThrowExceptionFromPostVisitDirectory()
-    {
-        var exception = new IOException( "test" );
-        var actual = assertThrows( Exception.class, () -> throwExceptions( mock( FileVisitor.class ) ).postVisitDirectory( null, exception ) );
-        assertEquals( exception, actual );
+    void shouldThrowExceptionFromPostVisitDirectory() {
+        var exception = new IOException("test");
+        var actual = assertThrows(
+                Exception.class, () -> throwExceptions(mock(FileVisitor.class)).postVisitDirectory(null, exception));
+        assertEquals(exception, actual);
     }
 }

@@ -35,15 +35,16 @@ import org.neo4j.values.virtual.VirtualValues
 /**
  * This implementation of pruning-var-expand is no longer used in production, but is used to testing purposes.
  */
-case class LegacyPruningVarLengthExpandPipe(source: Pipe,
-                                            fromName: String,
-                                            toName: String,
-                                            types: RelationshipTypes,
-                                            dir: SemanticDirection,
-                                            min: Int,
-                                            max: Int,
-                                            filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
-                                           (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
+case class LegacyPruningVarLengthExpandPipe(
+  source: Pipe,
+  fromName: String,
+  toName: String,
+  types: RelationshipTypes,
+  dir: SemanticDirection,
+  min: Int,
+  max: Int,
+  filteringStep: VarLengthPredicate = VarLengthPredicate.NONE
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
   assert(min <= max)
@@ -64,7 +65,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
 
    Missing from this picture are the dynamic connections between the states - both `pre` and `pru` have a `whenEmptied`
    field that is followed once the loaded iterator has been emptied.
- */
+   */
 
   sealed trait State {
     // Note that the ExecutionContext part here can be null.
@@ -87,14 +88,15 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
    * @param row         The current row we are adding reachable nodes to
    * @param expandMap   maps NodeID -> FullExpandDepths
    */
-  class PrePruningDFS(whenEmptied: State,
-                      node: VirtualNodeValue,
-                      val path: Array[Long],
-                      val pathLength: Int,
-                      val state: QueryState,
-                      row: CypherRow,
-                      expandMap: LongObjectHashMap[FullExpandDepths]
-                     ) extends State with Expandable with CheckPath {
+  class PrePruningDFS(
+    whenEmptied: State,
+    node: VirtualNodeValue,
+    val path: Array[Long],
+    val pathLength: Int,
+    val state: QueryState,
+    row: CypherRow,
+    expandMap: LongObjectHashMap[FullExpandDepths]
+  ) extends State with Expandable with CheckPath {
 
     private var rels: ClosingIterator[(VirtualRelationshipValue, VirtualNodeValue)] = _
 
@@ -130,25 +132,28 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
       path(pathLength) = relId
       val nextPathLength = pathLength + 1
       if (nextPathLength >= self.min)
-        new PruningDFS(whenEmptied = this,
+        new PruningDFS(
+          whenEmptied = this,
           node = nextNode,
           path = path,
           pathLength = nextPathLength,
           state = state,
           row = row,
           expandMap = expandMap,
-          updateMinFullExpandDepth = _ => {})
+          updateMinFullExpandDepth = _ => {}
+        )
       else
-        new PrePruningDFS(whenEmptied = this,
+        new PrePruningDFS(
+          whenEmptied = this,
           node = nextNode,
           path = path,
           pathLength = nextPathLength,
           state = state,
           row = row,
-          expandMap = expandMap)
+          expandMap = expandMap
+        )
     }
   }
-
 
   /**
    * Performs DFS traversal, but omits traversing relationships that have been completely traversed (to the
@@ -181,14 +186,16 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
    *                                 node, while outgoing relationships are all other relationships connected to this
    *                                 node.
    **/
-  class PruningDFS(whenEmptied: State,
-                   node: VirtualNodeValue,
-                   val path: Array[Long],
-                   val pathLength: Int,
-                   val state: QueryState,
-                   row: CypherRow,
-                   expandMap: LongObjectHashMap[FullExpandDepths],
-                   updateMinFullExpandDepth: Int => Unit) extends State with Expandable with CheckPath {
+  class PruningDFS(
+    whenEmptied: State,
+    node: VirtualNodeValue,
+    val path: Array[Long],
+    val pathLength: Int,
+    val state: QueryState,
+    row: CypherRow,
+    expandMap: LongObjectHashMap[FullExpandDepths],
+    updateMinFullExpandDepth: Int => Unit
+  ) extends State with Expandable with CheckPath {
 
     import FullExpandDepths.UNINITIALIZED
 
@@ -208,14 +215,16 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
             val relId = rel.id
             if (!seenRelationshipInPath(relId)) {
               path(pathLength) = relId
-              val nextState = new PruningDFS(whenEmptied = this,
+              val nextState = new PruningDFS(
+                whenEmptied = this,
                 node = nextNode,
                 path = path,
                 pathLength = pathLength + 1,
                 state = state,
                 row = row,
                 expandMap = expandMap,
-                updateMinFullExpandDepth = fullExpandDepths.depths(currentRelIdx) = _)
+                updateMinFullExpandDepth = fullExpandDepths.depths(currentRelIdx) = _
+              )
               return nextState.next()
             }
           }
@@ -264,13 +273,15 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
 
     override def next(): (State, CypherRow) = {
       def nextState(row: CypherRow, node: VirtualNodeValue) = {
-        val nextState = new PrePruningDFS(whenEmptied = this,
+        val nextState = new PrePruningDFS(
+          whenEmptied = this,
           node = node,
           path = new Array[Long](max),
           pathLength = 0,
           state = state,
           row = row,
-          expandMap = new LongObjectHashMap[FullExpandDepths]())
+          expandMap = new LongObjectHashMap[FullExpandDepths]()
+        )
         nextState.next()
       }
 
@@ -312,11 +323,17 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     /**
      * List all relationships of a node, given the predicates of this pipe.
      */
-    def expand(row: CypherRow, node: VirtualNodeValue): ClosingIterator[(VirtualRelationshipValue, VirtualNodeValue)] = {
+    def expand(
+      row: CypherRow,
+      node: VirtualNodeValue
+    ): ClosingIterator[(VirtualRelationshipValue, VirtualNodeValue)] = {
       val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
-      PrimitiveLongHelper.map(relationships, r => (VirtualValues.relationship(r), VirtualValues.node(relationships.otherNodeId(node.id())))).filter{
-        case (rel, other) =>  filteringStep.filterRelationship(row, state)(rel) &&
-          filteringStep.filterNode(row, state)(other)
+      PrimitiveLongHelper.map(
+        relationships,
+        r => (VirtualValues.relationship(r), VirtualValues.node(relationships.otherNodeId(node.id())))
+      ).filter {
+        case (rel, other) => filteringStep.filterRelationship(row, state)(rel) &&
+            filteringStep.filterNode(row, state)(other)
       }
     }
   }
@@ -327,8 +344,8 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     val UNINITIALIZED: FullExpandDepths = null
   }
 
-  class FullExpandDepths(// all relationships that connect to this node, filtered by the var-length predicates
-                         val relAndNext: Array[(VirtualRelationshipValue, VirtualNodeValue)]) {
+  class FullExpandDepths( // all relationships that connect to this node, filtered by the var-length predicates
+    val relAndNext: Array[(VirtualRelationshipValue, VirtualNodeValue)]) {
     // The fully expanded depth for each relationship in rels
     val depths = new Array[Int](relAndNext.length)
 
@@ -351,7 +368,10 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     }
   }
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] =
     new ClosingIterator[CypherRow] {
 
       var (stateMachine, current) = new LoadNext(input, state).next()

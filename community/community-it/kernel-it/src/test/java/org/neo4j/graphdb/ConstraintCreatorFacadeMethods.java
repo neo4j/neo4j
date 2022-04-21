@@ -20,30 +20,26 @@
 package org.neo4j.graphdb;
 
 import java.util.function.Consumer;
-
 import org.neo4j.graphdb.schema.ConstraintCreator;
 
-public enum ConstraintCreatorFacadeMethods implements Consumer<ConstraintCreator>
-{
-    UNIQUE( new FacadeMethod<>( "ConstraintCreator assertPropertyIsUnique()", self -> self.assertPropertyIsUnique( "property" ) ) ),
-    CREATE( new FacadeMethod<>( "ConstraintDefinition create()", ConstraintCreator::create ) );
+public enum ConstraintCreatorFacadeMethods implements Consumer<ConstraintCreator> {
+    UNIQUE(new FacadeMethod<>(
+            "ConstraintCreator assertPropertyIsUnique()", self -> self.assertPropertyIsUnique("property"))),
+    CREATE(new FacadeMethod<>("ConstraintDefinition create()", ConstraintCreator::create));
 
     private final FacadeMethod<ConstraintCreator> facadeMethod;
 
-    ConstraintCreatorFacadeMethods( FacadeMethod<ConstraintCreator> facadeMethod )
-    {
+    ConstraintCreatorFacadeMethods(FacadeMethod<ConstraintCreator> facadeMethod) {
         this.facadeMethod = facadeMethod;
     }
 
     @Override
-    public void accept( ConstraintCreator constraintCreator )
-    {
-        facadeMethod.accept( constraintCreator );
+    public void accept(ConstraintCreator constraintCreator) {
+        facadeMethod.accept(constraintCreator);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return facadeMethod.toString();
     }
 }

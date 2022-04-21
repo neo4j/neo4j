@@ -20,15 +20,13 @@
 package org.neo4j.bolt.dbapi;
 
 import java.util.Optional;
-
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A transaction representation as seen and used by Bolt.
  */
-public interface BoltTransaction extends BoltQueryExecutor, AutoCloseable
-{
+public interface BoltTransaction extends BoltQueryExecutor, AutoCloseable {
     void commit() throws TransactionFailureException;
 
     void rollback() throws TransactionFailureException;
@@ -40,7 +38,7 @@ public interface BoltTransaction extends BoltQueryExecutor, AutoCloseable
      * Terminates the transaction. The main difference between this operation and {@link #rollback()} is
      * that a transaction must be rolled back from a thread bound to the transaction, but it can be terminated from any thread.
      */
-    void markForTermination( Status reason );
+    void markForTermination(Status reason);
 
     /**
      * Terminates the transaction. The main difference between this operation and {@link #rollback()} is

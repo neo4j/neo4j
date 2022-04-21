@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -30,40 +31,36 @@ import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @ImpermanentDbmsExtension
-class NoChangeWriteTransactionTest
-{
+class NoChangeWriteTransactionTest {
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private TransactionIdStore transactionIdStore;
 
     @Test
-    void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly()
-    {
+    void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly() {
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.
         long startTxId = transactionIdStore.getLastCommittedTransactionId();
-        Node node = createEmptyNode( db );
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = tx.getNodeById( node.getId() );
-            node.addLabel( TestLabels.LABEL_ONE );
-            node.removeLabel( TestLabels.LABEL_ONE );
+        Node node = createEmptyNode(db);
+        try (Transaction tx = db.beginTx()) {
+            node = tx.getNodeById(node.getId());
+            node.addLabel(TestLabels.LABEL_ONE);
+            node.removeLabel(TestLabels.LABEL_ONE);
             tx.commit();
         } // WHEN closing that transaction
 
         // THEN it should not have been committed
-        assertEquals( startTxId + 2, transactionIdStore.getLastCommittedTransactionId(),
-                "Expected last txId to be what it started at + 2 (1 for the empty node, and one for the label)" );
+        assertEquals(
+                startTxId + 2,
+                transactionIdStore.getLastCommittedTransactionId(),
+                "Expected last txId to be what it started at + 2 (1 for the empty node, and one for the label)");
     }
 
-    private static Node createEmptyNode( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
+    private static Node createEmptyNode(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
             tx.commit();
             return node;

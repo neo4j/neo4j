@@ -38,18 +38,20 @@ case object normalizeNotEquals extends Rewriter with StepSequencer.Step with AST
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     case p @ NotEquals(lhs, rhs) =>
-      Not(Equals(lhs, rhs)(p.position))(p.position)   // not(1 = 2)  <!===!>     1 != 2
+      Not(Equals(lhs, rhs)(p.position))(p.position) // not(1 = 2)  <!===!>     1 != 2
   })
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = instance
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
 }

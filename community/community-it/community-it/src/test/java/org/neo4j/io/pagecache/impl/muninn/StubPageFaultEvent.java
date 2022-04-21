@@ -22,39 +22,28 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 
-class StubPageFaultEvent implements PageFaultEvent
-{
+class StubPageFaultEvent implements PageFaultEvent {
     long bytesRead;
 
     @Override
-    public void addBytesRead( long bytes )
-    {
+    public void addBytesRead(long bytes) {
         bytesRead += bytes;
     }
 
     @Override
-    public void setCachePageId( long cachePageId )
-    {
-    }
+    public void setCachePageId(long cachePageId) {}
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 
     @Override
-    public void setException( Throwable throwable )
-    {
-    }
+    public void setException(Throwable throwable) {}
 
     @Override
-    public void freeListSize( int freeListSize )
-    {
-    }
+    public void freeListSize(int freeListSize) {}
 
     @Override
-    public EvictionEvent beginEviction( long cachePageId )
-    {
+    public EvictionEvent beginEviction(long cachePageId) {
         return EvictionEvent.NULL;
     }
 }

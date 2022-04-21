@@ -29,125 +29,95 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class ObjectRepresentation extends MappingRepresentation
-{
-    @Target( ElementType.METHOD )
-    @Retention( RetentionPolicy.RUNTIME )
-    protected @interface Mapping
-    {
+public abstract class ObjectRepresentation extends MappingRepresentation {
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    protected @interface Mapping {
         String value();
     }
 
     private static final ConcurrentHashMap<Class<?>, Map<String, PropertyGetter>> serializations =
             new ConcurrentHashMap<>();
 
-    private final Map<String, PropertyGetter> serialization = serialization( getClass() );
+    private final Map<String, PropertyGetter> serialization = serialization(getClass());
 
-    public ObjectRepresentation( RepresentationType type )
-    {
-        super( type );
+    public ObjectRepresentation(RepresentationType type) {
+        super(type);
     }
 
-    public ObjectRepresentation( String type )
-    {
-        super( type );
+    public ObjectRepresentation(String type) {
+        super(type);
     }
 
-    private static Map<String, PropertyGetter> serialization( Class<? extends ObjectRepresentation> type )
-    {
-        Map<String, PropertyGetter> serialization = serializations.computeIfAbsent(
-                type, ObjectRepresentation::buildSerialization );
+    private static Map<String, PropertyGetter> serialization(Class<? extends ObjectRepresentation> type) {
+        Map<String, PropertyGetter> serialization =
+                serializations.computeIfAbsent(type, ObjectRepresentation::buildSerialization);
         return serialization;
     }
 
-    private static Map<String,PropertyGetter> buildSerialization( Class<?> type )
-    {
-        Map<String,PropertyGetter> serialization;
+    private static Map<String, PropertyGetter> buildSerialization(Class<?> type) {
+        Map<String, PropertyGetter> serialization;
         serialization = new HashMap<>();
-        for ( Method method : type.getMethods() )
-        {
-            Mapping property = method.getAnnotation( Mapping.class );
-            if ( property != null )
-            {
-                serialization.put( property.value(), getter( method ) );
+        for (Method method : type.getMethods()) {
+            Mapping property = method.getAnnotation(Mapping.class);
+            if (property != null) {
+                serialization.put(property.value(), getter(method));
             }
         }
         return serialization;
     }
 
-    private static PropertyGetter getter( final Method method )
-    {
+    private static PropertyGetter getter(final Method method) {
         // If this turns out to be a bottle neck we could use a byte code
         // generation library, such as ASM, instead of reflection.
-        return new PropertyGetter( method )
-        {
+        return new PropertyGetter(method) {
             @Override
-            Object get( ObjectRepresentation object )
-            {
+            Object get(ObjectRepresentation object) {
                 Throwable e;
-                try
-                {
-                    return method.invoke( object );
-                }
-                catch ( InvocationTargetException ex )
-                {
+                try {
+                    return method.invoke(object);
+                } catch (InvocationTargetException ex) {
                     e = ex.getTargetException();
-                    if ( e instanceof RuntimeException )
-                    {
+                    if (e instanceof RuntimeException) {
                         throw (RuntimeException) e;
-                    }
-                    else if ( e instanceof Error )
-                    {
+                    } else if (e instanceof Error) {
                         throw (Error) e;
                     }
-                }
-                catch ( Exception ex )
-                {
+                } catch (Exception ex) {
                     e = ex;
                 }
-                throw new IllegalStateException( "Serialization failure", e );
+                throw new IllegalStateException("Serialization failure", e);
             }
         };
     }
 
-    private abstract static class PropertyGetter
-    {
-        PropertyGetter( Method method )
-        {
-            if ( method.getParameterTypes().length != 0 )
-            {
-                throw new IllegalStateException( "Property getter method may not have any parameters." );
+    private abstract static class PropertyGetter {
+        PropertyGetter(Method method) {
+            if (method.getParameterTypes().length != 0) {
+                throw new IllegalStateException("Property getter method may not have any parameters.");
             }
-            if ( !Representation.class.isAssignableFrom( method.getReturnType() ) )
-            {
-                throw new IllegalStateException( "Property getter must return Representation object." );
+            if (!Representation.class.isAssignableFrom(method.getReturnType())) {
+                throw new IllegalStateException("Property getter must return Representation object.");
             }
         }
 
-        void putTo( MappingSerializer serializer, ObjectRepresentation object, String key )
-        {
-            Object value = get( object );
-            if ( value != null )
-            {
-                ((Representation) value).putTo( serializer, key );
+        void putTo(MappingSerializer serializer, ObjectRepresentation object, String key) {
+            Object value = get(object);
+            if (value != null) {
+                ((Representation) value).putTo(serializer, key);
             }
         }
 
-        abstract Object get( ObjectRepresentation object );
+        abstract Object get(ObjectRepresentation object);
     }
 
     @Override
-    protected final void serialize( MappingSerializer serializer )
-    {
-        for ( Map.Entry<String, PropertyGetter> property : serialization.entrySet() )
-        {
-            property.getValue()
-                    .putTo( serializer, this, property.getKey() );
+    protected final void serialize(MappingSerializer serializer) {
+        for (Map.Entry<String, PropertyGetter> property : serialization.entrySet()) {
+            property.getValue().putTo(serializer, this, property.getKey());
         }
-        extraData( serializer );
+        extraData(serializer);
     }
 
-    protected void extraData( MappingSerializer serializer )
-    {
-    }
+    protected void extraData(MappingSerializer serializer) {}
 }

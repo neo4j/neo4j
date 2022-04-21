@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.facade;
 
 import java.util.Map;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -28,8 +27,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
 
-public interface ExternalDependencies
-{
+public interface ExternalDependencies {
     /**
      * Allowed to be null. Null means that no external {@link Monitors} was created,
      * let the database create its own monitors instance.
@@ -42,7 +40,7 @@ public interface ExternalDependencies
 
     Iterable<ExtensionFactory<?>> extensions();
 
-    Map<String,URLAccessRule> urlAccessRules();
+    Map<String, URLAccessRule> urlAccessRules();
 
     /**
      * Configured default database event listeners

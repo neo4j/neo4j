@@ -19,54 +19,50 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import static java.util.Objects.requireNonNull;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-import static java.util.Objects.requireNonNull;
-
-abstract class RelationshipConstraintDefinition extends SinglePropertyConstraintDefinition
-{
+abstract class RelationshipConstraintDefinition extends SinglePropertyConstraintDefinition {
     protected final RelationshipType relationshipType;
 
-    RelationshipConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, RelationshipType relationshipType, String propertyKey )
-    {
-        super( actions, constraint, propertyKey );
-        this.relationshipType = requireNonNull( relationshipType );
+    RelationshipConstraintDefinition(
+            InternalSchemaActions actions,
+            ConstraintDescriptor constraint,
+            RelationshipType relationshipType,
+            String propertyKey) {
+        super(actions, constraint, propertyKey);
+        this.relationshipType = requireNonNull(relationshipType);
     }
 
     @Override
-    public Label getLabel()
-    {
+    public Label getLabel() {
         assertInUnterminatedTransaction();
-        throw new IllegalStateException( "Constraint is associated with relationships" );
+        throw new IllegalStateException("Constraint is associated with relationships");
     }
 
     @Override
-    public RelationshipType getRelationshipType()
-    {
+    public RelationshipType getRelationshipType() {
         assertInUnterminatedTransaction();
         return relationshipType;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         RelationshipConstraintDefinition that = (RelationshipConstraintDefinition) o;
-        return relationshipType.name().equals( that.relationshipType.name() ) && propertyKey.equals( that.propertyKey );
+        return relationshipType.name().equals(that.relationshipType.name()) && propertyKey.equals(that.propertyKey);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return 31 * relationshipType.name().hashCode() + propertyKey.hashCode();
     }
 }

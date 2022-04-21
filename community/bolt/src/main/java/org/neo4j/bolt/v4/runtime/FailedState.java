@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
@@ -31,55 +33,49 @@ import org.neo4j.bolt.v4.messaging.DiscardMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.memory.HeapEstimator;
 
-import static org.neo4j.util.Preconditions.checkState;
-
 /**
  * The FAILED state occurs when a recoverable error is encountered.
  * This might be something like a Cypher SyntaxError or
  * ConstraintViolation. To exit the FAILED state, a RESET must be issued.
  * All stream will be IGNORED until this is done.
  */
-public class FailedState implements BoltStateMachineState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( FailedState.class );
+public class FailedState implements BoltStateMachineState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(FailedState.class);
 
     private BoltStateMachineState interruptedState;
 
     @Override
-    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
-    {
+    public BoltStateMachineState process(RequestMessage message, StateMachineContext context)
+            throws BoltConnectionFatality {
         assertInitialized();
-        if ( shouldIgnore( message ) )
-        {
+        if (shouldIgnore(message)) {
             context.connectionState().markIgnored();
             return this;
         }
-        if ( message instanceof InterruptSignal )
-        {
+        if (message instanceof InterruptSignal) {
             return interruptedState;
         }
         return null;
     }
 
-    public void setInterruptedState( BoltStateMachineState interruptedState )
-    {
+    public void setInterruptedState(BoltStateMachineState interruptedState) {
         this.interruptedState = interruptedState;
     }
 
-    protected void assertInitialized()
-    {
-        checkState( interruptedState != null, "Interrupted state not set" );
+    protected void assertInitialized() {
+        checkState(interruptedState != null, "Interrupted state not set");
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "FAILED";
     }
 
-    private static boolean shouldIgnore( RequestMessage message )
-    {
-        return message instanceof RunMessage || message instanceof PullMessage || message instanceof DiscardMessage
-                || message instanceof CommitMessage || message instanceof RollbackMessage;
+    private static boolean shouldIgnore(RequestMessage message) {
+        return message instanceof RunMessage
+                || message instanceof PullMessage
+                || message instanceof DiscardMessage
+                || message instanceof CommitMessage
+                || message instanceof RollbackMessage;
     }
 }

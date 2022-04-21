@@ -19,9 +19,8 @@
  */
 package org.neo4j.collection.pool;
 
-public interface Pool<T> extends AutoCloseable
-{
+public interface Pool<T> extends AutoCloseable {
     T acquire();
 
-    void release( T obj );
+    void release(T obj);
 }

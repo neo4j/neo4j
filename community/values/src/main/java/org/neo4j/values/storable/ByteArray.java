@@ -19,203 +19,174 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.Arrays;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 
-public final class ByteArray extends IntegralArray
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ByteArray.class );
+import java.util.Arrays;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public final class ByteArray extends IntegralArray {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(ByteArray.class);
 
     private final byte[] value;
 
     private boolean invalid;
 
-    ByteArray( byte[] value )
-    {
+    ByteArray(byte[] value) {
         assert value != null;
         this.value = value;
     }
 
-    private void checkValid()
-    {
-        if ( invalid )
-        {
-            throw new RuntimeException( "Invalidated" );
+    private void checkValid() {
+        if (invalid) {
+            throw new RuntimeException("Invalidated");
         }
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         checkValid();
         return value.length;
     }
 
     @Override
-    public long longValue( int index )
-    {
+    public long longValue(int index) {
         checkValid();
         return value[index];
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
+    protected int computeHashToMemoize() {
         checkValid();
-        return NumberValues.hash( value );
+        return NumberValues.hash(value);
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
+    public <T> T map(ValueMapper<T> mapper) {
         checkValid();
-        return mapper.mapByteArray( this );
+        return mapper.mapByteArray(this);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
+    public boolean equals(Value other) {
         checkValid();
-        return other.equals( value );
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( byte[] x )
-    {
+    public boolean equals(byte[] x) {
         checkValid();
-        return Arrays.equals( value, x );
+        return Arrays.equals(value, x);
     }
 
     @Override
-    public boolean equals( short[] x )
-    {
+    public boolean equals(short[] x) {
         checkValid();
-        return PrimitiveArrayValues.equals( value, x );
+        return PrimitiveArrayValues.equals(value, x);
     }
 
     @Override
-    public boolean equals( int[] x )
-    {
+    public boolean equals(int[] x) {
         checkValid();
-        return PrimitiveArrayValues.equals( value, x );
+        return PrimitiveArrayValues.equals(value, x);
     }
 
     @Override
-    public boolean equals( long[] x )
-    {
+    public boolean equals(long[] x) {
         checkValid();
-        return PrimitiveArrayValues.equals( value, x );
+        return PrimitiveArrayValues.equals(value, x);
     }
 
     @Override
-    public boolean equals( float[] x )
-    {
+    public boolean equals(float[] x) {
         checkValid();
-        return PrimitiveArrayValues.equals( value, x );
+        return PrimitiveArrayValues.equals(value, x);
     }
 
     @Override
-    public boolean equals( double[] x )
-    {
+    public boolean equals(double[] x) {
         checkValid();
-        return PrimitiveArrayValues.equals( value, x );
+        return PrimitiveArrayValues.equals(value, x);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
         checkValid();
-        writer.writeByteArray( value );
+        writer.writeByteArray(value);
     }
 
     @Override
-    public byte[] asObjectCopy()
-    {
+    public byte[] asObjectCopy() {
         checkValid();
-        return Arrays.copyOf( value, value.length );
+        return Arrays.copyOf(value, value.length);
     }
 
     @Override
     @Deprecated
-    public byte[] asObject()
-    {
+    public byte[] asObject() {
         checkValid();
         return value;
     }
 
     @Override
-    public String prettyPrint()
-    {
+    public String prettyPrint() {
         checkValid();
-        return Arrays.toString( value );
+        return Arrays.toString(value);
     }
 
     @Override
-    public AnyValue value( int offset )
-    {
+    public AnyValue value(int offset) {
         checkValid();
-        return Values.byteValue( value[offset] );
+        return Values.byteValue(value[offset]);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         checkValid();
-        return format( "%s%s", getTypeName(), Arrays.toString( value ) );
+        return format("%s%s", getTypeName(), Arrays.toString(value));
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "ByteArray";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOf( value );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOf(value);
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof ByteValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        byte[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        byte[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = ((ByteValue) added).value();
-        return new ByteArray( newArray );
+        return new ByteArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         byte[] newArray = new byte[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
+        System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((ByteValue) prepended).value();
-        return new ByteArray( newArray );
+        return new ByteArray(newArray);
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.INT8_ARRAY;
     }
 
-    public void zero()
-    {
+    public void zero() {
         invalid = true;
-        Arrays.fill( value, (byte) 0 );
+        Arrays.fill(value, (byte) 0);
     }
 }

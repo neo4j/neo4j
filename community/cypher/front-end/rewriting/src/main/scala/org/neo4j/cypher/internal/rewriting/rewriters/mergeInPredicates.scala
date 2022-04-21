@@ -66,35 +66,36 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
 
   private val inner: Rewriter = bottomUp(Rewriter.lift {
 
-    case and@And(lhs, rhs) if containNeitherOrsNorInnerScopes(lhs, rhs) && containIns(lhs, rhs) =>
+    case and @ And(lhs, rhs) if containNeitherOrsNorInnerScopes(lhs, rhs) && containIns(lhs, rhs) =>
       if (containNoNots(lhs, rhs))
-      //Look for a `IN [...] AND a IN [...]` and compute the intersection of lists
+        // Look for a `IN [...] AND a IN [...]` and compute the intersection of lists
         rewriteBinaryOperator(and, (a, b) => a intersect b, (l, r) => and.copy(l, r)(and.position))
       else if (containNots(lhs, rhs))
-      //Look for a `NOT IN [...] AND a NOT IN [...]` and compute the union of lists
+        // Look for a `NOT IN [...] AND a NOT IN [...]` and compute the union of lists
         rewriteBinaryOperator(and, (a, b) => a concat b, (l, r) => and.copy(l, r)(and.position))
       else
-      // In case only one of lhs and rhs includes a NOT we cannot rewrite
+        // In case only one of lhs and rhs includes a NOT we cannot rewrite
         and
 
-    case or@Or(lhs, rhs) if containNoAnds(lhs, rhs) && containIns(lhs, rhs) =>
+    case or @ Or(lhs, rhs) if containNoAnds(lhs, rhs) && containIns(lhs, rhs) =>
       if (containNoNots(lhs, rhs))
-      //Look for `a IN [...] OR a IN [...]` and compute union of lists
+        // Look for `a IN [...] OR a IN [...]` and compute union of lists
         rewriteBinaryOperator(or, (a, b) => a concat b, (l, r) => or.copy(l, r)(or.position))
       else if (containNots(lhs, rhs))
-      //Look for a `NOT IN [...] OR a NOT IN [...]` and compute the intersection of lists
+        // Look for a `NOT IN [...] OR a NOT IN [...]` and compute the intersection of lists
         rewriteBinaryOperator(or, (a, b) => a intersect b, (l, r) => or.copy(l, r)(or.position))
       else
-      // In case only one of lhs and rhs includes a NOT we cannot rewrite
+        // In case only one of lhs and rhs includes a NOT we cannot rewrite
         or
   })
 
-  private def containNeitherOrsNorInnerScopes(expressions: Expression*):Boolean = expressions.forall(!_.folder.treeExists {
-    case _: Or => true
-    case _: ScopeExpression => true
-  })
+  private def containNeitherOrsNorInnerScopes(expressions: Expression*): Boolean =
+    expressions.forall(!_.folder.treeExists {
+      case _: Or              => true
+      case _: ScopeExpression => true
+    })
 
-  private def containNoAnds(expressions: Expression*):Boolean = expressions.forall(!_.folder.treeExists {
+  private def containNoAnds(expressions: Expression*): Boolean = expressions.forall(!_.folder.treeExists {
     case _: And => true
   })
 
@@ -110,11 +111,13 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
     case _: In => true
   })
 
-  //Takes a binary operator a merge operator and a copy constructor
-  //and rewrites the binary operator
-  private def rewriteBinaryOperator(binary: BinaryOperatorExpression,
-                                    merge: (Seq[Expression], Seq[Expression]) => Seq[Expression],
-                                    copy: (Expression, Expression) => Expression): Expression = {
+  // Takes a binary operator a merge operator and a copy constructor
+  // and rewrites the binary operator
+  private def rewriteBinaryOperator(
+    binary: BinaryOperatorExpression,
+    merge: (Seq[Expression], Seq[Expression]) => Seq[Expression],
+    copy: (Expression, Expression) => Expression
+  ): Expression = {
     val rewriter = inRewriter(collectInPredicates(merge)(binary.lhs, binary.rhs))
     val newLhs = binary.lhs.endoRewrite(rewriter)
     val newRhs = binary.rhs.endoRewrite(rewriter)
@@ -124,10 +127,10 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
       copy(newLhs, newRhs)
   }
 
-  //Rewrites a IN [] by using the the provided map of precomputed lists
-  //a IN ... is rewritten to a IN inPredicates(a)
+  // Rewrites a IN [] by using the the provided map of precomputed lists
+  // a IN ... is rewritten to a IN inPredicates(a)
   private def inRewriter(inPredicates: Map[Expression, Seq[Expression]]) = bottomUp(Rewriter.lift({
-    case in@In(a, list@ListLiteral(_)) =>
+    case in @ In(a, list @ ListLiteral(_)) =>
       val expressions = inPredicates(a)
       if (expressions.nonEmpty)
         in.copy(rhs = list.copy(expressions)(list.position))(in.position)
@@ -135,19 +138,20 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
         False()(in.position)
   }))
 
-  //Given `a IN A ... b IN B ... a IN C` and use `merge` to merge all the lists with the same key.
-  //Returns {a -> merge(A,B), b -> C}
-  private def collectInPredicates(merge: (Seq[Expression], Seq[Expression]) => Seq[Expression])
-                                 (expressions: Expression*): Map[Expression, Seq[Expression]] = {
+  // Given `a IN A ... b IN B ... a IN C` and use `merge` to merge all the lists with the same key.
+  // Returns {a -> merge(A,B), b -> C}
+  private def collectInPredicates(merge: (Seq[Expression], Seq[Expression]) => Seq[Expression])(
+    expressions: Expression*
+  ): Map[Expression, Seq[Expression]] = {
     val maps = expressions.map(_.folder.treeFold(Map.empty[Expression, Seq[Expression]]) {
       case In(a, ListLiteral(exprs)) => map => {
-        //if there is already a list associated with `a`, do map(a) ++ exprs otherwise exprs
-        val values = map.get(a).map(current => merge(current, exprs)).getOrElse(exprs).distinct
-        SkipChildren(map + (a -> values))
-      }
+          // if there is already a list associated with `a`, do map(a) ++ exprs otherwise exprs
+          val values = map.get(a).map(current => merge(current, exprs)).getOrElse(exprs).distinct
+          SkipChildren(map + (a -> values))
+        }
     })
-    //Take list of maps, [map1,map2,...] and merge the using the provided `merge` to
-    //merge lists
+    // Take list of maps, [map1,map2,...] and merge the using the provided `merge` to
+    // merge lists
     maps.reduceLeft((acc, current) => {
       val sharedKeys = acc.keySet intersect current.keySet
       val updates = sharedKeys.map(k => k -> merge(acc(k), current(k)).distinct)
@@ -155,6 +159,8 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
     })
   }
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory,
-                           notificationLogger: InternalNotificationLogger): Rewriter = this
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    notificationLogger: InternalNotificationLogger
+  ): Rewriter = this
 }

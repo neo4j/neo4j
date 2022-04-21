@@ -19,13 +19,11 @@
  */
 package org.neo4j.lock;
 
-public abstract class Lock implements AutoCloseable
-{
+public abstract class Lock implements AutoCloseable {
     public abstract void release();
 
     @Override
-    public final void close()
-    {
+    public final void close() {
         release();
     }
 }

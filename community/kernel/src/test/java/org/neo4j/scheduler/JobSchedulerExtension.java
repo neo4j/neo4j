@@ -21,43 +21,36 @@ package org.neo4j.scheduler;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.test.extension.StatefulFieldExtension;
 
-public class JobSchedulerExtension extends StatefulFieldExtension<JobScheduler> implements AfterEachCallback
-{
+public class JobSchedulerExtension extends StatefulFieldExtension<JobScheduler> implements AfterEachCallback {
     private static final String FIELD_KEY = "job_scheduler";
-    private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create( FIELD_KEY );
+    private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(FIELD_KEY);
 
     @Override
-    public void afterEach( ExtensionContext context ) throws Exception
-    {
-        JobScheduler jobScheduler = deepRemoveStoredValue( context );
+    public void afterEach(ExtensionContext context) throws Exception {
+        JobScheduler jobScheduler = deepRemoveStoredValue(context);
         jobScheduler.close();
     }
 
     @Override
-    protected String getFieldKey()
-    {
+    protected String getFieldKey() {
         return FIELD_KEY;
     }
 
     @Override
-    protected ExtensionContext.Namespace getNameSpace()
-    {
+    protected ExtensionContext.Namespace getNameSpace() {
         return NAMESPACE;
     }
 
     @Override
-    protected Class<JobScheduler> getFieldType()
-    {
+    protected Class<JobScheduler> getFieldType() {
         return JobScheduler.class;
     }
 
     @Override
-    protected JobScheduler createField( ExtensionContext context )
-    {
+    protected JobScheduler createField(ExtensionContext context) {
         return JobSchedulerFactory.createInitialisedScheduler();
     }
 }

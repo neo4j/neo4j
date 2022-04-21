@@ -19,23 +19,21 @@
  */
 package org.neo4j.procedure.builtin;
 
+import static java.lang.String.format;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
-
-import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.api.TransactionExecutionStatistic;
 
-import static java.lang.String.format;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
-
-@SuppressWarnings( "WeakerAccess" )
-public class TransactionStatusResult
-{
+@SuppressWarnings("WeakerAccess")
+public class TransactionStatusResult {
     private static final String RUNNING_STATE = "Running";
     private static final String CLOSING_STATE = "Closing";
     private static final String BLOCKED_STATE = "Blocked by: ";
@@ -43,7 +41,7 @@ public class TransactionStatusResult
 
     public final String transactionId;
     public final String username;
-    public final Map<String,Object> metaData;
+    public final Map<String, Object> metaData;
     public final String startTime;
     public final String protocol;
     public final String clientAddress;
@@ -54,7 +52,7 @@ public class TransactionStatusResult
 
     public final long activeLockCount;
     public final String status;
-    public Map<String,Object> resourceInformation;
+    public Map<String, Object> resourceInformation;
 
     public final long elapsedTimeMillis;
     public final Long cpuTimeMillis;
@@ -66,6 +64,7 @@ public class TransactionStatusResult
     public final long pageFaults;
     /** @since Neo4j 3.5 */
     public final String connectionId;
+
     public final String initializationStackTrace;
     /** @since Neo4j 4.0 */
     public final String database;
@@ -73,18 +72,22 @@ public class TransactionStatusResult
     public final Long estimatedUsedHeapMemory;
     /** @since Neo4j 4.4 */
     public final String outerTransactionId;
+
     public final String statusDetails;
 
-    public TransactionStatusResult( String database, KernelTransactionHandle transaction,
+    public TransactionStatusResult(
+            String database,
+            KernelTransactionHandle transaction,
             TransactionDependenciesResolver transactionDependenciesResolver,
-            Map<KernelTransactionHandle,Optional<QuerySnapshot>> handleSnapshotsMap, ZoneId zoneId ) throws InvalidArgumentsException
-    {
+            Map<KernelTransactionHandle, Optional<QuerySnapshot>> handleSnapshotsMap,
+            ZoneId zoneId)
+            throws InvalidArgumentsException {
         this.database = database;
-        this.transactionId = new TransactionId( database, transaction.getUserTransactionId() ).toString();
+        this.transactionId = new TransactionId(database, transaction.getUserTransactionId()).toString();
         this.username = transaction.subject().executingUser();
-        this.startTime = ProceduresTimeFormatHelper.formatTime( transaction.startTime(), zoneId );
+        this.startTime = ProceduresTimeFormatHelper.formatTime(transaction.startTime(), zoneId);
         this.activeLockCount = transaction.activeLocks().count();
-        Optional<QuerySnapshot> querySnapshot = handleSnapshotsMap.get( transaction );
+        Optional<QuerySnapshot> querySnapshot = handleSnapshotsMap.get(transaction);
         TransactionExecutionStatistic statistic = transaction.transactionStatistic();
         elapsedTimeMillis = statistic.getElapsedTimeMillis();
         cpuTimeMillis = statistic.getCpuTimeMillis();
@@ -96,47 +99,43 @@ public class TransactionStatusResult
         pageHits = statistic.getPageHits();
         pageFaults = statistic.getPageFaults();
 
-        if ( querySnapshot.isPresent() )
-        {
+        if (querySnapshot.isPresent()) {
             QuerySnapshot snapshot = querySnapshot.get();
-            this.currentQueryId = new QueryId( snapshot.internalQueryId() ).toString();
-            this.currentQuery = snapshot.obfuscatedQueryText().orElse( null );
-            String queryTransactionId = new TransactionId( database, snapshot.transactionId() ).toString();
-            this.outerTransactionId = queryTransactionId.equals( this.transactionId ) ? EMPTY : queryTransactionId;
-        }
-        else
-        {
+            this.currentQueryId = new QueryId(snapshot.internalQueryId()).toString();
+            this.currentQuery = snapshot.obfuscatedQueryText().orElse(null);
+            String queryTransactionId = new TransactionId(database, snapshot.transactionId()).toString();
+            this.outerTransactionId = queryTransactionId.equals(this.transactionId) ? EMPTY : queryTransactionId;
+        } else {
             this.currentQueryId = EMPTY;
             this.currentQuery = EMPTY;
             this.outerTransactionId = EMPTY;
         }
 
         var clientInfo = transaction.clientInfo();
-        this.protocol = clientInfo.map( ClientConnectionInfo::protocol ).orElse( EMPTY );
-        this.clientAddress = clientInfo.map( ClientConnectionInfo::clientAddress ).orElse( EMPTY );
-        this.requestUri = clientInfo.map( ClientConnectionInfo::requestURI ).orElse( EMPTY ) ;
-        this.connectionId = clientInfo.map( ClientConnectionInfo::connectionId ).orElse( EMPTY );
-        this.resourceInformation = transactionDependenciesResolver.describeBlockingLocks( transaction );
-        this.status = getStatus( transaction, transactionDependenciesResolver );
+        this.protocol = clientInfo.map(ClientConnectionInfo::protocol).orElse(EMPTY);
+        this.clientAddress = clientInfo.map(ClientConnectionInfo::clientAddress).orElse(EMPTY);
+        this.requestUri = clientInfo.map(ClientConnectionInfo::requestURI).orElse(EMPTY);
+        this.connectionId = clientInfo.map(ClientConnectionInfo::connectionId).orElse(EMPTY);
+        this.resourceInformation = transactionDependenciesResolver.describeBlockingLocks(transaction);
+        this.status = getStatus(transaction, transactionDependenciesResolver);
         this.statusDetails = transaction.getStatusDetails();
         this.metaData = transaction.getMetaData();
-        this.initializationStackTrace = transaction.transactionInitialisationTrace().getTrace();
+        this.initializationStackTrace =
+                transaction.transactionInitialisationTrace().getTrace();
     }
 
-    private static String getStatus( KernelTransactionHandle handle, TransactionDependenciesResolver transactionDependenciesResolver )
-    {
-        return handle.terminationReason().map( reason -> format( TERMINATED_STATE, reason.code() ) )
-                .orElseGet( () -> getExecutingStatus( handle, transactionDependenciesResolver ) );
+    private static String getStatus(
+            KernelTransactionHandle handle, TransactionDependenciesResolver transactionDependenciesResolver) {
+        return handle.terminationReason()
+                .map(reason -> format(TERMINATED_STATE, reason.code()))
+                .orElseGet(() -> getExecutingStatus(handle, transactionDependenciesResolver));
     }
 
-    private static String getExecutingStatus( KernelTransactionHandle handle, TransactionDependenciesResolver transactionDependenciesResolver )
-    {
-        if ( transactionDependenciesResolver.isBlocked( handle ) )
-        {
-            return BLOCKED_STATE + transactionDependenciesResolver.describeBlockingTransactions( handle );
-        }
-        else if ( handle.isClosing() )
-        {
+    private static String getExecutingStatus(
+            KernelTransactionHandle handle, TransactionDependenciesResolver transactionDependenciesResolver) {
+        if (transactionDependenciesResolver.isBlocked(handle)) {
+            return BLOCKED_STATE + transactionDependenciesResolver.describeBlockingTransactions(handle);
+        } else if (handle.isClosing()) {
             return CLOSING_STATE;
         }
         return RUNNING_STATE;

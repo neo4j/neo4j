@@ -73,13 +73,20 @@ import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object TransactionBoundPlanContext {
-  def apply(tc: TransactionalContextWrapper,
-            logger: InternalNotificationLogger,
-            log: InternalLog): TransactionBoundPlanContext = {
+
+  def apply(
+    tc: TransactionalContextWrapper,
+    logger: InternalNotificationLogger,
+    log: InternalLog
+  ): TransactionBoundPlanContext = {
 
     val statistics = TransactionBoundGraphStatistics(tc.dataRead, tc.schemaRead, log)
 
-    new TransactionBoundPlanContext(tc, logger, InstrumentedGraphStatistics(statistics, new MutableGraphStatisticsSnapshot()))
+    new TransactionBoundPlanContext(
+      tc,
+      logger,
+      InstrumentedGraphStatistics(statistics, new MutableGraphStatisticsSnapshot())
+    )
   }
 
   def procedureSignature(tx: KernelTransaction, name: QualifiedName): ProcedureSignature = {
@@ -95,8 +102,9 @@ object TransactionBoundPlanContext {
     val procedures = tx.procedures()
     val func = procedures.functionGet(kn)
 
-    val (fcn, aggregation) = if (func != null) (func, false)
-    else (procedures.aggregationFunctionGet(kn), true)
+    val (fcn, aggregation) =
+      if (func != null) (func, false)
+      else (procedures.aggregationFunctionGet(kn), true)
     if (fcn == null) None
     else {
       val signature = fcn.signature()
@@ -107,9 +115,17 @@ object TransactionBoundPlanContext {
       val deprecationInfo = asOption(signature.deprecated())
       val description = asOption(signature.description())
 
-      Some(UserFunctionSignature(name, input, output, deprecationInfo,
-        description, isAggregate = aggregation,
-        id = fcn.id(), signature.isBuiltIn, threadSafe = fcn.threadSafe()))
+      Some(UserFunctionSignature(
+        name,
+        input,
+        output,
+        deprecationInfo,
+        description,
+        isAggregate = aggregation,
+        id = fcn.id(),
+        signature.isBuiltIn,
+        threadSafe = fcn.threadSafe()
+      ))
     }
   }
 
@@ -118,7 +134,7 @@ object TransactionBoundPlanContext {
    */
   private def typeToValueCategory(in: CypherType): ValueCategory = in match {
     case _: symbols.IntegerType |
-         _: symbols.FloatType =>
+      _: symbols.FloatType =>
       ValueCategory.NUMBER
 
     case _: symbols.StringType =>
@@ -136,8 +152,11 @@ object TransactionBoundPlanContext {
   }
 }
 
-class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: InstrumentedGraphStatistics)
-  extends TransactionBoundReadTokenContext(tc) with PlanContext with IndexDescriptorCompatibility {
+class TransactionBoundPlanContext(
+  tc: TransactionalContextWrapper,
+  logger: InternalNotificationLogger,
+  graphStatistics: InstrumentedGraphStatistics
+) extends TransactionBoundReadTokenContext(tc) with PlanContext with IndexDescriptorCompatibility {
 
   override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     indexesGetForLabel(labelId, Some(schema.IndexType.RANGE))
@@ -185,7 +204,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       .flatMap(getOnlineIndex)
   }
 
-  override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = tc.schemaRead.indexesGetAllNonLocking.asScala.flatMap(getOnlineIndex)
+  override def propertyIndexesGetAll(): Iterator[IndexDescriptor] =
+    tc.schemaRead.indexesGetAllNonLocking.asScala.flatMap(getOnlineIndex)
 
   override def indexExistsForLabel(labelId: Int): Boolean = {
     indexesGetForLabel(labelId, None).nonEmpty
@@ -195,41 +215,68 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     indexesGetForRelType(relTypeId, None).nonEmpty
   }
 
-  override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  override def textIndexGetForLabelAndProperties(
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = {
     indexGetForLabelAndProperties(schema.IndexType.TEXT, labelName, propertyKeys)
   }
 
-  override def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  override def rangeIndexGetForLabelAndProperties(
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = {
     indexGetForLabelAndProperties(schema.IndexType.RANGE, labelName, propertyKeys)
   }
 
-  override def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  override def pointIndexGetForLabelAndProperties(
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = {
     indexGetForLabelAndProperties(schema.IndexType.POINT, labelName, propertyKeys)
   }
 
-  override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  override def textIndexGetForRelTypeAndProperties(
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = {
     indexGetForRelTypeAndProperties(schema.IndexType.TEXT, relTypeName, propertyKeys)
   }
 
-  override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  override def rangeIndexGetForRelTypeAndProperties(
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = {
     indexGetForRelTypeAndProperties(schema.IndexType.RANGE, relTypeName, propertyKeys)
   }
 
-  override def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  override def pointIndexGetForRelTypeAndProperties(
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = {
     indexGetForRelTypeAndProperties(schema.IndexType.POINT, relTypeName, propertyKeys)
   }
 
-  private def indexGetForLabelAndProperties(indexType: schema.IndexType, labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  private def indexGetForLabelAndProperties(
+    indexType: schema.IndexType,
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
     descriptor.flatMap(indexGetForSchemaDescriptor(indexType))
   }
 
-  private def indexGetForRelTypeAndProperties(indexType: schema.IndexType, relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  private def indexGetForRelTypeAndProperties(
+    indexType: schema.IndexType,
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] = {
     val descriptor = toRelTypeSchemaDescriptor(this, relTypeName, propertyKeys)
     descriptor.flatMap(indexGetForSchemaDescriptor(indexType))
   }
 
-  private def indexGetForSchemaDescriptor(indexType: schema.IndexType)(descriptor: SchemaDescriptor): Option[IndexDescriptor] = {
+  private def indexGetForSchemaDescriptor(indexType: schema.IndexType)(descriptor: SchemaDescriptor)
+    : Option[IndexDescriptor] = {
     val itr = tc.schemaRead.indexForSchemaNonLocking(descriptor).asScala
       .filter(_.getIndexType == indexType)
       .flatMap(getOnlineIndex)
@@ -267,7 +314,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
           val entityType = {
             val tokenId = reference.schema().getEntityTokenIds()(0)
             reference.schema().entityType() match {
-              case EntityType.NODE => IndexDescriptor.EntityType.Node(LabelId(tokenId))
+              case EntityType.NODE         => IndexDescriptor.EntityType.Node(LabelId(tokenId))
               case EntityType.RELATIONSHIP => IndexDescriptor.EntityType.Relationship(RelTypeId(tokenId))
             }
           }
@@ -280,21 +327,21 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             // From Cyphers perspective, using the Kernel API, fully and partially sorted are the same, since geometry values which come out of order
             // from the index are sorted in DefaultNodeValueIndexCursor.
             reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
-              case BOTH_FULLY_SORTED => IndexOrderCapability.BOTH
+              case BOTH_FULLY_SORTED     => IndexOrderCapability.BOTH
               case BOTH_PARTIALLY_SORTED => IndexOrderCapability.BOTH
-              case ASC_FULLY_SORTED => IndexOrderCapability.ASC
-              case ASC_PARTIALLY_SORTED => IndexOrderCapability.ASC
-              case DESC_FULLY_SORTED => IndexOrderCapability.DESC
+              case ASC_FULLY_SORTED      => IndexOrderCapability.ASC
+              case ASC_PARTIALLY_SORTED  => IndexOrderCapability.ASC
+              case DESC_FULLY_SORTED     => IndexOrderCapability.DESC
               case DESC_PARTIALLY_SORTED => IndexOrderCapability.DESC
-              case NONE => IndexOrderCapability.NONE
+              case NONE                  => IndexOrderCapability.NONE
             }
           }
           val valueCapability: ValueCapability = tps => {
             reference.getCapability.valueCapability(tps.map(typeToValueCategory): _*) match {
               // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
-              case IndexValueCapability.YES => tps.map(_ => CanGetValue)
+              case IndexValueCapability.YES     => tps.map(_ => CanGetValue)
               case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
-              case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
+              case IndexValueCapability.NO      => tps.map(_ => DoNotGetValue)
             }
           }
           if (behaviours.contains(EventuallyConsistent)) {
@@ -347,7 +394,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
   }
 
-  private def getPropertiesFromExistenceConstraints(constraints: Iterator[ConstraintDescriptor]):Set[String] = {
+  private def getPropertiesFromExistenceConstraints(constraints: Iterator[ConstraintDescriptor]): Set[String] = {
     // We are only interested in existence constraints, not unique constraints
     val existsConstraints = constraints.filter(c => c.enforcesPropertyExistence())
 
@@ -374,7 +421,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     try {
       val relTypeId = getRelTypeId(relTypeName)
 
-      val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForRelationshipTypeNonLocking(relTypeId).asScala
+      val constraints: Iterator[ConstraintDescriptor] =
+        tc.schemaRead.constraintsGetForRelationshipTypeNonLocking(relTypeId).asScala
 
       getPropertiesFromExistenceConstraints(constraints)
     } catch {
@@ -397,9 +445,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   // TODO: graph
   override val lastCommittedTxIdProvider: LastCommittedTxIdProvider = LastCommittedTxIdProvider(tc.graph)
 
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name)
+  override def procedureSignature(name: QualifiedName): ProcedureSignature =
+    TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name)
 
-  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
+    TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
 
   override def notificationLogger(): InternalNotificationLogger = logger
 

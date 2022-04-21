@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.availability;
 
+import static java.util.stream.Collectors.joining;
+
 import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.internal.helpers.Format;
 import org.neo4j.internal.helpers.Listeners;
@@ -30,15 +31,12 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 
-import static java.util.stream.Collectors.joining;
-
 /**
  * Single database availability guard.
  *
  * @see AvailabilityGuard
  */
-public class DatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard
-{
+public class DatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard {
     private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement '%s' makes database %s available.";
     private static final String DATABASE_UNAVAILABLE_MSG = "Requirement `%s` makes database %s unavailable.";
 
@@ -52,71 +50,63 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     private final long databaseTimeMillis;
     private final CompositeDatabaseAvailabilityGuard globalGuard;
 
-    public DatabaseAvailabilityGuard( NamedDatabaseId namedDatabaseId, Clock clock, InternalLog log, long databaseTimeMillis,
-            CompositeDatabaseAvailabilityGuard globalGuard )
-    {
+    public DatabaseAvailabilityGuard(
+            NamedDatabaseId namedDatabaseId,
+            Clock clock,
+            InternalLog log,
+            long databaseTimeMillis,
+            CompositeDatabaseAvailabilityGuard globalGuard) {
         this.namedDatabaseId = namedDatabaseId;
         this.clock = clock;
         this.log = log;
         this.databaseTimeMillis = databaseTimeMillis;
         this.globalGuard = globalGuard;
-        this.listeners.add( new LoggingAvailabilityListener( log, namedDatabaseId ) );
+        this.listeners.add(new LoggingAvailabilityListener(log, namedDatabaseId));
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         shutdown = false;
         startupFailure = null;
     }
 
     @Override
-    public void start()
-    {
-        globalGuard.addDatabaseAvailabilityGuard( this );
+    public void start() {
+        globalGuard.addDatabaseAvailabilityGuard(this);
     }
 
     @Override
-    public void stop()
-    {
-        globalGuard.removeDatabaseAvailabilityGuard( this );
+    public void stop() {
+        globalGuard.removeDatabaseAvailabilityGuard(this);
     }
 
     @Override
-    public void require( AvailabilityRequirement requirement )
-    {
-        if ( shutdown )
-        {
+    public void require(AvailabilityRequirement requirement) {
+        if (shutdown) {
             return;
         }
-        if ( !blockingRequirements.add( requirement ) )
-        {
+        if (!blockingRequirements.add(requirement)) {
             return;
         }
 
-        if ( blockingRequirements.size() == 1 )
-        {
-            log.info( DATABASE_UNAVAILABLE_MSG, requirement.description(), namedDatabaseId.name() );
-            listeners.notify( AvailabilityListener::unavailable );
+        if (blockingRequirements.size() == 1) {
+            log.info(DATABASE_UNAVAILABLE_MSG, requirement.description(), namedDatabaseId.name());
+            listeners.notify(AvailabilityListener::unavailable);
         }
     }
 
     @Override
-    public void fulfill( AvailabilityRequirement requirement )
-    {
-        if ( shutdown )
-        {
+    public void fulfill(AvailabilityRequirement requirement) {
+        if (shutdown) {
             return;
         }
-        if ( !blockingRequirements.remove( requirement ) )
-        {
+        if (!blockingRequirements.remove(requirement)) {
             return;
         }
 
-        if ( blockingRequirements.isEmpty() )
-        {
-            log.info( DATABASE_AVAILABLE_MSG, requirement.description(), namedDatabaseId.name() );
-            listeners.notify( AvailabilityListener::available );
+        if (blockingRequirements.isEmpty()) {
+            log.info(DATABASE_AVAILABLE_MSG, requirement.description(), namedDatabaseId.name());
+            listeners.notify(AvailabilityListener::available);
         }
     }
 
@@ -126,8 +116,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
      * the {@link DatabaseShutdownException} thrown from e.g. {@link #assertDatabaseAvailable()}.
      * @param cause cause of failure to start database.
      */
-    public void startupFailure( Throwable cause )
-    {
+    public void startupFailure(Throwable cause) {
         startupFailure = cause;
     }
 
@@ -135,91 +124,74 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
      * Shutdown the guard. After this method is invoked, the database will always be considered unavailable.
      */
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         shutdown = true;
         blockingRequirements.clear();
     }
 
     @Override
-    public boolean isAvailable()
-    {
+    public boolean isAvailable() {
         return availability() == Availability.AVAILABLE;
     }
 
     @Override
-    public boolean isShutdown()
-    {
+    public boolean isShutdown() {
         return availability() == Availability.SHUTDOWN;
     }
 
     @Override
-    public boolean isAvailable( long millis )
-    {
-        return availability( millis ) == Availability.AVAILABLE;
+    public boolean isAvailable(long millis) {
+        return availability(millis) == Availability.AVAILABLE;
     }
 
-    public void assertDatabaseAvailable() throws UnavailableException
-    {
-        Availability availability = availability( databaseTimeMillis );
-        switch ( availability )
-        {
-        case AVAILABLE:
-            return;
-        case SHUTDOWN:
-            if ( startupFailure != null )
-            {
-                throw new DatabaseShutdownException( startupFailure );
-            }
-            throw new DatabaseShutdownException();
-        case UNAVAILABLE:
-            throwUnavailableException( databaseTimeMillis, availability );
-        default:
-            throw new IllegalStateException( "Unsupported availability mode: " + availability );
+    public void assertDatabaseAvailable() throws UnavailableException {
+        Availability availability = availability(databaseTimeMillis);
+        switch (availability) {
+            case AVAILABLE:
+                return;
+            case SHUTDOWN:
+                if (startupFailure != null) {
+                    throw new DatabaseShutdownException(startupFailure);
+                }
+                throw new DatabaseShutdownException();
+            case UNAVAILABLE:
+                throwUnavailableException(databaseTimeMillis, availability);
+            default:
+                throw new IllegalStateException("Unsupported availability mode: " + availability);
         }
     }
 
     @Override
-    public void await( long millis ) throws UnavailableException
-    {
-        Availability availability = availability( millis );
-        if ( availability == Availability.AVAILABLE )
-        {
+    public void await(long millis) throws UnavailableException {
+        Availability availability = availability(millis);
+        if (availability == Availability.AVAILABLE) {
             return;
         }
-        throwUnavailableException( millis, availability );
+        throwUnavailableException(millis, availability);
     }
 
-    private void throwUnavailableException( long millis, Availability availability ) throws UnavailableException
-    {
+    private void throwUnavailableException(long millis, Availability availability) throws UnavailableException {
         String description = (availability == Availability.UNAVAILABLE)
-                ? "Timeout waiting for database to become available and allow new transactions. Waited " +
-                Format.duration( millis ) + ". " + describe()
+                ? "Timeout waiting for database to become available and allow new transactions. Waited "
+                        + Format.duration(millis) + ". " + describe()
                 : "Database not available because it's shutting down";
-        throw new UnavailableException( description );
+        throw new UnavailableException(description);
     }
 
-    private Availability availability()
-    {
-        if ( shutdown )
-        {
+    private Availability availability() {
+        if (shutdown) {
             return Availability.SHUTDOWN;
         }
         return blockingRequirements.isEmpty() ? Availability.AVAILABLE : Availability.UNAVAILABLE;
     }
 
-    private Availability availability( long millis )
-    {
+    private Availability availability(long millis) {
         long timeout = clock.millis() + millis;
         Availability availability = availability();
-        while ( availability != Availability.AVAILABLE && clock.millis() < timeout )
-        {
-            try
-            {
-                Thread.sleep( 10 );
-            }
-            catch ( InterruptedException e )
-            {
+        while (availability != Availability.AVAILABLE && clock.millis() < timeout) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
                 Thread.interrupted();
                 break;
             }
@@ -230,61 +202,54 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     }
 
     @Override
-    public void addListener( AvailabilityListener listener )
-    {
-        listeners.add( listener );
+    public void addListener(AvailabilityListener listener) {
+        listeners.add(listener);
     }
 
     @Override
-    public void removeListener( AvailabilityListener listener )
-    {
-        listeners.remove( listener );
+    public void removeListener(AvailabilityListener listener) {
+        listeners.remove(listener);
     }
 
     /**
      * @return a textual description of what components, if any, are blocking access
      */
     @Override
-    public String describe()
-    {
+    public String describe() {
         Set<AvailabilityRequirement> requirementSet = this.blockingRequirements;
         int requirements = requirementSet.size();
-        if ( requirements > 0 )
-        {
-            String causes = requirementSet.stream().map( AvailabilityRequirement::description ).collect( joining( ", " ) );
+        if (requirements > 0) {
+            String causes = requirementSet.stream()
+                    .map(AvailabilityRequirement::description)
+                    .collect(joining(", "));
             return requirements + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";
     }
 
-    private enum Availability
-    {
+    private enum Availability {
         AVAILABLE,
         UNAVAILABLE,
         SHUTDOWN
     }
 
-    private static class LoggingAvailabilityListener implements AvailabilityListener
-    {
+    private static class LoggingAvailabilityListener implements AvailabilityListener {
         private final InternalLog log;
         private final NamedDatabaseId namedDatabaseId;
 
-        LoggingAvailabilityListener( InternalLog log, NamedDatabaseId namedDatabaseId )
-        {
+        LoggingAvailabilityListener(InternalLog log, NamedDatabaseId namedDatabaseId) {
             this.log = log;
             this.namedDatabaseId = namedDatabaseId;
         }
 
         @Override
-        public void available()
-        {
-            log.info( "%s is ready.", namedDatabaseId );
+        public void available() {
+            log.info("%s is ready.", namedDatabaseId);
         }
 
         @Override
-        public void unavailable()
-        {
-            log.info( "%s is unavailable.", namedDatabaseId );
+        public void unavailable() {
+            log.info("%s is unavailable.", namedDatabaseId);
         }
     }
 }

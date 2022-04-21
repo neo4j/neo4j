@@ -20,7 +20,6 @@
 package org.neo4j.server.http.cypher;
 
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -28,8 +27,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-public class TransitionalTxManagementKernelTransaction
-{
+public class TransitionalTxManagementKernelTransaction {
     private final GraphDatabaseAPI db;
     private final KernelTransaction.Type type;
     private final LoginContext loginContext;
@@ -38,9 +36,12 @@ public class TransitionalTxManagementKernelTransaction
 
     private InternalTransaction tx;
 
-    TransitionalTxManagementKernelTransaction( GraphDatabaseAPI db, KernelTransaction.Type type, LoginContext loginContext,
-            ClientConnectionInfo connectionInfo, long customTransactionTimeout )
-    {
+    TransitionalTxManagementKernelTransaction(
+            GraphDatabaseAPI db,
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo connectionInfo,
+            long customTransactionTimeout) {
         this.db = db;
         this.type = type;
         this.loginContext = loginContext;
@@ -49,29 +50,26 @@ public class TransitionalTxManagementKernelTransaction
         this.tx = startTransaction();
     }
 
-    public InternalTransaction getInternalTransaction()
-    {
+    public InternalTransaction getInternalTransaction() {
         return tx;
     }
 
-    public void terminate()
-    {
+    public void terminate() {
         tx.terminate();
     }
 
-    public void rollback()
-    {
+    public void rollback() {
         tx.rollback();
     }
 
-    public void commit()
-    {
+    public void commit() {
         tx.commit();
     }
 
-    private InternalTransaction startTransaction()
-    {
-        return customTransactionTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ? db.beginTransaction( type, loginContext, connectionInfo,
-                customTransactionTimeout, TimeUnit.MILLISECONDS ) : db.beginTransaction( type, loginContext, connectionInfo );
+    private InternalTransaction startTransaction() {
+        return customTransactionTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT
+                ? db.beginTransaction(
+                        type, loginContext, connectionInfo, customTransactionTimeout, TimeUnit.MILLISECONDS)
+                : db.beginTransaction(type, loginContext, connectionInfo);
     }
 }

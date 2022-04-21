@@ -31,18 +31,23 @@ trait TypeSignature {
   def getSignatureAsString: String
 }
 
-case class FunctionTypeSignature(function : FunctionWithName,
-                                 outputType: CypherType,
-                                 names: IndexedSeq[String],
-                                 description: String,
-                                 category: String,
-                                 argumentTypes: IndexedSeq[CypherType],
-                                 optionalTypes: IndexedSeq[CypherType] = Vector.empty,
-                                 deprecated: Boolean = false,
-                                 overrideDefaultAsString: Option[String] = None) extends TypeSignature {
+case class FunctionTypeSignature(
+  function: FunctionWithName,
+  outputType: CypherType,
+  names: IndexedSeq[String],
+  description: String,
+  category: String,
+  argumentTypes: IndexedSeq[CypherType],
+  optionalTypes: IndexedSeq[CypherType] = Vector.empty,
+  deprecated: Boolean = false,
+  overrideDefaultAsString: Option[String] = None
+) extends TypeSignature {
+
   override def getSignatureAsString: String = {
     overrideDefaultAsString.getOrElse {
-      function.name + "(" + names.zip(argumentTypes.map(_.toNeoTypeString) ++ optionalTypes.map(_.toNeoTypeString)).map { f =>
+      function.name + "(" + names.zip(
+        argumentTypes.map(_.toNeoTypeString) ++ optionalTypes.map(_.toNeoTypeString)
+      ).map { f =>
         f._1 + " :: " + f._2
       }.mkString(", ") + ") :: (" + outputType.toNeoTypeString + ")"
     }
@@ -52,27 +57,49 @@ case class FunctionTypeSignature(function : FunctionWithName,
 
   def isAggregationFunction: Boolean = function match {
     case _: functions.AggregatingFunction => true
-    case _ => false
+    case _                                => false
   }
 }
 
 object TypeSignature {
-  def deprecated(function : Function, argumentType: CypherType, outputType: CypherType, description: String, category: String) =
-    FunctionTypeSignature(function, outputType, Vector("input"), description, category, Vector(argumentType), deprecated = true)
 
-  def apply(function : Function, argumentType: CypherType, outputType: CypherType, description: String, category: String): FunctionTypeSignature =
+  def deprecated(
+    function: Function,
+    argumentType: CypherType,
+    outputType: CypherType,
+    description: String,
+    category: String
+  ) =
+    FunctionTypeSignature(
+      function,
+      outputType,
+      Vector("input"),
+      description,
+      category,
+      Vector(argumentType),
+      deprecated = true
+    )
+
+  def apply(
+    function: Function,
+    argumentType: CypherType,
+    outputType: CypherType,
+    description: String,
+    category: String
+  ): FunctionTypeSignature =
     FunctionTypeSignature(function, outputType, Vector("input"), description, category, Vector(argumentType))
 
-  def noArg(function : Function, outputType: CypherType, description: String, category: String): FunctionTypeSignature =
+  def noArg(function: Function, outputType: CypherType, description: String, category: String): FunctionTypeSignature =
     FunctionTypeSignature(function, outputType, Vector("input"), description, category, Vector())
 
   def apply(argumentTypes: IndexedSeq[CypherType], outputType: CypherType) =
     ExpressionTypeSignature(argumentTypes, outputType)
 }
 
-case class ExpressionTypeSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType) extends TypeSignature {
+case class ExpressionTypeSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
+    extends TypeSignature {
   override def removeFirstArgumentType: TypeSignature = this.copy(argumentTypes = this.argumentTypes.tail)
 
   def getSignatureAsString: String =
-    argumentTypes.map(_.toNeoTypeString).mkString(", ") ++  ") :: (" + outputType.toNeoTypeString + ")"
+    argumentTypes.map(_.toNeoTypeString).mkString(", ") ++ ") :: (" + outputType.toNeoTypeString + ")"
 }

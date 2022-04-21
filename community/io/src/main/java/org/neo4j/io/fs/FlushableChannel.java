@@ -27,8 +27,7 @@ import java.io.IOException;
  * buffer over a {@link WritableChannel}, allowing for batching of writes, controlled via the {@link #prepareForFlush}
  * call.
  */
-public interface FlushableChannel extends WritableChannel
-{
+public interface FlushableChannel extends WritableChannel {
     /**
      * Ensures that all written content will be present in the file channel. This method does not flush, it prepares for
      * it, by returning a handle for flushing at a later time.
@@ -38,29 +37,28 @@ public interface FlushableChannel extends WritableChannel
     Flushable prepareForFlush() throws IOException;
 
     @Override
-    FlushableChannel put( byte value ) throws IOException;
+    FlushableChannel put(byte value) throws IOException;
 
     @Override
-    FlushableChannel putShort( short value ) throws IOException;
+    FlushableChannel putShort(short value) throws IOException;
 
     @Override
-    FlushableChannel putInt( int value ) throws IOException;
+    FlushableChannel putInt(int value) throws IOException;
 
     @Override
-    FlushableChannel putLong( long value ) throws IOException;
+    FlushableChannel putLong(long value) throws IOException;
 
     @Override
-    FlushableChannel putFloat( float value ) throws IOException;
+    FlushableChannel putFloat(float value) throws IOException;
 
     @Override
-    FlushableChannel putDouble( double value ) throws IOException;
+    FlushableChannel putDouble(double value) throws IOException;
 
     @Override
-    default FlushableChannel put( byte[] value, int length ) throws IOException
-    {
-        return put( value, 0, length );
+    default FlushableChannel put(byte[] value, int length) throws IOException {
+        return put(value, 0, length);
     }
 
     @Override
-    FlushableChannel put( byte[] value, int offset, int length ) throws IOException;
+    FlushableChannel put(byte[] value, int offset, int length) throws IOException;
 }

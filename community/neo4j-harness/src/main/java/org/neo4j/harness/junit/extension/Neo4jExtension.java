@@ -30,7 +30,6 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -86,98 +85,88 @@ import org.neo4j.harness.internal.InProcessNeo4j;
  * </pre>
  */
 @PublicApi
-public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver
-{
+public class Neo4jExtension
+        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
     private static final String NEO4J_NAMESPACE = "neo4j-extension";
     private static final String PER_METHOD_KEY = "perMethod";
-    private static final Namespace NAMESPACE = Namespace.create( NEO4J_NAMESPACE );
+    private static final Namespace NAMESPACE = Namespace.create(NEO4J_NAMESPACE);
 
     private final Neo4jBuilder builder;
 
-    public static Neo4jExtensionBuilder builder()
-    {
+    public static Neo4jExtensionBuilder builder() {
         return new Neo4jExtensionBuilder();
     }
 
-    public Neo4jExtension()
-    {
-        this( Neo4jBuilders.newInProcessBuilder() );
+    public Neo4jExtension() {
+        this(Neo4jBuilders.newInProcessBuilder());
     }
 
-    protected Neo4jExtension( Neo4jBuilder builder )
-    {
+    protected Neo4jExtension(Neo4jBuilder builder) {
         this.builder = builder;
     }
 
     @Override
-    public void beforeAll( ExtensionContext context )
-    {
-        instantiateService( context );
+    public void beforeAll(ExtensionContext context) {
+        instantiateService(context);
     }
 
     @Override
-    public void afterAll( ExtensionContext context )
-    {
-        destroyService( context );
+    public void afterAll(ExtensionContext context) {
+        destroyService(context);
     }
 
     @Override
-    public void beforeEach( ExtensionContext context ) throws Exception
-    {
-        ExtensionContext.Store store = getStore( context );
-        if ( store.get( Neo4j.class ) == null )
-        {
+    public void beforeEach(ExtensionContext context) throws Exception {
+        ExtensionContext.Store store = getStore(context);
+        if (store.get(Neo4j.class) == null) {
             // beforeEach is the first method to be called with non-static field and per-method lifecycle
-            store.put( PER_METHOD_KEY, true );
-            instantiateService( context );
+            store.put(PER_METHOD_KEY, true);
+            instantiateService(context);
         }
     }
 
-    private static ExtensionContext.Store getStore( ExtensionContext context )
-    {
-        return context.getStore( NAMESPACE );
+    private static ExtensionContext.Store getStore(ExtensionContext context) {
+        return context.getStore(NAMESPACE);
     }
 
     @Override
-    public void afterEach( ExtensionContext extensionContext ) throws Exception
-    {
-        if ( getStore( extensionContext ).getOrDefault( PER_METHOD_KEY, Boolean.class, false ) )
-        {
-            destroyService( extensionContext );
+    public void afterEach(ExtensionContext extensionContext) throws Exception {
+        if (getStore(extensionContext).getOrDefault(PER_METHOD_KEY, Boolean.class, false)) {
+            destroyService(extensionContext);
         }
     }
 
     @Override
-    public boolean supportsParameter( ParameterContext parameterContext, ExtensionContext extensionContext ) throws ParameterResolutionException
-    {
+    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
         Class<?> paramType = parameterContext.getParameter().getType();
-        return paramType.equals( GraphDatabaseService.class ) || paramType.equals( Neo4j.class ) || paramType.equals( DatabaseManagementService.class );
+        return paramType.equals(GraphDatabaseService.class)
+                || paramType.equals(Neo4j.class)
+                || paramType.equals(DatabaseManagementService.class);
     }
 
     @Override
-    public Object resolveParameter( ParameterContext parameterContext, ExtensionContext extensionContext ) throws ParameterResolutionException
-    {
+    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
         Class<?> paramType = parameterContext.getParameter().getType();
-        return getStore( extensionContext ).get( paramType, paramType );
+        return getStore(extensionContext).get(paramType, paramType);
     }
 
-    private void instantiateService( ExtensionContext context )
-    {
+    private void instantiateService(ExtensionContext context) {
         Neo4j neo = builder.build();
         DatabaseManagementService managementService = neo.databaseManagementService();
         GraphDatabaseService service = neo.defaultDatabaseService();
-        ExtensionContext.Store store = getStore( context );
-        store.put( Neo4j.class, neo );
-        store.put( DatabaseManagementService.class, managementService );
-        store.put( GraphDatabaseService.class, service );
+        ExtensionContext.Store store = getStore(context);
+        store.put(Neo4j.class, neo);
+        store.put(DatabaseManagementService.class, managementService);
+        store.put(GraphDatabaseService.class, service);
     }
 
-    private static void destroyService( ExtensionContext context )
-    {
-        ExtensionContext.Store store = getStore( context );
-        store.remove( GraphDatabaseService.class );
-        store.remove( DatabaseManagementService.class );
-        InProcessNeo4j controls = store.remove( Neo4j.class, InProcessNeo4j.class );
+    private static void destroyService(ExtensionContext context) {
+        ExtensionContext.Store store = getStore(context);
+        store.remove(GraphDatabaseService.class);
+        store.remove(DatabaseManagementService.class);
+        InProcessNeo4j controls = store.remove(Neo4j.class, InProcessNeo4j.class);
         controls.close();
     }
 }

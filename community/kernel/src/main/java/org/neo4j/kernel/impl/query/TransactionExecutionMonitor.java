@@ -21,36 +21,26 @@ package org.neo4j.kernel.impl.query;
 
 import org.neo4j.kernel.api.KernelTransaction;
 
-public interface TransactionExecutionMonitor
-{
-    void start( KernelTransaction tx );
+public interface TransactionExecutionMonitor {
+    void start(KernelTransaction tx);
 
-    void commit( KernelTransaction tx );
+    void commit(KernelTransaction tx);
 
-    void rollback( KernelTransaction tx, Throwable failure );
+    void rollback(KernelTransaction tx, Throwable failure);
 
-    void rollback( KernelTransaction tx );
+    void rollback(KernelTransaction tx);
 
-    TransactionExecutionMonitor NO_OP = new TransactionExecutionMonitor()
-    {
+    TransactionExecutionMonitor NO_OP = new TransactionExecutionMonitor() {
         @Override
-        public void start( KernelTransaction tx )
-        {
-        }
+        public void start(KernelTransaction tx) {}
 
         @Override
-        public void commit( KernelTransaction tx )
-        {
-        }
+        public void commit(KernelTransaction tx) {}
 
         @Override
-        public void rollback( KernelTransaction tx, Throwable failure )
-        {
-        }
+        public void rollback(KernelTransaction tx, Throwable failure) {}
 
         @Override
-        public void rollback( KernelTransaction tx )
-        {
-        }
+        public void rollback(KernelTransaction tx) {}
     };
 }

@@ -23,27 +23,23 @@ package org.neo4j.bolt.runtime.statemachine;
  * Metadata that becomes available as soon as a statement is started, and is sent to the client before the result
  * stream is sent.
  */
-public interface StatementMetadata
-{
+public interface StatementMetadata {
     int ABSENT_QUERY_ID = -1;
 
     String[] fieldNames();
 
     int queryId();
 
-    StatementMetadata EMPTY = new StatementMetadata()
-    {
+    StatementMetadata EMPTY = new StatementMetadata() {
         private final String[] emptyFields = new String[0];
 
         @Override
-        public String[] fieldNames()
-        {
+        public String[] fieldNames() {
             return emptyFields;
         }
 
         @Override
-        public int queryId()
-        {
+        public int queryId() {
             return ABSENT_QUERY_ID;
         }
     };

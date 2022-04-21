@@ -38,7 +38,7 @@ case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V]) extends
 
   override def get(key: K): Option[V] =
     idMap.get(key) match {
-      case null => None
+      case null  => None
       case value => Some(value)
     }
 
@@ -59,7 +59,9 @@ case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V]) extends
   override def updated[V1 >: V](key: K, value: V1): IdentityMap[K, V1] = this + ((key, value))
 
   override def iterator: Iterator[(K, V)] =
-    idMap.clone().asInstanceOf[util.IdentityHashMap[K, V]].entrySet().iterator().asScala.map(e => (e.getKey, e.getValue))
+    idMap.clone().asInstanceOf[util.IdentityHashMap[K, V]].entrySet().iterator().asScala.map(e =>
+      (e.getKey, e.getValue)
+    )
 
   override def stringPrefix: String = "IdentityMap"
 }

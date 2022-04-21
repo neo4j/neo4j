@@ -32,137 +32,114 @@ import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.ValueMapper;
 
-public class TestFabricTransactionalContext implements TransactionalContext
-{
+public class TestFabricTransactionalContext implements TransactionalContext {
     private final InternalTransaction transaction;
 
-    TestFabricTransactionalContext( InternalTransaction transaction )
-    {
+    TestFabricTransactionalContext(InternalTransaction transaction) {
         this.transaction = transaction;
     }
 
-    private static UnsupportedOperationException failure()
-    {
-        return new UnsupportedOperationException( "Not implemented" );
+    private static UnsupportedOperationException failure() {
+        return new UnsupportedOperationException("Not implemented");
     }
 
     @Override
-    public ValueMapper<Object> valueMapper()
-    {
+    public ValueMapper<Object> valueMapper() {
         return new TestFabricValueMapper();
     }
 
     @Override
-    public ExecutingQuery executingQuery()
-    {
+    public ExecutingQuery executingQuery() {
         throw failure();
     }
 
     @Override
-    public KernelTransaction kernelTransaction()
-    {
+    public KernelTransaction kernelTransaction() {
         return transaction.kernelTransaction();
     }
 
     @Override
-    public InternalTransaction transaction()
-    {
+    public InternalTransaction transaction() {
         return transaction;
     }
 
     @Override
-    public boolean isTopLevelTx()
-    {
+    public boolean isTopLevelTx() {
         throw failure();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         throw failure();
     }
 
     @Override
-    public void rollback()
-    {
+    public void rollback() {
         throw failure();
     }
 
     @Override
-    public void terminate()
-    {
+    public void terminate() {
         throw failure();
     }
 
     @Override
-    public long commitAndRestartTx()
-    {
+    public long commitAndRestartTx() {
         throw failure();
     }
 
     @Override
-    public TransactionalContext getOrBeginNewIfClosed()
-    {
+    public TransactionalContext getOrBeginNewIfClosed() {
         throw failure();
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         throw failure();
     }
 
     @Override
-    public GraphDatabaseQueryService graph()
-    {
+    public GraphDatabaseQueryService graph() {
         throw failure();
     }
 
     @Override
-    public NamedDatabaseId databaseId()
-    {
+    public NamedDatabaseId databaseId() {
         throw failure();
     }
 
     @Override
-    public Statement statement()
-    {
+    public Statement statement() {
         throw failure();
     }
 
     @Override
-    public SecurityContext securityContext()
-    {
+    public SecurityContext securityContext() {
         throw failure();
     }
 
     @Override
-    public StatisticProvider kernelStatisticProvider()
-    {
+    public StatisticProvider kernelStatisticProvider() {
         throw failure();
     }
 
     @Override
-    public KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context )
-    {
+    public KernelTransaction.Revertable restrictCurrentTransaction(SecurityContext context) {
         throw failure();
     }
 
     @Override
-    public ResourceTracker resourceTracker()
-    {
+    public ResourceTracker resourceTracker() {
         throw failure();
     }
 
     @Override
-    public TransactionalContext contextWithNewTransaction()
-    {
+    public TransactionalContext contextWithNewTransaction() {
         throw failure();
     }
 
     @Override
-    public ElementIdMapper elementIdMapper()
-    {
+    public ElementIdMapper elementIdMapper() {
         throw failure();
     }
 }

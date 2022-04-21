@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import java.io.IOException;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 
+import java.io.IOException;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -31,54 +32,57 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
-
-class LenientRelationshipReader extends LenientStoreInputChunk
-{
+class LenientRelationshipReader extends LenientStoreInputChunk {
     private final RelationshipStore relationshipStore;
     private final RelationshipRecord record;
 
-    LenientRelationshipReader( ReadBehaviour readBehaviour, RelationshipStore relationshipStore, PropertyStore propertyStore, TokenHolders tokenHolders,
-            CursorContextFactory contextFactory, StoreCursors storeCursors )
-    {
-        super( readBehaviour, propertyStore, tokenHolders, contextFactory, storeCursors, storeCursors.readCursor( RELATIONSHIP_CURSOR ) );
+    LenientRelationshipReader(
+            ReadBehaviour readBehaviour,
+            RelationshipStore relationshipStore,
+            PropertyStore propertyStore,
+            TokenHolders tokenHolders,
+            CursorContextFactory contextFactory,
+            StoreCursors storeCursors) {
+        super(
+                readBehaviour,
+                propertyStore,
+                tokenHolders,
+                contextFactory,
+                storeCursors,
+                storeCursors.readCursor(RELATIONSHIP_CURSOR));
         this.relationshipStore = relationshipStore;
         this.record = relationshipStore.newRecord();
     }
 
     @Override
-    void readAndVisit( long id, InputEntityVisitor visitor, StoreCursors storeCursors ) throws IOException
-    {
-        relationshipStore.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, cursor );
-        if ( record.inUse() )
-        {
-            relationshipStore.ensureHeavy( record, storeCursors );
+    void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors) throws IOException {
+        relationshipStore.getRecordByCursor(id, record, RecordLoad.LENIENT_CHECK, cursor);
+        if (record.inUse()) {
+            relationshipStore.ensureHeavy(record, storeCursors);
             int relationshipType = record.getType();
-            String relationshipTypeName = LenientStoreInput.getTokenByIdSafe( tokenHolders.relationshipTypeTokens(), relationshipType ).name();
-            if ( readBehaviour.shouldIncludeRelationship( relationshipTypeName ) )
-            {
-                visitor.type( relationshipTypeName );
-                visitor.startId( record.getFirstNode(), Group.GLOBAL );
-                visitor.endId( record.getSecondNode(), Group.GLOBAL );
-                visitPropertyChainNoThrow( visitor, record, EntityType.RELATIONSHIP, new String[] {relationshipTypeName} );
+            String relationshipTypeName = LenientStoreInput.getTokenByIdSafe(
+                            tokenHolders.relationshipTypeTokens(), relationshipType)
+                    .name();
+            if (readBehaviour.shouldIncludeRelationship(relationshipTypeName)) {
+                visitor.type(relationshipTypeName);
+                visitor.startId(record.getFirstNode(), Group.GLOBAL);
+                visitor.endId(record.getSecondNode(), Group.GLOBAL);
+                visitPropertyChainNoThrow(
+                        visitor, record, EntityType.RELATIONSHIP, new String[] {relationshipTypeName});
                 visitor.endOfEntity();
             }
-        }
-        else
-        {
+        } else {
             readBehaviour.unused();
         }
     }
 
     @Override
-    String recordType()
-    {
+    String recordType() {
         return "Relationship";
     }
 
     @Override
-    boolean shouldIncludeProperty( ReadBehaviour readBehaviour, String key, String[] owningEntityTokens )
-    {
-        return readBehaviour.shouldIncludeRelationshipProperty( key, owningEntityTokens[0] );
+    boolean shouldIncludeProperty(ReadBehaviour readBehaviour, String key, String[] owningEntityTokens) {
+        return readBehaviour.shouldIncludeRelationshipProperty(key, owningEntityTokens[0]);
     }
 }

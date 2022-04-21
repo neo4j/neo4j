@@ -19,17 +19,16 @@
  */
 package org.neo4j.internal.schema;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
+import static java.lang.Math.toIntExact;
+import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
-import static java.lang.Math.toIntExact;
-import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
-import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 
 /**
  * Collects and provides efficient access to {@link SchemaDescriptor}, based on complete list of entity tokens and partial or complete list of property keys.
@@ -70,15 +69,13 @@ import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
  *        -> (7): E
  * </pre>
  */
-public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
-{
+public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier> {
     private final MutableIntObjectMap<PropertyMultiSet> byEntityToken = IntObjectMaps.mutable.empty();
 
     /**
      * @return whether or not this set is empty, i.e. {@code true} if no descriptors have been added.
      */
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return byEntityToken.isEmpty();
     }
 
@@ -89,20 +86,16 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      * @param propertyKey a property key id to check.
      * @return {@code true} if there are one or more descriptors matching the given tokens.
      */
-    public boolean has( long[] entityTokenIds, int propertyKey )
-    {
+    public boolean has(long[] entityTokenIds, int propertyKey) {
         // Abort right away if there are no descriptors at all
-        if ( isEmpty() )
-        {
+        if (isEmpty()) {
             return false;
         }
 
         // Check if there are any descriptors that matches any of the first (or only) entity token
-        for ( long entityTokenId : entityTokenIds )
-        {
-            PropertyMultiSet set = byEntityToken.get( toIntExact( entityTokenId ) );
-            if ( set != null && set.has( propertyKey ) )
-            {
+        for (long entityTokenId : entityTokenIds) {
+            PropertyMultiSet set = byEntityToken.get(toIntExact(entityTokenId));
+            if (set != null && set.has(propertyKey)) {
                 return true;
             }
         }
@@ -115,9 +108,8 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      * @param entityTokenId entity token id to check.
      * @return {@code true} if there are one or more descriptors matching the given entity token.
      */
-    public boolean has( int entityTokenId )
-    {
-        return byEntityToken.containsKey( entityTokenId );
+    public boolean has(int entityTokenId) {
+        return byEntityToken.containsKey(entityTokenId);
     }
 
     /**
@@ -125,11 +117,9 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      *
      * @param schemaDescriptor the descriptor to add.
      */
-    public void add( T schemaDescriptor )
-    {
-        for ( int entityTokenId : schemaDescriptor.schema().getEntityTokenIds() )
-        {
-            byEntityToken.getIfAbsentPut( entityTokenId, PropertyMultiSet::new ).add( schemaDescriptor );
+    public void add(T schemaDescriptor) {
+        for (int entityTokenId : schemaDescriptor.schema().getEntityTokenIds()) {
+            byEntityToken.getIfAbsentPut(entityTokenId, PropertyMultiSet::new).add(schemaDescriptor);
         }
     }
 
@@ -139,14 +129,11 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      *
      * @param schemaDescriptor the descriptor to remove.
      */
-    public void remove( T schemaDescriptor )
-    {
-        for ( int entityTokenId : schemaDescriptor.schema().getEntityTokenIds() )
-        {
-            PropertyMultiSet any = byEntityToken.get( entityTokenId );
-            if ( any != null && any.remove( schemaDescriptor ) )
-            {
-                byEntityToken.remove( entityTokenId );
+    public void remove(T schemaDescriptor) {
+        for (int entityTokenId : schemaDescriptor.schema().getEntityTokenIds()) {
+            PropertyMultiSet any = byEntityToken.get(entityTokenId);
+            if (any != null && any.remove(schemaDescriptor)) {
+                byEntityToken.remove(entityTokenId);
             }
         }
     }
@@ -159,14 +146,12 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      * @param entityTokenIds complete and sorted array of entity token ids for the entity.
      * @param sortedProperties complete and sorted array of property key token ids for the entity.
      */
-    public void matchingDescriptorsForCompleteListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
-    {
-        for ( long entityTokenId : entityTokenIds )
-        {
-            PropertyMultiSet first = byEntityToken.get( toIntExact( entityTokenId ) );
-            if ( first != null )
-            {
-                first.collectForCompleteListOfProperties( into, sortedProperties );
+    public void matchingDescriptorsForCompleteListOfProperties(
+            Collection<T> into, long[] entityTokenIds, int[] sortedProperties) {
+        for (long entityTokenId : entityTokenIds) {
+            PropertyMultiSet first = byEntityToken.get(toIntExact(entityTokenId));
+            if (first != null) {
+                first.collectForCompleteListOfProperties(into, sortedProperties);
             }
         }
     }
@@ -182,14 +167,12 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      * @param entityTokenIds complete and sorted array of entity token ids for the entity.
      * @param sortedProperties complete and sorted array of property key token ids for the entity.
      */
-    public void matchingDescriptorsForPartialListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
-    {
-        for ( long entityTokenId : entityTokenIds )
-        {
-            PropertyMultiSet first = byEntityToken.get( toIntExact( entityTokenId ) );
-            if ( first != null )
-            {
-                first.collectForPartialListOfProperties( into, sortedProperties );
+    public void matchingDescriptorsForPartialListOfProperties(
+            Collection<T> into, long[] entityTokenIds, int[] sortedProperties) {
+        for (long entityTokenId : entityTokenIds) {
+            PropertyMultiSet first = byEntityToken.get(toIntExact(entityTokenId));
+            if (first != null) {
+                first.collectForPartialListOfProperties(into, sortedProperties);
             }
         }
     }
@@ -200,14 +183,11 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      * @param into {@link Collection} to add matching descriptors into.
      * @param entityTokenIds complete and sorted array of entity token ids for the entity.
      */
-    public void matchingDescriptors( Collection<T> into, long[] entityTokenIds )
-    {
-        for ( long entityTokenId : entityTokenIds )
-        {
-            PropertyMultiSet set = byEntityToken.get( toIntExact( entityTokenId ) );
-            if ( set != null )
-            {
-                set.collectAll( into );
+    public void matchingDescriptors(Collection<T> into, long[] entityTokenIds) {
+        for (long entityTokenId : entityTokenIds) {
+            PropertyMultiSet set = byEntityToken.get(toIntExact(entityTokenId));
+            if (set != null) {
+                set.collectAll(into);
             }
         }
     }
@@ -232,42 +212,35 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      *     (6): D
      * </pre>
      */
-    private class PropertyMultiSet
-    {
+    private class PropertyMultiSet {
         private final Set<T> descriptors = new HashSet<>();
         private final MutableIntObjectMap<PropertySet> next = IntObjectMaps.mutable.empty();
         private final MutableIntObjectMap<Set<T>> byAnyProperty = IntObjectMaps.mutable.empty();
 
-        void add( T schemaDescriptor )
-        {
+        void add(T schemaDescriptor) {
             // Add optimized path for when property list is fully known
-            descriptors.add( schemaDescriptor );
-            int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor.schema() );
+            descriptors.add(schemaDescriptor);
+            int[] propertyKeyIds = sortedPropertyKeyIds(schemaDescriptor.schema());
             PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
-            if ( propertySchemaType == COMPLETE_ALL_TOKENS )
-            {
+            if (propertySchemaType == COMPLETE_ALL_TOKENS) {
                 // Just add the first token id to the top level set
-                next.getIfAbsentPut( propertyKeyIds[0], PropertySet::new ).add( schemaDescriptor, propertyKeyIds, 0 );
-            }
-            else if ( propertySchemaType == PARTIAL_ANY_TOKEN )
-            {
-                // The internal data structure is built and optimized for when all property key tokens are required to match
+                next.getIfAbsentPut(propertyKeyIds[0], PropertySet::new).add(schemaDescriptor, propertyKeyIds, 0);
+            } else if (propertySchemaType == PARTIAL_ANY_TOKEN) {
+                // The internal data structure is built and optimized for when all property key tokens are required to
+                // match
                 // a particular descriptor. However to support the partial type, where any property key may match
                 // we will have to add such descriptors to all property key sets and pretend that each is the only one.
-                for ( int propertyKeyId : propertyKeyIds )
-                {
-                    next.getIfAbsentPut( propertyKeyId, PropertySet::new ).add( schemaDescriptor, new int[]{propertyKeyId}, 0 );
+                for (int propertyKeyId : propertyKeyIds) {
+                    next.getIfAbsentPut(propertyKeyId, PropertySet::new)
+                            .add(schemaDescriptor, new int[] {propertyKeyId}, 0);
                 }
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Unknown property schema type " + propertySchemaType );
+            } else {
+                throw new UnsupportedOperationException("Unknown property schema type " + propertySchemaType);
             }
 
             // Add fall-back path for when property list is only partly known
-            for ( int keyId : propertyKeyIds )
-            {
-                byAnyProperty.getIfAbsentPut( keyId, HashSet::new ).add( schemaDescriptor );
+            for (int keyId : propertyKeyIds) {
+                byAnyProperty.getIfAbsentPut(keyId, HashSet::new).add(schemaDescriptor);
             }
         }
 
@@ -276,85 +249,65 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
          * @param schemaDescriptor the {@link SchemaDescriptor} to remove.
          * @return {@code true} if this multi-set ended up empty after removing this descriptor.
          */
-        boolean remove( T schemaDescriptor )
-        {
+        boolean remove(T schemaDescriptor) {
             // Remove from the optimized path
-            descriptors.remove( schemaDescriptor );
-            int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor.schema() );
+            descriptors.remove(schemaDescriptor);
+            int[] propertyKeyIds = sortedPropertyKeyIds(schemaDescriptor.schema());
             PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
-            if ( propertySchemaType == COMPLETE_ALL_TOKENS )
-            {
+            if (propertySchemaType == COMPLETE_ALL_TOKENS) {
                 int firstPropertyKeyId = propertyKeyIds[0];
-                PropertySet firstPropertySet = next.get( firstPropertyKeyId );
-                if ( firstPropertySet != null && firstPropertySet.remove( schemaDescriptor, propertyKeyIds, 0 ) )
-                {
-                    next.remove( firstPropertyKeyId );
+                PropertySet firstPropertySet = next.get(firstPropertyKeyId);
+                if (firstPropertySet != null && firstPropertySet.remove(schemaDescriptor, propertyKeyIds, 0)) {
+                    next.remove(firstPropertyKeyId);
                 }
-            }
-            else if ( propertySchemaType == PARTIAL_ANY_TOKEN )
-            {
-                for ( int propertyKeyId : propertyKeyIds )
-                {
-                    PropertySet propertySet = next.get( propertyKeyId );
-                    if ( propertySet != null && propertySet.remove( schemaDescriptor, new int[]{propertyKeyId}, 0 ) )
-                    {
-                        next.remove( propertyKeyId );
+            } else if (propertySchemaType == PARTIAL_ANY_TOKEN) {
+                for (int propertyKeyId : propertyKeyIds) {
+                    PropertySet propertySet = next.get(propertyKeyId);
+                    if (propertySet != null && propertySet.remove(schemaDescriptor, new int[] {propertyKeyId}, 0)) {
+                        next.remove(propertyKeyId);
                     }
                 }
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Unknown property schema type " + propertySchemaType );
+            } else {
+                throw new UnsupportedOperationException("Unknown property schema type " + propertySchemaType);
             }
 
             // Remove from the fall-back path
-            for ( int keyId : propertyKeyIds )
-            {
-                Set<T> byProperty = byAnyProperty.get( keyId );
-                if ( byProperty != null )
-                {
-                    byProperty.remove( schemaDescriptor );
-                    if ( byProperty.isEmpty() )
-                    {
-                        byAnyProperty.remove( keyId );
+            for (int keyId : propertyKeyIds) {
+                Set<T> byProperty = byAnyProperty.get(keyId);
+                if (byProperty != null) {
+                    byProperty.remove(schemaDescriptor);
+                    if (byProperty.isEmpty()) {
+                        byAnyProperty.remove(keyId);
                     }
                 }
             }
             return descriptors.isEmpty() && next.isEmpty();
         }
 
-        void collectForCompleteListOfProperties( Collection<T> descriptors, int[] sortedProperties )
-        {
-            for ( int i = 0; i < sortedProperties.length; i++ )
-            {
-                PropertySet firstSet = next.get( sortedProperties[i] );
-                if ( firstSet != null )
-                {
-                    firstSet.collectForCompleteListOfProperties( descriptors, sortedProperties, i );
+        void collectForCompleteListOfProperties(Collection<T> descriptors, int[] sortedProperties) {
+            for (int i = 0; i < sortedProperties.length; i++) {
+                PropertySet firstSet = next.get(sortedProperties[i]);
+                if (firstSet != null) {
+                    firstSet.collectForCompleteListOfProperties(descriptors, sortedProperties, i);
                 }
             }
         }
 
-        void collectForPartialListOfProperties( Collection<T> descriptors, int[] sortedProperties )
-        {
-            for ( int propertyKeyId : sortedProperties )
-            {
-                Set<T> propertyDescriptors = byAnyProperty.get( propertyKeyId );
-                if ( propertyDescriptors != null )
-                {
-                    descriptors.addAll( propertyDescriptors );
+        void collectForPartialListOfProperties(Collection<T> descriptors, int[] sortedProperties) {
+            for (int propertyKeyId : sortedProperties) {
+                Set<T> propertyDescriptors = byAnyProperty.get(propertyKeyId);
+                if (propertyDescriptors != null) {
+                    descriptors.addAll(propertyDescriptors);
                 }
             }
         }
 
-        void collectAll( Collection<T> descriptors )
-        {
-            descriptors.addAll( this.descriptors );
+        void collectAll(Collection<T> descriptors) {
+            descriptors.addAll(this.descriptors);
         }
 
-        boolean has( int propertyKey )
-        {
-            return byAnyProperty.containsKey( propertyKey );
+        boolean has(int propertyKey) {
+            return byAnyProperty.containsKey(propertyKey);
         }
     }
 
@@ -364,21 +317,16 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      * to other property key tokens in known chains, but no way of looking up descriptors by any part of the chain,
      * like {@link PropertyMultiSet} has.
      */
-    private class PropertySet
-    {
+    private class PropertySet {
         private final Set<T> fullDescriptors = new HashSet<>();
         private final MutableIntObjectMap<PropertySet> next = IntObjectMaps.mutable.empty();
 
-        void add( T schemaDescriptor, int[] propertyKeyIds, int cursor )
-        {
-            if ( cursor == propertyKeyIds.length - 1 )
-            {
-                fullDescriptors.add( schemaDescriptor );
-            }
-            else
-            {
+        void add(T schemaDescriptor, int[] propertyKeyIds, int cursor) {
+            if (cursor == propertyKeyIds.length - 1) {
+                fullDescriptors.add(schemaDescriptor);
+            } else {
                 int nextPropertyKeyId = propertyKeyIds[++cursor];
-                next.getIfAbsentPut( nextPropertyKeyId, PropertySet::new ).add( schemaDescriptor, propertyKeyIds, cursor );
+                next.getIfAbsentPut(nextPropertyKeyId, PropertySet::new).add(schemaDescriptor, propertyKeyIds, cursor);
             }
         }
 
@@ -388,49 +336,38 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
          * @param cursor which property key among the sorted property keys that this set deals with.
          * @return {@code true} if this {@link PropertySet} ends up empty after this removal.
          */
-        boolean remove( T schemaDescriptor, int[] propertyKeyIds, int cursor )
-        {
-            if ( cursor == propertyKeyIds.length - 1 )
-            {
-                fullDescriptors.remove( schemaDescriptor );
-            }
-            else
-            {
+        boolean remove(T schemaDescriptor, int[] propertyKeyIds, int cursor) {
+            if (cursor == propertyKeyIds.length - 1) {
+                fullDescriptors.remove(schemaDescriptor);
+            } else {
                 int nextPropertyKeyId = propertyKeyIds[++cursor];
-                PropertySet propertySet = next.get( nextPropertyKeyId );
-                if ( propertySet != null && propertySet.remove( schemaDescriptor, propertyKeyIds, cursor ) )
-                {
-                    next.remove( nextPropertyKeyId );
+                PropertySet propertySet = next.get(nextPropertyKeyId);
+                if (propertySet != null && propertySet.remove(schemaDescriptor, propertyKeyIds, cursor)) {
+                    next.remove(nextPropertyKeyId);
                 }
             }
             return fullDescriptors.isEmpty() && next.isEmpty();
         }
 
-        void collectForCompleteListOfProperties( Collection<T> descriptors, int[] sortedProperties, int cursor )
-        {
-            descriptors.addAll( fullDescriptors );
-            if ( !next.isEmpty() )
-            {
-                for ( int i = cursor + 1; i < sortedProperties.length; i++ )
-                {
-                    PropertySet nextSet = next.get( sortedProperties[i] );
-                    if ( nextSet != null )
-                    {
-                        nextSet.collectForCompleteListOfProperties( descriptors, sortedProperties, i );
+        void collectForCompleteListOfProperties(Collection<T> descriptors, int[] sortedProperties, int cursor) {
+            descriptors.addAll(fullDescriptors);
+            if (!next.isEmpty()) {
+                for (int i = cursor + 1; i < sortedProperties.length; i++) {
+                    PropertySet nextSet = next.get(sortedProperties[i]);
+                    if (nextSet != null) {
+                        nextSet.collectForCompleteListOfProperties(descriptors, sortedProperties, i);
                     }
                 }
             }
         }
     }
 
-    private static int[] sortedPropertyKeyIds( SchemaDescriptor schemaDescriptor )
-    {
+    private static int[] sortedPropertyKeyIds(SchemaDescriptor schemaDescriptor) {
         int[] tokenIds = schemaDescriptor.getPropertyIds();
-        if ( tokenIds.length > 1 )
-        {
+        if (tokenIds.length > 1) {
             // Clone it because we don't know if the array was an internal array that the descriptor handed out
-            tokenIds = Arrays.copyOf( tokenIds, tokenIds.length );
-            Arrays.sort( tokenIds );
+            tokenIds = Arrays.copyOf(tokenIds, tokenIds.length);
+            Arrays.sort(tokenIds);
         }
         return tokenIds;
     }

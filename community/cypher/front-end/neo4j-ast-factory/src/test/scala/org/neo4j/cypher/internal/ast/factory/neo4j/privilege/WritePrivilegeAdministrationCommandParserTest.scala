@@ -33,65 +33,116 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
     ("REVOKE", "FROM", revokeGraphPrivilege: noResourcePrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, func: noResourcePrivilegeFunc) =>
-
       test(s"$verb WRITE ON GRAPH foo $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb WRITE ON GRAPHS foo $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       // Multiple graphs should be allowed (with and without plural GRAPHS)
 
       test(s"$verb WRITE ON GRAPH * $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(ast.AllGraphsScope()(_)))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(ast.AllGraphsScope()(_)))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb WRITE ON GRAPHS * $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(ast.AllGraphsScope()(_)))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(ast.AllGraphsScope()(_)))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb WRITE ON GRAPH foo, baz $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(graphScopeFoo, graphScopeBaz))(pos), List(ast.ElementsAllQualifier() _), List(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(graphScopeFoo, graphScopeBaz))(pos),
+          List(ast.ElementsAllQualifier() _),
+          List(literalRole)
+        ))
       }
 
       test(s"$verb WRITE ON GRAPHS foo, baz $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(graphScopeFoo, graphScopeBaz))(pos), List(ast.ElementsAllQualifier() _), List(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(graphScopeFoo, graphScopeBaz))(pos),
+          List(ast.ElementsAllQualifier() _),
+          List(literalRole)
+        ))
       }
 
       // Default and home graph should parse
 
       test(s"$verb WRITE ON HOME GRAPH $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(ast.HomeGraphScope()(_)))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(ast.HomeGraphScope()(_)))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb WRITE ON DEFAULT GRAPH $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(ast.DefaultGraphScope()(_)))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(ast.DefaultGraphScope()(_)))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       // Multiple roles should be allowed
 
       test(s"$verb WRITE ON GRAPH foo $preposition role1, role2") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(_), List(ast.ElementsAllQualifier() _), Seq(literalRole1, literalRole2)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(_),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRole1, literalRole2)
+        ))
       }
 
       // Parameters and escaped strings should be allowed
 
       test(s"$verb WRITE ON GRAPH $$foo $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(graphScopeParamFoo))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(graphScopeParamFoo))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb WRITE ON GRAPH `f:oo` $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(ast.NamedGraphScope(literalFColonOo)(_)))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(ast.NamedGraphScope(literalFColonOo)(_)))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRole)
+        ))
       }
 
       test(s"$verb WRITE ON GRAPH foo $preposition $$role") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos), List(ast.ElementsAllQualifier() _), Seq(paramRole)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(paramRole)
+        ))
       }
 
       test(s"$verb WRITE ON GRAPH foo $preposition `r:ole`") {
-        yields(func(ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRColonOle)))
+        yields(func(
+          ast.GraphPrivilege(WriteAction, List(graphScopeFoo))(pos),
+          List(ast.ElementsAllQualifier() _),
+          Seq(literalRColonOle)
+        ))
       }
 
       // Resource or qualifier should not be supported
@@ -154,12 +205,18 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON HOME GRAPHS $preposition role") {
         val offset = verb.length + 15
-        assertFailsWithMessage(testName, s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))""")
+        assertFailsWithMessage(
+          testName,
+          s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+        )
       }
 
       test(s"$verb WRITE ON DEFAULT GRAPHS $preposition role") {
         val offset = verb.length + 18
-        assertFailsWithMessage(testName, s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))""")
+        assertFailsWithMessage(
+          testName,
+          s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+        )
       }
 
       // Default and home graph with named graph
@@ -186,12 +243,18 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON DATABASES * $preposition role") {
         val offset = verb.length + 10
-        assertFailsWithMessage(testName, s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
+        assertFailsWithMessage(
+          testName,
+          s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
+        )
       }
 
       test(s"$verb WRITE ON DATABASE foo $preposition role") {
         val offset = verb.length + 10
-        assertFailsWithMessage(testName, s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
+        assertFailsWithMessage(
+          testName,
+          s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
+        )
       }
 
       test(s"$verb WRITE ON HOME DATABASE $preposition role") {

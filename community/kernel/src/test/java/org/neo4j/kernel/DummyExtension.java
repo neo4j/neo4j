@@ -22,67 +22,55 @@ package org.neo4j.kernel;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
-public class DummyExtension implements Lifecycle
-{
+public class DummyExtension implements Lifecycle {
     LifecycleStatus status = LifecycleStatus.NONE;
     private DummyExtensionFactory.Dependencies dependencies;
 
-    public DummyExtension( DummyExtensionFactory.Dependencies dependencies )
-    {
+    public DummyExtension(DummyExtensionFactory.Dependencies dependencies) {
         this.dependencies = dependencies;
     }
 
     @Override
-    public void init()
-    {
-        if ( status != LifecycleStatus.NONE )
-        {
-            throw new IllegalStateException( "Wrong state:" + status );
+    public void init() {
+        if (status != LifecycleStatus.NONE) {
+            throw new IllegalStateException("Wrong state:" + status);
         }
 
         status = LifecycleStatus.STOPPED;
     }
 
     @Override
-    public void start()
-    {
-        if ( status != LifecycleStatus.STOPPED )
-        {
-            throw new IllegalStateException( "Wrong state:" + status );
+    public void start() {
+        if (status != LifecycleStatus.STOPPED) {
+            throw new IllegalStateException("Wrong state:" + status);
         }
 
         status = LifecycleStatus.STARTED;
     }
 
     @Override
-    public void stop()
-    {
-        if ( status != LifecycleStatus.STARTED )
-        {
-            throw new IllegalStateException( "Wrong state:" + status );
+    public void stop() {
+        if (status != LifecycleStatus.STARTED) {
+            throw new IllegalStateException("Wrong state:" + status);
         }
 
         status = LifecycleStatus.STOPPED;
     }
 
     @Override
-    public void shutdown()
-    {
-        if ( status != LifecycleStatus.STOPPED )
-        {
-            throw new IllegalStateException( "Wrong state:" + status );
+    public void shutdown() {
+        if (status != LifecycleStatus.STOPPED) {
+            throw new IllegalStateException("Wrong state:" + status);
         }
 
         status = LifecycleStatus.SHUTDOWN;
     }
 
-    public LifecycleStatus getStatus()
-    {
+    public LifecycleStatus getStatus() {
         return status;
     }
 
-    public DummyExtensionFactory.Dependencies getDependencies()
-    {
+    public DummyExtensionFactory.Dependencies getDependencies() {
         return dependencies;
     }
 }

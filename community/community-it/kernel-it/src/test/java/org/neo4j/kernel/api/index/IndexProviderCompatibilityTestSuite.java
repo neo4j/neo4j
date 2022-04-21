@@ -19,58 +19,48 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.jupiter.api.Nested;
-
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Nested;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 
-abstract class IndexProviderCompatibilityTestSuite
-{
-    abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config );
+abstract class IndexProviderCompatibilityTestSuite {
+    abstract IndexProvider createIndexProvider(
+            PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config);
 
     abstract IndexPrototype indexPrototype();
 
     abstract IndexType indexType();
 
-    void consistencyCheck( IndexPopulator populator )
-    {
+    void consistencyCheck(IndexPopulator populator) {
         // no-op by default
     }
 
-    void additionalConfig( Config.Builder configBuilder )
-    {
-        //can be overridden in sub-classes that wants to add additional Config settings.
+    void additionalConfig(Config.Builder configBuilder) {
+        // can be overridden in sub-classes that wants to add additional Config settings.
     }
 
     @Nested
-    class IndexConfigurationCompletion extends IndexConfigurationCompletionCompatibility
-    {
-        IndexConfigurationCompletion()
-        {
-            super( IndexProviderCompatibilityTestSuite.this );
+    class IndexConfigurationCompletion extends IndexConfigurationCompletionCompatibility {
+        IndexConfigurationCompletion() {
+            super(IndexProviderCompatibilityTestSuite.this);
         }
     }
 
     @Nested
-    class ReadOnlyMinimalIndexAccessor extends MinimalIndexAccessorCompatibility.ReadOnly
-    {
-        ReadOnlyMinimalIndexAccessor()
-        {
-            super( IndexProviderCompatibilityTestSuite.this );
+    class ReadOnlyMinimalIndexAccessor extends MinimalIndexAccessorCompatibility.ReadOnly {
+        ReadOnlyMinimalIndexAccessor() {
+            super(IndexProviderCompatibilityTestSuite.this);
         }
     }
 
     @Nested
-    class GeneralMinimalIndexAccessor extends MinimalIndexAccessorCompatibility.General
-    {
-        GeneralMinimalIndexAccessor()
-        {
-            super( IndexProviderCompatibilityTestSuite.this );
+    class GeneralMinimalIndexAccessor extends MinimalIndexAccessorCompatibility.General {
+        GeneralMinimalIndexAccessor() {
+            super(IndexProviderCompatibilityTestSuite.this);
         }
     }
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.logical.builder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 class SimpleLogicalPlanBuilder(resolver: Resolver = SimpleResolver(), wholePlan: Boolean = true)
-  extends AbstractLogicalPlanBuilder[LogicalPlan, SimpleLogicalPlanBuilder](resolver, wholePlan) {
+    extends AbstractLogicalPlanBuilder[LogicalPlan, SimpleLogicalPlanBuilder](resolver, wholePlan) {
 
   override def build(readOnly: Boolean): LogicalPlan = buildLogicalPlan()
 }

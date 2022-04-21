@@ -27,10 +27,8 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 @ServiceProvider
-public class DummyExtensionFactory extends ExtensionFactory<DummyExtensionFactory.Dependencies>
-{
-    public interface Dependencies
-    {
+public class DummyExtensionFactory extends ExtensionFactory<DummyExtensionFactory.Dependencies> {
+    public interface Dependencies {
         Config getConfig();
 
         DatabaseManager<?> getDatabaseManager();
@@ -38,14 +36,12 @@ public class DummyExtensionFactory extends ExtensionFactory<DummyExtensionFactor
 
     static final String EXTENSION_ID = "dummy";
 
-    public DummyExtensionFactory()
-    {
-        super( EXTENSION_ID );
+    public DummyExtensionFactory() {
+        super(EXTENSION_ID);
     }
 
     @Override
-    public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-    {
-        return new DummyExtension( dependencies );
+    public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+        return new DummyExtension(dependencies);
     }
 }

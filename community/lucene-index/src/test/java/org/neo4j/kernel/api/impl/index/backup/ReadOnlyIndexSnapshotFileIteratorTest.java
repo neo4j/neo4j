@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index.backup;
 
+import static java.util.stream.Collectors.toSet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -27,12 +35,6 @@ import org.apache.lucene.store.Directory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Set;
-import java.util.stream.Stream;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
@@ -42,13 +44,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.util.stream.Collectors.toSet;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 @TestDirectoryExtension
-public class ReadOnlyIndexSnapshotFileIteratorTest
-{
+public class ReadOnlyIndexSnapshotFileIteratorTest {
     @Inject
     private TestDirectory testDir;
 
@@ -56,69 +53,59 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
     protected Directory dir;
 
     @BeforeEach
-    void setUp() throws IOException
-    {
+    void setUp() throws IOException {
         indexDir = testDir.homePath();
-        dir = DirectoryFactory.PERSISTENT.open( indexDir );
+        dir = DirectoryFactory.PERSISTENT.open(indexDir);
     }
 
     @AfterEach
-    public void tearDown() throws IOException
-    {
-        IOUtils.closeAll( dir );
+    public void tearDown() throws IOException {
+        IOUtils.closeAll(dir);
     }
 
     @Test
-    void shouldReturnRealSnapshotIfIndexAllowsIt() throws IOException
-    {
+    void shouldReturnRealSnapshotIfIndexAllowsIt() throws IOException {
         prepareIndex();
 
-        Set<String> files = listDir( dir );
-        assertFalse( files.isEmpty() );
+        Set<String> files = listDir(dir);
+        assertFalse(files.isEmpty());
 
-        try ( ResourceIterator<Path> snapshot = makeSnapshot() )
-        {
-            Set<String> snapshotFiles = snapshot.stream().map( Path::getFileName ).map( Path::toString ).collect( toSet() );
-            assertEquals( files, snapshotFiles );
+        try (ResourceIterator<Path> snapshot = makeSnapshot()) {
+            Set<String> snapshotFiles =
+                    snapshot.stream().map(Path::getFileName).map(Path::toString).collect(toSet());
+            assertEquals(files, snapshotFiles);
         }
     }
 
     @Test
-    void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
-    {
-        try ( ResourceIterator<Path> snapshot = makeSnapshot() )
-        {
-            assertFalse( snapshot.hasNext() );
+    void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException {
+        try (ResourceIterator<Path> snapshot = makeSnapshot()) {
+            assertFalse(snapshot.hasNext());
         }
     }
 
-    private void prepareIndex() throws IOException
-    {
-        try ( IndexWriter writer = new IndexWriter( dir, IndexWriterConfigs.standard( Config.defaults() ) ) )
-        {
-            insertRandomDocuments( writer );
+    private void prepareIndex() throws IOException {
+        try (IndexWriter writer = new IndexWriter(dir, IndexWriterConfigs.standard(Config.defaults()))) {
+            insertRandomDocuments(writer);
         }
     }
 
-    protected ResourceIterator<Path> makeSnapshot() throws IOException
-    {
-        return LuceneIndexSnapshots.forIndex( indexDir, dir );
+    protected ResourceIterator<Path> makeSnapshot() throws IOException {
+        return LuceneIndexSnapshots.forIndex(indexDir, dir);
     }
 
-    private static void insertRandomDocuments( IndexWriter writer ) throws IOException
-    {
+    private static void insertRandomDocuments(IndexWriter writer) throws IOException {
         Document doc = new Document();
-        doc.add( new StringField( "a", "b", Field.Store.YES ) );
-        doc.add( new StringField( "c", "d", Field.Store.NO ) );
-        writer.addDocument( doc );
+        doc.add(new StringField("a", "b", Field.Store.YES));
+        doc.add(new StringField("c", "d", Field.Store.NO));
+        writer.addDocument(doc);
         writer.commit();
     }
 
-    private static Set<String> listDir( Directory dir ) throws IOException
-    {
+    private static Set<String> listDir(Directory dir) throws IOException {
         String[] files = dir.listAll();
-        return Stream.of( files )
-                .filter( file -> !IndexWriter.WRITE_LOCK_NAME.equals( file ) )
-                .collect( toSet() );
+        return Stream.of(files)
+                .filter(file -> !IndexWriter.WRITE_LOCK_NAME.equals(file))
+                .collect(toSet());
     }
 }

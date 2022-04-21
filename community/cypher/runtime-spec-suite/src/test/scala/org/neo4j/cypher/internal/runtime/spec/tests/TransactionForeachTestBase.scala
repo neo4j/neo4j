@@ -43,19 +43,21 @@ import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.InternalLogProvider
 
-import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
 
-  override protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
-                                                  edition: Edition[CONTEXT],
-                                                  workloadMode: Boolean,
-                                                  logProvider: InternalLogProvider): RuntimeTestSupport[CONTEXT] = {
+  override protected def createRuntimeTestSupport(
+    graphDb: GraphDatabaseService,
+    edition: Edition[CONTEXT],
+    workloadMode: Boolean,
+    logProvider: InternalLogProvider
+  ): RuntimeTestSupport[CONTEXT] = {
     new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions) {
       override def getTransactionType: Type = Type.IMPLICIT
     }
@@ -133,7 +135,10 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     nodes.size shouldBe 2
   }
 
-  def inputStreamWithSideEffectInNewTxn(inputValues: InputDataStream, sideEffect: (InternalTransaction, Long) => Unit): InputDataStream = {
+  def inputStreamWithSideEffectInNewTxn(
+    inputValues: InputDataStream,
+    sideEffect: (InternalTransaction, Long) => Unit
+  ): InputDataStream = {
     new OnNextInputDataStream(inputValues) {
       override protected def onNext(offset: Long): Unit = withNewTx(sideEffect(_, offset))
     }
@@ -290,7 +295,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     nodes.size shouldBe Math.pow(2, numberOfIterations)
   }
 
-  test("should create data in different transactions in batches when using transactionForeach and see previous changes") {
+  test(
+    "should create data in different transactions in batches when using transactionForeach and see previous changes"
+  ) {
     val numberOfIterations = 8
     val batchSize = 3
     val inputRows = (0 until numberOfIterations).map { i =>
@@ -324,7 +331,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     nodes.size shouldBe Math.pow(2, numberOfIterations)
   }
 
-  test("should create data in different transactions when using transactionForeach with index and see previous changes") {
+  test(
+    "should create data in different transactions when using transactionForeach with index and see previous changes"
+  ) {
     val numberOfIterations = 8
     val inputRows = (0 until numberOfIterations).map { i =>
       Array[Any](i.toLong)
@@ -332,9 +341,8 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     given {
       nodeIndex("Label", "prop")
-      nodePropertyGraph(1, {case _ => Map[String, Any]("prop" -> 2)},"Label")
+      nodePropertyGraph(1, { case _ => Map[String, Any]("prop" -> 2) }, "Label")
     }
-
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
@@ -359,7 +367,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     nodes.size shouldBe Math.pow(2, numberOfIterations)
   }
 
-  test("should create data in different transactions when using transactionForeach and see previous changes (also from other transactionForeach)") {
+  test(
+    "should create data in different transactions when using transactionForeach and see previous changes (also from other transactionForeach)"
+  ) {
     val numberOfIterations = 4
     val inputRows = (0 until numberOfIterations).map { i =>
       Array[Any](i.toLong)
@@ -434,7 +444,11 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val expectedTransactionCount = Math.ceil(rangeSize / batchSize.toDouble).toInt
     runtimeResult should beColumns("x")
       .withRows(singleColumn(1 to rangeSize))
-      .withStatistics(nodesCreated = rangeSize, labelsAdded = rangeSize, transactionsCommitted = expectedTransactionCount + 1)
+      .withStatistics(
+        nodesCreated = rangeSize,
+        labelsAdded = rangeSize,
+        transactionsCommitted = expectedTransactionCount + 1
+      )
   }
 
   test("statistics should report data creation from subqueries while profiling") {
@@ -546,7 +560,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns().withNoRows
     val nNodes = tx.findNodes(label("N")).asScala.toList
-    nNodes.map(_.getProperty("prop")) should contain theSameElementsAs(
+    nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (
       (0 until 10) ++ // nodes from given
         (100 to 102) ++ // nodes from LHS of Union
         (11 to 15 by 2) // nodes from RHS of Union
@@ -603,11 +617,11 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns().withNoRows
     val nNodes = tx.findNodes(label("N")).asScala.toList
-    nNodes.map(_.getProperty("prop")) should contain theSameElementsAs(
+    nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (
       (0 until 10) ++ // nodes from given
         (100 to 102) ++ // nodes from LHS of Union
         (11 to 15 by 2) // nodes from RHS of Union
-      )
+    )
   }
 
   test("Relationship type scans should see data created from previous transactions") {
@@ -621,8 +635,10 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .emptyResult()
       .transactionForeach()
       .|.emptyResult()
-      .|.create(nodes = Seq(createNode("n"), createNode("m")),
-                relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}"))))
+      .|.create(
+        nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}")))
+      )
       .|.aggregation(Seq.empty, Seq("count(*) AS c"))
       .|.relationshipTypeScan("(a)-[r:R]->(b)")
       .unwind("[1, 2, 3] AS x")
@@ -649,12 +665,16 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .transactionForeach()
       .|.union()
       .|.|.emptyResult()
-      .|.|.create(nodes = Seq(createNode("n"), createNode("m")),
-                  relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}"))))
+      .|.|.create(
+        nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}")))
+      )
       .|.|.aggregation(Seq.empty, Seq("count(*) AS c"))
       .|.|.relationshipTypeScan("(a)-[r:R]->(b)")
-      .|.create(nodes = Seq(createNode("n"), createNode("m")),
-      relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: x}"))))
+      .|.create(
+        nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: x}")))
+      )
       .|.argument("x")
       .unwind("[100, 101, 102] AS x")
       .argument()
@@ -665,11 +685,11 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns().withNoRows
     val nRels = tx.findRelationships(RelationshipType.withName("R")).asScala.toList
-    nRels.map(_.getProperty("prop")) should contain theSameElementsAs(
+    nRels.map(_.getProperty("prop")) should contain theSameElementsAs (
       (0 until 10) ++ // rels from given
         (100 to 102) ++ // rels from LHS of Union
         (11 to 15 by 2) // rels from RHS of Union
-      )
+    )
   }
 
   test("should allow node entity values as params") {
@@ -698,7 +718,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       query,
       runtime,
       inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(nodes.map(n => Array[Any](n)):_*).stream(),
+        inputValues(nodes.map(n => Array[Any](n)): _*).stream(),
         (externalTx, offset) => {
           offset match {
             case 0L =>
@@ -706,7 +726,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
             case 1L =>
               checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
           }
-        }))
+        }
+      )
+    )
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
@@ -741,7 +763,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       query,
       runtime,
       inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(relationships.map(r => Array[Any](r)):_*).stream(),
+        inputValues(relationships.map(r => Array[Any](r)): _*).stream(),
         (externalTx, offset) => {
           offset match {
             case 0L =>
@@ -749,7 +771,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
             case 1L =>
               checkExternalAndRuntimeRelationships(externalTx, runtimeTestSupport, 2L)
           }
-        }))
+        }
+      )
+    )
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
@@ -785,7 +809,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       query,
       runtime,
       inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(paths.map(p => Array[Any](p)):_*).stream(),
+        inputValues(paths.map(p => Array[Any](p)): _*).stream(),
         (externalTx, offset) => {
           offset match {
             case 0L =>
@@ -793,7 +817,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
             case 1L =>
               checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
           }
-        }))
+        }
+      )
+    )
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
@@ -827,7 +853,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       query,
       runtime,
       inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(nodeRows.toSeq:_*).stream(),
+        inputValues(nodeRows.toSeq: _*).stream(),
         (externalTx, offset) => {
           offset match {
             case 0L =>
@@ -835,7 +861,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
             case 1L =>
               checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
           }
-        }))
+        }
+      )
+    )
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
@@ -869,7 +897,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       query,
       runtime,
       inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(nodes.map(n => Array[Any](java.util.Map.of("n", n))):_*).stream(),
+        inputValues(nodes.map(n => Array[Any](java.util.Map.of("n", n))): _*).stream(),
         (externalTx, offset) => {
           offset match {
             case 0L =>
@@ -877,14 +905,20 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
             case 1L =>
               checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
           }
-        }))
+        }
+      )
+    )
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
 
-  private def checkExternalAndRuntimeNodes(externalTx: InternalTransaction, runtimeTestSupport: RuntimeTestSupport[CONTEXT], firstItemVal: Long): Unit = {
+  private def checkExternalAndRuntimeNodes(
+    externalTx: InternalTransaction,
+    runtimeTestSupport: RuntimeTestSupport[CONTEXT],
+    firstItemVal: Long
+  ): Unit = {
     val extAllNodes = externalTx.getAllNodes
     try {
       val runtimeAllNodes = runtimeTestSupport.tx.getAllNodes
@@ -901,7 +935,11 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  private def checkExternalAndRuntimeRelationships(externalTx: InternalTransaction, runtimeTestSupport: RuntimeTestSupport[CONTEXT], firstItemVal: Long): Unit = {
+  private def checkExternalAndRuntimeRelationships(
+    externalTx: InternalTransaction,
+    runtimeTestSupport: RuntimeTestSupport[CONTEXT],
+    firstItemVal: Long
+  ): Unit = {
     val extAllRels = externalTx.getAllRelationships
     try {
       val runtimeAllRels = runtimeTestSupport.tx.getAllRelationships

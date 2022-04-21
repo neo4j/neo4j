@@ -38,42 +38,62 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
 import java.net.URL
+
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-case class LoadCSVPipe(source: Pipe,
-                       format: CSVFormat,
-                       urlExpression: Expression,
-                       variable: String,
-                       fieldTerminator: Option[String],
-                       legacyCsvQuoteEscaping: Boolean,
-                       bufferSize: Int)
-                      (val id: Id = Id.INVALID_ID)
-  extends AbstractLoadCSVPipe(source, format, urlExpression, fieldTerminator, legacyCsvQuoteEscaping, bufferSize) {
+case class LoadCSVPipe(
+  source: Pipe,
+  format: CSVFormat,
+  urlExpression: Expression,
+  variable: String,
+  fieldTerminator: Option[String],
+  legacyCsvQuoteEscaping: Boolean,
+  bufferSize: Int
+)(val id: Id = Id.INVALID_ID)
+    extends AbstractLoadCSVPipe(source, format, urlExpression, fieldTerminator, legacyCsvQuoteEscaping, bufferSize) {
 
-  override final def writeRow(filename: String, linenumber: Long, last: Boolean, argumentRow: CypherRow, value: AnyValue): CypherRow = {
+  final override def writeRow(
+    filename: String,
+    linenumber: Long,
+    last: Boolean,
+    argumentRow: CypherRow,
+    value: AnyValue
+  ): CypherRow = {
     val newRow = rowFactory.copyWith(argumentRow, variable, value)
-    newRow.setLinenumber(Some(ResourceLinenumber(filename, linenumber, last))) // Always overwrite linenumber if we have nested LoadCsvs
+    newRow.setLinenumber(Some(ResourceLinenumber(
+      filename,
+      linenumber,
+      last
+    ))) // Always overwrite linenumber if we have nested LoadCsvs
     newRow
   }
 }
 
-abstract class AbstractLoadCSVPipe(source: Pipe,
-                                   format: CSVFormat,
-                                   urlExpression: Expression,
-                                   fieldTerminator: Option[String],
-                                   legacyCsvQuoteEscaping: Boolean,
-                                   bufferSize: Int
-                                  ) extends PipeWithSource(source) {
+abstract class AbstractLoadCSVPipe(
+  source: Pipe,
+  format: CSVFormat,
+  urlExpression: Expression,
+  fieldTerminator: Option[String],
+  legacyCsvQuoteEscaping: Boolean,
+  bufferSize: Int
+) extends PipeWithSource(source) {
 
-  protected def writeRow(filename: String, linenumber: Long, last: Boolean, argumentRow: CypherRow, value: AnyValue): CypherRow
+  protected def writeRow(
+    filename: String,
+    linenumber: Long,
+    last: Boolean,
+    argumentRow: CypherRow,
+    value: AnyValue
+  ): CypherRow
 
   protected def getImportURL(urlString: String, context: QueryContext): URL = {
-    val url: URL = try {
-      new URL(urlString)
-    } catch {
-      case e: java.net.MalformedURLException =>
-        throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${e.getMessage}", e)
-    }
+    val url: URL =
+      try {
+        new URL(urlString)
+      } catch {
+        case e: java.net.MalformedURLException =>
+          throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${e.getMessage}", e)
+      }
 
     context.getImportURL(url) match {
       case Left(error) =>
@@ -83,10 +103,18 @@ abstract class AbstractLoadCSVPipe(source: Pipe,
     }
   }
 
-  //Uses an ArrayBackedMap to store header-to-values mapping
-  private class IteratorWithHeaders(headers: Seq[Value], argumentRow: CypherRow, filename: String, inner: LoadCsvIterator) extends ClosingIterator[CypherRow] {
-    private val internalMap = new ArrayBackedMap[String, AnyValue](headers.map(a => if (a eq Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap,
-                                                                   nullValue = Values.NO_VALUE)
+  // Uses an ArrayBackedMap to store header-to-values mapping
+  private class IteratorWithHeaders(
+    headers: Seq[Value],
+    argumentRow: CypherRow,
+    filename: String,
+    inner: LoadCsvIterator
+  ) extends ClosingIterator[CypherRow] {
+
+    private val internalMap = new ArrayBackedMap[String, AnyValue](
+      headers.map(a => if (a eq Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap,
+      nullValue = Values.NO_VALUE
+    )
     private val internalMapSize = ArrayBackedMap.SHALLOW_SIZE + HeapEstimator.shallowSizeOfObjectArray(headers.size)
     private var newRow: CypherRow = _
     private var needsUpdate = true
@@ -111,8 +139,8 @@ abstract class AbstractLoadCSVPipe(source: Pipe,
       if (inner.hasNext) {
         val row = inner.next()
         internalMap.putValues(row.asInstanceOf[Array[AnyValue]])
-        //we need to make a copy here since someone may hold on this
-        //reference, e.g. EagerPipe
+        // we need to make a copy here since someone may hold on this
+        // reference, e.g. EagerPipe
         val internalMapCopy = internalMap.copy.asJava
         // NOTE: The header key values will be the same for every row, so we do not include it in the memory tracking payload size
         //       since it will result in overestimation of heap usage
@@ -128,7 +156,8 @@ abstract class AbstractLoadCSVPipe(source: Pipe,
     }
   }
 
-  private class IteratorWithoutHeaders(argumentRow: CypherRow, filename: String, inner: LoadCsvIterator) extends ClosingIterator[CypherRow] {
+  private class IteratorWithoutHeaders(argumentRow: CypherRow, filename: String, inner: LoadCsvIterator)
+      extends ClosingIterator[CypherRow] {
 
     override protected[this] def closeMore(): Unit = inner.close()
 
@@ -141,13 +170,20 @@ abstract class AbstractLoadCSVPipe(source: Pipe,
     }
   }
 
-  private def getLoadCSVIterator(state: QueryState, url: URL, useHeaders: Boolean): LoadCsvIterator ={
+  private def getLoadCSVIterator(state: QueryState, url: URL, useHeaders: Boolean): LoadCsvIterator = {
     state.resources.getCsvIterator(
-      url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, useHeaders
+      url,
+      fieldTerminator,
+      legacyCsvQuoteEscaping,
+      bufferSize,
+      useHeaders
     )
   }
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.flatMap(row => {
       val urlString: TextValue = urlExpression(row, state).asInstanceOf[TextValue]
       val url = getImportURL(urlString.stringValue(), state.query)
@@ -155,7 +191,8 @@ abstract class AbstractLoadCSVPipe(source: Pipe,
       format match {
         case HasHeaders =>
           val iterator = getLoadCSVIterator(state, url, useHeaders = true)
-          val headers = if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
+          val headers =
+            if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
           new IteratorWithHeaders(replaceNoValues(headers), row, url.getFile, iterator)
         case NoHeaders =>
           new IteratorWithoutHeaders(row, url.getFile, getLoadCSVIterator(state, url, useHeaders = false))
@@ -165,6 +202,6 @@ abstract class AbstractLoadCSVPipe(source: Pipe,
 
   private def replaceNoValues(headers: IndexedSeq[Value]): IndexedSeq[Value] = headers.map {
     case noValue if noValue eq Values.NO_VALUE => Values.stringValue("")
-    case other => other
+    case other                                 => other
   }
 }

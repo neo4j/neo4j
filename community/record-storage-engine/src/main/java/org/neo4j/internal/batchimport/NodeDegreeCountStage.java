@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.internal.batchimport.RecordIdIterator.forwards;
+
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
@@ -28,22 +30,22 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 
-import static org.neo4j.internal.batchimport.RecordIdIterator.forwards;
-
 /**
  * Goes through {@link RelationshipStore} and increments counts per start/end node,
  * calling {@link NodeRelationshipCache#incrementCount(long)}. This is in preparation of linking relationships.
  */
-public class NodeDegreeCountStage extends Stage
-{
+public class NodeDegreeCountStage extends Stage {
     public static final String NAME = "Node Degrees";
 
-    public NodeDegreeCountStage( Configuration config, RelationshipStore store, NodeRelationshipCache cache,
-            StatsProvider memoryUsageStatsProvider, CursorContextFactory contextFactory )
-    {
-        super( NAME, null, config, Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store, contextFactory ) );
-        add( new CalculateDenseNodesStep( control(), config, cache, contextFactory, memoryUsageStatsProvider ) );
+    public NodeDegreeCountStage(
+            Configuration config,
+            RelationshipStore store,
+            NodeRelationshipCache cache,
+            StatsProvider memoryUsageStatsProvider,
+            CursorContextFactory contextFactory) {
+        super(NAME, null, config, Step.RECYCLE_BATCHES);
+        add(new BatchFeedStep(control(), config, forwards(0, store.getHighId(), config), store.getRecordSize()));
+        add(new ReadRecordsStep<>(control(), config, false, store, contextFactory));
+        add(new CalculateDenseNodesStep(control(), config, cache, contextFactory, memoryUsageStatsProvider));
     }
 }

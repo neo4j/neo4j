@@ -36,10 +36,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *   for ( leftRow <- group )
  *     produce (leftRow merge rightRow)
  */
-case class NodeHashJoin(nodes: Set[String],
-                        override val left: LogicalPlan,
-                        override val right: LogicalPlan)
-                       (implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
+case class NodeHashJoin(nodes: Set[String], override val left: LogicalPlan, override val right: LogicalPlan)(implicit
+idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 

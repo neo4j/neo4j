@@ -19,30 +19,27 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class LongEncoderTest
-{
+import org.junit.jupiter.api.Test;
+
+class LongEncoderTest {
     @Test
-    void shouldProperlyEncodeLength()
-    {
+    void shouldProperlyEncodeLength() {
         // GIVEN
         Encoder encoder = new LongEncoder();
 
         // WHEN
-        long a = encoder.encode( 1L << 25 );
-        long b = encoder.encode( 1L << 28 );
+        long a = encoder.encode(1L << 25);
+        long b = encoder.encode(1L << 28);
 
         // THEN
-        assertNotEquals( a, b );
+        assertNotEquals(a, b);
     }
 
     @Test
-    void shouldThrowOnEncodingTooLargeID()
-    {
+    void shouldThrowOnEncodingTooLargeID() {
         // GIVEN
         Encoder encoder = new LongEncoder();
 
@@ -50,12 +47,11 @@ class LongEncoderTest
         long invalidValue = 0x01ABC123_4567890FL;
 
         // THEN
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( invalidValue ) );
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(invalidValue));
     }
 
     @Test
-    void shouldThrowOnEncodingNegativeID()
-    {
+    void shouldThrowOnEncodingNegativeID() {
         // GIVEN
         Encoder encoder = new LongEncoder();
 
@@ -63,6 +59,6 @@ class LongEncoderTest
         long invalidValue = -1;
 
         // THEN
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( invalidValue ) );
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(invalidValue));
     }
 }

@@ -24,8 +24,7 @@ package org.neo4j.storageengine.api;
  *
  * @param <EXCEPTION> exception thrown from the {@link #visit(long, int, long, long, Iterable)} method.
  */
-public interface RelationshipVisitorWithProperties<EXCEPTION extends Exception>
-{
+public interface RelationshipVisitorWithProperties<EXCEPTION extends Exception> {
     /**
      * Visits data about a relationship.
      *
@@ -35,5 +34,11 @@ public interface RelationshipVisitorWithProperties<EXCEPTION extends Exception>
      * @param endNodeId id of the end node of the relationship.
      * @param addedProperties added properties for this relationship.
      */
-    void visit( long relationshipId, int typeId, long startNodeId, long endNodeId, Iterable<StorageProperty> addedProperties ) throws EXCEPTION;
+    void visit(
+            long relationshipId,
+            int typeId,
+            long startNodeId,
+            long endNodeId,
+            Iterable<StorageProperty> addedProperties)
+            throws EXCEPTION;
 }

@@ -47,7 +47,6 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
 
   def testPlanner(solver: QueryGraphSolver) = {
     forAll(patterns) { pattern =>
-
       // reset naming sequence number
       nameSeq.set(0)
 
@@ -82,7 +81,6 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     semanticPlan._1
   }
 
-
   def joinSymbolsIn(plan: LogicalPlan) = {
     val flattenedPlan = plan.folder.treeFold(Seq.empty[LogicalPlan]) {
       case plan: LogicalPlan => acc => TraverseChildren(acc :+ plan)
@@ -109,8 +107,16 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     Some(joinNodeName)
   }
 
-  def relGen = Gen.oneOf(emptyRelGen, emptyRelWithLengthGen, namedRelGen, namedRelWithLengthGen, typedRelGen,
-    typedRelWithLengthGen, namedTypedRelGen, namedTypedRelWithLengthGen)
+  def relGen = Gen.oneOf(
+    emptyRelGen,
+    emptyRelWithLengthGen,
+    namedRelGen,
+    namedRelWithLengthGen,
+    typedRelGen,
+    typedRelWithLengthGen,
+    namedTypedRelGen,
+    namedTypedRelWithLengthGen
+  )
 
   def nodeGen = Gen.oneOf(emptyNodeGen, namedNodeGen, labeledNodeGen, namedLabeledNodeGen)
 

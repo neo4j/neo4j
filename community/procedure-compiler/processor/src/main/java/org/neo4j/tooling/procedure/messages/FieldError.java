@@ -21,28 +21,24 @@ package org.neo4j.tooling.procedure.messages;
 
 import javax.lang.model.element.VariableElement;
 
-public class FieldError implements CompilationMessage
-{
+public class FieldError implements CompilationMessage {
 
     private final VariableElement field;
     private final String errorMessage;
 
-    public FieldError( VariableElement field, String errorMessage, Object... args )
-    {
+    public FieldError(VariableElement field, String errorMessage, Object... args) {
 
         this.field = field;
-        this.errorMessage = String.format( errorMessage, args );
+        this.errorMessage = String.format(errorMessage, args);
     }
 
     @Override
-    public VariableElement getElement()
-    {
+    public VariableElement getElement() {
         return field;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return errorMessage;
     }
 }

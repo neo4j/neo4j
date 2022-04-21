@@ -20,7 +20,6 @@
 package org.neo4j.consistency.report;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.consistency.RecordType;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -29,74 +28,72 @@ import org.neo4j.logging.AssertableLogProvider.Level;
 import org.neo4j.logging.LogAssert;
 import org.neo4j.logging.LogAssertions;
 
-class MessageConsistencyLoggerTest
-{
+class MessageConsistencyLoggerTest {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private final InconsistencyMessageLogger logger = new InconsistencyMessageLogger( logProvider.getLog( getClass() ) );
-    private final LogAssert logMatcher = LogAssertions.assertThat( logProvider ).forClass( MessageConsistencyLoggerTest.class );
+    private final InconsistencyMessageLogger logger = new InconsistencyMessageLogger(logProvider.getLog(getClass()));
+    private final LogAssert logMatcher =
+            LogAssertions.assertThat(logProvider).forClass(MessageConsistencyLoggerTest.class);
 
     @Test
-    void shouldFormatErrorForRecord()
-    {
+    void shouldFormatErrorForRecord() {
         // when
-        logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
+        logger.error(RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2);
 
         // then
-        logMatcher.forLevel( Level.ERROR )
-                .containsMessages( join( "sample message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) );
+        logMatcher
+                .forLevel(Level.ERROR)
+                .containsMessages(join("sample message", neoStoreRecord(true, -1), "Inconsistent with: 1 2"));
     }
 
     @Test
-    void shouldFlattenAMultiLineMessageToASingleLine()
-    {
+    void shouldFlattenAMultiLineMessageToASingleLine() {
         // when
-        logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "multiple\n line\r\n message", 1, 2 );
+        logger.error(RecordType.NEO_STORE, new NeoStoreRecord(), "multiple\n line\r\n message", 1, 2);
 
         // then
-        logMatcher.forLevel( Level.ERROR )
-                .containsMessages( join( "multiple line message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) );
+        logMatcher
+                .forLevel(Level.ERROR)
+                .containsMessages(join("multiple line message", neoStoreRecord(true, -1), "Inconsistent with: 1 2"));
     }
 
     @Test
-    void shouldFormatWarningForRecord()
-    {
+    void shouldFormatWarningForRecord() {
         // when
-        logger.warning( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
+        logger.warning(RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2);
 
         // then
-        logMatcher.forLevel( Level.WARN )
-                .containsMessages( join( "sample message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) );
+        logMatcher
+                .forLevel(Level.WARN)
+                .containsMessages(join("sample message", neoStoreRecord(true, -1), "Inconsistent with: 1 2"));
     }
 
     @Test
-    void shouldFormatLogForChangedRecord()
-    {
+    void shouldFormatLogForChangedRecord() {
         // when
-        logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), new NeoStoreRecord(), "sample message", 1, 2 );
+        logger.error(RecordType.NEO_STORE, new NeoStoreRecord(), new NeoStoreRecord(), "sample message", 1, 2);
 
         // then
-        logMatcher.forLevel( Level.ERROR )
-                .containsMessages( join( "sample message",
-                        "- " + neoStoreRecord( true, -1 ),
-                        "+ " + neoStoreRecord( true, -1 ),
-                        "Inconsistent with: 1 2" ) );
+        logMatcher
+                .forLevel(Level.ERROR)
+                .containsMessages(join(
+                        "sample message",
+                        "- " + neoStoreRecord(true, -1),
+                        "+ " + neoStoreRecord(true, -1),
+                        "Inconsistent with: 1 2"));
     }
 
-    private static String join( String firstLine, String... lines )
-    {
-        StringBuilder expected = new StringBuilder( firstLine );
-        for ( String line : lines )
-        {
-            expected.append( System.lineSeparator() ).append( Strings.TAB ).append( line );
+    private static String join(String firstLine, String... lines) {
+        StringBuilder expected = new StringBuilder(firstLine);
+        for (String line : lines) {
+            expected.append(System.lineSeparator()).append(Strings.TAB).append(line);
         }
         return expected.toString();
     }
 
-    private static String neoStoreRecord( boolean used, long nextProp )
-    {
+    private static String neoStoreRecord(boolean used, long nextProp) {
         NeoStoreRecord record = new NeoStoreRecord();
-        record.setInUse( used );
-        record.setNextProp( nextProp );
+        record.setInUse(used);
+        record.setNextProp(nextProp);
         return record.toString();
     }
 }

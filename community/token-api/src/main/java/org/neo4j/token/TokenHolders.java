@@ -30,76 +30,58 @@ import org.neo4j.token.api.TokensLoader;
  * and for easily extending available instances in one place.
  * Resolves token names without going through transaction and locking layers.
  */
-public class TokenHolders implements TokenNameLookup
-{
+public class TokenHolders implements TokenNameLookup {
     private final TokenHolder propertyKeyTokens;
     private final TokenHolder labelTokens;
     private final TokenHolder relationshipTypeTokens;
 
-    public TokenHolders( TokenHolder propertyKeyTokens, TokenHolder labelTokens, TokenHolder relationshipTypeTokens )
-    {
+    public TokenHolders(TokenHolder propertyKeyTokens, TokenHolder labelTokens, TokenHolder relationshipTypeTokens) {
         this.propertyKeyTokens = propertyKeyTokens;
         this.labelTokens = labelTokens;
         this.relationshipTypeTokens = relationshipTypeTokens;
     }
 
-    public TokenHolder propertyKeyTokens()
-    {
+    public TokenHolder propertyKeyTokens() {
         return propertyKeyTokens;
     }
 
-    public TokenHolder labelTokens()
-    {
+    public TokenHolder labelTokens() {
         return labelTokens;
     }
 
-    public TokenHolder relationshipTypeTokens()
-    {
+    public TokenHolder relationshipTypeTokens() {
         return relationshipTypeTokens;
     }
 
-    public void setInitialTokens( TokensLoader loader, StoreCursors storeCursors )
-    {
-        propertyKeyTokens().setInitialTokens( loader.getPropertyKeyTokens( storeCursors ) );
-        labelTokens().setInitialTokens( loader.getLabelTokens( storeCursors ) );
-        relationshipTypeTokens().setInitialTokens( loader.getRelationshipTypeTokens( storeCursors ) );
+    public void setInitialTokens(TokensLoader loader, StoreCursors storeCursors) {
+        propertyKeyTokens().setInitialTokens(loader.getPropertyKeyTokens(storeCursors));
+        labelTokens().setInitialTokens(loader.getLabelTokens(storeCursors));
+        relationshipTypeTokens().setInitialTokens(loader.getRelationshipTypeTokens(storeCursors));
     }
 
     @Override
-    public String labelGetName( int labelId )
-    {
-        try
-        {
-            return labelTokens().getTokenById( labelId ).name();
-        }
-        catch ( TokenNotFoundException e )
-        {
+    public String labelGetName(int labelId) {
+        try {
+            return labelTokens().getTokenById(labelId).name();
+        } catch (TokenNotFoundException e) {
             return "[no such label: " + labelId + "]";
         }
     }
 
     @Override
-    public String relationshipTypeGetName( int relationshipTypeId )
-    {
-        try
-        {
-            return relationshipTypeTokens().getTokenById( relationshipTypeId ).name();
-        }
-        catch ( TokenNotFoundException e )
-        {
+    public String relationshipTypeGetName(int relationshipTypeId) {
+        try {
+            return relationshipTypeTokens().getTokenById(relationshipTypeId).name();
+        } catch (TokenNotFoundException e) {
             return "[no such relationship type: " + relationshipTypeId + "]";
         }
     }
 
     @Override
-    public String propertyKeyGetName( int propertyKeyId )
-    {
-        try
-        {
-            return propertyKeyTokens().getTokenById( propertyKeyId ).name();
-        }
-        catch ( TokenNotFoundException e )
-        {
+    public String propertyKeyGetName(int propertyKeyId) {
+        try {
+            return propertyKeyTokens().getTokenById(propertyKeyId).name();
+        } catch (TokenNotFoundException e) {
             return "[no such property key: " + propertyKeyId + "]";
         }
     }
@@ -107,26 +89,21 @@ public class TokenHolders implements TokenNameLookup
     /**
      * Produce a {@link TokenNameLookup} that appends the token ids to all the token names.
      */
-    public TokenNameLookup lookupWithIds()
-    {
-        return new TokenNameLookup()
-        {
+    public TokenNameLookup lookupWithIds() {
+        return new TokenNameLookup() {
             @Override
-            public String labelGetName( int labelId )
-            {
-                return TokenHolders.this.labelGetName( labelId ) + "[" + labelId + "]";
+            public String labelGetName(int labelId) {
+                return TokenHolders.this.labelGetName(labelId) + "[" + labelId + "]";
             }
 
             @Override
-            public String relationshipTypeGetName( int relationshipTypeId )
-            {
-                return TokenHolders.this.relationshipTypeGetName( relationshipTypeId ) + "[" + relationshipTypeId + "]";
+            public String relationshipTypeGetName(int relationshipTypeId) {
+                return TokenHolders.this.relationshipTypeGetName(relationshipTypeId) + "[" + relationshipTypeId + "]";
             }
 
             @Override
-            public String propertyKeyGetName( int propertyKeyId )
-            {
-                return TokenHolders.this.propertyKeyGetName( propertyKeyId ) + "[" + propertyKeyId + "]";
+            public String propertyKeyGetName(int propertyKeyId) {
+                return TokenHolders.this.propertyKeyGetName(propertyKeyId) + "[" + propertyKeyId + "]";
             }
         };
     }

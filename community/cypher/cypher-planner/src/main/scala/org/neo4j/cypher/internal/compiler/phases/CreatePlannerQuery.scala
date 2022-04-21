@@ -48,7 +48,8 @@ import org.neo4j.exceptions.InternalException
 /**
  * From the normalized ast, create the corresponding PlannerQuery.
  */
-case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
   override def phase = LOGICAL_PLANNING
 
   override def process(from: BaseState, context: BaseContext): LogicalPlanState = from.statement() match {
@@ -57,7 +58,8 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
       LogicalPlanState(from).copy(maybeQuery = Some(plannerQuery))
 
     case command: AdministrationCommand => throw new DatabaseAdministrationException(
-      s"This is an administration command and it should be executed against the system database: ${command.name}")
+        s"This is an administration command and it should be executed against the system database: ${command.name}"
+      )
 
     case x => throw new InternalException(s"Expected a Query and not `$x`")
   }
@@ -82,5 +84,8 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getTransformer(pushdownPropertyReads: Boolean, semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, LogicalPlanState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[BaseContext, BaseState, LogicalPlanState] = this
 }

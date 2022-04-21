@@ -26,23 +26,20 @@ import java.util.Objects;
  *
  * @param <T> The type of the capability value.
  */
-public final class Capability<T>
-{
+public final class Capability<T> {
     private final Name name;
     private final Type<T> type;
     private boolean internal;
     private String description;
 
-    public Capability( Name name, Type<T> type )
-    {
-        this( name, type, "", true );
+    public Capability(Name name, Type<T> type) {
+        this(name, type, "", true);
     }
 
-    private Capability( Name name, Type<T> type, String description, boolean internal )
-    {
-        this.name = Objects.requireNonNull( name );
-        this.type = Objects.requireNonNull( type );
-        this.description = Objects.requireNonNull( description );
+    private Capability(Name name, Type<T> type, String description, boolean internal) {
+        this.name = Objects.requireNonNull(name);
+        this.type = Objects.requireNonNull(type);
+        this.description = Objects.requireNonNull(description);
         this.internal = internal;
     }
 
@@ -51,8 +48,7 @@ public final class Capability<T>
      *
      * @return the name.
      */
-    public Name name()
-    {
+    public Name name() {
         return name;
     }
 
@@ -61,8 +57,7 @@ public final class Capability<T>
      *
      * @return the description.
      */
-    public String description()
-    {
+    public String description() {
         return description;
     }
 
@@ -71,8 +66,7 @@ public final class Capability<T>
      *
      * @return true if the capability is internal, false otherwise.
      */
-    public boolean internal()
-    {
+    public boolean internal() {
         return internal;
     }
 
@@ -81,48 +75,37 @@ public final class Capability<T>
      *
      * @return the type.
      */
-    public Type<T> type()
-    {
+    public Type<T> type() {
         return type;
     }
 
-    void setDescription( String description )
-    {
-        this.description = Objects.requireNonNull( description );
+    void setDescription(String description) {
+        this.description = Objects.requireNonNull(description);
     }
 
-    void setPublic()
-    {
+    void setPublic() {
         this.internal = false;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         Capability<?> that = (Capability<?>) o;
-        return name.equals( that.name );
+        return name.equals(that.name);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( name );
+    public int hashCode() {
+        return Objects.hash(name);
     }
 
     @Override
-    public String toString()
-    {
-        return "Capability{" +
-               "name=" + name +
-               ", type=" + type +
-               '}';
+    public String toString() {
+        return "Capability{" + "name=" + name + ", type=" + type + '}';
     }
 }

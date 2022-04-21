@@ -22,16 +22,13 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
-class FullAccessPropertyCursor extends DefaultPropertyCursor
-{
-    FullAccessPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
-    {
-        super( pool, storeCursor, null, null );
+class FullAccessPropertyCursor extends DefaultPropertyCursor {
+    FullAccessPropertyCursor(CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor) {
+        super(pool, storeCursor, null, null);
     }
 
     @Override
-    final boolean allowed( int propertyKeyId )
-    {
+    final boolean allowed(int propertyKeyId) {
         return true;
     }
 
@@ -39,8 +36,7 @@ class FullAccessPropertyCursor extends DefaultPropertyCursor
      * Only used for security checks
      */
     @Override
-    public TokenSet get()
-    {
+    public TokenSet get() {
         throw new UnsupportedOperationException();
     }
 
@@ -48,8 +44,7 @@ class FullAccessPropertyCursor extends DefaultPropertyCursor
      * Only used for security checks
      */
     @Override
-    public int getRelType()
-    {
+    public int getRelType() {
         throw new UnsupportedOperationException();
     }
 }

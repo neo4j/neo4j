@@ -45,7 +45,7 @@ case object inlineNamedPathsInPatternComprehensions extends Rewriter with Step w
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
   private val instance = bottomUp(Rewriter.lift {
@@ -58,7 +58,8 @@ case object inlineNamedPathsInPatternComprehensions extends Rewriter with Step w
       )(expr.position, expr.outerScope, expr.variableToCollectName, expr.collectionName)
   })
 
-  private implicit final class InliningExpression(val expr: Expression) extends AnyVal {
+  implicit final private class InliningExpression(val expr: Expression) extends AnyVal {
+
     def inline(path: LogicalVariable, patternElement: PatternElement): Expression =
       expr.copyAndReplace(path) by {
         PathExpression(projectNamedPaths.patternPartPathExpression(patternElement))(expr.position)
@@ -67,8 +68,10 @@ case object inlineNamedPathsInPatternComprehensions extends Rewriter with Step w
 
   override def apply(v: AnyRef): AnyRef = instance(v)
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = instance
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
 }

@@ -21,10 +21,8 @@ package org.neo4j.dbms.archive;
 
 import java.io.IOException;
 
-public class InvalidDumpEntryException extends IOException
-{
-    public InvalidDumpEntryException( String entryName )
-    {
-        super( "Dump file entry `" + entryName + "` points to a location outside of the destination database." );
+public class InvalidDumpEntryException extends IOException {
+    public InvalidDumpEntryException(String entryName) {
+        super("Dump file entry `" + entryName + "` points to a location outside of the destination database.");
     }
 }

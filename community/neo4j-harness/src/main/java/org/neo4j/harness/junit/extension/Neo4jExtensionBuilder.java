@@ -21,7 +21,6 @@ package org.neo4j.harness.junit.extension;
 
 import java.nio.file.Path;
 import java.util.function.Function;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -35,17 +34,14 @@ import org.neo4j.procedure.UserFunction;
  * {@link Neo4jExtension} extension builder.
  */
 @PublicApi
-public class Neo4jExtensionBuilder
-{
+public class Neo4jExtensionBuilder {
     private Neo4jBuilder builder;
 
-    Neo4jExtensionBuilder()
-    {
-        this( Neo4jBuilders.newInProcessBuilder() );
+    Neo4jExtensionBuilder() {
+        this(Neo4jBuilders.newInProcessBuilder());
     }
 
-    protected Neo4jExtensionBuilder( Neo4jBuilder builder )
-    {
+    protected Neo4jExtensionBuilder(Neo4jBuilder builder) {
         this.builder = builder;
     }
 
@@ -55,9 +51,8 @@ public class Neo4jExtensionBuilder
      * @param workingDirectory new working directory
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withFolder( Path workingDirectory )
-    {
-        builder = builder.withWorkingDir( workingDirectory );
+    public Neo4jExtensionBuilder withFolder(Path workingDirectory) {
+        builder = builder.withWorkingDir(workingDirectory);
         return this;
     }
 
@@ -70,9 +65,8 @@ public class Neo4jExtensionBuilder
      * @param <T> the setting type
      * @return this configurator instance
      */
-    public <T> Neo4jExtensionBuilder withConfig( Setting<T> key, T value )
-    {
-        builder = builder.withConfig( key, value );
+    public <T> Neo4jExtensionBuilder withConfig(Setting<T> key, T value) {
+        builder = builder.withConfig(key, value);
         return this;
     }
 
@@ -84,9 +78,8 @@ public class Neo4jExtensionBuilder
      * @param extension the unmanaged extension class.
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withUnmanagedExtension( String mountPath, Class<?> extension )
-    {
-        builder = builder.withUnmanagedExtension( mountPath, extension );
+    public Neo4jExtensionBuilder withUnmanagedExtension(String mountPath, Class<?> extension) {
+        builder = builder.withUnmanagedExtension(mountPath, extension);
         return this;
     }
 
@@ -97,9 +90,8 @@ public class Neo4jExtensionBuilder
      * @param packageName a java package with extension classes.
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withUnmanagedExtension( String mountPath, String packageName )
-    {
-        builder = builder.withUnmanagedExtension( mountPath, packageName );
+    public Neo4jExtensionBuilder withUnmanagedExtension(String mountPath, String packageName) {
+        builder = builder.withUnmanagedExtension(mountPath, packageName);
         return this;
     }
 
@@ -108,8 +100,7 @@ public class Neo4jExtensionBuilder
      * For cases where web server is not required to test specific functionality it can be fully disabled using this tuning option.
      * @return this configurator instance.
      */
-    public Neo4jExtensionBuilder withDisabledServer()
-    {
+    public Neo4jExtensionBuilder withDisabledServer() {
         builder = builder.withDisabledServer();
         return this;
     }
@@ -120,9 +111,8 @@ public class Neo4jExtensionBuilder
      * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withFixture( Path cypherFileOrDirectory )
-    {
-        builder = builder.withFixture( cypherFileOrDirectory );
+    public Neo4jExtensionBuilder withFixture(Path cypherFileOrDirectory) {
+        builder = builder.withFixture(cypherFileOrDirectory);
         return this;
     }
 
@@ -131,9 +121,8 @@ public class Neo4jExtensionBuilder
      * @param fixtureStatement a cypher statement
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withFixture( String fixtureStatement )
-    {
-        builder = builder.withFixture( fixtureStatement );
+    public Neo4jExtensionBuilder withFixture(String fixtureStatement) {
+        builder = builder.withFixture(fixtureStatement);
         return this;
     }
 
@@ -143,9 +132,8 @@ public class Neo4jExtensionBuilder
      * @param fixtureFunction a fixture function
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
-    {
-        builder = builder.withFixture( fixtureFunction );
+    public Neo4jExtensionBuilder withFixture(Function<GraphDatabaseService, Void> fixtureFunction) {
+        builder = builder.withFixture(fixtureFunction);
         return this;
     }
 
@@ -155,9 +143,8 @@ public class Neo4jExtensionBuilder
      * @param sourceDirectory the directory to copy from
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder copyFrom( Path sourceDirectory )
-    {
-        builder = builder.copyFrom( sourceDirectory );
+    public Neo4jExtensionBuilder copyFrom(Path sourceDirectory) {
+        builder = builder.copyFrom(sourceDirectory);
         return this;
     }
 
@@ -169,9 +156,8 @@ public class Neo4jExtensionBuilder
      * @param procedureClass a class containing one or more procedure definitions
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withProcedure( Class<?> procedureClass )
-    {
-        builder = builder.withProcedure( procedureClass );
+    public Neo4jExtensionBuilder withProcedure(Class<?> procedureClass) {
+        builder = builder.withProcedure(procedureClass);
         return this;
     }
 
@@ -183,9 +169,8 @@ public class Neo4jExtensionBuilder
      * @param functionClass a class containing one or more function definitions
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withFunction( Class<?> functionClass )
-    {
-        builder = builder.withFunction( functionClass );
+    public Neo4jExtensionBuilder withFunction(Class<?> functionClass) {
+        builder = builder.withFunction(functionClass);
         return this;
     }
 
@@ -197,14 +182,12 @@ public class Neo4jExtensionBuilder
      * @param functionClass a class containing one or more function definitions
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withAggregationFunction( Class<?> functionClass )
-    {
-        builder = builder.withAggregationFunction( functionClass );
+    public Neo4jExtensionBuilder withAggregationFunction(Class<?> functionClass) {
+        builder = builder.withAggregationFunction(functionClass);
         return this;
     }
 
-    public Neo4jExtension build()
-    {
-        return new Neo4jExtension( builder );
+    public Neo4jExtension build() {
+        return new Neo4jExtension(builder);
     }
 }

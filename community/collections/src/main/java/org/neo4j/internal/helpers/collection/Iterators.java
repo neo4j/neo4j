@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import static java.util.Collections.emptyIterator;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +44,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
@@ -50,17 +51,13 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
-import static java.util.Collections.emptyIterator;
-
 /**
  * Contains common functionality regarding {@link Iterator}s and
  * {@link Iterable}s.
  */
-public final class Iterators
-{
-    private Iterators()
-    {
-        throw new AssertionError( "no instance" );
+public final class Iterators {
+    private Iterators() {
+        throw new AssertionError("no instance");
     }
 
     /**
@@ -72,15 +69,11 @@ public final class Iterators
      * @return the first element in the {@code iterator}, or {@code null} if no
      * element found.
      */
-    public static <T> T firstOrNull( Iterator<T> iterator )
-    {
-        try
-        {
+    public static <T> T firstOrNull(Iterator<T> iterator) {
+        try {
             return iterator.hasNext() ? iterator.next() : null;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
@@ -94,15 +87,11 @@ public final class Iterators
      * @return the first element in the {@code iterator}, or {@code null} if no
      * element found.
      */
-    public static <T> T firstOrDefault( Iterator<T> iterator, T defaultValue )
-    {
-        try
-        {
+    public static <T> T firstOrDefault(Iterator<T> iterator, T defaultValue) {
+        try {
             return iterator.hasNext() ? iterator.next() : defaultValue;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
@@ -115,9 +104,8 @@ public final class Iterators
      * @return the first element in the {@code iterator}.
      * @throws NoSuchElementException if no element found.
      */
-    public static <T> T first( Iterator<T> iterator )
-    {
-        return assertNotNull( iterator, firstOrNull( iterator ) );
+    public static <T> T first(Iterator<T> iterator) {
+        return assertNotNull(iterator, firstOrNull(iterator));
     }
 
     /**
@@ -129,20 +117,15 @@ public final class Iterators
      * @return the last element in the {@code iterator}, or {@code null} if no
      * element found.
      */
-    static <T> T lastOrNull( Iterator<T> iterator )
-    {
-        try
-        {
+    static <T> T lastOrNull(Iterator<T> iterator) {
+        try {
             T result = null;
-            while ( iterator.hasNext() )
-            {
+            while (iterator.hasNext()) {
                 result = iterator.next();
             }
             return result;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
@@ -155,9 +138,8 @@ public final class Iterators
      * @return the last element in the {@code iterator}.
      * @throws NoSuchElementException if no element found.
      */
-    public static <T> T last( Iterator<T> iterator )
-    {
-        return assertNotNull( iterator, lastOrNull( iterator ) );
+    public static <T> T last(Iterator<T> iterator) {
+        return assertNotNull(iterator, lastOrNull(iterator));
     }
 
     /**
@@ -174,15 +156,11 @@ public final class Iterators
      * element found.
      * @throws NoSuchElementException if more than one element was found.
      */
-    public static <T> T singleOrNull( Iterator<T> iterator )
-    {
-        try
-        {
-            return single( iterator, null );
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+    public static <T> T singleOrNull(Iterator<T> iterator) {
+        try {
+            return single(iterator, null);
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
@@ -199,9 +177,8 @@ public final class Iterators
      * @return the single element in the {@code iterator}.
      * @throws NoSuchElementException if there isn't exactly one element.
      */
-    public static <T> T single( Iterator<T> iterator )
-    {
-        return assertNotNull( iterator, singleOrNull( iterator ) );
+    public static <T> T single(Iterator<T> iterator) {
+        return assertNotNull(iterator, singleOrNull(iterator));
     }
 
     /**
@@ -215,9 +192,8 @@ public final class Iterators
      * @return the iterator's n:th item from the end of the iteration.
      * @throws NoSuchElementException if the iterator contains less than n-1 items.
      */
-    static <T> T fromEnd( Iterator<T> iterator, int n )
-    {
-        return assertNotNull( iterator, fromEndOrNull( iterator, n ) );
+    static <T> T fromEnd(Iterator<T> iterator, int n) {
+        return assertNotNull(iterator, fromEndOrNull(iterator, n));
     }
 
     /**
@@ -230,24 +206,18 @@ public final class Iterators
      * @return the iterator's n:th item from the end of the iteration,
      * or {@code null} if the iterator doesn't contain that many items.
      */
-    private static <T> T fromEndOrNull( Iterator<T> iterator, int n )
-    {
-        try
-        {
-            Deque<T> trail = new ArrayDeque<>( n );
-            while ( iterator.hasNext() )
-            {
-                if ( trail.size() > n )
-                {
+    private static <T> T fromEndOrNull(Iterator<T> iterator, int n) {
+        try {
+            Deque<T> trail = new ArrayDeque<>(n);
+            while (iterator.hasNext()) {
+                if (trail.size() > n) {
                     trail.removeLast();
                 }
-                trail.addFirst( iterator.next() );
+                trail.addFirst(iterator.next());
             }
             return trail.size() == n + 1 ? trail.getLast() : null;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
@@ -259,31 +229,23 @@ public final class Iterators
      * @param other the other iterator
      * @return {@code true} if all items are equal; otherwise
      */
-    public static boolean iteratorsEqual( Iterator<?> first, Iterator<?> other )
-    {
-        try
-        {
-            while ( first.hasNext() && other.hasNext() )
-            {
-                if ( !Objects.equals( first.next(), other.next() ) )
-                {
+    public static boolean iteratorsEqual(Iterator<?> first, Iterator<?> other) {
+        try {
+            while (first.hasNext() && other.hasNext()) {
+                if (!Objects.equals(first.next(), other.next())) {
                     return false;
                 }
             }
             return first.hasNext() == other.hasNext();
-        }
-        finally
-        {
-            tryCloseResource( first );
-            tryCloseResource( other );
+        } finally {
+            tryCloseResource(first);
+            tryCloseResource(other);
         }
     }
 
-    private static <T> T assertNotNull( Iterator<T> iterator, T result )
-    {
-        if ( result == null )
-        {
-            throw new NoSuchElementException( "No element found in " + iterator );
+    private static <T> T assertNotNull(Iterator<T> iterator, T result) {
+        if (result == null) {
+            throw new NoSuchElementException("No element found in " + iterator);
         }
         return result;
     }
@@ -303,21 +265,16 @@ public final class Iterators
      * element found.
      * @throws NoSuchElementException if more than one element was found.
      */
-    public static <T> T single( Iterator<T> iterator, T itemIfNone )
-    {
-        try
-        {
+    public static <T> T single(Iterator<T> iterator, T itemIfNone) {
+        try {
             T result = iterator.hasNext() ? iterator.next() : itemIfNone;
-            if ( iterator.hasNext() )
-            {
-                throw new NoSuchElementException( "More than one element in " + iterator + ". First element is '"
-                        + result + "' and the second element is '" + iterator.next() + "'" );
+            if (iterator.hasNext()) {
+                throw new NoSuchElementException("More than one element in " + iterator + ". First element is '"
+                        + result + "' and the second element is '" + iterator.next() + "'");
             }
             return result;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
@@ -330,20 +287,14 @@ public final class Iterators
      * @return the {@code collection} which was passed in, now filled
      * with the items from {@code iterator}.
      */
-    public static <C extends Collection<T>,T> C addToCollection( Iterator<T> iterator,
-            C collection )
-    {
-        try
-        {
-            while ( iterator.hasNext() )
-            {
-                collection.add( iterator.next() );
+    public static <C extends Collection<T>, T> C addToCollection(Iterator<T> iterator, C collection) {
+        try {
+            while (iterator.hasNext()) {
+                collection.add(iterator.next());
             }
             return collection;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
@@ -356,28 +307,21 @@ public final class Iterators
      * @return the {@code collection} which was passed in, now filled
      * with the items from {@code iterator}.
      */
-    private static <C extends Collection<T>,T> C addToCollectionUnique( Iterator<T> iterator, C collection )
-    {
-        try
-        {
-            while ( iterator.hasNext() )
-            {
-                addUnique( collection, iterator.next() );
+    private static <C extends Collection<T>, T> C addToCollectionUnique(Iterator<T> iterator, C collection) {
+        try {
+            while (iterator.hasNext()) {
+                addUnique(collection, iterator.next());
             }
             return collection;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
-    private static <T, C extends Collection<T>> void addUnique( C collection, T item )
-    {
-        if ( !collection.add( item ) )
-        {
-            throw new IllegalStateException( "Encountered an already added item:" + item +
-                    " when adding items uniquely to a collection:" + collection );
+    private static <T, C extends Collection<T>> void addUnique(C collection, T item) {
+        if (!collection.add(item)) {
+            throw new IllegalStateException("Encountered an already added item:" + item
+                    + " when adding items uniquely to a collection:" + collection);
         }
     }
 
@@ -390,9 +334,8 @@ public final class Iterators
      * @return the {@code collection} which was passed in, now filled
      * with the items from {@code iterator}.
      */
-    static <C extends Collection<T>,T> C addToCollectionUnique( Iterable<T> iterable, C collection )
-    {
-        return addToCollectionUnique( iterable.iterator(), collection );
+    static <C extends Collection<T>, T> C addToCollectionUnique(Iterable<T> iterable, C collection) {
+        return addToCollectionUnique(iterable.iterator(), collection);
     }
 
     /**
@@ -408,8 +351,7 @@ public final class Iterators
      * @param iterator the iterator to expose as an {@link Iterable}.
      * @return the supplied iterator posing as an {@link Iterable}.
      */
-    public static <T> Iterable<T> loop( final Iterator<T> iterator )
-    {
+    public static <T> Iterable<T> loop(final Iterator<T> iterator) {
         return () -> iterator;
     }
 
@@ -424,9 +366,8 @@ public final class Iterators
      * @param iterator the {@link Iterator} to count items in.
      * @return the number of items found in {@code iterator}.
      */
-    public static <T> long count( Iterator<T> iterator )
-    {
-        return count( iterator, Predicates.alwaysTrue() );
+    public static <T> long count(Iterator<T> iterator) {
+        return count(iterator, Predicates.alwaysTrue());
     }
 
     /**
@@ -441,56 +382,42 @@ public final class Iterators
      * @param filter the filter to test items against
      * @return the number of filtered items found in {@code iterator}.
      */
-    public static <T> long count( Iterator<T> iterator, Predicate<T> filter )
-    {
-        try
-        {
+    public static <T> long count(Iterator<T> iterator, Predicate<T> filter) {
+        try {
             long result = 0;
-            while ( iterator.hasNext() )
-            {
-                if ( filter.test( iterator.next() ) )
-                {
+            while (iterator.hasNext()) {
+                if (filter.test(iterator.next())) {
                     result++;
                 }
             }
             return result;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
-    public static <T> Collection<T> asCollection( Iterator<T> iterable )
-    {
-        return addToCollection( iterable, new ArrayList<>() );
+    public static <T> Collection<T> asCollection(Iterator<T> iterable) {
+        return addToCollection(iterable, new ArrayList<>());
     }
 
-    public static <T> List<T> asList( Iterator<T> iterator )
-    {
-        return addToCollection( iterator, new ArrayList<>() );
+    public static <T> List<T> asList(Iterator<T> iterator) {
+        return addToCollection(iterator, new ArrayList<>());
     }
 
-    public static <T, EX extends Exception> List<T> asList( RawIterator<T, EX> iterator ) throws EX
-    {
-        try
-        {
+    public static <T, EX extends Exception> List<T> asList(RawIterator<T, EX> iterator) throws EX {
+        try {
             List<T> out = new ArrayList<>();
-            while ( iterator.hasNext() )
-            {
-                out.add( iterator.next() );
+            while (iterator.hasNext()) {
+                out.add(iterator.next());
             }
             return out;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
-    public static <T> Set<T> asSet( Iterator<T> iterator )
-    {
-        return addToCollection( iterator, new HashSet<>() );
+    public static <T> Set<T> asSet(Iterator<T> iterator) {
+        return addToCollection(iterator, new HashSet<>());
     }
 
     /**
@@ -501,9 +428,8 @@ public final class Iterators
      * @return the {@link Set} containing the items.
      */
     @SafeVarargs
-    public static <T> Set<T> asSet( T... items )
-    {
-        return new HashSet<>( Arrays.asList( items ) );
+    public static <T> Set<T> asSet(T... items) {
+        return new HashSet<>(Arrays.asList(items));
     }
 
     /**
@@ -514,9 +440,8 @@ public final class Iterators
      * @return the {@link Set} containing the items.
      */
     @SafeVarargs
-    public static <T> Set<T> set( T... items )
-    {
-        return asSet( items );
+    public static <T> Set<T> set(T... items) {
+        return asSet(items);
     }
 
     /**
@@ -527,12 +452,10 @@ public final class Iterators
      * @return the {@link Set} containing the items.
      */
     @SafeVarargs
-    public static <T> Set<T> asUniqueSet( T... items )
-    {
+    public static <T> Set<T> asUniqueSet(T... items) {
         Set<T> set = new HashSet<>();
-        for ( T item : items )
-        {
-            addUnique( set, item );
+        for (T item : items) {
+            addUnique(set, item);
         }
         return set;
     }
@@ -544,47 +467,36 @@ public final class Iterators
      * @param <T> the type of the items
      * @return the {@link Set} containing the items.
      */
-    public static <T> Set<T> asUniqueSet( Iterator<T> iterator )
-    {
-        try
-        {
+    public static <T> Set<T> asUniqueSet(Iterator<T> iterator) {
+        try {
             Set<T> set = new HashSet<>();
-            while ( iterator.hasNext() )
-            {
-                addUnique( set, iterator.next() );
+            while (iterator.hasNext()) {
+                addUnique(set, iterator.next());
             }
             return set;
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
-    public static <T> SortedSet<T> asSortedSet( Comparator<T> comparator, T... items )
-    {
-        SortedSet<T> set = new TreeSet<>( comparator );
-        Collections.addAll( set, items );
+    public static <T> SortedSet<T> asSortedSet(Comparator<T> comparator, T... items) {
+        SortedSet<T> set = new TreeSet<>(comparator);
+        Collections.addAll(set, items);
         return set;
     }
 
-    static Iterator<Long> asIterator( final long... array )
-    {
-        return new Iterator<>()
-        {
+    static Iterator<Long> asIterator(final long... array) {
+        return new Iterator<>() {
             private int index;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return index < array.length;
             }
 
             @Override
-            public Long next()
-            {
-                if ( !hasNext() )
-                {
+            public Long next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
 
@@ -593,23 +505,18 @@ public final class Iterators
         };
     }
 
-    public static Iterator<Integer> asIterator( final int... array )
-    {
-        return new Iterator<>()
-        {
+    public static Iterator<Integer> asIterator(final int... array) {
+        return new Iterator<>() {
             private int index;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return index < array.length;
             }
 
             @Override
-            public Integer next()
-            {
-                if ( !hasNext() )
-                {
+            public Integer next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
 
@@ -619,23 +526,18 @@ public final class Iterators
     }
 
     @SafeVarargs
-    private static <T> Iterator<T> asIterator( final int maxItems, final T... array )
-    {
-        return new Iterator<>()
-        {
+    private static <T> Iterator<T> asIterator(final int maxItems, final T... array) {
+        return new Iterator<>() {
             int index;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return index < maxItems;
             }
 
             @Override
-            public T next()
-            {
-                if ( !hasNext() )
-                {
+            public T next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
 
@@ -644,28 +546,22 @@ public final class Iterators
         };
     }
 
-    public static <T> Iterator<T> iterator( final T item )
-    {
-        if ( item == null )
-        {
+    public static <T> Iterator<T> iterator(final T item) {
+        if (item == null) {
             return emptyIterator();
         }
 
-        return new Iterator<>()
-        {
+        return new Iterator<>() {
             T myItem = item;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return myItem != null;
             }
 
             @Override
-            public T next()
-            {
-                if ( !hasNext() )
-                {
+            public T next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
                 T toReturn = myItem;
@@ -676,75 +572,55 @@ public final class Iterators
     }
 
     @SafeVarargs
-    public static <T> Iterator<T> iterator( T ... items )
-    {
-        return asIterator( items.length, items );
+    public static <T> Iterator<T> iterator(T... items) {
+        return asIterator(items.length, items);
     }
 
     @SafeVarargs
-    public static <T> Iterator<T> iterator( int maxItems, T ... items )
-    {
-        return asIterator( maxItems, items );
+    public static <T> Iterator<T> iterator(int maxItems, T... items) {
+        return asIterator(maxItems, items);
     }
 
-    public static <T> Iterator<T> appendTo( Iterator<T> iterator, T... appended )
-    {
-        return new Iterator<>()
-        {
+    public static <T> Iterator<T> appendTo(Iterator<T> iterator, T... appended) {
+        return new Iterator<>() {
             private int index;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return iterator.hasNext() || index < appended.length;
             }
 
             @Override
-            public T next()
-            {
-                if ( iterator.hasNext() )
-                {
+            public T next() {
+                if (iterator.hasNext()) {
                     return iterator.next();
-                }
-                else if ( index < appended.length )
-                {
+                } else if (index < appended.length) {
                     return appended[index++];
-                }
-                else
-                {
-                    tryCloseResource( iterator );
+                } else {
+                    tryCloseResource(iterator);
                     throw new NoSuchElementException();
                 }
             }
         };
     }
 
-    public static <T> Iterator<T> prependTo( Iterator<T> iterator, T... prepended )
-    {
-        return new Iterator<>()
-        {
+    public static <T> Iterator<T> prependTo(Iterator<T> iterator, T... prepended) {
+        return new Iterator<>() {
             private int index;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return index < prepended.length || iterator.hasNext();
             }
 
             @Override
-            public T next()
-            {
-                if ( index < prepended.length )
-                {
+            public T next() {
+                if (index < prepended.length) {
                     return prepended[index++];
-                }
-                else if ( iterator.hasNext() )
-                {
+                } else if (iterator.hasNext()) {
                     return iterator.next();
-                }
-                else
-                {
-                    tryCloseResource( iterator );
+                } else {
+                    tryCloseResource(iterator);
                     throw new NoSuchElementException();
                 }
             }
@@ -761,143 +637,115 @@ public final class Iterators
      * @param <T> the type of objects in the iterator.
      * @return a string of the form {@code [A, B, C]} or {@code [A, B, C, ...]}.
      */
-    public static <T> String toString( Iterator<T> iterator, Function<T,String> toString, int maxItems )
-    {
-        try
-        {
-            StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
-            while ( iterator.hasNext() && maxItems > 0 )
-            {
-                String str = toString.apply( iterator.next() );
-                joiner.add( str );
+    public static <T> String toString(Iterator<T> iterator, Function<T, String> toString, int maxItems) {
+        try {
+            StringJoiner joiner = new StringJoiner(", ", "[", "]");
+            while (iterator.hasNext() && maxItems > 0) {
+                String str = toString.apply(iterator.next());
+                joiner.add(str);
                 maxItems--;
             }
-            if ( iterator.hasNext() )
-            {
-                joiner.add( "..." );
+            if (iterator.hasNext()) {
+                joiner.add("...");
             }
             return joiner.toString();
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> ResourceIterator<T> emptyResourceIterator()
-    {
+    @SuppressWarnings("unchecked")
+    public static <T> ResourceIterator<T> emptyResourceIterator() {
         return (ResourceIterator<T>) EmptyResourceIterator.EMPTY_RESOURCE_ITERATOR;
     }
 
-    public static <T> ResourceIterator<T> asResourceIterator( final Iterable<T> iterable )
-    {
-        if ( iterable instanceof ResourceIterable )
-        {
+    public static <T> ResourceIterator<T> asResourceIterator(final Iterable<T> iterable) {
+        if (iterable instanceof ResourceIterable) {
             return ((ResourceIterable<T>) iterable).iterator();
         }
-        return asResourceIterator( iterable.iterator() );
+        return asResourceIterator(iterable.iterator());
     }
 
-    public static <T> ResourceIterator<T> asResourceIterator( final Iterator<T> iterator )
-    {
-        if ( iterator instanceof ResourceIterator<?> )
-        {
+    public static <T> ResourceIterator<T> asResourceIterator(final Iterator<T> iterator) {
+        if (iterator instanceof ResourceIterator<?>) {
             return (ResourceIterator<T>) iterator;
         }
-        return new WrappingResourceIterator<>( iterator );
+        return new WrappingResourceIterator<>(iterator);
     }
 
-    public static <T> ResourceIterator<T> resourceIterator( final Iterator<T> iterator, final Resource resource )
-    {
-        return new PrefetchingResourceIterator<>()
-        {
+    public static <T> ResourceIterator<T> resourceIterator(final Iterator<T> iterator, final Resource resource) {
+        return new PrefetchingResourceIterator<>() {
             @Override
-            public void close()
-            {
+            public void close() {
                 resource.close();
             }
 
             @Override
-            protected T fetchNextOrNull()
-            {
+            protected T fetchNextOrNull() {
                 return iterator.hasNext() ? iterator.next() : null;
             }
         };
     }
 
     @SafeVarargs
-    public static <T> T[] array( T... items )
-    {
+    public static <T> T[] array(T... items) {
         return items;
     }
 
-    public static <X> Iterator<X> filter( Predicate<? super X> specification, Iterator<X> i )
-    {
-        return new FilterIterable.FilterIterator<>( i, specification );
+    public static <X> Iterator<X> filter(Predicate<? super X> specification, Iterator<X> i) {
+        return new FilterIterable.FilterIterator<>(i, specification);
     }
 
-    public static <FROM, TO> Iterator<TO> map( Function<? super FROM, ? extends TO> function, Iterator<FROM> from )
-    {
-        return new MapIterable.MapIterator<>( from, function );
+    public static <FROM, TO> Iterator<TO> map(Function<? super FROM, ? extends TO> function, Iterator<FROM> from) {
+        return new MapIterable.MapIterator<>(from, function);
     }
 
     public static <FROM, TO, EX extends Exception> RawIterator<TO, EX> map(
-            ThrowingFunction<? super FROM, ? extends TO, EX> function, RawIterator<FROM, EX> from )
-    {
-        return new RawMapIterator<>( from, function );
+            ThrowingFunction<? super FROM, ? extends TO, EX> function, RawIterator<FROM, EX> from) {
+        return new RawMapIterator<>(from, function);
     }
 
-    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator( Iterator<T> iter )
-    {
-        return new RawIterator<>()
-        {
+    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator(Iterator<T> iter) {
+        return new RawIterator<>() {
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return iter.hasNext();
             }
 
             @Override
-            public T next()
-            {
+            public T next() {
                 return iter.next();
             }
         };
     }
 
-    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator( Stream<T> stream )
-    {
-        return asRawIterator( stream.iterator() );
+    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator(Stream<T> stream) {
+        return asRawIterator(stream.iterator());
     }
 
     @SafeVarargs
-    @SuppressWarnings( "unchecked" )
-    public static <T> Iterator<T> concat( Iterator<? extends T>... iterators )
-    {
-        return concat( Arrays.asList( (Iterator<T>[]) iterators ).iterator() );
+    @SuppressWarnings("unchecked")
+    public static <T> Iterator<T> concat(Iterator<? extends T>... iterators) {
+        return concat(Arrays.asList((Iterator<T>[]) iterators).iterator());
     }
 
-    public static <T> ResourceIterator<T> concatResourceIterators( Iterator<ResourceIterator<T>> iterators )
-    {
-        return new CombiningResourceIterator<>( iterators );
+    public static <T> ResourceIterator<T> concatResourceIterators(Iterator<ResourceIterator<T>> iterators) {
+        return new CombiningResourceIterator<>(iterators);
     }
 
-    public static <T> Iterator<T> concat( Iterator<Iterator<T>> iterators )
-    {
-        return new CombiningIterator<>( iterators );
+    public static <T> Iterator<T> concat(Iterator<Iterator<T>> iterators) {
+        return new CombiningIterator<>(iterators);
     }
 
-    public static <T> PrefetchingIterator<T> prefetching( Iterator<T> iterator )
-    {
-        return iterator instanceof PrefetchingIterator ? (PrefetchingIterator<T>) iterator : new PrefetchingIterator<>()
-        {
-            @Override
-            protected T fetchNextOrNull()
-            {
-                return iterator.hasNext() ? iterator.next() : null;
-            }
-        };
+    public static <T> PrefetchingIterator<T> prefetching(Iterator<T> iterator) {
+        return iterator instanceof PrefetchingIterator
+                ? (PrefetchingIterator<T>) iterator
+                : new PrefetchingIterator<>() {
+                    @Override
+                    protected T fetchNextOrNull() {
+                        return iterator.hasNext() ? iterator.next() : null;
+                    }
+                };
     }
 
     /**
@@ -911,9 +759,8 @@ public final class Iterators
      * @return stream over the iterator elements
      * @throws NullPointerException when the given stream is {@code null}
      */
-    public static <T> Stream<T> stream( Iterator<T> iterator )
-    {
-        return stream( iterator, 0 );
+    public static <T> Stream<T> stream(Iterator<T> iterator) {
+        return stream(iterator, 0);
     }
 
     /**
@@ -928,14 +775,12 @@ public final class Iterators
      * @return stream over the iterator elements
      * @throws NullPointerException when the given iterator is {@code null}
      */
-    public static <T> Stream<T> stream( Iterator<T> iterator, int characteristics )
-    {
-        Objects.requireNonNull( iterator );
-        Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize( iterator, characteristics );
-        Stream<T> stream = StreamSupport.stream( spliterator, false );
-        if ( iterator instanceof Resource resource )
-        {
-            return stream.onClose( resource::close );
+    public static <T> Stream<T> stream(Iterator<T> iterator, int characteristics) {
+        Objects.requireNonNull(iterator);
+        Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize(iterator, characteristics);
+        Stream<T> stream = StreamSupport.stream(spliterator, false);
+        if (iterator instanceof Resource resource) {
+            return stream.onClose(resource::close);
         }
         return stream;
     }
@@ -950,15 +795,11 @@ public final class Iterators
      * @param consumer the consumer of each remaining item in the iterator
      * @param <T> the type of elements in the given iterator
      */
-    public static <T> void forEachRemaining( Iterator<T> iterator, Consumer<? super T> consumer )
-    {
-        try
-        {
-            iterator.forEachRemaining( consumer );
-        }
-        finally
-        {
-            tryCloseResource( iterator );
+    public static <T> void forEachRemaining(Iterator<T> iterator, Consumer<? super T> consumer) {
+        try {
+            iterator.forEachRemaining(consumer);
+        } finally {
+            tryCloseResource(iterator);
         }
     }
 
@@ -967,40 +808,31 @@ public final class Iterators
      *
      * @param iterator the iterator to check for closing
      */
-    public static void tryCloseResource( Iterator<?> iterator )
-    {
-        if ( iterator instanceof Resource closeable )
-        {
+    public static void tryCloseResource(Iterator<?> iterator) {
+        if (iterator instanceof Resource closeable) {
             closeable.close();
         }
     }
 
-    private static void tryCloseResource( RawIterator<?,?> iterator )
-    {
-        if ( iterator instanceof Resource closeable )
-        {
+    private static void tryCloseResource(RawIterator<?, ?> iterator) {
+        if (iterator instanceof Resource closeable) {
             closeable.close();
         }
     }
 
-    private static class EmptyResourceIterator<E> implements ResourceIterator<E>
-    {
+    private static class EmptyResourceIterator<E> implements ResourceIterator<E> {
         private static final ResourceIterator<Object> EMPTY_RESOURCE_ITERATOR = new Iterators.EmptyResourceIterator<>();
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return false;
         }
 
         @Override
-        public E next()
-        {
+        public E next() {
             throw new NoSuchElementException();
         }
     }

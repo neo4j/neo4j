@@ -19,8 +19,13 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import org.junit.jupiter.api.Test;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
@@ -37,114 +42,87 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
-
-@DbmsExtension( configurationCallback = "configure" )
-class QueryFailureTransactionIT
-{
+@DbmsExtension(configurationCallback = "configure")
+class QueryFailureTransactionIT {
     @Inject
     private GraphDatabaseAPI databaseAPI;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.addExtension( new CustomProcedureExtension( ProcedureWithException.class ) );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.addExtension(new CustomProcedureExtension(ProcedureWithException.class));
     }
 
     @Test
-    void failedQueryExecutionRollbackTransaction()
-    {
-        try ( var transaction = databaseAPI.beginTx() )
-        {
-            assertThrows( Exception.class, () -> transaction.execute( "CREATE (n:evilNode {v:0}) WITH (n) RETURN 1/n.v" ) );
+    void failedQueryExecutionRollbackTransaction() {
+        try (var transaction = databaseAPI.beginTx()) {
+            assertThrows(Exception.class, () -> transaction.execute("CREATE (n:evilNode {v:0}) WITH (n) RETURN 1/n.v"));
 
-            checkFailToCommit( transaction );
+            checkFailToCommit(transaction);
         }
     }
 
     @Test
-    void failedQueryExecutionRollbackTransactionAndAllowUserRollback()
-    {
-        try ( var transaction = databaseAPI.beginTx() )
-        {
-            assertThrows( Exception.class, () -> transaction.execute( "CREATE (n:evilNode {v:0}) WITH (n) RETURN 1/n.v" ) );
+    void failedQueryExecutionRollbackTransactionAndAllowUserRollback() {
+        try (var transaction = databaseAPI.beginTx()) {
+            assertThrows(Exception.class, () -> transaction.execute("CREATE (n:evilNode {v:0}) WITH (n) RETURN 1/n.v"));
             transaction.rollback();
 
-            checkFailToCommit( transaction );
+            checkFailToCommit(transaction);
         }
     }
 
     @Test
-    void incorrectQueryRollbacksTransaction()
-    {
-        try ( var transaction = databaseAPI.beginTx() )
-        {
-            assertThrows( Exception.class, () -> transaction.execute( "rollback everything!" ) );
+    void incorrectQueryRollbacksTransaction() {
+        try (var transaction = databaseAPI.beginTx()) {
+            assertThrows(Exception.class, () -> transaction.execute("rollback everything!"));
 
-            checkFailToCommit( transaction );
+            checkFailToCommit(transaction);
         }
     }
 
     @Test
-    void rollbackTransactionOnResultException()
-    {
-        try ( var transaction = databaseAPI.beginTx() )
-        {
-            var result = transaction.execute( "CALL exception.stream.generate()" );
-            assertThrows( QueryExecutionException.class, () ->
-                    {
-                        while ( result.hasNext() )
-                        {
-                            result.next();
-                        }
-                    } );
-            checkFailToCommit( transaction );
+    void rollbackTransactionOnResultException() {
+        try (var transaction = databaseAPI.beginTx()) {
+            var result = transaction.execute("CALL exception.stream.generate()");
+            assertThrows(QueryExecutionException.class, () -> {
+                while (result.hasNext()) {
+                    result.next();
+                }
+            });
+            checkFailToCommit(transaction);
         }
     }
 
-    private static void checkFailToCommit( Transaction transaction )
-    {
-        var e = assertThrows( TransactionFailureException.class, transaction::commit );
-        assertThat( getRootCause( e ) ).isInstanceOf( NotInTransactionException.class );
+    private static void checkFailToCommit(Transaction transaction) {
+        var e = assertThrows(TransactionFailureException.class, transaction::commit);
+        assertThat(getRootCause(e)).isInstanceOf(NotInTransactionException.class);
     }
 
-    private static class CustomProcedureExtension extends ExtensionFactory<CustomProcedureExtension.Dependencies>
-    {
+    private static class CustomProcedureExtension extends ExtensionFactory<CustomProcedureExtension.Dependencies> {
         private final Class<?> procedureClass;
 
-        interface Dependencies
-        {
+        interface Dependencies {
             GlobalProcedures procedures();
 
             Database database();
         }
 
-        CustomProcedureExtension( Class<?> procedureClass )
-        {
-            super( DATABASE, "customProcedureRegistration" );
+        CustomProcedureExtension(Class<?> procedureClass) {
+            super(DATABASE, "customProcedureRegistration");
             this.procedureClass = procedureClass;
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-        {
-            if ( DEFAULT_DATABASE_NAME.equals( dependencies.database().getNamedDatabaseId().name() ) )
-            {
-                return new LifecycleAdapter()
-                {
+        public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+            if (DEFAULT_DATABASE_NAME.equals(
+                    dependencies.database().getNamedDatabaseId().name())) {
+                return new LifecycleAdapter() {
                     @Override
-                    public void start() throws Exception
-                    {
-                        dependencies.procedures().registerProcedure( procedureClass );
+                    public void start() throws Exception {
+                        dependencies.procedures().registerProcedure(procedureClass);
                     }
                 };
-            }
-            else
-            {
+            } else {
                 return new LifecycleAdapter();
             }
         }

@@ -30,16 +30,27 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
 
-  override def createPlans(indexMatches: Set[NodeIndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = for {
+  override def createPlans(
+    indexMatches: Set[NodeIndexMatch],
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    restrictions: LeafPlanRestrictions,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch.variableName, restrictions) && indexMatch.indexDescriptor.properties.size == 1
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 
-  private def doCreatePlans(indexMatch: NodeIndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
+  private def doCreatePlans(
+    indexMatch: NodeIndexMatch,
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     indexMatch.propertyPredicates.flatMap { indexPredicate =>
       indexPredicate.predicate match {
-        case predicate@ (_:Contains | _:EndsWith) =>
+        case predicate @ (_: Contains | _: EndsWith) =>
           val (valueExpr, stringSearchMode) = predicate match {
             case contains: Contains =>
               (contains.rhs, ContainsSearchMode)
@@ -64,7 +75,7 @@ object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
             providedOrder = indexMatch.providedOrder,
             indexOrder = indexMatch.indexOrder,
             context = context,
-            indexType = indexMatch.indexDescriptor.indexType,
+            indexType = indexMatch.indexDescriptor.indexType
           )
           Some(plan)
 

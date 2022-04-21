@@ -23,8 +23,7 @@ package org.neo4j.internal.batchimport;
  * Represents something that can be parallelizable, in this case that means the ability to dynamically change
  * the number of processors executing tasks.
  */
-public interface Parallelizable
-{
+public interface Parallelizable {
     /**
      * Change number of processors assigned to this {@link Parallelizable}. Accepts a {@code delta},
      * which may specify positive or negative value, even zero. This instances may have internal constraints
@@ -40,8 +39,7 @@ public interface Parallelizable
      * zero will result in merely the current number of assigned processors to be returned.
      * @return the number of assigned processors as a result this call.
      */
-    default int processors( int delta )
-    {
+    default int processors(int delta) {
         return 1;
     }
 }

@@ -23,47 +23,38 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
-class InaccessibleLock implements Lock
-{
+class InaccessibleLock implements Lock {
     private final String message;
 
-    InaccessibleLock( String message )
-    {
+    InaccessibleLock(String message) {
         this.message = message;
     }
 
     @Override
-    public void lock()
-    {
-        throw new IllegalStateException( message );
+    public void lock() {
+        throw new IllegalStateException(message);
     }
 
     @Override
-    public void lockInterruptibly()
-    {
-        throw new IllegalStateException( message );
+    public void lockInterruptibly() {
+        throw new IllegalStateException(message);
     }
 
     @Override
-    public boolean tryLock()
-    {
+    public boolean tryLock() {
         return false;
     }
 
     @Override
-    public boolean tryLock( long time, TimeUnit unit )
-    {
+    public boolean tryLock(long time, TimeUnit unit) {
         return false;
     }
 
     @Override
-    public void unlock()
-    {
-    }
+    public void unlock() {}
 
     @Override
-    public Condition newCondition()
-    {
-        throw new UnsupportedOperationException( message );
+    public Condition newCondition() {
+        throw new UnsupportedOperationException(message);
     }
 }

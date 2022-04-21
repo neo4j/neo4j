@@ -26,10 +26,8 @@ import java.io.IOException;
  *
  * @see org.apache.lucene.search.IndexSearcher
  */
-public class LuceneIndexReaderAcquisitionException extends RuntimeException
-{
-    public LuceneIndexReaderAcquisitionException( String message, IOException e )
-    {
-        super( message, e );
+public class LuceneIndexReaderAcquisitionException extends RuntimeException {
+    public LuceneIndexReaderAcquisitionException(String message, IOException e) {
+        super(message, e);
     }
 }

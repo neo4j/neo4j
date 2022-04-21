@@ -19,44 +19,31 @@
  */
 package org.neo4j.internal.unsafe;
 
-import sun.misc.Unsafe;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import sun.misc.Unsafe;
 
-final class UnsafeAccessor
-{
-    private UnsafeAccessor()
-    {
-    }
+final class UnsafeAccessor {
+    private UnsafeAccessor() {}
 
-    static Unsafe getUnsafe()
-    {
-        try
-        {
+    static Unsafe getUnsafe() {
+        try {
             return Unsafe.getUnsafe();
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             Class<Unsafe> type = Unsafe.class;
-            try
-            {
+            try {
                 Field[] fields = type.getDeclaredFields();
-                for ( Field field : fields )
-                {
-                    if ( Modifier.isStatic( field.getModifiers() ) && type.isAssignableFrom( field.getType() ) )
-                    {
-                        field.setAccessible( true );
-                        return type.cast( field.get( null ) );
+                for (Field field : fields) {
+                    if (Modifier.isStatic(field.getModifiers()) && type.isAssignableFrom(field.getType())) {
+                        field.setAccessible(true);
+                        return type.cast(field.get(null));
                     }
                 }
+            } catch (IllegalAccessException iae) {
+                e.addSuppressed(iae);
             }
-            catch ( IllegalAccessException iae )
-            {
-                e.addSuppressed( iae );
-            }
-            var error = new LinkageError( "Cannot access sun.misc.Unsafe", e );
-            error.addSuppressed( e );
+            var error = new LinkageError("Cannot access sun.misc.Unsafe", e);
+            error.addSuppressed(e);
             throw error;
         }
     }

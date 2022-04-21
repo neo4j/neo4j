@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import scala.util.Random
 
 abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   private val random = new Random(77)
 
@@ -92,7 +92,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByIdSeek("x", Set.empty, toFind.map(_.getId):_*)
+      .nodeByIdSeek("x", Set.empty, toFind.map(_.getId): _*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -112,7 +112,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByIdSeek("x", Set.empty, nodesToLookFor:_*)
+      .nodeByIdSeek("x", Set.empty, nodesToLookFor: _*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -123,14 +123,14 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle nodeById + filter") {
     // given
-    val nodes = given{ nodeGraph(sizeHint) }
+    val nodes = given { nodeGraph(sizeHint) }
     val toSeekFor = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .filter(s"id(x) = ${toFind.getId}")
-      .nodeByIdSeek("x", Set.empty, toSeekFor.map(_.getId):_*)
+      .nodeByIdSeek("x", Set.empty, toSeekFor.map(_.getId): _*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -150,7 +150,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n", "x")
       .apply()
       .|.filter(s"id(x) = ${toFind.getId}")
-      .|.nodeByIdSeek("x", Set.empty, toSeekFor.map(_.getId):_*)
+      .|.nodeByIdSeek("x", Set.empty, toSeekFor.map(_.getId): _*)
       .allNodeScan("n")
       .build()
 

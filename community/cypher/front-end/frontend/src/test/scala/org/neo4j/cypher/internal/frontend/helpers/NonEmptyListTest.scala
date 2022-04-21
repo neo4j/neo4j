@@ -91,7 +91,12 @@ class NonEmptyListTest extends CypherFunSuite {
 
   test("Should map and prepend reversed to NonEmptyList") {
     NonEmptyList(2, 3).mapAndPrependReversedTo[Int, Int](_ + 1, NonEmptyList(1)) should equal(NonEmptyList(4, 3, 1))
-    NonEmptyList(2, 3).mapAndPrependReversedTo[Int, Int](_ + 1, NonEmptyList(1, 2)) should equal(NonEmptyList(4, 3, 1, 2))
+    NonEmptyList(2, 3).mapAndPrependReversedTo[Int, Int](_ + 1, NonEmptyList(1, 2)) should equal(NonEmptyList(
+      4,
+      3,
+      1,
+      2
+    ))
     NonEmptyList(2).mapAndPrependReversedTo[Int, Int](_ + 1, NonEmptyList(1, 2)) should equal(NonEmptyList(3, 1, 2))
     NonEmptyList(2).mapAndPrependReversedTo[Int, Int](_ + 1, NonEmptyList(1)) should equal(NonEmptyList(3, 1))
   }
@@ -116,9 +121,9 @@ class NonEmptyListTest extends CypherFunSuite {
 
   test("Should concatenate NonEmptyLists") {
     (NonEmptyList(1) ++ NonEmptyList(4)) should equal(NonEmptyList(1, 4))
-    (NonEmptyList(1) ++ NonEmptyList(4, 5 ,6)) should equal(NonEmptyList(1, 4, 5, 6))
+    (NonEmptyList(1) ++ NonEmptyList(4, 5, 6)) should equal(NonEmptyList(1, 4, 5, 6))
     (NonEmptyList(1, 2, 3) ++ NonEmptyList(4)) should equal(NonEmptyList(1, 2, 3, 4))
-    (NonEmptyList(1, 2, 3) ++ NonEmptyList(4, 5 ,6)) should equal(NonEmptyList(1, 2, 3, 4, 5, 6))
+    (NonEmptyList(1, 2, 3) ++ NonEmptyList(4, 5, 6)) should equal(NonEmptyList(1, 2, 3, 4, 5, 6))
   }
 
   test("Should support foreach on NonEmptyLists") {
@@ -201,11 +206,24 @@ class NonEmptyListTest extends CypherFunSuite {
     NonEmptyList(1).partition { x => if (x == 1) Left(x) else Right(x) } should equal(Left(NonEmptyList(1) -> None))
     NonEmptyList(1).partition { x => if (x != 1) Left(x) else Right(x) } should equal(Right(None -> NonEmptyList(1)))
 
-    NonEmptyList(1, 2, 3).partition { x => if (x == 1) Left(x) else Right(x) } should equal(Left(NonEmptyList(1) -> Some(NonEmptyList(2, 3))))
-    NonEmptyList(1, 2, 3).partition { x => if (x != 1) Left(x) else Right(x) } should equal(Right(Some(NonEmptyList(2, 3)) -> NonEmptyList(1)))
+    NonEmptyList(1, 2, 3).partition { x => if (x == 1) Left(x) else Right(x) } should equal(
+      Left(NonEmptyList(1) -> Some(NonEmptyList(2, 3)))
+    )
+    NonEmptyList(1, 2, 3).partition { x => if (x != 1) Left(x) else Right(x) } should equal(Right(Some(NonEmptyList(
+      2,
+      3
+    )) -> NonEmptyList(1)))
 
-    NonEmptyList(1, 2, 3).partition { x => if (x != 0) Left(x) else Right(x) } should equal(Left(NonEmptyList(1, 2, 3) -> None))
-    NonEmptyList(1, 2, 3).partition { x => if (x == 0) Left(x) else Right(x) } should equal(Right(None -> NonEmptyList(1, 2, 3)))
+    NonEmptyList(1, 2, 3).partition { x => if (x != 0) Left(x) else Right(x) } should equal(Left(NonEmptyList(
+      1,
+      2,
+      3
+    ) -> None))
+    NonEmptyList(1, 2, 3).partition { x => if (x == 0) Left(x) else Right(x) } should equal(Right(None -> NonEmptyList(
+      1,
+      2,
+      3
+    )))
   }
 
   test("exists should work as expected") {

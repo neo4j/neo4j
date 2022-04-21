@@ -34,7 +34,11 @@ object LimitSelectivity {
 
   def forAllParts(query: SinglePlannerQuery, context: LogicalPlanningContext): List[Selectivity] = {
     @tailrec
-    def recurse(query: Option[SinglePlannerQuery], parentLimitSelectivity: Selectivity, acc: List[Selectivity]): List[Selectivity] = {
+    def recurse(
+      query: Option[SinglePlannerQuery],
+      parentLimitSelectivity: Selectivity,
+      acc: List[Selectivity]
+    ): List[Selectivity] = {
       query match {
         case None => acc
         case Some(query) =>
@@ -46,7 +50,11 @@ object LimitSelectivity {
     recurse(Some(query), Selectivity.ONE, List.empty)
   }
 
-  def forLastPart(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
+  def forLastPart(
+    query: SinglePlannerQuery,
+    context: LogicalPlanningContext,
+    parentLimitSelectivity: Selectivity
+  ): Selectivity = {
     if (!query.readOnly) {
       Selectivity.ONE
     } else {
@@ -55,13 +63,24 @@ object LimitSelectivity {
           Selectivity.ONE
 
         case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
-          val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
-          val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable, context.indexCompatiblePredicatesProviderContext)
+          val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ =>
+            proj.withPagination(proj.queryPagination.withLimit(None))
+          ))
+          val cardinalityModel = context.metrics.cardinality(
+            _,
+            context.input,
+            context.semanticTable,
+            context.indexCompatiblePredicatesProviderContext
+          )
 
           val cardinalityWithoutLimit = cardinalityModel(queryWithoutLimit)
           val cardinalityWithLimit = cardinalityModel(query)
 
-          CardinalityCostModel.limitingPlanSelectivity(cardinalityWithoutLimit, cardinalityWithLimit, parentLimitSelectivity)
+          CardinalityCostModel.limitingPlanSelectivity(
+            cardinalityWithoutLimit,
+            cardinalityWithLimit,
+            parentLimitSelectivity
+          )
 
         case ProcedureCallProjection(ResolvedCall(signature, _, _, _, _, _)) if signature.eager => Selectivity.ONE
 

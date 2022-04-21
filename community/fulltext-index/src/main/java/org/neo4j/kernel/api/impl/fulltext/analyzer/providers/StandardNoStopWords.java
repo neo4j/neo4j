@@ -22,31 +22,26 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class StandardNoStopWords extends AnalyzerProvider
-{
+public class StandardNoStopWords extends AnalyzerProvider {
     public static final String ANALYZER_NAME = "standard-no-stop-words";
 
-    public StandardNoStopWords()
-    {
-        super( ANALYZER_NAME );
+    public StandardNoStopWords() {
+        super(ANALYZER_NAME);
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
-        return new StandardAnalyzer( CharArraySet.EMPTY_SET );
+    public Analyzer createAnalyzer() {
+        return new StandardAnalyzer(CharArraySet.EMPTY_SET);
     }
 
     @Override
-    public String description()
-    {
-        return "The default analyzer. Similar to the 'standard' analyzer, but filters no stop words. " +
-                "Tokenizes on non-letter boundaries filters out punctuation. " +
-                "Does no stemming, but takes care to keep likely product names, URLs and email addresses as single terms.";
+    public String description() {
+        return "The default analyzer. Similar to the 'standard' analyzer, but filters no stop words. "
+                + "Tokenizes on non-letter boundaries filters out punctuation. "
+                + "Does no stemming, but takes care to keep likely product names, URLs and email addresses as single terms.";
     }
 }

@@ -23,34 +23,28 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 
-public class LockWorkFailureDump
-{
+public class LockWorkFailureDump {
     private final Path file;
 
-    public LockWorkFailureDump( Path file )
-    {
+    public LockWorkFailureDump(Path file) {
         this.file = file;
     }
 
-    public Path dumpState( Locks lm, LockWorker... workers ) throws IOException
-    {
-        try ( OutputStream out = Files.newOutputStream( file ) )
-        {
-            InternalLogProvider logProvider = new Log4jLogProvider( out );
+    public Path dumpState(Locks lm, LockWorker... workers) throws IOException {
+        try (OutputStream out = Files.newOutputStream(file)) {
+            InternalLogProvider logProvider = new Log4jLogProvider(out);
             //  * locks held by the lock manager
-            lm.accept( new DumpLocksVisitor( logProvider.getLog( LockWorkFailureDump.class ) ) );
+            lm.accept(new DumpLocksVisitor(logProvider.getLog(LockWorkFailureDump.class)));
             //  * rag manager state;
             //  * workers state
-            InternalLog log = logProvider.getLog( getClass() );
-            for ( LockWorker worker : workers )
-            {
+            InternalLog log = logProvider.getLog(getClass());
+            for (LockWorker worker : workers) {
                 // - what each is doing and have up to now
-                log.info( "Worker %s", worker );
+                log.info("Worker %s", worker);
             }
             return file;
         }

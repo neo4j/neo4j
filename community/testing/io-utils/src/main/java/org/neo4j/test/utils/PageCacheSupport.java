@@ -19,12 +19,14 @@
  */
 package org.neo4j.test.utils;
 
-import org.apache.commons.lang3.ObjectUtils;
+import static java.lang.Boolean.TRUE;
+import static org.neo4j.io.ByteUnit.parse;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.apache.commons.lang3.ObjectUtils;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -43,30 +45,22 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.lang.Boolean.TRUE;
-import static org.neo4j.io.ByteUnit.parse;
-import static org.neo4j.test.utils.PageCacheConfig.config;
-
-public class PageCacheSupport
-{
+public class PageCacheSupport {
     protected JobScheduler jobScheduler;
     protected SystemNanoClock clock;
     protected PageCache pageCache;
     private final PageCacheConfig baseConfig;
 
-    public PageCacheSupport()
-    {
-        this( config() );
+    public PageCacheSupport() {
+        this(config());
     }
 
-    public PageCacheSupport( PageCacheConfig config )
-    {
+    public PageCacheSupport(PageCacheConfig config) {
         this.baseConfig = config;
     }
 
-    public PageCache getPageCache( FileSystemAbstraction fs )
-    {
-        return getPageCache( fs, config() );
+    public PageCache getPageCache(FileSystemAbstraction fs) {
+        return getPageCache(fs, config());
     }
 
     /**
@@ -77,15 +71,14 @@ public class PageCacheSupport
      * constructor, if any.
      * @return the opened {@link PageCache}.
      */
-    public PageCache getPageCache( FileSystemAbstraction fs, PageCacheConfig overriddenConfig )
-    {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fs, new DefaultPageCacheTracer(), EmptyMemoryTracker.INSTANCE );
-        return getPageCache( factory, overriddenConfig );
+    public PageCache getPageCache(FileSystemAbstraction fs, PageCacheConfig overriddenConfig) {
+        SingleFilePageSwapperFactory factory =
+                new SingleFilePageSwapperFactory(fs, new DefaultPageCacheTracer(), EmptyMemoryTracker.INSTANCE);
+        return getPageCache(factory, overriddenConfig);
     }
 
-    public PageCache getPageCache( PageSwapperFactory swapperFactory )
-    {
-        return getPageCache( swapperFactory, config() );
+    public PageCache getPageCache(PageSwapperFactory swapperFactory) {
+        return getPageCache(swapperFactory, config());
     }
 
     /**
@@ -96,145 +89,116 @@ public class PageCacheSupport
      * constructor, if any.
      * @return the opened {@link PageCache}.
      */
-    public PageCache getPageCache( PageSwapperFactory factory, PageCacheConfig overriddenConfig )
-    {
+    public PageCache getPageCache(PageSwapperFactory factory, PageCacheConfig overriddenConfig) {
         closeExistingPageCache();
         var memoryTracker = new LocalMemoryTracker();
-        MemoryAllocator mman = MemoryAllocator.createAllocator( parse( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ) ),
-                memoryTracker );
-        if ( clock == null )
-        {
+        MemoryAllocator mman = MemoryAllocator.createAllocator(
+                parse(selectConfig(baseConfig.memory, overriddenConfig.memory, "8 MiB")), memoryTracker);
+        if (clock == null) {
             clock = Clocks.nanoClock();
         }
-        MuninnPageCache.Configuration configuration = MuninnPageCache.config( mman ).memoryTracker( memoryTracker ).clock( clock );
-        Integer pageSize = selectConfig( baseConfig.pageSize, overriddenConfig.pageSize, null );
-        configuration = pageSize == null ? configuration : configuration.pageSize( pageSize );
-        PageCacheTracer cacheTracer = selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL );
-        configuration = configuration.pageCacheTracer( cacheTracer );
+        MuninnPageCache.Configuration configuration =
+                MuninnPageCache.config(mman).memoryTracker(memoryTracker).clock(clock);
+        Integer pageSize = selectConfig(baseConfig.pageSize, overriddenConfig.pageSize, null);
+        configuration = pageSize == null ? configuration : configuration.pageSize(pageSize);
+        PageCacheTracer cacheTracer = selectConfig(baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL);
+        configuration = configuration.pageCacheTracer(cacheTracer);
         initializeJobScheduler();
-        pageCache = new MuninnPageCache( factory, jobScheduler, configuration );
-        pageCachePostConstruct( overriddenConfig );
+        pageCache = new MuninnPageCache(factory, jobScheduler, configuration);
+        pageCachePostConstruct(overriddenConfig);
         return pageCache;
     }
 
-    protected void initializeJobScheduler()
-    {
-        jobScheduler = new ThreadPoolJobScheduler( "PageCacheRule-" );
+    protected void initializeJobScheduler() {
+        jobScheduler = new ThreadPoolJobScheduler("PageCacheRule-");
     }
 
-    protected static <T> T selectConfig( T base, T overridden, T defaultValue )
-    {
-        return ObjectUtils.firstNonNull( base, overridden, defaultValue );
+    protected static <T> T selectConfig(T base, T overridden, T defaultValue) {
+        return ObjectUtils.firstNonNull(base, overridden, defaultValue);
     }
 
-    protected void pageCachePostConstruct( PageCacheConfig overriddenConfig )
-    {
-        if ( selectConfig( baseConfig.inconsistentReads, overriddenConfig.inconsistentReads, TRUE ) )
-        {
-            AtomicBoolean controller = selectConfig( baseConfig.nextReadIsInconsistent,
-                    overriddenConfig.nextReadIsInconsistent, null );
+    protected void pageCachePostConstruct(PageCacheConfig overriddenConfig) {
+        if (selectConfig(baseConfig.inconsistentReads, overriddenConfig.inconsistentReads, TRUE)) {
+            AtomicBoolean controller =
+                    selectConfig(baseConfig.nextReadIsInconsistent, overriddenConfig.nextReadIsInconsistent, null);
             Adversary adversary = controller != null
-                    ? new AtomicBooleanInconsistentReadAdversary( controller )
+                    ? new AtomicBooleanInconsistentReadAdversary(controller)
                     : new RandomInconsistentReadAdversary();
-            pageCache = new AdversarialPageCache( pageCache, adversary );
+            pageCache = new AdversarialPageCache(pageCache, adversary);
         }
-        if ( selectConfig( baseConfig.accessChecks, overriddenConfig.accessChecks, false ) )
-        {
-            pageCache = new AccessCheckingPageCache( pageCache );
+        if (selectConfig(baseConfig.accessChecks, overriddenConfig.accessChecks, false)) {
+            pageCache = new AccessCheckingPageCache(pageCache);
         }
     }
 
-    protected void closeExistingPageCache()
-    {
-        closePageCache( "Failed to stop existing PageCache prior to creating a new one." );
-        closeJobScheduler( "Failed to stop existing job scheduler prior to creating a new one." );
+    protected void closeExistingPageCache() {
+        closePageCache("Failed to stop existing PageCache prior to creating a new one.");
+        closeJobScheduler("Failed to stop existing job scheduler prior to creating a new one.");
     }
 
-    protected void after( boolean success )
-    {
-        closePageCache( "Failed to stop PageCache after test." );
-        closeJobScheduler( "Failed to stop job scheduler after test." );
+    protected void after(boolean success) {
+        closePageCache("Failed to stop PageCache after test.");
+        closeJobScheduler("Failed to stop job scheduler after test.");
     }
 
-    private void closeJobScheduler( String errorMessage )
-    {
-        if ( jobScheduler != null )
-        {
-            try
-            {
+    private void closeJobScheduler(String errorMessage) {
+        if (jobScheduler != null) {
+            try {
                 jobScheduler.close();
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( errorMessage, e );
+            } catch (Exception e) {
+                throw new RuntimeException(errorMessage, e);
             }
             jobScheduler = null;
         }
     }
 
-    private void closePageCache( String errorMessage )
-    {
-        if ( pageCache != null )
-        {
-            try
-            {
+    private void closePageCache(String errorMessage) {
+        if (pageCache != null) {
+            try {
                 pageCache.close();
-            }
-            catch ( Exception e )
-            {
-                throw new AssertionError( errorMessage, e );
+            } catch (Exception e) {
+                throw new AssertionError(errorMessage, e);
             }
             pageCache = null;
         }
     }
 
-    public static class AtomicBooleanInconsistentReadAdversary implements Adversary
-    {
+    public static class AtomicBooleanInconsistentReadAdversary implements Adversary {
         final AtomicBoolean nextReadIsInconsistent;
 
-        public AtomicBooleanInconsistentReadAdversary( AtomicBoolean nextReadIsInconsistent )
-        {
+        public AtomicBooleanInconsistentReadAdversary(AtomicBoolean nextReadIsInconsistent) {
             this.nextReadIsInconsistent = nextReadIsInconsistent;
         }
 
         @Override
         @SafeVarargs
-        public final void injectFailure( Class<? extends Throwable>... failureTypes )
-        {
-        }
+        public final void injectFailure(Class<? extends Throwable>... failureTypes) {}
 
         @Override
         @SafeVarargs
-        public final boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
-        {
-            return nextReadIsInconsistent.getAndSet( false );
+        public final boolean injectFailureOrMischief(Class<? extends Throwable>... failureTypes) {
+            return nextReadIsInconsistent.getAndSet(false);
         }
 
         @Override
-        public Optional<Throwable> getLastAdversaryException()
-        {
+        public Optional<Throwable> getLastAdversaryException() {
             return Optional.empty();
         }
     }
 
-    private static class RandomInconsistentReadAdversary implements Adversary
-    {
+    private static class RandomInconsistentReadAdversary implements Adversary {
         @Override
         @SafeVarargs
-        public final void injectFailure( Class<? extends Throwable>... failureTypes )
-        {
-        }
+        public final void injectFailure(Class<? extends Throwable>... failureTypes) {}
 
         @Override
         @SafeVarargs
-        public final boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
-        {
+        public final boolean injectFailureOrMischief(Class<? extends Throwable>... failureTypes) {
             return ThreadLocalRandom.current().nextBoolean();
         }
 
         @Override
-        public Optional<Throwable> getLastAdversaryException()
-        {
+        public Optional<Throwable> getLastAdversaryException() {
             return Optional.empty();
         }
     }

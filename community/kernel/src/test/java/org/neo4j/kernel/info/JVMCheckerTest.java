@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.info;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.InternalLog;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_VERSION_WARNING;
@@ -31,73 +26,78 @@ import static org.neo4j.kernel.info.JvmChecker.initialMemorySettingWarning;
 import static org.neo4j.kernel.info.JvmChecker.maxMemorySettingWarning;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-class JVMCheckerTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.InternalLog;
+
+class JVMCheckerTest {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private final InternalLog log = logProvider.getLog( "test" );
+    private final InternalLog log = logProvider.getLog("test");
 
     @Test
-    void shouldIssueWarningWhenUsingHotspotServerVmVersion12()
-    {
-        new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                                                              "12" ) ).checkJvmCompatibilityAndIssueWarning();
+    void shouldIssueWarningWhenUsingHotspotServerVmVersion12() {
+        new JvmChecker(log, new CannedJvmMetadataRepository("Java HotSpot(TM) 64-Bit Server VM", "12"))
+                .checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).containsMessages( INCOMPATIBLE_JVM_VERSION_WARNING );
+        assertThat(logProvider).containsMessages(INCOMPATIBLE_JVM_VERSION_WARNING);
     }
 
     @Test
-    void shouldNotIssueWarningWhenUsingHotspotServerVmVersion17()
-    {
-        new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "17" ) ).checkJvmCompatibilityAndIssueWarning();
+    void shouldNotIssueWarningWhenUsingHotspotServerVmVersion17() {
+        new JvmChecker(log, new CannedJvmMetadataRepository("Java HotSpot(TM) 64-Bit Server VM", "17"))
+                .checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).doesNotContainMessage( INCOMPATIBLE_JVM_VERSION_WARNING );
+        assertThat(logProvider).doesNotContainMessage(INCOMPATIBLE_JVM_VERSION_WARNING);
     }
 
     @Test
-    void shouldIssueWarningWhenUsingUnsupportedJvmVersion()
-    {
-        new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "22.33.44.55" ) ).checkJvmCompatibilityAndIssueWarning();
+    void shouldIssueWarningWhenUsingUnsupportedJvmVersion() {
+        new JvmChecker(log, new CannedJvmMetadataRepository("Java HotSpot(TM) 64-Bit Server VM", "22.33.44.55"))
+                .checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).containsMessages( INCOMPATIBLE_JVM_VERSION_WARNING );
+        assertThat(logProvider).containsMessages(INCOMPATIBLE_JVM_VERSION_WARNING);
     }
 
     @Test
-    void warnAboutMissingInitialHeapSize()
-    {
-        new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "11.0.2+9", singletonList( "-XMx" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
+    void warnAboutMissingInitialHeapSize() {
+        new JvmChecker(
+                        log,
+                        new CannedJvmMetadataRepository(
+                                "Java HotSpot(TM) 64-Bit Server VM", "11.0.2+9", singletonList("-XMx"), 12, 23))
+                .checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).containsMessages( initialMemorySettingWarning( 12 ) );
+        assertThat(logProvider).containsMessages(initialMemorySettingWarning(12));
     }
 
     @Test
-    void warnAboutMissingMaximumHeapSize()
-    {
-        new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "11", singletonList( "-XMs" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
+    void warnAboutMissingMaximumHeapSize() {
+        new JvmChecker(
+                        log,
+                        new CannedJvmMetadataRepository(
+                                "Java HotSpot(TM) 64-Bit Server VM", "11", singletonList("-XMs"), 12, 23))
+                .checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).containsMessages( maxMemorySettingWarning( 23 ) );
+        assertThat(logProvider).containsMessages(maxMemorySettingWarning(23));
     }
 
     @Test
-    void warnAboutMissingHeapSizes()
-    {
-        new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "11.0.1" ) ).checkJvmCompatibilityAndIssueWarning();
+    void warnAboutMissingHeapSizes() {
+        new JvmChecker(log, new CannedJvmMetadataRepository("Java HotSpot(TM) 64-Bit Server VM", "11.0.1"))
+                .checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).containsMessages( initialMemorySettingWarning( 1 ) );
-        assertThat( logProvider ).containsMessages( maxMemorySettingWarning( 2 ) );
+        assertThat(logProvider).containsMessages(initialMemorySettingWarning(1));
+        assertThat(logProvider).containsMessages(maxMemorySettingWarning(2));
     }
 
     @Test
-    void doNotWarnAboutMissingHeapSizesWhenOptionsSpecified()
-    {
-        new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM", "11.0.2",
-                asList( "-xMx", "-xmS" ), 1, 2 ) ).checkJvmCompatibilityAndIssueWarning();
+    void doNotWarnAboutMissingHeapSizesWhenOptionsSpecified() {
+        new JvmChecker(
+                        log,
+                        new CannedJvmMetadataRepository(
+                                "Java HotSpot(TM) 64-Bit Server VM", "11.0.2", asList("-xMx", "-xmS"), 1, 2))
+                .checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).doesNotContainMessage( initialMemorySettingWarning( 1 ) );
-        assertThat( logProvider ).doesNotContainMessage( maxMemorySettingWarning( 2 ) );
+        assertThat(logProvider).doesNotContainMessage(initialMemorySettingWarning(1));
+        assertThat(logProvider).doesNotContainMessage(maxMemorySettingWarning(2));
     }
 }

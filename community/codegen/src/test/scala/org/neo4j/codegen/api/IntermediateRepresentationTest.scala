@@ -64,39 +64,51 @@ class IntermediateRepresentationTest extends CypherFunSuite {
   test("ifElse") {
     ifElse(constant(true))(print(constant("hello")))(print(constant("there"))) shouldBe print(constant("hello"))
     ifElse(constant(false))(print(constant("hello")))(print(constant("there"))) shouldBe print(constant("there"))
-    ifElse(load[Boolean]("boolean"))(print(constant("hello")))(block()) shouldBe condition(load[Boolean]("boolean"))(print(constant("hello")))
-    ifElse(load[Boolean]("boolean"))(block())(print(constant("there"))) shouldBe condition(notOp(load[Boolean]("boolean")))(print(constant("there")))
+    ifElse(load[Boolean]("boolean"))(print(constant("hello")))(block()) shouldBe condition(load[Boolean]("boolean"))(
+      print(constant("hello"))
+    )
+    ifElse(load[Boolean]("boolean"))(block())(print(constant("there"))) shouldBe condition(
+      notOp(load[Boolean]("boolean"))
+    )(print(constant("there")))
   }
 
   test("ternary") {
-    ternary(constant(true),
-      print(constant("hello")),
-      print(constant("there"))) shouldBe print(constant("hello"))
-    ternary(constant(false),
-      print(constant("hello")),
-      print(constant("there"))) shouldBe print(constant("there"))
+    ternary(constant(true), print(constant("hello")), print(constant("there"))) shouldBe print(constant("hello"))
+    ternary(constant(false), print(constant("hello")), print(constant("there"))) shouldBe print(constant("there"))
   }
 
   test("not") {
-   notOp(constant(true)) shouldBe constant(false)
-   notOp(constant(false)) shouldBe constant(true)
-   notOp(Not(load[Boolean]("boolean"))) shouldBe load[Boolean]("boolean")
-   notOp(Not(Not(load[Boolean]("boolean")))) shouldBe notOp(load[Boolean]("boolean"))
+    notOp(constant(true)) shouldBe constant(false)
+    notOp(constant(false)) shouldBe constant(true)
+    notOp(Not(load[Boolean]("boolean"))) shouldBe load[Boolean]("boolean")
+    notOp(Not(Not(load[Boolean]("boolean")))) shouldBe notOp(load[Boolean]("boolean"))
   }
 
   test("rewrite if (booleanValue(a) == TRUE) to if (a)") {
-    condition(IntermediateRepresentation.equal(IntermediateRepresentation.booleanValue(load[Boolean]("foo")), trueValue)) {
+    condition(IntermediateRepresentation.equal(
+      IntermediateRepresentation.booleanValue(load[Boolean]("foo")),
+      trueValue
+    )) {
       print(constant("hello"))
     } shouldBe condition(load[Boolean]("foo"))(print(constant("hello")))
 
-    condition(IntermediateRepresentation.equal(trueValue, IntermediateRepresentation.booleanValue(load[Boolean]("foo")))) {
+    condition(IntermediateRepresentation.equal(
+      trueValue,
+      IntermediateRepresentation.booleanValue(load[Boolean]("foo"))
+    )) {
       print(constant("hello"))
     } shouldBe condition(load[Boolean]("foo"))(print(constant("hello")))
 
-    condition(IntermediateRepresentation.equal(block(print(constant("hello")), IntermediateRepresentation.booleanValue(load[Boolean]("foo"))), trueValue)) {
+    condition(IntermediateRepresentation.equal(
+      block(print(constant("hello")), IntermediateRepresentation.booleanValue(load[Boolean]("foo"))),
+      trueValue
+    )) {
       print(constant("hello"))
     } shouldBe condition(block(print(constant("hello")), load[Boolean]("foo")))(print(constant("hello")))
-    condition(IntermediateRepresentation.equal(trueValue, block(print(constant("hello")), IntermediateRepresentation.booleanValue(load[Boolean]("foo"))))) {
+    condition(IntermediateRepresentation.equal(
+      trueValue,
+      block(print(constant("hello")), IntermediateRepresentation.booleanValue(load[Boolean]("foo")))
+    )) {
       print(constant("hello"))
     } shouldBe condition(block(print(constant("hello")), load[Boolean]("foo")))(print(constant("hello")))
 
@@ -123,7 +135,7 @@ class IntermediateRepresentationTest extends CypherFunSuite {
     objectInstance.getClass.getField(expectedRepresenation.name).get(null) should be theSameInstanceAs objectInstance
   }
 
-  //this is here just because we cannot import IntermediateRepresentation.not because of scalatest
+  // this is here just because we cannot import IntermediateRepresentation.not because of scalatest
   private def notOp(inner: IntermediateRepresentation) = IntermediateRepresentation.not(inner)
 }
 

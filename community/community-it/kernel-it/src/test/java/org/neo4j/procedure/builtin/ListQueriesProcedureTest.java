@@ -19,9 +19,14 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.assertj.core.api.Condition;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error;
+import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.extension.Threading.waitingWhileIn;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +34,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
+import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Entity;
@@ -52,386 +59,346 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Threading;
 import org.neo4j.test.extension.ThreadingExtension;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error;
-import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.extension.Threading.waitingWhileIn;
-
-@DbmsExtension( configurationCallback = "configure" )
-@ExtendWith( ThreadingExtension.class )
-public class ListQueriesProcedureTest
-{
+@DbmsExtension(configurationCallback = "configure")
+@ExtendWith(ThreadingExtension.class)
+public class ListQueriesProcedureTest {
     @Inject
     private GraphDatabaseService db;
+
     @Inject
     private Threading threads;
 
     private static final int SECONDS_TIMEOUT = 240;
-    private static final Condition<Object> LONG_VALUE = new Condition<>( value -> value instanceof Long, "long value" );
+    private static final Condition<Object> LONG_VALUE = new Condition<>(value -> value instanceof Long, "long value");
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( cypher_hints_error, true )
-               .setConfig( GraphDatabaseSettings.track_query_allocation, true )
-               .setConfig( track_query_cpu_time, true )
-               .addExtension( new CustomProcedureExtensionFactory() );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(cypher_hints_error, true)
+                .setConfig(GraphDatabaseSettings.track_query_allocation, true)
+                .setConfig(track_query_cpu_time, true)
+                .addExtension(new CustomProcedureExtensionFactory());
     }
 
     @Test
-    void shouldContainTheQueryItself()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
+    void shouldContainTheQueryItself() {
+        try (Transaction transaction = db.beginTx()) {
             // given
             String query = "CALL dbms.listQueries";
 
             // when
-            Result result = transaction.execute( query );
+            Result result = transaction.execute(query);
 
             // then
-            Map<String,Object> row = result.next();
-            assertFalse( result.hasNext() );
-            assertEquals( query, row.get( "query" ) );
-            assertEquals( db.databaseName(), row.get( "database" ) );
+            Map<String, Object> row = result.next();
+            assertFalse(result.hasNext());
+            assertEquals(query, row.get("query"));
+            assertEquals(db.databaseName(), row.get("database"));
             transaction.commit();
         }
     }
 
     @Test
-    void shouldNotIncludeDeprecatedFields()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
+    void shouldNotIncludeDeprecatedFields() {
+        try (Transaction transaction = db.beginTx()) {
             // when
-            Result result = transaction.execute( "CALL dbms.listQueries" );
+            Result result = transaction.execute("CALL dbms.listQueries");
 
             // then
-            Map<String,Object> row = result.next();
-            assertThat( row ).doesNotContainKey( "elapsedTime" );
-            assertThat( row ).doesNotContainKey( "connectionDetails" );
+            Map<String, Object> row = result.next();
+            assertThat(row).doesNotContainKey("elapsedTime");
+            assertThat(row).doesNotContainKey("connectionDetails");
             transaction.commit();
         }
     }
 
     @Test
-    void shouldContainSpecificConnectionDetails()
-    {
+    void shouldContainSpecificConnectionDetails() {
         // when
-        Map<String,Object> data = getQueryListing( "CALL dbms.listQueries" );
+        Map<String, Object> data = getQueryListing("CALL dbms.listQueries");
 
         // then
-        assertThat( data ).containsKey( "protocol" );
-        assertThat( data ).containsKey( "connectionId" );
-        assertThat( data ).containsKey( "clientAddress" );
-        assertThat( data ).containsKey( "requestUri" );
+        assertThat(data).containsKey("protocol");
+        assertThat(data).containsKey("connectionId");
+        assertThat(data).containsKey("clientAddress");
+        assertThat(data).containsKey("requestUri");
     }
 
     @Test
-    void shouldContainPageHitsAndPageFaults() throws Exception
-    {
+    void shouldContainPageHitsAndPageFaults() throws Exception {
         // given
         String query = "MATCH (n) SET n.v = n.v + 1";
-        try ( Resource<Node> test = test( Transaction::createNode, query ) )
-        {
+        try (Resource<Node> test = test(Transaction::createNode, query)) {
             // when
-            Map<String,Object> data = getQueryListing( query );
+            Map<String, Object> data = getQueryListing(query);
 
             // then
-            assertThat( data ).hasEntrySatisfying( "pageHits", LONG_VALUE );
-            assertThat( data ).hasEntrySatisfying( "pageFaults", LONG_VALUE );
+            assertThat(data).hasEntrySatisfying("pageHits", LONG_VALUE);
+            assertThat(data).hasEntrySatisfying("pageFaults", LONG_VALUE);
         }
     }
 
     @Test
-    void shouldListUsedIndexes() throws Exception
-    {
+    void shouldListUsedIndexes() throws Exception {
         // given
         String label = "IndexedLabel";
         String property = "indexedProperty";
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( label( label ) ).on( property ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().indexFor(label(label)).on(property).create();
             tx.commit();
         }
         ensureIndexesAreOnline();
-        shouldListUsedIndexes( label, property );
+        shouldListUsedIndexes(label, property);
     }
 
-    private void ensureIndexesAreOnline()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( SECONDS_TIMEOUT, SECONDS );
+    private void ensureIndexesAreOnline() {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(SECONDS_TIMEOUT, SECONDS);
             tx.commit();
         }
     }
 
     @Test
-    void shouldListUsedUniqueIndexes() throws Exception
-    {
+    void shouldListUsedUniqueIndexes() throws Exception {
         // given
         String label = "UniqueLabel";
         String property = "uniqueProperty";
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label( label ) ).assertPropertyIsUnique( property ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema()
+                    .constraintFor(label(label))
+                    .assertPropertyIsUnique(property)
+                    .create();
             tx.commit();
         }
         ensureIndexesAreOnline();
-        shouldListUsedIndexes( label, property );
+        shouldListUsedIndexes(label, property);
     }
 
     @Test
-    void shouldListIndexesUsedForScans() throws Exception
-    {
+    void shouldListIndexesUsedForScans() throws Exception {
         // given
         final String QUERY = "MATCH (n:Node) USING INDEX n:Node(value) WHERE 1 < n.value < 10 SET n.value = 2";
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( label( "Node" ) ).on( "value" ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().indexFor(label("Node")).on("value").create();
             tx.commit();
         }
         ensureIndexesAreOnline();
-        try ( Resource<Node> test = test( tx ->
-        {
-            Node node = tx.createNode( label( "Node" ) );
-            node.setProperty( "value", 5L );
-            return node;
-        }, QUERY ) )
-        {
+        try (Resource<Node> test = test(
+                tx -> {
+                    Node node = tx.createNode(label("Node"));
+                    node.setProperty("value", 5L);
+                    return node;
+                },
+                QUERY)) {
             // when
-            Map<String,Object> data = getQueryListing( QUERY );
+            Map<String, Object> data = getQueryListing(QUERY);
 
             // then
-            assertThat( data ).hasEntrySatisfying( "indexes", value -> assertThat( value ).isInstanceOf( List.class ) );
-            @SuppressWarnings( "unchecked" )
-            List<Map<String,Object>> indexes = (List<Map<String,Object>>) data.get( "indexes" );
-            assertEquals( 1, indexes.size(), "number of indexes used" );
-            Map<String,Object> index = indexes.get( 0 );
-            assertThat( index ).containsEntry( "identifier", "n" );
-            assertThat( index ).containsEntry( "label", "Node" );
-            assertThat( index ).containsEntry( "propertyKey", "value" );
+            assertThat(data)
+                    .hasEntrySatisfying("indexes", value -> assertThat(value).isInstanceOf(List.class));
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> indexes = (List<Map<String, Object>>) data.get("indexes");
+            assertEquals(1, indexes.size(), "number of indexes used");
+            Map<String, Object> index = indexes.get(0);
+            assertThat(index).containsEntry("identifier", "n");
+            assertThat(index).containsEntry("label", "Node");
+            assertThat(index).containsEntry("propertyKey", "value");
         }
     }
 
     @Test
-    void shouldListBothChildAndParentOfNestedQueries() throws ExecutionException, InterruptedException
-    {
+    void shouldListBothChildAndParentOfNestedQueries() throws ExecutionException, InterruptedException {
         List<Object> foundQueries;
         String query = "CALL db.testProcedure()";
         String queryInProc = "MATCH (n) SET n.v = n.v + 1";
         String listQuery = "CALL dbms.listQueries";
 
         // Call procedure that executes a query that will try to get node lock.
-        // Both the parent (procedure call) and child (set property) queries should be included in the listQueries result.
-        try ( Resource<Node> test = test( Transaction::createNode, query ) )
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
-                try ( Result rows = transaction.execute( listQuery ) )
-                {
-                    foundQueries = rows.stream().map( row -> row.getOrDefault( "query", "no query" ) ).collect( Collectors.toList() );
+        // Both the parent (procedure call) and child (set property) queries should be included in the listQueries
+        // result.
+        try (Resource<Node> test = test(Transaction::createNode, query)) {
+            try (Transaction transaction = db.beginTx()) {
+                try (Result rows = transaction.execute(listQuery)) {
+                    foundQueries = rows.stream()
+                            .map(row -> row.getOrDefault("query", "no query"))
+                            .collect(Collectors.toList());
                 }
                 transaction.commit();
             }
         }
 
-        assertThat( foundQueries ).containsExactlyInAnyOrder( query, queryInProc, listQuery );
+        assertThat(foundQueries).containsExactlyInAnyOrder(query, queryInProc, listQuery);
     }
 
-    private void shouldListUsedIndexes( String label, String property ) throws Exception
-    {
+    private void shouldListUsedIndexes(String label, String property) throws Exception {
         // given
-        final String QUERY1 = "MATCH (n:" + label + "{" + property + ":5}) USING INDEX n:" + label + "(" + property +
-                ") SET n." + property + " = 3";
-        try ( Resource<Node> test = test( tx ->
-        {
-            Node node = tx.createNode( label( label ) );
-            node.setProperty( property, 5L );
-            return node;
-        }, QUERY1 ) )
-        {
+        final String QUERY1 = "MATCH (n:" + label + "{" + property + ":5}) USING INDEX n:" + label + "(" + property
+                + ") SET n." + property + " = 3";
+        try (Resource<Node> test = test(
+                tx -> {
+                    Node node = tx.createNode(label(label));
+                    node.setProperty(property, 5L);
+                    return node;
+                },
+                QUERY1)) {
             // when
-            Map<String,Object> data = getQueryListing( QUERY1 );
+            Map<String, Object> data = getQueryListing(QUERY1);
 
             // then
-            assertThat( data ).containsEntry( "runtime", "interpreted" );
-            assertThat( data ).containsEntry( "status", "waiting" );
-            assertThat( data ).hasEntrySatisfying( "indexes", value -> assertThat( value ).isInstanceOf( List.class ) );
-            @SuppressWarnings( "unchecked" )
-            List<Map<String,Object>> indexes = (List<Map<String,Object>>) data.get( "indexes" );
-            assertEquals( 1, indexes.size(), "number of indexes used" );
-            Map<String,Object> index = indexes.get( 0 );
-            assertThat( index ).containsEntry( "identifier", "n" );
-            assertThat( index ).containsEntry( "label", label );
-            assertThat( index ).containsEntry( "propertyKey", property );
+            assertThat(data).containsEntry("runtime", "interpreted");
+            assertThat(data).containsEntry("status", "waiting");
+            assertThat(data)
+                    .hasEntrySatisfying("indexes", value -> assertThat(value).isInstanceOf(List.class));
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> indexes = (List<Map<String, Object>>) data.get("indexes");
+            assertEquals(1, indexes.size(), "number of indexes used");
+            Map<String, Object> index = indexes.get(0);
+            assertThat(index).containsEntry("identifier", "n");
+            assertThat(index).containsEntry("label", label);
+            assertThat(index).containsEntry("propertyKey", property);
         }
 
         // given
-        final String QUERY2 = "MATCH (n:" + label + "{" + property + ":3}) USING INDEX n:" + label + "(" + property +
-                ") MATCH (u:" + label + "{" + property + ":4}) USING INDEX u:" + label + "(" + property +
-                ") CREATE (n)-[:KNOWS]->(u)";
-        try ( Resource<Node> test = test( tx ->
-        {
-            Node node = tx.createNode( label( label ) );
-            node.setProperty( property, 4L );
-            return node;
-        }, QUERY2 ) )
-        {
+        final String QUERY2 =
+                "MATCH (n:" + label + "{" + property + ":3}) USING INDEX n:" + label + "(" + property + ") MATCH (u:"
+                        + label + "{" + property + ":4}) USING INDEX u:" + label + "(" + property
+                        + ") CREATE (n)-[:KNOWS]->(u)";
+        try (Resource<Node> test = test(
+                tx -> {
+                    Node node = tx.createNode(label(label));
+                    node.setProperty(property, 4L);
+                    return node;
+                },
+                QUERY2)) {
             // when
-            Map<String,Object> data = getQueryListing( QUERY2 );
+            Map<String, Object> data = getQueryListing(QUERY2);
 
             // then
-            assertThat( data ).hasEntrySatisfying( "indexes", value -> assertThat( value ).isInstanceOf( List.class ) );
-            @SuppressWarnings( "unchecked" )
-            List<Map<String,Object>> indexes = (List<Map<String,Object>>) data.get( "indexes" );
-            assertEquals( 2, indexes.size(), "number of indexes used" );
+            assertThat(data)
+                    .hasEntrySatisfying("indexes", value -> assertThat(value).isInstanceOf(List.class));
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> indexes = (List<Map<String, Object>>) data.get("indexes");
+            assertEquals(2, indexes.size(), "number of indexes used");
 
-            Map<String,Object> index1 = indexes.get( 0 );
-            assertThat( index1 ).containsEntry( "identifier", "n" );
-            assertThat( index1 ).containsEntry( "label", label );
-            assertThat( index1 ).containsEntry( "propertyKey", property );
+            Map<String, Object> index1 = indexes.get(0);
+            assertThat(index1).containsEntry("identifier", "n");
+            assertThat(index1).containsEntry("label", label);
+            assertThat(index1).containsEntry("propertyKey", property);
 
-            Map<String,Object> index2 = indexes.get( 1 );
-            assertThat( index2 ).containsEntry( "identifier", "u" );
-            assertThat( index2 ).containsEntry( "label", label );
-            assertThat( index2 ).containsEntry( "propertyKey", property );
+            Map<String, Object> index2 = indexes.get(1);
+            assertThat(index2).containsEntry("identifier", "u");
+            assertThat(index2).containsEntry("label", label);
+            assertThat(index2).containsEntry("propertyKey", property);
         }
     }
 
-    private Map<String,Object> getQueryListing( String query )
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            try ( Result rows = transaction.execute( "CALL dbms.listQueries" ) )
-            {
-                while ( rows.hasNext() )
-                {
-                    Map<String,Object> row = rows.next();
-                    if ( query.equals( row.get( "query" ) ) )
-                    {
+    private Map<String, Object> getQueryListing(String query) {
+        try (Transaction transaction = db.beginTx()) {
+            try (Result rows = transaction.execute("CALL dbms.listQueries")) {
+                while (rows.hasNext()) {
+                    Map<String, Object> row = rows.next();
+                    if (query.equals(row.get("query"))) {
                         return row;
                     }
                 }
             }
             transaction.commit();
         }
-        throw new AssertionError( "query not active: " + query );
+        throw new AssertionError("query not active: " + query);
     }
 
-    private static class Resource<T> implements AutoCloseable
-    {
+    private static class Resource<T> implements AutoCloseable {
         private final CountDownLatch latch;
         private final CountDownLatch finishLatch;
         private final T resource;
 
-        private Resource( CountDownLatch latch, CountDownLatch finishLatch, T resource )
-        {
+        private Resource(CountDownLatch latch, CountDownLatch finishLatch, T resource) {
             this.latch = latch;
             this.finishLatch = finishLatch;
             this.resource = resource;
         }
 
         @Override
-        public void close() throws InterruptedException
-        {
+        public void close() throws InterruptedException {
             latch.countDown();
             finishLatch.await();
         }
 
-        public T resource()
-        {
+        public T resource() {
             return resource;
         }
     }
 
-    private <T extends Entity> Resource<T> test( Function<Transaction, T> setup, String... queries )
-            throws InterruptedException, ExecutionException
-    {
-        CountDownLatch resourceLocked = new CountDownLatch( 1 );
-        CountDownLatch listQueriesLatch = new CountDownLatch( 1 );
-        CountDownLatch finishQueriesLatch = new CountDownLatch( 1 );
+    private <T extends Entity> Resource<T> test(Function<Transaction, T> setup, String... queries)
+            throws InterruptedException, ExecutionException {
+        CountDownLatch resourceLocked = new CountDownLatch(1);
+        CountDownLatch listQueriesLatch = new CountDownLatch(1);
+        CountDownLatch finishQueriesLatch = new CountDownLatch(1);
         T resource;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             resource = setup.apply(tx);
             tx.commit();
         }
-        threads.execute( parameter ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.acquireWriteLock( resource );
-                resourceLocked.countDown();
-                listQueriesLatch.await();
-            }
-            return null;
-        }, null );
+        threads.execute(
+                parameter -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.acquireWriteLock(resource);
+                        resourceLocked.countDown();
+                        listQueriesLatch.await();
+                    }
+                    return null;
+                },
+                null);
         resourceLocked.await();
 
-        threads.executeAndAwait( parameter ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                for ( String query : queries )
-                {
-                    tx.execute( query ).close();
-                }
-                tx.commit();
-            }
-            catch ( Throwable t )
-            {
-                throw new RuntimeException( t );
-            }
-            finally
-            {
-                finishQueriesLatch.countDown();
-            }
-            return null;
-        }, null, waitingWhileIn( Locks.Client.class, "acquireExclusive", "acquireShared" ), SECONDS_TIMEOUT, SECONDS );
+        threads.executeAndAwait(
+                parameter -> {
+                    try (Transaction tx = db.beginTx()) {
+                        for (String query : queries) {
+                            tx.execute(query).close();
+                        }
+                        tx.commit();
+                    } catch (Throwable t) {
+                        throw new RuntimeException(t);
+                    } finally {
+                        finishQueriesLatch.countDown();
+                    }
+                    return null;
+                },
+                null,
+                waitingWhileIn(Locks.Client.class, "acquireExclusive", "acquireShared"),
+                SECONDS_TIMEOUT,
+                SECONDS);
 
-        return new Resource<>( listQueriesLatch, finishQueriesLatch, resource );
+        return new Resource<>(listQueriesLatch, finishQueriesLatch, resource);
     }
 
-    public static class NestedQueryProcedure
-    {
+    public static class NestedQueryProcedure {
         @Context
         public Transaction transaction;
 
-        @Procedure( name = "db.testProcedure" )
-        public void myProc()
-        {
-            transaction.execute( "MATCH (n) SET n.v = n.v + 1" ).close();
+        @Procedure(name = "db.testProcedure")
+        public void myProc() {
+            transaction.execute("MATCH (n) SET n.v = n.v + 1").close();
         }
     }
 
-    private static class CustomProcedureExtensionFactory extends ExtensionFactory<CustomProcedureExtensionFactory.Dependencies>
-    {
-        protected CustomProcedureExtensionFactory()
-        {
-            super( "customProcedureFactory" );
+    private static class CustomProcedureExtensionFactory
+            extends ExtensionFactory<CustomProcedureExtensionFactory.Dependencies> {
+        protected CustomProcedureExtensionFactory() {
+            super("customProcedureFactory");
         }
 
-        interface Dependencies
-        {
+        interface Dependencies {
             GlobalProcedures procedures();
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, CustomProcedureExtensionFactory.Dependencies dependencies )
-        {
-            try
-            {
-                dependencies.procedures().registerProcedure( NestedQueryProcedure.class );
-            }
-            catch ( KernelException e )
-            {
-                throw new RuntimeException( e );
+        public Lifecycle newInstance(
+                ExtensionContext context, CustomProcedureExtensionFactory.Dependencies dependencies) {
+            try {
+                dependencies.procedures().registerProcedure(NestedQueryProcedure.class);
+            } catch (KernelException e) {
+                throw new RuntimeException(e);
             }
             return new LifecycleAdapter();
         }

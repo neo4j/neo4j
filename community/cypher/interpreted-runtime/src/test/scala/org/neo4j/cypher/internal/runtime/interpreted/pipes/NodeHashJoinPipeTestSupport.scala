@@ -40,13 +40,16 @@ trait NodeHashJoinPipeTestSupport extends CypherFunSuite {
   protected val node3 = newMockedNode(3)
 
   protected def prop(node: String, prop: String) =
-    CachedProperty(node, Variable(node)(InputPosition.NONE), PropertyKeyName(prop)(InputPosition.NONE), NODE_TYPE)(InputPosition.NONE)
+    CachedProperty(node, Variable(node)(InputPosition.NONE), PropertyKeyName(prop)(InputPosition.NONE), NODE_TYPE)(
+      InputPosition.NONE
+    )
 
   protected def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)
 
   protected def rowWithCached(values: (String, AnyValue)*) = CypherRow.from(values: _*)
 
   case class rowWith(variables: (String, AnyValue)*) {
+
     def cached(cachedNodePropeties: (CachedProperty, Value)*): CypherRow = {
       val row = CypherRow.from(variables: _*)
       for ((cnp, value) <- cachedNodePropeties) row.setCachedProperty(cnp.runtimeKey, value)

@@ -21,7 +21,6 @@ package org.neo4j.server.rest;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -34,25 +33,20 @@ import org.neo4j.kernel.api.exceptions.Status;
  * <p>
  * This way, we make it easy to transition this service over to a unified error code based error scheme.
  */
-public class Neo4jError
-{
+public class Neo4jError {
     private final Status status;
     private final Throwable cause;
 
-    public Neo4jError( Status status, String message )
-    {
-        this( status, new RuntimeException( message ) );
+    public Neo4jError(Status status, String message) {
+        this(status, new RuntimeException(message));
     }
 
-    public Neo4jError( Status status, Throwable cause )
-    {
-        if ( status == null )
-        {
-            throw new IllegalArgumentException( "statusCode must not be null" );
+    public Neo4jError(Status status, Throwable cause) {
+        if (status == null) {
+            throw new IllegalArgumentException("statusCode must not be null");
         }
-        if ( cause == null )
-        {
-            throw new IllegalArgumentException( "cause must not be null" );
+        if (cause == null) {
+            throw new IllegalArgumentException("cause must not be null");
         }
 
         this.status = status;
@@ -60,38 +54,31 @@ public class Neo4jError
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         cause.printStackTrace();
-        return String.format( "%s[%s, cause=\"%s\"]",
-                              getClass().getSimpleName(), status.code(), cause );
+        return String.format("%s[%s, cause=\"%s\"]", getClass().getSimpleName(), status.code(), cause);
     }
 
-    public Throwable cause()
-    {
+    public Throwable cause() {
         return cause;
     }
 
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 
-    public String getMessage()
-    {
+    public String getMessage() {
         return cause.getMessage();
     }
 
-    public boolean shouldSerializeStackTrace()
-    {
+    public boolean shouldSerializeStackTrace() {
         return status.code().classification() != Status.Classification.ClientError;
     }
 
-    public String getStackTraceAsString()
-    {
+    public String getStackTraceAsString() {
         StringWriter stringWriter = new StringWriter();
-        PrintWriter printWriter = new PrintWriter( stringWriter );
-        cause.printStackTrace( printWriter );
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        cause.printStackTrace(printWriter);
         return stringWriter.toString();
     }
 }

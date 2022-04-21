@@ -20,10 +20,8 @@
 package org.neo4j.kernel.api;
 
 import java.util.Optional;
-
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.values.virtual.MapValue;
-
 
 /**
  * Tracks currently running stream. This is used for listing currently running stream and to make it possible to
@@ -32,8 +30,7 @@ import org.neo4j.values.virtual.MapValue;
  * If a query uses multiple transactions (think of PERIODIC COMMIT), the query needs to be registered to all
  * transactions it uses.
  */
-public interface QueryRegistry
-{
+public interface QueryRegistry {
     /**
      * List of all currently running stream in this transaction. An user can have multiple stream running
      * simultaneously on the same transaction.
@@ -45,22 +42,22 @@ public interface QueryRegistry
      *
      * @return the new ExecutingQuery
      */
-    ExecutingQuery startAndBindExecutingQuery( String queryText, MapValue queryParameters );
+    ExecutingQuery startAndBindExecutingQuery(String queryText, MapValue queryParameters);
 
     /**
      * Registers an already known query to be executed
      */
-    void bindExecutingQuery( ExecutingQuery executingQuery );
+    void bindExecutingQuery(ExecutingQuery executingQuery);
 
     /**
      * Unregisters a query that was stopped
      */
-    void unbindExecutingQuery( ExecutingQuery executingQuery, long userTransactionId );
+    void unbindExecutingQuery(ExecutingQuery executingQuery, long userTransactionId);
 
     /**
      * Registers an already known query with a statement.
      *
      * This is used solely for snapshot retry. (see SnapshotExecutionEngine)
      */
-    void registerExecutingQuery( ExecutingQuery executingQuery );
+    void registerExecutingQuery(ExecutingQuery executingQuery);
 }

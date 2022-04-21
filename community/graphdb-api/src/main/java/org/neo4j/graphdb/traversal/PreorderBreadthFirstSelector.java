@@ -21,7 +21,6 @@ package org.neo4j.graphdb.traversal;
 
 import java.util.LinkedList;
 import java.util.Queue;
-
 import org.neo4j.graphdb.PathExpander;
 
 /**
@@ -29,35 +28,27 @@ import org.neo4j.graphdb.PathExpander;
  * pattern, the most natural ordering in a breadth first search, see
  * http://en.wikipedia.org/wiki/Breadth-first_search
  */
-class PreorderBreadthFirstSelector implements BranchSelector
-{
+class PreorderBreadthFirstSelector implements BranchSelector {
     private final Queue<TraversalBranch> queue = new LinkedList<>();
     private TraversalBranch current;
     private final PathExpander expander;
 
-    PreorderBreadthFirstSelector( TraversalBranch startSource, PathExpander expander )
-    {
+    PreorderBreadthFirstSelector(TraversalBranch startSource, PathExpander expander) {
         this.current = startSource;
         this.expander = expander;
     }
 
     @Override
-    public TraversalBranch next( TraversalContext metadata )
-    {
+    public TraversalBranch next(TraversalContext metadata) {
         TraversalBranch result = null;
-        while ( result == null )
-        {
-            TraversalBranch next = current.next( expander, metadata );
-            if ( next != null )
-            {
-                queue.add( next );
+        while (result == null) {
+            TraversalBranch next = current.next(expander, metadata);
+            if (next != null) {
+                queue.add(next);
                 result = next;
-            }
-            else
-            {
+            } else {
                 current = queue.poll();
-                if ( current == null )
-                {
+                if (current == null) {
                     return null;
                 }
             }

@@ -19,15 +19,13 @@
  */
 package org.neo4j.test.extension.guard;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ValidUsage
-{
+import org.junit.jupiter.api.Test;
+
+class ValidUsage {
     @Test
-    void anything()
-    {
-        assertEquals( 0L, 0L );
+    void anything() {
+        assertEquals(0L, 0L);
     }
 }

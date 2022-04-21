@@ -19,18 +19,6 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.IntStream;
-
-import org.neo4j.shell.Historian;
-import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.printer.Printer;
-
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -42,109 +30,96 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class HistoryTest
-{
-    private Printer printer = mock( Printer.class );
-    private Historian historian = mock( Historian.class );
-    private Command cmd = new History( printer, historian );
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.shell.Historian;
+import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.printer.Printer;
+
+class HistoryTest {
+    private Printer printer = mock(Printer.class);
+    private Historian historian = mock(Historian.class);
+    private Command cmd = new History(printer, historian);
 
     @BeforeEach
-    void setup()
-    {
-        printer = mock( Printer.class );
-        historian = mock( Historian.class );
-        cmd = new History( printer, historian );
+    void setup() {
+        printer = mock(Printer.class);
+        historian = mock(Historian.class);
+        cmd = new History(printer, historian);
     }
 
     @Test
-    void shouldNotAcceptSomeArgs()
-    {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob" ) ) );
-        assertThat( exception.getMessage(), containsString( "Unrecognised argument bob" ) );
+    void shouldNotAcceptSomeArgs() {
+        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob")));
+        assertThat(exception.getMessage(), containsString("Unrecognised argument bob"));
     }
 
     @Test
-    void shouldPrintHistoryCorrectlyNumberedFrom1() throws CommandException, IOException
-    {
-        when( historian.getHistory() ).thenReturn( List.of( ":help", ":exit" ) );
+    void shouldPrintHistoryCorrectlyNumberedFrom1() throws CommandException, IOException {
+        when(historian.getHistory()).thenReturn(List.of(":help", ":exit"));
 
-        cmd.execute( List.of() );
+        cmd.execute(List.of());
 
-        verify( printer ).printOut( eq( format( " 1  :help%n 2  :exit%n" ) ) );
-        verify( historian, times( 0 ) ).clear();
+        verify(printer).printOut(eq(format(" 1  :help%n 2  :exit%n")));
+        verify(historian, times(0)).clear();
     }
 
     @Test
-    void shouldHandleMultiLine() throws CommandException
-    {
-        when( historian.getHistory() ).thenReturn( Arrays.asList( "match\n(n)\nreturn\nn\n;", ":exit" ) );
+    void shouldHandleMultiLine() throws CommandException {
+        when(historian.getHistory()).thenReturn(Arrays.asList("match\n(n)\nreturn\nn\n;", ":exit"));
 
-        cmd.execute( List.of() );
+        cmd.execute(List.of());
 
-        var expected = format(
-            " 1  match%n" +
-            "    (n)%n" +
-            "    return%n" +
-            "    n%n" +
-            "    ;%n" +
-            " 2  :exit%n");
+        var expected = format(" 1  match%n" + "    (n)%n" + "    return%n" + "    n%n" + "    ;%n" + " 2  :exit%n");
 
-        verify( printer ).printOut( eq( expected ) );
+        verify(printer).printOut(eq(expected));
     }
 
     @Test
-    void shouldHandleMultiLineCRNL() throws CommandException
-    {
-        when( historian.getHistory() ).thenReturn( Arrays.asList( "match\r\n(n)\r\nreturn\r\nn\r\n;", ":exit" ) );
+    void shouldHandleMultiLineCRNL() throws CommandException {
+        when(historian.getHistory()).thenReturn(Arrays.asList("match\r\n(n)\r\nreturn\r\nn\r\n;", ":exit"));
 
-        cmd.execute( List.of() );
+        cmd.execute(List.of());
 
-        var expected = format(
-                " 1  match%n" +
-                "    (n)%n" +
-                "    return%n" +
-                "    n%n" +
-                "    ;%n" +
-                " 2  :exit%n"
-        );
+        var expected = format(" 1  match%n" + "    (n)%n" + "    return%n" + "    n%n" + "    ;%n" + " 2  :exit%n");
 
-        verify( printer ).printOut( eq( expected ) );
+        verify(printer).printOut(eq(expected));
     }
 
     @Test
-    void shouldClearHistory() throws CommandException, IOException
-    {
-        cmd.execute( List.of( "clear" ) );
+    void shouldClearHistory() throws CommandException, IOException {
+        cmd.execute(List.of("clear"));
 
-        verify( historian, times( 1 ) ).clear();
-        verify( printer ).printIfVerbose( eq( "Removing history..." ) );
+        verify(historian, times(1)).clear();
+        verify(printer).printIfVerbose(eq("Removing history..."));
     }
 
     @Test
-    void shouldLimitHistory() throws CommandException
-    {
-        when( historian.getHistory() ).thenReturn( IntStream.range( 1, 21 ).mapToObj( Integer::toString ).collect( toList() ) );
+    void shouldLimitHistory() throws CommandException {
+        when(historian.getHistory())
+                .thenReturn(IntStream.range(1, 21).mapToObj(Integer::toString).collect(toList()));
 
-        cmd.execute( List.of() );
+        cmd.execute(List.of());
 
-        var expected = format(
-            " 5   5%n" +
-            " 6   6%n" +
-            " 7   7%n" +
-            " 8   8%n" +
-            " 9   9%n" +
-            " 10  10%n" +
-            " 11  11%n" +
-            " 12  12%n" +
-            " 13  13%n" +
-            " 14  14%n" +
-            " 15  15%n" +
-            " 16  16%n" +
-            " 17  17%n" +
-            " 18  18%n" +
-            " 19  19%n" +
-            " 20  20%n"
-        );
-        verify( printer ).printOut( eq( expected ) );
+        var expected = format(" 5   5%n" + " 6   6%n"
+                + " 7   7%n"
+                + " 8   8%n"
+                + " 9   9%n"
+                + " 10  10%n"
+                + " 11  11%n"
+                + " 12  12%n"
+                + " 13  13%n"
+                + " 14  14%n"
+                + " 15  15%n"
+                + " 16  16%n"
+                + " 17  17%n"
+                + " 18  18%n"
+                + " 19  19%n"
+                + " 20  20%n");
+        verify(printer).printOut(eq(expected));
     }
 }

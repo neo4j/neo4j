@@ -20,16 +20,14 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
-
 import org.neo4j.io.fs.StoreChannel;
 
 /**
  * Provides information and functionality for bridging log file boundaries.
  */
 @FunctionalInterface
-public interface LogVersionBridge
-{
-    LogVersionBridge NO_MORE_CHANNELS = ( channel, raw ) -> channel;
+public interface LogVersionBridge {
+    LogVersionBridge NO_MORE_CHANNELS = (channel, raw) -> channel;
 
     /**
      * Provides the next channel, given the current channel and version.
@@ -42,5 +40,5 @@ public interface LogVersionBridge
      * if no bridging needed or end was reached.
      * @throws IOException on error opening next version channel.
      */
-    LogVersionedStoreChannel next( LogVersionedStoreChannel channel, boolean raw ) throws IOException;
+    LogVersionedStoreChannel next(LogVersionedStoreChannel channel, boolean raw) throws IOException;
 }

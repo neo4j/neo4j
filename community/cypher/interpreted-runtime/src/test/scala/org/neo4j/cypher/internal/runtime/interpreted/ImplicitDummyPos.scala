@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import scala.language.implicitConversions
 
 trait ImplicitDummyPos {
-    protected val pos = DummyPosition(0)
+  protected val pos = DummyPosition(0)
 
-    implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
+  implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 }

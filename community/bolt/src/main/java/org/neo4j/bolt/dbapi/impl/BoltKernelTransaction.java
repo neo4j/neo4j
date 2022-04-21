@@ -21,7 +21,6 @@ package org.neo4j.bolt.dbapi.impl;
 
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -32,65 +31,59 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.memory.HeapEstimator;
 
-public class BoltKernelTransaction extends BoltQueryExecutorImpl implements BoltTransaction
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltKernelTransaction.class );
+public class BoltKernelTransaction extends BoltQueryExecutorImpl implements BoltTransaction {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BoltKernelTransaction.class);
 
     private final KernelTransaction kernelTransaction;
     private final InternalTransaction topLevelInternalTransaction;
     private final Supplier<BookmarkMetadata> bookmarkSupplier;
 
-    public BoltKernelTransaction( QueryExecutionEngine queryExecutionEngine, TransactionalContextFactory transactionalContextFactory,
-            KernelTransaction kernelTransaction, InternalTransaction internalTransaction, Supplier<BookmarkMetadata> bookmarkSupplier )
-    {
-        super( queryExecutionEngine, transactionalContextFactory, internalTransaction );
+    public BoltKernelTransaction(
+            QueryExecutionEngine queryExecutionEngine,
+            TransactionalContextFactory transactionalContextFactory,
+            KernelTransaction kernelTransaction,
+            InternalTransaction internalTransaction,
+            Supplier<BookmarkMetadata> bookmarkSupplier) {
+        super(queryExecutionEngine, transactionalContextFactory, internalTransaction);
         this.kernelTransaction = kernelTransaction;
         this.topLevelInternalTransaction = internalTransaction;
         this.bookmarkSupplier = bookmarkSupplier;
     }
 
     @Override
-    public void commit() throws TransactionFailureException
-    {
+    public void commit() throws TransactionFailureException {
         kernelTransaction.commit();
     }
 
     @Override
-    public void rollback() throws TransactionFailureException
-    {
-        if ( kernelTransaction.isOpen() )
-        {
+    public void rollback() throws TransactionFailureException {
+        if (kernelTransaction.isOpen()) {
             kernelTransaction.rollback();
         }
     }
 
     @Override
-    public void close() throws TransactionFailureException
-    {
+    public void close() throws TransactionFailureException {
         kernelTransaction.close();
     }
 
     @Override
-    public void markForTermination( Status reason )
-    {
-        kernelTransaction.markForTermination( reason );
+    public void markForTermination(Status reason) {
+        kernelTransaction.markForTermination(reason);
     }
 
     @Override
-    public void markForTermination()
-    {
-        kernelTransaction.markForTermination( Status.Transaction.Terminated );
+    public void markForTermination() {
+        kernelTransaction.markForTermination(Status.Transaction.Terminated);
     }
 
     @Override
-    public Optional<Status> getReasonIfTerminated()
-    {
+    public Optional<Status> getReasonIfTerminated() {
         return topLevelInternalTransaction.terminationReason();
     }
 
     @Override
-    public BookmarkMetadata getBookmarkMetadata()
-    {
+    public BookmarkMetadata getBookmarkMetadata() {
         return bookmarkSupplier.get();
     }
 }

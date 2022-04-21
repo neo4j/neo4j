@@ -19,11 +19,13 @@
  */
 package org.neo4j.shell.cli;
 
+import static org.neo4j.shell.Main.EXIT_FAILURE;
+import static org.neo4j.shell.Main.EXIT_SUCCESS;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.List;
-
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.ShellRunner;
 import org.neo4j.shell.StatementExecuter;
@@ -32,15 +34,11 @@ import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.printer.Printer;
 
-import static org.neo4j.shell.Main.EXIT_FAILURE;
-import static org.neo4j.shell.Main.EXIT_SUCCESS;
-
 /**
  * A shell runner which reads all of STDIN and executes commands until completion. In case of errors, the failBehavior determines if the shell exits
  * immediately, or if it should keep trying the next commands.
  */
-public class NonInteractiveShellRunner implements ShellRunner
-{
+public class NonInteractiveShellRunner implements ShellRunner {
     private static final Logger log = Logger.create();
     private final FailBehavior failBehavior;
     private final StatementExecuter executer;
@@ -48,12 +46,12 @@ public class NonInteractiveShellRunner implements ShellRunner
     private final StatementParser statementParser;
     private final InputStream inputStream;
 
-    public NonInteractiveShellRunner( FailBehavior failBehavior,
-                                      StatementExecuter executer,
-                                      Printer printer,
-                                      StatementParser statementParser,
-                                      InputStream inputStream )
-    {
+    public NonInteractiveShellRunner(
+            FailBehavior failBehavior,
+            StatementExecuter executer,
+            Printer printer,
+            StatementParser statementParser,
+            InputStream inputStream) {
         this.failBehavior = failBehavior;
         this.executer = executer;
         this.printer = printer;
@@ -62,41 +60,30 @@ public class NonInteractiveShellRunner implements ShellRunner
     }
 
     @Override
-    public int runUntilEnd()
-    {
+    public int runUntilEnd() {
         List<StatementParser.ParsedStatement> statements;
-        try ( Reader reader = new InputStreamReader( inputStream ) )
-        {
-            statements = statementParser.parse( reader ).statements();
-        }
-        catch ( Throwable e )
-        {
-            log.error( e );
-            printer.printError( e );
+        try (Reader reader = new InputStreamReader(inputStream)) {
+            statements = statementParser.parse(reader).statements();
+        } catch (Throwable e) {
+            log.error(e);
+            printer.printError(e);
             return EXIT_FAILURE;
         }
 
         int exitCode = EXIT_SUCCESS;
 
-        for ( var statement : statements )
-        {
-            try
-            {
-                executer.execute( statement );
-            }
-            catch ( ExitException e )
-            {
-                log.info( "ExitException code=" + e.getCode() + ": " + e.getMessage() );
+        for (var statement : statements) {
+            try {
+                executer.execute(statement);
+            } catch (ExitException e) {
+                log.info("ExitException code=" + e.getCode() + ": " + e.getMessage());
                 // These exceptions are always fatal
                 return e.getCode();
-            }
-            catch ( Throwable e )
-            {
+            } catch (Throwable e) {
                 exitCode = EXIT_FAILURE;
-                log.error( e );
-                printer.printError( e );
-                if ( FailBehavior.FAIL_AT_END != failBehavior )
-                {
+                log.error(e);
+                printer.printError(e);
+                if (FailBehavior.FAIL_AT_END != failBehavior) {
                     return exitCode;
                 }
             }
@@ -105,8 +92,7 @@ public class NonInteractiveShellRunner implements ShellRunner
     }
 
     @Override
-    public Historian getHistorian()
-    {
+    public Historian getHistorian() {
         return Historian.empty;
     }
 }

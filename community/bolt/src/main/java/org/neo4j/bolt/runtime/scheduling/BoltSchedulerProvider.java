@@ -22,9 +22,7 @@ package org.neo4j.bolt.runtime.scheduling;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public interface BoltSchedulerProvider extends Lifecycle
-{
+public interface BoltSchedulerProvider extends Lifecycle {
 
-    BoltScheduler get( BoltChannel channel );
-
+    BoltScheduler get(BoltChannel channel);
 }

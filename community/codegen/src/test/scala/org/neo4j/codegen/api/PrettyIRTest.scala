@@ -54,7 +54,7 @@ import org.neo4j.values.storable.Values
 
 class PrettyIRTest extends CypherFunSuite {
 
-  val indent: String = " "*PrettyIR.indentSize
+  val indent: String = " " * PrettyIR.indentSize
 
   test("prettify empty block") {
     PrettyIR.pretty(block()) shouldBe empty
@@ -111,8 +111,8 @@ class PrettyIRTest extends CypherFunSuite {
       s"""{
          |${indent}AnyValue a = 0 + 7
          |${indent}if (b) {
-         |${indent*2}b = false
-         |${indent*2}a = 13
+         |${indent * 2}b = false
+         |${indent * 2}a = 13
          |${indent}}
          |}""".stripMargin
   }
@@ -122,7 +122,10 @@ class PrettyIRTest extends CypherFunSuite {
   }
 
   test("invoke function") {
-    PrettyIR.pretty(invoke(load[java.util.Iterator[AnyValue]]("iter"), method[java.util.Iterator[AnyValue], Boolean]("hasNext"))) shouldBe "iter.hasNext()"
+    PrettyIR.pretty(invoke(
+      load[java.util.Iterator[AnyValue]]("iter"),
+      method[java.util.Iterator[AnyValue], Boolean]("hasNext")
+    )) shouldBe "iter.hasNext()"
   }
 
   test("get static no value") {
@@ -166,7 +169,9 @@ class PrettyIRTest extends CypherFunSuite {
   }
 
   test("if-else-condition") {
-    PrettyIR.pretty(ifElse(load[Boolean]("condition"))(constant(false))(constant(true))) shouldBe "if (condition) false else true"
+    PrettyIR.pretty(
+      ifElse(load[Boolean]("condition"))(constant(false))(constant(true))
+    ) shouldBe "if (condition) false else true"
   }
 
   test("if-else-block-condition") {
@@ -174,9 +179,10 @@ class PrettyIRTest extends CypherFunSuite {
       constant(0)
     )(
       block(Seq(
-      assign("a", add(constant(0), constant(7))),
-      assign("a", add(load[Int]("a"), constant(7)))
-    ): _*))
+        assign("a", add(constant(0), constant(7))),
+        assign("a", add(load[Int]("a"), constant(7)))
+      ): _*)
+    )
     PrettyIR.pretty(condition) shouldBe
       s"""if (condition) 0 else {
          |${indent}a = 0 + 7
@@ -185,7 +191,9 @@ class PrettyIRTest extends CypherFunSuite {
   }
 
   test("ternary") {
-    PrettyIR.pretty(ternary(load[Boolean]("condition"), constant(false), constant(true))) shouldBe "condition ? false : true"
+    PrettyIR.pretty(
+      ternary(load[Boolean]("condition"), constant(false), constant(true))
+    ) shouldBe "condition ? false : true"
   }
 
   test("Loop without label") {
@@ -194,10 +202,11 @@ class PrettyIRTest extends CypherFunSuite {
   }
 
   test("Loop with label") {
-    val loopIR = labeledLoop("loop1", notEqual(load[Int]("a"), constant(100)))(assign("a", add(load[Int]("a"), constant(1))))
+    val loopIR =
+      labeledLoop("loop1", notEqual(load[Int]("a"), constant(100)))(assign("a", add(load[Int]("a"), constant(1))))
     PrettyIR.pretty(loopIR) shouldBe
-        """loop1:
-          |while (a != 100) a = a + 1""".stripMargin
+      """loop1:
+        |while (a != 100) a = a + 1""".stripMargin
   }
 
   test("array load") {
@@ -219,11 +228,11 @@ class PrettyIRTest extends CypherFunSuite {
       IntermediateRepresentation.fail(load[ClassCastException]("e"))
     )
     PrettyIR.pretty(tryCatchIR) shouldBe
-    s"""try {
-        |${indent}(double)a
-        |} catch(e: ClassCastException) {
-        |${indent}throw e
-        |}""".stripMargin
+      s"""try {
+         |${indent}(double)a
+         |} catch(e: ClassCastException) {
+         |${indent}throw e
+         |}""".stripMargin
   }
 
   test("Noop") {
@@ -231,9 +240,14 @@ class PrettyIRTest extends CypherFunSuite {
   }
 
   test("Not(...)") {
-    PrettyIR.pretty(IntermediateRepresentation.not(IntermediateRepresentation.equal(constant(true), constant(false)))) shouldBe "true != false"
+    PrettyIR.pretty(
+      IntermediateRepresentation.not(IntermediateRepresentation.equal(constant(true), constant(false)))
+    ) shouldBe "true != false"
 
-    PrettyIR.pretty(IntermediateRepresentation.not(IntermediateRepresentation.or(load[Boolean]("a"), load[Boolean]("b")))) shouldBe "!(a || b)"
+    PrettyIR.pretty(IntermediateRepresentation.not(IntermediateRepresentation.or(
+      load[Boolean]("a"),
+      load[Boolean]("b")
+    ))) shouldBe "!(a || b)"
   }
 
 }

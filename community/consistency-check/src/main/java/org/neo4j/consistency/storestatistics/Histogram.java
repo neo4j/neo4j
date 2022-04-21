@@ -24,9 +24,10 @@ import java.util.Arrays;
 /**
  * Basic histogram implementation used to represent statistics about the database store analysed by the consistency checker.
  */
-class Histogram
-{
-    static final int[] COUNT_BUCKETS = {0, 1, 1 << 2, 1 << 4, 1 << 6, 1 << 8, 1 << 10, 1 << 12, 1 << 14, 1 << 16, 1 << 24, Integer.MAX_VALUE};
+class Histogram {
+    static final int[] COUNT_BUCKETS = {
+        0, 1, 1 << 2, 1 << 4, 1 << 6, 1 << 8, 1 << 10, 1 << 12, 1 << 14, 1 << 16, 1 << 24, Integer.MAX_VALUE
+    };
     static final int[] FRAG_MEASURE_BUCKETS = {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 
     private final int[] buckets;
@@ -35,21 +36,18 @@ class Histogram
     /**
      * Returns a histogram ready to be used to hold frequency data about integer values.
      */
-    Histogram()
-    {
-        this( COUNT_BUCKETS );
+    Histogram() {
+        this(COUNT_BUCKETS);
     }
 
     /**
      * Returns a histogram ready to be used to hold frequency data about frequency measures.
      */
-    static Histogram newFragMeasureHistogram()
-    {
-        return new Histogram( FRAG_MEASURE_BUCKETS );
+    static Histogram newFragMeasureHistogram() {
+        return new Histogram(FRAG_MEASURE_BUCKETS);
     }
 
-    private Histogram( int[] bucketUpperBounds )
-    {
+    private Histogram(int[] bucketUpperBounds) {
         this.buckets = bucketUpperBounds;
         this.frequencies = new int[bucketUpperBounds.length];
     }
@@ -60,14 +58,11 @@ class Histogram
      *
      * @param totalHist the histogram holding aggregate data.
      */
-    void addTo( Histogram totalHist )
-    {
-        if ( !Arrays.equals( this.buckets, totalHist.buckets ) )
-        {
-            throw new RuntimeException( "Attempted to add histograms with different buckets. This is a bug." );
+    void addTo(Histogram totalHist) {
+        if (!Arrays.equals(this.buckets, totalHist.buckets)) {
+            throw new RuntimeException("Attempted to add histograms with different buckets. This is a bug.");
         }
-        for ( int i = 0; i < frequencies.length; i++ )
-        {
+        for (int i = 0; i < frequencies.length; i++) {
             totalHist.frequencies[i] += frequencies[i];
         }
     }
@@ -77,19 +72,16 @@ class Histogram
      *
      * @param value the value to the be added to histogram.
      */
-    void addValue( int value )
-    {
-        for ( int i = 0; i < buckets.length; i++ )
-        {
-            if ( value <= buckets[i] )
-            {
+    void addValue(int value) {
+        for (int i = 0; i < buckets.length; i++) {
+            if (value <= buckets[i]) {
                 frequencies[i]++;
                 return;
             }
         }
-        throw new RuntimeException( String.format( "Attempted to add value %d to histogram whose max value is %d. This is a bug.",
-                                                   value,
-                                                   buckets[buckets.length - 1] ) );
+        throw new RuntimeException(String.format(
+                "Attempted to add value %d to histogram whose max value is %d. This is a bug.",
+                value, buckets[buckets.length - 1]));
     }
 
     /**
@@ -97,32 +89,29 @@ class Histogram
      *
      * @return textual representation of the histogram.
      */
-    String prettyPrint()
-    {
+    String prettyPrint() {
         StringBuilder sb = new StringBuilder();
 
         // Width of the left side of the histogram, so that all numbers fit
         int width = 0;
         int tmp = buckets[buckets.length - 1];
-        while ( tmp > 0 )
-        {
+        while (tmp > 0) {
             width++;
             tmp /= 10;
         }
-        width = Math.max( width, "Buckets".length() );
+        width = Math.max(width, "Buckets".length());
 
-        String bucketsFormat = String.format( "%%%ds", width );
+        String bucketsFormat = String.format("%%%ds", width);
 
-        sb.append( String.format( bucketsFormat, "Buckets" ) );
-        sb.append( " | " );
-        sb.append( "Frequencies" );
+        sb.append(String.format(bucketsFormat, "Buckets"));
+        sb.append(" | ");
+        sb.append("Frequencies");
 
-        for ( int i = 0; i < buckets.length; i++ )
-        {
-            sb.append( "\n" );
-            sb.append( String.format( bucketsFormat, buckets[i] ) );
-            sb.append( " | " );
-            sb.append( frequencies[i] );
+        for (int i = 0; i < buckets.length; i++) {
+            sb.append("\n");
+            sb.append(String.format(bucketsFormat, buckets[i]));
+            sb.append(" | ");
+            sb.append(frequencies[i]);
         }
         return sb.toString();
     }

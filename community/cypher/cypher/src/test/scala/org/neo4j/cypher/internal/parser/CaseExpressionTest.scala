@@ -33,7 +33,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
 
-class CaseExpressionTest extends JavaccParserTestBase[internal.expressions.Expression, commands.expressions.Expression] {
+class CaseExpressionTest
+    extends JavaccParserTestBase[internal.expressions.Expression, commands.expressions.Expression] {
   implicit private val parserToTest: JavaccRule[internal.expressions.Expression] = JavaccRule.CaseExpression
 
   test("simple_cases") {
@@ -44,7 +45,8 @@ class CaseExpressionTest extends JavaccParserTestBase[internal.expressions.Expre
       """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
-         END""") shouldGive
+         END"""
+    ) shouldGive
       commands.expressions.SimpleCase(literal(1), Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))), None)
 
     parsing(
@@ -52,8 +54,13 @@ class CaseExpressionTest extends JavaccParserTestBase[internal.expressions.Expre
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
                   ELSE 'DEFAULT'
-         END""") shouldGive
-      commands.expressions.SimpleCase(literal(1), Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))), Some(literal("DEFAULT")))
+         END"""
+    ) shouldGive
+      commands.expressions.SimpleCase(
+        literal(1),
+        Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))),
+        Some(literal("DEFAULT"))
+      )
   }
 
   test("generic_cases") {
@@ -67,7 +74,8 @@ class CaseExpressionTest extends JavaccParserTestBase[internal.expressions.Expre
       """CASE
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
-         END""") shouldGive
+         END"""
+    ) shouldGive
       commands.expressions.GenericCase(IndexedSeq(alt1, alt2), None)
 
     parsing(
@@ -75,10 +83,14 @@ class CaseExpressionTest extends JavaccParserTestBase[internal.expressions.Expre
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
-         END""") shouldGive
+         END"""
+    ) shouldGive
       commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(literal("OTHER")))
   }
 
-  private val converters = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
-  override def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
+  private val converters =
+    new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+
+  override def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =
+    converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

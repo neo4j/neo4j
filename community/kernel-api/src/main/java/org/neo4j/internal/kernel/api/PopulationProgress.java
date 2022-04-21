@@ -19,18 +19,16 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import static java.lang.String.format;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.neo4j.graphdb.schema.IndexPopulationProgress;
 
-import static java.lang.String.format;
-
-public interface PopulationProgress
-{
-    PopulationProgress NONE = single( 0, 0 );
-    PopulationProgress DONE = single( 1, 1 );
+public interface PopulationProgress {
+    PopulationProgress NONE = single(0, 0);
+    PopulationProgress DONE = single(1, 1);
 
     long getCompleted();
 
@@ -40,117 +38,102 @@ public interface PopulationProgress
 
     IndexPopulationProgress toIndexPopulationProgress();
 
-    static PopulationProgress single( long completed, long total )
-    {
-        return new PopulationProgress()
-        {
+    static PopulationProgress single(long completed, long total) {
+        return new PopulationProgress() {
             @Override
-            public long getCompleted()
-            {
+            public long getCompleted() {
                 return completed;
             }
 
             @Override
-            public long getTotal()
-            {
+            public long getTotal() {
                 return total;
             }
 
             @Override
-            public float getProgress()
-            {
+            public float getProgress() {
                 return (total == 0) ? 0 : (float) ((double) completed / total);
             }
 
             @Override
-            public IndexPopulationProgress toIndexPopulationProgress()
-            {
-                return new IndexPopulationProgress( completed, total );
+            public IndexPopulationProgress toIndexPopulationProgress() {
+                return new IndexPopulationProgress(completed, total);
             }
 
             @Override
-            public String toString()
-            {
-                return format( Locale.ROOT, "[%d/%d:%f]", completed, total, getProgress() );
+            public String toString() {
+                return format(Locale.ROOT, "[%d/%d:%f]", completed, total, getProgress());
             }
         };
     }
 
-    static MultiBuilder multiple()
-    {
+    static MultiBuilder multiple() {
         return new MultiBuilder();
     }
 
-    class MultiBuilder
-    {
+    class MultiBuilder {
         private final List<PopulationProgressWeight> parts = new ArrayList<>();
         private float totalWeight;
 
-        public MultiBuilder add( PopulationProgress part, float weight )
-        {
-            parts.add( new PopulationProgressWeight( part, weight ) );
+        public MultiBuilder add(PopulationProgress part, float weight) {
+            parts.add(new PopulationProgressWeight(part, weight));
             totalWeight += weight;
             return this;
         }
 
-        public PopulationProgress build()
-        {
+        public PopulationProgress build() {
             float[] weightFactors = buildWeightFactors();
-            return new PopulationProgress()
-            {
+            return new PopulationProgress() {
                 @Override
-                public long getCompleted()
-                {
-                    return parts.stream().mapToLong( part -> part.part.getCompleted() ).sum();
+                public long getCompleted() {
+                    return parts.stream()
+                            .mapToLong(part -> part.part.getCompleted())
+                            .sum();
                 }
 
                 @Override
-                public long getTotal()
-                {
-                    return parts.stream().mapToLong( part -> part.part.getTotal() ).sum();
+                public long getTotal() {
+                    return parts.stream()
+                            .mapToLong(part -> part.part.getTotal())
+                            .sum();
                 }
 
                 @Override
-                public float getProgress()
-                {
+                public float getProgress() {
                     float combined = 0;
-                    for ( int i = 0; i < parts.size(); i++ )
-                    {
-                        combined += parts.get( i ).part.getProgress() * weightFactors[i];
+                    for (int i = 0; i < parts.size(); i++) {
+                        combined += parts.get(i).part.getProgress() * weightFactors[i];
                     }
                     return combined;
                 }
 
                 @Override
-                public IndexPopulationProgress toIndexPopulationProgress()
-                {
+                public IndexPopulationProgress toIndexPopulationProgress() {
                     // Here we want to control the progress percentage and the best way to do that without introducing
-                    // another IndexPopulationProgress constructor is to make up completed/total values that will generate
-                    // the progress we want (nobody uses getCompleted()/getTotal() anyway since even the widely used IndexPopulationProgress#DONE)
+                    // another IndexPopulationProgress constructor is to make up completed/total values that will
+                    // generate
+                    // the progress we want (nobody uses getCompleted()/getTotal() anyway since even the widely used
+                    // IndexPopulationProgress#DONE)
                     // destroys any actual numbers by having 1/1.
                     float progress = getProgress();
                     long fakeTotal = 1_000; // because we have 4 value digits in the report there
                     long fakeCompleted = (long) ((float) fakeTotal * progress);
-                    return new IndexPopulationProgress( fakeCompleted, fakeTotal );
+                    return new IndexPopulationProgress(fakeCompleted, fakeTotal);
                 }
             };
         }
 
-        private float[] buildWeightFactors()
-        {
+        private float[] buildWeightFactors() {
             float[] weightFactors = new float[parts.size()];
             float weightSum = 0;
-            for ( int i = 0; i < parts.size(); i++ )
-            {
-                PopulationProgressWeight part = parts.get( i );
+            for (int i = 0; i < parts.size(); i++) {
+                PopulationProgressWeight part = parts.get(i);
                 weightFactors[i] = i == parts.size() - 1 ? 1 - weightSum : part.weight / totalWeight;
                 weightSum += weightFactors[i];
             }
             return weightFactors;
         }
 
-        private record PopulationProgressWeight(PopulationProgress part, float weight)
-        {
-        }
+        private record PopulationProgressWeight(PopulationProgress part, float weight) {}
     }
 }

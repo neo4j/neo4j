@@ -185,7 +185,8 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
     when(monitors.newMonitor[AstRewritingMonitor]()).thenReturn(astRewritingMonitor)
     rewriter = {
       case e: Expression =>
-        val initialState = InitialState("", None, NoPlannerName, new AnonymousVariableNameGenerator()).withStatement(TestStatement(e))
+        val initialState =
+          InitialState("", None, NoPlannerName, new AnonymousVariableNameGenerator()).withStatement(TestStatement(e))
         val finalState = CNFNormalizerTest.getTransformer.transform(initialState, new TestContext(monitors))
         val TestStatement(expression) = finalState.statement()
         expression
@@ -196,6 +197,7 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
 object CNFNormalizerTest {
 
   case object SemanticWrapper extends Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step {
+
     private val transformer =
       SemanticAnalysis.getTransformer(pushdownPropertyReads = false, Seq.empty)
 
@@ -205,15 +207,20 @@ object CNFNormalizerTest {
 
     override def invalidatedConditions: Set[Condition] = SemanticAnalysis.invalidatedConditions
 
-    override def transform(from: BaseState,
-                           context: BaseContext): BaseState = transformer.transform(from, context)
+    override def transform(from: BaseState, context: BaseContext): BaseState = transformer.transform(from, context)
 
     override def name: String = transformer.name
   }
 
   val orderedSteps: Seq[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step] =
     StepSequencer(ListStepAccumulator[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step]())
-      .orderSteps(Set[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step](transitiveClosure, SemanticWrapper) ++ steps, Set.empty)
+      .orderSteps(
+        Set[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step](
+          transitiveClosure,
+          SemanticWrapper
+        ) ++ steps,
+        Set.empty
+      )
       .steps
 
   def getTransformer: Transformer[BaseContext, BaseState, BaseState] = {
@@ -225,14 +232,18 @@ object CNFNormalizerTest {
  * Rewriters work on states, which reference a statement. As we often care about the rewriting of expressions (instead of statements), this object helps to bridge that gap.
  */
 object TestStatement {
+
   def apply(e: Expression): Statement = {
-    val returnClause = Return(ReturnItems(includeExisting = false, Seq(AliasedReturnItem(e, Variable("")(InputPosition.NONE))
-    (InputPosition.NONE, isAutoAliased = false)))(InputPosition.NONE))(InputPosition.NONE)
+    val returnClause = Return(ReturnItems(
+      includeExisting = false,
+      Seq(AliasedReturnItem(e, Variable("")(InputPosition.NONE))(InputPosition.NONE, isAutoAliased = false))
+    )(InputPosition.NONE))(InputPosition.NONE)
     Query(SingleQuery(Seq(returnClause))(InputPosition.NONE))(InputPosition.NONE)
   }
 
   def unapply(s: Statement): Option[Expression] = s match {
-    case Query(SingleQuery(Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(expression, _)), _), _, _, _, _)))) => Some(expression)
+    case Query(SingleQuery(Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(expression, _)), _), _, _, _, _)))) =>
+      Some(expression)
     case _ => None
   }
 }

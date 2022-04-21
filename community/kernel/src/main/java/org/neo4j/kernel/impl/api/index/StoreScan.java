@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.kernel.api.PopulationProgress;
 
-public interface StoreScan
-{
-    void run( ExternalUpdatesCheck externalUpdatesCheck );
+public interface StoreScan {
+    void run(ExternalUpdatesCheck externalUpdatesCheck);
 
     void stop();
 
@@ -34,16 +33,14 @@ public interface StoreScan
      * Must not be called once scan has already started.
      * @param phaseTracker {@link PhaseTracker} this store scan shall report to.
      */
-    default void setPhaseTracker( PhaseTracker phaseTracker )
-    {   // no-op
+    default void setPhaseTracker(PhaseTracker phaseTracker) { // no-op
     }
 
     /**
      * Interaction point from the store scan with the index population to synchronize store scan with applying external concurrent updates
      * that happens while the store scan is running.
      */
-    interface ExternalUpdatesCheck
-    {
+    interface ExternalUpdatesCheck {
         /**
          * Called by the thread running the store scan from within the scan now and then to check whether or not there are external
          * updates to apply.
@@ -55,20 +52,16 @@ public interface StoreScan
          * can be applied w/o concurrent scan updates.
          * @param currentlyIndexedNodeId the highest entity id which has been processed by the store scan.
          */
-        void applyExternalUpdates( long currentlyIndexedNodeId );
+        void applyExternalUpdates(long currentlyIndexedNodeId);
     }
 
-    ExternalUpdatesCheck NO_EXTERNAL_UPDATES = new ExternalUpdatesCheck()
-    {
+    ExternalUpdatesCheck NO_EXTERNAL_UPDATES = new ExternalUpdatesCheck() {
         @Override
-        public boolean needToApplyExternalUpdates()
-        {
+        public boolean needToApplyExternalUpdates() {
             return false;
         }
 
         @Override
-        public void applyExternalUpdates( long currentlyIndexedNodeId )
-        {
-        }
+        public void applyExternalUpdates(long currentlyIndexedNodeId) {}
     };
 }

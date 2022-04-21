@@ -23,23 +23,19 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.values.storable.Value;
 
-class FilteringNativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>> extends NativeHitIndexProgressor<KEY>
-{
+class FilteringNativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>> extends NativeHitIndexProgressor<KEY> {
     private final PropertyIndexQuery[] filter;
 
-    FilteringNativeHitIndexProgressor( Seeker<KEY,NullValue> seeker, EntityValueClient client, PropertyIndexQuery[] filter )
-    {
-        super( seeker, client );
+    FilteringNativeHitIndexProgressor(
+            Seeker<KEY, NullValue> seeker, EntityValueClient client, PropertyIndexQuery[] filter) {
+        super(seeker, client);
         this.filter = filter;
     }
 
     @Override
-    protected boolean acceptValue( Value[] values )
-    {
-        for ( int i = 0; i < values.length; i++ )
-        {
-            if ( !filter[i].acceptsValue( values[i] ) )
-            {
+    protected boolean acceptValue(Value[] values) {
+        for (int i = 0; i < values.length; i++) {
+            if (!filter[i].acceptsValue(values[i])) {
                 return false;
             }
         }
@@ -48,8 +44,7 @@ class FilteringNativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>> extends
 
     // We need to make sure to always deserialize, even if the client doesn't need the value, to be able to filter
     @Override
-    Value[] extractValues( KEY key )
-    {
+    Value[] extractValues(KEY key) {
         return key.asValues();
     }
 }

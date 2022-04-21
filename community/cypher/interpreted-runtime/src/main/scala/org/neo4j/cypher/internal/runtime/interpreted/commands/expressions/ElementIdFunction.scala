@@ -31,7 +31,7 @@ case class ElementIdFunction(inner: Expression) extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = inner(row, state) match {
     case IsNoValue() => Values.NO_VALUE
-    case entity => CypherFunctions.elementId(entity, state.query.elementIdMapper())
+    case entity      => CypherFunctions.elementId(entity, state.query.elementIdMapper())
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(ElementIdFunction(inner.rewrite(f)))

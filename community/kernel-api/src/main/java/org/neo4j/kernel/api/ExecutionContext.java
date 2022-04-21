@@ -32,8 +32,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * to be transferred back to owning transaction.
  * After that transaction executor thread should call {@link ExecutionContext#close()}
  */
-public interface ExecutionContext extends AutoCloseable
-{
+public interface ExecutionContext extends AutoCloseable {
     /**
      * Execution context cursor tracer. Page cache statistic recorded during execution reported back to owning transaction only when context is closed.
      *

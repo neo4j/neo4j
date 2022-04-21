@@ -20,15 +20,13 @@
 package org.neo4j.graphalgo.impl.util;
 
 import java.util.Iterator;
-
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Path;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-public class WeightedPathIterator extends PrefetchingIterator<WeightedPath>
-{
+public class WeightedPathIterator extends PrefetchingIterator<WeightedPath> {
     private final Iterator<Path> paths;
     private final CostEvaluator<Double> costEvaluator;
     private Double foundWeight;
@@ -36,15 +34,17 @@ public class WeightedPathIterator extends PrefetchingIterator<WeightedPath>
     private final double epsilon;
     private final PathInterest<?> interest;
 
-    public WeightedPathIterator( Iterator<Path> paths, CostEvaluator<Double> costEvaluator,
-            double epsilon, boolean stopAfterLowestWeight )
-    {
-        this( paths, costEvaluator, epsilon, stopAfterLowestWeight ? PathInterestFactory.allShortest( epsilon ) :
-                                                                     PathInterestFactory.all( epsilon ) );
+    public WeightedPathIterator(
+            Iterator<Path> paths, CostEvaluator<Double> costEvaluator, double epsilon, boolean stopAfterLowestWeight) {
+        this(
+                paths,
+                costEvaluator,
+                epsilon,
+                stopAfterLowestWeight ? PathInterestFactory.allShortest(epsilon) : PathInterestFactory.all(epsilon));
     }
 
-    public WeightedPathIterator( Iterator<Path> paths, CostEvaluator<Double> costEvaluator, double epsilon, PathInterest<?> interest )
-    {
+    public WeightedPathIterator(
+            Iterator<Path> paths, CostEvaluator<Double> costEvaluator, double epsilon, PathInterest<?> interest) {
         this.paths = paths;
         this.costEvaluator = costEvaluator;
         this.epsilon = epsilon;
@@ -52,19 +52,17 @@ public class WeightedPathIterator extends PrefetchingIterator<WeightedPath>
     }
 
     @Override
-    protected WeightedPath fetchNextOrNull()
-    {
-        if ( !interest.stillInteresting( ++foundTotal ) )
-        {
+    protected WeightedPath fetchNextOrNull() {
+        if (!interest.stillInteresting(++foundTotal)) {
             return null;
         }
-        if ( !paths.hasNext() )
-        {
+        if (!paths.hasNext()) {
             return null;
         }
-        WeightedPath path = new WeightedPathImpl( costEvaluator, paths.next() );
-        if ( interest.stopAfterLowestCost() && foundWeight != null && MathUtil.compare( path.weight(), foundWeight, epsilon ) > 0 )
-        {
+        WeightedPath path = new WeightedPathImpl(costEvaluator, paths.next());
+        if (interest.stopAfterLowestCost()
+                && foundWeight != null
+                && MathUtil.compare(path.weight(), foundWeight, epsilon) > 0) {
             return null;
         }
         foundWeight = path.weight();

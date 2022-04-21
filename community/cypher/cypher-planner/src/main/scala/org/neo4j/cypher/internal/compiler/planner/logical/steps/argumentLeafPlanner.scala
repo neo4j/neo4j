@@ -26,7 +26,12 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class argumentLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
-  def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] = {
+
+  def apply(
+    qg: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     val ids = qg.patternNodes.diff(skipIDs) ++ qg.patternRelationships.map(_.name)
     if ((qg.argumentIds intersect ids).isEmpty)
       Set.empty

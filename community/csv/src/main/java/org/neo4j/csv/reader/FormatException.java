@@ -22,18 +22,15 @@ package org.neo4j.csv.reader;
 /**
  * Super class for exceptions stemming from invalid format of a data source that is read.
  */
-public abstract class FormatException extends IllegalStateException
-{
+public abstract class FormatException extends IllegalStateException {
     private final SourceTraceability source;
 
-    protected FormatException( SourceTraceability source, String description )
-    {
-        super( "At " + source.sourceDescription() + " @ position " + source.position() + " - " + description );
+    protected FormatException(SourceTraceability source, String description) {
+        super("At " + source.sourceDescription() + " @ position " + source.position() + " - " + description);
         this.source = source;
     }
 
-    public SourceTraceability source()
-    {
+    public SourceTraceability source() {
         return this.source;
     }
 }

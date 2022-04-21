@@ -37,51 +37,40 @@ import org.neo4j.io.pagecache.PageSwapper;
  *   Thus, number of successful faults is calculated from those counters using subtraction.
  *
  */
-public interface PinEvent extends AutoCloseablePageCacheTracerEvent
-{
+public interface PinEvent extends AutoCloseablePageCacheTracerEvent {
     /**
      * A PinEvent that does nothing other than return the PageFaultEvent.NULL.
      */
-    PinEvent NULL = new PinEvent()
-    {
+    PinEvent NULL = new PinEvent() {
         @Override
-        public void setCachePageId( long cachePageId )
-        {
-        }
+        public void setCachePageId(long cachePageId) {}
 
         @Override
-        public PageFaultEvent beginPageFault( long filePageId, PageSwapper pageSwapper )
-        {
+        public PageFaultEvent beginPageFault(long filePageId, PageSwapper pageSwapper) {
             return PageFaultEvent.NULL;
         }
 
         @Override
-        public void hit()
-        {
-        }
+        public void hit() {}
 
         @Override
-        public void noFault()
-        {
-        }
+        public void noFault() {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     };
 
     /**
      * The id of the cache page that holds the file page we pinned.
      */
-    void setCachePageId( long cachePageId );
+    void setCachePageId(long cachePageId);
 
     /**
      * The page we want to pin is not in memory, so being a page fault to load it in.
      * @param filePageId file page id
      * @param pageSwapper file swapper
      */
-    PageFaultEvent beginPageFault( long filePageId, PageSwapper pageSwapper );
+    PageFaultEvent beginPageFault(long filePageId, PageSwapper pageSwapper);
 
     /**
      * Page found and bounded.

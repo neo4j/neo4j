@@ -19,14 +19,19 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -59,38 +64,32 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 /**
  * Base class for disk layer tests, which test read-access to committed data.
  */
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
-public abstract class RecordStorageReaderTestBase
-{
+public abstract class RecordStorageReaderTestBase {
     private static final ResourceLocker IGNORE_LOCKING = ResourceLocker.IGNORE;
 
     private final RecordStorageEngineSupport storageEngineRule = new RecordStorageEngineSupport();
 
     @Inject
     protected PageCache pageCache;
+
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
-    protected final Label label1 = label( "FirstLabel" );
-    protected final Label label2 = label( "SecondLabel" );
-    protected final RelationshipType relType1 = RelationshipType.withName( "type1" );
-    protected final RelationshipType relType2 = RelationshipType.withName( "type2" );
+    protected final Label label1 = label("FirstLabel");
+    protected final Label label2 = label("SecondLabel");
+    protected final RelationshipType relType1 = RelationshipType.withName("type1");
+    protected final RelationshipType relType2 = RelationshipType.withName("type2");
     protected final String propertyKey = "name";
     protected final String otherPropertyKey = "age";
-    private final AtomicLong nextTxId = new AtomicLong( TransactionIdStore.BASE_TX_ID );
+    private final AtomicLong nextTxId = new AtomicLong(TransactionIdStore.BASE_TX_ID);
     private TokenHolders tokenHolders;
     protected RecordStorageReader storageReader;
     protected RecordStorageEngine storageEngine;
@@ -99,213 +98,206 @@ public abstract class RecordStorageReaderTestBase
     protected StoreCursors storageCursors;
 
     @BeforeEach
-    public void before() throws Throwable
-    {
+    public void before() throws Throwable {
         this.tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
+                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_LABEL),
+                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
         RecordStorageEngineSupport.Builder builder =
-                storageEngineRule.getWith( fs, pageCache, databaseLayout ).tokenHolders( tokenHolders );
+                storageEngineRule.getWith(fs, pageCache, databaseLayout).tokenHolders(tokenHolders);
 
-        builder = modify( builder );
+        builder = modify(builder);
         this.storageEngine = builder.build();
         this.storageReader = storageEngine.newReader();
         this.commitReader = storageEngine.newReader();
-        this.commitContext = storageEngine.newCommandCreationContext( INSTANCE );
-        storageCursors = storageEngine.createStorageCursors( NULL_CONTEXT );
-        commitContext.initialize( NULL_CONTEXT, storageCursors );
+        this.commitContext = storageEngine.newCommandCreationContext(INSTANCE);
+        storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
+        commitContext.initialize(NULL_CONTEXT, storageCursors);
         storageEngineRule.before();
     }
 
     @AfterEach
-    public void after() throws Throwable
-    {
+    public void after() throws Throwable {
         storageCursors.close();
-        storageEngineRule.after( true );
+        storageEngineRule.after(true);
     }
 
-    protected RecordStorageEngineSupport.Builder modify( RecordStorageEngineSupport.Builder builder )
-    {
+    protected RecordStorageEngineSupport.Builder modify(RecordStorageEngineSupport.Builder builder) {
         return builder;
     }
 
-    protected long createNode( Map<String, Object> properties, Label... labels ) throws Exception
-    {
+    protected long createNode(Map<String, Object> properties, Label... labels) throws Exception {
         TxState txState = new TxState();
         long nodeId = commitContext.reserveNode();
-        txState.nodeDoCreate( nodeId );
-        for ( Label label : labels )
-        {
-            txState.nodeDoAddLabel( getOrCreateLabelId( label ), nodeId );
+        txState.nodeDoCreate(nodeId);
+        for (Label label : labels) {
+            txState.nodeDoAddLabel(getOrCreateLabelId(label), nodeId);
         }
-        for ( Map.Entry<String,Object> property : properties.entrySet() )
-        {
-            txState.nodeDoAddProperty( nodeId, getOrCreatePropertyKeyId( property.getKey() ), Values.of( property.getValue() ) );
+        for (Map.Entry<String, Object> property : properties.entrySet()) {
+            txState.nodeDoAddProperty(
+                    nodeId, getOrCreatePropertyKeyId(property.getKey()), Values.of(property.getValue()));
         }
-        apply( txState );
+        apply(txState);
         return nodeId;
     }
 
-    protected void deleteNode( long nodeId ) throws Exception
-    {
+    protected void deleteNode(long nodeId) throws Exception {
         TxState txState = new TxState();
-        txState.nodeDoDelete( nodeId );
-        apply( txState );
+        txState.nodeDoDelete(nodeId);
+        apply(txState);
     }
 
-    protected long createRelationship( long sourceNode, long targetNode, RelationshipType relationshipType ) throws Exception
-    {
+    protected long createRelationship(long sourceNode, long targetNode, RelationshipType relationshipType)
+            throws Exception {
         TxState txState = new TxState();
-        long relationshipId = commitContext.reserveRelationship( sourceNode );
-        txState.relationshipDoCreate( relationshipId, getOrCreateRelationshipTypeId( relationshipType ), sourceNode, targetNode );
-        apply( txState );
+        long relationshipId = commitContext.reserveRelationship(sourceNode);
+        txState.relationshipDoCreate(
+                relationshipId, getOrCreateRelationshipTypeId(relationshipType), sourceNode, targetNode);
+        apply(txState);
         return relationshipId;
     }
 
-    protected void deleteRelationship( long relationshipId ) throws Exception
-    {
+    protected void deleteRelationship(long relationshipId) throws Exception {
         TxState txState = new TxState();
-        try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor( NULL_CONTEXT, StoreCursors.NULL ) )
-        {
-            cursor.single( relationshipId );
-            assertTrue( cursor.next() );
-            txState.relationshipDoDelete( relationshipId, cursor.type(), cursor.getFirstNode(), cursor.getSecondNode() );
+        try (RecordRelationshipScanCursor cursor =
+                commitReader.allocateRelationshipScanCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+            cursor.single(relationshipId);
+            assertTrue(cursor.next());
+            txState.relationshipDoDelete(relationshipId, cursor.type(), cursor.getFirstNode(), cursor.getSecondNode());
         }
-        apply( txState );
+        apply(txState);
     }
 
-    protected IndexDescriptor createUniquenessConstraint( Label label, String propertyKey ) throws Exception
-    {
-        IndexDescriptor index = createUniqueIndex( label, propertyKey );
+    protected IndexDescriptor createUniquenessConstraint(Label label, String propertyKey) throws Exception {
+        IndexDescriptor index = createUniqueIndex(label, propertyKey);
         TxState txState = new TxState();
-        int labelId = getOrCreateLabelId( label );
-        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
-        constraint = constraint.withName( index.getName() ).withOwnedIndexId( index.getId() );
-        txState.constraintDoAdd( constraint );
-        apply( txState );
+        int labelId = getOrCreateLabelId(label);
+        int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyKeyId);
+        constraint = constraint.withName(index.getName()).withOwnedIndexId(index.getId());
+        txState.constraintDoAdd(constraint);
+        apply(txState);
         return index;
     }
 
-    protected void createNodeKeyConstraint( Label label, String propertyKey ) throws Exception
-    {
-        IndexDescriptor index = createUniqueIndex( label, propertyKey );
+    protected void createNodeKeyConstraint(Label label, String propertyKey) throws Exception {
+        IndexDescriptor index = createUniqueIndex(label, propertyKey);
         TxState txState = new TxState();
-        int labelId = getOrCreateLabelId( label );
-        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
-        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyId );
-        constraint = constraint.withName( index.getName() ).withOwnedIndexId( index.getId() );
-        txState.constraintDoAdd( constraint );
-        apply( txState );
+        int labelId = getOrCreateLabelId(label);
+        int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
+        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForLabel(labelId, propertyKeyId);
+        constraint = constraint.withName(index.getName()).withOwnedIndexId(index.getId());
+        txState.constraintDoAdd(constraint);
+        apply(txState);
     }
 
-    private IndexDescriptor createUniqueIndex( Label label, String propertyKey ) throws Exception
-    {
+    private IndexDescriptor createUniqueIndex(Label label, String propertyKey) throws Exception {
         TxState txState = new TxState();
-        int labelId = getOrCreateLabelId( label );
-        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+        int labelId = getOrCreateLabelId(label);
+        int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
         long id = commitContext.reserveSchema();
-        IndexDescriptor index = IndexPrototype.uniqueForSchema( forLabel( labelId, propertyKeyId ) ).withName( "constraint_" + id ).materialise( id );
-        txState.indexDoAdd( index );
-        apply( txState );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema(forLabel(labelId, propertyKeyId))
+                .withName("constraint_" + id)
+                .materialise(id);
+        txState.indexDoAdd(index);
+        apply(txState);
         return index;
     }
 
-    protected IndexDescriptor createIndex( Label label, String propertyKey ) throws Exception
-    {
+    protected IndexDescriptor createIndex(Label label, String propertyKey) throws Exception {
         TxState txState = new TxState();
-        int labelId = getOrCreateLabelId( label );
-        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+        int labelId = getOrCreateLabelId(label);
+        int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
         long id = commitContext.reserveSchema();
-        IndexPrototype prototype = IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).withName( "index_" + id );
-        IndexDescriptor index = prototype.materialise( id );
-        txState.indexDoAdd( index );
-        apply( txState );
+        IndexPrototype prototype =
+                IndexPrototype.forSchema(forLabel(labelId, propertyKeyId)).withName("index_" + id);
+        IndexDescriptor index = prototype.materialise(id);
+        txState.indexDoAdd(index);
+        apply(txState);
         return index;
     }
 
-    protected IndexDescriptor createIndex( RelationshipType relType, String propertyKey ) throws Exception
-    {
+    protected IndexDescriptor createIndex(RelationshipType relType, String propertyKey) throws Exception {
         TxState txState = new TxState();
-        int relTypeId = getOrCreateRelationshipTypeId( relType );
-        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+        int relTypeId = getOrCreateRelationshipTypeId(relType);
+        int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
         long id = commitContext.reserveSchema();
-        IndexPrototype prototype = IndexPrototype.forSchema( forRelType( relTypeId, propertyKeyId ) ).withName( "index_" + id );
-        IndexDescriptor index = prototype.materialise( id );
-        txState.indexDoAdd( index );
-        apply( txState );
+        IndexPrototype prototype =
+                IndexPrototype.forSchema(forRelType(relTypeId, propertyKeyId)).withName("index_" + id);
+        IndexDescriptor index = prototype.materialise(id);
+        txState.indexDoAdd(index);
+        apply(txState);
         return index;
     }
 
-    protected void createNodePropertyExistenceConstraint( Label label, String propertyKey ) throws Exception
-    {
+    protected void createNodePropertyExistenceConstraint(Label label, String propertyKey) throws Exception {
         TxState txState = new TxState();
-        NodeExistenceConstraintDescriptor constraint =
-                ConstraintDescriptorFactory.existsForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) );
+        NodeExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForLabel(
+                getOrCreateLabelId(label), getOrCreatePropertyKeyId(propertyKey));
         long id = commitContext.reserveSchema();
-        txState.constraintDoAdd( constraint.withId( id ).withName( "constraint_" + id ) );
-        apply( txState );
+        txState.constraintDoAdd(constraint.withId(id).withName("constraint_" + id));
+        apply(txState);
     }
 
-    protected void createRelPropertyExistenceConstraint( RelationshipType relationshipType, String propertyKey ) throws Exception
-    {
+    protected void createRelPropertyExistenceConstraint(RelationshipType relationshipType, String propertyKey)
+            throws Exception {
         TxState txState = new TxState();
-        RelExistenceConstraintDescriptor constraint =
-                ConstraintDescriptorFactory.existsForRelType( getOrCreateRelationshipTypeId( relationshipType ), getOrCreatePropertyKeyId( propertyKey ) );
+        RelExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType(
+                getOrCreateRelationshipTypeId(relationshipType), getOrCreatePropertyKeyId(propertyKey));
         long id = commitContext.reserveSchema();
-        txState.constraintDoAdd( constraint.withId( id ).withName( "constraint_" + id ) );
-        apply( txState );
+        txState.constraintDoAdd(constraint.withId(id).withName("constraint_" + id));
+        apply(txState);
     }
 
-    private int getOrCreatePropertyKeyId( String propertyKey ) throws KernelException
-    {
-        return tokenHolders.propertyKeyTokens().getOrCreateId( propertyKey );
+    private int getOrCreatePropertyKeyId(String propertyKey) throws KernelException {
+        return tokenHolders.propertyKeyTokens().getOrCreateId(propertyKey);
     }
 
-    private int getOrCreateLabelId( Label label ) throws KernelException
-    {
-        return tokenHolders.labelTokens().getOrCreateId( label.name() );
+    private int getOrCreateLabelId(Label label) throws KernelException {
+        return tokenHolders.labelTokens().getOrCreateId(label.name());
     }
 
-    private int getOrCreateRelationshipTypeId( RelationshipType relationshipType ) throws KernelException
-    {
-        return tokenHolders.relationshipTypeTokens().getOrCreateId( relationshipType.name() );
+    private int getOrCreateRelationshipTypeId(RelationshipType relationshipType) throws KernelException {
+        return tokenHolders.relationshipTypeTokens().getOrCreateId(relationshipType.name());
     }
 
-    private void apply( TxState txState ) throws Exception
-    {
+    private void apply(TxState txState) throws Exception {
         List<StorageCommand> commands = new ArrayList<>();
         long txId = nextTxId.incrementAndGet();
-        storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, LockTracer.NONE, txId, state -> state, NULL_CONTEXT,
-                storageCursors, INSTANCE );
-        storageEngine.apply( new GroupOfCommands( txId, storageCursors, commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
+        storageEngine.createCommands(
+                commands,
+                txState,
+                commitReader,
+                commitContext,
+                IGNORE_LOCKING,
+                LockTracer.NONE,
+                txId,
+                state -> state,
+                NULL_CONTEXT,
+                storageCursors,
+                INSTANCE);
+        storageEngine.apply(
+                new GroupOfCommands(txId, storageCursors, commands.toArray(new StorageCommand[0])),
+                TransactionApplicationMode.EXTERNAL);
     }
 
-    protected int labelId( Label label )
-    {
-        return tokenHolders.labelTokens().getIdByName( label.name() );
+    protected int labelId(Label label) {
+        return tokenHolders.labelTokens().getIdByName(label.name());
     }
 
-    protected int relationshipTypeId( RelationshipType type )
-    {
-        return tokenHolders.relationshipTypeTokens().getIdByName( type.name() );
+    protected int relationshipTypeId(RelationshipType type) {
+        return tokenHolders.relationshipTypeTokens().getIdByName(type.name());
     }
 
-    protected String relationshipType( int id ) throws KernelException
-    {
-        try
-        {
-            return tokenHolders.relationshipTypeTokens().getTokenById( id ).name();
+    protected String relationshipType(int id) throws KernelException {
+        try {
+            return tokenHolders.relationshipTypeTokens().getTokenById(id).name();
+        } catch (TokenNotFoundException e) {
+            throw new RelationshipTypeIdNotFoundKernelException(id, e);
         }
-        catch ( TokenNotFoundException e )
-        {
-            throw new RelationshipTypeIdNotFoundKernelException( id, e );
-        }
     }
 
-    protected int propertyKeyId( String propertyKey )
-    {
-        return tokenHolders.propertyKeyTokens().getIdByName( propertyKey );
+    protected int propertyKeyId(String propertyKey) {
+        return tokenHolders.propertyKeyTokens().getIdByName(propertyKey);
     }
 }

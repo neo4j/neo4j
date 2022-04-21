@@ -20,21 +20,16 @@
 package org.neo4j.bolt.v3.messaging.encoder;
 
 import java.io.IOException;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.messaging.ResponseMessageEncoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
 
-public class SuccessMessageEncoder implements ResponseMessageEncoder<SuccessMessage>
-{
-    public SuccessMessageEncoder()
-    {
-    }
+public class SuccessMessageEncoder implements ResponseMessageEncoder<SuccessMessage> {
+    public SuccessMessageEncoder() {}
 
     @Override
-    public void encode( Neo4jPack.Packer packer, SuccessMessage message ) throws IOException
-    {
-        packer.packStructHeader( 1, message.signature() );
-        packer.pack( message.meta() );
+    public void encode(Neo4jPack.Packer packer, SuccessMessage message) throws IOException {
+        packer.packStructHeader(1, message.signature());
+        packer.pack(message.meta());
     }
 }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,7 +31,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.SplittableRandom;
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -41,84 +45,82 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-
 @PageCacheExtension
-class PageCachePrefetchingTest
-{
+class PageCachePrefetchingTest {
     @Inject
     TestDirectory dir;
+
     @Inject
     FileSystemAbstraction fs;
+
     @Inject
     PageCache pageCache;
+
     private Path file;
     private CursorContext cursorContext;
     private Consumer<PageCursor> scanner;
 
     @BeforeEach
-    void setUp()
-    {
-        file = dir.createFile( "file" );
+    void setUp() {
+        file = dir.createFile("file");
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
-        cursorContext = cursorContextFactory.create( "test" );
+        var cursorContextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
+        cursorContext = cursorContextFactory.create("test");
     }
 
     @Test
-    void scanningWithPreFetcherMustGiveScannerFewerPageFaultsWhenScannerIsFast() throws Exception
-    {
-        scanner = cursor -> cursor.putBytes( PageCache.PAGE_SIZE, (byte) 0xA7 ); // This is pretty fast.
+    void scanningWithPreFetcherMustGiveScannerFewerPageFaultsWhenScannerIsFast() throws Exception {
+        scanner = cursor -> cursor.putBytes(PageCache.PAGE_SIZE, (byte) 0xA7); // This is pretty fast.
 
-        runScan( file, cursorContext, "Warmup", PF_READ_AHEAD );
-        long faultsWithPreFetch = runScan( file, cursorContext, "Scanner With Prefetch", PF_READ_AHEAD );
-        long faultsWithoutPreFetch = runScan( file, cursorContext, "Scanner Without Prefetch", 0 );
+        runScan(file, cursorContext, "Warmup", PF_READ_AHEAD);
+        long faultsWithPreFetch = runScan(file, cursorContext, "Scanner With Prefetch", PF_READ_AHEAD);
+        long faultsWithoutPreFetch = runScan(file, cursorContext, "Scanner Without Prefetch", 0);
 
-        assertThat( faultsWithPreFetch ).as( "faults" ).isLessThan( faultsWithoutPreFetch );
+        assertThat(faultsWithPreFetch).as("faults").isLessThan(faultsWithoutPreFetch);
     }
 
     @Test
-    void scanningWithPreFetchMustGiveScannerFewerPageFaultsWhenScannerIsSlow() throws Exception
-    {
+    void scanningWithPreFetchMustGiveScannerFewerPageFaultsWhenScannerIsSlow() throws Exception {
         RecordFormat<RelationshipRecord> format = defaultFormat().relationship();
         RelationshipRecord record = format.newRecord();
-        int recordSize = format.getRecordSize( NoStoreHeader.NO_STORE_HEADER );
+        int recordSize = format.getRecordSize(NoStoreHeader.NO_STORE_HEADER);
         int recordsPerPage = PageCache.PAGE_SIZE / recordSize;
-        SplittableRandom rng = new SplittableRandom( 13 );
+        SplittableRandom rng = new SplittableRandom(13);
 
         // This scanner is a bit on the slow side:
-        scanner = cursor ->
-        {
-            for ( int j = 0; j < recordsPerPage; j++ )
-            {
-                try
-                {
-                    record.initialize( rng.nextBoolean(), rng.nextInt(), rng.nextInt(), rng.nextInt(), rng.nextInt() & 0xFFFF,
-                            rng.nextInt(), rng.nextInt(), rng.nextInt(), rng.nextInt(), rng.nextBoolean(), rng.nextBoolean() );
-                    format.write( record, cursor, recordSize, recordsPerPage );
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
+        scanner = cursor -> {
+            for (int j = 0; j < recordsPerPage; j++) {
+                try {
+                    record.initialize(
+                            rng.nextBoolean(),
+                            rng.nextInt(),
+                            rng.nextInt(),
+                            rng.nextInt(),
+                            rng.nextInt() & 0xFFFF,
+                            rng.nextInt(),
+                            rng.nextInt(),
+                            rng.nextInt(),
+                            rng.nextInt(),
+                            rng.nextBoolean(),
+                            rng.nextBoolean());
+                    format.write(record, cursor, recordSize, recordsPerPage);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
             }
         };
 
-        runScan( file, cursorContext, "Warmup", PF_READ_AHEAD );
-        long faultsWithPreFetch = runScan( file, cursorContext, "Scanner With Prefetch", PF_READ_AHEAD );
-        long faultsWithoutPreFetch = runScan( file, cursorContext, "Scanner Without Prefetch", 0 );
+        runScan(file, cursorContext, "Warmup", PF_READ_AHEAD);
+        long faultsWithPreFetch = runScan(file, cursorContext, "Scanner With Prefetch", PF_READ_AHEAD);
+        long faultsWithoutPreFetch = runScan(file, cursorContext, "Scanner Without Prefetch", 0);
 
-        assertThat( faultsWithPreFetch ).as( "faults" ).isLessThan( faultsWithoutPreFetch );
+        assertThat(faultsWithPreFetch).as("faults").isLessThan(faultsWithoutPreFetch);
     }
 
-    private long runScan( Path file, CursorContext cursorContext, String threadName, int additionalPfFlags ) throws InterruptedException
-    {
+    private long runScan(Path file, CursorContext cursorContext, String threadName, int additionalPfFlags)
+            throws InterruptedException {
         long faultsWith;
-        RunnerThread thread = new RunnerThread( threadName );
+        RunnerThread thread = new RunnerThread(threadName);
         thread.additionalPfFlags = additionalPfFlags;
         thread.file = file;
         thread.cursorContext = cursorContext;
@@ -128,54 +130,46 @@ class PageCachePrefetchingTest
         return faultsWith;
     }
 
-    private class RunnerThread extends Thread
-    {
+    private class RunnerThread extends Thread {
         private int additionalPfFlags;
         private Path file;
         private CursorContext cursorContext;
         private long faults;
 
-        RunnerThread( String name )
-        {
-            super( name );
+        RunnerThread(String name) {
+            super(name);
         }
 
         @Override
-        public void run()
-        {
-            try
-            {
+        public void run() {
+            try {
                 cursorContext.getCursorTracer().reportEvents();
-                writeToFile( file, cursorContext, additionalPfFlags );
+                writeToFile(file, cursorContext, additionalPfFlags);
                 faults = cursorContext.getCursorTracer().faults();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }
 
-    private void writeToFile( Path file, CursorContext cursorContext, int additionalPfFlags ) throws IOException
-    {
-        try ( PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME,
-                immutable.of( StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE ) ) )
-        {
-            for ( int i = 0; i < 5; i++ )
-            {
-                writeToFile( pagedFile, cursorContext, additionalPfFlags );
+    private void writeToFile(Path file, CursorContext cursorContext, int additionalPfFlags) throws IOException {
+        try (PagedFile pagedFile = pageCache.map(
+                file,
+                PageCache.PAGE_SIZE,
+                DEFAULT_DATABASE_NAME,
+                immutable.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+            for (int i = 0; i < 5; i++) {
+                writeToFile(pagedFile, cursorContext, additionalPfFlags);
             }
         }
     }
 
-    private void writeToFile( PagedFile pagedFile, CursorContext cursorContext, int additionalPfFlags ) throws IOException
-    {
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK | additionalPfFlags, cursorContext ) )
-        {
-            for ( int i = 0; i < 6_000; i++ )
-            {
+    private void writeToFile(PagedFile pagedFile, CursorContext cursorContext, int additionalPfFlags)
+            throws IOException {
+        try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK | additionalPfFlags, cursorContext)) {
+            for (int i = 0; i < 6_000; i++) {
                 cursor.next();
-                scanner.accept( cursor );
+                scanner.accept(cursor);
             }
         }
     }

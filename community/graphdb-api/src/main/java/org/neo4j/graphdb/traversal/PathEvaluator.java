@@ -33,8 +33,7 @@ import org.neo4j.graphdb.Path;
  * @see Evaluators
  * @see TraversalDescription#evaluator(PathEvaluator)
  */
-public interface PathEvaluator<STATE> extends Evaluator
-{
+public interface PathEvaluator<STATE> extends Evaluator {
     /**
      * Evaluates a {@link Path} and returns an {@link Evaluation} containing
      * information about whether or not to include it in the traversal result,
@@ -49,19 +48,17 @@ public interface PathEvaluator<STATE> extends Evaluator
      * to return it from the {@link Traverser} and whether or not to continue
      * down that path.
      */
-    Evaluation evaluate( Path path, BranchState<STATE> state );
+    Evaluation evaluate(Path path, BranchState<STATE> state);
 
     /**
      * Adapter for {@link PathEvaluator}.
      * @param <STATE> the type of the state object
      */
-    abstract class Adapter<STATE> implements PathEvaluator<STATE>
-    {
+    abstract class Adapter<STATE> implements PathEvaluator<STATE> {
         @Override
-        @SuppressWarnings( "unchecked" )
-        public Evaluation evaluate( Path path )
-        {
-            return evaluate( path, BranchState.NO_STATE );
+        @SuppressWarnings("unchecked")
+        public Evaluation evaluate(Path path) {
+            return evaluate(path, BranchState.NO_STATE);
         }
     }
 }

@@ -19,63 +19,56 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 
+import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
+import org.junit.jupiter.api.Test;
+
 /**
  * This is an *IT integration test because it uses a large amount of memory.
  * Approximately 1.2 GBs goes into the map we use to check for collisions.
  */
-class ResourceTypesIT
-{
+class ResourceTypesIT {
     @Test
-    void indexEntryHashing()
-    {
+    void indexEntryHashing() {
         int collisions = 0;
         int labelIdCount = 50;
         int propertyKeyIdCount = 50;
         int objectCount = 10000;
-        MutableLongLongMap map = new LongLongHashMap( 50 * 50 * 10000 );
-        String[] values = precomputeValues( objectCount );
+        MutableLongLongMap map = new LongLongHashMap(50 * 50 * 10000);
+        String[] values = precomputeValues(objectCount);
 
-        for ( int labelId = 0; labelId < labelIdCount; labelId++ )
-        {
-            for ( int propertyKeyId = 0; propertyKeyId < propertyKeyIdCount; propertyKeyId++ )
-            {
-                for ( int objectId = 0; objectId < objectCount; objectId++ )
-                {
+        for (int labelId = 0; labelId < labelIdCount; labelId++) {
+            for (int propertyKeyId = 0; propertyKeyId < propertyKeyIdCount; propertyKeyId++) {
+                for (int objectId = 0; objectId < objectCount; objectId++) {
                     String object = values[objectId];
-                    long resourceId = indexEntryResourceId( labelId, exact( propertyKeyId, object ) );
+                    long resourceId = indexEntryResourceId(labelId, exact(propertyKeyId, object));
 
-                    long newValue = packValue( labelId, propertyKeyId, objectId );
-                    final boolean hasOldValue = map.containsKey( resourceId );
-                    final long oldValue = map.get( resourceId );
-                    map.put( resourceId, newValue );
-                    if ( hasOldValue )
-                    {
-                        System.out.printf( "Collision on %s: %s ~= %s%n", resourceId, toValueString( newValue ),
-                                toValueString( oldValue ) );
+                    long newValue = packValue(labelId, propertyKeyId, objectId);
+                    final boolean hasOldValue = map.containsKey(resourceId);
+                    final long oldValue = map.get(resourceId);
+                    map.put(resourceId, newValue);
+                    if (hasOldValue) {
+                        System.out.printf(
+                                "Collision on %s: %s ~= %s%n",
+                                resourceId, toValueString(newValue), toValueString(oldValue));
                         collisions++;
-                        if ( collisions > 100 )
-                        {
-                            fail( "This hashing is terrible!" );
+                        if (collisions > 100) {
+                            fail("This hashing is terrible!");
                         }
                     }
                 }
             }
         }
 
-        assertThat( collisions ).isEqualTo( 0 );
+        assertThat(collisions).isEqualTo(0);
     }
 
-    private static long packValue( int labelId, int propertyKeyId, int objectId )
-    {
+    private static long packValue(int labelId, int propertyKeyId, int objectId) {
         long result = labelId;
         result <<= 16;
         result += propertyKeyId;
@@ -84,21 +77,18 @@ class ResourceTypesIT
         return result;
     }
 
-    private static String toValueString( long value )
-    {
+    private static String toValueString(long value) {
         int objectId = (int) (value & 0x00000000_FFFFFFFFL);
         int propertyKeyId = (int) ((value & 0x0000FFFF_00000000L) >>> 32);
         int labelId = (int) ((value & 0xFFFF0000_00000000L) >>> 48);
-        return String.format( "IndexEntry{ labelId=%s, propertyKeyId=%s, objectId=%s }",
-                labelId, propertyKeyId, objectId );
+        return String.format(
+                "IndexEntry{ labelId=%s, propertyKeyId=%s, objectId=%s }", labelId, propertyKeyId, objectId);
     }
 
-    private static String[] precomputeValues( int objectCount )
-    {
+    private static String[] precomputeValues(int objectCount) {
         String[] values = new String[objectCount];
-        for ( int i = 0; i < objectCount; i++ )
-        {
-            values[i] = String.valueOf( i );
+        for (int i = 0; i < objectCount; i++) {
+            values[i] = String.valueOf(i);
         }
         return values;
     }

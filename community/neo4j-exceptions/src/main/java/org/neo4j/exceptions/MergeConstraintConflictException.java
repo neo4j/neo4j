@@ -21,16 +21,13 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class MergeConstraintConflictException extends Neo4jException
-{
-    public MergeConstraintConflictException( String message )
-    {
-        super( message );
+public class MergeConstraintConflictException extends Neo4jException {
+    public MergeConstraintConflictException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Schema.ConstraintValidationFailed;
     }
 }

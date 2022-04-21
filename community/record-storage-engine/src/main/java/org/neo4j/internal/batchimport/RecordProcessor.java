@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -28,18 +27,17 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  *
  * @param <T>
  */
-public interface RecordProcessor<T extends AbstractBaseRecord> extends AutoCloseable
-{
+public interface RecordProcessor<T extends AbstractBaseRecord> extends AutoCloseable {
     /**
      * Processes an item.
      * @param storeCursors underlying page cursors provider.
      * @return {@code true} if processing this item resulted in changes that should be updated back to the source.
      */
-    boolean process( T item, StoreCursors storeCursors );
+    boolean process(T item, StoreCursors storeCursors);
 
     void done();
 
-    void mergeResultsFrom( RecordProcessor<T> other );
+    void mergeResultsFrom(RecordProcessor<T> other);
 
     @Override
     void close();

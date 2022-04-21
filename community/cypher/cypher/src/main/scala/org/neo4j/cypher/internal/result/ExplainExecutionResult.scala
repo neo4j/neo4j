@@ -25,12 +25,13 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
-class ExplainExecutionResult(fieldNames: Array[String],
-                             planDescription: InternalPlanDescription,
-                             queryType: InternalQueryType,
-                             notifications: Set[Notification],
-                             subscriber: QuerySubscriber)
-  extends EmptyExecutionResult(fieldNames, planDescription, queryType, notifications) {
+class ExplainExecutionResult(
+  fieldNames: Array[String],
+  planDescription: InternalPlanDescription,
+  queryType: InternalQueryType,
+  notifications: Set[Notification],
+  subscriber: QuerySubscriber
+) extends EmptyExecutionResult(fieldNames, planDescription, queryType, notifications) {
 
   override def request(numberOfRecords: Long): Unit = {
     subscriber.onResult(0)
@@ -38,7 +39,7 @@ class ExplainExecutionResult(fieldNames: Array[String],
   }
 
   override def cancel(): Unit = {
-    //do nothing
+    // do nothing
   }
 
   override def await(): Boolean = false

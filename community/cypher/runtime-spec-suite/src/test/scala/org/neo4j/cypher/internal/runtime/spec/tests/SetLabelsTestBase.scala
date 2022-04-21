@@ -31,13 +31,14 @@ import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.internal.helpers.collection.Iterables
 
 import java.util
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
-    edition: Edition[CONTEXT],
-    runtime: CypherRuntime[CONTEXT],
-    sizeHint: Int
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should set label on a node") {
@@ -140,9 +141,11 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
     }
 
     exception match {
-      case _: CypherTypeException => succeed
+      case _: CypherTypeException         => succeed
       case _: ParameterWrongTypeException => succeed
-      case e => fail(s"Expected exception CypherTypeException or ParameterWrongTypeException to be thrown, but ${e.getClass.getSimpleName} was thrown")
+      case e => fail(
+          s"Expected exception CypherTypeException or ParameterWrongTypeException to be thrown, but ${e.getClass.getSimpleName} was thrown"
+        )
     }
   }
 
@@ -168,7 +171,6 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
     labels.map(_.name()) shouldBe empty
     labelsInUse.map(_.name()) shouldBe empty
   }
-
 
   test("should set label on a node and remove it") {
     // given a single node
@@ -285,7 +287,10 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("refSlotLabels", "longSlotLabels")
       .withRows(
-        Seq(Array(util.Arrays.asList("LongSlotLabel", "RefSlotLabel", "CommonLabel"), util.Arrays.asList("LongSlotLabel", "RefSlotLabel", "CommonLabel"))),
+        Seq(Array(
+          util.Arrays.asList("LongSlotLabel", "RefSlotLabel", "CommonLabel"),
+          util.Arrays.asList("LongSlotLabel", "RefSlotLabel", "CommonLabel")
+        )),
         listInAnyOrder = true
       )
       .withStatistics(labelsAdded = 3)

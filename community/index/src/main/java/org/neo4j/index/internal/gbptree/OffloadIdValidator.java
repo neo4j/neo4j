@@ -22,9 +22,8 @@ package org.neo4j.index.internal.gbptree;
 import java.io.IOException;
 
 @FunctionalInterface
-interface OffloadIdValidator
-{
+interface OffloadIdValidator {
     OffloadIdValidator ALWAYS_TRUE = offloadId -> true;
 
-    boolean valid( long offloadId ) throws IOException;
+    boolean valid(long offloadId) throws IOException;
 }

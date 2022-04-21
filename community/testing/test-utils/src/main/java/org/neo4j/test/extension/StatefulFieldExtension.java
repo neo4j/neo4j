@@ -19,6 +19,11 @@
  */
 package org.neo4j.test.extension;
 
+import static java.lang.String.format;
+import static org.neo4j.test.ReflectionUtil.getAllFields;
+
+import java.lang.reflect.Field;
+import java.util.List;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionConfigurationException;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -26,89 +31,71 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 
-import java.lang.reflect.Field;
-import java.util.List;
-
-import static java.lang.String.format;
-import static org.neo4j.test.ReflectionUtil.getAllFields;
-
-public abstract class StatefulFieldExtension<T> implements TestInstancePostProcessor, AfterAllCallback
-{
+public abstract class StatefulFieldExtension<T> implements TestInstancePostProcessor, AfterAllCallback {
     protected abstract String getFieldKey();
 
     protected abstract Class<T> getFieldType();
 
-    protected abstract T createField( ExtensionContext extensionContext );
+    protected abstract T createField(ExtensionContext extensionContext);
 
     protected abstract Namespace getNameSpace();
 
     @Override
-    public void afterAll( ExtensionContext context ) throws Exception
-    {
-        removeStoredValue( context );
+    public void afterAll(ExtensionContext context) throws Exception {
+        removeStoredValue(context);
     }
 
     @Override
-    public void postProcessTestInstance( Object testInstance, ExtensionContext context ) throws Exception
-    {
+    public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
         Class<?> clazz = testInstance.getClass();
-        Object instance = createInstance( context );
-        List<Field> declaredFields = getAllFields( clazz );
-        for ( Field declaredField : declaredFields )
-        {
-            if ( declaredField.isAnnotationPresent( Inject.class ) && declaredField.getType().isAssignableFrom( getFieldType() ) )
-            {
-                declaredField.setAccessible( true );
-                if ( declaredField.get( testInstance ) != null )
-                {
-                    throw new ExtensionConfigurationException(
-                            format( "Field %s that is marked for injection in class %s is managed by extension container " +
-                                            "and should not have any manually assigned value.", declaredField.getName(), clazz.getName() ) );
+        Object instance = createInstance(context);
+        List<Field> declaredFields = getAllFields(clazz);
+        for (Field declaredField : declaredFields) {
+            if (declaredField.isAnnotationPresent(Inject.class)
+                    && declaredField.getType().isAssignableFrom(getFieldType())) {
+                declaredField.setAccessible(true);
+                if (declaredField.get(testInstance) != null) {
+                    throw new ExtensionConfigurationException(format(
+                            "Field %s that is marked for injection in class %s is managed by extension container "
+                                    + "and should not have any manually assigned value.",
+                            declaredField.getName(), clazz.getName()));
                 }
-                declaredField.set( testInstance, instance );
+                declaredField.set(testInstance, instance);
             }
         }
     }
 
-    protected T getStoredValue( ExtensionContext context )
-    {
-        return getLocalStore( context ).get( getFieldKey(), getFieldType() );
+    protected T getStoredValue(ExtensionContext context) {
+        return getLocalStore(context).get(getFieldKey(), getFieldType());
     }
 
-    protected T removeStoredValue( ExtensionContext context )
-    {
-        return getLocalStore( context ).remove( getFieldKey(), getFieldType() );
+    protected T removeStoredValue(ExtensionContext context) {
+        return getLocalStore(context).remove(getFieldKey(), getFieldType());
     }
 
-    protected T deepRemoveStoredValue( ExtensionContext context )
-    {
+    protected T deepRemoveStoredValue(ExtensionContext context) {
         T removedValue = null;
         ExtensionContext valueContext = context;
-        while ( removedValue == null && valueContext != null )
-        {
-            removedValue = removeStoredValue( valueContext );
-            valueContext = valueContext.getParent().orElse( null );
+        while (removedValue == null && valueContext != null) {
+            removedValue = removeStoredValue(valueContext);
+            valueContext = valueContext.getParent().orElse(null);
         }
         return removedValue;
     }
 
-    protected static Store getStore( ExtensionContext extensionContext, Namespace namespace )
-    {
-        return extensionContext.getStore( namespace );
+    protected static Store getStore(ExtensionContext extensionContext, Namespace namespace) {
+        return extensionContext.getStore(namespace);
     }
 
-    protected Store getLocalStore( ExtensionContext extensionContext )
-    {
-        return getStore( extensionContext, getNameSpace() );
+    protected Store getLocalStore(ExtensionContext extensionContext) {
+        return getStore(extensionContext, getNameSpace());
     }
 
-    private Object createInstance( ExtensionContext extensionContext )
-    {
-        Object value = getStoredValue( extensionContext );
-        if ( value == null )
-        {
-            value = createField( extensionContext );
-            getLocalStore( extensionContext ).put( getFieldKey(), value );
+    private Object createInstance(ExtensionContext extensionContext) {
+        Object value = getStoredValue(extensionContext);
+        if (value == null) {
+            value = createField(extensionContext);
+            getLocalStore(extensionContext).put(getFieldKey(), value);
         }
         return value;
     }

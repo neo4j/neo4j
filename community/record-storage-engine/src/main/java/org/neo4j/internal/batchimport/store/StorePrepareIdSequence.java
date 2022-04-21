@@ -20,14 +20,11 @@
 package org.neo4j.internal.batchimport.store;
 
 import java.util.function.LongFunction;
-
 import org.neo4j.internal.id.IdSequence;
 
-public class StorePrepareIdSequence implements PrepareIdSequence
-{
+public class StorePrepareIdSequence implements PrepareIdSequence {
     @Override
-    public LongFunction<IdSequence> apply( IdSequence idSequence )
-    {
+    public LongFunction<IdSequence> apply(IdSequence idSequence) {
         return id -> idSequence;
     }
 }

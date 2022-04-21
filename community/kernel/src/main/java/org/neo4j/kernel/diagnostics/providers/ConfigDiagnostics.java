@@ -19,41 +19,35 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import java.util.Map;
+import static java.lang.String.format;
 
+import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 
-import static java.lang.String.format;
-
-public class ConfigDiagnostics extends NamedDiagnosticsProvider
-{
+public class ConfigDiagnostics extends NamedDiagnosticsProvider {
     private final Config config;
 
-    public ConfigDiagnostics( Config config )
-    {
-        super( "DBMS config" );
+    public ConfigDiagnostics(Config config) {
+        super("DBMS config");
         this.config = config;
     }
 
     @Override
-    public void dump( DiagnosticsLogger logger )
-    {
-        if ( config.getDeclaredSettings().values().stream().noneMatch( config::isExplicitlySet ) )
-        {
-            logger.log( "No provided DBMS settings." );
+    public void dump(DiagnosticsLogger logger) {
+        if (config.getDeclaredSettings().values().stream().noneMatch(config::isExplicitlySet)) {
+            logger.log("No provided DBMS settings.");
             return;
         }
-        logger.log( "DBMS provided settings:" );
+        logger.log("DBMS provided settings:");
         config.getDeclaredSettings().entrySet().stream()
-                .filter( entry -> config.isExplicitlySet( entry.getValue() ) )
-                .sorted( Map.Entry.comparingByKey() )
-                .forEachOrdered( e ->
-                {
-                    String value = ((SettingImpl<Object>) e.getValue()).valueToString( config.get( e.getValue() ) );
-                    logger.log( format( "%s=%s", e.getKey(), value ) );
-                } );
+                .filter(entry -> config.isExplicitlySet(entry.getValue()))
+                .sorted(Map.Entry.comparingByKey())
+                .forEachOrdered(e -> {
+                    String value = ((SettingImpl<Object>) e.getValue()).valueToString(config.get(e.getValue()));
+                    logger.log(format("%s=%s", e.getKey(), value));
+                });
     }
 }

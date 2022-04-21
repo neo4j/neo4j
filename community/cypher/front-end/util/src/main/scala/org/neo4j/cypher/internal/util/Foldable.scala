@@ -25,20 +25,21 @@ import scala.reflect.ClassTag
 object Foldable {
 
   implicit class TreeAny(val that: Any) extends AnyVal {
+
     def treeChildren: Iterator[AnyRef] = that match {
       case s: collection.Seq[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case s: Set[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case m: Map[_, _] => m.iterator.asInstanceOf[Iterator[AnyRef]]
-      case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]
-      case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+      case s: Set[_]            => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case m: Map[_, _]         => m.iterator.asInstanceOf[Iterator[AnyRef]]
+      case p: Product           => p.productIterator.asInstanceOf[Iterator[AnyRef]]
+      case _                    => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
 
     def reverseTreeChildren: Iterator[AnyRef] = that match {
       case s: collection.Seq[_] => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]
-      case s: Set[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case m: Map[_, _] => m.iterator.asInstanceOf[Iterator[AnyRef]]
-      case p: Product => reverseProductIterator(p)
-      case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+      case s: Set[_]            => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case m: Map[_, _]         => m.iterator.asInstanceOf[Iterator[AnyRef]]
+      case p: Product           => reverseProductIterator(p)
+      case _                    => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
 
     private def reverseProductIterator(p: Product) = new Iterator[AnyRef] {
@@ -69,7 +70,8 @@ object Foldable {
    * output accumulator for this "inner treefold" to create the accumulator
    * for traversing the siblings of the node.
    */
-  case class TraverseChildrenNewAccForSiblings[R](accumulatorForChildren: R, forSiblings: R => R) extends FoldingBehavior[R]
+  case class TraverseChildrenNewAccForSiblings[R](accumulatorForChildren: R, forSiblings: R => R)
+      extends FoldingBehavior[R]
 
   /**
    * Any type is foldable
@@ -110,7 +112,7 @@ object Foldable {
         f.andThen[R => (R, Option[R => R])](innerF => innerTreeFold(innerF)).lift,
         new mutable.Stack[(mutable.Stack[Any], R => R)](),
         reverse = false,
-        cancellation,
+        cancellation
       )
     }
 
@@ -124,13 +126,13 @@ object Foldable {
         f.andThen[R => (R, Option[R => R])](innerF => innerTreeFold(innerF)).lift,
         new mutable.Stack[(mutable.Stack[Any], R => R)](),
         reverse = true,
-        cancellation,
+        cancellation
       )
 
     private def innerTreeFold[R](innerF: R => FoldingBehavior[R]): R => (R, Option[R => R]) = acc => {
       innerF(acc) match {
-        case SkipChildren(newAcc) => (newAcc, None)
-        case TraverseChildren(newAcc) => (newAcc, Some(identity))
+        case SkipChildren(newAcc)                                         => (newAcc, None)
+        case TraverseChildren(newAcc)                                     => (newAcc, Some(identity))
         case TraverseChildrenNewAccForSiblings(newAcc, mergeAccumulators) => (newAcc, Some(mergeAccumulators))
       }
     }
@@ -174,7 +176,7 @@ object Foldable {
         val that = remaining.pop()
         that match {
           case x: A => result += x
-          case _ =>
+          case _    =>
         }
         remaining.pushAll(that.reverseTreeChildren)
       }
@@ -188,7 +190,7 @@ object Foldable {
     remaining: mutable.Stack[Any],
     acc: R,
     f: Any => Option[R => R],
-    cancellation: CancellationChecker,
+    cancellation: CancellationChecker
   ): R = {
     cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
@@ -201,12 +203,12 @@ object Foldable {
 
   @tailrec
   private def treeFoldAcc[R](
-      remaining: mutable.Stack[Any],
-      acc: R,
-      f: Any => Option[R => (R, Option[R => R])],
-      continuation: mutable.Stack[(mutable.Stack[Any], R => R)],
-      reverse: Boolean,
-      cancellation: CancellationChecker,
+    remaining: mutable.Stack[Any],
+    acc: R,
+    f: Any => Option[R => (R, Option[R => R])],
+    continuation: mutable.Stack[(mutable.Stack[Any], R => R)],
+    reverse: Boolean,
+    cancellation: CancellationChecker
   ): R = {
     cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
@@ -239,7 +241,7 @@ object Foldable {
   private def existsAcc(
     remaining: mutable.Stack[Any],
     f: Any => Option[Boolean],
-    cancellation: CancellationChecker,
+    cancellation: CancellationChecker
   ): Boolean = {
     cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
@@ -260,7 +262,7 @@ object Foldable {
     remaining: mutable.Stack[Any],
     f: Any => Option[Int],
     acc: Int,
-    cancellation: CancellationChecker,
+    cancellation: CancellationChecker
   ): Int = {
     cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
@@ -281,7 +283,7 @@ object Foldable {
   @tailrec
   private def findAcc[A: ClassTag](
     remaining: mutable.Stack[Any],
-    cancellation: CancellationChecker,
+    cancellation: CancellationChecker
   ): A = {
     cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
@@ -290,7 +292,7 @@ object Foldable {
       val that = remaining.pop()
       that match {
         case x: A => x
-        case _ => findAcc(remaining.pushAll(that.reverseTreeChildren), cancellation)
+        case _    => findAcc(remaining.pushAll(that.reverseTreeChildren), cancellation)
       }
     }
   }
@@ -298,7 +300,7 @@ object Foldable {
   @tailrec
   private def optionFindAcc[A: ClassTag](
     remaining: mutable.ArrayStack[Any],
-    cancellation: CancellationChecker,
+    cancellation: CancellationChecker
   ): Option[A] = {
     cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
@@ -314,9 +316,9 @@ object Foldable {
 
   @tailrec
   private def findAcc[A: ClassTag](
-      remaining: mutable.Stack[Any],
-      predicate: A => Option[Boolean],
-      cancellation: CancellationChecker,
+    remaining: mutable.Stack[Any],
+    predicate: A => Option[Boolean],
+    cancellation: CancellationChecker
   ): Option[A] = {
     cancellation.throwIfCancelled()
     if (remaining.isEmpty) {

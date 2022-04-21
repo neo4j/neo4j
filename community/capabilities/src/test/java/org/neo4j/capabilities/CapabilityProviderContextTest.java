@@ -19,37 +19,34 @@
  */
 package org.neo4j.capabilities;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.logging.InternalLog;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-class CapabilityProviderContextTest
-{
+class CapabilityProviderContextTest {
 
     @Test
-    void shouldResolveComponents()
-    {
-        var log = mock( InternalLog.class );
-        var config = mock( Configuration.class );
-        var dbms = mock( DatabaseManagementService.class );
-        var caps = mock( Capabilities.class );
+    void shouldResolveComponents() {
+        var log = mock(InternalLog.class);
+        var config = mock(Configuration.class);
+        var dbms = mock(DatabaseManagementService.class);
+        var caps = mock(Capabilities.class);
 
         var deps = new CapabilityProviderDependencies();
-        deps.register( InternalLog.class, () -> log );
-        deps.register( Configuration.class, () -> config );
-        deps.register( DatabaseManagementService.class, () -> dbms );
-        deps.register( Capabilities.class, () -> caps );
+        deps.register(InternalLog.class, () -> log);
+        deps.register(Configuration.class, () -> config);
+        deps.register(DatabaseManagementService.class, () -> dbms);
+        deps.register(Capabilities.class, () -> caps);
 
-        var ctx = new CapabilityProviderContext( deps );
+        var ctx = new CapabilityProviderContext(deps);
 
-        assertThat( ctx.log() ).isSameAs( log );
-        assertThat( ctx.config() ).isSameAs( config );
-        assertThat( ctx.dbms() ).isSameAs( dbms );
-        assertThat( ctx.get( Capabilities.class ) ).isSameAs( caps );
+        assertThat(ctx.log()).isSameAs(log);
+        assertThat(ctx.config()).isSameAs(config);
+        assertThat(ctx.dbms()).isSameAs(dbms);
+        assertThat(ctx.get(Capabilities.class)).isSameAs(caps);
     }
 }

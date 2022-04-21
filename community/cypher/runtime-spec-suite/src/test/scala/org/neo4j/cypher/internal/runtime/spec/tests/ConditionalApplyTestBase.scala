@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("conditional apply should not run rhs if lhs is empty") {
     // given
@@ -122,7 +122,8 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expected = (nodes.map(n => Array[Any]("42", n)) :+ Array[Any](null, null)) ++ nodes.map(n => Array[Any]("43", n))
+    val expected =
+      (nodes.map(n => Array[Any]("42", n)) :+ Array[Any](null, null)) ++ nodes.map(n => Array[Any]("43", n))
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
@@ -132,7 +133,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       circleGraph(nodeCount, "L")
     }
 
-    //when
+    // when
     val limit = 2
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -145,7 +146,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    //then
+    // then
     runtimeResult should beColumns("x").withRows(nodes.flatMap(n => Seq.fill(limit)(Array[Any](n))))
   }
 
@@ -167,7 +168,6 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
-
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
@@ -259,7 +259,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = for{
+    val expected = for {
       x <- aNodes
       _ <- 1 to 10
     } yield Array[Any](x)
@@ -283,7 +283,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .|.limit(limit)
       .|.expand("(x)-[:R]->(y)")
       .|.argument("x")
-      .nodeByLabelScan("x","A", IndexOrderNone)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -302,7 +302,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .conditionalApply("x")
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .nodeByLabelScan("x","A", IndexOrderNone)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -323,7 +323,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .conditionalApply("x")
       .|.expandAll("(x)-->(y)")
       .|.argument("x")
-      .nodeByLabelScan("x","A", IndexOrderNone)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -336,8 +336,15 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate on top of conditional apply with expand on RHS with nulls") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R",
-      { case i if i % 2 == 0 => Map("prop" -> i)})}
+    val (aNodes, bNodes) = given {
+      bipartiteGraph(
+        nodesPerLabel,
+        "A",
+        "B",
+        "R",
+        { case i if i % 2 == 0 => Map("prop" -> i) }
+      )
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -347,7 +354,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .|.expandAll("(x)-->(y)")
       .|.argument("x")
       .projection("x AS x", "x.prop AS prop")
-      .nodeByLabelScan("x","A", IndexOrderNone)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -355,7 +362,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = aNodes.map {
       case x if x.hasProperty("prop") => Array[Any](x, bNodes.size)
-      case x  => Array[Any](x, 0)
+      case x                          => Array[Any](x, 0)
     }
     runtimeResult should beColumns("x", "ys").withRows(expected)
   }
@@ -378,10 +385,13 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle cachedProperties on RHS") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("prop1" -> i)
-        case i => Map("prop1" -> i, "prop2" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("prop1" -> i)
+          case i               => Map("prop1" -> i, "prop2" -> i)
+        }
+      )
     }
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -397,16 +407,16 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val result = execute(logicalQuery, runtime)
 
     // then
-   result should beColumns("prop1").withRows((0 until sizeHint).map(Array[Any](_)))
+    result should beColumns("prop1").withRows((0 until sizeHint).map(Array[Any](_)))
   }
 
   test("limit after conditionalApply on the RHS of apply") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
@@ -420,7 +430,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
   }

@@ -19,50 +19,44 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import static java.util.Arrays.asList;
+import static java.util.Objects.requireNonNull;
+
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-import static java.util.Arrays.asList;
-import static java.util.Objects.requireNonNull;
-
-abstract class MultiPropertyConstraintDefinition extends PropertyConstraintDefinition
-{
+abstract class MultiPropertyConstraintDefinition extends PropertyConstraintDefinition {
     protected final String[] propertyKeys;
 
-    MultiPropertyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, String[] propertyKeys )
-    {
-        super( actions, constraint );
-        this.propertyKeys = requireNonEmpty( propertyKeys );
+    MultiPropertyConstraintDefinition(
+            InternalSchemaActions actions, ConstraintDescriptor constraint, String[] propertyKeys) {
+        super(actions, constraint);
+        this.propertyKeys = requireNonEmpty(propertyKeys);
     }
 
-    MultiPropertyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition )
-    {
-        super( actions, constraint );
-        this.propertyKeys = requireNonEmpty( Iterables.asArray( String.class, indexDefinition.getPropertyKeys() ) );
+    MultiPropertyConstraintDefinition(
+            InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition) {
+        super(actions, constraint);
+        this.propertyKeys = requireNonEmpty(Iterables.asArray(String.class, indexDefinition.getPropertyKeys()));
     }
 
-    private static String[] requireNonEmpty( String[] array )
-    {
-        requireNonNull( array );
-        if ( array.length < 1 )
-        {
-            throw new IllegalArgumentException( "Property constraint must have at least one property" );
+    private static String[] requireNonEmpty(String[] array) {
+        requireNonNull(array);
+        if (array.length < 1) {
+            throw new IllegalArgumentException("Property constraint must have at least one property");
         }
-        for ( String field : array )
-        {
-            if ( field == null )
-            {
-                throw new IllegalArgumentException( "Property constraints cannot have null property names" );
+        for (String field : array) {
+            if (field == null) {
+                throw new IllegalArgumentException("Property constraints cannot have null property names");
             }
         }
         return array;
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
-    {
+    public Iterable<String> getPropertyKeys() {
         assertInUnterminatedTransaction();
-        return asList( propertyKeys );
+        return asList(propertyKeys);
     }
 }

@@ -58,24 +58,31 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
-  def check(ctx: Expression.SemanticContext, invocation: FunctionInvocation, parents: Seq[Expression] = Seq()): SemanticCheck =
+  def check(
+    ctx: Expression.SemanticContext,
+    invocation: FunctionInvocation,
+    parents: Seq[Expression] = Seq()
+  ): SemanticCheck =
     invocation.function match {
-      case f:AggregatingFunction =>
+      case f: AggregatingFunction =>
         when(ctx == Expression.SemanticContext.Simple) {
           error(s"Invalid use of aggregating function ${f.name}(...) in this context", invocation.position)
         } chain {
           checkNoNestedAggregateFunctions(invocation) chain
-          SemanticExpressionCheck.check(ctx, invocation.arguments, invocation +: parents) chain
-          semanticCheck(ctx, invocation)
+            SemanticExpressionCheck.check(ctx, invocation.arguments, invocation +: parents) chain
+            semanticCheck(ctx, invocation)
         }
 
       case Reduce =>
         error(s"${Reduce.name}(...) requires '| expression' (an accumulation expression)", invocation.position)
 
-      case f:Function =>
+      case f: Function =>
         when(invocation.distinct) {
           error(s"Invalid use of DISTINCT with function '${f.name}'", invocation.position)
-        } chain SemanticExpressionCheck.check(ctx, invocation.arguments, invocation +: parents) chain semanticCheck(ctx, invocation)
+        } chain SemanticExpressionCheck.check(ctx, invocation.arguments, invocation +: parents) chain semanticCheck(
+          ctx,
+          invocation
+        )
     }
 
   private def checkNoNestedAggregateFunctions(invocation: FunctionInvocation): SemanticCheck =
@@ -94,7 +101,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
       case Collect =>
         checkTypeSignatures(ctx, Collect, invocation) ifOkChain {
-            specifyType(types(invocation.arguments(0))(_).wrapInList, invocation)
+          specifyType(types(invocation.arguments(0))(_).wrapInList, invocation)
         }
 
       case Exists =>
@@ -119,7 +126,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         }
 
       case Last =>
-        def possibleTypes(expression: Expression) : TypeGenerator = s =>
+        def possibleTypes(expression: Expression): TypeGenerator = s =>
           (types(expression)(s) constrain CTList(CTAny)).unwrapLists
 
         checkArgs(invocation, 1) ifOkChain {
@@ -155,7 +162,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       case Reverse =>
         checkArgs(invocation, 1) ifOkChain {
           expectType(CTList(CTAny).covariant | CTString, invocation.arguments.head) chain
-          specifyType(types(invocation.arguments.head), invocation)
+            specifyType(types(invocation.arguments.head), invocation)
         }
 
       case Tail =>
@@ -174,8 +181,9 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
           checkToSpecifiedTypeOfArgument(invocation, ToString.validInputTypes) ifOkChain
           specifyType(CTString, invocation)
 
-      //distance has been replaced with point.distance, make sure we provide a nice error message
-      case UnresolvedFunction if invocation.namespace.parts.isEmpty && invocation.functionName.name.toLowerCase == "distance" =>
+      // distance has been replaced with point.distance, make sure we provide a nice error message
+      case UnresolvedFunction
+        if invocation.namespace.parts.isEmpty && invocation.functionName.name.toLowerCase == "distance" =>
         SemanticError(s"'distance' has been replaced by 'point.distance'", invocation.position)
 
       case Distance =>
@@ -190,7 +198,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         // We cannot do a full semantic check until we have resolved the function call.
         SemanticCheckResult.success
 
-      case x:TypeSignatures =>
+      case x: TypeSignatures =>
         checkTypeSignatures(ctx, x, invocation)
     }
 
@@ -198,10 +206,10 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
    * Check that invocation align with one of the functions type signatures
    */
   def checkTypeSignatures(
-                           ctx: Expression.SemanticContext,
-                           f:TypeSignatures,
-                           invocation: FunctionInvocation
-                         ): SemanticCheck =
+    ctx: Expression.SemanticContext,
+    f: TypeSignatures,
+    invocation: FunctionInvocation
+  ): SemanticCheck =
     checkMinArgs(invocation, f.signatureLengths.min) chain
       checkMaxArgs(invocation, f.signatureLengths.max) chain
       checkTypes(invocation, f.signatures)
@@ -221,7 +229,6 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
     else
       None
 
-
   /*
    * Checks so that the expression is in the range [min, max]
    */
@@ -232,14 +239,18 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       case i: IntegerLiteral if i.value == 0L || i.value == 1L =>
         SemanticCheckResult.success
       case d: DoubleLiteral =>
-        error(s"Invalid input '${d.value}' is not a valid argument, must be a number in the range 0.0 to 1.0", d.position)
+        error(
+          s"Invalid input '${d.value}' is not a valid argument, must be a number in the range 0.0 to 1.0",
+          d.position
+        )
 
       case l: Literal =>
-        error(s"Invalid input '${
-          l.asCanonicalStringVal
-        }' is not a valid argument, must be a number in the range 0.0 to 1.0", l.position)
+        error(
+          s"Invalid input '${l.asCanonicalStringVal}' is not a valid argument, must be a number in the range 0.0 to 1.0",
+          l.position
+        )
 
-      //for other types we'll have to wait until runtime to fail
+      // for other types we'll have to wait until runtime to fail
       case _ => SemanticCheckResult.success
 
     }
@@ -251,26 +262,31 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
   protected def checkPointMap(expression: Expression): SemanticCheck =
     expression match {
 
-      //Cartesian point
+      // Cartesian point
       case map: MapExpression if map.items.exists(withKey("x")) && map.items.exists(withKey("y")) =>
         SemanticCheckResult.success
 
-      //Geographic point
+      // Geographic point
       case map: MapExpression if map.items.exists(withKey("longitude")) && map.items.exists(withKey("latitude")) =>
         SemanticCheckResult.success
 
       case map: MapExpression => error(
-        s"A map with keys ${map.items.map(a => s"'${a._1.name}'").mkString(", ")} is not describing a valid point, " +
-          s"a point is described either by using cartesian coordinates e.g. {x: 2.3, y: 4.5, crs: 'cartesian'} or using " +
-          s"geographic coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}.", map.position)
+          s"A map with keys ${map.items.map(a => s"'${a._1.name}'").mkString(", ")} is not describing a valid point, " +
+            s"a point is described either by using cartesian coordinates e.g. {x: 2.3, y: 4.5, crs: 'cartesian'} or using " +
+            s"geographic coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}.",
+          map.position
+        )
 
-      //if using variable or parameter we can't introspect the map here
+      // if using variable or parameter we can't introspect the map here
       case _ => SemanticCheckResult.success
     }
 
   private def withKey(key: String)(kv: (PropertyKeyName, Expression)) = kv._1.name == key
 
-  private def checkToSpecifiedTypeOfArgument(invocation: FunctionInvocation, allowedTypes: Seq[CypherType]): SemanticCheck =
+  private def checkToSpecifiedTypeOfArgument(
+    invocation: FunctionInvocation,
+    allowedTypes: Seq[CypherType]
+  ): SemanticCheck =
     (s: SemanticState) => {
       val argument = invocation.args.head
       val specifiedType = s.expressionType(argument).specified

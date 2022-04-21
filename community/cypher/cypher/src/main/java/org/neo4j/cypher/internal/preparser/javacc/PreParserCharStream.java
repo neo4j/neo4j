@@ -24,10 +24,8 @@ import org.neo4j.cypher.internal.parser.javacc.CypherCharStream;
 /**
  * Identical to CypherCharStream, but we need to extend the generated preparser CharStream interface
  */
-public class PreParserCharStream extends CypherCharStream implements CharStream
-{
-    public PreParserCharStream( String query )
-    {
-        super( query );
+public class PreParserCharStream extends CypherCharStream implements CharStream {
+    public PreParserCharStream(String query) {
+        super(query);
     }
 }

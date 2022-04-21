@@ -19,24 +19,6 @@
  */
 package org.neo4j.bolt.packstream;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.List;
-
-import org.neo4j.io.memory.ByteBuffers;
-
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,158 +30,162 @@ import static org.neo4j.bolt.packstream.ChunkedOutput.CHUNK_HEADER_SIZE;
 import static org.neo4j.bolt.transport.TransportThrottleGroup.NO_THROTTLE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-public class ChunkedOutputTest
-{
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.memory.ByteBuffers;
+
+public class ChunkedOutputTest {
     private static final int DEFAULT_TEST_BUFFER_SIZE = 16;
 
     private final EmbeddedChannel channel = new EmbeddedChannel();
     private ChunkedOutput out;
 
     @BeforeEach
-    void setUp()
-    {
-        out = new ChunkedOutput( channel, DEFAULT_TEST_BUFFER_SIZE, DEFAULT_TEST_BUFFER_SIZE, NO_THROTTLE );
+    void setUp() {
+        out = new ChunkedOutput(channel, DEFAULT_TEST_BUFFER_SIZE, DEFAULT_TEST_BUFFER_SIZE, NO_THROTTLE);
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         out.close();
         channel.finishAndReleaseAll();
     }
 
     @Test
-    void shouldFlushNothingWhenEmpty() throws Exception
-    {
+    void shouldFlushNothingWhenEmpty() throws Exception {
         out.flush();
-        assertEquals( 0, channel.outboundMessages().size() );
+        assertEquals(0, channel.outboundMessages().size());
     }
 
     @Test
-    void shouldFlushNothingWhenClosed() throws Exception
-    {
+    void shouldFlushNothingWhenClosed() throws Exception {
         out.close();
         out.flush();
-        assertEquals( 0, channel.outboundMessages().size() );
+        assertEquals(0, channel.outboundMessages().size());
     }
 
     @Test
-    void shouldWriteAndFlushByte() throws Exception
-    {
+    void shouldWriteAndFlushByte() throws Exception {
         out.beginMessage();
-        out.writeByte( (byte) 42 );
+        out.writeByte((byte) 42);
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( (byte) 42 ) + messageBoundary() );
+        assertByteBufEqual(outboundMessage, chunkContaining((byte) 42) + messageBoundary());
     }
 
     @Test
-    void shouldWriteAndFlushShort() throws Exception
-    {
+    void shouldWriteAndFlushShort() throws Exception {
         out.beginMessage();
-        out.writeShort( (short) 42 );
+        out.writeShort((short) 42);
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( (short) 42 ) + messageBoundary() );
+        assertByteBufEqual(outboundMessage, chunkContaining((short) 42) + messageBoundary());
     }
 
     @Test
-    void shouldWriteAndFlushInt() throws Exception
-    {
+    void shouldWriteAndFlushInt() throws Exception {
         out.beginMessage();
-        out.writeInt( 424242 );
+        out.writeInt(424242);
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( 424242 ) + messageBoundary() );
+        assertByteBufEqual(outboundMessage, chunkContaining(424242) + messageBoundary());
     }
 
     @Test
-    void shouldWriteAndFlushLong() throws Exception
-    {
+    void shouldWriteAndFlushLong() throws Exception {
         out.beginMessage();
-        out.writeLong( 42424242 );
+        out.writeLong(42424242);
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( 42424242L ) + messageBoundary() );
+        assertByteBufEqual(outboundMessage, chunkContaining(42424242L) + messageBoundary());
     }
 
     @Test
-    void shouldWriteAndFlushDouble() throws Exception
-    {
+    void shouldWriteAndFlushDouble() throws Exception {
         out.beginMessage();
-        out.writeDouble( 42.4224 );
+        out.writeDouble(42.4224);
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( 42.4224 ) + messageBoundary() );
+        assertByteBufEqual(outboundMessage, chunkContaining(42.4224) + messageBoundary());
     }
 
     @Test
-    void shouldWriteAndFlushByteBuffer() throws Exception
-    {
+    void shouldWriteAndFlushByteBuffer() throws Exception {
         out.beginMessage();
-        out.writeBytes( ByteBuffer.wrap( new byte[]{9, 8, 7, 6, 5, 4, 3, 2, 1} ) );
+        out.writeBytes(ByteBuffer.wrap(new byte[] {9, 8, 7, 6, 5, 4, 3, 2, 1}));
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( (byte) 9, (byte) 8, (byte) 7, (byte) 6, (byte) 5, (byte) 4, (byte) 3, (byte) 2, (byte) 1 ) +
-                                             messageBoundary() );
+        assertByteBufEqual(
+                outboundMessage,
+                chunkContaining((byte) 9, (byte) 8, (byte) 7, (byte) 6, (byte) 5, (byte) 4, (byte) 3, (byte) 2, (byte)
+                                1)
+                        + messageBoundary());
     }
 
     @Test
-    void shouldWriteAndFlushByteArray() throws Exception
-    {
+    void shouldWriteAndFlushByteArray() throws Exception {
         out.beginMessage();
-        out.writeBytes( new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9}, 1, 5 );
+        out.writeBytes(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9}, 1, 5);
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( (byte) 2, (byte) 3, (byte) 4, (byte) 5, (byte) 6 ) + messageBoundary() );
+        assertByteBufEqual(
+                outboundMessage, chunkContaining((byte) 2, (byte) 3, (byte) 4, (byte) 5, (byte) 6) + messageBoundary());
     }
 
     @Test
-    void shouldThrowWhenByteArrayContainsInsufficientBytes() throws Exception
-    {
-        var e = assertThrows( IOException.class, () -> out.writeBytes( new byte[]{1, 2, 3}, 1, 5 ) );
-        assertEquals( "Asked to write 5 bytes, but there is only 2 bytes available in data provided.", e.getMessage() );
+    void shouldThrowWhenByteArrayContainsInsufficientBytes() throws Exception {
+        var e = assertThrows(IOException.class, () -> out.writeBytes(new byte[] {1, 2, 3}, 1, 5));
+        assertEquals("Asked to write 5 bytes, but there is only 2 bytes available in data provided.", e.getMessage());
     }
 
     @Test
-    void shouldFlushOnClose() throws Exception
-    {
+    void shouldFlushOnClose() throws Exception {
         out.beginMessage();
-        out.writeInt( 42 ).writeInt( 4242 ).writeInt( 424242 );
+        out.writeInt(42).writeInt(4242).writeInt(424242);
         out.messageSucceeded();
         out.close();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
-        assertByteBufEqual( outboundMessage, chunkContaining( 42, 4242, 424242 ) +
-                                             messageBoundary() );
+        assertByteBufEqual(outboundMessage, chunkContaining(42, 4242, 424242) + messageBoundary());
     }
 
     @Test
-    void shouldCloseNothingWhenAlreadyClosed() throws Exception
-    {
+    void shouldCloseNothingWhenAlreadyClosed() throws Exception {
         out.beginMessage();
-        out.writeLong( 42 );
+        out.writeLong(42);
         out.messageSucceeded();
 
         out.close();
@@ -207,160 +193,158 @@ public class ChunkedOutputTest
         out.close();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
-        assertByteBufEqual( outboundMessage, chunkContaining( (long) 42 ) + messageBoundary() );
+        assertByteBufEqual(outboundMessage, chunkContaining((long) 42) + messageBoundary());
     }
 
     @Test
-    void shouldChunkSingleMessage() throws Throwable
-    {
+    void shouldChunkSingleMessage() throws Throwable {
         out.beginMessage();
-        out.writeByte( (byte) 1 );
-        out.writeShort( (short) 2 );
+        out.writeByte((byte) 1);
+        out.writeShort((short) 2);
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
-        assertByteBufEqual( outboundMessage, chunkContaining( (byte) 1, (short) 2 ) + messageBoundary() );
+        assertByteBufEqual(outboundMessage, chunkContaining((byte) 1, (short) 2) + messageBoundary());
     }
 
     @Test
-    void shouldChunkMessageSpanningMultipleChunks() throws Throwable
-    {
+    void shouldChunkMessageSpanningMultipleChunks() throws Throwable {
         out.beginMessage();
-        out.writeLong( 1 );
-        out.writeLong( 2 );
-        out.writeLong( 3 );
+        out.writeLong(1);
+        out.writeLong(2);
+        out.writeLong(3);
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( (long) 1 ) + chunkContaining( (long) 2 ) + chunkContaining( (long) 3 ) + messageBoundary() );
+        assertByteBufEqual(
+                outboundMessage,
+                chunkContaining((long) 1) + chunkContaining((long) 2) + chunkContaining((long) 3) + messageBoundary());
     }
 
     @Test
-    void shouldChunkDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
-    {
+    void shouldChunkDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException {
         out.beginMessage();
         byte[] bytes = new byte[16];
-        Arrays.fill( bytes, (byte) 42 );
-        out.writeBytes( bytes, 0, 16 );
+        Arrays.fill(bytes, (byte) 42);
+        out.writeBytes(bytes, 0, 16);
         out.messageSucceeded();
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
         Number[] chunk1Body = new Number[14];
-        Arrays.fill( chunk1Body, (byte) 42 );
+        Arrays.fill(chunk1Body, (byte) 42);
 
         Number[] chunk2Body = new Number[2];
-        Arrays.fill( chunk2Body, (byte) 42 );
+        Arrays.fill(chunk2Body, (byte) 42);
 
-        assertByteBufEqual( outboundMessage, chunkContaining( chunk1Body ) + chunkContaining( chunk2Body ) + messageBoundary() );
+        assertByteBufEqual(
+                outboundMessage, chunkContaining(chunk1Body) + chunkContaining(chunk2Body) + messageBoundary());
     }
 
     @Test
-    void shouldNotThrowIfOutOfSyncFlush() throws Throwable
-    {
+    void shouldNotThrowIfOutOfSyncFlush() throws Throwable {
         out.beginMessage();
-        out.writeLong( 1 );
-        out.writeLong( 2 );
-        out.writeLong( 3 );
+        out.writeLong(1);
+        out.writeLong(2);
+        out.writeLong(3);
         out.messageSucceeded();
 
         out.flush();
         out.close();
-        //this flush comes in to late but should not cause ChunkedOutput to choke.
+        // this flush comes in to late but should not cause ChunkedOutput to choke.
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( (long) 1 ) + chunkContaining( (long) 2 ) + chunkContaining( (long) 3 ) + messageBoundary() );
+        assertByteBufEqual(
+                outboundMessage,
+                chunkContaining((long) 1) + chunkContaining((long) 2) + chunkContaining((long) 3) + messageBoundary());
     }
 
     @Test
-    void shouldNotBeAbleToWriteAfterClose() throws Throwable
-    {
+    void shouldNotBeAbleToWriteAfterClose() throws Throwable {
         out.beginMessage();
-        out.writeLong( 1 );
-        out.writeLong( 2 );
-        out.writeLong( 3 );
+        out.writeLong(1);
+        out.writeLong(2);
+        out.writeLong(3);
         out.messageSucceeded();
 
         out.flush();
         out.close();
 
-        assertThrows( IOException.class, () -> out.writeShort( (short) 42 ) );
+        assertThrows(IOException.class, () -> out.writeShort((short) 42));
     }
 
     @Test
-    void shouldThrowErrorWithRemoteAddressWhenClosed() throws Exception
-    {
-        Channel channel = mock( Channel.class );
-        ByteBufAllocator allocator = mock( ByteBufAllocator.class );
-        when( allocator.buffer( anyInt() ) ).thenReturn( Unpooled.buffer() );
-        when( channel.alloc() ).thenReturn( allocator );
-        SocketAddress remoteAddress = mock( SocketAddress.class );
+    void shouldThrowErrorWithRemoteAddressWhenClosed() throws Exception {
+        Channel channel = mock(Channel.class);
+        ByteBufAllocator allocator = mock(ByteBufAllocator.class);
+        when(allocator.buffer(anyInt())).thenReturn(Unpooled.buffer());
+        when(channel.alloc()).thenReturn(allocator);
+        SocketAddress remoteAddress = mock(SocketAddress.class);
         String remoteAddressString = "client.server.com:7687";
-        when( remoteAddress.toString() ).thenReturn( remoteAddressString );
-        when( channel.remoteAddress() ).thenReturn( remoteAddress );
+        when(remoteAddress.toString()).thenReturn(remoteAddressString);
+        when(channel.remoteAddress()).thenReturn(remoteAddress);
 
-        ChunkedOutput output = new ChunkedOutput( channel, DEFAULT_TEST_BUFFER_SIZE, DEFAULT_TEST_BUFFER_SIZE, NO_THROTTLE );
+        ChunkedOutput output =
+                new ChunkedOutput(channel, DEFAULT_TEST_BUFFER_SIZE, DEFAULT_TEST_BUFFER_SIZE, NO_THROTTLE);
         output.close();
 
-        var e = assertThrows( PackOutputClosedException.class, () -> output.writeInt( 42 ) );
-        assertThat( e.getMessage() ).contains( remoteAddressString );
+        var e = assertThrows(PackOutputClosedException.class, () -> output.writeInt(42));
+        assertThat(e.getMessage()).contains(remoteAddressString);
     }
 
     @Test
-    void shouldTruncateFailedMessage() throws Exception
-    {
+    void shouldTruncateFailedMessage() throws Exception {
         out.beginMessage();
-        out.writeInt( 1 );
-        out.writeInt( 2 );
+        out.writeInt(1);
+        out.writeInt(2);
         out.messageSucceeded();
 
         out.beginMessage();
-        out.writeInt( 3 );
-        out.writeInt( 4 );
+        out.writeInt(3);
+        out.writeInt(4);
         out.messageFailed();
 
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( 1, 2 ) + messageBoundary() );
+        assertByteBufEqual(outboundMessage, chunkContaining(1, 2) + messageBoundary());
     }
 
     @Test
-    void shouldAllowWritingAfterFailedMessage() throws Exception
-    {
+    void shouldAllowWritingAfterFailedMessage() throws Exception {
         out.beginMessage();
-        out.writeInt( 1 );
-        out.writeInt( 2 );
+        out.writeInt(1);
+        out.writeInt(2);
         out.messageSucceeded();
 
         out.beginMessage();
-        out.writeByte( (byte) 3 );
-        out.writeByte( (byte) 4 );
+        out.writeByte((byte) 3);
+        out.writeByte((byte) 4);
         out.messageFailed();
 
         out.beginMessage();
-        out.writeInt( 33 );
-        out.writeLong( 44 );
+        out.writeInt(33);
+        out.writeLong(44);
         out.messageSucceeded();
 
         out.flush();
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( 1, 2 ) + messageBoundary() +
-                                             chunkContaining( 33, (long) 44 ) + messageBoundary() );
+        assertByteBufEqual(
+                outboundMessage,
+                chunkContaining(1, 2) + messageBoundary() + chunkContaining(33, (long) 44) + messageBoundary());
     }
 
     @Test
-    void shouldWriteOnlyMessageBoundaryWhenWriterIsEmpty() throws Exception
-    {
+    void shouldWriteOnlyMessageBoundaryWhenWriterIsEmpty() throws Exception {
         out.beginMessage();
         // write nothing in the message body
         out.messageSucceeded();
@@ -368,270 +352,228 @@ public class ChunkedOutputTest
 
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, messageBoundary() );
+        assertByteBufEqual(outboundMessage, messageBoundary());
     }
 
     @Test
-    void shouldAutoFlushOnlyWhenMaxBufferSizeReachedAfterFullMessage() throws Exception
-    {
+    void shouldAutoFlushOnlyWhenMaxBufferSizeReachedAfterFullMessage() throws Exception {
         out.beginMessage();
-        out.writeInt( 1 );
-        out.writeInt( 2 );
-        out.writeInt( 3 );
-        out.writeLong( 4 );
+        out.writeInt(1);
+        out.writeInt(2);
+        out.writeInt(3);
+        out.writeLong(4);
 
         // nothing should be flushed because we are still in the middle of the message
-        assertEquals( 0, peekAllOutboundMessages().size() );
+        assertEquals(0, peekAllOutboundMessages().size());
 
-        out.writeByte( (byte) 5 );
-        out.writeByte( (byte) 6 );
-        out.writeLong( 7 );
-        out.writeInt( 8 );
-        out.writeByte( (byte) 9 );
+        out.writeByte((byte) 5);
+        out.writeByte((byte) 6);
+        out.writeLong(7);
+        out.writeInt(8);
+        out.writeByte((byte) 9);
 
         // still nothing should be flushed
-        assertEquals( 0, peekAllOutboundMessages().size() );
+        assertEquals(0, peekAllOutboundMessages().size());
 
         out.messageSucceeded();
 
         // now the whole buffer should be flushed, it is larger than the maxBufferSize
         ByteBuf outboundMessage = peekSingleOutboundMessage();
 
-        assertByteBufEqual( outboundMessage, chunkContaining( 1, 2, 3 ) +
-                                             chunkContaining( (long) 4, (byte) 5, (byte) 6 ) +
-                                             chunkContaining( (long) 7, 8, (byte) 9 ) +
-                                             messageBoundary() );
+        assertByteBufEqual(
+                outboundMessage,
+                chunkContaining(1, 2, 3)
+                        + chunkContaining((long) 4, (byte) 5, (byte) 6)
+                        + chunkContaining((long) 7, 8, (byte) 9)
+                        + messageBoundary());
     }
 
     @Test
-    void shouldAutoFlushMultipleMessages() throws Exception
-    {
+    void shouldAutoFlushMultipleMessages() throws Exception {
         out.beginMessage();
-        out.writeLong( 1 );
-        out.writeLong( 2 );
+        out.writeLong(1);
+        out.writeLong(2);
         out.messageSucceeded();
 
         out.beginMessage();
-        out.writeLong( 3 );
-        out.writeLong( 4 );
+        out.writeLong(3);
+        out.writeLong(4);
         out.messageSucceeded();
 
         out.beginMessage();
-        out.writeLong( 5 );
-        out.writeLong( 6 );
+        out.writeLong(5);
+        out.writeLong(6);
         out.messageSucceeded();
 
         List<ByteBuf> outboundMessages = peekAllOutboundMessages();
-        assertEquals( 3, outboundMessages.size() );
+        assertEquals(3, outboundMessages.size());
 
-        assertByteBufEqual( outboundMessages.get( 0 ), chunkContaining( (long) 1 ) + chunkContaining( (long) 2 ) + messageBoundary() );
-        assertByteBufEqual( outboundMessages.get( 1 ), chunkContaining( (long) 3 ) + chunkContaining( (long) 4 ) + messageBoundary() );
-        assertByteBufEqual( outboundMessages.get( 2 ), chunkContaining( (long) 5 ) + chunkContaining( (long) 6 ) + messageBoundary() );
+        assertByteBufEqual(
+                outboundMessages.get(0), chunkContaining((long) 1) + chunkContaining((long) 2) + messageBoundary());
+        assertByteBufEqual(
+                outboundMessages.get(1), chunkContaining((long) 3) + chunkContaining((long) 4) + messageBoundary());
+        assertByteBufEqual(
+                outboundMessages.get(2), chunkContaining((long) 5) + chunkContaining((long) 6) + messageBoundary());
     }
 
     @Test
-    void shouldFailToBeginMultipleMessages()
-    {
+    void shouldFailToBeginMultipleMessages() {
         out.beginMessage();
 
-        assertThrows( IllegalStateException.class, () -> out.beginMessage() );
+        assertThrows(IllegalStateException.class, () -> out.beginMessage());
     }
 
     @Test
-    void shouldFailToMarkMessageAsSuccessfulWhenMessageNotStarted() throws Exception
-    {
-        assertThrows( IllegalStateException.class, () -> out.messageSucceeded() );
+    void shouldFailToMarkMessageAsSuccessfulWhenMessageNotStarted() throws Exception {
+        assertThrows(IllegalStateException.class, () -> out.messageSucceeded());
     }
 
     @Test
-    void shouldFailToMarkMessageAsFialedWhenMessageNotStarted() throws Exception
-    {
-        assertThrows( IllegalStateException.class, () -> out.messageFailed() );
+    void shouldFailToMarkMessageAsFialedWhenMessageNotStarted() throws Exception {
+        assertThrows(IllegalStateException.class, () -> out.messageFailed());
     }
 
     @Test
-    void shouldFailToWriteByteOutsideOfMessage() throws Exception
-    {
-        assertThrows( IllegalStateException.class, () -> out.writeByte( (byte) 1 ) );
+    void shouldFailToWriteByteOutsideOfMessage() throws Exception {
+        assertThrows(IllegalStateException.class, () -> out.writeByte((byte) 1));
     }
 
     @Test
-    void shouldFailToWriteShortOutsideOfMessage() throws Exception
-    {
-        assertThrows( IllegalStateException.class, () -> out.writeShort( (short) 1 ) );
+    void shouldFailToWriteShortOutsideOfMessage() throws Exception {
+        assertThrows(IllegalStateException.class, () -> out.writeShort((short) 1));
     }
 
     @Test
-    void shouldFailToWriteIntOutsideOfMessage() throws Exception
-    {
-        assertThrows( IllegalStateException.class, () -> out.writeInt( 1 ) );
+    void shouldFailToWriteIntOutsideOfMessage() throws Exception {
+        assertThrows(IllegalStateException.class, () -> out.writeInt(1));
     }
 
     @Test
-    void shouldFailToWriteLongOutsideOfMessage() throws Exception
-    {
-        assertThrows( IllegalStateException.class, () -> out.writeLong( 1 ) );
+    void shouldFailToWriteLongOutsideOfMessage() throws Exception {
+        assertThrows(IllegalStateException.class, () -> out.writeLong(1));
     }
 
     @Test
-    void shouldFailToWriteDoubleOutsideOfMessage() throws Exception
-    {
-        assertThrows( IllegalStateException.class, () -> out.writeDouble( 1.1 ) );
+    void shouldFailToWriteDoubleOutsideOfMessage() throws Exception {
+        assertThrows(IllegalStateException.class, () -> out.writeDouble(1.1));
     }
 
     @Test
-    void shouldFailToWriteBytesOutsideOfMessage() throws Exception
-    {
-        assertThrows( IllegalStateException.class, () -> out.writeBytes( ByteBuffer.wrap( new byte[10] ) ) );
+    void shouldFailToWriteBytesOutsideOfMessage() throws Exception {
+        assertThrows(IllegalStateException.class, () -> out.writeBytes(ByteBuffer.wrap(new byte[10])));
     }
 
     @Test
-    void shouldFailToMarkMessageAsSuccessfulAndThenAsFailed() throws Exception
-    {
+    void shouldFailToMarkMessageAsSuccessfulAndThenAsFailed() throws Exception {
         out.beginMessage();
-        out.writeInt( 42 );
+        out.writeInt(42);
         out.messageSucceeded();
 
-        assertThrows( IllegalStateException.class, () -> out.messageFailed() );
+        assertThrows(IllegalStateException.class, () -> out.messageFailed());
 
         out.flush();
 
-        assertByteBufEqual( peekSingleOutboundMessage(), chunkContaining( 42 ) + messageBoundary() );
+        assertByteBufEqual(peekSingleOutboundMessage(), chunkContaining(42) + messageBoundary());
     }
 
     @Test
-    void shouldFailToMarkMessageAsFailedAndThenAsSuccessful() throws Exception
-    {
+    void shouldFailToMarkMessageAsFailedAndThenAsSuccessful() throws Exception {
         out.beginMessage();
-        out.writeInt( 42 );
+        out.writeInt(42);
         out.messageFailed();
 
-        assertThrows( IllegalStateException.class, () -> out.messageSucceeded() );
+        assertThrows(IllegalStateException.class, () -> out.messageSucceeded());
 
         out.flush();
 
-        assertEquals( 0, peekAllOutboundMessages().size() );
+        assertEquals(0, peekAllOutboundMessages().size());
     }
 
     @Test
-    void shouldAllowMultipleFailedMessages() throws Exception
-    {
-        for ( int i = 0; i < 7; i++ )
-        {
+    void shouldAllowMultipleFailedMessages() throws Exception {
+        for (int i = 0; i < 7; i++) {
             out.beginMessage();
-            out.writeByte( (byte) i );
-            out.writeShort( (short) i );
-            out.writeInt( i );
+            out.writeByte((byte) i);
+            out.writeShort((short) i);
+            out.writeInt(i);
             out.messageFailed();
         }
 
         out.flush();
-        assertEquals( 0, peekAllOutboundMessages().size() );
+        assertEquals(0, peekAllOutboundMessages().size());
 
         // try to write a 2-chunk message which should auto-flush
         out.beginMessage();
-        out.writeByte( (byte) 8 );
-        out.writeShort( (short) 9 );
-        out.writeInt( 10 );
-        out.writeDouble( 199.92 );
+        out.writeByte((byte) 8);
+        out.writeShort((short) 9);
+        out.writeInt(10);
+        out.writeDouble(199.92);
         out.messageSucceeded();
 
-        assertByteBufEqual( peekSingleOutboundMessage(), chunkContaining( (byte) 8, (short) 9, 10 ) +
-                                                         chunkContaining( 199.92 ) +
-                                                         messageBoundary() );
+        assertByteBufEqual(
+                peekSingleOutboundMessage(),
+                chunkContaining((byte) 8, (short) 9, 10) + chunkContaining(199.92) + messageBoundary());
     }
 
-    private ByteBuf peekSingleOutboundMessage()
-    {
+    private ByteBuf peekSingleOutboundMessage() {
         List<ByteBuf> outboundMessages = peekAllOutboundMessages();
-        assertEquals( 1, outboundMessages.size() );
-        return outboundMessages.get( 0 );
+        assertEquals(1, outboundMessages.size());
+        return outboundMessages.get(0);
     }
 
-    private List<ByteBuf> peekAllOutboundMessages()
-    {
-        return channel.outboundMessages()
-                .stream()
-                .map( msg -> (ByteBuf) msg )
-                .collect( toList() );
+    private List<ByteBuf> peekAllOutboundMessages() {
+        return channel.outboundMessages().stream().map(msg -> (ByteBuf) msg).collect(toList());
     }
 
-    private static void assertByteBufEqual( ByteBuf buf, String hexContent )
-    {
-        assertEquals( ByteBufUtil.hexDump( buf ), hexContent );
+    private static void assertByteBufEqual(ByteBuf buf, String hexContent) {
+        assertEquals(ByteBufUtil.hexDump(buf), hexContent);
     }
 
-    private static String chunkContaining( Number... values )
-    {
+    private static String chunkContaining(Number... values) {
         short chunkSize = 0;
-        for ( Number value : values )
-        {
-            if ( value instanceof Byte )
-            {
+        for (Number value : values) {
+            if (value instanceof Byte) {
                 chunkSize += Byte.BYTES;
-            }
-            else if ( value instanceof Short )
-            {
+            } else if (value instanceof Short) {
                 chunkSize += Short.BYTES;
-            }
-            else if ( value instanceof Integer )
-            {
+            } else if (value instanceof Integer) {
                 chunkSize += Integer.BYTES;
-            }
-            else if ( value instanceof Long )
-            {
+            } else if (value instanceof Long) {
                 chunkSize += Long.BYTES;
-            }
-            else if ( value instanceof Double )
-            {
+            } else if (value instanceof Double) {
                 chunkSize += Double.BYTES;
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Unsupported number " + value.getClass() + ' ' + value );
+            } else {
+                throw new IllegalArgumentException("Unsupported number " + value.getClass() + ' ' + value);
             }
         }
 
-        ByteBuffer buffer = ByteBuffers.allocate( chunkSize + CHUNK_HEADER_SIZE, INSTANCE );
-        buffer.putShort( chunkSize );
+        ByteBuffer buffer = ByteBuffers.allocate(chunkSize + CHUNK_HEADER_SIZE, INSTANCE);
+        buffer.putShort(chunkSize);
 
-        for ( Number value : values )
-        {
-            if ( value instanceof Byte )
-            {
-                buffer.put( value.byteValue() );
-            }
-            else if ( value instanceof Short )
-            {
-                buffer.putShort( value.shortValue() );
-            }
-            else if ( value instanceof Integer )
-            {
-                buffer.putInt( value.intValue() );
-            }
-            else if ( value instanceof Long )
-            {
-                buffer.putLong( value.longValue() );
-            }
-            else if ( value instanceof Double )
-            {
-                buffer.putDouble( value.doubleValue() );
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Unsupported number " + value.getClass() + ' ' + value );
+        for (Number value : values) {
+            if (value instanceof Byte) {
+                buffer.put(value.byteValue());
+            } else if (value instanceof Short) {
+                buffer.putShort(value.shortValue());
+            } else if (value instanceof Integer) {
+                buffer.putInt(value.intValue());
+            } else if (value instanceof Long) {
+                buffer.putLong(value.longValue());
+            } else if (value instanceof Double) {
+                buffer.putDouble(value.doubleValue());
+            } else {
+                throw new IllegalArgumentException("Unsupported number " + value.getClass() + ' ' + value);
             }
         }
         buffer.flip();
 
-        return ByteBufUtil.hexDump( buffer.array() );
+        return ByteBufUtil.hexDump(buffer.array());
     }
 
-    private static String messageBoundary()
-    {
-        ByteBuffer buffer = ByteBuffers.allocate( Short.BYTES, INSTANCE );
-        buffer.putShort( (short) 0 );
+    private static String messageBoundary() {
+        ByteBuffer buffer = ByteBuffers.allocate(Short.BYTES, INSTANCE);
+        buffer.putShort((short) 0);
         buffer.flip();
-        return ByteBufUtil.hexDump( buffer.array() );
+        return ByteBufUtil.hexDump(buffer.array());
     }
 }

@@ -21,48 +21,40 @@ package org.neo4j.server.startup;
 
 import org.apache.commons.lang3.StringUtils;
 
-class UnixBootloaderOs extends AbstractUnixBootloaderOs
-{
+class UnixBootloaderOs extends AbstractUnixBootloaderOs {
     private static final int MIN_ALLOWED_OPEN_FILES = 40000;
 
-    UnixBootloaderOs( BootloaderContext ctx )
-    {
-        super( ctx );
+    UnixBootloaderOs(BootloaderContext ctx) {
+        super(ctx);
     }
 
-    private static int getFileHandleLimit()
-    {
-        try
-        {
-            String result = executeCommand( new String[]{"bash", "-c", "ulimit -n"} );
-            return StringUtils.isNumeric( result ) ? Integer.parseInt( result ) : Integer.MAX_VALUE;
-        }
-        catch ( RuntimeException e )
-        { //Ignore this check if it is not available
+    private static int getFileHandleLimit() {
+        try {
+            String result = executeCommand(new String[] {"bash", "-c", "ulimit -n"});
+            return StringUtils.isNumeric(result) ? Integer.parseInt(result) : Integer.MAX_VALUE;
+        } catch (RuntimeException e) { // Ignore this check if it is not available
         }
         return Integer.MAX_VALUE;
     }
 
     @Override
-    long start()
-    {
+    long start() {
         checkLimits();
         return super.start();
     }
 
     @Override
-    long console() throws BootFailureException
-    {
+    long console() throws BootFailureException {
         checkLimits();
         return super.console();
     }
 
-    private void checkLimits()
-    {
+    private void checkLimits() {
         int limit = getFileHandleLimit();
-        if ( limit < MIN_ALLOWED_OPEN_FILES )
-        {
-            ctx.err.printf( "WARNING: Max %s open files allowed, minimum of %s recommended. See the Neo4j manual.%n", limit, MIN_ALLOWED_OPEN_FILES );
+        if (limit < MIN_ALLOWED_OPEN_FILES) {
+            ctx.err.printf(
+                    "WARNING: Max %s open files allowed, minimum of %s recommended. See the Neo4j manual.%n",
+                    limit, MIN_ALLOWED_OPEN_FILES);
         }
     }
 }

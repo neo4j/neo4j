@@ -22,60 +22,47 @@ package org.neo4j.test.mockito.mock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-public class Link
-{
-    public static Link link( Relationship relationship, Node node )
-    {
-        if ( relationship.getStartNodeId() == node.getId() )
-        {
-            return new Link( node, relationship );
+public class Link {
+    public static Link link(Relationship relationship, Node node) {
+        if (relationship.getStartNodeId() == node.getId()) {
+            return new Link(node, relationship);
         }
-        if ( relationship.getEndNodeId() == node.getId() )
-        {
-            return new Link( relationship, node );
+        if (relationship.getEndNodeId() == node.getId()) {
+            return new Link(relationship, node);
         }
-        throw illegalArgument( "%s is neither the start node nor the end node of %s", node, relationship );
+        throw illegalArgument("%s is neither the start node nor the end node of %s", node, relationship);
     }
 
     final Relationship relationship;
     private final Node node;
     private final boolean isStartNode;
 
-    private Link( Node node, Relationship relationship )
-    {
+    private Link(Node node, Relationship relationship) {
         this.relationship = relationship;
         this.node = node;
         this.isStartNode = true;
     }
 
-    private Link( Relationship relationship, Node node )
-    {
+    private Link(Relationship relationship, Node node) {
         this.relationship = relationship;
         this.node = node;
         this.isStartNode = false;
     }
 
-    public Node checkNode( Node node )
-    {
-        if ( isStartNode )
-        {
-            if ( node.getId() != relationship.getEndNodeId() )
-            {
-                throw illegalArgument( "%s is not the end node of %s", node, relationship );
+    public Node checkNode(Node node) {
+        if (isStartNode) {
+            if (node.getId() != relationship.getEndNodeId()) {
+                throw illegalArgument("%s is not the end node of %s", node, relationship);
             }
-        }
-        else
-        {
-            if ( node.getId() != relationship.getStartNodeId() )
-            {
-                throw illegalArgument( "%s is not the start node of %s", node, relationship );
+        } else {
+            if (node.getId() != relationship.getStartNodeId()) {
+                throw illegalArgument("%s is not the start node of %s", node, relationship);
             }
         }
         return this.node;
     }
 
-    private static IllegalArgumentException illegalArgument( String message, Object... parameters )
-    {
-        return new IllegalArgumentException( String.format( message, parameters ) );
+    private static IllegalArgumentException illegalArgument(String message, Object... parameters) {
+        return new IllegalArgumentException(String.format(message, parameters));
     }
 }

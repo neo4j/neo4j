@@ -21,10 +21,8 @@ package org.neo4j.internal.id;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 
-public class NegativeIdException extends UnderlyingStorageException
-{
-    public NegativeIdException( long id )
-    {
-        super( "Record id can't be negative: " + id );
+public class NegativeIdException extends UnderlyingStorageException {
+    public NegativeIdException(long id) {
+        super("Record id can't be negative: " + id);
     }
 }

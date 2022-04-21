@@ -23,29 +23,25 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
-public class UpdateCountingIndexUpdater implements IndexUpdater
-{
+public class UpdateCountingIndexUpdater implements IndexUpdater {
     private final IndexProxyStrategy indexProxyStrategy;
     private final IndexUpdater delegate;
     private long updates;
 
-    public UpdateCountingIndexUpdater( IndexProxyStrategy indexProxyStrategy, IndexUpdater delegate )
-    {
+    public UpdateCountingIndexUpdater(IndexProxyStrategy indexProxyStrategy, IndexUpdater delegate) {
         this.indexProxyStrategy = indexProxyStrategy;
         this.delegate = delegate;
     }
 
     @Override
-    public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
-    {
-        delegate.process( update );
+    public void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException {
+        delegate.process(update);
         updates++;
     }
 
     @Override
-    public void close() throws IndexEntryConflictException
-    {
+    public void close() throws IndexEntryConflictException {
         delegate.close();
-        indexProxyStrategy.incrementUpdateStatisticsForIndex( updates );
+        indexProxyStrategy.incrementUpdateStatisticsForIndex(updates);
     }
 }

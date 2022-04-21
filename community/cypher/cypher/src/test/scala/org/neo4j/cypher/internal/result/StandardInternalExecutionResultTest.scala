@@ -85,10 +85,12 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
     assertMaterializationAndCloseOfInit(READ_WRITE, true, true, TestRuntimeResult(Nil, fieldNames = Array()))
   }
 
-  private def assertMaterializationAndCloseOfInit(queryType: InternalQueryType,
-                                                  shouldMaterialize: Boolean,
-                                                  shouldClose: Boolean,
-                                                  inner: TestRuntimeResult = TestRuntimeResult(List(1))): Unit = {
+  private def assertMaterializationAndCloseOfInit(
+    queryType: InternalQueryType,
+    shouldMaterialize: Boolean,
+    shouldClose: Boolean,
+    inner: TestRuntimeResult = TestRuntimeResult(List(1))
+  ): Unit = {
     // given
     // given
     val result = inner.subscriber
@@ -129,8 +131,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
     assertMaterializationOfMethod(TestRuntimeResult(List(1)), _.accept(mock[ResultVisitor[Exception]]))
   }
 
-  private def assertMaterializationOfMethod(inner: TestRuntimeResult,
-                                            f: Result => Unit): Unit = {
+  private def assertMaterializationOfMethod(inner: TestRuntimeResult, f: Result => Unit): Unit = {
     // given
     val result = inner.subscriber
     val x = standardInternalExecutionResult(inner, READ_ONLY, result)
@@ -144,8 +145,11 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
     result.isMaterialized should be(false)
   }
 
-  private def standardInternalExecutionResult(inner: RuntimeResult, queryType: InternalQueryType,
-                                              subscriber: QuerySubscriber) =
+  private def standardInternalExecutionResult(
+    inner: RuntimeResult,
+    queryType: InternalQueryType,
+    subscriber: QuerySubscriber
+  ) =
     new StandardInternalExecutionResult(
       inner,
       new TaskCloser,
@@ -156,10 +160,11 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       Seq.empty
     )
 
-  case class TestRuntimeResult(values: Seq[Int],
-                               var resultRequested: Boolean = false,
-                               override val fieldNames: Array[String] = Array("x", "y")
-                              ) extends RuntimeResult {
+  case class TestRuntimeResult(
+    values: Seq[Int],
+    var resultRequested: Boolean = false,
+    override val fieldNames: Array[String] = Array("x", "y")
+  ) extends RuntimeResult {
 
     val subscriber = new ResultSubscriber(mock[TransactionalContext](RETURNS_DEEP_STUBS))
     private val iterator = values.iterator
@@ -180,9 +185,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
 
     override def queryProfile(): QueryProfile = QueryProfile.NONE
 
-    override def close(): Unit = {
-
-    }
+    override def close(): Unit = {}
 
     override def request(numberOfRecords: Long): Unit = {
       demand += numberOfRecords
@@ -193,7 +196,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       while (iterator.hasNext && served < demand && !cancelled) {
         subscriber.onRecord()
         val nextValue = intValue(iterator.next())
-        for(i <- 0 until numberOfFields) subscriber.onField(i, nextValue)
+        for (i <- 0 until numberOfFields) subscriber.onField(i, nextValue)
         subscriber.onRecordCompleted()
         served += 1L
       }

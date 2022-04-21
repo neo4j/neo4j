@@ -19,10 +19,11 @@ package org.neo4j.cypher.internal.util
 sealed trait ZeroOneOrMany[+T]
 
 object ZeroOneOrMany {
+
   def apply[T](elts: Seq[T]): ZeroOneOrMany[T] = elts match {
-    case Seq() => Zero
+    case Seq()    => Zero
     case Seq(one) => One(one)
-    case many => Many(many)
+    case many     => Many(many)
   }
 }
 

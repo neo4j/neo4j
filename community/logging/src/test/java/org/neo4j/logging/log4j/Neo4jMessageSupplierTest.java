@@ -19,14 +19,6 @@
  */
 package org.neo4j.logging.log4j;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.io.ByteArrayOutputStream;
-
-import org.neo4j.logging.Level;
-import org.neo4j.logging.Neo4jMessageSupplier;
-
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
@@ -37,42 +29,45 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.logging.log4j.LogConfigTest.DATE_PATTERN;
 
-class Neo4jMessageSupplierTest extends Log4jLogTestBase
-{
-    @ParameterizedTest( name = "{1}" )
-    @MethodSource( "logMethods" )
-    void shouldSupplyMessageWithFormat( LogMethod logMethod, Level level )
-    {
-        logMethod.log( log, () -> Neo4jMessageSupplier.forMessage( "my %s message %d", "long", 1 ) );
+import java.io.ByteArrayOutputStream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.logging.Level;
+import org.neo4j.logging.Neo4jMessageSupplier;
 
-        assertThat( outContent.toString() ).matches( format( DATE_PATTERN + " %-5s \\[className\\] my long message 1%n", level ) );
+class Neo4jMessageSupplierTest extends Log4jLogTestBase {
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("logMethods")
+    void shouldSupplyMessageWithFormat(LogMethod logMethod, Level level) {
+        logMethod.log(log, () -> Neo4jMessageSupplier.forMessage("my %s message %d", "long", 1));
+
+        assertThat(outContent.toString())
+                .matches(format(DATE_PATTERN + " %-5s \\[className\\] my long message 1%n", level));
     }
 
-    @ParameterizedTest( name = "{1}" )
-    @MethodSource( "logMethods" )
-    void shouldOnlyEvaluateArgWhenNeeded( LogMethod logMethod, Level level )
-    {
-        for ( Level configuredLevel : Level.values() )
-        {
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("logMethods")
+    void shouldOnlyEvaluateArgWhenNeeded(LogMethod logMethod, Level level) {
+        for (Level configuredLevel : Level.values()) {
             ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-            try ( Neo4jLoggerContext context = LogConfig.createBuilder( outContent, configuredLevel ).build() )
-            {
-                Log4jLog log = new Log4jLog( context.getLogger( "className" ) );
+            try (Neo4jLoggerContext context =
+                    LogConfig.createBuilder(outContent, configuredLevel).build()) {
+                Log4jLog log = new Log4jLog(context.getLogger("className"));
 
-                Neo4jMessageSupplier supplier = mock( Neo4jMessageSupplier.class );
-                doReturn( Neo4jMessageSupplier.forMessage( "my arg %s", "foo" ) ).when( supplier ).get();
-                logMethod.log( log, supplier );
+                Neo4jMessageSupplier supplier = mock(Neo4jMessageSupplier.class);
+                doReturn(Neo4jMessageSupplier.forMessage("my arg %s", "foo"))
+                        .when(supplier)
+                        .get();
+                logMethod.log(log, supplier);
 
-                if ( level.compareTo( configuredLevel ) < 0 )
-                {
-                    verifyNoInteractions( supplier );
-                    assertThat( outContent.toString() ).isEmpty();
-                }
-                else
-                {
-                    verify( supplier, times( 1 ) ).get();
-                    verifyNoMoreInteractions( supplier );
-                    assertThat( outContent.toString() ).matches( format( DATE_PATTERN + " %-5s \\[className\\] my arg foo%n", level ) );
+                if (level.compareTo(configuredLevel) < 0) {
+                    verifyNoInteractions(supplier);
+                    assertThat(outContent.toString()).isEmpty();
+                } else {
+                    verify(supplier, times(1)).get();
+                    verifyNoMoreInteractions(supplier);
+                    assertThat(outContent.toString())
+                            .matches(format(DATE_PATTERN + " %-5s \\[className\\] my arg foo%n", level));
                 }
             }
         }

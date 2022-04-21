@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class ParallelNodeLabelScanTransactionStateTest extends ParallelNodeLabelScanTransactionStateTestBase<WriteTestSupport>
-{
+public class ParallelNodeLabelScanTransactionStateTest
+        extends ParallelNodeLabelScanTransactionStateTestBase<WriteTestSupport> {
     @Override
-    public WriteTestSupport newTestSupport()
-    {
+    public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();
     }
 }

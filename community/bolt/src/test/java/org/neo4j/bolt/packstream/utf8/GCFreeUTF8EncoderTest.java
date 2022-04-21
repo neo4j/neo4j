@@ -19,24 +19,22 @@
  */
 package org.neo4j.bolt.packstream.utf8;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-class GCFreeUTF8EncoderTest
-{
+import org.junit.jupiter.api.Test;
+
+class GCFreeUTF8EncoderTest {
     @Test
-    void shouldThrowErrorWhenStringIsUnpackable() throws Throwable
-    {
+    void shouldThrowErrorWhenStringIsUnpackable() throws Throwable {
         // Given
         String invalidSurrogatePair = "\u0020\ude00";
 
         var encoder = UTF8Encoder.EncoderLoader.ENCODER_LOADER.fastestAvailableEncoder();
-        assumeTrue( encoder instanceof GCFreeUTF8Encoder );
+        assumeTrue(encoder instanceof GCFreeUTF8Encoder);
 
-        var error = assertThrows( AssertionError.class, () -> encoder.encode( invalidSurrogatePair ) );
-        assertThat( error.getMessage() ).contains( "Failure when converting to UTF-8." );
+        var error = assertThrows(AssertionError.class, () -> encoder.encode(invalidSurrogatePair));
+        assertThat(error.getMessage()).contains("Failure when converting to UTF-8.");
     }
 }

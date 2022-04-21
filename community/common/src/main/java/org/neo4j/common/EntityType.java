@@ -26,8 +26,7 @@ package org.neo4j.common;
  * <p>
  * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
-public enum EntityType
-{
+public enum EntityType {
     NODE,
     RELATIONSHIP
 }

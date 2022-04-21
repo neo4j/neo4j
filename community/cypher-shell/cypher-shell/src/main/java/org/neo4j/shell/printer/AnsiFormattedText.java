@@ -19,19 +19,17 @@
  */
 package org.neo4j.shell.printer;
 
-import org.fusesource.jansi.Ansi;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.fusesource.jansi.Ansi;
 
 /**
  * A piece of text which can be rendered with Ansi format codes.
  */
-public class AnsiFormattedText
-{
+public class AnsiFormattedText {
 
     private static final String RED = "RED";
     private static final String YELLOW = "YELLOW";
@@ -48,18 +46,16 @@ public class AnsiFormattedText
      * Return a new map which is a copy of the first map, with the keys/values from the second if they do not override anything already defined in the first
      * map.
      */
-    private static <K, V> Map<K, V> mergeMaps( Map<K, V> primary, Map<K, V> secondary )
-    {
-        Map<K,V> result = new HashMap<>( primary );
-        secondary.forEach( result::putIfAbsent );
+    private static <K, V> Map<K, V> mergeMaps(Map<K, V> primary, Map<K, V> secondary) {
+        Map<K, V> result = new HashMap<>(primary);
+        secondary.forEach(result::putIfAbsent);
         return result;
     }
 
     /**
      * @return a new empty instance
      */
-    public static AnsiFormattedText s()
-    {
+    public static AnsiFormattedText s() {
         return new AnsiFormattedText();
     }
 
@@ -67,12 +63,10 @@ public class AnsiFormattedText
      * @param string to start with, may be null in which case it is ignored
      * @return a new instance containing the unformatted text in string, or empty if it was null
      */
-    public static AnsiFormattedText from( String string )
-    {
+    public static AnsiFormattedText from(String string) {
         AnsiFormattedText st = new AnsiFormattedText();
-        if ( string != null )
-        {
-            st.append( string );
+        if (string != null) {
+            st.append(string);
         }
         return st;
     }
@@ -80,36 +74,28 @@ public class AnsiFormattedText
     /**
      * @return the text as a string including possible formatting, ready for ANSI formatting
      */
-    public String formattedString()
-    {
+    public String formattedString() {
         StringBuilder sb = new StringBuilder();
-        for ( AnsiFormattedString s : pieces )
-        {
+        for (AnsiFormattedString s : pieces) {
             List<String> codes = new ArrayList<>();
 
             // color
-            if ( s.color != null && !DEFAULT_COLOR.equals( s.color ) )
-            {
-                codes.add( s.color );
+            if (s.color != null && !DEFAULT_COLOR.equals(s.color)) {
+                codes.add(s.color);
             }
             // attributes
-            if ( s.attributes.getOrDefault( BOLD, false ) )
-            {
-                codes.add( BOLD );
+            if (s.attributes.getOrDefault(BOLD, false)) {
+                codes.add(BOLD);
             }
             // Only do formatting if we actually have some formatting to apply
-            if ( !codes.isEmpty() )
-            {
-                sb.append( "@|" )
-                  .append( String.join( ",", codes ) )
-                  .append( " " );
+            if (!codes.isEmpty()) {
+                sb.append("@|").append(String.join(",", codes)).append(" ");
             }
             // string
-            sb.append( s.string );
+            sb.append(s.string);
             // Only reset formatting if we actually did some formatting
-            if ( !codes.isEmpty() )
-            {
-                sb.append( "|@" );
+            if (!codes.isEmpty()) {
+                sb.append("|@");
             }
         }
         return sb.toString();
@@ -118,18 +104,16 @@ public class AnsiFormattedText
     /**
      * @return the text as a string rendered with ANSI escape codes
      */
-    public String renderedString()
-    {
-        return Ansi.ansi().render( formattedString() ).toString();
+    public String renderedString() {
+        return Ansi.ansi().render(formattedString()).toString();
     }
 
     /**
      * @return the text as a plain string without any formatting
      */
-    public String plainString()
-    {
+    public String plainString() {
         StringBuilder sb = new StringBuilder();
-        pieces.forEach( sb::append );
+        pieces.forEach(sb::append);
         return sb.toString();
     }
 
@@ -139,10 +123,9 @@ public class AnsiFormattedText
      * @param existing text to append using this instance's formatting
      * @return this
      */
-    public AnsiFormattedText append( AnsiFormattedText existing )
-    {
-        existing.pieces.forEach( s -> pieces.add( new AnsiFormattedString( color != null ? color : s.color,
-                                                                           mergeMaps( attributes, s.attributes ), s.string ) ) );
+    public AnsiFormattedText append(AnsiFormattedText existing) {
+        existing.pieces.forEach(s -> pieces.add(new AnsiFormattedString(
+                color != null ? color : s.color, mergeMaps(attributes, s.attributes), s.string)));
         return this;
     }
 
@@ -152,9 +135,8 @@ public class AnsiFormattedText
      * @param s string to append using this instance's formatting
      * @return this
      */
-    public AnsiFormattedText append( String s )
-    {
-        pieces.add( new AnsiFormattedString( color, attributes, s ) );
+    public AnsiFormattedText append(String s) {
+        pieces.add(new AnsiFormattedString(color, attributes, s));
         return this;
     }
 
@@ -163,9 +145,8 @@ public class AnsiFormattedText
      *
      * @return this
      */
-    public AnsiFormattedText appendNewLine()
-    {
-        pieces.add( new AnsiFormattedString( color, attributes, System.lineSeparator() ) );
+    public AnsiFormattedText appendNewLine() {
+        pieces.add(new AnsiFormattedString(color, attributes, System.lineSeparator()));
         return this;
     }
 
@@ -174,15 +155,13 @@ public class AnsiFormattedText
      *
      * @return this
      */
-    public AnsiFormattedText bold()
-    {
-        attributes.put( BOLD, true );
+    public AnsiFormattedText bold() {
+        attributes.put(BOLD, true);
         return this;
     }
 
-    public AnsiFormattedText bold( String bold )
-    {
-        return bold().append( bold ).boldOff();
+    public AnsiFormattedText bold(String bold) {
+        return bold().append(bold).boldOff();
     }
 
     /**
@@ -190,9 +169,8 @@ public class AnsiFormattedText
      *
      * @return this
      */
-    public AnsiFormattedText boldOff()
-    {
-        attributes.put( BOLD, false );
+    public AnsiFormattedText boldOff() {
+        attributes.put(BOLD, false);
         return this;
     }
 
@@ -201,21 +179,18 @@ public class AnsiFormattedText
      *
      * @return this
      */
-    public AnsiFormattedText colorRed()
-    {
+    public AnsiFormattedText colorRed() {
         color = RED;
         return this;
     }
 
-    public AnsiFormattedText colorOrange()
-    {
+    public AnsiFormattedText colorOrange() {
         color = YELLOW;
         return this;
     }
 
-    public AnsiFormattedText orange( String s )
-    {
-        pieces.add( new AnsiFormattedString( YELLOW, attributes, s ) );
+    public AnsiFormattedText orange(String s) {
+        pieces.add(new AnsiFormattedString(YELLOW, attributes, s));
         return this;
     }
 
@@ -224,38 +199,33 @@ public class AnsiFormattedText
      *
      * @return this
      */
-    public AnsiFormattedText colorDefault()
-    {
+    public AnsiFormattedText colorDefault() {
         color = DEFAULT_COLOR;
         return this;
     }
 
-    public int textLength()
-    {
-        return pieces.stream().mapToInt( p -> p.string.length() ).sum();
+    public int textLength() {
+        return pieces.stream().mapToInt(p -> p.string.length()).sum();
     }
 
     /**
      * A formatted string
      */
-    private static class AnsiFormattedString
-    {
+    private static class AnsiFormattedString {
         // can be defined, or undefined. null means undefined.
         final String color;
         // same here, no mapping means undefined
         final Map<String, Boolean> attributes = new HashMap<>();
         final String string;
 
-        AnsiFormattedString( String color, Map<String, Boolean> attributes, String s )
-        {
+        AnsiFormattedString(String color, Map<String, Boolean> attributes, String s) {
             this.color = color;
-            this.attributes.putAll( attributes );
+            this.attributes.putAll(attributes);
             this.string = s;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return string;
         }
     }

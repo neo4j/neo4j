@@ -34,7 +34,7 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  protected  val sizeHint: Int
+  protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should project endpoints - directed - start in scope") {
@@ -217,12 +217,10 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       Array(Array(a, b), Array(b, a))
     }).flatten
 
-
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
-
-    test("should project endpoints with hash join under apply - directed - nothing in scope - using input") {
+  test("should project endpoints with hash join under apply - directed - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
@@ -323,7 +321,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .projectEndpoints("(x)-[r]->(y)", startInScope = true, endInScope = true)   // chained middle
+      .projectEndpoints("(x)-[r]->(y)", startInScope = true, endInScope = true) // chained middle
       .projectEndpoints("(x)-[r]->(y)", startInScope = false, endInScope = false) // middle
       .input(relationships = Seq("r"), nullable = false)
       .build()
@@ -417,7 +415,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] =
+        node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
       twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
         case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
       }
@@ -443,10 +442,11 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    //then
+    // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] =
+        node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
       twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
         case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
       }
@@ -475,7 +475,9 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r =>
+        Array(node, r.getOtherNode(node))
+      )
     } yield oneStep).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -501,7 +503,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] =
+        node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
       twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
         case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
       }
@@ -530,7 +533,9 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r =>
+        Array(node, r.getOtherNode(node))
+      )
     } yield oneStep).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -556,7 +561,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] =
+        node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
       twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
         case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
       }
@@ -585,7 +591,9 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r =>
+        Array(node, r.getOtherNode(node))
+      )
     } yield oneStep).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -611,7 +619,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] =
+        node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
       twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
         case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
       }
@@ -640,7 +649,9 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r =>
+        Array(node, r.getOtherNode(node))
+      )
     } yield oneStep).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -666,7 +677,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] =
+        node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
       twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
         case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
       }
@@ -695,7 +707,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(BOTH, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] =
+        node.getRelationships(BOTH, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
     } yield oneStep).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -721,9 +734,11 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(BOTH, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] =
+        node.getRelationships(BOTH, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
       twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
-        case Array(_, b) => b.getRelationships(BOTH, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(b)))
+        case Array(_, b) =>
+          b.getRelationships(BOTH, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(b)))
       }
     } yield oneStep ++ twoSteps).flatten
 
@@ -750,7 +765,9 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (for {
       node <- aNodes ++ bNodes
-      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r =>
+        Array(node, r.getOtherNode(node))
+      )
     } yield oneStep).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)

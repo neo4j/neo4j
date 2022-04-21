@@ -19,25 +19,29 @@
  */
 package org.neo4j.index;
 
-import org.junit.jupiter.api.Test;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 import java.util.concurrent.locks.LockSupport;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
@@ -47,16 +51,8 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-
 @PageCacheExtension
-class NonUniqueIndexTest
-{
+class NonUniqueIndexTest {
     private static final String LABEL = "SomeLabel";
     private static final String KEY = "key";
     private static final String VALUE = "value";
@@ -64,94 +60,86 @@ class NonUniqueIndexTest
 
     @Inject
     private TestDirectory testDirectory;
+
     private DatabaseManagementService managementService;
 
     @Test
-    void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception
-    {
+    void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception {
         // Given
         GraphDatabaseService db = newEmbeddedGraphDatabaseWithSlowJobScheduler();
-        try
-        {
+        try {
             // When
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().indexFor( label( LABEL ) ).on( KEY ).withName( INDEX_NAME ).create();
+            try (Transaction tx = db.beginTx()) {
+                tx.schema().indexFor(label(LABEL)).on(KEY).withName(INDEX_NAME).create();
                 tx.commit();
             }
             Node node;
-            try ( Transaction tx = db.beginTx() )
-            {
-                node = tx.createNode( label( LABEL ) );
-                node.setProperty( KEY, VALUE );
+            try (Transaction tx = db.beginTx()) {
+                node = tx.createNode(label(LABEL));
+                node.setProperty(KEY, VALUE);
                 tx.commit();
             }
 
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().awaitIndexesOnline( 2, MINUTES );
+            try (Transaction tx = db.beginTx()) {
+                tx.schema().awaitIndexesOnline(2, MINUTES);
                 tx.commit();
             }
 
             // Then
-            try ( Transaction tx = db.beginTx() )
-            {
+            try (Transaction tx = db.beginTx()) {
                 KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-                IndexDescriptor index = ktx.schemaRead().indexGetForName( INDEX_NAME );
-                IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-                try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
-                {
-                    ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), PropertyIndexQuery.exact( 1, VALUE ) );
-                    assertTrue( cursor.next() );
-                    assertEquals( node.getId(), cursor.nodeReference() );
-                    assertFalse( cursor.next() );
+                IndexDescriptor index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+                IndexReadSession indexSession = ktx.dataRead().indexReadSession(index);
+                try (NodeValueIndexCursor cursor =
+                        ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
+                    ktx.dataRead()
+                            .nodeIndexSeek(
+                                    ktx.queryContext(),
+                                    indexSession,
+                                    cursor,
+                                    unconstrained(),
+                                    PropertyIndexQuery.exact(1, VALUE));
+                    assertTrue(cursor.next());
+                    assertEquals(node.getId(), cursor.nodeReference());
+                    assertFalse(cursor.next());
                 }
                 tx.commit();
             }
-        }
-        finally
-        {
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler()
-    {
+    private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler() {
         // Inject JobScheduler
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( createJobScheduler() );
+        dependencies.satisfyDependencies(createJobScheduler());
 
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setExternalDependencies( dependencies )
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setExternalDependencies(dependencies)
                 .build();
 
-        return managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        return managementService.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
     }
 
-    private static CentralJobScheduler createJobScheduler()
-    {
+    private static CentralJobScheduler createJobScheduler() {
         CentralJobScheduler scheduler = newSlowJobScheduler();
         scheduler.init();
         return scheduler;
     }
 
-    private static CentralJobScheduler newSlowJobScheduler()
-    {
-        return new CentralJobScheduler( Clocks.nanoClock(), NullLogProvider.getInstance() )
-        {
+    private static CentralJobScheduler newSlowJobScheduler() {
+        return new CentralJobScheduler(Clocks.nanoClock(), NullLogProvider.getInstance()) {
             @Override
-            public JobHandle<?> schedule( Group group, Runnable job )
-            {
-                return super.schedule( group, JobMonitoringParams.NOT_MONITORED, slowRunnable( job ) );
+            public JobHandle<?> schedule(Group group, Runnable job) {
+                return super.schedule(group, JobMonitoringParams.NOT_MONITORED, slowRunnable(job));
             }
         };
     }
 
-    private static Runnable slowRunnable( final Runnable target )
-    {
-        return () ->
-        {
-            LockSupport.parkNanos( 100_000_000L );
+    private static Runnable slowRunnable(final Runnable target) {
+        return () -> {
+            LockSupport.parkNanos(100_000_000L);
             target.run();
         };
     }

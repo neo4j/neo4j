@@ -19,27 +19,20 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
-
 import static java.lang.System.nanoTime;
 
-public final class Conditions
-{
-    private Conditions()
-    {
-    }
+import java.util.concurrent.TimeUnit;
+import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 
-    public static Condition numberOfEvictions( final PageCacheCounters monitor,
-                                               final long desiredNumberOfEvictions )
-    {
+public final class Conditions {
+    private Conditions() {}
+
+    public static Condition numberOfEvictions(final PageCacheCounters monitor, final long desiredNumberOfEvictions) {
         return () -> monitor.evictions() > desiredNumberOfEvictions;
     }
 
-    public static Condition timePeriod( final int duration, final TimeUnit timeUnit )
-    {
-        final long endTimeInNanos = nanoTime() + timeUnit.toNanos( duration );
+    public static Condition timePeriod(final int duration, final TimeUnit timeUnit) {
+        final long endTimeInNanos = nanoTime() + timeUnit.toNanos(duration);
 
         return () -> nanoTime() > endTimeInNanos;
     }

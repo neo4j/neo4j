@@ -31,10 +31,11 @@ import org.neo4j.graphdb.Direction
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should join after expand on empty lhs") {
     // given
@@ -164,10 +165,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(node, otherNode)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(node, otherNode)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
@@ -190,10 +192,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(otherNode, node)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(otherNode, node)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
@@ -217,10 +220,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(otherNode, node)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(otherNode, node)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
@@ -235,81 +239,81 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // when
     /*
       pipeline 0 => input =>       RegularBufferVariant
-                                    * id = BufferId(1)
-                                    * reducers = ASM(0)
-                                    * workCanceller = ASM(0)
+     * id = BufferId(1)
+     * reducers = ASM(0)
+     * workCanceller = ASM(0)
                     output =>      MorselArgumentStateBufferOutput
-                                    * id = BufferId(3)
-                                    * nextPipelineHeadPlanId = 7
+     * id = BufferId(3)
+     * nextPipelineHeadPlanId = 7
                     WorkLimiter => ASM(0)
       pipeline 1 => input =>       RegularBufferVariant
-                                    * id = BufferId(2)
-                                    * reducers = ASM(1), ASM(4)
-                                    * workCanceller = ASM(1), ASM(4)
+     * id = BufferId(2)
+     * reducers = ASM(1), ASM(4)
+     * workCanceller = ASM(1), ASM(4)
                     output =>      MorselArgumentStateBufferOutput
-                                    * id = BufferId(4)
-                                    * nextPipelineHeadPlanId = 7
+     * id = BufferId(4)
+     * nextPipelineHeadPlanId = 7
                     WorkLimiter => ASM(1)
       pipeline 2 => lhs         => pipeline 0
                     rhs         => pipeline 1
                     input       => LHSAccumulatingRHSStreamingBufferVariant(InnerVariant)
-                                    * id = BufferId(5)
-                                    * reducers = ASM(4)
-                                    * workCanceller = ASM(4)
-                                    * lhsSink = BufferId(3) / ASM(0)
-                                      * reducers = ASM(4)
-                                      * workCanceller = ASM(4)
-                                    * rhsSink = BufferId(4) / ASM(1)
-                                      * reducers = ASM(4)
-                                      * workCanceller = ASM(4)
+     * id = BufferId(5)
+     * reducers = ASM(4)
+     * workCanceller = ASM(4)
+     * lhsSink = BufferId(3) / ASM(0)
+     * reducers = ASM(4)
+     * workCanceller = ASM(4)
+     * rhsSink = BufferId(4) / ASM(1)
+     * reducers = ASM(4)
+     * workCanceller = ASM(4)
                     output      => MorselArgumentStateBufferOutput
-                                    * id = BufferId(11)
-                                    * nextPipelineHeadPlanId = 1
+     * id = BufferId(11)
+     * nextPipelineHeadPlanId = 1
                     WorkLimiter => ASM(4)
       pipeline 3 => input       => RegularBufferVariant
-                                    * id = BufferId(6)
-                                    * reducers = ASM(2)
-                                    * workCanceller = ASM(2)
+     * id = BufferId(6)
+     * reducers = ASM(2)
+     * workCanceller = ASM(2)
                     output      => MorselArgumentStateBufferOutput
-                                    * id = BufferId(8)
-                                    * nextPipelineHeadPlanId = 2
+     * id = BufferId(8)
+     * nextPipelineHeadPlanId = 2
                     WorkLimiter => ASM(2)
       pipeline 4 => input       => RegularBufferVariant
-                                    * id = BufferId(7)
-                                    * reducers = ASM(3), ASM(5)
-                                    * workCanceller = ASM(3), ASM(5)
+     * id = BufferId(7)
+     * reducers = ASM(3), ASM(5)
+     * workCanceller = ASM(3), ASM(5)
                     output      => MorselArgumentStateBufferOutput
-                                    * id = BufferId(9)
-                                    * nextPipelineHeadPlanId = 2
+     * id = BufferId(9)
+     * nextPipelineHeadPlanId = 2
                     WorkLimiter => ASM(3)
       pipeline 5 => lhs         => pipeline 3
                     rhs         => pipeline 4
                     input       => LHSAccumulatingRHSStreamingBufferVariant(InnerVariant)
-                                    * id = BufferId(10)
-                                    * reducers = ASM(5)
-                                    * workCanceller = ASM(5)
-                                    * lhsSink = BufferId(8) / ASM(2)
-                                      * reducers = ASM(5)
-                                      * workCanceller = ASM(5)
-                                    * rhsSink = BufferId(9) / ASM(3)
-                                      * reducers = ASM(5)
-                                      * workCanceller = ASM(5)
+     * id = BufferId(10)
+     * reducers = ASM(5)
+     * workCanceller = ASM(5)
+     * lhsSink = BufferId(8) / ASM(2)
+     * reducers = ASM(5)
+     * workCanceller = ASM(5)
+     * rhsSink = BufferId(9) / ASM(3)
+     * reducers = ASM(5)
+     * workCanceller = ASM(5)
                     output      => MorselArgumentStateBufferOutput
-                                    * id = BufferId(12)
-                                    * nextPipelineHeadPlanId = 1
+     * id = BufferId(12)
+     * nextPipelineHeadPlanId = 1
                     WorkLimiter => ASM(5)
       pipeline 6 => lhs         => pipeline 2
                     rhs         => pipeline 5
                     input       => LHSAccumulatingRHSStreamingBufferVariant(InnerVariant)
-                                    * id = BufferId(13)
-                                    * reducers =
-                                    * workCanceller =
-                                    * lhsSink = BufferId(11) / ASM(4)
-                                      * reducers =
-                                      * workCanceller =
-                                    * rhsSink = BufferId(12) / ASM(5)
-                                      * reducers =
-                                      * workCanceller =
+     * id = BufferId(13)
+     * reducers =
+     * workCanceller =
+     * lhsSink = BufferId(11) / ASM(4)
+     * reducers =
+     * workCanceller =
+     * rhsSink = BufferId(12) / ASM(5)
+     * reducers =
+     * workCanceller =
                     output      => ProduceResultOutput
                     WorkLimiter =>
      */
@@ -323,7 +327,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .|.allNodeScan("a") // pipeline 3
       .nodeHashJoin("a") // pipeline 2
       .|.filter("a:B", "a.prop % 10 = 0") // pipeline 1
-      .|.allNodeScan("a")  // pipeline 1
+      .|.allNodeScan("a") // pipeline 1
       .filter("a:A", "a.prop < 100") // pipeline 0
       .allNodeScan("a") // pipeline 0
       .build()
@@ -331,9 +335,10 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expectedResultRows = for {node <- withAllLabels
-                                  i = node.getProperty("prop").asInstanceOf[Int]
-                                  if i % 20 == 0 && i <= 80
+    val expectedResultRows = for {
+      node <- withAllLabels
+      i = node.getProperty("prop").asInstanceOf[Int]
+      if i % 20 == 0 && i <= 80
     } yield Array(node)
 
     runtimeResult should beColumns("a").withRows(expectedResultRows)
@@ -360,12 +365,13 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {x <- nodes if x != null
-                                  rel1 <- x.getRelationships(Direction.OUTGOING).asScala
-                                  rel2 <- x.getRelationships(Direction.INCOMING).asScala
-                                  y = rel1.getOtherNode(x)
-                                  z = rel2.getOtherNode(x)
-                                  } yield Array(x, y, z)
+    val expectedResultRows = for {
+      x <- nodes if x != null
+      rel1 <- x.getRelationships(Direction.OUTGOING).asScala
+      rel2 <- x.getRelationships(Direction.INCOMING).asScala
+      y = rel1.getOtherNode(x)
+      z = rel2.getOtherNode(x)
+    } yield Array(x, y, z)
 
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResultRows)
   }
@@ -392,12 +398,13 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val unsortedExpectedResult = for {x <- nodes if x != null
-                                      rel1 <- x.getRelationships(Direction.OUTGOING).asScala
-                                      rel2 <- x.getRelationships(Direction.INCOMING).asScala
-                                      y = rel1.getOtherNode(x)
-                                      z = rel2.getOtherNode(x)
-                                      } yield Array(x, y, z)
+    val unsortedExpectedResult = for {
+      x <- nodes if x != null
+      rel1 <- x.getRelationships(Direction.OUTGOING).asScala
+      rel2 <- x.getRelationships(Direction.INCOMING).asScala
+      y = rel1.getOtherNode(x)
+      z = rel2.getOtherNode(x)
+    } yield Array(x, y, z)
     val expectedResult = unsortedExpectedResult.sortBy(arr => (-arr(0).getId, -arr(1).getId, -arr(2).getId))
 
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResult)
@@ -425,10 +432,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val allRows = for {node <- nodes if node != null
-                       rel <- node.getRelationships().asScala
-                       otherNode = rel.getOtherNode(node)
-                       } yield Array(node, otherNode)
+    val allRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(node, otherNode)
     val expectedResultRows = allRows.sortBy(arr => (-arr(0).getId, arr(1).getId)).take(limitCount)
 
     runtimeResult should beColumns("x", "y").withRows(inOrder(expectedResultRows))
@@ -455,10 +463,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val allRows = for {node <- nodes if node != null
-                       rel <- node.getRelationships().asScala
-                       otherNode = rel.getOtherNode(node)
-                       } yield Array(node, otherNode)
+    val allRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(node, otherNode)
     val expectedResultRows = allRows.sortBy(arr => (-arr(0).getId, arr(1).getId)).take(limitCount)
 
     runtimeResult should beColumns("x", "y").withRows(inOrder(expectedResultRows))
@@ -485,10 +494,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes.filter(_ != null).sortBy(_.getId).take(limitCount)
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(node, otherNode)
+    val expectedResultRows = for {
+      node <- nodes.filter(_ != null).sortBy(_.getId).take(limitCount)
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(node, otherNode)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
@@ -522,7 +532,8 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // We cannot have a nullProbability in this test. Otherwise we would not know if null-rows survive through the limit or not,
     // and that influences the number of result rows.
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
-    val lhsRows = inputColumns(100000, 3, i => nodes(i % nodes.size)).stream() // setting it high so the last assertion is not flaky
+    val lhsRows =
+      inputColumns(100000, 3, i => nodes(i % nodes.size)).stream() // setting it high so the last assertion is not flaky
     val limitCount = 10 // setting it low so the last assertion is not flaky
 
     // when
@@ -565,16 +576,18 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
 
     // then
     val rhsRows = {
-      for {y <- unfilteredNodes
-           rel <- y.getRelationships(Direction.OUTGOING).asScala
-           rhsX = rel.getOtherNode(y)
-           } yield (rhsX, y)
-      }.sortBy {
+      for {
+        y <- unfilteredNodes
+        rel <- y.getRelationships(Direction.OUTGOING).asScala
+        rhsX = rel.getOtherNode(y)
+      } yield (rhsX, y)
+    }.sortBy {
       case (rhsX, y) => (-rhsX.getId, -y.getId)
     }.take(limitCount)
-    val expectedResultRows = for {(rhsX, y) <- rhsRows
-                                  lhsX <- nodes.filter(_ == rhsX)
-                                  } yield Array(lhsX, y)
+    val expectedResultRows = for {
+      (rhsX, y) <- rhsRows
+      lhsX <- nodes.filter(_ == rhsX)
+    } yield Array(lhsX, y)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
@@ -653,10 +666,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expectedResultRows = for {n <- nodes
-                                  i = n.getProperty("prop").asInstanceOf[Int]
-                                  if i % 10 == 0 && i < 100
-                                  } yield Array(i)
+    val expectedResultRows = for {
+      n <- nodes
+      i = n.getProperty("prop").asInstanceOf[Int]
+      if i % 10 == 0 && i < 100
+    } yield Array(i)
 
     runtimeResult should beColumns("prop").withRows(expectedResultRows)
   }
@@ -680,10 +694,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(node, otherNode, otherNode)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(node, otherNode, otherNode)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
@@ -728,7 +743,6 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .|.unwind("[yLong] as y")
       .|.allNodeScan("yLong")
       .allNodeScan("y")
-
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)
@@ -757,10 +771,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(node, node, otherNode)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(node, node, otherNode)
     runtimeResult should beColumns("x", "x2", "y").withRows(expectedResultRows)
   }
 
@@ -783,10 +798,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(node, otherNode, otherNode)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(node, otherNode, otherNode)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
@@ -809,10 +825,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(node, node, otherNode)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(node, node, otherNode)
     runtimeResult should beColumns("x", "x2", "y").withRows(expectedResultRows)
   }
 
@@ -839,10 +856,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(otherNode, node)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(otherNode, node)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
@@ -873,10 +891,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(otherNode, node)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(otherNode, node)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }

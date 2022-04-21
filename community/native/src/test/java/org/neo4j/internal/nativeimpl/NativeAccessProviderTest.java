@@ -19,32 +19,29 @@
  */
 package org.neo4j.internal.nativeimpl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class NativeAccessProviderTest
-{
+class NativeAccessProviderTest {
     @Test
-    @EnabledOnOs( OS.LINUX )
-    void linuxNativeAccessSelectedOnLinux()
-    {
+    @EnabledOnOs(OS.LINUX)
+    void linuxNativeAccessSelectedOnLinux() {
         NativeAccess nativeAccess = NativeAccessProvider.getNativeAccess();
-        assertThat( nativeAccess ).isInstanceOf( LinuxNativeAccess.class );
-        assertTrue( nativeAccess.isAvailable() );
+        assertThat(nativeAccess).isInstanceOf(LinuxNativeAccess.class);
+        assertTrue(nativeAccess.isAvailable());
     }
 
     @Test
-    @DisabledOnOs( OS.LINUX )
-    void absentNativeAccessSelectedOnNonLinux()
-    {
+    @DisabledOnOs(OS.LINUX)
+    void absentNativeAccessSelectedOnNonLinux() {
         NativeAccess nativeAccess = NativeAccessProvider.getNativeAccess();
-        assertThat( nativeAccess ).isInstanceOf( AbsentNativeAccess.class );
-        assertFalse( nativeAccess.isAvailable() );
+        assertThat(nativeAccess).isInstanceOf(AbsentNativeAccess.class);
+        assertFalse(nativeAccess.isAvailable());
     }
 }

@@ -26,9 +26,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * For each input row, delete the path specified by 'expression' from the graph. All nodes in the path and all their
  * relationships are deleted.
  */
-case class DetachDeletePath(override val source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+case class DetachDeletePath(override val source: LogicalPlan, expression: Expression)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
+    copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols
 }

@@ -21,27 +21,22 @@ package org.neo4j.graphdb.traversal;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
 import org.neo4j.graphdb.Path;
 
-class GloballyUnique extends AbstractUniquenessFilter
-{
-    private final MutableLongSet visited = new LongHashSet( 1 << 12 );
+class GloballyUnique extends AbstractUniquenessFilter {
+    private final MutableLongSet visited = new LongHashSet(1 << 12);
 
-    GloballyUnique( PrimitiveTypeFetcher type )
-    {
-        super( type );
+    GloballyUnique(PrimitiveTypeFetcher type) {
+        super(type);
     }
 
     @Override
-    public boolean check( TraversalBranch branch )
-    {
-        return visited.add( type.getId( branch ) );
+    public boolean check(TraversalBranch branch) {
+        return visited.add(type.getId(branch));
     }
 
     @Override
-    public boolean checkFull( Path path )
-    {
+    public boolean checkFull(Path path) {
         // Since this is for bidirectional uniqueness checks and
         // uniqueness is enforced through the shared "visited" set
         // this uniqueness contract is fulfilled automatically.

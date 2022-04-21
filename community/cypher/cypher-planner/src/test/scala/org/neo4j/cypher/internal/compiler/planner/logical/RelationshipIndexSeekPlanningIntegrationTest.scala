@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
 class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
-                                                   with LogicalPlanningIntegrationTestSupport
-                                                   with AstConstructionTestSupport {
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
@@ -41,15 +41,17 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       .setRelationshipCardinality("()-[:REL2]-()", 50)
       .addRelationshipIndex("REL", Seq("prop"), 0.01, 0.001)
 
-  for ((pred, indexStr) <- Seq(
-    "r.prop = 123"       -> "prop = 123",
-    "r.prop > 123"       -> "prop > 123",
-    "r.prop < 123"       -> "prop < 123",
-    "123 < r.prop"       -> "prop > 123",
-    "10 <= r.prop < 123" -> "10 <= prop < 123",
-    "123 >= r.prop > 10" -> "10 < prop <= 123",
-    "r.prop IN [1, 2]"   -> "prop = 1 OR 2",
-  )) {
+  for (
+    (pred, indexStr) <- Seq(
+      "r.prop = 123" -> "prop = 123",
+      "r.prop > 123" -> "prop > 123",
+      "r.prop < 123" -> "prop < 123",
+      "123 < r.prop" -> "prop > 123",
+      "10 <= r.prop < 123" -> "10 <= prop < 123",
+      "123 >= r.prop > 10" -> "10 < prop <= 123",
+      "r.prop IN [1, 2]" -> "prop = 1 OR 2"
+    )
+  ) {
 
     test(s"should plan undirected relationship index seek for $pred") {
       val planner = plannerBuilder().build()
@@ -89,21 +91,25 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
       planner.plan(
         s"""
-          |MATCH (n)
-          |CALL {
-          |  WITH n
-          |  MATCH (a)-[r:REL]-(b)
-          |  WHERE $pred AND b.prop = n.prop
-          |  RETURN r
-          |}
-          |RETURN n, r
-          |""".stripMargin
+           |MATCH (n)
+           |CALL {
+           |  WITH n
+           |  MATCH (a)-[r:REL]-(b)
+           |  WHERE $pred AND b.prop = n.prop
+           |  RETURN r
+           |}
+           |RETURN n, r
+           |""".stripMargin
       ) should equal(
         planner.planBuilder()
           .produceResults("n", "r")
           .filter("b.prop = n.prop")
           .apply(fromSubquery = true)
-          .|.relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(b)", argumentIds = Set("n"), indexType = IndexType.RANGE)
+          .|.relationshipIndexOperator(
+            s"(a)-[r:REL($indexStr)]-(b)",
+            argumentIds = Set("n"),
+            indexType = IndexType.RANGE
+          )
           .allNodeScan("n")
           .build()
       )
@@ -126,32 +132,42 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
     test(s"should plan relationship index seek with filter for already bound start node for $pred") {
       val planner = plannerBuilder().build()
-        planner.plan(
-          s"""MATCH (a) WITH a SKIP 0
-             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
-          planner.planBuilder()
-            .produceResults("r")
-            // the filter got pushed up through the apply
-            .filter("a = anon_1")
-            .apply()
-            .|.relationshipIndexOperator(s"(anon_1)-[r:REL($indexStr)]-(b)", argumentIds = Set("a"), indexType = IndexType.RANGE)
-            .skip(0)
-            .allNodeScan("a")
-            .build()
-        )
+      planner.plan(
+        s"""MATCH (a) WITH a SKIP 0
+           |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin
+      ) should equal(
+        planner.planBuilder()
+          .produceResults("r")
+          // the filter got pushed up through the apply
+          .filter("a = anon_1")
+          .apply()
+          .|.relationshipIndexOperator(
+            s"(anon_1)-[r:REL($indexStr)]-(b)",
+            argumentIds = Set("a"),
+            indexType = IndexType.RANGE
+          )
+          .skip(0)
+          .allNodeScan("a")
+          .build()
+      )
     }
 
     test(s"should plan relationship index seek with filter for already bound end node for $pred") {
       val planner = plannerBuilder().build()
       planner.plan(
         s"""MATCH (b) WITH b SKIP 0
-           |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
+           |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin
+      ) should equal(
         planner.planBuilder()
           .produceResults("r")
           // the filter got pushed up through the apply
           .filter("b = anon_1")
           .apply()
-          .|.relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(anon_1)", argumentIds = Set("b"), indexType = IndexType.RANGE)
+          .|.relationshipIndexOperator(
+            s"(a)-[r:REL($indexStr)]-(anon_1)",
+            argumentIds = Set("b"),
+            indexType = IndexType.RANGE
+          )
           .skip(0)
           .allNodeScan("b")
           .build()
@@ -162,13 +178,18 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       val planner = plannerBuilder().build()
       planner.plan(
         s"""MATCH (a), (b) WITH a, b SKIP 0
-           |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
+           |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin
+      ) should equal(
         planner.planBuilder()
           .produceResults("r")
           // the filter got pushed up through the apply
           .filter("a = anon_2", "b = anon_3")
           .apply()
-          .|.relationshipIndexOperator(s"(anon_2)-[r:REL($indexStr)]-(anon_3)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
+          .|.relationshipIndexOperator(
+            s"(anon_2)-[r:REL($indexStr)]-(anon_3)",
+            argumentIds = Set("a", "b"),
+            indexType = IndexType.RANGE
+          )
           .skip(0)
           .cartesianProduct()
           .|.allNodeScan("b")
@@ -182,7 +203,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       withClue("Did not expect an UndirectedRelationshipIndexSeek to be planned") {
         planner.plan(
           s"""MATCH (a)-[r:REL]-(b) WITH r SKIP 0
-            |MATCH (a2)-[r:REL]-(b2) WHERE $pred RETURN r""".stripMargin).leaves.folder.treeExists {
+             |MATCH (a2)-[r:REL]-(b2) WHERE $pred RETURN r""".stripMargin
+        ).leaves.folder.treeExists {
           case _: UndirectedRelationshipIndexSeek => true
         } should be(false)
       }
@@ -194,11 +216,12 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     // Add an uninteresting predicate using a parameter to stop autoparameterization from happening
     planner.plan(
       """MATCH (a)-[r:REL]->(b)
-         |WHERE 43 = $apa
-         |  AND r.prop STARTS WITH 'w'
-         |  AND r.prop STARTS WITH 'www'
-         |RETURN r
-         |""".stripMargin).leaves.head should equal(
+        |WHERE 43 = $apa
+        |  AND r.prop STARTS WITH 'w'
+        |  AND r.prop STARTS WITH 'www'
+        |RETURN r
+        |""".stripMargin
+    ).leaves.head should equal(
       planner.subPlanBuilder()
         .relationshipIndexOperator(s"(a)-[r:REL(prop STARTS WITH 'www')]->(b)", indexType = IndexType.RANGE)
         .build()
@@ -210,7 +233,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     withClue("Used relationship index when not expected:") {
       planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop > a.prop RETURN count(r) as c").folder.treeExists {
         case _: UndirectedRelationshipIndexSeek => true
-        case _: DirectedRelationshipIndexSeek => true
+        case _: DirectedRelationshipIndexSeek   => true
       } should be(false)
     }
   }
@@ -220,7 +243,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     withClue("Used relationship index when not expected:") {
       planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop <= a.prop RETURN count(r) as c").folder.treeExists {
         case _: UndirectedRelationshipIndexSeek => true
-        case _: DirectedRelationshipIndexSeek => true
+        case _: DirectedRelationshipIndexSeek   => true
       } should be(false)
     }
   }
@@ -230,9 +253,15 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     planner.plan(
       """WITH 200 AS x
         |MATCH (a)-[r:REL]-(b) WHERE r.prop > x RETURN count(r) as c
-        |""".stripMargin).leaves(1) should equal(
+        |""".stripMargin
+    ).leaves(1) should equal(
       planner.subPlanBuilder()
-        .relationshipIndexOperator(s"(a)-[r:REL(prop > ???)]-(b)", argumentIds = Set("x"), paramExpr = Some(varFor("x")), indexType = IndexType.RANGE)
+        .relationshipIndexOperator(
+          s"(a)-[r:REL(prop > ???)]-(b)",
+          argumentIds = Set("x"),
+          paramExpr = Some(varFor("x")),
+          indexType = IndexType.RANGE
+        )
         .build()
     )
   }
@@ -249,7 +278,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       """MATCH (a)-[r:REL]->(b)
         |WHERE r.prop > 1
         |  AND r.prop2 > 1
-        |RETURN r""".stripMargin).leaves.head should equal(
+        |RETURN r""".stripMargin
+    ).leaves.head should equal(
       planner.subPlanBuilder()
         .relationshipIndexOperator(s"(a)-[r:REL(prop > 1)]->(b)", indexType = IndexType.RANGE)
         .build()
@@ -260,7 +290,9 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     .addRelationshipIndex("REL", Seq("prop1", "prop2"), existsSelectivity = 0.5, uniqueSelectivity = 0.5)
     .build()
 
-  test("should plan composite relationship index seek when there is an index on two properties and both are in equality predicates") {
+  test(
+    "should plan composite relationship index seek when there is an index on two properties and both are in equality predicates"
+  ) {
     val planner = compositeRelIndexSeekConfig()
     val query = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 'foo' RETURN r"
     val plan = planner.plan(query).stripProduceResults
@@ -270,7 +302,9 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       .build()
   }
 
-  test("should plan composite relationship index seek when there is an index on two properties and both are in equality predicates regardless of predicate order") {
+  test(
+    "should plan composite relationship index seek when there is an index on two properties and both are in equality predicates regardless of predicate order"
+  ) {
     val planner = compositeRelIndexSeekConfig()
     val query = "MATCH (a)-[r:REL]->(b) WHERE r.prop2 = 'foo' AND r.prop1 = 42 RETURN r"
     val plan = planner.plan(query).stripProduceResults
@@ -280,7 +314,9 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       .build()
   }
 
-  test("should plan composite relationship index seek and filter when there is an index on two properties and both are in equality predicates together with other predicates") {
+  test(
+    "should plan composite relationship index seek and filter when there is an index on two properties and both are in equality predicates together with other predicates"
+  ) {
     val planner = compositeRelIndexSeekConfig()
     val query = "MATCH (a)-[r:REL]->(b) WHERE r.prop2 = 'foo' AND r.name IS NOT NULL AND r.prop1 = 42 RETURN r"
     val plan = planner.plan(query).stripProduceResults

@@ -53,8 +53,8 @@ class SemanticScopeRecordingTest extends CypherFunSuite {
     context.errors shouldBe empty
 
     val unwindScope = state.semantics().recordedScopes
-      .map{ case(k, v) => (k.node, v) }
-      .collect{ case (_:Unwind, scope) => scope }
+      .map { case (k, v) => (k.node, v) }
+      .collect { case (_: Unwind, scope) => scope }
       .head
 
     unwindScope.symbolNames should equal(Set("x"))

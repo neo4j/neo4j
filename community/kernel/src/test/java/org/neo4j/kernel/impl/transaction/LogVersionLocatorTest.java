@@ -19,80 +19,73 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class LogVersionLocatorTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+
+class LogVersionLocatorTest {
     private static final long firstTxIdInLog = 3;
     private static final long lastTxIdInLog = 67;
 
     @Test
-    void shouldFindLogPosition() throws NoSuchTransactionException
-    {
+    void shouldFindLogPosition() throws NoSuchTransactionException {
         // given
         final long txId = 42L;
 
         final PhysicalLogicalTransactionStore.LogVersionLocator locator =
-                new PhysicalLogicalTransactionStore.LogVersionLocator( txId );
+                new PhysicalLogicalTransactionStore.LogVersionLocator(txId);
 
-        final LogPosition position = new LogPosition( 1, 128 );
+        final LogPosition position = new LogPosition(1, 128);
 
         // when
-        final boolean result = locator.visit( null, position, firstTxIdInLog, lastTxIdInLog );
+        final boolean result = locator.visit(null, position, firstTxIdInLog, lastTxIdInLog);
 
         // then
-        assertFalse( result );
-        assertEquals( position, locator.getLogPosition() );
+        assertFalse(result);
+        assertEquals(position, locator.getLogPosition());
     }
 
     @Test
-    void shouldNotFindLogPosition()
-    {
+    void shouldNotFindLogPosition() {
         // given
         final long txId = 1L;
 
         final PhysicalLogicalTransactionStore.LogVersionLocator locator =
-                new PhysicalLogicalTransactionStore.LogVersionLocator( txId );
+                new PhysicalLogicalTransactionStore.LogVersionLocator(txId);
 
-        final LogPosition position = new LogPosition( 1, 128 );
+        final LogPosition position = new LogPosition(1, 128);
 
         // when
-        final boolean result = locator.visit( null, position, firstTxIdInLog, lastTxIdInLog );
+        final boolean result = locator.visit(null, position, firstTxIdInLog, lastTxIdInLog);
 
         // then
-        assertTrue( result );
+        assertTrue(result);
 
-        var e = assertThrows( NoSuchTransactionException.class, locator::getLogPosition );
+        var e = assertThrows(NoSuchTransactionException.class, locator::getLogPosition);
         assertEquals(
-                "Unable to find transaction " + txId + " in any of my logical logs: " +
-                        "Couldn't find any log containing " + txId,
-                e.getMessage()
-        );
+                "Unable to find transaction " + txId + " in any of my logical logs: "
+                        + "Couldn't find any log containing " + txId,
+                e.getMessage());
     }
 
     @Test
-    void shouldAlwaysThrowIfVisitIsNotCalled()
-    {
+    void shouldAlwaysThrowIfVisitIsNotCalled() {
         // given
         final long txId = 1L;
 
         final PhysicalLogicalTransactionStore.LogVersionLocator locator =
-                new PhysicalLogicalTransactionStore.LogVersionLocator( txId );
+                new PhysicalLogicalTransactionStore.LogVersionLocator(txId);
 
-        var e = assertThrows( NoSuchTransactionException.class, locator::getLogPosition );
+        var e = assertThrows(NoSuchTransactionException.class, locator::getLogPosition);
         assertEquals(
-                "Unable to find transaction " + txId + " in any of my logical logs: " +
-                        "Couldn't find any log containing " + txId,
-                e.getMessage()
-        );
+                "Unable to find transaction " + txId + " in any of my logical logs: "
+                        + "Couldn't find any log containing " + txId,
+                e.getMessage());
     }
 }

@@ -22,92 +22,78 @@ package org.neo4j.storageengine.api;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class EntityTokenUpdate
-{
+public class EntityTokenUpdate {
     public static final Comparator<? super EntityTokenUpdate> SORT_BY_ENTITY_ID =
-            Comparator.comparingLong( EntityTokenUpdate::getEntityId );
+            Comparator.comparingLong(EntityTokenUpdate::getEntityId);
 
     private final long entityId;
     private final long[] tokensBefore;
     private final long[] tokensAfter;
     private final long txId;
 
-    private EntityTokenUpdate( long entityId, long[] tokensBefore, long[] tokensAfter, long txId )
-    {
+    private EntityTokenUpdate(long entityId, long[] tokensBefore, long[] tokensAfter, long txId) {
         this.entityId = entityId;
         this.tokensBefore = tokensBefore;
         this.tokensAfter = tokensAfter;
         this.txId = txId;
     }
 
-    public long getEntityId()
-    {
+    public long getEntityId() {
         return entityId;
     }
 
-    public long[] getTokensBefore()
-    {
+    public long[] getTokensBefore() {
         return tokensBefore;
     }
 
-    public long[] getTokensAfter()
-    {
+    public long[] getTokensAfter() {
         return tokensAfter;
     }
 
-    public long getTxId()
-    {
+    public long getTxId() {
         return txId;
     }
 
     @Override
-    public String toString()
-    {
-        return getClass().getSimpleName() + "[entity:" + entityId + ", tokensBefore:" + Arrays.toString( tokensBefore ) +
-                ", tokensAfter:" + Arrays.toString( tokensAfter ) + "]";
+    public String toString() {
+        return getClass().getSimpleName() + "[entity:" + entityId + ", tokensBefore:" + Arrays.toString(tokensBefore)
+                + ", tokensAfter:" + Arrays.toString(tokensAfter) + "]";
     }
 
-    public static EntityTokenUpdate tokenChanges( long entityId, long[] tokensBeforeChange, long[] tokensAfterChange )
-    {
-        return tokenChanges( entityId, tokensBeforeChange, tokensAfterChange, -1 );
+    public static EntityTokenUpdate tokenChanges(long entityId, long[] tokensBeforeChange, long[] tokensAfterChange) {
+        return tokenChanges(entityId, tokensBeforeChange, tokensAfterChange, -1);
     }
 
-    public static EntityTokenUpdate tokenChanges( long entityId, long[] tokensBeforeChange, long[] tokensAfterChange, long txId )
-    {
-        return new EntityTokenUpdate( entityId, tokensBeforeChange, tokensAfterChange, txId );
+    public static EntityTokenUpdate tokenChanges(
+            long entityId, long[] tokensBeforeChange, long[] tokensAfterChange, long txId) {
+        return new EntityTokenUpdate(entityId, tokensBeforeChange, tokensAfterChange, txId);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         EntityTokenUpdate that = (EntityTokenUpdate) o;
 
-        if ( entityId != that.entityId )
-        {
+        if (entityId != that.entityId) {
             return false;
         }
-        if ( !Arrays.equals( tokensAfter, that.tokensAfter ) )
-        {
+        if (!Arrays.equals(tokensAfter, that.tokensAfter)) {
             return false;
         }
-        return Arrays.equals( tokensBefore, that.tokensBefore );
+        return Arrays.equals(tokensBefore, that.tokensBefore);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = (int) (entityId ^ (entityId >>> 32));
-        result = 31 * result + (tokensBefore != null ? Arrays.hashCode( tokensBefore ) : 0);
-        result = 31 * result + (tokensAfter != null ? Arrays.hashCode( tokensAfter ) : 0);
+        result = 31 * result + (tokensBefore != null ? Arrays.hashCode(tokensBefore) : 0);
+        result = 31 * result + (tokensAfter != null ? Arrays.hashCode(tokensAfter) : 0);
         return result;
     }
 }

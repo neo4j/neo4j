@@ -22,13 +22,10 @@ package org.neo4j.kernel.impl.store;
 /**
  * Used in a scenario where a store doesn't have a store header.
  */
-public class NoStoreHeader implements StoreHeader
-{
+public class NoStoreHeader implements StoreHeader {
     public static final NoStoreHeader NO_STORE_HEADER = new NoStoreHeader();
 
-    private NoStoreHeader()
-    {
-    }
+    private NoStoreHeader() {}
 
     // equals/hashCode doesn't need to be implemented because there can be only a single instance of these
 }

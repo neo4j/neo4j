@@ -19,17 +19,14 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
-import org.neo4j.test.RandomSupport;
-
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
-public class GBPTreeConcurrencyFixedSizeIT extends GBPTreeConcurrencyITBase<MutableLong,MutableLong>
-{
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.neo4j.test.RandomSupport;
+
+public class GBPTreeConcurrencyFixedSizeIT extends GBPTreeConcurrencyITBase<MutableLong, MutableLong> {
     @Override
-    protected TestLayout<MutableLong,MutableLong> getLayout( RandomSupport random, int payloadSize )
-    {
-        return longLayout().withKeyPadding( random.intBetween( 0, 10 ) ).build();
+    protected TestLayout<MutableLong, MutableLong> getLayout(RandomSupport random, int payloadSize) {
+        return longLayout().withKeyPadding(random.intBetween(0, 10)).build();
     }
 }

@@ -19,37 +19,28 @@
  */
 package org.neo4j.bolt.testing;
 
-import org.assertj.core.api.Condition;
-
 import java.util.Arrays;
-
+import org.assertj.core.api.Condition;
 import org.neo4j.values.AnyValue;
 
-public class StreamConditions
-{
-    private StreamConditions()
-    {
-    }
+public class StreamConditions {
+    private StreamConditions() {}
 
     @SafeVarargs
-    public static Condition<AnyValue[]> eqRecord( Condition<AnyValue>... expectedFieldValues )
-    {
-        return new Condition<>( item ->
-        {
-            if ( expectedFieldValues.length != item.length )
-            {
-                return false;
-            }
+    public static Condition<AnyValue[]> eqRecord(Condition<AnyValue>... expectedFieldValues) {
+        return new Condition<>(
+                item -> {
+                    if (expectedFieldValues.length != item.length) {
+                        return false;
+                    }
 
-            for ( int i = 0; i < item.length; i++ )
-            {
-                if ( !expectedFieldValues[i].matches( item[i] ) )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }, "EqRecord. Expected values: " + Arrays.toString( expectedFieldValues ) );
+                    for (int i = 0; i < item.length; i++) {
+                        if (!expectedFieldValues[i].matches(item[i])) {
+                            return false;
+                        }
+                    }
+                    return true;
+                },
+                "EqRecord. Expected values: " + Arrays.toString(expectedFieldValues));
     }
-
 }

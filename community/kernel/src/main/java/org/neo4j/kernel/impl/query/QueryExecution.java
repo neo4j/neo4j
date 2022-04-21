@@ -22,15 +22,12 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
-import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.Result;
 
 /**
  * The execution of a query is a {@link QuerySubscription} with added methods describing the actual execution of a
  * query.
  */
-public interface QueryExecution extends QuerySubscription
-{
+public interface QueryExecution extends QuerySubscription {
     /**
      * The {@link QueryExecutionType} of the query,
      */

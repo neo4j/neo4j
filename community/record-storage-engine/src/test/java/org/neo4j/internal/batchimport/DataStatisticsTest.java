@@ -19,92 +19,78 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.Iterator;
-
-import org.neo4j.test.Race;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith( RandomExtension.class )
-class DataStatisticsTest
-{
+import java.util.Iterator;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+
+@ExtendWith(RandomExtension.class)
+class DataStatisticsTest {
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldSumCounts() throws Throwable
-    {
+    void shouldSumCounts() throws Throwable {
         // given
-        DataStatistics stats = new DataStatistics( 1, 2, new DataStatistics.RelationshipTypeCount[0] );
+        DataStatistics stats = new DataStatistics(1, 2, new DataStatistics.RelationshipTypeCount[0]);
         Race race = new Race();
         int types = 10;
         long[] expected = new long[types];
         int threads = Runtime.getRuntime().availableProcessors();
-        for ( int i = 0; i < threads; i++ )
-        {
+        for (int i = 0; i < threads; i++) {
             long[] local = new long[types];
-            for ( int j = 0; j < types; j++ )
-            {
-                local[j] = random.nextInt( 1_000, 2_000 );
+            for (int j = 0; j < types; j++) {
+                local[j] = random.nextInt(1_000, 2_000);
                 expected[j] += local[j];
             }
-            race.addContestant( () ->
-            {
-                try ( DataStatistics.Client client = stats.newClient() )
-                {
-                    for ( int typeId = 0; typeId < types; typeId++ )
-                    {
-                        while ( local[typeId]-- > 0 )
-                        {
-                            client.increment( typeId );
+            race.addContestant(() -> {
+                try (DataStatistics.Client client = stats.newClient()) {
+                    for (int typeId = 0; typeId < types; typeId++) {
+                        while (local[typeId]-- > 0) {
+                            client.increment(typeId);
                         }
                     }
                 }
-            } );
+            });
         }
 
         // when
         race.go();
 
         // then
-        stats.forEach( count -> assertEquals( expected[count.getTypeId()], count.getCount() ) );
+        stats.forEach(count -> assertEquals(expected[count.getTypeId()], count.getCount()));
     }
 
     @Test
-    void shouldGrowArrayProperly()
-    {
+    void shouldGrowArrayProperly() {
         // given
-        DataStatistics stats = new DataStatistics( 1, 1, new DataStatistics.RelationshipTypeCount[0] );
+        DataStatistics stats = new DataStatistics(1, 1, new DataStatistics.RelationshipTypeCount[0]);
 
         // when
         int typeId = 1_000;
-        try ( DataStatistics.Client client = stats.newClient() )
-        {
-            client.increment( typeId );
+        try (DataStatistics.Client client = stats.newClient()) {
+            client.increment(typeId);
         }
 
         // then
-        DataStatistics.RelationshipTypeCount count = typeCount( stats.iterator(), typeId );
-        assertEquals( 1, count.getCount() );
-        assertEquals( typeId, count.getTypeId() );
+        DataStatistics.RelationshipTypeCount count = typeCount(stats.iterator(), typeId);
+        assertEquals(1, count.getCount());
+        assertEquals(typeId, count.getTypeId());
     }
 
-    private static DataStatistics.RelationshipTypeCount typeCount( Iterator<DataStatistics.RelationshipTypeCount> iterator, int typeId )
-    {
-        while ( iterator.hasNext() )
-        {
+    private static DataStatistics.RelationshipTypeCount typeCount(
+            Iterator<DataStatistics.RelationshipTypeCount> iterator, int typeId) {
+        while (iterator.hasNext()) {
             DataStatistics.RelationshipTypeCount count = iterator.next();
-            if ( count.getTypeId() == typeId )
-            {
+            if (count.getTypeId() == typeId) {
                 return count;
             }
         }
-        throw new IllegalStateException( "Couldn't find " + typeId );
+        throw new IllegalStateException("Couldn't find " + typeId);
     }
 }

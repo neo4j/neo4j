@@ -19,16 +19,20 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,79 +55,70 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
-import static org.neo4j.test.TestLabels.LABEL_ONE;
-
 @Neo4jLayoutExtension
-public class IndexCleanupIT
-{
+public class IndexCleanupIT {
     private static final String propertyKey = "key";
 
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     private DatabaseManagementService managementService;
     private GraphDatabaseAPI db;
 
     @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
+    void tearDown() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
 
-    private static Stream<Arguments> indexProviders()
-    {
+    private static Stream<Arguments> indexProviders() {
         return Stream.of(
-                Arguments.of( RangeIndexProvider.DESCRIPTOR, IndexType.RANGE ),
-                Arguments.of( PointIndexProvider.DESCRIPTOR, IndexType.POINT ) );
+                Arguments.of(RangeIndexProvider.DESCRIPTOR, IndexType.RANGE),
+                Arguments.of(PointIndexProvider.DESCRIPTOR, IndexType.POINT));
     }
 
     @ParameterizedTest
-    @MethodSource( "indexProviders" )
-    void mustClearIndexDirectoryOnDropWhileOnline( IndexProviderDescriptor provider, IndexType indexType ) throws IOException, KernelException
-    {
+    @MethodSource("indexProviders")
+    void mustClearIndexDirectoryOnDropWhileOnline(IndexProviderDescriptor provider, IndexType indexType)
+            throws IOException, KernelException {
         configureDb();
-        createIndex( db, indexType, provider, true );
+        createIndex(db, indexType, provider, true);
 
-        Path[] providerDirectories = providerDirectories( fs, db );
-        for ( Path providerDirectory : providerDirectories )
-        {
-            assertTrue( fs.listFiles( providerDirectory ).length > 0, "expected there to be at least one index per existing provider map" );
+        Path[] providerDirectories = providerDirectories(fs, db);
+        for (Path providerDirectory : providerDirectories) {
+            assertTrue(
+                    fs.listFiles(providerDirectory).length > 0,
+                    "expected there to be at least one index per existing provider map");
         }
 
         dropAllIndexes();
 
-        assertNoIndexFilesExisting( providerDirectories );
+        assertNoIndexFilesExisting(providerDirectories);
     }
 
     @ParameterizedTest
-    @MethodSource( "indexProviders" )
-    void mustClearIndexDirectoryOnDropWhileFailed( IndexProviderDescriptor provider, IndexType indexType ) throws IOException, KernelException
-    {
+    @MethodSource("indexProviders")
+    void mustClearIndexDirectoryOnDropWhileFailed(IndexProviderDescriptor provider, IndexType indexType)
+            throws IOException, KernelException {
         configureDb();
-        createIndex( db, indexType, provider, true );
-        SetInitialStateInNativeIndex setInitialStateInNativeIndex = new SetInitialStateInNativeIndex( BYTE_FAILED, provider );
-        restartDatabase( setInitialStateInNativeIndex );
+        createIndex(db, indexType, provider, true);
+        SetInitialStateInNativeIndex setInitialStateInNativeIndex =
+                new SetInitialStateInNativeIndex(BYTE_FAILED, provider);
+        restartDatabase(setInitialStateInNativeIndex);
         // Index should be failed at this point
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( IndexDefinition index : tx.schema().getIndexes() )
-            {
+        try (Transaction tx = db.beginTx()) {
+            for (IndexDefinition index : tx.schema().getIndexes()) {
                 // ignore the lookup indexes which are there by default and have nothing to do with this test
-                if ( index.getIndexType() == org.neo4j.graphdb.schema.IndexType.LOOKUP )
-                {
+                if (index.getIndexType() == org.neo4j.graphdb.schema.IndexType.LOOKUP) {
                     continue;
                 }
-                IndexState indexState = tx.schema().getIndexState( index );
-                assertEquals( IndexState.FAILED, indexState, "expected index state to be " + IndexState.FAILED );
+                IndexState indexState = tx.schema().getIndexState(index);
+                assertEquals(IndexState.FAILED, indexState, "expected index state to be " + IndexState.FAILED);
             }
             tx.commit();
         }
@@ -132,107 +127,99 @@ public class IndexCleanupIT
         dropAllIndexes();
 
         // then
-        assertNoIndexFilesExisting( providerDirectories( fs, db ) );
+        assertNoIndexFilesExisting(providerDirectories(fs, db));
     }
 
     @ParameterizedTest
-    @MethodSource( "indexProviders" )
-    void mustClearIndexDirectoryOnDropWhilePopulating( IndexProviderDescriptor provider, IndexType indexType )
-            throws InterruptedException, IOException, KernelException
-    {
+    @MethodSource("indexProviders")
+    void mustClearIndexDirectoryOnDropWhilePopulating(IndexProviderDescriptor provider, IndexType indexType)
+            throws InterruptedException, IOException, KernelException {
         // given
         Barrier.Control midPopulation = new Barrier.Control();
-        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter()
-        {
+        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter() {
             @Override
-            public void indexPopulationScanStarting()
-            {
+            public void indexPopulationScanStarting() {
                 midPopulation.reached();
             }
         };
         configureDb();
         createSomeData();
-        Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
-        monitors.addMonitorListener( trappingMonitor );
-        createIndex( db, indexType, provider, false );
+        Monitors monitors = db.getDependencyResolver().resolveDependency(Monitors.class);
+        monitors.addMonitorListener(trappingMonitor);
+        createIndex(db, indexType, provider, false);
 
         midPopulation.await();
-        Path[] providerDirectories = providerDirectories( fs, db );
-        for ( Path providerDirectory : providerDirectories )
-        {
-            assertTrue( fs.listFiles( providerDirectory ).length > 0, "expected there to be at least one index per existing provider map" );
+        Path[] providerDirectories = providerDirectories(fs, db);
+        for (Path providerDirectory : providerDirectories) {
+            assertTrue(
+                    fs.listFiles(providerDirectory).length > 0,
+                    "expected there to be at least one index per existing provider map");
         }
 
         // when
         dropAllIndexes();
         midPopulation.release();
 
-        assertNoIndexFilesExisting( providerDirectories );
+        assertNoIndexFilesExisting(providerDirectories);
     }
 
-    private void assertNoIndexFilesExisting( Path[] providerDirectories ) throws IOException
-    {
-        for ( Path providerDirectory : providerDirectories )
-        {
-            assertEquals( 0, fs.listFiles( providerDirectory ).length, "expected there to be no index files" );
+    private void assertNoIndexFilesExisting(Path[] providerDirectories) throws IOException {
+        for (Path providerDirectory : providerDirectories) {
+            assertEquals(0, fs.listFiles(providerDirectory).length, "expected there to be no index files");
         }
     }
 
-    private void dropAllIndexes()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().getIndexes().forEach( IndexDefinition::drop );
+    private void dropAllIndexes() {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().getIndexes().forEach(IndexDefinition::drop);
             tx.commit();
         }
     }
 
-    private void restartDatabase( SetInitialStateInNativeIndex action ) throws IOException
-    {
-        var openOptions = db.getDependencyResolver().resolveDependency( StorageEngine.class ).getOpenOptions();
+    private void restartDatabase(SetInitialStateInNativeIndex action) throws IOException {
+        var openOptions = db.getDependencyResolver()
+                .resolveDependency(StorageEngine.class)
+                .getOpenOptions();
         managementService.shutdown();
-        action.run( fs, databaseLayout, openOptions );
+        action.run(fs, databaseLayout, openOptions);
         configureDb();
     }
 
-    private void configureDb()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    private void configureDb() {
+        managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private static void createIndex( GraphDatabaseService db, IndexType indexType, IndexProviderDescriptor providerDescriptor, boolean awaitOnline )
-            throws KernelException
-    {
-        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
-        {
-            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, providerDescriptor, LABEL_ONE, propertyKey, indexType );
+    private static void createIndex(
+            GraphDatabaseService db,
+            IndexType indexType,
+            IndexProviderDescriptor providerDescriptor,
+            boolean awaitOnline)
+            throws KernelException {
+        try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider(
+                    tx, providerDescriptor, LABEL_ONE, propertyKey, indexType);
             tx.commit();
         }
-        if ( awaitOnline )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        if (awaitOnline) {
+            try (Transaction tx = db.beginTx()) {
+                tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
                 tx.commit();
             }
         }
     }
 
-    private static Path[] providerDirectories( FileSystemAbstraction fs, GraphDatabaseAPI db ) throws IOException
-    {
+    private static Path[] providerDirectories(FileSystemAbstraction fs, GraphDatabaseAPI db) throws IOException {
         DatabaseLayout databaseLayout = db.databaseLayout();
         Path dbDir = databaseLayout.databaseDirectory();
-        Path schemaDir = dbDir.resolve( "schema" );
-        Path indexDir = schemaDir.resolve( "index" );
-        return fs.listFiles( indexDir );
+        Path schemaDir = dbDir.resolve("schema");
+        Path indexDir = schemaDir.resolve("index");
+        return fs.listFiles(indexDir);
     }
 
-    private void createSomeData()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode().setProperty( propertyKey, "abc" );
+    private void createSomeData() {
+        try (Transaction tx = db.beginTx()) {
+            tx.createNode().setProperty(propertyKey, "abc");
             tx.commit();
         }
     }

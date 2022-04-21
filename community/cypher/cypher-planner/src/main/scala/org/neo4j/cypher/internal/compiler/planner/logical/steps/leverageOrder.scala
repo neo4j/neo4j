@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 
 object leverageOrder {
 
-  final case class OrderToLeverageWithAliases(orderToLeverage: Seq[Expression], groupingExpressionsMap: Map[String, Expression])
+  final case class OrderToLeverageWithAliases(
+    orderToLeverage: Seq[Expression],
+    groupingExpressionsMap: Map[String, Expression]
+  )
 
   /**
    * Given the order of a plan, some grouping expressions, and available symbols, return the prefix
@@ -39,9 +42,11 @@ object leverageOrder {
    * @return a tuple of A) the prefix of the provided order that is part of the grouping expressions
    *         and B) the grouping expressions map rewritten to use variables that are already available symbols
    */
-  def apply(inputProvidedOrder: ProvidedOrder,
-            groupingExpressionsMap: Map[String, Expression],
-            availableSymbols: Set[String]): OrderToLeverageWithAliases = {
+  def apply(
+    inputProvidedOrder: ProvidedOrder,
+    groupingExpressionsMap: Map[String, Expression],
+    availableSymbols: Set[String]
+  ): OrderToLeverageWithAliases = {
     // Collect aliases for all grouping expressions which project a variable that is already an available symbol
     val aliasMap: Map[Expression, Variable] = groupingExpressionsMap.collect {
       case (k, expr) if availableSymbols.contains(k) => (expr, Variable(k)(expr.position))
@@ -56,8 +61,8 @@ object leverageOrder {
     val orderToLeverage = {
       // To find out if there are order columns of which we can leverage the order, we have to use the same aliases in the provided order.
       val aliasedInputProvidedOrder = inputProvidedOrder.mapColumns {
-        case c@Asc(expression, _) => c.copy(aliasMap.getOrElse(expression, expression))
-        case c@Desc(expression, _) => c.copy(aliasMap.getOrElse(expression, expression))
+        case c @ Asc(expression, _)  => c.copy(aliasMap.getOrElse(expression, expression))
+        case c @ Desc(expression, _) => c.copy(aliasMap.getOrElse(expression, expression))
       }
 
       providedOrderPrefix(aliasedInputProvidedOrder, newGroupingExpressionsMap.values.toSet)
@@ -66,7 +71,10 @@ object leverageOrder {
     OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap)
   }
 
-  private def providedOrderPrefix(inputProvidedOrder: ProvidedOrder, groupingExpressions: Set[Expression]): Seq[Expression] = {
+  private def providedOrderPrefix(
+    inputProvidedOrder: ProvidedOrder,
+    groupingExpressions: Set[Expression]
+  ): Seq[Expression] = {
     // We use the instances of expressions from the groupingExpressions (instead of the instance of expressions from the ProvidedOrder).
     // This is important because some rewriters will rewrite expressions based on reference equality
     // and we need to make sure that orderToLeverage expressions are equal to grouping expressions, even after those rewriters.

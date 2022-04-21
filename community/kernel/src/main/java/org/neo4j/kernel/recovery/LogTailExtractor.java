@@ -20,7 +20,6 @@
 package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -32,17 +31,19 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
-public class LogTailExtractor
-{
+public class LogTailExtractor {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final Config config;
     private final StorageEngineFactory storageEngineFactory;
     private final DatabaseTracers databaseTracers;
 
-    public LogTailExtractor( FileSystemAbstraction fs, PageCache pageCache, Config config, StorageEngineFactory storageEngineFactory,
-            DatabaseTracers databaseTracers )
-    {
+    public LogTailExtractor(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Config config,
+            StorageEngineFactory storageEngineFactory,
+            DatabaseTracers databaseTracers) {
         this.fs = fs;
         this.pageCache = pageCache;
         this.config = config;
@@ -50,18 +51,17 @@ public class LogTailExtractor
         this.databaseTracers = databaseTracers;
     }
 
-    public LogTailMetadata getTailMetadata( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
-    {
-        return buildLogFiles( databaseLayout, memoryTracker ).getTailMetadata();
+    public LogTailMetadata getTailMetadata(DatabaseLayout databaseLayout, MemoryTracker memoryTracker)
+            throws IOException {
+        return buildLogFiles(databaseLayout, memoryTracker).getTailMetadata();
     }
 
-    private LogFiles buildLogFiles( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
-    {
-        return LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
-                .withConfig( config )
-                .withMemoryTracker( memoryTracker )
-                .withDatabaseTracers( databaseTracers )
-                .withStorageEngineFactory( storageEngineFactory )
+    private LogFiles buildLogFiles(DatabaseLayout databaseLayout, MemoryTracker memoryTracker) throws IOException {
+        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache)
+                .withConfig(config)
+                .withMemoryTracker(memoryTracker)
+                .withDatabaseTracers(databaseTracers)
+                .withStorageEngineFactory(storageEngineFactory)
                 .build();
     }
 }

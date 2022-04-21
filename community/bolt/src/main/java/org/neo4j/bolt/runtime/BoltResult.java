@@ -28,90 +28,76 @@ import org.neo4j.values.AnyValue;
  * Streams contains nominally uniform records meaning each record has the same set of named fields.
  * However, the contents of these fields may vary by both type and value and may be null.
  */
-public interface BoltResult extends AutoCloseable
-{
+public interface BoltResult extends AutoCloseable {
     /** Positional names for all fields in every record of this stream. */
     String[] fieldNames();
 
     /**
      * @return {@code true} if there could be more records, {@code false} otherwise.
      */
-    boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Throwable;
+    boolean handleRecords(RecordConsumer recordConsumer, long size) throws Throwable;
 
     /**
      * @return {@code true} if there could be more records, {@code false} otherwise.
      */
-    boolean discardRecords( DiscardingRecordConsumer recordConsumer, long size ) throws Throwable;
+    boolean discardRecords(DiscardingRecordConsumer recordConsumer, long size) throws Throwable;
 
     @Override
     void close();
 
-    interface RecordConsumer extends BoltRecordConsumer
-    {
+    interface RecordConsumer extends BoltRecordConsumer {
         /**
          * Associate arbitrary metadata with the result stream. This will get transferred at the end of the stream.
          * Please stick to Neo4j type system types (Map, List, Integer, Float, Boolean, String etc)
          */
-        void addMetadata( String key, AnyValue value );
+        void addMetadata(String key, AnyValue value);
     }
 
-    abstract class DiscardingRecordConsumer implements RecordConsumer
-    {
+    abstract class DiscardingRecordConsumer implements RecordConsumer {
         @Override
-        public void beginRecord( int numberOfFields )
-        {
-            //discard
+        public void beginRecord(int numberOfFields) {
+            // discard
         }
 
         @Override
-        public void consumeField( AnyValue value )
-        {
-            //discard
+        public void consumeField(AnyValue value) {
+            // discard
         }
 
         @Override
-        public void endRecord()
-        {
-            //discard
+        public void endRecord() {
+            // discard
         }
 
         @Override
-        public void onError()
-        {
-            //discard
+        public void onError() {
+            // discard
         }
     }
 
-    BoltResult EMPTY = new BoltResult()
-    {
+    BoltResult EMPTY = new BoltResult() {
         private final String[] nothing = new String[0];
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public String[] fieldNames()
-        {
+        public String[] fieldNames() {
             return nothing;
         }
 
         @Override
-        public boolean handleRecords( RecordConsumer recordConsumer, long size )
-        {
+        public boolean handleRecords(RecordConsumer recordConsumer, long size) {
             return false;
         }
 
         @Override
-        public boolean discardRecords( DiscardingRecordConsumer recordConsumer, long size )
-        {
+        public boolean discardRecords(DiscardingRecordConsumer recordConsumer, long size) {
             return false;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "EmptyBoltResult{}";
         }
     };

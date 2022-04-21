@@ -22,10 +22,8 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public abstract class SchemaRuleWithNameAlreadyExistsException extends SchemaKernelException
-{
-    SchemaRuleWithNameAlreadyExistsException( Status status, String message )
-    {
-        super( status, message );
+public abstract class SchemaRuleWithNameAlreadyExistsException extends SchemaKernelException {
+    SchemaRuleWithNameAlreadyExistsException(Status status, String message) {
+        super(status, message);
     }
 }

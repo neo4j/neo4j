@@ -27,9 +27,8 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 /**
  * Injectable logic to a {@link StoreScan} to accommodate for different types of scans.
  */
-interface EntityScanCursorBehaviour<CURSOR extends StorageEntityScanCursor<?>>
-{
-    CURSOR allocateEntityScanCursor( CursorContext cursorContext, StoreCursors storeCursors );
+interface EntityScanCursorBehaviour<CURSOR extends StorageEntityScanCursor<?>> {
+    CURSOR allocateEntityScanCursor(CursorContext cursorContext, StoreCursors storeCursors);
 
-    long[] readTokens( CURSOR cursor );
+    long[] readTokens(CURSOR cursor);
 }

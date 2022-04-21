@@ -19,30 +19,27 @@
  */
 package org.neo4j.bolt.v3.messaging.encoder;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.v3.messaging.response.IgnoredMessage;
-
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.bolt.v3.messaging.response.IgnoredMessage.IGNORED_MESSAGE;
 
-class IgnoredMessageEncoderTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.v3.messaging.response.IgnoredMessage;
+
+class IgnoredMessageEncoderTest {
     @Test
-    void shouldEncodeIgnoredMessage() throws Throwable
-    {
+    void shouldEncodeIgnoredMessage() throws Throwable {
         // Given
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
         IgnoredMessageEncoder encoder = new IgnoredMessageEncoder();
 
         // When
-        encoder.encode( packer, IGNORED_MESSAGE );
+        encoder.encode(packer, IGNORED_MESSAGE);
 
         // Then
-        verify( packer ).packStructHeader( anyInt(), eq( IgnoredMessage.SIGNATURE ) );
+        verify(packer).packStructHeader(anyInt(), eq(IgnoredMessage.SIGNATURE));
     }
 }

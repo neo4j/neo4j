@@ -48,9 +48,11 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 import scala.util.Try
 
-class ParserPositionTest extends CypherFunSuite with TestName  {
+class ParserPositionTest extends CypherFunSuite with TestName {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
-  private val javaCcAST: String => Try[Statement] = (query: String) => Try(JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator()))
+
+  private val javaCcAST: String => Try[Statement] =
+    (query: String) => Try(JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator()))
 
   test("MATCH (n) RETURN n.prop") {
     validatePosition(testName, _.isInstanceOf[Property], InputPosition(17, 1, 18))
@@ -125,7 +127,7 @@ class ParserPositionTest extends CypherFunSuite with TestName  {
     ("DEFAULT DATABASE YIELD name", 28),
     ("HOME DATABASE YIELD name", 25),
     ("DATABASE $db YIELD name", 24),
-    ("DATABASE neo4j YIELD name", 26),
+    ("DATABASE neo4j YIELD name", 26)
   ).foreach { case (name, variableOffset) =>
     test(s"SHOW $name") {
       validatePosition(testName, _.isInstanceOf[ShowDatabase], InputPosition(0, 1, 1))

@@ -19,45 +19,37 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.kernel.database.DatabaseStartupController.NEVER_ABORT;
+
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.kernel.database.DatabaseStartupController.NEVER_ABORT;
-
-public class RecoveryStartupChecker
-{
+public class RecoveryStartupChecker {
     public static final RecoveryStartupChecker EMPTY_CHECKER = new NeverCanceledChecker();
 
     private final DatabaseStartupController databaseStartupController;
     private final NamedDatabaseId namedDatabaseId;
 
-    public RecoveryStartupChecker( DatabaseStartupController databaseStartupController, NamedDatabaseId namedDatabaseId )
-    {
-        this.databaseStartupController = requireNonNull( databaseStartupController );
+    public RecoveryStartupChecker(
+            DatabaseStartupController databaseStartupController, NamedDatabaseId namedDatabaseId) {
+        this.databaseStartupController = requireNonNull(databaseStartupController);
         this.namedDatabaseId = namedDatabaseId;
     }
 
-    void checkIfCanceled() throws DatabaseStartAbortedException
-    {
-        if ( databaseStartupController.shouldAbort( namedDatabaseId ) )
-        {
-            throw new DatabaseStartAbortedException( namedDatabaseId );
+    void checkIfCanceled() throws DatabaseStartAbortedException {
+        if (databaseStartupController.shouldAbort(namedDatabaseId)) {
+            throw new DatabaseStartAbortedException(namedDatabaseId);
         }
     }
 
-    private static class NeverCanceledChecker extends RecoveryStartupChecker
-    {
-        private NeverCanceledChecker()
-        {
-            super( NEVER_ABORT, null );
+    private static class NeverCanceledChecker extends RecoveryStartupChecker {
+        private NeverCanceledChecker() {
+            super(NEVER_ABORT, null);
         }
 
         @Override
-        void checkIfCanceled()
-        {
-
-        }
+        void checkIfCanceled() {}
     }
 }

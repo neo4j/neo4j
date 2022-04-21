@@ -19,12 +19,12 @@
  */
 package org.neo4j.test.extension.pagecache;
 
+import static org.neo4j.test.utils.PageCacheConfig.config;
+
+import java.util.Optional;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
-
-import java.util.Optional;
-
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,77 +33,65 @@ import org.neo4j.test.extension.StatefulFieldExtension;
 import org.neo4j.test.utils.PageCacheConfig;
 import org.neo4j.test.utils.PageCacheSupport;
 
-import static org.neo4j.test.utils.PageCacheConfig.config;
-
-public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache>
-{
+public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache> {
     private static final String PAGE_CACHE = "pageCache";
-    private static final Namespace PAGE_CACHE_NAMESPACE = Namespace.create( PAGE_CACHE );
+    private static final Namespace PAGE_CACHE_NAMESPACE = Namespace.create(PAGE_CACHE);
 
     private final PageCacheConfig config;
 
-    public PageCacheSupportExtension()
-    {
-        this( config() );
+    public PageCacheSupportExtension() {
+        this(config());
     }
 
-    public PageCacheSupportExtension( PageCacheConfig config )
-    {
+    public PageCacheSupportExtension(PageCacheConfig config) {
         this.config = config;
     }
 
     @Override
-    protected String getFieldKey()
-    {
+    protected String getFieldKey() {
         return PAGE_CACHE;
     }
 
     @Override
-    protected Class<PageCache> getFieldType()
-    {
+    protected Class<PageCache> getFieldType() {
         return PageCache.class;
     }
 
     @Override
-    protected PageCache createField( ExtensionContext extensionContext )
-    {
-        Store fileSystemStore = getStore( extensionContext, FileSystemExtension.FILE_SYSTEM_NAMESPACE );
-        FileSystemAbstraction contextFileSystem = fileSystemStore.get( FileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class );
-        FileSystemAbstraction pageCacheFileSystem = Optional.ofNullable( contextFileSystem )
-                                                    .orElseGet( DefaultFileSystemAbstraction::new );
-        return new PageCacheSupport().getPageCache( pageCacheFileSystem, config );
+    protected PageCache createField(ExtensionContext extensionContext) {
+        Store fileSystemStore = getStore(extensionContext, FileSystemExtension.FILE_SYSTEM_NAMESPACE);
+        FileSystemAbstraction contextFileSystem =
+                fileSystemStore.get(FileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class);
+        FileSystemAbstraction pageCacheFileSystem =
+                Optional.ofNullable(contextFileSystem).orElseGet(DefaultFileSystemAbstraction::new);
+        return new PageCacheSupport().getPageCache(pageCacheFileSystem, config);
     }
 
     /**
      * @return Return a new page cache using the provided filesystem and config. This page cache must be closed after use.
      */
-    public static PageCache getPageCache( FileSystemAbstraction fs, PageCacheConfig config )
-    {
-        return new PageCacheSupport().getPageCache( fs, config );
+    public static PageCache getPageCache(FileSystemAbstraction fs, PageCacheConfig config) {
+        return new PageCacheSupport().getPageCache(fs, config);
     }
 
     /**
      * @return Return a new page cache using the provided filesystem. This page cache must be closed after use.
      */
-    public PageCache getPageCache( FileSystemAbstraction fs )
-    {
-        return new PageCacheSupport().getPageCache( fs, config );
+    public PageCache getPageCache(FileSystemAbstraction fs) {
+        return new PageCacheSupport().getPageCache(fs, config);
     }
 
     @Override
-    protected Namespace getNameSpace()
-    {
+    protected Namespace getNameSpace() {
         return PAGE_CACHE_NAMESPACE;
     }
 
     @Override
-    public void afterAll( ExtensionContext context ) throws Exception
-    {
-        PageCache storedValue = getStoredValue( context );
-        if ( storedValue != null )
-        {
+    public void afterAll(ExtensionContext context) throws Exception {
+        PageCache storedValue = getStoredValue(context);
+        if (storedValue != null) {
             storedValue.close();
         }
-        super.afterAll( context );
+        super.afterAll(context);
     }
 }

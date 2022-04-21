@@ -19,65 +19,54 @@
  */
 package org.neo4j.internal.kernel.api.procs;
 
-import java.util.Arrays;
-import java.util.List;
-
-import org.neo4j.internal.helpers.collection.Iterables;
-
 import static java.util.Arrays.asList;
 
-public class QualifiedName
-{
+import java.util.Arrays;
+import java.util.List;
+import org.neo4j.internal.helpers.collection.Iterables;
+
+public class QualifiedName {
     private final String[] namespace;
     private final String name;
 
-    public QualifiedName( List<String> namespace, String name )
-    {
-        this( namespace.toArray( new String[0] ), name );
+    public QualifiedName(List<String> namespace, String name) {
+        this(namespace.toArray(new String[0]), name);
     }
 
-    public QualifiedName( String[] namespace, String name )
-    {
+    public QualifiedName(String[] namespace, String name) {
         this.namespace = namespace;
         this.name = name;
     }
 
-    public String[] namespace()
-    {
+    public String[] namespace() {
         return namespace;
     }
 
-    public String name()
-    {
+    public String name() {
         return name;
     }
 
     @Override
-    public String toString()
-    {
-        String strNamespace = namespace.length > 0 ? Iterables.toString( asList( namespace ), "." ) + "." : "";
-        return String.format( "%s%s", strNamespace, name );
+    public String toString() {
+        String strNamespace = namespace.length > 0 ? Iterables.toString(asList(namespace), ".") + "." : "";
+        return String.format("%s%s", strNamespace, name);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         QualifiedName that = (QualifiedName) o;
-        return Arrays.equals( namespace, that.namespace ) && name.equals( that.name );
+        return Arrays.equals(namespace, that.namespace) && name.equals(that.name);
     }
 
     @Override
-    public int hashCode()
-    {
-        return 31 * Arrays.hashCode( namespace ) + name.hashCode();
+    public int hashCode() {
+        return 31 * Arrays.hashCode(namespace) + name.hashCode();
     }
 }

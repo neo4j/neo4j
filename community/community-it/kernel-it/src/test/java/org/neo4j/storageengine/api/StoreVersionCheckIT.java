@@ -19,8 +19,10 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -33,44 +35,47 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
 @ImpermanentDbmsExtension
-class StoreVersionCheckIT
-{
+class StoreVersionCheckIT {
     @Inject
     Database db;
+
     @Inject
     PageCache pc;
+
     @Inject
     FileSystemAbstraction fs;
 
     @Test
-    void shouldBeAbleToFetchStorageVersionForOnlineDatabase()
-    {
-        //Given
-        StoreVersion storeVersion = db.getStorageEngineFactory().versionInformation( db.getStoreId() );
-        //Then
-        assertThat( storeVersion ).isNotNull();
+    void shouldBeAbleToFetchStorageVersionForOnlineDatabase() {
+        // Given
+        StoreVersion storeVersion = db.getStorageEngineFactory().versionInformation(db.getStoreId());
+        // Then
+        assertThat(storeVersion).isNotNull();
     }
 
     @Test
-    void shouldBeAbleToFetchStorageVersionForOfflineDatabase() throws Exception
-    {
-        //Given
+    void shouldBeAbleToFetchStorageVersionForOfflineDatabase() throws Exception {
+        // Given
         DatabaseLayout databaseLayout = db.getDatabaseLayout();
         Config config = db.getConfig();
 
-        //When
+        // When
         db.shutdown();
 
-        //Then
-        StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine( fs, databaseLayout, pc ).get();
-        StoreVersionCheck storeVersionCheck = sef.versionCheck( fs, databaseLayout, config, pc, NullLogService.getInstance(),
-                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
-        String storeVersionStr = storeVersionCheck.storeVersion( CursorContext.NULL_CONTEXT ).get();
-        StoreVersion storeVersion = sef.versionInformation( storeVersionStr );
-        assertThat( storeVersion ).isNotNull();
+        // Then
+        StorageEngineFactory sef =
+                StorageEngineFactory.selectStorageEngine(fs, databaseLayout, pc).get();
+        StoreVersionCheck storeVersionCheck = sef.versionCheck(
+                fs,
+                databaseLayout,
+                config,
+                pc,
+                NullLogService.getInstance(),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+        String storeVersionStr =
+                storeVersionCheck.storeVersion(CursorContext.NULL_CONTEXT).get();
+        StoreVersion storeVersion = sef.versionInformation(storeVersionStr);
+        assertThat(storeVersion).isNotNull();
     }
 }

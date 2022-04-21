@@ -19,27 +19,29 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
-
-public class FacadeKernelTransactionFactory implements KernelTransactionFactory
-{
+public class FacadeKernelTransactionFactory implements KernelTransactionFactory {
     private final Config config;
     private final GraphDatabaseFacade facade;
 
-    public FacadeKernelTransactionFactory( Config config, GraphDatabaseFacade facade )
-    {
+    public FacadeKernelTransactionFactory(Config config, GraphDatabaseFacade facade) {
         this.config = config;
         this.facade = facade;
     }
 
     @Override
-    public KernelTransaction beginKernelTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo )
-    {
-        return facade.beginKernelTransaction( type, loginContext, connectionInfo, config.get( transaction_timeout ).toMillis() );
+    public KernelTransaction beginKernelTransaction(
+            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo) {
+        return facade.beginKernelTransaction(
+                type,
+                loginContext,
+                connectionInfo,
+                config.get(transaction_timeout).toMillis());
     }
 }

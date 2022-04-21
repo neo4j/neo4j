@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -45,94 +48,77 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
-
-@DbmsExtension( configurationCallback = "configure" )
-public class QueryTracingIT
-{
+@DbmsExtension(configurationCallback = "configure")
+public class QueryTracingIT {
     @Inject
     private GraphDatabaseAPI databaseAPI;
+
     private static final List<ExecutingQuery> queries = new ArrayList<>();
 
     @ExtensionCallback
-    protected void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.addExtension( new CustomProcedureExtensionFactory() );
+    protected void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.addExtension(new CustomProcedureExtensionFactory());
     }
 
     @Test
-    void chainedQueryExecution()
-    {
-        try ( var transaction = databaseAPI.beginTransaction( IMPLICIT, AUTH_DISABLED );
-                var statement = (KernelStatement) transaction.kernelTransaction().acquireStatement() )
-        {
+    void chainedQueryExecution() {
+        try (var transaction = databaseAPI.beginTransaction(IMPLICIT, AUTH_DISABLED);
+                var statement =
+                        (KernelStatement) transaction.kernelTransaction().acquireStatement()) {
             QueryRegistry queryRegistry = statement.queryRegistry();
-            assertTrue( queryRegistry.executingQuery().isEmpty() );
+            assertTrue(queryRegistry.executingQuery().isEmpty());
 
-            assertThat( queries ).isEmpty();
+            assertThat(queries).isEmpty();
             var outerQuery = "CALL db.testCaptureProcedure()";
             var innerQuery = "match (n) return count(n)";
-            try ( Result result = transaction.execute( outerQuery ) )
-            {
+            try (Result result = transaction.execute(outerQuery)) {
                 result.next();
             }
 
-            assertThat( queries ).hasSize( 3 );
-            assertThat( queries.get( 0 ).rawQueryText() ).isEqualTo( outerQuery );
-            assertThat( queries.get( 1 ).rawQueryText() ).isEqualTo( innerQuery );
-            assertThat( queries.get( 2 ).rawQueryText() ).isEqualTo( outerQuery );
+            assertThat(queries).hasSize(3);
+            assertThat(queries.get(0).rawQueryText()).isEqualTo(outerQuery);
+            assertThat(queries.get(1).rawQueryText()).isEqualTo(innerQuery);
+            assertThat(queries.get(2).rawQueryText()).isEqualTo(outerQuery);
         }
     }
 
-    public static class QueryCapturingProcedure
-    {
+    public static class QueryCapturingProcedure {
         @Context
         public Transaction transaction;
 
-        @Procedure( name = "db.testCaptureProcedure" )
-        public Stream<Result> myProc()
-        {
-            var statement = (KernelStatement) ((InternalTransaction) transaction).kernelTransaction().acquireStatement();
-            queries.add( statement.queryRegistry().executingQuery().get() );
-            try ( var result = transaction.execute( "match (n) return count(n)" ) )
-            {
-                queries.add( statement.queryRegistry().executingQuery().get() );
+        @Procedure(name = "db.testCaptureProcedure")
+        public Stream<Result> myProc() {
+            var statement = (KernelStatement)
+                    ((InternalTransaction) transaction).kernelTransaction().acquireStatement();
+            queries.add(statement.queryRegistry().executingQuery().get());
+            try (var result = transaction.execute("match (n) return count(n)")) {
+                queries.add(statement.queryRegistry().executingQuery().get());
             }
-            queries.add( statement.queryRegistry().executingQuery().get() );
-            return Stream.of( new Result() );
+            queries.add(statement.queryRegistry().executingQuery().get());
+            return Stream.of(new Result());
         }
 
-        public static class Result
-        {
+        public static class Result {
             public Long value = 7L;
         }
     }
 
-    private static class CustomProcedureExtensionFactory extends ExtensionFactory<CustomProcedureExtensionFactory.Dependencies>
-    {
-        protected CustomProcedureExtensionFactory()
-        {
-            super( "customProcedureFactory" );
+    private static class CustomProcedureExtensionFactory
+            extends ExtensionFactory<CustomProcedureExtensionFactory.Dependencies> {
+        protected CustomProcedureExtensionFactory() {
+            super("customProcedureFactory");
         }
 
-        interface Dependencies
-        {
+        interface Dependencies {
             GlobalProcedures procedures();
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-        {
-            try
-            {
-                dependencies.procedures().registerProcedure( QueryCapturingProcedure.class );
-            }
-            catch ( KernelException e )
-            {
-                throw new RuntimeException( e );
+        public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+            try {
+                dependencies.procedures().registerProcedure(QueryCapturingProcedure.class);
+            } catch (KernelException e) {
+                throw new RuntimeException(e);
             }
             return new LifecycleAdapter();
         }

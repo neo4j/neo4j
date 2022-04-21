@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.util.NoSuchElementException;
-
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -40,20 +39,19 @@ import org.neo4j.time.SystemNanoClock;
  * configured check point thresholds.
  */
 @Service
-public interface CheckPointThresholdPolicy extends NamedService
-{
+public interface CheckPointThresholdPolicy extends NamedService {
     /**
      * Load the {@link CheckPointThresholdPolicy} by the given name.
      *
      * @throws NoSuchElementException if the policy was not found.
      */
-    static CheckPointThresholdPolicy loadPolicy( String policyName )
-    {
-        return Services.loadOrFail( CheckPointThresholdPolicy.class, policyName );
+    static CheckPointThresholdPolicy loadPolicy(String policyName) {
+        return Services.loadOrFail(CheckPointThresholdPolicy.class, policyName);
     }
 
     /**
      * Create a {@link CheckPointThreshold} instance based on this policy and the given configurations.
      */
-    CheckPointThreshold createThreshold( Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider );
+    CheckPointThreshold createThreshold(
+            Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider);
 }

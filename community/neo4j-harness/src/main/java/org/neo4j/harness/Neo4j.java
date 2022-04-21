@@ -21,7 +21,6 @@ package org.neo4j.harness;
 
 import java.io.PrintStream;
 import java.net.URI;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -31,8 +30,7 @@ import org.neo4j.graphdb.config.Configuration;
  * Neo4j test instance.
  */
 @PublicApi
-public interface Neo4j extends AutoCloseable
-{
+public interface Neo4j extends AutoCloseable {
     /**
      * Returns the URI to the Bolt Protocol connector of the instance.
      * @return the bolt address.
@@ -74,7 +72,7 @@ public interface Neo4j extends AutoCloseable
      * Prints logs to the specified print stream if log is available.
      * @param out the stream to print to.
      */
-    void printLogs( PrintStream out );
+    void printLogs(PrintStream out);
 
     /**
      * Shutdown neo4j test instance.

@@ -25,4 +25,3 @@
  * Both indexes and constraints are configured based on node {@linkplain org.neo4j.graphdb.Label labels}.
  */
 package org.neo4j.graphdb.schema;
-

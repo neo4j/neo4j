@@ -19,55 +19,51 @@
  */
 package org.neo4j.bolt.v4.runtime.bookmarking;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
-
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class BookmarkWithDatabaseIdTest
-{
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+
+class BookmarkWithDatabaseIdTest {
     @Test
-    void shouldHaveTransactionIdAndDatabaseId()
-    {
+    void shouldHaveTransactionIdAndDatabaseId() {
         var txId = 42;
-        var databaseId = from( "morty", UUID.randomUUID() );
+        var databaseId = from("morty", UUID.randomUUID());
 
-        var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
+        var bookmark = new BookmarkWithDatabaseId(txId, databaseId);
 
-        assertEquals( txId, bookmark.txId() );
-        assertEquals( databaseId, bookmark.databaseId() );
+        assertEquals(txId, bookmark.txId());
+        assertEquals(databaseId, bookmark.databaseId());
     }
 
     @Test
-    void shouldAttachToMetadata()
-    {
+    void shouldAttachToMetadata() {
         var txId = 42;
-        var namedDatabaseId = from( "morty", UUID.randomUUID() );
-        var responseHandler = mock( BoltResponseHandler.class );
-        var bookmark = new BookmarkWithDatabaseId( txId, namedDatabaseId );
+        var namedDatabaseId = from("morty", UUID.randomUUID());
+        var responseHandler = mock(BoltResponseHandler.class);
+        var bookmark = new BookmarkWithDatabaseId(txId, namedDatabaseId);
 
-        bookmark.attachTo( responseHandler );
+        bookmark.attachTo(responseHandler);
 
-        verify( responseHandler ).onMetadata( "bookmark",
-                stringValue( String.format( "%s:42", namedDatabaseId.databaseId().uuid() ) ) );
+        verify(responseHandler)
+                .onMetadata(
+                        "bookmark",
+                        stringValue(String.format(
+                                "%s:42", namedDatabaseId.databaseId().uuid())));
     }
 
     @Test
-    void shouldFormatAsString()
-    {
+    void shouldFormatAsString() {
         var txId = 424242;
-        var namedDatabaseId = from( "morty", UUID.randomUUID() );
+        var namedDatabaseId = from("morty", UUID.randomUUID());
 
-        var bookmark = new BookmarkWithDatabaseId( txId, namedDatabaseId );
+        var bookmark = new BookmarkWithDatabaseId(txId, namedDatabaseId);
 
-        assertEquals( String.format( "%s:424242", namedDatabaseId.databaseId().uuid() ), bookmark.toString() );
+        assertEquals(String.format("%s:424242", namedDatabaseId.databaseId().uuid()), bookmark.toString());
     }
 }
-

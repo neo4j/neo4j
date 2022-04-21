@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.exceptions.InternalException
 
-final case class QueryPagination(skip: Option[Expression] = None,
-                                 limit: Option[Expression] = None) {
+final case class QueryPagination(skip: Option[Expression] = None, limit: Option[Expression] = None) {
 
   def withSkip(skip: Option[Skip]): QueryPagination = copy(skip = skip.map(_.expression))
   def withSkipExpression(skip: Expression): QueryPagination = copy(skip = Some(skip))
@@ -39,9 +38,9 @@ final case class QueryPagination(skip: Option[Expression] = None,
     )
 
   private def either[T](what: String, a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException(s"Can't join two query pagination with different $what")
-    case (s@Some(_), None)  => s
-    case (None, s)          => s
+    case (Some(_), Some(_))  => throw new InternalException(s"Can't join two query pagination with different $what")
+    case (s @ Some(_), None) => s
+    case (None, s)           => s
   }
 }
 

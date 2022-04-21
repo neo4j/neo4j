@@ -21,14 +21,12 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import org.neo4j.io.fs.FlushableChecksumChannel;
 
-public interface FlushablePositionAwareChecksumChannel extends FlushableChecksumChannel, PositionAwareChannel
-{
+public interface FlushablePositionAwareChecksumChannel extends FlushableChecksumChannel, PositionAwareChannel {
     /**
      * Bulk append of transaction logs with prepared buffer of tx logs
      * @param buffer buffer with transaction logs
      */
-    void write( ByteBuffer buffer ) throws IOException;
+    void write(ByteBuffer buffer) throws IOException;
 }

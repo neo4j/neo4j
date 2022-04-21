@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.runtime.spec.tests.stress.ConcurrencyStressTest
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class RelationshipIndexSeekConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
-                                                                                          edition: Edition[CONTEXT],
-                                                                                          runtime: CypherRuntime[CONTEXT],
-                                                                                        ) extends ConcurrencyStressTestBase[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends ConcurrencyStressTestBase[CONTEXT](edition, runtime) {
 
   test("should not return relationships with null end nodes from directed relationship") {
     seekWithConcurrentDeletes(directed = true)

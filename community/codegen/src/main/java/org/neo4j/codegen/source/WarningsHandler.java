@@ -23,29 +23,22 @@ import java.util.List;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
-interface WarningsHandler
-{
-    WarningsHandler NO_WARNINGS_HANDLER = diagnostics ->
-    {
-    };
+interface WarningsHandler {
+    WarningsHandler NO_WARNINGS_HANDLER = diagnostics -> {};
 
-    void handle( List<Diagnostic<? extends JavaFileObject>> diagnostics );
+    void handle(List<Diagnostic<? extends JavaFileObject>> diagnostics);
 
-    class Multiplex implements WarningsHandler
-    {
+    class Multiplex implements WarningsHandler {
         private final WarningsHandler[] handlers;
 
-        Multiplex( WarningsHandler... handlers )
-        {
+        Multiplex(WarningsHandler... handlers) {
             this.handlers = handlers;
         }
 
         @Override
-        public void handle( List<Diagnostic<? extends JavaFileObject>> diagnostics )
-        {
-            for ( WarningsHandler handler : handlers )
-            {
-                handler.handle( diagnostics );
+        public void handle(List<Diagnostic<? extends JavaFileObject>> diagnostics) {
+            for (WarningsHandler handler : handlers) {
+                handler.handle(diagnostics);
             }
         }
     }

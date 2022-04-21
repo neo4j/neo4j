@@ -22,16 +22,13 @@ package org.neo4j.codegen.source;
 import org.neo4j.codegen.CodeGeneratorOption;
 import org.neo4j.codegen.TypeReference;
 
-public abstract class SourceVisitor implements CodeGeneratorOption
-{
+public abstract class SourceVisitor implements CodeGeneratorOption {
     @Override
-    public final void applyTo( Object target )
-    {
-        if ( target instanceof Configuration configuration )
-        {
-            configuration.withSourceVisitor( this );
+    public final void applyTo(Object target) {
+        if (target instanceof Configuration configuration) {
+            configuration.withSourceVisitor(this);
         }
     }
 
-    protected abstract void visitSource( TypeReference reference, CharSequence sourceCode );
+    protected abstract void visitSource(TypeReference reference, CharSequence sourceCode);
 }

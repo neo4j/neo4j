@@ -22,20 +22,17 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.api.CommandsToApply;
 
-public class CacheInvalidationTransactionApplierFactory implements TransactionApplierFactory
-{
+public class CacheInvalidationTransactionApplierFactory implements TransactionApplierFactory {
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
 
-    public CacheInvalidationTransactionApplierFactory( NeoStores neoStores, CacheAccessBackDoor cacheAccess )
-    {
+    public CacheInvalidationTransactionApplierFactory(NeoStores neoStores, CacheAccessBackDoor cacheAccess) {
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext )
-    {
-        return new CacheInvalidationTransactionApplier( neoStores, cacheAccess, transaction.storeCursors() );
+    public TransactionApplier startTx(CommandsToApply transaction, BatchContext batchContext) {
+        return new CacheInvalidationTransactionApplier(neoStores, cacheAccess, transaction.storeCursors());
     }
 }

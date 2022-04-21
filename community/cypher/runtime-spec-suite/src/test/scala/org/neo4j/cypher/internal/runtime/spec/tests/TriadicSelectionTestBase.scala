@@ -32,10 +32,10 @@ import org.neo4j.graphdb.RelationshipType
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
-                                                                    edition: Edition[CONTEXT],
-                                                                    runtime: CypherRuntime[CONTEXT],
-                                                                    sizeHint: Int
-                                                                  ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   private def basicQuery(positivePredicate: Boolean): LogicalQuery = {
     new LogicalQueryBuilder(this)
@@ -128,7 +128,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
       val nodes = nodeGraph(size)
       val rels = for {
         n <- 0 until size
-        m <- (n-2) to (n+2) if m != n && m >= 0 && m < size
+        m <- (n - 2) to (n + 2) if m != n && m >= 0 && m < size
       } yield (n, m, "FRIEND")
 
       connect(nodes, rels)
@@ -197,7 +197,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
       val nodes = nodeGraph(size)
       val rels = for {
         n <- 0 until size
-        m <- (n-2) to (n+2) if m != n && m >= 0 && m < size
+        m <- (n - 2) to (n + 2) if m != n && m >= 0 && m < size
       } yield (n, m, "FRIEND")
 
       connect(nodes, rels)

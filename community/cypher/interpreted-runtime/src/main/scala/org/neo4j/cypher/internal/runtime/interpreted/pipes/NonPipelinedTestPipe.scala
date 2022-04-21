@@ -28,7 +28,10 @@ import org.neo4j.cypher.internal.util.attribution.Id
  */
 case class NonPipelinedTestPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.map(row => {
       state.query.getOptLabelId("DUMMY_LABEL") // Expected to generate one db hit per row, for testing profiling.
       row

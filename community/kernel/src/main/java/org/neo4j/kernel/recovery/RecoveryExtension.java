@@ -29,9 +29,6 @@ import java.lang.annotation.Target;
  * Annotation to mark extension that want to participate in database recovery.
  */
 @Inherited
-@Target( ElementType.TYPE )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface RecoveryExtension
-{
-
-}
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface RecoveryExtension {}

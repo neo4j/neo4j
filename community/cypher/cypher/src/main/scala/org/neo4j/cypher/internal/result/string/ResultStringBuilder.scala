@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 import java.io.PrintWriter
+
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -75,6 +76,7 @@ object ResultStringBuilder {
   }
 
   case class InternalTransactionSupport(context: TransactionalContext) extends DeletedInTx {
+
     override def node(id: Long): Boolean =
       context.kernelTransaction().dataRead.nodeDeletedInTransaction(id)
 
@@ -86,8 +88,8 @@ object ResultStringBuilder {
 /**
  * The actual builder.
  */
-class ResultStringBuilder private(columns: Array[String],
-                                  deletedInTx: ResultStringBuilder.DeletedInTx) extends ResultVisitor[Exception] {
+class ResultStringBuilder private (columns: Array[String], deletedInTx: ResultStringBuilder.DeletedInTx)
+    extends ResultVisitor[Exception] {
 
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
   private val rows = new ArrayBuffer[Array[String]]
@@ -142,20 +144,22 @@ class ResultStringBuilder private(columns: Array[String],
     val scalaValue = scalaValues.asShallowScalaValue(a)
     scalaValue match {
       case node: Node => s"Node[${node.getId}]${props(node)}"
-      case relationship: Relationship => s"${relationshipType(relationship)}[${relationship.getId}]${props(relationship)}"
-      case path: Path => pathAsTextValue(path)
-      case map: Map[_, _] => makeString(map)
-      case opt: Option[_] => opt.map(asTextValue).getOrElse("None")
-      case array: Array[_] => array.map(elem => asTextValue(elem)).mkString("[", ",", "]")
+      case relationship: Relationship =>
+        s"${relationshipType(relationship)}[${relationship.getId}]${props(relationship)}"
+      case path: Path            => pathAsTextValue(path)
+      case map: Map[_, _]        => makeString(map)
+      case opt: Option[_]        => opt.map(asTextValue).getOrElse("None")
+      case array: Array[_]       => array.map(elem => asTextValue(elem)).mkString("[", ",", "]")
       case iterable: Iterable[_] => iterable.map(elem => asTextValue(elem)).mkString("[", ",", "]")
-      case str: String => "\"" + str + "\""
-      case token: KeyToken => token.name
-      case null => "<null>"
-      case value => value.toString
+      case str: String           => "\"" + str + "\""
+      case token: KeyToken       => token.name
+      case null                  => "<null>"
+      case value                 => value.toString
     }
   }
 
-  private def makeString[K,V](m: Map[K, V]) = m.map { case (k, v) => s"$k -> ${asTextValue(v)}" }.mkString("{", ", ", "}")
+  private def makeString[K, V](m: Map[K, V]) =
+    m.map { case (k, v) => s"$k -> ${asTextValue(v)}" }.mkString("{", ", ", "}")
 
   private def pathAsTextValue(path: Path): String = {
     val nodes = path.nodes().iterator()
@@ -240,5 +244,5 @@ class ResultStringBuilder private(columns: Array[String],
     keyValues.mkString("{", ",", "}")
   }
 
-  private def isVirtualEntityHack(entity:Entity): Boolean = entity.getId < 0
+  private def isVirtualEntityHack(entity: Entity): Boolean = entity.getId < 0
 }

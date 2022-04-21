@@ -26,14 +26,13 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 /**
  * Store for degrees of relationship chains for dense nodes. Relationship group record ID plus relationship direction forms the key for the counts.
  */
-public interface RelationshipGroupDegreesStore extends CountsStorage
-{
+public interface RelationshipGroupDegreesStore extends CountsStorage {
     /**
      * @param txId for which transaction ID the changes will be made.
      * @param cursorContext page cache access context
      * @return an {@link Updater} which is able to make counts updates.
      */
-    Updater apply( long txId, CursorContext cursorContext );
+    Updater apply(long txId, CursorContext cursorContext);
 
     /**
      * @param groupId the relationship group ID to look for.
@@ -41,17 +40,16 @@ public interface RelationshipGroupDegreesStore extends CountsStorage
      * @param cursorContext page cache access context.
      * @return the degree for the given groupId and direction, or {@code 0} if it wasn't found.
      */
-    long degree( long groupId, RelationshipDirection direction, CursorContext cursorContext );
+    long degree(long groupId, RelationshipDirection direction, CursorContext cursorContext);
 
     /**
      * Accepts a visitor observing all entries in this store.
      * @param visitor to receive the entries.
      * @param cursorContext page cache access context.
      */
-    void accept( GroupDegreeVisitor visitor, CursorContext cursorContext );
+    void accept(GroupDegreeVisitor visitor, CursorContext cursorContext);
 
-    interface Updater extends AutoCloseable
-    {
+    interface Updater extends AutoCloseable {
         @Override
         void close();
 
@@ -62,17 +60,16 @@ public interface RelationshipGroupDegreesStore extends CountsStorage
          * @param direction the direction to make the change for.
          * @param delta delta value to apply, can be either positive or negative.
          */
-        void increment( long groupId, RelationshipDirection direction, long delta );
+        void increment(long groupId, RelationshipDirection direction, long delta);
     }
 
-    interface GroupDegreeVisitor
-    {
+    interface GroupDegreeVisitor {
         /**
          * Receives data about a degree.
          * @param groupId relationship group ID of the degree.
          * @param direction direction of the degree.
          * @param degree the absolute degree for the group and direction.
          */
-        void degree( long groupId, RelationshipDirection direction, long degree );
+        void degree(long groupId, RelationshipDirection direction, long degree);
     }
 }

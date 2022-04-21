@@ -20,29 +20,24 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
 /**
  * Basic functionality for {@link CommandReader} for {@link RecordStorageEngine}.
  */
-public abstract class BaseCommandReader implements CommandReader
-{
+public abstract class BaseCommandReader implements CommandReader {
     /**
      * Handles format back to 1.9 where the command format didn't have a version.
      */
     @Override
-    public final Command read( ReadableChannel channel ) throws IOException
-    {
+    public final Command read(ReadableChannel channel) throws IOException {
         byte commandType;
-        do
-        {
+        do {
             commandType = channel.get();
-        }
-        while ( commandType == CommandReader.NONE );
+        } while (commandType == CommandReader.NONE);
 
-        return read( commandType, channel );
+        return read(commandType, channel);
     }
 
     /**
@@ -53,5 +48,5 @@ public abstract class BaseCommandReader implements CommandReader
      * @return {@link Command} or {@code null} if end reached.
      * @throws IOException if channel throws exception.
      */
-    protected abstract Command read( byte commandType, ReadableChannel channel ) throws IOException;
+    protected abstract Command read(byte commandType, ReadableChannel channel) throws IOException;
 }

@@ -22,13 +22,12 @@ package org.neo4j.values;
 /**
  * Conversion to and from internal "storage" IDs to external element IDs.
  */
-public interface ElementIdMapper
-{
-    String nodeElementId( long nodeId );
+public interface ElementIdMapper {
+    String nodeElementId(long nodeId);
 
-    long nodeId( String id );
+    long nodeId(String id);
 
-    String relationshipElementId( long relationshipId );
+    String relationshipElementId(long relationshipId);
 
-    long relationshipId( String id );
+    long relationshipId(String id);
 }

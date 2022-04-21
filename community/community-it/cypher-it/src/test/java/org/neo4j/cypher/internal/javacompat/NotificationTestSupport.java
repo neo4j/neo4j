@@ -19,15 +19,19 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
-import org.hamcrest.TypeSafeMatcher;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.any;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
+import org.hamcrest.TypeSafeMatcher;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
@@ -41,71 +45,61 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-
 @ImpermanentDbmsExtension
-public class NotificationTestSupport
-{
+public class NotificationTestSupport {
     @Inject
     protected GraphDatabaseAPI db;
 
-    private final List<String> supportedCypherVersions = List.of( "CYPHER 3.5", "CYPHER 4.3", "CYPHER 4.4" );
+    private final List<String> supportedCypherVersions = List.of("CYPHER 3.5", "CYPHER 4.3", "CYPHER 4.4");
 
-    void assertNotificationsInSupportedVersions( String query, Matcher<Iterable<Notification>> matchesExpectation )
-    {
-        assertNotifications( supportedCypherVersions, query, matchesExpectation );
+    void assertNotificationsInSupportedVersions(String query, Matcher<Iterable<Notification>> matchesExpectation) {
+        assertNotifications(supportedCypherVersions, query, matchesExpectation);
     }
 
-    private void assertNotifications( List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation )
-    {
+    private void assertNotifications(
+            List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation) {
 
-        versions.forEach( version ->
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
-                try ( Result result = transaction.execute( String.format( "%s %s", version, query ) ) )
-                {
-                    assertThat( result.getNotifications(), matchesExpectation );
+        versions.forEach(version -> {
+            try (Transaction transaction = db.beginTx()) {
+                try (Result result = transaction.execute(String.format("%s %s", version, query))) {
+                    assertThat(result.getNotifications(), matchesExpectation);
                 }
             }
-        } );
+        });
     }
 
-    public static Matcher<Notification> notification( String code, Matcher<String> description, Matcher<InputPosition> position, SeverityLevel severity )
-    {
-        return new TypeSafeMatcher<>()
-        {
+    public static Matcher<Notification> notification(
+            String code, Matcher<String> description, Matcher<InputPosition> position, SeverityLevel severity) {
+        return new TypeSafeMatcher<>() {
             @Override
-            protected boolean matchesSafely( Notification item )
-            {
-                return code.equals( item.getCode() ) && description.matches( item.getDescription() ) && position.matches( item.getPosition() ) &&
-                        severity.equals( item.getSeverity() );
+            protected boolean matchesSafely(Notification item) {
+                return code.equals(item.getCode())
+                        && description.matches(item.getDescription())
+                        && position.matches(item.getPosition())
+                        && severity.equals(item.getSeverity());
             }
 
             @Override
-            public void describeTo( Description target )
-            {
-                target.appendText( "Notification{code=" ).appendValue( code ).appendText( ", description=[" ).appendDescriptionOf( description ).appendText(
-                        "], position=[" ).appendDescriptionOf( position ).appendText( "], severity=" ).appendValue( severity ).appendText( "}" );
+            public void describeTo(Description target) {
+                target.appendText("Notification{code=")
+                        .appendValue(code)
+                        .appendText(", description=[")
+                        .appendDescriptionOf(description)
+                        .appendText("], position=[")
+                        .appendDescriptionOf(position)
+                        .appendText("], severity=")
+                        .appendValue(severity)
+                        .appendText("}");
             }
         };
     }
 
-    public static <T> Matcher<Iterable<T>> containsItem( Matcher<T> itemMatcher )
-    {
-        return new TypeSafeMatcher<>()
-        {
+    public static <T> Matcher<Iterable<T>> containsItem(Matcher<T> itemMatcher) {
+        return new TypeSafeMatcher<>() {
             @Override
-            protected boolean matchesSafely( Iterable<T> items )
-            {
-                for ( T item : items )
-                {
-                    if ( itemMatcher.matches( item ) )
-                    {
+            protected boolean matchesSafely(Iterable<T> items) {
+                for (T item : items) {
+                    if (itemMatcher.matches(item)) {
                         return true;
                     }
                 }
@@ -113,24 +107,18 @@ public class NotificationTestSupport
             }
 
             @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "an iterable containing " ).appendDescriptionOf( itemMatcher );
+            public void describeTo(Description description) {
+                description.appendText("an iterable containing ").appendDescriptionOf(itemMatcher);
             }
         };
     }
 
-    public static <T> Matcher<Iterable<T>> containsNoItem( Matcher<T> itemMatcher )
-    {
-        return new TypeSafeMatcher<>()
-        {
+    public static <T> Matcher<Iterable<T>> containsNoItem(Matcher<T> itemMatcher) {
+        return new TypeSafeMatcher<>() {
             @Override
-            protected boolean matchesSafely( Iterable<T> items )
-            {
-                for ( T item : items )
-                {
-                    if ( itemMatcher.matches( item ) )
-                    {
+            protected boolean matchesSafely(Iterable<T> items) {
+                for (T item : items) {
+                    if (itemMatcher.matches(item)) {
                         return false;
                     }
                 }
@@ -138,132 +126,136 @@ public class NotificationTestSupport
             }
 
             @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "an iterable not containing " ).appendDescriptionOf( itemMatcher );
+            public void describeTo(Description description) {
+                description.appendText("an iterable not containing ").appendDescriptionOf(itemMatcher);
             }
         };
     }
 
-    void shouldNotifyInStream( String query, InputPosition pos, NotificationCode code )
-    {
-        Stream.of( supportedCypherVersions.toArray() ).forEach( version ->
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
-                //when
-                try ( Result result = transaction.execute( version + query ) )
-                {
-                    //then
-                    NotificationCode.Notification notification = code.notification( pos );
-                    assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
-                    Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-                    assertThat( arguments.get( "version" ), equalTo( version ) );
-                }
-                transaction.commit();
-            }
-        } );
-    }
-
-    void shouldNotifyInStreamWithDetail( String query, InputPosition pos, NotificationCode code, NotificationDetail detail )
-    {
-        Stream.of( supportedCypherVersions.toArray() ).forEach( version ->
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
-                //when
-                try ( Result result = transaction.execute( version + " " + query ) )
-                {
-
-                    //then
-                    NotificationCode.Notification notification = code.notification( pos, detail );
-                    assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
-                    Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-                    assertThat( arguments.get( "version" ), equalTo( version ) );
-                }
-                transaction.commit();
-            }
-        } );
-    }
-
-    void shouldNotNotifyInStream( String query )
-    {
-        Stream.of( supportedCypherVersions.toArray() ).forEach( version ->
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
+    void shouldNotifyInStream(String query, InputPosition pos, NotificationCode code) {
+        Stream.of(supportedCypherVersions.toArray()).forEach(version -> {
+            try (Transaction transaction = db.beginTx()) {
                 // when
-                try ( Result result = transaction.execute( version + " " + query ) )
-                {
+                try (Result result = transaction.execute(version + query)) {
+                    // then
+                    NotificationCode.Notification notification = code.notification(pos);
+                    assertThat(Iterables.asList(result.getNotifications()), Matchers.hasItems(notification));
+                    Map<String, Object> arguments =
+                            result.getExecutionPlanDescription().getArguments();
+                    assertThat(arguments.get("version"), equalTo(version));
+                }
+                transaction.commit();
+            }
+        });
+    }
+
+    void shouldNotifyInStreamWithDetail(
+            String query, InputPosition pos, NotificationCode code, NotificationDetail detail) {
+        Stream.of(supportedCypherVersions.toArray()).forEach(version -> {
+            try (Transaction transaction = db.beginTx()) {
+                // when
+                try (Result result = transaction.execute(version + " " + query)) {
 
                     // then
-                    assertThat( Iterables.asList( result.getNotifications() ), empty() );
-                    Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-                    assertThat( arguments.get( "version" ), equalTo( version ) );
+                    NotificationCode.Notification notification = code.notification(pos, detail);
+                    assertThat(Iterables.asList(result.getNotifications()), Matchers.hasItems(notification));
+                    Map<String, Object> arguments =
+                            result.getExecutionPlanDescription().getArguments();
+                    assertThat(arguments.get("version"), equalTo(version));
                 }
                 transaction.commit();
             }
-        } );
+        });
     }
 
-    Matcher<Notification> cartesianProductWarning = notification( "Neo.ClientNotification.Statement.CartesianProductWarning", containsString(
-            "If a part of a query contains multiple disconnected patterns, this will build a " +
-                    "cartesian product between all those parts. This may produce a large amount of data and slow down" + " query processing. " +
-                    "While occasionally intended, it may often be possible to reformulate the query that avoids the " + "use of this cross " +
-                    "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH" ), any( InputPosition.class ),
-            SeverityLevel.WARNING );
+    void shouldNotNotifyInStream(String query) {
+        Stream.of(supportedCypherVersions.toArray()).forEach(version -> {
+            try (Transaction transaction = db.beginTx()) {
+                // when
+                try (Result result = transaction.execute(version + " " + query)) {
 
-    Matcher<Notification> largeLabelCSVWarning = notification( "Neo.ClientNotification.Statement.NoApplicableIndexWarning", containsString(
-            "Using LOAD CSV with a large data set in a query where the execution plan contains the " +
-                    "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely " +
-                    "not perform well on large data sets. Please consider using a schema index." ), any( InputPosition.class ), SeverityLevel.WARNING );
+                    // then
+                    assertThat(Iterables.asList(result.getNotifications()), empty());
+                    Map<String, Object> arguments =
+                            result.getExecutionPlanDescription().getArguments();
+                    assertThat(arguments.get("version"), equalTo(version));
+                }
+                transaction.commit();
+            }
+        });
+    }
 
-    Matcher<Notification> eagerOperatorWarning = notification( "Neo.ClientNotification.Statement.EagerOperatorWarning", containsString(
-            "Using LOAD CSV with a large data set in a query where the execution plan contains the " +
-                    "Eager operator could potentially consume a lot of memory and is likely to not perform well. " +
-                    "See the Neo4j Manual entry on the Eager operator for more information and hints on " + "how problems could be avoided." ),
-            any( InputPosition.class ), SeverityLevel.WARNING );
+    Matcher<Notification> cartesianProductWarning = notification(
+            "Neo.ClientNotification.Statement.CartesianProductWarning",
+            containsString(
+                    "If a part of a query contains multiple disconnected patterns, this will build a "
+                            + "cartesian product between all those parts. This may produce a large amount of data and slow down"
+                            + " query processing. "
+                            + "While occasionally intended, it may often be possible to reformulate the query that avoids the "
+                            + "use of this cross "
+                            + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH"),
+            any(InputPosition.class),
+            SeverityLevel.WARNING);
 
-    Matcher<Notification> unknownPropertyKeyWarning =
-            notification( "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning", containsString( "the missing property name is" ),
-                    any( InputPosition.class ), SeverityLevel.WARNING );
+    Matcher<Notification> largeLabelCSVWarning = notification(
+            "Neo.ClientNotification.Statement.NoApplicableIndexWarning",
+            containsString("Using LOAD CSV with a large data set in a query where the execution plan contains the "
+                    + "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
+                    + "not perform well on large data sets. Please consider using a schema index."),
+            any(InputPosition.class),
+            SeverityLevel.WARNING);
 
-    Matcher<Notification> unknownRelationshipWarning =
-            notification( "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning", containsString( "the missing relationship type is" ),
-                    any( InputPosition.class ), SeverityLevel.WARNING );
+    Matcher<Notification> eagerOperatorWarning = notification(
+            "Neo.ClientNotification.Statement.EagerOperatorWarning",
+            containsString("Using LOAD CSV with a large data set in a query where the execution plan contains the "
+                    + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
+                    + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
+                    + "how problems could be avoided."),
+            any(InputPosition.class),
+            SeverityLevel.WARNING);
 
-    Matcher<Notification> unknownLabelWarning =
-            notification( "Neo.ClientNotification.Statement.UnknownLabelWarning", containsString( "the missing label name is" ), any( InputPosition.class ),
-                    SeverityLevel.WARNING );
+    Matcher<Notification> unknownPropertyKeyWarning = notification(
+            "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning",
+            containsString("the missing property name is"),
+            any(InputPosition.class),
+            SeverityLevel.WARNING);
 
-    Matcher<Notification> dynamicPropertyWarning = notification( "Neo.ClientNotification.Statement.DynamicPropertyWarning",
-            containsString( "Using a dynamic property makes it impossible to use an index lookup for this query" ), any( InputPosition.class ),
-            SeverityLevel.WARNING );
+    Matcher<Notification> unknownRelationshipWarning = notification(
+            "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning",
+            containsString("the missing relationship type is"),
+            any(InputPosition.class),
+            SeverityLevel.WARNING);
 
-    public static class ChangedResults
-    {
+    Matcher<Notification> unknownLabelWarning = notification(
+            "Neo.ClientNotification.Statement.UnknownLabelWarning",
+            containsString("the missing label name is"),
+            any(InputPosition.class),
+            SeverityLevel.WARNING);
+
+    Matcher<Notification> dynamicPropertyWarning = notification(
+            "Neo.ClientNotification.Statement.DynamicPropertyWarning",
+            containsString("Using a dynamic property makes it impossible to use an index lookup for this query"),
+            any(InputPosition.class),
+            SeverityLevel.WARNING);
+
+    public static class ChangedResults {
         @Deprecated
         public final String oldField = "deprecated";
+
         public final String newField = "use this";
     }
 
-    public static class TestProcedures
-    {
-        @Procedure( "newProc" )
-        public void newProc()
-        {
-        }
+    public static class TestProcedures {
+        @Procedure("newProc")
+        public void newProc() {}
 
         @Deprecated
-        @Procedure( name = "oldProc", deprecatedBy = "newProc" )
-        public void oldProc()
-        {
-        }
+        @Procedure(name = "oldProc", deprecatedBy = "newProc")
+        public void oldProc() {}
 
-        @Procedure( "changedProc" )
-        public Stream<ChangedResults> changedProc()
-        {
-            return Stream.of( new ChangedResults() );
+        @Procedure("changedProc")
+        public Stream<ChangedResults> changedProc() {
+            return Stream.of(new ChangedResults());
         }
     }
 }

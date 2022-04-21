@@ -28,11 +28,12 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
  * For databases in dbms.read_only mode, the implementation of {@link org.neo4j.kernel.impl.api.TransactionCommitProcess}
  * will simply always throw an exception on commit, to ensure that no changes are made.
  */
-public class ReadOnlyTransactionCommitProcess implements TransactionCommitProcess
-{
+public class ReadOnlyTransactionCommitProcess implements TransactionCommitProcess {
     @Override
-    public long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode ) throws TransactionFailureException
-    {
-        throw new TransactionFailureException( Status.General.ForbiddenOnReadOnlyDatabase, "Transactions cannot be committed in a read-only Neo4j database" );
+    public long commit(TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+            throws TransactionFailureException {
+        throw new TransactionFailureException(
+                Status.General.ForbiddenOnReadOnlyDatabase,
+                "Transactions cannot be committed in a read-only Neo4j database");
     }
 }

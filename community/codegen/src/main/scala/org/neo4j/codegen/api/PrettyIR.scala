@@ -40,7 +40,7 @@ object PrettyIR {
 
     def append(str: String): PrettyBuilder = {
       if (onNewLine) {
-        sb.append(" "*indent)
+        sb.append(" " * indent)
         onNewLine = false
       }
       sb.append(str)
@@ -65,11 +65,11 @@ object PrettyIR {
 
     def result: String = sb.result()
 
-    //noinspection NameBooleanParameters
+    // noinspection NameBooleanParameters
     @nowarn("msg=(Exhaustivity analysis)|(match may not be exhaustive)")
     def pretty(ir: IntermediateRepresentation): PrettyBuilder = {
       ir match {
-        case Block(Seq(d@DeclareLocalVariable(_, name), AssignToLocalVariable(name2, value))) if name == name2 =>
+        case Block(Seq(d @ DeclareLocalVariable(_, name), AssignToLocalVariable(name2, value))) if name == name2 =>
           pretty(d).append(" = ").pretty(value)
 
         case Block(Seq()) => append("{ }")
@@ -87,7 +87,7 @@ object PrettyIR {
              *
              * boolean v3 = true;
              */
-            case (d@DeclareLocalVariable(_, name), AssignToLocalVariable(name2, value)) if name == name2  =>
+            case (d @ DeclareLocalVariable(_, name), AssignToLocalVariable(name2, value)) if name == name2 =>
               pretty(d).append(" = ").pretty(value).newLine()
               Noop
             case (Noop, current) => current
@@ -95,7 +95,7 @@ object PrettyIR {
               pretty(acc).newLine()
               current
           }
-          if(lastIr != Noop)
+          if (lastIr != Noop)
             pretty(lastIr).newLine()
           decrIndent()
           append("}")
@@ -109,7 +109,7 @@ object PrettyIR {
         case NewInstance(constructor, params) =>
           append("new ").prettyType(constructor.owner).prettyParams(params)
 
-        case Invoke(target, method, params)  =>
+        case Invoke(target, method, params) =>
           pretty(target).prettyInvoke(method, params)
 
         case InvokeSideEffect(target, method, params) =>
@@ -151,15 +151,15 @@ object PrettyIR {
         case BooleanOr(as) =>
           val size = as.size
           as.zipWithIndex.foreach {
-            case (v, i) if i < size -1 => pretty(v).append(" || ")
-            case (v, _) => pretty((v))
+            case (v, i) if i < size - 1 => pretty(v).append(" || ")
+            case (v, _)                 => pretty((v))
           }
 
         case BooleanAnd(as) =>
           val size = as.size
           as.zipWithIndex.foreach {
-            case (v, i) if i < size -1 => pretty(v).append(" && ")
-            case (v, _) => pretty((v))
+            case (v, i) if i < size - 1 => pretty(v).append(" && ")
+            case (v, _)                 => pretty((v))
           }
 
         case Condition(test, onTrue, onFalse) =>
@@ -206,15 +206,14 @@ object PrettyIR {
 
         case Noop =>
 
-        case Not(Eq(lhs, rhs)) =>  pretty(lhs).append(" != ").pretty(rhs)
+        case Not(Eq(lhs, rhs)) => pretty(lhs).append(" != ").pretty(rhs)
 
         case Not(expr) => append("!(").pretty(expr).append(")")
       }
       this
     }
 
-    private def prettyInvoke(method: Method,
-                     params: Seq[IntermediateRepresentation]): PrettyBuilder = {
+    private def prettyInvoke(method: Method, params: Seq[IntermediateRepresentation]): PrettyBuilder = {
       append(s".${method.name}")
       prettyParams(params)
     }
@@ -227,14 +226,14 @@ object PrettyIR {
 
         var first = true
         val iter = typeReference.parameters.iterator()
-        while(iter.hasNext){
+        while (iter.hasNext) {
           if (first) first = false else append(", ")
           prettyType(iter.next())
         }
         append(">")
       }
 
-      if(typeReference.isArray){
+      if (typeReference.isArray) {
         append("[]")
       }
       this

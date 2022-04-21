@@ -27,5 +27,5 @@ object LenientCreateRelationship {
 
   def errorMsg(relName: String, nodeName: String): String =
     s"Failed to create relationship `$relName`, node `$nodeName` is missing. If you prefer to simply ignore rows " +
-    s"where a relationship node is missing, set '$confName = true' in neo4j.conf"
+      s"where a relationship node is missing, set '$confName = true' in neo4j.conf"
 }

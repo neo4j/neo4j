@@ -30,7 +30,8 @@ class CaseExpressionParserTest extends JavaccParserAstTestBase[Expression] {
       CaseExpression(
         None,
         List(varFor("e") -> varFor("e")),
-        Some(nullLiteral))
+        Some(nullLiteral)
+      )
     }
   }
 
@@ -39,7 +40,8 @@ class CaseExpressionParserTest extends JavaccParserAstTestBase[Expression] {
       CaseExpression(
         Some(function("when", varFor("e"))),
         List(varFor("e") -> varFor("e")),
-        Some(nullLiteral))
+        Some(nullLiteral)
+      )
     }
   }
 

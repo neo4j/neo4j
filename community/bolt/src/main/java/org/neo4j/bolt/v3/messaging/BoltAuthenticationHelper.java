@@ -20,35 +20,30 @@
 package org.neo4j.bolt.v3.messaging;
 
 import java.util.Map;
-
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.values.storable.Values;
 
-public class BoltAuthenticationHelper
-{
-    public static boolean processAuthentication( String userAgent, Map<String,Object> authToken, StateMachineContext context ) throws BoltConnectionFatality
-    {
-        try
-        {
+public class BoltAuthenticationHelper {
+    public static boolean processAuthentication(
+            String userAgent, Map<String, Object> authToken, StateMachineContext context)
+            throws BoltConnectionFatality {
+        try {
             BoltStateMachineSPI boltSpi = context.boltSpi();
 
-            AuthenticationResult authResult = boltSpi.authenticate( authToken );
-            context.authenticatedAsUser( authResult.getLoginContext(), userAgent );
+            AuthenticationResult authResult = boltSpi.authenticate(authToken);
+            context.authenticatedAsUser(authResult.getLoginContext(), userAgent);
 
-            if ( authResult.credentialsExpired() )
-            {
-                context.connectionState().onMetadata( "credentials_expired", Values.TRUE );
+            if (authResult.credentialsExpired()) {
+                context.connectionState().onMetadata("credentials_expired", Values.TRUE);
             }
-            context.connectionState().onMetadata( "server", Values.utf8Value( boltSpi.version() ) );
+            context.connectionState().onMetadata("server", Values.utf8Value(boltSpi.version()));
 
             return true;
-        }
-        catch ( Throwable t )
-        {
-            context.handleFailure( t, true );
+        } catch (Throwable t) {
+            context.handleFailure(t, true);
             return false;
         }
     }

@@ -26,18 +26,16 @@ import static java.lang.String.format;
  * Also contains the signature byte with which the message is
  * encoded on the wire.
  */
-public enum BoltResponseMessage
-{
-    SUCCESS( 0x70 ),
-    RECORD( 0x71 ),
-    IGNORED( 0x7E ),
-    FAILURE( 0x7F );
+public enum BoltResponseMessage {
+    SUCCESS(0x70),
+    RECORD(0x71),
+    IGNORED(0x7E),
+    FAILURE(0x7F);
 
-    private static final BoltResponseMessage[] VALUES_BY_SIGNATURE =  new BoltResponseMessage[0x80];
-    static
-    {
-        for ( BoltResponseMessage value : values() )
-        {
+    private static final BoltResponseMessage[] VALUES_BY_SIGNATURE = new BoltResponseMessage[0x80];
+
+    static {
+        for (BoltResponseMessage value : values()) {
             VALUES_BY_SIGNATURE[value.signature()] = value;
         }
     }
@@ -49,26 +47,21 @@ public enum BoltResponseMessage
      * @return the appropriate message instance
      * @throws IllegalArgumentException if no such message exists
      */
-    public static BoltResponseMessage withSignature( int signature )
-    {
+    public static BoltResponseMessage withSignature(int signature) {
         BoltResponseMessage message = VALUES_BY_SIGNATURE[signature];
-        if ( message == null )
-        {
-            throw new IllegalArgumentException( format( "No message with signature %d", signature ) );
+        if (message == null) {
+            throw new IllegalArgumentException(format("No message with signature %d", signature));
         }
         return message;
     }
 
     private final byte signature;
 
-    BoltResponseMessage( int signature )
-    {
+    BoltResponseMessage(int signature) {
         this.signature = (byte) signature;
     }
 
-    public byte signature()
-    {
+    public byte signature() {
         return signature;
     }
-
 }

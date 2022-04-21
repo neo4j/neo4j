@@ -39,29 +39,45 @@ import org.neo4j.cypher.internal.util.Selectivity
 /**
  * Test that CompositeExpressionSelectivityCalculator returns the same results as ExpressionSelectivityCalculator for single expressions.
  */
-abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends ExpressionSelectivityCalculatorTest {
-  override protected def setUpCalculator(labelInfo: LabelInfo,
-                                         relTypeInfo: RelTypeInfo,
-                                         stats: GraphStatistics,
-                                         planningTextIndexesEnabled: Boolean,
-                                         planningRangeIndexesEnabled: Boolean,
-                                         planningPointIndexesEnabled: Boolean,
-                                        ): Expression => Selectivity = {
+abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
+    extends ExpressionSelectivityCalculatorTest {
+
+  override protected def setUpCalculator(
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    stats: GraphStatistics,
+    planningTextIndexesEnabled: Boolean,
+    planningRangeIndexesEnabled: Boolean,
+    planningPointIndexesEnabled: Boolean
+  ): Expression => Selectivity = {
     val semanticTable = setupSemanticTable()
-    val compositeCalculator = CompositeExpressionSelectivityCalculator(mockPlanContext(stats), planningTextIndexesEnabled, planningRangeIndexesEnabled, planningPointIndexesEnabled)
+    val compositeCalculator = CompositeExpressionSelectivityCalculator(
+      mockPlanContext(stats),
+      planningTextIndexesEnabled,
+      planningRangeIndexesEnabled,
+      planningPointIndexesEnabled
+    )
     exp: Expression => {
-      compositeCalculator(Selections.from(exp), labelInfo, relTypeInfo, semanticTable, IndexCompatiblePredicatesProviderContext.default)
+      compositeCalculator(
+        Selections.from(exp),
+        labelInfo,
+        relTypeInfo,
+        semanticTable,
+        IndexCompatiblePredicatesProviderContext.default
+      )
     }
   }
 
   private def getNameId(descriptor: IndexDescriptor): Int = descriptor.entityType match {
-    case Node(labelId) => labelId.id
+    case Node(labelId)           => labelId.id
     case Relationship(relTypeId) => relTypeId.id
   }
 
   private def mockPlanContext(stats: GraphStatistics): PlanContext = new NotImplementedPlanContext {
+
     val indexMap: Map[Int, IndexDescriptor] = stats match {
-      case mockStats(_, _, _, indexCardinalities, _) => indexCardinalities.keys.map(desc => getNameId(desc) -> desc).toMap
+      case mockStats(_, _, _, indexCardinalities, _) =>
+        indexCardinalities.keys.map(desc => getNameId(desc) -> desc).toMap
       case _ => Map.empty
     }
     override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
@@ -70,13 +86,15 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
 
     override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
 
-    override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(stats, new MutableGraphStatisticsSnapshot())
+    override def statistics: InstrumentedGraphStatistics =
+      InstrumentedGraphStatistics(stats, new MutableGraphStatisticsSnapshot())
 
     override def txStateHasChanges(): Boolean = false
   }
 }
 
-class RangeCompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest {
+class RangeCompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
+    extends CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest {
   override def getIndexType: IndexDescriptor.IndexType = IndexType.Range
 
   override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =

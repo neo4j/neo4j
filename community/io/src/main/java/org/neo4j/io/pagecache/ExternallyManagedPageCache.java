@@ -19,14 +19,12 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 
 /**
@@ -35,79 +33,72 @@ import org.neo4j.io.pagecache.buffer.IOBufferFactory;
  * This page cache implementation DOES NOT delegate close() method calls, so it can be used to safely share a page
  * cache with a component that might try to close the page cache it gets.
  */
-public class ExternallyManagedPageCache implements PageCache
-{
+public class ExternallyManagedPageCache implements PageCache {
     private final PageCache delegate;
 
-    public ExternallyManagedPageCache( PageCache delegate )
-    {
+    public ExternallyManagedPageCache(PageCache delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         // Don't close the delegate, because we are not in charge of its life cycle.
     }
 
     @Override
-    public PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        return delegate.map( path, pageSize, databaseName, openOptions );
+    public PagedFile map(Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        return delegate.map(path, pageSize, databaseName, openOptions);
     }
 
     @Override
-    public PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
-            IOController ioController ) throws IOException
-    {
-        return delegate.map( path, pageSize, databaseName, openOptions, ioController );
+    public PagedFile map(
+            Path path,
+            int pageSize,
+            String databaseName,
+            ImmutableSet<OpenOption> openOptions,
+            IOController ioController)
+            throws IOException {
+        return delegate.map(path, pageSize, databaseName, openOptions, ioController);
     }
 
     @Override
-    public Optional<PagedFile> getExistingMapping( Path path ) throws IOException
-    {
-        return delegate.getExistingMapping( path );
+    public Optional<PagedFile> getExistingMapping(Path path) throws IOException {
+        return delegate.getExistingMapping(path);
     }
 
     @Override
-    public List<PagedFile> listExistingMappings() throws IOException
-    {
+    public List<PagedFile> listExistingMappings() throws IOException {
         return delegate.listExistingMappings();
     }
 
     @Override
-    public void flushAndForce() throws IOException
-    {
+    public void flushAndForce() throws IOException {
         delegate.flushAndForce();
     }
 
     @Override
-    public int pageSize()
-    {
+    public int pageSize() {
         return delegate.pageSize();
     }
 
     @Override
-    public int payloadSize()
-    {
+    public int payloadSize() {
         return delegate.payloadSize();
     }
 
     @Override
-    public int pageReservedBytes()
-    {
+    public int pageReservedBytes() {
         return delegate.pageReservedBytes();
     }
 
     @Override
-    public long maxCachedPages()
-    {
+    public long maxCachedPages() {
         return delegate.maxCachedPages();
     }
 
     @Override
-    public IOBufferFactory getBufferFactory()
-    {
+    public IOBufferFactory getBufferFactory() {
         return delegate.getBufferFactory();
     }
 }

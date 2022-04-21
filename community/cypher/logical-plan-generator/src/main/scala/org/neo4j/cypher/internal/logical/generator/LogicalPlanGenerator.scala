@@ -105,13 +105,15 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
   case class WithState[+T](x: T, state: State)
 
   object State {
-   def apply(labelsWithIds: Map[String, Int], relTypesWithIds: Map[String, Int]): State = {
+
+    def apply(labelsWithIds: Map[String, Int], relTypesWithIds: Map[String, Int]): State = {
       val resolvedLabelTypes = mutable.HashMap(labelsWithIds.mapValues(LabelId).toSeq: _*)
       val resolvedRelTypes = mutable.HashMap(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
       State(
         new SemanticTable(
           resolvedLabelNames = resolvedLabelTypes,
-          resolvedRelTypeNames = resolvedRelTypes),
+          resolvedRelTypeNames = resolvedRelTypes
+        ),
         Set.empty,
         0,
         Set.empty,
@@ -119,7 +121,8 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
         Map.empty.withDefaultValue(Set.empty),
         Map.empty,
         new Cardinalities,
-        new SequentialIdGen())
+        new SequentialIdGen()
+      )
     }
   }
 
@@ -134,15 +137,17 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
    * @param cardinalities cardinalities of generated plans
    * @param idGen id generator for plans
    */
-  case class State(semanticTable: SemanticTable,
-                   arguments: Set[String],
-                   varCount: Int,
-                   parameters: Set[String],
-                   private val leafCardinalityMultipliersStack: List[Cardinality],
-                   labelInfo: LabelInfo,
-                   relTypeInfo: RelTypeInfo,
-                   cardinalities: Cardinalities,
-                   idGen: IdGen) {
+  case class State(
+    semanticTable: SemanticTable,
+    arguments: Set[String],
+    varCount: Int,
+    parameters: Set[String],
+    private val leafCardinalityMultipliersStack: List[Cardinality],
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    cardinalities: Cardinalities,
+    idGen: IdGen
+  ) {
 
     def incVarCount(): State =
       copy(varCount = varCount + 1)
@@ -154,7 +159,9 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
       copy(semanticTable = semanticTable.addRelationship(varFor(name)))
 
     def declareTypeAny(name: String): State =
-      copy(semanticTable = semanticTable.copy(types = semanticTable.types.updated(varFor(name), ExpressionTypeInfo(CTAny.invariant, None))))
+      copy(semanticTable =
+        semanticTable.copy(types = semanticTable.types.updated(varFor(name), ExpressionTypeInfo(CTAny.invariant, None)))
+      )
 
     def addArguments(args: Set[String]): State =
       copy(arguments = arguments ++ args)
@@ -188,12 +195,14 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
  * @param planContext Mostly used to obtain statistics of a graphs that plans are executed against.
  * @param costLimit Maximum allowed cost of a generated plan.
  */
-class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
-                           relTypesWithIds: Map[String, Int],
-                           planContext: PlanContext,
-                           costLimit: Cost,
-                           nodes: Seq[Node],
-                           rels: Seq[Relationship]) extends AstConstructionTestSupport {
+class LogicalPlanGenerator(
+  labelsWithIds: Map[String, Int],
+  relTypesWithIds: Map[String, Int],
+  planContext: PlanContext,
+  costLimit: Cost,
+  nodes: Seq[Node],
+  rels: Seq[Relationship]
+) extends AstConstructionTestSupport {
 
   private val labels = labelsWithIds.keys.toVector
   private val relTypes = relTypesWithIds.keys.toVector
@@ -233,14 +242,21 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   def innerLogicalPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     leafPlan(state),
     oneChildPlan(state),
-    twoChildPlan(state),
+    twoChildPlan(state)
   ).suchThat {
     case WithState(plan, state) =>
       val po = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
         override protected def defaultValue: ProvidedOrder = ProvidedOrder.empty
       }
       CardinalityCostModel(Volcano)
-        .costFor(plan, QueryGraphSolverInput.empty, state.semanticTable, state.cardinalities, po, CostModelMonitor.DEFAULT) <= costLimit
+        .costFor(
+          plan,
+          QueryGraphSolverInput.empty,
+          state.semanticTable,
+          state.cardinalities,
+          po,
+          CostModelMonitor.DEFAULT
+        ) <= costLimit
   }
 
   def innerLogicalPlanWithAtLeastOneSymbol(state: State): Gen[WithState[LogicalPlan]] =
@@ -255,7 +271,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     sortedUndirectedRelationshipByIdSeek(state),
     sortedDirectedRelationshipByIdSeek(state),
     nodeCountFromCountStore(state),
-    relCountFromCountStore(state),
+    relCountFromCountStore(state)
   )
 
   def oneChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -270,7 +286,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     Gen.lzy(sort(state)),
     Gen.lzy(top(state)),
     Gen.lzy(selection(state)),
-    Gen.lzy(unwindCollection(state)),
+    Gen.lzy(unwindCollection(state))
   )
 
   def twoChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -279,7 +295,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     Gen.lzy(apply(state)),
     Gen.lzy(semiApply(state)),
     Gen.lzy(antiSemiApply(state)),
-    Gen.lzy(valueHashJoin(state)),
+    Gen.lzy(valueHashJoin(state))
   )
 
   // Leaf Plans
@@ -338,7 +354,9 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   }
 
   def expand(state: State): Gen[WithState[Expand]] = for {
-    WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, state) => plan.availableSymbols.exists(v => state.semanticTable.isNode(v)) }
+    WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, state) =>
+      plan.availableSymbols.exists(v => state.semanticTable.isNode(v))
+    }
     from <- Gen.oneOf(source.availableSymbols.toSeq).suchThat(name => state.semanticTable.isNode(varFor(name)))
     dir <- semanticDirection
     relTypes <- relTypeNames
@@ -351,7 +369,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     annotate(plan, state)
   }
 
-  private def sortedRelationshipByIdSeek(state: State, directed: Boolean): Gen[WithState[Sort]] =  for {
+  private def sortedRelationshipByIdSeek(state: State, directed: Boolean): Gen[WithState[Sort]] = for {
     WithState(idName, state) <- newVariable(state)
     state <- state.newRelationship(idName)
     WithState(left, state) <- newVariable(state)
@@ -360,22 +378,22 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     state <- state.newNode(right)
     relIds <- Gen.someOf(relIds ++ Seq.fill(relIds.size)(StatementConstants.NO_SUCH_RELATIONSHIP))
   } yield {
-    val seekableArgs = ManySeekableArgs(listOfInt(relIds.toSeq:_*))
-    val plan = if(directed) {
-      val p = DirectedRelationshipByIdSeek(idName, seekableArgs, left, right, Set.empty)(state.idGen)
-      annotate(p, state)
-      p
-    } else {
-      val p = UndirectedRelationshipByIdSeek(idName, seekableArgs, left, right, Set.empty)(state.idGen)
-      annotate(p, state)
-      p
-    }
+    val seekableArgs = ManySeekableArgs(listOfInt(relIds.toSeq: _*))
+    val plan =
+      if (directed) {
+        val p = DirectedRelationshipByIdSeek(idName, seekableArgs, left, right, Set.empty)(state.idGen)
+        annotate(p, state)
+        p
+      } else {
+        val p = UndirectedRelationshipByIdSeek(idName, seekableArgs, left, right, Set.empty)(state.idGen)
+        annotate(p, state)
+        p
+      }
 
     // result order is undefined, sort to make sure we get the same result for all runtimes
     val sortPlan = Sort(plan, Seq(Ascending(left), Ascending(idName)))(state.idGen)
     annotate(sortPlan, state)
   }
-
 
   def sortedUndirectedRelationshipByIdSeek(state: State): Gen[WithState[Sort]] =
     sortedRelationshipByIdSeek(state, directed = false)
@@ -410,10 +428,12 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     annotate(plan, state)
   }
 
-  private def projectionList(state: State,
-                             availableSymbols: Seq[String],
-                             expressionGen: SemanticAwareAstGenerator => Gen[Expression],
-                             minSize: Int = 0): Gen[WithState[Map[String, Expression]]] =
+  private def projectionList(
+    state: State,
+    availableSymbols: Seq[String],
+    expressionGen: SemanticAwareAstGenerator => Gen[Expression],
+    minSize: Int = 0
+  ): Gen[WithState[Map[String, Expression]]] =
     Gen.sized(s => Gen.choose(minSize, s max minSize)).flatMap { n =>
       (0 until n).foldLeft(Gen.const(WithState(Map.empty[String, Expression], state))) { (prevGen, _) =>
         for {
@@ -429,8 +449,10 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   def aggregation(state: State): Gen[WithState[Aggregation]] = for {
     WithState(source, state) <- innerLogicalPlan(state)
-    WithState(groupingExpressions, state) <- projectionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression)
-    WithState(aggregatingExpressions, state) <- projectionList(state, source.availableSymbols.toSeq, _.aggregatingExpression, minSize = 1)
+    WithState(groupingExpressions, state) <-
+      projectionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression)
+    WithState(aggregatingExpressions, state) <-
+      projectionList(state, source.availableSymbols.toSeq, _.aggregatingExpression, minSize = 1)
   } yield {
     val plan = Aggregation(source, groupingExpressions, aggregatingExpressions)(state.idGen)
     annotate(plan, state)
@@ -438,7 +460,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   def distinct(state: State): Gen[WithState[Distinct]] = for {
     WithState(source, state) <- innerLogicalPlan(state)
-    WithState(groupingExpressions, state) <- projectionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression, minSize = 1)
+    WithState(groupingExpressions, state) <-
+      projectionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression, minSize = 1)
   } yield {
     val plan = Distinct(source, groupingExpressions)(state.idGen)
     annotate(plan, state)
@@ -485,7 +508,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     WithState(xpr, state) <- validExpression(
       source.availableSymbols.toSeq,
       state,
-      expressionGen => expressionGen._listOf(expressionGen.nonAggregatingExpression))
+      expressionGen => expressionGen._listOf(expressionGen.nonAggregatingExpression)
+    )
     WithState(name, state) <- newVariable(state)
     state <- state.declareTypeAny(name)
   } yield {
@@ -556,7 +580,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   // Other stuff
 
-  private def annotate[T <: LogicalPlan](plan: T, state: State)(implicit cardinalityCalculator: CardinalityCalculator[T]): WithState[T] = {
+  private def annotate[T <: LogicalPlan](plan: T, state: State)(implicit
+  cardinalityCalculator: CardinalityCalculator[T]): WithState[T] = {
     state.cardinalities.set(plan.id, cardinalityCalculator(plan, state, planContext, labelsWithIds))
     WithState(plan, state)
   }
@@ -589,10 +614,12 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     Gen.const(WithState(name, state.incVarCount()))
   }
 
-  private def expressionList(state: State,
-                             availableSymbols: Seq[String],
-                             expressionGen: SemanticAwareAstGenerator => Gen[Expression],
-                             minSize: Int): Gen[WithState[Seq[Expression]]] =
+  private def expressionList(
+    state: State,
+    availableSymbols: Seq[String],
+    expressionGen: SemanticAwareAstGenerator => Gen[Expression],
+    minSize: Int
+  ): Gen[WithState[Seq[Expression]]] =
     Gen.sized(s => Gen.choose(minSize, s max minSize)).flatMap { n =>
       (0 until n).foldLeft(Gen.const(WithState(Seq.empty[Expression], state))) { (prevGen, _) =>
         for {
@@ -616,10 +643,10 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   }
 
   /*
-  * Creates copy of state, without variable information.
-  *
-  * - Shares cardinalities with state
-  * - Shares idGen with state
+   * Creates copy of state, without variable information.
+   *
+   * - Shares cardinalities with state
+   * - Shares idGen with state
    */
   private def copyStateWithoutVariableInfo(state: State) = {
     val resolvedLabelTypes = mutable.HashMap(labelsWithIds.mapValues(LabelId).toSeq: _*)
@@ -630,7 +657,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     val semanticTable = new SemanticTable(
       resolvedLabelNames = resolvedLabelTypes,
       resolvedRelTypeNames = resolvedRelTypes,
-      types = ASTAnnotationMap(state.semanticTable.types.filterKeys(pn => variables.contains(pn.node)).toList: _*))
+      types = ASTAnnotationMap(state.semanticTable.types.filterKeys(pn => variables.contains(pn.node)).toList: _*)
+    )
 
     State(
       semanticTable,
@@ -641,15 +669,25 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
       Map.empty.withDefaultValue(Set.empty),
       Map.empty,
       state.cardinalities,
-      state.idGen)
+      state.idGen
+    )
   }
 
   /**
    * This generates random expressions and then uses SematicChecking to see if they are valid. This works,
    * but is inefficient and will miss lots of expressions for which it is harder to generate valid instances.
    */
-  private def validExpression(availableSymbols: Seq[String], state: State, expressionGen: SemanticAwareAstGenerator => Gen[Expression]): Gen[WithState[Expression]] = {
-    val semanticState = SemanticState(new ScopeLocation(Scope.empty.location(ScopeZipper)), state.semanticTable.types, ASTAnnotationMap.empty, MessageUtilProvider)
+  private def validExpression(
+    availableSymbols: Seq[String],
+    state: State,
+    expressionGen: SemanticAwareAstGenerator => Gen[Expression]
+  ): Gen[WithState[Expression]] = {
+    val semanticState = SemanticState(
+      new ScopeLocation(Scope.empty.location(ScopeZipper)),
+      state.semanticTable.types,
+      ASTAnnotationMap.empty,
+      MessageUtilProvider
+    )
     for {
       expression <- expressionGen(new SemanticAwareAstGenerator(allowedVarNames = Some(availableSymbols)))
         .suchThat(e => {

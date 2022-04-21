@@ -19,90 +19,83 @@
  */
 package org.neo4j.server.bind;
 
-import org.glassfish.jersey.internal.PropertiesDelegate;
-import org.glassfish.jersey.server.ApplicationHandler;
-import org.glassfish.jersey.server.ContainerRequest;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import javax.ws.rs.core.SecurityContext;
-
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.core.Response.Status;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-class ComponentsBinderTest
-{
+import java.net.URI;
+import javax.ws.rs.core.SecurityContext;
+import org.glassfish.jersey.internal.PropertiesDelegate;
+import org.glassfish.jersey.server.ApplicationHandler;
+import org.glassfish.jersey.server.ContainerRequest;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.junit.jupiter.api.Test;
+
+class ComponentsBinderTest {
     private final ComponentsBinder binder = new ComponentsBinder();
 
     @Test
-    void shouldConfigureSingletonDependencyInjection()
-    {
+    void shouldConfigureSingletonDependencyInjection() {
         configureSingletonInjection();
         testDependencyInjectionConfiguration();
     }
 
     @Test
-    void shouldConfigureSupplierDependencyInjection()
-    {
+    void shouldConfigureSupplierDependencyInjection() {
         configureSupplierInjection();
         testDependencyInjectionConfiguration();
     }
 
     @Test
-    void shouldConfigureSupplierClassDependencyInjection()
-    {
+    void shouldConfigureSupplierClassDependencyInjection() {
         configureSupplierClassInjection();
         testDependencyInjectionConfiguration();
     }
 
     @Test
-    void shouldThrowWhenDependencyInjectionConfiguredAfterStartup()
-    {
+    void shouldThrowWhenDependencyInjectionConfiguredAfterStartup() {
         configureSingletonInjection();
 
         testDependencyInjectionConfiguration();
 
-        assertThrows( IllegalStateException.class, this::configureSingletonInjection );
-        assertThrows( IllegalStateException.class, this::configureSingletonInjection );
-        assertThrows( IllegalStateException.class, this::configureSupplierClassInjection );
+        assertThrows(IllegalStateException.class, this::configureSingletonInjection);
+        assertThrows(IllegalStateException.class, this::configureSingletonInjection);
+        assertThrows(IllegalStateException.class, this::configureSupplierClassInjection);
     }
 
-    private void configureSingletonInjection()
-    {
-        binder.addSingletonBinding( new DummyComponent(), DummyComponent.class );
+    private void configureSingletonInjection() {
+        binder.addSingletonBinding(new DummyComponent(), DummyComponent.class);
     }
 
-    private void configureSupplierInjection()
-    {
-        binder.addLazyBinding( DummyComponent::new, DummyComponent.class );
+    private void configureSupplierInjection() {
+        binder.addLazyBinding(DummyComponent::new, DummyComponent.class);
     }
 
-    private void configureSupplierClassInjection()
-    {
-        binder.addLazyBinding( DummyComponentSupplier.class, DummyComponent.class );
+    private void configureSupplierClassInjection() {
+        binder.addLazyBinding(DummyComponentSupplier.class, DummyComponent.class);
     }
 
-    private void testDependencyInjectionConfiguration()
-    {
-        ResourceConfig resourceConfig = new ResourceConfig()
-                .register( binder )
-                .register( DummyRestResource.class );
+    private void testDependencyInjectionConfiguration() {
+        ResourceConfig resourceConfig = new ResourceConfig().register(binder).register(DummyRestResource.class);
 
-        ApplicationHandler handler = new ApplicationHandler( resourceConfig );
+        ApplicationHandler handler = new ApplicationHandler(resourceConfig);
 
-        ContainerRequest request = new ContainerRequest( URI.create( "http://neo4j.com/" ), URI.create( "http://neo4j.com/" ), GET,
-                mock( SecurityContext.class ), mock( PropertiesDelegate.class ), null );
+        ContainerRequest request = new ContainerRequest(
+                URI.create("http://neo4j.com/"),
+                URI.create("http://neo4j.com/"),
+                GET,
+                mock(SecurityContext.class),
+                mock(PropertiesDelegate.class),
+                null);
 
         MemorizingContainerResponseWriter responseWriter = new MemorizingContainerResponseWriter();
-        request.setWriter( responseWriter );
+        request.setWriter(responseWriter);
 
-        handler.handle( request );
+        handler.handle(request);
 
-        assertEquals( Status.OK, responseWriter.getStatus() );
-        assertEquals( DummyComponent.VALUE, responseWriter.getEntity() );
+        assertEquals(Status.OK, responseWriter.getStatus());
+        assertEquals(DummyComponent.VALUE, responseWriter.getEntity());
     }
 }

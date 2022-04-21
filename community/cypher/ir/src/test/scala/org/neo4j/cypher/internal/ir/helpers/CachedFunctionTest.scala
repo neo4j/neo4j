@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir.helpers
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CachedFunctionTest extends CypherFunSuite {
+
   test("1 argument") {
     var i = 0
     val f = (_: Int) => {
@@ -75,7 +76,7 @@ class CachedFunctionTest extends CypherFunSuite {
 
   test("4 arguments") {
     var i = 0
-    val f = (_: Int, _: Int, _:Int, _:Int) => {
+    val f = (_: Int, _: Int, _: Int, _: Int) => {
       i += 1
       5
     }
@@ -92,7 +93,7 @@ class CachedFunctionTest extends CypherFunSuite {
 
   test("5 arguments") {
     var i = 0
-    val f = (_: Int, _: Int, _:Int, _:Int, _:Int) => {
+    val f = (_: Int, _: Int, _: Int, _: Int, _: Int) => {
       i += 1
       5
     }

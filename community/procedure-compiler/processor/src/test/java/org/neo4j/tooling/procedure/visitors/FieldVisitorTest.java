@@ -19,60 +19,53 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import com.google.testing.compile.CompilationRule;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
+import com.google.testing.compile.CompilationRule;
 import java.util.stream.Stream;
 import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic;
-
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
 import org.neo4j.tooling.procedure.visitors.examples.GoodContextUse;
 import org.neo4j.tooling.procedure.visitors.examples.StaticNonContextMisuse;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-
-public class FieldVisitorTest
-{
+public class FieldVisitorTest {
 
     @Rule
     public CompilationRule compilationRule = new CompilationRule();
-    private ElementVisitor<Stream<CompilationMessage>,Void> fieldVisitor;
+
+    private ElementVisitor<Stream<CompilationMessage>, Void> fieldVisitor;
     private ElementTestUtils elementTestUtils;
 
     @Before
-    public void prepare()
-    {
-        elementTestUtils = new ElementTestUtils( compilationRule );
-        fieldVisitor = new FieldVisitor( compilationRule.getTypes(), compilationRule.getElements(), true );
+    public void prepare() {
+        elementTestUtils = new ElementTestUtils(compilationRule);
+        fieldVisitor = new FieldVisitor(compilationRule.getTypes(), compilationRule.getElements(), true);
     }
 
     @Test
-    public void validates_visibility_of_fields()
-    {
-        Stream<VariableElement> fields = elementTestUtils.getFields( GoodContextUse.class );
+    public void validates_visibility_of_fields() {
+        Stream<VariableElement> fields = elementTestUtils.getFields(GoodContextUse.class);
 
-        Stream<CompilationMessage> result = fields.flatMap( fieldVisitor::visit );
+        Stream<CompilationMessage> result = fields.flatMap(fieldVisitor::visit);
 
-        assertThat( result ).isEmpty();
+        assertThat(result).isEmpty();
     }
 
     @Test
-    public void rejects_non_static_non_context_fields()
-    {
-        Stream<VariableElement> fields = elementTestUtils.getFields( StaticNonContextMisuse.class );
+    public void rejects_non_static_non_context_fields() {
+        Stream<VariableElement> fields = elementTestUtils.getFields(StaticNonContextMisuse.class);
 
-        Stream<CompilationMessage> result = fields.flatMap( fieldVisitor::visit );
+        Stream<CompilationMessage> result = fields.flatMap(fieldVisitor::visit);
 
-        assertThat( result ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
-                .containsExactly(
-                        tuple( Diagnostic.Kind.ERROR, "Field StaticNonContextMisuse#value should be static" ) );
+        assertThat(result)
+                .extracting(CompilationMessage::getCategory, CompilationMessage::getContents)
+                .containsExactly(tuple(Diagnostic.Kind.ERROR, "Field StaticNonContextMisuse#value should be static"));
     }
-
 }
-

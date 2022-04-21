@@ -28,18 +28,22 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
-                                                             edition: Edition[CONTEXT],
-                                                             runtime: CypherRuntime[CONTEXT],
-                                                             sizeHint: Int
-                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for ENDS WITH with indexes") {
     given {
       nodeIndex(IndexType.TEXT, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("text" -> "CASE")
-        case i if i % 2 == 1 => Map("text" -> "case")
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("text" -> "CASE")
+          case i if i % 2 == 1 => Map("text" -> "case")
+        },
+        "Label"
+      )
     }
 
     // when
@@ -60,10 +64,14 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   ignore("should be case sensitive for ENDS WITH with unique indexes") {
     given {
       uniqueNodeIndex(IndexType.TEXT, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("text" -> s"$i CASE")
-        case i if i % 2 == 1 => Map("text" -> s"$i case")
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("text" -> s"$i CASE")
+          case i if i % 2 == 1 => Map("text" -> s"$i case")
+        },
+        "Label"
+      )
     }
 
     // when
@@ -83,10 +91,14 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   test("should handle null input") {
     given {
       nodeIndex(IndexType.TEXT, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("text" -> "CASE")
-        case i if i % 2 == 1 => Map("text" -> "case")
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("text" -> "CASE")
+          case i if i % 2 == 1 => Map("text" -> "case")
+        },
+        "Label"
+      )
     }
 
     // when
@@ -105,10 +117,14 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   test("should handle non-text input") {
     given {
       nodeIndex(IndexType.TEXT, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("text" -> "CASE")
-        case i if i % 2 == 1 => Map("text" -> "case")
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("text" -> "CASE")
+          case i if i % 2 == 1 => Map("text" -> "case")
+        },
+        "Label"
+      )
     }
 
     // when
@@ -118,7 +134,6 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
       .nodeIndexOperator("x:Label(text ENDS WITH 1337)", indexType = IndexType.TEXT)
       .build()
 
-
     // then
     execute(logicalQuery, runtime) should beColumns("text").withNoRows()
   }
@@ -127,9 +142,13 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   ignore("should cache properties") {
     val nodes = given {
       nodeIndex(IndexType.TEXT, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("text" -> i.toString)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("text" -> i.toString)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -142,7 +161,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if i.toString.endsWith("1") => Array(n, i.toString)}
+    val expected = nodes.zipWithIndex.collect { case (n, i) if i.toString.endsWith("1") => Array(n, i.toString) }
     runtimeResult should beColumns("x", "text").withRows(expected)
   }
 
@@ -150,9 +169,13 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   ignore("should cache properties with a unique index") {
     val nodes = given {
       uniqueNodeIndex(IndexType.TEXT, "Label", "text")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("text" -> i.toString)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("text" -> i.toString)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -165,7 +188,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if i.toString.endsWith("1") => Array(n, i.toString)}
+    val expected = nodes.zipWithIndex.collect { case (n, i) if i.toString.endsWith("1") => Array(n, i.toString) }
     runtimeResult should beColumns("x", "text").withRows(expected)
   }
 }

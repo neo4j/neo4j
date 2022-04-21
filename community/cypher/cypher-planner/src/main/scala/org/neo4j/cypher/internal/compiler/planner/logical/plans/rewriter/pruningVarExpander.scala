@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -54,8 +54,7 @@ case object pruningVarExpander extends Rewriter {
       (aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)) ++
         aggPlan.aggregationExpressions.values.flatMap(_.dependencies.map(_.name))).toSet
 
-    def collectDistinctSet(plan: LogicalPlan,
-                           dependencies: Option[Set[String]]): Option[Set[String]] = {
+    def collectDistinctSet(plan: LogicalPlan, dependencies: Option[Set[String]]): Option[Set[String]] = {
 
       val lowerDistinctLand: Option[Set[String]] = plan match {
 
@@ -74,9 +73,9 @@ case object pruningVarExpander extends Rewriter {
           dependencies.map(_ ++ predicates.flatMap(_.dependencies.map(_.name)))
 
         case _: Expand |
-             _: VarExpand |
-             _: Apply |
-             _: Optional =>
+          _: VarExpand |
+          _: Apply |
+          _: Optional =>
           dependencies
 
         case _ =>
@@ -106,19 +105,22 @@ case object pruningVarExpander extends Rewriter {
         val distinctSet = findDistinctSet(plan)
 
         val innerRewriter = topDown(Rewriter.lift {
-          case expand@VarExpand(lhs,
-                                fromId,
-                                dir,
-                                _,
-                                relTypes,
-                                toId,
-                                _,
-                                length,
-                                ExpandAll,
-                                nodePredicate,
-                                relationshipPredicate) if distinctSet(expand) =>
+          case expand @ VarExpand(
+              lhs,
+              fromId,
+              dir,
+              _,
+              relTypes,
+              toId,
+              _,
+              length,
+              ExpandAll,
+              nodePredicate,
+              relationshipPredicate
+            ) if distinctSet(expand) =>
             if (isDistinctVarExpand(expand)) {
-              BFSPruningVarExpand(lhs,
+              BFSPruningVarExpand(
+                lhs,
                 fromId,
                 dir,
                 relTypes,
@@ -126,9 +128,11 @@ case object pruningVarExpander extends Rewriter {
                 length.min == 0,
                 length.max.get,
                 nodePredicate,
-                relationshipPredicate)(SameId(expand.id))
+                relationshipPredicate
+              )(SameId(expand.id))
             } else {
-              PruningVarExpand(lhs,
+              PruningVarExpand(
+                lhs,
                 fromId,
                 dir,
                 relTypes,
@@ -136,7 +140,8 @@ case object pruningVarExpander extends Rewriter {
                 length.min,
                 length.max.get,
                 nodePredicate,
-                relationshipPredicate)(SameId(expand.id))
+                relationshipPredicate
+              )(SameId(expand.id))
 
             }
         })
@@ -154,13 +159,14 @@ case object pruningVarExpander extends Rewriter {
 
   private def validLength(expand: VarExpand): Boolean = expand.length.max match {
     case Some(i) => i > 1
-    case _ => false
+    case _       => false
   }
 
   private def isDistinct(e: Expression) = e match {
     case f: FunctionInvocation => f.distinct
-    case _ => false
+    case _                     => false
   }
 
-  private def isDistinctVarExpand(expand: VarExpand): Boolean = expand.length.min <= 1 && expand.dir != SemanticDirection.BOTH
+  private def isDistinctVarExpand(expand: VarExpand): Boolean =
+    expand.length.min <= 1 && expand.dir != SemanticDirection.BOTH
 }

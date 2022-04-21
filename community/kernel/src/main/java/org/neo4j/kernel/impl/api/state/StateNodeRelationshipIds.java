@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.txstate.RelationshipModifications;
-
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.storageengine.api.txstate.RelationshipModifications.noAdditionalDataDecorator;
 
-class StateNodeRelationshipIds implements RelationshipModifications.NodeRelationshipIds
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( StateNodeRelationshipIds.class );
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications;
+
+class StateNodeRelationshipIds implements RelationshipModifications.NodeRelationshipIds {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(StateNodeRelationshipIds.class);
     private final NodeStateImpl nodeState;
     private final boolean hasCreations;
     private final boolean hasDeletions;
     private final RelationshipModifications.IdDataDecorator relationshipVisit;
 
-    static StateNodeRelationshipIds createStateNodeRelationshipIds( NodeStateImpl nodeState, RelationshipModifications.IdDataDecorator relationshipVisit,
-            MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap( SHALLOW_SIZE );
-        return new StateNodeRelationshipIds( nodeState, relationshipVisit );
+    static StateNodeRelationshipIds createStateNodeRelationshipIds(
+            NodeStateImpl nodeState,
+            RelationshipModifications.IdDataDecorator relationshipVisit,
+            MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(SHALLOW_SIZE);
+        return new StateNodeRelationshipIds(nodeState, relationshipVisit);
     }
 
-    private StateNodeRelationshipIds( NodeStateImpl nodeState, RelationshipModifications.IdDataDecorator relationshipVisit )
-    {
+    private StateNodeRelationshipIds(
+            NodeStateImpl nodeState, RelationshipModifications.IdDataDecorator relationshipVisit) {
         this.nodeState = nodeState;
         this.hasCreations = nodeState.hasAddedRelationships();
         this.hasDeletions = nodeState.hasRemovedRelationships();
@@ -49,52 +49,42 @@ class StateNodeRelationshipIds implements RelationshipModifications.NodeRelation
     }
 
     @Override
-    public long nodeId()
-    {
+    public long nodeId() {
         return nodeState.getId();
     }
 
     @Override
-    public boolean hasCreations()
-    {
+    public boolean hasCreations() {
         return hasCreations;
     }
 
     @Override
-    public boolean hasCreations( int type )
-    {
-        return hasCreations && nodeState.hasAddedRelationships( type );
+    public boolean hasCreations(int type) {
+        return hasCreations && nodeState.hasAddedRelationships(type);
     }
 
     @Override
-    public boolean hasDeletions()
-    {
+    public boolean hasDeletions() {
         return hasDeletions;
     }
 
     @Override
-    public RelationshipModifications.RelationshipBatch creations()
-    {
-        return nodeState.additionsAsRelationshipBatch( relationshipVisit );
+    public RelationshipModifications.RelationshipBatch creations() {
+        return nodeState.additionsAsRelationshipBatch(relationshipVisit);
     }
 
     @Override
-    public RelationshipModifications.RelationshipBatch deletions()
-    {
-        return nodeState.removalsAsRelationshipBatch( noAdditionalDataDecorator() );
+    public RelationshipModifications.RelationshipBatch deletions() {
+        return nodeState.removalsAsRelationshipBatch(noAdditionalDataDecorator());
     }
 
     @Override
-    public void forEachCreationSplitInterruptible(
-            RelationshipModifications.InterruptibleTypeIdsVisitor visitor )
-    {
-        nodeState.visitAddedIdsSplit( visitor, relationshipVisit );
+    public void forEachCreationSplitInterruptible(RelationshipModifications.InterruptibleTypeIdsVisitor visitor) {
+        nodeState.visitAddedIdsSplit(visitor, relationshipVisit);
     }
 
     @Override
-    public void forEachDeletionSplitInterruptible(
-            RelationshipModifications.InterruptibleTypeIdsVisitor visitor )
-    {
-        nodeState.visitRemovedIdsSplit( visitor );
+    public void forEachDeletionSplitInterruptible(RelationshipModifications.InterruptibleTypeIdsVisitor visitor) {
+        nodeState.visitRemovedIdsSplit(visitor);
     }
 }

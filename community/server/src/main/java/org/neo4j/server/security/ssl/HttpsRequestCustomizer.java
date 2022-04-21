@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.security.ssl;
 
+import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
+import static org.neo4j.server.configuration.ServerSettings.http_strict_transport_security;
+
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpScheme;
@@ -26,44 +29,33 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
-
 import org.neo4j.configuration.Config;
 
-import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
-import static org.neo4j.server.configuration.ServerSettings.http_strict_transport_security;
-
-public class HttpsRequestCustomizer implements HttpConfiguration.Customizer
-{
+public class HttpsRequestCustomizer implements HttpConfiguration.Customizer {
     private final HttpField hstsResponseField;
 
-    public HttpsRequestCustomizer( Config config )
-    {
-        hstsResponseField = createHstsResponseField( config );
+    public HttpsRequestCustomizer(Config config) {
+        hstsResponseField = createHstsResponseField(config);
     }
 
     @Override
-    public void customize( Connector connector, HttpConfiguration channelConfig, Request request )
-    {
-        request.setScheme( HttpScheme.HTTPS.asString() );
+    public void customize(Connector connector, HttpConfiguration channelConfig, Request request) {
+        request.setScheme(HttpScheme.HTTPS.asString());
 
-        addResponseFieldIfConfigured( request, hstsResponseField );
+        addResponseFieldIfConfigured(request, hstsResponseField);
     }
 
-    private static void addResponseFieldIfConfigured( Request request, HttpField field )
-    {
-        if ( field != null )
-        {
-            request.getResponse().getHttpFields().add( field );
+    private static void addResponseFieldIfConfigured(Request request, HttpField field) {
+        if (field != null) {
+            request.getResponse().getHttpFields().add(field);
         }
     }
 
-    private static HttpField createHstsResponseField( Config config )
-    {
-        String configuredValue = config.get( http_strict_transport_security );
-        if ( StringUtils.isBlank( configuredValue ) )
-        {
+    private static HttpField createHstsResponseField(Config config) {
+        String configuredValue = config.get(http_strict_transport_security);
+        if (StringUtils.isBlank(configuredValue)) {
             return null;
         }
-        return new PreEncodedHttpField( STRICT_TRANSPORT_SECURITY, configuredValue );
+        return new PreEncodedHttpField(STRICT_TRANSPORT_SECURITY, configuredValue);
     }
 }

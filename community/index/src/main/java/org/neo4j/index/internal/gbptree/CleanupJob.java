@@ -28,8 +28,7 @@ import java.util.concurrent.Future;
  * <p>
  * Report state of cleaning progress.
  */
-public interface CleanupJob
-{
+public interface CleanupJob {
     /**
      * @return {@code true} if gbptree still needs cleaning, meaning job is not yet finished or has not started at all.
      * {@code false} if gbptree does not need cleaning, meaning job has finished or it was never needed in the first place.
@@ -55,7 +54,7 @@ public interface CleanupJob
      * Run cleanup job and use provided executor for parallel tasks.
      * This method will wait for all jobs passed to executor to finish before returning.
      */
-    void run( Executor executor );
+    void run(Executor executor);
 
     /**
      * A {@link CleanupJob} that doesn't need cleaning, i.e. it's already clean.
@@ -66,17 +65,15 @@ public interface CleanupJob
      * Executor of asynchronous units of work needed during the recovery clean up.
      */
     @FunctionalInterface
-    interface Executor
-    {
-        <T> JobResult<T> submit( String jobDescription, Callable<T> job );
+    interface Executor {
+        <T> JobResult<T> submit(String jobDescription, Callable<T> job);
     }
 
     /**
      * Result handle of jobs executed by {@link Executor}.
      */
     @FunctionalInterface
-    interface JobResult<T>
-    {
+    interface JobResult<T> {
         /**
          * Waits if necessary for the computation to complete, and then
          * retrieves its result, similar to {@link Future#get()}.
@@ -88,34 +85,28 @@ public interface CleanupJob
         T get() throws ExecutionException, InterruptedException;
     }
 
-    class Adaptor implements CleanupJob
-    {
+    class Adaptor implements CleanupJob {
         @Override
-        public void run( Executor executor )
-        {   // no-op
+        public void run(Executor executor) { // no-op
         }
 
         @Override
-        public boolean needed()
-        {
+        public boolean needed() {
             return false;
         }
 
         @Override
-        public boolean hasFailed()
-        {
+        public boolean hasFailed() {
             return false;
         }
 
         @Override
-        public Throwable getCause()
-        {
+        public Throwable getCause() {
             return null;
         }
 
         @Override
-        public void close()
-        {   // no-op
+        public void close() { // no-op
         }
     }
 }

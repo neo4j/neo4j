@@ -19,55 +19,46 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 import java.util.Objects;
-
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 /**
  * The transaction state of a token that we want to create.
  *
  * We track the name, and whether or not the token is internal or public.
  */
-class TokenState
-{
-    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TokenState.class );
+class TokenState {
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TokenState.class);
     public final String name;
     public final boolean internal;
 
-    static TokenState createTokenState( String name, boolean internal, MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap( SHALLOW_SIZE + sizeOf( name ) );
-        return new TokenState( name, internal );
+    static TokenState createTokenState(String name, boolean internal, MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(SHALLOW_SIZE + sizeOf(name));
+        return new TokenState(name, internal);
     }
 
-    private TokenState( String name, boolean internal )
-    {
+    private TokenState(String name, boolean internal) {
         this.name = name;
         this.internal = internal;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         TokenState that = (TokenState) o;
-        return internal == that.internal && name.equals( that.name );
+        return internal == that.internal && name.equals(that.name);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( name, internal );
+    public int hashCode() {
+        return Objects.hash(name, internal);
     }
 }

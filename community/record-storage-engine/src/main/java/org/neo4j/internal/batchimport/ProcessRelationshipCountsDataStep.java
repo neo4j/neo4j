@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Function;
+import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
 
+import java.util.function.Function;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
@@ -33,23 +35,33 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static java.lang.Math.max;
-import static java.lang.Math.toIntExact;
-
 /**
  * Processes relationship records, feeding them to {@link RelationshipCountsProcessor} which keeps
  * the accumulated counts per thread. Aggregated in {@link #done()}.
  */
-public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<RelationshipRecord>
-{
-    public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache, Configuration config, int
-            highLabelId, int highRelationshipTypeId,
-            CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory, ProgressReporter progressReporter, CursorContextFactory contextFactory,
-            Function<CursorContext,StoreCursors> storeCursorsCreator, MemoryTracker memoryTracker )
-    {
-        super( control, "COUNT", config,
-                () -> new RelationshipCountsProcessor( cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, memoryTracker ), true,
-                numberOfProcessors( config, cache, highLabelId, highRelationshipTypeId ), contextFactory, storeCursorsCreator );
+public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<RelationshipRecord> {
+    public ProcessRelationshipCountsDataStep(
+            StageControl control,
+            NodeLabelsCache cache,
+            Configuration config,
+            int highLabelId,
+            int highRelationshipTypeId,
+            CountsAccessor.Updater countsUpdater,
+            NumberArrayFactory cacheFactory,
+            ProgressReporter progressReporter,
+            CursorContextFactory contextFactory,
+            Function<CursorContext, StoreCursors> storeCursorsCreator,
+            MemoryTracker memoryTracker) {
+        super(
+                control,
+                "COUNT",
+                config,
+                () -> new RelationshipCountsProcessor(
+                        cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, memoryTracker),
+                true,
+                numberOfProcessors(config, cache, highLabelId, highRelationshipTypeId),
+                contextFactory,
+                storeCursorsCreator);
     }
 
     /**
@@ -65,14 +77,14 @@ public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<Relat
      * when just allowing the importer to grab up to {@link Configuration#maxNumberOfProcessors()}. The returned value
      * will at least be 1.
      */
-    private static int numberOfProcessors( Configuration config, NodeLabelsCache cache, int highLabelId, int highRelationshipTypeId )
-    {
+    private static int numberOfProcessors(
+            Configuration config, NodeLabelsCache cache, int highLabelId, int highRelationshipTypeId) {
         GatheringMemoryStatsVisitor memVisitor = new GatheringMemoryStatsVisitor();
-        cache.acceptMemoryStatsVisitor( memVisitor );
+        cache.acceptMemoryStatsVisitor(memVisitor);
 
         long availableMem = config.maxMemoryUsage() - memVisitor.getTotalUsage();
-        long threadMem = RelationshipCountsProcessor.calculateMemoryUsage( highLabelId, highRelationshipTypeId );
+        long threadMem = RelationshipCountsProcessor.calculateMemoryUsage(highLabelId, highRelationshipTypeId);
         long possibleThreads = availableMem / threadMem;
-        return possibleThreads >= config.maxNumberOfProcessors() ? 0 : toIntExact( max( 1, possibleThreads ) );
+        return possibleThreads >= config.maxNumberOfProcessors() ? 0 : toIntExact(max(1, possibleThreads));
     }
 }

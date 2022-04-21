@@ -21,15 +21,12 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.adversaries.fs.AdversarialChannelDefaultFileSystemAbstraction;
 
-public class MuninnPageCacheSlowTestWithAdversarialChannelIT extends MuninnPageCacheSlowTestWithRealFileSystemIT
-{
+public class MuninnPageCacheSlowTestWithAdversarialChannelIT extends MuninnPageCacheSlowTestWithRealFileSystemIT {
 
     @Override
-    protected Fixture<MuninnPageCache> createFixture()
-    {
+    protected Fixture<MuninnPageCache> createFixture() {
         return super.createFixture()
-                .withFileSystemAbstraction( AdversarialChannelDefaultFileSystemAbstraction::new )
-                .withFileConstructor( directory::file );
+                .withFileSystemAbstraction(AdversarialChannelDefaultFileSystemAbstraction::new)
+                .withFileConstructor(directory::file);
     }
-
 }

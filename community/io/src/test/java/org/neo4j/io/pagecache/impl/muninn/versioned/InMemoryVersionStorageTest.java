@@ -19,146 +19,118 @@
  */
 package org.neo4j.io.pagecache.impl.muninn.versioned;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Isolated;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.io.pagecache.impl.muninn.versioned.InMemoryVersionStorage.MAX_VERSIONED_STORAGE;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.util.concurrent.Futures;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.pagecache.impl.muninn.versioned.InMemoryVersionStorage.MAX_VERSIONED_STORAGE;
-
 @Isolated
-class InMemoryVersionStorageTest
-{
+class InMemoryVersionStorageTest {
 
     private boolean nativeAccess;
 
     @BeforeEach
-    void setUp()
-    {
-        nativeAccess = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
+    void setUp() {
+        nativeAccess = UnsafeUtil.exchangeNativeAccessCheckEnabled(false);
     }
 
     @AfterEach
-    void tearDown()
-    {
-        UnsafeUtil.exchangeNativeAccessCheckEnabled( nativeAccess );
+    void tearDown() {
+        UnsafeUtil.exchangeNativeAccessCheckEnabled(nativeAccess);
     }
 
     @Test
-    void copyPageToNewAddress() throws Throwable
-    {
+    void copyPageToNewAddress() throws Throwable {
         int directlyAllocatedCapacity = PageCache.PAGE_SIZE;
         var memoryTracker = new LocalMemoryTracker();
-        var allocator = MemoryAllocator.createAllocator( MAX_VERSIONED_STORAGE, memoryTracker );
+        var allocator = MemoryAllocator.createAllocator(MAX_VERSIONED_STORAGE, memoryTracker);
         long allocatedMemory = 0;
-        try
-        {
-            allocatedMemory = UnsafeUtil.allocateMemory( directlyAllocatedCapacity, EmptyMemoryTracker.INSTANCE );
-            ByteBuffer sourceBuffer = UnsafeUtil.newDirectByteBuffer( allocatedMemory, directlyAllocatedCapacity );
-            sourceBuffer.putLong( 42 );
+        try {
+            allocatedMemory = UnsafeUtil.allocateMemory(directlyAllocatedCapacity, EmptyMemoryTracker.INSTANCE);
+            ByteBuffer sourceBuffer = UnsafeUtil.newDirectByteBuffer(allocatedMemory, directlyAllocatedCapacity);
+            sourceBuffer.putLong(42);
 
-            var versionStorage = new InMemoryVersionStorage( allocator, PageCache.PAGE_SIZE );
-            long destination = versionStorage.copyPage( allocatedMemory );
+            var versionStorage = new InMemoryVersionStorage(allocator, PageCache.PAGE_SIZE);
+            long destination = versionStorage.copyPage(allocatedMemory);
 
-            assertNotEquals( allocatedMemory, destination );
-            ByteBuffer destinationBuffer = UnsafeUtil.newDirectByteBuffer( destination, directlyAllocatedCapacity );
-            assertEquals( 42, destinationBuffer.getLong() );
-        }
-        finally
-        {
-            UnsafeUtil.free( allocatedMemory, directlyAllocatedCapacity, EmptyMemoryTracker.INSTANCE );
+            assertNotEquals(allocatedMemory, destination);
+            ByteBuffer destinationBuffer = UnsafeUtil.newDirectByteBuffer(destination, directlyAllocatedCapacity);
+            assertEquals(42, destinationBuffer.getLong());
+        } finally {
+            UnsafeUtil.free(allocatedMemory, directlyAllocatedCapacity, EmptyMemoryTracker.INSTANCE);
         }
     }
 
     @Test
-    void copyPageByMultipleThreads() throws Throwable
-    {
+    void copyPageByMultipleThreads() throws Throwable {
         int directlyAllocatedCapacity = PageCache.PAGE_SIZE;
         var memoryTracker = new LocalMemoryTracker();
-        var allocator = MemoryAllocator.createAllocator( MAX_VERSIONED_STORAGE, memoryTracker );
+        var allocator = MemoryAllocator.createAllocator(MAX_VERSIONED_STORAGE, memoryTracker);
         long allocatedMemory = 0;
-        var executors = Executors.newFixedThreadPool( 20 );
+        var executors = Executors.newFixedThreadPool(20);
         int copyTasks = 1000;
-        try
-        {
-            allocatedMemory = UnsafeUtil.allocateMemory( directlyAllocatedCapacity, EmptyMemoryTracker.INSTANCE );
+        try {
+            allocatedMemory = UnsafeUtil.allocateMemory(directlyAllocatedCapacity, EmptyMemoryTracker.INSTANCE);
 
             long sourcePage = allocatedMemory;
-            var versionStorage = new InMemoryVersionStorage( allocator, PageCache.PAGE_SIZE );
+            var versionStorage = new InMemoryVersionStorage(allocator, PageCache.PAGE_SIZE);
 
-            CountDownLatch startLatch = new CountDownLatch( 1 );
+            CountDownLatch startLatch = new CountDownLatch(1);
             var futures = new ArrayList<Future<?>>();
-            for ( int i = 0; i < copyTasks; i++ )
-            {
-                futures.add( executors.submit( () ->
-                {
-                    try
-                    {
+            for (int i = 0; i < copyTasks; i++) {
+                futures.add(executors.submit(() -> {
+                    try {
                         startLatch.await();
-                        versionStorage.copyPage( sourcePage );
+                        versionStorage.copyPage(sourcePage);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
                     }
-                    catch ( InterruptedException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
-                } ) );
+                }));
             }
             startLatch.countDown();
-            Futures.getAll( futures );
+            Futures.getAll(futures);
 
-            assertEquals( copyTasks * PageCache.PAGE_SIZE, versionStorage.getAllocatedBytes() );
-        }
-        finally
-        {
-            UnsafeUtil.free( allocatedMemory, directlyAllocatedCapacity, EmptyMemoryTracker.INSTANCE );
+            assertEquals(copyTasks * PageCache.PAGE_SIZE, versionStorage.getAllocatedBytes());
+        } finally {
+            UnsafeUtil.free(allocatedMemory, directlyAllocatedCapacity, EmptyMemoryTracker.INSTANCE);
             executors.shutdown();
         }
-
     }
 
     @Test
-    void failWithOutOfMemoryOnLimit()
-    {
+    void failWithOutOfMemoryOnLimit() {
         int direcltyAllocatedCapacity = Long.BYTES;
         var memoryTracker = new LocalMemoryTracker();
-        var allocator = MemoryAllocator.createAllocator( MAX_VERSIONED_STORAGE, memoryTracker );
+        var allocator = MemoryAllocator.createAllocator(MAX_VERSIONED_STORAGE, memoryTracker);
         long allocatedMemory = 0;
-        try
-        {
-            allocatedMemory = UnsafeUtil.allocateMemory( direcltyAllocatedCapacity, EmptyMemoryTracker.INSTANCE );
+        try {
+            allocatedMemory = UnsafeUtil.allocateMemory(direcltyAllocatedCapacity, EmptyMemoryTracker.INSTANCE);
 
-            var versionStorage = new InMemoryVersionStorage( allocator, PageCache.PAGE_SIZE );
+            var versionStorage = new InMemoryVersionStorage(allocator, PageCache.PAGE_SIZE);
             long sourcePage = allocatedMemory;
-            assertThrows( OutOfMemoryError.class, () -> {
-                while ( true )
-                {
-                    versionStorage.copyPage( sourcePage );
+            assertThrows(OutOfMemoryError.class, () -> {
+                while (true) {
+                    versionStorage.copyPage(sourcePage);
                 }
-            } );
-        }
-        finally
-        {
-            UnsafeUtil.free( allocatedMemory, direcltyAllocatedCapacity, EmptyMemoryTracker.INSTANCE );
+            });
+        } finally {
+            UnsafeUtil.free(allocatedMemory, direcltyAllocatedCapacity, EmptyMemoryTracker.INSTANCE);
         }
     }
 }

@@ -19,12 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Test;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.DateValue.date;
@@ -34,56 +28,53 @@ import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-class LocalDateTimeValueTest
-{
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class LocalDateTimeValueTest {
     @Test
-    void shouldParseDate()
-    {
+    void shouldParseDate() {
         assertEquals(
-                localDateTime( date( 2017, 12, 17 ), localTime( 17, 14, 35, 123456789 ) ),
-                parse( "2017-12-17T17:14:35.123456789" ) );
+                localDateTime(date(2017, 12, 17), localTime(17, 14, 35, 123456789)),
+                parse("2017-12-17T17:14:35.123456789"));
     }
 
     @Test
-    void shouldWriteDateTime()
-    {
+    void shouldWriteDateTime() {
         // given
-        for ( LocalDateTimeValue value : new LocalDateTimeValue[] {
-                localDateTime( date( 2017, 3, 26 ), localTime( 1, 0, 0, 0 ) ),
-                localDateTime( date( 2017, 3, 26 ), localTime( 2, 0, 0, 0 ) ),
-                localDateTime( date( 2017, 3, 26 ), localTime( 3, 0, 0, 0 ) ),
-                localDateTime( date( 2017, 10, 29 ), localTime( 2, 0, 0, 0 ) ),
-                localDateTime( date( 2017, 10, 29 ), localTime( 3, 0, 0, 0 ) ),
-                localDateTime( date( 2017, 10, 29 ), localTime( 4, 0, 0, 0 ) ),
-        } )
-        {
-            List<LocalDateTimeValue> values = new ArrayList<>( 1 );
-            ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
-            {
+        for (LocalDateTimeValue value : new LocalDateTimeValue[] {
+            localDateTime(date(2017, 3, 26), localTime(1, 0, 0, 0)),
+            localDateTime(date(2017, 3, 26), localTime(2, 0, 0, 0)),
+            localDateTime(date(2017, 3, 26), localTime(3, 0, 0, 0)),
+            localDateTime(date(2017, 10, 29), localTime(2, 0, 0, 0)),
+            localDateTime(date(2017, 10, 29), localTime(3, 0, 0, 0)),
+            localDateTime(date(2017, 10, 29), localTime(4, 0, 0, 0)),
+        }) {
+            List<LocalDateTimeValue> values = new ArrayList<>(1);
+            ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly() {
                 @Override
-                public void writeLocalDateTime( LocalDateTime localDateTime )
-                {
-                    values.add( localDateTime( localDateTime ) );
+                public void writeLocalDateTime(LocalDateTime localDateTime) {
+                    values.add(localDateTime(localDateTime));
                 }
             };
 
             // when
-            value.writeTo( writer );
+            value.writeTo(writer);
 
             // then
-            assertEquals( singletonList( value ), values );
+            assertEquals(singletonList(value), values);
         }
     }
 
     @Test
-    void shouldEqualItself()
-    {
-        assertEqual( localDateTime( 2018, 1, 31, 10, 52, 5, 6 ), localDateTime( 2018, 1, 31, 10, 52, 5, 6 ) );
+    void shouldEqualItself() {
+        assertEqual(localDateTime(2018, 1, 31, 10, 52, 5, 6), localDateTime(2018, 1, 31, 10, 52, 5, 6));
     }
 
     @Test
-    void shouldNotEqualOther()
-    {
-        assertNotEqual( localDateTime( 2018, 1, 31, 10, 52, 5, 6 ), localDateTime( 2018, 1, 31, 10, 52, 5, 7 ) );
+    void shouldNotEqualOther() {
+        assertNotEqual(localDateTime(2018, 1, 31, 10, 52, 5, 6), localDateTime(2018, 1, 31, 10, 52, 5, 7));
     }
 }

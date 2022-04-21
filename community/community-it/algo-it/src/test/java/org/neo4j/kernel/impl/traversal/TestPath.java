@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 
 import java.util.Iterator;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -40,12 +41,7 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-
-class TestPath extends TraversalTestBase
-{
+class TestPath extends TraversalTestBase {
     private Node a;
     private Node b;
     private Node c;
@@ -53,157 +49,152 @@ class TestPath extends TraversalTestBase
     private Node e;
 
     @BeforeEach
-    void setup()
-    {
-        createGraph( "A TO B", "B TO C", "C TO D", "D TO E" );
+    void setup() {
+        createGraph("A TO B", "B TO C", "C TO D", "D TO E");
 
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            a = getNodeWithName( transaction, "A" );
-            b = getNodeWithName( transaction, "B" );
-            c = getNodeWithName( transaction, "C" );
-            d = getNodeWithName( transaction, "D" );
-            e = getNodeWithName( transaction, "E" );
+        try (Transaction transaction = getGraphDb().beginTx()) {
+            a = getNodeWithName(transaction, "A");
+            b = getNodeWithName(transaction, "B");
+            c = getNodeWithName(transaction, "C");
+            d = getNodeWithName(transaction, "D");
+            e = getNodeWithName(transaction, "E");
         }
     }
 
     @Test
-    void testPathIterator()
-    {
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            markTracerToIgnoreDifferences( transaction );
-            Traverser traverse = transaction.traversalDescription().evaluator( atDepth( 4 ) )
-                    .traverse( transaction.getNodeById( node( "A" ).getId() ) );
+    void testPathIterator() {
+        try (Transaction transaction = getGraphDb().beginTx()) {
+            markTracerToIgnoreDifferences(transaction);
+            Traverser traverse = transaction
+                    .traversalDescription()
+                    .evaluator(atDepth(4))
+                    .traverse(transaction.getNodeById(node("A").getId()));
             Iterator<Path> resourceIterator = traverse.iterator();
             {
                 Path path = resourceIterator.next();
-                assertPathIsCorrect( transaction, path );
+                assertPathIsCorrect(transaction, path);
             }
         }
     }
 
     @Test
-    void reverseNodes()
-    {
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            markTracerToIgnoreDifferences( transaction );
-            a = transaction.getNodeById( a.getId() );
-            Traverser traverse = transaction.traversalDescription()
-                    .evaluator( atDepth( 0 ) ).traverse( a );
-            Path path = getFirstPath( traverse );
-            assertContains( path.reverseNodes(), a );
+    void reverseNodes() {
+        try (Transaction transaction = getGraphDb().beginTx()) {
+            markTracerToIgnoreDifferences(transaction);
+            a = transaction.getNodeById(a.getId());
+            Traverser traverse =
+                    transaction.traversalDescription().evaluator(atDepth(0)).traverse(a);
+            Path path = getFirstPath(traverse);
+            assertContains(path.reverseNodes(), a);
 
-            Traverser traverse2 = transaction.traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
-            Path path2 = getFirstPath( traverse2 );
-            assertContainsInOrder( path2.reverseNodes(), e, d, c, b, a );
+            Traverser traverse2 =
+                    transaction.traversalDescription().evaluator(atDepth(4)).traverse(a);
+            Path path2 = getFirstPath(traverse2);
+            assertContainsInOrder(path2.reverseNodes(), e, d, c, b, a);
         }
     }
 
     @Test
-    void reverseRelationships()
-    {
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            markTracerToIgnoreDifferences( transaction );
-            Traverser traverser = transaction.traversalDescription().evaluator( atDepth( 0 ) )
-                    .traverse( transaction.getNodeById( a.getId() ) );
-            Path path = getFirstPath( traverser );
-            assertFalse( path.reverseRelationships().iterator().hasNext() );
+    void reverseRelationships() {
+        try (Transaction transaction = getGraphDb().beginTx()) {
+            markTracerToIgnoreDifferences(transaction);
+            Traverser traverser = transaction
+                    .traversalDescription()
+                    .evaluator(atDepth(0))
+                    .traverse(transaction.getNodeById(a.getId()));
+            Path path = getFirstPath(traverser);
+            assertFalse(path.reverseRelationships().iterator().hasNext());
 
-            Traverser traverser2 = transaction.traversalDescription().evaluator( atDepth( 4 ) )
-                    .traverse( transaction.getNodeById( a.getId() ) );
-            Path path2 = getFirstPath( traverser2 );
+            Traverser traverser2 = transaction
+                    .traversalDescription()
+                    .evaluator(atDepth(4))
+                    .traverse(transaction.getNodeById(a.getId()));
+            Path path2 = getFirstPath(traverser2);
             Node[] expectedNodes = {e, d, c, b, a};
             int index = 0;
-            for ( Relationship rel : path2.reverseRelationships() )
-            {
-                assertEquals( expectedNodes[index++], rel.getEndNode(), "For index " + index );
+            for (Relationship rel : path2.reverseRelationships()) {
+                assertEquals(expectedNodes[index++], rel.getEndNode(), "For index " + index);
             }
-            assertEquals( 4, index );
+            assertEquals(4, index);
         }
     }
 
     @Test
-    public void testBidirectionalPath()
-    {
+    public void testBidirectionalPath() {
         var graphDb = getGraphDb();
         BidirectionalTraversalDescription bidirectional;
-        try ( var transaction = graphDb.beginTx() )
-        {
-            markTracerToIgnoreDifferences( transaction );
-            Node a = transaction.getNodeById( this.a.getId() );
-            Node e = transaction.getNodeById( this.e.getId() );
-            TraversalDescription side = transaction.traversalDescription().uniqueness( Uniqueness.NODE_PATH );
-            bidirectional = transaction.bidirectionalTraversalDescription().mirroredSides( side );
-            Path bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
-            assertPathIsCorrect( transaction, bidirectionalPath );
+        try (var transaction = graphDb.beginTx()) {
+            markTracerToIgnoreDifferences(transaction);
+            Node a = transaction.getNodeById(this.a.getId());
+            Node e = transaction.getNodeById(this.e.getId());
+            TraversalDescription side = transaction.traversalDescription().uniqueness(Uniqueness.NODE_PATH);
+            bidirectional = transaction.bidirectionalTraversalDescription().mirroredSides(side);
+            Path bidirectionalPath = getFirstPath(bidirectional.traverse(a, e));
+            assertPathIsCorrect(transaction, bidirectionalPath);
 
-            Path path = getFirstPath( bidirectional.traverse( a, e ) );
+            Path path = getFirstPath(bidirectional.traverse(a, e));
             Node node = path.startNode();
-            assertEquals( a, node );
+            assertEquals(a, node);
 
             // White box testing below: relationships(), nodes(), reverseRelationships(), reverseNodes()
             // does cache the start node if not already cached, so just make sure they to it properly.
-            bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
+            bidirectionalPath = getFirstPath(bidirectional.traverse(a, e));
             bidirectionalPath.relationships();
-            assertEquals( a, bidirectionalPath.startNode() );
+            assertEquals(a, bidirectionalPath.startNode());
 
-            bidirectionalPath = getFirstPath(bidirectional.traverse(a,e ) );
+            bidirectionalPath = getFirstPath(bidirectional.traverse(a, e));
             bidirectionalPath.nodes();
-            assertEquals( a, bidirectionalPath.startNode() );
+            assertEquals(a, bidirectionalPath.startNode());
 
-            bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
+            bidirectionalPath = getFirstPath(bidirectional.traverse(a, e));
             bidirectionalPath.reverseRelationships();
-            assertEquals( a, bidirectionalPath.startNode() );
+            assertEquals(a, bidirectionalPath.startNode());
 
-            bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
+            bidirectionalPath = getFirstPath(bidirectional.traverse(a, e));
             bidirectionalPath.reverseNodes();
-            assertEquals( a, bidirectionalPath.startNode() );
+            assertEquals(a, bidirectionalPath.startNode());
 
-            bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
+            bidirectionalPath = getFirstPath(bidirectional.traverse(a, e));
             bidirectionalPath.iterator();
-            assertEquals( a, bidirectionalPath.startNode() );
+            assertEquals(a, bidirectionalPath.startNode());
         }
     }
 
-    private static Path getFirstPath( Traverser traverse )
-    {
-        return Iterators.first( traverse.iterator() );
+    private static Path getFirstPath(Traverser traverse) {
+        return Iterators.first(traverse.iterator());
     }
 
-    private void assertPathIsCorrect( Transaction transaction, Path path )
-    {
-        Node a = transaction.getNodeById( node( "A" ).getId() );
-        Relationship to1 = getFirstRelationship( a );
+    private void assertPathIsCorrect(Transaction transaction, Path path) {
+        Node a = transaction.getNodeById(node("A").getId());
+        Relationship to1 = getFirstRelationship(a);
         Node b = to1.getEndNode();
-        Relationship to2 = getFirstRelationship( b );
+        Relationship to2 = getFirstRelationship(b);
         Node c = to2.getEndNode();
-        Relationship to3 = getFirstRelationship( c );
+        Relationship to3 = getFirstRelationship(c);
         Node d = to3.getEndNode();
-        Relationship to4 = getFirstRelationship( d );
+        Relationship to4 = getFirstRelationship(d);
         Node e = to4.getEndNode();
-        assertEquals( (Integer) 4, (Integer) path.length() );
-        assertEquals( a, path.startNode() );
-        assertEquals( e, path.endNode() );
-        assertEquals( to4, path.lastRelationship() );
+        assertEquals((Integer) 4, (Integer) path.length());
+        assertEquals(a, path.startNode());
+        assertEquals(e, path.endNode());
+        assertEquals(to4, path.lastRelationship());
 
-        assertContainsInOrder( path, a, to1, b, to2, c, to3, d, to4, e );
-        assertContainsInOrder( path.nodes(), a, b, c, d, e );
-        assertContainsInOrder( path.relationships(), to1, to2, to3, to4 );
-        assertContainsInOrder( path.reverseNodes(), e, d, c, b, a );
-        assertContainsInOrder( path.reverseRelationships(), to4, to3, to2, to1 );
+        assertContainsInOrder(path, a, to1, b, to2, c, to3, d, to4, e);
+        assertContainsInOrder(path.nodes(), a, b, c, d, e);
+        assertContainsInOrder(path.relationships(), to1, to2, to3, to4);
+        assertContainsInOrder(path.reverseNodes(), e, d, c, b, a);
+        assertContainsInOrder(path.reverseRelationships(), to4, to3, to2, to1);
     }
 
-    private static Relationship getFirstRelationship( Node node )
-    {
-        return Iterables.first( node.getRelationships( Direction.OUTGOING ) );
+    private static Relationship getFirstRelationship(Node node) {
+        return Iterables.first(node.getRelationships(Direction.OUTGOING));
     }
 
-    private static void markTracerToIgnoreDifferences( Transaction transaction )
-    {
-        PageCursorTracer cursorTracer = ((InternalTransaction) transaction).kernelTransaction().cursorContext().getCursorTracer();
-        ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );
+    private static void markTracerToIgnoreDifferences(Transaction transaction) {
+        PageCursorTracer cursorTracer = ((InternalTransaction) transaction)
+                .kernelTransaction()
+                .cursorContext()
+                .getCursorTracer();
+        ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck(true);
     }
 }

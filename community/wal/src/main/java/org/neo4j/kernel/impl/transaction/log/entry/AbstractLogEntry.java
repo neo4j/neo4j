@@ -22,32 +22,27 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import org.neo4j.internal.helpers.Format;
 import org.neo4j.kernel.KernelVersion;
 
-public abstract class AbstractLogEntry implements LogEntry
-{
+public abstract class AbstractLogEntry implements LogEntry {
     private final KernelVersion version;
     private final byte type;
 
-    public AbstractLogEntry( KernelVersion version, byte type )
-    {
+    public AbstractLogEntry(KernelVersion version, byte type) {
         this.type = type;
         this.version = version;
     }
 
     @Override
-    public byte getType()
-    {
+    public byte getType() {
         return type;
     }
 
     @Override
-    public KernelVersion getVersion()
-    {
+    public KernelVersion getVersion() {
         return version;
     }
 
     @Override
-    public String timestamp( long timeWritten )
-    {
-        return Format.date( timeWritten ) + "/" + timeWritten;
+    public String timestamp(long timeWritten) {
+        return Format.date(timeWritten) + "/" + timeWritten;
     }
 }

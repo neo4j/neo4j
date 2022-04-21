@@ -22,42 +22,35 @@ package org.neo4j.kernel.impl.transaction.log;
 /**
  * Mutable marker that can create immutable {@link LogPosition} objects when requested to.
  */
-public class LogPositionMarker
-{
+public class LogPositionMarker {
     private long logVersion;
     private long byteOffset;
     private boolean specified;
 
-    public void mark( long logVersion, long byteOffset )
-    {
+    public void mark(long logVersion, long byteOffset) {
         this.logVersion = logVersion;
         this.byteOffset = byteOffset;
         this.specified = true;
     }
 
-    public void unspecified()
-    {
+    public void unspecified() {
         specified = false;
     }
 
-    public LogPosition newPosition()
-    {
-        return specified ? new LogPosition( logVersion, byteOffset ) : LogPosition.UNSPECIFIED;
+    public LogPosition newPosition() {
+        return specified ? new LogPosition(logVersion, byteOffset) : LogPosition.UNSPECIFIED;
     }
 
-    public long getLogVersion()
-    {
+    public long getLogVersion() {
         return logVersion;
     }
 
-    public long getByteOffset()
-    {
+    public long getByteOffset() {
         return byteOffset;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "Mark:" + newPosition();
     }
 }

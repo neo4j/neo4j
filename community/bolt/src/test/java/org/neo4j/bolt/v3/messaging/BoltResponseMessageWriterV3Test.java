@@ -19,27 +19,6 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.InOrder;
-
-import java.io.IOException;
-
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.PackOutput;
-import org.neo4j.bolt.v3.messaging.response.FailureMessage;
-import org.neo4j.bolt.v3.messaging.response.IgnoredMessage;
-import org.neo4j.bolt.v3.messaging.response.RecordMessage;
-import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.logging.internal.SimpleLogService;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.VirtualValues;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,166 +35,181 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
-public class BoltResponseMessageWriterV3Test
-{
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.InOrder;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackOutput;
+import org.neo4j.bolt.v3.messaging.response.FailureMessage;
+import org.neo4j.bolt.v3.messaging.response.IgnoredMessage;
+import org.neo4j.bolt.v3.messaging.response.RecordMessage;
+import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
+
+public class BoltResponseMessageWriterV3Test {
     @Test
-    void shouldWriteRecordMessage() throws Exception
-    {
-        PackOutput output = mock( PackOutput.class );
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
+    void shouldWriteRecordMessage() throws Exception {
+        PackOutput output = mock(PackOutput.class);
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
 
-        var writer = newWriter( output, packer );
+        var writer = newWriter(output, packer);
 
-        writer.write( new RecordMessage( new AnyValue[]{longValue( 42 ), stringValue( "42" )} ) );
+        writer.write(new RecordMessage(new AnyValue[] {longValue(42), stringValue("42")}));
 
-        InOrder inOrder = inOrder( output, packer );
-        inOrder.verify( output ).beginMessage();
-        inOrder.verify( packer ).pack( longValue( 42 ) );
-        inOrder.verify( packer ).pack( stringValue( "42" ) );
-        inOrder.verify( output ).messageSucceeded();
+        InOrder inOrder = inOrder(output, packer);
+        inOrder.verify(output).beginMessage();
+        inOrder.verify(packer).pack(longValue(42));
+        inOrder.verify(packer).pack(stringValue("42"));
+        inOrder.verify(output).messageSucceeded();
     }
 
     @Test
-    void shouldWriteSuccessMessage() throws Exception
-    {
-        PackOutput output = mock( PackOutput.class );
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
+    void shouldWriteSuccessMessage() throws Exception {
+        PackOutput output = mock(PackOutput.class);
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
 
-        var writer = newWriter( output, packer );
+        var writer = newWriter(output, packer);
 
-        MapValue metadata = map( new String[]{"a", "b", "c"}, new AnyValue[]{intValue( 1 ), stringValue( "2" ), date( 2010, 02, 02 )} );
-        writer.write( new SuccessMessage( metadata ) );
+        MapValue metadata =
+                map(new String[] {"a", "b", "c"}, new AnyValue[] {intValue(1), stringValue("2"), date(2010, 02, 02)});
+        writer.write(new SuccessMessage(metadata));
 
-        InOrder inOrder = inOrder( output, packer );
-        inOrder.verify( output ).beginMessage();
-        inOrder.verify( packer ).pack( metadata );
-        inOrder.verify( output ).messageSucceeded();
+        InOrder inOrder = inOrder(output, packer);
+        inOrder.verify(output).beginMessage();
+        inOrder.verify(packer).pack(metadata);
+        inOrder.verify(output).messageSucceeded();
     }
 
     @Test
-    void shouldWriteFailureMessage() throws Exception
-    {
-        PackOutput output = mock( PackOutput.class );
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
+    void shouldWriteFailureMessage() throws Exception {
+        PackOutput output = mock(PackOutput.class);
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
 
-        var writer = newWriter( output, packer );
+        var writer = newWriter(output, packer);
 
         Status.Transaction errorStatus = Status.Transaction.DeadlockDetected;
         String errorMessage = "Hi Deadlock!";
-        writer.write( new FailureMessage( errorStatus, errorMessage ) );
+        writer.write(new FailureMessage(errorStatus, errorMessage));
 
-        InOrder inOrder = inOrder( output, packer );
-        inOrder.verify( output ).beginMessage();
-        inOrder.verify( packer ).pack( errorStatus.code().serialize() );
-        inOrder.verify( packer ).pack( errorMessage );
-        inOrder.verify( output ).messageSucceeded();
+        InOrder inOrder = inOrder(output, packer);
+        inOrder.verify(output).beginMessage();
+        inOrder.verify(packer).pack(errorStatus.code().serialize());
+        inOrder.verify(packer).pack(errorMessage);
+        inOrder.verify(output).messageSucceeded();
     }
 
     @Test
-    void shouldWriteIgnoredMessage() throws Exception
-    {
-        PackOutput output = mock( PackOutput.class );
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
+    void shouldWriteIgnoredMessage() throws Exception {
+        PackOutput output = mock(PackOutput.class);
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
 
-        var writer = newWriter( output, packer );
+        var writer = newWriter(output, packer);
 
-        writer.write( IgnoredMessage.IGNORED_MESSAGE );
+        writer.write(IgnoredMessage.IGNORED_MESSAGE);
 
-        InOrder inOrder = inOrder( output, packer );
-        inOrder.verify( output ).beginMessage();
-        inOrder.verify( packer ).packStructHeader( 0, IGNORED.signature() );
-        inOrder.verify( output ).messageSucceeded();
+        InOrder inOrder = inOrder(output, packer);
+        inOrder.verify(output).beginMessage();
+        inOrder.verify(packer).packStructHeader(0, IGNORED.signature());
+        inOrder.verify(output).messageSucceeded();
     }
 
     @Test
-    void shouldFlush() throws Exception
-    {
-        PackOutput output = mock( PackOutput.class );
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
+    void shouldFlush() throws Exception {
+        PackOutput output = mock(PackOutput.class);
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
 
-        var writer = newWriter( output, packer );
+        var writer = newWriter(output, packer);
 
         writer.flush();
 
-        verify( output ).flush();
+        verify(output).flush();
     }
 
     @Test
-    void shouldNotifyOutputAboutFailedRecordMessage() throws Exception
-    {
-        PackOutput output = mock( PackOutput.class );
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        IOException error = new IOException( "Unable to pack 42" );
-        doThrow( error ).when( packer ).pack( longValue( 42 ) );
+    void shouldNotifyOutputAboutFailedRecordMessage() throws Exception {
+        PackOutput output = mock(PackOutput.class);
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
+        IOException error = new IOException("Unable to pack 42");
+        doThrow(error).when(packer).pack(longValue(42));
 
-        var writer = newWriter( output, packer );
+        var writer = newWriter(output, packer);
 
-        var e = assertThrows(IOException.class, () -> writer.write( new RecordMessage( new AnyValue[]{stringValue( "42" ), longValue( 42 )} ) ) );
-        assertEquals( error, e );
+        var e = assertThrows(
+                IOException.class,
+                () -> writer.write(new RecordMessage(new AnyValue[] {stringValue("42"), longValue(42)})));
+        assertEquals(error, e);
 
-        InOrder inOrder = inOrder( output, packer );
-        inOrder.verify( output ).beginMessage();
-        inOrder.verify( packer ).pack( stringValue( "42" ) );
-        inOrder.verify( packer ).pack( longValue( 42 ) );
-        inOrder.verify( output ).messageFailed();
+        InOrder inOrder = inOrder(output, packer);
+        inOrder.verify(output).beginMessage();
+        inOrder.verify(packer).pack(stringValue("42"));
+        inOrder.verify(packer).pack(longValue(42));
+        inOrder.verify(output).messageFailed();
     }
 
     @Test
-    void shouldNotNotifyOutputWhenOutputItselfFails() throws Exception
-    {
-        PackOutput output = mock( PackOutput.class );
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        IOException error = new IOException( "Unable to flush" );
-        doThrow( error ).when( output ).messageSucceeded();
+    void shouldNotNotifyOutputWhenOutputItselfFails() throws Exception {
+        PackOutput output = mock(PackOutput.class);
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
+        IOException error = new IOException("Unable to flush");
+        doThrow(error).when(output).messageSucceeded();
 
-        var writer = newWriter( output, packer );
+        var writer = newWriter(output, packer);
 
-        var e = assertThrows(IOException.class, () -> writer.write( new RecordMessage( new AnyValue[]{longValue( 1 ), longValue( 2 )} ) ) );
-        assertEquals( error, e );
+        var e = assertThrows(
+                IOException.class, () -> writer.write(new RecordMessage(new AnyValue[] {longValue(1), longValue(2)})));
+        assertEquals(error, e);
 
-        InOrder inOrder = inOrder( output, packer );
-        inOrder.verify( output ).beginMessage();
-        inOrder.verify( packer ).pack( longValue( 1 ) );
-        inOrder.verify( packer ).pack( longValue( 2 ) );
-        inOrder.verify( output ).messageSucceeded();
+        InOrder inOrder = inOrder(output, packer);
+        inOrder.verify(output).beginMessage();
+        inOrder.verify(packer).pack(longValue(1));
+        inOrder.verify(packer).pack(longValue(2));
+        inOrder.verify(output).messageSucceeded();
 
-        verify( output, never() ).messageFailed();
+        verify(output, never()).messageFailed();
     }
 
     /**
      * Asserts that large values aren't passed directly to the log provider as this may lead to overflows when flushing the message.
      */
     @Test
-    void shouldLimitLogOutputToSensibleSizes() throws IOException
-    {
-        PackOutput output = mock( PackOutput.class );
+    void shouldLimitLogOutputToSensibleSizes() throws IOException {
+        PackOutput output = mock(PackOutput.class);
 
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        IOException error = new IOException( "Unable to flush" );
-        doThrow( error ).when( packer ).pack( ArgumentMatchers.any( AnyValue.class ) );
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
+        IOException error = new IOException("Unable to flush");
+        doThrow(error).when(packer).pack(ArgumentMatchers.any(AnyValue.class));
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
-        var writer = new BoltResponseMessageWriterV3( out -> packer, output, new SimpleLogService( logProvider ) );
+        var writer = new BoltResponseMessageWriterV3(out -> packer, output, new SimpleLogService(logProvider));
 
         var listValue = VirtualValues.list();
-        for ( var i = 0; i < 1000; i++ )
-        {
-            listValue = VirtualValues.list( listValue );
+        for (var i = 0; i < 1000; i++) {
+            listValue = VirtualValues.list(listValue);
         }
 
         var testValue = listValue;
-        var cause = assertThrows( IOException.class, () -> writer.consumeField( testValue ) );
-        assertSame( error, cause );
+        var cause = assertThrows(IOException.class, () -> writer.consumeField(testValue));
+        assertSame(error, cause);
 
-        assertThat( logProvider ).forClass( BoltResponseMessageWriterV3.class )
-                                 .containsMessagesOnce( "Failed to write value" );
-        assertThat( logProvider ).forClass( BoltResponseMessageWriterV3.class )
-                                 .doesNotContainMessageWithArguments( "Failed to write value %s because: %s", listValue, cause.getMessage() );
+        assertThat(logProvider)
+                .forClass(BoltResponseMessageWriterV3.class)
+                .containsMessagesOnce("Failed to write value");
+        assertThat(logProvider)
+                .forClass(BoltResponseMessageWriterV3.class)
+                .doesNotContainMessageWithArguments(
+                        "Failed to write value %s because: %s", listValue, cause.getMessage());
     }
 
-    protected BoltResponseMessageWriter newWriter( PackOutput output, Neo4jPack.Packer packer )
-    {
-        return new BoltResponseMessageWriterV3( out -> packer, output, NullLogService.getInstance() );
+    protected BoltResponseMessageWriter newWriter(PackOutput output, Neo4jPack.Packer packer) {
+        return new BoltResponseMessageWriterV3(out -> packer, output, NullLogService.getInstance());
     }
 }

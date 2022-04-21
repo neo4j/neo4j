@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public interface FailedIndexProxyFactory
-{
-    IndexProxy create( Throwable failure );
+public interface FailedIndexProxyFactory {
+    IndexProxy create(Throwable failure);
 }

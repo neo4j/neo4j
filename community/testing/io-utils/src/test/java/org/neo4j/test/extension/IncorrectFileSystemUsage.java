@@ -19,22 +19,19 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@ExtendWith( DefaultFileSystemExtension.class )
-class IncorrectFileSystemUsage
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+
+@ExtendWith(DefaultFileSystemExtension.class)
+class IncorrectFileSystemUsage {
     @Inject
     private DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
     @Test
-    void anyInteraction()
-    {
-        assertNotNull( fileSystem );
+    void anyInteraction() {
+        assertNotNull(fileSystem);
     }
 }

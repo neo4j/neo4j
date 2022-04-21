@@ -20,58 +20,47 @@
 package org.neo4j.procedure.builtin;
 
 import java.util.Arrays;
-
 import org.neo4j.internal.kernel.api.TokenSet;
 
-public class SortedLabels
-{
+public class SortedLabels {
     private long[] labels;
 
-    private SortedLabels( long[] labels )
-    {
+    private SortedLabels(long[] labels) {
         this.labels = labels;
     }
 
-    public static SortedLabels from( long[] labels )
-    {
-        Arrays.sort( labels );
-        return new SortedLabels( labels );
+    public static SortedLabels from(long[] labels) {
+        Arrays.sort(labels);
+        return new SortedLabels(labels);
     }
 
-    static SortedLabels from( TokenSet tokenSet )
-    {
-        return from( tokenSet.all() );
+    static SortedLabels from(TokenSet tokenSet) {
+        return from(tokenSet.all());
     }
 
-    private long[] all()
-    {
+    private long[] all() {
         return labels;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Arrays.hashCode( labels );
+    public int hashCode() {
+        return Arrays.hashCode(labels);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( obj instanceof SortedLabels )
-        {
+    public boolean equals(Object obj) {
+        if (obj instanceof SortedLabels) {
             long[] input = ((SortedLabels) obj).all();
-            return Arrays.equals( labels, input );
+            return Arrays.equals(labels, input);
         }
         return false;
     }
 
-    public int numberOfLabels()
-    {
+    public int numberOfLabels() {
         return labels.length;
     }
 
-    public Integer label( int offset )
-    {
+    public Integer label(int offset) {
         return (int) labels[offset];
     }
 }

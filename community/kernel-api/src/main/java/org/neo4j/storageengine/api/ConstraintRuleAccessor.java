@@ -24,15 +24,15 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
-public interface ConstraintRuleAccessor
-{
-    ConstraintDescriptor readConstraint( ConstraintDescriptor rule );
+public interface ConstraintRuleAccessor {
+    ConstraintDescriptor readConstraint(ConstraintDescriptor rule);
 
-    ConstraintDescriptor createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId );
+    ConstraintDescriptor createUniquenessConstraintRule(
+            long ruleId, UniquenessConstraintDescriptor descriptor, long indexId);
 
-    ConstraintDescriptor createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
+    ConstraintDescriptor createNodeKeyConstraintRule(long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId)
             throws CreateConstraintFailureException;
 
-    ConstraintDescriptor createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
+    ConstraintDescriptor createExistenceConstraint(long ruleId, ConstraintDescriptor descriptor)
             throws CreateConstraintFailureException;
 }

@@ -19,63 +19,52 @@
  */
 package org.neo4j.consistency.statistics;
 
-import java.util.Arrays;
-
 import static java.lang.String.format;
 
-public class DefaultCounts implements Counts
-{
+import java.util.Arrays;
+
+public class DefaultCounts implements Counts {
     private final long[][] counts;
 
-    public DefaultCounts( int threads )
-    {
+    public DefaultCounts(int threads) {
         counts = new long[Type.values().length][threads];
     }
 
-    private long[] counts( Type type )
-    {
+    private long[] counts(Type type) {
         return counts[type.ordinal()];
     }
 
     @Override
-    public long sum( Type type )
-    {
+    public long sum(Type type) {
         long[] all = counts[type.ordinal()];
         long total = 0;
-        for ( long one : all )
-        {
+        for (long one : all) {
             total += one;
         }
         return total;
     }
 
     @Override
-    public void incAndGet( Type type, int threadIndex )
-    {
-        counts( type )[threadIndex]++;
+    public void incAndGet(Type type, int threadIndex) {
+        counts(type)[threadIndex]++;
     }
 
     @Override
-    public String toString()
-    {
-        StringBuilder builder = new StringBuilder( "Counts:" );
-        for ( Type type : Type.values() )
-        {
-            long sum = sum( type );
-            if ( sum > 0 )
-            {
-                builder.append( format( "%n  %d %s", sum, type.name() ) );
+    public String toString() {
+        StringBuilder builder = new StringBuilder("Counts:");
+        for (Type type : Type.values()) {
+            long sum = sum(type);
+            if (sum > 0) {
+                builder.append(format("%n  %d %s", sum, type.name()));
             }
         }
         return builder.toString();
     }
 
     @Override
-    public void reset()
-    {
-        for ( long[] c : counts )
-        {
-            Arrays.fill( c, 0 );
+    public void reset() {
+        for (long[] c : counts) {
+            Arrays.fill(c, 0);
         }
     }
 }

@@ -21,53 +21,45 @@ package org.neo4j.gis.spatial.index.curves;
 
 import org.neo4j.gis.spatial.index.Envelope;
 
-public class ZOrderSpaceFillingCurve2D extends SpaceFillingCurve
-{
+public class ZOrderSpaceFillingCurve2D extends SpaceFillingCurve {
 
     /**
      * Description of the space filling curve structure
      */
-    static class ZOrderCurve2D extends CurveRule
-    {
+    static class ZOrderCurve2D extends CurveRule {
 
-        private ZOrderCurve2D( int... npointValues )
-        {
-            super( 2, npointValues );
+        private ZOrderCurve2D(int... npointValues) {
+            super(2, npointValues);
             assert npointValues[0] == 1 && npointValues[3] == 2;
         }
 
         @Override
-        public CurveRule childAt( int npoint )
-        {
+        public CurveRule childAt(int npoint) {
             return this;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "Z";
         }
     }
 
-    private static final ZOrderCurve2D rootCurve = new ZOrderCurve2D( 1, 3, 0, 2 );
+    private static final ZOrderCurve2D rootCurve = new ZOrderCurve2D(1, 3, 0, 2);
 
     public static final int MAX_LEVEL = 63 / 2 - 1;
 
-    public ZOrderSpaceFillingCurve2D( Envelope range )
-    {
-        this( range, MAX_LEVEL );
+    public ZOrderSpaceFillingCurve2D(Envelope range) {
+        this(range, MAX_LEVEL);
     }
 
-    public ZOrderSpaceFillingCurve2D( Envelope range, int maxLevel )
-    {
-        super( range, maxLevel );
+    public ZOrderSpaceFillingCurve2D(Envelope range, int maxLevel) {
+        super(range, maxLevel);
         assert maxLevel <= MAX_LEVEL;
         assert range.getDimension() == 2;
     }
 
     @Override
-    protected CurveRule rootCurve()
-    {
+    protected CurveRule rootCurve() {
         return rootCurve;
     }
 }

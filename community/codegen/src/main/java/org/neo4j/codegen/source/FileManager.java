@@ -30,59 +30,49 @@ import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardJavaFileManager;
-
 import org.neo4j.codegen.ByteCodes;
 
-class FileManager extends ForwardingJavaFileManager<StandardJavaFileManager>
-{
-    private final Map<String/*className*/, ClassFile> classes = new HashMap<>();
+class FileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
+    private final Map<String /*className*/, ClassFile> classes = new HashMap<>();
 
-    FileManager( StandardJavaFileManager fileManager )
-    {
-        super( fileManager );
+    FileManager(StandardJavaFileManager fileManager) {
+        super(fileManager);
     }
 
     @Override
-    public JavaFileObject getJavaFileForOutput( Location location, String className,
-                                                JavaFileObject.Kind kind, FileObject sibling )
-    {
-        ClassFile file = new ClassFile( className );
-        classes.put( className, file );
+    public JavaFileObject getJavaFileForOutput(
+            Location location, String className, JavaFileObject.Kind kind, FileObject sibling) {
+        ClassFile file = new ClassFile(className);
+        classes.put(className, file);
         return file;
     }
 
-    public Iterable<? extends ByteCodes> bytecodes()
-    {
+    public Iterable<? extends ByteCodes> bytecodes() {
         return classes.values();
     }
 
-    private static class ClassFile extends SimpleJavaFileObject implements ByteCodes
-    {
+    private static class ClassFile extends SimpleJavaFileObject implements ByteCodes {
         private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         private final String className;
 
-        protected ClassFile( String className )
-        {
-            super( URI.create( "classes:/" + className.replace( '.', '/' ) + Kind.CLASS.extension ), Kind.CLASS );
+        protected ClassFile(String className) {
+            super(URI.create("classes:/" + className.replace('.', '/') + Kind.CLASS.extension), Kind.CLASS);
             this.className = className;
         }
 
         @Override
-        public OutputStream openOutputStream()
-        {
+        public OutputStream openOutputStream() {
             return bytes;
         }
 
         @Override
-        public String name()
-        {
+        public String name() {
             return className;
         }
 
         @Override
-        public ByteBuffer bytes()
-        {
-            return ByteBuffer.wrap( bytes.toByteArray() );
+        public ByteBuffer bytes() {
+            return ByteBuffer.wrap(bytes.toByteArray());
         }
     }
 }

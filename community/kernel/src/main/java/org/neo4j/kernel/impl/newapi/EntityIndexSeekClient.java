@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.index.IndexProgressor;
  * <p>
  * This is useful if the entity references needs to be processed further.
  */
-public interface EntityIndexSeekClient extends IndexProgressor.EntityValueClient
-{
-    void setRead( Read read );
+public interface EntityIndexSeekClient extends IndexProgressor.EntityValueClient {
+    void setRead(Read read);
 }

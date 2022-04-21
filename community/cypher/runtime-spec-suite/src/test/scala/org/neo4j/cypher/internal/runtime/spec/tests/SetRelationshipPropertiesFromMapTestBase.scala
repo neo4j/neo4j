@@ -32,10 +32,10 @@ import org.neo4j.internal.helpers.collection.Iterables
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should add relationship property with removeOtherProps") {
     given {
@@ -48,7 +48,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("r.prop1 as p1", "r.prop2 as p2")
-      .setRelationshipPropertiesFromMap("r","{prop2: 3}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{prop2: 3}", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -72,7 +72,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("r.prop1 as p1", "r.prop2 as p2")
-      .setRelationshipPropertiesFromMap("r","{prop2: 3}", removeOtherProps = false)
+      .setRelationshipPropertiesFromMap("r", "{prop2: 3}", removeOtherProps = false)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -97,7 +97,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("r.prop1 as p1", "r.prop2 as p2")
-      .setRelationshipPropertiesFromMap("r","{prop1: null}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{prop1: null}", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -122,7 +122,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("r.prop1 as p1", "r.prop2 as p2")
-      .setRelationshipPropertiesFromMap("r","{prop1: null}", removeOtherProps = false)
+      .setRelationshipPropertiesFromMap("r", "{prop1: null}", removeOtherProps = false)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -146,8 +146,8 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("r.prop1 as p1", "r.prop2 as p2")
-      .setRelationshipPropertiesFromMap("r","{prop1: null}", removeOtherProps = false)
-      .setRelationshipPropertiesFromMap("r","{prop2: r.prop1 + 1}", removeOtherProps = false)
+      .setRelationshipPropertiesFromMap("r", "{prop1: null}", removeOtherProps = false)
+      .setRelationshipPropertiesFromMap("r", "{prop2: r.prop1 + 1}", removeOtherProps = false)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -171,8 +171,8 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("r.prop1 as p1", "r.prop2 as p2")
-      .setRelationshipPropertiesFromMap("r","{prop1: 3}", removeOtherProps = true)
-      .setRelationshipPropertiesFromMap("r","{prop2: r.prop1 + 1}", removeOtherProps = false)
+      .setRelationshipPropertiesFromMap("r", "{prop1: 3}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{prop2: r.prop1 + 1}", removeOtherProps = false)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -196,7 +196,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2", "p3")
       .projection("r.prop1 as p1", "r.prop2 as p2", "r.propCopy as p3")
-      .setRelationshipPropertiesFromMap("r","{propCopy: r.prop1, prop2: 2}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{propCopy: r.prop1, prop2: 2}", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -218,7 +218,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1")
       .projection("r.prop1 as p1")
-      .setRelationshipPropertiesFromMap("r","{prop1: 1}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{prop1: 1}", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -229,7 +229,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("p1")
       .withRows(singleColumn(relationships.map(_ => 1)))
-      .withStatistics(propertiesSet = relationships.size )
+      .withStatistics(propertiesSet = relationships.size)
     property shouldBe "prop1"
   }
 
@@ -243,7 +243,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
       .produceResults("p1")
       .apply()
       .|.projection("r.prop1 as p1")
-      .|.setRelationshipPropertiesFromMap("r","{prop1: 1}", removeOtherProps = true)
+      .|.setRelationshipPropertiesFromMap("r", "{prop1: 1}", removeOtherProps = true)
       .|.argument("r")
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
@@ -255,7 +255,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("p1")
       .withRows(singleColumn(relationships.map(_ => 1)))
-      .withStatistics(propertiesSet = relationships.size )
+      .withStatistics(propertiesSet = relationships.size)
     property shouldBe "prop1"
   }
 
@@ -268,7 +268,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1")
       .projection("r.prop1 as p1")
-      .setRelationshipPropertiesFromMap("r","{prop1: 1}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{prop1: 1}", removeOtherProps = true)
       .limit(1)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
@@ -280,7 +280,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("p1")
       .withSingleRow(1)
-      .withStatistics(propertiesSet = 1 )
+      .withStatistics(propertiesSet = 1)
     property shouldBe "prop1"
   }
 
@@ -293,7 +293,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("r.prop1 as p1", "r.prop2 as p2")
-      .setRelationshipPropertiesFromMap("r","{prop2: r.prop1 + 1}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{prop2: r.prop1 + 1}", removeOtherProps = true)
       .apply()
       .|.setRelationshipPropertiesFromMap("r", "{prop1: 1}", removeOtherProps = true)
       .|.argument("r")
@@ -307,7 +307,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val properties = tx.getAllPropertyKeys.asScala.toList
     runtimeResult should beColumns("p1", "p2")
       .withRows(relationships.map(_ => Array(null, 2)))
-      .withStatistics(propertiesSet = relationships.size * 3 )
+      .withStatistics(propertiesSet = relationships.size * 3)
     properties shouldBe Seq("prop1", "prop2")
   }
 
@@ -322,9 +322,9 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("cached")
       .projection("cacheR[r.prop1] as cached")
-      .setRelationshipPropertiesFromMap("r","{prop1: 3}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{prop1: 3}", removeOtherProps = true)
       .cacheProperties("r.prop1")
-      .setRelationshipPropertiesFromMap("r","{prop1: 2}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{prop1: 2}", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -335,7 +335,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("cached")
       .withSingleRow(3)
-      .withStatistics(propertiesSet = 2 )
+      .withStatistics(propertiesSet = 2)
     property shouldBe "prop1"
   }
 
@@ -349,7 +349,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1")
       .projection("r.prop1 as p1")
-      .setRelationshipPropertiesFromMap("r","{prop1: null}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{prop1: null}", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -373,14 +373,16 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("r.prop as p")
-      .setRelationshipPropertiesFromMap("r","null", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "null", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    the [CypherTypeException] thrownBy consume(runtimeResult) should have message "Expected Null() to be a map, but it was :`NO_VALUE`"
+    the[CypherTypeException] thrownBy consume(
+      runtimeResult
+    ) should have message "Expected Null() to be a map, but it was :`NO_VALUE`"
   }
 
   test("should handle empty map") {
@@ -394,7 +396,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("r.prop as p")
-      .setRelationshipPropertiesFromMap("r","{}", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{}", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -511,14 +513,14 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1", "p2")
       .projection("r.prop1 as p1", "r.prop2 as p2")
-      .setRelationshipPropertiesFromMap("r","3", removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "3", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    val thrownException = the [CypherTypeException] thrownBy consume(runtimeResult)
+    val thrownException = the[CypherTypeException] thrownBy consume(runtimeResult)
     thrownException.getMessage should fullyMatch regex "Expected (.*)3(.*) to be a map, but it was :`Long\\(3\\)`".r
   }
 
@@ -528,8 +530,10 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   test("should delete existing properties from virtual relationship") {
     val relationships = given {
       val nodes = nodeGraph(3)
-      val relationships = Seq(nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R")),
-        nodes(1).createRelationshipTo(nodes(2), RelationshipType.withName("R")))
+      val relationships = Seq(
+        nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R")),
+        nodes(1).createRelationshipTo(nodes(2), RelationshipType.withName("R"))
+      )
       relationships.head.setProperty("prop1", 200)
       relationships.head.setProperty("prop2", 300)
       relationships(1).setProperty("prop1", 100)
@@ -558,8 +562,10 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   test("should update existing properties from virtual relationship") {
     val relationships = given {
       val nodes = nodeGraph(3)
-      val relationships = Seq(nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R")),
-        nodes(1).createRelationshipTo(nodes(2), RelationshipType.withName("R")))
+      val relationships = Seq(
+        nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R")),
+        nodes(1).createRelationshipTo(nodes(2), RelationshipType.withName("R"))
+      )
       relationships.head.setProperty("prop1", 200)
       relationships.head.setProperty("prop2", 300)
       relationships(1).setProperty("prop1", 100)

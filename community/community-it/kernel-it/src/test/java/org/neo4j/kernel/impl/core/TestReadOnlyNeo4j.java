@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
@@ -50,176 +55,155 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
 @EphemeralTestDirectoryExtension
-class TestReadOnlyNeo4j
-{
+class TestReadOnlyNeo4j {
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDirectory;
+
     private DatabaseManagementService managementService;
 
     @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
+    void tearDown() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
 
     @Test
-    void testSimple()
-    {
+    void testSimple() {
         DbRepresentation someData = createSomeData();
         managementService = dbmsReadOnly();
-        GraphDatabaseService readGraphDb = managementService.database( DEFAULT_DATABASE_NAME );
-        assertEquals( someData, DbRepresentation.of( readGraphDb ) );
+        GraphDatabaseService readGraphDb = managementService.database(DEFAULT_DATABASE_NAME);
+        assertEquals(someData, DbRepresentation.of(readGraphDb));
 
-        assertThrows( WriteOperationsNotAllowedException.class, () ->
-        {
-            try ( Transaction tx = readGraphDb.beginTx() )
-            {
+        assertThrows(WriteOperationsNotAllowedException.class, () -> {
+            try (Transaction tx = readGraphDb.beginTx()) {
                 tx.createNode();
 
                 tx.commit();
             }
-        } );
+        });
     }
 
     @Test
-    void databaseNotStartInReadOnlyModeWithMissingIndex() throws IOException
-    {
+    void databaseNotStartInReadOnlyModeWithMissingIndex() throws IOException {
         createIndex();
         deleteIndexFolder();
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        managementService = dbmsReadOnly( logProvider );
-        final var db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        managementService = dbmsReadOnly(logProvider);
+        final var db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         var namedDatabaseId = db.databaseId();
-        assertFalse( db.isAvailable(), "Did not expect db to start" );
-        assertThat( logProvider )
+        assertFalse(db.isAvailable(), "Did not expect db to start");
+        assertThat(logProvider)
                 .assertExceptionForLogMessage(
-                        "[" + namedDatabaseId.logPrefix() +
-                        "] Exception occurred while starting the database. Trying to stop already started components." )
-                .hasMessageContaining( "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in " +
-                                       "writable mode to rebuild indexes. Indexes needing rebuild: " );
+                        "[" + namedDatabaseId.logPrefix()
+                                + "] Exception occurred while starting the database. Trying to stop already started components.")
+                .hasMessageContaining(
+                        "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in "
+                                + "writable mode to rebuild indexes. Indexes needing rebuild: ");
     }
 
     @Test
-    void testReadOnlyOperationsAndNoTransaction()
-    {
+    void testReadOnlyOperationsAndNoTransaction() {
         managementService = dbms();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
 
         Transaction tx = db.beginTx();
         Node node1 = tx.createNode();
         Node node2 = tx.createNode();
-        Relationship rel = node1.createRelationshipTo( node2, withName( "TEST" ) );
-        node1.setProperty( "key1", "value1" );
-        rel.setProperty( "key1", "value1" );
+        Relationship rel = node1.createRelationshipTo(node2, withName("TEST"));
+        node1.setProperty("key1", "value1");
+        rel.setProperty("key1", "value1");
         tx.commit();
 
         // make sure write operations still throw exception
-        assertThrows( NotInTransactionException.class, () -> node1.createRelationshipTo( node2, withName( "TEST2" ) ) );
-        assertThrows( NotInTransactionException.class, () -> node1.setProperty( "key1", "value2" ) );
-        assertThrows( NotInTransactionException.class, () -> rel.removeProperty( "key1" ) );
+        assertThrows(NotInTransactionException.class, () -> node1.createRelationshipTo(node2, withName("TEST2")));
+        assertThrows(NotInTransactionException.class, () -> node1.setProperty("key1", "value2"));
+        assertThrows(NotInTransactionException.class, () -> rel.removeProperty("key1"));
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertEquals( node1, transaction.getNodeById( node1.getId() ) );
-            assertEquals( node2, transaction.getNodeById( node2.getId() ) );
-            assertEquals( rel, transaction.getRelationshipById( rel.getId() ) );
+        try (Transaction transaction = db.beginTx()) {
+            assertEquals(node1, transaction.getNodeById(node1.getId()));
+            assertEquals(node2, transaction.getNodeById(node2.getId()));
+            assertEquals(rel, transaction.getRelationshipById(rel.getId()));
 
-            var loadedNode = transaction.getNodeById( node1.getId() );
-            assertEquals( "value1", loadedNode.getProperty( "key1" ) );
-            Relationship loadedRel = loadedNode.getSingleRelationship( withName( "TEST" ), Direction.OUTGOING );
-            assertEquals( rel, loadedRel );
-            assertEquals( "value1", loadedRel.getProperty( "key1" ) );
+            var loadedNode = transaction.getNodeById(node1.getId());
+            assertEquals("value1", loadedNode.getProperty("key1"));
+            Relationship loadedRel = loadedNode.getSingleRelationship(withName("TEST"), Direction.OUTGOING);
+            assertEquals(rel, loadedRel);
+            assertEquals("value1", loadedRel.getProperty("key1"));
         }
     }
 
-    private void createIndex()
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+    private void createIndex() {
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                 .impermanent()
                 .build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( Label.label( "label" ) ).on( "prop" ).create();
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().indexFor(Label.label("label")).on("prop").create();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
         managementService.shutdown();
     }
 
-    private void deleteIndexFolder() throws IOException
-    {
-        Path databaseDir = Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory();
-        fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ) );
+    private void deleteIndexFolder() throws IOException {
+        Path databaseDir = Neo4jLayout.of(testDirectory.homePath())
+                .databaseLayout(DEFAULT_DATABASE_NAME)
+                .databaseDirectory();
+        fs.deleteRecursively(IndexDirectoryStructure.baseSchemaIndexFolder(databaseDir));
     }
 
-    private DbRepresentation createSomeData()
-    {
-        RelationshipType type = withName( "KNOWS" );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+    private DbRepresentation createSomeData() {
+        RelationshipType type = withName("KNOWS");
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                 .impermanent()
                 .build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
-        {
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+        try (Transaction tx = db.beginTx()) {
             Node prevNode = tx.createNode();
-            for ( int i = 0; i < 100; i++ )
-            {
+            for (int i = 0; i < 100; i++) {
                 Node node = tx.createNode();
-                Relationship rel = prevNode.createRelationshipTo( node, type );
-                node.setProperty( "someKey" + i % 10, i % 15 );
-                rel.setProperty( "since", System.currentTimeMillis() );
+                Relationship rel = prevNode.createRelationshipTo(node, type);
+                node.setProperty("someKey" + i % 10, i % 15);
+                rel.setProperty("since", System.currentTimeMillis());
             }
             tx.commit();
         }
-        DbRepresentation result = DbRepresentation.of( db );
+        DbRepresentation result = DbRepresentation.of(db);
         managementService.shutdown();
         return result;
     }
 
-    private DatabaseManagementService dbmsReadOnly( InternalLogProvider logProvider )
-    {
-        return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+    private DatabaseManagementService dbmsReadOnly(InternalLogProvider logProvider) {
+        return new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                 .impermanent()
-                .setConfig( GraphDatabaseSettings.read_only_database_default, true )
-                .setInternalLogProvider( logProvider )
+                .setConfig(GraphDatabaseSettings.read_only_database_default, true)
+                .setInternalLogProvider(logProvider)
                 .build();
     }
 
-    private DatabaseManagementService dbmsReadOnly()
-    {
-        return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+    private DatabaseManagementService dbmsReadOnly() {
+        return new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                 .impermanent()
-                .setConfig( GraphDatabaseSettings.read_only_database_default, true )
+                .setConfig(GraphDatabaseSettings.read_only_database_default, true)
                 .build();
     }
 
-    private DatabaseManagementService dbms()
-    {
-        return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setFileSystem( fs )
+    private DatabaseManagementService dbms() {
+        return new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setFileSystem(fs)
                 .impermanent()
                 .build();
     }

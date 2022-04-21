@@ -21,24 +21,20 @@ package org.neo4j.kernel.internal.locker;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class LockerLifecycleAdapter extends LifecycleAdapter
-{
+public class LockerLifecycleAdapter extends LifecycleAdapter {
     private final Locker locker;
 
-    public LockerLifecycleAdapter( Locker locker )
-    {
+    public LockerLifecycleAdapter(Locker locker) {
         this.locker = locker;
     }
 
     @Override
-    public synchronized void start()
-    {
+    public synchronized void start() {
         locker.checkLock();
     }
 
     @Override
-    public synchronized void stop() throws Exception
-    {
+    public synchronized void stop() throws Exception {
         locker.close();
     }
 }

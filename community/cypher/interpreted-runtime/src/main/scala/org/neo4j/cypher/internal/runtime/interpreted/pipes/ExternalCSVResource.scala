@@ -19,22 +19,24 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.net.URL
-
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.values.storable.Value
 
+import java.net.URL
+
 trait ExternalCSVResource {
-  def getCsvIterator(url: URL,
-                     fieldTerminator: Option[String],
-                     legacyCsvQuoteEscaping: Boolean,
-                     bufferSize: Int,
-                     headers: Boolean = false): LoadCsvIterator
+
+  def getCsvIterator(
+    url: URL,
+    fieldTerminator: Option[String],
+    legacyCsvQuoteEscaping: Boolean,
+    bufferSize: Int,
+    headers: Boolean = false
+  ): LoadCsvIterator
 }
 
 object ExternalCSVResource {
-  def empty: ExternalCSVResource = (_: URL, _: Option[String], _: Boolean,
-                                    _: Int, _: Boolean) => LoadCsvIterator.empty
+  def empty: ExternalCSVResource = (_: URL, _: Option[String], _: Boolean, _: Int, _: Boolean) => LoadCsvIterator.empty
 }
 
 trait LoadCsvIterator extends ClosingIterator[Array[Value]] {
@@ -43,6 +45,7 @@ trait LoadCsvIterator extends ClosingIterator[Array[Value]] {
 }
 
 object LoadCsvIterator {
+
   def empty: LoadCsvIterator = new LoadCsvIterator {
     override protected[this] def closeMore(): Unit = ()
     override def lastProcessed: Long = 0L

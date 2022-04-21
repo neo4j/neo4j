@@ -21,17 +21,15 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.IOException;
 import java.util.Collection;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 @FunctionalInterface
-public interface StoreFileProvider
-{
+public interface StoreFileProvider {
     /**
      * @param fileMetadataCollection the collection to add the files to
      * @return A {@link Resource} that should be closed when we are done working with the files added to the collection
      * @throws IOException if the provider is unable to prepare the file listing
      */
-    Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException;
+    Resource addFilesTo(Collection<StoreFileMetadata> fileMetadataCollection) throws IOException;
 }

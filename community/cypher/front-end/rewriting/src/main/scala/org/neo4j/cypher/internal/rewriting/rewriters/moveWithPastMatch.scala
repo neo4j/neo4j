@@ -47,10 +47,12 @@ case object IndependentWithsMovedAfterMatch extends StepSequencer.Condition
  */
 case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = instance
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
@@ -71,72 +73,80 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
 
   private val instance: Rewriter = inSequence(innerRewriter(insideSubquery = false), subqueryRewriter)
 
-  private sealed trait QuerySection {
+  sealed private trait QuerySection {
     def clauses: Seq[Clause]
   }
+
   private case class MatchGroup(clauses: Seq[Match]) extends QuerySection {
     def containsOptionalMatch: Boolean = clauses.exists(_.optional)
+
     def usesVariableFromWith(w: With): Boolean = {
       // We can be sure all return items are aliased at this point
       clauses.exists {
         m => m.folder.findAllByClass[LogicalVariable].exists(w.returnItems.items.flatMap(_.alias).contains)
       }
     }
-    def allExportedVariablesAsReturnItems: Seq[AliasedReturnItem] = clauses.flatMap(_.allExportedVariables.map(v => AliasedReturnItem(v))).distinct
+
+    def allExportedVariablesAsReturnItems: Seq[AliasedReturnItem] =
+      clauses.flatMap(_.allExportedVariables.map(v => AliasedReturnItem(v))).distinct
   }
+
   private case class MovableWith(`with`: With) extends QuerySection {
     override def clauses: Seq[Clause] = Seq(`with`)
   }
+
   private case class OtherClause(clause: Clause) extends QuerySection {
     override def clauses: Seq[Clause] = Seq(clause)
   }
 
-  private def innerRewriter(insideSubquery: Boolean): Rewriter = fixedPoint(topDown(Rewriter.lift {
-    case q: SingleQuery =>
-      // Partition the clauses into sections
-      val sections = q.clauses.foldLeft(Seq.empty[QuerySection]) {
-        case (previousSections :+ (mg@MatchGroup(matches)), m:Match) if !mg.containsOptionalMatch || m.optional =>
-          // Add MATCH to previous MatchGroup
-          previousSections :+ MatchGroup(matches :+ m)
-        case (previousSections, m:Match) =>
-          // New MatchGroup
-          previousSections :+ MatchGroup(Seq(m))
-        case (previousSections, w:With) if isMovableWith(w) && previousSections.forall(_.isInstanceOf[MovableWith]) =>
-          // A with clause that can potentially be moved. Only if at beginning or after other movable WITHs.
-          previousSections :+ MovableWith(w)
-        case (previousSections, clause) =>
-          // New OtherClause
-          previousSections :+ OtherClause(clause)
-      }
+  private def innerRewriter(insideSubquery: Boolean): Rewriter = fixedPoint(topDown(
+    Rewriter.lift {
+      case q: SingleQuery =>
+        // Partition the clauses into sections
+        val sections = q.clauses.foldLeft(Seq.empty[QuerySection]) {
+          case (previousSections :+ (mg @ MatchGroup(matches)), m: Match) if !mg.containsOptionalMatch || m.optional =>
+            // Add MATCH to previous MatchGroup
+            previousSections :+ MatchGroup(matches :+ m)
+          case (previousSections, m: Match) =>
+            // New MatchGroup
+            previousSections :+ MatchGroup(Seq(m))
+          case (previousSections, w: With)
+            if isMovableWith(w) && previousSections.forall(_.isInstanceOf[MovableWith]) =>
+            // A with clause that can potentially be moved. Only if at beginning or after other movable WITHs.
+            previousSections :+ MovableWith(w)
+          case (previousSections, clause) =>
+            // New OtherClause
+            previousSections :+ OtherClause(clause)
+        }
 
-      // Move WITHs around
-      val newSections = sections.foldLeft(Seq.empty[QuerySection]) {
-        case (previousSections :+ MovableWith(w), mg: MatchGroup)
-          if !(insideSubquery && q.importWith.contains(w)) &&
-            !mg.usesVariableFromWith(w)  =>
-          // The WITH can be moved past the MatchGroup
-          val newWith = w.copy(returnItems = w.returnItems.copy(items =
-            w.returnItems.items ++ mg.allExportedVariablesAsReturnItems
-          )(w.returnItems.position))(w.position)
+        // Move WITHs around
+        val newSections = sections.foldLeft(Seq.empty[QuerySection]) {
+          case (previousSections :+ MovableWith(w), mg: MatchGroup)
+            if !(insideSubquery && q.importWith.contains(w)) &&
+              !mg.usesVariableFromWith(w) =>
+            // The WITH can be moved past the MatchGroup
+            val newWith = w.copy(returnItems = w.returnItems.copy(items =
+              w.returnItems.items ++ mg.allExportedVariablesAsReturnItems)(w.returnItems.position))(w.position)
 
-          previousSections :+ mg :+ MovableWith(newWith)
-        case (previousSections, section) =>
-          previousSections :+ section
-      }
+            previousSections :+ mg :+ MovableWith(newWith)
+          case (previousSections, section) =>
+            previousSections :+ section
+        }
 
-      // Extract individual clauses again
-      val newClauses = newSections.flatMap(_.clauses)
-      q.copy(clauses = newClauses)(q.position)
-  }, stopper = _.isInstanceOf[SubqueryCall]))
-
+        // Extract individual clauses again
+        val newClauses = newSections.flatMap(_.clauses)
+        q.copy(clauses = newClauses)(q.position)
+    },
+    stopper = _.isInstanceOf[SubqueryCall]
+  ))
 
   private def isMovableWith(w: With): Boolean = {
     w.skip.isEmpty &&
-      w.limit.isEmpty &&
-      w.orderBy.isEmpty &&
-      w.where.isEmpty &&
-      !w.returnItems.includeExisting &&
-      !w.returnItems.containsAggregate &&
-      !w.distinct
+    w.limit.isEmpty &&
+    w.orderBy.isEmpty &&
+    w.where.isEmpty &&
+    !w.returnItems.includeExisting &&
+    !w.returnItems.containsAggregate &&
+    !w.distinct
   }
 }

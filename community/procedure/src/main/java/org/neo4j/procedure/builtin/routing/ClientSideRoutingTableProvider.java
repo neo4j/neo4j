@@ -23,7 +23,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.values.virtual.MapValue;
 
-public interface ClientSideRoutingTableProvider
-{
-    RoutingResult getRoutingResultForClientSideRouting( NamedDatabaseId databaseId, MapValue routingContext ) throws ProcedureException;
+public interface ClientSideRoutingTableProvider {
+    RoutingResult getRoutingResultForClientSideRouting(NamedDatabaseId databaseId, MapValue routingContext)
+            throws ProcedureException;
 }

@@ -16,46 +16,36 @@
  */
 package org.neo4j.pushtocloud;
 
-interface PushToCloudConsole
-{
-    String readLine( String fmt, Object... args );
+interface PushToCloudConsole {
+    String readLine(String fmt, Object... args);
 
-    char[] readPassword( String fmt, Object... args );
+    char[] readPassword(String fmt, Object... args);
 
-    static PushToCloudConsole realConsole()
-    {
-        return new PushToCloudConsole()
-        {
+    static PushToCloudConsole realConsole() {
+        return new PushToCloudConsole() {
             @Override
-            public String readLine( String fmt, Object... args )
-            {
-                return System.console().readLine( fmt, args );
+            public String readLine(String fmt, Object... args) {
+                return System.console().readLine(fmt, args);
             }
 
             @Override
-            public char[] readPassword( String fmt, Object... args )
-            {
-                return System.console().readPassword( fmt, args );
+            public char[] readPassword(String fmt, Object... args) {
+                return System.console().readPassword(fmt, args);
             }
         };
     }
 
-    static PushToCloudConsole fakeConsole( String username, String password )
-    {
-        return new PushToCloudConsole()
-        {
+    static PushToCloudConsole fakeConsole(String username, String password) {
+        return new PushToCloudConsole() {
             @Override
-            public String readLine( String fmt, Object... args )
-            {
+            public String readLine(String fmt, Object... args) {
                 return username;
             }
 
             @Override
-            public char[] readPassword( String fmt, Object... args )
-            {
+            public char[] readPassword(String fmt, Object... args) {
                 return password.toCharArray();
             }
         };
     }
 }
-

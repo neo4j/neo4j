@@ -20,14 +20,11 @@
 package org.neo4j.server.http.cypher.format.jolt;
 
 import com.fasterxml.jackson.databind.util.StdConverter;
-
 import org.neo4j.graphdb.Label;
 
-final class JoltLabelConverter extends StdConverter<Label,String>
-{
+final class JoltLabelConverter extends StdConverter<Label, String> {
     @Override
-    public String convert( Label value )
-    {
+    public String convert(Label value) {
         return value.name();
     }
 }

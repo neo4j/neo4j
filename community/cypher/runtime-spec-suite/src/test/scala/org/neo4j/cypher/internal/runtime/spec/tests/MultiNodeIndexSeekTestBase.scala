@@ -48,33 +48,40 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   sizeHint: Int
-)
-  extends RuntimeTestSuite[CONTEXT](runtime = runtime, edition = edition)
-  with PropertyIndexTestSupport[CONTEXT]
-  with RandomValuesTestSupport {
+) extends RuntimeTestSuite[CONTEXT](runtime = runtime, edition = edition)
+    with PropertyIndexTestSupport[CONTEXT]
+    with RandomValuesTestSupport {
 
   test("should do double index seek") {
     // given
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
     val nodes = given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i % 10)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i % 10)
+        },
+        "Label"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.RANGE),
-                                  _.nodeIndexSeek("m:Label(prop=3)", indexType = IndexType.RANGE))
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.RANGE),
+        _.nodeIndexSeek("m:Label(prop=3)", indexType = IndexType.RANGE)
+      )
       .build()
 
     // then
     val ns = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == 7)
     val ms = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == 3)
-    val expected = for {n <-ns
-                        m <- ms} yield Array(n, m)
+    val expected = for {
+      n <- ns
+      m <- ms
+    } yield Array(n, m)
 
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n", "m").withRows(expected)
@@ -85,26 +92,34 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val size = 100
     nodeIndex(IndexType.RANGE, "Label", "prop")
     val nodes = given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i % 10)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i % 10)
+        },
+        "Label"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m", "o")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.RANGE),
-                                  _.nodeIndexSeek("m:Label(prop=3)", indexType = IndexType.RANGE),
-                                  _.nodeIndexSeek("o:Label(prop=5)", indexType = IndexType.RANGE))
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.RANGE),
+        _.nodeIndexSeek("m:Label(prop=3)", indexType = IndexType.RANGE),
+        _.nodeIndexSeek("o:Label(prop=5)", indexType = IndexType.RANGE)
+      )
       .build()
 
     // then
     val ns = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == 7)
     val ms = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == 3)
     val os = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == 5)
-    val expected = for {n <-ns
-                        m <- ms
-                        o <- os} yield Array(n, m, o)
+    val expected = for {
+      n <- ns
+      m <- ms
+      o <- os
+    } yield Array(n, m, o)
 
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n", "m", "o").withRows(expected)
@@ -114,9 +129,13 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     nodeIndex(IndexType.RANGE, "Label", "prop")
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("prop" -> i)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "Label"
+      )
     }
 
     val nSeeks = 100
@@ -130,7 +149,9 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults(columns: _*)
       .projection(projections: _*)
-      .multiNodeIndexSeekOperator(indexSeeks.map(s => (b: LogicalQueryBuilder) => b.nodeIndexSeek(s, indexType = IndexType.RANGE)): _*)
+      .multiNodeIndexSeekOperator(indexSeeks.map(s =>
+        (b: LogicalQueryBuilder) => b.nodeIndexSeek(s, indexType = IndexType.RANGE)
+      ): _*)
       .build()
 
     // then
@@ -143,26 +164,34 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val size = 100
     nodeIndex(IndexType.RANGE, "Label", "prop")
     val nodes = given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i % 10)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i % 10)
+        },
+        "Label"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m", "o")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2)), indexType = IndexType.RANGE),
-                                  _.nodeIndexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6)), indexType = IndexType.RANGE),
-                                  _.nodeIndexSeek("o:Label(prop > 8)", indexType = IndexType.RANGE))
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:Label(prop IN ???)", paramExpr = Some(listOfInt(0, 1, 2)), indexType = IndexType.RANGE),
+        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(listOfInt(5, 6)), indexType = IndexType.RANGE),
+        _.nodeIndexSeek("o:Label(prop > 8)", indexType = IndexType.RANGE)
+      )
       .build()
 
     // then
     val ns = nodes.filter(n => Set(0, 1, 2).contains(n.getProperty("prop").asInstanceOf[Int]))
     val ms = nodes.filter(m => Set(5, 6).contains(m.getProperty("prop").asInstanceOf[Int]))
     val os = nodes.filter(_.getProperty("prop").asInstanceOf[Int] > 8)
-    val expected = for {n <-ns
-                        m <- ms
-                        o <- os} yield Array(n, m, o)
+    val expected = for {
+      n <- ns
+      m <- ms
+      o <- os
+    } yield Array(n, m, o)
 
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n", "m", "o").withRows(expected)
@@ -173,17 +202,23 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val size = 100
     nodeIndex(IndexType.RANGE, "Label", "prop")
     given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i % 10)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i % 10)
+        },
+        "Label"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m", "o")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2)), indexType = IndexType.RANGE),
-                                  _.nodeIndexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6)), indexType = IndexType.RANGE),
-                                  _.nodeIndexSeek("o:Label(prop > 10)", indexType = IndexType.RANGE))
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:Label(prop IN ???)", paramExpr = Some(listOfInt(0, 1, 2)), indexType = IndexType.RANGE),
+        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(listOfInt(5, 6)), indexType = IndexType.RANGE),
+        _.nodeIndexSeek("o:Label(prop > 10)", indexType = IndexType.RANGE)
+      )
       .build()
 
     // then
@@ -196,17 +231,23 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
     val nodes = given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i % 10)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i % 10)
+        },
+        "Label"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
       .apply()
-      .|.multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=???)", paramExpr = Some(varFor("i")), indexType = IndexType.RANGE),
-                                    _.nodeIndexSeek("m:Label(prop=???)", paramExpr = Some(varFor("i")), indexType = IndexType.RANGE))
+      .|.multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:Label(prop=???)", paramExpr = Some(varFor("i")), indexType = IndexType.RANGE),
+        _.nodeIndexSeek("m:Label(prop=???)", paramExpr = Some(varFor("i")), indexType = IndexType.RANGE)
+      )
       .unwind("range(0, 2) AS i")
       .argument()
       .build()
@@ -216,8 +257,10 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     (0 to 2).foreach { i =>
       val ns = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == i)
       val ms = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == i)
-      val cartesian = for {n <- ns
-                           m <- ms} yield Array(n, m)
+      val cartesian = for {
+        n <- ns
+        m <- ms
+      } yield Array(n, m)
       expected ++= cartesian
     }
 
@@ -230,16 +273,22 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
     given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i % 10)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i % 10)
+        },
+        "Label"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.RANGE),
-        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(listOfInt()), indexType = IndexType.RANGE))
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.RANGE),
+        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(listOfInt()), indexType = IndexType.RANGE)
+      )
       .build()
 
     // then
@@ -252,16 +301,22 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
     given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i % 10)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i % 10)
+        },
+        "Label"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.RANGE),
-        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(nullLiteral), indexType = IndexType.RANGE))
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.RANGE),
+        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(nullLiteral), indexType = IndexType.RANGE)
+      )
       .build()
 
     // then
@@ -274,10 +329,14 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       nodeIndex(IndexType.RANGE, "Label", "prop")
       nodeIndex(IndexType.TEXT, "Label", "prop")
 
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("prop" -> i)
-        case i if i % 2 == 1 => Map("prop" -> i.toString)
-      }, "Label")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("prop" -> i)
+          case i if i % 2 == 1 => Map("prop" -> i.toString)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -296,13 +355,13 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val strs = nodes.filter { n =>
         n.getProperty("prop") match {
           case s: String => s.startsWith("1")
-          case _ => false
+          case _         => false
         }
       }
       val ints = nodes.filter { n =>
         n.getProperty("prop") match {
           case i: Integer => i > 42
-          case _ => false
+          case _          => false
         }
       }
 
@@ -318,9 +377,13 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
     val nodes = given {
-      nodePropertyGraph(size, {
-        case i: Int => Map("prop" -> i % 10)
-      }, "Label")
+      nodePropertyGraph(
+        size,
+        {
+          case i: Int => Map("prop" -> i % 10)
+        },
+        "Label"
+      )
     }
 
     // when
@@ -329,23 +392,26 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       .deleteNode("n")
       .multiNodeIndexSeekOperator(
         _.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.RANGE),
-        _.nodeIndexSeek("m:Label(prop=3)", indexType = IndexType.RANGE))
+        _.nodeIndexSeek("m:Label(prop=3)", indexType = IndexType.RANGE)
+      )
       .build(readOnly = false)
 
     // then
     val ns = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == 7)
     val ms = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == 3)
-    val expected = for {n <-ns
-                        m <- ms} yield Array(m)
+    val expected = for {
+      n <- ns
+      m <- ms
+    } yield Array(m)
 
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    runtimeResult should beColumns("m").withRows(expected).withStatistics(nodesDeleted = size/10)
+    runtimeResult should beColumns("m").withRows(expected).withStatistics(nodesDeleted = size / 10)
     Iterables.count(tx.getAllNodes) shouldBe size * 0.9
   }
 
   test("should not create too many nodes after a multi node index seek") {
-    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
     nodeIndex(IndexType.RANGE, "L", "prop")
     val nodes = given {
@@ -359,14 +425,23 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       .unwind(s"range(1, 10) AS r")
       .create(createNode("o", "A", "B", "C"))
       .multiNodeIndexSeekOperator(
-        _.nodeIndexSeek("n:L(prop IN ???)", paramExpr = Some(listOf((0 until 10).map(i => literalInt(i)):_*)), indexType = IndexType.RANGE),
-        _.nodeIndexSeek("m:L(prop IN ???)", paramExpr = Some(listOf((10 until 20).map(i => literalInt(i)):_*)), indexType = IndexType.RANGE))
+        _.nodeIndexSeek(
+          "n:L(prop IN ???)",
+          paramExpr = Some(listOf((0 until 10).map(i => literalInt(i)): _*)),
+          indexType = IndexType.RANGE
+        ),
+        _.nodeIndexSeek(
+          "m:L(prop IN ???)",
+          paramExpr = Some(listOf((10 until 20).map(i => literalInt(i)): _*)),
+          indexType = IndexType.RANGE
+        )
+      )
       .build(readOnly = false)
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val expected = nodes.take(10).flatMap(r => Seq.fill(10 /*m:L seek*/ * 10 /*range() r*/)(r))
+    val expected = nodes.take(10).flatMap(r => Seq.fill(10 /*m:L seek*/ * 10 /*range() r*/ )(r))
     runtimeResult should beColumns("n")
       .withRows(singleColumn(expected))
       .withStatistics(nodesCreated = size, labelsAdded = 3 * size)

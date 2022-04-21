@@ -40,35 +40,28 @@ import java.nio.ByteBuffer;
  * Once that is resolved, we could have a method here that took a
  * WritableByteChannel or similar instead.
  */
-public interface UTF8Encoder
-{
+public interface UTF8Encoder {
     /**
      * @return a ByteBuffer with the encoded string. This will be overwritten
      *         the next time you call this method, so use it or loose it!
      */
-    ByteBuffer encode( String input );
+    ByteBuffer encode(String input);
 
-    class EncoderLoader
-    {
+    class EncoderLoader {
         public static final EncoderLoader ENCODER_LOADER = new EncoderLoader();
 
         private volatile boolean useFallbackEncoder;
-        public UTF8Encoder fastestAvailableEncoder()
-        {
-            if ( useFallbackEncoder )
-            {
+
+        public UTF8Encoder fastestAvailableEncoder() {
+            if (useFallbackEncoder) {
                 return new VanillaUTF8Encoder();
             }
 
-            try
-            {
-                return (UTF8Encoder)Class
-                        .forName( "org.neo4j.bolt.packstream.utf8.GCFreeUTF8Encoder" )
+            try {
+                return (UTF8Encoder) Class.forName("org.neo4j.bolt.packstream.utf8.GCFreeUTF8Encoder")
                         .getConstructor()
                         .newInstance();
-            }
-            catch ( Throwable e )
-            {
+            } catch (Throwable e) {
                 useFallbackEncoder = true;
                 return new VanillaUTF8Encoder();
             }

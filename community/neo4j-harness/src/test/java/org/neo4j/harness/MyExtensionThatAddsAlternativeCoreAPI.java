@@ -35,22 +35,23 @@ import org.neo4j.logging.internal.LogService;
 // the old Core API.
 @ServiceProvider
 public class MyExtensionThatAddsAlternativeCoreAPI
-        extends ExtensionFactory<MyExtensionThatAddsAlternativeCoreAPI.Dependencies>
-{
-    public MyExtensionThatAddsAlternativeCoreAPI()
-    {
-        super( ExtensionType.DATABASE, "my-ext" );
+        extends ExtensionFactory<MyExtensionThatAddsAlternativeCoreAPI.Dependencies> {
+    public MyExtensionThatAddsAlternativeCoreAPI() {
+        super(ExtensionType.DATABASE, "my-ext");
     }
 
     @Override
-    public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-    {
-        dependencies.procedures().registerComponent( MyCoreAPI.class, ctx -> new MyCoreAPI( dependencies.logService().getUserLog( MyCoreAPI.class ) ), true );
+    public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+        dependencies
+                .procedures()
+                .registerComponent(
+                        MyCoreAPI.class,
+                        ctx -> new MyCoreAPI(dependencies.logService().getUserLog(MyCoreAPI.class)),
+                        true);
         return new LifecycleAdapter();
     }
 
-    public interface Dependencies
-    {
+    public interface Dependencies {
         LogService logService();
 
         GlobalProcedures procedures();

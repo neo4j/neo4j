@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index.partition;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
-import java.nio.file.Path;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshots;
@@ -35,24 +33,22 @@ import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshots;
  * Represents a single writable partition of a partitioned lucene index.
  * @see AbstractIndexPartition
  */
-public class WritableIndexPartition extends AbstractIndexPartition
-{
+public class WritableIndexPartition extends AbstractIndexPartition {
     private final IndexWriter indexWriter;
     private final SearcherManager searcherManager;
 
-    public WritableIndexPartition( Path partitionFolder, Directory directory, IndexWriterConfig writerConfig ) throws IOException
-    {
-        super( partitionFolder, directory );
-        this.indexWriter = new IndexWriter( directory, writerConfig );
-        this.searcherManager = new SearcherManager( indexWriter, new Neo4jSearcherFactory() );
+    public WritableIndexPartition(Path partitionFolder, Directory directory, IndexWriterConfig writerConfig)
+            throws IOException {
+        super(partitionFolder, directory);
+        this.indexWriter = new IndexWriter(directory, writerConfig);
+        this.searcherManager = new SearcherManager(indexWriter, new Neo4jSearcherFactory());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public IndexWriter getIndexWriter()
-    {
+    public IndexWriter getIndexWriter() {
         return indexWriter;
     }
 
@@ -60,17 +56,15 @@ public class WritableIndexPartition extends AbstractIndexPartition
      * {@inheritDoc}
      */
     @Override
-    public PartitionSearcher acquireSearcher() throws IOException
-    {
-        return new PartitionSearcher( searcherManager );
+    public PartitionSearcher acquireSearcher() throws IOException {
+        return new PartitionSearcher(searcherManager);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void maybeRefreshBlocking() throws IOException
-    {
+    public void maybeRefreshBlocking() throws IOException {
         searcherManager.maybeRefreshBlocking();
     }
 
@@ -78,17 +72,15 @@ public class WritableIndexPartition extends AbstractIndexPartition
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException
-    {
-        IOUtils.closeAll( searcherManager, indexWriter, getDirectory() );
+    public void close() throws IOException {
+        IOUtils.closeAll(searcherManager, indexWriter, getDirectory());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public ResourceIterator<Path> snapshot() throws IOException
-    {
-        return LuceneIndexSnapshots.forIndex( partitionFolder, indexWriter );
+    public ResourceIterator<Path> snapshot() throws IOException {
+        return LuceneIndexSnapshots.forIndex(partitionFolder, indexWriter);
     }
 }

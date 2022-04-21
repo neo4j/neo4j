@@ -19,230 +19,208 @@
  */
 package org.neo4j.consistency.checker;
 
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**
  * Means of parameterizing selection of {@link RelationshipRecord} pointers.
  */
-enum RelationshipLink
-{
-    SOURCE_PREV
-    {
+enum RelationshipLink {
+    SOURCE_PREV {
         @Override
-        boolean endOfChain( RelationshipRecord relationship )
-        {
+        boolean endOfChain(RelationshipRecord relationship) {
             return relationship.isFirstInFirstChain();
         }
 
         @Override
-        long node( RelationshipRecord relationship )
-        {
+        long node(RelationshipRecord relationship) {
             return relationship.getFirstNode();
         }
 
         @Override
-        long link( RelationshipRecord relationship )
-        {
+        long link(RelationshipRecord relationship) {
             return relationship.getFirstPrevRel();
         }
 
         @Override
-        void setOther( RelationshipRecord relationship, NodeLink nodeLink, long other )
-        {
-            nodeLink.setNextRel( relationship, other );
+        void setOther(RelationshipRecord relationship, NodeLink nodeLink, long other) {
+            nodeLink.setNextRel(relationship, other);
         }
 
         @Override
-        long other( RelationshipRecord relationship, NodeLink nodeLink )
-        {
-            return nodeLink.getNextRel( relationship );
+        long other(RelationshipRecord relationship, NodeLink nodeLink) {
+            return nodeLink.getNextRel(relationship);
         }
 
         @Override
-        void reportDoesNotReferenceBack( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).sourcePrevDoesNotReferenceBack( other );
+        void reportDoesNotReferenceBack(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).sourcePrevDoesNotReferenceBack(other);
         }
 
         @Override
-        void reportNotUsedRelationshipReferencedInChain( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).notUsedRelationshipReferencedInChain( relationship );
+        void reportNotUsedRelationshipReferencedInChain(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).notUsedRelationshipReferencedInChain(relationship);
         }
 
         @Override
-        void reportOtherNode( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).sourcePrevReferencesOtherNodes( other );
+        void reportOtherNode(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).sourcePrevReferencesOtherNodes(other);
         }
     },
-    SOURCE_NEXT
-    {
+    SOURCE_NEXT {
         @Override
-        boolean endOfChain( RelationshipRecord relationship )
-        {
-            return NULL_REFERENCE.is( relationship.getFirstNextRel() );
+        boolean endOfChain(RelationshipRecord relationship) {
+            return NULL_REFERENCE.is(relationship.getFirstNextRel());
         }
 
         @Override
-        long node( RelationshipRecord relationship )
-        {
+        long node(RelationshipRecord relationship) {
             return relationship.getFirstNode();
         }
 
         @Override
-        long link( RelationshipRecord relationship )
-        {
+        long link(RelationshipRecord relationship) {
             return relationship.getFirstNextRel();
         }
 
         @Override
-        void setOther( RelationshipRecord relationship, NodeLink nodeLink, long other )
-        {
-            nodeLink.setPrevRel( relationship, other );
+        void setOther(RelationshipRecord relationship, NodeLink nodeLink, long other) {
+            nodeLink.setPrevRel(relationship, other);
         }
 
         @Override
-        long other( RelationshipRecord relationship, NodeLink nodeLink )
-        {
-            return nodeLink.getPrevRel( relationship );
+        long other(RelationshipRecord relationship, NodeLink nodeLink) {
+            return nodeLink.getPrevRel(relationship);
         }
 
         @Override
-        void reportDoesNotReferenceBack( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).sourceNextDoesNotReferenceBack( other );
+        void reportDoesNotReferenceBack(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).sourceNextDoesNotReferenceBack(other);
         }
 
         @Override
-        void reportNotUsedRelationshipReferencedInChain( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).notUsedRelationshipReferencedInChain( relationship );
+        void reportNotUsedRelationshipReferencedInChain(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).notUsedRelationshipReferencedInChain(relationship);
         }
 
         @Override
-        void reportOtherNode( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).sourceNextReferencesOtherNodes( other );
+        void reportOtherNode(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).sourceNextReferencesOtherNodes(other);
         }
     },
-    TARGET_PREV
-    {
+    TARGET_PREV {
         @Override
-        boolean endOfChain( RelationshipRecord relationship )
-        {
+        boolean endOfChain(RelationshipRecord relationship) {
             return relationship.isFirstInSecondChain();
         }
 
         @Override
-        long node( RelationshipRecord relationship )
-        {
+        long node(RelationshipRecord relationship) {
             return relationship.getSecondNode();
         }
 
         @Override
-        long link( RelationshipRecord relationship )
-        {
+        long link(RelationshipRecord relationship) {
             return relationship.getSecondPrevRel();
         }
 
         @Override
-        void setOther( RelationshipRecord relationship, NodeLink nodeLink, long other )
-        {
-            nodeLink.setNextRel( relationship, other );
+        void setOther(RelationshipRecord relationship, NodeLink nodeLink, long other) {
+            nodeLink.setNextRel(relationship, other);
         }
 
         @Override
-        long other( RelationshipRecord relationship, NodeLink nodeLink )
-        {
-            return nodeLink.getNextRel( relationship );
+        long other(RelationshipRecord relationship, NodeLink nodeLink) {
+            return nodeLink.getNextRel(relationship);
         }
 
         @Override
-        void reportDoesNotReferenceBack( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).targetPrevDoesNotReferenceBack( other );
+        void reportDoesNotReferenceBack(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).targetPrevDoesNotReferenceBack(other);
         }
 
         @Override
-        void reportNotUsedRelationshipReferencedInChain( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).notUsedRelationshipReferencedInChain( relationship );
+        void reportNotUsedRelationshipReferencedInChain(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).notUsedRelationshipReferencedInChain(relationship);
         }
 
         @Override
-        void reportOtherNode( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).targetPrevReferencesOtherNodes( other );
+        void reportOtherNode(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).targetPrevReferencesOtherNodes(other);
         }
     },
-    TARGET_NEXT
-    {
+    TARGET_NEXT {
         @Override
-        boolean endOfChain( RelationshipRecord relationship )
-        {
-            return NULL_REFERENCE.is( relationship.getSecondNextRel() );
+        boolean endOfChain(RelationshipRecord relationship) {
+            return NULL_REFERENCE.is(relationship.getSecondNextRel());
         }
 
         @Override
-        long node( RelationshipRecord relationship )
-        {
+        long node(RelationshipRecord relationship) {
             return relationship.getSecondNode();
         }
 
         @Override
-        long link( RelationshipRecord relationship )
-        {
+        long link(RelationshipRecord relationship) {
             return relationship.getSecondNextRel();
         }
 
         @Override
-        void setOther( RelationshipRecord relationship, NodeLink nodeLink, long other )
-        {
-            nodeLink.setPrevRel( relationship, other );
+        void setOther(RelationshipRecord relationship, NodeLink nodeLink, long other) {
+            nodeLink.setPrevRel(relationship, other);
         }
 
         @Override
-        long other( RelationshipRecord relationship, NodeLink nodeLink )
-        {
-            return nodeLink.getPrevRel( relationship );
+        long other(RelationshipRecord relationship, NodeLink nodeLink) {
+            return nodeLink.getPrevRel(relationship);
         }
 
         @Override
-        void reportDoesNotReferenceBack( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).targetNextDoesNotReferenceBack( other );
+        void reportDoesNotReferenceBack(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).targetNextDoesNotReferenceBack(other);
         }
 
         @Override
-        void reportNotUsedRelationshipReferencedInChain( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).notUsedRelationshipReferencedInChain( relationship );
+        void reportNotUsedRelationshipReferencedInChain(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).notUsedRelationshipReferencedInChain(relationship);
         }
 
         @Override
-        void reportOtherNode( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other )
-        {
-            reporter.forRelationship( relationship ).targetNextReferencesOtherNodes( other );
+        void reportOtherNode(
+                ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other) {
+            reporter.forRelationship(relationship).targetNextReferencesOtherNodes(other);
         }
     };
 
-    abstract boolean endOfChain( RelationshipRecord relationship );
+    abstract boolean endOfChain(RelationshipRecord relationship);
 
-    abstract long node( RelationshipRecord relationship );
+    abstract long node(RelationshipRecord relationship);
 
-    abstract long link( RelationshipRecord relationship );
+    abstract long link(RelationshipRecord relationship);
 
-    abstract void setOther( RelationshipRecord relationship, NodeLink nodeLink, long other );
+    abstract void setOther(RelationshipRecord relationship, NodeLink nodeLink, long other);
 
-    abstract long other( RelationshipRecord relationship, NodeLink nodeLink );
+    abstract long other(RelationshipRecord relationship, NodeLink nodeLink);
 
-    abstract void reportDoesNotReferenceBack( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other );
+    abstract void reportDoesNotReferenceBack(
+            ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other);
 
-    abstract void reportNotUsedRelationshipReferencedInChain( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other );
+    abstract void reportNotUsedRelationshipReferencedInChain(
+            ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other);
 
-    abstract void reportOtherNode( ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other );
+    abstract void reportOtherNode(
+            ConsistencyReport.Reporter reporter, RelationshipRecord relationship, RelationshipRecord other);
 }

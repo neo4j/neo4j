@@ -42,10 +42,12 @@ case object OnlySingleHasLabels extends StepSequencer.Condition
 
 case object normalizeComparisons extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = instance
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
@@ -54,32 +56,33 @@ case object normalizeComparisons extends Rewriter with StepSequencer.Step with A
     !containsNamedPathOnlyForShortestPath // this rewriter will not achieve 'noReferenceEqualityAmongVariables' if projectNamedPaths run first
   )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(OnlySingleHasLabels, noReferenceEqualityAmongVariables)
+  override def postConditions: Set[StepSequencer.Condition] =
+    Set(OnlySingleHasLabels, noReferenceEqualityAmongVariables)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
   private val instance: Rewriter = topDown(Rewriter.lift {
-    case c@NotEquals(lhs, rhs) =>
+    case c @ NotEquals(lhs, rhs) =>
       NotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@Equals(lhs, rhs) =>
+    case c @ Equals(lhs, rhs) =>
       Equals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@LessThan(lhs, rhs) =>
+    case c @ LessThan(lhs, rhs) =>
       LessThan(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@LessThanOrEqual(lhs, rhs) =>
+    case c @ LessThanOrEqual(lhs, rhs) =>
       LessThanOrEqual(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@GreaterThan(lhs, rhs) =>
+    case c @ GreaterThan(lhs, rhs) =>
       GreaterThan(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@GreaterThanOrEqual(lhs, rhs) =>
+    case c @ GreaterThanOrEqual(lhs, rhs) =>
       GreaterThanOrEqual(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@InvalidNotEquals(lhs, rhs) =>
+    case c @ InvalidNotEquals(lhs, rhs) =>
       InvalidNotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@HasLabels(expr, labels) if labels.size > 1 =>
+    case c @ HasLabels(expr, labels) if labels.size > 1 =>
       val hasLabels = labels.map(l => HasLabels(expr.endoRewrite(copyVariables), Seq(l))(c.position))
       Ands(hasLabels)(c.position)
-    case c@HasTypes(expr, types) if types.size > 1 =>
+    case c @ HasTypes(expr, types) if types.size > 1 =>
       val hasTypes = types.map(t => HasTypes(expr.endoRewrite(copyVariables), Seq(t))(c.position))
       Ands(hasTypes)(c.position)
   })

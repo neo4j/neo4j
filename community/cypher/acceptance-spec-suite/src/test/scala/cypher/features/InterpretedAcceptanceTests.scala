@@ -27,7 +27,8 @@ class InterpretedAcceptanceTests extends BaseAcceptanceTest {
 
   override val config: TestConfig = InterpretedTestConfig
 
-  override def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef] = super.dbConfigPerFeature(featureName)
+  override def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef] =
+    super.dbConfigPerFeature(featureName)
 
   override val useBolt: Boolean = false
 }

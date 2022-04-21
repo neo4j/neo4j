@@ -21,14 +21,12 @@ package org.neo4j.procedure.builtin;
 
 import org.neo4j.capabilities.Capability;
 
-public class CapabilityResult
-{
+public class CapabilityResult {
     public final String name;
     public final String description;
     public final Object value;
 
-    public CapabilityResult( Capability<?> capability, Object value )
-    {
+    public CapabilityResult(Capability<?> capability, Object value) {
         this.name = capability.name().fullName();
         this.description = capability.description();
         this.value = value;

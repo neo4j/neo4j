@@ -19,13 +19,9 @@
  */
 package org.neo4j.fabric.bolt;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber;
 import org.neo4j.fabric.config.FabricConfig;
@@ -37,28 +33,30 @@ import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
-import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-public class BoltQueryExecutionImpl implements BoltQueryExecution
-{
+public class BoltQueryExecutionImpl implements BoltQueryExecution {
     private final QueryExecutionImpl queryExecution;
     private final QuerySubscriber subscriber;
 
-    public BoltQueryExecutionImpl( StatementResult statementResult, QuerySubscriber subscriber, FabricConfig fabricConfig )
-    {
+    public BoltQueryExecutionImpl(
+            StatementResult statementResult, QuerySubscriber subscriber, FabricConfig fabricConfig) {
         this.subscriber = subscriber;
         var config = fabricConfig.getDataStream();
-        var rx2SyncStream = new Rx2SyncStream( statementResult.records(), config.getBatchSize() );
-        queryExecution =
-                new QueryExecutionImpl( rx2SyncStream, subscriber, statementResult.columns(), statementResult.summary(), statementResult.executionType() );
+        var rx2SyncStream = new Rx2SyncStream(statementResult.records(), config.getBatchSize());
+        queryExecution = new QueryExecutionImpl(
+                rx2SyncStream,
+                subscriber,
+                statementResult.columns(),
+                statementResult.summary(),
+                statementResult.executionType());
     }
 
-    public void initialize() throws Exception
-    {
+    public void initialize() throws Exception {
         // Mimic eager execution as triggered in org.neo4j.cypher.internal.result.StandardInternalExecutionResult
 
         boolean isWriteOnly = queryExecution.executionType().queryType() == QueryExecutionType.QueryType.WRITE;
@@ -68,38 +66,32 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
 
         boolean triggerArtificialDemand = isWriteOnly || isExplain || noResult;
 
-        if ( triggerArtificialDemand )
-        {
-            queryExecution.request( 1 );
+        if (triggerArtificialDemand) {
+            queryExecution.request(1);
             queryExecution.await();
         }
 
-        if ( subscriber instanceof ResultSubscriber && (!isReadOnly || isExplain) )
-        {
-            ((ResultSubscriber) subscriber).materialize( queryExecution );
+        if (subscriber instanceof ResultSubscriber && (!isReadOnly || isExplain)) {
+            ((ResultSubscriber) subscriber).materialize(queryExecution);
         }
     }
 
     @Override
-    public QueryExecution getQueryExecution()
-    {
+    public QueryExecution getQueryExecution() {
         return queryExecution;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         queryExecution.cancel();
     }
 
     @Override
-    public void terminate()
-    {
+    public void terminate() {
         queryExecution.cancel();
     }
 
-    private static class QueryExecutionImpl implements QueryExecution
-    {
+    private static class QueryExecutionImpl implements QueryExecution {
 
         private final Rx2SyncStream rx2SyncStream;
         private final QuerySubscriber subscriber;
@@ -109,119 +101,102 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
         private final Mono<QueryExecutionType> queryExecutionType;
         private final Supplier<List<String>> columns;
 
-        private QueryExecutionImpl( Rx2SyncStream rx2SyncStream, QuerySubscriber subscriber, Flux<String> columns, Mono<Summary> summary,
-                                    Mono<QueryExecutionType> queryExecutionType )
-        {
+        private QueryExecutionImpl(
+                Rx2SyncStream rx2SyncStream,
+                QuerySubscriber subscriber,
+                Flux<String> columns,
+                Mono<Summary> summary,
+                Mono<QueryExecutionType> queryExecutionType) {
             this.rx2SyncStream = rx2SyncStream;
             this.subscriber = subscriber;
             this.summary = summary;
             this.queryExecutionType = queryExecutionType;
 
             AtomicReference<List<String>> columnsStore = new AtomicReference<>();
-            this.columns = () ->
-            {
-                if ( columnsStore.get() == null )
-                {
-                    columnsStore.compareAndSet( null, columns.collectList().block() );
+            this.columns = () -> {
+                if (columnsStore.get() == null) {
+                    columnsStore.compareAndSet(null, columns.collectList().block());
                 }
 
                 return columnsStore.get();
             };
         }
 
-        private Summary getSummary()
-        {
+        private Summary getSummary() {
             return summary.cache().block();
         }
 
         @Override
-        public QueryExecutionType executionType()
-        {
+        public QueryExecutionType executionType() {
             return queryExecutionType.cache().block();
         }
 
         @Override
-        public ExecutionPlanDescription executionPlanDescription()
-        {
+        public ExecutionPlanDescription executionPlanDescription() {
             return getSummary().executionPlanDescription();
         }
 
         @Override
-        public Iterable<Notification> getNotifications()
-        {
+        public Iterable<Notification> getNotifications() {
             return getSummary().getNotifications();
         }
 
         @Override
-        public String[] fieldNames()
-        {
-            return columns.get().toArray( new String[0] );
+        public String[] fieldNames() {
+            return columns.get().toArray(new String[0]);
         }
 
         @Override
-        public void request( long numberOfRecords ) throws Exception
-        {
-            if ( !hasMore )
-            {
+        public void request(long numberOfRecords) throws Exception {
+            if (!hasMore) {
                 return;
             }
 
-            if ( !initialised )
-            {
+            if (!initialised) {
                 initialised = true;
-                subscriber.onResult( columns.get().size() );
+                subscriber.onResult(columns.get().size());
             }
 
-            try
-            {
-                for ( int i = 0; i < numberOfRecords; i++ )
-                {
+            try {
+                for (int i = 0; i < numberOfRecords; i++) {
                     Record record = rx2SyncStream.readRecord();
 
-                    if ( record == null )
-                    {
+                    if (record == null) {
                         hasMore = false;
-                        subscriber.onResultCompleted( getSummary().getQueryStatistics() );
+                        subscriber.onResultCompleted(getSummary().getQueryStatistics());
                         return;
                     }
 
                     subscriber.onRecord();
-                    publishFields( record );
+                    publishFields(record);
                     subscriber.onRecordCompleted();
                 }
 
                 // Let's check if the last record exhausted the stream,
                 // This is not necessary for correctness, but might save one extra
                 // round trip.
-                if ( rx2SyncStream.completed() )
-                {
+                if (rx2SyncStream.completed()) {
                     hasMore = false;
-                    subscriber.onResultCompleted( getSummary().getQueryStatistics() );
+                    subscriber.onResultCompleted(getSummary().getQueryStatistics());
                 }
-            }
-            catch ( Exception e )
-            {
-                throw Exceptions.transform( Status.Statement.ExecutionFailed, e );
+            } catch (Exception e) {
+                throw Exceptions.transform(Status.Statement.ExecutionFailed, e);
             }
         }
 
-        private void publishFields( Record record ) throws Exception
-        {
-            for ( int i = 0; i < columns.get().size(); i++ )
-            {
-                subscriber.onField( i, record.getValue( i ) );
+        private void publishFields(Record record) throws Exception {
+            for (int i = 0; i < columns.get().size(); i++) {
+                subscriber.onField(i, record.getValue(i));
             }
         }
 
         @Override
-        public void cancel()
-        {
+        public void cancel() {
             rx2SyncStream.close();
         }
 
         @Override
-        public boolean await()
-        {
+        public boolean await() {
             return hasMore;
         }
     }

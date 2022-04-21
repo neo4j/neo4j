@@ -21,25 +21,21 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.neo4j.common.TokenNameLookup;
 
-public class LuceneTestTokenNameLookup implements TokenNameLookup
-{
+public class LuceneTestTokenNameLookup implements TokenNameLookup {
     public static final LuceneTestTokenNameLookup SIMPLE_TOKEN_LOOKUP = new LuceneTestTokenNameLookup();
 
     @Override
-    public String labelGetName( int labelId )
-    {
+    public String labelGetName(int labelId) {
         return "Label" + labelId;
     }
 
     @Override
-    public String relationshipTypeGetName( int relationshipTypeId )
-    {
+    public String relationshipTypeGetName(int relationshipTypeId) {
         return "RelType" + relationshipTypeId;
     }
 
     @Override
-    public String propertyKeyGetName( int propertyKeyId )
-    {
+    public String propertyKeyGetName(int propertyKeyId) {
         return "property" + propertyKeyId;
     }
 }

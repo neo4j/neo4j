@@ -19,39 +19,36 @@
  */
 package org.neo4j.bolt.packstream.utf8;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class UTF8EncoderTest
-{
+public class UTF8EncoderTest {
     @Test
-    void shouldEncodeDecode()
-    {
-        assertEncodes( "" );
-        assertEncodes( "a" );
-        assertEncodes( "ä" );
-        assertEncodes( "äa" );
-        assertEncodes( "☺️" );
-        assertEncodes( "基本上，電腦只是處理數位。它們指定一個數位，來儲存字母或其他字元。在創造Unicode之前，" +
-                "有數百種指定這些數位的編碼系統。沒有一個編碼可以包含足夠的字元，例如：單單歐洲共同體就需要好幾種不同的編碼來包括所有的語言。" +
-                "即使是單一種語言，例如英語，也沒有哪一個編碼可以適用於所有的字母、標點符號，和常用的技術符號" );
-        assertEncodes( new String( new byte[(int) Math.pow( 2, 18 )] ) ); // bigger than default buffer size
+    void shouldEncodeDecode() {
+        assertEncodes("");
+        assertEncodes("a");
+        assertEncodes("ä");
+        assertEncodes("äa");
+        assertEncodes("☺️");
+        assertEncodes("基本上，電腦只是處理數位。它們指定一個數位，來儲存字母或其他字元。在創造Unicode之前，"
+                + "有數百種指定這些數位的編碼系統。沒有一個編碼可以包含足夠的字元，例如：單單歐洲共同體就需要好幾種不同的編碼來包括所有的語言。"
+                + "即使是單一種語言，例如英語，也沒有哪一個編碼可以適用於所有的字母、標點符號，和常用的技術符號");
+        assertEncodes(new String(new byte[(int) Math.pow(2, 18)])); // bigger than default buffer size
     }
 
-    private static void assertEncodes( String val )
-    {
-        assertEquals( val,  encodeDecode( val ) );
+    private static void assertEncodes(String val) {
+        assertEquals(val, encodeDecode(val));
     }
 
-    private static String encodeDecode( String original )
-    {
-        ByteBuffer encoded = UTF8Encoder.EncoderLoader.ENCODER_LOADER.fastestAvailableEncoder().encode( original );
+    private static String encodeDecode(String original) {
+        ByteBuffer encoded = UTF8Encoder.EncoderLoader.ENCODER_LOADER
+                .fastestAvailableEncoder()
+                .encode(original);
         byte[] b = new byte[encoded.remaining()];
-        encoded.get( b );
-        return new String( b, StandardCharsets.UTF_8 );
+        encoded.get(b);
+        return new String(b, StandardCharsets.UTF_8);
     }
 }

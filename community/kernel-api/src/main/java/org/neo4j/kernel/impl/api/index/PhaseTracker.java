@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public interface PhaseTracker
-{
-    void enterPhase( Phase phase );
+public interface PhaseTracker {
+    void enterPhase(Phase phase);
 
     /**
      * Method for when time has been kept externally and merely reported to this tracker.
@@ -29,14 +28,13 @@ public interface PhaseTracker
      * @param phase which {@link Phase} to register the time for.
      * @param millis time to register.
      */
-    void registerTime( Phase phase, long millis );
+    void registerTime(Phase phase, long millis);
 
     void stop();
 
     PhaseTracker nullInstance = new NullPhaseTracker();
 
-    enum Phase
-    {
+    enum Phase {
         // The order in which the phases are declared defines the order in which they will be printed in the log.
         // Keep them arranged in the order in which they naturally are seen during index population.
         SCAN,
@@ -47,21 +45,14 @@ public interface PhaseTracker
         FLIP;
     }
 
-    class NullPhaseTracker implements PhaseTracker
-    {
+    class NullPhaseTracker implements PhaseTracker {
         @Override
-        public void enterPhase( Phase phase )
-        {
-        }
+        public void enterPhase(Phase phase) {}
 
         @Override
-        public void registerTime( Phase phase, long millis )
-        {
-        }
+        public void registerTime(Phase phase, long millis) {}
 
         @Override
-        public void stop()
-        {
-        }
+        public void stop() {}
     }
 }

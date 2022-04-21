@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.cache
 
-
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LFUCacheTest extends CypherFunSuite {
@@ -27,26 +26,26 @@ class LFUCacheTest extends CypherFunSuite {
   test("testClear") {
     val cache = new LFUCache[String, String](TestExecutorCaffeineCacheFactory, 5)
 
-    cache.put("A","A")
-    cache.put("B","B")
-    cache.put("C","C")
-    cache.put("D","D")
-    cache.put("E","E")
+    cache.put("A", "A")
+    cache.put("B", "B")
+    cache.put("C", "C")
+    cache.put("D", "D")
+    cache.put("E", "E")
 
-    cache.get("A").isEmpty should be (false)
-    cache.get("B").isEmpty should be (false)
-    cache.get("C").isEmpty should be (false)
-    cache.get("D").isEmpty should be (false)
-    cache.get("E").isEmpty should be (false)
+    cache.get("A").isEmpty should be(false)
+    cache.get("B").isEmpty should be(false)
+    cache.get("C").isEmpty should be(false)
+    cache.get("D").isEmpty should be(false)
+    cache.get("E").isEmpty should be(false)
 
-    cache.clear() should be (5)  // it returns the number of elements in the cache prior to the clearing
+    cache.clear() should be(5) // it returns the number of elements in the cache prior to the clearing
 
-    cache.inner.estimatedSize() should be (0)
+    cache.inner.estimatedSize() should be(0)
 
-    cache.get("A").isEmpty should be (true)
-    cache.get("B").isEmpty should be (true)
-    cache.get("C").isEmpty should be (true)
-    cache.get("D").isEmpty should be (true)
-    cache.get("E").isEmpty should be (true)
+    cache.get("A").isEmpty should be(true)
+    cache.get("B").isEmpty should be(true)
+    cache.get("C").isEmpty should be(true)
+    cache.get("D").isEmpty should be(true)
+    cache.get("E").isEmpty should be(true)
   }
 }

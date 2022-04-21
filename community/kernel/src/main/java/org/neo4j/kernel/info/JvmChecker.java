@@ -19,79 +19,72 @@
  */
 package org.neo4j.kernel.info;
 
-import java.lang.management.MemoryUsage;
-import java.util.List;
-import java.util.Locale;
-import java.util.regex.Pattern;
-
-import org.neo4j.logging.InternalLog;
-
 import static java.util.regex.Pattern.compile;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 
-public class JvmChecker
-{
+import java.lang.management.MemoryUsage;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
+import org.neo4j.logging.InternalLog;
+
+public class JvmChecker {
     private static final int SUPPORTED_FEATURE_VERSION = 17;
-    static final String INCOMPATIBLE_JVM_WARNING = "You are using an unsupported Java runtime. Please" +
-            " use Oracle(R) Java(TM) 17, OpenJDK(TM) 17.";
-    static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of " +
-            "the Java runtime. Please use Oracle(R) Java(TM) 17 or OpenJDK(TM) 17.";
-    private static final Pattern SUPPORTED_JAVA_NAME_PATTERN = compile( "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server) VM" );
+    static final String INCOMPATIBLE_JVM_WARNING =
+            "You are using an unsupported Java runtime. Please" + " use Oracle(R) Java(TM) 17, OpenJDK(TM) 17.";
+    static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of "
+            + "the Java runtime. Please use Oracle(R) Java(TM) 17 or OpenJDK(TM) 17.";
+    private static final Pattern SUPPORTED_JAVA_NAME_PATTERN =
+            compile("(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server) VM");
 
     private final InternalLog log;
     private final JvmMetadataRepository jvmMetadataRepository;
 
-    public JvmChecker( InternalLog log, JvmMetadataRepository jvmMetadataRepository )
-    {
+    public JvmChecker(InternalLog log, JvmMetadataRepository jvmMetadataRepository) {
         this.log = log;
         this.jvmMetadataRepository = jvmMetadataRepository;
     }
 
-    public void checkJvmCompatibilityAndIssueWarning()
-    {
+    public void checkJvmCompatibilityAndIssueWarning() {
         String javaVmName = jvmMetadataRepository.getJavaVmName();
         Runtime.Version javaVersion = jvmMetadataRepository.getJavaVersion();
 
-        if ( !SUPPORTED_JAVA_NAME_PATTERN.matcher( javaVmName ).matches() )
-        {
-            log.warn( INCOMPATIBLE_JVM_WARNING );
-        }
-        else if ( javaVersion.feature() != SUPPORTED_FEATURE_VERSION )
-        {
-            log.warn( INCOMPATIBLE_JVM_VERSION_WARNING );
+        if (!SUPPORTED_JAVA_NAME_PATTERN.matcher(javaVmName).matches()) {
+            log.warn(INCOMPATIBLE_JVM_WARNING);
+        } else if (javaVersion.feature() != SUPPORTED_FEATURE_VERSION) {
+            log.warn(INCOMPATIBLE_JVM_VERSION_WARNING);
         }
         List<String> jvmArguments = jvmMetadataRepository.getJvmInputArguments();
         MemoryUsage heapMemoryUsage = jvmMetadataRepository.getHeapMemoryUsage();
-        if ( missingOption( jvmArguments, "-Xmx" ) )
-        {
-            log.warn( maxMemorySettingWarning( heapMemoryUsage.getMax() ) );
+        if (missingOption(jvmArguments, "-Xmx")) {
+            log.warn(maxMemorySettingWarning(heapMemoryUsage.getMax()));
         }
-        if ( missingOption( jvmArguments, "-Xms" ) )
-        {
-            log.warn( initialMemorySettingWarning( heapMemoryUsage.getInit() ) );
+        if (missingOption(jvmArguments, "-Xms")) {
+            log.warn(initialMemorySettingWarning(heapMemoryUsage.getInit()));
         }
     }
 
-    static String initialMemorySettingWarning( long currentUsage )
-    {
-        return String.format( "The initial heap memory has not been configured. It is recommended that it is always explicitly configured, to " +
-                "ensure the system has a balanced configuration. Until then, a JVM computed heuristic of %d bytes is used instead. If you are running " +
-                "neo4j server, you need to configure %s in neo4j.conf. If you are running neo4j embedded, you have to launch the JVM with -Xms set to a " +
-                "value. You can run neo4j-admin memrec for memory configuration suggestions.", currentUsage, initial_heap_size.name() );
+    static String initialMemorySettingWarning(long currentUsage) {
+        return String.format(
+                "The initial heap memory has not been configured. It is recommended that it is always explicitly configured, to "
+                        + "ensure the system has a balanced configuration. Until then, a JVM computed heuristic of %d bytes is used instead. If you are running "
+                        + "neo4j server, you need to configure %s in neo4j.conf. If you are running neo4j embedded, you have to launch the JVM with -Xms set to a "
+                        + "value. You can run neo4j-admin memrec for memory configuration suggestions.",
+                currentUsage, initial_heap_size.name());
     }
 
-    static String maxMemorySettingWarning( long currentUsage )
-    {
-        return String.format( "The max heap memory has not been configured. It is recommended that it is always explicitly configured, to " +
-                "ensure the system has a balanced configuration. Until then, a JVM computed heuristic of %d bytes is used instead. If you are running " +
-                "neo4j server, you need to configure %s in neo4j.conf. If you are running neo4j embedded, you have to launch the JVM with -Xmx set to a " +
-                "value. You can run neo4j-admin memrec for memory configuration suggestions.", currentUsage, max_heap_size.name() );
+    static String maxMemorySettingWarning(long currentUsage) {
+        return String.format(
+                "The max heap memory has not been configured. It is recommended that it is always explicitly configured, to "
+                        + "ensure the system has a balanced configuration. Until then, a JVM computed heuristic of %d bytes is used instead. If you are running "
+                        + "neo4j server, you need to configure %s in neo4j.conf. If you are running neo4j embedded, you have to launch the JVM with -Xmx set to a "
+                        + "value. You can run neo4j-admin memrec for memory configuration suggestions.",
+                currentUsage, max_heap_size.name());
     }
 
-    private static boolean missingOption( List<String> jvmArguments, String option )
-    {
-        String normalizedOption = option.toUpperCase( Locale.ROOT );
-        return jvmArguments.stream().noneMatch( o -> o.toUpperCase( Locale.ROOT ).startsWith( normalizedOption ) );
+    private static boolean missingOption(List<String> jvmArguments, String option) {
+        String normalizedOption = option.toUpperCase(Locale.ROOT);
+        return jvmArguments.stream().noneMatch(o -> o.toUpperCase(Locale.ROOT).startsWith(normalizedOption));
     }
 }

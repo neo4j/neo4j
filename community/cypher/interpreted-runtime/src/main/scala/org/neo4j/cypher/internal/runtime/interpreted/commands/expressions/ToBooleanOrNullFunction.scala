@@ -31,7 +31,8 @@ case class ToBooleanOrNullFunction(a: Expression) extends NullInNullOutExpressio
 
   override def rewrite(f: Expression => Expression): Expression = f(ToBooleanOrNullFunction(a.rewrite(f)))
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.toBooleanOrNull(value)
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toBooleanOrNull(value)
 
   override def children: Seq[AstNode[_]] = Seq(a)
 }

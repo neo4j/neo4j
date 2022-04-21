@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import java.nio.file.Files
-import java.util.concurrent.TimeUnit
-
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression
 import org.apache.commons.math3.stat.regression.SimpleRegression
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -74,6 +71,9 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
+import java.nio.file.Files
+import java.util.concurrent.TimeUnit
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -118,8 +118,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       results.normalizedResult.foreach {
         case (name, slope) => println(s"$name: COST = $slope * NROWS")
       }
-    }
-    finally {
+    } finally {
       managementService.shutdown()
     }
   }
@@ -127,7 +126,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
   ignore("cost for eagerness") {
     val path = Files.createTempDirectory("apa").toAbsolutePath
     val managementService = new TestDatabaseManagementServiceBuilder(path).build()
-    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
+    val graph: GraphDatabaseQueryService =
+      new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     try {
       graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
@@ -145,8 +145,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       results.result.foreach {
         case (name, slope) => println(s"$name: COST = $slope * NROWS")
       }
-    }
-    finally {
+    } finally {
       managementService.shutdown()
     }
   }
@@ -154,7 +153,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
   ignore("hash joins") {
     val path = Files.createTempDirectory("apa").toAbsolutePath
     val managementService = new TestDatabaseManagementServiceBuilder(path).build()
-    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
+    val graph: GraphDatabaseQueryService =
+      new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     val labels = Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
     val x = ListBuffer.empty[Array[Double]]
     val y = ListBuffer.empty[Double]
@@ -162,10 +162,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
     try {
       setupDbForJoins(graph, labels)
 
-      //permutate lhs, and rhs of the hashjoin, for each permutation
-      //calculate cost of lhs, rhs and the cost for the hash join
-      for {label1 <- labels
-           label2 <- labels if label1 != label2} {
+      // permutate lhs, and rhs of the hashjoin, for each permutation
+      // calculate cost of lhs, rhs and the cost for the hash join
+      for {
+        label1 <- labels
+        label2 <- labels if label1 != label2
+      } {
 
         val lhsPipe = labelScan("x", label1)
         val rhsPipe = labelScan("x", label2)
@@ -176,7 +178,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
         y.append(hashJoinCost.elapsed)
       }
 
-      //From the collected data, estimate A and B
+      // From the collected data, estimate A and B
       val regression = new OLSMultipleLinearRegression()
       regression.setNoIntercept(true)
       regression.newSampleData(y.toArray, x.toArray)
@@ -193,6 +195,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     private val table = mutable.HashMap.empty[String, ListBuffer[DataPoint]]
 
     def foreach(f: ((String, ListBuffer[DataPoint])) => Unit): Unit = table.foreach(f)
+
     def add(name: String, dataPoint: DataPoint): Unit =
       table.getOrElseUpdate(name, ListBuffer.empty).append(dataPoint)
 
@@ -202,12 +205,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
     def normalizedResult: collection.Map[String, Double] = {
       val result = table.view.mapValues(calculateSimpleResult).toMap
       val minValue = result.values.min
-      result.view.mapValues(_/minValue).toMap
+      result.view.mapValues(_ / minValue).toMap
     }
 
     def result: collection.Map[String, Double] = table.view.mapValues(calculateSimpleResult).toMap
 
-    override def toString: String = table.map{
+    override def toString: String = table.map {
       case (name, dataPoints) => s"$name: $dataPoints"
     }.mkString("\n")
   }
@@ -230,8 +233,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
     simulation
   }
 
-  //From the provided data points, estimate slope and intercept in `cost = slope*NROWS + intercept`
-  private def calculateSimpleResult(dataPoints: ListBuffer[DataPoint]): Double= {
+  // From the provided data points, estimate slope and intercept in `cost = slope*NROWS + intercept`
+  private def calculateSimpleResult(dataPoints: ListBuffer[DataPoint]): Double = {
     if (dataPoints.isEmpty) {
       throw new IllegalArgumentException("Cannot compute result without any data points")
     } else if (dataPoints.size == 1) {
@@ -244,7 +247,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 
-  //For each rowcount find the median value
+  // For each rowcount find the median value
   private def medianPerRowCount(dataPoints: ListBuffer[DataPoint]) =
     dataPoints.groupBy(_.numberOfRows).map {
       case (rowCount, dps) => DataPoint(median(dps.map(_.elapsed)), rowCount)
@@ -264,10 +267,10 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def transactionContext(graph: GraphDatabaseQueryService, tx: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graph)
-    contextFactory.newContext( tx, "X", EMPTY_MAP)
+    contextFactory.newContext(tx, "X", EMPTY_MAP)
   }
 
-  //executes the provided pipes and returns execution times
+  // executes the provided pipes and returns execution times
   private def runSimulation(graph: GraphDatabaseQueryService, pipes: Seq[Pipe]) = {
     val results = new ListBuffer[DataPoint]
 
@@ -282,12 +285,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
           val numberOfRows = pipe.createResults(state).size
           val elapsed = System.nanoTime() - start
 
-          //warmup
+          // warmup
           if (x > 4) results.append(DataPoint(elapsed, numberOfRows))
         }
       }
     }
-    //remove fastest and slowest
+    // remove fastest and slowest
     results.sortBy(_.elapsed).slice(5, results.size - 5)
   }
 
@@ -295,20 +298,19 @@ class ActualCostCalculationTest extends CypherFunSuite {
     graph.withTx { tx =>
       for (_ <- 1 to chunkSize) {
         val node = tx.createNode(LABEL)
-        node.createRelationshipTo(tx.createNode(),
-          RelationshipType.withName(RELATIONSHIP))
+        node.createRelationshipTo(tx.createNode(), RelationshipType.withName(RELATIONSHIP))
         node.setProperty(PROPERTY, 42)
       }
     }
   }
 
-  //create a database where each subsequent label is more frequent
+  // create a database where each subsequent label is more frequent
   private def setupDbForJoins(graph: GraphDatabaseQueryService, labels: Seq[String]): Unit = {
     val nLabels = labels.size
-    //divide so that each subsequent label is more frequent,
-    //e.g. [100, 200, 300,...] with 100 + 200 + 300 ~ N
+    // divide so that each subsequent label is more frequent,
+    // e.g. [100, 200, 300,...] with 100 + 200 + 300 ~ N
     val factor = 2 * N / (nLabels * (nLabels + 1))
-    val sizes =  for (i <- 1 to nLabels) yield i * factor
+    val sizes = for (i <- 1 to nLabels) yield i * factor
     graph.withTx { tx =>
       for (i <- labels.indices) {
         val label = labels(i)
@@ -320,11 +322,13 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 
-  private def labelScan(variable: String, label: String) = NodeByLabelScanPipe(variable, LazyLabel(label), IndexOrderNone)()
+  private def labelScan(variable: String, label: String) =
+    NodeByLabelScanPipe(variable, LazyLabel(label), IndexOrderNone)()
 
   private def hashJoin(l: Pipe, r: Pipe) = NodeHashJoinPipe(Set("x"), l, r)()
 
-  private def expand(l: Pipe, t: String) = ExpandAllPipe(l, "x", "r", "n", SemanticDirection.OUTGOING, RelationshipTypes(Array(t)))()
+  private def expand(l: Pipe, t: String) =
+    ExpandAllPipe(l, "x", "r", "n", SemanticDirection.OUTGOING, RelationshipTypes(Array(t)))()
 
   private def allNodes = AllNodesScanPipe("x")()
 
@@ -347,7 +351,15 @@ class ActualCostCalculationTest extends CypherFunSuite {
       // We are calculating the cost excluding deserialization of values from the index
       val properties = propertyKeyToken.map(IndexedProperty(_, DoNotGetValue, NODE_TYPE)).toArray
 
-      NodeIndexSeekPipe(LABEL.name(), labelToken, properties, 0, SingleQueryExpression(literalValue), IndexSeek, IndexOrderNone)()
+      NodeIndexSeekPipe(
+        LABEL.name(),
+        labelToken,
+        properties,
+        0,
+        SingleQueryExpression(literalValue),
+        IndexSeek,
+        IndexOrderNone
+      )()
     }
   }
 
@@ -362,7 +374,13 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val propertyKeyToken = PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
       // We are calculating the cost excluding deserialization of values from the index
 
-      NodeIndexScanPipe(LABEL.name(), labelToken, Seq(IndexedProperty(propertyKeyToken, DoNotGetValue, NODE_TYPE)), 0, IndexOrderNone)()
+      NodeIndexScanPipe(
+        LABEL.name(),
+        labelToken,
+        Seq(IndexedProperty(propertyKeyToken, DoNotGetValue, NODE_TYPE)),
+        0,
+        IndexOrderNone
+      )()
     }
   }
 
@@ -397,4 +415,3 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 }
-

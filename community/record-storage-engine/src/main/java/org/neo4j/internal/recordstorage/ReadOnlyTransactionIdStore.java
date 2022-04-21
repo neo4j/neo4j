@@ -25,15 +25,13 @@ import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-public class ReadOnlyTransactionIdStore implements TransactionIdStore
-{
+public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     private final long transactionId;
     private final int transactionChecksum;
     private final long transactionCommitTimestamp;
     private final LogPosition logPosition;
 
-    public ReadOnlyTransactionIdStore( LogTailMetadata logTailMetadata )
-    {
+    public ReadOnlyTransactionIdStore(LogTailMetadata logTailMetadata) {
         var lastCommittedTransaction = logTailMetadata.getLastCommittedTransaction();
         transactionId = lastCommittedTransaction.transactionId();
         transactionChecksum = lastCommittedTransaction.checksum();
@@ -42,62 +40,56 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public long nextCommittingTransactionId()
-    {
-        throw new UnsupportedOperationException( "Read-only transaction ID store" );
+    public long nextCommittingTransactionId() {
+        throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
     @Override
-    public long committingTransactionId()
-    {
-        throw new UnsupportedOperationException( "Read-only transaction ID store" );
+    public long committingTransactionId() {
+        throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
     @Override
-    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
-    {
-        throw new UnsupportedOperationException( "Read-only transaction ID store" );
+    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp) {
+        throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
     @Override
-    public long getLastCommittedTransactionId()
-    {
+    public long getLastCommittedTransactionId() {
         return transactionId;
     }
 
     @Override
-    public TransactionId getLastCommittedTransaction()
-    {
-        return new TransactionId( transactionId, transactionChecksum, BASE_TX_COMMIT_TIMESTAMP );
+    public TransactionId getLastCommittedTransaction() {
+        return new TransactionId(transactionId, transactionChecksum, BASE_TX_COMMIT_TIMESTAMP);
     }
 
     @Override
-    public long getLastClosedTransactionId()
-    {
+    public long getLastClosedTransactionId() {
         return transactionId;
     }
 
     @Override
-    public ClosedTransactionMetadata getLastClosedTransaction()
-    {
-        return new ClosedTransactionMetadata( transactionId, logPosition, transactionChecksum, transactionCommitTimestamp );
+    public ClosedTransactionMetadata getLastClosedTransaction() {
+        return new ClosedTransactionMetadata(
+                transactionId, logPosition, transactionChecksum, transactionCommitTimestamp);
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long logByteOffset, long logVersion )
-    {
-        throw new UnsupportedOperationException( "Read-only transaction ID store" );
+    public void setLastCommittedAndClosedTransactionId(
+            long transactionId, int checksum, long commitTimestamp, long logByteOffset, long logVersion) {
+        throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long logByteOffset, int checksum, long commitTimestamp )
-    {
-        throw new UnsupportedOperationException( "Read-only transaction ID store" );
+    public void transactionClosed(
+            long transactionId, long logVersion, long logByteOffset, int checksum, long commitTimestamp) {
+        throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp )
-    {
-        throw new UnsupportedOperationException( "Read-only transaction ID store" );
+    public void resetLastClosedTransaction(
+            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
+        throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 }

@@ -19,45 +19,40 @@
  */
 package org.neo4j.test.impl;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @TestDirectoryExtension
-class ChannelOutputStreamTest
-{
+class ChannelOutputStreamTest {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void shouldStoreAByteAtBoundary() throws Exception
-    {
-        try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
-        {
-            Path workFile = testDirectory.file( "a" );
-            fs.mkdirs( testDirectory.homePath() );
-            OutputStream out = fs.openAsOutputStream( workFile, false );
+    void shouldStoreAByteAtBoundary() throws Exception {
+        try (EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction()) {
+            Path workFile = testDirectory.file("a");
+            fs.mkdirs(testDirectory.homePath());
+            OutputStream out = fs.openAsOutputStream(workFile, false);
 
             // When I write a byte[] that is larger than the internal buffer in
             // ChannelOutputStream..
             byte[] b = new byte[8097];
             b[b.length - 1] = 7;
-            out.write( b );
+            out.write(b);
             out.flush();
 
             // Then it should get cleanly written and be readable
-            InputStream in = fs.openAsInputStream( workFile );
-            in.skip( 8096 );
-            assertEquals( 7, in.read() );
+            InputStream in = fs.openAsInputStream(workFile);
+            in.skip(8096);
+            assertEquals(7, in.read());
         }
     }
 }

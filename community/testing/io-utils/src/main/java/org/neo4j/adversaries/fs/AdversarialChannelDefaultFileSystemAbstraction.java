@@ -20,7 +20,6 @@
 package org.neo4j.adversaries.fs;
 
 import java.nio.channels.FileChannel;
-
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
@@ -33,23 +32,19 @@ import org.neo4j.io.fs.StoreFileChannel;
  * and only verify handling of inconsistent channel operations.
  * Otherwise consider {@link AdversarialFileSystemAbstraction} since it should produce more failure cases.
  */
-public class AdversarialChannelDefaultFileSystemAbstraction extends DefaultFileSystemAbstraction
-{
+public class AdversarialChannelDefaultFileSystemAbstraction extends DefaultFileSystemAbstraction {
     private final RandomAdversary adversary;
 
-    public AdversarialChannelDefaultFileSystemAbstraction()
-    {
-        this( new RandomAdversary( 0.5, 0.0, 0.0 ) );
+    public AdversarialChannelDefaultFileSystemAbstraction() {
+        this(new RandomAdversary(0.5, 0.0, 0.0));
     }
 
-    public AdversarialChannelDefaultFileSystemAbstraction( RandomAdversary adversary )
-    {
+    public AdversarialChannelDefaultFileSystemAbstraction(RandomAdversary adversary) {
         this.adversary = adversary;
     }
 
     @Override
-    protected StoreFileChannel getStoreFileChannel( FileChannel channel )
-    {
-        return AdversarialFileChannel.wrap( super.getStoreFileChannel( channel ), adversary );
+    protected StoreFileChannel getStoreFileChannel(FileChannel channel) {
+        return AdversarialFileChannel.wrap(super.getStoreFileChannel(channel), adversary);
     }
 }

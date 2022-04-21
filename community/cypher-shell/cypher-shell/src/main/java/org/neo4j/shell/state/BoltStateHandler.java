@@ -19,13 +19,14 @@
  */
 package org.neo4j.shell.state;
 
+import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
@@ -59,13 +60,10 @@ import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ThrowingAction;
 import org.neo4j.shell.log.Logger;
 
-import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
-
 /**
  * Handles interactions with the driver
  */
-public class BoltStateHandler implements TransactionHandler, Connector, DatabaseManager
-{
+public class BoltStateHandler implements TransactionHandler, Connector, DatabaseManager {
     private static final Logger log = Logger.create();
     private static final String USER_AGENT = "neo4j-cypher-shell/v" + Build.version();
     private final TriFunction<String, AuthToken, Config, Driver> driverProvider;
@@ -79,48 +77,36 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private Transaction tx;
     private ConnectionConfig connectionConfig;
 
-    public BoltStateHandler( boolean isInteractive )
-    {
-        this( GraphDatabase::driver, isInteractive );
+    public BoltStateHandler(boolean isInteractive) {
+        this(GraphDatabase::driver, isInteractive);
     }
 
-    BoltStateHandler( TriFunction<String, AuthToken, Config, Driver> driverProvider,
-                      boolean isInteractive )
-    {
+    BoltStateHandler(TriFunction<String, AuthToken, Config, Driver> driverProvider, boolean isInteractive) {
         this.driverProvider = driverProvider;
         activeDatabaseNameAsSetByUser = ABSENT_DB_NAME;
         this.isInteractive = isInteractive;
     }
 
     @Override
-    public void setActiveDatabase( String databaseName ) throws CommandException
-    {
-        if ( isTransactionOpen() )
-        {
-            throw new CommandException( "There is an open transaction. You need to close it before you can switch database." );
+    public void setActiveDatabase(String databaseName) throws CommandException {
+        if (isTransactionOpen()) {
+            throw new CommandException(
+                    "There is an open transaction. You need to close it before you can switch database.");
         }
         String previousDatabaseName = activeDatabaseNameAsSetByUser;
         activeDatabaseNameAsSetByUser = databaseName;
-        try
-        {
-            if ( isConnected() )
-            {
-                reconnectAndPing( databaseName, previousDatabaseName );
+        try {
+            if (isConnected()) {
+                reconnectAndPing(databaseName, previousDatabaseName);
             }
-        }
-        catch ( ClientException e )
-        {
-            if ( isInteractive )
-            {
+        } catch (ClientException e) {
+            if (isInteractive) {
                 // We want to try to connect to the previous database
                 activeDatabaseNameAsSetByUser = previousDatabaseName;
-                try
-                {
-                    reconnectAndPing( previousDatabaseName, previousDatabaseName );
-                }
-                catch ( Exception e2 )
-                {
-                    e.addSuppressed( e2 );
+                try {
+                    reconnectAndPing(previousDatabaseName, previousDatabaseName);
+                } catch (Exception e2) {
+                    e.addSuppressed(e2);
                 }
             }
             throw e;
@@ -128,73 +114,56 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public String getActiveDatabaseAsSetByUser()
-    {
+    public String getActiveDatabaseAsSetByUser() {
         return activeDatabaseNameAsSetByUser;
     }
 
     @Override
-    public String getActualDatabaseAsReportedByServer()
-    {
+    public String getActualDatabaseAsReportedByServer() {
         return actualDatabaseNameAsReportedByServer;
     }
 
     @Override
-    public void beginTransaction() throws CommandException
-    {
-        if ( !isConnected() )
-        {
-            throw new CommandException( "Not connected to Neo4j" );
+    public void beginTransaction() throws CommandException {
+        if (!isConnected()) {
+            throw new CommandException("Not connected to Neo4j");
         }
-        if ( isTransactionOpen() )
-        {
-            throw new CommandException( "There is already an open transaction" );
+        if (isTransactionOpen()) {
+            throw new CommandException("There is already an open transaction");
         }
         tx = session.beginTransaction();
     }
 
     @Override
-    public void commitTransaction() throws CommandException
-    {
-        if ( !isConnected() )
-        {
-            throw new CommandException( "Not connected to Neo4j" );
+    public void commitTransaction() throws CommandException {
+        if (!isConnected()) {
+            throw new CommandException("Not connected to Neo4j");
         }
-        if ( !isTransactionOpen() )
-        {
-            throw new CommandException( "There is no open transaction to commit" );
+        if (!isTransactionOpen()) {
+            throw new CommandException("There is no open transaction to commit");
         }
 
-        try
-        {
+        try {
             tx.commit();
             tx.close();
-        }
-        finally
-        {
+        } finally {
             tx = null;
         }
     }
 
     @Override
-    public void rollbackTransaction() throws CommandException
-    {
-        if ( !isConnected() )
-        {
-            throw new CommandException( "Not connected to Neo4j" );
+    public void rollbackTransaction() throws CommandException {
+        if (!isConnected()) {
+            throw new CommandException("Not connected to Neo4j");
         }
-        if ( !isTransactionOpen() )
-        {
-            throw new CommandException( "There is no open transaction to rollback" );
+        if (!isTransactionOpen()) {
+            throw new CommandException("There is no open transaction to rollback");
         }
 
-        try
-        {
+        try {
             tx.rollback();
             tx.close();
-        }
-        finally
-        {
+        } finally {
             tx = null;
         }
     }
@@ -206,153 +175,125 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
      * @param e the thrown exception.
      * @return a suitable exception to rethrow.
      */
-    public Neo4jException handleException( Neo4jException e )
-    {
-        if ( isTransactionOpen() )
-        {
+    public Neo4jException handleException(Neo4jException e) {
+        if (isTransactionOpen()) {
             tx.close();
             tx = null;
             return new ErrorWhileInTransactionException(
-                    "An error occurred while in an open transaction. The transaction will be rolled back and terminated. Error: " + e.getMessage(), e );
-        }
-        else
-        {
+                    "An error occurred while in an open transaction. The transaction will be rolled back and terminated. Error: "
+                            + e.getMessage(),
+                    e);
+        } else {
             return e;
         }
     }
 
     @Override
-    public boolean isTransactionOpen()
-    {
+    public boolean isTransactionOpen() {
         return tx != null;
     }
 
     @Override
-    public boolean isConnected()
-    {
+    public boolean isConnected() {
         return session != null && session.isOpen();
     }
 
     @Override
-    public void connect( String user, String password, String database ) throws CommandException
-    {
-        connect( connectionConfig.withUsernameAndPasswordAndDatabase( user, password, database ) );
+    public void connect(String user, String password, String database) throws CommandException {
+        connect(connectionConfig.withUsernameAndPasswordAndDatabase(user, password, database));
     }
 
     @Override
-    public void impersonate( String impersonatedUser ) throws CommandException
-    {
-        if ( isTransactionOpen() )
-        {
-            throw new CommandException( "There is an open transaction. You need to close it before starting impersonation." );
+    public void impersonate(String impersonatedUser) throws CommandException {
+        if (isTransactionOpen()) {
+            throw new CommandException(
+                    "There is an open transaction. You need to close it before starting impersonation.");
         }
-        if ( isConnected() )
-        {
+        if (isConnected()) {
             disconnect();
         }
-        connect( connectionConfig.withImpersonatedUser( impersonatedUser ) );
+        connect(connectionConfig.withImpersonatedUser(impersonatedUser));
     }
 
     @Override
-    public void reconnect() throws CommandException
-    {
-        if ( !isConnected() )
-        {
-            throw new CommandException( "Can't reconnect when unconnected." );
+    public void reconnect() throws CommandException {
+        if (!isConnected()) {
+            throw new CommandException("Can't reconnect when unconnected.");
         }
-        if ( isTransactionOpen() )
-        {
-            throw new CommandException( "There is an open transaction. You need to close it before you can reconnect." );
+        if (isTransactionOpen()) {
+            throw new CommandException("There is an open transaction. You need to close it before you can reconnect.");
         }
 
         var config = this.connectionConfig;
         disconnect();
-        connect( config );
+        connect(config);
     }
 
     @Override
-    public void connect( ConnectionConfig incomingConfig ) throws CommandException
-    {
-        if ( isConnected() )
-        {
-            throw new CommandException( "Already connected" );
+    public void connect(ConnectionConfig incomingConfig) throws CommandException {
+        if (isConnected()) {
+            throw new CommandException("Already connected");
         }
-        this.connectionConfig = clean( incomingConfig );
-        final AuthToken authToken = AuthTokens.basic( connectionConfig.username(), connectionConfig.password() );
-        try
-        {
+        this.connectionConfig = clean(incomingConfig);
+        final AuthToken authToken = AuthTokens.basic(connectionConfig.username(), connectionConfig.password());
+        try {
             String previousDatabaseName = activeDatabaseNameAsSetByUser;
-            try
-            {
+            try {
                 activeDatabaseNameAsSetByUser = connectionConfig.database();
-                driver = getDriver( connectionConfig, authToken );
-                reconnectAndPing( activeDatabaseNameAsSetByUser, previousDatabaseName );
-            }
-            catch ( ServiceUnavailableException | SessionExpiredException e )
-            {
+                driver = getDriver(connectionConfig, authToken);
+                reconnectAndPing(activeDatabaseNameAsSetByUser, previousDatabaseName);
+            } catch (ServiceUnavailableException | SessionExpiredException e) {
                 String scheme = connectionConfig.scheme();
-                String fallbackScheme = switch ( scheme )
-                        {
+                String fallbackScheme =
+                        switch (scheme) {
                             case Scheme.NEO4J_URI_SCHEME -> Scheme.BOLT_URI_SCHEME;
                             case Scheme.NEO4J_LOW_TRUST_URI_SCHEME -> Scheme.BOLT_LOW_TRUST_URI_SCHEME;
                             case Scheme.NEO4J_HIGH_TRUST_URI_SCHEME -> Scheme.BOLT_HIGH_TRUST_URI_SCHEME;
                             default -> throw e;
                         };
-                this.connectionConfig = connectionConfig.withScheme( fallbackScheme );
+                this.connectionConfig = connectionConfig.withScheme(fallbackScheme);
 
-                try
-                {
-                    driver = getDriver( connectionConfig, authToken );
-                    log.info( "Connecting with fallback scheme: " + fallbackScheme );
-                    reconnectAndPing( activeDatabaseNameAsSetByUser, previousDatabaseName );
-                }
-                catch ( Throwable fallbackThrowable )
-                {
-                    log.warn( "Fallback scheme failed", fallbackThrowable );
+                try {
+                    driver = getDriver(connectionConfig, authToken);
+                    log.info("Connecting with fallback scheme: " + fallbackScheme);
+                    reconnectAndPing(activeDatabaseNameAsSetByUser, previousDatabaseName);
+                } catch (Throwable fallbackThrowable) {
+                    log.warn("Fallback scheme failed", fallbackThrowable);
                     // Throw the original exception to not cause confusion.
                     throw e;
                 }
             }
-        }
-        catch ( Throwable t )
-        {
-            try
-            {
+        } catch (Throwable t) {
+            try {
                 silentDisconnect();
-            }
-            catch ( Exception e )
-            {
-                t.addSuppressed( e );
+            } catch (Exception e) {
+                t.addSuppressed(e);
             }
             throw t;
         }
     }
 
-    private void reconnectAndPing( String databaseToConnectTo, String previousDatabase ) throws CommandException
-    {
-        reconnect( databaseToConnectTo, previousDatabase );
+    private void reconnectAndPing(String databaseToConnectTo, String previousDatabase) throws CommandException {
+        reconnect(databaseToConnectTo, previousDatabase);
         getPing().apply();
     }
 
-    private void reconnect( String databaseToConnectTo, String previousDatabase )
-    {
-        log.info( "Connecting to database " + databaseToConnectTo + "..." );
+    private void reconnect(String databaseToConnectTo, String previousDatabase) {
+        log.info("Connecting to database " + databaseToConnectTo + "...");
         SessionConfig.Builder builder = SessionConfig.builder();
-        builder.withDefaultAccessMode( AccessMode.WRITE );
-        if ( !ABSENT_DB_NAME.equals( databaseToConnectTo ) )
-        {
-            builder.withDatabase( databaseToConnectTo );
+        builder.withDefaultAccessMode(AccessMode.WRITE);
+        if (!ABSENT_DB_NAME.equals(databaseToConnectTo)) {
+            builder.withDatabase(databaseToConnectTo);
         }
-        closeSession( previousDatabase );
-        final Bookmark bookmarkForDBToConnectTo = bookmarks.get( databaseToConnectTo );
-        if ( bookmarkForDBToConnectTo != null )
-        {
-            builder.withBookmarks( bookmarkForDBToConnectTo );
+        closeSession(previousDatabase);
+        final Bookmark bookmarkForDBToConnectTo = bookmarks.get(databaseToConnectTo);
+        if (bookmarkForDBToConnectTo != null) {
+            builder.withBookmarks(bookmarkForDBToConnectTo);
         }
 
-        impersonatedUser().ifPresent( builder::withImpersonatedUser );
+        impersonatedUser().ifPresent(builder::withImpersonatedUser);
 
-        session = driver.session( builder.build() );
+        session = driver.session(builder.build());
 
         resetActualDbName(); // Set this to null first in case run throws an exception
     }
@@ -362,41 +303,31 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
      *
      * @param databaseName the name of the database currently connected to
      */
-    private void closeSession( String databaseName )
-    {
-        if ( session != null )
-        {
+    private void closeSession(String databaseName) {
+        if (session != null) {
             // Save the last bookmark and close the session
             final Bookmark bookmarkForPreviousDB = session.lastBookmark();
             session.close();
-            bookmarks.put( databaseName, bookmarkForPreviousDB );
+            bookmarks.put(databaseName, bookmarkForPreviousDB);
         }
     }
 
-    private ThrowingAction<CommandException> getPing()
-    {
-        return () ->
-        {
-            try
-            {
-                Result run = session.run( "CALL db.ping()" );
+    private ThrowingAction<CommandException> getPing() {
+        return () -> {
+            try {
+                Result run = session.run("CALL db.ping()");
                 ResultSummary summary = run.consume();
                 BoltStateHandler.this.protocolVersion = summary.server().protocolVersion();
-                updateActualDbName( summary );
-            }
-            catch ( ClientException e )
-            {
-                log.warn( "Ping failed", e );
-                //In older versions there is no db.ping procedure, use legacy method.
-                if ( procedureNotFound( e ) )
-                {
-                    Result run = session.run( isSystemDb() ? "CALL db.indexes()" : "RETURN 1" );
+                updateActualDbName(summary);
+            } catch (ClientException e) {
+                log.warn("Ping failed", e);
+                // In older versions there is no db.ping procedure, use legacy method.
+                if (procedureNotFound(e)) {
+                    Result run = session.run(isSystemDb() ? "CALL db.indexes()" : "RETURN 1");
                     ResultSummary summary = run.consume();
                     BoltStateHandler.this.protocolVersion = summary.server().protocolVersion();
-                    updateActualDbName( summary );
-                }
-                else
-                {
+                    updateActualDbName(summary);
+                } else {
                     throw e;
                 }
             }
@@ -404,32 +335,25 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public String getServerVersion()
-    {
-        try
-        {
+    public String getServerVersion() {
+        try {
             return runCypher("CALL dbms.components() YIELD versions", Collections.emptyMap())
                     .flatMap(recordOpt -> recordOpt.getRecords().stream().findFirst())
                     .map(record -> record.get("versions"))
-                    .filter(value  -> !value.isNull())
+                    .filter(value -> !value.isNull())
                     .map(value -> value.get(0).asString())
                     .orElse("");
-        }
-        catch ( CommandException e )
-        {
-            log.warn( "Failed to get server version", e );
+        } catch (CommandException e) {
+            log.warn("Failed to get server version", e);
             // On versions before 3.1.0-M09
             return "";
         }
     }
 
     @Override
-    public String getProtocolVersion()
-    {
-        if ( isConnected() )
-        {
-            if ( protocolVersion == null )
-            {
+    public String getProtocolVersion() {
+        if (isConnected()) {
+            if (protocolVersion == null) {
                 // On versions before 3.1.0-M09
                 protocolVersion = "";
             }
@@ -440,171 +364,134 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public String username()
-    {
+    public String username() {
         return connectionConfig != null ? connectionConfig.username() : "";
     }
 
     @Override
-    public String driverUrl()
-    {
+    public String driverUrl() {
         return connectionConfig != null ? connectionConfig.driverUrl() : "";
     }
 
     @Override
-    public Optional<String> impersonatedUser()
-    {
-        return Optional.ofNullable( connectionConfig ).flatMap( ConnectionConfig::impersonatedUser );
+    public Optional<String> impersonatedUser() {
+        return Optional.ofNullable(connectionConfig).flatMap(ConnectionConfig::impersonatedUser);
     }
 
     @Override
-    public Optional<BoltResult> runCypher( String cypher, Map<String, Object> queryParams ) throws CommandException
-    {
-        if ( !isConnected() )
-        {
-            throw new CommandException( "Not connected to Neo4j" );
+    public Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams) throws CommandException {
+        if (!isConnected()) {
+            throw new CommandException("Not connected to Neo4j");
         }
-        if ( isTransactionOpen() )
-        {
+        if (isTransactionOpen()) {
             // If this fails, don't try any funny business - just let it die
-            return getBoltResult( cypher, queryParams );
-        }
-        else
-        {
-            try
-            {
-                // Note that CALL IN TRANSACTIONS can't execute in an explicit transaction, so if the user has not typed BEGIN, then
+            return getBoltResult(cypher, queryParams);
+        } else {
+            try {
+                // Note that CALL IN TRANSACTIONS can't execute in an explicit transaction, so if the user has not typed
+                // BEGIN, then
                 // the statement should NOT be executed in a transaction.
-                return getBoltResult( cypher, queryParams );
-            }
-            catch ( SessionExpiredException e )
-            {
-                log.warn( "Failed to execute query, re-trying", e );
+                return getBoltResult(cypher, queryParams);
+            } catch (SessionExpiredException e) {
+                log.warn("Failed to execute query, re-trying", e);
                 // Server is no longer accepting writes, reconnect and try again.
                 // If it still fails, leave it up to the user
-                reconnectAndPing( activeDatabaseNameAsSetByUser, activeDatabaseNameAsSetByUser );
-                return getBoltResult( cypher, queryParams );
+                reconnectAndPing(activeDatabaseNameAsSetByUser, activeDatabaseNameAsSetByUser);
+                return getBoltResult(cypher, queryParams);
             }
         }
     }
 
-    public void updateActualDbName( ResultSummary resultSummary )
-    {
-        actualDatabaseNameAsReportedByServer = getActualDbName( resultSummary );
+    public void updateActualDbName(ResultSummary resultSummary) {
+        actualDatabaseNameAsReportedByServer = getActualDbName(resultSummary);
     }
 
-    public void changePassword( ConnectionConfig connectionConfig, String newPassword )
-    {
-        if ( isConnected() )
-        {
+    public void changePassword(ConnectionConfig connectionConfig, String newPassword) {
+        if (isConnected()) {
             silentDisconnect();
         }
 
-        final AuthToken authToken = AuthTokens.basic( connectionConfig.username(), connectionConfig.password() );
+        final AuthToken authToken = AuthTokens.basic(connectionConfig.username(), connectionConfig.password());
 
-        try
-        {
-            driver = getDriver( connectionConfig, authToken );
+        try {
+            driver = getDriver(connectionConfig, authToken);
 
             activeDatabaseNameAsSetByUser = SYSTEM_DB_NAME;
-            reconnect( SYSTEM_DB_NAME, SYSTEM_DB_NAME );
+            reconnect(SYSTEM_DB_NAME, SYSTEM_DB_NAME);
 
-            try
-            {
+            try {
                 String command = "ALTER CURRENT USER SET PASSWORD FROM $o TO $n";
                 Value parameters = Values.parameters("o", connectionConfig.password(), "n", newPassword);
                 Result run = session.run(command, parameters);
                 run.consume();
-            }
-            catch ( Neo4jException e )
-            {
-                if ( isPasswordChangeRequiredException( e ) )
-                {
-                    log.info( "Password change failed, fallback to legacy method", e );
+            } catch (Neo4jException e) {
+                if (isPasswordChangeRequiredException(e)) {
+                    log.info("Password change failed, fallback to legacy method", e);
                     // In < 4.0 versions use legacy method.
                     String oldCommand = "CALL dbms.security.changePassword($n)";
                     Value oldParameters = Values.parameters("n", newPassword);
                     Result run = session.run(oldCommand, oldParameters);
                     run.consume();
-                }
-                else
-                {
+                } else {
                     throw e;
                 }
             }
 
             silentDisconnect();
-        }
-        catch ( Throwable t )
-        {
-            try
-            {
+        } catch (Throwable t) {
+            try {
                 silentDisconnect();
+            } catch (Exception e) {
+                t.addSuppressed(e);
             }
-            catch ( Exception e )
-            {
-                t.addSuppressed( e );
-            }
-            if ( t instanceof RuntimeException )
-            {
+            if (t instanceof RuntimeException) {
                 throw (RuntimeException) t;
             }
             // The only checked exception is CommandException and we know that
             // we cannot get that since we supply an empty command.
-            throw new RuntimeException( t );
+            throw new RuntimeException(t);
         }
     }
 
     /**
      * @throws SessionExpiredException when server no longer serves writes anymore
      */
-    private Optional<BoltResult> getBoltResult( String cypher, Map<String, Object> queryParams ) throws SessionExpiredException
-    {
+    private Optional<BoltResult> getBoltResult(String cypher, Map<String, Object> queryParams)
+            throws SessionExpiredException {
         Result statementResult;
 
-        if ( isTransactionOpen() )
-        {
-            statementResult = tx.run( new Query( cypher, queryParams ) );
-        }
-        else
-        {
-            statementResult = session.run( new Query( cypher, queryParams ) );
+        if (isTransactionOpen()) {
+            statementResult = tx.run(new Query(cypher, queryParams));
+        } else {
+            statementResult = session.run(new Query(cypher, queryParams));
         }
 
-        if ( statementResult == null )
-        {
+        if (statementResult == null) {
             return Optional.empty();
         }
 
-        return Optional.of( new StatementBoltResult( statementResult ) );
+        return Optional.of(new StatementBoltResult(statementResult));
     }
 
-    private static String getActualDbName( ResultSummary resultSummary )
-    {
+    private static String getActualDbName(ResultSummary resultSummary) {
         DatabaseInfo dbInfo = resultSummary.database();
         return dbInfo.name() == null ? ABSENT_DB_NAME : dbInfo.name();
     }
 
-    private void resetActualDbName()
-    {
+    private void resetActualDbName() {
         actualDatabaseNameAsReportedByServer = null;
     }
 
     /**
      * Disconnect from Neo4j, clearing up any session resources, but don't give any output. Intended only to be used if connect fails.
      */
-    void silentDisconnect()
-    {
-        try
-        {
-            closeSession( activeDatabaseNameAsSetByUser );
-            if ( driver != null )
-            {
+    void silentDisconnect() {
+        try {
+            closeSession(activeDatabaseNameAsSetByUser);
+            if (driver != null) {
                 driver.close();
             }
-        }
-        finally
-        {
+        } finally {
             session = null;
             driver = null;
             resetActualDbName();
@@ -614,13 +501,10 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     /**
      * Reset the current session. This rolls back any open transactions.
      */
-    public void reset()
-    {
-        if ( isConnected() )
-        {
+    public void reset() {
+        if (isConnected()) {
             // Clear current state
-            if ( isTransactionOpen() )
-            {
+            if (isTransactionOpen()) {
                 // Bolt has already rolled back the transaction but it doesn't close it properly
                 tx.rollback();
                 tx = null;
@@ -629,55 +513,44 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public void disconnect()
-    {
+    public void disconnect() {
         reset();
         silentDisconnect();
         protocolVersion = null;
     }
 
-    private Driver getDriver( ConnectionConfig connectionConfig, AuthToken authToken )
-    {
-        Config.ConfigBuilder configBuilder = Config.builder()
-                                                   .withLogging( driverLogger() )
-                                                   .withUserAgent( USER_AGENT );
-        switch ( connectionConfig.encryption() )
-        {
-        case TRUE -> configBuilder = configBuilder.withEncryption();
-        case FALSE -> configBuilder = configBuilder.withoutEncryption();
-        default -> {
+    private Driver getDriver(ConnectionConfig connectionConfig, AuthToken authToken) {
+        Config.ConfigBuilder configBuilder =
+                Config.builder().withLogging(driverLogger()).withUserAgent(USER_AGENT);
+        switch (connectionConfig.encryption()) {
+            case TRUE -> configBuilder = configBuilder.withEncryption();
+            case FALSE -> configBuilder = configBuilder.withoutEncryption();
+            default -> {}
+                // Do nothing
         }
-        // Do nothing
-        }
-        return driverProvider.apply( connectionConfig.driverUrl(), authToken, configBuilder.build() );
+        return driverProvider.apply(connectionConfig.driverUrl(), authToken, configBuilder.build());
     }
 
-    private boolean isSystemDb()
-    {
-        return activeDatabaseNameAsSetByUser.compareToIgnoreCase( SYSTEM_DB_NAME ) == 0;
+    private boolean isSystemDb() {
+        return activeDatabaseNameAsSetByUser.compareToIgnoreCase(SYSTEM_DB_NAME) == 0;
     }
 
-    private static boolean procedureNotFound( ClientException e )
-    {
-        return "Neo.ClientError.Procedure.ProcedureNotFound".compareToIgnoreCase( e.code() ) == 0;
+    private static boolean procedureNotFound(ClientException e) {
+        return "Neo.ClientError.Procedure.ProcedureNotFound".compareToIgnoreCase(e.code()) == 0;
     }
 
-    private static Logging driverLogger()
-    {
-        var level = LogManager.getLogManager().getLogger( "" ).getLevel();
-        if ( level == Level.OFF )
-        {
+    private static Logging driverLogger() {
+        var level = LogManager.getLogManager().getLogger("").getLevel();
+        if (level == Level.OFF) {
             return DevNullLogging.DEV_NULL_LOGGING;
         }
 
-        return Logging.javaUtilLogging( level );
+        return Logging.javaUtilLogging(level);
     }
 
-    private static ConnectionConfig clean( ConnectionConfig config )
-    {
-        if ( config.impersonatedUser().filter( i -> i.equals( config.username() ) ).isPresent() )
-        {
-            return config.withImpersonatedUser( null );
+    private static ConnectionConfig clean(ConnectionConfig config) {
+        if (config.impersonatedUser().filter(i -> i.equals(config.username())).isPresent()) {
+            return config.withImpersonatedUser(null);
         }
         return config;
     }

@@ -19,9 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -36,85 +47,79 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
-import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
-class OnlineIndexSamplingJobTest
-{
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+class OnlineIndexSamplingJobTest {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
     private final InternalLogProvider logProvider = NullLogProvider.getInstance();
     private final long indexId = 1;
-    private final IndexProxy indexProxy = mock( IndexProxy.class );
-    private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
-    private final IndexDescriptor indexDescriptor = forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withName( "index" ).materialise( indexId );
-    private final ValueIndexReader indexReader = mock( ValueIndexReader.class );
-    private final IndexSampler indexSampler = mock( IndexSampler.class );
+    private final IndexProxy indexProxy = mock(IndexProxy.class);
+    private final IndexStatisticsStore indexStatisticsStore = mock(IndexStatisticsStore.class);
+    private final IndexDescriptor indexDescriptor = forSchema(forLabel(1, 2), IndexProviderDescriptor.UNDECIDED)
+            .withName("index")
+            .materialise(indexId);
+    private final ValueIndexReader indexReader = mock(ValueIndexReader.class);
+    private final IndexSampler indexSampler = mock(IndexSampler.class);
 
     private final long indexUniqueValues = 21L;
     private final long indexSize = 23L;
-    private final IndexSample sample = new IndexSample( indexSize, indexUniqueValues, indexSize );
+    private final IndexSample sample = new IndexSample(indexSize, indexUniqueValues, indexSize);
 
     @BeforeEach
-    void setup() throws IndexNotFoundKernelException
-    {
-        when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
-        when( indexProxy.newValueReader() ).thenReturn( indexReader );
-        when( indexReader.createSampler() ).thenReturn( indexSampler );
-        when( indexSampler.sampleIndex( any() ) ).thenReturn( sample );
+    void setup() throws IndexNotFoundKernelException {
+        when(indexProxy.getDescriptor()).thenReturn(indexDescriptor);
+        when(indexProxy.newValueReader()).thenReturn(indexReader);
+        when(indexReader.createSampler()).thenReturn(indexSampler);
+        when(indexSampler.sampleIndex(any())).thenReturn(sample);
     }
 
     @Test
-    void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
-    {
+    void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline() {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, CONTEXT_FACTORY );
-        when( indexProxy.getState() ).thenReturn( ONLINE );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob(
+                indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, CONTEXT_FACTORY);
+        when(indexProxy.getState()).thenReturn(ONLINE);
 
         // when
         job.run();
 
         // then
-        verify( indexStatisticsStore ).replaceStats( indexId, sample );
-        verifyNoMoreInteractions( indexStatisticsStore );
+        verify(indexStatisticsStore).replaceStats(indexId, sample);
+        verifyNoMoreInteractions(indexStatisticsStore);
     }
 
     @Test
-    void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
-    {
+    void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline() {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, CONTEXT_FACTORY );
-        when( indexProxy.getState() ).thenReturn( FAILED );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob(
+                indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, CONTEXT_FACTORY);
+        when(indexProxy.getState()).thenReturn(FAILED);
 
         // when
         job.run();
 
         // then
-        verifyNoMoreInteractions( indexStatisticsStore );
+        verifyNoMoreInteractions(indexStatisticsStore);
     }
 
     @Test
-    void usePageCursorToTraceIndexSampling() throws IndexNotFoundKernelException
-    {
-        var pageCacheTracer = mock( PageCacheTracer.class );
-        var pageCursorTracer = mock( PageCursorTracer.class );
-        when( pageCacheTracer.createPageCursorTracer( any() ) ).thenReturn( pageCursorTracer );
+    void usePageCursorToTraceIndexSampling() throws IndexNotFoundKernelException {
+        var pageCacheTracer = mock(PageCacheTracer.class);
+        var pageCursorTracer = mock(PageCursorTracer.class);
+        when(pageCacheTracer.createPageCursorTracer(any())).thenReturn(pageCursorTracer);
 
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider,
-                new CursorContextFactory( pageCacheTracer, EMPTY ) );
-        when( indexProxy.getState() ).thenReturn( ONLINE );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob(
+                indexId,
+                indexProxy,
+                indexStatisticsStore,
+                "Foo",
+                "Foo",
+                logProvider,
+                new CursorContextFactory(pageCacheTracer, EMPTY));
+        when(indexProxy.getState()).thenReturn(ONLINE);
 
         // when
         job.run();
 
-        verify( indexSampler ).sampleIndex( argThat( context -> context.getCursorTracer().equals( pageCursorTracer ) ) );
+        verify(indexSampler)
+                .sampleIndex(argThat(context -> context.getCursorTracer().equals(pageCursorTracer)));
     }
 }

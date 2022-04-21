@@ -26,10 +26,8 @@ import static java.lang.String.format;
  * It signals that the database is inconsistent, or trying to perform an inconsistent operations,
  * and when thrown it should bubble up in order to stop the database.
  */
-public class NonUniqueTokenException extends RuntimeException
-{
-    public NonUniqueTokenException( String tokenType, NamedToken newToken, NamedToken existingToken )
-    {
-        super( format( "The %s %s is not unique, it existed as %s.", tokenType, newToken, existingToken ) );
+public class NonUniqueTokenException extends RuntimeException {
+    public NonUniqueTokenException(String tokenType, NamedToken newToken, NamedToken existingToken) {
+        super(format("The %s %s is not unique, it existed as %s.", tokenType, newToken, existingToken));
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.Comparator
 import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -28,18 +27,23 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialSortPipe.NO_MORE_ROWS_TO_SKIP_SORTING
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class PartialSortPipe(source: Pipe,
-                           prefixComparator: Comparator[ReadableRow],
-                           suffixComparator: Comparator[ReadableRow],
-                           skipSortingPrefixLengthExp: Option[Expression])
-                          (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) with OrderedInputPipe {
+import java.util.Comparator
+
+case class PartialSortPipe(
+  source: Pipe,
+  prefixComparator: Comparator[ReadableRow],
+  suffixComparator: Comparator[ReadableRow],
+  skipSortingPrefixLengthExp: Option[Expression]
+)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) with OrderedInputPipe {
 
   class PartialSortReceiver(state: QueryState) extends OrderedChunkReceiver {
     private val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
     private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
     private val buffer = HeapTrackingArrayList.newArrayList[CypherRow](16, memoryTracker)
-    private val skipSortingPrefixLength = skipSortingPrefixLengthExp.map(SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(_, state, "SKIP"))
+
+    private val skipSortingPrefixLength =
+      skipSortingPrefixLengthExp.map(SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(_, state, "SKIP"))
 
     // How many rows remain until we need to start sorting?
     private var remainingSkipSorting: Long = skipSortingPrefixLength.getOrElse(NO_MORE_ROWS_TO_SKIP_SORTING)
@@ -54,7 +58,8 @@ case class PartialSortPipe(source: Pipe,
       rowsMemoryTracker.close()
     }
 
-    override def isSameChunk(first: CypherRow, current: CypherRow): Boolean = prefixComparator.compare(first, current) == 0
+    override def isSameChunk(first: CypherRow, current: CypherRow): Boolean =
+      prefixComparator.compare(first, current) == 0
 
     override def processRow(row: CypherRow): Unit = {
       rowsMemoryTracker.allocateHeap(row.estimatedHeapUsage)

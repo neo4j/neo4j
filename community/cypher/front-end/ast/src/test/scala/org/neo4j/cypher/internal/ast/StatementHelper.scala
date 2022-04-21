@@ -44,7 +44,9 @@ object StatementHelper extends Assertions {
         case Some(value) => value
         case None =>
           val foundOffsets = allVariables.filter(v => v.name == name).map(_.position.offset)
-          throw new IllegalStateException(s"Variable `$name` not found at position $offset. Found positions: $foundOffsets")
+          throw new IllegalStateException(
+            s"Variable `$name` not found at position $offset. Found positions: $foundOffsets"
+          )
       }
   }
 }

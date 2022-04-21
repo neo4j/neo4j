@@ -19,65 +19,54 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.schema.IndexOrder;
-
 import static java.lang.Long.signum;
 import static java.lang.Math.subtractExact;
+
+import org.neo4j.internal.schema.IndexOrder;
 
 /**
  * A sort merge join that sorts nodes by their ids
  */
-final class PrimitiveSortedMergeJoin
-{
+final class PrimitiveSortedMergeJoin {
     private static final int NOT_INITIALIZED = -1;
     private long nextFromA = NOT_INITIALIZED;
     private long nextFromB = NOT_INITIALIZED;
     private int indexOrder;
 
-    void initialize( IndexOrder indexOrder )
-    {
+    void initialize(IndexOrder indexOrder) {
         this.indexOrder = indexOrder == IndexOrder.DESCENDING ? 1 : -1;
         this.nextFromA = NOT_INITIALIZED;
         this.nextFromB = NOT_INITIALIZED;
     }
 
-    boolean needsA()
-    {
+    boolean needsA() {
         return nextFromA == NOT_INITIALIZED;
     }
 
-    boolean needsB()
-    {
+    boolean needsB() {
         return nextFromB == NOT_INITIALIZED;
     }
 
-    void setA( long nodeId )
-    {
+    void setA(long nodeId) {
         nextFromA = nodeId;
     }
 
-    void setB( long nodeId )
-    {
+    void setB(long nodeId) {
         nextFromB = nodeId;
     }
 
-    long next()
-    {
+    long next() {
         long difference = 0;
         long result;
 
-        if ( nextFromA != NOT_INITIALIZED && nextFromB != NOT_INITIALIZED )
-        {
-            difference = subtractExact( nextFromA, nextFromB );
+        if (nextFromA != NOT_INITIALIZED && nextFromB != NOT_INITIALIZED) {
+            difference = subtractExact(nextFromA, nextFromB);
         }
 
-        if ( nextFromB == NOT_INITIALIZED || signum( difference ) == indexOrder )
-        {
+        if (nextFromB == NOT_INITIALIZED || signum(difference) == indexOrder) {
             result = nextFromA;
             nextFromA = NOT_INITIALIZED;
-        }
-        else
-        {
+        } else {
             result = nextFromB;
             nextFromB = NOT_INITIALIZED;
         }

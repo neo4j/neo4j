@@ -20,27 +20,22 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.util.stream.Stream;
-
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
-public class DefaultFulltextAdapter implements FulltextAdapter
-{
+public class DefaultFulltextAdapter implements FulltextAdapter {
     private final FulltextIndexProvider fulltextIndexProvider;
 
-    public DefaultFulltextAdapter( FulltextIndexProvider fulltextIndexProvider )
-    {
+    public DefaultFulltextAdapter(FulltextIndexProvider fulltextIndexProvider) {
         this.fulltextIndexProvider = fulltextIndexProvider;
     }
 
     @Override
-    public void awaitRefresh()
-    {
+    public void awaitRefresh() {
         fulltextIndexProvider.awaitRefresh();
     }
 
     @Override
-    public Stream<AnalyzerProvider> listAvailableAnalyzers()
-    {
+    public Stream<AnalyzerProvider> listAvailableAnalyzers() {
         return fulltextIndexProvider.listAvailableAnalyzers();
     }
 }

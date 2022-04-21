@@ -24,7 +24,6 @@ package org.neo4j.kernel.impl.newapi;
  *
  * @param <T> Type of cursors accepted
  */
-interface CursorPool<T>
-{
-    void accept( T t );
+interface CursorPool<T> {
+    void accept(T t);
 }

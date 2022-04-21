@@ -38,8 +38,11 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   implicit def converter(s: Symbol): String = s.toString()
 
-  private val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val pattern1 =
+    PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+
+  private val pattern2 =
+    PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   private val table = IDPTable.empty[LogicalPlan]
   private val qg = mock[QueryGraph]
@@ -56,7 +59,10 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
-      ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
+      ctx.planningAttributes.solveds.set(
+        plan1.id,
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+      )
       table.put(register(pattern1), sorted = false, plan1)
 
       expandSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
@@ -70,10 +76,20 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
-      ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
-      table.put(register(pattern1), sorted = false, plan1)  // a - [r1] - b
+      ctx.planningAttributes.solveds.set(
+        plan1.id,
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+      )
+      table.put(register(pattern1), sorted = false, plan1) // a - [r1] - b
 
-      val patternX = PatternRelationship("r2", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength) // a - [r2] -> b
+      val patternX =
+        PatternRelationship(
+          "r2",
+          ("a", "b"),
+          SemanticDirection.OUTGOING,
+          Seq.empty,
+          SimplePatternLength
+        ) // a - [r2] -> b
 
       expandSolverStep(qg)(registry, register(pattern1, patternX), table, ctx).toSet should equal(Set(
         Expand(plan1, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandInto),
@@ -86,7 +102,10 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
-      ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
+      ctx.planningAttributes.solveds.set(
+        plan1.id,
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+      )
       table.put(register(pattern1), sorted = false, plan1)
 
       val patternX = PatternRelationship("r2", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -101,7 +120,10 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c", "r2", "d")
-      ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b", "c", "d")))
+      ctx.planningAttributes.solveds.set(
+        plan1.id,
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b", "c", "d"))
+      )
       table.put(register(pattern1, pattern2), sorted = false, plan1)
 
       val pattern3 = PatternRelationship("r3", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -118,17 +140,24 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     new given().withLogicalPlanningContext { (_, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
-      ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
+      ctx.planningAttributes.solveds.set(
+        plan1.id,
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+      )
 
       val compactedPattern1 = Goal(BitSet(registry.compact(register(pattern1).bitSet)))
       val compactedPattern2 = Goal(BitSet(registry.compact(register(pattern2).bitSet)))
 
       table.put(compactedPattern1, sorted = false, plan1)
 
-      expandSolverStep(qg)(registry, Goal(compactedPattern1.bitSet ++ compactedPattern2.bitSet), table, ctx).toSet should be(empty)
+      expandSolverStep(qg)(
+        registry,
+        Goal(compactedPattern1.bitSet ++ compactedPattern2.bitSet),
+        table,
+        ctx
+      ).toSet should be(empty)
     }
   }
-
 
   def register[X](patRels: X*)(implicit registry: IdRegistry[X]): Goal = Goal(registry.registerAll(patRels))
 }

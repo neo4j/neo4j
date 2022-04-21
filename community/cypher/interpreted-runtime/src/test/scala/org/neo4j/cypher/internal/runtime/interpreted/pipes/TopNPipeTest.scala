@@ -86,13 +86,13 @@ class TopNPipeTest extends CypherFunSuite {
   }
 
   test("duplicates should be sorted correctly for small lists") {
-    val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
+    val in = List(Map("a" -> 0), Map("a" -> 1), Map("a" -> 1))
     val input = new FakePipe(in)
 
     val pipe = TopNPipe(input, literal(2), InterpretedExecutionContextOrdering.asComparator(List(Descending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
-    result should equal(list(1,1))
+    result should equal(list(1, 1))
   }
 
   test("should handle empty input") {
@@ -105,19 +105,19 @@ class TopNPipeTest extends CypherFunSuite {
   }
 
   test("should handle null input") {
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
 
     val pipe = TopNPipe(input, literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
-    result should equal(list(10,null))
+    result should equal(list(10, null))
   }
 
   // This test is really representing that all pipes should close their input
   // under special circumstances (here: early abort because of limit 0).
   // This test is _not_ repeated for every pipe since the solution was implemented in PipeWithSource.
   test("limit 0 should close input") {
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
     val pipe = TopNPipe(input, literal(0), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a"))
     result.hasNext
@@ -127,23 +127,24 @@ class TopNPipeTest extends CypherFunSuite {
   test("close should close input and table") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
     val pipe = TopNPipe(input, literal(1), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).map(ctx => ctx.getByName("a"))
+    val result =
+      pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).map(ctx => ctx.getByName("a"))
     result.close()
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: DefaultComparatorTopTable[_] => t } should have size(1)
+    monitor.closedResources.collect { case t: DefaultComparatorTopTable[_] => t } should have size (1)
   }
 
   test("exhaust should close input and table") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
     val pipe = TopNPipe(input, literal(1), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     // exhaust
     pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).map(ctx => ctx.getByName("a")).toList
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: DefaultComparatorTopTable[_] => t } should have size(1)
+    monitor.closedResources.collect { case t: DefaultComparatorTopTable[_] => t } should have size (1)
   }
 
   private def list(a: Any*) = a.map(ValueUtils.of).toList
@@ -152,7 +153,7 @@ class TopNPipeTest extends CypherFunSuite {
 
     val r = new Random(1337)
 
-    val in = (0 until count).map(i => Map("a" -> i)).sortBy( _ => 50 - r.nextInt(100))
+    val in = (0 until count).map(i => Map("a" -> i)).sortBy(_ => 50 - r.nextInt(100))
     new FakePipe(in)
   }
 }

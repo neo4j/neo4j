@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.SplittableRandom;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -43,9 +42,8 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
 
-@SuppressWarnings( "WeakerAccess" ) // Keep accessibility high in case someone wants to extend this class in the future.
-public class RandomSchema implements Supplier<SchemaRule>
-{
+@SuppressWarnings("WeakerAccess") // Keep accessibility high in case someone wants to extend this class in the future.
+public class RandomSchema implements Supplier<SchemaRule> {
     private final SplittableRandom rng;
     private final int maxPropId;
     private final int maxRelTypeId;
@@ -56,13 +54,11 @@ public class RandomSchema implements Supplier<SchemaRule>
     private final RandomValues values;
     private final ValueType[] textTypes;
 
-    public RandomSchema()
-    {
-        this( new SplittableRandom() );
+    public RandomSchema() {
+        this(new SplittableRandom());
     }
 
-    public RandomSchema( SplittableRandom rng )
-    {
+    public RandomSchema(SplittableRandom rng) {
         this.rng = rng;
         maxPropId = maxPropertyId();
         maxRelTypeId = maxRelationshipTypeId();
@@ -70,297 +66,266 @@ public class RandomSchema implements Supplier<SchemaRule>
         defaultLabelIdsArrayMaxLength = defaultLabelIdsArrayMaxLength();
         defaultRelationshipTypeIdsArrayMaxLength = defaultRelationshipTypeIdsArrayMaxLength();
         defaultPropertyKeyIdsArrayMaxLength = defaultPropertyKeyIdsArrayMaxLength();
-        values = RandomValues.create( rng, valuesConfiguration() );
-        textTypes = RandomValues.typesOfGroup( ValueGroup.TEXT );
+        values = RandomValues.create(rng, valuesConfiguration());
+        textTypes = RandomValues.typesOfGroup(ValueGroup.TEXT);
     }
 
-    protected int maxPropertyId()
-    {
+    protected int maxPropertyId() {
         return (1 << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS) - 1;
     }
 
-    protected int maxRelationshipTypeId()
-    {
+    protected int maxRelationshipTypeId() {
         return (1 << StandardFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS) - 1;
     }
 
-    protected int maxLabelId()
-    {
+    protected int maxLabelId() {
         return Integer.MAX_VALUE;
     }
 
-    protected int defaultLabelIdsArrayMaxLength()
-    {
+    protected int defaultLabelIdsArrayMaxLength() {
         return 200;
     }
 
-    protected int defaultRelationshipTypeIdsArrayMaxLength()
-    {
+    protected int defaultRelationshipTypeIdsArrayMaxLength() {
         return 200;
     }
 
-    protected int defaultPropertyKeyIdsArrayMaxLength()
-    {
+    protected int defaultPropertyKeyIdsArrayMaxLength() {
         return 300;
     }
 
-    protected RandomValues.Default valuesConfiguration()
-    {
-        return new RandomValues.Default()
-        {
+    protected RandomValues.Default valuesConfiguration() {
+        return new RandomValues.Default() {
             @Override
-            public int stringMaxLength()
-            {
+            public int stringMaxLength() {
                 return 200;
             }
 
             @Override
-            public int minCodePoint()
-            {
+            public int minCodePoint() {
                 return super.minCodePoint() + 1; // Avoid null-bytes in our strings.
             }
         };
     }
 
-    public Stream<SchemaRule> schemaRules()
-    {
-        return Stream.generate( this );
+    public Stream<SchemaRule> schemaRules() {
+        return Stream.generate(this);
     }
 
     @Override
-    public SchemaRule get()
-    {
+    public SchemaRule get() {
         return nextSchemaRule();
     }
 
-    public SchemaRule nextSchemaRule()
-    {
-        if ( rng.nextBoolean() )
-        {
+    public SchemaRule nextSchemaRule() {
+        if (rng.nextBoolean()) {
             return nextIndex();
-        }
-        else
-        {
+        } else {
             return nextConstraint();
         }
     }
 
-    public IndexDescriptor nextIndex()
-    {
-        int choice = rng.nextInt( 4 );
+    public IndexDescriptor nextIndex() {
+        int choice = rng.nextInt(4);
         SchemaDescriptor schema;
-        switch ( choice )
-        {
-        case 0:
-            schema = nextNodeSchema();
-            break;
-        case 1:
-            schema = nextNodeFulltextSchema();
-            break;
-        case 2:
-            schema = nextRelationshipSchema();
-            break;
-        case 3:
-            schema = nextRelationshipFulltextSchema();
-            break;
-        default:
-            throw new RuntimeException( "Bad index choice: " + choice );
+        switch (choice) {
+            case 0:
+                schema = nextNodeSchema();
+                break;
+            case 1:
+                schema = nextNodeFulltextSchema();
+                break;
+            case 2:
+                schema = nextRelationshipSchema();
+                break;
+            case 3:
+                schema = nextRelationshipFulltextSchema();
+                break;
+            default:
+                throw new RuntimeException("Bad index choice: " + choice);
         }
 
         boolean isUnique = rng.nextBoolean() && !schema.isFulltextSchemaDescriptor();
-        IndexPrototype prototype = isUnique ? IndexPrototype.uniqueForSchema( schema ) : IndexPrototype.forSchema( schema );
+        IndexPrototype prototype = isUnique ? IndexPrototype.uniqueForSchema(schema) : IndexPrototype.forSchema(schema);
 
-        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( nextName(), nextName() );
-        prototype = prototype.withIndexProvider( providerDescriptor );
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor(nextName(), nextName());
+        prototype = prototype.withIndexProvider(providerDescriptor);
 
-        prototype = prototype.withName( nextName() );
-        if ( schema.isFulltextSchemaDescriptor() )
-        {
-            prototype = prototype.withIndexType( IndexType.FULLTEXT );
+        prototype = prototype.withName(nextName());
+        if (schema.isFulltextSchemaDescriptor()) {
+            prototype = prototype.withIndexType(IndexType.FULLTEXT);
         }
 
         long ruleId = nextRuleIdForIndex();
-        IndexDescriptor index = prototype.materialise( ruleId );
+        IndexDescriptor index = prototype.materialise(ruleId);
 
-        if ( isUnique && rng.nextBoolean() )
-        {
-            index = index.withOwningConstraintId( existingConstraintId() );
+        if (isUnique && rng.nextBoolean()) {
+            index = index.withOwningConstraintId(existingConstraintId());
         }
 
         return index;
     }
 
-    public long nextRuleIdForIndex()
-    {
+    public long nextRuleIdForIndex() {
         return nextRuleId();
     }
 
-    public long existingConstraintId()
-    {
+    public long existingConstraintId() {
         return nextRuleId();
     }
 
-    public ConstraintDescriptor nextConstraint()
-    {
+    public ConstraintDescriptor nextConstraint() {
         long ruleId = nextRuleIdForConstraint();
-        int choice = rng.nextInt( 6 );
-        switch ( choice )
-        {
-        case 0: return ConstraintDescriptorFactory.existsForSchema( nextRelationshipSchema() ).withId( ruleId ).withName( nextName() );
-        case 1: return ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
-        case 2: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
-        case 3: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() )
-                .withName( nextName() );
-        case 4: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
-        case 5: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() )
-                .withName( nextName() );
-        default: throw new RuntimeException( "Bad constraint choice: " + choice );
+        int choice = rng.nextInt(6);
+        switch (choice) {
+            case 0:
+                return ConstraintDescriptorFactory.existsForSchema(nextRelationshipSchema())
+                        .withId(ruleId)
+                        .withName(nextName());
+            case 1:
+                return ConstraintDescriptorFactory.existsForSchema(nextNodeSchema())
+                        .withId(ruleId)
+                        .withName(nextName());
+            case 2:
+                return ConstraintDescriptorFactory.uniqueForSchema(nextNodeSchema())
+                        .withId(ruleId)
+                        .withName(nextName());
+            case 3:
+                return ConstraintDescriptorFactory.uniqueForSchema(nextNodeSchema())
+                        .withId(ruleId)
+                        .withOwnedIndexId(existingIndexId())
+                        .withName(nextName());
+            case 4:
+                return ConstraintDescriptorFactory.nodeKeyForSchema(nextNodeSchema())
+                        .withId(ruleId)
+                        .withName(nextName());
+            case 5:
+                return ConstraintDescriptorFactory.nodeKeyForSchema(nextNodeSchema())
+                        .withId(ruleId)
+                        .withOwnedIndexId(existingIndexId())
+                        .withName(nextName());
+            default:
+                throw new RuntimeException("Bad constraint choice: " + choice);
         }
     }
 
-    public long nextRuleIdForConstraint()
-    {
+    public long nextRuleIdForConstraint() {
         return nextRuleId();
     }
 
-    public long existingIndexId()
-    {
+    public long existingIndexId() {
         return nextRuleId();
     }
 
-    public LabelSchemaDescriptor nextNodeSchema()
-    {
-        return SchemaDescriptors.forLabel( nextLabelId(), nextPropertyKeyIdsArray() );
+    public LabelSchemaDescriptor nextNodeSchema() {
+        return SchemaDescriptors.forLabel(nextLabelId(), nextPropertyKeyIdsArray());
     }
 
-    public RelationTypeSchemaDescriptor nextRelationshipSchema()
-    {
-        return SchemaDescriptors.forRelType( nextRelationshipTypeId(), nextPropertyKeyIdsArray() );
+    public RelationTypeSchemaDescriptor nextRelationshipSchema() {
+        return SchemaDescriptors.forRelType(nextRelationshipTypeId(), nextPropertyKeyIdsArray());
     }
 
-    public SchemaDescriptor nextNodeFulltextSchema()
-    {
-        return SchemaDescriptors.fulltext( EntityType.NODE, nextLabelIdsArray(), nextPropertyKeyIdsArray() );
+    public SchemaDescriptor nextNodeFulltextSchema() {
+        return SchemaDescriptors.fulltext(EntityType.NODE, nextLabelIdsArray(), nextPropertyKeyIdsArray());
     }
 
-    public SchemaDescriptor nextRelationshipFulltextSchema()
-    {
-        return SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, nextRelationTypeIdsArray(), nextPropertyKeyIdsArray() );
+    public SchemaDescriptor nextRelationshipFulltextSchema() {
+        return SchemaDescriptors.fulltext(
+                EntityType.RELATIONSHIP, nextRelationTypeIdsArray(), nextPropertyKeyIdsArray());
     }
 
-    public int nextRuleId()
-    {
-        return rng.nextInt( Integer.MAX_VALUE );
+    public int nextRuleId() {
+        return rng.nextInt(Integer.MAX_VALUE);
     }
 
-    public String nextName()
-    {
+    public String nextName() {
         String name;
-        do
-        {
-            name = ((TextValue) values.nextValueOfTypes( textTypes )).stringValue().trim();
-        }
-        while ( name.isEmpty() || name.isBlank() || name.contains( "\0" ) || name.contains( "`" ) ); // Avoid generating empty names.
+        do {
+            name = ((TextValue) values.nextValueOfTypes(textTypes))
+                    .stringValue()
+                    .trim();
+        } while (name.isEmpty()
+                || name.isBlank()
+                || name.contains("\0")
+                || name.contains("`")); // Avoid generating empty names.
         return name;
     }
 
-    public int nextLabelId()
-    {
-        return rng.nextInt( maxLabelId );
+    public int nextLabelId() {
+        return rng.nextInt(maxLabelId);
     }
 
-    public int nextRelationshipTypeId()
-    {
-        return rng.nextInt( maxRelTypeId );
+    public int nextRelationshipTypeId() {
+        return rng.nextInt(maxRelTypeId);
     }
 
-    public int[] nextLabelIdsArray()
-    {
-        return nextLabelIdsArray( defaultLabelIdsArrayMaxLength );
+    public int[] nextLabelIdsArray() {
+        return nextLabelIdsArray(defaultLabelIdsArrayMaxLength);
     }
 
-    public int[] nextLabelIdsArray( int maxLength )
-    {
-        return rng.ints( rng.nextInt( 1, maxLength ), 1, maxLabelId ).toArray();
+    public int[] nextLabelIdsArray(int maxLength) {
+        return rng.ints(rng.nextInt(1, maxLength), 1, maxLabelId).toArray();
     }
 
-    public int[] nextRelationTypeIdsArray()
-    {
-        return nextRelationTypeIdsArray( defaultRelationshipTypeIdsArrayMaxLength );
+    public int[] nextRelationTypeIdsArray() {
+        return nextRelationTypeIdsArray(defaultRelationshipTypeIdsArrayMaxLength);
     }
 
-    public int[] nextRelationTypeIdsArray( int maxLength )
-    {
-        return rng.ints( rng.nextInt( 1, maxLength ), 1, maxRelTypeId ).toArray();
+    public int[] nextRelationTypeIdsArray(int maxLength) {
+        return rng.ints(rng.nextInt(1, maxLength), 1, maxRelTypeId).toArray();
     }
 
-    public int[] nextPropertyKeyIdsArray()
-    {
-        return nextPropertyKeyIdsArray( defaultPropertyKeyIdsArrayMaxLength );
+    public int[] nextPropertyKeyIdsArray() {
+        return nextPropertyKeyIdsArray(defaultPropertyKeyIdsArrayMaxLength);
     }
 
-    public int[] nextPropertyKeyIdsArray( int maxLength )
-    {
-        int propCount = rng.nextInt( 1, maxLength + 1 );
-        return rng.ints( propCount, 1, maxPropId ).toArray();
+    public int[] nextPropertyKeyIdsArray(int maxLength) {
+        int propCount = rng.nextInt(1, maxLength + 1);
+        return rng.ints(propCount, 1, maxPropId).toArray();
     }
 
-    public static boolean schemaDeepEquals( SchemaRule a, SchemaRule b )
-    {
-        if ( !a.equals( b ) )
-        {
+    public static boolean schemaDeepEquals(SchemaRule a, SchemaRule b) {
+        if (!a.equals(b)) {
             return false;
         }
-        if ( a.getId() != b.getId() )
-        {
+        if (a.getId() != b.getId()) {
             return false;
         }
-        if ( !a.getName().equals( b.getName() ) )
-        {
+        if (!a.getName().equals(b.getName())) {
             return false;
         }
-        if ( a.getClass() != b.getClass() )
-        {
+        if (a.getClass() != b.getClass()) {
             return false;
         }
-        if ( a instanceof IndexDescriptor indexA && b instanceof IndexDescriptor indexB )
-        {
-            return indexA.getCapability().equals( indexB.getCapability() ) &&
-                    indexA.isUnique() == indexB.isUnique() &&
-                    indexA.getIndexProvider().equals( indexB.getIndexProvider() ) &&
-                    indexA.getIndexType() == indexB.getIndexType() &&
-                    indexA.getOwningConstraintId().equals( indexB.getOwningConstraintId() ) &&
-                    schemaDeepEquals( indexA.schema(), indexB.schema() );
-        }
-        else if ( a instanceof ConstraintDescriptor constraintA && b instanceof ConstraintDescriptor constraintB )
-        {
-            if ( constraintA.isIndexBackedConstraint() && constraintB.isIndexBackedConstraint() )
-            {
+        if (a instanceof IndexDescriptor indexA && b instanceof IndexDescriptor indexB) {
+            return indexA.getCapability().equals(indexB.getCapability())
+                    && indexA.isUnique() == indexB.isUnique()
+                    && indexA.getIndexProvider().equals(indexB.getIndexProvider())
+                    && indexA.getIndexType() == indexB.getIndexType()
+                    && indexA.getOwningConstraintId().equals(indexB.getOwningConstraintId())
+                    && schemaDeepEquals(indexA.schema(), indexB.schema());
+        } else if (a instanceof ConstraintDescriptor constraintA && b instanceof ConstraintDescriptor constraintB) {
+            if (constraintA.isIndexBackedConstraint() && constraintB.isIndexBackedConstraint()) {
                 IndexBackedConstraintDescriptor ibcA = constraintA.asIndexBackedConstraint();
                 IndexBackedConstraintDescriptor ibcB = constraintB.asIndexBackedConstraint();
-                return ibcA.hasOwnedIndexId() == ibcB.hasOwnedIndexId() &&
-                        (!ibcA.hasOwnedIndexId() || ibcA.ownedIndexId() == ibcB.ownedIndexId()) &&
-                        ibcA.equals( ibcB ) &&
-                        schemaDeepEquals( ibcA.schema(), ibcB.schema() );
+                return ibcA.hasOwnedIndexId() == ibcB.hasOwnedIndexId()
+                        && (!ibcA.hasOwnedIndexId() || ibcA.ownedIndexId() == ibcB.ownedIndexId())
+                        && ibcA.equals(ibcB)
+                        && schemaDeepEquals(ibcA.schema(), ibcB.schema());
+            } else {
+                return constraintA.isIndexBackedConstraint() == constraintB.isIndexBackedConstraint()
+                        && constraintA.equals(constraintB)
+                        && schemaDeepEquals(constraintA.schema(), constraintB.schema());
             }
-            else
-            {
-                return constraintA.isIndexBackedConstraint() == constraintB.isIndexBackedConstraint() &&
-                        constraintA.equals( constraintB ) &&
-                        schemaDeepEquals( constraintA.schema(), constraintB.schema() );
-            }
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unsupported type of a:" + a + " and b:" + b );
+        } else {
+            throw new IllegalArgumentException("Unsupported type of a:" + a + " and b:" + b);
         }
     }
 
-    public static boolean schemaDeepEquals( SchemaDescriptor a, SchemaDescriptor b )
-    {
-        return a.entityType() == b.entityType() &&
-                a.propertySchemaType() == b.propertySchemaType() &&
-                Arrays.equals( a.getEntityTokenIds(), b.getEntityTokenIds() ) &&
-                Arrays.equals( a.getPropertyIds(), b.getPropertyIds() );
+    public static boolean schemaDeepEquals(SchemaDescriptor a, SchemaDescriptor b) {
+        return a.entityType() == b.entityType()
+                && a.propertySchemaType() == b.propertySchemaType()
+                && Arrays.equals(a.getEntityTokenIds(), b.getEntityTokenIds())
+                && Arrays.equals(a.getPropertyIds(), b.getPropertyIds());
     }
 }

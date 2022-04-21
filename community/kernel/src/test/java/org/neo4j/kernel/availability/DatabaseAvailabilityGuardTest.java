@@ -19,22 +19,6 @@
  */
 package org.neo4j.kernel.availability;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
-import org.mockito.verification.VerificationMode;
-
-import java.time.Clock;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.InternalLog;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.LifeExtension;
-import org.neo4j.time.Clocks;
-
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -50,333 +34,327 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
-@Timeout( 30 )
-@ExtendWith( LifeExtension.class )
-class DatabaseAvailabilityGuardTest
-{
-    private static final AvailabilityRequirement REQUIREMENT_1 = new DescriptiveAvailabilityRequirement( "Requirement 1" );
-    private static final AvailabilityRequirement REQUIREMENT_2 = new DescriptiveAvailabilityRequirement( "Requirement 2" );
+import java.time.Clock;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
+import org.mockito.verification.VerificationMode;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.time.Clocks;
+
+@Timeout(30)
+@ExtendWith(LifeExtension.class)
+class DatabaseAvailabilityGuardTest {
+    private static final AvailabilityRequirement REQUIREMENT_1 =
+            new DescriptiveAvailabilityRequirement("Requirement 1");
+    private static final AvailabilityRequirement REQUIREMENT_2 =
+            new DescriptiveAvailabilityRequirement("Requirement 2");
 
     private final Clock clock = Clocks.systemClock();
-    private final InternalLog log = mock( InternalLog.class );
+    private final InternalLog log = mock(InternalLog.class);
 
     @Inject
     private LifeSupport life;
 
     @Test
-    void notStartedGuardIsNotAvailable()
-    {
-        DatabaseAvailabilityGuard availabilityGuard = createAvailabilityGuard( clock, log );
-        assertFalse( availabilityGuard.isAvailable() );
-        assertFalse( availabilityGuard.isAvailable( 0 ) );
-        assertTrue( availabilityGuard.isShutdown() );
+    void notStartedGuardIsNotAvailable() {
+        DatabaseAvailabilityGuard availabilityGuard = createAvailabilityGuard(clock, log);
+        assertFalse(availabilityGuard.isAvailable());
+        assertFalse(availabilityGuard.isAvailable(0));
+        assertTrue(availabilityGuard.isShutdown());
     }
 
     @Test
-    void shutdownAvailabilityGuardIsNotAvailable()
-    {
-        DatabaseAvailabilityGuard availabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        assertTrue( availabilityGuard.isAvailable() );
-        assertFalse( availabilityGuard.isShutdown() );
+    void shutdownAvailabilityGuardIsNotAvailable() {
+        DatabaseAvailabilityGuard availabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        assertTrue(availabilityGuard.isAvailable());
+        assertFalse(availabilityGuard.isShutdown());
 
         availabilityGuard.stop();
         availabilityGuard.shutdown();
 
-        assertFalse( availabilityGuard.isAvailable() );
-        assertTrue( availabilityGuard.isShutdown() );
+        assertFalse(availabilityGuard.isAvailable());
+        assertTrue(availabilityGuard.isShutdown());
     }
 
     @Test
-    void restartedAvailabilityGuardIsAvailable()
-    {
-        DatabaseAvailabilityGuard availabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        assertTrue( availabilityGuard.isAvailable() );
-        assertFalse( availabilityGuard.isShutdown() );
+    void restartedAvailabilityGuardIsAvailable() {
+        DatabaseAvailabilityGuard availabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        assertTrue(availabilityGuard.isAvailable());
+        assertFalse(availabilityGuard.isShutdown());
 
         availabilityGuard.stop();
         availabilityGuard.shutdown();
 
         availabilityGuard.init();
-        assertFalse( availabilityGuard.isShutdown() );
-        assertTrue( availabilityGuard.isAvailable() );
+        assertFalse(availabilityGuard.isShutdown());
+        assertTrue(availabilityGuard.isAvailable());
 
         availabilityGuard.start();
-        assertFalse( availabilityGuard.isShutdown() );
-        assertTrue( availabilityGuard.isAvailable() );
+        assertFalse(availabilityGuard.isShutdown());
+        assertTrue(availabilityGuard.isAvailable());
     }
 
     @Test
-    void logOnAvailabilityChange()
-    {
-        AvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
+    void logOnAvailabilityChange() {
+        AvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
 
         // When starting out
-        verifyNoInteractions( log );
+        verifyNoInteractions(log);
 
         // When requirement is added
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
 
         // Then log should have been called
-        verifyLogging( log, atLeastOnce() );
+        verifyLogging(log, atLeastOnce());
 
         // When requirement fulfilled
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_1);
 
         // Then log should have been called
-        verifyLogging( log, times( 4 ) );
+        verifyLogging(log, times(4));
 
         // When requirement is added
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_2 );
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_2);
 
         // Then log should have been called
-        verifyLogging( log, times( 6 ) );
+        verifyLogging(log, times(6));
 
         // When requirement fulfilled
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_1);
 
         // Then log should not have been called
-        verifyLogging( log, times( 6 ) );
+        verifyLogging(log, times(6));
 
         // When requirement fulfilled
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_2 );
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_2);
 
         // Then log should have been called
-        verifyLogging( log, times( 8 ) );
+        verifyLogging(log, times(8));
     }
 
     @Test
-    void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse()
-    {
+    void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse() {
         // Given
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_2 );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_2);
 
         // When
-        boolean result = databaseAvailabilityGuard.isAvailable( 1000 );
+        boolean result = databaseAvailabilityGuard.isAvailable(1000);
 
         // Then
-        assertFalse( result );
+        assertFalse(result);
     }
 
     @Test
-    void givenAccessGuardWith2ConditionsWhenAwaitThenActuallyWaitGivenTimeout()
-    {
+    void givenAccessGuardWith2ConditionsWhenAwaitThenActuallyWaitGivenTimeout() {
         // Given
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_2 );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_2);
 
         // When
         long timeout = 1000;
         long start = clock.millis();
-        boolean result = databaseAvailabilityGuard.isAvailable( timeout );
+        boolean result = databaseAvailabilityGuard.isAvailable(timeout);
         long end = clock.millis();
 
         // Then
         long waitTime = end - start;
-        assertFalse( result );
-        assertThat( waitTime ).isGreaterThanOrEqualTo( timeout );
+        assertFalse(result);
+        assertThat(waitTime).isGreaterThanOrEqualTo(timeout);
     }
 
     @Test
-    void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitThenTimeoutAndReturnFalse()
-    {
+    void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitThenTimeoutAndReturnFalse() {
         // Given
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_2 );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_2);
 
         // When
         long start = clock.millis();
         long timeout = 1000;
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
-        boolean result = databaseAvailabilityGuard.isAvailable( timeout );
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_1);
+        boolean result = databaseAvailabilityGuard.isAvailable(timeout);
         long end = clock.millis();
 
         // Then
         long waitTime = end - start;
-        assertFalse( result );
-        assertThat( waitTime ).isGreaterThanOrEqualTo( timeout );
-
+        assertFalse(result);
+        assertThat(waitTime).isGreaterThanOrEqualTo(timeout);
     }
 
     @Test
-    void givenAccessGuardWith2ConditionsWhenGrantEachAndAwaitThenTrue()
-    {
+    void givenAccessGuardWith2ConditionsWhenGrantEachAndAwaitThenTrue() {
         // Given
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_2 );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_2);
 
         // When
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_2 );
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_1);
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_2);
 
-        assertTrue( databaseAvailabilityGuard.isAvailable( 1000 ) );
+        assertTrue(databaseAvailabilityGuard.isAvailable(1000));
     }
 
     @Test
-    void givenAccessGuardWith2ConditionsWhenGrantTwiceAndDenyOnceAndAwaitThenTimeoutAndReturnFalse()
-    {
+    void givenAccessGuardWith2ConditionsWhenGrantTwiceAndDenyOnceAndAwaitThenTimeoutAndReturnFalse() {
         // Given
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_2 );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_2);
 
         // When
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_2 );
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_1);
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_2);
 
         long start = clock.millis();
         long timeout = 1000;
-        boolean result = databaseAvailabilityGuard.isAvailable( timeout );
+        boolean result = databaseAvailabilityGuard.isAvailable(timeout);
         long end = clock.millis();
 
         // Then
         long waitTime = end - start;
-        assertFalse( result );
-        assertThat( waitTime ).isGreaterThanOrEqualTo( timeout );
+        assertFalse(result);
+        assertThat(waitTime).isGreaterThanOrEqualTo(timeout);
     }
 
     @Test
-    void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitAndGrantAgainThenReturnTrue()
-    {
+    void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitAndGrantAgainThenReturnTrue() {
         // Given
-        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_2 );
+        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_2);
 
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_2 );
-        assertFalse( databaseAvailabilityGuard.isAvailable( 100 ) );
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_2);
+        assertFalse(databaseAvailabilityGuard.isAvailable(100));
 
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
-        assertTrue( databaseAvailabilityGuard.isAvailable( 100 ) );
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_1);
+        assertTrue(databaseAvailabilityGuard.isAvailable(100));
     }
 
     @Test
-    void givenAccessGuardWithConditionWhenGrantThenNotifyListeners()
-    {
+    void givenAccessGuardWithConditionWhenGrantThenNotifyListeners() {
         // Given
-        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
+        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
 
         final AtomicBoolean notified = new AtomicBoolean();
-        AvailabilityListener availabilityListener = new AvailabilityListener()
-        {
+        AvailabilityListener availabilityListener = new AvailabilityListener() {
             @Override
-            public void available()
-            {
-                notified.set( true );
+            public void available() {
+                notified.set(true);
             }
 
             @Override
-            public void unavailable()
-            {
+            public void unavailable() {}
+        };
+
+        databaseAvailabilityGuard.addListener(availabilityListener);
+
+        // When
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_1);
+
+        // Then
+        assertTrue(notified.get());
+    }
+
+    @Test
+    void givenAccessGuardWithConditionWhenGrantAndDenyThenNotifyListeners() {
+        // Given
+        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
+
+        final AtomicBoolean notified = new AtomicBoolean();
+        AvailabilityListener availabilityListener = new AvailabilityListener() {
+            @Override
+            public void available() {}
+
+            @Override
+            public void unavailable() {
+                notified.set(true);
             }
         };
 
-        databaseAvailabilityGuard.addListener( availabilityListener );
+        databaseAvailabilityGuard.addListener(availabilityListener);
 
         // When
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
+        databaseAvailabilityGuard.fulfill(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
 
         // Then
-        assertTrue( notified.get() );
+        assertTrue(notified.get());
     }
 
     @Test
-    void givenAccessGuardWithConditionWhenGrantAndDenyThenNotifyListeners()
-    {
+    void shouldExplainWhoIsBlockingAccess() {
         // Given
-        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-
-        final AtomicBoolean notified = new AtomicBoolean();
-        AvailabilityListener availabilityListener = new AvailabilityListener()
-        {
-            @Override
-            public void available()
-            {
-            }
-
-            @Override
-            public void unavailable()
-            {
-                notified.set( true );
-            }
-        };
-
-        databaseAvailabilityGuard.addListener( availabilityListener );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard(clock, log);
 
         // When
-        databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
+        databaseAvailabilityGuard.require(REQUIREMENT_1);
+        databaseAvailabilityGuard.require(REQUIREMENT_2);
 
         // Then
-        assertTrue( notified.get() );
+        assertThat(databaseAvailabilityGuard.describe())
+                .isEqualTo("2 reasons for blocking: Requirement 1, Requirement 2.");
     }
 
     @Test
-    void shouldExplainWhoIsBlockingAccess()
-    {
-        // Given
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-
-        // When
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-        databaseAvailabilityGuard.require( REQUIREMENT_2 );
-
-        // Then
-        assertThat( databaseAvailabilityGuard.describe() ).isEqualTo( "2 reasons for blocking: Requirement 1, Requirement 2." );
-    }
-
-    @Test
-    void shouldWaitForAvailabilityWhenShutdown() throws Exception
-    {
+    void shouldWaitForAvailabilityWhenShutdown() throws Exception {
         // very long timeout to force blocking
-        var waitMs = DAYS.toMillis( 1 );
-        var availabilityGuard = createAvailabilityGuard( clock, log );
+        var waitMs = DAYS.toMillis(1);
+        var availabilityGuard = createAvailabilityGuard(clock, log);
 
         availabilityGuard.init();
         availabilityGuard.start();
 
-        assertFalse( availabilityGuard.isShutdown() );
-        assertTrue( availabilityGuard.isAvailable( waitMs ) );
+        assertFalse(availabilityGuard.isShutdown());
+        assertTrue(availabilityGuard.isAvailable(waitMs));
 
         availabilityGuard.stop();
         availabilityGuard.shutdown();
 
-        assertTrue( availabilityGuard.isShutdown() );
+        assertTrue(availabilityGuard.isShutdown());
 
         // check isAvailable in a separate thread with a very long timeout; this thread should keep polling and sleeping
-        var isAvailableFuture = supplyAsync( () -> availabilityGuard.isAvailable( waitMs ) );
-        SECONDS.sleep( 1 );
-        assertFalse( isAvailableFuture.isDone() );
+        var isAvailableFuture = supplyAsync(() -> availabilityGuard.isAvailable(waitMs));
+        SECONDS.sleep(1);
+        assertFalse(isAvailableFuture.isDone());
 
         // start the guard, this should make the polling thread exit
         availabilityGuard.init();
         availabilityGuard.start();
-        assertTrue( isAvailableFuture.get( 5, SECONDS ) );
+        assertTrue(isAvailableFuture.get(5, SECONDS));
     }
 
-    private static void verifyLogging( InternalLog log, VerificationMode mode )
-    {
-        verify( log, mode ).info( anyString(), Mockito.<Object[]>any() );
+    private static void verifyLogging(InternalLog log, VerificationMode mode) {
+        verify(log, mode).info(anyString(), Mockito.<Object[]>any());
     }
 
-    private DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, InternalLog log )
-    {
-        DatabaseAvailabilityGuard availabilityGuard = createAvailabilityGuard( clock, log );
-        life.add( availabilityGuard );
+    private DatabaseAvailabilityGuard getDatabaseAvailabilityGuard(Clock clock, InternalLog log) {
+        DatabaseAvailabilityGuard availabilityGuard = createAvailabilityGuard(clock, log);
+        life.add(availabilityGuard);
         return availabilityGuard;
     }
 
-    private static DatabaseAvailabilityGuard createAvailabilityGuard( Clock clock, InternalLog log )
-    {
-        return new DatabaseAvailabilityGuard( from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), clock, log, 0,
-                mock( CompositeDatabaseAvailabilityGuard.class ) );
+    private static DatabaseAvailabilityGuard createAvailabilityGuard(Clock clock, InternalLog log) {
+        return new DatabaseAvailabilityGuard(
+                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
+                clock,
+                log,
+                0,
+                mock(CompositeDatabaseAvailabilityGuard.class));
     }
 }

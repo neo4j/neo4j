@@ -22,19 +22,16 @@ package org.neo4j.bolt.v4.messaging;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.values.virtual.MapValue;
 
-public class PullMessage extends AbstractStreamingMessage
-{
+public class PullMessage extends AbstractStreamingMessage {
     public static final byte SIGNATURE = 0x3F;
     private static final String NAME = "PULL";
 
-    public PullMessage( MapValue meta ) throws BoltIOException
-    {
-        super( meta, NAME );
+    public PullMessage(MapValue meta) throws BoltIOException {
+        super(meta, NAME);
     }
 
     @Override
-    String name()
-    {
+    String name() {
         return NAME;
     }
 }

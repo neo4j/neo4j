@@ -25,9 +25,8 @@ import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.exceptions.KernelException;
 
-public interface BoltStateMachine extends AutoCloseable
-{
-    void process( RequestMessage message, BoltResponseHandler handler ) throws BoltConnectionFatality;
+public interface BoltStateMachine extends AutoCloseable {
+    void process(RequestMessage message, BoltResponseHandler handler) throws BoltConnectionFatality;
 
     boolean shouldStickOnThread();
 
@@ -39,11 +38,11 @@ public interface BoltStateMachine extends AutoCloseable
 
     boolean reset() throws BoltConnectionFatality;
 
-    void markFailed( Neo4jError error );
+    void markFailed(Neo4jError error);
 
-    void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality;
+    void handleFailure(Throwable cause, boolean fatal) throws BoltConnectionFatality;
 
-    void handleExternalFailure( Neo4jError error, BoltResponseHandler handler ) throws BoltConnectionFatality;
+    void handleExternalFailure(Neo4jError error, BoltResponseHandler handler) throws BoltConnectionFatality;
 
     void markForTermination();
 

@@ -23,48 +23,41 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
-
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
-public class LifeExtension extends StatefulFieldExtension<LifeSupport> implements AfterEachCallback, BeforeEachCallback
-{
+public class LifeExtension extends StatefulFieldExtension<LifeSupport>
+        implements AfterEachCallback, BeforeEachCallback {
     private static final String LIFE = "life";
-    private static final Namespace LIFE_NAMESPACE = Namespace.create( LIFE );
+    private static final Namespace LIFE_NAMESPACE = Namespace.create(LIFE);
 
     @Override
-    protected String getFieldKey()
-    {
+    protected String getFieldKey() {
         return LIFE;
     }
 
     @Override
-    protected Class<LifeSupport> getFieldType()
-    {
+    protected Class<LifeSupport> getFieldType() {
         return LifeSupport.class;
     }
 
     @Override
-    protected LifeSupport createField( ExtensionContext extensionContext )
-    {
+    protected LifeSupport createField(ExtensionContext extensionContext) {
         return new LifeSupport();
     }
 
     @Override
-    protected Namespace getNameSpace()
-    {
+    protected Namespace getNameSpace() {
         return LIFE_NAMESPACE;
     }
 
     @Override
-    public void afterEach( ExtensionContext context )
-    {
-        deepRemoveStoredValue( context ).shutdown();
+    public void afterEach(ExtensionContext context) {
+        deepRemoveStoredValue(context).shutdown();
     }
 
     @Override
-    public void beforeEach( ExtensionContext context )
-    {
-        LifeSupport value = getStoredValue( context );
+    public void beforeEach(ExtensionContext context) {
+        LifeSupport value = getStoredValue(context);
         value.start();
     }
 }

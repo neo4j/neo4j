@@ -47,7 +47,7 @@ case object reattachAliasedExpressions extends Rewriter {
     }.toMap
 
     bottomUp(Rewriter.lift {
-      case id@Variable(name) if aliasedExpressions.contains(name) => aliasedExpressions(name)
+      case id @ Variable(name) if aliasedExpressions.contains(name) => aliasedExpressions(name)
     })
   }
 }

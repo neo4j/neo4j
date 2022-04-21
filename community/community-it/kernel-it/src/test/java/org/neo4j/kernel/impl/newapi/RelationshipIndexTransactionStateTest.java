@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
+
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -34,117 +35,119 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
-
-public class RelationshipIndexTransactionStateTest extends IndexTransactionStateTestBase
-{
+public class RelationshipIndexTransactionStateTest extends IndexTransactionStateTestBase {
     private static final String DEFAULT_REl_TYPE = "Rel";
 
     @Override
-    Pair<Long,Value> entityWithProp( KernelTransaction tx, Object value ) throws Exception
-    {
+    Pair<Long, Value> entityWithProp(KernelTransaction tx, Object value) throws Exception {
         Write write = tx.dataWrite();
         long sourceNode = write.nodeCreate();
         long targetNode = write.nodeCreate();
 
-        long rel = write.relationshipCreate( sourceNode, tx.tokenWrite().relationshipTypeGetOrCreateForName( DEFAULT_REl_TYPE ), targetNode );
+        long rel = write.relationshipCreate(
+                sourceNode, tx.tokenWrite().relationshipTypeGetOrCreateForName(DEFAULT_REl_TYPE), targetNode);
 
-        Value val = Values.of( value );
-        write.relationshipSetProperty( rel, tx.tokenWrite().propertyKeyGetOrCreateForName( DEFAULT_PROPERTY_NAME ), val );
-        return Pair.of( rel, val );
+        Value val = Values.of(value);
+        write.relationshipSetProperty(rel, tx.tokenWrite().propertyKeyGetOrCreateForName(DEFAULT_PROPERTY_NAME), val);
+        return Pair.of(rel, val);
     }
 
     @Override
-    void createIndex( IndexType indexType )
-    {
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-        {
-            tx.schema().indexFor( RelationshipType.withName( DEFAULT_REl_TYPE ) ).on( DEFAULT_PROPERTY_NAME ).withIndexType( indexType ).withName( INDEX_NAME )
+    void createIndex(IndexType indexType) {
+        try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
+            tx.schema()
+                    .indexFor(RelationshipType.withName(DEFAULT_REl_TYPE))
+                    .on(DEFAULT_PROPERTY_NAME)
+                    .withIndexType(indexType)
+                    .withName(INDEX_NAME)
                     .create();
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
         }
     }
 
     @Override
-    void deleteEntity( KernelTransaction tx, long entity ) throws Exception
-    {
-        tx.dataWrite().relationshipDelete( entity );
+    void deleteEntity(KernelTransaction tx, long entity) throws Exception {
+        tx.dataWrite().relationshipDelete(entity);
     }
 
     @Override
-    boolean entityExists( KernelTransaction tx, long entity )
-    {
-        return tx.dataRead().relationshipExists( entity );
+    boolean entityExists(KernelTransaction tx, long entity) {
+        return tx.dataRead().relationshipExists(entity);
     }
 
     @Override
-    void removeProperty( KernelTransaction tx, long entity ) throws Exception
-    {
-        int propertyKey = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-        tx.dataWrite().relationshipRemoveProperty( entity, propertyKey );
+    void removeProperty(KernelTransaction tx, long entity) throws Exception {
+        int propertyKey = tx.tokenRead().propertyKey(DEFAULT_PROPERTY_NAME);
+        tx.dataWrite().relationshipRemoveProperty(entity, propertyKey);
     }
 
     @Override
-    void setProperty( KernelTransaction tx, long entity, Value value ) throws Exception
-    {
-        int propertyKey = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-        tx.dataWrite().relationshipSetProperty( entity, propertyKey, value );
+    void setProperty(KernelTransaction tx, long entity, Value value) throws Exception {
+        int propertyKey = tx.tokenRead().propertyKey(DEFAULT_PROPERTY_NAME);
+        tx.dataWrite().relationshipSetProperty(entity, propertyKey, value);
     }
 
     @Override
-    void assertEntityAndValueForSeek( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
-            Object anotherValueFoundByQuery, PropertyIndexQuery... queries ) throws Exception
-    {
-        try ( RelationshipValueIndexCursor relationships = tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ) )
-        {
-            IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-            tx.dataRead().relationshipIndexSeek( tx.queryContext(), indexSession, relationships, unordered( needsValues ), queries );
-            assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new RelationshipCursorAdapter( relationships ) );
+    void assertEntityAndValueForSeek(
+            Set<Pair<Long, Value>> expected,
+            KernelTransaction tx,
+            IndexDescriptor index,
+            boolean needsValues,
+            Object anotherValueFoundByQuery,
+            PropertyIndexQuery... queries)
+            throws Exception {
+        try (RelationshipValueIndexCursor relationships =
+                tx.cursors().allocateRelationshipValueIndexCursor(tx.cursorContext(), tx.memoryTracker())) {
+            IndexReadSession indexSession = tx.dataRead().indexReadSession(index);
+            tx.dataRead()
+                    .relationshipIndexSeek(
+                            tx.queryContext(), indexSession, relationships, unordered(needsValues), queries);
+            assertEntityAndValue(
+                    expected, tx, needsValues, anotherValueFoundByQuery, new RelationshipCursorAdapter(relationships));
         }
     }
 
     @Override
-    void assertEntityAndValueForScan( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
-            Object anotherValueFoundByQuery ) throws Exception
-    {
-        IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-        try ( RelationshipValueIndexCursor relationships = tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ) )
-        {
-            tx.dataRead().relationshipIndexScan( indexSession, relationships, unordered( needsValues ) );
-            assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new RelationshipCursorAdapter( relationships ) );
+    void assertEntityAndValueForScan(
+            Set<Pair<Long, Value>> expected,
+            KernelTransaction tx,
+            IndexDescriptor index,
+            boolean needsValues,
+            Object anotherValueFoundByQuery)
+            throws Exception {
+        IndexReadSession indexSession = tx.dataRead().indexReadSession(index);
+        try (RelationshipValueIndexCursor relationships =
+                tx.cursors().allocateRelationshipValueIndexCursor(tx.cursorContext(), tx.memoryTracker())) {
+            tx.dataRead().relationshipIndexScan(indexSession, relationships, unordered(needsValues));
+            assertEntityAndValue(
+                    expected, tx, needsValues, anotherValueFoundByQuery, new RelationshipCursorAdapter(relationships));
         }
     }
 
-    private static class RelationshipCursorAdapter implements EntityValueIndexCursor
-    {
+    private static class RelationshipCursorAdapter implements EntityValueIndexCursor {
 
         private final RelationshipValueIndexCursor relationships;
 
-        private RelationshipCursorAdapter( RelationshipValueIndexCursor relationships )
-        {
+        private RelationshipCursorAdapter(RelationshipValueIndexCursor relationships) {
             this.relationships = relationships;
         }
 
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return relationships.next();
         }
 
         @Override
-        public Value propertyValue( int offset )
-        {
-            return relationships.propertyValue( offset );
+        public Value propertyValue(int offset) {
+            return relationships.propertyValue(offset);
         }
 
         @Override
-        public long entityReference()
-        {
+        public long entityReference() {
             return relationships.relationshipReference();
         }
     }

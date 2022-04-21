@@ -26,15 +26,13 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.values.virtual.MapValue;
 
-public class QuerySnapshot
-{
+public class QuerySnapshot {
     private final ExecutingQuery query;
     private final CompilerInfo compilerInfo;
     private final long compilationTimeMicros;
@@ -42,7 +40,7 @@ public class QuerySnapshot
     private final long cpuTimeMicros;
     private final long waitTimeMicros;
     private final String status;
-    private final Map<String,Object> resourceInfo;
+    private final Map<String, Object> resourceInfo;
     private final List<ActiveLock> waitingLocks;
     private final long activeLockCount;
     private final long allocatedBytes;
@@ -52,11 +50,23 @@ public class QuerySnapshot
     private final Optional<MapValue> obfuscatedQueryParameters;
     private final long transactionId;
 
-    QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, long pageHits, long pageFaults, long compilationTimeMicros,
-                   long elapsedTimeMicros, long cpuTimeMicros, long waitTimeMicros, String status,
-                   Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, long allocatedBytes,
-                   Optional<String> obfuscatedQueryText, Optional<MapValue> obfuscatedQueryParameters, long transactionId )
-    {
+    QuerySnapshot(
+            ExecutingQuery query,
+            CompilerInfo compilerInfo,
+            long pageHits,
+            long pageFaults,
+            long compilationTimeMicros,
+            long elapsedTimeMicros,
+            long cpuTimeMicros,
+            long waitTimeMicros,
+            String status,
+            Map<String, Object> resourceInfo,
+            List<ActiveLock> waitingLocks,
+            long activeLockCount,
+            long allocatedBytes,
+            Optional<String> obfuscatedQueryText,
+            Optional<MapValue> obfuscatedQueryParameters,
+            long transactionId) {
         this.query = query;
         this.compilerInfo = compilerInfo;
         this.pageHits = pageHits;
@@ -75,112 +85,89 @@ public class QuerySnapshot
         this.transactionId = transactionId;
     }
 
-    public long internalQueryId()
-    {
+    public long internalQueryId() {
         return query.internalQueryId();
     }
 
-    public String id()
-    {
+    public String id() {
         return query.id();
     }
 
-    public String rawQueryText()
-    {
+    public String rawQueryText() {
         return query.rawQueryText();
     }
 
-    public Optional<String> obfuscatedQueryText()
-    {
+    public Optional<String> obfuscatedQueryText() {
         return obfuscatedQueryText;
     }
 
-    public MapValue rawQueryParameters()
-    {
+    public MapValue rawQueryParameters() {
         return query.rawQueryParameters();
     }
 
-    public Optional<MapValue> obfuscatedQueryParameters()
-    {
+    public Optional<MapValue> obfuscatedQueryParameters() {
         return obfuscatedQueryParameters;
     }
 
-    public Supplier<ExecutionPlanDescription> queryPlanSupplier()
-    {
+    public Supplier<ExecutionPlanDescription> queryPlanSupplier() {
         return query.planDescriptionSupplier();
     }
 
-    public String executingUsername()
-    {
+    public String executingUsername() {
         return query.executingUsername();
     }
 
-    public String authenticatedUsername()
-    {
+    public String authenticatedUsername() {
         return query.authenticatedUsername();
     }
 
-    public Optional<NamedDatabaseId> databaseId()
-    {
+    public Optional<NamedDatabaseId> databaseId() {
         return query.databaseId();
     }
 
-    public ClientConnectionInfo clientConnection()
-    {
+    public ClientConnectionInfo clientConnection() {
         return query.clientConnection();
     }
 
-    public Map<String,Object> transactionAnnotationData()
-    {
+    public Map<String, Object> transactionAnnotationData() {
         return query.transactionAnnotationData();
     }
 
-    public long activeLockCount()
-    {
+    public long activeLockCount() {
         return activeLockCount;
     }
 
-    public String planner()
-    {
+    public String planner() {
         return compilerInfo == null ? null : compilerInfo.planner();
     }
 
-    public String runtime()
-    {
+    public String runtime() {
         return compilerInfo == null ? null : compilerInfo.runtime();
     }
 
-    public List<Map<String,String>> indexes()
-    {
-        if ( compilerInfo == null )
-        {
+    public List<Map<String, String>> indexes() {
+        if (compilerInfo == null) {
             return Collections.emptyList();
         }
-        return compilerInfo.indexes().stream()
-                           .map( IndexUsage::asMap )
-                           .collect( Collectors.toList() );
+        return compilerInfo.indexes().stream().map(IndexUsage::asMap).collect(Collectors.toList());
     }
 
-    public String status()
-    {
+    public String status() {
         return status;
     }
 
-    public Map<String,Object> resourceInformation()
-    {
+    public Map<String, Object> resourceInformation() {
         return resourceInfo;
     }
 
-    public long startTimestampMillis()
-    {
+    public long startTimestampMillis() {
         return query.startTimestampMillis();
     }
 
     /**
      * User transaction ID of the outer transaction that is executing this query.
      */
-    public long transactionId()
-    {
+    public long transactionId() {
         return transactionId;
     }
 
@@ -189,8 +176,7 @@ public class QuerySnapshot
      *
      * @return the time in microseconds spent planning the query.
      */
-    public long compilationTimeMicros()
-    {
+    public long compilationTimeMicros() {
         return compilationTimeMicros;
     }
 
@@ -199,8 +185,7 @@ public class QuerySnapshot
      *
      * @return the time in microseconds spent waiting on locks.
      */
-    public long waitTimeMicros()
-    {
+    public long waitTimeMicros() {
         return waitTimeMicros;
     }
 
@@ -209,8 +194,7 @@ public class QuerySnapshot
      *
      * @return the time in microseconds since execution of this query started.
      */
-    public long elapsedTimeMicros()
-    {
+    public long elapsedTimeMicros() {
         return elapsedTimeMicros;
     }
 
@@ -220,9 +204,8 @@ public class QuerySnapshot
      * @return the time in microseconds that the CPU has spent on this query, or {@code null} if the cpu time could not
      * be measured.
      */
-    public OptionalLong cpuTimeMicros()
-    {
-        return cpuTimeMicros < 0 ? OptionalLong.empty() : OptionalLong.of( cpuTimeMicros );
+    public OptionalLong cpuTimeMicros() {
+        return cpuTimeMicros < 0 ? OptionalLong.empty() : OptionalLong.of(cpuTimeMicros);
     }
 
     /**
@@ -238,9 +221,10 @@ public class QuerySnapshot
      * @return the time in microseconds that this query was de-scheduled, or {@code null} if the cpu time could not be
      * measured.
      */
-    public OptionalLong idleTimeMicros()
-    {
-        return cpuTimeMicros < 0 ? OptionalLong.empty() : OptionalLong.of( elapsedTimeMicros - cpuTimeMicros - waitTimeMicros );
+    public OptionalLong idleTimeMicros() {
+        return cpuTimeMicros < 0
+                ? OptionalLong.empty()
+                : OptionalLong.of(elapsedTimeMicros - cpuTimeMicros - waitTimeMicros);
     }
 
     /**
@@ -248,23 +232,19 @@ public class QuerySnapshot
      *
      * @return the number of bytes allocated by the execution of the query, or Optional.empty() if measurement was not possible or not enabled.
      */
-    public long allocatedBytes()
-    {
+    public long allocatedBytes() {
         return allocatedBytes;
     }
 
-    public long pageHits()
-    {
+    public long pageHits() {
         return pageHits;
     }
 
-    public long pageFaults()
-    {
+    public long pageFaults() {
         return pageFaults;
     }
 
-    public List<ActiveLock> waitingLocks()
-    {
+    public List<ActiveLock> waitingLocks() {
         return waitingLocks;
     }
 }

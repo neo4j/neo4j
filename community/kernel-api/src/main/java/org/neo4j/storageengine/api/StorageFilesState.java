@@ -28,39 +28,32 @@ import java.util.Collections;
  * or {@link RecoveryState#RECOVERABLE} is used, or some store files are missing or broken and {@link RecoveryState#UNRECOVERABLE} together
  * with a list of missing or broken files can be specified in {@link #unrecoverableState(Collection)}.
  */
-public class StorageFilesState
-{
+public class StorageFilesState {
     private final RecoveryState recoveryState;
     private final Collection<Path> missingFiles;
 
-    private StorageFilesState( RecoveryState recoveryState, Collection<Path> missingFiles )
-    {
+    private StorageFilesState(RecoveryState recoveryState, Collection<Path> missingFiles) {
         this.recoveryState = recoveryState;
         this.missingFiles = missingFiles;
     }
 
-    public RecoveryState getRecoveryState()
-    {
+    public RecoveryState getRecoveryState() {
         return recoveryState;
     }
 
-    public Collection<Path> getMissingFiles()
-    {
+    public Collection<Path> getMissingFiles() {
         return missingFiles;
     }
 
-    public static StorageFilesState recoverableState()
-    {
-        return new StorageFilesState( RecoveryState.RECOVERABLE, Collections.emptyList() );
+    public static StorageFilesState recoverableState() {
+        return new StorageFilesState(RecoveryState.RECOVERABLE, Collections.emptyList());
     }
 
-    public static StorageFilesState recoveredState()
-    {
-        return new StorageFilesState( RecoveryState.RECOVERED, Collections.emptyList() );
+    public static StorageFilesState recoveredState() {
+        return new StorageFilesState(RecoveryState.RECOVERED, Collections.emptyList());
     }
 
-    public static StorageFilesState unrecoverableState( Collection<Path> missingFiles )
-    {
-        return new StorageFilesState( RecoveryState.UNRECOVERABLE, missingFiles );
+    public static StorageFilesState unrecoverableState(Collection<Path> missingFiles) {
+        return new StorageFilesState(RecoveryState.UNRECOVERABLE, missingFiles);
     }
 }

@@ -19,35 +19,28 @@
  */
 package org.neo4j.procedure.impl;
 
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
+
 import java.util.Map;
 import java.util.function.Function;
-
 import org.neo4j.cypher.internal.evaluator.EvaluationException;
 import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 
-import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
-
-public class MapConverter implements Function<String,DefaultParameterValue>
-{
+public class MapConverter implements Function<String, DefaultParameterValue> {
     private final ExpressionEvaluator evaluator;
 
-    MapConverter( ExpressionEvaluator evaluator )
-    {
+    MapConverter(ExpressionEvaluator evaluator) {
         this.evaluator = evaluator;
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Override
-    public DefaultParameterValue apply( String s )
-    {
-        try
-        {
-            return ntMap( (Map<String,Object>) evaluator.evaluate( s, Map.class ) );
-        }
-        catch ( EvaluationException e )
-        {
-            throw new IllegalArgumentException( String.format( "%s is not a valid map expression", s ), e );
+    public DefaultParameterValue apply(String s) {
+        try {
+            return ntMap((Map<String, Object>) evaluator.evaluate(s, Map.class));
+        } catch (EvaluationException e) {
+            throw new IllegalArgumentException(String.format("%s is not a valid map expression", s), e);
         }
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-public interface Condition
-{
+public interface Condition {
     boolean fulfilled();
 }

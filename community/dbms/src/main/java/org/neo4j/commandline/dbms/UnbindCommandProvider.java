@@ -19,25 +19,22 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static org.neo4j.cli.Command.CommandType.UNBIND;
+
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.Command.CommandType;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.ExecutionContext;
 
-import static org.neo4j.cli.Command.CommandType.UNBIND;
-
 @ServiceProvider
-public class UnbindCommandProvider implements CommandProvider<UnbindCommand>
-{
+public class UnbindCommandProvider implements CommandProvider<UnbindCommand> {
     @Override
-    public UnbindCommand createCommand( ExecutionContext ctx )
-    {
-        return new UnbindCommand( ctx );
+    public UnbindCommand createCommand(ExecutionContext ctx) {
+        return new UnbindCommand(ctx);
     }
 
     @Override
-    public CommandType commandType()
-    {
+    public CommandType commandType() {
         return UNBIND;
     }
 }

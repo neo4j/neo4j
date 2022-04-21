@@ -26,6 +26,4 @@ import org.neo4j.util.MarkerInterface;
  * {@link PropertySchemaType#COMPLETE_ALL_TOKENS}.
  */
 @MarkerInterface
-public interface RelationTypeSchemaDescriptor extends SchemaDescriptor
-{
-}
+public interface RelationTypeSchemaDescriptor extends SchemaDescriptor {}

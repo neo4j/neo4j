@@ -21,28 +21,22 @@ package org.neo4j.logging;
 
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-
 import org.neo4j.annotations.api.PublicApi;
 
 @PublicApi
-public enum LogTimeZone
-{
-    UTC
-            {
-                @Override
-                public ZoneId getZoneId()
-                {
-                    return ZoneOffset.UTC;
-                }
-            },
-    SYSTEM
-            {
-                @Override
-                public ZoneId getZoneId()
-                {
-                    return ZoneId.systemDefault();
-                }
-            };
+public enum LogTimeZone {
+    UTC {
+        @Override
+        public ZoneId getZoneId() {
+            return ZoneOffset.UTC;
+        }
+    },
+    SYSTEM {
+        @Override
+        public ZoneId getZoneId() {
+            return ZoneId.systemDefault();
+        }
+    };
 
     public abstract ZoneId getZoneId();
 }

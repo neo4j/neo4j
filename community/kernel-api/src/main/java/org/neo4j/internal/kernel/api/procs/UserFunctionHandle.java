@@ -19,32 +19,26 @@
  */
 package org.neo4j.internal.kernel.api.procs;
 
-
-public class UserFunctionHandle
-{
+public class UserFunctionHandle {
     private final UserFunctionSignature signature;
     private final int id;
     private final boolean threadSafe;
 
-    public UserFunctionHandle( UserFunctionSignature signature, int id, boolean threadSafe )
-    {
+    public UserFunctionHandle(UserFunctionSignature signature, int id, boolean threadSafe) {
         this.signature = signature;
         this.id = id;
         this.threadSafe = threadSafe;
     }
 
-    public UserFunctionSignature signature()
-    {
+    public UserFunctionSignature signature() {
         return signature;
     }
 
-    public int id()
-    {
+    public int id() {
         return id;
     }
 
-    public boolean threadSafe()
-    {
+    public boolean threadSafe() {
         return threadSafe;
     }
 }

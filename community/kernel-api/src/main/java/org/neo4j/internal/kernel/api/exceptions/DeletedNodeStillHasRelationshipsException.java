@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.exceptions;
 
-public class DeletedNodeStillHasRelationshipsException extends ConstraintViolationTransactionFailureException
-{
-    public DeletedNodeStillHasRelationshipsException( long nodeId )
-    {
-        super( "Cannot delete node<" + nodeId + ">, because it still has relationships. To delete this node, you must first delete its relationships." );
+public class DeletedNodeStillHasRelationshipsException extends ConstraintViolationTransactionFailureException {
+    public DeletedNodeStillHasRelationshipsException(long nodeId) {
+        super(
+                "Cannot delete node<" + nodeId
+                        + ">, because it still has relationships. To delete this node, you must first delete its relationships.");
     }
 }

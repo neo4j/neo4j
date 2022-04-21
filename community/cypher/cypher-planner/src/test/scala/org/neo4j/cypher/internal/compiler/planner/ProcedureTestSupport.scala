@@ -38,8 +38,9 @@ object ProcedureTestSupport {
     inputSignature: IndexedSeq[FieldSignature] = IndexedSeq(),
     outputSignature: Option[IndexedSeq[FieldSignature]] = None,
     deprecationInfo: Option[String] = None,
-    accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess,
+    accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess
   ) {
+
     def withInputField(name: String, inputType: CypherType): ProcedureSignatureBuilder =
       copy(inputSignature = inputSignature :+ FieldSignature(name, inputType))
 
@@ -58,7 +59,8 @@ object ProcedureTestSupport {
         outputSignature = outputSignature,
         deprecationInfo = deprecationInfo,
         accessMode = accessMode,
-        id = 1)
+        id = 1
+      )
     }
   }
 }

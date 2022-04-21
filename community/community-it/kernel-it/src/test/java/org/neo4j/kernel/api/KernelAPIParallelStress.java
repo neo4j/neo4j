@@ -19,49 +19,45 @@
  */
 package org.neo4j.kernel.api;
 
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.Race;
 
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
-
-class KernelAPIParallelStress
-{
-    static <RESOURCE extends AutoCloseable> void parallelStressInTx( Kernel kernel,
-                                                                     int nThreads,
-                                                                     Function<KernelTransaction, RESOURCE> resourceSupplier,
-                                                                     BiFunction<Read, RESOURCE, Runnable> runnable ) throws Throwable
-    {
+class KernelAPIParallelStress {
+    static <RESOURCE extends AutoCloseable> void parallelStressInTx(
+            Kernel kernel,
+            int nThreads,
+            Function<KernelTransaction, RESOURCE> resourceSupplier,
+            BiFunction<Read, RESOURCE, Runnable> runnable)
+            throws Throwable {
         Race race = new Race();
 
         List<RESOURCE> resources = new ArrayList<>();
-        try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
+        try (KernelTransaction tx = kernel.beginTransaction(EXPLICIT, LoginContext.AUTH_DISABLED)) {
             // assert our test works single-threaded before racing
-            try ( RESOURCE cursor = resourceSupplier.apply( tx ) )
-            {
-                runnable.apply( tx.dataRead(), cursor ).run();
+            try (RESOURCE cursor = resourceSupplier.apply(tx)) {
+                runnable.apply(tx.dataRead(), cursor).run();
             }
 
-            for ( int i = 0; i < nThreads; i++ )
-            {
-                final RESOURCE resource = resourceSupplier.apply( tx );
+            for (int i = 0; i < nThreads; i++) {
+                final RESOURCE resource = resourceSupplier.apply(tx);
 
-                race.addContestant( runnable.apply( tx.dataRead(), resource ), 1 );
+                race.addContestant(runnable.apply(tx.dataRead(), resource), 1);
 
-                resources.add( resource );
+                resources.add(resource);
             }
 
             race.go();
 
             // clean-up
-            closeAllUnchecked( resources );
+            closeAllUnchecked(resources);
             tx.commit();
         }
     }

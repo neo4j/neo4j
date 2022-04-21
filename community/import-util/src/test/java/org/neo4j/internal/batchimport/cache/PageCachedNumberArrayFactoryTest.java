@@ -19,11 +19,15 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -32,63 +36,58 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @PageCacheExtension
-class PageCachedNumberArrayFactoryTest
-{
+class PageCachedNumberArrayFactoryTest {
     @Inject
     private PageCache pageCache;
+
     @Inject
     private TestDirectory directory;
-    private final CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
+    private final CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
     @Test
-    void shouldLogAllocationOnIntArray()
-    {
+    void shouldLogAllocationOnIntArray() {
         // given
-        InternalLog log = mock( InternalLog.class );
-        Path dir = directory.directory( "cache" );
-        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
+        InternalLog log = mock(InternalLog.class);
+        Path dir = directory.directory("cache");
+        PageCachedNumberArrayFactory factory =
+                new PageCachedNumberArrayFactory(pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME);
 
         // when
-        factory.newIntArray( 1_000, -1, 0, INSTANCE ).close();
+        factory.newIntArray(1_000, -1, 0, INSTANCE).close();
 
         // then
-        verify( log ).info( ArgumentMatchers.contains( "Using page-cache backed caching" ) );
+        verify(log).info(ArgumentMatchers.contains("Using page-cache backed caching"));
     }
 
     @Test
-    void shouldLogAllocationOnLongArray()
-    {
+    void shouldLogAllocationOnLongArray() {
         // given
-        InternalLog log = mock( InternalLog.class );
-        Path dir = directory.directory( "cache" );
-        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
+        InternalLog log = mock(InternalLog.class);
+        Path dir = directory.directory("cache");
+        PageCachedNumberArrayFactory factory =
+                new PageCachedNumberArrayFactory(pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME);
 
         // when
-        factory.newLongArray( 1_000, -1, 0, INSTANCE ).close();
+        factory.newLongArray(1_000, -1, 0, INSTANCE).close();
 
         // then
-        verify( log ).info( ArgumentMatchers.contains( "Using page-cache backed caching" ) );
+        verify(log).info(ArgumentMatchers.contains("Using page-cache backed caching"));
     }
 
     @Test
-    void shouldLogAllocationOnByteArray()
-    {
+    void shouldLogAllocationOnByteArray() {
         // given
-        InternalLog log = mock( InternalLog.class );
-        Path dir = directory.directory( "cache" );
-        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
+        InternalLog log = mock(InternalLog.class);
+        Path dir = directory.directory("cache");
+        PageCachedNumberArrayFactory factory =
+                new PageCachedNumberArrayFactory(pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME);
 
         // when
-        factory.newByteArray( 1_000, new byte[4], 0, INSTANCE ).close();
+        factory.newByteArray(1_000, new byte[4], 0, INSTANCE).close();
 
         // then
-        verify( log ).info( ArgumentMatchers.contains( "Using page-cache backed caching" ) );
+        verify(log).info(ArgumentMatchers.contains("Using page-cache backed caching"));
     }
 }

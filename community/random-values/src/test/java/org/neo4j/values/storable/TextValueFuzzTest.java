@@ -19,113 +19,90 @@
  */
 package org.neo4j.values.storable;
 
+import static org.neo4j.values.storable.StringHelpers.assertConsistent;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
-import static org.neo4j.values.storable.StringHelpers.assertConsistent;
-
-@ExtendWith( RandomExtension.class )
-class TextValueFuzzTest
-{
+@ExtendWith(RandomExtension.class)
+class TextValueFuzzTest {
     @Inject
     private RandomSupport random;
 
     private static final int ITERATIONS = 1000;
 
-    @Disabled(
-            "we have decided to stick with String::compareTo under the hood which doesn't respect code point order " +
-            "whenever the code point doesn't fit 16bits" )
+    @Disabled("we have decided to stick with String::compareTo under the hood which doesn't respect code point order "
+            + "whenever the code point doesn't fit 16bits")
     @Test
-    void shouldCompareToForAllValidStrings()
-    {
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            assertConsistent( random.nextString(), random.nextString(),
-                    ( t1, t2 ) -> Math.signum( t1.compareTo( t2 ) ) );
+    void shouldCompareToForAllValidStrings() {
+        for (int i = 0; i < ITERATIONS; i++) {
+            assertConsistent(random.nextString(), random.nextString(), (t1, t2) -> Math.signum(t1.compareTo(t2)));
         }
     }
 
     @Test
-    void shouldCompareToForAllStringsInBasicMultilingualPlane()
-    {
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            assertConsistent( random.nextBasicMultilingualPlaneString(), random.nextBasicMultilingualPlaneString(),
-                    ( t1, t2 ) -> Math.signum( t1.compareTo( t2 ) ) );
+    void shouldCompareToForAllStringsInBasicMultilingualPlane() {
+        for (int i = 0; i < ITERATIONS; i++) {
+            assertConsistent(
+                    random.nextBasicMultilingualPlaneString(),
+                    random.nextBasicMultilingualPlaneString(),
+                    (t1, t2) -> Math.signum(t1.compareTo(t2)));
         }
     }
 
     @Test
-    void shouldAdd()
-    {
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            assertConsistent( random.nextString(), random.nextString(), TextValue::plus );
+    void shouldAdd() {
+        for (int i = 0; i < ITERATIONS; i++) {
+            assertConsistent(random.nextString(), random.nextString(), TextValue::plus);
         }
     }
 
     @Test
-    void shouldComputeLength()
-    {
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            assertConsistent( random.nextString(),  TextValue::length );
+    void shouldComputeLength() {
+        for (int i = 0; i < ITERATIONS; i++) {
+            assertConsistent(random.nextString(), TextValue::length);
         }
     }
 
     @Test
-    void shouldComputeIsEmpty()
-    {
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            assertConsistent( random.nextString(),  TextValue::isEmpty );
+    void shouldComputeIsEmpty() {
+        for (int i = 0; i < ITERATIONS; i++) {
+            assertConsistent(random.nextString(), TextValue::isEmpty);
         }
     }
 
     @Test
-    void shouldReverse()
-    {
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            assertConsistent( random.nextString(),  TextValue::reverse );
+    void shouldReverse() {
+        for (int i = 0; i < ITERATIONS; i++) {
+            assertConsistent(random.nextString(), TextValue::reverse);
         }
     }
 
     @Test
-    void shouldTrim()
-    {
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            assertConsistent( random.nextString(),  TextValue::trim );
+    void shouldTrim() {
+        for (int i = 0; i < ITERATIONS; i++) {
+            assertConsistent(random.nextString(), TextValue::trim);
         }
     }
 
     @Test
-    void shouldHandleStringPredicates()
-    {
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
+    void shouldHandleStringPredicates() {
+        for (int i = 0; i < ITERATIONS; i++) {
             String value = random.nextString();
             String other;
-            if ( random.nextBoolean() )
-            {
+            if (random.nextBoolean()) {
                 other = value;
-            }
-            else
-            {
+            } else {
                 other = random.nextString();
             }
 
-            assertConsistent( value, other, TextValue::startsWith );
-            assertConsistent( value, other, TextValue::endsWith );
-            assertConsistent( value, other, TextValue::contains );
+            assertConsistent(value, other, TextValue::startsWith);
+            assertConsistent(value, other, TextValue::endsWith);
+            assertConsistent(value, other, TextValue::contains);
         }
     }
-
 }

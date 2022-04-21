@@ -19,9 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newArrayList;
+import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
+import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -29,7 +35,9 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
-
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -58,16 +66,6 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.TemporalValueWriterAdapter;
-
-import static org.neo4j.collection.trackable.HeapTrackingCollections.newArrayList;
-import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
-import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -153,8 +151,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  *            seconds in next long block
  * </pre>
  */
-public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader>
-{
+public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHeader> {
     public static final String TYPE_DESCRIPTOR = "PropertyStore";
 
     private final DynamicStringStore stringStore;
@@ -174,228 +171,230 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, configuration, RecordIdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                configuration,
+                RecordIdType.PROPERTY,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                TYPE_DESCRIPTOR,
+                recordFormats.property(),
+                NO_STORE_HEADER_FORMAT,
+                recordFormats.storeVersion(),
+                readOnlyChecker,
+                databaseName,
+                openOptions);
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;
     }
 
-    public DynamicStringStore getStringStore()
-    {
+    public DynamicStringStore getStringStore() {
         return stringStore;
     }
 
-    public DynamicArrayStore getArrayStore()
-    {
+    public DynamicArrayStore getArrayStore() {
         return arrayStore;
     }
 
-    public PropertyKeyTokenStore getPropertyKeyTokenStore()
-    {
+    public PropertyKeyTokenStore getPropertyKeyTokenStore() {
         return propertyKeyTokenStore;
     }
 
     @Override
-    public void updateRecord( PropertyRecord record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext,
-            StoreCursors storeCursors )
-    {
-        updatePropertyBlocks( record, idUpdateListener, cursorContext, storeCursors );
-        super.updateRecord( record, idUpdateListener, cursor, cursorContext, storeCursors );
+    public void updateRecord(
+            PropertyRecord record,
+            IdUpdateListener idUpdateListener,
+            PageCursor cursor,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
+        updatePropertyBlocks(record, idUpdateListener, cursorContext, storeCursors);
+        super.updateRecord(record, idUpdateListener, cursor, cursorContext, storeCursors);
     }
 
-    private void updatePropertyBlocks( PropertyRecord record, IdUpdateListener idUpdateListener, CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        if ( record.inUse() )
-        {
+    private void updatePropertyBlocks(
+            PropertyRecord record,
+            IdUpdateListener idUpdateListener,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
+        if (record.inUse()) {
             // Go through the blocks
-            for ( PropertyBlock block : record )
-            {
+            for (PropertyBlock block : record) {
                 /*
                  * For each block we need to update its dynamic record chain if
                  * it is just created. Deleted dynamic records are in the property
                  * record and dynamic records are never modified. Also, they are
                  * assigned as a whole, so just checking the first should be enough.
                  */
-                if ( !block.isLight()
-                        && block.getValueRecords().get( 0 ).isCreated() )
-                {
-                    updateDynamicRecords( block.getValueRecords(), idUpdateListener, cursorContext, storeCursors );
+                if (!block.isLight() && block.getValueRecords().get(0).isCreated()) {
+                    updateDynamicRecords(block.getValueRecords(), idUpdateListener, cursorContext, storeCursors);
                 }
             }
         }
-        updateDynamicRecords( record.getDeletedRecords(), idUpdateListener, cursorContext, storeCursors );
+        updateDynamicRecords(record.getDeletedRecords(), idUpdateListener, cursorContext, storeCursors);
     }
 
-    private void updateDynamicRecords( List<DynamicRecord> records, IdUpdateListener idUpdateListener, CursorContext cursorContext, StoreCursors storeCursors )
-    {
+    private void updateDynamicRecords(
+            List<DynamicRecord> records,
+            IdUpdateListener idUpdateListener,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
         PageCursor stringCursor = null;
         PageCursor arrayCursor = null;
-        try
-        {
-            for ( DynamicRecord valueRecord : records )
-            {
+        try {
+            for (DynamicRecord valueRecord : records) {
                 PropertyType recordType = valueRecord.getType();
-                if ( recordType == PropertyType.STRING )
-                {
-                    if ( stringCursor == null )
-                    {
-                        stringCursor = storeCursors.writeCursor( DYNAMIC_STRING_STORE_CURSOR );
+                if (recordType == PropertyType.STRING) {
+                    if (stringCursor == null) {
+                        stringCursor = storeCursors.writeCursor(DYNAMIC_STRING_STORE_CURSOR);
                     }
-                    stringStore.updateRecord( valueRecord, idUpdateListener, stringCursor, cursorContext, storeCursors );
-                }
-                else if ( recordType == PropertyType.ARRAY )
-                {
-                    if ( arrayCursor == null )
-                    {
-                        arrayCursor = storeCursors.writeCursor( DYNAMIC_ARRAY_STORE_CURSOR );
+                    stringStore.updateRecord(valueRecord, idUpdateListener, stringCursor, cursorContext, storeCursors);
+                } else if (recordType == PropertyType.ARRAY) {
+                    if (arrayCursor == null) {
+                        arrayCursor = storeCursors.writeCursor(DYNAMIC_ARRAY_STORE_CURSOR);
                     }
-                    arrayStore.updateRecord( valueRecord, idUpdateListener, arrayCursor, cursorContext, storeCursors );
-                }
-                else
-                {
-                    throw new InvalidRecordException( "Unknown dynamic record" + valueRecord );
+                    arrayStore.updateRecord(valueRecord, idUpdateListener, arrayCursor, cursorContext, storeCursors);
+                } else {
+                    throw new InvalidRecordException("Unknown dynamic record" + valueRecord);
                 }
             }
-        }
-        finally
-        {
-            closeAllUnchecked( stringCursor, arrayCursor );
+        } finally {
+            closeAllUnchecked(stringCursor, arrayCursor);
         }
     }
 
     @Override
-    public void ensureHeavy( PropertyRecord record, StoreCursors storeCursors )
-    {
-        for ( PropertyBlock block : record )
-        {
-            ensureHeavy( block, storeCursors );
+    public void ensureHeavy(PropertyRecord record, StoreCursors storeCursors) {
+        for (PropertyBlock block : record) {
+            ensureHeavy(block, storeCursors);
         }
     }
 
-    public void ensureHeavy( PropertyBlock block, StoreCursors storeCursors )
-    {
-        if ( !block.isLight() )
-        {
+    public void ensureHeavy(PropertyBlock block, StoreCursors storeCursors) {
+        if (!block.isLight()) {
             return;
         }
 
         PropertyType type = block.getType();
-        RecordStore<DynamicRecord> dynamicStore = dynamicStoreForValueType( type );
-        if ( dynamicStore != null )
-        {
-            var cursorForType = dynamicStoreCursorForType( storeCursors, type );
-            List<DynamicRecord> dynamicRecords = dynamicStore.getRecords( block.getSingleValueLong(), NORMAL, false, cursorForType );
-            for ( DynamicRecord dynamicRecord : dynamicRecords )
-            {
-                dynamicRecord.setType( type.intValue() );
+        RecordStore<DynamicRecord> dynamicStore = dynamicStoreForValueType(type);
+        if (dynamicStore != null) {
+            var cursorForType = dynamicStoreCursorForType(storeCursors, type);
+            List<DynamicRecord> dynamicRecords =
+                    dynamicStore.getRecords(block.getSingleValueLong(), NORMAL, false, cursorForType);
+            for (DynamicRecord dynamicRecord : dynamicRecords) {
+                dynamicRecord.setType(type.intValue());
             }
-            block.setValueRecords( dynamicRecords );
+            block.setValueRecords(dynamicRecords);
         }
     }
 
-    private PageCursor dynamicStoreCursorForType( StoreCursors storeCursors, PropertyType type )
-    {
-        switch ( type )
-        {
-        case ARRAY:
-            return storeCursors.readCursor( DYNAMIC_ARRAY_STORE_CURSOR );
-        case STRING:
-            return storeCursors.readCursor( DYNAMIC_STRING_STORE_CURSOR );
-        default:
-            throw new IllegalArgumentException( "Unsupported type of dynamic property " + type );
+    private PageCursor dynamicStoreCursorForType(StoreCursors storeCursors, PropertyType type) {
+        switch (type) {
+            case ARRAY:
+                return storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR);
+            case STRING:
+                return storeCursors.readCursor(DYNAMIC_STRING_STORE_CURSOR);
+            default:
+                throw new IllegalArgumentException("Unsupported type of dynamic property " + type);
         }
     }
 
-    private RecordStore<DynamicRecord> dynamicStoreForValueType( PropertyType type )
-    {
-        switch ( type )
-        {
-        case ARRAY:
-            return arrayStore;
-        case STRING:
-            return stringStore;
-        default:
-            return null;
+    private RecordStore<DynamicRecord> dynamicStoreForValueType(PropertyType type) {
+        switch (type) {
+            case ARRAY:
+                return arrayStore;
+            case STRING:
+                return stringStore;
+            default:
+                return null;
         }
     }
 
-    public Value getValue( PropertyBlock propertyBlock, StoreCursors cursors )
-    {
-        return propertyBlock.getType().value( propertyBlock, this, cursors );
+    public Value getValue(PropertyBlock propertyBlock, StoreCursors cursors) {
+        return propertyBlock.getType().value(propertyBlock, this, cursors);
     }
 
-    private static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars, DynamicRecordAllocator allocator, CursorContext cursorContext,
-            MemoryTracker memoryTracker )
-    {
-        AbstractDynamicStore.allocateRecordsFromBytes( target, chars, allocator, cursorContext, memoryTracker );
+    private static void allocateStringRecords(
+            Collection<DynamicRecord> target,
+            byte[] chars,
+            DynamicRecordAllocator allocator,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
+        AbstractDynamicStore.allocateRecordsFromBytes(target, chars, allocator, cursorContext, memoryTracker);
     }
 
-    private static void allocateArrayRecords( Collection<DynamicRecord> target, Object array, DynamicRecordAllocator allocator,
-            CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        DynamicArrayStore.allocateRecords( target, array, allocator, cursorContext, memoryTracker );
+    private static void allocateArrayRecords(
+            Collection<DynamicRecord> target,
+            Object array,
+            DynamicRecordAllocator allocator,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
+        DynamicArrayStore.allocateRecords(target, array, allocator, cursorContext, memoryTracker);
     }
 
-    public void encodeValue( PropertyBlock block, int keyId, Value value, CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        encodeValue( block, keyId, value, stringStore, arrayStore, cursorContext, memoryTracker );
+    public void encodeValue(
+            PropertyBlock block, int keyId, Value value, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        encodeValue(block, keyId, value, stringStore, arrayStore, cursorContext, memoryTracker);
     }
 
-    public static void encodeValue( PropertyBlock block, int keyId, Value value, DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator,
-            CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        if ( value instanceof ArrayValue )
-        {
+    public static void encodeValue(
+            PropertyBlock block,
+            int keyId,
+            Value value,
+            DynamicRecordAllocator stringAllocator,
+            DynamicRecordAllocator arrayAllocator,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
+        if (value instanceof ArrayValue) {
             Object asObject = value.asObject();
 
             // Try short array first, i.e. inlined in the property block
-            if ( ShortArray.encode( keyId, asObject, block, PropertyType.getPayloadSize() ) )
-            {
+            if (ShortArray.encode(keyId, asObject, block, PropertyType.getPayloadSize())) {
                 return;
             }
 
             // Fall back to dynamic array store
-            List<DynamicRecord> arrayRecords = newArrayList( memoryTracker );
-            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, cursorContext, memoryTracker );
-            setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
-            for ( DynamicRecord valueRecord : arrayRecords )
-            {
-                valueRecord.setType( PropertyType.ARRAY.intValue() );
+            List<DynamicRecord> arrayRecords = newArrayList(memoryTracker);
+            allocateArrayRecords(arrayRecords, asObject, arrayAllocator, cursorContext, memoryTracker);
+            setSingleBlockValue(
+                    block,
+                    keyId,
+                    PropertyType.ARRAY,
+                    Iterables.first(arrayRecords).getId());
+            for (DynamicRecord valueRecord : arrayRecords) {
+                valueRecord.setType(PropertyType.ARRAY.intValue());
             }
-            block.setValueRecords( arrayRecords );
-        }
-        else
-        {
-            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, cursorContext, memoryTracker ) );
+            block.setValueRecords(arrayRecords);
+        } else {
+            value.writeTo(new PropertyBlockValueWriter(block, keyId, stringAllocator, cursorContext, memoryTracker));
         }
     }
 
-    public PageCursor openStringPageCursor( long reference, CursorContext cursorContext )
-    {
-        return stringStore.openPageCursorForReading( reference, cursorContext );
+    public PageCursor openStringPageCursor(long reference, CursorContext cursorContext) {
+        return stringStore.openPageCursorForReading(reference, cursorContext);
     }
 
-    public PageCursor openArrayPageCursor( long reference, CursorContext cursorContext )
-    {
-        return arrayStore.openPageCursorForReading( reference, cursorContext );
+    public PageCursor openArrayPageCursor(long reference, CursorContext cursorContext) {
+        return arrayStore.openPageCursorForReading(reference, cursorContext);
     }
 
-    public void loadString( long reference, RecordPropertyCursor propertyCursor, PageCursor page, RecordLoad loadMode )
-    {
-        readDynamic( stringStore, reference, propertyCursor, page, loadMode );
+    public void loadString(long reference, RecordPropertyCursor propertyCursor, PageCursor page, RecordLoad loadMode) {
+        readDynamic(stringStore, reference, propertyCursor, page, loadMode);
     }
 
-    public void loadArray( long reference, RecordPropertyCursor propertyCursor, PageCursor page, RecordLoad loadMode )
-    {
-        readDynamic( arrayStore, reference, propertyCursor, page, loadMode );
+    public void loadArray(long reference, RecordPropertyCursor propertyCursor, PageCursor page, RecordLoad loadMode) {
+        readDynamic(arrayStore, reference, propertyCursor, page, loadMode);
     }
 
-    private static void readDynamic( AbstractDynamicStore store, long reference, RecordPropertyCursor propertyCursor,
-            PageCursor page, RecordLoad loadMode )
-    {
+    private static void readDynamic(
+            AbstractDynamicStore store,
+            long reference,
+            RecordPropertyCursor propertyCursor,
+            PageCursor page,
+            RecordLoad loadMode) {
         var buffer = propertyCursor.getOrCreateClearBuffer();
         DynamicRecord record = store.newRecord();
         // Only instantiated if number of dynamic records reaches a certain threshold, at which point it's instantiated
@@ -403,47 +402,44 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         MutableLongSet seenDynamicIds = null;
         long firstReference = reference;
         int count = 0;
-        do
-        {
-            //We need to load forcefully here since otherwise we can have inconsistent reads
-            //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-            store.getRecordByCursor( reference, record, loadMode, page );
+        do {
+            // We need to load forcefully here since otherwise we can have inconsistent reads
+            // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
+            store.getRecordByCursor(reference, record, loadMode, page);
             reference = record.getNextBlock();
             byte[] data = record.getData();
-            if ( buffer.remaining() < data.length )
-            {
-                buffer = propertyCursor.growBuffer( data.length );
+            if (buffer.remaining() < data.length) {
+                buffer = propertyCursor.growBuffer(data.length);
             }
-            buffer.put( data, 0, data.length );
+            buffer.put(data, 0, data.length);
 
             // An arbitrarily high threshold so that it's very likely only hit on actual chain cycle
-            if ( ++count >= CYCLE_DETECTION_THRESHOLD )
-            {
-                if ( seenDynamicIds == null )
-                {
+            if (++count >= CYCLE_DETECTION_THRESHOLD) {
+                if (seenDynamicIds == null) {
                     seenDynamicIds = LongSets.mutable.empty();
                 }
-                if ( !seenDynamicIds.add( reference ) )
-                {
-                    throw new InconsistentDataReadException( "Chain cycle detected in dynamic property value store %s starting at id:%d", store,
-                            firstReference );
+                if (!seenDynamicIds.add(reference)) {
+                    throw new InconsistentDataReadException(
+                            "Chain cycle detected in dynamic property value store %s starting at id:%d",
+                            store, firstReference);
                 }
             }
-        }
-        while ( reference != NO_ID );
+        } while (reference != NO_ID);
     }
 
-    private static class PropertyBlockValueWriter extends TemporalValueWriterAdapter<IllegalArgumentException>
-    {
+    private static class PropertyBlockValueWriter extends TemporalValueWriterAdapter<IllegalArgumentException> {
         private final PropertyBlock block;
         private final int keyId;
         private final DynamicRecordAllocator stringAllocator;
         private final CursorContext cursorContext;
         private final MemoryTracker memoryTracker;
 
-        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator,
-                CursorContext cursorContext, MemoryTracker memoryTracker )
-        {
+        PropertyBlockValueWriter(
+                PropertyBlock block,
+                int keyId,
+                DynamicRecordAllocator stringAllocator,
+                CursorContext cursorContext,
+                MemoryTracker memoryTracker) {
             this.block = block;
             this.keyId = keyId;
             this.stringAllocator = stringAllocator;
@@ -452,289 +448,245 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
 
         @Override
-        public void writeNull() throws IllegalArgumentException
-        {
-            throw new IllegalArgumentException( "Cannot write null values to the property store" );
+        public void writeNull() throws IllegalArgumentException {
+            throw new IllegalArgumentException("Cannot write null values to the property store");
         }
 
         @Override
-        public void writeBoolean( boolean value ) throws IllegalArgumentException
-        {
-            setSingleBlockValue( block, keyId, PropertyType.BOOL, value ? 1L : 0L );
+        public void writeBoolean(boolean value) throws IllegalArgumentException {
+            setSingleBlockValue(block, keyId, PropertyType.BOOL, value ? 1L : 0L);
         }
 
         @Override
-        public void writeInteger( byte value ) throws IllegalArgumentException
-        {
-            setSingleBlockValue( block, keyId, PropertyType.BYTE, value );
+        public void writeInteger(byte value) throws IllegalArgumentException {
+            setSingleBlockValue(block, keyId, PropertyType.BYTE, value);
         }
 
         @Override
-        public void writeInteger( short value ) throws IllegalArgumentException
-        {
-            setSingleBlockValue( block, keyId, PropertyType.SHORT, value );
+        public void writeInteger(short value) throws IllegalArgumentException {
+            setSingleBlockValue(block, keyId, PropertyType.SHORT, value);
         }
 
         @Override
-        public void writeInteger( int value ) throws IllegalArgumentException
-        {
-            setSingleBlockValue( block, keyId, PropertyType.INT, value );
+        public void writeInteger(int value) throws IllegalArgumentException {
+            setSingleBlockValue(block, keyId, PropertyType.INT, value);
         }
 
         @Override
-        public void writeInteger( long value ) throws IllegalArgumentException
-        {
-            long keyAndType = keyId | (((long) PropertyType.LONG.intValue()) <<
-                                       StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS);
-            if ( ShortArray.LONG.getRequiredBits( value ) <= 35 )
-            {   // We only need one block for this value, special layout compared to, say, an integer
-                block.setSingleBlock( keyAndType | (1L << 28) | (value << 29) );
-            }
-            else
-            {   // We need two blocks for this value
-                block.setValueBlocks( new long[]{keyAndType, value} );
+        public void writeInteger(long value) throws IllegalArgumentException {
+            long keyAndType = keyId
+                    | (((long) PropertyType.LONG.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS);
+            if (ShortArray.LONG.getRequiredBits(value)
+                    <= 35) { // We only need one block for this value, special layout compared to, say, an integer
+                block.setSingleBlock(keyAndType | (1L << 28) | (value << 29));
+            } else { // We need two blocks for this value
+                block.setValueBlocks(new long[] {keyAndType, value});
             }
         }
 
         @Override
-        public void writeFloatingPoint( float value ) throws IllegalArgumentException
-        {
-            setSingleBlockValue( block, keyId, PropertyType.FLOAT, Float.floatToRawIntBits( value ) );
+        public void writeFloatingPoint(float value) throws IllegalArgumentException {
+            setSingleBlockValue(block, keyId, PropertyType.FLOAT, Float.floatToRawIntBits(value));
         }
 
         @Override
-        public void writeFloatingPoint( double value ) throws IllegalArgumentException
-        {
-            block.setValueBlocks( new long[]{
-                    keyId | (((long) PropertyType.DOUBLE.intValue())
-                             << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS),
-                    Double.doubleToRawLongBits( value )
-            } );
+        public void writeFloatingPoint(double value) throws IllegalArgumentException {
+            block.setValueBlocks(new long[] {
+                keyId
+                        | (((long) PropertyType.DOUBLE.intValue())
+                                << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS),
+                Double.doubleToRawLongBits(value)
+            });
         }
 
         @Override
-        public void writeString( String value ) throws IllegalArgumentException
-        {
+        public void writeString(String value) throws IllegalArgumentException {
             // Try short string first, i.e. inlined in the property block
-            if ( LongerShortString.encode( keyId, value, block, PropertyType.getPayloadSize() ) )
-            {
+            if (LongerShortString.encode(keyId, value, block, PropertyType.getPayloadSize())) {
                 return;
             }
 
             // Fall back to dynamic string store
-            byte[] encodedString = encodeString( value );
-            List<DynamicRecord> valueRecords = newArrayList( encodedString.length / stringAllocator.getRecordDataSize() + 1, memoryTracker );
-            allocateStringRecords( valueRecords, encodedString, stringAllocator, cursorContext, memoryTracker );
-            setSingleBlockValue( block, keyId, PropertyType.STRING, Iterables.first( valueRecords ).getId() );
-            for ( DynamicRecord valueRecord : valueRecords )
-            {
-                valueRecord.setType( PropertyType.STRING.intValue() );
+            byte[] encodedString = encodeString(value);
+            List<DynamicRecord> valueRecords =
+                    newArrayList(encodedString.length / stringAllocator.getRecordDataSize() + 1, memoryTracker);
+            allocateStringRecords(valueRecords, encodedString, stringAllocator, cursorContext, memoryTracker);
+            setSingleBlockValue(
+                    block,
+                    keyId,
+                    PropertyType.STRING,
+                    Iterables.first(valueRecords).getId());
+            for (DynamicRecord valueRecord : valueRecords) {
+                valueRecord.setType(PropertyType.STRING.intValue());
             }
-            block.setValueRecords( valueRecords );
+            block.setValueRecords(valueRecords);
         }
 
         @Override
-        public void writeString( char value ) throws IllegalArgumentException
-        {
-            setSingleBlockValue( block, keyId, PropertyType.CHAR, value );
+        public void writeString(char value) throws IllegalArgumentException {
+            setSingleBlockValue(block, keyId, PropertyType.CHAR, value);
         }
 
         @Override
-        public void beginArray( int size, ArrayType arrayType ) throws IllegalArgumentException
-        {
-            throw new IllegalArgumentException( "Cannot persist arrays to property store using ValueWriter" );
+        public void beginArray(int size, ArrayType arrayType) throws IllegalArgumentException {
+            throw new IllegalArgumentException("Cannot persist arrays to property store using ValueWriter");
         }
 
         @Override
-        public void endArray() throws IllegalArgumentException
-        {
-            throw new IllegalArgumentException( "Cannot persist arrays to property store using ValueWriter" );
+        public void endArray() throws IllegalArgumentException {
+            throw new IllegalArgumentException("Cannot persist arrays to property store using ValueWriter");
         }
 
         @Override
-        public void writeByteArray( byte[] value ) throws IllegalArgumentException
-        {
-            throw new IllegalArgumentException( "Cannot persist arrays to property store using ValueWriter" );
+        public void writeByteArray(byte[] value) throws IllegalArgumentException {
+            throw new IllegalArgumentException("Cannot persist arrays to property store using ValueWriter");
         }
 
         @Override
-        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IllegalArgumentException
-        {
-            block.setValueBlocks( GeometryType.encodePoint( keyId, crs, coordinate ) );
+        public void writePoint(CoordinateReferenceSystem crs, double[] coordinate) throws IllegalArgumentException {
+            block.setValueBlocks(GeometryType.encodePoint(keyId, crs, coordinate));
         }
 
         @Override
-        public void writeDuration( long months, long days, long seconds, int nanos ) throws IllegalArgumentException
-        {
-            block.setValueBlocks( TemporalType.encodeDuration( keyId, months, days, seconds, nanos ) );
+        public void writeDuration(long months, long days, long seconds, int nanos) throws IllegalArgumentException {
+            block.setValueBlocks(TemporalType.encodeDuration(keyId, months, days, seconds, nanos));
         }
 
         @Override
-        public void writeDate( long epochDay ) throws IllegalArgumentException
-        {
-            block.setValueBlocks( TemporalType.encodeDate( keyId, epochDay ) );
+        public void writeDate(long epochDay) throws IllegalArgumentException {
+            block.setValueBlocks(TemporalType.encodeDate(keyId, epochDay));
         }
 
         @Override
-        public void writeLocalTime( long nanoOfDay ) throws IllegalArgumentException
-        {
-            block.setValueBlocks( TemporalType.encodeLocalTime( keyId, nanoOfDay ) );
+        public void writeLocalTime(long nanoOfDay) throws IllegalArgumentException {
+            block.setValueBlocks(TemporalType.encodeLocalTime(keyId, nanoOfDay));
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IllegalArgumentException
-        {
-            block.setValueBlocks( TemporalType.encodeTime( keyId, nanosOfDayUTC, offsetSeconds ) );
+        public void writeTime(long nanosOfDayUTC, int offsetSeconds) throws IllegalArgumentException {
+            block.setValueBlocks(TemporalType.encodeTime(keyId, nanosOfDayUTC, offsetSeconds));
         }
 
         @Override
-        public void writeLocalDateTime( long epochSecond, int nano ) throws IllegalArgumentException
-        {
-            block.setValueBlocks( TemporalType.encodeLocalDateTime( keyId, epochSecond, nano ) );
+        public void writeLocalDateTime(long epochSecond, int nano) throws IllegalArgumentException {
+            block.setValueBlocks(TemporalType.encodeLocalDateTime(keyId, epochSecond, nano));
         }
 
         @Override
-        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IllegalArgumentException
-        {
-            block.setValueBlocks( TemporalType.encodeDateTime( keyId, epochSecondUTC, nano, offsetSeconds ) );
+        public void writeDateTime(long epochSecondUTC, int nano, int offsetSeconds) throws IllegalArgumentException {
+            block.setValueBlocks(TemporalType.encodeDateTime(keyId, epochSecondUTC, nano, offsetSeconds));
         }
 
         @Override
-        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IllegalArgumentException
-        {
-            block.setValueBlocks( TemporalType.encodeDateTime( keyId, epochSecondUTC, nano, zoneId ) );
+        public void writeDateTime(long epochSecondUTC, int nano, String zoneId) throws IllegalArgumentException {
+            block.setValueBlocks(TemporalType.encodeDateTime(keyId, epochSecondUTC, nano, zoneId));
         }
-
-    }
-    public static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
-    {
-        block.setSingleBlock( singleBlockLongValue( keyId, type, longValue ) );
     }
 
-    public static long singleBlockLongValue( int keyId, PropertyType type, long longValue )
-    {
-        return keyId | (((long) type.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS) |
-               (longValue << 28);
+    public static void setSingleBlockValue(PropertyBlock block, int keyId, PropertyType type, long longValue) {
+        block.setSingleBlock(singleBlockLongValue(keyId, type, longValue));
     }
 
-    public static byte[] encodeString( String string )
-    {
-        return UTF8.encode( string );
+    public static long singleBlockLongValue(int keyId, PropertyType type, long longValue) {
+        return keyId
+                | (((long) type.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS)
+                | (longValue << 28);
     }
 
-    public static String decodeString( byte[] byteArray )
-    {
-        return UTF8.decode( byteArray );
+    public static byte[] encodeString(String string) {
+        return UTF8.encode(string);
     }
 
-    TextValue getTextValueFor( PropertyBlock propertyBlock, StoreCursors storeCursors )
-    {
-        ensureHeavy( propertyBlock, storeCursors );
-        return getTextValueFor( propertyBlock.getValueRecords(), storeCursors );
+    public static String decodeString(byte[] byteArray) {
+        return UTF8.decode(byteArray);
     }
 
-    public TextValue getTextValueFor( Collection<DynamicRecord> dynamicRecords, StoreCursors storeCursors )
-    {
-        AbstractDynamicStore.HeavyRecordData source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING, storeCursors );
+    TextValue getTextValueFor(PropertyBlock propertyBlock, StoreCursors storeCursors) {
+        ensureHeavy(propertyBlock, storeCursors);
+        return getTextValueFor(propertyBlock.getValueRecords(), storeCursors);
+    }
+
+    public TextValue getTextValueFor(Collection<DynamicRecord> dynamicRecords, StoreCursors storeCursors) {
+        AbstractDynamicStore.HeavyRecordData source =
+                stringStore.readFullByteArray(dynamicRecords, PropertyType.STRING, storeCursors);
         // A string doesn't have a header in the data array
-        return Values.utf8Value( source.data() );
+        return Values.utf8Value(source.data());
     }
 
-    Value getArrayFor( PropertyBlock propertyBlock, StoreCursors storeCursors )
-    {
-        ensureHeavy( propertyBlock, storeCursors );
-        return getArrayFor( propertyBlock.getValueRecords(), storeCursors );
+    Value getArrayFor(PropertyBlock propertyBlock, StoreCursors storeCursors) {
+        ensureHeavy(propertyBlock, storeCursors);
+        return getArrayFor(propertyBlock.getValueRecords(), storeCursors);
     }
 
-    public Value getArrayFor( Collection<DynamicRecord> records, StoreCursors storeCursors )
-    {
-        return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY, storeCursors ) );
+    public Value getArrayFor(Collection<DynamicRecord> records, StoreCursors storeCursors) {
+        return getRightArray(arrayStore.readFullByteArray(records, PropertyType.ARRAY, storeCursors));
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + "]";
     }
 
     @Override
-    public PropertyRecord newRecord()
-    {
-        return new PropertyRecord( -1 );
+    public PropertyRecord newRecord() {
+        return new PropertyRecord(-1);
     }
 
     /**
      * @return a calculator of property value sizes. The returned instance is designed to be used multiple times by a single thread only.
      */
-    public PropertyValueRecordSizeCalculator newValueEncodedSizeCalculator()
-    {
-        return new PropertyValueRecordSizeCalculator( this );
+    public PropertyValueRecordSizeCalculator newValueEncodedSizeCalculator() {
+        return new PropertyValueRecordSizeCalculator(this);
     }
 
-    public static ArrayValue readArrayFromBuffer( ByteBuffer buffer )
-    {
-        if ( buffer.limit() <= 0 )
-        {
-            throw new IllegalStateException( "Given buffer is empty" );
+    public static ArrayValue readArrayFromBuffer(ByteBuffer buffer) {
+        if (buffer.limit() <= 0) {
+            throw new IllegalStateException("Given buffer is empty");
         }
 
         byte typeId = buffer.get();
-        buffer.order( ByteOrder.BIG_ENDIAN );
-        try
-        {
-            if ( typeId == PropertyType.STRING.intValue() )
-            {
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        try {
+            if (typeId == PropertyType.STRING.intValue()) {
                 int arrayLength = buffer.getInt();
                 String[] result = new String[arrayLength];
 
-                for ( int i = 0; i < arrayLength; i++ )
-                {
+                for (int i = 0; i < arrayLength; i++) {
                     int byteLength = buffer.getInt();
-                    result[i] = UTF8.decode( buffer.array(), buffer.position(), byteLength );
-                    buffer.position( buffer.position() + byteLength );
+                    result[i] = UTF8.decode(buffer.array(), buffer.position(), byteLength);
+                    buffer.position(buffer.position() + byteLength);
                 }
-                return Values.stringArray( result );
-            }
-            else if ( typeId == PropertyType.GEOMETRY.intValue() )
-            {
-                GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer( buffer );
+                return Values.stringArray(result);
+            } else if (typeId == PropertyType.GEOMETRY.intValue()) {
+                GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer(buffer);
                 byte[] byteArray = new byte[buffer.limit() - buffer.position()];
-                buffer.get( byteArray );
-                return GeometryType.decodeGeometryArray( header, byteArray );
-            }
-            else if ( typeId == PropertyType.TEMPORAL.intValue() )
-            {
-                TemporalType.TemporalHeader header = TemporalType.TemporalHeader.fromArrayHeaderByteBuffer( buffer );
+                buffer.get(byteArray);
+                return GeometryType.decodeGeometryArray(header, byteArray);
+            } else if (typeId == PropertyType.TEMPORAL.intValue()) {
+                TemporalType.TemporalHeader header = TemporalType.TemporalHeader.fromArrayHeaderByteBuffer(buffer);
                 byte[] byteArray = new byte[buffer.limit() - buffer.position()];
-                buffer.get( byteArray );
-                return TemporalType.decodeTemporalArray( header, byteArray );
-            }
-            else
-            {
-                ShortArray type = ShortArray.typeOf( typeId );
+                buffer.get(byteArray);
+                return TemporalType.decodeTemporalArray(header, byteArray);
+            } else {
+                ShortArray type = ShortArray.typeOf(typeId);
                 int bitsUsedInLastByte = buffer.get();
                 int requiredBits = buffer.get();
-                if ( requiredBits == 0 )
-                {
+                if (requiredBits == 0) {
                     return type.createEmptyArray();
                 }
-                if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
-                {   // Optimization for byte arrays (probably large ones)
+                if (type == ShortArray.BYTE
+                        && requiredBits == Byte.SIZE) { // Optimization for byte arrays (probably large ones)
                     byte[] byteArray = new byte[buffer.limit() - buffer.position()];
-                    buffer.get( byteArray );
-                    return Values.byteArray( byteArray );
-                }
-                else
-                {   // Fallback to the generic approach, which is a slower
-                    Bits bits = Bits.bitsFromBytes( buffer.array(), buffer.position() );
+                    buffer.get(byteArray);
+                    return Values.byteArray(byteArray);
+                } else { // Fallback to the generic approach, which is a slower
+                    Bits bits = Bits.bitsFromBytes(buffer.array(), buffer.position());
                     int length = ((buffer.limit() - buffer.position()) * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
-                    return type.createArray( length, bits, requiredBits );
+                    return type.createArray(length, bits, requiredBits);
                 }
             }
-        }
-        finally
-        {
-            buffer.order( ByteOrder.LITTLE_ENDIAN );
+        } finally {
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
         }
     }
 }

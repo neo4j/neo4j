@@ -19,18 +19,23 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import static java.lang.String.format;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.Changed;
+import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.NoValue;
+import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.UnChanged;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -42,19 +47,11 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
-import static java.lang.String.format;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
-import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.Changed;
-import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.NoValue;
-import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.UnChanged;
-
 /**
  * Represent events related to property changes due to entity addition, deletion or update.
  * This is of use in populating indexes that might be relevant to label/relType and property combinations.
  */
-public class EntityUpdates
-{
+public class EntityUpdates {
     private final long entityId;
 
     // ASSUMPTION: these long arrays are actually sorted sets
@@ -66,84 +63,70 @@ public class EntityUpdates
     private int propertyKeyIdsCursor;
     private boolean hasLoadedAdditionalProperties;
 
-    public static class Builder
-    {
+    public static class Builder {
         private final EntityUpdates updates;
 
-        private Builder( EntityUpdates updates )
-        {
+        private Builder(EntityUpdates updates) {
             this.updates = updates;
         }
 
-        public Builder added( int propertyKeyId, Value value )
-        {
-            updates.put( propertyKeyId, EntityUpdates.after( value ) );
+        public Builder added(int propertyKeyId, Value value) {
+            updates.put(propertyKeyId, EntityUpdates.after(value));
             return this;
         }
 
-        public Builder removed( int propertyKeyId, Value value )
-        {
-            updates.put( propertyKeyId, EntityUpdates.before( value ) );
+        public Builder removed(int propertyKeyId, Value value) {
+            updates.put(propertyKeyId, EntityUpdates.before(value));
             return this;
         }
 
-        public Builder changed( int propertyKeyId, Value before, Value after )
-        {
-            updates.put( propertyKeyId, EntityUpdates.changed( before, after ) );
+        public Builder changed(int propertyKeyId, Value before, Value after) {
+            updates.put(propertyKeyId, EntityUpdates.changed(before, after));
             return this;
         }
 
-        public Builder existing( int propertyKeyId, Value value )
-        {
-            updates.put( propertyKeyId, EntityUpdates.unchanged( value ) );
+        public Builder existing(int propertyKeyId, Value value) {
+            updates.put(propertyKeyId, EntityUpdates.unchanged(value));
             return this;
         }
 
-        public Builder withTokens( long... entityTokens )
-        {
+        public Builder withTokens(long... entityTokens) {
             this.updates.entityTokensBefore = entityTokens;
             this.updates.entityTokensAfter = entityTokens;
             return this;
         }
 
-        public  Builder withTokensBefore( long... entityTokensBefore )
-        {
+        public Builder withTokensBefore(long... entityTokensBefore) {
             this.updates.entityTokensBefore = entityTokensBefore;
             return this;
         }
 
-        public Builder withTokensAfter( long... entityTokensAfter )
-        {
+        public Builder withTokensAfter(long... entityTokensAfter) {
             this.updates.entityTokensAfter = entityTokensAfter;
             return this;
         }
 
-        public EntityUpdates build()
-        {
+        public EntityUpdates build() {
             return updates;
         }
     }
 
-    private void put( int propertyKeyId, PropertyValue propertyValue )
-    {
-        PropertyValue existing = knownProperties.put( propertyKeyId, propertyValue );
-        if ( existing == null )
-        {
-            if ( propertyKeyIdsCursor >= propertyKeyIds.length )
-            {
-                propertyKeyIds = Arrays.copyOf( propertyKeyIds, propertyKeyIdsCursor * 2 );
+    private void put(int propertyKeyId, PropertyValue propertyValue) {
+        PropertyValue existing = knownProperties.put(propertyKeyId, propertyValue);
+        if (existing == null) {
+            if (propertyKeyIdsCursor >= propertyKeyIds.length) {
+                propertyKeyIds = Arrays.copyOf(propertyKeyIds, propertyKeyIdsCursor * 2);
             }
             propertyKeyIds[propertyKeyIdsCursor++] = propertyKeyId;
         }
     }
 
-    public static Builder forEntity( long entityId, boolean propertyListIsComplete )
-    {
-        return new Builder( new EntityUpdates( entityId, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, propertyListIsComplete ) );
+    public static Builder forEntity(long entityId, boolean propertyListIsComplete) {
+        return new Builder(new EntityUpdates(entityId, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, propertyListIsComplete));
     }
 
-    private EntityUpdates( long entityId, long[] entityTokensBefore, long[] entityTokensAfter, boolean propertyListComplete )
-    {
+    private EntityUpdates(
+            long entityId, long[] entityTokensBefore, long[] entityTokensAfter, boolean propertyListComplete) {
         this.entityId = entityId;
         this.entityTokensBefore = entityTokensBefore;
         this.entityTokensAfter = entityTokensAfter;
@@ -152,35 +135,33 @@ public class EntityUpdates
         this.propertyKeyIds = new int[8];
     }
 
-    public final long getEntityId()
-    {
+    public final long getEntityId() {
         return entityId;
     }
 
-    public long[] entityTokensChanged()
-    {
-        return PrimitiveArrays.symmetricDifference( entityTokensBefore, entityTokensAfter );
+    public long[] entityTokensChanged() {
+        return PrimitiveArrays.symmetricDifference(entityTokensBefore, entityTokensAfter);
     }
 
-    public long[] entityTokensUnchanged()
-    {
-        return PrimitiveArrays.intersect( entityTokensBefore, entityTokensAfter );
+    public long[] entityTokensUnchanged() {
+        return PrimitiveArrays.intersect(entityTokensBefore, entityTokensAfter);
     }
 
-    public int[] propertiesChanged()
-    {
-        assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +
-                                                "properties have already been loaded.";
-        Arrays.sort( propertyKeyIds, 0, propertyKeyIdsCursor );
-        return propertyKeyIdsCursor == propertyKeyIds.length ? propertyKeyIds : Arrays.copyOf( propertyKeyIds, propertyKeyIdsCursor );
+    public int[] propertiesChanged() {
+        assert !hasLoadedAdditionalProperties
+                : "Calling propertiesChanged() is not valid after non-changed "
+                        + "properties have already been loaded.";
+        Arrays.sort(propertyKeyIds, 0, propertyKeyIdsCursor);
+        return propertyKeyIdsCursor == propertyKeyIds.length
+                ? propertyKeyIds
+                : Arrays.copyOf(propertyKeyIds, propertyKeyIdsCursor);
     }
 
     /**
      * @return whether or not the list provided from {@link #propertiesChanged()} is the complete list of properties on this node.
      * If {@code false} then the list may contain some properties, whereas there may be other unloaded properties on the persisted existing node.
      */
-    public boolean isPropertyListComplete()
-    {
+    public boolean isPropertyListComplete() {
         return propertyListComplete;
     }
 
@@ -195,11 +176,11 @@ public class EntityUpdates
      * @return IndexEntryUpdates for all relevant index keys
      */
     public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> valueUpdatesForIndexKeys(
-            Iterable<INDEX_KEY> indexKeys )
-    {
-        Iterable<INDEX_KEY> potentiallyRelevant = Iterables.filter( indexKey -> atLeastOneRelevantChange( indexKey.schema() ), indexKeys );
+            Iterable<INDEX_KEY> indexKeys) {
+        Iterable<INDEX_KEY> potentiallyRelevant =
+                Iterables.filter(indexKey -> atLeastOneRelevantChange(indexKey.schema()), indexKeys);
 
-        return gatherUpdatesForPotentials( potentiallyRelevant );
+        return gatherUpdatesForPotentials(potentiallyRelevant);
     }
 
     /**
@@ -217,53 +198,47 @@ public class EntityUpdates
      * @param type EntityType of the indexes
      * @return IndexEntryUpdates for all relevant index keys
      */
-    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> valueUpdatesForIndexKeys( Iterable<INDEX_KEY> indexKeys,
-            StorageReader reader, EntityType type, CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
-    {
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> valueUpdatesForIndexKeys(
+            Iterable<INDEX_KEY> indexKeys,
+            StorageReader reader,
+            EntityType type,
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         List<INDEX_KEY> potentiallyRelevant = new ArrayList<>();
         final MutableIntSet additionalPropertiesToLoad = new IntHashSet();
 
-        for ( INDEX_KEY indexKey : indexKeys )
-        {
-            if ( atLeastOneRelevantChange( indexKey.schema() ) )
-            {
-                potentiallyRelevant.add( indexKey );
-                gatherPropsToLoad( indexKey.schema(), additionalPropertiesToLoad );
+        for (INDEX_KEY indexKey : indexKeys) {
+            if (atLeastOneRelevantChange(indexKey.schema())) {
+                potentiallyRelevant.add(indexKey);
+                gatherPropsToLoad(indexKey.schema(), additionalPropertiesToLoad);
             }
         }
 
-        if ( !additionalPropertiesToLoad.isEmpty() )
-        {
-            loadProperties( reader, additionalPropertiesToLoad, type, cursorContext, storeCursors, memoryTracker );
+        if (!additionalPropertiesToLoad.isEmpty()) {
+            loadProperties(reader, additionalPropertiesToLoad, type, cursorContext, storeCursors, memoryTracker);
         }
 
-        return gatherUpdatesForPotentials( potentiallyRelevant );
+        return gatherUpdatesForPotentials(potentiallyRelevant);
     }
 
-    @SuppressWarnings( "ConstantConditions" )
-    private <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(
-            Iterable<INDEX_KEY> potentiallyRelevant )
-    {
+    @SuppressWarnings("ConstantConditions")
+    private <INDEX_KEY extends SchemaDescriptorSupplier>
+            Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(Iterable<INDEX_KEY> potentiallyRelevant) {
         List<IndexEntryUpdate<INDEX_KEY>> indexUpdates = new ArrayList<>();
-        for ( INDEX_KEY indexKey : potentiallyRelevant )
-        {
+        for (INDEX_KEY indexKey : potentiallyRelevant) {
             SchemaDescriptor schema = indexKey.schema();
-            boolean relevantBefore = relevantBefore( schema );
-            boolean relevantAfter = relevantAfter( schema );
+            boolean relevantBefore = relevantBefore(schema);
+            boolean relevantAfter = relevantAfter(schema);
             int[] propertyIds = schema.getPropertyIds();
-            if ( relevantBefore && !relevantAfter )
-            {
-                indexUpdates.add( IndexEntryUpdate.remove( entityId, indexKey, valuesBefore( propertyIds ) ) );
-            }
-            else if ( !relevantBefore && relevantAfter )
-            {
-                indexUpdates.add( IndexEntryUpdate.add( entityId, indexKey, valuesAfter( propertyIds ) ) );
-            }
-            else if ( relevantBefore && relevantAfter )
-            {
-                if ( valuesChanged( propertyIds, schema.propertySchemaType() ) )
-                {
-                    indexUpdates.add( IndexEntryUpdate.change( entityId, indexKey, valuesBefore( propertyIds ), valuesAfter( propertyIds ) ) );
+            if (relevantBefore && !relevantAfter) {
+                indexUpdates.add(IndexEntryUpdate.remove(entityId, indexKey, valuesBefore(propertyIds)));
+            } else if (!relevantBefore && relevantAfter) {
+                indexUpdates.add(IndexEntryUpdate.add(entityId, indexKey, valuesAfter(propertyIds)));
+            } else if (relevantBefore && relevantAfter) {
+                if (valuesChanged(propertyIds, schema.propertySchemaType())) {
+                    indexUpdates.add(IndexEntryUpdate.change(
+                            entityId, indexKey, valuesBefore(propertyIds), valuesAfter(propertyIds)));
                 }
             }
         }
@@ -277,93 +252,86 @@ public class EntityUpdates
      * @param indexKey The index key to generate entry updates for
      * @param txId ID of the transaction the update comes from.
      */
-    public <INDEX_KEY extends SchemaDescriptorSupplier> Optional<IndexEntryUpdate<INDEX_KEY>> tokenUpdateForIndexKey( INDEX_KEY indexKey, long txId )
-    {
-        if ( indexKey == null || Arrays.equals( entityTokensBefore, entityTokensAfter ) )
-        {
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Optional<IndexEntryUpdate<INDEX_KEY>> tokenUpdateForIndexKey(
+            INDEX_KEY indexKey, long txId) {
+        if (indexKey == null || Arrays.equals(entityTokensBefore, entityTokensAfter)) {
             return Optional.empty();
         }
 
-        return Optional.of( IndexEntryUpdate.change( entityId, indexKey, entityTokensBefore, entityTokensAfter, txId ) );
+        return Optional.of(IndexEntryUpdate.change(entityId, indexKey, entityTokensBefore, entityTokensAfter, txId));
     }
 
-    private boolean relevantBefore( SchemaDescriptor schema )
-    {
-        return schema.isAffected( entityTokensBefore ) && hasPropsBefore( schema.getPropertyIds(), schema.propertySchemaType() );
+    private boolean relevantBefore(SchemaDescriptor schema) {
+        return schema.isAffected(entityTokensBefore)
+                && hasPropsBefore(schema.getPropertyIds(), schema.propertySchemaType());
     }
 
-    private boolean relevantAfter( SchemaDescriptor schema )
-    {
-        return schema.isAffected( entityTokensAfter ) && hasPropsAfter( schema.getPropertyIds(), schema.propertySchemaType() );
+    private boolean relevantAfter(SchemaDescriptor schema) {
+        return schema.isAffected(entityTokensAfter)
+                && hasPropsAfter(schema.getPropertyIds(), schema.propertySchemaType());
     }
 
-    private void loadProperties( StorageReader reader, MutableIntSet additionalPropertiesToLoad, EntityType type, CursorContext cursorContext,
-            StoreCursors storeCursors, MemoryTracker memoryTracker )
-    {
+    private void loadProperties(
+            StorageReader reader,
+            MutableIntSet additionalPropertiesToLoad,
+            EntityType type,
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         hasLoadedAdditionalProperties = true;
-        if ( type == EntityType.NODE )
-        {
-            try ( StorageNodeCursor cursor = reader.allocateNodeCursor( cursorContext, storeCursors ) )
-            {
-                cursor.single( entityId );
-                loadProperties( reader, cursor, additionalPropertiesToLoad, cursorContext, storeCursors, memoryTracker );
+        if (type == EntityType.NODE) {
+            try (StorageNodeCursor cursor = reader.allocateNodeCursor(cursorContext, storeCursors)) {
+                cursor.single(entityId);
+                loadProperties(reader, cursor, additionalPropertiesToLoad, cursorContext, storeCursors, memoryTracker);
             }
-        }
-        else if ( type == EntityType.RELATIONSHIP )
-        {
-            try ( StorageRelationshipScanCursor cursor = reader.allocateRelationshipScanCursor( cursorContext, storeCursors ) )
-            {
-                cursor.single( entityId );
-                loadProperties( reader, cursor, additionalPropertiesToLoad, cursorContext, storeCursors, memoryTracker );
+        } else if (type == EntityType.RELATIONSHIP) {
+            try (StorageRelationshipScanCursor cursor =
+                    reader.allocateRelationshipScanCursor(cursorContext, storeCursors)) {
+                cursor.single(entityId);
+                loadProperties(reader, cursor, additionalPropertiesToLoad, cursorContext, storeCursors, memoryTracker);
             }
         }
 
         // loadProperties removes loaded properties from the input set, so the remaining ones were not on the node
         final IntIterator propertiesWithNoValue = additionalPropertiesToLoad.intIterator();
-        while ( propertiesWithNoValue.hasNext() )
-        {
-            put( propertiesWithNoValue.next(), NO_VALUE );
+        while (propertiesWithNoValue.hasNext()) {
+            put(propertiesWithNoValue.next(), NO_VALUE);
         }
     }
 
-    private void loadProperties( StorageReader reader, StorageEntityCursor cursor, MutableIntSet additionalPropertiesToLoad,
-            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
-    {
-        if ( cursor.next() && cursor.hasProperties() )
-        {
-            try ( StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor( cursorContext, storeCursors, memoryTracker ) )
-            {
-                cursor.properties( propertyCursor, PropertySelection.selection( additionalPropertiesToLoad.toArray() ) );
-                while ( propertyCursor.next() )
-                {
-                    additionalPropertiesToLoad.remove( propertyCursor.propertyKey() );
-                    knownProperties.put( propertyCursor.propertyKey(), unchanged( propertyCursor.propertyValue() ) );
+    private void loadProperties(
+            StorageReader reader,
+            StorageEntityCursor cursor,
+            MutableIntSet additionalPropertiesToLoad,
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
+        if (cursor.next() && cursor.hasProperties()) {
+            try (StoragePropertyCursor propertyCursor =
+                    reader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker)) {
+                cursor.properties(propertyCursor, PropertySelection.selection(additionalPropertiesToLoad.toArray()));
+                while (propertyCursor.next()) {
+                    additionalPropertiesToLoad.remove(propertyCursor.propertyKey());
+                    knownProperties.put(propertyCursor.propertyKey(), unchanged(propertyCursor.propertyValue()));
                 }
             }
         }
     }
 
-    private void gatherPropsToLoad( SchemaDescriptor schema, MutableIntSet target )
-    {
-        for ( int propertyId : schema.getPropertyIds() )
-        {
-            if ( knownProperties.get( propertyId ) == null )
-            {
-                target.add( propertyId );
+    private void gatherPropsToLoad(SchemaDescriptor schema, MutableIntSet target) {
+        for (int propertyId : schema.getPropertyIds()) {
+            if (knownProperties.get(propertyId) == null) {
+                target.add(propertyId);
             }
         }
     }
 
-    private boolean atLeastOneRelevantChange( SchemaDescriptor schema )
-    {
-        boolean affectedBefore = schema.isAffected( entityTokensBefore );
-        boolean affectedAfter = schema.isAffected( entityTokensAfter );
-        if ( affectedBefore && affectedAfter )
-        {
-            for ( int propertyId : schema.getPropertyIds() )
-            {
-                if ( knownProperties.containsKey( propertyId ) )
-                {
+    private boolean atLeastOneRelevantChange(SchemaDescriptor schema) {
+        boolean affectedBefore = schema.isAffected(entityTokensBefore);
+        boolean affectedAfter = schema.isAffected(entityTokensAfter);
+        if (affectedBefore && affectedAfter) {
+            for (int propertyId : schema.getPropertyIds()) {
+                if (knownProperties.containsKey(propertyId)) {
                     return true;
                 }
             }
@@ -372,64 +340,48 @@ public class EntityUpdates
         return affectedBefore || affectedAfter;
     }
 
-    private boolean hasPropsBefore( int[] propertyIds, PropertySchemaType propertySchemaType )
-    {
+    private boolean hasPropsBefore(int[] propertyIds, PropertySchemaType propertySchemaType) {
         boolean found = false;
-        for ( int propertyId : propertyIds )
-        {
-            PropertyValue propertyValue = knownProperties.getIfAbsent( propertyId, () -> NO_VALUE );
-            if ( !propertyValue.hasBefore() )
-            {
-                if ( propertySchemaType == COMPLETE_ALL_TOKENS )
-                {
+        for (int propertyId : propertyIds) {
+            PropertyValue propertyValue = knownProperties.getIfAbsent(propertyId, () -> NO_VALUE);
+            if (!propertyValue.hasBefore()) {
+                if (propertySchemaType == COMPLETE_ALL_TOKENS) {
                     return false;
                 }
-            }
-            else
-            {
+            } else {
                 found = true;
             }
         }
         return found;
     }
 
-    private boolean hasPropsAfter( int[] propertyIds, PropertySchemaType propertySchemaType )
-    {
+    private boolean hasPropsAfter(int[] propertyIds, PropertySchemaType propertySchemaType) {
         boolean found = false;
-        for ( int propertyId : propertyIds )
-        {
-            PropertyValue propertyValue = knownProperties.getIfAbsent( propertyId, () -> NO_VALUE );
-            if ( !propertyValue.hasAfter() )
-            {
-                if ( propertySchemaType == COMPLETE_ALL_TOKENS )
-                {
+        for (int propertyId : propertyIds) {
+            PropertyValue propertyValue = knownProperties.getIfAbsent(propertyId, () -> NO_VALUE);
+            if (!propertyValue.hasAfter()) {
+                if (propertySchemaType == COMPLETE_ALL_TOKENS) {
                     return false;
                 }
-            }
-            else
-            {
+            } else {
                 found = true;
             }
         }
         return found;
     }
 
-    private Value[] valuesBefore( int[] propertyIds )
-    {
+    private Value[] valuesBefore(int[] propertyIds) {
         Value[] values = new Value[propertyIds.length];
-        for ( int i = 0; i < propertyIds.length; i++ )
-        {
-            values[i] = knownProperties.get( propertyIds[i] ).before;
+        for (int i = 0; i < propertyIds.length; i++) {
+            values[i] = knownProperties.get(propertyIds[i]).before;
         }
         return values;
     }
 
-    private Value[] valuesAfter( int[] propertyIds )
-    {
+    private Value[] valuesAfter(int[] propertyIds) {
         Value[] values = new Value[propertyIds.length];
-        for ( int i = 0; i < propertyIds.length; i++ )
-        {
-            PropertyValue propertyValue = knownProperties.get( propertyIds[i] );
+        for (int i = 0; i < propertyIds.length; i++) {
+            PropertyValue propertyValue = knownProperties.get(propertyIds[i]);
             values[i] = propertyValue == null ? null : propertyValue.after;
         }
         return values;
@@ -438,28 +390,22 @@ public class EntityUpdates
     /**
      * This method should only be called in a context where you know that your entity is relevant both before and after
      */
-    private boolean valuesChanged( int[] propertyIds, PropertySchemaType propertySchemaType )
-    {
-        if ( propertySchemaType == COMPLETE_ALL_TOKENS )
-        {
-            // In the case of indexes were all entries must have all indexed tokens, one of the properties must have changed for us to generate a change.
-            for ( int propertyId : propertyIds )
-            {
-                if ( knownProperties.get( propertyId ).type == Changed )
-                {
+    private boolean valuesChanged(int[] propertyIds, PropertySchemaType propertySchemaType) {
+        if (propertySchemaType == COMPLETE_ALL_TOKENS) {
+            // In the case of indexes were all entries must have all indexed tokens, one of the properties must have
+            // changed for us to generate a change.
+            for (int propertyId : propertyIds) {
+                if (knownProperties.get(propertyId).type == Changed) {
                     return true;
                 }
             }
             return false;
-        }
-        else
-        {
-            // In the case of indexes were we index incomplete index entries, we need to update as long as _anything_ happened to one of the indexed properties.
-            for ( int propertyId : propertyIds )
-            {
-                PropertyValueType type = knownProperties.get( propertyId ).type;
-                if ( type != UnChanged && type != NoValue )
-                {
+        } else {
+            // In the case of indexes were we index incomplete index entries, we need to update as long as _anything_
+            // happened to one of the indexed properties.
+            for (int propertyId : propertyIds) {
+                PropertyValueType type = knownProperties.get(propertyId).type;
+                if (type != UnChanged && type != NoValue) {
                     return true;
                 }
             }
@@ -468,49 +414,44 @@ public class EntityUpdates
     }
 
     @Override
-    public String toString()
-    {
-        StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( '[' ).append( entityId );
-        result.append( ", entityTokensBefore:" ).append( Arrays.toString( entityTokensBefore ) );
-        result.append( ", entityTokensAfter:" ).append( Arrays.toString( entityTokensAfter ) );
-        knownProperties.forEachKeyValue( ( key, propertyValue ) ->
-        {
-            result.append( ", " );
-            result.append( key );
-            result.append( " -> " );
-            result.append( propertyValue );
-        } );
-        return result.append( ']' ).toString();
+    public String toString() {
+        StringBuilder result =
+                new StringBuilder(getClass().getSimpleName()).append('[').append(entityId);
+        result.append(", entityTokensBefore:").append(Arrays.toString(entityTokensBefore));
+        result.append(", entityTokensAfter:").append(Arrays.toString(entityTokensAfter));
+        knownProperties.forEachKeyValue((key, propertyValue) -> {
+            result.append(", ");
+            result.append(key);
+            result.append(" -> ");
+            result.append(propertyValue);
+        });
+        return result.append(']').toString();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         EntityUpdates that = (EntityUpdates) o;
-        return entityId == that.entityId && Arrays.equals( entityTokensBefore, that.entityTokensBefore ) &&
-                Arrays.equals( entityTokensAfter, that.entityTokensAfter );
+        return entityId == that.entityId
+                && Arrays.equals(entityTokensBefore, that.entityTokensBefore)
+                && Arrays.equals(entityTokensAfter, that.entityTokensAfter);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
 
-        int result = Objects.hash( entityId );
-        result = 31 * result + Arrays.hashCode( entityTokensBefore );
-        result = 31 * result + Arrays.hashCode( entityTokensAfter );
+        int result = Objects.hash(entityId);
+        result = 31 * result + Arrays.hashCode(entityTokensBefore);
+        result = 31 * result + Arrays.hashCode(entityTokensAfter);
         return result;
     }
 
-    enum PropertyValueType
-    {
+    enum PropertyValueType {
         NoValue,
         Before,
         After,
@@ -518,76 +459,75 @@ public class EntityUpdates
         Changed
     }
 
-    private static class PropertyValue
-    {
+    private static class PropertyValue {
         private final Value before;
         private final Value after;
         private final PropertyValueType type;
 
-        private PropertyValue( Value before, Value after, PropertyValueType type )
-        {
+        private PropertyValue(Value before, Value after, PropertyValueType type) {
             this.before = before;
             this.after = after;
             this.type = type;
         }
 
-        boolean hasBefore()
-        {
+        boolean hasBefore() {
             return before != null;
         }
 
-        boolean hasAfter()
-        {
+        boolean hasAfter() {
             return after != null;
         }
 
         @Override
-        public String toString()
-        {
-            switch ( type )
-            {
-            case NoValue:   return "NoValue";
-            case Before:    return format( "Before(%s)", before );
-            case After:     return format( "After(%s)", after );
-            case UnChanged: return format( "UnChanged(%s)", after );
-            case Changed:   return format( "Changed(from=%s, to=%s)", before, after );
-            default:        throw new IllegalStateException( "This cannot happen!" );
+        public String toString() {
+            switch (type) {
+                case NoValue:
+                    return "NoValue";
+                case Before:
+                    return format("Before(%s)", before);
+                case After:
+                    return format("After(%s)", after);
+                case UnChanged:
+                    return format("UnChanged(%s)", after);
+                case Changed:
+                    return format("Changed(from=%s, to=%s)", before, after);
+                default:
+                    throw new IllegalStateException("This cannot happen!");
             }
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
 
             PropertyValue that = (PropertyValue) o;
-            if ( type != that.type )
-            {
+            if (type != that.type) {
                 return false;
             }
 
-            switch ( type )
-            {
-            case NoValue:   return true;
-            case Before:    return before.equals( that.before );
-            case After:     return after.equals( that.after );
-            case UnChanged: return after.equals( that.after );
-            case Changed:   return before.equals( that.before ) &&
-                    after.equals( that.after );
-            default:        throw new IllegalStateException( "This cannot happen!" );
+            switch (type) {
+                case NoValue:
+                    return true;
+                case Before:
+                    return before.equals(that.before);
+                case After:
+                    return after.equals(that.after);
+                case UnChanged:
+                    return after.equals(that.after);
+                case Changed:
+                    return before.equals(that.before) && after.equals(that.after);
+                default:
+                    throw new IllegalStateException("This cannot happen!");
             }
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             int result = before != null ? before.hashCode() : 0;
             result = 31 * result + (after != null ? after.hashCode() : 0);
             result = 31 * result + (type != null ? type.hashCode() : 0);
@@ -595,25 +535,21 @@ public class EntityUpdates
         }
     }
 
-    private static final PropertyValue NO_VALUE = new PropertyValue( null, null, NoValue );
+    private static final PropertyValue NO_VALUE = new PropertyValue(null, null, NoValue);
 
-    private static PropertyValue before( Value value )
-    {
-        return new PropertyValue( value, null, PropertyValueType.Before );
+    private static PropertyValue before(Value value) {
+        return new PropertyValue(value, null, PropertyValueType.Before);
     }
 
-    private static PropertyValue after( Value value )
-    {
-        return new PropertyValue( null, value, PropertyValueType.After );
+    private static PropertyValue after(Value value) {
+        return new PropertyValue(null, value, PropertyValueType.After);
     }
 
-    private static PropertyValue unchanged( Value value )
-    {
-        return new PropertyValue( value, value, PropertyValueType.UnChanged );
+    private static PropertyValue unchanged(Value value) {
+        return new PropertyValue(value, value, PropertyValueType.UnChanged);
     }
 
-    private static PropertyValue changed( Value before, Value after )
-    {
-        return new PropertyValue( before, after, PropertyValueType.Changed );
+    private static PropertyValue changed(Value before, Value after) {
+        return new PropertyValue(before, after, PropertyValueType.Changed);
     }
 }

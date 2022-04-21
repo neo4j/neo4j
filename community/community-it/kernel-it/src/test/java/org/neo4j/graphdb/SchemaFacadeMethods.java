@@ -19,49 +19,53 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-
-import org.neo4j.graphdb.schema.AnyTokens;
-import org.neo4j.graphdb.schema.Schema;
-
 import static org.neo4j.graphdb.FacadeMethod.FOO;
 import static org.neo4j.graphdb.FacadeMethod.INDEX_DEFINITION;
 import static org.neo4j.graphdb.FacadeMethod.LABEL;
 
-public enum SchemaFacadeMethods implements Consumer<Schema>
-{
-    INDEX_FOR_LABEL( new FacadeMethod<>( "IndexCreator indexFor( Label label )", s -> s.indexFor( LABEL ) ) ),
-    INDEX_FOR_REL_TYPE( new FacadeMethod<>( "IndexCreator indexFor( RelationshipType type )", s -> s.indexFor( FOO ) ) ),
-    INDEX_FOR_TOKENS( new FacadeMethod<>( "IndexCreator indexFor( AnyTokens tokens )", s -> s.indexFor( AnyTokens.ANY_LABELS ) ) ),
-    GET_INDEXES_BY_LABEL( new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes( Label label )", s -> s.getIndexes( LABEL ) ) ),
-    GET_INDEXES_BY_REL_TYPE( new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes( RelationshipType relationshipType )", s -> s.getIndexes( FOO ) ) ),
-    GET_INDEXES( new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes()", Schema::getIndexes ) ),
-    GET_INDEX_STATE( new FacadeMethod<>( "IndexState getIndexState( IndexDefinition index )", s -> s.getIndexState( INDEX_DEFINITION ) ) ),
-    GET_INDEX_FAILURE( new FacadeMethod<>( "String getIndexFailure( IndexDefinition index )", s -> s.getIndexFailure( INDEX_DEFINITION ) ) ),
-    CONSTRAINT_FOR( new FacadeMethod<>( "ConstraintCreator constraintFor( Label label )", s -> s.constraintFor( LABEL ) ) ),
-    GET_CONSTRAINTS_BY_LABEL( new FacadeMethod<>( "Iterable<ConstraintDefinition> getConstraints( Label label )", s -> s.getConstraints( LABEL ) ) ),
-    GET_CONSTRAINTS( new FacadeMethod<>( "Iterable<ConstraintDefinition> getConstraints()", Schema::getConstraints ) ),
-    AWAIT_INDEX_ONLINE( new FacadeMethod<>( "void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )",
-            s -> s.awaitIndexOnline( INDEX_DEFINITION, 1L, TimeUnit.SECONDS ) ) ),
-    AWAIT_INDEXES_ONLINE( new FacadeMethod<>( "void awaitIndexesOnline( long duration, TimeUnit unit )", s -> s.awaitIndexesOnline( 1L, TimeUnit.SECONDS ) ) );
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import org.neo4j.graphdb.schema.AnyTokens;
+import org.neo4j.graphdb.schema.Schema;
+
+public enum SchemaFacadeMethods implements Consumer<Schema> {
+    INDEX_FOR_LABEL(new FacadeMethod<>("IndexCreator indexFor( Label label )", s -> s.indexFor(LABEL))),
+    INDEX_FOR_REL_TYPE(new FacadeMethod<>("IndexCreator indexFor( RelationshipType type )", s -> s.indexFor(FOO))),
+    INDEX_FOR_TOKENS(
+            new FacadeMethod<>("IndexCreator indexFor( AnyTokens tokens )", s -> s.indexFor(AnyTokens.ANY_LABELS))),
+    GET_INDEXES_BY_LABEL(
+            new FacadeMethod<>("Iterable<IndexDefinition> getIndexes( Label label )", s -> s.getIndexes(LABEL))),
+    GET_INDEXES_BY_REL_TYPE(new FacadeMethod<>(
+            "Iterable<IndexDefinition> getIndexes( RelationshipType relationshipType )", s -> s.getIndexes(FOO))),
+    GET_INDEXES(new FacadeMethod<>("Iterable<IndexDefinition> getIndexes()", Schema::getIndexes)),
+    GET_INDEX_STATE(new FacadeMethod<>(
+            "IndexState getIndexState( IndexDefinition index )", s -> s.getIndexState(INDEX_DEFINITION))),
+    GET_INDEX_FAILURE(new FacadeMethod<>(
+            "String getIndexFailure( IndexDefinition index )", s -> s.getIndexFailure(INDEX_DEFINITION))),
+    CONSTRAINT_FOR(new FacadeMethod<>("ConstraintCreator constraintFor( Label label )", s -> s.constraintFor(LABEL))),
+    GET_CONSTRAINTS_BY_LABEL(new FacadeMethod<>(
+            "Iterable<ConstraintDefinition> getConstraints( Label label )", s -> s.getConstraints(LABEL))),
+    GET_CONSTRAINTS(new FacadeMethod<>("Iterable<ConstraintDefinition> getConstraints()", Schema::getConstraints)),
+    AWAIT_INDEX_ONLINE(new FacadeMethod<>(
+            "void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )",
+            s -> s.awaitIndexOnline(INDEX_DEFINITION, 1L, TimeUnit.SECONDS))),
+    AWAIT_INDEXES_ONLINE(new FacadeMethod<>(
+            "void awaitIndexesOnline( long duration, TimeUnit unit )",
+            s -> s.awaitIndexesOnline(1L, TimeUnit.SECONDS)));
 
     private final FacadeMethod<Schema> facadeMethod;
 
-    SchemaFacadeMethods( FacadeMethod<Schema> facadeMethod )
-    {
+    SchemaFacadeMethods(FacadeMethod<Schema> facadeMethod) {
         this.facadeMethod = facadeMethod;
     }
 
     @Override
-    public void accept( Schema schema )
-    {
-        facadeMethod.accept( schema );
+    public void accept(Schema schema) {
+        facadeMethod.accept(schema);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return facadeMethod.toString();
     }
 }

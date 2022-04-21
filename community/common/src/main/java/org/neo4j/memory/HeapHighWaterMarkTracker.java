@@ -22,8 +22,7 @@ package org.neo4j.memory;
 /**
  * Tracker that is possibly capable of reporting the high water mark of number of allocated bytes on the heap.
  */
-public interface HeapHighWaterMarkTracker
-{
+public interface HeapHighWaterMarkTracker {
     long ALLOCATIONS_NOT_TRACKED = -1L;
 
     HeapHighWaterMarkTracker NONE = () -> ALLOCATIONS_NOT_TRACKED;

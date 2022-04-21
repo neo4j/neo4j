@@ -22,10 +22,8 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class IndexBrokenKernelException extends KernelException
-{
-    public IndexBrokenKernelException( String indexFailureCause )
-    {
-        super( Status.General.IndexCorruptionDetected, "The index is in a failed state: '%s'.", indexFailureCause );
+public class IndexBrokenKernelException extends KernelException {
+    public IndexBrokenKernelException(String indexFailureCause) {
+        super(Status.General.IndexCorruptionDetected, "The index is in a failed state: '%s'.", indexFailureCause);
     }
 }

@@ -19,18 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.DoubleLatch;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,8 +28,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
-class IndexSamplingJobTrackerTest
-{
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.DoubleLatch;
+
+class IndexSamplingJobTrackerTest {
     private static final long indexId11 = 0;
     private static final long indexId12 = 1;
     private static final long indexId22 = 2;
@@ -49,27 +46,23 @@ class IndexSamplingJobTrackerTest
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @AfterEach
-    void tearDown() throws Exception
-    {
+    void tearDown() throws Exception {
         executorService.shutdownNow();
         jobScheduler.shutdown();
     }
 
     @Test
-    void shouldNotRunASampleJobWhichIsAlreadyRunning()
-    {
+    void shouldNotRunASampleJobWhichIsAlreadyRunning() {
         // given
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler, "test database" );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker(jobScheduler, "test database");
         final DoubleLatch latch = new DoubleLatch();
 
         // when
-        final AtomicInteger count = new AtomicInteger( 0 );
+        final AtomicInteger count = new AtomicInteger(0);
 
-        IndexSamplingJob job = new IndexSamplingJob()
-        {
+        IndexSamplingJob job = new IndexSamplingJob() {
             @Override
-            public void run()
-            {
+            public void run() {
                 count.incrementAndGet();
 
                 latch.waitForAllToStart();
@@ -77,112 +70,99 @@ class IndexSamplingJobTrackerTest
             }
 
             @Override
-            public long indexId()
-            {
+            public long indexId() {
                 return indexId12;
             }
 
             @Override
-            public String indexName()
-            {
+            public String indexName() {
                 return "test database";
             }
         };
 
-        jobTracker.scheduleSamplingJob( job );
-        jobTracker.scheduleSamplingJob( job );
+        jobTracker.scheduleSamplingJob(job);
+        jobTracker.scheduleSamplingJob(job);
 
         latch.startAndWaitForAllToStart();
         latch.waitForAllToFinish();
 
-        assertEquals( 1, count.get() );
+        assertEquals(1, count.get());
     }
 
     @Test
-    void shouldDoNothingWhenUsedAfterBeingStopped()
-    {
+    void shouldDoNothingWhenUsedAfterBeingStopped() {
         // Given
-        JobScheduler scheduler = mock( JobScheduler.class );
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, "test database" );
+        JobScheduler scheduler = mock(JobScheduler.class);
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker(scheduler, "test database");
         jobTracker.stopAndAwaitAllJobs();
 
         // When
-        jobTracker.scheduleSamplingJob( mock( IndexSamplingJob.class ) );
+        jobTracker.scheduleSamplingJob(mock(IndexSamplingJob.class));
 
         // Then
-        verifyNoInteractions( scheduler );
+        verifyNoInteractions(scheduler);
     }
 
     @Test
-    void shouldStopAndWaitForAllJobsToFinish() throws Exception
-    {
+    void shouldStopAndWaitForAllJobsToFinish() throws Exception {
         // Given
-        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler, "test database" );
-        final CountDownLatch latch1 = new CountDownLatch( 1 );
-        final CountDownLatch latch2 = new CountDownLatch( 1 );
+        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker(jobScheduler, "test database");
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
 
-        WaitingIndexSamplingJob job1 = new WaitingIndexSamplingJob( indexId11, latch1 );
-        WaitingIndexSamplingJob job2 = new WaitingIndexSamplingJob( indexId22, latch1 );
+        WaitingIndexSamplingJob job1 = new WaitingIndexSamplingJob(indexId11, latch1);
+        WaitingIndexSamplingJob job2 = new WaitingIndexSamplingJob(indexId22, latch1);
 
-        jobTracker.scheduleSamplingJob( job1 );
-        jobTracker.scheduleSamplingJob( job2 );
+        jobTracker.scheduleSamplingJob(job1);
+        jobTracker.scheduleSamplingJob(job2);
 
-        Future<?> stopping = executorService.submit( () ->
-        {
+        Future<?> stopping = executorService.submit(() -> {
             latch2.countDown();
             jobTracker.stopAndAwaitAllJobs();
-        } );
+        });
 
         // When
         latch2.await();
-        assertFalse( stopping.isDone() );
+        assertFalse(stopping.isDone());
         latch1.countDown();
-        stopping.get( 5, SECONDS );
+        stopping.get(5, SECONDS);
 
         // Then
-        assertTrue( stopping.isDone() );
-        assertNull( stopping.get() );
-        assertTrue( job1.executed );
-        assertTrue( job2.executed );
+        assertTrue(stopping.isDone());
+        assertNull(stopping.get());
+        assertTrue(job1.executed);
+        assertTrue(job2.executed);
     }
 
-    private static class WaitingIndexSamplingJob implements IndexSamplingJob
-    {
+    private static class WaitingIndexSamplingJob implements IndexSamplingJob {
         final long indexId;
         final CountDownLatch latch;
 
         volatile boolean executed;
 
-        WaitingIndexSamplingJob( long indexId, CountDownLatch latch )
-        {
+        WaitingIndexSamplingJob(long indexId, CountDownLatch latch) {
             this.indexId = indexId;
             this.latch = latch;
         }
 
         @Override
-        public long indexId()
-        {
+        public long indexId() {
             return indexId;
         }
 
         @Override
-        public String indexName()
-        {
+        public String indexName() {
             return "test database";
         }
 
         @Override
-        public void run()
-        {
-            try
-            {
+        public void run() {
+            try {
                 latch.await();
                 executed = true;
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new RuntimeException( e );
+                throw new RuntimeException(e);
             }
         }
     }

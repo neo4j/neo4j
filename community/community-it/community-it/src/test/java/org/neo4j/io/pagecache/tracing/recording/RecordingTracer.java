@@ -27,30 +27,25 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Predicate;
 
-public class RecordingTracer
-{
+public class RecordingTracer {
     private final Set<Class<? extends Event>> eventTypesToTrace = new HashSet<>();
     private final BlockingQueue<Event> record = new LinkedBlockingQueue<>();
     private CountDownLatch trapLatch;
     private Predicate<Event> trap;
 
     @SafeVarargs
-    public RecordingTracer( Class<? extends Event>... eventTypesToTrace )
-    {
-        Collections.addAll( this.eventTypesToTrace, eventTypesToTrace );
+    public RecordingTracer(Class<? extends Event>... eventTypesToTrace) {
+        Collections.addAll(this.eventTypesToTrace, eventTypesToTrace);
     }
 
-    public <T extends Event> T observe( Class<T> type ) throws InterruptedException
-    {
-        return type.cast( record.take() );
+    public <T extends Event> T observe(Class<T> type) throws InterruptedException {
+        return type.cast(record.take());
     }
 
-    protected void record( Event event )
-    {
-        if ( eventTypesToTrace.contains( event.getClass() ) )
-        {
-            record.add( event );
-            trip( event );
+    protected void record(Event event) {
+        if (eventTypesToTrace.contains(event.getClass())) {
+            record.add(event);
+            trip(event);
         }
     }
 
@@ -59,39 +54,31 @@ public class RecordingTracer
      * When the eviction thread performs the given trap-event, it will block on the latch after
      * making the event observable.
      */
-    public synchronized CountDownLatch trap( Predicate<Event> trap )
-    {
+    public synchronized CountDownLatch trap(Predicate<Event> trap) {
         assert trap != null;
-        trapLatch = new CountDownLatch( 1 );
+        trapLatch = new CountDownLatch(1);
         this.trap = trap;
         return trapLatch;
     }
 
-    private void trip( Event event )
-    {
+    private void trip(Event event) {
         Predicate<Event> theTrap;
         CountDownLatch theTrapLatch;
 
         // The synchronized block is in here, so we don't risk calling await on
         // the trapLatch while holding the monitor lock.
-        synchronized ( this )
-        {
+        synchronized (this) {
             theTrap = trap;
             theTrapLatch = trapLatch;
         }
 
-        if ( theTrap != null && theTrap.test( event ) )
-        {
-            try
-            {
+        if (theTrap != null && theTrap.test(event)) {
+            try {
                 theTrapLatch.await();
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new RuntimeException( "Unexpected interrupt in RecordingMonitor", e );
+                throw new RuntimeException("Unexpected interrupt in RecordingMonitor", e);
             }
         }
     }
-
 }

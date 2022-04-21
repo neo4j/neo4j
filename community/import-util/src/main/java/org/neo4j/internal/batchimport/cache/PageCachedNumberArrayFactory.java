@@ -19,88 +19,84 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static java.util.Objects.requireNonNull;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-import static java.util.Objects.requireNonNull;
-import static org.eclipse.collections.impl.factory.Sets.immutable;
-
 /**
  * Factory of page cache backed number arrays.
  * @see NumberArrayFactory
  */
-public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
-{
+public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter {
     private final PageCache pageCache;
     private final Path storeDir;
     private final String databaseName;
     private final CursorContextFactory contextFactory;
     private final InternalLog log;
 
-    public PageCachedNumberArrayFactory( PageCache pageCache, CursorContextFactory contextFactory, Path storeDir, InternalLog log, String databaseName )
-    {
-        this.pageCache = requireNonNull( pageCache );
+    public PageCachedNumberArrayFactory(
+            PageCache pageCache,
+            CursorContextFactory contextFactory,
+            Path storeDir,
+            InternalLog log,
+            String databaseName) {
+        this.pageCache = requireNonNull(pageCache);
         this.log = log;
-        this.contextFactory = requireNonNull( contextFactory );
-        this.storeDir = requireNonNull( storeDir );
+        this.contextFactory = requireNonNull(contextFactory);
+        this.storeDir = requireNonNull(storeDir);
         this.databaseName = databaseName;
     }
 
     @Override
-    public IntArray newIntArray( long length, int defaultValue, long base, MemoryTracker memoryTracker )
-    {
-        try
-        {
-            Path tempFile = Files.createTempFile( storeDir, "intArray", ".tmp" );
-            PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), databaseName, immutable.of( DELETE_ON_CLOSE, CREATE ) );
-            log.info( "Using page-cache backed caching, this may affect performance negatively. IntArray length:" + length );
-            return new PageCacheIntArray( pagedFile, contextFactory, length, defaultValue, base );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public IntArray newIntArray(long length, int defaultValue, long base, MemoryTracker memoryTracker) {
+        try {
+            Path tempFile = Files.createTempFile(storeDir, "intArray", ".tmp");
+            PagedFile pagedFile =
+                    pageCache.map(tempFile, pageCache.pageSize(), databaseName, immutable.of(DELETE_ON_CLOSE, CREATE));
+            log.info("Using page-cache backed caching, this may affect performance negatively. IntArray length:"
+                    + length);
+            return new PageCacheIntArray(pagedFile, contextFactory, length, defaultValue, base);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public LongArray newLongArray( long length, long defaultValue, long base, MemoryTracker memoryTracker )
-    {
-        try
-        {
-            Path tempFile = Files.createTempFile( storeDir, "longArray", ".tmp" );
-            PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), databaseName, immutable.of( DELETE_ON_CLOSE, CREATE ) );
-            log.info( "Using page-cache backed caching, this may affect performance negatively. LongArray length:" + length );
-            return new PageCacheLongArray( pagedFile, contextFactory, length, defaultValue, base );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public LongArray newLongArray(long length, long defaultValue, long base, MemoryTracker memoryTracker) {
+        try {
+            Path tempFile = Files.createTempFile(storeDir, "longArray", ".tmp");
+            PagedFile pagedFile =
+                    pageCache.map(tempFile, pageCache.pageSize(), databaseName, immutable.of(DELETE_ON_CLOSE, CREATE));
+            log.info("Using page-cache backed caching, this may affect performance negatively. LongArray length:"
+                    + length);
+            return new PageCacheLongArray(pagedFile, contextFactory, length, defaultValue, base);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public ByteArray newByteArray( long length, byte[] defaultValue, long base, MemoryTracker memoryTracker )
-    {
-        try
-        {
-            Path tempFile = Files.createTempFile( storeDir, "byteArray", ".tmp" );
-            PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), databaseName, immutable.of( DELETE_ON_CLOSE, CREATE ) );
-            log.info( "Using page-cache backed caching, this may affect performance negatively. ByteArray length:" + length );
-            return new PageCacheByteArray( pagedFile, contextFactory, length, defaultValue, base );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public ByteArray newByteArray(long length, byte[] defaultValue, long base, MemoryTracker memoryTracker) {
+        try {
+            Path tempFile = Files.createTempFile(storeDir, "byteArray", ".tmp");
+            PagedFile pagedFile =
+                    pageCache.map(tempFile, pageCache.pageSize(), databaseName, immutable.of(DELETE_ON_CLOSE, CREATE));
+            log.info("Using page-cache backed caching, this may affect performance negatively. ByteArray length:"
+                    + length);
+            return new PageCacheByteArray(pagedFile, contextFactory, length, defaultValue, base);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

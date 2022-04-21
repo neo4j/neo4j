@@ -26,22 +26,29 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 
-public class SingleSourceShortestPathDijkstraTest extends
-    SingleSourceShortestPathTest
-{
+public class SingleSourceShortestPathDijkstraTest extends SingleSourceShortestPathTest {
     @Override
-    protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
-        Node startNode )
-    {
-        return new SingleSourceShortestPathDijkstra<>( 0, startNode, ( relationship, direction ) -> 1, new IntegerAdder(),
-                Integer::compareTo, Direction.BOTH, MyRelTypes.R1 );
+    protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(Node startNode) {
+        return new SingleSourceShortestPathDijkstra<>(
+                0,
+                startNode,
+                (relationship, direction) -> 1,
+                new IntegerAdder(),
+                Integer::compareTo,
+                Direction.BOTH,
+                MyRelTypes.R1);
     }
 
     @Override
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
-        Node startNode, Direction direction, RelationshipType... relTypes )
-    {
-        return new SingleSourceShortestPathDijkstra<>( 0, startNode, ( relationship, direction1 ) -> 1, new IntegerAdder(),
-                Integer::compareTo, direction, relTypes );
+            Node startNode, Direction direction, RelationshipType... relTypes) {
+        return new SingleSourceShortestPathDijkstra<>(
+                0,
+                startNode,
+                (relationship, direction1) -> 1,
+                new IntegerAdder(),
+                Integer::compareTo,
+                direction,
+                relTypes);
     }
 }

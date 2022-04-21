@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api.cursor;
 
-public interface CursorType
-{
+public interface CursorType {
     /**
      * @return A storage-engine unique value for this specific cursor type
      */

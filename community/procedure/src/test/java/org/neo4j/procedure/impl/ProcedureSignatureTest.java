@@ -19,72 +19,77 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.kernel.api.procs.FieldSignature;
-import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
-import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
-@SuppressWarnings( "WeakerAccess" )
-public class ProcedureSignatureTest
-{
-    private static final ProcedureSignature signature = procedureSignature( "asd" ).in( "a", Neo4jTypes.NTAny ).build();
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+
+@SuppressWarnings("WeakerAccess")
+public class ProcedureSignatureTest {
+    private static final ProcedureSignature signature =
+            procedureSignature("asd").in("a", Neo4jTypes.NTAny).build();
 
     @Test
-    void inputSignatureShouldNotBeModifiable()
-    {
-        assertThrows( UnsupportedOperationException.class, () -> signature.inputSignature().add( FieldSignature.inputField( "b", Neo4jTypes.NTAny ) ) );
+    void inputSignatureShouldNotBeModifiable() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> signature.inputSignature().add(FieldSignature.inputField("b", Neo4jTypes.NTAny)));
     }
 
     @Test
-    void outputSignatureShouldNotBeModifiable()
-    {
-        assertThrows( UnsupportedOperationException.class, () -> signature.outputSignature().add( FieldSignature.outputField( "b", Neo4jTypes.NTAny ) ) );
+    void outputSignatureShouldNotBeModifiable() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> signature.outputSignature().add(FieldSignature.outputField("b", Neo4jTypes.NTAny)));
     }
 
     @Test
-    void shouldHonorVoidInEquals()
-    {
-        ProcedureSignature sig1 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).build();
-        ProcedureSignature sig2 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).out( ProcedureSignature.VOID ).build();
-        ProcedureSignature sig2clone = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).out( ProcedureSignature.VOID ).build();
+    void shouldHonorVoidInEquals() {
+        ProcedureSignature sig1 =
+                procedureSignature("foo").in("a", Neo4jTypes.NTAny).build();
+        ProcedureSignature sig2 = procedureSignature("foo")
+                .in("a", Neo4jTypes.NTAny)
+                .out(ProcedureSignature.VOID)
+                .build();
+        ProcedureSignature sig2clone = procedureSignature("foo")
+                .in("a", Neo4jTypes.NTAny)
+                .out(ProcedureSignature.VOID)
+                .build();
 
-        assertEquals( sig2, sig2clone );
-        assertNotEquals( sig1, sig2 );
+        assertEquals(sig2, sig2clone);
+        assertNotEquals(sig1, sig2);
     }
 
     @Test
-    void toStringShouldMatchCypherSyntax()
-    {
+    void toStringShouldMatchCypherSyntax() {
         // When
-        String toStr = procedureSignature( "org", "myProcedure" )
-                .in( "inputArg", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
-                .out( "outputArg", Neo4jTypes.NTNumber )
+        String toStr = procedureSignature("org", "myProcedure")
+                .in("inputArg", Neo4jTypes.NTList(Neo4jTypes.NTString))
+                .out("outputArg", Neo4jTypes.NTNumber)
                 .build()
                 .toString();
 
         // Then
-        assertEquals( "org.myProcedure(inputArg :: LIST? OF STRING?) :: (outputArg :: NUMBER?)", toStr );
+        assertEquals("org.myProcedure(inputArg :: LIST? OF STRING?) :: (outputArg :: NUMBER?)", toStr);
     }
 
     @Test
-    void toStringForVoidProcedureShouldMatchCypherSyntax()
-    {
+    void toStringForVoidProcedureShouldMatchCypherSyntax() {
         // Given
-        ProcedureSignature proc = procedureSignature( "org", "myProcedure" )
-                .in( "inputArg", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
-                .out( ProcedureSignature.VOID )
+        ProcedureSignature proc = procedureSignature("org", "myProcedure")
+                .in("inputArg", Neo4jTypes.NTList(Neo4jTypes.NTString))
+                .out(ProcedureSignature.VOID)
                 .build();
 
         // When
         String toStr = proc.toString();
 
         // Then
-        assertEquals( "org.myProcedure(inputArg :: LIST? OF STRING?) :: VOID", toStr );
+        assertEquals("org.myProcedure(inputArg :: LIST? OF STRING?) :: VOID", toStr);
     }
 }

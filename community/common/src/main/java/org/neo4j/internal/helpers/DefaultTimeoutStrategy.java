@@ -22,54 +22,45 @@ package org.neo4j.internal.helpers;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class DefaultTimeoutStrategy implements TimeoutStrategy
-{
-    public static DefaultTimeoutStrategy exponential( long initialTime, long upperBoundTime, TimeUnit timeUnit )
-    {
-        return new DefaultTimeoutStrategy( initialTime, upperBoundTime, timeUnit, i -> i * 2 );
+public class DefaultTimeoutStrategy implements TimeoutStrategy {
+    public static DefaultTimeoutStrategy exponential(long initialTime, long upperBoundTime, TimeUnit timeUnit) {
+        return new DefaultTimeoutStrategy(initialTime, upperBoundTime, timeUnit, i -> i * 2);
     }
 
-    public static DefaultTimeoutStrategy constant( long initialTime, TimeUnit timeUnit )
-    {
-        return new DefaultTimeoutStrategy( initialTime, initialTime, timeUnit, i -> i );
+    public static DefaultTimeoutStrategy constant(long initialTime, TimeUnit timeUnit) {
+        return new DefaultTimeoutStrategy(initialTime, initialTime, timeUnit, i -> i);
     }
 
-    private final Function<Long,Long> increasingFunction;
+    private final Function<Long, Long> increasingFunction;
     private final long startTimeMillis;
     private final long upperBoundTime;
 
-    public DefaultTimeoutStrategy( long initialTime, long upperBoundTime, TimeUnit timeUnit, Function<Long,Long> increasingFunction )
-    {
-        if ( initialTime > increasingFunction.apply( initialTime ) )
-        {
-            throw new IllegalArgumentException( "passed function can't decrease" );
+    public DefaultTimeoutStrategy(
+            long initialTime, long upperBoundTime, TimeUnit timeUnit, Function<Long, Long> increasingFunction) {
+        if (initialTime > increasingFunction.apply(initialTime)) {
+            throw new IllegalArgumentException("passed function can't decrease");
         }
-        if ( initialTime < 0 )
-        {
-            throw new IllegalArgumentException( "initial time can't be less than zero" );
+        if (initialTime < 0) {
+            throw new IllegalArgumentException("initial time can't be less than zero");
         }
-        this.startTimeMillis = timeUnit.toMillis( initialTime );
+        this.startTimeMillis = timeUnit.toMillis(initialTime);
         this.increasingFunction = increasingFunction;
-        this.upperBoundTime = timeUnit.toMillis( upperBoundTime );
+        this.upperBoundTime = timeUnit.toMillis(upperBoundTime);
     }
 
     @Override
-    public Timeout newTimeout()
-    {
-        return new Timeout()
-        {
+    public Timeout newTimeout() {
+        return new Timeout() {
             private long currentTimeMillis = startTimeMillis;
 
             @Override
-            public long getMillis()
-            {
+            public long getMillis() {
                 return currentTimeMillis;
             }
 
             @Override
-            public void increment()
-            {
-                currentTimeMillis = Math.min( upperBoundTime, increasingFunction.apply( currentTimeMillis ) );
+            public void increment() {
+                currentTimeMillis = Math.min(upperBoundTime, increasingFunction.apply(currentTimeMillis));
             }
         };
     }

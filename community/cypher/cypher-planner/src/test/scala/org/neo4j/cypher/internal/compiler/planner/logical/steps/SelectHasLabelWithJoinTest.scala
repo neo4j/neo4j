@@ -48,22 +48,24 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Inside.inside
 
 class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
   test("should solve labels with joins") {
 
-    val plan = new given {
-      cost = {
-        case (_: Selection, _, _, _) => 1000.0
-        case (_: NodeHashJoin, _, _, _) => 20.0
-        case (_: NodeByLabelScan, _, _, _) => 20.0
-      }
-    } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) RETURN n"
+    val plan =
+      new given {
+        cost = {
+          case (_: Selection, _, _, _)       => 1000.0
+          case (_: NodeHashJoin, _, _, _)    => 20.0
+          case (_: NodeByLabelScan, _, _, _) => 20.0
+        }
+      } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) RETURN n"
 
     plan._1 match {
-      case NodeHashJoin(_,
-      NodeHashJoin(_,
-      NodeByLabelScan(_, _, _, _),
-      NodeByLabelScan(_, _, _, _)),
-      NodeByLabelScan(_, _, _, _)) => ()
+      case NodeHashJoin(
+          _,
+          NodeHashJoin(_, NodeByLabelScan(_, _, _, _), NodeByLabelScan(_, _, _, _)),
+          NodeByLabelScan(_, _, _, _)
+        ) => ()
       case _ => fail("Not what we expected!")
     }
   }
@@ -75,16 +77,18 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       Some(IndexedSeq(FieldSignature("node", CTNode))),
       None,
       ProcedureReadOnlyAccess,
-      id = 0)
+      id = 0
+    )
 
-    val plan = new given {
-      procedure(signature)
-      cost = {
-        case (_: Selection, _, _, _) => 1000.0
-        case (_: NodeHashJoin, _, _, _) => 20.0
-        case (_: NodeByLabelScan, _, _, _) => 20.0
-      }
-    } getLogicalPlanFor "CALL getNode() YIELD node WHERE node:Label RETURN node"
+    val plan =
+      new given {
+        procedure(signature)
+        cost = {
+          case (_: Selection, _, _, _)       => 1000.0
+          case (_: NodeHashJoin, _, _, _)    => 20.0
+          case (_: NodeByLabelScan, _, _, _) => 20.0
+        }
+      } getLogicalPlanFor "CALL getNode() YIELD node WHERE node:Label RETURN node"
 
     inside(plan._1) {
       case Selection(Ands(exprs), ProcedureCall(Argument(_), _)) =>
@@ -101,24 +105,23 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
         |RETURN n, m
         |""".stripMargin
 
-    val plan = new given {
-      cost = {
-        case (_: Selection, _, _, _) => 1000.0
-        case (_: RightOuterHashJoin, _, _, _) => 1000.0
-        case (_: LeftOuterHashJoin, _, _, _) => 1000.0
-        case (_: NodeHashJoin, _, _, _) => 20.0
-        case (_: NodeByLabelScan, _, _, _) => 20.0
-      }
-    } getLogicalPlanFor query
+    val plan =
+      new given {
+        cost = {
+          case (_: Selection, _, _, _)          => 1000.0
+          case (_: RightOuterHashJoin, _, _, _) => 1000.0
+          case (_: LeftOuterHashJoin, _, _, _)  => 1000.0
+          case (_: NodeHashJoin, _, _, _)       => 20.0
+          case (_: NodeByLabelScan, _, _, _)    => 20.0
+        }
+      } getLogicalPlanFor query
 
     plan._1 should beLike {
-      case
-        Apply
-          (NodeByLabelScan("n", _, _, _),
-          Optional
-            (Expand
-              (NodeByLabelScan("m", _, args, _), _, _, _, _, _, _), _), _)
-        if args == Set("n") => ()
+      case Apply(
+          NodeByLabelScan("n", _, _, _),
+          Optional(Expand(NodeByLabelScan("m", _, args, _), _, _, _, _, _, _), _),
+          _
+        ) if args == Set("n") => ()
     }
   }
 
@@ -129,22 +132,17 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
         |RETURN n
         |""".stripMargin
 
-    val plan = new given {
-      cost = {
-        case (_: Selection, _, _, _) => 1000.0
-        case (_: NodeHashJoin, _, _, _) => 20.0
-        case (_: NodeByLabelScan, _, _, _) => 20.0
-      }
-    } getLogicalPlanFor query
+    val plan =
+      new given {
+        cost = {
+          case (_: Selection, _, _, _)       => 1000.0
+          case (_: NodeHashJoin, _, _, _)    => 20.0
+          case (_: NodeByLabelScan, _, _, _) => 20.0
+        }
+      } getLogicalPlanFor query
 
     plan._1 should beLike {
-      case
-        Apply
-          (NodeByLabelScan("n", _, _, _),
-          Optional
-            (Selection(_,
-            Argument(args)), _), _)
-        if args == Set("n") => ()
+      case Apply(NodeByLabelScan("n", _, _, _), Optional(Selection(_, Argument(args)), _), _) if args == Set("n") => ()
     }
   }
 

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import java.net.URLDecoder
-
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.ResourceLinenumber
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
@@ -28,7 +26,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
+import java.net.URLDecoder
+
 case class Linenumber() extends Expression {
+
   override def apply(row: ReadableRow, state: QueryState): AnyValue =
     Linenumber.compute(row)
 
@@ -40,13 +41,15 @@ case class Linenumber() extends Expression {
 }
 
 object Linenumber {
+
   def compute(row: ReadableRow): AnyValue = row.getLinenumber match {
     case Some(ResourceLinenumber(_, line, _)) => Values.longValue(line)
-    case _ => Values.NO_VALUE
+    case _                                    => Values.NO_VALUE
   }
 }
 
 case class File() extends Expression {
+
   override def apply(row: ReadableRow, state: QueryState): AnyValue =
     File.compute(row)
 
@@ -58,8 +61,10 @@ case class File() extends Expression {
 }
 
 object File {
+
   def compute(row: ReadableRow): AnyValue = row.getLinenumber match {
-    case Some(ResourceLinenumber(name, _, _)) => Values.utf8Value(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
+    case Some(ResourceLinenumber(name, _, _)) =>
+      Values.utf8Value(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
     case _ => Values.NO_VALUE
   }
 }

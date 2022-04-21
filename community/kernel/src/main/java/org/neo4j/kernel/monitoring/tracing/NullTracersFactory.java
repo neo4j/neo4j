@@ -20,7 +20,6 @@
 package org.neo4j.kernel.monitoring.tracing;
 
 import java.time.Clock;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -30,32 +29,28 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
-public class NullTracersFactory implements TracerFactory
-{
+public class NullTracersFactory implements TracerFactory {
 
     static final String NULL_TRACERS_NAME = "null";
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return NULL_TRACERS_NAME;
     }
 
     @Override
-    public PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, InternalLog log, Config config )
-    {
+    public PageCacheTracer createPageCacheTracer(
+            Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, InternalLog log, Config config) {
         return PageCacheTracer.NULL;
     }
 
     @Override
-    public DatabaseTracer createDatabaseTracer( Clock clock )
-    {
+    public DatabaseTracer createDatabaseTracer(Clock clock) {
         return DatabaseTracer.NULL;
     }
 
     @Override
-    public LockTracer createLockTracer( Clock clock )
-    {
+    public LockTracer createLockTracer(Clock clock) {
         return LockTracer.NONE;
     }
 }

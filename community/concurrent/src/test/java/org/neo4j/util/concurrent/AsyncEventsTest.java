@@ -19,10 +19,7 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -32,214 +29,186 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@Timeout( 30 )
-class AsyncEventsTest
-{
+@Timeout(30)
+class AsyncEventsTest {
     private ExecutorService executor;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         executor = Executors.newCachedThreadPool();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         executor.shutdown();
     }
 
-    static class Event extends AsyncEvent
-    {
+    static class Event extends AsyncEvent {
         Thread processedBy;
     }
 
-    static class EventConsumer implements Consumer<Event>
-    {
+    static class EventConsumer implements Consumer<Event> {
         final BlockingQueue<Event> eventsProcessed = new LinkedBlockingQueue<>();
 
         @Override
-        public void accept( Event event )
-        {
+        public void accept(Event event) {
             event.processedBy = Thread.currentThread();
-            eventsProcessed.offer( event );
+            eventsProcessed.offer(event);
         }
 
-        public Event poll( long timeout, TimeUnit unit ) throws InterruptedException
-        {
-            return eventsProcessed.poll( timeout, unit );
+        public Event poll(long timeout, TimeUnit unit) throws InterruptedException {
+            return eventsProcessed.poll(timeout, unit);
         }
     }
 
     @Test
-    void eventsMustBeProcessedByBackgroundThread() throws Exception
-    {
+    void eventsMustBeProcessedByBackgroundThread() throws Exception {
         EventConsumer consumer = new EventConsumer();
 
-        AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
-        executor.submit( asyncEvents );
+        AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        executor.submit(asyncEvents);
 
         Event firstSentEvent = new Event();
-        asyncEvents.send( firstSentEvent );
-        Event firstProcessedEvent = consumer.poll( 10, TimeUnit.SECONDS );
+        asyncEvents.send(firstSentEvent);
+        Event firstProcessedEvent = consumer.poll(10, TimeUnit.SECONDS);
 
         Event secondSentEvent = new Event();
-        asyncEvents.send( secondSentEvent );
-        Event secondProcessedEvent = consumer.poll( 10, TimeUnit.SECONDS );
+        asyncEvents.send(secondSentEvent);
+        Event secondProcessedEvent = consumer.poll(10, TimeUnit.SECONDS);
 
         asyncEvents.shutdown();
 
-        assertThat( firstProcessedEvent ).isEqualTo( firstSentEvent );
-        assertThat( secondProcessedEvent ).isEqualTo( secondSentEvent );
+        assertThat(firstProcessedEvent).isEqualTo(firstSentEvent);
+        assertThat(secondProcessedEvent).isEqualTo(secondSentEvent);
     }
 
     @Test
-    void mustNotProcessEventInSameThreadWhenNotShutDown() throws Exception
-    {
+    void mustNotProcessEventInSameThreadWhenNotShutDown() throws Exception {
         EventConsumer consumer = new EventConsumer();
 
-        AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
-        executor.submit( asyncEvents );
+        AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        executor.submit(asyncEvents);
 
-        asyncEvents.send( new Event() );
+        asyncEvents.send(new Event());
 
-        Thread processingThread = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
+        Thread processingThread = consumer.poll(10, TimeUnit.SECONDS).processedBy;
         asyncEvents.shutdown();
 
-        assertThat( processingThread ).isNotEqualTo( Thread.currentThread() );
+        assertThat(processingThread).isNotEqualTo(Thread.currentThread());
     }
 
     @Test
-    void mustProcessEventsDirectlyWhenShutDown() throws InterruptedException
-    {
+    void mustProcessEventsDirectlyWhenShutDown() throws InterruptedException {
         EventConsumer consumer = new EventConsumer();
 
-        AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
-        executor.submit( asyncEvents );
+        AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        executor.submit(asyncEvents);
 
-        asyncEvents.send( new Event() );
-        Thread threadForFirstEvent = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
+        asyncEvents.send(new Event());
+        Thread threadForFirstEvent = consumer.poll(10, TimeUnit.SECONDS).processedBy;
         asyncEvents.shutdown();
 
-        assertThat( threadForFirstEvent ).isNotEqualTo( Thread.currentThread() );
+        assertThat(threadForFirstEvent).isNotEqualTo(Thread.currentThread());
 
         Thread threadForSubsequentEvents;
-        do
-        {
-            asyncEvents.send( new Event() );
-            threadForSubsequentEvents = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
-        }
-        while ( threadForSubsequentEvents != Thread.currentThread() );
+        do {
+            asyncEvents.send(new Event());
+            threadForSubsequentEvents = consumer.poll(10, TimeUnit.SECONDS).processedBy;
+        } while (threadForSubsequentEvents != Thread.currentThread());
     }
 
     @Test
-    void concurrentlyPublishedEventsMustAllBeProcessed() throws InterruptedException
-    {
+    void concurrentlyPublishedEventsMustAllBeProcessed() throws InterruptedException {
         EventConsumer consumer = new EventConsumer();
-        final CountDownLatch startLatch = new CountDownLatch( 1 );
+        final CountDownLatch startLatch = new CountDownLatch(1);
         final int threads = 10;
         final int iterations = 2_000;
-        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
-        executor.submit( asyncEvents );
+        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        executor.submit(asyncEvents);
 
-        ExecutorService threadPool = Executors.newFixedThreadPool( threads );
-        Runnable runner = () ->
-        {
-            try
-            {
+        ExecutorService threadPool = Executors.newFixedThreadPool(threads);
+        Runnable runner = () -> {
+            try {
                 startLatch.await();
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
 
-            for ( int i = 0; i < iterations; i++ )
-            {
-                asyncEvents.send( new Event() );
+            for (int i = 0; i < iterations; i++) {
+                asyncEvents.send(new Event());
             }
         };
-        for ( int i = 0; i < threads; i++ )
-        {
-            threadPool.submit( runner );
+        for (int i = 0; i < threads; i++) {
+            threadPool.submit(runner);
         }
         startLatch.countDown();
 
         Thread thisThread = Thread.currentThread();
         int eventCount = threads * iterations;
-        try
-        {
-            for ( int i = 0; i < eventCount; i++ )
-            {
-                Event event = consumer.poll( 1, TimeUnit.SECONDS );
-                if ( event == null )
-                {
+        try {
+            for (int i = 0; i < eventCount; i++) {
+                Event event = consumer.poll(1, TimeUnit.SECONDS);
+                if (event == null) {
                     i--;
-                }
-                else
-                {
-                    assertThat( event.processedBy ).isNotEqualTo( thisThread );
+                } else {
+                    assertThat(event.processedBy).isNotEqualTo(thisThread);
                 }
             }
-        }
-        finally
-        {
+        } finally {
             asyncEvents.shutdown();
             threadPool.shutdown();
         }
     }
 
     @Test
-    void awaitingShutdownMustBlockUntilAllMessagesHaveBeenProcessed() throws Exception
-    {
+    void awaitingShutdownMustBlockUntilAllMessagesHaveBeenProcessed() throws Exception {
         final Event specialShutdownObservedEvent = new Event();
-        final CountDownLatch awaitStartLatch = new CountDownLatch( 1 );
+        final CountDownLatch awaitStartLatch = new CountDownLatch(1);
         final EventConsumer consumer = new EventConsumer();
-        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
-        executor.submit( asyncEvents );
+        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        executor.submit(asyncEvents);
 
         // Wait for the background thread to start processing events
-        do
-        {
-            asyncEvents.send( new Event() );
-        }
-        while ( consumer.eventsProcessed.take().processedBy == Thread.currentThread() );
+        do {
+            asyncEvents.send(new Event());
+        } while (consumer.eventsProcessed.take().processedBy == Thread.currentThread());
 
         // Start a thread that awaits the termination
-        Future<?> awaitShutdownFuture = executor.submit( () ->
-        {
+        Future<?> awaitShutdownFuture = executor.submit(() -> {
             awaitStartLatch.countDown();
             asyncEvents.awaitTermination();
-            consumer.eventsProcessed.offer( specialShutdownObservedEvent );
-        } );
+            consumer.eventsProcessed.offer(specialShutdownObservedEvent);
+        });
 
         awaitStartLatch.await();
 
         // Send 5 events
-        asyncEvents.send( new Event() );
-        asyncEvents.send( new Event() );
-        asyncEvents.send( new Event() );
-        asyncEvents.send( new Event() );
-        asyncEvents.send( new Event() );
+        asyncEvents.send(new Event());
+        asyncEvents.send(new Event());
+        asyncEvents.send(new Event());
+        asyncEvents.send(new Event());
+        asyncEvents.send(new Event());
 
         // Observe 5 events processed
-        assertThat( consumer.eventsProcessed.take() ).isNotNull();
-        assertThat( consumer.eventsProcessed.take() ).isNotNull();
-        assertThat( consumer.eventsProcessed.take() ).isNotNull();
-        assertThat( consumer.eventsProcessed.take() ).isNotNull();
-        assertThat( consumer.eventsProcessed.take() ).isNotNull();
+        assertThat(consumer.eventsProcessed.take()).isNotNull();
+        assertThat(consumer.eventsProcessed.take()).isNotNull();
+        assertThat(consumer.eventsProcessed.take()).isNotNull();
+        assertThat(consumer.eventsProcessed.take()).isNotNull();
+        assertThat(consumer.eventsProcessed.take()).isNotNull();
 
         // Observe no events left
-        assertThat( consumer.eventsProcessed.poll( 20, TimeUnit.MILLISECONDS ) ).isNull();
+        assertThat(consumer.eventsProcessed.poll(20, TimeUnit.MILLISECONDS)).isNull();
 
         // Shutdown and await termination
         asyncEvents.shutdown();
         awaitShutdownFuture.get();
 
         // Observe termination
-        assertThat( consumer.eventsProcessed.take() ).isSameAs( specialShutdownObservedEvent );
+        assertThat(consumer.eventsProcessed.take()).isSameAs(specialShutdownObservedEvent);
     }
 }

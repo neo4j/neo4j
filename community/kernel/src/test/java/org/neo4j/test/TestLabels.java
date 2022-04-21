@@ -21,9 +21,8 @@ package org.neo4j.test;
 
 import org.neo4j.graphdb.Label;
 
-public interface TestLabels
-{
-    Label LABEL_ONE = Label.label( "LABEL_ONE" );
-    Label LABEL_TWO = Label.label( "LABEL_TWO" );
-    Label LABEL_THREE = Label.label( "LABEL_THREE" );
+public interface TestLabels {
+    Label LABEL_ONE = Label.label("LABEL_ONE");
+    Label LABEL_TWO = Label.label("LABEL_TWO");
+    Label LABEL_THREE = Label.label("LABEL_THREE");
 }

@@ -49,7 +49,7 @@ class RangeFunctionTest extends CypherFunSuite {
     range(1L, Int.MaxValue + 1000L, 1L) // should not blow up...
   }
 
-  private def seq(vals: Long*) = list(vals.map(Values.longValue):_*)
+  private def seq(vals: Long*) = list(vals.map(Values.longValue): _*)
 
   private def range(start: Long, end: Long, step: Long): ListValue = {
     val expr = RangeFunction(literal(start), literal(end), literal(step))

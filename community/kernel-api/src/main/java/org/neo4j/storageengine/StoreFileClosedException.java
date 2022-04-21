@@ -21,10 +21,8 @@ package org.neo4j.storageengine;
 
 import java.nio.file.Path;
 
-public class StoreFileClosedException extends RuntimeException
-{
-    public StoreFileClosedException( Path storageFile )
-    {
-        super( "Store for file '" + storageFile + "' is closed" );
+public class StoreFileClosedException extends RuntimeException {
+    public StoreFileClosedException(Path storageFile) {
+        super("Store for file '" + storageFile + "' is closed");
     }
 }

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class PointTest extends FunctionTestBase("point")  {
+class PointTest extends FunctionTestBase("point") {
 
   test("should accept map") {
     testValidTypes(CTMap)(CTPoint)

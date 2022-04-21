@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-public interface TxStateHolder
-{
+public interface TxStateHolder {
     TransactionState txState();
 
     boolean hasTxStateWithChanges();

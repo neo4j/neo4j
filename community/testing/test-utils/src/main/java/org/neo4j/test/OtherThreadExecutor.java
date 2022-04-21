@@ -19,6 +19,13 @@
  */
 package org.neo4j.test;
 
+import static java.lang.String.format;
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.io.Closeable;
 import java.io.PrintStream;
 import java.lang.Thread.State;
@@ -34,164 +41,121 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Predicate;
 
-import static java.lang.String.format;
-import static java.lang.System.nanoTime;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 /**
  * Executes commands in another thread. Very useful for writing
  * tests which handles two simultaneous transactions and interleave them,
  * f.ex for testing locking and data visibility.
  */
-public class OtherThreadExecutor implements ThreadFactory, Closeable
-{
-    private final ExecutorService commandExecutor = newSingleThreadExecutor( this );
+public class OtherThreadExecutor implements ThreadFactory, Closeable {
+    private final ExecutorService commandExecutor = newSingleThreadExecutor(this);
     private volatile Thread thread;
     private volatile ExecutionState executionState;
     private final String name;
     private final long timeoutNanos;
 
-    private static final class AnyThreadState implements Predicate<Thread>
-    {
+    private static final class AnyThreadState implements Predicate<Thread> {
         private final EnumSet<State> possibleStates;
-        private final EnumSet<State> seenStates = EnumSet.noneOf( State.class );
+        private final EnumSet<State> seenStates = EnumSet.noneOf(State.class);
 
-        private AnyThreadState( State... possibleStates )
-        {
-            this.possibleStates = EnumSet.noneOf( State.class );
-            this.possibleStates.addAll( Arrays.asList( possibleStates ) );
+        private AnyThreadState(State... possibleStates) {
+            this.possibleStates = EnumSet.noneOf(State.class);
+            this.possibleStates.addAll(Arrays.asList(possibleStates));
         }
 
         @Override
-        public boolean test( Thread thread )
-        {
+        public boolean test(Thread thread) {
             State threadState = thread.getState();
-            seenStates.add( threadState );
-            return possibleStates.contains( threadState );
+            seenStates.add(threadState);
+            return possibleStates.contains(threadState);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "Any of thread states " + possibleStates + ", but saw " + seenStates;
         }
     }
 
-    private enum ExecutionState
-    {
+    private enum ExecutionState {
         REQUESTED_EXECUTION,
         EXECUTING,
         EXECUTED
     }
 
-    public OtherThreadExecutor( String name )
-    {
-        this( name, 1, MINUTES );
+    public OtherThreadExecutor(String name) {
+        this(name, 1, MINUTES);
     }
 
-    public OtherThreadExecutor( String name, long timeout, TimeUnit unit )
-    {
+    public OtherThreadExecutor(String name, long timeout, TimeUnit unit) {
         this.name = name;
-        this.timeoutNanos = NANOSECONDS.convert( timeout, unit );
+        this.timeoutNanos = NANOSECONDS.convert(timeout, unit);
     }
 
-    public <R> Future<R> executeDontWait( final Callable<R> cmd )
-    {
+    public <R> Future<R> executeDontWait(final Callable<R> cmd) {
         executionState = ExecutionState.REQUESTED_EXECUTION;
-        return commandExecutor.submit( () ->
-        {
+        return commandExecutor.submit(() -> {
             executionState = ExecutionState.EXECUTING;
-            try
-            {
+            try {
                 return cmd.call();
-            }
-            finally
-            {
+            } finally {
                 executionState = ExecutionState.EXECUTED;
             }
-        } );
+        });
     }
 
-    public <R> R execute( Callable<R> cmd ) throws Exception
-    {
-        return executeDontWait( cmd ).get();
+    public <R> R execute(Callable<R> cmd) throws Exception {
+        return executeDontWait(cmd).get();
     }
 
-    public <R> R execute( Callable<R> cmd, long timeout, TimeUnit unit ) throws Exception
-    {
-        Future<R> future = executeDontWait( cmd );
+    public <R> R execute(Callable<R> cmd, long timeout, TimeUnit unit) throws Exception {
+        Future<R> future = executeDontWait(cmd);
         boolean success = false;
-        try
-        {
+        try {
             awaitStartExecuting();
-            R result = future.get( timeout, unit );
+            R result = future.get(timeout, unit);
             success = true;
             return result;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                future.cancel( true );
+        } finally {
+            if (!success) {
+                future.cancel(true);
             }
         }
     }
 
-    public void awaitStartExecuting() throws InterruptedException
-    {
-        while ( executionState == ExecutionState.REQUESTED_EXECUTION )
-        {
-            Thread.sleep( 10 );
+    public void awaitStartExecuting() throws InterruptedException {
+        while (executionState == ExecutionState.REQUESTED_EXECUTION) {
+            Thread.sleep(10);
         }
     }
 
-    public <R> R awaitFuture( Future<R> future ) throws InterruptedException, ExecutionException, TimeoutException
-    {
-        return future.get( timeoutNanos, NANOSECONDS );
+    public <R> R awaitFuture(Future<R> future) throws InterruptedException, ExecutionException, TimeoutException {
+        return future.get(timeoutNanos, NANOSECONDS);
     }
 
-    public interface WorkerCommand<R>
-    {
+    public interface WorkerCommand<R> {
         R doWork() throws Exception;
     }
 
-    public static <R> Callable<R> command( Race.ThrowingRunnable runnable )
-    {
-        return () ->
-        {
-            try
-            {
+    public static <R> Callable<R> command(Race.ThrowingRunnable runnable) {
+        return () -> {
+            try {
                 runnable.run();
                 return null;
-            }
-            catch ( Exception e )
-            {
+            } catch (Exception e) {
                 throw e;
-            }
-            catch ( Throwable throwable )
-            {
-                throw new RuntimeException( throwable );
+            } catch (Throwable throwable) {
+                throw new RuntimeException(throwable);
             }
         };
     }
 
     @Override
-    public Thread newThread( Runnable r )
-    {
-        Thread newThread = new Thread( r, getClass().getName() + ":" + name )
-        {
+    public Thread newThread(Runnable r) {
+        Thread newThread = new Thread(r, getClass().getName() + ":" + name) {
             @Override
-            public void run()
-            {
-                try
-                {
+            public void run() {
+                try {
                     super.run();
-                }
-                finally
-                {
+                } finally {
                     OtherThreadExecutor.this.thread = null;
                 }
             }
@@ -201,113 +165,91 @@ public class OtherThreadExecutor implements ThreadFactory, Closeable
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         Thread thread = this.thread;
-        return format( "%s[%s,state=%s]", getClass().getSimpleName(), name,
-                       thread == null ? "dead" : thread.getState() );
+        return format("%s[%s,state=%s]", getClass().getSimpleName(), name, thread == null ? "dead" : thread.getState());
     }
 
-    public WaitDetails waitUntilWaiting() throws TimeoutException
-    {
-        return waitUntilWaiting( details -> true );
+    public WaitDetails waitUntilWaiting() throws TimeoutException {
+        return waitUntilWaiting(details -> true);
     }
 
-    public WaitDetails waitUntilBlocked() throws TimeoutException
-    {
-        return waitUntilBlocked( details -> true );
+    public WaitDetails waitUntilBlocked() throws TimeoutException {
+        return waitUntilBlocked(details -> true);
     }
 
-    public WaitDetails waitUntilWaiting( Predicate<WaitDetails> correctWait ) throws TimeoutException
-    {
-        return waitUntilThreadState( correctWait, Thread.State.WAITING, Thread.State.TIMED_WAITING );
+    public WaitDetails waitUntilWaiting(Predicate<WaitDetails> correctWait) throws TimeoutException {
+        return waitUntilThreadState(correctWait, Thread.State.WAITING, Thread.State.TIMED_WAITING);
     }
 
-    public WaitDetails waitUntilBlocked( Predicate<WaitDetails> correctWait ) throws TimeoutException
-    {
-        return waitUntilThreadState( correctWait, Thread.State.BLOCKED );
+    public WaitDetails waitUntilBlocked(Predicate<WaitDetails> correctWait) throws TimeoutException {
+        return waitUntilThreadState(correctWait, Thread.State.BLOCKED);
     }
 
-    public WaitDetails waitUntilThreadState( final Thread.State... possibleStates ) throws TimeoutException
-    {
-        return waitUntilThreadState( details -> true, possibleStates );
+    public WaitDetails waitUntilThreadState(final Thread.State... possibleStates) throws TimeoutException {
+        return waitUntilThreadState(details -> true, possibleStates);
     }
 
-    public WaitDetails waitUntilThreadState( Predicate<WaitDetails> correctWait,
-            final Thread.State... possibleStates ) throws TimeoutException
-    {
+    public WaitDetails waitUntilThreadState(Predicate<WaitDetails> correctWait, final Thread.State... possibleStates)
+            throws TimeoutException {
         long endTimeNanos = nanoTime() + timeoutNanos;
         WaitDetails details;
-        while ( !correctWait.test( details = waitUntil( new AnyThreadState( possibleStates )) ) )
-        {
-            LockSupport.parkNanos( MILLISECONDS.toNanos( 20 ) );
-            if ( nanoTime() > endTimeNanos )
-            {
-                throw new TimeoutException( "Wanted to wait for any of " + Arrays.toString( possibleStates ) +
-                        " over at " + correctWait + ", but didn't managed to get there in " + timeoutNanos + "ns. " +
-                        "instead ended up waiting in " + details );
+        while (!correctWait.test(details = waitUntil(new AnyThreadState(possibleStates)))) {
+            LockSupport.parkNanos(MILLISECONDS.toNanos(20));
+            if (nanoTime() > endTimeNanos) {
+                throw new TimeoutException("Wanted to wait for any of " + Arrays.toString(possibleStates) + " over at "
+                        + correctWait + ", but didn't managed to get there in " + timeoutNanos + "ns. "
+                        + "instead ended up waiting in "
+                        + details);
             }
         }
         return details;
     }
 
-    public WaitDetails waitUntil( Predicate<Thread> condition ) throws TimeoutException
-    {
+    public WaitDetails waitUntil(Predicate<Thread> condition) throws TimeoutException {
         long end = nanoTime() + timeoutNanos;
         Thread thread = getThread();
-        while ( !condition.test( thread ) || executionState == ExecutionState.REQUESTED_EXECUTION )
-        {
-            try
-            {
-                Thread.sleep( 10 );
-            }
-            catch ( InterruptedException e )
-            {
+        while (!condition.test(thread) || executionState == ExecutionState.REQUESTED_EXECUTION) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
                 // whatever
             }
 
-            if ( nanoTime() > end )
-            {
-                throw new TimeoutException( "The executor didn't meet condition '" + condition +
-                        "' inside an executing command for " + timeoutNanos + " ns" );
+            if (nanoTime() > end) {
+                throw new TimeoutException("The executor didn't meet condition '" + condition
+                        + "' inside an executing command for " + timeoutNanos + " ns");
             }
         }
 
-        if ( executionState == ExecutionState.EXECUTED )
-        {
-            throw new IllegalStateException( "Would have wanted " + thread + " to wait for " + condition +
-                    " but that never happened within the duration of executed task" );
+        if (executionState == ExecutionState.EXECUTED) {
+            throw new IllegalStateException("Would have wanted " + thread + " to wait for " + condition
+                    + " but that never happened within the duration of executed task");
         }
 
-        return new WaitDetails( thread.getStackTrace() );
+        return new WaitDetails(thread.getStackTrace());
     }
 
-    public static class WaitDetails
-    {
+    public static class WaitDetails {
         private final StackTraceElement[] stackTrace;
 
-        public WaitDetails( StackTraceElement[] stackTrace )
-        {
+        public WaitDetails(StackTraceElement[] stackTrace) {
             this.stackTrace = stackTrace;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             StringBuilder builder = new StringBuilder();
-            for ( StackTraceElement element : stackTrace )
-            {
-                builder.append( format( element + "%n" ) );
+            for (StackTraceElement element : stackTrace) {
+                builder.append(format(element + "%n"));
             }
             return builder.toString();
         }
 
-        public boolean isAt( Class<?> clz, String method )
-        {
-            for ( StackTraceElement element : stackTrace )
-            {
-                if ( element.getClassName().equals( clz.getName() ) && element.getMethodName().equals( method ) )
-                {
+        public boolean isAt(Class<?> clz, String method) {
+            for (StackTraceElement element : stackTrace) {
+                if (element.getClassName().equals(clz.getName())
+                        && element.getMethodName().equals(method)) {
                     return true;
                 }
             }
@@ -315,55 +257,43 @@ public class OtherThreadExecutor implements ThreadFactory, Closeable
         }
     }
 
-    public Thread.State state()
-    {
+    public Thread.State state() {
         return thread.getState();
     }
 
-    private Thread getThread()
-    {
+    private Thread getThread() {
         Thread thread = null;
-        while ( thread == null )
-        {
+        while (thread == null) {
             thread = this.thread;
         }
         return thread;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         commandExecutor.shutdown();
-        try
-        {
-            commandExecutor.awaitTermination( 10, TimeUnit.SECONDS );
-        }
-        catch ( InterruptedException e )
-        {
+        try {
+            commandExecutor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             // shutdownNow() will interrupt running tasks if necessary
         }
-        if ( ! commandExecutor.isTerminated() )
-        {
+        if (!commandExecutor.isTerminated()) {
             commandExecutor.shutdownNow();
         }
     }
 
-    public void interrupt()
-    {
-        if ( thread != null )
-        {
+    public void interrupt() {
+        if (thread != null) {
             thread.interrupt();
         }
     }
 
-    public void printStackTrace( PrintStream out )
-    {
+    public void printStackTrace(PrintStream out) {
         Thread thread = getThread();
-        out.println( thread );
-        for ( StackTraceElement trace : thread.getStackTrace() )
-        {
-            out.println( "\tat " + trace );
+        out.println(thread);
+        for (StackTraceElement trace : thread.getStackTrace()) {
+            out.println("\tat " + trace);
         }
     }
 }

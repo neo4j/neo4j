@@ -19,33 +19,30 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.time.Clocks;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
-
-class ThreadPoolManagerTest
-{
+class ThreadPoolManagerTest {
     @Test
-    void shouldDefaultToGroupParallelism() throws ExecutionException, InterruptedException
-    {
+    void shouldDefaultToGroupParallelism() throws ExecutionException, InterruptedException {
         // given
-        ThreadPoolManager manager = new ThreadPoolManager( new ThreadGroup( "parent" ), Clocks.nanoClock(), new FailedJobRunsStore( 0 ), () -> 1L );
+        ThreadPoolManager manager = new ThreadPoolManager(
+                new ThreadGroup("parent"), Clocks.nanoClock(), new FailedJobRunsStore(0), () -> 1L);
         AtomicBoolean hasBeenRun = new AtomicBoolean();
 
         // when
-        ThreadPool pool = manager.getThreadPool( Group.PAGE_CACHE_PRE_FETCHER, null );
-        JobHandle<?> handle = pool.submit( NOT_MONITORED, () -> hasBeenRun.set( true ) );
+        ThreadPool pool = manager.getThreadPool(Group.PAGE_CACHE_PRE_FETCHER, null);
+        JobHandle<?> handle = pool.submit(NOT_MONITORED, () -> hasBeenRun.set(true));
 
         // then
         handle.waitTermination();
-        assertThat( hasBeenRun.get() ).isTrue();
+        assertThat(hasBeenRun.get()).isTrue();
     }
 }

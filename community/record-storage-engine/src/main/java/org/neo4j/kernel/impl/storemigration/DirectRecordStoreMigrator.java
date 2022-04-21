@@ -19,8 +19,14 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.IOException;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.helpers.ArrayUtil.contains;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
+import java.io.IOException;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -43,73 +49,89 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.helpers.ArrayUtil.contains;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-
 /**
  * Idea is to migrate a {@link NeoStores} store by store, record by record in a sequential fashion for
  * quick migration from one {@link RecordFormats} to another.
  */
-class DirectRecordStoreMigrator
-{
+class DirectRecordStoreMigrator {
     private static final String DIRECT_STORE_MIGRATOR_TAG = "directStoreMigrator";
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
     private final Config config;
     private final CursorContextFactory contextFactory;
 
-    DirectRecordStoreMigrator( PageCache pageCache, FileSystemAbstraction fs, Config config, CursorContextFactory contextFactory )
-    {
+    DirectRecordStoreMigrator(
+            PageCache pageCache, FileSystemAbstraction fs, Config config, CursorContextFactory contextFactory) {
         this.pageCache = pageCache;
         this.fs = fs;
         this.config = config;
         this.contextFactory = contextFactory;
     }
 
-    public void migrate( RecordDatabaseLayout fromDirectoryStructure, RecordFormats fromFormat, RecordDatabaseLayout toDirectoryStructure,
-            RecordFormats toFormat, ProgressReporter progressReporter, StoreType[] types, StoreType... additionalTypesToOpen ) throws IOException
-    {
-        StoreType[] storesToOpen = ArrayUtil.concat( types, additionalTypesToOpen );
-        progressReporter.start( storesToOpen.length );
+    public void migrate(
+            RecordDatabaseLayout fromDirectoryStructure,
+            RecordFormats fromFormat,
+            RecordDatabaseLayout toDirectoryStructure,
+            RecordFormats toFormat,
+            ProgressReporter progressReporter,
+            StoreType[] types,
+            StoreType... additionalTypesToOpen)
+            throws IOException {
+        StoreType[] storesToOpen = ArrayUtil.concat(types, additionalTypesToOpen);
+        progressReporter.start(storesToOpen.length);
 
-        try (
-                NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(),
-                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), contextFactory, readOnly(), EMPTY_LOG_TAIL, immutable.empty() )
-                        .openNeoStores( true, storesToOpen );
-                NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
-                        new DefaultIdGeneratorFactory( fs, immediate(), toDirectoryStructure.getDatabaseName() ), pageCache, fs, toFormat,
-                        NullLogProvider.getInstance(), contextFactory, writable(), EMPTY_LOG_TAIL, immutable.empty() )
-                        .openNeoStores( true, storesToOpen );
-                var cursorContext = contextFactory.create( DIRECT_STORE_MIGRATOR_TAG );
-                var toStoreCursors = new CachedStoreCursors( toStores, cursorContext ) )
-        {
-            toStores.start( cursorContext );
-            for ( StoreType type : types )
-            {
+        try (NeoStores fromStores = new StoreFactory(
+                                fromDirectoryStructure,
+                                config,
+                                new ScanOnOpenReadOnlyIdGeneratorFactory(),
+                                pageCache,
+                                fs,
+                                fromFormat,
+                                NullLogProvider.getInstance(),
+                                contextFactory,
+                                readOnly(),
+                                EMPTY_LOG_TAIL,
+                                immutable.empty())
+                        .openNeoStores(true, storesToOpen);
+                NeoStores toStores = new StoreFactory(
+                                toDirectoryStructure,
+                                withPersistedStoreHeadersAsConfigFrom(fromStores, storesToOpen),
+                                new DefaultIdGeneratorFactory(fs, immediate(), toDirectoryStructure.getDatabaseName()),
+                                pageCache,
+                                fs,
+                                toFormat,
+                                NullLogProvider.getInstance(),
+                                contextFactory,
+                                writable(),
+                                EMPTY_LOG_TAIL,
+                                immutable.empty())
+                        .openNeoStores(true, storesToOpen);
+                var cursorContext = contextFactory.create(DIRECT_STORE_MIGRATOR_TAG);
+                var toStoreCursors = new CachedStoreCursors(toStores, cursorContext)) {
+            toStores.start(cursorContext);
+            for (StoreType type : types) {
                 // This condition will exclude counts store first and foremost.
-                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ), cursorContext, toStoreCursors );
-                progressReporter.progress( 1 );
+                migrate(fromStores.getRecordStore(type), toStores.getRecordStore(type), cursorContext, toStoreCursors);
+                progressReporter.progress(1);
             }
         }
     }
 
-    private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to, CursorContext cursorContext,
-            StoreCursors toStoreCursors )
-    {
-        to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse( cursorContext ) );
-        try ( var toCursor = to.openPageCursorForWriting( 0, cursorContext );
-              var fromCursor = from.openPageCursorForReading( 0, cursorContext ) )
-        {
-            from.scanAllRecords( record ->
-            {
-                to.prepareForCommit( record, cursorContext );
-                to.updateRecord( record, toCursor, cursorContext, toStoreCursors );
-                return false;
-            }, fromCursor );
+    private static <RECORD extends AbstractBaseRecord> void migrate(
+            RecordStore<RECORD> from,
+            RecordStore<RECORD> to,
+            CursorContext cursorContext,
+            StoreCursors toStoreCursors) {
+        to.setHighestPossibleIdInUse(from.getHighestPossibleIdInUse(cursorContext));
+        try (var toCursor = to.openPageCursorForWriting(0, cursorContext);
+                var fromCursor = from.openPageCursorForReading(0, cursorContext)) {
+            from.scanAllRecords(
+                    record -> {
+                        to.prepareForCommit(record, cursorContext);
+                        to.updateRecord(record, toCursor, cursorContext, toStoreCursors);
+                        return false;
+                    },
+                    fromCursor);
         }
     }
 
@@ -123,20 +145,24 @@ class DirectRecordStoreMigrator
      * @param types array of {@link StoreType} which we know that legacy stores have opened.
      * @return a {@link Config} which mimics dynamic record data sizes from the {@code legacyStores}.
      */
-    private Config withPersistedStoreHeadersAsConfigFrom( NeoStores legacyStores, StoreType[] types )
-    {
-        if ( contains( types, StoreType.RELATIONSHIP_GROUP ) )
-        {
-            config.set( GraphDatabaseSettings.dense_node_threshold, legacyStores.getRelationshipGroupStore().getStoreHeaderInt() );
+    private Config withPersistedStoreHeadersAsConfigFrom(NeoStores legacyStores, StoreType[] types) {
+        if (contains(types, StoreType.RELATIONSHIP_GROUP)) {
+            config.set(
+                    GraphDatabaseSettings.dense_node_threshold,
+                    legacyStores.getRelationshipGroupStore().getStoreHeaderInt());
         }
-        if ( contains( types, StoreType.PROPERTY ) )
-        {
-            config.set( GraphDatabaseInternalSettings.array_block_size, legacyStores.getPropertyStore().getArrayStore().getRecordDataSize() );
-            config.set( GraphDatabaseInternalSettings.string_block_size, legacyStores.getPropertyStore().getStringStore().getRecordDataSize() );
+        if (contains(types, StoreType.PROPERTY)) {
+            config.set(
+                    GraphDatabaseInternalSettings.array_block_size,
+                    legacyStores.getPropertyStore().getArrayStore().getRecordDataSize());
+            config.set(
+                    GraphDatabaseInternalSettings.string_block_size,
+                    legacyStores.getPropertyStore().getStringStore().getRecordDataSize());
         }
-        if ( contains( types, StoreType.NODE_LABEL ) )
-        {
-            config.set( GraphDatabaseInternalSettings.label_block_size, legacyStores.getNodeStore().getDynamicLabelStore().getRecordDataSize() );
+        if (contains(types, StoreType.NODE_LABEL)) {
+            config.set(
+                    GraphDatabaseInternalSettings.label_block_size,
+                    legacyStores.getNodeStore().getDynamicLabelStore().getRecordDataSize());
         }
         return config;
     }

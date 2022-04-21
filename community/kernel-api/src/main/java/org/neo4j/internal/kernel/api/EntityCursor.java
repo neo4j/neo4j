@@ -19,21 +19,19 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
+
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 
-import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
-
-public interface EntityCursor extends Cursor
-{
+public interface EntityCursor extends Cursor {
     long reference();
 
-    default void properties( PropertyCursor cursor )
-    {
-        properties( cursor, ALL_PROPERTIES );
+    default void properties(PropertyCursor cursor) {
+        properties(cursor, ALL_PROPERTIES);
     }
 
-    void properties( PropertyCursor cursor, PropertySelection selection );
+    void properties(PropertyCursor cursor, PropertySelection selection);
 
     Reference propertiesReference();
 }

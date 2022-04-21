@@ -19,64 +19,54 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.time.Instant.ofEpochMilli;
+
 import java.time.Clock;
 import java.time.ZoneId;
 import java.util.Objects;
-
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.time.Instant.ofEpochMilli;
-
-public final class ClockContext
-{
+public final class ClockContext {
     private final SystemNanoClock system;
     private final ZoneId timezone;
     private Clock statement;
     private Clock transaction;
 
-    public ClockContext()
-    {
-        this( Clocks.nanoClock() );
+    public ClockContext() {
+        this(Clocks.nanoClock());
     }
 
-    public ClockContext( SystemNanoClock clock )
-    {
-        this.system = Objects.requireNonNull( clock, "system clock" );
+    public ClockContext(SystemNanoClock clock) {
+        this.system = Objects.requireNonNull(clock, "system clock");
         this.timezone = clock.getZone();
     }
 
-    void initializeTransaction( long transactionStartTimeMillis )
-    {
-        this.transaction = Clock.fixed( ofEpochMilli( transactionStartTimeMillis ), timezone );
+    void initializeTransaction(long transactionStartTimeMillis) {
+        this.transaction = Clock.fixed(ofEpochMilli(transactionStartTimeMillis), timezone);
         this.statement = null;
     }
 
-    void initializeStatement()
-    {
-        if ( this.statement == null ) // this is the first statement in the transaction, use the transaction time
+    void initializeStatement() {
+        if (this.statement == null) // this is the first statement in the transaction, use the transaction time
         {
             this.statement = this.transaction;
-        }
-        else // this is not the first statement in the transaction, initialize with a new time
+        } else // this is not the first statement in the transaction, initialize with a new time
         {
-            this.statement = Clock.fixed( system.instant(), timezone );
+            this.statement = Clock.fixed(system.instant(), timezone);
         }
     }
 
-    public SystemNanoClock systemClock()
-    {
+    public SystemNanoClock systemClock() {
         return system;
     }
 
-    public Clock statementClock()
-    {
+    public Clock statementClock() {
         assert statement != null : "statement clock not initialized";
         return statement;
     }
 
-    public Clock transactionClock()
-    {
+    public Clock transactionClock() {
         assert transaction != null : "transaction clock not initialized";
         return transaction;
     }

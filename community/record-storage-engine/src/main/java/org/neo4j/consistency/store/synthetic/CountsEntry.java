@@ -26,52 +26,44 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  * Synthetic record type that stands in for a real record to fit in conveniently
  * with consistency checking
  */
-public class CountsEntry extends AbstractBaseRecord
-{
+public class CountsEntry extends AbstractBaseRecord {
     private CountsKey key;
     private long count;
 
-    public CountsEntry( CountsKey key, long count )
-    {
-        super( -1 );
+    public CountsEntry(CountsKey key, long count) {
+        super(-1);
         this.key = key;
         this.count = count;
-        setInUse( true );
+        setInUse(true);
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         super.clear();
         key = null;
         count = 0;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "CountsEntry[" + key + ": " + count + "]";
     }
 
     @Override
-    public long getId()
-    {
+    public long getId() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public CountsEntry copy()
-    {
-        throw new UnsupportedOperationException( "Synthetic records cannot be copied." );
+    public CountsEntry copy() {
+        throw new UnsupportedOperationException("Synthetic records cannot be copied.");
     }
 
-    public CountsKey getCountsKey()
-    {
+    public CountsKey getCountsKey() {
         return key;
     }
 
-    public long getCount()
-    {
+    public long getCount() {
         return count;
     }
 }

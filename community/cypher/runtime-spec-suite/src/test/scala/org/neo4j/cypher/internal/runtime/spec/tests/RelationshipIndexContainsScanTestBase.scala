@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
-                                                             edition: Edition[CONTEXT],
-                                                             runtime: CypherRuntime[CONTEXT],
-                                                             sizeHint: Int
-                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for CONTAINS with directed index scan") {
     given {
@@ -39,7 +39,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _)  => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -63,7 +63,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _)  => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -81,14 +81,13 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("text").withRows(singleColumn(expected))
   }
 
-
   test("should handle null input with direction") {
     given {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _)  => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -115,7 +114,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _)  => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -142,7 +141,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _)  => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -153,7 +152,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .relationshipIndexOperator("(x)-[r:R(text CONTAINS 1337)]->(y)", indexType = IndexType.TEXT)
       .build()
 
-    //then
+    // then
     execute(logicalQuery, runtime) should beColumns("text").withNoRows()
   }
 
@@ -163,7 +162,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _)  => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -174,7 +173,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .relationshipIndexOperator("(x)-[r:R(text CONTAINS 1337)]-(y)", indexType = IndexType.TEXT)
       .build()
 
-    //then
+    // then
     execute(logicalQuery, runtime) should beColumns("text").withNoRows()
   }
 
@@ -189,7 +188,6 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       rels
     }
 
-
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "text")
@@ -200,7 +198,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.zipWithIndex.collect{ case (r, i) if i.toString.contains("1") => Array(r, i.toString)}
+    val expected = rels.zipWithIndex.collect { case (r, i) if i.toString.contains("1") => Array(r, i.toString) }
     runtimeResult should beColumns("r", "text").withRows(expected)
   }
 
@@ -231,7 +229,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
           Array(r.getStartNode, r.getEndNode, i.toString),
           Array(r.getEndNode, r.getStartNode, i.toString)
         )
-      case _  => Seq.empty
+      case _ => Seq.empty
     }
     runtimeResult should beColumns("x", "y", "text").withRows(expected)
   }
@@ -255,11 +253,13 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val input = (1 to 10).map(i => Array[Any](i))
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
-    val expected = for {_ <- 1 to 10
-                        r <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("1"))} yield Array(r.getStartNode, r, r.getEndNode)
+    val expected = for {
+      _ <- 1 to 10
+      r <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("1"))
+    } yield Array(r.getStartNode, r, r.getEndNode)
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
@@ -283,11 +283,13 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val input = (1 to 10).map(i => Array[Any](i))
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
-    val expected = for {_ <- 1 to 10
-                        r <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("1"))} yield Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode))
+    val expected = for {
+      _ <- 1 to 10
+      r <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("1"))
+    } yield Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode))
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected.flatten)
   }
@@ -313,8 +315,10 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {r1 <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("1"))
-                        r2 <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("2"))} yield Array(r1, r2)
+    val expected = for {
+      r1 <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("1"))
+      r2 <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("2"))
+    } yield Array(r1, r2)
 
     runtimeResult should beColumns("r1", "r2").withRows(expected)
   }
@@ -340,8 +344,10 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {r1 <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("1"))
-                        r2 <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("2"))} yield Seq.fill(4)(Array(r1, r2))
+    val expected = for {
+      r1 <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("1"))
+      r2 <- rels.filter(_.getProperty("text").asInstanceOf[String].contains("2"))
+    } yield Seq.fill(4)(Array(r1, r2))
     runtimeResult should beColumns("r1", "r2").withRows(expected.flatten)
   }
 
@@ -414,15 +420,19 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.projection("r.text AS value")
       .|.limit(limit)
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", argumentIds = Set("i"), indexType = IndexType.TEXT)
+      .|.relationshipIndexOperator(
+        "(x)-[r:R(text CONTAINS 'alu')]->(y)",
+        argumentIds = Set("i"),
+        indexType = IndexType.TEXT
+      )
       .input(variables = Seq("i"))
       .build()
 
     val input = (1 to 100).map(i => Array[Any](i))
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
-    //then
-    runtimeResult should beColumns("value").withRows(rowCount(limit * 100 ))
+    // then
+    runtimeResult should beColumns("value").withRows(rowCount(limit * 100))
   }
 
   test("limit and undirected scan on the RHS of an apply") {
@@ -442,15 +452,19 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.projection("r.text AS value")
       .|.limit(limit)
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]-(y)", argumentIds = Set("i"), indexType = IndexType.TEXT)
+      .|.relationshipIndexOperator(
+        "(x)-[r:R(text CONTAINS 'alu')]-(y)",
+        argumentIds = Set("i"),
+        indexType = IndexType.TEXT
+      )
       .input(variables = Seq("i"))
       .build()
 
     val input = (1 to 100).map(i => Array[Any](i))
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
-    //then
-    runtimeResult should beColumns("value").withRows(rowCount(limit * 100 ))
+    // then
+    runtimeResult should beColumns("value").withRows(rowCount(limit * 100))
   }
 
   test("limit on top of apply with directed scan on the RHS of an apply") {
@@ -470,14 +484,18 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .limit(limit)
       .apply()
       .|.projection("r.text AS value")
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", argumentIds = Set("i"), indexType = IndexType.TEXT)
+      .|.relationshipIndexOperator(
+        "(x)-[r:R(text CONTAINS 'alu')]->(y)",
+        argumentIds = Set("i"),
+        indexType = IndexType.TEXT
+      )
       .input(variables = Seq("i"))
       .build()
 
     val input = (1 to 100).map(i => Array[Any](i))
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
-    //then
+    // then
     runtimeResult should beColumns("value").withRows(rowCount(limit))
   }
 
@@ -498,14 +516,18 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .limit(limit)
       .apply()
       .|.projection("r.text AS value")
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]-(y)", argumentIds = Set("i"), indexType = IndexType.TEXT)
+      .|.relationshipIndexOperator(
+        "(x)-[r:R(text CONTAINS 'alu')]-(y)",
+        argumentIds = Set("i"),
+        indexType = IndexType.TEXT
+      )
       .input(variables = Seq("i"))
       .build()
 
     val input = (1 to 100).map(i => Array[Any](i))
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
-    //then
+    // then
     runtimeResult should beColumns("value").withRows(rowCount(limit))
   }
 }

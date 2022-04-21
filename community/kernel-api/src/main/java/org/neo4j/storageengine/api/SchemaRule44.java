@@ -32,11 +32,10 @@ import org.neo4j.internal.schema.SchemaUserDescription;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.util.Preconditions;
 
-public interface SchemaRule44
-{
+public interface SchemaRule44 {
     long id();
 
-    String userDescription( TokenNameLookup tokenNameLookup );
+    String userDescription(TokenNameLookup tokenNameLookup);
 
     SchemaRule convertTo50rule();
 
@@ -48,30 +47,40 @@ public interface SchemaRule44
             IndexType indexType,
             IndexProviderDescriptor providerDescriptor,
             IndexConfig indexConfig,
-            Long owningConstraintId
-    ) implements SchemaRule44
-    {
+            Long owningConstraintId)
+            implements SchemaRule44 {
         @Override
-        public String userDescription( TokenNameLookup tokenNameLookup )
-        {
-            return SchemaUserDescription.forIndex( tokenNameLookup, id, name, unique, indexType.name(), schema, providerDescriptor, owningConstraintId );
+        public String userDescription(TokenNameLookup tokenNameLookup) {
+            return SchemaUserDescription.forIndex(
+                    tokenNameLookup,
+                    id,
+                    name,
+                    unique,
+                    indexType.name(),
+                    schema,
+                    providerDescriptor,
+                    owningConstraintId);
         }
 
         @Override
-        public SchemaRule convertTo50rule()
-        {
-            Preconditions.checkState( indexType != IndexType.BTREE, "Unsupported migration for schema rule with BTREE index type. Id: " + id );
+        public SchemaRule convertTo50rule() {
+            Preconditions.checkState(
+                    indexType != IndexType.BTREE,
+                    "Unsupported migration for schema rule with BTREE index type. Id: " + id);
 
-            IndexPrototype prototype = unique ? IndexPrototype.uniqueForSchema( schema ) : IndexPrototype.forSchema( schema );
-            prototype = prototype.withName( name ).withIndexType( indexType.convertIndexType() ).withIndexProvider( providerDescriptor );
+            IndexPrototype prototype =
+                    unique ? IndexPrototype.uniqueForSchema(schema) : IndexPrototype.forSchema(schema);
+            prototype = prototype
+                    .withName(name)
+                    .withIndexType(indexType.convertIndexType())
+                    .withIndexProvider(providerDescriptor);
 
-            IndexDescriptor index = prototype.materialise( id );
+            IndexDescriptor index = prototype.materialise(id);
 
-            index = index.withIndexConfig( indexConfig );
+            index = index.withIndexConfig(indexConfig);
 
-            if ( owningConstraintId != null )
-            {
-                index = index.withOwningConstraintId( owningConstraintId );
+            if (owningConstraintId != null) {
+                index = index.withOwningConstraintId(owningConstraintId);
             }
 
             return index;
@@ -84,48 +93,45 @@ public interface SchemaRule44
             String name,
             ConstraintRuleType constraintRuleType,
             Long ownedIndex,
-            IndexType indexType
-    ) implements SchemaRule44
-    {
+            IndexType indexType)
+            implements SchemaRule44 {
         @Override
-        public String userDescription( TokenNameLookup tokenNameLookup )
-        {
-            return SchemaUserDescription.forConstraint( tokenNameLookup, id, name, constraintRuleType.asConstraintType(), schema, ownedIndex );
+        public String userDescription(TokenNameLookup tokenNameLookup) {
+            return SchemaUserDescription.forConstraint(
+                    tokenNameLookup, id, name, constraintRuleType.asConstraintType(), schema, ownedIndex);
         }
 
         @Override
-        public SchemaRule convertTo50rule()
-        {
+        public SchemaRule convertTo50rule() {
             ConstraintDescriptor constraint;
-            switch ( constraintRuleType )
-            {
-            case UNIQUE -> {
-                Preconditions.checkState( indexType == IndexType.RANGE,
-                        "Unsupported migration for constraint schema rule backed by BTREE index type. Id: " + id );
-                constraint = ConstraintDescriptorFactory.uniqueForSchema( schema, indexType.convertIndexType() );
-                if ( ownedIndex != null )
-                {
-                    constraint = constraint.withOwnedIndexId( ownedIndex );
+            switch (constraintRuleType) {
+                case UNIQUE -> {
+                    Preconditions.checkState(
+                            indexType == IndexType.RANGE,
+                            "Unsupported migration for constraint schema rule backed by BTREE index type. Id: " + id);
+                    constraint = ConstraintDescriptorFactory.uniqueForSchema(schema, indexType.convertIndexType());
+                    if (ownedIndex != null) {
+                        constraint = constraint.withOwnedIndexId(ownedIndex);
+                    }
                 }
-            }
-            case EXISTS -> constraint = ConstraintDescriptorFactory.existsForSchema( schema );
-            case UNIQUE_EXISTS -> {
-                Preconditions.checkState( indexType == IndexType.RANGE,
-                        "Unsupported migration for constraint schema rule backed by BTREE index type. Id: " + id );
-                constraint = ConstraintDescriptorFactory.nodeKeyForSchema( schema, indexType.convertIndexType() );
-                if ( ownedIndex != null )
-                {
-                    constraint = constraint.withOwnedIndexId( ownedIndex );
+                case EXISTS -> constraint = ConstraintDescriptorFactory.existsForSchema(schema);
+                case UNIQUE_EXISTS -> {
+                    Preconditions.checkState(
+                            indexType == IndexType.RANGE,
+                            "Unsupported migration for constraint schema rule backed by BTREE index type. Id: " + id);
+                    constraint = ConstraintDescriptorFactory.nodeKeyForSchema(schema, indexType.convertIndexType());
+                    if (ownedIndex != null) {
+                        constraint = constraint.withOwnedIndexId(ownedIndex);
+                    }
                 }
+                default -> throw new IllegalStateException(
+                        "Unsupported migration for constraint of type " + constraintRuleType.name());
             }
-            default -> throw new IllegalStateException( "Unsupported migration for constraint of type " + constraintRuleType.name() );
-            }
-            return constraint.withId( id ).withName( name );
+            return constraint.withId(id).withName(name);
         }
     }
 
-    enum IndexType
-    {
+    enum IndexType {
         BTREE,
         FULLTEXT,
         LOOKUP,
@@ -133,46 +139,40 @@ public interface SchemaRule44
         RANGE,
         POINT;
 
-        org.neo4j.internal.schema.IndexType convertIndexType()
-        {
-            return switch ( this )
-                    {
-                        case BTREE -> throw new IllegalStateException( "Trying to convert unsupported index type 'BTREE'" );
-                        case FULLTEXT -> org.neo4j.internal.schema.IndexType.FULLTEXT;
-                        case LOOKUP -> org.neo4j.internal.schema.IndexType.LOOKUP;
-                        case TEXT -> org.neo4j.internal.schema.IndexType.TEXT;
-                        case RANGE -> org.neo4j.internal.schema.IndexType.RANGE;
-                        case POINT -> org.neo4j.internal.schema.IndexType.POINT;
-                    };
+        org.neo4j.internal.schema.IndexType convertIndexType() {
+            return switch (this) {
+                case BTREE -> throw new IllegalStateException("Trying to convert unsupported index type 'BTREE'");
+                case FULLTEXT -> org.neo4j.internal.schema.IndexType.FULLTEXT;
+                case LOOKUP -> org.neo4j.internal.schema.IndexType.LOOKUP;
+                case TEXT -> org.neo4j.internal.schema.IndexType.TEXT;
+                case RANGE -> org.neo4j.internal.schema.IndexType.RANGE;
+                case POINT -> org.neo4j.internal.schema.IndexType.POINT;
+            };
         }
     }
 
-    enum ConstraintRuleType
-    {
-        UNIQUE( true, ConstraintType.UNIQUE ),
-        EXISTS( false, ConstraintType.EXISTS ),
-        UNIQUE_EXISTS( true, ConstraintType.UNIQUE_EXISTS );
+    enum ConstraintRuleType {
+        UNIQUE(true, ConstraintType.UNIQUE),
+        EXISTS(false, ConstraintType.EXISTS),
+        UNIQUE_EXISTS(true, ConstraintType.UNIQUE_EXISTS);
 
         private boolean isIndexBacked;
         private final ConstraintType constraintType;
 
-        ConstraintRuleType( boolean isIndexBacked, ConstraintType constraintType )
-        {
+        ConstraintRuleType(boolean isIndexBacked, ConstraintType constraintType) {
             this.isIndexBacked = isIndexBacked;
             this.constraintType = constraintType;
         }
 
-        public boolean isIndexBacked()
-        {
+        public boolean isIndexBacked() {
             return isIndexBacked;
         }
 
-        public ConstraintType asConstraintType()
-        {
+        public ConstraintType asConstraintType() {
             return constraintType;
         }
     }
 
-    IndexProviderDescriptor NATIVE_BTREE_10 = new IndexProviderDescriptor( "native-btree", "1.0" );
-    IndexProviderDescriptor LUCENE_NATIVE_30 = new IndexProviderDescriptor( "lucene+native", "3.0" );
+    IndexProviderDescriptor NATIVE_BTREE_10 = new IndexProviderDescriptor("native-btree", "1.0");
+    IndexProviderDescriptor LUCENE_NATIVE_30 = new IndexProviderDescriptor("lucene+native", "3.0");
 }

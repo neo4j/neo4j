@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.lang
-import java.util
-
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
+
+import java.lang
+import java.util
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 

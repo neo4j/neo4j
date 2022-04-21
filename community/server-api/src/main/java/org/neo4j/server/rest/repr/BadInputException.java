@@ -21,26 +21,21 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class BadInputException extends Exception implements Status.HasStatus
-{
-    public BadInputException( Throwable cause )
-    {
-        super( cause.getMessage(), cause );
+public class BadInputException extends Exception implements Status.HasStatus {
+    public BadInputException(Throwable cause) {
+        super(cause.getMessage(), cause);
     }
 
-    public BadInputException( String message )
-    {
-        super( message );
+    public BadInputException(String message) {
+        super(message);
     }
 
-    public BadInputException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public BadInputException(String message, Throwable cause) {
+        super(message, cause);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Request.InvalidFormat;
     }
 }

@@ -19,16 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
+import static org.neo4j.values.storable.Values.longValue;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
@@ -59,14 +62,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
-import static org.neo4j.values.storable.Values.longValue;
-
 @TestDirectoryExtension
-public class IndexingServiceIntegrationTest
-{
+public class IndexingServiceIntegrationTest {
     private static final String FOOD_LABEL = "food";
     private static final String CLOTHES_LABEL = "clothes";
     private static final String WEATHER_LABEL = "weather";
@@ -75,245 +72,255 @@ public class IndexingServiceIntegrationTest
 
     @Inject
     private TestDirectory directory;
+
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setUp()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() ).build();
-        database = managementService.database( DEFAULT_DATABASE_NAME );
-        createData( database );
+    void setUp() {
+        managementService = new TestDatabaseManagementServiceBuilder(directory.homePath()).build();
+        database = managementService.database(DEFAULT_DATABASE_NAME);
+        createData(database);
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         managementService.shutdown();
     }
 
     @Test
-    void tracePageCacheAccessOnIndexUpdatesApply() throws KernelException
-    {
-        var marker = Label.label( "marker" );
+    void tracePageCacheAccessOnIndexUpdatesApply() throws KernelException {
+        var marker = Label.label("marker");
         var propertyName = "property";
         var testConstraint = "testConstraint";
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.schema().constraintFor( marker ).withName( testConstraint ).assertPropertyIsUnique( propertyName ).create();
+        try (Transaction transaction = database.beginTx()) {
+            transaction
+                    .schema()
+                    .constraintFor(marker)
+                    .withName(testConstraint)
+                    .assertPropertyIsUnique(propertyName)
+                    .create();
             transaction.commit();
         }
 
         var dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
-        var indexingService = dependencyResolver.resolveDependency( IndexingService.class );
-        var contextFactory = dependencyResolver.resolveDependency( CursorContextFactory.class );
+        var indexingService = dependencyResolver.resolveDependency(IndexingService.class);
+        var contextFactory = dependencyResolver.resolveDependency(CursorContextFactory.class);
 
-        try ( Transaction transaction = database.beginTx() )
-        {
+        try (Transaction transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
-            var indexDescriptor = kernelTransaction.schemaRead().indexGetForName( testConstraint );
-            try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnIndexUpdatesApply" ) )
-            {
-                Iterable<IndexEntryUpdate<IndexDescriptor>> updates = List.of( add( 1, indexDescriptor, longValue( 4 ) ) );
-                indexingService.applyUpdates( updates, cursorContext, false );
+            var indexDescriptor = kernelTransaction.schemaRead().indexGetForName(testConstraint);
+            try (var cursorContext = contextFactory.create("tracePageCacheAccessOnIndexUpdatesApply")) {
+                Iterable<IndexEntryUpdate<IndexDescriptor>> updates = List.of(add(1, indexDescriptor, longValue(4)));
+                indexingService.applyUpdates(updates, cursorContext, false);
 
                 PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-                assertEquals( 4L, cursorTracer.pins() );
-                assertEquals( 4L, cursorTracer.unpins() );
-                assertEquals( 2L, cursorTracer.hits() );
-                assertEquals( 2L, cursorTracer.faults() );
+                assertEquals(4L, cursorTracer.pins());
+                assertEquals(4L, cursorTracer.unpins());
+                assertEquals(2L, cursorTracer.hits());
+                assertEquals(2L, cursorTracer.faults());
             }
         }
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
-    void testManualIndexPopulation( IndexType indexType ) throws InterruptedException, IndexNotFoundKernelException
-    {
+    @EnumSource(
+            value = IndexType.class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = {"LOOKUP"})
+    void testManualIndexPopulation(IndexType indexType) throws InterruptedException, IndexNotFoundKernelException {
         IndexDescriptor index;
-        try ( Transaction tx = database.beginTx() )
-        {
-            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( Label.label( FOOD_LABEL ) ).on( PROPERTY_NAME )
-                    .withIndexType( indexType ).create();
+        try (Transaction tx = database.beginTx()) {
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema()
+                    .indexFor(Label.label(FOOD_LABEL))
+                    .on(PROPERTY_NAME)
+                    .withIndexType(indexType)
+                    .create();
             index = indexDefinition.getIndexReference();
             tx.commit();
         }
 
-        IndexingService indexingService = getIndexingService( database );
-        IndexProxy indexProxy = indexingService.getIndexProxy( index );
+        IndexingService indexingService = getIndexingService(database);
+        IndexProxy indexProxy = indexingService.getIndexProxy(index);
 
-        waitIndexOnline( indexProxy );
-        assertEquals( InternalIndexState.ONLINE, indexProxy.getState() );
+        waitIndexOnline(indexProxy);
+        assertEquals(InternalIndexState.ONLINE, indexProxy.getState());
         PopulationProgress progress = indexProxy.getIndexPopulationProgress();
-        assertEquals( progress.getCompleted(), progress.getTotal() );
+        assertEquals(progress.getCompleted(), progress.getTotal());
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
-    void testManualRelationshipIndexPopulation( IndexType indexType ) throws Exception
-    {
+    @EnumSource(
+            value = IndexType.class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = {"LOOKUP"})
+    void testManualRelationshipIndexPopulation(IndexType indexType) throws Exception {
         IndexDescriptor index;
-        try ( Transaction tx = database.beginTx() )
-        {
-            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( RelationshipType.withName( FOOD_LABEL ) ).on( PROPERTY_NAME )
-                    .withIndexType( indexType ).create();
+        try (Transaction tx = database.beginTx()) {
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema()
+                    .indexFor(RelationshipType.withName(FOOD_LABEL))
+                    .on(PROPERTY_NAME)
+                    .withIndexType(indexType)
+                    .create();
             index = indexDefinition.getIndexReference();
             tx.commit();
         }
 
-        IndexingService indexingService = getIndexingService( database );
-        IndexProxy indexProxy = indexingService.getIndexProxy( index );
+        IndexingService indexingService = getIndexingService(database);
+        IndexProxy indexProxy = indexingService.getIndexProxy(index);
 
-        waitIndexOnline( indexProxy );
-        assertEquals( InternalIndexState.ONLINE, indexProxy.getState() );
+        waitIndexOnline(indexProxy);
+        assertEquals(InternalIndexState.ONLINE, indexProxy.getState());
         PopulationProgress progress = indexProxy.getIndexPopulationProgress();
-        assertEquals( progress.getCompleted(), progress.getTotal() );
+        assertEquals(progress.getCompleted(), progress.getTotal());
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
-    void testSchemaIndexMatchIndexingService( IndexType indexType ) throws IndexNotFoundKernelException
-    {
+    @EnumSource(
+            value = IndexType.class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = {"LOOKUP"})
+    void testSchemaIndexMatchIndexingService(IndexType indexType) throws IndexNotFoundKernelException {
         String constraintName = "MyConstraint";
         String indexName = "MyIndex";
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.schema().constraintFor( Label.label( CLOTHES_LABEL ) ).assertPropertyIsUnique( PROPERTY_NAME ).withName( constraintName ).create();
-            transaction.schema().indexFor( Label.label( WEATHER_LABEL ) ).on( PROPERTY_NAME ).withIndexType( indexType ).withName( indexName ).create();
+        try (Transaction transaction = database.beginTx()) {
+            transaction
+                    .schema()
+                    .constraintFor(Label.label(CLOTHES_LABEL))
+                    .assertPropertyIsUnique(PROPERTY_NAME)
+                    .withName(constraintName)
+                    .create();
+            transaction
+                    .schema()
+                    .indexFor(Label.label(WEATHER_LABEL))
+                    .on(PROPERTY_NAME)
+                    .withIndexType(indexType)
+                    .withName(indexName)
+                    .create();
 
             transaction.commit();
         }
 
-        try ( Transaction tx = database.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = database.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
         }
 
-        IndexingService indexingService = getIndexingService( database );
+        IndexingService indexingService = getIndexingService(database);
 
-        IndexProxy clothesIndex = indexingService.getIndexProxy( getIndexByName( constraintName ) );
-        IndexProxy weatherIndex = indexingService.getIndexProxy( getIndexByName( indexName ) );
-        assertEquals( InternalIndexState.ONLINE, clothesIndex.getState());
-        assertEquals( InternalIndexState.ONLINE, weatherIndex.getState());
+        IndexProxy clothesIndex = indexingService.getIndexProxy(getIndexByName(constraintName));
+        IndexProxy weatherIndex = indexingService.getIndexProxy(getIndexByName(indexName));
+        assertEquals(InternalIndexState.ONLINE, clothesIndex.getState());
+        assertEquals(InternalIndexState.ONLINE, weatherIndex.getState());
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
-    void dropIndexDirectlyOnIndexingServiceRaceWithCheckpoint( IndexType indexType ) throws Throwable
-    {
-        IndexingService indexingService = getIndexingService( database );
-        CheckPointer checkPointer = getCheckPointer( database );
+    @EnumSource(
+            value = IndexType.class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = {"LOOKUP"})
+    void dropIndexDirectlyOnIndexingServiceRaceWithCheckpoint(IndexType indexType) throws Throwable {
+        IndexingService indexingService = getIndexingService(database);
+        CheckPointer checkPointer = getCheckPointer(database);
 
         IndexDescriptor indexDescriptor;
-        try ( Transaction tx = database.beginTx() )
-        {
-            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( Label.label( "label" ) ).on( "prop" )
-                    .withIndexType( indexType ).create();
+        try (Transaction tx = database.beginTx()) {
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema()
+                    .indexFor(Label.label("label"))
+                    .on("prop")
+                    .withIndexType(indexType)
+                    .create();
             indexDescriptor = indexDefinition.getIndexReference();
             tx.commit();
         }
-        try ( Transaction tx = database.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+        try (Transaction tx = database.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, TimeUnit.HOURS);
             tx.commit();
         }
 
         Race race = new Race();
-        race.addContestant( Race.throwing( () -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Test force" ) ) ) );
+        race.addContestant(Race.throwing(() -> checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test force"))));
 
-        race.addContestant( Race.throwing( () -> indexingService.dropIndex( indexDescriptor ) ) );
+        race.addContestant(Race.throwing(() -> indexingService.dropIndex(indexDescriptor)));
         race.go();
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
-    void dropIndexRaceWithCheckpoint( IndexType indexType ) throws Throwable
-    {
-        CheckPointer checkPointer = getCheckPointer( database );
+    @EnumSource(
+            value = IndexType.class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = {"LOOKUP"})
+    void dropIndexRaceWithCheckpoint(IndexType indexType) throws Throwable {
+        CheckPointer checkPointer = getCheckPointer(database);
 
         int nbrOfIndexes = 100;
-        try ( Transaction tx = database.beginTx() )
-        {
-            for ( int i = 0; i < nbrOfIndexes; i++ )
-            {
-                tx.schema().indexFor( Label.label( "label" ) ).on( "prop" + i ).withIndexType( indexType ).create();
+        try (Transaction tx = database.beginTx()) {
+            for (int i = 0; i < nbrOfIndexes; i++) {
+                tx.schema()
+                        .indexFor(Label.label("label"))
+                        .on("prop" + i)
+                        .withIndexType(indexType)
+                        .create();
             }
             tx.commit();
         }
-        try ( Transaction tx = database.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+        try (Transaction tx = database.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, TimeUnit.HOURS);
             tx.commit();
         }
 
         AtomicBoolean allIndexesDropped = new AtomicBoolean();
         Race race = new Race();
-        race.addContestant( Race.throwing( () -> {
-            while ( !allIndexesDropped.get() )
-            {
-                checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Test force" ) );
+        race.addContestant(Race.throwing(() -> {
+            while (!allIndexesDropped.get()) {
+                checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test force"));
             }
-        } ) );
-        race.addContestant( Race.throwing( () ->
-        {
-            try ( Transaction tx = database.beginTx() )
-            {
-                tx.schema().getIndexes().forEach( IndexDefinition::drop );
+        }));
+        race.addContestant(Race.throwing(() -> {
+            try (Transaction tx = database.beginTx()) {
+                tx.schema().getIndexes().forEach(IndexDefinition::drop);
                 tx.commit();
+            } finally {
+                allIndexesDropped.set(true);
             }
-            finally
-            {
-                allIndexesDropped.set( true );
-            }
-        } ) );
+        }));
         race.go();
     }
 
-    private static void waitIndexOnline( IndexProxy indexProxy ) throws InterruptedException
-    {
-        while ( InternalIndexState.ONLINE != indexProxy.getState() )
-        {
-            Thread.sleep( 10 );
+    private static void waitIndexOnline(IndexProxy indexProxy) throws InterruptedException {
+        while (InternalIndexState.ONLINE != indexProxy.getState()) {
+            Thread.sleep(10);
         }
     }
 
-    private static IndexingService getIndexingService( GraphDatabaseService database )
-    {
-        return getDependencyResolver(database).resolveDependency( IndexingService.class );
+    private static IndexingService getIndexingService(GraphDatabaseService database) {
+        return getDependencyResolver(database).resolveDependency(IndexingService.class);
     }
 
-    private static CheckPointer getCheckPointer( GraphDatabaseService database )
-    {
-        return getDependencyResolver( database ).resolveDependency( CheckPointer.class );
+    private static CheckPointer getCheckPointer(GraphDatabaseService database) {
+        return getDependencyResolver(database).resolveDependency(CheckPointer.class);
     }
 
-    private static DependencyResolver getDependencyResolver( GraphDatabaseService database )
-    {
-        return ((GraphDatabaseAPI)database).getDependencyResolver();
+    private static DependencyResolver getDependencyResolver(GraphDatabaseService database) {
+        return ((GraphDatabaseAPI) database).getDependencyResolver();
     }
 
-    private static void createData( GraphDatabaseService database )
-    {
-        for ( int i = 0; i < NUMBER_OF_NODES; i++ )
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                Node node = transaction.createNode( Label.label( FOOD_LABEL ), Label.label( CLOTHES_LABEL ),
-                        Label.label( WEATHER_LABEL ) );
-                node.setProperty( PROPERTY_NAME, "Node" + i );
-                Relationship relationship = node.createRelationshipTo( node, RelationshipType.withName( FOOD_LABEL ) );
-                relationship.setProperty( PROPERTY_NAME, "Relationship" + i );
+    private static void createData(GraphDatabaseService database) {
+        for (int i = 0; i < NUMBER_OF_NODES; i++) {
+            try (Transaction transaction = database.beginTx()) {
+                Node node = transaction.createNode(
+                        Label.label(FOOD_LABEL), Label.label(CLOTHES_LABEL), Label.label(WEATHER_LABEL));
+                node.setProperty(PROPERTY_NAME, "Node" + i);
+                Relationship relationship = node.createRelationshipTo(node, RelationshipType.withName(FOOD_LABEL));
+                relationship.setProperty(PROPERTY_NAME, "Relationship" + i);
                 transaction.commit();
             }
         }
     }
 
-    private IndexDescriptor getIndexByName( String name )
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
+    private IndexDescriptor getIndexByName(String name) {
+        try (Transaction tx = database.beginTx()) {
             KernelTransaction transaction = ((InternalTransaction) tx).kernelTransaction();
-            return transaction.schemaRead().indexGetForName( name );
+            return transaction.schemaRead().indexGetForName(name);
         }
     }
 }

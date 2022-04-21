@@ -20,7 +20,6 @@
 package org.neo4j.server.helpers;
 
 import java.nio.file.Path;
-
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -29,119 +28,94 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.logging.InternalLogProvider;
 
-public final class WebContainerHelper
-{
-    private WebContainerHelper()
-    {
-    }
+public final class WebContainerHelper {
+    private WebContainerHelper() {}
 
-    public static void cleanTheDatabase( final TestWebContainer testWebContainer )
-    {
-        if ( testWebContainer == null )
-        {
+    public static void cleanTheDatabase(final TestWebContainer testWebContainer) {
+        if (testWebContainer == null) {
             return;
         }
 
-        rollbackAllOpenTransactions( testWebContainer );
+        rollbackAllOpenTransactions(testWebContainer);
 
-        cleanTheDatabase( testWebContainer.getDefaultDatabase() );
+        cleanTheDatabase(testWebContainer.getDefaultDatabase());
     }
 
-    public static void cleanTheDatabase( GraphDatabaseService db )
-    {
-        new Transactor( db, new DeleteAllData(), 10 ).execute();
-        new Transactor( db, new DeleteAllSchema(), 10 ).execute();
+    public static void cleanTheDatabase(GraphDatabaseService db) {
+        new Transactor(db, new DeleteAllData(), 10).execute();
+        new Transactor(db, new DeleteAllSchema(), 10).execute();
     }
 
-    public static TestWebContainer createNonPersistentContainer() throws Exception
-    {
-        return createContainer( CommunityWebContainerBuilder.builder(), false, null );
+    public static TestWebContainer createNonPersistentContainer() throws Exception {
+        return createContainer(CommunityWebContainerBuilder.builder(), false, null);
     }
 
-    public static TestWebContainer createReadOnlyContainer( Path path ) throws Exception
-    {
+    public static TestWebContainer createReadOnlyContainer(Path path) throws Exception {
         CommunityWebContainerBuilder builder = CommunityWebContainerBuilder.builder();
-        builder.withProperty( "dbms.connector.bolt.listen_address", ":0" );
-        createContainer( builder, true, path ).shutdown();
-        builder.withProperty( GraphDatabaseSettings.read_only_database_default.name(), "true" );
-        return createContainer( builder, true, path );
+        builder.withProperty("dbms.connector.bolt.listen_address", ":0");
+        createContainer(builder, true, path).shutdown();
+        builder.withProperty(GraphDatabaseSettings.read_only_database_default.name(), "true");
+        return createContainer(builder, true, path);
     }
 
-    public static TestWebContainer createNonPersistentContainer( InternalLogProvider logProvider ) throws Exception
-    {
-        return createContainer( CommunityWebContainerBuilder.builder( logProvider ), false, null );
+    public static TestWebContainer createNonPersistentContainer(InternalLogProvider logProvider) throws Exception {
+        return createContainer(CommunityWebContainerBuilder.builder(logProvider), false, null);
     }
 
-    public static TestWebContainer createNonPersistentContainer( CommunityWebContainerBuilder builder ) throws Exception
-    {
-        return createContainer( builder, false, null );
+    public static TestWebContainer createNonPersistentContainer(CommunityWebContainerBuilder builder) throws Exception {
+        return createContainer(builder, false, null);
     }
 
-    private static TestWebContainer createContainer( CommunityWebContainerBuilder builder, boolean persistent, Path path ) throws Exception
-    {
-        if ( persistent )
-        {
+    private static TestWebContainer createContainer(CommunityWebContainerBuilder builder, boolean persistent, Path path)
+            throws Exception {
+        if (persistent) {
             builder = builder.persistent();
         }
         builder.onRandomPorts();
-        return builder
-              .usingDataDir( path != null ? path.toAbsolutePath().toString() : null )
-              .build();
+        return builder.usingDataDir(path != null ? path.toAbsolutePath().toString() : null)
+                .build();
     }
 
-    private static void rollbackAllOpenTransactions( TestWebContainer testWebContainer )
-    {
+    private static void rollbackAllOpenTransactions(TestWebContainer testWebContainer) {
         testWebContainer.getTransactionRegistry().rollbackAllSuspendedTransactions();
     }
 
-    private static class DeleteAllData implements UnitOfWork
-    {
+    private static class DeleteAllData implements UnitOfWork {
         @Override
-        public void doWork( Transaction transaction )
-        {
-            deleteAllNodesAndRelationships( transaction );
+        public void doWork(Transaction transaction) {
+            deleteAllNodesAndRelationships(transaction);
         }
 
-        private static void deleteAllNodesAndRelationships( Transaction tx )
-        {
-            try ( ResourceIterable<Node> allNodes = tx.getAllNodes() )
-            {
-                for ( Node n : allNodes )
-                {
-                    Iterables.forEach( n.getRelationships(), Relationship::delete );
+        private static void deleteAllNodesAndRelationships(Transaction tx) {
+            try (ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+                for (Node n : allNodes) {
+                    Iterables.forEach(n.getRelationships(), Relationship::delete);
                     n.delete();
                 }
             }
         }
     }
 
-    private static class DeleteAllSchema implements UnitOfWork
-    {
+    private static class DeleteAllSchema implements UnitOfWork {
         @Override
-        public void doWork( Transaction transaction )
-        {
-            deleteAllIndexRules( transaction );
-            deleteAllConstraints( transaction );
+        public void doWork(Transaction transaction) {
+            deleteAllIndexRules(transaction);
+            deleteAllConstraints(transaction);
         }
 
-        private static void deleteAllIndexRules( Transaction transaction )
-        {
-            for ( IndexDefinition index : transaction.schema().getIndexes() )
-            {
-                if ( !index.isConstraintIndex() )
-                {
+        private static void deleteAllIndexRules(Transaction transaction) {
+            for (IndexDefinition index : transaction.schema().getIndexes()) {
+                if (!index.isConstraintIndex()) {
                     index.drop();
                 }
             }
         }
 
-        private static void deleteAllConstraints( Transaction transaction )
-        {
-            for ( ConstraintDefinition constraint : transaction.schema().getConstraints() )
-            {
+        private static void deleteAllConstraints(Transaction transaction) {
+            for (ConstraintDefinition constraint : transaction.schema().getConstraints()) {
                 constraint.drop();
             }
         }

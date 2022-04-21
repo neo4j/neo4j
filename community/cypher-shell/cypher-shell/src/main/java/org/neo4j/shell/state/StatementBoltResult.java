@@ -21,7 +21,6 @@ package org.neo4j.shell.state;
 
 import java.util.Iterator;
 import java.util.List;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.summary.ResultSummary;
@@ -29,37 +28,31 @@ import org.neo4j.driver.summary.ResultSummary;
 /**
  * Wrapper around {@link Result}. Might or might not be materialized.
  */
-public class StatementBoltResult implements BoltResult
-{
+public class StatementBoltResult implements BoltResult {
 
     private final Result result;
 
-    public StatementBoltResult( Result result )
-    {
+    public StatementBoltResult(Result result) {
         this.result = result;
     }
 
     @Override
-    public List<String> getKeys()
-    {
+    public List<String> getKeys() {
         return result.keys();
     }
 
     @Override
-    public List<Record> getRecords()
-    {
+    public List<Record> getRecords() {
         return result.list();
     }
 
     @Override
-    public Iterator<Record> iterate()
-    {
+    public Iterator<Record> iterate() {
         return result;
     }
 
     @Override
-    public ResultSummary getSummary()
-    {
+    public ResultSummary getSummary() {
         return result.consume();
     }
 }

@@ -55,28 +55,30 @@ object PredicateHelper {
     case e: PatternExpression =>
       GreaterThan(
         FunctionInvocation(FunctionName(functions.Length.name)(e.position), e)(e.position),
-        UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
+        UnsignedDecimalIntegerLiteral("0")(e.position)
+      )(e.position)
     case e: ListComprehension => GreaterThan(
-      FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
-      UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
+        FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
+        UnsignedDecimalIntegerLiteral("0")(e.position)
+      )(e.position)
     case e if isPredicate(e) => e
-    case e => CoerceToPredicate(e)
+    case e                   => CoerceToPredicate(e)
   }
 
-  //TODO we should be able to use the semantic table for this however for two reasons we cannot
-  //i) we do late ast rewrite after semantic analysis, so all semantic table will be missing some expression
-  //ii) For WHERE a.prop semantic analysis will say that a.prop has boolean type since it belongs to a WHERE.
+  // TODO we should be able to use the semantic table for this however for two reasons we cannot
+  // i) we do late ast rewrite after semantic analysis, so all semantic table will be missing some expression
+  // ii) For WHERE a.prop semantic analysis will say that a.prop has boolean type since it belongs to a WHERE.
   //    That makes it not usable here since we would need to coerce in that case.
   def isPredicate(expression: Expression): Boolean = {
     expression match {
-      case _: BooleanExpression |  _:BooleanLiteral => true
-      case o: OperatorExpression => o.signatures.forall(_.outputType == symbols.CTBoolean)
+      case _: BooleanExpression | _: BooleanLiteral => true
+      case o: OperatorExpression                    => o.signatures.forall(_.outputType == symbols.CTBoolean)
       case f: FunctionInvocation => f.function match {
-        case ts: TypeSignatures => ts.signatures.forall(_.outputType == symbols.CTBoolean)
-        case func => false
-      }
+          case ts: TypeSignatures => ts.signatures.forall(_.outputType == symbols.CTBoolean)
+          case func               => false
+        }
       case f: ResolvedFunctionInvocation => f.fcnSignature.forall(_.outputType == symbols.CTBoolean)
-      case _ => false
+      case _                             => false
     }
   }
 }

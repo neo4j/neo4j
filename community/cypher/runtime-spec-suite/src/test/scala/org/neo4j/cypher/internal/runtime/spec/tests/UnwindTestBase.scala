@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
+import java.util
+
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
-                                                          edition: Edition[CONTEXT],
-                                                          runtime: CypherRuntime[CONTEXT],
-                                                          sizeHint: Int
-                                                        ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should unwind on top of argument with no IDs") {
     // when
@@ -102,7 +102,10 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("i").withRows(singleColumn(Seq(util.Arrays.asList(1, 2, 3), util.Arrays.asList(4, 5, 6))))
+    runtimeResult should beColumns("i").withRows(singleColumn(Seq(
+      util.Arrays.asList(1, 2, 3),
+      util.Arrays.asList(4, 5, 6)
+    )))
   }
 
   test("should produce no rows on top of empty input") {
@@ -146,7 +149,8 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
     // given
     val input = inputValues(
       Array(util.Arrays.asList(10, 20, 30)),
-      Array(util.Arrays.asList(100, 200, 300)))
+      Array(util.Arrays.asList(100, 200, 300))
+    )
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -180,7 +184,7 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("a"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expected = for {
@@ -208,20 +212,20 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("a"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expected = for {
       a <- 1 to sizeHint
       rhs = for {
-        b <- ( a*10) to ( a*10 + 10)
-        c <- (-a*10) to (-a*10 + 10)
+        b <- (a * 10) to (a * 10 + 10)
+        c <- (-a * 10) to (-a * 10 + 10)
       } yield (b, c)
       (b, c) <- rhs.take(limit)
     } yield Array[Any](a, b, c)
 
     if (isParallel) {
-      //In parallel we can't be sure what item that is produced on the RHS
+      // In parallel we can't be sure what item that is produced on the RHS
       runtimeResult should beColumns("a", "b", "c").withRows(rowCount(limit * input.length))
     } else {
       runtimeResult should beColumns("a", "b", "c").withRows(expected)
@@ -245,10 +249,16 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("two"))
       .build()
 
-
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(1), Array(2)))
 
     // then
-    runtimeResult should beColumns("two", "x").withRows(Seq(Array(1,1), Array(1,2), Array(1,3), Array(2,1), Array(2,2), Array(2,3)))
+    runtimeResult should beColumns("two", "x").withRows(Seq(
+      Array(1, 1),
+      Array(1, 2),
+      Array(1, 3),
+      Array(2, 1),
+      Array(2, 2),
+      Array(2, 3)
+    ))
   }
 }

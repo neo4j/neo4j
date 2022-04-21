@@ -23,15 +23,17 @@ import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.StepSequencer
 
 case class LogicalPlanCondition(inner: ValidatingCondition) extends ValidatingCondition {
+
   override def apply(state: Any): Seq[String] = state match {
     case s: LogicalPlanState => inner(s.logicalPlan)
-    case x => throw new IllegalStateException(s"Unknown state: $x")
+    case x                   => throw new IllegalStateException(s"Unknown state: $x")
   }
 
   override def name: String = productPrefix
 }
 
 object LogicalPlanCondition {
+
   /**
    * Conditions that during Rewriting check the LogicalPlan need to be checked on the LogicalPlan only.
    * When checking these same conditions during higher-level phases, we need to wrap ValidatingCondition in LogicalPlanCondition.
@@ -39,8 +41,7 @@ object LogicalPlanCondition {
   def wrap(condition: StepSequencer.Condition): StepSequencer.Condition = {
     condition match {
       case vc: ValidatingCondition => LogicalPlanCondition(vc)
-      case _ => condition
+      case _                       => condition
     }
   }
 }
-

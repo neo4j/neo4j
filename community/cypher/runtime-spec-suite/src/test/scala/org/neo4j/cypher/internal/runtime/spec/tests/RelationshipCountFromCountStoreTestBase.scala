@@ -29,9 +29,9 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 
 abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
-                                                                                   edition: Edition[CONTEXT],
-                                                                                   runtime: CypherRuntime[CONTEXT]
-                                                                                 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
   private val actualSize = 11
 
   test("should get count when both wildcard labels") {
@@ -55,7 +55,7 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
   }
 
   test("should get count for single relationship type and start label") {
-    val (aNodes, bNodes) = given { bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")}
+    val (aNodes, bNodes) = given { bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -167,7 +167,12 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
 
-    given { tx.createNode(Label.label("NotThereYet")).createRelationshipTo(tx.createNode(), RelationshipType.withName("RelType")) }
+    given {
+      tx.createNode(Label.label("NotThereYet")).createRelationshipTo(
+        tx.createNode(),
+        RelationshipType.withName("RelType")
+      )
+    }
 
     // then
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))
@@ -179,13 +184,18 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipCountFromCountStore("x", None, List("RelType"),  Some("NotThereYet"))
+      .relationshipCountFromCountStore("x", None, List("RelType"), Some("NotThereYet"))
       .build()
 
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
 
-    given { tx.createNode().createRelationshipTo(tx.createNode(Label.label("NotThereYet")), RelationshipType.withName("RelType")) }
+    given {
+      tx.createNode().createRelationshipTo(
+        tx.createNode(Label.label("NotThereYet")),
+        RelationshipType.withName("RelType")
+      )
+    }
 
     // then
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))
@@ -258,7 +268,6 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
   }
 
   test("should get count for multiple identical relationship types not there at compile time and one provided label") {
-
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

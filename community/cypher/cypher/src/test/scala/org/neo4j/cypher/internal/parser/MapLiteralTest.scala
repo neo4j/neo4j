@@ -49,9 +49,14 @@ class MapLiteralTest extends JavaccParserTestBase[internal.expressions.Expressio
       commands.expressions.LiteralMap(Map("key" -> literal("value")))
 
     parsing("{ inner1: { inner2: 'Value' } }") shouldGive
-      commands.expressions.LiteralMap(Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> literal("Value")))))
+      commands.expressions.LiteralMap(
+        Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> literal("Value"))))
+      )
   }
 
-  private val converters = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
-  def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
+  private val converters =
+    new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+
+  def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =
+    converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

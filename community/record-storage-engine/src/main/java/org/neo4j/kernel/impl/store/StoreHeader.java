@@ -22,6 +22,4 @@ package org.neo4j.kernel.impl.store;
 /**
  * Information extracted from the header of a store.
  */
-public interface StoreHeader
-{
-}
+public interface StoreHeader {}

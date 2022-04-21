@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.internal.helpers.Cancelable;
 import org.neo4j.internal.helpers.CancellationRequest;
 
@@ -30,58 +29,47 @@ import org.neo4j.internal.helpers.CancellationRequest;
  * cancelled en mass. Instances of {@link Task} acquired through the {@link #newTask()} method can be
  * notified of cancellation with the semantics of {@link CancellationRequest}.
  */
-public class TaskCoordinator implements Cancelable, CancellationRequest
-{
+public class TaskCoordinator implements Cancelable, CancellationRequest {
     private final AtomicInteger tasks = new AtomicInteger();
     private volatile boolean cancelled;
 
     @Override
-    public void cancel()
-    {
+    public void cancel() {
         cancelled = true;
     }
 
-    public void awaitCompletion() throws InterruptedException
-    {
-        while ( tasks.get() > 0 )
-        {
-            TimeUnit.MILLISECONDS.sleep( 10 );
+    public void awaitCompletion() throws InterruptedException {
+        while (tasks.get() > 0) {
+            TimeUnit.MILLISECONDS.sleep(10);
         }
     }
 
     @Override
-    public boolean cancellationRequested()
-    {
+    public boolean cancellationRequested() {
         return cancelled;
     }
 
-    public Task newTask()
-    {
+    public Task newTask() {
         Task task = new Task();
-        if ( cancelled )
-        {
+        if (cancelled) {
             task.close();
-            throw new IllegalStateException( "This manager has already been cancelled." );
+            throw new IllegalStateException("This manager has already been cancelled.");
         }
         return task;
     }
 
-    public class Task implements AutoCloseable, CancellationRequest
-    {
-        Task()
-        {
+    public class Task implements AutoCloseable, CancellationRequest {
+        Task() {
             tasks.incrementAndGet();
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             tasks.decrementAndGet();
         }
 
         @Override
-        public boolean cancellationRequested()
-        {
+        public boolean cancellationRequested() {
             return TaskCoordinator.this.cancellationRequested();
         }
     }

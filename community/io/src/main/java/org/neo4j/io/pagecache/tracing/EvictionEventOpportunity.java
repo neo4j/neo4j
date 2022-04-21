@@ -22,10 +22,9 @@ package org.neo4j.io.pagecache.tracing;
 /**
  * Interface for any event that in turn presents the opportunity to evict a page.
  */
-public interface EvictionEventOpportunity
-{
+public interface EvictionEventOpportunity {
     /**
      * Begin an eviction event.
      */
-    EvictionEvent beginEviction( long cachePageId );
+    EvictionEvent beginEviction(long cachePageId);
 }

@@ -31,21 +31,35 @@ class noUnnamedPatternElementsInPatternComprehensionTest extends CypherFunSuite 
   private val condition: Any => Seq[String] = noUnnamedPatternElementsInPatternComprehension
 
   test("should detect an unnamed pattern element in comprehension") {
-    val input: ASTNode = PatternComprehension(None, RelationshipsPattern(
-      RelationshipChain(NodePattern(None, None, None, None) _,
-                        RelationshipPattern(None, Seq.empty, None, None, None, SemanticDirection.OUTGOING) _,
-                        NodePattern(None, None, None, None) _) _) _,
-      None, literalString("foo"))(pos, Set.empty, "", "")
+    val input: ASTNode = PatternComprehension(
+      None,
+      RelationshipsPattern(
+        RelationshipChain(
+          NodePattern(None, None, None, None) _,
+          RelationshipPattern(None, Seq.empty, None, None, None, SemanticDirection.OUTGOING) _,
+          NodePattern(None, None, None, None) _
+        ) _
+      ) _,
+      None,
+      literalString("foo")
+    )(pos, Set.empty, "", "")
 
     condition(input) should equal(Seq(s"Expression $input contains pattern elements which are not named"))
   }
 
   test("should not react to fully named pattern comprehension") {
-    val input: PatternComprehension = PatternComprehension(Some(varFor("p")), RelationshipsPattern(
-      RelationshipChain(NodePattern(Some(varFor("a")), None, None, None) _,
-                        RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.OUTGOING) _,
-                        NodePattern(Some(varFor("b")), None, None, None) _) _) _,
-      None, literalString("foo"))(pos, Set.empty, "", "")
+    val input: PatternComprehension = PatternComprehension(
+      Some(varFor("p")),
+      RelationshipsPattern(
+        RelationshipChain(
+          NodePattern(Some(varFor("a")), None, None, None) _,
+          RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.OUTGOING) _,
+          NodePattern(Some(varFor("b")), None, None, None) _
+        ) _
+      ) _,
+      None,
+      literalString("foo")
+    )(pos, Set.empty, "", "")
 
     condition(input) shouldBe empty
   }

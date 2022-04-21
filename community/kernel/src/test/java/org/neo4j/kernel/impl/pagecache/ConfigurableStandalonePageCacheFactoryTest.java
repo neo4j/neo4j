@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -36,35 +37,28 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @TestDirectoryExtension
-class ConfigurableStandalonePageCacheFactoryTest
-{
+class ConfigurableStandalonePageCacheFactoryTest {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void mustAutomaticallyStartEvictionThread() throws Exception
-    {
-        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-              JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
-        {
-            Path file = testDirectory.homePath().resolve( "a" ).normalize();
-            fs.write( file ).close();
+    void mustAutomaticallyStartEvictionThread() throws Exception {
+        try (FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+                JobScheduler jobScheduler = new ThreadPoolJobScheduler()) {
+            Path file = testDirectory.homePath().resolve("a").normalize();
+            fs.write(file).close();
 
-            try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, jobScheduler, PageCacheTracer.NULL );
-                    PagedFile pf = cache.map( file, 4096, DEFAULT_DATABASE_NAME );
-                    PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT ) )
-            {
+            try (PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache(
+                            fs, jobScheduler, PageCacheTracer.NULL);
+                    PagedFile pf = cache.map(file, 4096, DEFAULT_DATABASE_NAME);
+                    PageCursor cursor = pf.io(0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT)) {
                 // The default size is currently 8MBs.
                 // It should be possible to write more than that.
                 // If the eviction thread has not been started, then this test will block forever.
-                for ( int i = 0; i < 10_000; i++ )
-                {
-                    assertTrue( cursor.next() );
-                    cursor.putInt( 42 );
+                for (int i = 0; i < 10_000; i++) {
+                    assertTrue(cursor.next());
+                    cursor.putInt(42);
                 }
             }
         }

@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index.storage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.storage.layout.FolderLayout;
@@ -32,8 +31,7 @@ import org.neo4j.string.UTF8;
  * Helper class for storing a failure message that happens during an OutOfDisk situation in
  * a pre-allocated file
  */
-public class FailureStorage
-{
+public class FailureStorage {
     private static final int MAX_FAILURE_SIZE = 16384;
     public static final String DEFAULT_FAILURE_FILE_NAME = "failure-message";
 
@@ -45,16 +43,14 @@ public class FailureStorage
      * @param failureFileName name of failure files to be created
      * @param folderLayout describing where failure files should be stored
      */
-    public FailureStorage( FileSystemAbstraction fs, FolderLayout folderLayout, String failureFileName )
-    {
+    public FailureStorage(FileSystemAbstraction fs, FolderLayout folderLayout, String failureFileName) {
         this.fs = fs;
         this.folderLayout = folderLayout;
         this.failureFileName = failureFileName;
     }
 
-    public FailureStorage( FileSystemAbstraction fs, FolderLayout folderLayout )
-    {
-        this( fs, folderLayout, DEFAULT_FAILURE_FILE_NAME );
+    public FailureStorage(FileSystemAbstraction fs, FolderLayout folderLayout) {
+        this(fs, folderLayout, DEFAULT_FAILURE_FILE_NAME);
     }
 
     /**
@@ -64,14 +60,12 @@ public class FailureStorage
      *
      * @throws IOException if the failure file could not be created
      */
-    public synchronized void reserveForIndex() throws IOException
-    {
-        fs.mkdirs( folderLayout.getIndexFolder() );
+    public synchronized void reserveForIndex() throws IOException {
+        fs.mkdirs(folderLayout.getIndexFolder());
         Path failureFile = failureFile();
-        try ( StoreChannel channel = fs.write( failureFile ) )
-        {
-            channel.writeAll( ByteBuffer.wrap( new byte[MAX_FAILURE_SIZE] ) );
-            channel.force( true );
+        try (StoreChannel channel = fs.write(failureFile)) {
+            channel.writeAll(ByteBuffer.wrap(new byte[MAX_FAILURE_SIZE]));
+            channel.force(true);
         }
     }
 
@@ -79,28 +73,22 @@ public class FailureStorage
      * Delete failure file for the given index id
      *
      */
-    public synchronized void clearForIndex() throws IOException
-    {
-        fs.deleteFile( failureFile() );
+    public synchronized void clearForIndex() throws IOException {
+        fs.deleteFile(failureFile());
     }
 
     /**
      * @return the failure, if any. Otherwise {@code null} marking no failure.
      */
-    public synchronized String loadIndexFailure()
-    {
+    public synchronized String loadIndexFailure() {
         Path failureFile = failureFile();
-        try
-        {
-            if ( !fs.fileExists( failureFile ) || !isFailed( failureFile ) )
-            {
+        try {
+            if (!fs.fileExists(failureFile) || !isFailed(failureFile)) {
                 return null;
             }
-            return readFailure( failureFile );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+            return readFailure(failureFile);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -110,73 +98,59 @@ public class FailureStorage
      * @param failure message describing the failure that needs to be stored
      * @throws IOException if the failure could not be stored
      */
-    public synchronized void storeIndexFailure( String failure ) throws IOException
-    {
+    public synchronized void storeIndexFailure(String failure) throws IOException {
         Path failureFile = failureFile();
-        try ( StoreChannel channel = fs.write( failureFile ) )
-        {
+        try (StoreChannel channel = fs.write(failureFile)) {
             byte[] existingData = new byte[(int) channel.size()];
-            channel.readAll( ByteBuffer.wrap( existingData ) );
-            channel.position( lengthOf( existingData ) );
+            channel.readAll(ByteBuffer.wrap(existingData));
+            channel.position(lengthOf(existingData));
 
-            byte[] data = UTF8.encode( failure );
-            channel.writeAll( ByteBuffer.wrap( data, 0, Math.min( data.length, MAX_FAILURE_SIZE ) ) );
+            byte[] data = UTF8.encode(failure);
+            channel.writeAll(ByteBuffer.wrap(data, 0, Math.min(data.length, MAX_FAILURE_SIZE)));
 
-            channel.force( true );
+            channel.force(true);
         }
     }
 
-    Path failureFile()
-    {
-        return folderLayout.getIndexFolder().resolve( failureFileName );
+    Path failureFile() {
+        return folderLayout.getIndexFolder().resolve(failureFileName);
     }
 
-    private String readFailure( Path failureFile ) throws IOException
-    {
-        try ( StoreChannel channel = fs.read( failureFile ) )
-        {
+    private String readFailure(Path failureFile) throws IOException {
+        try (StoreChannel channel = fs.read(failureFile)) {
             byte[] data = new byte[(int) channel.size()];
-            channel.readAll( ByteBuffer.wrap( data ) );
-            return UTF8.decode( withoutZeros( data ) );
+            channel.readAll(ByteBuffer.wrap(data));
+            return UTF8.decode(withoutZeros(data));
         }
     }
 
-    private static byte[] withoutZeros( byte[] data )
-    {
-        byte[] result = new byte[ lengthOf(data) ];
-        System.arraycopy( data, 0, result, 0, result.length );
+    private static byte[] withoutZeros(byte[] data) {
+        byte[] result = new byte[lengthOf(data)];
+        System.arraycopy(data, 0, result, 0, result.length);
         return result;
     }
 
-    private static int lengthOf( byte[] data )
-    {
-        for ( int i = 0; i < data.length; i++ )
-        {
-            if ( 0 == data[i] )
-            {
+    private static int lengthOf(byte[] data) {
+        for (int i = 0; i < data.length; i++) {
+            if (0 == data[i]) {
                 return i;
             }
         }
         return data.length;
     }
 
-    private boolean isFailed( Path failureFile ) throws IOException
-    {
-        try ( StoreChannel channel = fs.read( failureFile ) )
-        {
+    private boolean isFailed(Path failureFile) throws IOException {
+        try (StoreChannel channel = fs.read(failureFile)) {
             byte[] data = new byte[(int) channel.size()];
-            channel.readAll( ByteBuffer.wrap( data ) );
+            channel.readAll(ByteBuffer.wrap(data));
             channel.close();
-            return !allZero( data );
+            return !allZero(data);
         }
     }
 
-    private static boolean allZero( byte[] data )
-    {
-        for ( byte b : data )
-        {
-            if ( b != 0 )
-            {
+    private static boolean allZero(byte[] data) {
+        for (byte b : data) {
+            if (b != 0) {
                 return false;
             }
         }

@@ -19,20 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.eclipse.collections.api.factory.Sets;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Map;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.values.storable.Value;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,80 +27,86 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBase
-{
-    MinimalIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype indexPrototype )
-    {
-        super( testSuite, indexPrototype );
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Map;
+import org.eclipse.collections.api.factory.Sets;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.values.storable.Value;
+
+class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBase {
+    MinimalIndexAccessorCompatibility(IndexProviderCompatibilityTestSuite testSuite, IndexPrototype indexPrototype) {
+        super(testSuite, indexPrototype);
     }
 
-    abstract static class General extends MinimalIndexAccessorCompatibility
-    {
+    abstract static class General extends MinimalIndexAccessorCompatibility {
         private MinimalIndexAccessor minimalIndexAccessor;
 
-        General( IndexProviderCompatibilityTestSuite testSuite )
-        {
-            super( testSuite, testSuite.indexPrototype() );
+        General(IndexProviderCompatibilityTestSuite testSuite) {
+            super(testSuite, testSuite.indexPrototype());
         }
 
         @BeforeEach
-        void before() throws IOException
-        {
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            fs.mkdir( homePath );
-            IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP,
-                                                                   Sets.immutable.empty() );
+        void before() throws IOException {
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig(Config.defaults());
+            fs.mkdir(homePath);
+            IndexPopulator populator = indexProvider.getPopulator(
+                    descriptor,
+                    indexSamplingConfig,
+                    heapBufferFactory(1024),
+                    INSTANCE,
+                    SIMPLE_NAME_LOOKUP,
+                    Sets.immutable.empty());
             populator.create();
-            populator.close( true, NULL_CONTEXT );
-            minimalIndexAccessor = indexProvider.getMinimalIndexAccessor( descriptor );
+            populator.close(true, NULL_CONTEXT);
+            minimalIndexAccessor = indexProvider.getMinimalIndexAccessor(descriptor);
         }
 
         @Test
-        void indexDropperMustDropIndex() throws IOException
-        {
+        void indexDropperMustDropIndex() throws IOException {
             // given
             Path rootDirectory = indexProvider.directoryStructure().rootDirectory();
-            Path[] files = fs.listFiles( rootDirectory );
-            assertEquals( 1, files.length );
+            Path[] files = fs.listFiles(rootDirectory);
+            assertEquals(1, files.length);
 
             // when
             minimalIndexAccessor.drop();
 
             // then
-            files = fs.listFiles( rootDirectory );
-            assertEquals( 0, files.length );
+            files = fs.listFiles(rootDirectory);
+            assertEquals(0, files.length);
         }
 
         @Test
-        void indexDropperMustProvideIndexConfiguration()
-        {
+        void indexDropperMustProvideIndexConfiguration() {
             // when
-            Map<String,Value> dropperConfiguration = minimalIndexAccessor.indexConfig();
+            Map<String, Value> dropperConfiguration = minimalIndexAccessor.indexConfig();
 
             // then
-            assertEquals( descriptor.getIndexConfig().asMap(), dropperConfiguration );
+            assertEquals(descriptor.getIndexConfig().asMap(), dropperConfiguration);
         }
     }
 
-    abstract static class ReadOnly extends MinimalIndexAccessorCompatibility
-    {
-        ReadOnly( IndexProviderCompatibilityTestSuite testSuite )
-        {
-            super( testSuite, testSuite.indexPrototype() );
+    abstract static class ReadOnly extends MinimalIndexAccessorCompatibility {
+        ReadOnly(IndexProviderCompatibilityTestSuite testSuite) {
+            super(testSuite, testSuite.indexPrototype());
         }
 
         @Override
-        void additionalConfig( Config.Builder configBuilder )
-        {
-            configBuilder.set( GraphDatabaseSettings.read_only_database_default, true );
+        void additionalConfig(Config.Builder configBuilder) {
+            configBuilder.set(GraphDatabaseSettings.read_only_database_default, true);
         }
 
         @Test
-        void dropShouldBeBlockedIfReadOnly()
-        {
-            MinimalIndexAccessor minimalIndexAccessor = indexProvider.getMinimalIndexAccessor( descriptor );
-            IllegalStateException e = assertThrows( IllegalStateException.class, minimalIndexAccessor::drop );
-            assertThat( e ).hasMessageContaining( "read-only" );
+        void dropShouldBeBlockedIfReadOnly() {
+            MinimalIndexAccessor minimalIndexAccessor = indexProvider.getMinimalIndexAccessor(descriptor);
+            IllegalStateException e = assertThrows(IllegalStateException.class, minimalIndexAccessor::drop);
+            assertThat(e).hasMessageContaining("read-only");
         }
     }
 }

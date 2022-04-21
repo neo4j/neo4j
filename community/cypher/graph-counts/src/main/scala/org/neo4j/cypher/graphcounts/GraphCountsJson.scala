@@ -77,64 +77,79 @@ case class Data(row: Row)
 
 // These classes represent the particular format for `db.stats.retrieve("GRAPH COUNTS")`
 case class Row(section: String, data: GraphCountData)
-case class GraphCountData(constraints: Seq[Constraint],
-                          indexes: Seq[Index],
-                          nodes: Seq[NodeCount],
-                          relationships: Seq[RelationshipCount])
 
-case class Constraint(label: Option[String],
-                      relationshipType: Option[String],
-                      properties: Seq[String],
-                      `type`: ConstraintType)
+case class GraphCountData(
+  constraints: Seq[Constraint],
+  indexes: Seq[Index],
+  nodes: Seq[NodeCount],
+  relationships: Seq[RelationshipCount]
+)
 
-case class Index(labels: Option[Seq[String]],
-                 relationshipTypes: Option[Seq[String]],
-                 indexType: IndexType,
-                 properties: Seq[String],
-                 totalSize: Long,
-                 estimatedUniqueSize: Long,
-                 updatesSinceEstimation: Long)
+case class Constraint(
+  label: Option[String],
+  relationshipType: Option[String],
+  properties: Seq[String],
+  `type`: ConstraintType
+)
 
-case class NodeCount(count: Long,
-                     label: Option[String])
+case class Index(
+  labels: Option[Seq[String]],
+  relationshipTypes: Option[Seq[String]],
+  indexType: IndexType,
+  properties: Seq[String],
+  totalSize: Long,
+  estimatedUniqueSize: Long,
+  updatesSinceEstimation: Long
+)
 
-case class RelationshipCount(count: Long,
-                             relationshipType: Option[String],
-                             startLabel: Option[String],
-                             endLabel: Option[String])
+case class NodeCount(count: Long, label: Option[String])
+
+case class RelationshipCount(
+  count: Long,
+  relationshipType: Option[String],
+  startLabel: Option[String],
+  endLabel: Option[String]
+)
 
 /**
  * This custom serializer is needed because the format of Row is such that offsets in an array
  * map to particular columns.
  */
-case object RowSerializer extends CustomSerializer[Row](format => (
-  {
-    case JArray(arr) =>
-      implicit val formats: Formats = DefaultFormats + IndexTypeSerializer + ConstraintTypeSerializer
-      Row(arr.head.extract[String], arr.last.extract[GraphCountData])
-  },
-  {
-    case _:Row => throw new UnsupportedOperationException("Serialization of GraphCounts is not supported.")
-  }))
+case object RowSerializer extends CustomSerializer[Row](format =>
+      (
+        {
+          case JArray(arr) =>
+            implicit val formats: Formats = DefaultFormats + IndexTypeSerializer + ConstraintTypeSerializer
+            Row(arr.head.extract[String], arr.last.extract[GraphCountData])
+        },
+        {
+          case _: Row => throw new UnsupportedOperationException("Serialization of GraphCounts is not supported.")
+        }
+      )
+    )
 
-case object IndexTypeSerializer extends CustomSerializer[IndexType](format => (
-  {
-    case JString(stringValue) => IndexType.valueOf(stringValue)
-  },
-  {
-    case indexType: IndexType => JString(indexType.name())
-  }
-))
+case object IndexTypeSerializer extends CustomSerializer[IndexType](format =>
+      (
+        {
+          case JString(stringValue) => IndexType.valueOf(stringValue)
+        },
+        {
+          case indexType: IndexType => JString(indexType.name())
+        }
+      )
+    )
 
-case object ConstraintTypeSerializer extends CustomSerializer[ConstraintType](format => (
-  {
-    case JString("Uniqueness constraint") => ConstraintType.UNIQUE
-    case JString("Existence constraint") => ConstraintType.EXISTS
-    case JString("Node Key") => ConstraintType.UNIQUE_EXISTS
-  },
-  {
-    case ConstraintType.UNIQUE => JString("Uniqueness constraint")
-    case ConstraintType.EXISTS => JString("Existence constraint")
-    case ConstraintType.UNIQUE_EXISTS => JString("Node Key")
-  }
-))
+case object ConstraintTypeSerializer extends CustomSerializer[ConstraintType](format =>
+      (
+        {
+          case JString("Uniqueness constraint") => ConstraintType.UNIQUE
+          case JString("Existence constraint")  => ConstraintType.EXISTS
+          case JString("Node Key")              => ConstraintType.UNIQUE_EXISTS
+        },
+        {
+          case ConstraintType.UNIQUE        => JString("Uniqueness constraint")
+          case ConstraintType.EXISTS        => JString("Existence constraint")
+          case ConstraintType.UNIQUE_EXISTS => JString("Node Key")
+        }
+      )
+    )

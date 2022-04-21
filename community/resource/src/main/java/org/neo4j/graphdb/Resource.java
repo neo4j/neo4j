@@ -26,8 +26,7 @@ import org.neo4j.annotations.api.PublicApi;
  * with {@link #close()} not throwing any checked exception.
  */
 @PublicApi
-public interface Resource extends AutoCloseable
-{
+public interface Resource extends AutoCloseable {
     @Override
     void close();
 

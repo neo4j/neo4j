@@ -21,40 +21,31 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 
-public final class DatabaseFunctions
-{
-    private DatabaseFunctions()
-    {
-        throw new AssertionError( "Not for instantiation!" );
+public final class DatabaseFunctions {
+    private DatabaseFunctions() {
+        throw new AssertionError("Not for instantiation!");
     }
 
-    public static Function<Transaction,Void> index( Label label, String propertyKey )
-    {
-        return tx ->
-        {
-            tx.schema().indexFor( label ).on( propertyKey ).create();
+    public static Function<Transaction, Void> index(Label label, String propertyKey) {
+        return tx -> {
+            tx.schema().indexFor(label).on(propertyKey).create();
             return null;
         };
     }
 
-    public static Function<Transaction,Void> uniquenessConstraint( Label label, String propertyKey )
-    {
-        return tx ->
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+    public static Function<Transaction, Void> uniquenessConstraint(Label label, String propertyKey) {
+        return tx -> {
+            tx.schema().constraintFor(label).assertPropertyIsUnique(propertyKey).create();
             return null;
         };
     }
 
-    public static Function<Transaction,Void> awaitIndexesOnline( long timeout, TimeUnit unit )
-    {
-        return tx ->
-        {
-            tx.schema().awaitIndexesOnline( timeout, unit );
+    public static Function<Transaction, Void> awaitIndexesOnline(long timeout, TimeUnit unit) {
+        return tx -> {
+            tx.schema().awaitIndexesOnline(timeout, unit);
             return null;
         };
     }

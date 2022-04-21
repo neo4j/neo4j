@@ -19,36 +19,32 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class MovingAverageTest
-{
+import org.junit.jupiter.api.Test;
+
+class MovingAverageTest {
     @Test
-    void shouldHaveAverageMovingWithChanges()
-    {
+    void shouldHaveAverageMovingWithChanges() {
         // GIVEN
-        MovingAverage average = new MovingAverage( 5 );
+        MovingAverage average = new MovingAverage(5);
 
         // WHEN moving to 10 as average
         long avg = average.average();
-        for ( int i = 0; i < 5; i++ )
-        {
-            average.add( 10 );
-            assertEquals( 10L, average.average() );
+        for (int i = 0; i < 5; i++) {
+            average.add(10);
+            assertEquals(10L, average.average());
             avg = average.average();
         }
-        assertEquals( 10L, average.average() );
+        assertEquals(10L, average.average());
 
         // WHEN moving to 100 as average
-        for ( int i = 0; i < 5; i++ )
-        {
-            average.add( 100 );
-            assertThat( average.average() ).isGreaterThan( avg );
+        for (int i = 0; i < 5; i++) {
+            average.add(100);
+            assertThat(average.average()).isGreaterThan(avg);
             avg = average.average();
         }
-        assertEquals( 100L, average.average() );
+        assertEquals(100L, average.average());
     }
 }

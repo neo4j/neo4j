@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache;
 
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.neo4j.util.concurrent.BinaryLatch;
 
 /**
@@ -28,38 +27,30 @@ import org.neo4j.util.concurrent.BinaryLatch;
  * the entity locks since page write locks are not exclusive. Also, for the stress test, a simple array of
  * ReentrantLocks would take up too much memory.
  */
-public class TinyLockManager
-{
-    private final ConcurrentHashMap<Integer,BinaryLatch> map = new ConcurrentHashMap<>( 64, 0.75f, 64 );
+public class TinyLockManager {
+    private final ConcurrentHashMap<Integer, BinaryLatch> map = new ConcurrentHashMap<>(64, 0.75f, 64);
 
-    public void lock( int recordId )
-    {
+    public void lock(int recordId) {
         Integer record = recordId;
         BinaryLatch myLatch = new BinaryLatch();
-        for (;;)
-        {
-            BinaryLatch existingLatch = map.putIfAbsent( record, myLatch );
-            if ( existingLatch == null )
-            {
+        for (; ; ) {
+            BinaryLatch existingLatch = map.putIfAbsent(record, myLatch);
+            if (existingLatch == null) {
                 break;
-            }
-            else
-            {
+            } else {
                 existingLatch.await();
             }
         }
     }
 
-    public boolean tryLock( int recordId )
-    {
+    public boolean tryLock(int recordId) {
         Integer record = recordId;
         BinaryLatch myLatch = new BinaryLatch();
-        BinaryLatch existingLatch = map.putIfAbsent( record, myLatch );
+        BinaryLatch existingLatch = map.putIfAbsent(record, myLatch);
         return existingLatch == null;
     }
 
-    public void unlock( int recordId )
-    {
-        map.remove( recordId ).release();
+    public void unlock(int recordId) {
+        map.remove(recordId).release();
     }
 }

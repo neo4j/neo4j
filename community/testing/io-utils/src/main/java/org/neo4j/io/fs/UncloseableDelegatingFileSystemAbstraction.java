@@ -23,16 +23,13 @@ package org.neo4j.io.fs;
  * File system abstraction that wraps real file system and prevent it from being closed.
  * Useful for cases when we pass file system to db, shut it down and verify file system content.
  */
-public class UncloseableDelegatingFileSystemAbstraction extends DelegatingFileSystemAbstraction
-{
-    public UncloseableDelegatingFileSystemAbstraction( FileSystemAbstraction delegate )
-    {
-        super( delegate );
+public class UncloseableDelegatingFileSystemAbstraction extends DelegatingFileSystemAbstraction {
+    public UncloseableDelegatingFileSystemAbstraction(FileSystemAbstraction delegate) {
+        super(delegate);
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         // do nothing
     }
 }

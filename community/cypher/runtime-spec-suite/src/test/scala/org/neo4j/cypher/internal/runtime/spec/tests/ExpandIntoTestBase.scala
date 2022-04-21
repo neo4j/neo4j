@@ -36,13 +36,13 @@ import org.neo4j.graphdb.RelationshipType
 abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  protected  val sizeHint: Int
+  protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should expand into and provide variables for relationship - outgoing") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, (i + 1) % n, "NEXT")
       )
@@ -74,7 +74,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - outgoing, one type") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, (i + 2) % n, "SECONDNEXT"),
         (i, (i + 1) % n, "NEXT")
@@ -107,7 +107,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - outgoing, two types") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, (i + 2) % n, "SECONDNEXT"),
         (i, (i + 1) % n, "NEXT"),
@@ -141,7 +141,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   test("should expand and handle self loops") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, i, "ME")
       )
@@ -260,9 +260,11 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val (r1, r2, r3) = given {
       val node = tx.createNode(Label.label("L"))
       val other = tx.createNode(Label.label("L"))
-      (node.createRelationshipTo(other, RelationshipType.withName("R")),
+      (
+        node.createRelationshipTo(other, RelationshipType.withName("R")),
         node.createRelationshipTo(other, RelationshipType.withName("S")),
-        node.createRelationshipTo(other, RelationshipType.withName("T")))
+        node.createRelationshipTo(other, RelationshipType.withName("T"))
+      )
     }
 
     // when
@@ -302,15 +304,15 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
 
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(List.empty)
 
-    //CREATE S
+    // CREATE S
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
 
-    //CREATE R
+    // CREATE R
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(2))
 
-    //CREATE T
+    // CREATE T
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(3))
   }
@@ -333,15 +335,15 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
 
     execute(executablePlan) should beColumns("x", "y").withRows(List.empty)
 
-    //CREATE S
+    // CREATE S
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(1))
 
-    //CREATE R
+    // CREATE R
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(2))
 
-    //CREATE T
+    // CREATE T
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
@@ -359,7 +361,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.expandAll("(b)-[:R]->(c)")
       .|.expandInto("(a)-[:R]->(b)")
-      .|.nodeByLabelScan("b", "B", IndexOrderNone,  "a")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone, "a")
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -383,13 +385,12 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
       bipartiteGraph(size, "A", "B", "R")
     }
 
-
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
       .apply()
       .|.expandInto("(a)-[:R]->(b)")
-      .|.nodeByLabelScan("b", "B", IndexOrderNone,  "a")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone, "a")
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -421,13 +422,13 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a", "b")
       .apply()
       .|.expandInto("(a)--(b)")
-      .|.nodeByLabelScan("b", "B", IndexOrderNone,  "a")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone, "a")
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = (for {a <- as;b <- bs} yield Array(a, b)) ++ (for {a <- as2;b <- bs2} yield Array(a, b))
+    val expected = (for { a <- as; b <- bs } yield Array(a, b)) ++ (for { a <- as2; b <- bs2 } yield Array(a, b))
 
     // then
     runtimeResult should beColumns("a", "b").withRows(expected)
@@ -444,7 +445,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
       tx.createNode(Label.label("A"))
       val b = tx.createNode(Label.label("B"))
       // b has to be a dense node, but not have any REL relationships
-      for(_ <- 1 to relsToCreate) a1.createRelationshipTo(b, RelationshipType.withName("ANOTHER_REL"))
+      for (_ <- 1 to relsToCreate) a1.createRelationshipTo(b, RelationshipType.withName("ANOTHER_REL"))
     }
 
     // when
@@ -480,7 +481,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .|.sort(Seq(Ascending("a"), Ascending("b")))
       .|.expandAll("(b)-[:R]->(c)")
       .|.expandInto("(a)-[:R]->(b)")
-      .|.nodeByLabelScan("b", "B", IndexOrderNone,  "a")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone, "a")
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -521,7 +522,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("should handle node reference as input") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, (i + 1) % n, "NEXT")
       )
@@ -554,7 +555,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("should gracefully handle non-node reference as input") {
     // given
     val n = sizeHint
-    val input = inputValues((1 to n).map(i => Array[Any](i, i + 1)):_*)
+    val input = inputValues((1 to n).map(i => Array[Any](i, i + 1)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -564,7 +565,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .build()
 
     // then
-    a [ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
+    a[ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
   }
 
   test("should handle expand + filter") {
@@ -587,7 +588,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     val expected =
       for {
         r <- rels
-        if r.getEndNode.getId >= size /2
+        if r.getEndNode.getId >= size / 2
         row <- List(Array(r.getStartNode, r.getEndNode))
       } yield row
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -596,7 +597,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("should filter on cached relationship property") {
     // given
     val rels = given {
-      val (_,rs) = circleGraph(sizeHint)
+      val (_, rs) = circleGraph(sizeHint)
       rs.indices.foreach(i => rs(i).setProperty("prop", i))
       rs
     }

@@ -24,24 +24,21 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class RelationshipCursorBehaviour implements EntityScanCursorBehaviour<StorageRelationshipScanCursor>
-{
+public class RelationshipCursorBehaviour implements EntityScanCursorBehaviour<StorageRelationshipScanCursor> {
     private final StorageReader storageReader;
 
-    RelationshipCursorBehaviour( StorageReader storageReader )
-    {
+    RelationshipCursorBehaviour(StorageReader storageReader) {
         this.storageReader = storageReader;
     }
 
     @Override
-    public StorageRelationshipScanCursor allocateEntityScanCursor( CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        return storageReader.allocateRelationshipScanCursor( cursorContext, storeCursors );
+    public StorageRelationshipScanCursor allocateEntityScanCursor(
+            CursorContext cursorContext, StoreCursors storeCursors) {
+        return storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors);
     }
 
     @Override
-    public long[] readTokens( StorageRelationshipScanCursor cursor )
-    {
-        return new long[]{cursor.type()};
+    public long[] readTokens(StorageRelationshipScanCursor cursor) {
+        return new long[] {cursor.type()};
     }
 }

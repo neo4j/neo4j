@@ -19,10 +19,11 @@
  */
 package org.neo4j.internal.id;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -35,15 +36,12 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 /**
  * Storage id controller that provide buffering possibilities to be able so safely free and reuse ids.
  * Allows perform clear and maintenance operations over currently buffered set of ids.
  * @see BufferingIdGeneratorFactory
  */
-public class BufferedIdController extends LifecycleAdapter implements IdController
-{
+public class BufferedIdController extends LifecycleAdapter implements IdController {
     private static final String BUFFERED_ID_CONTROLLER = "idController";
     private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private final JobScheduler scheduler;
@@ -52,35 +50,35 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     private final InternalLog log;
     private JobHandle<?> jobHandle;
 
-    public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler, CursorContextFactory contextFactory,
-                                 String databaseName, LogService logService )
-    {
+    public BufferedIdController(
+            BufferingIdGeneratorFactory bufferingIdGeneratorFactory,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory,
+            String databaseName,
+            LogService logService) {
         this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
         this.scheduler = scheduler;
         this.contextFactory = contextFactory;
         this.databaseName = databaseName;
-        this.log = logService.getInternalLog( BufferedIdController.class );
+        this.log = logService.getInternalLog(BufferedIdController.class);
     }
 
     @Override
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         bufferingIdGeneratorFactory.init();
     }
 
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         bufferingIdGeneratorFactory.start();
-        var monitoringParams = JobMonitoringParams.systemJob( databaseName, "ID generator maintenance" );
-        jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, 1, SECONDS );
+        var monitoringParams = JobMonitoringParams.systemJob(databaseName, "ID generator maintenance");
+        jobHandle =
+                scheduler.scheduleRecurring(Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, 1, SECONDS);
     }
 
     @Override
-    public void stop() throws Exception
-    {
-        if ( jobHandle != null )
-        {
+    public void stop() throws Exception {
+        if (jobHandle != null) {
             jobHandle.cancel();
             jobHandle = null;
         }
@@ -88,28 +86,28 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     }
 
     @Override
-    public void shutdown() throws Exception
-    {
+    public void shutdown() throws Exception {
         bufferingIdGeneratorFactory.shutdown();
     }
 
     @Override
-    public void maintenance()
-    {
-        try ( var cursorContext = contextFactory.create( BUFFERED_ID_CONTROLLER ) )
-        {
-            bufferingIdGeneratorFactory.maintenance( cursorContext );
-        }
-        catch ( Throwable t )
-        {
-            log.error( "Exception when performing id maintenance", t );
+    public void maintenance() {
+        try (var cursorContext = contextFactory.create(BUFFERED_ID_CONTROLLER)) {
+            bufferingIdGeneratorFactory.maintenance(cursorContext);
+        } catch (Throwable t) {
+            log.error("Exception when performing id maintenance", t);
         }
     }
 
     @Override
-    public void initialize( FileSystemAbstraction fs, Path baseBufferPath, Config config, Supplier<TransactionSnapshot> snapshotSupplier,
-            IdFreeCondition condition, MemoryTracker memoryTracker ) throws IOException
-    {
-        bufferingIdGeneratorFactory.initialize( fs, baseBufferPath, config, snapshotSupplier, condition, memoryTracker );
+    public void initialize(
+            FileSystemAbstraction fs,
+            Path baseBufferPath,
+            Config config,
+            Supplier<TransactionSnapshot> snapshotSupplier,
+            IdFreeCondition condition,
+            MemoryTracker memoryTracker)
+            throws IOException {
+        bufferingIdGeneratorFactory.initialize(fs, baseBufferPath, config, snapshotSupplier, condition, memoryTracker);
     }
 }

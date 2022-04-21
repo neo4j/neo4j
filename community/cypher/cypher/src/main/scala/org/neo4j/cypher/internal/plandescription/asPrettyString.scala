@@ -94,11 +94,12 @@ object asPrettyString {
    * {{{pretty"foo$bar"}}} or {{{pretty"literal"}}}
    */
   implicit class PrettyStringInterpolator(val sc: StringContext) extends AnyVal {
+
     def pretty(args: PrettyString*): PrettyString = {
       val connectors = sc.parts.iterator
       val expressions = args.iterator
       val buf = new StringBuffer(connectors.next())
-      while(connectors.hasNext) {
+      while (connectors.hasNext) {
         buf append expressions.next().prettifiedString
         buf append connectors.next()
       }
@@ -112,6 +113,8 @@ object asPrettyString {
   implicit class PrettyStringMaker(iterableOnce: IterableOnce[PrettyString]) {
     def mkPrettyString(sep: String): PrettyString = PrettyString(iterableOnce.iterator.mkString(sep))
     def mkPrettyString: PrettyString = PrettyString(iterableOnce.iterator.mkString)
-    def mkPrettyString(start: String, sep: String, end: String): PrettyString = PrettyString(iterableOnce.iterator.mkString(start, sep, end))
+
+    def mkPrettyString(start: String, sep: String, end: String): PrettyString =
+      PrettyString(iterableOnce.iterator.mkString(start, sep, end))
   }
 }

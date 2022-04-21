@@ -19,27 +19,22 @@
  */
 package org.neo4j.kernel;
 
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.IOException;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
-import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.utils.TestDirectory;
 
 @ImpermanentDbmsExtension
-@ExtendWith( RandomExtension.class )
-public class TransactionStoreConcurrentIT
-{
+@ExtendWith(RandomExtension.class)
+public class TransactionStoreConcurrentIT {
 
     public static final int TX_COUNT = 1000;
 
@@ -53,47 +48,37 @@ public class TransactionStoreConcurrentIT
     private RandomSupport random;
 
     @BeforeEach
-    void before()
-    {
-        for ( int i = 0; i < TX_COUNT; i++ )
-        {
+    void before() {
+        for (int i = 0; i < TX_COUNT; i++) {
             createTx();
         }
     }
 
-    @RepeatedTest( 10 )
-    void testConcurentScanOfTransactionLog() throws Throwable
-    {
+    @RepeatedTest(10)
+    void testConcurentScanOfTransactionLog() throws Throwable {
         var race = new Race();
-        race.addContestants( 100, this::doThings );
-        race.addContestant( this::createTx, 100 );
+        race.addContestants(100, this::doThings);
+        race.addContestant(this::createTx, 100);
         race.go();
     }
 
-    private void doThings()
-    {
-        try
-        {
-            var logicalTransactionStore = dbapi.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
-            try ( var txCursor = logicalTransactionStore.getTransactions( random.nextLong( TX_COUNT / 2, TX_COUNT ) ) )
-            {
-                while ( txCursor.next() )
-                {
+    private void doThings() {
+        try {
+            var logicalTransactionStore =
+                    dbapi.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
+            try (var txCursor = logicalTransactionStore.getTransactions(random.nextLong(TX_COUNT / 2, TX_COUNT))) {
+                while (txCursor.next()) {
                     txCursor.position();
                 }
             }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( Thread.currentThread().getName(), e );
+        } catch (IOException e) {
+            throw new RuntimeException(Thread.currentThread().getName(), e);
         }
     }
 
-    private void createTx()
-    {
-        try ( var tx = db.beginTx() )
-        {
-            tx.createNode().setProperty( "test", "Test" );
+    private void createTx() {
+        try (var tx = db.beginTx()) {
+            tx.createNode().setProperty("test", "Test");
             tx.commit();
         }
     }

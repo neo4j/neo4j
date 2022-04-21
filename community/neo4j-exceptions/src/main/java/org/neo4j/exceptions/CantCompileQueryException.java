@@ -21,21 +21,17 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class CantCompileQueryException extends Neo4jException
-{
-    public CantCompileQueryException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class CantCompileQueryException extends Neo4jException {
+    public CantCompileQueryException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public CantCompileQueryException( String message )
-    {
-        super( message );
+    public CantCompileQueryException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.ExecutionFailed;
     }
 }

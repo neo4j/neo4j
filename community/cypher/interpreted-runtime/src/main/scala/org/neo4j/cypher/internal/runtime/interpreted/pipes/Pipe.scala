@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 trait Pipe {
   self: Pipe =>
 
-  def createResults(state: QueryState) : ClosingIterator[CypherRow] = {
+  def createResults(state: QueryState): ClosingIterator[CypherRow] = {
     val decoratedState = state.decorator.decorate(self.id, state)
     decoratedState.setExecutionContextFactory(rowFactory)
     val innerResult = internalCreateResults(decoratedState)
@@ -74,7 +74,8 @@ case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {
 }
 
 abstract class PipeWithSource(source: Pipe) extends Pipe {
-  override final def createResults(state: QueryState): ClosingIterator[CypherRow] = {
+
+  final override def createResults(state: QueryState): ClosingIterator[CypherRow] = {
     val sourceResult = source.createResults(state)
 
     val decoratedState = state.decorator.decorate(this.id, state)
@@ -84,9 +85,9 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     val decoratedResult = state.decorator.decorate(this.id, decoratedState, result, sourceResult).closing(sourceResult)
 
     if (isRootPipe) {
-        state.decorator.decorateRoot(this.id, decoratedState, decoratedResult)
+      state.decorator.decorateRoot(this.id, decoratedState, decoratedResult)
     } else {
-        decoratedResult
+      decoratedResult
     }
   }
 
@@ -94,6 +95,7 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow]
+
   private[pipes] def testCreateResults(input: ClosingIterator[CypherRow], state: QueryState) =
     internalCreateResults(input, state)
 

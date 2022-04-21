@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-public interface StorageRelationshipTraversalCursor extends StorageRelationshipCursor
-{
+public interface StorageRelationshipTraversalCursor extends StorageRelationshipCursor {
     long neighbourNodeReference();
 
     long originNodeReference();
@@ -31,15 +30,14 @@ public interface StorageRelationshipTraversalCursor extends StorageRelationshipC
      * @param reference reference to the relationships.
      * @param selection which relationships to select.
      */
-    void init( long nodeReference, long reference, RelationshipSelection selection );
+    void init(long nodeReference, long reference, RelationshipSelection selection);
 
     /**
      * Called when traversing all relationships for a node.
      *
      * @param nodeCursor node cursor refers to these relationships.
      */
-    default void init( StorageNodeCursor nodeCursor, RelationshipSelection selection )
-    {
-        init( nodeCursor.entityReference(), nodeCursor.relationshipsReference(), selection );
+    default void init(StorageNodeCursor nodeCursor, RelationshipSelection selection) {
+        init(nodeCursor.entityReference(), nodeCursor.relationshipsReference(), selection);
     }
 }

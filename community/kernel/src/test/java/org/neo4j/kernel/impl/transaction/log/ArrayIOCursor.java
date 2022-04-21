@@ -24,34 +24,29 @@ import org.neo4j.cursor.IOCursor;
 /**
  * {@link IOCursor} abstraction over a given array
  */
-public class ArrayIOCursor<T> implements IOCursor<T>
-{
+public class ArrayIOCursor<T> implements IOCursor<T> {
     private final T[] entries;
     private int pos;
     private boolean closed;
 
-    public ArrayIOCursor( T... entries )
-    {
+    public ArrayIOCursor(T... entries) {
         this.entries = entries;
     }
 
     @Override
-    public T get()
-    {
+    public T get() {
         assert !closed;
         return entries[pos - 1];
     }
 
     @Override
-    public boolean next()
-    {
+    public boolean next() {
         assert !closed;
         return pos++ < entries.length;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         closed = true;
     }
 }

@@ -26,28 +26,24 @@ import java.net.URI;
  * <p>
  * This is always the last event in the event stream.
  */
-public class TransactionInfoEvent implements OutputEvent
-{
+public class TransactionInfoEvent implements OutputEvent {
 
     private final TransactionNotificationState notification;
     private final URI commitUri;
     private final long expirationTimestamp;
 
-    public TransactionInfoEvent( TransactionNotificationState notification, URI commitUri, long expirationTimestamp )
-    {
+    public TransactionInfoEvent(TransactionNotificationState notification, URI commitUri, long expirationTimestamp) {
         this.notification = notification;
         this.commitUri = commitUri;
         this.expirationTimestamp = expirationTimestamp;
     }
 
     @Override
-    public Type getType()
-    {
+    public Type getType() {
         return Type.TRANSACTION_INFO;
     }
 
-    public TransactionNotificationState getNotification()
-    {
+    public TransactionNotificationState getNotification() {
         return notification;
     }
 
@@ -59,8 +55,7 @@ public class TransactionInfoEvent implements OutputEvent
      *
      * @return a URI for committing the transaction or {@code null}.
      */
-    public URI getCommitUri()
-    {
+    public URI getCommitUri() {
         return commitUri;
     }
 
@@ -71,8 +66,7 @@ public class TransactionInfoEvent implements OutputEvent
      *
      * @return an expiration timestamp or {@code -1}.
      */
-    public long getExpirationTimestamp()
-    {
+    public long getExpirationTimestamp() {
         return expirationTimestamp;
     }
 }

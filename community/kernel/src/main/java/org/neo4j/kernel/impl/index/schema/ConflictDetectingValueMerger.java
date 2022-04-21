@@ -30,24 +30,21 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
  * {@link #checkConflict(REPORT_TYPE)} can be called to check whether or not that call conflicted with
  * an existing key. A call to {@link #checkConflict(REPORT_TYPE)} will also initialize the conflict flag.
  */
-abstract class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, REPORT_TYPE> implements ValueMerger<KEY,NullValue>
-{
+abstract class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, REPORT_TYPE>
+        implements ValueMerger<KEY, NullValue> {
     private final boolean compareEntityIds;
 
     private boolean conflict;
     private long existingNodeId;
     private long addedNodeId;
 
-    ConflictDetectingValueMerger( boolean compareEntityIds )
-    {
+    ConflictDetectingValueMerger(boolean compareEntityIds) {
         this.compareEntityIds = compareEntityIds;
     }
 
     @Override
-    public MergeResult merge( KEY existingKey, KEY newKey, NullValue existingValue, NullValue newValue )
-    {
-        if ( existingKey.getEntityId() != newKey.getEntityId() )
-        {
+    public MergeResult merge(KEY existingKey, KEY newKey, NullValue existingValue, NullValue newValue) {
+        if (existingKey.getEntityId() != newKey.getEntityId()) {
             conflict = true;
             existingNodeId = existingKey.getEntityId();
             addedNodeId = newKey.getEntityId();
@@ -62,29 +59,25 @@ abstract class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, REP
      *
      * @param key key to let know about conflict detection strictness.
      */
-    void controlConflictDetection( KEY key )
-    {
-        key.setCompareId( compareEntityIds );
+    void controlConflictDetection(KEY key) {
+        key.setCompareId(compareEntityIds);
     }
 
-    boolean wasConflicting()
-    {
+    boolean wasConflicting() {
         return conflict;
     }
 
-    void reportConflict( REPORT_TYPE toReport ) throws IndexEntryConflictException
-    {
+    void reportConflict(REPORT_TYPE toReport) throws IndexEntryConflictException {
         conflict = false;
-        doReportConflict( existingNodeId, addedNodeId, toReport );
+        doReportConflict(existingNodeId, addedNodeId, toReport);
     }
 
-    void checkConflict( REPORT_TYPE toReport ) throws IndexEntryConflictException
-    {
-        if ( wasConflicting() )
-        {
-            reportConflict( toReport );
+    void checkConflict(REPORT_TYPE toReport) throws IndexEntryConflictException {
+        if (wasConflicting()) {
+            reportConflict(toReport);
         }
     }
 
-    abstract void doReportConflict( long existingNodeId, long addedNodeId, REPORT_TYPE toReport ) throws IndexEntryConflictException;
+    abstract void doReportConflict(long existingNodeId, long addedNodeId, REPORT_TYPE toReport)
+            throws IndexEntryConflictException;
 }

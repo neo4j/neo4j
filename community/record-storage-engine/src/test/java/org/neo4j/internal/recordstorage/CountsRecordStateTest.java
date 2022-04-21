@@ -19,38 +19,36 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
-class CountsRecordStateTest
-{
+import org.junit.jupiter.api.Test;
+
+class CountsRecordStateTest {
     @Test
-    void trackCounts()
-    {
+    void trackCounts() {
         // given
-        CountsRecordState counts = new CountsRecordState( LATEST_LOG_SERIALIZATION );
-        counts.incrementNodeCount( 17, 5 );
-        counts.incrementNodeCount( 12, 9 );
-        counts.incrementRelationshipCount( 1, 2, 3, 19 );
-        counts.incrementRelationshipCount( 1, 4, 3, 25 );
+        CountsRecordState counts = new CountsRecordState(LATEST_LOG_SERIALIZATION);
+        counts.incrementNodeCount(17, 5);
+        counts.incrementNodeCount(12, 9);
+        counts.incrementRelationshipCount(1, 2, 3, 19);
+        counts.incrementRelationshipCount(1, 4, 3, 25);
 
-        assertEquals( 0, counts.nodeCount( 1, NULL_CONTEXT ) );
-        assertEquals( 5, counts.nodeCount( 17, NULL_CONTEXT ) );
-        assertEquals( 9, counts.nodeCount( 12, NULL_CONTEXT ) );
-        assertEquals( 19, counts.relationshipCount( 1, 2, 3, NULL_CONTEXT ) );
-        assertEquals( 25, counts.relationshipCount( 1, 4, 3, NULL_CONTEXT ) );
+        assertEquals(0, counts.nodeCount(1, NULL_CONTEXT));
+        assertEquals(5, counts.nodeCount(17, NULL_CONTEXT));
+        assertEquals(9, counts.nodeCount(12, NULL_CONTEXT));
+        assertEquals(19, counts.relationshipCount(1, 2, 3, NULL_CONTEXT));
+        assertEquals(25, counts.relationshipCount(1, 4, 3, NULL_CONTEXT));
 
-        counts.incrementNodeCount( 17, 0 );
-        counts.incrementNodeCount( 12, -2 );
-        counts.incrementRelationshipCount( 1, 2, 3, 1 );
-        counts.incrementRelationshipCount( 1, 4, 3, -25 );
+        counts.incrementNodeCount(17, 0);
+        counts.incrementNodeCount(12, -2);
+        counts.incrementRelationshipCount(1, 2, 3, 1);
+        counts.incrementRelationshipCount(1, 4, 3, -25);
 
-        assertEquals( 5, counts.nodeCount( 17, NULL_CONTEXT ) );
-        assertEquals( 7, counts.nodeCount( 12, NULL_CONTEXT ) );
-        assertEquals( 20, counts.relationshipCount( 1, 2, 3, NULL_CONTEXT ) );
-        assertEquals( 0, counts.relationshipCount( 1, 4, 3, NULL_CONTEXT ) );
+        assertEquals(5, counts.nodeCount(17, NULL_CONTEXT));
+        assertEquals(7, counts.nodeCount(12, NULL_CONTEXT));
+        assertEquals(20, counts.relationshipCount(1, 2, 3, NULL_CONTEXT));
+        assertEquals(0, counts.relationshipCount(1, 4, 3, NULL_CONTEXT));
     }
 }

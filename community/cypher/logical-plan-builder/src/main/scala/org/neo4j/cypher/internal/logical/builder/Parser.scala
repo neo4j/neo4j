@@ -38,27 +38,35 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
 
 object Parser {
+
   val injectCachedProperties: Rewriter = topDown(Rewriter.lift {
-    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "cache" || name == "cacheN" =>
+    case ContainerIndex(Variable(name), Property(v @ Variable(node), pkn: PropertyKeyName))
+      if name == "cache" || name == "cacheN" =>
       CachedProperty(node, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "cacheFromStore" || name == "cacheNFromStore" =>
+    case ContainerIndex(Variable(name), Property(v @ Variable(node), pkn: PropertyKeyName))
+      if name == "cacheFromStore" || name == "cacheNFromStore" =>
       CachedProperty(node, v, pkn, NODE_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable("cacheR"), Property(v@Variable(relationship), pkn:PropertyKeyName)) =>
+    case ContainerIndex(Variable("cacheR"), Property(v @ Variable(relationship), pkn: PropertyKeyName)) =>
       CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable("cacheRFromStore"), Property(v@Variable(relationship), pkn:PropertyKeyName)) =>
+    case ContainerIndex(Variable("cacheRFromStore"), Property(v @ Variable(relationship), pkn: PropertyKeyName)) =>
       CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "cacheNHasProperty" =>
+    case ContainerIndex(Variable(name), Property(v @ Variable(node), pkn: PropertyKeyName))
+      if name == "cacheNHasProperty" =>
       CachedHasProperty(node, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v@Variable(rel), pkn:PropertyKeyName)) if name == "cacheRHasProperty" =>
+    case ContainerIndex(Variable(name), Property(v @ Variable(rel), pkn: PropertyKeyName))
+      if name == "cacheRHasProperty" =>
       CachedHasProperty(rel, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "cacheNHasPropertyFromStore" =>
+    case ContainerIndex(Variable(name), Property(v @ Variable(node), pkn: PropertyKeyName))
+      if name == "cacheNHasPropertyFromStore" =>
       CachedHasProperty(node, v, pkn, NODE_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v@Variable(rel), pkn:PropertyKeyName)) if name == "cacheRHasPropertyFromStore" =>
+    case ContainerIndex(Variable(name), Property(v @ Variable(rel), pkn: PropertyKeyName))
+      if name == "cacheRHasPropertyFromStore" =>
       CachedHasProperty(rel, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
 
   })
+
   val invalidateInputPositions: Rewriter = topDown(Rewriter.lift {
-    case a:ASTNode => a.dup(a.treeChildren.toSeq :+ AbstractLogicalPlanBuilder.pos)
+    case a: ASTNode => a.dup(a.treeChildren.toSeq :+ AbstractLogicalPlanBuilder.pos)
   })
 
   def cleanup[T <: ASTNode](in: T): T = inSequence(
@@ -67,7 +75,6 @@ object Parser {
     flattenBooleanOperators, // It is otherwise impossible to create instances of Ands / Ors
     LabelExpressionPredicateNormalizer
   )(in).asInstanceOf[T]
-
 
   private val regex = s"(.+) [Aa][Ss] (.+)".r
   private val parser = new Parser
@@ -96,8 +103,8 @@ private class Parser {
   def parseProcedureCall(text: String): UnresolvedCall = {
     val clause = JavaccRule.CallClause.apply(s"CALL $text")
     clause match {
-      case u:UnresolvedCall => Parser.cleanup(u)
-      case c => throw new IllegalArgumentException(s"Expected UnresolvedCall but got: $c")
+      case u: UnresolvedCall => Parser.cleanup(u)
+      case c                 => throw new IllegalArgumentException(s"Expected UnresolvedCall but got: $c")
     }
   }
 }

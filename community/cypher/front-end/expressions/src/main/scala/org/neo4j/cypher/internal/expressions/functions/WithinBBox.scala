@@ -24,7 +24,13 @@ case object WithinBBox extends Function {
   val name = "point.withinBBox"
 
   override val signatures = Vector(
-    FunctionTypeSignature(function = this, names = Vector("point", "lowerLeft", "upperRight"), argumentTypes = Vector(CTPoint, CTPoint, CTPoint), outputType = CTBoolean,
-      description = "Returns true if the provided point is within the bounding box defined by the two provided points.", category = Category.SPATIAL)
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("point", "lowerLeft", "upperRight"),
+      argumentTypes = Vector(CTPoint, CTPoint, CTPoint),
+      outputType = CTBoolean,
+      description = "Returns true if the provided point is within the bounding box defined by the two provided points.",
+      category = Category.SPATIAL
+    )
   )
 }

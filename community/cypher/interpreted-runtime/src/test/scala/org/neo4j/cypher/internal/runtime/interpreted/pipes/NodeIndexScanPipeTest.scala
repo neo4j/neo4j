@@ -38,27 +38,31 @@ import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 
 class NodeIndexScanPipeTest extends CypherFunSuite {
+
   test("exhaust should close cursor") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.nodeIndexScan(any[IndexReadSession], any[Boolean], any[IndexOrder])).thenAnswer((_: InvocationOnMock) => {
-      //NOTE: this is what is done in TransactionBoundQueryContext
-      resourceManager.trace(cursor)
-      cursor
-    })
+    when(state.query.nodeIndexScan(any[IndexReadSession], any[Boolean], any[IndexOrder])).thenAnswer(
+      (_: InvocationOnMock) => {
+        // NOTE: this is what is done in TransactionBoundQueryContext
+        resourceManager.trace(cursor)
+        cursor
+      }
+    )
 
     val pipe = NodeIndexScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
       Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       0,
-      IndexOrderNone)()
+      IndexOrderNone
+    )()
     // exhaust
     pipe.createResults(state).toList
-    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size (1)
   }
 
   test("close should close cursor") {
@@ -67,20 +71,23 @@ class NodeIndexScanPipeTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.nodeIndexScan(any[IndexReadSession], any[Boolean], any[IndexOrder])).thenAnswer((_: InvocationOnMock) => {
-      //NOTE: this is what is done in TransactionBoundQueryContext
-      resourceManager.trace(cursor)
-      cursor
-    })
+    when(state.query.nodeIndexScan(any[IndexReadSession], any[Boolean], any[IndexOrder])).thenAnswer(
+      (_: InvocationOnMock) => {
+        // NOTE: this is what is done in TransactionBoundQueryContext
+        resourceManager.trace(cursor)
+        cursor
+      }
+    )
 
     val pipe = NodeIndexScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
       Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       0,
-      IndexOrderNone)()
+      IndexOrderNone
+    )()
     val result = pipe.createResults(state)
     result.close()
-    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size (1)
   }
 }

@@ -19,76 +19,60 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+
 import java.util.Arrays;
 import java.util.StringJoiner;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
-
-public class RawBytes
-{
-    static final RawBytes EMPTY_BYTES = new RawBytes( EMPTY_BYTE_ARRAY );
+public class RawBytes {
+    static final RawBytes EMPTY_BYTES = new RawBytes(EMPTY_BYTE_ARRAY);
 
     byte[] bytes;
 
-    public RawBytes()
-    {
-        this( EMPTY_BYTE_ARRAY );
+    public RawBytes() {
+        this(EMPTY_BYTE_ARRAY);
     }
 
-    public RawBytes( byte[] byteArray )
-    {
+    public RawBytes(byte[] byteArray) {
         bytes = byteArray;
     }
 
     @Override
-    public String toString()
-    {
-        StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
+    public String toString() {
+        StringJoiner joiner = new StringJoiner(", ", "[", "]");
         int index = 0;
         int nbrOfAccumulatedZeroes = 0;
-        while ( index < bytes.length )
-        {
-            if ( bytes[index] != (byte) 0 )
-            {
-                if ( nbrOfAccumulatedZeroes > 0 )
-                {
-                    joiner.add( replaceZeroes( nbrOfAccumulatedZeroes ) );
+        while (index < bytes.length) {
+            if (bytes[index] != (byte) 0) {
+                if (nbrOfAccumulatedZeroes > 0) {
+                    joiner.add(replaceZeroes(nbrOfAccumulatedZeroes));
                     nbrOfAccumulatedZeroes = 0;
                 }
-                joiner.add( Byte.toString( bytes[index] ) );
-            }
-            else
-            {
+                joiner.add(Byte.toString(bytes[index]));
+            } else {
                 nbrOfAccumulatedZeroes++;
             }
             index++;
         }
-        if ( nbrOfAccumulatedZeroes > 0 )
-        {
-            joiner.add( replaceZeroes( nbrOfAccumulatedZeroes ) );
+        if (nbrOfAccumulatedZeroes > 0) {
+            joiner.add(replaceZeroes(nbrOfAccumulatedZeroes));
         }
         return joiner.toString();
     }
 
-    private static String replaceZeroes( int nbrOfZeroes )
-    {
-        if ( nbrOfZeroes > 3 )
-        {
+    private static String replaceZeroes(int nbrOfZeroes) {
+        if (nbrOfZeroes > 3) {
             return "0...>" + nbrOfZeroes;
-        }
-        else
-        {
-            StringJoiner joiner = new StringJoiner( ", " );
-            for ( int i = 0; i < nbrOfZeroes; i++ )
-            {
-                joiner.add( "0" );
+        } else {
+            StringJoiner joiner = new StringJoiner(", ");
+            for (int i = 0; i < nbrOfZeroes; i++) {
+                joiner.add("0");
             }
             return joiner.toString();
         }
     }
 
-    void copyFrom( RawBytes source )
-    {
-        bytes = Arrays.copyOf( source.bytes, source.bytes.length );
+    void copyFrom(RawBytes source) {
+        bytes = Arrays.copyOf(source.bytes, source.bytes.length);
     }
 }

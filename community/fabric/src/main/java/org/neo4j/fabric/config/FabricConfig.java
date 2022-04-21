@@ -22,75 +22,66 @@ package org.neo4j.fabric.config;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
-public class FabricConfig
-{
+public class FabricConfig {
     private final Supplier<Duration> transactionTimeout;
     private final DataStream dataStream;
     private final boolean routingEnabled;
     private final boolean enabledByDefault;
 
-    public FabricConfig( Supplier<Duration> transactionTimeout, DataStream dataStream, boolean routingEnabled, boolean enabledByDefault )
-    {
+    public FabricConfig(
+            Supplier<Duration> transactionTimeout,
+            DataStream dataStream,
+            boolean routingEnabled,
+            boolean enabledByDefault) {
         this.transactionTimeout = transactionTimeout;
         this.dataStream = dataStream;
         this.routingEnabled = routingEnabled;
         this.enabledByDefault = enabledByDefault;
     }
 
-    public Duration getTransactionTimeout()
-    {
+    public Duration getTransactionTimeout() {
         return transactionTimeout.get();
     }
 
-    public DataStream getDataStream()
-    {
+    public DataStream getDataStream() {
         return dataStream;
     }
 
-    public Optional<NormalizedDatabaseName> getFabricDatabaseName()
-    {
+    public Optional<NormalizedDatabaseName> getFabricDatabaseName() {
         return Optional.empty();
     }
 
-    public boolean isRoutingEnabled()
-    {
+    public boolean isRoutingEnabled() {
         return routingEnabled;
     }
 
-    public boolean isEnabledByDefault()
-    {
+    public boolean isEnabledByDefault() {
         return enabledByDefault;
     }
 
-    public static FabricConfig from( Config config )
-    {
-        var syncBatchSize = config.get( FabricSettings.batch_size_setting );
+    public static FabricConfig from(Config config) {
+        var syncBatchSize = config.get(FabricSettings.batch_size_setting);
         // the rest of the settings are not used for any type of queries supported in CE
-        var dataStream = new DataStream( 0, 0, syncBatchSize, 0 );
-        var enabledByDefault = config.get( FabricSettings.enabled_by_default );
-        return new FabricConfig( () -> config.get( GraphDatabaseSettings.transaction_timeout ), dataStream, false, enabledByDefault );
+        var dataStream = new DataStream(0, 0, syncBatchSize, 0);
+        var enabledByDefault = config.get(FabricSettings.enabled_by_default);
+        return new FabricConfig(
+                () -> config.get(GraphDatabaseSettings.transaction_timeout), dataStream, false, enabledByDefault);
     }
 
-    public static class DataStream
-    {
+    public static class DataStream {
         private final int bufferLowWatermark;
         private final int bufferSize;
         private final int batchSize;
         private final int concurrency;
 
-        public DataStream( int bufferLowWatermark, int bufferSize, int batchSize, int concurrency )
-        {
-            if ( bufferLowWatermark > bufferSize )
-            {
+        public DataStream(int bufferLowWatermark, int bufferSize, int batchSize, int concurrency) {
+            if (bufferLowWatermark > bufferSize) {
                 this.bufferLowWatermark = bufferSize;
-            }
-            else
-            {
+            } else {
                 this.bufferLowWatermark = bufferLowWatermark;
             }
 
@@ -99,23 +90,19 @@ public class FabricConfig
             this.concurrency = concurrency;
         }
 
-        public int getBufferLowWatermark()
-        {
+        public int getBufferLowWatermark() {
             return bufferLowWatermark;
         }
 
-        public int getBufferSize()
-        {
+        public int getBufferSize() {
             return bufferSize;
         }
 
-        public int getBatchSize()
-        {
+        public int getBatchSize() {
             return batchSize;
         }
 
-        public int getConcurrency()
-        {
+        public int getConcurrency() {
             return concurrency;
         }
     }

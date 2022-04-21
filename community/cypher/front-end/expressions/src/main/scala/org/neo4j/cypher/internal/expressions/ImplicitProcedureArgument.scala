@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case class ImplicitProcedureArgument(name: String, parameterType: CypherType, defaultValue: AnyRef)
-  extends Expression {
+    extends Expression {
 
   override def asCanonicalStringVal: String = "$" + name
 

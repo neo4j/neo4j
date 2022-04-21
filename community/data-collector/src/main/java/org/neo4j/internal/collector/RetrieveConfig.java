@@ -20,26 +20,22 @@
 package org.neo4j.internal.collector;
 
 import java.util.Map;
-
 import org.neo4j.internal.collector.DataCollectorOptions.IntOption;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 /**
  * Configuration of retrieve procedure call.
  */
-class RetrieveConfig
-{
-    private static final IntOption MAX_INVOCATIONS = new IntOption( "maxInvocations", 100 );
+class RetrieveConfig {
+    private static final IntOption MAX_INVOCATIONS = new IntOption("maxInvocations", 100);
 
-    static RetrieveConfig of( Map<String, Object> userMap ) throws InvalidArgumentsException
-    {
-        return new RetrieveConfig( MAX_INVOCATIONS.parseOrDefault( userMap ) );
+    static RetrieveConfig of(Map<String, Object> userMap) throws InvalidArgumentsException {
+        return new RetrieveConfig(MAX_INVOCATIONS.parseOrDefault(userMap));
     }
 
     final int maxInvocations;
 
-    private RetrieveConfig( int maxInvocations )
-    {
+    private RetrieveConfig(int maxInvocations) {
         this.maxInvocations = maxInvocations;
     }
 }

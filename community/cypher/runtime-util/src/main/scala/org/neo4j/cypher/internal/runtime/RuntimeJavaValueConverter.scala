@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.util
-
 import org.neo4j.cypher.internal.util.Eagerly.immutableMapValues
 
+import java.util
+
+import scala.IterableOnce
 import scala.collection.Map
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SeqHasAsJava
-import scala.IterableOnce
 
 // This converts runtime scala values into runtime Java value
 //
@@ -38,13 +38,11 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
     if (map == null) null else immutableMapValues(map, asDeepJavaValue).asJava: util.Map[S, Any]
 
   def asDeepJavaValue(value: Any): Any = value match {
-    case anything if skip(anything) => anything
-    case map: Map[_, _] => immutableMapValues(map, asDeepJavaValue).asJava: util.Map[_, _]
-    case JavaListWrapper(inner, _) => inner
-    case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toIndexedSeq.asJava: util.List[_]
+    case anything if skip(anything)    => anything
+    case map: Map[_, _]                => immutableMapValues(map, asDeepJavaValue).asJava: util.Map[_, _]
+    case JavaListWrapper(inner, _)     => inner
+    case iterable: Iterable[_]         => iterable.map(asDeepJavaValue).toIndexedSeq.asJava: util.List[_]
     case iterableOnce: IterableOnce[_] => iterableOnce.iterator.map(asDeepJavaValue).toVector.asJava: util.List[_]
-    case anything => anything
+    case anything                      => anything
   }
 }
-
-

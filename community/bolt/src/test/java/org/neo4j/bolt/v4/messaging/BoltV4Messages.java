@@ -19,9 +19,15 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
+import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
+import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
+import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
+
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
@@ -34,122 +40,94 @@ import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
-import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
-import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
-
 /**
  * Quick access of all Bolt V4 messages
  */
-public class BoltV4Messages
-{
+public class BoltV4Messages {
     private static final String USER_AGENT = "BoltV4Messages/0.0";
-    private static final RequestMessage HELLO = new HelloMessage( map( "user_agent", USER_AGENT ) );
-    private static final RequestMessage RUN_RETURN_ONE = new RunMessage( "RETURN 1" );
+    private static final RequestMessage HELLO = new HelloMessage(map("user_agent", USER_AGENT));
+    private static final RequestMessage RUN_RETURN_ONE = new RunMessage("RETURN 1");
     private static final RequestMessage BEGIN = new BeginMessage();
 
-    public static Stream<RequestMessage> supported() throws BoltIOException
-    {
-        return Stream.of( hello(), goodbye(), run(), discard( 10 ), pull( 10 ), begin(), commit(), rollback(), reset() );
+    public static Stream<RequestMessage> supported() throws BoltIOException {
+        return Stream.of(hello(), goodbye(), run(), discard(10), pull(10), begin(), commit(), rollback(), reset());
     }
 
-    public static Stream<RequestMessage> unsupported()
-    {
+    public static Stream<RequestMessage> unsupported() {
         return Stream.of( // bolt v3 only messages
-                BoltV3Messages.pullAll(), BoltV3Messages.discardAll() );
-
+                BoltV3Messages.pullAll(), BoltV3Messages.discardAll());
     }
 
-    public static RequestMessage begin()
-    {
+    public static RequestMessage begin() {
         return BEGIN;
     }
 
-    public static RequestMessage begin( DatabaseIdRepository repository, MapValue bookmarks ) throws BoltIOException
-    {
-        var bookmarkList = new BookmarksParserV4( repository, CustomBookmarkFormatParser.DEFAULT ).parseBookmarks( bookmarks );
-        return new BeginMessage( MapValue.EMPTY, bookmarkList, null, AccessMode.WRITE, Map.of(), ABSENT_DB_NAME );
+    public static RequestMessage begin(DatabaseIdRepository repository, MapValue bookmarks) throws BoltIOException {
+        var bookmarkList =
+                new BookmarksParserV4(repository, CustomBookmarkFormatParser.DEFAULT).parseBookmarks(bookmarks);
+        return new BeginMessage(MapValue.EMPTY, bookmarkList, null, AccessMode.WRITE, Map.of(), ABSENT_DB_NAME);
     }
 
-    public static RequestMessage discard( long n ) throws BoltIOException
-    {
-        return new DiscardMessage( asMapValue( map( "n", n ) ) );
+    public static RequestMessage discard(long n) throws BoltIOException {
+        return new DiscardMessage(asMapValue(map("n", n)));
     }
 
-    public static RequestMessage pull( long n ) throws BoltIOException
-    {
-        return new PullMessage( asMapValue( map( "n", n ) ) );
+    public static RequestMessage pull(long n) throws BoltIOException {
+        return new PullMessage(asMapValue(map("n", n)));
     }
 
-    public static RequestMessage hello()
-    {
+    public static RequestMessage hello() {
         return HELLO;
     }
 
-    public static RequestMessage hello( Map<String,Object> meta )
-    {
-        if ( !meta.containsKey( "user_agent" ) )
-        {
-            meta.put( "user_agent", USER_AGENT );
+    public static RequestMessage hello(Map<String, Object> meta) {
+        if (!meta.containsKey("user_agent")) {
+            meta.put("user_agent", USER_AGENT);
         }
-        return new HelloMessage( meta );
+        return new HelloMessage(meta);
     }
 
-    public static RequestMessage run( String statement )
-    {
-        return new RunMessage( statement );
+    public static RequestMessage run(String statement) {
+        return new RunMessage(statement);
     }
 
-    public static RequestMessage run()
-    {
+    public static RequestMessage run() {
         return RUN_RETURN_ONE;
     }
 
-    public static RequestMessage pullAll() throws BoltIOException
-    {
-        return pull( -1 );
+    public static RequestMessage pullAll() throws BoltIOException {
+        return pull(-1);
     }
 
-    public static RequestMessage discardAll() throws BoltIOException
-    {
-        return discard( -1 );
+    public static RequestMessage discardAll() throws BoltIOException {
+        return discard(-1);
     }
 
-    public static RequestMessage run( String statement, MapValue params )
-    {
-        return new RunMessage( statement, params );
+    public static RequestMessage run(String statement, MapValue params) {
+        return new RunMessage(statement, params);
     }
 
-    public static RequestMessage run( String statement, MapValue params, MapValue meta )
-    {
-        return new RunMessage( statement, params, meta );
+    public static RequestMessage run(String statement, MapValue params, MapValue meta) {
+        return new RunMessage(statement, params, meta);
     }
 
-    public static RequestMessage rollback()
-    {
+    public static RequestMessage rollback() {
         return ROLLBACK_MESSAGE;
     }
 
-    public static RequestMessage commit()
-    {
+    public static RequestMessage commit() {
         return COMMIT_MESSAGE;
     }
 
-    public static RequestMessage reset()
-    {
+    public static RequestMessage reset() {
         return ResetMessage.INSTANCE;
     }
 
-    public static RequestMessage goodbye()
-    {
+    public static RequestMessage goodbye() {
         return GOODBYE_MESSAGE;
     }
 
-    public static RequestMessage Interrupted()
-    {
+    public static RequestMessage Interrupted() {
         // This is a special state machine internal message.
         // A client shall never send this to server
         return InterruptSignal.INSTANCE;

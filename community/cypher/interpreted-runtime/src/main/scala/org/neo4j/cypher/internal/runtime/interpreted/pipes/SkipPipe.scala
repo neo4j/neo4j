@@ -25,11 +25,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class SkipPipe(source: Pipe, exp: Expression)
-                   (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class SkipPipe(source: Pipe, exp: Expression)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val skip = evaluateStaticSkipOrLimitNumberOrThrow(exp, state, "SKIP")
     SkipPipe.drop[CypherRow](skip, input)
   }
@@ -37,7 +39,8 @@ case class SkipPipe(source: Pipe, exp: Expression)
 }
 
 object SkipPipe {
-  //todo move this to ClosingIterator?
+
+  // todo move this to ClosingIterator?
   def drop[T](n: Long, iterator: ClosingIterator[T]): ClosingIterator[T] = {
     var j = 0L
     while (j < n && iterator.hasNext) {

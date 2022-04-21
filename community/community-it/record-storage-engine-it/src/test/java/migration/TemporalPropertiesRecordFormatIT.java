@@ -19,11 +19,14 @@
  */
 package migration;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -37,83 +40,70 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.DateValue;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @TestDirectoryExtension
-class TemporalPropertiesRecordFormatIT
-{
+class TemporalPropertiesRecordFormatIT {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void createDatePropertyOnLatestDatabase()
-    {
+    void createDatePropertyOnLatestDatabase() {
         Path storeDir = testDirectory.homePath();
-        Label label = Label.label( "DateNode" );
+        Label label = Label.label("DateNode");
         String propertyKey = "a";
-        LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
+        LocalDate date = DateValue.date(1991, 5, 3).asObjectCopy();
 
-        DatabaseManagementService managementService = startDatabaseService( storeDir );
-        GraphDatabaseService database = getDefaultDatabase( managementService );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node node = transaction.createNode( label );
-            node.setProperty( propertyKey, date );
+        DatabaseManagementService managementService = startDatabaseService(storeDir);
+        GraphDatabaseService database = getDefaultDatabase(managementService);
+        try (Transaction transaction = database.beginTx()) {
+            Node node = transaction.createNode(label);
+            node.setProperty(propertyKey, date);
             transaction.commit();
         }
         managementService.shutdown();
 
-        managementService = startDatabaseService( storeDir );
-        GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
-        try ( Transaction transaction = restartedDatabase.beginTx() )
-        {
-            assertNotNull( transaction.findNode( label, propertyKey, date ) );
+        managementService = startDatabaseService(storeDir);
+        GraphDatabaseService restartedDatabase = getDefaultDatabase(managementService);
+        try (Transaction transaction = restartedDatabase.beginTx()) {
+            assertNotNull(transaction.findNode(label, propertyKey, date));
         }
         managementService.shutdown();
     }
 
     @Test
-    void createDateArrayOnLatestDatabase()
-    {
+    void createDateArrayOnLatestDatabase() {
         Path storeDir = testDirectory.homePath();
-        Label label = Label.label( "DateNode" );
+        Label label = Label.label("DateNode");
         String propertyKey = "a";
-        LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
+        LocalDate date = DateValue.date(1991, 5, 3).asObjectCopy();
 
-        DatabaseManagementService managementService = startDatabaseService( storeDir );
-        GraphDatabaseService database = getDefaultDatabase( managementService );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node node = transaction.createNode( label );
-            node.setProperty( propertyKey, new LocalDate[]{date, date} );
+        DatabaseManagementService managementService = startDatabaseService(storeDir);
+        GraphDatabaseService database = getDefaultDatabase(managementService);
+        try (Transaction transaction = database.beginTx()) {
+            Node node = transaction.createNode(label);
+            node.setProperty(propertyKey, new LocalDate[] {date, date});
             transaction.commit();
         }
         managementService.shutdown();
 
-        managementService = startDatabaseService( storeDir );
-        GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
-        try ( Transaction transaction = restartedDatabase.beginTx() )
-        {
-            try ( ResourceIterator<Node> nodes = transaction.findNodes( label ) )
-            {
+        managementService = startDatabaseService(storeDir);
+        GraphDatabaseService restartedDatabase = getDefaultDatabase(managementService);
+        try (Transaction transaction = restartedDatabase.beginTx()) {
+            try (ResourceIterator<Node> nodes = transaction.findNodes(label)) {
                 Node node = nodes.next();
-                LocalDate[] points = (LocalDate[]) node.getProperty( propertyKey );
-                assertThat( points ).hasSize( 2 );
+                LocalDate[] points = (LocalDate[]) node.getProperty(propertyKey);
+                assertThat(points).hasSize(2);
             }
         }
         managementService.shutdown();
     }
 
-    private static DatabaseManagementService startDatabaseService( Path storeDir )
-    {
-        return new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( storage_engine, RecordStorageEngineFactory.NAME ).build();
+    private static DatabaseManagementService startDatabaseService(Path storeDir) {
+        return new TestDatabaseManagementServiceBuilder(storeDir)
+                .setConfig(storage_engine, RecordStorageEngineFactory.NAME)
+                .build();
     }
 
-    private static GraphDatabaseService getDefaultDatabase( DatabaseManagementService managementService )
-    {
-        return managementService.database( DEFAULT_DATABASE_NAME );
+    private static GraphDatabaseService getDefaultDatabase(DatabaseManagementService managementService) {
+        return managementService.database(DEFAULT_DATABASE_NAME);
     }
 }

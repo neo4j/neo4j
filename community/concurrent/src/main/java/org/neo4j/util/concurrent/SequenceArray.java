@@ -19,12 +19,11 @@
  */
 package org.neo4j.util.concurrent;
 
-import java.util.Arrays;
-
 import static java.lang.Math.max;
 
-public class SequenceArray
-{
+import java.util.Arrays;
+
+public class SequenceArray {
     private static final long UNSET = -1L;
     // This is the backing store, treated as a ring, courtesy of cursor
     private long[] array;
@@ -33,93 +32,81 @@ public class SequenceArray
     private final int longsPerItem;
     private int capacity;
 
-    SequenceArray( int longsPerItem, int initialCapacity )
-    {
+    SequenceArray(int longsPerItem, int initialCapacity) {
         this.longsPerItem = longsPerItem;
         this.capacity = initialCapacity;
         this.array = new long[capacity * longsPerItem];
     }
 
-    public void clear()
-    {
+    public void clear() {
         cursor = 0;
         itemsAhead = 0;
     }
 
-    void offer( long baseNumber, long number, long[] meta )
-    {
+    void offer(long baseNumber, long number, long[] meta) {
         int diff = (int) (number - baseNumber);
-        ensureArrayCapacity( diff );
+        ensureArrayCapacity(diff);
         int index = cursor + diff - 1;
 
         // If we offer a value a bit ahead of the last offered value then clear the values in between
-        for ( int i = cursor + itemsAhead; i < index; i++ )
-        {
-            array[index( i )] = UNSET;
+        for (int i = cursor + itemsAhead; i < index; i++) {
+            array[index(i)] = UNSET;
         }
 
-        int absIndex = index( index );
+        int absIndex = index(index);
         array[absIndex] = number;
-        System.arraycopy( meta, 0, array, absIndex + 1, longsPerItem - 1 );
-        itemsAhead = max( itemsAhead, diff );
+        System.arraycopy(meta, 0, array, absIndex + 1, longsPerItem - 1);
+        itemsAhead = max(itemsAhead, diff);
     }
 
-    private int index( int logicalIndex )
-    {
+    private int index(int logicalIndex) {
         return (logicalIndex % capacity) * longsPerItem;
     }
 
-    long pollHighestGapFree( long given, long[] meta )
-    {
+    long pollHighestGapFree(long given, long[] meta) {
         // assume that "given" would be placed at cursor
         long number = given;
         int length = itemsAhead - 1;
         int absIndex = 0;
-        for ( int i = 0; i < length; i++ )
-        {
-            // Advance the cursor first because this method is only assumed to be called when offering the number immediately after
+        for (int i = 0; i < length; i++) {
+            // Advance the cursor first because this method is only assumed to be called when offering the number
+            // immediately after
             // the current highest gap-free number
             advanceCursor();
-            int tentativeAbsIndex = index( cursor );
-            if ( array[tentativeAbsIndex] == UNSET )
-            {   // we found a gap, return the number before the gap
+            int tentativeAbsIndex = index(cursor);
+            if (array[tentativeAbsIndex] == UNSET) { // we found a gap, return the number before the gap
                 break;
             }
 
             absIndex = tentativeAbsIndex;
             number++;
-            assert array[absIndex] == number :
-                    "Expected index " + cursor + " to be " + number + ", but was " + array[absIndex] +
-                            ". This is for i=" + i;
+            assert array[absIndex] == number
+                    : "Expected index " + cursor + " to be " + number + ", but was " + array[absIndex]
+                            + ". This is for i=" + i;
         }
 
         // copy the meta values into the supplied meta
-        System.arraycopy( array, absIndex + 1, meta, 0, longsPerItem - 1 );
+        System.arraycopy(array, absIndex + 1, meta, 0, longsPerItem - 1);
         return number;
     }
 
-    private void advanceCursor()
-    {
+    private void advanceCursor() {
         assert itemsAhead > 0;
         itemsAhead--;
-        cursor = advanceCursor( cursor );
+        cursor = advanceCursor(cursor);
     }
 
-    private int advanceCursor( int cursor )
-    {
+    private int advanceCursor(int cursor) {
         return (cursor + 1) % capacity;
     }
 
-    private void ensureArrayCapacity( int capacity )
-    {
-        while ( capacity > this.capacity )
-        {
+    private void ensureArrayCapacity(int capacity) {
+        while (capacity > this.capacity) {
             int newCapacity = this.capacity * 2;
             long[] newArray = new long[newCapacity * longsPerItem];
             // Copy contents to new array, newArray starting at 0
-            for ( int i = 0; i < itemsAhead; i++ )
-            {
-                System.arraycopy( array, index( cursor + i ), newArray, index( i ), longsPerItem );
+            for (int i = 0; i < itemsAhead; i++) {
+                System.arraycopy(array, index(cursor + i), newArray, index(i), longsPerItem);
             }
             this.array = newArray;
             this.capacity = newCapacity;
@@ -128,62 +115,52 @@ public class SequenceArray
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < itemsAhead; i++ )
-        {
-            long value = array[index( cursor + i )];
-            if ( value != UNSET )
-            {
-                builder.append( builder.length() > 0 ? "," : "" ).append( value );
+        for (int i = 0; i < itemsAhead; i++) {
+            long value = array[index(cursor + i)];
+            if (value != UNSET) {
+                builder.append(builder.length() > 0 ? "," : "").append(value);
             }
         }
         return builder.toString();
     }
 
-    boolean seen( long baseNumber, long number, long[] meta )
-    {
+    boolean seen(long baseNumber, long number, long[] meta) {
         int diff = (int) (number - baseNumber);
         int index = cursor + diff - 1;
 
-        if ( index >= cursor + itemsAhead )
-        {
+        if (index >= cursor + itemsAhead) {
             return false;
         }
 
-        int absIndex = index( index );
+        int absIndex = index(index);
         long[] arrayRef = array;
         long num = arrayRef[absIndex];
-        if ( num != number )
-        {
+        if (num != number) {
             return false;
         }
 
-        long[] metaCopy = Arrays.copyOfRange( arrayRef, absIndex + 1, absIndex + longsPerItem );
-        return Arrays.equals( meta, metaCopy );
+        long[] metaCopy = Arrays.copyOfRange(arrayRef, absIndex + 1, absIndex + longsPerItem);
+        return Arrays.equals(meta, metaCopy);
     }
 
-    long[][] snapshot()
-    {
+    long[][] snapshot() {
         long[][] temp = new long[itemsAhead][]; // worst-case size
         int remaining = itemsAhead - 1;
         int queueCursor = cursor + 1;
         int resultCursor = 0;
-        while ( remaining-- > 0 )
-        {
-            int absIndex = index( queueCursor );
+        while (remaining-- > 0) {
+            int absIndex = index(queueCursor);
             long number = array[absIndex];
-            if ( number != UNSET )
-            {
-                temp[resultCursor++] = Arrays.copyOfRange( array, absIndex, absIndex + longsPerItem );
+            if (number != UNSET) {
+                temp[resultCursor++] = Arrays.copyOfRange(array, absIndex, absIndex + longsPerItem);
             }
-            queueCursor = advanceCursor( queueCursor );
+            queueCursor = advanceCursor(queueCursor);
         }
-        if ( resultCursor < temp.length )
-        {
+        if (resultCursor < temp.length) {
             // shrink to actual size
-            temp = Arrays.copyOf( temp, resultCursor );
+            temp = Arrays.copyOf(temp, resultCursor);
         }
         return temp;
     }

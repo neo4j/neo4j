@@ -25,18 +25,16 @@ package org.neo4j.function;
  *
  * @param <E> the type of exception that may be thrown from the function
  */
-public interface ThrowingLongConsumer<E extends Throwable>
-{
+public interface ThrowingLongConsumer<E extends Throwable> {
     /**
      * Performs this operation on the given argument.
      *
      * @param t the input argument
      * @throws E an exception if the function fails
      */
-    void accept( long t ) throws E;
+    void accept(long t) throws E;
 
-    static <E extends Exception> ThrowingLongConsumer<E> noop()
-    {
+    static <E extends Exception> ThrowingLongConsumer<E> noop() {
         return t -> {};
     }
 }

@@ -21,28 +21,26 @@ package org.neo4j.kernel.impl.util.watcher;
 
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.neo4j.io.fs.watcher.FileWatchEventListenerFactory;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.internal.LogService;
 
-public class DefaultFileDeletionListenerFactory implements FileWatchEventListenerFactory<DefaultFileDeletionEventListener>
-{
+public class DefaultFileDeletionListenerFactory
+        implements FileWatchEventListenerFactory<DefaultFileDeletionEventListener> {
     private final DatabaseLayout databaseLayout;
     private final LogService logService;
     private final Predicate<String> fileNameFilter;
 
-    public DefaultFileDeletionListenerFactory( DatabaseLayout databaseLayout, LogService logService, Predicate<String> fileNameFilter )
-    {
+    public DefaultFileDeletionListenerFactory(
+            DatabaseLayout databaseLayout, LogService logService, Predicate<String> fileNameFilter) {
         this.databaseLayout = databaseLayout;
         this.logService = logService;
         this.fileNameFilter = fileNameFilter;
     }
 
     @Override
-    public DefaultFileDeletionEventListener createListener( Set<WatchedResource> watchedResources )
-    {
-        return new DefaultFileDeletionEventListener( databaseLayout, watchedResources, logService, fileNameFilter );
+    public DefaultFileDeletionEventListener createListener(Set<WatchedResource> watchedResources) {
+        return new DefaultFileDeletionEventListener(databaseLayout, watchedResources, logService, fileNameFilter);
     }
 }

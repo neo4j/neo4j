@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class ContainsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("finds nested aggregate expressions") {
-    val expr = add(literalInt(1), CountStar()_)
+    val expr = add(literalInt(1), CountStar() _)
 
     containsAggregate(expr) should equal(true)
   }

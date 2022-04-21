@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -58,119 +57,99 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
  * in tentative mode does not fail the transaction violating the constraint, but keeps the failure around and will
  * eventually fail T instead.
  */
-public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
-{
+public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy {
     private final FlippableIndexProxy flipper;
     private final OnlineIndexProxy target;
     private final Collection<IndexEntryConflictException> failures = new CopyOnWriteArrayList<>();
     private TokenNameLookup tokenNameLookup;
 
-    TentativeConstraintIndexProxy( FlippableIndexProxy flipper, OnlineIndexProxy target, TokenNameLookup tokenNameLookup )
-    {
+    TentativeConstraintIndexProxy(
+            FlippableIndexProxy flipper, OnlineIndexProxy target, TokenNameLookup tokenNameLookup) {
         this.flipper = flipper;
         this.target = target;
         this.tokenNameLookup = tokenNameLookup;
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
-        switch ( mode )
-        {
+    public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+        switch (mode) {
             case ONLINE:
-                return new DelegatingIndexUpdater( new DeferredConflictCheckingIndexUpdater( target.accessor.newUpdater( mode, cursorContext, parallel ),
-                        target::newValueReader, target.getDescriptor(), cursorContext ) )
-                {
+                return new DelegatingIndexUpdater(new DeferredConflictCheckingIndexUpdater(
+                        target.accessor.newUpdater(mode, cursorContext, parallel),
+                        target::newValueReader,
+                        target.getDescriptor(),
+                        cursorContext)) {
                     @Override
-                    public void process( IndexEntryUpdate<?> update )
-                    {
-                        try
-                        {
-                            delegate.process( update );
-                        }
-                        catch ( IndexEntryConflictException conflict )
-                        {
-                            failures.add( conflict );
+                    public void process(IndexEntryUpdate<?> update) {
+                        try {
+                            delegate.process(update);
+                        } catch (IndexEntryConflictException conflict) {
+                            failures.add(conflict);
                         }
                     }
 
                     @Override
-                    public void close()
-                    {
-                        try
-                        {
+                    public void close() {
+                        try {
                             delegate.close();
-                        }
-                        catch ( IndexEntryConflictException conflict )
-                        {
-                            failures.add( conflict );
+                        } catch (IndexEntryConflictException conflict) {
+                            failures.add(conflict);
                         }
                     }
                 };
 
             case RECOVERY:
-                return newUpdater( mode, cursorContext, parallel );
+                return newUpdater(mode, cursorContext, parallel);
 
-        default:
-                throw new IllegalArgumentException( "Unsupported update mode: " + mode );
-
+            default:
+                throw new IllegalArgumentException("Unsupported update mode: " + mode);
         }
     }
 
     @Override
-    public InternalIndexState getState()
-    {
+    public InternalIndexState getState() {
         return failures.isEmpty() ? InternalIndexState.POPULATING : InternalIndexState.FAILED;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + "[target:" + target + "]";
     }
 
     @Override
-    public ValueIndexReader newValueReader() throws IndexNotFoundKernelException
-    {
-        throw new IndexNotFoundKernelException( getDescriptor() + " is still populating" );
+    public ValueIndexReader newValueReader() throws IndexNotFoundKernelException {
+        throw new IndexNotFoundKernelException(getDescriptor() + " is still populating");
     }
 
     @Override
-    public TokenIndexReader newTokenReader()
-    {
-        throw new UnsupportedOperationException( "Not supported for value indexes" );
+    public TokenIndexReader newTokenReader() {
+        throw new UnsupportedOperationException("Not supported for value indexes");
     }
 
     @Override
-    public IndexProxy getDelegate()
-    {
+    public IndexProxy getDelegate() {
         return target;
     }
 
     @Override
-    public void validate() throws UniquePropertyValueValidationException
-    {
-        if ( !failures.isEmpty() )
-        {
+    public void validate() throws UniquePropertyValueValidationException {
+        if (!failures.isEmpty()) {
             SchemaDescriptor descriptor = getDescriptor().schema();
             throw new UniquePropertyValueValidationException(
-                    ConstraintDescriptorFactory.uniqueForSchema( descriptor ),
+                    ConstraintDescriptorFactory.uniqueForSchema(descriptor),
                     ConstraintValidationException.Phase.VERIFICATION,
-                    new HashSet<>( failures ), tokenNameLookup );
+                    new HashSet<>(failures),
+                    tokenNameLookup);
         }
     }
 
     @Override
-    public void activate()
-    {
-        if ( failures.isEmpty() )
-        {
-            flipper.flipTo( target );
-        }
-        else
-        {
+    public void activate() {
+        if (failures.isEmpty()) {
+            flipper.flipTo(target);
+        } else {
             throw new IllegalStateException(
-                    "Trying to activate failed index, should have checked the failures earlier..." );
+                    "Trying to activate failed index, should have checked the failures earlier...");
         }
     }
 }

@@ -19,46 +19,41 @@
  */
 package org.neo4j.harness.junit.rule;
 
-import org.junit.jupiter.api.Test;
-import org.junit.runners.model.Statement;
-
-import java.net.URI;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.neo4j.harness.Neo4jBuilder;
-import org.neo4j.harness.internal.InProcessNeo4j;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class Neo4jRuleTest
-{
+import java.net.URI;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.Test;
+import org.junit.runners.model.Statement;
+import org.neo4j.harness.Neo4jBuilder;
+import org.neo4j.harness.internal.InProcessNeo4j;
+
+class Neo4jRuleTest {
     @Test
-    void shouldReturnHttpsUriWhenConfigured() throws Throwable
-    {
-        URI configuredHttpsUri = URI.create( "https://localhost:7473" );
-        assertEquals( configuredHttpsUri, getHttpsUriFromNeo4jRule( configuredHttpsUri ) );
+    void shouldReturnHttpsUriWhenConfigured() throws Throwable {
+        URI configuredHttpsUri = URI.create("https://localhost:7473");
+        assertEquals(configuredHttpsUri, getHttpsUriFromNeo4jRule(configuredHttpsUri));
     }
 
-    private static URI getHttpsUriFromNeo4jRule( URI configuredHttpsUri ) throws Throwable
-    {
-        InProcessNeo4j neo4J = mock( InProcessNeo4j.class );
-        when( neo4J.httpsURI() ).thenReturn( configuredHttpsUri );
-        Neo4jBuilder serverBuilder = mock( Neo4jBuilder.class );
-        when( serverBuilder.build() ).thenReturn( neo4J );
+    private static URI getHttpsUriFromNeo4jRule(URI configuredHttpsUri) throws Throwable {
+        InProcessNeo4j neo4J = mock(InProcessNeo4j.class);
+        when(neo4J.httpsURI()).thenReturn(configuredHttpsUri);
+        Neo4jBuilder serverBuilder = mock(Neo4jBuilder.class);
+        when(serverBuilder.build()).thenReturn(neo4J);
 
-        Neo4jRule rule = new Neo4jRule( serverBuilder );
+        Neo4jRule rule = new Neo4jRule(serverBuilder);
 
         AtomicReference<URI> uriRef = new AtomicReference<>();
-        Statement statement = rule.apply( new Statement()
-        {
-            @Override
-            public void evaluate()
-            {
-                uriRef.set( rule.httpsURI() );
-            }
-        }, null );
+        Statement statement = rule.apply(
+                new Statement() {
+                    @Override
+                    public void evaluate() {
+                        uriRef.set(rule.httpsURI());
+                    }
+                },
+                null);
 
         statement.evaluate();
         return uriRef.get();

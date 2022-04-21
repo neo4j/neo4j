@@ -23,14 +23,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.function.LongPredicate;
-
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
 /**
  * Iterator over entity ids together with their respective score.
  */
-public class ScoreEntityIterator implements ValuesIterator
-{
+public class ScoreEntityIterator implements ValuesIterator {
     private final ValuesIterator iterator;
     private final LongPredicate predicate;
     private boolean hasNext;
@@ -39,70 +37,56 @@ public class ScoreEntityIterator implements ValuesIterator
     private long nextEntityId;
     private float nextScore;
 
-    private ScoreEntityIterator( ValuesIterator sortedValuesIterator, LongPredicate predicate )
-    {
+    private ScoreEntityIterator(ValuesIterator sortedValuesIterator, LongPredicate predicate) {
         this.iterator = sortedValuesIterator;
         this.predicate = predicate;
         advanceIterator();
     }
 
     @Override
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         return hasNext;
     }
 
     @Override
-    public long current()
-    {
+    public long current() {
         return currentEntityId;
     }
 
     @Override
-    public int remaining()
-    {
+    public int remaining() {
         return iterator.remaining() + (hasNext ? 1 : 0);
     }
 
     @Override
-    public float currentScore()
-    {
+    public float currentScore() {
         return currentScore;
     }
 
     @Override
-    public long next()
-    {
-        if ( hasNext )
-        {
+    public long next() {
+        if (hasNext) {
             currentEntityId = nextEntityId;
             currentScore = nextScore;
             advanceIterator();
             return currentEntityId;
-        }
-        else
-        {
-            throw new NoSuchElementException( "The iterator is exhausted." );
+        } else {
+            throw new NoSuchElementException("The iterator is exhausted.");
         }
     }
 
-    private void advanceIterator()
-    {
-        do
-        {
+    private void advanceIterator() {
+        do {
             hasNext = iterator.hasNext();
-            if ( hasNext )
-            {
+            if (hasNext) {
                 nextEntityId = iterator.next();
                 nextScore = iterator.currentScore();
             }
-        }
-        while ( hasNext && !predicate.test( nextEntityId ) );
+        } while (hasNext && !predicate.test(nextEntityId));
     }
 
-    public static ValuesIterator filter( ValuesIterator itr, LongPredicate predicate )
-    {
-        return new ScoreEntityIterator( itr, predicate );
+    public static ValuesIterator filter(ValuesIterator itr, LongPredicate predicate) {
+        return new ScoreEntityIterator(itr, predicate);
     }
 
     /**
@@ -111,82 +95,68 @@ public class ScoreEntityIterator implements ValuesIterator
      * @param iterators to concatenate
      * @return a {@link ScoreEntityIterator} that iterates over all of the elements in all of the given iterators
      */
-    static ValuesIterator mergeIterators( List<ValuesIterator> iterators )
-    {
-        if ( iterators.size() == 1 )
-        {
-            return iterators.get( 0 );
+    static ValuesIterator mergeIterators(List<ValuesIterator> iterators) {
+        if (iterators.size() == 1) {
+            return iterators.get(0);
         }
-        return new ConcatenatingScoreEntityIterator( iterators );
+        return new ConcatenatingScoreEntityIterator(iterators);
     }
 
-    private static class ConcatenatingScoreEntityIterator implements ValuesIterator
-    {
+    private static class ConcatenatingScoreEntityIterator implements ValuesIterator {
         private final PriorityQueue<ValuesIterator> sources;
         private boolean hasNext;
         private long entityId;
         private float score;
 
-        ConcatenatingScoreEntityIterator( List<? extends ValuesIterator> iterators )
-        {
-            // We take the delegate iterators in current score order, using the ordering defined in CIP2016-06-14, where NaN comes between positive infinity
+        ConcatenatingScoreEntityIterator(List<? extends ValuesIterator> iterators) {
+            // We take the delegate iterators in current score order, using the ordering defined in CIP2016-06-14, where
+            // NaN comes between positive infinity
             // and the largest float/double value. This is the same as Float/Double.compare.
-            sources = new PriorityQueue<>( ( o1, o2 ) -> Float.compare( o2.currentScore(), o1.currentScore() ) );
-            for ( ValuesIterator iterator : iterators )
-            {
-                if ( iterator.hasNext() )
-                {
+            sources = new PriorityQueue<>((o1, o2) -> Float.compare(o2.currentScore(), o1.currentScore()));
+            for (ValuesIterator iterator : iterators) {
+                if (iterator.hasNext()) {
                     iterator.next();
-                    sources.add( iterator );
+                    sources.add(iterator);
                     hasNext = true;
                 }
             }
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return hasNext;
         }
 
         @Override
-        public int remaining()
-        {
+        public int remaining() {
             return 0;
         }
 
         @Override
-        public float currentScore()
-        {
+        public float currentScore() {
             return score;
         }
 
         @Override
-        public long next()
-        {
-            if ( hasNext )
-            {
+        public long next() {
+            if (hasNext) {
                 ValuesIterator itr = sources.poll();
                 assert itr != null;
                 entityId = itr.current();
                 score = itr.currentScore();
-                if ( itr.hasNext() )
-                {
+                if (itr.hasNext()) {
                     itr.next();
-                    sources.add( itr );
+                    sources.add(itr);
                 }
                 hasNext = !sources.isEmpty();
                 return entityId;
-            }
-            else
-            {
+            } else {
                 throw new NoSuchElementException();
             }
         }
 
         @Override
-        public long current()
-        {
+        public long current() {
             return entityId;
         }
     }

@@ -56,10 +56,10 @@ import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues.list
 
+import scala.IterableOnce
 import scala.jdk.CollectionConverters.IterableHasAsJava
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.language.implicitConversions
-import scala.IterableOnce
 
 object ImplicitValueConversion {
 
@@ -69,7 +69,7 @@ object ImplicitValueConversion {
 
   implicit def toStringValue(s: String): TextValue = stringValue(s)
 
-  implicit def toStringArrayValue(s: Array[String]): ArrayValue = stringArray(s:_*)
+  implicit def toStringArrayValue(s: Array[String]): ArrayValue = stringArray(s: _*)
 
   implicit def toByteArrayValue(s: Array[Byte]): ArrayValue = byteArray(s)
 
@@ -101,7 +101,6 @@ object ImplicitValueConversion {
 
   implicit def toMapValue(m: Map[String, _]): MapValue =
     ValueUtils.asMapValue(m.asJava.asInstanceOf[java.util.Map[String, AnyRef]])
-
 
   implicit def toMapValue(m: java.util.Map[String, Any]): MapValue =
     ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])

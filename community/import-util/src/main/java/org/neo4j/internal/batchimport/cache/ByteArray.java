@@ -36,15 +36,14 @@ package org.neo4j.internal.batchimport.cache;
  *
  * @see NumberArrayFactory
  */
-public interface ByteArray extends NumberArray<ByteArray>
-{
+public interface ByteArray extends NumberArray<ByteArray> {
     /**
      * Gets the data at the given {@code index}. The data is read into the given byte array.
      *
      * @param index array index to get.
      * @param into byte[] to read into.
      */
-    void get( long index, byte[] into );
+    void get(long index, byte[] into);
 
     /**
      * Gets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -54,7 +53,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to get the value from.
      * @return the byte at the given offset at the given array index.
      */
-    byte getByte( long index, int offset );
+    byte getByte(long index, int offset);
 
     /**
      * Gets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -64,7 +63,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to get the value from.
      * @return the short at the given offset at the given array index.
      */
-    short getShort( long index, int offset );
+    short getShort(long index, int offset);
 
     /**
      * Gets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -74,7 +73,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to get the value from.
      * @return the int at the given offset at the given array index.
      */
-    int getInt( long index, int offset );
+    int getInt(long index, int offset);
 
     /**
      * Gets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -84,7 +83,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to get the value from.
      * @return the 5-byte long at the given offset at the given array index.
      */
-    long get5ByteLong( long index, int offset );
+    long get5ByteLong(long index, int offset);
 
     /**
      * Gets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -94,7 +93,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to get the value from.
      * @return the 6-byte long at the given offset at the given array index.
      */
-    long get6ByteLong( long index, int offset );
+    long get6ByteLong(long index, int offset);
 
     /**
      * Gets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -104,7 +103,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to get the value from.
      * @return the long at the given offset at the given array index.
      */
-    long getLong( long index, int offset );
+    long getLong(long index, int offset);
 
     /**
      * Sets the given {@code data} at the given {@code index}, overwriting all the values in it.
@@ -112,7 +111,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param index array index to get.
      * @param value the byte[] to copy into the given offset at the given array index.
      */
-    void set( long index, byte[] value );
+    void set(long index, byte[] value);
 
     /**
      * Sets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -122,7 +121,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to set the value for.
      * @param value the byte value to set at the given offset at the given array index.
      */
-    void setByte( long index, int offset, byte value );
+    void setByte(long index, int offset, byte value);
 
     /**
      * Sets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -132,7 +131,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to set the value for.
      * @param value the short value to set at the given offset at the given array index.
      */
-    void setShort( long index, int offset, short value );
+    void setShort(long index, int offset, short value);
 
     /**
      * Sets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -142,7 +141,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to set the value for.
      * @param value the int value to set at the given offset at the given array index.
      */
-    void setInt( long index, int offset, int value );
+    void setInt(long index, int offset, int value);
 
     /**
      * Sets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -152,7 +151,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to set the value for.
      * @param value the 5-byte long value to set at the given offset at the given array index.
      */
-    void set5ByteLong( long index, int offset, long value );
+    void set5ByteLong(long index, int offset, long value);
 
     /**
      * Sets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -162,7 +161,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to set the value for.
      * @param value the 6-byte long value to set at the given offset at the given array index.
      */
-    void set6ByteLong( long index, int offset, long value );
+    void set6ByteLong(long index, int offset, long value);
 
     /**
      * Sets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -172,7 +171,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to set the value for.
      * @param value the long value to set at the given offset at the given array index.
      */
-    void setLong( long index, int offset, long value );
+    void setLong(long index, int offset, long value);
 
     /**
      * Gets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -182,7 +181,7 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to get the value from.
      * @return the 3-byte int at the given offset at the given array index.
      */
-    int get3ByteInt( long index, int offset );
+    int get3ByteInt(long index, int offset);
 
     /**
      * Sets a part of an item, at the given {@code index}. An item in this array can consist of
@@ -192,5 +191,5 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param offset offset into this index to set the value for.
      * @param value the 3-byte int value to set at the given offset at the given array index.
      */
-    void set3ByteInt( long index, int offset, int value );
+    void set3ByteInt(long index, int offset, int value);
 }

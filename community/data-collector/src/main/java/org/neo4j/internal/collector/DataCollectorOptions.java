@@ -20,72 +20,55 @@
 package org.neo4j.internal.collector;
 
 import java.util.Map;
-
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 /**
  * Helper classes which are used to define options to data collector procedures.
  */
-class DataCollectorOptions
-{
-    private DataCollectorOptions()
-    {
-    }
+class DataCollectorOptions {
+    private DataCollectorOptions() {}
 
-    abstract static class Option<T>
-    {
+    abstract static class Option<T> {
         final String name;
         final T defaultValue;
 
-        Option( String name, T defaultValue )
-        {
+        Option(String name, T defaultValue) {
             this.name = name;
             this.defaultValue = defaultValue;
         }
 
-        abstract T parse( Object value ) throws InvalidArgumentsException;
+        abstract T parse(Object value) throws InvalidArgumentsException;
 
-        T parseOrDefault( Map<String,Object> valueMap ) throws InvalidArgumentsException
-        {
-            if ( valueMap.containsKey( name ) )
-            {
-                Object o = valueMap.get( name );
-                return parse( o );
+        T parseOrDefault(Map<String, Object> valueMap) throws InvalidArgumentsException {
+            if (valueMap.containsKey(name)) {
+                Object o = valueMap.get(name);
+                return parse(o);
             }
             return defaultValue;
         }
     }
 
-    static class IntOption extends Option<Integer>
-    {
-        IntOption( String name, int defaultValue )
-        {
-            super( name, defaultValue );
+    static class IntOption extends Option<Integer> {
+        IntOption(String name, int defaultValue) {
+            super(name, defaultValue);
         }
 
         @Override
-        Integer parse( Object value ) throws InvalidArgumentsException
-        {
-            int x = asInteger( value );
-            if ( x < 0 )
-            {
+        Integer parse(Object value) throws InvalidArgumentsException {
+            int x = asInteger(value);
+            if (x < 0) {
                 throw new InvalidArgumentsException(
-                        String.format( "Option `%s` requires positive integer argument, got `%d`", name, x ) );
+                        String.format("Option `%s` requires positive integer argument, got `%d`", name, x));
             }
             return x;
         }
 
-        private int asInteger( Object value ) throws InvalidArgumentsException
-        {
-            if ( value instanceof Byte ||
-                 value instanceof Short ||
-                 value instanceof Integer ||
-                 value instanceof Long )
-            {
-                return ((Number)value).intValue();
+        private int asInteger(Object value) throws InvalidArgumentsException {
+            if (value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long) {
+                return ((Number) value).intValue();
             }
             throw new InvalidArgumentsException(
-                    String.format( "Option `%s` requires integer argument, got `%s`", name, value ) );
+                    String.format("Option `%s` requires integer argument, got `%s`", name, value));
         }
     }
 }

@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenSet;
@@ -36,76 +35,70 @@ import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 import org.neo4j.kernel.impl.index.schema.TokenScan;
 
-public class StubTokenIndexReader implements TokenIndexReader
-{
-    private final Map<Long,Set<Long>> index = new HashMap<>();
+public class StubTokenIndexReader implements TokenIndexReader {
+    private final Map<Long, Set<Long>> index = new HashMap<>();
 
-    void index( int[] tokens, long entity )
-    {
-        for ( long token : tokens )
-        {
-            index.computeIfAbsent( token, k -> new TreeSet<>() );
-            index.get( token ).add( entity );
+    void index(int[] tokens, long entity) {
+        for (long token : tokens) {
+            index.computeIfAbsent(token, k -> new TreeSet<>());
+            index.get(token).add(entity);
         }
     }
 
     @Override
-    public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, CursorContext cursorContext )
-    {
-        index.forEach( ( token, entities ) -> client.initialize( new StubIndexProgressor( client, entities ), token.intValue(), IndexOrder.NONE ) );
+    public void query(
+            IndexProgressor.EntityTokenClient client,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            CursorContext cursorContext) {
+        index.forEach((token, entities) ->
+                client.initialize(new StubIndexProgressor(client, entities), token.intValue(), IndexOrder.NONE));
     }
 
     @Override
-    public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, EntityRange range,
-                       CursorContext cursorContext )
-    {
-        index.forEach( ( token, entities ) -> client.initialize( new StubIndexProgressor( client, entities ), token.intValue(), IndexOrder.NONE ) );
+    public void query(
+            IndexProgressor.EntityTokenClient client,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            EntityRange range,
+            CursorContext cursorContext) {
+        index.forEach((token, entities) ->
+                client.initialize(new StubIndexProgressor(client, entities), token.intValue(), IndexOrder.NONE));
     }
 
     @Override
-    public TokenScan entityTokenScan( int tokenId, CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "Stub implementation does not support this method." );
+    public TokenScan entityTokenScan(int tokenId, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Stub implementation does not support this method.");
     }
 
     @Override
-    public PartitionedTokenScan entityTokenScan( int desiredNumberOfPartitions, CursorContext context, TokenPredicate query )
-    {
-        throw new UnsupportedOperationException( "Stub implementation does not support this method." );
+    public PartitionedTokenScan entityTokenScan(
+            int desiredNumberOfPartitions, CursorContext context, TokenPredicate query) {
+        throw new UnsupportedOperationException("Stub implementation does not support this method.");
     }
 
-    private static class StubIndexProgressor implements IndexProgressor
-    {
+    private static class StubIndexProgressor implements IndexProgressor {
         private final IndexProgressor.EntityTokenClient client;
         private final Iterator<Long> entities;
 
-        StubIndexProgressor( IndexProgressor.EntityTokenClient client, Set<Long> entities )
-        {
+        StubIndexProgressor(IndexProgressor.EntityTokenClient client, Set<Long> entities) {
             this.client = client;
             this.entities = entities.iterator();
         }
 
         @Override
-        public boolean next()
-        {
-            if ( entities.hasNext() )
-            {
-                client.acceptEntity( entities.next(), TokenSet.NONE );
+        public boolean next() {
+            if (entities.hasNext()) {
+                client.acceptEntity(entities.next(), TokenSet.NONE);
                 return true;
             }
             return false;
         }
 
         @Override
-        public void close()
-        {
-
-        }
+        public void close() {}
     }
 
     @Override
-    public void close()
-    {
-
-    }
+    public void close() {}
 }

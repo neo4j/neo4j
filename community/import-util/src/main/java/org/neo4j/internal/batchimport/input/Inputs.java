@@ -24,26 +24,23 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class Inputs
-{
-    private Inputs()
-    {
-    }
+public class Inputs {
+    private Inputs() {}
 
-    public static int calculatePropertySize( InputEntity entity, PropertySizeCalculator valueSizeCalculator, CursorContext cursorContext,
-            MemoryTracker memoryTracker )
-    {
+    public static int calculatePropertySize(
+            InputEntity entity,
+            PropertySizeCalculator valueSizeCalculator,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         int size = 0;
         int propertyCount = entity.propertyCount();
-        if ( propertyCount > 0 )
-        {
+        if (propertyCount > 0) {
             Value[] values = new Value[propertyCount];
-            for ( int i = 0; i < propertyCount; i++ )
-            {
-                Object propertyValue = entity.propertyValue( i );
-                values[i] = propertyValue instanceof Value ? (Value) propertyValue : Values.of( propertyValue );
+            for (int i = 0; i < propertyCount; i++) {
+                Object propertyValue = entity.propertyValue(i);
+                values[i] = propertyValue instanceof Value ? (Value) propertyValue : Values.of(propertyValue);
             }
-            size += valueSizeCalculator.calculateSize( values, cursorContext, memoryTracker );
+            size += valueSizeCalculator.calculateSize(values, cursorContext, memoryTracker);
         }
         return size;
     }

@@ -24,52 +24,45 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 
-class ValueIndexProxyStrategy implements IndexProxyStrategy
-{
+class ValueIndexProxyStrategy implements IndexProxyStrategy {
     private final IndexDescriptor indexDescriptor;
     private final IndexStatisticsStore statisticsStore;
     private final String indexUserDescription;
 
-    ValueIndexProxyStrategy( IndexDescriptor indexDescriptor, IndexStatisticsStore statisticsStore, TokenNameLookup tokenNameLookup )
-    {
+    ValueIndexProxyStrategy(
+            IndexDescriptor indexDescriptor, IndexStatisticsStore statisticsStore, TokenNameLookup tokenNameLookup) {
         this.indexDescriptor = indexDescriptor;
         this.statisticsStore = statisticsStore;
-        indexUserDescription = indexDescriptor.userDescription( tokenNameLookup );
+        indexUserDescription = indexDescriptor.userDescription(tokenNameLookup);
     }
 
     @Override
-    public IndexDescriptor getIndexDescriptor()
-    {
+    public IndexDescriptor getIndexDescriptor() {
         return indexDescriptor;
     }
 
     @Override
-    public void removeStatisticsForIndex()
-    {
-        statisticsStore.removeIndex( indexDescriptor.getId() );
+    public void removeStatisticsForIndex() {
+        statisticsStore.removeIndex(indexDescriptor.getId());
     }
 
     @Override
-    public void incrementUpdateStatisticsForIndex( long delta )
-    {
-        statisticsStore.incrementIndexUpdates( indexDescriptor.getId(), delta );
+    public void incrementUpdateStatisticsForIndex(long delta) {
+        statisticsStore.incrementIndexUpdates(indexDescriptor.getId(), delta);
     }
 
     @Override
-    public void replaceStatisticsForIndex( IndexSample sample )
-    {
-        statisticsStore.replaceStats( indexDescriptor.getId(), sample );
+    public void replaceStatisticsForIndex(IndexSample sample) {
+        statisticsStore.replaceStats(indexDescriptor.getId(), sample);
     }
 
     @Override
-    public void changeIndexDescriptor( IndexDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Changing descriptor on this index proxy strategy is not allowed" );
+    public void changeIndexDescriptor(IndexDescriptor descriptor) {
+        throw new UnsupportedOperationException("Changing descriptor on this index proxy strategy is not allowed");
     }
 
     @Override
-    public String getIndexUserDescription()
-    {
+    public String getIndexUserDescription() {
         return indexUserDescription;
     }
 }

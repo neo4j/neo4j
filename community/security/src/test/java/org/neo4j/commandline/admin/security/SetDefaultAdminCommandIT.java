@@ -19,27 +19,24 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileUserRepository;
+import picocli.CommandLine;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-class SetDefaultAdminCommandIT
-{
+class SetDefaultAdminCommandIT {
     private final FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private Path confDir;
     private Path homeDir;
@@ -47,52 +44,47 @@ class SetDefaultAdminCommandIT
     private PrintStream err;
 
     @BeforeEach
-    void setup()
-    {
-        Path graphDir = Path.of( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-        confDir = graphDir.resolveSibling( "conf" );
-        homeDir = graphDir.resolveSibling( "home" );
-        out = mock( PrintStream.class );
-        err = mock( PrintStream.class );
+    void setup() {
+        Path graphDir = Path.of(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
+        confDir = graphDir.resolveSibling("conf");
+        homeDir = graphDir.resolveSibling("home");
+        out = mock(PrintStream.class);
+        err = mock(PrintStream.class);
     }
 
     @Test
-    void shouldSetDefaultAdmin() throws Throwable
-    {
-        execute( "jane" );
-        assertAdminIniFile( "jane" );
+    void shouldSetDefaultAdmin() throws Throwable {
+        execute("jane");
+        assertAdminIniFile("jane");
 
-        verify( out ).println( "default admin user set to 'jane'" );
+        verify(out).println("default admin user set to 'jane'");
     }
 
     @Test
-    void shouldOverwrite() throws Throwable
-    {
-        execute( "jane" );
-        assertAdminIniFile( "jane" );
-        execute( "janette" );
-        assertAdminIniFile( "janette" );
+    void shouldOverwrite() throws Throwable {
+        execute("jane");
+        assertAdminIniFile("jane");
+        execute("janette");
+        assertAdminIniFile("janette");
 
-        verify( out ).println( "default admin user set to 'jane'" );
-        verify( out ).println( "default admin user set to 'janette'" );
+        verify(out).println("default admin user set to 'jane'");
+        verify(out).println("default admin user set to 'janette'");
     }
 
-    private void assertAdminIniFile( String username ) throws Throwable
-    {
-        Path adminIniFile = homeDir.resolve( "data" ).resolve( "dbms" ).resolve( SetDefaultAdminCommand.ADMIN_INI );
-        Assertions.assertTrue( fileSystem.fileExists( adminIniFile ) );
-        FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
-                NullLogProvider.getInstance() );
+    private void assertAdminIniFile(String username) throws Throwable {
+        Path adminIniFile = homeDir.resolve("data").resolve("dbms").resolve(SetDefaultAdminCommand.ADMIN_INI);
+        Assertions.assertTrue(fileSystem.fileExists(adminIniFile));
+        FileUserRepository userRepository =
+                new FileUserRepository(fileSystem, adminIniFile, NullLogProvider.getInstance());
         userRepository.start();
-        assertThat( userRepository.getAllUsernames() ).contains( username );
+        assertThat(userRepository.getAllUsernames()).contains(username);
         userRepository.stop();
         userRepository.shutdown();
     }
 
-    private void execute( String username )
-    {
-        final var command = new SetDefaultAdminCommand( new ExecutionContext( homeDir, confDir, out, err, fileSystem ) );
-        CommandLine.populateCommand( command, username );
+    private void execute(String username) {
+        final var command = new SetDefaultAdminCommand(new ExecutionContext(homeDir, confDir, out, err, fileSystem));
+        CommandLine.populateCommand(command, username);
         command.execute();
     }
 }

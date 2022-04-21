@@ -28,6 +28,7 @@ import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.NumberValue
 
 class DivideTest extends CypherFunSuite {
+
   test("should_throw_arithmetic_exception_for_divide_by_zero") {
     val ctx = CypherRow.empty
     val state = QueryStateHelper.empty
@@ -37,8 +38,12 @@ class DivideTest extends CypherFunSuite {
     // Floating point division should not throw "/ by zero".
     // The JVM does not trap IEEE-754 exceptional conditions (see https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.8.1)
     // The behaviour is defined as:
-    Divide(literal(1), literal(0.0))(ctx, state).asInstanceOf[NumberValue].doubleValue() should equal(Double.PositiveInfinity)
-    Divide(literal(-1), literal(0.0))(ctx, state).asInstanceOf[NumberValue].doubleValue() should equal(Double.NegativeInfinity)
+    Divide(literal(1), literal(0.0))(ctx, state).asInstanceOf[NumberValue].doubleValue() should equal(
+      Double.PositiveInfinity
+    )
+    Divide(literal(-1), literal(0.0))(ctx, state).asInstanceOf[NumberValue].doubleValue() should equal(
+      Double.NegativeInfinity
+    )
     Divide(literal(0), literal(0.0))(ctx, state).asInstanceOf[FloatingPointValue].isNaN shouldBe true
   }
 }

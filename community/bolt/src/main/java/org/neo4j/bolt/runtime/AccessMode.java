@@ -19,8 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
-public enum AccessMode
-{
+public enum AccessMode {
     WRITE,
     READ
 }

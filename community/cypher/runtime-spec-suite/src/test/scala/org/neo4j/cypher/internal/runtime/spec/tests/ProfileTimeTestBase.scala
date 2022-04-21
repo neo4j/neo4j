@@ -38,14 +38,23 @@ import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
 
-abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                              runtime: CypherRuntime[CONTEXT],
-                                                              val sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   // We always get OperatorProfile.NO_DATA for page cache hits and misses in Pipelined
   val NO_PROFILE = new OperatorProfile.ConstOperatorProfile(0, 0, 0, 0, 0, OperatorProfile.NO_DATA)
-  val NO_PROFILE_NO_TIME = new OperatorProfile.ConstOperatorProfile(OperatorProfile.NO_DATA, 0, 0, OperatorProfile.NO_DATA, OperatorProfile.NO_DATA, OperatorProfile.NO_DATA)
+
+  val NO_PROFILE_NO_TIME = new OperatorProfile.ConstOperatorProfile(
+    OperatorProfile.NO_DATA,
+    0,
+    0,
+    OperatorProfile.NO_DATA,
+    OperatorProfile.NO_DATA,
+    OperatorProfile.NO_DATA
+  )
 
   // time is profiled in nano-seconds, but we can only assert > 0, because the operators take
   // different time on different tested systems.
@@ -73,9 +82,12 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile time with apply") {
     val size = sizeHint / 10
     given {
-      nodePropertyGraph(size, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        size,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -94,7 +106,9 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
     queryProfile.operatorProfile(1).time() should be > 0L // skip
-    queryProfile.operatorProfile(2).time() should be > 0L // apply -  time of the output task of the previous pipeline gets attributed here
+    queryProfile.operatorProfile(
+      2
+    ).time() should be > 0L // apply -  time of the output task of the previous pipeline gets attributed here
     queryProfile.operatorProfile(3).time() should be > 0L // filter
     queryProfile.operatorProfile(4).time() should be > 0L // all node scan
     queryProfile.operatorProfile(5).time() should be > 0L // all node scan
@@ -105,9 +119,12 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile time with conditional apply") {
     val size = sizeHint / 10
     given {
-      nodePropertyGraph(size, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        size,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -190,9 +207,14 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
   test("should profile time with value hash join") {
     val size = sizeHint / 10
-    given { nodePropertyGraph(size, {
-      case i => Map("prop" -> i)
-    }) }
+    given {
+      nodePropertyGraph(
+        size,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -259,7 +281,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile time with pruning var expand") {
-    //TODO: flaky because of unsafe kernel access
+    // TODO: flaky because of unsafe kernel access
     assume(!(isParallel && runOnlySafeScenarios))
 
     val size = sizeHint / 10
@@ -277,20 +299,22 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
-    queryProfile.operatorProfile(1).time() should be(OperatorProfile.NO_DATA) // pruning var expand (OperatorProfile.NO_DATA as long as we use slotted fallback)
+    queryProfile.operatorProfile(1).time() should be(
+      OperatorProfile.NO_DATA
+    ) // pruning var expand (OperatorProfile.NO_DATA as long as we use slotted fallback)
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
     queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with shortest path") {
-    //TODO: flaky because of fallback and ambient cursors
+    // TODO: flaky because of fallback and ambient cursors
     assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val nodesPerLabel = 10
     given {
-      for(_ <- 0 until nodesPerLabel)
+      for (_ <- 0 until nodesPerLabel)
         sineGraph()
     }
 
@@ -308,7 +332,9 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
-    queryProfile.operatorProfile(1).time() should be(OperatorProfile.NO_DATA) // shortest path (OperatorProfile.NO_DATA as long as we use slotted fallback)
+    queryProfile.operatorProfile(1).time() should be(
+      OperatorProfile.NO_DATA
+    ) // shortest path (OperatorProfile.NO_DATA as long as we use slotted fallback)
     queryProfile.operatorProfile(2).time() should be > 0L // cartesian product
     queryProfile.operatorProfile(3).time() should be > 0L // nodeByLabelScan
     queryProfile.operatorProfile(4).time() should be > 0L // nodeByLabelScan
@@ -496,7 +522,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val input = aRels.map(r => Array[Any](r))
 
     // then
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq: _*))
     consume(runtimeResult)
 
     // then
@@ -512,8 +538,14 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile time of procedure call") {
     // given
-    registerProcedure(new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "proc").mode(Mode.READ).out(VOID).build()) {
-      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+    registerProcedure(new BasicProcedure(
+      ProcedureSignature.procedureSignature(Array[String](), "proc").mode(Mode.READ).out(VOID).build()
+    ) {
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
         RawIterator.empty[Array[AnyValue], ProcedureException]()
       }
     })
@@ -552,7 +584,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq: _*))
     consume(runtimeResult)
 
     // then
@@ -578,7 +610,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq: _*))
     consume(runtimeResult)
 
     // then
@@ -642,7 +674,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     // in pipelined triadic selection is rewritten into build-apply-filter
     (time(1), time(6), time(7), time(8)) should {
       be >= ((1L, 0L, 0L, 0L)) or // triadic selection
-      be >= ((0L, 1L, 1L, 1L))    // triadic build, apply, triadic filter
+        be >= ((0L, 1L, 1L, 1L)) // triadic build, apply, triadic filter
     }
 
     // Should not attribute anything to the invalid id

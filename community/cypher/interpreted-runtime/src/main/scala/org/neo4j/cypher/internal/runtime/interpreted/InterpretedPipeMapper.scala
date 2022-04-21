@@ -310,12 +310,13 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
  * Responsible for turning a logical plan with argument pipes into a new pipe.
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
-case class InterpretedPipeMapper(readOnly: Boolean,
-                                 expressionConverters: ExpressionConverters,
-                                 tokenContext: ReadTokenContext,
-                                 indexRegistrator: QueryIndexRegistrator,
-                                 anonymousVariableNameGenerator: AnonymousVariableNameGenerator)
-                                (implicit semanticTable: SemanticTable) extends PipeMapper {
+case class InterpretedPipeMapper(
+  readOnly: Boolean,
+  expressionConverters: ExpressionConverters,
+  tokenContext: ReadTokenContext,
+  indexRegistrator: QueryIndexRegistrator,
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+)(implicit semanticTable: SemanticTable) extends PipeMapper {
 
   private def getBuildExpression(id: Id): internal.expressions.Expression => Expression =
     ((e: internal.expressions.Expression) => expressionConverters.toCommandExpression(id, e)) andThen
@@ -335,8 +336,12 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeCountFromCountStorePipe(ident, labels.map(l => l.map(LazyLabel.apply)))(id = id)
 
       case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
-        RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply(_)),
-          RelationshipTypes(typeNames.map(_.name).toArray, tokenContext), endLabel.map(LazyLabel.apply(_)))(id = id)
+        RelationshipCountFromCountStorePipe(
+          ident,
+          startLabel.map(LazyLabel.apply(_)),
+          RelationshipTypes(typeNames.map(_.name).toArray, tokenContext),
+          endLabel.map(LazyLabel.apply(_))
+        )(id = id)
 
       case NodeByLabelScan(ident, label, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
@@ -346,10 +351,20 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, nodeIdExpr))(id = id)
 
       case DirectedRelationshipByIdSeek(ident, relIdExpr, fromNode, toNode, _) =>
-        DirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, relIdExpr), toNode, fromNode)(id = id)
+        DirectedRelationshipByIdSeekPipe(
+          ident,
+          expressionConverters.toCommandSeekArgs(id, relIdExpr),
+          toNode,
+          fromNode
+        )(id = id)
 
       case UndirectedRelationshipByIdSeek(ident, relIdExpr, fromNode, toNode, _) =>
-        UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, relIdExpr), toNode, fromNode)(id = id)
+        UndirectedRelationshipByIdSeekPipe(
+          ident,
+          expressionConverters.toCommandSeekArgs(id, relIdExpr),
+          toNode,
+          fromNode
+        )(id = id)
 
       case DirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _, indexOrder) =>
         indexRegistrator.registerTypeScan()
@@ -357,70 +372,238 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case UndirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _, indexOrder) =>
         indexRegistrator.registerTypeScan()
-        UndirectedRelationshipTypeScanPipe(ident, fromNode,  LazyType(typ)(semanticTable), toNode, indexOrder)(id = id)
+        UndirectedRelationshipTypeScanPipe(ident, fromNode, LazyType(typ)(semanticTable), toNode, indexOrder)(id = id)
 
-      case DirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties, valueExpr, _, indexOrder, indexType) =>
+      case DirectedRelationshipIndexSeek(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        DirectedRelationshipIndexSeekPipe(idName, startNode, endNode, typeToken, properties.toArray,
-          indexRegistrator.registerQueryIndex(indexType, typeToken, properties), valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+        DirectedRelationshipIndexSeekPipe(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties.toArray,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
+          valueExpr.map(buildExpression),
+          indexSeekMode,
+          indexOrder
+        )(id = id)
 
-      case UndirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties, valueExpr, _, indexOrder, indexType) =>
+      case UndirectedRelationshipIndexSeek(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        UndirectedRelationshipIndexSeekPipe(idName, startNode, endNode, typeToken, properties.toArray,
-          indexRegistrator.registerQueryIndex(indexType, typeToken, properties), valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+        UndirectedRelationshipIndexSeekPipe(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties.toArray,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
+          valueExpr.map(buildExpression),
+          indexSeekMode,
+          indexOrder
+        )(id = id)
 
       case DirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder, indexType) =>
-        DirectedRelationshipIndexScanPipe(idName, startNode, endNode, typeToken, properties.toArray,
-          indexRegistrator.registerQueryIndex(indexType, typeToken, properties), indexOrder)(id = id)
+        DirectedRelationshipIndexScanPipe(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties.toArray,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
+          indexOrder
+        )(id = id)
 
-      case UndirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder, indexType) =>
-        UndirectedRelationshipIndexScanPipe(idName, startNode, endNode, typeToken, properties.toArray,
-          indexRegistrator.registerQueryIndex(indexType, typeToken, properties), indexOrder)(id = id)
+      case UndirectedRelationshipIndexScan(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          _,
+          indexOrder,
+          indexType
+        ) =>
+        UndirectedRelationshipIndexScanPipe(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties.toArray,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
+          indexOrder
+        )(id = id)
 
-      case DirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
-        DirectedRelationshipIndexContainsScanPipe(idName, startNode, endNode, typeToken, property,
-          indexRegistrator.registerQueryIndex(indexType, typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+      case DirectedRelationshipIndexContainsScan(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
+        DirectedRelationshipIndexContainsScanPipe(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, property),
+          buildExpression(valueExpr),
+          indexOrder
+        )(id = id)
 
-      case UndirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
-        UndirectedRelationshipIndexContainsScanPipe(idName, startNode, endNode, typeToken, property,
-          indexRegistrator.registerQueryIndex(indexType, typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+      case UndirectedRelationshipIndexContainsScan(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
+        UndirectedRelationshipIndexContainsScanPipe(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, property),
+          buildExpression(valueExpr),
+          indexOrder
+        )(id = id)
 
-      case DirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
-        DirectedRelationshipIndexEndsWithScanPipe(idName, startNode, endNode, typeToken, property,
-          indexRegistrator.registerQueryIndex(indexType, typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+      case DirectedRelationshipIndexEndsWithScan(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
+        DirectedRelationshipIndexEndsWithScanPipe(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, property),
+          buildExpression(valueExpr),
+          indexOrder
+        )(id = id)
 
-      case UndirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
-        UndirectedRelationshipIndexEndsWithScanPipe(idName, startNode, endNode, typeToken, property,
-          indexRegistrator.registerQueryIndex(indexType, typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+      case UndirectedRelationshipIndexEndsWithScan(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
+        UndirectedRelationshipIndexEndsWithScanPipe(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, property),
+          buildExpression(valueExpr),
+          indexOrder
+        )(id = id)
 
       case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(indexType, label, properties),
-          valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+        NodeIndexSeekPipe(
+          ident,
+          label,
+          properties.toArray,
+          indexRegistrator.registerQueryIndex(indexType, label, properties),
+          valueExpr.map(buildExpression),
+          indexSeekMode,
+          indexOrder
+        )(id = id)
 
       case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(indexType, label, properties),
-          valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+        NodeIndexSeekPipe(
+          ident,
+          label,
+          properties.toArray,
+          indexRegistrator.registerQueryIndex(indexType, label, properties),
+          valueExpr.map(buildExpression),
+          indexSeekMode,
+          indexOrder
+        )(id = id)
 
       case NodeIndexScan(ident, label, properties, _, indexOrder, indexType) =>
-        NodeIndexScanPipe(ident, label, properties, indexRegistrator.registerQueryIndex(indexType, label, properties), indexOrder)(id = id)
+        NodeIndexScanPipe(
+          ident,
+          label,
+          properties,
+          indexRegistrator.registerQueryIndex(indexType, label, properties),
+          indexOrder
+        )(id = id)
 
       case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder, indexType) =>
-        NodeIndexContainsScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(indexType, label, property),
-          buildExpression(valueExpr), indexOrder)(id = id)
+        NodeIndexContainsScanPipe(
+          ident,
+          label,
+          property,
+          indexRegistrator.registerQueryIndex(indexType, label, property),
+          buildExpression(valueExpr),
+          indexOrder
+        )(id = id)
 
       case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, indexOrder, indexType) =>
-        NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(indexType, label, property),
-          buildExpression(valueExpr), indexOrder)(id = id)
+        NodeIndexEndsWithScanPipe(
+          ident,
+          label,
+          property,
+          indexRegistrator.registerQueryIndex(indexType, label, property),
+          buildExpression(valueExpr),
+          indexOrder
+        )(id = id)
 
       case ShowIndexes(indexType, verbose, columns) => CommandPipe(ShowIndexesCommand(indexType, verbose, columns))(id)
 
-      case ShowConstraints(constraintType, verbose, columns) => CommandPipe(ShowConstraintsCommand(constraintType, verbose, columns))(id)
+      case ShowConstraints(constraintType, verbose, columns) =>
+        CommandPipe(ShowConstraintsCommand(constraintType, verbose, columns))(id)
 
-      case ShowProcedures(executableBy, verbose, columns) => CommandPipe(ShowProceduresCommand(executableBy, verbose, columns))(id)
+      case ShowProcedures(executableBy, verbose, columns) =>
+        CommandPipe(ShowProceduresCommand(executableBy, verbose, columns))(id)
 
-      case ShowFunctions(functionType, executableBy, verbose, columns) => CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns))(id)
+      case ShowFunctions(functionType, executableBy, verbose, columns) =>
+        CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns))(id)
 
       case ShowTransactions(ids, verbose, columns) => CommandPipe(ShowTransactionsCommand(ids, verbose, columns))(id)
 
@@ -440,8 +623,6 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     }
   }
 
-
-
   override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe = {
     val id = plan.id
     val buildExpression = getBuildExpression(id)
@@ -451,23 +632,33 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         case CreatePattern(nodes, relationships) =>
           val nodeOps = nodes.map {
             case ir.CreateNode(node, labels, properties) =>
-              CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)), allowNullOrNaNProperty = true)
+              CreateNode(
+                CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)),
+                allowNullOrNaNProperty = true
+              )
           }
           val relOps = relationships.map { r: ir.CreateRelationship =>
-            CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)),
-              allowNullOrNaNProperty = true)
+            CreateRelationship(
+              CreateRelationshipCommand(
+                r.idName,
+                r.startNode,
+                LazyType(r.relType)(semanticTable),
+                r.endNode,
+                r.properties.map(buildExpression)
+              ),
+              allowNullOrNaNProperty = true
+            )
           }
           nodeOps ++ relOps
 
         case ir.DeleteExpression(expression, forced) => Seq(DeleteOperation(buildExpression(expression), forced))
-        case SetLabelPattern(node, labelNames) => Seq(SetLabelsOperation(node, labelNames.map(LazyLabel.apply)))
+        case SetLabelPattern(node, labelNames)       => Seq(SetLabelsOperation(node, labelNames.map(LazyLabel.apply)))
         case RemoveLabelPattern(node, labelNames) => Seq(RemoveLabelsOperation(node, labelNames.map(LazyLabel.apply)))
         case SetNodePropertyPattern(node, propertyKey, value) =>
           val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(node, value, propertyKey)
-          Seq(SetNodePropertyOperation(node, LazyPropertyKey(propertyKey),
-            buildExpression(value), needsExclusiveLock))
+          Seq(SetNodePropertyOperation(node, LazyPropertyKey(propertyKey), buildExpression(value), needsExclusiveLock))
         case SetNodePropertiesPattern(node, items) =>
-          val needsExclusiveLock = items.exists{
+          val needsExclusiveLock = items.exists {
             case (p, e) => internal.expressions.Expression.hasPropertyReadDependency(node, e, p)
           }
           val size = items.size
@@ -484,10 +675,16 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(node, map)
           Seq(SetNodePropertyFromMapOperation(node, buildExpression(map), removeOtherProps, needsExclusiveLock))
         case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
-          val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(relationship, value, propertyKey)
-          Seq(SetRelationshipPropertyOperation(relationship, LazyPropertyKey(propertyKey), buildExpression(value), needsExclusiveLock))
+          val needsExclusiveLock =
+            internal.expressions.Expression.hasPropertyReadDependency(relationship, value, propertyKey)
+          Seq(SetRelationshipPropertyOperation(
+            relationship,
+            LazyPropertyKey(propertyKey),
+            buildExpression(value),
+            needsExclusiveLock
+          ))
         case SetRelationshipPropertiesPattern(rel, items) =>
-          val needsExclusiveLock = items.exists{
+          val needsExclusiveLock = items.exists {
             case (p, e) => internal.expressions.Expression.hasPropertyReadDependency(rel, e, p)
           }
           val size = items.size
@@ -501,10 +698,20 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
           Seq(SetRelationshipPropertiesOperation(rel, keys, values, needsExclusiveLock))
         case SetRelationshipPropertiesFromMapPattern(relationship, map, removeOtherProps) =>
-          val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(relationship, map)
-          Seq(SetRelationshipPropertyFromMapOperation(relationship, buildExpression(map), removeOtherProps, needsExclusiveLock))
+          val needsExclusiveLock =
+            internal.expressions.Expression.mapExpressionHasPropertyReadDependency(relationship, map)
+          Seq(SetRelationshipPropertyFromMapOperation(
+            relationship,
+            buildExpression(map),
+            removeOtherProps,
+            needsExclusiveLock
+          ))
         case SetPropertyPattern(entityExpression, propertyKeyName, expression) =>
-         Seq(SetPropertyOperation(buildExpression(entityExpression),  LazyPropertyKey(propertyKeyName), buildExpression(expression)))
+          Seq(SetPropertyOperation(
+            buildExpression(entityExpression),
+            LazyPropertyKey(propertyKeyName),
+            buildExpression(expression)
+          ))
         case SetPropertiesPattern(entityExpression, items) =>
           val size = items.size
           val keys = new Array[LazyPropertyKey](size)
@@ -516,7 +723,11 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           }
           Seq(SetPropertiesOperation(buildExpression(entityExpression), keys, values))
         case SetPropertiesFromMapPattern(entityExpression, expression, removeOtherProps) =>
-          Seq(SetPropertyFromMapOperation(buildExpression(entityExpression), buildExpression(expression), removeOtherProps))
+          Seq(SetPropertyFromMapOperation(
+            buildExpression(entityExpression),
+            buildExpression(expression),
+            removeOtherProps
+          ))
 
         case other => throw new IllegalStateException(s"Cannot compile $other")
       }
@@ -524,13 +735,22 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
     plan match {
       case Projection(_, expressions) =>
-        ProjectionPipe(source,  InterpretedCommandProjection(Eagerly.immutableMapValues(expressions, buildExpression)))(id = id)
+        ProjectionPipe(source, InterpretedCommandProjection(Eagerly.immutableMapValues(expressions, buildExpression)))(
+          id = id
+        )
 
       case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, directed, length) =>
-        ProjectEndpointsPipe(source, rel,
-                             start, startInScope,
-                             end, endInScope,
-                             types.map(_.toArray).map(RelationshipTypes.apply).getOrElse(RelationshipTypes.empty), directed, length.isSimple)(id = id)
+        ProjectEndpointsPipe(
+          source,
+          rel,
+          start,
+          startInScope,
+          end,
+          endInScope,
+          types.map(_.toArray).map(RelationshipTypes.apply).getOrElse(RelationshipTypes.empty),
+          directed,
+          length.isSimple
+        )(id = id)
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
@@ -563,56 +783,96 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         ExpandIntoPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicate) =>
-        OptionalExpandAllPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray), predicate.map(buildExpression))(id = id)
+        OptionalExpandAllPipe(
+          source,
+          fromName,
+          relName,
+          toName,
+          dir,
+          RelationshipTypes(types.toArray),
+          predicate.map(buildExpression)
+        )(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandInto, predicate) =>
-        OptionalExpandIntoPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray), predicate.map(buildExpression))(id = id)
+        OptionalExpandIntoPipe(
+          source,
+          fromName,
+          relName,
+          toName,
+          dir,
+          RelationshipTypes(types.toArray),
+          predicate.map(buildExpression)
+        )(id = id)
 
-      case VarExpand(_,
-                     fromName,
-                     dir,
-                     projectedDir,
-                     types,
-                     toName,
-                     relName,
-                     VarPatternLength(min, max),
-                     expansionMode,
-                     nodePredicate,
-                     relationshipPredicate) =>
+      case VarExpand(
+          _,
+          fromName,
+          dir,
+          projectedDir,
+          types,
+          toName,
+          relName,
+          VarPatternLength(min, max),
+          expansionMode,
+          nodePredicate,
+          relationshipPredicate
+        ) =>
         val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
 
         val nodeInScope = expansionMode match {
-          case ExpandAll => false
+          case ExpandAll  => false
           case ExpandInto => true
         }
 
-        VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
-          RelationshipTypes(types.toArray), min, max, nodeInScope, predicate)(id = id)
+        VarLengthExpandPipe(
+          source,
+          fromName,
+          relName,
+          toName,
+          dir,
+          projectedDir,
+          RelationshipTypes(types.toArray),
+          min,
+          max,
+          nodeInScope,
+          predicate
+        )(id = id)
 
       case Optional(inner, protectedSymbols) =>
         OptionalPipe(inner.availableSymbols -- protectedSymbols, source)(id = id)
 
-      case PruningVarExpand(_,
-                            from,
-                            dir,
-                            types,
-                            toName,
-                            minLength,
-                            maxLength,
-                            nodePredicate,
-                            relationshipPredicate) =>
+      case PruningVarExpand(_, from, dir, types, toName, minLength, maxLength, nodePredicate, relationshipPredicate) =>
         val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
-        PruningVarLengthExpandPipe(source, from, toName, RelationshipTypes(types.toArray), dir, minLength, maxLength, predicate)(id = id)
+        PruningVarLengthExpandPipe(
+          source,
+          from,
+          toName,
+          RelationshipTypes(types.toArray),
+          dir,
+          minLength,
+          maxLength,
+          predicate
+        )(id = id)
 
       case BFSPruningVarExpand(_, from, dir, types, to, includeStartNode, max, nodePredicate, relationshipPredicate) =>
         val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
-        BFSPruningVarLengthExpandPipe(source, from, to, RelationshipTypes(types.toArray), dir, includeStartNode, max, predicate)(id = id)
+        BFSPruningVarLengthExpandPipe(
+          source,
+          from,
+          to,
+          RelationshipTypes(types.toArray),
+          dir,
+          includeStartNode,
+          max,
+          predicate
+        )(id = id)
 
       case Sort(_, sortItems) =>
         SortPipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder)))(id = id)
 
       case PartialSort(_, alreadySortedPrefix, stillToSortSuffix, skipSortingPrefixLength) =>
-        PartialSortPipe(source,
+        PartialSortPipe(
+          source,
           InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder)),
           InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder)),
           skipSortingPrefixLength.map(buildExpression)
@@ -624,27 +884,40 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case Top(_, sortItems, _) if sortItems.isEmpty => source
 
       case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
-        Top1Pipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
+        Top1Pipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(
+          id = id
+        )
 
       case Top1WithTies(_, sortItems) =>
-        Top1WithTiesPipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
+        Top1WithTiesPipe(
+          source,
+          InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList)
+        )(id = id)
 
       case Top(_, sortItems, limit) =>
-        TopNPipe(source, buildExpression(limit),
-          InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
+        TopNPipe(
+          source,
+          buildExpression(limit),
+          InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList)
+        )(id = id)
 
       case PartialTop(_, _, stillToSortSuffix, _, _) if stillToSortSuffix.isEmpty => source
 
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, SignedDecimalIntegerLiteral("1"), _) =>
-        PartialTop1Pipe(source, InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
-          InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
+        PartialTop1Pipe(
+          source,
+          InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
+          InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList)
+        )(id = id)
 
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit, skipSortingPrefixLength) =>
-        PartialTopNPipe(source,
+        PartialTopNPipe(
+          source,
           buildExpression(limit),
           skipSortingPrefixLength.map(buildExpression),
           InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
-          InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
+          InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList)
+        )(id = id)
 
       case Limit(_, count) =>
         LimitPipe(source, buildExpression(count))(id = id)
@@ -674,7 +947,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           OrderedDistinctPipe(source, projection)(id = id)
         }
 
-      case OrderedAggregation(_, groupingExpressions, aggregatingExpressions, orderToLeverage) if aggregatingExpressions.isEmpty =>
+      case OrderedAggregation(_, groupingExpressions, aggregatingExpressions, orderToLeverage)
+        if aggregatingExpressions.isEmpty =>
         val projection = groupingExpressions.map {
           case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value), orderToLeverage.contains(value))
         }.toArray
@@ -682,7 +956,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case Aggregation(_, groupingExpressions, aggregatingExpressions) =>
         val aggregationColumns = aggregatingExpressions.map {
-          case (key, value) => AggregationPipe.AggregatingCol(key, buildExpression(value).asInstanceOf[AggregationExpression])
+          case (key, value) =>
+            AggregationPipe.AggregatingCol(key, buildExpression(value).asInstanceOf[AggregationExpression])
         }.toArray
 
         val tableFactory =
@@ -692,33 +967,48 @@ case class InterpretedPipeMapper(readOnly: Boolean,
             val groupingColumns = groupingExpressions.map {
               case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value))
             }.toArray
-            val groupingFunction: (CypherRow, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(groupingColumns)
+            val groupingFunction: (CypherRow, QueryState) => AnyValue =
+              AggregationPipe.computeGroupingFunction(groupingColumns)
             GroupingAggTable.Factory(groupingColumns, groupingFunction, aggregationColumns)
           }
         EagerAggregationPipe(source, tableFactory)(id = id)
 
       case OrderedAggregation(_, groupingExpressions, aggregatingExpressions, orderToLeverage) =>
         val aggregationColumns = aggregatingExpressions.map {
-          case (key, value) => AggregationPipe.AggregatingCol(key, buildExpression(value).asInstanceOf[AggregationExpression])
+          case (key, value) =>
+            AggregationPipe.AggregatingCol(key, buildExpression(value).asInstanceOf[AggregationExpression])
         }.toArray
         val groupingColumns = groupingExpressions.map {
           case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value), orderToLeverage.contains(value))
         }.toArray
 
         val (orderedGroupingColumns, unorderedGroupingColumns) = groupingColumns.partition(_.ordered)
-        val unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(unorderedGroupingColumns)
-        val orderedGroupingFunction: (CypherRow, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(orderedGroupingColumns)
+        val unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue =
+          AggregationPipe.computeGroupingFunction(unorderedGroupingColumns)
+        val orderedGroupingFunction: (CypherRow, QueryState) => AnyValue =
+          AggregationPipe.computeGroupingFunction(orderedGroupingColumns)
 
         val tableFactory =
           if (groupingColumns.forall(_.ordered)) {
             OrderedNonGroupingAggTable.Factory(orderedGroupingFunction, orderedGroupingColumns, aggregationColumns)
           } else {
-            OrderedGroupingAggTable.Factory(orderedGroupingFunction, orderedGroupingColumns, unorderedGroupingFunction, unorderedGroupingColumns, aggregationColumns)
+            OrderedGroupingAggTable.Factory(
+              orderedGroupingFunction,
+              orderedGroupingColumns,
+              unorderedGroupingFunction,
+              unorderedGroupingColumns,
+              aggregationColumns
+            )
           }
         OrderedAggregationPipe(source, tableFactory)(id = id)
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
-        val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(id, shortestPathPattern.name, expressionConverters, anonymousVariableNameGenerator).head
+        val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(
+          id,
+          shortestPathPattern.name,
+          expressionConverters,
+          anonymousVariableNameGenerator
+        ).head
         val pathVariables = Set(legacyShortestPath.pathName, legacyShortestPath.relIterator.getOrElse(""))
 
         def noDependency(expression: internal.expressions.Expression) =
@@ -727,29 +1017,53 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val (perStepPredicates, fullPathPredicates) = predicates.partition {
           case p: IterablePredicateExpression =>
             noDependency(
-              p.innerPredicate.getOrElse(throw new InternalException("This should have been handled in planning")))
+              p.innerPredicate.getOrElse(throw new InternalException("This should have been handled in planning"))
+            )
           case e => noDependency(e)
         }
         val commandPerStepPredicates = perStepPredicates.map(p => buildPredicate(id, p))
         val commandFullPathPredicates = fullPathPredicates.map(p => buildPredicate(id, p))
 
-        val commandExpression = ShortestPathExpression(legacyShortestPath, commandPerStepPredicates,
-          commandFullPathPredicates, withFallBack, disallowSameNode, id)
+        val commandExpression = ShortestPathExpression(
+          legacyShortestPath,
+          commandPerStepPredicates,
+          commandFullPathPredicates,
+          withFallBack,
+          disallowSameNode,
+          id
+        )
         ShortestPathPipe(source, commandExpression)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable)(id = id)
 
-      case ProcedureCall(_, call@ResolvedCall(signature, callArguments, _, _, _, _)) =>
+      case ProcedureCall(_, call @ ResolvedCall(signature, callArguments, _, _, _, _)) =>
         val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-        val callArgumentCommands = callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default), None, None).map {
-          case (given, default) => given.map(buildExpression).getOrElse(Literal(default.get))
-        }
+        val callArgumentCommands =
+          callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default), None, None).map {
+            case (given, default) => given.map(buildExpression).getOrElse(Literal(default.get))
+          }
         val rowProcessing = ProcedureCallRowProcessing(signature)
-        ProcedureCallPipe(source, signature, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)(id = id)
+        ProcedureCallPipe(
+          source,
+          signature,
+          callMode,
+          callArgumentCommands,
+          rowProcessing,
+          call.callResultTypes,
+          call.callResultIndices
+        )(id = id)
 
       case LoadCSV(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping, bufferSize) =>
-        LoadCSVPipe(source, format, buildExpression(url), variableName, fieldTerminator, legacyCsvQuoteEscaping, bufferSize)(id = id)
+        LoadCSVPipe(
+          source,
+          format,
+          buildExpression(url),
+          variableName,
+          fieldTerminator,
+          legacyCsvQuoteEscaping,
+          bufferSize
+        )(id = id)
 
       case ProduceResult(_, columns) =>
         ProduceResultsPipe(source, columns.toArray)(id = id)
@@ -761,33 +1075,61 @@ case class InterpretedPipeMapper(readOnly: Boolean,
             CreateNodeCommand(n.idName, n.labels.map(LazyLabel.apply), n.properties.map(buildExpression))
           ).toArray,
           relationships.map(r =>
-            CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType.name), r.endNode, r.properties.map(buildExpression))
+            CreateRelationshipCommand(
+              r.idName,
+              r.startNode,
+              LazyType(r.relType.name),
+              r.endNode,
+              r.properties.map(buildExpression)
+            )
           ).toArray
         )(id = id)
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
         val creates = createNodes.map {
           case ir.CreateNode(node, labels, properties) =>
-            CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)),
-              allowNullOrNaNProperty = false)
-        }  ++ createRelationships.map {
+            CreateNode(
+              CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)),
+              allowNullOrNaNProperty = false
+            )
+        } ++ createRelationships.map {
           r: ir.CreateRelationship =>
-            CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)),
-              allowNullOrNaNProperty = false)
+            CreateRelationship(
+              CreateRelationshipCommand(
+                r.idName,
+                r.startNode,
+                LazyType(r.relType)(semanticTable),
+                r.endNode,
+                r.properties.map(buildExpression)
+              ),
+              allowNullOrNaNProperty = false
+            )
         }
-        if (nodesToLock.isEmpty) new MergePipe(source, (creates ++ onCreate.flatMap(compileEffects)).toArray , onMatch.flatMap(compileEffects).toArray)(id = id)
-        else new LockingMergePipe(source,  (creates ++ onCreate.flatMap(compileEffects)).toArray, onMatch.flatMap(compileEffects).toArray,  nodesToLock.toArray)(id = id)
+        if (nodesToLock.isEmpty) new MergePipe(
+          source,
+          (creates ++ onCreate.flatMap(compileEffects)).toArray,
+          onMatch.flatMap(compileEffects).toArray
+        )(id = id)
+        else new LockingMergePipe(
+          source,
+          (creates ++ onCreate.flatMap(compileEffects)).toArray,
+          onMatch.flatMap(compileEffects).toArray,
+          nodesToLock.toArray
+        )(id = id)
 
       case SetLabels(_, name, labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
 
       case SetNodeProperty(_, name, propertyKey, expression) =>
-        val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(name, expression, propertyKey)
-        SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
-          buildExpression(expression), needsExclusiveLock))(id = id)
+        val needsExclusiveLock =
+          internal.expressions.Expression.hasPropertyReadDependency(name, expression, propertyKey)
+        SetPipe(
+          source,
+          SetNodePropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression), needsExclusiveLock)
+        )(id = id)
 
       case SetNodeProperties(_, name, items) =>
-        val needsExclusiveLock = items.exists{
+        val needsExclusiveLock = items.exists {
           case (p, e) => internal.expressions.Expression.hasPropertyReadDependency(name, e, p)
         }
         val size = items.size
@@ -801,21 +1143,34 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         SetPipe(source, SetNodePropertiesOperation(name, keys, values, needsExclusiveLock))(id = id)
 
       case SetNodePropertiesFromMap(_, name, expression, removeOtherProps) =>
-        val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(name, expression)
-        SetPipe(source,
-          SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps, needsExclusiveLock))(id = id)
+        val needsExclusiveLock =
+          internal.expressions.Expression.mapExpressionHasPropertyReadDependency(name, expression)
+        SetPipe(
+          source,
+          SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps, needsExclusiveLock)
+        )(id = id)
 
       case SetPropertiesFromMap(_, entityExpr, expression, removeOtherProps) =>
-        SetPipe(source,
-          SetPropertyFromMapOperation(buildExpression(entityExpr), buildExpression(expression), removeOtherProps))(id = id)
+        SetPipe(
+          source,
+          SetPropertyFromMapOperation(buildExpression(entityExpr), buildExpression(expression), removeOtherProps)
+        )(id = id)
 
       case SetRelationshipProperty(_, name, propertyKey, expression) =>
-        val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(name, expression, propertyKey)
-        SetPipe(source,
-          SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression), needsExclusiveLock))(id = id)
+        val needsExclusiveLock =
+          internal.expressions.Expression.hasPropertyReadDependency(name, expression, propertyKey)
+        SetPipe(
+          source,
+          SetRelationshipPropertyOperation(
+            name,
+            LazyPropertyKey(propertyKey),
+            buildExpression(expression),
+            needsExclusiveLock
+          )
+        )(id = id)
 
       case SetRelationshipProperties(_, name, items) =>
-        val needsExclusiveLock = items.exists{
+        val needsExclusiveLock = items.exists {
           case (p, e) => internal.expressions.Expression.hasPropertyReadDependency(name, e, p)
         }
         val size = items.size
@@ -829,13 +1184,27 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         SetPipe(source, SetRelationshipPropertiesOperation(name, keys, values, needsExclusiveLock))(id = id)
 
       case SetRelationshipPropertiesFromMap(_, name, expression, removeOtherProps) =>
-        val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(name, expression)
-        SetPipe(source,
-          SetRelationshipPropertyFromMapOperation(name, buildExpression(expression), removeOtherProps, needsExclusiveLock))(id = id)
+        val needsExclusiveLock =
+          internal.expressions.Expression.mapExpressionHasPropertyReadDependency(name, expression)
+        SetPipe(
+          source,
+          SetRelationshipPropertyFromMapOperation(
+            name,
+            buildExpression(expression),
+            removeOtherProps,
+            needsExclusiveLock
+          )
+        )(id = id)
 
       case SetProperty(_, entityExpr, propertyKey, expression) =>
-        SetPipe(source, SetPropertyOperation(
-          buildExpression(entityExpr), LazyPropertyKey(propertyKey), buildExpression(expression)))(id = id)
+        SetPipe(
+          source,
+          SetPropertyOperation(
+            buildExpression(entityExpr),
+            LazyPropertyKey(propertyKey),
+            buildExpression(expression)
+          )
+        )(id = id)
 
       case SetProperties(_, entityExpr, items) =>
         val size = items.size
@@ -886,21 +1255,27 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     }
   }
 
-  private def varLengthPredicate(id: Id,
-                                 nodePredicate: Option[VariablePredicate],
-                                 relationshipPredicate: Option[VariablePredicate]): VarLengthPredicate  = {
+  private def varLengthPredicate(
+    id: Id,
+    nodePredicate: Option[VariablePredicate],
+    relationshipPredicate: Option[VariablePredicate]
+  ): VarLengthPredicate = {
 
-    //Creates commands out of the predicates
-    def asCommand(maybeVariablePredicate: Option[VariablePredicate]): ((CypherRow, QueryState, AnyValue) => Boolean, Option[Predicate]) =
+    // Creates commands out of the predicates
+    def asCommand(maybeVariablePredicate: Option[VariablePredicate])
+      : ((CypherRow, QueryState, AnyValue) => Boolean, Option[Predicate]) =
       maybeVariablePredicate match {
         case None => ((_: CypherRow, _: QueryState, _: AnyValue) => true, None)
         case Some(VariablePredicate(variable, astPredicate)) =>
           val command = buildPredicate(id, astPredicate)
           val ev = ExpressionVariable.cast(variable)
-          ((context: CypherRow, state: QueryState, entity: AnyValue) => {
-            state.expressionVariables(ev.offset) = entity
-            command.isTrue(context, state)
-          }, Some(command))
+          (
+            (context: CypherRow, state: QueryState, entity: AnyValue) => {
+              state.expressionVariables(ev.offset) = entity
+              command.isTrue(context, state)
+            },
+            Some(command)
+          )
       }
 
     (nodePredicate, relationshipPredicate) match {
@@ -910,8 +1285,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val (relCommand, maybeRelCommandPred) = asCommand(relationshipPredicate)
 
         new VarLengthPredicate {
-          override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean = nodeCommand(row, state, node)
-          override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean = relCommand(row, state, rel)
+          override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean =
+            nodeCommand(row, state, node)
+          override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean =
+            relCommand(row, state, rel)
           override def predicateExpressions: Seq[Predicate] = maybeNodeCommandPred.toSeq ++ maybeRelCommandPred
         }
     }
@@ -965,16 +1342,22 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         LetSelectOrSemiApplyPipe(lhs, rhs, idName, buildPredicate(id, predicate), negated = true)(id = id)
 
       case ConditionalApply(lhsPlan, rhsPlan, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids, negated = false, rhsPlan.availableSymbols -- lhsPlan.availableSymbols)(id = id)
+        ConditionalApplyPipe(lhs, rhs, ids, negated = false, rhsPlan.availableSymbols -- lhsPlan.availableSymbols)(id =
+          id)
 
       case AntiConditionalApply(lhsPlan, rhsPlan, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids, negated = true, rhsPlan.availableSymbols -- lhsPlan.availableSymbols)(id = id)
+        ConditionalApplyPipe(lhs, rhs, ids, negated = true, rhsPlan.availableSymbols -- lhsPlan.availableSymbols)(id =
+          id)
 
       case Union(_, _) =>
         UnionPipe(lhs, rhs)(id = id)
 
       case OrderedUnion(_, _, sortedColumns) =>
-        OrderedUnionPipe(lhs, rhs, InterpretedExecutionContextOrdering.asComparator(sortedColumns.map(translateColumnOrder)))(id = id)
+        OrderedUnionPipe(
+          lhs,
+          rhs,
+          InterpretedExecutionContextOrdering.asComparator(sortedColumns.map(translateColumnOrder))
+        )(id = id)
 
       case TriadicSelection(_, _, positivePredicate, sourceId, seenId, targetId) =>
         TriadicSelectionPipe(positivePredicate, lhs, sourceId, seenId, targetId, rhs)(id = id)
@@ -1007,8 +1390,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       .rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext))
       .asInstanceOf[Predicate]
 
-  private def translateColumnOrder(s: plans.ColumnOrder): org.neo4j.cypher.internal.runtime.interpreted.ColumnOrder = s match {
-    case plans.Ascending(name) => org.neo4j.cypher.internal.runtime.interpreted.Ascending(name)
-    case plans.Descending(name) => org.neo4j.cypher.internal.runtime.interpreted.Descending(name)
-  }
+  private def translateColumnOrder(s: plans.ColumnOrder): org.neo4j.cypher.internal.runtime.interpreted.ColumnOrder =
+    s match {
+      case plans.Ascending(name)  => org.neo4j.cypher.internal.runtime.interpreted.Ascending(name)
+      case plans.Descending(name) => org.neo4j.cypher.internal.runtime.interpreted.Descending(name)
+    }
 }

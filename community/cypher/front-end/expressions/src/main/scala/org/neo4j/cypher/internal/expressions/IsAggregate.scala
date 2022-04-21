@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.functions.AggregatingFunction
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
 
-
 object IsAggregate {
+
   def unapply(v: Any) = v match {
     case expr: CountStar =>
       Some(expr)
@@ -31,7 +31,7 @@ object IsAggregate {
     case fi: FunctionInvocation =>
       fi.function match {
         case _: AggregatingFunction => Some(fi)
-        case _                              => None
+        case _                      => None
       }
 
     case fi: UserDefinedFunctionInvocation if fi.isAggregate =>

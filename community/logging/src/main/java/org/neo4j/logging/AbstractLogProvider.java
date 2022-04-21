@@ -27,39 +27,31 @@ import java.util.function.Supplier;
 /**
  * An abstract {@link InternalLogProvider} implementation, which ensures {@link InternalLog}s are cached and reused.
  */
-public abstract class AbstractLogProvider<T extends InternalLog> implements InternalLogProvider
-{
+public abstract class AbstractLogProvider<T extends InternalLog> implements InternalLogProvider {
     private final ConcurrentHashMap<String, LogWithContext> logCache = new ConcurrentHashMap<>();
     // read-lock: getting log instances, write-lock: changing log level settings
     private final ReadWriteLock settingsChangeLock = new ReentrantReadWriteLock();
 
     @Override
-    public T getLog( final Class<?> loggingClass )
-    {
-        return getLog( loggingClass.getName(), () -> buildLog( loggingClass ) );
+    public T getLog(final Class<?> loggingClass) {
+        return getLog(loggingClass.getName(), () -> buildLog(loggingClass));
     }
 
     @Override
-    public T getLog( final String name )
-    {
-        return getLog( name, () -> buildLog( name ) );
+    public T getLog(final String name) {
+        return getLog(name, () -> buildLog(name));
     }
 
-    private T getLog( String name, Supplier<T> logSupplier )
-    {
+    private T getLog(String name, Supplier<T> logSupplier) {
         // First an optimistic map get
-        LogWithContext log = logCache.get( name );
-        if ( log == null )
-        {
+        LogWithContext log = logCache.get(name);
+        if (log == null) {
             // Do this locking here around computeIfAbsent because we want both the construction of the log
             // and the placement of it in the map to be under the lock
             settingsChangeLock.readLock().lock();
-            try
-            {
-                log = logCache.computeIfAbsent( name, c -> new LogWithContext( logSupplier.get(), c ) );
-            }
-            finally
-            {
+            try {
+                log = logCache.computeIfAbsent(name, c -> new LogWithContext(logSupplier.get(), c));
+            } finally {
                 settingsChangeLock.readLock().unlock();
             }
         }
@@ -70,25 +62,23 @@ public abstract class AbstractLogProvider<T extends InternalLog> implements Inte
      * @param loggingClass the context for the returned {@link InternalLog}
      * @return a {@link InternalLog} that logs messages with the {@code loggingClass} as the context
      */
-    protected abstract T buildLog( Class<?> loggingClass );
+    protected abstract T buildLog(Class<?> loggingClass);
 
     /**
      * @param name the context for the returned {@link InternalLog}
      * @return a {@link InternalLog} that logs messages with the specified name as the context
      */
-    protected abstract T buildLog( String name );
+    protected abstract T buildLog(String name);
 
     /**
      * A log accompanied its original context, since logs may be instantiated with a modified version of the context
      * and determining things like log level must be done on the original context.
      */
-    private class LogWithContext
-    {
+    private class LogWithContext {
         private final T log;
         private final String fullContext;
 
-        LogWithContext( T log, String fullContext )
-        {
+        LogWithContext(T log, String fullContext) {
             this.log = log;
             this.fullContext = fullContext;
         }

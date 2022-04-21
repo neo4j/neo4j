@@ -23,32 +23,26 @@ import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class EntityNotFoundException extends KernelException
-{
+public class EntityNotFoundException extends KernelException {
     private final EntityType entityType;
     private final long entityId;
 
-    public EntityNotFoundException( EntityType entityType, long entityId )
-    {
-        super( Status.Statement.EntityNotFound, "Unable to load %s with id %s.", entityType.name(), entityId );
+    public EntityNotFoundException(EntityType entityType, long entityId) {
+        super(Status.Statement.EntityNotFound, "Unable to load %s with id %s.", entityType.name(), entityId);
         this.entityType = entityType;
         this.entityId = entityId;
     }
 
-    public EntityType entityType()
-    {
-        if ( entityType == null )
-        {
-            throw new IllegalStateException( "No entity type specified for this exception", this );
+    public EntityType entityType() {
+        if (entityType == null) {
+            throw new IllegalStateException("No entity type specified for this exception", this);
         }
         return entityType;
     }
 
-    public long entityId()
-    {
-        if ( entityId == -1 )
-        {
-            throw new IllegalStateException( "No entity id specified for this exception", this );
+    public long entityId() {
+        if (entityId == -1) {
+            throw new IllegalStateException("No entity id specified for this exception", this);
         }
         return entityId;
     }

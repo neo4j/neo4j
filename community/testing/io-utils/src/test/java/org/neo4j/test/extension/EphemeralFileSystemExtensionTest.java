@@ -19,49 +19,42 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-@ExtendWith( EphemeralFileSystemExtension.class )
-class EphemeralFileSystemExtensionTest
-{
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+
+@ExtendWith(EphemeralFileSystemExtension.class)
+class EphemeralFileSystemExtensionTest {
     @Inject
     EphemeralFileSystemAbstraction rootFileSystem;
 
     @Test
-    void fileSystemInjectionCreateFileSystem()
-    {
-        assertNotNull( rootFileSystem );
+    void fileSystemInjectionCreateFileSystem() {
+        assertNotNull(rootFileSystem);
     }
 
     @Nested
-    class NestedFileSystemTest
-    {
+    class NestedFileSystemTest {
         @Inject
         EphemeralFileSystemAbstraction nestedFileSystem;
 
         @Test
-        void nestedFileSystemInjection()
-        {
-            assertNotNull( nestedFileSystem );
+        void nestedFileSystemInjection() {
+            assertNotNull(nestedFileSystem);
         }
 
         @Test
-        void rootFileSystemAvailable()
-        {
-            assertNotNull( rootFileSystem );
+        void rootFileSystemAvailable() {
+            assertNotNull(rootFileSystem);
         }
 
         @Test
-        void nestedAndRootFileSystemsAreTheSame()
-        {
-            assertSame( nestedFileSystem, rootFileSystem );
+        void nestedAndRootFileSystemsAreTheSame() {
+            assertSame(nestedFileSystem, rootFileSystem);
         }
     }
 }

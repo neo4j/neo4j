@@ -19,52 +19,43 @@
  */
 package org.neo4j.internal.collector;
 
-interface Anonymizer
-{
-    String propertyKey( String name, int id );
+interface Anonymizer {
+    String propertyKey(String name, int id);
 
-    String label( String name, int id );
+    String label(String name, int id);
 
-    String relationshipType( String name, int id );
+    String relationshipType(String name, int id);
 
-    Anonymizer PLAIN_TEXT = new Anonymizer()
-    {
+    Anonymizer PLAIN_TEXT = new Anonymizer() {
         @Override
-        public String propertyKey( String name, int id )
-        {
+        public String propertyKey(String name, int id) {
             return name;
         }
 
         @Override
-        public String label( String name, int id )
-        {
+        public String label(String name, int id) {
             return name;
         }
 
         @Override
-        public String relationshipType( String name, int id )
-        {
+        public String relationshipType(String name, int id) {
             return name;
         }
     };
 
-    Anonymizer IDS = new Anonymizer()
-    {
+    Anonymizer IDS = new Anonymizer() {
         @Override
-        public String propertyKey( String name, int id )
-        {
+        public String propertyKey(String name, int id) {
             return "p" + id;
         }
 
         @Override
-        public String label( String name, int id )
-        {
+        public String label(String name, int id) {
             return "L" + id;
         }
 
         @Override
-        public String relationshipType( String name, int id )
-        {
+        public String relationshipType(String name, int id) {
             return "R" + id;
         }
     };

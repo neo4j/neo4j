@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.list.primitive.MutableLongList;
+import static java.lang.Long.min;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,15 +28,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
-
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.neo4j.common.EntityType;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
-
-import static java.lang.Long.min;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 /**
  * {@link AllEntriesTokenScanReader} for token index.
@@ -45,141 +43,115 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
  * and coordinate those simultaneously over the scan. Each {@link EntityTokenRange} returned is a view
  * over all cursors at that same range, giving an aggregation of all tokens in that entity id range.
  */
-class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
-{
-    private final IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider;
-    private final List<Seeker<TokenScanKey,TokenScanValue>> cursors = new ArrayList<>();
+class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader {
+    private final IntFunction<Seeker<TokenScanKey, TokenScanValue>> seekProvider;
+    private final List<Seeker<TokenScanKey, TokenScanValue>> cursors = new ArrayList<>();
     private final int highestTokenId;
     private final EntityType entityType;
 
-    NativeAllEntriesTokenScanReader( IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider,
-            int highestTokenId, EntityType entityType )
-    {
+    NativeAllEntriesTokenScanReader(
+            IntFunction<Seeker<TokenScanKey, TokenScanValue>> seekProvider, int highestTokenId, EntityType entityType) {
         this.seekProvider = seekProvider;
         this.highestTokenId = highestTokenId;
         this.entityType = entityType;
     }
 
     @Override
-    public long maxCount()
-    {
+    public long maxCount() {
         return BoundedIterable.UNKNOWN_MAX_COUNT;
     }
 
     @Override
-    public Iterator<EntityTokenRange> iterator()
-    {
-        try
-        {
+    public Iterator<EntityTokenRange> iterator() {
+        try {
             long lowestRange = Long.MAX_VALUE;
             closeCursors();
-            for ( int tokenId = 0; tokenId <= highestTokenId; tokenId++ )
-            {
-                Seeker<TokenScanKey,TokenScanValue> cursor = seekProvider.apply( tokenId );
+            for (int tokenId = 0; tokenId <= highestTokenId; tokenId++) {
+                Seeker<TokenScanKey, TokenScanValue> cursor = seekProvider.apply(tokenId);
 
                 // Bootstrap the cursor, which also provides a great opportunity to exclude if empty
-                if ( cursor.next() )
-                {
-                    lowestRange = min( lowestRange, cursor.key().idRange );
-                    cursors.add( cursor );
+                if (cursor.next()) {
+                    lowestRange = min(lowestRange, cursor.key().idRange);
+                    cursors.add(cursor);
                 }
             }
-            return new EntityTokenRangeIterator( lowestRange, entityType );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+            return new EntityTokenRangeIterator(lowestRange, entityType);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private void closeCursors() throws IOException
-    {
-        for ( Seeker<TokenScanKey,TokenScanValue> cursor : cursors )
-        {
+    private void closeCursors() throws IOException {
+        for (Seeker<TokenScanKey, TokenScanValue> cursor : cursors) {
             cursor.close();
         }
         cursors.clear();
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         closeCursors();
     }
 
     /**
      * The main iterator over {@link EntityTokenRange ranges}, aggregating all the cursors as it goes.
      */
-    private class EntityTokenRangeIterator extends PrefetchingIterator<EntityTokenRange>
-    {
+    private class EntityTokenRangeIterator extends PrefetchingIterator<EntityTokenRange> {
         private long currentRange;
         private final EntityType entityType;
 
         // entityId (relative to lowestRange) --> tokenId[]
         private final MutableLongList[] tokensForEachEntity = new MutableLongList[RANGE_SIZE];
 
-        EntityTokenRangeIterator( long lowestRange, EntityType entityType )
-        {
+        EntityTokenRangeIterator(long lowestRange, EntityType entityType) {
             this.currentRange = lowestRange;
             this.entityType = entityType;
         }
 
         @Override
-        protected EntityTokenRange fetchNextOrNull()
-        {
-            if ( currentRange == Long.MAX_VALUE )
-            {
+        protected EntityTokenRange fetchNextOrNull() {
+            if (currentRange == Long.MAX_VALUE) {
                 return null;
             }
 
-            Arrays.fill( tokensForEachEntity, null );
+            Arrays.fill(tokensForEachEntity, null);
             long nextLowestRange = Long.MAX_VALUE;
-            try
-            {
+            try {
                 // One "rangeSize" range at a time
-                for ( var iterator = cursors.iterator(); iterator.hasNext(); )
-                {
+                for (var iterator = cursors.iterator(); iterator.hasNext(); ) {
                     var cursor = iterator.next();
                     long idRange = cursor.key().idRange;
-                    if ( idRange < currentRange )
-                    {
-                        // This should never happen because if the cursor has been exhausted and the iterator have moved on
+                    if (idRange < currentRange) {
+                        // This should never happen because if the cursor has been exhausted and the iterator have moved
+                        // on
                         // from the range it returned as its last hit, that cursor is removed from the collection
-                        throw new IllegalStateException( "Accessing cursor that is out of range" );
-                    }
-                    else if ( idRange == currentRange )
-                    {
+                        throw new IllegalStateException("Accessing cursor that is out of range");
+                    } else if (idRange == currentRange) {
                         long bits = cursor.value().bits;
                         long tokenId = cursor.key().tokenId;
-                        EntityTokenRangeImpl.readBitmap( bits, tokenId, tokensForEachEntity );
+                        EntityTokenRangeImpl.readBitmap(bits, tokenId, tokensForEachEntity);
 
                         // Advance cursor and look ahead to the next range
-                        if ( cursor.next() )
-                        {
-                            nextLowestRange = min( nextLowestRange, cursor.key().idRange );
-                        }
-                        else
-                        {
+                        if (cursor.next()) {
+                            nextLowestRange = min(nextLowestRange, cursor.key().idRange);
+                        } else {
                             // remove exhausted cursor so we never try to read from it again
                             cursor.close();
                             iterator.remove();
                         }
-                    }
-                    else
-                    {
+                    } else {
                         // Excluded from this range
-                        nextLowestRange = min( nextLowestRange, cursor.key().idRange );
+                        nextLowestRange = min(nextLowestRange, cursor.key().idRange);
                     }
                 }
 
-                EntityTokenRange range = new EntityTokenRangeImpl( currentRange, EntityTokenRangeImpl.convertState( tokensForEachEntity ), entityType );
+                EntityTokenRange range = new EntityTokenRangeImpl(
+                        currentRange, EntityTokenRangeImpl.convertState(tokensForEachEntity), entityType);
                 currentRange = nextLowestRange;
 
                 return range;
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
     }

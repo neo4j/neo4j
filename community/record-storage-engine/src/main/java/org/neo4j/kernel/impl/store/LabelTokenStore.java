@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -33,14 +34,10 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.logging.InternalLogProvider;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_TOKEN_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
-
 /**
  * Implementation of the label store.
  */
-public class LabelTokenStore extends TokenStore<LabelTokenRecord>
-{
+public class LabelTokenStore extends TokenStore<LabelTokenRecord> {
     public static final String TYPE_DESCRIPTOR = "LabelTokenStore";
 
     public LabelTokenStore(
@@ -54,10 +51,23 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, config, SchemaIdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
-                logProvider, nameStore, TYPE_DESCRIPTOR, recordFormats.labelToken(),
-                recordFormats.storeVersion(), readOnlyChecker, databaseName, LABEL_TOKEN_CURSOR, DYNAMIC_LABEL_TOKEN_CURSOR, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                config,
+                SchemaIdType.LABEL_TOKEN,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                nameStore,
+                TYPE_DESCRIPTOR,
+                recordFormats.labelToken(),
+                recordFormats.storeVersion(),
+                readOnlyChecker,
+                databaseName,
+                LABEL_TOKEN_CURSOR,
+                DYNAMIC_LABEL_TOKEN_CURSOR,
+                openOptions);
     }
 }

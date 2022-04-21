@@ -19,28 +19,6 @@
  */
 package org.neo4j.server;
 
-import org.dummy.web.service.DummyThirdPartyWebService;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Stream;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.server.configuration.ConfigurableServerModules;
-import org.neo4j.server.rest.security.CommunityWebContainerTestBase;
-import org.neo4j.test.server.HTTP;
-
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -51,68 +29,84 @@ import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-class NeoWebServerConfigurableModulesIT extends CommunityWebContainerTestBase
-{
+import java.io.IOException;
+import java.net.URI;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import org.dummy.web.service.DummyThirdPartyWebService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
+import org.neo4j.server.configuration.ConfigurableServerModules;
+import org.neo4j.server.rest.security.CommunityWebContainerTestBase;
+import org.neo4j.test.server.HTTP;
+
+class NeoWebServerConfigurableModulesIT extends CommunityWebContainerTestBase {
     @Test
-    void webServerShouldNotStartWithoutAnyModule()
-    {
-        assertThatExceptionOfType( UnsatisfiedDependencyException.class )
-                .isThrownBy( () -> serverOnRandomPorts().withProperty( http_enabled_modules.name(), "" ).build() );
+    void webServerShouldNotStartWithoutAnyModule() {
+        assertThatExceptionOfType(UnsatisfiedDependencyException.class).isThrownBy(() -> serverOnRandomPorts()
+                .withProperty(http_enabled_modules.name(), "")
+                .build());
     }
 
     @Test
-    void authAndDbmsShouldBeEnabled() throws IOException
-    {
-        startTestWebContainer( EnumSet.of( ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS ), true );
+    void authAndDbmsShouldBeEnabled() throws IOException {
+        startTestWebContainer(EnumSet.of(ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS), true);
 
-        HTTP.Response response = POST( txCommitURL( "system" ), quotedJson( "{ 'statements': [ { 'statement': 'SHOW DEFAULT DATABASE' } ] }" ) );
-        assertThat( response.status() ).isEqualTo( 401 );
+        HTTP.Response response = POST(
+                txCommitURL("system"), quotedJson("{ 'statements': [ { 'statement': 'SHOW DEFAULT DATABASE' } ] }"));
+        assertThat(response.status()).isEqualTo(401);
 
-        response = GET( testWebContainer.getBaseUri().resolve( "/" ).toString() );
+        response = GET(testWebContainer.getBaseUri().resolve("/").toString());
 
-        assertThat( response.status() ).isEqualTo( 200 );
-        assertThat( response.<Map<String,Object>>content() ).containsKey( "transaction" );
+        assertThat(response.status()).isEqualTo(200);
+        assertThat(response.<Map<String, Object>>content()).containsKey("transaction");
     }
 
-    private static Stream<Arguments> disabledModuleAndURIs()
-    {
+    private static Stream<Arguments> disabledModuleAndURIs() {
         return Stream.of(
                 arguments(
                         ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS,
-                        (Function<URI,List<URI>>) baseUir ->
-                                List.of( baseUir.resolve( "/db/neo4j/tx" ), baseUir.resolve( "/db/data/transaction" ) ),
-                        (Function<URI,HTTP.Response>) uri -> HTTP.POST( uri.toString() )
-                ),
+                        (Function<URI, List<URI>>) baseUir ->
+                                List.of(baseUir.resolve("/db/neo4j/tx"), baseUir.resolve("/db/data/transaction")),
+                        (Function<URI, HTTP.Response>) uri -> HTTP.POST(uri.toString())),
                 arguments(
                         ConfigurableServerModules.BROWSER,
-                        (Function<URI,List<URI>>) baseUir -> List.of( baseUir.resolve( "/browser" ) ),
-                        (Function<URI,HTTP.Response>) uri -> HTTP.GET( uri.toString() )
-                ),
+                        (Function<URI, List<URI>>) baseUir -> List.of(baseUir.resolve("/browser")),
+                        (Function<URI, HTTP.Response>) uri -> HTTP.GET(uri.toString())),
                 arguments(
                         ConfigurableServerModules.UNMANAGED_EXTENSIONS,
-                        (Function<URI,List<URI>>) baseUir -> List.of( baseUir.resolve( DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT ) ),
-                        (Function<URI,HTTP.Response>) uri -> HTTP.withHeaders( HttpHeaders.ACCEPT, MediaType.TEXT_PLAIN ).GET( uri.toString() )
-                )
-        );
+                        (Function<URI, List<URI>>) baseUir ->
+                                List.of(baseUir.resolve(DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)),
+                        (Function<URI, HTTP.Response>) uri -> HTTP.withHeaders(HttpHeaders.ACCEPT, MediaType.TEXT_PLAIN)
+                                .GET(uri.toString())));
     }
 
-    @ParameterizedTest( name = "{0} should be disabled" )
-    @MethodSource( "disabledModuleAndURIs" )
-    void moduleShouldBeDisabled( ConfigurableServerModules disabledModule, Function<URI,List<URI>> uriProvider, Function<URI,HTTP.Response> httpCall )
-            throws IOException
-    {
-        startTestWebContainer( EnumSet.complementOf( EnumSet.of( disabledModule ) ), false );
+    @ParameterizedTest(name = "{0} should be disabled")
+    @MethodSource("disabledModuleAndURIs")
+    void moduleShouldBeDisabled(
+            ConfigurableServerModules disabledModule,
+            Function<URI, List<URI>> uriProvider,
+            Function<URI, HTTP.Response> httpCall)
+            throws IOException {
+        startTestWebContainer(EnumSet.complementOf(EnumSet.of(disabledModule)), false);
 
-        for ( URI uri : uriProvider.apply( testWebContainer.getBaseUri() ) )
-        {
-            HTTP.Response response = httpCall.apply( uri );
-            assertThat( response.status() ).isEqualTo( 404 );
+        for (URI uri : uriProvider.apply(testWebContainer.getBaseUri())) {
+            HTTP.Response response = httpCall.apply(uri);
+            assertThat(response.status()).isEqualTo(404);
         }
     }
 
-    private static String moduleSettingsToProperty( EnumSet<ConfigurableServerModules> enabledModules )
-    {
-        return enabledModules.stream().map( ConfigurableServerModules::name ).collect( joining( "," ) );
+    private static String moduleSettingsToProperty(EnumSet<ConfigurableServerModules> enabledModules) {
+        return enabledModules.stream().map(ConfigurableServerModules::name).collect(joining(","));
     }
 
     /**
@@ -120,13 +114,13 @@ class NeoWebServerConfigurableModulesIT extends CommunityWebContainerTestBase
      * @param authEnabled    Whether auth is to be enabled or not
      * @throws IOException
      */
-    void startTestWebContainer( EnumSet<ConfigurableServerModules> enabledModules, boolean authEnabled ) throws IOException
-    {
+    void startTestWebContainer(EnumSet<ConfigurableServerModules> enabledModules, boolean authEnabled)
+            throws IOException {
         testWebContainer = serverOnRandomPorts()
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
-                .withProperty( http_enabled_modules.name(), moduleSettingsToProperty( enabledModules ) )
-                .withThirdPartyJaxRsPackage( "org.dummy.web.service",
-                                             DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
+                .withProperty(GraphDatabaseSettings.auth_enabled.name(), Boolean.toString(authEnabled))
+                .withProperty(http_enabled_modules.name(), moduleSettingsToProperty(enabledModules))
+                .withThirdPartyJaxRsPackage(
+                        "org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
                 .build();
     }
 }

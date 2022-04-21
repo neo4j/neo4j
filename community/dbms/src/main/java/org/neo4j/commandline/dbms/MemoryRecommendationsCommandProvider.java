@@ -19,25 +19,22 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static org.neo4j.cli.Command.CommandType.MEMORY_RECOMMENDATION;
+
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.Command.CommandType;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.ExecutionContext;
 
-import static org.neo4j.cli.Command.CommandType.MEMORY_RECOMMENDATION;
-
 @ServiceProvider
-public class MemoryRecommendationsCommandProvider implements CommandProvider<MemoryRecommendationsCommand>
-{
+public class MemoryRecommendationsCommandProvider implements CommandProvider<MemoryRecommendationsCommand> {
     @Override
-    public MemoryRecommendationsCommand createCommand( ExecutionContext ctx )
-    {
-        return new MemoryRecommendationsCommand( ctx );
+    public MemoryRecommendationsCommand createCommand(ExecutionContext ctx) {
+        return new MemoryRecommendationsCommand(ctx);
     }
 
     @Override
-    public CommandType commandType()
-    {
+    public CommandType commandType() {
         return MEMORY_RECOMMENDATION;
     }
 }

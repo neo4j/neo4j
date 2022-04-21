@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
+
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -27,14 +29,11 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
-
 /**
  * Calculates counts per label and puts data into {@link NodeLabelsCache} for use by {@link
  * RelationshipCountsProcessor}.
  */
-public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
-{
+public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
     private final NodeStore nodeStore;
     private final long[] labelCounts;
     private final ProgressReporter progressReporter;
@@ -43,9 +42,12 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
     private final int anyLabel;
     private final NodeLabelsCache.Client cacheClient;
 
-    NodeCountsProcessor( NodeStore nodeStore, NodeLabelsCache cache, int highLabelId,
-            CountsAccessor.Updater counts, ProgressReporter progressReporter )
-    {
+    NodeCountsProcessor(
+            NodeStore nodeStore,
+            NodeLabelsCache cache,
+            int highLabelId,
+            CountsAccessor.Updater counts,
+            ProgressReporter progressReporter) {
         this.nodeStore = nodeStore;
         this.cache = cache;
         this.anyLabel = highLabelId;
@@ -57,45 +59,36 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
     }
 
     @Override
-    public boolean process( NodeRecord node, StoreCursors storeCursors )
-    {
-        long[] labels = NodeLabelsField.get( node, nodeStore, storeCursors );
-        if ( labels.length > 0 )
-        {
-            for ( long labelId : labels )
-            {
+    public boolean process(NodeRecord node, StoreCursors storeCursors) {
+        long[] labels = NodeLabelsField.get(node, nodeStore, storeCursors);
+        if (labels.length > 0) {
+            for (long labelId : labels) {
                 labelCounts[(int) labelId]++;
             }
-            cache.put( cacheClient, node.getId(), labels );
+            cache.put(cacheClient, node.getId(), labels);
         }
         labelCounts[anyLabel]++;
-        progressReporter.progress( 1 );
+        progressReporter.progress(1);
 
         // No need to update the store, we're just reading things here
         return false;
     }
 
     @Override
-    public void mergeResultsFrom( RecordProcessor<NodeRecord> other )
-    {
+    public void mergeResultsFrom(RecordProcessor<NodeRecord> other) {
         NodeCountsProcessor o = (NodeCountsProcessor) other;
-        for ( int i = 0; i < o.labelCounts.length; i++ )
-        {
+        for (int i = 0; i < o.labelCounts.length; i++) {
             labelCounts[i] += o.labelCounts[i];
         }
     }
 
     @Override
-    public void done()
-    {
-        for ( int i = 0; i < labelCounts.length; i++ )
-        {
-            counts.incrementNodeCount( i == anyLabel ? ANY_LABEL : i, labelCounts[i] );
+    public void done() {
+        for (int i = 0; i < labelCounts.length; i++) {
+            counts.incrementNodeCount(i == anyLabel ? ANY_LABEL : i, labelCounts[i]);
         }
     }
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 }

@@ -19,31 +19,27 @@
  */
 package org.neo4j.kernel.impl.context;
 
-import java.util.function.LongSupplier;
-
-import org.neo4j.io.pagecache.context.VersionContext;
-
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+
+import java.util.function.LongSupplier;
+import org.neo4j.io.pagecache.context.VersionContext;
 
 /**
  * Transactional version context that used by read transaction to read data of specific version.
  * Or perform versioned data modification.
  */
-public class TransactionVersionContext implements VersionContext
-{
+public class TransactionVersionContext implements VersionContext {
     private final LongSupplier lastClosedTxIdSupplier;
     private long transactionId = BASE_TX_ID;
     private long lastClosedTxId = Long.MAX_VALUE;
     private boolean dirty;
 
-    public TransactionVersionContext( LongSupplier lastClosedTxIdSupplier )
-    {
+    public TransactionVersionContext(LongSupplier lastClosedTxIdSupplier) {
         this.lastClosedTxIdSupplier = lastClosedTxIdSupplier;
     }
 
     @Override
-    public void initRead()
-    {
+    public void initRead() {
         long txId = lastClosedTxIdSupplier.getAsLong();
         assert txId >= BASE_TX_ID;
         lastClosedTxId = txId;
@@ -51,33 +47,28 @@ public class TransactionVersionContext implements VersionContext
     }
 
     @Override
-    public void initWrite( long committingTxId )
-    {
+    public void initWrite(long committingTxId) {
         assert committingTxId >= BASE_TX_ID;
         transactionId = committingTxId;
     }
 
     @Override
-    public long committingTransactionId()
-    {
+    public long committingTransactionId() {
         return transactionId;
     }
 
     @Override
-    public long lastClosedTransactionId()
-    {
+    public long lastClosedTransactionId() {
         return lastClosedTxId;
     }
 
     @Override
-    public void markAsDirty()
-    {
+    public void markAsDirty() {
         dirty = true;
     }
 
     @Override
-    public boolean isDirty()
-    {
+    public boolean isDirty() {
         return dirty;
     }
 }

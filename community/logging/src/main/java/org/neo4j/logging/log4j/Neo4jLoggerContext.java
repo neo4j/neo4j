@@ -19,26 +19,22 @@
  */
 package org.neo4j.logging.log4j;
 
+import java.io.Closeable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.message.StringFormatterMessageFactory;
 import org.apache.logging.log4j.spi.ExtendedLogger;
-
-import java.io.Closeable;
-
 import org.neo4j.io.IOUtils;
 
 /**
  * Facade for Log4j LoggerContext.
  */
-public class Neo4jLoggerContext implements Closeable
-{
+public class Neo4jLoggerContext implements Closeable {
     private final LoggerContext ctx;
     private final Closeable additionalClosable;
 
-    public Neo4jLoggerContext( LoggerContext ctx, Closeable additionalClosable )
-    {
+    public Neo4jLoggerContext(LoggerContext ctx, Closeable additionalClosable) {
         this.ctx = ctx;
         this.additionalClosable = additionalClosable;
     }
@@ -47,43 +43,37 @@ public class Neo4jLoggerContext implements Closeable
      * Package-private specifically to not leak {@link Logger} outside logging module.
      * Should not be used outside of the logging module.
      */
-    ExtendedLogger getLogger( Class<?> clazz )
-    {
+    ExtendedLogger getLogger(Class<?> clazz) {
         // StringFormatterMessageFactory will recognize printf syntax, default it anchor {} which we don't use
-        return ctx.getLogger( clazz, StringFormatterMessageFactory.INSTANCE );
+        return ctx.getLogger(clazz, StringFormatterMessageFactory.INSTANCE);
     }
 
     /**
      * Package-private specifically to not leak {@link Logger} outside logging module.
      * Should not be used outside of the logging module.
      */
-    ExtendedLogger getLogger( String name )
-    {
+    ExtendedLogger getLogger(String name) {
         // StringFormatterMessageFactory will recognize printf syntax, default it anchor {} which we don't use
-        return ctx.getLogger( name, StringFormatterMessageFactory.INSTANCE );
+        return ctx.getLogger(name, StringFormatterMessageFactory.INSTANCE);
     }
 
     /**
      * Package-private specifically to not leak {@link LoggerContext} outside logging module.
      * Should not be used outside of the logging module.
      */
-    LoggerContext getLoggerContext()
-    {
+    LoggerContext getLoggerContext() {
         return ctx;
     }
 
-    boolean haveExternalResources()
-    {
+    boolean haveExternalResources() {
         return additionalClosable != null;
     }
 
     @Override
-    public void close()
-    {
-        LogManager.shutdown( ctx );
-        if ( additionalClosable != null )
-        {
-            IOUtils.closeAllSilently( additionalClosable );
+    public void close() {
+        LogManager.shutdown(ctx);
+        if (additionalClosable != null) {
+            IOUtils.closeAllSilently(additionalClosable);
         }
     }
 }

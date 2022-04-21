@@ -19,41 +19,37 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.List;
+import static org.neo4j.shell.printer.AnsiFormattedText.from;
 
+import java.util.List;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.parameter.ParameterService;
 
-import static org.neo4j.shell.printer.AnsiFormattedText.from;
-
 /**
  * This command sets a variable to a name, for use as query parameter.
  */
-public record Param( ParameterService parameters ) implements Command
-{
+public record Param(ParameterService parameters) implements Command {
     @Override
-    public void execute( List<String> args ) throws ExitException, CommandException
-    {
-        requireArgumentCount( args, 1 );
-        try
-        {
-            var parsed = parameters.parse( args.get( 0 ) );
-            parameters.setParameter( parameters.evaluate( parsed ) );
-        }
-        catch ( ParameterService.ParameterParsingException e )
-        {
-            throw new CommandException( from( "Incorrect usage.\nusage: " ).bold( metadata().name() ).append( " " ).append( metadata().usage() ) );
+    public void execute(List<String> args) throws ExitException, CommandException {
+        requireArgumentCount(args, 1);
+        try {
+            var parsed = parameters.parse(args.get(0));
+            parameters.setParameter(parameters.evaluate(parsed));
+        } catch (ParameterService.ParameterParsingException e) {
+            throw new CommandException(from("Incorrect usage.\nusage: ")
+                    .bold(metadata().name())
+                    .append(" ")
+                    .append(metadata().usage()));
         }
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
+        public Metadata metadata() {
             var help = "Set the specified query parameter to the value given";
-            var usage = """
+            var usage =
+                    """
                     name => <Cypher Expression>
 
                     For example:
@@ -62,13 +58,12 @@ public record Param( ParameterService parameters ) implements Command
                         :param name => { mapKey: 'map value' }
                         :param name => [ 1, 2, 3 ]
                     """;
-            return new Metadata( ":param", "Set the value of a query parameter", usage, help, List.of() );
+            return new Metadata(":param", "Set the value of a query parameter", usage, help, List.of());
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
-            return new Param( args.parameters() );
+        public Command executor(Arguments args) {
+            return new Param(args.parameters());
         }
     }
 }

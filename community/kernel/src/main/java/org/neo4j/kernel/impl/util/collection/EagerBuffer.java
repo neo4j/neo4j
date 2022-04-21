@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+
 import java.util.Iterator;
 import java.util.function.IntUnaryOperator;
-
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
-
-import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 
 /**
  * A specialized heap tracking buffer of Measurable elements, which grows in chunks without array copy as a linked list.
@@ -40,13 +39,12 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
  *
  * @param <T> element type
  */
-public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable
-{
+public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable {
     public static final IntUnaryOperator KEEP_CONSTANT_CHUNK_SIZE = size -> size;
     public static final IntUnaryOperator GROW_NEW_CHUNKS_BY_50_PCT = size -> size + (size >> 1);
     public static final IntUnaryOperator GROW_NEW_CHUNKS_BY_100_PCT = size -> size << 1;
 
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( EagerBuffer.class );
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(EagerBuffer.class);
 
     private final MemoryTracker scopedMemoryTracker;
     private final IntUnaryOperator growthStrategy;
@@ -56,55 +54,55 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable
     private long size;
     private int maxChunkSize;
 
-    public static <T extends Measurable> EagerBuffer<T> createEagerBuffer( MemoryTracker memoryTracker )
-    {
-        return createEagerBuffer( memoryTracker, 1024, ArrayUtil.MAX_ARRAY_SIZE, GROW_NEW_CHUNKS_BY_50_PCT ); // Grow by 50%
-    }
-
-    public static <T extends Measurable> EagerBuffer<T> createEagerBuffer( MemoryTracker memoryTracker, int initialChunkSize )
-    {
-        return createEagerBuffer( memoryTracker, initialChunkSize, ArrayUtil.MAX_ARRAY_SIZE, GROW_NEW_CHUNKS_BY_50_PCT ); // Grow by 50%
+    public static <T extends Measurable> EagerBuffer<T> createEagerBuffer(MemoryTracker memoryTracker) {
+        return createEagerBuffer(
+                memoryTracker, 1024, ArrayUtil.MAX_ARRAY_SIZE, GROW_NEW_CHUNKS_BY_50_PCT); // Grow by 50%
     }
 
     public static <T extends Measurable> EagerBuffer<T> createEagerBuffer(
-            MemoryTracker memoryTracker, int initialChunkSize, int maxChunkSize, IntUnaryOperator growthStrategy )
-    {
-        MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
-        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfInstance( IntUnaryOperator.class ) );
-        return new EagerBuffer<T>( scopedMemoryTracker, initialChunkSize, maxChunkSize, growthStrategy );
+            MemoryTracker memoryTracker, int initialChunkSize) {
+        return createEagerBuffer(
+                memoryTracker, initialChunkSize, ArrayUtil.MAX_ARRAY_SIZE, GROW_NEW_CHUNKS_BY_50_PCT); // Grow by 50%
     }
 
-    private EagerBuffer( MemoryTracker scopedMemoryTracker, int initialChunkSize, int maxChunkSize, IntUnaryOperator growthStrategy )
-    {
+    public static <T extends Measurable> EagerBuffer<T> createEagerBuffer(
+            MemoryTracker memoryTracker, int initialChunkSize, int maxChunkSize, IntUnaryOperator growthStrategy) {
+        MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
+        scopedMemoryTracker.allocateHeap(
+                SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfInstance(IntUnaryOperator.class));
+        return new EagerBuffer<T>(scopedMemoryTracker, initialChunkSize, maxChunkSize, growthStrategy);
+    }
+
+    private EagerBuffer(
+            MemoryTracker scopedMemoryTracker,
+            int initialChunkSize,
+            int maxChunkSize,
+            IntUnaryOperator growthStrategy) {
         this.scopedMemoryTracker = scopedMemoryTracker;
         this.maxChunkSize = maxChunkSize;
         this.growthStrategy = growthStrategy;
-        first = new EagerBuffer.Chunk<>( initialChunkSize, scopedMemoryTracker.getScopedMemoryTracker() );
+        first = new EagerBuffer.Chunk<>(initialChunkSize, scopedMemoryTracker.getScopedMemoryTracker());
         current = first;
     }
 
-    public void add( T element )
-    {
-        if ( !current.add( element ) )
-        {
-            int newChunkSize = grow( current.elements.length );
-            EagerBuffer.Chunk<T> newChunk = new EagerBuffer.Chunk<>( newChunkSize, scopedMemoryTracker.getScopedMemoryTracker() );
+    public void add(T element) {
+        if (!current.add(element)) {
+            int newChunkSize = grow(current.elements.length);
+            EagerBuffer.Chunk<T> newChunk =
+                    new EagerBuffer.Chunk<>(newChunkSize, scopedMemoryTracker.getScopedMemoryTracker());
             current.next = newChunk;
             current = newChunk;
-            current.add( element );
+            current.add(element);
         }
         size++;
     }
 
-    public long size()
-    {
+    public long size() {
         return size;
     }
 
-    public Iterator<T> autoClosingIterator()
-    {
-        return new Iterator<T>()
-        {
+    public Iterator<T> autoClosingIterator() {
+        return new Iterator<T>() {
             private EagerBuffer.Chunk<T> chunk;
             private int index;
 
@@ -115,23 +113,19 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable
             }
 
             @Override
-            public boolean hasNext()
-            {
-                if ( chunk == null || index >= chunk.cursor )
-                {
+            public boolean hasNext() {
+                if (chunk == null || index >= chunk.cursor) {
                     close();
                     return false;
                 }
                 return true;
             }
 
-            @SuppressWarnings( "unchecked" )
+            @SuppressWarnings("unchecked")
             @Override
-            public T next()
-            {
+            public T next() {
                 Object element = chunk.elements[index++];
-                if ( index >= chunk.cursor )
-                {
+                if (index >= chunk.cursor) {
                     var chunkToRelease = chunk;
                     chunk = chunk.next;
                     index = 0;
@@ -143,75 +137,65 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable
     }
 
     @Override
-    public void closeInternal()
-    {
+    public void closeInternal() {
         first = null;
         current = null;
         scopedMemoryTracker.close();
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return false;
     }
 
     @VisibleForTesting
-    public int numberOfChunks()
-    {
+    public int numberOfChunks() {
         int i = 0;
         var chunk = first;
-        while ( chunk != null )
-        {
+        while (chunk != null) {
             chunk = chunk.next;
             i++;
         }
         return i;
     }
 
-    private int grow( int size )
-    {
-        if ( size == maxChunkSize )
-        {
+    private int grow(int size) {
+        if (size == maxChunkSize) {
             return size;
         }
-        int newSize = growthStrategy.applyAsInt( size );
-        if ( newSize <= 0 || newSize > maxChunkSize ) // Check overflow
+        int newSize = growthStrategy.applyAsInt(size);
+        if (newSize <= 0 || newSize > maxChunkSize) // Check overflow
         {
             return maxChunkSize;
         }
         return newSize;
     }
 
-    private static class Chunk<T extends Measurable>
-    {
-        private static final long SHALLOW_SIZE = shallowSizeOfInstance( EagerBuffer.Chunk.class );
+    private static class Chunk<T extends Measurable> {
+        private static final long SHALLOW_SIZE = shallowSizeOfInstance(EagerBuffer.Chunk.class);
 
         private final Object[] elements;
         private EagerBuffer.Chunk<T> next;
         private MemoryTracker memoryTracker;
         private int cursor;
 
-        Chunk( int size, MemoryTracker memoryTracker )
-        {
-            memoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfObjectArray( size ) );
+        Chunk(int size, MemoryTracker memoryTracker) {
+            memoryTracker.allocateHeap(
+                    SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfObjectArray(size));
             elements = new Object[size];
             this.memoryTracker = memoryTracker;
         }
 
-        boolean add( T element )
-        {
-            if ( cursor < elements.length )
-            {
-                memoryTracker.allocateHeap( element.estimatedHeapUsage() );
+        boolean add(T element) {
+            if (cursor < elements.length) {
+                memoryTracker.allocateHeap(element.estimatedHeapUsage());
                 elements[cursor++] = element;
                 return true;
             }
             return false;
         }
 
-        void close()
-        {
+        void close() {
             memoryTracker.close();
         }
     }

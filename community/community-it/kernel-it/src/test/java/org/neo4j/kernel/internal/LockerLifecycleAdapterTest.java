@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.emptyMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.config.Setting;
@@ -32,19 +34,13 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.util.Collections.emptyMap;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
-
 @TestDirectoryExtension
-class LockerLifecycleAdapterTest
-{
+class LockerLifecycleAdapterTest {
     @Inject
     private TestDirectory directory;
 
     @Test
-    void shouldAllowDatabasesToUseFilesetsSequentially()
-    {
+    void shouldAllowDatabasesToUseFilesetsSequentially() {
         DatabaseManagementService managementService = newDb();
         managementService.shutdown();
         managementService = newDb();
@@ -52,45 +48,37 @@ class LockerLifecycleAdapterTest
     }
 
     @Test
-    void shouldNotAllowDatabasesToUseFilesetsConcurrently()
-    {
-        shouldNotAllowDatabasesToUseFilesetsConcurrently( emptyMap() );
+    void shouldNotAllowDatabasesToUseFilesetsConcurrently() {
+        shouldNotAllowDatabasesToUseFilesetsConcurrently(emptyMap());
     }
 
     @Test
-    void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
-    {
-        shouldNotAllowDatabasesToUseFilesetsConcurrently( Map.of( GraphDatabaseSettings.read_only_database_default, true ) );
+    void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode() {
+        shouldNotAllowDatabasesToUseFilesetsConcurrently(
+                Map.of(GraphDatabaseSettings.read_only_database_default, true));
     }
 
-    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<Setting<?>,Object> config )
-    {
+    private void shouldNotAllowDatabasesToUseFilesetsConcurrently(Map<Setting<?>, Object> config) {
         DatabaseManagementService managementService = newDb();
         DatabaseManagementService embeddedService = null;
-        try
-        {
-            embeddedService = new TestDatabaseManagementServiceBuilder( directory.homePath() ).setConfig( config ).build();
+        try {
+            embeddedService = new TestDatabaseManagementServiceBuilder(directory.homePath())
+                    .setConfig(config)
+                    .build();
             fail();
-        }
-        catch ( RuntimeException e )
-        {
-            assertThat( e.getCause().getCause() ).isInstanceOf( FileLockException.class );
-        }
-        finally
-        {
-            if ( embeddedService != null )
-            {
+        } catch (RuntimeException e) {
+            assertThat(e.getCause().getCause()).isInstanceOf(FileLockException.class);
+        } finally {
+            if (embeddedService != null) {
                 embeddedService.shutdown();
             }
-            if ( managementService != null )
-            {
+            if (managementService != null) {
                 managementService.shutdown();
             }
         }
     }
 
-    private DatabaseManagementService newDb()
-    {
-        return new TestDatabaseManagementServiceBuilder( directory.homePath() ).build();
+    private DatabaseManagementService newDb() {
+        return new TestDatabaseManagementServiceBuilder(directory.homePath()).build();
     }
 }

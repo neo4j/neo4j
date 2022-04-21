@@ -33,9 +33,10 @@ import scala.collection.immutable.BitSet.BitSetN
  * For example, a Set that contains both BitSets and other Set[Int]s must not make use of these methods.
  */
 object BitSetEquality {
+
   private def all0From(array: Array[Long], startIndex: Int): Boolean = {
     var i = startIndex
-    while(i < array.length) {
+    while (i < array.length) {
       if (array(i) != 0L) return false
       i += 1
     }
@@ -63,23 +64,23 @@ object BitSetEquality {
   def equalBitSets(bitSet1: BitSet, bitSet2: BitSet): Boolean = {
     bitSet1 match {
       case bs1: BitSet1 => bitSet2 match {
-        case bs2: BitSet1 => bs1.elems == bs2.elems
-        case bs2: BitSet2 => bs1.elems == bs2.elems0 && bs2.toBitMask(1) == 0L
-        case bs2: BitSetN => bs1.elems == bs2.elems(0) && all0From(bs2.elems, 1)
-        case _ => bitSet1.equals(bitSet2)
-      }
+          case bs2: BitSet1 => bs1.elems == bs2.elems
+          case bs2: BitSet2 => bs1.elems == bs2.elems0 && bs2.toBitMask(1) == 0L
+          case bs2: BitSetN => bs1.elems == bs2.elems(0) && all0From(bs2.elems, 1)
+          case _            => bitSet1.equals(bitSet2)
+        }
       case bs1: BitSet2 => bitSet2 match {
-        case bs2: BitSet1 => bs1.elems0 == bs2.elems && bs1.toBitMask(1) == 0L
-        case bs2: BitSet2 => bs1.elems0 == bs2.elems0 && bs1.toBitMask(1) == bs2.toBitMask(1)
-        case bs2: BitSetN => bs1.elems0 == bs2.elems(0) && bs1.toBitMask(1) == bs2.elems(1) && all0From(bs2.elems, 2)
-        case _ => bitSet1.equals(bitSet2)
-      }
+          case bs2: BitSet1 => bs1.elems0 == bs2.elems && bs1.toBitMask(1) == 0L
+          case bs2: BitSet2 => bs1.elems0 == bs2.elems0 && bs1.toBitMask(1) == bs2.toBitMask(1)
+          case bs2: BitSetN => bs1.elems0 == bs2.elems(0) && bs1.toBitMask(1) == bs2.elems(1) && all0From(bs2.elems, 2)
+          case _            => bitSet1.equals(bitSet2)
+        }
       case bs1: BitSetN => bitSet2 match {
-        case bs2: BitSet1 => bs1.elems(0) == bs2.elems && all0From(bs1.elems, 1)
-        case bs2: BitSet2 => bs1.elems(0) == bs2.elems0 && bs1.elems(1) == bs2.toBitMask(1) && all0From(bs1.elems, 2)
-        case bs2: BitSetN => util.Arrays.equals(bs1.elems, bs2.elems)
-        case _ => bitSet1.equals(bitSet2)
-      }
+          case bs2: BitSet1 => bs1.elems(0) == bs2.elems && all0From(bs1.elems, 1)
+          case bs2: BitSet2 => bs1.elems(0) == bs2.elems0 && bs1.elems(1) == bs2.toBitMask(1) && all0From(bs1.elems, 2)
+          case bs2: BitSetN => util.Arrays.equals(bs1.elems, bs2.elems)
+          case _            => bitSet1.equals(bitSet2)
+        }
       case _ => bitSet1.equals(bitSet2)
     }
   }
@@ -92,7 +93,7 @@ object BitSetEquality {
       case bs: BitSet1 => hashCode(bs.elems)
       case bs: BitSet2 => hashCode(bs.toBitMask)
       case bs: BitSetN => hashCode(bs.elems)
-      case bs => hashCode(bs.toBitMask)
+      case bs          => hashCode(bs.toBitMask)
     }
   }
 }

@@ -19,27 +19,23 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import java.io.PrintStream;
-
 import static org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.NO_MONITOR;
+
+import java.io.PrintStream;
 
 /**
  * Common {@link ExecutionMonitor} implementations.
  */
-public class ExecutionMonitors
-{
-    private ExecutionMonitors()
-    {
-        throw new AssertionError( "No instances allowed" );
+public class ExecutionMonitors {
+    private ExecutionMonitors() {
+        throw new AssertionError("No instances allowed");
     }
 
-    public static ExecutionMonitor defaultVisible()
-    {
-        return defaultVisible( System.out );
+    public static ExecutionMonitor defaultVisible() {
+        return defaultVisible(System.out);
     }
 
-    public static ExecutionMonitor defaultVisible( PrintStream out )
-    {
-        return new HumanUnderstandableExecutionMonitor( NO_MONITOR, out );
+    public static ExecutionMonitor defaultVisible(PrintStream out) {
+        return new HumanUnderstandableExecutionMonitor(NO_MONITOR, out);
     }
 }

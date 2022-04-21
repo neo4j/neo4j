@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.internal.helpers.collection.Iterators
 
 import java.util
+
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
@@ -48,10 +49,10 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
     val nodeCount = 2
     val labels = Seq("RemoveMe", "MeToo", "AndMe")
     given {
-      nodeGraph(2, labels.toSeq:_*)
+      nodeGraph(2, labels.toSeq: _*)
     }
 
-    removeLabelsTest(Seq("RemoveMe", "MeToo", "AndMe"), nodeCount*labels.size)
+    removeLabelsTest(Seq("RemoveMe", "MeToo", "AndMe"), nodeCount * labels.size)
   }
 
   test("remove non-existing label") {
@@ -71,7 +72,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
       nodeGraph(2, "Cynist", "Nihilist")
     }
 
-    removeLabelsTest(Seq("Cynist"), 7+2)
+    removeLabelsTest(Seq("Cynist"), 7 + 2)
   }
 
   test("remove nodes on rhs of apply") {
@@ -154,7 +155,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .removeLabels("n", removeLabels:_*)
+      .removeLabels("n", removeLabels: _*)
       .allNodeScan("n")
       .build(readOnly = false)
 

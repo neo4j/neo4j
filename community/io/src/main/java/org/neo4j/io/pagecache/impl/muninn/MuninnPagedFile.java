@@ -19,13 +19,17 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static java.util.Arrays.fill;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.getInteger;
+
 import java.io.Flushable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
-
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
@@ -43,17 +47,13 @@ import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 
-import static java.util.Arrays.fill;
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.util.FeatureToggles.flag;
-import static org.neo4j.util.FeatureToggles.getInteger;
-
-final class MuninnPagedFile extends PageList implements PagedFile, Flushable
-{
+final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     static final int UNMAPPED_TTE = -1;
-    private static final boolean mergePagesOnFlush = flag( MuninnPagedFile.class, "mergePagesOnFlush", true );
-    private static final int maxChunkGrowth = getInteger( MuninnPagedFile.class, "maxChunkGrowth", 16 ); // One chunk is 32 MiB, by default.
-    private static final int translationTableChunkSizePower = getInteger( MuninnPagedFile.class, "translationTableChunkSizePower", 12 );
+    private static final boolean mergePagesOnFlush = flag(MuninnPagedFile.class, "mergePagesOnFlush", true);
+    private static final int maxChunkGrowth =
+            getInteger(MuninnPagedFile.class, "maxChunkGrowth", 16); // One chunk is 32 MiB, by default.
+    private static final int translationTableChunkSizePower =
+            getInteger(MuninnPagedFile.class, "translationTableChunkSizePower", 12);
     private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
     private static final long translationTableChunkSizeMask = translationTableChunkSize - 1;
 
@@ -88,8 +88,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     private volatile Exception closeStackTrace;
 
     // max modifier transaction id among evicted pages for this file
-    @SuppressWarnings( "unused" ) // accessed with VarHandle
+    @SuppressWarnings("unused") // accessed with VarHandle
     private volatile long highestEvictedTransactionId;
+
     private static final VarHandle HIGHEST_EVICTED_TRANSACTION_ID;
 
     /**
@@ -106,22 +107,20 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * MRRRRRRR RRRRRRRR IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII
      * 1        2        3        4        5        6        7        8        byte
      */
-    @SuppressWarnings( "unused" ) // accessed with VarHandle
+    @SuppressWarnings("unused") // accessed with VarHandle
     private volatile long headerState;
+
     private static final VarHandle HEADER_STATE;
 
-    static
-    {
-        try
-        {
+    static {
+        try {
             MethodHandles.Lookup l = MethodHandles.lookup();
-            HEADER_STATE = l.findVarHandle( MuninnPagedFile.class, "headerState", long.class );
-            HIGHEST_EVICTED_TRANSACTION_ID = l.findVarHandle( MuninnPagedFile.class, "highestEvictedTransactionId", long.class );
-            TRANSLATION_TABLE_ARRAY = MethodHandles.arrayElementVarHandle( int[].class );
-        }
-        catch ( ReflectiveOperationException e )
-        {
-            throw new ExceptionInInitializerError( e );
+            HEADER_STATE = l.findVarHandle(MuninnPagedFile.class, "headerState", long.class);
+            HIGHEST_EVICTED_TRANSACTION_ID =
+                    l.findVarHandle(MuninnPagedFile.class, "highestEvictedTransactionId", long.class);
+            TRANSLATION_TABLE_ARRAY = MethodHandles.arrayElementVarHandle(int[].class);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
         }
     }
 
@@ -142,21 +141,32 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param littleEndian
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
-    MuninnPagedFile( Path path, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
-                     boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, boolean preallocateStoreFiles, String databaseName,
-                     int faultLockStriping, IOController ioController, boolean littleEndian ) throws IOException
-    {
-        super( pageCache.pages );
+    MuninnPagedFile(
+            Path path,
+            MuninnPageCache pageCache,
+            int filePageSize,
+            PageSwapperFactory swapperFactory,
+            PageCacheTracer pageCacheTracer,
+            boolean createIfNotExists,
+            boolean truncateExisting,
+            boolean useDirectIo,
+            boolean preallocateStoreFiles,
+            String databaseName,
+            int faultLockStriping,
+            IOController ioController,
+            boolean littleEndian)
+            throws IOException {
+        super(pageCache.pages);
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
         this.fileReservedPageBytes = pageCache.pageReservedBytes();
         this.littleEndian = littleEndian;
-        this.cursorFactory = new CursorFactory( this );
+        this.cursorFactory = new CursorFactory(this);
         this.pageCacheTracer = pageCacheTracer;
-        this.pageFaultLatches = new LatchMap( faultLockStriping );
+        this.pageFaultLatches = new LatchMap(faultLockStriping);
         this.bufferFactory = pageCache.getBufferFactory();
-        this.databaseName = requireNonNull( databaseName );
-        this.ioController = requireNonNull( ioController );
+        this.databaseName = requireNonNull(databaseName);
+        this.ioController = requireNonNull(ioController);
 
         // The translation table is an array of arrays of integers that are either UNMAPPED_TTE, or the id of a page in
         // the page list. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
@@ -175,238 +185,199 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         // filled with UNMAPPED_TTE values, and then finally assigns the new outer array to the translationTable field
         // and releases the resize lock.
         PageEvictionCallback onEviction = this::evictPage;
-        swapper = swapperFactory.createPageSwapper( path, filePageSize, onEviction, createIfNotExists, useDirectIo, preallocateStoreFiles, ioController,
-                getSwappers() );
-        if ( truncateExisting )
-        {
+        swapper = swapperFactory.createPageSwapper(
+                path,
+                filePageSize,
+                onEviction,
+                createIfNotExists,
+                useDirectIo,
+                preallocateStoreFiles,
+                ioController,
+                getSwappers());
+        if (truncateExisting) {
             swapper.truncate();
         }
         long lastPageId = swapper.getLastPageId();
 
-        int initialChunks = Math.max( 1 + computeChunkId( lastPageId ), 1 ); // At least one initial chunk. Always enough for the whole file.
+        int initialChunks = Math.max(
+                1 + computeChunkId(lastPageId), 1); // At least one initial chunk. Always enough for the whole file.
         int[][] tt = new int[initialChunks][];
-        for ( int i = 0; i < initialChunks; i++ )
-        {
+        for (int i = 0; i < initialChunks; i++) {
             tt[i] = newChunk();
         }
         translationTable = tt;
 
-        initialiseLastPageId( lastPageId );
+        initialiseLastPageId(lastPageId);
         this.swapperId = swapper.swapperId();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + "[" + swapper.path() + ", reference count = " + getRefCount() + "]";
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags, CursorContext context )
-    {
+    public PageCursor io(long pageId, int pf_flags, CursorContext context) {
         int lockFlags = pf_flags & PF_LOCK_MASK;
         MuninnPageCursor cursor;
-        if ( lockFlags == PF_SHARED_READ_LOCK )
-        {
-            cursor = cursorFactory.takeReadCursor( pageId, pf_flags, context );
-        }
-        else if ( lockFlags == PF_SHARED_WRITE_LOCK )
-        {
-            cursor = cursorFactory.takeWriteCursor( pageId, pf_flags, context );
-        }
-        else
-        {
-            throw wrongLocksArgument( lockFlags );
+        if (lockFlags == PF_SHARED_READ_LOCK) {
+            cursor = cursorFactory.takeReadCursor(pageId, pf_flags, context);
+        } else if (lockFlags == PF_SHARED_WRITE_LOCK) {
+            cursor = cursorFactory.takeWriteCursor(pageId, pf_flags, context);
+        } else {
+            throw wrongLocksArgument(lockFlags);
         }
 
         cursor.rewind();
-        if ( ( pf_flags & PF_READ_AHEAD ) == PF_READ_AHEAD && ( pf_flags & PF_NO_FAULT ) != PF_NO_FAULT )
-        {
-            pageCache.startPreFetching( cursor, cursorFactory );
+        if ((pf_flags & PF_READ_AHEAD) == PF_READ_AHEAD && (pf_flags & PF_NO_FAULT) != PF_NO_FAULT) {
+            pageCache.startPreFetching(cursor, cursorFactory);
         }
         return cursor;
     }
 
-    private static IllegalArgumentException wrongLocksArgument( int lockFlags )
-    {
-        if ( lockFlags == 0 )
-        {
-            return new IllegalArgumentException(
-                    "Must specify either PF_SHARED_WRITE_LOCK or PF_SHARED_READ_LOCK" );
-        }
-        else
-        {
-            return new IllegalArgumentException(
-                    "Cannot specify both PF_SHARED_WRITE_LOCK and PF_SHARED_READ_LOCK" );
+    private static IllegalArgumentException wrongLocksArgument(int lockFlags) {
+        if (lockFlags == 0) {
+            return new IllegalArgumentException("Must specify either PF_SHARED_WRITE_LOCK or PF_SHARED_READ_LOCK");
+        } else {
+            return new IllegalArgumentException("Cannot specify both PF_SHARED_WRITE_LOCK and PF_SHARED_READ_LOCK");
         }
     }
 
     @Override
-    public int pageSize()
-    {
+    public int pageSize() {
         return filePageSize;
     }
 
     @Override
-    public int payloadSize()
-    {
+    public int payloadSize() {
         return filePageSize - fileReservedPageBytes;
     }
 
     @Override
-    public long fileSize() throws FileIsNotMappedException
-    {
+    public long fileSize() throws FileIsNotMappedException {
         final long lastPageId = getLastPageId();
-        if ( lastPageId < 0 )
-        {
+        if (lastPageId < 0) {
             return 0L;
         }
         return (lastPageId + 1) * pageSize();
     }
 
     @Override
-    public Path path()
-    {
+    public Path path() {
         return swapper.path();
     }
 
     @Override
-    public void close()
-    {
-        pageCache.unmap( this );
+    public void close() {
+        pageCache.unmap(this);
     }
 
-    void closeSwapper() throws IOException
-    {
+    void closeSwapper() throws IOException {
         // We don't set closeStackTrace in close(), because the reference count may keep the file open.
         // But if we get here, to close the swapper, then we are definitely unmapping!
-        closeStackTrace = new Exception( "tracing paged file closing" );
+        closeStackTrace = new Exception("tracing paged file closing");
 
         evictPages();
-        if ( !deleteOnClose )
-        {
+        if (!deleteOnClose) {
             swapper.close();
-        }
-        else
-        {
+        } else {
             swapper.closeAndDelete();
         }
-        pageCache.sweep( getSwappers() );
+        pageCache.sweep(getSwappers());
     }
 
-    private void evictPages() throws IOException
-    {
+    private void evictPages() throws IOException {
         long totalPages = 0;
         long evictedPages = 0;
         PageList pages = pageCache.pages;
-        try ( EvictionRunEvent evictionEvent = pageCacheTracer.beginEviction() )
-        {
+        try (EvictionRunEvent evictionEvent = pageCacheTracer.beginEviction()) {
             long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
             int[][] tt = this.translationTable;
-            for ( int[] chunk : tt )
-            {
-                for ( int i = 0; i < chunk.length; i++ )
-                {
+            for (int[] chunk : tt) {
+                for (int i = 0; i < chunk.length; i++) {
                     filePageId++;
-                    int chunkIndex = computeChunkIndex( filePageId );
+                    int chunkIndex = computeChunkIndex(filePageId);
 
-                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex );
-                    if ( pageId != UNMAPPED_TTE )
-                    {
-                        long pageRef = deref( pageId );
-                        // try to evict page, but we can fail if there is a race or if we still have cursor open for some page
-                        // in this case we will deal with this page later on postponed sweep or eviction will do its business
-                        if ( PageList.isLoaded( pageRef ) )
-                        {
-                            if ( PageList.decrementUsage( pageRef ) && pages.tryEvict( pageRef, evictionEvent ) )
-                            {
-                                pageCache.addFreePageToFreelist( pageRef, evictionEvent );
+                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+                    if (pageId != UNMAPPED_TTE) {
+                        long pageRef = deref(pageId);
+                        // try to evict page, but we can fail if there is a race or if we still have cursor open for
+                        // some page
+                        // in this case we will deal with this page later on postponed sweep or eviction will do its
+                        // business
+                        if (PageList.isLoaded(pageRef)) {
+                            if (PageList.decrementUsage(pageRef) && pages.tryEvict(pageRef, evictionEvent)) {
+                                pageCache.addFreePageToFreelist(pageRef, evictionEvent);
                                 evictedPages++;
                             }
                             totalPages++;
                         }
-                        TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, UNMAPPED_TTE );
+                        TRANSLATION_TABLE_ARRAY.setVolatile(chunk, chunkIndex, UNMAPPED_TTE);
                     }
                 }
             }
         }
         SwapperSet swappers = getSwappers();
-        if ( totalPages == evictedPages )
-        {
-            swappers.free( swapperId );
-        }
-        else
-        {
-            swappers.postponedFree( swapperId );
+        if (totalPages == evictedPages) {
+            swappers.free(swapperId);
+        } else {
+            swappers.postponedFree(swapperId);
         }
     }
 
     @Override
-    public void flushAndForce() throws IOException
-    {
-        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper );
-              var buffer = bufferFactory.createBuffer() )
-        {
-            flushAndForceInternal( flushEvent, false, ioController, buffer );
+    public void flushAndForce() throws IOException {
+        try (MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush(swapper);
+                var buffer = bufferFactory.createBuffer()) {
+            flushAndForceInternal(flushEvent, false, ioController, buffer);
         }
         pageCache.clearEvictorException();
     }
 
-    void flushAndForceForClose() throws IOException
-    {
-        if ( deleteOnClose )
-        {
+    void flushAndForceForClose() throws IOException {
+        if (deleteOnClose) {
             // No need to spend time flushing data to a file we're going to delete anyway.
             // However, we still have to mark the dirtied pages as clean since evicting would otherwise try to flush
             // these pages, and would fail because the file is closed, and we cannot allow that to happen.
             markAllDirtyPagesAsClean();
             return;
         }
-        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper );
-              var buffer = bufferFactory.createBuffer() )
-        {
-            flushAndForceInternal( flushEvent, true, ioController, buffer );
+        try (MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush(swapper);
+                var buffer = bufferFactory.createBuffer()) {
+            flushAndForceInternal(flushEvent, true, ioController, buffer);
         }
         pageCache.clearEvictorException();
     }
 
-    private void markAllDirtyPagesAsClean()
-    {
+    private void markAllDirtyPagesAsClean() {
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         int[][] tt = this.translationTable;
-        for ( int[] chunk : tt )
-        {
+        for (int[] chunk : tt) {
             chunkLoop:
-            for ( int i = 0; i < chunk.length; i++ )
-            {
+            for (int i = 0; i < chunk.length; i++) {
                 filePageId++;
-                int chunkIndex = computeChunkIndex( filePageId );
+                int chunkIndex = computeChunkIndex(filePageId);
 
                 // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
                 // in getting a lock on all available pages.
-                for (;;)
-                {
-                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex );
-                    if ( pageId != UNMAPPED_TTE )
-                    {
-                        long pageRef = deref( pageId );
-                        long stamp = tryOptimisticReadLock( pageRef );
-                        if ( (!isModified( pageRef )) && validateReadLock( pageRef, stamp ) )
-                        {
+                for (; ; ) {
+                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+                    if (pageId != UNMAPPED_TTE) {
+                        long pageRef = deref(pageId);
+                        long stamp = tryOptimisticReadLock(pageRef);
+                        if ((!isModified(pageRef)) && validateReadLock(pageRef, stamp)) {
                             // We got a valid read, and the page isn't dirty, so we skip it.
                             continue chunkLoop;
                         }
 
-                        if ( !tryExclusiveLock( pageRef ) )
-                        {
+                        if (!tryExclusiveLock(pageRef)) {
                             continue;
                         }
-                        if ( isBoundTo( pageRef, swapperId, filePageId ) && isModified( pageRef ) )
-                        {
+                        if (isBoundTo(pageRef, swapperId, filePageId) && isModified(pageRef)) {
                             // The page is still bound to the expected file and file page id after we locked it,
                             // so we didn't race with eviction and faulting, and the page is dirty.
-                            explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
-                            unlockExclusive( pageRef );
+                            explicitlyMarkPageUnmodifiedUnderExclusiveLock(pageRef);
+                            unlockExclusive(pageRef);
                             continue chunkLoop;
                         }
                     }
@@ -417,21 +388,17 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
     }
 
-    void flushAndForceInternal( MajorFlushEvent flushEvent, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer )
-            throws IOException
-    {
-        try
-        {
-            doFlushAndForceInternal( flushEvent, forClosing, limiter, ioBuffer );
-        }
-        catch ( ClosedChannelException e )
-        {
-            if ( getRefCount() > 0 )
-            {
+    void flushAndForceInternal(
+            MajorFlushEvent flushEvent, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer)
+            throws IOException {
+        try {
+            doFlushAndForceInternal(flushEvent, forClosing, limiter, ioBuffer);
+        } catch (ClosedChannelException e) {
+            if (getRefCount() > 0) {
                 // The file is not supposed to be closed, since we have a positive ref-count, yet we got a
                 // ClosedChannelException anyway? It's an odd situation, so let's tell the outside world about
                 // this failure.
-                e.addSuppressed( closeStackTrace );
+                e.addSuppressed(closeStackTrace);
                 throw e;
             }
             // Otherwise: The file was closed while we were trying to flush it. Since unmapping implies a flush
@@ -440,9 +407,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
     }
 
-    private void doFlushAndForceInternal( MajorFlushEvent flushes, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer )
-            throws IOException
-    {
+    private void doFlushAndForceInternal(
+            MajorFlushEvent flushes, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer)
+            throws IOException {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
         long[] pages = new long[translationTableChunkSize];
         long[] flushStamps = forClosing ? null : new long[translationTableChunkSize];
@@ -452,11 +419,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         int[][] tt = this.translationTable;
         boolean useTemporaryBuffer = ioBuffer.isEnabled();
 
-        flushes.startFlush( tt );
+        flushes.startFlush(tt);
 
-        for ( int[] chunk : tt )
-        {
-            var chunkEvent = flushes.startChunk( chunk );
+        for (int[] chunk : tt) {
+            var chunkEvent = flushes.startChunk(chunk);
             long notModifiedPages = 0;
             long flushPerChunk = 0;
             long buffersPerChunk = 0;
@@ -471,82 +437,69 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             int mergedPages = 0;
 
             boolean fillingDirtyBuffer = false;
-            if ( useTemporaryBuffer )
-            {
-                // in case when we use temp intermediate buffer we have only buffer and its address and length are always stored in arrays with index 0
+            if (useTemporaryBuffer) {
+                // in case when we use temp intermediate buffer we have only buffer and its address and length are
+                // always stored in arrays with index 0
                 bufferAddresses[0] = ioBuffer.getAddress();
                 bufferLengths[0] = 0;
                 buffersPerChunk = 1;
             }
 
             chunkLoop:
-            for ( int i = 0; i < chunk.length; i++ )
-            {
+            for (int i = 0; i < chunk.length; i++) {
                 filePageId++;
-                int chunkIndex = computeChunkIndex( filePageId );
+                int chunkIndex = computeChunkIndex(filePageId);
 
                 // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
                 // in getting a lock on all available pages.
-                for ( ; ; )
-                {
-                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex );
-                    if ( pageId != UNMAPPED_TTE )
-                    {
-                        long pageRef = deref( pageId );
-                        long stamp = tryOptimisticReadLock( pageRef );
-                        if ( (!isModified( pageRef ) && !fillingDirtyBuffer) && validateReadLock( pageRef, stamp ) )
-                        {
+                for (; ; ) {
+                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+                    if (pageId != UNMAPPED_TTE) {
+                        long pageRef = deref(pageId);
+                        long stamp = tryOptimisticReadLock(pageRef);
+                        if ((!isModified(pageRef) && !fillingDirtyBuffer) && validateReadLock(pageRef, stamp)) {
                             notModifiedPages++;
                             break; // not modified, continue with the chunk
                         }
 
                         long flushStamp = 0;
-                        if ( !(forClosing ? tryExclusiveLock( pageRef ) : ((flushStamp = tryFlushLock( pageRef )) != 0)) )
-                        {
+                        if (!(forClosing ? tryExclusiveLock(pageRef) : ((flushStamp = tryFlushLock(pageRef)) != 0))) {
                             continue; // retry lock
                         }
-                        if ( isBoundTo( pageRef, swapperId, filePageId ) && (isModified( pageRef ) || fillingDirtyBuffer) )
-                        {
-                            // we should try to merge pages into buffer even if they are not modified only when we using intermediate temporary buffer
+                        if (isBoundTo(pageRef, swapperId, filePageId) && (isModified(pageRef) || fillingDirtyBuffer)) {
+                            // we should try to merge pages into buffer even if they are not modified only when we using
+                            // intermediate temporary buffer
                             fillingDirtyBuffer = useTemporaryBuffer;
                             // The page is still bound to the expected file and file page id after we locked it,
                             // so we didn't race with eviction and faulting, and the page is dirty.
                             // So we add it to our IO vector.
                             pages[pagesGrabbed] = pageRef;
-                            if ( !forClosing )
-                            {
+                            if (!forClosing) {
                                 flushStamps[pagesGrabbed] = flushStamp;
                             }
                             pagesGrabbed++;
-                            long address = getAddress( pageRef );
-                            if ( useTemporaryBuffer )
-                            {
-                                // in case we use temp buffer to combine pages address and buffer lengths are located in corresponding arrays and have
+                            long address = getAddress(pageRef);
+                            if (useTemporaryBuffer) {
+                                // in case we use temp buffer to combine pages address and buffer lengths are located in
+                                // corresponding arrays and have
                                 // index 0.
-                                // Reset of accumulated effective length of temp buffer happens after intermediate vectored flush if any
-                                UnsafeUtil.copyMemory( address, bufferAddresses[0] + bufferLengths[0], filePageSize );
+                                // Reset of accumulated effective length of temp buffer happens after intermediate
+                                // vectored flush if any
+                                UnsafeUtil.copyMemory(address, bufferAddresses[0] + bufferLengths[0], filePageSize);
                                 bufferLengths[0] += filePageSize;
                                 numberOfBuffers = 1;
-                                if ( !ioBuffer.hasMoreCapacity( bufferLengths[0], filePageSize ) )
-                                {
+                                if (!ioBuffer.hasMoreCapacity(bufferLengths[0], filePageSize)) {
                                     break; // continue to flush
-                                }
-                                else
-                                {
+                                } else {
                                     continue chunkLoop; // go to next page
                                 }
-                            }
-                            else
-                            {
-                                if ( mergePagesOnFlush && nextSequentialAddress == address )
-                                {
+                            } else {
+                                if (mergePagesOnFlush && nextSequentialAddress == address) {
                                     // do not add new address, only bump length of previous buffer
                                     bufferLengths[lastBufferIndex] += filePageSize;
                                     mergedPages++;
                                     mergesPerChunk++;
-                                }
-                                else
-                                {
+                                } else {
                                     // add new address
                                     bufferAddresses[numberOfBuffers] = address;
                                     lastBufferIndex = numberOfBuffers;
@@ -557,19 +510,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                                 nextSequentialAddress = address + filePageSize;
                                 continue chunkLoop; // go to next page
                             }
-                        }
-                        else
-                        {
-                            if ( forClosing )
-                            {
-                                unlockExclusive( pageRef );
+                        } else {
+                            if (forClosing) {
+                                unlockExclusive(pageRef);
+                            } else {
+                                unlockFlush(pageRef, flushStamp, false);
                             }
-                            else
-                            {
-                                unlockFlush( pageRef, flushStamp, false );
-                            }
-                            if ( useTemporaryBuffer && pagesGrabbed > 0 )
-                            {
+                            if (useTemporaryBuffer && pagesGrabbed > 0) {
                                 // flush previous grabbed region
                                 break;
                             }
@@ -577,10 +524,18 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                     }
                     break;
                 }
-                if ( pagesGrabbed > 0 )
-                {
-                    vectoredFlush( pages, bufferAddresses, flushStamps, bufferLengths, numberOfBuffers, pagesGrabbed, mergedPages, flushes, forClosing );
-                    limiter.maybeLimitIO( numberOfBuffers, this, flushes );
+                if (pagesGrabbed > 0) {
+                    vectoredFlush(
+                            pages,
+                            bufferAddresses,
+                            flushStamps,
+                            bufferLengths,
+                            numberOfBuffers,
+                            pagesGrabbed,
+                            mergedPages,
+                            flushes,
+                            forClosing);
+                    limiter.maybeLimitIO(numberOfBuffers, this, flushes);
                     pagesGrabbed = 0;
                     nextSequentialAddress = -1;
                     numberOfBuffers = 0;
@@ -591,204 +546,182 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                     bufferLengths[0] = 0;
                 }
             }
-            if ( pagesGrabbed > 0 )
-            {
-                vectoredFlush( pages, bufferAddresses, flushStamps, bufferLengths, numberOfBuffers, pagesGrabbed, mergedPages, flushes, forClosing );
-                limiter.maybeLimitIO( numberOfBuffers, this, flushes );
+            if (pagesGrabbed > 0) {
+                vectoredFlush(
+                        pages,
+                        bufferAddresses,
+                        flushStamps,
+                        bufferLengths,
+                        numberOfBuffers,
+                        pagesGrabbed,
+                        mergedPages,
+                        flushes,
+                        forClosing);
+                limiter.maybeLimitIO(numberOfBuffers, this, flushes);
                 flushPerChunk++;
             }
-            chunkEvent.chunkFlushed( notModifiedPages, flushPerChunk, buffersPerChunk, mergesPerChunk );
+            chunkEvent.chunkFlushed(notModifiedPages, flushPerChunk, buffersPerChunk, mergesPerChunk);
         }
 
         swapper.force();
     }
 
     private void vectoredFlush(
-            long[] pages, long[] bufferAddresses, long[] flushStamps, int[] bufferLengths, int numberOfBuffers, int pagesToFlush, int pagesMerged,
-            MajorFlushEvent flushEvent, boolean forClosing ) throws IOException
-    {
-        try ( var flush = flushEvent.beginFlush( pages, swapper, this, pagesToFlush, pagesMerged ) )
-        {
+            long[] pages,
+            long[] bufferAddresses,
+            long[] flushStamps,
+            int[] bufferLengths,
+            int numberOfBuffers,
+            int pagesToFlush,
+            int pagesMerged,
+            MajorFlushEvent flushEvent,
+            boolean forClosing)
+            throws IOException {
+        try (var flush = flushEvent.beginFlush(pages, swapper, this, pagesToFlush, pagesMerged)) {
             boolean successful = false;
-            try
-            {
+            try {
                 // Write the pages vector
                 long firstPageRef = pages[0];
-                long startFilePageId = getFilePageId( firstPageRef );
-                long bytesWritten = swapper.write( startFilePageId, bufferAddresses, bufferLengths, numberOfBuffers, pagesToFlush );
+                long startFilePageId = getFilePageId(firstPageRef);
+                long bytesWritten =
+                        swapper.write(startFilePageId, bufferAddresses, bufferLengths, numberOfBuffers, pagesToFlush);
 
                 // Update the flush event
-                flush.addBytesWritten( bytesWritten );
-                flush.addPagesFlushed( pagesToFlush );
-                flush.addPagesMerged( pagesMerged );
+                flush.addBytesWritten(bytesWritten);
+                flush.addPagesFlushed(pagesToFlush);
+                flush.addPagesMerged(pagesMerged);
                 successful = true;
 
                 // There are now 0 'grabbed' pages
-            }
-            catch ( IOException ioe )
-            {
-                flush.setException( ioe );
+            } catch (IOException ioe) {
+                flush.setException(ioe);
                 throw ioe;
-            }
-            finally
-            {
+            } finally {
                 // Always unlock all the pages in the vector
-                if ( forClosing )
-                {
-                    for ( int i = 0; i < pagesToFlush; i++ )
-                    {
+                if (forClosing) {
+                    for (int i = 0; i < pagesToFlush; i++) {
                         long pageRef = pages[i];
-                        if ( successful )
-                        {
-                            explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+                        if (successful) {
+                            explicitlyMarkPageUnmodifiedUnderExclusiveLock(pageRef);
                         }
-                        unlockExclusive( pageRef );
+                        unlockExclusive(pageRef);
                     }
-                }
-                else
-                {
-                    for ( int i = 0; i < pagesToFlush; i++ )
-                    {
-                        unlockFlush( pages[i], flushStamps[i], successful );
+                } else {
+                    for (int i = 0; i < pagesToFlush; i++) {
+                        unlockFlush(pages[i], flushStamps[i], successful);
                     }
                 }
             }
         }
     }
 
-    boolean flushLockedPage( long pageRef, long filePageId )
-    {
+    boolean flushLockedPage(long pageRef, long filePageId) {
         boolean success = false;
-        try ( var majorFlushEvent = pageCacheTracer.beginFileFlush( swapper );
-              var flushEvent = majorFlushEvent.beginFlush( pageRef, swapper, this ) )
-        {
-            long address = getAddress( pageRef );
-            try
-            {
-                long bytesWritten = swapper.write( filePageId, address );
-                flushEvent.addBytesWritten( bytesWritten );
-                flushEvent.addPagesFlushed( 1 );
+        try (var majorFlushEvent = pageCacheTracer.beginFileFlush(swapper);
+                var flushEvent = majorFlushEvent.beginFlush(pageRef, swapper, this)) {
+            long address = getAddress(pageRef);
+            try {
+                long bytesWritten = swapper.write(filePageId, address);
+                flushEvent.addBytesWritten(bytesWritten);
+                flushEvent.addPagesFlushed(1);
                 success = true;
-            }
-            catch ( IOException e )
-            {
-                flushEvent.setException( e );
+            } catch (IOException e) {
+                flushEvent.setException(e);
             }
         }
         return success;
     }
 
     @Override
-    public void flush() throws IOException
-    {
+    public void flush() throws IOException {
         swapper.force();
     }
 
     @Override
-    public long getLastPageId() throws FileIsNotMappedException
-    {
+    public long getLastPageId() throws FileIsNotMappedException {
         long state = getHeaderState();
-        if ( refCountOf( state ) == 0 )
-        {
+        if (refCountOf(state) == 0) {
             throw fileIsNotMappedException();
         }
         return state & headerStateLastPageIdMask;
     }
 
-    private FileIsNotMappedException fileIsNotMappedException()
-    {
-        FileIsNotMappedException exception = new FileIsNotMappedException( path() );
+    private FileIsNotMappedException fileIsNotMappedException() {
+        FileIsNotMappedException exception = new FileIsNotMappedException(path());
         Exception closedBy = closeStackTrace;
-        if ( closedBy != null )
-        {
-            exception.addSuppressed( closedBy );
+        if (closedBy != null) {
+            exception.addSuppressed(closedBy);
         }
         return exception;
     }
 
-    private long getHeaderState()
-    {
-        return (long) HEADER_STATE.getVolatile( this );
+    private long getHeaderState() {
+        return (long) HEADER_STATE.getVolatile(this);
     }
 
-    private static long refCountOf( long state )
-    {
+    private static long refCountOf(long state) {
         return (state & headerStateRefCountMask) >>> headerStateRefCountShift;
     }
 
-    private void initialiseLastPageId( long lastPageIdFromFile )
-    {
-        if ( lastPageIdFromFile < 0 )
-        {
+    private void initialiseLastPageId(long lastPageIdFromFile) {
+        if (lastPageIdFromFile < 0) {
             // MIN_VALUE only has the sign bit raised, and the rest of the bits are zeros.
-            HEADER_STATE.setVolatile( this, Long.MIN_VALUE );
-        }
-        else
-        {
-            HEADER_STATE.setVolatile( this, lastPageIdFromFile );
+            HEADER_STATE.setVolatile(this, Long.MIN_VALUE);
+        } else {
+            HEADER_STATE.setVolatile(this, lastPageIdFromFile);
         }
     }
 
     /**
      * Make sure that the lastPageId is at least the given pageId
      */
-    void increaseLastPageIdTo( long newLastPageId )
-    {
+    void increaseLastPageIdTo(long newLastPageId) {
         long current;
         long update;
         long lastPageId;
-        do
-        {
+        do {
             current = getHeaderState();
             update = newLastPageId + (current & headerStateRefCountMask);
             lastPageId = current & headerStateLastPageIdMask;
-        }
-        while ( lastPageId < newLastPageId && !HEADER_STATE.weakCompareAndSet( this, current, update ) );
+        } while (lastPageId < newLastPageId && !HEADER_STATE.weakCompareAndSet(this, current, update));
     }
 
     /**
      * Atomically increment the reference count for this mapped file.
      */
-    void incrementRefCount()
-    {
+    void incrementRefCount() {
         long current;
         long update;
-        do
-        {
+        do {
             current = getHeaderState();
-            long count = refCountOf( current ) + 1;
-            if ( count > headerStateRefCountMax )
-            {
-                throw new IllegalStateException( "Cannot map file because reference counter would overflow. " +
-                                                 "Maximum reference count is " + headerStateRefCountMax + ". " +
-                                                 "File is " + swapper.path().toAbsolutePath() );
+            long count = refCountOf(current) + 1;
+            if (count > headerStateRefCountMax) {
+                throw new IllegalStateException(
+                        "Cannot map file because reference counter would overflow. " + "Maximum reference count is "
+                                + headerStateRefCountMax + ". " + "File is "
+                                + swapper.path().toAbsolutePath());
             }
             update = (current & headerStateLastPageIdMask) + (count << headerStateRefCountShift);
-        }
-        while ( !HEADER_STATE.weakCompareAndSet( this, current, update ) );
+        } while (!HEADER_STATE.weakCompareAndSet(this, current, update));
     }
 
     /**
      * Atomically decrement the reference count. Returns true if this was the
      * last reference.
      */
-    boolean decrementRefCount()
-    {
+    boolean decrementRefCount() {
         long current;
         long update;
         long count;
-        do
-        {
+        do {
             current = getHeaderState();
-            count = refCountOf( current ) - 1;
-            if ( count < 0 )
-            {
-                throw new IllegalStateException( "File has already been closed and unmapped. " +
-                                                 "It cannot be closed any further." );
+            count = refCountOf(current) - 1;
+            if (count < 0) {
+                throw new IllegalStateException(
+                        "File has already been closed and unmapped. " + "It cannot be closed any further.");
             }
             update = (current & headerStateLastPageIdMask) + (count << headerStateRefCountShift);
-        }
-        while ( !HEADER_STATE.weakCompareAndSet( this, current, update ) );
+        } while (!HEADER_STATE.weakCompareAndSet(this, current, update));
         return count == 0;
     }
 
@@ -796,32 +729,27 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * Get the current ref-count. Useful for checking if this PagedFile should
      * be considered unmapped.
      */
-    int getRefCount()
-    {
-        return (int) refCountOf( getHeaderState() );
+    int getRefCount() {
+        return (int) refCountOf(getHeaderState());
     }
 
     @Override
-    public void setDeleteOnClose( boolean deleteOnClose )
-    {
+    public void setDeleteOnClose(boolean deleteOnClose) {
         this.deleteOnClose = deleteOnClose;
     }
 
     @Override
-    public boolean isDeleteOnClose()
-    {
+    public boolean isDeleteOnClose() {
         return deleteOnClose;
     }
 
     @Override
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return databaseName;
     }
 
     @Override
-    public PageFileCounters pageFileCounters()
-    {
+    public PageFileCounters pageFileCounters() {
         return swapper.fileSwapperTracer();
     }
 
@@ -830,43 +758,37 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * none are immediately available.
      * @param faultEvent The trace event for the current page fault.
      */
-    long grabFreeAndExclusivelyLockedPage( PageFaultEvent faultEvent ) throws IOException
-    {
-        return pageCache.grabFreeAndExclusivelyLockedPage( faultEvent );
+    long grabFreeAndExclusivelyLockedPage(PageFaultEvent faultEvent) throws IOException {
+        return pageCache.grabFreeAndExclusivelyLockedPage(faultEvent);
     }
 
     /**
      * Remove the mapping of the given filePageId from the translation table, and return the evicted page object.
      * @param filePageId The id of the file page to evict.
      */
-    private void evictPage( long filePageId )
-    {
-        int chunkId = computeChunkId( filePageId );
-        int chunkIndex = computeChunkIndex( filePageId );
+    private void evictPage(long filePageId) {
+        int chunkId = computeChunkId(filePageId);
+        int chunkIndex = computeChunkIndex(filePageId);
         int[] chunk = translationTable[chunkId];
 
-        int mappedPageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex );
-        long pageRef = deref( mappedPageId );
-        setHighestEvictedTransactionId( getAndResetLastModifiedTransactionId( pageRef ) );
-        TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, UNMAPPED_TTE );
+        int mappedPageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+        long pageRef = deref(mappedPageId);
+        setHighestEvictedTransactionId(getAndResetLastModifiedTransactionId(pageRef));
+        TRANSLATION_TABLE_ARRAY.setVolatile(chunk, chunkIndex, UNMAPPED_TTE);
     }
 
-    private void setHighestEvictedTransactionId( long modifiedTransactionId )
-    {
+    private void setHighestEvictedTransactionId(long modifiedTransactionId) {
         long current;
-        do
-        {
-            current = (long) HIGHEST_EVICTED_TRANSACTION_ID.getVolatile( this );
-            if ( current >= modifiedTransactionId )
-            {
+        do {
+            current = (long) HIGHEST_EVICTED_TRANSACTION_ID.getVolatile(this);
+            if (current >= modifiedTransactionId) {
                 return;
             }
-        } while ( !HIGHEST_EVICTED_TRANSACTION_ID.weakCompareAndSet( this, current, modifiedTransactionId ) );
+        } while (!HIGHEST_EVICTED_TRANSACTION_ID.weakCompareAndSet(this, current, modifiedTransactionId));
     }
 
-    long getHighestEvictedTransactionId()
-    {
-        return (long) HIGHEST_EVICTED_TRANSACTION_ID.getVolatile( this );
+    long getHighestEvictedTransactionId() {
+        return (long) HIGHEST_EVICTED_TRANSACTION_ID.getVolatile(this);
     }
 
     /**
@@ -874,27 +796,23 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param maxChunkId The new translation table must be big enough to include at least this chunkId.
      * @return A reference to the expanded transaction table.
      */
-    synchronized int[][] expandCapacity( int maxChunkId ) throws IOException
-    {
+    synchronized int[][] expandCapacity(int maxChunkId) throws IOException {
         int[][] tt = translationTable;
-        if ( tt.length <= maxChunkId )
-        {
-            int newLength = computeNewRootTableLength( maxChunkId );
+        if (tt.length <= maxChunkId) {
+            int newLength = computeNewRootTableLength(maxChunkId);
             int[][] ntt = new int[newLength][];
-            System.arraycopy( tt, 0, ntt, 0, tt.length );
-            for ( int i = tt.length; i < ntt.length; i++ )
-            {
+            System.arraycopy(tt, 0, ntt, 0, tt.length);
+            for (int i = tt.length; i < ntt.length; i++) {
                 ntt[i] = newChunk();
             }
             tt = ntt;
-            if ( swapper.canAllocate() )
-            {
+            if (swapper.canAllocate()) {
                 // Hint to the file system that we've grown our file.
                 // This should reduce our tendency to fragment files.
                 long newFileSize = tt.length; // New number of chunks.
                 newFileSize *= translationTableChunkSize; // Pages per chunk.
                 newFileSize *= filePageSize; // Bytes per page.
-                swapper.allocate( newFileSize );
+                swapper.allocate(newFileSize);
             }
         }
         // It is important to publish the extended table only
@@ -908,27 +826,24 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return tt;
     }
 
-    private static int[] newChunk()
-    {
+    private static int[] newChunk() {
         int[] chunk = new int[translationTableChunkSize];
-        fill( chunk, UNMAPPED_TTE );
+        fill(chunk, UNMAPPED_TTE);
         return chunk;
     }
 
-    private static int computeNewRootTableLength( int maxChunkId )
-    {
-        // Grow by approximate 10% but always by at least one full chunk, and no more than maxChunkGrowth (16 by default, equivalent to 512 MiB).
+    private static int computeNewRootTableLength(int maxChunkId) {
+        // Grow by approximate 10% but always by at least one full chunk, and no more than maxChunkGrowth (16 by
+        // default, equivalent to 512 MiB).
         int next = 1 + (int) (maxChunkId * 1.1);
-        return Math.min( next, maxChunkId + maxChunkGrowth );
+        return Math.min(next, maxChunkId + maxChunkGrowth);
     }
 
-    static int computeChunkId( long filePageId )
-    {
+    static int computeChunkId(long filePageId) {
         return (int) (filePageId >>> translationTableChunkSizePower);
     }
 
-    static int computeChunkIndex( long filePageId )
-    {
+    static int computeChunkIndex(long filePageId) {
         return (int) (filePageId & translationTableChunkSizeMask);
     }
 }

@@ -31,7 +31,7 @@ trait Neo4jCsvFileCreationAdapter extends CsvFileCreationSupport with TempFileCr
 
   private val csvSeparator: String = ","
 
-  private def printCypherValueRecordsAsCSV(contents: CypherValueRecords)(writer: PrintWriter) : Unit = {
+  private def printCypherValueRecordsAsCSV(contents: CypherValueRecords)(writer: PrintWriter): Unit = {
     writer.println(contents.header.mkString(csvSeparator))
 
     contents.rows

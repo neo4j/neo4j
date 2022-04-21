@@ -19,31 +19,23 @@
  */
 package org.neo4j.codegen;
 
-abstract class Lookup<T>
-{
-    static Lookup<FieldReference> field( final TypeReference type, final String name )
-    {
-        return new Lookup<>()
-        {
+abstract class Lookup<T> {
+    static Lookup<FieldReference> field(final TypeReference type, final String name) {
+        return new Lookup<>() {
             @Override
-            FieldReference lookup( CodeBlock method )
-            {
-                FieldReference field = method.clazz.getField( name );
-                if ( field == null )
-                {
+            FieldReference lookup(CodeBlock method) {
+                FieldReference field = method.clazz.getField(name);
+                if (field == null) {
                     throw new IllegalArgumentException(
-                            method.clazz.handle() + " has no such field: " + name + " of type " + type );
-                }
-                else if ( !type.equals( field.type() ) )
-                {
-                    throw new IllegalArgumentException(
-                            method.clazz.handle() + " has no such field: " + name + " of type " + type +
-                            ", actual field has type: " + field.type() );
+                            method.clazz.handle() + " has no such field: " + name + " of type " + type);
+                } else if (!type.equals(field.type())) {
+                    throw new IllegalArgumentException(method.clazz.handle() + " has no such field: " + name
+                            + " of type " + type + ", actual field has type: " + field.type());
                 }
                 return field;
             }
         };
     }
 
-    abstract T lookup( CodeBlock method );
+    abstract T lookup(CodeBlock method);
 }

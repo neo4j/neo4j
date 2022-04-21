@@ -22,14 +22,12 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.internal.helpers.Format;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.time.SystemNanoClock;
 
-class TimeCheckPointThreshold extends AbstractCheckPointThreshold
-{
+class TimeCheckPointThreshold extends AbstractCheckPointThreshold {
     private volatile long lastCheckPointedTransactionId;
     private volatile Duration timeout;
     private volatile Stopwatch stopWatch;
@@ -37,45 +35,44 @@ class TimeCheckPointThreshold extends AbstractCheckPointThreshold
     private final long timeMillisThreshold;
     private final SystemNanoClock clock;
 
-    TimeCheckPointThreshold( long thresholdMillis, SystemNanoClock clock )
-    {
-        super( "every " + formatDuration( thresholdMillis ) + " threshold" );
+    TimeCheckPointThreshold(long thresholdMillis, SystemNanoClock clock) {
+        super("every " + formatDuration(thresholdMillis) + " threshold");
         this.timeMillisThreshold = thresholdMillis;
         this.clock = clock;
         // The random start offset means database in a cluster will not all check-point at the same time.
-        long randomStartOffset = thresholdMillis > 0 ? ThreadLocalRandom.current().nextLong( thresholdMillis ) : 0;
-        this.timeout = Duration.ofMillis( thresholdMillis + randomStartOffset );
+        long randomStartOffset =
+                thresholdMillis > 0 ? ThreadLocalRandom.current().nextLong(thresholdMillis) : 0;
+        this.timeout = Duration.ofMillis(thresholdMillis + randomStartOffset);
         this.stopWatch = clock.startStopWatch();
     }
 
-    private static String formatDuration( long thresholdMillis )
-    {
-        return Format.duration( thresholdMillis, TimeUnit.DAYS, TimeUnit.MILLISECONDS, unit -> ' ' + unit.name().toLowerCase() );
+    private static String formatDuration(long thresholdMillis) {
+        return Format.duration(
+                thresholdMillis,
+                TimeUnit.DAYS,
+                TimeUnit.MILLISECONDS,
+                unit -> ' ' + unit.name().toLowerCase());
     }
 
     @Override
-    public void initialize( long transactionId, LogPosition logPosition )
-    {
+    public void initialize(long transactionId, LogPosition logPosition) {
         lastCheckPointedTransactionId = transactionId;
     }
 
     @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId, LogPosition logPosition )
-    {
-        return lastCommittedTransactionId > lastCheckPointedTransactionId && stopWatch.hasTimedOut( timeout );
+    protected boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition) {
+        return lastCommittedTransactionId > lastCheckPointedTransactionId && stopWatch.hasTimedOut(timeout);
     }
 
     @Override
-    public void checkPointHappened( long transactionId, LogPosition logPosition )
-    {
+    public void checkPointHappened(long transactionId, LogPosition logPosition) {
         lastCheckPointedTransactionId = transactionId;
         stopWatch = clock.startStopWatch();
-        timeout = Duration.ofMillis( timeMillisThreshold );
+        timeout = Duration.ofMillis(timeMillisThreshold);
     }
 
     @Override
-    public long checkFrequencyMillis()
-    {
+    public long checkFrequencyMillis() {
         return timeMillisThreshold;
     }
 }

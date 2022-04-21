@@ -23,12 +23,13 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext.Counter
 
-class TransactionsCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) with CountingQueryContext {
+class TransactionsCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner)
+    with CountingQueryContext {
   private val transactionsCommitted = new Counter
 
- override def getTrackedStatistics: QueryStatistics = {
+  override def getTrackedStatistics: QueryStatistics = {
     QueryStatistics(
-      transactionsCommitted = transactionsCommitted.count,
+      transactionsCommitted = transactionsCommitted.count
     )
   }
 

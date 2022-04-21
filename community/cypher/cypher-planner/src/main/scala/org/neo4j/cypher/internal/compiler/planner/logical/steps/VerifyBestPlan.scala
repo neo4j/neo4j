@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
-import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingPointIndexType
+import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
@@ -70,7 +70,8 @@ object VerifyBestPlan {
     if (expected != constructed) {
       val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context)
       val unfulfillableJoinHints = findUnfulfillableJoinHints(expected)
-      val expectedWithoutUnfulfillableHints = expected.withoutHints(unfulfillableIndexHints.hints ++ unfulfillableJoinHints)
+      val expectedWithoutUnfulfillableHints =
+        expected.withoutHints(unfulfillableIndexHints.hints ++ unfulfillableJoinHints)
       if (expectedWithoutUnfulfillableHints != constructed) {
         val a: PlannerQueryPart = expected.withoutHints(expected.allHints)
         val b: PlannerQueryPart = constructed.withoutHints(constructed.allHints)
@@ -83,7 +84,9 @@ object VerifyBestPlan {
               case _ => ""
             }
 
-          throw new InternalException(s"Expected: \n$expected \n\nActual: \n$constructed\n\nPlan: \n${LogicalPlanToPlanBuilderString(plan)} \n\n$moreDetails")
+          throw new InternalException(
+            s"Expected: \n$expected \n\nActual: \n$constructed\n\nPlan: \n${LogicalPlanToPlanBuilderString(plan)} \n\n$moreDetails"
+          )
         } else {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
           val expectedHints = expected.allHints
@@ -94,14 +97,15 @@ object VerifyBestPlan {
           if (missing.nonEmpty || inventedHintsAndThenSolvedThem) {
             def out(h: Set[Hint]) = h.map(prettifier.asString).mkString("`", ", ", "`")
 
-            val details = if (missing.isEmpty)
-              s"""Expected:
-                 |${out(expectedHints)}
-                 |
-                 |Instead, got:
-                 |${out(actualHints)}""".stripMargin
-            else
-              s"Could not solve these hints: ${out(missing)}"
+            val details =
+              if (missing.isEmpty)
+                s"""Expected:
+                   |${out(expectedHints)}
+                   |
+                   |Instead, got:
+                   |${out(actualHints)}""".stripMargin
+              else
+                s"Could not solve these hints: ${out(missing)}"
 
             val message =
               s"""Failed to fulfil the hints of the query.
@@ -119,7 +123,10 @@ object VerifyBestPlan {
     }
   }
 
-  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, unfulfillableIndexHints: UnfulfillableIndexHints): Unit = {
+  private def processUnfulfilledIndexHints(
+    context: LogicalPlanningContext,
+    unfulfillableIndexHints: UnfulfillableIndexHints
+  ): Unit = {
     unfulfillableIndexHints.wrongPropertyTypeHints.headOption.foreach(hint => throw hint.toException)
     val hints = unfulfillableIndexHints.missingIndexHints
     if (hints.nonEmpty) {
@@ -128,13 +135,17 @@ object VerifyBestPlan {
         throw hints.head.toException
       } else {
         hints.foreach { hint =>
-            context.notificationLogger.log(hint.toNotification)
+          context.notificationLogger.log(hint.toNotification)
         }
       }
     }
   }
 
-  private def processUnfulfilledJoinHints(plan: LogicalPlan, context: LogicalPlanningContext, hints: Set[UsingJoinHint]): Unit = {
+  private def processUnfulfilledJoinHints(
+    plan: LogicalPlan,
+    context: LogicalPlanningContext,
+    hints: Set[UsingJoinHint]
+  ): Unit = {
     if (hints.nonEmpty) {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
@@ -153,17 +164,30 @@ object VerifyBestPlan {
    * @param entityType the type of the entity this hint refers to
    */
   case class MissingIndexHint(hint: UsingIndexHint, entityType: EntityType) {
+
     def toNotification: IndexHintUnfulfillableNotification =
-      IndexHintUnfulfillableNotification(hint.variable.name, hint.labelOrRelType.name, hint.properties.map(_.name), entityType, hint.indexType)
+      IndexHintUnfulfillableNotification(
+        hint.variable.name,
+        hint.labelOrRelType.name,
+        hint.properties.map(_.name),
+        entityType,
+        hint.indexType
+      )
 
     def toException: IndexHintException = {
       val exceptionIndexType = hint.indexType match {
-        case UsingAnyIndexType => IndexHintIndexType.ANY
-        case UsingTextIndexType => IndexHintIndexType.TEXT
+        case UsingAnyIndexType   => IndexHintIndexType.ANY
+        case UsingTextIndexType  => IndexHintIndexType.TEXT
         case UsingRangeIndexType => IndexHintIndexType.RANGE
         case UsingPointIndexType => IndexHintIndexType.POINT
       }
-      new IndexHintException(hint.variable.name, hint.labelOrRelType.name, hint.properties.map(_.name).asJava, entityType, exceptionIndexType)
+      new IndexHintException(
+        hint.variable.name,
+        hint.labelOrRelType.name,
+        hint.properties.map(_.name).asJava,
+        entityType,
+        exceptionIndexType
+      )
     }
   }
 
@@ -172,6 +196,7 @@ object VerifyBestPlan {
    * @param hint the offending hint
    */
   case class WrongPropertyTypeHint(hint: UsingIndexHint, foundPredicates: Set[IndexCompatiblePredicate]) {
+
     def toException: Neo4jException =
       new InvalidHintException(MessageUtil.createTextIndexHintError(
         prettifier.asString(hint),
@@ -179,21 +204,38 @@ object VerifyBestPlan {
       ))
   }
 
-  private case class UnfulfillableIndexHints(missingIndexHints: Set[MissingIndexHint], wrongPropertyTypeHints: collection.Seq[WrongPropertyTypeHint]) {
+  private case class UnfulfillableIndexHints(
+    missingIndexHints: Set[MissingIndexHint],
+    wrongPropertyTypeHints: collection.Seq[WrongPropertyTypeHint]
+  ) {
     def hints: Set[Hint] = Set[Hint]() ++ missingIndexHints.map(_.hint) ++ wrongPropertyTypeHints.map(_.hint)
   }
 
-  private def findUnfulfillableIndexHints(query: PlannerQueryPart, context: LogicalPlanningContext): UnfulfillableIndexHints = {
+  private def findUnfulfillableIndexHints(
+    query: PlannerQueryPart,
+    context: LogicalPlanningContext
+  ): UnfulfillableIndexHints = {
     val planContext = context.planContext
     val semanticTable = context.semanticTable
 
-    def nodeIndexHintFulfillable(labelOrRelType: LabelOrRelTypeName, properties: Seq[PropertyKeyName], indexHintType: UsingIndexHintType): Boolean = {
+    def nodeIndexHintFulfillable(
+      labelOrRelType: LabelOrRelTypeName,
+      properties: Seq[PropertyKeyName],
+      indexHintType: UsingIndexHintType
+    ): Boolean = {
       val labelName = labelOrRelType.name
       val propertyNames = properties.map(_.name)
 
-      def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(labelName, propertyNames)
-      def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForLabelAndProperties(labelName, propertyNames)
-      def pointExists = context.planningPointIndexesEnabled && planContext.pointIndexExistsForLabelAndProperties(labelName, propertyNames)
+      def textExists =
+        context.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(labelName, propertyNames)
+      def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForLabelAndProperties(
+        labelName,
+        propertyNames
+      )
+      def pointExists = context.planningPointIndexesEnabled && planContext.pointIndexExistsForLabelAndProperties(
+        labelName,
+        propertyNames
+      )
 
       indexHintType match {
         case UsingAnyIndexType   => textExists || rangeExists || pointExists
@@ -203,18 +245,31 @@ object VerifyBestPlan {
       }
     }
 
-    def relIndexHintFulfillable(labelOrRelType: LabelOrRelTypeName, properties: Seq[PropertyKeyName], indexHintType: UsingIndexHintType): Boolean = {
+    def relIndexHintFulfillable(
+      labelOrRelType: LabelOrRelTypeName,
+      properties: Seq[PropertyKeyName],
+      indexHintType: UsingIndexHintType
+    ): Boolean = {
       val relTypeName = labelOrRelType.name
       val propertyNames = properties.map(_.name)
 
-      def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
-      def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
-      def pointExists = context.planningPointIndexesEnabled && planContext.pointIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
+      def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(
+        relTypeName,
+        propertyNames
+      )
+      def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForRelTypeAndProperties(
+        relTypeName,
+        propertyNames
+      )
+      def pointExists = context.planningPointIndexesEnabled && planContext.pointIndexExistsForRelTypeAndProperties(
+        relTypeName,
+        propertyNames
+      )
 
       indexHintType match {
         case UsingAnyIndexType   => textExists || rangeExists || pointExists
         case UsingTextIndexType  => textExists
-        case UsingRangeIndexType  => rangeExists
+        case UsingRangeIndexType => rangeExists
         case UsingPointIndexType => pointExists
       }
     }
@@ -222,11 +277,21 @@ object VerifyBestPlan {
     /**
      * Tests whether there exists a predicate on the given property that can be used by a text index. And if not, return the predicates searched through.
      */
-    def hasPropertyOfTypeText(variable: Variable, propertyName: PropertyKeyName, semanticTable: SemanticTable, queryGraph: QueryGraph): Either[Set[IndexCompatiblePredicate], Boolean] = {
+    def hasPropertyOfTypeText(
+      variable: Variable,
+      propertyName: PropertyKeyName,
+      semanticTable: SemanticTable,
+      queryGraph: QueryGraph
+    ): Either[Set[IndexCompatiblePredicate], Boolean] = {
       val predicates = queryGraph.selections.flatPredicates.toSet
       val arguments: Set[LogicalVariable] = queryGraph.argumentIds.map(Variable(_)(InputPosition.NONE))
-      val matchingPredicates = IndexCompatiblePredicatesProvider.findExplicitCompatiblePredicates(arguments, predicates, semanticTable).collect {
-        case pred@IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _, _) => pred
+      val matchingPredicates = IndexCompatiblePredicatesProvider.findExplicitCompatiblePredicates(
+        arguments,
+        predicates,
+        semanticTable
+      ).collect {
+        case pred @ IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _, _) =>
+          pred
       }
       if (matchingPredicates.exists(_.compatibleIndexTypes.contains(IndexType.Text))) {
         Right(true)
@@ -235,12 +300,16 @@ object VerifyBestPlan {
       }
     }
 
-    val hintsForWrongType = query.asSinglePlannerQuery.allPlannerQueries.flatMap(query => query.queryGraph.allHints.flatMap {
-      case hint@UsingIndexHint(variable, _, Seq(property), _, UsingTextIndexType) =>
-        hasPropertyOfTypeText(variable, property, semanticTable, query.queryGraph).left.toOption.map(WrongPropertyTypeHint(hint, _))
+    val hintsForWrongType = query.asSinglePlannerQuery.allPlannerQueries.flatMap(query =>
+      query.queryGraph.allHints.flatMap {
+        case hint @ UsingIndexHint(variable, _, Seq(property), _, UsingTextIndexType) =>
+          hasPropertyOfTypeText(variable, property, semanticTable, query.queryGraph).left.toOption.map(
+            WrongPropertyTypeHint(hint, _)
+          )
 
-      case _ => None
-    })
+        case _ => None
+      }
+    )
 
     val hintsWithoutIndex = query.allHints.flatMap {
       // using index name:label(property1,property2)
@@ -250,13 +319,18 @@ object VerifyBestPlan {
 
       // using index name:relType(property1,property2)
       case UsingIndexHint(v, labelOrRelType, properties, _, indexHintType)
-        if semanticTable.isRelationshipNoFail(v.name) && relIndexHintFulfillable(labelOrRelType, properties, indexHintType) =>
+        if semanticTable.isRelationshipNoFail(v.name) && relIndexHintFulfillable(
+          labelOrRelType,
+          properties,
+          indexHintType
+        ) =>
         None
 
       // no such index exists
       case hint: UsingIndexHint =>
         // Let's assume node type by default, in case we have no type information.
-        val entityType = if (semanticTable.isRelationshipNoFail(hint.variable)) EntityType.RELATIONSHIP else EntityType.NODE
+        val entityType =
+          if (semanticTable.isRelationshipNoFail(hint.variable)) EntityType.RELATIONSHIP else EntityType.NODE
         Some(MissingIndexHint(hint, entityType))
       // don't care about other hints
       case _ => None

@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.SystemNanoClock;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -35,112 +29,108 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class KernelTransactionImplementationHandleTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
+
+class KernelTransactionImplementationHandleTest {
     private final SystemNanoClock clock = Clocks.nanoClock();
 
     @Test
-    void returnsCorrectLastTransactionTimestampWhenStarted()
-    {
+    void returnsCorrectLastTransactionTimestampWhenStarted() {
         long lastCommittedTxTimestamp = 42;
 
-        KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
-        when( tx.lastTransactionTimestampWhenStarted() ).thenReturn( lastCommittedTxTimestamp );
-        when( tx.isOpen() ).thenReturn( true );
+        KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.lastTransactionTimestampWhenStarted()).thenReturn(lastCommittedTxTimestamp);
+        when(tx.isOpen()).thenReturn(true);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx, clock );
+        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
 
-        assertEquals( lastCommittedTxTimestamp, handle.lastTransactionTimestampWhenStarted() );
+        assertEquals(lastCommittedTxTimestamp, handle.lastTransactionTimestampWhenStarted());
     }
 
     @Test
-    void returnsCorrectLastTransactionTimestampWhenStartedForClosedTx()
-    {
+    void returnsCorrectLastTransactionTimestampWhenStartedForClosedTx() {
         long lastCommittedTxTimestamp = 4242;
 
-        KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
-        when( tx.lastTransactionTimestampWhenStarted() ).thenReturn( lastCommittedTxTimestamp );
-        when( tx.isOpen() ).thenReturn( false );
+        KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.lastTransactionTimestampWhenStarted()).thenReturn(lastCommittedTxTimestamp);
+        when(tx.isOpen()).thenReturn(false);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx, clock );
+        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
 
-        assertEquals( lastCommittedTxTimestamp, handle.lastTransactionTimestampWhenStarted() );
+        assertEquals(lastCommittedTxTimestamp, handle.lastTransactionTimestampWhenStarted());
     }
 
     @Test
-    void isOpenForUnchangedKernelTransactionImplementation()
-    {
+    void isOpenForUnchangedKernelTransactionImplementation() {
         long userTransactionId = 42;
 
-        KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
-        when( tx.isOpen() ).thenReturn( true );
-        when( tx.getUserTransactionId() ).thenReturn( userTransactionId );
+        KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.isOpen()).thenReturn(true);
+        when(tx.getUserTransactionId()).thenReturn(userTransactionId);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx, clock );
+        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
 
-        assertTrue( handle.isOpen() );
+        assertTrue(handle.isOpen());
     }
 
     @Test
-    void isOpenForReusedKernelTransactionImplementation()
-    {
+    void isOpenForReusedKernelTransactionImplementation() {
         long initialUserTransactionId = 42;
         long nextUserTransactionId = 4242;
 
-        KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
-        when( tx.isOpen() ).thenReturn( true );
-        when( tx.getUserTransactionId() ).thenReturn( initialUserTransactionId ).thenReturn( nextUserTransactionId );
+        KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.isOpen()).thenReturn(true);
+        when(tx.getUserTransactionId()).thenReturn(initialUserTransactionId).thenReturn(nextUserTransactionId);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx, clock );
+        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
 
-        assertFalse( handle.isOpen() );
+        assertFalse(handle.isOpen());
     }
 
     @Test
-    void markForTerminationCallsKernelTransactionImplementation()
-    {
+    void markForTerminationCallsKernelTransactionImplementation() {
         long userTransactionId = 42;
         Status.Transaction terminationReason = Status.Transaction.Terminated;
 
-        KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
-        when( tx.getUserTransactionId() ).thenReturn( userTransactionId );
+        KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.getUserTransactionId()).thenReturn(userTransactionId);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx, clock );
-        handle.markForTermination( terminationReason );
+        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        handle.markForTermination(terminationReason);
 
-        verify( tx ).markForTermination( userTransactionId, terminationReason );
+        verify(tx).markForTermination(userTransactionId, terminationReason);
     }
 
     @Test
-    void markForTerminationReturnsTrueWhenSuccessful()
-    {
-        KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
-        when( tx.getUserTransactionId() ).thenReturn( 42L );
-        when( tx.markForTermination( anyLong(), any() ) ).thenReturn( true );
+    void markForTerminationReturnsTrueWhenSuccessful() {
+        KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.getUserTransactionId()).thenReturn(42L);
+        when(tx.markForTermination(anyLong(), any())).thenReturn(true);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx, clock );
-        assertTrue( handle.markForTermination( Status.Transaction.Terminated ) );
+        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        assertTrue(handle.markForTermination(Status.Transaction.Terminated));
     }
 
     @Test
-    void markForTerminationReturnsFalseWhenNotSuccessful()
-    {
-        KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
-        when( tx.getUserTransactionId() ).thenReturn( 42L );
-        when( tx.markForTermination( anyLong(), any() ) ).thenReturn( false );
+    void markForTerminationReturnsFalseWhenNotSuccessful() {
+        KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.getUserTransactionId()).thenReturn(42L);
+        when(tx.markForTermination(anyLong(), any())).thenReturn(false);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx, clock );
-        assertFalse( handle.markForTermination( Status.Transaction.Terminated ) );
+        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        assertFalse(handle.markForTermination(Status.Transaction.Terminated));
     }
 
     @Test
-    void transactionStatisticForReusedTransactionIsNotAvailable()
-    {
-        KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
-        when( tx.isOpen() ).thenReturn( true );
-        when( tx.getUserTransactionId() ).thenReturn( 2L ).thenReturn( 3L );
+    void transactionStatisticForReusedTransactionIsNotAvailable() {
+        KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.isOpen()).thenReturn(true);
+        when(tx.getUserTransactionId()).thenReturn(2L).thenReturn(3L);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx, clock );
-        assertSame( TransactionExecutionStatistic.NOT_AVAILABLE, handle.transactionStatistic() );
+        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        assertSame(TransactionExecutionStatistic.NOT_AVAILABLE, handle.transactionStatistic());
     }
 }

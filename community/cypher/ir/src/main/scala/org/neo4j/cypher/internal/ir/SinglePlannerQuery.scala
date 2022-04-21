@@ -39,10 +39,12 @@ trait SinglePlannerQuery extends PlannerQueryPart {
    * Optionally, an input to the query provided using INPUT DATA STREAM. These are the column names provided by IDS.
    */
   val queryInput: Option[Seq[String]]
+
   /**
    * The part of query from a MATCH/MERGE/CREATE until (excluding) the next WITH/RETURN.
    */
   val queryGraph: QueryGraph
+
   /**
    * The required order of a query graph and its horizon. The required order emerges from an ORDER BY or aggregation or distinct.
    */
@@ -52,6 +54,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
    * The WITH/RETURN part of a query
    */
   val horizon: QueryHorizon
+
   /**
    * Optionally, a next PlannerQuery for everything after the WITH in the current horizon.
    */
@@ -68,19 +71,19 @@ trait SinglePlannerQuery extends PlannerQueryPart {
   def lastQueryHorizon: QueryHorizon = last.horizon
 
   def withTail(newTail: SinglePlannerQuery): SinglePlannerQuery = tail match {
-    case None => copy(tail = Some(newTail))
+    case None    => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
   def withoutTail: SinglePlannerQuery = tail match {
     case None => this
-    case _ => copy(tail = None)
+    case _    => copy(tail = None)
   }
 
   def withoutLast: Option[SinglePlannerQuery] = tail match {
     case Some(tt) if tt.tail.isEmpty => Some(copy(tail = None))
-    case Some(tt) => Some(copy(tail = Some(tt.withoutLast.get)))
-    case None => None
+    case Some(tt)                    => Some(copy(tail = Some(tt.withoutLast.get)))
+    case None                        => None
   }
 
   def withInput(queryInput: Seq[String]): SinglePlannerQuery =
@@ -107,7 +110,8 @@ trait SinglePlannerQuery extends PlannerQueryPart {
         case Some(q) =>
           val (newTail, tailOrder) = f(q)
           if (plannerQuery.interestingOrder.isEmpty) {
-            val reverseProjected = reverseProjectedInterestingOrder(tailOrder, plannerQuery.horizon, newTail.queryGraph.argumentIds)
+            val reverseProjected =
+              reverseProjectedInterestingOrder(tailOrder, plannerQuery.horizon, newTail.queryGraph.argumentIds)
             (plannerQuery.copy(interestingOrder = reverseProjected, tail = Some(newTail)), reverseProjected)
           } else
             (plannerQuery.copy(tail = Some(newTail)), InterestingOrder.empty)
@@ -137,7 +141,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
   override def allHints: Set[Hint] = tail match {
     case Some(tailPlannerQuery) => queryGraph.allHints ++ tailPlannerQuery.allHints
-    case None => queryGraph.allHints
+    case None                   => queryGraph.allHints
   }
 
   override def numHints: Int = allHints.size
@@ -152,17 +156,17 @@ trait SinglePlannerQuery extends PlannerQueryPart {
   }
 
   def updateTail(f: SinglePlannerQuery => SinglePlannerQuery): SinglePlannerQuery = tail match {
-    case None => this
+    case None            => this
     case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
   }
 
   def updateTailOrSelf(f: SinglePlannerQuery => SinglePlannerQuery): SinglePlannerQuery = tail match {
-    case None => f(this)
+    case None    => f(this)
     case Some(_) => this.updateTail(_.updateTailOrSelf(f))
   }
 
   def tailOrSelf: SinglePlannerQuery = tail match {
-    case None => this
+    case None    => this
     case Some(t) => t.tailOrSelf
   }
 
@@ -177,7 +181,8 @@ trait SinglePlannerQuery extends PlannerQueryPart {
           interestingOrder = interestingOrder,
           horizon = a ++ b,
           tail = either(tail, other.tail),
-          queryInput = either(queryInput, other.queryInput))
+          queryInput = either(queryInput, other.queryInput)
+        )
 
       case _ =>
         throw new InternalException("Tried to concatenate non-regular query projections")
@@ -186,16 +191,18 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
   private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
     case (Some(aa), Some(bb)) => throw new InternalException(s"Can't join two query graphs. First: $aa, Second: $bb")
-    case (s@Some(_), None) => s
-    case (None, s) => s
+    case (s @ Some(_), None)  => s
+    case (None, s)            => s
   }
 
   // This is here to stop usage of copy from the outside
-  protected def copy(queryGraph: QueryGraph = queryGraph,
-                     interestingOrder: InterestingOrder = interestingOrder,
-                     horizon: QueryHorizon = horizon,
-                     tail: Option[SinglePlannerQuery] = tail,
-                     input: Option[Seq[String]] = queryInput): SinglePlannerQuery
+  protected def copy(
+    queryGraph: QueryGraph = queryGraph,
+    interestingOrder: InterestingOrder = interestingOrder,
+    horizon: QueryHorizon = horizon,
+    tail: Option[SinglePlannerQuery] = tail,
+    input: Option[Seq[String]] = queryInput
+  ): SinglePlannerQuery
 
   def foldMap(f: (SinglePlannerQuery, SinglePlannerQuery) => SinglePlannerQuery): SinglePlannerQuery = tail match {
     case None => this
@@ -212,16 +219,17 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
       pq.tail match {
         case Some(tailPQ) => recurse(nextAcc, tailPQ)
-        case None => nextAcc
+        case None         => nextAcc
       }
     }
 
     recurse(in, this)
   }
 
-  override lazy val allQGsWithLeafInfo: collection.Seq[QgWithLeafInfo] = allPlannerQueries.flatMap(q => q.queryGraph.allQGsWithLeafInfo ++ q.horizon.allQueryGraphs)
+  override lazy val allQGsWithLeafInfo: collection.Seq[QgWithLeafInfo] =
+    allPlannerQueries.flatMap(q => q.queryGraph.allQGsWithLeafInfo ++ q.horizon.allQueryGraphs)
 
-  //Returns list of planner query and all of its tails
+  // Returns list of planner query and all of its tails
   def allPlannerQueries: collection.Seq[SinglePlannerQuery] = {
     val buffer = scala.collection.mutable.ArrayBuffer[SinglePlannerQuery]()
     var current = this
@@ -241,7 +249,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
   override def returns: Set[String] = {
     lastQueryHorizon match {
       case projection: QueryProjection => projection.keySet
-      case _ => Set.empty
+      case _                           => Set.empty
     }
   }
 
@@ -263,14 +271,18 @@ object SinglePlannerQuery {
    * @param horizon     the horizon
    * @param argumentIds the arguments to the next query part
    */
-  def reverseProjectedInterestingOrder(order: InterestingOrder, horizon: QueryHorizon, argumentIds: Set[String]): InterestingOrder = {
+  def reverseProjectedInterestingOrder(
+    order: InterestingOrder,
+    horizon: QueryHorizon,
+    argumentIds: Set[String]
+  ): InterestingOrder = {
     horizon match {
       case qp: QueryProjection => order.withReverseProjectedColumns(qp.projections, argumentIds)
-      case _ => order.withReverseProjectedColumns(Map.empty, argumentIds)
+      case _                   => order.withReverseProjectedColumns(Map.empty, argumentIds)
     }
   }
 
-  def extractLabelInfo(q: SinglePlannerQuery) : Map[String, Set[LabelName]] = {
+  def extractLabelInfo(q: SinglePlannerQuery): Map[String, Set[LabelName]] = {
     val labelInfo = q.queryGraph.selections.labelInfo
     val projectedLabelInfo = q.horizon match {
       case projection: QueryProjection =>
@@ -284,21 +296,26 @@ object SinglePlannerQuery {
   }
 }
 
-case class RegularSinglePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
-                                     interestingOrder: InterestingOrder = InterestingOrder.empty,
-                                     horizon: QueryHorizon = QueryProjection.empty,
-                                     tail: Option[SinglePlannerQuery] = None,
-                                     queryInput: Option[Seq[String]] = None) extends SinglePlannerQuery {
+case class RegularSinglePlannerQuery(
+  queryGraph: QueryGraph = QueryGraph.empty,
+  interestingOrder: InterestingOrder = InterestingOrder.empty,
+  horizon: QueryHorizon = QueryProjection.empty,
+  tail: Option[SinglePlannerQuery] = None,
+  queryInput: Option[Seq[String]] = None
+) extends SinglePlannerQuery {
 
   // This is here to stop usage of copy from the outside
-  override protected def copy(queryGraph: QueryGraph = queryGraph,
-                              interestingOrder: InterestingOrder = interestingOrder,
-                              horizon: QueryHorizon = horizon,
-                              tail: Option[SinglePlannerQuery] = tail,
-                              queryInput: Option[Seq[String]] = queryInput): SinglePlannerQuery =
+  override protected def copy(
+    queryGraph: QueryGraph = queryGraph,
+    interestingOrder: InterestingOrder = interestingOrder,
+    horizon: QueryHorizon = horizon,
+    tail: Option[SinglePlannerQuery] = tail,
+    queryInput: Option[Seq[String]] = queryInput
+  ): SinglePlannerQuery =
     RegularSinglePlannerQuery(queryGraph, interestingOrder, horizon, tail, queryInput)
 
-  override def dependencies: Set[String] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
+  override def dependencies: Set[String] =
+    horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[RegularSinglePlannerQuery]
 

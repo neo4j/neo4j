@@ -61,12 +61,13 @@ object PlannerNameFor {
 
   def apply(name: String): PlannerName = name.toUpperCase match {
     case IDPPlannerName.name => IDPPlannerName
-    case DPPlannerName.name => DPPlannerName
-    case "COST" => CostBasedPlannerName.default
-    case "DEFAULT" => CostBasedPlannerName.default
+    case DPPlannerName.name  => DPPlannerName
+    case "COST"              => CostBasedPlannerName.default
+    case "DEFAULT"           => CostBasedPlannerName.default
 
     // Note that conservative planner is not exposed to end users.
     case n => throw new IllegalArgumentException(
-      s"$n is not a a valid planner, valid options are COST, ${IDPPlannerName.name} and ${DPPlannerName.name}")
+        s"$n is not a a valid planner, valid options are COST, ${IDPPlannerName.name} and ${DPPlannerName.name}"
+      )
   }
 }

@@ -28,24 +28,21 @@ import org.neo4j.values.AnyValue;
 /**
  * The public Result API of Cypher
  */
-public interface QueryResult
-{
+public interface QueryResult {
     String[] fieldNames();
 
-    <E extends Exception> void accept( QueryResultVisitor<E> visitor )
-            throws E;
+    <E extends Exception> void accept(QueryResultVisitor<E> visitor) throws E;
 
-    interface QueryResultVisitor<E extends Exception>
-    {
+    interface QueryResultVisitor<E extends Exception> {
         /**
          * @return true to continue, false otherwise.
          */
-        boolean visit( Record row ) throws E;
+        boolean visit(Record row) throws E;
     }
 
-    interface Record
-    {
+    interface Record {
         AnyValue[] fields();
+
         default void release() {}
     }
 

@@ -26,56 +26,48 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.JobHandle;
 
-final class PooledJobHandle<T> implements JobHandle<T>
-{
+final class PooledJobHandle<T> implements JobHandle<T> {
     private final Future<T> future;
     private final Object registryKey;
-    private final ConcurrentHashMap<Object,?> registry;
+    private final ConcurrentHashMap<Object, ?> registry;
     private final List<CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
 
-    PooledJobHandle( Future<T> future, Object registryKey, ConcurrentHashMap<Object,?> registry )
-    {
+    PooledJobHandle(Future<T> future, Object registryKey, ConcurrentHashMap<Object, ?> registry) {
         this.future = future;
         this.registryKey = registryKey;
         this.registry = registry;
     }
 
     @Override
-    public void cancel()
-    {
-        future.cancel( false );
-        for ( CancelListener cancelListener : cancelListeners )
-        {
+    public void cancel() {
+        future.cancel(false);
+        for (CancelListener cancelListener : cancelListeners) {
             cancelListener.cancelled();
         }
-        registry.remove( registryKey );
+        registry.remove(registryKey);
     }
 
     @Override
-    public void waitTermination() throws InterruptedException, ExecutionException
-    {
+    public void waitTermination() throws InterruptedException, ExecutionException {
         future.get();
     }
 
     @Override
-    public void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
-    {
-        future.get( timeout, unit );
+    public void waitTermination(long timeout, TimeUnit unit)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        future.get(timeout, unit);
     }
 
     @Override
-    public T get() throws ExecutionException, InterruptedException
-    {
+    public T get() throws ExecutionException, InterruptedException {
         return future.get();
     }
 
     @Override
-    public void registerCancelListener( CancelListener listener )
-    {
-        cancelListeners.add( listener );
+    public void registerCancelListener(CancelListener listener) {
+        cancelListeners.add(listener);
     }
 }

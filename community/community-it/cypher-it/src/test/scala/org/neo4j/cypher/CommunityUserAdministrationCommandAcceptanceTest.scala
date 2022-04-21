@@ -41,6 +41,7 @@ import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import java.util
 import java.util.Collections
+
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 //noinspection RedundantDefaultArgument
@@ -58,7 +59,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   private val wrongPassword = "wrong"
   private val alterDefaultUserQuery = s"ALTER USER $defaultUsername SET PASSWORD '$password' CHANGE NOT REQUIRED"
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
+  override def databaseConfig(): Map[Setting[_], Object] =
+    super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
 
   def authManager: AuthManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])
 
@@ -179,11 +181,14 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("CREATE USER foo SET PASSWORD 'password' CHANGE NOT REQUIRED")
 
     // WHEN
-    val result = execute("SHOW USERS YIELD user, passwordChangeRequired RETURN count(user) as count, passwordChangeRequired")
+    val result =
+      execute("SHOW USERS YIELD user, passwordChangeRequired RETURN count(user) as count, passwordChangeRequired")
 
     // THEN
-    result.toSet should be(Set(Map("count" -> 1, "passwordChangeRequired" -> true),
-      Map("count" -> 1, "passwordChangeRequired" -> false)))
+    result.toSet should be(Set(
+      Map("count" -> 1, "passwordChangeRequired" -> true),
+      Map("count" -> 1, "passwordChangeRequired" -> false)
+    ))
   }
 
   test("should show users with yield, return and skip") {
@@ -322,13 +327,18 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute(s"CREATE USER $username SET PASSWORD '$password' CHANGE NOT REQUIRED")
 
     // WHEN
-    executeOnSystem(username, password, "SHOW CURRENT USER", resultHandler = (row, _) => {
-      // THEN
-      row.get("user") should be(username)
-      row.get("roles") should be(null)
-      row.get("passwordChangeRequired") shouldBe false
-      row.get("suspended") shouldBe null
-    }) should be(1)
+    executeOnSystem(
+      username,
+      password,
+      "SHOW CURRENT USER",
+      resultHandler = (row, _) => {
+        // THEN
+        row.get("user") should be(username)
+        row.get("roles") should be(null)
+        row.get("passwordChangeRequired") shouldBe false
+        row.get("suspended") shouldBe null
+      }
+    ) should be(1)
   }
 
   test("should show current user with yield, where and return") {
@@ -336,12 +346,17 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute(s"CREATE USER $username SET PASSWORD '$password' CHANGE NOT REQUIRED")
 
     // WHEN
-    executeOnSystem(username, password, "SHOW CURRENT USER YIELD * WHERE user = $name RETURN user, passwordChangeRequired", Collections.singletonMap("name", username),
+    executeOnSystem(
+      username,
+      password,
+      "SHOW CURRENT USER YIELD * WHERE user = $name RETURN user, passwordChangeRequired",
+      Collections.singletonMap("name", username),
       resultHandler = (row, _) => {
         // THEN
         row.get("user") should be(username)
         row.get("passwordChangeRequired") shouldBe false
-      }) should be(1)
+      }
+    ) should be(1)
   }
 
   test("should only show current user") {
@@ -350,14 +365,18 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute(s"CREATE USER bar SET PASSWORD '$password' CHANGE NOT REQUIRED")
 
     // WHEN
-    executeOnSystem( username, password, "SHOW CURRENT USER",
+    executeOnSystem(
+      username,
+      password,
+      "SHOW CURRENT USER",
       resultHandler = (row, _) => {
         // THEN
         row.get("user") should be(username)
         row.get("roles") should be(null)
         row.get("passwordChangeRequired") shouldBe false
         row.get("suspended") shouldBe null
-      }) should be(1)
+      }
+    ) should be(1)
   }
 
   test("should not return a user that is not the current user") {
@@ -488,8 +507,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should not be able to create user with explicit status active in community") {
     // WHEN
-    assertFailure("CREATE USER foo SET PASSWORD 'password' SET STATUS ACTIVE",
-      "Failed to create the specified user 'foo': 'SET STATUS' is not available in community edition.")
+    assertFailure(
+      "CREATE USER foo SET PASSWORD 'password' SET STATUS ACTIVE",
+      "Failed to create the specified user 'foo': 'SET STATUS' is not available in community edition."
+    )
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
@@ -497,8 +518,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should not be able to create user with status suspended in community") {
     // WHEN
-    assertFailure("CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDED",
-      "Failed to create the specified user 'foo': 'SET STATUS' is not available in community edition.")
+    assertFailure(
+      "CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDED",
+      "Failed to create the specified user 'foo': 'SET STATUS' is not available in community edition."
+    )
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
@@ -506,8 +529,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should not be able to create user with a default database in community") {
     // WHEN
-    assertFailure("CREATE USER foo SET PASSWORD 'password' SET HOME DATABASE foo",
-      "Failed to create the specified user 'foo': 'HOME DATABASE' is not available in community edition.")
+    assertFailure(
+      "CREATE USER foo SET PASSWORD 'password' SET HOME DATABASE foo",
+      "Failed to create the specified user 'foo': 'HOME DATABASE' is not available in community edition."
+    )
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
@@ -532,7 +557,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should do nothing when creating already existing user using if not exists") {
     // WHEN
-    val result = execute(s"CREATE USER $defaultUsername IF NOT EXISTS SET PLAINTEXT PASSWORD '$wrongPassword' CHANGE NOT REQUIRED")
+    val result =
+      execute(s"CREATE USER $defaultUsername IF NOT EXISTS SET PLAINTEXT PASSWORD '$wrongPassword' CHANGE NOT REQUIRED")
 
     // THEN
     result.queryStatistics().systemUpdates should be(0)
@@ -619,7 +645,12 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     the[QueryExecutionException] thrownBy {
       // WHEN
-      executeOnSystem(defaultUsername, password, "CREATE OR REPLACE USER $user SET PASSWORD 'wrong'", Map[String, Object]("user" -> defaultUsername).asJava)
+      executeOnSystem(
+        defaultUsername,
+        password,
+        "CREATE OR REPLACE USER $user SET PASSWORD 'wrong'",
+        Map[String, Object]("user" -> defaultUsername).asJava
+      )
       // THEN
     } should have message s"Failed to replace the specified user '$defaultUsername': Deleting yourself is not allowed."
 
@@ -635,14 +666,18 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       execute("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'pass'")
     }
     // THEN
-    exception.getMessage should include("Failed to create the specified user 'foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`.")
+    exception.getMessage should include(
+      "Failed to create the specified user 'foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`."
+    )
 
     // WHEN
     val exception2 = the[SyntaxException] thrownBy {
       execute("CREATE OR REPLACE USER $user IF NOT EXISTS SET PASSWORD 'pass'", userFooMap)
     }
     // THEN
-    exception2.getMessage should include("Failed to create the specified user '$user': cannot have both `OR REPLACE` and `IF NOT EXISTS`.")
+    exception2.getMessage should include(
+      "Failed to create the specified user '$user': cannot have both `OR REPLACE` and `IF NOT EXISTS`."
+    )
   }
 
   test("should create user with encrypted password") {
@@ -676,7 +711,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should fail to create user with unmasked encrypted password") {
     // GIVEN
-    val unmaskedEncryptedPassword = "SHA-256,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab,1024"
+    val unmaskedEncryptedPassword =
+      "SHA-256,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab,1024"
 
     the[InvalidArgumentException] thrownBy {
       // WHEN
@@ -689,7 +725,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should fail to create user with encrypted password and unsupported version number") {
     // GIVEN
-    val incorrectlyEncryptedPassword = "8,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"
+    val incorrectlyEncryptedPassword =
+      "8,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"
 
     the[InvalidArgumentException] thrownBy {
       // WHEN
@@ -728,7 +765,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val encryptedPassword = getMaskedEncodedPassword(password)
 
     // WHEN
-    execute(s"CREATE USER $username SET ENCRYPTED PASSWORD $$password CHANGE REQUIRED", Map("password" -> encryptedPassword))
+    execute(
+      s"CREATE USER $username SET ENCRYPTED PASSWORD $$password CHANGE REQUIRED",
+      Map("password" -> encryptedPassword)
+    )
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser, user(username))
@@ -740,7 +780,6 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   test("should fail when creating user when not on system database") {
     assertFailWhenNotOnSystem("CREATE USER foo SET PASSWORD 'bar'", "CREATE USER")
   }
-
 
   // Test for renaming users
 
@@ -821,7 +860,9 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val exception = the[InvalidArgumentException] thrownBy execute(s"RENAME USER iDontExist TO $newUsername")
 
     // THEN
-    exception.getMessage should startWith(s"Failed to rename the specified user 'iDontExist' to '$newUsername': The user 'iDontExist' does not exist.")
+    exception.getMessage should startWith(
+      s"Failed to rename the specified user 'iDontExist' to '$newUsername': The user 'iDontExist' does not exist."
+    )
     execute("SHOW USERS").toSet should be(Set(defaultUser))
   }
 
@@ -842,7 +883,9 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val exception = the[InvalidArgumentException] thrownBy execute(s"RENAME USER $username TO $newUsername")
 
     // THEN
-    exception.getMessage should startWith(s"Failed to rename the specified user '$username' to '$newUsername': User '$newUsername' already exists.")
+    exception.getMessage should startWith(
+      s"Failed to rename the specified user '$username' to '$newUsername': User '$newUsername' already exists."
+    )
 
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
     testUserLogin(newUsername, password, AuthenticationResult.FAILURE)
@@ -858,15 +901,16 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val exception = the[InvalidArgumentException] thrownBy execute(s"RENAME USER $username IF EXISTS TO $newUsername")
 
     // THEN
-    exception.getMessage should startWith(s"Failed to rename the specified user '$username' to '$newUsername': User '$newUsername' already exists.")
+    exception.getMessage should startWith(
+      s"Failed to rename the specified user '$username' to '$newUsername': User '$newUsername' already exists."
+    )
 
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
     testUserLogin(newUsername, password, AuthenticationResult.FAILURE)
     testUserLogin(newUsername, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
-   test( "should create user with old name after rename")
-  {
+  test("should create user with old name after rename") {
     // GIVEN
     prepareUser()
 
@@ -880,8 +924,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(username, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
-  test( "should rename user to old name after rename")
-  {
+  test("should rename user to old name after rename") {
     // GIVEN
     execute(s"CREATE USER alice SET PASSWORD '$password'")
     execute(s"CREATE USER charlie SET PASSWORD '$newPassword'")
@@ -898,14 +941,14 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin("alice", newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
-  test( "should not create user with new name after rename")
-  {
+  test("should not create user with new name after rename") {
     // GIVEN
     prepareUser()
     execute(s"RENAME USER $username TO $newUsername")
 
     // WHEN .. THEN
-    val exception = the[InvalidArgumentException] thrownBy execute(s"CREATE USER $newUsername SET PASSWORD '$newPassword'")
+    val exception =
+      the[InvalidArgumentException] thrownBy execute(s"CREATE USER $newUsername SET PASSWORD '$newPassword'")
     exception.getMessage should startWith(s"Failed to create the specified user '$newUsername': User already exists.")
 
     testUserLogin(username, password, AuthenticationResult.FAILURE)
@@ -1109,7 +1152,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     prepareUser()
 
     // WHEN
-    execute("ALTER USER $user SET PASSWORD $user", Map( "user" -> username))
+    execute("ALTER USER $user SET PASSWORD $user", Map("user" -> username))
 
     // THEN
     testUserLogin(username, username, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
@@ -1297,7 +1340,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val encryptedPassword = getMaskedEncodedPassword(newPassword)
 
     // WHEN
-    execute(s"ALTER USER $username SET ENCRYPTED PASSWORD $$password CHANGE REQUIRED", Map("password" -> encryptedPassword))
+    execute(
+      s"ALTER USER $username SET ENCRYPTED PASSWORD $$password CHANGE REQUIRED",
+      Map("password" -> encryptedPassword)
+    )
 
     // THEN
     testUserLogin(username, password, AuthenticationResult.FAILURE)
@@ -1306,8 +1352,14 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   }
 
   test("should fail on altering user status from community") {
-    assertFailure(s"ALTER USER $defaultUsername SET STATUS ACTIVE", s"Failed to alter the specified user '$defaultUsername': 'SET STATUS' is not available in community edition.")
-    assertFailure(s"ALTER USER $defaultUsername SET PASSWORD 'xxx' SET STATUS SUSPENDED", s"Failed to alter the specified user '$defaultUsername': 'SET STATUS' is not available in community edition.")
+    assertFailure(
+      s"ALTER USER $defaultUsername SET STATUS ACTIVE",
+      s"Failed to alter the specified user '$defaultUsername': 'SET STATUS' is not available in community edition."
+    )
+    assertFailure(
+      s"ALTER USER $defaultUsername SET PASSWORD 'xxx' SET STATUS SUSPENDED",
+      s"Failed to alter the specified user '$defaultUsername': 'SET STATUS' is not available in community edition."
+    )
   }
 
   test("should alter existing user using if exists") {
@@ -1340,8 +1392,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should not be able to alter a users default database in community") {
     // WHEN
-    assertFailure("ALTER USER foo SET HOME DATABASE foo",
-      "Failed to alter the specified user 'foo': 'HOME DATABASE' is not available in community edition.")
+    assertFailure(
+      "ALTER USER foo SET HOME DATABASE foo",
+      "Failed to alter the specified user 'foo': 'HOME DATABASE' is not available in community edition."
+    )
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
@@ -1498,7 +1552,12 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val parameter = Map[String, Object]("currentPassword" -> password, "newPassword" -> newPassword).asJava
 
     // WHEN
-    executeOnSystem(username, password, "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", parameter)
+    executeOnSystem(
+      username,
+      password,
+      "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword",
+      parameter
+    )
 
     // THEN
     testUserLogin(username, newPassword, AuthenticationResult.SUCCESS)
@@ -1512,7 +1571,12 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     the[QueryExecutionException] thrownBy {
       // WHEN
-      executeOnSystem(username, password, "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", parameter)
+      executeOnSystem(
+        username,
+        password,
+        "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword",
+        parameter
+      )
       // THEN
     } should have message "Expected parameter(s): newPassword"
 
@@ -1527,7 +1591,12 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     the[QueryExecutionException] thrownBy {
       // WHEN
-      executeOnSystem(username, password, "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", parameter)
+      executeOnSystem(
+        username,
+        password,
+        "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword",
+        parameter
+      )
       // THEN
     } should have message "Expected parameter(s): currentPassword"
 
@@ -1564,7 +1633,12 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     the[QueryExecutionException] thrownBy {
       // WHEN
-      executeOn(DEFAULT_DATABASE_NAME, username, password, s"ALTER CURRENT USER SET PASSWORD FROM '$password' TO '$newPassword'")
+      executeOn(
+        DEFAULT_DATABASE_NAME,
+        username,
+        password,
+        s"ALTER CURRENT USER SET PASSWORD FROM '$password' TO '$newPassword'"
+      )
       // THEN
     } should have message
       "This is an administration command and it should be executed against the system database: ALTER CURRENT USER SET PASSWORD"
@@ -1601,7 +1675,13 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   // Helper methods
 
   private def user(username: String, passwordChangeRequired: Boolean = true): Map[String, Any] =
-    Map("user" -> username, "roles" -> null, "passwordChangeRequired" -> passwordChangeRequired, "suspended" -> null, "home" -> null)
+    Map(
+      "user" -> username,
+      "roles" -> null,
+      "passwordChangeRequired" -> passwordChangeRequired,
+      "suspended" -> null,
+      "home" -> null
+    )
 
   private def testUserLogin(username: String, password: String, expected: AuthenticationResult): Unit = {
     val login = authManager.login(SecurityTestUtils.authToken(username, password), EMBEDDED_CONNECTION)
@@ -1614,7 +1694,11 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute(s"CREATE USER $username SET PASSWORD '$password' $changeRequiredString")
     execute("SHOW USERS").toSet shouldBe Set(defaultUser, user(username, changeRequired))
     testUserLogin(username, wrongPassword, AuthenticationResult.FAILURE)
-    testUserLogin(username, password, if (changeRequired) AuthenticationResult.PASSWORD_CHANGE_REQUIRED else AuthenticationResult.SUCCESS)
+    testUserLogin(
+      username,
+      password,
+      if (changeRequired) AuthenticationResult.PASSWORD_CHANGE_REQUIRED else AuthenticationResult.SUCCESS
+    )
   }
 
   private def getMaskedEncodedPassword(password: String): String = {
@@ -1629,15 +1713,24 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     SystemGraphCredential.maskSerialized(credential.serialize())
   }
 
-  private def executeOnSystem(username: String, password: String, query: String,
-                              params: util.Map[String, Object] = Collections.emptyMap(),
-                              resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}): Int = {
+  private def executeOnSystem(
+    username: String,
+    password: String,
+    query: String,
+    params: util.Map[String, Object] = Collections.emptyMap(),
+    resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}
+  ): Int = {
     executeOn(SYSTEM_DATABASE_NAME, username, password, query, params, resultHandler)
   }
 
-  private def executeOn(database: String, username: String, password: String, query: String,
-                        params: util.Map[String, Object] = Collections.emptyMap(),
-                        resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}): Int = {
+  private def executeOn(
+    database: String,
+    username: String,
+    password: String,
+    query: String,
+    params: util.Map[String, Object] = Collections.emptyMap(),
+    resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}
+  ): Int = {
     selectDatabase(database)
     val login = authManager.login(SecurityTestUtils.authToken(username, password), EMBEDDED_CONNECTION)
     val tx = graph.beginTransaction(Type.EXPLICIT, login)

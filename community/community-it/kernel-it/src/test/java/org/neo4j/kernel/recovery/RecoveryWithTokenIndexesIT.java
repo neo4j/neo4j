@@ -19,15 +19,22 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.kernel.recovery.Recovery.performRecovery;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
+import java.io.IOException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.io.IOException;
-import java.util.stream.Stream;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -53,133 +60,113 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.kernel.recovery.Recovery.performRecovery;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @TestDirectoryExtension
-class RecoveryWithTokenIndexesIT
-{
+class RecoveryWithTokenIndexesIT {
     @RegisterExtension
     static final PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
+
     @Inject
     private TestDirectory testDirectory;
 
     private DatabaseManagementService managementService;
     private Config config;
 
-    private static final Label label = Label.label( "label" );
-    private static final RelationshipType type = RelationshipType.withName( "type" );
+    private static final Label label = Label.label("label");
+    private static final RelationshipType type = RelationshipType.withName("type");
 
     @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
+    void tearDown() {
+        if (managementService != null) {
             managementService.shutdown();
             managementService = null;
         }
     }
 
-    private static Stream<Arguments> arguments()
-    {
+    private static Stream<Arguments> arguments() {
         return Stream.of(
-                Arguments.of( "indexes created during recovery", false ),
-                Arguments.of( "indexes updated during recovery", true )
-        );
+                Arguments.of("indexes created during recovery", false),
+                Arguments.of("indexes updated during recovery", true));
     }
 
-    @ParameterizedTest( name = "{0}" )
-    @MethodSource( "arguments" )
-    void recoverDatabaseWithTokenIndexes( String name, boolean checkpointIndexes ) throws Throwable
-    {
-        config = Config.newBuilder().set( neo4j_home, testDirectory.homePath() ).build();
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("arguments")
+    void recoverDatabaseWithTokenIndexes(String name, boolean checkpointIndexes) throws Throwable {
+        config = Config.newBuilder().set(neo4j_home, testDirectory.homePath()).build();
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        GraphDatabaseService db = startDatabase( fs );
-        IndexingTestUtil.assertOnlyDefaultTokenIndexesExists( db );
+        GraphDatabaseService db = startDatabase(fs);
+        IndexingTestUtil.assertOnlyDefaultTokenIndexesExists(db);
 
-        if ( checkpointIndexes )
-        {
+        if (checkpointIndexes) {
             // Checkpoint to not make index creation part of the recovery.
-            checkPoint( db );
+            checkPoint(db);
         }
 
         int numberOfEntities = 10;
-        for ( int i = 0; i < numberOfEntities; i++ )
-        {
-            createEntities( db );
+        for (int i = 0; i < numberOfEntities; i++) {
+            createEntities(db);
         }
 
-        // Don't flush/checkpoint before taking the snapshot, to make the indexes need to recover (clean crash generation)
+        // Don't flush/checkpoint before taking the snapshot, to make the indexes need to recover (clean crash
+        // generation)
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
         managementService.shutdown();
         fs.close();
 
-        try ( PageCache cache = pageCacheExtension.getPageCache( crashedFs ) )
-        {
-            DatabaseLayout layout = DatabaseLayout.of( config );
-            recoverDatabase( layout, crashedFs, cache );
+        try (PageCache cache = pageCacheExtension.getPageCache(crashedFs)) {
+            DatabaseLayout layout = DatabaseLayout.of(config);
+            recoverDatabase(layout, crashedFs, cache);
         }
 
-        db = startDatabase( crashedFs );
+        db = startDatabase(crashedFs);
 
         // Verify that the default token indexes still exist
-        IndexingTestUtil.assertOnlyDefaultTokenIndexesExists( db );
-        awaitIndexesOnline( db );
+        IndexingTestUtil.assertOnlyDefaultTokenIndexesExists(db);
+        awaitIndexesOnline(db);
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( numberOfEntities, Iterators.count( tx.findNodes( label ) ) );
-            assertEquals( numberOfEntities, Iterators.count( tx.findRelationships( type ) ) );
+        try (Transaction tx = db.beginTx()) {
+            assertEquals(numberOfEntities, Iterators.count(tx.findNodes(label)));
+            assertEquals(numberOfEntities, Iterators.count(tx.findRelationships(type)));
         }
     }
 
-    private static void checkPoint( GraphDatabaseService db ) throws IOException
-    {
-        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class )
-                .forceCheckPoint( new SimpleTriggerInfo( "Manual trigger" ) );
+    private static void checkPoint(GraphDatabaseService db) throws IOException {
+        ((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency(CheckPointer.class)
+                .forceCheckPoint(new SimpleTriggerInfo("Manual trigger"));
     }
 
-    private static void awaitIndexesOnline( GraphDatabaseService database )
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.schema().awaitIndexesOnline( 10, MINUTES );
+    private static void awaitIndexesOnline(GraphDatabaseService database) {
+        try (Transaction transaction = database.beginTx()) {
+            transaction.schema().awaitIndexesOnline(10, MINUTES);
             transaction.commit();
         }
     }
 
-    private GraphDatabaseService startDatabase( EphemeralFileSystemAbstraction fs )
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setFileSystem( fs )
+    private GraphDatabaseService startDatabase(EphemeralFileSystemAbstraction fs) {
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setFileSystem(fs)
                 .impermanent()
-                .setConfig( config )
+                .setConfig(config)
                 .build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void recoverDatabase( DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache ) throws Exception
-    {
-        assertTrue( Recovery.isRecoveryRequired( fs, layout, config, INSTANCE ) );
-        performRecovery( Recovery.context( fs, cache, DatabaseTracers.EMPTY, config, layout, INSTANCE, IOController.DISABLED ) );
-        assertFalse( Recovery.isRecoveryRequired( fs, layout, config, INSTANCE ) );
+    private void recoverDatabase(DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache) throws Exception {
+        assertTrue(Recovery.isRecoveryRequired(fs, layout, config, INSTANCE));
+        performRecovery(
+                Recovery.context(fs, cache, DatabaseTracers.EMPTY, config, layout, INSTANCE, IOController.DISABLED));
+        assertFalse(Recovery.isRecoveryRequired(fs, layout, config, INSTANCE));
     }
 
-    private static void createEntities( GraphDatabaseService service )
-    {
-        try ( Transaction transaction = service.beginTx() )
-        {
-            Node node = transaction.createNode( label );
-            node.createRelationshipTo( node, type );
+    private static void createEntities(GraphDatabaseService service) {
+        try (Transaction transaction = service.beginTx()) {
+            Node node = transaction.createNode(label);
+            node.createRelationshipTo(node, type);
             transaction.commit();
         }
     }

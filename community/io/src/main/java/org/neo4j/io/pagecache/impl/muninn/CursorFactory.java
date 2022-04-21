@@ -21,8 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 
-final class CursorFactory
-{
+final class CursorFactory {
     private final MuninnPagedFile pagedFile;
     private final long victimPage;
 
@@ -30,23 +29,20 @@ final class CursorFactory
      * Cursor factory construction
      * @param pagedFile paged file for which cursor is created
      */
-    CursorFactory( MuninnPagedFile pagedFile )
-    {
+    CursorFactory(MuninnPagedFile pagedFile) {
         this.pagedFile = pagedFile;
         this.victimPage = pagedFile.pageCache.victimPage;
     }
 
-    MuninnReadPageCursor takeReadCursor( long pageId, int pf_flags, CursorContext cursorContext )
-    {
-        MuninnReadPageCursor cursor = new MuninnReadPageCursor( victimPage, cursorContext );
-        cursor.initialise( pagedFile, pageId, pf_flags );
+    MuninnReadPageCursor takeReadCursor(long pageId, int pf_flags, CursorContext cursorContext) {
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor(victimPage, cursorContext);
+        cursor.initialise(pagedFile, pageId, pf_flags);
         return cursor;
     }
 
-    MuninnWritePageCursor takeWriteCursor( long pageId, int pf_flags, CursorContext cursorContext )
-    {
-        MuninnWritePageCursor cursor = new MuninnWritePageCursor( victimPage, cursorContext );
-        cursor.initialise( pagedFile, pageId, pf_flags );
+    MuninnWritePageCursor takeWriteCursor(long pageId, int pf_flags, CursorContext cursorContext) {
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor(victimPage, cursorContext);
+        cursor.initialise(pagedFile, pageId, pf_flags);
         return cursor;
     }
 }

@@ -30,55 +30,52 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.values.virtual.MapValue;
 
-public class BoltQueryExecutorImpl implements BoltQueryExecutor
-{
+public class BoltQueryExecutorImpl implements BoltQueryExecutor {
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionalContextFactory transactionalContextFactory;
     private final InternalTransaction internalTransaction;
 
-    BoltQueryExecutorImpl( QueryExecutionEngine queryExecutionEngine, TransactionalContextFactory transactionalContextFactory,
-            InternalTransaction internalTransaction )
-    {
+    BoltQueryExecutorImpl(
+            QueryExecutionEngine queryExecutionEngine,
+            TransactionalContextFactory transactionalContextFactory,
+            InternalTransaction internalTransaction) {
         this.queryExecutionEngine = queryExecutionEngine;
         this.transactionalContextFactory = transactionalContextFactory;
         this.internalTransaction = internalTransaction;
     }
 
     @Override
-    public BoltQueryExecution executeQuery( String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber )
-            throws QueryExecutionKernelException
-    {
-        TransactionalContext transactionalContext = transactionalContextFactory.newContext( internalTransaction, query, parameters );
-        QueryExecution queryExecution = queryExecutionEngine.executeQuery( query, parameters, transactionalContext, prePopulate, subscriber );
-        return new BoltQueryExecutionImpl( queryExecution, transactionalContext );
+    public BoltQueryExecution executeQuery(
+            String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber)
+            throws QueryExecutionKernelException {
+        TransactionalContext transactionalContext =
+                transactionalContextFactory.newContext(internalTransaction, query, parameters);
+        QueryExecution queryExecution =
+                queryExecutionEngine.executeQuery(query, parameters, transactionalContext, prePopulate, subscriber);
+        return new BoltQueryExecutionImpl(queryExecution, transactionalContext);
     }
 
-    private static class BoltQueryExecutionImpl implements BoltQueryExecution
-    {
+    private static class BoltQueryExecutionImpl implements BoltQueryExecution {
         private final QueryExecution queryExecution;
         private final TransactionalContext transactionalContext;
 
-        BoltQueryExecutionImpl( QueryExecution queryExecution, TransactionalContext transactionalContext )
-        {
+        BoltQueryExecutionImpl(QueryExecution queryExecution, TransactionalContext transactionalContext) {
             this.queryExecution = queryExecution;
             this.transactionalContext = transactionalContext;
         }
 
         @Override
-        public QueryExecution getQueryExecution()
-        {
+        public QueryExecution getQueryExecution() {
             return queryExecution;
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             transactionalContext.close();
         }
 
         @Override
-        public void terminate()
-        {
+        public void terminate() {
             transactionalContext.terminate();
         }
     }

@@ -21,7 +21,6 @@ package org.neo4j.bolt.v44.messaging;
 
 import java.util.Arrays;
 import java.util.List;
-
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -45,52 +44,58 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 
-public class BoltRequestMessageReaderV44 extends BoltRequestMessageReaderV43
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOf( BoltRequestMessageReaderV44.class );
+public class BoltRequestMessageReaderV44 extends BoltRequestMessageReaderV43 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOf(BoltRequestMessageReaderV44.class);
 
-    protected BoltRequestMessageReaderV44( BoltConnection connection, BoltResponseHandler externalErrorResponseHandler,
-                                           List<RequestMessageDecoder> decoders, ChannelProtector channelProtector )
-    {
-        super( connection, externalErrorResponseHandler, decoders, channelProtector );
+    protected BoltRequestMessageReaderV44(
+            BoltConnection connection,
+            BoltResponseHandler externalErrorResponseHandler,
+            List<RequestMessageDecoder> decoders,
+            ChannelProtector channelProtector) {
+        super(connection, externalErrorResponseHandler, decoders, channelProtector);
     }
 
-    public BoltRequestMessageReaderV44( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, BookmarksParser bookmarksParser,
-                                        ChannelProtector channelProtector, LogService logService )
-    {
-        this( connection, newSimpleResponseHandler( responseMessageWriter, connection, logService ),
-              buildDecoders( connection, responseMessageWriter, bookmarksParser, logService ), channelProtector );
+    public BoltRequestMessageReaderV44(
+            BoltConnection connection,
+            BoltResponseMessageWriter responseMessageWriter,
+            BookmarksParser bookmarksParser,
+            ChannelProtector channelProtector,
+            LogService logService) {
+        this(
+                connection,
+                newSimpleResponseHandler(responseMessageWriter, connection, logService),
+                buildDecoders(connection, responseMessageWriter, bookmarksParser, logService),
+                channelProtector);
     }
 
-    private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
-                                                              BookmarksParser bookmarksParser, LogService logService )
-    {
-        var resultHandler = new ResultHandler( responseMessageWriter, connection, internalLog( logService ) );
-        var defaultHandler = newSimpleResponseHandler( responseMessageWriter, connection, logService );
+    private static List<RequestMessageDecoder> buildDecoders(
+            BoltConnection connection,
+            BoltResponseMessageWriter responseMessageWriter,
+            BookmarksParser bookmarksParser,
+            LogService logService) {
+        var resultHandler = new ResultHandler(responseMessageWriter, connection, internalLog(logService));
+        var defaultHandler = newSimpleResponseHandler(responseMessageWriter, connection, logService);
 
         return Arrays.asList(
-                new HelloMessageDecoder( defaultHandler ),
-                new DiscardMessageDecoder( resultHandler ),
-                new PullMessageDecoder( resultHandler ),
-                new CommitMessageDecoder( resultHandler ),
-                new RollbackMessageDecoder( resultHandler ),
-                new ResetMessageDecoder( connection, defaultHandler ),
-                new GoodbyeMessageDecoder( connection, defaultHandler ),
+                new HelloMessageDecoder(defaultHandler),
+                new DiscardMessageDecoder(resultHandler),
+                new PullMessageDecoder(resultHandler),
+                new CommitMessageDecoder(resultHandler),
+                new RollbackMessageDecoder(resultHandler),
+                new ResetMessageDecoder(connection, defaultHandler),
+                new GoodbyeMessageDecoder(connection, defaultHandler),
                 // New in 4.4
-                new RouteMessageDecoder( defaultHandler, bookmarksParser ),
-                new RunMessageDecoder( defaultHandler, bookmarksParser ),
-                new BeginMessageDecoder( defaultHandler, bookmarksParser )
-        );
+                new RouteMessageDecoder(defaultHandler, bookmarksParser),
+                new RunMessageDecoder(defaultHandler, bookmarksParser),
+                new BeginMessageDecoder(defaultHandler, bookmarksParser));
     }
 
-    private static BoltResponseHandler newSimpleResponseHandler( BoltResponseMessageWriter responseMessageWriter, BoltConnection connection,
-                                                                 LogService logService )
-    {
-        return new MessageProcessingHandler( responseMessageWriter, connection, internalLog( logService ) );
+    private static BoltResponseHandler newSimpleResponseHandler(
+            BoltResponseMessageWriter responseMessageWriter, BoltConnection connection, LogService logService) {
+        return new MessageProcessingHandler(responseMessageWriter, connection, internalLog(logService));
     }
 
-    private static InternalLog internalLog( LogService logService )
-    {
-        return logService.getInternalLog( BoltRequestMessageReaderV44.class );
+    private static InternalLog internalLog(LogService logService) {
+        return logService.getInternalLog(BoltRequestMessageReaderV44.class);
     }
 }

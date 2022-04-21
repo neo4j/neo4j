@@ -19,33 +19,30 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.io.layout.CommonDatabaseFile;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class StoreTypeTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.layout.CommonDatabaseFile;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
+
+class StoreTypeTest {
     @Test
-    void storeTypeOfValidStoreFile()
-    {
-        StoreType matchedType = StoreType.typeOf( RecordDatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
-        assertEquals( StoreType.NODE, matchedType );
+    void storeTypeOfValidStoreFile() {
+        StoreType matchedType = StoreType.typeOf(RecordDatabaseFile.NODE_STORE)
+                .orElseThrow(() -> new IllegalStateException("Store type not found"));
+        assertEquals(StoreType.NODE, matchedType);
     }
 
     @Test
-    void storeTypeOfMetaDataStoreFile()
-    {
-        StoreType matchedType = StoreType.typeOf( CommonDatabaseFile.METADATA_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
-        assertEquals( StoreType.META_DATA, matchedType );
+    void storeTypeOfMetaDataStoreFile() {
+        StoreType matchedType = StoreType.typeOf(CommonDatabaseFile.METADATA_STORE)
+                .orElseThrow(() -> new IllegalStateException("Store type not found"));
+        assertEquals(StoreType.META_DATA, matchedType);
     }
 
     @Test
-    void storeTypeofSomeInvalidFile()
-    {
-        assertThat( StoreType.typeOf( CommonDatabaseFile.INDEX_STATISTICS_STORE ) ).isEmpty();
+    void storeTypeofSomeInvalidFile() {
+        assertThat(StoreType.typeOf(CommonDatabaseFile.INDEX_STATISTICS_STORE)).isEmpty();
     }
 }

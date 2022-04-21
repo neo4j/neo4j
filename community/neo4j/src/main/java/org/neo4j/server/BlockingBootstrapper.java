@@ -23,37 +23,29 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-public class BlockingBootstrapper implements Bootstrapper
-{
+public class BlockingBootstrapper implements Bootstrapper {
     private final Bootstrapper wrapped;
     private final CountDownLatch latch;
 
-    public BlockingBootstrapper( Bootstrapper wrapped )
-    {
+    public BlockingBootstrapper(Bootstrapper wrapped) {
         this.wrapped = wrapped;
-        this.latch = new CountDownLatch( 1 );
+        this.latch = new CountDownLatch(1);
     }
 
-    public final int start( Path homeDir, Map<String, String> configOverrides )
-    {
-        return start( homeDir, null, configOverrides, false );
+    public final int start(Path homeDir, Map<String, String> configOverrides) {
+        return start(homeDir, null, configOverrides, false);
     }
 
     @Override
-    public final int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands )
-    {
-        int status = wrapped.start( homeDir, configFile, configOverrides, expandCommands );
-        if ( status != NeoBootstrapper.OK )
-        {
+    public final int start(Path homeDir, Path configFile, Map<String, String> configOverrides, boolean expandCommands) {
+        int status = wrapped.start(homeDir, configFile, configOverrides, expandCommands);
+        if (status != NeoBootstrapper.OK) {
             return status;
         }
 
-        try
-        {
+        try {
             latch.await();
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
@@ -61,8 +53,7 @@ public class BlockingBootstrapper implements Bootstrapper
     }
 
     @Override
-    public int stop()
-    {
+    public int stop() {
         latch.countDown();
         return 0;
     }

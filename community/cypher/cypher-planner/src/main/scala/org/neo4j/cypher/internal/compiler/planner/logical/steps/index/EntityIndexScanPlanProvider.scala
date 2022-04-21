@@ -35,26 +35,29 @@ object EntityIndexScanPlanProvider {
    * We put values in this container so that we can avoid creating duplicate plans.
    */
   case class Solution[PARAMETERS](
-                                   indexScanParameters: PARAMETERS,
-                                   solvedPredicates: Seq[Expression],
-                                   solvedHint: Option[UsingIndexHint],
-                                   providedOrder: ProvidedOrder,
-                                   indexType: IndexType,
-                                 )
+    indexScanParameters: PARAMETERS,
+    solvedPredicates: Seq[Expression],
+    solvedHint: Option[UsingIndexHint],
+    providedOrder: ProvidedOrder,
+    indexType: IndexType
+  )
 
-  private[index] def predicatesForIndexScan(propertyPredicates: Seq[IndexCompatiblePredicate]): Seq[IndexCompatiblePredicate] =
+  private[index] def predicatesForIndexScan(propertyPredicates: Seq[IndexCompatiblePredicate])
+    : Seq[IndexCompatiblePredicate] =
     propertyPredicates.map(_.convertToScannable)
 
   private[index] def mergeSolutions[PARAMETERS](solutions: Set[Solution[PARAMETERS]]): Set[Solution[PARAMETERS]] =
     solutions
       .groupBy(s => (s.indexScanParameters, s.indexType))
-      .map { case ((parameters, indexType), solutions) => Solution(
-        indexScanParameters = parameters,
-        solvedPredicates = mergeSolvedPredicates(solutions).toSeq,
-        solvedHint = solutions.flatMap(_.solvedHint).headOption,
-        providedOrder = solutions.map(_.providedOrder).head,
-        indexType = indexType,
-      )}
+      .map { case ((parameters, indexType), solutions) =>
+        Solution(
+          indexScanParameters = parameters,
+          solvedPredicates = mergeSolvedPredicates(solutions).toSeq,
+          solvedHint = solutions.flatMap(_.solvedHint).headOption,
+          providedOrder = solutions.map(_.providedOrder).head,
+          indexType = indexType
+        )
+      }
       .toSet
 
   private def mergeSolvedPredicates[PARAMETERS](solutions: Set[Solution[PARAMETERS]]): Set[Expression] = {

@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
-abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                runtime: CypherRuntime[CONTEXT],
-                                                                val sizeHint: Int
-                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("empty lhs should produce no rows") {
     // when
@@ -534,7 +535,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
   }
 
   test("with column introduced after apply") {
-    //flaky
+    // flaky
     assume(!(isParallel && runOnlySafeScenarios))
     val (nodes, _) = given {
       circleGraph(sizeHint)

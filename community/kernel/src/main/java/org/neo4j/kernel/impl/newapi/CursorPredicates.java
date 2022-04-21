@@ -21,34 +21,24 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.function.Predicate;
-
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 
-public class CursorPredicates
-{
+public class CursorPredicates {
 
-    public static boolean propertiesMatch( PropertyCursor propertyCursor, PropertyIndexQuery[] queries )
-    {
+    public static boolean propertiesMatch(PropertyCursor propertyCursor, PropertyIndexQuery[] queries) {
         int targetCount = queries.length;
-        while ( propertyCursor.next() )
-        {
-            for ( PropertyIndexQuery query : queries )
-            {
-                if ( propertyCursor.propertyKey() == query.propertyKeyId() )
-                {
-                    if ( query.acceptsValueAt( propertyCursor ) )
-                    {
+        while (propertyCursor.next()) {
+            for (PropertyIndexQuery query : queries) {
+                if (propertyCursor.propertyKey() == query.propertyKeyId()) {
+                    if (query.acceptsValueAt(propertyCursor)) {
                         targetCount--;
-                        if ( targetCount == 0 )
-                        {
+                        if (targetCount == 0) {
                             return true;
                         }
-                    }
-                    else
-                    {
+                    } else {
                         return false;
                     }
                 }
@@ -57,31 +47,27 @@ public class CursorPredicates
         return false;
     }
 
-    public static Predicate<NodeCursor> hasLabel( int labelId )
-    {
-        return cursor -> cursor.hasLabel( labelId );
+    public static Predicate<NodeCursor> hasLabel(int labelId) {
+        return cursor -> cursor.hasLabel(labelId);
     }
 
-    public static Predicate<RelationshipScanCursor> hasType( int typeId )
-    {
+    public static Predicate<RelationshipScanCursor> hasType(int typeId) {
         return cursor -> cursor.type() == typeId;
     }
 
-    public static Predicate<NodeCursor> nodeMatchProperties( PropertyIndexQuery[] queries, PropertyCursor propertyCursor )
-    {
-        return cursor ->
-        {
-            cursor.properties( propertyCursor );
-            return propertiesMatch( propertyCursor, queries );
+    public static Predicate<NodeCursor> nodeMatchProperties(
+            PropertyIndexQuery[] queries, PropertyCursor propertyCursor) {
+        return cursor -> {
+            cursor.properties(propertyCursor);
+            return propertiesMatch(propertyCursor, queries);
         };
     }
 
-    public static Predicate<RelationshipScanCursor> relationshipMatchProperties( PropertyIndexQuery[] queries, PropertyCursor propertyCursor )
-    {
-        return cursor ->
-        {
-            cursor.properties( propertyCursor );
-            return propertiesMatch( propertyCursor, queries );
+    public static Predicate<RelationshipScanCursor> relationshipMatchProperties(
+            PropertyIndexQuery[] queries, PropertyCursor propertyCursor) {
+        return cursor -> {
+            cursor.properties(propertyCursor);
+            return propertiesMatch(propertyCursor, queries);
         };
     }
 }

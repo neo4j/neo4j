@@ -19,50 +19,44 @@
  */
 package org.neo4j.bolt.v3.runtime.bookmarking;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class BookmarkWithPrefixTest
-{
-    @Test
-    void shouldHaveTransactionId()
-    {
-        var bookmark = new BookmarkWithPrefix( 42 );
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 
-        assertEquals( 42, bookmark.txId() );
+class BookmarkWithPrefixTest {
+    @Test
+    void shouldHaveTransactionId() {
+        var bookmark = new BookmarkWithPrefix(42);
+
+        assertEquals(42, bookmark.txId());
     }
 
     @Test
-    void shouldNotHaveDatabaseId()
-    {
-        var bookmark = new BookmarkWithPrefix( 42 );
+    void shouldNotHaveDatabaseId() {
+        var bookmark = new BookmarkWithPrefix(42);
 
-        assertNull( bookmark.databaseId() );
+        assertNull(bookmark.databaseId());
     }
 
     @Test
-    void shouldAttachToMetadata()
-    {
-        var bookmark = new BookmarkWithPrefix( 42 );
-        var responseHandler = mock( BoltResponseHandler.class );
+    void shouldAttachToMetadata() {
+        var bookmark = new BookmarkWithPrefix(42);
+        var responseHandler = mock(BoltResponseHandler.class);
 
-        bookmark.attachTo( responseHandler );
+        bookmark.attachTo(responseHandler);
 
-        verify( responseHandler ).onMetadata( "bookmark", stringValue( "neo4j:bookmark:v1:tx42" ) );
+        verify(responseHandler).onMetadata("bookmark", stringValue("neo4j:bookmark:v1:tx42"));
     }
 
     @Test
-    void shouldFormatAsString()
-    {
-        var bookmark = new BookmarkWithPrefix( 424242 );
+    void shouldFormatAsString() {
+        var bookmark = new BookmarkWithPrefix(424242);
 
-        assertEquals( "neo4j:bookmark:v1:tx424242", bookmark.toString() );
+        assertEquals("neo4j:bookmark:v1:tx424242", bookmark.toString());
     }
 }

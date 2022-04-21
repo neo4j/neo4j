@@ -17,13 +17,14 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeComparisons
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 
 class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val expression = varFor("foo")
+
   private val comparisons = List(
     equals(expression, expression),
     notEquals(expression, expression),
@@ -46,7 +47,8 @@ class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSu
     val original = hasLabels(varFor("a"), "X", "Y")
 
     original.endoRewrite(normalizeComparisons) should equal(
-      ands(hasLabels("a", "X"), hasLabels("a", "Y")))
+      ands(hasLabels("a", "X"), hasLabels("a", "Y"))
+    )
   }
 
   test("does not extract single hasLabels") {

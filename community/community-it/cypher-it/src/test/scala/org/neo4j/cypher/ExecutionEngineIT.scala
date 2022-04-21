@@ -33,7 +33,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
-  private var db : GraphDatabaseService = _
+  private var db: GraphDatabaseService = _
   private var managementService: DatabaseManagementService = _
 
   override protected def stopTest(): Unit = {
@@ -44,19 +44,18 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   }
 
   Seq(CypherParserVersion.V_35, CypherParserVersion.V_43, CypherParserVersion.V_44).foreach { version =>
-
     test(s"by default when using cypher ${version.name} some queries should default to COST") {
-      //given
+      // given
       managementService = new TestDatabaseManagementServiceBuilder().impermanent()
         .setConfig(GraphDatabaseSettings.cypher_parser_version, version).build()
       db = managementService.database(DEFAULT_DATABASE_NAME)
       val service = new GraphDatabaseCypherService(db)
 
-      //when
+      // when
       val plan1 = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
       val plan2 = service.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
-      //then
+      // then
       plan1.getArguments.get("planner") should equal("COST")
       plan1.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
       plan2.getArguments.get("planner") should equal("COST")
@@ -64,7 +63,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     }
 
     test(s"should be able to force COST as default when using cypher ${version.name}") {
-      //given
+      // given
       managementService = new TestDatabaseManagementServiceBuilder()
         .impermanent()
         .setConfig(GraphDatabaseSettings.cypher_planner, GraphDatabaseSettings.CypherPlanner.COST)
@@ -72,10 +71,10 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
       db = managementService.database(DEFAULT_DATABASE_NAME)
       val service = new GraphDatabaseCypherService(db)
 
-      //when
+      // when
       val plan = service.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
-      //then
+      // then
       plan.getArguments.get("planner") should equal("COST")
       plan.getArguments.get("planner-impl") should equal("IDP")
     }
@@ -83,7 +82,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   }
 
   test("should work if query cache size is set to zero") {
-    //given
+    // given
     managementService = new TestDatabaseManagementServiceBuilder()
       .impermanent()
       .setConfig(GraphDatabaseSettings.query_cache_size, Integer.valueOf(1)).build()
@@ -156,9 +155,10 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     }
   }
 
-  private implicit class RichDb(db: GraphDatabaseCypherService) {
+  implicit private class RichDb(db: GraphDatabaseCypherService) {
+
     def planDescriptionForQuery(query: String): ExecutionPlanDescription = {
-      db.withTx( tx => {
+      db.withTx(tx => {
         val res = tx.execute(query)
         res.resultAsString()
         res.getExecutionPlanDescription

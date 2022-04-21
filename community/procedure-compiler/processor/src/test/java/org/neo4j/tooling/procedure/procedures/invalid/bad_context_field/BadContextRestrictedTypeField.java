@@ -28,41 +28,31 @@ import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
 
-public class BadContextRestrictedTypeField
-{
+public class BadContextRestrictedTypeField {
 
     @Context
     public GraphDatabaseAPI notOfficiallySupported;
 
     @Procedure
-    public void sproc()
-    {
-    }
+    public void sproc() {}
 
     @UserFunction
-    public Long function()
-    {
+    public Long function() {
         return 42L;
     }
 
     @UserAggregationFunction
-    public MyAggregation aggregation()
-    {
+    public MyAggregation aggregation() {
         return new MyAggregation();
     }
 
-    public static class MyAggregation
-    {
+    public static class MyAggregation {
         @UserAggregationResult
-        public Long result()
-        {
+        public Long result() {
             return 42L;
         }
 
         @UserAggregationUpdate
-        public void woot( @Name( "undostres" ) String onetwothree )
-        {
-
-        }
+        public void woot(@Name("undostres") String onetwothree) {}
     }
 }

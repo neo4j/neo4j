@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.jupiter.api.Test;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -37,55 +41,68 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @DbmsExtension
-class DynamicIndexStoreViewTracingIT
-{
+class DynamicIndexStoreViewTracingIT {
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private LockService lockService;
+
     @Inject
     private Locks locks;
+
     @Inject
     private IndexingService indexingService;
+
     @Inject
     private StorageEngine storageEngine;
+
     @Inject
     private JobScheduler jobScheduler;
 
     @Test
-    void tracePageCacheAccess()
-    {
+    void tracePageCacheAccess() {
         int nodeCount = 1000;
-        var label = Label.label( "marker" );
-        try ( var tx = database.beginTx() )
-        {
-            for ( int i = 0; i < nodeCount; i++ )
-            {
-                var node = tx.createNode( label );
-                node.setProperty( "a", randomAscii( 10 ) );
+        var label = Label.label("marker");
+        try (var tx = database.beginTx()) {
+            for (int i = 0; i < nodeCount; i++) {
+                var node = tx.createNode(label);
+                node.setProperty("a", randomAscii(10));
             }
             tx.commit();
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
-        var neoStoreStoreView =
-                new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
-        var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, locks, lockService, Config.defaults(),
-                indexDescriptor -> indexingService.getIndexProxy( indexDescriptor ), storageEngine::newReader, storageEngine::createStorageCursors,
-                NullLogProvider.getInstance() );
-        var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
-                new TestTokenScanConsumer(), false, true, contextFactory, INSTANCE );
-        storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
+        var neoStoreStoreView = new FullScanStoreView(
+                lockService,
+                storageEngine::newReader,
+                storageEngine::createStorageCursors,
+                Config.defaults(),
+                jobScheduler);
+        var indexStoreView = new DynamicIndexStoreView(
+                neoStoreStoreView,
+                locks,
+                lockService,
+                Config.defaults(),
+                indexDescriptor -> indexingService.getIndexProxy(indexDescriptor),
+                storageEngine::newReader,
+                storageEngine::createStorageCursors,
+                NullLogProvider.getInstance());
+        var storeScan = indexStoreView.visitNodes(
+                new int[] {0, 1, 2},
+                ALWAYS_TRUE_INT,
+                null,
+                new TestTokenScanConsumer(),
+                false,
+                true,
+                contextFactory,
+                INSTANCE);
+        storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 104 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 104 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 104 );
+        assertThat(pageCacheTracer.pins()).isEqualTo(104);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(104);
+        assertThat(pageCacheTracer.hits()).isEqualTo(104);
     }
 }

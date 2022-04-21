@@ -19,9 +19,7 @@
  */
 package org.neo4j.monitoring;
 
-import org.apache.commons.lang3.ClassUtils;
-import org.eclipse.collections.api.bag.MutableBag;
-import org.eclipse.collections.impl.bag.mutable.MultiReaderHashBag;
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -32,12 +30,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-
+import org.apache.commons.lang3.ClassUtils;
+import org.eclipse.collections.api.bag.MutableBag;
+import org.eclipse.collections.impl.bag.mutable.MultiReaderHashBag;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 /**
  * This can be used to create monitor instances using a Dynamic Proxy, which when invoked can delegate to any number of
@@ -50,27 +48,25 @@ import static org.apache.commons.lang3.ArrayUtils.isEmpty;
  *
  * This class is thread-safe.
  */
-public class Monitors
-{
-    private static final FailureHandler IGNORE = ( f, m ) -> {};
+public class Monitors {
+    private static final FailureHandler IGNORE = (f, m) -> {};
 
     /** Monitor interface method -> Listeners */
-    private final Map<Method,Set<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
+    private final Map<Method, Set<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
+
     private final MutableBag<Class<?>> monitoredInterfaces = MultiReaderHashBag.newBag();
     private final Monitors parent;
     private final FailureHandler failureHandler;
 
-    public Monitors()
-    {
-        this( null, IGNORE );
+    public Monitors() {
+        this(null, IGNORE);
     }
 
     /**
      * @param failureHandler will be called if an exception is thrown from one of the listeners.
      */
-    public Monitors( FailureHandler failureHandler )
-    {
-        this( null, failureHandler );
+    public Monitors(FailureHandler failureHandler) {
+        this(null, failureHandler);
     }
 
     /**
@@ -86,193 +82,163 @@ public class Monitors
      * @param parent to propagate events to.
      * @param logProvider to create a logger.
      */
-    public Monitors( Monitors parent, InternalLogProvider logProvider )
-    {
-        this( parent, new LoggingFailureHandler( logProvider ) );
+    public Monitors(Monitors parent, InternalLogProvider logProvider) {
+        this(parent, new LoggingFailureHandler(logProvider));
     }
 
-    public Monitors( Monitors parent, FailureHandler failureHandler )
-    {
+    public Monitors(Monitors parent, FailureHandler failureHandler) {
         this.parent = parent;
         this.failureHandler = failureHandler;
     }
 
-    public <T> T newMonitor( Class<T> monitorClass, String... tags )
-    {
-        requireInterface( monitorClass );
+    public <T> T newMonitor(Class<T> monitorClass, String... tags) {
+        requireInterface(monitorClass);
         ClassLoader classLoader = monitorClass.getClassLoader();
-        MonitorInvocationHandler monitorInvocationHandler = new MonitorInvocationHandler( this, tags );
-        return monitorClass.cast( Proxy.newProxyInstance( classLoader, new Class<?>[]{monitorClass}, monitorInvocationHandler ) );
+        MonitorInvocationHandler monitorInvocationHandler = new MonitorInvocationHandler(this, tags);
+        return monitorClass.cast(
+                Proxy.newProxyInstance(classLoader, new Class<?>[] {monitorClass}, monitorInvocationHandler));
     }
 
-    public void addMonitorListener( Object monitorListener, String... tags )
-    {
-        MonitorListenerInvocationHandler monitorListenerInvocationHandler = createInvocationHandler( monitorListener, tags );
+    public void addMonitorListener(Object monitorListener, String... tags) {
+        MonitorListenerInvocationHandler monitorListenerInvocationHandler =
+                createInvocationHandler(monitorListener, tags);
 
-        List<Class<?>> listenerInterfaces = getAllInterfaces( monitorListener );
-        methodsStream( listenerInterfaces ).forEach( method ->
-        {
+        List<Class<?>> listenerInterfaces = getAllInterfaces(monitorListener);
+        methodsStream(listenerInterfaces).forEach(method -> {
             Set<MonitorListenerInvocationHandler> methodHandlers =
-                    methodMonitorListeners.computeIfAbsent( method, f -> ConcurrentHashMap.newKeySet() );
-            methodHandlers.add( monitorListenerInvocationHandler );
-        } );
-        monitoredInterfaces.addAll( listenerInterfaces );
+                    methodMonitorListeners.computeIfAbsent(method, f -> ConcurrentHashMap.newKeySet());
+            methodHandlers.add(monitorListenerInvocationHandler);
+        });
+        monitoredInterfaces.addAll(listenerInterfaces);
     }
 
-    public void removeMonitorListener( Object monitorListener )
-    {
-        List<Class<?>> listenerInterfaces = getAllInterfaces( monitorListener );
-        methodsStream( listenerInterfaces ).forEach( method -> cleanupMonitorListeners( monitorListener, method ) );
-        listenerInterfaces.forEach( monitoredInterfaces::remove );
+    public void removeMonitorListener(Object monitorListener) {
+        List<Class<?>> listenerInterfaces = getAllInterfaces(monitorListener);
+        methodsStream(listenerInterfaces).forEach(method -> cleanupMonitorListeners(monitorListener, method));
+        listenerInterfaces.forEach(monitoredInterfaces::remove);
     }
 
-    private void cleanupMonitorListeners( Object monitorListener, Method key )
-    {
-        methodMonitorListeners.computeIfPresent( key, ( method1, handlers ) ->
-        {
-            handlers.removeIf( handler -> monitorListener.equals( handler.getMonitorListener() ) );
+    private void cleanupMonitorListeners(Object monitorListener, Method key) {
+        methodMonitorListeners.computeIfPresent(key, (method1, handlers) -> {
+            handlers.removeIf(handler -> monitorListener.equals(handler.getMonitorListener()));
             return handlers.isEmpty() ? null : handlers;
-        } );
+        });
     }
 
-    private static List<Class<?>> getAllInterfaces( Object monitorListener )
-    {
-        return ClassUtils.getAllInterfaces( monitorListener.getClass() );
+    private static List<Class<?>> getAllInterfaces(Object monitorListener) {
+        return ClassUtils.getAllInterfaces(monitorListener.getClass());
     }
 
-    private static Stream<Method> methodsStream( List<Class<?>> interfaces )
-    {
-        return interfaces.stream().map( Class::getMethods ).flatMap( Arrays::stream );
+    private static Stream<Method> methodsStream(List<Class<?>> interfaces) {
+        return interfaces.stream().map(Class::getMethods).flatMap(Arrays::stream);
     }
 
-    private static MonitorListenerInvocationHandler createInvocationHandler( Object monitorListener, String[] tags )
-    {
-        return isEmpty( tags ) ? new UntaggedMonitorListenerInvocationHandler( monitorListener )
-                                          : new TaggedMonitorListenerInvocationHandler( monitorListener, tags );
+    private static MonitorListenerInvocationHandler createInvocationHandler(Object monitorListener, String[] tags) {
+        return isEmpty(tags)
+                ? new UntaggedMonitorListenerInvocationHandler(monitorListener)
+                : new TaggedMonitorListenerInvocationHandler(monitorListener, tags);
     }
 
-    private static void requireInterface( Class monitorClass )
-    {
-        if ( !monitorClass.isInterface() )
-        {
-            throw new IllegalArgumentException( "Interfaces should be provided." );
+    private static void requireInterface(Class monitorClass) {
+        if (!monitorClass.isInterface()) {
+            throw new IllegalArgumentException("Interfaces should be provided.");
         }
     }
-    private interface MonitorListenerInvocationHandler
-    {
+
+    private interface MonitorListenerInvocationHandler {
         Object getMonitorListener();
 
-        void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable;
+        void invoke(Object proxy, Method method, Object[] args, String... tags) throws Throwable;
     }
 
-    private static class UntaggedMonitorListenerInvocationHandler implements MonitorListenerInvocationHandler
-    {
+    private static class UntaggedMonitorListenerInvocationHandler implements MonitorListenerInvocationHandler {
         private final Object monitorListener;
 
-        UntaggedMonitorListenerInvocationHandler( Object monitorListener )
-        {
+        UntaggedMonitorListenerInvocationHandler(Object monitorListener) {
             this.monitorListener = monitorListener;
         }
 
         @Override
-        public Object getMonitorListener()
-        {
+        public Object getMonitorListener() {
             return monitorListener;
         }
 
         @Override
-        public void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable
-        {
-            method.invoke( monitorListener, args );
+        public void invoke(Object proxy, Method method, Object[] args, String... tags) throws Throwable {
+            method.invoke(monitorListener, args);
         }
     }
 
-    private static class TaggedMonitorListenerInvocationHandler extends UntaggedMonitorListenerInvocationHandler
-    {
+    private static class TaggedMonitorListenerInvocationHandler extends UntaggedMonitorListenerInvocationHandler {
         private final String[] tags;
 
-        TaggedMonitorListenerInvocationHandler( Object monitorListener, String... tags )
-        {
-            super( monitorListener );
+        TaggedMonitorListenerInvocationHandler(Object monitorListener, String... tags) {
+            super(monitorListener);
             this.tags = tags;
         }
 
         @Override
-        public void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable
-        {
-            if ( ArrayUtil.containsAll( this.tags, tags ) )
-            {
-                super.invoke( proxy, method, args, tags );
+        public void invoke(Object proxy, Method method, Object[] args, String... tags) throws Throwable {
+            if (ArrayUtil.containsAll(this.tags, tags)) {
+                super.invoke(proxy, method, args, tags);
             }
         }
     }
 
-    private static class MonitorInvocationHandler implements InvocationHandler
-    {
+    private static class MonitorInvocationHandler implements InvocationHandler {
         private final Monitors monitor;
         private final String[] tags;
 
-        MonitorInvocationHandler( Monitors monitor, String... tags )
-        {
+        MonitorInvocationHandler(Monitors monitor, String... tags) {
             this.monitor = monitor;
             this.tags = tags;
         }
 
         @Override
-        public Object invoke( Object proxy, Method method, Object[] args )
-        {
-            invokeMonitorListeners( monitor, tags, proxy, method, args );
+        public Object invoke(Object proxy, Method method, Object[] args) {
+            invokeMonitorListeners(monitor, tags, proxy, method, args);
 
             // Bubble up
             Monitors current = monitor.parent;
-            while ( current != null )
-            {
-                invokeMonitorListeners( current, tags, proxy, method, args );
+            while (current != null) {
+                invokeMonitorListeners(current, tags, proxy, method, args);
                 current = current.parent;
             }
             return null;
         }
 
-        private static void invokeMonitorListeners( Monitors monitor, String[] tags, Object proxy, Method method, Object[] args )
-        {
-            Set<MonitorListenerInvocationHandler> handlers = monitor.methodMonitorListeners.get( method );
-            if ( handlers == null || handlers.isEmpty() )
-            {
+        private static void invokeMonitorListeners(
+                Monitors monitor, String[] tags, Object proxy, Method method, Object[] args) {
+            Set<MonitorListenerInvocationHandler> handlers = monitor.methodMonitorListeners.get(method);
+            if (handlers == null || handlers.isEmpty()) {
                 return;
             }
-            for ( MonitorListenerInvocationHandler monitorListenerInvocationHandler : handlers )
-            {
-                try
-                {
-                    monitorListenerInvocationHandler.invoke( proxy, method, args, tags );
-                }
-                catch ( Throwable failure )
-                {
-                    monitor.failureHandler.accept( failure, method.getName() );
+            for (MonitorListenerInvocationHandler monitorListenerInvocationHandler : handlers) {
+                try {
+                    monitorListenerInvocationHandler.invoke(proxy, method, args, tags);
+                } catch (Throwable failure) {
+                    monitor.failureHandler.accept(failure, method.getName());
                 }
             }
         }
     }
 
-    public interface FailureHandler
-    {
-        void accept( Throwable failure, String method );
+    public interface FailureHandler {
+        void accept(Throwable failure, String method);
     }
 
-    public static class LoggingFailureHandler implements FailureHandler
-    {
+    public static class LoggingFailureHandler implements FailureHandler {
         private final InternalLog log;
 
-        public LoggingFailureHandler( InternalLogProvider logProvider )
-        {
-            log = logProvider.getLog( Monitors.class );
+        public LoggingFailureHandler(InternalLogProvider logProvider) {
+            log = logProvider.getLog(Monitors.class);
         }
 
         @Override
-        public void accept( Throwable failure, String method )
-        {
-            String message = String.format( "Encountered exception while handling listener for monitor method %s", method );
-            log.warn( message, failure );
+        public void accept(Throwable failure, String method) {
+            String message =
+                    String.format("Encountered exception while handling listener for monitor method %s", method);
+            log.warn(message, failure);
         }
     }
 }

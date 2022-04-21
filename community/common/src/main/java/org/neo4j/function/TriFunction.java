@@ -28,7 +28,6 @@ package org.neo4j.function;
  * @param <W> type of the function's result
  */
 @FunctionalInterface
-public interface TriFunction<T,U,V,W>
-{
-    W apply( T t, U u, V v );
+public interface TriFunction<T, U, V, W> {
+    W apply(T t, U u, V v);
 }

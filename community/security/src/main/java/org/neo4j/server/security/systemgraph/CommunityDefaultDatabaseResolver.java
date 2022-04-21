@@ -19,9 +19,12 @@
  */
 package org.neo4j.server.security.systemgraph;
 
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
+
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,69 +35,54 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
-
-public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAdapter<Object> implements DefaultDatabaseResolver
-{
+public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAdapter<Object>
+        implements DefaultDatabaseResolver {
     private final Config config;
     private final Supplier<GraphDatabaseService> systemDbSupplier;
     private GraphDatabaseService systemDb;
 
-    private final AtomicReference<String> cachedDefaultDatabase = new AtomicReference<>( null );
+    private final AtomicReference<String> cachedDefaultDatabase = new AtomicReference<>(null);
 
-    public CommunityDefaultDatabaseResolver( Config config, Supplier<GraphDatabaseService> systemDbSupplier )
-    {
+    public CommunityDefaultDatabaseResolver(Config config, Supplier<GraphDatabaseService> systemDbSupplier) {
         this.config = config;
         this.systemDbSupplier = systemDbSupplier;
     }
 
     @Override
-    public String defaultDatabase( String username )
-    {
+    public String defaultDatabase(String username) {
         String cachedResult = cachedDefaultDatabase.get();
-        if ( cachedResult != null )
-        {
+        if (cachedResult != null) {
             return cachedResult;
         }
 
-        String defaultDatabase = config.get( GraphDatabaseSettings.default_database );
-        try ( Transaction tx = getSystemDb().beginTx() )
-        {
-            Node defaultDatabaseNode = tx.findNode( DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true );
-            if ( defaultDatabaseNode != null )
-            {
-                defaultDatabase = (String) defaultDatabaseNode.getProperty( DATABASE_NAME_PROPERTY, defaultDatabase );
+        String defaultDatabase = config.get(GraphDatabaseSettings.default_database);
+        try (Transaction tx = getSystemDb().beginTx()) {
+            Node defaultDatabaseNode = tx.findNode(DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true);
+            if (defaultDatabaseNode != null) {
+                defaultDatabase = (String) defaultDatabaseNode.getProperty(DATABASE_NAME_PROPERTY, defaultDatabase);
             }
             tx.commit();
-            cachedDefaultDatabase.set( defaultDatabase );
+            cachedDefaultDatabase.set(defaultDatabase);
             return defaultDatabase;
-        }
-        catch ( NotFoundException n )
-        {
+        } catch (NotFoundException n) {
             return defaultDatabase;
         }
     }
 
     @Override
-    public void clearCache()
-    {
-        cachedDefaultDatabase.set( null );
+    public void clearCache() {
+        cachedDefaultDatabase.set(null);
     }
 
-    private GraphDatabaseService getSystemDb()
-    {
-        if ( systemDb == null )
-        {
+    private GraphDatabaseService getSystemDb() {
+        if (systemDb == null) {
             systemDb = systemDbSupplier.get();
         }
         return systemDb;
     }
 
     @Override
-    public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
-    {
+    public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
         clearCache();
     }
 }

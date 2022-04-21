@@ -19,13 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.eclipse.collections.api.factory.Sets;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
+import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.eclipse.collections.api.factory.Sets;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.staging.BatchSender;
@@ -59,60 +67,52 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
-import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
-
-@ExtendWith( RandomExtension.class )
+@ExtendWith(RandomExtension.class)
 @PageCacheExtension
 @Neo4jLayoutExtension
-class ReadEntityIdsStepUsingTokenIndexTest
-{
+class ReadEntityIdsStepUsingTokenIndexTest {
     private static final int TOKEN_ID = 0;
-    private static final AnyTokenSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptors.forAnyEntityTokens( EntityType.NODE );
-    private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withName( "index" ).materialise( 1 );
+    private static final AnyTokenSchemaDescriptor SCHEMA_DESCRIPTOR =
+            SchemaDescriptors.forAnyEntityTokens(EntityType.NODE);
+    private static final IndexDescriptor INDEX_DESCRIPTOR =
+            IndexPrototype.forSchema(SCHEMA_DESCRIPTOR).withName("index").materialise(1);
 
     @Inject
     TestDirectory testDir;
 
     @Inject
     PageCache pageCache;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private RandomSupport random;
-    private final CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+
+    private final CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
 
     @Test
-    void shouldSeeRecentUpdatesRightInFrontOfExternalUpdatesPoint() throws Exception
-    {
+    void shouldSeeRecentUpdatesRightInFrontOfExternalUpdatesPoint() throws Exception {
         // given
-        long entityCount = 1_000 + random.nextInt( 100 );
+        long entityCount = 1_000 + random.nextInt(100);
         BitSet expectedEntityIds = new BitSet();
         BitSet seenEntityIds = new BitSet();
 
-        try ( var indexAccessor = indexAccessor() )
-        {
-            populateTokenIndex( indexAccessor, expectedEntityIds, entityCount );
-            Configuration configuration = withBatchSize( DEFAULT, 100 );
-            Stage stage = new Stage( "Test", null, configuration, 0 )
-            {
+        try (var indexAccessor = indexAccessor()) {
+            populateTokenIndex(indexAccessor, expectedEntityIds, entityCount);
+            Configuration configuration = withBatchSize(DEFAULT, 100);
+            Stage stage = new Stage("Test", null, configuration, 0) {
                 {
-                    add( new ReadEntityIdsStep( control(),
-                                                configuration,
-                                                ( cursorContext, storeCursors ) -> new TokenIndexScanIdIterator(
-                                                        indexAccessor.newTokenReader(), new int[]{TOKEN_ID}, CursorContext.NULL_CONTEXT ),
-                                                any -> StoreCursors.NULL,
-                                                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                                                new ControlledUpdatesCheck( indexAccessor, expectedEntityIds ),
-                                                new AtomicBoolean( true ) ) );
-                    add( new CollectEntityIdsStep( control(), configuration, seenEntityIds ) );
+                    add(new ReadEntityIdsStep(
+                            control(),
+                            configuration,
+                            (cursorContext, storeCursors) -> new TokenIndexScanIdIterator(
+                                    indexAccessor.newTokenReader(), new int[] {TOKEN_ID}, CursorContext.NULL_CONTEXT),
+                            any -> StoreCursors.NULL,
+                            new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                            new ControlledUpdatesCheck(indexAccessor, expectedEntityIds),
+                            new AtomicBoolean(true)));
+                    add(new CollectEntityIdsStep(control(), configuration, seenEntityIds));
                 }
             };
 
@@ -120,91 +120,81 @@ class ReadEntityIdsStepUsingTokenIndexTest
             stage.execute().awaitCompletion();
 
             // then
-            assertThat( seenEntityIds ).isEqualTo( expectedEntityIds );
+            assertThat(seenEntityIds).isEqualTo(expectedEntityIds);
         }
     }
 
-    private void populateTokenIndex( TokenIndexAccessor indexAccessor, BitSet entityIds, long count ) throws Exception
-    {
-        try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL_CONTEXT, false ) )
-        {
+    private void populateTokenIndex(TokenIndexAccessor indexAccessor, BitSet entityIds, long count) throws Exception {
+        try (IndexUpdater updater = indexAccessor.newUpdater(ONLINE, CursorContext.NULL_CONTEXT, false)) {
             long id = 0;
-            for ( int i = 0; i < count; i++ )
-            {
-                updater.process( IndexEntryUpdate.change( id, INDEX_DESCRIPTOR, EMPTY_LONG_ARRAY, new long[]{TOKEN_ID} ) );
-                entityIds.set( (int) id );
-                id += random.nextInt( 1, 5 );
+            for (int i = 0; i < count; i++) {
+                updater.process(IndexEntryUpdate.change(id, INDEX_DESCRIPTOR, EMPTY_LONG_ARRAY, new long[] {TOKEN_ID}));
+                entityIds.set((int) id);
+                id += random.nextInt(1, 5);
             }
         }
     }
 
-    private class ControlledUpdatesCheck implements ExternalUpdatesCheck
-    {
+    private class ControlledUpdatesCheck implements ExternalUpdatesCheck {
         private final TokenIndexAccessor indexAccessor;
         private final BitSet expectedEntityIds;
 
-        ControlledUpdatesCheck( TokenIndexAccessor indexAccessor, BitSet expectedEntityIds )
-        {
+        ControlledUpdatesCheck(TokenIndexAccessor indexAccessor, BitSet expectedEntityIds) {
             this.indexAccessor = indexAccessor;
             this.expectedEntityIds = expectedEntityIds;
         }
 
         @Override
-        public boolean needToApplyExternalUpdates()
-        {
+        public boolean needToApplyExternalUpdates() {
             return random.nextBoolean();
         }
 
         @Override
-        public void applyExternalUpdates( long currentlyIndexedNodeId )
-        {
+        public void applyExternalUpdates(long currentlyIndexedNodeId) {
             // Apply some changes right in front of this point
-            int numIds = random.nextInt( 5, 50 );
-            try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL_CONTEXT, false ) )
-            {
-                for ( int i = 0; i < numIds; i++ )
-                {
+            int numIds = random.nextInt(5, 50);
+            try (IndexUpdater updater = indexAccessor.newUpdater(ONLINE, CursorContext.NULL_CONTEXT, false)) {
+                for (int i = 0; i < numIds; i++) {
                     long candidateId = currentlyIndexedNodeId + i + 1;
-                    if ( !expectedEntityIds.get( (int) candidateId ) )
-                    {
-                        updater.process( IndexEntryUpdate.change( candidateId, INDEX_DESCRIPTOR, EMPTY_LONG_ARRAY, new long[]{TOKEN_ID} ) );
-                        expectedEntityIds.set( (int) candidateId );
+                    if (!expectedEntityIds.get((int) candidateId)) {
+                        updater.process(IndexEntryUpdate.change(
+                                candidateId, INDEX_DESCRIPTOR, EMPTY_LONG_ARRAY, new long[] {TOKEN_ID}));
+                        expectedEntityIds.set((int) candidateId);
                     }
                 }
-            }
-            catch ( IndexEntryConflictException e )
-            {
-                throw new RuntimeException( e );
+            } catch (IndexEntryConflictException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
-    private static class CollectEntityIdsStep extends ProcessorStep<long[]>
-    {
+    private static class CollectEntityIdsStep extends ProcessorStep<long[]> {
         private final BitSet seenEntityIds;
 
-        CollectEntityIdsStep( StageControl control, Configuration config, BitSet seenEntityIds )
-        {
-            super( control, "Collector", config, 1, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+        CollectEntityIdsStep(StageControl control, Configuration config, BitSet seenEntityIds) {
+            super(control, "Collector", config, 1, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
             this.seenEntityIds = seenEntityIds;
         }
 
         @Override
-        protected void process( long[] entityIds, BatchSender sender, CursorContext cursorContext ) throws Throwable
-        {
-            for ( long entityId : entityIds )
-            {
-                seenEntityIds.set( (int) entityId );
+        protected void process(long[] entityIds, BatchSender sender, CursorContext cursorContext) throws Throwable {
+            for (long entityId : entityIds) {
+                seenEntityIds.set((int) entityId);
             }
         }
     }
 
-    private TokenIndexAccessor indexAccessor()
-    {
-        IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() )
-                .forProvider( TokenIndexProvider.DESCRIPTOR );
-        IndexFiles indexFiles = new IndexFiles.Directory( testDir.getFileSystem(), indexDirectoryStructure, INDEX_DESCRIPTOR.getId() );
-        return new TokenIndexAccessor( DatabaseIndexContext.builder( pageCache, testDir.getFileSystem(), contextFactory, DEFAULT_DATABASE_NAME ).build(),
-                                       indexFiles, INDEX_DESCRIPTOR, immediate(), Sets.immutable.empty() );
+    private TokenIndexAccessor indexAccessor() {
+        IndexDirectoryStructure indexDirectoryStructure =
+                directoriesByProvider(databaseLayout.databaseDirectory()).forProvider(TokenIndexProvider.DESCRIPTOR);
+        IndexFiles indexFiles =
+                new IndexFiles.Directory(testDir.getFileSystem(), indexDirectoryStructure, INDEX_DESCRIPTOR.getId());
+        return new TokenIndexAccessor(
+                DatabaseIndexContext.builder(pageCache, testDir.getFileSystem(), contextFactory, DEFAULT_DATABASE_NAME)
+                        .build(),
+                indexFiles,
+                INDEX_DESCRIPTOR,
+                immediate(),
+                Sets.immutable.empty());
     }
 }

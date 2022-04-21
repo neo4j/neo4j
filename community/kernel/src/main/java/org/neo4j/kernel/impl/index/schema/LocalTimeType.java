@@ -21,94 +21,76 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.time.LocalTime;
 import java.util.StringJoiner;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-class LocalTimeType extends Type
-{
+class LocalTimeType extends Type {
     // Affected key state:
     // long0 (nanoOfDay)
 
-    LocalTimeType( byte typeId )
-    {
-        super( ValueGroup.LOCAL_TIME, typeId, LocalTimeValue.MIN_VALUE, LocalTimeValue.MAX_VALUE );
+    LocalTimeType(byte typeId) {
+        super(ValueGroup.LOCAL_TIME, typeId, LocalTimeValue.MIN_VALUE, LocalTimeValue.MAX_VALUE);
     }
 
     @Override
-    int valueSize( GenericKey<?> state )
-    {
+    int valueSize(GenericKey<?> state) {
         return Types.SIZE_LOCAL_TIME;
     }
 
     @Override
-    void copyValue( GenericKey<?> to, GenericKey<?> from )
-    {
+    void copyValue(GenericKey<?> to, GenericKey<?> from) {
         to.long0 = from.long0;
     }
 
     @Override
-    Value asValue( GenericKey<?> state )
-    {
-        return asValue( state.long0 );
+    Value asValue(GenericKey<?> state) {
+        return asValue(state.long0);
     }
 
     @Override
-    int compareValue( GenericKey<?> left, GenericKey<?> right )
-    {
-        return compare(
-                left.long0,
-                right.long0 );
+    int compareValue(GenericKey<?> left, GenericKey<?> right) {
+        return compare(left.long0, right.long0);
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey<?> state )
-    {
-        put( cursor, state.long0 );
+    void putValue(PageCursor cursor, GenericKey<?> state) {
+        put(cursor, state.long0);
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey<?> into )
-    {
-        return read( cursor, into );
+    boolean readValue(PageCursor cursor, int size, GenericKey<?> into) {
+        return read(cursor, into);
     }
 
-    static LocalTimeValue asValue( long long0 )
-    {
-        return LocalTimeValue.localTime( asValueRaw( long0 ) );
+    static LocalTimeValue asValue(long long0) {
+        return LocalTimeValue.localTime(asValueRaw(long0));
     }
 
-    static LocalTime asValueRaw( long long0 )
-    {
-        return LocalTimeValue.localTimeRaw( long0 );
+    static LocalTime asValueRaw(long long0) {
+        return LocalTimeValue.localTimeRaw(long0);
     }
 
-    static int compare( long this_long0, long that_long0 )
-    {
-        return Long.compare( this_long0, that_long0 );
+    static int compare(long this_long0, long that_long0) {
+        return Long.compare(this_long0, that_long0);
     }
 
-    static void put( PageCursor cursor, long long0 )
-    {
-        cursor.putLong( long0 );
+    static void put(PageCursor cursor, long long0) {
+        cursor.putLong(long0);
     }
 
-    static boolean read( PageCursor cursor, GenericKey<?> into )
-    {
-        into.writeLocalTime( cursor.getLong() );
+    static boolean read(PageCursor cursor, GenericKey<?> into) {
+        into.writeLocalTime(cursor.getLong());
         return true;
     }
 
-    static void write( GenericKey<?> state, long nanoOfDay )
-    {
+    static void write(GenericKey<?> state, long nanoOfDay) {
         state.long0 = nanoOfDay;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
-    {
-        joiner.add( "long0=" + state.long0 );
+    protected void addTypeSpecificDetails(StringJoiner joiner, GenericKey<?> state) {
+        joiner.add("long0=" + state.long0);
     }
 }

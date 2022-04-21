@@ -19,39 +19,35 @@
  */
 package org.neo4j.server.security.systemgraph.versions;
 
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_41;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.server.security.auth.UserRepository;
 
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_41;
-
 /**
  * This is the UserSecurityComponent version for Neo4j 4.1
  */
-public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySecurityComponentVersion
-{
+public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySecurityComponentVersion {
     private final KnownCommunitySecurityComponentVersion previous;
 
-    public CommunitySecurityComponentVersion_2_41( AbstractSecurityLog securityLog, UserRepository userRepository,
-            KnownCommunitySecurityComponentVersion previous )
-    {
-        super( COMMUNITY_SECURITY_41, securityLog, userRepository );
+    public CommunitySecurityComponentVersion_2_41(
+            AbstractSecurityLog securityLog,
+            UserRepository userRepository,
+            KnownCommunitySecurityComponentVersion previous) {
+        super(COMMUNITY_SECURITY_41, securityLog, userRepository);
         this.previous = previous;
     }
 
     @Override
-    public void upgradeSecurityGraph( Transaction tx, int fromVersion ) throws Exception
-    {
-        if ( fromVersion < version )
-        {
-            previous.upgradeSecurityGraph( tx, fromVersion );
+    public void upgradeSecurityGraph(Transaction tx, int fromVersion) throws Exception {
+        if (fromVersion < version) {
+            previous.upgradeSecurityGraph(tx, fromVersion);
             // This version introduced the Version node
-            this.setVersionProperty( tx, version );
+            this.setVersionProperty(tx, version);
         }
     }
 
     @Override
-    public void upgradeSecurityGraphSchema( Transaction tx, int fromVersion )
-    {
-    }
+    public void upgradeSecurityGraphSchema(Transaction tx, int fromVersion) {}
 }

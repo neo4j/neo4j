@@ -19,9 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.TimeUtil.parseTimeMillis;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.index.schema.RangeIndexProvider.DESCRIPTOR;
+import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
+import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,7 +39,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.batchimport.cache.idmapping.string.Workers;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
@@ -66,93 +77,75 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.TimeUtil.parseTimeMillis;
-import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.index.schema.RangeIndexProvider.DESCRIPTOR;
-import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
-import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
-
 @PageCacheExtension
-class IndexWorkSyncTransactionApplicationStressIT
-{
-    private static final LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel( 0, 0 );
+class IndexWorkSyncTransactionApplicationStressIT {
+    private static final LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel(0, 0);
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
+
     @Inject
     private TestDirectory directory;
+
     @Inject
     private PageCache pageCache;
 
     private final RecordStorageEngineSupport storageEngineRule = new RecordStorageEngineSupport();
 
     @BeforeEach
-    void setUp() throws Throwable
-    {
+    void setUp() throws Throwable {
         storageEngineRule.before();
     }
 
     @AfterEach
-    void tearDown() throws Throwable
-    {
-        storageEngineRule.after( false );
+    void tearDown() throws Throwable {
+        storageEngineRule.after(false);
     }
 
     @Test
-    void shouldApplyIndexUpdatesInWorkSyncedBatches() throws Exception
-    {
+    void shouldApplyIndexUpdatesInWorkSyncedBatches() throws Exception {
         // GIVEN
-        long duration = parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "2s" ) );
-        int numThreads = Integer.getInteger( getClass().getName() + ".numThreads",
-                Runtime.getRuntime().availableProcessors() );
+        long duration = parseTimeMillis.apply(System.getProperty(getClass().getName() + ".duration", "2s"));
+        int numThreads = Integer.getInteger(
+                getClass().getName() + ".numThreads", Runtime.getRuntime().availableProcessors());
         CollectingIndexUpdateListener index = new CollectingIndexUpdateListener();
         RecordStorageEngine storageEngine = storageEngineRule
-                .getWith( fileSystem, pageCache, RecordDatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) ) )
-                .indexUpdateListener( index )
+                .getWith(fileSystem, pageCache, RecordDatabaseLayout.ofFlat(directory.directory(DEFAULT_DATABASE_NAME)))
+                .indexUpdateListener(index)
                 .build();
-        try ( var storageCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
-        {
-            storageEngine.apply( tx( singletonList( Commands.createIndexRule( DESCRIPTOR, 1, descriptor ) ), storageCursors ), EXTERNAL );
+        try (var storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
+            storageEngine.apply(
+                    tx(singletonList(Commands.createIndexRule(DESCRIPTOR, 1, descriptor)), storageCursors), EXTERNAL);
         }
 
         // WHEN
-        Workers<Worker> workers = new Workers<>( getClass().getSimpleName() );
+        Workers<Worker> workers = new Workers<>(getClass().getSimpleName());
         final AtomicBoolean end = new AtomicBoolean();
-        for ( int i = 0; i < numThreads; i++ )
-        {
-            workers.start( new Worker( i, end, storageEngine, 10, index ) );
+        for (int i = 0; i < numThreads; i++) {
+            workers.start(new Worker(i, end, storageEngine, 10, index));
         }
 
         // let the threads hammer the storage engine for some time
-        Thread.sleep( duration );
-        end.set( true );
+        Thread.sleep(duration);
+        end.set(true);
 
         // THEN (assertions as part of the workers applying transactions)
         workers.awaitAndThrowOnError();
     }
 
-    private static Value propertyValue( int id, int progress )
-    {
-        return Values.of( id + "_" + progress );
+    private static Value propertyValue(int id, int progress) {
+        return Values.of(id + "_" + progress);
     }
 
-    private static TransactionToApply tx( List<StorageCommand> commands, StoreCursors storeCursors )
-    {
-        PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1, ANONYMOUS );
-        TransactionToApply tx = new TransactionToApply( txRepresentation, NULL_CONTEXT, storeCursors );
-        tx.commitment( NO_COMMITMENT, 0 );
+    private static TransactionToApply tx(List<StorageCommand> commands, StoreCursors storeCursors) {
+        PhysicalTransactionRepresentation txRepresentation =
+                new PhysicalTransactionRepresentation(commands, new byte[0], -1, -1, -1, -1, ANONYMOUS);
+        TransactionToApply tx = new TransactionToApply(txRepresentation, NULL_CONTEXT, storeCursors);
+        tx.commitment(NO_COMMITMENT, 0);
         return tx;
     }
 
-    private static class Worker implements Runnable
-    {
+    private static class Worker implements Runnable {
         private final int id;
         private final AtomicBoolean end;
         private final RecordStorageEngine storageEngine;
@@ -162,8 +155,12 @@ class IndexWorkSyncTransactionApplicationStressIT
         private int i;
         private int base;
 
-        Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, CollectingIndexUpdateListener index )
-        {
+        Worker(
+                int id,
+                AtomicBoolean end,
+                RecordStorageEngine storageEngine,
+                int batchSize,
+                CollectingIndexUpdateListener index) {
             this.id = id;
             this.end = end;
             this.storageEngine = storageEngine;
@@ -174,103 +171,99 @@ class IndexWorkSyncTransactionApplicationStressIT
         }
 
         @Override
-        public void run()
-        {
-            try ( StorageReader reader = storageEngine.newReader();
-                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext( INSTANCE );
-                  var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
-            {
-                creationContext.initialize( NULL_CONTEXT, storeCursors );
-                TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
-                {
+        public void run() {
+            try (StorageReader reader = storageEngine.newReader();
+                    CommandCreationContext creationContext = storageEngine.newCommandCreationContext(INSTANCE);
+                    var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
+                creationContext.initialize(NULL_CONTEXT, storeCursors);
+                TransactionQueue queue = new TransactionQueue(batchSize, (tx, last) -> {
                     // Apply
-                    storageEngine.apply( tx, EXTERNAL );
+                    storageEngine.apply(tx, EXTERNAL);
 
                     // And verify that all nodes are in the index
-                    verifyIndex( tx );
+                    verifyIndex(tx);
                     base += batchSize;
-                } );
-                for ( ; !end.get(); i++ )
-                {
-                    queue.queue( createNodeAndProperty( i, reader, creationContext, storeCursors ) );
+                });
+                for (; !end.get(); i++) {
+                    queue.queue(createNodeAndProperty(i, reader, creationContext, storeCursors));
                 }
                 queue.empty();
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
 
-        private TransactionToApply createNodeAndProperty( int progress, StorageReader reader, CommandCreationContext creationContext,
-                StoreCursors storeCursors ) throws Exception
-        {
+        private TransactionToApply createNodeAndProperty(
+                int progress, StorageReader reader, CommandCreationContext creationContext, StoreCursors storeCursors)
+                throws Exception {
             TransactionState txState = new TxState();
-            long nodeId = nodeIds.nextId( NULL_CONTEXT );
-            txState.nodeDoCreate( nodeId );
-            txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
-            txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
+            long nodeId = nodeIds.nextId(NULL_CONTEXT);
+            txState.nodeDoCreate(nodeId);
+            txState.nodeDoAddLabel(descriptor.getLabelId(), nodeId);
+            txState.nodeDoAddProperty(nodeId, descriptor.getPropertyId(), propertyValue(id, progress));
             List<StorageCommand> commands = new ArrayList<>();
-            storageEngine.createCommands( commands, txState, reader, creationContext, null, LockTracer.NONE, 0, NO_DECORATION, NULL_CONTEXT, storeCursors,
-                    INSTANCE );
-            return tx( commands, storeCursors );
+            storageEngine.createCommands(
+                    commands,
+                    txState,
+                    reader,
+                    creationContext,
+                    null,
+                    LockTracer.NONE,
+                    0,
+                    NO_DECORATION,
+                    NULL_CONTEXT,
+                    storeCursors,
+                    INSTANCE);
+            return tx(commands, storeCursors);
         }
 
-        private void verifyIndex( TransactionToApply tx ) throws Exception
-        {
+        private void verifyIndex(TransactionToApply tx) throws Exception {
             NodeVisitor visitor = new NodeVisitor();
-            for ( int i = 0; tx != null; i++ )
-            {
-                tx.transactionRepresentation().accept( visitor.clear() );
+            for (int i = 0; tx != null; i++) {
+                tx.transactionRepresentation().accept(visitor.clear());
 
-                Value propertyValue = propertyValue( id, base + i );
-                index.assertHasIndexEntry( propertyValue, visitor.nodeId );
+                Value propertyValue = propertyValue(id, base + i);
+                index.assertHasIndexEntry(propertyValue, visitor.nodeId);
                 tx = tx.next();
             }
         }
     }
 
-    private static class NodeVisitor implements Visitor<StorageCommand,IOException>
-    {
+    private static class NodeVisitor implements Visitor<StorageCommand, IOException> {
         long nodeId;
 
         @Override
-        public boolean visit( StorageCommand element )
-        {
-            if ( element instanceof NodeCommand )
-            {
+        public boolean visit(StorageCommand element) {
+            if (element instanceof NodeCommand) {
                 nodeId = ((NodeCommand) element).getKey();
             }
             return false;
         }
 
-        public NodeVisitor clear()
-        {
+        public NodeVisitor clear() {
             nodeId = -1;
             return this;
         }
     }
 
-    private static class CollectingIndexUpdateListener extends IndexUpdateListener.Adapter
-    {
+    private static class CollectingIndexUpdateListener extends IndexUpdateListener.Adapter {
         // Only one index assumed
-        private final ConcurrentMap<Value,Set<Long>> index = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Value, Set<Long>> index = new ConcurrentHashMap<>();
 
         @Override
-        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel )
-        {
-            updates.forEach( rawUpdate ->
-            {
+        public void applyUpdates(
+                Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel) {
+            updates.forEach(rawUpdate -> {
                 // Only additions assumed
                 assert rawUpdate.updateMode() == UpdateMode.ADDED;
                 ValueIndexEntryUpdate<?> update = (ValueIndexEntryUpdate<?>) rawUpdate;
-                index.computeIfAbsent( update.values()[0], value -> ConcurrentHashMap.newKeySet() ).add( update.getEntityId() );
-            } );
+                index.computeIfAbsent(update.values()[0], value -> ConcurrentHashMap.newKeySet())
+                        .add(update.getEntityId());
+            });
         }
 
-        void assertHasIndexEntry( Value value, long entityId )
-        {
-            assertTrue( index.getOrDefault( value, emptySet() ).contains( entityId ) );
+        void assertHasIndexEntry(Value value, long entityId) {
+            assertTrue(index.getOrDefault(value, emptySet()).contains(entityId));
         }
     }
 }

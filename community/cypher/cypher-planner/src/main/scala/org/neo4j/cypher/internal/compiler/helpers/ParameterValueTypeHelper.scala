@@ -58,21 +58,21 @@ object ParameterValueTypeHelper {
 
   def deriveCypherType(obj: AnyValue): CypherType = { // for scala reasons, we need the cast
     obj match {
-      case _: TextValue => CTString
-      case _: BooleanValue => CTBoolean
-      case _: IntegralValue => CTInteger
+      case _: TextValue          => CTString
+      case _: BooleanValue       => CTBoolean
+      case _: IntegralValue      => CTInteger
       case _: FloatingPointValue =>
         // because Javascript sees everything as floats, even integer values, we need to do this until properly
         // fixing semantic checking
         CTAny
-      case _: PointValue => CTPoint
-      case _: DateTimeValue => CTDateTime
+      case _: PointValue         => CTPoint
+      case _: DateTimeValue      => CTDateTime
       case _: LocalDateTimeValue => CTLocalDateTime
-      case _: TimeValue => CTTime
-      case _: LocalTimeValue => CTLocalTime
-      case _: DateValue => CTDate
-      case _: DurationValue => CTDuration
-      case _: MapValue => CTMap
+      case _: TimeValue          => CTTime
+      case _: LocalTimeValue     => CTLocalTime
+      case _: DateValue          => CTDate
+      case _: DurationValue      => CTDuration
+      case _: MapValue           => CTMap
       case l: ListValue =>
         var isStringList = true
         l.forEach(isStringList &= _.isInstanceOf[TextValue])

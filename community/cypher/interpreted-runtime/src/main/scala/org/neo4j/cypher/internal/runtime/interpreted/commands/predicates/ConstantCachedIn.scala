@@ -40,16 +40,20 @@ case class ConstantCachedIn(value: Expression, list: Expression, id: Id) extends
 
   // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    val inChecker = state.cachedIn.getOrElseUpdate(list, {
-      val listValue = list(ctx, state)
-      val checker = if (listValue eq Values.NO_VALUE)
-        NullListChecker
-      else {
-        val input = makeTraversable(listValue)
-        if (input.isEmpty) AlwaysFalseChecker else new BuildUp(input, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+    val inChecker = state.cachedIn.getOrElseUpdate(
+      list, {
+        val listValue = list(ctx, state)
+        val checker =
+          if (listValue eq Values.NO_VALUE)
+            NullListChecker
+          else {
+            val input = makeTraversable(listValue)
+            if (input.isEmpty) AlwaysFalseChecker
+            else new BuildUp(input, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+          }
+        new InCheckContainer(checker)
       }
-      new InCheckContainer(checker)
-    })
+    )
 
     inChecker.contains(value(ctx, state))
   }
@@ -60,7 +64,8 @@ case class ConstantCachedIn(value: Expression, list: Expression, id: Id) extends
 
   override def arguments: Seq[Expression] = Seq(list)
 
-  override def rewrite(f: Expression => Expression): Expression = f(ConstantCachedIn(value.rewrite(f), list.rewrite(f), id))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(ConstantCachedIn(value.rewrite(f), list.rewrite(f), id))
 }
 
 /*
@@ -74,18 +79,20 @@ case class DynamicCachedIn(value: Expression, list: Expression, id: Id) extends 
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
     val listValue: AnyValue = list(ctx, state)
 
-    if(listValue eq Values.NO_VALUE)
+    if (listValue eq Values.NO_VALUE)
       return None
 
     val traversable = makeTraversable(listValue)
 
-    if(traversable.isEmpty)
+    if (traversable.isEmpty)
       return Some(false)
 
-    val inChecker = state.cachedIn.getOrElseUpdate(traversable, {
-      val checker = new BuildUp(traversable, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
-      new InCheckContainer(checker)
-    })
+    val inChecker = state.cachedIn.getOrElseUpdate(
+      traversable, {
+        val checker = new BuildUp(traversable, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+        new InCheckContainer(checker)
+      }
+    )
 
     inChecker.contains(value(ctx, state))
   }
@@ -96,15 +103,16 @@ case class DynamicCachedIn(value: Expression, list: Expression, id: Id) extends 
 
   override def children: Seq[AstNode[_]] = Seq(value, list)
 
-
-  override def rewrite(f: Expression => Expression): Expression = f(DynamicCachedIn(value.rewrite(f), list.rewrite(f), id))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(DynamicCachedIn(value.rewrite(f), list.rewrite(f), id))
 }
 
 object CachedIn {
+
   def unapply(arg: Expression): Option[(Expression, Expression)] = arg match {
-    case DynamicCachedIn(value, list, _) => Some((value, list))
+    case DynamicCachedIn(value, list, _)  => Some((value, list))
     case ConstantCachedIn(value, list, _) => Some((value, list))
-    case _ => None
+    case _                                => None
   }
 }
 
@@ -112,6 +120,7 @@ object CachedIn {
 This is a simple container that keep the latest state of the cached IN check
  */
 class InCheckContainer(var checker: Checker) {
+
   def contains(value: AnyValue): Option[Boolean] = {
     val (result, newChecker) = checker.contains(value)
     checker = newChecker
@@ -120,7 +129,9 @@ class InCheckContainer(var checker: Checker) {
 }
 
 class ConcurrentLRUCache[K, V](maxSizePerThread: Int) extends InLRUCache[K, V] {
-  private val threadLocalCache = ThreadLocal.withInitial[mutable.ArrayDeque[(K, V)]](() => new mutable.ArrayDeque[(K, V)](maxSizePerThread))
+
+  private val threadLocalCache =
+    ThreadLocal.withInitial[mutable.ArrayDeque[(K, V)]](() => new mutable.ArrayDeque[(K, V)](maxSizePerThread))
   override val maxSize: Int = maxSizePerThread
 
   override def cache: mutable.ArrayDeque[(K, V)] = threadLocalCache.get()

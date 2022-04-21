@@ -22,8 +22,7 @@ package org.neo4j.server.web;
 /**
  * Provider of information about web container threads usages state.
  */
-public interface WebContainerThreadInfo
-{
+public interface WebContainerThreadInfo {
     int allThreads();
 
     int idleThreads();

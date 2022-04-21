@@ -19,25 +19,24 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
+import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
-
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.Stat;
 
-import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
-
 /**
  * Default implementation of {@link StageControl}
  */
-public class StageExecution implements StageControl, AutoCloseable
-{
-    public static final PanicMonitor DEFAULT_PANIC_MONITOR = cause -> System.err.println( "Critical error occurred! Shutting down the import..." );
+public class StageExecution implements StageControl, AutoCloseable {
+    public static final PanicMonitor DEFAULT_PANIC_MONITOR =
+            cause -> System.err.println("Critical error occurred! Shutting down the import...");
 
     private final String stageName;
     private final String part;
@@ -50,14 +49,26 @@ public class StageExecution implements StageControl, AutoCloseable
     private final PanicMonitor panicMonitor;
     private final ConcurrentLinkedQueue<Object> recycled;
 
-    public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees )
-    {
-        this( stageName, part, config, pipeline, orderingGuarantees, ProcessorScheduler.SPAWN_THREAD, DEFAULT_PANIC_MONITOR );
+    public StageExecution(
+            String stageName, String part, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees) {
+        this(
+                stageName,
+                part,
+                config,
+                pipeline,
+                orderingGuarantees,
+                ProcessorScheduler.SPAWN_THREAD,
+                DEFAULT_PANIC_MONITOR);
     }
 
-    public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees,
-            ProcessorScheduler scheduler, PanicMonitor panicMonitor )
-    {
+    public StageExecution(
+            String stageName,
+            String part,
+            Configuration config,
+            Collection<Step<?>> pipeline,
+            int orderingGuarantees,
+            ProcessorScheduler scheduler,
+            PanicMonitor panicMonitor) {
         this.stageName = stageName;
         this.part = part;
         this.config = config;
@@ -69,51 +80,40 @@ public class StageExecution implements StageControl, AutoCloseable
         this.recycled = shouldRecycle ? new ConcurrentLinkedQueue<>() : null;
     }
 
-    public boolean stillExecuting()
-    {
-        for ( Step<?> step : pipeline )
-        {
-            if ( !step.isCompleted() )
-            {
+    public boolean stillExecuting() {
+        for (Step<?> step : pipeline) {
+            if (!step.isCompleted()) {
                 return true;
             }
         }
         return false;
     }
 
-    public void awaitCompletion() throws InterruptedException
-    {
-        for ( Step<?> step : pipeline )
-        {
+    public void awaitCompletion() throws InterruptedException {
+        for (Step<?> step : pipeline) {
             step.awaitCompleted();
         }
     }
 
-    public void start()
-    {
-        for ( Step<?> step : pipeline )
-        {
-            step.start( orderingGuarantees );
+    public void start() {
+        for (Step<?> step : pipeline) {
+            step.start(orderingGuarantees);
         }
     }
 
-    public String getStageName()
-    {
+    public String getStageName() {
         return stageName;
     }
 
-    public String name()
-    {
+    public String name() {
         return stageName + (part != null ? part : "");
     }
 
-    public Configuration getConfig()
-    {
+    public Configuration getConfig() {
         return config;
     }
 
-    public Iterable<Step<?>> steps()
-    {
+    public Iterable<Step<?>> steps() {
         return pipeline;
     }
 
@@ -125,85 +125,70 @@ public class StageExecution implements StageControl, AutoCloseable
      * {@code 1.0} signals them being close to equal, and a value of for example {@code 0.5} signals that
      * the value of the current step is half that of the next step.
      */
-    public List<WeightedStep> stepsOrderedBy( final Key stat, final boolean trueForAscending )
-    {
-        final List<Step<?>> steps = new ArrayList<>( pipeline );
-        steps.sort( ( o1, o2 ) -> {
-            long stat1 = o1.longStat( stat );
-            long stat2 = o2.longStat( stat );
-            return trueForAscending ? Long.compare( stat1, stat2 ) : Long.compare( stat2, stat1 );
-        } );
+    public List<WeightedStep> stepsOrderedBy(final Key stat, final boolean trueForAscending) {
+        final List<Step<?>> steps = new ArrayList<>(pipeline);
+        steps.sort((o1, o2) -> {
+            long stat1 = o1.longStat(stat);
+            long stat2 = o2.longStat(stat);
+            return trueForAscending ? Long.compare(stat1, stat2) : Long.compare(stat2, stat1);
+        });
         List<WeightedStep> result = new ArrayList<>();
-        for ( int i = 0, numSteps = steps.size(); i < numSteps - 1; i++ )
-        {
-            Step<?> current = steps.get( i );
-            result.add( new WeightedStep( current, (float) current.longStat( stat ) / (float) steps.get( i + 1 ).longStat( stat ) ) );
-                               }
-        result.add( new WeightedStep( steps.get( steps.size() - 1 ), 1.0f ) );
+        for (int i = 0, numSteps = steps.size(); i < numSteps - 1; i++) {
+            Step<?> current = steps.get(i);
+            result.add(new WeightedStep(
+                    current,
+                    (float) current.longStat(stat) / (float) steps.get(i + 1).longStat(stat)));
+        }
+        result.add(new WeightedStep(steps.get(steps.size() - 1), 1.0f));
         return result;
     }
 
-    public int size()
-    {
+    public int size() {
         return pipeline.size();
     }
 
     @Override
-    public synchronized void panic( Throwable cause )
-    {
-        if ( panic == null )
-        {
-            panicMonitor.receivedPanic( cause );
+    public synchronized void panic(Throwable cause) {
+        if (panic == null) {
+            panicMonitor.receivedPanic(cause);
             panic = cause;
-            for ( Step<?> step : pipeline )
-            {
-                step.receivePanic( cause );
+            for (Step<?> step : pipeline) {
+                step.receivePanic(cause);
                 step.endOfUpstream();
             }
-        }
-        else
-        {
-            if ( !panic.equals( cause ) )
-            {
-                panic.addSuppressed( cause );
+        } else {
+            if (!panic.equals(cause)) {
+                panic.addSuppressed(cause);
             }
         }
     }
 
     @Override
-    public void assertHealthy()
-    {
-        if ( panic != null )
-        {
-            throwIfUnchecked( panic );
-            throw new RuntimeException( panic );
+    public void assertHealthy() {
+        if (panic != null) {
+            throwIfUnchecked(panic);
+            throw new RuntimeException(panic);
         }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + "[" + name() + "]";
     }
 
     @Override
-    public void recycle( Object batch )
-    {
-        if ( shouldRecycle )
-        {
-            recycled.offer( batch );
+    public void recycle(Object batch) {
+        if (shouldRecycle) {
+            recycled.offer(batch);
         }
     }
 
     @Override
-    public <T> T reuse( Supplier<T> fallback )
-    {
-        if ( shouldRecycle )
-        {
-            @SuppressWarnings( "unchecked" )
+    public <T> T reuse(Supplier<T> fallback) {
+        if (shouldRecycle) {
+            @SuppressWarnings("unchecked")
             T result = (T) recycled.poll();
-            if ( result != null )
-            {
+            if (result != null) {
                 return result;
             }
         }
@@ -212,15 +197,11 @@ public class StageExecution implements StageControl, AutoCloseable
     }
 
     @Override
-    public boolean isIdle()
-    {
+    public boolean isIdle() {
         int i = 0;
-        for ( Step<?> step : steps() )
-        {
-            if ( i++ > 0 )
-            {
-                if ( !step.isIdle() )
-                {
+        for (Step<?> step : steps()) {
+            if (i++ > 0) {
+                if (!step.isIdle()) {
                     return false;
                 }
             }
@@ -229,23 +210,19 @@ public class StageExecution implements StageControl, AutoCloseable
     }
 
     @Override
-    public ProcessorScheduler scheduler()
-    {
+    public ProcessorScheduler scheduler() {
         return scheduler;
     }
 
     @Override
-    public void close()
-    {
-        if ( shouldRecycle )
-        {
+    public void close() {
+        if (shouldRecycle) {
             recycled.clear();
         }
     }
 
     @FunctionalInterface
-    interface PanicMonitor
-    {
-        void receivedPanic( Throwable cause );
+    interface PanicMonitor {
+        void receivedPanic(Throwable cause);
     }
 }

@@ -25,7 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -36,11 +35,8 @@ import org.neo4j.graphdb.Relationship;
  * are lifted out here because they can be used by algorithms for too different
  * problems.
  */
-public class Util
-{
-    private Util()
-    {
-    }
+public class Util {
+    private Util() {}
 
     /**
      * Constructs a path to a given node, for a given set of predecessors
@@ -56,25 +52,19 @@ public class Util
      *            reversed
      * @return A path as a list of nodes.
      */
-    public static List<Node> constructSinglePathToNodeAsNodes( Node node,
-        Map<Node,List<Relationship>> predecessors, boolean includeNode,
-        boolean backwards )
-    {
-        List<Entity> singlePathToNode = constructSinglePathToNode(
-            node, predecessors, includeNode, backwards );
+    public static List<Node> constructSinglePathToNodeAsNodes(
+            Node node, Map<Node, List<Relationship>> predecessors, boolean includeNode, boolean backwards) {
+        List<Entity> singlePathToNode = constructSinglePathToNode(node, predecessors, includeNode, backwards);
         Iterator<Entity> iterator = singlePathToNode.iterator();
         // When going backwards and not including the node the first element is
         // a relationship. Thus skip it.
-        if ( backwards && !includeNode && iterator.hasNext() )
-        {
+        if (backwards && !includeNode && iterator.hasNext()) {
             iterator.next();
         }
         LinkedList<Node> path = new LinkedList<>();
-        while ( iterator.hasNext() )
-        {
-            path.addLast( (Node) iterator.next() );
-            if ( iterator.hasNext() )
-            {
+        while (iterator.hasNext()) {
+            path.addLast((Node) iterator.next());
+            if (iterator.hasNext()) {
                 iterator.next();
             }
         }
@@ -93,22 +83,17 @@ public class Util
      * @return A path as a list of relationships.
      */
     public static List<Relationship> constructSinglePathToNodeAsRelationships(
-        Node node, Map<Node,List<Relationship>> predecessors, boolean backwards )
-    {
-        List<Entity> singlePathToNode = constructSinglePathToNode(
-            node, predecessors, true, backwards );
+            Node node, Map<Node, List<Relationship>> predecessors, boolean backwards) {
+        List<Entity> singlePathToNode = constructSinglePathToNode(node, predecessors, true, backwards);
         Iterator<Entity> iterator = singlePathToNode.iterator();
         // Skip the first, it is a node
-        if ( iterator.hasNext() )
-        {
+        if (iterator.hasNext()) {
             iterator.next();
         }
         LinkedList<Relationship> path = new LinkedList<>();
-        while ( iterator.hasNext() )
-        {
-            path.addLast( (Relationship) iterator.next() );
-            if ( iterator.hasNext() )
-            {
+        while (iterator.hasNext()) {
+            path.addLast((Relationship) iterator.next());
+            if (iterator.hasNext()) {
                 iterator.next();
             }
         }
@@ -130,43 +115,33 @@ public class Util
      *            reversed
      * @return A path as a list of alternating Node/Relationship.
      */
-    public static List<Entity> constructSinglePathToNode( Node node,
-        Map<Node,List<Relationship>> predecessors, boolean includeNode,
-        boolean backwards )
-    {
+    public static List<Entity> constructSinglePathToNode(
+            Node node, Map<Node, List<Relationship>> predecessors, boolean includeNode, boolean backwards) {
         LinkedList<Entity> path = new LinkedList<>();
-        if ( includeNode )
-        {
-            if ( backwards )
-            {
-                path.addLast( node );
-            }
-            else
-            {
-                path.addFirst( node );
+        if (includeNode) {
+            if (backwards) {
+                path.addLast(node);
+            } else {
+                path.addFirst(node);
             }
         }
         Node currentNode = node;
-        List<Relationship> currentPreds = predecessors.get( currentNode );
+        List<Relationship> currentPreds = predecessors.get(currentNode);
         // Traverse predecessors until we have added a node without predecessors
-        while ( currentPreds != null && !currentPreds.isEmpty() )
-        {
+        while (currentPreds != null && !currentPreds.isEmpty()) {
             // Get next node
-            Relationship currentRelationship = currentPreds.get( 0 );
-            currentNode = currentRelationship.getOtherNode( currentNode );
+            Relationship currentRelationship = currentPreds.get(0);
+            currentNode = currentRelationship.getOtherNode(currentNode);
             // Add current
-            if ( backwards )
-            {
-                path.addLast( currentRelationship );
-                path.addLast( currentNode );
-            }
-            else
-            {
-                path.addFirst( currentRelationship );
-                path.addFirst( currentNode );
+            if (backwards) {
+                path.addLast(currentRelationship);
+                path.addLast(currentNode);
+            } else {
+                path.addFirst(currentRelationship);
+                path.addFirst(currentNode);
             }
             // Continue with the next node
-            currentPreds = predecessors.get( currentNode );
+            currentPreds = predecessors.get(currentNode);
         }
         return path;
     }
@@ -185,50 +160,37 @@ public class Util
      *            reversed
      * @return
      */
-    public static List<List<Node>> constructAllPathsToNodeAsNodes( Node node,
-        Map<Node,List<Relationship>> predecessors, boolean includeNode,
-        boolean backwards )
-    {
-        return new LinkedList<>( constructAllPathsToNodeAsNodeLinkedLists( node, predecessors, includeNode, backwards ) );
+    public static List<List<Node>> constructAllPathsToNodeAsNodes(
+            Node node, Map<Node, List<Relationship>> predecessors, boolean includeNode, boolean backwards) {
+        return new LinkedList<>(constructAllPathsToNodeAsNodeLinkedLists(node, predecessors, includeNode, backwards));
     }
 
     /**
      * Same as constructAllPathsToNodeAsNodes, but different return type
      */
     protected static List<LinkedList<Node>> constructAllPathsToNodeAsNodeLinkedLists(
-        Node node, Map<Node,List<Relationship>> predecessors,
-        boolean includeNode, boolean backwards )
-    {
+            Node node, Map<Node, List<Relationship>> predecessors, boolean includeNode, boolean backwards) {
         List<LinkedList<Node>> paths = new LinkedList<>();
-        List<Relationship> current = predecessors.get( node );
+        List<Relationship> current = predecessors.get(node);
         // First build all paths to this node's predecessors
-        if ( current != null )
-        {
-            for ( Relationship r : current )
-            {
-                Node n = r.getOtherNode( node );
-                paths.addAll( constructAllPathsToNodeAsNodeLinkedLists( n,
-                    predecessors, true, backwards ) );
+        if (current != null) {
+            for (Relationship r : current) {
+                Node n = r.getOtherNode(node);
+                paths.addAll(constructAllPathsToNodeAsNodeLinkedLists(n, predecessors, true, backwards));
             }
         }
         // If no paths exists to this node, just create an empty one (which will
         // have this node added to it)
-        if ( paths.isEmpty() )
-        {
-            paths.add( new LinkedList<>() );
+        if (paths.isEmpty()) {
+            paths.add(new LinkedList<>());
         }
         // Then add this node to all those paths
-        if ( includeNode )
-        {
-            for ( LinkedList<Node> path : paths )
-            {
-                if ( backwards )
-                {
-                    path.addFirst( node );
-                }
-                else
-                {
-                    path.addLast( node );
+        if (includeNode) {
+            for (LinkedList<Node> path : paths) {
+                if (backwards) {
+                    path.addFirst(node);
+                } else {
+                    path.addLast(node);
                 }
             }
         }
@@ -250,62 +212,46 @@ public class Util
      * @return List of lists of alternating Node/Relationship.
      */
     public static List<List<Entity>> constructAllPathsToNode(
-        Node node, Map<Node,List<Relationship>> predecessors,
-        boolean includeNode, boolean backwards )
-    {
-        return new LinkedList<>( constructAllPathsToNodeAsLinkedLists( node, predecessors, includeNode, backwards ) );
+            Node node, Map<Node, List<Relationship>> predecessors, boolean includeNode, boolean backwards) {
+        return new LinkedList<>(constructAllPathsToNodeAsLinkedLists(node, predecessors, includeNode, backwards));
     }
 
     /**
      * Same as constructAllPathsToNode, but different return type
      */
     protected static List<LinkedList<Entity>> constructAllPathsToNodeAsLinkedLists(
-        Node node, Map<Node,List<Relationship>> predecessors,
-        boolean includeNode, boolean backwards )
-    {
+            Node node, Map<Node, List<Relationship>> predecessors, boolean includeNode, boolean backwards) {
         List<LinkedList<Entity>> paths = new LinkedList<>();
-        List<Relationship> current = predecessors.get( node );
+        List<Relationship> current = predecessors.get(node);
         // First build all paths to this node's predecessors
-        if ( current != null )
-        {
-            for ( Relationship r : current )
-            {
-                Node n = r.getOtherNode( node );
-                List<LinkedList<Entity>> newPaths = constructAllPathsToNodeAsLinkedLists(
-                    n, predecessors, true, backwards );
-                paths.addAll( newPaths );
+        if (current != null) {
+            for (Relationship r : current) {
+                Node n = r.getOtherNode(node);
+                List<LinkedList<Entity>> newPaths =
+                        constructAllPathsToNodeAsLinkedLists(n, predecessors, true, backwards);
+                paths.addAll(newPaths);
                 // Add the relationship
-                for ( LinkedList<Entity> path : newPaths )
-                {
-                    if ( backwards )
-                    {
-                        path.addFirst( r );
-                    }
-                    else
-                    {
-                        path.addLast( r );
+                for (LinkedList<Entity> path : newPaths) {
+                    if (backwards) {
+                        path.addFirst(r);
+                    } else {
+                        path.addLast(r);
                     }
                 }
             }
         }
         // If no paths exists to this node, just create an empty one (which will
         // have this node added to it)
-        if ( paths.isEmpty() )
-        {
-            paths.add( new LinkedList<>() );
+        if (paths.isEmpty()) {
+            paths.add(new LinkedList<>());
         }
         // Then add this node to all those paths
-        if ( includeNode )
-        {
-            for ( LinkedList<Entity> path : paths )
-            {
-                if ( backwards )
-                {
-                    path.addFirst( node );
-                }
-                else
-                {
-                    path.addLast( node );
+        if (includeNode) {
+            for (LinkedList<Entity> path : paths) {
+                if (backwards) {
+                    path.addFirst(node);
+                } else {
+                    path.addLast(node);
                 }
             }
         }
@@ -324,46 +270,37 @@ public class Util
      * @return List of lists of relationships.
      */
     public static List<List<Relationship>> constructAllPathsToNodeAsRelationships(
-        Node node, Map<Node,List<Relationship>> predecessors, boolean backwards )
-    {
-        return new LinkedList<>( constructAllPathsToNodeAsRelationshipLinkedLists( node, predecessors, backwards ) );
+            Node node, Map<Node, List<Relationship>> predecessors, boolean backwards) {
+        return new LinkedList<>(constructAllPathsToNodeAsRelationshipLinkedLists(node, predecessors, backwards));
     }
 
     /**
      * Same as constructAllPathsToNodeAsRelationships, but different return type
      */
     protected static List<LinkedList<Relationship>> constructAllPathsToNodeAsRelationshipLinkedLists(
-        Node node, Map<Node,List<Relationship>> predecessors, boolean backwards )
-    {
+            Node node, Map<Node, List<Relationship>> predecessors, boolean backwards) {
         List<LinkedList<Relationship>> paths = new LinkedList<>();
-        List<Relationship> current = predecessors.get( node );
+        List<Relationship> current = predecessors.get(node);
         // First build all paths to this node's predecessors
-        if ( current != null )
-        {
-            for ( Relationship r : current )
-            {
-                Node n = r.getOtherNode( node );
-                List<LinkedList<Relationship>> newPaths = constructAllPathsToNodeAsRelationshipLinkedLists(
-                    n, predecessors, backwards );
-                paths.addAll( newPaths );
+        if (current != null) {
+            for (Relationship r : current) {
+                Node n = r.getOtherNode(node);
+                List<LinkedList<Relationship>> newPaths =
+                        constructAllPathsToNodeAsRelationshipLinkedLists(n, predecessors, backwards);
+                paths.addAll(newPaths);
                 // Add the relationship
-                for ( LinkedList<Relationship> path : newPaths )
-                {
-                    if ( backwards )
-                    {
-                        path.addFirst( r );
-                    }
-                    else
-                    {
-                        path.addLast( r );
+                for (LinkedList<Relationship> path : newPaths) {
+                    if (backwards) {
+                        path.addFirst(r);
+                    } else {
+                        path.addLast(r);
                     }
                 }
             }
         }
         // If no paths exists to this node, just create an empty one
-        if ( paths.isEmpty() )
-        {
-            paths.add( new LinkedList<>() );
+        if (paths.isEmpty()) {
+            paths.add(new LinkedList<>());
         }
         return paths;
     }
@@ -372,36 +309,29 @@ public class Util
      * This can be used for counting the number of paths from the start node
      * (implicit from the predecessors) and some target nodes.
      */
-    public static class PathCounter
-    {
-        Map<Node,List<Relationship>> predecessors;
-        Map<Node,Integer> pathCounts = new HashMap<>();
+    public static class PathCounter {
+        Map<Node, List<Relationship>> predecessors;
+        Map<Node, Integer> pathCounts = new HashMap<>();
 
-        public PathCounter( Map<Node,List<Relationship>> predecessors )
-        {
+        public PathCounter(Map<Node, List<Relationship>> predecessors) {
             super();
             this.predecessors = predecessors;
         }
 
-        public int getNumberOfPathsToNode( Node node )
-        {
-            Integer i = pathCounts.get( node );
-            if ( i != null )
-            {
+        public int getNumberOfPathsToNode(Node node) {
+            Integer i = pathCounts.get(node);
+            if (i != null) {
                 return i;
             }
-            List<Relationship> preds = predecessors.get( node );
-            if ( preds == null || preds.isEmpty() )
-            {
+            List<Relationship> preds = predecessors.get(node);
+            if (preds == null || preds.isEmpty()) {
                 return 1;
             }
             int result = 0;
-            for ( Relationship relationship : preds )
-            {
-                result += getNumberOfPathsToNode( relationship
-                    .getOtherNode( node ) );
+            for (Relationship relationship : preds) {
+                result += getNumberOfPathsToNode(relationship.getOtherNode(node));
             }
-            pathCounts.put( node, result );
+            pathCounts.put(node, result);
             return result;
         }
     }
@@ -412,21 +342,17 @@ public class Util
      * @param predecessors
      * @return
      */
-    public static Map<Node,List<Relationship>> reversedPredecessors(
-        Map<Node,List<Relationship>> predecessors )
-    {
-        Map<Node,List<Relationship>> result = new HashMap<>();
+    public static Map<Node, List<Relationship>> reversedPredecessors(Map<Node, List<Relationship>> predecessors) {
+        Map<Node, List<Relationship>> result = new HashMap<>();
         Set<Node> keys = predecessors.keySet();
-        for ( Node node : keys )
-        {
-            List<Relationship> preds = predecessors.get( node );
-            for ( Relationship relationship : preds )
-            {
-                Node otherNode = relationship.getOtherNode( node );
+        for (Node node : keys) {
+            List<Relationship> preds = predecessors.get(node);
+            for (Relationship relationship : preds) {
+                Node otherNode = relationship.getOtherNode(node);
                 // We add node as a predecessor to otherNode, instead of the
                 // other way around
-                List<Relationship> otherPreds = result.computeIfAbsent( otherNode, k -> new LinkedList<>() );
-                otherPreds.add( relationship );
+                List<Relationship> otherPreds = result.computeIfAbsent(otherNode, k -> new LinkedList<>());
+                otherPreds.add(relationship);
             }
         }
         return result;

@@ -25,10 +25,8 @@ import org.neo4j.graphdb.Resource;
  * This exception is thrown when a checked exception occurs inside {@link Resource#close()}.
  * It is a RuntimeException since {@link Resource#close()} is not allowed to throw checked exceptions.
  */
-public class ResourceCloseFailureException extends RuntimeException
-{
-    public ResourceCloseFailureException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class ResourceCloseFailureException extends RuntimeException {
+    public ResourceCloseFailureException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

@@ -19,17 +19,6 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.internal.helpers.collection.LongRange;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,133 +27,135 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 
-class ParallelExecutionTest
-{
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.collection.LongRange;
+
+class ParallelExecutionTest {
     private final int NUM_THREADS = 3;
 
     @Test
-    void shouldRethrowException()
-    {
-        ParallelExecution execution = new ParallelExecution( NUM_THREADS, NOOP_EXCEPTION_HANDLER, 100 );
-        assertThrows( Exception.class, () -> execution.run( getClass().getSimpleName(), () ->
-        {
-            throw new Exception();
-        } ) );
+    void shouldRethrowException() {
+        ParallelExecution execution = new ParallelExecution(NUM_THREADS, NOOP_EXCEPTION_HANDLER, 100);
+        assertThrows(
+                Exception.class,
+                () -> execution.run(getClass().getSimpleName(), () -> {
+                    throw new Exception();
+                }));
     }
 
     @Test
-    void exceptionHandlerShouldSeeBothCheckedAndUnchecked()
-    {
-        AtomicInteger counter = new AtomicInteger( 0 );
-        ParallelExecution execution = new ParallelExecution( NUM_THREADS, e -> counter.incrementAndGet(), 100 );
+    void exceptionHandlerShouldSeeBothCheckedAndUnchecked() {
+        AtomicInteger counter = new AtomicInteger(0);
+        ParallelExecution execution = new ParallelExecution(NUM_THREADS, e -> counter.incrementAndGet(), 100);
 
-        ParallelExecution.ThrowingRunnable checkedException = () ->
-        {
+        ParallelExecution.ThrowingRunnable checkedException = () -> {
             throw new Exception();
         };
-        ParallelExecution.ThrowingRunnable uncheckedException = () ->
-        {
+        ParallelExecution.ThrowingRunnable uncheckedException = () -> {
             throw new RuntimeException();
         };
-        ParallelExecution.ThrowingRunnable assertion = () ->
-        {
+        ParallelExecution.ThrowingRunnable assertion = () -> {
             assert false;
         };
-        ParallelExecution.ThrowingRunnable oom = () ->
-        {
+        ParallelExecution.ThrowingRunnable oom = () -> {
             throw new OutOfMemoryError();
         };
-        try
-        {
-            execution.run( getClass().getSimpleName(), checkedException, uncheckedException, assertion, oom );
-        }
-        catch ( Exception e )
-        {
-            //expected
+        try {
+            execution.run(getClass().getSimpleName(), checkedException, uncheckedException, assertion, oom);
+        } catch (Exception e) {
+            // expected
         }
 
-        assertEquals( 4, counter.get() );
+        assertEquals(4, counter.get());
     }
 
     @Test
-    void shouldChainAllExceptions()
-    {
-        ParallelExecution execution = new ParallelExecution( NUM_THREADS, NOOP_EXCEPTION_HANDLER, 100 );
-        Exception e1 = new Exception( "A" );
-        Exception e2 = new Exception( "B" );
-        Exception e3 = new Exception( "C" );
-        Exception executionException = assertThrows( Exception.class, () -> execution.run( getClass().getSimpleName(), () ->
-        {
-            throw e1;
-        }, () ->
-        {
-            throw e2;
-        }, () ->
-        {
-            throw e3;
-        } ) );
+    void shouldChainAllExceptions() {
+        ParallelExecution execution = new ParallelExecution(NUM_THREADS, NOOP_EXCEPTION_HANDLER, 100);
+        Exception e1 = new Exception("A");
+        Exception e2 = new Exception("B");
+        Exception e3 = new Exception("C");
+        Exception executionException = assertThrows(
+                Exception.class,
+                () -> execution.run(
+                        getClass().getSimpleName(),
+                        () -> {
+                            throw e1;
+                        },
+                        () -> {
+                            throw e2;
+                        },
+                        () -> {
+                            throw e3;
+                        }));
         Throwable exception = executionException.getCause();
         Throwable[] suppressed = exception.getSuppressed();
-        List<String> messages = List.of( exception.getCause().getMessage(), suppressed[0].getCause().getMessage(), suppressed[1].getCause().getMessage() );
+        List<String> messages = List.of(
+                exception.getCause().getMessage(),
+                suppressed[0].getCause().getMessage(),
+                suppressed[1].getCause().getMessage());
 
-        assertThat( messages ).contains( "A", "B", "C" );
+        assertThat(messages).contains("A", "B", "C");
     }
 
     @Test
-    void shouldPartitionIdRanges()
-    {
+    void shouldPartitionIdRanges() {
         // given
-        ParallelExecution execution = new ParallelExecution( 10, NOOP_EXCEPTION_HANDLER, 145 );
-        ParallelExecution.RangeOperation rangeOperation = mock( ParallelExecution.RangeOperation.class );
+        ParallelExecution execution = new ParallelExecution(10, NOOP_EXCEPTION_HANDLER, 145);
+        ParallelExecution.RangeOperation rangeOperation = mock(ParallelExecution.RangeOperation.class);
 
         // when
-        execution.partition( LongRange.range( 0, 470 ), rangeOperation );
+        execution.partition(LongRange.range(0, 470), rangeOperation);
 
         // then
-        verify( rangeOperation ).operation( 0, 145, false );
-        verify( rangeOperation ).operation( 145, 290, false );
-        verify( rangeOperation ).operation( 290, 435, false );
-        verify( rangeOperation ).operation( 435, 470, true );
-        verifyNoMoreInteractions( rangeOperation );
+        verify(rangeOperation).operation(0, 145, false);
+        verify(rangeOperation).operation(145, 290, false);
+        verify(rangeOperation).operation(290, 435, false);
+        verify(rangeOperation).operation(435, 470, true);
+        verifyNoMoreInteractions(rangeOperation);
     }
 
     @Test
-    void shouldRunAllJobsConcurrently() throws Exception
-    {
+    void shouldRunAllJobsConcurrently() throws Exception {
         // given
-        ParallelExecution execution = new ParallelExecution( 2, NOOP_EXCEPTION_HANDLER, 100 );
-        ParallelExecution.ThrowingRunnable[] blockingJobs = new ParallelExecution.ThrowingRunnable[execution.getNumberOfThreads() + 2];
-        CountDownLatch latch = new CountDownLatch( blockingJobs.length );
-        Arrays.fill( blockingJobs, (ParallelExecution.ThrowingRunnable) () ->
-        {
+        ParallelExecution execution = new ParallelExecution(2, NOOP_EXCEPTION_HANDLER, 100);
+        ParallelExecution.ThrowingRunnable[] blockingJobs =
+                new ParallelExecution.ThrowingRunnable[execution.getNumberOfThreads() + 2];
+        CountDownLatch latch = new CountDownLatch(blockingJobs.length);
+        Arrays.fill(blockingJobs, (ParallelExecution.ThrowingRunnable) () -> {
             latch.countDown();
             latch.await();
-        } );
+        });
 
         // when
-        execution.runAll( "test", blockingJobs );
+        execution.runAll("test", blockingJobs);
 
         // then
-        assertEquals( 0, latch.getCount() );
+        assertEquals(0, latch.getCount());
     }
 
     @Test
-    void shouldRunJobs() throws Exception
-    {
+    void shouldRunJobs() throws Exception {
         // given
-        ParallelExecution execution = new ParallelExecution( 2, NOOP_EXCEPTION_HANDLER, 100 );
-        ParallelExecution.ThrowingRunnable[] blockingJobs = new ParallelExecution.ThrowingRunnable[execution.getNumberOfThreads() * 5];
+        ParallelExecution execution = new ParallelExecution(2, NOOP_EXCEPTION_HANDLER, 100);
+        ParallelExecution.ThrowingRunnable[] blockingJobs =
+                new ParallelExecution.ThrowingRunnable[execution.getNumberOfThreads() * 5];
         Set<Thread> threads = new CopyOnWriteArraySet<>();
-        Arrays.fill( blockingJobs, (ParallelExecution.ThrowingRunnable) () ->
-        {
-            Thread.sleep( 10 );
-            threads.add( Thread.currentThread() );
-        } );
+        Arrays.fill(blockingJobs, (ParallelExecution.ThrowingRunnable) () -> {
+            Thread.sleep(10);
+            threads.add(Thread.currentThread());
+        });
 
         // when
-        execution.run( "test", blockingJobs );
+        execution.run("test", blockingJobs);
 
         // then
-        assertEquals( 2, threads.size() );
+        assertEquals(2, threads.size());
     }
 }

@@ -19,9 +19,17 @@
  */
 package org.neo4j.consistency.checking.index;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -39,25 +47,19 @@ import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.count;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-
 @DbmsExtension
-class IndexIteratorIT
-{
+class IndexIteratorIT {
     private static final String INDEX_NAME = "index";
+
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private RecordStorageEngine storageEngine;
+
     @Inject
     private IndexProviderMap providerMap;
+
     @Inject
     private Config config;
 
@@ -66,60 +68,57 @@ class IndexIteratorIT
     private CursorContextFactory contextFactory;
 
     @BeforeEach
-    void setUp()
-    {
-        var label = label( "any" );
+    void setUp() {
+        var label = label("any");
         var propertyName = "property";
-        try ( var tx = database.beginTx() )
-        {
-            var node = tx.createNode( label );
-            node.setProperty( propertyName, "nodeValue" );
+        try (var tx = database.beginTx()) {
+            var node = tx.createNode(label);
+            node.setProperty(propertyName, "nodeValue");
             tx.commit();
         }
-        try ( var tx = database.beginTx() )
-        {
-            tx.schema().indexFor( label ).on( propertyName ).withName( INDEX_NAME ).create();
+        try (var tx = database.beginTx()) {
+            tx.schema().indexFor(label).on(propertyName).withName(INDEX_NAME).create();
             tx.commit();
         }
-        try ( var transaction = database.beginTx() )
-        {
-            transaction.schema().awaitIndexesOnline( 10, MINUTES );
+        try (var transaction = database.beginTx()) {
+            transaction.schema().awaitIndexesOnline(10, MINUTES);
         }
 
         var neoStores = storageEngine.testAccessNeoStores();
         pageCacheTracer = new DefaultPageCacheTracer();
-        contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
-        {
-            var tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, storeCursors );
-            indexAccessors = new IndexAccessors( providerMap, c -> asResourceIterator(
-                    SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST )
-                            .indexesGetAll( storeCursors ) ), new IndexSamplingConfig( config ), SIMPLE_NAME_LOOKUP, contextFactory,
-                                                 neoStores.getOpenOptions() );
+        contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
+            var tokenHolders = StoreTokens.readOnlyTokenHolders(neoStores, storeCursors);
+            indexAccessors = new IndexAccessors(
+                    providerMap,
+                    c -> asResourceIterator(SchemaRuleAccess.getSchemaRuleAccess(
+                                    neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST)
+                            .indexesGetAll(storeCursors)),
+                    new IndexSamplingConfig(config),
+                    SIMPLE_NAME_LOOKUP,
+                    contextFactory,
+                    neoStores.getOpenOptions());
         }
     }
 
     @Test
-    void tracePageCacheAccessOnIteration() throws Exception
-    {
+    void tracePageCacheAccessOnIteration() throws Exception {
         var descriptors = indexAccessors.onlineRules();
-        assertThat( descriptors ).hasSize( 1 );
+        assertThat(descriptors).hasSize(1);
         long initialPins = pageCacheTracer.pins();
         long initialUnpins = pageCacheTracer.unpins();
         long initialHits = pageCacheTracer.hits();
-        try ( CursorContext cursorContext = contextFactory.create( "tracePageCacheAccessOnIteration" ) )
-        {
-            for ( IndexDescriptor descriptor : descriptors )
-            {
-                try ( BoundedIterable<Long> indexIterator = indexAccessors.accessorFor( descriptor ).newAllEntriesValueReader( cursorContext ) )
-                {
-                    assertEquals( 1, count( indexIterator.iterator() ) );
+        try (CursorContext cursorContext = contextFactory.create("tracePageCacheAccessOnIteration")) {
+            for (IndexDescriptor descriptor : descriptors) {
+                try (BoundedIterable<Long> indexIterator =
+                        indexAccessors.accessorFor(descriptor).newAllEntriesValueReader(cursorContext)) {
+                    assertEquals(1, count(indexIterator.iterator()));
                 }
             }
         }
 
-        assertThat( pageCacheTracer.pins() - initialPins ).isOne();
-        assertThat( pageCacheTracer.unpins() - initialUnpins ).isOne();
-        assertThat( pageCacheTracer.hits() - initialHits ).isOne();
+        assertThat(pageCacheTracer.pins() - initialPins).isOne();
+        assertThat(pageCacheTracer.unpins() - initialUnpins).isOne();
+        assertThat(pageCacheTracer.hits() - initialHits).isOne();
     }
 }

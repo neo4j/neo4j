@@ -21,11 +21,9 @@ package org.neo4j.bolt.packstream;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.transport.TransportThrottleException;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
@@ -36,9 +34,8 @@ import org.neo4j.memory.HeapEstimator;
  * A target output for {@link PackStream} which breaks the data into a continuous stream of chunks before pushing them into a netty
  * channel.
  */
-public class ChunkedOutput implements PackOutput
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ChunkedOutput.class );
+public class ChunkedOutput implements PackOutput {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ChunkedOutput.class);
 
     private static final int DEFAULT_BUFFER_SIZE = 8192;
 
@@ -59,92 +56,79 @@ public class ChunkedOutput implements PackOutput
 
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen;
+
     private int currentMessageStartIndex = NO_MESSAGE;
 
-    public ChunkedOutput( Channel ch, TransportThrottleGroup throttleGroup )
-    {
-        this( ch, DEFAULT_BUFFER_SIZE, throttleGroup );
+    public ChunkedOutput(Channel ch, TransportThrottleGroup throttleGroup) {
+        this(ch, DEFAULT_BUFFER_SIZE, throttleGroup);
     }
 
-    public ChunkedOutput( Channel ch, int bufferSize, TransportThrottleGroup throttleGroup )
-    {
-        this( ch, bufferSize, MAX_CHUNK_SIZE, throttleGroup );
+    public ChunkedOutput(Channel ch, int bufferSize, TransportThrottleGroup throttleGroup) {
+        this(ch, bufferSize, MAX_CHUNK_SIZE, throttleGroup);
     }
 
-    public ChunkedOutput( Channel channel, int maxBufferSize, int maxChunkSize, TransportThrottleGroup throttleGroup )
-    {
-        this.channel = Objects.requireNonNull( channel );
+    public ChunkedOutput(Channel channel, int maxBufferSize, int maxChunkSize, TransportThrottleGroup throttleGroup) {
+        this.channel = Objects.requireNonNull(channel);
         this.maxBufferSize = maxBufferSize;
         this.maxChunkSize = maxChunkSize;
         this.buffer = allocateBuffer();
-        this.throttleGroup = Objects.requireNonNull( throttleGroup );
+        this.throttleGroup = Objects.requireNonNull(throttleGroup);
     }
 
     @Override
-    public void beginMessage()
-    {
-        if ( currentMessageStartIndex != NO_MESSAGE )
-        {
-            throw new IllegalStateException( "Message has already been started, index: " + currentMessageStartIndex );
+    public void beginMessage() {
+        if (currentMessageStartIndex != NO_MESSAGE) {
+            throw new IllegalStateException("Message has already been started, index: " + currentMessageStartIndex);
         }
 
         currentMessageStartIndex = buffer.writerIndex();
     }
 
     @Override
-    public void messageSucceeded() throws IOException
-    {
+    public void messageSucceeded() throws IOException {
         assertMessageStarted();
         currentMessageStartIndex = NO_MESSAGE;
 
         closeChunkIfOpen();
-        buffer.writeShort( MESSAGE_BOUNDARY );
+        buffer.writeShort(MESSAGE_BOUNDARY);
 
-        if ( buffer.readableBytes() >= maxBufferSize )
-        {
+        if (buffer.readableBytes() >= maxBufferSize) {
             flush();
         }
         chunkOpen = false;
     }
 
     @Override
-    public void messageFailed()
-    {
+    public void messageFailed() {
         assertMessageStarted();
         reset();
     }
 
     @Override
-    public void messageReset()
-    {
-        if ( currentMessageStartIndex != NO_MESSAGE )
-        {
+    public void messageReset() {
+        if (currentMessageStartIndex != NO_MESSAGE) {
             reset();
         }
     }
 
     @Override
-    public PackOutput flush() throws IOException
-    {
-        if ( buffer != null && buffer.readableBytes() > 0 )
-        {
+    public PackOutput flush() throws IOException {
+        if (buffer != null && buffer.readableBytes() > 0) {
             closeChunkIfOpen();
 
             // check for and apply write throttles
-            try
-            {
-                throttleGroup.writeThrottle().acquire( channel );
-            }
-            catch ( TransportThrottleException ex )
-            {
-                throw new BoltIOException( Status.Request.InvalidUsage, ex.getMessage(), ex );
+            try {
+                throttleGroup.writeThrottle().acquire(channel);
+            } catch (TransportThrottleException ex) {
+                throw new BoltIOException(Status.Request.InvalidUsage, ex.getMessage(), ex);
             }
 
-            // Local copy and clear the buffer field. This ensures that the buffer is not re-released if the flush call fails
+            // Local copy and clear the buffer field. This ensures that the buffer is not re-released if the flush call
+            // fails
             ByteBuf out = this.buffer;
             this.buffer = null;
 
-            channel.writeAndFlush( out, channel.voidPromise() );
+            channel.writeAndFlush(out, channel.voidPromise());
 
             buffer = allocateBuffer();
         }
@@ -152,171 +136,142 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public PackOutput writeByte( byte value ) throws IOException
-    {
-        ensure( Byte.BYTES );
-        buffer.writeByte( value );
+    public PackOutput writeByte(byte value) throws IOException {
+        ensure(Byte.BYTES);
+        buffer.writeByte(value);
         return this;
     }
 
     @Override
-    public PackOutput writeShort( short value ) throws IOException
-    {
-        ensure( Short.BYTES );
-        buffer.writeShort( value );
+    public PackOutput writeShort(short value) throws IOException {
+        ensure(Short.BYTES);
+        buffer.writeShort(value);
         return this;
     }
 
     @Override
-    public PackOutput writeInt( int value ) throws IOException
-    {
-        ensure( Integer.BYTES );
-        buffer.writeInt( value );
+    public PackOutput writeInt(int value) throws IOException {
+        ensure(Integer.BYTES);
+        buffer.writeInt(value);
         return this;
     }
 
     @Override
-    public PackOutput writeLong( long value ) throws IOException
-    {
-        ensure( Long.BYTES );
-        buffer.writeLong( value );
+    public PackOutput writeLong(long value) throws IOException {
+        ensure(Long.BYTES);
+        buffer.writeLong(value);
         return this;
     }
 
     @Override
-    public PackOutput writeDouble( double value ) throws IOException
-    {
-        ensure( Double.BYTES );
-        buffer.writeDouble( value );
+    public PackOutput writeDouble(double value) throws IOException {
+        ensure(Double.BYTES);
+        buffer.writeDouble(value);
         return this;
     }
 
     @Override
-    public PackOutput writeBytes( ByteBuffer data ) throws IOException
-    {
-        while ( data.remaining() > 0 )
-        {
+    public PackOutput writeBytes(ByteBuffer data) throws IOException {
+        while (data.remaining() > 0) {
             // Ensure there is an open chunk, and that it has at least one byte of space left
-            ensure( 1 );
+            ensure(1);
 
             int oldLimit = data.limit();
-            data.limit( data.position() + Math.min( availableBytesInCurrentChunk(), data.remaining() ) );
-            buffer.writeBytes( data );
-            data.limit( oldLimit );
+            data.limit(data.position() + Math.min(availableBytesInCurrentChunk(), data.remaining()));
+            buffer.writeBytes(data);
+            data.limit(oldLimit);
         }
         return this;
     }
 
     @Override
-    public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
-    {
-        if ( offset + length > data.length )
-        {
-            throw new IOException( "Asked to write " + length + " bytes, but there is only " + (data.length - offset) + " bytes available in data provided." );
+    public PackOutput writeBytes(byte[] data, int offset, int length) throws IOException {
+        if (offset + length > data.length) {
+            throw new IOException("Asked to write " + length + " bytes, but there is only " + (data.length - offset)
+                    + " bytes available in data provided.");
         }
-        return writeBytes( ByteBuffer.wrap( data, offset, length ) );
+        return writeBytes(ByteBuffer.wrap(data, offset, length));
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
+    public void close() {
+        try {
             flush();
-        }
-        catch ( IOException ignore )
-        {
-        }
-        finally
-        {
+        } catch (IOException ignore) {
+        } finally {
             closed = true;
-            if ( buffer != null )
-            {
+            if (buffer != null) {
                 buffer.release();
                 buffer = null;
             }
         }
     }
 
-    private void ensure( int numberOfBytes ) throws IOException
-    {
+    private void ensure(int numberOfBytes) throws IOException {
         assertOpen();
         assertMessageStarted();
 
-        if ( chunkOpen )
-        {
+        if (chunkOpen) {
             int targetChunkSize = currentChunkBodySize() + numberOfBytes + CHUNK_HEADER_SIZE;
-            if ( targetChunkSize > maxChunkSize )
-            {
+            if (targetChunkSize > maxChunkSize) {
                 closeChunkIfOpen();
                 startNewChunk();
             }
-        }
-        else
-        {
+        } else {
             startNewChunk();
         }
     }
 
-    private void startNewChunk()
-    {
+    private void startNewChunk() {
         currentChunkStartIndex = buffer.writerIndex();
 
         // write empty chunk header
-        buffer.writeShort( 0 );
+        buffer.writeShort(0);
         chunkOpen = true;
     }
 
-    private void closeChunkIfOpen()
-    {
-        if ( chunkOpen )
-        {
+    private void closeChunkIfOpen() {
+        if (chunkOpen) {
             int chunkBodySize = currentChunkBodySize();
-            buffer.setShort( currentChunkStartIndex, chunkBodySize );
+            buffer.setShort(currentChunkStartIndex, chunkBodySize);
             chunkOpen = false;
         }
     }
 
-    private int availableBytesInCurrentChunk()
-    {
+    private int availableBytesInCurrentChunk() {
         return maxChunkSize - currentChunkBodySize() - CHUNK_HEADER_SIZE;
     }
 
-    private int currentChunkBodySize()
-    {
+    private int currentChunkBodySize() {
         return buffer.writerIndex() - (currentChunkStartIndex + CHUNK_HEADER_SIZE);
     }
 
-    private ByteBuf allocateBuffer()
-    {
-        return channel.alloc().buffer( maxBufferSize );
+    private ByteBuf allocateBuffer() {
+        return channel.alloc().buffer(maxBufferSize);
     }
 
-    private void assertMessageStarted()
-    {
-        if ( currentMessageStartIndex == NO_MESSAGE )
-        {
-            throw new IllegalStateException( "Message has not been started" );
+    private void assertMessageStarted() {
+        if (currentMessageStartIndex == NO_MESSAGE) {
+            throw new IllegalStateException("Message has not been started");
         }
     }
 
-    private void assertOpen() throws PackOutputClosedException
-    {
-        if ( closed )
-        {
+    private void assertOpen() throws PackOutputClosedException {
+        if (closed) {
             throw new PackOutputClosedException(
-                    String.format( "Network channel towards %s is closed. Client has probably been stopped.", channel.remoteAddress() ),
-                    String.format( "%s", channel.remoteAddress() ) );
+                    String.format(
+                            "Network channel towards %s is closed. Client has probably been stopped.",
+                            channel.remoteAddress()),
+                    String.format("%s", channel.remoteAddress()));
         }
     }
 
-    private void reset()
-    {
+    private void reset() {
         int writerIndex = currentMessageStartIndex;
         currentMessageStartIndex = NO_MESSAGE;
 
         // truncate the buffer to remove all data written by an unfinished message
-        buffer.capacity( writerIndex );
+        buffer.capacity(writerIndex);
         chunkOpen = false;
     }
 }

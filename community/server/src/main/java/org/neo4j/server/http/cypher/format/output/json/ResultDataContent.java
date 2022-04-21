@@ -24,59 +24,45 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public enum ResultDataContent
-{
-    row
-    {
+public enum ResultDataContent {
+    row {
         @Override
-        public ResultDataContentWriter writer( URI baseUri )
-        {
+        public ResultDataContentWriter writer(URI baseUri) {
             return new RowWriter();
         }
     },
-    graph
-    {
+    graph {
         @Override
-        public ResultDataContentWriter writer( URI baseUri )
-        {
+        public ResultDataContentWriter writer(URI baseUri) {
             return new GraphExtractionWriter();
         }
     },
-    rest
-    {
+    rest {
         @Override
-        public ResultDataContentWriter writer( URI baseUri )
-        {
-            return new RestRepresentationWriter( baseUri );
+        public ResultDataContentWriter writer(URI baseUri) {
+            return new RestRepresentationWriter(baseUri);
         }
     };
 
-    public abstract ResultDataContentWriter writer( URI baseUri );
+    public abstract ResultDataContentWriter writer(URI baseUri);
 
-    public static List<ResultDataContent> fromNames( List<?> names )
-    {
-        if ( names == null )
-        {
+    public static List<ResultDataContent> fromNames(List<?> names) {
+        if (names == null) {
             return Collections.emptyList();
         }
 
-        return names.stream().map( name ->
-        {
-            if ( name instanceof String )
-            {
-                try
-                {
-                    return valueOf( ((String) name).toLowerCase() );
-                }
-                catch ( IllegalArgumentException e )
-                {
-                    throw new IllegalArgumentException( "Invalid result data content specifier: " + name );
-                }
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Invalid result data content specifier: " + name );
-            }
-        } ).collect( Collectors.toList() );
+        return names.stream()
+                .map(name -> {
+                    if (name instanceof String) {
+                        try {
+                            return valueOf(((String) name).toLowerCase());
+                        } catch (IllegalArgumentException e) {
+                            throw new IllegalArgumentException("Invalid result data content specifier: " + name);
+                        }
+                    } else {
+                        throw new IllegalArgumentException("Invalid result data content specifier: " + name);
+                    }
+                })
+                .collect(Collectors.toList());
     }
 }

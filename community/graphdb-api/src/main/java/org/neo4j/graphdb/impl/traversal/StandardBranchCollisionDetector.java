@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -36,77 +35,63 @@ import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
-public class StandardBranchCollisionDetector implements BranchCollisionDetector
-{
-    private final Map<Node,Collection<TraversalBranch>[]> paths = new HashMap<>( 1000 );
+public class StandardBranchCollisionDetector implements BranchCollisionDetector {
+    private final Map<Node, Collection<TraversalBranch>[]> paths = new HashMap<>(1000);
     private final Evaluator evaluator;
     private final Set<Path> returnedPaths = new HashSet<>();
     private Predicate<Path> pathPredicate = Predicates.alwaysTrue();
 
-    public StandardBranchCollisionDetector( Evaluator evaluator, Predicate<Path> pathPredicate )
-    {
+    public StandardBranchCollisionDetector(Evaluator evaluator, Predicate<Path> pathPredicate) {
         this.evaluator = evaluator;
-        if ( pathPredicate != null )
-        {
+        if (pathPredicate != null) {
             this.pathPredicate = pathPredicate;
         }
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
-    public Collection<Path> evaluate( TraversalBranch branch, Direction direction )
-    {
+    @SuppressWarnings("unchecked")
+    public Collection<Path> evaluate(TraversalBranch branch, Direction direction) {
         // [0] for paths from start, [1] for paths from end
-        Collection<TraversalBranch>[] pathsHere = paths.get( branch.endNode() );
+        Collection<TraversalBranch>[] pathsHere = paths.get(branch.endNode());
         int index = direction.ordinal();
-        if ( pathsHere == null )
-        {
-            pathsHere = new Collection[] {new ArrayList<>(), new ArrayList<>() };
-            paths.put( branch.endNode(), pathsHere );
+        if (pathsHere == null) {
+            pathsHere = new Collection[] {new ArrayList<>(), new ArrayList<>()};
+            paths.put(branch.endNode(), pathsHere);
         }
-        pathsHere[index].add( branch );
+        pathsHere[index].add(branch);
 
         // If there are paths from the other side then include all the
         // combined paths
         Collection<TraversalBranch> otherCollections = pathsHere[index == 0 ? 1 : 0];
-        if ( !otherCollections.isEmpty() )
-        {
+        if (!otherCollections.isEmpty()) {
             Collection<Path> foundPaths = new ArrayList<>();
-            for ( TraversalBranch otherBranch : otherCollections )
-            {
+            for (TraversalBranch otherBranch : otherCollections) {
                 TraversalBranch startPath = index == 0 ? branch : otherBranch;
                 TraversalBranch endPath = index == 0 ? otherBranch : branch;
-                BidirectionalTraversalBranchPath path = new BidirectionalTraversalBranchPath(
-                        startPath, endPath );
-                if ( isAcceptablePath( path ) )
-                {
-                    if ( returnedPaths.add( path ) && includePath( path, startPath, endPath ) )
-                    {
-                        foundPaths.add( path );
+                BidirectionalTraversalBranchPath path = new BidirectionalTraversalBranchPath(startPath, endPath);
+                if (isAcceptablePath(path)) {
+                    if (returnedPaths.add(path) && includePath(path, startPath, endPath)) {
+                        foundPaths.add(path);
                     }
                 }
             }
 
-            if ( !foundPaths.isEmpty() )
-            {
+            if (!foundPaths.isEmpty()) {
                 return foundPaths;
             }
         }
         return null;
     }
 
-    private boolean isAcceptablePath( BidirectionalTraversalBranchPath path )
-    {
-        return pathPredicate.test( path );
+    private boolean isAcceptablePath(BidirectionalTraversalBranchPath path) {
+        return pathPredicate.test(path);
     }
 
-    protected boolean includePath( Path path, TraversalBranch startPath, TraversalBranch endPath )
-    {
-        Evaluation eval = evaluator.evaluate( path );
-        if ( !eval.continues() )
-        {
-            startPath.evaluation( eval );
-            endPath.evaluation( eval );
+    protected boolean includePath(Path path, TraversalBranch startPath, TraversalBranch endPath) {
+        Evaluation eval = evaluator.evaluate(path);
+        if (!eval.continues()) {
+            startPath.evaluation(eval);
+            endPath.evaluation(eval);
         }
         return eval.includes();
     }

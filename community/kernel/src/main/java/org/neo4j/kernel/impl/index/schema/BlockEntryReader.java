@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -29,13 +28,12 @@ import org.neo4j.io.pagecache.PageCursor;
  * internally so consumer need to either create a copy or finish all operations on key and value before progressing reader.
  * Reader will figure out when to stop reading based on Block header wish contains total size of this Block in bytes and total number of entries in Block.
  */
-public class BlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
-{
+public class BlockEntryReader<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE> {
     private final long blockSize;
     private final long entryCount;
     private final PageCursor pageCursor;
     private final boolean produceNewKeyAndValueInstances;
-    private final Layout<KEY,VALUE> layout;
+    private final Layout<KEY, VALUE> layout;
     private KEY key;
     private VALUE value;
     private long readEntries;
@@ -44,8 +42,7 @@ public class BlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
      * @param produceNewKeyAndValueInstances whether or not to let each {@link #next()} instantiate new KEY and VALUE instances.
      * If {@code false} the single KEY and VALUE instances will be reused and its data overwritten with each invokation to {@link #next()}.
      */
-    BlockEntryReader( PageCursor pageCursor, Layout<KEY,VALUE> layout, boolean produceNewKeyAndValueInstances )
-    {
+    BlockEntryReader(PageCursor pageCursor, Layout<KEY, VALUE> layout, boolean produceNewKeyAndValueInstances) {
         this.pageCursor = pageCursor;
         this.blockSize = pageCursor.getLong();
         this.entryCount = pageCursor.getLong();
@@ -56,47 +53,39 @@ public class BlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
     }
 
     @Override
-    public boolean next() throws IOException
-    {
-        if ( readEntries >= entryCount )
-        {
+    public boolean next() throws IOException {
+        if (readEntries >= entryCount) {
             return false;
         }
-        if ( produceNewKeyAndValueInstances )
-        {
+        if (produceNewKeyAndValueInstances) {
             key = layout.newKey();
             value = layout.newValue();
         }
-        BlockEntry.read( pageCursor, layout, key, value );
+        BlockEntry.read(pageCursor, layout, key, value);
         readEntries++;
         return true;
     }
 
-    public long blockSize()
-    {
+    public long blockSize() {
         return blockSize;
     }
 
-    public long entryCount()
-    {
+    public long entryCount() {
         return entryCount;
     }
 
     @Override
-    public KEY key()
-    {
+    public KEY key() {
         return key;
     }
 
     @Override
-    public VALUE value()
-    {
+    public VALUE value() {
         return value;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         pageCursor.close();
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.Values.byteValue;
@@ -33,177 +31,145 @@ import static org.neo4j.values.utils.ValueMath.overflowSafeAdd;
 import static org.neo4j.values.utils.ValueMath.overflowSafeMultiply;
 import static org.neo4j.values.utils.ValueMath.overflowSafeSubtract;
 
-class NumberValueMathTest
-{
-    @Test
-    void shouldAddSimpleIntegers()
-    {
-        NumberValue[] integers =
-                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
+import org.junit.jupiter.api.Test;
 
-        for ( NumberValue a : integers )
-        {
-            for ( NumberValue b : integers )
-            {
-                assertThat( a.plus( b ) ).isEqualTo( longValue( 84 ) );
-                assertThat( b.plus( a ) ).isEqualTo( longValue( 84 ) );
+class NumberValueMathTest {
+    @Test
+    void shouldAddSimpleIntegers() {
+        NumberValue[] integers =
+                new NumberValue[] {byteValue((byte) 42), shortValue((short) 42), intValue(42), longValue(42)};
+
+        for (NumberValue a : integers) {
+            for (NumberValue b : integers) {
+                assertThat(a.plus(b)).isEqualTo(longValue(84));
+                assertThat(b.plus(a)).isEqualTo(longValue(84));
             }
         }
     }
 
     @Test
-    void shouldSubtractSimpleIntegers()
-    {
+    void shouldSubtractSimpleIntegers() {
         NumberValue[] integers =
-                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
+                new NumberValue[] {byteValue((byte) 42), shortValue((short) 42), intValue(42), longValue(42)};
 
-        for ( NumberValue a : integers )
-        {
-            for ( NumberValue b : integers )
-            {
-                assertThat( a.minus( b ) ).isEqualTo( longValue( 0 ) );
-                assertThat( b.minus( a ) ).isEqualTo( longValue( 0 ) );
+        for (NumberValue a : integers) {
+            for (NumberValue b : integers) {
+                assertThat(a.minus(b)).isEqualTo(longValue(0));
+                assertThat(b.minus(a)).isEqualTo(longValue(0));
             }
         }
     }
 
     @Test
-    void shouldMultiplySimpleIntegers()
-    {
+    void shouldMultiplySimpleIntegers() {
         NumberValue[] integers =
-                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
+                new NumberValue[] {byteValue((byte) 42), shortValue((short) 42), intValue(42), longValue(42)};
 
-        for ( NumberValue a : integers )
-        {
-            for ( NumberValue b : integers )
-            {
-                assertThat( a.times( b ) ).isEqualTo( longValue( 42 * 42 ) );
-                assertThat( b.times( a ) ).isEqualTo( longValue( 42 * 42 ) );
+        for (NumberValue a : integers) {
+            for (NumberValue b : integers) {
+                assertThat(a.times(b)).isEqualTo(longValue(42 * 42));
+                assertThat(b.times(a)).isEqualTo(longValue(42 * 42));
             }
         }
     }
 
     @Test
-    void shouldAddSimpleFloats()
-    {
+    void shouldAddSimpleFloats() {
         NumberValue[] integers =
-                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
-        NumberValue[] floats =
-                new NumberValue[]{floatValue( 42 ), doubleValue( 42 )};
+                new NumberValue[] {byteValue((byte) 42), shortValue((short) 42), intValue(42), longValue(42)};
+        NumberValue[] floats = new NumberValue[] {floatValue(42), doubleValue(42)};
 
-        for ( NumberValue a : integers )
-        {
-            for ( NumberValue b : floats )
-            {
-                assertThat( a.plus( b ) ).isEqualTo( doubleValue( 84 ) );
-                assertThat( b.plus( a ) ).isEqualTo( doubleValue( 84 ) );
+        for (NumberValue a : integers) {
+            for (NumberValue b : floats) {
+                assertThat(a.plus(b)).isEqualTo(doubleValue(84));
+                assertThat(b.plus(a)).isEqualTo(doubleValue(84));
             }
         }
     }
 
     @Test
-    void shouldSubtractSimpleFloats()
-    {
+    void shouldSubtractSimpleFloats() {
         NumberValue[] integers =
-                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
-        NumberValue[] floats =
-                new NumberValue[]{floatValue( 42 ), doubleValue( 42 )};
+                new NumberValue[] {byteValue((byte) 42), shortValue((short) 42), intValue(42), longValue(42)};
+        NumberValue[] floats = new NumberValue[] {floatValue(42), doubleValue(42)};
 
-        for ( NumberValue a : integers )
-        {
-            for ( NumberValue b : floats )
-            {
-                assertThat( a.minus( b ) ).isEqualTo( doubleValue( 0 ) );
-                assertThat( b.minus( a ) ).isEqualTo( doubleValue( 0 ) );
+        for (NumberValue a : integers) {
+            for (NumberValue b : floats) {
+                assertThat(a.minus(b)).isEqualTo(doubleValue(0));
+                assertThat(b.minus(a)).isEqualTo(doubleValue(0));
             }
         }
     }
 
     @Test
-    void shouldMultiplySimpleFloats()
-    {
+    void shouldMultiplySimpleFloats() {
         NumberValue[] integers =
-                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
-        NumberValue[] floats =
-                new NumberValue[]{floatValue( 42 ), doubleValue( 42 )};
+                new NumberValue[] {byteValue((byte) 42), shortValue((short) 42), intValue(42), longValue(42)};
+        NumberValue[] floats = new NumberValue[] {floatValue(42), doubleValue(42)};
 
-        for ( NumberValue a : integers )
-        {
-            for ( NumberValue b : floats )
-            {
-                assertThat( a.times( b ) ).isEqualTo( doubleValue( 42 * 42 ) );
-                assertThat( b.times( a ) ).isEqualTo( doubleValue( 42 * 42 ) );
+        for (NumberValue a : integers) {
+            for (NumberValue b : floats) {
+                assertThat(a.times(b)).isEqualTo(doubleValue(42 * 42));
+                assertThat(b.times(a)).isEqualTo(doubleValue(42 * 42));
             }
         }
     }
 
     @Test
-    void shouldDivideSimpleIntegers()
-    {
+    void shouldDivideSimpleIntegers() {
         NumberValue[] integers =
-                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
+                new NumberValue[] {byteValue((byte) 42), shortValue((short) 42), intValue(42), longValue(42)};
 
-        for ( NumberValue a : integers )
-        {
-            for ( NumberValue b : integers )
-            {
-                assertThat( a.divideBy( b ) ).isEqualTo( longValue( 1 ) );
-                assertThat( b.divideBy( a ) ).isEqualTo( longValue( 1 ) );
+        for (NumberValue a : integers) {
+            for (NumberValue b : integers) {
+                assertThat(a.divideBy(b)).isEqualTo(longValue(1));
+                assertThat(b.divideBy(a)).isEqualTo(longValue(1));
             }
         }
     }
 
     @Test
-    void shouldDivideSimpleFloats()
-    {
+    void shouldDivideSimpleFloats() {
         NumberValue[] integers =
-                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
-        NumberValue[] floats =
-                new NumberValue[]{floatValue( 42 ), doubleValue( 42 )};
+                new NumberValue[] {byteValue((byte) 42), shortValue((short) 42), intValue(42), longValue(42)};
+        NumberValue[] floats = new NumberValue[] {floatValue(42), doubleValue(42)};
 
-        for ( NumberValue a : integers )
-        {
-            for ( NumberValue b : floats )
-            {
-                assertThat( a.divideBy( b ) ).isEqualTo( doubleValue( 1.0 ) );
-                assertThat( b.divideBy( a ) ).isEqualTo( doubleValue( 1.0 ) );
+        for (NumberValue a : integers) {
+            for (NumberValue b : floats) {
+                assertThat(a.divideBy(b)).isEqualTo(doubleValue(1.0));
+                assertThat(b.divideBy(a)).isEqualTo(doubleValue(1.0));
             }
         }
     }
 
     @Test
-    void shouldFailOnOverflowingAdd()
-    {
-        assertThrows(ArithmeticException.class, () -> longValue( Long.MAX_VALUE ).plus( longValue( 1 ) ) );
+    void shouldFailOnOverflowingAdd() {
+        assertThrows(ArithmeticException.class, () -> longValue(Long.MAX_VALUE).plus(longValue(1)));
     }
 
     @Test
-    void shouldFailOnOverflowingSubtraction()
-    {
-        assertThrows( ArithmeticException.class, () -> longValue( Long.MAX_VALUE ).minus( longValue( -1 ) ) );
+    void shouldFailOnOverflowingSubtraction() {
+        assertThrows(ArithmeticException.class, () -> longValue(Long.MAX_VALUE).minus(longValue(-1)));
     }
 
     @Test
-    void shouldFailOnOverflowingMultiplication()
-    {
-        assertThrows( ArithmeticException.class, () -> longValue( Long.MAX_VALUE ).times( 2 ) );
+    void shouldFailOnOverflowingMultiplication() {
+        assertThrows(ArithmeticException.class, () -> longValue(Long.MAX_VALUE).times(2));
     }
 
     @Test
-    void shouldNotOverflowOnSafeAddition()
-    {
-        assertThat( overflowSafeAdd( Long.MAX_VALUE, 1 ) ).isEqualTo( doubleValue( (double) Long.MAX_VALUE + 1 ) );
+    void shouldNotOverflowOnSafeAddition() {
+        assertThat(overflowSafeAdd(Long.MAX_VALUE, 1)).isEqualTo(doubleValue((double) Long.MAX_VALUE + 1));
     }
 
     @Test
-    void shouldNotOverflowOnSafeSubtraction()
-    {
-        assertThat( overflowSafeSubtract( Long.MAX_VALUE, -1 ) ).isEqualTo( doubleValue( ((double) Long.MAX_VALUE) + (double) 1 ) );
+    void shouldNotOverflowOnSafeSubtraction() {
+        assertThat(overflowSafeSubtract(Long.MAX_VALUE, -1))
+                .isEqualTo(doubleValue(((double) Long.MAX_VALUE) + (double) 1));
     }
 
     @Test
-    void shouldNotOverflowOnMultiplication()
-    {
-        assertThat( overflowSafeMultiply( Long.MAX_VALUE, 2 ) ).isEqualTo( doubleValue( (double) Long.MAX_VALUE * 2 ) );
+    void shouldNotOverflowOnMultiplication() {
+        assertThat(overflowSafeMultiply(Long.MAX_VALUE, 2)).isEqualTo(doubleValue((double) Long.MAX_VALUE * 2));
     }
 }

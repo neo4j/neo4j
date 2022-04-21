@@ -21,10 +21,12 @@ package cypher.features
 
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-case class ProcedureSignature(namespace: Seq[String],
-                              name: String,
-                              inputs: Seq[(String, CypherType)],
-                              outputs: Option[Seq[(String, CypherType)]]) {
+case class ProcedureSignature(
+  namespace: Seq[String],
+  name: String,
+  inputs: Seq[(String, CypherType)],
+  outputs: Option[Seq[(String, CypherType)]]
+) {
 
   val fields: List[String] =
     (inputs ++ outputs.getOrElse(Seq.empty)).map { case (fieldName, _) => fieldName }.toList

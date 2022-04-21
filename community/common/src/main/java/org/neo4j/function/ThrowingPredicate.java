@@ -27,8 +27,7 @@ import java.util.function.Predicate;
  * @param <T> the type of the input to the predicate
  * @param <E> the type of exception that may be thrown from the operator
  */
-public interface ThrowingPredicate<T, E extends Exception>
-{
+public interface ThrowingPredicate<T, E extends Exception> {
     /**
      * Evaluates this predicate on the given argument.
      *
@@ -36,21 +35,17 @@ public interface ThrowingPredicate<T, E extends Exception>
      * @return true if the input argument matches the predicate, otherwise false
      * @throws E an exception if the predicate fails
      */
-    boolean test( T t ) throws E;
+    boolean test(T t) throws E;
 
-    static <TYPE> ThrowingPredicate<TYPE,RuntimeException> throwingPredicate( Predicate<TYPE> predicate )
-    {
-        return new ThrowingPredicate<>()
-        {
+    static <TYPE> ThrowingPredicate<TYPE, RuntimeException> throwingPredicate(Predicate<TYPE> predicate) {
+        return new ThrowingPredicate<>() {
             @Override
-            public boolean test( TYPE value )
-            {
-                return predicate.test( value );
+            public boolean test(TYPE value) {
+                return predicate.test(value);
             }
 
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return predicate.toString();
             }
         };

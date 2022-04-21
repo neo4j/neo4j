@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-public interface AccessCapability
-{
+public interface AccessCapability {
     void assertCanWrite();
 }

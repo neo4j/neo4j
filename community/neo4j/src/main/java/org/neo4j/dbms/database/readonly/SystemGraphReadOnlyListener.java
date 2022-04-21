@@ -19,55 +19,48 @@
  */
 package org.neo4j.dbms.database.readonly;
 
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-
-public final class SystemGraphReadOnlyListener extends LifecycleAdapter
-{
+public final class SystemGraphReadOnlyListener extends LifecycleAdapter {
     private final GlobalTransactionEventListeners txListeners;
     private final ReadOnlyDatabases readOnlyDatabases;
 
     private Listener listener;
 
-    public SystemGraphReadOnlyListener( GlobalTransactionEventListeners txListeners, ReadOnlyDatabases readOnlyDatabases )
-    {
+    public SystemGraphReadOnlyListener(
+            GlobalTransactionEventListeners txListeners, ReadOnlyDatabases readOnlyDatabases) {
         this.txListeners = txListeners;
         this.readOnlyDatabases = readOnlyDatabases;
     }
 
     @Override
-    public void start() throws Exception
-    {
-        this.listener = new Listener( readOnlyDatabases );
-        txListeners.registerTransactionEventListener( NAMED_SYSTEM_DATABASE_ID.name(), listener );
+    public void start() throws Exception {
+        this.listener = new Listener(readOnlyDatabases);
+        txListeners.registerTransactionEventListener(NAMED_SYSTEM_DATABASE_ID.name(), listener);
     }
 
     @Override
-    public void stop() throws Exception
-    {
-        if ( listener != null )
-        {
-            txListeners.unregisterTransactionEventListener( NAMED_SYSTEM_DATABASE_ID.name(), listener );
+    public void stop() throws Exception {
+        if (listener != null) {
+            txListeners.unregisterTransactionEventListener(NAMED_SYSTEM_DATABASE_ID.name(), listener);
         }
     }
 
-    private static class Listener extends TransactionEventListenerAdapter<Object>
-    {
+    private static class Listener extends TransactionEventListenerAdapter<Object> {
         private final ReadOnlyDatabases readOnlyDatabases;
 
-        private Listener( ReadOnlyDatabases readOnlyDatabases )
-        {
+        private Listener(ReadOnlyDatabases readOnlyDatabases) {
             this.readOnlyDatabases = readOnlyDatabases;
         }
 
         @Override
-        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
-        {
+        public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
             readOnlyDatabases.refresh();
         }
     }

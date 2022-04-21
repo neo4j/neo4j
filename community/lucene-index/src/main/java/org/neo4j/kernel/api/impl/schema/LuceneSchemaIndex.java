@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
@@ -37,47 +36,43 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 /**
  * Implementation of Lucene schema index that support multiple partitions.
  */
-class LuceneSchemaIndex extends AbstractLuceneIndex<ValueIndexReader>
-{
+class LuceneSchemaIndex extends AbstractLuceneIndex<ValueIndexReader> {
 
     private final IndexSamplingConfig samplingConfig;
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator();
 
-    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, IndexPartitionFactory partitionFactory, Config config  )
-    {
-        super( indexStorage, partitionFactory, descriptor, config );
+    LuceneSchemaIndex(
+            PartitionedIndexStorage indexStorage,
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            IndexPartitionFactory partitionFactory,
+            Config config) {
+        super(indexStorage, partitionFactory, descriptor, config);
         this.samplingConfig = samplingConfig;
     }
 
     @Override
-    public void drop()
-    {
+    public void drop() {
         taskCoordinator.cancel();
-        try
-        {
+        try {
             taskCoordinator.awaitCompletion();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( "Interrupted while waiting for concurrent tasks to complete.", e );
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted while waiting for concurrent tasks to complete.", e);
         }
         super.drop();
     }
 
     @Override
-    protected SimpleValueIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
-    {
-        AbstractIndexPartition searcher = getFirstPartition( partitions );
-        return new SimpleValueIndexReader( searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator );
+    protected SimpleValueIndexReader createSimpleReader(List<AbstractIndexPartition> partitions) throws IOException {
+        AbstractIndexPartition searcher = getFirstPartition(partitions);
+        return new SimpleValueIndexReader(searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator);
     }
 
     @Override
-    protected PartitionedValueIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
-    {
-        List<SearcherReference> searchers = acquireSearchers( partitions );
-        return new PartitionedValueIndexReader( searchers, descriptor, samplingConfig, taskCoordinator );
+    protected PartitionedValueIndexReader createPartitionedReader(List<AbstractIndexPartition> partitions)
+            throws IOException {
+        List<SearcherReference> searchers = acquireSearchers(partitions);
+        return new PartitionedValueIndexReader(searchers, descriptor, samplingConfig, taskCoordinator);
     }
-
 }

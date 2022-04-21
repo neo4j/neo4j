@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-public enum ParameterType
-{
+public enum ParameterType {
     ANY,
     STRING,
     MAP

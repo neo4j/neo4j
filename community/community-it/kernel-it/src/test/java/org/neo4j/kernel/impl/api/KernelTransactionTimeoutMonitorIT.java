@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_monitor_check_interval;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 import java.time.Duration;
 import java.util.Set;
@@ -31,7 +33,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -46,18 +51,11 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.BinaryLatch;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_monitor_check_interval;
-import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
-
-@DbmsExtension( configurationCallback = "configure" )
-public class KernelTransactionTimeoutMonitorIT
-{
+@DbmsExtension(configurationCallback = "configure")
+public class KernelTransactionTimeoutMonitorIT {
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private KernelTransactions kernelTransactions;
 
@@ -65,112 +63,97 @@ public class KernelTransactionTimeoutMonitorIT
     private ExecutorService executor;
 
     @ExtensionCallback
-    protected void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( transaction_monitor_check_interval, Duration.ofMillis( 100 ) );
+    protected void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(transaction_monitor_check_interval, Duration.ofMillis(100));
     }
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         executor = Executors.newSingleThreadExecutor();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         executor.shutdown();
     }
 
     @Test
-    @Timeout( 30 )
-    void terminatingTransactionMustEagerlyReleaseTheirLocks() throws Exception
-    {
+    @Timeout(30)
+    void terminatingTransactionMustEagerlyReleaseTheirLocks() throws Exception {
         AtomicBoolean nodeLockAcquired = new AtomicBoolean();
         AtomicBoolean lockerDone = new AtomicBoolean();
         BinaryLatch lockerPause = new BinaryLatch();
         long nodeId;
-        try ( Transaction tx = database.beginTx() )
-        {
+        try (Transaction tx = database.beginTx()) {
             nodeId = tx.createNode().getId();
             tx.commit();
         }
-        Future<?> locker = executor.submit( () ->
-        {
-            try ( Transaction tx = database.beginTx() )
-            {
-                Node node = tx.getNodeById( nodeId );
-                tx.acquireReadLock( node );
-                nodeLockAcquired.set( true );
+        Future<?> locker = executor.submit(() -> {
+            try (Transaction tx = database.beginTx()) {
+                Node node = tx.getNodeById(nodeId);
+                tx.acquireReadLock(node);
+                nodeLockAcquired.set(true);
                 lockerPause.await();
             }
-            lockerDone.set( true );
-        } );
+            lockerDone.set(true);
+        });
 
         boolean proceed;
-        do
-        {
+        do {
             proceed = nodeLockAcquired.get();
-        }
-        while ( !proceed );
+        } while (!proceed);
 
         terminateOngoingTransaction();
 
-        assertFalse( lockerDone.get() ); // but the thread should still be blocked on the latch
+        assertFalse(lockerDone.get()); // but the thread should still be blocked on the latch
         // Yet we should be able to proceed and grab the locks they once held
-        try ( Transaction tx = database.beginTx() )
-        {
+        try (Transaction tx = database.beginTx()) {
             // Write-locking is only possible if their shared lock was released
-            tx.acquireWriteLock( tx.getNodeById( nodeId ) );
+            tx.acquireWriteLock(tx.getNodeById(nodeId));
             tx.commit();
         }
         // No exception from our lock client being stopped (e.g. we ended up blocked for too long) or from timeout
         lockerPause.release();
         locker.get();
-        assertTrue( lockerDone.get() );
+        assertTrue(lockerDone.get());
     }
 
-    @Timeout( 30 )
+    @Timeout(30)
     @Test
-    void terminateExpiredTransaction()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
+    void terminateExpiredTransaction() {
+        try (Transaction transaction = database.beginTx()) {
             transaction.createNode();
             transaction.commit();
         }
 
-        Exception exception = assertThrows( Exception.class, () ->
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                Node nodeById = transaction.getNodeById( NODE_ID );
-                nodeById.setProperty( "a", "b" );
-                executor.submit( startAnotherTransaction() ).get();
+        Exception exception = assertThrows(Exception.class, () -> {
+            try (Transaction transaction = database.beginTx()) {
+                Node nodeById = transaction.getNodeById(NODE_ID);
+                nodeById.setProperty("a", "b");
+                executor.submit(startAnotherTransaction()).get();
             }
-        } );
-        assertThat( exception.getMessage() ).contains( "The transaction has been terminated." );
+        });
+        assertThat(exception.getMessage()).contains("The transaction has been terminated.");
     }
 
-    private void terminateOngoingTransaction()
-    {
+    private void terminateOngoingTransaction() {
         Set<KernelTransactionHandle> kernelTransactionHandles = kernelTransactions.activeTransactions();
-        assertThat( kernelTransactionHandles ).hasSize( 1 );
-        for ( KernelTransactionHandle kernelTransactionHandle : kernelTransactionHandles )
-        {
-            kernelTransactionHandle.markForTermination( Status.Transaction.Terminated );
+        assertThat(kernelTransactionHandles).hasSize(1);
+        for (KernelTransactionHandle kernelTransactionHandle : kernelTransactionHandles) {
+            kernelTransactionHandle.markForTermination(Status.Transaction.Terminated);
         }
     }
 
-    private Runnable startAnotherTransaction()
-    {
-        return () ->
-        {
-            try ( InternalTransaction tx = database
-                    .beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED, EMBEDDED_CONNECTION, 1, TimeUnit.SECONDS ) )
-            {
-                Node node = tx.getNodeById( NODE_ID );
-                node.setProperty( "c", "d" );
+    private Runnable startAnotherTransaction() {
+        return () -> {
+            try (InternalTransaction tx = database.beginTransaction(
+                    KernelTransaction.Type.IMPLICIT,
+                    LoginContext.AUTH_DISABLED,
+                    EMBEDDED_CONNECTION,
+                    1,
+                    TimeUnit.SECONDS)) {
+                Node node = tx.getNodeById(NODE_ID);
+                node.setProperty("c", "d");
             }
         };
     }

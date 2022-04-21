@@ -21,28 +21,24 @@ package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.common.Edition;
 
-public enum DbmsInfo
-{
-    UNKNOWN( Edition.UNKNOWN, OperationalMode.UNKNOWN ),
-    TOOL( Edition.UNKNOWN, OperationalMode.SINGLE ),
-    COMMUNITY( Edition.COMMUNITY, OperationalMode.SINGLE ),
-    ENTERPRISE( Edition.ENTERPRISE, OperationalMode.SINGLE ),
-    CORE( Edition.ENTERPRISE, OperationalMode.CORE ),
-    READ_REPLICA( Edition.ENTERPRISE, OperationalMode.READ_REPLICA );
+public enum DbmsInfo {
+    UNKNOWN(Edition.UNKNOWN, OperationalMode.UNKNOWN),
+    TOOL(Edition.UNKNOWN, OperationalMode.SINGLE),
+    COMMUNITY(Edition.COMMUNITY, OperationalMode.SINGLE),
+    ENTERPRISE(Edition.ENTERPRISE, OperationalMode.SINGLE),
+    CORE(Edition.ENTERPRISE, OperationalMode.CORE),
+    READ_REPLICA(Edition.ENTERPRISE, OperationalMode.READ_REPLICA);
 
     public final Edition edition;
     public final OperationalMode operationalMode;
 
-    DbmsInfo( Edition edition, OperationalMode operationalMode )
-    {
+    DbmsInfo(Edition edition, OperationalMode operationalMode) {
         this.edition = edition;
         this.operationalMode = operationalMode;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return edition + " " + operationalMode;
     }
-
 }

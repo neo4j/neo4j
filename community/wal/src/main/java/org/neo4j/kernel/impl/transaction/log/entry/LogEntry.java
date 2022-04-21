@@ -21,11 +21,10 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.KernelVersion;
 
-public interface LogEntry
-{
+public interface LogEntry {
     KernelVersion getVersion();
 
     byte getType();
 
-    String timestamp( long timeWritten );
+    String timestamp(long timeWritten);
 }

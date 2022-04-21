@@ -34,7 +34,10 @@ trait OrderedInputPipe {
    */
   def getReceiver(state: QueryState): OrderedChunkReceiver
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val receiver = getReceiver(state)
     internalCreateResultsWithReceiver(input, receiver)
   }
@@ -42,7 +45,10 @@ trait OrderedInputPipe {
   /**
    * Processes the input in chunks as described by [[OrderedChunkReceiver]].
    */
-  protected final def internalCreateResultsWithReceiver(input: ClosingIterator[CypherRow], receiver: OrderedChunkReceiver): ClosingIterator[CypherRow] = {
+  final protected def internalCreateResultsWithReceiver(
+    input: ClosingIterator[CypherRow],
+    receiver: OrderedChunkReceiver
+  ): ClosingIterator[CypherRow] = {
     val inputState = new InputState()
 
     new ClosingIterator[CypherRow] {
@@ -56,7 +62,8 @@ trait OrderedInputPipe {
       override def innerHasNext: Boolean = {
         val _hasNext = inputState.resultRowsOfChunk.hasNext ||
           (processNextChunk && (
-            inputState.firstRowOfNextChunk != null || input.hasNext))
+            inputState.firstRowOfNextChunk != null || input.hasNext
+          ))
         if (!_hasNext) {
           receiver.close()
         }
@@ -119,6 +126,7 @@ trait OrderedInputPipe {
  * processNextChunk -> false
  */
 trait OrderedChunkReceiver {
+
   /**
    * Will be called after a chunk is completed and all rows streamed out to the enclosing Pipe.
    */

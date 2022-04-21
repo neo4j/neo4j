@@ -21,20 +21,16 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.exceptions.StoreFailureException;
 
-public class InvalidRecordException extends StoreFailureException
-{
-    public InvalidRecordException( String msg )
-    {
-        super( msg );
+public class InvalidRecordException extends StoreFailureException {
+    public InvalidRecordException(String msg) {
+        super(msg);
     }
 
-    public InvalidRecordException( Throwable cause )
-    {
-        super( cause );
+    public InvalidRecordException(Throwable cause) {
+        super(cause);
     }
 
-    public InvalidRecordException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public InvalidRecordException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import java.time.Clock;
+import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
+import java.time.Clock;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
@@ -37,76 +38,79 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.Group;
 
-import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
-
-public class CommunityCypherEngineProvider extends QueryEngineProvider
-{
+public class CommunityCypherEngineProvider extends QueryEngineProvider {
     @Override
-    protected int enginePriority()
-    {
+    protected int enginePriority() {
         return 42; // Lower means better. The enterprise version will have a lower number
     }
 
-    protected CompilerFactory makeCompilerFactory( GraphDatabaseCypherService queryService,
-                                                   SPI spi,
-                                                   CypherPlannerConfiguration plannerConfig,
-                                                   CypherRuntimeConfiguration runtimeConfig,
-                                                   CypherQueryCaches queryCaches )
-    {
-        return new CommunityCompilerFactory( queryService, spi.monitors(), spi.logProvider(), plannerConfig, runtimeConfig, queryCaches );
+    protected CompilerFactory makeCompilerFactory(
+            GraphDatabaseCypherService queryService,
+            SPI spi,
+            CypherPlannerConfiguration plannerConfig,
+            CypherRuntimeConfiguration runtimeConfig,
+            CypherQueryCaches queryCaches) {
+        return new CommunityCompilerFactory(
+                queryService, spi.monitors(), spi.logProvider(), plannerConfig, runtimeConfig, queryCaches);
     }
 
     @Override
-    protected QueryExecutionEngine createEngine( Dependencies deps,
-                                                 GraphDatabaseAPI graphAPI,
-                                                 boolean isSystemDatabase,
-                                                 SPI spi )
-    {
-        GraphDatabaseCypherService queryService = new GraphDatabaseCypherService( graphAPI );
-        deps.satisfyDependency( queryService );
-        CypherConfiguration cypherConfig = CypherConfiguration.fromConfig( spi.config() );
-        CypherPlannerConfiguration plannerConfig = CypherPlannerConfiguration.fromCypherConfiguration( cypherConfig, spi.config(), isSystemDatabase );
-        CypherRuntimeConfiguration runtimeConfig = CypherRuntimeConfiguration.fromCypherConfiguration( cypherConfig );
-        CaffeineCacheFactory cacheFactory = makeCacheFactory( spi );
+    protected QueryExecutionEngine createEngine(
+            Dependencies deps, GraphDatabaseAPI graphAPI, boolean isSystemDatabase, SPI spi) {
+        GraphDatabaseCypherService queryService = new GraphDatabaseCypherService(graphAPI);
+        deps.satisfyDependency(queryService);
+        CypherConfiguration cypherConfig = CypherConfiguration.fromConfig(spi.config());
+        CypherPlannerConfiguration plannerConfig =
+                CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), isSystemDatabase);
+        CypherRuntimeConfiguration runtimeConfig = CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig);
+        CaffeineCacheFactory cacheFactory = makeCacheFactory(spi);
         Clock clock = Clock.systemUTC();
 
-        CypherQueryCaches queryCaches = makeCypherQueryCaches( spi, queryService, cypherConfig, cacheFactory, clock );
-        CompilerFactory compilerFactory = makeCompilerFactory( queryService, spi, plannerConfig, runtimeConfig, queryCaches );
-        deps.satisfyDependency( queryCaches.statistics() );
+        CypherQueryCaches queryCaches = makeCypherQueryCaches(spi, queryService, cypherConfig, cacheFactory, clock);
+        CompilerFactory compilerFactory =
+                makeCompilerFactory(queryService, spi, plannerConfig, runtimeConfig, queryCaches);
+        deps.satisfyDependency(queryCaches.statistics());
 
-        if ( isSystemDatabase )
-        {
-            CypherPlannerConfiguration innerPlannerConfig = CypherPlannerConfiguration.fromCypherConfiguration( cypherConfig, spi.config(), false );
-            CypherQueryCaches innerQueryCaches = makeCypherQueryCaches( spi, queryService, cypherConfig, cacheFactory, clock );
-            CompilerFactory innerCompilerFactory = makeCompilerFactory( queryService, spi, innerPlannerConfig, runtimeConfig, innerQueryCaches );
-            return new SystemExecutionEngine( queryService, spi.logProvider(), queryCaches, compilerFactory, innerQueryCaches, innerCompilerFactory );
-        }
-        else if ( spi.config().get( GraphDatabaseInternalSettings.snapshot_query ) )
-        {
-            return new SnapshotExecutionEngine( queryService, spi.config(), queryCaches, spi.logProvider(), compilerFactory );
-        }
-        else
-        {
-            return new ExecutionEngine( queryService, queryCaches, spi.logProvider(), compilerFactory );
+        if (isSystemDatabase) {
+            CypherPlannerConfiguration innerPlannerConfig =
+                    CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), false);
+            CypherQueryCaches innerQueryCaches =
+                    makeCypherQueryCaches(spi, queryService, cypherConfig, cacheFactory, clock);
+            CompilerFactory innerCompilerFactory =
+                    makeCompilerFactory(queryService, spi, innerPlannerConfig, runtimeConfig, innerQueryCaches);
+            return new SystemExecutionEngine(
+                    queryService,
+                    spi.logProvider(),
+                    queryCaches,
+                    compilerFactory,
+                    innerQueryCaches,
+                    innerCompilerFactory);
+        } else if (spi.config().get(GraphDatabaseInternalSettings.snapshot_query)) {
+            return new SnapshotExecutionEngine(
+                    queryService, spi.config(), queryCaches, spi.logProvider(), compilerFactory);
+        } else {
+            return new ExecutionEngine(queryService, queryCaches, spi.logProvider(), compilerFactory);
         }
     }
 
-    private CypherQueryCaches makeCypherQueryCaches( SPI spi, GraphDatabaseCypherService queryService, CypherConfiguration cypherConfig,
-                                                     CaffeineCacheFactory cacheFactory, Clock clock )
-    {
+    private CypherQueryCaches makeCypherQueryCaches(
+            SPI spi,
+            GraphDatabaseCypherService queryService,
+            CypherConfiguration cypherConfig,
+            CaffeineCacheFactory cacheFactory,
+            Clock clock) {
         return new CypherQueryCaches(
-                new CypherQueryCaches.Config( cypherConfig ),
-                new LastCommittedTxIdProvider( queryService ),
+                new CypherQueryCaches.Config(cypherConfig),
+                new LastCommittedTxIdProvider(queryService),
                 cacheFactory,
                 clock,
                 spi.monitors(),
-                spi.logProvider()
-        );
+                spi.logProvider());
     }
 
-    private static CaffeineCacheFactory makeCacheFactory( SPI spi )
-    {
-        var monitoredExecutor = spi.jobScheduler().monitoredJobExecutor( Group.CYPHER_CACHE );
-        return new ExecutorBasedCaffeineCacheFactory( job -> monitoredExecutor.execute( systemJob( "Query plan cache maintenance" ), job ) );
+    private static CaffeineCacheFactory makeCacheFactory(SPI spi) {
+        var monitoredExecutor = spi.jobScheduler().monitoredJobExecutor(Group.CYPHER_CACHE);
+        return new ExecutorBasedCaffeineCacheFactory(
+                job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));
     }
 }

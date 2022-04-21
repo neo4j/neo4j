@@ -19,54 +19,55 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
-import org.neo4j.kernel.impl.security.User;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 
-class UserTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
+import org.neo4j.kernel.impl.security.User;
+
+class UserTest {
     @Test
-    void shouldBuildImmutableUser()
-    {
-        SystemGraphCredential abc = credentialFor( "123abc" );
-        SystemGraphCredential fruit = credentialFor( "fruit" );
-        User u1 = new User.Builder( "Steve", abc ).build();
-        User u2 = new User.Builder( "Steve", fruit )
-                .withRequiredPasswordChange( true )
-                .withFlag( "nice_guy" ).build();
-        assertThat( u1 ).isEqualTo( u1 );
-        assertThat( u1 ).isNotEqualTo( u2 );
+    void shouldBuildImmutableUser() {
+        SystemGraphCredential abc = credentialFor("123abc");
+        SystemGraphCredential fruit = credentialFor("fruit");
+        User u1 = new User.Builder("Steve", abc).build();
+        User u2 = new User.Builder("Steve", fruit)
+                .withRequiredPasswordChange(true)
+                .withFlag("nice_guy")
+                .build();
+        assertThat(u1).isEqualTo(u1);
+        assertThat(u1).isNotEqualTo(u2);
 
-        User u1AsU2 = u1.augment().withCredentials( fruit )
-                .withRequiredPasswordChange( true )
-                .withFlag( "nice_guy" ).build();
-        assertThat( u1 ).isNotEqualTo( u1AsU2 );
-        assertThat( u2 ).isEqualTo( u1AsU2 );
+        User u1AsU2 = u1.augment()
+                .withCredentials(fruit)
+                .withRequiredPasswordChange(true)
+                .withFlag("nice_guy")
+                .build();
+        assertThat(u1).isNotEqualTo(u1AsU2);
+        assertThat(u2).isEqualTo(u1AsU2);
 
-        User u2AsU1 = u2.augment().withCredentials( abc )
-                .withRequiredPasswordChange( false )
-                .withoutFlag( "nice_guy" ).build();
-        assertThat( u2 ).isNotEqualTo( u2AsU1 );
-        assertThat( u1 ).isEqualTo( u2AsU1 );
+        User u2AsU1 = u2.augment()
+                .withCredentials(abc)
+                .withRequiredPasswordChange(false)
+                .withoutFlag("nice_guy")
+                .build();
+        assertThat(u2).isNotEqualTo(u2AsU1);
+        assertThat(u1).isEqualTo(u2AsU1);
 
-        assertThat( u1 ).isNotEqualTo( u2 );
+        assertThat(u1).isNotEqualTo(u2);
     }
 
     @Test
-    void shouldBuildUserWithId()
-    {
-        SystemGraphCredential abc = credentialFor( "123abc" );
-        User u1 = new User.Builder( "Alice", abc ).withId( "id1" ).build();
-        User u2 = new User.Builder( "Alice", abc ).withId( "id2" ).build();
-        User u3 = new User.Builder( "Alice", abc ).build();
+    void shouldBuildUserWithId() {
+        SystemGraphCredential abc = credentialFor("123abc");
+        User u1 = new User.Builder("Alice", abc).withId("id1").build();
+        User u2 = new User.Builder("Alice", abc).withId("id2").build();
+        User u3 = new User.Builder("Alice", abc).build();
 
-        assertThat( u1 ).isEqualTo( u1 );
-        assertThat( u1 ).isNotEqualTo( u2 );
-        assertThat( u1 ).isNotEqualTo( u3 );
-        assertThat( u3 ).isNotEqualTo( u1 );
+        assertThat(u1).isEqualTo(u1);
+        assertThat(u1).isNotEqualTo(u2);
+        assertThat(u1).isNotEqualTo(u3);
+        assertThat(u3).isNotEqualTo(u1);
     }
 }

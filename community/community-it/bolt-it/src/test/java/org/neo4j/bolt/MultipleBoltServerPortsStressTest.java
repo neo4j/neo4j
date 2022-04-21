@@ -19,17 +19,26 @@
  */
 package org.neo4j.bolt;
 
-import org.assertj.core.api.Condition;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
+import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceivesSelectedProtocolVersion;
+import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newMessageEncoder;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
+import static org.neo4j.values.storable.Values.longValue;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
-
+import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
@@ -51,21 +60,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.values.AnyValue;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceivesSelectedProtocolVersion;
-import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newMessageEncoder;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
-import static org.neo4j.values.storable.Values.longValue;
-
 @TestDirectoryExtension
 @Neo4jWithSocketExtension
-class MultipleBoltServerPortsStressTest
-{
+class MultipleBoltServerPortsStressTest {
     private static final int DURATION_IN_MINUTES = 1;
     private static final int NUMBER_OF_THREADS = 10;
 
@@ -76,123 +73,100 @@ class MultipleBoltServerPortsStressTest
     public Neo4jWithSocket server;
 
     @BeforeEach
-    void setUp( TestInfo testInfo ) throws IOException
-    {
-        server.setGraphDatabaseFactory( new SharedAuthManagerDbmsBuilder() );
-        server.setConfigure( settings ->
-        {
-            settings.put( BoltConnector.enabled, true );
-            settings.put( BoltConnector.listen_address, new SocketAddress( 0 ) );
+    void setUp(TestInfo testInfo) throws IOException {
+        server.setGraphDatabaseFactory(new SharedAuthManagerDbmsBuilder());
+        server.setConfigure(settings -> {
+            settings.put(BoltConnector.enabled, true);
+            settings.put(BoltConnector.listen_address, new SocketAddress(0));
 
-            settings.put( GraphDatabaseSettings.routing_enabled, true );
-            settings.put( GraphDatabaseSettings.routing_listen_address, new SocketAddress( 0 ) );
-        } );
-        server.init( testInfo );
+            settings.put(GraphDatabaseSettings.routing_enabled, true);
+            settings.put(GraphDatabaseSettings.routing_listen_address, new SocketAddress(0));
+        });
+        server.init(testInfo);
 
-        util = new TransportTestUtil( newMessageEncoder() );
+        util = new TransportTestUtil(newMessageEncoder());
     }
 
     @Test
-    void splitTrafficBetweenPorts() throws Exception
-    {
+    void splitTrafficBetweenPorts() throws Exception {
         SocketConnection externalConnection = new SocketConnection();
         SocketConnection internalConnection = new SocketConnection();
-        try
-        {
-            HostnamePort externalAddress = server.lookupConnector( BoltConnector.NAME );
-            HostnamePort internalAddress = server.lookupConnector( BoltConnector.INTERNAL_NAME );
+        try {
+            HostnamePort externalAddress = server.lookupConnector(BoltConnector.NAME);
+            HostnamePort internalAddress = server.lookupConnector(BoltConnector.INTERNAL_NAME);
 
-            executeStressTest( Executors.newFixedThreadPool( NUMBER_OF_THREADS ), externalAddress, internalAddress );
-        }
-        finally
-        {
+            executeStressTest(Executors.newFixedThreadPool(NUMBER_OF_THREADS), externalAddress, internalAddress);
+        } finally {
             externalConnection.disconnect();
             internalConnection.disconnect();
         }
     }
 
-    private static void executeStressTest( ExecutorService executorPool, HostnamePort external, HostnamePort internal ) throws Exception
-    {
-        long finishTimeMillis = System.currentTimeMillis() + MINUTES.toMillis( MultipleBoltServerPortsStressTest.DURATION_IN_MINUTES );
-        AtomicBoolean failureFlag = new AtomicBoolean( false );
+    private static void executeStressTest(ExecutorService executorPool, HostnamePort external, HostnamePort internal)
+            throws Exception {
+        long finishTimeMillis =
+                System.currentTimeMillis() + MINUTES.toMillis(MultipleBoltServerPortsStressTest.DURATION_IN_MINUTES);
+        AtomicBoolean failureFlag = new AtomicBoolean(false);
 
-        for ( int i = 0; i < MultipleBoltServerPortsStressTest.NUMBER_OF_THREADS; i++ )
-        {
+        for (int i = 0; i < MultipleBoltServerPortsStressTest.NUMBER_OF_THREADS; i++) {
             SocketConnection connection = new SocketConnection();
 
             // split connections evenly between internal and external
-            if ( i % 2 == 0 )
-            {
-                initializeConnection( connection, internal );
-            }
-            else
-            {
-                initializeConnection( connection, external );
+            if (i % 2 == 0) {
+                initializeConnection(connection, internal);
+            } else {
+                initializeConnection(connection, external);
             }
 
-            executorPool.submit( workload( failureFlag, connection, finishTimeMillis ) );
+            executorPool.submit(workload(failureFlag, connection, finishTimeMillis));
         }
 
         executorPool.shutdown();
-        executorPool.awaitTermination( DURATION_IN_MINUTES, MINUTES );
-        assertThat( failureFlag ).isFalse();
+        executorPool.awaitTermination(DURATION_IN_MINUTES, MINUTES);
+        assertThat(failureFlag).isFalse();
     }
 
-    private static void initializeConnection( SocketConnection connection, HostnamePort address ) throws Exception
-    {
-        connection.connect( address ).send( TransportTestUtil.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( eventuallyReceivesSelectedProtocolVersion() );
+    private static void initializeConnection(SocketConnection connection, HostnamePort address) throws Exception {
+        connection.connect(address).send(TransportTestUtil.defaultAcceptedVersions());
+        assertThat(connection).satisfies(eventuallyReceivesSelectedProtocolVersion());
 
-        connection.send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+        connection.send(util.chunk(new HelloMessage(map("user_agent", USER_AGENT))));
+        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
     }
 
-    private static Condition<AnyValue> longValueCondition()
-    {
-        return new Condition<>( value -> value.equals( longValue( 1 ) ), "equals" );
+    private static Condition<AnyValue> longValueCondition() {
+        return new Condition<>(value -> value.equals(longValue(1)), "equals");
     }
 
-    private static Runnable workload( AtomicBoolean failureFlag, SocketConnection connection, long finishTimeMillis )
-    {
-        return () ->
-        {
-            while ( !failureFlag.get() && System.currentTimeMillis() < finishTimeMillis )
-            {
-                try
-                {
-                    connection.send( util.chunk( new RunMessage( "RETURN 1" ), new PullMessage( asMapValue( map( "n", -1L ) ) ) ) );
-                }
-                catch ( IOException e )
-                {
+    private static Runnable workload(AtomicBoolean failureFlag, SocketConnection connection, long finishTimeMillis) {
+        return () -> {
+            while (!failureFlag.get() && System.currentTimeMillis() < finishTimeMillis) {
+                try {
+                    connection.send(util.chunk(new RunMessage("RETURN 1"), new PullMessage(asMapValue(map("n", -1L)))));
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
 
-                try
-                {
-                    assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
-                    assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( longValueCondition() ) ) ) );
-                    assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
-                }
-                catch ( AssertionError e )
-                {
+                try {
+                    assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+                    assertThat(connection)
+                            .satisfies(util.eventuallyReceives(msgRecord(eqRecord(longValueCondition()))));
+                    assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
+                } catch (AssertionError e) {
                     e.printStackTrace();
-                    failureFlag.set( true );
+                    failureFlag.set(true);
                 }
             }
         };
     }
 
-    private static class SharedAuthManagerDbmsBuilder extends TestDatabaseManagementServiceBuilder
-    {
+    private static class SharedAuthManagerDbmsBuilder extends TestDatabaseManagementServiceBuilder {
         @Override
-        protected Function<GlobalModule,AbstractEditionModule> getEditionFactory( Config config )
-        {
-            return globalModule -> new CommunityEditionModule( globalModule )
-            {
+        protected Function<GlobalModule, AbstractEditionModule> getEditionFactory(Config config) {
+            return globalModule -> new CommunityEditionModule(globalModule) {
                 @Override
-                public AuthManager getBoltInClusterAuthManager()
-                {
-                    return getBoltAuthManager( globalModule.getGlobalDependencies() );
+                public AuthManager getBoltInClusterAuthManager() {
+                    return getBoltAuthManager(globalModule.getGlobalDependencies());
                 }
             };
         }

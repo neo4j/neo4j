@@ -60,10 +60,13 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
-class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private def nodeIndexLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexLeafPlanner(Seq(nodeIndexSeekPlanProvider, nodeIndexStringSearchScanPlanProvider, nodeIndexScanPlanProvider), restrictions)
+    NodeIndexLeafPlanner(
+      Seq(nodeIndexSeekPlanProvider, nodeIndexStringSearchScanPlanProvider, nodeIndexScanPlanProvider),
+      restrictions
+    )
 
   test("finds all types of index plans") {
 
@@ -134,7 +137,7 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         oBarEqualsLit42,
         oAaaEqualsLit42,
         oBbbLessThan6,
-        oCccLessThan6,
+        oCccLessThan6
       )
 
       qg = QueryGraph(
@@ -148,7 +151,6 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
       indexOn("Awesome", "foo", "bar")
       indexOn("Awesome", "aaa", "bbb", "ccc")
     }.withLogicalPlanningContext { (cfg, ctx) =>
-
       // when
       val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
       val resultPlans = nodeIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
@@ -164,46 +166,237 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
 
       resultPlans shouldEqual Set(
         // nPropInLit6Lit42
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
+          ManyQueryExpression(listOf(lit6, lit42)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // nPropInLitFooLitBar
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(litFoo, litBar)), Set("x"), IndexOrderNone, IndexType.RANGE),
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(litFoo, litBar)), Set("x"), IndexOrderNone, IndexType.TEXT),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
+          ManyQueryExpression(listOf(litFoo, litBar)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
+          ManyQueryExpression(listOf(litFoo, litBar)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // nPropLessThanLit6
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
+          RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // nPropLessThanLitFoo
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(litFoo))))(pos)), Set("x"), IndexOrderNone, IndexType.RANGE),
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(litFoo))))(pos)), Set("x"), IndexOrderNone, IndexType.TEXT),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
+          RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(litFoo))))(pos)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
+          RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(litFoo))))(pos)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // nPropEqualsLit42
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
+          SingleQueryExpression(lit42),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // nPropEqualsLitFoo
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(litFoo), Set("x"), IndexOrderNone, IndexType.RANGE),
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(litFoo), Set("x"), IndexOrderNone, IndexType.TEXT),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
+          SingleQueryExpression(litFoo),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
+          SingleQueryExpression(litFoo),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // nPropStartsWithLitFoo
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.RANGE),
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.TEXT),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
+          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
+          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // nPropEqualsXProp
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
+          SingleQueryExpression(xProp),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // mPropEqualsXProp
-        NodeIndexSeek("m", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexSeek(
+          "m",
+          labelToken,
+          Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
+          SingleQueryExpression(xProp),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // oFooEqualsLit6, oBarEqualsLit42
-        NodeIndexSeek("o", labelToken, Seq(IndexedProperty(fooToken, CanGetValue, NODE_TYPE), IndexedProperty(barToken, CanGetValue, NODE_TYPE)), CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexSeek(
+          "o",
+          labelToken,
+          Seq(IndexedProperty(fooToken, CanGetValue, NODE_TYPE), IndexedProperty(barToken, CanGetValue, NODE_TYPE)),
+          CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
-        NodeIndexSeek("o", labelToken, Seq(IndexedProperty(aaaToken, CanGetValue, NODE_TYPE), IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE), IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)),
-          CompositeQueryExpression(Seq(SingleQueryExpression(lit42), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), ExistenceQueryExpression())), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexSeek(
+          "o",
+          labelToken,
+          Seq(
+            IndexedProperty(aaaToken, CanGetValue, NODE_TYPE),
+            IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE),
+            IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)
+          ),
+          CompositeQueryExpression(Seq(
+            SingleQueryExpression(lit42),
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
+            ExistenceQueryExpression()
+          )),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // nPropContainsLitFoo
-        NodeIndexContainsScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.RANGE),
-        NodeIndexContainsScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.TEXT),
+        NodeIndexContainsScan(
+          "n",
+          labelToken,
+          IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
+          litFoo,
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
+        NodeIndexContainsScan(
+          "n",
+          labelToken,
+          IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
+          litFoo,
+          Set("x"),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // nPropEndsWithLitFoo
-        NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.RANGE),
-        NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.TEXT),
+        NodeIndexEndsWithScan(
+          "n",
+          labelToken,
+          IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
+          litFoo,
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
+        NodeIndexEndsWithScan(
+          "n",
+          labelToken,
+          IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
+          litFoo,
+          Set("x"),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // ..several..
-        NodeIndexScan("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexScan(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // oPropIsNotNull
-        NodeIndexScan("o", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexScan(
+          "o",
+          labelToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // oFooEqualsLit6, oBarEqualsLit42,
-        NodeIndexScan("o", labelToken, Seq(IndexedProperty(fooToken, DoNotGetValue, NODE_TYPE), IndexedProperty(barToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexScan(
+          "o",
+          labelToken,
+          Seq(IndexedProperty(fooToken, DoNotGetValue, NODE_TYPE), IndexedProperty(barToken, DoNotGetValue, NODE_TYPE)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        ),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
-        NodeIndexScan("o", labelToken, Seq(IndexedProperty(aaaToken, DoNotGetValue, NODE_TYPE), IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE), IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
+        NodeIndexScan(
+          "o",
+          labelToken,
+          Seq(
+            IndexedProperty(aaaToken, DoNotGetValue, NODE_TYPE),
+            IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE),
+            IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)
+          ),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.RANGE
+        )
       )
     }
   }
@@ -226,18 +419,17 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         nPropStartsWithLitFoo,
         nPropEndsWithLitFoo,
         nPropContainsLitFoo,
-        nPropIsNotNull,
+        nPropIsNotNull
       )
 
       qg = QueryGraph(
         selections = Selections(predicates.flatMap(_.asPredicates)),
-        patternNodes = Set("n"),
+        patternNodes = Set("n")
       )
 
       textIndexOn("Awesome", "prop")
 
     }.withLogicalPlanningContext { (cfg, ctx) =>
-
       // when
       val restriction = LeafPlanRestrictions.NoRestrictions
       val resultPlans = nodeIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
@@ -248,11 +440,35 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
 
       resultPlans shouldEqual Set(
         // nPropStartsWithLitFoo
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set(), IndexOrderNone, IndexType.TEXT),
+        NodeIndexSeek(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
+          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
+          Set(),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // nPropEndsWithLitFoo
-        NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set(), IndexOrderNone, IndexType.TEXT),
+        NodeIndexEndsWithScan(
+          "n",
+          labelToken,
+          IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
+          litFoo,
+          Set(),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // nPropContainsLitFoo
-        NodeIndexContainsScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set(), IndexOrderNone, IndexType.TEXT),
+        NodeIndexContainsScan(
+          "n",
+          labelToken,
+          IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
+          litFoo,
+          Set(),
+          IndexOrderNone,
+          IndexType.TEXT
+        )
         // no scan plans
       )
     }

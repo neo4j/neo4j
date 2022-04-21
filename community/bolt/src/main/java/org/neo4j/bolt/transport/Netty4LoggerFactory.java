@@ -19,214 +19,169 @@
  */
 package org.neo4j.bolt.transport;
 
+import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlaceholders;
+
 import io.netty.util.internal.logging.AbstractInternalLogger;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-
-import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlaceholders;
 
 /**
  * This class replaces Nettys regular logging system, injecting our own.
  */
-public class Netty4LoggerFactory extends InternalLoggerFactory
-{
+public class Netty4LoggerFactory extends InternalLoggerFactory {
     private final InternalLogProvider logProvider;
 
-    public Netty4LoggerFactory( InternalLogProvider logProvider )
-    {
+    public Netty4LoggerFactory(InternalLogProvider logProvider) {
         this.logProvider = logProvider;
     }
 
     @Override
-    public InternalLogger newInstance( String name )
-    {
-        final InternalLog log = logProvider.getLog( name );
-        return new AbstractInternalLogger( name )
-        {
+    public InternalLogger newInstance(String name) {
+        final InternalLog log = logProvider.getLog(name);
+        return new AbstractInternalLogger(name) {
             @Override
-            public boolean isTraceEnabled()
-            {
+            public boolean isTraceEnabled() {
                 return false;
             }
 
             @Override
-            public boolean isDebugEnabled()
-            {
+            public boolean isDebugEnabled() {
                 return log.isDebugEnabled();
             }
 
             @Override
-            public boolean isInfoEnabled()
-            {
+            public boolean isInfoEnabled() {
                 // No way to tell log level with better granularity yet, and INFO
                 // logging for Netty component is most likely DEBUG anyway
                 return log.isDebugEnabled();
             }
 
             @Override
-            public boolean isWarnEnabled()
-            {
+            public boolean isWarnEnabled() {
                 return true;
             }
 
             @Override
-            public boolean isErrorEnabled()
-            {
+            public boolean isErrorEnabled() {
                 return true;
             }
 
             @Override
-            public void debug( String s )
-            {
-                log.debug( s );
+            public void debug(String s) {
+                log.debug(s);
             }
 
             @Override
-            public void debug( String s, Object o )
-            {
-                log.debug( slf4jToStringFormatPlaceholders( s ), o );
+            public void debug(String s, Object o) {
+                log.debug(slf4jToStringFormatPlaceholders(s), o);
             }
 
             @Override
-            public void debug( String s, Object o, Object o1 )
-            {
-                log.debug( slf4jToStringFormatPlaceholders( s ), o, o1 );
+            public void debug(String s, Object o, Object o1) {
+                log.debug(slf4jToStringFormatPlaceholders(s), o, o1);
             }
 
             @Override
-            public void debug( String s, Object... objects )
-            {
-                log.debug( slf4jToStringFormatPlaceholders( s ), objects );
+            public void debug(String s, Object... objects) {
+                log.debug(slf4jToStringFormatPlaceholders(s), objects);
             }
 
             @Override
-            public void debug( String s, Throwable throwable )
-            {
-                log.debug( s, throwable );
+            public void debug(String s, Throwable throwable) {
+                log.debug(s, throwable);
             }
 
             @Override
-            public void info( String s )
-            {
-                log.info( s );
+            public void info(String s) {
+                log.info(s);
             }
 
             @Override
-            public void info( String s, Object o )
-            {
-                log.info( slf4jToStringFormatPlaceholders( s ), o );
+            public void info(String s, Object o) {
+                log.info(slf4jToStringFormatPlaceholders(s), o);
             }
 
             @Override
-            public void info( String s, Object o, Object o1 )
-            {
-                log.info( slf4jToStringFormatPlaceholders( s ), o, o1 );
+            public void info(String s, Object o, Object o1) {
+                log.info(slf4jToStringFormatPlaceholders(s), o, o1);
             }
 
             @Override
-            public void info( String s, Object... objects )
-            {
-                log.info( slf4jToStringFormatPlaceholders( s ), objects );
+            public void info(String s, Object... objects) {
+                log.info(slf4jToStringFormatPlaceholders(s), objects);
             }
 
             @Override
-            public void info( String s, Throwable throwable )
-            {
-                log.info( s, throwable );
+            public void info(String s, Throwable throwable) {
+                log.info(s, throwable);
             }
 
             @Override
-            public void warn( String s )
-            {
-                log.warn( s );
+            public void warn(String s) {
+                log.warn(s);
             }
 
             @Override
-            public void warn( String s, Object o )
-            {
-                log.warn( slf4jToStringFormatPlaceholders( s ), o );
+            public void warn(String s, Object o) {
+                log.warn(slf4jToStringFormatPlaceholders(s), o);
             }
 
             @Override
-            public void warn( String s, Object... objects )
-            {
-                log.warn( slf4jToStringFormatPlaceholders( s ), objects );
+            public void warn(String s, Object... objects) {
+                log.warn(slf4jToStringFormatPlaceholders(s), objects);
             }
 
             @Override
-            public void warn( String s, Object o, Object o1 )
-            {
-                log.warn( slf4jToStringFormatPlaceholders( s ), o, o1 );
+            public void warn(String s, Object o, Object o1) {
+                log.warn(slf4jToStringFormatPlaceholders(s), o, o1);
             }
 
             @Override
-            public void warn( String s, Throwable throwable )
-            {
-                log.warn( s, throwable );
+            public void warn(String s, Throwable throwable) {
+                log.warn(s, throwable);
             }
 
             @Override
-            public void error( String s )
-            {
-                log.error( s );
+            public void error(String s) {
+                log.error(s);
             }
 
             @Override
-            public void error( String s, Object o )
-            {
-                log.error( slf4jToStringFormatPlaceholders( s ), o );
+            public void error(String s, Object o) {
+                log.error(slf4jToStringFormatPlaceholders(s), o);
             }
 
             @Override
-            public void error( String s, Object o, Object o1 )
-            {
-                log.error( slf4jToStringFormatPlaceholders( s ), o, o1 );
+            public void error(String s, Object o, Object o1) {
+                log.error(slf4jToStringFormatPlaceholders(s), o, o1);
             }
 
             @Override
-            public void error( String s, Object... objects )
-            {
-                log.error( slf4jToStringFormatPlaceholders( s ), objects );
+            public void error(String s, Object... objects) {
+                log.error(slf4jToStringFormatPlaceholders(s), objects);
             }
 
             @Override
-            public void error( String s, Throwable throwable )
-            {
-                log.error( s, throwable );
+            public void error(String s, Throwable throwable) {
+                log.error(s, throwable);
             }
 
             @Override
-            public void trace( String s )
-            {
-
-            }
+            public void trace(String s) {}
 
             @Override
-            public void trace( String s, Object o )
-            {
-
-            }
+            public void trace(String s, Object o) {}
 
             @Override
-            public void trace( String s, Object o, Object o1 )
-            {
-
-            }
+            public void trace(String s, Object o, Object o1) {}
 
             @Override
-            public void trace( String s, Object... objects )
-            {
-
-            }
+            public void trace(String s, Object... objects) {}
 
             @Override
-            public void trace( String s, Throwable throwable )
-            {
-
-            }
+            public void trace(String s, Throwable throwable) {}
         };
     }
 }

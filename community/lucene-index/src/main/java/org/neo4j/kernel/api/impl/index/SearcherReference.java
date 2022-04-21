@@ -20,10 +20,8 @@
 package org.neo4j.kernel.api.impl.index;
 
 import java.io.Closeable;
-
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 
-public interface SearcherReference extends Closeable
-{
+public interface SearcherReference extends Closeable {
     Neo4jIndexSearcher getIndexSearcher();
 }

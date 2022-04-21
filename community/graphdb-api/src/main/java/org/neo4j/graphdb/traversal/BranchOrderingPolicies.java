@@ -26,38 +26,29 @@ import org.neo4j.graphdb.PathExpander;
  *
  * Copied from kernel package so that we can hide kernel from the public API.
  */
-public enum BranchOrderingPolicies implements BranchOrderingPolicy
-{
-    PREORDER_DEPTH_FIRST
-    {
+public enum BranchOrderingPolicies implements BranchOrderingPolicy {
+    PREORDER_DEPTH_FIRST {
         @Override
-        public BranchSelector create( TraversalBranch startSource, PathExpander expander )
-        {
-            return new PreorderDepthFirstSelector( startSource, expander );
+        public BranchSelector create(TraversalBranch startSource, PathExpander expander) {
+            return new PreorderDepthFirstSelector(startSource, expander);
         }
     },
-    POSTORDER_DEPTH_FIRST
-    {
+    POSTORDER_DEPTH_FIRST {
         @Override
-        public BranchSelector create( TraversalBranch startSource, PathExpander expander )
-        {
-            return new PostorderDepthFirstSelector( startSource, expander );
+        public BranchSelector create(TraversalBranch startSource, PathExpander expander) {
+            return new PostorderDepthFirstSelector(startSource, expander);
         }
     },
-    PREORDER_BREADTH_FIRST
-    {
+    PREORDER_BREADTH_FIRST {
         @Override
-        public BranchSelector create( TraversalBranch startSource, PathExpander expander )
-        {
-            return new PreorderBreadthFirstSelector( startSource, expander );
+        public BranchSelector create(TraversalBranch startSource, PathExpander expander) {
+            return new PreorderBreadthFirstSelector(startSource, expander);
         }
     },
-    POSTORDER_BREADTH_FIRST
-    {
+    POSTORDER_BREADTH_FIRST {
         @Override
-        public BranchSelector create( TraversalBranch startSource, PathExpander expander )
-        {
-            return new PostorderBreadthFirstSelector( startSource, expander );
+        public BranchSelector create(TraversalBranch startSource, PathExpander expander) {
+            return new PostorderBreadthFirstSelector(startSource, expander);
         }
     }
 }

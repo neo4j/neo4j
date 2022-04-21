@@ -30,7 +30,7 @@ case class Subtract(a: Expression, b: Expression) extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = (a(row, state), b(row, state)) match {
     case (x, y) if (x eq Values.NO_VALUE) || (y eq Values.NO_VALUE) => Values.NO_VALUE
-    case (x, y) => CypherMath.subtract(x, y)
+    case (x, y)                                                     => CypherMath.subtract(x, y)
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(Subtract(a.rewrite(f), b.rewrite(f)))

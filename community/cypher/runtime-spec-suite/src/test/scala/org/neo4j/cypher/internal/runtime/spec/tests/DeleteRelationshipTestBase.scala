@@ -38,7 +38,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
   test("delete all relationships") {
     val relCount = sizeHint
     given {
-      chainGraphs(1, (1 to relCount).map(_ => "KNOWS"):_*)
+      chainGraphs(1, (1 to relCount).map(_ => "KNOWS"): _*)
     }
 
     deleteAllTest(relCount)

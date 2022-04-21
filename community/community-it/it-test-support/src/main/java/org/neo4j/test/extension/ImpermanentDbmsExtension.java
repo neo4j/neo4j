@@ -19,14 +19,12 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
@@ -36,11 +34,10 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
  * <p>The only difference to {@link DbmsExtension} is that this uses {@link EphemeralFileSystemAbstraction}.
  */
 @Inherited
-@Target( {ElementType.TYPE, ElementType.METHOD} )
-@Retention( RetentionPolicy.RUNTIME )
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
 @EphemeralTestDirectoryExtension
-@ExtendWith( DbmsSupportExtension.class )
-public @interface ImpermanentDbmsExtension
-{
+@ExtendWith(DbmsSupportExtension.class)
+public @interface ImpermanentDbmsExtension {
     String configurationCallback() default "";
 }

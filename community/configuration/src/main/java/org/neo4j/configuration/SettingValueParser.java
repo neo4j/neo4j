@@ -26,8 +26,7 @@ import org.neo4j.graphdb.config.Setting;
  *
  * @param <T> the type of the object handled by a specific parser.
  */
-public interface SettingValueParser<T>
-{
+public interface SettingValueParser<T> {
     /**
      * Parse a textual representation of a value into a typed object.
      *
@@ -35,7 +34,7 @@ public interface SettingValueParser<T>
      * @throws IllegalArgumentException if the text representation can not be parsed into an object of type {@code T}.
      * @return The parsed value.
      */
-    T parse( String value );
+    T parse(String value);
 
     /**
      * Validate a value.
@@ -43,9 +42,7 @@ public interface SettingValueParser<T>
      * @param value The value to be validated.
      * @throws IllegalArgumentException if the value is not accepted by the parser.
      */
-    default void validate( T value )
-    {
-    }
+    default void validate(T value) {}
 
     /**
      * The description describing the parser.
@@ -67,8 +64,7 @@ public interface SettingValueParser<T>
      * @param defaultValue The default value for the given setting.
      * @return The solved value.
      */
-    default T solveDefault( T value, T defaultValue )
-    {
+    default T solveDefault(T value, T defaultValue) {
         return value;
     }
 
@@ -81,10 +77,8 @@ public interface SettingValueParser<T>
      * @param dependencyValue The configured value from the parent setting.
      * @return The solved value.
      */
-    default T solveDependency( T value, T dependencyValue )
-    {
-        if ( value != null )
-        {
+    default T solveDependency(T value, T dependencyValue) {
+        if (value != null) {
             return value;
         }
         return dependencyValue;
@@ -95,8 +89,7 @@ public interface SettingValueParser<T>
      *
      * @return A natural language description of the dependency
      */
-    default String getSolverDescription()
-    {
+    default String getSolverDescription() {
         return "If unset the value is inherited";
     }
 
@@ -106,8 +99,7 @@ public interface SettingValueParser<T>
      * @param value The object to be turned in to a textual representation.
      * @return The textual representation.
      */
-    default String valueToString( T value )
-    {
+    default String valueToString(T value) {
         return value.toString();
     }
 }

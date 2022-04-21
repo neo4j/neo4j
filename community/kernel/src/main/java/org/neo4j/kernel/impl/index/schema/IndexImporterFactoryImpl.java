@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.nio.file.OpenOption;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.internal.batchimport.IndexImporter;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -31,13 +29,16 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
-public class IndexImporterFactoryImpl implements IndexImporterFactory
-{
+public class IndexImporterFactoryImpl implements IndexImporterFactory {
 
     @Override
-    public IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
-                                      CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
-    {
-        return new TokenIndexImporter( index, layout, fs, pageCache, contextFactory, openOptions );
+    public IndexImporter getImporter(
+            IndexDescriptor index,
+            DatabaseLayout layout,
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions) {
+        return new TokenIndexImporter(index, layout, fs, pageCache, contextFactory, openOptions);
     }
 }

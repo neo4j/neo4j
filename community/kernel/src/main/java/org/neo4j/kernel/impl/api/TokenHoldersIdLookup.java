@@ -20,65 +20,58 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.function.Predicate;
-
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.string.Globbing;
 import org.neo4j.token.TokenHolders;
 
-class TokenHoldersIdLookup implements LoginContext.IdLookup
-{
+class TokenHoldersIdLookup implements LoginContext.IdLookup {
     private final TokenHolders tokens;
     private final GlobalProcedures globalProcedures;
 
-    TokenHoldersIdLookup( TokenHolders tokens, GlobalProcedures globalProcedures )
-    {
+    TokenHoldersIdLookup(TokenHolders tokens, GlobalProcedures globalProcedures) {
         this.tokens = tokens;
         this.globalProcedures = globalProcedures;
     }
 
     @Override
-    public int getPropertyKeyId( String name )
-    {
-        return tokens.propertyKeyTokens().getIdByName( name );
+    public int getPropertyKeyId(String name) {
+        return tokens.propertyKeyTokens().getIdByName(name);
     }
 
     @Override
-    public int getLabelId( String name )
-    {
-        return tokens.labelTokens().getIdByName( name );
+    public int getLabelId(String name) {
+        return tokens.labelTokens().getIdByName(name);
     }
 
     @Override
-    public int getRelTypeId( String name )
-    {
-        return tokens.relationshipTypeTokens().getIdByName( name );
+    public int getRelTypeId(String name) {
+        return tokens.relationshipTypeTokens().getIdByName(name);
     }
 
     @Override
-    public int[] getProcedureIds( String procedureGlobbing )
-    {
-        Predicate<String> matcherPredicate = Globbing.globPredicate( procedureGlobbing );
-        return globalProcedures.getIdsOfProceduresMatching( p -> matcherPredicate.test( p.signature().name().toString() ) );
+    public int[] getProcedureIds(String procedureGlobbing) {
+        Predicate<String> matcherPredicate = Globbing.globPredicate(procedureGlobbing);
+        return globalProcedures.getIdsOfProceduresMatching(
+                p -> matcherPredicate.test(p.signature().name().toString()));
     }
 
     @Override
-    public int[] getAdminProcedureIds()
-    {
-        return globalProcedures.getIdsOfProceduresMatching( p -> p.signature().admin() );
+    public int[] getAdminProcedureIds() {
+        return globalProcedures.getIdsOfProceduresMatching(p -> p.signature().admin());
     }
 
     @Override
-    public int[] getFunctionIds( String functionGlobbing )
-    {
-        Predicate<String> matcherPredicate = Globbing.globPredicate( functionGlobbing );
-        return globalProcedures.getIdsOfFunctionsMatching( f -> matcherPredicate.test( f.signature().name().toString() ) );
+    public int[] getFunctionIds(String functionGlobbing) {
+        Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
+        return globalProcedures.getIdsOfFunctionsMatching(
+                f -> matcherPredicate.test(f.signature().name().toString()));
     }
 
     @Override
-    public int[] getAggregatingFunctionIds( String functionGlobbing )
-    {
-        Predicate<String> matcherPredicate = Globbing.globPredicate( functionGlobbing );
-        return globalProcedures.getIdsOfAggregatingFunctionsMatching( f -> matcherPredicate.test( f.signature().name().toString() ) );
+    public int[] getAggregatingFunctionIds(String functionGlobbing) {
+        Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
+        return globalProcedures.getIdsOfAggregatingFunctionsMatching(
+                f -> matcherPredicate.test(f.signature().name().toString()));
     }
 }

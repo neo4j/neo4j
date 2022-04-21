@@ -28,12 +28,14 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
-public class CommunityCommitProcessFactory implements CommitProcessFactory
-{
+public class CommunityCommitProcessFactory implements CommitProcessFactory {
     @Override
-    public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine, NamedDatabaseId databaseId,
-            DatabaseReadOnlyChecker readOnlyChecker )
-    {
-        return new DatabaseTransactionCommitProcess( new InternalTransactionCommitProcess( appender, storageEngine ), readOnlyChecker );
+    public TransactionCommitProcess create(
+            TransactionAppender appender,
+            StorageEngine storageEngine,
+            NamedDatabaseId databaseId,
+            DatabaseReadOnlyChecker readOnlyChecker) {
+        return new DatabaseTransactionCommitProcess(
+                new InternalTransactionCommitProcess(appender, storageEngine), readOnlyChecker);
     }
 }

@@ -19,95 +19,83 @@
  */
 package org.neo4j.importer;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class CharacterConverterTest
-{
+import org.junit.jupiter.api.Test;
+
+class CharacterConverterTest {
     private final CharacterConverter converter = new CharacterConverter();
 
     @Test
-    void shouldConvertCharacter()
-    {
+    void shouldConvertCharacter() {
         // GIVEN
         String candidates = "abcdefghijklmnopqrstuvwxyzåäö\"'^`\\"; // to name a few
 
         // THEN
-        for ( int i = 0; i < candidates.length(); i++ )
-        {
-            char expected = candidates.charAt( i );
-            assertCorrectConversion( expected, String.valueOf( expected ) );
+        for (int i = 0; i < candidates.length(); i++) {
+            char expected = candidates.charAt(i);
+            assertCorrectConversion(expected, String.valueOf(expected));
         }
     }
 
     @Test
-    void shouldConvertRawAscii()
-    {
-        for ( char expected = 0; expected < Character.MAX_VALUE; expected++ )
-        {
-            assertCorrectConversion( expected, "\\" + (int) expected );
+    void shouldConvertRawAscii() {
+        for (char expected = 0; expected < Character.MAX_VALUE; expected++) {
+            assertCorrectConversion(expected, "\\" + (int) expected);
         }
     }
 
     @Test
-    void shouldConvertEscaped_t_AsTab()
-    {
+    void shouldConvertEscaped_t_AsTab() {
         // GIVEN
         char expected = '\t';
 
         // THEN
-        assertCorrectConversion( expected, "\\t" );
+        assertCorrectConversion(expected, "\\t");
     }
 
     @Test
-    void shouldConvert_t_AsTab()
-    {
+    void shouldConvert_t_AsTab() {
         // GIVEN
         char expected = '\t';
 
         // THEN
-        assertCorrectConversion( expected, "\t" );
+        assertCorrectConversion(expected, "\t");
     }
 
     @Test
-    void shouldConvertSpelledOut_TAB_AsTab()
-    {
+    void shouldConvertSpelledOut_TAB_AsTab() {
         // GIVEN
         char expected = '\t';
 
         // THEN
-        assertCorrectConversion( expected, "TAB" );
+        assertCorrectConversion(expected, "TAB");
     }
 
     @Test
-    void shouldNotAcceptRandomEscapedStrings()
-    {
-        assertThrows( IllegalArgumentException.class, () -> converter.apply( "\\bogus" ) );
+    void shouldNotAcceptRandomEscapedStrings() {
+        assertThrows(IllegalArgumentException.class, () -> converter.apply("\\bogus"));
     }
 
     @Test
-    void shouldNotAcceptStrings()
-    {
-        assertThrows( IllegalArgumentException.class, () -> converter.apply( "bogus" ) );
+    void shouldNotAcceptStrings() {
+        assertThrows(IllegalArgumentException.class, () -> converter.apply("bogus"));
     }
 
     @Test
-    void shouldConvertUnicodeCharacter()
-    {
-        assertCorrectConversion( '\u20AC', "\\u20AC" );
-        assertCorrectConversion( '\u20AC', "\\U20AC" );
-        assertCorrectConversion( '\u20AC', "u+20AC" );
-        assertCorrectConversion( '\u20AC', "U+20AC" );
+    void shouldConvertUnicodeCharacter() {
+        assertCorrectConversion('\u20AC', "\\u20AC");
+        assertCorrectConversion('\u20AC', "\\U20AC");
+        assertCorrectConversion('\u20AC', "u+20AC");
+        assertCorrectConversion('\u20AC', "U+20AC");
     }
 
-    private void assertCorrectConversion( char expected, String material )
-    {
+    private void assertCorrectConversion(char expected, String material) {
         // WHEN
-        char converted = converter.apply( material );
+        char converted = converter.apply(material);
 
         // THEN
-        assertEquals( expected, converted );
+        assertEquals(expected, converted);
     }
 }

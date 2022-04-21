@@ -19,25 +19,22 @@
  */
 package org.neo4j.bolt.testing;
 
-import java.util.Map;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.SeverityLevel;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestNotification implements Notification
-{
+public class TestNotification implements Notification {
     private final String code;
     private final String title;
     private final String description;
     private final SeverityLevel severityLevel;
     private final InputPosition position;
 
-    public TestNotification( String code, String title, String description, SeverityLevel severityLevel,
-            InputPosition position )
-    {
+    public TestNotification(
+            String code, String title, String description, SeverityLevel severityLevel, InputPosition position) {
         this.code = code;
         this.title = title;
         this.description = description;
@@ -45,96 +42,85 @@ public class TestNotification implements Notification
         this.position = position != null ? position : InputPosition.empty;
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static Notification fromMap( Map<String,Object> notification )
-    {
-        assertThat( notification ).containsKey( "code" );
-        assertThat( notification ).containsKey( "title" );
-        assertThat( notification ).containsKey( "description" );
-        assertThat( notification ).containsKey( "severity" );
+    @SuppressWarnings("unchecked")
+    public static Notification fromMap(Map<String, Object> notification) {
+        assertThat(notification).containsKey("code");
+        assertThat(notification).containsKey("title");
+        assertThat(notification).containsKey("description");
+        assertThat(notification).containsKey("severity");
         InputPosition position = null;
-        if ( notification.containsKey( "position" ) )
-        {
-            Map<String,Long> pos = (Map<String,Long>) notification.get( "position" );
-            assertThat( pos ).containsKey( "offset" );
-            assertThat( pos ).containsKey( "line" );
-            assertThat( pos ).containsKey( "column" );
-            position = new InputPosition( pos.get("offset").intValue(), pos.get("line").intValue(), pos.get("column").intValue() );
+        if (notification.containsKey("position")) {
+            Map<String, Long> pos = (Map<String, Long>) notification.get("position");
+            assertThat(pos).containsKey("offset");
+            assertThat(pos).containsKey("line");
+            assertThat(pos).containsKey("column");
+            position = new InputPosition(
+                    pos.get("offset").intValue(),
+                    pos.get("line").intValue(),
+                    pos.get("column").intValue());
         }
 
-        return new TestNotification( (String) notification.get("code"),
+        return new TestNotification(
+                (String) notification.get("code"),
                 (String) notification.get("title"),
                 (String) notification.get("description"),
-                SeverityLevel.valueOf( (String) notification.get( "severity")), position );
+                SeverityLevel.valueOf((String) notification.get("severity")),
+                position);
     }
 
     @Override
-    public String getCode()
-    {
+    public String getCode() {
         return code;
     }
 
     @Override
-    public String getTitle()
-    {
+    public String getTitle() {
         return title;
     }
 
     @Override
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
     @Override
-    public SeverityLevel getSeverity()
-    {
+    public SeverityLevel getSeverity() {
         return severityLevel;
     }
 
     @Override
-    public InputPosition getPosition()
-    {
+    public InputPosition getPosition() {
         return position;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         TestNotification that = (TestNotification) o;
 
-        if ( code != null ? !code.equals( that.code ) : that.code != null )
-        {
+        if (code != null ? !code.equals(that.code) : that.code != null) {
             return false;
         }
-        if ( title != null ? !title.equals( that.title ) : that.title != null )
-        {
+        if (title != null ? !title.equals(that.title) : that.title != null) {
             return false;
         }
-        if ( description != null ? !description.equals( that.description ) : that.description != null )
-        {
+        if (description != null ? !description.equals(that.description) : that.description != null) {
             return false;
         }
-        if ( severityLevel != that.severityLevel )
-        {
+        if (severityLevel != that.severityLevel) {
             return false;
         }
-        return position != null ? position.equals( that.position ) : that.position == null;
-
+        return position != null ? position.equals(that.position) : that.position == null;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = code != null ? code.hashCode() : 0;
         result = 31 * result + (title != null ? title.hashCode() : 0);
         result = 31 * result + (description != null ? description.hashCode() : 0);

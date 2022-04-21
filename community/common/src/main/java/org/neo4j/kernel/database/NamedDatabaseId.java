@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.database;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Objects;
 import java.util.UUID;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a unique identifier for a database, including a persistent and immutable component. Intended to support renaming of database.
@@ -33,86 +33,71 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * Equality and hashcode are based only on UUID.
  */
-public class NamedDatabaseId implements Comparable<NamedDatabaseId>
-{
+public class NamedDatabaseId implements Comparable<NamedDatabaseId> {
     public static final String SYSTEM_DATABASE_NAME = "system";
-    public static final NamedDatabaseId NAMED_SYSTEM_DATABASE_ID = new NamedDatabaseId( SYSTEM_DATABASE_NAME, DatabaseId.SYSTEM_DATABASE_ID );
+    public static final NamedDatabaseId NAMED_SYSTEM_DATABASE_ID =
+            new NamedDatabaseId(SYSTEM_DATABASE_NAME, DatabaseId.SYSTEM_DATABASE_ID);
 
     private final String name;
     private final DatabaseId databaseId;
 
-    NamedDatabaseId( String name, UUID uuid )
-    {
-        this( name, new DatabaseId( uuid ) );
+    NamedDatabaseId(String name, UUID uuid) {
+        this(name, new DatabaseId(uuid));
     }
 
-    NamedDatabaseId( String name, DatabaseId databaseId )
-    {
-        requireNonNull( databaseId, "DatabaseId should be not null." );
-        requireNonNull( name, "Database name should be not null." );
+    NamedDatabaseId(String name, DatabaseId databaseId) {
+        requireNonNull(databaseId, "DatabaseId should be not null.");
+        requireNonNull(name, "Database name should be not null.");
         this.databaseId = databaseId;
-        this.name = new NormalizedDatabaseName( name ).name();
+        this.name = new NormalizedDatabaseName(name).name();
     }
 
-    public String name()
-    {
+    public String name() {
         return name;
     }
 
-    public DatabaseId databaseId()
-    {
+    public DatabaseId databaseId() {
         return databaseId;
     }
 
-    public String logPrefix()
-    {
+    public String logPrefix() {
         return name + "/" + databaseId.id();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "DatabaseId{" + databaseId.id() + "[" + name + "]}";
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         NamedDatabaseId that = (NamedDatabaseId) o;
-        return databaseId.equals( that.databaseId );
+        return databaseId.equals(that.databaseId);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( databaseId );
+    public int hashCode() {
+        return Objects.hash(databaseId);
     }
 
     @Override
-    public int compareTo( NamedDatabaseId that )
-    {
+    public int compareTo(NamedDatabaseId that) {
         boolean leftIsSystem = this.isSystemDatabase();
         boolean rightIsSystem = that.isSystemDatabase();
-        if ( leftIsSystem || rightIsSystem )
-        {
-            return Boolean.compare( rightIsSystem, leftIsSystem );
-        }
-        else
-        {
-            return this.name.compareTo( that.name );
+        if (leftIsSystem || rightIsSystem) {
+            return Boolean.compare(rightIsSystem, leftIsSystem);
+        } else {
+            return this.name.compareTo(that.name);
         }
     }
 
-    public boolean isSystemDatabase()
-    {
+    public boolean isSystemDatabase() {
         return databaseId.isSystemDatabase();
     }
 }

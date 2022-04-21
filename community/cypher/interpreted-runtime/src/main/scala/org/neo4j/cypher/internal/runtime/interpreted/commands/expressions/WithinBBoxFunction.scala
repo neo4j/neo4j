@@ -27,7 +27,8 @@ import org.neo4j.values.AnyValue
 
 case class WithinBBoxFunction(point: Expression, lowerLeft: Expression, upperRight: Expression) extends Expression {
 
-  override def apply(row: ReadableRow, state: QueryState): AnyValue = CypherFunctions.withinBBox(point(row, state), lowerLeft(row, state), upperRight(row, state))
+  override def apply(row: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.withinBBox(point(row, state), lowerLeft(row, state), upperRight(row, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(WithinBBoxFunction(point, lowerLeft, upperRight))
 

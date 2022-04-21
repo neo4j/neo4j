@@ -23,7 +23,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.StringJoiner;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.TimeZones;
@@ -31,8 +30,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-class ZonedDateTimeType extends Type
-{
+class ZonedDateTimeType extends Type {
     // A 1 signals a named time zone is stored, a 0 that an offset is stored
     private static final int ZONE_ID_FLAG = 0x0100_0000;
     // Mask for offsets to remove to not collide with the flag for negative numbers
@@ -41,7 +39,7 @@ class ZonedDateTimeType extends Type
     // This is used to determine if the value is negative (after applying the bitmask)
     private static final int ZONE_ID_HIGH = 0x0080_0000;
     // This is used to restore masked negative offsets to their real value
-    private static final int ZONE_ID_EXT =  0xFF00_0000;
+    private static final int ZONE_ID_EXT = 0xFF00_0000;
 
     // Affected key state:
     // long0 (epochSecondUTC)
@@ -49,20 +47,17 @@ class ZonedDateTimeType extends Type
     // long2 (zoneId)
     // long3 (zoneOffsetSeconds)
 
-    ZonedDateTimeType( byte typeId )
-    {
-        super( ValueGroup.ZONED_DATE_TIME, typeId, DateTimeValue.MIN_VALUE, DateTimeValue.MAX_VALUE );
+    ZonedDateTimeType(byte typeId) {
+        super(ValueGroup.ZONED_DATE_TIME, typeId, DateTimeValue.MIN_VALUE, DateTimeValue.MAX_VALUE);
     }
 
     @Override
-    int valueSize( GenericKey<?> state )
-    {
+    int valueSize(GenericKey<?> state) {
         return Types.SIZE_ZONED_DATE_TIME;
     }
 
     @Override
-    void copyValue( GenericKey<?> to, GenericKey<?> from )
-    {
+    void copyValue(GenericKey<?> to, GenericKey<?> from) {
         to.long0 = from.long0;
         to.long1 = from.long1;
         to.long2 = from.long2;
@@ -70,98 +65,88 @@ class ZonedDateTimeType extends Type
     }
 
     @Override
-    Value asValue( GenericKey<?> state )
-    {
-        return asValue( state.long0, state.long1, state.long2, state.long3 );
+    Value asValue(GenericKey<?> state) {
+        return asValue(state.long0, state.long1, state.long2, state.long3);
     }
 
     @Override
-    int compareValue( GenericKey<?> left, GenericKey<?> right )
-    {
+    int compareValue(GenericKey<?> left, GenericKey<?> right) {
         return compare(
-                left.long0, left.long1, left.long2, left.long3,
-                right.long0, right.long1, right.long2, right.long3 );
+                left.long0, left.long1, left.long2, left.long3, right.long0, right.long1, right.long2, right.long3);
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey<?> state )
-    {
-        put( cursor, state.long0, state.long1, state.long2, state.long3 );
+    void putValue(PageCursor cursor, GenericKey<?> state) {
+        put(cursor, state.long0, state.long1, state.long2, state.long3);
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey<?> into )
-    {
-        return read( cursor, into );
+    boolean readValue(PageCursor cursor, int size, GenericKey<?> into) {
+        return read(cursor, into);
     }
 
     static int compare(
-            long this_long0, long this_long1, long this_long2, long this_long3,
-            long that_long0, long that_long1, long that_long2, long that_long3 )
-    {
-        int compare = Long.compare( this_long0, that_long0 );
-        if ( compare == 0 )
-        {
-            compare = Integer.compare( (int) this_long1, (int) that_long1 );
-            if ( compare == 0 && !(this_long2 == that_long2 && this_long3 == that_long3) &&
-                    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
-                    TimeZones.validZoneOffset( (int) this_long3 ) &&
-                    TimeZones.validZoneOffset( (int) that_long3 ) )
-            {
+            long this_long0,
+            long this_long1,
+            long this_long2,
+            long this_long3,
+            long that_long0,
+            long that_long1,
+            long that_long2,
+            long that_long3) {
+        int compare = Long.compare(this_long0, that_long0);
+        if (compare == 0) {
+            compare = Integer.compare((int) this_long1, (int) that_long1);
+            if (compare == 0
+                    && !(this_long2 == that_long2 && this_long3 == that_long3)
+                    &&
+                    // We need to check validity upfront without throwing exceptions, because the PageCursor might give
+                    // garbage bytes
+                    TimeZones.validZoneOffset((int) this_long3)
+                    && TimeZones.validZoneOffset((int) that_long3)) {
                 // In the rare case of comparing the same instant in different time zones, we settle for
                 // mapping to values and comparing using the general values comparator.
                 compare = Values.COMPARATOR.compare(
-                        asValue( this_long0, this_long1, this_long2, this_long3 ),
-                        asValue( that_long0, that_long1, that_long2, that_long3 ) );
+                        asValue(this_long0, this_long1, this_long2, this_long3),
+                        asValue(that_long0, that_long1, that_long2, that_long3));
             }
         }
         return compare;
     }
 
-    static void put( PageCursor cursor, long long0, long long1, long long2, long long3 )
-    {
-        cursor.putLong( long0 );
-        cursor.putInt( (int) long1 );
-        if ( long2 >= 0 )
-        {
-            cursor.putInt( (int) long2 | ZONE_ID_FLAG );
-        }
-        else
-        {
-            cursor.putInt( (int) long3 & ZONE_ID_MASK );
+    static void put(PageCursor cursor, long long0, long long1, long long2, long long3) {
+        cursor.putLong(long0);
+        cursor.putInt((int) long1);
+        if (long2 >= 0) {
+            cursor.putInt((int) long2 | ZONE_ID_FLAG);
+        } else {
+            cursor.putInt((int) long3 & ZONE_ID_MASK);
         }
     }
 
-    static boolean read( PageCursor cursor, GenericKey<?> into )
-    {
+    static boolean read(PageCursor cursor, GenericKey<?> into) {
         long epochSecondUTC = cursor.getLong();
         int nanoOfSecond = cursor.getInt();
         int encodedZone = cursor.getInt();
-        if ( isZoneId( encodedZone ) )
-        {
-            into.writeDateTime( epochSecondUTC, nanoOfSecond, asZoneId( encodedZone ) );
-        }
-        else
-        {
-            into.writeDateTime( epochSecondUTC, nanoOfSecond, asZoneOffset( encodedZone ) );
+        if (isZoneId(encodedZone)) {
+            into.writeDateTime(epochSecondUTC, nanoOfSecond, asZoneId(encodedZone));
+        } else {
+            into.writeDateTime(epochSecondUTC, nanoOfSecond, asZoneOffset(encodedZone));
         }
         return true;
     }
 
-    static DateTimeValue asValue( long long0, long long1, long long2, long long3 )
-    {
-        return DateTimeValue.datetime( asValueRaw( long0, long1, long2, long3 ) );
+    static DateTimeValue asValue(long long0, long long1, long long2, long long3) {
+        return DateTimeValue.datetime(asValueRaw(long0, long1, long2, long3));
     }
 
-    static ZonedDateTime asValueRaw( long long0, long long1, long long2, long long3 )
-    {
-        return TimeZones.validZoneId( (short) long2 ) ?
-               DateTimeValue.datetimeRaw( long0, long1, ZoneId.of( TimeZones.map( (short) long2 ) ) ) :
-               DateTimeValue.datetimeRaw( long0, long1, ZoneOffset.ofTotalSeconds( (int) long3 ) );
+    static ZonedDateTime asValueRaw(long long0, long long1, long long2, long long3) {
+        return TimeZones.validZoneId((short) long2)
+                ? DateTimeValue.datetimeRaw(long0, long1, ZoneId.of(TimeZones.map((short) long2)))
+                : DateTimeValue.datetimeRaw(long0, long1, ZoneOffset.ofTotalSeconds((int) long3));
     }
 
-    static void write( GenericKey<?> state, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
-    {
+    static void write(GenericKey<?> state, long epochSecondUTC, int nano, short zoneId, int offsetSeconds) {
         state.long0 = epochSecondUTC;
         state.long1 = nano;
         state.long2 = zoneId;
@@ -169,33 +154,26 @@ class ZonedDateTimeType extends Type
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
-    {
-        joiner.add( "long0=" + state.long0 );
-        joiner.add( "long1=" + state.long1 );
-        joiner.add( "long2=" + state.long2 );
-        joiner.add( "long3=" + state.long3 );
+    protected void addTypeSpecificDetails(StringJoiner joiner, GenericKey<?> state) {
+        joiner.add("long0=" + state.long0);
+        joiner.add("long1=" + state.long1);
+        joiner.add("long2=" + state.long2);
+        joiner.add("long3=" + state.long3);
     }
 
-    private static int asZoneOffset( int encodedZone )
-    {
-        if ( (ZONE_ID_HIGH & encodedZone) == ZONE_ID_HIGH )
-        {
+    private static int asZoneOffset(int encodedZone) {
+        if ((ZONE_ID_HIGH & encodedZone) == ZONE_ID_HIGH) {
             return ZONE_ID_EXT | encodedZone;
-        }
-        else
-        {
+        } else {
             return encodedZone;
         }
     }
 
-    private static short asZoneId( int encodedZone )
-    {
-        return (short) ( encodedZone & ZONE_ID_MASK );
+    private static short asZoneId(int encodedZone) {
+        return (short) (encodedZone & ZONE_ID_MASK);
     }
 
-    private static boolean isZoneId( int encodedZone )
-    {
-        return ( encodedZone & ZONE_ID_FLAG ) != 0;
+    private static boolean isZoneId(int encodedZone) {
+        return (encodedZone & ZONE_ID_FLAG) != 0;
     }
 }

@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.DateTimeValue
@@ -41,12 +37,16 @@ import org.neo4j.values.utils.TemporalUtil
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
-import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 import org.scalatest.prop.PropertyChecks
 
-import scala.jdk.CollectionConverters.SetHasAsScala
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.util.concurrent.TimeUnit
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 /**
  * After a failure, do this to reproduce with the actual values that caused the error:
@@ -62,14 +62,15 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
  */
 class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyChecks {
 
-  //we don't want scala check to shrink strings since it hides the actual error
+  // we don't want scala check to shrink strings since it hides the actual error
   implicit val dontShrink: Shrink[String] = Shrink(s => Stream.empty)
 
-  private val allNonGeographicCRS: Map[Int, Array[CoordinateReferenceSystem]] = CoordinateReferenceSystem.all().asScala.filterNot(crs => crs.isGeographic).toArray.groupBy(_.getDimension)
+  private val allNonGeographicCRS: Map[Int, Array[CoordinateReferenceSystem]] =
+    CoordinateReferenceSystem.all().asScala.filterNot(crs => crs.isGeographic).toArray.groupBy(_.getDimension)
   private val allNonGeographicCRSDimensions = allNonGeographicCRS.keys.toArray
   private val oneDay = DurationValue.duration(0, 1, 0, 0)
   private val oneSecond = DurationValue.duration(0, 0, 1, 0)
-  private val timeZones:Seq[ZoneId] = ZoneId.getAvailableZoneIds.asScala.toSeq.map(ZoneId.of)
+  private val timeZones: Seq[ZoneId] = ZoneId.getAvailableZoneIds.asScala.toSeq.map(ZoneId.of)
   private val MAX_NANOS_PER_DAY = 86399999999999L
 
   // ----------------
@@ -80,7 +81,12 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     valueGen <- List(
       ValueSetup[LongValue]("longs", longGen, x => x.minus(1L), x => x.plus(1L)),
       ValueSetup[DoubleValue]("doubles", doubleGen, x => x.minus(0.1), x => x.plus(0.1)),
-      ValueSetup[TextValue]("strings", textGen, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar)),
+      ValueSetup[TextValue](
+        "strings",
+        textGen,
+        changeLastChar(c => (c - 1).toChar),
+        changeLastChar(c => (c + 1).toChar)
+      ),
       ValueSetup[PointValue]("geometric points", pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
       ValueSetup[PointValue]("2d geographic points", wgs84_2D_pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
       ValueSetup[PointValue]("3d geographic points", wgs84_3D_pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
@@ -98,10 +104,10 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   override protected def initTest(): Unit = {
     super.initTest()
     graph.createNodeIndex("Label", "indexed")
-    graph.withTx( tx =>
+    graph.withTx(tx =>
       tx.schema().awaitIndexesOnline(30, TimeUnit.SECONDS)
-     )
-    for(_ <- 1 to 1000) createLabeledNode("Label")
+    )
+    for (_ <- 1 to 1000) createLabeledNode("Label")
   }
 
   /**
@@ -113,7 +119,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   // GENERATORS
 
   def longGen: Gen[LongValue] =
-    for (x <- Gen.chooseNum(Long.MinValue+1, Long.MaxValue-1)) yield Values.longValue(x)
+    for (x <- Gen.chooseNum(Long.MinValue + 1, Long.MaxValue - 1)) yield Values.longValue(x)
 
   def doubleGen: Gen[DoubleValue] =
     for (x <- arbitrary[Double]) yield Values.doubleValue(x)
@@ -126,7 +132,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
       dimension <- Gen.oneOf(allNonGeographicCRSDimensions)
       coordinates <- Gen.listOfN(dimension, arbitrary[Double].retryUntil(java.lang.Double.isFinite(_)))
       crs <- Gen.oneOf(allNonGeographicCRS(dimension))
-    } yield Values.pointValue(crs, coordinates:_*)
+    } yield Values.pointValue(crs, coordinates: _*)
 
   def wgs84_3D_pointGen: Gen[PointValue] =
     for {
@@ -155,33 +161,34 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   def dateGen: Gen[DateValue] =
     for {
       epochDays <- arbitrary[Int] // we only generate epochDays as an int, to avoid overflowing
-                                  // the limits of the underlying java types
+      // the limits of the underlying java types
     } yield DateValue.epochDate(epochDays)
 
   def dateTimeGen: Gen[DateTimeValue] =
     for {
       epochSecondsUTC <- arbitrary[Int]
-      nanosOfSecond <- Gen.chooseNum(0, TemporalUtil.NANOS_PER_SECOND-1)
+      nanosOfSecond <- Gen.chooseNum(0, TemporalUtil.NANOS_PER_SECOND - 1)
       timeZone <- Gen.oneOf(zoneIdGen, zoneOffsetGen)
     } yield DateTimeValue.datetime(epochSecondsUTC, nanosOfSecond, timeZone)
 
   def localDateTimeGen: Gen[LocalDateTimeValue] =
     for {
       epochSeconds <- arbitrary[Int]
-      nanosOfSecond <- Gen.chooseNum(0, TemporalUtil.NANOS_PER_SECOND-1)
+      nanosOfSecond <- Gen.chooseNum(0, TemporalUtil.NANOS_PER_SECOND - 1)
     } yield LocalDateTimeValue.localDateTime(epochSeconds, nanosOfSecond)
 
   def zoneIdGen: Gen[ZoneId] = Gen.oneOf(timeZones)
 
   def zoneOffsetGen: Gen[ZoneOffset] =
-    Gen.chooseNum(-18*60, 18*60).map(minute => ZoneOffset.ofTotalSeconds(minute * 60))
+    Gen.chooseNum(-18 * 60, 18 * 60).map(minute => ZoneOffset.ofTotalSeconds(minute * 60))
 
   /**
    * Test a single value setup and operator
    */
   private def testOperator[T <: Value](operator: String, setup: ValueSetup[T]): Unit = {
 
-    val queryNotUsingIndex = s"MATCH (n:Label) WHERE n.nonIndexed $operator $$prop RETURN n, n.nonIndexed AS prop ORDER BY id(n)"
+    val queryNotUsingIndex =
+      s"MATCH (n:Label) WHERE n.nonIndexed $operator $$prop RETURN n, n.nonIndexed AS prop ORDER BY id(n)"
     val queryUsingIndex = s"MATCH (n:Label) WHERE n.indexed $operator $$prop RETURN n, n.indexed AS prop ORDER BY id(n)"
 
     case object behaveEqualWithAndWithoutIndex extends Matcher[Value] {
@@ -227,6 +234,6 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   }
 
   private def modifyPoint(f: Double => Double)(in: PointValue): PointValue =
-    Values.pointValue(in.getCoordinateReferenceSystem, in.coordinate().map(f):_*)
+    Values.pointValue(in.getCoordinateReferenceSystem, in.coordinate().map(f): _*)
 
 }

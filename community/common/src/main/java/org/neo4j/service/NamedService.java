@@ -25,7 +25,6 @@ import org.neo4j.annotations.api.PublicApi;
  * Helper interface to be implemented by services if there's a need to load a particular service provider by name.
  */
 @PublicApi
-public interface NamedService
-{
+public interface NamedService {
     String getName();
 }

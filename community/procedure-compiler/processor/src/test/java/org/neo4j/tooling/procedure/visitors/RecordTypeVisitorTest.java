@@ -19,61 +19,57 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import com.google.testing.compile.CompilationRule;
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
-import org.neo4j.tooling.procedure.visitors.examples.InvalidRecord;
-import org.neo4j.tooling.procedure.visitors.examples.ValidRecord;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
+import com.google.testing.compile.CompilationRule;
 import java.util.stream.Stream;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
+import org.neo4j.tooling.procedure.visitors.examples.InvalidRecord;
+import org.neo4j.tooling.procedure.visitors.examples.ValidRecord;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-
-public class RecordTypeVisitorTest
-{
+public class RecordTypeVisitorTest {
 
     @Rule
     public CompilationRule compilation = new CompilationRule();
+
     private TypeMirrorTestUtils typeMirrorTestUtils;
     private RecordTypeVisitor visitor;
 
     @Before
-    public void prepare()
-    {
+    public void prepare() {
         Types types = compilation.getTypes();
         Elements elements = compilation.getElements();
-        TypeMirrorUtils typeMirrors = new TypeMirrorUtils( types, elements );
+        TypeMirrorUtils typeMirrors = new TypeMirrorUtils(types, elements);
 
-        typeMirrorTestUtils = new TypeMirrorTestUtils( compilation );
-        visitor = new RecordTypeVisitor( types, typeMirrors );
+        typeMirrorTestUtils = new TypeMirrorTestUtils(compilation);
+        visitor = new RecordTypeVisitor(types, typeMirrors);
     }
 
     @Test
-    public void validates_supported_record()
-    {
-        TypeMirror recordStreamType = typeMirrorTestUtils.typeOf( Stream.class, ValidRecord.class );
+    public void validates_supported_record() {
+        TypeMirror recordStreamType = typeMirrorTestUtils.typeOf(Stream.class, ValidRecord.class);
 
-        assertThat( visitor.visit( recordStreamType ) ).isEmpty();
+        assertThat(visitor.visit(recordStreamType)).isEmpty();
     }
 
     @Test
-    public void does_not_validate_record_with_nonpublic_fields()
-    {
-        TypeMirror recordStreamType = typeMirrorTestUtils.typeOf( Stream.class, InvalidRecord.class );
+    public void does_not_validate_record_with_nonpublic_fields() {
+        TypeMirror recordStreamType = typeMirrorTestUtils.typeOf(Stream.class, InvalidRecord.class);
 
-        assertThat( visitor.visit( recordStreamType ) ).hasSize( 1 )
-                .extracting( CompilationMessage::getCategory, CompilationMessage::getContents ).containsExactly(
-                tuple( Diagnostic.Kind.ERROR,
-                        "Record definition error: field InvalidRecord#foo must" + " be public" ) );
+        assertThat(visitor.visit(recordStreamType))
+                .hasSize(1)
+                .extracting(CompilationMessage::getCategory, CompilationMessage::getContents)
+                .containsExactly(tuple(
+                        Diagnostic.Kind.ERROR, "Record definition error: field InvalidRecord#foo must" + " be public"));
     }
-
 }

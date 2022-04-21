@@ -23,18 +23,15 @@ package org.neo4j.storageengine.migration;
  * Default empty implementation of StoreMigrationParticipant.
  * Base class for all StoreMigrationParticipant implementations.
  */
-public abstract class AbstractStoreMigrationParticipant implements StoreMigrationParticipant
-{
+public abstract class AbstractStoreMigrationParticipant implements StoreMigrationParticipant {
     protected final String name;
 
-    protected AbstractStoreMigrationParticipant( String name )
-    {
+    protected AbstractStoreMigrationParticipant(String name) {
         this.name = name;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 }

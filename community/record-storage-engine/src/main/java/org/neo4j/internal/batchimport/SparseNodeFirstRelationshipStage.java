@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Function;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 
+import java.util.function.Function;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.cache.NodeType;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
@@ -33,8 +34,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-
 /**
  * Updates sparse {@link NodeRecord node records} with relationship heads after relationship linking. Steps:
  *
@@ -46,18 +45,34 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
  * <li>{@link UpdateRecordsStep} writes the updated records back into store.</li>
  * </ol>
  */
-public class SparseNodeFirstRelationshipStage extends Stage
-{
+public class SparseNodeFirstRelationshipStage extends Stage {
     public static final String NAME = "Node --> Relationship";
 
-    public SparseNodeFirstRelationshipStage( Configuration config, NodeStore nodeStore, NodeRelationshipCache cache, CursorContextFactory contextFactory,
-            Function<CursorContext,StoreCursors> storeCursorsCreator )
-    {
-        super( NAME, null, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
-        add( new ReadNodeIdsByCacheStep( control(), config, cache, NodeType.NODE_TYPE_SPARSE ) );
-        add( new ReadRecordsStep<>( control(), config, true, nodeStore, contextFactory ) );
-        add( new RecordProcessorStep<>( control(), "LINK", config,
-                () -> new SparseNodeFirstRelationshipProcessor( cache ), false, 1, contextFactory, storeCursorsCreator ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence(), contextFactory, storeCursorsCreator, NODE_CURSOR ) );
+    public SparseNodeFirstRelationshipStage(
+            Configuration config,
+            NodeStore nodeStore,
+            NodeRelationshipCache cache,
+            CursorContextFactory contextFactory,
+            Function<CursorContext, StoreCursors> storeCursorsCreator) {
+        super(NAME, null, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES);
+        add(new ReadNodeIdsByCacheStep(control(), config, cache, NodeType.NODE_TYPE_SPARSE));
+        add(new ReadRecordsStep<>(control(), config, true, nodeStore, contextFactory));
+        add(new RecordProcessorStep<>(
+                control(),
+                "LINK",
+                config,
+                () -> new SparseNodeFirstRelationshipProcessor(cache),
+                false,
+                1,
+                contextFactory,
+                storeCursorsCreator));
+        add(new UpdateRecordsStep<>(
+                control(),
+                config,
+                nodeStore,
+                new StorePrepareIdSequence(),
+                contextFactory,
+                storeCursorsCreator,
+                NODE_CURSOR));
     }
 }

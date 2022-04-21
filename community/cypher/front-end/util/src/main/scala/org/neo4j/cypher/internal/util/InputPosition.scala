@@ -23,9 +23,7 @@ package org.neo4j.cypher.internal.util
  * @param line   the line in the query string
  * @param column the column in the query string
  */
-case class InputPosition(offset: Int,
-                         line: Int,
-                         column: Int) {
+case class InputPosition(offset: Int, line: Int, column: Int) {
 
   override def toString = s"line $line, column $column (offset: $offset)"
 

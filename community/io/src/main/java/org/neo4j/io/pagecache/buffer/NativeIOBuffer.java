@@ -26,8 +26,7 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
  *
  * @see MuninnPageCache
  */
-public interface NativeIOBuffer extends AutoCloseable
-{
+public interface NativeIOBuffer extends AutoCloseable {
     /**
      * @return true if usage of native io buffer is enabled
      */
@@ -38,7 +37,7 @@ public interface NativeIOBuffer extends AutoCloseable
      * @param used number of bytes already used
      * @param requestSize size of memory request to expect
      */
-    boolean hasMoreCapacity( int used, int requestSize );
+    boolean hasMoreCapacity(int used, int requestSize);
 
     /**
      * Access to this method should always be guarded by enable check. In case of buffer is disabled any number can be returned.

@@ -19,12 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.storageengine.api.cursor.CursorType;
-
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
 
-public enum RecordCursorTypes implements CursorType
-{
+import org.neo4j.storageengine.api.cursor.CursorType;
+
+public enum RecordCursorTypes implements CursorType {
     NODE_CURSOR,
     GROUP_CURSOR,
     SCHEMA_CURSOR,
@@ -42,8 +41,7 @@ public enum RecordCursorTypes implements CursorType
     public static final short MAX_TYPE = LABEL_TOKEN_CURSOR.value();
 
     @Override
-    public short value()
-    {
-        return safeCastIntToShort( ordinal() );
+    public short value() {
+        return safeCastIntToShort(ordinal());
     }
 }

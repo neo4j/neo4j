@@ -29,26 +29,29 @@ object LegacyDbHitsTestBase {
   final val costOfExpandOneRel: Long = 1 // to get one relationship in a rel cursor
 }
 
-abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int,
-                                                               createsRelValueInExpand: Boolean)
-  extends ProfileDbHitsTestBase(edition,
-                                runtime,
-                                sizeHint,
-                                costOfLabelCheck = 1,
-                                costOfLabelLookup = 1,
-                                costOfSetProperty = 1,
-                                costOfPropertyToken = 1,
-                                costOfGetPropertyChain = 0,
-                                costOfPropertyJumpedOverInChain = 0,
-                                costOfPropertyExists = 1,
-                                costOfProperty = 1,
-                                costOfExpandGetRelCursor = LegacyDbHitsTestBase.costOfExpandOneRel,
-                                costOfExpandOneRel = LegacyDbHitsTestBase.costOfExpandOneRel,
-                                costOfRelationshipTypeLookup = 1,
-                                costOfCompositeUniqueIndexCursorRow = 1,
-                                cartesianProductChunkSize = 1,
-                                canReuseAllNodesScanLookup = false,
-                                canFuseOverPipelines = false,
-                                useWritesWithProfiling = false)
+abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int,
+  createsRelValueInExpand: Boolean
+) extends ProfileDbHitsTestBase(
+      edition,
+      runtime,
+      sizeHint,
+      costOfLabelCheck = 1,
+      costOfLabelLookup = 1,
+      costOfSetProperty = 1,
+      costOfPropertyToken = 1,
+      costOfGetPropertyChain = 0,
+      costOfPropertyJumpedOverInChain = 0,
+      costOfPropertyExists = 1,
+      costOfProperty = 1,
+      costOfExpandGetRelCursor = LegacyDbHitsTestBase.costOfExpandOneRel,
+      costOfExpandOneRel = LegacyDbHitsTestBase.costOfExpandOneRel,
+      costOfRelationshipTypeLookup = 1,
+      costOfCompositeUniqueIndexCursorRow = 1,
+      cartesianProductChunkSize = 1,
+      canReuseAllNodesScanLookup = false,
+      canFuseOverPipelines = false,
+      useWritesWithProfiling = false
+    )

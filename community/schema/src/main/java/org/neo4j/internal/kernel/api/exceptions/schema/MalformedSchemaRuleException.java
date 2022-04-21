@@ -25,20 +25,16 @@ import org.neo4j.kernel.api.exceptions.Status;
  * Signals that a schema rule in the schema store was malformed, i.e. contained corrupted data and could not
  * be parsed.
  */
-public class MalformedSchemaRuleException extends SchemaKernelException
-{
-    public MalformedSchemaRuleException( Throwable cause, String message, Object... parameters )
-    {
-        super( Status.General.SchemaCorruptionDetected, cause, message, parameters );
+public class MalformedSchemaRuleException extends SchemaKernelException {
+    public MalformedSchemaRuleException(Throwable cause, String message, Object... parameters) {
+        super(Status.General.SchemaCorruptionDetected, cause, message, parameters);
     }
 
-    public MalformedSchemaRuleException( String message, Throwable cause )
-    {
-        super( Status.General.SchemaCorruptionDetected, message, cause );
+    public MalformedSchemaRuleException(String message, Throwable cause) {
+        super(Status.General.SchemaCorruptionDetected, message, cause);
     }
 
-    public MalformedSchemaRuleException( String message )
-    {
-        super( Status.General.SchemaCorruptionDetected, message );
+    public MalformedSchemaRuleException(String message) {
+        super(Status.General.SchemaCorruptionDetected, message);
     }
 }

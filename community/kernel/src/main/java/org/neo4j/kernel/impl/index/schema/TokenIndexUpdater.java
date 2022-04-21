@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Arrays;
+import static java.lang.Long.min;
+import static java.lang.Math.toIntExact;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
+import java.util.Arrays;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -32,10 +35,6 @@ import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.PhysicalToLogicalTokenChanges.LogicalTokenUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
-
-import static java.lang.Long.min;
-import static java.lang.Math.toIntExact;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 /**
  * {@link IndexUpdater} for token index, or rather a {@link Writer} for its
@@ -54,27 +53,26 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
  *
  * @see PhysicalToLogicalTokenChanges
  */
-class TokenIndexUpdater implements IndexUpdater
-{
+class TokenIndexUpdater implements IndexUpdater {
     /**
      * {@link ValueMerger} used for adding token->entity mappings, see {@link TokenScanValue#add(TokenScanValue)}.
      */
-    private final ValueMerger<TokenScanKey,TokenScanValue> addMerger = ( existingKey, newKey, existingValue, newValue ) ->
-    {
-        existingValue.add( newValue );
-        return ValueMerger.MergeResult.MERGED;
-    };
+    private final ValueMerger<TokenScanKey, TokenScanValue> addMerger =
+            (existingKey, newKey, existingValue, newValue) -> {
+                existingValue.add(newValue);
+                return ValueMerger.MergeResult.MERGED;
+            };
 
     /**
      * {@link ValueMerger} used for removing token->entity mappings, see {@link TokenScanValue#remove(TokenScanValue)}.
      */
-    private final ValueMerger<TokenScanKey,TokenScanValue> removeMerger;
+    private final ValueMerger<TokenScanKey, TokenScanValue> removeMerger;
 
     /**
      * {@link Writer} acquired when acquiring this {@link TokenIndexUpdater},
      * acquired from {@link GBPTree#writer(CursorContext)}.
      */
-    private Writer<TokenScanKey,TokenScanValue> writer;
+    private Writer<TokenScanKey, TokenScanValue> writer;
 
     /**
      * Instance of {@link TokenScanKey} acting as place to read keys into and to set for each applied update.
@@ -119,23 +117,17 @@ class TokenIndexUpdater implements IndexUpdater
 
     private boolean closed = true;
 
-    TokenIndexUpdater( int batchSize )
-    {
+    TokenIndexUpdater(int batchSize) {
         this.pendingUpdates = new LogicalTokenUpdates[batchSize];
-        this.removeMerger = ( existingKey, newKey, existingValue, newValue ) ->
-        {
-            existingValue.remove( newValue );
-            return existingValue.isEmpty()
-                   ? ValueMerger.MergeResult.REMOVED
-                   : ValueMerger.MergeResult.MERGED;
+        this.removeMerger = (existingKey, newKey, existingValue, newValue) -> {
+            existingValue.remove(newValue);
+            return existingValue.isEmpty() ? ValueMerger.MergeResult.REMOVED : ValueMerger.MergeResult.MERGED;
         };
     }
 
-    TokenIndexUpdater initialize( Writer<TokenScanKey,TokenScanValue> writer )
-    {
-        if ( !closed )
-        {
-            throw new IllegalStateException( "Updater still open" );
+    TokenIndexUpdater initialize(Writer<TokenScanKey, TokenScanValue> writer) {
+        if (!closed) {
+            throw new IllegalStateException("Updater still open");
         }
 
         this.writer = writer;
@@ -153,44 +145,40 @@ class TokenIndexUpdater implements IndexUpdater
      * Calls to this method MUST be ordered by ascending entity id.
      */
     @Override
-    public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
-    {
+    public void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException {
         assertOpen();
-        if ( pendingUpdatesCursor == pendingUpdates.length )
-        {
+        if (pendingUpdatesCursor == pendingUpdates.length) {
             flushPendingChanges();
         }
 
-        TokenIndexEntryUpdate<?> tokenUpdate = asTokenUpdate( update );
-        LogicalTokenUpdates logicalTokenUpdate = PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( tokenUpdate );
+        TokenIndexEntryUpdate<?> tokenUpdate = asTokenUpdate(update);
+        LogicalTokenUpdates logicalTokenUpdate =
+                PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals(tokenUpdate);
         pendingUpdates[pendingUpdatesCursor++] = logicalTokenUpdate;
-        checkNextTokenId( tokenUpdate.beforeValues() );
-        checkNextTokenId( tokenUpdate.values() );
+        checkNextTokenId(tokenUpdate.beforeValues());
+        checkNextTokenId(tokenUpdate.values());
     }
 
-    private void checkNextTokenId( long[] tokens )
-    {
-        if ( tokens.length > 0 && tokens[0] != -1 )
-        {
-            lowestTokenId = min( lowestTokenId, tokens[0] );
+    private void checkNextTokenId(long[] tokens) {
+        if (tokens.length > 0 && tokens[0] != -1) {
+            lowestTokenId = min(lowestTokenId, tokens[0]);
         }
     }
 
-    private void flushPendingChanges()
-    {
-        Arrays.sort( pendingUpdates, 0, pendingUpdatesCursor );
+    private void flushPendingChanges() {
+        Arrays.sort(pendingUpdates, 0, pendingUpdatesCursor);
         long currentTokenId = lowestTokenId;
         value.clear();
         key.clear();
-        while ( currentTokenId != Long.MAX_VALUE )
-        {
+        while (currentTokenId != Long.MAX_VALUE) {
             long nextTokenId = Long.MAX_VALUE;
-            for ( int i = 0; i < pendingUpdatesCursor; i++ )
-            {
+            for (int i = 0; i < pendingUpdatesCursor; i++) {
                 LogicalTokenUpdates update = pendingUpdates[i];
                 long entityId = update.entityId();
-                nextTokenId = extractChange( update.additions(), currentTokenId, entityId, nextTokenId, true, update.txId() );
-                nextTokenId = extractChange( update.removals(), currentTokenId, entityId, nextTokenId, false, update.txId() );
+                nextTokenId =
+                        extractChange(update.additions(), currentTokenId, entityId, nextTokenId, true, update.txId());
+                nextTokenId =
+                        extractChange(update.removals(), currentTokenId, entityId, nextTokenId, false, update.txId());
             }
             currentTokenId = nextTokenId;
         }
@@ -198,54 +186,44 @@ class TokenIndexUpdater implements IndexUpdater
         pendingUpdatesCursor = 0;
     }
 
-    private long extractChange( long[] tokens, long currentTokenId, long entityId, long nextTokenId, boolean addition, long txId )
-    {
+    private long extractChange(
+            long[] tokens, long currentTokenId, long entityId, long nextTokenId, boolean addition, long txId) {
         long foundNextTokenId = nextTokenId;
-        for ( int li = 0; li < tokens.length; li++ )
-        {
+        for (int li = 0; li < tokens.length; li++) {
             long tokenId = tokens[li];
-            if ( tokenId == -1 )
-            {
+            if (tokenId == -1) {
                 break;
             }
 
             // Have this check here so that we can pick up the next tokenId in our change set
-            if ( tokenId == currentTokenId )
-            {
-                change( currentTokenId, entityId, addition, txId );
+            if (tokenId == currentTokenId) {
+                change(currentTokenId, entityId, addition, txId);
 
                 // We can do a little shorter check for next tokenId here straight away,
                 // we just check the next if it's less than what we currently think is next tokenId
                 // and then break right after
-                if ( li + 1 < tokens.length && tokens[li + 1] != -1 )
-                {
+                if (li + 1 < tokens.length && tokens[li + 1] != -1) {
                     long nextTokenCandidate = tokens[li + 1];
-                    if ( nextTokenCandidate < currentTokenId )
-                    {
+                    if (nextTokenCandidate < currentTokenId) {
                         throw new IllegalArgumentException(
-                                "The entity token contained unsorted tokens ids " + Arrays.toString( tokens ) );
+                                "The entity token contained unsorted tokens ids " + Arrays.toString(tokens));
                     }
-                    if ( nextTokenCandidate > currentTokenId )
-                    {
-                        foundNextTokenId = min( foundNextTokenId, nextTokenCandidate );
+                    if (nextTokenCandidate > currentTokenId) {
+                        foundNextTokenId = min(foundNextTokenId, nextTokenCandidate);
                     }
                 }
                 break;
-            }
-            else if ( tokenId > currentTokenId )
-            {
-                foundNextTokenId = min( foundNextTokenId, tokenId );
+            } else if (tokenId > currentTokenId) {
+                foundNextTokenId = min(foundNextTokenId, tokenId);
             }
         }
         return foundNextTokenId;
     }
 
-    private void change( long currentTokenId, long entityId, boolean add, long txId )
-    {
-        int tokenId = toIntExact( currentTokenId );
-        long idRange = rangeOf( entityId );
-        if ( tokenId != key.tokenId || idRange != key.idRange || addition != add )
-        {
+    private void change(long currentTokenId, long entityId, boolean add, long txId) {
+        int tokenId = toIntExact(currentTokenId);
+        long idRange = rangeOf(entityId);
+        if (tokenId != key.tokenId || idRange != key.idRange || addition != add) {
             flushPendingRange();
 
             // Set key to current and reset value
@@ -254,29 +232,23 @@ class TokenIndexUpdater implements IndexUpdater
             addition = add;
         }
 
-        int offset = toIntExact( entityId % RANGE_SIZE );
-        value.set( offset );
+        int offset = toIntExact(entityId % RANGE_SIZE);
+        value.set(offset);
     }
 
-    private void flushPendingRange()
-    {
-        if ( value.bits != 0 )
-        {
+    private void flushPendingRange() {
+        if (value.bits != 0) {
             // There are changes in the current range, flush them
-            if ( addition )
-            {
-                writer.merge( key, value, addMerger );
-            }
-            else
-            {
-                writer.mergeIfExists( key, value, removeMerger );
+            if (addition) {
+                writer.merge(key, value, addMerger);
+            } else {
+                writer.mergeIfExists(key, value, removeMerger);
             }
             value.clear();
         }
     }
 
-    static long rangeOf( long entityId )
-    {
+    static long rangeOf(long entityId) {
         return entityId / RANGE_SIZE;
     }
 
@@ -285,24 +257,18 @@ class TokenIndexUpdater implements IndexUpdater
      * No more {@link #process(IndexEntryUpdate) updates} can be applied after this call.
      */
     @Override
-    public void close()
-    {
-        try
-        {
+    public void close() {
+        try {
             flushPendingChanges();
-        }
-        finally
-        {
+        } finally {
             closed = true;
-            IOUtils.closeAllUnchecked( writer );
+            IOUtils.closeAllUnchecked(writer);
         }
     }
 
-    private void assertOpen()
-    {
-        if ( closed )
-        {
-            throw new IllegalStateException( "Updater has been closed" );
+    private void assertOpen() {
+        if (closed) {
+            throw new IllegalStateException("Updater has been closed");
         }
     }
 }

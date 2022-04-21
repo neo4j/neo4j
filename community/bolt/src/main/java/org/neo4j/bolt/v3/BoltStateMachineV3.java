@@ -20,11 +20,10 @@
 package org.neo4j.bolt.v3;
 
 import java.time.Clock;
-
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.v3.runtime.ConnectedState;
 import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
@@ -37,25 +36,31 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.MapValue;
 
-public class BoltStateMachineV3 extends AbstractBoltStateMachine
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineV3.class );
+public class BoltStateMachineV3 extends AbstractBoltStateMachine {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BoltStateMachineV3.class);
 
-    public BoltStateMachineV3( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
-                               MapValue connectionHints, MemoryTracker memoryTracker, TransactionManager transactionManager )
-    {
-        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker, transactionManager );
+    public BoltStateMachineV3(
+            BoltStateMachineSPI boltSPI,
+            BoltChannel boltChannel,
+            Clock clock,
+            DefaultDatabaseResolver defaultDatabaseResolver,
+            MapValue connectionHints,
+            MemoryTracker memoryTracker,
+            TransactionManager transactionManager) {
+        super(boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker, transactionManager);
     }
 
     @Override
-    protected States buildStates( MapValue connectionHints, MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap(
-                ConnectedState.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE + StreamingState.SHALLOW_SIZE
-                + TransactionReadyState.SHALLOW_SIZE + TransactionStreamingState.SHALLOW_SIZE
-                + FailedState.SHALLOW_SIZE + InterruptedState.SHALLOW_SIZE );
+    protected States buildStates(MapValue connectionHints, MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(ConnectedState.SHALLOW_SIZE
+                + ReadyState.SHALLOW_SIZE
+                + StreamingState.SHALLOW_SIZE
+                + TransactionReadyState.SHALLOW_SIZE
+                + TransactionStreamingState.SHALLOW_SIZE
+                + FailedState.SHALLOW_SIZE
+                + InterruptedState.SHALLOW_SIZE);
 
-        ConnectedState connected = new ConnectedState( connectionHints );
+        ConnectedState connected = new ConnectedState(connectionHints);
         ReadyState ready = new ReadyState();
         StreamingState streaming = new StreamingState();
         TransactionReadyState txReady = new TransactionReadyState();
@@ -63,30 +68,30 @@ public class BoltStateMachineV3 extends AbstractBoltStateMachine
         FailedState failed = new FailedState();
         InterruptedState interrupted = new InterruptedState();
 
-        connected.setReadyState( ready );
+        connected.setReadyState(ready);
 
-        ready.setTransactionReadyState( txReady );
-        ready.setStreamingState( streaming );
-        ready.setFailedState( failed );
-        ready.setInterruptedState( interrupted );
+        ready.setTransactionReadyState(txReady);
+        ready.setStreamingState(streaming);
+        ready.setFailedState(failed);
+        ready.setInterruptedState(interrupted);
 
-        streaming.setReadyState( ready );
-        streaming.setFailedState( failed );
-        streaming.setInterruptedState( interrupted );
+        streaming.setReadyState(ready);
+        streaming.setFailedState(failed);
+        streaming.setInterruptedState(interrupted);
 
-        txReady.setReadyState( ready );
-        txReady.setTransactionStreamingState( txStreaming );
-        txReady.setFailedState( failed );
-        txReady.setInterruptedState( interrupted );
+        txReady.setReadyState(ready);
+        txReady.setTransactionStreamingState(txStreaming);
+        txReady.setFailedState(failed);
+        txReady.setInterruptedState(interrupted);
 
-        txStreaming.setReadyState( txReady );
-        txStreaming.setFailedState( failed );
-        txStreaming.setInterruptedState( interrupted );
+        txStreaming.setReadyState(txReady);
+        txStreaming.setFailedState(failed);
+        txStreaming.setInterruptedState(interrupted);
 
-        failed.setInterruptedState( interrupted );
+        failed.setInterruptedState(interrupted);
 
-        interrupted.setReadyState( ready );
+        interrupted.setReadyState(ready);
 
-        return new States( connected, failed );
+        return new States(connected, failed);
     }
 }

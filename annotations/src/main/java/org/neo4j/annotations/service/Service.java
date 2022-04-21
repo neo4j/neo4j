@@ -19,13 +19,12 @@
  */
 package org.neo4j.annotations.service;
 
+import static java.lang.annotation.ElementType.TYPE;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.neo4j.annotations.api.PublicApi;
-
-import static java.lang.annotation.ElementType.TYPE;
 
 /**
  * Used to mark a type as a service as defined in {@link java.util.ServiceLoader}.
@@ -34,9 +33,7 @@ import static java.lang.annotation.ElementType.TYPE;
  * <p/>
  * Processed by {@link ServiceAnnotationProcessor}.
  */
-@Target( TYPE )
-@Retention( RetentionPolicy.CLASS )
+@Target(TYPE)
+@Retention(RetentionPolicy.CLASS)
 @PublicApi
-public @interface Service
-{
-}
+public @interface Service {}

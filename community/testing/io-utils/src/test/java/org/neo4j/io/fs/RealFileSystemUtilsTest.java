@@ -22,7 +22,4 @@ package org.neo4j.io.fs;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
 @TestDirectoryExtension
-public class RealFileSystemUtilsTest extends FileSystemUtilsTest
-{
-
-}
+public class RealFileSystemUtilsTest extends FileSystemUtilsTest {}

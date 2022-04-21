@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-public enum AccessType
-{
+public enum AccessType {
     READ_ONLY,
     READ_WRITE
 }

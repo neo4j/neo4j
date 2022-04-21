@@ -21,8 +21,7 @@ package org.neo4j.bolt.transaction;
 
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 
-public interface ProgramResultReference
-{
+public interface ProgramResultReference {
     String transactionId();
 
     StatementMetadata statementMetadata();

@@ -40,39 +40,54 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
   val currentBytes = "current".getBytes(StandardCharsets.UTF_8)
 
   test("should extract password") {
-    val expectedPattern: Matcher[Any] = matchPattern {case CreateUser(_, _, AutoExtractedParameter(_, _, _ :SensitiveStringLiteral, _), _, _) => }
+    val expectedPattern: Matcher[Any] =
+      matchPattern { case CreateUser(_, _, AutoExtractedParameter(_, _, _: SensitiveStringLiteral, _), _, _) => }
 
     assertRewrite("CREATE USER foo SET PASSWORD 'password'", expectedPattern, Map("  AUTOSTRING0" -> passwordBytes))
   }
 
   test("should extract password in the presence of other vars") {
-    val expectedPattern: Matcher[Any] = matchPattern {case CreateUser(_, _, AutoExtractedParameter(_, _, _ :SensitiveStringLiteral, _), _, _) => }
+    val expectedPattern: Matcher[Any] =
+      matchPattern { case CreateUser(_, _, AutoExtractedParameter(_, _, _: SensitiveStringLiteral, _), _, _) => }
 
     assertRewrite("CREATE USER $foo SET PASSWORD 'password'", expectedPattern, Map("  AUTOSTRING0" -> passwordBytes))
   }
 
   test("should extract nothing if password is already parameterised") {
-    val expectedPattern: Matcher[Any] = matchPattern {case CreateUser(_, _, _ :ExplicitParameter, _, _) => }
+    val expectedPattern: Matcher[Any] = matchPattern { case CreateUser(_, _, _: ExplicitParameter, _, _) => }
 
     assertRewrite("CREATE USER $foo SET PASSWORD $password", expectedPattern, Map())
   }
 
   test("should extract two passwords") {
-    val expectedPattern: Matcher[Any] = matchPattern {case SetOwnPassword(AutoExtractedParameter(_, _, _ :SensitiveStringLiteral, _), AutoExtractedParameter(_, _, _ :SensitiveStringLiteral, _)) => }
+    val expectedPattern: Matcher[Any] = matchPattern {
+      case SetOwnPassword(
+          AutoExtractedParameter(_, _, _: SensitiveStringLiteral, _),
+          AutoExtractedParameter(_, _, _: SensitiveStringLiteral, _)
+        ) =>
+    }
 
-    assertRewrite("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'password'", expectedPattern, Map("  AUTOSTRING1" -> currentBytes, "  AUTOSTRING0" -> passwordBytes))
+    assertRewrite(
+      "ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'password'",
+      expectedPattern,
+      Map("  AUTOSTRING1" -> currentBytes, "  AUTOSTRING0" -> passwordBytes)
+    )
   }
 
   test("should ignore queries with no passwords") {
     val query = "MATCH (n:Node{name:'foo'}) RETURN n"
 
     val expected = JavaCCParser.parse(query, exceptionFactory, nameGenerator)
-    val expectedPattern: Matcher[Any] = matchPattern {case `expected` => }
+    val expectedPattern: Matcher[Any] = matchPattern { case `expected` => }
 
     assertRewrite(query, expectedPattern, Map())
   }
 
-  private def assertRewrite(originalQuery: String, matchExpectedPattern: Matcher[Any], replacements: Map[String, Any]): Unit = {
+  private def assertRewrite(
+    originalQuery: String,
+    matchExpectedPattern: Matcher[Any],
+    replacements: Map[String, Any]
+  ): Unit = {
     val original = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)
 
     val (rewriter, replacedLiterals) = sensitiveLiteralReplacement(original)

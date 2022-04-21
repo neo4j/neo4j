@@ -24,8 +24,7 @@ package org.neo4j.kernel.api;
  * E.g. verify that transaction is still open when lazily reading property values from store.
  */
 @FunctionalInterface
-public interface AssertOpen
-{
+public interface AssertOpen {
     /**
      * Assert that source tied to instance is open.
      * Should throw exception with reason if source is not open.

@@ -22,7 +22,6 @@ package org.neo4j.graphdb.traversal;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.neo4j.graphdb.PathExpander;
 
 /**
@@ -31,68 +30,53 @@ import org.neo4j.graphdb.PathExpander;
  * deepest levels are returned first, see
  * http://en.wikipedia.org/wiki/Breadth-first_search
  */
-class PostorderBreadthFirstSelector implements BranchSelector
-{
+class PostorderBreadthFirstSelector implements BranchSelector {
     private Iterator<TraversalBranch> sourceIterator;
     private final TraversalBranch current;
     private final PathExpander expander;
 
-    PostorderBreadthFirstSelector( TraversalBranch startSource, PathExpander expander )
-    {
+    PostorderBreadthFirstSelector(TraversalBranch startSource, PathExpander expander) {
         this.current = startSource;
         this.expander = expander;
     }
 
     @Override
-    public TraversalBranch next( TraversalContext metadata )
-    {
-        if ( sourceIterator == null )
-        {
-            sourceIterator = gatherSourceIterator( metadata );
+    public TraversalBranch next(TraversalContext metadata) {
+        if (sourceIterator == null) {
+            sourceIterator = gatherSourceIterator(metadata);
         }
         return sourceIterator.hasNext() ? sourceIterator.next() : null;
     }
 
-    private Iterator<TraversalBranch> gatherSourceIterator( TraversalContext metadata )
-    {
+    private Iterator<TraversalBranch> gatherSourceIterator(TraversalContext metadata) {
         List<TraversalBranch> queue = new LinkedList<>();
-        queue.add( current.next( expander, metadata ) );
-        while ( true )
-        {
-            List<TraversalBranch> level = gatherOneLevel( queue, metadata );
-            if ( level.isEmpty() )
-            {
+        queue.add(current.next(expander, metadata));
+        while (true) {
+            List<TraversalBranch> level = gatherOneLevel(queue, metadata);
+            if (level.isEmpty()) {
                 break;
             }
-            queue.addAll( 0, level );
+            queue.addAll(0, level);
         }
         return queue.iterator();
     }
 
-    private List<TraversalBranch> gatherOneLevel(
-            List<TraversalBranch> queue, TraversalContext metadata )
-    {
+    private List<TraversalBranch> gatherOneLevel(List<TraversalBranch> queue, TraversalContext metadata) {
         List<TraversalBranch> level = new LinkedList<>();
         Integer depth = null;
-        for ( TraversalBranch source : queue )
-        {
-            if ( depth == null )
-            {
+        for (TraversalBranch source : queue) {
+            if (depth == null) {
                 depth = source.length();
-            }
-            else if ( source.length() != depth )
-            {
+            } else if (source.length() != depth) {
                 break;
             }
 
-            while ( true )
-            {
-                TraversalBranch next = source.next( expander, metadata );
-                if ( next == null )
-                {
+            while (true) {
+                TraversalBranch next = source.next(expander, metadata);
+                if (next == null) {
                     break;
                 }
-                level.add( next );
+                level.add(next);
             }
         }
         return level;

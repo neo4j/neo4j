@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Function;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.get;
 
+import java.util.function.Function;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
@@ -31,47 +34,49 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.get;
-
-public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]>
-{
+public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
     private static final String LABEL_INDEX_WRITE_STEP_TAG = "labelIndexWriteStep";
     private final CursorContext cursorContext;
     private final IndexImporter importer;
     private final NodeStore nodeStore;
     private final StoreCursors cachedStoreCursors;
 
-    public LabelIndexWriterStep( StageControl control, Configuration config, BatchingNeoStores neoStores, IndexImporterFactory indexImporterFactory,
-            MemoryTracker memoryTracker, CursorContextFactory contextFactory,
-            Function<CursorContext,StoreCursors> storeCursorsCreator )
-    {
-        super( control, "LABEL INDEX", config, 1, contextFactory );
-        this.cursorContext = contextFactory.create( LABEL_INDEX_WRITE_STEP_TAG );
-        this.importer = indexImporter( config.indexConfig(), indexImporterFactory, neoStores, NODE, memoryTracker, contextFactory, storeCursorsCreator );
-        this.cachedStoreCursors = storeCursorsCreator.apply( cursorContext );
+    public LabelIndexWriterStep(
+            StageControl control,
+            Configuration config,
+            BatchingNeoStores neoStores,
+            IndexImporterFactory indexImporterFactory,
+            MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory,
+            Function<CursorContext, StoreCursors> storeCursorsCreator) {
+        super(control, "LABEL INDEX", config, 1, contextFactory);
+        this.cursorContext = contextFactory.create(LABEL_INDEX_WRITE_STEP_TAG);
+        this.importer = indexImporter(
+                config.indexConfig(),
+                indexImporterFactory,
+                neoStores,
+                NODE,
+                memoryTracker,
+                contextFactory,
+                storeCursorsCreator);
+        this.cachedStoreCursors = storeCursorsCreator.apply(cursorContext);
         this.nodeStore = neoStores.getNodeStore();
     }
 
     @Override
-    protected void process( NodeRecord[] batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
-    {
-        cachedStoreCursors.reset( cursorContext );
-        for ( NodeRecord node : batch )
-        {
-            if ( node.inUse() )
-            {
-                importer.add( node.getId(), get( node, nodeStore, cachedStoreCursors ) );
+    protected void process(NodeRecord[] batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
+        cachedStoreCursors.reset(cursorContext);
+        for (NodeRecord node : batch) {
+            if (node.inUse()) {
+                importer.add(node.getId(), get(node, nodeStore, cachedStoreCursors));
             }
         }
-        sender.send( batch );
+        sender.send(batch);
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         super.close();
-        closeAll( importer, cursorContext, cachedStoreCursors );
+        closeAll(importer, cursorContext, cachedStoreCursors);
     }
 }

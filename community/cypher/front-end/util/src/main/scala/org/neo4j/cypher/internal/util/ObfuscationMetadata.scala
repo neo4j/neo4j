@@ -16,7 +16,10 @@
  */
 package org.neo4j.cypher.internal.util
 
-final case class ObfuscationMetadata(sensitiveLiteralOffsets: Vector[LiteralOffset], sensitiveParameterNames: Set[String]) {
+final case class ObfuscationMetadata(
+  sensitiveLiteralOffsets: Vector[LiteralOffset],
+  sensitiveParameterNames: Set[String]
+) {
   def isEmpty: Boolean = sensitiveLiteralOffsets.isEmpty && sensitiveParameterNames.isEmpty
 }
 

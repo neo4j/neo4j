@@ -24,7 +24,13 @@ case object Right extends Function {
   def name = "right"
 
   override val signatures = Vector(
-    FunctionTypeSignature(function = this, names = Vector("original","length"), argumentTypes = Vector(CTString, CTInteger), outputType = CTString,
-      description = "Returns a string containing the specified number of rightmost characters of the original string.", category = Category.STRING)
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("original", "length"),
+      argumentTypes = Vector(CTString, CTInteger),
+      outputType = CTString,
+      description = "Returns a string containing the specified number of rightmost characters of the original string.",
+      category = Category.STRING
+    )
   )
 }

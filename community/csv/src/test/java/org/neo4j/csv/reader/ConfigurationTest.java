@@ -19,38 +19,35 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.jupiter.api.Test;
-
 import static org.apache.commons.lang3.builder.ToStringBuilder.reflectionToString;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ConfigurationTest
-{
+import org.junit.jupiter.api.Test;
+
+class ConfigurationTest {
     @Test
-    void toBuilderThenBuildDefault()
-    {
+    void toBuilderThenBuildDefault() {
         final var before = Configuration.newBuilder().build();
         final var after = before.toBuilder().build();
 
-        assertEquals( reflectionToString( before, SHORT_PREFIX_STYLE ), reflectionToString( after, SHORT_PREFIX_STYLE ) );
+        assertEquals(reflectionToString(before, SHORT_PREFIX_STYLE), reflectionToString(after, SHORT_PREFIX_STYLE));
     }
 
     @Test
-    void toBuilderThenBuildNonDefault()
-    {
+    void toBuilderThenBuildNonDefault() {
         final var before = Configuration.newBuilder()
-                .withDelimiter( '1' )
-                .withArrayDelimiter( '2' )
-                .withQuotationCharacter( '3' )
-                .withBufferSize( 100500 )
-                .withLegacyStyleQuoting( true )
-                .withEmptyQuotedStringsAsNull( true )
-                .withMultilineFields( true )
-                .withTrimStrings( true )
+                .withDelimiter('1')
+                .withArrayDelimiter('2')
+                .withQuotationCharacter('3')
+                .withBufferSize(100500)
+                .withLegacyStyleQuoting(true)
+                .withEmptyQuotedStringsAsNull(true)
+                .withMultilineFields(true)
+                .withTrimStrings(true)
                 .build();
         final var after = before.toBuilder().build();
 
-        assertEquals( reflectionToString( before, SHORT_PREFIX_STYLE), reflectionToString( after, SHORT_PREFIX_STYLE ) );
+        assertEquals(reflectionToString(before, SHORT_PREFIX_STYLE), reflectionToString(after, SHORT_PREFIX_STYLE));
     }
 }

@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-
 trait CardinalityModelIntegrationTest extends StatisticsBackedLogicalPlanningSupport {
   self: CypherFunSuite =>
 
@@ -46,20 +45,33 @@ trait CardinalityModelIntegrationTest extends StatisticsBackedLogicalPlanningSup
 
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
-  def and(numbers: Double*): Double = combiner.andTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
-  def or(numbers: Double*): Double = combiner.orTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
+  def and(numbers: Double*): Double =
+    combiner.andTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
 
-  def queryShouldHaveCardinality(config: StatisticsBackedLogicalPlanningConfiguration, query: String, expectedCardinality: Double): Unit = {
+  def or(numbers: Double*): Double =
+    combiner.orTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
+
+  def queryShouldHaveCardinality(
+    config: StatisticsBackedLogicalPlanningConfiguration,
+    query: String,
+    expectedCardinality: Double
+  ): Unit = {
     planShouldHaveCardinality(
       config,
       query,
       {
         case _: ProduceResult => true
       },
-      expectedCardinality)
+      expectedCardinality
+    )
   }
 
-  def planShouldHaveCardinality(config: StatisticsBackedLogicalPlanningConfiguration, query: String, findPlanId: PartialFunction[LogicalPlan, Boolean], expectedCardinality: Double): Unit = {
+  def planShouldHaveCardinality(
+    config: StatisticsBackedLogicalPlanningConfiguration,
+    query: String,
+    findPlanId: PartialFunction[LogicalPlan, Boolean],
+    expectedCardinality: Double
+  ): Unit = {
     val planState = config.planState(s"$query RETURN 1 AS result")
 
     val planId = planState.logicalPlan.flatten.collectFirst {
@@ -73,10 +85,23 @@ trait CardinalityModelIntegrationTest extends StatisticsBackedLogicalPlanningSup
   }
 
   def queryShouldHaveCardinality(query: String, expectedCardinality: Double): Unit = {
-    queryShouldHaveCardinality(plannerBuilder().setExecutionModel(ExecutionModel.Volcano).build(), query, expectedCardinality)
+    queryShouldHaveCardinality(
+      plannerBuilder().setExecutionModel(ExecutionModel.Volcano).build(),
+      query,
+      expectedCardinality
+    )
   }
 
-  def planShouldHaveCardinality(query: String, findPlanId: PartialFunction[LogicalPlan, Boolean], expectedCardinality: Double): Unit = {
-    planShouldHaveCardinality(plannerBuilder().setExecutionModel(ExecutionModel.Volcano).build(), query, findPlanId, expectedCardinality)
+  def planShouldHaveCardinality(
+    query: String,
+    findPlanId: PartialFunction[LogicalPlan, Boolean],
+    expectedCardinality: Double
+  ): Unit = {
+    planShouldHaveCardinality(
+      plannerBuilder().setExecutionModel(ExecutionModel.Volcano).build(),
+      query,
+      findPlanId,
+      expectedCardinality
+    )
   }
 }

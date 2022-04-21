@@ -20,9 +20,7 @@
 package org.neo4j.bolt.runtime.scheduling;
 
 import io.netty.channel.Channel;
-
 import java.util.Collection;
-
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Job;
 import org.neo4j.logging.InternalLog;
@@ -33,73 +31,64 @@ import org.neo4j.logging.internal.LogService;
  * Methods {@link #enqueued(BoltConnection, Job)} and {@link #drained(BoltConnection, Collection)} are synchronized to make sure
  * queue size and channel auto-read are modified together as an atomic operation.
  */
-public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
-{
+public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor {
     private final InternalLog log;
     private final int lowWatermark;
     private final int highWatermark;
 
     private int queueSize;
 
-    public BoltConnectionReadLimiter( LogService logService, int lowWatermark, int highWatermark )
-    {
-        if ( highWatermark <= 0 )
-        {
-            throw new IllegalArgumentException( "invalid highWatermark value" );
+    public BoltConnectionReadLimiter(LogService logService, int lowWatermark, int highWatermark) {
+        if (highWatermark <= 0) {
+            throw new IllegalArgumentException("invalid highWatermark value");
         }
 
-        if ( lowWatermark < 0 || lowWatermark >= highWatermark )
-        {
-            throw new IllegalArgumentException( "invalid lowWatermark value" );
+        if (lowWatermark < 0 || lowWatermark >= highWatermark) {
+            throw new IllegalArgumentException("invalid lowWatermark value");
         }
 
-        this.log = logService.getInternalLog( getClass() );
+        this.log = logService.getInternalLog(getClass());
         this.lowWatermark = lowWatermark;
         this.highWatermark = highWatermark;
     }
 
     @Override
-    public synchronized void enqueued( BoltConnection to, Job job )
-    {
+    public synchronized void enqueued(BoltConnection to, Job job) {
         queueSize += 1;
-        checkLimitsOnEnqueue( to );
+        checkLimitsOnEnqueue(to);
     }
 
     @Override
-    public synchronized void drained( BoltConnection from, Collection<Job> batch )
-    {
+    public synchronized void drained(BoltConnection from, Collection<Job> batch) {
         queueSize -= batch.size();
-        checkLimitsOnDequeue( from );
+        checkLimitsOnDequeue(from);
     }
 
-    private void checkLimitsOnEnqueue( BoltConnection connection )
-    {
+    private void checkLimitsOnEnqueue(BoltConnection connection) {
         Channel channel = connection.channel();
 
-        if ( queueSize > highWatermark && channel.config().isAutoRead() )
-        {
-            if ( log != null )
-            {
-                log.warn( "Channel [%s]: client produced %d messages on the worker queue, auto-read is being disabled.", channel.remoteAddress(), queueSize );
+        if (queueSize > highWatermark && channel.config().isAutoRead()) {
+            if (log != null) {
+                log.warn(
+                        "Channel [%s]: client produced %d messages on the worker queue, auto-read is being disabled.",
+                        channel.remoteAddress(), queueSize);
             }
 
-            channel.config().setAutoRead( false );
+            channel.config().setAutoRead(false);
         }
     }
 
-    private void checkLimitsOnDequeue( BoltConnection connection )
-    {
+    private void checkLimitsOnDequeue(BoltConnection connection) {
         Channel channel = connection.channel();
 
-        if ( queueSize <= lowWatermark && !channel.config().isAutoRead() )
-        {
-            if ( log != null )
-            {
-                log.warn( "Channel [%s]: consumed messages on the worker queue below %d, auto-read is being enabled.", channel.remoteAddress(), lowWatermark );
+        if (queueSize <= lowWatermark && !channel.config().isAutoRead()) {
+            if (log != null) {
+                log.warn(
+                        "Channel [%s]: consumed messages on the worker queue below %d, auto-read is being enabled.",
+                        channel.remoteAddress(), lowWatermark);
             }
 
-            channel.config().setAutoRead( true );
+            channel.config().setAutoRead(true);
         }
     }
-
 }

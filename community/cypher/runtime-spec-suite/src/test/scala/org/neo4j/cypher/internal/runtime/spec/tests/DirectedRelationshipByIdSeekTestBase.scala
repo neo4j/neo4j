@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import scala.util.Random
 
 abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   private val random = new Random(77)
 
@@ -49,7 +49,11 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("r", "x", "y").withRows(singleRow(relToFind, relToFind.getStartNode, relToFind.getEndNode))
+    runtimeResult should beColumns("r", "x", "y").withRows(singleRow(
+      relToFind,
+      relToFind.getStartNode,
+      relToFind.getEndNode
+    ))
   }
 
   test("should find by floating point") {
@@ -82,7 +86,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should  beColumns("r", "x", "y").withNoRows()
+    runtimeResult should beColumns("r", "x", "y").withNoRows()
   }
 
   test("should find multiple relationships") {
@@ -93,7 +97,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
-      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, toFind.map(_.getId):_*)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, toFind.map(_.getId): _*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -114,7 +118,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
-      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, relationshipsToLookFor:_*)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, relationshipsToLookFor: _*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -133,7 +137,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
       .filter(s"id(r) = ${toFind.getId}")
-      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, toSeekFor.map(_.getId):_*)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, toSeekFor.map(_.getId): _*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

@@ -20,6 +20,7 @@
 package org.neo4j.csv.reader;
 
 import org.neo4j.values.storable.CSVHeaderInformation;
+
 /**
  * Extracts a value from a part of a {@code char[]} into any type of value, f.ex. a {@link Extractors#string()},
  * {@link Extractors#long_() long} or {@link Extractors#intArray()}.
@@ -33,8 +34,7 @@ import org.neo4j.values.storable.CSVHeaderInformation;
  *
  * @see Extractors for a collection of very common extractors.
  */
-public interface Extractor<T> extends Cloneable
-{
+public interface Extractor<T> extends Cloneable {
     /**
      * Extracts value of type {@code T} from the given character data.
      * @param data characters in a buffer.
@@ -44,7 +44,7 @@ public interface Extractor<T> extends Cloneable
      * @param optionalData optional data to be used for spatial or temporal values or null if csv header did not use it
      * @return {@code true} if a value was extracted, otherwise {@code false}.
      */
-    boolean extract( char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData );
+    boolean extract(char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData);
 
     /**
      * Extracts value of type {@code T} from the given character data.
@@ -54,7 +54,7 @@ public interface Extractor<T> extends Cloneable
      * @param hadQuotes whether or not there were skipped characters, f.ex. quotation.
      * @return {@code true} if a value was extracted, otherwise {@code false}.
      */
-    boolean extract( char[] data, int offset, int length, boolean hadQuotes );
+    boolean extract(char[] data, int offset, int length, boolean hadQuotes);
 
     /**
      * @return the most recently extracted value.

@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import java.nio.file.Path;
-
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.configuration.Config;
@@ -38,45 +37,44 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
-public final class AdversarialPageCacheGraphDatabaseFactory
-{
-    private AdversarialPageCacheGraphDatabaseFactory()
-    {
-        throw new AssertionError( "Not for instantiation!" );
+public final class AdversarialPageCacheGraphDatabaseFactory {
+    private AdversarialPageCacheGraphDatabaseFactory() {
+        throw new AssertionError("Not for instantiation!");
     }
 
-    public static TestDatabaseManagementServiceBuilder create( Path homeDir, FileSystemAbstraction fs, Adversary adversary )
-    {
-        return new TestDatabaseManagementServiceBuilder( homeDir )
-        {
+    public static TestDatabaseManagementServiceBuilder create(
+            Path homeDir, FileSystemAbstraction fs, Adversary adversary) {
+        return new TestDatabaseManagementServiceBuilder(homeDir) {
             @Override
-            protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
-            {
+            protected DatabaseManagementService newDatabaseManagementService(
+                    Config config, ExternalDependencies dependencies) {
 
-                return new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, CommunityEditionModule::new )
-                {
+                return new DatabaseManagementServiceFactory(DbmsInfo.COMMUNITY, CommunityEditionModule::new) {
 
                     @Override
-                    protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
-                    {
-                        return new GlobalModule( config, dbmsInfo, dependencies )
-                        {
+                    protected GlobalModule createGlobalModule(Config config, ExternalDependencies dependencies) {
+                        return new GlobalModule(config, dbmsInfo, dependencies) {
                             @Override
-                            protected FileSystemAbstraction createFileSystemAbstraction()
-                            {
+                            protected FileSystemAbstraction createFileSystemAbstraction() {
                                 return fs;
                             }
 
                             @Override
-                            protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
-                                    JobScheduler jobScheduler, SystemNanoClock clock, MemoryPools memoryPools )
-                            {
-                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools );
-                                return new AdversarialPageCache( pageCache, adversary );
+                            protected PageCache createPageCache(
+                                    FileSystemAbstraction fileSystem,
+                                    Config config,
+                                    LogService logging,
+                                    Tracers tracers,
+                                    JobScheduler jobScheduler,
+                                    SystemNanoClock clock,
+                                    MemoryPools memoryPools) {
+                                PageCache pageCache = super.createPageCache(
+                                        fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools);
+                                return new AdversarialPageCache(pageCache, adversary);
                             }
                         };
                     }
-                }.build( config, dependencies );
+                }.build(config, dependencies);
             }
         };
     }

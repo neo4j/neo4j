@@ -19,8 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.jupiter.api.Test;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -33,50 +39,53 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @DbmsExtension
-class FullScanStoreViewTracingIT
-{
+class FullScanStoreViewTracingIT {
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private LockService lockService;
+
     @Inject
     private StorageEngine storageEngine;
+
     @Inject
     private JobScheduler jobScheduler;
 
     @Test
-    void tracePageCacheAccess()
-    {
+    void tracePageCacheAccess() {
         int nodeCount = 1000;
-        var label = Label.label( "marker" );
-        try ( var tx = database.beginTx() )
-        {
-            for ( int i = 0; i < nodeCount; i++ )
-            {
-                var node = tx.createNode( label );
-                node.setProperty( "a", randomAscii( 10 ) );
+        var label = Label.label("marker");
+        try (var tx = database.beginTx()) {
+            for (int i = 0; i < nodeCount; i++) {
+                var node = tx.createNode(label);
+                node.setProperty("a", randomAscii(10));
             }
             tx.commit();
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        var indexStoreView =
-                new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
-        var storeScan = indexStoreView.visitNodes( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null,
-                new TestTokenScanConsumer(), true, true, contextFactory, INSTANCE );
-        storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var indexStoreView = new FullScanStoreView(
+                lockService,
+                storageEngine::newReader,
+                storageEngine::createStorageCursors,
+                Config.defaults(),
+                jobScheduler);
+        var storeScan = indexStoreView.visitNodes(
+                EMPTY_INT_ARRAY,
+                ALWAYS_TRUE_INT,
+                null,
+                new TestTokenScanConsumer(),
+                true,
+                true,
+                contextFactory,
+                INSTANCE);
+        storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 103 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 103 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 103 );
+        assertThat(pageCacheTracer.pins()).isEqualTo(103);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(103);
+        assertThat(pageCacheTracer.hits()).isEqualTo(103);
     }
 }

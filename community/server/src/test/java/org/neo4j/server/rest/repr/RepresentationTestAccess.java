@@ -25,117 +25,90 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
-
 import org.neo4j.server.rest.repr.formats.ListWrappingWriter;
 import org.neo4j.server.rest.repr.formats.MapWrappingWriter;
 
-public class RepresentationTestAccess
-{
-    private static final URI BASE_URI = URI.create( "http://neo4j.org/" );
+public class RepresentationTestAccess {
+    private static final URI BASE_URI = URI.create("http://neo4j.org/");
 
-    private RepresentationTestAccess()
-    {
-    }
+    private RepresentationTestAccess() {}
 
-    public static Object serialize( Representation repr )
-    {
-        if ( repr instanceof ValueRepresentation )
-        {
-            return serialize( (ValueRepresentation) repr );
-        }
-        else if ( repr instanceof MappingRepresentation )
-        {
-            return serialize( (MappingRepresentation) repr );
-        }
-        else if ( repr instanceof ListRepresentation )
-        {
-            return serialize( (ListRepresentation) repr );
-        }
-        else
-        {
-            throw new IllegalArgumentException( repr.getClass().toString() );
+    public static Object serialize(Representation repr) {
+        if (repr instanceof ValueRepresentation) {
+            return serialize((ValueRepresentation) repr);
+        } else if (repr instanceof MappingRepresentation) {
+            return serialize((MappingRepresentation) repr);
+        } else if (repr instanceof ListRepresentation) {
+            return serialize((ListRepresentation) repr);
+        } else {
+            throw new IllegalArgumentException(repr.getClass().toString());
         }
     }
 
-    public static String serialize( ValueRepresentation repr )
-    {
-        return serialize( BASE_URI, repr );
+    public static String serialize(ValueRepresentation repr) {
+        return serialize(BASE_URI, repr);
     }
 
-    public static String serialize( URI baseUri, ValueRepresentation repr )
-    {
-        return repr.serialize( new StringFormat(), baseUri );
+    public static String serialize(URI baseUri, ValueRepresentation repr) {
+        return repr.serialize(new StringFormat(), baseUri);
     }
 
-    public static Map<String, Object> serialize( MappingRepresentation repr )
-    {
-        return serialize( BASE_URI, repr );
+    public static Map<String, Object> serialize(MappingRepresentation repr) {
+        return serialize(BASE_URI, repr);
     }
 
-    public static Map<String, Object> serialize( URI baseUri, MappingRepresentation repr )
-    {
+    public static Map<String, Object> serialize(URI baseUri, MappingRepresentation repr) {
         Map<String, Object> result = new HashMap<>();
-        repr.serialize( new MappingSerializer( new MapWrappingWriter( result ), baseUri ) );
+        repr.serialize(new MappingSerializer(new MapWrappingWriter(result), baseUri));
         return result;
     }
 
-    public static List<Object> serialize( ListRepresentation repr )
-    {
-        return serialize( BASE_URI, repr );
+    public static List<Object> serialize(ListRepresentation repr) {
+        return serialize(BASE_URI, repr);
     }
 
-    public static List<Object> serialize( URI baseUri, ListRepresentation repr )
-    {
+    public static List<Object> serialize(URI baseUri, ListRepresentation repr) {
         List<Object> result = new ArrayList<>();
-        repr.serialize( new ListSerializer( new ListWrappingWriter( result ), baseUri ) );
+        repr.serialize(new ListSerializer(new ListWrappingWriter(result), baseUri));
         return result;
     }
 
-    public static long nodeUriToId( String nodeUri )
-    {
-        int lastSlash = nodeUri.lastIndexOf( '/' );
-        if ( lastSlash == -1 )
-        {
-            throw new IllegalArgumentException( "'" + nodeUri + "' isn't a node URI" );
+    public static long nodeUriToId(String nodeUri) {
+        int lastSlash = nodeUri.lastIndexOf('/');
+        if (lastSlash == -1) {
+            throw new IllegalArgumentException("'" + nodeUri + "' isn't a node URI");
         }
-        return Long.parseLong( nodeUri.substring( lastSlash + 1 ) );
+        return Long.parseLong(nodeUri.substring(lastSlash + 1));
     }
 
-    private static class StringFormat extends RepresentationFormat
-    {
-        StringFormat()
-        {
-            super( MediaType.WILDCARD_TYPE );
+    private static class StringFormat extends RepresentationFormat {
+        StringFormat() {
+            super(MediaType.WILDCARD_TYPE);
         }
 
         @Override
-        protected String serializeValue( String type, Object value )
-        {
+        protected String serializeValue(String type, Object value) {
             return value.toString();
         }
 
         @Override
-        protected String complete( ListWriter serializer )
-        {
-            throw new UnsupportedOperationException( "StringFormat.complete(ListWriter)" );
+        protected String complete(ListWriter serializer) {
+            throw new UnsupportedOperationException("StringFormat.complete(ListWriter)");
         }
 
         @Override
-        protected String complete( MappingWriter serializer )
-        {
-            throw new UnsupportedOperationException( "StringFormat.complete(MappingWriter)" );
+        protected String complete(MappingWriter serializer) {
+            throw new UnsupportedOperationException("StringFormat.complete(MappingWriter)");
         }
 
         @Override
-        protected ListWriter serializeList( String type )
-        {
-            throw new UnsupportedOperationException( "StringFormat.serializeList()" );
+        protected ListWriter serializeList(String type) {
+            throw new UnsupportedOperationException("StringFormat.serializeList()");
         }
 
         @Override
-        protected MappingWriter serializeMapping( String type )
-        {
-            throw new UnsupportedOperationException( "StringFormat.serializeMapping()" );
+        protected MappingWriter serializeMapping(String type) {
+            throw new UnsupportedOperationException("StringFormat.serializeMapping()");
         }
     }
 }

@@ -24,17 +24,14 @@ import org.neo4j.logging.InternalLog;
 /**
  * Logging service that is used to obtain loggers for different output purposes
  */
-public abstract class AbstractLogService implements LogService
-{
+public abstract class AbstractLogService implements LogService {
     @Override
-    public InternalLog getUserLog( Class<?> loggingClass )
-    {
-        return getUserLogProvider().getLog( loggingClass );
+    public InternalLog getUserLog(Class<?> loggingClass) {
+        return getUserLogProvider().getLog(loggingClass);
     }
 
     @Override
-    public InternalLog getInternalLog( Class<?> loggingClass )
-    {
-        return getInternalLogProvider().getLog( loggingClass );
+    public InternalLog getInternalLog(Class<?> loggingClass) {
+        return getInternalLogProvider().getLog(loggingClass);
     }
 }

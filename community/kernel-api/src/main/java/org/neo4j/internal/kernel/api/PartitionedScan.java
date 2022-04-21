@@ -31,8 +31,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  *
  * @param <Cursor> the type of cursor this object initializes.
  */
-public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
-{
+public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cursor> {
     /**
      * @return the total number of partitions in this scan object
      */
@@ -100,5 +99,5 @@ public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cu
      * @throws IllegalStateException if transaction contains changed state.
      * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
      */
-    boolean reservePartition( Cursor cursor, CursorContext cursorContext, AccessMode accessMode );
+    boolean reservePartition(Cursor cursor, CursorContext cursorContext, AccessMode accessMode);
 }

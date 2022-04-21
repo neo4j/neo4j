@@ -19,76 +19,60 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class CheckPointThresholdDescriptionTest
-{
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+
+class CheckPointThresholdDescriptionTest {
     @Test
-    void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue()
-    {
+    void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue() {
         // Given
         String description = "description";
-        AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( true, description );
+        AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold(true, description);
 
         final AtomicReference<String> calledWith = new AtomicReference<>();
         // When
-        LogPosition logPosition = new LogPosition( 99, 100 );
-        threshold.isCheckPointingNeeded( 42, logPosition, calledWith::set );
+        LogPosition logPosition = new LogPosition(99, 100);
+        threshold.isCheckPointingNeeded(42, logPosition, calledWith::set);
 
         // Then
-        assertEquals( description, calledWith.get() );
+        assertEquals(description, calledWith.get());
     }
 
     @Test
-    void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse()
-    {
-        AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( false, null );
+    void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse() {
+        AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold(false, null);
 
-        LogPosition logPosition = new LogPosition( 1, 100 );
-        assertDoesNotThrow( () -> threshold.isCheckPointingNeeded( 42, logPosition, s ->
-        {
-            throw new IllegalStateException( "nooooooooo!" );
-        } ) );
+        LogPosition logPosition = new LogPosition(1, 100);
+        assertDoesNotThrow(() -> threshold.isCheckPointingNeeded(42, logPosition, s -> {
+            throw new IllegalStateException("nooooooooo!");
+        }));
     }
 
-    private static class TheAbstractCheckPointThreshold extends AbstractCheckPointThreshold
-    {
+    private static class TheAbstractCheckPointThreshold extends AbstractCheckPointThreshold {
         private final boolean reached;
 
-        TheAbstractCheckPointThreshold( boolean reached, String description )
-        {
-            super( description );
+        TheAbstractCheckPointThreshold(boolean reached, String description) {
+            super(description);
             this.reached = reached;
         }
 
         @Override
-        public void initialize( long transactionId, LogPosition logPosition )
-        {
-
-        }
+        public void initialize(long transactionId, LogPosition logPosition) {}
 
         @Override
-        public void checkPointHappened( long transactionId, LogPosition logPosition )
-        {
-
-        }
+        public void checkPointHappened(long transactionId, LogPosition logPosition) {}
 
         @Override
-        public long checkFrequencyMillis()
-        {
+        public long checkFrequencyMillis() {
             return DEFAULT_CHECKING_FREQUENCY_MILLIS;
         }
 
         @Override
-        protected boolean thresholdReached( long lastCommittedTransactionId, LogPosition logPosition )
-        {
+        protected boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition) {
             return reached;
         }
     }

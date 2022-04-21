@@ -43,6 +43,7 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util
+
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
@@ -64,14 +65,20 @@ trait ScenarioTestHelper extends FeatureTest {
 
   def useBolt: Boolean
 
-  final override def denylist: Seq[DenylistEntry] = config.denylist.map(parseDenylist).getOrElse(Seq.empty[DenylistEntry])
+  final override def denylist: Seq[DenylistEntry] =
+    config.denylist.map(parseDenylist).getOrElse(Seq.empty[DenylistEntry])
 
   final override def runDenyListedScenario(scenario: Scenario): Seq[Executable] = {
     val name = scenario.toString()
     val scenarioExpectsError: Boolean = scenario.steps.exists(_.isInstanceOf[ExpectError])
     val executable: Executable = () => {
       Try {
-        scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfigPerFeature(scenario.featureName), useBolt)).run()
+        scenario(Neo4jAdapter(
+          config.executionPrefix,
+          graphDatabaseFactory(),
+          dbConfigPerFeature(scenario.featureName),
+          useBolt
+        )).run()
       } match {
         case Success(_) =>
           if (!config.experimental) {
@@ -80,7 +87,7 @@ trait ScenarioTestHelper extends FeatureTest {
           }
         case Failure(e) =>
           e.getCause match {
-            case cause@Neo4jExecutionFailed(_, phase, _, _) =>
+            case cause @ Neo4jExecutionFailed(_, phase, _, _) =>
               // If the scenario expects an error (e.g. at compile time), but we throw it at runtime instead
               // That is not critical. Therefore, if the test is denylisted, we allow it to fail at runtime.
               // If, on the other hand, the scenario expects results and the test is denylisted, only compile
@@ -90,7 +97,9 @@ trait ScenarioTestHelper extends FeatureTest {
                 throw new Exception(
                   s"""Failed at $phase in scenario $name for query
                      |(NOTE: This test is marked as expected to fail, but failing at $phase is not ok)
-                     |""".stripMargin, cause.cause)
+                     |""".stripMargin,
+                  cause.cause
+                )
               }
             // else failed as expected
             // Not supported
@@ -105,7 +114,12 @@ trait ScenarioTestHelper extends FeatureTest {
   }
 
   final override def runScenario(scenario: Scenario): Seq[Executable] = {
-    val runnable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfigPerFeature(scenario.featureName), useBolt))
+    val runnable = scenario(Neo4jAdapter(
+      config.executionPrefix,
+      graphDatabaseFactory(),
+      dbConfigPerFeature(scenario.featureName),
+      useBolt
+    ))
     val executable: Executable = () => runnable.run()
     Seq(executable)
   }
@@ -179,7 +193,8 @@ object ScenarioTestHelper {
       if (denylistPathsList.isEmpty) throw new NoSuchFileException(s"Denylist file not found at: $resourcePath")
       val lines = denylistPathsList.flatMap(f => Files.readAllLines(f, StandardCharsets.UTF_8).asScala.toList)
 
-      val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty) // comments in denylist are being ignored
+      val scenarios =
+        lines.filterNot(line => line.startsWith("//") || line.isEmpty) // comments in denylist are being ignored
       scenarios.foreach(validate)
       scenarios.map(DenylistEntry(_))
     } finally {
@@ -195,25 +210,35 @@ object ScenarioTestHelper {
     This method can be used to generate a denylist for a given TestConfig.
     It can be very useful when adding a new runtime for example.
    */
-  private def printComputedDenylist(scenarios: Seq[Scenario],
-                            config: TestConfig, graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
-                            useBolt: Boolean = false): Unit = {
-    //Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
-    //TODO: Investigate this!
+  private def printComputedDenylist(
+    scenarios: Seq[Scenario],
+    config: TestConfig,
+    graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
+    useBolt: Boolean = false
+  ): Unit = {
+    // Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
+    // TODO: Investigate this!
     println("Evaluating scenarios")
     val numberOfScenarios = scenarios.size
     val denylist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
-      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), defaultTestConfig(scenario.featureName), useBolt)).run()).isFailure
+      val isFailure = Try(scenario(Neo4jAdapter(
+        config.executionPrefix,
+        graphDatabaseFactory(),
+        defaultTestConfig(scenario.featureName),
+        useBolt
+      )).run()).isFailure
       print(s"Processing scenario ${index + 1}/$numberOfScenarios\n")
       Console.out.flush() // to make sure we see progress
       if (isFailure) Some(scenarioToString(scenario)) else None
     }
     // Sort the list alphabetically to normalize diffs
-    println(denylist.distinct.sorted.mkString("\n","\n","\n"))
+    println(denylist.distinct.sorted.mkString("\n", "\n", "\n"))
   }
 
   // This is the OpenCypher 1.0.0-M15 + a few months version of Scenario.toString way of formatting, which is used in the denylist
   private def scenarioToString(scenario: Scenario): String =
-    s"""Feature "${scenario.featureName}": Scenario "${scenario.name}"""" + scenario.exampleIndex.map(ix => s""": Example "$ix"""").getOrElse("")
+    s"""Feature "${scenario.featureName}": Scenario "${scenario.name}"""" + scenario.exampleIndex.map(ix =>
+      s""": Example "$ix""""
+    ).getOrElse("")
 
 }

@@ -19,55 +19,52 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.logging.AssertableLogProvider;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-class DatabaseSchemaStateTest
-{
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.logging.AssertableLogProvider;
+
+class DatabaseSchemaStateTest {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private DatabaseSchemaState stateStore;
 
     @BeforeEach
-    void before()
-    {
-        this.stateStore = new DatabaseSchemaState( logProvider );
+    void before() {
+        this.stateStore = new DatabaseSchemaState(logProvider);
     }
 
     @Test
-    void should_apply_updates_correctly()
-    {
+    void should_apply_updates_correctly() {
         // GIVEN
-        stateStore.put( "key", "created_value" );
+        stateStore.put("key", "created_value");
 
         // WHEN
-        String result = stateStore.get( "key" );
+        String result = stateStore.get("key");
 
         // THEN
-        assertEquals( "created_value", result );
+        assertEquals("created_value", result);
     }
 
     @Test
-    void should_flush()
-    {
+    void should_flush() {
         // GIVEN
-        stateStore.put( "key", "created_value" );
+        stateStore.put("key", "created_value");
 
         // WHEN
         stateStore.clear();
 
         // THEN
-        String result = stateStore.get( "key" );
-        assertNull( result );
+        String result = stateStore.get("key");
+        assertNull(result);
 
         // AND ALSO
-        assertThat( logProvider).forClass( DatabaseSchemaState.class )
-                .forLevel( DEBUG ).containsMessages( "Schema state store has been cleared." );
+        assertThat(logProvider)
+                .forClass(DatabaseSchemaState.class)
+                .forLevel(DEBUG)
+                .containsMessages("Schema state store has been cleared.");
     }
 }

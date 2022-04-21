@@ -24,36 +24,28 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Tracks a highest id when there are potentially multiple concurrent threads calling {@link #offer(long)}.
  */
-public class HighestId
-{
+public class HighestId {
     private final AtomicLong highestId;
 
-    public HighestId()
-    {
-        this( 0 );
+    public HighestId() {
+        this(0);
     }
 
-    public HighestId( long initialId )
-    {
-        this.highestId = new AtomicLong( initialId );
+    public HighestId(long initialId) {
+        this.highestId = new AtomicLong(initialId);
     }
 
-    public void offer( long candidate )
-    {
+    public void offer(long candidate) {
         long currentHighest;
-        do
-        {
+        do {
             currentHighest = highestId.get();
-            if ( candidate <= currentHighest )
-            {
+            if (candidate <= currentHighest) {
                 return;
             }
-        }
-        while ( !highestId.compareAndSet( currentHighest, candidate ) );
+        } while (!highestId.compareAndSet(currentHighest, candidate));
     }
 
-    public long get()
-    {
+    public long get() {
         return highestId.get();
     }
 }

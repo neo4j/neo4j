@@ -19,20 +19,18 @@
  */
 package org.neo4j.configuration;
 
-import io.netty.handler.ssl.SslProvider;
+import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 
+import io.netty.handler.ssl.SslProvider;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.configuration.SettingValueParsers.ofEnum;
-
 @ServiceProvider
 @PublicApi
-public class SslSystemSettings implements SettingsDeclaration
-{
-    @Description( "Netty SSL provider" )
-    public static final Setting<SslProvider> netty_ssl_provider =
-            SettingImpl.newBuilder( "dbms.netty.ssl.provider", ofEnum( SslProvider.class ), SslProvider.JDK ).build();
+public class SslSystemSettings implements SettingsDeclaration {
+    @Description("Netty SSL provider")
+    public static final Setting<SslProvider> netty_ssl_provider = SettingImpl.newBuilder(
+                    "dbms.netty.ssl.provider", ofEnum(SslProvider.class), SslProvider.JDK)
+            .build();
 }
-

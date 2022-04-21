@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
 case object containsNoReturnAll extends ValidatingCondition {
+
   private val matcher = containsNoMatchingNodes({
     case ri: ReturnItems if ri.includeExisting => "ReturnItems(includeExisting = true, ...)"
   })

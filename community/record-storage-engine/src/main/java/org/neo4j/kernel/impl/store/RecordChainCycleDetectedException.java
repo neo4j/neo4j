@@ -24,10 +24,8 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 /**
  * Thrown when a cycle was detected while loading a chain of records.
  */
-public class RecordChainCycleDetectedException extends UnderlyingStorageException
-{
-    public RecordChainCycleDetectedException( String msg )
-    {
-        super( msg );
+public class RecordChainCycleDetectedException extends UnderlyingStorageException {
+    public RecordChainCycleDetectedException(String msg) {
+        super(msg);
     }
 }

@@ -32,12 +32,14 @@ import org.neo4j.util.VisibleForTesting
  * This is needed for tests, because closing is usually handled in org.neo4j.cypher.internal.result.ClosingExecutionResult,
  * which we are not using here. We need to close the results to make sure that updates are committed and that cursors are closed.
  */
-class ClosingRuntimeResult(inner: RuntimeResult,
-                           tx: Transaction,
-                           txContext: TransactionalContext,
-                           resourceManager: ResourceManager,
-                           subscriber: QuerySubscriber,
-                           assertAllReleased: () => Unit) extends RuntimeResult {
+class ClosingRuntimeResult(
+  inner: RuntimeResult,
+  tx: Transaction,
+  txContext: TransactionalContext,
+  resourceManager: ResourceManager,
+  subscriber: QuerySubscriber,
+  assertAllReleased: () => Unit
+) extends RuntimeResult {
 
   private var error: Throwable = _
   private var _pageCacheHits: Long = -1L

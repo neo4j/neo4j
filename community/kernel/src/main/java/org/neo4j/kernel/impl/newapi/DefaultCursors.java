@@ -19,92 +19,78 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static java.lang.String.format;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 
-import static java.lang.String.format;
-
-abstract class DefaultCursors
-{
+abstract class DefaultCursors {
     private final Collection<CloseableStacktrace> closeables;
     private final boolean trackCursorClose;
     private final boolean traceCursorClose;
 
-    DefaultCursors( Collection<CloseableStacktrace> closeables, Config config )
-    {
+    DefaultCursors(Collection<CloseableStacktrace> closeables, Config config) {
         this.closeables = closeables;
-        this.trackCursorClose = config.get( GraphDatabaseInternalSettings.track_cursor_close );
-        this.traceCursorClose = config.get( GraphDatabaseInternalSettings.trace_cursors );
+        this.trackCursorClose = config.get(GraphDatabaseInternalSettings.track_cursor_close);
+        this.traceCursorClose = config.get(GraphDatabaseInternalSettings.trace_cursors);
     }
 
-    protected <T extends AutoCloseablePlus> T trace( T closeable )
-    {
-        if ( trackCursorClose )
-        {
+    protected <T extends AutoCloseablePlus> T trace(T closeable) {
+        if (trackCursorClose) {
             StackTraceElement[] stackTrace = null;
-            if ( traceCursorClose )
-            {
+            if (traceCursorClose) {
                 stackTrace = Thread.currentThread().getStackTrace();
-                stackTrace = Arrays.copyOfRange( stackTrace, 2, stackTrace.length );
+                stackTrace = Arrays.copyOfRange(stackTrace, 2, stackTrace.length);
             }
 
-            closeables.add( new CloseableStacktrace( closeable, stackTrace ) );
+            closeables.add(new CloseableStacktrace(closeable, stackTrace));
         }
         return closeable;
     }
 
-    public void assertClosed()
-    {
-        if ( trackCursorClose )
-        {
-            for ( CloseableStacktrace c : closeables )
-            {
+    public void assertClosed() {
+        if (trackCursorClose) {
+            for (CloseableStacktrace c : closeables) {
                 c.assertClosed();
             }
             closeables.clear();
         }
     }
 
-    static class CloseableStacktrace
-    {
+    static class CloseableStacktrace {
         private final AutoCloseablePlus c;
         private final StackTraceElement[] stackTrace;
 
-        CloseableStacktrace( AutoCloseablePlus c, StackTraceElement[] stackTrace )
-        {
+        CloseableStacktrace(AutoCloseablePlus c, StackTraceElement[] stackTrace) {
             this.c = c;
             this.stackTrace = stackTrace;
         }
 
-        void assertClosed()
-        {
-            if ( !c.isClosed() )
-            {
+        void assertClosed() {
+            if (!c.isClosed()) {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-                PrintStream printStream = new PrintStream( out, false, StandardCharsets.UTF_8 );
+                PrintStream printStream = new PrintStream(out, false, StandardCharsets.UTF_8);
 
-                if ( stackTrace != null )
-                {
+                if (stackTrace != null) {
                     printStream.println();
-                    for ( StackTraceElement traceElement : stackTrace )
-                    {
-                        printStream.println( "\tat " + traceElement );
+                    for (StackTraceElement traceElement : stackTrace) {
+                        printStream.println("\tat " + traceElement);
                     }
-                }
-                else
-                {
-                    String msg = format( " To see stack traces please set '%s' setting to true", GraphDatabaseInternalSettings.trace_cursors.name() );
-                    printStream.print( msg );
+                } else {
+                    String msg = format(
+                            " To see stack traces please set '%s' setting to true",
+                            GraphDatabaseInternalSettings.trace_cursors.name());
+                    printStream.print(msg);
                 }
                 printStream.println();
-                throw new IllegalStateException( format( "Closeable %s was not closed!%s", c, out.toString( StandardCharsets.UTF_8 ) ) );
+                throw new IllegalStateException(
+                        format("Closeable %s was not closed!%s", c, out.toString(StandardCharsets.UTF_8)));
             }
         }
     }

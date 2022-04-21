@@ -23,43 +23,35 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
 
-public class ListWrappingWriter extends ListWriter
-{
+public class ListWrappingWriter extends ListWriter {
     final List<Object> data;
 
-    public ListWrappingWriter( List<Object> data )
-    {
+    public ListWrappingWriter(List<Object> data) {
         this.data = data;
     }
 
     @Override
-    protected ListWriter newList( String type )
-    {
+    protected ListWriter newList(String type) {
         List<Object> list = new ArrayList<>();
-        data.add( list );
-        return new ListWrappingWriter( list );
+        data.add(list);
+        return new ListWrappingWriter(list);
     }
 
     @Override
-    protected MappingWriter newMapping( String type )
-    {
+    protected MappingWriter newMapping(String type) {
         Map<String, Object> map = new HashMap<>();
-        data.add( map );
-        return new MapWrappingWriter( map );
+        data.add(map);
+        return new MapWrappingWriter(map);
     }
 
     @Override
-    protected void writeValue( String type, Object value )
-    {
-        data.add( value );
+    protected void writeValue(String type, Object value) {
+        data.add(value);
     }
 
     @Override
-    protected void done()
-    {
-    }
+    protected void done() {}
 }

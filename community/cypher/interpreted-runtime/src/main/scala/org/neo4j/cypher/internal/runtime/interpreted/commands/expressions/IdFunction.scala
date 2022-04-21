@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
@@ -31,7 +31,7 @@ case class IdFunction(inner: Expression) extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = inner(row, state) match {
     case IsNoValue() => Values.NO_VALUE
-    case value => CypherFunctions.id(value)
+    case value       => CypherFunctions.id(value)
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(IdFunction(inner.rewrite(f)))

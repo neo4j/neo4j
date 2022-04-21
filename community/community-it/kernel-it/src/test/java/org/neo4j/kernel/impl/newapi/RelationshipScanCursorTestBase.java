@@ -19,21 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,52 +26,64 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
-public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
-{
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+
+public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTestSupport>
+        extends KernelAPIReadTestBase<G> {
     private static List<Long> RELATIONSHIP_IDS;
     private static long none, loop, one, c, d;
 
     @Override
-    public void createTestGraph( GraphDatabaseService graphDb )
-    {
+    public void createTestGraph(GraphDatabaseService graphDb) {
         Relationship deleted;
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            Node a = tx.createNode(), b = tx.createNode(), c = tx.createNode(),
-                    d = tx.createNode(), e = tx.createNode(), f = tx.createNode();
+        try (Transaction tx = graphDb.beginTx()) {
+            Node a = tx.createNode(),
+                    b = tx.createNode(),
+                    c = tx.createNode(),
+                    d = tx.createNode(),
+                    e = tx.createNode(),
+                    f = tx.createNode();
 
-            a.createRelationshipTo( b, withName( "CIRCLE" ) );
-            b.createRelationshipTo( c, withName( "CIRCLE" ) );
-            one = c.createRelationshipTo( d, withName( "CIRCLE" ) ).getId();
-            d.createRelationshipTo( e, withName( "CIRCLE" ) );
-            e.createRelationshipTo( f, withName( "CIRCLE" ) );
-            f.createRelationshipTo( a, withName( "CIRCLE" ) );
+            a.createRelationshipTo(b, withName("CIRCLE"));
+            b.createRelationshipTo(c, withName("CIRCLE"));
+            one = c.createRelationshipTo(d, withName("CIRCLE")).getId();
+            d.createRelationshipTo(e, withName("CIRCLE"));
+            e.createRelationshipTo(f, withName("CIRCLE"));
+            f.createRelationshipTo(a, withName("CIRCLE"));
 
-            a.createRelationshipTo( b, withName( "TRIANGLE" ) );
-            a.createRelationshipTo( c, withName( "TRIANGLE" ) );
-            b.createRelationshipTo( c, withName( "TRIANGLE" ) );
-            none = (deleted = c.createRelationshipTo( b, withName( "TRIANGLE" ) )).getId();
+            a.createRelationshipTo(b, withName("TRIANGLE"));
+            a.createRelationshipTo(c, withName("TRIANGLE"));
+            b.createRelationshipTo(c, withName("TRIANGLE"));
+            none = (deleted = c.createRelationshipTo(b, withName("TRIANGLE"))).getId();
             RelationshipScanCursorTestBase.c = c.getId();
             RelationshipScanCursorTestBase.d = d.getId();
 
-            d.createRelationshipTo( e, withName( "TRIANGLE" ) );
-            e.createRelationshipTo( f, withName( "TRIANGLE" ) );
-            f.createRelationshipTo( d, withName( "TRIANGLE" ) );
+            d.createRelationshipTo(e, withName("TRIANGLE"));
+            e.createRelationshipTo(f, withName("TRIANGLE"));
+            f.createRelationshipTo(d, withName("TRIANGLE"));
 
-            loop = a.createRelationshipTo( a, withName( "LOOP" ) ).getId();
+            loop = a.createRelationshipTo(a, withName("LOOP")).getId();
 
             tx.commit();
         }
 
         RELATIONSHIP_IDS = new ArrayList<>();
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            tx.getRelationshipById( deleted.getId() ).delete();
-            try ( ResourceIterable<Relationship> allRelationships = tx.getAllRelationships() )
-            {
-                for ( Relationship relationship : allRelationships )
-                {
-                    RELATIONSHIP_IDS.add( relationship.getId() );
+        try (Transaction tx = graphDb.beginTx()) {
+            tx.getRelationshipById(deleted.getId()).delete();
+            try (ResourceIterable<Relationship> allRelationships = tx.getAllRelationships()) {
+                for (Relationship relationship : allRelationships) {
+                    RELATIONSHIP_IDS.add(relationship.getId());
                 }
             }
             tx.commit();
@@ -94,121 +91,105 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    void shouldScanRelationships()
-    {
+    void shouldScanRelationships() {
         // given
         List<Long> ids = new ArrayList<>();
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL_CONTEXT ) )
-        {
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
             // when
-            read.allRelationshipsScan( relationships );
-            while ( relationships.next() )
-            {
-                ids.add( relationships.relationshipReference() );
+            read.allRelationshipsScan(relationships);
+            while (relationships.next()) {
+                ids.add(relationships.relationshipReference());
             }
         }
 
-        assertEquals( RELATIONSHIP_IDS, ids );
+        assertEquals(RELATIONSHIP_IDS, ids);
     }
 
     @Test
-    void shouldAccessRelationshipByReference()
-    {
+    void shouldAccessRelationshipByReference() {
         // given
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL_CONTEXT ) )
-        {
-            for ( long id : RELATIONSHIP_IDS )
-            {
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
+            for (long id : RELATIONSHIP_IDS) {
                 // when
-                read.singleRelationship( id, relationships );
+                read.singleRelationship(id, relationships);
 
                 // then
-                assertTrue( relationships.next(), "should access defined relationship" );
-                assertEquals( id, relationships.relationshipReference(), "should access the correct relationship" );
-                assertFalse( relationships.next(), "should only access a single relationship" );
+                assertTrue(relationships.next(), "should access defined relationship");
+                assertEquals(id, relationships.relationshipReference(), "should access the correct relationship");
+                assertFalse(relationships.next(), "should only access a single relationship");
             }
         }
     }
 
     @Test
-    void shouldNotAccessDeletedRelationship()
-    {
+    void shouldNotAccessDeletedRelationship() {
         // given
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL_CONTEXT ) )
-        {
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
             // when
-            read.singleRelationship( none, relationships );
+            read.singleRelationship(none, relationships);
 
             // then
-            assertFalse( relationships.next(), "should not access deleted relationship" );
+            assertFalse(relationships.next(), "should not access deleted relationship");
         }
     }
 
     // This is functionality which is only required for the hacky db.schema not to leak real data
     @Test
-    void shouldNotAccessNegativeReferences()
-    {
+    void shouldNotAccessNegativeReferences() {
         // given
-        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( NULL_CONTEXT ) )
-        {
+        try (RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
             // when
-            read.singleRelationship( -2L, relationship );
+            read.singleRelationship(-2L, relationship);
 
             // then
-            assertFalse( relationship.next(), "should not access negative reference relationship" );
+            assertFalse(relationship.next(), "should not access negative reference relationship");
         }
     }
 
     @Test
-    void shouldAccessRelationshipLabels()
-    {
+    void shouldAccessRelationshipLabels() {
         // given
-        Map<Integer,Integer> counts = new HashMap<>();
+        Map<Integer, Integer> counts = new HashMap<>();
 
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL_CONTEXT ) )
-        {
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
             // when
-            read.allRelationshipsScan( relationships );
-            while ( relationships.next() )
-            {
-                counts.compute( relationships.type(), ( k, v ) -> v == null ? 1 : v + 1 );
+            read.allRelationshipsScan(relationships);
+            while (relationships.next()) {
+                counts.compute(relationships.type(), (k, v) -> v == null ? 1 : v + 1);
             }
         }
 
         // then
-        assertEquals( 3, counts.size() );
+        assertEquals(3, counts.size());
         int[] values = new int[3];
         int i = 0;
-        for ( int value : counts.values() )
-        {
+        for (int value : counts.values()) {
             values[i++] = value;
         }
-        Arrays.sort( values );
-        assertArrayEquals( new int[]{1, 6, 6}, values );
+        Arrays.sort(values);
+        assertArrayEquals(new int[] {1, 6, 6}, values);
     }
 
     @Test
-    void shouldAccessNodes()
-    {
+    void shouldAccessNodes() {
         // given
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL_CONTEXT ) )
-        {
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
             // when
-            read.singleRelationship( one, relationships );
+            read.singleRelationship(one, relationships);
 
             // then
-            assertTrue( relationships.next() );
-            assertEquals( c, relationships.sourceNodeReference() );
-            assertEquals( d, relationships.targetNodeReference() );
-            assertFalse( relationships.next() );
+            assertTrue(relationships.next());
+            assertEquals(c, relationships.sourceNodeReference());
+            assertEquals(d, relationships.targetNodeReference());
+            assertFalse(relationships.next());
 
             // when
-            read.singleRelationship( loop, relationships );
+            read.singleRelationship(loop, relationships);
 
             // then
-            assertTrue( relationships.next() );
-            assertEquals( relationships.sourceNodeReference(), relationships.targetNodeReference() );
-            assertFalse( relationships.next() );
+            assertTrue(relationships.next());
+            assertEquals(relationships.sourceNodeReference(), relationships.targetNodeReference());
+            assertFalse(relationships.next());
         }
     }
 }

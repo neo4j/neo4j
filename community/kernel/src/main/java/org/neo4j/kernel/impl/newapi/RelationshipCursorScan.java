@@ -20,23 +20,28 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 
-final class RelationshipCursorScan extends BaseCursorScan<RelationshipScanCursor,AllRelationshipsScan>
-{
+final class RelationshipCursorScan extends BaseCursorScan<RelationshipScanCursor, AllRelationshipsScan> {
 
-    RelationshipCursorScan( AllRelationshipsScan allRelationshipsScan, Read read )
-    {
-        super( allRelationshipsScan, read, () -> read.txState().addedAndRemovedRelationships().getAdded().toArray() );
+    RelationshipCursorScan(AllRelationshipsScan allRelationshipsScan, Read read) {
+        super(
+                allRelationshipsScan,
+                read,
+                () -> read.txState().addedAndRemovedRelationships().getAdded().toArray());
     }
 
     @Override
-    boolean scanStore( RelationshipScanCursor cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext, AccessMode accessMode )
-    {
-        return ((DefaultRelationshipScanCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges, accessMode );
+    boolean scanStore(
+            RelationshipScanCursor cursor,
+            int sizeHint,
+            LongIterator addedItems,
+            CursorContext cursorContext,
+            AccessMode accessMode) {
+        return ((DefaultRelationshipScanCursor) cursor)
+                .scanBatch(read, storageScan, sizeHint, addedItems, hasChanges, accessMode);
     }
 }

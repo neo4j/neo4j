@@ -19,10 +19,13 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
+import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 import java.util.function.LongConsumer;
-
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -33,169 +36,145 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.EagerDegrees;
 
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
-import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
-import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
-
-public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
-{
+public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator {
     private final CountsDelta counts;
     private final ReadableTransactionState txState;
     private final StorageNodeCursor nodeCursor;
     private final StorageRelationshipScanCursor relationshipCursor;
 
-    public TransactionCountingStateVisitor( TxStateVisitor next, StorageReader storageReader,
-            ReadableTransactionState txState, CountsDelta counts, CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        super( next );
+    public TransactionCountingStateVisitor(
+            TxStateVisitor next,
+            StorageReader storageReader,
+            ReadableTransactionState txState,
+            CountsDelta counts,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
+        super(next);
         this.txState = txState;
         this.counts = counts;
-        this.nodeCursor = storageReader.allocateNodeCursor( cursorContext, storeCursors );
-        this.relationshipCursor = storageReader.allocateRelationshipScanCursor( cursorContext, storeCursors );
+        this.nodeCursor = storageReader.allocateNodeCursor(cursorContext, storeCursors);
+        this.relationshipCursor = storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors);
     }
 
     @Override
-    public void visitCreatedNode( long id )
-    {
-        counts.incrementNodeCount( ANY_LABEL, 1 );
-        super.visitCreatedNode( id );
+    public void visitCreatedNode(long id) {
+        counts.incrementNodeCount(ANY_LABEL, 1);
+        super.visitCreatedNode(id);
     }
 
     @Override
-    public void visitDeletedNode( long id )
-    {
-        counts.incrementNodeCount( ANY_LABEL, -1 );
-        nodeCursor.single( id );
-        if ( nodeCursor.next() )
-        {
-            decrementCountForLabelsAndRelationships( nodeCursor );
+    public void visitDeletedNode(long id) {
+        counts.incrementNodeCount(ANY_LABEL, -1);
+        nodeCursor.single(id);
+        if (nodeCursor.next()) {
+            decrementCountForLabelsAndRelationships(nodeCursor);
         }
-        super.visitDeletedNode( id );
+        super.visitDeletedNode(id);
     }
 
-    private void decrementCountForLabelsAndRelationships( StorageNodeCursor node )
-    {
+    private void decrementCountForLabelsAndRelationships(StorageNodeCursor node) {
         final long[] labelIds = node.labels();
-        for ( long labelId : labelIds )
-        {
-            counts.incrementNodeCount( labelId, -1 );
+        for (long labelId : labelIds) {
+            counts.incrementNodeCount(labelId, -1);
         }
 
-        visitDegrees( node, ( type, out, in ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in ) );
+        visitDegrees(node, (type, out, in) -> updateRelationshipsCountsFromDegrees(labelIds, type, -out, -in));
     }
 
-    private static void visitDegrees( StorageNodeCursor node, DegreeVisitor visitor )
-    {
+    private static void visitDegrees(StorageNodeCursor node, DegreeVisitor visitor) {
         EagerDegrees degrees = new EagerDegrees();
-        node.degrees( ALL_RELATIONSHIPS, degrees );
-        for ( int type : degrees.types() )
-        {
-            visitor.visitDegree( type, degrees.outgoingDegree( type ), degrees.incomingDegree( type ) );
+        node.degrees(ALL_RELATIONSHIPS, degrees);
+        for (int type : degrees.types()) {
+            visitor.visitDegree(type, degrees.outgoingDegree(type), degrees.incomingDegree(type));
         }
     }
 
     @Override
-    public void visitRelationshipModifications( RelationshipModifications ids ) throws ConstraintValidationException
-    {
-        ids.creations().forEach( ( id, type, startNode, endNode, addedProperties ) -> updateRelationshipCount( startNode, type, endNode, 1 ) );
-        ids.deletions().forEach( ( id, type, startNode, endNode, noProperties ) ->
-        {
-            if ( type == ANY_RELATIONSHIP_TYPE )
-            {
+    public void visitRelationshipModifications(RelationshipModifications ids) throws ConstraintValidationException {
+        ids.creations()
+                .forEach((id, type, startNode, endNode, addedProperties) ->
+                        updateRelationshipCount(startNode, type, endNode, 1));
+        ids.deletions().forEach((id, type, startNode, endNode, noProperties) -> {
+            if (type == ANY_RELATIONSHIP_TYPE) {
                 // Indication that no meta data for deleted relationships is kept, we have to look it up here instead
-                relationshipCursor.single( id );
-                if ( !relationshipCursor.next() )
-                {
-                    throw new IllegalStateException( "Relationship being deleted should exist along with its nodes. Relationship[" + id + "]" );
+                relationshipCursor.single(id);
+                if (!relationshipCursor.next()) {
+                    throw new IllegalStateException(
+                            "Relationship being deleted should exist along with its nodes. Relationship[" + id + "]");
                 }
-                updateRelationshipCount( relationshipCursor.sourceNodeReference(), relationshipCursor.type(), relationshipCursor.targetNodeReference(), -1 );
-            }
-            else
-            {
+                updateRelationshipCount(
+                        relationshipCursor.sourceNodeReference(),
+                        relationshipCursor.type(),
+                        relationshipCursor.targetNodeReference(),
+                        -1);
+            } else {
                 // All meta data about this deleted relationship is available, just use it
-                updateRelationshipCount( startNode, type, endNode, -1 );
+                updateRelationshipCount(startNode, type, endNode, -1);
             }
-        } );
-        super.visitRelationshipModifications( ids );
+        });
+        super.visitRelationshipModifications(ids);
     }
 
     @Override
-    public void visitNodeLabelChanges( long id, final LongSet added, final LongSet removed )
-            throws ConstraintValidationException
-    {
+    public void visitNodeLabelChanges(long id, final LongSet added, final LongSet removed)
+            throws ConstraintValidationException {
         // update counts
-        if ( !(added.isEmpty() && removed.isEmpty()) )
-        {
-            added.each( label -> counts.incrementNodeCount( label, 1 ) );
-            removed.each( label -> counts.incrementNodeCount( label, -1 ) );
+        if (!(added.isEmpty() && removed.isEmpty())) {
+            added.each(label -> counts.incrementNodeCount(label, 1));
+            removed.each(label -> counts.incrementNodeCount(label, -1));
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
 
-            nodeCursor.single( id );
-            if ( nodeCursor.next() )
-            {
-                visitDegrees( nodeCursor, ( type, out, in ) ->
-                {
-                    added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
-                    removed.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in ) );
-                } );
+            nodeCursor.single(id);
+            if (nodeCursor.next()) {
+                visitDegrees(nodeCursor, (type, out, in) -> {
+                    added.forEach(label -> updateRelationshipsCountsFromDegrees(type, label, out, in));
+                    removed.forEach(label -> updateRelationshipsCountsFromDegrees(type, label, -out, -in));
+                });
             }
         }
-        super.visitNodeLabelChanges( id, added, removed );
+        super.visitNodeLabelChanges(id, added, removed);
     }
 
-    private void updateRelationshipsCountsFromDegrees( long[] labels, int type, long outgoing, long incoming )
-    {
-        for ( long label : labels )
-        {
-            updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming );
+    private void updateRelationshipsCountsFromDegrees(long[] labels, int type, long outgoing, long incoming) {
+        for (long label : labels) {
+            updateRelationshipsCountsFromDegrees(type, label, outgoing, incoming);
         }
     }
 
-    private void updateRelationshipsCountsFromDegrees( int type, long label, long outgoing, long incoming )
-    {
+    private void updateRelationshipsCountsFromDegrees(int type, long label, long outgoing, long incoming) {
         // untyped
-        counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
-        counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, incoming );
+        counts.incrementRelationshipCount(label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing);
+        counts.incrementRelationshipCount(ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, incoming);
         // typed
-        counts.incrementRelationshipCount( label, type, ANY_LABEL, outgoing );
-        counts.incrementRelationshipCount( ANY_LABEL, type, label, incoming );
+        counts.incrementRelationshipCount(label, type, ANY_LABEL, outgoing);
+        counts.incrementRelationshipCount(ANY_LABEL, type, label, incoming);
     }
 
-    private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
-    {
-        updateRelationshipsCountsFromDegrees( type, ANY_LABEL, delta, 0 );
-        visitLabels( startNode, labelId -> updateRelationshipsCountsFromDegrees( type, labelId, delta, 0 ) );
-        visitLabels( endNode, labelId -> updateRelationshipsCountsFromDegrees( type, labelId, 0, delta ) );
+    private void updateRelationshipCount(long startNode, int type, long endNode, int delta) {
+        updateRelationshipsCountsFromDegrees(type, ANY_LABEL, delta, 0);
+        visitLabels(startNode, labelId -> updateRelationshipsCountsFromDegrees(type, labelId, delta, 0));
+        visitLabels(endNode, labelId -> updateRelationshipsCountsFromDegrees(type, labelId, 0, delta));
     }
 
-    private void visitLabels( long nodeId, LongConsumer visitor )
-    {
+    private void visitLabels(long nodeId, LongConsumer visitor) {
         // This transaction state visitor doesn't have access to higher level cursors that combine store- and tx-state,
         // but however has access to the two individually, and so does this combining here directly.
-        if ( txState.nodeIsDeletedInThisTx( nodeId ) )
-        {
+        if (txState.nodeIsDeletedInThisTx(nodeId)) {
             return;
         }
 
-        if ( txState.nodeIsAddedInThisTx( nodeId ) )
-        {
-            txState.getNodeState( nodeId ).labelDiffSets().getAdded().forEach( visitor::accept );
-        }
-        else
-        {
-            nodeCursor.single( nodeId );
-            if ( nodeCursor.next() )
-            {
+        if (txState.nodeIsAddedInThisTx(nodeId)) {
+            txState.getNodeState(nodeId).labelDiffSets().getAdded().forEach(visitor::accept);
+        } else {
+            nodeCursor.single(nodeId);
+            if (nodeCursor.next()) {
                 long[] labels = nodeCursor.labels();
-                LongDiffSets labelDiff = txState.getNodeState( nodeId ).labelDiffSets();
-                labelDiff.getAdded().forEach( visitor::accept );
-                for ( long label : labels )
-                {
-                    if ( !labelDiff.isRemoved( label ) )
-                    {
-                        visitor.accept( label );
+                LongDiffSets labelDiff = txState.getNodeState(nodeId).labelDiffSets();
+                labelDiff.getAdded().forEach(visitor::accept);
+                for (long label : labels) {
+                    if (!labelDiff.isRemoved(label)) {
+                        visitor.accept(label);
                     }
                 }
             }
@@ -203,9 +182,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     }
 
     @Override
-    public void close() throws KernelException
-    {
+    public void close() throws KernelException {
         super.close();
-        closeAllUnchecked( nodeCursor, relationshipCursor );
+        closeAllUnchecked(nodeCursor, relationshipCursor);
     }
 }

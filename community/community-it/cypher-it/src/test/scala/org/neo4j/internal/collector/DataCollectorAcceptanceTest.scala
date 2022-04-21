@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.collector
 
-import java.time.ZonedDateTime
-
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.internal.collector.DataCollectorMatchers.beListInOrder
 import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
 import org.neo4j.internal.collector.DataCollectorMatchers.occurBetween
+
+import java.time.ZonedDateTime
 
 class DataCollectorAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -50,7 +50,8 @@ class DataCollectorAcceptanceTest extends ExecutionEngineFunSuite {
         "data" -> beMapContaining(
           "graphToken" -> "myToken",
           "retrieveTime" -> occurBetween(before, after)
-        )),
+        )
+      ),
       beMapContaining(
         "section" -> "GRAPH COUNTS"
       )

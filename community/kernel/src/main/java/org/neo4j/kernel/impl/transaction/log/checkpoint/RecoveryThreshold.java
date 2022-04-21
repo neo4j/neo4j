@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-public class RecoveryThreshold extends ReachedThreshold
-{
+public class RecoveryThreshold extends ReachedThreshold {
     public static final RecoveryThreshold INSTANCE = new RecoveryThreshold();
 
-    private RecoveryThreshold()
-    {
-        super( "recovery threshold" );
+    private RecoveryThreshold() {
+        super("recovery threshold");
     }
 }

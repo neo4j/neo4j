@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.Collection;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
@@ -32,37 +30,33 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 
-class TestTraversalWithIterable extends TraversalTestBase
-{
+class TestTraversalWithIterable extends TraversalTestBase {
     @Test
-    void traverseWithIterableForStartNodes()
-    {
+    void traverseWithIterableForStartNodes() {
         /*
          * (a)-->(b)-->(c)
          * (d)-->(e)-->(f)
          *
          */
 
-        createGraph( "a TO b", "b TO c", "d TO e", "e TO f" );
+        createGraph("a TO b", "b TO c", "d TO e", "e TO f");
 
-        try ( Transaction tx = beginTx() )
-        {
-            TraversalDescription basicTraverser = tx.traversalDescription().evaluator( Evaluators.atDepth(2) );
+        try (Transaction tx = beginTx()) {
+            TraversalDescription basicTraverser = tx.traversalDescription().evaluator(Evaluators.atDepth(2));
 
             Collection<Node> startNodes = new ArrayList<>();
-            startNodes.add( getNodeWithName( tx, "a" ) );
-            startNodes.add( getNodeWithName( tx, "d" ) );
+            startNodes.add(getNodeWithName(tx, "a"));
+            startNodes.add(getNodeWithName(tx, "d"));
 
             Iterable<Node> iterableStartNodes = startNodes;
 
-            expectPaths( basicTraverser.traverse( iterableStartNodes ), "a,b,c", "d,e,f");
+            expectPaths(basicTraverser.traverse(iterableStartNodes), "a,b,c", "d,e,f");
             tx.commit();
         }
     }
 
     @Test
-    void useTraverserInsideTraverser()
-    {
+    void useTraverserInsideTraverser() {
         /*
          * (a)-->(b)-->(c)
          *  |
@@ -71,28 +65,24 @@ class TestTraversalWithIterable extends TraversalTestBase
          *
          */
 
-        createGraph( "a FIRST d", "a TO b", "b TO c", "d TO e", "e TO f" );
+        createGraph("a FIRST d", "a TO b", "b TO c", "d TO e", "e TO f");
 
-        try ( Transaction tx = beginTx() )
-        {
+        try (Transaction tx = beginTx()) {
             TraversalDescription firstTraverser = tx.traversalDescription()
-                    .relationships( RelationshipType.withName( "FIRST" ) )
-                    .evaluator( Evaluators.toDepth( 1 ) );
-            final Iterable<Path> firstResult = firstTraverser.traverse( getNodeWithName( tx, "a" ) );
+                    .relationships(RelationshipType.withName("FIRST"))
+                    .evaluator(Evaluators.toDepth(1));
+            final Iterable<Path> firstResult = firstTraverser.traverse(getNodeWithName(tx, "a"));
 
-            Iterable<Node> startNodesForNestedTraversal = new IterableWrapper<Node,Path>( firstResult )
-            {
+            Iterable<Node> startNodesForNestedTraversal = new IterableWrapper<Node, Path>(firstResult) {
                 @Override
-                protected Node underlyingObjectToObject( Path path )
-                {
+                protected Node underlyingObjectToObject(Path path) {
                     return path.endNode();
                 }
             };
 
-            TraversalDescription nestedTraversal = tx.traversalDescription().evaluator( Evaluators.atDepth( 2 ) );
-            expectPaths( nestedTraversal.traverse( startNodesForNestedTraversal ), "a,b,c", "d,e,f");
+            TraversalDescription nestedTraversal = tx.traversalDescription().evaluator(Evaluators.atDepth(2));
+            expectPaths(nestedTraversal.traverse(startNodesForNestedTraversal), "a,b,c", "d,e,f");
             tx.commit();
         }
     }
-
 }

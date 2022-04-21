@@ -19,6 +19,10 @@
  */
 package org.neo4j.procedure.builtin;
 
+import static org.neo4j.internal.helpers.collection.Iterators.stream;
+import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
+import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -48,28 +51,20 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 
-import static org.neo4j.internal.helpers.collection.Iterators.stream;
-import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
-import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
-
-public class SchemaProcedure
-{
+public class SchemaProcedure {
     private final InternalTransaction internalTransaction;
 
-    public SchemaProcedure( final InternalTransaction internalTransaction )
-    {
+    public SchemaProcedure(final InternalTransaction internalTransaction) {
         this.internalTransaction = internalTransaction;
     }
 
-    public GraphResult buildSchemaGraph()
-    {
-        final Map<String,VirtualNodeHack> nodes = new HashMap<>();
-        final Map<String,Set<VirtualRelationshipHack>> relationships = new HashMap<>();
+    public GraphResult buildSchemaGraph() {
+        final Map<String, VirtualNodeHack> nodes = new HashMap<>();
+        final Map<String, Set<VirtualRelationshipHack>> relationships = new HashMap<>();
         final KernelTransaction kernelTransaction = internalTransaction.kernelTransaction();
         AccessMode mode = kernelTransaction.securityContext().mode();
 
-        try ( KernelTransaction.Revertable ignore = kernelTransaction.overrideWith( SecurityContext.AUTH_DISABLED ) )
-        {
+        try (KernelTransaction.Revertable ignore = kernelTransaction.overrideWith(SecurityContext.AUTH_DISABLED)) {
             Read dataRead = kernelTransaction.dataRead();
             TokenRead tokenRead = kernelTransaction.tokenRead();
             SchemaRead schemaRead = kernelTransaction.schemaRead();
@@ -77,156 +72,136 @@ public class SchemaProcedure
             List<LabelNameId> labelNamesAndIds = new ArrayList<>();
 
             // Get all labels that are in use as seen by a super user
-            List<Label> labelsInUse = stream( LABELS.inUse( kernelTransaction ) ).collect( Collectors.toList() );
+            List<Label> labelsInUse = stream(LABELS.inUse(kernelTransaction)).collect(Collectors.toList());
 
-            for ( Label label: labelsInUse )
-            {
+            for (Label label : labelsInUse) {
                 String labelName = label.name();
-                int labelId = tokenRead.nodeLabel( labelName );
+                int labelId = tokenRead.nodeLabel(labelName);
 
                 // Filter out labels that are denied or aren't explicitly allowed
-                if ( mode.allowsTraverseNode( labelId ) )
-                {
-                    labelNamesAndIds.add( new LabelNameId( labelName, labelId ) );
+                if (mode.allowsTraverseNode(labelId)) {
+                    labelNamesAndIds.add(new LabelNameId(labelName, labelId));
 
-                    Map<String,Object> properties = new HashMap<>();
+                    Map<String, Object> properties = new HashMap<>();
 
-                    Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel( labelId );
+                    Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel(labelId);
                     List<String> indexes = new ArrayList<>();
-                    while ( indexReferences.hasNext() )
-                    {
+                    while (indexReferences.hasNext()) {
                         IndexDescriptor index = indexReferences.next();
-                        if ( !index.isUnique() )
-                        {
-                            String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenRead, index.schema().getPropertyIds() );
-                            indexes.add( String.join( ",", propertyNames ) );
+                        if (!index.isUnique()) {
+                            String[] propertyNames = PropertyNameUtils.getPropertyKeys(
+                                    tokenRead, index.schema().getPropertyIds());
+                            indexes.add(String.join(",", propertyNames));
                         }
                     }
-                    properties.put( "indexes", indexes );
+                    properties.put("indexes", indexes);
 
-                    Iterator<ConstraintDescriptor> nodePropertyConstraintIterator = schemaRead.constraintsGetForLabel( labelId );
+                    Iterator<ConstraintDescriptor> nodePropertyConstraintIterator =
+                            schemaRead.constraintsGetForLabel(labelId);
                     List<String> constraints = new ArrayList<>();
-                    while ( nodePropertyConstraintIterator.hasNext() )
-                    {
+                    while (nodePropertyConstraintIterator.hasNext()) {
                         ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
-                        constraints.add( constraint.userDescription( tokenRead ) );
+                        constraints.add(constraint.userDescription(tokenRead));
                     }
-                    properties.put( "constraints", constraints );
+                    properties.put("constraints", constraints);
 
-                    getOrCreateLabel( label.name(), properties, nodes );
+                    getOrCreateLabel(label.name(), properties, nodes);
                 }
             }
 
             // Get all relTypes that are in use as seen by a super user
-            List<RelationshipType> relTypesInUse = stream( RELATIONSHIP_TYPES.inUse( kernelTransaction ) ).collect( Collectors.toList() );
+            List<RelationshipType> relTypesInUse =
+                    stream(RELATIONSHIP_TYPES.inUse(kernelTransaction)).collect(Collectors.toList());
 
-            for ( RelationshipType relationshipType : relTypesInUse )
-            {
+            for (RelationshipType relationshipType : relTypesInUse) {
                 String relationshipTypeGetName = relationshipType.name();
-                int relId = tokenRead.relationshipType( relationshipTypeGetName );
+                int relId = tokenRead.relationshipType(relationshipTypeGetName);
 
                 // Filter out relTypes that are denied or aren't explicitly allowed
-                if ( mode.allowsTraverseRelType( relId ) )
-                {
+                if (mode.allowsTraverseRelType(relId)) {
                     List<VirtualNodeHack> startNodes = new LinkedList<>();
                     List<VirtualNodeHack> endNodes = new LinkedList<>();
 
-                    for ( LabelNameId labelNameAndId: labelNamesAndIds )
-                    {
+                    for (LabelNameId labelNameAndId : labelNamesAndIds) {
                         String labelName = labelNameAndId.name();
                         int labelId = labelNameAndId.id();
 
-                        Map<String,Object> properties = new HashMap<>();
-                        VirtualNodeHack node = getOrCreateLabel( labelName, properties, nodes );
+                        Map<String, Object> properties = new HashMap<>();
+                        VirtualNodeHack node = getOrCreateLabel(labelName, properties, nodes);
 
-                        if ( dataRead.countsForRelationship( labelId, relId, TokenRead.ANY_LABEL ) > 0 )
-                        {
-                            startNodes.add( node );
+                        if (dataRead.countsForRelationship(labelId, relId, TokenRead.ANY_LABEL) > 0) {
+                            startNodes.add(node);
                         }
-                        if ( dataRead.countsForRelationship( TokenRead.ANY_LABEL, relId, labelId ) > 0 )
-                        {
-                            endNodes.add( node );
+                        if (dataRead.countsForRelationship(TokenRead.ANY_LABEL, relId, labelId) > 0) {
+                            endNodes.add(node);
                         }
                     }
 
-                    for ( VirtualNodeHack startNode : startNodes )
-                    {
-                        for ( VirtualNodeHack endNode : endNodes )
-                        {
-                            addRelationship( startNode, endNode, relationshipTypeGetName, relationships );
+                    for (VirtualNodeHack startNode : startNodes) {
+                        for (VirtualNodeHack endNode : endNodes) {
+                            addRelationship(startNode, endNode, relationshipTypeGetName, relationships);
                         }
                     }
                 }
             }
-
         }
-        return getGraphResult( nodes, relationships );
+        return getGraphResult(nodes, relationships);
     }
 
-    private record LabelNameId( String name, int id )
-    {
-    }
+    private record LabelNameId(String name, int id) {}
 
-    public record GraphResult( List<Node> nodes, List<Relationship> relationships )
-    {
-    }
+    public record GraphResult(List<Node> nodes, List<Relationship> relationships) {}
 
-    private static VirtualNodeHack getOrCreateLabel( String label, Map<String,Object> properties,
-            final Map<String,VirtualNodeHack> nodeMap )
-    {
-        if ( nodeMap.containsKey( label ) )
-        {
-            return nodeMap.get( label );
+    private static VirtualNodeHack getOrCreateLabel(
+            String label, Map<String, Object> properties, final Map<String, VirtualNodeHack> nodeMap) {
+        if (nodeMap.containsKey(label)) {
+            return nodeMap.get(label);
         }
-        VirtualNodeHack node = new VirtualNodeHack( label, properties );
-        nodeMap.put( label, node );
+        VirtualNodeHack node = new VirtualNodeHack(label, properties);
+        nodeMap.put(label, node);
         return node;
     }
 
-    private static void addRelationship( VirtualNodeHack startNode, VirtualNodeHack endNode, String relType,
-            final Map<String,Set<VirtualRelationshipHack>> relationshipMap )
-    {
+    private static void addRelationship(
+            VirtualNodeHack startNode,
+            VirtualNodeHack endNode,
+            String relType,
+            final Map<String, Set<VirtualRelationshipHack>> relationshipMap) {
         Set<VirtualRelationshipHack> relationshipsForType;
-        if ( !relationshipMap.containsKey( relType ) )
-        {
+        if (!relationshipMap.containsKey(relType)) {
             relationshipsForType = new HashSet<>();
-            relationshipMap.put( relType, relationshipsForType );
+            relationshipMap.put(relType, relationshipsForType);
+        } else {
+            relationshipsForType = relationshipMap.get(relType);
         }
-        else
-        {
-            relationshipsForType = relationshipMap.get( relType );
-        }
-        VirtualRelationshipHack relationship = new VirtualRelationshipHack( startNode, endNode, relType );
-        relationshipsForType.add( relationship );
+        VirtualRelationshipHack relationship = new VirtualRelationshipHack(startNode, endNode, relType);
+        relationshipsForType.add(relationship);
     }
 
-    private static GraphResult getGraphResult( final Map<String,VirtualNodeHack> nodeMap,
-            final Map<String,Set<VirtualRelationshipHack>> relationshipMap )
-    {
+    private static GraphResult getGraphResult(
+            final Map<String, VirtualNodeHack> nodeMap,
+            final Map<String, Set<VirtualRelationshipHack>> relationshipMap) {
         List<Relationship> relationships = new LinkedList<>();
-        for ( Set<VirtualRelationshipHack> relationship : relationshipMap.values() )
-        {
-            relationships.addAll( relationship );
+        for (Set<VirtualRelationshipHack> relationship : relationshipMap.values()) {
+            relationships.addAll(relationship);
         }
 
         GraphResult graphResult;
-        graphResult = new GraphResult( new ArrayList<>( nodeMap.values() ), relationships );
+        graphResult = new GraphResult(new ArrayList<>(nodeMap.values()), relationships);
 
         return graphResult;
     }
 
-    private static class VirtualRelationshipHack implements Relationship
-    {
+    private static class VirtualRelationshipHack implements Relationship {
 
-        private static final AtomicLong MIN_ID = new AtomicLong( -1 );
+        private static final AtomicLong MIN_ID = new AtomicLong(-1);
 
         private final long id;
         private final Node startNode;
         private final Node endNode;
         private final RelationshipType relationshipType;
 
-        VirtualRelationshipHack( final VirtualNodeHack startNode, final VirtualNodeHack endNode, final String type )
-        {
+        VirtualRelationshipHack(final VirtualNodeHack startNode, final VirtualNodeHack endNode, final String type) {
             this.id = MIN_ID.getAndDecrement();
             this.startNode = startNode;
             this.endNode = endNode;
@@ -234,320 +209,256 @@ public class SchemaProcedure
         }
 
         @Override
-        public long getId()
-        {
+        public long getId() {
             return id;
         }
 
         @Override
-        public String getElementId()
-        {
-            return String.valueOf( id );
+        public String getElementId() {
+            return String.valueOf(id);
         }
 
         @Override
-        public Node getStartNode()
-        {
+        public Node getStartNode() {
             return startNode;
         }
 
         @Override
-        public Node getEndNode()
-        {
+        public Node getEndNode() {
             return endNode;
         }
 
         @Override
-        public RelationshipType getType()
-        {
+        public RelationshipType getType() {
             return relationshipType;
         }
 
         @Override
-        public Map<String,Object> getAllProperties()
-        {
+        public Map<String, Object> getAllProperties() {
             return new HashMap<>();
         }
 
         @Override
-        public void delete()
-        {
-
-        }
+        public void delete() {}
 
         @Override
-        public Node getOtherNode( Node node )
-        {
+        public Node getOtherNode(Node node) {
             return null;
         }
 
         @Override
-        public Node[] getNodes()
-        {
+        public Node[] getNodes() {
             return new Node[0];
         }
 
         @Override
-        public boolean isType( RelationshipType type )
-        {
+        public boolean isType(RelationshipType type) {
             return false;
         }
 
         @Override
-        public boolean hasProperty( String key )
-        {
+        public boolean hasProperty(String key) {
             return false;
         }
 
         @Override
-        public Object getProperty( String key )
-        {
+        public Object getProperty(String key) {
             return null;
         }
 
         @Override
-        public Object getProperty( String key, Object defaultValue )
-        {
+        public Object getProperty(String key, Object defaultValue) {
             return null;
         }
 
         @Override
-        public void setProperty( String key, Object value )
-        {
-
-        }
+        public void setProperty(String key, Object value) {}
 
         @Override
-        public Object removeProperty( String key )
-        {
+        public Object removeProperty(String key) {
             return null;
         }
 
         @Override
-        public Iterable<String> getPropertyKeys()
-        {
+        public Iterable<String> getPropertyKeys() {
             return null;
         }
 
         @Override
-        public Map<String,Object> getProperties( String... keys )
-        {
+        public Map<String, Object> getProperties(String... keys) {
             return null;
         }
 
         @Override
-        public String toString()
-        {
-            return String.format( "VirtualRelationshipHack[%s]", id );
+        public String toString() {
+            return String.format("VirtualRelationshipHack[%s]", id);
         }
     }
 
-    private static class VirtualNodeHack implements Node
-    {
+    private static class VirtualNodeHack implements Node {
 
-        private final Map<String,Object> propertyMap = new HashMap<>();
+        private final Map<String, Object> propertyMap = new HashMap<>();
 
-        private static final AtomicLong MIN_ID = new AtomicLong( -1 );
+        private static final AtomicLong MIN_ID = new AtomicLong(-1);
         private final long id;
         private final Label label;
 
-        VirtualNodeHack( final String label, Map<String,Object> properties )
-        {
+        VirtualNodeHack(final String label, Map<String, Object> properties) {
             this.id = MIN_ID.getAndDecrement();
-            this.label = Label.label( label );
-            propertyMap.putAll( properties );
-            propertyMap.put( "name", label );
+            this.label = Label.label(label);
+            propertyMap.putAll(properties);
+            propertyMap.put("name", label);
         }
 
         @Override
-        public long getId()
-        {
+        public long getId() {
             return id;
         }
 
         @Override
-        public String getElementId()
-        {
-            return String.valueOf( id );
+        public String getElementId() {
+            return String.valueOf(id);
         }
 
         @Override
-        public Map<String,Object> getAllProperties()
-        {
+        public Map<String, Object> getAllProperties() {
             return propertyMap;
         }
 
         @Override
-        public Iterable<Label> getLabels()
-        {
-            return Collections.singletonList( label );
+        public Iterable<Label> getLabels() {
+            return Collections.singletonList(label);
         }
 
         @Override
-        public void delete()
-        {
-
-        }
+        public void delete() {}
 
         @Override
-        public ResourceIterable<Relationship> getRelationships()
-        {
+        public ResourceIterable<Relationship> getRelationships() {
             return null;
         }
 
         @Override
-        public boolean hasRelationship()
-        {
+        public boolean hasRelationship() {
             return false;
         }
 
         @Override
-        public ResourceIterable<Relationship> getRelationships( RelationshipType... types )
-        {
+        public ResourceIterable<Relationship> getRelationships(RelationshipType... types) {
             return null;
         }
 
         @Override
-        public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
-        {
+        public ResourceIterable<Relationship> getRelationships(Direction direction, RelationshipType... types) {
             return null;
         }
 
-        public ResourceIterable<Relationship> getRelationships( RelationshipType type, Direction direction )
-        {
-            return null;
-        }
-
-        @Override
-        public ResourceIterable<Relationship> getRelationships( Direction direction )
-        {
+        public ResourceIterable<Relationship> getRelationships(RelationshipType type, Direction direction) {
             return null;
         }
 
         @Override
-        public boolean hasRelationship( RelationshipType... types )
-        {
+        public ResourceIterable<Relationship> getRelationships(Direction direction) {
+            return null;
+        }
+
+        @Override
+        public boolean hasRelationship(RelationshipType... types) {
             return false;
         }
 
         @Override
-        public boolean hasRelationship( Direction direction, RelationshipType... types )
-        {
+        public boolean hasRelationship(Direction direction, RelationshipType... types) {
             return false;
         }
 
         @Override
-        public boolean hasRelationship( Direction direction )
-        {
+        public boolean hasRelationship(Direction direction) {
             return false;
         }
 
         @Override
-        public Relationship getSingleRelationship( RelationshipType type, Direction dir )
-        {
+        public Relationship getSingleRelationship(RelationshipType type, Direction dir) {
             return null;
         }
 
         @Override
-        public Relationship createRelationshipTo( Node otherNode, RelationshipType type )
-        {
+        public Relationship createRelationshipTo(Node otherNode, RelationshipType type) {
             return null;
         }
 
         @Override
-        public Iterable<RelationshipType> getRelationshipTypes()
-        {
+        public Iterable<RelationshipType> getRelationshipTypes() {
             return null;
         }
 
         @Override
-        public int getDegree()
-        {
+        public int getDegree() {
             return 0;
         }
 
         @Override
-        public int getDegree( RelationshipType type )
-        {
+        public int getDegree(RelationshipType type) {
             return 0;
         }
 
         @Override
-        public int getDegree( RelationshipType type, Direction direction )
-        {
+        public int getDegree(RelationshipType type, Direction direction) {
             return 0;
         }
 
         @Override
-        public int getDegree( Direction direction )
-        {
+        public int getDegree(Direction direction) {
             return 0;
         }
 
         @Override
-        public void addLabel( Label label )
-        {
-
-        }
+        public void addLabel(Label label) {}
 
         @Override
-        public void removeLabel( Label label )
-        {
-
-        }
+        public void removeLabel(Label label) {}
 
         @Override
-        public boolean hasLabel( Label label )
-        {
+        public boolean hasLabel(Label label) {
             return false;
         }
 
         @Override
-        public boolean hasProperty( String key )
-        {
+        public boolean hasProperty(String key) {
             return false;
         }
 
         @Override
-        public Object getProperty( String key )
-        {
+        public Object getProperty(String key) {
             return null;
         }
 
         @Override
-        public Object getProperty( String key, Object defaultValue )
-        {
+        public Object getProperty(String key, Object defaultValue) {
             return null;
         }
 
         @Override
-        public void setProperty( String key, Object value )
-        {
-
-        }
+        public void setProperty(String key, Object value) {}
 
         @Override
-        public Object removeProperty( String key )
-        {
+        public Object removeProperty(String key) {
             return null;
         }
 
         @Override
-        public Iterable<String> getPropertyKeys()
-        {
+        public Iterable<String> getPropertyKeys() {
             return null;
         }
 
         @Override
-        public Map<String,Object> getProperties( String... keys )
-        {
+        public Map<String, Object> getProperties(String... keys) {
             return null;
         }
 
         @Override
-        public String toString()
-        {
-            return String.format( "VirtualNodeHack[%s]", id );
+        public String toString() {
+            return String.format("VirtualNodeHack[%s]", id);
         }
     }
 }

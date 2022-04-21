@@ -26,15 +26,15 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExhaustiveLimitPlanningIntegrationTest
-  extends CypherFunSuite
-  with LogicalPlanningIntegrationTestSupport
-  with AstConstructionTestSupport {
+    extends CypherFunSuite
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   test("should plan exhaustive limit for single update followed by LIMIT 0") {
-   // given
-   val config = plannerBuilder()
-     .setAllNodesCardinality(100)
-     .build()
+    // given
+    val config = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
     val query =
       s"""
          |CREATE (m:M)
@@ -133,7 +133,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .limit(3)
       .expand("(m)-[r]->(o)")
       .sort(Seq(Ascending("m")))
-      .eager()//TODO: this eager is not necessary
+      .eager() // TODO: this eager is not necessary
       .create(createNode("m", "M"))
       .nodeByLabelScan("n", "N")
       .build()
@@ -255,7 +255,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .limit(add(literalInt(3), literalInt(10)))
       .expand("(m)-[r]->(o)")
       .sort(Seq(Ascending("m")))
-      .eager()//TODO: this eager is not necessary
+      .eager() // TODO: this eager is not necessary
       .create(createNode("m", "M"))
       .nodeByLabelScan("n", "N")
       .build()

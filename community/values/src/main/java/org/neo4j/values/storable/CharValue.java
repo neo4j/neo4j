@@ -19,114 +19,96 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.neo4j.hashing.HashFunction;
-import org.neo4j.values.ValueMapper;
-import org.neo4j.values.virtual.ListValue;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public final class CharValue extends TextValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( CharValue.class );
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.neo4j.hashing.HashFunction;
+import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.ListValue;
+
+public final class CharValue extends TextValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(CharValue.class);
 
     private final char value;
 
-    CharValue( char value )
-    {
+    CharValue(char value) {
         this.value = value;
     }
 
     @Override
-    public boolean equalTo( Object other )
-    {
-        return other instanceof Value && equals( (Value) other );
+    public boolean equalTo(Object other) {
+        return other instanceof Value && equals((Value) other);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+    public boolean equals(Value other) {
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( char x )
-    {
+    public boolean equals(char x) {
         return value == x;
     }
 
     @Override
-    public boolean equals( String x )
-    {
-        return x.length() == 1 && x.charAt( 0 ) == value;
+    public boolean equals(String x) {
+        return x.length() == 1 && x.charAt(0) == value;
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
-        //The 31 is there to give it the same hash as the string equivalent
+    protected int computeHashToMemoize() {
+        // The 31 is there to give it the same hash as the string equivalent
         return HASH_CONSTANT + value;
     }
 
     @Override
-    public long updateHash( HashFunction hashFunction, long hash )
-    {
-        return updateHash( hashFunction, hash, value );
+    public long updateHash(HashFunction hashFunction, long hash) {
+        return updateHash(hashFunction, hash, value);
     }
 
-    public static long updateHash( HashFunction hashFunction, long hash, char value )
-    {
-        hash = hashFunction.update( hash, value );
-        return hashFunction.update( hash, 1 ); // Pretend we're a string of length 1.
-    }
-
-    @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeString( value );
+    public static long updateHash(HashFunction hashFunction, long hash, char value) {
+        hash = hashFunction.update(hash, value);
+        return hashFunction.update(hash, 1); // Pretend we're a string of length 1.
     }
 
     @Override
-    public Object asObjectCopy()
-    {
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeString(value);
+    }
+
+    @Override
+    public Object asObjectCopy() {
         return value;
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return format( "'%s'", value );
+    public String prettyPrint() {
+        return format("'%s'", value);
     }
 
     @Override
-    public String stringValue()
-    {
-        return Character.toString( value );
+    public String stringValue() {
+        return Character.toString(value);
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         return 1;
     }
 
     @Override
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return false;
     }
 
     @Override
-    public TextValue substring( int start, int length )
-    {
-        if ( length != 1 && start != 0 )
-        {
+    public TextValue substring(int start, int length) {
+        if (length != 1 && start != 0) {
             return StringValue.EMPTY;
         }
 
@@ -134,157 +116,124 @@ public final class CharValue extends TextValue
     }
 
     @Override
-    public TextValue trim()
-    {
-        if ( Character.isWhitespace( value ) )
-        {
+    public TextValue trim() {
+        if (Character.isWhitespace(value)) {
             return StringValue.EMPTY;
-        }
-        else
-        {
+        } else {
             return this;
         }
     }
 
     @Override
-    public TextValue ltrim()
-    {
+    public TextValue ltrim() {
         return trim();
     }
 
     @Override
-    public TextValue rtrim()
-    {
+    public TextValue rtrim() {
         return trim();
     }
 
     @Override
-    public TextValue toLower()
-    {
-        return new CharValue( Character.toLowerCase( value ) );
+    public TextValue toLower() {
+        return new CharValue(Character.toLowerCase(value));
     }
 
     @Override
-    public TextValue toUpper()
-    {
-        return new CharValue( Character.toUpperCase( value ) );
+    public TextValue toUpper() {
+        return new CharValue(Character.toUpperCase(value));
     }
 
     @Override
-    public ListValue split( String separator )
-    {
-        if ( separator.equals( stringValue() ) )
-        {
+    public ListValue split(String separator) {
+        if (separator.equals(stringValue())) {
             return EMPTY_SPLIT;
-        }
-        else
-        {
-            return list( this );
+        } else {
+            return list(this);
         }
     }
 
     @Override
-    public ListValue split( List<String> separators )
-    {
-        if ( separators.stream().anyMatch( sep -> sep.equals( stringValue() ) ) )
-        {
+    public ListValue split(List<String> separators) {
+        if (separators.stream().anyMatch(sep -> sep.equals(stringValue()))) {
             return EMPTY_SPLIT;
-        }
-        else
-        {
-            return list( this );
+        } else {
+            return list(this);
         }
     }
 
     @Override
-    public TextValue replace( String find, String replace )
-    {
+    public TextValue replace(String find, String replace) {
         assert find != null;
         assert replace != null;
-        if ( stringValue().equals( find ) )
-        {
-            return Values.stringValue( replace );
-        }
-        else
-        {
+        if (stringValue().equals(find)) {
+            return Values.stringValue(replace);
+        } else {
             return this;
         }
     }
 
     @Override
-    public TextValue reverse()
-    {
+    public TextValue reverse() {
         return this;
     }
 
     @Override
-    public TextValue plus( TextValue other )
-    {
-        return Values.stringValue( value + other.stringValue() );
+    public TextValue plus(TextValue other) {
+        return Values.stringValue(value + other.stringValue());
     }
 
     @Override
-    public boolean startsWith( TextValue other )
-    {
-        return other.length() == 1 && other.stringValue().charAt( 0 ) == value;
+    public boolean startsWith(TextValue other) {
+        return other.length() == 1 && other.stringValue().charAt(0) == value;
     }
 
     @Override
-    public boolean endsWith( TextValue other )
-    {
-        return startsWith( other );
+    public boolean endsWith(TextValue other) {
+        return startsWith(other);
     }
 
     @Override
-    public boolean contains( TextValue other )
-    {
-        return startsWith( other );
+    public boolean contains(TextValue other) {
+        return startsWith(other);
     }
 
-    public char value()
-    {
+    public char value() {
         return value;
     }
 
     @Override
-    public int compareTo( TextValue other )
-    {
-        return TextValues.compareCharToString( value, other.stringValue() );
+    public int compareTo(TextValue other) {
+        return TextValues.compareCharToString(value, other.stringValue());
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapChar( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapChar(this);
     }
 
     @Override
-    Matcher matcher( Pattern pattern )
-    {
-        return pattern.matcher( String.valueOf( value ) );
+    Matcher matcher(Pattern pattern) {
+        return pattern.matcher(String.valueOf(value));
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s('%s')", getTypeName(), value );
+    public String toString() {
+        return format("%s('%s')", getTypeName(), value);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Char";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return SHALLOW_SIZE;
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.UTF16_TEXT;
     }
 }

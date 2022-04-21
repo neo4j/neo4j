@@ -19,35 +19,52 @@
  */
 package org.neo4j.internal.id;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
-public interface IdGeneratorFactory
-{
-    IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException;
+public interface IdGeneratorFactory {
+    IdGenerator open(
+            PageCache pageCache,
+            Path filename,
+            IdType idType,
+            LongSupplier highIdScanner,
+            long maxId,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution)
+            throws IOException;
 
-    IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
-            IdSlotDistribution slotDistribution ) throws IOException;
+    IdGenerator create(
+            PageCache pageCache,
+            Path filename,
+            IdType idType,
+            long highId,
+            boolean throwIfFileExists,
+            long maxId,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution)
+            throws IOException;
 
-    IdGenerator get( IdType idType );
+    IdGenerator get(IdType idType);
 
-    void visit( Consumer<IdGenerator> visitor );
+    void visit(Consumer<IdGenerator> visitor);
 
-    void clearCache( CursorContext cursorContext );
+    void clearCache(CursorContext cursorContext);
 
     Collection<Path> listIdFiles();
 }

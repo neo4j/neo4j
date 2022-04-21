@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   test("should plan single create") {
     val cfg = plannerBuilder().setAllNodesCardinality(0).build()
@@ -140,7 +141,9 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       .build()
   }
 
-  test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
+  test(
+    "should plan only one create node when the other node is already in scope and aliased when creating a relationship"
+  ) {
     val cfg = plannerBuilder().setAllNodesCardinality(0).build()
     val plan = cfg.plan("MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b)").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()

@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.startup;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.SystemUtils;
-import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.impl.factory.Sets;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
-import picocli.CommandLine;
-import picocli.CommandLine.ExitCode;
-import sun.misc.Signal;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.server.startup.Bootloader.ENV_JAVA_OPTS;
+import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
+import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
+import static org.neo4j.server.startup.Bootloader.EXIT_CODE_RUNNING;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +49,17 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
+import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.impl.factory.Sets;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -60,740 +70,672 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.conditions.Conditions;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.time.Stopwatch;
+import picocli.CommandLine;
+import picocli.CommandLine.ExitCode;
+import sun.misc.Signal;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assumptions.assumeThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.spy;
-import static org.neo4j.configuration.SettingImpl.newBuilder;
-import static org.neo4j.configuration.SettingValueParsers.BOOL;
-import static org.neo4j.server.startup.Bootloader.ENV_JAVA_OPTS;
-import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
-import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
-import static org.neo4j.server.startup.Bootloader.EXIT_CODE_RUNNING;
-import static org.neo4j.test.assertion.Assert.assertEventually;
-
-class Neo4jCommandTest
-{
+class Neo4jCommandTest {
     @Nested
-    class UsingFakeProcess extends Neo4jCommandTestBase
-    {
+    class UsingFakeProcess extends Neo4jCommandTestBase {
         private final ProcessHandler handler = new ProcessHandler();
 
         @Test
-        void shouldPrintUsageWhenNoArgument()
-        {
-            assertThat( execute() ).isEqualTo( ExitCode.USAGE );
-            assertThat( err.toString() ).contains( "Usage: Neo4j" );
+        void shouldPrintUsageWhenNoArgument() {
+            assertThat(execute()).isEqualTo(ExitCode.USAGE);
+            assertThat(err.toString()).contains("Usage: Neo4j");
         }
 
         @Test
-        void shouldPrintPlatformSpecificUsage()
-        {
-            assertThat( execute( "help" ) ).isEqualTo( EXIT_CODE_OK );
+        void shouldPrintPlatformSpecificUsage() {
+            assertThat(execute("help")).isEqualTo(EXIT_CODE_OK);
             String output = out.toString();
-            String[] availableCommands =  new String[] {"start", "restart", "console", "status", "stop"};
-            if ( SystemUtils.IS_OS_WINDOWS )
-            {
-                availableCommands = ArrayUtils.addAll( availableCommands, "install-service", "uninstall-service", "update-service" );
+            String[] availableCommands = new String[] {"start", "restart", "console", "status", "stop"};
+            if (SystemUtils.IS_OS_WINDOWS) {
+                availableCommands =
+                        ArrayUtils.addAll(availableCommands, "install-service", "uninstall-service", "update-service");
             }
-            availableCommands = ArrayUtils.addAll( availableCommands, "version", "help" );
+            availableCommands = ArrayUtils.addAll(availableCommands, "version", "help");
 
-            assertThat( output ).contains( availableCommands );
+            assertThat(output).contains(availableCommands);
         }
 
         @Test
-        void shouldPrintUsageWhenInvalidArgument()
-        {
-            assertThat( execute( "foo" ) ).isEqualTo( ExitCode.USAGE );
-            assertThat( err.toString() ).contains( "Usage: Neo4j" );
+        void shouldPrintUsageWhenInvalidArgument() {
+            assertThat(execute("foo")).isEqualTo(ExitCode.USAGE);
+            assertThat(err.toString()).contains("Usage: Neo4j");
         }
 
         @Test
-        void shouldPrintUsageOnHelp()
-        {
-            assertThat( execute( "help" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "Usage: Neo4j" );
+        void shouldPrintUsageOnHelp() {
+            assertThat(execute("help")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("Usage: Neo4j");
         }
 
         @Test
-        void shouldNotBeAbleToStartWhenAlreadyRunning()
-        {
-            execute( "start" );
+        void shouldNotBeAbleToStartWhenAlreadyRunning() {
+            execute("start");
             clearOutAndErr();
-            executeWithoutInjection( "start" );
-            assertThat( out.toString() ).contains( "Neo4j is already running" );
+            executeWithoutInjection("start");
+            assertThat(out.toString()).contains("Neo4j is already running");
         }
 
         @Test
-        void shouldDetectNeo4jNotRunningOnStatus()
-        {
-            assertThat( execute( "status" ) ).isEqualTo( EXIT_CODE_NOT_RUNNING );
-            assertThat( out.toString() ).contains( "Neo4j is not running" );
+        void shouldDetectNeo4jNotRunningOnStatus() {
+            assertThat(execute("status")).isEqualTo(EXIT_CODE_NOT_RUNNING);
+            assertThat(out.toString()).contains("Neo4j is not running");
         }
 
         @Test
-        void shouldDetectNeo4jRunningOnStatus()
-        {
-            execute( "start" );
+        void shouldDetectNeo4jRunningOnStatus() {
+            execute("start");
             clearOutAndErr();
-            assertThat( execute( "status" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "Neo4j is running" );
+            assertThat(execute("status")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("Neo4j is running");
         }
 
         @Test
-        void shouldDoNothingWhenStoppingNonRunningNeo4j()
-        {
-            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "Neo4j is not running" );
+        void shouldDoNothingWhenStoppingNonRunningNeo4j() {
+            assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("Neo4j is not running");
         }
 
         @Test
-        void shouldBeAbleToStopStartedNeo4j()
-        {
-            execute( "start" );
-            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "Stopping Neo4j", "stopped" );
+        void shouldBeAbleToStopStartedNeo4j() {
+            execute("start");
+            assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("Stopping Neo4j", "stopped");
         }
 
         @Test
-        void shouldBeAbleToRestartNeo4j()
-        {
-            execute( "start" );
+        void shouldBeAbleToRestartNeo4j() {
+            execute("start");
             Optional<ProcessHandle> firstProcess = getProcess();
 
-            assertThat( firstProcess ).isPresent();
+            assertThat(firstProcess).isPresent();
 
-            execute( "restart" );
+            execute("restart");
             Optional<ProcessHandle> secondProcess = getProcess();
 
-            assertThat( secondProcess ).isPresent();
-            assertThat( firstProcess.get().pid() ).isNotEqualTo( secondProcess.get().pid() );
-            assertThat( out.toString() ).containsSubsequence( "Starting Neo4j.",  "Stopping Neo4j", "stopped" , "Starting Neo4j." );
+            assertThat(secondProcess).isPresent();
+            assertThat(firstProcess.get().pid())
+                    .isNotEqualTo(secondProcess.get().pid());
+            assertThat(out.toString())
+                    .containsSubsequence("Starting Neo4j.", "Stopping Neo4j", "stopped", "Starting Neo4j.");
         }
 
         @Test
-        void shouldBeAbleToProvideHeapSettings()
-        {
-            addConf( BootloaderSettings.max_heap_size, "100m" );
-            addConf( BootloaderSettings.initial_heap_size, "10m" );
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() )
-                    .contains( "-Xmx102400k" )
-                    .contains( "-Xms10240k" );
+        void shouldBeAbleToProvideHeapSettings() {
+            addConf(BootloaderSettings.max_heap_size, "100m");
+            addConf(BootloaderSettings.initial_heap_size, "10m");
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("-Xmx102400k").contains("-Xms10240k");
         }
 
         @Test
-        void shouldSeeErrorMessageOnInvalidHeap()
-        {
-            addConf( BootloaderSettings.max_heap_size, "foo" );
-            assertThat( execute( "start" ) ).isEqualTo( ExitCode.SOFTWARE );
-            assertThat( err.toString() ).contains( "'foo' is not a valid size" );
+        void shouldSeeErrorMessageOnInvalidHeap() {
+            addConf(BootloaderSettings.max_heap_size, "foo");
+            assertThat(execute("start")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).contains("'foo' is not a valid size");
         }
 
         @Test
-        void shouldOnlyPrintStacktraceOnVerbose()
-        {
-            addConf( HttpConnector.enabled, "foo" );
-            assertThat( execute( "start" ) ).isEqualTo( ExitCode.SOFTWARE );
-            assertThat( err.toString() ).contains( "Run with '--verbose' for a more detailed error message." );
-            assertThat( err.toString() ).doesNotContain( "Exception" );
+        void shouldOnlyPrintStacktraceOnVerbose() {
+            addConf(HttpConnector.enabled, "foo");
+            assertThat(execute("start")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).contains("Run with '--verbose' for a more detailed error message.");
+            assertThat(err.toString()).doesNotContain("Exception");
 
             clearOutAndErr();
-            assertThat( execute( "start", "--verbose" ) ).isEqualTo( ExitCode.SOFTWARE );
-            assertThat( err.toString() ).doesNotContain( "Run with '--verbose' for a more detailed error message." );
-            assertThat( err.toString() ).contains( "BootFailureException" );
+            assertThat(execute("start", "--verbose")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).doesNotContain("Run with '--verbose' for a more detailed error message.");
+            assertThat(err.toString()).contains("BootFailureException");
         }
 
         @Test
-        void shouldNotValidateSettingsNotUsedByBootloaderOnStopAndStatus()
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( err.toString() ).isEmpty();
+        void shouldNotValidateSettingsNotUsedByBootloaderOnStopAndStatus() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(err.toString()).isEmpty();
 
-            addConf( GraphDatabaseSettings.record_format_created_db, "foo" ); //This setting is not used by the bootloader, so ignored.
-            assertThat( execute( "status" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( err.toString() ).isEmpty();
+            addConf(
+                    GraphDatabaseSettings.record_format_created_db,
+                    "foo"); // This setting is not used by the bootloader, so ignored.
+            assertThat(execute("status")).isEqualTo(EXIT_CODE_OK);
+            assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
+            assertThat(err.toString()).isEmpty();
         }
 
         @Test
-        void shouldValidateSettingsUsedByBootloaderOnStopAndStatus()
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( err.toString() ).isEmpty();
+        void shouldValidateSettingsUsedByBootloaderOnStopAndStatus() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(err.toString()).isEmpty();
 
-            addConf( GraphDatabaseSettings.strict_config_validation, "foo" );
-            assertThat( execute( "status" ) ).isEqualTo( ExitCode.SOFTWARE );
-            assertThat( err.toString() ).contains( "'foo' is not a valid boolean value" );
+            addConf(GraphDatabaseSettings.strict_config_validation, "foo");
+            assertThat(execute("status")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).contains("'foo' is not a valid boolean value");
             clearOutAndErr();
-            assertThat( execute( "stop" ) ).isEqualTo( ExitCode.SOFTWARE );
-            assertThat( err.toString() ).contains( "'foo' is not a valid boolean value" );
+            assertThat(execute("stop")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).contains("'foo' is not a valid boolean value");
         }
 
         @Test
-        void shouldValidateSettingsOnStartAndConsole()
-        {
-            addConf( HttpConnector.enabled, "foo" );
-            assertThat( execute( "start" ) ).isEqualTo( ExitCode.SOFTWARE );
-            assertThat( err.toString() ).contains( "'foo' is not a valid boolean value" );
+        void shouldValidateSettingsOnStartAndConsole() {
+            addConf(HttpConnector.enabled, "foo");
+            assertThat(execute("start")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).contains("'foo' is not a valid boolean value");
             clearOutAndErr();
-            assertThat( execute( "console" ) ).isEqualTo( ExitCode.SOFTWARE );
-            assertThat( err.toString() ).contains( "'foo' is not a valid boolean value" );
+            assertThat(execute("console")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).contains("'foo' is not a valid boolean value");
         }
 
         @Test
-        void shouldBeAbleToPassCommandExpansion()
-        {
-            if ( IS_OS_WINDOWS )
-            {
-                // This cannot run on Windows if the user is running as elevated to admin rights since this creates a scenario
-                // where it's essentially impossible to create correct ACL/owner of the config file that passes the validation in the config reading.
-                assumeThat( isCurrentlyRunningAsWindowsAdmin() ).isFalse();
+        void shouldBeAbleToPassCommandExpansion() {
+            if (IS_OS_WINDOWS) {
+                // This cannot run on Windows if the user is running as elevated to admin rights since this creates a
+                // scenario
+                // where it's essentially impossible to create correct ACL/owner of the config file that passes the
+                // validation in the config reading.
+                assumeThat(isCurrentlyRunningAsWindowsAdmin()).isFalse();
             }
-            assertThat( execute( "start", "--expand-commands" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "--expand-commands" );
-            assertThat( execute( "stop", "--expand-commands" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat(execute("start", "--expand-commands")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("--expand-commands");
+            assertThat(execute("stop", "--expand-commands")).isEqualTo(EXIT_CODE_OK);
         }
 
         @Test
-        void shouldNotComplainOnJavaWhenCorrectVersion()
-        {
-            Map<String,String> java = Map.of( Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
-            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( err.toString() ).doesNotContain( "WARNING! You are using an unsupported Java runtime" );
+        void shouldNotComplainOnJavaWhenCorrectVersion() {
+            Map<String, String> java = Map.of(Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM");
+            assertThat(execute(List.of("start"), java)).isEqualTo(EXIT_CODE_OK);
+            assertThat(err.toString()).doesNotContain("WARNING! You are using an unsupported Java runtime");
         }
 
         @Test
-        void shouldComplainWhenJavaVersionIsTooNew()
-        {
-            Runtime.Version version = Runtime.Version.parse( "15.0.1+2" );
-            Map<String,String> java = Map.of( Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
-            assertThat( execute( List.of( "start" ), java, version ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( err.toString() ).contains( "WARNING! You are using an unsupported Java runtime." );
+        void shouldComplainWhenJavaVersionIsTooNew() {
+            Runtime.Version version = Runtime.Version.parse("15.0.1+2");
+            Map<String, String> java = Map.of(Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM");
+            assertThat(execute(List.of("start"), java, version)).isEqualTo(EXIT_CODE_OK);
+            assertThat(err.toString()).contains("WARNING! You are using an unsupported Java runtime.");
         }
 
         @Test
-        void shouldComplainWhenRunningUnsupportedJvm()
-        {
-            Map<String,String> java = Map.of( Bootloader.PROP_VM_NAME, "Eclipse OpenJ9 VM" );
-            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( err.toString() ).contains( "WARNING! You are using an unsupported Java runtime." );
+        void shouldComplainWhenRunningUnsupportedJvm() {
+            Map<String, String> java = Map.of(Bootloader.PROP_VM_NAME, "Eclipse OpenJ9 VM");
+            assertThat(execute(List.of("start"), java)).isEqualTo(EXIT_CODE_OK);
+            assertThat(err.toString()).contains("WARNING! You are using an unsupported Java runtime.");
         }
 
         @Test
-        void shouldBeAbleToPrintCorrectVersion()
-        {
-            assertThat( execute( "version" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( Version.getNeo4jVersion() );
+        void shouldBeAbleToPrintCorrectVersion() {
+            assertThat(execute("version")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains(Version.getNeo4jVersion());
 
             clearOutAndErr();
-            assertThat( execute( "--version" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( Version.getNeo4jVersion() );
+            assertThat(execute("--version")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains(Version.getNeo4jVersion());
         }
 
         @Test
-        void shouldBeAbleToPrintCorrectVersionWhenRunning()
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
+        void shouldBeAbleToPrintCorrectVersionWhenRunning() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
             ProcessHandle firstHandle = getProcess().get();
-            assertThat( execute( "version" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( Version.getNeo4jVersion() );
+            assertThat(execute("version")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains(Version.getNeo4jVersion());
             ProcessHandle secondHandle = getProcess().get();
-            assertThat( firstHandle.pid() ).isEqualTo( secondHandle.pid() );
-            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
-            assertFalse( firstHandle.isAlive() );
+            assertThat(firstHandle.pid()).isEqualTo(secondHandle.pid());
+            assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
+            assertFalse(firstHandle.isAlive());
         }
 
         @Test
-        @EnabledOnOs( OS.LINUX ) //stop involves services on windows
-        void shouldBeAbleToStopRunningServerWithConfigErrors()
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            addConf( BootloaderSettings.gc_logging_enabled, "yes" );
-            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
+        @EnabledOnOs(OS.LINUX) // stop involves services on windows
+        void shouldBeAbleToStopRunningServerWithConfigErrors() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            addConf(BootloaderSettings.gc_logging_enabled, "yes");
+            assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
             clearOutAndErr();
-            assertThat( execute( "start" ) ).isEqualTo( ExitCode.SOFTWARE );
-            assertThat( err.toString() ).contains( "'yes' is not a valid boolean" );
+            assertThat(execute("start")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).contains("'yes' is not a valid boolean");
         }
 
         @Test
-        void shouldBeAbleToStartInFakeConsoleMode()
-        {
-            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK ); //Since we're using a fake process it does not block on anything
-            assertThat( out.toString() ).contains( TestEntryPoint.class.getName() );
+        void shouldBeAbleToStartInFakeConsoleMode() {
+            assertThat(execute("console"))
+                    .isEqualTo(EXIT_CODE_OK); // Since we're using a fake process it does not block on anything
+            assertThat(out.toString()).contains(TestEntryPoint.class.getName());
         }
 
         @Test
-        void shouldUseUtf8ByDefault()
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "-Dfile.encoding=UTF-8" );
+        void shouldUseUtf8ByDefault() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("-Dfile.encoding=UTF-8");
         }
 
         @Test
-        void shouldUseIncludeLibAndPluginAndConfInClassPath() throws IOException
-        {
-            //Empty dirs are ignored, create fake jars
-            FileUtils.writeToFile( config.get( BootloaderSettings.lib_directory ).resolve( "fake.jar" ), "foo", true );
-            FileUtils.writeToFile( config.get( GraphDatabaseSettings.plugin_dir ).resolve( "fake.jar" ), "foo", true );
-            FileUtils.writeToFile( confFile.getParent().resolve( "fake.jar" ), "foo", true );
+        void shouldUseIncludeLibAndPluginAndConfInClassPath() throws IOException {
+            // Empty dirs are ignored, create fake jars
+            FileUtils.writeToFile(config.get(BootloaderSettings.lib_directory).resolve("fake.jar"), "foo", true);
+            FileUtils.writeToFile(config.get(GraphDatabaseSettings.plugin_dir).resolve("fake.jar"), "foo", true);
+            FileUtils.writeToFile(confFile.getParent().resolve("fake.jar"), "foo", true);
 
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).containsSubsequence(
-                    IS_OS_WINDOWS ? "--Classpath" : "-cp",
-                    config.get( GraphDatabaseSettings.plugin_dir ).toString() + File.separator + "*",
-                    confFile.getParent() + File.separator + "*",
-                    config.get( BootloaderSettings.lib_directory ).toString() + File.separator + "*"
-                    );
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString())
+                    .containsSubsequence(
+                            IS_OS_WINDOWS ? "--Classpath" : "-cp",
+                            config.get(GraphDatabaseSettings.plugin_dir).toString() + File.separator + "*",
+                            confFile.getParent() + File.separator + "*",
+                            config.get(BootloaderSettings.lib_directory).toString() + File.separator + "*");
         }
 
         @Test
-        void shouldPassHomeAndConfArgs()
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "--home-dir", "--config-dir" );
+        void shouldPassHomeAndConfArgs() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("--home-dir", "--config-dir");
         }
 
         @Test
-        void shouldHideDryRunArgument()
-        {
-            assertThat( execute( "help", "console" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).doesNotContain( "--dry-run" );
+        void shouldHideDryRunArgument() {
+            assertThat(execute("help", "console")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).doesNotContain("--dry-run");
         }
 
         @Test
-        void shouldOnlyGetCommandLineFromDryRun()
-        {
-            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).hasLineCount( 1 );
-            assertThat( out.toString() ).containsSubsequence( "java", "-cp", TestEntryPoint.class.getName(), "--home-dir", "--config-dir" );
+        void shouldOnlyGetCommandLineFromDryRun() {
+            assertThat(execute("console", "--dry-run")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).hasLineCount(1);
+            assertThat(out.toString())
+                    .containsSubsequence("java", "-cp", TestEntryPoint.class.getName(), "--home-dir", "--config-dir");
         }
 
         @Test
-        void shouldQuoteArgsCorrectlyOnDryRun()
-        {
-            addConf( BootloaderSettings.additional_jvm, "\"-Dbaz=/path/with spaces/and double qoutes\"" );
-            addConf( BootloaderSettings.additional_jvm, "\"-Dqux=/path/with spaces/and unmatched \"\" qoute\"" );
-            addConf( BootloaderSettings.additional_jvm, "-Dcorge=/path/with/no/spaces" );
-            addConf( BootloaderSettings.additional_jvm, "-Dgrault=/path/with/part/'quoted'" );
-            addConf( BootloaderSettings.additional_jvm, "-Dgarply=\"/path/with/part/quoted\"" );
-            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains(
-                    "\"-Dbaz=/path/with spaces/and double qoutes\"",
-                    "'-Dqux=/path/with spaces/and unmatched \" qoute'",
-                    "-Dcorge=/path/with/no/spaces",
-                    "-Dgrault=/path/with/part/'quoted'",
-                    "'-Dgarply=\"/path/with/part/quoted\"'"
-            );
+        void shouldQuoteArgsCorrectlyOnDryRun() {
+            addConf(BootloaderSettings.additional_jvm, "\"-Dbaz=/path/with spaces/and double qoutes\"");
+            addConf(BootloaderSettings.additional_jvm, "\"-Dqux=/path/with spaces/and unmatched \"\" qoute\"");
+            addConf(BootloaderSettings.additional_jvm, "-Dcorge=/path/with/no/spaces");
+            addConf(BootloaderSettings.additional_jvm, "-Dgrault=/path/with/part/'quoted'");
+            addConf(BootloaderSettings.additional_jvm, "-Dgarply=\"/path/with/part/quoted\"");
+            assertThat(execute("console", "--dry-run")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString())
+                    .contains(
+                            "\"-Dbaz=/path/with spaces/and double qoutes\"",
+                            "'-Dqux=/path/with spaces/and unmatched \" qoute'",
+                            "-Dcorge=/path/with/no/spaces",
+                            "-Dgrault=/path/with/part/'quoted'",
+                            "'-Dgarply=\"/path/with/part/quoted\"'");
 
-            assertThat( out.toString() ).doesNotContain( "\"-Dcorge=/path/with/no/spaces\"" );
+            assertThat(out.toString()).doesNotContain("\"-Dcorge=/path/with/no/spaces\"");
         }
 
         @Test
-        void shouldComplainOnIncorrectQuotingOnDryRun()
-        {
-            addConf( BootloaderSettings.additional_jvm, "-Dfoo=some\"partly'quoted'\"data" );
-            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( ExitCode.SOFTWARE );
-            assertThat( err.toString() ).contains( "contains both single and double quotes" );
+        void shouldComplainOnIncorrectQuotingOnDryRun() {
+            addConf(BootloaderSettings.additional_jvm, "-Dfoo=some\"partly'quoted'\"data");
+            assertThat(execute("console", "--dry-run")).isEqualTo(ExitCode.SOFTWARE);
+            assertThat(err.toString()).contains("contains both single and double quotes");
         }
 
         @Test
-        void shouldNotComplainOnUnknownSettingWithStrictValidation()
-        {
-            addConf( newBuilder( "apoc.export.file.enabled", BOOL, false ).build(), "true" );
-            addConf( GraphDatabaseSettings.strict_config_validation, "true" );
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
+        void shouldNotComplainOnUnknownSettingWithStrictValidation() {
+            addConf(newBuilder("apoc.export.file.enabled", BOOL, false).build(), "true");
+            addConf(GraphDatabaseSettings.strict_config_validation, "true");
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
         }
 
         @Test
-        void consoleShouldDetectAnotherConsoleRunning()
-        {
-            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
+        void consoleShouldDetectAnotherConsoleRunning() {
+            assertThat(execute("console")).isEqualTo(EXIT_CODE_OK);
             clearOutAndErr();
-            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_RUNNING );
-            assertThat( out.toString() ).contains( "Neo4j is already running" );
+            assertThat(execute("console")).isEqualTo(EXIT_CODE_RUNNING);
+            assertThat(out.toString()).contains("Neo4j is already running");
         }
 
         @Test
-        void dryRunShouldPrintWarningAndCommandIfAlreadyRunning()
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
+        void dryRunShouldPrintWarningAndCommandIfAlreadyRunning() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
             clearOutAndErr();
-            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_RUNNING );
-            assertThat( out.toString() )
-                    .containsSubsequence( "Neo4j is already running", "java", "-cp", TestEntryPoint.class.getName() );
+            assertThat(execute("console", "--dry-run")).isEqualTo(EXIT_CODE_RUNNING);
+            assertThat(out.toString())
+                    .containsSubsequence("Neo4j is already running", "java", "-cp", TestEntryPoint.class.getName());
         }
 
         @Nested
-        @EnabledOnOs( OS.WINDOWS )
-        class OnWindows
-        {
+        @EnabledOnOs(OS.WINDOWS)
+        class OnWindows {
             @Test
-            void shouldNotStartIfServiceNotInstalled()
-            {
-                assertThat( executeWithoutInjection( "start" ) ).isEqualTo( EXIT_CODE_NOT_RUNNING );
-                assertThat( err.toString() ).contains( "Neo4j service is not installed" );
+            void shouldNotStartIfServiceNotInstalled() {
+                assertThat(executeWithoutInjection("start")).isEqualTo(EXIT_CODE_NOT_RUNNING);
+                assertThat(err.toString()).contains("Neo4j service is not installed");
             }
 
             @Test
-            void shouldNotStopIfServiceNotInstalled()
-            {
-                assertThat( executeWithoutInjection( "stop" ) ).isEqualTo( EXIT_CODE_OK );
-                assertThat( out.toString() ).contains( "Neo4j is not running" );
+            void shouldNotStopIfServiceNotInstalled() {
+                assertThat(executeWithoutInjection("stop")).isEqualTo(EXIT_CODE_OK);
+                assertThat(out.toString()).contains("Neo4j is not running");
             }
 
             @Test
-            void shouldComplainIfAlreadyInstalled()
-            {
-                assertThat( executeWithoutInjection( "install-service" ) ).isEqualTo( EXIT_CODE_OK );
+            void shouldComplainIfAlreadyInstalled() {
+                assertThat(executeWithoutInjection("install-service")).isEqualTo(EXIT_CODE_OK);
                 clearOutAndErr();
-                assertThat( executeWithoutInjection( "install-service" ) ).isEqualTo( ExitCode.SOFTWARE );
-                assertThat( out.toString() ).contains( "Neo4j service is already installed" );
+                assertThat(executeWithoutInjection("install-service")).isEqualTo(ExitCode.SOFTWARE);
+                assertThat(out.toString()).contains("Neo4j service is already installed");
             }
 
             @Test
-            void shouldComplainIfUninstallingWhenNotInstalled()
-            {
-                assertThat( executeWithoutInjection( "uninstall-service" ) ).isEqualTo( EXIT_CODE_OK );
-                assertThat( out.toString() ).contains( "Neo4j service is not installed" );
+            void shouldComplainIfUninstallingWhenNotInstalled() {
+                assertThat(executeWithoutInjection("uninstall-service")).isEqualTo(EXIT_CODE_OK);
+                assertThat(out.toString()).contains("Neo4j service is not installed");
             }
         }
 
         @Override
-        protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
-                Runtime.Version version )
-        {
-            var ctx = spy( new Neo4jCommand.Neo4jBootloaderContext( out, err, envLookup, propLookup, entrypoint(), version, List.of() ) );
-            ProcessManager pm = new FakeProcessManager( config, ctx, handler, TestEntryPoint.class );
-            doAnswer( inv -> pm ).when( ctx ).processManager();
-            return Neo4jCommand.asCommandLine( ctx );
+        protected CommandLine createCommand(
+                PrintStream out,
+                PrintStream err,
+                Function<String, String> envLookup,
+                Function<String, String> propLookup,
+                Runtime.Version version) {
+            var ctx = spy(new Neo4jCommand.Neo4jBootloaderContext(
+                    out, err, envLookup, propLookup, entrypoint(), version, List.of()));
+            ProcessManager pm = new FakeProcessManager(config, ctx, handler, TestEntryPoint.class);
+            doAnswer(inv -> pm).when(ctx).processManager();
+            return Neo4jCommand.asCommandLine(ctx);
         }
 
         @Override
-        protected int execute( List<String> args, Map<String,String> env, Runtime.Version version )
-        {
-            if ( IS_OS_WINDOWS )
-            {
-                if ( !args.isEmpty() && args.get( 0 ).equals( "start" ) )
-                {
-                    List<String> installArgs = new ArrayList<>( args );
-                    installArgs.remove( 0 );
-                    installArgs.add( 0, "install-service" );
-                    int installExitCode = super.execute( installArgs, env, version );
-                    if ( installExitCode != EXIT_CODE_OK )
-                    {
+        protected int execute(List<String> args, Map<String, String> env, Runtime.Version version) {
+            if (IS_OS_WINDOWS) {
+                if (!args.isEmpty() && args.get(0).equals("start")) {
+                    List<String> installArgs = new ArrayList<>(args);
+                    installArgs.remove(0);
+                    installArgs.add(0, "install-service");
+                    int installExitCode = super.execute(installArgs, env, version);
+                    if (installExitCode != EXIT_CODE_OK) {
                         return installExitCode;
                     }
                 }
             }
-            int exitCode = super.execute( args, env, version );
-            if ( IS_OS_WINDOWS )
-            {
-                if ( !args.isEmpty() && args.get( 0 ).equals( "stop" ) && exitCode == EXIT_CODE_OK )
-                {
-                    return super.execute( List.of( "uninstall-service" ), env );
+            int exitCode = super.execute(args, env, version);
+            if (IS_OS_WINDOWS) {
+                if (!args.isEmpty() && args.get(0).equals("stop") && exitCode == EXIT_CODE_OK) {
+                    return super.execute(List.of("uninstall-service"), env);
                 }
             }
             return exitCode;
         }
 
-        int executeWithoutInjection( String arg )
-        {
-            return super.execute( List.of( arg ), Map.of(), Runtime.version() );
+        int executeWithoutInjection(String arg) {
+            return super.execute(List.of(arg), Map.of(), Runtime.version());
         }
 
         @Override
-        protected Optional<ProcessHandle> getProcess()
-        {
+        protected Optional<ProcessHandle> getProcess() {
             return handler.handle();
         }
 
         @Override
-        protected Class<? extends EntryPoint> entrypoint()
-        {
+        protected Class<? extends EntryPoint> entrypoint() {
             return TestEntryPoint.class;
         }
     }
 
-    abstract static class Neo4jCommandTestWithExtensionBase extends Neo4jCommandTestBase
-    {
+    abstract static class Neo4jCommandTestWithExtensionBase extends Neo4jCommandTestBase {
         private final ProcessHandler handler = new ProcessHandler();
         private final BootloaderExtension extension;
 
-        Neo4jCommandTestWithExtensionBase( BootloaderExtension extension )
-        {
+        Neo4jCommandTestWithExtensionBase(BootloaderExtension extension) {
             this.extension = extension;
         }
 
         @Override
-        protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
-                                             Runtime.Version version )
-        {
-            var ctx = spy( new Neo4jCommand.Neo4jBootloaderContext( out, err, envLookup, propLookup,
-                                                                    entrypoint(), version, List.of( extension ) ) );
-            ProcessManager pm = new FakeProcessManager( config, ctx, handler, TestEntryPoint.class );
-            doAnswer( inv -> pm ).when( ctx ).processManager();
-            return Neo4jCommand.asCommandLine( ctx );
+        protected CommandLine createCommand(
+                PrintStream out,
+                PrintStream err,
+                Function<String, String> envLookup,
+                Function<String, String> propLookup,
+                Runtime.Version version) {
+            var ctx = spy(new Neo4jCommand.Neo4jBootloaderContext(
+                    out, err, envLookup, propLookup, entrypoint(), version, List.of(extension)));
+            ProcessManager pm = new FakeProcessManager(config, ctx, handler, TestEntryPoint.class);
+            doAnswer(inv -> pm).when(ctx).processManager();
+            return Neo4jCommand.asCommandLine(ctx);
         }
 
         @Override
-        protected Class<? extends EntryPoint> entrypoint()
-        {
+        protected Class<? extends EntryPoint> entrypoint() {
             return TestEntryPoint.class;
         }
     }
 
     @Nested
-    class UsingFakeProcessWithExtension extends Neo4jCommandTestWithExtensionBase
-    {
-        UsingFakeProcessWithExtension()
-        {
-            super( config -> new BootloaderExtension.BootloaderArguments( List.of( "-Xmx38m", "-Xms26m" ), List.of( "-TestAdditionalArgument" ) ) );
+    class UsingFakeProcessWithExtension extends Neo4jCommandTestWithExtensionBase {
+        UsingFakeProcessWithExtension() {
+            super(config -> new BootloaderExtension.BootloaderArguments(
+                    List.of("-Xmx38m", "-Xms26m"), List.of("-TestAdditionalArgument")));
         }
 
         @Test
-        void consoleShouldIncludeParametersFromExtension()
-        {
-            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "-Xmx38m", "-Xms26m", "-TestAdditionalArgument" );
+        void consoleShouldIncludeParametersFromExtension() {
+            assertThat(execute("console")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("-Xmx38m", "-Xms26m", "-TestAdditionalArgument");
         }
 
         @Test
-        void consoleDryRunShouldIncludeParametersFromExtension()
-        {
-            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "-Xmx38m", "-Xms26m", "-TestAdditionalArgument" );
+        void consoleDryRunShouldIncludeParametersFromExtension() {
+            assertThat(execute("console", "--dry-run")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("-Xmx38m", "-Xms26m", "-TestAdditionalArgument");
         }
 
         // bootloader extension isn't fully supported when starting windows service
-        @DisabledOnOs( OS.WINDOWS )
+        @DisabledOnOs(OS.WINDOWS)
         @Test
-        void startShouldIncludeParametersFromExtension()
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "-Xmx38m", "-Xms26m", "-TestAdditionalArgument" );
+        void startShouldIncludeParametersFromExtension() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("-Xmx38m", "-Xms26m", "-TestAdditionalArgument");
         }
 
         @Test
-        void extensionHeapOptionsShouldOverrideConfig()
-        {
-            addConf( BootloaderSettings.max_heap_size, "66m" );
-            addConf( BootloaderSettings.initial_heap_size, "49m" );
-            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "-Xmx38m", "-Xms26m", "-TestAdditionalArgument" );
+        void extensionHeapOptionsShouldOverrideConfig() {
+            addConf(BootloaderSettings.max_heap_size, "66m");
+            addConf(BootloaderSettings.initial_heap_size, "49m");
+            assertThat(execute("console")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("-Xmx38m", "-Xms26m", "-TestAdditionalArgument");
         }
 
         @Test
-        void envJavaOptsShouldOverrideExtensionOpts()
-        {
-            assertThat( execute( List.of( "console" ), Map.of( ENV_JAVA_OPTS, "-Xmx33m" ) ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "-Xmx33m", "-TestAdditionalArgument" ).doesNotContain( "-Xms26m" );
+        void envJavaOptsShouldOverrideExtensionOpts() {
+            assertThat(execute(List.of("console"), Map.of(ENV_JAVA_OPTS, "-Xmx33m")))
+                    .isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString())
+                    .contains("-Xmx33m", "-TestAdditionalArgument")
+                    .doesNotContain("-Xms26m");
         }
     }
 
     @Nested
-    class UsingRealProcess extends Neo4jCommandTestBase
-    {
+    class UsingRealProcess extends Neo4jCommandTestBase {
         private TestInFork fork;
 
         @Override
         @BeforeEach
-        void setUp() throws Exception
-        {
+        void setUp() throws Exception {
             super.setUp();
-            fork = new TestInFork( out, err );
+            fork = new TestInFork(out, err);
         }
 
         @Test
-        void shouldBeAbleToStartInRealConsoleMode() throws Exception
-        {
-            if ( fork.run( () -> assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK ), Map.of( TestEntryPoint.ENV_TIMEOUT, "0" ) ) )
-            {
+        void shouldBeAbleToStartInRealConsoleMode() throws Exception {
+            if (fork.run(
+                    () -> assertThat(execute("console")).isEqualTo(EXIT_CODE_OK),
+                    Map.of(TestEntryPoint.ENV_TIMEOUT, "0"))) {
 
-                assertThat( out.toString() ).contains( TestEntryPoint.STARTUP_MSG );
+                assertThat(out.toString()).contains(TestEntryPoint.STARTUP_MSG);
             }
         }
 
-        // Process.destroy()/destroyForcibly() on windows are the same and kills process instantly without invoking exit handler. Can't mimic CTRL+C in test.
-        @DisabledOnOs( OS.WINDOWS )
+        // Process.destroy()/destroyForcibly() on windows are the same and kills process instantly without invoking exit
+        // handler. Can't mimic CTRL+C in test.
+        @DisabledOnOs(OS.WINDOWS)
         @Test
-        void shouldWaitForNeo4jToDieBeforeExitInConsole() throws Exception
-        {
-            if ( fork.run( () -> assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK ), Map.of( TestEntryPoint.ENV_TIMEOUT, "1000" ), p ->
-            {
-                StringBuilder sb = new StringBuilder();
-                assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(), s -> s.contains( TestEntryPoint.STARTUP_MSG ),
-                        5, MINUTES );
-                p.toHandle().destroy();
-                return 0;
-            } ) )
-            {
-                assertThat( out.toString() ).contains( TestEntryPoint.EXIT_MSG );
-                assertThat( out.toString() ).doesNotContain( TestEntryPoint.END_MSG );
+        void shouldWaitForNeo4jToDieBeforeExitInConsole() throws Exception {
+            if (fork.run(
+                    () -> assertThat(execute("console")).isEqualTo(EXIT_CODE_OK),
+                    Map.of(TestEntryPoint.ENV_TIMEOUT, "1000"),
+                    p -> {
+                        StringBuilder sb = new StringBuilder();
+                        assertEventually(
+                                () -> sb.append(new String(p.getInputStream().readNBytes(1)))
+                                        .toString(),
+                                s -> s.contains(TestEntryPoint.STARTUP_MSG),
+                                5,
+                                MINUTES);
+                        p.toHandle().destroy();
+                        return 0;
+                    })) {
+                assertThat(out.toString()).contains(TestEntryPoint.EXIT_MSG);
+                assertThat(out.toString()).doesNotContain(TestEntryPoint.END_MSG);
             }
         }
 
         @Test
-        void shouldSeeErrorMessageOnTooSmallHeap() throws Exception
-        {
-            if ( fork.run( () ->
-            {
-                addConf( BootloaderSettings.max_heap_size, "1k" );
-                assertThat( execute( "console" ) ).isEqualTo( ExitCode.SOFTWARE );
-            } ) )
-            {
-                assertThat( out.toString() ).contains( "Too small maximum heap" );
+        void shouldSeeErrorMessageOnTooSmallHeap() throws Exception {
+            if (fork.run(() -> {
+                addConf(BootloaderSettings.max_heap_size, "1k");
+                assertThat(execute("console")).isEqualTo(ExitCode.SOFTWARE);
+            })) {
+                assertThat(out.toString()).contains("Too small maximum heap");
             }
         }
 
-        @DisabledOnOs( OS.WINDOWS )
+        @DisabledOnOs(OS.WINDOWS)
         @Test
-        void shouldWritePidFileOnStart()
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).contains( "Starting Neo4j." );
-            assertThat( pidFile ).exists();
-            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( pidFile ).doesNotExist();
+        void shouldWritePidFileOnStart() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("Starting Neo4j.");
+            assertThat(pidFile).exists();
+            assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
+            assertThat(pidFile).doesNotExist();
         }
 
-        @DisabledOnOs( OS.WINDOWS )
+        @DisabledOnOs(OS.WINDOWS)
         @Test
-        void shouldWritePidFileOnConsole() throws Exception
-        {
-            if ( fork.run( () ->
-            {
-                try ( OtherThreadExecutor executor = new OtherThreadExecutor( "TestExecutor" ) )
-                {
-                    Future<Integer> console = executor.executeDontWait( () -> execute( "console" ) );
-                    assertEventually( () -> Files.exists( pidFile ), Conditions.TRUE, 2, MINUTES );
-                    Optional<ProcessHandle> process = getProcess();
-                    assertThat( process ).isPresent();
+        void shouldWritePidFileOnConsole() throws Exception {
+            if (fork.run(
+                    () -> {
+                        try (OtherThreadExecutor executor = new OtherThreadExecutor("TestExecutor")) {
+                            Future<Integer> console = executor.executeDontWait(() -> execute("console"));
+                            assertEventually(() -> Files.exists(pidFile), Conditions.TRUE, 2, MINUTES);
+                            Optional<ProcessHandle> process = getProcess();
+                            assertThat(process).isPresent();
 
-                    process.get().destroy();
-                    console.get();
-                }
-            }, Map.of( TestEntryPoint.ENV_TIMEOUT, "1000" ) ) )
-            {
-                assertThat( pidFile ).doesNotExist();
+                            process.get().destroy();
+                            console.get();
+                        }
+                    },
+                    Map.of(TestEntryPoint.ENV_TIMEOUT, "1000"))) {
+                assertThat(pidFile).doesNotExist();
             }
         }
 
-        @DisabledOnOs( OS.WINDOWS )
+        @DisabledOnOs(OS.WINDOWS)
         @Test
-        void shouldDetectRunningNeo4jOnConsole() throws Exception
-        {
-            if ( !fork.run( () ->
-            {
-                assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-                assertThat( execute( "console" ) ).isEqualTo( ExitCode.SOFTWARE );
-            } ) )
-            {
-                assertThat( out.toString() ).contains( "Neo4j is already running" );
+        void shouldDetectRunningNeo4jOnConsole() throws Exception {
+            if (!fork.run(() -> {
+                assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+                assertThat(execute("console")).isEqualTo(ExitCode.SOFTWARE);
+            })) {
+                assertThat(out.toString()).contains("Neo4j is already running");
             }
         }
 
-        @DisabledOnOs( OS.WINDOWS )
+        @DisabledOnOs(OS.WINDOWS)
         @DisabledForRoot
         @Test
-        void shouldPrintErrorOnFailedPidWriteOnConsole() throws Exception
-        {
-            if ( !fork.run( () ->
-            {
-                Path runDir = pidFile.getParent();
-                Files.createDirectories( runDir );
-                Set<PosixFilePermission> origPermissions = Files.getPosixFilePermissions( runDir );
-                try
-                {
-                    Files.setPosixFilePermissions( runDir, Set.of() );
-                    assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
-                }
-                finally
-                {
-                    Files.setPosixFilePermissions( runDir, origPermissions );
-                }
-            }, Map.of( TestEntryPoint.ENV_TIMEOUT, "0" ) ) )
-            {
-                assertThat( err.toString() ).contains( "Failed to write PID file: Access denied" );
+        void shouldPrintErrorOnFailedPidWriteOnConsole() throws Exception {
+            if (!fork.run(
+                    () -> {
+                        Path runDir = pidFile.getParent();
+                        Files.createDirectories(runDir);
+                        Set<PosixFilePermission> origPermissions = Files.getPosixFilePermissions(runDir);
+                        try {
+                            Files.setPosixFilePermissions(runDir, Set.of());
+                            assertThat(execute("console")).isEqualTo(EXIT_CODE_OK);
+                        } finally {
+                            Files.setPosixFilePermissions(runDir, origPermissions);
+                        }
+                    },
+                    Map.of(TestEntryPoint.ENV_TIMEOUT, "0"))) {
+                assertThat(err.toString()).contains("Failed to write PID file: Access denied");
             }
         }
 
-        @DisabledOnOs( OS.WINDOWS )
-        @DisabledForRoot //Turns out root can always read the file anyway, causing test issues on TC
+        @DisabledOnOs(OS.WINDOWS)
+        @DisabledForRoot // Turns out root can always read the file anyway, causing test issues on TC
         @Test
-        void shouldGetReasonableErrorWhenUnableToReadPidFile() throws IOException
-        {
-            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( pidFile ).exists();
-            Set<PosixFilePermission> origPermissions = Files.getPosixFilePermissions( pidFile );
-            try
-            {
-                Files.setPosixFilePermissions( pidFile, Sets.mutable.withAll( origPermissions ).without( PosixFilePermission.OWNER_READ ) );
-                assertThat( execute( "status" ) ).isEqualTo( ExitCode.SOFTWARE );
-                assertThat( err.toString() ).contains( "Access denied" );
-            }
-            finally
-            {
-                Files.setPosixFilePermissions( pidFile, origPermissions );
+        void shouldGetReasonableErrorWhenUnableToReadPidFile() throws IOException {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            assertThat(pidFile).exists();
+            Set<PosixFilePermission> origPermissions = Files.getPosixFilePermissions(pidFile);
+            try {
+                Files.setPosixFilePermissions(
+                        pidFile, Sets.mutable.withAll(origPermissions).without(PosixFilePermission.OWNER_READ));
+                assertThat(execute("status")).isEqualTo(ExitCode.SOFTWARE);
+                assertThat(err.toString()).contains("Access denied");
+            } finally {
+                Files.setPosixFilePermissions(pidFile, origPermissions);
             }
         }
 
         @Test
-        void shouldBeAbleToGetGcLogging() throws Exception
-        {
-            if ( fork.run( () ->
-            {
-                Files.createDirectories( config.get( GraphDatabaseSettings.logs_directory ) );
-                addConf( BootloaderSettings.gc_logging_enabled, "true" );
-                assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
-            }, Map.of( TestEntryPoint.ENV_TIMEOUT, "0" ) ) )
-            {
-                assertThat( out.toString() ).containsSubsequence( "-Xlog:gc*,safepoint,age*=trace:file=", "gc.log", "::filecount=5,filesize=20480k" );
+        void shouldBeAbleToGetGcLogging() throws Exception {
+            if (fork.run(
+                    () -> {
+                        Files.createDirectories(config.get(GraphDatabaseSettings.logs_directory));
+                        addConf(BootloaderSettings.gc_logging_enabled, "true");
+                        assertThat(execute("console")).isEqualTo(EXIT_CODE_OK);
+                    },
+                    Map.of(TestEntryPoint.ENV_TIMEOUT, "0"))) {
+                assertThat(out.toString())
+                        .containsSubsequence(
+                                "-Xlog:gc*,safepoint,age*=trace:file=", "gc.log", "::filecount=5,filesize=20480k");
             }
         }
 
         @Override
-        protected Class<? extends EntryPoint> entrypoint()
-        {
+        protected Class<? extends EntryPoint> entrypoint() {
             return TestEntryPoint.class;
         }
     }
 
-    private static class TestEntryPoint implements EntryPoint
-    {
+    private static class TestEntryPoint implements EntryPoint {
         static final String ENV_TIMEOUT = "TestEntryPointTimeout";
         static final String STARTUP_MSG = "TestEntryPoint started";
         static final String EXIT_MSG = "TestEntryPoint exited";
         static final String END_MSG = "TestEntryPoint ended";
 
-        public static void main( String[] args ) throws InterruptedException
-        {
-            Runtime.getRuntime().addShutdownHook( new Thread( () -> System.out.println( EXIT_MSG ) ) );
-            Signal.handle( new Signal( NeoBootstrapper.SIGINT ), s -> System.exit( 0 ) ); //mimic neo4j (NeoBootstrapper.installSignalHandlers)
-            Signal.handle( new Signal( NeoBootstrapper.SIGTERM ), s -> System.exit( 0 ) );
+        public static void main(String[] args) throws InterruptedException {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> System.out.println(EXIT_MSG)));
+            Signal.handle(
+                    new Signal(NeoBootstrapper.SIGINT),
+                    s -> System.exit(0)); // mimic neo4j (NeoBootstrapper.installSignalHandlers)
+            Signal.handle(new Signal(NeoBootstrapper.SIGTERM), s -> System.exit(0));
 
-            System.out.println( STARTUP_MSG );
+            System.out.println(STARTUP_MSG);
             Lists.mutable
-                    .with( args )
-                    .withAll( ManagementFactory.getRuntimeMXBean().getInputArguments() )
-                    .forEach( System.out::println );
+                    .with(args)
+                    .withAll(ManagementFactory.getRuntimeMXBean().getInputArguments())
+                    .forEach(System.out::println);
             Stopwatch stopwatch = Stopwatch.start();
 
-            int timeoutSeconds = StringUtils.isNotEmpty( System.getenv( ENV_TIMEOUT ) ) ? Integer.parseInt( System.getenv( ENV_TIMEOUT ) ) : 60;
-            while ( !stopwatch.hasTimedOut( timeoutSeconds, TimeUnit.SECONDS ) )
-            {
-                Thread.sleep( 1000 ); //A minute should be enough for all tests and any erroneously leaked processes will eventually die.
+            int timeoutSeconds = StringUtils.isNotEmpty(System.getenv(ENV_TIMEOUT))
+                    ? Integer.parseInt(System.getenv(ENV_TIMEOUT))
+                    : 60;
+            while (!stopwatch.hasTimedOut(timeoutSeconds, TimeUnit.SECONDS)) {
+                Thread.sleep(1000); // A minute should be enough for all tests and any erroneously leaked processes will
+                // eventually die.
             }
-            System.out.println( END_MSG );
+            System.out.println(END_MSG);
         }
 
         @Override
-        public Priority getPriority()
-        {
+        public Priority getPriority() {
             return Priority.HIGH;
         }
     }

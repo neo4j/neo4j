@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
+
 import java.util.Arrays;
 import java.util.function.BooleanSupplier;
-
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -31,17 +33,13 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.FeatureToggles;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
-
-public class CheckPointScheduler extends LifecycleAdapter
-{
+public class CheckPointScheduler extends LifecycleAdapter {
     /**
      * The max number of consecutive check point failures that can be tolerated before treating
      * check point failures more seriously, with a panic.
      */
     static final int MAX_CONSECUTIVE_FAILURES_TOLERANCE =
-            FeatureToggles.getInteger( CheckPointScheduler.class, "failure_tolerance", 10 );
+            FeatureToggles.getInteger(CheckPointScheduler.class, "failure_tolerance", 10);
 
     private final CheckPointer checkPointer;
     private final JobScheduler scheduler;
@@ -50,58 +48,45 @@ public class CheckPointScheduler extends LifecycleAdapter
     private final String databaseName;
     private final Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
     private volatile int consecutiveFailures;
-    private final Runnable job = new Runnable()
-    {
+    private final Runnable job = new Runnable() {
         @Override
-        public void run()
-        {
-            try
-            {
+        public void run() {
+            try {
                 checkPointing = true;
-                if ( stopped )
-                {
+                if (stopped) {
                     return;
                 }
-                checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "Scheduled checkpoint" ) );
+                checkPointer.checkPointIfNeeded(new SimpleTriggerInfo("Scheduled checkpoint"));
 
                 // There were previous unsuccessful attempts, but this attempt was a success
                 // so let's clear those previous errors.
-                if ( consecutiveFailures > 0 )
-                {
-                    Arrays.fill( failures, null );
+                if (consecutiveFailures > 0) {
+                    Arrays.fill(failures, null);
                     consecutiveFailures = 0;
                 }
-            }
-            catch ( Throwable t )
-            {
+            } catch (Throwable t) {
                 failures[consecutiveFailures++] = t;
 
                 // We're counting check pointer to log about the failure itself
-                if ( consecutiveFailures >= MAX_CONSECUTIVE_FAILURES_TOLERANCE )
-                {
+                if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES_TOLERANCE) {
                     UnderlyingStorageException combinedFailure = constructCombinedFailure();
-                    health.panic( combinedFailure );
+                    health.panic(combinedFailure);
                     throw combinedFailure;
                 }
-            }
-            finally
-            {
+            } finally {
                 checkPointing = false;
             }
 
             // reschedule only if it is not stopped
-            if ( !stopped )
-            {
+            if (!stopped) {
                 schedule();
             }
         }
 
-        private UnderlyingStorageException constructCombinedFailure()
-        {
-            UnderlyingStorageException combined = new UnderlyingStorageException( "Error performing check point" );
-            for ( int i = 0; i < consecutiveFailures; i++ )
-            {
-                combined.addSuppressed( failures[i] );
+        private UnderlyingStorageException constructCombinedFailure() {
+            UnderlyingStorageException combined = new UnderlyingStorageException("Error performing check point");
+            for (int i = 0; i < consecutiveFailures; i++) {
+                combined.addSuppressed(failures[i]);
             }
             return combined;
         }
@@ -112,9 +97,12 @@ public class CheckPointScheduler extends LifecycleAdapter
     private volatile boolean checkPointing;
     private final BooleanSupplier checkPointingCondition = () -> !checkPointing;
 
-    public CheckPointScheduler( CheckPointer checkPointer, JobScheduler scheduler, long recurringPeriodMillis,
-            Health health, String databaseName )
-    {
+    public CheckPointScheduler(
+            CheckPointer checkPointer,
+            JobScheduler scheduler,
+            long recurringPeriodMillis,
+            Health health,
+            String databaseName) {
         this.checkPointer = checkPointer;
         this.scheduler = scheduler;
         this.recurringPeriodMillis = recurringPeriodMillis;
@@ -123,29 +111,29 @@ public class CheckPointScheduler extends LifecycleAdapter
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         schedule();
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         stopped = true;
-        if ( handle != null )
-        {
+        if (handle != null) {
             handle.cancel();
         }
         waitOngoingCheckpointCompletion();
     }
 
-    private void waitOngoingCheckpointCompletion()
-    {
-        Predicates.awaitForever( checkPointingCondition, 100, MILLISECONDS );
+    private void waitOngoingCheckpointCompletion() {
+        Predicates.awaitForever(checkPointingCondition, 100, MILLISECONDS);
     }
 
-    private void schedule()
-    {
-        handle = scheduler.schedule( Group.CHECKPOINT, systemJob( databaseName, "Scheduled checkpoint" ), job, recurringPeriodMillis, MILLISECONDS );
+    private void schedule() {
+        handle = scheduler.schedule(
+                Group.CHECKPOINT,
+                systemJob(databaseName, "Scheduled checkpoint"),
+                job,
+                recurringPeriodMillis,
+                MILLISECONDS);
     }
 }

@@ -19,38 +19,33 @@
  */
 package org.neo4j.internal.collector;
 
-import org.apache.commons.lang3.mutable.MutableInt;
-
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 /**
  * Implementation of {@link RecentBuffer} using {@link ConcurrentLinkedQueue}.
  */
-public class ConcurrentLinkedQueueRecentBuffer<T> implements RecentBuffer<T>
-{
+public class ConcurrentLinkedQueueRecentBuffer<T> implements RecentBuffer<T> {
     private final ConcurrentLinkedQueue<T> queue;
     private final int maxSize;
     private final AtomicInteger size;
 
-    public ConcurrentLinkedQueueRecentBuffer( int maxSize )
-    {
+    public ConcurrentLinkedQueueRecentBuffer(int maxSize) {
         this.maxSize = maxSize;
         queue = new ConcurrentLinkedQueue<>();
-        size = new AtomicInteger( 0 );
+        size = new AtomicInteger(0);
     }
 
     /* ---- many producers ---- */
 
     @Override
-    public void produce( T t )
-    {
-        queue.add( t );
+    public void produce(T t) {
+        queue.add(t);
         int newSize = size.incrementAndGet();
-        if ( newSize > maxSize )
-        {
+        if (newSize > maxSize) {
             queue.poll();
             size.decrementAndGet();
         }
@@ -59,29 +54,23 @@ public class ConcurrentLinkedQueueRecentBuffer<T> implements RecentBuffer<T>
     /* ---- single consumer ---- */
 
     @Override
-    public void clearIf( Predicate<T> predicate )
-    {
-        var removeCount = new MutableInt( 0 );
-        queue.removeIf( q ->
-                        {
-                            if ( predicate.test( q ) )
-                            {
-                                removeCount.increment();
-                                return true;
-                            }
-                            else
-                            {
-                                return false;
-                            }
-                        } );
+    public void clearIf(Predicate<T> predicate) {
+        var removeCount = new MutableInt(0);
+        queue.removeIf(q -> {
+            if (predicate.test(q)) {
+                removeCount.increment();
+                return true;
+            } else {
+                return false;
+            }
+        });
         // Might go out of sync with queue here, but should be minor slippage.
         // Will not accumulate leaks either, but reset on every clear.
-        size.addAndGet( -removeCount.intValue() );
+        size.addAndGet(-removeCount.intValue());
     }
 
     @Override
-    public void foreach( Consumer<T> consumer )
-    {
-        queue.forEach( consumer );
+    public void foreach(Consumer<T> consumer) {
+        queue.forEach(consumer);
     }
 }

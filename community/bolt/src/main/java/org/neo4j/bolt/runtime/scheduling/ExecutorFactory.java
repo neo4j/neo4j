@@ -23,7 +23,12 @@ import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
-public interface ExecutorFactory
-{
-    ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, boolean startCoreThreads, ThreadFactory threadFactory );
+public interface ExecutorFactory {
+    ExecutorService create(
+            int corePoolSize,
+            int maxPoolSize,
+            Duration keepAlive,
+            int queueSize,
+            boolean startCoreThreads,
+            ThreadFactory threadFactory);
 }

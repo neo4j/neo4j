@@ -19,22 +19,6 @@
  */
 package org.neo4j.cypher.operations;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.cypher.internal.runtime.DbAccess;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.virtual.PathReference;
-import org.neo4j.values.virtual.VirtualNodeValue;
-import org.neo4j.values.virtual.VirtualRelationshipValue;
-import org.neo4j.values.virtual.VirtualValues;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,219 +29,209 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-class PathValueBuilderTest
-{
-    private static class RelatedTo
-    {
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
+import org.neo4j.cypher.internal.runtime.DbAccess;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.PathReference;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
+import org.neo4j.values.virtual.VirtualValues;
+
+class PathValueBuilderTest {
+    private static class RelatedTo {
         private final VirtualNodeValue start;
         private final VirtualNodeValue end;
 
-        private RelatedTo( VirtualNodeValue start, VirtualNodeValue end )
-        {
+        private RelatedTo(VirtualNodeValue start, VirtualNodeValue end) {
             this.start = start;
             this.end = end;
         }
     }
+
     private Map<Long, RelatedTo> relations = new HashMap<>();
 
     @BeforeEach
-    void setup()
-    {
+    void setup() {
         relations.clear();
     }
 
     @Test
-    void shouldComplainOnEmptyPath()
-    {
-        assertThrows( IllegalArgumentException.class,
-                () -> new PathValueBuilder( mock( DbAccess.class ), mock( RelationshipScanCursor.class ) ).build() );
+    void shouldComplainOnEmptyPath() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new PathValueBuilder(mock(DbAccess.class), mock(RelationshipScanCursor.class)).build());
     }
 
     @Test
-    void shouldHandleSingleNode()
-    {
+    void shouldHandleSingleNode() {
         // Given
-        VirtualNodeValue node = node( 42 );
-        PathValueBuilder builder = builder( node );
+        VirtualNodeValue node = node(42);
+        PathValueBuilder builder = builder(node);
 
         // When
-        builder.addNode( node );
+        builder.addNode(node);
 
         // Then
-        assertEquals( path( node ), builder.build() );
+        assertEquals(path(node), builder.build());
     }
 
     @Test
-    void shouldHandleLongerPath()
-    {
+    void shouldHandleLongerPath() {
         // Given  (n1)<--(n2)-->(n3)
-        VirtualNodeValue n1 = node( 42 );
-        VirtualNodeValue n2 = node( 43 );
-        VirtualNodeValue n3 = node( 44 );
-        VirtualRelationshipValue r1 = relationship( 1337, n2, n1 );
-        VirtualRelationshipValue r2 = relationship( 1338, n2, n3 );
-        PathValueBuilder builder = builder( n1, n2, n3, r1, r2 );
+        VirtualNodeValue n1 = node(42);
+        VirtualNodeValue n2 = node(43);
+        VirtualNodeValue n3 = node(44);
+        VirtualRelationshipValue r1 = relationship(1337, n2, n1);
+        VirtualRelationshipValue r2 = relationship(1338, n2, n3);
+        PathValueBuilder builder = builder(n1, n2, n3, r1, r2);
 
         // When (n1)<--(n2)--(n3)
-        builder.addNode( n1 );
-        builder.addIncoming( r1 );
-        builder.addUndirected( r2 );
+        builder.addNode(n1);
+        builder.addIncoming(r1);
+        builder.addUndirected(r2);
 
         // Then
-        assertEquals( path( n1, r1, n2, r2, n3 ), builder.build() );
+        assertEquals(path(n1, r1, n2, r2, n3), builder.build());
     }
 
     @Test
-    void shouldHandleEmptyMultiRel()
-    {
+    void shouldHandleEmptyMultiRel() {
         // Given  (n1)<--(n2)-->(n3)
-        VirtualNodeValue n1 = node( 42 );
-        PathValueBuilder builder = builder( n1 );
+        VirtualNodeValue n1 = node(42);
+        PathValueBuilder builder = builder(n1);
 
         // When (n1)<--(n2)--(n3)
-        builder.addNode( n1 );
-        builder.addMultipleUndirected( EMPTY_LIST );
+        builder.addNode(n1);
+        builder.addMultipleUndirected(EMPTY_LIST);
 
         // Then
-        assertEquals( path( n1 ), builder.build() );
+        assertEquals(path(n1), builder.build());
     }
 
     @Test
-    void shouldHandleLongerPathWithMultiRel()
-    {
+    void shouldHandleLongerPathWithMultiRel() {
         // Given  (n1)<--(n2)-->(n3)
-        VirtualNodeValue n1 = node( 42 );
-        VirtualNodeValue n2 = node( 43 );
-        VirtualNodeValue n3 = node( 44 );
-        VirtualRelationshipValue r1 = relationship( 1337, n2, n1 );
-        VirtualRelationshipValue r2 = relationship( 1338, n2, n3 );
-        PathValueBuilder builder = builder( n1, n2, n3, r1, r2 );
+        VirtualNodeValue n1 = node(42);
+        VirtualNodeValue n2 = node(43);
+        VirtualNodeValue n3 = node(44);
+        VirtualRelationshipValue r1 = relationship(1337, n2, n1);
+        VirtualRelationshipValue r2 = relationship(1338, n2, n3);
+        PathValueBuilder builder = builder(n1, n2, n3, r1, r2);
 
         // When (n1)<--(n2)--(n3)
-        builder.addNode( n1 );
-        builder.addMultipleUndirected( list( r1, r2 ) );
+        builder.addNode(n1);
+        builder.addMultipleUndirected(list(r1, r2));
 
         // Then
-        assertEquals( path( n1, r1, n2, r2, n3 ), builder.build() );
+        assertEquals(path(n1, r1, n2, r2, n3), builder.build());
     }
 
     @Test
-    void shouldHandleNoValue()
-    {
+    void shouldHandleNoValue() {
         // Given  (n1)<--(n2)-->(n3)
-        VirtualNodeValue node = node( 42 );
-        VirtualRelationshipValue relationship = relationship( 1337, node( 43 ), node );
-        PathValueBuilder builder = builder( node, relationship );
+        VirtualNodeValue node = node(42);
+        VirtualRelationshipValue relationship = relationship(1337, node(43), node);
+        PathValueBuilder builder = builder(node, relationship);
 
         // When (n1)<--(n2)--(n3)
-        builder.addNode( node );
-        builder.addIncoming( relationship );
-        builder.addUndirected( NO_VALUE );
+        builder.addNode(node);
+        builder.addIncoming(relationship);
+        builder.addUndirected(NO_VALUE);
 
         // Then
-        assertEquals( NO_VALUE, builder.build() );
+        assertEquals(NO_VALUE, builder.build());
     }
 
     @Test
-    void shouldHandleNoValueInMultiRel()
-    {
+    void shouldHandleNoValueInMultiRel() {
         // Given  (n1)<--(n2)-->(n3)
-        VirtualNodeValue node1 = node( 42 );
-        VirtualNodeValue node2 = node( 43 );
-        VirtualNodeValue node3 = node( 44 );
-        VirtualRelationshipValue relationship1 = relationship( 1337, node2, node1 );
-        VirtualRelationshipValue relationship2 = relationship( 1338, node2, node3 );
-        PathValueBuilder builder =
-                builder( node1, node2, node3, relationship1, relationship2 );
+        VirtualNodeValue node1 = node(42);
+        VirtualNodeValue node2 = node(43);
+        VirtualNodeValue node3 = node(44);
+        VirtualRelationshipValue relationship1 = relationship(1337, node2, node1);
+        VirtualRelationshipValue relationship2 = relationship(1338, node2, node3);
+        PathValueBuilder builder = builder(node1, node2, node3, relationship1, relationship2);
 
         // When (n1)<--(n2)--(n3)
-        builder.addNode( node1 );
-        builder.addMultipleUndirected( list( relationship1, relationship2, NO_VALUE ) );
+        builder.addNode(node1);
+        builder.addMultipleUndirected(list(relationship1, relationship2, NO_VALUE));
 
         // Then
-        assertEquals( NO_VALUE, builder.build() );
+        assertEquals(NO_VALUE, builder.build());
     }
 
     @Test
-    void shouldHandleLongerPathWithMultiRelWhereEndNodeIsKnown()
-    {
+    void shouldHandleLongerPathWithMultiRelWhereEndNodeIsKnown() {
         // Given  (n1)<--(n2)-->(n3)
-        VirtualNodeValue n1 = node( 42 );
-        VirtualNodeValue n2 = node( 43 );
-        VirtualNodeValue n3 = node( 44 );
-        VirtualRelationshipValue r1 = relationship( 1337, n2, n1 );
-        VirtualRelationshipValue r2 = relationship( 1338, n2, n3 );
-        PathValueBuilder builder = builder( n1, n2, n3, r1, r2 );
+        VirtualNodeValue n1 = node(42);
+        VirtualNodeValue n2 = node(43);
+        VirtualNodeValue n3 = node(44);
+        VirtualRelationshipValue r1 = relationship(1337, n2, n1);
+        VirtualRelationshipValue r2 = relationship(1338, n2, n3);
+        PathValueBuilder builder = builder(n1, n2, n3, r1, r2);
 
         // When (n1)<--(n2)--(n3)
-        builder.addNode( n1 );
-        builder.addMultipleUndirected( list( r1, r2 ), n3 );
+        builder.addNode(n1);
+        builder.addMultipleUndirected(list(r1, r2), n3);
 
         // Then
-        assertEquals( path( n1, r1, n2, r2, n3 ), builder.build() );
+        assertEquals(path(n1, r1, n2, r2, n3), builder.build());
     }
 
-    private VirtualNodeValue node( long id )
-    {
-        return VirtualValues.node( id );
+    private VirtualNodeValue node(long id) {
+        return VirtualValues.node(id);
     }
 
-    private VirtualRelationshipValue relationship( long id, VirtualNodeValue from, VirtualNodeValue to )
-    {
-        relations.put( id, new RelatedTo( from, to ) );
-        return VirtualValues.relationship( id );
+    private VirtualRelationshipValue relationship(long id, VirtualNodeValue from, VirtualNodeValue to) {
+        relations.put(id, new RelatedTo(from, to));
+        return VirtualValues.relationship(id);
     }
 
-    private PathReference path( AnyValue... nodeAndRel )
-    {
+    private PathReference path(AnyValue... nodeAndRel) {
         VirtualNodeValue[] nodes = new VirtualNodeValue[nodeAndRel.length / 2 + 1];
         VirtualRelationshipValue[] rels = new VirtualRelationshipValue[nodeAndRel.length / 2];
-        for ( int i = 0; i < nodeAndRel.length; i++ )
-        {
-            if ( i % 2 == 0 )
-            {
+        for (int i = 0; i < nodeAndRel.length; i++) {
+            if (i % 2 == 0) {
                 nodes[i / 2] = (VirtualNodeValue) nodeAndRel[i];
-            }
-            else
-            {
+            } else {
                 rels[i / 2] = (VirtualRelationshipValue) nodeAndRel[i];
             }
         }
-        return VirtualValues.pathReference( nodes, rels );
+        return VirtualValues.pathReference(nodes, rels);
     }
 
-    private PathValueBuilder builder( AnyValue... values )
-    {
-        DbAccess dbAccess = mock( DbAccess.class );
-        RelationshipScanCursor cursors = mock( RelationshipScanCursor.class );
-        for ( AnyValue value : values )
-        {
-            if ( value instanceof VirtualNodeValue nodeValue )
-            {
-                when( dbAccess.nodeById( nodeValue.id() ) ).thenReturn( nodeValue );
-            }
-            else if ( value instanceof VirtualRelationshipValue relationshipValue )
-            {
-                when( dbAccess.relationshipById( relationshipValue.id() ) ).thenReturn( relationshipValue );
-            }
-            else
-            {
-                throw new AssertionError( "invalid input" );
+    private PathValueBuilder builder(AnyValue... values) {
+        DbAccess dbAccess = mock(DbAccess.class);
+        RelationshipScanCursor cursors = mock(RelationshipScanCursor.class);
+        for (AnyValue value : values) {
+            if (value instanceof VirtualNodeValue nodeValue) {
+                when(dbAccess.nodeById(nodeValue.id())).thenReturn(nodeValue);
+            } else if (value instanceof VirtualRelationshipValue relationshipValue) {
+                when(dbAccess.relationshipById(relationshipValue.id())).thenReturn(relationshipValue);
+            } else {
+                throw new AssertionError("invalid input");
             }
 
-            Mockito.doAnswer( (Answer<Void>) invocationOnMock -> {
-                long id = invocationOnMock.getArgument( 0 );
-                RelationshipScanCursor cursor = invocationOnMock.getArgument( 1 );
-                RelatedTo relatedTo = relations.get( id );
-                if ( relatedTo != null )
-                {
-                    when( cursor.next() ).thenReturn( true );
-                    when( cursor.sourceNodeReference() ).thenReturn( relatedTo.start.id() );
-                    when( cursor.targetNodeReference() ).thenReturn( relatedTo.end.id() );
-                }
-                return null;
-            } ).when( dbAccess ).singleRelationship( anyLong(), any( RelationshipScanCursor.class ) );
+            Mockito.doAnswer((Answer<Void>) invocationOnMock -> {
+                        long id = invocationOnMock.getArgument(0);
+                        RelationshipScanCursor cursor = invocationOnMock.getArgument(1);
+                        RelatedTo relatedTo = relations.get(id);
+                        if (relatedTo != null) {
+                            when(cursor.next()).thenReturn(true);
+                            when(cursor.sourceNodeReference()).thenReturn(relatedTo.start.id());
+                            when(cursor.targetNodeReference()).thenReturn(relatedTo.end.id());
+                        }
+                        return null;
+                    })
+                    .when(dbAccess)
+                    .singleRelationship(anyLong(), any(RelationshipScanCursor.class));
         }
-        return new PathValueBuilder( dbAccess, cursors );
+        return new PathValueBuilder(dbAccess, cursors);
     }
 }

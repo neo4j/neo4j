@@ -40,16 +40,21 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 
 case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerConfiguration)
-  extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
+    extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
 
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                                selectivityCalculator: SelectivityCalculator,
-                                evaluator: ExpressionEvaluator): CardinalityModel = {
+  override def cardinalityModel(
+    queryGraphCardinalityModel: QueryGraphCardinalityModel,
+    selectivityCalculator: SelectivityCalculator,
+    evaluator: ExpressionEvaluator
+  ): CardinalityModel = {
     new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, selectivityCalculator, evaluator)
   }
 
-  //noinspection ScalaUnnecessaryParentheses
-  override def costModel(executionModel: ExecutionModel): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost] = {
+  // noinspection ScalaUnnecessaryParentheses
+  override def costModel(executionModel: ExecutionModel): PartialFunction[
+    (LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor),
+    Cost
+  ] = {
     case (plan, input, semanticTable, cardinalities, providedOrders, monitor) =>
       CardinalityCostModel(executionModel).costFor(plan, input, semanticTable, cardinalities, providedOrders, monitor)
   }

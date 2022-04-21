@@ -19,36 +19,32 @@
  */
 package org.neo4j.tooling.procedure.compilerutils;
 
-import org.junit.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CustomNameExtractorTest
-{
+import org.junit.Test;
+
+public class CustomNameExtractorTest {
 
     @Test
-    public void favours_name_over_value()
-    {
-        assertThat(CustomNameExtractor.getName( () -> "name", () -> "value" )).contains( "name" );
-        assertThat(CustomNameExtractor.getName( () -> "name", () -> "" )).contains( "name" );
-        assertThat(CustomNameExtractor.getName( () -> "name", () -> "  " )).contains( "name" );
-        assertThat(CustomNameExtractor.getName( () -> "   name  ", () -> "  " )).contains( "name" );
+    public void favours_name_over_value() {
+        assertThat(CustomNameExtractor.getName(() -> "name", () -> "value")).contains("name");
+        assertThat(CustomNameExtractor.getName(() -> "name", () -> "")).contains("name");
+        assertThat(CustomNameExtractor.getName(() -> "name", () -> "  ")).contains("name");
+        assertThat(CustomNameExtractor.getName(() -> "   name  ", () -> "  ")).contains("name");
     }
 
     @Test
-    public void returns_value_if_trimmed_name_is_empty()
-    {
-        assertThat(CustomNameExtractor.getName( () -> "", () -> "value" )).contains( "value" );
-        assertThat(CustomNameExtractor.getName( () -> "   ", () -> "value" )).contains( "value" );
-        assertThat(CustomNameExtractor.getName( () -> "   ", () -> "   value  " )).contains( "value" );
+    public void returns_value_if_trimmed_name_is_empty() {
+        assertThat(CustomNameExtractor.getName(() -> "", () -> "value")).contains("value");
+        assertThat(CustomNameExtractor.getName(() -> "   ", () -> "value")).contains("value");
+        assertThat(CustomNameExtractor.getName(() -> "   ", () -> "   value  ")).contains("value");
     }
 
     @Test
-    public void returns_nothing_if_none_defined()
-    {
-        assertThat(CustomNameExtractor.getName( () -> "", () -> "" )).isEmpty();
-        assertThat(CustomNameExtractor.getName( () -> "   ", () -> "" )).isEmpty();
-        assertThat(CustomNameExtractor.getName( () -> "", () -> "   " )).isEmpty();
-        assertThat(CustomNameExtractor.getName( () -> "   ", () -> "   " )).isEmpty();
+    public void returns_nothing_if_none_defined() {
+        assertThat(CustomNameExtractor.getName(() -> "", () -> "")).isEmpty();
+        assertThat(CustomNameExtractor.getName(() -> "   ", () -> "")).isEmpty();
+        assertThat(CustomNameExtractor.getName(() -> "", () -> "   ")).isEmpty();
+        assertThat(CustomNameExtractor.getName(() -> "   ", () -> "   ")).isEmpty();
     }
 }

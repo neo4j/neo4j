@@ -22,69 +22,55 @@ package org.neo4j.internal.helpers;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class NamedThreadFactory implements ThreadFactory
-{
-    public interface Monitor
-    {
-        void threadCreated( String threadNamePrefix );
+public class NamedThreadFactory implements ThreadFactory {
+    public interface Monitor {
+        void threadCreated(String threadNamePrefix);
 
-        void threadFinished( String threadNamePrefix );
+        void threadFinished(String threadNamePrefix);
     }
 
-    public static final Monitor NO_OP_MONITOR = new Monitor()
-    {
+    public static final Monitor NO_OP_MONITOR = new Monitor() {
         @Override
-        public void threadCreated( String threadNamePrefix )
-        {
-        }
+        public void threadCreated(String threadNamePrefix) {}
 
         @Override
-        public void threadFinished( String threadNamePrefix )
-        {
-        }
+        public void threadFinished(String threadNamePrefix) {}
     };
 
     private static final int DEFAULT_THREAD_PRIORITY = Thread.NORM_PRIORITY;
 
     private final ThreadGroup group;
-    private final AtomicInteger threadCounter = new AtomicInteger( 1 );
+    private final AtomicInteger threadCounter = new AtomicInteger(1);
     private String threadNamePrefix;
     private final int priority;
     private final boolean daemon;
     private final Monitor monitor;
 
-    public NamedThreadFactory( String threadNamePrefix )
-    {
-        this( threadNamePrefix, DEFAULT_THREAD_PRIORITY );
+    public NamedThreadFactory(String threadNamePrefix) {
+        this(threadNamePrefix, DEFAULT_THREAD_PRIORITY);
     }
 
-    public NamedThreadFactory( String threadNamePrefix, int priority )
-    {
-        this( threadNamePrefix, priority, NO_OP_MONITOR );
+    public NamedThreadFactory(String threadNamePrefix, int priority) {
+        this(threadNamePrefix, priority, NO_OP_MONITOR);
     }
 
-    public NamedThreadFactory( String threadNamePrefix, Monitor monitor )
-    {
-        this( threadNamePrefix, DEFAULT_THREAD_PRIORITY, monitor );
+    public NamedThreadFactory(String threadNamePrefix, Monitor monitor) {
+        this(threadNamePrefix, DEFAULT_THREAD_PRIORITY, monitor);
     }
 
-    public NamedThreadFactory( String threadNamePrefix, int priority, Monitor monitor )
-    {
-        this( threadNamePrefix, priority, monitor, false );
+    public NamedThreadFactory(String threadNamePrefix, int priority, Monitor monitor) {
+        this(threadNamePrefix, priority, monitor, false);
     }
 
-    public NamedThreadFactory( String threadNamePrefix, int priority, boolean daemon )
-    {
-        this( threadNamePrefix, priority, NO_OP_MONITOR, daemon );
+    public NamedThreadFactory(String threadNamePrefix, int priority, boolean daemon) {
+        this(threadNamePrefix, priority, NO_OP_MONITOR, daemon);
     }
 
-    public NamedThreadFactory( String threadNamePrefix, boolean daemon )
-    {
-        this( threadNamePrefix, DEFAULT_THREAD_PRIORITY, NO_OP_MONITOR, daemon );
+    public NamedThreadFactory(String threadNamePrefix, boolean daemon) {
+        this(threadNamePrefix, DEFAULT_THREAD_PRIORITY, NO_OP_MONITOR, daemon);
     }
 
-    public NamedThreadFactory( String threadNamePrefix, int priority, Monitor monitor, boolean daemon )
-    {
+    public NamedThreadFactory(String threadNamePrefix, int priority, Monitor monitor, boolean daemon) {
         this.threadNamePrefix = threadNamePrefix;
         group = Thread.currentThread().getThreadGroup();
         this.priority = priority;
@@ -93,49 +79,39 @@ public class NamedThreadFactory implements ThreadFactory
     }
 
     @Override
-    public Thread newThread( Runnable runnable )
-    {
+    public Thread newThread(Runnable runnable) {
         int id = threadCounter.getAndIncrement();
 
-        Thread result = new Thread( group, runnable, threadNamePrefix + "-" + id )
-        {
+        Thread result = new Thread(group, runnable, threadNamePrefix + "-" + id) {
             @Override
-            public void run()
-            {
-                try
-                {
+            public void run() {
+                try {
                     super.run();
-                }
-                finally
-                {
-                    monitor.threadFinished( threadNamePrefix );
+                } finally {
+                    monitor.threadFinished(threadNamePrefix);
                 }
             }
         };
 
-        result.setDaemon( daemon );
-        result.setPriority( priority );
-        monitor.threadCreated( threadNamePrefix );
+        result.setDaemon(daemon);
+        result.setPriority(priority);
+        monitor.threadCreated(threadNamePrefix);
         return result;
     }
 
-    public static NamedThreadFactory named( String threadNamePrefix )
-    {
-        return new NamedThreadFactory( threadNamePrefix );
+    public static NamedThreadFactory named(String threadNamePrefix) {
+        return new NamedThreadFactory(threadNamePrefix);
     }
 
-    public static NamedThreadFactory named( String threadNamePrefix, int priority )
-    {
-        return new NamedThreadFactory( threadNamePrefix, priority );
+    public static NamedThreadFactory named(String threadNamePrefix, int priority) {
+        return new NamedThreadFactory(threadNamePrefix, priority);
     }
 
-    public static NamedThreadFactory daemon( String threadNamePrefix )
-    {
-        return daemon( threadNamePrefix, NO_OP_MONITOR );
+    public static NamedThreadFactory daemon(String threadNamePrefix) {
+        return daemon(threadNamePrefix, NO_OP_MONITOR);
     }
 
-    public static NamedThreadFactory daemon( String threadNamePrefix, Monitor monitor )
-    {
-        return new NamedThreadFactory( threadNamePrefix, DEFAULT_THREAD_PRIORITY, monitor, true );
+    public static NamedThreadFactory daemon(String threadNamePrefix, Monitor monitor) {
+        return new NamedThreadFactory(threadNamePrefix, DEFAULT_THREAD_PRIORITY, monitor, true);
     }
 }

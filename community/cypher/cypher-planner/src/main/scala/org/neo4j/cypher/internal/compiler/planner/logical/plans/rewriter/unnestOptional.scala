@@ -39,7 +39,6 @@ case object unnestOptional extends Rewriter {
 
   override def apply(input: AnyRef) = if (isSafe(input)) instance.apply(input) else input
 
-
   /*
    * It is not safe to unnest an optional expand with when we have
    * a merge relationship, since it must be able to read its own
@@ -51,17 +50,26 @@ case object unnestOptional extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
 
-    case apply:AntiConditionalApply => apply
+    case apply: AntiConditionalApply => apply
 
-    case apply@Apply(lhs,
-    Optional(
-    e@Expand(_: Argument, _, _, _, _, _, _), _), _) =>
+    case apply @ Apply(
+        lhs,
+        Optional(
+          e @ Expand(_: Argument, _, _, _, _, _, _),
+          _
+        ),
+        _
+      ) =>
       optionalExpand(e, lhs)(None)(SameId(apply.id))
 
-    case apply@Apply(lhs,
-    Optional(
-    Selection(predicate,
-    e@Expand(_: Argument, _, _, _, _, _, _)), _), _) =>
+    case apply @ Apply(
+        lhs,
+        Optional(
+          Selection(predicate, e @ Expand(_: Argument, _, _, _, _, _, _)),
+          _
+        ),
+        _
+      ) =>
       optionalExpand(e, lhs)(Some(predicate))(SameId(apply.id))
   })
 

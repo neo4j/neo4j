@@ -19,77 +19,66 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.util.Objects;
-
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class SchemaRecord extends PrimitiveRecord
-{
-    public static final long SHALLOW_SIZE = shallowSizeOfInstance( SchemaRecord.class );
+import java.util.Objects;
+
+public class SchemaRecord extends PrimitiveRecord {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance(SchemaRecord.class);
     public static final byte COMMAND_HAS_NO_SCHEMA_RULE = 0;
     public static final byte COMMAND_HAS_SCHEMA_RULE = 1;
     public static final byte SCHEMA_FLAG_IS_CONSTRAINT = 1;
 
     private boolean constraint;
 
-    public SchemaRecord( long id )
-    {
-        super( id );
+    public SchemaRecord(long id) {
+        super(id);
     }
 
-    public SchemaRecord( SchemaRecord other )
-    {
-        super( other );
+    public SchemaRecord(SchemaRecord other) {
+        super(other);
         this.constraint = other.constraint;
     }
 
     @Override
-    public void setIdTo( PropertyRecord property )
-    {
-        property.setSchemaRuleId( getId() );
+    public void setIdTo(PropertyRecord property) {
+        property.setSchemaRuleId(getId());
     }
 
     @Override
-    public SchemaRecord initialize( boolean inUse, long nextProp )
-    {
-        super.initialize( inUse, nextProp );
+    public SchemaRecord initialize(boolean inUse, long nextProp) {
+        super.initialize(inUse, nextProp);
         return this;
     }
 
     @Override
-    public SchemaRecord copy()
-    {
-        return new SchemaRecord( this );
+    public SchemaRecord copy() {
+        return new SchemaRecord(this);
     }
 
     @Override
-    public String toString()
-    {
-        return "SchemaRecord[" + getId() + ",used=" + inUse() + ",created=" + isCreated() + ",nextProp=" + nextProp + ",constraint=" + constraint
-               + ",secondaryUnitId" + getSecondaryUnitId() + ",fixedReferences=" + isUseFixedReferences() + "]";
+    public String toString() {
+        return "SchemaRecord[" + getId() + ",used=" + inUse() + ",created=" + isCreated() + ",nextProp=" + nextProp
+                + ",constraint=" + constraint + ",secondaryUnitId" + getSecondaryUnitId() + ",fixedReferences="
+                + isUseFixedReferences() + "]";
     }
 
-    public boolean isConstraint()
-    {
+    public boolean isConstraint() {
         return constraint;
     }
 
-    public void setConstraint( boolean constraint )
-    {
+    public void setConstraint(boolean constraint) {
         this.constraint = constraint;
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( super.hashCode(), constraint );
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), constraint);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( !super.equals( obj ) )
-        {
+    public boolean equals(Object obj) {
+        if (!super.equals(obj)) {
             return false;
         }
         SchemaRecord other = (SchemaRecord) obj;

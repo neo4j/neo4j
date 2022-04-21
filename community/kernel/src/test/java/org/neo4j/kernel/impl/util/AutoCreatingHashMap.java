@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.function.Factory;
 
 /**
@@ -89,43 +88,37 @@ import org.neo4j.function.Factory;
  * An enormous improvement in readability. The only reflection used is in the {@link #values()} {@link Factory},
  * however that's just a convenience as well. Any {@link Factory} can be supplied instead.
  */
-public class AutoCreatingHashMap<K,V> extends HashMap<K,V>
-{
+public class AutoCreatingHashMap<K, V> extends HashMap<K, V> {
     private final Factory<V> valueCreator;
 
-    public AutoCreatingHashMap( Factory<V> valueCreator )
-    {
+    public AutoCreatingHashMap(Factory<V> valueCreator) {
         super();
         this.valueCreator = valueCreator;
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Override
-    public V get( Object key )
-    {
-        if ( !super.containsKey( key ) )
-        {
+    public V get(Object key) {
+        if (!super.containsKey(key)) {
             // Since this is just a test class, we can force all users of it to call get with K instances.
-            put( (K) key, valueCreator.newInstance() );
+            put((K) key, valueCreator.newInstance());
         }
-        return super.get( key );
+        return super.get(key);
     }
 
     /**
      * @return a {@link Factory} that via reflection instantiates objects of the supplied {@code valueType},
      * assuming zero-argument constructor.
      */
-    public static <V> Factory<V> values( final Class<V> valueType )
-    {
-        return () ->
-        {
-            try
-            {
+    public static <V> Factory<V> values(final Class<V> valueType) {
+        return () -> {
+            try {
                 return valueType.getDeclaredConstructor().newInstance();
-            }
-            catch ( InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e )
-            {
-                throw new RuntimeException( e );
+            } catch (InstantiationException
+                    | IllegalAccessException
+                    | NoSuchMethodException
+                    | InvocationTargetException e) {
+                throw new RuntimeException(e);
             }
         };
     }
@@ -134,18 +127,15 @@ public class AutoCreatingHashMap<K,V> extends HashMap<K,V>
      * @return a {@link Factory} that creates {@link AutoCreatingHashMap} instances as values, and where the
      * created maps have the supplied {@code nested} {@link Factory} as value factory.
      */
-    public static <K,V> Factory<Map<K,V>> nested( final Factory<V> nested )
-    {
-        return () -> new AutoCreatingHashMap<>( nested );
+    public static <K, V> Factory<Map<K, V>> nested(final Factory<V> nested) {
+        return () -> new AutoCreatingHashMap<>(nested);
     }
 
-    public static <V> Factory<V> dontCreate()
-    {
+    public static <V> Factory<V> dontCreate() {
         return () -> null;
     }
 
-    public static <V> Factory<Set<V>> valuesOfTypeHashSet()
-    {
+    public static <V> Factory<Set<V>> valuesOfTypeHashSet() {
         return HashSet::new;
     }
 }

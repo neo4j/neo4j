@@ -32,7 +32,8 @@ class RenderSummaryTest extends CypherFunSuite {
   test("single node is represented nicely") {
     val arguments = Seq(
       Rows(42),
-      DbHits(33))
+      DbHits(33)
+    )
 
     val plan = PlanDescriptionImpl(id, "NAME", NoChildren, arguments, Set())
 
@@ -42,7 +43,8 @@ class RenderSummaryTest extends CypherFunSuite {
   test("single node no db hits") {
     val arguments = Seq(
       Rows(42),
-      DbHits(0))
+      DbHits(0)
+    )
 
     val plan = PlanDescriptionImpl(id, "NAME", NoChildren, arguments, Set())
 
@@ -52,11 +54,13 @@ class RenderSummaryTest extends CypherFunSuite {
   test("adds together two db hits") {
     val arguments1 = Seq(
       Rows(42),
-      DbHits(33))
+      DbHits(33)
+    )
 
     val arguments2 = Seq(
       Rows(42),
-      DbHits(22))
+      DbHits(22)
+    )
 
     val child = PlanDescriptionImpl(Id(0), "NAME1", NoChildren, arguments1, Set())
     val parent = PlanDescriptionImpl(Id(1), "NAME2", SingleChild(child), arguments2, Set())
@@ -67,10 +71,12 @@ class RenderSummaryTest extends CypherFunSuite {
   test("one node with db hits, one without") {
     val arguments1 = Seq(
       Rows(42),
-      DbHits(33))
+      DbHits(33)
+    )
 
     val arguments2 = Seq(
-      Rows(42))
+      Rows(42)
+    )
 
     val child = PlanDescriptionImpl(Id(0), "NAME1", NoChildren, arguments1, Set())
     val parent = PlanDescriptionImpl(Id(1), "NAME2", SingleChild(child), arguments2, Set())

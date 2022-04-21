@@ -31,21 +31,38 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 class ImpersonatePrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBase {
-  type impersonatePrivilegeFunc = (List[PrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
 
-  def grantImpersonatePrivilege(q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  type impersonatePrivilegeFunc =
+    (List[PrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
+
+  def grantImpersonatePrivilege(
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(ast.ImpersonateUserAction, r, q)
 
-  def denyImpersonatePrivilege(q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def denyImpersonatePrivilege(
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(ast.ImpersonateUserAction, r, q)
 
-  def revokeGrantImpersonatePrivilege(q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeGrantImpersonatePrivilege(
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(ast.ImpersonateUserAction, r, RevokeGrantType()(pos), q)
 
-  def revokeDenyImpersonatePrivilege(q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeDenyImpersonatePrivilege(
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(ast.ImpersonateUserAction, r, RevokeDenyType()(pos), q)
 
-  def revokeImpersonatePrivilege(q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+  def revokeImpersonatePrivilege(
+    q: List[PrivilegeQualifier],
+    r: Seq[Either[String, Parameter]]
+  ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(ast.ImpersonateUserAction, r, RevokeBothType()(pos), q)
 
   Seq(
@@ -65,18 +82,24 @@ class ImpersonatePrivilegeParserTest extends AdministrationAndSchemaCommandParse
       }
 
       test(s"$verb IMPERSONATE (foo) ON DBMS $preposition role") {
-        assertAst(func(List(ast.UserQualifier(Left("foo"))(pos)), List(Left("role")))(defaultPos), comparePosition = false)
+        assertAst(
+          func(List(ast.UserQualifier(Left("foo"))(pos)), List(Left("role")))(defaultPos),
+          comparePosition = false
+        )
       }
 
       test(s"$verb IMPERSONATE (foo, $$userParam) ON DBMS $preposition role") {
-        val fooColumn:Int = verb.length + " IMPERSONATE (".length
+        val fooColumn: Int = verb.length + " IMPERSONATE (".length
         val useParamColumn: Int = fooColumn + "foo $".length
-        assertAst(func(List(
-          ast.UserQualifier(Left("foo"))(1, fooColumn + 1, fooColumn),
-          ast.UserQualifier(Right(ExplicitParameter("userParam", CTString)(1, useParamColumn + 1, useParamColumn)))
-          (defaultPos)),
-          List(Left("role")))
-        (defaultPos))
+        assertAst(func(
+          List(
+            ast.UserQualifier(Left("foo"))(1, fooColumn + 1, fooColumn),
+            ast.UserQualifier(Right(ExplicitParameter("userParam", CTString)(1, useParamColumn + 1, useParamColumn)))(
+              defaultPos
+            )
+          ),
+          List(Left("role"))
+        )(defaultPos))
       }
   }
 }

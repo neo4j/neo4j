@@ -19,6 +19,17 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +37,6 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.function.Consumer;
-
 import org.neo4j.bolt.runtime.scheduling.ExecutorBoltScheduler;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
@@ -53,28 +57,23 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
-
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-public class ResetFuzzIT
-{
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+public class ResetFuzzIT {
     private static final int TEST_EXECUTION_TIME = 2000;
 
     private final int seed = new Random().nextInt();
-    private final Random rand = new Random( seed );
+    private final Random rand = new Random(seed);
 
-    private final AssertableLogProvider internalLogProvider = new SpiedAssertableLogProvider( ExecutorBoltScheduler.class );
+    private final AssertableLogProvider internalLogProvider =
+            new SpiedAssertableLogProvider(ExecutorBoltScheduler.class);
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
 
     @Inject
     private Neo4jWithSocket server;
+
     private final TransportTestUtil util = new TransportTestUtil();
     private HostnamePort address;
 
@@ -84,118 +83,107 @@ public class ResetFuzzIT
     private static final String LONG_QUERY = "UNWIND range(0, 10000000) AS i CREATE (n:Node {idx: i}) DELETE n";
 
     @BeforeEach
-    public void setup( TestInfo testInfo ) throws IOException
-    {
-        server.setGraphDatabaseFactory( getTestGraphDatabaseFactory() );
-        server.setConfigure( getSettingsFunction() );
-        server.init( testInfo );
+    public void setup(TestInfo testInfo) throws IOException {
+        server.setGraphDatabaseFactory(getTestGraphDatabaseFactory());
+        server.setConfigure(getSettingsFunction());
+        server.init(testInfo);
         address = server.lookupDefaultConnector();
     }
 
     @AfterEach
-    public void tearDown()
-    {
-        userLogProvider.print( System.out );
-        internalLogProvider.print( System.out );
+    public void tearDown() {
+        userLogProvider.print(System.out);
+        internalLogProvider.print(System.out);
     }
 
     @Test
-    public void shouldTerminateAutoCommitQuery() throws Exception
-    {
-        List<Pair<byte[],Integer>> sequences = asList(
-                Pair.of( util.defaultRunAutoCommitTx( SHORT_QUERY_1 ), 2 ),
-                Pair.of( util.defaultRunAutoCommitTxWithoutResult( SHORT_QUERY_2 ), 2 ),
-                Pair.of( util.chunk( BoltV4Messages.run( SHORT_QUERY_3 ) ), 1 )
-        );
+    public void shouldTerminateAutoCommitQuery() throws Exception {
+        List<Pair<byte[], Integer>> sequences = asList(
+                Pair.of(util.defaultRunAutoCommitTx(SHORT_QUERY_1), 2),
+                Pair.of(util.defaultRunAutoCommitTxWithoutResult(SHORT_QUERY_2), 2),
+                Pair.of(util.chunk(BoltV4Messages.run(SHORT_QUERY_3)), 1));
 
-        execute( sequences );
+        execute(sequences);
     }
 
     @Test
-    public void shouldTerminateLongRunningAutoCommitQuery() throws Exception
-    {
+    public void shouldTerminateLongRunningAutoCommitQuery() throws Exception {
         // It takes a while for kernel to notice the tx get killed.
-        List<Pair<byte[],Integer>> sequences = singletonList( Pair.of( util.defaultRunAutoCommitTxWithoutResult( LONG_QUERY ), 2 ) );
-        execute( sequences );
+        List<Pair<byte[], Integer>> sequences =
+                singletonList(Pair.of(util.defaultRunAutoCommitTxWithoutResult(LONG_QUERY), 2));
+        execute(sequences);
     }
 
     @Test
-    public void shouldTerminateQueryInExplicitTransaction() throws Exception
-    {
-        List<Pair<byte[],Integer>> sequences = asList(
-                Pair.of( util.defaultRunExplicitCommitTxAndRollBack( SHORT_QUERY_1 ), 4 ),
-                Pair.of( util.defaultRunExplicitCommitTxAndCommit( SHORT_QUERY_2 ), 4 ),
-                Pair.of( util.chunk( BoltV4Messages.begin(), BoltV4Messages.run( SHORT_QUERY_3 ), BoltV4Messages.pullAll() ), 3 ),
-                Pair.of( util.chunk( BoltV4Messages.begin(), BoltV4Messages.run( SHORT_QUERY_1 ) ), 2 ),
-                Pair.of( util.chunk( BoltV4Messages.begin() ), 1 )
-        );
+    public void shouldTerminateQueryInExplicitTransaction() throws Exception {
+        List<Pair<byte[], Integer>> sequences = asList(
+                Pair.of(util.defaultRunExplicitCommitTxAndRollBack(SHORT_QUERY_1), 4),
+                Pair.of(util.defaultRunExplicitCommitTxAndCommit(SHORT_QUERY_2), 4),
+                Pair.of(
+                        util.chunk(BoltV4Messages.begin(), BoltV4Messages.run(SHORT_QUERY_3), BoltV4Messages.pullAll()),
+                        3),
+                Pair.of(util.chunk(BoltV4Messages.begin(), BoltV4Messages.run(SHORT_QUERY_1)), 2),
+                Pair.of(util.chunk(BoltV4Messages.begin()), 1));
 
-        execute( sequences );
+        execute(sequences);
     }
 
     @Test
-    public void shouldTerminateLongRunningQueryInExplicitTransaction() throws Exception
-    {
-        List<Pair<byte[],Integer>> sequences = singletonList( Pair.of( util.defaultRunExplicitCommitTxAndRollBack( LONG_QUERY ), 4 ) );
-        execute( sequences );
+    public void shouldTerminateLongRunningQueryInExplicitTransaction() throws Exception {
+        List<Pair<byte[], Integer>> sequences =
+                singletonList(Pair.of(util.defaultRunExplicitCommitTxAndRollBack(LONG_QUERY), 4));
+        execute(sequences);
     }
 
-    private void execute( List<Pair<byte[],Integer>> sequences ) throws Exception
-    {
+    private void execute(List<Pair<byte[], Integer>> sequences) throws Exception {
         var connection = connectAndAuthenticate();
         long deadline = System.currentTimeMillis() + TEST_EXECUTION_TIME;
 
         // when
-        while ( System.currentTimeMillis() < deadline )
-        {
-            int sent = dispatchRandomSequenceOfMessages( connection, sequences );
-            assertResetWorks( connection, sent );
+        while (System.currentTimeMillis() < deadline) {
+            int sent = dispatchRandomSequenceOfMessages(connection, sequences);
+            assertResetWorks(connection, sent);
         }
     }
 
-    private void assertResetWorks( TransportConnection connection, int sent ) throws IOException
-    {
-        connection.send( util.defaultReset() );
-        assertThat( connection ).satisfies( util.eventuallyReceives( sent, msgSuccess() ) );
+    private void assertResetWorks(TransportConnection connection, int sent) throws IOException {
+        connection.send(util.defaultReset());
+        assertThat(connection).satisfies(util.eventuallyReceives(sent, msgSuccess()));
     }
 
-    private int dispatchRandomSequenceOfMessages( TransportConnection connection, List<Pair<byte[],Integer>> sequences ) throws IOException
-    {
-        Pair<byte[],Integer> pair = sequences.get( rand.nextInt( sequences.size() ) );
-        connection.send( pair.first() );
+    private int dispatchRandomSequenceOfMessages(TransportConnection connection, List<Pair<byte[], Integer>> sequences)
+            throws IOException {
+        Pair<byte[], Integer> pair = sequences.get(rand.nextInt(sequences.size()));
+        connection.send(pair.first());
         return pair.other();
     }
 
-    private TransportConnection connectAndAuthenticate() throws Exception
-    {
+    private TransportConnection connectAndAuthenticate() throws Exception {
         var connection = new SocketConnection();
 
-        connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
+        connection.connect(address).send(util.defaultAcceptedVersions());
+        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
 
-        connection.send( util.defaultAuth() );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+        connection.send(util.defaultAuth());
+        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
 
         return connection;
     }
 
-    private TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
-    {
+    private TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory() {
         TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
-        factory.setInternalLogProvider( internalLogProvider );
-        factory.setUserLogProvider( userLogProvider );
+        factory.setInternalLogProvider(internalLogProvider);
+        factory.setUserLogProvider(userLogProvider);
         return factory;
     }
 
-    private static Consumer<Map<Setting<?>,Object>> getSettingsFunction()
-    {
+    private static Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
         return settings -> {
-            settings.put( BoltConnector.encryption_level, OPTIONAL );
-            settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
-            settings.put( BoltConnectorInternalSettings.unsupported_thread_pool_queue_size, -1 );
-            settings.put( BoltConnector.thread_pool_min_size, 1 );
-            settings.put( BoltConnector.thread_pool_max_size, 1 );
+            settings.put(BoltConnector.encryption_level, OPTIONAL);
+            settings.put(BoltConnector.listen_address, new SocketAddress("localhost", 0));
+            settings.put(BoltConnectorInternalSettings.unsupported_thread_pool_queue_size, -1);
+            settings.put(BoltConnector.thread_pool_min_size, 1);
+            settings.put(BoltConnector.thread_pool_max_size, 1);
         };
     }
 }
-

@@ -26,23 +26,19 @@ package org.neo4j.kernel.api.impl.index;
  * @see org.apache.lucene.search.IndexSearcher
  * @see org.apache.lucene.search.DocIdSetIterator
  */
-public class LuceneDocumentRetrievalException extends RuntimeException
-{
+public class LuceneDocumentRetrievalException extends RuntimeException {
     private long documentId;
 
-    public LuceneDocumentRetrievalException( String message, long documentId, Throwable cause )
-    {
-        this( message, cause );
+    public LuceneDocumentRetrievalException(String message, long documentId, Throwable cause) {
+        this(message, cause);
         this.documentId = documentId;
     }
 
-    public LuceneDocumentRetrievalException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public LuceneDocumentRetrievalException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public long getDocumentId()
-    {
+    public long getDocumentId() {
         return documentId;
     }
 }

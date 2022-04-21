@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.eclipse.collections.api.LazyIterable;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
+
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
@@ -27,17 +29,12 @@ import org.eclipse.collections.api.multimap.MutableMultimap;
 import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.api.tuple.primitive.LongLongPair;
 import org.eclipse.collections.impl.factory.Multimaps;
 import org.eclipse.collections.impl.set.mutable.primitive.SynchronizedLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.UnmodifiableLongSet;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
-
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * Off heap implementation of long hash set.
@@ -47,8 +44,7 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
  * <li>Iterators returned by this set are fail-fast
  * </ul>
  */
-class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet implements MutableLongSet, Resource
-{
+class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet implements MutableLongSet, Resource {
     static final int DEFAULT_CAPACITY = 32;
     static final int REMOVALS_RATIO = 4;
     private static final double LOAD_FACTOR = 0.75;
@@ -62,108 +58,92 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
     private int removals;
     private boolean frozen;
 
-    MutableLinearProbeLongHashSet( MemoryAllocator allocator, MemoryTracker memoryTracker )
-    {
-        this.allocator = requireNonNull( allocator );
+    MutableLinearProbeLongHashSet(MemoryAllocator allocator, MemoryTracker memoryTracker) {
+        this.allocator = requireNonNull(allocator);
         this.memoryTracker = memoryTracker;
-        allocateMemory( DEFAULT_CAPACITY );
+        allocateMemory(DEFAULT_CAPACITY);
     }
 
     @Override
-    public boolean add( long element )
-    {
+    public boolean add(long element) {
         ++modCount;
-        if ( element == 0 )
-        {
+        if (element == 0) {
             final boolean hadZero = hasZero;
             hasZero = true;
             return hadZero != hasZero;
         }
-        if ( element == 1 )
-        {
+        if (element == 1) {
             final boolean hadOne = hasOne;
             hasOne = true;
             return hadOne != hasOne;
         }
-        return addToMemory( element );
+        return addToMemory(element);
     }
 
     @Override
-    public boolean addAll( long... elements )
-    {
+    public boolean addAll(long... elements) {
         ++modCount;
         final int prevSize = size();
-        for ( final long element : elements )
-        {
-            add( element );
+        for (final long element : elements) {
+            add(element);
         }
         return prevSize != size();
     }
 
     @Override
-    public boolean addAll( LongIterable elements )
-    {
+    public boolean addAll(LongIterable elements) {
         ++modCount;
         final int prevSize = size();
-        elements.forEach( this::add );
+        elements.forEach(this::add);
         return prevSize != size();
     }
 
     @Override
-    public boolean remove( long element )
-    {
+    public boolean remove(long element) {
         ++modCount;
-        if ( element == 0 )
-        {
+        if (element == 0) {
             final boolean hadZero = hasZero;
             hasZero = false;
             return hadZero != hasZero;
         }
-        if ( element == 1 )
-        {
+        if (element == 1) {
             final boolean hadOne = hasOne;
             hasOne = false;
             return hadOne != hasOne;
         }
-        return removeFromMemory( element );
+        return removeFromMemory(element);
     }
 
     @Override
-    public boolean removeAll( LongIterable elements )
-    {
+    public boolean removeAll(LongIterable elements) {
         ++modCount;
         final int prevSize = size();
-        elements.forEach( this::remove );
+        elements.forEach(this::remove);
         return prevSize != size();
     }
 
     @Override
-    public boolean removeAll( long... elements )
-    {
+    public boolean removeAll(long... elements) {
         ++modCount;
         final int prevSize = size();
-        for ( final long element : elements )
-        {
-            remove( element );
+        for (final long element : elements) {
+            remove(element);
         }
         return prevSize != size();
     }
 
     @Override
-    public boolean retainAll( LongIterable elements )
-    {
+    public boolean retainAll(LongIterable elements) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean retainAll( long... source )
-    {
+    public boolean retainAll(long... source) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         ++modCount;
         copyIfFrozen();
         memory.clear();
@@ -174,25 +154,20 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
     }
 
     @Override
-    public MutableLongIterator longIterator()
-    {
+    public MutableLongIterator longIterator() {
         return new FailFastIterator();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         ++modCount;
-        if ( memory != null )
-        {
-            frozenCopies.forEachKeyMultiValues( ( mem, copies ) ->
-            {
-                mem.free( memoryTracker );
-                copies.forEach( FrozenCopy::invalidate );
-            } );
-            if ( !frozenCopies.containsKey( memory ) )
-            {
-                memory.free( memoryTracker );
+        if (memory != null) {
+            frozenCopies.forEachKeyMultiValues((mem, copies) -> {
+                mem.free(memoryTracker);
+                copies.forEach(FrozenCopy::invalidate);
+            });
+            if (!frozenCopies.containsKey(memory)) {
+                memory.free(memoryTracker);
             }
             memory = null;
             frozenCopies.clear();
@@ -200,112 +175,96 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
     }
 
     @Override
-    public MutableLongSet tap( LongProcedure procedure )
-    {
-        each( procedure );
+    public MutableLongSet tap(LongProcedure procedure) {
+        each(procedure);
         return this;
     }
 
     @Override
-    public MutableLongSet with( long element )
-    {
-        add( element );
+    public MutableLongSet with(long element) {
+        add(element);
         return this;
     }
 
     @Override
-    public MutableLongSet without( long element )
-    {
-        remove( element );
+    public MutableLongSet without(long element) {
+        remove(element);
         return this;
     }
 
     @Override
-    public MutableLongSet withAll( LongIterable elements )
-    {
-        addAll( elements );
+    public MutableLongSet withAll(LongIterable elements) {
+        addAll(elements);
         return this;
     }
 
     @Override
-    public MutableLongSet withoutAll( LongIterable elements )
-    {
-        removeAll( elements );
+    public MutableLongSet withoutAll(LongIterable elements) {
+        removeAll(elements);
         return this;
     }
 
     @Override
-    public MutableLongSet asUnmodifiable()
-    {
-        return new UnmodifiableLongSet( this );
+    public MutableLongSet asUnmodifiable() {
+        return new UnmodifiableLongSet(this);
     }
 
     @Override
-    public MutableLongSet asSynchronized()
-    {
-        return new SynchronizedLongSet( this );
+    public MutableLongSet asSynchronized() {
+        return new SynchronizedLongSet(this);
     }
 
     @Override
-    public LongSet freeze()
-    {
+    public LongSet freeze() {
         frozen = true;
         final FrozenCopy frozenCopy = new FrozenCopy();
-        frozenCopies.put( memory, frozenCopy );
+        frozenCopies.put(memory, frozenCopy);
         return frozenCopy;
     }
 
     @Override
-    public ImmutableLongSet toImmutable()
-    {
+    public ImmutableLongSet toImmutable() {
         throw new UnsupportedOperationException();
     }
 
-    private boolean removeFromMemory( long element )
-    {
-        final int idx = indexOf( element );
-        final long valueAtIdx = memory.readLong( (long) idx * Long.BYTES );
+    private boolean removeFromMemory(long element) {
+        final int idx = indexOf(element);
+        final long valueAtIdx = memory.readLong((long) idx * Long.BYTES);
 
-        if ( valueAtIdx != element )
-        {
+        if (valueAtIdx != element) {
             return false;
         }
 
         copyIfFrozen();
 
-        memory.writeLong( (long) idx * Long.BYTES, REMOVED );
+        memory.writeLong((long) idx * Long.BYTES, REMOVED);
         --elementsInMemory;
         ++removals;
 
-        if ( removals >= resizeRemovalsThreshold )
-        {
+        if (removals >= resizeRemovalsThreshold) {
             rehashWithoutGrow();
         }
         return true;
     }
 
-    private boolean addToMemory( long element )
-    {
-        final int idx = indexOf( element );
-        final long valueAtIdx = valueAt( idx );
+    private boolean addToMemory(long element) {
+        final int idx = indexOf(element);
+        final long valueAtIdx = valueAt(idx);
 
-        if ( valueAtIdx == element )
-        {
+        if (valueAtIdx == element) {
             return false;
         }
 
-        if ( valueAtIdx == REMOVED )
-        {
+        if (valueAtIdx == REMOVED) {
             --removals;
         }
 
         copyIfFrozen();
 
-        memory.writeLong( (long) idx * Long.BYTES, element );
+        memory.writeLong((long) idx * Long.BYTES, element);
         ++elementsInMemory;
 
-        if ( elementsInMemory >= resizeOccupancyThreshold )
-        {
+        if (elementsInMemory >= resizeOccupancyThreshold) {
             growAndRehash();
         }
 
@@ -313,106 +272,88 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
     }
 
     @VisibleForTesting
-    void growAndRehash()
-    {
+    void growAndRehash() {
         final int newCapacity = capacity * 2;
-        if ( newCapacity < capacity )
-        {
-            throw new RuntimeException( "LongSet reached capacity limit" );
+        if (newCapacity < capacity) {
+            throw new RuntimeException("LongSet reached capacity limit");
         }
-        rehash( newCapacity );
+        rehash(newCapacity);
     }
 
     @VisibleForTesting
-    void rehashWithoutGrow()
-    {
-        rehash( capacity );
+    void rehashWithoutGrow() {
+        rehash(capacity);
     }
 
-    private void allocateMemory( int newCapacity )
-    {
-        requirePowerOfTwo( newCapacity );
+    private void allocateMemory(int newCapacity) {
+        requirePowerOfTwo(newCapacity);
         capacity = newCapacity;
         resizeOccupancyThreshold = (int) (newCapacity * LOAD_FACTOR);
         resizeRemovalsThreshold = newCapacity / REMOVALS_RATIO;
-        memory = allocator.allocate( (long) newCapacity * Long.BYTES, true, memoryTracker );
+        memory = allocator.allocate((long) newCapacity * Long.BYTES, true, memoryTracker);
     }
 
-    private void rehash( int newCapacity )
-    {
+    private void rehash(int newCapacity) {
         final int prevCapacity = capacity;
         final Memory prevMemory = memory;
         elementsInMemory = 0;
         removals = 0;
-        allocateMemory( newCapacity );
+        allocateMemory(newCapacity);
 
-        for ( int i = 0; i < prevCapacity; i++ )
-        {
-            final long value = prevMemory.readLong( (long) i * Long.BYTES );
-            if ( isRealValue( value ) )
-            {
-                add( value );
+        for (int i = 0; i < prevCapacity; i++) {
+            final long value = prevMemory.readLong((long) i * Long.BYTES);
+            if (isRealValue(value)) {
+                add(value);
             }
         }
 
-        prevMemory.free( memoryTracker );
+        prevMemory.free(memoryTracker);
     }
 
-    private void copyIfFrozen()
-    {
-        if ( frozen )
-        {
+    private void copyIfFrozen() {
+        if (frozen) {
             frozen = false;
-            memory = memory.copy( memoryTracker );
+            memory = memory.copy(memoryTracker);
         }
     }
 
-    class FrozenCopy extends AbstractLinearProbeLongHashSet
-    {
+    class FrozenCopy extends AbstractLinearProbeLongHashSet {
 
-        FrozenCopy()
-        {
-            super( MutableLinearProbeLongHashSet.this );
+        FrozenCopy() {
+            super(MutableLinearProbeLongHashSet.this);
         }
 
         @Override
-        public LongSet union( LongSet set )
-        {
+        public LongSet union(LongSet set) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public LongSet intersect( LongSet set )
-        {
+        public LongSet intersect(LongSet set) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public LongSet difference( LongSet set )
-        {
+        public LongSet difference(LongSet set) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public LongSet symmetricDifference( LongSet set )
-        {
+        public LongSet symmetricDifference(LongSet set) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public LongSet freeze()
-        {
+        public LongSet freeze() {
             return this;
         }
 
         @Override
-        public ImmutableLongSet toImmutable()
-        {
+        public ImmutableLongSet toImmutable() {
             throw new UnsupportedOperationException();
         }
 
-        void invalidate()
-        {
+        void invalidate() {
             ++FrozenCopy.this.modCount;
         }
     }

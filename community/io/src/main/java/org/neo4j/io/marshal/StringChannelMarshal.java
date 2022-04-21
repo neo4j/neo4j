@@ -19,44 +19,36 @@
  */
 package org.neo4j.io.marshal;
 
-import java.io.IOException;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-public class StringChannelMarshal implements ChannelMarshal<String>
-{
+public class StringChannelMarshal implements ChannelMarshal<String> {
     public static final int NULL_STRING_LENGTH = -1;
 
     @Override
-    public void marshal( String string, WritableChannel channel ) throws IOException
-    {
-        if ( string == null )
-        {
-            channel.putInt( NULL_STRING_LENGTH );
-        }
-        else
-        {
-            byte[] bytes = string.getBytes( UTF_8 );
-            channel.putInt( bytes.length );
-            channel.put( bytes, bytes.length );
+    public void marshal(String string, WritableChannel channel) throws IOException {
+        if (string == null) {
+            channel.putInt(NULL_STRING_LENGTH);
+        } else {
+            byte[] bytes = string.getBytes(UTF_8);
+            channel.putInt(bytes.length);
+            channel.put(bytes, bytes.length);
         }
     }
 
     @Override
-    public String unmarshal( ReadableChannel channel ) throws IOException
-    {
+    public String unmarshal(ReadableChannel channel) throws IOException {
         int len = channel.getInt();
-        if ( len == NULL_STRING_LENGTH )
-        {
+        if (len == NULL_STRING_LENGTH) {
             return null;
         }
 
         byte[] stringBytes = new byte[len];
-        channel.get( stringBytes, stringBytes.length );
+        channel.get(stringBytes, stringBytes.length);
 
-        return new String( stringBytes, UTF_8 );
+        return new String(stringBytes, UTF_8);
     }
 }

@@ -21,18 +21,15 @@ package org.neo4j.kernel.database;
 
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 
-public class GlobalAvailabilityGuardController implements DatabaseStartupController
-{
+public class GlobalAvailabilityGuardController implements DatabaseStartupController {
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
 
-    public GlobalAvailabilityGuardController( CompositeDatabaseAvailabilityGuard globalAvailabilityGuard )
-    {
+    public GlobalAvailabilityGuardController(CompositeDatabaseAvailabilityGuard globalAvailabilityGuard) {
         this.globalAvailabilityGuard = globalAvailabilityGuard;
     }
 
     @Override
-    public boolean shouldAbort( NamedDatabaseId namedDatabaseId )
-    {
+    public boolean shouldAbort(NamedDatabaseId namedDatabaseId) {
         return globalAvailabilityGuard.isShutdown();
     }
 }

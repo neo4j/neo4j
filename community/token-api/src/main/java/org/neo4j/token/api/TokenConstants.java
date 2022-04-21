@@ -19,8 +19,7 @@
  */
 package org.neo4j.token.api;
 
-public interface TokenConstants
-{
+public interface TokenConstants {
     /**
      * Value indicating the a token does not exist.
      */

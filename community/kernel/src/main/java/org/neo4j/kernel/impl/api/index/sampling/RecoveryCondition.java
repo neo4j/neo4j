@@ -20,11 +20,7 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.function.Predicate;
-
 import org.neo4j.internal.schema.IndexDescriptor;
 
 @FunctionalInterface
-public interface RecoveryCondition extends Predicate<IndexDescriptor>
-{
-
-}
+public interface RecoveryCondition extends Predicate<IndexDescriptor> {}

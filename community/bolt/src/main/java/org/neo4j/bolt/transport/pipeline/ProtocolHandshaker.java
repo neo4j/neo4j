@@ -24,10 +24,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
-
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.BoltProtocolVersion;
@@ -37,9 +35,8 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
-public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ProtocolHandshaker.class );
+public class ProtocolHandshaker extends ChannelInboundHandlerAdapter {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ProtocolHandshaker.class);
 
     public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
     private static final int HANDSHAKE_BUFFER_SIZE = 5 * Integer.BYTES;
@@ -55,12 +52,17 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     private ByteBuf handshakeBuffer;
     private BoltProtocol protocol;
 
-    public ProtocolHandshaker( BoltProtocolFactory boltProtocolFactory, BoltChannel boltChannel, InternalLogProvider logging,
-                               boolean encryptionRequired, boolean encrypted, ChannelProtector channelProtector, MemoryTracker memoryTracker )
-    {
+    public ProtocolHandshaker(
+            BoltProtocolFactory boltProtocolFactory,
+            BoltChannel boltChannel,
+            InternalLogProvider logging,
+            boolean encryptionRequired,
+            boolean encrypted,
+            ChannelProtector channelProtector,
+            MemoryTracker memoryTracker) {
         this.boltProtocolFactory = boltProtocolFactory;
         this.boltChannel = boltChannel;
-        this.log = logging.getLog( getClass() );
+        this.log = logging.getLog(getClass());
         this.encryptionRequired = encryptionRequired;
         this.encrypted = encrypted;
         this.channelProtector = channelProtector;
@@ -68,29 +70,25 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     }
 
     @Override
-    public void handlerAdded( ChannelHandlerContext ctx )
-    {
-        handshakeBuffer = ctx.alloc().buffer( HANDSHAKE_BUFFER_SIZE, HANDSHAKE_BUFFER_SIZE );
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        handshakeBuffer = ctx.alloc().buffer(HANDSHAKE_BUFFER_SIZE, HANDSHAKE_BUFFER_SIZE);
     }
 
     @Override
-    public void handlerRemoved( ChannelHandlerContext ctx )
-    {
+    public void handlerRemoved(ChannelHandlerContext ctx) {
         handshakeBuffer.release();
         handshakeBuffer = null;
 
-        memoryTracker.releaseHeap( SHALLOW_SIZE );
+        memoryTracker.releaseHeap(SHALLOW_SIZE);
     }
 
     @Override
-    public void channelRead( ChannelHandlerContext ctx, Object msg )
-    {
-        try
-        {
-            if ( !(msg instanceof ByteBuf buf) )
-            {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        try {
+            if (!(msg instanceof ByteBuf buf)) {
                 // we know it is HTTP as we only have HTTP (for Websocket) and TCP handlers installed.
-                log.warn( "Unsupported connection type: 'HTTP'. Bolt protocol only operates over a TCP connection or WebSocket." );
+                log.warn(
+                        "Unsupported connection type: 'HTTP'. Bolt protocol only operates over a TCP connection or WebSocket.");
                 ctx.close();
                 return;
             }
@@ -98,117 +96,101 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
             assertEncryptedIfRequired();
 
             // try to fill out handshake buffer
-            handshakeBuffer.writeBytes( buf, Math.min( buf.readableBytes(), handshakeBuffer.writableBytes() ) );
+            handshakeBuffer.writeBytes(buf, Math.min(buf.readableBytes(), handshakeBuffer.writableBytes()));
 
             // we filled up the handshake buffer
-            if ( handshakeBuffer.writableBytes() == 0 )
-            {
-                if ( verifyBoltPreamble() )
-                {
+            if (handshakeBuffer.writableBytes() == 0) {
+                if (verifyBoltPreamble()) {
                     // let's handshake
-                    if ( performHandshake() )
-                    {
+                    if (performHandshake()) {
                         // announce selected protocol to the client
-                        ctx.writeAndFlush( ctx.alloc().buffer( 4 ).writeInt( protocol.version().toInt() ) );
+                        ctx.writeAndFlush(ctx.alloc()
+                                .buffer(4)
+                                .writeInt(protocol.version().toInt()));
 
                         // install related protocol handlers into the pipeline
                         protocol.install();
-                        ctx.pipeline().remove( this );
+                        ctx.pipeline().remove(this);
 
                         // if we somehow end up with more data in the incoming buffers, let's send them
                         // down to the pipeline for the chosen protocol handlers to handle whatever they
                         // are.
-                        if ( buf.readableBytes() > 0 )
-                        {
-                            ctx.fireChannelRead( buf.readRetainedSlice( buf.readableBytes() ) );
+                        if (buf.readableBytes() > 0) {
+                            ctx.fireChannelRead(buf.readRetainedSlice(buf.readableBytes()));
                         }
+                    } else {
+                        ctx.writeAndFlush(ctx.alloc().buffer().writeBytes(new byte[] {0, 0, 0, 0}))
+                                .addListener(ChannelFutureListener.CLOSE);
                     }
-                    else
-                    {
-                        ctx.writeAndFlush( ctx.alloc().buffer().writeBytes( new byte[]{0, 0, 0, 0} ) ).addListener( ChannelFutureListener.CLOSE );
-                    }
-                }
-                else
-                {
+                } else {
                     ctx.close();
                 }
             }
-        }
-        finally
-        {
-            ReferenceCountUtil.release( msg );
+        } finally {
+            ReferenceCountUtil.release(msg);
         }
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
-    {
-        log.error( "Fatal error occurred during protocol handshaking: " + ctx.channel(), cause );
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.error("Fatal error occurred during protocol handshaking: " + ctx.channel(), cause);
         ctx.close();
     }
 
     @Override
-    public void channelInactive( ChannelHandlerContext ctx )
-    {
+    public void channelInactive(ChannelHandlerContext ctx) {
         ctx.close();
     }
 
-    private void assertEncryptedIfRequired()
-    {
-        if ( encryptionRequired && !encrypted )
-        {
-            throw new SecurityException( "An unencrypted connection attempt was made where encryption is required." );
+    private void assertEncryptedIfRequired() {
+        if (encryptionRequired && !encrypted) {
+            throw new SecurityException("An unencrypted connection attempt was made where encryption is required.");
         }
     }
 
-    private boolean verifyBoltPreamble()
-    {
-        if ( handshakeBuffer.getInt( 0 ) != BOLT_MAGIC_PREAMBLE )
-        {
-            log.debug( "Invalid Bolt handshake signature. Expected 0x%08X, but got: 0x%08X", BOLT_MAGIC_PREAMBLE, handshakeBuffer.getInt( 0 ) );
+    private boolean verifyBoltPreamble() {
+        if (handshakeBuffer.getInt(0) != BOLT_MAGIC_PREAMBLE) {
+            log.debug(
+                    "Invalid Bolt handshake signature. Expected 0x%08X, but got: 0x%08X",
+                    BOLT_MAGIC_PREAMBLE, handshakeBuffer.getInt(0));
             return false;
         }
 
         return true;
     }
 
-    private boolean performHandshake()
-    {
-        try ( var handshakeMemoryTracker = memoryTracker.getScopedMemoryTracker() )
-        {
+    private boolean performHandshake() {
+        try (var handshakeMemoryTracker = memoryTracker.getScopedMemoryTracker()) {
             ArrayList<BoltProtocolVersion> suggestions = new ArrayList<BoltProtocolVersion>();
 
-            for ( int i = 0; i < 4; i++ )
-            {
-                int rawBytes = handshakeBuffer.getInt( (i + 1) * Integer.BYTES );
-                int major = BoltProtocolVersion.getMajorFromRawBytes( rawBytes );
-                int minor = BoltProtocolVersion.getMinorFromRawBytes( rawBytes );
-                int range = BoltProtocolVersion.getRangeFromRawBytes( rawBytes );
+            for (int i = 0; i < 4; i++) {
+                int rawBytes = handshakeBuffer.getInt((i + 1) * Integer.BYTES);
+                int major = BoltProtocolVersion.getMajorFromRawBytes(rawBytes);
+                int minor = BoltProtocolVersion.getMinorFromRawBytes(rawBytes);
+                int range = BoltProtocolVersion.getRangeFromRawBytes(rawBytes);
 
-                handshakeMemoryTracker.allocateHeap( BoltProtocolVersion.SHALLOW_SIZE * (range + 1) );
-                for ( int j = 0; j <= range; j++ )   //Range is inclusive thus the use of <=
+                handshakeMemoryTracker.allocateHeap(BoltProtocolVersion.SHALLOW_SIZE * (range + 1));
+                for (int j = 0; j <= range; j++) // Range is inclusive thus the use of <=
                 {
-                    int newMinor = Math.max( minor - j, 0 );
-                    BoltProtocolVersion suggestion = new BoltProtocolVersion( major, newMinor );
+                    int newMinor = Math.max(minor - j, 0);
+                    BoltProtocolVersion suggestion = new BoltProtocolVersion(major, newMinor);
 
-                    protocol = boltProtocolFactory.create( suggestion, boltChannel, channelProtector, memoryTracker );
-                    if ( protocol != null )
-                    {
+                    protocol = boltProtocolFactory.create(suggestion, boltChannel, channelProtector, memoryTracker);
+                    if (protocol != null) {
                         break;
                     }
-                    suggestions.add( suggestion );
+                    suggestions.add(suggestion);
                 }
 
-                if ( protocol != null )
-                {
+                if (protocol != null) {
                     break;
                 }
             }
 
-            if ( protocol == null )
-            {
-                log.debug( "Failed Bolt handshake: Bolt versions suggested by client '%s' are not supported by this server.",
-                           Arrays.toString( suggestions.toArray() ) );
+            if (protocol == null) {
+                log.debug(
+                        "Failed Bolt handshake: Bolt versions suggested by client '%s' are not supported by this server.",
+                        Arrays.toString(suggestions.toArray()));
             }
         }
 

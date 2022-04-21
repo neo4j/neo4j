@@ -30,6 +30,7 @@ class NormalizeInequalitiesTest extends CypherFunSuite with AstConstructionTestS
 
   val expression1: Expression = Variable("foo1")(pos)
   val expression2: Expression = Variable("foo2")(pos)
+
   val comparisons = List(
     Or(Equals(expression1, expression2)(pos), LessThan(expression1, expression2)(pos))(pos),
     Or(Equals(expression2, expression1)(pos), LessThan(expression1, expression2)(pos))(pos),

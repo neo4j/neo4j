@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
 
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -38,119 +42,102 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.Iterators.count;
-
 @TestDirectoryExtension
-class PageBytesReserveIT
-{
+class PageBytesReserveIT {
     @Inject
     private TestDirectory testDirectory;
 
-    public static IntStream reservedBytes()
-    {
-        return IntStream.of( 8, 16, 24, 32, 40, 48, 64 );
+    public static IntStream reservedBytes() {
+        return IntStream.of(8, 16, 24, 32, 40, 48, 64);
     }
 
     @ParameterizedTest
-    @MethodSource( "reservedBytes" )
-    void reserveBytesInPageHeader( int reservedBytes )
-    {
-        var managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( reserved_page_header_bytes, reservedBytes ).build();
-        try
-        {
-            Label testLabel = Label.label( "test" );
-            RelationshipType testRelType = RelationshipType.withName( "test" );
+    @MethodSource("reservedBytes")
+    void reserveBytesInPageHeader(int reservedBytes) {
+        var managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setConfig(reserved_page_header_bytes, reservedBytes)
+                .build();
+        try {
+            Label testLabel = Label.label("test");
+            RelationshipType testRelType = RelationshipType.withName("test");
             String repPropertyKey = "a";
             String nodePropertyKey = "b";
-            String relProperty = randomAscii( (int) ByteUnit.kibiBytes( 8 ) );
-            String nodeProperty = randomAscii( (int) ByteUnit.kibiBytes( 8 ) );
-            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            String relProperty = randomAscii((int) ByteUnit.kibiBytes(8));
+            String nodeProperty = randomAscii((int) ByteUnit.kibiBytes(8));
+            GraphDatabaseService database = managementService.database(DEFAULT_DATABASE_NAME);
             int iterations = 1024;
-            for ( int i = 0; i < iterations; i++ )
-            {
-                try ( Transaction transaction = database.beginTx() )
-                {
-                    Node start = transaction.createNode( testLabel );
-                    Node end = transaction.createNode( testLabel );
-                    Relationship relationshipTo = start.createRelationshipTo( end, testRelType );
-                    relationshipTo.setProperty( repPropertyKey, relProperty );
-                    start.setProperty( nodePropertyKey, nodeProperty );
+            for (int i = 0; i < iterations; i++) {
+                try (Transaction transaction = database.beginTx()) {
+                    Node start = transaction.createNode(testLabel);
+                    Node end = transaction.createNode(testLabel);
+                    Relationship relationshipTo = start.createRelationshipTo(end, testRelType);
+                    relationshipTo.setProperty(repPropertyKey, relProperty);
+                    start.setProperty(nodePropertyKey, nodeProperty);
                     transaction.commit();
                 }
             }
 
-            try ( Transaction transaction = database.beginTx() )
-            {
-                assertEquals( 2 * iterations, count( transaction.findNodes( testLabel ) ) );
+            try (Transaction transaction = database.beginTx()) {
+                assertEquals(2 * iterations, count(transaction.findNodes(testLabel)));
             }
-        }
-        finally
-        {
+        } finally {
             managementService.shutdown();
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "reservedBytes" )
-    void reserveBytesInPageHeaderWithAdditionalIndexes( int reservedBytes )
-    {
-        var managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( reserved_page_header_bytes, reservedBytes ).build();
-        try
-        {
-            Label testLabel = Label.label( "test" );
-            RelationshipType testRelType = RelationshipType.withName( "test" );
+    @MethodSource("reservedBytes")
+    void reserveBytesInPageHeaderWithAdditionalIndexes(int reservedBytes) {
+        var managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setConfig(reserved_page_header_bytes, reservedBytes)
+                .build();
+        try {
+            Label testLabel = Label.label("test");
+            RelationshipType testRelType = RelationshipType.withName("test");
             String repPropertyKey = "a";
             String nodePropertyKey = "b";
-            String relProperty = randomAscii( (int) ByteUnit.kibiBytes( 7 ) );
-            String nodeProperty = randomAscii( (int) ByteUnit.kibiBytes( 7 ) );
-            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            String relProperty = randomAscii((int) ByteUnit.kibiBytes(7));
+            String nodeProperty = randomAscii((int) ByteUnit.kibiBytes(7));
+            GraphDatabaseService database = managementService.database(DEFAULT_DATABASE_NAME);
 
-            try ( Transaction tx = database.beginTx() )
-            {
+            try (Transaction tx = database.beginTx()) {
                 Schema schema = tx.schema();
-                schema.indexFor( testLabel ).on( nodePropertyKey ).withName( "nodeIndex" ).create();
-                schema.indexFor( testRelType ).on( relProperty ).withName( "relIndex" ).create();
+                schema.indexFor(testLabel)
+                        .on(nodePropertyKey)
+                        .withName("nodeIndex")
+                        .create();
+                schema.indexFor(testRelType)
+                        .on(relProperty)
+                        .withName("relIndex")
+                        .create();
                 tx.commit();
             }
 
-            awaitIndexes( database );
+            awaitIndexes(database);
 
             int iterations = 512;
-            for ( int i = 0; i < iterations; i++ )
-            {
-                try ( Transaction transaction = database.beginTx() )
-                {
-                    Node start = transaction.createNode( testLabel );
-                    Node end = transaction.createNode( testLabel );
-                    Relationship relationshipTo = start.createRelationshipTo( end, testRelType );
-                    relationshipTo.setProperty( repPropertyKey, relProperty );
-                    start.setProperty( nodePropertyKey, nodeProperty );
+            for (int i = 0; i < iterations; i++) {
+                try (Transaction transaction = database.beginTx()) {
+                    Node start = transaction.createNode(testLabel);
+                    Node end = transaction.createNode(testLabel);
+                    Relationship relationshipTo = start.createRelationshipTo(end, testRelType);
+                    relationshipTo.setProperty(repPropertyKey, relProperty);
+                    start.setProperty(nodePropertyKey, nodeProperty);
                     transaction.commit();
                 }
             }
 
-            try ( Transaction transaction = database.beginTx() )
-            {
-                assertEquals( 2 * iterations, count( transaction.findNodes( testLabel ) ) );
+            try (Transaction transaction = database.beginTx()) {
+                assertEquals(2 * iterations, count(transaction.findNodes(testLabel)));
             }
-        }
-        finally
-        {
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private static void awaitIndexes( GraphDatabaseService database )
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+    private static void awaitIndexes(GraphDatabaseService database) {
+        try (Transaction tx = database.beginTx()) {
+            tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES);
         }
     }
 }

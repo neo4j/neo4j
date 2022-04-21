@@ -19,141 +19,133 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Iterator;
-
-import org.neo4j.graphdb.Entity;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-class PathProxyTest
-{
-    private final InternalTransaction transaction = mock( InternalTransaction.class );
+import java.util.Iterator;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.Entity;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+
+class PathProxyTest {
+    private final InternalTransaction transaction = mock(InternalTransaction.class);
 
     @Test
-    void shouldIterateThroughNodes()
-    {
+    void shouldIterateThroughNodes() {
         // given
-        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy(transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0});
 
         Iterator<Node> iterator = path.nodes().iterator();
         Node node;
 
         // then
-        assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
-        assertEquals( 1, node.getId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
-        assertEquals( 2, node.getId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
-        assertEquals( 3, node.getId() );
-        assertFalse( iterator.hasNext() );
+        assertTrue(iterator.hasNext());
+        assertThat(node = iterator.next()).isInstanceOf(Node.class);
+        assertEquals(1, node.getId());
+        assertTrue(iterator.hasNext());
+        assertThat(node = iterator.next()).isInstanceOf(Node.class);
+        assertEquals(2, node.getId());
+        assertTrue(iterator.hasNext());
+        assertThat(node = iterator.next()).isInstanceOf(Node.class);
+        assertEquals(3, node.getId());
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void shouldIterateThroughNodesInReverse()
-    {
+    void shouldIterateThroughNodesInReverse() {
         // given
-        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy(transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0});
 
         Iterator<Node> iterator = path.reverseNodes().iterator();
         Node node;
 
         // then
-        assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
-        assertEquals( 3, node.getId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
-        assertEquals( 2, node.getId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( node = iterator.next() ).isInstanceOf( Node.class );
-        assertEquals( 1, node.getId() );
-        assertFalse( iterator.hasNext() );
+        assertTrue(iterator.hasNext());
+        assertThat(node = iterator.next()).isInstanceOf(Node.class);
+        assertEquals(3, node.getId());
+        assertTrue(iterator.hasNext());
+        assertThat(node = iterator.next()).isInstanceOf(Node.class);
+        assertEquals(2, node.getId());
+        assertTrue(iterator.hasNext());
+        assertThat(node = iterator.next()).isInstanceOf(Node.class);
+        assertEquals(1, node.getId());
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void shouldIterateThroughRelationships()
-    {
+    void shouldIterateThroughRelationships() {
         // given
-        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy(transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0});
 
         Iterator<Relationship> iterator = path.relationships().iterator();
         Relationship relationship;
 
         // then
-        assertTrue( iterator.hasNext() );
-        assertThat( relationship = iterator.next() ).isInstanceOf( Relationship.class );
-        assertEquals( 100, relationship.getId() );
-        assertEquals( 1, relationship.getStartNodeId() );
-        assertEquals( 2, relationship.getEndNodeId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( relationship = iterator.next() ).isInstanceOf( Relationship.class );
-        assertEquals( 200, relationship.getId() );
-        assertEquals( 3, relationship.getStartNodeId() );
-        assertEquals( 2, relationship.getEndNodeId() );
-        assertFalse( iterator.hasNext() );
+        assertTrue(iterator.hasNext());
+        assertThat(relationship = iterator.next()).isInstanceOf(Relationship.class);
+        assertEquals(100, relationship.getId());
+        assertEquals(1, relationship.getStartNodeId());
+        assertEquals(2, relationship.getEndNodeId());
+        assertTrue(iterator.hasNext());
+        assertThat(relationship = iterator.next()).isInstanceOf(Relationship.class);
+        assertEquals(200, relationship.getId());
+        assertEquals(3, relationship.getStartNodeId());
+        assertEquals(2, relationship.getEndNodeId());
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void shouldIterateThroughRelationshipsInReverse()
-    {
+    void shouldIterateThroughRelationshipsInReverse() {
         // given
-        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy(transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0});
 
         Iterator<Relationship> iterator = path.reverseRelationships().iterator();
         Relationship relationship;
 
         // then
-        assertTrue( iterator.hasNext() );
-        assertThat( relationship = iterator.next() ).isInstanceOf( Relationship.class );
-        assertEquals( 200, relationship.getId() );
-        assertEquals( 3, relationship.getStartNodeId() );
-        assertEquals( 2, relationship.getEndNodeId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( relationship = iterator.next() ).isInstanceOf( Relationship.class );
-        assertEquals( 100, relationship.getId() );
-        assertEquals( 1, relationship.getStartNodeId() );
-        assertEquals( 2, relationship.getEndNodeId() );
-        assertFalse( iterator.hasNext() );
+        assertTrue(iterator.hasNext());
+        assertThat(relationship = iterator.next()).isInstanceOf(Relationship.class);
+        assertEquals(200, relationship.getId());
+        assertEquals(3, relationship.getStartNodeId());
+        assertEquals(2, relationship.getEndNodeId());
+        assertTrue(iterator.hasNext());
+        assertThat(relationship = iterator.next()).isInstanceOf(Relationship.class);
+        assertEquals(100, relationship.getId());
+        assertEquals(1, relationship.getStartNodeId());
+        assertEquals(2, relationship.getEndNodeId());
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void shouldIterateAlternatingNodesAndRelationships()
-    {
+    void shouldIterateAlternatingNodesAndRelationships() {
         // given
-        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy(transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0});
 
         Iterator<Entity> iterator = path.iterator();
         Entity entity;
 
         // then
-        assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next() ).isInstanceOf( Node.class );
-        assertEquals( 1, entity.getId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next() ).isInstanceOf( Relationship.class );
-        assertEquals( 100, entity.getId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next() ).isInstanceOf( Node.class );
-        assertEquals( 2, entity.getId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next() ).isInstanceOf( Relationship.class );
-        assertEquals( 200, entity.getId() );
-        assertTrue( iterator.hasNext() );
-        assertThat( entity = iterator.next() ).isInstanceOf( Node.class );
-        assertEquals( 3, entity.getId() );
-        assertFalse( iterator.hasNext() );
+        assertTrue(iterator.hasNext());
+        assertThat(entity = iterator.next()).isInstanceOf(Node.class);
+        assertEquals(1, entity.getId());
+        assertTrue(iterator.hasNext());
+        assertThat(entity = iterator.next()).isInstanceOf(Relationship.class);
+        assertEquals(100, entity.getId());
+        assertTrue(iterator.hasNext());
+        assertThat(entity = iterator.next()).isInstanceOf(Node.class);
+        assertEquals(2, entity.getId());
+        assertTrue(iterator.hasNext());
+        assertThat(entity = iterator.next()).isInstanceOf(Relationship.class);
+        assertEquals(200, entity.getId());
+        assertTrue(iterator.hasNext());
+        assertThat(entity = iterator.next()).isInstanceOf(Node.class);
+        assertEquals(3, entity.getId());
+        assertFalse(iterator.hasNext());
     }
 }

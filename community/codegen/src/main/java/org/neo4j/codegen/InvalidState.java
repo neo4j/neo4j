@@ -21,149 +21,123 @@ package org.neo4j.codegen;
 
 import java.util.function.Consumer;
 
-class InvalidState implements MethodWriter
-{
-    public static final ClassWriter CLASS_DONE = new ClassWriter()
-    {
+class InvalidState implements MethodWriter {
+    public static final ClassWriter CLASS_DONE = new ClassWriter() {
         @Override
-        public MethodWriter method( MethodDeclaration method )
-        {
-            throw new IllegalStateException( "class done" );
+        public MethodWriter method(MethodDeclaration method) {
+            throw new IllegalStateException("class done");
         }
 
         @Override
-        public void field( FieldReference field, Expression value )
-        {
-            throw new IllegalStateException( "class done" );
+        public void field(FieldReference field, Expression value) {
+            throw new IllegalStateException("class done");
         }
 
         @Override
-        public void done()
-        {
-            throw new IllegalStateException( "class done" );
+        public void done() {
+            throw new IllegalStateException("class done");
         }
     };
-    public static final MethodWriter BLOCK_CLOSED = new InvalidState( "this block has been closed" );
-    public static final MethodWriter IN_SUB_BLOCK = new InvalidState( "currently generating a sub-block of this block" );
+    public static final MethodWriter BLOCK_CLOSED = new InvalidState("this block has been closed");
+    public static final MethodWriter IN_SUB_BLOCK = new InvalidState("currently generating a sub-block of this block");
     private final String reason;
 
-    private InvalidState( String reason )
-    {
+    private InvalidState(String reason) {
         this.reason = reason;
     }
 
     @Override
-    public boolean isStatic()
-    {
-        throw new IllegalStateException( reason );
+    public boolean isStatic() {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void done()
-    {
-        throw new IllegalStateException( reason );
+    public void done() {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void expression( Expression expression )
-    {
-        throw new IllegalStateException( reason );
+    public void expression(Expression expression) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void put( Expression target, FieldReference field, Expression value )
-    {
-        throw new IllegalStateException( reason );
+    public void put(Expression target, FieldReference field, Expression value) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void putStatic( FieldReference field, Expression value )
-    {
-        throw new IllegalStateException( reason );
+    public void putStatic(FieldReference field, Expression value) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void returns()
-    {
-        throw new IllegalStateException( reason );
+    public void returns() {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void returns( Expression value )
-    {
-        throw new IllegalStateException( reason );
+    public void returns(Expression value) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void continues()
-    {
-        throw new IllegalStateException( reason );
+    public void continues() {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void breaks( String labelName )
-    {
-        throw new IllegalStateException( reason );
+    public void breaks(String labelName) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void assign( LocalVariable variable, Expression value )
-    {
-        throw new IllegalStateException( reason );
+    public void assign(LocalVariable variable, Expression value) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void beginWhile( Expression test, String labelName )
-    {
-        throw new IllegalStateException( reason );
+    public void beginWhile(Expression test, String labelName) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void beginIf( Expression test )
-    {
-        throw new IllegalStateException( reason );
+    public void beginIf(Expression test) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void beginBlock()
-    {
-        throw new IllegalStateException( reason );
+    public void beginBlock() {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void endBlock()
-    {
-        throw new IllegalStateException( reason );
+    public void endBlock() {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public <T> void ifElseStatement( Expression test, Consumer<T> onTrue, Consumer<T> onFalse, T block )
-    {
-        throw new IllegalStateException( reason );
+    public <T> void ifElseStatement(Expression test, Consumer<T> onTrue, Consumer<T> onFalse, T block) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
-    {
-        throw new IllegalStateException( reason );
+    public <T> void tryCatchBlock(Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void throwException( Expression exception )
-    {
-        throw new IllegalStateException( reason );
+    public void throwException(Expression exception) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void declare( LocalVariable local )
-    {
-        throw new IllegalStateException( reason );
+    public void declare(LocalVariable local) {
+        throw new IllegalStateException(reason);
     }
 
     @Override
-    public void assignVariableInScope( LocalVariable local, Expression value )
-    {
-        throw new IllegalStateException( reason );
+    public void assignVariableInScope(LocalVariable local, Expression value) {
+        throw new IllegalStateException(reason);
     }
-
 }

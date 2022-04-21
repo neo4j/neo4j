@@ -19,17 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import java.net.http.HttpRequest;
-
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.server.rest.domain.GraphDbHelper;
-
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -39,130 +28,122 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class XForwardFilterIT extends AbstractRestFunctionalTestBase
-{
+import java.net.URI;
+import java.net.http.HttpRequest;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.helpers.FunctionalTestHelper;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+
+public class XForwardFilterIT extends AbstractRestFunctionalTestBase {
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
     private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
 
     private static GraphDbHelper helper;
 
     @BeforeAll
-    public static void setupServer()
-    {
-        helper = new FunctionalTestHelper( container() ).getGraphDbHelper();
+    public static void setupServer() {
+        helper = new FunctionalTestHelper(container()).getGraphDbHelper();
     }
 
     @BeforeEach
-    public void setupTheDatabase()
-    {
-        helper.createRelationship( "RELATES_TO", helper.createNode(), helper.createNode() );
+    public void setupTheDatabase() {
+        helper.createRelationship("RELATES_TO", helper.createNode(), helper.createNode());
     }
 
     @Test
-    public void shouldUseXForwardedHostHeaderWhenPresent() throws Exception
-    {
-        var entity = sendGetRequest( X_FORWARDED_HOST, "jimwebber.org" );
+    public void shouldUseXForwardedHostHeaderWhenPresent() throws Exception {
+        var entity = sendGetRequest(X_FORWARDED_HOST, "jimwebber.org");
 
-        assertTrue( entity.contains( "http://jimwebber.org" ) );
-        assertFalse( entity.contains( "http://localhost" ) );
+        assertTrue(entity.contains("http://jimwebber.org"));
+        assertFalse(entity.contains("http://localhost"));
     }
 
     @Test
-    public void shouldUseXForwardedProtoHeaderWhenPresent() throws Exception
-    {
-        var entity = sendGetRequest( X_FORWARDED_PROTO, "https" );
+    public void shouldUseXForwardedProtoHeaderWhenPresent() throws Exception {
+        var entity = sendGetRequest(X_FORWARDED_PROTO, "https");
 
-        assertTrue( entity.contains( "https://localhost" ) );
-        assertFalse( entity.contains( "http://localhost" ) );
+        assertTrue(entity.contains("https://localhost"));
+        assertFalse(entity.contains("http://localhost"));
     }
 
     @Test
-    public void shouldPickFirstXForwardedHostHeaderValueFromCommaOrCommaAndSpaceSeparatedList() throws Exception
-    {
-        var entity = sendGetRequest( X_FORWARDED_HOST, "jimwebber.org, kathwebber.com,neo4j.org" );
+    public void shouldPickFirstXForwardedHostHeaderValueFromCommaOrCommaAndSpaceSeparatedList() throws Exception {
+        var entity = sendGetRequest(X_FORWARDED_HOST, "jimwebber.org, kathwebber.com,neo4j.org");
 
-        assertTrue( entity.contains( "http://jimwebber.org" ) );
-        assertFalse( entity.contains( "http://localhost" ) );
+        assertTrue(entity.contains("http://jimwebber.org"));
+        assertFalse(entity.contains("http://localhost"));
     }
 
     @Test
-    public void shouldUseBaseUriOnBadXForwardedHostHeader() throws Exception
-    {
-        var entity = sendGetRequest( X_FORWARDED_HOST, ":bad_URI" );
+    public void shouldUseBaseUriOnBadXForwardedHostHeader() throws Exception {
+        var entity = sendGetRequest(X_FORWARDED_HOST, ":bad_URI");
 
-        assertTrue( entity.contains( serverUriString() ) );
+        assertTrue(entity.contains(serverUriString()));
     }
 
     @Test
-    public void shouldUseBaseUriIfFirstAddressInXForwardedHostHeaderIsBad() throws Exception
-    {
-        var entity = sendGetRequest( X_FORWARDED_HOST, ":bad_URI,good-host" );
+    public void shouldUseBaseUriIfFirstAddressInXForwardedHostHeaderIsBad() throws Exception {
+        var entity = sendGetRequest(X_FORWARDED_HOST, ":bad_URI,good-host");
 
-        assertTrue( entity.contains( serverUriString() ) );
+        assertTrue(entity.contains(serverUriString()));
     }
 
     @Test
-    public void shouldUseBaseUriOnBadXForwardedProtoHeader() throws Exception
-    {
-        var entity = sendGetRequest( X_FORWARDED_PROTO, "%%%DEFINITELY-NOT-A-PROTO!" );
+    public void shouldUseBaseUriOnBadXForwardedProtoHeader() throws Exception {
+        var entity = sendGetRequest(X_FORWARDED_PROTO, "%%%DEFINITELY-NOT-A-PROTO!");
 
-        assertTrue( entity.contains( serverUriString() ) );
+        assertTrue(entity.contains(serverUriString()));
     }
 
     @Test
-    public void shouldUseXForwardedHostAndXForwardedProtoHeadersWhenPresent() throws Exception
-    {
-        var entity = sendGetRequest( X_FORWARDED_HOST, "jimwebber.org",
-                X_FORWARDED_PROTO, "https" );
+    public void shouldUseXForwardedHostAndXForwardedProtoHeadersWhenPresent() throws Exception {
+        var entity = sendGetRequest(X_FORWARDED_HOST, "jimwebber.org", X_FORWARDED_PROTO, "https");
 
-        assertTrue( entity.contains( "https://jimwebber.org" ) );
-        assertFalse( entity.contains( serverUriString() ) );
+        assertTrue(entity.contains("https://jimwebber.org"));
+        assertFalse(entity.contains(serverUriString()));
     }
 
     @Test
-    public void shouldUseXForwardedHostAndXForwardedProtoHeadersInCypherResponseRepresentations() throws Exception
-    {
-        String jsonString = "{\"statements\" : [{ \"statement\": \"MATCH (n) RETURN n\", " +
-                "\"resultDataContents\":[\"REST\"] }] }";
+    public void shouldUseXForwardedHostAndXForwardedProtoHeadersInCypherResponseRepresentations() throws Exception {
+        String jsonString = "{\"statements\" : [{ \"statement\": \"MATCH (n) RETURN n\", "
+                + "\"resultDataContents\":[\"REST\"] }] }";
 
-        var entity = sendPostRequest( txUri(), jsonString,
-                X_FORWARDED_HOST, "jimwebber.org:2354",
-                X_FORWARDED_PROTO, "https" );
+        var entity = sendPostRequest(
+                txUri(), jsonString, X_FORWARDED_HOST, "jimwebber.org:2354", X_FORWARDED_PROTO, "https");
 
-        assertTrue( entity.contains( "https://jimwebber.org:2354" ) );
-        assertFalse( entity.contains( serverUriString() ) );
+        assertTrue(entity.contains("https://jimwebber.org:2354"));
+        assertFalse(entity.contains(serverUriString()));
     }
 
-    private static String sendGetRequest( String... headers ) throws Exception
-    {
-        var request = HttpRequest.newBuilder( serverUri() )
-                .header( ACCEPT, APPLICATION_JSON )
-                .headers( headers )
+    private static String sendGetRequest(String... headers) throws Exception {
+        var request = HttpRequest.newBuilder(serverUri())
+                .header(ACCEPT, APPLICATION_JSON)
+                .headers(headers)
                 .GET()
                 .build();
 
-        return newHttpClient().send( request, ofString() ).body();
+        return newHttpClient().send(request, ofString()).body();
     }
 
-    private static String sendPostRequest( String uri, String payload, String... headers ) throws Exception
-    {
-        var request = HttpRequest.newBuilder( URI.create( uri ) )
-                .header( ACCEPT, APPLICATION_JSON )
-                .header( CONTENT_TYPE, APPLICATION_JSON )
-                .headers( headers )
-                .POST( ofString( payload ) )
+    private static String sendPostRequest(String uri, String payload, String... headers) throws Exception {
+        var request = HttpRequest.newBuilder(URI.create(uri))
+                .header(ACCEPT, APPLICATION_JSON)
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .headers(headers)
+                .POST(ofString(payload))
                 .build();
 
-        return newHttpClient().send( request, ofString() ).body();
+        return newHttpClient().send(request, ofString()).body();
     }
 
-    private static String serverUriString()
-    {
+    private static String serverUriString() {
         return serverUri().toString();
     }
 
-    private static URI serverUri()
-    {
+    private static URI serverUri() {
         return container().getBaseUri();
     }
 }

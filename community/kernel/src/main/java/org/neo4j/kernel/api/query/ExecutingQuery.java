@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.api.query;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -44,16 +45,12 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
-
 /**
  * Represents a currently running query.
  */
-public class ExecutingQuery
-{
+public class ExecutingQuery {
     private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
-            newUpdater( ExecutingQuery.class, "waitTimeNanos" );
+            newUpdater(ExecutingQuery.class, "waitTimeNanos");
     private final long queryId;
     private final LockTracer lockTracer = this::waitForLock;
     private final String executingUsername;
@@ -63,16 +60,19 @@ public class ExecutingQuery
     private final MapValue rawQueryParameters;
     private final long startTimeNanos;
     private final long startTimestampMillis;
-    private final Map<String,Object> transactionAnnotationData;
+    private final Map<String, Object> transactionAnnotationData;
     private final long threadExecutingTheQueryId;
-    @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
+
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private final String threadExecutingTheQueryName;
+
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
     private final long cpuTimeNanosWhenQueryStarted;
 
     /** Uses write barrier of {@link #status}. */
     private CompilerInfo compilerInfo;
+
     private long compilationCompletedNanos;
     private String obfuscatedQueryText;
     private MapValue obfuscatedQueryParameters;
@@ -81,7 +81,7 @@ public class ExecutingQuery
     private volatile ExecutingQuery previousQuery;
 
     /** Updated through {@link #WAIT_TIME} */
-    @SuppressWarnings( "unused" )
+    @SuppressWarnings("unused")
     private volatile long waitTimeNanos;
 
     private HeapHighWaterMarkTracker memoryTracker;
@@ -110,13 +110,20 @@ public class ExecutingQuery
     private long outerTransactionId = -1L;
 
     public ExecutingQuery(
-            long queryId, ClientConnectionInfo clientConnection, String executingUsername, String authenticatedUsername, String queryText,
+            long queryId,
+            ClientConnectionInfo clientConnection,
+            String executingUsername,
+            String authenticatedUsername,
+            String queryText,
             MapValue queryParameters,
-            Map<String,Object> transactionAnnotationData,
-            long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock, boolean trackQueryAllocations )
-    {
+            Map<String, Object> transactionAnnotationData,
+            long threadExecutingTheQueryId,
+            String threadExecutingTheQueryName,
+            SystemNanoClock clock,
+            CpuClock cpuClock,
+            boolean trackQueryAllocations) {
         // Capture timestamps first
-        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
+        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos(threadExecutingTheQueryId);
         this.startTimeNanos = clock.nanos();
         this.startTimestampMillis = clock.millis();
         // then continue with assigning fields
@@ -136,11 +143,22 @@ public class ExecutingQuery
 
     // NOTE: test/benchmarking constructor
     public ExecutingQuery(
-            long queryId, ClientConnectionInfo clientConnection, NamedDatabaseId namedDatabaseId, String executingUsername, String authenticatedUsername,
-            String queryText, MapValue queryParameters,
-            Map<String,Object> transactionAnnotationData, LongSupplier activeLockCount, LongSupplier hitsSupplier, LongSupplier faultsSupplier,
-            long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock, boolean trackQueryAllocations )
-    {
+            long queryId,
+            ClientConnectionInfo clientConnection,
+            NamedDatabaseId namedDatabaseId,
+            String executingUsername,
+            String authenticatedUsername,
+            String queryText,
+            MapValue queryParameters,
+            Map<String, Object> transactionAnnotationData,
+            LongSupplier activeLockCount,
+            LongSupplier hitsSupplier,
+            LongSupplier faultsSupplier,
+            long threadExecutingTheQueryId,
+            String threadExecutingTheQueryName,
+            SystemNanoClock clock,
+            CpuClock cpuClock,
+            boolean trackQueryAllocations) {
         this(
                 queryId,
                 clientConnection,
@@ -153,13 +171,11 @@ public class ExecutingQuery
                 threadExecutingTheQueryName,
                 clock,
                 cpuClock,
-                trackQueryAllocations
-        );
-        onTransactionBound( new TransactionBinding( namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount, 1 ) );
+                trackQueryAllocations);
+        onTransactionBound(new TransactionBinding(namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount, 1));
     }
 
-    public static class TransactionBinding
-    {
+    public static class TransactionBinding {
         private final NamedDatabaseId namedDatabaseId;
         private final LongSupplier hitsSupplier;
         private final LongSupplier faultsSupplier;
@@ -167,12 +183,12 @@ public class ExecutingQuery
         private final long initialActiveLocks;
         private final long transactionId;
 
-        public TransactionBinding( NamedDatabaseId namedDatabaseId,
-                                   LongSupplier hitsSupplier,
-                                   LongSupplier faultsSupplier,
-                                   LongSupplier activeLockCount,
-                                   long transactionId )
-        {
+        public TransactionBinding(
+                NamedDatabaseId namedDatabaseId,
+                LongSupplier hitsSupplier,
+                LongSupplier faultsSupplier,
+                LongSupplier activeLockCount,
+                long transactionId) {
             this.namedDatabaseId = namedDatabaseId;
             this.hitsSupplier = hitsSupplier;
             this.faultsSupplier = faultsSupplier;
@@ -184,8 +200,7 @@ public class ExecutingQuery
         /**
          * @return the number of active locks, already subtracting the initially active locks count
          */
-        public long getActiveLocks()
-        {
+        public long getActiveLocks() {
             return activeLockCount.getAsLong() - initialActiveLocks;
         }
     }
@@ -196,57 +211,47 @@ public class ExecutingQuery
      * Called before this query (or part of this query) starts executing in a transaction.
      * Adds a TransactionBinding used to fetch statistics from the transaction.
      */
-    public void onTransactionBound( TransactionBinding transactionBinding )
-    {
-        if ( this.openTransactionBindings.isEmpty() )
-        {
+    public void onTransactionBound(TransactionBinding transactionBinding) {
+        if (this.openTransactionBindings.isEmpty()) {
             namedDatabaseId = transactionBinding.namedDatabaseId;
             outerTransactionId = transactionBinding.transactionId;
         }
-        this.openTransactionBindings.add( transactionBinding );
+        this.openTransactionBindings.add(transactionBinding);
     }
 
     /**
      * Called when a transaction, that this query (or part of this query) has executed in, is about to close.
      * Removes the TransactionBinding for that transaction, after capturing some statistics that we might need even after the transaction has closed.
      */
-    public void onTransactionUnbound( long userTransactionId )
-    {
-        this.openTransactionBindings
-                .stream()
-                .filter( binding -> binding.transactionId == userTransactionId )
+    public void onTransactionUnbound(long userTransactionId) {
+        this.openTransactionBindings.stream()
+                .filter(binding -> binding.transactionId == userTransactionId)
                 .findFirst()
                 .ifPresentOrElse(
-                        foundBinding ->
-                        {
+                        foundBinding -> {
                             pageFaultsOfClosedTransactions += foundBinding.faultsSupplier.getAsLong();
                             // Write volatile field last
-                            //noinspection NonAtomicOperationOnVolatileField (we only have one thread which writes to this field)
+                            //noinspection NonAtomicOperationOnVolatileField (we only have one thread which writes to
+                            // this field)
                             pageHitsOfClosedTransactions += foundBinding.hitsSupplier.getAsLong();
-                            openTransactionBindings.remove( foundBinding );
+                            openTransactionBindings.remove(foundBinding);
                         },
-                        () ->
-                        {
+                        () -> {
                             throw new IllegalStateException(
-                                    "Unbound a transaction that was never bound. ID: " + userTransactionId );
-                        }
-                );
+                                    "Unbound a transaction that was never bound. ID: " + userTransactionId);
+                        });
     }
 
-    public void onObfuscatorReady( QueryObfuscator queryObfuscator )
-    {
-        if ( status != SimpleState.parsing() ) // might get called multiple times due to caching and/or internal queries
+    public void onObfuscatorReady(QueryObfuscator queryObfuscator) {
+        if (status != SimpleState.parsing()) // might get called multiple times due to caching and/or internal queries
         {
             return;
         }
 
-        try
-        {
-            obfuscatedQueryText = queryObfuscator.obfuscateText( rawQueryText );
-            obfuscatedQueryParameters = queryObfuscator.obfuscateParameters( rawQueryParameters );
-        }
-        catch ( Exception ignore )
-        {
+        try {
+            obfuscatedQueryText = queryObfuscator.obfuscateText(rawQueryText);
+            obfuscatedQueryParameters = queryObfuscator.obfuscateParameters(rawQueryParameters);
+        } catch (Exception ignore) {
             obfuscatedQueryText = null;
             obfuscatedQueryParameters = null;
         }
@@ -254,10 +259,9 @@ public class ExecutingQuery
         this.status = SimpleState.planning();
     }
 
-    public void onCompilationCompleted( CompilerInfo compilerInfo,
-                                        Supplier<ExecutionPlanDescription> planDescriptionSupplier )
-    {
-        assertExpectedStatus( SimpleState.planning() );
+    public void onCompilationCompleted(
+            CompilerInfo compilerInfo, Supplier<ExecutionPlanDescription> planDescriptionSupplier) {
+        assertExpectedStatus(SimpleState.planning());
 
         this.compilerInfo = compilerInfo;
         this.compilationCompletedNanos = clock.nanos();
@@ -265,17 +269,15 @@ public class ExecutingQuery
         this.status = SimpleState.planned(); // write barrier - must be last
     }
 
-    public void onExecutionStarted( HeapHighWaterMarkTracker memoryTracker )
-    {
-        assertExpectedStatus( SimpleState.planned() );
+    public void onExecutionStarted(HeapHighWaterMarkTracker memoryTracker) {
+        assertExpectedStatus(SimpleState.planned());
 
         this.memoryTracker = memoryTracker;
         this.status = SimpleState.running(); // write barrier - must be last
     }
 
-    public void onRetryAttempted()
-    {
-        assertExpectedStatus( SimpleState.running() );
+    public void onRetryAttempted() {
+        assertExpectedStatus(SimpleState.running());
 
         this.compilerInfo = null;
         this.compilationCompletedNanos = 0;
@@ -286,15 +288,13 @@ public class ExecutingQuery
         this.status = SimpleState.parsing();
     }
 
-    public LockTracer lockTracer()
-    {
+    public LockTracer lockTracer() {
         return lockTracer;
     }
 
     // snapshot state
 
-    public QuerySnapshot snapshot()
-    {
+    public QuerySnapshot snapshot() {
         // capture a consistent snapshot of the "live" state
         ExecutingQueryStatus status;
         long waitTimeNanos;
@@ -302,16 +302,14 @@ public class ExecutingQuery
         long cpuTimeNanos;
         String queryText;
         MapValue queryParameters;
-        do
-        {
+        do {
             status = this.status; // read barrier, must be first
             waitTimeNanos = this.waitTimeNanos; // the reason for the retry loop: don't count the wait time twice
-            cpuTimeNanos = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
+            cpuTimeNanos = cpuClock.cpuTimeNanos(threadExecutingTheQueryId);
             currentTimeNanos = clock.nanos(); // capture the time as close to the snapshot as possible
             queryText = this.obfuscatedQueryText;
             queryParameters = this.obfuscatedQueryParameters;
-        }
-        while ( this.status != status );
+        } while (this.status != status);
         // guarded by barrier - unused if status is planning, stable otherwise
         long compilationCompletedNanos = this.compilationCompletedNanos;
         // guarded by barrier - like compilationCompletedNanos
@@ -323,50 +321,46 @@ public class ExecutingQuery
         // Read volatile field first
         long hits = pageHitsOfClosedTransactions;
         long faults = pageFaultsOfClosedTransactions;
-        for ( TransactionBinding tx : openTransactionBindings )
-        {
+        for (TransactionBinding tx : openTransactionBindings) {
             activeLocks += tx.getActiveLocks();
             hits += tx.hitsSupplier.getAsLong();
             faults += tx.faultsSupplier.getAsLong();
         }
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
-        long compilationTimeNanos = (status.isParsingOrPlanning() ? currentTimeNanos : compilationCompletedNanos) - startTimeNanos;
+        long compilationTimeNanos =
+                (status.isParsingOrPlanning() ? currentTimeNanos : compilationCompletedNanos) - startTimeNanos;
         long elapsedTimeNanos = currentTimeNanos - startTimeNanos;
         cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
-        waitTimeNanos += status.waitTimeNanos( currentTimeNanos );
+        waitTimeNanos += status.waitTimeNanos(currentTimeNanos);
 
         return new QuerySnapshot(
                 this,
                 planner,
                 hits,
                 faults,
-                NANOSECONDS.toMicros( compilationTimeNanos ),
-                NANOSECONDS.toMicros( elapsedTimeNanos ),
-                cpuTimeNanos == 0 && cpuTimeNanosWhenQueryStarted == -1 ? -1 : NANOSECONDS.toMicros( cpuTimeNanos ),
-                NANOSECONDS.toMicros( waitTimeNanos ),
+                NANOSECONDS.toMicros(compilationTimeNanos),
+                NANOSECONDS.toMicros(elapsedTimeNanos),
+                cpuTimeNanos == 0 && cpuTimeNanosWhenQueryStarted == -1 ? -1 : NANOSECONDS.toMicros(cpuTimeNanos),
+                NANOSECONDS.toMicros(waitTimeNanos),
                 status.name(),
-                status.toMap( currentTimeNanos ),
+                status.toMap(currentTimeNanos),
                 waitingOnLocks,
                 activeLocks,
                 memoryTracker.heapHighWaterMark(),
-                Optional.ofNullable( queryText ),
-                Optional.ofNullable( queryParameters ),
-                outerTransactionId
-        );
+                Optional.ofNullable(queryText),
+                Optional.ofNullable(queryParameters),
+                outerTransactionId);
     }
 
     // basic methods
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
@@ -376,148 +370,117 @@ public class ExecutingQuery
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return (int) (queryId ^ (queryId >>> 32));
     }
 
     @Override
-    public String toString()
-    {
-        return ToStringBuilder.reflectionToString( this );
+    public String toString() {
+        return ToStringBuilder.reflectionToString(this);
     }
 
     // access stable state
 
-    public long internalQueryId()
-    {
+    public long internalQueryId() {
         return queryId;
     }
 
-    public String id()
-    {
-        return Long.toString( internalQueryId() );
+    public String id() {
+        return Long.toString(internalQueryId());
     }
 
-    public String executingUsername()
-    {
+    public String executingUsername() {
         return executingUsername;
     }
 
-    public String authenticatedUsername()
-    {
+    public String authenticatedUsername() {
         return authenticatedUsername;
     }
 
-    public String rawQueryText()
-    {
+    public String rawQueryText() {
         return rawQueryText;
     }
 
-    public MapValue rawQueryParameters()
-    {
+    public MapValue rawQueryParameters() {
         return rawQueryParameters;
     }
 
-    Supplier<ExecutionPlanDescription> planDescriptionSupplier()
-    {
+    Supplier<ExecutionPlanDescription> planDescriptionSupplier() {
         return planDescriptionSupplier;
     }
 
-    public Optional<NamedDatabaseId> databaseId()
-    {
-        return Optional.ofNullable( namedDatabaseId );
+    public Optional<NamedDatabaseId> databaseId() {
+        return Optional.ofNullable(namedDatabaseId);
     }
 
-    public long startTimestampMillis()
-    {
+    public long startTimestampMillis() {
         return startTimestampMillis;
     }
 
-    public long elapsedNanos()
-    {
+    public long elapsedNanos() {
         return clock.nanos() - startTimeNanos;
     }
 
-    public long elapsedMillis()
-    {
-        return NANOSECONDS.toMillis( elapsedNanos() );
+    public long elapsedMillis() {
+        return NANOSECONDS.toMillis(elapsedNanos());
     }
 
-    public Map<String,Object> transactionAnnotationData()
-    {
+    public Map<String, Object> transactionAnnotationData() {
         return transactionAnnotationData;
     }
 
-    public long reportedWaitingTimeNanos()
-    {
+    public long reportedWaitingTimeNanos() {
         return waitTimeNanos;
     }
 
-    public long totalWaitingTimeNanos( long currentTimeNanos )
-    {
-        return waitTimeNanos + status.waitTimeNanos( currentTimeNanos );
+    public long totalWaitingTimeNanos(long currentTimeNanos) {
+        return waitTimeNanos + status.waitTimeNanos(currentTimeNanos);
     }
 
-    public String threadExecutingTheQueryName()
-    {
+    public String threadExecutingTheQueryName() {
         return this.threadExecutingTheQueryName;
     }
 
-    ClientConnectionInfo clientConnection()
-    {
+    ClientConnectionInfo clientConnection() {
         return clientConnection;
     }
 
-    private LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long userTransactionId, long[] resourceIds )
-    {
+    private LockWaitEvent waitForLock(
+            LockType lockType, ResourceType resourceType, long userTransactionId, long[] resourceIds) {
         WaitingOnLockEvent event = new WaitingOnLockEvent(
-                lockType,
-                resourceType,
-                userTransactionId,
-                resourceIds,
-                this,
-                clock.nanos(),
-                status );
+                lockType, resourceType, userTransactionId, resourceIds, this, clock.nanos(), status);
         status = event;
         return event;
     }
 
-    void doneWaitingOnLock( WaitingOnLockEvent waiting )
-    {
-        if ( status != waiting )
-        {
+    void doneWaitingOnLock(WaitingOnLockEvent waiting) {
+        if (status != waiting) {
             return; // already closed
         }
-        WAIT_TIME.addAndGet( this, waiting.waitTimeNanos( clock.nanos() ) );
+        WAIT_TIME.addAndGet(this, waiting.waitTimeNanos(clock.nanos()));
         status = waiting.previousStatus();
     }
 
-    private void assertExpectedStatus( ExecutingQueryStatus expectedStatus )
-    {
-        if ( status != expectedStatus )
-        {
-            throw new IllegalStateException( String.format( "Expected query in '%s' state, actual state is '%s'.", expectedStatus.name(), status.name() ) );
+    private void assertExpectedStatus(ExecutingQueryStatus expectedStatus) {
+        if (status != expectedStatus) {
+            throw new IllegalStateException(String.format(
+                    "Expected query in '%s' state, actual state is '%s'.", expectedStatus.name(), status.name()));
         }
     }
 
-    public ExecutingQuery getPreviousQuery()
-    {
+    public ExecutingQuery getPreviousQuery() {
         return previousQuery;
     }
 
-    public void setPreviousQuery( ExecutingQuery previousQuery )
-    {
+    public void setPreviousQuery(ExecutingQuery previousQuery) {
         this.previousQuery = previousQuery;
     }
 
-    public long pageHitsOfClosedTransactions()
-    {
+    public long pageHitsOfClosedTransactions() {
         return pageHitsOfClosedTransactions;
     }
 
-    public long pageFaultsOfClosedTransactions()
-    {
+    public long pageFaultsOfClosedTransactions() {
         return pageFaultsOfClosedTransactions;
     }
 }

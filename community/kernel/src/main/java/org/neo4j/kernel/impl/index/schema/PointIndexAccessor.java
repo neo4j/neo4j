@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.UPDATE_IGNORE_STRATEGY;
 
 import java.nio.file.OpenOption;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -32,34 +32,33 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.UPDATE_IGNORE_STRATEGY;
-
-class PointIndexAccessor extends NativeIndexAccessor<PointKey>
-{
+class PointIndexAccessor extends NativeIndexAccessor<PointKey> {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
 
-    PointIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-                        IndexLayout<PointKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
-                        IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration,
-                        ImmutableSet<OpenOption> openOptions )
-    {
-        super( databaseIndexContext, indexFiles, layout, descriptor, openOptions );
+    PointIndexAccessor(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexLayout<PointKey> layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            IndexDescriptor descriptor,
+            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
+            SpaceFillingCurveConfiguration configuration,
+            ImmutableSet<OpenOption> openOptions) {
+        super(databaseIndexContext, indexFiles, layout, descriptor, openOptions);
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
-        instantiateTree( recoveryCleanupWorkCollector, headerWriter );
+        instantiateTree(recoveryCleanupWorkCollector, headerWriter);
     }
 
     @Override
-    public ValueIndexReader newValueReader()
-    {
+    public ValueIndexReader newValueReader() {
         assertOpen();
-        return new PointIndexReader( tree, layout, descriptor, spaceFillingCurveSettings, configuration );
+        return new PointIndexReader(tree, layout, descriptor, spaceFillingCurveSettings, configuration);
     }
 
     @Override
-    public void validateBeforeCommit( long entityId, Value[] tuple )
-    {
+    public void validateBeforeCommit(long entityId, Value[] tuple) {
         // Validation is supposed to check that the to-be-added values fit into the index key.
         // This is always true for the point index, because it does not support composite keys
         // and the supported values have only two possible sizes - serialised 2D point
@@ -68,16 +67,14 @@ class PointIndexAccessor extends NativeIndexAccessor<PointKey>
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
-        Map<String,Value> map = new HashMap<>();
-        spaceFillingCurveSettings.visitIndexSpecificSettings( new SpatialConfigVisitor( map ) );
+    public Map<String, Value> indexConfig() {
+        Map<String, Value> map = new HashMap<>();
+        spaceFillingCurveSettings.visitIndexSpecificSettings(new SpatialConfigVisitor(map));
         return map;
     }
 
     @Override
-    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy()
-    {
+    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy() {
         return UPDATE_IGNORE_STRATEGY;
     }
 }

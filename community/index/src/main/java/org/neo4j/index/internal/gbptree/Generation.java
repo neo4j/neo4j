@@ -29,14 +29,11 @@ import static java.lang.String.format;
  *       msb <-------> lsb
  * </pre>
  */
-class Generation
-{
+class Generation {
     private static final long UNSTABLE_GENERATION_MASK = 0xFFFFFFFFL;
     private static final int STABLE_GENERATION_SHIFT = Integer.SIZE;
 
-    private Generation()
-    {
-    }
+    private Generation() {}
 
     /**
      * Takes one stable and one unstable generation (both unsigned ints) and crams them into one {@code long}.
@@ -45,10 +42,9 @@ class Generation
      * @param unstableGeneration unstable generation.
      * @return the two generation numbers as one {@code long}.
      */
-    public static long generation( long stableGeneration, long unstableGeneration )
-    {
-        GenerationSafePointer.assertGenerationOnWrite( stableGeneration );
-        GenerationSafePointer.assertGenerationOnWrite( unstableGeneration );
+    public static long generation(long stableGeneration, long unstableGeneration) {
+        GenerationSafePointer.assertGenerationOnWrite(stableGeneration);
+        GenerationSafePointer.assertGenerationOnWrite(unstableGeneration);
 
         return (stableGeneration << STABLE_GENERATION_SHIFT) | unstableGeneration;
     }
@@ -59,8 +55,7 @@ class Generation
      * @param generation generation variable containing both stable and unstable generations.
      * @return unstable generation from generation.
      */
-    public static long unstableGeneration( long generation )
-    {
+    public static long unstableGeneration(long generation) {
         return generation & UNSTABLE_GENERATION_MASK;
     }
 
@@ -70,13 +65,12 @@ class Generation
      * @param generation generation variable containing both stable and unstable generations.
      * @return stable generation from generation.
      */
-    public static long stableGeneration( long generation )
-    {
+    public static long stableGeneration(long generation) {
         return generation >>> STABLE_GENERATION_SHIFT;
     }
 
-    public static String toString( long generation )
-    {
-        return format( "Generation[stable:%d, unstable:%d]", stableGeneration( generation ), unstableGeneration( generation ) );
+    public static String toString(long generation) {
+        return format(
+                "Generation[stable:%d, unstable:%d]", stableGeneration(generation), unstableGeneration(generation));
     }
 }

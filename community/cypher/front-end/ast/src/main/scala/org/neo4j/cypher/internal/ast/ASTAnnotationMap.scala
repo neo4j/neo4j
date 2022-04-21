@@ -28,20 +28,25 @@ object ASTAnnotationMap {
   def empty[K <: ASTNode, V]: ASTAnnotationMap[K, V] = Map.empty[PositionedNode[K], V]
 
   // DummyImplicit used just to disambiguate `apply` after type erasure
-  def apply[K <: ASTNode, V](elems: (PositionedNode[K], V)*)(implicit dummyImplicit: DummyImplicit): ASTAnnotationMap[K, V] = Map(elems:_*)
+  def apply[K <: ASTNode, V](elems: (PositionedNode[K], V)*)(implicit
+  dummyImplicit: DummyImplicit): ASTAnnotationMap[K, V] = Map(elems: _*)
 
-  def apply[K <: ASTNode, V](elems: (K, V)*): ASTAnnotationMap[K, V] = Map(elems.map { case( k, v )=> (PositionedNode(k), v) } :_*)
+  def apply[K <: ASTNode, V](elems: (K, V)*): ASTAnnotationMap[K, V] = Map(elems.map { case (k, v) =>
+    (PositionedNode(k), v)
+  }: _*)
 
-  implicit class ASTAnnotationMapOps[K <: ASTNode, V] (m: ASTAnnotationMap[K, V]){
+  implicit class ASTAnnotationMapOps[K <: ASTNode, V](m: ASTAnnotationMap[K, V]) {
+
     def replaceKeys(replacements: (PositionedNode[K], PositionedNode[K])*): ASTAnnotationMap[K, V] =
       Eagerly.immutableReplaceKeys(m)(replacements: _*)
   }
 
   object PositionedNode {
-      implicit def astNodeToPositionedNodeConverter[TFrom <: ASTNode](i: TFrom): PositionedNode[TFrom] = PositionedNode(i)
+    implicit def astNodeToPositionedNodeConverter[TFrom <: ASTNode](i: TFrom): PositionedNode[TFrom] = PositionedNode(i)
   }
 
-  case class PositionedNode[+N<:ASTNode](node: N)  {
+  case class PositionedNode[+N <: ASTNode](node: N) {
+
     def canEqual(a: Any): Boolean = {
       a.isInstanceOf[PositionedNode[N]]
     }
@@ -62,4 +67,3 @@ object ASTAnnotationMap {
     }
   }
 }
-

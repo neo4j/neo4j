@@ -25,61 +25,50 @@ import org.neo4j.graphdb.traversal.SideSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 
-public abstract class AbstractSelectorOrderer<T> implements SideSelector
-{
+public abstract class AbstractSelectorOrderer<T> implements SideSelector {
     private static final BranchSelector EMPTY_SELECTOR = metadata -> null;
 
     private final BranchSelector[] selectors;
-    @SuppressWarnings( "unchecked" )
+
+    @SuppressWarnings("unchecked")
     private final T[] states = (T[]) new Object[2];
+
     private int selectorIndex;
 
-    public AbstractSelectorOrderer( BranchSelector startSelector, BranchSelector endSelector )
-    {
-        selectors = new BranchSelector[] { startSelector, endSelector };
+    public AbstractSelectorOrderer(BranchSelector startSelector, BranchSelector endSelector) {
+        selectors = new BranchSelector[] {startSelector, endSelector};
         states[0] = initialState();
         states[1] = initialState();
     }
 
-    protected T initialState()
-    {
+    protected T initialState() {
         return null;
     }
 
-    protected void setStateForCurrentSelector( T state )
-    {
+    protected void setStateForCurrentSelector(T state) {
         states[selectorIndex] = state;
     }
 
-    protected T getStateForCurrentSelector()
-    {
+    protected T getStateForCurrentSelector() {
         return states[selectorIndex];
     }
 
-    protected TraversalBranch nextBranchFromCurrentSelector( TraversalContext metadata,
-            boolean switchIfExhausted )
-    {
-        return nextBranchFromSelector( metadata, selectors[selectorIndex], switchIfExhausted );
+    protected TraversalBranch nextBranchFromCurrentSelector(TraversalContext metadata, boolean switchIfExhausted) {
+        return nextBranchFromSelector(metadata, selectors[selectorIndex], switchIfExhausted);
     }
 
-    protected TraversalBranch nextBranchFromNextSelector( TraversalContext metadata,
-            boolean switchIfExhausted )
-    {
-        return nextBranchFromSelector( metadata, nextSelector(), switchIfExhausted );
+    protected TraversalBranch nextBranchFromNextSelector(TraversalContext metadata, boolean switchIfExhausted) {
+        return nextBranchFromSelector(metadata, nextSelector(), switchIfExhausted);
     }
 
-    private TraversalBranch nextBranchFromSelector( TraversalContext metadata,
-            BranchSelector selector, boolean switchIfExhausted )
-    {
-        TraversalBranch result = selector.next( metadata );
-        if ( result == null )
-        {
+    private TraversalBranch nextBranchFromSelector(
+            TraversalContext metadata, BranchSelector selector, boolean switchIfExhausted) {
+        TraversalBranch result = selector.next(metadata);
+        if (result == null) {
             selectors[selectorIndex] = EMPTY_SELECTOR;
-            if ( switchIfExhausted )
-            {
-                result = nextSelector().next( metadata );
-                if ( result == null )
-                {
+            if (switchIfExhausted) {
+                result = nextSelector().next(metadata);
+                if (result == null) {
                     selectors[selectorIndex] = EMPTY_SELECTOR;
                 }
             }
@@ -87,16 +76,13 @@ public abstract class AbstractSelectorOrderer<T> implements SideSelector
         return result;
     }
 
-    protected BranchSelector nextSelector()
-    {
+    protected BranchSelector nextSelector() {
         selectorIndex = (selectorIndex + 1) % 2;
         return selectors[selectorIndex];
     }
 
     @Override
-    public Direction currentSide()
-    {
+    public Direction currentSide() {
         return selectorIndex == 0 ? Direction.OUTGOING : Direction.INCOMING;
     }
-
 }

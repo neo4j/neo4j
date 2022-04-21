@@ -19,38 +19,35 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
+
+import java.util.Arrays;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-
-import java.util.Arrays;
-
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.util.Preconditions;
 
-import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
-
 /**
  * Used to specify a selection of relationships to get from a node.
  */
-public abstract class RelationshipSelection
-{
+public abstract class RelationshipSelection {
     /**
      * Tests whether a relationship of a certain type should be part of this selection.
      *
      * @param type the relationship type id of the relationship to test.
      * @return whether or not this relationship type is part of this selection.
      */
-    public abstract boolean test( int type );
+    public abstract boolean test(int type);
 
     /**
      * Tests whether a relationship of a certain direction should be part of this selection.
      * @param direction {@link RelationshipDirection} of the relationship to test.
      * @return whether or not this relationship is part of this selection.
      */
-    public abstract boolean test( RelationshipDirection direction );
+    public abstract boolean test(RelationshipDirection direction);
 
     /**
      * @return the {@link Direction} of relationships in this selection.
@@ -64,7 +61,7 @@ public abstract class RelationshipSelection
      * @param direction {@link RelationshipDirection} of the relationship to test.
      * @return whether or not this relationship type is part of this selection.
      */
-    public abstract boolean test( int type, RelationshipDirection direction );
+    public abstract boolean test(int type, RelationshipDirection direction);
 
     /**
      * @return the number of criteria in this selection. One {@link Criterion} is a type and {@link Direction}.
@@ -75,7 +72,7 @@ public abstract class RelationshipSelection
      * @param index which {@link Criterion} to access.
      * @return the {@link Criterion} for the given index, must be between 0 and {@link #numberOfCriteria()}.
      */
-    public abstract Criterion criterion( int index );
+    public abstract Criterion criterion(int index);
 
     /**
      * @return {@code true} if this selection is limited on type, i.e. if number of criteria matches number of selected types,
@@ -86,8 +83,7 @@ public abstract class RelationshipSelection
     /**
      * @return {@code true} if this selection is limited in any way, otherwise {@code false} where all relationships should be selected.
      */
-    public boolean isLimited()
-    {
+    public boolean isLimited() {
         return true;
     }
 
@@ -97,225 +93,182 @@ public abstract class RelationshipSelection
      * @param transactionState the {@link NodeState} to select added relationships from.
      * @return a {@link LongIterator} of added relationships matching the selection criteria from transaction state.
      */
-    public abstract LongIterator addedRelationship( NodeState transactionState );
+    public abstract LongIterator addedRelationship(NodeState transactionState);
 
     public abstract RelationshipSelection reverse();
 
-    public static RelationshipSelection selection( int[] types, Direction direction )
-    {
-        if ( types == null )
-        {
-            return selection( direction );
-        }
-        else if ( types.length == 0 )
-        {
+    public static RelationshipSelection selection(int[] types, Direction direction) {
+        if (types == null) {
+            return selection(direction);
+        } else if (types.length == 0) {
             return NO_RELATIONSHIPS;
+        } else if (types.length == 1) {
+            return new DirectionalSingleType(types[0], direction);
         }
-        else if ( types.length == 1 )
-        {
-            return new DirectionalSingleType( types[0], direction );
-        }
-        return new DirectionalMultipleTypes( types, direction );
+        return new DirectionalMultipleTypes(types, direction);
     }
 
-    public static RelationshipSelection selection( int type, Direction direction )
-    {
-        return new DirectionalSingleType( type, direction );
+    public static RelationshipSelection selection(int type, Direction direction) {
+        return new DirectionalSingleType(type, direction);
     }
 
-    public static RelationshipSelection selection( Direction direction )
-    {
-        return direction == Direction.BOTH ? ALL_RELATIONSHIPS : new DirectionalAllTypes( direction );
+    public static RelationshipSelection selection(Direction direction) {
+        return direction == Direction.BOTH ? ALL_RELATIONSHIPS : new DirectionalAllTypes(direction);
     }
 
-    private abstract static class Directional extends RelationshipSelection
-    {
+    private abstract static class Directional extends RelationshipSelection {
         protected final Direction direction;
 
-        Directional( Direction direction )
-        {
+        Directional(Direction direction) {
             this.direction = direction;
         }
 
         @Override
-        public boolean test( RelationshipDirection direction )
-        {
-            return direction.matches( this.direction );
+        public boolean test(RelationshipDirection direction) {
+            return direction.matches(this.direction);
         }
 
         @Override
-        public Direction direction()
-        {
+        public Direction direction() {
             return direction;
         }
     }
 
-    private abstract static class DirectionalSingleCriterion extends Directional implements Criterion
-    {
+    private abstract static class DirectionalSingleCriterion extends Directional implements Criterion {
         protected final int type;
 
-        DirectionalSingleCriterion( int type, Direction direction )
-        {
-            super( direction );
+        DirectionalSingleCriterion(int type, Direction direction) {
+            super(direction);
             this.type = type;
         }
 
         @Override
-        public boolean test( RelationshipDirection direction )
-        {
-            return direction.matches( this.direction );
+        public boolean test(RelationshipDirection direction) {
+            return direction.matches(this.direction);
         }
 
         @Override
-        public int numberOfCriteria()
-        {
+        public int numberOfCriteria() {
             return 1;
         }
 
         @Override
-        public Criterion criterion( int index )
-        {
-            Preconditions.checkArgument( index == 0, "Unknown criterion index %d", index );
+        public Criterion criterion(int index) {
+            Preconditions.checkArgument(index == 0, "Unknown criterion index %d", index);
             return this;
         }
 
         @Override
-        public int type()
-        {
+        public int type() {
             return type;
         }
 
         @Override
-        public Direction direction()
-        {
+        public Direction direction() {
             return direction;
         }
     }
 
-    private static class DirectionalSingleType extends DirectionalSingleCriterion
-    {
-        DirectionalSingleType( int type, Direction direction )
-        {
-            super( type, direction );
+    private static class DirectionalSingleType extends DirectionalSingleCriterion {
+        DirectionalSingleType(int type, Direction direction) {
+            super(type, direction);
         }
 
         @Override
-        public boolean test( int type )
-        {
+        public boolean test(int type) {
             return this.type == type;
         }
 
         @Override
-        public boolean test( int type, RelationshipDirection direction )
-        {
-            return this.type == type && direction.matches( this.direction );
+        public boolean test(int type, RelationshipDirection direction) {
+            return this.type == type && direction.matches(this.direction);
         }
 
         @Override
-        public boolean isTypeLimited()
-        {
+        public boolean isTypeLimited() {
             return true;
         }
 
         @Override
-        public LongIterator addedRelationship( NodeState transactionState )
-        {
-            return transactionState.getAddedRelationships( direction, type );
+        public LongIterator addedRelationship(NodeState transactionState) {
+            return transactionState.getAddedRelationships(direction, type);
         }
 
         @Override
-        public RelationshipSelection reverse()
-        {
-            return Direction.BOTH.equals( direction ) ? this : new DirectionalSingleType( type, direction.reverse() );
+        public RelationshipSelection reverse() {
+            return Direction.BOTH.equals(direction) ? this : new DirectionalSingleType(type, direction.reverse());
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "RelationshipSelection[" + "type=" + type + ", " + direction + "]";
         }
     }
 
-    private static class DirectionalMultipleTypes extends Directional
-    {
+    private static class DirectionalMultipleTypes extends Directional {
         private final int[] types;
 
-        DirectionalMultipleTypes( int[] types, Direction direction )
-        {
-            super( direction );
+        DirectionalMultipleTypes(int[] types, Direction direction) {
+            super(direction);
             this.types = types;
         }
 
         @Override
-        public boolean test( int type )
-        {
-            return ArrayUtils.contains( types, type );
+        public boolean test(int type) {
+            return ArrayUtils.contains(types, type);
         }
 
         @Override
-        public boolean test( int type, RelationshipDirection direction )
-        {
-            return test( type ) && direction.matches( this.direction );
+        public boolean test(int type, RelationshipDirection direction) {
+            return test(type) && direction.matches(this.direction);
         }
 
         @Override
-        public int numberOfCriteria()
-        {
+        public int numberOfCriteria() {
             return types.length;
         }
 
         @Override
-        public boolean isTypeLimited()
-        {
+        public boolean isTypeLimited() {
             return true;
         }
 
         @Override
-        public Criterion criterion( int index )
-        {
-            Preconditions.checkArgument( index < types.length, "Unknown criterion index %d", index );
-            return new CriterionImpl( types[index], direction );
+        public Criterion criterion(int index) {
+            Preconditions.checkArgument(index < types.length, "Unknown criterion index %d", index);
+            return new CriterionImpl(types[index], direction);
         }
 
         @Override
-        public LongIterator addedRelationship( NodeState transactionState )
-        {
+        public LongIterator addedRelationship(NodeState transactionState) {
             LongIterator[] all = new LongIterator[types.length];
             int index = 0;
-            for ( int i = 0; i < types.length; i++ )
-            {
+            for (int i = 0; i < types.length; i++) {
                 // We have to avoid duplication here, so check backwards if this type exists earlier in the array
-                if ( !existsEarlier( types, i ) )
-                {
-                    all[index++] = transactionState.getAddedRelationships( direction, types[i] );
+                if (!existsEarlier(types, i)) {
+                    all[index++] = transactionState.getAddedRelationships(direction, types[i]);
                 }
             }
-            if ( index != types.length )
-            {
-                all = Arrays.copyOf( all, index );
+            if (index != types.length) {
+                all = Arrays.copyOf(all, index);
             }
-            return PrimitiveLongCollections.concat( all );
+            return PrimitiveLongCollections.concat(all);
         }
 
         @Override
-        public RelationshipSelection reverse()
-        {
-            return Direction.BOTH.equals( direction ) ? this : new DirectionalMultipleTypes( types, direction.reverse() );
+        public RelationshipSelection reverse() {
+            return Direction.BOTH.equals(direction) ? this : new DirectionalMultipleTypes(types, direction.reverse());
         }
 
         @Override
-        public String toString()
-        {
-            return "RelationshipSelection[" + "types=" + Arrays.toString( types ) + ", " + direction + "]";
+        public String toString() {
+            return "RelationshipSelection[" + "types=" + Arrays.toString(types) + ", " + direction + "]";
         }
 
-        private static boolean existsEarlier( int[] types, int i )
-        {
+        private static boolean existsEarlier(int[] types, int i) {
             int candidateType = types[i];
-            for ( int j = i - 1; j >= 0; j-- )
-            {
-                if ( candidateType == types[j] )
-                {
+            for (int j = i - 1; j >= 0; j--) {
+                if (candidateType == types[j]) {
                     return true;
                 }
             }
@@ -323,212 +276,176 @@ public abstract class RelationshipSelection
         }
     }
 
-    private static class DirectionalAllTypes extends DirectionalSingleCriterion
-    {
-        DirectionalAllTypes( Direction direction )
-        {
-            super( ANY_RELATIONSHIP_TYPE, direction );
+    private static class DirectionalAllTypes extends DirectionalSingleCriterion {
+        DirectionalAllTypes(Direction direction) {
+            super(ANY_RELATIONSHIP_TYPE, direction);
         }
 
         @Override
-        public boolean test( int type )
-        {
+        public boolean test(int type) {
             return true;
         }
 
         @Override
-        public boolean test( int type, RelationshipDirection direction )
-        {
-            return direction.matches( this.direction );
+        public boolean test(int type, RelationshipDirection direction) {
+            return direction.matches(this.direction);
         }
 
         @Override
-        public boolean isTypeLimited()
-        {
+        public boolean isTypeLimited() {
             return false;
         }
 
         @Override
-        public LongIterator addedRelationship( NodeState transactionState )
-        {
-            return transactionState.getAddedRelationships( direction );
+        public LongIterator addedRelationship(NodeState transactionState) {
+            return transactionState.getAddedRelationships(direction);
         }
 
         @Override
-        public RelationshipSelection reverse()
-        {
-            return Direction.BOTH.equals( direction ) ? this : new DirectionalAllTypes( direction.reverse() );
+        public RelationshipSelection reverse() {
+            return Direction.BOTH.equals(direction) ? this : new DirectionalAllTypes(direction.reverse());
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "RelationshipSelection[" + direction + "]";
         }
     }
 
-    public interface Criterion
-    {
+    public interface Criterion {
         int type();
 
         Direction direction();
     }
 
-    public static class CriterionImpl implements Criterion
-    {
+    public static class CriterionImpl implements Criterion {
         private final int type;
         private final Direction direction;
 
-        CriterionImpl( int type, Direction direction )
-        {
+        CriterionImpl(int type, Direction direction) {
             this.type = type;
             this.direction = direction;
         }
 
         @Override
-        public int type()
-        {
+        public int type() {
             return type;
         }
 
         @Override
-        public Direction direction()
-        {
+        public Direction direction() {
             return direction;
         }
     }
 
-    public static final RelationshipSelection ALL_RELATIONSHIPS = new RelationshipSelection()
-    {
-        private final Criterion ALL_CRITERIA = new CriterionImpl( ANY_RELATIONSHIP_TYPE, Direction.BOTH );
+    public static final RelationshipSelection ALL_RELATIONSHIPS = new RelationshipSelection() {
+        private final Criterion ALL_CRITERIA = new CriterionImpl(ANY_RELATIONSHIP_TYPE, Direction.BOTH);
 
         @Override
-        public boolean test( int type )
-        {
+        public boolean test(int type) {
             return true;
         }
 
         @Override
-        public boolean test( RelationshipDirection direction )
-        {
+        public boolean test(RelationshipDirection direction) {
             return true;
         }
 
         @Override
-        public Direction direction()
-        {
+        public Direction direction() {
             return Direction.BOTH;
         }
 
         @Override
-        public boolean test( int type, RelationshipDirection direction )
-        {
+        public boolean test(int type, RelationshipDirection direction) {
             return true;
         }
 
         @Override
-        public RelationshipSelection reverse()
-        {
+        public RelationshipSelection reverse() {
             return this;
         }
 
         @Override
-        public int numberOfCriteria()
-        {
+        public int numberOfCriteria() {
             return 1;
         }
 
         @Override
-        public Criterion criterion( int index )
-        {
-            Preconditions.checkArgument( index == 0, "Unknown criterion index %d", index );
+        public Criterion criterion(int index) {
+            Preconditions.checkArgument(index == 0, "Unknown criterion index %d", index);
             return ALL_CRITERIA;
         }
 
         @Override
-        public boolean isTypeLimited()
-        {
+        public boolean isTypeLimited() {
             return false;
         }
 
         @Override
-        public boolean isLimited()
-        {
+        public boolean isLimited() {
             return false;
         }
 
         @Override
-        public LongIterator addedRelationship( NodeState transactionState )
-        {
+        public LongIterator addedRelationship(NodeState transactionState) {
             return transactionState.getAddedRelationships();
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "RelationshipSelection[*]";
         }
     };
 
-    public static final RelationshipSelection NO_RELATIONSHIPS = new RelationshipSelection()
-    {
+    public static final RelationshipSelection NO_RELATIONSHIPS = new RelationshipSelection() {
         @Override
-        public boolean test( int type )
-        {
+        public boolean test(int type) {
             return false;
         }
 
         @Override
-        public boolean test( RelationshipDirection direction )
-        {
+        public boolean test(RelationshipDirection direction) {
             return false;
         }
 
         @Override
-        public Direction direction()
-        {
+        public Direction direction() {
             return Direction.BOTH;
         }
 
         @Override
-        public boolean test( int type, RelationshipDirection direction )
-        {
+        public boolean test(int type, RelationshipDirection direction) {
             return false;
         }
 
         @Override
-        public int numberOfCriteria()
-        {
+        public int numberOfCriteria() {
             return 0;
         }
 
         @Override
-        public Criterion criterion( int index )
-        {
-            throw new IllegalArgumentException( "Unknown criterion index " + index );
+        public Criterion criterion(int index) {
+            throw new IllegalArgumentException("Unknown criterion index " + index);
         }
 
         @Override
-        public boolean isTypeLimited()
-        {
+        public boolean isTypeLimited() {
             return true;
         }
 
         @Override
-        public LongIterator addedRelationship( NodeState transactionState )
-        {
+        public LongIterator addedRelationship(NodeState transactionState) {
             return ImmutableEmptyLongIterator.INSTANCE;
         }
 
         @Override
-        public RelationshipSelection reverse()
-        {
+        public RelationshipSelection reverse() {
             return this;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "RelationshipSelection[NOTHING]";
         }
     };

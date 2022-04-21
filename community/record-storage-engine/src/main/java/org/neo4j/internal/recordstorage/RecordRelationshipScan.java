@@ -21,11 +21,10 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 
-final class RecordRelationshipScan extends BaseRecordScan<RecordRelationshipScanCursor> implements AllRelationshipsScan
-{
+final class RecordRelationshipScan extends BaseRecordScan<RecordRelationshipScanCursor>
+        implements AllRelationshipsScan {
     @Override
-    boolean scanRange( RecordRelationshipScanCursor cursor, long start, long stopInclusive )
-    {
-        return cursor.scanRange( start, stopInclusive );
+    boolean scanRange(RecordRelationshipScanCursor cursor, long start, long stopInclusive) {
+        return cursor.scanRange(start, stopInclusive);
     }
 }

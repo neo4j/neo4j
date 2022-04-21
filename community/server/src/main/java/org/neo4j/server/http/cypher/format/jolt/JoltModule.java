@@ -21,7 +21,6 @@ package org.neo4j.server.http.cypher.format.jolt;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdDelegatingSerializer;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,99 +28,90 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.storable.DurationValue;
 
-enum JoltModule
-{
-    DEFAULT( new JoltModuleImpl( false ) ),
-    STRICT( new JoltModuleImpl( true ) );
+enum JoltModule {
+    DEFAULT(new JoltModuleImpl(false)),
+    STRICT(new JoltModuleImpl(true));
 
     private final SimpleModule instance;
 
-    JoltModule( SimpleModule instance )
-    {
+    JoltModule(SimpleModule instance) {
         this.instance = instance;
     }
 
-    public SimpleModule getInstance()
-    {
+    public SimpleModule getInstance() {
         return instance;
     }
 
-    private static class JoltModuleImpl extends SimpleModule
-    {
+    private static class JoltModuleImpl extends SimpleModule {
 
         private static final char[] HEX_DIGITS = "0123456789ABCDEF".toCharArray();
 
-        private JoltModuleImpl( boolean strictModeEnabled )
-        {
+        private JoltModuleImpl(boolean strictModeEnabled) {
 
-            if ( strictModeEnabled )
-            {
-                this.addSerializer( new JoltDelegatingValueSerializer<>( String.class, Sigil.UNICODE, Function.identity() ) );
+            if (strictModeEnabled) {
+                this.addSerializer(
+                        new JoltDelegatingValueSerializer<>(String.class, Sigil.UNICODE, Function.identity()));
 
-                this.addSerializer( new JoltDelegatingValueSerializer<>( boolean.class, Sigil.BOOLEAN, String::valueOf ) );
-                this.addSerializer( new JoltDelegatingValueSerializer<>( Boolean.class, Sigil.BOOLEAN, String::valueOf ) );
+                this.addSerializer(new JoltDelegatingValueSerializer<>(boolean.class, Sigil.BOOLEAN, String::valueOf));
+                this.addSerializer(new JoltDelegatingValueSerializer<>(Boolean.class, Sigil.BOOLEAN, String::valueOf));
 
-                this.addSerializer( new JoltDelegatingValueSerializer<>( int.class, Sigil.INTEGER, String::valueOf ) );
-                this.addSerializer( new JoltDelegatingValueSerializer<>( Integer.class, Sigil.INTEGER, String::valueOf ) );
+                this.addSerializer(new JoltDelegatingValueSerializer<>(int.class, Sigil.INTEGER, String::valueOf));
+                this.addSerializer(new JoltDelegatingValueSerializer<>(Integer.class, Sigil.INTEGER, String::valueOf));
 
-                this.addSerializer( new JoltLongSerializer<>( long.class ) );
-                this.addSerializer( new JoltLongSerializer<>( Long.class ) );
+                this.addSerializer(new JoltLongSerializer<>(long.class));
+                this.addSerializer(new JoltLongSerializer<>(Long.class));
 
-                this.addSerializer( new JoltDelegatingValueSerializer<>( Void.class, Sigil.BOOLEAN, String::valueOf ) );
-                this.addSerializer( new JoltListSerializer() );
-            }
-            else
-            {
-                this.addSerializer( new JoltSparseNumberSerializer<>( int.class, Sigil.INTEGER, String::valueOf ) );
-                this.addSerializer( new JoltSparseNumberSerializer<>( Integer.class, Sigil.INTEGER, String::valueOf ) );
+                this.addSerializer(new JoltDelegatingValueSerializer<>(Void.class, Sigil.BOOLEAN, String::valueOf));
+                this.addSerializer(new JoltListSerializer());
+            } else {
+                this.addSerializer(new JoltSparseNumberSerializer<>(int.class, Sigil.INTEGER, String::valueOf));
+                this.addSerializer(new JoltSparseNumberSerializer<>(Integer.class, Sigil.INTEGER, String::valueOf));
 
-                this.addSerializer( new JoltSparseNumberSerializer<>( long.class, Sigil.INTEGER, String::valueOf ) );
-                this.addSerializer( new JoltSparseNumberSerializer<>( Long.class, Sigil.INTEGER, String::valueOf ) );
+                this.addSerializer(new JoltSparseNumberSerializer<>(long.class, Sigil.INTEGER, String::valueOf));
+                this.addSerializer(new JoltSparseNumberSerializer<>(Long.class, Sigil.INTEGER, String::valueOf));
             }
 
-            this.addSerializer( new JoltDelegatingValueSerializer<>( double.class, Sigil.REAL, String::valueOf ) );
-            this.addSerializer( new JoltDelegatingValueSerializer<>( Double.class, Sigil.REAL, String::valueOf ) );
+            this.addSerializer(new JoltDelegatingValueSerializer<>(double.class, Sigil.REAL, String::valueOf));
+            this.addSerializer(new JoltDelegatingValueSerializer<>(Double.class, Sigil.REAL, String::valueOf));
 
-            this.addSerializer( new JoltDelegatingValueSerializer<>( byte[].class, Sigil.BINARY, JoltModuleImpl::toHexString ) );
-            this.addSerializer( new JoltDelegatingValueSerializer<>( Point.class, Sigil.SPATIAL, new PointToWKT() ) );
-
-            this.addSerializer( new JoltDelegatingValueSerializer<>( LocalDate.class, Sigil.TIME,
-                                                                     DateTimeFormatter.ISO_LOCAL_DATE::format ) );
-            this.addSerializer( new JoltDelegatingValueSerializer<>( OffsetTime.class, Sigil.TIME,
-                                                                     DateTimeFormatter.ISO_OFFSET_TIME::format ) );
-            this.addSerializer( new JoltDelegatingValueSerializer<>( LocalTime.class, Sigil.TIME,
-                                                                     DateTimeFormatter.ISO_LOCAL_TIME::format ) );
-            this.addSerializer( new JoltDelegatingValueSerializer<>( ZonedDateTime.class, Sigil.TIME,
-                                                                     DateTimeFormatter.ISO_ZONED_DATE_TIME::format ) );
-            this.addSerializer( new JoltDelegatingValueSerializer<>( LocalDateTime.class, Sigil.TIME,
-                                                                     DateTimeFormatter.ISO_LOCAL_DATE_TIME::format ) );
-            this.addSerializer( new JoltDelegatingValueSerializer<>( DurationValue.class, Sigil.TIME,
-                                                                     DurationValue::toString ) );
-
-            this.addSerializer( new StdDelegatingSerializer( Label.class, new JoltLabelConverter() ) );
             this.addSerializer(
-                    new StdDelegatingSerializer( RelationshipType.class, new JoltRelationshipTypeConverter() ) );
+                    new JoltDelegatingValueSerializer<>(byte[].class, Sigil.BINARY, JoltModuleImpl::toHexString));
+            this.addSerializer(new JoltDelegatingValueSerializer<>(Point.class, Sigil.SPATIAL, new PointToWKT()));
 
-            this.addSerializer( new JoltNodeSerializer() );
-            this.addSerializer( new JoltRelationshipSerializer() );
-            this.addSerializer( new JoltRelationshipReversedSerializer() );
-            this.addSerializer( new JoltPathSerializer() );
+            this.addSerializer(new JoltDelegatingValueSerializer<>(
+                    LocalDate.class, Sigil.TIME, DateTimeFormatter.ISO_LOCAL_DATE::format));
+            this.addSerializer(new JoltDelegatingValueSerializer<>(
+                    OffsetTime.class, Sigil.TIME, DateTimeFormatter.ISO_OFFSET_TIME::format));
+            this.addSerializer(new JoltDelegatingValueSerializer<>(
+                    LocalTime.class, Sigil.TIME, DateTimeFormatter.ISO_LOCAL_TIME::format));
+            this.addSerializer(new JoltDelegatingValueSerializer<>(
+                    ZonedDateTime.class, Sigil.TIME, DateTimeFormatter.ISO_ZONED_DATE_TIME::format));
+            this.addSerializer(new JoltDelegatingValueSerializer<>(
+                    LocalDateTime.class, Sigil.TIME, DateTimeFormatter.ISO_LOCAL_DATE_TIME::format));
+            this.addSerializer(
+                    new JoltDelegatingValueSerializer<>(DurationValue.class, Sigil.TIME, DurationValue::toString));
 
-            this.addSerializer( new JoltMapSerializer() );
+            this.addSerializer(new StdDelegatingSerializer(Label.class, new JoltLabelConverter()));
+            this.addSerializer(
+                    new StdDelegatingSerializer(RelationshipType.class, new JoltRelationshipTypeConverter()));
+
+            this.addSerializer(new JoltNodeSerializer());
+            this.addSerializer(new JoltRelationshipSerializer());
+            this.addSerializer(new JoltRelationshipReversedSerializer());
+            this.addSerializer(new JoltPathSerializer());
+
+            this.addSerializer(new JoltMapSerializer());
         }
 
-        private static String toHexString( byte[] bytes )
-        {
-            var sb = new StringBuilder( 2 * bytes.length );
-            for ( var b : bytes )
-            {
-                sb.append( HEX_DIGITS[(b >> 4) & 0xf] ).append( HEX_DIGITS[b & 0xf] );
+        private static String toHexString(byte[] bytes) {
+            var sb = new StringBuilder(2 * bytes.length);
+            for (var b : bytes) {
+                sb.append(HEX_DIGITS[(b >> 4) & 0xf]).append(HEX_DIGITS[b & 0xf]);
             }
             return sb.toString();
         }

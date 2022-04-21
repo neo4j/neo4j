@@ -20,10 +20,8 @@
 package org.neo4j.procedure.builtin.routing;
 
 import java.util.Optional;
-
 import org.neo4j.configuration.helpers.SocketAddress;
 
-public interface ServerSideRoutingTableProvider
-{
-    RoutingResult getServerSideRoutingTable( Optional<SocketAddress> clientProvidedAddress );
+public interface ServerSideRoutingTableProvider {
+    RoutingResult getServerSideRoutingTable(Optional<SocketAddress> clientProvidedAddress);
 }

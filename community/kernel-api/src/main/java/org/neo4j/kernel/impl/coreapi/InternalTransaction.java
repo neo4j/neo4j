@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.coreapi;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -33,9 +32,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory;
 import org.neo4j.values.ElementIdMapper;
 
-public interface InternalTransaction extends Transaction, TransactionalEntityFactory, ResourceMonitor
-{
-    void setTransaction( KernelTransaction transaction );
+public interface InternalTransaction extends Transaction, TransactionalEntityFactory, ResourceMonitor {
+    void setTransaction(KernelTransaction transaction);
 
     /**
      * Loop-hole to access underlying kernel transaction. This is intended to allow
@@ -49,23 +47,23 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
 
     ClientConnectionInfo clientInfo();
 
-    KernelTransaction.Revertable overrideWith( SecurityContext context );
+    KernelTransaction.Revertable overrideWith(SecurityContext context);
 
     Optional<Status> terminationReason();
 
-    void setMetaData( Map<String, Object> txMeta );
+    void setMetaData(Map<String, Object> txMeta);
 
     void checkInTransaction();
 
     boolean isOpen();
 
-    void terminate( Status reason );
+    void terminate(Status reason);
 
     UUID getDatabaseId();
 
     String getDatabaseName();
 
-    <E extends Entity> E validateSameDB( E entity );
+    <E extends Entity> E validateSameDB(E entity);
 
     /**
      * Attach a callback that will be called when the transaction is closed. This can be used by e.g. procedures to register
@@ -73,16 +71,14 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
      *
      * @param callback to be invoked when the transaction is closed.
      */
-    default void addCloseCallback( TransactionClosedCallback callback )
-    {
-        throw new UnsupportedOperationException( "This transaction implementation does not allow close callbacks" );
+    default void addCloseCallback(TransactionClosedCallback callback) {
+        throw new UnsupportedOperationException("This transaction implementation does not allow close callbacks");
     }
 
     ElementIdMapper elementIdMapper();
 
     @FunctionalInterface
-    interface TransactionClosedCallback
-    {
+    interface TransactionClosedCallback {
         void transactionClosed();
     }
 }

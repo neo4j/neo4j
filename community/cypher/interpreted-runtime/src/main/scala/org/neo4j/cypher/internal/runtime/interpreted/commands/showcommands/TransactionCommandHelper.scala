@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.configuration.helpers.DatabaseNameValidator
-import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.dbms.database.DatabaseContext
@@ -29,22 +28,30 @@ import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransactionHandle
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.impl.api.KernelTransactions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.virtual.ListValue
 
 import java.util.Objects
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 case object TransactionCommandHelper {
-  def isSelfOrAllows(username: String, actionOnResource: AdminActionOnResource, securityContext: SecurityContext): Boolean =
+
+  def isSelfOrAllows(
+    username: String,
+    actionOnResource: AdminActionOnResource,
+    securityContext: SecurityContext
+  ): Boolean =
     securityContext.subject.hasUsername(username) || securityContext.allowsAdminAction(actionOnResource).allowsAccess
 
   def getExecutingTransactions(databaseContext: DatabaseContext): Set[KernelTransactionHandle] = {
     val dependencies = databaseContext.dependencies
-    if (dependencies != null) dependencies.resolveDependency(classOf[KernelTransactions]).executingTransactions.asScala.toSet
+    if (dependencies != null)
+      dependencies.resolveDependency(classOf[KernelTransactions]).executingTransactions.asScala.toSet
     else Set.empty
   }
 
@@ -59,9 +66,10 @@ case object TransactionCommandHelper {
             val list = l.iterator().asScala
             list.map {
               case s: StringValue => s.stringValue()
-              case x => throw new ParameterWrongTypeException(s"Expected a string, but got: ${x.toString}")
+              case x              => throw new ParameterWrongTypeException(s"Expected a string, but got: ${x.toString}")
             }.toSet.toList
-          case x => throw new ParameterWrongTypeException(s"Expected a string or a list of strings, but got: ${x.toString}")
+          case x =>
+            throw new ParameterWrongTypeException(s"Expected a string or a list of strings, but got: ${x.toString}")
         }
       case x => throw new IllegalStateException(s"Expected a list of strings or a parameter, but got: ${x.toString}")
     }

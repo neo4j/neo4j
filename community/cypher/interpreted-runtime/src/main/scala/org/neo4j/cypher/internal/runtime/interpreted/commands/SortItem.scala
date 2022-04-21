@@ -26,6 +26,7 @@ import org.neo4j.exceptions.PatternException
 import org.neo4j.values.AnyValue
 
 case class SortItem(expression: Expression, ascending: Boolean) {
+
   def apply(ctx: CypherRow, state: QueryState): AnyValue =
     if (!expression.isDeterministic)
       throw new PatternException("ORDER BY expressions must be deterministic. " +

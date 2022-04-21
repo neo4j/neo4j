@@ -19,12 +19,12 @@
  */
 package org.neo4j.internal.collector
 
-import java.util.Locale
-import java.util.TimeZone
-
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
 import org.neo4j.internal.collector.DataCollectorMatchers.ofType
+
+import java.util.Locale
+import java.util.TimeZone
 
 class DataCollectorMetaAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -107,7 +107,7 @@ class DataCollectorMetaAcceptanceTest extends ExecutionEngineFunSuite {
       "userLanguage" -> Locale.getDefault.getLanguage,
       "userCountry" -> Locale.getDefault.getCountry,
       "userTimezone" -> TimeZone.getDefault.getID,
-      "fileEncoding" -> System.getProperty( "file.encoding" )
+      "fileEncoding" -> System.getProperty("file.encoding")
     )
 
   private val beInternalData =

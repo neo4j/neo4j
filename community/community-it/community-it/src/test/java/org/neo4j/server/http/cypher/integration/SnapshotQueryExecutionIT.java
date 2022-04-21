@@ -19,15 +19,20 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
+import static org.neo4j.snapshot.TestVersionContext.testCursorContext;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.LongSupplier;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,113 +45,95 @@ import org.neo4j.snapshot.TestVersionContext;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
-import static org.neo4j.snapshot.TestVersionContext.testCursorContext;
-import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
-
-class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
-{
+class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase {
     private TestWebContainer testWebContainer;
     private LongSupplier lastTransactionIdSource;
     private final CopyOnWriteArrayList<TestVersionContext> contexts = new CopyOnWriteArrayList<>();
     private final LongSupplier idSupplier = () -> lastTransactionIdSource.getAsLong();
 
     @BeforeEach
-    void setUp() throws Exception
-    {
+    void setUp() throws Exception {
         var testContextSupplierFactory = new TestTransactionVersionContextSupplier.Factory();
         var dependencies = new Dependencies();
-        dependencies.satisfyDependencies( testContextSupplierFactory );
+        dependencies.satisfyDependencies(testContextSupplierFactory);
         testWebContainer = serverOnRandomPorts()
-                .withProperty( GraphDatabaseInternalSettings.snapshot_query.name(), TRUE )
-                .withDependencies( dependencies )
+                .withProperty(GraphDatabaseInternalSettings.snapshot_query.name(), TRUE)
+                .withDependencies(dependencies)
                 .build();
         var db = testWebContainer.getDefaultDatabase();
 
-        testContextSupplierFactory.setTestVersionContextSupplier( databaseName -> {
-            var context = testCursorContext( idSupplier, databaseName );
-            contexts.add( context );
+        testContextSupplierFactory.setTestVersionContextSupplier(databaseName -> {
+            var context = testCursorContext(idSupplier, databaseName);
+            contexts.add(context);
             return context;
-        } );
+        });
 
-        createData( db );
+        createData(db);
     }
 
-    private static void createData( GraphDatabaseService database )
-    {
-        Label label = Label.label( "toRetry" );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node node = transaction.createNode( label );
-            node.setProperty( "c", "d" );
+    private static void createData(GraphDatabaseService database) {
+        Label label = Label.label("toRetry");
+        try (Transaction transaction = database.beginTx()) {
+            Node node = transaction.createNode(label);
+            node.setProperty("c", "d");
             transaction.commit();
         }
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( testWebContainer != null )
-        {
+    void tearDown() {
+        if (testWebContainer != null) {
             testWebContainer.shutdown();
         }
     }
 
     @Test
-    void executeQueryWithSingleRetry()
-    {
+    void executeQueryWithSingleRetry() {
         lastTransactionIdSource = new ArrayBasedLongSupplier();
-        HTTP.Response response = executeOverHTTP( "MATCH (n) RETURN n.c" );
-        assertThat( response.status() ).isEqualTo( 200 );
-        Map<String,List<Map<String,List<Map<String,List<String>>>>>> content = response.content();
-        assertEquals( "d", content.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 ) );
+        HTTP.Response response = executeOverHTTP("MATCH (n) RETURN n.c");
+        assertThat(response.status()).isEqualTo(200);
+        Map<String, List<Map<String, List<Map<String, List<String>>>>>> content = response.content();
+        assertEquals(
+                "d", content.get("results").get(0).get("data").get(0).get("row").get(0));
         TestVersionContext testVersionContext = findCorrespondingContext();
-        assertEquals( 1, testVersionContext.getAdditionalAttempts() );
+        assertEquals(1, testVersionContext.getAdditionalAttempts());
     }
 
     @Test
-    void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
-    {
+    void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException() {
         lastTransactionIdSource = () -> 1;
-        HTTP.Response response = executeOverHTTP( "MATCH (n:toRetry) CREATE () RETURN n.c" );
-        Map<String,List<Map<String,String>>> content = response.content();
-        //todo query string returned is different bug? 'MATCH (`n`:`toRetry`)
-        //CREATE ()
-        //RETURN (`n`).`c` AS `n.c`' that performs updates.
-        assertThat( content.get( "errors" ).get( 0 ).get( "message" ) ).startsWith( "Unable to get clean data snapshot for query" );
+        HTTP.Response response = executeOverHTTP("MATCH (n:toRetry) CREATE () RETURN n.c");
+        Map<String, List<Map<String, String>>> content = response.content();
+        // todo query string returned is different bug? 'MATCH (`n`:`toRetry`)
+        // CREATE ()
+        // RETURN (`n`).`c` AS `n.c`' that performs updates.
+        assertThat(content.get("errors").get(0).get("message"))
+                .startsWith("Unable to get clean data snapshot for query");
     }
 
-    private TestVersionContext findCorrespondingContext()
-    {
-        for ( TestVersionContext context : contexts )
-        {
-            if ( context.getNumIsDirtyCalls() > 0 )
-            {
+    private TestVersionContext findCorrespondingContext() {
+        for (TestVersionContext context : contexts) {
+            if (context.getNumIsDirtyCalls() > 0) {
                 return context;
             }
         }
-        throw new IllegalStateException( "Should have at least one matching context. Observed contexts: " + contexts );
+        throw new IllegalStateException("Should have at least one matching context. Observed contexts: " + contexts);
     }
 
-    private HTTP.Response executeOverHTTP( String query )
-    {
-        HTTP.Builder httpClientBuilder = HTTP.withBaseUri( testWebContainer.getBaseUri() );
-        HTTP.Response transactionStart = httpClientBuilder.POST( txEndpoint() );
-        assertThat( transactionStart.status() ).isEqualTo( 201 );
-        return httpClientBuilder.POST( transactionStart.location(), quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
+    private HTTP.Response executeOverHTTP(String query) {
+        HTTP.Builder httpClientBuilder = HTTP.withBaseUri(testWebContainer.getBaseUri());
+        HTTP.Response transactionStart = httpClientBuilder.POST(txEndpoint());
+        assertThat(transactionStart.status()).isEqualTo(201);
+        return httpClientBuilder.POST(
+                transactionStart.location(), quotedJson("{ 'statements': [ { 'statement': '" + query + "' } ] }"));
     }
 
-    private static class ArrayBasedLongSupplier implements LongSupplier
-    {
+    private static class ArrayBasedLongSupplier implements LongSupplier {
         private final long[] values = new long[] {1, Long.MAX_VALUE};
         private int index;
 
         @Override
-        public long getAsLong()
-        {
+        public long getAsLong() {
             return index >= values.length ? values[values.length - 1] : values[index++];
         }
     }

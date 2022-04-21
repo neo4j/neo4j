@@ -22,29 +22,23 @@ package org.neo4j.kernel.api.security.provider;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class NoAuthSecurityProvider extends LifecycleAdapter implements SecurityProvider
-{
+public class NoAuthSecurityProvider extends LifecycleAdapter implements SecurityProvider {
     public static final NoAuthSecurityProvider INSTANCE = new NoAuthSecurityProvider();
 
-    private NoAuthSecurityProvider()
-    {
-    }
+    private NoAuthSecurityProvider() {}
 
     @Override
-    public AuthManager authManager()
-    {
+    public AuthManager authManager() {
         return AuthManager.NO_AUTH;
     }
 
     @Override
-    public AuthManager inClusterAuthManager()
-    {
+    public AuthManager inClusterAuthManager() {
         return AuthManager.NO_AUTH;
     }
 
     @Override
-    public AuthManager loopbackAuthManager()
-    {
+    public AuthManager loopbackAuthManager() {
         return AuthManager.NO_AUTH;
     }
 }

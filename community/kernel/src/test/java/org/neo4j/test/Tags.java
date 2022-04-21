@@ -24,20 +24,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 
 /**
  * Utility classes for tags, a general term to try and encompass both tokens (labels, and types), and property keys.
  */
-public class Tags
-{
+public class Tags {
     /**
      * A set of factory helpers that normalize the creation of tags.
      */
-    public static class Factories
-    {
+    public static class Factories {
         public static final Label LABEL = new Label();
         public static final RelationshipType RELATIONSHIP_TYPE = new RelationshipType();
         public static final PropertyKey PROPERTY_KEY = new PropertyKey();
@@ -45,83 +42,66 @@ public class Tags
         /**
          * A factory helper to normalize the creation of {@link org.neo4j.graphdb.Label}s.
          */
-        public static final class Label extends Factory<org.neo4j.graphdb.Label>
-        {
+        public static final class Label extends Factory<org.neo4j.graphdb.Label> {
             @Override
-            public org.neo4j.graphdb.Label fromName( String name )
-            {
-                return org.neo4j.graphdb.Label.label( name );
+            public org.neo4j.graphdb.Label fromName(String name) {
+                return org.neo4j.graphdb.Label.label(name);
             }
 
             @Override
-            public int getId( KernelTransaction tx, org.neo4j.graphdb.Label label ) throws KernelException
-            {
-                return tx.tokenWrite().labelGetOrCreateForName( label.name() );
+            public int getId(KernelTransaction tx, org.neo4j.graphdb.Label label) throws KernelException {
+                return tx.tokenWrite().labelGetOrCreateForName(label.name());
             }
 
-            private Label()
-            {
-            }
+            private Label() {}
         }
 
         /**
          * A factory helper to normalize the creation of {@link org.neo4j.graphdb.RelationshipType}s.
          */
-        public static final class RelationshipType extends Factory<org.neo4j.graphdb.RelationshipType>
-        {
+        public static final class RelationshipType extends Factory<org.neo4j.graphdb.RelationshipType> {
 
             @Override
-            public org.neo4j.graphdb.RelationshipType fromName( String name )
-            {
-                return org.neo4j.graphdb.RelationshipType.withName( name );
+            public org.neo4j.graphdb.RelationshipType fromName(String name) {
+                return org.neo4j.graphdb.RelationshipType.withName(name);
             }
 
             @Override
-            public int getId( KernelTransaction tx, org.neo4j.graphdb.RelationshipType relType ) throws KernelException
-            {
-                return tx.tokenWrite().relationshipTypeGetOrCreateForName( relType.name() );
+            public int getId(KernelTransaction tx, org.neo4j.graphdb.RelationshipType relType) throws KernelException {
+                return tx.tokenWrite().relationshipTypeGetOrCreateForName(relType.name());
             }
 
-            private RelationshipType()
-            {
-            }
+            private RelationshipType() {}
         }
 
         /**
          * A factory helper to normalize the creation of property keys.
          */
-        public static final class PropertyKey extends Factory<String>
-        {
+        public static final class PropertyKey extends Factory<String> {
 
             @Override
-            public String fromName( String name )
-            {
+            public String fromName(String name) {
                 return name;
             }
 
             @Override
-            public int getId( KernelTransaction tx, String propertyKey ) throws KernelException
-            {
-                return tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
+            public int getId(KernelTransaction tx, String propertyKey) throws KernelException {
+                return tx.tokenWrite().propertyKeyGetOrCreateForName(propertyKey);
             }
 
-            private PropertyKey()
-            {
-            }
+            private PropertyKey() {}
         }
         /**
          * An abstract factory helper to normalize the creation of {@code TAG}s.
          *
          * @param <TAG> the type of tags to be created
          */
-        public abstract static sealed class Factory<TAG>
-                permits Label, RelationshipType, PropertyKey
-        {
+        public abstract static sealed class Factory<TAG> permits Label, RelationshipType, PropertyKey {
             /**
              * @param name the name of a {@code TAG}
              * @return a {@code TAG} corresponding to {@code name}
              */
-            public abstract TAG fromName( String name );
+            public abstract TAG fromName(String name);
 
             /**
              * Get the ID for the given {@code tag}.
@@ -133,7 +113,7 @@ public class Tags
              * @return the ID of the corresponding {@code TAG} token
              * @throws KernelException if the corresponding ID of the given {@code tag} cannot be acquired
              */
-            public abstract int getId( KernelTransaction tx, TAG tag ) throws KernelException;
+            public abstract int getId(KernelTransaction tx, TAG tag) throws KernelException;
 
             /**
              * Get the IDs for the given {@code tags}.
@@ -145,9 +125,8 @@ public class Tags
              * @see Factory#getId(KernelTransaction, Object)
              */
             @SafeVarargs
-            public final List<Integer> getIds( KernelTransaction tx, TAG... tags ) throws KernelException
-            {
-                return getIds( tx, List.of( tags ) );
+            public final List<Integer> getIds(KernelTransaction tx, TAG... tags) throws KernelException {
+                return getIds(tx, List.of(tags));
             }
 
             /**
@@ -159,27 +138,22 @@ public class Tags
              * @throws KernelException if the corresponding ID of the given {@code tags} cannot be acquired
              * @see Factory#getId(KernelTransaction, Object)
              */
-            public final List<Integer> getIds( KernelTransaction tx, Iterable<TAG> tags ) throws KernelException
-            {
+            public final List<Integer> getIds(KernelTransaction tx, Iterable<TAG> tags) throws KernelException {
                 final var ids = new ArrayList<Integer>();
-                for ( final var tag : tags )
-                {
-                    ids.add( getId( tx, tag ) );
+                for (final var tag : tags) {
+                    ids.add(getId(tx, tag));
                 }
                 return ids;
             }
         }
 
-        private Factories()
-        {
-        }
+        private Factories() {}
     }
 
     /**
      * A set of suppliers that can autogenerate tags.
      */
-    public static class Suppliers
-    {
+    public static class Suppliers {
         /**
          * A namespace for a {@code static} set of {@link Supplier}s using {@link Suffixes#incrementing()}.
          * <p>
@@ -190,36 +164,29 @@ public class Tags
          * final var local  = new Tags.Suppliers.Label( Tags.Suppliers.Suffixes.incrementing() );
          * }</pre>
          */
-        public static class Incrementing
-        {
-            public static final Label LABEL = new Label( Suffixes.incrementing() );
-            public static final RelationshipType RELATIONSHIP_TYPE = new RelationshipType( Suffixes.incrementing() );
-            public static final PropertyKey PROPERTY_KEY = new PropertyKey( Suffixes.incrementing() );
+        public static class Incrementing {
+            public static final Label LABEL = new Label(Suffixes.incrementing());
+            public static final RelationshipType RELATIONSHIP_TYPE = new RelationshipType(Suffixes.incrementing());
+            public static final PropertyKey PROPERTY_KEY = new PropertyKey(Suffixes.incrementing());
 
-            private Incrementing()
-            {
-            }
+            private Incrementing() {}
         }
 
         /**
          * A namespace for a {@code static} set of {@link Supplier}s using {@link Suffixes#UUID()}.
          */
-        public static class UUID
-        {
-            public static final Label LABEL = new Label( Suffixes.UUID() );
-            public static final RelationshipType RELATIONSHIP_TYPE = new RelationshipType( Suffixes.UUID() );
-            public static final PropertyKey PROPERTY_KEY = new PropertyKey( Suffixes.UUID() );
+        public static class UUID {
+            public static final Label LABEL = new Label(Suffixes.UUID());
+            public static final RelationshipType RELATIONSHIP_TYPE = new RelationshipType(Suffixes.UUID());
+            public static final PropertyKey PROPERTY_KEY = new PropertyKey(Suffixes.UUID());
 
-            private UUID()
-            {
-            }
+            private UUID() {}
         }
 
         /**
          * A set of methods to help create common suffix {@link java.util.function.Supplier}s for {@link Supplier}s.
          */
-        public static class Suffixes
-        {
+        public static class Suffixes {
             /**
              * Incrementing suffix
              *
@@ -231,9 +198,8 @@ public class Tags
              * @return a thread safe suffix {@link java.util.function.Supplier} of a {@code long} which increments from {@code 0}
              * @see Suffixes#incrementing(long)
              */
-            public static java.util.function.Supplier<String> incrementing()
-            {
-                return incrementing( 0 );
+            public static java.util.function.Supplier<String> incrementing() {
+                return incrementing(0);
             }
 
             /**
@@ -247,10 +213,9 @@ public class Tags
              * @param from the value from which to increment
              * @return a thread safe suffix {@link java.util.function.Supplier} of a {@code long} which increments from {@code from}
              */
-            public static java.util.function.Supplier<String> incrementing( long from )
-            {
-                final var count = new AtomicLong( from );
-                return () -> String.valueOf( count.getAndIncrement() );
+            public static java.util.function.Supplier<String> incrementing(long from) {
+                final var count = new AtomicLong(from);
+                return () -> String.valueOf(count.getAndIncrement());
             }
 
             /**
@@ -268,8 +233,7 @@ public class Tags
              * @return a suffix {@link java.util.function.Supplier} of a random UUID
              * @see java.util.UUID#randomUUID()
              */
-            public static java.util.function.Supplier<String> UUID()
-            {
+            public static java.util.function.Supplier<String> UUID() {
                 return () -> java.util.UUID.randomUUID().toString();
             }
 
@@ -286,39 +250,32 @@ public class Tags
              * @param numBytes number of bytes of randomness to use
              * @return a suffix {@link java.util.function.Supplier} of a random number of bytes in represented in hexadecimal
              */
-            public static java.util.function.Supplier<String> random( Random random, int numBytes )
-            {
-                return () ->
-                {
+            public static java.util.function.Supplier<String> random(Random random, int numBytes) {
+                return () -> {
                     final var bytes = new byte[numBytes];
-                    random.nextBytes( bytes );
+                    random.nextBytes(bytes);
                     final var sb = new StringBuilder();
-                    for ( final var b : bytes )
-                    {
-                        sb.append( String.format( "%02x", b ) );
+                    for (final var b : bytes) {
+                        sb.append(String.format("%02x", b));
                     }
                     return sb.toString();
                 };
             }
 
-            private Suffixes()
-            {
-            }
+            private Suffixes() {}
         }
 
         /**
          * A {@link java.util.function.Supplier} that autogenerates {@link org.neo4j.graphdb.Label}s.
          */
-        public static final class Label extends Supplier<org.neo4j.graphdb.Label>
-        {
+        public static final class Label extends Supplier<org.neo4j.graphdb.Label> {
             /**
              * @param name      the name prefix of the autogenerated {@link org.neo4j.graphdb.Label}s
              * @param separator the separator between the {@code name} and the supplied {@code suffix}
              * @param suffix    a {@link java.util.function.Supplier} of suffixes to append to the name for autogenerated {@link org.neo4j.graphdb.Label}s
              */
-            public Label( String name, String separator, java.util.function.Supplier<String> suffix )
-            {
-                super( name, separator, suffix, Factories.LABEL );
+            public Label(String name, String separator, java.util.function.Supplier<String> suffix) {
+                super(name, separator, suffix, Factories.LABEL);
             }
 
             /**
@@ -326,9 +283,8 @@ public class Tags
              * @param suffix a {@link java.util.function.Supplier} of suffixes to append to the name for autogenerated {@link org.neo4j.graphdb.Label}s
              * @see Supplier#Supplier(String, java.util.function.Supplier, Factories.Factory)
              */
-            public Label( String name, java.util.function.Supplier<String> suffix )
-            {
-                super( name, suffix, Factories.LABEL );
+            public Label(String name, java.util.function.Supplier<String> suffix) {
+                super(name, suffix, Factories.LABEL);
             }
 
             /**
@@ -337,26 +293,23 @@ public class Tags
              * @param suffix a {@link java.util.function.Supplier} of suffixes to append to the name for autogenerated {@link org.neo4j.graphdb.Label}s
              * @see Label#Label(String, java.util.function.Supplier)
              */
-            public Label( java.util.function.Supplier<String> suffix )
-            {
-                this( "Label", suffix );
+            public Label(java.util.function.Supplier<String> suffix) {
+                this("Label", suffix);
             }
         }
 
         /**
          * A {@link java.util.function.Supplier} that autogenerates {@link org.neo4j.graphdb.RelationshipType}s.
          */
-        public static final class RelationshipType extends Supplier<org.neo4j.graphdb.RelationshipType>
-        {
+        public static final class RelationshipType extends Supplier<org.neo4j.graphdb.RelationshipType> {
             /**
              * @param name      the name prefix of the autogenerated {@link org.neo4j.graphdb.RelationshipType}s
              * @param separator the separator between the {@code name} and the supplied {@code suffix}
              * @param suffix    a {@link java.util.function.Supplier} of suffixes to append to the name for autogenerated
              *                  {@link org.neo4j.graphdb.RelationshipType}s
              */
-            public RelationshipType( String name, String separator, java.util.function.Supplier<String> suffix )
-            {
-                super( name, separator, suffix, Factories.RELATIONSHIP_TYPE );
+            public RelationshipType(String name, String separator, java.util.function.Supplier<String> suffix) {
+                super(name, separator, suffix, Factories.RELATIONSHIP_TYPE);
             }
 
             /**
@@ -365,9 +318,8 @@ public class Tags
              *               {@link org.neo4j.graphdb.RelationshipType}s
              * @see Supplier#Supplier(String, java.util.function.Supplier, Factories.Factory)
              */
-            public RelationshipType( String name, java.util.function.Supplier<String> suffix )
-            {
-                super( name, suffix, Factories.RELATIONSHIP_TYPE );
+            public RelationshipType(String name, java.util.function.Supplier<String> suffix) {
+                super(name, suffix, Factories.RELATIONSHIP_TYPE);
             }
 
             /**
@@ -377,25 +329,22 @@ public class Tags
              *               {@link org.neo4j.graphdb.RelationshipType}s
              * @see RelationshipType#RelationshipType(String, java.util.function.Supplier)
              */
-            public RelationshipType( java.util.function.Supplier<String> suffix )
-            {
-                this( "RelationshipType", suffix );
+            public RelationshipType(java.util.function.Supplier<String> suffix) {
+                this("RelationshipType", suffix);
             }
         }
 
         /**
          * A {@link java.util.function.Supplier} that autogenerates property keys.
          */
-        public static final class PropertyKey extends Supplier<String>
-        {
+        public static final class PropertyKey extends Supplier<String> {
             /**
              * @param name      the name prefix of the autogenerated property keys
              * @param separator the separator between the {@code name} and the supplied {@code suffix}
              * @param suffix    a {@link java.util.function.Supplier} of suffixes to append to the name for autogenerated property keys
              */
-            public PropertyKey( String name, String separator, java.util.function.Supplier<String> suffix )
-            {
-                super( name, separator, suffix, Factories.PROPERTY_KEY );
+            public PropertyKey(String name, String separator, java.util.function.Supplier<String> suffix) {
+                super(name, separator, suffix, Factories.PROPERTY_KEY);
             }
 
             /**
@@ -403,9 +352,8 @@ public class Tags
              * @param suffix a {@link java.util.function.Supplier} of suffixes to append to the name for autogenerated property keys
              * @see Supplier#Supplier(String, java.util.function.Supplier, Factories.Factory)
              */
-            public PropertyKey( String name, java.util.function.Supplier<String> suffix )
-            {
-                super( name, suffix, Factories.PROPERTY_KEY );
+            public PropertyKey(String name, java.util.function.Supplier<String> suffix) {
+                super(name, suffix, Factories.PROPERTY_KEY);
             }
 
             /**
@@ -414,9 +362,8 @@ public class Tags
              * @param suffix a {@link java.util.function.Supplier} of suffixes to append to the name for autogenerated property keys
              * @see PropertyKey#PropertyKey(String, java.util.function.Supplier)
              */
-            public PropertyKey( java.util.function.Supplier<String> suffix )
-            {
-                this( "PropertyKey", suffix );
+            public PropertyKey(java.util.function.Supplier<String> suffix) {
+                this("PropertyKey", suffix);
             }
         }
 
@@ -426,8 +373,7 @@ public class Tags
          * @param <TAG> the type of tags to be supplied
          */
         public abstract static sealed class Supplier<TAG> implements java.util.function.Supplier<TAG>
-                permits Label, RelationshipType, PropertyKey
-        {
+                permits Label, RelationshipType, PropertyKey {
             private final String name;
             private final String separator;
             private final java.util.function.Supplier<String> suffix;
@@ -439,8 +385,11 @@ public class Tags
              * @param suffix    a {@link java.util.function.Supplier} of suffixes to append to the name of autogenerated {@code TAG}s
              * @param factory
              */
-            protected Supplier( String name, String separator, java.util.function.Supplier<String> suffix, Factories.Factory<TAG> factory )
-            {
+            protected Supplier(
+                    String name,
+                    String separator,
+                    java.util.function.Supplier<String> suffix,
+                    Factories.Factory<TAG> factory) {
                 this.name = name;
                 this.separator = separator;
                 this.suffix = suffix;
@@ -455,9 +404,9 @@ public class Tags
              * @param factory
              * @see Supplier#Supplier(String, String, java.util.function.Supplier, Factories.Factory)
              */
-            protected Supplier( String name, java.util.function.Supplier<String> suffix, Factories.Factory<TAG> factory )
-            {
-                this( name, "_", suffix, factory );
+            protected Supplier(
+                    String name, java.util.function.Supplier<String> suffix, Factories.Factory<TAG> factory) {
+                this(name, "_", suffix, factory);
             }
 
             /**
@@ -465,8 +414,7 @@ public class Tags
              *
              * @return the name of the {@link Supplier} class
              */
-            public final String name()
-            {
+            public final String name() {
                 return name;
             }
 
@@ -477,9 +425,8 @@ public class Tags
              * @implSpec <p>behaves as if generated from <pre>{@code factory.fromName( name + separator + suffix.get() )}</pre>
              */
             @Override
-            public final TAG get()
-            {
-                return factory.fromName( name + separator + suffix.get() );
+            public final TAG get() {
+                return factory.fromName(name + separator + suffix.get());
             }
 
             /**
@@ -489,9 +436,8 @@ public class Tags
              * @return autogenerated {@code TAG}s
              * @see Supplier#get()
              */
-            public final List<TAG> get( int numberOfTags )
-            {
-                return Stream.generate( this ).limit( numberOfTags ).toList();
+            public final List<TAG> get(int numberOfTags) {
+                return Stream.generate(this).limit(numberOfTags).toList();
             }
 
             /**
@@ -502,9 +448,8 @@ public class Tags
              * @throws KernelException if the corresponding ID of the generated {@code TAG} cannot be acquired
              * @see Supplier#getId(KernelTransaction)
              */
-            public final int getId( KernelTransaction tx ) throws KernelException
-            {
-                return factory.getId( tx, get() );
+            public final int getId(KernelTransaction tx) throws KernelException {
+                return factory.getId(tx, get());
             }
 
             /**
@@ -515,18 +460,13 @@ public class Tags
              * @return the IDs of the corresponding autogenerated {@code TAG}s
              * @throws KernelException if any of the corresponding IDs of the generated {@code TAG}s cannot be acquired
              */
-            public final List<Integer> getIds( KernelTransaction tx, int numberOfTags ) throws KernelException
-            {
-                return factory.getIds( tx, get( numberOfTags ) );
+            public final List<Integer> getIds(KernelTransaction tx, int numberOfTags) throws KernelException {
+                return factory.getIds(tx, get(numberOfTags));
             }
         }
 
-        private Suppliers()
-        {
-        }
+        private Suppliers() {}
     }
 
-    private Tags()
-    {
-    }
+    private Tags() {}
 }

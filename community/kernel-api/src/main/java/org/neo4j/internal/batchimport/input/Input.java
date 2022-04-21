@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport.input;
 
 import java.io.IOException;
-
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
@@ -28,10 +27,8 @@ import org.neo4j.internal.batchimport.InputIterator;
 /**
  * Unifies all data input given to a {@link BatchImporter} to allow for more coherent implementations.
  */
-public interface Input extends AutoCloseable
-{
-    interface Estimates
-    {
+public interface Input extends AutoCloseable {
+    interface Estimates {
         /**
          * @return estimated number of nodes for the entire input.
          */
@@ -81,7 +78,7 @@ public interface Input extends AutoCloseable
      * @param badCollector for collecting bad entries.
      * @return an {@link InputIterator} which will provide all node data for the whole import.
      */
-    InputIterable nodes( Collector badCollector );
+    InputIterable nodes(Collector badCollector);
 
     /**
      * Provides all relationship data for an import.
@@ -89,7 +86,7 @@ public interface Input extends AutoCloseable
      * @param badCollector for collecting bad entries.
      * @return an {@link InputIterator} which will provide all relationship data for the whole import.
      */
-    InputIterable relationships( Collector badCollector );
+    InputIterable relationships(Collector badCollector);
 
     /**
      * @return {@link IdType} which matches the type of ids this {@link Input} generates.
@@ -108,96 +105,86 @@ public interface Input extends AutoCloseable
      * @return {@link Estimates} for this input w/o reading through it entirely.
      * @throws IOException on I/O error.
      */
-    Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator ) throws IOException;
+    Estimates calculateEstimates(PropertySizeCalculator valueSizeCalculator) throws IOException;
 
     @Override
-    default void close()
-    {
-    }
+    default void close() {}
 
-    static Input input( InputIterable nodes, InputIterable relationships, IdType idType, Estimates estimates, ReadableGroups groups )
-    {
-        return new Input()
-        {
+    static Input input(
+            InputIterable nodes,
+            InputIterable relationships,
+            IdType idType,
+            Estimates estimates,
+            ReadableGroups groups) {
+        return new Input() {
             @Override
-            public InputIterable relationships( Collector badCollector )
-            {
+            public InputIterable relationships(Collector badCollector) {
                 return relationships;
             }
 
             @Override
-            public InputIterable nodes( Collector badCollector )
-            {
+            public InputIterable nodes(Collector badCollector) {
                 return nodes;
             }
 
             @Override
-            public IdType idType()
-            {
+            public IdType idType() {
                 return idType;
             }
 
             @Override
-            public ReadableGroups groups()
-            {
+            public ReadableGroups groups() {
                 return groups;
             }
 
             @Override
-            public Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator )
-            {
+            public Estimates calculateEstimates(PropertySizeCalculator valueSizeCalculator) {
                 return estimates;
             }
         };
     }
 
     static Estimates knownEstimates(
-            long numberOfNodes, long numberOfRelationships,
-            long numberOfNodeProperties, long numberOfRelationshipProperties,
-            long nodePropertiesSize, long relationshipPropertiesSize,
-            long numberOfNodeLabels )
-    {
-        return new Estimates()
-        {
+            long numberOfNodes,
+            long numberOfRelationships,
+            long numberOfNodeProperties,
+            long numberOfRelationshipProperties,
+            long nodePropertiesSize,
+            long relationshipPropertiesSize,
+            long numberOfNodeLabels) {
+        return new Estimates() {
             @Override
-            public long numberOfNodes()
-            {
+            public long numberOfNodes() {
                 return numberOfNodes;
             }
 
             @Override
-            public long numberOfRelationships()
-            {
+            public long numberOfRelationships() {
                 return numberOfRelationships;
             }
 
             @Override
-            public long numberOfNodeProperties()
-            {
+            public long numberOfNodeProperties() {
                 return numberOfNodeProperties;
             }
 
             @Override
-            public long sizeOfNodeProperties()
-            {
+            public long sizeOfNodeProperties() {
                 return nodePropertiesSize;
             }
 
             @Override
-            public long numberOfNodeLabels()
-            {
+            public long numberOfNodeLabels() {
                 return numberOfNodeLabels;
             }
 
             @Override
-            public long numberOfRelationshipProperties()
-            {
+            public long numberOfRelationshipProperties() {
                 return numberOfRelationshipProperties;
             }
 
             @Override
-            public long sizeOfRelationshipProperties()
-            {
+            public long sizeOfRelationshipProperties() {
                 return relationshipPropertiesSize;
             }
         };

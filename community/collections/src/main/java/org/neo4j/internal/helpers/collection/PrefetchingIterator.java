@@ -31,8 +31,7 @@ import java.util.NoSuchElementException;
  * So you only have to implement one method, {@code fetchNextOrNull} which
  * returns {@code null} when the iteration has reached the end, and you're done.
  */
-public abstract class PrefetchingIterator<T> implements Iterator<T>
-{
+public abstract class PrefetchingIterator<T> implements Iterator<T> {
     private boolean hasFetchedNext;
     private T nextObject;
 
@@ -41,8 +40,7 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
      * call to {@link #next()}.
      */
     @Override
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         return peek() != null;
     }
 
@@ -50,10 +48,8 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
      * @return the next element that will be returned from {@link #next()} without
      * actually advancing the iterator
      */
-    public T peek()
-    {
-        if ( hasFetchedNext )
-        {
+    public T peek() {
+        if (hasFetchedNext) {
             return nextObject;
         }
 
@@ -70,10 +66,8 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
      * {@link NoSuchElementException} if there's no more items to return.
      */
     @Override
-    public T next()
-    {
-        if ( !hasNext() )
-        {
+    public T next() {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
         T result = nextObject;
@@ -82,21 +76,18 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
         return result;
     }
 
-    public boolean hasFetchedNext()
-    {
+    public boolean hasFetchedNext() {
         return hasFetchedNext;
     }
 
-    public T getNextObject()
-    {
+    public T getNextObject() {
         return nextObject;
     }
 
     protected abstract T fetchNextOrNull();
 
     @Override
-    public void remove()
-    {
+    public void remove() {
         throw new UnsupportedOperationException();
     }
 }

@@ -19,14 +19,12 @@
  */
 package org.neo4j.scheduler;
 
-import java.time.Instant;
-
-import org.neo4j.common.Subject;
-
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
-public class FailedJobRun
-{
+import java.time.Instant;
+import org.neo4j.common.Subject;
+
+public class FailedJobRun {
     private final long jobId;
     private final Group group;
     private final Subject submitter;
@@ -38,9 +36,17 @@ public class FailedJobRun
     private final Instant failureTime;
     private final String failureDescription;
 
-    public FailedJobRun( long jobId, Group group, Subject submitter, String targetDatabaseName, String description, JobType jobType, Instant submitted,
-            Instant executionStart, Instant failureTime, Throwable failure )
-    {
+    public FailedJobRun(
+            long jobId,
+            Group group,
+            Subject submitter,
+            String targetDatabaseName,
+            String description,
+            JobType jobType,
+            Instant submitted,
+            Instant executionStart,
+            Instant failureTime,
+            Throwable failure) {
         this.jobId = jobId;
         this.group = group;
         this.submitter = submitter;
@@ -50,63 +56,52 @@ public class FailedJobRun
         this.submitted = submitted;
         this.executionStart = executionStart;
         this.failureTime = failureTime;
-        this.failureDescription = constructFailureDescription( failure );
+        this.failureDescription = constructFailureDescription(failure);
     }
 
-    private static String constructFailureDescription( Throwable failure )
-    {
+    private static String constructFailureDescription(Throwable failure) {
         String exceptionClass = failure.getClass().getSimpleName();
         String message = failure.getMessage();
-        return isNotEmpty( message ) ? exceptionClass + ": " + message : exceptionClass;
+        return isNotEmpty(message) ? exceptionClass + ": " + message : exceptionClass;
     }
 
-    public long getJobId()
-    {
+    public long getJobId() {
         return jobId;
     }
 
-    public Group getGroup()
-    {
+    public Group getGroup() {
         return group;
     }
 
-    public Subject getSubmitter()
-    {
+    public Subject getSubmitter() {
         return submitter;
     }
 
-    public String getTargetDatabaseName()
-    {
+    public String getTargetDatabaseName() {
         return targetDatabaseName;
     }
 
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
-    public JobType getJobType()
-    {
+    public JobType getJobType() {
         return jobType;
     }
 
-    public Instant getSubmitted()
-    {
+    public Instant getSubmitted() {
         return submitted;
     }
 
-    public Instant getExecutionStart()
-    {
+    public Instant getExecutionStart() {
         return executionStart;
     }
 
-    public Instant getFailureTime()
-    {
+    public Instant getFailureTime() {
         return failureTime;
     }
 
-    public String getFailureDescription()
-    {
+    public String getFailureDescription() {
         return failureDescription;
     }
 }

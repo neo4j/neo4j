@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
 /**
@@ -34,78 +33,63 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
  * Should only be accessed from a single thread
  * @param <T> the type to be stored
  */
-class ProcedureHolder<T>
-{
-    private final Map<QualifiedName,Integer> nameToId = new HashMap<>();
-    private final Map<QualifiedName,Integer> caseInsensitiveName2Id = new HashMap<>();
+class ProcedureHolder<T> {
+    private final Map<QualifiedName, Integer> nameToId = new HashMap<>();
+    private final Map<QualifiedName, Integer> caseInsensitiveName2Id = new HashMap<>();
     private final List<T> store = new ArrayList<>();
 
-    T get( QualifiedName name )
-    {
-        Integer id = name2Id( name );
-        if ( id == null )
-        {
+    T get(QualifiedName name) {
+        Integer id = name2Id(name);
+        if (id == null) {
             return null;
         }
-        return store.get( id );
+        return store.get(id);
     }
 
-    T get( int id )
-    {
-        return store.get( id );
+    T get(int id) {
+        return store.get(id);
     }
 
-    void put( QualifiedName name, T item, boolean caseInsensitive )
-    {
+    void put(QualifiedName name, T item, boolean caseInsensitive) {
         int id = store.size();
-        store.add( item );
-        nameToId.put( name, id );
-        if ( caseInsensitive )
-        {
-            caseInsensitiveName2Id.put( toLowerCaseName( name ), id );
-        }
-        else
-        {
-            caseInsensitiveName2Id.remove( toLowerCaseName( name ) );
+        store.add(item);
+        nameToId.put(name, id);
+        if (caseInsensitive) {
+            caseInsensitiveName2Id.put(toLowerCaseName(name), id);
+        } else {
+            caseInsensitiveName2Id.remove(toLowerCaseName(name));
         }
     }
 
-    int idOf( QualifiedName name )
-    {
-        Integer id = name2Id( name );
-        if ( id == null )
-        {
+    int idOf(QualifiedName name) {
+        Integer id = name2Id(name);
+        if (id == null) {
             throw new NoSuchElementException();
         }
 
         return id;
     }
 
-    List<T> all()
-    {
-        return Collections.unmodifiableList( store );
+    List<T> all() {
+        return Collections.unmodifiableList(store);
     }
 
-    private Integer name2Id( QualifiedName name )
-    {
-        Integer id = nameToId.get( name );
-        if ( id == null )
-        { // Did not find it in the case sensitive lookup - let's check for case insensitive objects
-            QualifiedName lowerCaseName = toLowerCaseName( name );
-            id = caseInsensitiveName2Id.get( lowerCaseName );
+    private Integer name2Id(QualifiedName name) {
+        Integer id = nameToId.get(name);
+        if (id == null) { // Did not find it in the case sensitive lookup - let's check for case insensitive objects
+            QualifiedName lowerCaseName = toLowerCaseName(name);
+            id = caseInsensitiveName2Id.get(lowerCaseName);
         }
         return id;
     }
 
-    private QualifiedName toLowerCaseName( QualifiedName name )
-    {
+    private QualifiedName toLowerCaseName(QualifiedName name) {
         String[] oldNs = name.namespace();
         String[] lowerCaseNamespace = new String[oldNs.length];
-        for ( int i = 0; i < oldNs.length; i++ )
-        {
+        for (int i = 0; i < oldNs.length; i++) {
             lowerCaseNamespace[i] = oldNs[i].toLowerCase();
         }
         String lowercaseName = name.name().toLowerCase();
-        return new QualifiedName( lowerCaseNamespace, lowercaseName );
+        return new QualifiedName(lowerCaseNamespace, lowercaseName);
     }
 }

@@ -22,38 +22,31 @@ package org.neo4j.bolt.testing;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-public class ArrayByteChannel implements ReadableByteChannel
-{
+public class ArrayByteChannel implements ReadableByteChannel {
     private final ByteBuffer data;
 
-    public ArrayByteChannel( byte[] bytes )
-    {
-        this.data = ByteBuffer.wrap( bytes );
+    public ArrayByteChannel(byte[] bytes) {
+        this.data = ByteBuffer.wrap(bytes);
     }
 
     @Override
-    public int read( ByteBuffer dst )
-    {
-        if ( data.position() == data.limit() )
-        {
+    public int read(ByteBuffer dst) {
+        if (data.position() == data.limit()) {
             return -1;
         }
         int originalPosition = data.position();
         int originalLimit = data.limit();
-        data.limit( Math.min( data.limit(), dst.limit() - dst.position() + data.position() ) );
-        dst.put( data );
-        data.limit( originalLimit );
+        data.limit(Math.min(data.limit(), dst.limit() - dst.position() + data.position()));
+        dst.put(data);
+        data.limit(originalLimit);
         return data.position() - originalPosition;
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return data.position() < data.limit();
     }
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 }

@@ -19,15 +19,14 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-
 import static org.neo4j.consistency.checking.cache.CacheSlots.longOf;
+
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
  * A batch of relationship records as one contiguous piece of memory. Used as means of communication between threads checking relationship chains.
  */
-class BatchedRelationshipRecords
-{
+class BatchedRelationshipRecords {
     // id
     // start node
     // end node
@@ -43,18 +42,15 @@ class BatchedRelationshipRecords
     private int writeCursor;
     private int readCursor;
 
-    int numberOfRelationships()
-    {
+    int numberOfRelationships() {
         return writeCursor / FIELDS_PER_RELATIONSHIP;
     }
 
-    boolean hasMoreSpace()
-    {
+    boolean hasMoreSpace() {
         return writeCursor < fields.length;
     }
 
-    void add( RelationshipRecord relationshipRecord )
-    {
+    void add(RelationshipRecord relationshipRecord) {
         fields[writeCursor++] = relationshipRecord.getId();
         fields[writeCursor++] = relationshipRecord.getFirstNode();
         fields[writeCursor++] = relationshipRecord.getSecondNode();
@@ -62,24 +58,23 @@ class BatchedRelationshipRecords
         fields[writeCursor++] = relationshipRecord.getFirstNextRel();
         fields[writeCursor++] = relationshipRecord.getSecondPrevRel();
         fields[writeCursor++] = relationshipRecord.getSecondNextRel();
-        fields[writeCursor++] = longOf( relationshipRecord.isFirstInFirstChain() ) | longOf( relationshipRecord.isFirstInSecondChain() ) << 1;
+        fields[writeCursor++] = longOf(relationshipRecord.isFirstInFirstChain())
+                | longOf(relationshipRecord.isFirstInSecondChain()) << 1;
     }
 
-    boolean fillNext( RelationshipRecord relationshipRecord )
-    {
-        if ( readCursor < writeCursor )
-        {
-            relationshipRecord.setId( fields[readCursor++] );
-            relationshipRecord.setFirstNode( fields[readCursor++] );
-            relationshipRecord.setSecondNode( fields[readCursor++] );
-            relationshipRecord.setFirstPrevRel( fields[readCursor++] );
-            relationshipRecord.setFirstNextRel( fields[readCursor++] );
-            relationshipRecord.setSecondPrevRel( fields[readCursor++] );
-            relationshipRecord.setSecondNextRel( fields[readCursor++] );
+    boolean fillNext(RelationshipRecord relationshipRecord) {
+        if (readCursor < writeCursor) {
+            relationshipRecord.setId(fields[readCursor++]);
+            relationshipRecord.setFirstNode(fields[readCursor++]);
+            relationshipRecord.setSecondNode(fields[readCursor++]);
+            relationshipRecord.setFirstPrevRel(fields[readCursor++]);
+            relationshipRecord.setFirstNextRel(fields[readCursor++]);
+            relationshipRecord.setSecondPrevRel(fields[readCursor++]);
+            relationshipRecord.setSecondNextRel(fields[readCursor++]);
             long flags = fields[readCursor++];
-            relationshipRecord.setFirstInFirstChain( (flags & 0x1) != 0 );
-            relationshipRecord.setFirstInSecondChain( (flags & 0x2) != 0 );
-            relationshipRecord.setInUse( true );
+            relationshipRecord.setFirstInFirstChain((flags & 0x1) != 0);
+            relationshipRecord.setFirstInSecondChain((flags & 0x2) != 0);
+            relationshipRecord.setInUse(true);
             return true;
         }
         return false;

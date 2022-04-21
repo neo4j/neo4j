@@ -24,37 +24,37 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 
 /**
  * Extension of the default Jetty {@link HttpConnectionFactory} which creates connections with additional properties.
  * Created connections also notify {@link NetworkConnectionTracker} when open or closed.
  */
-public class JettyHttpConnectionFactory extends HttpConnectionFactory
-{
+public class JettyHttpConnectionFactory extends HttpConnectionFactory {
     private final NetworkConnectionTracker connectionTracker;
     private final JettyHttpConnectionListener connectionListener;
 
-    public JettyHttpConnectionFactory( NetworkConnectionTracker connectionTracker, HttpConfiguration configuration )
-    {
-        super( configuration );
+    public JettyHttpConnectionFactory(NetworkConnectionTracker connectionTracker, HttpConfiguration configuration) {
+        super(configuration);
         this.connectionTracker = connectionTracker;
-        this.connectionListener = new JettyHttpConnectionListener( connectionTracker );
+        this.connectionListener = new JettyHttpConnectionListener(connectionTracker);
     }
 
     @Override
-    public Connection newConnection( Connector connector, EndPoint endPoint )
-    {
-        JettyHttpConnection connection = createConnection( connector, endPoint );
-        connection.addListener( connectionListener );
-        return configure( connection, connector, endPoint );
+    public Connection newConnection(Connector connector, EndPoint endPoint) {
+        JettyHttpConnection connection = createConnection(connector, endPoint);
+        connection.addListener(connectionListener);
+        return configure(connection, connector, endPoint);
     }
 
-    private JettyHttpConnection createConnection( Connector connector, EndPoint endPoint )
-    {
-        String connectionId = connectionTracker.newConnectionId( connector.getName() );
-        return new JettyHttpConnection( connectionId, getHttpConfiguration(), connector, endPoint,
-                getHttpCompliance(), isRecordHttpComplianceViolations() );
+    private JettyHttpConnection createConnection(Connector connector, EndPoint endPoint) {
+        String connectionId = connectionTracker.newConnectionId(connector.getName());
+        return new JettyHttpConnection(
+                connectionId,
+                getHttpConfiguration(),
+                connector,
+                endPoint,
+                getHttpCompliance(),
+                isRecordHttpComplianceViolations());
     }
 }

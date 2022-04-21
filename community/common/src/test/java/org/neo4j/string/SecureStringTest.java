@@ -19,17 +19,6 @@
  */
 package org.neo4j.string;
 
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.TestFactory;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Random;
-
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_16;
@@ -41,70 +30,71 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-class SecureStringTest
-{
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Random;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+class SecureStringTest {
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void testString( boolean encrypt )
-    {
-        testString( "a super secret text", encrypt );
+    @ValueSource(strings = {"true", "false"})
+    void testString(boolean encrypt) {
+        testString("a super secret text", encrypt);
     }
 
     @TestFactory
-    Collection<DynamicTest> dynamicTestsFromCollection()
-    {
+    Collection<DynamicTest> dynamicTestsFromCollection() {
         Random random = new Random();
-        Collection<Charset> standardCharsets = Arrays.asList( US_ASCII, UTF_8, UTF_16, ISO_8859_1, UTF_16BE, UTF_16LE );
+        Collection<Charset> standardCharsets = Arrays.asList(US_ASCII, UTF_8, UTF_16, ISO_8859_1, UTF_16BE, UTF_16LE);
         Collection<DynamicTest> tests = new ArrayList<>();
 
-        for ( Charset charset : standardCharsets )
-        {
-            for ( boolean encrypted : Arrays.asList( true, false ) )
-            {
+        for (Charset charset : standardCharsets) {
+            for (boolean encrypted : Arrays.asList(true, false)) {
                 long randomSeed = random.nextLong();
-                String testName = String.format( "TestRandomStrings: encrypted(%s), encoding(%s), randomSeed(%d)", encrypted, charset, randomSeed );
-                tests.add( dynamicTest( testName, () -> testRandomStrings( encrypted, charset, randomSeed ) ) );
+                String testName = String.format(
+                        "TestRandomStrings: encrypted(%s), encoding(%s), randomSeed(%d)",
+                        encrypted, charset, randomSeed);
+                tests.add(dynamicTest(testName, () -> testRandomStrings(encrypted, charset, randomSeed)));
             }
         }
         return tests;
     }
 
-    static void testRandomStrings( boolean encrypt, Charset charset, long randomSeed )
-    {
-        Random random = new Random( randomSeed );
-        for ( int i = 0; i < 1000; i++ )
-        {
-            byte[] bytes = new byte[random.nextInt( 10000 ) + 1];
-            random.nextBytes( bytes );
-            String clearText = new String( bytes, charset );
-            testString( clearText, encrypt );
+    static void testRandomStrings(boolean encrypt, Charset charset, long randomSeed) {
+        Random random = new Random(randomSeed);
+        for (int i = 0; i < 1000; i++) {
+            byte[] bytes = new byte[random.nextInt(10000) + 1];
+            random.nextBytes(bytes);
+            String clearText = new String(bytes, charset);
+            testString(clearText, encrypt);
         }
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void testNullAndEmpty( boolean encrypt )
-    {
-        testString( "", encrypt );
-        testString( null, encrypt );
+    @ValueSource(strings = {"true", "false"})
+    void testNullAndEmpty(boolean encrypt) {
+        testString("", encrypt);
+        testString(null, encrypt);
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void toStringNotLeaking( boolean encrypt )
-    {
+    @ValueSource(strings = {"true", "false"})
+    void toStringNotLeaking(boolean encrypt) {
         String clearText = "leaked?";
-        SecureString ss = new SecureString( clearText, encrypt );
-        assertNotEquals( clearText, ss.toString() );
+        SecureString ss = new SecureString(clearText, encrypt);
+        assertNotEquals(clearText, ss.toString());
     }
 
-    private static void testString( String clearText, boolean useEncryption )
-    {
-        SecureString ss = new SecureString( clearText, useEncryption );
-        if ( useEncryption )
-        {
-            assertTrue( ss.encryptionAvailable() );
+    private static void testString(String clearText, boolean useEncryption) {
+        SecureString ss = new SecureString(clearText, useEncryption);
+        if (useEncryption) {
+            assertTrue(ss.encryptionAvailable());
         }
-        assertEquals( clearText, ss.getString() );
+        assertEquals(clearText, ss.getString());
     }
 }

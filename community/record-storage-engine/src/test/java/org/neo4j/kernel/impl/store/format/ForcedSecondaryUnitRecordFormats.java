@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import static java.util.stream.Collectors.toSet;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.SECONDARY_RECORD_UNITS;
+
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -38,151 +41,125 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
-import static java.util.stream.Collectors.toSet;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.SECONDARY_RECORD_UNITS;
-
 /**
  * Wraps another {@link RecordFormats} and merely forces {@link AbstractBaseRecord#setSecondaryUnitIdOnLoad/Create(long)}
  * to be used, and in extension {@link IdSequence#nextId(CursorContext)} to be called in
  * {@link RecordFormat#prepare(AbstractBaseRecord, int, IdSequence, CursorContext)}. All {@link RecordFormat} instances
  * will also be wrapped. This is a utility to test behavior when there are secondary record units at play.
  */
-public class ForcedSecondaryUnitRecordFormats implements RecordFormats
-{
-    public static final ForcedSecondaryUnitRecordFormats DEFAULT_RECORD_FORMATS = new ForcedSecondaryUnitRecordFormats( defaultFormat() );
+public class ForcedSecondaryUnitRecordFormats implements RecordFormats {
+    public static final ForcedSecondaryUnitRecordFormats DEFAULT_RECORD_FORMATS =
+            new ForcedSecondaryUnitRecordFormats(defaultFormat());
 
     private final RecordFormats actual;
 
-    public ForcedSecondaryUnitRecordFormats( RecordFormats actual )
-    {
+    public ForcedSecondaryUnitRecordFormats(RecordFormats actual) {
         this.actual = actual;
     }
 
     @Override
-    public String storeVersion()
-    {
+    public String storeVersion() {
         return actual.storeVersion();
     }
 
     @Override
-    public String introductionVersion()
-    {
+    public String introductionVersion() {
         return actual.introductionVersion();
     }
 
     @Override
-    public int majorVersion()
-    {
+    public int majorVersion() {
         return NO_GENERATION;
     }
 
     @Override
-    public int minorVersion()
-    {
+    public int minorVersion() {
         return NO_GENERATION;
     }
 
-    private static <R extends AbstractBaseRecord> RecordFormat<R> withForcedSecondaryUnit( RecordFormat<R> format )
-    {
-        return new ForcedSecondaryUnitRecordFormat<>( format );
+    private static <R extends AbstractBaseRecord> RecordFormat<R> withForcedSecondaryUnit(RecordFormat<R> format) {
+        return new ForcedSecondaryUnitRecordFormat<>(format);
     }
 
     @Override
-    public RecordFormat<NodeRecord> node()
-    {
-        return withForcedSecondaryUnit( actual.node() );
+    public RecordFormat<NodeRecord> node() {
+        return withForcedSecondaryUnit(actual.node());
     }
 
     @Override
-    public RecordFormat<RelationshipGroupRecord> relationshipGroup()
-    {
-        return withForcedSecondaryUnit( actual.relationshipGroup() );
+    public RecordFormat<RelationshipGroupRecord> relationshipGroup() {
+        return withForcedSecondaryUnit(actual.relationshipGroup());
     }
 
     @Override
-    public RecordFormat<RelationshipRecord> relationship()
-    {
-        return withForcedSecondaryUnit( actual.relationship() );
+    public RecordFormat<RelationshipRecord> relationship() {
+        return withForcedSecondaryUnit(actual.relationship());
     }
 
     @Override
-    public RecordFormat<PropertyRecord> property()
-    {
-        return withForcedSecondaryUnit( actual.property() );
+    public RecordFormat<PropertyRecord> property() {
+        return withForcedSecondaryUnit(actual.property());
     }
 
     @Override
-    public RecordFormat<SchemaRecord> schema()
-    {
-        return withForcedSecondaryUnit( actual.schema() );
+    public RecordFormat<SchemaRecord> schema() {
+        return withForcedSecondaryUnit(actual.schema());
     }
 
     @Override
-    public RecordFormat<LabelTokenRecord> labelToken()
-    {
-        return withForcedSecondaryUnit( actual.labelToken() );
+    public RecordFormat<LabelTokenRecord> labelToken() {
+        return withForcedSecondaryUnit(actual.labelToken());
     }
 
     @Override
-    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
-    {
-        return withForcedSecondaryUnit( actual.propertyKeyToken() );
+    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken() {
+        return withForcedSecondaryUnit(actual.propertyKeyToken());
     }
 
     @Override
-    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
-    {
-        return withForcedSecondaryUnit( actual.relationshipTypeToken() );
+    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken() {
+        return withForcedSecondaryUnit(actual.relationshipTypeToken());
     }
 
     @Override
-    public RecordFormat<DynamicRecord> dynamic()
-    {
-        return withForcedSecondaryUnit( actual.dynamic() );
+    public RecordFormat<DynamicRecord> dynamic() {
+        return withForcedSecondaryUnit(actual.dynamic());
     }
 
     @Override
-    public RecordFormat<MetaDataRecord> metaData()
-    {
-        return withForcedSecondaryUnit( actual.metaData() );
+    public RecordFormat<MetaDataRecord> metaData() {
+        return withForcedSecondaryUnit(actual.metaData());
     }
 
     @Override
-    public Capability[] capabilities()
-    {
-        Set<Capability> myCapabilities = Stream.of( actual.capabilities() ).collect( toSet() );
-        myCapabilities.add( SECONDARY_RECORD_UNITS );
-        return myCapabilities.toArray( new Capability[0] );
+    public Capability[] capabilities() {
+        Set<Capability> myCapabilities = Stream.of(actual.capabilities()).collect(toSet());
+        myCapabilities.add(SECONDARY_RECORD_UNITS);
+        return myCapabilities.toArray(new Capability[0]);
     }
 
     @Override
-    public boolean hasCapability( Capability capability )
-    {
-        return capability == SECONDARY_RECORD_UNITS || actual.hasCapability( capability );
+    public boolean hasCapability(Capability capability) {
+        return capability == SECONDARY_RECORD_UNITS || actual.hasCapability(capability);
     }
 
     @Override
-    public FormatFamily getFormatFamily()
-    {
+    public FormatFamily getFormatFamily() {
         return actual.getFormatFamily();
     }
 
     @Override
-    public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
-    {
-        return BaseRecordFormats.hasCompatibleCapabilities( this, other, type );
+    public boolean hasCompatibleCapabilities(RecordFormats other, CapabilityType type) {
+        return BaseRecordFormats.hasCompatibleCapabilities(this, other, type);
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return this.getClass().getName();
     }
 
     @Override
-    public boolean onlyForMigration()
-    {
+    public boolean onlyForMigration() {
         return actual.onlyForMigration();
     }
 }

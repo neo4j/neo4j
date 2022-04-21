@@ -41,14 +41,17 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 
 class NodeIndexSeekPipeTest extends CypherFunSuite {
+
   test("exhaust should close cursor") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.nodeIndexSeek(any[IndexReadSession], any[Boolean], any[IndexOrder], any[Seq[PropertyIndexQuery]])).thenAnswer((_: InvocationOnMock) => {
-      //NOTE: this is what is done in TransactionBoundQueryContext
+    when(
+      state.query.nodeIndexSeek(any[IndexReadSession], any[Boolean], any[IndexOrder], any[Seq[PropertyIndexQuery]])
+    ).thenAnswer((_: InvocationOnMock) => {
+      // NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
     })
@@ -59,10 +62,11 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
       0,
       SingleQueryExpression(LiteralHelper.literal(42)),
       UniqueIndexSeek,
-      IndexOrderNone)()
+      IndexOrderNone
+    )()
     // exhaust
     pipe.createResults(state).toList
-    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size (1)
   }
 
   test("close should close cursor") {
@@ -71,8 +75,10 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.nodeIndexSeek(any[IndexReadSession], any[Boolean], any[IndexOrder], any[Seq[PropertyIndexQuery]])).thenAnswer((_: InvocationOnMock) => {
-      //NOTE: this is what is done in TransactionBoundQueryContext
+    when(
+      state.query.nodeIndexSeek(any[IndexReadSession], any[Boolean], any[IndexOrder], any[Seq[PropertyIndexQuery]])
+    ).thenAnswer((_: InvocationOnMock) => {
+      // NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
     })
@@ -84,9 +90,10 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
       0,
       SingleQueryExpression(LiteralHelper.literal(42)),
       UniqueIndexSeek,
-      IndexOrderNone)()
+      IndexOrderNone
+    )()
     val result = pipe.createResults(state)
     result.close()
-    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size (1)
   }
 }

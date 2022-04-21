@@ -22,8 +22,7 @@ package org.neo4j.internal.schema;
 /**
  * Represents a stored schema rule.
  */
-public interface SchemaRule extends SchemaDescriptorSupplier
-{
+public interface SchemaRule extends SchemaDescriptorSupplier {
     /**
      * The persistence id for this rule.
      */
@@ -41,5 +40,5 @@ public interface SchemaRule extends SchemaDescriptorSupplier
      * @return a modified copy of this schema rule.
      * @throws IllegalArgumentException if the given name is not {@code null}, and it fails the sanitise check.
      */
-    SchemaRule withName( String name );
+    SchemaRule withName(String name);
 }

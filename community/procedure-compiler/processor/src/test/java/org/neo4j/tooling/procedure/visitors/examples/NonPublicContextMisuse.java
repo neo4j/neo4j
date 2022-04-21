@@ -22,8 +22,7 @@ package org.neo4j.tooling.procedure.visitors.examples;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.procedure.Context;
 
-public class NonPublicContextMisuse
-{
+public class NonPublicContextMisuse {
     @Context
     InternalLog arithm;
 }

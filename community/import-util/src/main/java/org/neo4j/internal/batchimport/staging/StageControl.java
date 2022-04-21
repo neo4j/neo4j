@@ -20,24 +20,22 @@
 package org.neo4j.internal.batchimport.staging;
 
 import java.util.function.Supplier;
-
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 
 /**
  * Represents a means to control and coordinate lifecycle matters about a {@link Stage} and all its
  * {@link Step steps}.
  */
-public interface StageControl
-{
-    void panic( Throwable cause );
+public interface StageControl {
+    void panic(Throwable cause);
 
     void assertHealthy();
 
-    void recycle( Object batch );
+    void recycle(Object batch);
 
     boolean isIdle();
 
-    <T> T reuse( Supplier<T> fallback );
+    <T> T reuse(Supplier<T> fallback);
 
     ProcessorScheduler scheduler();
 }

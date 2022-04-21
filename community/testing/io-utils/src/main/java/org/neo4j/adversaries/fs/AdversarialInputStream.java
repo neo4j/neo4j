@@ -21,91 +21,77 @@ package org.neo4j.adversaries.fs;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.neo4j.adversaries.Adversary;
 
-@SuppressWarnings( "unchecked" )
-public class AdversarialInputStream extends InputStream
-{
+@SuppressWarnings("unchecked")
+public class AdversarialInputStream extends InputStream {
     private final InputStream inputStream;
     private final Adversary adversary;
 
-    public AdversarialInputStream( InputStream inputStream, Adversary adversary )
-    {
+    public AdversarialInputStream(InputStream inputStream, Adversary adversary) {
         this.inputStream = inputStream;
         this.adversary = adversary;
     }
 
     @Override
-    public int read() throws IOException
-    {
-        adversary.injectFailure( IOException.class );
+    public int read() throws IOException {
+        adversary.injectFailure(IOException.class);
         return inputStream.read();
     }
 
     @Override
-    public int read( byte[] b ) throws IOException
-    {
-        if ( adversary.injectFailureOrMischief( IOException.class, NullPointerException.class ) )
-        {
-            byte[] dup = new byte[Math.max( b.length / 2, 1 )];
-            int read = inputStream.read( dup );
-            System.arraycopy( dup, 0, b, 0, read );
+    public int read(byte[] b) throws IOException {
+        if (adversary.injectFailureOrMischief(IOException.class, NullPointerException.class)) {
+            byte[] dup = new byte[Math.max(b.length / 2, 1)];
+            int read = inputStream.read(dup);
+            System.arraycopy(dup, 0, b, 0, read);
             return read;
         }
-        return inputStream.read( b );
+        return inputStream.read(b);
     }
 
     @Override
-    public int read( byte[] b, int off, int len ) throws IOException
-    {
-        if ( adversary.injectFailureOrMischief(
-                IOException.class, NullPointerException.class, IndexOutOfBoundsException.class ) )
-        {
-            int halflen = Math.max( len / 2, 1 );
-            return inputStream.read( b, off, halflen );
+    public int read(byte[] b, int off, int len) throws IOException {
+        if (adversary.injectFailureOrMischief(
+                IOException.class, NullPointerException.class, IndexOutOfBoundsException.class)) {
+            int halflen = Math.max(len / 2, 1);
+            return inputStream.read(b, off, halflen);
         }
-        return inputStream.read( b, off, len );
+        return inputStream.read(b, off, len);
     }
 
     @Override
-    public long skip( long n ) throws IOException
-    {
-        adversary.injectFailure( IOException.class, NullPointerException.class, IndexOutOfBoundsException.class );
-        return inputStream.skip( n );
+    public long skip(long n) throws IOException {
+        adversary.injectFailure(IOException.class, NullPointerException.class, IndexOutOfBoundsException.class);
+        return inputStream.skip(n);
     }
 
     @Override
-    public int available() throws IOException
-    {
-        adversary.injectFailure( IOException.class );
+    public int available() throws IOException {
+        adversary.injectFailure(IOException.class);
         return inputStream.available();
     }
 
     @Override
-    public void close() throws IOException
-    {
-        adversary.injectFailure( IOException.class );
+    public void close() throws IOException {
+        adversary.injectFailure(IOException.class);
         inputStream.close();
     }
 
     @Override
-    public void mark( int readlimit )
-    {
+    public void mark(int readlimit) {
         adversary.injectFailure();
-        inputStream.mark( readlimit );
+        inputStream.mark(readlimit);
     }
 
     @Override
-    public void reset() throws IOException
-    {
-        adversary.injectFailure( IOException.class );
+    public void reset() throws IOException {
+        adversary.injectFailure(IOException.class);
         inputStream.reset();
     }
 
     @Override
-    public boolean markSupported()
-    {
+    public boolean markSupported() {
         adversary.injectFailure();
         return inputStream.markSupported();
     }

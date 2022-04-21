@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
-
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
@@ -40,8 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
  *
  * @see ReversedSingleFileTransactionCursor
  */
-public class ReversedMultiFileTransactionCursor implements TransactionCursor
-{
+public class ReversedMultiFileTransactionCursor implements TransactionCursor {
     private final TransactionCursors transactionCursors;
     private TransactionCursor currentLogTransactionCursor;
 
@@ -64,39 +62,30 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
             LogEntryReader logEntryReader,
             boolean failOnCorruptedLogFiles,
             ReversedTransactionCursorMonitor monitor,
-            boolean presketch )
-    {
-        if ( presketch )
-        {
-            return new ReversedMultiFileTransactionCursor(
-                    new PrefetchedTransactionCursors( logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor ) );
-        }
-        else
-        {
-            return new ReversedMultiFileTransactionCursor(
-                    new DefaultTransactionCursors( logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor ) );
+            boolean presketch) {
+        if (presketch) {
+            return new ReversedMultiFileTransactionCursor(new PrefetchedTransactionCursors(
+                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor));
+        } else {
+            return new ReversedMultiFileTransactionCursor(new DefaultTransactionCursors(
+                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor));
         }
     }
 
-    public ReversedMultiFileTransactionCursor( TransactionCursors transactionCursors )
-    {
+    public ReversedMultiFileTransactionCursor(TransactionCursors transactionCursors) {
         this.transactionCursors = transactionCursors;
     }
 
     @Override
-    public CommittedTransactionRepresentation get()
-    {
+    public CommittedTransactionRepresentation get() {
         return currentLogTransactionCursor.get();
     }
 
     @Override
-    public boolean next() throws IOException
-    {
-        while ( currentLogTransactionCursor == null || !currentLogTransactionCursor.next() )
-        {
+    public boolean next() throws IOException {
+        while (currentLogTransactionCursor == null || !currentLogTransactionCursor.next()) {
             var cursor = transactionCursors.next();
-            if ( cursor.isEmpty() )
-            {
+            if (cursor.isEmpty()) {
                 return false;
             }
             closeCurrent();
@@ -106,24 +95,20 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         closeCurrent();
         transactionCursors.close();
     }
 
-    private void closeCurrent() throws IOException
-    {
-        if ( currentLogTransactionCursor != null )
-        {
+    private void closeCurrent() throws IOException {
+        if (currentLogTransactionCursor != null) {
             currentLogTransactionCursor.close();
             currentLogTransactionCursor = null;
         }
     }
 
     @Override
-    public LogPosition position()
-    {
+    public LogPosition position() {
         return currentLogTransactionCursor.position();
     }
 }

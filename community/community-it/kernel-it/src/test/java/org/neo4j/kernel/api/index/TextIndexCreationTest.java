@@ -19,12 +19,19 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static java.util.Arrays.stream;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.stream.Collectors.toSet;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.schema.IndexOrderCapability.NONE;
+import static org.neo4j.internal.schema.IndexValueCapability.NO;
+
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-
-import java.util.Set;
-
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -41,97 +48,86 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.ValueCategory;
 
-import static java.util.Arrays.stream;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.stream.Collectors.toSet;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.schema.IndexOrderCapability.NONE;
-import static org.neo4j.internal.schema.IndexValueCapability.NO;
-
 @ImpermanentDbmsExtension
-public class TextIndexCreationTest
-{
+public class TextIndexCreationTest {
     @Inject
     private GraphDatabaseAPI db;
+
     private int labelId;
     private int relTypeId;
     private int[] propertyIds;
     private int[] compositeKey;
 
     @BeforeEach
-    void setup() throws Exception
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
+    void setup() throws Exception {
+        try (Transaction tx = db.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             TokenWrite tokenWrite = ktx.tokenWrite();
-            labelId = tokenWrite.labelGetOrCreateForName( label( "PERSON" ).name() );
-            relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( RelationshipType.withName( "FRIEND" ).name() );
-            propertyIds = new int[]{tokenWrite.propertyKeyGetOrCreateForName( "name" )};
-            compositeKey = new int[]{
-                    tokenWrite.propertyKeyGetOrCreateForName( "address" ), tokenWrite.propertyKeyGetOrCreateForName( "age" )};
+            labelId = tokenWrite.labelGetOrCreateForName(label("PERSON").name());
+            relTypeId = tokenWrite.relationshipTypeGetOrCreateForName(
+                    RelationshipType.withName("FRIEND").name());
+            propertyIds = new int[] {tokenWrite.propertyKeyGetOrCreateForName("name")};
+            compositeKey = new int[] {
+                tokenWrite.propertyKeyGetOrCreateForName("address"), tokenWrite.propertyKeyGetOrCreateForName("age")
+            };
             tx.commit();
         }
     }
 
     @Test
-    void shouldRejectCompositeKeys()
-    {
-        assertUnsupported( () -> createTextIndex( "nti", SchemaDescriptors.forLabel( labelId, compositeKey ) ) );
-        assertUnsupported( () -> createTextIndex( "rti", SchemaDescriptors.forRelType( relTypeId, compositeKey ) ) );
+    void shouldRejectCompositeKeys() {
+        assertUnsupported(() -> createTextIndex("nti", SchemaDescriptors.forLabel(labelId, compositeKey)));
+        assertUnsupported(() -> createTextIndex("rti", SchemaDescriptors.forRelType(relTypeId, compositeKey)));
     }
 
-    private void assertUnsupported( Executable executable )
-    {
-        var message = assertThrows( UnsupportedOperationException.class, executable ).getMessage();
-        assertThat( message ).isEqualTo( "Composite indexes are not supported for TEXT index type." );
+    private void assertUnsupported(Executable executable) {
+        var message =
+                assertThrows(UnsupportedOperationException.class, executable).getMessage();
+        assertThat(message).isEqualTo("Composite indexes are not supported for TEXT index type.");
     }
 
     @Test
-    void shouldCreateIndexes() throws Exception
-    {
-        //When
-        createTextIndex( "node_text_index", SchemaDescriptors.forLabel( labelId, propertyIds ) );
-        createTextIndex( "rel_text_index", SchemaDescriptors.forRelType( relTypeId, propertyIds ) );
+    void shouldCreateIndexes() throws Exception {
+        // When
+        createTextIndex("node_text_index", SchemaDescriptors.forLabel(labelId, propertyIds));
+        createTextIndex("rel_text_index", SchemaDescriptors.forRelType(relTypeId, propertyIds));
 
-        //Then
+        // Then
         awaitIndexesOnline();
-        try ( var transaction = db.beginTx() )
-        {
+        try (var transaction = db.beginTx()) {
             var ktx = ((TransactionImpl) transaction).kernelTransaction();
-            assertValidTextIndex( ktx.schemaRead().indexGetForName( "node_text_index" ), propertyIds );
-            assertValidTextIndex( ktx.schemaRead().indexGetForName( "rel_text_index" ), propertyIds );
+            assertValidTextIndex(ktx.schemaRead().indexGetForName("node_text_index"), propertyIds);
+            assertValidTextIndex(ktx.schemaRead().indexGetForName("rel_text_index"), propertyIds);
         }
     }
 
-    private void awaitIndexesOnline()
-    {
-        try ( var tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 5, MINUTES );
+    private void awaitIndexesOnline() {
+        try (var tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(5, MINUTES);
         }
     }
 
-    private void assertValidTextIndex( IndexDescriptor index, int[] propertyIds )
-    {
-        assertThat( index.getIndexType() ).isEqualTo( IndexType.TEXT );
-        assertThat( index.getCapability().behaviours() ).isEmpty();
-        assertThat( index.schema().getPropertyIds() ).isEqualTo( propertyIds );
-        assertThat( stream( ValueCategory.values() ).map(
-                value -> index.getCapability().orderCapability( value ) ).collect( toSet() ) ).isEqualTo( Set.of( NONE ) );
-        assertThat( stream( ValueCategory.values() ).map(
-                value -> index.getCapability().valueCapability( value ) ).collect( toSet() ) ).isEqualTo( Set.of( NO ) );
+    private void assertValidTextIndex(IndexDescriptor index, int[] propertyIds) {
+        assertThat(index.getIndexType()).isEqualTo(IndexType.TEXT);
+        assertThat(index.getCapability().behaviours()).isEmpty();
+        assertThat(index.schema().getPropertyIds()).isEqualTo(propertyIds);
+        assertThat(stream(ValueCategory.values())
+                        .map(value -> index.getCapability().orderCapability(value))
+                        .collect(toSet()))
+                .isEqualTo(Set.of(NONE));
+        assertThat(stream(ValueCategory.values())
+                        .map(value -> index.getCapability().valueCapability(value))
+                        .collect(toSet()))
+                .isEqualTo(Set.of(NO));
     }
 
-    private void createTextIndex( String name, SchemaDescriptor schema ) throws Exception
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            var prototype = IndexPrototype.forSchema( schema ).withIndexType( IndexType.TEXT ).withName( name );
+    private void createTextIndex(String name, SchemaDescriptor schema) throws Exception {
+        try (Transaction tx = db.beginTx()) {
+            var prototype = IndexPrototype.forSchema(schema)
+                    .withIndexType(IndexType.TEXT)
+                    .withName(name);
             var kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
-            kernelTransaction.schemaWrite().indexCreate( prototype );
+            kernelTransaction.schemaWrite().indexCreate(prototype);
             tx.commit();
         }
     }

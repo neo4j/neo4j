@@ -27,11 +27,13 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
-case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
-                           (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(src) with GraphElementPropertyFunctions {
+case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(src) with GraphElementPropertyFunctions {
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.map { row =>
       val item = row.getByName(variable)
       if (!(item eq Values.NO_VALUE)) removeLabels(state, CastSupport.castOrFail[VirtualNodeValue](item).id)

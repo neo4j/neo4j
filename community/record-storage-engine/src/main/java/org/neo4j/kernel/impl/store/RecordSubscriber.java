@@ -24,8 +24,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 /**
  * Subscriber used for streaming records back to client
  */
-public interface RecordSubscriber<RECORD extends AbstractBaseRecord>
-{
+public interface RecordSubscriber<RECORD extends AbstractBaseRecord> {
     /**
      * Called on each new record.
      *
@@ -33,5 +32,5 @@ public interface RecordSubscriber<RECORD extends AbstractBaseRecord>
      * @param record The record to be streamed.
      * @return <code>true</code> if the client wants more records otherwise <code>false</code>
      */
-    boolean onRecord( RECORD record );
+    boolean onRecord(RECORD record);
 }

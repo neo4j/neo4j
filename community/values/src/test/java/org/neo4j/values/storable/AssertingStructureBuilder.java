@@ -19,53 +19,43 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Assertions;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-
+import org.junit.jupiter.api.Assertions;
 import org.neo4j.values.StructureBuilder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public final class AssertingStructureBuilder<Input, Result> implements StructureBuilder<Input,Result>
-{
-    public static <I, O> AssertingStructureBuilder<I,O> asserting( StructureBuilder<I,O> builder )
-    {
-        return new AssertingStructureBuilder<>( builder );
+public final class AssertingStructureBuilder<Input, Result> implements StructureBuilder<Input, Result> {
+    public static <I, O> AssertingStructureBuilder<I, O> asserting(StructureBuilder<I, O> builder) {
+        return new AssertingStructureBuilder<>(builder);
     }
 
-    private final Map<String,Input> input = new LinkedHashMap<>();
-    private final StructureBuilder<Input,Result> builder;
+    private final Map<String, Input> input = new LinkedHashMap<>();
+    private final StructureBuilder<Input, Result> builder;
 
-    private AssertingStructureBuilder( StructureBuilder<Input,Result> builder )
-    {
+    private AssertingStructureBuilder(StructureBuilder<Input, Result> builder) {
         this.builder = builder;
     }
 
-    public void assertThrows( Class<? extends Exception> type, String message )
-    {
-        var e = Assertions.assertThrows( Exception.class, () ->
-        {
-            for ( Map.Entry<String, Input> entry : input.entrySet() )
-            {
-                builder.add( entry.getKey(), entry.getValue() );
+    public void assertThrows(Class<? extends Exception> type, String message) {
+        var e = Assertions.assertThrows(Exception.class, () -> {
+            for (Map.Entry<String, Input> entry : input.entrySet()) {
+                builder.add(entry.getKey(), entry.getValue());
             }
             builder.build();
-        } );
-        assertThat( e ).isInstanceOf( type ).hasMessageContaining( message );
+        });
+        assertThat(e).isInstanceOf(type).hasMessageContaining(message);
     }
 
     @Override
-    public AssertingStructureBuilder<Input,Result> add( String field, Input value )
-    {
-        input.put( field, value );
+    public AssertingStructureBuilder<Input, Result> add(String field, Input value) {
+        input.put(field, value);
         return this;
     }
 
     @Override
-    public Result build()
-    {
-        throw new UnsupportedOperationException( "do not use this method" );
+    public Result build() {
+        throw new UnsupportedOperationException("do not use this method");
     }
 }

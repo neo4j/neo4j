@@ -30,14 +30,15 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * If the CSV file has headers, each line will represented in Cypher as a MapValue, if the file has no header, each
  * line will be a ListValue.
  */
-case class LoadCSV(override val source: LogicalPlan,
-                   url: Expression,
-                   variableName: String,
-                   format: CSVFormat,
-                   fieldTerminator: Option[String],
-                   legacyCsvQuoteEscaping: Boolean,
-                   csvBufferSize: Int)
-                  (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
+case class LoadCSV(
+  override val source: LogicalPlan,
+  url: Expression,
+  variableName: String,
+  format: CSVFormat,
+  fieldTerminator: Option[String],
+  legacyCsvQuoteEscaping: Boolean,
+  csvBufferSize: Int
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
 
   override val availableSymbols: Set[String] = source.availableSymbols + variableName
 

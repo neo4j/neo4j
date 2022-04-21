@@ -19,25 +19,22 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Files;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.test.utils.TestDirectory;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 
+import java.nio.file.Files;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.test.utils.TestDirectory;
+
 @Neo4jLayoutExtension
-class Neo4jLayoutSupportExtensionTest
-{
+class Neo4jLayoutSupportExtensionTest {
     @Inject
     private Neo4jLayout neo4jLayout;
 
@@ -51,37 +48,34 @@ class Neo4jLayoutSupportExtensionTest
     private TestDirectory testDirectory;
 
     @Test
-    void shouldInjectLayouts()
-    {
-        assertNotNull( neo4jLayout );
-        assertNotNull( databaseLayout );
-        assertNotNull( fs );
-        assertNotNull( databaseLayout );
+    void shouldInjectLayouts() {
+        assertNotNull(neo4jLayout);
+        assertNotNull(databaseLayout);
+        assertNotNull(fs);
+        assertNotNull(databaseLayout);
     }
 
     @Test
-    void shouldCreateDirectories()
-    {
-        assertTrue( Files.exists( neo4jLayout.homeDirectory() ) );
-        assertTrue( Files.exists( neo4jLayout.databasesDirectory() ) );
-        assertTrue( Files.exists( neo4jLayout.transactionLogsRootDirectory() ) );
+    void shouldCreateDirectories() {
+        assertTrue(Files.exists(neo4jLayout.homeDirectory()));
+        assertTrue(Files.exists(neo4jLayout.databasesDirectory()));
+        assertTrue(Files.exists(neo4jLayout.transactionLogsRootDirectory()));
 
-        assertTrue( fs.fileExists( databaseLayout.databaseDirectory() ) );
-        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+        assertTrue(fs.fileExists(databaseLayout.databaseDirectory()));
+        assertTrue(fs.fileExists(databaseLayout.getTransactionLogsDirectory()));
     }
 
     @Test
-    void shouldUseDefaultConfig()
-    {
-        Config defaultConfig = Config.defaults( neo4j_home, testDirectory.homePath() );
-        Neo4jLayout defaultNeo4jLayout = Neo4jLayout.of( defaultConfig );
-        DatabaseLayout defaultDatabaseLayout = defaultNeo4jLayout.databaseLayout( defaultConfig.get( default_database ) );
+    void shouldUseDefaultConfig() {
+        Config defaultConfig = Config.defaults(neo4j_home, testDirectory.homePath());
+        Neo4jLayout defaultNeo4jLayout = Neo4jLayout.of(defaultConfig);
+        DatabaseLayout defaultDatabaseLayout = defaultNeo4jLayout.databaseLayout(defaultConfig.get(default_database));
 
-        assertEquals( defaultNeo4jLayout.homeDirectory(), neo4jLayout.homeDirectory() );
-        assertEquals( defaultNeo4jLayout.databasesDirectory(), neo4jLayout.databasesDirectory() );
-        assertEquals( defaultNeo4jLayout.transactionLogsRootDirectory(), neo4jLayout.transactionLogsRootDirectory() );
+        assertEquals(defaultNeo4jLayout.homeDirectory(), neo4jLayout.homeDirectory());
+        assertEquals(defaultNeo4jLayout.databasesDirectory(), neo4jLayout.databasesDirectory());
+        assertEquals(defaultNeo4jLayout.transactionLogsRootDirectory(), neo4jLayout.transactionLogsRootDirectory());
 
-        assertEquals( defaultDatabaseLayout.databaseDirectory(), databaseLayout.databaseDirectory() );
-        assertEquals( defaultDatabaseLayout.getTransactionLogsDirectory(), databaseLayout.getTransactionLogsDirectory() );
+        assertEquals(defaultDatabaseLayout.databaseDirectory(), databaseLayout.databaseDirectory());
+        assertEquals(defaultDatabaseLayout.getTransactionLogsDirectory(), databaseLayout.getTransactionLogsDirectory());
     }
 }

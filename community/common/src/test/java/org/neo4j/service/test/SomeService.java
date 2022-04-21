@@ -22,6 +22,4 @@ package org.neo4j.service.test;
 import org.neo4j.service.NamedService;
 import org.neo4j.service.PrioritizedService;
 
-public interface SomeService extends NamedService, PrioritizedService
-{
-}
+public interface SomeService extends NamedService, PrioritizedService {}

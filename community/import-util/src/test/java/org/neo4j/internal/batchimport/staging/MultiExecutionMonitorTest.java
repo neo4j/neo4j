@@ -19,74 +19,63 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.jupiter.api.Test;
-
-import java.time.Clock;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class MultiExecutionMonitorTest
-{
+import java.time.Clock;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
+
+class MultiExecutionMonitorTest {
     @Test
-    void shouldCheckMultipleMonitors()
-    {
+    void shouldCheckMultipleMonitors() {
         // GIVEN
         FakeClock clock = Clocks.fakeClock();
-        TestableMonitor first = new TestableMonitor( clock, 100, MILLISECONDS, "first" );
-        TestableMonitor other = new TestableMonitor( clock, 250, MILLISECONDS, "other" );
-        MultiExecutionMonitor multiMonitor = new MultiExecutionMonitor( clock, first, other );
+        TestableMonitor first = new TestableMonitor(clock, 100, MILLISECONDS, "first");
+        TestableMonitor other = new TestableMonitor(clock, 250, MILLISECONDS, "other");
+        MultiExecutionMonitor multiMonitor = new MultiExecutionMonitor(clock, first, other);
 
         // WHEN/THEN
-        clock.forward( 110, MILLISECONDS );
-        expectCallsToCheck( multiMonitor, first, 1, other, 0 );
-        clock.forward( 100, MILLISECONDS );
-        expectCallsToCheck( multiMonitor, first, 2, other, 0 );
-        clock.forward( 45, MILLISECONDS );
-        expectCallsToCheck( multiMonitor, first, 2, other, 1 );
+        clock.forward(110, MILLISECONDS);
+        expectCallsToCheck(multiMonitor, first, 1, other, 0);
+        clock.forward(100, MILLISECONDS);
+        expectCallsToCheck(multiMonitor, first, 2, other, 0);
+        clock.forward(45, MILLISECONDS);
+        expectCallsToCheck(multiMonitor, first, 2, other, 1);
     }
 
-    private static void expectCallsToCheck( ExecutionMonitor multiMonitor, Object... alternatingMonitorAndCount )
-    {
-        multiMonitor.check( null ); // null, knowing that our monitors in this test doesn't use 'em
-        for ( int i = 0; i < alternatingMonitorAndCount.length; i++ )
-        {
+    private static void expectCallsToCheck(ExecutionMonitor multiMonitor, Object... alternatingMonitorAndCount) {
+        multiMonitor.check(null); // null, knowing that our monitors in this test doesn't use 'em
+        for (int i = 0; i < alternatingMonitorAndCount.length; i++) {
             TestableMonitor monitor = (TestableMonitor) alternatingMonitorAndCount[i++];
             int count = (Integer) alternatingMonitorAndCount[i];
-            assertThat( monitor.timesPolled ).isLessThanOrEqualTo( count );
-            if ( monitor.timesPolled < count )
-            {
-                fail( "Polls didn't occur, expected " + Arrays.toString( alternatingMonitorAndCount ) );
+            assertThat(monitor.timesPolled).isLessThanOrEqualTo(count);
+            if (monitor.timesPolled < count) {
+                fail("Polls didn't occur, expected " + Arrays.toString(alternatingMonitorAndCount));
             }
         }
     }
 
-    private static class TestableMonitor extends ExecutionMonitor.Adapter
-    {
+    private static class TestableMonitor extends ExecutionMonitor.Adapter {
         private int timesPolled;
         private final String name;
 
-        TestableMonitor( Clock clock, long interval, TimeUnit unit, String name )
-        {
-            super( clock, interval, unit );
+        TestableMonitor(Clock clock, long interval, TimeUnit unit, String name) {
+            super(clock, interval, unit);
             this.name = name;
         }
 
         @Override
-        public void check( StageExecution execution )
-        {
+        public void check(StageExecution execution) {
             timesPolled++;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "[" + name + ":" + timesPolled + "]";
         }
     }

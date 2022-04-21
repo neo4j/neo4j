@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.util.InternalNotification
  * This trait is just there to give the ability to hold caching information
  */
 trait CacheabilityInfo {
+
   /**
    * This field indicates if a query should be cached in the query caches or not
    * (e.g. "EXPLAIN query with not enough given parameters" will be executable but useless in the cache ).

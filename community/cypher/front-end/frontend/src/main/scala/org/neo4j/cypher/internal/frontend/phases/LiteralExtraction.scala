@@ -27,19 +27,18 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 
-
-
 /**
  * Replace literals with parameters.
  */
-case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy) extends Phase[BaseContext, BaseState, BaseState] with Step {
+case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy)
+    extends Phase[BaseContext, BaseState, BaseState] with Step {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
     val statement = in.statement()
     val (extractParameters, extractedParameters) = statement match {
-      case _ : AdministrationCommand => sensitiveLiteralReplacement(statement)
-      case _ : SchemaCommand => Rewriter.noop -> Map.empty[String, Any]
-      case _ => literalReplacement(statement, literalExtraction)
+      case _: AdministrationCommand => sensitiveLiteralReplacement(statement)
+      case _: SchemaCommand         => Rewriter.noop -> Map.empty[String, Any]
+      case _                        => literalReplacement(statement, literalExtraction)
     }
     val rewrittenStatement = statement.endoRewrite(extractParameters)
     in.withStatement(rewrittenStatement).withParams(extractedParameters)

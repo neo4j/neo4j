@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class SortTestBase[CONTEXT <: RuntimeContext](
-                                                        edition: Edition[CONTEXT],
-                                                        runtime: CypherRuntime[CONTEXT],
-                                                        sizeHint: Int
-                                                      ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("empty input gives empty output") {
     // when
@@ -81,7 +81,8 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = input.flatten.sortBy(arr => (-arr(0).asInstanceOf[Int], arr(1).asInstanceOf[Int], -arr(2).asInstanceOf[Int]))
+    val expected =
+      input.flatten.sortBy(arr => (-arr(0).asInstanceOf[Int], arr(1).asInstanceOf[Int], -arr(2).asInstanceOf[Int]))
     runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
   }
 
@@ -102,7 +103,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for{
+    val expected = for {
       x <- aNodes
       y <- bNodes.sortBy(_.getId)
     } yield Array[Any](x, y)
@@ -190,7 +191,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle sort after distinct removed rows (FilteringExecutionContext and cancelled rows) I") {
-    //this test is mostly testing pipelined runtime and assumes a morsel/batch size of 4
+    // this test is mostly testing pipelined runtime and assumes a morsel/batch size of 4
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("A")
@@ -200,15 +201,15 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when (one element in each batch will be cancelled)
-    val runtimeResult = execute(logicalQuery, runtime,
-                                inputValues(Array(4), Array(2), Array(4), Array(1), Array(3), Array(5), Array(3)))
+    val runtimeResult =
+      execute(logicalQuery, runtime, inputValues(Array(4), Array(2), Array(4), Array(1), Array(3), Array(5), Array(3)))
 
-    //then
+    // then
     runtimeResult should beColumns("A").withRows(List(Array(1), Array(2), Array(3), Array(4), Array(5)))
   }
 
   test("should handle sort after distinct removed rows (FilteringExecutionContext and cancelled rows) II") {
-    //this test is mostly testing pipelined runtime and assumes a morsel/batch size of 4
+    // this test is mostly testing pipelined runtime and assumes a morsel/batch size of 4
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("A")
@@ -218,11 +219,11 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    //when (the first element of the second batch will be cancelled)
-    val runtimeResult = execute(logicalQuery, runtime,
-                                inputValues(Array(1), Array(2), Array(3), Array(4), Array(4), Array(5), Array(6)))
+    // when (the first element of the second batch will be cancelled)
+    val runtimeResult =
+      execute(logicalQuery, runtime, inputValues(Array(1), Array(2), Array(3), Array(4), Array(4), Array(5), Array(6)))
 
-    //then
+    // then
     runtimeResult should beColumns("A").withRows(List(Array(1), Array(2), Array(3), Array(4), Array(5), Array(6)))
   }
 }

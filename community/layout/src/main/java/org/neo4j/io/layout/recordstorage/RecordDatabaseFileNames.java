@@ -22,8 +22,7 @@ package org.neo4j.io.layout.recordstorage;
 /**
  * List of file names for a database.
  */
-final class RecordDatabaseFileNames
-{
+final class RecordDatabaseFileNames {
     static final String COUNTS_STORE = "neostore.counts.db";
 
     static final String NODE_STORE = "neostore.nodestore.db";

@@ -83,8 +83,7 @@ package org.neo4j.index.internal.gbptree;
  * </pre>
  * @param <KEY> type of key.
  */
-class StructurePropagation<KEY>
-{
+class StructurePropagation<KEY> {
     /* <CONTENT> */
     // Below are the "content" of structure propagation
     /**
@@ -149,11 +148,11 @@ class StructurePropagation<KEY>
      * is used to find "common ancestor" of leaves involved in merge. See {@link org.neo4j.index.internal.gbptree}.
      */
     KeyReplaceStrategy keyReplaceStrategy;
+
     boolean hasLeftKeyReplace;
     boolean hasRightKeyReplace;
 
-    StructurePropagation( KEY leftKey, KEY rightKey, KEY bubbleKey )
-    {
+    StructurePropagation(KEY leftKey, KEY rightKey, KEY bubbleKey) {
         this.leftKey = leftKey;
         this.rightKey = rightKey;
         this.bubbleKey = bubbleKey;
@@ -162,8 +161,7 @@ class StructurePropagation<KEY>
     /**
      * Clear booleans indicating change has occurred.
      */
-    void clear()
-    {
+    void clear() {
         hasLeftChildUpdate = false;
         hasRightChildUpdate = false;
         hasMidChildUpdate = false;
@@ -172,36 +170,36 @@ class StructurePropagation<KEY>
         hasRightKeyReplace = false;
     }
 
-    boolean isEmpty()
-    {
-        return !hasLeftChildUpdate && !hasRightChildUpdate && !hasMidChildUpdate && !hasRightKeyInsert && !hasLeftKeyReplace && !hasRightKeyReplace;
+    boolean isEmpty() {
+        return !hasLeftChildUpdate
+                && !hasRightChildUpdate
+                && !hasMidChildUpdate
+                && !hasRightKeyInsert
+                && !hasLeftKeyReplace
+                && !hasRightKeyReplace;
     }
 
-    interface StructureUpdate
-    {
-        void update( StructurePropagation structurePropagation, long childId );
+    interface StructureUpdate {
+        void update(StructurePropagation structurePropagation, long childId);
     }
 
-    static final StructureUpdate UPDATE_LEFT_CHILD = ( sp, childId ) ->
-    {
+    static final StructureUpdate UPDATE_LEFT_CHILD = (sp, childId) -> {
         sp.hasLeftChildUpdate = true;
         sp.leftChild = childId;
     };
 
-    static final StructureUpdate UPDATE_MID_CHILD = ( sp, childId ) ->
-    {
+    static final StructureUpdate UPDATE_MID_CHILD = (sp, childId) -> {
         sp.hasMidChildUpdate = true;
         sp.midChild = childId;
     };
 
-    static final StructureUpdate UPDATE_RIGHT_CHILD = ( sp, childId ) ->
-    {
+    static final StructureUpdate UPDATE_RIGHT_CHILD = (sp, childId) -> {
         sp.hasRightChildUpdate = true;
         sp.rightChild = childId;
     };
 
-    enum KeyReplaceStrategy
-    {
-        REPLACE, BUBBLE
+    enum KeyReplaceStrategy {
+        REPLACE,
+        BUBBLE
     }
 }

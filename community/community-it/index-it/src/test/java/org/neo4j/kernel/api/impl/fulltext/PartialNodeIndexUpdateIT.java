@@ -19,44 +19,38 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 @DbmsExtension
-class PartialNodeIndexUpdateIT
-{
+class PartialNodeIndexUpdateIT {
     @Inject
     private GraphDatabaseService database;
 
     @Test
-    void partialIndexedNodePropertiesUpdate()
-    {
-        final Label userLabel = Label.label( "User" );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.execute( "CREATE FULLTEXT INDEX test FOR (n: Card | " + userLabel.name() + ") " +
-                            "ON EACH [n.title, n.plainText, n.username, n.screenName]" );
+    void partialIndexedNodePropertiesUpdate() {
+        final Label userLabel = Label.label("User");
+        try (Transaction transaction = database.beginTx()) {
+            transaction.execute("CREATE FULLTEXT INDEX test FOR (n: Card | " + userLabel.name() + ") "
+                    + "ON EACH [n.title, n.plainText, n.username, n.screenName]");
             transaction.commit();
         }
 
         final String value = "asdf";
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.execute( "UNWIND [{_id:48, properties:{screenName:\"" + value + "\"}}] as row " +
-                    "CREATE (n:L1{_id: row._id}) SET n += row.properties SET n:" + userLabel.name() );
+        try (Transaction transaction = database.beginTx()) {
+            transaction.execute("UNWIND [{_id:48, properties:{screenName:\"" + value + "\"}}] as row "
+                    + "CREATE (n:L1{_id: row._id}) SET n += row.properties SET n:" + userLabel.name());
             transaction.commit();
         }
 
-        try ( Transaction transaction = database.beginTx() )
-        {
-            assertNotNull( transaction.findNode( userLabel, "screenName", value ) );
+        try (Transaction transaction = database.beginTx()) {
+            assertNotNull(transaction.findNode(userLabel, "screenName", value));
         }
     }
 }

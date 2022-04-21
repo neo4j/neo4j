@@ -28,10 +28,11 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.InvalidArgumentException
 
-abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                       runtime: CypherRuntime[CONTEXT],
-                                                       sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class SkipTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("skip 0") {
     // when
@@ -224,7 +225,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     // then
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = for{
+    val expected = for {
       x <- aNodes
       y <- bNodes.sortBy(_.getId).drop(90)
     } yield Array[Any](x, y)
@@ -364,16 +365,21 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("sum").withSingleRow(input.flatten.drop(10).foldLeft(0)((sum, current) => sum + current(0).asInstanceOf[Int]))
+    runtimeResult should beColumns("sum").withSingleRow(input.flatten.drop(10).foldLeft(0)((sum, current) =>
+      sum + current(0).asInstanceOf[Int]
+    ))
 
   }
 
   test("should work with aggregation on the RHS of an apply") {
     // given
     given {
-      nodePropertyGraph(sizeHint, properties = {
-        case _: Int => Map("foo" -> s"bar")
-      })
+      nodePropertyGraph(
+        sizeHint,
+        properties = {
+          case _: Int => Map("foo" -> s"bar")
+        }
+      )
     }
 
     // when
@@ -388,7 +394,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
     val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(Array[Any](_)): _*))
 
-    val expected = for {_ <- 1 to 10} yield Array(s"bar", 10)
+    val expected = for { _ <- 1 to 10 } yield Array(s"bar", 10)
 
     // then
     runtimeResult should beColumns("group", "c").withRows(expected)
@@ -396,10 +402,13 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
   test("should work with chained skips on the RHS of an apply") {
     given {
-      nodePropertyGraph(sizeHint,
+      nodePropertyGraph(
+        sizeHint,
         properties = {
           case _: Int => Map("foo" -> s"bar")
-        }, "A")
+        },
+        "A"
+      )
     }
 
     // when
@@ -416,8 +425,10 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(Array[Any](_)): _*))
 
     // then
-    val expected = for {_ <- 1 to 10
-                        _ <- 0 until 8} yield s"bar"
+    val expected = for {
+      _ <- 1 to 10
+      _ <- 0 until 8
+    } yield s"bar"
     runtimeResult should beColumns("bar").withRows(singleColumn(expected))
   }
 }

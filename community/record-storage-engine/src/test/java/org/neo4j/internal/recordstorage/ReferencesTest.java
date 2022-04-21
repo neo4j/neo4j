@@ -19,11 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.ThreadLocalRandom;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -33,45 +28,43 @@ import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.DEN
 import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.clearEncoding;
 import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.parseEncoding;
 
-class ReferencesTest
-{
+import java.util.concurrent.ThreadLocalRandom;
+import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
+import org.junit.jupiter.api.Test;
+
+class ReferencesTest {
     // This value the largest possible high limit id +1 (see HighLimitV3_1_0)
     private static final long MAX_ID_LIMIT = 1L << 50;
 
     @Test
-    void shouldPreserveNoId()
-    {
-        assertThat( RelationshipReferenceEncoding.encodeDense( NO_ID ) ).isEqualTo( NO_ID );
+    void shouldPreserveNoId() {
+        assertThat(RelationshipReferenceEncoding.encodeDense(NO_ID)).isEqualTo(NO_ID);
     }
 
     @Test
-    void shouldClearFlags()
-    {
+    void shouldClearFlags() {
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int i = 0; i < 1000; i++ )
-        {
-            long reference = random.nextLong( MAX_ID_LIMIT );
-            int token = random.nextInt( Integer.MAX_VALUE );
+        for (int i = 0; i < 1000; i++) {
+            long reference = random.nextLong(MAX_ID_LIMIT);
+            int token = random.nextInt(Integer.MAX_VALUE);
 
-            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeDense( reference ) ) ).isEqualTo( reference );
+            assertThat(clearEncoding(RelationshipReferenceEncoding.encodeDense(reference)))
+                    .isEqualTo(reference);
         }
     }
 
     @Test
-    void encodeDense()
-    {
-        testLongFlag( DENSE, RelationshipReferenceEncoding::encodeDense );
+    void encodeDense() {
+        testLongFlag(DENSE, RelationshipReferenceEncoding::encodeDense);
     }
 
-    private static void testLongFlag( RelationshipReferenceEncoding flag, LongToLongFunction encoder )
-    {
+    private static void testLongFlag(RelationshipReferenceEncoding flag, LongToLongFunction encoder) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int i = 0; i < 1000; i++ )
-        {
-            long reference = random.nextLong( MAX_ID_LIMIT );
-            assertNotEquals( flag, parseEncoding( reference ) );
-            assertEquals( flag, parseEncoding( encoder.applyAsLong( reference ) ) );
-            assertTrue( encoder.applyAsLong( reference ) < 0, "encoded reference is negative" );
+        for (int i = 0; i < 1000; i++) {
+            long reference = random.nextLong(MAX_ID_LIMIT);
+            assertNotEquals(flag, parseEncoding(reference));
+            assertEquals(flag, parseEncoding(encoder.applyAsLong(reference)));
+            assertTrue(encoder.applyAsLong(reference) < 0, "encoded reference is negative");
         }
     }
 }

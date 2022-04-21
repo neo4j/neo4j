@@ -20,11 +20,12 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
 
 object NodePatternPredicateNormalizer extends MatchPredicateNormalizer {
+
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
     case NodePattern(_, _, _, Some(expr)) => Vector(expr)
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(_, _, _, Some(_)) => p.copy(predicate = None)(p.position)
+    case p @ NodePattern(_, _, _, Some(_)) => p.copy(predicate = None)(p.position)
   }
 }

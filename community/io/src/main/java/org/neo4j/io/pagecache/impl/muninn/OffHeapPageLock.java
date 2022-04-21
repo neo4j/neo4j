@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.lang.invoke.VarHandle;
-
 import org.neo4j.internal.unsafe.UnsafeUtil;
 
 /**
@@ -60,8 +59,7 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
  * Note that the lock-word is assumed to be 8 bytes, and should ideally be aligned to 8-byte boundaries, and ideally
  * run on platforms that support 8-byte-wide atomic memory operations.
  */
-public final class OffHeapPageLock
-{
+public final class OffHeapPageLock {
     /*
      * Bits for counting concurrent write-locks. We use 17 bits because our pages are most likely 8192 bytes, and
      * 2^17 = 131.072, which is far more than our page size, so makes it highly unlikely that we are going to overflow
@@ -103,31 +101,26 @@ public final class OffHeapPageLock
     // Unlocked mask:
     private static final long UNL_MASK = 0b11011111_11111111_11110000_00000000_00000000_00000000_00000000_00000000L;
 
-    private OffHeapPageLock()
-    {
+    private OffHeapPageLock() {
         // The static version keeps all state externally.
     }
 
-    private static long getState( long address )
-    {
-        return UnsafeUtil.getLongVolatile( address );
+    private static long getState(long address) {
+        return UnsafeUtil.getLongVolatile(address);
     }
 
-    private static boolean compareAndSetState( long address, long expect, long update )
-    {
-        return UnsafeUtil.compareAndSwapLong( null, address, expect, update );
+    private static boolean compareAndSetState(long address, long expect, long update) {
+        return UnsafeUtil.compareAndSwapLong(null, address, expect, update);
     }
 
-    private static void unconditionallySetState( long address, long update )
-    {
-        UnsafeUtil.putLongVolatile( address, update );
+    private static void unconditionallySetState(long address, long update) {
+        UnsafeUtil.putLongVolatile(address, update);
     }
 
     /**
      * @return A newly initialised lock word, for a lock that is exclusively locked.
      */
-    public static long initialLockWordWithExclusiveLock()
-    {
+    public static long initialLockWordWithExclusiveLock() {
         return EXL_MASK;
     }
 
@@ -137,9 +130,8 @@ public final class OffHeapPageLock
      *
      * @return A stamp that must be passed to {@link #validateReadLock(long, long)} to validate the critical section.
      */
-    public static long tryOptimisticReadLock( long address )
-    {
-        return getState( address ) & SEQ_MASK;
+    public static long tryOptimisticReadLock(long address) {
+        return getState(address) & SEQ_MASK;
     }
 
     /**
@@ -150,20 +142,17 @@ public final class OffHeapPageLock
      * @param stamp The stamp of the optimistic read lock.
      * @return {@code true} if the optimistic read lock was valid, {@code false} otherwise.
      */
-    public static boolean validateReadLock( long address, long stamp )
-    {
+    public static boolean validateReadLock(long address, long stamp) {
         VarHandle.acquireFence();
-        return (getState( address ) & CHK_MASK) == stamp;
+        return (getState(address) & CHK_MASK) == stamp;
     }
 
-    public static boolean isModified( long address )
-    {
-        return (getState( address ) & MOD_MASK) == MOD_MASK;
+    public static boolean isModified(long address) {
+        return (getState(address) & MOD_MASK) == MOD_MASK;
     }
 
-    public static boolean isExclusivelyLocked( long address )
-    {
-        return (getState( address ) & EXL_MASK) == EXL_MASK;
+    public static boolean isExclusivelyLocked(long address) {
+        return (getState(address) & EXL_MASK) == EXL_MASK;
     }
 
     /**
@@ -175,95 +164,77 @@ public final class OffHeapPageLock
      *
      * @return {@code true} if the write lock was taken, {@code false} otherwise.
      */
-    public static boolean tryWriteLock( long address )
-    {
+    public static boolean tryWriteLock(long address) {
         long s;
         long n;
-        for ( ; ; )
-        {
-            s = getState( address );
+        for (; ; ) {
+            s = getState(address);
             boolean unwritablyLocked = (s & EXL_MASK) != 0;
             boolean writeCountOverflow = (s & CNT_MASK) == CNT_MASK;
 
-            if ( unwritablyLocked || writeCountOverflow )
-            {
-                return failWriteLock( s, writeCountOverflow );
+            if (unwritablyLocked || writeCountOverflow) {
+                return failWriteLock(s, writeCountOverflow);
             }
 
             n = s + CNT_UNIT | MOD_MASK;
-            if ( compareAndSetState( address, s, n ) )
-            {
+            if (compareAndSetState(address, s, n)) {
                 VarHandle.releaseFence();
                 return true;
             }
         }
     }
 
-    private static boolean failWriteLock( long s, boolean writeCountOverflow )
-    {
-        if ( writeCountOverflow )
-        {
-            throwWriteLockOverflow( s );
+    private static boolean failWriteLock(long s, boolean writeCountOverflow) {
+        if (writeCountOverflow) {
+            throwWriteLockOverflow(s);
         }
         // Otherwise it was exclusively locked
         return false;
     }
 
-    private static void throwWriteLockOverflow( long s )
-    {
-        throw new IllegalMonitorStateException( "Write lock counter overflow: " + describeState( s ) );
+    private static void throwWriteLockOverflow(long s) {
+        throw new IllegalMonitorStateException("Write lock counter overflow: " + describeState(s));
     }
 
     /**
      * Release a write lock taking with {@link #tryWriteLock(long)}.
      */
-    public static void unlockWrite( long address )
-    {
+    public static void unlockWrite(long address) {
         long s;
         long n;
-        do
-        {
-            s = getState( address );
-            if ( (s & CNT_MASK) == 0 )
-            {
-                throwUnmatchedUnlockWrite( s );
+        do {
+            s = getState(address);
+            if ((s & CNT_MASK) == 0) {
+                throwUnmatchedUnlockWrite(s);
             }
-            n = nextSeq( s ) - CNT_UNIT;
-        }
-        while ( !compareAndSetState( address, s, n ) );
+            n = nextSeq(s) - CNT_UNIT;
+        } while (!compareAndSetState(address, s, n));
     }
 
-    private static void throwUnmatchedUnlockWrite( long s )
-    {
-        throw new IllegalMonitorStateException( "Unmatched unlockWrite: " + describeState( s ) );
+    private static void throwUnmatchedUnlockWrite(long s) {
+        throw new IllegalMonitorStateException("Unmatched unlockWrite: " + describeState(s));
     }
 
-    private static long nextSeq( long s )
-    {
+    private static long nextSeq(long s) {
         return (s & SEQ_IMSK) + (s + 1 & SEQ_MASK);
     }
 
-    public static long unlockWriteAndTryTakeFlushLock( long address )
-    {
+    public static long unlockWriteAndTryTakeFlushLock(long address) {
         long s;
         long n;
         long r;
-        do
-        {
+        do {
             r = 0;
-            s = getState( address );
-            if ( (s & CNT_MASK) == 0 )
-            {
-                throwUnmatchedUnlockWrite( s );
+            s = getState(address);
+            if ((s & CNT_MASK) == 0) {
+                throwUnmatchedUnlockWrite(s);
             }
-            n = nextSeq( s ) - CNT_UNIT;
-            if ( (n & FAE_MASK) == 0 )
-            {
+            n = nextSeq(s) - CNT_UNIT;
+            if ((n & FAE_MASK) == 0) {
                 n += FLS_MASK;
                 r = n;
             }
-        }
-        while ( !compareAndSetState( address, s, n ) );
+        } while (!compareAndSetState(address, s, n));
         VarHandle.releaseFence();
         return r;
     }
@@ -277,10 +248,9 @@ public final class OffHeapPageLock
      *
      * @return {@code true} if we successfully got the exclusive lock, {@code false} otherwise.
      */
-    public static boolean tryExclusiveLock( long address )
-    {
-        long s = getState( address );
-        boolean res = ((s & UNL_MASK) == 0) && compareAndSetState( address, s, s + EXL_MASK );
+    public static boolean tryExclusiveLock(long address) {
+        long s = getState(address);
+        boolean res = ((s & UNL_MASK) == 0) && compareAndSetState(address, s, s + EXL_MASK);
         VarHandle.releaseFence();
         return res;
     }
@@ -291,38 +261,33 @@ public final class OffHeapPageLock
      *
      * @return A stamp that represents an optimistic read lock, in case you need it.
      */
-    public static long unlockExclusive( long address )
-    {
-        long s = initiateExclusiveLockRelease( address );
-        long n = nextSeq( s ) - EXL_MASK;
+    public static long unlockExclusive(long address) {
+        long s = initiateExclusiveLockRelease(address);
+        long n = nextSeq(s) - EXL_MASK;
         // Exclusive locks prevent any state modifications from write locks
-        unconditionallySetState( address, n );
+        unconditionallySetState(address, n);
         return n;
     }
 
     /**
      * Atomically unlock the currently held exclusive lock, and take a write lock.
      */
-    public static void unlockExclusiveAndTakeWriteLock( long address )
-    {
-        long s = initiateExclusiveLockRelease( address );
-        long n = (nextSeq( s ) - EXL_MASK + CNT_UNIT) | MOD_MASK;
-        unconditionallySetState( address, n );
+    public static void unlockExclusiveAndTakeWriteLock(long address) {
+        long s = initiateExclusiveLockRelease(address);
+        long n = (nextSeq(s) - EXL_MASK + CNT_UNIT) | MOD_MASK;
+        unconditionallySetState(address, n);
     }
 
-    private static long initiateExclusiveLockRelease( long address )
-    {
-        long s = getState( address );
-        if ( (s & EXL_MASK) != EXL_MASK )
-        {
-            throwUnmatchedUnlockExclusive( s );
+    private static long initiateExclusiveLockRelease(long address) {
+        long s = getState(address);
+        if ((s & EXL_MASK) != EXL_MASK) {
+            throwUnmatchedUnlockExclusive(s);
         }
         return s;
     }
 
-    private static void throwUnmatchedUnlockExclusive( long s )
-    {
-        throw new IllegalMonitorStateException( "Unmatched unlockExclusive: " + describeState( s ) );
+    private static void throwUnmatchedUnlockExclusive(long s) {
+        throw new IllegalMonitorStateException("Unmatched unlockExclusive: " + describeState(s));
     }
 
     /**
@@ -333,15 +298,13 @@ public final class OffHeapPageLock
      *
      * @throws IllegalStateException if the lock at the given address is not in the exclusively locked state.
      */
-    public static void explicitlyMarkPageUnmodifiedUnderExclusiveLock( long address )
-    {
-        long s = getState( address );
-        if ( (s & EXL_MASK) != EXL_MASK )
-        {
-            throw new IllegalStateException( "Page must be exclusively locked to explicitly lower modified bit" );
+    public static void explicitlyMarkPageUnmodifiedUnderExclusiveLock(long address) {
+        long s = getState(address);
+        if ((s & EXL_MASK) != EXL_MASK) {
+            throw new IllegalStateException("Page must be exclusively locked to explicitly lower modified bit");
         }
         s = s & (~MOD_MASK);
-        unconditionallySetState( address, s );
+        unconditionallySetState(address, s);
     }
 
     /**
@@ -357,13 +320,11 @@ public final class OffHeapPageLock
      * {@link #unlockFlush(long, long, boolean)}, and which is used for detecting any overlapping write locks. If the
      * flush lock could not be taken, {@code 0} will be returned.
      */
-    public static long tryFlushLock( long address )
-    {
-        long s = getState( address );
-        if ( (s & FAE_MASK) == 0 )
-        {
+    public static long tryFlushLock(long address) {
+        long s = getState(address);
+        if ((s & FAE_MASK) == 0) {
             long n = s + FLS_MASK;
-            boolean res = compareAndSetState( address, s, n );
+            boolean res = compareAndSetState(address, s, n);
             VarHandle.releaseFence();
             return res ? n : 0;
         }
@@ -373,46 +334,38 @@ public final class OffHeapPageLock
     /**
      * Unlock the currently held flush lock.
      */
-    public static void unlockFlush( long address, long stamp, boolean success )
-    {
+    public static void unlockFlush(long address, long stamp, boolean success) {
         long s;
         long n;
-        do
-        {
-            s = getState( address );
-            if ( (s & FLS_MASK) != FLS_MASK )
-            {
-                throwUnmatchedUnlockFlush( s );
+        do {
+            s = getState(address);
+            if ((s & FLS_MASK) != FLS_MASK) {
+                throwUnmatchedUnlockFlush(s);
             }
             // We don't increment the sequence with nextSeq here, because flush locks don't invalidate readers
             n = s - FLS_MASK;
-            if ( success && (s & CHK_MASK) == (stamp & SEQ_MASK) )
-            {
+            if (success && (s & CHK_MASK) == (stamp & SEQ_MASK)) {
                 // The flush was successful and we had no overlapping writers, thus we can lower the modified flag
                 n = n & (~MOD_MASK);
             }
-        }
-        while ( !compareAndSetState( address, s, n ) );
+        } while (!compareAndSetState(address, s, n));
     }
 
-    private static void throwUnmatchedUnlockFlush( long s )
-    {
-        throw new IllegalMonitorStateException( "Unmatched unlockFlush: " + describeState( s ) );
+    private static void throwUnmatchedUnlockFlush(long s) {
+        throw new IllegalMonitorStateException("Unmatched unlockFlush: " + describeState(s));
     }
 
-    private static String describeState( long s )
-    {
+    private static String describeState(long s) {
         long flush = s >>> EXL_LOCK_BITS + MOD_BITS + CNT_BITS + SEQ_BITS;
         long excl = (s & EXL_MASK) >>> MOD_BITS + CNT_BITS + SEQ_BITS;
         long mod = (s & MOD_MASK) >>> CNT_BITS + SEQ_BITS;
         long cnt = (s & CNT_MASK) >> SEQ_BITS;
         long seq = s & SEQ_MASK;
-        return "OffHeapPageLock[" +
-               "Flush: " + flush + ", Excl: " + excl + ", Mod: " + mod + ", Ws: " + cnt + ", S: " + seq + "]";
+        return "OffHeapPageLock[" + "Flush: " + flush + ", Excl: " + excl + ", Mod: " + mod + ", Ws: " + cnt + ", S: "
+                + seq + "]";
     }
 
-    static String toString( long address )
-    {
-        return describeState( getState( address ) );
+    static String toString(long address) {
+        return describeState(getState(address));
     }
 }

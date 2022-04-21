@@ -21,14 +21,12 @@ package org.neo4j.internal.batchimport.executor;
 
 import static org.neo4j.internal.helpers.Exceptions.SILENT_UNCAUGHT_EXCEPTION_HANDLER;
 
-public interface ProcessorScheduler
-{
-    ProcessorScheduler SPAWN_THREAD = ( job, name ) ->
-    {
-        Thread thread = new Thread( job, name );
-        thread.setUncaughtExceptionHandler( SILENT_UNCAUGHT_EXCEPTION_HANDLER );
+public interface ProcessorScheduler {
+    ProcessorScheduler SPAWN_THREAD = (job, name) -> {
+        Thread thread = new Thread(job, name);
+        thread.setUncaughtExceptionHandler(SILENT_UNCAUGHT_EXCEPTION_HANDLER);
         thread.start();
     };
 
-    void schedule( Runnable job, String name );
+    void schedule(Runnable job, String name);
 }

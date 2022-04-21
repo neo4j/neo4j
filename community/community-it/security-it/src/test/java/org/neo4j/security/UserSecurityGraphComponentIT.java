@@ -19,50 +19,6 @@
  */
 package org.neo4j.security;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.SystemGraphComponent;
-import org.neo4j.dbms.database.SystemGraphComponents;
-import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
-import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
-import org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion;
-import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
-
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,12 +41,52 @@ import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVe
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_ID;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion;
+import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 @TestDirectoryExtension
-@TestInstance( PER_CLASS )
-class UserSecurityGraphComponentIT
-{
+@TestInstance(PER_CLASS)
+class UserSecurityGraphComponentIT {
     @Inject
-    @SuppressWarnings( "unused" )
+    @SuppressWarnings("unused")
     private static TestDirectory directory;
 
     private static DatabaseManagementService dbms;
@@ -100,274 +96,258 @@ class UserSecurityGraphComponentIT
     private static AuthManager authManager;
 
     @BeforeAll
-    static void setup()
-    {
+    static void setup() {
         Config cfg = Config.newBuilder()
-                           .set( auth_enabled, TRUE )
-                           .set( allow_single_automatic_upgrade, FALSE )
-                           .build();
+                .set(auth_enabled, TRUE)
+                .set(allow_single_automatic_upgrade, FALSE)
+                .build();
 
-        dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() )
+        dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
                 .impermanent()
-                .setConfig( cfg )
+                .setConfig(cfg)
                 .noOpSystemGraphInitializer()
                 .build();
-        system = (GraphDatabaseFacade) dbms.database( SYSTEM_DATABASE_NAME );
+        system = (GraphDatabaseFacade) dbms.database(SYSTEM_DATABASE_NAME);
         DependencyResolver resolver = system.getDependencyResolver();
-        authManager = resolver.resolveDependency( AuthManager.class );
-        userSecurityGraphComponent = new UserSecurityGraphComponent( CommunitySecurityLog.NULL_LOG, new InMemoryUserRepository(), Config.defaults() );
+        authManager = resolver.resolveDependency(AuthManager.class);
+        userSecurityGraphComponent = new UserSecurityGraphComponent(
+                CommunitySecurityLog.NULL_LOG, new InMemoryUserRepository(), Config.defaults());
 
         // remove DBMS runtime component as it is not a subject of this test
-        systemGraphComponents = resolver.resolveDependency( SystemGraphComponents.class );
-        systemGraphComponents.deregister( DBMS_RUNTIME_COMPONENT );
+        systemGraphComponents = resolver.resolveDependency(SystemGraphComponents.class);
+        systemGraphComponents.deregister(DBMS_RUNTIME_COMPONENT);
     }
 
     @BeforeEach
-    void clear() throws Exception
-    {
-        inTx( tx -> Iterables.forEach( tx.getAllNodes(), n ->
-        {
-            Iterables.forEach( n.getRelationships(), Relationship::delete );
+    void clear() throws Exception {
+        inTx(tx -> Iterables.forEach(tx.getAllNodes(), n -> {
+            Iterables.forEach(n.getRelationships(), Relationship::delete);
             n.delete();
-        } ) );
-        inTx( tx -> tx.schema().getConstraints().forEach( ConstraintDefinition::drop ) );
+        }));
+        inTx(tx -> tx.schema().getConstraints().forEach(ConstraintDefinition::drop));
         // Remove the SecurityUserComponent, to be able to initialize it with the correct version
-        systemGraphComponents.deregister( SECURITY_USER_COMPONENT );
-        systemGraphComponents.initializeSystemGraph( system );
+        systemGraphComponents.deregister(SECURITY_USER_COMPONENT);
+        systemGraphComponents.initializeSystemGraph(system);
     }
 
     @AfterAll
-    static void tearDown()
-    {
+    static void tearDown() {
         dbms.shutdown();
     }
 
     @ParameterizedTest
-    @MethodSource( "supportedPreviousVersions" )
-    void shouldAuthenticate( UserSecurityGraphComponentVersion version ) throws Exception
-    {
-        initUserSecurityComponent( version );
-        LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ),  EMBEDDED_CONNECTION);
-        assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
+    @MethodSource("supportedPreviousVersions")
+    void shouldAuthenticate(UserSecurityGraphComponentVersion version) throws Exception {
+        initUserSecurityComponent(version);
+        LoginContext loginContext =
+                authManager.login(AuthToken.newBasicAuthToken("neo4j", "neo4j"), EMBEDDED_CONNECTION);
+        assertThat(loginContext.subject().getAuthenticationResult())
+                .isEqualTo(AuthenticationResult.PASSWORD_CHANGE_REQUIRED);
     }
 
     @Test
-    void shouldInitializeDefaultVersion() throws Exception
-    {
-        userSecurityGraphComponent.initializeSystemGraph( system, true );
-        systemGraphComponents.register( userSecurityGraphComponent );
+    void shouldInitializeDefaultVersion() throws Exception {
+        userSecurityGraphComponent.initializeSystemGraph(system, true);
+        systemGraphComponents.register(userSecurityGraphComponent);
 
-        HashMap<String,SystemGraphComponent.Status> statuses = new HashMap<>();
-        inTx( tx ->
-        {
-            systemGraphComponents.forEach( component -> statuses.put( component.componentName(), component.detect( tx ) ) );
-            statuses.put( "dbms-status", systemGraphComponents.detect( tx ) );
-        } );
-        assertEquals( statuses.size(), 4, "Expecting four components" );
-        assertEquals( CURRENT, statuses.get( "multi-database" ), "System graph status" );
-        assertEquals( CURRENT, statuses.get( SECURITY_USER_COMPONENT ), "Users status" );
-        assertEquals( CURRENT, statuses.get( COMMUNITY_TOPOLOGY_GRAPH_COMPONENT ), "Community topology graph status" );
-        assertEquals( CURRENT, statuses.get( "dbms-status" ), "Overall status" );
+        HashMap<String, SystemGraphComponent.Status> statuses = new HashMap<>();
+        inTx(tx -> {
+            systemGraphComponents.forEach(component -> statuses.put(component.componentName(), component.detect(tx)));
+            statuses.put("dbms-status", systemGraphComponents.detect(tx));
+        });
+        assertEquals(statuses.size(), 4, "Expecting four components");
+        assertEquals(CURRENT, statuses.get("multi-database"), "System graph status");
+        assertEquals(CURRENT, statuses.get(SECURITY_USER_COMPONENT), "Users status");
+        assertEquals(CURRENT, statuses.get(COMMUNITY_TOPOLOGY_GRAPH_COMPONENT), "Community topology graph status");
+        assertEquals(CURRENT, statuses.get("dbms-status"), "Overall status");
     }
 
     @ParameterizedTest
-    @MethodSource( "versionAndStatusProvider" )
-    void shouldInitializeAndUpgradeSystemGraph( UserSecurityGraphComponentVersion version, SystemGraphComponent.Status initialStatus ) throws Exception
-    {
-        initUserSecurityComponent( version );
-        assertCanUpgradeThisVersionAndThenUpgradeIt( initialStatus );
+    @MethodSource("versionAndStatusProvider")
+    void shouldInitializeAndUpgradeSystemGraph(
+            UserSecurityGraphComponentVersion version, SystemGraphComponent.Status initialStatus) throws Exception {
+        initUserSecurityComponent(version);
+        assertCanUpgradeThisVersionAndThenUpgradeIt(initialStatus);
     }
 
-    static Stream<Arguments> versionAndStatusProvider()
-    {
+    static Stream<Arguments> versionAndStatusProvider() {
         return Stream.of(
-                Arguments.arguments( COMMUNITY_SECURITY_40, REQUIRES_UPGRADE ),
-                Arguments.arguments( COMMUNITY_SECURITY_41, REQUIRES_UPGRADE ),
-                Arguments.arguments( COMMUNITY_SECURITY_43D4, REQUIRES_UPGRADE ),
-                Arguments.arguments( COMMUNITY_SECURITY_50, CURRENT )
-        );
+                Arguments.arguments(COMMUNITY_SECURITY_40, REQUIRES_UPGRADE),
+                Arguments.arguments(COMMUNITY_SECURITY_41, REQUIRES_UPGRADE),
+                Arguments.arguments(COMMUNITY_SECURITY_43D4, REQUIRES_UPGRADE),
+                Arguments.arguments(COMMUNITY_SECURITY_50, CURRENT));
     }
 
     @ParameterizedTest
-    @MethodSource( "beforeUserId" )
-    void shouldAddUserIdsOnUpgradeFromOlderSystemDb( UserSecurityGraphComponentVersion version ) throws Exception
-    {
+    @MethodSource("beforeUserId")
+    void shouldAddUserIdsOnUpgradeFromOlderSystemDb(UserSecurityGraphComponentVersion version) throws Exception {
         // Given
-        initUserSecurityComponent( version );
+        initUserSecurityComponent(version);
 
-        createUser( version, "alice" );
+        createUser(version, "alice");
 
         // Then
         HashMap<String, Object> usernameAndIdsBeforeUpgrade = getUserNamesAndIds();
-        assertThat( usernameAndIdsBeforeUpgrade.get( "neo4j" ) ).isNull();
-        assertThat( usernameAndIdsBeforeUpgrade.get( "alice" ) ).isNull();
+        assertThat(usernameAndIdsBeforeUpgrade.get("neo4j")).isNull();
+        assertThat(usernameAndIdsBeforeUpgrade.get("alice")).isNull();
 
         // When running dbms.upgrade
-        systemGraphComponents.upgradeToCurrent( system );
+        systemGraphComponents.upgradeToCurrent(system);
 
         // Then
         HashMap<String, Object> usernameAndIdsAfterUpgrade = getUserNamesAndIds();
 
-        assertThat( usernameAndIdsAfterUpgrade.get( "neo4j" ) ).isNotNull();
-        assertThat( usernameAndIdsAfterUpgrade.get( "alice" ) ).isNotNull();
+        assertThat(usernameAndIdsAfterUpgrade.get("neo4j")).isNotNull();
+        assertThat(usernameAndIdsAfterUpgrade.get("alice")).isNotNull();
     }
 
     @ParameterizedTest
-    @MethodSource( "beforeUserIdConstraint" )
-    void shouldAddConstraintForUserIdsOnUpgradeFromOlderSystemDb( UserSecurityGraphComponentVersion version ) throws Exception
-    {
+    @MethodSource("beforeUserIdConstraint")
+    void shouldAddConstraintForUserIdsOnUpgradeFromOlderSystemDb(UserSecurityGraphComponentVersion version)
+            throws Exception {
         // Given
-        initUserSecurityComponent( version );
+        initUserSecurityComponent(version);
 
-        try ( Transaction tx = system.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
-            Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints( USER_LABEL );
-            for ( ConstraintDefinition constraint : constraints )
-            {
-                for ( String property : constraint.getPropertyKeys() )
-                {
-                    assertThat( property ).isIn( "name" );
+        try (Transaction tx = system.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
+            Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints(USER_LABEL);
+            for (ConstraintDefinition constraint : constraints) {
+                for (String property : constraint.getPropertyKeys()) {
+                    assertThat(property).isIn("name");
                 }
             }
             tx.commit();
         }
 
         // When running dbms.upgrade
-        systemGraphComponents.upgradeToCurrent( system );
+        systemGraphComponents.upgradeToCurrent(system);
 
         // Then
-        try ( Transaction tx = system.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
-            Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints( USER_LABEL );
-            for ( ConstraintDefinition constraint : constraints )
-            {
-                for ( String property : constraint.getPropertyKeys() )
-                {
-                    assertThat( property ).isIn( "name", USER_ID );
+        try (Transaction tx = system.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
+            Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints(USER_LABEL);
+            for (ConstraintDefinition constraint : constraints) {
+                for (String property : constraint.getPropertyKeys()) {
+                    assertThat(property).isIn("name", USER_ID);
                 }
             }
             tx.commit();
         }
     }
 
-    private static Stream<Arguments> supportedPreviousVersions()
-    {
-        return Arrays.stream( UserSecurityGraphComponentVersion.values() )
-                     .filter( version -> version.runtimeSupported() && !version.isCurrent() )
-                     .map( Arguments::of );
+    private static Stream<Arguments> supportedPreviousVersions() {
+        return Arrays.stream(UserSecurityGraphComponentVersion.values())
+                .filter(version -> version.runtimeSupported() && !version.isCurrent())
+                .map(Arguments::of);
     }
 
-    private static Stream<Arguments> beforeUserId()
-    {
-        return Arrays.stream( UserSecurityGraphComponentVersion.values() )
-                     .filter( version -> version.runtimeSupported() && version.getVersion() < COMMUNITY_SECURITY_43D4.getVersion() )
-                     .map( Arguments::of );
+    private static Stream<Arguments> beforeUserId() {
+        return Arrays.stream(UserSecurityGraphComponentVersion.values())
+                .filter(version ->
+                        version.runtimeSupported() && version.getVersion() < COMMUNITY_SECURITY_43D4.getVersion())
+                .map(Arguments::of);
     }
 
-    private static Stream<Arguments> beforeUserIdConstraint()
-    {
-        return Arrays.stream( UserSecurityGraphComponentVersion.values() )
-                     .filter( version -> version.runtimeSupported() && version.getVersion() < COMMUNITY_SECURITY_50.getVersion() )
-                     .map( Arguments::of );
+    private static Stream<Arguments> beforeUserIdConstraint() {
+        return Arrays.stream(UserSecurityGraphComponentVersion.values())
+                .filter(version ->
+                        version.runtimeSupported() && version.getVersion() < COMMUNITY_SECURITY_50.getVersion())
+                .map(Arguments::of);
     }
 
-    private static void assertCanUpgradeThisVersionAndThenUpgradeIt( SystemGraphComponent.Status initialState ) throws Exception
-    {
-        var systemGraphComponents = system.getDependencyResolver().resolveDependency( SystemGraphComponents.class );
-        assertStatus( Map.of(
-                "multi-database", CURRENT,
-                SECURITY_USER_COMPONENT, initialState,
-                COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, CURRENT,
-                "dbms-status", initialState
-        ) );
+    private static void assertCanUpgradeThisVersionAndThenUpgradeIt(SystemGraphComponent.Status initialState)
+            throws Exception {
+        var systemGraphComponents = system.getDependencyResolver().resolveDependency(SystemGraphComponents.class);
+        assertStatus(Map.of(
+                "multi-database",
+                CURRENT,
+                SECURITY_USER_COMPONENT,
+                initialState,
+                COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
+                CURRENT,
+                "dbms-status",
+                initialState));
 
         // When running dbms.upgrade
-        systemGraphComponents.upgradeToCurrent( system );
+        systemGraphComponents.upgradeToCurrent(system);
 
         // Then when looking at component statuses
-        assertStatus( Map.of(
-                "multi-database", CURRENT,
-                SECURITY_USER_COMPONENT, CURRENT,
-                COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, CURRENT,
-                "dbms-status", CURRENT
-        ) );
+        assertStatus(Map.of(
+                "multi-database",
+                CURRENT,
+                SECURITY_USER_COMPONENT,
+                CURRENT,
+                COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
+                CURRENT,
+                "dbms-status",
+                CURRENT));
     }
 
-    private static void assertStatus( Map<String,SystemGraphComponent.Status> expected ) throws Exception
-    {
-        HashMap<String,SystemGraphComponent.Status> statuses = new HashMap<>();
-        inTx( tx ->
-        {
-            systemGraphComponents.forEach( component -> statuses.put( component.componentName(), component.detect( tx ) ) );
-            statuses.put( "dbms-status", systemGraphComponents.detect( tx ) );
-        } );
-        for ( var entry : expected.entrySet() )
-        {
-            assertEquals( entry.getValue(), statuses.get( entry.getKey() ), entry.getKey() );
+    private static void assertStatus(Map<String, SystemGraphComponent.Status> expected) throws Exception {
+        HashMap<String, SystemGraphComponent.Status> statuses = new HashMap<>();
+        inTx(tx -> {
+            systemGraphComponents.forEach(component -> statuses.put(component.componentName(), component.detect(tx)));
+            statuses.put("dbms-status", systemGraphComponents.detect(tx));
+        });
+        for (var entry : expected.entrySet()) {
+            assertEquals(entry.getValue(), statuses.get(entry.getKey()), entry.getKey());
         }
     }
 
-    private HashMap<String,Object> getUserNamesAndIds()
-    {
+    private HashMap<String, Object> getUserNamesAndIds() {
         HashMap<String, Object> usernameAndIds = new HashMap<>();
 
-        try ( Transaction tx = system.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED );
-              ResourceIterator<Node> nodes = tx.findNodes( USER_LABEL ) )
-        {
-             while ( nodes.hasNext() )
-             {
-                 Node userNode = nodes.next();
-                 String username = userNode.getProperty( "name" ).toString();
-                 Object userId;
-                 try
-                 {
-                    userId = userNode.getProperty( "id" );
-                 }
-                 catch ( NotFoundException e )
-                 {
-                     userId = null;
-                 }
-                 usernameAndIds.put( username, userId );
-             }
+        try (Transaction tx = system.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED);
+                ResourceIterator<Node> nodes = tx.findNodes(USER_LABEL)) {
+            while (nodes.hasNext()) {
+                Node userNode = nodes.next();
+                String username = userNode.getProperty("name").toString();
+                Object userId;
+                try {
+                    userId = userNode.getProperty("id");
+                } catch (NotFoundException e) {
+                    userId = null;
+                }
+                usernameAndIds.put(username, userId);
+            }
         }
         return usernameAndIds;
     }
 
-    private void createUser( UserSecurityGraphComponentVersion version, String name )
-    {
-        KnownCommunitySecurityComponentVersion builder = userSecurityGraphComponent.findSecurityGraphComponentVersion( version );
-        try ( Transaction tx = system.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
-            builder.addUser(tx, name, credentialFor( "abc123" ), false, false  );
+    private void createUser(UserSecurityGraphComponentVersion version, String name) {
+        KnownCommunitySecurityComponentVersion builder =
+                userSecurityGraphComponent.findSecurityGraphComponentVersion(version);
+        try (Transaction tx = system.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
+            builder.addUser(tx, name, credentialFor("abc123"), false, false);
             tx.commit();
         }
     }
 
-    private static void initUserSecurityComponent( UserSecurityGraphComponentVersion version ) throws Exception
-    {
-        KnownCommunitySecurityComponentVersion builder = userSecurityGraphComponent.findSecurityGraphComponentVersion( version );
-        inTx( tx -> tx.schema().constraintFor( USER_LABEL ).assertPropertyIsUnique( "name" ).create() );
+    private static void initUserSecurityComponent(UserSecurityGraphComponentVersion version) throws Exception {
+        KnownCommunitySecurityComponentVersion builder =
+                userSecurityGraphComponent.findSecurityGraphComponentVersion(version);
+        inTx(tx -> tx.schema()
+                .constraintFor(USER_LABEL)
+                .assertPropertyIsUnique("name")
+                .create());
 
-        inTx( builder::setupUsers );
-        if ( version != COMMUNITY_SECURITY_40 )
-        {
-            inTx( tx -> builder.setVersionProperty( tx, version.getVersion() ) );
+        inTx(builder::setupUsers);
+        if (version != COMMUNITY_SECURITY_40) {
+            inTx(tx -> builder.setVersionProperty(tx, version.getVersion()));
         }
-        if ( version.getVersion() >= COMMUNITY_SECURITY_50.getVersion() )
-        {
-            inTx( tx -> tx.schema().constraintFor( USER_LABEL ).assertPropertyIsUnique( USER_ID ).create() );
+        if (version.getVersion() >= COMMUNITY_SECURITY_50.getVersion()) {
+            inTx(tx -> tx.schema()
+                    .constraintFor(USER_LABEL)
+                    .assertPropertyIsUnique(USER_ID)
+                    .create());
         }
-        userSecurityGraphComponent.postInitialization( system, true );
+        userSecurityGraphComponent.postInitialization(system, true);
 
         // re-add the user security component to allow querying for status
-        systemGraphComponents.register( userSecurityGraphComponent );
+        systemGraphComponents.register(userSecurityGraphComponent);
     }
 
-    private static void inTx( ThrowingConsumer<Transaction,Exception> consumer ) throws Exception
-    {
-        try ( Transaction tx = system.beginTx() )
-        {
-            consumer.accept( tx );
+    private static void inTx(ThrowingConsumer<Transaction, Exception> consumer) throws Exception {
+        try (Transaction tx = system.beginTx()) {
+            consumer.accept(tx);
             tx.commit();
         }
     }

@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.NoSuchElementException;
+import java.util.function.LongPredicate;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -28,12 +32,6 @@ import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.eclipse.collections.api.block.procedure.primitive.LongFloatProcedure;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.NoSuchElementException;
-import java.util.function.LongPredicate;
-
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
@@ -45,67 +43,52 @@ import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
  *
  * This collector doesn't track total number of hits.
  */
-class FulltextResultCollector implements Collector
-{
+class FulltextResultCollector implements Collector {
     private static final int NO_LIMIT = -1;
 
     private final long limit;
     private final EntityScorePriorityQueue pq;
     private final LongPredicate exclusionFilter;
 
-    FulltextResultCollector( IndexQueryConstraints constraints, LongPredicate exclusionFilter )
-    {
+    FulltextResultCollector(IndexQueryConstraints constraints, LongPredicate exclusionFilter) {
         this.exclusionFilter = exclusionFilter;
-        this.limit = getLimit( constraints );
-        if ( this.limit == NO_LIMIT )
-        {
+        this.limit = getLimit(constraints);
+        if (this.limit == NO_LIMIT) {
             pq = new EntityScorePriorityQueue();
-        }
-        else
-        {
+        } else {
             // Use a min-queue to continuously drop the entry with the lowest score.
-            pq = new EntityScorePriorityQueue( false );
+            pq = new EntityScorePriorityQueue(false);
         }
     }
 
-    public ValuesIterator iterator()
-    {
-        if ( pq.isEmpty() )
-        {
+    public ValuesIterator iterator() {
+        if (pq.isEmpty()) {
             return ValuesIterator.EMPTY;
         }
-        if ( limit == NO_LIMIT )
-        {
+        if (limit == NO_LIMIT) {
             // The 'pq' will pop entries in their correctly sorted order.
-            return new EntityResultsMaxQueueIterator( pq );
+            return new EntityResultsMaxQueueIterator(pq);
         }
         // Otherwise, we need to reverse the result collected in the 'pq'.
-        return new EntityResultsMinQueueIterator( pq );
+        return new EntityResultsMinQueueIterator(pq);
     }
 
     @Override
-    public LeafCollector getLeafCollector( LeafReaderContext context ) throws IOException
-    {
-        return new ScoredEntityLeafCollector( context, pq, limit, exclusionFilter );
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+        return new ScoredEntityLeafCollector(context, pq, limit, exclusionFilter);
     }
 
     @Override
-    public ScoreMode scoreMode()
-    {
+    public ScoreMode scoreMode() {
         return limit == NO_LIMIT ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
     }
 
-    private static long getLimit( IndexQueryConstraints constraints )
-    {
-        if ( constraints.limit().isPresent() )
-        {
-            long limit = constraints.limit().getAsLong() + constraints.skip().orElse( 0 );
-            if ( limit < Integer.MAX_VALUE )
-            {
+    private static long getLimit(IndexQueryConstraints constraints) {
+        if (constraints.limit().isPresent()) {
+            long limit = constraints.limit().getAsLong() + constraints.skip().orElse(0);
+            if (limit < Integer.MAX_VALUE) {
                 return limit;
-            }
-            else
-            {
+            } else {
                 // The limit is enormous, and we will never reach it from just querying a single index partition.
                 // An index partition can "only" hold 2 billion documents.
                 // Just let the FulltextIndexProgressor apply the skip and limit.
@@ -115,8 +98,7 @@ class FulltextResultCollector implements Collector
         return NO_LIMIT;
     }
 
-    private static class ScoredEntityLeafCollector implements LeafCollector
-    {
+    private static class ScoredEntityLeafCollector implements LeafCollector {
         private final EntityScorePriorityQueue pq;
         private final long limit;
         private final LongPredicate exclusionFilter;
@@ -125,58 +107,49 @@ class FulltextResultCollector implements Collector
 
         private float minCompetitiveScore;
 
-        ScoredEntityLeafCollector( LeafReaderContext context, EntityScorePriorityQueue pq, long limit, LongPredicate exclusionFilter ) throws IOException
-        {
+        ScoredEntityLeafCollector(
+                LeafReaderContext context, EntityScorePriorityQueue pq, long limit, LongPredicate exclusionFilter)
+                throws IOException {
             this.pq = pq;
             this.limit = limit;
             this.exclusionFilter = exclusionFilter;
             LeafReader reader = context.reader();
-            values = reader.getNumericDocValues( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
+            values = reader.getNumericDocValues(LuceneFulltextDocumentStructure.FIELD_ENTITY_ID);
         }
 
         @Override
-        public void setScorer( Scorable scorer ) throws IOException
-        {
+        public void setScorer(Scorable scorer) throws IOException {
             this.scorer = scorer;
             minCompetitiveScore = 0f;
-            updateMinCompetitiveScore( scorer );
+            updateMinCompetitiveScore(scorer);
         }
 
         @Override
-        public void collect( int doc ) throws IOException
-        {
+        public void collect(int doc) throws IOException {
             assert scorer.docID() == doc;
-            if ( values.advanceExact( doc ) )
-            {
+            if (values.advanceExact(doc)) {
                 long entityId = values.longValue();
                 float score = scorer.score();
-                if ( exclusionFilter.test( entityId ) )
-                {
+                if (exclusionFilter.test(entityId)) {
                     return;
                 }
-                if ( limit == NO_LIMIT )
-                {
-                    pq.insert( entityId, score );
-                }
-                else
-                {
-                    if ( pq.size() < limit )
-                    {
-                        pq.insert( entityId, score );
-                        updateMinCompetitiveScore( scorer );
-                    }
-                    else if ( pq.peekTopScore() < score ) // when limit is set pq is min-queue, if new score is better use it
+                if (limit == NO_LIMIT) {
+                    pq.insert(entityId, score);
+                } else {
+                    if (pq.size() < limit) {
+                        pq.insert(entityId, score);
+                        updateMinCompetitiveScore(scorer);
+                    } else if (pq.peekTopScore()
+                            < score) // when limit is set pq is min-queue, if new score is better use it
                     {
                         pq.removeTop();
-                        pq.insert( entityId, score );
-                        updateMinCompetitiveScore( scorer );
+                        pq.insert(entityId, score);
+                        updateMinCompetitiveScore(scorer);
                     }
                     // Otherwise, don't bother inserting this entry.
                 }
-            }
-            else
-            {
-                throw new RuntimeException( "No document value for document id " + doc + "." );
+            } else {
+                throw new RuntimeException("No document value for document id " + doc + ".");
             }
         }
 
@@ -185,30 +158,25 @@ class FulltextResultCollector implements Collector
          * This score is updated only if limit is specified. In this case pq is min-queue and top element contains lowest collected score,
          * we are not interested in documents with score lower then that.
          */
-        private void updateMinCompetitiveScore( Scorable scorer ) throws IOException
-        {
+        private void updateMinCompetitiveScore(Scorable scorer) throws IOException {
             // limit is set and enough elements have already collected, we can start skipping low scored documents
-            if ( limit != NO_LIMIT && pq.size() >= limit )
-            {
+            if (limit != NO_LIMIT && pq.size() >= limit) {
                 // since we tie-break on doc id and collect in doc id order, we can require
                 // the next float
-                var localMinScore = Math.nextUp( pq.peekTopScore() );
-                if ( localMinScore > minCompetitiveScore )
-                {
-                    scorer.setMinCompetitiveScore( localMinScore );
+                var localMinScore = Math.nextUp(pq.peekTopScore());
+                if (localMinScore > minCompetitiveScore) {
+                    scorer.setMinCompetitiveScore(localMinScore);
                     minCompetitiveScore = localMinScore;
                 }
             }
         }
-
     }
 
     /**
      * Organise entity ids by decreasing scores, using a binary heap.
      * The implementation of the priority queue algorithm follows the one in Algorithms, 4th Edition by Robert Sedgewick and Kevin Wayne.
      */
-    static class EntityScorePriorityQueue
-    {
+    static class EntityScorePriorityQueue {
         private static final int ROOT = 1; // Root of the heap is always at index 1.
         private static final int INITIAL_CAPACITY = 33; // Some number not too big, and not too small.
         private final boolean maxQueue; // 'true' if this is a max-priority queue, 'false' for a min-priority queue.
@@ -216,102 +184,84 @@ class FulltextResultCollector implements Collector
         private float[] scores;
         private int size;
 
-        EntityScorePriorityQueue()
-        {
-            this( true );
+        EntityScorePriorityQueue() {
+            this(true);
         }
 
-        EntityScorePriorityQueue( boolean maxQueue )
-        {
+        EntityScorePriorityQueue(boolean maxQueue) {
             this.maxQueue = maxQueue;
             entities = new long[INITIAL_CAPACITY];
             scores = new float[INITIAL_CAPACITY];
         }
 
-        public int size()
-        {
+        public int size() {
             return size;
         }
 
-        public boolean isEmpty()
-        {
+        public boolean isEmpty() {
             return size == 0;
         }
 
-        public void insert( long entityId, float score )
-        {
+        public void insert(long entityId, float score) {
             size += 1;
-            if ( size == entities.length )
-            {
+            if (size == entities.length) {
                 growCapacity();
             }
             entities[size] = entityId;
             scores[size] = score;
-            liftTowardsRoot( size );
+            liftTowardsRoot(size);
         }
 
-        public float peekTopScore()
-        {
+        public float peekTopScore() {
             return scores[ROOT];
         }
 
-        public void removeTop( LongFloatProcedure receiver )
-        {
-            receiver.value( entities[ROOT], scores[ROOT] );
+        public void removeTop(LongFloatProcedure receiver) {
+            receiver.value(entities[ROOT], scores[ROOT]);
             removeTop();
         }
 
-        public void removeTop()
-        {
-            swap( ROOT, size );
+        public void removeTop() {
+            swap(ROOT, size);
             size -= 1;
             pushTowardsBottom();
         }
 
-        private void growCapacity()
-        {
-            entities = Arrays.copyOf( entities, entities.length * 2 );
-            scores = Arrays.copyOf( scores, scores.length * 2 );
+        private void growCapacity() {
+            entities = Arrays.copyOf(entities, entities.length * 2);
+            scores = Arrays.copyOf(scores, scores.length * 2);
         }
 
-        private void liftTowardsRoot( int index )
-        {
+        private void liftTowardsRoot(int index) {
             int parentIndex;
-            while ( index > ROOT && subordinate( parentIndex = index >> 1, index ) )
-            {
-                swap( index, parentIndex );
+            while (index > ROOT && subordinate(parentIndex = index >> 1, index)) {
+                swap(index, parentIndex);
                 index = parentIndex;
             }
         }
 
-        private void pushTowardsBottom()
-        {
+        private void pushTowardsBottom() {
             int index = ROOT;
             int child;
-            while ( (child = index << 1) <= size )
-            {
-                if ( child < size && subordinate( child, child + 1 ) )
-                {
+            while ((child = index << 1) <= size) {
+                if (child < size && subordinate(child, child + 1)) {
                     child += 1;
                 }
-                if ( !subordinate( index, child ) )
-                {
+                if (!subordinate(index, child)) {
                     break;
                 }
-                swap( index, child );
+                swap(index, child);
                 index = child;
             }
         }
 
-        private boolean subordinate( int indexA, int indexB )
-        {
+        private boolean subordinate(int indexA, int indexB) {
             float scoreA = scores[indexA];
             float scoreB = scores[indexB];
             return maxQueue ? scoreA < scoreB : scoreA > scoreB;
         }
 
-        private void swap( int indexA, int indexB )
-        {
+        private void swap(int indexA, int indexB) {
             long entity = entities[indexA];
             float score = scores[indexA];
             entities[indexA] = entities[indexB];
@@ -324,58 +274,47 @@ class FulltextResultCollector implements Collector
     /**
      * Produce entity/score results from the given priority queue, assuming it's a max-queue that itself delivers entries in descending order.
      */
-    static class EntityResultsMaxQueueIterator implements ValuesIterator, LongFloatProcedure
-    {
+    static class EntityResultsMaxQueueIterator implements ValuesIterator, LongFloatProcedure {
         private final EntityScorePriorityQueue pq;
         private long currentEntity;
         private float currentScore;
 
-        EntityResultsMaxQueueIterator( EntityScorePriorityQueue pq )
-        {
+        EntityResultsMaxQueueIterator(EntityScorePriorityQueue pq) {
             this.pq = pq;
         }
 
         @Override
-        public int remaining()
-        {
+        public int remaining() {
             return 0; // Not used.
         }
 
         @Override
-        public float currentScore()
-        {
+        public float currentScore() {
             return currentScore;
         }
 
         @Override
-        public long next()
-        {
-            if ( hasNext() )
-            {
-                pq.removeTop( this );
+        public long next() {
+            if (hasNext()) {
+                pq.removeTop(this);
                 return currentEntity;
-            }
-            else
-            {
+            } else {
                 throw new NoSuchElementException();
             }
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return !pq.isEmpty();
         }
 
         @Override
-        public long current()
-        {
+        public long current() {
             return currentEntity;
         }
 
         @Override
-        public void value( long entityId, float score )
-        {
+        public void value(long entityId, float score) {
             currentEntity = entityId;
             currentScore = score;
         }
@@ -385,35 +324,29 @@ class FulltextResultCollector implements Collector
      * Produce entity/score results from the given priority queue, assuming it's a min-queue which delivers entries in ascending order, so that they have
      * to be reversed before we can iterate them.
      */
-    static class EntityResultsMinQueueIterator implements ValuesIterator, LongFloatProcedure
-    {
+    static class EntityResultsMinQueueIterator implements ValuesIterator, LongFloatProcedure {
         private final long[] entityIds;
         private final float[] scores;
         private int index;
 
-        EntityResultsMinQueueIterator( EntityScorePriorityQueue pq )
-        {
+        EntityResultsMinQueueIterator(EntityScorePriorityQueue pq) {
             int size = pq.size();
             this.entityIds = new long[size];
             this.scores = new float[size];
             this.index = size - 1;
-            while ( !pq.isEmpty() )
-            {
-                pq.removeTop( this ); // Populate the arrays in the correct order, basically using Heap Sort.
+            while (!pq.isEmpty()) {
+                pq.removeTop(this); // Populate the arrays in the correct order, basically using Heap Sort.
             }
         }
 
         @Override
-        public int remaining()
-        {
+        public int remaining() {
             return 0; // Not used.
         }
 
         @Override
-        public long next()
-        {
-            if ( hasNext() )
-            {
+        public long next() {
+            if (hasNext()) {
                 index++;
                 return current();
             }
@@ -421,26 +354,22 @@ class FulltextResultCollector implements Collector
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return index < entityIds.length - 1;
         }
 
         @Override
-        public long current()
-        {
+        public long current() {
             return entityIds[index];
         }
 
         @Override
-        public float currentScore()
-        {
+        public float currentScore() {
             return scores[index];
         }
 
         @Override
-        public void value( long entityId, float score )
-        {
+        public void value(long entityId, float score) {
             this.entityIds[index] = entityId;
             this.scores[index] = score;
             index--;

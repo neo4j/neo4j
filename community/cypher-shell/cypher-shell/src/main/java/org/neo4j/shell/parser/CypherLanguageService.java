@@ -21,18 +21,16 @@ package org.neo4j.shell.parser;
 
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants;
 
 /**
  * Analyses Cypher.
  */
-public interface CypherLanguageService
-{
+public interface CypherLanguageService {
     /**
      * Returns tokenized query.
      */
-    List<Token> tokenize( String query );
+    List<Token> tokenize(String query);
 
     /**
      * Returns all available Cypher keywords.
@@ -42,15 +40,13 @@ public interface CypherLanguageService
     /**
      * Returns suggestions for the next keyword based on the specified incomplete query.
      */
-    List<String> suggestNextKeyword( String incompleteQuery );
+    List<String> suggestNextKeyword(String incompleteQuery);
 
-    static CypherLanguageService get()
-    {
+    static CypherLanguageService get() {
         return new JavaCcCypherLanguageService();
     }
 
-    interface Token
-    {
+    interface Token {
         /** Returns the Java CC parser token kind */
         int kind();
 
@@ -66,8 +62,7 @@ public interface CypherLanguageService
         /** Returns true if this is a query parameter identifier */
         boolean isParameterIdentifier();
 
-        default boolean isIdentifier()
-        {
+        default boolean isIdentifier() {
             return kind() == CypherConstants.IDENTIFIER;
         }
     }

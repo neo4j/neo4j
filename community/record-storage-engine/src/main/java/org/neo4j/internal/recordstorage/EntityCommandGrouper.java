@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Arrays;
 import java.util.Comparator;
-
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
@@ -45,31 +44,25 @@ import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
  *     <li>Call {@link #clear()} and use this instance again for another set of commands</li>
  * </ol>
  */
-public class EntityCommandGrouper<ENTITY extends Command>
-{
+public class EntityCommandGrouper<ENTITY extends Command> {
     /**
      * Enforces the order described on the class-level javadoc above.
      */
-    private final Comparator<Command> COMMAND_COMPARATOR = new Comparator<>()
-    {
+    private final Comparator<Command> COMMAND_COMPARATOR = new Comparator<>() {
         @Override
-        public int compare( Command o1, Command o2 )
-        {
-            int entityIdComparison = Long.compare( entityId( o1 ), entityId( o2 ) );
-            return entityIdComparison != 0 ? entityIdComparison : Integer.compare( commandType( o1 ), commandType( o2 ) );
+        public int compare(Command o1, Command o2) {
+            int entityIdComparison = Long.compare(entityId(o1), entityId(o2));
+            return entityIdComparison != 0 ? entityIdComparison : Integer.compare(commandType(o1), commandType(o2));
         }
 
-        private long entityId( Command command )
-        {
-            if ( command.getClass() == entityCommandClass )
-            {
+        private long entityId(Command command) {
+            if (command.getClass() == entityCommandClass) {
                 return command.getKey();
             }
             return ((PropertyCommand) command).getEntityId();
         }
 
-        private int commandType( Command command )
-        {
+        private int commandType(Command command) {
             return command.getClass() == entityCommandClass ? 0 : 1;
         }
     };
@@ -78,33 +71,27 @@ public class EntityCommandGrouper<ENTITY extends Command>
     private Command[] commands;
     private int writeCursor;
 
-    public EntityCommandGrouper( Class<ENTITY> entityCommandClass, int sizeHint )
-    {
+    public EntityCommandGrouper(Class<ENTITY> entityCommandClass, int sizeHint) {
         this.entityCommandClass = entityCommandClass;
         this.commands = new Command[sizeHint];
     }
 
-    public void add( Command command )
-    {
-        if ( writeCursor == commands.length )
-        {
-            commands = Arrays.copyOf( commands, commands.length * 2 );
+    public void add(Command command) {
+        if (writeCursor == commands.length) {
+            commands = Arrays.copyOf(commands, commands.length * 2);
         }
         commands[writeCursor++] = command;
     }
 
-    public Cursor sortAndAccessGroups()
-    {
-        Arrays.sort( commands, 0, writeCursor, COMMAND_COMPARATOR );
+    public Cursor sortAndAccessGroups() {
+        Arrays.sort(commands, 0, writeCursor, COMMAND_COMPARATOR);
         return new Cursor();
     }
 
-    public void clear()
-    {
-        if ( writeCursor > 1_000 )
-        {
+    public void clear() {
+        if (writeCursor > 1_000) {
             // Don't continue to hog large transactions
-            Arrays.fill( commands, 1_000, writeCursor, null );
+            Arrays.fill(commands, 1_000, writeCursor, null);
         }
         writeCursor = 0;
     }
@@ -118,26 +105,20 @@ public class EntityCommandGrouper<ENTITY extends Command>
      *     <li>Call {@link #nextProperty()} until it returns null, now all the {@link PropertyCommand} in this group have been accessed</li>
      * </ol>
      */
-    public class Cursor
-    {
+    public class Cursor {
         private int readCursor;
         private long currentEntity;
         private ENTITY currentEntityCommand;
 
-        public boolean nextEntity()
-        {
-            if ( readCursor >= writeCursor )
-            {
+        public boolean nextEntity() {
+            if (readCursor >= writeCursor) {
                 return false;
             }
 
-            if ( commands[readCursor].getClass() == entityCommandClass )
-            {
+            if (commands[readCursor].getClass() == entityCommandClass) {
                 currentEntityCommand = (ENTITY) commands[readCursor++];
                 currentEntity = currentEntityCommand.getKey();
-            }
-            else
-            {
+            } else {
                 PropertyCommand firstPropertyCommand = (PropertyCommand) commands[readCursor];
                 currentEntityCommand = null;
                 currentEntity = firstPropertyCommand.getEntityId();
@@ -145,13 +126,10 @@ public class EntityCommandGrouper<ENTITY extends Command>
             return true;
         }
 
-        public PropertyCommand nextProperty()
-        {
-            if ( readCursor < writeCursor )
-            {
+        public PropertyCommand nextProperty() {
+            if (readCursor < writeCursor) {
                 Command command = commands[readCursor];
-                if ( command instanceof PropertyCommand && ((PropertyCommand) command).getEntityId() == currentEntity )
-                {
+                if (command instanceof PropertyCommand && ((PropertyCommand) command).getEntityId() == currentEntity) {
                     readCursor++;
                     return (PropertyCommand) command;
                 }
@@ -159,13 +137,11 @@ public class EntityCommandGrouper<ENTITY extends Command>
             return null;
         }
 
-        public long currentEntityId()
-        {
+        public long currentEntityId() {
             return currentEntity;
         }
 
-        public ENTITY currentEntityCommand()
-        {
+        public ENTITY currentEntityCommand() {
             return currentEntityCommand;
         }
     }

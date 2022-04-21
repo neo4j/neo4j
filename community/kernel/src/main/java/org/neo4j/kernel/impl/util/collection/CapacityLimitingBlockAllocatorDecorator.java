@@ -19,75 +19,57 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.neo4j.memory.MemoryTracker;
-
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.requirePositive;
 
-public class CapacityLimitingBlockAllocatorDecorator implements OffHeapBlockAllocator
-{
+import java.util.concurrent.atomic.AtomicLong;
+import org.neo4j.memory.MemoryTracker;
+
+public class CapacityLimitingBlockAllocatorDecorator implements OffHeapBlockAllocator {
     private final OffHeapBlockAllocator impl;
     private final long maxMemory;
     private final AtomicLong usedMemory = new AtomicLong();
 
-    public CapacityLimitingBlockAllocatorDecorator( OffHeapBlockAllocator impl, long maxMemory )
-    {
-        this.impl = requireNonNull( impl );
-        this.maxMemory = requirePositive( maxMemory );
+    public CapacityLimitingBlockAllocatorDecorator(OffHeapBlockAllocator impl, long maxMemory) {
+        this.impl = requireNonNull(impl);
+        this.maxMemory = requirePositive(maxMemory);
     }
 
     @Override
-    public MemoryBlock allocate( long size, MemoryTracker tracker )
-    {
-        while ( true )
-        {
+    public MemoryBlock allocate(long size, MemoryTracker tracker) {
+        while (true) {
             final long usedMemoryBefore = usedMemory.get();
             final long usedMemoryAfter = usedMemoryBefore + size;
-            if ( usedMemoryAfter > maxMemory )
-            {
-                throw new MemoryAllocationLimitException( size, usedMemoryBefore, maxMemory );
+            if (usedMemoryAfter > maxMemory) {
+                throw new MemoryAllocationLimitException(size, usedMemoryBefore, maxMemory);
             }
-            if ( usedMemory.compareAndSet( usedMemoryBefore, usedMemoryAfter ) )
-            {
+            if (usedMemory.compareAndSet(usedMemoryBefore, usedMemoryAfter)) {
                 break;
             }
         }
-        try
-        {
-            return impl.allocate( size, tracker );
-        }
-        catch ( Throwable t )
-        {
-            usedMemory.addAndGet( -size );
+        try {
+            return impl.allocate(size, tracker);
+        } catch (Throwable t) {
+            usedMemory.addAndGet(-size);
             throw t;
         }
     }
 
     @Override
-    public void free( MemoryBlock block, MemoryTracker tracker )
-    {
-        try
-        {
-            impl.free( block, tracker );
-        }
-        finally
-        {
-            usedMemory.addAndGet( -block.size );
+    public void free(MemoryBlock block, MemoryTracker tracker) {
+        try {
+            impl.free(block, tracker);
+        } finally {
+            usedMemory.addAndGet(-block.size);
         }
     }
 
     @Override
-    public void release()
-    {
-        try
-        {
+    public void release() {
+        try {
             impl.release();
-        }
-        finally
-        {
-            usedMemory.set( 0 );
+        } finally {
+            usedMemory.set(0);
         }
     }
 }

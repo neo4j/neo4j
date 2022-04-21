@@ -19,15 +19,13 @@
  */
 package org.neo4j.internal.collector;
 
-@SuppressWarnings( "WeakerAccess" )
-public class ActionResult
-{
+@SuppressWarnings("WeakerAccess")
+public class ActionResult {
     public final String section;
     public final boolean success;
     public final String message;
 
-    public ActionResult( String section, boolean success, String message )
-    {
+    public ActionResult(String section, boolean success, String message) {
         this.section = section;
         this.success = success;
         this.message = message;

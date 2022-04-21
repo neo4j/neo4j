@@ -20,7 +20,6 @@
 package org.neo4j.server.modules;
 
 import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.CypherResource;
@@ -35,39 +34,38 @@ import org.neo4j.time.SystemNanoClock;
 /**
  * Mounts the transactional endpoint.
  */
-public class TransactionModule implements ServerModule
-{
+public class TransactionModule implements ServerModule {
     private final Config config;
     private final WebServer webServer;
     private final SystemNanoClock clock;
 
-    public TransactionModule( WebServer webServer, Config config, SystemNanoClock clock )
-    {
+    public TransactionModule(WebServer webServer, Config config, SystemNanoClock clock) {
         this.webServer = webServer;
         this.config = config;
         this.clock = clock;
     }
 
     @Override
-    public void start()
-    {
-        webServer.addJAXRSClasses( jaxRsClasses(), mountPoint(), List.of( Injectable.injectable( SystemNanoClock.class, clock ) ) );
+    public void start() {
+        webServer.addJAXRSClasses(
+                jaxRsClasses(), mountPoint(), List.of(Injectable.injectable(SystemNanoClock.class, clock)));
     }
 
     @Override
-    public void stop()
-    {
-        webServer.removeJAXRSClasses( jaxRsClasses(), mountPoint() );
+    public void stop() {
+        webServer.removeJAXRSClasses(jaxRsClasses(), mountPoint());
     }
 
-    private String mountPoint()
-    {
-        return config.get( ServerSettings.db_api_path ).toString();
+    private String mountPoint() {
+        return config.get(ServerSettings.db_api_path).toString();
     }
 
-    private static List<Class<?>> jaxRsClasses()
-    {
-        return List.of( CypherResource.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class,
-                        LineDelimitedEventSourceJoltMessageBodyWriter.class, SequentialEventSourceJoltMessageBodyWriter.class );
+    private static List<Class<?>> jaxRsClasses() {
+        return List.of(
+                CypherResource.class,
+                JsonMessageBodyReader.class,
+                JsonMessageBodyWriter.class,
+                LineDelimitedEventSourceJoltMessageBodyWriter.class,
+                SequentialEventSourceJoltMessageBodyWriter.class);
     }
 }

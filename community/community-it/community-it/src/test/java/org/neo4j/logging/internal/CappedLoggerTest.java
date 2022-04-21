@@ -19,151 +19,130 @@
  */
 package org.neo4j.logging.internal;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-public class CappedLoggerTest
-{
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
-    public interface LogMethod
-    {
-        void log( CappedLogger logger, String msg );
+public class CappedLoggerTest {
 
-        void log( CappedLogger logger, String msg, Throwable cause );
+    public interface LogMethod {
+        void log(CappedLogger logger, String msg);
+
+        void log(CappedLogger logger, String msg, Throwable cause);
     }
 
-    private static Stream<Arguments> argumentsProvider()
-    {
-        LogMethod debug = new LogMethod()
-        {
+    private static Stream<Arguments> argumentsProvider() {
+        LogMethod debug = new LogMethod() {
             @Override
-            public void log( CappedLogger logger, String msg )
-            {
-                logger.debug( msg );
+            public void log(CappedLogger logger, String msg) {
+                logger.debug(msg);
             }
 
             @Override
-            public void log( CappedLogger logger, String msg, Throwable cause )
-            {
-                logger.debug( msg, cause );
+            public void log(CappedLogger logger, String msg, Throwable cause) {
+                logger.debug(msg, cause);
             }
         };
-        LogMethod info = new LogMethod()
-        {
+        LogMethod info = new LogMethod() {
             @Override
-            public void log( CappedLogger logger, String msg )
-            {
-                logger.info( msg );
+            public void log(CappedLogger logger, String msg) {
+                logger.info(msg);
             }
 
             @Override
-            public void log( CappedLogger logger, String msg, Throwable cause )
-            {
-                logger.info( msg, cause );
+            public void log(CappedLogger logger, String msg, Throwable cause) {
+                logger.info(msg, cause);
             }
         };
-        LogMethod warn = new LogMethod()
-        {
+        LogMethod warn = new LogMethod() {
             @Override
-            public void log( CappedLogger logger, String msg )
-            {
-                logger.warn( msg );
+            public void log(CappedLogger logger, String msg) {
+                logger.warn(msg);
             }
 
             @Override
-            public void log( CappedLogger logger, String msg, Throwable cause )
-            {
-                logger.warn( msg, cause );
+            public void log(CappedLogger logger, String msg, Throwable cause) {
+                logger.warn(msg, cause);
             }
         };
-        LogMethod error = new LogMethod()
-        {
+        LogMethod error = new LogMethod() {
             @Override
-            public void log( CappedLogger logger, String msg )
-            {
-                logger.error( msg );
+            public void log(CappedLogger logger, String msg) {
+                logger.error(msg);
             }
 
             @Override
-            public void log( CappedLogger logger, String msg, Throwable cause )
-            {
-                logger.error( msg, cause );
+            public void log(CappedLogger logger, String msg, Throwable cause) {
+                logger.error(msg, cause);
             }
         };
         return Stream.of(
-                Arguments.of( debug, "debug" ),
-                Arguments.of( info, "info" ),
-                Arguments.of( warn, "warn" ),
-                Arguments.of( error, "error" )
-        );
+                Arguments.of(debug, "debug"),
+                Arguments.of(info, "info"),
+                Arguments.of(warn, "warn"),
+                Arguments.of(error, "error"));
     }
 
     private AssertableLogProvider logProvider;
     private CappedLogger logger;
 
     @BeforeEach
-    public void setUp()
-    {
+    public void setUp() {
         logProvider = new AssertableLogProvider();
     }
 
-    @ParameterizedTest( name = "{1}" )
-    @MethodSource( "argumentsProvider" )
-    public void mustLogExceptions( LogMethod logMethod, String name )
-    {
-        logger = new CappedLogger( logProvider.getLog( CappedLogger.class ), 1, TimeUnit.MILLISECONDS, Clocks.systemClock() );
-        var exception = new ArithmeticException( "EXCEPTION" );
-        logMethod.log( logger, "MESSAGE", exception );
-        assertThat( logProvider ).containsMessageWithException( "MESSAGE", exception );
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("argumentsProvider")
+    public void mustLogExceptions(LogMethod logMethod, String name) {
+        logger = new CappedLogger(
+                logProvider.getLog(CappedLogger.class), 1, TimeUnit.MILLISECONDS, Clocks.systemClock());
+        var exception = new ArithmeticException("EXCEPTION");
+        logMethod.log(logger, "MESSAGE", exception);
+        assertThat(logProvider).containsMessageWithException("MESSAGE", exception);
     }
 
-    @ParameterizedTest( name = "{1}" )
-    @MethodSource( "argumentsProvider" )
-    public void mustThrowOnZeroTimeLimit( LogMethod logMethod, String name )
-    {
-        assertThrows( IllegalArgumentException.class, () ->
-                new CappedLogger( logProvider.getLog( CappedLogger.class ), 0, MILLISECONDS, Clocks.systemClock() ) );
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("argumentsProvider")
+    public void mustThrowOnZeroTimeLimit(LogMethod logMethod, String name) {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new CappedLogger(logProvider.getLog(CappedLogger.class), 0, MILLISECONDS, Clocks.systemClock()));
     }
 
-    @ParameterizedTest( name = "{1}" )
-    @MethodSource( "argumentsProvider" )
-    public void mustThrowOnNegativeTimeLimit( LogMethod logMethod, String name )
-    {
-        assertThrows( IllegalArgumentException.class, () ->
-                new CappedLogger( logProvider.getLog( CappedLogger.class ), -1, MILLISECONDS, Clocks.systemClock() ) );
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("argumentsProvider")
+    public void mustThrowOnNegativeTimeLimit(LogMethod logMethod, String name) {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new CappedLogger(logProvider.getLog(CappedLogger.class), -1, MILLISECONDS, Clocks.systemClock()));
     }
 
-    @ParameterizedTest( name = "{1}" )
-    @MethodSource( "argumentsProvider" )
-    public void mustNotLogMessagesWithinConfiguredTimeLimit( LogMethod logMethod, String name )
-    {
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("argumentsProvider")
+    public void mustNotLogMessagesWithinConfiguredTimeLimit(LogMethod logMethod, String name) {
         FakeClock clock = getDefaultFakeClock();
-        logger = new CappedLogger( logProvider.getLog( CappedLogger.class ), 1, TimeUnit.MILLISECONDS, clock  );
-        logMethod.log( logger, "### AAA ###" );
-        logMethod.log( logger, "### BBB ###" );
-        clock.forward( 1, TimeUnit.MILLISECONDS );
-        logMethod.log( logger, "### CCC ###" );
+        logger = new CappedLogger(logProvider.getLog(CappedLogger.class), 1, TimeUnit.MILLISECONDS, clock);
+        logMethod.log(logger, "### AAA ###");
+        logMethod.log(logger, "### BBB ###");
+        clock.forward(1, TimeUnit.MILLISECONDS);
+        logMethod.log(logger, "### CCC ###");
 
-        assertThat( logProvider ).containsMessages( "### AAA ###" );
-        assertThat( logProvider ).forClass( CappedLogger.class ).doesNotContainMessage( "### BBB ###" );
-        assertThat( logProvider ).containsMessages( "### CCC ###" );
+        assertThat(logProvider).containsMessages("### AAA ###");
+        assertThat(logProvider).forClass(CappedLogger.class).doesNotContainMessage("### BBB ###");
+        assertThat(logProvider).containsMessages("### CCC ###");
     }
 
-    private static FakeClock getDefaultFakeClock()
-    {
-        return Clocks.fakeClock( 1000, TimeUnit.MILLISECONDS );
+    private static FakeClock getDefaultFakeClock() {
+        return Clocks.fakeClock(1000, TimeUnit.MILLISECONDS);
     }
 }

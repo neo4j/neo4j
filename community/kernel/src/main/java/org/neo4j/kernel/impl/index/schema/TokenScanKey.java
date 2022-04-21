@@ -23,19 +23,16 @@ package org.neo4j.kernel.impl.index.schema;
  * Keys in {@link TokenScanLayout}, each key consists of {@code tokenId} and {@code entityIdRange}, i.e.
  * {@code entityId/rangeSize}, where each range is a small bit set of size {@link TokenScanValue#RANGE_SIZE}.
  */
-class TokenScanKey
-{
+class TokenScanKey {
     int tokenId;
     long idRange;
 
-    TokenScanKey()
-    {
+    TokenScanKey() {
         clear();
     }
 
-    TokenScanKey( int tokenId, long idRange )
-    {
-        set( tokenId, idRange );
+    TokenScanKey(int tokenId, long idRange) {
+        set(tokenId, idRange);
     }
 
     /**
@@ -45,21 +42,18 @@ class TokenScanKey
      * @param idRange entity idRange for this key.
      * @return this key instance, for convenience.
      */
-    final TokenScanKey set( int tokenId, long idRange )
-    {
+    final TokenScanKey set(int tokenId, long idRange) {
         this.tokenId = tokenId;
         this.idRange = idRange;
         return this;
     }
 
-    final void clear()
-    {
-        set( -1, -1 );
+    final void clear() {
+        set(-1, -1);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "[token:" + tokenId + ",range:" + idRange + "]";
     }
 }

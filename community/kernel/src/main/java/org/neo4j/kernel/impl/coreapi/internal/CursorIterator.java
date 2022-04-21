@@ -20,38 +20,34 @@
 
 package org.neo4j.kernel.impl.coreapi.internal;
 
-import java.util.function.ToLongFunction;
+import static org.neo4j.io.IOUtils.closeAllSilently;
 
+import java.util.function.ToLongFunction;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.internal.kernel.api.Cursor;
 
-import static org.neo4j.io.IOUtils.closeAllSilently;
-
-public class CursorIterator<CURSOR extends Cursor, E extends Entity> extends PrefetchingEntityResourceIterator<CURSOR,E>
-{
+public class CursorIterator<CURSOR extends Cursor, E extends Entity>
+        extends PrefetchingEntityResourceIterator<CURSOR, E> {
     private final CURSOR cursor;
     private final ToLongFunction<CURSOR> toReferenceFunction;
 
-    public CursorIterator( CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, CursorEntityFactory<CURSOR,E> entityFactory )
-    {
-        super( cursor, entityFactory );
+    public CursorIterator(
+            CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, CursorEntityFactory<CURSOR, E> entityFactory) {
+        super(cursor, entityFactory);
         this.cursor = cursor;
         this.toReferenceFunction = toReferenceFunction;
     }
 
     @Override
-    long fetchNext()
-    {
-        if ( cursor.next() )
-        {
-            return toReferenceFunction.applyAsLong( cursor );
+    long fetchNext() {
+        if (cursor.next()) {
+            return toReferenceFunction.applyAsLong(cursor);
         }
         return NO_ID;
     }
 
     @Override
-    void closeResources()
-    {
-        closeAllSilently( cursor );
+    void closeResources() {
+        closeAllSilently(cursor);
     }
 }

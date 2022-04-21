@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.values.virtual.MapValue;
 
-public interface BoltQueryExecutor
-{
-    BoltQueryExecution executeQuery( String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber ) throws QueryExecutionKernelException;
+public interface BoltQueryExecutor {
+    BoltQueryExecution executeQuery(String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber)
+            throws QueryExecutionKernelException;
 }

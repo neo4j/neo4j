@@ -36,10 +36,22 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   private val m_prop2 = prop("m", "prop2")
 
   test("Should handle single predicate") {
-    groupInequalityPredicates(Seq(pred(lessThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(n_prop1, lessThan(n_prop1, literalInt(1)))))
-    groupInequalityPredicates(Seq(pred(lessThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(n_prop1, lessThanOrEqual(n_prop1, literalInt(1)))))
-    groupInequalityPredicates(Seq(pred(greaterThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(n_prop1, greaterThan(n_prop1, literalInt(1)))))
-    groupInequalityPredicates(Seq(pred(greaterThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(n_prop1, greaterThanOrEqual(n_prop1, literalInt(1)))))
+    groupInequalityPredicates(Seq(pred(lessThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
+      n_prop1,
+      lessThan(n_prop1, literalInt(1))
+    )))
+    groupInequalityPredicates(Seq(pred(lessThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
+      n_prop1,
+      lessThanOrEqual(n_prop1, literalInt(1))
+    )))
+    groupInequalityPredicates(Seq(pred(greaterThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
+      n_prop1,
+      greaterThan(n_prop1, literalInt(1))
+    )))
+    groupInequalityPredicates(Seq(pred(greaterThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(
+      n_prop1,
+      greaterThanOrEqual(n_prop1, literalInt(1))
+    )))
   }
 
   test("Should group by lhs property") {
@@ -90,16 +102,16 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
     groupInequalityPredicates(Seq(
       pred(equals(n_prop1, literalInt(1))),
       pred(ors(ands(
-          lessThan(m_prop1, literalInt(3)),
-          greaterThan(m_prop1, literalInt(4)),
-          equals(m_prop2, literalInt(2))
+        lessThan(m_prop1, literalInt(3)),
+        greaterThan(m_prop1, literalInt(4)),
+        equals(m_prop2, literalInt(2))
       ))),
       pred(greaterThanOrEqual(m_prop2, literalInt(5)))
     )).toSet should equal(Set(
       pred(equals(n_prop1, literalInt(1))),
       pred(ors(ands(
         anded(m_prop1, lessThan(m_prop1, literalInt(3)), greaterThan(m_prop1, literalInt(4))).expr,
-        equals(m_prop2, literalInt(2)),
+        equals(m_prop2, literalInt(2))
       ))),
       anded(m_prop2, greaterThanOrEqual(m_prop2, literalInt(5)))
     ))
@@ -109,9 +121,9 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
     groupInequalityPredicates(Seq(
       pred(equals(n_prop1, literalInt(1))),
       pred(ors(ands(
-          lessThan(m_prop1, literalInt(3)),
-          greaterThan(m_prop1, literalInt(4)))
-      )),
+        lessThan(m_prop1, literalInt(3)),
+        greaterThan(m_prop1, literalInt(4))
+      ))),
       pred(greaterThanOrEqual(m_prop2, literalInt(5)))
     )).toSet should equal(Set(
       pred(equals(n_prop1, literalInt(1))),
@@ -128,7 +140,9 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   private def anded(property: Property, first: InequalityExpression, others: InequalityExpression*) = {
     val variable = property.map.asInstanceOf[Variable]
     val inequalities = NonEmptyList(first, others: _*)
-    val deps = others.foldLeft(first.dependencies) { (acc, elem) => acc ++ elem.dependencies }.map { ident => ident.name }
+    val deps = others.foldLeft(first.dependencies) { (acc, elem) => acc ++ elem.dependencies }.map { ident =>
+      ident.name
+    }
     Predicate(deps, AndedPropertyInequalities(variable, property, inequalities))
   }
 }

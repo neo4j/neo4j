@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.impl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -30,287 +29,239 @@ import org.neo4j.io.pagecache.PagedFile;
 /**
  * A {@link PageCursor} implementation that delegates all calls to a given delegate PageCursor.
  */
-public class DelegatingPageCursor extends PageCursor
-{
+public class DelegatingPageCursor extends PageCursor {
     protected final PageCursor delegate;
 
     @Override
-    public byte getByte()
-    {
+    public byte getByte() {
         return delegate.getByte();
     }
 
     @Override
-    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
-    {
-        return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
+    public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
+        return delegate.copyTo(sourceOffset, targetCursor, targetOffset, lengthInBytes);
     }
 
     @Override
-    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
-    {
-        return delegate.copyTo( sourceOffset, targetBuffer );
+    public int copyTo(int sourceOffset, ByteBuffer targetBuffer) {
+        return delegate.copyTo(sourceOffset, targetBuffer);
     }
 
     @Override
-    public void shiftBytes( int sourceOffset, int length, int shift )
-    {
-        delegate.shiftBytes( sourceOffset, length, shift );
+    public void shiftBytes(int sourceOffset, int length, int shift) {
+        delegate.shiftBytes(sourceOffset, length, shift);
     }
 
     @Override
-    public void putInt( int value )
-    {
-        delegate.putInt( value );
+    public void putInt(int value) {
+        delegate.putInt(value);
     }
 
     @Override
-    public void getBytes( byte[] data )
-    {
-        delegate.getBytes( data );
+    public void getBytes(byte[] data) {
+        delegate.getBytes(data);
     }
 
     @Override
-    public boolean next() throws IOException
-    {
+    public boolean next() throws IOException {
         return delegate.next();
     }
 
     @Override
-    public void putBytes( byte[] data )
-    {
-        delegate.putBytes( data );
+    public void putBytes(byte[] data) {
+        delegate.putBytes(data);
     }
 
     @Override
-    public short getShort()
-    {
+    public short getShort() {
         return delegate.getShort();
     }
 
     @Override
-    public Path getCurrentFile()
-    {
+    public Path getCurrentFile() {
         return delegate.getCurrentFile();
     }
 
     @Override
-    public PagedFile getPagedFile()
-    {
+    public PagedFile getPagedFile() {
         return delegate.getPagedFile();
     }
 
     @Override
-    public Path getRawCurrentFile()
-    {
+    public Path getRawCurrentFile() {
         return delegate.getRawCurrentFile();
     }
 
     @Override
-    public void putShort( short value )
-    {
-        delegate.putShort( value );
+    public void putShort(short value) {
+        delegate.putShort(value);
     }
 
     @Override
-    public short getShort( int offset )
-    {
-        return delegate.getShort( offset );
+    public short getShort(int offset) {
+        return delegate.getShort(offset);
     }
 
     @Override
-    public long getLong()
-    {
+    public long getLong() {
         return delegate.getLong();
     }
 
     @Override
-    public void putLong( long value )
-    {
-        delegate.putLong( value );
+    public void putLong(long value) {
+        delegate.putLong(value);
     }
 
     @Override
-    public int getOffset()
-    {
+    public int getOffset() {
         return delegate.getOffset();
     }
 
     @Override
-    public void mark()
-    {
+    public void mark() {
         delegate.mark();
     }
 
     @Override
-    public void setOffsetToMark()
-    {
+    public void setOffsetToMark() {
         delegate.setOffsetToMark();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         delegate.close();
     }
 
     @Override
-    public void putByte( int offset, byte value )
-    {
-        delegate.putByte( offset, value );
+    public void putByte(int offset, byte value) {
+        delegate.putByte(offset, value);
     }
 
     @Override
-    public void putInt( int offset, int value )
-    {
-        delegate.putInt( offset, value );
+    public void putInt(int offset, int value) {
+        delegate.putInt(offset, value);
     }
 
     @Override
-    public void putBytes( byte[] data, int arrayOffset, int length )
-    {
-        delegate.putBytes( data, arrayOffset, length );
+    public void putBytes(byte[] data, int arrayOffset, int length) {
+        delegate.putBytes(data, arrayOffset, length);
     }
 
     @Override
-    public void putBytes( int bytes, byte value )
-    {
-        delegate.putBytes( bytes, value );
+    public void putBytes(int bytes, byte value) {
+        delegate.putBytes(bytes, value);
     }
 
     @Override
-    public void rewind()
-    {
+    public void rewind() {
         delegate.rewind();
     }
 
     @Override
-    public void putByte( byte value )
-    {
-        delegate.putByte( value );
+    public void putByte(byte value) {
+        delegate.putByte(value);
     }
 
     @Override
-    public boolean checkAndClearBoundsFlag()
-    {
+    public boolean checkAndClearBoundsFlag() {
         return delegate.checkAndClearBoundsFlag();
     }
 
     @Override
-    public void checkAndClearCursorException() throws CursorException
-    {
+    public void checkAndClearCursorException() throws CursorException {
         delegate.checkAndClearCursorException();
     }
 
     @Override
-    public void raiseOutOfBounds()
-    {
+    public void raiseOutOfBounds() {
         delegate.raiseOutOfBounds();
     }
 
     @Override
-    public void setCursorException( String message )
-    {
-        delegate.setCursorException( message );
+    public void setCursorException(String message) {
+        delegate.setCursorException(message);
     }
 
     @Override
-    public void clearCursorException()
-    {
+    public void clearCursorException() {
         delegate.clearCursorException();
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId ) throws IOException
-    {
-        return delegate.openLinkedCursor( pageId );
+    public PageCursor openLinkedCursor(long pageId) throws IOException {
+        return delegate.openLinkedCursor(pageId);
     }
 
     @Override
-    public long getCurrentPageId()
-    {
+    public long getCurrentPageId() {
         return delegate.getCurrentPageId();
     }
 
     @Override
-    public void putShort( int offset, short value )
-    {
-        delegate.putShort( offset, value );
+    public void putShort(int offset, short value) {
+        delegate.putShort(offset, value);
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
-    {
-        return delegate.next( pageId );
+    public boolean next(long pageId) throws IOException {
+        return delegate.next(pageId);
     }
 
     @Override
-    public void putLong( int offset, long value )
-    {
-        delegate.putLong( offset, value );
+    public void putLong(int offset, long value) {
+        delegate.putLong(offset, value);
     }
 
     @Override
-    public long getLong( int offset )
-    {
-        return delegate.getLong( offset );
+    public long getLong(int offset) {
+        return delegate.getLong(offset);
     }
 
     @Override
-    public void getBytes( byte[] data, int arrayOffset, int length )
-    {
-        delegate.getBytes( data, arrayOffset, length );
+    public void getBytes(byte[] data, int arrayOffset, int length) {
+        delegate.getBytes(data, arrayOffset, length);
     }
 
     @Override
-    public int getInt( int offset )
-    {
-        return delegate.getInt( offset );
+    public int getInt(int offset) {
+        return delegate.getInt(offset);
     }
 
     @Override
-    public void setOffset( int offset )
-    {
-        delegate.setOffset( offset );
+    public void setOffset(int offset) {
+        delegate.setOffset(offset);
     }
 
     @Override
-    public byte getByte( int offset )
-    {
-        return delegate.getByte( offset );
+    public byte getByte(int offset) {
+        return delegate.getByte(offset);
     }
 
     @Override
-    public int getInt()
-    {
+    public int getInt() {
         return delegate.getInt();
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
-    {
+    public boolean shouldRetry() throws IOException {
         return delegate.shouldRetry();
     }
 
     @Override
-    public void zapPage()
-    {
+    public void zapPage() {
         delegate.zapPage();
     }
 
     @Override
-    public boolean isWriteLocked()
-    {
+    public boolean isWriteLocked() {
         return delegate.isWriteLocked();
     }
 
-    public PageCursor unwrap()
-    {
+    public PageCursor unwrap() {
         return delegate;
     }
 
-    public DelegatingPageCursor( PageCursor delegate )
-    {
+    public DelegatingPageCursor(PageCursor delegate) {
         this.delegate = delegate;
     }
 }

@@ -19,85 +19,75 @@
  */
 package org.neo4j.logging.internal;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.io.ByteArrayOutputStream;
 import java.util.UUID;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
-class DatabaseLogServiceTest
-{
+class DatabaseLogServiceTest {
     private InternalLogProvider logProvider;
     private DatabaseLogService logService;
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    private final NamedDatabaseId namedDatabaseId = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
+    private final NamedDatabaseId namedDatabaseId = DatabaseIdFactory.from("foo", UUID.randomUUID());
 
     @BeforeEach
-    void setUp()
-    {
-        logProvider = new Log4jLogProvider( outContent, Level.DEBUG );
-        logService = new DatabaseLogService( namedDatabaseId, new SimpleLogService( logProvider ) );
+    void setUp() {
+        logProvider = new Log4jLogProvider(outContent, Level.DEBUG);
+        logService = new DatabaseLogService(namedDatabaseId, new SimpleLogService(logProvider));
     }
 
     @Test
-    void shouldReturnUserLogProvider()
-    {
+    void shouldReturnUserLogProvider() {
         var logProvider = logService.getUserLogProvider();
-        var log = logProvider.getLog( "log_name" );
-        log.info( "message" );
+        var log = logProvider.getLog("log_name");
+        log.info("message");
 
-        assertLogged( "[log_name] " + "[" + namedDatabaseId.logPrefix() + "] message" );
+        assertLogged("[log_name] " + "[" + namedDatabaseId.logPrefix() + "] message");
     }
 
     @Test
-    void shouldReturnInternalLogProvider()
-    {
+    void shouldReturnInternalLogProvider() {
         var logProvider = logService.getInternalLogProvider();
-        var log = logProvider.getLog( Object.class );
-        log.info( "message" );
+        var log = logProvider.getLog(Object.class);
+        log.info("message");
 
-        assertLogged( "[j.l.Object] " + "[" + namedDatabaseId.logPrefix() + "] message" );
+        assertLogged("[j.l.Object] " + "[" + namedDatabaseId.logPrefix() + "] message");
     }
 
     @Test
-    void shouldReturnDifferentUserAndInternalLogProviders()
-    {
+    void shouldReturnDifferentUserAndInternalLogProviders() {
         var userLogProvider = logService.getUserLogProvider();
         var internalLogProvider = logService.getInternalLogProvider();
 
-        assertNotEquals( userLogProvider, internalLogProvider );
+        assertNotEquals(userLogProvider, internalLogProvider);
     }
 
     @Test
-    void shouldAlwaysReturnSameUserLogProvider()
-    {
+    void shouldAlwaysReturnSameUserLogProvider() {
         var logProvider1 = logService.getUserLogProvider();
         var logProvider2 = logService.getUserLogProvider();
 
-        assertSame( logProvider1, logProvider2 );
+        assertSame(logProvider1, logProvider2);
     }
 
     @Test
-    void shouldAlwaysReturnSameInternalLogProvider()
-    {
+    void shouldAlwaysReturnSameInternalLogProvider() {
         var logProvider1 = logService.getInternalLogProvider();
         var logProvider2 = logService.getInternalLogProvider();
 
-        assertSame( logProvider1, logProvider2 );
+        assertSame(logProvider1, logProvider2);
     }
 
-    private void assertLogged( String message )
-    {
-        assertThat( outContent.toString() ).contains( message );
+    private void assertLogged(String message) {
+        assertThat(outContent.toString()).contains(message);
     }
 }

@@ -34,11 +34,13 @@ abstract class BaseAcceptanceTest extends BaseFeatureTest {
   val featureToRun = ""
   val scenarioToRun = ""
 
-  override lazy val scenarios: Seq[Scenario] =  filterScenarios(BaseFeatureTestHolder.allAcceptanceScenarios, categoryToRun, featureToRun, scenarioToRun)
+  override lazy val scenarios: Seq[Scenario] =
+    filterScenarios(BaseFeatureTestHolder.allAcceptanceScenarios, categoryToRun, featureToRun, scenarioToRun)
 
   override def graphDatabaseFactory(): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder()
 
-  override def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef] = defaultTestConfig(featureName)
+  override def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef] =
+    defaultTestConfig(featureName)
 
   @Test
   def debugTokensNeedToBeEmpty(): Unit = {

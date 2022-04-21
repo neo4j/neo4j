@@ -42,60 +42,65 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
   private val labelId = 42
   private val propertyId = 1337
-  private val index = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(labelId), Seq(PropertyKeyId(propertyId)))
-  private val descriptor: schema.IndexDescriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId)).withName("wut!").materialise(11L)
+
+  private val index =
+    IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(labelId), Seq(PropertyKeyId(propertyId)))
+
+  private val descriptor: schema.IndexDescriptor =
+    IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId)).withName("wut!").materialise(11L)
   private var read: Read = _
   private var schemaRead: SchemaRead = _
   private val log = mock[InternalLog]
 
-
   test("indexPropertyExistsSelectivity should compute selectivity") {
-    //given
+    // given
     when(read.countsForNodeWithoutTxState(labelId)).thenReturn(1000L)
     when(schemaRead.indexSize(descriptor)).thenReturn(500L)
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
-    //then
+    // then
     statistics.indexPropertyIsNotNullSelectivity(index) should equal(Some(Selectivity(0.5)))
   }
 
   test("indexPropertyExistsSelectivity should handle indexSize being out-of-sync with counts") {
-    //given
+    // given
     when(read.countsForNodeWithoutTxState(labelId)).thenReturn(1000L)
     when(schemaRead.indexSize(descriptor)).thenReturn(2000L)
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
-    //then
+    // then
     statistics.indexPropertyIsNotNullSelectivity(index) should equal(Some(Selectivity.ONE))
   }
 
   test("indexPropertyExistsSelectivity should handle label count zero") {
-    //given
+    // given
     when(read.countsForNodeWithoutTxState(labelId)).thenReturn(0L)
     when(schemaRead.indexSize(descriptor)).thenReturn(2000L)
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
-    //then
-    statistics.indexPropertyIsNotNullSelectivity(index) should equal(Some(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY))
+    // then
+    statistics.indexPropertyIsNotNullSelectivity(index) should equal(
+      Some(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY)
+    )
   }
 
   test("indexPropertyExistsSelectivity should log if index returned from schema read but size cannot get computed") {
-    //given
+    // given
     when(read.countsForNodeWithoutTxState(labelId)).thenReturn(20L)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
     val theLog = mock[InternalLog]
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
 
-    //then
+    // then
     statistics.indexPropertyIsNotNullSelectivity(index) should equal(None)
     verify(theLog).debug("Index not found for indexPropertyExistsSelectivity", exception)
   }
@@ -107,89 +112,89 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
     val theLog = mock[InternalLog]
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
 
-    //then
+    // then
     statistics.indexPropertyIsNotNullSelectivity(index) should equal(None)
     verifyNoInteractions(theLog)
   }
 
   test("uniqueValueSelectivity should compute selectivity") {
-    //given
+    // given
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.5)
     when(schemaRead.indexSize(descriptor)).thenReturn(2000L)
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
-    //then
+    // then
     statistics.uniqueValueSelectivity(index) should equal(Some(Selectivity(0.001)))
   }
 
   test("uniqueValueSelectivity should handle selectivity greater than 1") {
-    //given
+    // given
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0001)
     when(schemaRead.indexSize(descriptor)).thenReturn(100)
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
-    //then
+    // then
     statistics.uniqueValueSelectivity(index) should equal(Some(Selectivity.ONE))
   }
 
   test("uniqueValueSelectivity should handle indexSize zero") {
-    //given
+    // given
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.5)
     when(schemaRead.indexSize(descriptor)).thenReturn(0L)
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
-    //then
+    // then
     statistics.uniqueValueSelectivity(index) should equal(Some(Selectivity.ZERO))
   }
 
   test("uniqueValueSelectivity should handle indexUniqueValuesSelectivity zero") {
-    //given
+    // given
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0)
     when(schemaRead.indexSize(descriptor)).thenReturn(2000L)
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
-    //then
+    // then
     statistics.uniqueValueSelectivity(index) should equal(Some(Selectivity.ZERO))
   }
 
   test("uniqueValueSelectivity should log if index returned from schema read but size cannot get computed") {
-    //given
+    // given
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
     val theLog = mock[InternalLog]
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
 
-    //then
+    // then
     statistics.uniqueValueSelectivity(index) should equal(None)
     verify(theLog).debug("Index not found for uniqueValueSelectivity", exception)
   }
 
   test("uniqueValueSelectivity should not log if index was not found") {
-    //given
+    // given
     when(schemaRead.index(any[SchemaDescriptor], any[schema.IndexType])).thenReturn(schema.IndexDescriptor.NO_INDEX)
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
     val theLog = mock[InternalLog]
 
-    //when
+    // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
 
-    //then
+    // then
     statistics.uniqueValueSelectivity(index) should equal(None)
     verifyNoInteractions(theLog)
   }

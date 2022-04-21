@@ -22,6 +22,4 @@ package org.neo4j.kernel.extension;
 /**
  * This cannot be initialised as a dependencies proxy, because it is only possible to make proxies of interfaces, and this is a class!
  */
-class UnproxyableDependencies
-{
-}
+class UnproxyableDependencies {}

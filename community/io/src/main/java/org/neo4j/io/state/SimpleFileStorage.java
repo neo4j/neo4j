@@ -21,7 +21,6 @@ package org.neo4j.io.state;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.InputStreamReadableChannel;
 import org.neo4j.io.fs.OutputStreamWritableChannel;
@@ -30,61 +29,48 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.marshal.ChannelMarshal;
 import org.neo4j.io.marshal.EndOfStreamException;
 
-public class SimpleFileStorage<T> implements SimpleStorage<T>
-{
+public class SimpleFileStorage<T> implements SimpleStorage<T> {
     private final FileSystemAbstraction fileSystem;
     private final ChannelMarshal<T> marshal;
     private final Path path;
 
-    public SimpleFileStorage( FileSystemAbstraction fileSystem, Path path, ChannelMarshal<T> marshal )
-    {
+    public SimpleFileStorage(FileSystemAbstraction fileSystem, Path path, ChannelMarshal<T> marshal) {
         this.fileSystem = fileSystem;
         this.path = path;
         this.marshal = marshal;
     }
 
     @Override
-    public boolean exists()
-    {
-        return fileSystem.fileExists( path );
+    public boolean exists() {
+        return fileSystem.fileExists(path);
     }
 
     @Override
-    public T readState() throws IOException
-    {
-        try ( ReadableChannel channel =  new InputStreamReadableChannel( fileSystem.openAsInputStream( path ) ) )
-        {
-            return marshal.unmarshal( channel );
-        }
-        catch ( EndOfStreamException e )
-        {
-            throw new IOException( e );
+    public T readState() throws IOException {
+        try (ReadableChannel channel = new InputStreamReadableChannel(fileSystem.openAsInputStream(path))) {
+            return marshal.unmarshal(channel);
+        } catch (EndOfStreamException e) {
+            throw new IOException(e);
         }
     }
 
     @Override
-    public void writeState( T state ) throws IOException
-    {
-        if ( path.getParent() != null )
-        {
-            fileSystem.mkdirs( path.getParent() );
+    public void writeState(T state) throws IOException {
+        if (path.getParent() != null) {
+            fileSystem.mkdirs(path.getParent());
         }
-        if ( fileSystem.fileExists( path ) )
-        {
-            fileSystem.deleteFile( path );
+        if (fileSystem.fileExists(path)) {
+            fileSystem.deleteFile(path);
         }
-        try ( WritableChannel channel = new OutputStreamWritableChannel( fileSystem.openAsOutputStream( path, false ) ) )
-        {
-            marshal.marshal( state, channel );
+        try (WritableChannel channel = new OutputStreamWritableChannel(fileSystem.openAsOutputStream(path, false))) {
+            marshal.marshal(state, channel);
         }
     }
 
     @Override
-    public void removeState() throws IOException
-    {
-        if ( exists() )
-        {
-            fileSystem.deleteFile( path );
+    public void removeState() throws IOException {
+        if (exists()) {
+            fileSystem.deleteFile(path);
         }
     }
 }

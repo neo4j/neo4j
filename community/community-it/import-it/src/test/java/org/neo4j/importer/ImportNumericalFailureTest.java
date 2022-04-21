@@ -19,12 +19,8 @@
  */
 package org.neo4j.importer;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import picocli.CommandLine;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.importer.ImportCommandTest.assertExceptionContains;
 
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -32,47 +28,41 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.importer.ImportCommandTest.assertExceptionContains;
+import picocli.CommandLine;
 
 @Neo4jLayoutExtension
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-class ImportNumericalFailureTest
-{
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+class ImportNumericalFailureTest {
     @Inject
     private DatabaseLayout databaseLayout;
 
-    static List<String[]> parameters()
-    {
+    static List<String[]> parameters() {
         List<String[]> params = new ArrayList<>();
 
-        for ( String type : Arrays.asList( "int", "long", "short", "byte", "float", "double" ) )
-        {
-            for ( String val : Arrays.asList( " 1 7 ", " -1 7 ", " - 1 ", "   ", "   -  ", "-", "1. 0", "1 .", ".",
-                    "1E 10", " . 1" ) )
-            {
+        for (String type : Arrays.asList("int", "long", "short", "byte", "float", "double")) {
+            for (String val : Arrays.asList(
+                    " 1 7 ", " -1 7 ", " - 1 ", "   ", "   -  ", "-", "1. 0", "1 .", ".", "1E 10", " . 1")) {
                 // Only include decimals for floating point
-                if ( val.contains( "." ) && !( type.equals( "float" ) || type.equals( "double" ) ) )
-                {
+                if (val.contains(".") && !(type.equals("float") || type.equals("double"))) {
                     continue;
                 }
 
                 final String error;
-                if ( type.equals( "float" ) || type.equals( "double" ) )
-                {
+                if (type.equals("float") || type.equals("double")) {
                     error = "Not a number: \"" + val + "\"";
-                }
-                else
-                {
+                } else {
                     error = "Not an integer: \"" + val + "\"";
                 }
 
@@ -81,44 +71,45 @@ class ImportNumericalFailureTest
                 args[1] = val;
                 args[2] = error;
 
-                params.add( args );
+                params.add(args);
             }
         }
         return params;
     }
 
     @ParameterizedTest
-    @MethodSource( value = "parameters" )
-    void failImportOnInvalidData( String type, String val, String expectedError ) throws Exception
-    {
+    @MethodSource(value = "parameters")
+    void failImportOnInvalidData(String type, String val, String expectedError) throws Exception {
 
-        Path data = file( databaseLayout, fileName( "whitespace.csv" ) );
-        try ( PrintStream writer = new PrintStream( Files.newOutputStream( data ) ) )
-        {
-            writer.println( ":LABEL,adult:" + type );
-            writer.println( "PERSON," + val );
+        Path data = file(databaseLayout, fileName("whitespace.csv"));
+        try (PrintStream writer = new PrintStream(Files.newOutputStream(data))) {
+            writer.println(":LABEL,adult:" + type);
+            writer.println("PERSON," + val);
         }
 
-        Exception exception = assertThrows( Exception.class,
-                () -> runImport( databaseLayout.databaseDirectory().toAbsolutePath(), "--quote", "'", "--nodes", data.toAbsolutePath().toString() ) );
-        assertExceptionContains( exception, expectedError, InputException.class );
+        Exception exception = assertThrows(
+                Exception.class,
+                () -> runImport(
+                        databaseLayout.databaseDirectory().toAbsolutePath(),
+                        "--quote",
+                        "'",
+                        "--nodes",
+                        data.toAbsolutePath().toString()));
+        assertExceptionContains(exception, expectedError, InputException.class);
     }
 
-    private static String fileName( String name )
-    {
+    private static String fileName(String name) {
         return name;
     }
 
-    private static Path file( DatabaseLayout databaseLayout, String localname )
-    {
-        return databaseLayout.file( localname );
+    private static Path file(DatabaseLayout databaseLayout, String localname) {
+        return databaseLayout.file(localname);
     }
 
-    private static void runImport( Path homeDir, String... arguments )
-    {
-        final var ctx = new ExecutionContext( homeDir, homeDir.resolve( "conf" ) );
-        final var cmd = new ImportCommand( ctx );
-        CommandLine.populateCommand( cmd, arguments );
+    private static void runImport(Path homeDir, String... arguments) {
+        final var ctx = new ExecutionContext(homeDir, homeDir.resolve("conf"));
+        final var cmd = new ImportCommand(ctx);
+        CommandLine.populateCommand(cmd, arguments);
         cmd.execute();
     }
 }

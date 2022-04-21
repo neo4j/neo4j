@@ -19,61 +19,52 @@
  */
 package org.neo4j.tooling.procedure.testutils;
 
-import com.google.testing.compile.CompilationRule;
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toList;
 
+import com.google.testing.compile.CompilationRule;
 import java.util.stream.Stream;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toList;
-
-public class TypeMirrorTestUtils
-{
+public class TypeMirrorTestUtils {
 
     private final Types types;
     private final Elements elements;
     private final TypeMirrorUtils typeMirrors;
 
-    public TypeMirrorTestUtils( CompilationRule rule )
-    {
-        this( rule.getTypes(), rule.getElements(), new TypeMirrorUtils( rule.getTypes(), rule.getElements() ) );
+    public TypeMirrorTestUtils(CompilationRule rule) {
+        this(rule.getTypes(), rule.getElements(), new TypeMirrorUtils(rule.getTypes(), rule.getElements()));
     }
 
-    private TypeMirrorTestUtils( Types types, Elements elements, TypeMirrorUtils typeMirrors )
-    {
+    private TypeMirrorTestUtils(Types types, Elements elements, TypeMirrorUtils typeMirrors) {
         this.types = types;
         this.elements = elements;
         this.typeMirrors = typeMirrors;
     }
 
-    public TypeMirror typeOf( Class<?> type, Class<?>... parameterTypes )
-    {
-        return types.getDeclaredType( elements.getTypeElement( type.getName() ), typesOf( parameterTypes ) );
+    public TypeMirror typeOf(Class<?> type, Class<?>... parameterTypes) {
+        return types.getDeclaredType(elements.getTypeElement(type.getName()), typesOf(parameterTypes));
     }
 
-    public TypeMirror typeOf( Class<?> type, TypeMirror... parameterTypes )
-    {
-        return types.getDeclaredType( elements.getTypeElement( type.getName() ), parameterTypes );
+    public TypeMirror typeOf(Class<?> type, TypeMirror... parameterTypes) {
+        return types.getDeclaredType(elements.getTypeElement(type.getName()), parameterTypes);
     }
 
-    public PrimitiveType typeOf( TypeKind kind )
-    {
-        return typeMirrors.primitive( kind );
+    public PrimitiveType typeOf(TypeKind kind) {
+        return typeMirrors.primitive(kind);
     }
 
-    public TypeMirror typeOf( Class<?> type )
-    {
-        return typeMirrors.typeMirror( type );
+    public TypeMirror typeOf(Class<?> type) {
+        return typeMirrors.typeMirror(type);
     }
 
-    private TypeMirror[] typesOf( Class<?>... parameterTypes )
-    {
-        Stream<TypeMirror> mirrorStream = stream( parameterTypes ).map( this::typeOf );
-        return mirrorStream.collect( toList() ).toArray( new TypeMirror[parameterTypes.length] );
+    private TypeMirror[] typesOf(Class<?>... parameterTypes) {
+        Stream<TypeMirror> mirrorStream = stream(parameterTypes).map(this::typeOf);
+        return mirrorStream.collect(toList()).toArray(new TypeMirror[parameterTypes.length]);
     }
 }

@@ -19,87 +19,76 @@
  */
 package org.neo4j.storageengine.util;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.test.Race;
-
 import static java.lang.Math.max;
 import static java.lang.Runtime.getRuntime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class HighestTransactionIdTest
-{
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Test;
+import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.Race;
+
+class HighestTransactionIdTest {
     @Test
-    void shouldHardSetHighest()
-    {
+    void shouldHardSetHighest() {
         // GIVEN
-        HighestTransactionId highest = new HighestTransactionId( 10, 10, 10 );
+        HighestTransactionId highest = new HighestTransactionId(10, 10, 10);
 
         // WHEN
-        highest.set( 8, 1299128, 42 );
+        highest.set(8, 1299128, 42);
 
         // THEN
-        assertEquals( new TransactionId( 8, 1299128, 42 ), highest.get() );
+        assertEquals(new TransactionId(8, 1299128, 42), highest.get());
     }
 
     @Test
-    void shouldOnlyKeepTheHighestOffered()
-    {
+    void shouldOnlyKeepTheHighestOffered() {
         // GIVEN
-        HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );
+        HighestTransactionId highest = new HighestTransactionId(-1, -1, -1);
 
         // WHEN/THEN
-        assertAccepted( highest, 2 );
-        assertAccepted( highest, 5 );
-        assertRejected( highest, 3 );
-        assertRejected( highest, 4 );
-        assertAccepted( highest, 10 );
+        assertAccepted(highest, 2);
+        assertAccepted(highest, 5);
+        assertRejected(highest, 3);
+        assertRejected(highest, 4);
+        assertAccepted(highest, 10);
     }
 
     @Test
-    void shouldKeepHighestDuringConcurrentOfferings() throws Throwable
-    {
+    void shouldKeepHighestDuringConcurrentOfferings() throws Throwable {
         // GIVEN
-        final HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );
+        final HighestTransactionId highest = new HighestTransactionId(-1, -1, -1);
         Race race = new Race();
-        int updaters = max( 2, getRuntime().availableProcessors() );
+        int updaters = max(2, getRuntime().availableProcessors());
         final AtomicInteger accepted = new AtomicInteger();
-        for ( int i = 0; i < updaters; i++ )
-        {
+        for (int i = 0; i < updaters; i++) {
             final long id = i + 1;
-            race.addContestant( () ->
-            {
-                if ( highest.offer( id, (int) id, id ) )
-                {
+            race.addContestant(() -> {
+                if (highest.offer(id, (int) id, id)) {
                     accepted.incrementAndGet();
                 }
-            } );
+            });
         }
 
         // WHEN
         race.go();
 
         // THEN
-        assertTrue( accepted.get() > 0 );
-        assertEquals( updaters, highest.get().transactionId() );
+        assertTrue(accepted.get() > 0);
+        assertEquals(updaters, highest.get().transactionId());
     }
 
-    private static void assertAccepted( HighestTransactionId highest, long txId )
-    {
+    private static void assertAccepted(HighestTransactionId highest, long txId) {
         TransactionId current = highest.get();
-        assertTrue( highest.offer( txId, -1, -1 ) );
-        assertTrue( txId > current.transactionId() );
+        assertTrue(highest.offer(txId, -1, -1));
+        assertTrue(txId > current.transactionId());
     }
 
-    private static void assertRejected( HighestTransactionId highest, long txId )
-    {
+    private static void assertRejected(HighestTransactionId highest, long txId) {
         TransactionId current = highest.get();
-        assertFalse( highest.offer( txId, -1, -1 ) );
-        assertEquals( current, highest.get() );
+        assertFalse(highest.offer(txId, -1, -1));
+        assertEquals(current, highest.get());
     }
 }

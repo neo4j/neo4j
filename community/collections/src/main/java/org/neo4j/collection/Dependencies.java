@@ -19,140 +19,116 @@
  */
 package org.neo4j.collection;
 
+import static org.apache.commons.lang3.ClassUtils.getAllInterfaces;
+import static org.apache.commons.lang3.ClassUtils.getAllSuperclasses;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Supplier;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Multimaps;
 import org.eclipse.collections.impl.factory.Sets;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Supplier;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
-import static org.apache.commons.lang3.ClassUtils.getAllInterfaces;
-import static org.apache.commons.lang3.ClassUtils.getAllSuperclasses;
-
-@SuppressWarnings( "unchecked" )
-public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
-{
+@SuppressWarnings("unchecked")
+public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier {
     private final DependencyResolver parent;
     private final MutableSetMultimap<Class<?>, Object> typeDependencies = Multimaps.mutable.set.empty();
 
-    public Dependencies()
-    {
+    public Dependencies() {
         parent = null;
     }
 
-    public Dependencies( DependencyResolver parent )
-    {
-        Objects.requireNonNull( parent );
+    public Dependencies(DependencyResolver parent) {
+        Objects.requireNonNull(parent);
         this.parent = parent;
     }
 
     @Override
-    public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
-    {
-        RichIterable<Object> options = typeDependencies.get( type );
-        if ( options.notEmpty() )
-        {
-            return selector.select( type, (Iterable<T>) options );
+    public <T> T resolveDependency(Class<T> type, SelectionStrategy selector) {
+        RichIterable<Object> options = typeDependencies.get(type);
+        if (options.notEmpty()) {
+            return selector.select(type, (Iterable<T>) options);
         }
 
         // Try parent
-        if ( parent != null )
-        {
-            return parent.resolveDependency( type, selector );
+        if (parent != null) {
+            return parent.resolveDependency(type, selector);
         }
 
         // Out of options
-        throw new UnsatisfiedDependencyException( type );
+        throw new UnsatisfiedDependencyException(type);
     }
 
     @Override
-    public <T> Iterable<T> resolveTypeDependencies( Class<T> type )
-    {
-        MutableSet<T> options = (MutableSet<T>) typeDependencies.get( type );
-        if ( parent != null )
-        {
-            options = Sets.mutable.ofAll( options );
-            parent.resolveTypeDependencies( type ).forEach( options::add );
+    public <T> Iterable<T> resolveTypeDependencies(Class<T> type) {
+        MutableSet<T> options = (MutableSet<T>) typeDependencies.get(type);
+        if (parent != null) {
+            options = Sets.mutable.ofAll(options);
+            parent.resolveTypeDependencies(type).forEach(options::add);
         }
         return options;
     }
 
     @Override
-    public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector )
-    {
-        return () -> resolveDependency( type, selector );
+    public <T> Supplier<T> provideDependency(final Class<T> type, final SelectionStrategy selector) {
+        return () -> resolveDependency(type, selector);
     }
 
     @Override
-    public <T> Supplier<T> provideDependency( final Class<T> type )
-    {
-        return () -> resolveDependency( type );
+    public <T> Supplier<T> provideDependency(final Class<T> type) {
+        return () -> resolveDependency(type);
     }
 
     @Override
-    public <T> T satisfyDependency( T dependency )
-    {
+    public <T> T satisfyDependency(T dependency) {
         // File this object under all its possible types
         Class<?> type = dependency.getClass();
-        typeDependencies.put( type, dependency );
+        typeDependencies.put(type, dependency);
 
-        addSuperclasses( type, dependency );
-        addInterfaces( type, dependency );
+        addSuperclasses(type, dependency);
+        addInterfaces(type, dependency);
 
         return dependency;
     }
 
     @Override
-    public boolean containsDependency( Class<?> type )
-    {
-        if ( typeDependencies.containsKey( type ) )
-        {
+    public boolean containsDependency(Class<?> type) {
+        if (typeDependencies.containsKey(type)) {
             return true;
         }
-        if ( parent != null )
-        {
-            return parent.containsDependency( type );
+        if (parent != null) {
+            return parent.containsDependency(type);
         }
         return false;
     }
 
-    private <T> void addInterfaces( Class<?> type, T dependency )
-    {
-        List<Class<?>> interfaces = getAllInterfaces( type );
-        if ( interfaces != null )
-        {
-            interfaces.remove( type );
-            for ( Class<?> iType : interfaces )
-            {
-                typeDependencies.put( iType, dependency );
+    private <T> void addInterfaces(Class<?> type, T dependency) {
+        List<Class<?>> interfaces = getAllInterfaces(type);
+        if (interfaces != null) {
+            interfaces.remove(type);
+            for (Class<?> iType : interfaces) {
+                typeDependencies.put(iType, dependency);
             }
         }
     }
 
-    private <T> void addSuperclasses( Class<?> type, T dependency )
-    {
-        List<Class<?>> allSuperclasses = getAllSuperclasses( type );
-        if ( allSuperclasses != null )
-        {
-            for ( Class<?> aClass : allSuperclasses )
-            {
-                typeDependencies.put( aClass, dependency );
+    private <T> void addSuperclasses(Class<?> type, T dependency) {
+        List<Class<?>> allSuperclasses = getAllSuperclasses(type);
+        if (allSuperclasses != null) {
+            for (Class<?> aClass : allSuperclasses) {
+                typeDependencies.put(aClass, dependency);
             }
         }
     }
 
-    public void satisfyDependencies( Object... dependencies )
-    {
-        for ( Object dependency : dependencies )
-        {
-            satisfyDependency( dependency );
+    public void satisfyDependencies(Object... dependencies) {
+        for (Object dependency : dependencies) {
+            satisfyDependency(dependency);
         }
     }
 }

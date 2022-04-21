@@ -28,18 +28,15 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * @see Lifecycle
  * @see FileSystemAbstraction
  */
-public class FileSystemLifecycleAdapter extends LifecycleAdapter
-{
+public class FileSystemLifecycleAdapter extends LifecycleAdapter {
     private final FileSystemAbstraction fileSystemAbstraction;
 
-    public FileSystemLifecycleAdapter( FileSystemAbstraction fileSystemAbstraction )
-    {
+    public FileSystemLifecycleAdapter(FileSystemAbstraction fileSystemAbstraction) {
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
 
     @Override
-    public void shutdown() throws Exception
-    {
+    public void shutdown() throws Exception {
         fileSystemAbstraction.close();
     }
 }

@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl;
 
 import org.neo4j.graphdb.RelationshipType;
 
-public enum MyRelTypes implements RelationshipType
-{
-    TEST, TEST_TRAVERSAL, TEST2
+public enum MyRelTypes implements RelationshipType {
+    TEST,
+    TEST_TRAVERSAL,
+    TEST2
 }

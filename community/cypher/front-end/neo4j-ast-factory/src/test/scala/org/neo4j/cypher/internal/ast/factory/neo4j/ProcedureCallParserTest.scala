@@ -34,13 +34,11 @@ class ProcedureCallParserTest extends JavaccParserAstTestBase[Clause] {
   }
 
   test("CALL foo('Test', 1+2)") {
-    gives(call(Seq.empty,"foo",
-      Some(Vector(literalString("Test"), add(literalInt(1),literalInt(2))))))
+    gives(call(Seq.empty, "foo", Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))))
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
-    gives(call(List("foo", "bar"), "baz",
-      Some(Vector(literalString("Test"), add(literalInt(1),literalInt(2))))))
+    gives(call(List("foo", "bar"), "baz", Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))))
   }
 
   test("CALL foo YIELD bar") {

@@ -22,7 +22,6 @@ package org.neo4j.fabric.transaction;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
@@ -32,16 +31,15 @@ import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public interface FabricTransaction
-{
+public interface FabricTransaction {
 
     void commit();
 
     void rollback();
 
-    StatementResult execute( Function<FabricExecutionContext,StatementResult> runLogic );
+    StatementResult execute(Function<FabricExecutionContext, StatementResult> runLogic);
 
-    void markForTermination( Status reason );
+    void markForTermination(Status reason);
 
     Optional<Status> getReasonIfTerminated();
 
@@ -49,21 +47,20 @@ public interface FabricTransaction
 
     TransactionBookmarkManager getBookmarkManager();
 
-    void setLastSubmittedStatement( StatementLifecycle statement );
+    void setLastSubmittedStatement(StatementLifecycle statement);
 
     Optional<StatementLifecycle> getLastSubmittedStatement();
 
-    void setMetaData( Map<String, Object> txMeta );
+    void setMetaData(Map<String, Object> txMeta);
 
     boolean isOpen();
 
-    interface FabricExecutionContext
-    {
+    interface FabricExecutionContext {
         FabricRemoteExecutor.RemoteTransactionContext getRemote();
 
         FabricLocalExecutor.LocalTransactionContext getLocal();
 
-        void validateStatementType( StatementType type );
+        void validateStatementType(StatementType type);
 
         NamedDatabaseId getSessionDatabaseId();
     }

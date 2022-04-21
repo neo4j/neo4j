@@ -21,7 +21,6 @@ package org.neo4j.bolt.v3.runtime;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.ResourceLock;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.SessionExtension;
 import org.neo4j.bolt.testing.BoltTestUtil;
@@ -34,24 +33,21 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-@ResourceLock( "boltStateMachineV3" )
-public class BoltStateMachineV3StateTestBase
-{
+@ResourceLock("boltStateMachineV3")
+public class BoltStateMachineV3StateTestBase {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
     protected static final String USER_AGENT = "BoltConnectionIT/0.0";
-    protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel( "conn-v3-test-boltchannel-id" );
+    protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel("conn-v3-test-boltchannel-id");
     protected static final MemoryTracker MEMORY_TRACKER = EmptyMemoryTracker.INSTANCE;
 
     @RegisterExtension
     static final SessionExtension env = new SessionExtension();
 
-    protected BoltStateMachineV3 newStateMachine()
-    {
-        return (BoltStateMachineV3) env.newMachine( BoltProtocolV3.VERSION, BOLT_CHANNEL, MEMORY_TRACKER );
+    protected BoltStateMachineV3 newStateMachine() {
+        return (BoltStateMachineV3) env.newMachine(BoltProtocolV3.VERSION, BOLT_CHANNEL, MEMORY_TRACKER);
     }
 
-    protected static HelloMessage newHelloMessage()
-    {
-        return new HelloMessage( MapUtil.map( "user_agent", USER_AGENT ) );
+    protected static HelloMessage newHelloMessage() {
+        return new HelloMessage(MapUtil.map("user_agent", USER_AGENT));
     }
 }

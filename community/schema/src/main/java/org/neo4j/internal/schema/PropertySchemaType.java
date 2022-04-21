@@ -31,8 +31,7 @@ package org.neo4j.internal.schema;
  * <p>
  * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
-public enum PropertySchemaType
-{
+public enum PropertySchemaType {
     COMPLETE_ALL_TOKENS,
     PARTIAL_ANY_TOKEN,
     ENTITY_TOKENS

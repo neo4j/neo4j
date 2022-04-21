@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   test("should build plans containing joins") {
     val cfg = plannerBuilder()
@@ -85,12 +86,12 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val query =
       s"""
-        |MATCH (n1)
-        |UNWIND $array AS a0
-        |OPTIONAL MATCH (n1), (n2)
-        |WITH a0
-        |RETURN a0 ORDER BY a0
-        |""".stripMargin
+         |MATCH (n1)
+         |UNWIND $array AS a0
+         |OPTIONAL MATCH (n1), (n2)
+         |WITH a0
+         |RETURN a0 ORDER BY a0
+         |""".stripMargin
 
     val plan = cfg.plan(query).stripProduceResults
 

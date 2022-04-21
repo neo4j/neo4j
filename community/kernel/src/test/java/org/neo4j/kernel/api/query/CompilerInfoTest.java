@@ -19,21 +19,19 @@
  */
 package org.neo4j.kernel.api.query;
 
-import org.junit.jupiter.api.Test;
-
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class CompilerInfoTest
-{
+import org.junit.jupiter.api.Test;
+
+class CompilerInfoTest {
     @Test
-    void plannerInfoShouldBeInSmallCase()
-    {
+    void plannerInfoShouldBeInSmallCase() {
         // given
-        CompilerInfo compilerInfo = new CompilerInfo( "PLANNER", "RUNTIME", emptyList() );
+        CompilerInfo compilerInfo = new CompilerInfo("PLANNER", "RUNTIME", emptyList());
 
         // then
-        assertThat( compilerInfo.planner() ).isEqualTo( "planner" );
-        assertThat( compilerInfo.runtime() ).isEqualTo( "runtime" );
+        assertThat(compilerInfo.planner()).isEqualTo("planner");
+        assertThat(compilerInfo.runtime()).isEqualTo("runtime");
     }
 }

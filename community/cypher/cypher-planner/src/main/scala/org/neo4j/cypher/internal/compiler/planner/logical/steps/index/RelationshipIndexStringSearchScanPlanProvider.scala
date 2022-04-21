@@ -33,16 +33,27 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPlanProvider {
 
-  override def createPlans(indexMatches: Set[RelationshipIndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = for {
+  override def createPlans(
+    indexMatches: Set[RelationshipIndexMatch],
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    restrictions: LeafPlanRestrictions,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch.variableName, restrictions) && indexMatch.indexDescriptor.properties.size == 1
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 
-  private def doCreatePlans(indexMatch: RelationshipIndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
+  private def doCreatePlans(
+    indexMatch: RelationshipIndexMatch,
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     indexMatch.propertyPredicates.flatMap { indexPredicate =>
       indexPredicate.predicate match {
-        case predicate@ (_:Contains | _:EndsWith) =>
+        case predicate @ (_: Contains | _: EndsWith) =>
           val (valueExpr, stringSearchMode) = predicate match {
             case contains: Contains =>
               (contains.rhs, ContainsSearchMode)
@@ -51,9 +62,11 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
           }
           val singlePredicateSet = indexMatch.predicateSet(Seq(indexPredicate), exactPredicatesCanGetValue = false)
 
-          def provideRelationshipLeafPlan(patternForLeafPlan: PatternRelationship,
-                                          originalPattern: PatternRelationship,
-                                          hiddenSelections: Seq[Expression]): LogicalPlan = {
+          def provideRelationshipLeafPlan(
+            patternForLeafPlan: PatternRelationship,
+            originalPattern: PatternRelationship,
+            hiddenSelections: Seq[Expression]
+          ): LogicalPlan = {
 
             val hint = singlePredicateSet
               .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)
@@ -74,7 +87,7 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
               providedOrder = indexMatch.providedOrder,
               indexOrder = indexMatch.indexOrder,
               context = context,
-              indexType = indexMatch.indexDescriptor.indexType,
+              indexType = indexMatch.indexDescriptor.indexType
             )
           }
 

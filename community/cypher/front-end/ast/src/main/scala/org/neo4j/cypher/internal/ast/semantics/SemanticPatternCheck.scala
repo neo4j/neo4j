@@ -86,10 +86,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case x: NodePattern =>
         x.predicate.foldSemanticCheck { predicate =>
-          when (ctx != SemanticContext.Match) {
-            error(s"Node pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension", predicate.position)
+          when(ctx != SemanticContext.Match) {
+            error(
+              s"Node pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension",
+              predicate.position
+            )
           } chain withScopedState {
-              Where.checkExpression(predicate)
+            Where.checkExpression(predicate)
           }
         }
     }
@@ -98,38 +101,54 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     pattern.predicate.foldSemanticCheck { predicate =>
       whenState(state => !state.features.contains(SemanticFeature.RelationshipPatternPredicates)) {
         error("WHERE is not allowed inside a relationship pattern", predicate.position)
-      } chain when (ctx != SemanticContext.Match) {
-        error(s"Relationship pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension", predicate.position)
-      } chain pattern.length.foldSemanticCheck{ _ =>
+      } chain when(ctx != SemanticContext.Match) {
+        error(
+          s"Relationship pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension",
+          predicate.position
+        )
+      } chain pattern.length.foldSemanticCheck { _ =>
         error("Relationship pattern predicates are not allowed when a path length is specified", predicate.position)
       } ifOkChain withScopedState {
-          Where.checkExpression(predicate)
+        Where.checkExpression(predicate)
       }
     }
 
-  private def ensureNoSelfReferenceToVariableInPattern(ctx: SemanticContext, pattern: Pattern): SemanticCheck = { state =>
-    ctx match {
-      case Create =>
-        val errors = getSelfReferenceVariableInPattern(pattern, state)
-          .map(variable => SemanticError(state.errorMessageProvider.createSelfReferenceError(variable.name, state.symbolTypes(variable.name).toShortString), variable.position)).toSeq
+  private def ensureNoSelfReferenceToVariableInPattern(ctx: SemanticContext, pattern: Pattern): SemanticCheck = {
+    state =>
+      ctx match {
+        case Create =>
+          val errors = getSelfReferenceVariableInPattern(pattern, state)
+            .map(variable =>
+              SemanticError(
+                state.errorMessageProvider.createSelfReferenceError(
+                  variable.name,
+                  state.symbolTypes(variable.name).toShortString
+                ),
+                variable.position
+              )
+            ).toSeq
 
-        SemanticCheckResult(state, errors)
-      case _ => SemanticCheckResult.success(state)
-    }
+          SemanticCheckResult(state, errors)
+        case _ => SemanticCheckResult.success(state)
+      }
   }
 
   private def getSelfReferenceVariableInPattern(pattern: Pattern, state: SemanticState): Set[LogicalVariable] = {
     val allSymbolDefinitions = state.currentScope.scope.allSymbolDefinitions
 
     def findAllVariables(e: Any): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet
-    def isDefinition(variable: LogicalVariable): Boolean = allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
+    def isDefinition(variable: LogicalVariable): Boolean =
+      allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
 
-    pattern.patternParts.flatMap {patternParts =>
-      val (declaredVariables, referencedVariables) = patternParts.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-        case NodePattern(maybeVariable, _, maybeProperties, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-        case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-        case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
-      }
+    pattern.patternParts.flatMap { patternParts =>
+      val (declaredVariables, referencedVariables) =
+        patternParts.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
+          case NodePattern(maybeVariable, _, maybeProperties, _) => acc =>
+              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+          case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc =>
+              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+          case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
+        }
       referencedVariables.filter(declaredVariables)
     }.toSet
   }
@@ -168,13 +187,9 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         def checkContext: SemanticCheck =
           ctx match {
             case SemanticContext.Merge =>
-              SemanticError(s"${
-                x.name
-              }(...) cannot be used to MERGE", x.position)
+              SemanticError(s"${x.name}(...) cannot be used to MERGE", x.position)
             case SemanticContext.Create =>
-              SemanticError(s"${
-                x.name
-              }(...) cannot be used to CREATE", x.position)
+              SemanticError(s"${x.name}(...) cannot be used to CREATE", x.position)
             case _ =>
               None
           }
@@ -184,14 +199,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             case RelationshipChain(_: NodePattern, r, _: NodePattern) =>
               r.properties.map {
                 props =>
-                  SemanticError(s"${
-                    x.name
-                  }(...) contains properties $props. This is currently not supported.", x.position)
+                  SemanticError(
+                    s"${x.name}(...) contains properties $props. This is currently not supported.",
+                    x.position
+                  )
               }
             case _ =>
-              SemanticError(s"${
-                x.name
-              }(...) requires a pattern containing a single relationship", x.position)
+              SemanticError(s"${x.name}(...) requires a pattern containing a single relationship", x.position)
           }
 
         def checkKnownEnds: SemanticCheck =
@@ -199,13 +213,9 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             case (Match, _) => None
             case (_, RelationshipChain(l: NodePattern, _, r: NodePattern)) =>
               if (l.variable.isEmpty)
-                SemanticError(s"A ${
-                  x.name
-                }(...) requires bound nodes when not part of a MATCH clause.", x.position)
+                SemanticError(s"A ${x.name}(...) requires bound nodes when not part of a MATCH clause.", x.position)
               else if (r.variable.isEmpty)
-                SemanticError(s"A ${
-                  x.name
-                }(...) requires bound nodes when not part of a MATCH clause.", x.position)
+                SemanticError(s"A ${x.name}(...) requires bound nodes when not part of a MATCH clause.", x.position)
               else
                 None
             case (_, _) =>
@@ -218,10 +228,14 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
               case RelationshipChain(_, rel, _) =>
                 rel.length match {
                   case Some(Some(Range(Some(min), _))) if min.value < 0 || min.value > 1 =>
-                    SemanticCheckResult(state, Seq(SemanticError(s"${
-                      x.name
-                    }(...) does not support a minimal length different " +
-                      s"from 0 or 1", x.position)))
+                    SemanticCheckResult(
+                      state,
+                      Seq(SemanticError(
+                        s"${x.name}(...) does not support a minimal length different " +
+                          s"from 0 or 1",
+                        x.position
+                      ))
+                    )
 
                   case Some(None) =>
                     val newState = state.addNotification(UnboundedShortestPathNotification(x.element.position))
@@ -237,9 +251,10 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
               case RelationshipChain(_, rel, _) =>
                 rel.variable.flatMap(id => state.symbol(id.name)) match {
                   case Some(symbol) if symbol.references.size > 1 =>
-                    SemanticCheckResult.error(state, SemanticError(s"Bound relationships not allowed in ${
-                      x.name
-                    }(...)", rel.position))
+                    SemanticCheckResult.error(
+                      state,
+                      SemanticError(s"Bound relationships not allowed in ${x.name}(...)", rel.position)
+                    )
                   case _ =>
                     SemanticCheckResult.success(state)
                 }
@@ -298,11 +313,15 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
     def checkForLegacyTypeSeparator: SemanticCheck = x match {
       case RelationshipPattern(variable, _, length, properties, predicate, _, true)
-        if (variable.isDefined && !variableIsGenerated(variable.get)) || length.isDefined || properties.isDefined || predicate.isDefined =>
+        if (variable.isDefined && !variableIsGenerated(
+          variable.get
+        )) || length.isDefined || properties.isDefined || predicate.isDefined =>
         error(
           """The semantics of using colon in the separation of alternative relationship types in conjunction with
             |the use of variable binding, inlined property predicates, or variable length is no longer supported.
-            |Please separate the relationships types using `:A|B|C` instead""".stripMargin, x.position)
+            |Please separate the relationships types using `:A|B|C` instead""".stripMargin,
+          x.position
+        )
       case _ =>
         None
     }
@@ -362,10 +381,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
    */
   private def ensureNoDuplicateRelationships(astNode: ASTNode, error: Boolean): SemanticCheck = {
     def perDuplicate(name: String, pos: InputPosition): SemanticCheck =
-      if(error)
+      if (error)
         SemanticError(s"Cannot use the same relationship variable '$name' for multiple patterns", pos)
       else
-        state => SemanticCheckResult(state.addNotification(DeprecatedRepeatedRelVarInPatternExpression(pos, name)), Seq.empty)
+        state =>
+          SemanticCheckResult(state.addNotification(DeprecatedRepeatedRelVarInPatternExpression(pos, name)), Seq.empty)
 
     RelationshipChain.findDuplicateRelationships(astNode).foldSemanticCheck {
       duplicate => perDuplicate(duplicate.name, duplicate.position)
@@ -378,44 +398,55 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       SemanticExpressionCheck.simple(properties) chain
       expectType(CTMap.covariant, properties)
 
-  private def checkLabelExpressions(ctx: SemanticContext, labelExpression: Option[LabelExpression], inputPosition: InputPosition): SemanticCheck =
-  labelExpression.foldSemanticCheck { labelExpression =>
-    when (ctx != SemanticContext.Match && !labelExpression.isNonGpm) {
-      error(s"Label expressions are not allowed in ${ctx.name}, but only in MATCH clause", labelExpression.position)
-    } chain
-      SemanticExpressionCheck.simple(labelExpression)
-  }
+  private def checkLabelExpressions(
+    ctx: SemanticContext,
+    labelExpression: Option[LabelExpression],
+    inputPosition: InputPosition
+  ): SemanticCheck =
+    labelExpression.foldSemanticCheck { labelExpression =>
+      when(ctx != SemanticContext.Match && !labelExpression.isNonGpm) {
+        error(s"Label expressions are not allowed in ${ctx.name}, but only in MATCH clause", labelExpression.position)
+      } chain
+        SemanticExpressionCheck.simple(labelExpression)
+    }
 
   def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems, position: InputPosition): SemanticCheck = {
-    val propertyKeys = returnItems.items.collect { case item => item.expression.folder.findAllByClass[Property]map(prop => prop.propertyKey) }.flatten
+    val propertyKeys = returnItems.items.collect { case item =>
+      item.expression.folder.findAllByClass[Property] map (prop => prop.propertyKey)
+    }.flatten
     SemanticPatternCheck.checkValidPropertyKeyNames(propertyKeys, position)
   }
 
   def checkValidPropertyKeyNames(propertyKeys: Seq[PropertyKeyName], pos: InputPosition): SemanticCheck = {
-    val errorMessage = propertyKeys.collectFirst { case key if checkValidTokenName(key.name).nonEmpty =>
-      checkValidTokenName(key.name).get
+    val errorMessage = propertyKeys.collectFirst {
+      case key if checkValidTokenName(key.name).nonEmpty =>
+        checkValidTokenName(key.name).get
     }
     if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
   }
 
   def checkValidLabels(labelNames: Seq[LabelName], pos: InputPosition): SemanticCheck = {
-    val errorMessage = labelNames.collectFirst { case label if checkValidTokenName(label.name).nonEmpty =>
-      checkValidTokenName(label.name).get
+    val errorMessage = labelNames.collectFirst {
+      case label if checkValidTokenName(label.name).nonEmpty =>
+        checkValidTokenName(label.name).get
     }
     if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
   }
 
   private def checkValidRelTypes(relTypeNames: Seq[RelTypeName], pos: InputPosition): SemanticCheck = {
-    val errorMessage = relTypeNames.collectFirst { case relType if checkValidTokenName(relType.name).nonEmpty =>
-      checkValidTokenName(relType.name).get
+    val errorMessage = relTypeNames.collectFirst {
+      case relType if checkValidTokenName(relType.name).nonEmpty =>
+        checkValidTokenName(relType.name).get
     }
     if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
   }
 
   private def checkValidTokenName(name: String): Option[String] = {
     if (name == null || name.isEmpty || name.contains("\u0000")) {
-      Some(String.format("%s is not a valid token name. " + "Token names cannot be empty or contain any null-bytes.",
-        if (name != null) "'" + name + "'" else "Null"))
+      Some(String.format(
+        "%s is not a valid token name. " + "Token names cannot be empty or contain any null-bytes.",
+        if (name != null) "'" + name + "'" else "Null"
+      ))
     } else {
       None
     }
@@ -423,19 +454,27 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 }
 
 object checkNoParamMapsWhenMatching {
+
   def apply(properties: Option[Expression], ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
     case (Some(e: Parameter), SemanticContext.Match) =>
-      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
+      SemanticError(
+        "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        e.position
+      )
     case (Some(e: Parameter), SemanticContext.Merge) =>
-      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
+      SemanticError(
+        "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        e.position
+      )
     case _ =>
       None
   }
 }
 
 object checkValidPropertyKeyNamesInPattern {
+
   def apply(properties: Option[Expression]): SemanticCheck = properties match {
     case Some(e: MapExpression) => SemanticPatternCheck.checkValidPropertyKeyNames(e.items.map(i => i._1), e.position)
-    case _ => None
+    case _                      => None
   }
 }

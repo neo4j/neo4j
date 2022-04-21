@@ -19,100 +19,90 @@
  */
 package org.neo4j.server.http.cypher.entity;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.BiFunction;
-
-import org.neo4j.graphdb.Node;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-class HttpRelationshipTest
-{
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.neo4j.graphdb.Node;
+
+class HttpRelationshipTest {
     private static final long START_NODE_ID = 1245L;
     private static final long END_NODE_ID = 54321L;
 
     @Test
-    void getStartNodeId_shouldReturnStartNodeIdWithoutCallGetStartNode()
-    {
+    void getStartNodeId_shouldReturnStartNodeIdWithoutCallGetStartNode() {
         var subject = setupSubject();
 
         var startNodeId = subject.getStartNodeId();
 
-        assertEquals( START_NODE_ID, startNodeId );
-        verify( subject, Mockito.never() ).getStartNode();
+        assertEquals(START_NODE_ID, startNodeId);
+        verify(subject, Mockito.never()).getStartNode();
     }
 
     @Test
-    void getEndNodeId_shouldReturnEndNodeIdWithoutCallGetEndNode()
-    {
+    void getEndNodeId_shouldReturnEndNodeIdWithoutCallGetEndNode() {
         var subject = setupSubject();
 
         var endNodeId = subject.getEndNodeId();
 
-        assertEquals( END_NODE_ID, endNodeId );
-        verify( subject, Mockito.never() ).getEndNode();
+        assertEquals(END_NODE_ID, endNodeId);
+        verify(subject, Mockito.never()).getEndNode();
     }
 
     @Test
-    void getStartNode_whenSupplierReturnsEmpty_shouldReturnNodeCreatedOnlyWithNodeId()
-    {
+    void getStartNode_whenSupplierReturnsEmpty_shouldReturnNodeCreatedOnlyWithNodeId() {
         var subject = setupSubject();
-        var expectedNode = new HttpNode( START_NODE_ID );
+        var expectedNode = new HttpNode(START_NODE_ID);
 
         var startNode = subject.getStartNode();
 
-        assertEquals( expectedNode, startNode );
+        assertEquals(expectedNode, startNode);
     }
 
     @Test
-    void getStartNode_whenSupplierReturnsTheNode_shouldReturnIt()
-    {
-        var expectedNode = new HttpNode( START_NODE_ID, List.of(), Map.of(), false );
-        var subject = setupSubject( ( ignoredA, ignoredB ) -> Optional.of( expectedNode ) );
+    void getStartNode_whenSupplierReturnsTheNode_shouldReturnIt() {
+        var expectedNode = new HttpNode(START_NODE_ID, List.of(), Map.of(), false);
+        var subject = setupSubject((ignoredA, ignoredB) -> Optional.of(expectedNode));
 
         var startNode = subject.getStartNode();
 
-        assertSame( expectedNode, startNode );
+        assertSame(expectedNode, startNode);
     }
 
     @Test
-    void getEndNode_whenSupplierReturnsEmpty_shouldReturnNodeCreatedOnlyWithNodeId()
-    {
+    void getEndNode_whenSupplierReturnsEmpty_shouldReturnNodeCreatedOnlyWithNodeId() {
         var subject = setupSubject();
-        var expectedNode = new HttpNode( END_NODE_ID );
+        var expectedNode = new HttpNode(END_NODE_ID);
 
         var endNode = subject.getEndNode();
 
-        assertEquals( expectedNode, endNode );
+        assertEquals(expectedNode, endNode);
     }
 
     @Test
-    void getEndNode_whenSupplierReturnsTheNode_shouldReturnIt()
-    {
-        var expectedNode = new HttpNode( END_NODE_ID, List.of(), Map.of(), false );
-        var subject = setupSubject( ( ignoredA, ignoredB ) -> Optional.of( expectedNode ) );
+    void getEndNode_whenSupplierReturnsTheNode_shouldReturnIt() {
+        var expectedNode = new HttpNode(END_NODE_ID, List.of(), Map.of(), false);
+        var subject = setupSubject((ignoredA, ignoredB) -> Optional.of(expectedNode));
 
         var endNode = subject.getEndNode();
 
-        assertSame( expectedNode, endNode );
+        assertSame(expectedNode, endNode);
     }
 
-    private HttpRelationship setupSubject()
-    {
-        return setupSubject( ( ignoredA, ignoredB ) -> Optional.empty() );
+    private HttpRelationship setupSubject() {
+        return setupSubject((ignoredA, ignoredB) -> Optional.empty());
     }
 
-    private HttpRelationship setupSubject( BiFunction<Long,Boolean,Optional<Node>> getNodeById )
-    {
-        var httpRelationship = new HttpRelationship( 1, START_NODE_ID, END_NODE_ID, "KNOWS", Map.of(), false, getNodeById );
-        return spy( httpRelationship );
+    private HttpRelationship setupSubject(BiFunction<Long, Boolean, Optional<Node>> getNodeById) {
+        var httpRelationship =
+                new HttpRelationship(1, START_NODE_ID, END_NODE_ID, "KNOWS", Map.of(), false, getNodeById);
+        return spy(httpRelationship);
     }
 }

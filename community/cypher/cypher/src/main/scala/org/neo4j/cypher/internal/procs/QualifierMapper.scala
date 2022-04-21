@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.internal.kernel.api.security.UserSegment
 
 object QualifierMapper {
+
   def asKernelQualifier(qualifier: PrivilegeQualifier): Segment = qualifier match {
     case _: ProcedurePrivilegeQualifier => ProcedureSegment.ALL
     case _: FunctionPrivilegeQualifier  => FunctionSegment.ALL

@@ -19,35 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.kernel.api.index.IndexSampler;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueType;
-
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -66,17 +37,42 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.values.storable.Values.of;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexSampler;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueType;
+
 abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
-        extends IndexAccessorTests<KEY,NullValue, IndexLayout<KEY>>
-{
+        extends IndexAccessorTests<KEY, NullValue, IndexLayout<KEY>> {
     NativeValueIndexUtility<KEY> valueUtil;
     ValueCreatorUtil<KEY> valueCreatorUtil;
 
     @BeforeEach
-    void setupValueUtil()
-    {
+    void setupValueUtil() {
         valueCreatorUtil = createValueCreatorUtil();
-        valueUtil = new NativeValueIndexUtility<>( valueCreatorUtil, layout );
+        valueUtil = new NativeValueIndexUtility<>(valueCreatorUtil, layout);
     }
 
     abstract ValueCreatorUtil<KEY> createValueCreatorUtil();
@@ -86,97 +82,91 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     // UPDATER
 
     @Test
-    void processMustThrowAfterClose() throws Exception
-    {
+    void processMustThrowAfterClose() throws Exception {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false );
+        IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false);
         updater.close();
 
-        assertThrows( IllegalStateException.class, () -> updater.process( simpleUpdate() ) );
+        assertThrows(IllegalStateException.class, () -> updater.process(simpleUpdate()));
     }
 
     @Test
-    void shouldIndexAdd() throws Exception
-    {
+    void shouldIndexAdd() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-        {
+        try (IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
             // when
-            processAll( updater, updates );
+            processAll(updater, updates);
         }
 
         // then
         forceAndCloseAccessor();
-        valueUtil.verifyUpdates( updates, this::getTree );
+        valueUtil.verifyUpdates(updates, this::getTree);
     }
 
     @Test
-    void shouldIndexChange() throws Exception
-    {
+    void shouldIndexChange() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        processAll( updates );
-        Iterator<ValueIndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) );
+        processAll(updates);
+        Iterator<ValueIndexEntryUpdate<IndexDescriptor>> generator =
+                filter(skipExisting(updates), valueCreatorUtil.randomUpdateGenerator(random));
 
-        for ( int i = 0; i < updates.length; i++ )
-        {
+        for (int i = 0; i < updates.length; i++) {
             ValueIndexEntryUpdate<IndexDescriptor> update = updates[i];
             Value newValue = generator.next().values()[0];
-            updates[i] = change( update.getEntityId(), indexDescriptor, update.values()[0], newValue );
+            updates[i] = change(update.getEntityId(), indexDescriptor, update.values()[0], newValue);
         }
 
         // when
-        processAll( updates );
+        processAll(updates);
 
         // then
         forceAndCloseAccessor();
-        valueUtil.verifyUpdates( updates, this::getTree );
+        valueUtil.verifyUpdates(updates, this::getTree);
     }
 
     @Test
-    void shouldIndexRemove() throws Exception
-    {
+    void shouldIndexRemove() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        processAll( updates );
+        processAll(updates);
 
-        for ( int i = 0; i < updates.length; i++ )
-        {
+        for (int i = 0; i < updates.length; i++) {
             // when
             ValueIndexEntryUpdate<IndexDescriptor> update = updates[i];
-            ValueIndexEntryUpdate<IndexDescriptor> remove = remove( update.getEntityId(), indexDescriptor, update.values() );
-            processAll( remove );
+            ValueIndexEntryUpdate<IndexDescriptor> remove =
+                    remove(update.getEntityId(), indexDescriptor, update.values());
+            processAll(remove);
             forceAndCloseAccessor();
 
             // then
-            valueUtil.verifyUpdates( Arrays.copyOfRange( updates, i + 1, updates.length ), this::getTree );
+            valueUtil.verifyUpdates(Arrays.copyOfRange(updates, i + 1, updates.length), this::getTree);
             setupAccessor();
         }
     }
 
     @Test
-    void shouldHandleRandomUpdates() throws Exception
-    {
+    void shouldHandleRandomUpdates() throws Exception {
         // given
         Set<ValueIndexEntryUpdate<IndexDescriptor>> expectedData = new HashSet<>();
-        Iterator<ValueIndexEntryUpdate<IndexDescriptor>> newDataGenerator = valueCreatorUtil.randomUpdateGenerator( random );
+        Iterator<ValueIndexEntryUpdate<IndexDescriptor>> newDataGenerator =
+                valueCreatorUtil.randomUpdateGenerator(random);
 
         // when
         int rounds = 50;
-        for ( int round = 0; round < rounds; round++ )
-        {
+        for (int round = 0; round < rounds; round++) {
             // generate a batch of updates (add, change, remove)
-            ValueIndexEntryUpdate<IndexDescriptor>[] batch =
-                    generateRandomUpdates( expectedData, newDataGenerator, random.nextInt( 5, 20 ), (float) round / rounds * 2 );
+            ValueIndexEntryUpdate<IndexDescriptor>[] batch = generateRandomUpdates(
+                    expectedData, newDataGenerator, random.nextInt(5, 20), (float) round / rounds * 2);
             // apply to tree
-            processAll( batch );
+            processAll(batch);
             // apply to expectedData
-            applyUpdatesToExpectedData( expectedData, batch );
+            applyUpdatesToExpectedData(expectedData, batch);
             // verifyUpdates
             forceAndCloseAccessor();
             //noinspection unchecked
-            valueUtil.verifyUpdates( expectedData.toArray( new ValueIndexEntryUpdate[0] ), this::getTree );
+            valueUtil.verifyUpdates(expectedData.toArray(new ValueIndexEntryUpdate[0]), this::getTree);
             setupAccessor();
         }
     }
@@ -184,252 +174,238 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     // === READER ===
 
     @Test
-    void tokenReaderShouldThrow()
-    {
-        assertThatThrownBy( accessor::newTokenReader ).isInstanceOf( UnsupportedOperationException.class );
+    void tokenReaderShouldThrow() {
+        assertThatThrownBy(accessor::newTokenReader).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
-    void readingAfterDropShouldThrow()
-    {
+    void readingAfterDropShouldThrow() {
         // given
         accessor.drop();
 
-        assertThatThrownBy( () -> accessor.newValueReader() ).isInstanceOf( IllegalStateException.class );
+        assertThatThrownBy(() -> accessor.newValueReader()).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
-    void readingAfterCloseShouldThrow()
-    {
+    void readingAfterCloseShouldThrow() {
         // given
         accessor.close();
 
-        assertThatThrownBy( () -> accessor.newValueReader() ).isInstanceOf( IllegalStateException.class );
+        assertThatThrownBy(() -> accessor.newValueReader()).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
-    void shouldReturnZeroCountForEmptyIndex()
-    {
+    void shouldReturnZeroCountForEmptyIndex() {
         // given
-        try ( var reader = accessor.newValueReader() )
-        {
+        try (var reader = accessor.newValueReader()) {
             // when
-            ValueIndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.randomUpdateGenerator( random ).next();
-            long count = reader.countIndexedEntities( 123, NULL_CONTEXT, valueCreatorUtil.indexDescriptor().schema().getPropertyIds(),
-                    update.values()[0] );
+            ValueIndexEntryUpdate<IndexDescriptor> update =
+                    valueCreatorUtil.randomUpdateGenerator(random).next();
+            long count = reader.countIndexedEntities(
+                    123,
+                    NULL_CONTEXT,
+                    valueCreatorUtil.indexDescriptor().schema().getPropertyIds(),
+                    update.values()[0]);
 
             // then
-            assertEquals( 0, count );
+            assertEquals(0, count);
         }
     }
 
     @Test
-    void shouldReturnCountOneForExistingData() throws Exception
-    {
+    void shouldReturnCountOneForExistingData() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        processAll( updates );
+        processAll(updates);
 
         // when
-        try ( var reader = accessor.newValueReader() )
-        {
-            for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
-            {
-                long count = reader.countIndexedEntities( update.getEntityId(), NULL_CONTEXT,
-                        valueCreatorUtil.indexDescriptor().schema().getPropertyIds(), update.values() );
+        try (var reader = accessor.newValueReader()) {
+            for (ValueIndexEntryUpdate<IndexDescriptor> update : updates) {
+                long count = reader.countIndexedEntities(
+                        update.getEntityId(),
+                        NULL_CONTEXT,
+                        valueCreatorUtil.indexDescriptor().schema().getPropertyIds(),
+                        update.values());
 
                 // then
-                assertEquals( 1, count );
+                assertEquals(1, count);
             }
 
             // and when
-            Iterator<ValueIndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) );
-            long count = reader.countIndexedEntities( 123, NULL_CONTEXT, valueCreatorUtil.indexDescriptor().schema().getPropertyIds(),
-                    generator.next().values()[0] );
+            Iterator<ValueIndexEntryUpdate<IndexDescriptor>> generator =
+                    filter(skipExisting(updates), valueCreatorUtil.randomUpdateGenerator(random));
+            long count = reader.countIndexedEntities(
+                    123,
+                    NULL_CONTEXT,
+                    valueCreatorUtil.indexDescriptor().schema().getPropertyIds(),
+                    generator.next().values()[0]);
 
             // then
-            assertEquals( 0, count );
+            assertEquals(0, count);
         }
     }
 
     @Test
-    void shouldReturnCountZeroForMismatchingData() throws Exception
-    {
+    void shouldReturnCountZeroForMismatchingData() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates();
-        processAll( updates );
+        processAll(updates);
 
         // when
         var reader = accessor.newValueReader();
 
-        for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
-        {
+        for (ValueIndexEntryUpdate<IndexDescriptor> update : updates) {
             int[] propKeys = valueCreatorUtil.indexDescriptor().schema().getPropertyIds();
-            long countWithMismatchingData = reader.countIndexedEntities( update.getEntityId() + 1, NULL_CONTEXT, propKeys, update.values() );
-            long countWithNonExistentEntityId = reader.countIndexedEntities( NON_EXISTENT_ENTITY_ID, NULL_CONTEXT, propKeys, update.values() );
-            long countWithNonExistentValue = reader.countIndexedEntities( update.getEntityId(), NULL_CONTEXT, propKeys, generateUniqueValue( updates ) );
+            long countWithMismatchingData =
+                    reader.countIndexedEntities(update.getEntityId() + 1, NULL_CONTEXT, propKeys, update.values());
+            long countWithNonExistentEntityId =
+                    reader.countIndexedEntities(NON_EXISTENT_ENTITY_ID, NULL_CONTEXT, propKeys, update.values());
+            long countWithNonExistentValue = reader.countIndexedEntities(
+                    update.getEntityId(), NULL_CONTEXT, propKeys, generateUniqueValue(updates));
 
             // then
-            assertEquals( 0, countWithMismatchingData );
-            assertEquals( 0, countWithNonExistentEntityId );
-            assertEquals( 0, countWithNonExistentValue );
+            assertEquals(0, countWithMismatchingData);
+            assertEquals(0, countWithNonExistentEntityId);
+            assertEquals(0, countWithNonExistentValue);
         }
     }
 
     @Test
-    void shouldReturnAllEntriesForAllEntriesPredicate() throws Exception
-    {
+    void shouldReturnAllEntriesForAllEntriesPredicate() throws Exception {
         // given
         final var updates = someUpdatesSingleType();
-        processAll( updates );
+        processAll(updates);
 
-        final var expectedIds = Stream.of( updates )
-                                      .mapToLong( ValueIndexEntryUpdate::getEntityId )
-                                      .toArray();
+        final var expectedIds =
+                Stream.of(updates).mapToLong(ValueIndexEntryUpdate::getEntityId).toArray();
         // when
-        try ( var reader = accessor.newValueReader();
-              var result = query( reader, PropertyIndexQuery.allEntries() ) )
-        {
+        try (var reader = accessor.newValueReader();
+                var result = query(reader, PropertyIndexQuery.allEntries())) {
             // then
-            assertEntityIdHits( expectedIds, result );
+            assertEntityIdHits(expectedIds, result);
         }
     }
 
     @Test
-    void shouldReturnMatchingEntriesForExactPredicate() throws Exception
-    {
+    void shouldReturnMatchingEntriesForExactPredicate() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        processAll( updates );
+        processAll(updates);
 
         // when
         var reader = accessor.newValueReader();
-        for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
-        {
+        for (ValueIndexEntryUpdate<IndexDescriptor> update : updates) {
             Value value = update.values()[0];
-            try ( NodeValueIterator result = query( reader, PropertyIndexQuery.exact( 0, value ) ) )
-            {
-                assertEntityIdHits( extractEntityIds( updates, in( value ) ), result );
+            try (NodeValueIterator result = query(reader, PropertyIndexQuery.exact(0, value))) {
+                assertEntityIdHits(extractEntityIds(updates, in(value)), result);
             }
         }
     }
 
     @Test
-    void shouldReturnNoEntriesForMismatchingExactPredicate() throws Exception
-    {
+    void shouldReturnNoEntriesForMismatchingExactPredicate() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        processAll( updates );
+        processAll(updates);
 
         // when
         var reader = accessor.newValueReader();
-        Object value = generateUniqueValue( updates );
-        try ( NodeValueIterator result = query( reader, PropertyIndexQuery.exact( 0, value ) ) )
-        {
-            assertEntityIdHits( EMPTY_LONG_ARRAY, result );
+        Object value = generateUniqueValue(updates);
+        try (NodeValueIterator result = query(reader, PropertyIndexQuery.exact(0, value))) {
+            assertEntityIdHits(EMPTY_LONG_ARRAY, result);
         }
     }
 
     @Test
-    void shouldHandleMultipleConsecutiveUpdaters() throws Exception
-    {
+    void shouldHandleMultipleConsecutiveUpdaters() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
 
         // when
-        for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
-        {
-            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-            {
-                updater.process( update );
+        for (ValueIndexEntryUpdate<IndexDescriptor> update : updates) {
+            try (IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
+                updater.process(update);
             }
         }
 
         // then
         forceAndCloseAccessor();
-        valueUtil.verifyUpdates( updates, this::getTree );
+        valueUtil.verifyUpdates(updates, this::getTree);
     }
 
     @Test
-    void forceShouldCheckpointTree() throws Exception
-    {
+    void forceShouldCheckpointTree() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] data = someUpdatesSingleType();
-        processAll( data );
+        processAll(data);
 
         // when
-        accessor.force( NULL_CONTEXT );
+        accessor.force(NULL_CONTEXT);
         accessor.close();
 
         // then
-        valueUtil.verifyUpdates( data, this::getTree );
+        valueUtil.verifyUpdates(data, this::getTree);
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Test
-    void closeShouldCloseTreeWithoutCheckpoint() throws Exception
-    {
+    void closeShouldCloseTreeWithoutCheckpoint() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] data = someUpdatesSingleType();
-        processAll( data );
+        processAll(data);
 
         // when
         accessor.close();
 
         // then
-        valueUtil.verifyUpdates( new ValueIndexEntryUpdate[0], this::getTree );
+        valueUtil.verifyUpdates(new ValueIndexEntryUpdate[0], this::getTree);
     }
 
     @Test
-    void shouldSampleIndex() throws Exception
-    {
+    void shouldSampleIndex() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        processAll( updates );
-        try ( var reader = accessor.newValueReader();
-              IndexSampler sampler = reader.createSampler() )
-        {
+        processAll(updates);
+        try (var reader = accessor.newValueReader();
+                IndexSampler sampler = reader.createSampler()) {
             // when
-            IndexSample sample = sampler.sampleIndex( NULL_CONTEXT );
+            IndexSample sample = sampler.sampleIndex(NULL_CONTEXT);
 
             // then
-            assertEquals( updates.length, sample.indexSize() );
-            assertEquals( updates.length, sample.sampleSize() );
-            assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
+            assertEquals(updates.length, sample.indexSize());
+            assertEquals(updates.length, sample.sampleSize());
+            assertEquals(countUniqueValues(updates), sample.uniqueValues());
         }
     }
 
     @Test
-    void shouldSeeAllEntriesInAllEntriesReader() throws Exception
-    {
+    void shouldSeeAllEntriesInAllEntriesReader() throws Exception {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        processAll( updates );
+        processAll(updates);
 
         // when
-        Set<Long> ids = asUniqueSet( accessor.newAllEntriesValueReader( NULL_CONTEXT ) );
+        Set<Long> ids = asUniqueSet(accessor.newAllEntriesValueReader(NULL_CONTEXT));
 
         // then
-        Set<Long> expectedIds = Stream.of( updates )
-                .map( ValueIndexEntryUpdate::getEntityId )
-                .collect( Collectors.toCollection( HashSet::new ) );
-        assertEquals( expectedIds, ids );
+        Set<Long> expectedIds = Stream.of(updates)
+                .map(ValueIndexEntryUpdate::getEntityId)
+                .collect(Collectors.toCollection(HashSet::new));
+        assertEquals(expectedIds, ids);
     }
 
     @Test
-    void shouldSeeNoEntriesInAllEntriesReaderOnEmptyIndex()
-    {
+    void shouldSeeNoEntriesInAllEntriesReaderOnEmptyIndex() {
         // when
-        Set<Long> ids = asUniqueSet( accessor.newAllEntriesValueReader( NULL_CONTEXT ) );
+        Set<Long> ids = asUniqueSet(accessor.newAllEntriesValueReader(NULL_CONTEXT));
 
         // then
         Set<Long> expectedIds = Collections.emptySet();
-        assertEquals( expectedIds, ids );
+        assertEquals(expectedIds, ids);
     }
 
     @Test
-    void dropShouldDeleteEntireIndexFolder()
-    {
+    void dropShouldDeleteEntireIndexFolder() {
         // given
         assertFilePresent();
 
@@ -437,22 +413,20 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         accessor.drop();
 
         // then
-        assertFalse( fs.fileExists( indexFiles.getBase() ) );
+        assertFalse(fs.fileExists(indexFiles.getBase()));
     }
 
-    private Value generateUniqueValue( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
-    {
-        return filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) ).next().values()[0];
+    private Value generateUniqueValue(ValueIndexEntryUpdate<IndexDescriptor>[] updates) {
+        return filter(skipExisting(updates), valueCreatorUtil.randomUpdateGenerator(random))
+                .next()
+                .values()[0];
     }
 
-    private static Predicate<ValueIndexEntryUpdate<IndexDescriptor>> skipExisting( ValueIndexEntryUpdate<IndexDescriptor>[] existing )
-    {
-        return update ->
-        {
-            for ( ValueIndexEntryUpdate<IndexDescriptor> e : existing )
-            {
-                if ( Arrays.equals( e.values(), update.values() ) )
-                {
+    private static Predicate<ValueIndexEntryUpdate<IndexDescriptor>> skipExisting(
+            ValueIndexEntryUpdate<IndexDescriptor>[] existing) {
+        return update -> {
+            for (ValueIndexEntryUpdate<IndexDescriptor> e : existing) {
+                if (Arrays.equals(e.values(), update.values())) {
                     return false;
                 }
             }
@@ -460,97 +434,87 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         };
     }
 
-    static NodeValueIterator query( ValueIndexReader reader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
-    {
+    static NodeValueIterator query(ValueIndexReader reader, PropertyIndexQuery query)
+            throws IndexNotApplicableKernelException {
         NodeValueIterator client = new NodeValueIterator();
-        reader.query( client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query );
+        reader.query(client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query);
         return client;
     }
 
-    static void assertEntityIdHits( long[] expected, LongIterator result )
-    {
-        long[] actual = PrimitiveLongCollections.asArray( result );
-        assertSameContent( expected, actual );
+    static void assertEntityIdHits(long[] expected, LongIterator result) {
+        long[] actual = PrimitiveLongCollections.asArray(result);
+        assertSameContent(expected, actual);
     }
 
-    static void assertSameContent( long[] expected, long[] actual )
-    {
-        Arrays.sort( actual );
-        Arrays.sort( expected );
-        assertArrayEquals( expected, actual, format( "Expected arrays to be equal but wasn't.%nexpected:%s%n  actual:%s%n",
-            Arrays.toString( expected ), Arrays.toString( actual ) ) );
+    static void assertSameContent(long[] expected, long[] actual) {
+        Arrays.sort(actual);
+        Arrays.sort(expected);
+        assertArrayEquals(
+                expected,
+                actual,
+                format(
+                        "Expected arrays to be equal but wasn't.%nexpected:%s%n  actual:%s%n",
+                        Arrays.toString(expected), Arrays.toString(actual)));
     }
 
-    static long[] extractEntityIds( ValueIndexEntryUpdate<?>[] updates, Predicate<Value> valueFilter )
-    {
+    static long[] extractEntityIds(ValueIndexEntryUpdate<?>[] updates, Predicate<Value> valueFilter) {
         long[] entityIds = new long[updates.length];
         int cursor = 0;
-        for ( ValueIndexEntryUpdate<?> update : updates )
-        {
-            if ( valueFilter.test( update.values()[0] ) )
-            {
+        for (ValueIndexEntryUpdate<?> update : updates) {
+            if (valueFilter.test(update.values()[0])) {
                 entityIds[cursor++] = update.getEntityId();
             }
         }
-        return Arrays.copyOf( entityIds, cursor );
+        return Arrays.copyOf(entityIds, cursor);
     }
 
-    private void applyUpdatesToExpectedData( Set<ValueIndexEntryUpdate<IndexDescriptor>> expectedData,
-            ValueIndexEntryUpdate<IndexDescriptor>[] batch )
-    {
-        for ( ValueIndexEntryUpdate<IndexDescriptor> update : batch )
-        {
+    private void applyUpdatesToExpectedData(
+            Set<ValueIndexEntryUpdate<IndexDescriptor>> expectedData, ValueIndexEntryUpdate<IndexDescriptor>[] batch) {
+        for (ValueIndexEntryUpdate<IndexDescriptor> update : batch) {
             ValueIndexEntryUpdate<IndexDescriptor> addition = null;
             ValueIndexEntryUpdate<IndexDescriptor> removal = null;
-            switch ( update.updateMode() )
-            {
-            case ADDED -> addition = valueCreatorUtil.add( update.getEntityId(), update.values()[0] );
-            case CHANGED -> {
-                addition = valueCreatorUtil.add( update.getEntityId(), update.values()[0] );
-                removal = valueCreatorUtil.add( update.getEntityId(), update.beforeValues()[0] );
-            }
-            case REMOVED -> removal = valueCreatorUtil.add( update.getEntityId(), update.values()[0] );
-            default -> throw new IllegalArgumentException( update.updateMode().name() );
+            switch (update.updateMode()) {
+                case ADDED -> addition = valueCreatorUtil.add(update.getEntityId(), update.values()[0]);
+                case CHANGED -> {
+                    addition = valueCreatorUtil.add(update.getEntityId(), update.values()[0]);
+                    removal = valueCreatorUtil.add(update.getEntityId(), update.beforeValues()[0]);
+                }
+                case REMOVED -> removal = valueCreatorUtil.add(update.getEntityId(), update.values()[0]);
+                default -> throw new IllegalArgumentException(
+                        update.updateMode().name());
             }
 
-            if ( removal != null )
-            {
-                expectedData.remove( removal );
+            if (removal != null) {
+                expectedData.remove(removal);
             }
-            if ( addition != null )
-            {
-                expectedData.add( addition );
+            if (addition != null) {
+                expectedData.add(addition);
             }
         }
     }
 
     private ValueIndexEntryUpdate<IndexDescriptor>[] generateRandomUpdates(
             Set<ValueIndexEntryUpdate<IndexDescriptor>> expectedData,
-            Iterator<ValueIndexEntryUpdate<IndexDescriptor>> newDataGenerator, int count, float removeFactor )
-    {
-        @SuppressWarnings( "unchecked" )
+            Iterator<ValueIndexEntryUpdate<IndexDescriptor>> newDataGenerator,
+            int count,
+            float removeFactor) {
+        @SuppressWarnings("unchecked")
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = new ValueIndexEntryUpdate[count];
         float addChangeRatio = 0.5f;
-        for ( int i = 0; i < count; i++ )
-        {
+        for (int i = 0; i < count; i++) {
             float factor = random.nextFloat();
-            if ( !expectedData.isEmpty() && factor < removeFactor )
-            {
+            if (!expectedData.isEmpty() && factor < removeFactor) {
                 // remove something
-                ValueIndexEntryUpdate<IndexDescriptor> toRemove = selectRandomItem( expectedData );
-                updates[i] = remove( toRemove.getEntityId(), indexDescriptor, toRemove.values() );
-            }
-            else if ( !expectedData.isEmpty() && factor < (1 - removeFactor) * addChangeRatio )
-            {
+                ValueIndexEntryUpdate<IndexDescriptor> toRemove = selectRandomItem(expectedData);
+                updates[i] = remove(toRemove.getEntityId(), indexDescriptor, toRemove.values());
+            } else if (!expectedData.isEmpty() && factor < (1 - removeFactor) * addChangeRatio) {
                 // change
-                ValueIndexEntryUpdate<IndexDescriptor> toChange = selectRandomItem( expectedData );
+                ValueIndexEntryUpdate<IndexDescriptor> toChange = selectRandomItem(expectedData);
                 // use the data generator to generate values, even if the whole update as such won't be used
                 ValueIndexEntryUpdate<IndexDescriptor> updateContainingValue = newDataGenerator.next();
-                updates[i] = change( toChange.getEntityId(), indexDescriptor, toChange.values(),
-                        updateContainingValue.values() );
-            }
-            else
-            {
+                updates[i] = change(
+                        toChange.getEntityId(), indexDescriptor, toChange.values(), updateContainingValue.values());
+            } else {
                 // add
                 updates[i] = newDataGenerator.next();
             }
@@ -558,65 +522,52 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         return updates;
     }
 
-    @SuppressWarnings( "unchecked" )
-    private ValueIndexEntryUpdate<IndexDescriptor> selectRandomItem( Set<ValueIndexEntryUpdate<IndexDescriptor>> expectedData )
-    {
-        return expectedData.toArray( new ValueIndexEntryUpdate[0] )[random.nextInt( expectedData.size() )];
+    @SuppressWarnings("unchecked")
+    private ValueIndexEntryUpdate<IndexDescriptor> selectRandomItem(
+            Set<ValueIndexEntryUpdate<IndexDescriptor>> expectedData) {
+        return expectedData.toArray(new ValueIndexEntryUpdate[0])[random.nextInt(expectedData.size())];
     }
 
     @SafeVarargs
-    final void processAll( ValueIndexEntryUpdate<IndexDescriptor>... updates )
-            throws IndexEntryConflictException
-    {
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
-        {
-            for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
-            {
-                updater.process( update );
+    final void processAll(ValueIndexEntryUpdate<IndexDescriptor>... updates) throws IndexEntryConflictException {
+        try (IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
+            for (ValueIndexEntryUpdate<IndexDescriptor> update : updates) {
+                updater.process(update);
             }
         }
     }
 
-    private void forceAndCloseAccessor()
-    {
-        accessor.force( NULL_CONTEXT );
+    private void forceAndCloseAccessor() {
+        accessor.force(NULL_CONTEXT);
         closeAccessor();
     }
 
-    private static void processAll( IndexUpdater updater, ValueIndexEntryUpdate<IndexDescriptor>[] updates )
-            throws IndexEntryConflictException
-    {
-        for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
-        {
-            updater.process( update );
+    private static void processAll(IndexUpdater updater, ValueIndexEntryUpdate<IndexDescriptor>[] updates)
+            throws IndexEntryConflictException {
+        for (ValueIndexEntryUpdate<IndexDescriptor> update : updates) {
+            updater.process(update);
         }
     }
 
-    private ValueIndexEntryUpdate<IndexDescriptor> simpleUpdate()
-    {
-        return ValueIndexEntryUpdate.add( 0, indexDescriptor, of( 0 ) );
+    private ValueIndexEntryUpdate<IndexDescriptor> simpleUpdate() {
+        return ValueIndexEntryUpdate.add(0, indexDescriptor, of(0));
     }
 
-    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleType()
-    {
-        ValueType type = random.randomValues().among( valueCreatorUtil.supportedTypes() );
-        return valueCreatorUtil.someUpdates( random, new ValueType[]{type}, true );
+    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleType() {
+        ValueType type = random.randomValues().among(valueCreatorUtil.supportedTypes());
+        return valueCreatorUtil.someUpdates(random, new ValueType[] {type}, true);
     }
 
-    private ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates()
-    {
-        return someUpdatesSingleTypeNoDuplicates( valueCreatorUtil.supportedTypes() );
+    private ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates() {
+        return someUpdatesSingleTypeNoDuplicates(valueCreatorUtil.supportedTypes());
     }
 
-    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates( ValueType... types )
-    {
+    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates(ValueType... types) {
         ValueType type;
-        do
-        {
+        do {
             // Can not generate enough unique values of boolean
-            type = random.randomValues().among( types );
-        }
-        while ( type == ValueType.BOOLEAN );
-        return valueCreatorUtil.someUpdates( random, new ValueType[]{type}, false );
+            type = random.randomValues().among(types);
+        } while (type == ValueType.BOOLEAN);
+        return valueCreatorUtil.someUpdates(random, new ValueType[] {type}, false);
     }
 }

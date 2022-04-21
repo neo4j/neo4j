@@ -25,10 +25,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 
-public final class NoOpSystemGraphInitializer
-{
-    private NoOpSystemGraphInitializer()
-    { // no-op
+public final class NoOpSystemGraphInitializer {
+    private NoOpSystemGraphInitializer() { // no-op
     }
 
     /**
@@ -37,9 +35,8 @@ public final class NoOpSystemGraphInitializer
      * Assumes default database name is {@link GraphDatabaseSettings#DEFAULT_DATABASE_NAME}
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
      */
-    public static Dependencies noOpSystemGraphInitializer()
-    {
-        return noOpSystemGraphInitializer( Config.defaults() );
+    public static Dependencies noOpSystemGraphInitializer() {
+        return noOpSystemGraphInitializer(Config.defaults());
     }
 
     /**
@@ -48,9 +45,8 @@ public final class NoOpSystemGraphInitializer
      * @param config Used for default database name
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
      */
-    public static Dependencies noOpSystemGraphInitializer( Config config )
-    {
-        return noOpSystemGraphInitializer( new Dependencies(), config );
+    public static Dependencies noOpSystemGraphInitializer(Config config) {
+        return noOpSystemGraphInitializer(new Dependencies(), config);
     }
 
     /**
@@ -60,14 +56,12 @@ public final class NoOpSystemGraphInitializer
      * @param config Used for default database name
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
      */
-    public static Dependencies noOpSystemGraphInitializer( DependencyResolver dependencies, Config config )
-    {
-        return noOpSystemGraphInitializer( new Dependencies( dependencies ), config );
+    public static Dependencies noOpSystemGraphInitializer(DependencyResolver dependencies, Config config) {
+        return noOpSystemGraphInitializer(new Dependencies(dependencies), config);
     }
 
-    private static Dependencies noOpSystemGraphInitializer( Dependencies dependencies, Config config )
-    {
-        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP, new TestDatabaseIdRepository.Caching( config ) );
+    private static Dependencies noOpSystemGraphInitializer(Dependencies dependencies, Config config) {
+        dependencies.satisfyDependencies(SystemGraphInitializer.NO_OP, new TestDatabaseIdRepository.Caching(config));
         return dependencies;
     }
 }

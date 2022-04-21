@@ -25,14 +25,13 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-
 class OptionReaderTest extends CypherFunSuite {
 
   test("Can read defaults") {
 
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(Config.defaults()),
-      keyValues = Set(),
+      keyValues = Set()
     )
 
     options
@@ -44,16 +43,17 @@ class OptionReaderTest extends CypherFunSuite {
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
-              .set(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_35)
-              .set(GraphDatabaseInternalSettings.cypher_runtime, GraphDatabaseInternalSettings.CypherRuntime.INTERPRETED)
-              .build()),
-      keyValues = Set(),
+          .set(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_35)
+          .set(GraphDatabaseInternalSettings.cypher_runtime, GraphDatabaseInternalSettings.CypherRuntime.INTERPRETED)
+          .build()
+      ),
+      keyValues = Set()
     )
 
     options
       .shouldEqual(CypherQueryOptions.default.copy(
         version = CypherVersion.v3_5,
-        runtime = CypherRuntimeOption.interpreted,
+        runtime = CypherRuntimeOption.interpreted
       ))
   }
 
@@ -62,9 +62,13 @@ class OptionReaderTest extends CypherFunSuite {
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
-              .set(GraphDatabaseInternalSettings.cypher_splitting_top_behavior, GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW)
-              .build()),
-      keyValues = Set(),
+          .set(
+            GraphDatabaseInternalSettings.cypher_splitting_top_behavior,
+            GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
+          )
+          .build()
+      ),
+      keyValues = Set()
     )
 
     options
@@ -78,9 +82,13 @@ class OptionReaderTest extends CypherFunSuite {
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
-              .set(GraphDatabaseInternalSettings.cypher_splitting_top_behavior, GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW)
-              .build()),
-      keyValues = Set("debug" -> "toString"),
+          .set(
+            GraphDatabaseInternalSettings.cypher_splitting_top_behavior,
+            GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
+          )
+          .build()
+      ),
+      keyValues = Set("debug" -> "toString")
     )
 
     options
@@ -93,7 +101,7 @@ class OptionReaderTest extends CypherFunSuite {
 
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(Config.defaults()),
-      keyValues = Set("version" -> "3.5", "planner" -> "dp", "debug" -> "toString", "debug" -> "ast"),
+      keyValues = Set("version" -> "3.5", "planner" -> "dp", "debug" -> "toString", "debug" -> "ast")
     )
 
     options
@@ -109,10 +117,12 @@ class OptionReaderTest extends CypherFunSuite {
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
-              .set(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_35)
-              .set(GraphDatabaseInternalSettings.cypher_runtime, GraphDatabaseInternalSettings.CypherRuntime.INTERPRETED)
-              .build()),
-      keyValues = Set("version" -> "4.3", "planner" -> "dp", "runtime" -> "slotted", "debug" -> "toString", "debug" -> "ast"),
+          .set(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_35)
+          .set(GraphDatabaseInternalSettings.cypher_runtime, GraphDatabaseInternalSettings.CypherRuntime.INTERPRETED)
+          .build()
+      ),
+      keyValues =
+        Set("version" -> "4.3", "planner" -> "dp", "runtime" -> "slotted", "debug" -> "toString", "debug" -> "ast")
     )
 
     options
@@ -128,7 +138,7 @@ class OptionReaderTest extends CypherFunSuite {
 
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(Config.defaults()),
-      keyValues = Set("PLANNER" -> "dp", "debug" -> "toString", "DEbug" -> "ast"),
+      keyValues = Set("PLANNER" -> "dp", "debug" -> "toString", "DEbug" -> "ast")
     )
 
     options

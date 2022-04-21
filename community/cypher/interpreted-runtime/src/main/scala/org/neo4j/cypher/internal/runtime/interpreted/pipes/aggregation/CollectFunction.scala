@@ -28,10 +28,10 @@ import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.HeapTrackingListValueBuilder
 
-class CollectFunction(value:Expression, memoryTracker: MemoryTracker) extends AggregationFunction {
+class CollectFunction(value: Expression, memoryTracker: MemoryTracker) extends AggregationFunction {
   private[this] val collection = HeapTrackingListValueBuilder.newHeapTrackingListBuilder(memoryTracker)
 
-  override def apply(data: ReadableRow, state:QueryState): Unit = {
+  override def apply(data: ReadableRow, state: QueryState): Unit = {
     value(data, state) match {
       case IsNoValue() =>
       case v =>

@@ -84,7 +84,7 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
     ran should equal(false)
   }
 
-  private def closingTask(success:Boolean) = {
+  private def closingTask(success: Boolean) = {
     ran = true
     outcome = success
   }

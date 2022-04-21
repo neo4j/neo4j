@@ -52,12 +52,14 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
   private case class PlanRewrite(replaceArguments: Seq[Argument], removeArgumentByName: Set[String])
 
   private class ArgumentRewriter(rewrites: Map[Id, PlanRewrite]) extends Rewriter {
-    private final val instance: Rewriter = bottomUp(Rewriter.lift {
-      case plan: InternalPlanDescription if rewrites.contains(plan.id)  =>
+
+    final private val instance: Rewriter = bottomUp(Rewriter.lift {
+      case plan: InternalPlanDescription if rewrites.contains(plan.id) =>
         val rewrite = rewrites(plan.id)
         plan match {
           case planImpl: PlanDescriptionImpl => planImpl.copy(arguments = update(rewrite, planImpl.arguments))
-          case argumentPlan: ArgumentPlanDescription => argumentPlan.copy(arguments = update(rewrite, argumentPlan.arguments))
+          case argumentPlan: ArgumentPlanDescription =>
+            argumentPlan.copy(arguments = update(rewrite, argumentPlan.arguments))
           case compactedPlan: CompactedPlanDescription => compactedPlan // Handled by the rewriter
           case _ => throw new IllegalStateException(s"Unexpected InternalPlanDescription type: $plan")
         }
@@ -66,7 +68,7 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
     private def update(rewrite: PlanRewrite, arguments: Seq[Argument]) = {
       val cleanedArguments = arguments.filterNot { argument =>
         rewrite.removeArgumentByName.contains(argument.name) ||
-          rewrite.replaceArguments.exists(_.name == argument.name)
+        rewrite.replaceArguments.exists(_.name == argument.name)
       }
       cleanedArguments ++ rewrite.replaceArguments
     }
@@ -160,7 +162,7 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
             // We're not in the same fused pipeline anymore, calculate aggregation for previous fused pipeline (if any)
             computePipelineArgumentAggregates()
           }
-          if (newInfo.fused ) {
+          if (newInfo.fused) {
             plansToAggregate += plan
           }
           currentPipelineInfo = Some(newInfo)
@@ -202,4 +204,3 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
     plan.arguments.collectFirst { case info: PipelineInfo => info }
   }
 }
-

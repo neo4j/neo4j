@@ -22,11 +22,8 @@ package org.neo4j.kernel.impl.store;
 /**
  * Calculates page ids and offset based on record ids.
  */
-public class RecordPageLocationCalculator
-{
-    private RecordPageLocationCalculator()
-    {
-    }
+public class RecordPageLocationCalculator {
+    private RecordPageLocationCalculator() {}
 
     /**
      * Calculates which page a record with the given {@code id} should go into.
@@ -35,8 +32,7 @@ public class RecordPageLocationCalculator
      * @param recordsPerPage number of records per page
      * @return which page the record with the given {@code id} should go into.
      */
-    public static long pageIdForRecord( long id, int recordsPerPage )
-    {
+    public static long pageIdForRecord(long id, int recordsPerPage) {
         return id / recordsPerPage;
     }
 
@@ -49,8 +45,7 @@ public class RecordPageLocationCalculator
      * @param recordsPerPage number of records per page
      * @return which offset into the right page the given {@code id} lives at.
      */
-    public static int offsetForId( long id, int recordSize, int recordsPerPage )
-    {
+    public static int offsetForId(long id, int recordSize, int recordsPerPage) {
         return (int) (id % recordsPerPage) * recordSize;
     }
 }

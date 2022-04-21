@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.staging;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 
@@ -29,85 +28,77 @@ import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
  * A stage of processing, mainly consisting of one or more {@link Step steps} that batches of data to
  * process flows through.
  */
-public class Stage implements AutoCloseable
-{
+public class Stage implements AutoCloseable {
     private final List<Step<?>> pipeline = new ArrayList<>();
     private final StageExecution execution;
 
-    public Stage( String name, String part, Configuration config, int orderingGuarantees )
-    {
-        this( name, part, config, orderingGuarantees, ProcessorScheduler.SPAWN_THREAD, StageExecution.DEFAULT_PANIC_MONITOR );
+    public Stage(String name, String part, Configuration config, int orderingGuarantees) {
+        this(
+                name,
+                part,
+                config,
+                orderingGuarantees,
+                ProcessorScheduler.SPAWN_THREAD,
+                StageExecution.DEFAULT_PANIC_MONITOR);
     }
 
-    public Stage( String name, String part, Configuration config, int orderingGuarantees, ProcessorScheduler scheduler,
-            StageExecution.PanicMonitor panicMonitor )
-    {
-        this.execution = new StageExecution( name, part, config, pipeline, orderingGuarantees, scheduler, panicMonitor );
+    public Stage(
+            String name,
+            String part,
+            Configuration config,
+            int orderingGuarantees,
+            ProcessorScheduler scheduler,
+            StageExecution.PanicMonitor panicMonitor) {
+        this.execution = new StageExecution(name, part, config, pipeline, orderingGuarantees, scheduler, panicMonitor);
     }
 
-    protected StageControl control()
-    {
+    protected StageControl control() {
         return execution;
     }
 
-    public void add( Step<?> step )
-    {
-        pipeline.add( step );
+    public void add(Step<?> step) {
+        pipeline.add(step);
     }
 
-    public StageExecution execute()
-    {
+    public StageExecution execute() {
         linkSteps();
         execution.start();
-        pipeline.get( 0 ).receive( 1 /*a ticket, ignored anyway*/, null /*serves only as a start signal anyway*/ );
+        pipeline.get(0).receive(1 /*a ticket, ignored anyway*/, null /*serves only as a start signal anyway*/);
         return execution;
     }
 
-    private void linkSteps()
-    {
+    private void linkSteps() {
         Step<?> previous = null;
-        for ( Step<?> step : pipeline )
-        {
-            if ( previous != null )
-            {
-                previous.setDownstream( step );
+        for (Step<?> step : pipeline) {
+            if (previous != null) {
+                previous.setDownstream(step);
             }
             previous = step;
         }
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         Exception exception = null;
-        for ( Step<?> step : pipeline )
-        {
-            try
-            {
+        for (Step<?> step : pipeline) {
+            try {
                 step.close();
-            }
-            catch ( Exception e )
-            {
-                if ( exception == null )
-                {
+            } catch (Exception e) {
+                if (exception == null) {
                     exception = e;
-                }
-                else
-                {
-                    exception.addSuppressed( e );
+                } else {
+                    exception.addSuppressed(e);
                 }
             }
         }
         execution.close();
-        if ( exception != null )
-        {
-            throw new RuntimeException( exception );
+        if (exception != null) {
+            throw new RuntimeException(exception);
         }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return execution.getStageName();
     }
 }

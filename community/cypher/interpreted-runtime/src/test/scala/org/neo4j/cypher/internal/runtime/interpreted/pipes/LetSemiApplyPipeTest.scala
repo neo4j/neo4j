@@ -39,8 +39,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     })
 
     val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
-        createResults(QueryStateHelper.empty).toList
+      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().createResults(QueryStateHelper.empty).toList
 
     result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> FALSE),
@@ -54,8 +53,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val rhs = new FakePipe(Iterator.empty)
 
     val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
-        createResults(QueryStateHelper.empty).toList
+      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().createResults(QueryStateHelper.empty).toList
 
     result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> TRUE),
@@ -69,8 +67,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val rhs = new FakePipe(Iterator(Map("a" -> 1)))
 
     val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
-        createResults(QueryStateHelper.empty).toList
+      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().createResults(QueryStateHelper.empty).toList
 
     result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> FALSE),
@@ -90,8 +87,8 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("Each row should immediately close RHS. Exhaust should close LHS.") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val lhs = new FakePipe(Seq(Map("a"->10),Map("a"->11)))
-    val rhs = new FakePipe(Seq(Map("b"->20),Map("b"->21)))
+    val lhs = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11)))
+    val rhs = new FakePipe(Seq(Map("b" -> 20), Map("b" -> 21)))
     val pipe = LetSemiApplyPipe(lhs, rhs, "c", negated = false)()
     val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     result.next() // First row

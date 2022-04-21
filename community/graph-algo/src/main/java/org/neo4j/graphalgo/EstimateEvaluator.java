@@ -29,8 +29,7 @@ import org.neo4j.graphdb.Node;
  * @param <T> The data type of the estimated weight.
  */
 @PublicApi
-public interface EstimateEvaluator<T>
-{
+public interface EstimateEvaluator<T> {
     /**
      * Estimate the weight of the remaining path from one node to another.
      *
@@ -39,5 +38,5 @@ public interface EstimateEvaluator<T>
      * @return an estimation of the weight of the path from the first node to
      *         the second.
      */
-    T getCost( Node node, Node goal );
+    T getCost(Node node, Node goal);
 }

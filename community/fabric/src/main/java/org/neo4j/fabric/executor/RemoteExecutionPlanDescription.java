@@ -22,128 +22,105 @@ package org.neo4j.fabric.executor;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 
-public class RemoteExecutionPlanDescription implements ExecutionPlanDescription
-{
+public class RemoteExecutionPlanDescription implements ExecutionPlanDescription {
     private final ExecutionPlanDescription remotePlanDescription;
     private final Location.Remote location;
     private final ProfilerStatistics profilerStatistics;
 
-    RemoteExecutionPlanDescription( ExecutionPlanDescription remotePlanDescription, Location.Remote location )
-    {
+    RemoteExecutionPlanDescription(ExecutionPlanDescription remotePlanDescription, Location.Remote location) {
         this.remotePlanDescription = remotePlanDescription;
         this.location = location;
 
-        if ( remotePlanDescription.hasProfilerStatistics() )
-        {
-            profilerStatistics = new ProfilerStatisticsWrapper( remotePlanDescription.getProfilerStatistics() );
-        }
-        else
-        {
+        if (remotePlanDescription.hasProfilerStatistics()) {
+            profilerStatistics = new ProfilerStatisticsWrapper(remotePlanDescription.getProfilerStatistics());
+        } else {
             profilerStatistics = null;
         }
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "RemoteExecution@graph(" + location.getGraphId() + ")";
     }
 
     @Override
-    public List<ExecutionPlanDescription> getChildren()
-    {
+    public List<ExecutionPlanDescription> getChildren() {
         return List.of(remotePlanDescription);
     }
 
     @Override
-    public Map<String,Object> getArguments()
-    {
+    public Map<String, Object> getArguments() {
         return remotePlanDescription.getArguments();
     }
 
     @Override
-    public Set<String> getIdentifiers()
-    {
+    public Set<String> getIdentifiers() {
         return remotePlanDescription.getIdentifiers();
     }
 
     @Override
-    public boolean hasProfilerStatistics()
-    {
+    public boolean hasProfilerStatistics() {
         return remotePlanDescription.hasProfilerStatistics();
     }
 
     @Override
-    public ProfilerStatistics getProfilerStatistics()
-    {
+    public ProfilerStatistics getProfilerStatistics() {
         return profilerStatistics;
     }
 
-    private static class ProfilerStatisticsWrapper implements ProfilerStatistics
-    {
+    private static class ProfilerStatisticsWrapper implements ProfilerStatistics {
 
         private final ProfilerStatistics childStatistics;
 
-        ProfilerStatisticsWrapper( ProfilerStatistics childStatistics )
-        {
+        ProfilerStatisticsWrapper(ProfilerStatistics childStatistics) {
             this.childStatistics = childStatistics;
         }
 
         @Override
-        public boolean hasRows()
-        {
+        public boolean hasRows() {
             return childStatistics.hasRows();
         }
 
         @Override
-        public long getRows()
-        {
+        public long getRows() {
             return childStatistics.getRows();
         }
 
         @Override
-        public boolean hasDbHits()
-        {
+        public boolean hasDbHits() {
             return childStatistics.hasDbHits();
         }
 
         @Override
-        public long getDbHits()
-        {
+        public long getDbHits() {
             return 0;
         }
 
         @Override
-        public boolean hasPageCacheStats()
-        {
+        public boolean hasPageCacheStats() {
             return childStatistics.hasPageCacheStats();
         }
 
         @Override
-        public long getPageCacheHits()
-        {
+        public long getPageCacheHits() {
             return 0;
         }
 
         @Override
-        public long getPageCacheMisses()
-        {
+        public long getPageCacheMisses() {
             return 0;
         }
 
         @Override
-        public boolean hasTime()
-        {
+        public boolean hasTime() {
             // TODO: we need to investigate, how time works
             return false;
         }
 
         @Override
-        public long getTime()
-        {
+        public long getTime() {
             // TODO: we need to investigate, how time works
             return 0;
         }

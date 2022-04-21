@@ -19,87 +19,67 @@
  */
 package org.neo4j.collection.pool;
 
+import static java.time.Duration.ofMinutes;
+
 import java.time.Duration;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
-
 import org.neo4j.function.Factory;
 
-import static java.time.Duration.ofMinutes;
+public class LinkedQueuePool<R> implements Pool<R> {
+    public interface Monitor<R> {
+        void updatedCurrentPeakSize(int currentPeakSize);
 
-public class LinkedQueuePool<R> implements Pool<R>
-{
-    public interface Monitor<R>
-    {
-        void updatedCurrentPeakSize( int currentPeakSize );
+        void updatedTargetSize(int targetSize);
 
-        void updatedTargetSize( int targetSize );
+        void created(R resource);
 
-        void created( R resource );
+        void acquired(R resource);
 
-        void acquired( R resource );
+        void disposed(R resource);
 
-        void disposed( R resource );
-
-        class Adapter<R> implements Monitor<R>
-        {
+        class Adapter<R> implements Monitor<R> {
             @Override
-            public void updatedCurrentPeakSize( int currentPeakSize )
-            {
-            }
+            public void updatedCurrentPeakSize(int currentPeakSize) {}
 
             @Override
-            public void updatedTargetSize( int targetSize )
-            {
-            }
+            public void updatedTargetSize(int targetSize) {}
 
             @Override
-            public void created( R resource )
-            {
-            }
+            public void created(R resource) {}
 
             @Override
-            public void acquired( R resource )
-            {
-            }
+            public void acquired(R resource) {}
 
             @Override
-            public void disposed( R resource )
-            {
-            }
+            public void disposed(R resource) {}
         }
     }
 
-    public interface CheckStrategy
-    {
+    public interface CheckStrategy {
         boolean shouldCheck();
 
-        class TimeoutCheckStrategy implements CheckStrategy
-        {
+        class TimeoutCheckStrategy implements CheckStrategy {
             private final long intervalNanos;
             private long lastCheckTimeNanos;
             private final LongSupplier clock;
 
-            TimeoutCheckStrategy( Duration duration )
-            {
-                this( duration, System::nanoTime );
+            TimeoutCheckStrategy(Duration duration) {
+                this(duration, System::nanoTime);
             }
 
-            TimeoutCheckStrategy( Duration duration, LongSupplier nanoClock )
-            {
+            TimeoutCheckStrategy(Duration duration, LongSupplier nanoClock) {
                 this.intervalNanos = duration.toNanos();
                 this.lastCheckTimeNanos = nanoClock.getAsLong();
                 this.clock = nanoClock;
             }
 
             @Override
-            public boolean shouldCheck()
-            {
+            public boolean shouldCheck() {
                 long currentTimeNanos = clock.getAsLong();
-                if ( currentTimeNanos > lastCheckTimeNanos + intervalNanos )
-                {
+                if (currentTimeNanos > lastCheckTimeNanos + intervalNanos) {
                     lastCheckTimeNanos = currentTimeNanos;
                     return true;
                 }
@@ -114,18 +94,16 @@ public class LinkedQueuePool<R> implements Pool<R>
     private final Factory<R> factory;
     private final CheckStrategy checkStrategy;
     // Guarded by nothing. Those are estimates, losing some values doesn't matter much
-    private final AtomicInteger allocated = new AtomicInteger( 0 );
-    private final AtomicInteger queueSize = new AtomicInteger( 0 );
+    private final AtomicInteger allocated = new AtomicInteger(0);
+    private final AtomicInteger queueSize = new AtomicInteger(0);
     private int currentPeakSize;
     private int targetSize;
 
-    public LinkedQueuePool( int minSize, Factory<R> factory )
-    {
-        this( minSize, factory, new CheckStrategy.TimeoutCheckStrategy( ofMinutes( 1 ) ), new Monitor.Adapter<>() );
+    public LinkedQueuePool(int minSize, Factory<R> factory) {
+        this(minSize, factory, new CheckStrategy.TimeoutCheckStrategy(ofMinutes(1)), new Monitor.Adapter<>());
     }
 
-    public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor<R> monitor )
-    {
+    public LinkedQueuePool(int minSize, Factory<R> factory, CheckStrategy strategy, Monitor<R> monitor) {
         this.minSize = minSize;
         this.factory = factory;
         this.currentPeakSize = 0;
@@ -134,55 +112,44 @@ public class LinkedQueuePool<R> implements Pool<R>
         this.monitor = monitor;
     }
 
-    protected R create()
-    {
+    protected R create() {
         return factory.newInstance();
     }
 
-    protected void dispose( R resource )
-    {
-        monitor.disposed( resource );
+    protected void dispose(R resource) {
+        monitor.disposed(resource);
         allocated.decrementAndGet();
     }
 
     @Override
-    public final R acquire()
-    {
+    public final R acquire() {
         R resource = unused.poll();
-        if ( resource == null )
-        {
+        if (resource == null) {
             resource = create();
             allocated.incrementAndGet();
-            monitor.created( resource );
-        }
-        else
-        {
+            monitor.created(resource);
+        } else {
             queueSize.decrementAndGet();
         }
-        currentPeakSize = Math.max( currentPeakSize, allocated.get() - queueSize.get() );
-        if ( checkStrategy.shouldCheck() )
-        {
-            targetSize = Math.max( minSize, currentPeakSize );
-            monitor.updatedCurrentPeakSize( currentPeakSize );
+        currentPeakSize = Math.max(currentPeakSize, allocated.get() - queueSize.get());
+        if (checkStrategy.shouldCheck()) {
+            targetSize = Math.max(minSize, currentPeakSize);
+            monitor.updatedCurrentPeakSize(currentPeakSize);
             currentPeakSize = 0;
-            monitor.updatedTargetSize( targetSize );
+            monitor.updatedTargetSize(targetSize);
         }
 
-        monitor.acquired( resource );
+        monitor.acquired(resource);
         return resource;
     }
 
     @Override
-    public void release( R toRelease )
-    {
-        if ( queueSize.get() < targetSize )
-        {
-            unused.offer( toRelease );
+    public void release(R toRelease) {
+        if (queueSize.get() < targetSize) {
+            unused.offer(toRelease);
             queueSize.incrementAndGet();
-        }
-        else
-        {
-            dispose( toRelease );
+        } else {
+            dispose(toRelease);
         }
     }
 
@@ -190,11 +157,9 @@ public class LinkedQueuePool<R> implements Pool<R>
      * Dispose of all pooled objects.
      */
     @Override
-    public void close()
-    {
-        for ( R resource = unused.poll(); resource != null; resource = unused.poll() )
-        {
-            dispose( resource );
+    public void close() {
+        for (R resource = unused.poll(); resource != null; resource = unused.poll()) {
+            dispose(resource);
         }
     }
 }

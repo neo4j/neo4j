@@ -28,36 +28,30 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 
-public abstract class QueryEngineProvider
-{
-    protected abstract QueryExecutionEngine createEngine( Dependencies deps,
-                                                          GraphDatabaseAPI graphAPI,
-                                                          boolean isSystemDatabase,
-                                                          SPI spi );
+public abstract class QueryEngineProvider {
+    protected abstract QueryExecutionEngine createEngine(
+            Dependencies deps, GraphDatabaseAPI graphAPI, boolean isSystemDatabase, SPI spi);
 
     protected abstract int enginePriority();
 
-    public static QueryExecutionEngine initialize( Dependencies deps,
-                                                   GraphDatabaseAPI graphAPI,
-                                                   QueryEngineProvider provider,
-                                                   boolean isSystemDatabase,
-                                                   SPI spi )
-    {
-        if ( provider == null )
-        {
+    public static QueryExecutionEngine initialize(
+            Dependencies deps,
+            GraphDatabaseAPI graphAPI,
+            QueryEngineProvider provider,
+            boolean isSystemDatabase,
+            SPI spi) {
+        if (provider == null) {
             return noEngine();
         }
-        QueryExecutionEngine engine = provider.createEngine( deps, graphAPI, isSystemDatabase, spi );
-        return deps.satisfyDependency( engine );
+        QueryExecutionEngine engine = provider.createEngine(deps, graphAPI, isSystemDatabase, spi);
+        return deps.satisfyDependency(engine);
     }
 
-    public static QueryExecutionEngine noEngine()
-    {
+    public static QueryExecutionEngine noEngine() {
         return NoQueryEngine.INSTANCE;
     }
 
-    public interface SPI
-    {
+    public interface SPI {
         InternalLogProvider logProvider();
 
         Monitors monitors();
@@ -71,48 +65,41 @@ public abstract class QueryEngineProvider
         Config config();
     }
 
-    public static SPI spi( InternalLogProvider logProvider,
-                           Monitors monitors,
-                           JobScheduler jobScheduler,
-                           LifeSupport lifeSupport,
-                           Kernel kernel,
-                           Config config )
-    {
-        return new SPI()
-        {
+    public static SPI spi(
+            InternalLogProvider logProvider,
+            Monitors monitors,
+            JobScheduler jobScheduler,
+            LifeSupport lifeSupport,
+            Kernel kernel,
+            Config config) {
+        return new SPI() {
             @Override
-            public InternalLogProvider logProvider()
-            {
+            public InternalLogProvider logProvider() {
                 return logProvider;
             }
 
             @Override
-            public Monitors monitors()
-            {
+            public Monitors monitors() {
                 return monitors;
             }
 
             @Override
-            public JobScheduler jobScheduler()
-            {
+            public JobScheduler jobScheduler() {
                 return jobScheduler;
             }
 
             @Override
-            public LifeSupport lifeSupport()
-            {
+            public LifeSupport lifeSupport() {
                 return lifeSupport;
             }
 
             @Override
-            public Kernel kernel()
-            {
+            public Kernel kernel() {
                 return kernel;
             }
 
             @Override
-            public Config config()
-            {
+            public Config config() {
                 return config;
             }
         };

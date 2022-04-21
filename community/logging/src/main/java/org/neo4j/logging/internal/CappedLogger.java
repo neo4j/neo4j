@@ -19,14 +19,13 @@
  */
 package org.neo4j.logging.internal;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.util.Preconditions.requirePositive;
+
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-
 import org.neo4j.logging.InternalLog;
-
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.util.Preconditions.requirePositive;
 
 /**
  * A CappedLogger will accept log messages, unless they occur "too much", in which case the messages will be ignored
@@ -35,10 +34,9 @@ import static org.neo4j.util.Preconditions.requirePositive;
  * It is also desirable to be aware that log capping is taking place, so we don't mistakenly lose log output due to
  * output capping.
  */
-public class CappedLogger
-{
+public class CappedLogger {
     private static final AtomicLongFieldUpdater<CappedLogger> LAST_CHECK =
-            AtomicLongFieldUpdater.newUpdater( CappedLogger.class, "lastCheck" );
+            AtomicLongFieldUpdater.newUpdater(CappedLogger.class, "lastCheck");
 
     private final InternalLog delegate;
     private final long timeLimitMillis;
@@ -55,98 +53,75 @@ public class CappedLogger
      * @param unit The time unit.
      * @param clock The clock to use for reading the current time when checking this limit.
      */
-    public CappedLogger( InternalLog delegate, long time, TimeUnit unit, Clock clock )
-    {
-        this.delegate = requireNonNull( delegate );
-        this.clock = requireNonNull( clock );
-        this.timeLimitMillis = unit.toMillis( requirePositive( time ) );
+    public CappedLogger(InternalLog delegate, long time, TimeUnit unit, Clock clock) {
+        this.delegate = requireNonNull(delegate);
+        this.clock = requireNonNull(clock);
+        this.timeLimitMillis = unit.toMillis(requirePositive(time));
     }
 
-    public void debug( String msg )
-    {
-        if ( checkExpiredAndSetLastCheckTime() )
-        {
-            delegate.debug( msg );
+    public void debug(String msg) {
+        if (checkExpiredAndSetLastCheckTime()) {
+            delegate.debug(msg);
         }
     }
 
-    public void debug( String msg, Throwable cause )
-    {
-        if ( checkExpiredAndSetLastCheckTime() )
-        {
-            delegate.debug( msg, cause );
+    public void debug(String msg, Throwable cause) {
+        if (checkExpiredAndSetLastCheckTime()) {
+            delegate.debug(msg, cause);
         }
     }
 
-    public void info( String msg, Object... arguments )
-    {
-        if ( checkExpiredAndSetLastCheckTime() )
-        {
-            delegate.info( msg, arguments );
+    public void info(String msg, Object... arguments) {
+        if (checkExpiredAndSetLastCheckTime()) {
+            delegate.info(msg, arguments);
         }
     }
 
-    public void info( String msg, Throwable cause )
-    {
-        if ( checkExpiredAndSetLastCheckTime() )
-        {
-            delegate.info( msg, cause );
+    public void info(String msg, Throwable cause) {
+        if (checkExpiredAndSetLastCheckTime()) {
+            delegate.info(msg, cause);
         }
     }
 
-    public void warn( String msg )
-    {
-        if ( checkExpiredAndSetLastCheckTime() )
-        {
-            delegate.warn( msg );
+    public void warn(String msg) {
+        if (checkExpiredAndSetLastCheckTime()) {
+            delegate.warn(msg);
         }
     }
 
-    public void warn( String msg, Throwable cause )
-    {
-        if ( checkExpiredAndSetLastCheckTime() )
-        {
-            delegate.warn( msg, cause );
+    public void warn(String msg, Throwable cause) {
+        if (checkExpiredAndSetLastCheckTime()) {
+            delegate.warn(msg, cause);
         }
     }
 
-    public void warn( String msg, Object... arguments )
-    {
-        if ( checkExpiredAndSetLastCheckTime() )
-        {
-            delegate.warn( msg, arguments );
+    public void warn(String msg, Object... arguments) {
+        if (checkExpiredAndSetLastCheckTime()) {
+            delegate.warn(msg, arguments);
         }
     }
 
-    public void error( String msg )
-    {
-        if ( checkExpiredAndSetLastCheckTime() )
-        {
-            delegate.error( msg );
+    public void error(String msg) {
+        if (checkExpiredAndSetLastCheckTime()) {
+            delegate.error(msg);
         }
     }
 
-    public void error( String msg, Throwable cause )
-    {
-        if ( checkExpiredAndSetLastCheckTime() )
-        {
-            delegate.error( msg, cause );
+    public void error(String msg, Throwable cause) {
+        if (checkExpiredAndSetLastCheckTime()) {
+            delegate.error(msg, cause);
         }
     }
 
-    private boolean checkExpiredAndSetLastCheckTime()
-    {
+    private boolean checkExpiredAndSetLastCheckTime() {
         long now = clock.millis();
         long check = this.lastCheck;
-        if ( check > now - timeLimitMillis )
-        {
+        if (check > now - timeLimitMillis) {
             return false;
         }
-        while ( !LAST_CHECK.compareAndSet( this, check, now ) )
-        {
+        while (!LAST_CHECK.compareAndSet(this, check, now)) {
             check = lastCheck;
-            if ( check > now )
-            {
+            if (check > now) {
                 break;
             }
         }

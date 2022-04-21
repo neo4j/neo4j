@@ -19,33 +19,28 @@
  */
 package org.neo4j.bolt.messaging;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-
-import org.neo4j.io.memory.ByteBuffers;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-public class RecordingByteChannelTest
-{
+import java.nio.ByteBuffer;
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.memory.ByteBuffers;
+
+public class RecordingByteChannelTest {
 
     @Test
-    void shouldBeAbleToWriteToThenReadFromChannel()
-    {
+    void shouldBeAbleToWriteToThenReadFromChannel() {
         // Given
         RecordingByteChannel channel = new RecordingByteChannel();
 
         // When
-        byte[] data = new byte[]{1, 2, 3, 4, 5};
-        channel.write( ByteBuffer.wrap( data ) );
-        ByteBuffer buffer = ByteBuffers.allocate( 10, INSTANCE );
-        int bytesRead = channel.read( buffer );
+        byte[] data = new byte[] {1, 2, 3, 4, 5};
+        channel.write(ByteBuffer.wrap(data));
+        ByteBuffer buffer = ByteBuffers.allocate(10, INSTANCE);
+        int bytesRead = channel.read(buffer);
 
         // Then
-        assertThat( bytesRead ).isEqualTo( 5 );
-        assertThat( buffer.array() ).isEqualTo( new byte[]{1, 2, 3, 4, 5, 0, 0, 0, 0, 0} );
+        assertThat(bytesRead).isEqualTo(5);
+        assertThat(buffer.array()).isEqualTo(new byte[] {1, 2, 3, 4, 5, 0, 0, 0, 0, 0});
     }
-
 }

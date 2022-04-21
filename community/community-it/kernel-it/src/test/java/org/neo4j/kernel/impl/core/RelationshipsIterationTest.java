@@ -19,21 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,550 +28,465 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-class RelationshipsIterationTest
-{
+class RelationshipsIterationTest {
     private static final TestDatabaseManagementServiceBuilder BUILDER = new TestDatabaseManagementServiceBuilder();
     private static final int DENSE_NODE_THRESHOLD = 51;
     private static DatabaseManagementService DATABASE;
 
     private GraphDatabaseService db;
-    private final RelationshipType typeA = withName( "A" );
-    private final RelationshipType typeB = withName( "B" );
-    private final RelationshipType typeC = withName( "C" );
-    private final RelationshipType typeD = withName( "D" );
-    private final RelationshipType typeX = withName( "X" );
+    private final RelationshipType typeA = withName("A");
+    private final RelationshipType typeB = withName("B");
+    private final RelationshipType typeC = withName("C");
+    private final RelationshipType typeD = withName("D");
+    private final RelationshipType typeX = withName("X");
 
     @BeforeAll
-    static void setUp()
-    {
+    static void setUp() {
         DATABASE = BUILDER.impermanent().build();
     }
 
     @AfterAll
-    static void tearDown()
-    {
+    static void tearDown() {
         DATABASE.shutdown();
     }
 
     @BeforeEach
-    void setUpEach()
-    {
-        db = DATABASE.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx();
-              ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
-              ResourceIterable<Node> allNodes = tx.getAllNodes() )
-        {
-            allRelationships.forEach( Relationship::delete );
-            allNodes.forEach( Node::delete );
+    void setUpEach() {
+        db = DATABASE.database(DEFAULT_DATABASE_NAME);
+        try (Transaction tx = db.beginTx();
+                ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
+                ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+            allRelationships.forEach(Relationship::delete);
+            allNodes.forEach(Node::delete);
             tx.commit();
         }
     }
 
-    abstract class RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships
-    {
+    abstract class RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships {
         long matchingFirst;
         long notMatching;
         long matchingSecond;
 
         @BeforeEach
-        void setUp()
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
+        void setUp() {
+            try (Transaction tx = db.beginTx()) {
                 Node first = tx.createNode();
                 Node unrelated = tx.createNode();
                 Node second = tx.createNode();
                 matchingFirst = first.getId();
                 notMatching = unrelated.getId();
                 matchingSecond = second.getId();
-                first.createRelationshipTo( second, typeA );
-                first.createRelationshipTo( second, typeB );
-                first.createRelationshipTo( unrelated, typeC );
-                second.createRelationshipTo( unrelated, typeD );
+                first.createRelationshipTo(second, typeA);
+                first.createRelationshipTo(second, typeB);
+                first.createRelationshipTo(unrelated, typeC);
+                second.createRelationshipTo(unrelated, typeD);
                 tx.commit();
             }
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node first = tx.getNodeById( matchingFirst );
-                Node second = tx.getNodeById( matchingSecond );
-                first.createRelationshipTo( second, typeA );
-                first.createRelationshipTo( second, typeB );
+            try (Transaction tx = db.beginTx()) {
+                Node first = tx.getNodeById(matchingFirst);
+                Node second = tx.getNodeById(matchingSecond);
+                first.createRelationshipTo(second, typeA);
+                first.createRelationshipTo(second, typeB);
                 tx.commit();
             }
         }
 
         @Test
-        void matchNotMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( first.hasRelationship( typeA ) );
-                assertFalse( unrelated.hasRelationship( typeA ) );
-                assertTrue( second.hasRelationship( typeA ) );
-            } );
+        void matchNotMatch1() {
+            check((first, unrelated, second) -> {
+                assertTrue(first.hasRelationship(typeA));
+                assertFalse(unrelated.hasRelationship(typeA));
+                assertTrue(second.hasRelationship(typeA));
+            });
         }
 
         @Test
-        void matchNotMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( first.hasRelationship( typeA ) );
-                assertFalse( unrelated.hasRelationship( typeA ) );
-                assertTrue( first.hasRelationship( typeA ) );
-            } );
+        void matchNotMatch2() {
+            check((first, unrelated, second) -> {
+                assertTrue(first.hasRelationship(typeA));
+                assertFalse(unrelated.hasRelationship(typeA));
+                assertTrue(first.hasRelationship(typeA));
+            });
         }
 
         @Test
-        void matchNotMatch3()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( first.hasRelationship( typeA ) );
-                assertFalse( first.hasRelationship( typeD ) );
-                assertTrue( first.hasRelationship( typeA ) );
-            } );
+        void matchNotMatch3() {
+            check((first, unrelated, second) -> {
+                assertTrue(first.hasRelationship(typeA));
+                assertFalse(first.hasRelationship(typeD));
+                assertTrue(first.hasRelationship(typeA));
+            });
         }
 
         @Test
-        void matchNotMatch4()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( second.hasRelationship( typeA ) );
-                assertFalse( unrelated.hasRelationship( typeA ) );
-                assertTrue( first.hasRelationship( typeA ) );
-            } );
+        void matchNotMatch4() {
+            check((first, unrelated, second) -> {
+                assertTrue(second.hasRelationship(typeA));
+                assertFalse(unrelated.hasRelationship(typeA));
+                assertTrue(first.hasRelationship(typeA));
+            });
         }
 
         @Test
-        void matchNotMisdir1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( first.hasRelationship( OUTGOING, typeA ) );
-                assertFalse( unrelated.hasRelationship( BOTH, typeA ) );
-                assertFalse( second.hasRelationship( OUTGOING, typeA ) );
-            } );
+        void matchNotMisdir1() {
+            check((first, unrelated, second) -> {
+                assertTrue(first.hasRelationship(OUTGOING, typeA));
+                assertFalse(unrelated.hasRelationship(BOTH, typeA));
+                assertFalse(second.hasRelationship(OUTGOING, typeA));
+            });
         }
 
         @Test
-        void matchNotMisdir2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( first.hasRelationship( OUTGOING, typeA ) );
-                assertFalse( unrelated.hasRelationship( BOTH, typeA ) );
-                assertFalse( first.hasRelationship( INCOMING, typeA ) );
-            } );
+        void matchNotMisdir2() {
+            check((first, unrelated, second) -> {
+                assertTrue(first.hasRelationship(OUTGOING, typeA));
+                assertFalse(unrelated.hasRelationship(BOTH, typeA));
+                assertFalse(first.hasRelationship(INCOMING, typeA));
+            });
         }
 
         @Test
-        void misdirNotMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( first.hasRelationship( INCOMING, typeA ) );
-                assertFalse( unrelated.hasRelationship( BOTH, typeA ) );
-                assertTrue( second.hasRelationship( INCOMING, typeA ) );
-            } );
+        void misdirNotMatch1() {
+            check((first, unrelated, second) -> {
+                assertFalse(first.hasRelationship(INCOMING, typeA));
+                assertFalse(unrelated.hasRelationship(BOTH, typeA));
+                assertTrue(second.hasRelationship(INCOMING, typeA));
+            });
         }
 
         @Test
-        void misdirNotMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( second.hasRelationship( OUTGOING, typeA ) );
-                assertFalse( unrelated.hasRelationship( BOTH, typeA ) );
-                assertTrue( first.hasRelationship( OUTGOING, typeA ) );
-            } );
+        void misdirNotMatch2() {
+            check((first, unrelated, second) -> {
+                assertFalse(second.hasRelationship(OUTGOING, typeA));
+                assertFalse(unrelated.hasRelationship(BOTH, typeA));
+                assertTrue(first.hasRelationship(OUTGOING, typeA));
+            });
         }
 
         @Test
-        void notMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( unrelated.hasRelationship( typeA ) );
-                assertTrue( second.hasRelationship( typeA ) );
-            } );
+        void notMatch1() {
+            check((first, unrelated, second) -> {
+                assertFalse(unrelated.hasRelationship(typeA));
+                assertTrue(second.hasRelationship(typeA));
+            });
         }
 
         @Test
-        void notMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( unrelated.hasRelationship( typeA ) );
-                assertTrue( first.hasRelationship( typeA ) );
-            } );
+        void notMatch2() {
+            check((first, unrelated, second) -> {
+                assertFalse(unrelated.hasRelationship(typeA));
+                assertTrue(first.hasRelationship(typeA));
+            });
         }
 
         @Test
-        void misdirMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( first.hasRelationship( INCOMING, typeA ) );
-                assertTrue( second.hasRelationship( INCOMING, typeA ) );
-            } );
+        void misdirMatch1() {
+            check((first, unrelated, second) -> {
+                assertFalse(first.hasRelationship(INCOMING, typeA));
+                assertTrue(second.hasRelationship(INCOMING, typeA));
+            });
         }
 
         @Test
-        void misdirMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( second.hasRelationship( OUTGOING, typeA ) );
-                assertTrue( first.hasRelationship( OUTGOING, typeA ) );
-            } );
+        void misdirMatch2() {
+            check((first, unrelated, second) -> {
+                assertFalse(second.hasRelationship(OUTGOING, typeA));
+                assertTrue(first.hasRelationship(OUTGOING, typeA));
+            });
         }
 
         @Test
-        void matchMisdirMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( first.hasRelationship( OUTGOING, typeA ) );
-                assertFalse( first.hasRelationship( INCOMING, typeA ) );
-                assertTrue( second.hasRelationship( INCOMING, typeA ) );
-            } );
+        void matchMisdirMatch1() {
+            check((first, unrelated, second) -> {
+                assertTrue(first.hasRelationship(OUTGOING, typeA));
+                assertFalse(first.hasRelationship(INCOMING, typeA));
+                assertTrue(second.hasRelationship(INCOMING, typeA));
+            });
         }
 
         @Test
-        void matchMisdirMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( second.hasRelationship( INCOMING, typeA ) );
-                assertFalse( first.hasRelationship( INCOMING, typeA ) );
-                assertTrue( second.hasRelationship( INCOMING, typeA ) );
-            } );
+        void matchMisdirMatch2() {
+            check((first, unrelated, second) -> {
+                assertTrue(second.hasRelationship(INCOMING, typeA));
+                assertFalse(first.hasRelationship(INCOMING, typeA));
+                assertTrue(second.hasRelationship(INCOMING, typeA));
+            });
         }
 
         @Test
-        void matchMisdirMatch3()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( second.hasRelationship( INCOMING, typeA ) );
-                assertFalse( first.hasRelationship( INCOMING, typeA ) );
-                assertTrue( first.hasRelationship( OUTGOING, typeA ) );
-            } );
+        void matchMisdirMatch3() {
+            check((first, unrelated, second) -> {
+                assertTrue(second.hasRelationship(INCOMING, typeA));
+                assertFalse(first.hasRelationship(INCOMING, typeA));
+                assertTrue(first.hasRelationship(OUTGOING, typeA));
+            });
         }
 
         @Test
-        void matchMisdirMatch4()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( first.hasRelationship( OUTGOING, typeA ) );
-                assertFalse( first.hasRelationship( INCOMING, typeA ) );
-                assertTrue( first.hasRelationship( OUTGOING, typeA ) );
-            } );
+        void matchMisdirMatch4() {
+            check((first, unrelated, second) -> {
+                assertTrue(first.hasRelationship(OUTGOING, typeA));
+                assertFalse(first.hasRelationship(INCOMING, typeA));
+                assertTrue(first.hasRelationship(OUTGOING, typeA));
+            });
         }
 
         @Test
-        void matchMisdirMatch5()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertTrue( second.hasRelationship( INCOMING, typeA ) );
-                assertFalse( second.hasRelationship( OUTGOING, typeA ) );
-                assertTrue( second.hasRelationship( INCOMING, typeA ) );
-            } );
+        void matchMisdirMatch5() {
+            check((first, unrelated, second) -> {
+                assertTrue(second.hasRelationship(INCOMING, typeA));
+                assertFalse(second.hasRelationship(OUTGOING, typeA));
+                assertTrue(second.hasRelationship(INCOMING, typeA));
+            });
         }
 
         @Test
-        void notMisdir1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( unrelated.hasRelationship( BOTH, typeA ) );
-                assertFalse( second.hasRelationship( OUTGOING, typeA ) );
-            } );
+        void notMisdir1() {
+            check((first, unrelated, second) -> {
+                assertFalse(unrelated.hasRelationship(BOTH, typeA));
+                assertFalse(second.hasRelationship(OUTGOING, typeA));
+            });
         }
 
         @Test
-        void notMisdir2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( unrelated.hasRelationship( BOTH, typeA ) );
-                assertFalse( first.hasRelationship( INCOMING, typeA ) );
-            } );
+        void notMisdir2() {
+            check((first, unrelated, second) -> {
+                assertFalse(unrelated.hasRelationship(BOTH, typeA));
+                assertFalse(first.hasRelationship(INCOMING, typeA));
+            });
         }
 
         @Test
-        void notMatchNot1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( unrelated.hasRelationship( typeA ) );
-                assertTrue( first.hasRelationship( typeA ) );
-                assertFalse( unrelated.hasRelationship( typeA ) );
-            } );
+        void notMatchNot1() {
+            check((first, unrelated, second) -> {
+                assertFalse(unrelated.hasRelationship(typeA));
+                assertTrue(first.hasRelationship(typeA));
+                assertFalse(unrelated.hasRelationship(typeA));
+            });
         }
 
         @Test
-        void notMatchNot2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertFalse( unrelated.hasRelationship( typeA ) );
-                assertTrue( second.hasRelationship( typeA ) );
-                assertFalse( unrelated.hasRelationship( typeA ) );
-            } );
+        void notMatchNot2() {
+            check((first, unrelated, second) -> {
+                assertFalse(unrelated.hasRelationship(typeA));
+                assertTrue(second.hasRelationship(typeA));
+                assertFalse(unrelated.hasRelationship(typeA));
+            });
         }
 
         // =================================================
 
         @Test
-        void countMatchNotMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, first.getRelationships( typeA ) ) );
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( typeA ) ) );
-                assertEquals( 2, countTypes( typeA, second.getRelationships( typeA ) ) );
-            } );
+        void countMatchNotMatch1() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, first.getRelationships(typeA)));
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(typeA)));
+                assertEquals(2, countTypes(typeA, second.getRelationships(typeA)));
+            });
         }
 
         @Test
-        void countMatchNotMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, first.getRelationships( typeA ) ) );
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( typeA ) ) );
-                assertEquals( 2, countTypes( typeA, first.getRelationships( typeA ) ) );
-            } );
+        void countMatchNotMatch2() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, first.getRelationships(typeA)));
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(typeA)));
+                assertEquals(2, countTypes(typeA, first.getRelationships(typeA)));
+            });
         }
 
         @Test
-        void countMatchNotMatch3()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, first.getRelationships( typeA ) ) );
-                assertEquals( 0, countTypes( typeD, first.getRelationships( typeD ) ) );
-                assertEquals( 2, countTypes( typeA, first.getRelationships( typeA ) ) );
-            } );
+        void countMatchNotMatch3() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, first.getRelationships(typeA)));
+                assertEquals(0, countTypes(typeD, first.getRelationships(typeD)));
+                assertEquals(2, countTypes(typeA, first.getRelationships(typeA)));
+            });
         }
 
         @Test
-        void countMatchNotMatch4()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, second.getRelationships( typeA ) ) );
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( typeA ) ) );
-                assertEquals( 2, countTypes( typeA, first.getRelationships( typeA ) ) );
-            } );
+        void countMatchNotMatch4() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, second.getRelationships(typeA)));
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(typeA)));
+                assertEquals(2, countTypes(typeA, first.getRelationships(typeA)));
+            });
         }
 
         @Test
-        void countMatchNotMisdir1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, first.getRelationships( OUTGOING, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( BOTH, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, second.getRelationships( OUTGOING, typeA ) ) );
-            } );
+        void countMatchNotMisdir1() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, first.getRelationships(OUTGOING, typeA)));
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(BOTH, typeA)));
+                assertEquals(0, countTypes(typeA, second.getRelationships(OUTGOING, typeA)));
+            });
         }
 
         @Test
-        void countMatchNotMisdir2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, first.getRelationships( OUTGOING, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( BOTH, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, first.getRelationships( INCOMING, typeA ) ) );
-            } );
+        void countMatchNotMisdir2() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, first.getRelationships(OUTGOING, typeA)));
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(BOTH, typeA)));
+                assertEquals(0, countTypes(typeA, first.getRelationships(INCOMING, typeA)));
+            });
         }
 
         @Test
-        void countMisdirNotMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, first.getRelationships( INCOMING, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( BOTH, typeA ) ) );
-                assertEquals( 2, countTypes( typeA, second.getRelationships( INCOMING, typeA ) ) );
-            } );
+        void countMisdirNotMatch1() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, first.getRelationships(INCOMING, typeA)));
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(BOTH, typeA)));
+                assertEquals(2, countTypes(typeA, second.getRelationships(INCOMING, typeA)));
+            });
         }
 
         @Test
-        void countMisdirNotMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, second.getRelationships( OUTGOING, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( BOTH, typeA ) ) );
-                assertEquals( 2, countTypes( typeA, first.getRelationships( OUTGOING, typeA ) ) );
-            } );
+        void countMisdirNotMatch2() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, second.getRelationships(OUTGOING, typeA)));
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(BOTH, typeA)));
+                assertEquals(2, countTypes(typeA, first.getRelationships(OUTGOING, typeA)));
+            });
         }
 
         @Test
-        void countNotMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( typeA ) ) );
-                assertEquals( 2, countTypes( typeA, second.getRelationships( typeA ) ) );
-            } );
+        void countNotMatch1() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(typeA)));
+                assertEquals(2, countTypes(typeA, second.getRelationships(typeA)));
+            });
         }
 
         @Test
-        void countNotMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( typeA ) ) );
-                assertEquals( 2, countTypes( typeA, first.getRelationships( typeA ) ) );
-            } );
+        void countNotMatch2() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(typeA)));
+                assertEquals(2, countTypes(typeA, first.getRelationships(typeA)));
+            });
         }
 
         @Test
-        void countMisdirMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, first.getRelationships( INCOMING, typeA ) ) );
-                assertEquals( 2, countTypes( typeA, second.getRelationships( INCOMING, typeA ) ) );
-            } );
+        void countMisdirMatch1() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, first.getRelationships(INCOMING, typeA)));
+                assertEquals(2, countTypes(typeA, second.getRelationships(INCOMING, typeA)));
+            });
         }
 
         @Test
-        void countMisdirMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, second.getRelationships( OUTGOING, typeA ) ) );
-                assertEquals( 2, countTypes( typeA, first.getRelationships( OUTGOING, typeA ) ) );
-            } );
+        void countMisdirMatch2() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, second.getRelationships(OUTGOING, typeA)));
+                assertEquals(2, countTypes(typeA, first.getRelationships(OUTGOING, typeA)));
+            });
         }
 
         @Test
-        void countMatchMisdirMatch1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, first.getRelationships( OUTGOING, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, first.getRelationships( INCOMING, typeA ) ) );
-                assertEquals( 2, countTypes( typeA, second.getRelationships( INCOMING, typeA ) ) );
-            } );
+        void countMatchMisdirMatch1() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, first.getRelationships(OUTGOING, typeA)));
+                assertEquals(0, countTypes(typeA, first.getRelationships(INCOMING, typeA)));
+                assertEquals(2, countTypes(typeA, second.getRelationships(INCOMING, typeA)));
+            });
         }
 
         @Test
-        void countMatchMisdirMatch2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, second.getRelationships( INCOMING, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, first.getRelationships( INCOMING, typeA ) ) );
-                assertEquals( 2, countTypes( typeA, second.getRelationships( INCOMING, typeA ) ) );
-            } );
+        void countMatchMisdirMatch2() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, second.getRelationships(INCOMING, typeA)));
+                assertEquals(0, countTypes(typeA, first.getRelationships(INCOMING, typeA)));
+                assertEquals(2, countTypes(typeA, second.getRelationships(INCOMING, typeA)));
+            });
         }
 
         @Test
-        void countMatchMisdirMatch3()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, second.getRelationships( INCOMING, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, first.getRelationships( INCOMING, typeA ) ) );
-                assertEquals( 2, countTypes( typeA, first.getRelationships( OUTGOING, typeA ) ) );
-            } );
+        void countMatchMisdirMatch3() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, second.getRelationships(INCOMING, typeA)));
+                assertEquals(0, countTypes(typeA, first.getRelationships(INCOMING, typeA)));
+                assertEquals(2, countTypes(typeA, first.getRelationships(OUTGOING, typeA)));
+            });
         }
 
         @Test
-        void countMatchMisdirMatch4()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, first.getRelationships( OUTGOING, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, first.getRelationships( INCOMING, typeA ) ) );
-                assertEquals( 2, countTypes( typeA, first.getRelationships( OUTGOING, typeA ) ) );
-            } );
+        void countMatchMisdirMatch4() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, first.getRelationships(OUTGOING, typeA)));
+                assertEquals(0, countTypes(typeA, first.getRelationships(INCOMING, typeA)));
+                assertEquals(2, countTypes(typeA, first.getRelationships(OUTGOING, typeA)));
+            });
         }
 
         @Test
-        void countMatchMisdirMatch5()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 2, countTypes( typeA, second.getRelationships( INCOMING, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, second.getRelationships( OUTGOING, typeA ) ) );
-                assertEquals( 2, countTypes( typeA, second.getRelationships( INCOMING, typeA ) ) );
-            } );
+        void countMatchMisdirMatch5() {
+            check((first, unrelated, second) -> {
+                assertEquals(2, countTypes(typeA, second.getRelationships(INCOMING, typeA)));
+                assertEquals(0, countTypes(typeA, second.getRelationships(OUTGOING, typeA)));
+                assertEquals(2, countTypes(typeA, second.getRelationships(INCOMING, typeA)));
+            });
         }
 
         @Test
-        void countNotMisdir1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( BOTH, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, second.getRelationships( OUTGOING, typeA ) ) );
-            } );
+        void countNotMisdir1() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(BOTH, typeA)));
+                assertEquals(0, countTypes(typeA, second.getRelationships(OUTGOING, typeA)));
+            });
         }
 
         @Test
-        void countNotMisdir2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( BOTH, typeA ) ) );
-                assertEquals( 0, countTypes( typeA, first.getRelationships( INCOMING, typeA ) ) );
-            } );
+        void countNotMisdir2() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(BOTH, typeA)));
+                assertEquals(0, countTypes(typeA, first.getRelationships(INCOMING, typeA)));
+            });
         }
 
         @Test
-        void countNotMatchNot1()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( typeA ) ) );
-                assertEquals( 2, countTypes( typeA, first.getRelationships( typeA ) ) );
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( typeA ) ) );
-            } );
+        void countNotMatchNot1() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(typeA)));
+                assertEquals(2, countTypes(typeA, first.getRelationships(typeA)));
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(typeA)));
+            });
         }
 
         @Test
-        void countNotMatchNot2()
-        {
-            check( ( first, unrelated, second ) ->
-            {
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( typeA ) ) );
-                assertEquals( 2, countTypes( typeA, second.getRelationships( typeA ) ) );
-                assertEquals( 0, countTypes( typeA, unrelated.getRelationships( typeA ) ) );
-            } );
+        void countNotMatchNot2() {
+            check((first, unrelated, second) -> {
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(typeA)));
+                assertEquals(2, countTypes(typeA, second.getRelationships(typeA)));
+                assertEquals(0, countTypes(typeA, unrelated.getRelationships(typeA)));
+            });
         }
 
-        private void check( Check check )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node first = tx.getNodeById( matchingFirst );
-                Node unrelated = tx.getNodeById( notMatching );
-                Node second = tx.getNodeById( matchingSecond );
-                check.check( first, unrelated, second );
+        private void check(Check check) {
+            try (Transaction tx = db.beginTx()) {
+                Node first = tx.getNodeById(matchingFirst);
+                Node unrelated = tx.getNodeById(notMatching);
+                Node second = tx.getNodeById(matchingSecond);
+                check.check(first, unrelated, second);
             }
         }
 
-        private int countTypes( RelationshipType type, ResourceIterable<Relationship> iterable )
-        {
-            try ( iterable )
-            {
+        private int countTypes(RelationshipType type, ResourceIterable<Relationship> iterable) {
+            try (iterable) {
                 var count = 0;
-                for ( final var relationship : iterable )
-                {
-                    assertEquals( type, relationship.getType() );
+                for (final var relationship : iterable) {
+                    assertEquals(type, relationship.getType());
                     count++;
                 }
                 return count;
@@ -595,24 +495,18 @@ class RelationshipsIterationTest
     }
 
     @Nested
-    class WithNoDenseNodes extends RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships
-    {
-    }
+    class WithNoDenseNodes extends RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships {}
 
     @Nested
-    class WithDenseFirstNode extends RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships
-    {
+    class WithDenseFirstNode extends RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships {
         @BeforeEach
         @Override
-        void setUp()
-        {
+        void setUp() {
             super.setUp();
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node first = tx.getNodeById( matchingFirst );
-                for ( int i = 0; i < DENSE_NODE_THRESHOLD; i++ )
-                {
-                    first.createRelationshipTo( first, typeX );
+            try (Transaction tx = db.beginTx()) {
+                Node first = tx.getNodeById(matchingFirst);
+                for (int i = 0; i < DENSE_NODE_THRESHOLD; i++) {
+                    first.createRelationshipTo(first, typeX);
                 }
                 tx.commit();
             }
@@ -620,19 +514,15 @@ class RelationshipsIterationTest
     }
 
     @Nested
-    class WithDenseSecondNode extends RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships
-    {
+    class WithDenseSecondNode extends RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships {
         @BeforeEach
         @Override
-        void setUp()
-        {
+        void setUp() {
             super.setUp();
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node second = tx.getNodeById( matchingSecond );
-                for ( int i = 0; i < DENSE_NODE_THRESHOLD; i++ )
-                {
-                    second.createRelationshipTo( second, typeX );
+            try (Transaction tx = db.beginTx()) {
+                Node second = tx.getNodeById(matchingSecond);
+                for (int i = 0; i < DENSE_NODE_THRESHOLD; i++) {
+                    second.createRelationshipTo(second, typeX);
                 }
                 tx.commit();
             }
@@ -640,27 +530,22 @@ class RelationshipsIterationTest
     }
 
     @Nested
-    class WithDenseUnrelatedNode extends RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships
-    {
+    class WithDenseUnrelatedNode extends RelationshipTraversalCursorReuseMustNotFalselyMatchRelationships {
         @BeforeEach
         @Override
-        void setUp()
-        {
+        void setUp() {
             super.setUp();
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node unrelated = tx.getNodeById( notMatching );
-                for ( int i = 0; i < DENSE_NODE_THRESHOLD; i++ )
-                {
-                    unrelated.createRelationshipTo( unrelated, typeX );
+            try (Transaction tx = db.beginTx()) {
+                Node unrelated = tx.getNodeById(notMatching);
+                for (int i = 0; i < DENSE_NODE_THRESHOLD; i++) {
+                    unrelated.createRelationshipTo(unrelated, typeX);
                 }
                 tx.commit();
             }
         }
     }
 
-    private interface Check
-    {
-        void check( Node first, Node unrelated, Node second );
+    private interface Check {
+        void check(Node first, Node unrelated, Node second);
     }
 }

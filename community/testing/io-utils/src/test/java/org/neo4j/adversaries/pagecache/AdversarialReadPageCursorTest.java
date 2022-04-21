@@ -19,35 +19,32 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.test.utils.PageCacheSupport;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class AdversarialReadPageCursorTest
-{
+class AdversarialReadPageCursorTest {
     @Test
-    void shouldNotMessUpUnrelatedSegmentOnReadBytes() throws Exception
-    {
+    void shouldNotMessUpUnrelatedSegmentOnReadBytes() throws Exception {
         // Given
         byte[] buf = new byte[4];
-        byte[] page = new byte[]{7};
-        AdversarialReadPageCursor cursor = new AdversarialReadPageCursor( ByteArrayPageCursor.wrap( page ),
-                new PageCacheSupport.AtomicBooleanInconsistentReadAdversary( new AtomicBoolean( true ) ) );
+        byte[] page = new byte[] {7};
+        AdversarialReadPageCursor cursor = new AdversarialReadPageCursor(
+                ByteArrayPageCursor.wrap(page),
+                new PageCacheSupport.AtomicBooleanInconsistentReadAdversary(new AtomicBoolean(true)));
 
         // When
-        cursor.next( 0 );
-        cursor.getBytes( buf, buf.length - 1, 1 );
+        cursor.next(0);
+        cursor.getBytes(buf, buf.length - 1, 1);
         cursor.shouldRetry();
-        cursor.getBytes( buf, buf.length - 1, 1 );
+        cursor.getBytes(buf, buf.length - 1, 1);
 
         // Then the range outside of buf.length-1, buf.length should be pristine
-        assertEquals( 0, buf[0] );
-        assertEquals( 0, buf[1] );
-        assertEquals( 0, buf[2] );
+        assertEquals(0, buf[0]);
+        assertEquals(0, buf[1]);
+        assertEquals(0, buf[2]);
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.tracing.recording;
 
 import java.util.Objects;
-
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -34,245 +33,190 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  * Records and counts number of {@link Pin} and {@link Fault} events.
  * Propagate those counters to global page cache tracer during event reporting.
  */
-public class RecordingPageCursorTracer extends RecordingTracer implements PageCursorTracer
-{
+public class RecordingPageCursorTracer extends RecordingTracer implements PageCursorTracer {
     private int pins;
     private int faults;
     private final PageCacheTracer tracer;
     private final String tag;
 
-    public RecordingPageCursorTracer( PageCacheTracer tracer, String tag )
-    {
-        super( Pin.class, Fault.class );
+    public RecordingPageCursorTracer(PageCacheTracer tracer, String tag) {
+        super(Pin.class, Fault.class);
         this.tracer = tracer;
         this.tag = tag;
     }
 
     @SafeVarargs
-    public RecordingPageCursorTracer( PageCacheTracer tracer, String tag, Class<? extends Event>... eventTypesToTrace )
-    {
-        super( eventTypesToTrace );
+    public RecordingPageCursorTracer(PageCacheTracer tracer, String tag, Class<? extends Event>... eventTypesToTrace) {
+        super(eventTypesToTrace);
         this.tracer = tracer;
         this.tag = tag;
     }
 
     @Override
-    public long faults()
-    {
+    public long faults() {
         return faults;
     }
 
     @Override
-    public long failedFaults()
-    {
+    public long failedFaults() {
         return 0;
     }
 
     @Override
-    public long noFaults()
-    {
+    public long noFaults() {
         return 0;
     }
 
     @Override
-    public long pins()
-    {
+    public long pins() {
         return pins;
     }
 
     @Override
-    public long unpins()
-    {
+    public long unpins() {
         return 0;
     }
 
     @Override
-    public long hits()
-    {
+    public long hits() {
         return 0;
     }
 
     @Override
-    public long bytesRead()
-    {
+    public long bytesRead() {
         return 0;
     }
 
     @Override
-    public long evictions()
-    {
+    public long evictions() {
         return 0;
     }
 
     @Override
-    public long evictionExceptions()
-    {
+    public long evictionExceptions() {
         return 0;
     }
 
     @Override
-    public long bytesWritten()
-    {
+    public long bytesWritten() {
         return 0;
     }
 
     @Override
-    public long flushes()
-    {
+    public long flushes() {
         return 0;
     }
 
     @Override
-    public long merges()
-    {
+    public long merges() {
         return 0;
     }
 
     @Override
-    public double hitRatio()
-    {
+    public double hitRatio() {
         return 0d;
     }
 
     @Override
-    public PinEvent beginPin( boolean writeLock, final long filePageId, PageSwapper swapper )
-    {
-        return new PinEvent()
-        {
+    public PinEvent beginPin(boolean writeLock, final long filePageId, PageSwapper swapper) {
+        return new PinEvent() {
             private boolean hit = true;
 
             @Override
-            public void setCachePageId( long cachePageId )
-            {
-            }
+            public void setCachePageId(long cachePageId) {}
 
             @Override
-            public PageFaultEvent beginPageFault( long filePageId, PageSwapper swapper )
-            {
+            public PageFaultEvent beginPageFault(long filePageId, PageSwapper swapper) {
                 hit = false;
-                return new PageFaultEvent()
-                {
+                return new PageFaultEvent() {
                     @Override
-                    public void addBytesRead( long bytes )
-                    {
+                    public void addBytesRead(long bytes) {}
+
+                    @Override
+                    public void close() {
+                        pageFaulted(filePageId, swapper);
                     }
 
                     @Override
-                    public void close()
-                    {
-                        pageFaulted( filePageId, swapper );
-                    }
+                    public void setException(Throwable throwable) {}
 
                     @Override
-                    public void setException( Throwable throwable )
-                    {
-                    }
+                    public void freeListSize(int freeListSize) {}
 
                     @Override
-                    public void freeListSize( int freeListSize )
-                    {
-                    }
-
-                    @Override
-                    public EvictionEvent beginEviction( long cachePageId )
-                    {
+                    public EvictionEvent beginEviction(long cachePageId) {
                         return EvictionEvent.NULL;
                     }
 
                     @Override
-                    public void setCachePageId( long cachePageId )
-                    {
-                    }
+                    public void setCachePageId(long cachePageId) {}
                 };
             }
 
             @Override
-            public void hit()
-            {
-            }
+            public void hit() {}
 
             @Override
-            public void noFault()
-            {
-            }
+            public void noFault() {}
 
             @Override
-            public void close()
-            {
-                pinned( filePageId, swapper, hit );
+            public void close() {
+                pinned(filePageId, swapper, hit);
             }
         };
     }
 
     @Override
-    public void unpin( long filePageId, PageSwapper swapper )
-    {
+    public void unpin(long filePageId, PageSwapper swapper) {}
+
+    @Override
+    public void reportEvents() {
+        Objects.requireNonNull(tracer);
+        tracer.pins(pins);
+        tracer.faults(faults);
     }
 
     @Override
-    public void reportEvents()
-    {
-        Objects.requireNonNull( tracer );
-        tracer.pins( pins );
-        tracer.faults( faults );
-    }
-
-    @Override
-    public String getTag()
-    {
+    public String getTag() {
         return tag;
     }
 
     @Override
-    public void openCursor()
-    {
-    }
+    public void openCursor() {}
 
     @Override
-    public void closeCursor()
-    {
-    }
+    public void closeCursor() {}
 
     @Override
-    public void merge( CursorStatisticSnapshot statisticSnapshot )
-    {
-    }
+    public void merge(CursorStatisticSnapshot statisticSnapshot) {}
 
-    private void pageFaulted( long filePageId, PageSwapper swapper )
-    {
+    private void pageFaulted(long filePageId, PageSwapper swapper) {
         faults++;
-        record( new Fault( swapper, filePageId ) );
+        record(new Fault(swapper, filePageId));
     }
 
-    private void pinned( long filePageId, PageSwapper swapper, boolean hit )
-    {
+    private void pinned(long filePageId, PageSwapper swapper, boolean hit) {
         pins++;
-        record( new Pin( swapper, filePageId, hit ) );
+        record(new Pin(swapper, filePageId, hit));
     }
 
-    public static class Fault extends Event
-    {
-        private Fault( PageSwapper io, long pageId )
-        {
-            super( io, pageId );
+    public static class Fault extends Event {
+        private Fault(PageSwapper io, long pageId) {
+            super(io, pageId);
         }
     }
 
-    public static class Pin extends Event
-    {
+    public static class Pin extends Event {
         private final boolean hit;
 
-        private Pin( PageSwapper io, long pageId, boolean hit )
-        {
-            super( io, pageId );
+        private Pin(PageSwapper io, long pageId, boolean hit) {
+            super(io, pageId);
             this.hit = hit;
         }
 
         @Override
-        public String toString()
-        {
-            return String.format( "%s{io=%s, pageId=%s,hit=%s}", getClass().getSimpleName(), io, pageId, hit );
+        public String toString() {
+            return String.format("%s{io=%s, pageId=%s,hit=%s}", getClass().getSimpleName(), io, pageId, hit);
         }
     }
-
 }

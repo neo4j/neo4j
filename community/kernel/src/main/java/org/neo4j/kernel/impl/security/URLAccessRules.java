@@ -20,49 +20,39 @@
 package org.neo4j.kernel.impl.security;
 
 import java.util.Map;
-
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 
-public class URLAccessRules
-{
-    private static final URLAccessRule ALWAYS_PERMITTED = ( config, url ) -> url;
+public class URLAccessRules {
+    private static final URLAccessRule ALWAYS_PERMITTED = (config, url) -> url;
 
-    private URLAccessRules()
-    {
-    }
+    private URLAccessRules() {}
 
-    public static URLAccessRule alwaysPermitted()
-    {
+    public static URLAccessRule alwaysPermitted() {
         return ALWAYS_PERMITTED;
     }
 
     private static final URLAccessRule FILE_ACCESS = new FileURLAccessRule();
 
-    public static URLAccessRule fileAccess()
-    {
+    public static URLAccessRule fileAccess() {
         return FILE_ACCESS;
     }
 
     private static final URLAccessRule WEB_ACCESS = new WebURLAccessRule();
 
-    public static URLAccessRule webAccess()
-    {
+    public static URLAccessRule webAccess() {
         return WEB_ACCESS;
     }
 
-    public static URLAccessRule combined( final Map<String,URLAccessRule> urlAccessRules )
-    {
-        return ( config, url ) ->
-        {
+    public static URLAccessRule combined(final Map<String, URLAccessRule> urlAccessRules) {
+        return (config, url) -> {
             String protocol = url.getProtocol();
-            URLAccessRule protocolRule = urlAccessRules.get( protocol );
-            if ( protocolRule == null )
-            {
-                throw new URLAccessValidationError( "loading resources via protocol '" + protocol +
-                        "' is not permitted" );
+            URLAccessRule protocolRule = urlAccessRules.get(protocol);
+            if (protocolRule == null) {
+                throw new URLAccessValidationError(
+                        "loading resources via protocol '" + protocol + "' is not permitted");
             }
-            return protocolRule.validate( config, url );
+            return protocolRule.validate(config, url);
         };
     }
 }

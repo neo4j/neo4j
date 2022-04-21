@@ -19,16 +19,14 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-public enum RoutingOption
-{
-    ROUTE_AND_READ_ONLY( true, false, true ),
-    ROUTE_WRITE_AND_READ( true, true, true );
+public enum RoutingOption {
+    ROUTE_AND_READ_ONLY(true, false, true),
+    ROUTE_WRITE_AND_READ(true, true, true);
     final boolean read;
     final boolean write;
     final boolean route;
 
-    RoutingOption( boolean route, boolean write, boolean read )
-    {
+    RoutingOption(boolean route, boolean write, boolean read) {
         this.route = route;
         this.write = write;
         this.read = read;

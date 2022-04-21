@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import java.util.function.Supplier;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-
-import java.util.function.Supplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.Factory;
@@ -42,20 +40,19 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
  * @see LuceneSchemaIndex
  * @see AbstractLuceneIndexBuilder
  */
-public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
-{
+public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder> {
     private final IndexDescriptor descriptor;
     private final Config config;
     private IndexSamplingConfig samplingConfig;
     private Supplier<IndexWriterConfig> writerConfigFactory;
 
-    private LuceneSchemaIndexBuilder( IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config )
-    {
-        super( readOnlyChecker );
+    private LuceneSchemaIndexBuilder(
+            IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config) {
+        super(readOnlyChecker);
         this.descriptor = descriptor;
         this.config = config;
-        this.samplingConfig = new IndexSamplingConfig( config );
-        this.writerConfigFactory = () -> IndexWriterConfigs.standard( config );
+        this.samplingConfig = new IndexSamplingConfig(config);
+        this.writerConfigFactory = () -> IndexWriterConfigs.standard(config);
     }
 
     /**
@@ -64,9 +61,9 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      * @return new LuceneSchemaIndexBuilder
      * @param descriptor The descriptor for this index
      */
-    public static LuceneSchemaIndexBuilder create( IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config )
-    {
-        return new LuceneSchemaIndexBuilder( descriptor, readOnlyChecker, config );
+    public static LuceneSchemaIndexBuilder create(
+            IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config) {
+        return new LuceneSchemaIndexBuilder(descriptor, readOnlyChecker, config);
     }
 
     /**
@@ -75,8 +72,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      * @param samplingConfig sampling config
      * @return index builder
      */
-    public LuceneSchemaIndexBuilder withSamplingConfig( IndexSamplingConfig samplingConfig )
-    {
+    public LuceneSchemaIndexBuilder withSamplingConfig(IndexSamplingConfig samplingConfig) {
         this.samplingConfig = samplingConfig;
         return this;
     }
@@ -87,8 +83,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      * @param writerConfigFactory the supplier of writer configs
      * @return index builder
      */
-    public LuceneSchemaIndexBuilder withWriterConfig( Supplier<IndexWriterConfig> writerConfigFactory )
-    {
+    public LuceneSchemaIndexBuilder withWriterConfig(Supplier<IndexWriterConfig> writerConfigFactory) {
         this.writerConfigFactory = writerConfigFactory;
         return this;
     }
@@ -98,10 +93,14 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      *
      * @return lucene schema index
      */
-    public SchemaIndex build()
-    {
+    public SchemaIndex build() {
         PartitionedIndexStorage storage = storageBuilder.build();
-        return new WritableDatabaseSchemaIndex( storage, descriptor, samplingConfig, new WritableIndexPartitionFactory( writerConfigFactory ),
-                readOnlyChecker, config );
+        return new WritableDatabaseSchemaIndex(
+                storage,
+                descriptor,
+                samplingConfig,
+                new WritableIndexPartitionFactory(writerConfigFactory),
+                readOnlyChecker,
+                config);
     }
 }

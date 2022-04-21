@@ -24,8 +24,7 @@ import java.util.function.Supplier;
 /**
  * Provides extension developers to declare capabilities.
  */
-public interface CapabilitiesRegistry extends Capabilities
-{
+public interface CapabilitiesRegistry extends Capabilities {
     /**
      * Sets a capability to the given value.
      *
@@ -33,7 +32,7 @@ public interface CapabilitiesRegistry extends Capabilities
      * @param value      the value to set.
      * @param <T>        the type of the capability value.
      */
-    <T> void set( Capability<T> capability, T value );
+    <T> void set(Capability<T> capability, T value);
 
     /**
      * Sets a capability as a dynamic value that will be evaluated on each access.
@@ -42,5 +41,5 @@ public interface CapabilitiesRegistry extends Capabilities
      * @param dynamicValue the supplier function to be evaluated to retrieve the dynamic value.
      * @param <T>          the type of the capability value.
      */
-    <T> void supply( Capability<T> capability, Supplier<T> dynamicValue );
+    <T> void supply(Capability<T> capability, Supplier<T> dynamicValue);
 }

@@ -20,28 +20,19 @@
 package org.neo4j.server.http.cypher.format.output.eventsource;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-
 import java.io.IOException;
-
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContentWriter;
 
-public class EventSourceWriter implements ResultDataContentWriter
-{
+public class EventSourceWriter implements ResultDataContentWriter {
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent )
-            throws IOException
-    {
-        try
-        {
+    public void write(JsonGenerator out, RecordEvent recordEvent) throws IOException {
+        try {
             out.writeStartArray();
-            for ( String key : recordEvent.getColumns() )
-            {
-                out.writeObject( recordEvent.getValue( key ) );
+            for (String key : recordEvent.getColumns()) {
+                out.writeObject(recordEvent.getValue(key));
             }
-        }
-        finally
-        {
+        } finally {
             out.writeEndArray();
         }
     }

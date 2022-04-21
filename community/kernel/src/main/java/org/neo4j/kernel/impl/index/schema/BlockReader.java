@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
@@ -35,42 +34,40 @@ import org.neo4j.io.pagecache.PageCursor;
  * from and they need to be closed separately, this class does not take responsibility for created readers. This also mean it's safe to close this
  * {@link BlockReader} even if there are still child readers alive.
  */
-public class BlockReader<KEY,VALUE> implements Closeable
-{
+public class BlockReader<KEY, VALUE> implements Closeable {
     private final StoreChannel channel;
     private final FileSystemAbstraction fs;
     private final Path path;
-    private final Layout<KEY,VALUE> layout;
+    private final Layout<KEY, VALUE> layout;
     private final boolean produceNewKeyAndValueInstances;
 
-    BlockReader( FileSystemAbstraction fs, Path path, Layout<KEY,VALUE> layout, boolean produceNewKeyAndValueInstances ) throws IOException
-    {
+    BlockReader(FileSystemAbstraction fs, Path path, Layout<KEY, VALUE> layout, boolean produceNewKeyAndValueInstances)
+            throws IOException {
         this.fs = fs;
         this.path = path;
         this.layout = layout;
         this.produceNewKeyAndValueInstances = produceNewKeyAndValueInstances;
-        this.channel = fs.read( path );
+        this.channel = fs.read(path);
     }
 
-    BlockEntryReader<KEY,VALUE> nextBlock( ScopedBuffer blockBuffer ) throws IOException
-    {
+    BlockEntryReader<KEY, VALUE> nextBlock(ScopedBuffer blockBuffer) throws IOException {
         long position = channel.position();
-        if ( position >= channel.size() )
-        {
+        if (position >= channel.size()) {
             return null;
         }
-        StoreChannel blockChannel = fs.read( path );
-        blockChannel.position( position );
-        PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel, blockBuffer.getBuffer() ) );
-        BlockEntryReader<KEY,VALUE> blockEntryReader = new BlockEntryReader<>( pageCursor, layout, produceNewKeyAndValueInstances );
+        StoreChannel blockChannel = fs.read(path);
+        blockChannel.position(position);
+        PageCursor pageCursor =
+                new ReadableChannelPageCursor(new ReadAheadChannel<>(blockChannel, blockBuffer.getBuffer()));
+        BlockEntryReader<KEY, VALUE> blockEntryReader =
+                new BlockEntryReader<>(pageCursor, layout, produceNewKeyAndValueInstances);
         long blockSize = blockEntryReader.blockSize();
-        channel.position( position + blockSize );
+        channel.position(position + blockSize);
         return blockEntryReader;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         channel.close();
     }
 }

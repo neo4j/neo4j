@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util.Collections
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -30,12 +28,15 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Node
 
+import java.util.Collections
+
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                            runtime: CypherRuntime[CONTEXT],
-                                                            val sizeHint: Int
-                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("empty lhs should produce no rows") {
     // when
@@ -146,7 +147,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // then
     val expectedRows: Iterable[Array[_]] =
       aNodes.map(a => Array[Any](a.getId % 4, a, bNodes.asJava)) ++
-      bNodes.map(b => Array[Any](b.getId % 4, b, Collections.emptyList))
+        bNodes.map(b => Array[Any](b.getId % 4, b, Collections.emptyList))
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("i", "x", "list").withRows(expectedRows)
   }
@@ -175,7 +176,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val expectedRows: Seq[Array[_]] =
       (
         aNodes.map(a => Array[Any](a, bNodes.asJava)) ++
-        bNodes.map(b => Array[Any](b, Collections.emptyList))
+          bNodes.map(b => Array[Any](b, Collections.emptyList))
       ).sortBy(arr => arr(0).asInstanceOf[Node].getId).take(limit)
 
     val runtimeResult = execute(logicalQuery, runtime)

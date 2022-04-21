@@ -19,16 +19,17 @@
  */
 package org.neo4j.bolt.transport;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
+
+import java.io.IOException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.io.IOException;
-import java.util.stream.Stream;
-
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.bolt.testing.client.SecureWebSocketConnection;
 import org.neo4j.bolt.testing.client.SocketConnection;
@@ -38,13 +39,9 @@ import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
-
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-public class ConnectionIT
-{
+public class ConnectionIT {
     @Inject
     private Neo4jWithSocket server;
 
@@ -53,43 +50,41 @@ public class ConnectionIT
     private HostnamePort address;
 
     @BeforeEach
-    public void setup( TestInfo testInfo ) throws IOException
-    {
-        server.setConfigure( withOptionalBoltEncryption() );
-        server.init( testInfo );
+    public void setup(TestInfo testInfo) throws IOException {
+        server.setConfigure(withOptionalBoltEncryption());
+        server.init(testInfo);
         address = server.lookupDefaultConnector();
     }
 
     @AfterEach
-    public void cleanup() throws IOException
-    {
-        if ( connection != null )
-        {
+    public void cleanup() throws IOException {
+        if (connection != null) {
             connection.disconnect();
         }
     }
 
-    public static Stream<Arguments> transportFactory()
-    {
-        return Stream.of( Arguments.of( new SecureSocketConnection() ),
-                Arguments.of( new SocketConnection() ),
-                Arguments.of( new SecureWebSocketConnection()),
-                Arguments.of( new WebSocketConnection() ) );
+    public static Stream<Arguments> transportFactory() {
+        return Stream.of(
+                Arguments.of(new SecureSocketConnection()),
+                Arguments.of(new SocketConnection()),
+                Arguments.of(new SecureWebSocketConnection()),
+                Arguments.of(new WebSocketConnection()));
     }
 
-    @ParameterizedTest( name = "{displayName} {index}" )
-    @MethodSource( "transportFactory" )
-    public void shouldCloseConnectionOnInvalidHandshake( TransportConnection connection ) throws Exception
-    {
+    @ParameterizedTest(name = "{displayName} {index}")
+    @MethodSource("transportFactory")
+    public void shouldCloseConnectionOnInvalidHandshake(TransportConnection connection) throws Exception {
         this.connection = connection;
 
         // GIVEN
-        connection.connect( address );
+        connection.connect(address);
 
         // WHEN
-        connection.send( new byte[]{(byte) 0xDE, (byte) 0xAD, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
+        connection.send(new byte[] {
+            (byte) 0xDE, (byte) 0xAD, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        });
 
         // THEN
-        assertThrows( IOException.class, () -> connection.recv( 4 ) );
+        assertThrows(IOException.class, () -> connection.recv(4));
     }
 }

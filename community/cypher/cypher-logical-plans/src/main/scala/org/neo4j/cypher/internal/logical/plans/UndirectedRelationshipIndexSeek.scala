@@ -33,27 +33,29 @@ import org.neo4j.graphdb.schema.IndexType
  *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
-case class UndirectedRelationshipIndexSeek(idName: String,
-                                           leftNode: String,
-                                           rightNode: String,
-                                           override val typeToken: RelationshipTypeToken,
-                                           properties: Seq[IndexedProperty],
-                                           valueExpr: QueryExpression[Expression],
-                                           argumentIds: Set[String],
-                                           indexOrder: IndexOrder,
-                                           override val indexType: IndexType)
-                                          (implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
+case class UndirectedRelationshipIndexSeek(
+  idName: String,
+  leftNode: String,
+  rightNode: String,
+  override val typeToken: RelationshipTypeToken,
+  properties: Seq[IndexedProperty],
+  valueExpr: QueryExpression[Expression],
+  argumentIds: Set[String],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType
+)(implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexSeek =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
-  override def withMappedProperties(f: IndexedProperty => IndexedProperty):  UndirectedRelationshipIndexSeek =
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): UndirectedRelationshipIndexSeek =
     copy(properties = properties.map(f))(SameId(this.id))
 }
 

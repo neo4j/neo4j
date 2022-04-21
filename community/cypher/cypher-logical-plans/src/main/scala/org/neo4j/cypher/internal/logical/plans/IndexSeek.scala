@@ -59,8 +59,7 @@ object IndexSeek {
 
   // entry points
   private val NODE_INDEX_SEEK_PATTERN = s"$ID: ?$ID ?\\(([^\\)]+)\\)".r
-  private val REL_INDEX_SEEK_PATTERN =  s"\\($ID\\)(<?)-\\[$ID: ?$ID ?\\(([^\\)]+)\\)]?-(>?)\\($ID\\)".r
-
+  private val REL_INDEX_SEEK_PATTERN = s"\\($ID\\)(<?)-\\[$ID: ?$ID ?\\(([^\\)]+)\\)]?-(>?)\\($ID\\)".r
 
   // predicates
   private val EXACT = s"$ID ?= ?$VALUE".r
@@ -108,29 +107,29 @@ object IndexSeek {
   /**
    * Construct a node index seek/scan operator by parsing a string.
    */
-  def nodeIndexSeek(indexSeekString: String,
-                    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-                    indexOrder: IndexOrder = IndexOrderNone,
-                    paramExpr: Iterable[Expression] = Seq.empty,
-                    argumentIds: Set[String] = Set.empty,
-                    propIds: Option[PartialFunction[String, Int]] = None,
-                    labelId: Int = 0,
-                    unique: Boolean = false,
-                    customQueryExpression: Option[QueryExpression[Expression]] = None,
-                    indexType: IndexType = IndexType.RANGE)(implicit idGen: IdGen): NodeIndexLeafPlan = {
+  def nodeIndexSeek(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    propIds: Option[PartialFunction[String, Int]] = None,
+    labelId: Int = 0,
+    unique: Boolean = false,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  )(implicit idGen: IdGen): NodeIndexLeafPlan = {
 
     val NODE_INDEX_SEEK_PATTERN(node, labelStr, predicateStr) = indexSeekString.trim
     val label = LabelToken(labelStr, LabelId(labelId))
     val predicates = predicateStr.split(',').map(_.trim)
 
-    def createSeek(properties: Seq[IndexedProperty],
-                   valueExpr: QueryExpression[Expression]): NodeIndexSeekLeafPlan =
+    def createSeek(properties: Seq[IndexedProperty], valueExpr: QueryExpression[Expression]): NodeIndexSeekLeafPlan =
       if (unique) {
         NodeUniqueIndexSeek(node, label, properties, valueExpr, argumentIds, indexOrder, indexType)
       } else {
         NodeIndexSeek(node, label, properties, valueExpr, argumentIds, indexOrder, indexType)
       }
-
 
     def createEndsWithScan(property: IndexedProperty, valueExpr: Expression): NodeIndexLeafPlan = {
       NodeIndexEndsWithScan(node, label, property, valueExpr, argumentIds, indexOrder, indexType)
@@ -154,62 +153,146 @@ object IndexSeek {
       createSeek,
       createScan,
       createEndsWithScan,
-      createContainsScan)
+      createContainsScan
+    )
   }
 
   /**
    * Construct a relationship index seek/scan operator by parsing a string.
    */
-  def relationshipIndexSeek(indexSeekString: String,
-                            getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-                            indexOrder: IndexOrder = IndexOrderNone,
-                            paramExpr: Iterable[Expression] = Seq.empty,
-                            argumentIds: Set[String] = Set.empty,
-                            propIds: Option[PartialFunction[String, Int]] = None,
-                            typeId: Int = 0,
-                            customQueryExpression: Option[QueryExpression[Expression]] = None,
-                            indexType: IndexType = IndexType.RANGE)(implicit idGen: IdGen): RelationshipIndexLeafPlan = {
+  def relationshipIndexSeek(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    propIds: Option[PartialFunction[String, Int]] = None,
+    typeId: Int = 0,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  )(implicit idGen: IdGen): RelationshipIndexLeafPlan = {
 
-    val REL_INDEX_SEEK_PATTERN(leftNode, incoming, rel, typeStr, predicateStr, outgoing, rightNode) = indexSeekString.trim
+    val REL_INDEX_SEEK_PATTERN(leftNode, incoming, rel, typeStr, predicateStr, outgoing, rightNode) =
+      indexSeekString.trim
     val (startNode, endNode, directed) = (incoming, outgoing) match {
       case ("<", "") => (rightNode, leftNode, true)
       case ("", ">") => (leftNode, rightNode, true)
-      case ("", "") => (leftNode, rightNode, false)
-      case _ => throw new UnsupportedOperationException(s"Direction $incoming-$outgoing not supported")
+      case ("", "")  => (leftNode, rightNode, false)
+      case _         => throw new UnsupportedOperationException(s"Direction $incoming-$outgoing not supported")
     }
     val typeToken = RelationshipTypeToken(typeStr, RelTypeId(typeId))
     val predicates: Array[String] = predicateStr.split(',').map(_.trim)
 
-    def createSeek(properties: Seq[IndexedProperty],
-                   valueExpr: QueryExpression[Expression]): RelationshipIndexLeafPlan = {
+    def createSeek(
+      properties: Seq[IndexedProperty],
+      valueExpr: QueryExpression[Expression]
+    ): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexSeek(rel,  startNode, endNode, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType)
+        DirectedRelationshipIndexSeek(
+          rel,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        )
       } else {
-        UndirectedRelationshipIndexSeek(rel,  startNode, endNode, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType)
+        UndirectedRelationshipIndexSeek(
+          rel,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        )
       }
     }
 
     def createEndsWithScan(property: IndexedProperty, valueExpr: Expression): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexEndsWithScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder, indexType)
+        DirectedRelationshipIndexEndsWithScan(
+          rel,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        )
       } else {
-        UndirectedRelationshipIndexEndsWithScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder, indexType)
+        UndirectedRelationshipIndexEndsWithScan(
+          rel,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        )
       }
     }
 
     def createContainsScan(property: IndexedProperty, valueExpr: Expression): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexContainsScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder, indexType)
+        DirectedRelationshipIndexContainsScan(
+          rel,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        )
       } else {
-        UndirectedRelationshipIndexContainsScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder, indexType)
+        UndirectedRelationshipIndexContainsScan(
+          rel,
+          startNode,
+          endNode,
+          typeToken,
+          property,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        )
       }
     }
 
     def createScan(properties: Seq[IndexedProperty]): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexScan(rel, startNode, endNode, typeToken, properties, argumentIds, indexOrder, indexType)
+        DirectedRelationshipIndexScan(
+          rel,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          indexType
+        )
       } else {
-        UndirectedRelationshipIndexScan(rel, startNode, endNode, typeToken, properties, argumentIds, indexOrder, indexType)
+        UndirectedRelationshipIndexScan(
+          rel,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          indexType
+        )
       }
     }
 
@@ -223,19 +306,22 @@ object IndexSeek {
       createSeek,
       createScan,
       createEndsWithScan,
-      createContainsScan)
+      createContainsScan
+    )
   }
 
-  private def createPlan[T <: LogicalLeafPlan](predicates: Array[String],
-                                               entityType: EntityType,
-                                               getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-                                               paramExpr: Iterable[Expression],
-                                               propIds: Option[PartialFunction[String, Int]],
-                                               customQueryExpression: Option[QueryExpression[Expression]],
-                                               createSeek: (Seq[IndexedProperty], QueryExpression[Expression]) => T,
-                                               createScan: (Seq[IndexedProperty]) => T,
-                                               createEndsWithScan: (IndexedProperty, Expression) => T,
-                                               createContainsScan: (IndexedProperty, Expression) => T): T = {
+  private def createPlan[T <: LogicalLeafPlan](
+    predicates: Array[String],
+    entityType: EntityType,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    paramExpr: Iterable[Expression],
+    propIds: Option[PartialFunction[String, Int]],
+    customQueryExpression: Option[QueryExpression[Expression]],
+    createSeek: (Seq[IndexedProperty], QueryExpression[Expression]) => T,
+    createScan: (Seq[IndexedProperty]) => T,
+    createEndsWithScan: (IndexedProperty, Expression) => T,
+    createContainsScan: (IndexedProperty, Expression) => T
+  ): T = {
     var propId = -1
     def nextPropId(): Int = {
       propId += 1
@@ -249,7 +335,9 @@ object IndexSeek {
           if (func.isDefinedAt(prop)) {
             func(prop)
           } else {
-            throw new IllegalArgumentException(s"Property `$prop` has no provided id. Either provide ids for all properties, or provide none.")
+            throw new IllegalArgumentException(
+              s"Property `$prop` has no provided id. Either provide ids for all properties, or provide none."
+            )
           }
         } else {
           nextPropId()
@@ -258,14 +346,16 @@ object IndexSeek {
       IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(id)), getValue(prop), entityType)
     }
 
-    val paramQueue = mutable.Queue(paramExpr.toArray:_*)
+    val paramQueue = mutable.Queue(paramExpr.toArray: _*)
     def value(value: String): Expression =
       value match {
-        case INT(int) => SignedDecimalIntegerLiteral(int)(pos)
-        case STRING(str) => StringLiteral(str)(pos)
+        case INT(int)             => SignedDecimalIntegerLiteral(int)(pos)
+        case STRING(str)          => StringLiteral(str)(pos)
         case ID_PATTERN(variable) => Variable(variable)(pos)
         case PARAM =>
-          if (paramQueue.isEmpty) throw new IllegalArgumentException("Cannot use parameter syntax '???' without providing parameter expression 'paramExpr'")
+          if (paramQueue.isEmpty) throw new IllegalArgumentException(
+            "Cannot use parameter syntax '???' without providing parameter expression 'paramExpr'"
+          )
           paramQueue.dequeue()
         case _ => throw new IllegalArgumentException(s"Value `$value` is not supported")
       }
@@ -285,95 +375,127 @@ object IndexSeek {
           createSeek(List(prop(propStr)), valueExpr)
 
         case LESS_THAN(propStr, valueStr) =>
-          val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos))
+          val valueExpr = RangeQueryExpression(
+            InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos)
+          )
           createSeek(List(prop(propStr)), valueExpr)
 
         case LESS_THAN_OR_EQ(propStr, valueStr) =>
-          val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos))
+          val valueExpr = RangeQueryExpression(
+            InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos)
+          )
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN(propStr, valueStr) =>
-          val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos))
+          val valueExpr = RangeQueryExpression(
+            InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos)
+          )
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN_OR_EQ(propStr, valueStr) =>
-          val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos))
+          val valueExpr = RangeQueryExpression(
+            InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos)
+          )
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN_LESS_THAN(firstValueStr, propStr, secondValueStr) =>
           val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(
             RangeBetween(
               RangeGreaterThan(NonEmptyList(ExclusiveBound(value(firstValueStr)))),
-              RangeLessThan(NonEmptyList(ExclusiveBound(value(secondValueStr))))))(pos))
+              RangeLessThan(NonEmptyList(ExclusiveBound(value(secondValueStr))))
+            )
+          )(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN_EQ_LESS_THAN(firstValueStr, propStr, secondValueStr) =>
           val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(
             RangeBetween(
               RangeGreaterThan(NonEmptyList(InclusiveBound(value(firstValueStr)))),
-              RangeLessThan(NonEmptyList(ExclusiveBound(value(secondValueStr))))))(pos))
+              RangeLessThan(NonEmptyList(ExclusiveBound(value(secondValueStr))))
+            )
+          )(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN_LESS_THAN_EQ(firstValueStr, propStr, secondValueStr) =>
           val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(
             RangeBetween(
               RangeGreaterThan(NonEmptyList(ExclusiveBound(value(firstValueStr)))),
-              RangeLessThan(NonEmptyList(InclusiveBound(value(secondValueStr))))))(pos))
+              RangeLessThan(NonEmptyList(InclusiveBound(value(secondValueStr))))
+            )
+          )(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN_EQ_LESS_THAN_EQ(firstValueStr, propStr, secondValueStr) =>
           val valueExpr = RangeQueryExpression(InequalitySeekRangeWrapper(
             RangeBetween(
               RangeGreaterThan(NonEmptyList(InclusiveBound(value(firstValueStr)))),
-              RangeLessThan(NonEmptyList(InclusiveBound(value(secondValueStr))))))(pos))
+              RangeLessThan(NonEmptyList(InclusiveBound(value(secondValueStr))))
+            )
+          )(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case LESS_THAN_LESS_THAN(firstValueStr, propStr, secondValueStr) =>
           val valueExpr =
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(value(firstValueStr)),
-              ExclusiveBound(value(secondValueStr)))))(pos))
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(
+              ExclusiveBound(value(firstValueStr)),
+              ExclusiveBound(value(secondValueStr))
+            )))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case LESS_THAN_EQ_LESS_THAN(firstValueStr, propStr, secondValueStr) =>
           val valueExpr =
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(value(firstValueStr)),
-              ExclusiveBound(value(secondValueStr)))))(pos))
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(
+              InclusiveBound(value(firstValueStr)),
+              ExclusiveBound(value(secondValueStr))
+            )))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case LESS_THAN_LESS_THAN_EQ(firstValueStr, propStr, secondValueStr) =>
           val valueExpr =
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(value(firstValueStr)),
-              InclusiveBound(value(secondValueStr)))))(pos))
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(
+              ExclusiveBound(value(firstValueStr)),
+              InclusiveBound(value(secondValueStr))
+            )))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case LESS_THAN_EQ_LESS_THAN_EQ(firstValueStr, propStr, secondValueStr) =>
           val valueExpr =
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(value(firstValueStr)),
-              InclusiveBound(value(secondValueStr)))))(pos))
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(
+              InclusiveBound(value(firstValueStr)),
+              InclusiveBound(value(secondValueStr))
+            )))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN_GREATER_THAN(firstValueStr, propStr, secondValueStr) =>
           val valueExpr =
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(value(firstValueStr)),
-              ExclusiveBound(value(secondValueStr)))))(pos))
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(
+              ExclusiveBound(value(firstValueStr)),
+              ExclusiveBound(value(secondValueStr))
+            )))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN_EQ_GREATER_THAN(firstValueStr, propStr, secondValueStr) =>
           val valueExpr =
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(value(firstValueStr)),
-              ExclusiveBound(value(secondValueStr)))))(pos))
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(
+              InclusiveBound(value(firstValueStr)),
+              ExclusiveBound(value(secondValueStr))
+            )))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN_GREATER_THAN_EQ(firstValueStr, propStr, secondValueStr) =>
           val valueExpr =
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(value(firstValueStr)),
-              InclusiveBound(value(secondValueStr)))))(pos))
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(
+              ExclusiveBound(value(firstValueStr)),
+              InclusiveBound(value(secondValueStr))
+            )))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case GREATER_THAN_EQ_GREATER_THAN_EQ(firstValueStr, propStr, secondValueStr) =>
           val valueExpr =
-            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(value(firstValueStr)),
-              InclusiveBound(value(secondValueStr)))))(pos))
+            RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(
+              InclusiveBound(value(firstValueStr)),
+              InclusiveBound(value(secondValueStr))
+            )))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case STARTS_WITH(propStr, string) =>
@@ -398,8 +520,8 @@ object IndexSeek {
 
       val equalityPred = predicates.takeWhile {
         case EXACT_TWO(_, _, _) => true
-        case EXACT(_, _) => true
-        case _ => false
+        case EXACT(_, _)        => true
+        case _                  => false
       }
       val equalityAndNextPred =
         if (equalityPred sameElements predicates) equalityPred
@@ -416,16 +538,24 @@ object IndexSeek {
             valueExprs += SingleQueryExpression(value(valueStr))
             properties += prop(propStr)
           case LESS_THAN(propStr, valueStr) =>
-            valueExprs += RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos))
+            valueExprs += RangeQueryExpression(
+              InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos)
+            )
             properties += prop(propStr)
           case LESS_THAN_OR_EQ(propStr, valueStr) =>
-            valueExprs += RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos))
+            valueExprs += RangeQueryExpression(
+              InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos)
+            )
             properties += prop(propStr)
           case GREATER_THAN(propStr, valueStr) =>
-            valueExprs += RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos))
+            valueExprs += RangeQueryExpression(
+              InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos)
+            )
             properties += prop(propStr)
           case GREATER_THAN_OR_EQ(propStr, valueStr) =>
-            valueExprs += RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos))
+            valueExprs += RangeQueryExpression(
+              InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos)
+            )
             properties += prop(propStr)
           case STARTS_WITH(propStr, string) =>
             valueExprs += RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(value(string)))(pos))
@@ -477,18 +607,22 @@ object IndexSeek {
           case _ => throw new IllegalArgumentException(s"$predicate is not allowed in composite seeks.")
         }
 
-      if (equalityAndNextPred.length == 1 && (equalityAndNextPred.head match {
-        case EXISTS(_) => true
-        case ENDS_WITH(_, _) => true
-        case CONTAINS(_, _) => true
-        case _ => false
-      }))
+      if (
+        equalityAndNextPred.length == 1 && (equalityAndNextPred.head match {
+          case EXISTS(_)       => true
+          case ENDS_WITH(_, _) => true
+          case CONTAINS(_, _)  => true
+          case _               => false
+        })
+      )
         createScan(properties.toSeq)
       else
         createSeek(properties.toSeq, CompositeQueryExpression(valueExprs.toSeq))
     } else if (predicates.length > 1 && customQueryExpression.isDefined) {
       createSeek(predicates.map(prop), customQueryExpression.get)
     } else
-      throw new IllegalArgumentException(s"Cannot parse `${predicates.mkString("Array(", ", ", ")")}` as an index seek.")
+      throw new IllegalArgumentException(
+        s"Cannot parse `${predicates.mkString("Array(", ", ", ")")}` as an index seek."
+      )
   }
 }

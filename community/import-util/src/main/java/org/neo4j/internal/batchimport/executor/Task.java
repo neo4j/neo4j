@@ -29,7 +29,6 @@ import java.util.concurrent.Callable;
  * @param <LOCAL> thread-local state provided by the {@link TaskExecutor} executing this task.
  */
 @FunctionalInterface
-public interface Task<LOCAL>
-{
-    void run( LOCAL threadLocalState ) throws Exception;
+public interface Task<LOCAL> {
+    void run(LOCAL threadLocalState) throws Exception;
 }

@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-public final class IndexProxyAlreadyClosedKernelException extends FlipFailedKernelException
-{
-    public IndexProxyAlreadyClosedKernelException( Class<?> proxyClazz )
-    {
-        super( proxyClazz.getSimpleName() + " has been closed. No more interactions allowed." );
+public final class IndexProxyAlreadyClosedKernelException extends FlipFailedKernelException {
+    public IndexProxyAlreadyClosedKernelException(Class<?> proxyClazz) {
+        super(proxyClazz.getSimpleName() + " has been closed. No more interactions allowed.");
     }
 }

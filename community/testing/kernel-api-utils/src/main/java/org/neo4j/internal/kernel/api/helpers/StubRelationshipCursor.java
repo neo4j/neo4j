@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
+
 import java.util.Collections;
 import java.util.List;
-
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -32,10 +33,7 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
-
-public class StubRelationshipCursor extends DefaultCloseListenable implements RelationshipTraversalCursor
-{
+public class StubRelationshipCursor extends DefaultCloseListenable implements RelationshipTraversalCursor {
     private final List<TestRelationshipChain> store;
 
     private int offset;
@@ -45,124 +43,103 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     private RelationshipSelection selection;
     private long neighbourNodeReference;
 
-    public StubRelationshipCursor( TestRelationshipChain chain )
-    {
-        this( Collections.singletonList( chain ) );
+    public StubRelationshipCursor(TestRelationshipChain chain) {
+        this(Collections.singletonList(chain));
     }
 
-    public StubRelationshipCursor( List<TestRelationshipChain> store )
-    {
+    public StubRelationshipCursor(List<TestRelationshipChain> store) {
         this.store = store;
         this.chainId = 0;
         this.offset = -1;
         this.isClosed = true;
     }
 
-    void initialize( long nodeReference, RelationshipSelection selection, long neighbourNodeReference )
-    {
+    void initialize(long nodeReference, RelationshipSelection selection, long neighbourNodeReference) {
         this.nodeReference = nodeReference;
         this.selection = selection;
         this.neighbourNodeReference = neighbourNodeReference;
         this.offset = -1;
         this.isClosed = true;
-        this.chainId = findChain( nodeReference );
+        this.chainId = findChain(nodeReference);
     }
 
-    private int findChain( long nodeReference )
-    {
-        for ( int i = 0; i < store.size(); i++ )
-        {
-            if ( store.get( i ).originNodeId() == nodeReference )
-            {
+    private int findChain(long nodeReference) {
+        for (int i = 0; i < store.size(); i++) {
+            if (store.get(i).originNodeId() == nodeReference) {
                 return i;
             }
         }
-        throw new IllegalArgumentException( "No chain for " + nodeReference + " found" );
+        throw new IllegalArgumentException("No chain for " + nodeReference + " found");
     }
 
     @Override
-    public long relationshipReference()
-    {
-        return store.get( chainId ).get( offset ).id();
+    public long relationshipReference() {
+        return store.get(chainId).get(offset).id();
     }
 
     @Override
-    public int type()
-    {
-        return store.get( chainId ).get( offset ).type();
+    public int type() {
+        return store.get(chainId).get(offset).type();
     }
 
     @Override
-    public void source( NodeCursor cursor )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void source(NodeCursor cursor) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public void target( NodeCursor cursor )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void target(NodeCursor cursor) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public void properties( PropertyCursor cursor, PropertySelection selection )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void properties(PropertyCursor cursor, PropertySelection selection) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public long sourceNodeReference()
-    {
-        return store.get( chainId ).get( offset ).source();
+    public long sourceNodeReference() {
+        return store.get(chainId).get(offset).source();
     }
 
     @Override
-    public long targetNodeReference()
-    {
-        return store.get( chainId ).get( offset ).target();
+    public long targetNodeReference() {
+        return store.get(chainId).get(offset).target();
     }
 
     @Override
-    public Reference propertiesReference()
-    {
+    public Reference propertiesReference() {
         return LongReference.NULL_REFERENCE;
     }
 
     @Override
-    public void otherNode( NodeCursor cursor )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void otherNode(NodeCursor cursor) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public long otherNodeReference()
-    {
-        TestRelationshipChain chain = store.get( chainId );
-        TestRelationshipChain.Data relationship = chain.get( offset );
+    public long otherNodeReference() {
+        TestRelationshipChain chain = store.get(chainId);
+        TestRelationshipChain.Data relationship = chain.get(offset);
         return relationship.source() == chain.originNodeId() ? relationship.target() : relationship.source();
     }
 
     @Override
-    public long originNodeReference()
-    {
-        return store.get( chainId ).originNodeId();
+    public long originNodeReference() {
+        return store.get(chainId).originNodeId();
     }
 
     @Override
-    public boolean next()
-    {
-        while ( chainId >= 0 && chainId < store.size() && store.get( chainId ).isValidOffset( offset + 1 ) )
-        {
+    public boolean next() {
+        while (chainId >= 0 && chainId < store.size() && store.get(chainId).isValidOffset(offset + 1)) {
             offset++;
-            TestRelationshipChain chain = store.get( chainId );
-            if ( !chain.isValidOffset( offset ) )
-            {
+            TestRelationshipChain chain = store.get(chainId);
+            if (!chain.isValidOffset(offset)) {
                 return false;
             }
-            TestRelationshipChain.Data data = chain.get( offset );
-            if ( selection.test( data.type(), data.relationshipDirection( nodeReference ) ) &&
-                    (neighbourNodeReference == NO_ID || neighbourNodeReference == otherNodeReference()) )
-            {
+            TestRelationshipChain.Data data = chain.get(offset);
+            if (selection.test(data.type(), data.relationshipDirection(nodeReference))
+                    && (neighbourNodeReference == NO_ID || neighbourNodeReference == otherNodeReference())) {
                 return true;
             }
         }
@@ -170,26 +147,22 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     }
 
     @Override
-    public void closeInternal()
-    {
+    public void closeInternal() {
         isClosed = true;
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return isClosed;
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void setTracer(KernelReadTracer tracer) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public void removeTracer()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void removeTracer() {
+        throw new UnsupportedOperationException("not implemented");
     }
 }

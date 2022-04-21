@@ -77,6 +77,7 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import java.lang.Boolean.FALSE
 import java.net.URL
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
@@ -99,8 +100,14 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val kernelTransaction = mock[KernelTransactionImplementation](RETURNS_DEEP_STUBS)
     when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
     when(kernelTransaction.acquireStatement()).thenReturn(statement)
-    statement = new KernelStatement(kernelTransaction, LockTracer.NONE, new ClockContext(),
-      new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE), new Caching().defaultDatabase, Config.defaults() )
+    statement = new KernelStatement(
+      kernelTransaction,
+      LockTracer.NONE,
+      new ClockContext(),
+      new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE),
+      new Caching().defaultDatabase,
+      Config.defaults()
+    )
     statement.initialize(null, CursorContext.NULL_CONTEXT, 7)
     statement.acquire()
   }
@@ -117,7 +124,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
 
     val transaction = mock[KernelTransaction]
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, StoreCursors.NULL, Config.defaults() ))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, StoreCursors.NULL, Config.defaults()))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
@@ -189,7 +196,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
-    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val context =
+      new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
     val iteratorA = context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, null)
 
     // WHEN
@@ -197,7 +205,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     iteratorA.close()
 
     // THEN
-    monitor.closedResources.collect { case r:RelationshipTraversalCursor => r } should have size(1)
+    monitor.closedResources.collect { case r: RelationshipTraversalCursor => r } should have size (1)
   }
 
   test("getRelationshipsForIdsPrimitive closes underlying cursor") {
@@ -208,7 +216,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
-    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val context =
+      new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
     val iteratorA = context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, null)
 
     // WHEN
@@ -216,7 +225,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     iteratorA.close()
 
     // THEN
-    monitor.closedResources.collect { case r:RelationshipTraversalCursor => r } should have size(1)
+    monitor.closedResources.collect { case r: RelationshipTraversalCursor => r } should have size (1)
   }
 
   test("getNodesByLabel closes underlying cursor") {
@@ -226,7 +235,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
-    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val context =
+      new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
 
     val iteratorA = context.getNodesByLabel(tokenReadSession(tx), 0, IndexOrderNone)
 
@@ -235,7 +245,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     iteratorA.close()
 
     // THEN
-    monitor.closedResources.collect { case r:NodeLabelIndexCursor => r } should have size(1)
+    monitor.closedResources.collect { case r: NodeLabelIndexCursor => r } should have size (1)
   }
 
   test("getNodesByLabelPrimitive closes underlying cursor") {
@@ -245,7 +255,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
-    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val context =
+      new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
     val iteratorA = context.getNodesByLabel(tokenReadSession(tx), 0, IndexOrderNone)
 
     // WHEN
@@ -253,7 +264,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     iteratorA.close()
 
     // THEN
-    monitor.closedResources.collect { case r:NodeLabelIndexCursor => r } should have size(1)
+    monitor.closedResources.collect { case r: NodeLabelIndexCursor => r } should have size (1)
   }
 
   test("nodeOps.all closes underlying cursor") {
@@ -263,7 +274,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
-    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val context =
+      new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
     val iteratorA = context.nodeReadOps.all
 
     // WHEN
@@ -271,7 +283,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     iteratorA.close()
 
     // THEN
-    monitor.closedResources.collect { case r: NodeCursor => r } should have size(1)
+    monitor.closedResources.collect { case r: NodeCursor => r } should have size (1)
   }
 
   test("relationshipOps.all closes underlying cursor") {
@@ -281,7 +293,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
-    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val context =
+      new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
     val iteratorA = context.relationshipReadOps.all
 
     // WHEN
@@ -289,7 +302,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     iteratorA.close()
 
     // THEN
-    monitor.closedResources.collect { case r: RelationshipScanCursor => r } should have size(1)
+    monitor.closedResources.collect { case r: RelationshipScanCursor => r } should have size (1)
   }
 
   test("should deny non-whitelisted URL protocols for loading") {
@@ -299,9 +312,13 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
 
     // THEN
-    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal(Right(new URL("http://localhost:7474/data.csv")))
+    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal(
+      Right(new URL("http://localhost:7474/data.csv"))
+    )
     context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal(Right(new URL("file:///tmp/foo/data.csv")))
-    context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal(Left("loading resources via protocol 'jar' is not permitted"))
+    context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal(
+      Left("loading resources via protocol 'jar' is not permitted")
+    )
 
     transactionalContext.close()
     tx.close()
@@ -316,8 +333,12 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
 
     // THEN
-    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
-    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Left("configuration property 'dbms.security.allow_csv_import_from_file_urls' is false"))
+    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal(
+      Right(new URL("http://localhost:7474/data.csv"))
+    )
+    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal(
+      Left("configuration property 'dbms.security.allow_csv_import_from_file_urls' is false")
+    )
 
     transactionalContext.close()
     tx.close()
@@ -402,14 +423,17 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     tx.close()
   }
 
-  private def startGraph(config:(Setting[_], Object)) = {
+  private def startGraph(config: (Setting[_], Object)) = {
     val configs = Map[Setting[_], Object](config)
     managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfig(configs.asJava).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
-  private def createTransactionContext(graphDatabaseQueryService: GraphDatabaseQueryService, transaction: InternalTransaction) = {
+  private def createTransactionContext(
+    graphDatabaseQueryService: GraphDatabaseQueryService,
+    transaction: InternalTransaction
+  ) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseQueryService)
     contextFactory.newContext(transaction, "no query", EMPTY_MAP)
   }
@@ -426,14 +450,15 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
       other2.createRelationshipTo(node, relType)
       tx.commit()
       node
-    }
-    finally {
+    } finally {
       tx.close()
     }
   }
 
   private def tokenReadSession(tx: InternalTransaction): TokenReadSession = {
-    val index = tx.kernelTransaction().schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE)).next()
+    val index = tx.kernelTransaction().schemaRead.indexForSchemaNonTransactional(
+      SchemaDescriptors.forAnyEntityTokens(EntityType.NODE)
+    ).next()
     tx.kernelTransaction().dataRead().tokenReadSession(index)
   }
 
@@ -451,8 +476,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
       n3.createRelationshipTo(n1, relType)
 
       tx.commit()
-    }
-    finally {
+    } finally {
       tx.close()
     }
   }

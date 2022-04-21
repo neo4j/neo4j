@@ -23,71 +23,56 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 
-public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
-{
-    public static class NeoStoreVersions extends NeoStoresDiagnostics
-    {
-        NeoStoreVersions( NeoStores nodeStores )
-        {
-            super( nodeStores, "Store versions" );
+public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider {
+    public static class NeoStoreVersions extends NeoStoresDiagnostics {
+        NeoStoreVersions(NeoStores nodeStores) {
+            super(nodeStores, "Store versions");
         }
 
         @Override
-        protected void dump( NeoStores neoStores, DiagnosticsLogger logger )
-        {
-            neoStores.logVersions( logger );
+        protected void dump(NeoStores neoStores, DiagnosticsLogger logger) {
+            neoStores.logVersions(logger);
         }
     }
 
-    public static class NeoStoreIdUsage extends NeoStoresDiagnostics
-    {
+    public static class NeoStoreIdUsage extends NeoStoresDiagnostics {
 
-        NeoStoreIdUsage( NeoStores neoStores )
-        {
-            super( neoStores, "Id usage" );
+        NeoStoreIdUsage(NeoStores neoStores) {
+            super(neoStores, "Id usage");
         }
 
         @Override
-        protected void dump( NeoStores neoStores, DiagnosticsLogger logger )
-        {
-            neoStores.logIdUsage( logger );
+        protected void dump(NeoStores neoStores, DiagnosticsLogger logger) {
+            neoStores.logIdUsage(logger);
         }
     }
 
-    public static class NeoStoreRecords extends NeoStoresDiagnostics
-    {
-        NeoStoreRecords( NeoStores neoStores )
-        {
-            super( neoStores,  "Neostore records"  );
+    public static class NeoStoreRecords extends NeoStoresDiagnostics {
+        NeoStoreRecords(NeoStores neoStores) {
+            super(neoStores, "Neostore records");
         }
 
         @Override
-        protected void dump( NeoStores neoStores, DiagnosticsLogger logger )
-        {
-            neoStores.getMetaDataStore().logRecords( logger );
+        protected void dump(NeoStores neoStores, DiagnosticsLogger logger) {
+            neoStores.getMetaDataStore().logRecords(logger);
         }
     }
 
     private final NeoStores neoStores;
 
-    NeoStoresDiagnostics( NeoStores neoStores, String message )
-    {
-        super( message );
+    NeoStoresDiagnostics(NeoStores neoStores, String message) {
+        super(message);
         this.neoStores = neoStores;
     }
 
     @Override
-    public void dump( DiagnosticsLogger logger )
-    {
-        try
-        {
-            dump( neoStores, logger );
-        }
-        catch ( RuntimeException e )
-        {
-            logger.log( "Diagnostics not available: " + e.getMessage() );
+    public void dump(DiagnosticsLogger logger) {
+        try {
+            dump(neoStores, logger);
+        } catch (RuntimeException e) {
+            logger.log("Diagnostics not available: " + e.getMessage());
         }
     }
 
-    protected abstract void dump( NeoStores neoStores, DiagnosticsLogger logger );
+    protected abstract void dump(NeoStores neoStores, DiagnosticsLogger logger);
 }

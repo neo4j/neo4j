@@ -31,6 +31,7 @@ trait ConstraintCreator extends GraphIcing {
 }
 
 object UniquenessConstraintCreator extends ConstraintCreator {
+
   def createConstraint(graph: GraphDatabaseCypherService, label: String, property: String) =
     graph.createUniqueConstraint(label, property)
 
@@ -42,6 +43,7 @@ object UniquenessConstraintCreator extends ConstraintCreator {
 }
 
 object NodeKeyConstraintCreator extends ConstraintCreator {
+
   def createConstraint(graph: GraphDatabaseCypherService, label: String, property: String) =
     graph.createNodeKeyConstraint(label, property)
 

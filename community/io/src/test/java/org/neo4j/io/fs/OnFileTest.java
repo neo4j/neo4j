@@ -19,39 +19,34 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.FileVisitor;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import org.neo4j.function.ThrowingConsumer;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.io.fs.FileVisitors.onFile;
 
-@SuppressWarnings( "unchecked" )
-class OnFileTest
-{
-    private final ThrowingConsumer<Path, IOException> operation = mock( ThrowingConsumer.class );
-    private final FileVisitor<Path> wrapped = mock( FileVisitor.class );
+import java.io.IOException;
+import java.nio.file.FileVisitor;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import org.junit.jupiter.api.Test;
+import org.neo4j.function.ThrowingConsumer;
+
+@SuppressWarnings("unchecked")
+class OnFileTest {
+    private final ThrowingConsumer<Path, IOException> operation = mock(ThrowingConsumer.class);
+    private final FileVisitor<Path> wrapped = mock(FileVisitor.class);
 
     @Test
-    void shouldNotOperateOnDirectories() throws IOException
-    {
-        Path dir = Paths.get( "/some/path" );
-        onFile( operation, wrapped ).preVisitDirectory( dir, null );
-        verify( operation, never() ).accept( dir );
+    void shouldNotOperateOnDirectories() throws IOException {
+        Path dir = Paths.get("/some/path");
+        onFile(operation, wrapped).preVisitDirectory(dir, null);
+        verify(operation, never()).accept(dir);
     }
 
     @Test
-    void shouldOperateOnFiles() throws IOException
-    {
-        Path file = Paths.get( "/some/path" );
-        onFile( operation, wrapped ).visitFile( file, null );
-        verify( operation ).accept( file );
+    void shouldOperateOnFiles() throws IOException {
+        Path file = Paths.get("/some/path");
+        onFile(operation, wrapped).visitFile(file, null);
+        verify(operation).accept(file);
     }
 }

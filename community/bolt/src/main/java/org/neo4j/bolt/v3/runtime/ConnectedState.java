@@ -19,9 +19,11 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import static org.neo4j.bolt.v3.messaging.BoltAuthenticationHelper.processAuthentication;
+import static org.neo4j.util.Preconditions.checkState;
+
 import java.util.Collections;
 import java.util.Map;
-
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
@@ -32,9 +34,6 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.bolt.v3.messaging.BoltAuthenticationHelper.processAuthentication;
-import static org.neo4j.util.Preconditions.checkState;
-
 /**
  * Following the socket connection and a small handshake exchange to
  * establish protocol version, the machine begins in the CONNECTED
@@ -42,39 +41,33 @@ import static org.neo4j.util.Preconditions.checkState;
  * correctly authorised HELLO into the READY state. Any other action
  * results in disconnection.
  */
-public class ConnectedState implements BoltStateMachineState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ConnectedState.class );
+public class ConnectedState implements BoltStateMachineState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ConnectedState.class);
 
     private static final String CONNECTION_ID_KEY = "connection_id";
 
     private final MapValue connectionHints;
     private BoltStateMachineState readyState;
 
-    public ConnectedState( MapValue connectionHints )
-    {
+    public ConnectedState(MapValue connectionHints) {
         this.connectionHints = connectionHints;
     }
 
     @Override
-    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
-    {
+    public BoltStateMachineState process(RequestMessage message, StateMachineContext context)
+            throws BoltConnectionFatality {
         assertInitialized();
-        if ( message instanceof HelloMessage helloMessage )
-        {
+        if (message instanceof HelloMessage helloMessage) {
             String userAgent = helloMessage.userAgent();
-            Map<String,Object> authToken = helloMessage.authToken();
+            Map<String, Object> authToken = helloMessage.authToken();
 
-            if ( processAuthentication( userAgent, authToken, context  ) )
-            {
-                context.initStatementProcessorProvider( new RoutingContext( false, Collections.emptyMap() ) );
+            if (processAuthentication(userAgent, authToken, context)) {
+                context.initStatementProcessorProvider(new RoutingContext(false, Collections.emptyMap()));
 
-                context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.utf8Value( context.connectionId() ) );
-                context.connectionState().onMetadata( "hints", connectionHints );
+                context.connectionState().onMetadata(CONNECTION_ID_KEY, Values.utf8Value(context.connectionId()));
+                context.connectionState().onMetadata("hints", connectionHints);
                 return readyState;
-            }
-            else
-            {
+            } else {
                 return null;
             }
         }
@@ -82,18 +75,15 @@ public class ConnectedState implements BoltStateMachineState
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "CONNECTED";
     }
 
-    public void setReadyState( BoltStateMachineState readyState )
-    {
+    public void setReadyState(BoltStateMachineState readyState) {
         this.readyState = readyState;
     }
 
-    private void assertInitialized()
-    {
-        checkState( readyState != null, "Ready state not set" );
+    private void assertInitialized() {
+        checkState(readyState != null, "Ready state not set");
     }
 }

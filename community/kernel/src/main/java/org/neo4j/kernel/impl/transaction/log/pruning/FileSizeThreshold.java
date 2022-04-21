@@ -22,46 +22,37 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
-public final class FileSizeThreshold implements Threshold
-{
+public final class FileSizeThreshold implements Threshold {
     private final FileSystemAbstraction fileSystem;
     private final long maxSize;
 
     private long currentSize;
 
-    FileSizeThreshold( FileSystemAbstraction fileSystem, long maxSize )
-    {
+    FileSizeThreshold(FileSystemAbstraction fileSystem, long maxSize) {
         this.fileSystem = fileSystem;
         this.maxSize = maxSize;
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         currentSize = 0;
     }
 
     @Override
-    public boolean reached( Path file, long version, LogFileInformation source )
-    {
-        try
-        {
-            currentSize += fileSystem.getFileSize( file );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public boolean reached(Path file, long version, LogFileInformation source) {
+        try {
+            currentSize += fileSystem.getFileSize(file);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
         return currentSize >= maxSize;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return maxSize + " size";
     }
 }

@@ -19,18 +19,16 @@
  */
 package org.neo4j.internal.schema;
 
+import static java.util.Collections.unmodifiableMap;
+
+import java.util.Map;
+import java.util.Objects;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.factory.Maps;
-
-import java.util.Map;
-import java.util.Objects;
-
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
-
-import static java.util.Collections.unmodifiableMap;
 
 /**
  * The index configuration is an immutable map from Strings to Values.
@@ -38,118 +36,97 @@ import static java.util.Collections.unmodifiableMap;
  * Not all value types are supported, however. Only "storable" values are supported, with the additional restriction that temporal and spatial values are
  * <em>not</em> supported.
  */
-public final class IndexConfig
-{
-    private static final IndexConfig EMPTY = new IndexConfig( Maps.immutable.empty() );
+public final class IndexConfig {
+    private static final IndexConfig EMPTY = new IndexConfig(Maps.immutable.empty());
 
-    private final ImmutableMap<String,Value> map;
+    private final ImmutableMap<String, Value> map;
 
-    private IndexConfig( ImmutableMap<String,Value> map )
-    {
+    private IndexConfig(ImmutableMap<String, Value> map) {
         this.map = map;
     }
 
-    public static IndexConfig empty()
-    {
+    public static IndexConfig empty() {
         return EMPTY;
     }
 
-    public static IndexConfig with( String key, Value value )
-    {
-        return new IndexConfig( Maps.immutable.with( key, value ) );
+    public static IndexConfig with(String key, Value value) {
+        return new IndexConfig(Maps.immutable.with(key, value));
     }
 
-    public static IndexConfig with( Map<String,Value> map )
-    {
-        for ( Value value : map.values() )
-        {
-            validate( value );
+    public static IndexConfig with(Map<String, Value> map) {
+        for (Value value : map.values()) {
+            validate(value);
         }
-        return new IndexConfig( Maps.immutable.withAll( map ) );
+        return new IndexConfig(Maps.immutable.withAll(map));
     }
 
-    private static void validate( Value value )
-    {
+    private static void validate(Value value) {
         ValueCategory category = value.valueGroup().category();
-        switch ( category )
-        {
-        case GEOMETRY:
-        case GEOMETRY_ARRAY:
-        case TEMPORAL:
-        case TEMPORAL_ARRAY:
-        case UNKNOWN:
-        case NO_CATEGORY:
-            throw new IllegalArgumentException( "Value type not support in index configuration: " + value + "." );
-        default:
-            // Otherwise everything is fine.
+        switch (category) {
+            case GEOMETRY:
+            case GEOMETRY_ARRAY:
+            case TEMPORAL:
+            case TEMPORAL_ARRAY:
+            case UNKNOWN:
+            case NO_CATEGORY:
+                throw new IllegalArgumentException("Value type not support in index configuration: " + value + ".");
+            default:
+                // Otherwise everything is fine.
         }
     }
 
-    public IndexConfig withIfAbsent( String key, Value value )
-    {
-        validate( value );
-        if ( map.containsKey( key ) )
-        {
+    public IndexConfig withIfAbsent(String key, Value value) {
+        validate(value);
+        if (map.containsKey(key)) {
             return this;
         }
-        return new IndexConfig( map.newWithKeyValue( key, value ) );
+        return new IndexConfig(map.newWithKeyValue(key, value));
     }
 
-    @SuppressWarnings( "unchecked" )
-    public <T extends Value> T get( String key )
-    {
-        return (T) map.get( key );
+    @SuppressWarnings("unchecked")
+    public <T extends Value> T get(String key) {
+        return (T) map.get(key);
     }
 
-    public <T extends Value> T getOrDefault( String key, T defaultValue )
-    {
-        T value = get( key );
+    public <T extends Value> T getOrDefault(String key, T defaultValue) {
+        T value = get(key);
         return value != null ? value : defaultValue;
     }
 
-    public RichIterable<Pair<String, Value>> entries()
-    {
+    public RichIterable<Pair<String, Value>> entries() {
         return map.keyValuesView();
     }
 
-    public Map<String,Value> asMap()
-    {
-        return unmodifiableMap( map.toMap() );
+    public Map<String, Value> asMap() {
+        return unmodifiableMap(map.toMap());
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( !(o instanceof IndexConfig that) )
-        {
+        if (!(o instanceof IndexConfig that)) {
             return false;
         }
-        return map.equals( that.map );
+        return map.equals(that.map);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( map );
+    public int hashCode() {
+        return Objects.hash(map);
     }
 
     @Override
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder( "IndexConfig[" );
-        for ( Pair<String,Value> entry : entries() )
-        {
-            sb.append( entry.getOne() ).append( " -> " ).append( entry.getTwo() ).append( ", " );
+    public String toString() {
+        StringBuilder sb = new StringBuilder("IndexConfig[");
+        for (Pair<String, Value> entry : entries()) {
+            sb.append(entry.getOne()).append(" -> ").append(entry.getTwo()).append(", ");
         }
-        if ( !map.isEmpty() )
-        {
-            sb.setLength( sb.length() - 2 );
+        if (!map.isEmpty()) {
+            sb.setLength(sb.length() - 2);
         }
-        sb.append( ']' );
+        sb.append(']');
         return sb.toString();
     }
 }

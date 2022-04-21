@@ -26,35 +26,30 @@ import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 
-class StartNodeTraversalBranch extends TraversalBranchWithState
-{
+class StartNodeTraversalBranch extends TraversalBranchWithState {
     private final InitialBranchState initialState;
 
-    StartNodeTraversalBranch( TraversalContext context, TraversalBranch parent, Node source,
-            InitialBranchState initialState )
-    {
-        super( parent, source, initialState );
+    StartNodeTraversalBranch(
+            TraversalContext context, TraversalBranch parent, Node source, InitialBranchState initialState) {
+        super(parent, source, initialState);
         this.initialState = initialState;
-        evaluate( context );
-        context.isUniqueFirst( this );
+        evaluate(context);
+        context.isUniqueFirst(this);
     }
 
     @Override
-    public TraversalBranch next( PathExpander expander, TraversalContext metadata )
-    {
-        if ( !hasExpandedRelationships() )
-        {
-            expandRelationships( expander );
+    public TraversalBranch next(PathExpander expander, TraversalContext metadata) {
+        if (!hasExpandedRelationships()) {
+            expandRelationships(expander);
             return this;
         }
-        return super.next( expander, metadata );
+        return super.next(expander, metadata);
     }
 
     @Override
-    protected TraversalBranch newNextBranch( Node node, Relationship relationship )
-    {
-        return initialState != InitialBranchState.NO_STATE ?
-            new TraversalBranchWithState( this, 1, node, relationship, stateForChildren ) :
-            new TraversalBranchImpl( this, 1, node, relationship );
+    protected TraversalBranch newNextBranch(Node node, Relationship relationship) {
+        return initialState != InitialBranchState.NO_STATE
+                ? new TraversalBranchWithState(this, 1, node, relationship, stateForChildren)
+                : new TraversalBranchImpl(this, 1, node, relationship);
     }
 }

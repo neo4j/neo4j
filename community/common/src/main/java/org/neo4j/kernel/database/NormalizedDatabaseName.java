@@ -21,11 +21,9 @@ package org.neo4j.kernel.database;
 
 import static java.util.Objects.requireNonNull;
 
-public record NormalizedDatabaseName( String name )
-{
-    public NormalizedDatabaseName( String name )
-    {
-        requireNonNull( name, "Database name should be not null." );
+public record NormalizedDatabaseName(String name) {
+    public NormalizedDatabaseName(String name) {
+        requireNonNull(name, "Database name should be not null.");
         this.name = name.toLowerCase();
     }
 }

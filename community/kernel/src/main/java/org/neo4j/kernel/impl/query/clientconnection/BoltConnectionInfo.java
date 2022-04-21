@@ -19,28 +19,22 @@
  */
 package org.neo4j.kernel.impl.query.clientconnection;
 
-import java.net.SocketAddress;
-
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-
 import static org.neo4j.configuration.helpers.SocketAddress.format;
+
+import java.net.SocketAddress;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 
 /**
  * @see ClientConnectionInfo Parent class for documentation and tests.
  */
-public class BoltConnectionInfo extends ClientConnectionInfo
-{
+public class BoltConnectionInfo extends ClientConnectionInfo {
     private final String connectionId;
     private final String clientName;
     private final SocketAddress clientAddress;
     private final SocketAddress serverAddress;
 
     public BoltConnectionInfo(
-            String connectionId,
-            String clientName,
-            SocketAddress clientAddress,
-            SocketAddress serverAddress )
-    {
+            String connectionId, String clientName, SocketAddress clientAddress, SocketAddress serverAddress) {
         this.connectionId = connectionId;
         this.clientName = clientName;
         this.clientAddress = clientAddress;
@@ -48,36 +42,27 @@ public class BoltConnectionInfo extends ClientConnectionInfo
     }
 
     @Override
-    public String asConnectionDetails()
-    {
-        return String.format(
-                "bolt-session\tbolt\t%s\t\tclient%s\tserver%s>",
-                clientName,
-                clientAddress,
-                serverAddress );
+    public String asConnectionDetails() {
+        return String.format("bolt-session\tbolt\t%s\t\tclient%s\tserver%s>", clientName, clientAddress, serverAddress);
     }
 
     @Override
-    public String protocol()
-    {
+    public String protocol() {
         return "bolt";
     }
 
     @Override
-    public String connectionId()
-    {
+    public String connectionId() {
         return connectionId;
     }
 
     @Override
-    public String clientAddress()
-    {
-        return format( clientAddress );
+    public String clientAddress() {
+        return format(clientAddress);
     }
 
     @Override
-    public String requestURI()
-    {
-        return format( serverAddress );
+    public String requestURI() {
+        return format(serverAddress);
     }
 }

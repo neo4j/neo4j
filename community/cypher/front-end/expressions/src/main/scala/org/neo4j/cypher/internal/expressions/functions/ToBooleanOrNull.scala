@@ -24,6 +24,12 @@ case object ToBooleanOrNull extends Function {
   override def name = "toBooleanOrNull"
 
   override val signatures = Vector(
-    TypeSignature(this, CTAny, CTBoolean, "Converts a value to a boolean value, or null if the value cannot be converted.", Category.SCALAR)
+    TypeSignature(
+      this,
+      CTAny,
+      CTBoolean,
+      "Converts a value to a boolean value, or null if the value cannot be converted.",
+      Category.SCALAR
+    )
   )
 }

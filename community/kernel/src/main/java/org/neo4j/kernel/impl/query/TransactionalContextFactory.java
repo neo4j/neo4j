@@ -23,9 +23,8 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.virtual.MapValue;
 
-public interface TransactionalContextFactory
-{
-    TransactionalContext newContext( InternalTransaction tx, String queryText, MapValue queryParameters );
+public interface TransactionalContextFactory {
+    TransactionalContext newContext(InternalTransaction tx, String queryText, MapValue queryParameters);
 
-    TransactionalContext newContextForQuery( InternalTransaction tx, ExecutingQuery executingQuery );
+    TransactionalContext newContextForQuery(InternalTransaction tx, ExecutingQuery executingQuery);
 }

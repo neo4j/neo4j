@@ -19,22 +19,20 @@
  */
 package org.neo4j.collection.trackable;
 
-import java.util.Arrays;
-import java.util.Objects;
-
-import org.neo4j.collection.PrimitiveLongResourceCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.graphdb.Resource;
-import org.neo4j.memory.MemoryTracker;
-
 import static org.neo4j.collection.trackable.HeapTrackingArrayList.newCapacity;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOfLongArray;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
-public class HeapTrackingLongArrayList implements Resource
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongArrayList.class );
+import java.util.Arrays;
+import java.util.Objects;
+import org.neo4j.collection.PrimitiveLongResourceCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.memory.MemoryTracker;
+
+public class HeapTrackingLongArrayList implements Resource {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingLongArrayList.class);
 
     private final MemoryTracker memoryTracker;
 
@@ -45,165 +43,139 @@ public class HeapTrackingLongArrayList implements Resource
     /**
      * @return a new heap tracking long array list with initial size 1
      */
-    public static HeapTrackingLongArrayList newLongArrayList( MemoryTracker memoryTracker )
-    {
-        return newLongArrayList( 1, memoryTracker );
+    public static HeapTrackingLongArrayList newLongArrayList(MemoryTracker memoryTracker) {
+        return newLongArrayList(1, memoryTracker);
     }
 
     /**
      * @return a new heap tracking long array list with the specified initial size
      */
-    public static HeapTrackingLongArrayList newLongArrayList( int initialSize, MemoryTracker memoryTracker )
-    {
-        requireNonNegative( initialSize );
-        long trackedSize = sizeOfLongArray( initialSize );
-        memoryTracker.allocateHeap( SHALLOW_SIZE + trackedSize );
-        return new HeapTrackingLongArrayList( initialSize, memoryTracker, trackedSize );
+    public static HeapTrackingLongArrayList newLongArrayList(int initialSize, MemoryTracker memoryTracker) {
+        requireNonNegative(initialSize);
+        long trackedSize = sizeOfLongArray(initialSize);
+        memoryTracker.allocateHeap(SHALLOW_SIZE + trackedSize);
+        return new HeapTrackingLongArrayList(initialSize, memoryTracker, trackedSize);
     }
 
-    private HeapTrackingLongArrayList( int initialSize, MemoryTracker memoryTracker, long trackedSize )
-    {
+    private HeapTrackingLongArrayList(int initialSize, MemoryTracker memoryTracker, long trackedSize) {
         this.trackedSize = trackedSize;
         this.elementData = new long[initialSize];
         this.memoryTracker = memoryTracker;
     }
 
-    public boolean add( long item )
-    {
-        add( item, elementData, size );
+    public boolean add(long item) {
+        add(item, elementData, size);
         return true;
     }
 
-    public void add( int index, long element )
-    {
-        rangeCheckForAdd( index );
+    public void add(int index, long element) {
+        rangeCheckForAdd(index);
         final int s = size;
         long[] elementData = this.elementData;
-        if ( s == elementData.length )
-        {
-            elementData = grow( size + 1 );
+        if (s == elementData.length) {
+            elementData = grow(size + 1);
         }
-        System.arraycopy( elementData, index, elementData, index + 1, s - index );
+        System.arraycopy(elementData, index, elementData, index + 1, s - index);
         elementData[index] = element;
         size = s + 1;
     }
 
-    public long get( int index )
-    {
-        Objects.checkIndex( index, size );
+    public long get(int index) {
+        Objects.checkIndex(index, size);
         return elementData[index];
     }
 
-    public long set( int index, long element )
-    {
-        Objects.checkIndex( index, size );
+    public long set(int index, long element) {
+        Objects.checkIndex(index, size);
         long oldValue = elementData[index];
         elementData[index] = element;
         return oldValue;
     }
 
-    private void add( long e, long[] elementData, int s )
-    {
-        if ( s == elementData.length )
-        {
-            elementData = grow( size + 1 );
+    private void add(long e, long[] elementData, int s) {
+        if (s == elementData.length) {
+            elementData = grow(size + 1);
         }
         elementData[s] = e;
         size = s + 1;
     }
 
-    public int size()
-    {
+    public int size() {
         return size;
     }
 
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return size == 0;
     }
 
-    public boolean notEmpty()
-    {
+    public boolean notEmpty() {
         return size != 0;
     }
 
-    public void clear()
-    {
-        Arrays.fill( this.elementData, 0, size, 0L);
+    public void clear() {
+        Arrays.fill(this.elementData, 0, size, 0L);
         this.size = 0;
     }
 
     @Override
-    public void close()
-    {
-        if ( elementData != null )
-        {
-            memoryTracker.releaseHeap( trackedSize + SHALLOW_SIZE );
+    public void close() {
+        if (elementData != null) {
+            memoryTracker.releaseHeap(trackedSize + SHALLOW_SIZE);
             elementData = null;
         }
     }
 
-    public PrimitiveLongResourceIterator iterator()
-    {
-        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator( this )
-        {
+    public PrimitiveLongResourceIterator iterator() {
+        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator(this) {
             private int index = -1;
 
             @Override
-            protected boolean fetchNext()
-            {
+            protected boolean fetchNext() {
                 index++;
-                return index < size && next( elementData[index] );
+                return index < size && next(elementData[index]);
             }
         };
     }
 
-    public long removeLast()
-    {
+    public long removeLast() {
         long previous = elementData[size - 1];
         --size;
         elementData[size] = 0L;
         return previous;
     }
 
-    public boolean addAll( long... longs )
-    {
+    public boolean addAll(long... longs) {
         int numNew = longs.length;
-        if ( numNew == 0 )
-        {
+        if (numNew == 0) {
             return false;
         }
         final int s = size;
         long[] elementData = this.elementData;
-        if ( numNew > elementData.length - s )
-        {
-            elementData = grow( s + numNew );
+        if (numNew > elementData.length - s) {
+            elementData = grow(s + numNew);
         }
-        System.arraycopy( longs, 0, elementData, s, numNew );
+        System.arraycopy(longs, 0, elementData, s, numNew);
         size = s + numNew;
         return true;
     }
     /**
      * Grow and report size change to tracker
      */
-    private long[] grow( int minimumCapacity )
-    {
-        int newCapacity = newCapacity( minimumCapacity, elementData.length );
+    private long[] grow(int minimumCapacity) {
+        int newCapacity = newCapacity(minimumCapacity, elementData.length);
         long oldHeapUsage = trackedSize;
-        trackedSize = sizeOfLongArray( newCapacity );
-        memoryTracker.allocateHeap( trackedSize );
+        trackedSize = sizeOfLongArray(newCapacity);
+        memoryTracker.allocateHeap(trackedSize);
         long[] newItems = new long[newCapacity];
-        System.arraycopy( elementData, 0, newItems, 0, Math.min( size, newCapacity ) );
+        System.arraycopy(elementData, 0, newItems, 0, Math.min(size, newCapacity));
         elementData = newItems;
-        memoryTracker.releaseHeap( oldHeapUsage );
+        memoryTracker.releaseHeap(oldHeapUsage);
         return elementData;
     }
 
-    private void rangeCheckForAdd( int index )
-    {
-        if ( index > size || index < 0 )
-        {
-            throw new IndexOutOfBoundsException( "Index: " + index + ", Size: " + size );
+    private void rangeCheckForAdd(int index) {
+        if (index > size || index < 0) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
         }
     }
 }

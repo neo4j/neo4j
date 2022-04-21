@@ -43,7 +43,7 @@ trait PrettyPrinting[T] extends PrettyPrintingUtils {
         case (name, vs: Stream[_]) =>
           val text = vs.map(e => "│ ┊ " + e.toString)
           Stream(s"╞ $name:") ++ text
-        case (name, value)         =>
+        case (name, value) =>
           val space = " " * (max - name.length)
           Stream(s"╞ $name$space: $value")
       }
@@ -51,7 +51,7 @@ trait PrettyPrinting[T] extends PrettyPrintingUtils {
 
     def rest(cs: Seq[T]) = cs match {
       case Seq() => Stream()
-      case es    =>
+      case es =>
         es.init.toStream.flatMap(c => framing(pretty(c), "├─ ", "│    ")) ++
           framing(pretty(es.last), "└─ ", "     ")
     }
@@ -71,6 +71,7 @@ trait PrettyPrinting[T] extends PrettyPrintingUtils {
   def asString(t: T): String =
     pretty(t).mkString(System.lineSeparator())
 }
+
 trait PrettyPrintingUtils {
 
   private val printer = Prettifier(ExpressionStringifier())

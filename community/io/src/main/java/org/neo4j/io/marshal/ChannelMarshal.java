@@ -20,7 +20,6 @@
 package org.neo4j.io.marshal;
 
 import java.io.IOException;
-
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
@@ -31,12 +30,11 @@ import org.neo4j.io.fs.WritableChannel;
  *
  * @param <STATE> The class of objects supported by this marshal
  */
-public interface ChannelMarshal<STATE>
-{
+public interface ChannelMarshal<STATE> {
     /**
      * Marshals the state into the channel.
      */
-    void marshal( STATE state, WritableChannel channel ) throws IOException;
+    void marshal(STATE state, WritableChannel channel) throws IOException;
 
     /**
      * Unmarshals an instance of {@link STATE} from channel. If the channel does not have enough bytes
@@ -49,5 +47,5 @@ public interface ChannelMarshal<STATE>
      * to catch that particular exception explicitly, you would not get compiler/IDE support
      * for making that apparent.
      */
-    STATE unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException;
+    STATE unmarshal(ReadableChannel channel) throws IOException, EndOfStreamException;
 }

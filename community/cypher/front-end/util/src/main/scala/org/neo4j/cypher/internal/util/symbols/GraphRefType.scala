@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object GraphRefType {
+
   val instance = new GraphRefType() {
     override val parentType = CTAny
     override val toString = "GraphRef"

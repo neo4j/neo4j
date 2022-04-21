@@ -21,52 +21,49 @@ package org.neo4j.kernel.recovery;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-public class RecoveryStartInformation
-{
-    static final RecoveryStartInformation NO_RECOVERY_REQUIRED = new RecoveryStartInformation( LogPosition.UNSPECIFIED, LogPosition.UNSPECIFIED, -1 );
-    static final RecoveryStartInformation MISSING_LOGS = new RecoveryStartInformation( null, null, -1, true );
+public class RecoveryStartInformation {
+    static final RecoveryStartInformation NO_RECOVERY_REQUIRED =
+            new RecoveryStartInformation(LogPosition.UNSPECIFIED, LogPosition.UNSPECIFIED, -1);
+    static final RecoveryStartInformation MISSING_LOGS = new RecoveryStartInformation(null, null, -1, true);
 
     private final long firstTxIdAfterLastCheckPoint;
     private final LogPosition transactionLogPosition;
     private final LogPosition checkpointPosition;
     private final boolean missingLogs;
 
-    public RecoveryStartInformation( LogPosition transactionLogPosition, LogPosition checkpointPosition, long firstTxIdAfterLastCheckPoint )
-    {
-        this( transactionLogPosition, checkpointPosition, firstTxIdAfterLastCheckPoint, false );
+    public RecoveryStartInformation(
+            LogPosition transactionLogPosition, LogPosition checkpointPosition, long firstTxIdAfterLastCheckPoint) {
+        this(transactionLogPosition, checkpointPosition, firstTxIdAfterLastCheckPoint, false);
     }
 
-    private RecoveryStartInformation( LogPosition transactionLogPosition, LogPosition checkpointPosition, long firstTxIdAfterLastCheckPoint,
-            boolean missingLogs )
-    {
+    private RecoveryStartInformation(
+            LogPosition transactionLogPosition,
+            LogPosition checkpointPosition,
+            long firstTxIdAfterLastCheckPoint,
+            boolean missingLogs) {
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
         this.transactionLogPosition = transactionLogPosition;
         this.checkpointPosition = checkpointPosition;
         this.missingLogs = missingLogs;
     }
 
-    public boolean isRecoveryRequired()
-    {
+    public boolean isRecoveryRequired() {
         return transactionLogPosition != LogPosition.UNSPECIFIED;
     }
 
-    long getFirstTxIdAfterLastCheckPoint()
-    {
+    long getFirstTxIdAfterLastCheckPoint() {
         return firstTxIdAfterLastCheckPoint;
     }
 
-    LogPosition getTransactionLogPosition()
-    {
+    LogPosition getTransactionLogPosition() {
         return transactionLogPosition;
     }
 
-    public LogPosition getCheckpointPosition()
-    {
+    public LogPosition getCheckpointPosition() {
         return checkpointPosition;
     }
 
-    boolean isMissingLogs()
-    {
+    boolean isMissingLogs() {
         return missingLogs;
     }
 }

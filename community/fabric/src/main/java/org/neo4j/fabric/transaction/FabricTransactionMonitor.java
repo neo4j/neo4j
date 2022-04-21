@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -31,102 +30,90 @@ import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitor;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
-public class FabricTransactionMonitor extends TransactionMonitor
-{
-    private final Map<FabricTransactionImpl,MonitoredTransaction> transactions = new ConcurrentHashMap<>();
+public class FabricTransactionMonitor extends TransactionMonitor {
+    private final Map<FabricTransactionImpl, MonitoredTransaction> transactions = new ConcurrentHashMap<>();
     private final SystemNanoClock clock;
     private final FabricConfig fabricConfig;
 
-    public FabricTransactionMonitor( SystemNanoClock clock, LogService logService, FabricConfig fabricConfig )
-    {
-        super( clock, logService );
+    public FabricTransactionMonitor(SystemNanoClock clock, LogService logService, FabricConfig fabricConfig) {
+        super(clock, logService);
 
         this.clock = clock;
         this.fabricConfig = fabricConfig;
     }
 
-    public void startMonitoringTransaction( FabricTransactionImpl transaction, FabricTransactionInfo transactionInfo )
-    {
+    public void startMonitoringTransaction(FabricTransactionImpl transaction, FabricTransactionInfo transactionInfo) {
         long startTimeNanos = clock.nanos();
         long timeoutNanos;
-        if ( transactionInfo.getTxTimeout() != null )
-        {
+        if (transactionInfo.getTxTimeout() != null) {
             timeoutNanos = transactionInfo.getTxTimeout().toNanos();
-        }
-        else
-        {
+        } else {
             timeoutNanos = fabricConfig.getTransactionTimeout().toNanos();
         }
 
-        transactions.put( transaction, new FabricMonitoredTransaction( transaction, startTimeNanos, timeoutNanos ) );
+        transactions.put(transaction, new FabricMonitoredTransaction(transaction, startTimeNanos, timeoutNanos));
     }
 
-    public void stopMonitoringTransaction( FabricTransactionImpl transaction )
-    {
-        transactions.remove( transaction );
+    public void stopMonitoringTransaction(FabricTransactionImpl transaction) {
+        transactions.remove(transaction);
     }
 
     @Override
-    protected Set<MonitoredTransaction> getActiveTransactions()
-    {
-        return new HashSet<>( transactions.values() );
+    protected Set<MonitoredTransaction> getActiveTransactions() {
+        return new HashSet<>(transactions.values());
     }
 
-    private static class FabricMonitoredTransaction implements MonitoredTransaction
-    {
+    private static class FabricMonitoredTransaction implements MonitoredTransaction {
         private final FabricTransactionImpl fabricTransaction;
         private final long startTimeNanos;
         private final long timeoutNanos;
 
-        FabricMonitoredTransaction( FabricTransactionImpl fabricTransaction, long startTimeNanos, long timeoutNanos )
-        {
+        FabricMonitoredTransaction(FabricTransactionImpl fabricTransaction, long startTimeNanos, long timeoutNanos) {
             this.fabricTransaction = fabricTransaction;
             this.startTimeNanos = startTimeNanos;
             this.timeoutNanos = timeoutNanos;
         }
 
         @Override
-        public long startTimeNanos()
-        {
+        public long startTimeNanos() {
             return startTimeNanos;
         }
 
         @Override
-        public long timeoutNanos()
-        {
+        public long timeoutNanos() {
             return timeoutNanos;
         }
 
         @Override
-        public boolean isSchemaTransaction()
-        {
+        public boolean isSchemaTransaction() {
             return fabricTransaction.isSchemaTransaction();
         }
 
         @Override
-        public boolean markForTermination( Status reason )
-        {
-            fabricTransaction.markForTermination( reason );
+        public boolean markForTermination(Status reason) {
+            fabricTransaction.markForTermination(reason);
             return true;
         }
 
         @Override
-        public String getIdentifyingDescription()
-        {
+        public String getIdentifyingDescription() {
             StringBuilder sb = new StringBuilder();
-            sb.append( "QueryRouterTransaction[" );
-            sb.append( "id=" ).append( fabricTransaction.getId() ).append( "," );
+            sb.append("QueryRouterTransaction[");
+            sb.append("id=").append(fabricTransaction.getId()).append(",");
 
-            var rawAddress = fabricTransaction.getTransactionInfo().getClientConnectionInfo().clientAddress();
+            var rawAddress = fabricTransaction
+                    .getTransactionInfo()
+                    .getClientConnectionInfo()
+                    .clientAddress();
             var address = rawAddress == null ? "embedded" : rawAddress;
-            sb.append( "clientAddress=" ).append( address );
-            var authSubject = fabricTransaction.getTransactionInfo().getLoginContext().subject();
-            if ( authSubject != AuthSubject.ANONYMOUS && authSubject != AuthSubject.AUTH_DISABLED )
-            {
-                sb.append( "," ).append( "username=" ).append( authSubject.executingUser() );
+            sb.append("clientAddress=").append(address);
+            var authSubject =
+                    fabricTransaction.getTransactionInfo().getLoginContext().subject();
+            if (authSubject != AuthSubject.ANONYMOUS && authSubject != AuthSubject.AUTH_DISABLED) {
+                sb.append(",").append("username=").append(authSubject.executingUser());
             }
 
-            sb.append( "]" );
+            sb.append("]");
             return sb.toString();
         }
     }

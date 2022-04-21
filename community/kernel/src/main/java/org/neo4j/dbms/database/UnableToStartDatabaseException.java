@@ -25,21 +25,17 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * An error
  */
-public class UnableToStartDatabaseException extends DatabaseManagementException
-{
-    public UnableToStartDatabaseException( String message )
-    {
-        super( message );
+public class UnableToStartDatabaseException extends DatabaseManagementException {
+    public UnableToStartDatabaseException(String message) {
+        super(message);
     }
 
-    public UnableToStartDatabaseException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public UnableToStartDatabaseException(String message, Throwable cause) {
+        super(message, cause);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Database.UnableToStartDatabase;
     }
 }

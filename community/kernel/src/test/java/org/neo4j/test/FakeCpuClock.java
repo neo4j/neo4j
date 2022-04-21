@@ -19,37 +19,30 @@
  */
 package org.neo4j.test;
 
+import java.util.concurrent.TimeUnit;
 import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
-
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.resources.CpuClock;
 
-public class FakeCpuClock implements CpuClock
-{
+public class FakeCpuClock implements CpuClock {
     public static final CpuClock NOT_AVAILABLE = threadId -> -1;
     private final MutableLongLongMap cpuTimes = new LongLongHashMap();
 
     @Override
-    public long cpuTimeNanos( long threadId )
-    {
-        return Math.max( 0, cpuTimes.get( threadId ) );
+    public long cpuTimeNanos(long threadId) {
+        return Math.max(0, cpuTimes.get(threadId));
     }
 
-    public FakeCpuClock add( long delta, TimeUnit unit )
-    {
-        return add( unit.toNanos( delta ) );
+    public FakeCpuClock add(long delta, TimeUnit unit) {
+        return add(unit.toNanos(delta));
     }
 
-    public FakeCpuClock add( long nanos )
-    {
-        return add( Thread.currentThread().getId(), nanos );
+    public FakeCpuClock add(long nanos) {
+        return add(Thread.currentThread().getId(), nanos);
     }
 
-    public FakeCpuClock add( long threadId, long nanos )
-    {
-        cpuTimes.put( threadId, cpuTimeNanos( threadId ) + nanos );
+    public FakeCpuClock add(long threadId, long nanos) {
+        cpuTimes.put(threadId, cpuTimeNanos(threadId) + nanos);
         return this;
     }
 }

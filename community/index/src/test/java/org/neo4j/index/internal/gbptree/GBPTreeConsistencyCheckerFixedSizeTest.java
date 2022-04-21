@@ -21,11 +21,10 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
-public class GBPTreeConsistencyCheckerFixedSizeTest extends GBPTreeConsistencyCheckerTestBase<MutableLong,MutableLong>
-{
+public class GBPTreeConsistencyCheckerFixedSizeTest
+        extends GBPTreeConsistencyCheckerTestBase<MutableLong, MutableLong> {
     @Override
-    protected TestLayout<MutableLong,MutableLong> getLayout()
-    {
+    protected TestLayout<MutableLong, MutableLong> getLayout() {
         return SimpleLongLayout.longLayout().build();
     }
 }

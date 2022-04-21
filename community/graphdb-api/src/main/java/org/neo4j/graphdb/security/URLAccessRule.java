@@ -20,14 +20,12 @@
 package org.neo4j.graphdb.security;
 
 import java.net.URL;
-
 import org.neo4j.graphdb.config.Configuration;
 
 /**
  * A rule to evaluate if Neo4j is permitted to reach out to the specified URL (e.g. when using {@code LOAD CSV} in Cypher).
  */
-public interface URLAccessRule
-{
+public interface URLAccessRule {
     /**
      * Validate this rule against the specified URL and configuration, and throw a {@link URLAccessValidationError}
      * if the URL is not permitted for access.
@@ -37,5 +35,5 @@ public interface URLAccessRule
      * @return an updated URL that should be used for accessing the resource
      * @throws URLAccessValidationError thrown if the url does not pass the validation rule
      */
-    URL validate( Configuration configuration, URL url ) throws URLAccessValidationError;
+    URL validate(Configuration configuration, URL url) throws URLAccessValidationError;
 }

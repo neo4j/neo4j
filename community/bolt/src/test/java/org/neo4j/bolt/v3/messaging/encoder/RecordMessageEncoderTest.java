@@ -19,31 +19,28 @@
  */
 package org.neo4j.bolt.v3.messaging.encoder;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.v3.messaging.response.RecordMessage;
-import org.neo4j.values.AnyValue;
-
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class RecordMessageEncoderTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.v3.messaging.response.RecordMessage;
+import org.neo4j.values.AnyValue;
+
+class RecordMessageEncoderTest {
     @Test
-    void shouldEncodeRecordMessage() throws Throwable
-    {
+    void shouldEncodeRecordMessage() throws Throwable {
         // Given
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
         RecordMessageEncoder encoder = new RecordMessageEncoder();
 
         // When
-        encoder.encode( packer, new RecordMessage( new AnyValue[0] ) );
+        encoder.encode(packer, new RecordMessage(new AnyValue[0]));
 
         // Then
-        verify( packer ).packStructHeader( anyInt(), eq( RecordMessage.SIGNATURE ) );
-        verify( packer ).packListHeader( 0 );
+        verify(packer).packStructHeader(anyInt(), eq(RecordMessage.SIGNATURE));
+        verify(packer).packListHeader(0);
     }
 }

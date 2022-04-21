@@ -19,8 +19,7 @@
  */
 package org.neo4j.tooling.procedure.visitors.examples;
 
-public class ValidRecord
-{
+public class ValidRecord {
     private static final String BAR = "bar";
 
     public String foo = BAR;

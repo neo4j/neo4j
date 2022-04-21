@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index.backup;
 
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.SnapshotDeletionPolicy;
-
 import java.io.IOException;
 import java.nio.file.Path;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
 
 /**
  * Iterator over Lucene index files for a particular {@link IndexCommit snapshot}.
@@ -31,27 +30,22 @@ import java.nio.file.Path;
  * Internally uses {@link SnapshotDeletionPolicy#snapshot()} to create an {@link IndexCommit} that represents
  * consistent state of the index for a particular point in time.
  */
-public class WritableIndexSnapshotFileIterator extends ReadOnlyIndexSnapshotFileIterator
-{
+public class WritableIndexSnapshotFileIterator extends ReadOnlyIndexSnapshotFileIterator {
     private final SnapshotDeletionPolicy snapshotDeletionPolicy;
 
-    WritableIndexSnapshotFileIterator( Path indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy ) throws IOException
-    {
-        super( indexDirectory, snapshotDeletionPolicy.snapshot() );
+    WritableIndexSnapshotFileIterator(Path indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy)
+            throws IOException {
+        super(indexDirectory, snapshotDeletionPolicy.snapshot());
         this.snapshotDeletionPolicy = snapshotDeletionPolicy;
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
-            snapshotDeletionPolicy.release( getIndexCommit() );
-        }
-        catch ( IOException e )
-        {
-            throw new SnapshotReleaseException( "Unable to release lucene index snapshot for index in: " +
-                                                getIndexDirectory(), e );
+    public void close() {
+        try {
+            snapshotDeletionPolicy.release(getIndexCommit());
+        } catch (IOException e) {
+            throw new SnapshotReleaseException(
+                    "Unable to release lucene index snapshot for index in: " + getIndexDirectory(), e);
         }
     }
 }

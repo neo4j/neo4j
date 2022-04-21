@@ -24,12 +24,10 @@ package org.neo4j.io.marshal;
  * IOException even though the handling of an end of stream situation in general is
  * recoverable and must be handled explicitly.
  */
-public class EndOfStreamException extends Exception
-{
+public class EndOfStreamException extends Exception {
     public static final EndOfStreamException INSTANCE = new EndOfStreamException();
 
-    private EndOfStreamException()
-    {
+    private EndOfStreamException() {
         super();
     }
 }

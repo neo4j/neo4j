@@ -19,6 +19,13 @@
  */
 package org.neo4j.test.extension.guard;
 
+import static org.objectweb.asm.Type.getObjectType;
+import static org.objectweb.asm.Type.getType;
+
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -27,16 +34,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.objectweb.asm.Type.getObjectType;
-import static org.objectweb.asm.Type.getType;
-
-public class DependenciesCollector extends ClassVisitor
-{
+public class DependenciesCollector extends ClassVisitor {
     private static final int API_VERSION = Opcodes.ASM9;
     private final AnnotationVisitor annotationVisitor;
     private final MethodVisitor methodVisitor;
@@ -46,68 +44,59 @@ public class DependenciesCollector extends ClassVisitor
     private final Set<String> seenClasses = new HashSet<>();
     private final Deque<String> classes;
 
-    DependenciesCollector( Deque<String> classes )
-    {
-        super( API_VERSION );
+    DependenciesCollector(Deque<String> classes) {
+        super(API_VERSION);
         this.classes = classes;
-        this.annotationVisitor = new AnnotationClassCollectorVisitor( API_VERSION, descriptors );
-        this.methodVisitor = new MethodClassCollectorVisitor( API_VERSION, descriptors, annotationVisitor );
-        this.fieldVisitor = new FieldClassCollectorVisitor( API_VERSION, descriptors, annotationVisitor );
+        this.annotationVisitor = new AnnotationClassCollectorVisitor(API_VERSION, descriptors);
+        this.methodVisitor = new MethodClassCollectorVisitor(API_VERSION, descriptors, annotationVisitor);
+        this.fieldVisitor = new FieldClassCollectorVisitor(API_VERSION, descriptors, annotationVisitor);
     }
 
     @Override
-    public void visit( int version, int access, String name, String signature, String superName, String[] interfaces )
-    {
-        if ( superName != null && seenClasses.add( superName ) )
-        {
-            classes.push( superName );
+    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        if (superName != null && seenClasses.add(superName)) {
+            classes.push(superName);
         }
-        super.visit( version, access, name, signature, superName, interfaces );
+        super.visit(version, access, name, signature, superName, interfaces);
     }
 
     @Override
-    public void visitInnerClass( String name, String outerName, String innerName, int access )
-    {
-        if ( seenClasses.add( name ) )
-        {
-            classes.push( name );
+    public void visitInnerClass(String name, String outerName, String innerName, int access) {
+        if (seenClasses.add(name)) {
+            classes.push(name);
         }
-        super.visitInnerClass( name, outerName, innerName, access );
+        super.visitInnerClass(name, outerName, innerName, access);
     }
 
     @Override
-    public AnnotationVisitor visitAnnotation( String descriptor, boolean visible )
-    {
-        descriptors.add( descriptor );
+    public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+        descriptors.add(descriptor);
         return annotationVisitor;
     }
 
     @Override
-    public AnnotationVisitor visitTypeAnnotation( int typeRef, TypePath typePath, String descriptor, boolean visible )
-    {
-        descriptors.add( descriptor );
+    public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
+        descriptors.add(descriptor);
         return annotationVisitor;
     }
 
     @Override
-    public FieldVisitor visitField( int access, String name, String descriptor, String signature, Object value )
-    {
-        descriptors.add( descriptor );
+    public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+        descriptors.add(descriptor);
         return fieldVisitor;
     }
 
     @Override
-    public MethodVisitor visitMethod( int access, String name, String descriptor, String signature, String[] exceptions )
-    {
+    public MethodVisitor visitMethod(
+            int access, String name, String descriptor, String signature, String[] exceptions) {
         return methodVisitor;
     }
 
-    Set<String> getJunitTestClasses()
-    {
+    Set<String> getJunitTestClasses() {
         return descriptors.stream()
-                .filter( d -> d.startsWith( "org/junit" ) || d.startsWith( "Lorg/junit" ) )
-                .map( d -> d.startsWith( "o" ) ? getObjectType( d ) : getType( d ) )
-                .map( Type::getClassName )
-                .collect( Collectors.toSet() );
+                .filter(d -> d.startsWith("org/junit") || d.startsWith("Lorg/junit"))
+                .map(d -> d.startsWith("o") ? getObjectType(d) : getType(d))
+                .map(Type::getClassName)
+                .collect(Collectors.toSet());
     }
 }

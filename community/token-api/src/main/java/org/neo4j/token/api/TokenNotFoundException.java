@@ -19,10 +19,8 @@
  */
 package org.neo4j.token.api;
 
-public class TokenNotFoundException extends Exception
-{
-    public TokenNotFoundException( String message )
-    {
-        super( message );
+public class TokenNotFoundException extends Exception {
+    public TokenNotFoundException(String message) {
+        super(message);
     }
 }

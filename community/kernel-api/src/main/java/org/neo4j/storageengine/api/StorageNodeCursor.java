@@ -22,8 +22,7 @@ package org.neo4j.storageengine.api;
 /**
  * Cursor over nodes and its data.
  */
-public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
-{
+public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan> {
     /**
      * @return label ids of the node this cursor currently is placed at.
      */
@@ -32,7 +31,7 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
     /**
      * @return {@code true} if the node this cursor is placed at has the given {@code label}, otherwise {@code false}.
      */
-    boolean hasLabel( int label );
+    boolean hasLabel(int label);
 
     /**
      * @return reference for reading all relationships of the node this cursor currently is placed at.
@@ -46,7 +45,7 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
      * @param traversalCursor the {@link StorageRelationshipTraversalCursor} to initialize with relationships for this current node.
      * @param selection {@link RelationshipSelection} of relationships to select.
      */
-    void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection );
+    void relationships(StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection);
 
     /**
      * @return {@code true} if a call to {@link #relationshipsTo(StorageRelationshipTraversalCursor, RelationshipSelection, long)} is allowed,
@@ -64,7 +63,10 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
      * @param neighbourNodeReference the neighbour {@link StorageNodeCursor#entityReference() node reference} to look for.
      * @throws UnsupportedOperationException if not supported, i.e. if {@link #supportsFastRelationshipsTo()} returns {@code false}.
      */
-    void relationshipsTo( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection, long neighbourNodeReference );
+    void relationshipsTo(
+            StorageRelationshipTraversalCursor traversalCursor,
+            RelationshipSelection selection,
+            long neighbourNodeReference);
 
     /**
      * @return all relationship types that this node has, i.e. all relationship types in the returned array there are at one such
@@ -77,7 +79,7 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
      * @param selection {@link RelationshipSelection} to get degrees for.
      * @param mutator to given the degrees to.
      */
-    void degrees( RelationshipSelection selection, Degrees.Mutator mutator );
+    void degrees(RelationshipSelection selection, Degrees.Mutator mutator);
 
     /**
      * NOTE the fact that this method is here means physical details about underlying storage leaks into this API.

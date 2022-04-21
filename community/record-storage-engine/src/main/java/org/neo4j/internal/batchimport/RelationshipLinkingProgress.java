@@ -19,50 +19,43 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.concurrent.atomic.LongAdder;
+import static org.neo4j.internal.helpers.ArrayUtil.array;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.internal.batchimport.stats.DetailLevel;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 
-import static org.neo4j.internal.helpers.ArrayUtil.array;
-
 /**
  * Able to provide {@link Keys#progress}. Mutable and thread-safe, use {@link #add(long)} to move progress forwards.
  */
-public class RelationshipLinkingProgress implements StatsProvider, Stat
-{
-    private final Key[] keys = array( Keys.progress );
+public class RelationshipLinkingProgress implements StatsProvider, Stat {
+    private final Key[] keys = array(Keys.progress);
     private final LongAdder progress = new LongAdder();
 
     @Override
-    public Stat stat( Key key )
-    {
+    public Stat stat(Key key) {
         return this;
     }
 
     @Override
-    public Key[] keys()
-    {
+    public Key[] keys() {
         return keys;
     }
 
     @Override
-    public DetailLevel detailLevel()
-    {
+    public DetailLevel detailLevel() {
         return DetailLevel.BASIC;
     }
 
     @Override
-    public long asLong()
-    {
+    public long asLong() {
         return progress.longValue();
     }
 
-    public void add( long amount )
-    {
-        progress.add( amount );
+    public void add(long amount) {
+        progress.add(amount);
     }
 }

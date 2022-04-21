@@ -19,68 +19,52 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Iterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
-import java.util.Iterator;
-
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 /**
  * Stub cursors to be used for testing.
  */
-public class StubCursors
-{
-    private StubCursors()
-    {
-    }
+public class StubCursors {
+    private StubCursors() {}
 
-    public static MutableLongSet labels( final long... labels )
-    {
-        return LongHashSet.newSetWith( labels );
+    public static MutableLongSet labels(final long... labels) {
+        return LongHashSet.newSetWith(labels);
     }
 
     @SafeVarargs
-    public static <T> Cursor<T> cursor( final T... items )
-    {
-        return cursor( Iterables.asIterable( items ) );
+    public static <T> Cursor<T> cursor(final T... items) {
+        return cursor(Iterables.asIterable(items));
     }
 
-    public static <T> Cursor<T> cursor( final Iterable<T> items )
-    {
-        return new Cursor<T>()
-        {
+    public static <T> Cursor<T> cursor(final Iterable<T> items) {
+        return new Cursor<T>() {
             Iterator<T> iterator = items.iterator();
 
             T current;
 
             @Override
-            public boolean next()
-            {
-                if ( iterator.hasNext() )
-                {
+            public boolean next() {
+                if (iterator.hasNext()) {
                     current = iterator.next();
                     return true;
-                }
-                else
-                {
+                } else {
                     return false;
                 }
             }
 
             @Override
-            public void close()
-            {
+            public void close() {
                 iterator = items.iterator();
                 current = null;
             }
 
             @Override
-            public T get()
-            {
-                if ( current == null )
-                {
+            public T get() {
+                if (current == null) {
                     throw new IllegalStateException();
                 }
 

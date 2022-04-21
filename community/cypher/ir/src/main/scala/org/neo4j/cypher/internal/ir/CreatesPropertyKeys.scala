@@ -35,16 +35,17 @@ sealed trait CreatesPropertyKeys {
 }
 
 object CreatesPropertyKeys {
+
   def apply(properties: Expression*): CreatesPropertyKeys = {
-    //CREATE ()
+    // CREATE ()
     if (properties.isEmpty) CreatesNoPropertyKeys
     else {
       val knownProp: Seq[Seq[(PropertyKeyName, Expression)]] = properties.collect {
         case MapExpression(props) => props
       }
-      //all prop keys are known, CREATE ({prop1:1, prop2:2})
+      // all prop keys are known, CREATE ({prop1:1, prop2:2})
       if (knownProp.size == properties.size) CreatesKnownPropertyKeys(knownProp.flatMap(_.map(s => s._1)).toSet)
-      //props created are not known, e.g. CREATE ({props})
+      // props created are not known, e.g. CREATE ({props})
       else CreatesUnknownPropertyKeys
     }
   }
@@ -68,14 +69,16 @@ case class CreatesKnownPropertyKeys(keys: Set[PropertyKeyName]) extends CreatesP
   override def overlaps(propertyKeyName: PropertyKeyName): Boolean = keys(propertyKeyName)
 
   override def +(createsPropertyKeys: CreatesPropertyKeys) = createsPropertyKeys match {
-    case CreatesNoPropertyKeys => this
+    case CreatesNoPropertyKeys               => this
     case CreatesKnownPropertyKeys(otherKeys) => CreatesKnownPropertyKeys(keys ++ otherKeys)
-    case CreatesUnknownPropertyKeys => CreatesUnknownPropertyKeys
+    case CreatesUnknownPropertyKeys          => CreatesUnknownPropertyKeys
   }
 }
 
 object CreatesKnownPropertyKeys {
-  def apply(propertyKeyNames: PropertyKeyName*): CreatesKnownPropertyKeys = CreatesKnownPropertyKeys(propertyKeyNames.toSet)
+
+  def apply(propertyKeyNames: PropertyKeyName*): CreatesKnownPropertyKeys =
+    CreatesKnownPropertyKeys(propertyKeyNames.toSet)
 }
 
 /*

@@ -19,14 +19,12 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Arrays;
-
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
@@ -39,437 +37,357 @@ import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
  * {@link #setOffset(int)}, {@link #getOffset()} and {@link #rewind()} positions the internal {@link ByteBuffer}.
  * {@link #shouldRetry()} always returns {@code false}.
  */
-public class ByteArrayPageCursor extends PageCursor
-{
+public class ByteArrayPageCursor extends PageCursor {
     private static final long DEFAULT_PAGE_ID = 0;
     private final MutableLongObjectMap<ByteBuffer> buffers;
     private long pageId;
-    // If this is false then the next call to next() will just set it to true, this to adhere to the general PageCursor interaction contract
+    // If this is false then the next call to next() will just set it to true, this to adhere to the general PageCursor
+    // interaction contract
     private boolean initialized;
     private ByteBuffer buffer;
     private CursorException cursorException;
 
-    public static PageCursor wrap( byte[] array, int offset, int length, long currentPageId )
-    {
-        return new ByteArrayPageCursor( currentPageId, ByteBuffer.wrap( array, offset, length ) );
+    public static PageCursor wrap(byte[] array, int offset, int length, long currentPageId) {
+        return new ByteArrayPageCursor(currentPageId, ByteBuffer.wrap(array, offset, length));
     }
 
-    public static PageCursor wrap( byte[] array, int offset, int length )
-    {
-        return wrap( array, offset, length, DEFAULT_PAGE_ID );
+    public static PageCursor wrap(byte[] array, int offset, int length) {
+        return wrap(array, offset, length, DEFAULT_PAGE_ID);
     }
 
-    public static PageCursor wrap( byte[] array )
-    {
-        return wrap( array, 0, array.length );
+    public static PageCursor wrap(byte[] array) {
+        return wrap(array, 0, array.length);
     }
 
-    public static PageCursor wrap( int length )
-    {
-        return wrap( new byte[length] );
+    public static PageCursor wrap(int length) {
+        return wrap(new byte[length]);
     }
 
-    public ByteArrayPageCursor( ByteBuffer buffer )
-    {
-        this( DEFAULT_PAGE_ID, buffer );
+    public ByteArrayPageCursor(ByteBuffer buffer) {
+        this(DEFAULT_PAGE_ID, buffer);
     }
 
-    public ByteArrayPageCursor( long pageId, ByteBuffer buffer )
-    {
+    public ByteArrayPageCursor(long pageId, ByteBuffer buffer) {
         buffers = LongObjectMaps.mutable.empty();
-        buffers.put( pageId, buffer );
+        buffers.put(pageId, buffer);
         this.pageId = pageId;
         this.buffer = buffer;
         this.initialized = true;
     }
 
-    public ByteArrayPageCursor( MutableLongObjectMap<ByteBuffer> buffers, long pageId )
-    {
+    public ByteArrayPageCursor(MutableLongObjectMap<ByteBuffer> buffers, long pageId) {
         this.buffers = buffers;
         this.pageId = pageId;
         this.initialized = false;
-        this.buffer = buffers.get( pageId );
+        this.buffer = buffers.get(pageId);
     }
 
     @Override
-    public byte getByte()
-    {
+    public byte getByte() {
         return buffer.get();
     }
 
     @Override
-    public byte getByte( int offset )
-    {
-        return buffer.get( offset );
+    public byte getByte(int offset) {
+        return buffer.get(offset);
     }
 
     @Override
-    public void putByte( byte value )
-    {
-        buffer.put( value );
+    public void putByte(byte value) {
+        buffer.put(value);
     }
 
     @Override
-    public void putByte( int offset, byte value )
-    {
-        buffer.put( offset, value );
+    public void putByte(int offset, byte value) {
+        buffer.put(offset, value);
     }
 
     @Override
-    public long getLong()
-    {
+    public long getLong() {
         return buffer.getLong();
     }
 
     @Override
-    public long getLong( int offset )
-    {
-        return buffer.getLong( offset );
+    public long getLong(int offset) {
+        return buffer.getLong(offset);
     }
 
     @Override
-    public void putLong( long value )
-    {
-        buffer.putLong( value );
+    public void putLong(long value) {
+        buffer.putLong(value);
     }
 
     @Override
-    public void putLong( int offset, long value )
-    {
-        buffer.putLong( offset, value );
+    public void putLong(int offset, long value) {
+        buffer.putLong(offset, value);
     }
 
     @Override
-    public int getInt()
-    {
+    public int getInt() {
         return buffer.getInt();
     }
 
     @Override
-    public int getInt( int offset )
-    {
-        return buffer.getInt( offset );
+    public int getInt(int offset) {
+        return buffer.getInt(offset);
     }
 
     @Override
-    public void putInt( int value )
-    {
-        buffer.putInt( value );
+    public void putInt(int value) {
+        buffer.putInt(value);
     }
 
     @Override
-    public void putInt( int offset, int value )
-    {
-        buffer.putInt( offset, value );
+    public void putInt(int offset, int value) {
+        buffer.putInt(offset, value);
     }
 
     @Override
-    public void getBytes( byte[] data )
-    {
-        buffer.get( data );
+    public void getBytes(byte[] data) {
+        buffer.get(data);
     }
 
     @Override
-    public void getBytes( byte[] data, int arrayOffset, int length )
-    {
-        buffer.get( data, arrayOffset, length );
+    public void getBytes(byte[] data, int arrayOffset, int length) {
+        buffer.get(data, arrayOffset, length);
     }
 
     @Override
-    public void putBytes( byte[] data )
-    {
-        buffer.put( data );
+    public void putBytes(byte[] data) {
+        buffer.put(data);
     }
 
     @Override
-    public void putBytes( byte[] data, int arrayOffset, int length )
-    {
-        buffer.put( data, arrayOffset, length );
+    public void putBytes(byte[] data, int arrayOffset, int length) {
+        buffer.put(data, arrayOffset, length);
     }
 
     @Override
-    public void putBytes( int bytes, byte value )
-    {
+    public void putBytes(int bytes, byte value) {
         byte[] byteArray = new byte[bytes];
-        Arrays.fill( byteArray, value );
-        buffer.put( byteArray );
+        Arrays.fill(byteArray, value);
+        buffer.put(byteArray);
     }
 
     @Override
-    public short getShort()
-    {
+    public short getShort() {
         return buffer.getShort();
     }
 
     @Override
-    public short getShort( int offset )
-    {
-        return buffer.getShort( offset );
+    public short getShort(int offset) {
+        return buffer.getShort(offset);
     }
 
     @Override
-    public void putShort( short value )
-    {
-        buffer.putShort( value );
+    public void putShort(short value) {
+        buffer.putShort(value);
     }
 
     @Override
-    public void putShort( int offset, short value )
-    {
-        buffer.putShort( offset, value );
+    public void putShort(int offset, short value) {
+        buffer.putShort(offset, value);
     }
 
     @Override
-    public void setOffset( int offset )
-    {
-        buffer.position( offset );
+    public void setOffset(int offset) {
+        buffer.position(offset);
     }
 
     @Override
-    public int getOffset()
-    {
+    public int getOffset() {
         return buffer.position();
     }
 
     @Override
-    public void mark()
-    {
+    public void mark() {
         buffer.mark();
     }
 
     @Override
-    public void setOffsetToMark()
-    {
+    public void setOffsetToMark() {
         buffer.reset();
     }
 
     @Override
-    public long getCurrentPageId()
-    {
+    public long getCurrentPageId() {
         return pageId;
     }
 
     @Override
-    public Path getCurrentFile()
-    {
+    public Path getCurrentFile() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PagedFile getPagedFile()
-    {
-        return new ByteArrayPagedFile( buffer.capacity() );
+    public PagedFile getPagedFile() {
+        return new ByteArrayPagedFile(buffer.capacity());
     }
 
     @Override
-    public Path getRawCurrentFile()
-    {
+    public Path getRawCurrentFile() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void rewind()
-    {
-        setOffset( 0 );
+    public void rewind() {
+        setOffset(0);
     }
 
     @Override
-    public boolean next()
-    {
-        if ( !initialized )
-        {
+    public boolean next() {
+        if (!initialized) {
             initialized = true;
             return true;
         }
-        return next( pageId + 1 );
+        return next(pageId + 1);
     }
 
     @Override
-    public boolean next( long pageId )
-    {
+    public boolean next(long pageId) {
         this.initialized = true;
         this.pageId = pageId;
-        if ( buffers.containsKey( pageId ) )
-        {
-            buffer = buffers.get( pageId );
-        }
-        else
-        {
-            buffer = ByteBuffer.allocate( buffer.capacity() );
-            buffers.put( pageId, buffer );
+        if (buffers.containsKey(pageId)) {
+            buffer = buffers.get(pageId);
+        } else {
+            buffer = ByteBuffer.allocate(buffer.capacity());
+            buffers.put(pageId, buffer);
         }
         return true;
     }
 
     @Override
-    public void close()
-    {   // Nothing to close
+    public void close() { // Nothing to close
     }
 
     @Override
-    public boolean shouldRetry()
-    {
+    public boolean shouldRetry() {
         return false;
     }
 
     @Override
-    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
-    {
+    public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
-    {
+    public int copyTo(int sourceOffset, ByteBuffer targetBuffer) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void shiftBytes( int sourceOffset, int length, int shift )
-    {
+    public void shiftBytes(int sourceOffset, int length, int shift) {
         int currentOffset = getOffset();
-        setOffset( sourceOffset );
+        setOffset(sourceOffset);
         byte[] bytes = new byte[length];
-        getBytes( bytes );
-        setOffset( sourceOffset + shift );
-        putBytes( bytes );
-        setOffset( currentOffset );
+        getBytes(bytes);
+        setOffset(sourceOffset + shift);
+        putBytes(bytes);
+        setOffset(currentOffset);
     }
 
     @Override
-    public boolean checkAndClearBoundsFlag()
-    {
+    public boolean checkAndClearBoundsFlag() {
         return false;
     }
 
     @Override
-    public void checkAndClearCursorException() throws CursorException
-    {
-        if ( cursorException != null )
-        {
-            try
-            {
+    public void checkAndClearCursorException() throws CursorException {
+        if (cursorException != null) {
+            try {
                 throw cursorException;
-            }
-            finally
-            {
+            } finally {
                 cursorException = null;
             }
         }
     }
 
     @Override
-    public void raiseOutOfBounds()
-    {
+    public void raiseOutOfBounds() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setCursorException( String message )
-    {
-        cursorException = Exceptions.chain( cursorException, new CursorException( message ) );
+    public void setCursorException(String message) {
+        cursorException = Exceptions.chain(cursorException, new CursorException(message));
     }
 
     @Override
-    public void clearCursorException()
-    {   // Don't check
+    public void clearCursorException() { // Don't check
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
-    {
-        if ( !buffers.containsKey( pageId ) )
-        {
-            buffers.put( pageId, ByteBuffer.allocate( buffer.capacity() ) );
+    public PageCursor openLinkedCursor(long pageId) {
+        if (!buffers.containsKey(pageId)) {
+            buffers.put(pageId, ByteBuffer.allocate(buffer.capacity()));
         }
-        return new ByteArrayPageCursor( buffers, pageId );
+        return new ByteArrayPageCursor(buffers, pageId);
     }
 
     @Override
-    public void zapPage()
-    {
-        Arrays.fill( buffer.array(), (byte) 0 );
+    public void zapPage() {
+        Arrays.fill(buffer.array(), (byte) 0);
     }
 
     @Override
-    public boolean isWriteLocked()
-    {
+    public boolean isWriteLocked() {
         // Because we allow writes; they can't possibly conflict because this class is meant to be used by only one
         // thread at a time anyway.
         return true;
     }
 
-    private record ByteArrayPagedFile(int pageSize) implements PagedFile
-    {
+    private record ByteArrayPagedFile(int pageSize) implements PagedFile {
         @Override
-        public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
-        {
+        public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public int pageSize()
-        {
+        public int pageSize() {
             return pageSize;
         }
 
         @Override
-        public int payloadSize()
-        {
+        public int payloadSize() {
             return pageSize;
         }
 
         @Override
-        public long fileSize() throws IOException
-        {
+        public long fileSize() throws IOException {
             return pageSize;
         }
 
         @Override
-        public Path path()
-        {
+        public Path path() {
             return null;
         }
 
         @Override
-        public void flushAndForce() throws IOException
-        {
-
-        }
+        public void flushAndForce() throws IOException {}
 
         @Override
-        public long getLastPageId() throws IOException
-        {
+        public long getLastPageId() throws IOException {
             return 0;
         }
 
         @Override
-        public void close()
-        {
-
-        }
+        public void close() {}
 
         @Override
-        public void setDeleteOnClose( boolean deleteOnClose )
-        {
-
-        }
+        public void setDeleteOnClose(boolean deleteOnClose) {}
 
         @Override
-        public boolean isDeleteOnClose()
-        {
+        public boolean isDeleteOnClose() {
             return false;
         }
 
         @Override
-        public String getDatabaseName()
-        {
+        public String getDatabaseName() {
             return null;
         }
 
         @Override
-        public PageFileCounters pageFileCounters()
-        {
+        public PageFileCounters pageFileCounters() {
             return PageFileSwapperTracer.NULL;
         }
     }

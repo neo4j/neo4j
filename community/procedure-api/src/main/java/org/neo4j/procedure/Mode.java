@@ -26,8 +26,7 @@ import org.neo4j.annotations.api.PublicApi;
  * it requires.
  */
 @PublicApi
-public enum Mode
-{
+public enum Mode {
     /** This procedure will only perform read operations against the graph */
     READ,
     /** This procedure may perform both read and write operations against the graph */

@@ -20,57 +20,45 @@
 package org.neo4j.server.rest.dbms;
 
 import java.security.Principal;
-
 import org.neo4j.internal.kernel.api.security.LoginContext;
 
-public class DelegatingPrincipal implements Principal
-{
+public class DelegatingPrincipal implements Principal {
     private String username;
     private final LoginContext loginContext;
 
-    DelegatingPrincipal( String username, LoginContext loginContext )
-    {
+    DelegatingPrincipal(String username, LoginContext loginContext) {
         this.username = username;
         this.loginContext = loginContext;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return username;
     }
 
-    public LoginContext getLoginContext()
-    {
+    public LoginContext getLoginContext() {
         return loginContext;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( !(o instanceof DelegatingPrincipal that) )
-        {
+        if (!(o instanceof DelegatingPrincipal that)) {
             return false;
         }
 
-        return username.equals( that.username );
+        return username.equals(that.username);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return username.hashCode();
     }
 
     @Override
-    public String toString()
-    {
-        return "DelegatingPrincipal{" +
-                "username='" + username + '\'' +
-                '}';
+    public String toString() {
+        return "DelegatingPrincipal{" + "username='" + username + '\'' + '}';
     }
 }

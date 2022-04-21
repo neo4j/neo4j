@@ -19,26 +19,22 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RelationshipDirectionTest
-{
+import org.junit.jupiter.api.Test;
+
+class RelationshipDirectionTest {
     @Test
-    void shouldLookUpDirectionById()
-    {
-        for ( RelationshipDirection direction : RelationshipDirection.values() )
-        {
-            assertThat( direction ).isEqualTo( RelationshipDirection.ofId( direction.id() ) );
+    void shouldLookUpDirectionById() {
+        for (RelationshipDirection direction : RelationshipDirection.values()) {
+            assertThat(direction).isEqualTo(RelationshipDirection.ofId(direction.id()));
         }
     }
 
     @Test
-    void shouldHaveFixedOrder()
-    {
-        assertThat( RelationshipDirection.ofId( 0 ) ).isEqualTo( RelationshipDirection.OUTGOING );
-        assertThat( RelationshipDirection.ofId( 1 ) ).isEqualTo( RelationshipDirection.INCOMING );
-        assertThat( RelationshipDirection.ofId( 2 ) ).isEqualTo( RelationshipDirection.LOOP );
+    void shouldHaveFixedOrder() {
+        assertThat(RelationshipDirection.ofId(0)).isEqualTo(RelationshipDirection.OUTGOING);
+        assertThat(RelationshipDirection.ofId(1)).isEqualTo(RelationshipDirection.INCOMING);
+        assertThat(RelationshipDirection.ofId(2)).isEqualTo(RelationshipDirection.LOOP);
     }
 }

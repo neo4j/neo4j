@@ -20,28 +20,22 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import java.util.stream.Stream;
-
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Procedure;
 
-public class ProcedureWithException
-{
-    @Description( "List of numbers with erroneous value" )
-    @Procedure( name = "exception.stream.generate" )
-    public Stream<Result> streamErrors()
-    {
-        return Stream.of( new Result( 1L ), new Result( 2L ) ).onClose( () ->
-        {
-            throw new RuntimeException( "Injected error" );
-        } );
+public class ProcedureWithException {
+    @Description("List of numbers with erroneous value")
+    @Procedure(name = "exception.stream.generate")
+    public Stream<Result> streamErrors() {
+        return Stream.of(new Result(1L), new Result(2L)).onClose(() -> {
+            throw new RuntimeException("Injected error");
+        });
     }
 
-    public class Result
-    {
+    public class Result {
         public Long value;
 
-        public Result( Long value )
-        {
+        public Result(Long value) {
             this.value = value;
         }
     }

@@ -20,7 +20,6 @@
 package org.neo4j.io.bufferpool;
 
 import java.nio.ByteBuffer;
-
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -31,8 +30,7 @@ import org.neo4j.memory.MemoryTracker;
  * Buffers acquired {@link #acquire(int)} must be {@link #release(ByteBuffer) released},
  * because the secondary function of the pool is keeping of statistics about used memory.
  */
-public interface ByteBufferManger
-{
+public interface ByteBufferManger {
     int NO_CAPACITY_PREFERENCE = -1;
 
     /**
@@ -45,7 +43,7 @@ public interface ByteBufferManger
      * @return the requested buffer
      * @see #release(ByteBuffer)
      */
-    ByteBuffer acquire( int size );
+    ByteBuffer acquire(int size);
 
     /**
      * <p>Returns a {@link ByteBuffer}, obtained with {@link #acquire(int)}
@@ -54,7 +52,7 @@ public interface ByteBufferManger
      * @param buffer the buffer to return
      * @see #acquire(int)
      */
-    void release( ByteBuffer buffer );
+    void release(ByteBuffer buffer);
 
     /**
      * Recommends a size of a buffer given the capacity constraints.
@@ -66,7 +64,7 @@ public interface ByteBufferManger
      * <p>
      * If this method does not seem exactly logical, it is because its existence is dictated by Netty's APIs.
      */
-    int recommendNewCapacity( int minNewCapacity, int maxCapacity );
+    int recommendNewCapacity(int minNewCapacity, int maxCapacity);
 
     /**
      * This buffer manager works only with direct buffers, but it allows also monitoring memory used by heap buffers.

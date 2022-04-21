@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.graphdb.RelationshipType.withName;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.NodeEntity;
@@ -30,99 +32,84 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.graphdb.RelationshipType.withName;
-
 @DbmsExtension
-public class RelationshipAccessRequireTransactionIT
-{
+public class RelationshipAccessRequireTransactionIT {
     @Inject
     private GraphDatabaseAPI databaseAPI;
+
     private InternalTransaction transaction;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         transaction = (InternalTransaction) databaseAPI.beginTx();
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( transaction != null )
-        {
+    void tearDown() {
+        if (transaction != null) {
             transaction.close();
         }
     }
 
     @Test
-    void deleteRelationshipRequireTransaction()
-    {
+    void deleteRelationshipRequireTransaction() {
         var relationship = detachedRelationship();
-        assertThrows( NotInTransactionException.class, relationship::delete );
+        assertThrows(NotInTransactionException.class, relationship::delete);
     }
 
     @Test
-    void startNodeAccessRequireTransaction()
-    {
+    void startNodeAccessRequireTransaction() {
         var relationship = detachedRelationship();
-        assertThrows( NotInTransactionException.class, relationship::getStartNode );
+        assertThrows(NotInTransactionException.class, relationship::getStartNode);
     }
 
     @Test
-    void endNodeAccessRequireTransaction()
-    {
+    void endNodeAccessRequireTransaction() {
         var relationship = detachedRelationship();
-        assertThrows( NotInTransactionException.class, relationship::getEndNode );
+        assertThrows(NotInTransactionException.class, relationship::getEndNode);
     }
 
     @Test
-    void otherNodeAccessRequireTransaction()
-    {
+    void otherNodeAccessRequireTransaction() {
         var relationship = detachedRelationship();
-        assertThrows( NotInTransactionException.class, () -> relationship.getOtherNode( new NodeEntity( null, 7 ) ) );
+        assertThrows(NotInTransactionException.class, () -> relationship.getOtherNode(new NodeEntity(null, 7)));
     }
 
     @Test
-    void nodesAccessRequireTransaction()
-    {
+    void nodesAccessRequireTransaction() {
         var relationship = detachedRelationship();
-        assertThrows( NotInTransactionException.class, relationship::getNodes );
+        assertThrows(NotInTransactionException.class, relationship::getNodes);
     }
 
     @Test
-    void relationshipTypeAccessRequireTransaction()
-    {
+    void relationshipTypeAccessRequireTransaction() {
         var relationship = detachedRelationship();
-        assertThrows( NotInTransactionException.class, relationship::getType );
+        assertThrows(NotInTransactionException.class, relationship::getType);
     }
 
     @Test
-    void relationshipTypeCheckAccessRequireTransaction()
-    {
+    void relationshipTypeCheckAccessRequireTransaction() {
         var relationship = detachedRelationship();
-        assertThrows( NotInTransactionException.class, () -> relationship.isType( withName( "any" ) ) );
+        assertThrows(NotInTransactionException.class, () -> relationship.isType(withName("any")));
     }
 
     @Test
-    void startNodeIdAccessRequireTransaction()
-    {
+    void startNodeIdAccessRequireTransaction() {
         var relationship = detachedRelationship();
-        assertThrows( NotInTransactionException.class, relationship::getStartNodeId );
+        assertThrows(NotInTransactionException.class, relationship::getStartNodeId);
     }
 
     @Test
-    void endNodeIdAccessRequireTransaction()
-    {
+    void endNodeIdAccessRequireTransaction() {
         var relationship = detachedRelationship();
-        assertThrows( NotInTransactionException.class, relationship::getEndNodeId );
+        assertThrows(NotInTransactionException.class, relationship::getEndNodeId);
     }
 
-    private Relationship detachedRelationship()
-    {
+    private Relationship detachedRelationship() {
         var startNode = transaction.createNode();
         var endNode = transaction.createNode();
-        var relationship = transaction.getRelationshipById( startNode.createRelationshipTo( endNode, withName( "type" ) ).getId() );
+        var relationship = transaction.getRelationshipById(
+                startNode.createRelationshipTo(endNode, withName("type")).getId());
         transaction.close();
         return relationship;
     }

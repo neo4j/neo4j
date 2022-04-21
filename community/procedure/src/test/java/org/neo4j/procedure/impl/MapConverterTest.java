@@ -19,13 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-
-import org.neo4j.cypher.internal.evaluator.Evaluator;
-import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,259 +26,243 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
 
-class MapConverterTest
-{
-    private final MapConverter converter = new MapConverter( Evaluator.expressionEvaluator() );
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.cypher.internal.evaluator.Evaluator;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+
+class MapConverterTest {
+    private final MapConverter converter = new MapConverter(Evaluator.expressionEvaluator());
 
     @Test
-    void shouldHandleNullString()
-    {
+    void shouldHandleNullString() {
         // Given
         String mapString = "null";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( null ) );
+        assertThat(converted).isEqualTo(ntMap(null));
     }
 
     @Test
-    void shouldHandleEmptyMap()
-    {
+    void shouldHandleEmptyMap() {
         // Given
         String mapString = "{}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( emptyMap() ) );
+        assertThat(converted).isEqualTo(ntMap(emptyMap()));
     }
 
     @Test
-    void shouldHandleEmptyMapWithSpaces()
-    {
+    void shouldHandleEmptyMapWithSpaces() {
         // Given
         String mapString = " {  }  ";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( emptyMap() ) );
+        assertThat(converted).isEqualTo(ntMap(emptyMap()));
     }
 
     @Test
-    void shouldHandleSingleQuotedValue()
-    {
+    void shouldHandleSingleQuotedValue() {
         // Given
         String mapString = "{key: 'value'}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", "value" ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", "value")));
     }
 
     @Test
-    void shouldHandleEscapedSingleQuotedInValue2()
-    {
+    void shouldHandleEscapedSingleQuotedInValue2() {
         // Given
         String mapString = "{key: \"va\'lue\"}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", "va\'lue" ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", "va\'lue")));
     }
 
     @Test
-    void shouldHandleEscapedDoubleQuotedInValue1()
-    {
+    void shouldHandleEscapedDoubleQuotedInValue1() {
         // Given
         String mapString = "{key: \"va\\\"lue\"}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", "va\"lue" ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", "va\"lue")));
     }
 
     @Test
-    void shouldHandleEscapedDoubleQuotedInValue2()
-    {
+    void shouldHandleEscapedDoubleQuotedInValue2() {
         // Given
         String mapString = "{key: 'va\"lue'}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", "va\"lue" ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", "va\"lue")));
     }
 
     @Test
-    void shouldHandleDoubleQuotedValue()
-    {
+    void shouldHandleDoubleQuotedValue() {
         // Given
         String mapString = "{key: \"value\"}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", "value" ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", "value")));
     }
 
     @Test
-    void shouldHandleKeyWithEscapedSingleQuote()
-    {
+    void shouldHandleKeyWithEscapedSingleQuote() {
         // Given
         String mapString = "{`k\'ey`: \"value\"}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "k\'ey", "value" ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("k\'ey", "value")));
     }
 
     @Test
-    void shouldHandleKeyWithEscapedDoubleQuote()
-    {
+    void shouldHandleKeyWithEscapedDoubleQuote() {
         // Given
         String mapString = "{`k\"ey`: \"value\"}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "k\"ey", "value" ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("k\"ey", "value")));
     }
 
     @Test
-    void shouldHandleIntegerValue()
-    {
+    void shouldHandleIntegerValue() {
         // Given
         String mapString = "{key: 1337}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", 1337L ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", 1337L)));
     }
 
     @Test
-    void shouldHandleFloatValue()
-    {
+    void shouldHandleFloatValue() {
         // Given
         String mapString = "{key: 2.718281828}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", 2.718281828 ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", 2.718281828)));
     }
 
     @Test
-    void shouldHandleNullValue()
-    {
+    void shouldHandleNullValue() {
         // Given
         String mapString = "{key: null}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", null ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", null)));
     }
 
     @Test
-    void shouldHandleFalseValue()
-    {
+    void shouldHandleFalseValue() {
         // Given
         String mapString = "{key: false}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", false ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", false)));
     }
 
     @Test
-    void shouldHandleTrueValue()
-    {
+    void shouldHandleTrueValue() {
         // Given
         String mapString = "{key: true}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "key", true ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("key", true)));
     }
 
     @Test
-    void shouldHandleMultipleKeys()
-    {
+    void shouldHandleMultipleKeys() {
         // Given
         String mapString = "{k1: 2.718281828, k2: 'e'}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntMap( map( "k1", 2.718281828, "k2", "e" ) ) );
+        assertThat(converted).isEqualTo(ntMap(map("k1", 2.718281828, "k2", "e")));
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Test
-    void shouldHandleNestedMaps()
-    {
+    void shouldHandleNestedMaps() {
         // Given
         String mapString = "{k1: 1337, k2: { k1 : 1337, k2: {k1: 1337}}}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        Map<String,Object> map1 = (Map<String,Object>) converted.value();
-        Map<String,Object> map2 = (Map<String,Object>) map1.get( "k2" );
-        Map<String,Object> map3 = (Map<String,Object>) map2.get( "k2" );
-        assertThat( map1.get( "k1" ) ).isEqualTo( 1337L );
-        assertThat( map2.get( "k1" ) ).isEqualTo( 1337L );
-        assertThat( map3.get( "k1" ) ).isEqualTo( 1337L );
+        Map<String, Object> map1 = (Map<String, Object>) converted.value();
+        Map<String, Object> map2 = (Map<String, Object>) map1.get("k2");
+        Map<String, Object> map3 = (Map<String, Object>) map2.get("k2");
+        assertThat(map1.get("k1")).isEqualTo(1337L);
+        assertThat(map2.get("k1")).isEqualTo(1337L);
+        assertThat(map3.get("k1")).isEqualTo(1337L);
     }
 
     @Test
-    void shouldFailOnMalformedMap()
-    {
+    void shouldFailOnMalformedMap() {
         // Given
         String mapString = "{k1: 2.718281828, k2: 'e'}}";
 
-        assertThrows( IllegalArgumentException.class, () -> converter.apply( mapString ) );
+        assertThrows(IllegalArgumentException.class, () -> converter.apply(mapString));
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Test
-    void shouldHandleMapsWithLists()
-    {
+    void shouldHandleMapsWithLists() {
         // Given
         String mapString = "{k1: [1337, 42]}";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        Map<String,Object> map1 = (Map<String,Object>) converted.value();
-        assertThat( map1.get( "k1" ) ).isEqualTo( asList( 1337L, 42L ) );
-
+        Map<String, Object> map1 = (Map<String, Object>) converted.value();
+        assertThat(map1.get("k1")).isEqualTo(asList(1337L, 42L));
     }
 }

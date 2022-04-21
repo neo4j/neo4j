@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.messaging;
 
-public interface RequestMessage
-{
+public interface RequestMessage {
     boolean safeToProcessInAnyState();
 }

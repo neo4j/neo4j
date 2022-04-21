@@ -19,58 +19,51 @@
  */
 package org.neo4j.test.ports;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class SimplePortProviderTest
-{
+import org.junit.jupiter.api.Test;
+
+class SimplePortProviderTest {
     @Test
-    void shouldProvideUniquePorts()
-    {
-        PortProvider portProvider = new SimplePortProvider( port -> false, 42 );
+    void shouldProvideUniquePorts() {
+        PortProvider portProvider = new SimplePortProvider(port -> false, 42);
 
-        int port1 = portProvider.getNextFreePort( "foo" );
-        int port2 = portProvider.getNextFreePort( "foo" );
+        int port1 = portProvider.getNextFreePort("foo");
+        int port2 = portProvider.getNextFreePort("foo");
 
-        assertThat( port1 ).isNotEqualTo( port2 );
+        assertThat(port1).isNotEqualTo(port2);
     }
 
     @Test
-    void shouldSkipOccupiedPorts()
-    {
-        PortProbe portProbe = mock( PortProbe.class );
-        PortProvider portProvider = new SimplePortProvider( portProbe, 40 );
+    void shouldSkipOccupiedPorts() {
+        PortProbe portProbe = mock(PortProbe.class);
+        PortProvider portProvider = new SimplePortProvider(portProbe, 40);
 
-        when( portProbe.isOccupied( 40 ) ).thenReturn( false );
-        when( portProbe.isOccupied( 41 ) ).thenReturn( false );
-        when( portProbe.isOccupied( 42 ) ).thenReturn( true );
-        when( portProbe.isOccupied( 43 ) ).thenReturn( false );
-        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 40 );
-        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 41 );
-        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 43 );
+        when(portProbe.isOccupied(40)).thenReturn(false);
+        when(portProbe.isOccupied(41)).thenReturn(false);
+        when(portProbe.isOccupied(42)).thenReturn(true);
+        when(portProbe.isOccupied(43)).thenReturn(false);
+        assertThat(portProvider.getNextFreePort("foo")).isEqualTo(40);
+        assertThat(portProvider.getNextFreePort("foo")).isEqualTo(41);
+        assertThat(portProvider.getNextFreePort("foo")).isEqualTo(43);
     }
 
     @Test
-    void shouldNotOverRun()
-    {
-        PortProvider portProvider = new SimplePortProvider( port -> false, 65534 );
+    void shouldNotOverRun() {
+        PortProvider portProvider = new SimplePortProvider(port -> false, 65534);
 
-        portProvider.getNextFreePort( "foo" );
-        portProvider.getNextFreePort( "foo" );
+        portProvider.getNextFreePort("foo");
+        portProvider.getNextFreePort("foo");
 
-        try
-        {
-            portProvider.getNextFreePort( "foo" );
+        try {
+            portProvider.getNextFreePort("foo");
 
             fail("Failure was expected");
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e.getMessage() ).isEqualTo( "There are no more ports available" );
+        } catch (IllegalStateException e) {
+            assertThat(e.getMessage()).isEqualTo("There are no more ports available");
         }
     }
 }

@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 
-class DistanceTest extends FunctionTestBase("point.distance")  {
+class DistanceTest extends FunctionTestBase("point.distance") {
 
   test("should accept correct types") {
     testValidTypes(CTGeometry, CTGeometry)(CTFloat)

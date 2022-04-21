@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.index.partition;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.io.IOException;
+import java.nio.file.Path;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -36,61 +37,52 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @TestDirectoryExtension
-class IndexPartitionFactoryTest
-{
+class IndexPartitionFactoryTest {
     @Inject
     private TestDirectory testDirectory;
+
     private Directory directory;
 
     @BeforeEach
-    void setUp() throws IOException
-    {
-        directory = DirectoryFactory.PERSISTENT.open( testDirectory.homePath() );
+    void setUp() throws IOException {
+        directory = DirectoryFactory.PERSISTENT.open(testDirectory.homePath());
     }
 
     @Test
-    void createReadOnlyPartition() throws Exception
-    {
+    void createReadOnlyPartition() throws Exception {
         prepareIndex();
-        try ( AbstractIndexPartition indexPartition =
-                new ReadOnlyIndexPartitionFactory().createPartition( testDirectory.homePath(), directory ) )
-        {
-            assertThrows(UnsupportedOperationException.class, indexPartition::getIndexWriter );
+        try (AbstractIndexPartition indexPartition =
+                new ReadOnlyIndexPartitionFactory().createPartition(testDirectory.homePath(), directory)) {
+            assertThrows(UnsupportedOperationException.class, indexPartition::getIndexWriter);
         }
     }
 
     @Test
-    void createWritablePartition() throws Exception
-    {
-        try ( AbstractIndexPartition indexPartition =
-                      new WritableIndexPartitionFactory( () -> IndexWriterConfigs.standard( Config.defaults() ) )
-                              .createPartition( testDirectory.homePath(), directory ) )
-        {
+    void createWritablePartition() throws Exception {
+        try (AbstractIndexPartition indexPartition = new WritableIndexPartitionFactory(
+                        () -> IndexWriterConfigs.standard(Config.defaults()))
+                .createPartition(testDirectory.homePath(), directory)) {
 
-            try ( IndexWriter indexWriter = indexPartition.getIndexWriter() )
-            {
-                indexWriter.addDocument( new Document() );
+            try (IndexWriter indexWriter = indexPartition.getIndexWriter()) {
+                indexWriter.addDocument(new Document());
                 indexWriter.commit();
                 indexPartition.maybeRefreshBlocking();
-                try ( SearcherReference searcher = indexPartition.acquireSearcher() )
-                {
-                    assertEquals( 1, searcher.getIndexSearcher().getIndexReader().numDocs(), "We should be able to see newly added document " );
+                try (SearcherReference searcher = indexPartition.acquireSearcher()) {
+                    assertEquals(
+                            1,
+                            searcher.getIndexSearcher().getIndexReader().numDocs(),
+                            "We should be able to see newly added document ");
                 }
             }
         }
     }
 
-    private void prepareIndex() throws IOException
-    {
+    private void prepareIndex() throws IOException {
         Path location = testDirectory.homePath();
-        try ( AbstractIndexPartition ignored =
-                      new WritableIndexPartitionFactory( () -> IndexWriterConfigs.standard( Config.defaults() ) )
-                              .createPartition( location, DirectoryFactory.PERSISTENT.open( location ) ) )
-        {
+        try (AbstractIndexPartition ignored = new WritableIndexPartitionFactory(
+                        () -> IndexWriterConfigs.standard(Config.defaults()))
+                .createPartition(location, DirectoryFactory.PERSISTENT.open(location))) {
             // empty
         }
     }

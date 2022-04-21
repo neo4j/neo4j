@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.schema.reader;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -48,100 +47,91 @@ import org.neo4j.values.storable.Value;
  *
  * @see SimpleValueIndexReader
  */
-public class PartitionedValueIndexReader extends AbstractValueIndexReader
-{
+public class PartitionedValueIndexReader extends AbstractValueIndexReader {
     private final List<SimpleValueIndexReader> indexReaders;
 
-    public PartitionedValueIndexReader( List<SearcherReference> partitionSearchers,
-                                        IndexDescriptor descriptor,
-                                        IndexSamplingConfig samplingConfig,
-                                        TaskCoordinator taskCoordinator )
-    {
-        this( descriptor, partitionSearchers.stream()
-                .map( partitionSearcher -> new SimpleValueIndexReader( partitionSearcher, descriptor,
-                                                                       samplingConfig, taskCoordinator ) )
-                .collect( Collectors.toList() ) );
+    public PartitionedValueIndexReader(
+            List<SearcherReference> partitionSearchers,
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            TaskCoordinator taskCoordinator) {
+        this(
+                descriptor,
+                partitionSearchers.stream()
+                        .map(partitionSearcher -> new SimpleValueIndexReader(
+                                partitionSearcher, descriptor, samplingConfig, taskCoordinator))
+                        .collect(Collectors.toList()));
     }
 
-    PartitionedValueIndexReader( IndexDescriptor descriptor, List<SimpleValueIndexReader> readers )
-    {
-        super( descriptor );
+    PartitionedValueIndexReader(IndexDescriptor descriptor, List<SimpleValueIndexReader> readers) {
+        super(descriptor);
         this.indexReaders = readers;
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
-                       IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
-    {
-        try
-        {
-            BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-            indexReaders.parallelStream().forEach( reader ->
-            {
-                try
-                {
-                    reader.query( bridgingIndexProgressor, context, accessMode, constraints, query );
+    public void query(
+            IndexProgressor.EntityValueClient client,
+            QueryContext context,
+            AccessMode accessMode,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query)
+            throws IndexNotApplicableKernelException {
+        try {
+            BridgingIndexProgressor bridgingIndexProgressor =
+                    new BridgingIndexProgressor(client, descriptor.schema().getPropertyIds());
+            indexReaders.parallelStream().forEach(reader -> {
+                try {
+                    reader.query(bridgingIndexProgressor, context, accessMode, constraints, query);
+                } catch (IndexNotApplicableKernelException e) {
+                    throw new InnerException(e);
                 }
-                catch ( IndexNotApplicableKernelException e )
-                {
-                    throw new InnerException( e );
-                }
-            } );
-            client.initialize( descriptor, bridgingIndexProgressor, accessMode, false, constraints, query );
-        }
-        catch ( InnerException e )
-        {
+            });
+            client.initialize(descriptor, bridgingIndexProgressor, accessMode, false, constraints, query);
+        } catch (InnerException e) {
             throw e.getCause();
         }
     }
 
     @Override
-    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query )
-    {
+    public PartitionedValueSeek valueSeek(
+            int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query) {
         throw new UnsupportedOperationException();
     }
 
-    private static final class InnerException extends RuntimeException
-    {
-        private InnerException( IndexNotApplicableKernelException e )
-        {
-            super( e );
+    private static final class InnerException extends RuntimeException {
+        private InnerException(IndexNotApplicableKernelException e) {
+            super(e);
         }
 
         @Override
-        public synchronized IndexNotApplicableKernelException getCause()
-        {
+        public synchronized IndexNotApplicableKernelException getCause() {
             return (IndexNotApplicableKernelException) super.getCause();
         }
     }
 
     @Override
-    public long countIndexedEntities( long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues )
-    {
+    public long countIndexedEntities(
+            long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues) {
         return indexReaders.parallelStream()
-                .mapToLong( reader -> reader.countIndexedEntities( entityId, cursorContext, propertyKeyIds, propertyValues ) )
+                .mapToLong(
+                        reader -> reader.countIndexedEntities(entityId, cursorContext, propertyKeyIds, propertyValues))
                 .sum();
     }
 
     @Override
-    public IndexSampler createSampler()
-    {
+    public IndexSampler createSampler() {
         List<IndexSampler> indexSamplers = indexReaders.parallelStream()
-                .map( SimpleValueIndexReader::createSampler )
-                .collect( Collectors.toList() );
-        return new AggregatingIndexSampler( indexSamplers );
+                .map(SimpleValueIndexReader::createSampler)
+                .collect(Collectors.toList());
+        return new AggregatingIndexSampler(indexSamplers);
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
-            IOUtils.closeAll( indexReaders );
-        }
-        catch ( IOException e )
-        {
-            throw new IndexReaderCloseException( e );
+    public void close() {
+        try {
+            IOUtils.closeAll(indexReaders);
+        } catch (IOException e) {
+            throw new IndexReaderCloseException(e);
         }
     }
 }

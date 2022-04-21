@@ -24,23 +24,20 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class ResourceUtils
-{
+public class ResourceUtils {
     /**
      * @param resources {@link Iterable} over resources to close.
      */
-    public static <T extends Resource> void closeAll( Iterable<T> resources )
-    {
-        closeAll( StreamSupport.stream( resources.spliterator(), false ) );
+    public static <T extends Resource> void closeAll(Iterable<T> resources) {
+        closeAll(StreamSupport.stream(resources.spliterator(), false));
     }
 
     /**
      * @param resources Array of resources to close.
      */
     @SafeVarargs
-    public static <T extends Resource> void closeAll( T... resources )
-    {
-        closeAll( Arrays.stream( resources ) );
+    public static <T extends Resource> void closeAll(T... resources) {
+        closeAll(Arrays.stream(resources));
     }
 
     /**
@@ -48,8 +45,7 @@ public class ResourceUtils
      *
      * @param resources Stream of resources to close.
      */
-    public static <T extends Resource> void closeAll( Stream<T> resources )
-    {
-        resources.filter( Objects::nonNull ).forEach( Resource::close );
+    public static <T extends Resource> void closeAll(Stream<T> resources) {
+        resources.filter(Objects::nonNull).forEach(Resource::close);
     }
 }

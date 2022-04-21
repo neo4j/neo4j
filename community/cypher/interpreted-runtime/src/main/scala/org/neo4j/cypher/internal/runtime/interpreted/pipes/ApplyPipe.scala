@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.util.attribution.Id
 
 case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] =
     input.flatMap {
       outerContext: CypherRow =>
         val innerState = state.withInitialContext(outerContext)

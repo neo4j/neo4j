@@ -20,11 +20,9 @@
 package org.neo4j.io.fs.watcher;
 
 import java.util.Set;
-
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
 @FunctionalInterface
-public interface FileWatchEventListenerFactory<T extends FileWatchEventListener>
-{
-    T createListener( Set<WatchedResource> watchedResources );
+public interface FileWatchEventListenerFactory<T extends FileWatchEventListener> {
+    T createListener(Set<WatchedResource> watchedResources);
 }

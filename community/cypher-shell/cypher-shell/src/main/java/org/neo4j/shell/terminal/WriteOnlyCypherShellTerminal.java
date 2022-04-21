@@ -21,65 +21,54 @@ package org.neo4j.shell.terminal;
 
 import java.io.File;
 import java.io.PrintStream;
-
 import org.neo4j.shell.Historian;
 
 /**
  * Fallback implementation of CypherShellTerminal that only supports writing.
  */
-public class WriteOnlyCypherShellTerminal implements CypherShellTerminal
-{
+public class WriteOnlyCypherShellTerminal implements CypherShellTerminal {
     private final PrintStream out;
     private final Writer writer;
 
-    public WriteOnlyCypherShellTerminal( PrintStream out )
-    {
+    public WriteOnlyCypherShellTerminal(PrintStream out) {
         this.out = out;
         this.writer = new ReadOnlyWriter();
     }
 
     @Override
-    public Reader read()
-    {
-        throw new UnsupportedOperationException( "Could not read input" );
+    public Reader read() {
+        throw new UnsupportedOperationException("Could not read input");
     }
 
     @Override
-    public Writer write()
-    {
+    public Writer write() {
         return writer;
     }
 
     @Override
-    public boolean isInteractive()
-    {
+    public boolean isInteractive() {
         return false;
     }
 
     @Override
-    public Historian getHistory()
-    {
+    public Historian getHistory() {
         return Historian.empty;
     }
 
     @Override
-    public void setHistoryFile( File file )
-    {
+    public void setHistoryFile(File file) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void bindUserInterruptHandler( UserInterruptHandler handler )
-    {
+    public void bindUserInterruptHandler(UserInterruptHandler handler) {
         throw new UnsupportedOperationException();
     }
 
-    private class ReadOnlyWriter implements Writer
-    {
+    private class ReadOnlyWriter implements Writer {
         @Override
-        public void println( String line )
-        {
-            out.println( line );
+        public void println(String line) {
+            out.println(line);
         }
     }
 }

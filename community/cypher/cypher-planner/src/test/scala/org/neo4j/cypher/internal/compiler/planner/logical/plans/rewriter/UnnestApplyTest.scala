@@ -39,7 +39,8 @@ import org.scalatest.Assertion
 
 import scala.language.postfixOps
 
-class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
+class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport
+    with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
 
   private val po_n: ProvidedOrder = ProvidedOrder.asc(varFor("n"))
   private val po_n_m: ProvidedOrder = ProvidedOrder.asc(varFor("n")).asc(varFor("m"))
@@ -56,10 +57,9 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
       .argument().withCardinality(1)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(new LogicalPlanBuilder()
+    inputBuilder shouldRewriteToPlanWithAttributes (new LogicalPlanBuilder()
       .produceResults("x", "n").withCardinality(20)
-      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-    )
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n))
   }
 
   test("should unnest apply with a single Argument on the rhs") {
@@ -69,10 +69,9 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument().withCardinality(1)
       .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(new LogicalPlanBuilder()
+    inputBuilder shouldRewriteToPlanWithAttributes (new LogicalPlanBuilder()
       .produceResults("x", "n").withCardinality(20).withProvidedOrder(po_n)
-      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-    )
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n))
   }
 
   test("should not cross OPTIONAL boundaries") {
@@ -96,7 +95,6 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
                                       Arg2
      */
 
-
     val inputBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m", "o").withCardinality(300).withProvidedOrder(po_n)
       .apply().withCardinality(300).withProvidedOrder(po_n)
@@ -107,7 +105,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m", "o").withCardinality(300).withProvidedOrder(po_n)
         .expand("(n)-->(m)").withCardinality(300).withProvidedOrder(po_n)
@@ -134,15 +132,14 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.nodeByLabelScan("m", "M", "n").withCardinality(20)
       .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(new LogicalPlanBuilder()
+    inputBuilder shouldRewriteToPlanWithAttributes (new LogicalPlanBuilder()
       .produceResults("x", "n").withCardinality(40000).withProvidedOrder(po_n)
       .apply().withCardinality(40000).withProvidedOrder(po_n)
       .|.apply().withCardinality(800)
       .|.|.nodeByLabelScan("o", "O", "n", "m").withCardinality(40)
       .|.nodeByLabelScan("m", "M", "n").withCardinality(20)
       .filter("n.prop > 10").withCardinality(50).withProvidedOrder(po_n)
-      .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n)
-    )
+      .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n))
   }
 
   test("apply on apply should be left unchanged") {
@@ -187,14 +184,13 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(new LogicalPlanBuilder()
+    inputBuilder shouldRewriteToPlanWithAttributes (new LogicalPlanBuilder()
       .produceResults("x", "n").withCardinality(1000).withProvidedOrder(po_n)
       .apply().withCardinality(1000).withProvidedOrder(po_n)
       .|.optional("n").withCardinality(10)
       .|.expand("(n)-->(m)").withCardinality(15)
       .|.argument("n").withCardinality(1)
-      .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n)
-    )
+      .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n))
   }
 
   test("AntiConditionalApply on apply on optional should be OK") {
@@ -216,14 +212,13 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(new LogicalPlanBuilder()
+    inputBuilder shouldRewriteToPlanWithAttributes (new LogicalPlanBuilder()
       .produceResults("x", "n").withCardinality(1000).withProvidedOrder(po_n)
       .antiConditionalApply("n").withCardinality(1000).withProvidedOrder(po_n)
       .|.optional("n").withCardinality(10)
       .|.expand("(n)-->(m)").withCardinality(15)
       .|.argument("n").withCardinality(1)
-      .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n)
-    )
+      .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n))
   }
 
   test("π (Arg) Ax R => π (R)") {
@@ -234,11 +229,10 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .projection("5 AS x").withCardinality(1)
       .argument().withCardinality(1)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(new LogicalPlanBuilder()
+    inputBuilder shouldRewriteToPlanWithAttributes (new LogicalPlanBuilder()
       .produceResults("x", "n").withCardinality(100)
       .projection("5 as x").withCardinality(100).withProvidedOrder(po_n)
-      .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n)
-    )
+      .allNodeScan("n").withCardinality(100).withProvidedOrder(po_n))
   }
 
   test("π (Arg) Ax R => π (R): keeps arguments if nested under another apply") {
@@ -251,20 +245,24 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("m").withCardinality(1)
       .allNodeScan("m").withCardinality(100)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(new LogicalPlanBuilder()
+    inputBuilder shouldRewriteToPlanWithAttributes (new LogicalPlanBuilder()
       .produceResults("x", "n").withCardinality(50)
       .semiApply().withCardinality(50)
       .|.projection("5 as x").withCardinality(100).withProvidedOrder(po_n)
       .|.allNodeScan("n", "m").withCardinality(100).withProvidedOrder(po_n)
-      .allNodeScan("m").withCardinality(100)
-    )
+      .allNodeScan("m").withCardinality(100))
   }
 
   test("π (Arg) Ax R => π (R): if R uses projected value") {
     val input = new LogicalPlanBuilder()
       .produceResults("x", "n")
       .apply()
-      .|.nodeIndexOperator("n:Label(prop=???)", paramExpr = Some(varFor("x")), argumentIds = Set("x"), indexType = IndexType.RANGE)
+      .|.nodeIndexOperator(
+        "n:Label(prop=???)",
+        paramExpr = Some(varFor("x")),
+        argumentIds = Set("x"),
+        indexType = IndexType.RANGE
+      )
       .projection("5 AS x")
       .argument()
       .build()
@@ -280,11 +278,11 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
-    new LogicalPlanBuilder()
-      .produceResults("n", "m").withCardinality(200).withProvidedOrder(po_n)
-      .expand("(n)-->(m)").withCardinality(200).withProvidedOrder(po_n)
-      .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(200).withProvidedOrder(po_n)
+        .expand("(n)-->(m)").withCardinality(200).withProvidedOrder(po_n)
+        .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
     )
   }
 
@@ -297,7 +295,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m", "o").withCardinality(400).withProvidedOrder(po_n)
         .expand("(m)-->(o)").withCardinality(400).withProvidedOrder(po_n)
@@ -314,7 +312,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.allNodeScan("m").withCardinality(1000)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(200).withProvidedOrder(po_n)
         .expandInto("(n)-->(m)").withCardinality(200).withProvidedOrder(po_n)
@@ -332,7 +330,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n").withCardinality(50).withProvidedOrder(po_n)
         .filter("n.prop > 0").withCardinality(50).withProvidedOrder(po_n)
@@ -348,7 +346,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(50).withProvidedOrder(po_n)
         .projection("n AS m").withCardinality(100).withProvidedOrder(po_n)
@@ -364,7 +362,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(200).withProvidedOrder(po_n)
         .expand("(n)-[*]->(m)").withCardinality(200).withProvidedOrder(po_n)
@@ -380,7 +378,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(200).withProvidedOrder(po_n)
         .optionalExpandAll("(n)-->(m)").withCardinality(200).withProvidedOrder(po_n)
@@ -409,7 +407,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(100).withProvidedOrder(po_n)
         .create(createNode("m")).withCardinality(100).withProvidedOrder(po_n)
@@ -427,7 +425,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n").withCardinality(100)
         .foreachApply("n", "[1, 2, 3]").withCardinality(100) // Writing plans do not keep provided order
@@ -447,7 +445,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(2500)
         .leftOuterHashJoin("n").withCardinality(2500).withProvidedOrder(po_n)
@@ -467,7 +465,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-      inputBuilder shouldRewriteToPlanWithAttributes
+    inputBuilder shouldRewriteToPlanWithAttributes
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(2500)
         .leftOuterHashJoin("n").withCardinality(2500).withProvidedOrder(po_n_m)
@@ -513,10 +511,12 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.nodeByLabelScan("m", "M").withCardinality(10)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(2500)
-        .rightOuterHashJoin("n").withCardinality(2500).withProvidedOrder(po_n) // Assuming the label-scan order was propagated to the removed Argument
+        .rightOuterHashJoin("n").withCardinality(2500).withProvidedOrder(
+          po_n
+        ) // Assuming the label-scan order was propagated to the removed Argument
         .|.nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
         .expand("(m)--(n)").withCardinality(50)
         .nodeByLabelScan("m", "M").withCardinality(10)
@@ -547,7 +547,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(1000).withProvidedOrder(po_n)
         .apply().withCardinality(1000).withProvidedOrder(po_n)
@@ -555,7 +555,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .|.argument("n").withCardinality(1)
         .expand("(m)--(n)").withCardinality(1000).withProvidedOrder(po_n)
         .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest nested SemiApply with Expand on LHS") {
@@ -569,7 +569,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(500).withProvidedOrder(po_n)
         .semiApply().withCardinality(500).withProvidedOrder(po_n)
@@ -577,7 +577,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .|.argument("n").withCardinality(1)
         .expand("(m)--(n)").withCardinality(1000).withProvidedOrder(po_n)
         .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest nested Apply with deeply nested unary plan on LHS") {
@@ -592,7 +592,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
 
-    inputBuilder shouldRewriteToPlanWithAttributes(
+    inputBuilder shouldRewriteToPlanWithAttributes (
       new LogicalPlanBuilder()
         .produceResults("n", "m").withCardinality(1000).withProvidedOrder(po_n)
         .apply().withCardinality(1000).withProvidedOrder(po_n)
@@ -601,7 +601,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .filter("m.prop > 0").withCardinality(1000).withProvidedOrder(po_n)
         .expand("(n)--(m)").withCardinality(1500).withProvidedOrder(po_n)
         .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should not unnest nested Apply with Distinct on LHS") {
@@ -884,20 +884,33 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
   }
 
   implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
+
     def shouldRewriteToPlanWithAttributes(expectedBuilder: LogicalPlanBuilder): Assertion = {
-      val resultPlan = rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.providedOrders,inputBuilder.idGen)
-      (resultPlan, inputBuilder.cardinalities) should haveSamePlanAndCardinalitiesAs((expectedBuilder.build(), expectedBuilder.cardinalities))
-      (resultPlan, inputBuilder.providedOrders) should haveSamePlanAndProvidedOrdersAs((expectedBuilder.build(), expectedBuilder.providedOrders))
+      val resultPlan =
+        rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.providedOrders, inputBuilder.idGen)
+      (resultPlan, inputBuilder.cardinalities) should haveSamePlanAndCardinalitiesAs((
+        expectedBuilder.build(),
+        expectedBuilder.cardinalities
+      ))
+      (resultPlan, inputBuilder.providedOrders) should haveSamePlanAndProvidedOrdersAs((
+        expectedBuilder.build(),
+        expectedBuilder.providedOrders
+      ))
     }
 
     def shouldNotRewritePlan: Assertion = {
       val inputPlan = inputBuilder.build()
-      val resultPlan = rewrite(inputPlan, inputBuilder.cardinalities, inputBuilder.providedOrders,inputBuilder.idGen)
+      val resultPlan = rewrite(inputPlan, inputBuilder.cardinalities, inputBuilder.providedOrders, inputBuilder.idGen)
       resultPlan shouldEqual inputPlan
     }
   }
 
-  private def rewrite(p: LogicalPlan, cardinalities: Cardinalities, providedOrders: ProvidedOrders, idGen: IdGen): LogicalPlan = {
+  private def rewrite(
+    p: LogicalPlan,
+    cardinalities: Cardinalities,
+    providedOrders: ProvidedOrders,
+    idGen: IdGen
+  ): LogicalPlan = {
     val solveds = new StubSolveds
     val unnest = unnestEager(solveds, cardinalities, providedOrders, Attributes(idGen))
       .andThen(unnestApply(solveds, cardinalities, providedOrders, Attributes(idGen)))

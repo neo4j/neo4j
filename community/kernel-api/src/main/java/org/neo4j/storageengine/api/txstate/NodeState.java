@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
@@ -34,11 +33,10 @@ import org.neo4j.storageengine.api.RelationshipDirection;
  * <li>{@linkplain EntityState Changes to properties}.</li>
  * </ul>
  */
-public interface NodeState extends EntityState
-{
+public interface NodeState extends EntityState {
     LongDiffSets labelDiffSets();
 
-    int augmentDegree( RelationshipDirection direction, int degree, int typeId );
+    int augmentDegree(RelationshipDirection direction, int degree, int typeId);
 
     long getId();
 
@@ -48,7 +46,7 @@ public interface NodeState extends EntityState
 
     LongIterator getAddedRelationships();
 
-    LongIterator getAddedRelationships( Direction direction );
+    LongIterator getAddedRelationships(Direction direction);
 
-    LongIterator getAddedRelationships( Direction direction, int relType );
+    LongIterator getAddedRelationships(Direction direction, int relType);
 }

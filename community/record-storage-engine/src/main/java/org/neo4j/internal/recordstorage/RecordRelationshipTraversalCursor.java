@@ -19,6 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
+import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
+import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
+import static org.neo4j.storageengine.api.RelationshipDirection.directionOfStrict;
+
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -28,17 +33,10 @@ import org.neo4j.storageengine.api.ReadTracer;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
-import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
-import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
-import static org.neo4j.storageengine.api.RelationshipDirection.directionOfStrict;
-
-class RecordRelationshipTraversalCursor extends RecordRelationshipCursor implements StorageRelationshipTraversalCursor
-{
+class RecordRelationshipTraversalCursor extends RecordRelationshipCursor implements StorageRelationshipTraversalCursor {
     private ReadTracer tracer;
 
-    private enum GroupState
-    {
+    private enum GroupState {
         INCOMING,
         OUTGOING,
         LOOP,
@@ -53,51 +51,46 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     private GroupState groupState = GroupState.NONE;
     private boolean open;
 
-    RecordRelationshipTraversalCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RelationshipGroupDegreesStore groupDegreesStore,
-            CursorContext cursorContext )
-    {
-        super( relationshipStore, cursorContext );
-        this.group = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext );
+    RecordRelationshipTraversalCursor(
+            RelationshipStore relationshipStore,
+            RelationshipGroupStore groupStore,
+            RelationshipGroupDegreesStore groupDegreesStore,
+            CursorContext cursorContext) {
+        super(relationshipStore, cursorContext);
+        this.group = new RecordRelationshipGroupCursor(
+                relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext);
     }
 
-    void init( RecordNodeCursor nodeCursor, RelationshipSelection selection )
-    {
-        init( nodeCursor.entityReference(), nodeCursor.getNextRel(), nodeCursor.isDense(), selection );
+    void init(RecordNodeCursor nodeCursor, RelationshipSelection selection) {
+        init(nodeCursor.entityReference(), nodeCursor.getNextRel(), nodeCursor.isDense(), selection);
     }
 
     @Override
-    public void init( long nodeReference, long reference, RelationshipSelection selection )
-    {
-        if ( reference == NO_ID )
-        {
+    public void init(long nodeReference, long reference, RelationshipSelection selection) {
+        if (reference == NO_ID) {
             resetState();
             return;
         }
 
-        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
-        reference = RelationshipReferenceEncoding.clearEncoding( reference );
+        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding(reference);
+        reference = RelationshipReferenceEncoding.clearEncoding(reference);
 
-        init( nodeReference, reference, encoding == RelationshipReferenceEncoding.DENSE, selection );
+        init(nodeReference, reference, encoding == RelationshipReferenceEncoding.DENSE, selection);
     }
 
-    private void init( long nodeReference, long reference, boolean isDense, RelationshipSelection selection )
-    {
-        if ( reference == NO_ID )
-        {
+    private void init(long nodeReference, long reference, boolean isDense, RelationshipSelection selection) {
+        if (reference == NO_ID) {
             resetState();
             return;
         }
 
         this.selection = selection;
-        if ( isDense )
-        {
+        if (isDense) {
             // The reference points to a relationship group record
-            groups( nodeReference, reference );
-        }
-        else
-        {
+            groups(nodeReference, reference);
+        } else {
             // The reference points to a relationship record
-            chain( nodeReference, reference );
+            chain(nodeReference, reference);
         }
         open = true;
     }
@@ -105,13 +98,11 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     /*
      * Normal traversal. Traversal returns mixed types and directions.
      */
-    private void chain( long nodeReference, long reference )
-    {
-        if ( pageCursor == null )
-        {
-            pageCursor = relationshipPage( reference );
+    private void chain(long nodeReference, long reference) {
+        if (pageCursor == null) {
+            pageCursor = relationshipPage(reference);
         }
-        setId( NO_ID );
+        setId(NO_ID);
         this.groupState = GroupState.NONE;
         this.originNodeReference = nodeReference;
         this.next = reference;
@@ -120,231 +111,195 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     /*
      * Reference to a group record. Traversal returns mixed types and directions.
      */
-    private void groups( long nodeReference, long groupReference )
-    {
-        setId( NO_ID );
+    private void groups(long nodeReference, long groupReference) {
+        setId(NO_ID);
         this.next = NO_ID;
         this.groupState = GroupState.INCOMING;
         this.originNodeReference = nodeReference;
-        this.group.direct( nodeReference, groupReference );
+        this.group.direct(nodeReference, groupReference);
     }
 
     @Override
-    public long neighbourNodeReference()
-    {
+    public long neighbourNodeReference() {
         final long source = sourceNodeReference(), target = targetNodeReference();
-        if ( source == originNodeReference )
-        {
+        if (source == originNodeReference) {
             return target;
-        }
-        else if ( target == originNodeReference )
-        {
+        } else if (target == originNodeReference) {
             return source;
-        }
-        else
-        {
-            throw new IllegalStateException( "NOT PART OF CHAIN" );
+        } else {
+            throw new IllegalStateException("NOT PART OF CHAIN");
         }
     }
 
     @Override
-    public long originNodeReference()
-    {
+    public long originNodeReference() {
         return originNodeReference;
     }
 
     @Override
-    public boolean next()
-    {
+    public boolean next() {
         boolean traversingDenseNode;
-        do
-        {
+        do {
             traversingDenseNode = traversingDenseNode();
-            if ( traversingDenseNode )
-            {
+            if (traversingDenseNode) {
                 traverseDenseNode();
             }
 
-            if ( next == NO_ID )
-            {
+            if (next == NO_ID) {
                 resetState();
                 return false;
             }
 
-            relationshipFull( this, next, pageCursor );
+            relationshipFull(this, next, pageCursor);
             computeNext();
-            if ( tracer != null )
-            {
-                tracer.onRelationship( entityReference() );
+            if (tracer != null) {
+                tracer.onRelationship(entityReference());
             }
-        }
-        while ( !inUse() || (!traversingDenseNode && !selection.test( getType(), directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() ) )) );
+        } while (!inUse()
+                || (!traversingDenseNode
+                        && !selection.test(
+                                getType(), directionOfStrict(originNodeReference, getFirstNode(), getSecondNode()))));
         return true;
     }
 
-    private void traverseDenseNode()
-    {
-        while ( next == NO_ID )
-        {
-             /*
-              Dense nodes looks something like:
+    private void traverseDenseNode() {
+        while (next == NO_ID) {
+            /*
+             Dense nodes looks something like:
 
-                    Node(dense=true)
+                   Node(dense=true)
 
-                            |
-                            v
+                           |
+                           v
 
-                        Group(:HOLDS)   -incoming-> Rel(id=2) -> Rel(id=3)
-                                        -outgoing-> Rel(id=5) -> Rel(id=10) -> Rel(id=3)
-                                        -loop->     Rel(id=9)
-                            |
-                            v
+                       Group(:HOLDS)   -incoming-> Rel(id=2) -> Rel(id=3)
+                                       -outgoing-> Rel(id=5) -> Rel(id=10) -> Rel(id=3)
+                                       -loop->     Rel(id=9)
+                           |
+                           v
 
-                        Group(:USES)    -incoming-> Rel(id=14)
-                                        -outgoing-> Rel(id=55) -> Rel(id=51) -> ...
-                                        -loop->     Rel(id=21) -> Rel(id=11)
+                       Group(:USES)    -incoming-> Rel(id=14)
+                                       -outgoing-> Rel(id=55) -> Rel(id=51) -> ...
+                                       -loop->     Rel(id=21) -> Rel(id=11)
 
-                            |
-                            v
-                            ...
+                           |
+                           v
+                           ...
 
-              We iterate over dense nodes using a small state machine staring in state INCOMING.
-              1) fetch next group, if no more group stop.
-              2) set next to group.incomingReference, switch state to OUTGOING
-              3) Iterate relationship chain until we reach the end
-              4) set next to group.outgoingReference and state to LOOP
-              5) Iterate relationship chain until we reach the end
-              6) set next to group.loop and state back to INCOMING
-              7) Iterate relationship chain until we reach the end
-              8) GOTO 1
-             */
-            switch ( groupState )
-            {
-            case INCOMING:
-                boolean hasNext = group.next();
-                if ( !hasNext )
-                {
-                    assert next == NO_ID;
-                    return; // no more groups nor relationships
-                }
-                if ( tracer != null )
-                {
-                    tracer.dbHit();
-                }
-                if ( !selection.test( group.getType() ) )
-                {
-                    // This type isn't part of this selection, so skip the whole group
-                    continue;
-                }
+             We iterate over dense nodes using a small state machine staring in state INCOMING.
+             1) fetch next group, if no more group stop.
+             2) set next to group.incomingReference, switch state to OUTGOING
+             3) Iterate relationship chain until we reach the end
+             4) set next to group.outgoingReference and state to LOOP
+             5) Iterate relationship chain until we reach the end
+             6) set next to group.loop and state back to INCOMING
+             7) Iterate relationship chain until we reach the end
+             8) GOTO 1
+            */
+            switch (groupState) {
+                case INCOMING:
+                    boolean hasNext = group.next();
+                    if (!hasNext) {
+                        assert next == NO_ID;
+                        return; // no more groups nor relationships
+                    }
+                    if (tracer != null) {
+                        tracer.dbHit();
+                    }
+                    if (!selection.test(group.getType())) {
+                        // This type isn't part of this selection, so skip the whole group
+                        continue;
+                    }
 
-                if ( selection.test( group.getType(), INCOMING ) )
-                {
-                    next = group.incomingRawId();
-                    initializePageCursor();
-                }
-                groupState = GroupState.OUTGOING;
-                break;
+                    if (selection.test(group.getType(), INCOMING)) {
+                        next = group.incomingRawId();
+                        initializePageCursor();
+                    }
+                    groupState = GroupState.OUTGOING;
+                    break;
 
-            case OUTGOING:
-                if ( selection.test( group.getType(), OUTGOING ) )
-                {
-                    initializePageCursor();
-                    next = group.outgoingRawId();
-                }
-                groupState = GroupState.LOOP;
-                break;
+                case OUTGOING:
+                    if (selection.test(group.getType(), OUTGOING)) {
+                        initializePageCursor();
+                        next = group.outgoingRawId();
+                    }
+                    groupState = GroupState.LOOP;
+                    break;
 
-            case LOOP:
-                if ( selection.test( group.getType(), LOOP ) )
-                {
-                    initializePageCursor();
-                    next = group.loopsRawId();
-                }
-                groupState = GroupState.INCOMING;
-                break;
+                case LOOP:
+                    if (selection.test(group.getType(), LOOP)) {
+                        initializePageCursor();
+                        next = group.loopsRawId();
+                    }
+                    groupState = GroupState.INCOMING;
+                    break;
 
-            default:
-                throw new IllegalStateException( "We cannot get here, but checkstyle forces this!" );
+                default:
+                    throw new IllegalStateException("We cannot get here, but checkstyle forces this!");
             }
         }
     }
 
-    private void initializePageCursor()
-    {
-        if ( pageCursor == null )
-        {
-            pageCursor = relationshipPage( Math.max( next, 0L ) );
+    private void initializePageCursor() {
+        if (pageCursor == null) {
+            pageCursor = relationshipPage(Math.max(next, 0L));
         }
     }
 
-    private void computeNext()
-    {
+    private void computeNext() {
         final long source = sourceNodeReference(), target = targetNodeReference();
-        if ( source == originNodeReference )
-        {
+        if (source == originNodeReference) {
             next = getFirstNextRel();
-        }
-        else if ( target == originNodeReference )
-        {
+        } else if (target == originNodeReference) {
             next = getSecondNextRel();
-        }
-        else
-        {
-            throw new IllegalStateException( "NOT PART OF CHAIN! " + this );
+        } else {
+            throw new IllegalStateException("NOT PART OF CHAIN! " + this);
         }
     }
 
-    private boolean traversingDenseNode()
-    {
+    private boolean traversingDenseNode() {
         return groupState != GroupState.NONE;
     }
 
     @Override
-    public void reset()
-    {
-        if ( open )
-        {
+    public void reset() {
+        if (open) {
             open = false;
             resetState();
         }
     }
 
     @Override
-    public void setTracer( ReadTracer tracer )
-    {
-        // Since this cursor does its own filtering on relationships and has internal relationship group records and such,
+    public void setTracer(ReadTracer tracer) {
+        // Since this cursor does its own filtering on relationships and has internal relationship group records and
+        // such,
         // the kernel can't possible tell the number of db hits and therefore we do it here in this cursor instead.
         this.tracer = tracer;
     }
 
     @Override
-    public void removeTracer()
-    {
+    public void removeTracer() {
         this.tracer = null;
     }
 
     @Override
-    public void setForceLoad()
-    {
+    public void setForceLoad() {
         super.setForceLoad();
         group.loadMode = loadMode;
     }
 
     @Override
-    protected void resetState()
-    {
+    protected void resetState() {
         super.resetState();
         group.loadMode = loadMode;
-        setId( next = NO_ID );
+        setId(next = NO_ID);
         groupState = GroupState.NONE;
         selection = null;
     }
 
     @Override
-    public void close()
-    {
-        if ( pageCursor != null )
-        {
+    public void close() {
+        if (pageCursor != null) {
             pageCursor.close();
             pageCursor = null;
         }
@@ -353,19 +308,15 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
-    public String toString()
-    {
-        if ( !open )
-        {
+    public String toString() {
+        if (!open) {
             return "RelationshipTraversalCursor[closed state]";
-        }
-        else
-        {
+        } else {
             String dense = "denseNode=" + traversingDenseNode();
-            return "RelationshipTraversalCursor[id=" + getId() +
-                    ", open state with: " + dense +
-                    ", next=" + next + ", " +
-                    ", underlying record=" + super.toString() + "]";
+            return "RelationshipTraversalCursor[id=" + getId() + ", open state with: "
+                    + dense + ", next="
+                    + next + ", " + ", underlying record="
+                    + super.toString() + "]";
         }
     }
 }

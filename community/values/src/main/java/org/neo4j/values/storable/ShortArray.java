@@ -19,170 +19,144 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.Arrays;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 
-public class ShortArray extends IntegralArray
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ShortArray.class );
+import java.util.Arrays;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public class ShortArray extends IntegralArray {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(ShortArray.class);
 
     private final short[] value;
 
-    ShortArray( short[] value )
-    {
+    ShortArray(short[] value) {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         return value.length;
     }
 
     @Override
-    public long longValue( int index )
-    {
+    public long longValue(int index) {
         return value[index];
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
-        return NumberValues.hash( value );
+    protected int computeHashToMemoize() {
+        return NumberValues.hash(value);
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapShortArray( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapShortArray(this);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+    public boolean equals(Value other) {
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( byte[] x )
-    {
-        return PrimitiveArrayValues.equals( x, value );
+    public boolean equals(byte[] x) {
+        return PrimitiveArrayValues.equals(x, value);
     }
 
     @Override
-    public boolean equals( short[] x )
-    {
-        return Arrays.equals( value, x );
+    public boolean equals(short[] x) {
+        return Arrays.equals(value, x);
     }
 
     @Override
-    public boolean equals( int[] x )
-    {
-        return PrimitiveArrayValues.equals( value, x );
+    public boolean equals(int[] x) {
+        return PrimitiveArrayValues.equals(value, x);
     }
 
     @Override
-    public boolean equals( long[] x )
-    {
-        return PrimitiveArrayValues.equals( value, x );
+    public boolean equals(long[] x) {
+        return PrimitiveArrayValues.equals(value, x);
     }
 
     @Override
-    public boolean equals( float[] x )
-    {
-        return PrimitiveArrayValues.equals( value, x );
+    public boolean equals(float[] x) {
+        return PrimitiveArrayValues.equals(value, x);
     }
 
     @Override
-    public boolean equals( double[] x )
-    {
-        return PrimitiveArrayValues.equals( value, x );
+    public boolean equals(double[] x) {
+        return PrimitiveArrayValues.equals(value, x);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        PrimitiveArrayWriting.writeTo( writer, value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        PrimitiveArrayWriting.writeTo(writer, value);
     }
 
     @Override
-    public short[] asObjectCopy()
-    {
-        return Arrays.copyOf( value, value.length );
+    public short[] asObjectCopy() {
+        return Arrays.copyOf(value, value.length);
     }
 
     @Override
     @Deprecated
-    public short[] asObject()
-    {
+    public short[] asObject() {
         return value;
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return Arrays.toString( value );
+    public String prettyPrint() {
+        return Arrays.toString(value);
     }
 
     @Override
-    public AnyValue value( int offset )
-    {
-        return Values.shortValue( value[offset] );
+    public AnyValue value(int offset) {
+        return Values.shortValue(value[offset]);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s%s", getTypeName(), Arrays.toString( value ) );
+    public String toString() {
+        return format("%s%s", getTypeName(), Arrays.toString(value));
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "ShortArray";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOf( value );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOf(value);
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof ShortValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        short[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        short[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = ((ShortValue) added).value();
-        return new ShortArray( newArray );
+        return new ShortArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         short[] newArray = new short[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
+        System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((ShortValue) prepended).value();
-        return new ShortArray( newArray );
+        return new ShortArray(newArray);
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.INT16_ARRAY;
     }
 }

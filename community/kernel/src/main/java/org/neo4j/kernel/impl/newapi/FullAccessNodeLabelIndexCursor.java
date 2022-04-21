@@ -22,22 +22,18 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 
-class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor
-{
-    FullAccessNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool )
-    {
-        super( pool, null );
+class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor {
+    FullAccessNodeLabelIndexCursor(CursorPool<DefaultNodeLabelIndexCursor> pool) {
+        super(pool, null);
     }
 
     @Override
-    final boolean allowed( long reference, TokenSet labels )
-    {
+    final boolean allowed(long reference, TokenSet labels) {
         return true;
     }
 
     @Override
-    final boolean allowedToSeeEntity( AccessMode accessMode, long entityReference, TokenSet tokens )
-    {
+    final boolean allowedToSeeEntity(AccessMode accessMode, long entityReference, TokenSet tokens) {
         return true;
     }
 }

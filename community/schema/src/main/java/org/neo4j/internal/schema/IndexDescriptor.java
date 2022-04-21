@@ -19,33 +19,33 @@
  */
 package org.neo4j.internal.schema;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
-
-public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaRule
-{
+public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaRule {
     /**
      * A special index descriptor used to represent the absence of an index.
      * This descriptor <em>cannot</em> be modified by any of the {@code with*} methods.
      */
     public static final IndexDescriptor NO_INDEX = new IndexDescriptor();
+
     public static final long INJECTED_NLI_ID = -2;
     public static final String NLI_GENERATED_NAME =
             "__org_neo4j_schema_index_label_scan_store_converted_to_token_index";
-    public static final IndexPrototype NLI_PROTOTYPE = IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ),
-                                                                                 new IndexProviderDescriptor( "token-lookup", "1.0" ) )
-                                                                     .withIndexType( IndexType.LOOKUP )
-                                                                     .withName( IndexDescriptor.NLI_GENERATED_NAME );
-    public static final IndexDescriptor INJECTED_NLI = NLI_PROTOTYPE.materialise( IndexDescriptor.INJECTED_NLI_ID );
+    public static final IndexPrototype NLI_PROTOTYPE = IndexPrototype.forSchema(
+                    SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
+                    new IndexProviderDescriptor("token-lookup", "1.0"))
+            .withIndexType(IndexType.LOOKUP)
+            .withName(IndexDescriptor.NLI_GENERATED_NAME);
+    public static final IndexDescriptor INJECTED_NLI = NLI_PROTOTYPE.materialise(IndexDescriptor.INJECTED_NLI_ID);
 
     private final long id;
     private final String name;
@@ -57,26 +57,40 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     private final IndexType indexType;
     private final IndexConfig indexConfig;
 
-    IndexDescriptor( long id, IndexPrototype prototype )
-    {
-        this( id, SchemaNameUtil.sanitiseName( prototype.getName() ), prototype.schema(), prototype.isUnique(),
-              prototype.getIndexProvider(), null,
-              IndexCapability.NO_CAPABILITY, prototype.getIndexType(), prototype.getIndexConfig() );
+    IndexDescriptor(long id, IndexPrototype prototype) {
+        this(
+                id,
+                SchemaNameUtil.sanitiseName(prototype.getName()),
+                prototype.schema(),
+                prototype.isUnique(),
+                prototype.getIndexProvider(),
+                null,
+                IndexCapability.NO_CAPABILITY,
+                prototype.getIndexType(),
+                prototype.getIndexConfig());
     }
 
-    private IndexDescriptor( long id, String name, SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, Long owningConstraintId,
-            IndexCapability capability, IndexType indexType, IndexConfig indexConfig )
-    {
-        if ( id < 0 && id != INJECTED_NLI_ID )
-        {
-            throw new IllegalArgumentException( "The id of an index must not be negative, but it was attempted to assign " + id + "." );
+    private IndexDescriptor(
+            long id,
+            String name,
+            SchemaDescriptor schema,
+            boolean isUnique,
+            IndexProviderDescriptor indexProvider,
+            Long owningConstraintId,
+            IndexCapability capability,
+            IndexType indexType,
+            IndexConfig indexConfig) {
+        if (id < 0 && id != INJECTED_NLI_ID) {
+            throw new IllegalArgumentException(
+                    "The id of an index must not be negative, but it was attempted to assign " + id + ".");
         }
-        name = SchemaNameUtil.sanitiseName( name );
-        requireNonNull( schema, "The schema of an index cannot be null." );
-        requireNonNull( indexProvider, "The index provider cannot be null." );
-        // The 'owningConstraintId' is allowed to be null, which is the case when an index descriptor is initially created.
-        requireNonNull( capability, "The index capability cannot be null." );
-        requireNonNull( indexConfig, "The index configuration cannot be null." );
+        name = SchemaNameUtil.sanitiseName(name);
+        requireNonNull(schema, "The schema of an index cannot be null.");
+        requireNonNull(indexProvider, "The index provider cannot be null.");
+        // The 'owningConstraintId' is allowed to be null, which is the case when an index descriptor is initially
+        // created.
+        requireNonNull(capability, "The index capability cannot be null.");
+        requireNonNull(indexConfig, "The index configuration cannot be null.");
 
         this.id = id;
         this.name = name;
@@ -92,8 +106,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     /**
      * This constructor is used <em>exclusively</em> for the {@link #NO_INDEX} field!
      */
-    private IndexDescriptor()
-    {
+    private IndexDescriptor() {
         this.id = -1;
         this.name = ReservedSchemaRuleNames.NO_INDEX.getReservedName();
         this.schema = SchemaDescriptors.noSchema();
@@ -106,20 +119,17 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     }
 
     @Override
-    public SchemaDescriptor schema()
-    {
+    public SchemaDescriptor schema() {
         return schema;
     }
 
     @Override
-    public boolean isUnique()
-    {
+    public boolean isUnique() {
         return isUnique;
     }
 
     @Override
-    public long getId()
-    {
+    public long getId() {
         return id;
     }
 
@@ -127,28 +137,25 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
      * @return The name of this index.
      */
     @Override
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     @Override
-    public IndexDescriptor withName( String name )
-    {
-        if ( name == null )
-        {
+    public IndexDescriptor withName(String name) {
+        if (name == null) {
             return this;
         }
-        name = SchemaNameUtil.sanitiseName( name );
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig );
+        name = SchemaNameUtil.sanitiseName(name);
+        return new IndexDescriptor(
+                id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig);
     }
 
     /**
      * @return the {@link IndexConfig}
      */
     @Override
-    public IndexConfig getIndexConfig()
-    {
+    public IndexConfig getIndexConfig() {
         return indexConfig;
     }
 
@@ -158,55 +165,58 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
      * @return A new index descriptor with the given index config.
      */
     @Override
-    public IndexDescriptor withIndexConfig( IndexConfig indexConfig )
-    {
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig );
+    public IndexDescriptor withIndexConfig(IndexConfig indexConfig) {
+        return new IndexDescriptor(
+                id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig);
     }
 
     /**
      * @return The id of the constraint that owns this index, if such a constraint exists. Otherwise {@code empty}.
      */
-    public OptionalLong getOwningConstraintId()
-    {
-        return owningConstraintId == null ? OptionalLong.empty() : OptionalLong.of( owningConstraintId );
+    public OptionalLong getOwningConstraintId() {
+        return owningConstraintId == null ? OptionalLong.empty() : OptionalLong.of(owningConstraintId);
     }
 
     @Override
-    public String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        return SchemaUserDescription.forIndex( tokenNameLookup, id, name, isUnique, indexType.name(), schema(), getIndexProvider(), owningConstraintId );
+    public String userDescription(TokenNameLookup tokenNameLookup) {
+        return SchemaUserDescription.forIndex(
+                tokenNameLookup,
+                id,
+                name,
+                isUnique,
+                indexType.name(),
+                schema(),
+                getIndexProvider(),
+                owningConstraintId);
     }
 
     @Override
-    public IndexType getIndexType()
-    {
+    public IndexType getIndexType() {
         return indexType;
     }
 
     @Override
-    public IndexProviderDescriptor getIndexProvider()
-    {
+    public IndexProviderDescriptor getIndexProvider() {
         return indexProvider;
     }
 
     /**
      * Return the capabilities of this index.
      */
-    public IndexCapability getCapability()
-    {
+    public IndexCapability getCapability() {
         return capability;
     }
 
     @Override
-    public IndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider )
-    {
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig );
+    public IndexDescriptor withIndexProvider(IndexProviderDescriptor indexProvider) {
+        return new IndexDescriptor(
+                id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig);
     }
 
     @Override
-    public IndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
-    {
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig );
+    public IndexDescriptor withSchemaDescriptor(SchemaDescriptor schema) {
+        return new IndexDescriptor(
+                id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig);
     }
 
     /**
@@ -215,19 +225,18 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
      * @param owningConstraintId The id of the constraint that owns the index represented by this index descriptor.
      * @return A new index descriptor with the given owning constraint id.
      */
-    public IndexDescriptor withOwningConstraintId( long owningConstraintId )
-    {
-        if ( !isUnique() )
-        {
-            throw new IllegalStateException(
-                    "Cannot assign an owning constraint id (in this case " + owningConstraintId + ") to a non-unique index: " + this + "." );
+    public IndexDescriptor withOwningConstraintId(long owningConstraintId) {
+        if (!isUnique()) {
+            throw new IllegalStateException("Cannot assign an owning constraint id (in this case " + owningConstraintId
+                    + ") to a non-unique index: " + this + ".");
         }
-        if ( owningConstraintId < 0 )
-        {
+        if (owningConstraintId < 0) {
             throw new IllegalArgumentException(
-                    "The owning constraint id of an index must not be negative, but it was attempted to assign " + owningConstraintId + "." );
+                    "The owning constraint id of an index must not be negative, but it was attempted to assign "
+                            + owningConstraintId + ".");
         }
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig );
+        return new IndexDescriptor(
+                id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig);
     }
 
     /**
@@ -236,58 +245,48 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
      * @param capability The capabilities of the new index descriptor.
      * @return A new index descriptor with the given capabilities.
      */
-    public IndexDescriptor withIndexCapability( IndexCapability capability )
-    {
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig );
+    public IndexDescriptor withIndexCapability(IndexCapability capability) {
+        return new IndexDescriptor(
+                id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         IndexDescriptor that = (IndexDescriptor) o;
 
-        if ( id != that.id )
-        {
+        if (id != that.id) {
             return false;
         }
-        if ( isUnique != that.isUnique )
-        {
+        if (isUnique != that.isUnique) {
             return false;
         }
-        if ( indexType != that.indexType )
-        {
+        if (indexType != that.indexType) {
             return false;
         }
-        if ( !name.equals( that.name ) )
-        {
+        if (!name.equals(that.name)) {
             return false;
         }
-        if ( !schema.equals( that.schema ) )
-        {
+        if (!schema.equals(that.schema)) {
             return false;
         }
-        return indexProvider.equals( that.indexProvider );
+        return indexProvider.equals(that.indexProvider);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Long.hashCode( id );
+    public int hashCode() {
+        return Long.hashCode(id);
     }
 
     @Override
-    public String toString()
-    {
-        return userDescription( TOKEN_ID_NAME_LOOKUP );
+    public String toString() {
+        return userDescription(TOKEN_ID_NAME_LOOKUP);
     }
 
     /**
@@ -296,11 +295,10 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
      * @param indexes Indexes to sort
      * @return sorted indexes
      */
-    public static Iterator<IndexDescriptor> sortByType( Iterator<IndexDescriptor> indexes )
-    {
+    public static Iterator<IndexDescriptor> sortByType(Iterator<IndexDescriptor> indexes) {
         List<IndexDescriptor> nonUnique = new ArrayList<>();
         List<IndexDescriptor> unique = new ArrayList<>();
-        indexes.forEachRemaining( index -> (index.isUnique() ? unique : nonUnique).add( index ) );
-        return Stream.concat( nonUnique.stream(), unique.stream() ).iterator();
+        indexes.forEachRemaining(index -> (index.isUnique() ? unique : nonUnique).add(index));
+        return Stream.concat(nonUnique.stream(), unique.stream()).iterator();
     }
 }

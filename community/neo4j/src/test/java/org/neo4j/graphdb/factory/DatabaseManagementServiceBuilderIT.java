@@ -19,11 +19,19 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.fs.FileSystemUtils.isEmptyOrNonExistingDirectory;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -36,88 +44,72 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.fs.FileSystemUtils.isEmptyOrNonExistingDirectory;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-
 @Neo4jLayoutExtension
-class DatabaseManagementServiceBuilderIT
-{
+class DatabaseManagementServiceBuilderIT {
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private Neo4jLayout neo4jLayout;
 
     @Test
-    void startSystemAndDefaultDatabase()
-    {
-        DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize( testDirectory.homePath() ).build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
+    void startSystemAndDefaultDatabase() {
+        DatabaseManagementService managementService =
+                getDbmsBuilderWithLimitedTxLogSize(testDirectory.homePath()).build();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
-            DatabaseManager<?> databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
-            assertThat( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).isNotEmpty();
-            assertThat( databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ) ).isNotEmpty();
-        }
-        finally
-        {
+            DatabaseManager<?> databaseManager = dependencyResolver.resolveDependency(DatabaseManager.class);
+            assertThat(databaseManager.getDatabaseContext(DEFAULT_DATABASE_NAME))
+                    .isNotEmpty();
+            assertThat(databaseManager.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID))
+                    .isNotEmpty();
+        } finally {
             managementService.shutdown();
         }
     }
 
     @Test
-    void configuredDatabasesRootPath() throws IOException
-    {
+    void configuredDatabasesRootPath() throws IOException {
         Path homeDir = testDirectory.homePath();
         Path storeDir = testDirectory.homePath();
-        Path databasesDir = testDirectory.directory( "my_databases" );
+        Path databasesDir = testDirectory.directory("my_databases");
 
-        DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize( homeDir )
-                .setConfig( databases_root_path, databasesDir )
+        DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize(homeDir)
+                .setConfig(databases_root_path, databasesDir)
                 .build();
-        try
-        {
-            assertTrue( isEmptyOrNonExistingDirectory( fs, storeDir.resolve( DEFAULT_DATABASE_NAME ) ) );
-            assertTrue( isEmptyOrNonExistingDirectory( fs, storeDir.resolve( SYSTEM_DATABASE_NAME ) ) );
+        try {
+            assertTrue(isEmptyOrNonExistingDirectory(fs, storeDir.resolve(DEFAULT_DATABASE_NAME)));
+            assertTrue(isEmptyOrNonExistingDirectory(fs, storeDir.resolve(SYSTEM_DATABASE_NAME)));
 
-            assertFalse( isEmptyOrNonExistingDirectory( fs, databasesDir.resolve( DEFAULT_DATABASE_NAME ) ) );
-            assertFalse( isEmptyOrNonExistingDirectory( fs, databasesDir.resolve( SYSTEM_DATABASE_NAME ) ) );
-        }
-        finally
-        {
+            assertFalse(isEmptyOrNonExistingDirectory(fs, databasesDir.resolve(DEFAULT_DATABASE_NAME)));
+            assertFalse(isEmptyOrNonExistingDirectory(fs, databasesDir.resolve(SYSTEM_DATABASE_NAME)));
+        } finally {
             managementService.shutdown();
         }
     }
 
     @Test
-    void notConfiguredDatabasesRootPath() throws IOException
-    {
+    void notConfiguredDatabasesRootPath() throws IOException {
         Neo4jLayout layout = neo4jLayout;
 
-        DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize( layout.homeDirectory() ).build();
-        try
-        {
-            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory() ) );
-            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( SYSTEM_DATABASE_NAME ).databaseDirectory() ) );
-        }
-        finally
-        {
+        DatabaseManagementService managementService =
+                getDbmsBuilderWithLimitedTxLogSize(layout.homeDirectory()).build();
+        try {
+            assertFalse(isEmptyOrNonExistingDirectory(
+                    fs, layout.databaseLayout(DEFAULT_DATABASE_NAME).databaseDirectory()));
+            assertFalse(isEmptyOrNonExistingDirectory(
+                    fs, layout.databaseLayout(SYSTEM_DATABASE_NAME).databaseDirectory()));
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private static DatabaseManagementServiceBuilder getDbmsBuilderWithLimitedTxLogSize( Path homeDirectory )
-    {
-        return new DatabaseManagementServiceBuilder( homeDirectory )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, kibiBytes( 128 ) );
+    private static DatabaseManagementServiceBuilder getDbmsBuilderWithLimitedTxLogSize(Path homeDirectory) {
+        return new DatabaseManagementServiceBuilder(homeDirectory)
+                .setConfig(GraphDatabaseSettings.logical_log_rotation_threshold, kibiBytes(128));
     }
 }

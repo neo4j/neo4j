@@ -21,72 +21,60 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Objects;
 
-public final class IndexSamplingMode
-{
+public final class IndexSamplingMode {
     public static final long NO_WAIT = 0;
 
     private final boolean sampleOnlyIfUpdated;
     private final long millisToWaitForCompletion;
     private final String description;
 
-    private IndexSamplingMode( boolean sampleOnlyIfUpdated, long millisToWaitForCompletion, String description )
-    {
+    private IndexSamplingMode(boolean sampleOnlyIfUpdated, long millisToWaitForCompletion, String description) {
         this.sampleOnlyIfUpdated = sampleOnlyIfUpdated;
         this.millisToWaitForCompletion = millisToWaitForCompletion;
         this.description = description;
     }
 
-    public boolean sampleOnlyIfUpdated()
-    {
+    public boolean sampleOnlyIfUpdated() {
         return sampleOnlyIfUpdated;
     }
 
-    public long millisToWaitForCompletion()
-    {
+    public long millisToWaitForCompletion() {
         return millisToWaitForCompletion;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return description;
     }
 
-    public static IndexSamplingMode foregroundRebuildUpdated( long millisToWaitForCompletion )
-    {
-        return new IndexSamplingMode( true, millisToWaitForCompletion, "FOREGROUND-REBUILD UPDATED" );
+    public static IndexSamplingMode foregroundRebuildUpdated(long millisToWaitForCompletion) {
+        return new IndexSamplingMode(true, millisToWaitForCompletion, "FOREGROUND-REBUILD UPDATED");
     }
 
-    public static IndexSamplingMode backgroundRebuildAll()
-    {
-        return new IndexSamplingMode( false, NO_WAIT, "BACKGROUND-REBUILD ALL" );
+    public static IndexSamplingMode backgroundRebuildAll() {
+        return new IndexSamplingMode(false, NO_WAIT, "BACKGROUND-REBUILD ALL");
     }
 
-    public static IndexSamplingMode backgroundRebuildUpdated()
-    {
-        return new IndexSamplingMode( true, NO_WAIT, "BACKGROUND-REBUILD UPDATED" );
+    public static IndexSamplingMode backgroundRebuildUpdated() {
+        return new IndexSamplingMode(true, NO_WAIT, "BACKGROUND-REBUILD UPDATED");
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         IndexSamplingMode that = (IndexSamplingMode) o;
-        return sampleOnlyIfUpdated == that.sampleOnlyIfUpdated &&
-                millisToWaitForCompletion == that.millisToWaitForCompletion &&
-                description.equals( that.description );
+        return sampleOnlyIfUpdated == that.sampleOnlyIfUpdated
+                && millisToWaitForCompletion == that.millisToWaitForCompletion
+                && description.equals(that.description);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( sampleOnlyIfUpdated, millisToWaitForCompletion, description );
+    public int hashCode() {
+        return Objects.hash(sampleOnlyIfUpdated, millisToWaitForCompletion, description);
     }
 }

@@ -19,19 +19,17 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class InclusionTest
-{
+import org.junit.jupiter.api.Test;
+
+class InclusionTest {
     @Test
-    void inclusionsMustBeOrderedLowerToHigher()
-    {
+    void inclusionsMustBeOrderedLowerToHigher() {
         NativeIndexKey.Inclusion[] values = NativeIndexKey.Inclusion.values();
-        assertEquals( 3, values.length, "Unexpected number of inclusions" );
-        assertEquals( NativeIndexKey.Inclusion.LOW, values[0] );
-        assertEquals( NativeIndexKey.Inclusion.NEUTRAL, values[1] );
-        assertEquals( NativeIndexKey.Inclusion.HIGH, values[2] );
+        assertEquals(3, values.length, "Unexpected number of inclusions");
+        assertEquals(NativeIndexKey.Inclusion.LOW, values[0]);
+        assertEquals(NativeIndexKey.Inclusion.NEUTRAL, values[1]);
+        assertEquals(NativeIndexKey.Inclusion.HIGH, values[2]);
     }
 }

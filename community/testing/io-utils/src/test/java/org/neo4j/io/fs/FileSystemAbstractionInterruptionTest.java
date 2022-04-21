@@ -19,169 +19,150 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.file.Path;
-
-import org.neo4j.io.IOUtils;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.file.Path;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.IOUtils;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 @TestDirectoryExtension
-public class FileSystemAbstractionInterruptionTest
-{
+public class FileSystemAbstractionInterruptionTest {
     @Inject
     private TestDirectory testdir;
+
     private FileSystemAbstraction fs;
     private Path file;
     private StoreChannel channel;
     private boolean channelShouldBeClosed;
 
-    protected FileSystemAbstraction createFileSystem()
-    {
+    protected FileSystemAbstraction createFileSystem() {
         return new DefaultFileSystemAbstraction();
     }
 
     @BeforeEach
-    void createWorkingDirectoryAndTestFile() throws IOException
-    {
+    void createWorkingDirectoryAndTestFile() throws IOException {
         fs = createFileSystem();
-        fs.mkdirs( testdir.homePath() );
-        file = testdir.file( "a" );
-        fs.write( file ).close();
+        fs.mkdirs(testdir.homePath());
+        file = testdir.file("a");
+        fs.write(file).close();
         channel = null;
         channelShouldBeClosed = false;
         Thread.currentThread().interrupt();
     }
 
     @AfterEach
-    void verifyInterruptionAndChannelState() throws IOException
-    {
-        assertTrue( Thread.interrupted() );
-        assertThat( channel.isOpen() )
-                .describedAs( "channelShouldBeClosed? " + channelShouldBeClosed )
-                .isEqualTo( !channelShouldBeClosed );
+    void verifyInterruptionAndChannelState() throws IOException {
+        assertTrue(Thread.interrupted());
+        assertThat(channel.isOpen())
+                .describedAs("channelShouldBeClosed? " + channelShouldBeClosed)
+                .isEqualTo(!channelShouldBeClosed);
 
-        if ( channelShouldBeClosed )
-        {
-            assertThrows( ClosedChannelException.class, () -> channel.force( true ) );
+        if (channelShouldBeClosed) {
+            assertThrows(ClosedChannelException.class, () -> channel.force(true));
         }
-        IOUtils.closeAll( channel, fs );
+        IOUtils.closeAll(channel, fs);
     }
 
     @Test
-    void fsOpenClose() throws IOException
-    {
-        channel( true ).close();
+    void fsOpenClose() throws IOException {
+        channel(true).close();
     }
 
     @Test
-    void channelTryLock() throws IOException
-    {
-        channel( false ).tryLock().release();
+    void channelTryLock() throws IOException {
+        channel(false).tryLock().release();
     }
 
     @Test
-    void channelSetPosition()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).position( 0 ) );
+    void channelSetPosition() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true).position(0));
     }
 
     @Test
-    void channelGetPosition()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).position() );
+    void channelGetPosition() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true).position());
     }
 
     @Test
-    void channelTruncate()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).truncate( 0 ) );
+    void channelTruncate() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true).truncate(0));
     }
 
     @Test
-    void channelForce()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).force( true ) );
+    void channelForce() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true).force(true));
     }
 
     @Test
-    void channelWriteAllByteBuffer()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).writeAll( allocate( 1, INSTANCE ) ) );
+    void channelWriteAllByteBuffer() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true).writeAll(allocate(1, INSTANCE)));
     }
 
     @Test
-    void channelWriteAllByteBufferPosition()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).writeAll( allocate( 1, INSTANCE ), 1 ) );
+    void channelWriteAllByteBufferPosition() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true).writeAll(allocate(1, INSTANCE), 1));
     }
 
     @Test
-    void channelReadByteBuffer()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).read( allocate( 1, INSTANCE ) ) );
+    void channelReadByteBuffer() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true).read(allocate(1, INSTANCE)));
     }
 
     @Test
-    void channelWriteByteBuffer()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).write( allocate( 1, INSTANCE ) ) );
+    void channelWriteByteBuffer() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true).write(allocate(1, INSTANCE)));
     }
 
     @Test
-    void channelSize()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).size() );
+    void channelSize() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true).size());
     }
 
     @Test
-    void channelIsOpen() throws IOException
-    {
-        assertTrue( channel( false ).isOpen() );
+    void channelIsOpen() throws IOException {
+        assertTrue(channel(false).isOpen());
     }
 
     @Test
-    void channelWriteByteBuffersOffsetLength()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).write( new ByteBuffer[]{allocate( 1, INSTANCE )}, 0, 1 ) );
+    void channelWriteByteBuffersOffsetLength() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true)
+                .write(new ByteBuffer[] {allocate(1, INSTANCE)}, 0, 1));
     }
 
     @Test
-    void channelWriteByteBuffers()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).write( new ByteBuffer[]{allocate( 1, INSTANCE )} ) );
+    void channelWriteByteBuffers() {
+        assertThrows(
+                ClosedByInterruptException.class, () -> channel(true).write(new ByteBuffer[] {allocate(1, INSTANCE)}));
     }
 
     @Test
-    void channelReadByteBuffersOffsetLength()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).read( new ByteBuffer[]{allocate( 1, INSTANCE )}, 0, 1 ) );
+    void channelReadByteBuffersOffsetLength() {
+        assertThrows(ClosedByInterruptException.class, () -> channel(true)
+                .read(new ByteBuffer[] {allocate(1, INSTANCE)}, 0, 1));
     }
 
     @Test
-    void channelReadByteBuffers()
-    {
-        assertThrows( ClosedByInterruptException.class, () -> channel( true ).read( new ByteBuffer[]{allocate( 1, INSTANCE )} ) );
+    void channelReadByteBuffers() {
+        assertThrows(
+                ClosedByInterruptException.class, () -> channel(true).read(new ByteBuffer[] {allocate(1, INSTANCE)}));
     }
 
-    private StoreChannel channel( boolean channelShouldBeClosed ) throws IOException
-    {
+    private StoreChannel channel(boolean channelShouldBeClosed) throws IOException {
         this.channelShouldBeClosed = channelShouldBeClosed;
-        channel = fs.write( file );
+        channel = fs.write(file);
         return channel;
     }
 }

@@ -22,7 +22,6 @@ package org.neo4j.graphdb;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.internal.helpers.MathUtil;
 
@@ -32,8 +31,7 @@ import org.neo4j.internal.helpers.MathUtil;
  * Execution plans form a tree of execution steps.  Each step is described by a {@link ExecutionPlanDescription} object.
  */
 @PublicApi
-public interface ExecutionPlanDescription
-{
+public interface ExecutionPlanDescription {
     /**
      * Retrieves the name of this execution step.
      *
@@ -87,8 +85,7 @@ public interface ExecutionPlanDescription
     /**
      * Instances describe statistics from the profiler of a particular step in the execution plan.
      */
-    interface ProfilerStatistics
-    {
+    interface ProfilerStatistics {
         /**
          * @return if the number of rows was recorded.
          */
@@ -124,19 +121,18 @@ public interface ExecutionPlanDescription
 
         /**
          * @return number of page cache misses caused by executing the associated execution step
-
+         *
          * @throws IllegalStateException if no time was recorded.
          */
         long getPageCacheMisses();
 
         /**
          * @return the ratio of page cache hits to total number of lookups or 0 if no data is available
-
+         *
          * @throws IllegalStateException if no time was recorded.
          */
-        default double getPageCacheHitRatio()
-        {
-            return MathUtil.portion( getPageCacheHits(), getPageCacheMisses() );
+        default double getPageCacheHitRatio() {
+            return MathUtil.portion(getPageCacheHits(), getPageCacheMisses());
         }
 
         /**

@@ -21,58 +21,48 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
 
-public abstract class PrimitiveRecord extends AbstractBaseRecord
-{
+public abstract class PrimitiveRecord extends AbstractBaseRecord {
     protected long nextProp;
 
-    PrimitiveRecord( long id )
-    {
-        super( id );
+    PrimitiveRecord(long id) {
+        super(id);
     }
 
-    public PrimitiveRecord( PrimitiveRecord other )
-    {
-        super( other );
+    public PrimitiveRecord(PrimitiveRecord other) {
+        super(other);
         this.nextProp = other.nextProp;
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         super.clear();
         nextProp = Record.NO_NEXT_PROPERTY.intValue();
     }
 
-    protected PrimitiveRecord initialize( boolean inUse, long nextProp )
-    {
-        super.initialize( inUse );
+    protected PrimitiveRecord initialize(boolean inUse, long nextProp) {
+        super.initialize(inUse);
         this.nextProp = nextProp;
         return this;
     }
 
-    public long getNextProp()
-    {
+    public long getNextProp() {
         return nextProp;
     }
 
-    public void setNextProp( long nextProp )
-    {
+    public void setNextProp(long nextProp) {
         this.nextProp = nextProp;
     }
 
-    public abstract void setIdTo( PropertyRecord property );
+    public abstract void setIdTo(PropertyRecord property);
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( super.hashCode(), nextProp );
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), nextProp);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( !super.equals( obj ) )
-        {
+    public boolean equals(Object obj) {
+        if (!super.equals(obj)) {
             return false;
         }
         PrimitiveRecord other = (PrimitiveRecord) obj;

@@ -19,10 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.values.storable.Values.longValue;
 
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -35,127 +42,130 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.values.storable.Values.longValue;
+class ProceduresKernelIT extends KernelIntegrationTest {
+    private final ProcedureSignature signature = procedureSignature("example", "exampleProc")
+            .in("name", NTString)
+            .out("name", NTString)
+            .build();
 
-class ProceduresKernelIT extends KernelIntegrationTest
-{
-    private final ProcedureSignature signature = procedureSignature( "example", "exampleProc" )
-            .in( "name", NTString )
-            .out( "name", NTString ).build();
-
-    private final CallableProcedure procedure = procedure( signature );
+    private final CallableProcedure procedure = procedure(signature);
 
     @Test
-    void shouldGetProcedureByName() throws Throwable
-    {
+    void shouldGetProcedureByName() throws Throwable {
         // Given
-        internalKernel().registerProcedure( procedure );
+        internalKernel().registerProcedure(procedure);
 
         // When
-        ProcedureSignature found = procs()
-                .procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) ).signature();
+        ProcedureSignature found = procs().procedureGet(new QualifiedName(new String[] {"example"}, "exampleProc"))
+                .signature();
 
         // Then
-        assertThat( found ).isEqualTo( signature );
+        assertThat(found).isEqualTo(signature);
         commit();
     }
 
     @Test
-    void shouldGetBuiltInProcedureByName() throws Throwable
-    {
+    void shouldGetBuiltInProcedureByName() throws Throwable {
         // When
-        ProcedureSignature found = procs()
-                .procedureGet( procedureName( "db", "labels" ) ).signature();
+        ProcedureSignature found =
+                procs().procedureGet(procedureName("db", "labels")).signature();
 
         // Then
-        assertThat( found ).isEqualTo( procedureSignature( procedureName( "db", "labels" ) ).out( "label", NTString ).build() );
+        assertThat(found)
+                .isEqualTo(procedureSignature(procedureName("db", "labels"))
+                        .out("label", NTString)
+                        .build());
         commit();
     }
 
     @Test
-    void shouldGetAllProcedures() throws Throwable
-    {
+    void shouldGetAllProcedures() throws Throwable {
         // Given
-        internalKernel().registerProcedure( procedure );
-        internalKernel().registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).out( "name", NTString ).build() ) );
-        internalKernel().registerProcedure( procedure( procedureSignature( "example", "exampleProc3" ).out( "name", NTString ).build() ) );
+        internalKernel().registerProcedure(procedure);
+        internalKernel()
+                .registerProcedure(procedure(procedureSignature("example", "exampleProc2")
+                        .out("name", NTString)
+                        .build()));
+        internalKernel()
+                .registerProcedure(procedure(procedureSignature("example", "exampleProc3")
+                        .out("name", NTString)
+                        .build()));
 
         // When
         List<ProcedureSignature> signatures =
-                Iterables.asList( newTransaction().procedures().proceduresGetAll() );
+                Iterables.asList(newTransaction().procedures().proceduresGetAll());
 
         // Then
-        assertThat( signatures ).contains( procedure.signature(), procedureSignature( "example", "exampleProc2" ).out( "name", NTString ).build(),
-                procedureSignature( "example", "exampleProc3" ).out( "name", NTString ).build() );
+        assertThat(signatures)
+                .contains(
+                        procedure.signature(),
+                        procedureSignature("example", "exampleProc2")
+                                .out("name", NTString)
+                                .build(),
+                        procedureSignature("example", "exampleProc3")
+                                .out("name", NTString)
+                                .build());
         commit();
     }
 
     @Test
-    void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs() throws ProcedureException
-    {
-        var e = assertThrows( ProcedureException.class,
-            () -> internalKernel().registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) ) );
-        assertThat( e.getMessage() ).isEqualTo( "Procedures with zero output fields must be declared as VOID" );
+    void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs() throws ProcedureException {
+        var e = assertThrows(ProcedureException.class, () -> internalKernel()
+                .registerProcedure(
+                        procedure(procedureSignature("example", "exampleProc2").build())));
+        assertThat(e.getMessage()).isEqualTo("Procedures with zero output fields must be declared as VOID");
     }
 
     @Test
-    void shouldCallReadOnlyProcedure() throws Throwable
-    {
+    void shouldCallReadOnlyProcedure() throws Throwable {
         // Given
-        internalKernel().registerProcedure( procedure );
+        internalKernel().registerProcedure(procedure);
 
         // When
-        RawIterator<AnyValue[],ProcedureException> found = procs()
-                .procedureCallRead(
-                        procs().procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) ).id(),
-                        new AnyValue[]{longValue(1337)},
-                        ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> found = procs().procedureCallRead(
+                        procs().procedureGet(new QualifiedName(new String[] {"example"}, "exampleProc"))
+                                .id(),
+                        new AnyValue[] {longValue(1337)},
+                        ProcedureCallContext.EMPTY);
 
         // Then
-        assertThat( asList( found ) ).contains( new AnyValue[]{longValue(1337)} );
+        assertThat(asList(found)).contains(new AnyValue[] {longValue(1337)});
         commit();
     }
 
     @Test
-    void registeredProcedureShouldGetRead() throws Throwable
-    {
+    void registeredProcedureShouldGetRead() throws Throwable {
         // Given
-        internalKernel().registerProcedure( new CallableProcedure.BasicProcedure( signature )
-        {
+        internalKernel().registerProcedure(new CallableProcedure.BasicProcedure(signature) {
             @Override
-            public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input,
-                    ResourceTracker resourceTracker ) throws ProcedureException
-            {
-                return RawIterator.<AnyValue[],ProcedureException>of(
-                        new AnyValue[]{Values.stringValue(ctx.internalTransaction().kernelTransaction().dataRead().toString() )} );
+            public RawIterator<AnyValue[], ProcedureException> apply(
+                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
+                return RawIterator.<AnyValue[], ProcedureException>of(new AnyValue[] {
+                    Values.stringValue(ctx.internalTransaction()
+                            .kernelTransaction()
+                            .dataRead()
+                            .toString())
+                });
             }
-        } );
+        });
 
         // When
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( signature.name() ).id(), new AnyValue[]{Values.EMPTY_STRING},
-                        ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
+                        procs().procedureGet(signature.name()).id(),
+                        new AnyValue[] {Values.EMPTY_STRING},
+                        ProcedureCallContext.EMPTY);
 
         // Then
-        assertNotNull( asList( stream ).get( 0 )[0] );
+        assertNotNull(asList(stream).get(0)[0]);
         commit();
     }
 
-    private static CallableProcedure procedure( final ProcedureSignature signature )
-    {
-        return new CallableProcedure.BasicProcedure( signature )
-        {
+    private static CallableProcedure procedure(final ProcedureSignature signature) {
+        return new CallableProcedure.BasicProcedure(signature) {
             @Override
-            public RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker )
-            {
-                return RawIterator.<AnyValue[], ProcedureException>of( input );
+            public RawIterator<AnyValue[], ProcedureException> apply(
+                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker) {
+                return RawIterator.<AnyValue[], ProcedureException>of(input);
             }
         };
     }

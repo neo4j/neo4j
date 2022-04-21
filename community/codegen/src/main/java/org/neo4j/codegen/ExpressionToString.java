@@ -19,369 +19,323 @@
  */
 package org.neo4j.codegen;
 
-class ExpressionToString implements ExpressionVisitor
-{
+class ExpressionToString implements ExpressionVisitor {
     private final StringBuilder result;
 
-    ExpressionToString( StringBuilder result )
-    {
+    ExpressionToString(StringBuilder result) {
         this.result = result;
     }
 
     @Override
-    public void invoke( Expression target, MethodReference method, Expression[] arguments )
-    {
-        result.append( "invoke{target=" );
-        target.accept( this );
-        result.append( ", method=" );
-        method.writeTo( result );
-        result.append( "}(" );
+    public void invoke(Expression target, MethodReference method, Expression[] arguments) {
+        result.append("invoke{target=");
+        target.accept(this);
+        result.append(", method=");
+        method.writeTo(result);
+        result.append("}(");
         String sep = "";
-        for ( Expression argument : arguments )
-        {
-            result.append( sep );
-            argument.accept( this );
+        for (Expression argument : arguments) {
+            result.append(sep);
+            argument.accept(this);
             sep = ", ";
         }
-        result.append( ')' );
+        result.append(')');
     }
 
     @Override
-    public void invoke( MethodReference method, Expression[] arguments )
-    {
-        result.append( "invoke{method=" );
-        method.writeTo( result );
-        result.append( "}(" );
+    public void invoke(MethodReference method, Expression[] arguments) {
+        result.append("invoke{method=");
+        method.writeTo(result);
+        result.append("}(");
         String sep = "";
-        for ( Expression argument : arguments )
-        {
-            result.append( sep );
-            argument.accept( this );
+        for (Expression argument : arguments) {
+            result.append(sep);
+            argument.accept(this);
             sep = ", ";
         }
-        result.append( ')' );
+        result.append(')');
     }
 
     @Override
-    public void load( LocalVariable variable )
-    {
-        result.append( "load{type=" );
-        if ( variable.type() == null )
-        {
-            result.append( "null" );
+    public void load(LocalVariable variable) {
+        result.append("load{type=");
+        if (variable.type() == null) {
+            result.append("null");
+        } else {
+            variable.type().writeTo(result);
         }
-        else
-        {
-            variable.type().writeTo( result );
-        }
-        result.append( ", name=" ).append( variable.name() ).append( '}' );
+        result.append(", name=").append(variable.name()).append('}');
     }
 
     @Override
-    public void arrayLoad( Expression array, Expression index )
-    {
-        result.append( "loadArray{array=" );
-        array.accept( this );
-        result.append( ", index=" );
-        index.accept( this );
-        result.append( '}' );
+    public void arrayLoad(Expression array, Expression index) {
+        result.append("loadArray{array=");
+        array.accept(this);
+        result.append(", index=");
+        index.accept(this);
+        result.append('}');
     }
 
     @Override
-    public void arraySet( Expression array, Expression index, Expression value )
-    {
-        result.append( "setArray{array=" );
-        array.accept( this );
-        result.append( ", index=" );
-        index.accept( this );
-        result.append( ", value=" );
-        value.accept( this );
-        result.append( '}' );
+    public void arraySet(Expression array, Expression index, Expression value) {
+        result.append("setArray{array=");
+        array.accept(this);
+        result.append(", index=");
+        index.accept(this);
+        result.append(", value=");
+        value.accept(this);
+        result.append('}');
     }
 
     @Override
-    public void arrayLength( Expression array )
-    {
-        result.append( "length{array=" );
-        array.accept( this );
-        result.append( '}' );
+    public void arrayLength(Expression array) {
+        result.append("length{array=");
+        array.accept(this);
+        result.append('}');
     }
 
     @Override
-    public void getField( Expression target, FieldReference field )
-    {
-        result.append( "get{target=" );
-        target.accept( this );
-        result.append( ", field=" ).append( field.name() ).append( '}' );
+    public void getField(Expression target, FieldReference field) {
+        result.append("get{target=");
+        target.accept(this);
+        result.append(", field=").append(field.name()).append('}');
     }
 
     @Override
-    public void constant( Object value )
-    {
-        result.append( "constant(" ).append( value ).append( ')' );
+    public void constant(Object value) {
+        result.append("constant(").append(value).append(')');
     }
 
     @Override
-    public void getStatic( FieldReference field )
-    {
-        result.append( "get{class=" ).append( field.owner() );
-        result.append( ", field=" ).append( field.name() ).append( '}' );
+    public void getStatic(FieldReference field) {
+        result.append("get{class=").append(field.owner());
+        result.append(", field=").append(field.name()).append('}');
     }
 
     @Override
-    public void loadThis( String sourceName )
-    {
-        result.append( "load{" ).append( sourceName ).append( '}' );
+    public void loadThis(String sourceName) {
+        result.append("load{").append(sourceName).append('}');
     }
 
     @Override
-    public void newInstance( TypeReference type )
-    {
-        result.append( "new{type=" );
-        type.writeTo( result );
-        result.append( '}' );
+    public void newInstance(TypeReference type) {
+        result.append("new{type=");
+        type.writeTo(result);
+        result.append('}');
     }
 
     @Override
-    public void not( Expression expression )
-    {
-        result.append( "not(" );
-        expression.accept( this );
-        result.append( ')' );
+    public void not(Expression expression) {
+        result.append("not(");
+        expression.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void ternary( Expression test, Expression onTrue, Expression onFalse )
-    {
-        result.append( "ternary{test=" );
-        test.accept( this );
-        result.append( ", onTrue=" );
-        onTrue.accept( this );
-        result.append( ", onFalse=" );
-        onFalse.accept( this );
-        result.append( '}' );
+    public void ternary(Expression test, Expression onTrue, Expression onFalse) {
+        result.append("ternary{test=");
+        test.accept(this);
+        result.append(", onTrue=");
+        onTrue.accept(this);
+        result.append(", onFalse=");
+        onFalse.accept(this);
+        result.append('}');
     }
 
     @Override
-    public void equal( Expression lhs, Expression rhs )
-    {
-        result.append( "equal(" );
-        lhs.accept( this );
-        result.append( ", " );
-        rhs.accept( this );
-        result.append( ')' );
+    public void equal(Expression lhs, Expression rhs) {
+        result.append("equal(");
+        lhs.accept(this);
+        result.append(", ");
+        rhs.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void notEqual( Expression lhs, Expression rhs )
-    {
-        result.append( "notEqual(" );
-        lhs.accept( this );
-        result.append( ", " );
-        rhs.accept( this );
-        result.append( ')' );
+    public void notEqual(Expression lhs, Expression rhs) {
+        result.append("notEqual(");
+        lhs.accept(this);
+        result.append(", ");
+        rhs.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void isNull( Expression expression )
-    {
-        result.append( "isNull(" );
-        expression.accept( this );
-        result.append( ')' );
+    public void isNull(Expression expression) {
+        result.append("isNull(");
+        expression.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void notNull( Expression expression )
-    {
-        result.append( "notNull(" );
-        expression.accept( this );
-        result.append( ')' );
+    public void notNull(Expression expression) {
+        result.append("notNull(");
+        expression.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void or( Expression... expressions )
-    {
-        boolOp( "or(", expressions );
+    public void or(Expression... expressions) {
+        boolOp("or(", expressions);
     }
 
     @Override
-    public void and( Expression... expressions )
-    {
-        boolOp( "and(", expressions );
+    public void and(Expression... expressions) {
+        boolOp("and(", expressions);
     }
 
-    private void boolOp( String sep, Expression[] expressions )
-    {
-        for ( Expression expression : expressions )
-        {
-            result.append( sep );
-            expression.accept( this );
+    private void boolOp(String sep, Expression[] expressions) {
+        for (Expression expression : expressions) {
+            result.append(sep);
+            expression.accept(this);
             sep = ", ";
         }
-        result.append( ')' );
+        result.append(')');
     }
 
     @Override
-    public void add( Expression lhs, Expression rhs )
-    {
-        result.append( "add(" );
-        lhs.accept( this );
-        result.append( " + " );
-        rhs.accept( this );
-        result.append( ')' );
+    public void add(Expression lhs, Expression rhs) {
+        result.append("add(");
+        lhs.accept(this);
+        result.append(" + ");
+        rhs.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs )
-    {
-        result.append( "gt(" );
-        lhs.accept( this );
-        result.append( " > " );
-        rhs.accept( this );
-        result.append( ')' );
+    public void gt(Expression lhs, Expression rhs) {
+        result.append("gt(");
+        lhs.accept(this);
+        result.append(" > ");
+        rhs.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void gte( Expression lhs, Expression rhs )
-    {
-        result.append( "gt(" );
-        lhs.accept( this );
-        result.append( " >= " );
-        rhs.accept( this );
-        result.append( ')' );
+    public void gte(Expression lhs, Expression rhs) {
+        result.append("gt(");
+        lhs.accept(this);
+        result.append(" >= ");
+        rhs.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void lt( Expression lhs, Expression rhs )
-    {
-        result.append( "lt(" );
-        lhs.accept( this );
-        result.append( " < " );
-        rhs.accept( this );
-        result.append( ')' );
+    public void lt(Expression lhs, Expression rhs) {
+        result.append("lt(");
+        lhs.accept(this);
+        result.append(" < ");
+        rhs.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void lte( Expression lhs, Expression rhs )
-    {
-        result.append( "gt(" );
-        lhs.accept( this );
-        result.append( " <= " );
-        rhs.accept( this );
-        result.append( ')' );
+    public void lte(Expression lhs, Expression rhs) {
+        result.append("gt(");
+        lhs.accept(this);
+        result.append(" <= ");
+        rhs.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void subtract( Expression lhs, Expression rhs )
-    {
-        result.append( "sub(" );
-        lhs.accept( this );
-        result.append( " - " );
-        rhs.accept( this );
-        result.append( ')' );
+    public void subtract(Expression lhs, Expression rhs) {
+        result.append("sub(");
+        lhs.accept(this);
+        result.append(" - ");
+        rhs.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void multiply( Expression lhs, Expression rhs )
-    {
-        result.append( "mul(" );
-        lhs.accept( this );
-        result.append( " * " );
-        rhs.accept( this );
-        result.append( ')' );
+    public void multiply(Expression lhs, Expression rhs) {
+        result.append("mul(");
+        lhs.accept(this);
+        result.append(" * ");
+        rhs.accept(this);
+        result.append(')');
     }
 
-    private void div( Expression lhs, Expression rhs )
-    {
-        result.append( "div(" );
-        lhs.accept( this );
-        result.append( " / " );
-        rhs.accept( this );
-        result.append( ')' );
-    }
-
-    @Override
-    public void cast( TypeReference type, Expression expression )
-    {
-        result.append( "cast{type=" );
-        type.writeTo( result );
-        result.append( ", expression=" );
-        expression.accept( this );
-        result.append( '}' );
+    private void div(Expression lhs, Expression rhs) {
+        result.append("div(");
+        lhs.accept(this);
+        result.append(" / ");
+        rhs.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void instanceOf( TypeReference type, Expression expression )
-    {
-        result.append( "instanceOf{type=" );
-        type.writeTo( result );
-        result.append( ", expression=" );
-        expression.accept( this );
-        result.append( '}' );
+    public void cast(TypeReference type, Expression expression) {
+        result.append("cast{type=");
+        type.writeTo(result);
+        result.append(", expression=");
+        expression.accept(this);
+        result.append('}');
     }
 
     @Override
-    public void newInitializedArray( TypeReference type, Expression... constants )
-    {
-        result.append( "newArray{type=" );
-        type.writeTo( result );
-        result.append( ", constants=" );
+    public void instanceOf(TypeReference type, Expression expression) {
+        result.append("instanceOf{type=");
+        type.writeTo(result);
+        result.append(", expression=");
+        expression.accept(this);
+        result.append('}');
+    }
+
+    @Override
+    public void newInitializedArray(TypeReference type, Expression... constants) {
+        result.append("newArray{type=");
+        type.writeTo(result);
+        result.append(", constants=");
         String sep = "";
-        for ( Expression constant : constants )
-        {
-            result.append( sep );
-            constant.accept( this );
+        for (Expression constant : constants) {
+            result.append(sep);
+            constant.accept(this);
             sep = ", ";
         }
-        result.append( '}' );
+        result.append('}');
     }
 
     @Override
-    public void newArray( TypeReference type, int size )
-    {
-        result.append( "newArray{type=" );
-        type.writeTo( result );
-        result.append( ", size=" ).append( size ).append( '}' );
+    public void newArray(TypeReference type, int size) {
+        result.append("newArray{type=");
+        type.writeTo(result);
+        result.append(", size=").append(size).append('}');
     }
 
     @Override
-    public void newArray( TypeReference type, Expression size )
-    {
-        result.append( "newArray{type=" );
-        type.writeTo( result );
-        result.append( ", size=" );
-        size.accept( this );
-        result.append( '}' );
+    public void newArray(TypeReference type, Expression size) {
+        result.append("newArray{type=");
+        type.writeTo(result);
+        result.append(", size=");
+        size.accept(this);
+        result.append('}');
     }
 
     @Override
-    public void longToDouble( Expression expression )
-    {
-        result.append( "(double)" );
-        expression.accept( this );
+    public void longToDouble(Expression expression) {
+        result.append("(double)");
+        expression.accept(this);
     }
 
     @Override
-    public void pop( Expression expression )
-    {
-        result.append( "pop(" );
-        expression.accept( this );
-        result.append( ')' );
+    public void pop(Expression expression) {
+        result.append("pop(");
+        expression.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void box( Expression expression )
-    {
-        result.append( "box(" );
-        expression.accept( this );
-        result.append( ')' );
+    public void box(Expression expression) {
+        result.append("box(");
+        expression.accept(this);
+        result.append(')');
     }
 
     @Override
-    public void unbox( Expression expression )
-    {
-        result.append( "unbox(" );
-        expression.accept( this );
-        result.append( ')' );
+    public void unbox(Expression expression) {
+        result.append("unbox(");
+        expression.accept(this);
+        result.append(')');
     }
 }

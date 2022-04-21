@@ -19,8 +19,6 @@
  */
 package org.neo4j.codegen.bytecode;
 
-
-interface Block
-{
+interface Block {
     void endBlock();
 }

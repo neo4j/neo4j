@@ -21,33 +21,27 @@ package org.neo4j.test.extension;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class ExecutionSharedContext
-{
+public final class ExecutionSharedContext {
     public static final String SHARED_RESOURCE = "sharedContext";
     static final String CREATED_TEST_FILE_PAIRS_KEY = "createdTestFilePairs";
     static final String LOCKED_TEST_FILE_KEY = "lockedFileName";
     static final String SUCCESSFUL_TEST_FILE_KEY = "successfulFileName";
-    private static final ConcurrentHashMap<String,Object> map = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Object> map = new ConcurrentHashMap<>();
 
     public static final ExecutionSharedContext CONTEXT = new ExecutionSharedContext();
 
-    private ExecutionSharedContext()
-    {
-    }
+    private ExecutionSharedContext() {}
 
-    public static void clear()
-    {
+    public static void clear() {
         map.clear();
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> T getValue( String key )
-    {
-        return (T) map.get( key );
+    @SuppressWarnings("unchecked")
+    public static <T> T getValue(String key) {
+        return (T) map.get(key);
     }
 
-    public static void setValue( String key, Object value )
-    {
-        map.put( key, value );
+    public static void setValue(String key, Object value) {
+        map.put(key, value);
     }
 }

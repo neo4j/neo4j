@@ -19,40 +19,38 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-
-class BridgingIndexProgressorTest
-{
+class BridgingIndexProgressorTest {
     @Test
-    void closeMustCloseAll()
-    {
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 0 );
-        BridgingIndexProgressor progressor = new BridgingIndexProgressor( null, index.schema().getPropertyIds() );
+    void closeMustCloseAll() {
+        IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2, 3))
+                .withName("a")
+                .materialise(0);
+        BridgingIndexProgressor progressor =
+                new BridgingIndexProgressor(null, index.schema().getPropertyIds());
 
         IndexProgressor[] parts = {mock(IndexProgressor.class), mock(IndexProgressor.class)};
 
         // Given
-        for ( IndexProgressor part : parts )
-        {
-            progressor.initialize( index, part, AccessMode.Static.ACCESS, false, unconstrained(), null );
+        for (IndexProgressor part : parts) {
+            progressor.initialize(index, part, AccessMode.Static.ACCESS, false, unconstrained(), null);
         }
 
         // When
         progressor.close();
 
         // Then
-        for ( IndexProgressor part : parts )
-        {
-            verify( part ).close();
+        for (IndexProgressor part : parts) {
+            verify(part).close();
         }
     }
 }

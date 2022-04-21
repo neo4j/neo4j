@@ -22,7 +22,6 @@ package org.neo4j.internal.kernel.api;
 /**
  * A listener to close events of {@link AutoCloseablePlus} instances.
  */
-public interface CloseListener
-{
-    void onClosed( AutoCloseablePlus closed );
+public interface CloseListener {
+    void onClosed(AutoCloseablePlus closed);
 }

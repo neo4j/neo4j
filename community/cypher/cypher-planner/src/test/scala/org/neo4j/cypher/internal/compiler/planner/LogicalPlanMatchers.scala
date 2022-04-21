@@ -30,19 +30,20 @@ trait LogicalPlanMatchers {
    * Also evaluates the partial function if it matches.
    */
   def containPlanMatching(pf: PartialFunction[LogicalPlan, Unit]): Matcher[LogicalPlan] =
-    (plan: LogicalPlan) => MatchResult(
-      matches = plan.folder.treeExists({
-        case p: LogicalPlan =>
-          val matches = pf.isDefinedAt(p)
-          if (matches) pf(p)
-          matches
+    (plan: LogicalPlan) =>
+      MatchResult(
+        matches = plan.folder.treeExists({
+          case p: LogicalPlan =>
+            val matches = pf.isDefinedAt(p)
+            if (matches) pf(p)
+            matches
 
-        case _ => false
-      }),
-      rawFailureMessage = "The plan:\n{0}\n did not contain the expected pattern",
-      rawNegatedFailureMessage = "The plan:\n{0}\n contained the pattern when expected not to",
-      failureMessageArgs = IndexedSeq(plan),
-      negatedFailureMessageArgs = IndexedSeq(plan),
-    )
+          case _ => false
+        }),
+        rawFailureMessage = "The plan:\n{0}\n did not contain the expected pattern",
+        rawNegatedFailureMessage = "The plan:\n{0}\n contained the pattern when expected not to",
+        failureMessageArgs = IndexedSeq(plan),
+        negatedFailureMessageArgs = IndexedSeq(plan)
+      )
 
 }

@@ -52,7 +52,7 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should leverage order for prefix match with one of grouping columns") {
     val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
-    val grouping = Map("newA" -> varFor("a"),  "newC" -> varFor("c"))
+    val grouping = Map("newA" -> varFor("a"), "newC" -> varFor("c"))
     leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
   }
 
@@ -94,7 +94,7 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
     leverageOrder(po, grouping, Set.empty) match {
       case OrderToLeverageWithAliases(Seq(v), _) =>
-        v should be theSameInstanceAs(groupingInstance)
+        v should be theSameInstanceAs (groupingInstance)
     }
   }
 }

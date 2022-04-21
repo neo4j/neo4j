@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.batchimport.executor;
 
-public class TaskExecutionPanicException extends IllegalStateException
-{
-    public TaskExecutionPanicException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class TaskExecutionPanicException extends IllegalStateException {
+    public TaskExecutionPanicException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

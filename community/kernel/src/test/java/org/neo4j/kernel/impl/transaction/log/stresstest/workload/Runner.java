@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
+import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BooleanSupplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -51,53 +52,43 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.util.concurrent.Futures;
 
-import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
-
-public class Runner implements Callable<Long>
-{
+public class Runner implements Callable<Long> {
     private final DatabaseLayout databaseLayout;
     private final BooleanSupplier condition;
     private final int threads;
 
-    public Runner( DatabaseLayout databaseLayout, BooleanSupplier condition, int threads )
-    {
+    public Runner(DatabaseLayout databaseLayout, BooleanSupplier condition, int threads) {
         this.databaseLayout = databaseLayout;
         this.condition = condition;
         this.threads = threads;
     }
 
     @Override
-    public Long call() throws Exception
-    {
+    public Long call() throws Exception {
         long lastCommittedTransactionId;
 
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 var jobScheduler = new ThreadPoolJobScheduler();
-                Lifespan life = new Lifespan() )
-        {
+                Lifespan life = new Lifespan()) {
             TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
-            LogFiles logFiles = life.add( createLogFiles( transactionIdStore, fileSystem ) );
+            LogFiles logFiles = life.add(createLogFiles(transactionIdStore, fileSystem));
 
-            TransactionAppender transactionAppender =
-                    life.add( createBatchingTransactionAppender( transactionMetadataCache, logFiles, transactionIdStore, Config.defaults(), jobScheduler ) );
+            TransactionAppender transactionAppender = life.add(createBatchingTransactionAppender(
+                    transactionMetadataCache, logFiles, transactionIdStore, Config.defaults(), jobScheduler));
 
-            ExecutorService executorService = Executors.newFixedThreadPool( threads );
-            try
-            {
-                List<Future<?>> handlers = new ArrayList<>( threads );
-                for ( int i = 0; i < threads; i++ )
-                {
+            ExecutorService executorService = Executors.newFixedThreadPool(threads);
+            try {
+                List<Future<?>> handlers = new ArrayList<>(threads);
+                for (int i = 0; i < threads; i++) {
                     TransactionRepresentationFactory factory = new TransactionRepresentationFactory();
-                    Worker task = new Worker( transactionAppender, factory, condition );
-                    handlers.add( executorService.submit( task ) );
+                    Worker task = new Worker(transactionAppender, factory, condition);
+                    handlers.add(executorService.submit(task));
                 }
 
                 // wait for all the workers to complete
-                Futures.getAll( handlers );
-            }
-            finally
-            {
+                Futures.getAll(handlers);
+            } finally {
                 executorService.shutdown();
             }
 
@@ -107,24 +98,32 @@ public class Runner implements Callable<Long>
         return lastCommittedTransactionId;
     }
 
-    private static TransactionAppender createBatchingTransactionAppender( TransactionMetadataCache transactionMetadataCache, LogFiles logFiles,
-            TransactionIdStore transactionIdStore, Config config, JobScheduler jobScheduler )
-    {
+    private static TransactionAppender createBatchingTransactionAppender(
+            TransactionMetadataCache transactionMetadataCache,
+            LogFiles logFiles,
+            TransactionIdStore transactionIdStore,
+            Config config,
+            JobScheduler jobScheduler) {
         InternalLog log = NullLog.getInstance();
-        DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, log );
-        return createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, config, databaseHealth,
-                jobScheduler, NullLogProvider.getInstance() );
+        DatabaseHealth databaseHealth = new DatabaseHealth(PanicEventGenerator.NO_OP, log);
+        return createTransactionAppender(
+                logFiles,
+                transactionIdStore,
+                transactionMetadataCache,
+                config,
+                databaseHealth,
+                jobScheduler,
+                NullLogProvider.getInstance());
     }
 
-    private LogFiles createLogFiles( TransactionIdStore transactionIdStore,
-            FileSystemAbstraction fileSystemAbstraction ) throws IOException
-    {
+    private LogFiles createLogFiles(TransactionIdStore transactionIdStore, FileSystemAbstraction fileSystemAbstraction)
+            throws IOException {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
-        return LogFilesBuilder.builder( databaseLayout, fileSystemAbstraction )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( LegacyStoreId.UNKNOWN )
+        return LogFilesBuilder.builder(databaseLayout, fileSystemAbstraction)
+                .withTransactionIdStore(transactionIdStore)
+                .withLogVersionRepository(logVersionRepository)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withStoreId(LegacyStoreId.UNKNOWN)
                 .build();
     }
 }

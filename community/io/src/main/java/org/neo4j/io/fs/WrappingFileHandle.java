@@ -23,64 +23,55 @@ import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.Path;
 
-class WrappingFileHandle implements FileHandle
-{
+class WrappingFileHandle implements FileHandle {
     private final Path file;
     private final Path baseDirectory;
     private final FileSystemAbstraction fs;
 
-    WrappingFileHandle( Path file, Path baseDirectory, FileSystemAbstraction fs )
-    {
+    WrappingFileHandle(Path file, Path baseDirectory, FileSystemAbstraction fs) {
         this.file = file;
         this.baseDirectory = baseDirectory;
         this.fs = fs;
     }
 
     @Override
-    public Path getPath()
-    {
+    public Path getPath() {
         return file;
     }
 
     @Override
-    public Path getRelativePath()
-    {
-        return baseDirectory.relativize( file );
+    public Path getRelativePath() {
+        return baseDirectory.relativize(file);
     }
 
     @Override
-    public void rename( Path to, CopyOption... options ) throws IOException
-    {
+    public void rename(Path to, CopyOption... options) throws IOException {
         Path parentFile = file.getParent();
         Path canonicalTarget = to.normalize();
-        fs.mkdirs( canonicalTarget.getParent() );
-        fs.renameFile( file, canonicalTarget, options );
-        removeEmptyParent( parentFile );
+        fs.mkdirs(canonicalTarget.getParent());
+        fs.renameFile(file, canonicalTarget, options);
+        removeEmptyParent(parentFile);
     }
 
-    private void removeEmptyParent( Path parentFile ) throws IOException
-    {
+    private void removeEmptyParent(Path parentFile) throws IOException {
         // delete up to and including the base directory, but not above.
         // Note that this may be 'null' if 'baseDirectory' is the top directory.
         // Fortunately, 'File.equals(other)' handles 'null' and returns 'false' when 'other' is 'null'.
         Path end = baseDirectory.getParent();
-        while ( parentFile != null && !parentFile.equals( end ) )
-        {
-            Path[] files = fs.listFiles( parentFile );
-            if ( files.length > 0 )
-            {
+        while (parentFile != null && !parentFile.equals(end)) {
+            Path[] files = fs.listFiles(parentFile);
+            if (files.length > 0) {
                 return;
             }
-            fs.deleteFile( parentFile );
+            fs.deleteFile(parentFile);
             parentFile = parentFile.getParent();
         }
     }
 
     @Override
-    public void delete() throws IOException
-    {
+    public void delete() throws IOException {
         Path parent = file.getParent();
-        fs.deleteFileOrThrow( file );
-        removeEmptyParent( parent );
+        fs.deleteFileOrThrow(file);
+        removeEmptyParent(parent);
     }
 }

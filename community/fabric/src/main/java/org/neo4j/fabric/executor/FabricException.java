@@ -22,54 +22,46 @@ package org.neo4j.fabric.executor;
 import org.neo4j.kernel.api.exceptions.HasQuery;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class FabricException extends RuntimeException implements Status.HasStatus, HasQuery
-{
+public class FabricException extends RuntimeException implements Status.HasStatus, HasQuery {
     private final Status statusCode;
     private Long queryId;
 
-    public FabricException( Status statusCode, Throwable cause )
-    {
-        super( cause );
+    public FabricException(Status statusCode, Throwable cause) {
+        super(cause);
         this.statusCode = statusCode;
         this.queryId = null;
     }
 
-    public FabricException( Status statusCode, String message, Object... parameters )
-    {
-        super( String.format( message, parameters ) );
+    public FabricException(Status statusCode, String message, Object... parameters) {
+        super(String.format(message, parameters));
         this.statusCode = statusCode;
         this.queryId = null;
     }
 
-    public FabricException( Status statusCode, String message, Throwable cause )
-    {
-        super( message, cause );
+    public FabricException(Status statusCode, String message, Throwable cause) {
+        super(message, cause);
         this.statusCode = statusCode;
         this.queryId = null;
     }
 
-    public FabricException( Status statusCode, String message, Throwable cause, Long queryId )
-    {
-        super( message, cause );
+    public FabricException(Status statusCode, String message, Throwable cause, Long queryId) {
+        super(message, cause);
         this.statusCode = statusCode;
         this.queryId = queryId;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return statusCode;
     }
 
     @Override
-    public Long query()
-    {
+    public Long query() {
         return queryId;
     }
 
     @Override
-    public void setQuery( Long queryId )
-    {
+    public void setQuery(Long queryId) {
         this.queryId = queryId;
     }
 }

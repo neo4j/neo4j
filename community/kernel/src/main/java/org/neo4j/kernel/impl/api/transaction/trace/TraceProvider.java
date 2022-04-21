@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.transaction.trace;
 
 @FunctionalInterface
-public interface TraceProvider
-{
+public interface TraceProvider {
     TransactionInitializationTrace getTraceInfo();
 }

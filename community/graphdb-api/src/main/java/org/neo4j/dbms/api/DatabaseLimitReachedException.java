@@ -26,17 +26,15 @@ import org.neo4j.kernel.api.exceptions.Status;
  * A {@link DatabaseManagementService} tried to create a Database but the total limit of databases is already reached.
  */
 @PublicApi
-public class DatabaseLimitReachedException extends DatabaseManagementException
-{
-    public DatabaseLimitReachedException( String startOfErrorMessage )
-    {
-        super( startOfErrorMessage + " The total limit of databases is already reached. " +
-                "To create more you need to either drop databases or change the limit via the config setting 'dbms.max_databases'" );
+public class DatabaseLimitReachedException extends DatabaseManagementException {
+    public DatabaseLimitReachedException(String startOfErrorMessage) {
+        super(
+                startOfErrorMessage + " The total limit of databases is already reached. "
+                        + "To create more you need to either drop databases or change the limit via the config setting 'dbms.max_databases'");
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Database.DatabaseLimitReached;
     }
 }

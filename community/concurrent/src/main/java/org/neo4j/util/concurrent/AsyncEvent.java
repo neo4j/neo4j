@@ -22,7 +22,6 @@ package org.neo4j.util.concurrent;
 /**
  * The base-class for events that can be processed with an {@link AsyncEvents} processor.
  */
-public abstract class AsyncEvent
-{
+public abstract class AsyncEvent {
     volatile AsyncEvent next;
 }

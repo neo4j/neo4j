@@ -28,16 +28,18 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * Merge executes the inner plan and on each found row it executes `onMatch`. If there are no found rows
  * it will first run `createOps` followed by `onCreate`
  */
-case class Merge(read: LogicalPlan,
-                 createNodes: Seq[CreateNode],
-                 createRelationships: Seq[CreateRelationship],
-                 onMatch: Seq[SetMutatingPattern],
-                 onCreate: Seq[SetMutatingPattern],
-                 nodesToLock: Set[String])
-                (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+case class Merge(
+  read: LogicalPlan,
+  createNodes: Seq[CreateNode],
+  createRelationships: Seq[CreateRelationship],
+  onMatch: Seq[SetMutatingPattern],
+  onCreate: Seq[SetMutatingPattern],
+  nodesToLock: Set[String]
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
   override def source: LogicalPlan = read
 
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(read = newLHS)(idGen)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
+    copy(read = newLHS)(idGen)
 
   override def availableSymbols: Set[String] = read.availableSymbols
 }

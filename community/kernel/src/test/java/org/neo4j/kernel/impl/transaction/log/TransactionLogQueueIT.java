@@ -19,16 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.ByteUnit;
@@ -53,21 +56,18 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
-
 @Neo4jLayoutExtension
-@ExtendWith( LifeExtension.class )
-class TransactionLogQueueIT
-{
+@ExtendWith(LifeExtension.class)
+class TransactionLogQueueIT {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private LifeSupport life;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     private ThreadPoolJobScheduler jobScheduler;
     private SimpleLogVersionRepository logVersionRepository;
     private SimpleTransactionIdStore transactionIdStore;
@@ -76,92 +76,94 @@ class TransactionLogQueueIT
     private NullLogProvider logProvider;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         jobScheduler = new ThreadPoolJobScheduler();
 
         logVersionRepository = new SimpleLogVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
         logProvider = NullLogProvider.getInstance();
         metadataCache = new TransactionMetadataCache();
-        databaseHealth = new DatabaseHealth( NO_OP, logProvider.getLog( DatabaseHealth.class ) );
+        databaseHealth = new DatabaseHealth(NO_OP, logProvider.getLog(DatabaseHealth.class));
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         life.shutdown();
         jobScheduler.close();
     }
 
     @Test
-    void processMessagesByTheTransactionQueue() throws IOException, ExecutionException, InterruptedException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void processMessagesByTheTransactionQueue() throws IOException, ExecutionException, InterruptedException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        TransactionLogQueue logQueue = createLogQueue( logFiles );
-        life.add( logQueue );
+        TransactionLogQueue logQueue = createLogQueue(logFiles);
+        life.add(logQueue);
 
         long committedTransactionId = transactionIdStore.getLastCommittedTransactionId();
-        for ( int i = 0; i < 100; i++ )
-        {
+        for (int i = 0; i < 100; i++) {
             TransactionToApply transaction = createTransaction();
-            assertEquals( ++committedTransactionId, logQueue.submit( transaction, LogAppendEvent.NULL ).getCommittedTxId() );
+            assertEquals(
+                    ++committedTransactionId,
+                    logQueue.submit(transaction, LogAppendEvent.NULL).getCommittedTxId());
         }
     }
 
     @Test
-    void doNotProcessMessagesAfterShutdown() throws IOException, ExecutionException, InterruptedException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void doNotProcessMessagesAfterShutdown() throws IOException, ExecutionException, InterruptedException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        TransactionLogQueue logQueue = createLogQueue( logFiles );
-        life.add( logQueue );
+        TransactionLogQueue logQueue = createLogQueue(logFiles);
+        life.add(logQueue);
 
-        assertDoesNotThrow( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).getCommittedTxId() );
+        assertDoesNotThrow(
+                () -> logQueue.submit(createTransaction(), LogAppendEvent.NULL).getCommittedTxId());
 
         logQueue.shutdown();
 
-        assertThatThrownBy( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).getCommittedTxId() )
-                .isInstanceOf( DatabaseShutdownException.class );
+        assertThatThrownBy(() -> logQueue.submit(createTransaction(), LogAppendEvent.NULL)
+                        .getCommittedTxId())
+                .isInstanceOf(DatabaseShutdownException.class);
     }
 
     @Test
-    void stillProcessMessagesAfterStop() throws Exception
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void stillProcessMessagesAfterStop() throws Exception {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        TransactionLogQueue logQueue = createLogQueue( logFiles );
-        life.add( logQueue );
+        TransactionLogQueue logQueue = createLogQueue(logFiles);
+        life.add(logQueue);
 
-        assertDoesNotThrow( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).getCommittedTxId() );
+        assertDoesNotThrow(
+                () -> logQueue.submit(createTransaction(), LogAppendEvent.NULL).getCommittedTxId());
 
         logQueue.stop();
 
-        assertDoesNotThrow( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).getCommittedTxId() );
+        assertDoesNotThrow(
+                () -> logQueue.submit(createTransaction(), LogAppendEvent.NULL).getCommittedTxId());
     }
 
-    private static TransactionToApply createTransaction()
-    {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( List.of( new TestCommand() ) );
-        tx.setHeader( ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, AuthSubject.ANONYMOUS );
-        return new TransactionToApply( tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL );
+    private static TransactionToApply createTransaction() {
+        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(List.of(new TestCommand()));
+        tx.setHeader(ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, AuthSubject.ANONYMOUS);
+        return new TransactionToApply(tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL);
     }
 
-    private TransactionLogQueue createLogQueue( LogFiles logFiles )
-    {
-        return new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider );
+    private TransactionLogQueue createLogQueue(LogFiles logFiles) {
+        return new TransactionLogQueue(
+                logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider);
     }
 
-    private LogFiles buildLogFiles( SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore ) throws IOException
-    {
-        return LogFilesBuilder.builder( databaseLayout, fileSystem ).withLogVersionRepository( logVersionRepository )
-                              .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
-                              .withTransactionIdStore( transactionIdStore )
-                              .withCommandReaderFactory( new TestCommandReaderFactory() )
-                              .withStoreId( LegacyStoreId.UNKNOWN ).build();
+    private LogFiles buildLogFiles(
+            SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore)
+            throws IOException {
+        return LogFilesBuilder.builder(databaseLayout, fileSystem)
+                .withLogVersionRepository(logVersionRepository)
+                .withRotationThreshold(ByteUnit.mebiBytes(1))
+                .withTransactionIdStore(transactionIdStore)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withStoreId(LegacyStoreId.UNKNOWN)
+                .build();
     }
 }

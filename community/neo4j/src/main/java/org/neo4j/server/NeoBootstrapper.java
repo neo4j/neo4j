@@ -19,8 +19,7 @@
  */
 package org.neo4j.server;
 
-import org.apache.commons.lang3.SystemUtils;
-import sun.misc.Signal;
+import static java.lang.String.format;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -29,7 +28,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import org.apache.commons.lang3.SystemUtils;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.BufferingLog;
 import org.neo4j.configuration.Config;
@@ -53,11 +52,9 @@ import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.startup.PidFileHelper;
 import org.neo4j.util.VisibleForTesting;
+import sun.misc.Signal;
 
-import static java.lang.String.format;
-
-public abstract class NeoBootstrapper implements Bootstrapper
-{
+public abstract class NeoBootstrapper implements Bootstrapper {
     public static final String SIGTERM = "TERM";
     public static final String SIGINT = "INT";
     public static final int OK = 0;
@@ -76,219 +73,196 @@ public abstract class NeoBootstrapper implements Bootstrapper
     private MachineMemory machineMemory = MachineMemory.DEFAULT;
     private Path pidFile;
 
-    public static int start( Bootstrapper boot, String... argv )
-    {
-        CommandLineArgs args = CommandLineArgs.parse( argv );
+    public static int start(Bootstrapper boot, String... argv) {
+        CommandLineArgs args = CommandLineArgs.parse(argv);
 
-        if ( args.version() )
-        {
-            System.out.println( "neo4j " + Version.getNeo4jVersion() );
+        if (args.version()) {
+            System.out.println("neo4j " + Version.getNeo4jVersion());
             return 0;
         }
 
-        if ( args.homeDir() == null )
-        {
-            throw new ServerStartupException( "Argument --home-dir is required and was not provided." );
+        if (args.homeDir() == null) {
+            throw new ServerStartupException("Argument --home-dir is required and was not provided.");
         }
 
-        return boot.start( args.homeDir(), args.configFile(), args.configOverrides(), args.expandCommands() );
+        return boot.start(args.homeDir(), args.configFile(), args.configOverrides(), args.expandCommands());
     }
 
     @VisibleForTesting
-    public final int start( Path homeDir, Map<String, String> configOverrides )
-    {
-        return start( homeDir, null, configOverrides, false );
+    public final int start(Path homeDir, Map<String, String> configOverrides) {
+        return start(homeDir, null, configOverrides, false);
     }
 
     @Override
-    public final int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands )
-    {
+    public final int start(Path homeDir, Path configFile, Map<String, String> configOverrides, boolean expandCommands) {
         addShutdownHook();
         installSignalHandlers();
         Config config = Config.newBuilder()
-                .commandExpansion( expandCommands )
-                .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
-                .fromFileNoThrow( configFile )
-                .setRaw( configOverrides )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
+                .commandExpansion(expandCommands)
+                .setDefaults(GraphDatabaseSettings.SERVER_DEFAULTS)
+                .fromFileNoThrow(configFile)
+                .setRaw(configOverrides)
+                .set(GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath())
                 .build();
-        pidFile = config.get( BootloaderSettings.pid_file );
+        pidFile = config.get(BootloaderSettings.pid_file);
         writePidSilently();
-        Log4jLogProvider userLogProvider = setupLogging( config );
+        Log4jLogProvider userLogProvider = setupLogging(config);
         userLogFileStream = userLogProvider;
 
-        dependencies = dependencies.userLogProvider( userLogProvider );
+        dependencies = dependencies.userLogProvider(userLogProvider);
 
-        log = userLogProvider.getLog( getClass() );
+        log = userLogProvider.getLog(getClass());
         // Log any messages written before logging was configured.
-        startupLog.replayInto( log );
+        startupLog.replayInto(log);
 
-        config.setLogger( log );
+        config.setLogger(log);
 
-        if ( requestedMemoryExceedsAvailable( config ) )
-        {
-            log.error( format( "Invalid memory configuration - exceeds physical memory. Check the configured values for %s and %s",
-                    GraphDatabaseSettings.pagecache_memory.name(), BootloaderSettings.max_heap_size.name() ) );
+        if (requestedMemoryExceedsAvailable(config)) {
+            log.error(format(
+                    "Invalid memory configuration - exceeds physical memory. Check the configured values for %s and %s",
+                    GraphDatabaseSettings.pagecache_memory.name(), BootloaderSettings.max_heap_size.name()));
             return INVALID_CONFIGURATION_ERROR_CODE;
         }
 
-        try
-        {
-            serverAddress = config.get( HttpConnector.listen_address ).toString();
-            serverLocation = config.get( GraphDatabaseInternalSettings.databases_root_path ).toString();
+        try {
+            serverAddress = config.get(HttpConnector.listen_address).toString();
+            serverLocation = config.get(GraphDatabaseInternalSettings.databases_root_path)
+                    .toString();
 
-            log.info( "Starting..." );
-            databaseManagementService = createNeo( config, dependencies );
-            log.info( "Started." );
+            log.info("Starting...");
+            databaseManagementService = createNeo(config, dependencies);
+            log.info("Started.");
 
             return OK;
-        }
-        catch ( ServerStartupException e )
-        {
-            e.describeTo( log );
+        } catch (ServerStartupException e) {
+            e.describeTo(log);
             return WEB_SERVER_STARTUP_ERROR_CODE;
-        }
-        catch ( TransactionFailureException tfe )
-        {
-            log.error( format( "Failed to start Neo4j on %s. Another process may be using databases at location: %s", serverAddress, serverLocation ), tfe );
+        } catch (TransactionFailureException tfe) {
+            log.error(
+                    format(
+                            "Failed to start Neo4j on %s. Another process may be using databases at location: %s",
+                            serverAddress, serverLocation),
+                    tfe);
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
-        }
-        catch ( Exception e )
-        {
-            log.error( format( "Failed to start Neo4j on %s.", serverAddress ), e );
+        } catch (Exception e) {
+            log.error(format("Failed to start Neo4j on %s.", serverAddress), e);
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
     }
 
-    private void writePidSilently()
-    {
-        if ( !SystemUtils.IS_OS_WINDOWS ) //Windows does not use PID-files (for somewhat mysterious reasons)
+    private void writePidSilently() {
+        if (!SystemUtils.IS_OS_WINDOWS) // Windows does not use PID-files (for somewhat mysterious reasons)
         {
-            try //The neo4j.pid should already be there, but in the case of using the `console --dry-run` functionality we need to ensure it!
+            try // The neo4j.pid should already be there, but in the case of using the `console --dry-run` functionality
+            // we need to ensure it!
             {
                 Long currentPid = ProcessHandle.current().pid();
-                Long pid = PidFileHelper.readPid( pidFile );
-                if ( !currentPid.equals( pid ) )
-                {
-                    PidFileHelper.storePid( pidFile, currentPid );
+                Long pid = PidFileHelper.readPid(pidFile);
+                if (!currentPid.equals(pid)) {
+                    PidFileHelper.storePid(pidFile, currentPid);
                 }
-            }
-            catch ( IOException ignored )
-            {
+            } catch (IOException ignored) {
             }
         }
     }
 
-    private void deletePidSilently()
-    {
-        if ( !SystemUtils.IS_OS_WINDOWS )
-        {
-            if ( pidFile != null )
-            {
-                PidFileHelper.remove( pidFile );
+    private void deletePidSilently() {
+        if (!SystemUtils.IS_OS_WINDOWS) {
+            if (pidFile != null) {
+                PidFileHelper.remove(pidFile);
             }
         }
     }
 
-    private boolean requestedMemoryExceedsAvailable( Config config )
-    {
-        Long pageCacheMemory = config.get( GraphDatabaseSettings.pagecache_memory );
-        long pageCacheSize = pageCacheMemory == null ? ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory( machineMemory ) : pageCacheMemory;
+    private boolean requestedMemoryExceedsAvailable(Config config) {
+        Long pageCacheMemory = config.get(GraphDatabaseSettings.pagecache_memory);
+        long pageCacheSize = pageCacheMemory == null
+                ? ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory(machineMemory)
+                : pageCacheMemory;
         MemoryUsage heapMemoryUsage = machineMemory.getHeapMemoryUsage();
         long totalPhysicalMemory = machineMemory.getTotalPhysicalMemory();
 
-        if ( totalPhysicalMemory == 0 )
-        {
-            log.warn( "Unable to determine total physical memory of machine. JVM is most likely running in a container that do not expose that." );
+        if (totalPhysicalMemory == 0) {
+            log.warn(
+                    "Unable to determine total physical memory of machine. JVM is most likely running in a container that do not expose that.");
             return false;
         }
 
-        return totalPhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE  && pageCacheSize + heapMemoryUsage.getMax() > totalPhysicalMemory;
+        return totalPhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE
+                && pageCacheSize + heapMemoryUsage.getMax() > totalPhysicalMemory;
     }
 
     @Override
-    public int stop()
-    {
-        try
-        {
+    public int stop() {
+        try {
             doShutdown();
 
             removeShutdownHook();
 
             closeUserLogFileStream();
             return 0;
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             switchToErrorLoggingIfLoggingNotConfigured();
-            log.error( "Failed to cleanly shutdown Neo Server on port [%s], database [%s]. Reason [%s] ",
-                    serverAddress, serverLocation, e.getMessage(), e );
+            log.error(
+                    "Failed to cleanly shutdown Neo Server on port [%s], database [%s]. Reason [%s] ",
+                    serverAddress, serverLocation, e.getMessage(), e);
             closeUserLogFileStream();
             return 1;
         }
     }
 
-    public boolean isRunning()
-    {
+    public boolean isRunning() {
         return databaseManagementService != null;
     }
 
-    public DatabaseManagementService getDatabaseManagementService()
-    {
+    public DatabaseManagementService getDatabaseManagementService() {
         return databaseManagementService;
     }
 
-    public InternalLog getLog()
-    {
+    public InternalLog getLog() {
         return log;
     }
 
-    protected abstract DatabaseManagementService createNeo( Config config, GraphDatabaseDependencies dependencies );
+    protected abstract DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies);
 
-    private static Log4jLogProvider setupLogging( Config config )
-    {
-        LogConfig.Builder builder =
-                LogConfig.createBuilder( new DefaultFileSystemAbstraction(), config.get( GraphDatabaseSettings.store_user_log_path ),
-                        config.get( GraphDatabaseSettings.store_internal_log_level ) )
-                         .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) )
-                         .withFormat( config.get( GraphDatabaseSettings.store_user_log_format ) )
-                         .withCategory( false )
-                         .withRotation( config.get( GraphDatabaseSettings.store_user_log_rotation_threshold ),
-                                 config.get( GraphDatabaseSettings.store_user_log_max_archives ) );
+    private static Log4jLogProvider setupLogging(Config config) {
+        LogConfig.Builder builder = LogConfig.createBuilder(
+                        new DefaultFileSystemAbstraction(),
+                        config.get(GraphDatabaseSettings.store_user_log_path),
+                        config.get(GraphDatabaseSettings.store_internal_log_level))
+                .withTimezone(config.get(GraphDatabaseSettings.db_timezone))
+                .withFormat(config.get(GraphDatabaseSettings.store_user_log_format))
+                .withCategory(false)
+                .withRotation(
+                        config.get(GraphDatabaseSettings.store_user_log_rotation_threshold),
+                        config.get(GraphDatabaseSettings.store_user_log_max_archives));
 
-        if ( config.get( GraphDatabaseSettings.store_user_log_to_stdout ) )
-        {
+        if (config.get(GraphDatabaseSettings.store_user_log_to_stdout)) {
             builder.logToSystemOut();
         }
 
         Neo4jLoggerContext ctx = builder.build();
-        Log4jLogProvider userLogProvider = new Log4jLogProvider( ctx );
+        Log4jLogProvider userLogProvider = new Log4jLogProvider(ctx);
 
         JULBridge.resetJUL();
-        Logger.getLogger( "" ).setLevel( Level.WARNING );
-        JULBridge.forwardTo( userLogProvider );
-        JettyLogBridge.setLogProvider( userLogProvider );
+        Logger.getLogger("").setLevel(Level.WARNING);
+        JULBridge.forwardTo(userLogProvider);
+        JettyLogBridge.setLogProvider(userLogProvider);
         return userLogProvider;
     }
 
     // Exit gracefully if possible
-    private static void installSignalHandlers()
-    {
-        installSignalHandler( SIGTERM, false ); // SIGTERM is invoked when system service is stopped
-        installSignalHandler( SIGINT, true ); // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
+    private static void installSignalHandlers() {
+        installSignalHandler(SIGTERM, false); // SIGTERM is invoked when system service is stopped
+        installSignalHandler(SIGINT, true); // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
     }
 
-    private static void installSignalHandler( String sig, boolean tolerateErrors )
-    {
-        try
-        {
+    private static void installSignalHandler(String sig, boolean tolerateErrors) {
+        try {
             // System.exit() will trigger the shutdown hook
-            Signal.handle( new Signal( sig ), signal -> System.exit( 0 ) );
-        }
-        catch ( Throwable e )
-        {
-            if ( !tolerateErrors )
-            {
+            Signal.handle(new Signal(sig), signal -> System.exit(0));
+        } catch (Throwable e) {
+            if (!tolerateErrors) {
                 throw e;
             }
             // Errors occur on IBM JDK with IllegalArgumentException: Signal already used by VM: INT
@@ -296,43 +270,35 @@ public abstract class NeoBootstrapper implements Bootstrapper
         }
     }
 
-    private void doShutdown()
-    {
+    private void doShutdown() {
         switchToErrorLoggingIfLoggingNotConfigured();
-        if ( databaseManagementService != null )
-        {
-            log.info( "Stopping..." );
+        if (databaseManagementService != null) {
+            log.info("Stopping...");
             databaseManagementService.shutdown();
         }
         deletePidSilently();
-        log.info( "Stopped." );
+        log.info("Stopped.");
     }
 
-    private void closeUserLogFileStream()
-    {
-        if ( userLogFileStream != null )
-        {
-            IOUtils.closeAllUnchecked( userLogFileStream );
+    private void closeUserLogFileStream() {
+        if (userLogFileStream != null) {
+            IOUtils.closeAllUnchecked(userLogFileStream);
         }
     }
 
-    private void addShutdownHook()
-    {
-        shutdownHook = new Thread( () -> {
-            log.info( "Neo4j Server shutdown initiated by request" );
+    private void addShutdownHook() {
+        shutdownHook = new Thread(() -> {
+            log.info("Neo4j Server shutdown initiated by request");
             doShutdown();
             closeUserLogFileStream();
-        } );
-        Runtime.getRuntime().addShutdownHook( shutdownHook );
+        });
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
-    private void removeShutdownHook()
-    {
-        if ( shutdownHook != null )
-        {
-            if ( !Runtime.getRuntime().removeShutdownHook( shutdownHook ) )
-            {
-                log.warn( "Unable to remove shutdown hook" );
+    private void removeShutdownHook() {
+        if (shutdownHook != null) {
+            if (!Runtime.getRuntime().removeShutdownHook(shutdownHook)) {
+                log.warn("Unable to remove shutdown hook");
             }
         }
     }
@@ -340,21 +306,18 @@ public abstract class NeoBootstrapper implements Bootstrapper
     /**
      * If we ran into an error before logging was properly setup we log what we have buffered and any following messages directly to System.out.
      */
-    private void switchToErrorLoggingIfLoggingNotConfigured()
-    {
+    private void switchToErrorLoggingIfLoggingNotConfigured() {
         // Logging isn't configured yet
-        if ( userLogFileStream == null )
-        {
-            Log4jLogProvider outProvider = new Log4jLogProvider( System.out );
+        if (userLogFileStream == null) {
+            Log4jLogProvider outProvider = new Log4jLogProvider(System.out);
             userLogFileStream = outProvider;
-            log = outProvider.getLog( getClass() );
-            startupLog.replayInto( log );
+            log = outProvider.getLog(getClass());
+            startupLog.replayInto(log);
         }
     }
 
     @VisibleForTesting
-    void setMachineMemory( MachineMemory machineMemory )
-    {
+    void setMachineMemory(MachineMemory machineMemory) {
         this.machineMemory = machineMemory;
     }
 }

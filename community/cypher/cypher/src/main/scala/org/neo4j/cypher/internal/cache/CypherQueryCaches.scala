@@ -59,6 +59,7 @@ import org.neo4j.values.virtual.MapValue
 import java.lang
 import java.time.Clock
 import java.util.concurrent.CopyOnWriteArrayList
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 /**
@@ -82,16 +83,18 @@ object CypherQueryCaches {
     divergenceConfig: StatsDivergenceCalculatorConfig,
     enableExecutionPlanCacheTracing: Boolean
   ) {
+
     // Java helper
     def this(cypherConfig: CypherConfiguration) = this(
       cypherConfig.queryCacheSize,
       ExecutionPlanCacheSize.fromInt(cypherConfig.executionPlanCacheSize),
       cypherConfig.statsDivergenceCalculator,
-      cypherConfig.enableMonitors,
+      cypherConfig.enableMonitors
     )
   }
 
   object Config {
+
     def fromCypherConfiguration(cypherConfig: CypherConfiguration) =
       new Config(cypherConfig)
 
@@ -100,6 +103,7 @@ object CypherQueryCaches {
     object ExecutionPlanCacheSize {
       case object Disabled extends ExecutionPlanCacheSize
       case object Default extends ExecutionPlanCacheSize
+
       case class Sized(cacheSize: Int) extends ExecutionPlanCacheSize {
         require(cacheSize > 0, s"Cache size cannot be negative. Got $cacheSize.")
       }
@@ -183,6 +187,7 @@ object CypherQueryCaches {
       cacheFactory: CaffeineCacheFactory,
       size: Int
     ) extends LFUCache[Key, Value](cacheFactory, size) with CacheCommon {
+
       def key(preParsedQuery: PreParsedQuery, params: MapValue): AstCache.Key =
         AstCache.AstCacheKey(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
 
@@ -248,12 +253,17 @@ object CypherQueryCaches {
   // --- Logging ----------------------------------------------------
 
   class QueryCacheStaleLogger[Key](itemType: String, doLog: String => Unit) extends CacheTracer[Key] {
-    override def queryCacheStale(key: Key, secondsSinceReplan: Int, queryId: String, maybeReason: Option[String]): Unit =
+
+    override def queryCacheStale(
+      key: Key,
+      secondsSinceReplan: Int,
+      queryId: String,
+      maybeReason: Option[String]
+    ): Unit =
       doLog(
         (Seq(s"Discarded stale $itemType from the $itemType cache after $secondsSinceReplan seconds.") ++
-         maybeReason.map(r => s"Reason: $r.").toSeq ++
-         Seq(s"Query id: $queryId.")
-          ).mkString(" ")
+          maybeReason.map(r => s"Reason: $r.").toSeq ++
+          Seq(s"Query id: $queryId.")).mkString(" ")
       )
   }
 
@@ -275,7 +285,7 @@ class CypherQueryCaches(
   cacheFactory: CaffeineCacheFactory,
   clock: Clock,
   kernelMonitors: Monitors,
-  logProvider: InternalLogProvider,
+  logProvider: InternalLogProvider
 ) {
 
   private val log = logProvider.getLog(getClass)
@@ -291,6 +301,7 @@ class CypherQueryCaches(
    * Container for caches used by a single planner instance
    */
   class CypherPlannerCaches() {
+
     /**
      * Caches parsing
      */
@@ -307,7 +318,8 @@ class CypherQueryCaches(
         divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
         lastCommittedTxIdProvider,
         (state, _) => state.reusability,
-        log),
+        log
+      ),
       tracer = LogicalPlanCache.newMonitor(kernelMonitors)
     ))
   }
@@ -341,10 +353,12 @@ class CypherQueryCaches(
         case Some(cache) if cacheWhen =>
           var hit = true
           val keyVal = key
-          val result = cache.computeIfAbsent(keyVal, {
-            hit = false
-            compute
-          })
+          val result = cache.computeIfAbsent(
+            keyVal, {
+              hit = false
+              compute
+            }
+          )
           if (hit) {
             tracer.queryCacheHit(keyVal, "")
           } else {
@@ -376,13 +390,21 @@ class CypherQueryCaches(
       divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
       lastCommittedTxIdProvider = lastCommittedTxIdProvider,
       reusabilityInfo = (eq, ctx) => eq.reusabilityState(lastCommittedTxIdProvider, ctx),
-      log = log),
-    tracer = ExecutableQueryCache.newMonitor(kernelMonitors),
+      log = log
+    ),
+    tracer = ExecutableQueryCache.newMonitor(kernelMonitors)
   ))
 
   // Register monitor listeners that do logging
-  LogicalPlanCache.addMonitorListener(kernelMonitors, new QueryCacheStaleLogger[LogicalPlanCache.Key]("plan", log.debug))
-  ExecutableQueryCache.addMonitorListener(kernelMonitors, new QueryCacheStaleLogger[ExecutableQueryCache.Key]("query", log.info))
+  LogicalPlanCache.addMonitorListener(
+    kernelMonitors,
+    new QueryCacheStaleLogger[LogicalPlanCache.Key]("plan", log.debug)
+  )
+
+  ExecutableQueryCache.addMonitorListener(
+    kernelMonitors,
+    new QueryCacheStaleLogger[ExecutableQueryCache.Key]("query", log.info)
+  )
 
   private def registerCache[T <: CacheCommon](cache: T): T = {
     allCaches.add(cache)
@@ -416,4 +438,3 @@ class CypherQueryCaches(
   def clearAll(): Unit =
     allCaches.forEach(c => c.clear())
 }
-

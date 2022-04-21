@@ -19,21 +19,19 @@
  */
 package org.neo4j.shell.cli;
 
+import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
+
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
-
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
-import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
-
-@SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
-public class CliArgs
-{
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+public class CliArgs {
     static final String DEFAULT_SCHEME = "neo4j";
     static final String DEFAULT_HOST = "localhost";
     static final int DEFAULT_PORT = 7687;
@@ -64,262 +62,219 @@ public class CliArgs
     /**
      * Set the scheme to the primary value, or if null, the fallback value.
      */
-    public void setScheme( String primary, String fallback )
-    {
+    public void setScheme(String primary, String fallback) {
         scheme = primary == null ? fallback : primary;
     }
 
     /**
      * Set the host to the primary value, or if null, the fallback value.
      */
-    void setHost( String primary, String fallback )
-    {
+    void setHost(String primary, String fallback) {
         host = primary == null ? fallback : primary;
     }
 
     /**
      * Set the username to the primary value, or if null, the fallback value.
      */
-    public void setUsername( String primary, String fallback )
-    {
+    public void setUsername(String primary, String fallback) {
         username = primary == null ? fallback : primary;
     }
 
-    public void setImpersonatedUser( String impersonatedUser )
-    {
-        this.impersonatedUser = Optional.ofNullable( impersonatedUser );
+    public void setImpersonatedUser(String impersonatedUser) {
+        this.impersonatedUser = Optional.ofNullable(impersonatedUser);
     }
 
     /**
      * Set the password to the primary value, or if null, the fallback value.
      */
-    public void setPassword( String primary, String fallback )
-    {
+    public void setPassword(String primary, String fallback) {
         password = primary == null ? fallback : primary;
     }
 
-    public String getScheme()
-    {
+    public String getScheme() {
         return scheme;
     }
 
-    public String getHost()
-    {
+    public String getHost() {
         return host;
     }
 
-    public int getPort()
-    {
+    public int getPort() {
         return port;
     }
 
     /**
      * Set the port to the value.
      */
-    public void setPort( int port )
-    {
+    public void setPort(int port) {
         this.port = port;
     }
 
-    public String getUsername()
-    {
+    public String getUsername() {
         return username;
     }
 
-    public String getPassword()
-    {
+    public String getPassword() {
         return password;
     }
 
-    public String getDatabase()
-    {
+    public String getDatabase() {
         return databaseName;
     }
 
     /**
      * Set the database to connect to.
      */
-    public void setDatabase( String databaseName )
-    {
+    public void setDatabase(String databaseName) {
         this.databaseName = databaseName;
     }
 
-    public FailBehavior getFailBehavior()
-    {
+    public FailBehavior getFailBehavior() {
         return failBehavior;
     }
 
     /**
      * Set the desired fail behavior
      */
-    void setFailBehavior( FailBehavior failBehavior )
-    {
+    void setFailBehavior(FailBehavior failBehavior) {
         this.failBehavior = failBehavior;
     }
 
-    public Optional<String> getCypher()
-    {
+    public Optional<String> getCypher() {
         return cypher;
     }
 
     /**
      * Set the specified cypher string to execute
      */
-    public void setCypher( String cypher )
-    {
-        this.cypher = Optional.ofNullable( cypher );
+    public void setCypher(String cypher) {
+        this.cypher = Optional.ofNullable(cypher);
     }
 
-    public Format getFormat()
-    {
+    public Format getFormat() {
         return format;
     }
 
     /**
      * Set the desired format
      */
-    public void setFormat( Format format )
-    {
+    public void setFormat(Format format) {
         this.format = format;
     }
 
-    public void setParameters( List<RawParameter> parameters )
-    {
+    public void setParameters(List<RawParameter> parameters) {
         this.parameters = parameters;
     }
 
-    public Encryption getEncryption()
-    {
+    public Encryption getEncryption() {
         return encryption;
     }
 
     /**
      * Set whether the connection should be encrypted
      */
-    public void setEncryption( Encryption encryption )
-    {
+    public void setEncryption(Encryption encryption) {
         this.encryption = encryption;
     }
 
-    public boolean getNonInteractive()
-    {
+    public boolean getNonInteractive() {
         return nonInteractive;
     }
 
     /**
      * Force the shell to use non-interactive mode. Only useful on systems where auto-detection fails, such as Windows.
      */
-    public void setNonInteractive( boolean nonInteractive )
-    {
+    public void setNonInteractive(boolean nonInteractive) {
         this.nonInteractive = nonInteractive;
     }
 
-    public String getInputFilename()
-    {
+    public String getInputFilename() {
         return inputFilename;
     }
 
     /**
      * Sets a filename where to read Cypher statements from, much like piping statements from a file.
      */
-    public void setInputFilename( String inputFilename )
-    {
+    public void setInputFilename(String inputFilename) {
         this.inputFilename = inputFilename;
     }
 
-    public boolean getVersion()
-    {
+    public boolean getVersion() {
         return version;
     }
 
-    public void setVersion( boolean version )
-    {
+    public void setVersion(boolean version) {
         this.version = version;
     }
 
-    public boolean getDriverVersion()
-    {
+    public boolean getDriverVersion() {
         return driverVersion;
     }
 
-    public void setDriverVersion( boolean version )
-    {
+    public void setDriverVersion(boolean version) {
         this.driverVersion = version;
     }
 
-    public boolean isStringShell()
-    {
+    public boolean isStringShell() {
         return cypher.isPresent();
     }
 
-    public boolean getWrap()
-    {
+    public boolean getWrap() {
         return wrap;
     }
 
-    public void setWrap( boolean wrap )
-    {
+    public void setWrap(boolean wrap) {
         this.wrap = wrap;
     }
 
-    public int getNumSampleRows()
-    {
+    public int getNumSampleRows() {
         return numSampleRows;
     }
 
-    public void setNumSampleRows( Integer numSampleRows )
-    {
-        if ( numSampleRows != null && numSampleRows > 0 )
-        {
+    public void setNumSampleRows(Integer numSampleRows) {
+        if (numSampleRows != null && numSampleRows > 0) {
             this.numSampleRows = numSampleRows;
         }
     }
 
-    public List<RawParameter> getParameters()
-    {
+    public List<RawParameter> getParameters() {
         return parameters;
     }
 
-    public void setChangePassword( boolean changePassword )
-    {
+    public void setChangePassword(boolean changePassword) {
         this.changePassword = changePassword;
     }
 
-    public boolean getChangePassword()
-    {
+    public boolean getChangePassword() {
         return changePassword;
     }
 
-    public ConnectionConfig connectionConfig()
-    {
-        return ConnectionConfig.connectionConfig( getScheme(),
-                                                  getHost(),
-                                                  getPort(),
-                                                  getUsername(),
-                                                  getPassword(),
-                                                  getEncryption(),
-                                                  getDatabase(),
-                                                  new Environment(),
-                                                  impersonatedUser );
+    public ConnectionConfig connectionConfig() {
+        return ConnectionConfig.connectionConfig(
+                getScheme(),
+                getHost(),
+                getPort(),
+                getUsername(),
+                getPassword(),
+                getEncryption(),
+                getDatabase(),
+                new Environment(),
+                impersonatedUser);
     }
 
-    public File getHistoryFile()
-    {
+    public File getHistoryFile() {
         return historyFile;
     }
 
-    public void setHistoryFile( File historyFile )
-    {
+    public void setHistoryFile(File historyFile) {
         this.historyFile = historyFile;
     }
 
-    public void setLogLevel( Logger.Level logLevel )
-    {
+    public void setLogLevel(Logger.Level logLevel) {
         this.logLevel = logLevel;
     }
 
-    public Logger.Level logLevel()
-    {
+    public Logger.Level logLevel() {
         return logLevel;
     }
 }

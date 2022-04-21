@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
-
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
@@ -29,40 +28,46 @@ import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
-public class NameOverridingStoreMigrationParticipant implements StoreMigrationParticipant
-{
+public class NameOverridingStoreMigrationParticipant implements StoreMigrationParticipant {
     private final StoreMigrationParticipant delegate;
     private final String nameOverride;
 
-    public NameOverridingStoreMigrationParticipant( StoreMigrationParticipant delegate, String nameOverride )
-    {
+    public NameOverridingStoreMigrationParticipant(StoreMigrationParticipant delegate, String nameOverride) {
         this.delegate = delegate;
         this.nameOverride = nameOverride;
     }
 
     @Override
-    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, StoreVersion fromVersion,
-            StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata ) throws IOException, KernelException
-    {
-        delegate.migrate( directoryLayout, migrationLayout, progress, fromVersion, toVersion, indexImporterFactory, tailMetadata );
+    public void migrate(
+            DatabaseLayout directoryLayout,
+            DatabaseLayout migrationLayout,
+            ProgressReporter progress,
+            StoreVersion fromVersion,
+            StoreVersion toVersion,
+            IndexImporterFactory indexImporterFactory,
+            LogTailMetadata tailMetadata)
+            throws IOException, KernelException {
+        delegate.migrate(
+                directoryLayout, migrationLayout, progress, fromVersion, toVersion, indexImporterFactory, tailMetadata);
     }
 
     @Override
-    public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
-            throws IOException
-    {
-        delegate.moveMigratedFiles( migrationLayout, directoryLayout, versionToMigrateFrom, versionToMigrateTo );
+    public void moveMigratedFiles(
+            DatabaseLayout migrationLayout,
+            DatabaseLayout directoryLayout,
+            String versionToMigrateFrom,
+            String versionToMigrateTo)
+            throws IOException {
+        delegate.moveMigratedFiles(migrationLayout, directoryLayout, versionToMigrateFrom, versionToMigrateTo);
     }
 
     @Override
-    public void cleanup( DatabaseLayout migrationLayout ) throws IOException
-    {
-        delegate.cleanup( migrationLayout );
+    public void cleanup(DatabaseLayout migrationLayout) throws IOException {
+        delegate.cleanup(migrationLayout);
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return nameOverride;
     }
 }

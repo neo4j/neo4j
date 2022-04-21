@@ -21,21 +21,17 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Iterator;
 
-class ListBasedBlockEntryCursor<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
-{
-    private final Iterator<BlockEntry<KEY,VALUE>> entries;
-    private BlockEntry<KEY,VALUE> next;
+class ListBasedBlockEntryCursor<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE> {
+    private final Iterator<BlockEntry<KEY, VALUE>> entries;
+    private BlockEntry<KEY, VALUE> next;
 
-    ListBasedBlockEntryCursor( Iterable<BlockEntry<KEY,VALUE>> entries )
-    {
+    ListBasedBlockEntryCursor(Iterable<BlockEntry<KEY, VALUE>> entries) {
         this.entries = entries.iterator();
     }
 
     @Override
-    public boolean next()
-    {
-        if ( entries.hasNext() )
-        {
+    public boolean next() {
+        if (entries.hasNext()) {
             next = entries.next();
             return true;
         }
@@ -43,19 +39,16 @@ class ListBasedBlockEntryCursor<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE
     }
 
     @Override
-    public KEY key()
-    {
+    public KEY key() {
         return next.key();
     }
 
     @Override
-    public VALUE value()
-    {
+    public VALUE value() {
         return next.value();
     }
 
     @Override
-    public void close()
-    {   // no-op
+    public void close() { // no-op
     }
 }

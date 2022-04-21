@@ -19,6 +19,4 @@
  */
 package org.neo4j.shell.exception;
 
-public class UnconsumedStatementException extends IllegalArgumentException
-{
-}
+public class UnconsumedStatementException extends IllegalArgumentException {}

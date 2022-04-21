@@ -19,17 +19,17 @@
  */
 package org.neo4j.bolt.transport;
 
-
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
@@ -51,14 +51,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.AnyValue;
 
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-public class BoltKeepAliveSchedulingIT
-{
+public class BoltKeepAliveSchedulingIT {
     @Inject
     private Neo4jWithSocket server;
 
@@ -66,21 +61,19 @@ public class BoltKeepAliveSchedulingIT
     private TransportConnection connection;
     private TransportTestUtil util;
 
-    protected static Consumer<Map<Setting<?>,Object>> getSettingsFunction()
-    {
+    protected static Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
         return settings -> {
-            settings.put( GraphDatabaseSettings.auth_enabled, false );
-            settings.put( BoltConnector.connection_keep_alive, Duration.ofMillis( 20 ) );
-            settings.put( BoltConnector.connection_keep_alive_streaming_scheduling_interval, Duration.ofMillis( 10 ) );
+            settings.put(GraphDatabaseSettings.auth_enabled, false);
+            settings.put(BoltConnector.connection_keep_alive, Duration.ofMillis(20));
+            settings.put(BoltConnector.connection_keep_alive_streaming_scheduling_interval, Duration.ofMillis(10));
         };
     }
 
     @BeforeEach
-    public void setup( TestInfo testInfo ) throws Exception
-    {
-        server.setConfigure( getSettingsFunction() );
-        server.init( testInfo );
-        installSleepProcedure( server.graphDatabaseService() );
+    public void setup(TestInfo testInfo) throws Exception {
+        server.setConfigure(getSettingsFunction());
+        server.init(testInfo);
+        installSleepProcedure(server.graphDatabaseService());
 
         address = server.lookupDefaultConnector();
         connection = new SocketConnection();
@@ -88,52 +81,43 @@ public class BoltKeepAliveSchedulingIT
     }
 
     @Test
-    public void shouldSendNoOpForLongRunningTx() throws Exception
-    {
-        connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
-                .send( util.defaultAuth() );
-        AtomicInteger noOpCounter = new AtomicInteger( 0 );
+    public void shouldSendNoOpForLongRunningTx() throws Exception {
+        connection.connect(address).send(util.defaultAcceptedVersions()).send(util.defaultAuth());
+        AtomicInteger noOpCounter = new AtomicInteger(0);
 
-        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection ).satisfies( util.eventuallyReceives( true, noOpCounter::incrementAndGet,
-                msgSuccess() ) );
+        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        assertThat(connection).satisfies(util.eventuallyReceives(true, noOpCounter::incrementAndGet, msgSuccess()));
 
         // when
-        connection.send( util.defaultRunAutoCommitTxWithoutResult( "CALL boltissue.sleep()" ) );
+        connection.send(util.defaultRunAutoCommitTxWithoutResult("CALL boltissue.sleep()"));
 
         // expect
-        assertThat( connection ).satisfies( util.eventuallyReceives( true, noOpCounter::incrementAndGet,
-                msgSuccess(), msgSuccess() ) );
+        assertThat(connection)
+                .satisfies(util.eventuallyReceives(true, noOpCounter::incrementAndGet, msgSuccess(), msgSuccess()));
 
-        assertThat( noOpCounter.get() ).isGreaterThan( 1 );
+        assertThat(noOpCounter.get()).isGreaterThan(1);
     }
 
-    private static void installSleepProcedure( GraphDatabaseService db ) throws ProcedureException
-    {
+    private static void installSleepProcedure(GraphDatabaseService db) throws ProcedureException {
         GraphDatabaseAPI dbApi = (GraphDatabaseAPI) db;
 
-        dbApi.getDependencyResolver().resolveDependency( GlobalProcedures.class ).register(
-                new CallableProcedure.BasicProcedure(
-                        procedureSignature( "boltissue", "sleep" )
-                                .out( ProcedureSignature.VOID )
-                                .build() )
-                {
-                    @Override
-                    public RawIterator<AnyValue[],ProcedureException> apply(
-                            Context context, AnyValue[] objects, ResourceTracker resourceTracker ) throws ProcedureException
-                    {
-                        try
-                        {
-                            Thread.sleep( 100 );
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            throw new ProcedureException( Status.General.UnknownError, e, "Interrupted" );
-                        }
-                        return RawIterator.empty();
-                    }
-                } );
+        dbApi.getDependencyResolver()
+                .resolveDependency(GlobalProcedures.class)
+                .register(
+                        new CallableProcedure.BasicProcedure(procedureSignature("boltissue", "sleep")
+                                .out(ProcedureSignature.VOID)
+                                .build()) {
+                            @Override
+                            public RawIterator<AnyValue[], ProcedureException> apply(
+                                    Context context, AnyValue[] objects, ResourceTracker resourceTracker)
+                                    throws ProcedureException {
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
+                                    throw new ProcedureException(Status.General.UnknownError, e, "Interrupted");
+                                }
+                                return RawIterator.empty();
+                            }
+                        });
     }
-
 }

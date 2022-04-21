@@ -22,60 +22,49 @@ package org.neo4j.bolt.v3.messaging.response;
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.values.virtual.MapValue;
 
-public class SuccessMessage implements ResponseMessage
-{
+public class SuccessMessage implements ResponseMessage {
     public static final byte SIGNATURE = 0x70;
     private final MapValue metadata;
 
-    public SuccessMessage( MapValue metadata )
-    {
+    public SuccessMessage(MapValue metadata) {
         this.metadata = metadata;
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public ResponseMessage copy()
-    {
+    public ResponseMessage copy() {
         return this;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         SuccessMessage that = (SuccessMessage) o;
 
-        return metadata.equals( that.metadata );
-
+        return metadata.equals(that.metadata);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return metadata.hashCode();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "SUCCESS " + metadata;
     }
 
-    public MapValue meta()
-    {
+    public MapValue meta() {
         return metadata;
     }
 }

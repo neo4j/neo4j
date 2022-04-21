@@ -25,22 +25,16 @@ import java.util.function.LongSupplier;
  * {@link VersionContextSupplier} version that supply same {@link EmptyVersionContext} each time for cases
  * where version context mechanics is not required
  */
-public class EmptyVersionContextSupplier implements VersionContextSupplier
-{
+public class EmptyVersionContextSupplier implements VersionContextSupplier {
     public static final VersionContextSupplier EMPTY = new EmptyVersionContextSupplier();
 
-    private EmptyVersionContextSupplier()
-    {
-    }
+    private EmptyVersionContextSupplier() {}
 
     @Override
-    public void init( LongSupplier lastClosedTransactionIdSupplier )
-    {
-    }
+    public void init(LongSupplier lastClosedTransactionIdSupplier) {}
 
     @Override
-    public VersionContext createVersionContext()
-    {
+    public VersionContext createVersionContext() {
         return EmptyVersionContext.EMPTY;
     }
 }

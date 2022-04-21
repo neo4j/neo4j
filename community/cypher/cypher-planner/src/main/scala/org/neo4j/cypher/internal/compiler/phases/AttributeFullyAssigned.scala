@@ -32,28 +32,30 @@ import org.neo4j.cypher.internal.util.attribution.Attribute
 
 import scala.reflect.ClassTag
 
-case class AttributeFullyAssigned[T <: Attribute[LogicalPlan, _]]()(implicit val tag: ClassTag[T]) extends ValidatingCondition {
+case class AttributeFullyAssigned[T <: Attribute[LogicalPlan, _]]()(implicit val tag: ClassTag[T])
+    extends ValidatingCondition {
 
   override def apply(in: Any): Seq[String] = in match {
     case state: LogicalPlanState =>
       val plan = state.logicalPlan
       val attribute = tag.runtimeClass match {
-        case x if classOf[Solveds] == x => state.planningAttributes.solveds
-        case x if classOf[Cardinalities] == x => state.planningAttributes.cardinalities
+        case x if classOf[Solveds] == x                => state.planningAttributes.solveds
+        case x if classOf[Cardinalities] == x          => state.planningAttributes.cardinalities
         case x if classOf[EffectiveCardinalities] == x => state.planningAttributes.effectiveCardinalities
-        case x if classOf[ProvidedOrders] == x => state.planningAttributes.providedOrders
-        case x if classOf[LeveragedOrders] == x => state.planningAttributes.leveragedOrders
-        case x => throw new IllegalArgumentException(s"Unknown attribute: $x")
+        case x if classOf[ProvidedOrders] == x         => state.planningAttributes.providedOrders
+        case x if classOf[LeveragedOrders] == x        => state.planningAttributes.leveragedOrders
+        case x                                         => throw new IllegalArgumentException(s"Unknown attribute: $x")
       }
 
       plan.folder.treeFold(Seq.empty[String]) {
         case plan: LogicalPlan => acc =>
-          if (!attribute.isDefinedAt(plan.id)) {
-            val error = s"Attribute ${tag.runtimeClass.getSimpleName} not set for \n${LogicalPlanToPlanBuilderString(plan)}"
-            TraverseChildren(acc :+ error)
-          } else {
-            TraverseChildren(acc)
-          }
+            if (!attribute.isDefinedAt(plan.id)) {
+              val error =
+                s"Attribute ${tag.runtimeClass.getSimpleName} not set for \n${LogicalPlanToPlanBuilderString(plan)}"
+              TraverseChildren(acc :+ error)
+            } else {
+              TraverseChildren(acc)
+            }
       }
 
     case x => throw new IllegalArgumentException(s"Unknown state: $x")
@@ -64,7 +66,7 @@ case class AttributeFullyAssigned[T <: Attribute[LogicalPlan, _]]()(implicit val
   override def hashCode(): Int = tag.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
-    case cc:AttributeFullyAssigned[_] => tag.equals(cc.tag)
-    case  _ => false
+    case cc: AttributeFullyAssigned[_] => tag.equals(cc.tag)
+    case _                             => false
   }
 }

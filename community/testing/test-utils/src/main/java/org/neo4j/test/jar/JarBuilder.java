@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.jar;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,37 +30,28 @@ import java.nio.file.Path;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * Utility to create jar files containing classes from the current classpath.
  */
-public class JarBuilder
-{
-    public URL createJarFor( Path f, Class<?>... classesToInclude ) throws IOException
-    {
-        try ( JarOutputStream jarOut = new JarOutputStream( Files.newOutputStream( f ) ) )
-        {
-            for ( Class<?> target : classesToInclude )
-            {
-                String fileName = target.getName().replace( '.', '/' ) + ".class";
-                jarOut.putNextEntry( new ZipEntry( fileName ) );
-                jarOut.write( classCompiledBytes( fileName ) );
+public class JarBuilder {
+    public URL createJarFor(Path f, Class<?>... classesToInclude) throws IOException {
+        try (JarOutputStream jarOut = new JarOutputStream(Files.newOutputStream(f))) {
+            for (Class<?> target : classesToInclude) {
+                String fileName = target.getName().replace('.', '/') + ".class";
+                jarOut.putNextEntry(new ZipEntry(fileName));
+                jarOut.write(classCompiledBytes(fileName));
                 jarOut.closeEntry();
             }
         }
         return f.toUri().toURL();
     }
 
-    private byte[] classCompiledBytes( String fileName ) throws IOException
-    {
-        try ( InputStream in = getClass().getClassLoader().getResourceAsStream( fileName ) )
-        {
-            requireNonNull( in );
+    private byte[] classCompiledBytes(String fileName) throws IOException {
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream(fileName)) {
+            requireNonNull(in);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            while ( in.available() > 0 )
-            {
-                out.write( in.read() );
+            while (in.available() > 0) {
+                out.write(in.read());
             }
 
             return out.toByteArray();

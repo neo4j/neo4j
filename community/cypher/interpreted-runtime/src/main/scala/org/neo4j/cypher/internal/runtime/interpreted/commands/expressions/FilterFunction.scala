@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.ListSupport
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
@@ -29,12 +29,13 @@ import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable.ArrayBuffer
 
-case class FilterFunction(collection: Expression,
-                          innerVariableName: String,
-                          innerVariableOffset: Int,
-                          predicate: Predicate)
-  extends NullInNullOutExpression(collection)
-  with ListSupport {
+case class FilterFunction(
+  collection: Expression,
+  innerVariableName: String,
+  innerVariableOffset: Int,
+  predicate: Predicate
+) extends NullInNullOutExpression(collection)
+    with ListSupport {
 
   override def compute(value: AnyValue, row: ReadableRow, state: QueryState): ListValue = {
     val list = makeTraversable(value)
@@ -47,14 +48,11 @@ case class FilterFunction(collection: Expression,
         filtered += value
       }
     }
-    VirtualValues.list(filtered.toArray:_*)
+    VirtualValues.list(filtered.toArray: _*)
   }
 
   def rewrite(f: Expression => Expression): Expression =
-    f(FilterFunction(collection.rewrite(f),
-      innerVariableName,
-      innerVariableOffset,
-      predicate.rewriteAsPredicate(f)))
+    f(FilterFunction(collection.rewrite(f), innerVariableName, innerVariableOffset, predicate.rewriteAsPredicate(f)))
 
   override def children: Seq[Expression] = Seq(collection, predicate)
 

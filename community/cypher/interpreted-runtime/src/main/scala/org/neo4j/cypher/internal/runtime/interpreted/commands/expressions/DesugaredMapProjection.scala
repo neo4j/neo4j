@@ -32,25 +32,27 @@ import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.Map
 
-case class DesugaredMapProjection(variable: VariableCommand, includeAllProps: Boolean, literalExpressions: Map[String, Expression])
-  extends Expression with GraphElementPropertyFunctions {
+case class DesugaredMapProjection(
+  variable: VariableCommand,
+  includeAllProps: Boolean,
+  literalExpressions: Map[String, Expression]
+) extends Expression with GraphElementPropertyFunctions {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val variableValue = variable(row, state)
 
     val mapOfProperties = variableValue match {
       case v if v eq Values.NO_VALUE => return Values.NO_VALUE
-      case IsMap(m) => if (includeAllProps) m(state) else VirtualValues.EMPTY_MAP
+      case IsMap(m)                  => if (includeAllProps) m(state) else VirtualValues.EMPTY_MAP
     }
 
-    //in case we get a lazy map we need to make sure it has been loaded
+    // in case we get a lazy map we need to make sure it has been loaded
     mapOfProperties match {
-      case m :LazyMap[_,_] => m.load()
-      case _ =>
+      case m: LazyMap[_, _] => m.load()
+      case _                =>
     }
 
-    if (literalExpressions.nonEmpty)
-    {
+    if (literalExpressions.nonEmpty) {
       val builder = new MapValueBuilder(literalExpressions.size)
       literalExpressions.foreach {
         case (k, e) => builder.add(k, e(row, state))

@@ -19,18 +19,14 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 
-@Target( {ElementType.TYPE, ElementType.METHOD} )
-@Retention( RetentionPolicy.RUNTIME )
-@ExtendWith( {DefaultFileSystemExtension.class, TestDirectorySupportExtension.class, Neo4jLayoutSupportExtension.class} )
-public @interface Neo4jLayoutExtension
-{
-}
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@ExtendWith({DefaultFileSystemExtension.class, TestDirectorySupportExtension.class, Neo4jLayoutSupportExtension.class})
+public @interface Neo4jLayoutExtension {}

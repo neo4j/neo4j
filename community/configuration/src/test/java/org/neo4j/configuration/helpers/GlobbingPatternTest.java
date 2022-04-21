@@ -19,70 +19,65 @@
  */
 package org.neo4j.configuration.helpers;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class GlobbingPatternTest
-{
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class GlobbingPatternTest {
     @Test
-    void invalidGlobbingPatternShouldThrow()
-    {
+    void invalidGlobbingPatternShouldThrow() {
         IllegalArgumentException exception =
-                assertThrows( IllegalArgumentException.class, () -> new GlobbingPattern( "invalid[globbing*pattern" ) );
-        assertThat( exception.getMessage() ).isEqualTo( "Invalid globbing pattern 'invalid[globbing*pattern'" );
+                assertThrows(IllegalArgumentException.class, () -> new GlobbingPattern("invalid[globbing*pattern"));
+        assertThat(exception.getMessage()).isEqualTo("Invalid globbing pattern 'invalid[globbing*pattern'");
     }
 
     @Test
-    void createShouldBeAbleToCreateMultiplePatterns()
-    {
-        List<GlobbingPattern> globbingPatterns = GlobbingPattern.create( "*pattern1", "pattern?2" );
+    void createShouldBeAbleToCreateMultiplePatterns() {
+        List<GlobbingPattern> globbingPatterns = GlobbingPattern.create("*pattern1", "pattern?2");
 
-        assertThat( globbingPatterns ).containsExactly( new GlobbingPattern( "*pattern1" ), new GlobbingPattern( "pattern?2" ) );
+        assertThat(globbingPatterns)
+                .containsExactly(new GlobbingPattern("*pattern1"), new GlobbingPattern("pattern?2"));
     }
 
     @Test
-    void patternMatchingWithGlobbingCharsShouldWork()
-    {
-        GlobbingPattern globbingPattern = new GlobbingPattern( "pattern*1?.test" );
-        GlobbingPattern starsFirstLast = new GlobbingPattern( "*pattern1.test*" );
-        GlobbingPattern questionMarks = new GlobbingPattern( "?pattern1.test?" );
+    void patternMatchingWithGlobbingCharsShouldWork() {
+        GlobbingPattern globbingPattern = new GlobbingPattern("pattern*1?.test");
+        GlobbingPattern starsFirstLast = new GlobbingPattern("*pattern1.test*");
+        GlobbingPattern questionMarks = new GlobbingPattern("?pattern1.test?");
 
-        assertTrue( globbingPattern.matches( "pattern11.test" ) );
-        assertTrue( globbingPattern.matches( "patternstuff11.test" ) );
-        assertFalse( globbingPattern.matches( "pattern1.test" ) );
-        assertFalse( globbingPattern.matches( "pattern111test" ) );
-        assertTrue( starsFirstLast.matches( "pattern1.test" ) );
-        assertTrue( starsFirstLast.matches( "apattern1.testa" ) );
-        assertTrue( questionMarks.matches( "apattern1.testa" ) );
-        assertFalse( questionMarks.matches( "aapattern1.testaa" ) );
-        assertFalse( questionMarks.matches( "pattern1.test" ) );
+        assertTrue(globbingPattern.matches("pattern11.test"));
+        assertTrue(globbingPattern.matches("patternstuff11.test"));
+        assertFalse(globbingPattern.matches("pattern1.test"));
+        assertFalse(globbingPattern.matches("pattern111test"));
+        assertTrue(starsFirstLast.matches("pattern1.test"));
+        assertTrue(starsFirstLast.matches("apattern1.testa"));
+        assertTrue(questionMarks.matches("apattern1.testa"));
+        assertFalse(questionMarks.matches("aapattern1.testaa"));
+        assertFalse(questionMarks.matches("pattern1.test"));
     }
 
     @Test
-    void patternMatchingWithoutGlobbingCharsShouldWork()
-    {
-        GlobbingPattern empty = new GlobbingPattern( "" );
-        GlobbingPattern space = new GlobbingPattern( " " );
-        GlobbingPattern noGlobbing = new GlobbingPattern( "full.name" );
+    void patternMatchingWithoutGlobbingCharsShouldWork() {
+        GlobbingPattern empty = new GlobbingPattern("");
+        GlobbingPattern space = new GlobbingPattern(" ");
+        GlobbingPattern noGlobbing = new GlobbingPattern("full.name");
 
-        assertTrue( empty.matches( "" ) );
-        assertFalse( empty.matches( " " ) );
-        assertFalse( empty.matches( "a" ) );
+        assertTrue(empty.matches(""));
+        assertFalse(empty.matches(" "));
+        assertFalse(empty.matches("a"));
 
-        assertFalse( space.matches( "" ) );
-        assertTrue( space.matches( " " ) );
-        assertFalse( space.matches( "a" ) );
+        assertFalse(space.matches(""));
+        assertTrue(space.matches(" "));
+        assertFalse(space.matches("a"));
 
-        assertTrue( noGlobbing.matches( "full.name" ) );
-        assertFalse( noGlobbing.matches( "" ) );
-        assertFalse( noGlobbing.matches( "fullAname" ) );
-        assertFalse( noGlobbing.matches( "Afull.name" ) );
-        assertFalse( noGlobbing.matches( "full.nameA" ) );
+        assertTrue(noGlobbing.matches("full.name"));
+        assertFalse(noGlobbing.matches(""));
+        assertFalse(noGlobbing.matches("fullAname"));
+        assertFalse(noGlobbing.matches("Afull.name"));
+        assertFalse(noGlobbing.matches("full.nameA"));
     }
 }

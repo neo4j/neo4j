@@ -25,32 +25,25 @@ package org.neo4j.values;
  * In a ternary comparison the result may not only be greater than, equal or smaller than but the
  * result can also be undefined.
  */
-public enum Comparison
-{
-    GREATER_THAN
-            {
-                @Override
-                public int value()
-                {
-                    return 1;
-                }
-            },
-    EQUAL
-            {
-                @Override
-                public int value()
-                {
-                    return 0;
-                }
-            },
-    SMALLER_THAN
-            {
-                @Override
-                public int value()
-                {
-                    return -1;
-                }
-            },
+public enum Comparison {
+    GREATER_THAN {
+        @Override
+        public int value() {
+            return 1;
+        }
+    },
+    EQUAL {
+        @Override
+        public int value() {
+            return 0;
+        }
+    },
+    SMALLER_THAN {
+        @Override
+        public int value() {
+            return -1;
+        }
+    },
     UNDEFINED;
 
     /**
@@ -64,9 +57,8 @@ public enum Comparison
      * if equal.
      * @throws IllegalStateException if the result is undefined.
      */
-    public int value()
-    {
-        throw new IllegalStateException( "This value is undefined and can't handle primitive comparisons" );
+    public int value() {
+        throw new IllegalStateException("This value is undefined and can't handle primitive comparisons");
     }
 
     /**
@@ -76,18 +68,12 @@ public enum Comparison
      * @return {@link Comparison#GREATER_THAN} than if positive, {@link Comparison#SMALLER_THAN} if negative or
      * {@link Comparison#EQUAL} if zero
      */
-    public static Comparison from( int i )
-    {
-        if ( i > 0 )
-        {
+    public static Comparison from(int i) {
+        if (i > 0) {
             return GREATER_THAN;
-        }
-        else if ( i < 0 )
-        {
+        } else if (i < 0) {
             return SMALLER_THAN;
-        }
-        else
-        {
+        } else {
             return EQUAL;
         }
     }

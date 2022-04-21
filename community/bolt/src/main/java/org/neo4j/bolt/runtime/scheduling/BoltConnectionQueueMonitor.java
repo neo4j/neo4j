@@ -20,15 +20,12 @@
 package org.neo4j.bolt.runtime.scheduling;
 
 import java.util.Collection;
-
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Job;
 
-public interface BoltConnectionQueueMonitor
-{
+public interface BoltConnectionQueueMonitor {
 
-    void enqueued( BoltConnection to, Job job );
+    void enqueued(BoltConnection to, Job job);
 
-    void drained( BoltConnection from, Collection<Job> batch );
-
+    void drained(BoltConnection from, Collection<Job> batch);
 }

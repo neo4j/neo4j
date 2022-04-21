@@ -19,64 +19,60 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.server.web.JettyThreadCalculator.MAX_THREADS;
 
-class JettyThreadCalculatorTest
-{
+import org.junit.jupiter.api.Test;
+
+class JettyThreadCalculatorTest {
     @Test
-    void shouldHaveCorrectAmountOfThreads()
-    {
-        JettyThreadCalculator jtc = new JettyThreadCalculator( 1 );
-        assertEquals( 1, jtc.getAcceptors(), "Wrong acceptor value for 1 core" );
-        assertEquals( 1, jtc.getSelectors(), "Wrong selector value for 1 core" );
-        assertEquals( 12, jtc.getMaxThreads(), "Wrong maxThreads value for 1 core" );
-        assertEquals( 6, jtc.getMinThreads(), "Wrong minThreads value for 1 core" );
-        assertEquals( 480000, jtc.getMaxCapacity(), "Wrong capacity value for 1 core" );
+    void shouldHaveCorrectAmountOfThreads() {
+        JettyThreadCalculator jtc = new JettyThreadCalculator(1);
+        assertEquals(1, jtc.getAcceptors(), "Wrong acceptor value for 1 core");
+        assertEquals(1, jtc.getSelectors(), "Wrong selector value for 1 core");
+        assertEquals(12, jtc.getMaxThreads(), "Wrong maxThreads value for 1 core");
+        assertEquals(6, jtc.getMinThreads(), "Wrong minThreads value for 1 core");
+        assertEquals(480000, jtc.getMaxCapacity(), "Wrong capacity value for 1 core");
 
-        jtc = new JettyThreadCalculator( 4 );
-        assertEquals( 1, jtc.getAcceptors(), "Wrong acceptor value for 4 cores" );
-        assertEquals( 2, jtc.getSelectors(), "Wrong selector value for 4 cores" );
-        assertEquals( 14, jtc.getMaxThreads(), "Wrong maxThreads value for 4 cores" );
-        assertEquals( 8, jtc.getMinThreads(), "Wrong minThreads value for 4 cores" );
-        assertEquals( 480000, jtc.getMaxCapacity(), "Wrong capacity value for 4 cores" );
+        jtc = new JettyThreadCalculator(4);
+        assertEquals(1, jtc.getAcceptors(), "Wrong acceptor value for 4 cores");
+        assertEquals(2, jtc.getSelectors(), "Wrong selector value for 4 cores");
+        assertEquals(14, jtc.getMaxThreads(), "Wrong maxThreads value for 4 cores");
+        assertEquals(8, jtc.getMinThreads(), "Wrong minThreads value for 4 cores");
+        assertEquals(480000, jtc.getMaxCapacity(), "Wrong capacity value for 4 cores");
 
-        jtc = new JettyThreadCalculator( 16 );
-        assertEquals( 2, jtc.getAcceptors(), "Wrong acceptor value for 16 cores" );
-        assertEquals( 3, jtc.getSelectors(), "Wrong selector value for 16 cores" );
-        assertEquals( 21, jtc.getMaxThreads(), "Wrong maxThreads value for 16 cores" );
-        assertEquals( 14, jtc.getMinThreads(), "Wrong minThreads value for 16 cores" );
-        assertEquals( 660000, jtc.getMaxCapacity(), "Wrong capacity value for 16 cores" );
+        jtc = new JettyThreadCalculator(16);
+        assertEquals(2, jtc.getAcceptors(), "Wrong acceptor value for 16 cores");
+        assertEquals(3, jtc.getSelectors(), "Wrong selector value for 16 cores");
+        assertEquals(21, jtc.getMaxThreads(), "Wrong maxThreads value for 16 cores");
+        assertEquals(14, jtc.getMinThreads(), "Wrong minThreads value for 16 cores");
+        assertEquals(660000, jtc.getMaxCapacity(), "Wrong capacity value for 16 cores");
 
-        jtc = new JettyThreadCalculator( 64 );
-        assertEquals( 4, jtc.getAcceptors(), "Wrong acceptor value for 64 cores" );
-        assertEquals( 8, jtc.getSelectors(), "Wrong selector value for 64 cores" );
-        assertEquals( 76, jtc.getMaxThreads(), "Wrong maxThreads value for 64 cores" );
-        assertEquals( 36, jtc.getMinThreads(), "Wrong minThreads value for 64 cores" );
-        assertEquals( 3120000, jtc.getMaxCapacity(), "Wrong capacity value for 64 cores" );
+        jtc = new JettyThreadCalculator(64);
+        assertEquals(4, jtc.getAcceptors(), "Wrong acceptor value for 64 cores");
+        assertEquals(8, jtc.getSelectors(), "Wrong selector value for 64 cores");
+        assertEquals(76, jtc.getMaxThreads(), "Wrong maxThreads value for 64 cores");
+        assertEquals(36, jtc.getMinThreads(), "Wrong minThreads value for 64 cores");
+        assertEquals(3120000, jtc.getMaxCapacity(), "Wrong capacity value for 64 cores");
 
-        jtc = new JettyThreadCalculator( MAX_THREADS );
-        assertEquals( 2982, jtc.getAcceptors(), "Wrong acceptor value for max cores" );
-        assertEquals( 5965, jtc.getSelectors(), "Wrong selector value for max cores" );
-        assertEquals( 53685, jtc.getMaxThreads(), "Wrong maxThreads value for max cores" );
-        assertEquals( 26841, jtc.getMinThreads(), "Wrong minThreads value for max cores" );
-        assertEquals( 2147460000, jtc.getMaxCapacity(), "Wrong capacity value for max cores" );
+        jtc = new JettyThreadCalculator(MAX_THREADS);
+        assertEquals(2982, jtc.getAcceptors(), "Wrong acceptor value for max cores");
+        assertEquals(5965, jtc.getSelectors(), "Wrong selector value for max cores");
+        assertEquals(53685, jtc.getMaxThreads(), "Wrong maxThreads value for max cores");
+        assertEquals(26841, jtc.getMinThreads(), "Wrong minThreads value for max cores");
+        assertEquals(2147460000, jtc.getMaxCapacity(), "Wrong capacity value for max cores");
     }
 
     @Test
-    void shouldNotAllowLessThanOneThread()
-    {
-        var exception = assertThrows( IllegalArgumentException.class, () -> new JettyThreadCalculator( 0 ) );
-        assertEquals( "Max threads can't be less than 1", exception.getMessage() );
+    void shouldNotAllowLessThanOneThread() {
+        var exception = assertThrows(IllegalArgumentException.class, () -> new JettyThreadCalculator(0));
+        assertEquals("Max threads can't be less than 1", exception.getMessage());
     }
 
     @Test
-    void shouldNotAllowMoreThanMaxValue()
-    {
-        var exception = assertThrows( IllegalArgumentException.class, () -> new JettyThreadCalculator( MAX_THREADS + 1 ) );
-        assertEquals( String.format( "Max threads can't exceed %d", MAX_THREADS ), exception.getMessage() );
+    void shouldNotAllowMoreThanMaxValue() {
+        var exception = assertThrows(IllegalArgumentException.class, () -> new JettyThreadCalculator(MAX_THREADS + 1));
+        assertEquals(String.format("Max threads can't exceed %d", MAX_THREADS), exception.getMessage());
     }
 }

@@ -20,10 +20,11 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
 case object noDuplicatesInReturnItems extends ValidatingCondition {
+
   def apply(that: Any): Seq[String] = {
     val returnItems = collectNodesOfType[ReturnItems]().apply(that)
     returnItems.collect {
-      case ris@ReturnItems(_, items, _) if items.toSet.size != items.size =>
+      case ris @ ReturnItems(_, items, _) if items.toSet.size != items.size =>
         s"ReturnItems at ${ris.position} contain duplicate return item: $ris"
     }
   }

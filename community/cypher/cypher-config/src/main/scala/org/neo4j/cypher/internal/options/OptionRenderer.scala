@@ -24,7 +24,6 @@ import magnolia.Magnolia
 
 import scala.language.experimental.macros
 
-
 /**
  * Renders options as string for inclusion in rendered queries
  */
@@ -47,10 +46,11 @@ object OptionRenderer {
    * that combines smaller rendered strings into a space-separated string
    */
   def combine[T](caseClass: CaseClass[OptionRenderer, T]): OptionRenderer[T] =
-    (value: T) => caseClass.parameters
-                           .map(p => p.typeclass.render(p.dereference(value)))
-                           .filterNot(_.isBlank)
-                           .mkString(" ")
+    (value: T) =>
+      caseClass.parameters
+        .map(p => p.typeclass.render(p.dereference(value)))
+        .filterNot(_.isBlank)
+        .mkString(" ")
 
   def derive[T]: OptionRenderer[T] = macro Magnolia.gen[T]
 }

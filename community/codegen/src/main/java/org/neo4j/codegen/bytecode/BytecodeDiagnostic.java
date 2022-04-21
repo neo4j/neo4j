@@ -22,66 +22,55 @@ package org.neo4j.codegen.bytecode;
 import java.util.Locale;
 import javax.tools.Diagnostic;
 
-class BytecodeDiagnostic implements Diagnostic<Void>
-{
+class BytecodeDiagnostic implements Diagnostic<Void> {
     private final String message;
 
-    BytecodeDiagnostic( String message )
-    {
+    BytecodeDiagnostic(String message) {
         this.message = message;
     }
 
     @Override
-    public String getMessage( Locale locale )
-    {
+    public String getMessage(Locale locale) {
         return message;
     }
 
     @Override
-    public Kind getKind()
-    {
+    public Kind getKind() {
         return Kind.ERROR;
     }
 
     @Override
-    public Void getSource()
-    {
+    public Void getSource() {
         return null;
     }
 
     @Override
-    public long getPosition()
-    {
+    public long getPosition() {
         return NOPOS;
     }
 
     @Override
-    public long getStartPosition()
-    {
+    public long getStartPosition() {
         return NOPOS;
     }
 
     @Override
-    public long getEndPosition()
-    {
+    public long getEndPosition() {
         return NOPOS;
     }
 
     @Override
-    public long getLineNumber()
-    {
+    public long getLineNumber() {
         return NOPOS;
     }
 
     @Override
-    public long getColumnNumber()
-    {
+    public long getColumnNumber() {
         return NOPOS;
     }
 
     @Override
-    public String getCode()
-    {
+    public String getCode() {
         return null;
     }
 }

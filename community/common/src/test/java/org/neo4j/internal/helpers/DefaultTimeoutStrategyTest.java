@@ -19,31 +19,29 @@
  */
 package org.neo4j.internal.helpers;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class DefaultTimeoutStrategyTest
-{
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+
+class DefaultTimeoutStrategyTest {
     @Test
-    void shouldFailIfPassedFunctionIsNotIncreasing()
-    {
-        assertThrows( IllegalArgumentException.class, () -> new DefaultTimeoutStrategy( 0, 100, TimeUnit.MILLISECONDS, i -> i - 1 ) );
+    void shouldFailIfPassedFunctionIsNotIncreasing() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new DefaultTimeoutStrategy(0, 100, TimeUnit.MILLISECONDS, i -> i - 1));
     }
 
     @Test
-    void shouldGetAndIncrementCorrectly()
-    {
-        final var strategy = new DefaultTimeoutStrategy( 0, 100, TimeUnit.MILLISECONDS, i -> i + 1 );
+    void shouldGetAndIncrementCorrectly() {
+        final var strategy = new DefaultTimeoutStrategy(0, 100, TimeUnit.MILLISECONDS, i -> i + 1);
         final var timeout = strategy.newTimeout();
-        assertEquals( 0, timeout.getAndIncrement() );
-        assertEquals( 1, timeout.getAndIncrement() );
-        assertEquals( 2, timeout.getMillis() );
+        assertEquals(0, timeout.getAndIncrement());
+        assertEquals(1, timeout.getAndIncrement());
+        assertEquals(2, timeout.getMillis());
 
         final var timeout1 = strategy.newTimeout();
-        assertEquals( 0, timeout1.getMillis() );
+        assertEquals(0, timeout1.getMillis());
     }
 }

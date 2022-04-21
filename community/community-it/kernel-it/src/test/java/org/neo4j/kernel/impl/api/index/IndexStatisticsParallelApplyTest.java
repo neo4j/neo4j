@@ -23,13 +23,11 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 
-class IndexStatisticsParallelApplyTest extends IndexStatisticsTest
-{
+class IndexStatisticsParallelApplyTest extends IndexStatisticsTest {
     @ExtensionCallback
     @Override
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        super.configure( builder );
-        builder.setConfig( GraphDatabaseInternalSettings.parallel_index_updates_apply, true );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        super.configure(builder);
+        builder.setConfig(GraphDatabaseInternalSettings.parallel_index_updates_apply, true);
     }
 }

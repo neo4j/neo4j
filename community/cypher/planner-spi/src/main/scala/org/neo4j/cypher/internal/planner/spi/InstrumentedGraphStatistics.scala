@@ -26,12 +26,18 @@ import org.neo4j.cypher.internal.util.Selectivity
 
 import java.lang.Math.abs
 import java.lang.Math.max
+
 import scala.collection.mutable
 
 sealed trait StatisticsKey
 case class NodesWithLabelCardinality(labelId: Option[LabelId]) extends StatisticsKey
 case object NodesAllCardinality extends StatisticsKey
-case class CardinalityByLabelsAndRelationshipType(lhs: Option[LabelId], relType: Option[RelTypeId], rhs: Option[LabelId]) extends StatisticsKey
+
+case class CardinalityByLabelsAndRelationshipType(
+  lhs: Option[LabelId],
+  relType: Option[RelTypeId],
+  rhs: Option[LabelId]
+) extends StatisticsKey
 case class IndexSelectivity(index: IndexDescriptor) extends StatisticsKey
 case class IndexPropertyExistsSelectivity(index: IndexDescriptor) extends StatisticsKey
 
@@ -39,10 +45,10 @@ class MutableGraphStatisticsSnapshot(val map: mutable.Map[StatisticsKey, Double]
   def freeze: GraphStatisticsSnapshot = GraphStatisticsSnapshot(map.toMap)
 }
 
-
-case class DivergenceState(key:StatisticsKey, divergence: Double, before: Double, after: Double)
+case class DivergenceState(key: StatisticsKey, divergence: Double, before: Double, after: Double)
 
 case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map.empty) {
+
   def recompute(statistics: GraphStatistics): GraphStatisticsSnapshot = {
     val snapshot = new MutableGraphStatisticsSnapshot()
     val instrumented = InstrumentedGraphStatistics(statistics, snapshot)
@@ -63,7 +69,7 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
 
   def diverges(snapshot: GraphStatisticsSnapshot): DivergenceState = {
     assert(statsValues.keySet == snapshot.statsValues.keySet)
-    //find the maximum relative difference (|e1 - e2| / max(e1, e2))
+    // find the maximum relative difference (|e1 - e2| / max(e1, e2))
     val (divergedStats, divergedStatKey, before, after) = (statsValues map {
       case (k, e1) =>
         val e2 = snapshot.statsValues(k)
@@ -74,14 +80,20 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
   }
 }
 
-case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: MutableGraphStatisticsSnapshot) extends GraphStatistics {
+case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: MutableGraphStatisticsSnapshot)
+    extends GraphStatistics {
+
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = {
     val cardinality = inner.nodesWithLabelCardinality(labelId)
     snapshot.map.getOrElseUpdate(NodesWithLabelCardinality(labelId), cardinality.amount)
     cardinality
   }
 
-  def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+  def patternStepCardinality(
+    fromLabel: Option[LabelId],
+    relTypeId: Option[RelTypeId],
+    toLabel: Option[LabelId]
+  ): Cardinality =
     snapshot.map.getOrElseUpdate(
       CardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel),
       inner.patternStepCardinality(fromLabel, relTypeId, toLabel).amount
@@ -99,5 +111,6 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
     selectivity
   }
 
-  override def nodesAllCardinality(): Cardinality = snapshot.map.getOrElseUpdate(NodesAllCardinality, inner.nodesAllCardinality().amount)
+  override def nodesAllCardinality(): Cardinality =
+    snapshot.map.getOrElseUpdate(NodesAllCardinality, inner.nodesAllCardinality().amount)
 }

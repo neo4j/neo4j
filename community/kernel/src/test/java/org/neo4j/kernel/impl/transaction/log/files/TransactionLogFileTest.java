@@ -19,12 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,7 +48,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.nativeimpl.ErrorTranslator;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
@@ -61,8 +75,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -70,147 +84,134 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.Futures;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-
 @Neo4jLayoutExtension
-@ExtendWith( LifeExtension.class )
-class TransactionLogFileTest
-{
+@ExtendWith(LifeExtension.class)
+class TransactionLogFileTest {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private LifeSupport life;
 
     private CapturingChannelFileSystem wrappingFileSystem;
 
-    private final long rotationThreshold = ByteUnit.mebiBytes( 1 );
-    private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 1L );
-    private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
+    private final long rotationThreshold = ByteUnit.mebiBytes(1);
+    private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
+    private final TransactionIdStore transactionIdStore =
+            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0);
 
     @BeforeEach
-    void setUp()
-    {
-        wrappingFileSystem = new CapturingChannelFileSystem( fileSystem );
+    void setUp() {
+        wrappingFileSystem = new CapturingChannelFileSystem(fileSystem);
     }
 
     @Test
-    @EnabledOnOs( OS.LINUX )
-    void truncateCurrentLogFile() throws IOException
-    {
+    @EnabledOnOs(OS.LINUX)
+    void truncateCurrentLogFile() throws IOException {
         LogFiles logFiles = buildLogFiles();
-        life.add( logFiles );
+        life.add(logFiles);
         life.start();
 
         LogFile logFile = logFiles.getLogFile();
-        long sizeBefore = fileSystem.getFileSize( logFile.getLogFileForVersion( logFile.getCurrentLogVersion() ) );
+        long sizeBefore = fileSystem.getFileSize(logFile.getLogFileForVersion(logFile.getCurrentLogVersion()));
 
         logFile.truncate();
 
-        long sizeAfter = fileSystem.getFileSize( logFile.getLogFileForVersion( logFile.getCurrentLogVersion() ) );
+        long sizeAfter = fileSystem.getFileSize(logFile.getLogFileForVersion(logFile.getCurrentLogVersion()));
 
-        assertThat( sizeBefore ).describedAs( "Truncation should truncate any preallocated space." ).isGreaterThan( sizeAfter );
+        assertThat(sizeBefore)
+                .describedAs("Truncation should truncate any preallocated space.")
+                .isGreaterThan(sizeAfter);
     }
 
     @Test
-    void skipLogFileWithoutHeader() throws IOException
-    {
+    void skipLogFileWithoutHeader() throws IOException {
         LogFiles logFiles = buildLogFiles();
-        life.add( logFiles );
+        life.add(logFiles);
         life.start();
 
         // simulate new file without header presence
         logVersionRepository.incrementAndGetVersion();
-        fileSystem.write( logFiles.getLogFile().getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
-        transactionIdStore.transactionCommitted( 5L, 5, 5L );
+        fileSystem
+                .write(logFiles.getLogFile().getLogFileForVersion(logVersionRepository.getCurrentLogVersion()))
+                .close();
+        transactionIdStore.transactionCommitted(5L, 5, 5L);
 
-        PhysicalLogicalTransactionStore.LogVersionLocator versionLocator = new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
-        logFiles.getLogFile().accept( versionLocator );
+        PhysicalLogicalTransactionStore.LogVersionLocator versionLocator =
+                new PhysicalLogicalTransactionStore.LogVersionLocator(4L);
+        logFiles.getLogFile().accept(versionLocator);
 
         LogPosition logPosition = versionLocator.getLogPosition();
-        assertEquals( 1, logPosition.getLogVersion() );
+        assertEquals(1, logPosition.getLogVersion());
     }
 
     @Test
-    void preAllocateOnStartAndEvictOnShutdownNewLogFile() throws IOException
-    {
+    void preAllocateOnStartAndEvictOnShutdownNewLogFile() throws IOException {
         final CapturingNativeAccess capturingNativeAccess = new CapturingNativeAccess();
-        LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( LegacyStoreId.UNKNOWN )
-                .withNativeAccess( capturingNativeAccess )
+        LogFilesBuilder.builder(databaseLayout, fileSystem)
+                .withTransactionIdStore(transactionIdStore)
+                .withLogVersionRepository(logVersionRepository)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withNativeAccess(capturingNativeAccess)
                 .build();
 
-        startStop( capturingNativeAccess, life );
+        startStop(capturingNativeAccess, life);
 
-        assertEquals( 2, capturingNativeAccess.getPreallocateCounter() );
-        assertEquals( 5, capturingNativeAccess.getEvictionCounter() );
-        assertEquals( 3, capturingNativeAccess.getAdviseCounter() );
-        assertEquals( 3, capturingNativeAccess.getKeepCounter() );
+        assertEquals(2, capturingNativeAccess.getPreallocateCounter());
+        assertEquals(5, capturingNativeAccess.getEvictionCounter());
+        assertEquals(3, capturingNativeAccess.getAdviseCounter());
+        assertEquals(3, capturingNativeAccess.getKeepCounter());
     }
 
     @Test
-    void adviseOnStartAndEvictOnShutdownExistingLogFile() throws IOException
-    {
+    void adviseOnStartAndEvictOnShutdownExistingLogFile() throws IOException {
         var capturingNativeAccess = new CapturingNativeAccess();
 
-        startStop( capturingNativeAccess, life );
+        startStop(capturingNativeAccess, life);
         capturingNativeAccess.reset();
 
-        startStop( capturingNativeAccess, new LifeSupport() );
+        startStop(capturingNativeAccess, new LifeSupport());
 
-        assertEquals( 0, capturingNativeAccess.getPreallocateCounter() );
-        assertEquals( 5, capturingNativeAccess.getEvictionCounter() );
-        assertEquals( 5, capturingNativeAccess.getAdviseCounter() );
-        assertEquals( 5, capturingNativeAccess.getKeepCounter() );
+        assertEquals(0, capturingNativeAccess.getPreallocateCounter());
+        assertEquals(5, capturingNativeAccess.getEvictionCounter());
+        assertEquals(5, capturingNativeAccess.getAdviseCounter());
+        assertEquals(5, capturingNativeAccess.getKeepCounter());
     }
 
     @Test
-    void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception
-    {
+    void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception {
         // GIVEN
         LogFiles logFiles = buildLogFiles();
 
         // WHEN
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
         life.shutdown();
 
         // THEN
-        Path file =  LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
-                .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .build().getLogFile().getLogFileForVersion( 1L );
-        LogHeader header = readLogHeader( fileSystem, file, INSTANCE );
-        assertEquals( 1L, header.getLogVersion() );
-        assertEquals( 2L, header.getLastCommittedTxId() );
+        Path file = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .build()
+                .getLogFile()
+                .getLogFileForVersion(1L);
+        LogHeader header = readLogHeader(fileSystem, file, INSTANCE);
+        assertEquals(1L, header.getLogVersion());
+        assertEquals(2L, header.getLastCommittedTxId());
     }
 
     @Test
-    void shouldWriteSomeDataIntoTheLog() throws Exception
-    {
+    void shouldWriteSomeDataIntoTheLog() throws Exception {
         // GIVEN
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
         // WHEN
         LogFile logFile = logFiles.getLogFile();
@@ -219,25 +220,23 @@ class TransactionLogFileTest
         LogPosition currentPosition = transactionLogWriter.getCurrentPosition();
         int intValue = 45;
         long longValue = 4854587;
-        channel.putInt( intValue );
-        channel.putLong( longValue );
+        channel.putInt(intValue);
+        channel.putLong(longValue);
         logFile.flush();
 
         // THEN
-        try ( ReadableChannel reader = logFile.getReader( currentPosition ) )
-        {
-            assertEquals( intValue, reader.getInt() );
-            assertEquals( longValue, reader.getLong() );
+        try (ReadableChannel reader = logFile.getReader(currentPosition)) {
+            assertEquals(intValue, reader.getInt());
+            assertEquals(longValue, reader.getLong());
         }
     }
 
     @Test
-    void shouldReadOlderLogs() throws Exception
-    {
+    void shouldReadOlderLogs() throws Exception {
         // GIVEN
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
         // WHEN
         LogFile logFile = logFiles.getLogFile();
@@ -246,139 +245,132 @@ class TransactionLogFileTest
         LogPosition position1 = logWriter.getCurrentPosition();
         int intValue = 45;
         long longValue = 4854587;
-        byte[] someBytes = someBytes( 40 );
-        writer.putInt( intValue );
-        writer.putLong( longValue );
-        writer.put( someBytes, someBytes.length );
+        byte[] someBytes = someBytes(40);
+        writer.putInt(intValue);
+        writer.putLong(longValue);
+        writer.put(someBytes, someBytes.length);
         logFile.flush();
         LogPosition position2 = logWriter.getCurrentPosition();
         long longValue2 = 123456789L;
-        writer.putLong( longValue2 );
-        writer.put( someBytes, someBytes.length );
+        writer.putLong(longValue2);
+        writer.put(someBytes, someBytes.length);
         logFile.flush();
 
         // THEN
-        try ( ReadableChannel reader = logFile.getReader( position1 ) )
-        {
-            assertEquals( intValue, reader.getInt() );
-            assertEquals( longValue, reader.getLong() );
-            assertArrayEquals( someBytes, readBytes( reader, 40 ) );
+        try (ReadableChannel reader = logFile.getReader(position1)) {
+            assertEquals(intValue, reader.getInt());
+            assertEquals(longValue, reader.getLong());
+            assertArrayEquals(someBytes, readBytes(reader, 40));
         }
-        try ( ReadableChannel reader = logFile.getReader( position2 ) )
-        {
-            assertEquals( longValue2, reader.getLong() );
-            assertArrayEquals( someBytes, readBytes( reader, 40 ) );
+        try (ReadableChannel reader = logFile.getReader(position2)) {
+            assertEquals(longValue2, reader.getLong());
+            assertArrayEquals(someBytes, readBytes(reader, 40));
         }
     }
 
     @Test
-    void shouldVisitLogFile() throws Exception
-    {
+    void shouldVisitLogFile() throws Exception {
         // GIVEN
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
         LogFile logFile = logFiles.getLogFile();
         var transactionLogWriter = logFile.getTransactionLogWriter();
         var writer = transactionLogWriter.getChannel();
         LogPosition position = transactionLogWriter.getCurrentPosition();
-        for ( int i = 0; i < 5; i++ )
-        {
-            writer.put( (byte) i );
+        for (int i = 0; i < 5; i++) {
+            writer.put((byte) i);
         }
         logFile.flush();
 
         // WHEN/THEN
         final AtomicBoolean called = new AtomicBoolean();
-        logFile.accept( channel ->
-        {
-            for ( int i = 0; i < 5; i++ )
-            {
-                assertEquals( (byte)i, channel.get() );
-            }
-            called.set( true );
-            return true;
-        }, position );
-        assertTrue( called.get() );
+        logFile.accept(
+                channel -> {
+                    for (int i = 0; i < 5; i++) {
+                        assertEquals((byte) i, channel.get());
+                    }
+                    called.set(true);
+                    return true;
+                },
+                position);
+        assertTrue(called.get());
     }
 
     @Test
-    void shouldCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception
-    {
+    void shouldCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception {
         // GIVEN a file which returns 1/2 log header size worth of bytes
-        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withCommandReaderFactory( new TestCommandReaderFactory() )
+        FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+                .withTransactionIdStore(transactionIdStore)
+                .withLogVersionRepository(logVersionRepository)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
                 .build();
         int logVersion = 0;
-        Path logFile = logFiles.getLogFile().getLogFileForVersion( logVersion );
-        StoreChannel channel = mock( StoreChannel.class );
-        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
-        when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.read( eq( logFile ) ) ).thenReturn( channel );
+        Path logFile = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        StoreChannel channel = mock(StoreChannel.class);
+        when(channel.read(any(ByteBuffer.class))).thenReturn(CURRENT_FORMAT_LOG_HEADER_SIZE / 2);
+        when(fs.fileExists(logFile)).thenReturn(true);
+        when(fs.read(eq(logFile))).thenReturn(channel);
 
         // WHEN
-        assertThrows( IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion( logVersion ) );
-        verify( channel ).close();
+        assertThrows(
+                IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion(logVersion));
+        verify(channel).close();
     }
 
     @Test
-    void shouldSuppressFailureToCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception
-    {
+    void shouldSuppressFailureToCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception {
         // GIVEN a file which returns 1/2 log header size worth of bytes
-        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withCommandReaderFactory( new TestCommandReaderFactory() )
+        FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+                .withTransactionIdStore(transactionIdStore)
+                .withLogVersionRepository(logVersionRepository)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
                 .build();
         int logVersion = 0;
-        Path logFile = logFiles.getLogFile().getLogFileForVersion( logVersion );
-        StoreChannel channel = mock( StoreChannel.class );
-        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
-        when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.read( eq( logFile ) ) ).thenReturn( channel );
-        doThrow( IOException.class ).when( channel ).close();
+        Path logFile = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        StoreChannel channel = mock(StoreChannel.class);
+        when(channel.read(any(ByteBuffer.class))).thenReturn(CURRENT_FORMAT_LOG_HEADER_SIZE / 2);
+        when(fs.fileExists(logFile)).thenReturn(true);
+        when(fs.read(eq(logFile))).thenReturn(channel);
+        doThrow(IOException.class).when(channel).close();
 
         // WHEN
-        IncompleteLogHeaderException exception =
-                assertThrows( IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion( logVersion ) );
-        verify( channel ).close();
-        assertEquals( 1, exception.getSuppressed().length );
-        assertTrue( exception.getSuppressed()[0] instanceof IOException );
+        IncompleteLogHeaderException exception = assertThrows(
+                IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion(logVersion));
+        verify(channel).close();
+        assertEquals(1, exception.getSuppressed().length);
+        assertTrue(exception.getSuppressed()[0] instanceof IOException);
     }
 
     @Test
-    void closeChannelThrowExceptionOnAttemptToAppendTransactionLogRecords() throws IOException
-    {
+    void closeChannelThrowExceptionOnAttemptToAppendTransactionLogRecords() throws IOException {
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
         LogFile logFile = logFiles.getLogFile();
         var channel = logFile.getTransactionLogWriter().getChannel();
 
         life.shutdown();
 
-        assertThrows( Throwable.class, () -> channel.put( (byte) 7 ) );
-        assertThrows( Throwable.class, () -> channel.putInt( 7 ) );
-        assertThrows( Throwable.class, () -> channel.putLong( 7 ) );
-        assertThrows( Throwable.class, () -> channel.putDouble( 7 ) );
-        assertThrows( Throwable.class, () -> channel.putFloat( 7 ) );
-        assertThrows( Throwable.class, () -> channel.putShort( (short) 7 ) );
-        assertThrows( Throwable.class, () -> channel.put( new byte[]{1, 2, 3}, 3 ) );
-        assertThrows( IllegalStateException.class, logFile::flush );
+        assertThrows(Throwable.class, () -> channel.put((byte) 7));
+        assertThrows(Throwable.class, () -> channel.putInt(7));
+        assertThrows(Throwable.class, () -> channel.putLong(7));
+        assertThrows(Throwable.class, () -> channel.putDouble(7));
+        assertThrows(Throwable.class, () -> channel.putFloat(7));
+        assertThrows(Throwable.class, () -> channel.putShort((short) 7));
+        assertThrows(Throwable.class, () -> channel.put(new byte[] {1, 2, 3}, 3));
+        assertThrows(IllegalStateException.class, logFile::flush);
     }
 
     @Test
-    void shouldForceLogChannel() throws Throwable
-    {
+    void shouldForceLogChannel() throws Throwable {
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
         LogFile logFile = logFiles.getLogFile();
         var capturingChannel = wrappingFileSystem.getCapturingChannel();
@@ -386,181 +378,181 @@ class TransactionLogFileTest
         var flushesBefore = capturingChannel.getFlushCounter().get();
         var writesBefore = capturingChannel.getWriteAllCounter().get();
 
-        logFile.locklessForce( LogAppendEvent.NULL );
+        logFile.locklessForce(LogAppendEvent.NULL);
 
-        assertEquals( 1, capturingChannel.getFlushCounter().get() - flushesBefore );
-        assertEquals( 1, capturingChannel.getWriteAllCounter().get() - writesBefore );
+        assertEquals(1, capturingChannel.getFlushCounter().get() - flushesBefore);
+        assertEquals(1, capturingChannel.getWriteAllCounter().get() - writesBefore);
     }
 
     @Test
-    void combineLogFilesFromMultipleLocationsNonOverlappingFiles() throws IOException
-    {
+    void combineLogFilesFromMultipleLocationsNonOverlappingFiles() throws IOException {
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
-        Path additionalSource = testDirectory.directory( "another" );
-        createFile( additionalSource, 2 );
-        createFile( additionalSource, 3 );
-        createFile( additionalSource, 4 );
+        Path additionalSource = testDirectory.directory("another");
+        createFile(additionalSource, 2);
+        createFile(additionalSource, 3);
+        createFile(additionalSource, 4);
 
         LogFile logFile = logFiles.getLogFile();
-        assertEquals( 1, logFile.getHighestLogVersion() );
+        assertEquals(1, logFile.getHighestLogVersion());
 
-        logFile.combine( additionalSource );
-        assertEquals( 4, logFile.getHighestLogVersion() );
-        assertThat( Arrays.stream( logFile.getMatchedFiles() ).map( path -> path.getFileName().toString() ) ).contains( "neostore.transaction.db.1",
-                "neostore.transaction.db.2", "neostore.transaction.db.3", "neostore.transaction.db.4" );
-
+        logFile.combine(additionalSource);
+        assertEquals(4, logFile.getHighestLogVersion());
+        assertThat(Arrays.stream(logFile.getMatchedFiles())
+                        .map(path -> path.getFileName().toString()))
+                .contains(
+                        "neostore.transaction.db.1",
+                        "neostore.transaction.db.2",
+                        "neostore.transaction.db.3",
+                        "neostore.transaction.db.4");
     }
 
     @Test
-    void combineLogFilesFromMultipleLocationsOverlappingFiles() throws IOException
-    {
+    void combineLogFilesFromMultipleLocationsOverlappingFiles() throws IOException {
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
-        Path additionalSource = testDirectory.directory( "another" );
-        createFile( additionalSource, 0 );
-        createFile( additionalSource, 1 );
-        createFile( additionalSource, 2 );
+        Path additionalSource = testDirectory.directory("another");
+        createFile(additionalSource, 0);
+        createFile(additionalSource, 1);
+        createFile(additionalSource, 2);
 
         LogFile logFile = logFiles.getLogFile();
-        assertEquals( 1, logFile.getHighestLogVersion() );
+        assertEquals(1, logFile.getHighestLogVersion());
 
-        logFile.combine( additionalSource );
-        assertEquals( 4, logFile.getHighestLogVersion() );
-        assertThat( Arrays.stream( logFile.getMatchedFiles() ).map( path -> path.getFileName().toString() ) ).contains( "neostore.transaction.db.1",
-                "neostore.transaction.db.2", "neostore.transaction.db.3", "neostore.transaction.db.4" );
+        logFile.combine(additionalSource);
+        assertEquals(4, logFile.getHighestLogVersion());
+        assertThat(Arrays.stream(logFile.getMatchedFiles())
+                        .map(path -> path.getFileName().toString()))
+                .contains(
+                        "neostore.transaction.db.1",
+                        "neostore.transaction.db.2",
+                        "neostore.transaction.db.3",
+                        "neostore.transaction.db.4");
     }
 
     @Test
-    void combineShouldPreserveOrder() throws IOException
-    {
+    void combineShouldPreserveOrder() throws IOException {
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
-        Path additionalSource = testDirectory.directory( "another" );
+        Path additionalSource = testDirectory.directory("another");
 
         int numberOfAdditionalFile = 20;
 
-        for ( int i = 0; i < numberOfAdditionalFile; i++ )
-        {
-            createFile( additionalSource, i, i );
+        for (int i = 0; i < numberOfAdditionalFile; i++) {
+            createFile(additionalSource, i, i);
         }
 
         LogFile logFile = logFiles.getLogFile();
-        assertEquals( 1, logFile.getHighestLogVersion() );
+        assertEquals(1, logFile.getHighestLogVersion());
 
-        logFile.combine( additionalSource );
+        logFile.combine(additionalSource);
 
-        assertEquals( numberOfAdditionalFile + 1, logFile.getHighestLogVersion() );
+        assertEquals(numberOfAdditionalFile + 1, logFile.getHighestLogVersion());
 
-        for ( int i = 2; i < numberOfAdditionalFile + 2; i++ )
-        {
+        for (int i = 2; i < numberOfAdditionalFile + 2; i++) {
             int expectedCommitIdx = i - 2;
-            LogHeader header = readLogHeader( fileSystem, logFile.getLogFileForVersion( i ), INSTANCE );
+            LogHeader header = readLogHeader(fileSystem, logFile.getLogFileForVersion(i), INSTANCE);
             Long lastCommittedTxId = header.getLastCommittedTxId();
-            assertThat( lastCommittedTxId )
-                    .withFailMessage( "File %s should have commit idx %s instead of %s",
-                                      logFile.getLogFileForVersion( i ), expectedCommitIdx, lastCommittedTxId  )
-                    .isEqualTo( expectedCommitIdx );
+            assertThat(lastCommittedTxId)
+                    .withFailMessage(
+                            "File %s should have commit idx %s instead of %s",
+                            logFile.getLogFileForVersion(i), expectedCommitIdx, lastCommittedTxId)
+                    .isEqualTo(expectedCommitIdx);
         }
     }
 
     @Test
-    void combineLogFilesFromMultipleLocationsNonSequentialFiles() throws IOException
-    {
+    void combineLogFilesFromMultipleLocationsNonSequentialFiles() throws IOException {
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
-        Path additionalSource1 = testDirectory.directory( "another" );
-        createFile( additionalSource1, 0 );
-        createFile( additionalSource1, 6 );
-        createFile( additionalSource1, 8 );
+        Path additionalSource1 = testDirectory.directory("another");
+        createFile(additionalSource1, 0);
+        createFile(additionalSource1, 6);
+        createFile(additionalSource1, 8);
 
-        Path additionalSource2 = testDirectory.directory( "another2" );
-        createFile( additionalSource2, 10 );
-        createFile( additionalSource2, 26 );
-        createFile( additionalSource2, 38 );
+        Path additionalSource2 = testDirectory.directory("another2");
+        createFile(additionalSource2, 10);
+        createFile(additionalSource2, 26);
+        createFile(additionalSource2, 38);
 
         LogFile logFile = logFiles.getLogFile();
-        assertEquals( 1, logFile.getHighestLogVersion() );
+        assertEquals(1, logFile.getHighestLogVersion());
 
-        logFile.combine( additionalSource1 );
-        logFile.combine( additionalSource2 );
+        logFile.combine(additionalSource1);
+        logFile.combine(additionalSource2);
 
-        assertEquals( 7, logFile.getHighestLogVersion() );
-        assertThat( Arrays.stream( logFile.getMatchedFiles() ).map( path -> path.getFileName().toString() ) ).contains( "neostore.transaction.db.1",
-                "neostore.transaction.db.2", "neostore.transaction.db.3", "neostore.transaction.db.4",
-                "neostore.transaction.db.5", "neostore.transaction.db.6", "neostore.transaction.db.7" );
+        assertEquals(7, logFile.getHighestLogVersion());
+        assertThat(Arrays.stream(logFile.getMatchedFiles())
+                        .map(path -> path.getFileName().toString()))
+                .contains(
+                        "neostore.transaction.db.1",
+                        "neostore.transaction.db.2",
+                        "neostore.transaction.db.3",
+                        "neostore.transaction.db.4",
+                        "neostore.transaction.db.5",
+                        "neostore.transaction.db.6",
+                        "neostore.transaction.db.7");
     }
 
     @Test
-    void logFilesExternalReadersRegistration() throws IOException, ExecutionException
-    {
+    void logFilesExternalReadersRegistration() throws IOException, ExecutionException {
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
         LogFile logFile = logFiles.getLogFile();
         logFile.rotate();
         logFile.rotate();
         logFile.rotate();
 
-        assertEquals( 4, logFile.getHighestLogVersion() );
+        assertEquals(4, logFile.getHighestLogVersion());
 
         var channelMap = LongObjectMaps.mutable.<StoreChannel>empty();
-        channelMap.put( 1, logFile.openForVersion( 1 ) );
-        channelMap.put( 2, logFile.openForVersion( 2 ) );
-        channelMap.put( 3, logFile.openForVersion( 3 ) );
+        channelMap.put(1, logFile.openForVersion(1));
+        channelMap.put(2, logFile.openForVersion(2));
+        channelMap.put(3, logFile.openForVersion(3));
 
-        ExecutorService registerCalls = Executors.newFixedThreadPool( 5 );
-        ArrayList<Future<?>> futures = new ArrayList<>( 10 );
-        try
-        {
-            for ( int i = 0; i < 10; i++ )
-            {
-                futures.add( registerCalls.submit( () -> logFile.registerExternalReaders( channelMap ) ) );
+        ExecutorService registerCalls = Executors.newFixedThreadPool(5);
+        ArrayList<Future<?>> futures = new ArrayList<>(10);
+        try {
+            for (int i = 0; i < 10; i++) {
+                futures.add(registerCalls.submit(() -> logFile.registerExternalReaders(channelMap)));
             }
-        }
-        finally
-        {
+        } finally {
             registerCalls.shutdown();
         }
-        Futures.getAll( futures );
+        Futures.getAll(futures);
 
         var externalFileReaders = ((TransactionLogFile) logFile).getExternalFileReaders();
-        try
-        {
-            assertThat( externalFileReaders ).containsOnlyKeys( 1L, 2L, 3L );
-            for ( var entry : externalFileReaders.entrySet() )
-            {
+        try {
+            assertThat(externalFileReaders).containsOnlyKeys(1L, 2L, 3L);
+            for (var entry : externalFileReaders.entrySet()) {
                 List<StoreChannel> channels = entry.getValue();
-                assertThat( channels ).hasSize( 10 );
+                assertThat(channels).hasSize(10);
                 // all channels should be equal
-                var exampleChannel = channels.get( 0 );
-                for ( StoreChannel channel : channels )
-                {
-                    assertEquals( channel, exampleChannel );
+                var exampleChannel = channels.get(0);
+                for (StoreChannel channel : channels) {
+                    assertEquals(channel, exampleChannel);
                 }
             }
-        }
-        finally
-        {
-            logFile.terminateExternalReaders( 3 );
+        } finally {
+            logFile.terminateExternalReaders(3);
         }
     }
 
     @Test
-    void terminateLogFilesExternalReaders() throws IOException, ExecutionException
-    {
+    void terminateLogFilesExternalReaders() throws IOException, ExecutionException {
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
         LogFile logFile = logFiles.getLogFile();
         logFile.rotate();
@@ -568,247 +560,211 @@ class TransactionLogFileTest
         logFile.rotate();
         logFile.rotate();
 
-        assertEquals( 5, logFile.getHighestLogVersion() );
+        assertEquals(5, logFile.getHighestLogVersion());
 
         var channelMap = LongObjectMaps.mutable.<StoreChannel>empty();
-        channelMap.put( 1, logFile.openForVersion( 1 ) );
-        channelMap.put( 2, logFile.openForVersion( 2 ) );
-        channelMap.put( 3, logFile.openForVersion( 3 ) );
-        channelMap.put( 4, logFile.openForVersion( 4 ) );
+        channelMap.put(1, logFile.openForVersion(1));
+        channelMap.put(2, logFile.openForVersion(2));
+        channelMap.put(3, logFile.openForVersion(3));
+        channelMap.put(4, logFile.openForVersion(4));
 
-        ExecutorService registerCalls = Executors.newCachedThreadPool( );
-        ArrayList<Future<?>> futures = new ArrayList<>( 10 );
-        try
-        {
-            for ( int i = 0; i < 10; i++ )
-            {
-                futures.add( registerCalls.submit( () -> logFile.registerExternalReaders( channelMap ) ) );
+        ExecutorService registerCalls = Executors.newCachedThreadPool();
+        ArrayList<Future<?>> futures = new ArrayList<>(10);
+        try {
+            for (int i = 0; i < 10; i++) {
+                futures.add(registerCalls.submit(() -> logFile.registerExternalReaders(channelMap)));
             }
-        }
-        finally
-        {
+        } finally {
             registerCalls.shutdown();
         }
-        Futures.getAll( futures );
+        Futures.getAll(futures);
 
-        logFile.terminateExternalReaders( 3 );
+        logFile.terminateExternalReaders(3);
 
-        try
-        {
+        try {
             var externalFileReaders = ((TransactionLogFile) logFile).getExternalFileReaders();
-            assertThat( externalFileReaders ).containsOnlyKeys( 4L );
-            for ( var entry : externalFileReaders.entrySet() )
-            {
+            assertThat(externalFileReaders).containsOnlyKeys(4L);
+            for (var entry : externalFileReaders.entrySet()) {
                 List<StoreChannel> channels = entry.getValue();
-                assertThat( channels ).hasSize( 10 );
+                assertThat(channels).hasSize(10);
                 // all channels should be equal
-                var exampleChannel = channels.get( 0 );
-                for ( StoreChannel channel : channels )
-                {
-                    assertEquals( channel, exampleChannel );
+                var exampleChannel = channels.get(0);
+                for (StoreChannel channel : channels) {
+                    assertEquals(channel, exampleChannel);
                 }
             }
-        }
-        finally
-        {
-            logFile.terminateExternalReaders( 4 );
+        } finally {
+            logFile.terminateExternalReaders(4);
         }
     }
 
     @Test
-    void registerUnregisterLogFilesExternalReaders() throws IOException, ExecutionException
-    {
+    void registerUnregisterLogFilesExternalReaders() throws IOException, ExecutionException {
         LogFiles logFiles = buildLogFiles();
         life.start();
-        life.add( logFiles );
+        life.add(logFiles);
 
         LogFile logFile = logFiles.getLogFile();
         logFile.rotate();
         logFile.rotate();
         logFile.rotate();
 
-        assertEquals( 4, logFile.getHighestLogVersion() );
+        assertEquals(4, logFile.getHighestLogVersion());
 
         var channelMap = LongObjectMaps.mutable.<StoreChannel>empty();
-        var channel1 = logFile.openForVersion( 1 );
-        var channel2 = logFile.openForVersion( 2 );
-        channelMap.put( 1, channel1 );
-        channelMap.put( 2, channel2 );
+        var channel1 = logFile.openForVersion(1);
+        var channel2 = logFile.openForVersion(2);
+        channelMap.put(1, channel1);
+        channelMap.put(2, channel2);
 
-        ExecutorService registerCalls = Executors.newCachedThreadPool( );
-        ArrayList<Future<?>> futures = new ArrayList<>( 10 );
-        try
-        {
-            for ( int i = 0; i < 10; i++ )
-            {
-                futures.add( registerCalls.submit( () -> logFile.registerExternalReaders( channelMap ) ) );
+        ExecutorService registerCalls = Executors.newCachedThreadPool();
+        ArrayList<Future<?>> futures = new ArrayList<>(10);
+        try {
+            for (int i = 0; i < 10; i++) {
+                futures.add(registerCalls.submit(() -> logFile.registerExternalReaders(channelMap)));
             }
-        }
-        finally
-        {
+        } finally {
             registerCalls.shutdown();
         }
-        Futures.getAll( futures );
+        Futures.getAll(futures);
 
         var externalFileReaders = ((TransactionLogFile) logFile).getExternalFileReaders();
-        assertThat( externalFileReaders ).containsOnlyKeys( 1L, 2L );
+        assertThat(externalFileReaders).containsOnlyKeys(1L, 2L);
 
-        for ( int i = 0; i < 100; i++ )
-        {
-            logFile.unregisterExternalReader( 1, channel1 );
+        for (int i = 0; i < 100; i++) {
+            logFile.unregisterExternalReader(1, channel1);
         }
-        assertThat( externalFileReaders ).containsOnlyKeys( 2L );
+        assertThat(externalFileReaders).containsOnlyKeys(2L);
 
-        //removing wrong channel
-        for ( int i = 0; i < 19; i++ )
-        {
-            logFile.unregisterExternalReader( 2, channel1 );
+        // removing wrong channel
+        for (int i = 0; i < 19; i++) {
+            logFile.unregisterExternalReader(2, channel1);
         }
-        assertThat( externalFileReaders ).containsOnlyKeys( 2L );
+        assertThat(externalFileReaders).containsOnlyKeys(2L);
 
-        for ( int i = 0; i < 9; i++ )
-        {
-            logFile.unregisterExternalReader( 2, channel2 );
+        for (int i = 0; i < 9; i++) {
+            logFile.unregisterExternalReader(2, channel2);
         }
-        assertThat( externalFileReaders ).containsOnlyKeys( 2L );
-        assertThat( externalFileReaders.get( 2L ) ).hasSize( 1 );
+        assertThat(externalFileReaders).containsOnlyKeys(2L);
+        assertThat(externalFileReaders.get(2L)).hasSize(1);
 
-        logFile.unregisterExternalReader( 2, channel2 );
-        assertThat( externalFileReaders ).isEmpty();
+        logFile.unregisterExternalReader(2, channel2);
+        assertThat(externalFileReaders).isEmpty();
     }
 
-    private static byte[] readBytes( ReadableChannel reader, int length ) throws IOException
-    {
+    private static byte[] readBytes(ReadableChannel reader, int length) throws IOException {
         byte[] result = new byte[length];
-        reader.get( result, length );
+        reader.get(result, length);
         return result;
     }
 
-    private LogFiles buildLogFiles() throws IOException
-    {
-        return LogFilesBuilder.builder( databaseLayout, wrappingFileSystem )
-                .withRotationThreshold( rotationThreshold )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( LegacyStoreId.UNKNOWN )
+    private LogFiles buildLogFiles() throws IOException {
+        return LogFilesBuilder.builder(databaseLayout, wrappingFileSystem)
+                .withRotationThreshold(rotationThreshold)
+                .withTransactionIdStore(transactionIdStore)
+                .withLogVersionRepository(logVersionRepository)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withStoreId(LegacyStoreId.UNKNOWN)
                 .build();
     }
 
-    private static byte[] someBytes( int length )
-    {
+    private static byte[] someBytes(int length) {
         byte[] result = new byte[length];
-        for ( int i = 0; i < length; i++ )
-        {
+        for (int i = 0; i < length; i++) {
             result[i] = (byte) (i % 5);
         }
         return result;
     }
 
-    private void startStop( CapturingNativeAccess capturingNativeAccess, LifeSupport lifeSupport ) throws IOException
-    {
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                            .withTransactionIdStore( transactionIdStore )
-                            .withLogVersionRepository( logVersionRepository )
-                            .withCommandReaderFactory( new TestCommandReaderFactory() )
-                            .withStoreId( LegacyStoreId.UNKNOWN )
-                            .withNativeAccess( capturingNativeAccess ).build();
+    private void startStop(CapturingNativeAccess capturingNativeAccess, LifeSupport lifeSupport) throws IOException {
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem)
+                .withTransactionIdStore(transactionIdStore)
+                .withLogVersionRepository(logVersionRepository)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withNativeAccess(capturingNativeAccess)
+                .build();
 
-        lifeSupport.add( logFiles );
+        lifeSupport.add(logFiles);
         lifeSupport.start();
 
         lifeSupport.shutdown();
     }
 
-    private void createFile( Path filePath, long version, long lastCommittedTxId ) throws IOException
-    {
-        var filesHelper = new TransactionLogFilesHelper( fileSystem, filePath );
-        try ( StoreChannel storeChannel = fileSystem.write( filesHelper.getLogFileForVersion( version ) ) )
-        {
-            LogHeaderWriter.writeLogHeader( storeChannel, new LogHeader( version, lastCommittedTxId, LegacyStoreId.UNKNOWN ), INSTANCE );
+    private void createFile(Path filePath, long version, long lastCommittedTxId) throws IOException {
+        var filesHelper = new TransactionLogFilesHelper(fileSystem, filePath);
+        try (StoreChannel storeChannel = fileSystem.write(filesHelper.getLogFileForVersion(version))) {
+            LogHeaderWriter.writeLogHeader(
+                    storeChannel, new LogHeader(version, lastCommittedTxId, LegacyStoreId.UNKNOWN), INSTANCE);
         }
     }
 
-    private void createFile( Path filePath, long version ) throws IOException
-    {
-        createFile( filePath, version, 1 );
+    private void createFile(Path filePath, long version) throws IOException {
+        createFile(filePath, version, 1);
     }
 
-    private static class CapturingNativeAccess implements NativeAccess
-    {
+    private static class CapturingNativeAccess implements NativeAccess {
         private int evictionCounter;
         private int adviseCounter;
         private int preallocateCounter;
         private int keepCounter;
 
         @Override
-        public boolean isAvailable()
-        {
+        public boolean isAvailable() {
             return true;
         }
 
         @Override
-        public NativeCallResult tryEvictFromCache( int fd )
-        {
+        public NativeCallResult tryEvictFromCache(int fd) {
             evictionCounter++;
             return NativeCallResult.SUCCESS;
         }
 
         @Override
-        public NativeCallResult tryAdviseSequentialAccess( int fd )
-        {
+        public NativeCallResult tryAdviseSequentialAccess(int fd) {
             adviseCounter++;
             return NativeCallResult.SUCCESS;
         }
 
         @Override
-        public NativeCallResult tryAdviseToKeepInCache( int fd )
-        {
+        public NativeCallResult tryAdviseToKeepInCache(int fd) {
             keepCounter++;
             return NativeCallResult.SUCCESS;
         }
 
         @Override
-        public NativeCallResult tryPreallocateSpace( int fd, long bytes )
-        {
+        public NativeCallResult tryPreallocateSpace(int fd, long bytes) {
             preallocateCounter++;
             return NativeCallResult.SUCCESS;
         }
 
         @Override
-        public ErrorTranslator errorTranslator()
-        {
+        public ErrorTranslator errorTranslator() {
             return callResult -> false;
         }
 
         @Override
-        public String describe()
-        {
+        public String describe() {
             return "Test only";
         }
 
-        public int getEvictionCounter()
-        {
+        public int getEvictionCounter() {
             return evictionCounter;
         }
 
-        public int getAdviseCounter()
-        {
+        public int getAdviseCounter() {
             return adviseCounter;
         }
 
-        public int getKeepCounter()
-        {
+        public int getKeepCounter() {
             return keepCounter;
         }
 
-        public int getPreallocateCounter()
-        {
+        public int getPreallocateCounter() {
             return preallocateCounter;
         }
 
-        public void reset()
-        {
+        public void reset() {
             adviseCounter = 0;
             evictionCounter = 0;
             preallocateCounter = 0;
@@ -816,77 +772,62 @@ class TransactionLogFileTest
         }
     }
 
-    private static class CapturingChannelFileSystem extends DelegatingFileSystemAbstraction
-    {
+    private static class CapturingChannelFileSystem extends DelegatingFileSystemAbstraction {
         private CapturingStoreChannel capturingChannel;
 
-        CapturingChannelFileSystem( FileSystemAbstraction fs )
-        {
-            super( fs );
+        CapturingChannelFileSystem(FileSystemAbstraction fs) {
+            super(fs);
         }
 
         @Override
-        public StoreChannel write( Path fileName ) throws IOException
-        {
-            if ( fileName.toString().contains( TransactionLogFilesHelper.DEFAULT_NAME ) )
-            {
-                capturingChannel = new CapturingStoreChannel( super.write( fileName ) );
+        public StoreChannel write(Path fileName) throws IOException {
+            if (fileName.toString().contains(TransactionLogFilesHelper.DEFAULT_NAME)) {
+                capturingChannel = new CapturingStoreChannel(super.write(fileName));
                 return capturingChannel;
             }
-            return super.write( fileName );
+            return super.write(fileName);
         }
 
-        public CapturingStoreChannel getCapturingChannel()
-        {
+        public CapturingStoreChannel getCapturingChannel() {
             return capturingChannel;
         }
     }
 
-    private static class CapturingStoreChannel extends DelegatingStoreChannel<StoreChannel>
-    {
+    private static class CapturingStoreChannel extends DelegatingStoreChannel<StoreChannel> {
         private final AtomicInteger writeAllCounter = new AtomicInteger();
         private final AtomicInteger flushCounter = new AtomicInteger();
         private final ReentrantLock writeAllLock = new ReentrantLock();
 
-        private CapturingStoreChannel( StoreChannel delegate )
-        {
-            super( delegate );
+        private CapturingStoreChannel(StoreChannel delegate) {
+            super(delegate);
         }
 
         @Override
-        public void writeAll( ByteBuffer src ) throws IOException
-        {
+        public void writeAll(ByteBuffer src) throws IOException {
             writeAllLock.lock();
-            try
-            {
+            try {
                 writeAllCounter.incrementAndGet();
-                super.writeAll( src );
-            }
-            finally
-            {
+                super.writeAll(src);
+            } finally {
                 writeAllLock.unlock();
             }
         }
 
         @Override
-        public void flush() throws IOException
-        {
+        public void flush() throws IOException {
             flushCounter.incrementAndGet();
             super.flush();
         }
 
-        public ReentrantLock getWriteAllLock()
-        {
+        public ReentrantLock getWriteAllLock() {
             return writeAllLock;
         }
 
-        public AtomicInteger getWriteAllCounter()
-        {
+        public AtomicInteger getWriteAllCounter() {
             return writeAllCounter;
         }
 
-        public AtomicInteger getFlushCounter()
-        {
+        public AtomicInteger getFlushCounter() {
             return flushCounter;
         }
     }

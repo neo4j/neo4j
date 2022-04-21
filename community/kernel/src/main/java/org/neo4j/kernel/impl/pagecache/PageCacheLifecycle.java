@@ -27,18 +27,15 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * This way, the PageCache can participate in our life cycle mechanism without knowing it.
  */
-public class PageCacheLifecycle extends LifecycleAdapter
-{
+public class PageCacheLifecycle extends LifecycleAdapter {
     private final PageCache pageCache;
 
-    public PageCacheLifecycle( PageCache pageCache )
-    {
+    public PageCacheLifecycle(PageCache pageCache) {
         this.pageCache = pageCache;
     }
 
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         pageCache.close();
     }
 }

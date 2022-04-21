@@ -22,24 +22,18 @@ package org.neo4j.kernel.impl.transaction.tracing;
 /**
  * A trace event that represents the commit process of a transaction.
  */
-public interface CommitEvent extends AutoCloseable
-{
-    CommitEvent NULL = new CommitEvent()
-    {
+public interface CommitEvent extends AutoCloseable {
+    CommitEvent NULL = new CommitEvent() {
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public LogAppendEvent beginLogAppend()
-        {
+        public LogAppendEvent beginLogAppend() {
             return LogAppendEvent.NULL;
         }
 
         @Override
-        public StoreApplyEvent beginStoreApply()
-        {
+        public StoreApplyEvent beginStoreApply() {
             return StoreApplyEvent.NULL;
         }
     };

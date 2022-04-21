@@ -19,14 +19,13 @@
  */
 package org.neo4j.graphdb;
 
+import static java.util.Spliterators.spliteratorUnknownSize;
+
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import org.neo4j.annotations.api.PublicApi;
-
-import static java.util.Spliterators.spliteratorUnknownSize;
 
 /**
  * Closeable Iterator with associated resources.
@@ -40,8 +39,7 @@ import static java.util.Spliterators.spliteratorUnknownSize;
  * @see ResourceIterable
  */
 @PublicApi
-public interface ResourceIterator<T> extends Iterator<T>, Resource
-{
+public interface ResourceIterator<T> extends Iterator<T>, Resource {
     /**
      * Close the iterator early, freeing associated resources
      *
@@ -53,33 +51,25 @@ public interface ResourceIterator<T> extends Iterator<T>, Resource
     /**
      * @return this iterator as a {@link Stream}
      */
-    default Stream<T> stream()
-    {
-        return StreamSupport
-                .stream( spliteratorUnknownSize( this, 0 ), false )
-                .onClose( this::close );
+    default Stream<T> stream() {
+        return StreamSupport.stream(spliteratorUnknownSize(this, 0), false).onClose(this::close);
     }
 
-    default <R> ResourceIterator<R> map( Function<T,R> map )
-    {
-        return new ResourceIterator<>()
-        {
+    default <R> ResourceIterator<R> map(Function<T, R> map) {
+        return new ResourceIterator<>() {
             @Override
-            public void close()
-            {
+            public void close() {
                 ResourceIterator.this.close();
             }
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return ResourceIterator.this.hasNext();
             }
 
             @Override
-            public R next()
-            {
-                return map.apply( ResourceIterator.this.next() );
+            public R next() {
+                return map.apply(ResourceIterator.this.next());
             }
         };
     }

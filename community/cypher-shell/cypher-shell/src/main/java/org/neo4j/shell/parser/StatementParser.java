@@ -27,65 +27,60 @@ import java.util.Optional;
 /**
  * An object capable of parsing a piece of text and returning a List statements contained within.
  */
-public interface StatementParser
-{
+public interface StatementParser {
     /**
      * Consumes and parses all statements of the specified reader, including incomplete statements.
      */
-    ParsedStatements parse( Reader reader ) throws IOException;
+    ParsedStatements parse(Reader reader) throws IOException;
 
     /**
      * Consumes and parses all statements of the specified reader, including incomplete statements.
      */
-    ParsedStatements parse( String line ) throws IOException;
+    ParsedStatements parse(String line) throws IOException;
 
-    record ParsedStatements( List<ParsedStatement> statements )
-    {
-        public boolean isEmpty()
-        {
+    record ParsedStatements(List<ParsedStatement> statements) {
+        public boolean isEmpty() {
             return statements.isEmpty();
         }
 
-        public boolean hasIncompleteStatement()
-        {
-            return statements.stream().anyMatch( statement -> statement instanceof CypherStatement c && !c.isComplete() );
+        public boolean hasIncompleteStatement() {
+            return statements.stream().anyMatch(statement -> statement instanceof CypherStatement c && !c.isComplete());
         }
 
-        public Optional<ParsedStatement> statementAtOffset( int offset )
-        {
-            for ( int i = statements.size() - 1; i >= 0; --i )
-            {
-                var statement = statements.get( i );
-                if ( ( !statement.isComplete() && offset >= statement.beginOffset() )
-                     || ( offset >= statement.beginOffset() && offset <= statement.endOffset() ) )
-                {
-                    return Optional.of( statement );
+        public Optional<ParsedStatement> statementAtOffset(int offset) {
+            for (int i = statements.size() - 1; i >= 0; --i) {
+                var statement = statements.get(i);
+                if ((!statement.isComplete() && offset >= statement.beginOffset())
+                        || (offset >= statement.beginOffset() && offset <= statement.endOffset())) {
+                    return Optional.of(statement);
                 }
             }
             return Optional.empty();
         }
     }
 
-    sealed interface ParsedStatement permits CommandStatement, CypherStatement
-    {
+    sealed interface ParsedStatement permits CommandStatement, CypherStatement {
         String statement();
+
         int beginOffset();
+
         int endOffset();
+
         boolean isComplete();
     }
-    record CommandStatement( String name, List<String> args, boolean isComplete, int beginOffset, int endOffset ) implements ParsedStatement
-    {
+
+    record CommandStatement(String name, List<String> args, boolean isComplete, int beginOffset, int endOffset)
+            implements ParsedStatement {
         @Override
-        public String statement()
-        {
-            return name + " " + String.join( " ", args );
+        public String statement() {
+            return name + " " + String.join(" ", args);
         }
     }
-    record CypherStatement( String statement, boolean isComplete, int beginOffset, int endOffset ) implements ParsedStatement
-    {
-        public static CypherStatement complete( String statement )
-        {
-            return new CypherStatement( statement, true, 0, statement.length() == 0 ? 0 : statement.length() - 1 );
+
+    record CypherStatement(String statement, boolean isComplete, int beginOffset, int endOffset)
+            implements ParsedStatement {
+        public static CypherStatement complete(String statement) {
+            return new CypherStatement(statement, true, 0, statement.length() == 0 ? 0 : statement.length() - 1);
         }
     }
 }

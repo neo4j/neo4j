@@ -19,10 +19,6 @@
  */
 package org.neo4j.test;
 
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestMethodOrder;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -32,7 +28,9 @@ import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
-
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
@@ -51,8 +49,7 @@ import org.neo4j.values.storable.ValueType;
  *
  * Available methods directly on this class include those found in {@link RandomValues} and the basic ones in {@link Random}.
  */
-public class RandomSupport
-{
+public class RandomSupport {
     private long globalSeed;
     private long seed;
     private boolean hasGlobalSeed;
@@ -61,14 +58,12 @@ public class RandomSupport
 
     private RandomValues.Configuration config = RandomValues.DEFAULT_CONFIGURATION;
 
-    public RandomSupport withConfiguration( RandomValues.Configuration config )
-    {
+    public RandomSupport withConfiguration(RandomValues.Configuration config) {
         this.config = config;
         return this;
     }
 
-    public RandomSupport withSeedForAllTests( long seed )
-    {
+    public RandomSupport withSeedForAllTests(long seed) {
         hasGlobalSeed = true;
         this.globalSeed = seed;
         return this;
@@ -78,213 +73,175 @@ public class RandomSupport
     // Methods from Random
     // ============================
 
-    public byte[] nextBytes( byte[] bytes )
-    {
-        random.nextBytes( bytes );
+    public byte[] nextBytes(byte[] bytes) {
+        random.nextBytes(bytes);
         return bytes;
     }
 
-    public boolean nextBoolean()
-    {
+    public boolean nextBoolean() {
         return random.nextBoolean();
     }
 
-    public double nextDouble()
-    {
+    public double nextDouble() {
         return random.nextDouble();
     }
 
-    public DoubleStream doubles( int dimension, double minValue, double maxValue )
-    {
-        return random.doubles( dimension, minValue, maxValue );
+    public DoubleStream doubles(int dimension, double minValue, double maxValue) {
+        return random.doubles(dimension, minValue, maxValue);
     }
 
-    public float nextFloat()
-    {
+    public float nextFloat() {
         return random.nextFloat();
     }
 
-    public int nextInt()
-    {
+    public int nextInt() {
         return random.nextInt();
     }
 
     /**
      * @param bound – the upper bound (exclusive)
      */
-    public int nextInt( int bound )
-    {
-        return random.nextInt( bound );
+    public int nextInt(int bound) {
+        return random.nextInt(bound);
     }
 
     /**
      * @param origin - the origin (inclusive)
      * @param bound – the upper bound (exclusive)
      */
-    public int nextInt( int origin, int bound )
-    {
-        return random.nextInt( bound - origin ) + origin;
+    public int nextInt(int origin, int bound) {
+        return random.nextInt(bound - origin) + origin;
     }
 
-    public IntStream ints( long streamSize )
-    {
-        return random.ints( streamSize );
+    public IntStream ints(long streamSize) {
+        return random.ints(streamSize);
     }
 
-    public IntStream ints( long streamSize, int randomNumberOrigin, int randomNumberBound )
-    {
-        return random.ints( streamSize, randomNumberOrigin, randomNumberBound );
+    public IntStream ints(long streamSize, int randomNumberOrigin, int randomNumberBound) {
+        return random.ints(streamSize, randomNumberOrigin, randomNumberBound);
     }
 
-    public double nextGaussian()
-    {
+    public double nextGaussian() {
         return random.nextGaussian();
     }
 
-    public long nextLong()
-    {
+    public long nextLong() {
         return random.nextLong();
     }
 
     /**
      * @param bound – the upper bound (exclusive)
      */
-    public long nextLong( long bound )
-    {
+    public long nextLong(long bound) {
         var randomLong = nextLong();
-        if ( randomLong == Long.MIN_VALUE )
-        {
+        if (randomLong == Long.MIN_VALUE) {
             randomLong = 66;
         }
-        return Math.abs( randomLong ) % bound;
+        return Math.abs(randomLong) % bound;
     }
 
     /**
      * @param origin - the origin (inclusive)
      * @param bound – the upper bound (exclusive)
      */
-    public long nextLong( long origin, long bound )
-    {
-        return nextLong( bound - origin ) + origin;
+    public long nextLong(long origin, long bound) {
+        return nextLong(bound - origin) + origin;
     }
 
     // ============================
     // Methods from RandomValues
     // ============================
 
-    public int intBetween( int min, int max )
-    {
-        return randoms.intBetween( min, max );
+    public int intBetween(int min, int max) {
+        return randoms.intBetween(min, max);
     }
 
-    public String nextString()
-    {
+    public String nextString() {
         return nextTextValue().stringValue();
     }
 
-    public TextValue nextTextValue()
-    {
+    public TextValue nextTextValue() {
         return randoms.nextTextValue();
     }
 
-    public String nextAlphaNumericString( )
-    {
+    public String nextAlphaNumericString() {
         return nextAlphaNumericTextValue().stringValue();
     }
 
-    public String nextAsciiString()
-    {
+    public String nextAsciiString() {
         return nextAsciiTextValue().stringValue();
     }
 
-    private TextValue nextAsciiTextValue()
-    {
+    private TextValue nextAsciiTextValue() {
         return randoms.nextAsciiTextValue();
     }
 
-    public TextValue nextAlphaNumericTextValue( )
-    {
+    public TextValue nextAlphaNumericTextValue() {
         return randoms.nextAlphaNumericTextValue();
     }
 
-    public String nextAlphaNumericString( int minLength, int maxLength )
-    {
-        return nextAlphaNumericTextValue( minLength, maxLength ).stringValue();
+    public String nextAlphaNumericString(int minLength, int maxLength) {
+        return nextAlphaNumericTextValue(minLength, maxLength).stringValue();
     }
 
-    public TextValue nextAlphaNumericTextValue( int minLength, int maxLength )
-    {
-        return randoms.nextAlphaNumericTextValue( minLength, maxLength );
+    public TextValue nextAlphaNumericTextValue(int minLength, int maxLength) {
+        return randoms.nextAlphaNumericTextValue(minLength, maxLength);
     }
 
-    public TextValue nextBasicMultilingualPlaneTextValue()
-    {
+    public TextValue nextBasicMultilingualPlaneTextValue() {
         return randoms.nextBasicMultilingualPlaneTextValue();
     }
 
-    public String nextBasicMultilingualPlaneString()
-    {
+    public String nextBasicMultilingualPlaneString() {
         return nextBasicMultilingualPlaneTextValue().stringValue();
     }
 
-    public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
-    {
-        return randoms.selection( among, min, max, allowDuplicates );
+    public <T> T[] selection(T[] among, int min, int max, boolean allowDuplicates) {
+        return randoms.selection(among, min, max, allowDuplicates);
     }
 
-    public int[] selection( int[] among, int min, int max, boolean allowDuplicates )
-    {
-        return randoms.selection( among, min, max, allowDuplicates );
+    public int[] selection(int[] among, int min, int max, boolean allowDuplicates) {
+        return randoms.selection(among, min, max, allowDuplicates);
     }
 
-    public long[] selection( long[] among, int min, int max, boolean allowDuplicates )
-    {
-        return randoms.selection( among, min, max, allowDuplicates );
+    public long[] selection(long[] among, int min, int max, boolean allowDuplicates) {
+        return randoms.selection(among, min, max, allowDuplicates);
     }
 
     @SafeVarargs
-    public final <T> T among( T... among )
-    {
-        return randoms.among( among );
+    public final <T> T among(T... among) {
+        return randoms.among(among);
     }
 
-    public long among( long[] among )
-    {
-        return randoms.among( among );
+    public long among(long[] among) {
+        return randoms.among(among);
     }
 
-    public int among( int[] among )
-    {
-        return randoms.among( among );
+    public int among(int[] among) {
+        return randoms.among(among);
     }
 
-    public <T> T among( List<T> among )
-    {
-        return randoms.among( among );
+    public <T> T among(List<T> among) {
+        return randoms.among(among);
     }
 
-    public <T> void among( List<T> among, Consumer<T> action )
-    {
-        randoms.among( among, action );
+    public <T> void among(List<T> among, Consumer<T> action) {
+        randoms.among(among, action);
     }
 
-    public Object nextValueAsObject()
-    {
+    public Object nextValueAsObject() {
         return randoms.nextValue().asObject();
     }
 
-    public Value nextValue()
-    {
+    public Value nextValue() {
         return randoms.nextValue();
     }
 
-    public Value nextValue( ValueType type )
-    {
-        return randoms.nextValueOfType( type );
+    public Value nextValue(ValueType type) {
+        return randoms.nextValueOfType(type);
     }
 
-    public ArrayValue nextArray()
-    {
+    public ArrayValue nextArray() {
         return randoms.nextArray();
     }
 
@@ -292,37 +249,31 @@ public class RandomSupport
     // Other utility methods
     // ============================
 
-    public void reset()
-    {
-        random = new Random( seed );
-        randoms = RandomValues.create( random, config );
+    public void reset() {
+        random = new Random(seed);
+        randoms = RandomValues.create(random, config);
     }
 
-    public long seed()
-    {
+    public long seed() {
         return seed;
     }
 
-    public Random random()
-    {
+    public Random random() {
         return random;
     }
 
-    public RandomValues randomValues()
-    {
+    public RandomValues randomValues() {
         return randoms;
     }
 
-    public void setSeed( long seed )
-    {
+    public void setSeed(long seed) {
         this.seed = seed;
         reset();
     }
 
-    @Retention( RetentionPolicy.RUNTIME )
-    @Target( {ElementType.METHOD, ElementType.TYPE} )
-    public @interface Seed
-    {
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.METHOD, ElementType.TYPE})
+    public @interface Seed {
         long value();
     }
 }

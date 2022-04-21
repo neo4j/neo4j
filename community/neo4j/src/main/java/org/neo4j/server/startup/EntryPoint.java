@@ -23,19 +23,16 @@ import org.neo4j.annotations.service.Service;
 import org.neo4j.service.Services;
 
 @Service
-public interface EntryPoint extends Comparable<EntryPoint>
-{
-    enum Priority
-    {
-        HIGH, //Reserved for testing
-        MEDIUM, //Enterprise
-        LOW; //Community
+public interface EntryPoint extends Comparable<EntryPoint> {
+    enum Priority {
+        HIGH, // Reserved for testing
+        MEDIUM, // Enterprise
+        LOW; // Community
     }
 
     @Override
-    default int compareTo( EntryPoint o )
-    {
-        return getPriority().compareTo( o.getPriority() );
+    default int compareTo(EntryPoint o) {
+        return getPriority().compareTo(o.getPriority());
     }
 
     /**
@@ -44,9 +41,8 @@ public interface EntryPoint extends Comparable<EntryPoint>
      */
     Priority getPriority();
 
-    static Class<? extends EntryPoint> serviceloadEntryPoint()
-    {
-        return Services.loadAll( EntryPoint.class ).stream()
+    static Class<? extends EntryPoint> serviceloadEntryPoint() {
+        return Services.loadAll(EntryPoint.class).stream()
                 .sorted()
                 .findFirst()
                 .orElseThrow()

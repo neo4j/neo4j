@@ -20,63 +20,52 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.storageengine.api.LogVersionRepository;
 
-public class SimpleLogVersionRepository implements LogVersionRepository
-{
+public class SimpleLogVersionRepository implements LogVersionRepository {
     private final AtomicLong logVersion = new AtomicLong();
     private final AtomicLong checkpointLogVersion = new AtomicLong();
 
-    public SimpleLogVersionRepository()
-    {
-        this( INITIAL_LOG_VERSION, INITIAL_LOG_VERSION );
+    public SimpleLogVersionRepository() {
+        this(INITIAL_LOG_VERSION, INITIAL_LOG_VERSION);
     }
 
-    public SimpleLogVersionRepository( long initialLogVersion )
-    {
-        this( initialLogVersion, initialLogVersion );
+    public SimpleLogVersionRepository(long initialLogVersion) {
+        this(initialLogVersion, initialLogVersion);
     }
 
-    public SimpleLogVersionRepository( long initialLogVersion, long initialCheckpointLogVersion )
-    {
-        this.logVersion.set( initialLogVersion );
-        this.checkpointLogVersion.set( initialCheckpointLogVersion );
+    public SimpleLogVersionRepository(long initialLogVersion, long initialCheckpointLogVersion) {
+        this.logVersion.set(initialLogVersion);
+        this.checkpointLogVersion.set(initialCheckpointLogVersion);
     }
 
     @Override
-    public long incrementAndGetVersion()
-    {
+    public long incrementAndGetVersion() {
         return logVersion.incrementAndGet();
     }
 
     @Override
-    public long getCurrentLogVersion()
-    {
+    public long getCurrentLogVersion() {
         return logVersion.get();
     }
 
     @Override
-    public void setCurrentLogVersion( long version )
-    {
-        this.logVersion.set( version );
+    public void setCurrentLogVersion(long version) {
+        this.logVersion.set(version);
     }
 
     @Override
-    public long getCheckpointLogVersion()
-    {
+    public long getCheckpointLogVersion() {
         return checkpointLogVersion.get();
     }
 
     @Override
-    public void setCheckpointLogVersion( long version )
-    {
-        checkpointLogVersion.set( version );
+    public void setCheckpointLogVersion(long version) {
+        checkpointLogVersion.set(version);
     }
 
     @Override
-    public long incrementAndGetCheckpointLogVersion()
-    {
+    public long incrementAndGetCheckpointLogVersion() {
         return checkpointLogVersion.incrementAndGet();
     }
 }

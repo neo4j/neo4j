@@ -20,38 +20,27 @@
 package org.neo4j.server.http.cypher.format.output.json;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-
 import java.io.IOException;
-
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 
-class RowWriter implements ResultDataContentWriter
-{
+class RowWriter implements ResultDataContentWriter {
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent )
-            throws IOException
-    {
-        out.writeArrayFieldStart( "row" );
-        try
-        {
-            for ( String key : recordEvent.getColumns() )
-            {
-                out.writeObject( recordEvent.getValue( key ) );
+    public void write(JsonGenerator out, RecordEvent recordEvent) throws IOException {
+        out.writeArrayFieldStart("row");
+        try {
+            for (String key : recordEvent.getColumns()) {
+                out.writeObject(recordEvent.getValue(key));
             }
-        }
-        finally
-        {
+        } finally {
             out.writeEndArray();
-            writeMeta( out, recordEvent );
+            writeMeta(out, recordEvent);
         }
     }
 
-    private static void writeMeta( JsonGenerator out, RecordEvent recordEvent ) throws IOException
-    {
-        out.writeArrayFieldStart( "meta" );
-        try
-        {
+    private static void writeMeta(JsonGenerator out, RecordEvent recordEvent) throws IOException {
+        out.writeArrayFieldStart("meta");
+        try {
             /*
              * The way we've designed this JSON serialization is by injecting a custom codec
              * to write the entities. Unfortunately, there seems to be no way to control state
@@ -61,13 +50,10 @@ class RowWriter implements ResultDataContentWriter
              * formats is not a priority.
              */
             Neo4jJsonCodec codec = (Neo4jJsonCodec) out.getCodec();
-            for ( String key : recordEvent.getColumns() )
-            {
-                codec.writeMeta( out, recordEvent.getValue( key ) );
+            for (String key : recordEvent.getColumns()) {
+                codec.writeMeta(out, recordEvent.getValue(key));
             }
-        }
-        finally
-        {
+        } finally {
             out.writeEndArray();
         }
     }

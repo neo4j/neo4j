@@ -28,39 +28,36 @@ import org.neo4j.memory.HeapEstimator;
 /**
  * When AUTOCOMMIT, additionally attach bookmark to PULL, DISCARD result
  */
-public class AutoCommitState extends AbstractStreamingState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( AutoCommitState.class );
+public class AutoCommitState extends AbstractStreamingState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(AutoCommitState.class);
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "AUTOCOMMIT";
     }
 
     @Override
-    protected BoltStateMachineState processStreamPullResultMessage( int statementId, ResultConsumer resultConsumer,
-                                                                    StateMachineContext context, long noToPull ) throws Throwable
-    {
-        Bookmark bookmark = context.getTransactionManager().pullData( context.connectionState().getCurrentTransactionId(), statementId,
-                                                                      noToPull, resultConsumer );
-        bookmark.attachTo( context.connectionState() );
-        if ( resultConsumer.hasMore() )
-        {
+    protected BoltStateMachineState processStreamPullResultMessage(
+            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToPull)
+            throws Throwable {
+        Bookmark bookmark = context.getTransactionManager()
+                .pullData(context.connectionState().getCurrentTransactionId(), statementId, noToPull, resultConsumer);
+        bookmark.attachTo(context.connectionState());
+        if (resultConsumer.hasMore()) {
             return this;
         }
         return readyState;
     }
 
     @Override
-    protected BoltStateMachineState processStreamDiscardResultMessage( int statementId, ResultConsumer resultConsumer,
-                                                                       StateMachineContext context, long noToDiscard ) throws Throwable
-    {
-        var bookmark = context.getTransactionManager().discardData( context.connectionState().getCurrentTransactionId(), statementId,
-                                                                    noToDiscard, resultConsumer );
-        bookmark.attachTo( context.connectionState() );
-        if ( resultConsumer.hasMore() )
-        {
+    protected BoltStateMachineState processStreamDiscardResultMessage(
+            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToDiscard)
+            throws Throwable {
+        var bookmark = context.getTransactionManager()
+                .discardData(
+                        context.connectionState().getCurrentTransactionId(), statementId, noToDiscard, resultConsumer);
+        bookmark.attachTo(context.connectionState());
+        if (resultConsumer.hasMore()) {
             return this;
         }
         return readyState;

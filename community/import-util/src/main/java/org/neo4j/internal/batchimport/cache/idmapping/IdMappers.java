@@ -19,9 +19,11 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping;
 
+import static org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
+import static org.neo4j.internal.batchimport.cache.idmapping.string.TrackerFactories.dynamic;
+
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-
 import org.neo4j.internal.batchimport.PropertyValueLookup;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -36,81 +38,66 @@ import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
-import static org.neo4j.internal.batchimport.cache.idmapping.string.TrackerFactories.dynamic;
 
 /**
  * Place to instantiate common {@link IdMapper} implementations.
  */
-public class IdMappers
-{
-    private static class ActualIdMapper implements IdMapper
-    {
+public class IdMappers {
+    private static class ActualIdMapper implements IdMapper {
         @Override
-        public void put( Object inputId, long actualId, Group group )
-        {   // No need to remember anything
+        public void put(Object inputId, long actualId, Group group) { // No need to remember anything
         }
 
         @Override
-        public boolean needsPreparation()
-        {
+        public boolean needsPreparation() {
             return false;
         }
 
         @Override
-        public void prepare( PropertyValueLookup inputIdLookup, Collector collector, ProgressListener progress )
-        {   // No need to prepare anything
+        public void prepare(
+                PropertyValueLookup inputIdLookup,
+                Collector collector,
+                ProgressListener progress) { // No need to prepare anything
         }
 
         @Override
-        public long get( Object inputId, Group group )
-        {
+        public long get(Object inputId, Group group) {
             return (Long) inputId;
         }
 
         @Override
-        public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-        {   // No memory usage
+        public void acceptMemoryStatsVisitor(MemoryStatsVisitor visitor) { // No memory usage
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return getClass().getSimpleName();
         }
 
         @Override
-        public void close()
-        {   // Nothing to close
+        public void close() { // Nothing to close
         }
 
         @Override
-        public MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes )
-        {
+        public MemoryStatsVisitor.Visitable memoryEstimation(long numberOfNodes) {
             return MemoryStatsVisitor.NONE;
         }
 
         @Override
-        public LongIterator leftOverDuplicateNodesIds()
-        {
+        public LongIterator leftOverDuplicateNodesIds() {
             return ImmutableEmptyLongIterator.INSTANCE;
         }
     }
 
-    private IdMappers()
-    {
-    }
+    private IdMappers() {}
 
     /**
      * An {@link IdMapper} that doesn't touch the input ids, but just asserts that node ids arrive in ascending order.
      * This is for advanced usage and puts constraints on the input in that all node ids given as input
      * must be valid. There will not be further checks, other than that for order of the ids.
      */
-    public static IdMapper actual()
-    {
+    public static IdMapper actual() {
         return new ActualIdMapper();
     }
 
@@ -122,10 +109,17 @@ public class IdMappers
      * @param memoryTracker underlying buffers allocation memory tracker
      * @return {@link IdMapper} for when input ids are strings.
      */
-    public static IdMapper strings( NumberArrayFactory cacheFactory, ReadableGroups groups, MemoryTracker memoryTracker )
-    {
-        return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR, dynamic( memoryTracker ), groups,
-                numberOfCollisions -> new StringCollisionValues( cacheFactory, numberOfCollisions, memoryTracker ), memoryTracker );
+    public static IdMapper strings(
+            NumberArrayFactory cacheFactory, ReadableGroups groups, MemoryTracker memoryTracker) {
+        return new EncodingIdMapper(
+                cacheFactory,
+                new StringEncoder(),
+                Radix.STRING,
+                NO_MONITOR,
+                dynamic(memoryTracker),
+                groups,
+                numberOfCollisions -> new StringCollisionValues(cacheFactory, numberOfCollisions, memoryTracker),
+                memoryTracker);
     }
 
     /**
@@ -136,9 +130,15 @@ public class IdMappers
      * @param memoryTracker underlying buffers allocation memory tracker
      * @return {@link IdMapper} for when input ids are numbers.
      */
-    public static IdMapper longs( NumberArrayFactory cacheFactory, ReadableGroups groups, MemoryTracker memoryTracker )
-    {
-        return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR, dynamic( memoryTracker ), groups,
-                numberOfCollisions -> new LongCollisionValues( cacheFactory, numberOfCollisions, memoryTracker ), memoryTracker );
+    public static IdMapper longs(NumberArrayFactory cacheFactory, ReadableGroups groups, MemoryTracker memoryTracker) {
+        return new EncodingIdMapper(
+                cacheFactory,
+                new LongEncoder(),
+                Radix.LONG,
+                NO_MONITOR,
+                dynamic(memoryTracker),
+                groups,
+                numberOfCollisions -> new LongCollisionValues(cacheFactory, numberOfCollisions, memoryTracker),
+                memoryTracker);
     }
 }

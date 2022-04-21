@@ -34,7 +34,7 @@ class FabricFragmenter(
   defaultGraphName: String,
   queryString: String,
   queryStatement: ast.Statement,
-  semantics: ast.semantics.SemanticState,
+  semantics: ast.semantics.SemanticState
 ) {
 
   private val defaultUse: Use = makeDefaultUse(defaultGraphName, InputPosition.NONE)
@@ -42,7 +42,7 @@ class FabricFragmenter(
   private val start = Init(defaultUse)
 
   def fragment: Fragment = queryStatement match {
-    case query: ast.Query  => fragmentPart(start, query.part)
+    case query: ast.Query => fragmentPart(start, query.part)
     case command: ast.AdministrationCommand =>
       Fragment.AdminCommand(systemUse, command)
     case command: ast.SchemaCommand =>
@@ -52,19 +52,19 @@ class FabricFragmenter(
 
   private def fragmentPart(
     input: Fragment.Init,
-    part: ast.QueryPart,
+    part: ast.QueryPart
   ): Fragment = part match {
     case sq: ast.SingleQuery => fragmentSingle(input, sq)
-    case uq: ast.Union       => Union(input, isDistinct(uq), fragmentPart(input, uq.part), fragmentSingle(input, uq.query))(uq.position)
+    case uq: ast.Union =>
+      Union(input, isDistinct(uq), fragmentPart(input, uq.part), fragmentSingle(input, uq.query))(uq.position)
   }
 
   private def fragmentSingle(
     input: Fragment.Chain,
-    sq: ast.SingleQuery,
+    sq: ast.SingleQuery
   ): Fragment.Chain = {
     val parts = partitioned(sq.clauses)
     parts.foldLeft(input) { case (previous, part) =>
-
       val input = previous match {
         case init: Init =>
           // Previous is Init which means that we are at the start of a chain
@@ -83,7 +83,11 @@ class FabricFragmenter(
         case Left(subquery) =>
           // Subquery: Recurse and start the child chain with Init
           val use = Use.Inherited(input.use)(subquery.part.position)
-          Apply(input, fragmentPart(Init(use, input.outputColumns, Seq.empty), subquery.part), subquery.inTransactionsParameters)(subquery.position)
+          Apply(
+            input,
+            fragmentPart(Init(use, input.outputColumns, Seq.empty), subquery.part),
+            subquery.inTransactionsParameters
+          )(subquery.position)
       }
     }
   }
@@ -102,7 +106,9 @@ class FabricFragmenter(
     }
 
     rest.filter(_.isInstanceOf[ast.UseGraph])
-      .map(clause => Errors.syntax("USE can only appear at the beginning of a (sub-)query", queryString, clause.position))
+      .map(clause =>
+        Errors.syntax("USE can only appear at the beginning of a (sub-)query", queryString, clause.position)
+      )
 
     use
   }
@@ -136,12 +142,12 @@ class FabricFragmenter(
    */
   private def partition[E, H, M](es: Seq[E])(pred: E => Either[H, M]): Seq[Either[H, Seq[M]]] = {
     es.map(pred).foldLeft(Seq[Either[H, Seq[M]]]()) {
-      case (seq, Left(hit))   => seq :+ Left(hit)
+      case (seq, Left(hit)) => seq :+ Left(hit)
       case (seq, Right(miss)) => seq.lastOption match {
-        case None            => seq :+ Right(Seq(miss))
-        case Some(Left(_))   => seq :+ Right(Seq(miss))
-        case Some(Right(ms)) => seq.init :+ Right(ms :+ miss)
-      }
+          case None            => seq :+ Right(Seq(miss))
+          case Some(Left(_))   => seq :+ Right(Seq(miss))
+          case Some(Right(ms)) => seq.init :+ Right(ms :+ miss)
+        }
     }
   }
 

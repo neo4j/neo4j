@@ -20,11 +20,9 @@
 package org.neo4j.token.api;
 
 import java.util.List;
-
 import org.neo4j.exceptions.KernelException;
 
-public interface TokenHolder
-{
+public interface TokenHolder {
     String TYPE_PROPERTY_KEY = "PropertyKey";
     String TYPE_RELATIONSHIP_TYPE = "RelationshipType";
     String TYPE_LABEL = "Label";
@@ -37,7 +35,7 @@ public interface TokenHolder
      * @param tokens The set of initial tokens to populate this token holder with.
      * @throws NonUniqueTokenException If there are duplicate names or ids amongst the given tokens.
      */
-    void setInitialTokens( List<NamedToken> tokens );
+    void setInitialTokens(List<NamedToken> tokens);
 
     /**
      * Add the given token to the internal token registry. The token maybe be either a public or an internal one.
@@ -45,7 +43,7 @@ public interface TokenHolder
      * @param token The token to add.
      * @throws NonUniqueTokenException if the token conflicts with an existing token on id, or on name.
      */
-    void addToken( NamedToken token );
+    void addToken(NamedToken token);
 
     /**
      * Get the id of the public token by the given name, or create a new id for the token if it does not have one already,
@@ -56,7 +54,7 @@ public interface TokenHolder
      * @param name The name of the token to get the id for.
      * @return The (possibly newly created) id of the given token.
      */
-    int getOrCreateId( String name ) throws KernelException;
+    int getOrCreateId(String name) throws KernelException;
 
     /**
      * Resolve the ids of the given token {@code names} into the array for {@code ids}.
@@ -65,7 +63,7 @@ public interface TokenHolder
      * <p>
      * Note that this only looks at public tokens. For internal tokens, use {@link #getOrCreateInternalIds(String[], int[])}.
      */
-    void getOrCreateIds( String[] names, int[] ids ) throws KernelException;
+    void getOrCreateIds(String[] names, int[] ids) throws KernelException;
 
     /**
      * Get the (public) token that has the given id, or throw {@link TokenNotFoundException}.
@@ -74,12 +72,12 @@ public interface TokenHolder
      * <p>
      * To get an internal token, see {@link #getInternalTokenById(int)}.
      */
-    NamedToken getTokenById( int id ) throws TokenNotFoundException;
+    NamedToken getTokenById(int id) throws TokenNotFoundException;
 
     /**
      * Returns the id, or {@link TokenConstants#NO_TOKEN} if no token with this name exists.
      */
-    int getIdByName( String name );
+    int getIdByName(String name);
 
     /**
      * Resolve the ids of the given token {@code names} into the array for {@code ids}.
@@ -92,7 +90,7 @@ public interface TokenHolder
      *
      * @return {@code true} if some of the token names could not be resolved, {@code false} otherwise.
      */
-    boolean getIdsByNames( String[] names, int[] ids );
+    boolean getIdsByNames(String[] names, int[] ids);
 
     /**
      * Get an iterator of all public tokens. No internal tokens are returned by this iterator.
@@ -110,7 +108,7 @@ public interface TokenHolder
      * @param id the id to test for.
      * @return {@code true} if the given token id is in use.
      */
-    boolean hasToken( int id );
+    boolean hasToken(int id);
 
     /**
      * @return the number of public tokens currently in this token holder.
@@ -122,12 +120,12 @@ public interface TokenHolder
      * <p>
      * This method does not take public tokens into consideration.
      */
-    void getOrCreateInternalIds( String[] names, int[] ids ) throws KernelException;
+    void getOrCreateInternalIds(String[] names, int[] ids) throws KernelException;
 
     /**
      * This is the same as {@link #getTokenById(int)}, but for internal tokens.
      * <p>
      * The {@link TokenNotFoundException} exception will be thrown even if a public token exists with that id.
      */
-    NamedToken getInternalTokenById( int id ) throws TokenNotFoundException;
+    NamedToken getInternalTokenById(int id) throws TokenNotFoundException;
 }

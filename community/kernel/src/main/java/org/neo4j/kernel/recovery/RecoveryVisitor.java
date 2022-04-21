@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
+
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -27,39 +30,36 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
-
-final class RecoveryVisitor implements RecoveryApplier
-{
+final class RecoveryVisitor implements RecoveryApplier {
     private final StorageEngine storageEngine;
     private final TransactionApplicationMode mode;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
 
-    RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag )
-    {
+    RecoveryVisitor(
+            StorageEngine storageEngine,
+            TransactionApplicationMode mode,
+            CursorContextFactory contextFactory,
+            String tracerTag) {
         this.storageEngine = storageEngine;
         this.mode = mode;
-        this.cursorContext = contextFactory.create( tracerTag );
-        this.storeCursors = storageEngine.createStorageCursors( cursorContext );
+        this.cursorContext = contextFactory.create(tracerTag);
+        this.storeCursors = storageEngine.createStorageCursors(cursorContext);
     }
 
     @Override
-    public boolean visit( CommittedTransactionRepresentation transaction ) throws Exception
-    {
+    public boolean visit(CommittedTransactionRepresentation transaction) throws Exception {
         var txRepresentation = transaction.getTransactionRepresentation();
         var txId = transaction.getCommitEntry().getTxId();
-        var tx = new TransactionToApply( txRepresentation, txId, cursorContext, storeCursors );
-        tx.commitment( NO_COMMITMENT, txId );
-        tx.logPosition( transaction.getStartEntry().getStartPosition() );
-        storageEngine.apply( tx, mode );
+        var tx = new TransactionToApply(txRepresentation, txId, cursorContext, storeCursors);
+        tx.commitment(NO_COMMITMENT, txId);
+        tx.logPosition(transaction.getStartEntry().getStartPosition());
+        storageEngine.apply(tx, mode);
         return false;
     }
 
     @Override
-    public void close()
-    {
-        closeAllUnchecked( storeCursors, cursorContext );
+    public void close() {
+        closeAllUnchecked(storeCursors, cursorContext);
     }
 }

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
 case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
+
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
     memoryTracker.allocateHeap(StdevFunction.SHALLOW_SIZE)
     new StdevFunction(anInner, false)
@@ -40,7 +41,9 @@ case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anI
 }
 
 case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new StdevFunction(anInner, true)
+
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction =
+    new StdevFunction(anInner, true)
 
   override def expectedInnerType: CypherType = CTNumber
 
@@ -48,4 +51,3 @@ case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(an
 
   override def children: Seq[AstNode[_]] = Seq(anInner)
 }
-

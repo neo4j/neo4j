@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,15 +29,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
-
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 /**
  * First value block in have the following layout:
@@ -50,10 +49,9 @@ import static org.neo4j.memory.HeapEstimator.sizeOf;
  * have a single value block with a pointer to dynamic record chain. The dynamic records are loaded into valueRecords, in
  * order, to provide access in a single point.
  */
-public class PropertyBlock
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyBlock.class );
-    public static final long HEAP_SIZE = SHALLOW_SIZE + sizeOf( new long[1] );
+public class PropertyBlock {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(PropertyBlock.class);
+    public static final long HEAP_SIZE = SHALLOW_SIZE + sizeOf(new long[1]);
 
     /**
      * Size of one property block in a property record. One property may be composed by one or more property blocks
@@ -67,129 +65,106 @@ public class PropertyBlock
     private List<DynamicRecord> valueRecords;
     private long[] valueBlocks;
 
-    public PropertyBlock()
-    {
-    }
+    public PropertyBlock() {}
 
-    public PropertyBlock( PropertyBlock other )
-    {
-        if ( other.valueBlocks != null )
-        {
-            this.valueBlocks = Arrays.copyOf( other.valueBlocks, other.valueBlocks.length );
+    public PropertyBlock(PropertyBlock other) {
+        if (other.valueBlocks != null) {
+            this.valueBlocks = Arrays.copyOf(other.valueBlocks, other.valueBlocks.length);
         }
-        if ( other.valueRecords != null )
-        {
-            this.valueRecords = new ArrayList<>( other.valueRecords.size() );
-            for ( DynamicRecord valueRecord : other.valueRecords )
-            {
-                this.valueRecords.add( new DynamicRecord( valueRecord ) );
+        if (other.valueRecords != null) {
+            this.valueRecords = new ArrayList<>(other.valueRecords.size());
+            for (DynamicRecord valueRecord : other.valueRecords) {
+                this.valueRecords.add(new DynamicRecord(valueRecord));
             }
         }
     }
 
-    public PropertyType getType()
-    {
-        return getType( false );
+    public PropertyType getType() {
+        return getType(false);
     }
 
-    public PropertyType forceGetType()
-    {
-        return getType( true );
+    public PropertyType forceGetType() {
+        return getType(true);
     }
 
-    private PropertyType getType( boolean force )
-    {
-        return valueBlocks == null ? null : force ? PropertyType.getPropertyTypeOrNull( valueBlocks[0] )
-                                                  : PropertyType.getPropertyTypeOrThrow( valueBlocks[0] );
+    private PropertyType getType(boolean force) {
+        return valueBlocks == null
+                ? null
+                : force
+                        ? PropertyType.getPropertyTypeOrNull(valueBlocks[0])
+                        : PropertyType.getPropertyTypeOrThrow(valueBlocks[0]);
     }
 
-    public int getKeyIndexId()
-    {
-        return keyIndexId( valueBlocks[0] );
+    public int getKeyIndexId() {
+        return keyIndexId(valueBlocks[0]);
     }
 
-    public void setKeyIndexId( int key )
-    {
+    public void setKeyIndexId(int key) {
         valueBlocks[0] &= ~KEY_BITMASK;
         valueBlocks[0] |= key;
     }
 
-    public void setSingleBlock( long value )
-    {
+    public void setSingleBlock(long value) {
         valueBlocks = new long[1];
         valueBlocks[0] = value;
-        if ( valueRecords != null )
-        {
+        if (valueRecords != null) {
             valueRecords.clear();
         }
     }
 
-    public void addValueRecord( DynamicRecord record )
-    {
-        if ( valueRecords == null )
-        {
-            valueRecords = new ArrayList<>( 1 );
+    public void addValueRecord(DynamicRecord record) {
+        if (valueRecords == null) {
+            valueRecords = new ArrayList<>(1);
         }
-        valueRecords.add( record );
+        valueRecords.add(record);
     }
 
-    public void setValueRecords( List<DynamicRecord> valueRecords )
-    {
+    public void setValueRecords(List<DynamicRecord> valueRecords) {
         assert this.valueRecords == null || this.valueRecords.isEmpty() : this.valueRecords.toString();
         this.valueRecords = valueRecords;
     }
 
-    public List<DynamicRecord> getValueRecords()
-    {
+    public List<DynamicRecord> getValueRecords() {
         return valueRecords != null ? valueRecords : Collections.emptyList();
     }
 
-    public long getSingleValueBlock()
-    {
+    public long getSingleValueBlock() {
         return valueBlocks[0];
     }
 
     /**
      * use this for references to the dynamic stores
      */
-    public long getSingleValueLong()
-    {
-        return fetchLong( valueBlocks[0] );
+    public long getSingleValueLong() {
+        return fetchLong(valueBlocks[0]);
     }
 
-    public int getSingleValueInt()
-    {
-        return fetchInt( valueBlocks[0] );
+    public int getSingleValueInt() {
+        return fetchInt(valueBlocks[0]);
     }
 
-    public short getSingleValueShort()
-    {
-        return fetchShort( valueBlocks[0] );
+    public short getSingleValueShort() {
+        return fetchShort(valueBlocks[0]);
     }
 
-    public byte getSingleValueByte()
-    {
-        return fetchByte( valueBlocks[0] );
+    public byte getSingleValueByte() {
+        return fetchByte(valueBlocks[0]);
     }
 
-    public long[] getValueBlocks()
-    {
+    public long[] getValueBlocks() {
         return valueBlocks;
     }
 
-    public boolean isLight()
-    {
+    public boolean isLight() {
         return valueRecords == null || valueRecords.isEmpty();
     }
 
-    public void setValueBlocks( long[] blocks )
-    {
+    public void setValueBlocks(long[] blocks) {
         int expectedPayloadSize = PropertyType.getPayloadSizeLongs();
-        assert blocks == null || blocks.length <= expectedPayloadSize :
-                "I was given an array of size " + blocks.length + ", but I wanted it to be " + expectedPayloadSize;
+        assert blocks == null || blocks.length <= expectedPayloadSize
+                : "I was given an array of size " + blocks.length + ", but I wanted it to be " + expectedPayloadSize;
         this.valueBlocks = blocks;
-        if ( valueRecords != null )
-        {
+        if (valueRecords != null) {
             valueRecords.clear();
         }
     }
@@ -201,144 +176,120 @@ public class PropertyBlock
      *
      * @return The size of this block in bytes, including the header.
      */
-    public int getSize()
-    {
+    public int getSize() {
         // Currently each block is a multiple of 8 in size
         return valueBlocks == null ? 0 : valueBlocks.length * PROPERTY_BLOCK_SIZE;
     }
 
     @Override
-    public String toString()
-    {
-        StringBuilder result = new StringBuilder( "PropertyBlock[" );
+    public String toString() {
+        StringBuilder result = new StringBuilder("PropertyBlock[");
         PropertyType type = getType();
-        if ( valueBlocks != null )
-        {
-            result.append( "blocks=" ).append( valueBlocks.length ).append( ',' );
+        if (valueBlocks != null) {
+            result.append("blocks=").append(valueBlocks.length).append(',');
         }
-        result.append( type == null ? "<unknown type>" : type.name() ).append( ',' );
-        result.append( "key=" ).append( valueBlocks == null ? "?" : Integer.toString( getKeyIndexId() ) );
-        if ( type != null )
-        {
-            switch ( type )
-            {
-            case STRING:
-            case ARRAY:
-                result.append( ",firstDynamic=" ).append( getSingleValueLong() );
-                break;
-            default:
-                Object value = type.value( this, null, null ).asObject();
-                if ( value != null && value.getClass().isArray() )
-                {
-                    int length = Array.getLength( value );
-                    StringBuilder buf = new StringBuilder( value.getClass().getComponentType().getSimpleName() ).append( '[' );
-                    for ( int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++ )
-                    {
-                        if ( i != 0 )
-                        {
-                            buf.append( ',' );
+        result.append(type == null ? "<unknown type>" : type.name()).append(',');
+        result.append("key=").append(valueBlocks == null ? "?" : Integer.toString(getKeyIndexId()));
+        if (type != null) {
+            switch (type) {
+                case STRING:
+                case ARRAY:
+                    result.append(",firstDynamic=").append(getSingleValueLong());
+                    break;
+                default:
+                    Object value = type.value(this, null, null).asObject();
+                    if (value != null && value.getClass().isArray()) {
+                        int length = Array.getLength(value);
+                        StringBuilder buf = new StringBuilder(
+                                        value.getClass().getComponentType().getSimpleName())
+                                .append('[');
+                        for (int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++) {
+                            if (i != 0) {
+                                buf.append(',');
+                            }
+                            buf.append(Array.get(value, i));
                         }
-                        buf.append( Array.get( value, i ) );
+                        if (length > MAX_ARRAY_TOSTRING_SIZE) {
+                            buf.append(",...");
+                        }
+                        value = buf.append(']');
                     }
-                    if ( length > MAX_ARRAY_TOSTRING_SIZE )
-                    {
-                        buf.append( ",..." );
-                    }
-                    value = buf.append( ']' );
-                }
-                result.append( ",value=" ).append( value );
-                break;
+                    result.append(",value=").append(value);
+                    break;
             }
         }
-        if ( !isLight() )
-        {
-            result.append( ",ValueRecords[" );
+        if (!isLight()) {
+            result.append(",ValueRecords[");
             Iterator<DynamicRecord> recIt = valueRecords.iterator();
-            while ( recIt.hasNext() )
-            {
-                result.append( recIt.next() );
-                if ( recIt.hasNext() )
-                {
-                    result.append( ',' );
+            while (recIt.hasNext()) {
+                result.append(recIt.next());
+                if (recIt.hasNext()) {
+                    result.append(',');
                 }
             }
-            result.append( ']' );
+            result.append(']');
         }
-        result.append( ']' );
+        result.append(']');
         return result.toString();
     }
 
-    public boolean hasSameContentsAs( PropertyBlock other )
-    {
+    public boolean hasSameContentsAs(PropertyBlock other) {
         // Assumption (which happens to be true) that if a heavy (long string/array) property
         // changes it will get another id, making the valueBlocks values differ.
-        return Arrays.equals( valueBlocks, other.valueBlocks );
+        return Arrays.equals(valueBlocks, other.valueBlocks);
     }
 
-    public Value newPropertyValue( PropertyStore propertyStore, StoreCursors cursors )
-    {
-        return getType().value( this, propertyStore, cursors );
+    public Value newPropertyValue(PropertyStore propertyStore, StoreCursors cursors) {
+        return getType().value(this, propertyStore, cursors);
     }
 
-    public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore, StoreCursors cursors )
-    {
+    public PropertyKeyValue newPropertyKeyValue(PropertyStore propertyStore, StoreCursors cursors) {
         int propertyKeyId = getKeyIndexId();
-        return new PropertyKeyValue( propertyKeyId, getType().value( this, propertyStore, cursors ) );
+        return new PropertyKeyValue(propertyKeyId, getType().value(this, propertyStore, cursors));
     }
 
-    public static int keyIndexId( long valueBlock )
-    {
+    public static int keyIndexId(long valueBlock) {
         // [][][][][][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         return (int) (valueBlock & KEY_BITMASK);
     }
 
-    public static long fetchLong( long valueBlock )
-    {
+    public static long fetchLong(long valueBlock) {
         return (valueBlock & 0xFFFFFFFFF0000000L) >>> 28;
     }
 
-    public static int fetchInt( long valueBlock )
-    {
+    public static int fetchInt(long valueBlock) {
         return (int) ((valueBlock & 0x0FFFFFFFF0000000L) >>> 28);
     }
 
-    public static short fetchShort( long valueBlock )
-    {
+    public static short fetchShort(long valueBlock) {
         return (short) ((valueBlock & 0x00000FFFF0000000L) >>> 28);
     }
 
-    public static byte fetchByte( long valueBlock )
-    {
+    public static byte fetchByte(long valueBlock) {
         return (byte) ((valueBlock & 0x0000000FF0000000L) >>> 28);
     }
 
-    public static boolean valueIsInlined( long valueBlock )
-    {
+    public static boolean valueIsInlined(long valueBlock) {
         // [][][][][   i,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         return (valueBlock & 0x10000000L) > 0;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         PropertyBlock that = (PropertyBlock) o;
-        return Objects.equals( valueRecords, that.valueRecords ) &&
-                Arrays.equals( valueBlocks, that.valueBlocks );
+        return Objects.equals(valueRecords, that.valueRecords) && Arrays.equals(valueBlocks, that.valueBlocks);
     }
 
     @Override
-    public int hashCode()
-    {
-        int result = Objects.hash( valueRecords );
-        result = 31 * result + Arrays.hashCode( valueBlocks );
+    public int hashCode() {
+        int result = Objects.hash(valueRecords);
+        result = 31 * result + Arrays.hashCode(valueBlocks);
         return result;
     }
 }

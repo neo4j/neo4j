@@ -20,27 +20,21 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.graphdb.schema.IndexCreator;
 
-public class MandatoryTransactionsForIndexCreatorTest
-    extends AbstractMandatoryTransactionsTest<IndexCreator>
-{
+public class MandatoryTransactionsForIndexCreatorTest extends AbstractMandatoryTransactionsTest<IndexCreator> {
     @Test
-    void shouldRequireTransactionsWhenCallingMethodsOnIndexCreators()
-    {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexCreatorFacadeMethods.values() );
+    void shouldRequireTransactionsWhenCallingMethodsOnIndexCreators() {
+        assertFacadeMethodsThrowNotInTransaction(obtainEntity(), IndexCreatorFacadeMethods.values());
     }
 
     @Test
-    void shouldTerminateWhenCallingMethodsOnIndexCreators()
-    {
-        assertFacadeMethodsThrowAfterTerminate( IndexCreatorFacadeMethods.values() );
+    void shouldTerminateWhenCallingMethodsOnIndexCreators() {
+        assertFacadeMethodsThrowAfterTerminate(IndexCreatorFacadeMethods.values());
     }
 
     @Override
-    protected IndexCreator obtainEntityInTransaction( Transaction transaction )
-    {
-        return transaction.schema().indexFor( Label.label( "Label" ) );
+    protected IndexCreator obtainEntityInTransaction(Transaction transaction) {
+        return transaction.schema().indexFor(Label.label("Label"));
     }
 }

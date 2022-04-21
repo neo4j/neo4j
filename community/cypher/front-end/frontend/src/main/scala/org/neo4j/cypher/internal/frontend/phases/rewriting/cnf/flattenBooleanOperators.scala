@@ -33,19 +33,19 @@ case object flattenBooleanOperators extends Rewriter with CnfPhase {
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val firstStep: Rewriter = Rewriter.lift {
-    case p@And(lhs, rhs) => Ands(Seq(lhs, rhs))(p.position)
-    case p@Or(lhs, rhs)  => Ors(Seq(lhs, rhs))(p.position)
+    case p @ And(lhs, rhs) => Ands(Seq(lhs, rhs))(p.position)
+    case p @ Or(lhs, rhs)  => Ors(Seq(lhs, rhs))(p.position)
   }
 
   private val secondStep: Rewriter = Rewriter.lift {
-    case p@Ands(exprs) => Ands(exprs.flatMap {
-      case Ands(inner) => inner
-      case x => Set(x)
-    })(p.position)
-    case p@Ors(exprs) => Ors(exprs.flatMap {
-      case Ors(inner) => inner
-      case x => Set(x)
-    })(p.position)
+    case p @ Ands(exprs) => Ands(exprs.flatMap {
+        case Ands(inner) => inner
+        case x           => Set(x)
+      })(p.position)
+    case p @ Ors(exprs) => Ors(exprs.flatMap {
+        case Ors(inner) => inner
+        case x          => Set(x)
+      })(p.position)
   }
 
   private val instance = inSequence(bottomUp(firstStep), fixedPoint(bottomUp(secondStep)))
@@ -56,8 +56,7 @@ case object flattenBooleanOperators extends Rewriter with CnfPhase {
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
-  override def getRewriter(from: BaseState,
-                           context: BaseContext): Rewriter = this
+  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = this
 
   override def toString = "flattenBooleanOperators"
 }

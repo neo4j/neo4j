@@ -31,10 +31,12 @@ import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.values.storable.TextValue
 
-abstract class AbstractNodeIndexStringScanPipe(ident: String,
-                                               property: IndexedProperty,
-                                               queryIndexId: Int,
-                                               valueExpr: Expression) extends Pipe with IndexPipeWithValues {
+abstract class AbstractNodeIndexStringScanPipe(
+  ident: String,
+  property: IndexedProperty,
+  queryIndexId: Int,
+  valueExpr: Expression
+) extends Pipe with IndexPipeWithValues {
 
   override val indexPropertyIndices: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
   override val indexCachedProperties: Array[CachedProperty] = Array(property.asCachedProperty(ident))
@@ -46,44 +48,53 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
     val resultNodes = value match {
       case value: TextValue =>
-        new NodeIndexIterator(state, state.query, baseContext, queryContextCall(state, state.queryIndexes(queryIndexId), value))
+        new NodeIndexIterator(
+          state,
+          state.query,
+          baseContext,
+          queryContextCall(state, state.queryIndexes(queryIndexId), value)
+        )
       case _ => ClosingIterator.empty
     }
 
     resultNodes
   }
 
-  protected def queryContextCall(state: QueryState,
-                                 index: IndexReadSession,
-                                 value: TextValue): NodeValueIndexCursor
+  protected def queryContextCall(state: QueryState, index: IndexReadSession, value: TextValue): NodeValueIndexCursor
 }
 
-case class NodeIndexContainsScanPipe(ident: String,
-                                     label: LabelToken,
-                                     property: IndexedProperty,
-                                     queryIndexId: Int,
-                                     valueExpr: Expression,
-                                     indexOrder: IndexOrder)
-                                    (val id: Id = Id.INVALID_ID)
-  extends AbstractNodeIndexStringScanPipe(ident, property, queryIndexId, valueExpr) {
+case class NodeIndexContainsScanPipe(
+  ident: String,
+  label: LabelToken,
+  property: IndexedProperty,
+  queryIndexId: Int,
+  valueExpr: Expression,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID)
+    extends AbstractNodeIndexStringScanPipe(ident, property, queryIndexId, valueExpr) {
 
-  override protected def queryContextCall(state: QueryState,
-                                          index: IndexReadSession,
-                                          value: TextValue): NodeValueIndexCursor =
+  override protected def queryContextCall(
+    state: QueryState,
+    index: IndexReadSession,
+    value: TextValue
+  ): NodeValueIndexCursor =
     state.query.nodeIndexSeekByContains(index, needsValues, indexOrder, value)
 }
 
-case class NodeIndexEndsWithScanPipe(ident: String,
-                                     label: LabelToken,
-                                     property: IndexedProperty,
-                                     queryIndexId: Int,
-                                     valueExpr: Expression,
-                                     indexOrder: IndexOrder)
-                                    (val id: Id = Id.INVALID_ID)
-  extends AbstractNodeIndexStringScanPipe(ident, property, queryIndexId, valueExpr) {
+case class NodeIndexEndsWithScanPipe(
+  ident: String,
+  label: LabelToken,
+  property: IndexedProperty,
+  queryIndexId: Int,
+  valueExpr: Expression,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID)
+    extends AbstractNodeIndexStringScanPipe(ident, property, queryIndexId, valueExpr) {
 
-  override protected def queryContextCall(state: QueryState,
-                                          index: IndexReadSession,
-                                          value: TextValue): NodeValueIndexCursor =
+  override protected def queryContextCall(
+    state: QueryState,
+    index: IndexReadSession,
+    value: TextValue
+  ): NodeValueIndexCursor =
     state.query.nodeIndexSeekByEndsWith(index, needsValues, indexOrder, value)
 }

@@ -19,27 +19,26 @@
  */
 package org.neo4j.dbms.systemgraph;
 
-import org.neo4j.dbms.database.ComponentVersion;
-
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
 
-public enum CommunityTopologyGraphVersion implements ComponentVersion
-{
+import org.neo4j.dbms.database.ComponentVersion;
+
+public enum CommunityTopologyGraphVersion implements ComponentVersion {
     /**
      * Version scheme of COMMUNITY_TOPOLOGY_GRAPH_COMPONENT with breaking changes to the schema:
      *
      * Version 0 (Neo4j 4.4):
      *  - Introduced the access property on database nodes
      */
-    COMMUNITY_TOPOLOGY_44( 0, Neo4jVersions.VERSION_44 ),
+    COMMUNITY_TOPOLOGY_44(0, Neo4jVersions.VERSION_44),
 
-    COMMUNITY_TOPOLOGY_UNKNOWN_VERSION( UNKNOWN_VERSION, String.format( "no '%s' found", COMMUNITY_TOPOLOGY_GRAPH_COMPONENT ) );
+    COMMUNITY_TOPOLOGY_UNKNOWN_VERSION(
+            UNKNOWN_VERSION, String.format("no '%s' found", COMMUNITY_TOPOLOGY_GRAPH_COMPONENT));
 
     public static final int FIRST_VALID_COMMUNITY_TOPOLOGY_VERSION = COMMUNITY_TOPOLOGY_44.getVersion();
     public static final int LATEST_COMMUNITY_TOPOLOGY_VERSION = COMMUNITY_TOPOLOGY_44.getVersion();
 
-    CommunityTopologyGraphVersion( int version, String description )
-    {
+    CommunityTopologyGraphVersion(int version, String description) {
         this.version = version;
         this.description = description;
     }
@@ -48,44 +47,37 @@ public enum CommunityTopologyGraphVersion implements ComponentVersion
     private final int version;
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return description + '(' + version + ')';
     }
 
     @Override
-    public int getVersion()
-    {
+    public int getVersion() {
         return version;
     }
 
     @Override
-    public String getComponentName()
-    {
+    public String getComponentName() {
         return COMMUNITY_TOPOLOGY_GRAPH_COMPONENT;
     }
 
     @Override
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
     @Override
-    public boolean isCurrent()
-    {
+    public boolean isCurrent() {
         return version == LATEST_COMMUNITY_TOPOLOGY_VERSION;
     }
 
     @Override
-    public boolean migrationSupported()
-    {
+    public boolean migrationSupported() {
         return version >= FIRST_VALID_COMMUNITY_TOPOLOGY_VERSION && version <= LATEST_COMMUNITY_TOPOLOGY_VERSION;
     }
 
     @Override
-    public boolean runtimeSupported()
-    {
+    public boolean runtimeSupported() {
         return version >= FIRST_VALID_COMMUNITY_TOPOLOGY_VERSION && version <= LATEST_COMMUNITY_TOPOLOGY_VERSION;
     }
 }

@@ -21,21 +21,17 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class LoadExternalResourceException extends Neo4jException
-{
-    public LoadExternalResourceException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class LoadExternalResourceException extends Neo4jException {
+    public LoadExternalResourceException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public LoadExternalResourceException( String message )
-    {
-        super( message );
+    public LoadExternalResourceException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.ExternalResourceFailed;
     }
 }

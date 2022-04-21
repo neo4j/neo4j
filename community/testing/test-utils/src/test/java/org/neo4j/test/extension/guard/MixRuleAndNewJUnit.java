@@ -19,20 +19,18 @@
  */
 package org.neo4j.test.extension.guard;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class MixRuleAndNewJUnit
-{
+class MixRuleAndNewJUnit {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    void anything()
-    {
-        assertEquals( 0L, 0L );
+    void anything() {
+        assertEquals(0L, 0L);
     }
 }

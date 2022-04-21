@@ -23,8 +23,7 @@ package org.neo4j.io.pagecache.monitoring;
  * The PageCacheCounters exposes internal counters from the page cache.
  * The data for these counters is sourced through the PageCacheTracer API.
  */
-public interface PageCacheCounters
-{
+public interface PageCacheCounters {
     /**
      * @return The number of page faults observed thus far, both failed and successful.
      */
@@ -58,7 +57,7 @@ public interface PageCacheCounters
     /**
      * @return The number of page unpins observed thus far.
      */
-     long unpins();
+    long unpins();
 
     /**
      * @return The number of page cache hits so far.

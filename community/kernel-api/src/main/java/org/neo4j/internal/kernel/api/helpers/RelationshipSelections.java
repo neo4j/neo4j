@@ -31,12 +31,10 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 /**
  * Utilities for dealing with RelationshipSelectionCursor and corresponding iterators.
  */
-public final class RelationshipSelections
-{
+public final class RelationshipSelections {
 
-    private RelationshipSelections()
-    {
-        throw new UnsupportedOperationException( "Do not instantiate" );
+    private RelationshipSelections() {
+        throw new UnsupportedOperationException("Do not instantiate");
     }
 
     /**
@@ -48,12 +46,10 @@ public final class RelationshipSelections
      * @param cursorContext underlying page cursor context
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipTraversalCursor outgoingCursor( CursorFactory cursors,
-                                                              NodeCursor node,
-                                                              int[] types,
-                                                              CursorContext cursorContext )
-    {
-        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorContext ), node, types, Direction.OUTGOING );
+    public static RelationshipTraversalCursor outgoingCursor(
+            CursorFactory cursors, NodeCursor node, int[] types, CursorContext cursorContext) {
+        return relationshipsCursor(
+                cursors.allocateRelationshipTraversalCursor(cursorContext), node, types, Direction.OUTGOING);
     }
 
     /**
@@ -63,11 +59,9 @@ public final class RelationshipSelections
      * @param types The types of the relationship
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipTraversalCursor outgoingCursor( RelationshipTraversalCursor traversalCursor,
-            NodeCursor node,
-            int[] types )
-    {
-        return relationshipsCursor( traversalCursor, node, types, Direction.OUTGOING );
+    public static RelationshipTraversalCursor outgoingCursor(
+            RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types) {
+        return relationshipsCursor(traversalCursor, node, types, Direction.OUTGOING);
     }
 
     /**
@@ -77,11 +71,9 @@ public final class RelationshipSelections
      * @param types The types of the relationship
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipTraversalCursor incomingCursor( RelationshipTraversalCursor traversalCursor,
-            NodeCursor node,
-            int[] types )
-    {
-        return relationshipsCursor( traversalCursor, node, types, Direction.INCOMING );
+    public static RelationshipTraversalCursor incomingCursor(
+            RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types) {
+        return relationshipsCursor(traversalCursor, node, types, Direction.INCOMING);
     }
 
     /**
@@ -93,12 +85,10 @@ public final class RelationshipSelections
      * @param cursorContext underlying page cursor context
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipTraversalCursor incomingCursor( CursorFactory cursors,
-                                                              NodeCursor node,
-                                                              int[] types,
-                                                              CursorContext cursorContext )
-    {
-        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorContext ), node, types, Direction.INCOMING );
+    public static RelationshipTraversalCursor incomingCursor(
+            CursorFactory cursors, NodeCursor node, int[] types, CursorContext cursorContext) {
+        return relationshipsCursor(
+                cursors.allocateRelationshipTraversalCursor(cursorContext), node, types, Direction.INCOMING);
     }
 
     /**
@@ -110,12 +100,10 @@ public final class RelationshipSelections
      * @param cursorContext underlying page cursor context
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipTraversalCursor allCursor( CursorFactory cursors,
-                                                         NodeCursor node,
-                                                         int[] types,
-                                                         CursorContext cursorContext )
-    {
-        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorContext ), node, types, Direction.BOTH );
+    public static RelationshipTraversalCursor allCursor(
+            CursorFactory cursors, NodeCursor node, int[] types, CursorContext cursorContext) {
+        return relationshipsCursor(
+                cursors.allocateRelationshipTraversalCursor(cursorContext), node, types, Direction.BOTH);
     }
 
     /**
@@ -125,18 +113,15 @@ public final class RelationshipSelections
      * @param types The types of the relationship
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipTraversalCursor allCursor( RelationshipTraversalCursor traversalCursor,
-                                                         NodeCursor node,
-                                                         int[] types )
-    {
-        node.relationships( traversalCursor, RelationshipSelection.selection( types, Direction.BOTH ) );
+    public static RelationshipTraversalCursor allCursor(
+            RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types) {
+        node.relationships(traversalCursor, RelationshipSelection.selection(types, Direction.BOTH));
         return traversalCursor;
     }
 
-    public static RelationshipTraversalCursor relationshipsCursor( RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types,
-            Direction outgoing )
-    {
-        node.relationships( traversalCursor, RelationshipSelection.selection( types, outgoing ) );
+    public static RelationshipTraversalCursor relationshipsCursor(
+            RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types, Direction outgoing) {
+        node.relationships(traversalCursor, RelationshipSelection.selection(types, outgoing));
         return traversalCursor;
     }
 
@@ -150,13 +135,13 @@ public final class RelationshipSelections
      * @param cursorContext underlying page cursor context
      * @return An iterator that allows traversing the relationship chain.
      */
-    public static <T> ResourceIterator<T> outgoingIterator( CursorFactory cursors,
-                                                            NodeCursor node,
-                                                            int[] types,
-                                                            RelationshipFactory<T> factory,
-                                                            CursorContext cursorContext )
-    {
-        return new RelationshipEntityIterator<>( outgoingCursor( cursors, node, types, cursorContext ), factory );
+    public static <T> ResourceIterator<T> outgoingIterator(
+            CursorFactory cursors,
+            NodeCursor node,
+            int[] types,
+            RelationshipFactory<T> factory,
+            CursorContext cursorContext) {
+        return new RelationshipEntityIterator<>(outgoingCursor(cursors, node, types, cursorContext), factory);
     }
 
     /**
@@ -169,13 +154,13 @@ public final class RelationshipSelections
      * @param cursorContext underlying page cursor context
      * @return An iterator that allows traversing the relationship chain.
      */
-    public static <T> ResourceIterator<T> incomingIterator( CursorFactory cursors,
-                                                            NodeCursor node,
-                                                            int[] types,
-                                                            RelationshipFactory<T> factory,
-                                                            CursorContext cursorContext )
-    {
-        return new RelationshipEntityIterator<>( incomingCursor( cursors, node, types, cursorContext ), factory );
+    public static <T> ResourceIterator<T> incomingIterator(
+            CursorFactory cursors,
+            NodeCursor node,
+            int[] types,
+            RelationshipFactory<T> factory,
+            CursorContext cursorContext) {
+        return new RelationshipEntityIterator<>(incomingCursor(cursors, node, types, cursorContext), factory);
     }
 
     /**
@@ -188,39 +173,39 @@ public final class RelationshipSelections
      * @param cursorContext underlying page cursor context
      * @return An iterator that allows traversing the relationship chain.
      */
-    public static <T> ResourceIterator<T> allIterator( CursorFactory cursors,
-                                                       NodeCursor node,
-                                                       int[] types,
-                                                       RelationshipFactory<T> factory,
-                                                       CursorContext cursorContext )
-    {
-        return new RelationshipEntityIterator<>( allCursor( cursors, node, types, cursorContext ), factory );
+    public static <T> ResourceIterator<T> allIterator(
+            CursorFactory cursors,
+            NodeCursor node,
+            int[] types,
+            RelationshipFactory<T> factory,
+            CursorContext cursorContext) {
+        return new RelationshipEntityIterator<>(allCursor(cursors, node, types, cursorContext), factory);
     }
 
-    private static class RelationshipEntityIterator<T> extends PrefetchingResourceIterator<T>
-    {
+    private static class RelationshipEntityIterator<T> extends PrefetchingResourceIterator<T> {
         private final RelationshipTraversalCursor relationshipTraversalCursor;
         private final RelationshipFactory<T> factory;
 
-        RelationshipEntityIterator( RelationshipTraversalCursor relationshipTraversalCursor, RelationshipFactory<T> factory )
-        {
+        RelationshipEntityIterator(
+                RelationshipTraversalCursor relationshipTraversalCursor, RelationshipFactory<T> factory) {
             this.relationshipTraversalCursor = relationshipTraversalCursor;
             this.factory = factory;
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             relationshipTraversalCursor.close();
         }
 
         @Override
-        protected T fetchNextOrNull()
-        {
-            if ( relationshipTraversalCursor.next() )
-            {
-                return factory.relationship( relationshipTraversalCursor.relationshipReference(), relationshipTraversalCursor.sourceNodeReference(),
-                        relationshipTraversalCursor.type(), relationshipTraversalCursor.targetNodeReference(), relationshipTraversalCursor );
+        protected T fetchNextOrNull() {
+            if (relationshipTraversalCursor.next()) {
+                return factory.relationship(
+                        relationshipTraversalCursor.relationshipReference(),
+                        relationshipTraversalCursor.sourceNodeReference(),
+                        relationshipTraversalCursor.type(),
+                        relationshipTraversalCursor.targetNodeReference(),
+                        relationshipTraversalCursor);
             }
             close();
             return null;

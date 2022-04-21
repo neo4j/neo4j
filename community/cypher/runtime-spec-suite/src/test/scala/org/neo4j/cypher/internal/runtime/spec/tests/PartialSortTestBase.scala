@@ -34,12 +34,16 @@ import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase.secondCo
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  private def unsortedPrefixThenSort(input: IndexedSeq[Array[Any]], chunkSize: Int, skip: Int): IndexedSeq[Array[Any]] = {
+  private def unsortedPrefixThenSort(
+    input: IndexedSeq[Array[Any]],
+    chunkSize: Int,
+    skip: Int
+  ): IndexedSeq[Array[Any]] = {
     val skipPrefixLength = skip - skip % chunkSize
     val allSorted = input.sortBy(firstTwoColumns)
     val skipPrefixThenSorted = input.take(skipPrefixLength) ++ input.drop(skipPrefixLength).sortBy(firstTwoColumns)
@@ -131,7 +135,12 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     // when
     val chunkSize = 10
     val skip = 55
-    val input = inputColumns(nBatches = sizeHint / chunkSize, batchSize = chunkSize, row => row / chunkSize, row => row % (chunkSize / 2))
+    val input = inputColumns(
+      nBatches = sizeHint / chunkSize,
+      batchSize = chunkSize,
+      row => row / chunkSize,
+      row => row % (chunkSize / 2)
+    )
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -150,7 +159,12 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     // when
     val chunkSize = 10
     val skip = 5 * chunkSize
-    val input = inputColumns(nBatches = sizeHint / chunkSize, batchSize = chunkSize, row => row / chunkSize, row => row % (chunkSize / 2))
+    val input = inputColumns(
+      nBatches = sizeHint / chunkSize,
+      batchSize = chunkSize,
+      row => row / chunkSize,
+      row => row % (chunkSize / 2)
+    )
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -169,7 +183,12 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     // when
     val chunkSize = 10
     val skip = sizeHint - 1
-    val input = inputColumns(nBatches = sizeHint / chunkSize, batchSize = chunkSize, row => row / chunkSize, row => row % (chunkSize / 2))
+    val input = inputColumns(
+      nBatches = sizeHint / chunkSize,
+      batchSize = chunkSize,
+      row => row / chunkSize,
+      row => row % (chunkSize / 2)
+    )
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -187,7 +206,12 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
   test("partial sort with one column already sorted with skipping all rows") {
     // when
     val chunkSize = 10
-    val input = inputColumns(nBatches = sizeHint / chunkSize, batchSize = chunkSize, row => row / chunkSize, row => row % (chunkSize / 2))
+    val input = inputColumns(
+      nBatches = sizeHint / chunkSize,
+      batchSize = chunkSize,
+      row => row / chunkSize,
+      row => row % (chunkSize / 2)
+    )
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -235,11 +259,14 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
   test("partial sort with two sorted and two unsorted columns") {
     // when
-    val input = inputColumns(nBatches = sizeHint / 10, batchSize = 10,
+    val input = inputColumns(
+      nBatches = sizeHint / 10,
+      batchSize = 10,
       row => row / 20,
       row => -row / 4,
       row => row % 13,
-      row => row % 7)
+      row => row % 7
+    )
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z", "a")
@@ -251,15 +278,19 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "z", "a").withRows(inOrder(input.flatten.sortBy(row =>
-      (row(0).asInstanceOf[Int], -row(1).asInstanceOf[Int], row(2).asInstanceOf[Int], -row(3).asInstanceOf[Int]))))
+      (row(0).asInstanceOf[Int], -row(1).asInstanceOf[Int], row(2).asInstanceOf[Int], -row(3).asInstanceOf[Int])
+    )))
   }
 
   test("should handle null values") {
     // when
     val batchSize = 10
-    val input = inputColumns(nBatches = sizeHint / batchSize, batchSize = batchSize,
+    val input = inputColumns(
+      nBatches = sizeHint / batchSize,
+      batchSize = batchSize,
       row => if (row < sizeHint - batchSize) row / batchSize else null,
-      row => if (row % 3 != 0) row % 10 else null)
+      row => if (row % 3 != 0) row % 10 else null
+    )
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -272,10 +303,12 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     // then
     def sortKey(col: Any): Int = col match {
       case i: Int => i
-      case null => Integer.MAX_VALUE
+      case null   => Integer.MAX_VALUE
     }
 
-    runtimeResult should beColumns("x", "y").withRows(inOrder(input.flatten.sortBy(row => (sortKey(row(0)), sortKey(row(1))))))
+    runtimeResult should beColumns("x", "y").withRows(inOrder(input.flatten.sortBy(row =>
+      (sortKey(row(0)), sortKey(row(1)))
+    )))
   }
 
   test("should work on RHS of apply") {
@@ -283,9 +316,13 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     nodeIndex("B", "x")
     val aNodes = given {
       val aNodes = nodeGraph(2, "A")
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
-      }, "B")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
+        },
+        "B"
+      )
       aNodes
     }
 
@@ -301,7 +338,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val rhs = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, - i)
+    val rhs = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, -i)
 
     val expected = for {
       a <- aNodes
@@ -317,9 +354,13 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     nodeIndex("B", "x")
     val aNodes = given {
       val aNodes = nodeGraph(2, "A")
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
-      }, "B")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
+        },
+        "B"
+      )
       aNodes
     }
 
@@ -335,7 +376,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val rhs = unsortedPrefixThenSort(for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, - i), chunkSize, skip)
+    val rhs = unsortedPrefixThenSort(for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, -i), chunkSize, skip)
 
     val expected = for {
       a <- aNodes
@@ -361,7 +402,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     // Then
     result.request(1)
     result.await() shouldBe true
-    //we shouldn't have exhausted the entire input
+    // we shouldn't have exhausted the entire input
     stream.hasMore shouldBe true
   }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.limited;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,85 +34,69 @@ import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Set;
-
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstraction
-{
+public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstraction {
     private volatile boolean outOfSpace;
 
-    public LimitedFilesystemAbstraction( FileSystemAbstraction delegate )
-    {
-        super( delegate );
+    public LimitedFilesystemAbstraction(FileSystemAbstraction delegate) {
+        super(delegate);
     }
 
     @Override
-    public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
-    {
-        return new LimitedFileChannel( super.open( fileName, options ), this );
+    public StoreChannel open(Path fileName, Set<OpenOption> options) throws IOException {
+        return new LimitedFileChannel(super.open(fileName, options), this);
     }
 
     @Override
-    public OutputStream openAsOutputStream( Path fileName, boolean append ) throws IOException
-    {
-        return new ChannelOutputStream( write( fileName ), append, INSTANCE );
+    public OutputStream openAsOutputStream(Path fileName, boolean append) throws IOException {
+        return new ChannelOutputStream(write(fileName), append, INSTANCE);
     }
 
     @Override
-    public InputStream openAsInputStream( Path fileName ) throws IOException
-    {
-        return new ChannelInputStream( read( fileName ), INSTANCE );
+    public InputStream openAsInputStream(Path fileName) throws IOException {
+        return new ChannelInputStream(read(fileName), INSTANCE);
     }
 
     @Override
-    public Reader openAsReader( Path fileName, Charset charset ) throws IOException
-    {
-        return new InputStreamReader( openAsInputStream( fileName ), charset );
+    public Reader openAsReader(Path fileName, Charset charset) throws IOException {
+        return new InputStreamReader(openAsInputStream(fileName), charset);
     }
 
     @Override
-    public Writer openAsWriter( Path fileName, Charset charset, boolean append ) throws IOException
-    {
-        return new OutputStreamWriter( openAsOutputStream( fileName, append ), StandardCharsets.UTF_8 );
+    public Writer openAsWriter(Path fileName, Charset charset, boolean append) throws IOException {
+        return new OutputStreamWriter(openAsOutputStream(fileName, append), StandardCharsets.UTF_8);
     }
 
     @Override
-    public StoreChannel write( Path fileName ) throws IOException
-    {
+    public StoreChannel write(Path fileName) throws IOException {
         ensureHasSpace();
-        return new LimitedFileChannel( super.write( fileName ), this );
+        return new LimitedFileChannel(super.write(fileName), this);
     }
 
     @Override
-    public void mkdirs( Path fileName ) throws IOException
-    {
+    public void mkdirs(Path fileName) throws IOException {
         ensureHasSpace();
-        super.mkdirs( fileName );
+        super.mkdirs(fileName);
     }
 
     @Override
-    public void renameFile( Path from, Path to, CopyOption... copyOptions ) throws IOException
-    {
+    public void renameFile(Path from, Path to, CopyOption... copyOptions) throws IOException {
         ensureHasSpace();
-        super.renameFile( from, to, copyOptions );
+        super.renameFile(from, to, copyOptions);
     }
 
-    public void runOutOfDiskSpace( boolean outOfSpace )
-    {
+    public void runOutOfDiskSpace(boolean outOfSpace) {
         this.outOfSpace = outOfSpace;
     }
 
-    public void ensureHasSpace() throws IOException
-    {
-        if ( outOfSpace )
-        {
-            throw new IOException( "No space left on device" );
+    public void ensureHasSpace() throws IOException {
+        if (outOfSpace) {
+            throw new IOException("No space left on device");
         }
     }
 }

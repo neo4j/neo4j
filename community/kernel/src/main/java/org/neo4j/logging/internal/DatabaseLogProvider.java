@@ -23,20 +23,16 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-public class DatabaseLogProvider extends PrefixedLogProvider
-{
-    public DatabaseLogProvider( NamedDatabaseId namedDatabaseId, InternalLogProvider delegate )
-    {
-        this( namedDatabaseId.logPrefix(), delegate );
+public class DatabaseLogProvider extends PrefixedLogProvider {
+    public DatabaseLogProvider(NamedDatabaseId namedDatabaseId, InternalLogProvider delegate) {
+        this(namedDatabaseId.logPrefix(), delegate);
     }
 
-    private DatabaseLogProvider( String prefix, InternalLogProvider delegate )
-    {
-        super( delegate, prefix );
+    private DatabaseLogProvider(String prefix, InternalLogProvider delegate) {
+        super(delegate, prefix);
     }
 
-    public static DatabaseLogProvider nullDatabaseLogProvider()
-    {
-        return new DatabaseLogProvider( "", NullLogProvider.getInstance() );
+    public static DatabaseLogProvider nullDatabaseLogProvider() {
+        return new DatabaseLogProvider("", NullLogProvider.getInstance());
     }
 }

@@ -23,22 +23,18 @@ import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.values.storable.Value;
 
-public final class ResourceIds
-{
+public final class ResourceIds {
     // The hash code function we use for index entries and schema names, since Neo4j 4.0.
     private static final HashFunction HASH_40 = HashFunction.incrementalXXH64();
-    private static final long HASH_40_INIT = HASH_40.initialise( 0x0123456789abcdefL );
+    private static final long HASH_40_INIT = HASH_40.initialise(0x0123456789abcdefL);
 
-    private ResourceIds()
-    {
-    }
+    private ResourceIds() {}
 
     /**
      * Produces a 64-bit hashcode for locking index entries.
      */
-    public static long indexEntryResourceId( long labelId, PropertyIndexQuery.ExactPredicate... predicates )
-    {
-        return indexEntryResourceId_4_x( labelId, predicates );
+    public static long indexEntryResourceId(long labelId, PropertyIndexQuery.ExactPredicate... predicates) {
+        return indexEntryResourceId_4_x(labelId, predicates);
     }
 
     /**
@@ -46,11 +42,10 @@ public final class ResourceIds
      * @param schemaName The name to compute a hash code for.
      * @return The hash code for the given schema name.
      */
-    public static long schemaNameResourceId( String schemaName )
-    {
+    public static long schemaNameResourceId(String schemaName) {
         long hash = HASH_40_INIT;
-        hash = schemaName.chars().asLongStream().reduce( hash, HASH_40::update );
-        return HASH_40.finalise( hash );
+        hash = schemaName.chars().asLongStream().reduce(hash, HASH_40::update);
+        return HASH_40.finalise(hash);
     }
 
     /**
@@ -58,19 +53,17 @@ public final class ResourceIds
      *
      * @see HashFunction#incrementalXXH64()
      */
-    static long indexEntryResourceId_4_x( long labelId, PropertyIndexQuery.ExactPredicate[] predicates )
-    {
+    static long indexEntryResourceId_4_x(long labelId, PropertyIndexQuery.ExactPredicate[] predicates) {
         long hash = HASH_40_INIT;
-        hash = HASH_40.update( hash, labelId );
+        hash = HASH_40.update(hash, labelId);
 
-        for ( PropertyIndexQuery.ExactPredicate predicate : predicates )
-        {
+        for (PropertyIndexQuery.ExactPredicate predicate : predicates) {
             int propertyKeyId = predicate.propertyKeyId();
-            hash = HASH_40.update( hash, propertyKeyId );
+            hash = HASH_40.update(hash, propertyKeyId);
             Value value = predicate.value();
-            hash = value.updateHash( HASH_40, hash );
+            hash = value.updateHash(HASH_40, hash);
         }
 
-        return HASH_40.finalise( hash );
+        return HASH_40.finalise(hash);
     }
 }

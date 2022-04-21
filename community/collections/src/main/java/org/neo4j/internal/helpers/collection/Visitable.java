@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-public interface Visitable<V>
-{
-    void accept( V visitor );
+public interface Visitable<V> {
+    void accept(V visitor);
 }

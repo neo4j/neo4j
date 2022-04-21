@@ -20,25 +20,21 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.function.Consumer;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Writes index state in the {@link GBPTree} header.
  */
-public class NativeIndexHeaderWriter implements Consumer<PageCursor>
-{
+public class NativeIndexHeaderWriter implements Consumer<PageCursor> {
     private final byte state;
 
-    public NativeIndexHeaderWriter( byte state )
-    {
+    public NativeIndexHeaderWriter(byte state) {
         this.state = state;
     }
 
     @Override
-    public void accept( PageCursor cursor )
-    {
-        cursor.putByte( state );
+    public void accept(PageCursor cursor) {
+        cursor.putByte(state);
     }
 }

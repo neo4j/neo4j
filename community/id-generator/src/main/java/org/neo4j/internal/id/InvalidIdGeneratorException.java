@@ -21,10 +21,8 @@ package org.neo4j.internal.id;
 
 import org.neo4j.exceptions.StoreFailureException;
 
-public class InvalidIdGeneratorException extends StoreFailureException
-{
-    public InvalidIdGeneratorException( String msg )
-    {
-        super( msg );
+public class InvalidIdGeneratorException extends StoreFailureException {
+    public InvalidIdGeneratorException(String msg) {
+        super(msg);
     }
 }

@@ -20,30 +20,25 @@
 package org.neo4j.graphdb;
 
 import java.util.function.Consumer;
-
 import org.neo4j.graphdb.schema.IndexCreator;
 
-public enum IndexCreatorFacadeMethods implements Consumer<IndexCreator>
-{
-    ON( new FacadeMethod<>( "IndexCreator on( String propertyKey )", self -> self.on( "property" ) ) ),
-    CREATE( new FacadeMethod<>( "IndexDefinition create()", IndexCreator::create ) );
+public enum IndexCreatorFacadeMethods implements Consumer<IndexCreator> {
+    ON(new FacadeMethod<>("IndexCreator on( String propertyKey )", self -> self.on("property"))),
+    CREATE(new FacadeMethod<>("IndexDefinition create()", IndexCreator::create));
 
     private final FacadeMethod<IndexCreator> facadeMethod;
 
-    IndexCreatorFacadeMethods( FacadeMethod<IndexCreator> facadeMethod )
-    {
+    IndexCreatorFacadeMethods(FacadeMethod<IndexCreator> facadeMethod) {
         this.facadeMethod = facadeMethod;
     }
 
     @Override
-    public void accept( IndexCreator indexCreator )
-    {
-        facadeMethod.accept( indexCreator );
+    public void accept(IndexCreator indexCreator) {
+        facadeMethod.accept(indexCreator);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return facadeMethod.toString();
     }
 }

@@ -19,12 +19,13 @@
  */
 package org.neo4j.test.scheduler;
 
+import static org.neo4j.scheduler.JobHandle.EMPTY;
+
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CallableExecutor;
@@ -37,129 +38,110 @@ import org.neo4j.scheduler.MonitoredJobExecutor;
 import org.neo4j.scheduler.MonitoredJobInfo;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
-import static org.neo4j.scheduler.JobHandle.EMPTY;
-
-public class JobSchedulerAdapter extends LifecycleAdapter implements JobScheduler
-{
+public class JobSchedulerAdapter extends LifecycleAdapter implements JobScheduler {
     @Override
-    public void setTopLevelGroupName( String name )
-    {
-    }
+    public void setTopLevelGroupName(String name) {}
 
     @Override
-    public void setParallelism( Group group, int parallelism )
-    {
-    }
+    public void setParallelism(Group group, int parallelism) {}
 
     @Override
-    public void setThreadFactory( Group group, SchedulerThreadFactoryFactory threadFactory )
-    {
-    }
+    public void setThreadFactory(Group group, SchedulerThreadFactoryFactory threadFactory) {}
 
     @Override
-    public CallableExecutor executor( Group group )
-    {
+    public CallableExecutor executor(Group group) {
         return null;
     }
 
     @Override
-    public MonitoredJobExecutor monitoredJobExecutor( Group group )
-    {
+    public MonitoredJobExecutor monitoredJobExecutor(Group group) {
         return null;
     }
 
     @Override
-    public ThreadFactory threadFactory( Group group )
-    {
+    public ThreadFactory threadFactory(Group group) {
         return null;
     }
 
     @Override
-    public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
-    {
+    public <T> JobHandle<T> schedule(Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job) {
         return (JobHandle<T>) EMPTY;
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, Runnable job )
-    {
+    public JobHandle<?> schedule(Group group, Runnable job) {
         return EMPTY;
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable job )
-    {
+    public JobHandle<?> schedule(Group group, JobMonitoringParams monitoredJobParams, Runnable job) {
         return EMPTY;
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay,
-            TimeUnit timeUnit )
-    {
+    public JobHandle<?> schedule(Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit) {
         return EMPTY;
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, TimeUnit timeUnit )
-    {
+    public JobHandle<?> schedule(
+            Group group,
+            JobMonitoringParams monitoredJobParams,
+            Runnable runnable,
+            long initialDelay,
+            TimeUnit timeUnit) {
         return EMPTY;
     }
 
     @Override
-    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period,
-            TimeUnit timeUnit )
-    {
+    public JobHandle<?> scheduleRecurring(Group group, Runnable runnable, long period, TimeUnit timeUnit) {
         return EMPTY;
     }
 
     @Override
-    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit )
-    {
+    public JobHandle<?> scheduleRecurring(
+            Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit) {
         return EMPTY;
     }
 
     @Override
-    public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay,
-            long period, TimeUnit timeUnit )
-    {
+    public JobHandle<?> scheduleRecurring(
+            Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit) {
         return EMPTY;
     }
 
     @Override
-    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, long period,
-            TimeUnit timeUnit )
-    {
+    public JobHandle<?> scheduleRecurring(
+            Group group,
+            JobMonitoringParams monitoredJobParams,
+            Runnable runnable,
+            long initialDelay,
+            long period,
+            TimeUnit timeUnit) {
         return EMPTY;
     }
 
     @Override
-    public Stream<ActiveGroup> activeGroups()
-    {
+    public Stream<ActiveGroup> activeGroups() {
         return Stream.empty();
     }
 
     @Override
-    public List<MonitoredJobInfo> getMonitoredJobs()
-    {
+    public List<MonitoredJobInfo> getMonitoredJobs() {
         return List.of();
     }
 
     @Override
-    public List<FailedJobRun> getFailedJobRuns()
-    {
+    public List<FailedJobRun> getFailedJobRuns() {
         return List.of();
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
+    public void close() {
+        try {
             shutdown();
-        }
-        catch ( Throwable throwable )
-        {
-            throw new RuntimeException( throwable );
+        } catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
         }
     }
 }

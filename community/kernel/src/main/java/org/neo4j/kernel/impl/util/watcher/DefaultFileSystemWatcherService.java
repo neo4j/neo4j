@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util.watcher;
 
 import java.util.concurrent.ThreadFactory;
-
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -30,41 +29,35 @@ import org.neo4j.scheduler.JobScheduler;
  * In case if silent matcher is used dummy adapter will be used, otherwise will use default wrapper that will bind
  * monitoring cycles to corresponding lifecycle phases.
  */
-public class DefaultFileSystemWatcherService implements FileSystemWatcherService
-{
+public class DefaultFileSystemWatcherService implements FileSystemWatcherService {
     private final JobScheduler jobScheduler;
     private final FileWatcher fileWatcher;
     private final FileSystemEventWatcher eventWatcher;
     private ThreadFactory fileWatchers;
     private Thread watcher;
 
-    public DefaultFileSystemWatcherService( JobScheduler jobScheduler, FileWatcher fileWatcher )
-    {
+    public DefaultFileSystemWatcherService(JobScheduler jobScheduler, FileWatcher fileWatcher) {
         this.jobScheduler = jobScheduler;
         this.fileWatcher = fileWatcher;
         this.eventWatcher = new FileSystemEventWatcher();
     }
 
     @Override
-    public void init()
-    {
-        fileWatchers = jobScheduler.threadFactory( Group.FILE_WATCHER );
+    public void init() {
+        fileWatchers = jobScheduler.threadFactory(Group.FILE_WATCHER);
     }
 
     @Override
-    public synchronized void start()
-    {
+    public synchronized void start() {
         assert watcher == null;
-        watcher = fileWatchers.newThread( eventWatcher );
+        watcher = fileWatchers.newThread(eventWatcher);
         watcher.start();
     }
 
     @Override
-    public synchronized void stop() throws Exception
-    {
+    public synchronized void stop() throws Exception {
         eventWatcher.stopWatching();
-        if ( watcher != null )
-        {
+        if (watcher != null) {
             watcher.interrupt();
             watcher.join();
             watcher = null;
@@ -72,33 +65,25 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     }
 
     @Override
-    public void shutdown() throws Exception
-    {
+    public void shutdown() throws Exception {
         fileWatcher.close();
     }
 
     @Override
-    public FileWatcher getFileWatcher()
-    {
+    public FileWatcher getFileWatcher() {
         return fileWatcher;
     }
 
-    private class FileSystemEventWatcher implements Runnable
-    {
+    private class FileSystemEventWatcher implements Runnable {
         @Override
-        public void run()
-        {
-            try
-            {
+        public void run() {
+            try {
                 fileWatcher.startWatching();
-            }
-            catch ( InterruptedException ignored )
-            {
+            } catch (InterruptedException ignored) {
             }
         }
 
-        void stopWatching()
-        {
+        void stopWatching() {
             fileWatcher.stopWatching();
         }
     }

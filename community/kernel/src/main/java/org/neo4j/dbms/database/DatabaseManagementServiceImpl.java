@@ -19,9 +19,11 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -42,11 +44,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.logging.InternalLog;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-
-public class DatabaseManagementServiceImpl implements DatabaseManagementService
-{
+public class DatabaseManagementServiceImpl implements DatabaseManagementService {
     private final DatabaseManager<?> databaseManager;
     private final Lifecycle globalLife;
     private final DatabaseEventListeners databaseEventListeners;
@@ -54,9 +52,13 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     private final InternalLog log;
     private final Config globalConfig;
 
-    public DatabaseManagementServiceImpl( DatabaseManager<?> databaseManager, Lifecycle globalLife,
-            DatabaseEventListeners databaseEventListeners, GlobalTransactionEventListeners transactionEventListeners, InternalLog log, Config globalConfig )
-    {
+    public DatabaseManagementServiceImpl(
+            DatabaseManager<?> databaseManager,
+            Lifecycle globalLife,
+            DatabaseEventListeners databaseEventListeners,
+            GlobalTransactionEventListeners transactionEventListeners,
+            InternalLog log,
+            Config globalConfig) {
         this.databaseManager = databaseManager;
         this.globalLife = globalLife;
         this.databaseEventListeners = databaseEventListeners;
@@ -66,117 +68,101 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     }
 
     @Override
-    public GraphDatabaseService database( String name ) throws DatabaseNotFoundException
-    {
-        return databaseManager.getDatabaseContext( name )
-                .orElseThrow( () -> new DatabaseNotFoundException( name ) ).databaseFacade();
+    public GraphDatabaseService database(String name) throws DatabaseNotFoundException {
+        return databaseManager
+                .getDatabaseContext(name)
+                .orElseThrow(() -> new DatabaseNotFoundException(name))
+                .databaseFacade();
     }
 
     @Override
-    public void createDatabase( String name, Configuration databaseSpecificSettings )
-    {
-        String storageEngineName = getStorageEngine( databaseSpecificSettings );
-        systemDatabaseExecute( "CREATE DATABASE `" + name + "` OPTIONS {storageEngine:\"" + storageEngineName + "\"}" );
+    public void createDatabase(String name, Configuration databaseSpecificSettings) {
+        String storageEngineName = getStorageEngine(databaseSpecificSettings);
+        systemDatabaseExecute("CREATE DATABASE `" + name + "` OPTIONS {storageEngine:\"" + storageEngineName + "\"}");
     }
 
-    private String getStorageEngine( Configuration databaseSpecificSettings )
-    {
-        String dbSpecificStorageEngineName = databaseSpecificSettings.get( storage_engine );
-        return dbSpecificStorageEngineName != null ? dbSpecificStorageEngineName : globalConfig.get( storage_engine );
-    }
-
-    @Override
-    public void dropDatabase( String name )
-    {
-        systemDatabaseExecute( "DROP DATABASE `" + name + "`" );
+    private String getStorageEngine(Configuration databaseSpecificSettings) {
+        String dbSpecificStorageEngineName = databaseSpecificSettings.get(storage_engine);
+        return dbSpecificStorageEngineName != null ? dbSpecificStorageEngineName : globalConfig.get(storage_engine);
     }
 
     @Override
-    public void startDatabase( String name )
-    {
-        systemDatabaseExecute( "START DATABASE `" + name + "`" );
+    public void dropDatabase(String name) {
+        systemDatabaseExecute("DROP DATABASE `" + name + "`");
     }
 
     @Override
-    public void shutdownDatabase( String name )
-    {
-        systemDatabaseExecute( "STOP DATABASE `" + name + "`" );
+    public void startDatabase(String name) {
+        systemDatabaseExecute("START DATABASE `" + name + "`");
     }
 
     @Override
-    public List<String> listDatabases()
-    {
-        return databaseManager.registeredDatabases().keySet().stream().map( NamedDatabaseId::name ).sorted().collect( Collectors.toList() );
+    public void shutdownDatabase(String name) {
+        systemDatabaseExecute("STOP DATABASE `" + name + "`");
     }
 
     @Override
-    public void registerDatabaseEventListener( DatabaseEventListener listener )
-    {
-        databaseEventListeners.registerDatabaseEventListener( listener );
+    public List<String> listDatabases() {
+        return databaseManager.registeredDatabases().keySet().stream()
+                .map(NamedDatabaseId::name)
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     @Override
-    public void unregisterDatabaseEventListener( DatabaseEventListener listener )
-    {
-        databaseEventListeners.unregisterDatabaseEventListener( listener );
+    public void registerDatabaseEventListener(DatabaseEventListener listener) {
+        databaseEventListeners.registerDatabaseEventListener(listener);
     }
 
     @Override
-    public void registerTransactionEventListener( String databaseName, TransactionEventListener<?> listener )
-    {
-        validateDatabaseName( databaseName );
-        transactionEventListeners.registerTransactionEventListener( databaseName, listener );
+    public void unregisterDatabaseEventListener(DatabaseEventListener listener) {
+        databaseEventListeners.unregisterDatabaseEventListener(listener);
     }
 
     @Override
-    public void unregisterTransactionEventListener( String databaseName, TransactionEventListener<?> listener )
-    {
-        transactionEventListeners.unregisterTransactionEventListener( databaseName, listener );
+    public void registerTransactionEventListener(String databaseName, TransactionEventListener<?> listener) {
+        validateDatabaseName(databaseName);
+        transactionEventListeners.registerTransactionEventListener(databaseName, listener);
     }
 
     @Override
-    public void shutdown()
-    {
-        try
-        {
-            log.info( "Shutdown started" );
+    public void unregisterTransactionEventListener(String databaseName, TransactionEventListener<?> listener) {
+        transactionEventListeners.unregisterTransactionEventListener(databaseName, listener);
+    }
+
+    @Override
+    public void shutdown() {
+        try {
+            log.info("Shutdown started");
             globalLife.shutdown();
-        }
-        catch ( Exception throwable )
-        {
+        } catch (Exception throwable) {
             String message = "Shutdown failed";
-            log.error( message, throwable );
-            throw new RuntimeException( message, throwable );
+            log.error(message, throwable);
+            throw new RuntimeException(message, throwable);
         }
     }
 
-    private void systemDatabaseExecute( String query )
-    {
-        try
-        {
-            GraphDatabaseAPI database = (GraphDatabaseAPI) database( SYSTEM_DATABASE_NAME );
-            try ( InternalTransaction transaction = database.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
-            {
-                transaction.execute( query );
+    private void systemDatabaseExecute(String query) {
+        try {
+            GraphDatabaseAPI database = (GraphDatabaseAPI) database(SYSTEM_DATABASE_NAME);
+            try (InternalTransaction transaction =
+                    database.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
+                transaction.execute(query);
                 transaction.commit();
             }
-        }
-        catch ( QueryExecutionException e )
-        {
-            throw new DatabaseManagementException( e );
+        } catch (QueryExecutionException e) {
+            throw new DatabaseManagementException(e);
         }
     }
 
-    private static void validateDatabaseName( String databaseName )
-    {
-        if ( SYSTEM_DATABASE_NAME.equals( databaseName ) )
-        {
-            throw new IllegalArgumentException( "Registration of transaction event listeners on " + SYSTEM_DATABASE_NAME + " is not supported." );
+    private static void validateDatabaseName(String databaseName) {
+        if (SYSTEM_DATABASE_NAME.equals(databaseName)) {
+            throw new IllegalArgumentException(
+                    "Registration of transaction event listeners on " + SYSTEM_DATABASE_NAME + " is not supported.");
         }
     }
 
-    private interface SystemDatabaseExecutionContext
-    {
-        void accept( GraphDatabaseAPI database, InternalTransaction transaction ) throws KernelException;
+    private interface SystemDatabaseExecutionContext {
+        void accept(GraphDatabaseAPI database, InternalTransaction transaction) throws KernelException;
     }
 }

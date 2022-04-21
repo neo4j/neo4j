@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.schema;
 
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -34,15 +33,13 @@ import org.neo4j.graphdb.RelationshipType;
  * implementors.
  */
 @PublicApi
-public interface Schema
-{
+public interface Schema {
     /**
      * The states that an index can be in. This mostly relates to tracking the background
      * population of an index, to tell when it is done populating and is online serving
      * requests.
      */
-    enum IndexState
-    {
+    enum IndexState {
         ONLINE,
         POPULATING,
         FAILED
@@ -64,7 +61,7 @@ public interface Schema
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given {@link Label label}.
      */
-    IndexCreator indexFor( Label label );
+    IndexCreator indexFor(Label label);
 
     /**
      * Begin specifying an index for all nodes with any of the given labels.
@@ -91,7 +88,7 @@ public interface Schema
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given list of {@link Label labels}.
      */
-    IndexCreator indexFor( Label... labels );
+    IndexCreator indexFor(Label... labels);
 
     /**
      * Begin specifying an index for all relationships with the given relationship type.
@@ -109,7 +106,7 @@ public interface Schema
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given {@link RelationshipType}.
      */
-    IndexCreator indexFor( RelationshipType type );
+    IndexCreator indexFor(RelationshipType type);
 
     /**
      * Begin specifying an index for all relationships with any of the given relationship types.
@@ -134,7 +131,7 @@ public interface Schema
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given {@link RelationshipType RelationshipTypes}.
      */
-    IndexCreator indexFor( RelationshipType... types );
+    IndexCreator indexFor(RelationshipType... types);
 
     /**
      * Begin specifying an index of type {@link IndexType#LOOKUP} for all labels or relationship types.
@@ -152,19 +149,19 @@ public interface Schema
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given {@link Label label}.
      */
-    IndexCreator indexFor( AnyTokens tokens );
+    IndexCreator indexFor(AnyTokens tokens);
 
     /**
      * @param label the {@link Label} to get {@link IndexDefinition indexes} for.
      * @return all {@link IndexDefinition indexes} attached to the given {@link Label label}.
      */
-    Iterable<IndexDefinition> getIndexes( Label label );
+    Iterable<IndexDefinition> getIndexes(Label label);
 
     /**
      * @param relationshipType the {@link RelationshipType} to get {@link IndexDefinition indexes} for.
      * @return all {@link IndexDefinition indexes} attached to the given {@link RelationshipType relationship type}.
      */
-    Iterable<IndexDefinition> getIndexes( RelationshipType relationshipType );
+    Iterable<IndexDefinition> getIndexes(RelationshipType relationshipType);
 
     /**
      * @return all {@link IndexDefinition indexes} in this database.
@@ -180,7 +177,7 @@ public interface Schema
      * @param index the index that we want to poll state for
      * @return the current {@link IndexState} of the index
      */
-    IndexState getIndexState( IndexDefinition index );
+    IndexState getIndexState(IndexDefinition index);
 
     /**
      * Poll the database for the population progress. This can be used to track the progress of the
@@ -193,7 +190,7 @@ public interface Schema
      * @return the current population progress for the index
      *
      */
-    IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index );
+    IndexPopulationProgress getIndexPopulationProgress(IndexDefinition index);
 
     /**
      * If {@link #getIndexState(IndexDefinition)} return {@link IndexState#FAILED} this method will
@@ -202,7 +199,7 @@ public interface Schema
      * @return the failure description.
      * @throws IllegalStateException if the {@code index} isn't in a {@link IndexState#FAILED} state.
      */
-    String getIndexFailure( IndexDefinition index );
+    String getIndexFailure(IndexDefinition index);
 
     /**
      * Returns a {@link ConstraintCreator} where details about the constraint can be
@@ -218,7 +215,7 @@ public interface Schema
      * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
      * a constraint for the given {@linkplain Label label}.
      */
-    ConstraintCreator constraintFor( Label label );
+    ConstraintCreator constraintFor(Label label);
 
     /**
      * Returns a {@link ConstraintCreator} where details about the constraint can be specified.
@@ -234,19 +231,19 @@ public interface Schema
      * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
      * a constraint for the given {@linkplain RelationshipType}.
      */
-    ConstraintCreator constraintFor( RelationshipType type );
+    ConstraintCreator constraintFor(RelationshipType type);
 
     /**
      * @param label the {@linkplain Label label} to get constraints for.
      * @return all constraints for the given label.
      */
-    Iterable<ConstraintDefinition> getConstraints( Label label );
+    Iterable<ConstraintDefinition> getConstraints(Label label);
 
     /**
      * @param type the {@linkplain RelationshipType relationship type} to get constraints for.
      * @return all constraints for the given relationship type.
      */
-    Iterable<ConstraintDefinition> getConstraints( RelationshipType type );
+    Iterable<ConstraintDefinition> getConstraints(RelationshipType type);
 
     /**
      * @return all constraints
@@ -263,7 +260,7 @@ public interface Schema
      *             within the given duration or if the index entered the FAILED
      *             state
      */
-    void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit );
+    void awaitIndexOnline(IndexDefinition index, long duration, TimeUnit unit);
 
     /**
      * Wait until an index with the given name comes online.
@@ -274,7 +271,7 @@ public interface Schema
      * @throws IllegalStateException if the index did not enter the ONLINE state
      * within the given duration, or if the index entered the FAILED state.
      */
-    void awaitIndexOnline( String indexName, long duration, TimeUnit unit );
+    void awaitIndexOnline(String indexName, long duration, TimeUnit unit);
 
     /**
      * Wait until all indices comes online
@@ -285,7 +282,7 @@ public interface Schema
      *             state within the given duration or if the index entered the
      *             FAILED state
      */
-    void awaitIndexesOnline( long duration, TimeUnit unit );
+    void awaitIndexesOnline(long duration, TimeUnit unit);
 
     /**
      * Get a {@link ConstraintDefinition} by the given name of the constraint.
@@ -293,7 +290,7 @@ public interface Schema
      * @return The constraint with that name.
      * @throws IllegalArgumentException if there is no constraint with that name.
      */
-    ConstraintDefinition getConstraintByName( String constraintName );
+    ConstraintDefinition getConstraintByName(String constraintName);
 
     /**
      * Get an {@link IndexDefinition} by the name of the index.
@@ -301,5 +298,5 @@ public interface Schema
      * @return The index with that name.
      * @throws IllegalArgumentException if there is no index with that name.
      */
-    IndexDefinition getIndexByName( String indexName );
+    IndexDefinition getIndexByName(String indexName);
 }

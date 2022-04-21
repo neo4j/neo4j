@@ -25,8 +25,7 @@ package org.neo4j.internal.kernel.api;
  * <p>
  * Also provides ability to register a listener for when this is closed.
  */
-public interface AutoCloseablePlus extends AutoCloseable
-{
+public interface AutoCloseablePlus extends AutoCloseable {
     @Override
     void close();
 
@@ -37,13 +36,13 @@ public interface AutoCloseablePlus extends AutoCloseable
 
     boolean isClosed();
 
-    void setCloseListener( CloseListener closeListener );
+    void setCloseListener(CloseListener closeListener);
 
     /**
      * Assigns a token to the AutoCloseable that can be used to as an index for faster lookups.
      * @param token the token to assign to the AutoCloseable
      */
-    void setToken( int token );
+    void setToken(int token);
 
     /**
      * Retrieves the token associated with the AutoCloseable

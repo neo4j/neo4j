@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.rewriting.Additions
  * Find Cypher constructs added after this version and generate errors for them.
  */
 case class SyntaxAdditionsErrors(additions: Additions) extends VisitorPhase[BaseContext, BaseState] {
+
   override def visit(state: BaseState, context: BaseContext): Unit =
     additions.check(state.statement(), context.cypherExceptionFactory)
 
   override def phase = ADDITION_ERRORS
 }
-

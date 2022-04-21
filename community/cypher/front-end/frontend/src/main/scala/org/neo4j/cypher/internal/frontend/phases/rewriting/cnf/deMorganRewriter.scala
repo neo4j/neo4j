@@ -35,11 +35,14 @@ case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rew
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val step = Rewriter.lift {
-    case p@Xor(expr1, expr2) =>
-      And(Or(expr1, expr2)(p.position), Not(And(expr1.endoRewrite(copyVariables), expr2.endoRewrite(copyVariables))(p.position))(p.position))(p.position)
-    case p@Not(And(exp1, exp2)) =>
+    case p @ Xor(expr1, expr2) =>
+      And(
+        Or(expr1, expr2)(p.position),
+        Not(And(expr1.endoRewrite(copyVariables), expr2.endoRewrite(copyVariables))(p.position))(p.position)
+      )(p.position)
+    case p @ Not(And(exp1, exp2)) =>
       Or(Not(exp1)(p.position), Not(exp2)(p.position))(p.position)
-    case p@Not(Or(exp1, exp2)) =>
+    case p @ Not(Or(exp1, exp2)) =>
       And(Not(exp1)(p.position), Not(exp2)(p.position))(p.position)
   }
 
@@ -47,8 +50,8 @@ case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rew
 }
 
 case object deMorganRewriter extends CnfPhase {
-  override def getRewriter(from: BaseState,
-                           context: BaseContext): Rewriter = {
+
+  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = {
     implicit val monitor: AstRewritingMonitor = context.monitors.newMonitor[AstRewritingMonitor]()
     deMorganRewriter()
   }
@@ -57,5 +60,6 @@ case object deMorganRewriter extends CnfPhase {
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NotsBelowBooleanOperators, NoXorOperators)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable ++ Set(AndsAboveOrs, NoInequalityInsideNot)
+  override def invalidatedConditions: Set[StepSequencer.Condition] =
+    SemanticInfoAvailable ++ Set(AndsAboveOrs, NoInequalityInsideNot)
 }

@@ -23,7 +23,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -56,9 +55,7 @@ import org.neo4j.annotations.api.PublicApi;
  *
  * The update method cannot return any value and must be a void method.
  */
-@Target( ElementType.METHOD )
-@Retention( RetentionPolicy.RUNTIME )
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
 @PublicApi
-public @interface UserAggregationUpdate
-{
-}
+public @interface UserAggregationUpdate {}

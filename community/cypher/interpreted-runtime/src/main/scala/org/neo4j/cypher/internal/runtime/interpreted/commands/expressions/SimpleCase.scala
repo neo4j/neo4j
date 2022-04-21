@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Expression)], default: Option[Expression])
-  extends Expression {
+    extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val value = expression(row, state)
@@ -36,7 +36,7 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
 
     matchingExpression match {
       case Some(resultExpression) => resultExpression(row, state)
-      case None => default.getOrElse(Null()).apply(row, state)
+      case None                   => default.getOrElse(Null()).apply(row, state)
     }
   }
 
@@ -44,7 +44,8 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
 
   private def alternativeExpressions = alternatives.map(_._2)
 
-  override def arguments: Seq[Expression] = (expression +: (alternativeComparison ++ alternativeExpressions ++ default)).distinct
+  override def arguments: Seq[Expression] =
+    (expression +: (alternativeComparison ++ alternativeExpressions ++ default)).distinct
 
   override def children: Seq[AstNode[_]] = expression +: (alternativeComparison ++ alternativeExpressions ++ default)
 

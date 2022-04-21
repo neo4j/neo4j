@@ -22,11 +22,9 @@ package org.neo4j.bolt.runtime.statemachine;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 
-public interface TransactionStateMachineSPIProvider
-{
-    TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName,
-                                                              StatementProcessorReleaseManager resourceReleaseManager,
-                                                              String transactionId )
+public interface TransactionStateMachineSPIProvider {
+    TransactionStateMachineSPI getTransactionStateMachineSPI(
+            String databaseName, StatementProcessorReleaseManager resourceReleaseManager, String transactionId)
             throws BoltProtocolBreachFatality, BoltIOException;
 
     void releaseTransactionStateMachineSPI();

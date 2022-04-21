@@ -20,20 +20,18 @@
 package org.neo4j.storageengine.api;
 
 import java.io.IOException;
-
 import org.neo4j.internal.helpers.collection.Visitor;
 
 /**
  * A stream of commands from one or more transactions, that can be serialized to a transaction log or applied to a
  * store.
  */
-public interface CommandStream extends Iterable<StorageCommand>
-{
+public interface CommandStream extends Iterable<StorageCommand> {
     /**
      * Accepts a visitor into the commands making up this transaction.
      * @param visitor {@link Visitor} which will see the commands.
      * @return {@code true} if any {@link StorageCommand} visited returned {@code true}, otherwise {@code false}.
      * @throws IOException if there were any problem reading the commands.
      */
-    boolean accept( Visitor<StorageCommand,IOException> visitor ) throws IOException;
+    boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException;
 }

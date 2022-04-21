@@ -20,19 +20,16 @@
 
 package org.neo4j.graphdb.schema;
 
-import org.neo4j.graphdb.Transaction;
-
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
-class UpdateDeletedNodePropertyIndexIT extends UpdateDeletedNodeIndexBase
-{
+import org.neo4j.graphdb.Transaction;
+
+class UpdateDeletedNodePropertyIndexIT extends UpdateDeletedNodeIndexBase {
     @Override
-    protected IndexDefinition indexCreate()
-    {
+    protected IndexDefinition indexCreate() {
         IndexDefinition indexDefinition;
-        try ( Transaction tx = db.beginTx() )
-        {
-            indexDefinition = tx.schema().indexFor( LABEL_ONE ).on( KEY ).create();
+        try (Transaction tx = db.beginTx()) {
+            indexDefinition = tx.schema().indexFor(LABEL_ONE).on(KEY).create();
             tx.commit();
         }
         return indexDefinition;

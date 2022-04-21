@@ -21,17 +21,17 @@ package org.neo4j.kernel.impl.transaction.log.rotation.monitor;
 
 import java.nio.file.Path;
 
-public interface LogRotationMonitor
-{
+public interface LogRotationMonitor {
     /**
      * Called when the log file is initially opened, to allow monitor callback to know which version of the file was initially opened.
      * Then later on this version will be rotated into new versions, at which point {@link #startRotation(long)} will be called.
      * @param logFile the file.
      * @param logVersion the version of the file is used when starting.
      */
-    void started( Path logFile, long logVersion );
+    void started(Path logFile, long logVersion);
 
-    void startRotation( long currentLogVersion );
+    void startRotation(long currentLogVersion);
 
-    void finishLogRotation( Path logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation );
+    void finishLogRotation(
+            Path logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation);
 }

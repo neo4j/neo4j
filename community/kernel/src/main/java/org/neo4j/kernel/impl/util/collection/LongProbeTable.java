@@ -19,76 +19,64 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-
-import java.util.Iterator;
-
-import org.neo4j.collection.trackable.HeapTrackingArrayList;
-import org.neo4j.collection.trackable.HeapTrackingCollections;
-import org.neo4j.internal.kernel.api.DefaultCloseListenable;
-import org.neo4j.memory.Measurable;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
-
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class LongProbeTable<V extends Measurable> extends DefaultCloseListenable
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( LongProbeTable.class );
+import java.util.Iterator;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import org.neo4j.collection.trackable.HeapTrackingCollections;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
+import org.neo4j.memory.Measurable;
+import org.neo4j.memory.MemoryTracker;
+
+public class LongProbeTable<V extends Measurable> extends DefaultCloseListenable {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(LongProbeTable.class);
 
     private final MemoryTracker scopedMemoryTracker;
     private MutableLongObjectMap<HeapTrackingArrayList<V>> map;
 
-    public static <V extends Measurable> LongProbeTable<V> createLongProbeTable( MemoryTracker memoryTracker )
-    {
+    public static <V extends Measurable> LongProbeTable<V> createLongProbeTable(MemoryTracker memoryTracker) {
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
-        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
-        return new LongProbeTable<>( scopedMemoryTracker );
+        scopedMemoryTracker.allocateHeap(SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
+        return new LongProbeTable<>(scopedMemoryTracker);
     }
 
-    private LongProbeTable( MemoryTracker scopedMemoryTracker )
-    {
+    private LongProbeTable(MemoryTracker scopedMemoryTracker) {
         this.scopedMemoryTracker = scopedMemoryTracker;
-        this.map = newLongObjectMap( scopedMemoryTracker );
+        this.map = newLongObjectMap(scopedMemoryTracker);
     }
 
-    public void put( long key, V value )
-    {
-        map.getIfAbsentPutWith( key, HeapTrackingCollections::newArrayList, scopedMemoryTracker ).add( value );
-        scopedMemoryTracker.allocateHeap( value.estimatedHeapUsage() );
+    public void put(long key, V value) {
+        map.getIfAbsentPutWith(key, HeapTrackingCollections::newArrayList, scopedMemoryTracker)
+                .add(value);
+        scopedMemoryTracker.allocateHeap(value.estimatedHeapUsage());
     }
 
-    public Iterator<V> get( long key )
-    {
-        var entry = map.get( key );
-        if ( entry == null )
-        {
+    public Iterator<V> get(long key) {
+        var entry = map.get(key);
+        if (entry == null) {
             return emptyIterator();
         }
         return entry.iterator();
     }
 
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return map.isEmpty();
     }
 
     @Override
-    public void closeInternal()
-    {
-        if ( map != null )
-        {
+    public void closeInternal() {
+        if (map != null) {
             map = null;
             scopedMemoryTracker.close();
         }
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return map == null;
     }
 }

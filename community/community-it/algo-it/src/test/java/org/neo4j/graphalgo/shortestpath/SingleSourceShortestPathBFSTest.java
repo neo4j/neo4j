@@ -25,22 +25,17 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 
-public class SingleSourceShortestPathBFSTest extends
-    SingleSourceShortestPathTest
-{
+public class SingleSourceShortestPathBFSTest extends SingleSourceShortestPathTest {
     @Override
-    protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
-        Node startNode )
-    {
-        SingleSourceShortestPathBFS sourceBFS = new SingleSourceShortestPathBFS(
-            startNode, Direction.BOTH, MyRelTypes.R1 );
+    protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(Node startNode) {
+        SingleSourceShortestPathBFS sourceBFS =
+                new SingleSourceShortestPathBFS(startNode, Direction.BOTH, MyRelTypes.R1);
         return sourceBFS;
     }
 
     @Override
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
-        Node startNode, Direction direction, RelationshipType... relTypes )
-    {
-        return new SingleSourceShortestPathBFS( startNode, direction, relTypes );
+            Node startNode, Direction direction, RelationshipType... relTypes) {
+        return new SingleSourceShortestPathBFS(startNode, direction, relTypes);
     }
 }

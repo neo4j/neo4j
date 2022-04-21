@@ -35,7 +35,8 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Inside
 
-class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport with Inside {
+class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2
+    with LogicalPlanningIntegrationTestSupport with Inside {
 
   /**
    * The assumptions on the ordering for these selectivities is based on that [[PredicateOrdering]] is used.
@@ -53,32 +54,36 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       nProp -> 0.2, // Most selective predicate with 1 store access.
       nPropIn -> 0.2, // -"-
       nParam -> 0.9, // Least selective, but cheapest, therefore comes first.
-      nFooBar -> 0.1, // Very selective, but most costly with 2 store accesses. Comes almost last.
+      nFooBar -> 0.1 // Very selective, but most costly with 2 store accesses. Comes almost last.
     )
 
     val plan = new given {
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _)  =>
-          queryGraph.selections.predicates.foldLeft(1000.0){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
+          queryGraph.selections.predicates.foldLeft(1000.0) { case (rows, predicate) =>
+            rows * selectivities(predicate.expr)
+          }
       }
     }.getLogicalPlanFor(
       """MATCH (n:Label:OtherLabel)
         |WHERE n.prop = 5
         |AND n = $param
         |AND n.foo = n.bar
-        |RETURN n""".stripMargin)._1
+        |RETURN n""".stripMargin
+    )._1
     val noArgs = Set.empty[String]
     plan should beLike {
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
       // But unapply takes the order into account for [[Ands]].
-      case Selection(Ands(Seq(
-        `nParam`,
-        `nProp`,
-        `nFooBar`,
-        `otherLabel`
-      )),
-        NodeByLabelScan("n", LabelName("Label"), `noArgs`, IndexOrderNone)
-      ) => ()
+      case Selection(
+          Ands(Seq(
+            `nParam`,
+            `nProp`,
+            `nFooBar`,
+            `otherLabel`
+          )),
+          NodeByLabelScan("n", LabelName("Label"), `noArgs`, IndexOrderNone)
+        ) => ()
     }
   }
 
@@ -86,7 +91,8 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val nProp = greaterThan(prop("n", "prop"), literalInt(2))
     val nPropChain = equals(
       prop(prop(prop(prop(prop(prop(prop("n", "foo"), "bar"), "baz"), "blob"), "boing"), "peng"), "brrt"),
-      literalInt(2))
+      literalInt(2)
+    )
 
     val plan = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -100,12 +106,13 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     plan.stripProduceResults should beLike {
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
       // But unapply takes the order into account for [[Ands]].
-      case Selection(Ands(Seq(
-      `nPropChain`, // more selective, but needs to access deeply nested property
-      `nProp`,
-      )),
-      NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
-      ) => ()
+      case Selection(
+          Ands(Seq(
+            `nPropChain`, // more selective, but needs to access deeply nested property
+            `nProp`
+          )),
+          NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
+        ) => ()
     }
   }
 
@@ -124,12 +131,16 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     plan.stripProduceResults should beLike {
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
       // But unapply takes the order into account for [[Ands]].
-      case Projection(Selection(Ands(Seq(
-      `nPropFoo`, // more selective
-      `nPropBar`, // is cached, but needs ro read from store
-      )),
-      NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
-      ), _) => ()
+      case Projection(
+          Selection(
+            Ands(Seq(
+              `nPropFoo`, // more selective
+              `nPropBar` // is cached, but needs ro read from store
+            )),
+            NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
+          ),
+          _
+        ) => ()
     }
   }
 
@@ -148,12 +159,16 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     plan.stripProduceResults should beLike {
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
       // But unapply takes the order into account for [[Ands]].
-      case Projection(Selection(Ands(Seq(
-      `nPropBar`, // is cached and does not need to read from store
-      `nPropFoo`, // more selective
-      )),
-      _
-      ), _) => ()
+      case Projection(
+          Selection(
+            Ands(Seq(
+              `nPropBar`, // is cached and does not need to read from store
+              `nPropFoo` // more selective
+            )),
+            _
+          ),
+          _
+        ) => ()
     }
   }
 
@@ -177,12 +192,16 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       plan should beLike {
         // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
         // But unapply takes the order into account for [[Ands]].
-        case Projection(Selection(Ands(Seq(
-        `nPropFoo1`, // more selective
-        `nPropFoo2`,
-        )),
-        NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
-        ), _) => ()
+        case Projection(
+            Selection(
+              Ands(Seq(
+                `nPropFoo1`, // more selective
+                `nPropFoo2`
+              )),
+              NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
+            ),
+            _
+          ) => ()
       }
     }
   }
@@ -205,7 +224,8 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         predicates.length shouldBe 5
         predicates.last shouldBe lessThan(
           prop("n", "otherProp"),
-          prop("n", "yetAnotherProp"))
+          prop("n", "yetAnotherProp")
+        )
     }
   }
 }

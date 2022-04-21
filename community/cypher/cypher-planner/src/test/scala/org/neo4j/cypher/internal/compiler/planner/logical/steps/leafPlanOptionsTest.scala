@@ -45,8 +45,10 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
   private val allNodesScanLeafPlanner: LeafPlanner = (qg, _, context) =>
     qg.patternNodes.map(node => context.logicalPlanProducer.planAllNodesScan(node, Set.empty, context))
+
   private val labelScanLeafPlanner: LeafPlanner = (qg, _, context) =>
     qg.patternNodes.map(node =>
       context.logicalPlanProducer.planNodeByLabelScan(
@@ -57,29 +59,38 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         Set.empty,
         ProvidedOrder.asc(varFor(node)),
         context
-      ))
-  private val queryPlanConfig = (planner: IndexedSeq[LeafPlanner]) =>  QueryPlannerConfiguration(
-    pickBestCandidate = _ =>
-      new CandidateSelector {
+      )
+    )
 
-        // cost(AllNodesScan) < cost(NodeByLabelScan)
-        // cost(Sort(AllNodesScan)) > cost(NodeByLabelScan)
-        override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = {
-          val logicalPlans = input.map(i => (i, projector(i))).toSeq
-              .sortBy{
-                case (_, _: AllNodesScan) => 10
+  private val queryPlanConfig = (planner: IndexedSeq[LeafPlanner]) =>
+    QueryPlannerConfiguration(
+      pickBestCandidate = _ =>
+        new CandidateSelector {
+
+          // cost(AllNodesScan) < cost(NodeByLabelScan)
+          // cost(Sort(AllNodesScan)) > cost(NodeByLabelScan)
+          override def applyWithResolvedPerPlan[X](
+            projector: X => LogicalPlan,
+            input: Iterable[X],
+            resolved: => String,
+            resolvedPerPlan: LogicalPlan => String,
+            heuristic: SelectorHeuristic
+          ): Option[X] = {
+            val logicalPlans = input.map(i => (i, projector(i))).toSeq
+              .sortBy {
+                case (_, _: AllNodesScan)    => 10
                 case (_, _: NodeByLabelScan) => 100
-                case (_, _: Sort) => 1000
+                case (_, _: Sort)            => 1000
               }
 
-          logicalPlans.headOption.map(_._1)
-        }
-      },
-    applySelections = (plan, _, _, _) => plan,
-    optionalSolvers = Seq.empty,
-    leafPlanners = LeafPlannerList(planner),
-    updateStrategy = defaultUpdateStrategy
-  )
+            logicalPlans.headOption.map(_._1)
+          }
+        },
+      applySelections = (plan, _, _, _) => plan,
+      optionalSolvers = Seq.empty,
+      leafPlanners = LeafPlannerList(planner),
+      updateStrategy = defaultUpdateStrategy
+    )
 
   test("empty query graph") {
     new given().withLogicalPlanningContext { (_, ctx) =>
@@ -113,11 +124,15 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
         InterestingOrderConfig(
-          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))),
+          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
+        ),
         ctx
       )
 
-      options.shouldEqual(List(BestResults(AllNodesScan("a", Set.empty), Some(Sort(AllNodesScan("a", Set.empty), List(Ascending("a")))))))
+      options.shouldEqual(List(BestResults(
+        AllNodesScan("a", Set.empty),
+        Some(Sort(AllNodesScan("a", Set.empty), List(Ascending("a"))))
+      )))
     }
   }
 
@@ -140,12 +155,16 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
         InterestingOrderConfig(
-          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))),
+          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
+        ),
         ctx
       )
 
       options.shouldEqual(List(
-        BestResults(AllNodesScan("a", Set.empty), Some(NodeByLabelScan("a", LabelName("A")(pos), Set.empty, IndexOrderAscending)))
+        BestResults(
+          AllNodesScan("a", Set.empty),
+          Some(NodeByLabelScan("a", LabelName("A")(pos), Set.empty, IndexOrderAscending))
+        )
       ))
     }
   }
@@ -161,8 +180,8 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
       options.shouldEqual(List(
         BestResults(AllNodesScan("a", Set.empty), None),
-        BestResults(AllNodesScan("b", Set.empty), None))
-      )
+        BestResults(AllNodesScan("b", Set.empty), None)
+      ))
     }
   }
 
@@ -172,12 +191,16 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a", "b")),
         InterestingOrderConfig(
-          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))),
+          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
+        ),
         ctx
       )
 
       options.shouldEqual(List(
-        BestResults(AllNodesScan("a", Set.empty), Some(NodeByLabelScan("a", LabelName("A")(pos), Set.empty, IndexOrderAscending))),
+        BestResults(
+          AllNodesScan("a", Set.empty),
+          Some(NodeByLabelScan("a", LabelName("A")(pos), Set.empty, IndexOrderAscending))
+        ),
         BestResults(AllNodesScan("b", Set.empty), None)
       ))
     }
@@ -189,7 +212,13 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val queryPlanConfig = QueryPlannerConfiguration(
       pickBestCandidate = _ =>
         new CandidateSelector {
-          override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = input.headOption
+          override def applyWithResolvedPerPlan[X](
+            projector: X => LogicalPlan,
+            input: Iterable[X],
+            resolved: => String,
+            resolvedPerPlan: LogicalPlan => String,
+            heuristic: SelectorHeuristic
+          ): Option[X] = input.headOption
         },
       applySelections = (_, _, _, _) => plan,
       optionalSolvers = Seq.empty,
@@ -211,17 +240,25 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     }
   }
 
-  test("should group plans with same available symbols not considering generated variables that are not part of the queryGraph") {
+  test(
+    "should group plans with same available symbols not considering generated variables that are not part of the queryGraph"
+  ) {
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
     val plans = Set[LogicalPlan](
-     Argument(Set("a", anonymousVariableNameGenerator.nextName)),
-     Argument(Set("a", anonymousVariableNameGenerator.nextName))
+      Argument(Set("a", anonymousVariableNameGenerator.nextName)),
+      Argument(Set("a", anonymousVariableNameGenerator.nextName))
     )
     val customLeafPlanner: LeafPlanner = (_, _, _) => plans
     val queryPlanConfig = QueryPlannerConfiguration(
       pickBestCandidate = _ =>
         new CandidateSelector {
-          override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = input.headOption
+          override def applyWithResolvedPerPlan[X](
+            projector: X => LogicalPlan,
+            input: Iterable[X],
+            resolved: => String,
+            resolvedPerPlan: LogicalPlan => String,
+            heuristic: SelectorHeuristic
+          ): Option[X] = input.headOption
         },
       applySelections = (plan, _, _, _) => plan,
       optionalSolvers = Seq.empty,
@@ -243,19 +280,27 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     }
   }
 
-  test("should group plans with same available symbols considering generated variables that are part of the queryGraph") {
+  test(
+    "should group plans with same available symbols considering generated variables that are part of the queryGraph"
+  ) {
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
     val fresh1 = anonymousVariableNameGenerator.nextName
     val fresh2 = anonymousVariableNameGenerator.nextName
     val plans = Set[LogicalPlan](
-     Argument(Set("a", fresh1)),
-     Argument(Set("a", fresh2))
+      Argument(Set("a", fresh1)),
+      Argument(Set("a", fresh2))
     )
     val customLeafPlanner: LeafPlanner = (_, _, _) => plans
     val queryPlanConfig = QueryPlannerConfiguration(
       pickBestCandidate = _ =>
         new CandidateSelector {
-          override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = input.headOption
+          override def applyWithResolvedPerPlan[X](
+            projector: X => LogicalPlan,
+            input: Iterable[X],
+            resolved: => String,
+            resolvedPerPlan: LogicalPlan => String,
+            heuristic: SelectorHeuristic
+          ): Option[X] = input.headOption
         },
       applySelections = (plan, _, _, _) => plan,
       optionalSolvers = Seq.empty,

@@ -19,39 +19,32 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
+
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 
-import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
-
-public class ResultConsumerAdaptor implements ResultConsumer
-{
+public class ResultConsumerAdaptor implements ResultConsumer {
     private final boolean pull;
     private final StateMachineContext context;
 
-    ResultConsumerAdaptor( StateMachineContext context, boolean pull )
-    {
+    ResultConsumerAdaptor(StateMachineContext context, boolean pull) {
         this.pull = pull;
         this.context = context;
     }
 
     @Override
-    public boolean hasMore()
-    {
+    public boolean hasMore() {
         return false;
     }
 
     @Override
-    public void consume( BoltResult boltResult ) throws Throwable
-    {
-        if ( pull )
-        {
-            context.connectionState().getResponseHandler().onPullRecords( boltResult, STREAM_LIMIT_UNLIMITED );
-        }
-        else
-        {
-            context.connectionState().getResponseHandler().onDiscardRecords( boltResult, STREAM_LIMIT_UNLIMITED );
+    public void consume(BoltResult boltResult) throws Throwable {
+        if (pull) {
+            context.connectionState().getResponseHandler().onPullRecords(boltResult, STREAM_LIMIT_UNLIMITED);
+        } else {
+            context.connectionState().getResponseHandler().onDiscardRecords(boltResult, STREAM_LIMIT_UNLIMITED);
         }
     }
 }

@@ -20,37 +20,30 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.junit.jupiter.api.AfterAll;
-
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
 
-class TxStateOffHeapTest extends TxStateTest
-{
+class TxStateOffHeapTest extends TxStateTest {
     private static final CachingOffHeapBlockAllocator BLOCK_ALLOCATOR = new CachingOffHeapBlockAllocator();
 
-    TxStateOffHeapTest()
-    {
-        super( new CollectionsFactorySupplier()
-        {
+    TxStateOffHeapTest() {
+        super(new CollectionsFactorySupplier() {
             @Override
-            public CollectionsFactory create()
-            {
-                return new OffHeapCollectionsFactory( BLOCK_ALLOCATOR );
+            public CollectionsFactory create() {
+                return new OffHeapCollectionsFactory(BLOCK_ALLOCATOR);
             }
 
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return "Off heap";
             }
-        } );
+        });
     }
 
     @AfterAll
-    static void afterAll()
-    {
+    static void afterAll() {
         BLOCK_ALLOCATOR.release();
     }
 }

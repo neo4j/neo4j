@@ -21,29 +21,24 @@ package org.neo4j.gis.spatial.index.curves;
 
 import org.neo4j.gis.spatial.index.Envelope;
 
-public class TraverseToBottomConfiguration implements SpaceFillingCurveConfiguration
-{
+public class TraverseToBottomConfiguration implements SpaceFillingCurveConfiguration {
     @Override
-    public boolean stopAtThisDepth( double overlap, int depth, int maxDepth )
-    {
+    public boolean stopAtThisDepth(double overlap, int depth, int maxDepth) {
         return false;
     }
 
     @Override
-    public int maxDepth( Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel )
-    {
+    public int maxDepth(Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel) {
         return maxLevel;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName();
     }
 
     @Override
-    public int initialRangesListCapacity()
-    {
+    public int initialRangesListCapacity() {
         // When traversing to bottom, we can get extremely large lists and can't estimate the length.
         // Thus, we can just as well start with a short list.
         return 10;

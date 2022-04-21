@@ -19,14 +19,23 @@
  */
 package org.neo4j.bolt.transport;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
+
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.Iterator;
 import java.util.Map;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.BoltProtocolVersion;
@@ -47,109 +56,120 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
-
-class AbstractBoltProtocolTest
-{
+class AbstractBoltProtocolTest {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @AfterEach
-    void cleanup()
-    {
+    void cleanup() {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    void shouldInstallChannelHandlersInCorrectOrder() throws Throwable
-    {
+    void shouldInstallChannelHandlersInCorrectOrder() throws Throwable {
         // Given
-        BoltChannel boltChannel = newTestBoltChannel( channel );
-        BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
-        var memoryTracker = mock( MemoryTracker.class );
+        BoltChannel boltChannel = newTestBoltChannel(channel);
+        BoltConnectionFactory connectionFactory = mock(BoltConnectionFactory.class);
+        var memoryTracker = mock(MemoryTracker.class);
 
-        when( connectionFactory.newConnection( eq( boltChannel ), any(), any() ) ).thenReturn( mock( BoltConnection.class ) );
-        BoltProtocol boltProtocol =
-                new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ), Config.defaults(),
-                                              NullLogService.getInstance(), mock( TransportThrottleGroup.class ),
-                                              mock( ChannelProtector.class ), memoryTracker );
+        when(connectionFactory.newConnection(eq(boltChannel), any(), any())).thenReturn(mock(BoltConnection.class));
+        BoltProtocol boltProtocol = new TestAbstractBoltProtocol(
+                boltChannel,
+                connectionFactory,
+                mock(BoltStateMachineFactory.class),
+                Config.defaults(),
+                NullLogService.getInstance(),
+                mock(TransportThrottleGroup.class),
+                mock(ChannelProtector.class),
+                memoryTracker);
 
         // When
         boltProtocol.install();
 
-        Iterator<Map.Entry<String,ChannelHandler>> handlers = channel.pipeline().iterator();
-        assertThat( handlers.next().getValue() ).isInstanceOf( ChunkDecoder.class );
-        assertThat( handlers.next().getValue() ).isInstanceOf( MessageAccumulator.class );
-        assertThat( handlers.next().getValue() ).isInstanceOf( MessageDecoder.class );
-        assertThat( handlers.next().getValue() ).isInstanceOf( HouseKeeper.class );
+        Iterator<Map.Entry<String, ChannelHandler>> handlers =
+                channel.pipeline().iterator();
+        assertThat(handlers.next().getValue()).isInstanceOf(ChunkDecoder.class);
+        assertThat(handlers.next().getValue()).isInstanceOf(MessageAccumulator.class);
+        assertThat(handlers.next().getValue()).isInstanceOf(MessageDecoder.class);
+        assertThat(handlers.next().getValue()).isInstanceOf(HouseKeeper.class);
 
-        assertFalse( handlers.hasNext() );
+        assertFalse(handlers.hasNext());
     }
 
     @Test
-    void shouldAllocateMemory()
-    {
-        var boltChannel = newTestBoltChannel( channel );
-        var connectionFactory = mock( BoltConnectionFactory.class );
-        var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
+    void shouldAllocateMemory() {
+        var boltChannel = newTestBoltChannel(channel);
+        var connectionFactory = mock(BoltConnectionFactory.class);
+        var memoryTracker = mock(MemoryTracker.class, RETURNS_MOCKS);
 
-        when( connectionFactory.newConnection( eq( boltChannel ), any(), any() ) )
-                .thenReturn( mock( BoltConnection.class ) );
+        when(connectionFactory.newConnection(eq(boltChannel), any(), any())).thenReturn(mock(BoltConnection.class));
 
-        var boltProtocol = new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ),
-                                                         Config.defaults(), NullLogService.getInstance(), mock( TransportThrottleGroup.class ),
-                                                         mock( ChannelProtector.class ), memoryTracker );
+        var boltProtocol = new TestAbstractBoltProtocol(
+                boltChannel,
+                connectionFactory,
+                mock(BoltStateMachineFactory.class),
+                Config.defaults(),
+                NullLogService.getInstance(),
+                mock(TransportThrottleGroup.class),
+                mock(ChannelProtector.class),
+                memoryTracker);
 
         boltProtocol.install();
 
-        verify( memoryTracker )
-                .allocateHeap( ChunkDecoder.SHALLOW_SIZE + MessageAccumulator.SHALLOW_SIZE + MessageDecoder.SHALLOW_SIZE + HouseKeeper.SHALLOW_SIZE );
-        verifyNoMoreInteractions( memoryTracker );
+        verify(memoryTracker)
+                .allocateHeap(ChunkDecoder.SHALLOW_SIZE
+                        + MessageAccumulator.SHALLOW_SIZE
+                        + MessageDecoder.SHALLOW_SIZE
+                        + HouseKeeper.SHALLOW_SIZE);
+        verifyNoMoreInteractions(memoryTracker);
     }
 
-    private static class TestAbstractBoltProtocol extends AbstractBoltProtocol
-    {
-        private static final BoltProtocolVersion DUMMY_VERSION = new BoltProtocolVersion( 0, 0 );
+    private static class TestAbstractBoltProtocol extends AbstractBoltProtocol {
+        private static final BoltProtocolVersion DUMMY_VERSION = new BoltProtocolVersion(0, 0);
 
-        TestAbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-                                  Config config, LogService logging, TransportThrottleGroup throttleGroup, ChannelProtector channelProtector,
-                                  MemoryTracker memoryTracker )
-        {
-            super( channel, connectionFactory, stateMachineFactory, config, logging, throttleGroup, channelProtector, memoryTracker );
+        TestAbstractBoltProtocol(
+                BoltChannel channel,
+                BoltConnectionFactory connectionFactory,
+                BoltStateMachineFactory stateMachineFactory,
+                Config config,
+                LogService logging,
+                TransportThrottleGroup throttleGroup,
+                ChannelProtector channelProtector,
+                MemoryTracker memoryTracker) {
+            super(
+                    channel,
+                    connectionFactory,
+                    stateMachineFactory,
+                    config,
+                    logging,
+                    throttleGroup,
+                    channelProtector,
+                    memoryTracker);
         }
 
         @Override
-        public Neo4jPack createPack( MemoryTracker memoryTracker )
-        {
-            return mock( Neo4jPack.class );
+        public Neo4jPack createPack(MemoryTracker memoryTracker) {
+            return mock(Neo4jPack.class);
         }
 
         @Override
-        protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
-                                                                BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging,
-                                                                ChannelProtector channelProtector,
-                                                                MemoryTracker memoryTracker )
-        {
-            return mock( BoltRequestMessageReader.class );
+        protected BoltRequestMessageReader createMessageReader(
+                BoltConnection connection,
+                BoltResponseMessageWriter messageWriter,
+                BookmarksParser bookmarksParser,
+                LogService logging,
+                ChannelProtector channelProtector,
+                MemoryTracker memoryTracker) {
+            return mock(BoltRequestMessageReader.class);
         }
 
         @Override
-        protected BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack, LogService logging, MemoryTracker memoryTracker )
-        {
-            return mock( BoltResponseMessageWriter.class );
+        protected BoltResponseMessageWriter createMessageWriter(
+                Neo4jPack neo4jPack, LogService logging, MemoryTracker memoryTracker) {
+            return mock(BoltResponseMessageWriter.class);
         }
 
         @Override
-        public BoltProtocolVersion version()
-        {
+        public BoltProtocolVersion version() {
             return DUMMY_VERSION;
         }
     }

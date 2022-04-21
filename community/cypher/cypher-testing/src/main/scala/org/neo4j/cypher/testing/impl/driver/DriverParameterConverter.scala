@@ -19,26 +19,33 @@
  */
 package org.neo4j.cypher.testing.impl.driver
 
-import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalAmount
-
 import org.neo4j.cypher.testing.api.ParameterConverter
 import org.neo4j.driver
 import org.neo4j.graphdb.spatial.Point
+
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAmount
+
 import scala.IterableOnce
 
 object DriverParameterConverter extends ParameterConverter {
+
   def convertParameterValue(value: Any): AnyRef = value match {
-    case null                            => null
-    case map: Map[_, _]                  => convertParameters(map.asInstanceOf[Map[String, Any]])
-    case array: Array[AnyRef]            => array.map(convertParameterValue)
-    case iterable: Iterable[_]           => iterable.map(convertParameterValue).toArray
+    case null                         => null
+    case map: Map[_, _]               => convertParameters(map.asInstanceOf[Map[String, Any]])
+    case array: Array[AnyRef]         => array.map(convertParameterValue)
+    case iterable: Iterable[_]        => iterable.map(convertParameterValue).toArray
     case traversable: IterableOnce[_] => traversable.map(convertParameterValue).toArray
-    case d: TemporalAmount               => convertTemporalValue(d)
-    case _: Point                        => throw new IllegalStateException("Point type is not supported yet")
-    case x                               => x.asInstanceOf[AnyRef]
+    case d: TemporalAmount            => convertTemporalValue(d)
+    case _: Point                     => throw new IllegalStateException("Point type is not supported yet")
+    case x                            => x.asInstanceOf[AnyRef]
   }
 
   private def convertTemporalValue(serverValue: TemporalAmount): driver.Value =
-    driver.Values.isoDuration(serverValue.get(ChronoUnit.MONTHS), serverValue.get(ChronoUnit.DAYS), serverValue.get(ChronoUnit.SECONDS), serverValue.get(ChronoUnit.NANOS).toInt)
+    driver.Values.isoDuration(
+      serverValue.get(ChronoUnit.MONTHS),
+      serverValue.get(ChronoUnit.DAYS),
+      serverValue.get(ChronoUnit.SECONDS),
+      serverValue.get(ChronoUnit.NANOS).toInt
+    )
 }

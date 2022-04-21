@@ -29,284 +29,213 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  * whole page cache is doing. Implementations of this interface should be as
  * efficient as possible, lest they severely slow down the page cache.
  */
-public interface PageCacheTracer extends PageCacheCounters
-{
+public interface PageCacheTracer extends PageCacheCounters {
     /**
      * A PageCacheTracer that does nothing other than return the NULL variants of the companion interfaces.
      */
-    PageCacheTracer NULL = new PageCacheTracer()
-    {
+    PageCacheTracer NULL = new PageCacheTracer() {
         @Override
-        public PageFileSwapperTracer createFileSwapperTracer()
-        {
+        public PageFileSwapperTracer createFileSwapperTracer() {
             return PageFileSwapperTracer.NULL;
         }
 
         @Override
-        public PageCursorTracer createPageCursorTracer( String tag )
-        {
+        public PageCursorTracer createPageCursorTracer(String tag) {
             return PageCursorTracer.NULL;
         }
 
         @Override
-        public void mappedFile( int swapperId, PagedFile pagedFile )
-        {
-        }
+        public void mappedFile(int swapperId, PagedFile pagedFile) {}
 
         @Override
-        public void unmappedFile( int swapperId, PagedFile pagedFile )
-        {
-        }
+        public void unmappedFile(int swapperId, PagedFile pagedFile) {}
 
         @Override
-        public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
-        {
+        public EvictionRunEvent beginPageEvictions(int pageCountToEvict) {
             return EvictionRunEvent.NULL;
         }
 
         @Override
-        public EvictionRunEvent beginEviction()
-        {
+        public EvictionRunEvent beginEviction() {
             return EvictionRunEvent.NULL;
         }
 
         @Override
-        public MajorFlushEvent beginFileFlush( PageSwapper swapper )
-        {
+        public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
             return MajorFlushEvent.NULL;
         }
 
         @Override
-        public MajorFlushEvent beginCacheFlush()
-        {
+        public MajorFlushEvent beginCacheFlush() {
             return MajorFlushEvent.NULL;
         }
 
         @Override
-        public long faults()
-        {
+        public long faults() {
             return 0;
         }
 
         @Override
-        public long failedFaults()
-        {
+        public long failedFaults() {
             return 0;
         }
 
         @Override
-        public long noFaults()
-        {
+        public long noFaults() {
             return 0;
         }
 
         @Override
-        public long evictions()
-        {
+        public long evictions() {
             return 0;
         }
 
         @Override
-        public long cooperativeEvictions()
-        {
+        public long cooperativeEvictions() {
             return 0;
         }
 
         @Override
-        public long pins()
-        {
+        public long pins() {
             return 0;
         }
 
         @Override
-        public long unpins()
-        {
+        public long unpins() {
             return 0;
         }
 
         @Override
-        public long hits()
-        {
+        public long hits() {
             return 0;
         }
 
         @Override
-        public long flushes()
-        {
+        public long flushes() {
             return 0;
         }
 
         @Override
-        public long merges()
-        {
+        public long merges() {
             return 0;
         }
 
         @Override
-        public long bytesRead()
-        {
+        public long bytesRead() {
             return 0;
         }
 
         @Override
-        public long bytesWritten()
-        {
+        public long bytesWritten() {
             return 0;
         }
 
         @Override
-        public long filesMapped()
-        {
+        public long filesMapped() {
             return 0;
         }
 
         @Override
-        public long filesUnmapped()
-        {
+        public long filesUnmapped() {
             return 0;
         }
 
         @Override
-        public long evictionExceptions()
-        {
+        public long evictionExceptions() {
             return 0;
         }
 
         @Override
-        public double hitRatio()
-        {
+        public double hitRatio() {
             return 0d;
         }
 
         @Override
-        public double usageRatio()
-        {
+        public double usageRatio() {
             return 0d;
         }
 
         @Override
-        public long iopqPerformed()
-        {
+        public long iopqPerformed() {
             return 0;
         }
 
         @Override
-        public long ioLimitedTimes()
-        {
+        public long ioLimitedTimes() {
             return 0;
         }
 
         @Override
-        public long ioLimitedMillis()
-        {
+        public long ioLimitedMillis() {
             return 0;
         }
 
         @Override
-        public long openedCursors()
-        {
+        public long openedCursors() {
             return 0;
         }
 
         @Override
-        public long closedCursors()
-        {
+        public long closedCursors() {
             return 0;
         }
 
         @Override
-        public void pins( long pins )
-        {
-        }
+        public void pins(long pins) {}
 
         @Override
-        public void unpins( long unpins )
-        {
-        }
+        public void unpins(long unpins) {}
 
         @Override
-        public void hits( long hits )
-        {
-        }
+        public void hits(long hits) {}
 
         @Override
-        public void faults( long faults )
-        {
-        }
+        public void faults(long faults) {}
 
         @Override
-        public void noFaults( long noFaults )
-        {
-        }
+        public void noFaults(long noFaults) {}
 
         @Override
-        public void failedFaults( long failedFaults )
-        {
-        }
+        public void failedFaults(long failedFaults) {}
 
         @Override
-        public void bytesRead( long bytesRead )
-        {
-        }
+        public void bytesRead(long bytesRead) {}
 
         @Override
-        public void evictions( long evictions )
-        {
-        }
+        public void evictions(long evictions) {}
 
         @Override
-        public void cooperativeEvictions( long evictions )
-        {
-        }
+        public void cooperativeEvictions(long evictions) {}
 
         @Override
-        public void evictionExceptions( long evictionExceptions )
-        {
-        }
+        public void evictionExceptions(long evictionExceptions) {}
 
         @Override
-        public void bytesWritten( long bytesWritten )
-        {
-        }
+        public void bytesWritten(long bytesWritten) {}
 
         @Override
-        public void flushes( long flushes )
-        {
-        }
+        public void flushes(long flushes) {}
 
         @Override
-        public void merges( long merges )
-        {
-        }
+        public void merges(long merges) {}
 
         @Override
-        public void maxPages( long maxPages, long pageSize )
-        {
-        }
+        public void maxPages(long maxPages, long pageSize) {}
 
         @Override
-        public void iopq( long iopq )
-        {
-        }
+        public void iopq(long iopq) {}
 
         @Override
-        public void limitIO( long millis )
-        {
-        }
+        public void limitIO(long millis) {}
 
         @Override
-        public void closeCursor()
-        {
-        }
+        public void closeCursor() {}
 
         @Override
-        public void openCursor()
-        {
-        }
+        public void openCursor() {}
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return PageCacheTracer.class.getName() + ".NULL";
         }
     };
@@ -324,24 +253,24 @@ public interface PageCacheTracer extends PageCacheCounters
      * @param tag specific tag of underlying cursor tracer
      * @return page cursor tracer.
      */
-    PageCursorTracer createPageCursorTracer( String tag );
+    PageCursorTracer createPageCursorTracer(String tag);
 
     /**
      * The given file has been mapped, where no existing mapping for that file existed.
      */
-    void mappedFile( int swapperId, PagedFile pagedFile );
+    void mappedFile(int swapperId, PagedFile pagedFile);
 
     /**
      * The last reference to the given file has been unmapped.
      */
-    void unmappedFile( int swapperId, PagedFile pagedFile );
+    void unmappedFile(int swapperId, PagedFile pagedFile);
 
     /**
      * A background eviction has begun. Called from the background eviction thread.
      *
      * The method returns an EvictionRunEvent to represent the event of this eviction run.
      **/
-    EvictionRunEvent beginPageEvictions( int pageCountToEvict );
+    EvictionRunEvent beginPageEvictions(int pageCountToEvict);
 
     /**
      * Start of vacuum eviction event to cleanup unknown number of pages for obsolete swappers
@@ -352,7 +281,7 @@ public interface PageCacheTracer extends PageCacheCounters
     /**
      * A PagedFile wants to flush all its bound pages.
      */
-    MajorFlushEvent beginFileFlush( PageSwapper swapper );
+    MajorFlushEvent beginFileFlush(PageSwapper swapper);
 
     /**
      * The PageCache wants to flush all its bound pages.
@@ -363,98 +292,98 @@ public interface PageCacheTracer extends PageCacheCounters
      * Report number of observed pins
      * @param pins number of pins
      */
-    void pins( long pins );
+    void pins(long pins);
 
     /**
      * Report number of observed unpins
      * @param unpins number of unpins
      */
-    void unpins( long unpins );
+    void unpins(long unpins);
 
     /**
      * Report number of observer hits
      * @param hits number of hits
      */
-    void hits( long hits );
+    void hits(long hits);
 
     /**
      * Report number of observed fault attempts
      * @param faults number of fault attempts
      */
-    void faults( long faults );
+    void faults(long faults);
 
     /**
      * Report number of observed no-faults
      * @param noFaults number of no-faults
      */
-    void noFaults( long noFaults );
+    void noFaults(long noFaults);
 
     /**
      * Report number of observed failed faults
      * @param failedFaults number of failed faults
      */
-    void failedFaults( long failedFaults );
+    void failedFaults(long failedFaults);
 
     /**
      * Report number of bytes read
      * @param bytesRead number of read bytes
      */
-    void bytesRead( long bytesRead );
+    void bytesRead(long bytesRead);
 
     /**
      * Report number of observed evictions
      * @param evictions number of evictions
      */
-    void evictions( long evictions );
+    void evictions(long evictions);
 
     /**
      * Report number of observed cooperative evictions
      * @param evictions number of cooperative evictions
      */
-    void cooperativeEvictions( long evictions );
+    void cooperativeEvictions(long evictions);
 
     /**
      * Report number of eviction exceptions
      * @param evictionExceptions number of eviction exceptions
      */
-    void evictionExceptions( long evictionExceptions );
+    void evictionExceptions(long evictionExceptions);
 
     /**
      * Report number of bytes written
      * @param bytesWritten number of written bytes
      */
-    void bytesWritten( long bytesWritten );
+    void bytesWritten(long bytesWritten);
 
     /**
      * Report number of flushes
      * @param flushes number of flushes
      */
-    void flushes( long flushes );
+    void flushes(long flushes);
 
     /**
      * Report number of merges
      * @param merges number of merges
      */
-    void merges( long merges );
+    void merges(long merges);
 
     /**
      * Sets the number of available pages.
      * @param maxPages the total number of available pages.
      * @param pageSize size of page
      */
-    void maxPages( long maxPages, long pageSize );
+    void maxPages(long maxPages, long pageSize);
 
     /**
      * Report number of performed iopq.
      * @param iopq number of performed io operations per quantum of time.
      */
-    void iopq( long iopq );
+    void iopq(long iopq);
 
     /**
      * Report io throttling by io limiter.
      * @param millis number of millisecond io should be blocked.
      */
-    void limitIO( long millis );
+    void limitIO(long millis);
 
     /**
      * Page cache cursor closed

@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object PathType {
+
   val instance = new PathType() {
     val parentType = CTAny
     override val toString = "Path"

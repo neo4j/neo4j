@@ -30,8 +30,9 @@ import org.scalatest.matchers.Matcher
  * Asserts that the Order argument of a PlanDescription contains the expected provided order.
  */
 case class OrderArgumentMatcher(expected: ProvidedOrder) extends Matcher[InternalPlanDescription] {
+
   override def apply(plan: InternalPlanDescription): MatchResult = {
-    val orderArgs = plan.arguments.collect { case o:Order => o }
+    val orderArgs = plan.arguments.collect { case o: Order => o }
     val expectedAsOrder = asPrettyString.order(expected)
     MatchResult(
       matches = orderArgs.contains(expectedAsOrder),

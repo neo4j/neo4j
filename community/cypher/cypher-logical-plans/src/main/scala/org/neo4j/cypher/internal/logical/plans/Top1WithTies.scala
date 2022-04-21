@@ -24,11 +24,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Special case TOP for the case when we only want one element, and all others that have the same value (tied for first place)
  */
-case class Top1WithTies(override val source: LogicalPlan, sortItems: Seq[ColumnOrder])(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
+case class Top1WithTies(override val source: LogicalPlan, sortItems: Seq[ColumnOrder])(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols
 }
-
-
-

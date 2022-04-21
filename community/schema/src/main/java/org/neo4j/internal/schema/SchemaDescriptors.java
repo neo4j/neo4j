@@ -19,49 +19,43 @@
  */
 package org.neo4j.internal.schema;
 
-import java.util.function.Predicate;
-
-import org.neo4j.common.EntityType;
-import org.neo4j.token.api.TokenConstants;
-
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.ENTITY_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
+import java.util.function.Predicate;
+import org.neo4j.common.EntityType;
+import org.neo4j.token.api.TokenConstants;
+
 /**
  * Static methods to create different types of Schema Descriptors
  */
-public class SchemaDescriptors
-{
-    public static SchemaDescriptor noSchema()
-    {
+public class SchemaDescriptors {
+    public static SchemaDescriptor noSchema() {
         return NoSchemaDescriptor.NO_SCHEMA;
     }
 
-    public static FulltextSchemaDescriptor fulltext( EntityType entityType, int[] entityTokenIds, int[] propertyKeyIds )
-    {
-        return new SchemaDescriptorImplementation( entityType, PARTIAL_ANY_TOKEN, entityTokenIds, propertyKeyIds );
+    public static FulltextSchemaDescriptor fulltext(EntityType entityType, int[] entityTokenIds, int[] propertyKeyIds) {
+        return new SchemaDescriptorImplementation(entityType, PARTIAL_ANY_TOKEN, entityTokenIds, propertyKeyIds);
     }
 
-    public static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
-    {
-        validateLabelIds( labelId );
-        validatePropertyIds( propertyIds );
-        return new SchemaDescriptorImplementation( NODE, COMPLETE_ALL_TOKENS, new int[]{labelId}, propertyIds );
+    public static LabelSchemaDescriptor forLabel(int labelId, int... propertyIds) {
+        validateLabelIds(labelId);
+        validatePropertyIds(propertyIds);
+        return new SchemaDescriptorImplementation(NODE, COMPLETE_ALL_TOKENS, new int[] {labelId}, propertyIds);
     }
 
-    public static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
-    {
-        validateRelationshipTypeIds( relTypeId );
-        validatePropertyIds( propertyIds );
-        return new SchemaDescriptorImplementation( RELATIONSHIP, COMPLETE_ALL_TOKENS, new int[]{relTypeId}, propertyIds );
+    public static RelationTypeSchemaDescriptor forRelType(int relTypeId, int... propertyIds) {
+        validateRelationshipTypeIds(relTypeId);
+        validatePropertyIds(propertyIds);
+        return new SchemaDescriptorImplementation(
+                RELATIONSHIP, COMPLETE_ALL_TOKENS, new int[] {relTypeId}, propertyIds);
     }
 
-    public static AnyTokenSchemaDescriptor forAnyEntityTokens( EntityType entityType )
-    {
-        return new SchemaDescriptorImplementation( entityType, ENTITY_TOKENS, new int[0], new int[0] );
+    public static AnyTokenSchemaDescriptor forAnyEntityTokens(EntityType entityType) {
+        return new SchemaDescriptorImplementation(entityType, ENTITY_TOKENS, new int[0], new int[0]);
     }
 
     /**
@@ -70,41 +64,32 @@ public class SchemaDescriptors
      * @return A predicate that returns {@code true} if it is given a schema descriptor supplier that supplies the
      * same schema descriptor as the given schema descriptor.
      */
-    public static <T extends SchemaDescriptorSupplier> Predicate<T> equalTo( SchemaDescriptor descriptor )
-    {
-        return supplier -> descriptor.equals( supplier.schema() );
+    public static <T extends SchemaDescriptorSupplier> Predicate<T> equalTo(SchemaDescriptor descriptor) {
+        return supplier -> descriptor.equals(supplier.schema());
     }
 
-    private static void validatePropertyIds( int[] propertyIds )
-    {
-        for ( int propertyId : propertyIds )
-        {
-            if ( TokenConstants.ANY_PROPERTY_KEY == propertyId )
-            {
+    private static void validatePropertyIds(int[] propertyIds) {
+        for (int propertyId : propertyIds) {
+            if (TokenConstants.ANY_PROPERTY_KEY == propertyId) {
                 throw new IllegalArgumentException(
-                        "Index schema descriptor can't be created for non existent property." );
+                        "Index schema descriptor can't be created for non existent property.");
             }
         }
     }
 
-    private static void validateRelationshipTypeIds( int... relTypes )
-    {
-        for ( int relType : relTypes )
-        {
-            if ( TokenConstants.ANY_RELATIONSHIP_TYPE == relType )
-            {
-                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent relationship type." );
+    private static void validateRelationshipTypeIds(int... relTypes) {
+        for (int relType : relTypes) {
+            if (TokenConstants.ANY_RELATIONSHIP_TYPE == relType) {
+                throw new IllegalArgumentException(
+                        "Index schema descriptor can't be created for non existent relationship type.");
             }
         }
     }
 
-    private static void validateLabelIds( int... labelIds )
-    {
-        for ( int labelId : labelIds )
-        {
-            if ( TokenConstants.ANY_LABEL == labelId )
-            {
-                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
+    private static void validateLabelIds(int... labelIds) {
+        for (int labelId : labelIds) {
+            if (TokenConstants.ANY_LABEL == labelId) {
+                throw new IllegalArgumentException("Index schema descriptor can't be created for non existent label.");
             }
         }
     }

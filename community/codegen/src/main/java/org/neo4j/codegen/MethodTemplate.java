@@ -19,6 +19,11 @@
  */
 package org.neo4j.codegen;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.codegen.Parameter.NO_PARAMETERS;
+import static org.neo4j.codegen.TypeReference.NO_TYPES;
+import static org.neo4j.codegen.TypeReference.typeReference;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,210 +31,161 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.codegen.Parameter.NO_PARAMETERS;
-import static org.neo4j.codegen.TypeReference.NO_TYPES;
-import static org.neo4j.codegen.TypeReference.typeReference;
-
-public class MethodTemplate
-{
-    public static Builder method( Class<?> returnType, String name, Parameter... parameters )
-    {
-        return method( typeReference( returnType ), name, parameters );
+public class MethodTemplate {
+    public static Builder method(Class<?> returnType, String name, Parameter... parameters) {
+        return method(typeReference(returnType), name, parameters);
     }
 
-    public static Builder method( final TypeReference returnType, final String name, Parameter... parameters )
-    {
-        try
-        {
-            return new Builder( parameters )
-            {
+    public static Builder method(final TypeReference returnType, final String name, Parameter... parameters) {
+        try {
+            return new Builder(parameters) {
                 @Override
-                public MethodTemplate build()
-                {
-                    return buildMethod( this, returnType, name );
+                public MethodTemplate build() {
+                    return buildMethod(this, returnType, name);
                 }
 
                 @Override
-                MethodDeclaration.Builder declaration()
-                {
-                    return MethodDeclaration.method( returnType, name, parameters );
+                MethodDeclaration.Builder declaration() {
+                    return MethodDeclaration.method(returnType, name, parameters);
                 }
             };
-        }
-        catch ( IllegalArgumentException | NullPointerException e )
-        {
-            throw new IllegalArgumentException( "Invalid signature for " + name + ": " + e.getMessage(), e );
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException("Invalid signature for " + name + ": " + e.getMessage(), e);
         }
     }
 
-    public static ConstructorBuilder constructor( Parameter... parameters )
-    {
-        try
-        {
-            return new ConstructorBuilder( parameters );
-        }
-        catch ( IllegalArgumentException | NullPointerException e )
-        {
-            throw new IllegalArgumentException( "Invalid constructor signature: " + e.getMessage(), e );
+    public static ConstructorBuilder constructor(Parameter... parameters) {
+        try {
+            return new ConstructorBuilder(parameters);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException("Invalid constructor signature: " + e.getMessage(), e);
         }
     }
 
-    public static class ConstructorBuilder extends Builder
-    {
-        ConstructorBuilder( Parameter[] parameters )
-        {
-            super( parameters );
+    public static class ConstructorBuilder extends Builder {
+        ConstructorBuilder(Parameter[] parameters) {
+            super(parameters);
         }
 
-        public Builder invokeSuper()
-        {
+        public Builder invokeSuper() {
             return expression(
-                    ExpressionTemplate.invokeSuperConstructor( new ExpressionTemplate[]{}, TypeReference.NO_TYPES ) );
+                    ExpressionTemplate.invokeSuperConstructor(new ExpressionTemplate[] {}, TypeReference.NO_TYPES));
         }
 
-        public Builder invokeSuper( ExpressionTemplate[] parameters, Class<?>[] parameterTypes )
-        {
+        public Builder invokeSuper(ExpressionTemplate[] parameters, Class<?>[] parameterTypes) {
             TypeReference[] references = new TypeReference[parameterTypes.length];
-            for ( int i = 0; i < parameterTypes.length; i++ )
-            {
-                references[i] = typeReference( parameterTypes[i] );
+            for (int i = 0; i < parameterTypes.length; i++) {
+                references[i] = typeReference(parameterTypes[i]);
             }
 
-            return invokeSuper( parameters, references );
+            return invokeSuper(parameters, references);
         }
 
-        public Builder invokeSuper( ExpressionTemplate[] parameters, TypeReference[] parameterTypes )
-        {
-            return expression( ExpressionTemplate.invokeSuperConstructor( parameters, parameterTypes ) );
-        }
-
-        @Override
-        public MethodTemplate build()
-        {
-            return buildConstructor( this );
+        public Builder invokeSuper(ExpressionTemplate[] parameters, TypeReference[] parameterTypes) {
+            return expression(ExpressionTemplate.invokeSuperConstructor(parameters, parameterTypes));
         }
 
         @Override
-        MethodDeclaration.Builder declaration()
-        {
-            return MethodDeclaration.constructor( parameters );
+        public MethodTemplate build() {
+            return buildConstructor(this);
+        }
+
+        @Override
+        MethodDeclaration.Builder declaration() {
+            return MethodDeclaration.constructor(parameters);
         }
     }
 
-    public abstract static class Builder
-    {
+    public abstract static class Builder {
         final Parameter[] parameters;
-        private final Map<String,TypeReference> locals = new HashMap<>();
+        private final Map<String, TypeReference> locals = new HashMap<>();
         private final List<Statement> statements = new ArrayList<>();
         private int modifiers = Modifier.PUBLIC;
 
-        Builder( Parameter[] parameters )
-        {
-            if ( parameters == null || parameters.length == 0 )
-            {
+        Builder(Parameter[] parameters) {
+            if (parameters == null || parameters.length == 0) {
                 this.parameters = NO_PARAMETERS;
+            } else {
+                this.parameters = Arrays.copyOf(parameters, parameters.length);
             }
-            else
-            {
-                this.parameters = Arrays.copyOf( parameters, parameters.length );
-            }
-            for ( int i = 0; i < this.parameters.length; i++ )
-            {
-                Parameter parameter = requireNonNull( this.parameters[i], "Parameter " + i );
-                if ( null != locals.put( parameter.name(), parameter.type() ) )
-                {
-                    throw new IllegalArgumentException( "Duplicate parameters named \"" + parameter.name() + "\"." );
+            for (int i = 0; i < this.parameters.length; i++) {
+                Parameter parameter = requireNonNull(this.parameters[i], "Parameter " + i);
+                if (null != locals.put(parameter.name(), parameter.type())) {
+                    throw new IllegalArgumentException("Duplicate parameters named \"" + parameter.name() + "\".");
                 }
             }
         }
 
         public abstract MethodTemplate build();
 
-        public Builder expression( ExpressionTemplate expression )
-        {
-            statements.add( Statement.expression( expression ) );
+        public Builder expression(ExpressionTemplate expression) {
+            statements.add(Statement.expression(expression));
             return this;
         }
 
-        public Builder put( ExpressionTemplate target, Class<?> fieldType, String fieldName,
-                ExpressionTemplate expression )
-        {
-            return put( target, typeReference( fieldType ), fieldName, expression );
+        public Builder put(
+                ExpressionTemplate target, Class<?> fieldType, String fieldName, ExpressionTemplate expression) {
+            return put(target, typeReference(fieldType), fieldName, expression);
         }
 
-        public Builder put( ExpressionTemplate target, TypeReference fieldType, String fieldName,
-                ExpressionTemplate expression )
-        {
-            statements.add( Statement.put( target, Lookup.field( fieldType, fieldName ), expression ) );
+        public Builder put(
+                ExpressionTemplate target, TypeReference fieldType, String fieldName, ExpressionTemplate expression) {
+            statements.add(Statement.put(target, Lookup.field(fieldType, fieldName), expression));
             return this;
         }
 
-        public Builder modifiers( int modifiers )
-        {
+        public Builder modifiers(int modifiers) {
             this.modifiers = modifiers;
             return this;
         }
 
-        public Builder returns( ExpressionTemplate value )
-        {
-            statements.add( Statement.returns( value ) );
+        public Builder returns(ExpressionTemplate value) {
+            statements.add(Statement.returns(value));
             return this;
         }
 
         abstract MethodDeclaration.Builder declaration();
     }
 
-    public TypeReference returnType()
-    {
+    public TypeReference returnType() {
         return returnType;
     }
 
-    public String name()
-    {
+    public String name() {
         return name;
     }
 
-    public int modifiers()
-    {
+    public int modifiers() {
         return modifiers;
     }
 
-    public TypeReference[] parameterTypes()
-    {
-        if ( parameters.length == 0 )
-        {
+    public TypeReference[] parameterTypes() {
+        if (parameters.length == 0) {
             return NO_TYPES;
         }
         TypeReference[] result = new TypeReference[parameters.length];
-        for ( int i = 0; i < result.length; i++ )
-        {
+        for (int i = 0; i < result.length; i++) {
             result[i] = parameters[i].type();
         }
         return result;
     }
 
-    MethodDeclaration declaration( ClassHandle handle )
-    {
-        return declaration.build( handle );
+    MethodDeclaration declaration(ClassHandle handle) {
+        return declaration.build(handle);
     }
 
-    void generate( CodeBlock generator )
-    {
-        for ( Statement statement : statements )
-        {
-            statement.generate( generator );
+    void generate(CodeBlock generator) {
+        for (Statement statement : statements) {
+            statement.generate(generator);
         }
     }
 
-    private static MethodTemplate buildMethod( Builder builder, TypeReference returnType, String name )
-    {
-        return new MethodTemplate( builder, returnType, name );
+    private static MethodTemplate buildMethod(Builder builder, TypeReference returnType, String name) {
+        return new MethodTemplate(builder, returnType, name);
     }
 
-    private static MethodTemplate buildConstructor( Builder builder )
-    {
-        return new MethodTemplate( builder, TypeReference.VOID, "<init>" );
+    private static MethodTemplate buildConstructor(Builder builder) {
+        return new MethodTemplate(builder, TypeReference.VOID, "<init>");
     }
 
     private final MethodDeclaration.Builder declaration;
@@ -239,13 +195,12 @@ public class MethodTemplate
     private final String name;
     private final int modifiers;
 
-    private MethodTemplate( Builder builder, TypeReference returnType, String name )
-    {
+    private MethodTemplate(Builder builder, TypeReference returnType, String name) {
         this.returnType = returnType;
         this.name = name;
         this.declaration = builder.declaration();
         this.parameters = builder.parameters;
-        this.statements = builder.statements.toArray( new Statement[0] );
+        this.statements = builder.statements.toArray(new Statement[0]);
         this.modifiers = builder.modifiers;
     }
 }

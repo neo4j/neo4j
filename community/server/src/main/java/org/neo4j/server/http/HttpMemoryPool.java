@@ -19,34 +19,29 @@
  */
 package org.neo4j.server.http;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
+import static org.neo4j.memory.MemoryGroup.HTTP;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryPools;
 
-import static org.neo4j.memory.MemoryGroup.HTTP;
-
-public class HttpMemoryPool extends GlobalMemoryGroupTracker
-{
+public class HttpMemoryPool extends GlobalMemoryGroupTracker {
     private final ArrayByteBufferPool byteBufferPool;
 
-    public HttpMemoryPool( MemoryPools memoryPools, ArrayByteBufferPool byteBufferPool )
-    {
-        super( memoryPools, HTTP, 0, false, true, null );
+    public HttpMemoryPool(MemoryPools memoryPools, ArrayByteBufferPool byteBufferPool) {
+        super(memoryPools, HTTP, 0, false, true, null);
         this.byteBufferPool = byteBufferPool;
 
-        memoryPools.registerPool( this );
+        memoryPools.registerPool(this);
     }
 
     @Override
-    public long usedHeap()
-    {
+    public long usedHeap() {
         return super.usedHeap() + byteBufferPool.getHeapMemory();
     }
 
     @Override
-    public long usedNative()
-    {
+    public long usedNative() {
         return super.usedNative() + byteBufferPool.getDirectMemory();
     }
 }

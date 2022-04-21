@@ -22,8 +22,7 @@ package org.neo4j.cypher.result;
 /**
  * Profile of a query execution.
  */
-public interface QueryProfile
-{
+public interface QueryProfile {
     /**
      * Get profile for specific operator.
      *
@@ -34,24 +33,21 @@ public interface QueryProfile
      *
      * @param operatorId operator id
      */
-    OperatorProfile operatorProfile( int operatorId );
+    OperatorProfile operatorProfile(int operatorId);
 
     /**
      * The maximum amount of memory that this query held onto while executing.
      */
     long maxAllocatedMemory();
 
-    QueryProfile NONE = new QueryProfile()
-    {
+    QueryProfile NONE = new QueryProfile() {
         @Override
-        public OperatorProfile operatorProfile( int operatorId )
-        {
+        public OperatorProfile operatorProfile(int operatorId) {
             return OperatorProfile.NONE;
         }
 
         @Override
-        public long maxAllocatedMemory()
-        {
+        public long maxAllocatedMemory() {
             return OperatorProfile.NO_DATA;
         }
     };

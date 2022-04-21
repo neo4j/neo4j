@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.web;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import javax.servlet.Filter;
@@ -29,48 +31,38 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
-
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import static java.lang.String.format;
-
-public abstract class AbstractFilter implements Filter
-{
-    protected static ThrowingConsumer<HttpServletResponse, IOException> error( int code, Object body )
-    {
-        return response ->
-        {
-            response.setStatus( code );
-            response.addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-            response.getOutputStream().write( JsonHelper.createJsonFrom( body ).getBytes( StandardCharsets.UTF_8 ) );
+public abstract class AbstractFilter implements Filter {
+    protected static ThrowingConsumer<HttpServletResponse, IOException> error(int code, Object body) {
+        return response -> {
+            response.setStatus(code);
+            response.addHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.getOutputStream().write(JsonHelper.createJsonFrom(body).getBytes(StandardCharsets.UTF_8));
         };
     }
 
     @Override
-    public void init( FilterConfig filterConfig )
-    {
-    }
+    public void init(FilterConfig filterConfig) {}
 
     @Override
-    public void destroy()
-    {
-    }
+    public void destroy() {}
 
-    protected static HttpServletRequest validateRequestType( ServletRequest request ) throws ServletException
-    {
-        if ( !(request instanceof HttpServletRequest) )
-        {
-            throw new ServletException( format( "Expected HttpServletRequest, received [%s]", request.getClass().getCanonicalName() ) );
+    protected static HttpServletRequest validateRequestType(ServletRequest request) throws ServletException {
+        if (!(request instanceof HttpServletRequest)) {
+            throw new ServletException(format(
+                    "Expected HttpServletRequest, received [%s]",
+                    request.getClass().getCanonicalName()));
         }
         return (HttpServletRequest) request;
     }
 
-    protected static HttpServletResponse validateResponseType( ServletResponse response ) throws ServletException
-    {
-        if ( !(response instanceof HttpServletResponse) )
-        {
-            throw new ServletException( format( "Expected HttpServletResponse, received [%s]", response.getClass().getCanonicalName() ) );
+    protected static HttpServletResponse validateResponseType(ServletResponse response) throws ServletException {
+        if (!(response instanceof HttpServletResponse)) {
+            throw new ServletException(format(
+                    "Expected HttpServletResponse, received [%s]",
+                    response.getClass().getCanonicalName()));
         }
         return (HttpServletResponse) response;
     }

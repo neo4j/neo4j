@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProp
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
@@ -44,6 +43,7 @@ import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
 import org.neo4j.cypher.internal.frontend.phases.StatementCondition
 import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarningsAndReplacements
@@ -70,50 +70,52 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 object CompilationPhases {
 
   val defaultSemanticFeatures = Seq(
-    MultipleDatabases,
+    MultipleDatabases
   )
 
   def enabledSemanticFeatures(extra: Set[String]): Seq[SemanticFeature] =
     defaultSemanticFeatures ++ extra.map(SemanticFeature.fromString)
 
-  private val AccumulatedSteps(orderedPlanPipelineSteps, _) = StepSequencer(ListStepAccumulator[StepSequencer.Step with PlanPipelineTransformerFactory]())
-    .orderSteps(
-      Set(
-        SemanticAnalysis,
-        Namespacer,
-        ProjectNamedPathsRewriter,
-        isolateAggregation,
-        transitiveClosure,
-        rewriteEqualityToInPredicate,
-        collapseMultipleInPredicates,
-        ResolveTokens,
-        CreatePlannerQuery,
-        OptionalMatchRemover,
-        QueryPlanner,
-        PlanRewriter,
-        InsertCachedProperties,
-        CardinalityRewriter,
-        CompressPlanIDs,
-        CheckForUnresolvedTokens,
-      ) ++ CNFNormalizer.steps,
-      initialConditions = Set(StatementCondition(containsNoReturnAll), NoNamedPathsInPatternComprehensions)
-    )
+  private val AccumulatedSteps(orderedPlanPipelineSteps, _) =
+    StepSequencer(ListStepAccumulator[StepSequencer.Step with PlanPipelineTransformerFactory]())
+      .orderSteps(
+        Set(
+          SemanticAnalysis,
+          Namespacer,
+          ProjectNamedPathsRewriter,
+          isolateAggregation,
+          transitiveClosure,
+          rewriteEqualityToInPredicate,
+          collapseMultipleInPredicates,
+          ResolveTokens,
+          CreatePlannerQuery,
+          OptionalMatchRemover,
+          QueryPlanner,
+          PlanRewriter,
+          InsertCachedProperties,
+          CardinalityRewriter,
+          CompressPlanIDs,
+          CheckForUnresolvedTokens
+        ) ++ CNFNormalizer.steps,
+        initialConditions = Set(StatementCondition(containsNoReturnAll), NoNamedPathsInPatternComprehensions)
+      )
 
-  case class ParsingConfig(compatibilityMode: CypherCompatibilityVersion = Compatibility4_4,
-                           literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
-                           parameterTypeMapping: Map[String, CypherType] = Map.empty,
-                           semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
-                           obfuscateLiterals: Boolean = false
+  case class ParsingConfig(
+    compatibilityMode: CypherCompatibilityVersion = Compatibility4_4,
+    literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
+    parameterTypeMapping: Map[String, CypherType] = Map.empty,
+    semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
+    obfuscateLiterals: Boolean = false
   )
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     val compatibilityCheck: Transformer[BaseContext, BaseState, BaseState] =
       config.compatibilityMode match {
         case Compatibility3_5 =>
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
+          SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_4)
         case Compatibility4_3 =>
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_4)
+          SyntaxAdditionsErrors(Additions.addedFeaturesIn4_4)
         case Compatibility4_4 =>
           Transformer.identity
       }
@@ -122,7 +124,7 @@ object CompilationPhases {
       compatibilityCheck andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeaturesIn4_X) andThen
       PreparatoryRewriting andThen
-      If( (_: BaseState) => config.obfuscateLiterals) (
+      If((_: BaseState) => config.obfuscateLiterals)(
         extractSensitiveLiterals
       ) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
@@ -138,7 +140,10 @@ object CompilationPhases {
   }
 
   // Phase 1 (Fabric)
-  def fabricParsing(config: ParsingConfig, resolver: ProcedureSignatureResolver): Transformer[BaseContext, BaseState, BaseState] = {
+  def fabricParsing(
+    config: ParsingConfig,
+    resolver: ProcedureSignatureResolver
+  ): Transformer[BaseContext, BaseState, BaseState] = {
     parsingBase(config) andThen
       ExpandStarRewriter andThen
       TryRewriteProcedureCalls(resolver) andThen
@@ -164,7 +169,7 @@ object CompilationPhases {
   // Phase 3
   def planPipeLine(
     pushdownPropertyReads: Boolean = true,
-    semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
+    semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] =
     SchemaCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
@@ -186,4 +191,3 @@ sealed trait CypherCompatibilityVersion
 case object Compatibility3_5 extends CypherCompatibilityVersion
 case object Compatibility4_3 extends CypherCompatibilityVersion
 case object Compatibility4_4 extends CypherCompatibilityVersion
-

@@ -24,24 +24,20 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * Thrown when required authorization info has expired in the Neo4j auth cache
  */
-public class AuthorizationExpiredException extends RuntimeException implements Status.HasStatus
-{
+public class AuthorizationExpiredException extends RuntimeException implements Status.HasStatus {
     private static final Status statusCode = Status.Security.AuthorizationExpired;
 
-    public AuthorizationExpiredException( String msg )
-    {
-        super( msg );
+    public AuthorizationExpiredException(String msg) {
+        super(msg);
     }
 
-    public AuthorizationExpiredException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public AuthorizationExpiredException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
-    public Status status()
-    {
+    public Status status() {
         return statusCode;
     }
 }

@@ -25,8 +25,7 @@ package org.neo4j.graphdb.traversal;
  * "breadth first". This is an interface to implement if you'd like to implement
  * f.ex. a "best first" selector based on your own criteria.
  */
-public interface BranchSelector
-{
+public interface BranchSelector {
     /**
      * Decides the next position ("where to go from here") from the current
      * position, based on the {@code rules}. Since {@link TraversalBranch}
@@ -38,5 +37,5 @@ public interface BranchSelector
      * @return the next position based on the current position and the
      * {@code rules} of the traversal.
      */
-    TraversalBranch next( TraversalContext metadata );
+    TraversalBranch next(TraversalContext metadata);
 }

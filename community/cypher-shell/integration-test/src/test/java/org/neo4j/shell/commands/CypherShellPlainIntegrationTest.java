@@ -19,10 +19,13 @@
  */
 package org.neo4j.shell.commands;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Format;
@@ -33,85 +36,72 @@ import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.state.BoltStateHandler;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
-class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
-{
+class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
     private final StringLinePrinter linePrinter = new StringLinePrinter();
 
     @BeforeEach
-    void setUp() throws Exception
-    {
+    void setUp() throws Exception {
         linePrinter.clear();
-        var printer = new PrettyPrinter( new PrettyConfig( Format.PLAIN, true, 1000 ) );
-        var boltHandler = new BoltStateHandler( true );
-        var parameters = ParameterService.create( boltHandler );
-        shell = new CypherShell( linePrinter, boltHandler, printer, parameters );
-        connect( "neo" );
+        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000));
+        var boltHandler = new BoltStateHandler(true);
+        var parameters = ParameterService.create(boltHandler);
+        shell = new CypherShell(linePrinter, boltHandler, printer, parameters);
+        connect("neo");
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
-        try
-        {
-            shell.execute( CypherStatement.complete( "MATCH (n) DETACH DELETE (n)" ) );
-        }
-        finally
-        {
+    void tearDown() throws Exception {
+        try {
+            shell.execute(CypherStatement.complete("MATCH (n) DETACH DELETE (n)"));
+        } finally {
             shell.disconnect();
         }
     }
 
     @Test
-    void cypherWithProfileStatements() throws CommandException
-    {
-        //when
-        shell.execute( CypherStatement.complete( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" ) );
+    void cypherWithProfileStatements() throws CommandException {
+        // when
+        shell.execute(CypherStatement.complete("CYPHER RUNTIME=INTERPRETED PROFILE RETURN null"));
 
-        //then
+        // then
         String actual = linePrinter.output();
         //      This assertion checks everything except for time and cypher
-        assertThat( actual, containsString( "Plan: \"PROFILE\"" ) );
-        assertThat( actual, containsString( "Statement: \"READ_ONLY\"" ) );
-        assertThat( actual, containsString( "Planner: \"COST\"" ) );
-        assertThat( actual, containsString( "Runtime: \"INTERPRETED\"" ) );
-        assertThat( actual, containsString( "DbHits: 0" ) );
-        assertThat( actual, containsString( "Rows: 1" ) );
-        assertThat( actual, containsString( "null" ) );
-        assertThat( actual, containsString( "NULL" ) );
+        assertThat(actual, containsString("Plan: \"PROFILE\""));
+        assertThat(actual, containsString("Statement: \"READ_ONLY\""));
+        assertThat(actual, containsString("Planner: \"COST\""));
+        assertThat(actual, containsString("Runtime: \"INTERPRETED\""));
+        assertThat(actual, containsString("DbHits: 0"));
+        assertThat(actual, containsString("Rows: 1"));
+        assertThat(actual, containsString("null"));
+        assertThat(actual, containsString("NULL"));
     }
 
     @Test
-    void cypherWithProfileWithMemory() throws CommandException
-    {
+    void cypherWithProfileWithMemory() throws CommandException {
         // given
         // Memory profile are only available from 4.1
-        assumeTrue( runningAtLeast( "4.1" ) );
+        assumeTrue(runningAtLeast("4.1"));
 
-        //when
-        shell.execute( CypherStatement.complete( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" ) );
+        // when
+        shell.execute(CypherStatement.complete("CYPHER RUNTIME=INTERPRETED PROFILE RETURN null"));
 
-        //then
+        // then
         String actual = linePrinter.output();
-        System.out.println( actual );
-        assertThat( actual, containsString( "Memory (Bytes): " ) );
+        System.out.println(actual);
+        assertThat(actual, containsString("Memory (Bytes): "));
     }
 
     @Test
-    void cypherWithExplainStatements() throws CommandException
-    {
-        //when
-        shell.execute( CypherStatement.complete( "CYPHER RUNTIME=INTERPRETED EXPLAIN RETURN null" ) );
+    void cypherWithExplainStatements() throws CommandException {
+        // when
+        shell.execute(CypherStatement.complete("CYPHER RUNTIME=INTERPRETED EXPLAIN RETURN null"));
 
-        //then
+        // then
         String actual = linePrinter.output();
         //      This assertion checks everything except for time and cypher
-        assertThat( actual, containsString( "Plan: \"EXPLAIN\"" ) );
-        assertThat( actual, containsString( "Statement: \"READ_ONLY\"" ) );
-        assertThat( actual, containsString( "Planner: \"COST\"" ) );
-        assertThat( actual, containsString( "Runtime: \"INTERPRETED\"" ) );
+        assertThat(actual, containsString("Plan: \"EXPLAIN\""));
+        assertThat(actual, containsString("Statement: \"READ_ONLY\""));
+        assertThat(actual, containsString("Planner: \"COST\""));
+        assertThat(actual, containsString("Runtime: \"INTERPRETED\""));
     }
 }

@@ -19,32 +19,29 @@
  */
 package org.neo4j.bolt.v3.messaging.encoder;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
-import org.neo4j.values.virtual.MapValue;
-
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class SuccessMessageEncoderTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
+import org.neo4j.values.virtual.MapValue;
+
+class SuccessMessageEncoderTest {
     @Test
-    void shouldEncodeSuccessMessage() throws Throwable
-    {
+    void shouldEncodeSuccessMessage() throws Throwable {
         // Given
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
         SuccessMessageEncoder encoder = new SuccessMessageEncoder();
 
         // When
-        MapValue meta = mock( MapValue.class );
-        encoder.encode( packer, new SuccessMessage( meta ) );
+        MapValue meta = mock(MapValue.class);
+        encoder.encode(packer, new SuccessMessage(meta));
 
         // Then
-        verify( packer ).packStructHeader( anyInt(), eq( SuccessMessage.SIGNATURE ) );
-        verify( packer ).pack( meta );
+        verify(packer).packStructHeader(anyInt(), eq(SuccessMessage.SIGNATURE));
+        verify(packer).pack(meta);
     }
 }

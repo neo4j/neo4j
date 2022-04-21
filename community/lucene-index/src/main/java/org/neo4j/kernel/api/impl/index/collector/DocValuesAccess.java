@@ -23,8 +23,7 @@ package org.neo4j.kernel.api.impl.index.collector;
  * Represents a point-in-time view on a set of numeric values
  * that are read from a {@code NumericDocValues} field.
  */
-public interface DocValuesAccess
-{
+public interface DocValuesAccess {
     /**
      * @return the current value of the main field that is driving the values.
      */

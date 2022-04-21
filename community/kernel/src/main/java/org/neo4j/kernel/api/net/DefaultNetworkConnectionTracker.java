@@ -27,43 +27,36 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A {@link NetworkConnectionTracker} that keeps all given connections in a {@link ConcurrentHashMap}.
  */
-public class DefaultNetworkConnectionTracker implements NetworkConnectionTracker
-{
+public class DefaultNetworkConnectionTracker implements NetworkConnectionTracker {
     private final NetworkConnectionIdGenerator idGenerator = new NetworkConnectionIdGenerator();
-    private final Map<String,TrackedNetworkConnection> connectionsById = new ConcurrentHashMap<>();
+    private final Map<String, TrackedNetworkConnection> connectionsById = new ConcurrentHashMap<>();
 
     @Override
-    public String newConnectionId( String connector )
-    {
-        return idGenerator.newConnectionId( connector );
+    public String newConnectionId(String connector) {
+        return idGenerator.newConnectionId(connector);
     }
 
     @Override
-    public void add( TrackedNetworkConnection connection )
-    {
-        TrackedNetworkConnection previousConnection = connectionsById.put( connection.id(), connection );
-        if ( previousConnection != null )
-        {
-            throw new IllegalArgumentException( "Attempt to register a connection with an existing id " + connection.id() + ". " +
-                                                "Existing connection: " + previousConnection + ", new connection: " + connection );
+    public void add(TrackedNetworkConnection connection) {
+        TrackedNetworkConnection previousConnection = connectionsById.put(connection.id(), connection);
+        if (previousConnection != null) {
+            throw new IllegalArgumentException("Attempt to register a connection with an existing id " + connection.id()
+                    + ". " + "Existing connection: " + previousConnection + ", new connection: " + connection);
         }
     }
 
     @Override
-    public void remove( TrackedNetworkConnection connection )
-    {
-        connectionsById.remove( connection.id() );
+    public void remove(TrackedNetworkConnection connection) {
+        connectionsById.remove(connection.id());
     }
 
     @Override
-    public TrackedNetworkConnection get( String id )
-    {
-        return connectionsById.get( id );
+    public TrackedNetworkConnection get(String id) {
+        return connectionsById.get(id);
     }
 
     @Override
-    public List<TrackedNetworkConnection> activeConnections()
-    {
-        return new ArrayList<>( connectionsById.values() );
+    public List<TrackedNetworkConnection> activeConnections() {
+        return new ArrayList<>(connectionsById.values());
     }
 }

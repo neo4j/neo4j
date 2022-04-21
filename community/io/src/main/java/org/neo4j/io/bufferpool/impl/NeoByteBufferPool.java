@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.neo4j.io.bufferpool.ByteBufferManger;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -58,9 +57,8 @@ import org.neo4j.util.VisibleForTesting;
  * a slice for every 8 CPUs (Hyper threads are seen as CPUs by the JVM) which should be more than enough
  * even for workloads that spend unusually large proportion of time in the networking stack.
  */
-public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferManger
-{
-    private static final Duration COLLECTION_INTERVAL = Duration.ofSeconds( 20 );
+public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferManger {
+    private static final Duration COLLECTION_INTERVAL = Duration.ofSeconds(20);
 
     private final JobScheduler jobScheduler;
     private final Bucket[] buckets;
@@ -69,13 +67,12 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
 
     private JobHandle<?> collectionJob;
 
-    public NeoByteBufferPool( MemoryPools memoryPools, JobScheduler jobScheduler )
-    {
+    public NeoByteBufferPool(MemoryPools memoryPools, JobScheduler jobScheduler) {
         this.jobScheduler = jobScheduler;
-        this.memoryMonitor = crateMemoryMonitor( memoryPools );
+        this.memoryMonitor = crateMemoryMonitor(memoryPools);
 
-        var bucketBootstrapper = new BucketBootstrapper( memoryMonitor.getMemoryTracker() );
-        buckets = bucketBootstrapper.getBuckets().toArray( new Bucket[0] );
+        var bucketBootstrapper = new BucketBootstrapper(memoryMonitor.getMemoryTracker());
+        buckets = bucketBootstrapper.getBuckets().toArray(new Bucket[0]);
         maxPooledBufferCapacity = bucketBootstrapper.getMaxPooledBufferCapacity();
     }
 
@@ -84,113 +81,95 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
      * the pool is doing what it is supposed to.
      */
     @VisibleForTesting
-    MemoryMonitor crateMemoryMonitor( MemoryPools memoryPools )
-    {
-        return new MemoryMonitor( memoryPools );
+    MemoryMonitor crateMemoryMonitor(MemoryPools memoryPools) {
+        return new MemoryMonitor(memoryPools);
     }
 
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         collectionJob = jobScheduler.scheduleRecurring(
                 Group.BUFFER_POOL_MAINTENANCE,
-                JobMonitoringParams.systemJob( "Buffer pool maintenance" ),
-                () -> Arrays.stream( buckets ).forEach( Bucket::prunePooledBuffers ),
+                JobMonitoringParams.systemJob("Buffer pool maintenance"),
+                () -> Arrays.stream(buckets).forEach(Bucket::prunePooledBuffers),
                 COLLECTION_INTERVAL.toSeconds(),
-                TimeUnit.SECONDS );
+                TimeUnit.SECONDS);
     }
 
     @Override
-    public void stop() throws Exception
-    {
+    public void stop() throws Exception {
         // the collection job can return back buffers it examines,
         // so it needs to be cancelled first if we want to be sure
         // that all buffers are released when this is done.
-        if ( collectionJob != null )
-        {
+        if (collectionJob != null) {
             collectionJob.cancel();
-            try
-            {
+            try {
                 collectionJob.waitTermination();
-            }
-            catch ( Exception e )
-            {
+            } catch (Exception e) {
                 // ignore
             }
         }
-        Arrays.stream( buckets ).forEach( Bucket::releasePooledBuffers );
+        Arrays.stream(buckets).forEach(Bucket::releasePooledBuffers);
     }
 
     @Override
-    public ByteBuffer acquire( int size )
-    {
-        if ( size > maxPooledBufferCapacity )
-        {
-            return ByteBuffers.allocateDirect( size, memoryMonitor.getMemoryTracker() );
+    public ByteBuffer acquire(int size) {
+        if (size > maxPooledBufferCapacity) {
+            return ByteBuffers.allocateDirect(size, memoryMonitor.getMemoryTracker());
         }
 
-        var bucket = getBucketFor( size );
+        var bucket = getBucketFor(size);
         var buffer = bucket.acquire();
-        return buffer.clear().limit( size );
+        return buffer.clear().limit(size);
     }
 
     @Override
-    public void release( ByteBuffer buffer )
-    {
-        if ( !buffer.isDirect() )
-        {
-            throw alienBufferException( buffer );
+    public void release(ByteBuffer buffer) {
+        if (!buffer.isDirect()) {
+            throw alienBufferException(buffer);
         }
 
-        if ( buffer.capacity() > maxPooledBufferCapacity )
-        {
-            ByteBuffers.releaseBuffer( buffer, memoryMonitor.getMemoryTracker() );
+        if (buffer.capacity() > maxPooledBufferCapacity) {
+            ByteBuffers.releaseBuffer(buffer, memoryMonitor.getMemoryTracker());
             return;
         }
 
-        var bucket = getBucketFor( buffer.capacity() );
-        if ( buffer.capacity() != bucket.getBufferCapacity() )
-        {
-            throw alienBufferException( buffer );
+        var bucket = getBucketFor(buffer.capacity());
+        if (buffer.capacity() != bucket.getBufferCapacity()) {
+            throw alienBufferException(buffer);
         }
 
-        bucket.release( buffer );
+        bucket.release(buffer);
     }
 
     @Override
-    public int recommendNewCapacity( int minNewCapacity, int maxCapacity )
-    {
-        if ( minNewCapacity > maxPooledBufferCapacity )
-        {
+    public int recommendNewCapacity(int minNewCapacity, int maxCapacity) {
+        if (minNewCapacity > maxPooledBufferCapacity) {
             return NO_CAPACITY_PREFERENCE;
         }
 
-        return Math.min( getBucketFor( minNewCapacity ).getBufferCapacity(), maxCapacity );
+        return Math.min(getBucketFor(minNewCapacity).getBufferCapacity(), maxCapacity);
     }
 
     @Override
-    public MemoryTracker getHeapBufferMemoryTracker()
-    {
+    public MemoryTracker getHeapBufferMemoryTracker() {
         return memoryMonitor.getMemoryTracker();
     }
 
-    private Bucket getBucketFor( int size )
-    {
-        for ( int i = 0; i < buckets.length; i++ )
-        {
+    private Bucket getBucketFor(int size) {
+        for (int i = 0; i < buckets.length; i++) {
             Bucket pool = buckets[i];
-            if ( pool.getBufferCapacity() >= size )
-            {
+            if (pool.getBufferCapacity() >= size) {
                 return pool;
             }
         }
 
-        // we should not get here, because acquire(), release() and recommendNewCapacity() checks maxPooledBufferCapacity
-        throw new IllegalStateException( "There is no bucket big enough to allocate " + size + " bytes" );
+        // we should not get here, because acquire(), release() and recommendNewCapacity() checks
+        // maxPooledBufferCapacity
+        throw new IllegalStateException("There is no bucket big enough to allocate " + size + " bytes");
     }
 
-    private static RuntimeException alienBufferException( ByteBuffer buffer )
-    {
-        return new IllegalArgumentException( "Trying to release a buffer not acquired from this buffer manager: " + buffer );
+    private static RuntimeException alienBufferException(ByteBuffer buffer) {
+        return new IllegalArgumentException(
+                "Trying to release a buffer not acquired from this buffer manager: " + buffer);
     }
 }

@@ -29,6 +29,7 @@ import java.nio.file.Path
 import java.util.zip.GZIPOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+
 import scala.io.Codec
 import scala.language.implicitConversions
 import scala.reflect.io.File
@@ -46,9 +47,11 @@ trait TempFileCreator {
   def createCSVTempFileURL(f: PrintWriter => Unit)(implicit writer: File => PrintWriter = normalWriter): String =
     createCSVTempFileURL("cypher", null)(f)
 
-  def createCSVTempFileURL(filename: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String = createCSVTempFileURL(filename, null)(f)
+  def createCSVTempFileURL(filename: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
+    createCSVTempFileURL(filename, null)(f)
 
-  def createCSVTempFileURL(filename: String, dir: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
+  def createCSVTempFileURL(filename: String, dir: String)(f: PrintWriter => Unit)(implicit
+  writer: File => PrintWriter): String =
     createTempFileURL(filename, ".csv")(f)
 
   def createGzipCSVTempFileURL(f: PrintWriter => Unit): String =
@@ -63,9 +66,10 @@ trait TempFileCreator {
   def createZipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String =
     createTempFileURL(filename, ".csv.zip")(f)(zipWriter)
 
-  def createTempFile(name: String, ext: String, f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String = synchronized {
-    withTempFileWriter(name, ext)(f).toAbsolute.path
-  }
+  def createTempFile(name: String, ext: String, f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
+    synchronized {
+      withTempFileWriter(name, ext)(f).toAbsolute.path
+    }
 
   def createTempDirectory(name: String): Path = synchronized {
     val dir = java.nio.file.Files.createTempDirectory(name)
@@ -73,11 +77,13 @@ trait TempFileCreator {
     dir
   }
 
-  def createTempFileURL(name: String, ext: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String = synchronized {
+  def createTempFileURL(name: String, ext: String)(f: PrintWriter => Unit)(implicit
+  writer: File => PrintWriter): String = synchronized {
     withTempFileWriter(name, ext)(f).toURI.toURL.toString
   }
 
-  private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter) = {
+  private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit)(implicit
+  writer: File => PrintWriter) = {
     val path = Files.createTempFile(name, ext)
     val file = new File(path.toFile)
     try {
@@ -109,7 +115,9 @@ trait TempFileCreator {
   def gzipWriter(file: File): PrintWriter = new PrintWriter(new OutputStreamWriter(
     new GZIPOutputStream(
       new FileOutputStream(file.jfile, false)
-    ), Codec.UTF8.charSet))
+    ),
+    Codec.UTF8.charSet
+  ))
 
   def zipWriter(file: File): PrintWriter = {
     val zos = new ZipOutputStream(new FileOutputStream(file.jfile))

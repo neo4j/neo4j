@@ -20,33 +20,26 @@
 package org.neo4j.bolt.security.auth;
 
 import java.io.IOException;
-
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class AuthenticationException extends IOException implements Status.HasStatus
-{
+public class AuthenticationException extends IOException implements Status.HasStatus {
     private final Status status;
 
-    public AuthenticationException( Status status )
-    {
-        this( status, status.code().description(), null );
+    public AuthenticationException(Status status) {
+        this(status, status.code().description(), null);
     }
 
-    public AuthenticationException( Status status, String message )
-    {
-        this( status, message, null );
+    public AuthenticationException(Status status, String message) {
+        this(status, message, null);
     }
 
-    public AuthenticationException( Status status, String message, Throwable e )
-    {
-        super( message, e );
+    public AuthenticationException(Status status, String message, Throwable e) {
+        super(message, e);
         this.status = status;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
-
 }

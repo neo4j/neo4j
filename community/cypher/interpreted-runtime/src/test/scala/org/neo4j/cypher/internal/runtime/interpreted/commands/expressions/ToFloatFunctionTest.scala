@@ -37,7 +37,6 @@ class ToFloatFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyCh
     Seq((toFloat, "toFloat"), (toFloatOrNull, "toFloatOrNull"))
 
   tests.foreach { case (toFloatFn, name) =>
-
     test(s"$name should return null if argument is null") {
       assert(toFloatFn(null) === NO_VALUE)
     }
@@ -79,7 +78,9 @@ class ToFloatFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyCh
 
   test("should throw an exception if the argument is an object which cannot be converted to a float") {
     val caughtException = the[CypherTypeException] thrownBy toFloat(true)
-    caughtException.getMessage should startWith("Invalid input for function 'toFloat()': Expected a String or Number, got: ")
+    caughtException.getMessage should startWith(
+      "Invalid input for function 'toFloat()': Expected a String or Number, got: "
+    )
   }
 
   // toFloatOrNull
@@ -117,11 +118,11 @@ class ToFloatFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyCh
   }
 
   test(s"toFloatOrNull handles infinity") {
-    toFloatOrNull((BigDecimal(Double.MaxValue)*2).toString) should equal(doubleValue(Double.PositiveInfinity))
+    toFloatOrNull((BigDecimal(Double.MaxValue) * 2).toString) should equal(doubleValue(Double.PositiveInfinity))
   }
 
   test(s"toFloatOrNull handles negative infinity") {
-    toFloatOrNull((BigDecimal(Double.MaxValue)*(-2)).toString) should equal(doubleValue(Double.NegativeInfinity))
+    toFloatOrNull((BigDecimal(Double.MaxValue) * (-2)).toString) should equal(doubleValue(Double.NegativeInfinity))
   }
 
   test("toFloatOrNull should not throw an exception for any value") {
@@ -129,9 +130,11 @@ class ToFloatFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyCh
       v <- Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double])
     } yield v
 
-    forAll(generator) { s => {
-      toFloatOrNull(s) should (be(a[DoubleValue]) or equal(NO_VALUE))
-    }}
+    forAll(generator) { s =>
+      {
+        toFloatOrNull(s) should (be(a[DoubleValue]) or equal(NO_VALUE))
+      }
+    }
   }
 
   private def toFloat(orig: Any) = {

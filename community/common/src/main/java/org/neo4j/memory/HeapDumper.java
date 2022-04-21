@@ -20,44 +20,32 @@
 package org.neo4j.memory;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
-
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import javax.management.MBeanServer;
 
-public class HeapDumper
-{
+public class HeapDumper {
     private static final String HOTSPOT_BEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
     private final HotSpotDiagnosticMXBean hotspotDiagnosticMxBean;
 
-    public HeapDumper()
-    {
+    public HeapDumper() {
         hotspotDiagnosticMxBean = getHotspotDiagnosticMxBean();
     }
 
-    public void createHeapDump( String fileName, boolean live )
-    {
-        try
-        {
-            hotspotDiagnosticMxBean.dumpHeap( fileName, live );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "file: " + fileName, e );
+    public void createHeapDump(String fileName, boolean live) {
+        try {
+            hotspotDiagnosticMxBean.dumpHeap(fileName, live);
+        } catch (IOException e) {
+            throw new RuntimeException("file: " + fileName, e);
         }
     }
 
-    private static HotSpotDiagnosticMXBean getHotspotDiagnosticMxBean()
-    {
+    private static HotSpotDiagnosticMXBean getHotspotDiagnosticMxBean() {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        try
-        {
-            return ManagementFactory.newPlatformMXBeanProxy( server, HOTSPOT_BEAN_NAME, HotSpotDiagnosticMXBean.class );
-        }
-        catch ( IOException error )
-        {
-            throw new RuntimeException( "Failed getting Hotspot Diagnostic MX bean", error );
+        try {
+            return ManagementFactory.newPlatformMXBeanProxy(server, HOTSPOT_BEAN_NAME, HotSpotDiagnosticMXBean.class);
+        } catch (IOException error) {
+            throw new RuntimeException("Failed getting Hotspot Diagnostic MX bean", error);
         }
     }
 }
-

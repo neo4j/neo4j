@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
  */
 trait PipeDecorator {
+
   /**
    * Return a decorated QueryState for the given plan id.
    *
@@ -60,7 +61,12 @@ trait PipeDecorator {
    * @param iter  iterator to decorate
    * @return the decorated iterator
    */
-  def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow], sourceIter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] =
+  def decorate(
+    planId: Id,
+    state: QueryState,
+    iter: ClosingIterator[CypherRow],
+    sourceIter: ClosingIterator[CypherRow]
+  ): ClosingIterator[CypherRow] =
     decorate(planId, state, iter)
 
   /**
@@ -68,7 +74,12 @@ trait PipeDecorator {
    * @param iter  iterator to decorate
    * @return the decorated iterator
    */
-  def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] =
+  def decorate(
+    planId: Id,
+    state: QueryState,
+    iter: ClosingIterator[CypherRow],
+    previousContextSupplier: () => Option[CypherRow]
+  ): ClosingIterator[CypherRow] =
     decorate(planId, state, iter)
 
   /**
@@ -84,7 +95,9 @@ trait PipeDecorator {
 }
 
 object NullPipeDecorator extends PipeDecorator {
-  override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = iter
+
+  override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] =
+    iter
 
   override def decorate(planId: Id, state: QueryState): QueryState = state
 
@@ -92,5 +105,3 @@ object NullPipeDecorator extends PipeDecorator {
 
   override def afterCreateResults(planId: Id, state: QueryState): Unit = {}
 }
-
-

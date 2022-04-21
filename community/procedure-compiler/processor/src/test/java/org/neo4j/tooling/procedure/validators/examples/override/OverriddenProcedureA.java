@@ -21,12 +21,8 @@ package org.neo4j.tooling.procedure.validators.examples.override;
 
 import org.neo4j.procedure.Procedure;
 
-public class OverriddenProcedureA
-{
+public class OverriddenProcedureA {
 
-    @Procedure( name = "override", value = "name-has-more-priority" )
-    public void procedure()
-    {
-
-    }
+    @Procedure(name = "override", value = "name-has-more-priority")
+    public void procedure() {}
 }

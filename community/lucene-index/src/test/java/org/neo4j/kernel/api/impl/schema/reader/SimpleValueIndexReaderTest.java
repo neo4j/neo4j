@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
+import static org.neo4j.values.storable.Values.stringValue;
+
+import java.io.IOException;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
@@ -26,9 +37,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -50,116 +58,96 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
-import static org.neo4j.values.storable.Values.stringValue;
-
-class SimpleValueIndexReaderTest
-{
-    private static final SchemaDescriptor SCHEMA = SchemaDescriptors.forLabel( 0, 0 );
-    private final PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
-    private final Neo4jIndexSearcher indexSearcher = mock( Neo4jIndexSearcher.class );
-    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
+class SimpleValueIndexReaderTest {
+    private static final SchemaDescriptor SCHEMA = SchemaDescriptors.forLabel(0, 0);
+    private final PartitionSearcher partitionSearcher = mock(PartitionSearcher.class);
+    private final Neo4jIndexSearcher indexSearcher = mock(Neo4jIndexSearcher.class);
+    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig(Config.defaults());
     private final TaskCoordinator taskCoordinator = new TaskCoordinator();
 
     @BeforeEach
-    void setUp()
-    {
-        when( partitionSearcher.getIndexSearcher() ).thenReturn( indexSearcher );
+    void setUp() {
+        when(partitionSearcher.getIndexSearcher()).thenReturn(indexSearcher);
     }
 
     @Test
-    void releaseSearcherOnClose() throws IOException
-    {
+    void releaseSearcherOnClose() throws IOException {
         IndexReader simpleIndexReader = getNonUniqueSimpleReader();
 
         simpleIndexReader.close();
 
-        verify( partitionSearcher ).close();
+        verify(partitionSearcher).close();
     }
 
     @Test
-    void seekQueryReachSearcher() throws Exception
-    {
+    void seekQueryReachSearcher() throws Exception {
         var simpleIndexReader = getNonUniqueSimpleReader();
 
-        doQuery( simpleIndexReader, PropertyIndexQuery.exact( 1, "test" ) );
+        doQuery(simpleIndexReader, PropertyIndexQuery.exact(1, "test"));
 
-        verify( indexSearcher ).search( any( BooleanQuery.class ), any( DocValuesCollector.class ) );
+        verify(indexSearcher).search(any(BooleanQuery.class), any(DocValuesCollector.class));
     }
 
     @Test
-    void scanQueryReachSearcher() throws Exception
-    {
+    void scanQueryReachSearcher() throws Exception {
         var simpleIndexReader = getNonUniqueSimpleReader();
 
-        doQuery( simpleIndexReader, PropertyIndexQuery.exists( 1 ) );
+        doQuery(simpleIndexReader, PropertyIndexQuery.exists(1));
 
-        verify( indexSearcher ).search( any( MatchAllDocsQuery.class ), any( DocValuesCollector.class ) );
+        verify(indexSearcher).search(any(MatchAllDocsQuery.class), any(DocValuesCollector.class));
     }
 
     @Test
-    void stringRangeSeekQueryReachSearcher() throws Exception
-    {
+    void stringRangeSeekQueryReachSearcher() throws Exception {
         var simpleIndexReader = getNonUniqueSimpleReader();
 
-        doQuery( simpleIndexReader, range( 1, "a", false, "b", true ) );
+        doQuery(simpleIndexReader, range(1, "a", false, "b", true));
 
-        verify( indexSearcher ).search( any( TermRangeQuery.class ), any( DocValuesCollector.class ) );
+        verify(indexSearcher).search(any(TermRangeQuery.class), any(DocValuesCollector.class));
     }
 
     @Test
-    void prefixRangeSeekQueryReachSearcher() throws Exception
-    {
+    void prefixRangeSeekQueryReachSearcher() throws Exception {
         var simpleIndexReader = getNonUniqueSimpleReader();
 
-        doQuery( simpleIndexReader, PropertyIndexQuery.stringPrefix( 1, stringValue( "bb" ) ));
+        doQuery(simpleIndexReader, PropertyIndexQuery.stringPrefix(1, stringValue("bb")));
 
-        verify( indexSearcher ).search( any( MultiTermQuery.class ), any( DocValuesCollector.class ) );
+        verify(indexSearcher).search(any(MultiTermQuery.class), any(DocValuesCollector.class));
     }
 
     @Test
-    void numberRangeSeekQueryReachSearcher()
-    {
+    void numberRangeSeekQueryReachSearcher() {
         var simpleIndexReader = getNonUniqueSimpleReader();
-        var query = range( 1, 7, true, 8, true );
+        var query = range(1, 7, true, 8, true);
 
-        assertThatThrownBy( () -> doQuery( simpleIndexReader, query ) )
-                .isInstanceOf( IllegalArgumentException.class )
-                .hasMessageContainingAll( "Index query not supported for", "Query:", query.toString() );
+        assertThatThrownBy(() -> doQuery(simpleIndexReader, query))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll("Index query not supported for", "Query:", query.toString());
     }
 
     @Test
-    void countIndexedNodesReachSearcher() throws IOException
-    {
+    void countIndexedNodesReachSearcher() throws IOException {
         var simpleIndexReader = getNonUniqueSimpleReader();
 
-        simpleIndexReader.countIndexedEntities( 2, CursorContext.NULL_CONTEXT, new int[] {3}, Values.of( "testValue" ) );
+        simpleIndexReader.countIndexedEntities(2, CursorContext.NULL_CONTEXT, new int[] {3}, Values.of("testValue"));
 
-        verify( indexSearcher ).search( any( BooleanQuery.class ), any( TotalHitCountCollector.class ) );
+        verify(indexSearcher).search(any(BooleanQuery.class), any(TotalHitCountCollector.class));
     }
 
     @Test
-    void nonUniqueIndexSamplerForNonUniqueIndex()
-    {
+    void nonUniqueIndexSamplerForNonUniqueIndex() {
         SimpleValueIndexReader uniqueSimpleReader = getNonUniqueSimpleReader();
-        assertThat( uniqueSimpleReader.createSampler() ).isInstanceOf( NonUniqueLuceneIndexSampler.class );
+        assertThat(uniqueSimpleReader.createSampler()).isInstanceOf(NonUniqueLuceneIndexSampler.class);
     }
 
-    private static void doQuery( ValueIndexReader reader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
-    {
-        reader.query( new NodeValueIterator(), QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query );
+    private static void doQuery(ValueIndexReader reader, PropertyIndexQuery query)
+            throws IndexNotApplicableKernelException {
+        reader.query(
+                new NodeValueIterator(), QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query);
     }
 
-    private SimpleValueIndexReader getNonUniqueSimpleReader()
-    {
-        IndexDescriptor index = IndexPrototype.forSchema( SCHEMA ).withName( "a" ).materialise( 0 );
-        return new SimpleValueIndexReader( partitionSearcher, index, samplingConfig, taskCoordinator );
+    private SimpleValueIndexReader getNonUniqueSimpleReader() {
+        IndexDescriptor index = IndexPrototype.forSchema(SCHEMA).withName("a").materialise(0);
+        return new SimpleValueIndexReader(partitionSearcher, index, samplingConfig, taskCoordinator);
     }
 }

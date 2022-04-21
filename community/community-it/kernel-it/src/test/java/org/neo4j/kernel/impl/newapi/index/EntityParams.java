@@ -33,46 +33,56 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 
-public interface EntityParams<CURSOR extends Cursor & ValueIndexCursor>
-{
-    long entityWithProp( Transaction tx, String token, String key, Object value );
+public interface EntityParams<CURSOR extends Cursor & ValueIndexCursor> {
+    long entityWithProp(Transaction tx, String token, String key, Object value);
 
-    long entityNoTokenWithProp( Transaction tx, String key, Object value );
+    long entityNoTokenWithProp(Transaction tx, String key, Object value);
 
-    long entityWithTwoProps( Transaction tx, String token, String key1, String value1, String key2, String value2 );
+    long entityWithTwoProps(Transaction tx, String token, String key1, String value1, String key2, String value2);
 
     boolean tokenlessEntitySupported();
 
-    CURSOR allocateEntityValueIndexCursor( KernelTransaction tx, CursorFactory cursorFactory );
+    CURSOR allocateEntityValueIndexCursor(KernelTransaction tx, CursorFactory cursorFactory);
 
-    long entityReference( CURSOR cursor );
+    long entityReference(CURSOR cursor);
 
-    void entityIndexSeek( KernelTransaction tx, IndexReadSession index, CURSOR cursor,
-                          IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws KernelException;
+    void entityIndexSeek(
+            KernelTransaction tx,
+            IndexReadSession index,
+            CURSOR cursor,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query)
+            throws KernelException;
 
-    void entityIndexScan( KernelTransaction tx, IndexReadSession index, CURSOR cursor,
-                          IndexQueryConstraints constraints ) throws KernelException;
+    void entityIndexScan(KernelTransaction tx, IndexReadSession index, CURSOR cursor, IndexQueryConstraints constraints)
+            throws KernelException;
 
-    void createEntityIndex( Transaction tx, String entityToken, String propertyKey, String indexName, IndexType indexType );
+    void createEntityIndex(
+            Transaction tx, String entityToken, String propertyKey, String indexName, IndexType indexType);
 
-    void createCompositeEntityIndex( Transaction tx, String entityToken, String propertyKey1, String propertyKey2, String indexName,
-            IndexType indexType );
+    void createCompositeEntityIndex(
+            Transaction tx,
+            String entityToken,
+            String propertyKey1,
+            String propertyKey2,
+            String indexName,
+            IndexType indexType);
 
-    void entitySetProperty( KernelTransaction tx, long entityId, int propId, String value ) throws KernelException;
+    void entitySetProperty(KernelTransaction tx, long entityId, int propId, String value) throws KernelException;
 
-    void entitySetProperty( KernelTransaction tx, long entityId, int propId, Value value ) throws KernelException;
+    void entitySetProperty(KernelTransaction tx, long entityId, int propId, Value value) throws KernelException;
 
-    int entityTokenId( KernelTransaction tx, String tokenName );
+    int entityTokenId(KernelTransaction tx, String tokenName);
 
-    SchemaDescriptor schemaDescriptor( int tokenId, int propId );
+    SchemaDescriptor schemaDescriptor(int tokenId, int propId);
 
-    Value getPropertyValueFromStore( KernelTransaction tx, CursorFactory cursorFactory, long reference );
+    Value getPropertyValueFromStore(KernelTransaction tx, CursorFactory cursorFactory, long reference);
 
-    void entityDelete( KernelTransaction tx, long reference ) throws InvalidTransactionTypeKernelException;
+    void entityDelete(KernelTransaction tx, long reference) throws InvalidTransactionTypeKernelException;
 
-    void entityRemoveToken( KernelTransaction tx, long entityId, int tokenId ) throws KernelException;
+    void entityRemoveToken(KernelTransaction tx, long entityId, int tokenId) throws KernelException;
 
-    void entityAddToken( KernelTransaction tx, long entityId, int tokenId ) throws KernelException;
+    void entityAddToken(KernelTransaction tx, long entityId, int tokenId) throws KernelException;
 
-    long entityCreateNew( KernelTransaction tx, int tokenId ) throws KernelException;
+    long entityCreateNew(KernelTransaction tx, int tokenId) throws KernelException;
 }

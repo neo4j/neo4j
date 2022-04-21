@@ -21,21 +21,16 @@ package org.neo4j.internal.helpers.collection;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.ResourceUtils;
 
-public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<V>
-{
-    public static <R> ResourceIterator<R> newResourceIterator( Iterator<R> iterator, Resource... resources )
-    {
-        return new ResourceClosingIterator<>( iterator, resources )
-        {
+public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<V> {
+    public static <R> ResourceIterator<R> newResourceIterator(Iterator<R> iterator, Resource... resources) {
+        return new ResourceClosingIterator<>(iterator, resources) {
             @Override
-            public R map( R elem )
-            {
+            public R map(R elem) {
                 return elem;
             }
         };
@@ -53,61 +48,50 @@ public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<
      * @param <R> the type of elements in the given iterable
      * @return the iterator for the provided {@code iterable}
      */
-    public static <R> ResourceIterator<R> fromResourceIterable( ResourceIterable<R> iterable )
-    {
+    public static <R> ResourceIterator<R> fromResourceIterable(ResourceIterable<R> iterable) {
         ResourceIterator<R> iterator = iterable.iterator();
-        return newResourceIterator( iterator, iterator, iterable );
+        return newResourceIterator(iterator, iterator, iterable);
     }
 
     private Resource[] resources;
     private final Iterator<T> iterator;
 
-    ResourceClosingIterator( Iterator<T> iterator, Resource... resources )
-    {
+    ResourceClosingIterator(Iterator<T> iterator, Resource... resources) {
         this.resources = resources;
         this.iterator = iterator;
     }
 
     @Override
-    public void close()
-    {
-        if ( resources != null )
-        {
-            ResourceUtils.closeAll( resources );
+    public void close() {
+        if (resources != null) {
+            ResourceUtils.closeAll(resources);
             resources = null;
         }
     }
 
     @Override
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         boolean hasNext = iterator.hasNext();
-        if ( !hasNext )
-        {
+        if (!hasNext) {
             close();
         }
         return hasNext;
     }
 
-    public abstract V map( T elem );
+    public abstract V map(T elem);
 
     @Override
-    public V next()
-    {
-        try
-        {
-            return map( iterator.next() );
-        }
-        catch ( NoSuchElementException e )
-        {
+    public V next() {
+        try {
+            return map(iterator.next());
+        } catch (NoSuchElementException e) {
             close();
             throw e;
         }
     }
 
     @Override
-    public void remove()
-    {
+    public void remove() {
         iterator.remove();
     }
 }

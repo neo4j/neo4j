@@ -19,62 +19,56 @@
  */
 package org.neo4j.server.web;
 
-import org.eclipse.jetty.io.Connection;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.api.net.NetworkConnectionTracker;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-class JettyHttpConnectionListenerTest
-{
-    private final NetworkConnectionTracker connectionTracker = mock( NetworkConnectionTracker.class );
-    private final JettyHttpConnectionListener listener = new JettyHttpConnectionListener( connectionTracker );
+import org.eclipse.jetty.io.Connection;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
+
+class JettyHttpConnectionListenerTest {
+    private final NetworkConnectionTracker connectionTracker = mock(NetworkConnectionTracker.class);
+    private final JettyHttpConnectionListener listener = new JettyHttpConnectionListener(connectionTracker);
 
     @Test
-    void shouldNotifyAboutOpenConnection()
-    {
-        JettyHttpConnection connection = mock( JettyHttpConnection.class );
+    void shouldNotifyAboutOpenConnection() {
+        JettyHttpConnection connection = mock(JettyHttpConnection.class);
 
-        listener.onOpened( connection );
+        listener.onOpened(connection);
 
-        verify( connectionTracker ).add( connection );
-        verify( connectionTracker, never() ).remove( any() );
+        verify(connectionTracker).add(connection);
+        verify(connectionTracker, never()).remove(any());
     }
 
     @Test
-    void shouldNotifyAboutClosedConnection()
-    {
-        JettyHttpConnection connection = mock( JettyHttpConnection.class );
+    void shouldNotifyAboutClosedConnection() {
+        JettyHttpConnection connection = mock(JettyHttpConnection.class);
 
-        listener.onClosed( connection );
+        listener.onClosed(connection);
 
-        verify( connectionTracker, never() ).add( any() );
-        verify( connectionTracker ).remove( connection );
+        verify(connectionTracker, never()).add(any());
+        verify(connectionTracker).remove(connection);
     }
 
     @Test
-    void shouldIgnoreOpenConnectionOfUnknownType()
-    {
-        Connection connection = mock( Connection.class );
+    void shouldIgnoreOpenConnectionOfUnknownType() {
+        Connection connection = mock(Connection.class);
 
-        listener.onOpened( connection );
+        listener.onOpened(connection);
 
-        verify( connectionTracker, never() ).add( any() );
-        verify( connectionTracker, never() ).remove( any() );
+        verify(connectionTracker, never()).add(any());
+        verify(connectionTracker, never()).remove(any());
     }
 
     @Test
-    void shouldIgnoreClosedConnectionOfUnknownType()
-    {
-        Connection connection = mock( Connection.class );
+    void shouldIgnoreClosedConnectionOfUnknownType() {
+        Connection connection = mock(Connection.class);
 
-        listener.onClosed( connection );
+        listener.onClosed(connection);
 
-        verify( connectionTracker, never() ).add( any() );
-        verify( connectionTracker, never() ).remove( any() );
+        verify(connectionTracker, never()).add(any());
+        verify(connectionTracker, never()).remove(any());
     }
 }

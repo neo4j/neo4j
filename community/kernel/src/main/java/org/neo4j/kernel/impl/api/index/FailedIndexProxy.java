@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -34,102 +35,86 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
-
-public class FailedIndexProxy extends AbstractSwallowingIndexProxy
-{
+public class FailedIndexProxy extends AbstractSwallowingIndexProxy {
     private final IndexProxyStrategy indexProxyStrategy;
     private final MinimalIndexAccessor minimalIndexAccessor;
     private final InternalLog log;
 
-    FailedIndexProxy( IndexProxyStrategy indexProxyStrategy,
+    FailedIndexProxy(
+            IndexProxyStrategy indexProxyStrategy,
             MinimalIndexAccessor minimalIndexAccessor,
             IndexPopulationFailure populationFailure,
-            InternalLogProvider logProvider )
-    {
-        super( indexProxyStrategy, populationFailure );
+            InternalLogProvider logProvider) {
+        super(indexProxyStrategy, populationFailure);
         this.indexProxyStrategy = indexProxyStrategy;
         this.minimalIndexAccessor = minimalIndexAccessor;
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         // nothing to start
     }
 
     @Override
-    public void changeIdentity( IndexDescriptor descriptor )
-    {
-        indexProxyStrategy.changeIndexDescriptor( descriptor );
+    public void changeIdentity(IndexDescriptor descriptor) {
+        indexProxyStrategy.changeIndexDescriptor(descriptor);
     }
 
     @Override
-    public void drop()
-    {
+    public void drop() {
         indexProxyStrategy.removeStatisticsForIndex();
-        String message = "FailedIndexProxy#drop index on " + indexProxyStrategy.getIndexUserDescription() + " dropped due to:\n" +
-                     getPopulationFailure().asString();
-        log.info( message );
+        String message = "FailedIndexProxy#drop index on " + indexProxyStrategy.getIndexUserDescription()
+                + " dropped due to:\n" + getPopulationFailure().asString();
+        log.info(message);
         minimalIndexAccessor.drop();
     }
 
     @Override
-    public InternalIndexState getState()
-    {
+    public InternalIndexState getState() {
         return InternalIndexState.FAILED;
     }
 
     @Override
-    public boolean awaitStoreScanCompleted( long time, TimeUnit unit ) throws IndexPopulationFailedKernelException
-    {
+    public boolean awaitStoreScanCompleted(long time, TimeUnit unit) throws IndexPopulationFailedKernelException {
         throw failureCause();
     }
 
-    private IndexPopulationFailedKernelException failureCause()
-    {
-        return getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexProxyStrategy.getIndexUserDescription() );
+    private IndexPopulationFailedKernelException failureCause() {
+        return getPopulationFailure()
+                .asIndexPopulationFailure(getDescriptor().schema(), indexProxyStrategy.getIndexUserDescription());
     }
 
     @Override
-    public void activate()
-    {
-        throw new UnsupportedOperationException( "Cannot activate a failed index." );
+    public void activate() {
+        throw new UnsupportedOperationException("Cannot activate a failed index.");
     }
 
     @Override
-    public void validate() throws IndexPopulationFailedKernelException
-    {
+    public void validate() throws IndexPopulationFailedKernelException {
         throw failureCause();
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple, long entityId )
-    {
-    }
+    public void validateBeforeCommit(Value[] tuple, long entityId) {}
 
     @Override
-    public ResourceIterator<Path> snapshotFiles()
-    {
+    public ResourceIterator<Path> snapshotFiles() {
         return emptyResourceIterator();
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
+    public Map<String, Value> indexConfig() {
         return minimalIndexAccessor.indexConfig();
     }
 
     @Override
-    public ValueIndexReader newValueReader()
-    {
-        throw new UnsupportedOperationException( "Can not get a reader for an index in FAILED state" );
+    public ValueIndexReader newValueReader() {
+        throw new UnsupportedOperationException("Can not get a reader for an index in FAILED state");
     }
 
     @Override
-    public TokenIndexReader newTokenReader()
-    {
-        throw new UnsupportedOperationException( "Can not get a reader for an index in FAILED state" );
+    public TokenIndexReader newTokenReader() {
+        throw new UnsupportedOperationException("Can not get a reader for an index in FAILED state");
     }
 }

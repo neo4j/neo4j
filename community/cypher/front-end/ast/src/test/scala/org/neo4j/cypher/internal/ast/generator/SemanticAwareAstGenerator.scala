@@ -39,9 +39,10 @@ import org.scalacheck.Gen.oneOf
  * Prototype of a generator that generates semantically valid expressions/ASTs.
  */
 class SemanticAwareAstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[String]] = None)
-  extends AstGenerator(simpleStrings, allowedVarNames) {
+    extends AstGenerator(simpleStrings, allowedVarNames) {
 
-  private val supportedAggregationFunctions = Seq(Avg, Collect, Count, Max, Min, PercentileCont, PercentileDisc, StdDev, StdDevP, Sum)
+  private val supportedAggregationFunctions =
+    Seq(Avg, Collect, Count, Max, Min, PercentileCont, PercentileDisc, StdDev, StdDevP, Sum)
 
   // FIXME this generates too many invalid combinations
   def aggregationFunctionInvocation: Gen[FunctionInvocation] = for {
@@ -64,8 +65,10 @@ class SemanticAwareAstGenerator(simpleStrings: Boolean = true, allowedVarNames: 
   def nonAggregatingExpression: Gen[Expression] =
     _expression.suchThat { expr =>
       !expr.containsAggregate && !expr.folder.treeExists {
-        case _: FunctionInvocation => true // not interested in randomly-generated functions, we'll just end up with `scala.MatchError: UnresolvedFunction`
-        case _: MapProjection => true // org.neo4j.exceptions.InternalException: `MapProjection` should have been rewritten away
+        case _: FunctionInvocation =>
+          true // not interested in randomly-generated functions, we'll just end up with `scala.MatchError: UnresolvedFunction`
+        case _: MapProjection =>
+          true // org.neo4j.exceptions.InternalException: `MapProjection` should have been rewritten away
       }
     }
 }

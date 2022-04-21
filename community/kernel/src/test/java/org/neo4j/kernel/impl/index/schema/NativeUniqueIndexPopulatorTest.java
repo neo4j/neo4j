@@ -19,10 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -36,27 +44,19 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.ValueType;
 
-import static java.util.Arrays.asList;
-import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
-
-abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> extends NativeIndexPopulatorTests<KEY>
-{
-    private final IndexDescriptor uniqueDescriptor =
-            IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( 42, 666 ) ).withName( "constraint" )
-                    .withIndexType( indexType() ).materialise( 0 );
+abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> extends NativeIndexPopulatorTests<KEY> {
+    private final IndexDescriptor uniqueDescriptor = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(42, 666))
+            .withName("constraint")
+            .withIndexType(indexType())
+            .materialise(0);
 
     private final NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory;
     private final ValueType[] typesOfGroup;
 
-    NativeUniqueIndexPopulatorTest( NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory, ValueType[] typesOfGroup, IndexLayout<KEY> layout )
-    {
+    NativeUniqueIndexPopulatorTest(
+            NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory,
+            ValueType[] typesOfGroup,
+            IndexLayout<KEY> layout) {
         this.populatorFactory = populatorFactory;
         this.typesOfGroup = typesOfGroup;
         this.layout = layout;
@@ -65,90 +65,80 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> e
     abstract IndexType indexType();
 
     @Override
-    NativeIndexPopulator<KEY> createPopulator( PageCache pageCache ) throws IOException
-    {
-        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                DEFAULT_DATABASE_NAME ).build();
-        return populatorFactory.create( context, indexFiles, layout, indexDescriptor, tokenNameLookup );
+    NativeIndexPopulator<KEY> createPopulator(PageCache pageCache) throws IOException {
+        DatabaseIndexContext context = DatabaseIndexContext.builder(
+                        pageCache, fs, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), DEFAULT_DATABASE_NAME)
+                .build();
+        return populatorFactory.create(context, indexFiles, layout, indexDescriptor, tokenNameLookup);
     }
 
     @Override
-    ValueCreatorUtil<KEY> createValueCreatorUtil()
-    {
-        return new ValueCreatorUtil<>( uniqueDescriptor, typesOfGroup, ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE );
+    ValueCreatorUtil<KEY> createValueCreatorUtil() {
+        return new ValueCreatorUtil<>(uniqueDescriptor, typesOfGroup, ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE);
     }
 
     @Override
-    IndexLayout<KEY> layout()
-    {
+    IndexLayout<KEY> layout() {
         return layout;
     }
 
     @Override
-    IndexDescriptor indexDescriptor()
-    {
+    IndexDescriptor indexDescriptor() {
         return uniqueDescriptor;
     }
 
     @Test
-    void addShouldThrowOnDuplicateValues() throws IOException
-    {
+    void addShouldThrowOnDuplicateValues() throws IOException {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues(random);
 
-        assertThrows( IndexEntryConflictException.class, () ->
-        {
-            populator.add( asList( updates ), NULL_CONTEXT );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-        } );
+        assertThrows(IndexEntryConflictException.class, () -> {
+            populator.add(asList(updates), NULL_CONTEXT);
+            populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+        });
 
-        populator.close( true, NULL_CONTEXT );
+        populator.close(true, NULL_CONTEXT);
     }
 
     @Test
-    void updaterShouldThrowOnDuplicateValues() throws Exception
-    {
+    void updaterShouldThrowOnDuplicateValues() throws Exception {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-        IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT );
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues(random);
+        IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT);
 
         // when
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-        {
-            updater.process( update );
+        for (IndexEntryUpdate<IndexDescriptor> update : updates) {
+            updater.process(update);
         }
-        var e = assertThrows( Exception.class, () ->
-        {
+        var e = assertThrows(Exception.class, () -> {
             updater.close();
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-        } );
-        assertTrue( hasCause( e, IndexEntryConflictException.class ), e.getMessage() );
+            populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+        });
+        assertTrue(hasCause(e, IndexEntryConflictException.class), e.getMessage());
 
-        populator.close( true, NULL_CONTEXT );
+        populator.close(true, NULL_CONTEXT);
     }
 
     @Test
-    void shouldSampleUpdates() throws Exception
-    {
+    void shouldSampleUpdates() throws Exception {
         // GIVEN
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates(random);
 
         // WHEN
-        populator.add( asList( updates ), NULL_CONTEXT );
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-        {
-            populator.includeSample( update );
+        populator.add(asList(updates), NULL_CONTEXT);
+        for (IndexEntryUpdate<IndexDescriptor> update : updates) {
+            populator.includeSample(update);
         }
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-        IndexSample sample = populator.sample( NULL_CONTEXT );
+        populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+        IndexSample sample = populator.sample(NULL_CONTEXT);
 
         // THEN
-        assertEquals( updates.length, sample.sampleSize() );
-        assertEquals( updates.length, sample.uniqueValues() );
-        assertEquals( updates.length, sample.indexSize() );
-        populator.close( true, NULL_CONTEXT );
+        assertEquals(updates.length, sample.sampleSize());
+        assertEquals(updates.length, sample.uniqueValues());
+        assertEquals(updates.length, sample.indexSize());
+        populator.close(true, NULL_CONTEXT);
     }
 }

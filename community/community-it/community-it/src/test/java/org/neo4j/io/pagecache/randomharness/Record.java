@@ -19,6 +19,4 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
-public interface Record
-{
-}
+public interface Record {}

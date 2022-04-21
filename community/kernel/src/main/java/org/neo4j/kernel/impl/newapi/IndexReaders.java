@@ -19,38 +19,33 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-
-class IndexReaders implements Closeable
-{
+class IndexReaders implements Closeable {
     private final List<ValueIndexReader> indexReaders = new ArrayList<>();
     private final IndexDescriptor descriptor;
     private final Read read;
 
-    IndexReaders( IndexDescriptor descriptor, Read read )
-    {
+    IndexReaders(IndexDescriptor descriptor, Read read) {
         this.descriptor = descriptor;
         this.read = read;
     }
 
-    ValueIndexReader createReader() throws IndexNotFoundKernelException
-    {
-        var indexReader = read.newValueIndexReader( descriptor );
-        indexReaders.add( indexReader );
+    ValueIndexReader createReader() throws IndexNotFoundKernelException {
+        var indexReader = read.newValueIndexReader(descriptor);
+        indexReaders.add(indexReader);
         return indexReader;
     }
 
     @Override
-    public void close()
-    {
-        closeAllUnchecked( indexReaders );
+    public void close() {
+        closeAllUnchecked(indexReaders);
     }
 }

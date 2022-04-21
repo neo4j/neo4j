@@ -22,104 +22,88 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
-public class ReadOnlyLogVersionRepository implements LogVersionRepository
-{
+public class ReadOnlyLogVersionRepository implements LogVersionRepository {
     private final FixedLogVersion logVersion;
     private final FixedLogVersion checkpointLogVersion;
 
-    public ReadOnlyLogVersionRepository( LogTailMetadata logTailMetadata )
-    {
-        this.logVersion = new FixedLogVersion( logTailMetadata.getLogVersion() );
-        this.checkpointLogVersion = new FixedLogVersion( logTailMetadata.getCheckpointLogVersion() );
+    public ReadOnlyLogVersionRepository(LogTailMetadata logTailMetadata) {
+        this.logVersion = new FixedLogVersion(logTailMetadata.getLogVersion());
+        this.checkpointLogVersion = new FixedLogVersion(logTailMetadata.getCheckpointLogVersion());
     }
 
     @Override
-    public long getCurrentLogVersion()
-    {
-        return getCurrentVersion( logVersion );
+    public long getCurrentLogVersion() {
+        return getCurrentVersion(logVersion);
     }
 
     @Override
-    public void setCurrentLogVersion( long version )
-    {
+    public void setCurrentLogVersion(long version) {
         setCurrentVersionAttempt();
     }
 
     @Override
-    public long incrementAndGetVersion()
-    {
-        return incrementAndGetVersion( logVersion );
+    public long incrementAndGetVersion() {
+        return incrementAndGetVersion(logVersion);
     }
 
     @Override
-    public long getCheckpointLogVersion()
-    {
-        return getCurrentVersion( checkpointLogVersion );
+    public long getCheckpointLogVersion() {
+        return getCurrentVersion(checkpointLogVersion);
     }
 
     @Override
-    public void setCheckpointLogVersion( long version )
-    {
+    public void setCheckpointLogVersion(long version) {
         setCurrentVersionAttempt();
     }
 
     @Override
-    public long incrementAndGetCheckpointLogVersion()
-    {
-        return incrementAndGetVersion( checkpointLogVersion );
+    public long incrementAndGetCheckpointLogVersion() {
+        return incrementAndGetVersion(checkpointLogVersion);
     }
 
-    private static long getCurrentVersion( FixedLogVersion version )
-    {
+    private static long getCurrentVersion(FixedLogVersion version) {
         // We can expect a call to this during shutting down, if we have a LogFile using us.
         // So it's sort of OK.
-        if ( version.isIncrementAttempted() )
-        {
-            throw new IllegalStateException( "Read-only log version repository has observed a call to " +
-                    "incrementVersion, which indicates that it's been shut down" );
+        if (version.isIncrementAttempted()) {
+            throw new IllegalStateException("Read-only log version repository has observed a call to "
+                    + "incrementVersion, which indicates that it's been shut down");
         }
         return version.getValue();
     }
 
-    private static void setCurrentVersionAttempt()
-    {
-        throw new UnsupportedOperationException( "Can't set current log version in read only version repository." );
+    private static void setCurrentVersionAttempt() {
+        throw new UnsupportedOperationException("Can't set current log version in read only version repository.");
     }
 
-    private static long incrementAndGetVersion( FixedLogVersion version )
-    {   // We can expect a call to this during shutting down, if we have a LogFile using us.
+    private static long incrementAndGetVersion(
+            FixedLogVersion
+                    version) { // We can expect a call to this during shutting down, if we have a LogFile using us.
         // So it's sort of OK.
-        if ( version.isIncrementAttempted() )
-        {
-            throw new IllegalStateException( "Read-only log version repository only allows " +
-                    "to call incrementVersion once, during shutdown" );
+        if (version.isIncrementAttempted()) {
+            throw new IllegalStateException(
+                    "Read-only log version repository only allows " + "to call incrementVersion once, during shutdown");
         }
         version.setIncrementAttempt();
         return version.getValue();
     }
 
-    private static class FixedLogVersion
-    {
+    private static class FixedLogVersion {
         private boolean incrementAttempt;
         private final long value;
 
-        FixedLogVersion( long value )
-        {
+        FixedLogVersion(long value) {
             this.value = value;
         }
 
-        boolean isIncrementAttempted()
-        {
+        boolean isIncrementAttempted() {
             return incrementAttempt;
         }
 
-        long getValue()
-        {
+        long getValue() {
             return value;
         }
 
-        void setIncrementAttempt()
-        {
+        void setIncrementAttempt() {
             this.incrementAttempt = true;
         }
     }

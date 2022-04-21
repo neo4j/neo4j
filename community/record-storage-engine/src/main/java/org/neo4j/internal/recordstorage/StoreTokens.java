@@ -20,8 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.List;
-
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -35,11 +33,8 @@ import org.neo4j.token.api.TokensLoader;
 /**
  * Utility methods for getting tokens out of token stores in various ways.
  */
-public class StoreTokens
-{
-    private StoreTokens()
-    {
-    }
+public class StoreTokens {
+    private StoreTokens() {}
 
     /**
      * Get a {@link TokensLoader} that loads tokens by reading the relevant token stores from the given {@link NeoStores}.
@@ -51,26 +46,21 @@ public class StoreTokens
      *
      * @param neoStores The {@link NeoStores} to read tokens from.
      */
-    public static TokensLoader allReadableTokens( NeoStores neoStores )
-    {
-        return new TokensLoader()
-        {
+    public static TokensLoader allReadableTokens(NeoStores neoStores) {
+        return new TokensLoader() {
             @Override
-            public List<NamedToken> getPropertyKeyTokens( StoreCursors storeCursors )
-            {
-                return neoStores.getPropertyKeyTokenStore().getAllReadableTokens( storeCursors );
+            public List<NamedToken> getPropertyKeyTokens(StoreCursors storeCursors) {
+                return neoStores.getPropertyKeyTokenStore().getAllReadableTokens(storeCursors);
             }
 
             @Override
-            public List<NamedToken> getLabelTokens( StoreCursors storeCursors )
-            {
-                return neoStores.getLabelTokenStore().getAllReadableTokens( storeCursors );
+            public List<NamedToken> getLabelTokens(StoreCursors storeCursors) {
+                return neoStores.getLabelTokenStore().getAllReadableTokens(storeCursors);
             }
 
             @Override
-            public List<NamedToken> getRelationshipTypeTokens( StoreCursors storeCursors )
-            {
-                return neoStores.getRelationshipTypeTokenStore().getAllReadableTokens( storeCursors );
+            public List<NamedToken> getRelationshipTypeTokens(StoreCursors storeCursors) {
+                return neoStores.getRelationshipTypeTokenStore().getAllReadableTokens(storeCursors);
             }
         };
     }
@@ -82,26 +72,21 @@ public class StoreTokens
      *
      * @param neoStores The {@link NeoStores} to read tokens from.
      */
-    public static TokensLoader allTokens( NeoStores neoStores )
-    {
-        return new TokensLoader()
-        {
+    public static TokensLoader allTokens(NeoStores neoStores) {
+        return new TokensLoader() {
             @Override
-            public List<NamedToken> getPropertyKeyTokens( StoreCursors storeCursors )
-            {
-                return neoStores.getPropertyKeyTokenStore().getTokens( storeCursors );
+            public List<NamedToken> getPropertyKeyTokens(StoreCursors storeCursors) {
+                return neoStores.getPropertyKeyTokenStore().getTokens(storeCursors);
             }
 
             @Override
-            public List<NamedToken> getLabelTokens( StoreCursors storeCursors )
-            {
-                return neoStores.getLabelTokenStore().getTokens( storeCursors );
+            public List<NamedToken> getLabelTokens(StoreCursors storeCursors) {
+                return neoStores.getLabelTokenStore().getTokens(storeCursors);
             }
 
             @Override
-            public List<NamedToken> getRelationshipTypeTokens( StoreCursors storeCursors )
-            {
-                return neoStores.getRelationshipTypeTokenStore().getTokens( storeCursors );
+            public List<NamedToken> getRelationshipTypeTokens(StoreCursors storeCursors) {
+                return neoStores.getRelationshipTypeTokenStore().getTokens(storeCursors);
             }
         };
     }
@@ -115,13 +100,12 @@ public class StoreTokens
      * @param neoStores The {@link NeoStores} from which to load the initial tokens.
      * @return TokenHolders that can be used for reading tokens, but cannot create new ones.
      */
-    public static TokenHolders readOnlyTokenHolders( NeoStores neoStores, StoreCursors storeCursors )
-    {
-        TokenHolder propertyKeyTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );
-        TokenHolder labelTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL );
-        TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE );
-        TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
-        tokenHolders.setInitialTokens( allReadableTokens( neoStores ), storeCursors );
+    public static TokenHolders readOnlyTokenHolders(NeoStores neoStores, StoreCursors storeCursors) {
+        TokenHolder propertyKeyTokens = createReadOnlyTokenHolder(TokenHolder.TYPE_PROPERTY_KEY);
+        TokenHolder labelTokens = createReadOnlyTokenHolder(TokenHolder.TYPE_LABEL);
+        TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder(TokenHolder.TYPE_RELATIONSHIP_TYPE);
+        TokenHolders tokenHolders = new TokenHolders(propertyKeyTokens, labelTokens, relationshipTypeTokens);
+        tokenHolders.setInitialTokens(allReadableTokens(neoStores), storeCursors);
         return tokenHolders;
     }
 
@@ -130,8 +114,7 @@ public class StoreTokens
      * @param tokenType one of {@link TokenHolder#TYPE_LABEL}, {@link TokenHolder#TYPE_RELATIONSHIP_TYPE}, or {@link TokenHolder#TYPE_PROPERTY_KEY}.
      * @return An empty read-only token holder.
      */
-    public static TokenHolder createReadOnlyTokenHolder( String tokenType )
-    {
-        return new DelegatingTokenHolder( new ReadOnlyTokenCreator(), tokenType );
+    public static TokenHolder createReadOnlyTokenHolder(String tokenType) {
+        return new DelegatingTokenHolder(new ReadOnlyTokenCreator(), tokenType);
     }
 }

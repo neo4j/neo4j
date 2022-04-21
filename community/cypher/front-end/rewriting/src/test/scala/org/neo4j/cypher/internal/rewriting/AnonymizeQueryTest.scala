@@ -26,13 +26,15 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
 
   private val anonymizer = new Anonymizer {
-    override def label(name: String): String = "x"+name
-    override def relationshipType(name: String): String = "x"+name
-    override def labelOrRelationshipType(name: String): String = "x"+name
-    override def propertyKey(name: String): String = "X"+name
-    override def variable(name: String): String = "X"+name
-    override def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String = prettifier.expr(anonymizedExpression)
-    override def parameter(name: String): String = "X"+name
+    override def label(name: String): String = "x" + name
+    override def relationshipType(name: String): String = "x" + name
+    override def labelOrRelationshipType(name: String): String = "x" + name
+    override def propertyKey(name: String): String = "X" + name
+    override def variable(name: String): String = "X" + name
+
+    override def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String =
+      prettifier.expr(anonymizedExpression)
+    override def parameter(name: String): String = "X" + name
     override def literal(value: String): String = s"string[$value]"
   }
 
@@ -58,7 +60,10 @@ class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
   test("relationship type") {
     assertRewrite("MATCH ()-[:R]-() RETURN count(*)", "MATCH ()-[:xR]-() RETURN count(*)")
     assertRewrite("MATCH ()-[:R*2..4]-() RETURN count(*)", "MATCH ()-[:xR*2..4]-() RETURN count(*)")
-    assertRewrite("MATCH shortestPath(()-[:R*2..4]-()) RETURN count(*)", "MATCH shortestPath(()-[:xR*2..4]-()) RETURN count(*)")
+    assertRewrite(
+      "MATCH shortestPath(()-[:R*2..4]-()) RETURN count(*)",
+      "MATCH shortestPath(()-[:xR*2..4]-()) RETURN count(*)"
+    )
     assertRewrite("MATCH ()-[r]-() SET r:TYPE", "MATCH ()-[Xr]-() SET Xr:xTYPE")
   }
 

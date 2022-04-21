@@ -19,35 +19,29 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public class ProcedureSegment implements Segment
-{
+public class ProcedureSegment implements Segment {
     private final String procedure;
 
-    public ProcedureSegment( String procedure )
-    {
+    public ProcedureSegment(String procedure) {
         this.procedure = procedure;
     }
 
-    public String getProcedure()
-    {
+    public String getProcedure() {
         return procedure;
     }
 
     @Override
-    public boolean satisfies( Segment segment )
-    {
-        if ( segment instanceof ProcedureSegment other )
-        {
-            return procedure == null || procedure.equals( other.procedure );
+    public boolean satisfies(Segment segment) {
+        if (segment instanceof ProcedureSegment other) {
+            return procedure == null || procedure.equals(other.procedure);
         }
         return false;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return procedure == null ? "*" : procedure;
     }
 
-    public static final ProcedureSegment ALL = new ProcedureSegment( null );
+    public static final ProcedureSegment ALL = new ProcedureSegment(null);
 }

@@ -26,18 +26,19 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
-abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                        runtime: CypherRuntime[CONTEXT],
-                                                                        val sizeHint: Int
-                                                                   ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should only let through the one that matches when the expression is false") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .selectOrAntiSemiApply("false")
@@ -46,18 +47,18 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withSingleRow(1)
   }
 
   test("should not let anything through if rhs is non-empty and expression is false") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .selectOrAntiSemiApply("false")
@@ -66,18 +67,18 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withNoRows()
   }
 
   test("should let everything through if rhs is empty and the expression is false") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .selectOrAntiSemiApply("false")
@@ -86,13 +87,13 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(inputRows)
   }
 
   test("if lhs is empty, rhs should not be touched regardless the given expression") {
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .selectOrAntiSemiApply("false")
@@ -101,18 +102,18 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       .input(variables = Seq("x"))
       .build()
 
-    //then should not throw "/ by zero"
+    // then should not throw "/ by zero"
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x").withNoRows()
   }
 
   test("should let pass the one satisfying the expression even if the rhs is empty") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .selectOrAntiSemiApply("x = 1")
@@ -121,18 +122,18 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withSingleRow(1)
   }
 
   test("should let through the one that matches and the one satisfying the expression") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .selectOrAntiSemiApply("x = 2")
@@ -141,7 +142,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(Seq(Array(1), Array(2)))
   }
@@ -421,7 +422,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       i <- 0 until sizeHint
     } yield Array[Any](i.toLong)
 
-    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 != 0)
+    val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 != 0)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -443,7 +444,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       i <- 0 until sizeHint
     } yield Array[Any](i.toLong)
 
-    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 != 0)
+    val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 != 0)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -486,7 +487,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       i <- 0 until sizeHint
     } yield Array[Any](i.toLong)
 
-    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 == 0)
+    val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -505,10 +506,10 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
 
   test("should handle cached properties in selectOrAntiSemiApply") {
     given {
-      nodePropertyGraph(sizeHint, {case i => Map("prop" -> i)})
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("cache[n.prop] AS prop")
@@ -518,17 +519,17 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       .allNodeScan("n")
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("prop").withRows((0 until sizeHint).map(Array[Any](_)))
   }
 
   test("should handle cached properties in selectOrAntiSemiApply, include start node") {
     given {
-      nodePropertyGraph(sizeHint, {case i => Map("prop" -> i)})
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("cache[n.prop] AS prop")
@@ -538,18 +539,18 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       .allNodeScan("n")
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("prop").withRows((0 until 20).map(Array[Any](_)))
   }
 
   test("limit after selectOrAntiSemiApply on the RHS of apply") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
@@ -564,7 +565,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition:
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
   }

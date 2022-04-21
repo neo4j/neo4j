@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 import java.util.function.Function;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -32,226 +35,178 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.RelationshipType.withName;
-
 @ImpermanentDbmsExtension
-class DataAndSchemaTransactionSeparationIT
-{
+class DataAndSchemaTransactionSeparationIT {
     @Inject
     private GraphDatabaseAPI db;
 
     private static Function<Transaction, Void> expectFailureAfterSchemaOperation(
-            final Function<Transaction,?> function )
-    {
-        return transaction ->
-        {
+            final Function<Transaction, ?> function) {
+        return transaction -> {
             // given
-            transaction.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+            transaction.schema().indexFor(label("Label1")).on("key1").create();
 
             // when
-            var exception = assertThrows( Exception.class, () -> function.apply( transaction ) );
-            assertEquals( "Cannot perform data updates in a transaction that has performed schema updates.", exception.getMessage() );
+            var exception = assertThrows(Exception.class, () -> function.apply(transaction));
+            assertEquals(
+                    "Cannot perform data updates in a transaction that has performed schema updates.",
+                    exception.getMessage());
             return null;
         };
     }
 
-    private static Function<Transaction, Void> succeedAfterSchemaOperation(
-            final Function<Transaction,?> function )
-    {
-        return transaction ->
-        {
+    private static Function<Transaction, Void> succeedAfterSchemaOperation(final Function<Transaction, ?> function) {
+        return transaction -> {
             // given
-            transaction.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+            transaction.schema().indexFor(label("Label1")).on("key1").create();
 
             // when/then
-            function.apply( transaction );
+            function.apply(transaction);
             return null;
         };
     }
 
     @Test
-    void shouldNotAllowNodeCreationInSchemaTransaction()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            expectFailureAfterSchemaOperation( createNode() ).apply( transaction );
+    void shouldNotAllowNodeCreationInSchemaTransaction() {
+        try (Transaction transaction = db.beginTx()) {
+            expectFailureAfterSchemaOperation(createNode()).apply(transaction);
             transaction.commit();
         }
     }
 
     @Test
-    void shouldNotAllowRelationshipCreationInSchemaTransaction()
-    {
+    void shouldNotAllowRelationshipCreationInSchemaTransaction() {
         // given
-        Pair<Node,Node> nodes;
-        try ( var transaction = db.beginTx() )
-        {
-            nodes = aPairOfNodes().apply( transaction );
+        Pair<Node, Node> nodes;
+        try (var transaction = db.beginTx()) {
+            nodes = aPairOfNodes().apply(transaction);
             transaction.commit();
         }
         // then
-        try ( var transaction = db.beginTx() )
-        {
-            expectFailureAfterSchemaOperation( relate( nodes ) ).apply( transaction );
+        try (var transaction = db.beginTx()) {
+            expectFailureAfterSchemaOperation(relate(nodes)).apply(transaction);
         }
     }
 
     @Test
-    @SuppressWarnings( "unchecked" )
-    void shouldNotAllowPropertyWritesInSchemaTransaction()
-    {
+    @SuppressWarnings("unchecked")
+    void shouldNotAllowPropertyWritesInSchemaTransaction() {
         // given
-        Pair<Node,Node> nodes;
-        try ( var transaction = db.beginTx() )
-        {
-            nodes = aPairOfNodes().apply( transaction );
+        Pair<Node, Node> nodes;
+        try (var transaction = db.beginTx()) {
+            nodes = aPairOfNodes().apply(transaction);
             transaction.commit();
         }
         Relationship relationship;
-        try ( var tx = db.beginTx() )
-        {
-            relationship = relate( nodes ).apply( tx );
+        try (var tx = db.beginTx()) {
+            relationship = relate(nodes).apply(tx);
             tx.commit();
         }
         // when
-        for ( Function<Transaction, ?> operation : new Function[]{
-                propertyWrite( Node.class, nodes.first(), "key1", "value1" ),
-                propertyWrite( Relationship.class, relationship, "key1", "value1" ),
-        } )
-        {
+        for (Function<Transaction, ?> operation : new Function[] {
+            propertyWrite(Node.class, nodes.first(), "key1", "value1"),
+            propertyWrite(Relationship.class, relationship, "key1", "value1"),
+        }) {
             // then
-            try ( var transaction = db.beginTx() )
-            {
-                expectFailureAfterSchemaOperation( operation ).apply( transaction );
+            try (var transaction = db.beginTx()) {
+                expectFailureAfterSchemaOperation(operation).apply(transaction);
             }
         }
     }
 
     @Test
-    @SuppressWarnings( "unchecked" )
-    void shouldAllowPropertyReadsInSchemaTransaction()
-    {
+    @SuppressWarnings("unchecked")
+    void shouldAllowPropertyReadsInSchemaTransaction() {
         // given
-        Pair<Node,Node> nodes;
-        try ( var transaction = db.beginTx() )
-        {
-            nodes = aPairOfNodes().apply( transaction );
+        Pair<Node, Node> nodes;
+        try (var transaction = db.beginTx()) {
+            nodes = aPairOfNodes().apply(transaction);
             transaction.commit();
         }
         Relationship relationship;
-        try ( var tx = db.beginTx() )
-        {
-            relationship = relate( nodes ).apply( tx );
+        try (var tx = db.beginTx()) {
+            relationship = relate(nodes).apply(tx);
             tx.commit();
         }
-        try ( var tx = db.beginTx() )
-        {
-            var node = tx.getNodeById( nodes.first().getId() );
-            propertyWrite( Node.class, node, "key1", "value1" ).apply( tx );
+        try (var tx = db.beginTx()) {
+            var node = tx.getNodeById(nodes.first().getId());
+            propertyWrite(Node.class, node, "key1", "value1").apply(tx);
             tx.commit();
         }
-        try ( var tx = db.beginTx() )
-        {
-            propertyWrite( Relationship.class,
-                    tx.getRelationshipById( relationship.getId() ), "key1", "value1" ).apply( tx );
+        try (var tx = db.beginTx()) {
+            propertyWrite(Relationship.class, tx.getRelationshipById(relationship.getId()), "key1", "value1")
+                    .apply(tx);
             tx.commit();
         }
 
         // when
-        for ( Function<Transaction, ?> operation : new Function[]{
-                propertyRead( Node.class, nodes.first(), "key1" ),
-                propertyRead( Relationship.class, relationship, "key1" ),
-        } )
-        {
+        for (Function<Transaction, ?> operation : new Function[] {
+            propertyRead(Node.class, nodes.first(), "key1"), propertyRead(Relationship.class, relationship, "key1"),
+        }) {
             // then
-            try ( var transaction = db.beginTx() )
-            {
-                succeedAfterSchemaOperation( operation ).apply( transaction );
+            try (var transaction = db.beginTx()) {
+                succeedAfterSchemaOperation(operation).apply(transaction);
             }
         }
     }
 
-    private static Function<Transaction, Node> createNode()
-    {
+    private static Function<Transaction, Node> createNode() {
         return Transaction::createNode;
     }
 
     private static <T extends Entity> Function<Transaction, Object> propertyRead(
-            Class<T> type, final T entity, final String key )
-    {
-        return new FailureRewrite<>( type.getSimpleName() + ".getProperty()" )
-        {
+            Class<T> type, final T entity, final String key) {
+        return new FailureRewrite<>(type.getSimpleName() + ".getProperty()") {
             @Override
-            Object perform( Transaction transaction )
-            {
-                if ( entity instanceof Node )
-                {
-                    return transaction.getNodeById( entity.getId() ).getProperty( key );
-                }
-                else
-                {
-                    return transaction.getRelationshipById( entity.getId() ).getProperty( key );
+            Object perform(Transaction transaction) {
+                if (entity instanceof Node) {
+                    return transaction.getNodeById(entity.getId()).getProperty(key);
+                } else {
+                    return transaction.getRelationshipById(entity.getId()).getProperty(key);
                 }
             }
         };
     }
 
     private static <T extends Entity> Function<Transaction, Void> propertyWrite(
-            Class<T> type, final T entity, final String key, final Object value )
-    {
-        return new FailureRewrite<>( type.getSimpleName() + ".setProperty()" )
-        {
+            Class<T> type, final T entity, final String key, final Object value) {
+        return new FailureRewrite<>(type.getSimpleName() + ".setProperty()") {
             @Override
-            Void perform( Transaction transaction )
-            {
-                if ( entity instanceof Node )
-                {
-                    transaction.getNodeById( entity.getId() ).setProperty( key, value );
-                }
-                else
-                {
-                    transaction.getRelationshipById( entity.getId() ).setProperty( key, value );
+            Void perform(Transaction transaction) {
+                if (entity instanceof Node) {
+                    transaction.getNodeById(entity.getId()).setProperty(key, value);
+                } else {
+                    transaction.getRelationshipById(entity.getId()).setProperty(key, value);
                 }
                 return null;
             }
         };
     }
 
-    private static Function<Transaction, Pair<Node, Node>> aPairOfNodes()
-    {
-        return tx -> Pair.of( tx.createNode(), tx.createNode() );
+    private static Function<Transaction, Pair<Node, Node>> aPairOfNodes() {
+        return tx -> Pair.of(tx.createNode(), tx.createNode());
     }
 
-    private static Function<Transaction, Relationship> relate( final Pair<Node, Node> nodes )
-    {
-        return tx -> tx.getNodeById( nodes.first().getId() ).createRelationshipTo( nodes.other(), withName( "RELATED" ) );
+    private static Function<Transaction, Relationship> relate(final Pair<Node, Node> nodes) {
+        return tx -> tx.getNodeById(nodes.first().getId()).createRelationshipTo(nodes.other(), withName("RELATED"));
     }
 
-    private abstract static class FailureRewrite<T> implements Function<Transaction, T>
-    {
+    private abstract static class FailureRewrite<T> implements Function<Transaction, T> {
         private final String message;
 
-        FailureRewrite( String message )
-        {
+        FailureRewrite(String message) {
             this.message = message;
         }
 
         @Override
-        public T apply( Transaction transaction )
-        {
-            try
-            {
-                return perform( transaction );
-            }
-            catch ( AssertionError e )
-            {
-                throw new AssertionError( message + ": " + e.getMessage(), e );
+        public T apply(Transaction transaction) {
+            try {
+                return perform(transaction);
+            } catch (AssertionError e) {
+                throw new AssertionError(message + ": " + e.getMessage(), e);
             }
         }
 
-        abstract T perform( Transaction transaction );
+        abstract T perform(Transaction transaction);
     }
 }

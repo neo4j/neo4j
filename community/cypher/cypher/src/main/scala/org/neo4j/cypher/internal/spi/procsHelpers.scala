@@ -56,6 +56,7 @@ import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
 
 import java.util.Optional
+
 import scala.jdk.CollectionConverters.ListHasAsScala
 
 object procsHelpers {
@@ -63,53 +64,82 @@ object procsHelpers {
   def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
   def asCypherProcMode(mode: Mode): ProcedureAccessMode = mode match {
-    case Mode.READ => ProcedureReadOnlyAccess
+    case Mode.READ    => ProcedureReadOnlyAccess
     case Mode.DEFAULT => ProcedureReadOnlyAccess
-    case Mode.WRITE => ProcedureReadWriteAccess
-    case Mode.SCHEMA => ProcedureSchemaWriteAccess
-    case Mode.DBMS => ProcedureDbmsAccess
+    case Mode.WRITE   => ProcedureReadWriteAccess
+    case Mode.SCHEMA  => ProcedureSchemaWriteAccess
+    case Mode.DBMS    => ProcedureDbmsAccess
 
     case _ => throw new CypherExecutionException(
-      "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
+        "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(),
+        null
+      )
   }
 
   def asCypherValue(neo4jValue: DefaultParameterValue): AnyValue = ValueUtils.of(neo4jValue.value())
 
   def asCypherType(neoType: AnyType): CypherType = neoType match {
-    case Neo4jTypes.NTString => CTString
-    case Neo4jTypes.NTInteger => CTInteger
-    case Neo4jTypes.NTFloat => CTFloat
-    case Neo4jTypes.NTNumber => CTNumber
-    case Neo4jTypes.NTBoolean => CTBoolean
-    case l: Neo4jTypes.ListType => CTList(asCypherType(l.innerType()))
-    case Neo4jTypes.NTByteArray => CTList(CTAny)
-    case Neo4jTypes.NTDateTime => CTDateTime
+    case Neo4jTypes.NTString        => CTString
+    case Neo4jTypes.NTInteger       => CTInteger
+    case Neo4jTypes.NTFloat         => CTFloat
+    case Neo4jTypes.NTNumber        => CTNumber
+    case Neo4jTypes.NTBoolean       => CTBoolean
+    case l: Neo4jTypes.ListType     => CTList(asCypherType(l.innerType()))
+    case Neo4jTypes.NTByteArray     => CTList(CTAny)
+    case Neo4jTypes.NTDateTime      => CTDateTime
     case Neo4jTypes.NTLocalDateTime => CTLocalDateTime
-    case Neo4jTypes.NTDate => CTDate
-    case Neo4jTypes.NTTime => CTTime
-    case Neo4jTypes.NTLocalTime => CTLocalTime
-    case Neo4jTypes.NTDuration => CTDuration
-    case Neo4jTypes.NTPoint => CTPoint
-    case Neo4jTypes.NTNode => CTNode
-    case Neo4jTypes.NTRelationship => CTRelationship
-    case Neo4jTypes.NTPath => CTPath
-    case Neo4jTypes.NTGeometry => CTGeometry
-    case Neo4jTypes.NTMap => CTMap
-    case Neo4jTypes.NTAny => CTAny
+    case Neo4jTypes.NTDate          => CTDate
+    case Neo4jTypes.NTTime          => CTTime
+    case Neo4jTypes.NTLocalTime     => CTLocalTime
+    case Neo4jTypes.NTDuration      => CTDuration
+    case Neo4jTypes.NTPoint         => CTPoint
+    case Neo4jTypes.NTNode          => CTNode
+    case Neo4jTypes.NTRelationship  => CTRelationship
+    case Neo4jTypes.NTPath          => CTPath
+    case Neo4jTypes.NTGeometry      => CTGeometry
+    case Neo4jTypes.NTMap           => CTMap
+    case Neo4jTypes.NTAny           => CTAny
   }
 
-  def asCypherProcedureSignature(name: QualifiedName, id: Int, signature: org.neo4j.internal.kernel.api.procs.ProcedureSignature): ProcedureSignature = {
+  def asCypherProcedureSignature(
+    name: QualifiedName,
+    id: Int,
+    signature: org.neo4j.internal.kernel.api.procs.ProcedureSignature
+  ): ProcedureSignature = {
     val input = signature.inputSignature().asScala
-      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue), sensitive = s.isSensitive))
+      .map(s =>
+        FieldSignature(
+          s.name(),
+          asCypherType(s.neo4jType()),
+          asOption(s.defaultValue()).map(asCypherValue),
+          sensitive = s.isSensitive
+        )
+      )
       .toIndexedSeq
-    val output = if (signature.isVoid) None else Some(
-      signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
+    val output =
+      if (signature.isVoid) None
+      else Some(
+        signature.outputSignature().asScala.map(s =>
+          FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)
+        ).toIndexedSeq
+      )
     val deprecationInfo = asOption(signature.deprecated())
     val mode = asCypherProcMode(signature.mode())
     val description = asOption(signature.description())
     val warning = asOption(signature.warning())
 
-   ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, signature.eager(), id, signature.systemProcedure(),
-      signature.allowedExpiredCredentials())
+    ProcedureSignature(
+      name,
+      input,
+      output,
+      deprecationInfo,
+      mode,
+      description,
+      warning,
+      signature.eager(),
+      id,
+      signature.systemProcedure(),
+      signature.allowedExpiredCredentials()
+    )
   }
 }

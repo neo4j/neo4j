@@ -40,57 +40,109 @@ import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values
 
 abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
-                                                                 edition: Edition[CONTEXT],
-                                                                 runtime: CypherRuntime[CONTEXT],
-                                                                 val sizeHint: Int
-                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   private var testVar = 0
 
   private val procedures = Seq(
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readVoidProc").mode(Mode.READ).out(VOID).build()) {
-      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+    new BasicProcedure(
+      ProcedureSignature.procedureSignature(Array[String](), "readVoidProc").mode(Mode.READ).out(VOID).build()
+    ) {
+
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
         testVar += 1
         RawIterator.empty[Array[AnyValue], ProcedureException]()
       }
     },
+    new BasicProcedure(
+      ProcedureSignature.procedureSignature(Array[String](), "writeVoidProc").mode(Mode.WRITE).out(VOID).build()
+    ) {
 
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "writeVoidProc").mode(Mode.WRITE).out(VOID).build()) {
-      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
         ctx.graphDatabaseAPI().executeTransactionally("CREATE (n:INPROC)")
         RawIterator.empty[Array[AnyValue], ProcedureException]()
       }
     },
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "writeNonVoidProc").mode(Mode.WRITE).out("i", Neo4jTypes.NTInteger).build()) {
-      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "writeNonVoidProc").mode(Mode.WRITE).out(
+      "i",
+      Neo4jTypes.NTInteger
+    ).build()) {
+
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
         ctx.graphDatabaseAPI().executeTransactionally("CREATE (n:INPROC)")
         RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(42)), Array(Values.of(42)))
       }
     },
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntProc").mode(Mode.READ).out("i", Neo4jTypes.NTInteger).build()) {
-      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntProc").mode(Mode.READ).out(
+      "i",
+      Neo4jTypes.NTInteger
+    ).build()) {
+
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
         testVar += 1
         RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(testVar)), Array(Values.of(testVar)))
       }
     },
+    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntIntProc").mode(Mode.READ).in(
+      "j",
+      Neo4jTypes.NTInteger
+    ).out("i", Neo4jTypes.NTInteger).build()) {
 
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntIntProc").mode(Mode.READ).in("j", Neo4jTypes.NTInteger).out("i", Neo4jTypes.NTInteger).build()) {
-      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
         def twice(v: AnyValue): AnyValue = v.asInstanceOf[NumberValue].times(2L)
         RawIterator.of[Array[AnyValue], ProcedureException](input.map(twice), input.map(twice))
       }
     },
+    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "cardinalityIncreasingProc").mode(
+      Mode.READ
+    ).in("j", Neo4jTypes.NTInteger).out("i", Neo4jTypes.NTInteger).build()) {
 
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "cardinalityIncreasingProc").mode(Mode.READ).in("j", Neo4jTypes.NTInteger).out("i", Neo4jTypes.NTInteger).build()) {
-      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
 
         val nElemants = input.head.asInstanceOf[NumberValue].longValue().intValue()
-        RawIterator.of[Array[AnyValue], ProcedureException]((1 to nElemants).map(i => Array[AnyValue](Values.intValue(i))): _*)
+        RawIterator.of[Array[AnyValue], ProcedureException]((1 to nElemants).map(i =>
+          Array[AnyValue](Values.intValue(i))
+        ): _*)
       }
     },
+    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "echoProc").mode(Mode.READ).in(
+      "j",
+      Neo4jTypes.NTAny,
+      ntAny("default")
+    ).out("i", Neo4jTypes.NTAny).build()) {
 
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "echoProc").mode(Mode.READ).in("j", Neo4jTypes.NTAny, ntAny("default")).out("i", Neo4jTypes.NTAny).build()) {
-      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceTracker: ResourceTracker
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
         RawIterator.of[Array[AnyValue], ProcedureException](input)
       }
     }
@@ -214,8 +266,10 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {n <- nodes
-                        i <- 1 to 5} yield Array(n, i)
+    val expected = for {
+      n <- nodes
+      i <- 1 to 5
+    } yield Array(n, i)
 
     runtimeResult should beColumns("x", "i").withRows(expected)
   }
@@ -237,8 +291,10 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {n <- nodes
-                        i <- 1 until 10} yield Array(n, i)
+    val expected = for {
+      n <- nodes
+      i <- 1 until 10
+    } yield Array(n, i)
     runtimeResult should beColumns("n", "i").withRows(expected)
   }
 
@@ -259,9 +315,11 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {n <- nodes
-                        i1 <- 1 to 7
-                        i2 <- 1 to 3} yield Array(n, i1, i2)
+    val expected = for {
+      n <- nodes
+      i1 <- 1 to 7
+      i2 <- 1 to 3
+    } yield Array(n, i1, i2)
 
     runtimeResult should beColumns("x", "i1", "i2").withRows(expected)
   }
@@ -288,10 +346,16 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // produce results
+    queryProfile.operatorProfile(
+      0
+    ).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // produce results
     queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // apply
-    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // non-fuseable
-    queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // expand all
+    queryProfile.operatorProfile(
+      2
+    ).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // non-fuseable
+    queryProfile.operatorProfile(
+      3
+    ).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // expand all
     queryProfile.operatorProfile(4).rows() shouldBe (nodesPerLabel * 2L * procedureCallCardinality) // procedure call
     queryProfile.operatorProfile(5).rows() shouldBe (nodesPerLabel * 2L) // argument
     queryProfile.operatorProfile(6).rows() shouldBe (nodesPerLabel * 2L) // all node scan
@@ -313,11 +377,17 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("two"))
       .build()
 
-
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(1), Array(2)))
 
     // then
-    runtimeResult should beColumns("two", "x").withRows(Seq(Array(1,1), Array(1,2), Array(1,3), Array(2,1), Array(2,2), Array(2,3)))
+    runtimeResult should beColumns("two", "x").withRows(Seq(
+      Array(1, 1),
+      Array(1, 2),
+      Array(1, 3),
+      Array(2, 1),
+      Array(2, 2),
+      Array(2, 3)
+    ))
   }
 
   test("should call write void procedure") {

@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.tr.TurkishAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Turkish extends AnalyzerProvider
-{
-    public Turkish()
-    {
-        super( "turkish" );
+public class Turkish extends AnalyzerProvider {
+    public Turkish() {
+        super("turkish");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new TurkishAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Turkish analyzer with stemming and stop word filtering.";
     }
 }

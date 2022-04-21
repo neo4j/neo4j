@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
 case object containsNoLabelExpressionPredicates extends ValidatingCondition {
+
   private val matcher = containsNoMatchingNodes({
     case pattern: LabelExpressionPredicate => pattern.asCanonicalStringVal
   })
@@ -40,16 +41,19 @@ case object containsNoLabelExpressionPredicates extends ValidatingCondition {
 }
 
 object LabelExpressionPredicateNormalizer extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
+
   private val instance: Rewriter = topDown(Rewriter.lift {
-    case pred:LabelExpressionPredicate => LabelExpressionNormalizer(pred.entity, None)(pred.labelExpression)
+    case pred: LabelExpressionPredicate => LabelExpressionNormalizer(pred.entity, None)(pred.labelExpression)
   })
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = this
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = this
 
   /**
    * @return the conditions that needs to be met before this step can be allowed to run.
@@ -61,8 +65,8 @@ object LabelExpressionPredicateNormalizer extends Rewriter with StepSequencer.St
    *         Must not be empty, and must not contain any elements that are postConditions of other steps.
    */
   override def postConditions: Set[StepSequencer.Condition] = Set(
-      containsNoLabelExpressionPredicates
-    )
+    containsNoLabelExpressionPredicates
+  )
 
   /**
    * @return the conditions that this step invalidates as a side-effect of its work.
@@ -70,6 +74,6 @@ object LabelExpressionPredicateNormalizer extends Rewriter with StepSequencer.St
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     HasLabelsOrTypesReplacedIfPossible,
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 }

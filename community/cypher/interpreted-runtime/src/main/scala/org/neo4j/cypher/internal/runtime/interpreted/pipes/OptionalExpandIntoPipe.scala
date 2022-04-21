@@ -37,24 +37,33 @@ import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable.ListBuffer
 
-case class OptionalExpandIntoPipe(source: Pipe,
-                                  fromName: String,
-                                  relName: String,
-                                  toName: String,
-                                  dir: SemanticDirection,
-                                  types: RelationshipTypes,
-                                  predicate: Option[Expression])
-                                 (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source)  {
+case class OptionalExpandIntoPipe(
+  source: Pipe,
+  fromName: String,
+  relName: String,
+  toName: String,
+  dir: SemanticDirection,
+  types: RelationshipTypes,
+  predicate: Option[Expression]
+)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
+
   private val kernelDirection = dir match {
     case SemanticDirection.OUTGOING => Direction.OUTGOING
     case SemanticDirection.INCOMING => Direction.INCOMING
-    case SemanticDirection.BOTH => Direction.BOTH
+    case SemanticDirection.BOTH     => Direction.BOTH
   }
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val query = state.query
-    val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+    val expandInto = new CachingExpandInto(
+      query.transactionalContext.dataRead,
+      kernelDirection,
+      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
+    )
     state.query.resources.trace(expandInto)
     input.flatMap {
       row =>
@@ -71,11 +80,13 @@ case class OptionalExpandIntoPipe(source: Pipe,
                 val traversalCursor = query.traversalCursor()
                 val nodeCursor = query.nodeCursor()
                 try {
-                  val selectionCursor = expandInto.connectingRelationships(nodeCursor,
-                                                                           traversalCursor,
-                                                                           fromNode.id(),
-                                                                           types.types(query),
-                                                                           n.id())
+                  val selectionCursor = expandInto.connectingRelationships(
+                    nodeCursor,
+                    traversalCursor,
+                    fromNode.id(),
+                    types.types(query),
+                    n.id()
+                  )
                   traceRelationshipSelectionCursor(query.resources, selectionCursor, traversalCursor)
                   query.resources.trace(selectionCursor)
                   val relationships = relationshipSelectionCursorIterator(selectionCursor, traversalCursor)
@@ -83,7 +94,16 @@ case class OptionalExpandIntoPipe(source: Pipe,
                   // This is exhausting relationships directly, thus we do not need to return
                   // a ClosingIterator in this flatMap.
                   while (relationships.hasNext) {
-                    val candidateRow = rowFactory.copyWith(row, relName, VirtualValues.relationship(relationships.next(), relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()))
+                    val candidateRow = rowFactory.copyWith(
+                      row,
+                      relName,
+                      VirtualValues.relationship(
+                        relationships.next(),
+                        relationships.startNodeId(),
+                        relationships.endNodeId(),
+                        relationships.typeId()
+                      )
+                    )
                     if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)) {
                       filteredRows += candidateRow
                     }
@@ -91,8 +111,7 @@ case class OptionalExpandIntoPipe(source: Pipe,
                   if (filteredRows.isEmpty) {
                     row.set(relName, Values.NO_VALUE)
                     ClosingIterator.single(row)
-                  }
-                  else filteredRows.asClosingIterator
+                  } else filteredRows.asClosingIterator
                 } finally {
                   nodeCursor.close()
                 }

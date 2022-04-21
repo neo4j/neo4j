@@ -19,35 +19,32 @@
  */
 package org.neo4j.internal.id;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@ExtendWith( RandomExtension.class )
-class IdUtilsTest
-{
+@ExtendWith(RandomExtension.class)
+class IdUtilsTest {
     @Inject
     private RandomSupport random;
 
-    @RepeatedTest( 100 )
-    void shouldCombineIdAndNumberOfIds()
-    {
+    @RepeatedTest(100)
+    void shouldCombineIdAndNumberOfIds() {
         // given
-        long id = random.nextLong( IdUtils.MAX_ID + 1 );
-        int numberOfIds = random.intBetween( 1, IdUtils.MAX_NUMBER_OF_IDS );
+        long id = random.nextLong(IdUtils.MAX_ID + 1);
+        int numberOfIds = random.intBetween(1, IdUtils.MAX_NUMBER_OF_IDS);
         boolean used = random.nextBoolean();
 
         // when
-        long combinedId = IdUtils.combinedIdAndNumberOfIds( id, numberOfIds, used );
+        long combinedId = IdUtils.combinedIdAndNumberOfIds(id, numberOfIds, used);
 
         // then
-        assertThat( IdUtils.idFromCombinedId( combinedId ) ).isEqualTo( id );
-        assertThat( IdUtils.numberOfIdsFromCombinedId( combinedId ) ).isEqualTo( numberOfIds );
-        assertThat( IdUtils.usedFromCombinedId( combinedId ) ).isEqualTo( used );
+        assertThat(IdUtils.idFromCombinedId(combinedId)).isEqualTo(id);
+        assertThat(IdUtils.numberOfIdsFromCombinedId(combinedId)).isEqualTo(numberOfIds);
+        assertThat(IdUtils.usedFromCombinedId(combinedId)).isEqualTo(used);
     }
 }

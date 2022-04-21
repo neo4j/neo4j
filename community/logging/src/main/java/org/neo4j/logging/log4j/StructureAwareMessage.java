@@ -20,7 +20,6 @@
 package org.neo4j.logging.log4j;
 
 import org.apache.logging.log4j.util.StringBuilderFormattable;
-
 import org.neo4j.logging.Neo4jLogMessage;
 
 /**
@@ -28,54 +27,48 @@ import org.neo4j.logging.Neo4jLogMessage;
  * where {@link #asStructure(FieldConsumer)} will be used to generate the output. If this message is received by any other
  * layout, {@link #asString(StringBuilder)} will be called.
  */
-public abstract class StructureAwareMessage implements Neo4jLogMessage, StringBuilderFormattable
-{
-    public interface FieldConsumer
-    {
-        void add( String field, String value );
-        void add( String field, long value );
+public abstract class StructureAwareMessage implements Neo4jLogMessage, StringBuilderFormattable {
+    public interface FieldConsumer {
+        void add(String field, String value);
+
+        void add(String field, long value);
     }
 
     /**
      * Serialize the log message as a string.
      */
-    public abstract void asString( StringBuilder stringBuilder );
+    public abstract void asString(StringBuilder stringBuilder);
 
     /**
      * Serialize a structured message.
      * @param fieldConsumer consumer of all fields that should be added to the structured message.
      */
-    public abstract void asStructure( FieldConsumer fieldConsumer );
+    public abstract void asStructure(FieldConsumer fieldConsumer);
 
     @Override
-    public String getFormattedMessage()
-    {
+    public String getFormattedMessage() {
         StringBuilder sb = new StringBuilder();
-        asString( sb );
+        asString(sb);
         return sb.toString();
     }
 
     @Override
-    public void formatTo( StringBuilder buffer )
-    {
-        asString( buffer );
+    public void formatTo(StringBuilder buffer) {
+        asString(buffer);
     }
 
     @Override
-    public String getFormat()
-    {
+    public String getFormat() {
         return null;
     }
 
     @Override
-    public Object[] getParameters()
-    {
+    public Object[] getParameters() {
         return new Object[0];
     }
 
     @Override
-    public Throwable getThrowable()
-    {
+    public Throwable getThrowable() {
         return null;
     }
 }

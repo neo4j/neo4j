@@ -99,7 +99,7 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withStatistics(nodesDeleted = 1, relationshipsDeleted = nodeCount * 2 + (nodeCount - 1) * 2)
     Iterables.count(tx.getAllNodes) shouldBe (nodeCount - 1)
-    Iterables.count(tx.getAllRelationships) shouldBe ((nodeCount - 1)*(nodeCount - 1)*2)
+    Iterables.count(tx.getAllRelationships) shouldBe ((nodeCount - 1) * (nodeCount - 1) * 2)
   }
 
   test("duplicate detach delete") {

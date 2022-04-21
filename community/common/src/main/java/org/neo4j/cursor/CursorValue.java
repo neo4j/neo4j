@@ -19,28 +19,23 @@
  */
 package org.neo4j.cursor;
 
-public class CursorValue<T>
-{
+public class CursorValue<T> {
     private boolean valid;
     private T t;
 
-    public void set( T newT )
-    {
+    public void set(T newT) {
         t = newT;
         valid = true;
     }
 
-    public T get()
-    {
-        if ( valid )
-        {
+    public T get() {
+        if (valid) {
             return t;
         }
         throw new IllegalStateException();
     }
 
-    public void invalidate()
-    {
+    public void invalidate() {
         valid = false;
         t = null;
     }

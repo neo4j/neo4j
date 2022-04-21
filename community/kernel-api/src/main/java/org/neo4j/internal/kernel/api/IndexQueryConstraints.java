@@ -20,14 +20,14 @@
 package org.neo4j.internal.kernel.api;
 
 import java.util.OptionalLong;
-
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.util.Preconditions;
 
-public class IndexQueryConstraints
-{
-    private static final IndexQueryConstraints UNCONSTRAINED = new IndexQueryConstraints( IndexOrder.NONE, false, false, false, 0, 0 );
-    private static final IndexQueryConstraints UNORDERED_VALUES = new IndexQueryConstraints( IndexOrder.NONE, true, false, false, 0, 0 );
+public class IndexQueryConstraints {
+    private static final IndexQueryConstraints UNCONSTRAINED =
+            new IndexQueryConstraints(IndexOrder.NONE, false, false, false, 0, 0);
+    private static final IndexQueryConstraints UNORDERED_VALUES =
+            new IndexQueryConstraints(IndexOrder.NONE, true, false, false, 0, 0);
 
     private final IndexOrder order;
     private final boolean needsValues;
@@ -36,8 +36,8 @@ public class IndexQueryConstraints
     private final long skip;
     private final long limit;
 
-    private IndexQueryConstraints( IndexOrder order, boolean needsValues, boolean hasSkip, boolean hasLimit, long skip, long limit )
-    {
+    private IndexQueryConstraints(
+            IndexOrder order, boolean needsValues, boolean hasSkip, boolean hasLimit, long skip, long limit) {
         this.order = order;
         this.needsValues = needsValues;
         this.hasSkip = hasSkip;
@@ -46,73 +46,63 @@ public class IndexQueryConstraints
         this.limit = limit;
     }
 
-    public static IndexQueryConstraints unconstrained()
-    {
+    public static IndexQueryConstraints unconstrained() {
         return UNCONSTRAINED;
     }
 
-    public static IndexQueryConstraints unorderedValues()
-    {
+    public static IndexQueryConstraints unorderedValues() {
         return UNORDERED_VALUES;
     }
 
-    public static IndexQueryConstraints unordered( boolean needsValues )
-    {
+    public static IndexQueryConstraints unordered(boolean needsValues) {
         return needsValues ? unorderedValues() : unconstrained();
     }
 
-    public static IndexQueryConstraints ordered( IndexOrder order )
-    {
-        return constrained( order, false );
+    public static IndexQueryConstraints ordered(IndexOrder order) {
+        return constrained(order, false);
     }
 
-    public static IndexQueryConstraints constrained( IndexOrder order, boolean needsValues )
-    {
-        return new IndexQueryConstraints( order, needsValues, false, false, 0, 0 );
+    public static IndexQueryConstraints constrained(IndexOrder order, boolean needsValues) {
+        return new IndexQueryConstraints(order, needsValues, false, false, 0, 0);
     }
 
-    public IndexQueryConstraints skip( long skip )
-    {
-        Preconditions.checkState( skip >= 0, "Skip argument cannot be negative: %s.", skip );
-        if ( hasLimit )
-        {
-            Preconditions.requireNoLongAddOverflow( skip, limit, "SKIP (%s) and LIMIT (%s) combined are too large; would overflow 64-bit signed integer." );
+    public IndexQueryConstraints skip(long skip) {
+        Preconditions.checkState(skip >= 0, "Skip argument cannot be negative: %s.", skip);
+        if (hasLimit) {
+            Preconditions.requireNoLongAddOverflow(
+                    skip,
+                    limit,
+                    "SKIP (%s) and LIMIT (%s) combined are too large; would overflow 64-bit signed integer.");
         }
-        return new IndexQueryConstraints( order, needsValues, true, hasLimit, skip, limit );
+        return new IndexQueryConstraints(order, needsValues, true, hasLimit, skip, limit);
     }
 
-    public IndexQueryConstraints limit( long limit )
-    {
-        Preconditions.checkState( limit >= 0, "Limit argument cannot be negative: %s.", limit );
-        if ( hasSkip )
-        {
-            Preconditions.requireNoLongAddOverflow( skip, limit, "SKIP (%s) and LIMIT (%s) are too large; would overflow 64-bit signed integer." );
+    public IndexQueryConstraints limit(long limit) {
+        Preconditions.checkState(limit >= 0, "Limit argument cannot be negative: %s.", limit);
+        if (hasSkip) {
+            Preconditions.requireNoLongAddOverflow(
+                    skip, limit, "SKIP (%s) and LIMIT (%s) are too large; would overflow 64-bit signed integer.");
         }
-        return new IndexQueryConstraints( order, needsValues, hasSkip, true, skip, limit );
+        return new IndexQueryConstraints(order, needsValues, hasSkip, true, skip, limit);
     }
 
-    public boolean isOrdered()
-    {
+    public boolean isOrdered() {
         return order != IndexOrder.NONE;
     }
 
-    public boolean needsValues()
-    {
+    public boolean needsValues() {
         return needsValues;
     }
 
-    public IndexOrder order()
-    {
+    public IndexOrder order() {
         return order;
     }
 
-    public OptionalLong skip()
-    {
-        return hasSkip ? OptionalLong.of( skip ) : OptionalLong.empty();
+    public OptionalLong skip() {
+        return hasSkip ? OptionalLong.of(skip) : OptionalLong.empty();
     }
 
-    public OptionalLong limit()
-    {
-        return hasLimit ? OptionalLong.of( limit ) : OptionalLong.empty();
+    public OptionalLong limit() {
+        return hasLimit ? OptionalLong.of(limit) : OptionalLong.empty();
     }
 }

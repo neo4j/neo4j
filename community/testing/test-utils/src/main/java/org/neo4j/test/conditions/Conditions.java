@@ -19,42 +19,33 @@
  */
 package org.neo4j.test.conditions;
 
-import org.assertj.core.api.Condition;
-
 import java.util.Collection;
 import java.util.function.Predicate;
+import org.assertj.core.api.Condition;
 
-public final class Conditions
-{
-    public static final Condition<Boolean> TRUE = new Condition<>( value -> value, "Should be true." );
-    public static final Condition<Boolean> FALSE = new Condition<>( value -> !value, "Should be false." );
+public final class Conditions {
+    public static final Condition<Boolean> TRUE = new Condition<>(value -> value, "Should be true.");
+    public static final Condition<Boolean> FALSE = new Condition<>(value -> !value, "Should be false.");
 
-    private Conditions()
-    {
+    private Conditions() {}
+
+    public static <T> Condition<T> condition(Predicate<T> predicate) {
+        return new Condition<>(predicate, "Generic condition. See predicate for condition details.");
     }
 
-    public static <T> Condition<T> condition( Predicate<T> predicate )
-    {
-        return new Condition<>( predicate, "Generic condition. See predicate for condition details." );
+    public static <T> Condition<T> equalityCondition(T value) {
+        return new Condition<>(v -> v.equals(value), "Should be equal to " + value);
     }
 
-    public static <T> Condition<T> equalityCondition( T value )
-    {
-        return new Condition<>( v -> v.equals( value ), "Should be equal to " + value );
+    public static <T extends Comparable<T>> Condition<T> greaterThan(T value) {
+        return new Condition<>(v -> v.compareTo(value) > 0, "Should be greater than " + value);
     }
 
-    public static <T extends Comparable<T>> Condition<T> greaterThan( T value )
-    {
-        return new Condition<>( v -> v.compareTo( value ) > 0, "Should be greater than " + value );
+    public static <T extends Comparable<T>> Condition<T> greaterThanOrEqualTo(T value) {
+        return new Condition<>(v -> v.compareTo(value) >= 0, "Should be greater than or equal to " + value);
     }
 
-    public static <T extends Comparable<T>> Condition<T> greaterThanOrEqualTo( T value )
-    {
-        return new Condition<>( v -> v.compareTo( value ) >= 0, "Should be greater than or equal to " + value );
-    }
-
-    public static <T extends Collection<?>> Condition<T> sizeCondition( int expectedSize )
-    {
-        return new Condition<>( v -> v.size() == expectedSize, "Size should be equal to " + expectedSize );
+    public static <T extends Collection<?>> Condition<T> sizeCondition(int expectedSize) {
+        return new Condition<>(v -> v.size() == expectedSize, "Size should be equal to " + expectedSize);
     }
 }

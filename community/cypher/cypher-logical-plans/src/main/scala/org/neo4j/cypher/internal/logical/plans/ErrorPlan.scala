@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Throws exception if evaluated.
  */
-case class ErrorPlan(override val source: LogicalPlan, exception: Exception)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
+case class ErrorPlan(override val source: LogicalPlan, exception: Exception)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 

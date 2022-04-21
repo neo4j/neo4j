@@ -19,50 +19,49 @@
  */
 package org.neo4j.server.web;
 
-import org.eclipse.jetty.server.RequestLog;
-
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import javax.servlet.Filter;
-
+import org.eclipse.jetty.server.RequestLog;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.ssl.SslPolicy;
 
-public interface WebServer
-{
-    void setHttpAddress( SocketAddress address );
+public interface WebServer {
+    void setHttpAddress(SocketAddress address);
 
-    void setHttpsAddress( SocketAddress address );
+    void setHttpsAddress(SocketAddress address);
 
-    void setSslPolicy( SslPolicy sslPolicy );
+    void setSslPolicy(SslPolicy sslPolicy);
 
-    void setRequestLog( RequestLog requestLog );
+    void setRequestLog(RequestLog requestLog);
 
-    void setMaxThreads( int maxThreads );
+    void setMaxThreads(int maxThreads);
 
     void start() throws Exception;
 
     void stop();
 
-    void addJAXRSPackages( List<String> packageNames, String serverMountPoint, Collection<Injectable<?>> injectables );
-    void removeJAXRSPackages( List<String> packageNames, String serverMountPoint );
+    void addJAXRSPackages(List<String> packageNames, String serverMountPoint, Collection<Injectable<?>> injectables);
 
-    void addJAXRSClasses( List<Class<?>> classes, String serverMountPoint, Collection<Injectable<?>> injectables );
+    void removeJAXRSPackages(List<String> packageNames, String serverMountPoint);
 
-    void removeJAXRSClasses( List<Class<?>> classes, String serverMountPoint );
+    void addJAXRSClasses(List<Class<?>> classes, String serverMountPoint, Collection<Injectable<?>> injectables);
 
-    void addFilter( Filter filter, String pathSpec );
+    void removeJAXRSClasses(List<Class<?>> classes, String serverMountPoint);
 
-    void removeFilter( Filter filter, String pathSpec );
+    void addFilter(Filter filter, String pathSpec);
 
-    void addStaticContent( String contentLocation, String serverMountPoint );
-    void removeStaticContent( String contentLocation, String serverMountPoint );
+    void removeFilter(Filter filter, String pathSpec);
 
-    void setWadlEnabled( boolean wadlEnabled );
+    void addStaticContent(String contentLocation, String serverMountPoint);
 
-    void setComponentsBinder( ComponentsBinder binder );
+    void removeStaticContent(String contentLocation, String serverMountPoint);
+
+    void setWadlEnabled(boolean wadlEnabled);
+
+    void setComponentsBinder(ComponentsBinder binder);
 
     /**
      * @return local http connector bind port

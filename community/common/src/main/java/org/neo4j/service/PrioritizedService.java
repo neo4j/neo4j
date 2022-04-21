@@ -22,8 +22,7 @@ package org.neo4j.service;
 /**
  * Helper interface to be implemented by services if there's a need to load service provider base on priority.
  */
-public interface PrioritizedService
-{
+public interface PrioritizedService {
     /**
      * @return the priority of the service, lowest value takes precedent.
      */

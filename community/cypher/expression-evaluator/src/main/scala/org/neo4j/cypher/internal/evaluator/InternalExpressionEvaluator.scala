@@ -48,10 +48,9 @@ trait InternalExpressionEvaluator {
    * @throws EvaluationException if evaluation fails
    */
   @throws(classOf[EvaluationException])
-  def evaluate( expression: Expression,
-                params: MapValue = MapValue.EMPTY,
-                context: CypherRow = CypherRow.empty
-              ): AnyValue
+  def evaluate(
+    expression: Expression,
+    params: MapValue = MapValue.EMPTY,
+    context: CypherRow = CypherRow.empty
+  ): AnyValue
 }
-
-

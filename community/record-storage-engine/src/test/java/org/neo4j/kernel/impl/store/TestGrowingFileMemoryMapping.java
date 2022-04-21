@@ -19,10 +19,18 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -40,68 +48,64 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-class TestGrowingFileMemoryMapping
-{
+class TestGrowingFileMemoryMapping {
     @Inject
     private PageCache pageCache;
+
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
     @Test
-    @DisabledOnOs( OS.WINDOWS )
-    void shouldGrowAFileWhileContinuingToMemoryMapNewRegions()
-    {
+    @DisabledOnOs(OS.WINDOWS)
+    void shouldGrowAFileWhileContinuingToMemoryMapNewRegions() {
         // given
         final int NUMBER_OF_RECORDS = 1000000;
 
         Config config = Config.defaults();
-        DefaultIdGeneratorFactory idGeneratorFactory =
-                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate(), databaseLayout.getDatabaseName() );
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache,
-                testDirectory.getFileSystem(), NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(),
-                EMPTY_LOG_TAIL );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(
+                testDirectory.getFileSystem(), immediate(), databaseLayout.getDatabaseName());
+        StoreFactory storeFactory = new StoreFactory(
+                databaseLayout,
+                config,
+                idGeneratorFactory,
+                pageCache,
+                testDirectory.getFileSystem(),
+                NullLogProvider.getInstance(),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                writable(),
+                EMPTY_LOG_TAIL);
 
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true );
-               var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
-        {
+        try (NeoStores neoStores = storeFactory.openAllNeoStores(true);
+                var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
             NodeStore nodeStore = neoStores.getNodeStore();
             // when
             int iterations = 2 * NUMBER_OF_RECORDS;
-            long startingId = nodeStore.nextId( CursorContext.NULL_CONTEXT );
+            long startingId = nodeStore.nextId(CursorContext.NULL_CONTEXT);
             long nodeId = startingId;
-            try ( PageCursor pageCursor = storeCursors.writeCursor( NODE_CURSOR ) )
-            {
-                for ( int i = 0; i < iterations; i++ )
-                {
-                    NodeRecord record = new NodeRecord( nodeId ).initialize( false, 0, false, i, 0 );
-                    record.setInUse( true );
-                    nodeStore.updateRecord( record, pageCursor, CursorContext.NULL_CONTEXT, StoreCursors.NULL );
-                    nodeId = nodeStore.nextId( CursorContext.NULL_CONTEXT );
+            try (PageCursor pageCursor = storeCursors.writeCursor(NODE_CURSOR)) {
+                for (int i = 0; i < iterations; i++) {
+                    NodeRecord record = new NodeRecord(nodeId).initialize(false, 0, false, i, 0);
+                    record.setInUse(true);
+                    nodeStore.updateRecord(record, pageCursor, CursorContext.NULL_CONTEXT, StoreCursors.NULL);
+                    nodeId = nodeStore.nextId(CursorContext.NULL_CONTEXT);
                 }
             }
 
             // then
-            NodeRecord record = new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 );
-            var pageCursor = storeCursors.readCursor( NODE_CURSOR );
-            for ( int i = 0; i < iterations; i++ )
-            {
-                record.setId( startingId + i );
-                nodeStore.getRecordByCursor( i, record, NORMAL, pageCursor );
-                assertTrue( record.inUse(), "record[" + i + "] should be in use" );
-                assertThat( record.getNextRel() ).as( "record[" + i + "] should have nextRelId of " + i ).isEqualTo( i );
+            NodeRecord record = new NodeRecord(0).initialize(false, 0, false, 0, 0);
+            var pageCursor = storeCursors.readCursor(NODE_CURSOR);
+            for (int i = 0; i < iterations; i++) {
+                record.setId(startingId + i);
+                nodeStore.getRecordByCursor(i, record, NORMAL, pageCursor);
+                assertTrue(record.inUse(), "record[" + i + "] should be in use");
+                assertThat(record.getNextRel())
+                        .as("record[" + i + "] should have nextRelId of " + i)
+                        .isEqualTo(i);
             }
         }
     }

@@ -55,17 +55,19 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   when(inner.relationshipWriteOps).thenReturn(relWriteOps)
 
   // We need to have the inner mock return the right counts for added/removed labels.
-  when( inner.setLabelsOnNode(anyLong(), any()) ).thenAnswer( new Answer[Int]() {
-    def answer(invocation: InvocationOnMock):Int = {
-      invocation.getArgument(1).asInstanceOf[Iterator[String]].size
-    }
-  } )
+  when(inner.setLabelsOnNode(anyLong(), any())).thenAnswer(new Answer[Int]() {
 
-  when( inner.removeLabelsFromNode(anyLong(), any()) ).thenAnswer( new Answer[Int]() {
-    def answer(invocation: InvocationOnMock):Int = {
+    def answer(invocation: InvocationOnMock): Int = {
       invocation.getArgument(1).asInstanceOf[Iterator[String]].size
     }
-  } )
+  })
+
+  when(inner.removeLabelsFromNode(anyLong(), any())).thenAnswer(new Answer[Int]() {
+
+    def answer(invocation: InvocationOnMock): Int = {
+      invocation.getArgument(1).asInstanceOf[Iterator[String]].size
+    }
+  })
 
   when(inner.addRangeIndexRule(anyInt(), ArgumentMatchers.eq(EntityType.NODE), any(), any(), any()))
     .thenReturn(IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2)).withName("index_1").materialise(1))
@@ -119,7 +121,6 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
 
     context.getStatistics should equal(QueryStatistics())
   }
-
 
   test("set_property") {
     context.nodeWriteOps.setProperty(nodeAId, 1, Values.stringValue("value"))

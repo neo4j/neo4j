@@ -26,15 +26,12 @@ import org.neo4j.kernel.api.exceptions.Status;
  * This exception is thrown when committing a transaction contains
  * violations to any constraints defined for the database.
  */
-public class ConstraintViolationTransactionFailureException extends TransactionFailureException
-{
-    public ConstraintViolationTransactionFailureException( String msg, KernelException cause )
-    {
-        super( Status.Schema.ConstraintValidationFailed, cause, msg );
+public class ConstraintViolationTransactionFailureException extends TransactionFailureException {
+    public ConstraintViolationTransactionFailureException(String msg, KernelException cause) {
+        super(Status.Schema.ConstraintValidationFailed, cause, msg);
     }
 
-    public ConstraintViolationTransactionFailureException( String msg )
-    {
-        this( msg, null );
+    public ConstraintViolationTransactionFailureException(String msg) {
+        this(msg, null);
     }
 }

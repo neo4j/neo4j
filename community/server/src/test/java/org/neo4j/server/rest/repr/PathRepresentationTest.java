@@ -19,15 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Map;
-
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,51 +32,50 @@ import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Link.link;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 
-class PathRepresentationTest
-{
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
+
+class PathRepresentationTest {
 
     @Test
-    void shouldHaveLength()
-    {
-        assertNotNull( pathrep().length() );
+    void shouldHaveLength() {
+        assertNotNull(pathrep().length());
     }
 
     @Test
-    void shouldHaveStartNodeLink()
-    {
-        assertUriMatches( NODE_URI_PATTERN, pathrep().startNode() );
+    void shouldHaveStartNodeLink() {
+        assertUriMatches(NODE_URI_PATTERN, pathrep().startNode());
     }
 
     @Test
-    void shouldHaveEndNodeLink()
-    {
-        assertUriMatches( NODE_URI_PATTERN, pathrep().endNode() );
+    void shouldHaveEndNodeLink() {
+        assertUriMatches(NODE_URI_PATTERN, pathrep().endNode());
     }
 
     @Test
-    void shouldHaveNodeList()
-    {
-        assertNotNull( pathrep().nodes() );
+    void shouldHaveNodeList() {
+        assertNotNull(pathrep().nodes());
     }
 
     @Test
-    void shouldHaveRelationshipList()
-    {
-        assertNotNull( pathrep().relationships() );
+    void shouldHaveRelationshipList() {
+        assertNotNull(pathrep().relationships());
     }
 
     @Test
-    void shouldHaveDirectionList()
-    {
-        assertNotNull( pathrep().directions() );
+    void shouldHaveDirectionList() {
+        assertNotNull(pathrep().directions());
     }
 
     @Test
-    void shouldSerialiseToMap()
-    {
-        Map<String, Object> repr = serialize( pathrep() );
-        assertNotNull( repr );
-        verifySerialisation( repr );
+    void shouldSerialiseToMap() {
+        Map<String, Object> repr = serialize(pathrep());
+        assertNotNull(repr);
+        verifySerialisation(repr);
     }
 
     /*
@@ -114,53 +104,48 @@ class PathRepresentationTest
      * }
      *
      */
-    private static PathRepresentation<Path> pathrep()
-    {
-        Node a = node( 0, properties() );
-        Node b = node( 1, properties() );
-        Node c = node( 2, properties() );
-        Node d = node( 3, properties() );
+    private static PathRepresentation<Path> pathrep() {
+        Node a = node(0, properties());
+        Node b = node(1, properties());
+        Node c = node(2, properties());
+        Node d = node(3, properties());
 
-        Relationship ab = relationship( 17, a, "LOVES", b );
-        Relationship cb = relationship( 18, c, "HATES", b );
-        Relationship cd = relationship( 19, c, "KNOWS", d );
+        Relationship ab = relationship(17, a, "LOVES", b);
+        Relationship cb = relationship(18, c, "HATES", b);
+        Relationship cd = relationship(19, c, "KNOWS", d);
 
-        return new PathRepresentation<>( path( a, link( ab, b ), link( cb, c ), link( cd, d ) ) );
+        return new PathRepresentation<>(path(a, link(ab, b), link(cb, c), link(cd, d)));
     }
 
-    public static void verifySerialisation( Map<String, Object> pathrep )
-    {
-        assertNotNull( pathrep.get( "length" ) );
+    public static void verifySerialisation(Map<String, Object> pathrep) {
+        assertNotNull(pathrep.get("length"));
         int length = Integer.parseInt(pathrep.get("length").toString());
 
-        assertUriMatches( NODE_URI_PATTERN, pathrep.get( "start" ).toString() );
-        assertUriMatches( NODE_URI_PATTERN, pathrep.get( "end" ).toString() );
+        assertUriMatches(NODE_URI_PATTERN, pathrep.get("start").toString());
+        assertUriMatches(NODE_URI_PATTERN, pathrep.get("end").toString());
 
-        Object nodes = pathrep.get( "nodes" );
-        assertTrue( nodes instanceof List );
+        Object nodes = pathrep.get("nodes");
+        assertTrue(nodes instanceof List);
         List nodeList = (List) nodes;
-        assertEquals( length + 1, nodeList.size() );
-        for ( Object node : nodeList )
-        {
-            assertUriMatches( NODE_URI_PATTERN, node.toString() );
+        assertEquals(length + 1, nodeList.size());
+        for (Object node : nodeList) {
+            assertUriMatches(NODE_URI_PATTERN, node.toString());
         }
 
-        Object rels = pathrep.get( "relationships" );
-        assertTrue( rels instanceof List );
+        Object rels = pathrep.get("relationships");
+        assertTrue(rels instanceof List);
         List relList = (List) rels;
-        assertEquals( length, relList.size() );
-        for ( Object rel : relList )
-        {
-            assertUriMatches( RELATIONSHIP_URI_PATTERN, rel.toString() );
+        assertEquals(length, relList.size());
+        for (Object rel : relList) {
+            assertUriMatches(RELATIONSHIP_URI_PATTERN, rel.toString());
         }
 
-        Object directions = pathrep.get( "directions" );
-        assertTrue( directions instanceof List );
+        Object directions = pathrep.get("directions");
+        assertTrue(directions instanceof List);
         List directionList = (List) directions;
-        assertEquals( length, directionList.size() );
-        assertEquals( "->", directionList.get(0).toString() );
-        assertEquals( "<-", directionList.get(1).toString() );
-        assertEquals( "->", directionList.get(2).toString() );
+        assertEquals(length, directionList.size());
+        assertEquals("->", directionList.get(0).toString());
+        assertEquals("<-", directionList.get(1).toString());
+        assertEquals("->", directionList.get(2).toString());
     }
-
 }

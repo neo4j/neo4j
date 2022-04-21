@@ -19,13 +19,18 @@
  */
 package org.neo4j.bolt.transport;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceivesSelectedProtocolVersion;
+import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newMessageEncoder;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
-
-import java.util.stream.Collectors;
-
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
@@ -40,17 +45,9 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceivesSelectedProtocolVersion;
-import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newMessageEncoder;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-
 @TestDirectoryExtension
 @Neo4jWithSocketExtension
-public class TransactionTerminationIT
-{
+public class TransactionTerminationIT {
 
     private TransportTestUtil util;
     private HostnamePort serverAddress;
@@ -59,63 +56,57 @@ public class TransactionTerminationIT
     public Neo4jWithSocket server;
 
     @BeforeEach
-    void setUp( TestInfo testInfo ) throws Exception
-    {
+    void setUp(TestInfo testInfo) throws Exception {
         var test = new TestDatabaseManagementServiceBuilder();
-        server.setGraphDatabaseFactory( test );
-        server.setConfigure( settings ->
-                             {
-                                 settings.put( BoltConnector.enabled, true );
-                                 settings.put( BoltConnector.listen_address, new SocketAddress( 0 ) );
-                             } );
-        server.init( testInfo );
+        server.setGraphDatabaseFactory(test);
+        server.setConfigure(settings -> {
+            settings.put(BoltConnector.enabled, true);
+            settings.put(BoltConnector.listen_address, new SocketAddress(0));
+        });
+        server.init(testInfo);
 
-        serverAddress = server.lookupConnector( BoltConnector.NAME );
-        util = new TransportTestUtil( newMessageEncoder() );
+        serverAddress = server.lookupConnector(BoltConnector.NAME);
+        util = new TransportTestUtil(newMessageEncoder());
     }
 
     @Test
-    @Timeout( 15 )
-    void killTxViaReset() throws Exception
-    {
-        SocketConnection connA = initializeConnection( serverAddress );
+    @Timeout(15)
+    void killTxViaReset() throws Exception {
+        SocketConnection connA = initializeConnection(serverAddress);
 
-        connA.send( util.chunk( new BeginMessage() ) );
-        connA.send( util.chunk( new RunMessage( "UNWIND range(1, 2000000) AS i CREATE (n)" ) ) );
+        connA.send(util.chunk(new BeginMessage()));
+        connA.send(util.chunk(new RunMessage("UNWIND range(1, 2000000) AS i CREATE (n)")));
 
-        //let the query start actually executing
+        // let the query start actually executing
         awaitTransactionStart();
 
-        connA.send( util.chunk( ResetMessage.INSTANCE ) );
+        connA.send(util.chunk(ResetMessage.INSTANCE));
 
-        assertThat( connA ).satisfies( util.eventuallyReceives( msgSuccess() ) );
-        assertThat( connA ).satisfies( util.eventuallyReceives( msgFailure( Status.Transaction.Terminated ) ) );
-        assertThat( connA ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+        assertThat(connA).satisfies(util.eventuallyReceives(msgSuccess()));
+        assertThat(connA).satisfies(util.eventuallyReceives(msgFailure(Status.Transaction.Terminated)));
+        assertThat(connA).satisfies(util.eventuallyReceives(msgSuccess()));
     }
 
-    public void awaitTransactionStart() throws InterruptedException
-    {
+    public void awaitTransactionStart() throws InterruptedException {
         long txCount = 1;
-        while ( txCount <= 1 )
-        {
+        while (txCount <= 1) {
             var tx = server.graphDatabaseService().beginTx();
-            var result = tx.execute( "SHOW TRANSACTIONS" );
-            txCount = result.stream().collect( Collectors.toList() ).size();
-            System.out.println( txCount );
+            var result = tx.execute("SHOW TRANSACTIONS");
+            txCount = result.stream().collect(Collectors.toList()).size();
+            System.out.println(txCount);
             tx.close();
-            Thread.sleep( 100 );
+            Thread.sleep(100);
         }
     }
 
-    private SocketConnection initializeConnection( HostnamePort address ) throws Exception
-    {
+    private SocketConnection initializeConnection(HostnamePort address) throws Exception {
         SocketConnection socketConnection = new SocketConnection();
 
-        socketConnection.connect( address ).send( TransportTestUtil.defaultAcceptedVersions() );
-        assertThat( socketConnection ).satisfies( eventuallyReceivesSelectedProtocolVersion() );
+        socketConnection.connect(address).send(TransportTestUtil.defaultAcceptedVersions());
+        assertThat(socketConnection).satisfies(eventuallyReceivesSelectedProtocolVersion());
 
-        socketConnection.send( util.chunk( new HelloMessage( map( "user_agent", "TESTCLIENT/4.2" ) ) ) );
-        assertThat( socketConnection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+        socketConnection.send(util.chunk(new HelloMessage(map("user_agent", "TESTCLIENT/4.2"))));
+        assertThat(socketConnection).satisfies(util.eventuallyReceives(msgSuccess()));
 
         return socketConnection;
     }

@@ -37,9 +37,12 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
   test("should update state per key group in input") {
     // given
     val iterator = new LazyGroupingRowIterator(
-      new Row("a", 1), new Row("a", 3),
-      new Row("b", 3), new Row("b", 2),
-      new Row("c", 4))
+      new Row("a", 1),
+      new Row("a", 3),
+      new Row("b", 3),
+      new Row("b", 2),
+      new Row("c", 4)
+    )
 
     // then
 

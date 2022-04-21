@@ -19,65 +19,56 @@
  */
 package org.neo4j.test.impl;
 
+import static org.neo4j.io.ByteUnit.KibiByte;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.io.ByteUnit.KibiByte;
-
-public class ChannelOutputStream extends OutputStream
-{
+public class ChannelOutputStream extends OutputStream {
     private final StoreChannel channel;
     private final ScopedBuffer scopedBuffer;
     private final ByteBuffer buffer;
 
-    public ChannelOutputStream( StoreChannel channel, boolean append, MemoryTracker memoryTracker ) throws IOException
-    {
-        this.scopedBuffer = new HeapScopedBuffer( 8, KibiByte, memoryTracker );
+    public ChannelOutputStream(StoreChannel channel, boolean append, MemoryTracker memoryTracker) throws IOException {
+        this.scopedBuffer = new HeapScopedBuffer(8, KibiByte, memoryTracker);
         this.buffer = scopedBuffer.getBuffer();
         this.channel = channel;
-        if ( append )
-        {
-            this.channel.position( this.channel.size() );
+        if (append) {
+            this.channel.position(this.channel.size());
         }
     }
 
     @Override
-    public void write( int b ) throws IOException
-    {
+    public void write(int b) throws IOException {
         buffer.clear();
-        buffer.put( (byte) b );
+        buffer.put((byte) b);
         buffer.flip();
-        channel.writeAll( buffer );
+        channel.writeAll(buffer);
     }
 
     @Override
-    public void write( byte[] b ) throws IOException
-    {
-        write( b, 0, b.length );
+    public void write(byte[] b) throws IOException {
+        write(b, 0, b.length);
     }
 
     @Override
-    public void write( byte[] b, int off, int len ) throws IOException
-    {
+    public void write(byte[] b, int off, int len) throws IOException {
         int written = 0;
-        while ( written < len )
-        {
+        while (written < len) {
             buffer.clear();
-            buffer.put( b, off + written, Math.min( len - written, buffer.capacity() ) );
+            buffer.put(b, off + written, Math.min(len - written, buffer.capacity()));
             buffer.flip();
-            written += channel.write( buffer );
+            written += channel.write(buffer);
         }
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         scopedBuffer.close();
         channel.close();
     }

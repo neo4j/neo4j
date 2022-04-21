@@ -20,15 +20,12 @@
 package org.neo4j.tooling.procedure.procedures.invalid.bad_record_type;
 
 import java.util.stream.Stream;
-
 import org.neo4j.procedure.Procedure;
 
-public class BadRecordTypeSproc
-{
+public class BadRecordTypeSproc {
 
     @Procedure
-    public Stream<BadRecord> doIt()
-    {
-        return Stream.of( new BadRecord( "bad", 42 ) );
+    public Stream<BadRecord> doIt() {
+        return Stream.of(new BadRecord("bad", 42));
     }
 }

@@ -24,30 +24,23 @@ import java.lang.reflect.Method;
 /**
  * Utility methods for {@link Documented} annotation.
  */
-public final class DocumentedUtils
-{
-    private DocumentedUtils()
-    {
-        throw new RuntimeException( "Should not be instantiated." );
+public final class DocumentedUtils {
+    private DocumentedUtils() {
+        throw new RuntimeException("Should not be instantiated.");
     }
 
-    public static String extractMessage( Method method )
-    {
+    public static String extractMessage(Method method) {
         String message;
-        Documented annotation = method.getAnnotation( Documented.class );
-        if ( annotation != null && !"".equals( annotation.value() ) )
-        {
+        Documented annotation = method.getAnnotation(Documented.class);
+        if (annotation != null && !"".equals(annotation.value())) {
             message = annotation.value();
-        }
-        else
-        {
+        } else {
             message = method.getName();
         }
         return message;
     }
 
-    public static String extractFormattedMessage( Method method, Object[] args )
-    {
-        return String.format( extractMessage( method ), args );
+    public static String extractFormattedMessage(Method method, Object[] args) {
+        return String.format(extractMessage(method), args);
     }
 }

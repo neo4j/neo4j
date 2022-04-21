@@ -19,17 +19,16 @@
  */
 package org.neo4j.bolt.messaging.util;
 
-import java.util.Arrays;
-
 import static java.lang.System.arraycopy;
+
+import java.util.Arrays;
 
 /**
  * This collection class implements a minimal map-like interface
  * for an ordered, primitive-based key-value array. The array both
  * maintains insertion order and ensures key values are unique.
  */
-public class PrimitiveLongIntKeyValueArray
-{
+public class PrimitiveLongIntKeyValueArray {
     static final int DEFAULT_INITIAL_CAPACITY = 100;
     private static final double DEFAULT_GROWTH_FACTOR = 1.2;
 
@@ -40,15 +39,12 @@ public class PrimitiveLongIntKeyValueArray
     private double growthFactor;
     private int size;
 
-    private PrimitiveLongIntKeyValueArray( int initialCapacity, double growthFactor )
-    {
-        if ( initialCapacity <= 0 )
-        {
-            throw new IllegalArgumentException( "Illegal initial capacity: " + initialCapacity );
+    private PrimitiveLongIntKeyValueArray(int initialCapacity, double growthFactor) {
+        if (initialCapacity <= 0) {
+            throw new IllegalArgumentException("Illegal initial capacity: " + initialCapacity);
         }
-        if ( growthFactor <= 1 )
-        {
-            throw new IllegalArgumentException( "Illegal growth factor: " + growthFactor );
+        if (growthFactor <= 1) {
+            throw new IllegalArgumentException("Illegal growth factor: " + growthFactor);
         }
         naturalKeys = new long[DEFAULT_INITIAL_CAPACITY];
         naturalValues = new int[DEFAULT_INITIAL_CAPACITY];
@@ -57,14 +53,12 @@ public class PrimitiveLongIntKeyValueArray
         this.growthFactor = growthFactor;
     }
 
-    public PrimitiveLongIntKeyValueArray( int initialCapacity )
-    {
-        this( initialCapacity, DEFAULT_GROWTH_FACTOR );
+    public PrimitiveLongIntKeyValueArray(int initialCapacity) {
+        this(initialCapacity, DEFAULT_GROWTH_FACTOR);
     }
 
-    PrimitiveLongIntKeyValueArray()
-    {
-        this( DEFAULT_INITIAL_CAPACITY, DEFAULT_GROWTH_FACTOR );
+    PrimitiveLongIntKeyValueArray() {
+        this(DEFAULT_INITIAL_CAPACITY, DEFAULT_GROWTH_FACTOR);
     }
 
     /**
@@ -72,8 +66,7 @@ public class PrimitiveLongIntKeyValueArray
      *
      * @return current capacity
      */
-    public int capacity()
-    {
+    public int capacity() {
         return naturalKeys.length;
     }
 
@@ -83,19 +76,17 @@ public class PrimitiveLongIntKeyValueArray
      *
      * @param newCapacity the new capacity requirement
      */
-    void ensureCapacity( int newCapacity )
-    {
+    void ensureCapacity(int newCapacity) {
         int capacity = naturalKeys.length;
-        if ( newCapacity > capacity )
-        {
+        if (newCapacity > capacity) {
             long[] newNaturalKeys = new long[newCapacity];
             int[] newNaturalValues = new int[newCapacity];
             long[] newSortedKeys = new long[newCapacity];
             int[] newSortedValues = new int[newCapacity];
-            arraycopy( naturalKeys, 0, newNaturalKeys, 0, capacity );
-            arraycopy( naturalValues, 0, newNaturalValues, 0, capacity );
-            arraycopy( sortedKeys, 0, newSortedKeys, 0, capacity );
-            arraycopy( sortedValues, 0, newSortedValues, 0, capacity );
+            arraycopy(naturalKeys, 0, newNaturalKeys, 0, capacity);
+            arraycopy(naturalValues, 0, newNaturalValues, 0, capacity);
+            arraycopy(sortedKeys, 0, newSortedKeys, 0, capacity);
+            arraycopy(sortedValues, 0, newSortedValues, 0, capacity);
             naturalKeys = newNaturalKeys;
             naturalValues = newNaturalValues;
             sortedKeys = newSortedKeys;
@@ -108,8 +99,7 @@ public class PrimitiveLongIntKeyValueArray
      *
      * @return number of items in the array
      */
-    public int size()
-    {
+    public int size() {
         return size;
     }
 
@@ -121,15 +111,11 @@ public class PrimitiveLongIntKeyValueArray
      * @param defaultValue value to return if the key is not found
      * @return the integer value mapped to the key provided
      */
-    public int getOrDefault( long key, int defaultValue )
-    {
-        int index = Arrays.binarySearch( sortedKeys, 0, size, key );
-        if ( index >= 0 )
-        {
+    public int getOrDefault(long key, int defaultValue) {
+        int index = Arrays.binarySearch(sortedKeys, 0, size, key);
+        if (index >= 0) {
             return sortedValues[index];
-        }
-        else
-        {
+        } else {
             return defaultValue;
         }
     }
@@ -141,24 +127,18 @@ public class PrimitiveLongIntKeyValueArray
      * @param value the value to include
      * @return true if the value was successfully included, false otherwise
      */
-    public boolean putIfAbsent( long key, int value )
-    {
+    public boolean putIfAbsent(long key, int value) {
         int capacity = naturalKeys.length;
-        if ( size == capacity )
-        {
-            ensureCapacity( (int) Math.floor( growthFactor * capacity ) );
+        if (size == capacity) {
+            ensureCapacity((int) Math.floor(growthFactor * capacity));
         }
 
-        int index = Arrays.binarySearch( sortedKeys, 0, size, key );
-        if ( index >= 0 )
-        {
+        int index = Arrays.binarySearch(sortedKeys, 0, size, key);
+        if (index >= 0) {
             return false;
-        }
-        else
-        {
+        } else {
             index = -index - 1;
-            for ( int i = size; i > index; i-- )
-            {
+            for (int i = size; i > index; i--) {
                 int j = i - 1;
                 sortedKeys[i] = sortedKeys[j];
                 sortedValues[i] = sortedValues[j];
@@ -178,10 +158,9 @@ public class PrimitiveLongIntKeyValueArray
      *
      * @param newCapacity the new capacity requirement
      */
-    public void reset( int newCapacity )
-    {
+    public void reset(int newCapacity) {
         size = 0;
-        ensureCapacity( newCapacity );
+        ensureCapacity(newCapacity);
     }
 
     /**
@@ -189,8 +168,7 @@ public class PrimitiveLongIntKeyValueArray
      *
      * @return array of key values
      */
-    public long[] keys()
-    {
-        return Arrays.copyOfRange( naturalKeys, 0, size );
+    public long[] keys() {
+        return Arrays.copyOfRange(naturalKeys, 0, size);
     }
 }

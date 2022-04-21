@@ -26,33 +26,28 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  * Synthetic record type that stands in for a real record to fit in conveniently
  * with consistency checking
  */
-public class TokenScanDocument extends AbstractBaseRecord
-{
+public class TokenScanDocument extends AbstractBaseRecord {
     private EntityTokenRange entityTokenRange;
 
-    public TokenScanDocument( EntityTokenRange entityTokenRange )
-    {
-        super( entityTokenRange != null ? entityTokenRange.id() : -1 );
+    public TokenScanDocument(EntityTokenRange entityTokenRange) {
+        super(entityTokenRange != null ? entityTokenRange.id() : -1);
         this.entityTokenRange = entityTokenRange;
-        setInUse( entityTokenRange != null );
+        setInUse(entityTokenRange != null);
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         super.clear();
         this.entityTokenRange = null;
     }
 
     @Override
-    public TokenScanDocument copy()
-    {
-        throw new UnsupportedOperationException( "Synthetic records cannot be copied." );
+    public TokenScanDocument copy() {
+        throw new UnsupportedOperationException("Synthetic records cannot be copied.");
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return entityTokenRange != null ? entityTokenRange.toString() : "<no token scan data>";
     }
 }

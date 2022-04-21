@@ -22,13 +22,11 @@ package org.neo4j.ssl;
 import java.util.function.Function;
 import javax.net.ssl.SSLEngine;
 
-public class EssentialEngineModifications implements Function<SSLEngine,SSLEngine>
-{
+public class EssentialEngineModifications implements Function<SSLEngine, SSLEngine> {
     private final String[] tlsVersions;
     private final boolean isClient;
 
-    public EssentialEngineModifications( String[] tlsVersions, boolean isClient )
-    {
+    public EssentialEngineModifications(String[] tlsVersions, boolean isClient) {
         this.tlsVersions = tlsVersions;
         this.isClient = isClient;
     }
@@ -40,13 +38,11 @@ public class EssentialEngineModifications implements Function<SSLEngine,SSLEngin
      * @return the updated sslEngine (should be the same as the original, but don't rely on that)
      */
     @Override
-    public SSLEngine apply( SSLEngine sslEngine )
-    {
-        if ( tlsVersions != null )
-        {
-            sslEngine.setEnabledProtocols( tlsVersions );
+    public SSLEngine apply(SSLEngine sslEngine) {
+        if (tlsVersions != null) {
+            sslEngine.setEnabledProtocols(tlsVersions);
         }
-        sslEngine.setUseClientMode( isClient );
+        sslEngine.setUseClientMode(isClient);
         return sslEngine;
     }
 }

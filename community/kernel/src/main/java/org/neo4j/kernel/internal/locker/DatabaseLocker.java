@@ -25,10 +25,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 /**
  * Database level lock to prevent multiple database to be started on top of single {@link DatabaseLayout}
  */
-public class DatabaseLocker extends GlobalFileLocker
-{
-    public DatabaseLocker( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout )
-    {
-        super( fileSystemAbstraction, databaseLayout.databaseLockFile() );
+public class DatabaseLocker extends GlobalFileLocker {
+    public DatabaseLocker(FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout) {
+        super(fileSystemAbstraction, databaseLayout.databaseLockFile());
     }
 }

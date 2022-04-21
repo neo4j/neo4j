@@ -21,8 +21,7 @@ package org.neo4j.procedure.builtin;
 
 import java.util.List;
 
-public class NodePropertySchemaInfoResult
-{
+public class NodePropertySchemaInfoResult {
     /**
      * A combination of escaped label names interleaved by ":"
      */
@@ -47,12 +46,16 @@ public class NodePropertySchemaInfoResult
      */
     public final boolean mandatory;
 
-    public NodePropertySchemaInfoResult( String nodeType, List<String> nodeLabelsList, String propertyName, List<String> cypherTypes, boolean mandatory )
-    {
+    public NodePropertySchemaInfoResult(
+            String nodeType,
+            List<String> nodeLabelsList,
+            String propertyName,
+            List<String> cypherTypes,
+            boolean mandatory) {
         this.nodeType = nodeType;
         this.nodeLabels = nodeLabelsList;
         this.propertyName = propertyName;
         this.propertyTypes = cypherTypes;
-        this.mandatory  = mandatory;
+        this.mandatory = mandatory;
     }
 }

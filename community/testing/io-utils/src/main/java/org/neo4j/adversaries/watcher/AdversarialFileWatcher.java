@@ -21,7 +21,6 @@ package org.neo4j.adversaries.watcher;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -31,53 +30,45 @@ import org.neo4j.io.fs.watcher.resource.WatchedResource;
  * File watcher that injects additional failures using provided {@link Adversary}
  * and delegate all actual watching role to provided {@link FileWatcher}
  */
-public class AdversarialFileWatcher implements FileWatcher
-{
+public class AdversarialFileWatcher implements FileWatcher {
     private final FileWatcher fileWatcher;
     private final Adversary adversary;
 
-    public AdversarialFileWatcher( FileWatcher fileWatcher, Adversary adversary )
-    {
+    public AdversarialFileWatcher(FileWatcher fileWatcher, Adversary adversary) {
         this.fileWatcher = fileWatcher;
         this.adversary = adversary;
     }
 
     @Override
-    public void close() throws IOException
-    {
-        adversary.injectFailure( IOException.class );
+    public void close() throws IOException {
+        adversary.injectFailure(IOException.class);
         fileWatcher.close();
     }
 
     @Override
-    public WatchedResource watch( Path path ) throws IOException
-    {
-        adversary.injectFailure( IOException.class );
-        return fileWatcher.watch( path );
+    public WatchedResource watch(Path path) throws IOException {
+        adversary.injectFailure(IOException.class);
+        return fileWatcher.watch(path);
     }
 
     @Override
-    public void addFileWatchEventListener( FileWatchEventListener listener )
-    {
-        fileWatcher.addFileWatchEventListener( listener );
+    public void addFileWatchEventListener(FileWatchEventListener listener) {
+        fileWatcher.addFileWatchEventListener(listener);
     }
 
     @Override
-    public void removeFileWatchEventListener( FileWatchEventListener listener )
-    {
-        fileWatcher.removeFileWatchEventListener( listener );
+    public void removeFileWatchEventListener(FileWatchEventListener listener) {
+        fileWatcher.removeFileWatchEventListener(listener);
     }
 
     @Override
-    public void stopWatching()
-    {
+    public void stopWatching() {
         fileWatcher.stopWatching();
     }
 
     @Override
-    public void startWatching() throws InterruptedException
-    {
-        adversary.injectFailure( InterruptedException.class );
+    public void startWatching() throws InterruptedException {
+        adversary.injectFailure(InterruptedException.class);
         fileWatcher.startWatching();
     }
 }

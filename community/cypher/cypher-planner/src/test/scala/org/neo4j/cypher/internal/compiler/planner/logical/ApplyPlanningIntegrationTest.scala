@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ApplyPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
+
   test("does not use Apply for aggregation and order by") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (n) RETURN DISTINCT n.name")

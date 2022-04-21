@@ -19,72 +19,64 @@
  */
 package org.neo4j.configuration.connectors;
 
-import org.junit.jupiter.api.Test;
-
-import java.net.InetSocketAddress;
-
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.internal.helpers.HostnamePort;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-class ConnectorPortRegisterTest
-{
+import java.net.InetSocketAddress;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.helpers.HostnamePort;
+
+class ConnectorPortRegisterTest {
     private final ConnectorPortRegister portRegister = new ConnectorPortRegister();
 
     @Test
-    void shouldRegisterInetSocketAddress()
-    {
-        InetSocketAddress address = new InetSocketAddress( 0 );
+    void shouldRegisterInetSocketAddress() {
+        InetSocketAddress address = new InetSocketAddress(0);
 
-        portRegister.register( "key", address );
+        portRegister.register("key", address);
 
-        verifyAddress( "key", address.getHostString(), address.getPort() );
+        verifyAddress("key", address.getHostString(), address.getPort());
     }
 
     @Test
-    void shouldRegisterSocketAddress()
-    {
-        SocketAddress address = new SocketAddress( "neo4j.com", 12345 );
+    void shouldRegisterSocketAddress() {
+        SocketAddress address = new SocketAddress("neo4j.com", 12345);
 
-        portRegister.register( "key", address );
+        portRegister.register("key", address);
 
-        verifyAddress( "key", address.getHostname(), address.getPort() );
+        verifyAddress("key", address.getHostname(), address.getPort());
     }
 
     @Test
-    void shouldDeregister()
-    {
-        SocketAddress address = new SocketAddress( "neo4j.com", 42 );
-        portRegister.register( "key", address );
-        assertNotNull( portRegister.getLocalAddress( "key" ) );
+    void shouldDeregister() {
+        SocketAddress address = new SocketAddress("neo4j.com", 42);
+        portRegister.register("key", address);
+        assertNotNull(portRegister.getLocalAddress("key"));
 
-        portRegister.deregister( "key" );
+        portRegister.deregister("key");
 
-        assertNull( portRegister.getLocalAddress( "key" ) );
+        assertNull(portRegister.getLocalAddress("key"));
     }
 
     @Test
-    void shouldReturnAddressByKey()
-    {
-        SocketAddress address1 = new SocketAddress( "localhost", 7574 );
-        SocketAddress address2 = new SocketAddress( "neo4j.com", 8989 );
-        SocketAddress address3 = new SocketAddress( "8.8.8.8", 80 );
+    void shouldReturnAddressByKey() {
+        SocketAddress address1 = new SocketAddress("localhost", 7574);
+        SocketAddress address2 = new SocketAddress("neo4j.com", 8989);
+        SocketAddress address3 = new SocketAddress("8.8.8.8", 80);
 
-        portRegister.register( "key1", address1 );
-        portRegister.register( "key2", address2 );
-        portRegister.register( "key3", address3 );
+        portRegister.register("key1", address1);
+        portRegister.register("key2", address2);
+        portRegister.register("key3", address3);
 
-        verifyAddress( "key1", "localhost", 7574 );
-        verifyAddress( "key2", "neo4j.com", 8989 );
-        verifyAddress( "key3", "8.8.8.8", 80 );
+        verifyAddress("key1", "localhost", 7574);
+        verifyAddress("key2", "neo4j.com", 8989);
+        verifyAddress("key3", "8.8.8.8", 80);
     }
 
-    private void verifyAddress( String key, String expectedHostname, int expectedPort )
-    {
-        HostnamePort expectedAddress = new HostnamePort( expectedHostname, expectedPort );
-        assertEquals( expectedAddress, portRegister.getLocalAddress( key ) );
+    private void verifyAddress(String key, String expectedHostname, int expectedPort) {
+        HostnamePort expectedAddress = new HostnamePort(expectedHostname, expectedPort);
+        assertEquals(expectedAddress, portRegister.getLocalAddress(key));
     }
 }

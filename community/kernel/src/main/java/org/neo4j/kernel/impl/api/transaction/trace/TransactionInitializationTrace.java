@@ -22,28 +22,23 @@ package org.neo4j.kernel.impl.api.transaction.trace;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-public class TransactionInitializationTrace
-{
+public class TransactionInitializationTrace {
     private static final String MESSAGE = "Transaction initialization stacktrace.";
     public static final TransactionInitializationTrace NONE = new EmptyTransactionInitializationTrace();
 
     private final Throwable trace;
 
-    public TransactionInitializationTrace()
-    {
-        trace = new Throwable( MESSAGE );
+    public TransactionInitializationTrace() {
+        trace = new Throwable(MESSAGE);
     }
 
-    public String getTrace()
-    {
-        return ExceptionUtils.getStackTrace( trace );
+    public String getTrace() {
+        return ExceptionUtils.getStackTrace(trace);
     }
 
-    private static class EmptyTransactionInitializationTrace extends TransactionInitializationTrace
-    {
+    private static class EmptyTransactionInitializationTrace extends TransactionInitializationTrace {
         @Override
-        public String getTrace()
-        {
+        public String getTrace() {
             return StringUtils.EMPTY;
         }
     }

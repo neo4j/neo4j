@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Function;
+import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
+import java.util.function.Function;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -34,25 +35,35 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
-
 /**
  * Reads all records from {@link NodeStore} and process the counts in them, populating {@link NodeLabelsCache}
  * for later use of {@link RelationshipCountsStage}.
  */
-public class NodeCountsStage extends Stage
-{
+public class NodeCountsStage extends Stage {
     public static final String NAME = "Node counts";
 
-    public NodeCountsStage( Configuration config, NodeLabelsCache cache, NodeStore nodeStore, int highLabelId,
-            CountsAccessor.Updater countsUpdater, ProgressReporter progressReporter, CursorContextFactory contextFactory,
-            Function<CursorContext,StoreCursors> storeCursorsCreator, StatsProvider... additionalStatsProviders )
-    {
-        super( NAME, null, config, Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, nodeStore, contextFactory ) );
-        add( new RecordProcessorStep<>( control(), "COUNT", config,
-                () -> new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, 0, contextFactory,
-                storeCursorsCreator, additionalStatsProviders ) );
+    public NodeCountsStage(
+            Configuration config,
+            NodeLabelsCache cache,
+            NodeStore nodeStore,
+            int highLabelId,
+            CountsAccessor.Updater countsUpdater,
+            ProgressReporter progressReporter,
+            CursorContextFactory contextFactory,
+            Function<CursorContext, StoreCursors> storeCursorsCreator,
+            StatsProvider... additionalStatsProviders) {
+        super(NAME, null, config, Step.RECYCLE_BATCHES);
+        add(new BatchFeedStep(control(), config, allIn(nodeStore, config), nodeStore.getRecordSize()));
+        add(new ReadRecordsStep<>(control(), config, false, nodeStore, contextFactory));
+        add(new RecordProcessorStep<>(
+                control(),
+                "COUNT",
+                config,
+                () -> new NodeCountsProcessor(nodeStore, cache, highLabelId, countsUpdater, progressReporter),
+                true,
+                0,
+                contextFactory,
+                storeCursorsCreator,
+                additionalStatsProviders));
     }
 }

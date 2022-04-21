@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
 import java.util.regex.Pattern
+
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 class ExecutionResultTest extends ExecutionEngineFunSuite {
@@ -34,7 +35,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
     columns.foreach(createNode)
 
-    val q="match (zero), (one), (two), (three), (four), (five), (six), (seven), (eight), (nine) " +
+    val q = "match (zero), (one), (two), (three), (four), (five), (six), (seven), (eight), (nine) " +
       "where id(zero) = 0 AND id(one) = 1 AND id(two) = 2 AND id(three) = 3 AND id(four) = 4 AND id(five) = 5 AND id(six) = 6 AND id(seven) = 7 AND id(eight) = 8 AND id(nine) = 9 " +
       "return zero, one, two, three, four, five, six, seven, eight, nine"
 
@@ -44,59 +45,58 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     val pattern = Pattern.compile(regex)
 
     val stringDump = graph.withTx(tx => tx.execute(q).resultAsString())
-    assertTrue( pattern.matcher(stringDump).find(), "Columns did not appear in the expected order: \n" + stringDump )
+    assertTrue(pattern.matcher(stringDump).find(), "Columns did not appear in the expected order: \n" + stringDump)
   }
 
   test("correctLabelStatisticsForCreate") {
     val result = execute("create (n:foo:bar)")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)
     assert(stats.labelsRemoved === 0)
   }
 
   test("correctLabelStatisticsForAdd") {
-    val n      = createNode()
+    val n = createNode()
     val result = execute(s"match (n) where id(n) = ${n.getId} set n:foo:bar")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)
     assert(stats.labelsRemoved === 0)
   }
 
   test("correctLabelStatisticsForRemove") {
-    val n      = createNode()
+    val n = createNode()
     execute(s"match (n) where id(n) = ${n.getId} set n:foo:bar")
     val result = execute(s"match (n) where id(n) = ${n.getId} remove n:foo:bar")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)
     assert(stats.labelsRemoved === 2)
   }
 
   test("correctLabelStatisticsForAddAndRemove") {
-    val n      = createLabeledNode("foo", "bar")
+    val n = createLabeledNode("foo", "bar")
     val result = execute(s"match (n) where id(n) = ${n.getId} set n:baz remove n:foo:bar")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
     assert(stats.labelsRemoved === 2)
   }
 
-
   test("correctLabelStatisticsForLabelAddedTwice") {
-    val n      = createLabeledNode("foo", "bar")
+    val n = createLabeledNode("foo", "bar")
     val result = execute(s"match (n) where id(n) = ${n.getId} set n:bar:baz")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
     assert(stats.labelsRemoved === 0)
   }
 
   test("correctLabelStatisticsForRemovalOfUnsetLabel") {
-    val n      = createLabeledNode("foo", "bar")
+    val n = createLabeledNode("foo", "bar")
     val result = execute(s"match (n) where id(n) = ${n.getId} remove n:baz:foo")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)
     assert(stats.labelsRemoved === 1)
@@ -104,7 +104,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctIndexStatisticsForIndexAdded") {
     val result = execute("create index for (n:Person) on (n.name)")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.indexesAdded === 1)
     assert(stats.indexesRemoved === 0)
@@ -112,7 +112,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctIndexStatisticsForIndexWithNameAdded") {
     val result = execute("create index my_index for (n:Person) on (n.name)")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.indexesAdded === 1)
     assert(stats.indexesRemoved === 0)
@@ -120,14 +120,14 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctConstraintStatisticsForUniquenessConstraintAdded") {
     val result = execute("create constraint for (n:Person) require n.name is unique")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.uniqueConstraintsAdded === 1)
     assert(stats.constraintsRemoved === 0)
   }
 
   test("hasNext should not change resultAsString") {
-    graph.withTx( tx => {
+    graph.withTx(tx => {
       val result = tx.execute("UNWIND [1,2,3] AS x RETURN x")
       result.hasNext
       result.resultAsString() should equal(
@@ -139,12 +139,13 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
           || 3 |
           |+---+
           |3 rows
-          |""".stripMargin)
+          |""".stripMargin
+      )
     })
   }
 
   test("next should change resultAsString") {
-    graph.withTx( tx => {
+    graph.withTx(tx => {
       val result = tx.execute("UNWIND [1,2,3] AS x RETURN x")
       result.next().asScala should equal(Map("x" -> 1))
       result.resultAsString() should equal(
@@ -155,7 +156,8 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
           || 3 |
           |+---+
           |2 rows
-          |""".stripMargin)
+          |""".stripMargin
+      )
     })
   }
 }

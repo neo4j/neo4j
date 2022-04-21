@@ -22,34 +22,33 @@ package org.neo4j.kernel.impl.locking;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.memory.EmptyMemoryTracker;
 
-class LockWorkerState
-{
+class LockWorkerState {
     private static final AtomicLong TRANSACTION_ID = new AtomicLong();
     final Locks grabber;
     final Locks.Client client;
     final List<String> completedOperations = new ArrayList<>();
     String doing;
 
-    LockWorkerState( Locks locks )
-    {
+    LockWorkerState(Locks locks) {
         this.grabber = locks;
         this.client = locks.newClient();
-        this.client.initialize( NoLeaseClient.INSTANCE, TRANSACTION_ID.getAndIncrement(), EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        this.client.initialize(
+                NoLeaseClient.INSTANCE,
+                TRANSACTION_ID.getAndIncrement(),
+                EmptyMemoryTracker.INSTANCE,
+                Config.defaults());
     }
 
-    public void doing( String doing )
-    {
+    public void doing(String doing) {
         this.doing = doing;
     }
 
-    public void done()
-    {
-        this.completedOperations.add( this.doing );
+    public void done() {
+        this.completedOperations.add(this.doing);
         this.doing = null;
     }
 }

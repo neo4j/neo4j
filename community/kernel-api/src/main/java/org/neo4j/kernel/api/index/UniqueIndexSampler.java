@@ -21,18 +21,15 @@ package org.neo4j.kernel.api.index;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public class UniqueIndexSampler
-{
+public class UniqueIndexSampler {
     private final AtomicLong count = new AtomicLong();
 
-    public void increment( long count )
-    {
-        this.count.addAndGet( count );
+    public void increment(long count) {
+        this.count.addAndGet(count);
     }
 
-    public IndexSample result()
-    {
+    public IndexSample result() {
         long count = this.count.get();
-        return new IndexSample( count, count, count );
+        return new IndexSample(count, count, count);
     }
 }

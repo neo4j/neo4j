@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.lite
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SkipPipeTest extends CypherFunSuite {
+
   test("skip 0 should not actually pull from the input") {
     // Given
     val inputIterator = mock[Iterator[CypherRow]](new ReturnsMocks)

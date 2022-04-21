@@ -34,7 +34,8 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
         (
           literal(""),
           literal(1.0)
-        ), (
+        ),
+        (
           literal(""),
           literal(1)
         )
@@ -54,7 +55,8 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
         (
           DummyExpression(CTBoolean),
           DummyExpression(CTFloat | CTString)
-        ), (
+        ),
+        (
           DummyExpression(CTBoolean),
           DummyExpression(CTInteger)
         )
@@ -74,7 +76,8 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
         (
           DummyExpression(CTBoolean),
           DummyExpression(CTFloat)
-        ), (
+        ),
+        (
           DummyExpression(CTString, DummyPosition(12)),
           DummyExpression(CTInteger)
         )

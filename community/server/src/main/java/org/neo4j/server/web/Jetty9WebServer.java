@@ -19,21 +19,7 @@
  */
 package org.neo4j.server.web;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.MovedContextHandler;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.WebAppContext;
+import static java.lang.String.format;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -52,7 +38,21 @@ import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
-
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.MovedContextHandler;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.helpers.PortBindException;
@@ -64,16 +64,13 @@ import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 import org.neo4j.ssl.SslPolicy;
 
-import static java.lang.String.format;
-
 /**
  * This class handles the configuration and runtime management of a Jetty web server. The server is restartable.
  */
-public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
-{
+public class Jetty9WebServer implements WebServer, WebContainerThreadInfo {
     private static final int JETTY_THREAD_POOL_IDLE_TIMEOUT = 60000;
 
-    public static final SocketAddress DEFAULT_ADDRESS = new SocketAddress( "0.0.0.0", 80 );
+    public static final SocketAddress DEFAULT_ADDRESS = new SocketAddress("0.0.0.0", 80);
 
     private boolean wadlEnabled;
     private ComponentsBinder binder;
@@ -88,7 +85,7 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
     private ServerConnector httpsConnector;
 
     private final Map<String, String> staticContent = new HashMap<>();
-    private final Map<String,JaxRsServletHolderFactory> jaxRsServletHolderFactories = new HashMap<>();
+    private final Map<String, JaxRsServletHolderFactory> jaxRsServletHolderFactories = new HashMap<>();
     private final List<FilterDefinition> filters = new ArrayList<>();
 
     private int jettyMaxThreads = 1;
@@ -98,433 +95,362 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
     private final HttpConnectorFactory connectorFactory;
     private final InternalLog log;
 
-    public Jetty9WebServer( InternalLogProvider logProvider, Config config, NetworkConnectionTracker connectionTracker, ByteBufferPool byteBufferPool )
-    {
-        this.log = logProvider.getLog( getClass() );
-        this.ocspStaplingEnabled = config.get( CommonConnectorConfig.ocsp_stapling_enabled );
-        sslSocketFactory = new SslSocketConnectorFactory( connectionTracker, config, byteBufferPool );
-        connectorFactory = new HttpConnectorFactory( connectionTracker, config, byteBufferPool );
+    public Jetty9WebServer(
+            InternalLogProvider logProvider,
+            Config config,
+            NetworkConnectionTracker connectionTracker,
+            ByteBufferPool byteBufferPool) {
+        this.log = logProvider.getLog(getClass());
+        this.ocspStaplingEnabled = config.get(CommonConnectorConfig.ocsp_stapling_enabled);
+        sslSocketFactory = new SslSocketConnectorFactory(connectionTracker, config, byteBufferPool);
+        connectorFactory = new HttpConnectorFactory(connectionTracker, config, byteBufferPool);
     }
 
     @Override
-    public void start() throws Exception
-    {
-        if ( jetty == null )
-        {
+    public void start() throws Exception {
+        if (jetty == null) {
             verifyAddressConfiguration();
 
-            JettyThreadCalculator jettyThreadCalculator = new JettyThreadCalculator( jettyMaxThreads );
-            jetty = new Server( createQueuedThreadPool( jettyThreadCalculator ) );
+            JettyThreadCalculator jettyThreadCalculator = new JettyThreadCalculator(jettyMaxThreads);
+            jetty = new Server(createQueuedThreadPool(jettyThreadCalculator));
 
-            if ( httpAddress != null )
-            {
-                httpConnector = connectorFactory.createConnector( jetty, httpAddress, jettyThreadCalculator );
-                jetty.addConnector( httpConnector );
+            if (httpAddress != null) {
+                httpConnector = connectorFactory.createConnector(jetty, httpAddress, jettyThreadCalculator);
+                jetty.addConnector(httpConnector);
             }
 
-            if ( httpsAddress != null )
-            {
-                if ( sslPolicy == null )
-                {
-                    throw new RuntimeException( "HTTPS set to enabled, but no SSL policy provided" );
+            if (httpsAddress != null) {
+                if (sslPolicy == null) {
+                    throw new RuntimeException("HTTPS set to enabled, but no SSL policy provided");
                 }
 
-                if ( ocspStaplingEnabled )
-                {
+                if (ocspStaplingEnabled) {
                     // currently the only way to enable OCSP server stapling for JDK is through this property
-                    System.setProperty( "jdk.tls.server.enableStatusRequestExtension", "true" );
+                    System.setProperty("jdk.tls.server.enableStatusRequestExtension", "true");
                 }
-                httpsConnector = sslSocketFactory.createConnector( jetty, sslPolicy, httpsAddress, jettyThreadCalculator );
-                jetty.addConnector( httpsConnector );
+                httpsConnector =
+                        sslSocketFactory.createConnector(jetty, sslPolicy, httpsAddress, jettyThreadCalculator);
+                jetty.addConnector(httpsConnector);
             }
         }
 
         handlers = new HandlerList();
-        jetty.setHandler( handlers );
-        handlers.addHandler( new MovedContextHandler() );
+        jetty.setHandler(handlers);
+        handlers.addHandler(new MovedContextHandler());
 
         loadAllMounts();
 
-        if ( requestLog != null )
-        {
+        if (requestLog != null) {
             loadRequestLogging();
         }
 
         startJetty();
     }
 
-    private static QueuedThreadPool createQueuedThreadPool( JettyThreadCalculator jtc )
-    {
-        BlockingQueue<Runnable> queue = new BlockingArrayQueue<>( jtc.getMinThreads(), jtc.getMinThreads(), jtc.getMaxCapacity() );
-        QueuedThreadPool threadPool = new QueuedThreadPool( jtc.getMaxThreads(), jtc.getMinThreads(), JETTY_THREAD_POOL_IDLE_TIMEOUT, queue );
-        threadPool.setThreadPoolBudget( null ); // mute warnings about Jetty thread pool size
+    private static QueuedThreadPool createQueuedThreadPool(JettyThreadCalculator jtc) {
+        BlockingQueue<Runnable> queue =
+                new BlockingArrayQueue<>(jtc.getMinThreads(), jtc.getMinThreads(), jtc.getMaxCapacity());
+        QueuedThreadPool threadPool =
+                new QueuedThreadPool(jtc.getMaxThreads(), jtc.getMinThreads(), JETTY_THREAD_POOL_IDLE_TIMEOUT, queue);
+        threadPool.setThreadPoolBudget(null); // mute warnings about Jetty thread pool size
         return threadPool;
     }
 
     @Override
-    public void stop()
-    {
-        if ( jetty != null )
-        {
-            try
-            {
+    public void stop() {
+        if (jetty != null) {
+            try {
                 jetty.stop();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
-            try
-            {
+            try {
                 jetty.join();
-            }
-            catch ( InterruptedException e )
-            {
-                log.warn( "Interrupted while waiting for Jetty to stop" );
+            } catch (InterruptedException e) {
+                log.warn("Interrupted while waiting for Jetty to stop");
             }
             jetty = null;
         }
     }
 
     @Override
-    public void setHttpAddress( SocketAddress address )
-    {
+    public void setHttpAddress(SocketAddress address) {
         httpAddress = address;
     }
 
     @Override
-    public void setHttpsAddress( SocketAddress address )
-    {
+    public void setHttpsAddress(SocketAddress address) {
         httpsAddress = address;
     }
 
     @Override
-    public void setSslPolicy( SslPolicy policy )
-    {
+    public void setSslPolicy(SslPolicy policy) {
         sslPolicy = policy;
     }
 
     @Override
-    public void setMaxThreads( int maxThreads )
-    {
+    public void setMaxThreads(int maxThreads) {
         jettyMaxThreads = maxThreads;
     }
 
     @Override
-    public void addJAXRSPackages( List<String> packageNames, String mountPoint, Collection<Injectable<?>> injectables )
-    {
+    public void addJAXRSPackages(List<String> packageNames, String mountPoint, Collection<Injectable<?>> injectables) {
         // We don't want absolute URIs at this point
-        mountPoint = ensureRelativeUri( mountPoint );
-        mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
+        mountPoint = ensureRelativeUri(mountPoint);
+        mountPoint = trimTrailingSlashToKeepJettyHappy(mountPoint);
 
-        JaxRsServletHolderFactory factory = jaxRsServletHolderFactories.computeIfAbsent( mountPoint, k -> new JaxRsServletHolderFactory() );
-        factory.addPackages( packageNames, injectables );
+        JaxRsServletHolderFactory factory =
+                jaxRsServletHolderFactories.computeIfAbsent(mountPoint, k -> new JaxRsServletHolderFactory());
+        factory.addPackages(packageNames, injectables);
 
-        log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
+        log.debug("Adding JAXRS packages %s at [%s]", packageNames, mountPoint);
     }
 
     @Override
-    public void addJAXRSClasses( List<Class<?>> classNames, String mountPoint, Collection<Injectable<?>> injectables )
-    {
+    public void addJAXRSClasses(List<Class<?>> classNames, String mountPoint, Collection<Injectable<?>> injectables) {
         // We don't want absolute URIs at this point
-        mountPoint = ensureRelativeUri( mountPoint );
-        mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
+        mountPoint = ensureRelativeUri(mountPoint);
+        mountPoint = trimTrailingSlashToKeepJettyHappy(mountPoint);
 
-        JaxRsServletHolderFactory factory = jaxRsServletHolderFactories.computeIfAbsent( mountPoint, k -> new JaxRsServletHolderFactory() );
-        factory.addClasses( classNames, injectables );
+        JaxRsServletHolderFactory factory =
+                jaxRsServletHolderFactories.computeIfAbsent(mountPoint, k -> new JaxRsServletHolderFactory());
+        factory.addClasses(classNames, injectables);
 
-        log.debug( "Adding JAXRS classes %s at [%s]", classNames, mountPoint );
+        log.debug("Adding JAXRS classes %s at [%s]", classNames, mountPoint);
     }
 
     @Override
-    public void setWadlEnabled( boolean wadlEnabled )
-    {
+    public void setWadlEnabled(boolean wadlEnabled) {
         this.wadlEnabled = wadlEnabled;
     }
 
     @Override
-    public void setComponentsBinder( ComponentsBinder binder )
-    {
+    public void setComponentsBinder(ComponentsBinder binder) {
         this.binder = binder;
     }
 
     @Override
-    public void removeJAXRSPackages( List<String> packageNames, String serverMountPoint )
-    {
-        JaxRsServletHolderFactory factory = jaxRsServletHolderFactories.get( serverMountPoint );
-        if ( factory != null )
-        {
-            factory.removePackages( packageNames );
+    public void removeJAXRSPackages(List<String> packageNames, String serverMountPoint) {
+        JaxRsServletHolderFactory factory = jaxRsServletHolderFactories.get(serverMountPoint);
+        if (factory != null) {
+            factory.removePackages(packageNames);
         }
     }
 
     @Override
-    public void removeJAXRSClasses( List<Class<?>> classNames, String serverMountPoint )
-    {
-        JaxRsServletHolderFactory factory = jaxRsServletHolderFactories.get( serverMountPoint );
-        if ( factory != null )
-        {
-            factory.removeClasses( classNames );
+    public void removeJAXRSClasses(List<Class<?>> classNames, String serverMountPoint) {
+        JaxRsServletHolderFactory factory = jaxRsServletHolderFactories.get(serverMountPoint);
+        if (factory != null) {
+            factory.removeClasses(classNames);
         }
     }
 
     @Override
-    public void addFilter( Filter filter, String pathSpec )
-    {
-        filters.add( new FilterDefinition( filter, pathSpec ) );
+    public void addFilter(Filter filter, String pathSpec) {
+        filters.add(new FilterDefinition(filter, pathSpec));
     }
 
     @Override
-    public void removeFilter( Filter filter, String pathSpec )
-    {
-        filters.removeIf( current -> current.matches( filter, pathSpec ) );
+    public void removeFilter(Filter filter, String pathSpec) {
+        filters.removeIf(current -> current.matches(filter, pathSpec));
     }
 
     @Override
-    public void addStaticContent( String contentLocation, String serverMountPoint )
-    {
-        staticContent.put( serverMountPoint, contentLocation );
+    public void addStaticContent(String contentLocation, String serverMountPoint) {
+        staticContent.put(serverMountPoint, contentLocation);
     }
 
     @Override
-    public void removeStaticContent( String contentLocation, String serverMountPoint )
-    {
-        staticContent.remove( serverMountPoint );
+    public void removeStaticContent(String contentLocation, String serverMountPoint) {
+        staticContent.remove(serverMountPoint);
     }
 
     @Override
-    public void setRequestLog( RequestLog requestLog )
-    {
+    public void setRequestLog(RequestLog requestLog) {
         this.requestLog = requestLog;
     }
 
-    public Server getJetty()
-    {
+    public Server getJetty() {
         return jetty;
     }
 
-    private void startJetty() throws Exception
-    {
-        try
-        {
+    private void startJetty() throws Exception {
+        try {
             jetty.start();
-        }
-        catch ( IOException e )
-        {
-            throw new PortBindException( httpAddress, httpsAddress, e );
+        } catch (IOException e) {
+            throw new PortBindException(httpAddress, httpsAddress, e);
         }
     }
 
     @Override
-    public InetSocketAddress getLocalHttpAddress()
-    {
-        return getAddress( "HTTP", httpConnector );
+    public InetSocketAddress getLocalHttpAddress() {
+        return getAddress("HTTP", httpConnector);
     }
 
     @Override
-    public InetSocketAddress getLocalHttpsAddress()
-    {
-        return getAddress( "HTTPS", httpsConnector );
+    public InetSocketAddress getLocalHttpsAddress() {
+        return getAddress("HTTPS", httpsConnector);
     }
 
-    private void loadAllMounts()
-    {
-        final SortedSet<String> mountpoints = new TreeSet<>( Comparator.reverseOrder() );
+    private void loadAllMounts() {
+        final SortedSet<String> mountpoints = new TreeSet<>(Comparator.reverseOrder());
 
-        mountpoints.addAll( staticContent.keySet() );
-        mountpoints.addAll( jaxRsServletHolderFactories.keySet() );
+        mountpoints.addAll(staticContent.keySet());
+        mountpoints.addAll(jaxRsServletHolderFactories.keySet());
 
-        for ( String contentKey : mountpoints )
-        {
-            final boolean isStatic = staticContent.containsKey( contentKey );
-            final boolean isJaxRs = jaxRsServletHolderFactories.containsKey( contentKey );
+        for (String contentKey : mountpoints) {
+            final boolean isStatic = staticContent.containsKey(contentKey);
+            final boolean isJaxRs = jaxRsServletHolderFactories.containsKey(contentKey);
 
-            if ( isStatic && isJaxRs )
-            {
-                throw new RuntimeException(
-                        format( "content-key '%s' is mapped more than once", contentKey ) );
-            }
-            else if ( isStatic )
-            {
-                loadStaticContent( contentKey );
-            }
-            else if ( isJaxRs )
-            {
-                loadJaxRsResource( contentKey );
-            }
-            else
-            {
-                throw new RuntimeException( format( "content-key '%s' is not mapped", contentKey ) );
+            if (isStatic && isJaxRs) {
+                throw new RuntimeException(format("content-key '%s' is mapped more than once", contentKey));
+            } else if (isStatic) {
+                loadStaticContent(contentKey);
+            } else if (isJaxRs) {
+                loadJaxRsResource(contentKey);
+            } else {
+                throw new RuntimeException(format("content-key '%s' is not mapped", contentKey));
             }
         }
     }
 
-    private void loadRequestLogging()
-    {
+    private void loadRequestLogging() {
         // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new HttpChannelOptionalRequestLogHandler();
-        requestLogHandler.setRequestLog( requestLog );
-        requestLogHandler.setServer( jetty );
-        requestLogHandler.setHandler( jetty.getHandler() );
-        jetty.setHandler( requestLogHandler );
+        requestLogHandler.setRequestLog(requestLog);
+        requestLogHandler.setServer(jetty);
+        requestLogHandler.setHandler(jetty.getHandler());
+        jetty.setHandler(requestLogHandler);
     }
 
-    private static String trimTrailingSlashToKeepJettyHappy( String mountPoint )
-    {
-        if ( mountPoint.equals( "/" ) )
-        {
+    private static String trimTrailingSlashToKeepJettyHappy(String mountPoint) {
+        if (mountPoint.equals("/")) {
             return mountPoint;
         }
 
-        if ( mountPoint.endsWith( "/" ) )
-        {
-            mountPoint = mountPoint.substring( 0, mountPoint.length() - 1 );
+        if (mountPoint.endsWith("/")) {
+            mountPoint = mountPoint.substring(0, mountPoint.length() - 1);
         }
         return mountPoint;
     }
 
-    private String ensureRelativeUri( String mountPoint )
-    {
-        try
-        {
-            URI result = new URI( mountPoint );
-            if ( result.isAbsolute() )
-            {
+    private String ensureRelativeUri(String mountPoint) {
+        try {
+            URI result = new URI(mountPoint);
+            if (result.isAbsolute()) {
                 return result.getPath();
-            }
-            else
-            {
+            } else {
                 return result.toString();
             }
-        }
-        catch ( URISyntaxException e )
-        {
-            log.debug( "Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)", mountPoint );
+        } catch (URISyntaxException e) {
+            log.debug("Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)", mountPoint);
             return mountPoint;
         }
     }
 
-    private void loadStaticContent( String mountPoint )
-    {
-        String contentLocation = staticContent.get( mountPoint );
-        try
-        {
+    private void loadStaticContent(String mountPoint) {
+        String contentLocation = staticContent.get(mountPoint);
+        try {
             SessionHandler sessionHandler = new SessionHandler();
-            sessionHandler.setServer( getJetty() );
+            sessionHandler.setServer(getJetty());
             final WebAppContext staticContext = new WebAppContext();
-            staticContext.setServer( getJetty() );
-            staticContext.setContextPath( mountPoint );
-            staticContext.setSessionHandler( sessionHandler );
-            staticContext.setInitParameter( "org.eclipse.jetty.servlet.Default.dirAllowed", "false" );
-            URL resourceLoc = getClass().getClassLoader().getResource( contentLocation );
-            if ( resourceLoc != null )
-            {
+            staticContext.setServer(getJetty());
+            staticContext.setContextPath(mountPoint);
+            staticContext.setSessionHandler(sessionHandler);
+            staticContext.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
+            URL resourceLoc = getClass().getClassLoader().getResource(contentLocation);
+            if (resourceLoc != null) {
                 URL url = resourceLoc.toURI().toURL();
-                final Resource resource = Resource.newResource( url );
-                staticContext.setBaseResource( resource );
+                final Resource resource = Resource.newResource(url);
+                staticContext.setBaseResource(resource);
 
-                addFiltersTo( staticContext );
-                staticContext.addFilter( new FilterHolder( new StaticContentFilter() ), "/*",
-                        EnumSet.of( DispatcherType.REQUEST, DispatcherType.FORWARD ) );
+                addFiltersTo(staticContext);
+                staticContext.addFilter(
+                        new FilterHolder(new StaticContentFilter()),
+                        "/*",
+                        EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD));
 
-                handlers.addHandler( staticContext );
+                handlers.addHandler(staticContext);
             }
-        }
-        catch ( Exception e )
-        {
-            log.error( "Unknown error loading static content", e );
+        } catch (Exception e) {
+            log.error("Unknown error loading static content", e);
             e.printStackTrace();
-            throw new RuntimeException( e );
+            throw new RuntimeException(e);
         }
     }
 
-    private void loadJaxRsResource( String mountPoint )
-    {
-        log.debug( "Mounting servlet at [%s]", mountPoint );
+    private void loadJaxRsResource(String mountPoint) {
+        log.debug("Mounting servlet at [%s]", mountPoint);
 
         SessionHandler sessionHandler = new SessionHandler();
-        sessionHandler.setServer( getJetty() );
-        JaxRsServletHolderFactory jaxRsServletHolderFactory = jaxRsServletHolderFactories.get( mountPoint );
+        sessionHandler.setServer(getJetty());
+        JaxRsServletHolderFactory jaxRsServletHolderFactory = jaxRsServletHolderFactories.get(mountPoint);
         ServletContextHandler jerseyContext = new ServletContextHandler();
-        jerseyContext.setServer( getJetty() );
-        jerseyContext.setErrorHandler( new NeoJettyErrorHandler() );
-        jerseyContext.setContextPath( mountPoint );
-        jerseyContext.setSessionHandler( sessionHandler );
-        jerseyContext.addServlet( jaxRsServletHolderFactory.create( binder, wadlEnabled ), "/*" );
-        addFiltersTo( jerseyContext );
-        handlers.addHandler( jerseyContext );
+        jerseyContext.setServer(getJetty());
+        jerseyContext.setErrorHandler(new NeoJettyErrorHandler());
+        jerseyContext.setContextPath(mountPoint);
+        jerseyContext.setSessionHandler(sessionHandler);
+        jerseyContext.addServlet(jaxRsServletHolderFactory.create(binder, wadlEnabled), "/*");
+        addFiltersTo(jerseyContext);
+        handlers.addHandler(jerseyContext);
     }
 
-    private void addFiltersTo( ServletContextHandler context )
-    {
-        for ( FilterDefinition filterDef : filters )
-        {
-            context.addFilter( new FilterHolder( filterDef.getFilter() ),
-                    filterDef.getPathSpec(), EnumSet.allOf( DispatcherType.class )
-            );
+    private void addFiltersTo(ServletContextHandler context) {
+        for (FilterDefinition filterDef : filters) {
+            context.addFilter(
+                    new FilterHolder(filterDef.getFilter()),
+                    filterDef.getPathSpec(),
+                    EnumSet.allOf(DispatcherType.class));
         }
     }
 
-    private static InetSocketAddress getAddress( String name, ServerConnector connector )
-    {
-        if ( connector == null )
-        {
-            throw new IllegalStateException( name + " connector is not configured" );
+    private static InetSocketAddress getAddress(String name, ServerConnector connector) {
+        if (connector == null) {
+            throw new IllegalStateException(name + " connector is not configured");
         }
-        return new InetSocketAddress( connector.getHost(), connector.getLocalPort() );
+        return new InetSocketAddress(connector.getHost(), connector.getLocalPort());
     }
 
-    private void verifyAddressConfiguration()
-    {
-        if ( httpAddress == null && httpsAddress == null )
-        {
-            throw new IllegalStateException( "Either HTTP or HTTPS address must be configured to run the server" );
+    private void verifyAddressConfiguration() {
+        if (httpAddress == null && httpsAddress == null) {
+            throw new IllegalStateException("Either HTTP or HTTPS address must be configured to run the server");
         }
     }
 
     @Override
-    public int allThreads()
-    {
-        if ( getJetty() != null )
-        {
+    public int allThreads() {
+        if (getJetty() != null) {
             return getJetty().getThreadPool().getThreads();
         }
         return -1;
     }
 
     @Override
-    public int idleThreads()
-    {
-        if ( getJetty() != null )
-        {
+    public int idleThreads() {
+        if (getJetty() != null) {
             return getJetty().getThreadPool().getIdleThreads();
         }
         return -1;
     }
 
-    private static class FilterDefinition
-    {
+    private static class FilterDefinition {
         private final Filter filter;
         private final String pathSpec;
 
-        FilterDefinition( Filter filter, String pathSpec )
-        {
+        FilterDefinition(Filter filter, String pathSpec) {
             this.filter = filter;
             this.pathSpec = pathSpec;
         }
 
-        public boolean matches( Filter filter, String pathSpec )
-        {
-            return filter == this.filter && pathSpec.equals( this.pathSpec );
+        public boolean matches(Filter filter, String pathSpec) {
+            return filter == this.filter && pathSpec.equals(this.pathSpec);
         }
 
-        public Filter getFilter()
-        {
+        public Filter getFilter() {
             return filter;
         }
 
-        String getPathSpec()
-        {
+        String getPathSpec() {
             return pathSpec;
         }
     }

@@ -19,22 +19,6 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.function.Consumer;
-
-import org.neo4j.consistency.checking.cache.CacheAccess;
-import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
-import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.consistency.statistics.Counts;
-import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.recordstorage.RelationshipCounter;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.test.Race;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -50,8 +34,21 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
-class CountsStateTest
-{
+import java.util.function.Consumer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
+import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReporter;
+import org.neo4j.consistency.statistics.Counts;
+import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.recordstorage.RelationshipCounter;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.test.Race;
+
+class CountsStateTest {
     private static final int HIGH_NODE_ID = 100;
     private static final int HIGH_TOKEN_ID = 10;
     private static final int NUMBER_OF_RACE_THREADS = 10;
@@ -65,219 +62,206 @@ class CountsStateTest
     private CacheAccess cacheAccess;
 
     @BeforeEach
-    void setUp()
-    {
-        cacheAccess = new DefaultCacheAccess( HEAP.newByteArray( HIGH_NODE_ID, new byte[MAX_SLOT_BITS], INSTANCE ), Counts.NONE, 1 );
-        cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
-        countsState = new CountsState( HIGH_TOKEN_ID, HIGH_TOKEN_ID, HIGH_NODE_ID, cacheAccess, INSTANCE );
-        noConsistencyReporter = mock( ConsistencyReporter.class );
-        when( noConsistencyReporter.forCounts( any() ) ).thenReturn( mock( ConsistencyReport.CountsConsistencyReport.class ) );
-        inconsistencyReporter = mock( ConsistencyReporter.class );
-        when( inconsistencyReporter.forCounts( any() ) ).thenReturn( mock( ConsistencyReport.CountsConsistencyReport.class ) );
-        race = new Race().withEndCondition( () -> false );
+    void setUp() {
+        cacheAccess = new DefaultCacheAccess(
+                HEAP.newByteArray(HIGH_NODE_ID, new byte[MAX_SLOT_BITS], INSTANCE), Counts.NONE, 1);
+        cacheAccess.setCacheSlotSizes(DEFAULT_SLOT_SIZES);
+        countsState = new CountsState(HIGH_TOKEN_ID, HIGH_TOKEN_ID, HIGH_NODE_ID, cacheAccess, INSTANCE);
+        noConsistencyReporter = mock(ConsistencyReporter.class);
+        when(noConsistencyReporter.forCounts(any())).thenReturn(mock(ConsistencyReport.CountsConsistencyReport.class));
+        inconsistencyReporter = mock(ConsistencyReporter.class);
+        when(inconsistencyReporter.forCounts(any())).thenReturn(mock(ConsistencyReport.CountsConsistencyReport.class));
+        race = new Race().withEndCondition(() -> false);
     }
 
     @AfterEach
-    void tearDown()
-    {
-        verifyNoInteractions( noConsistencyReporter );
+    void tearDown() {
+        verifyNoInteractions(noConsistencyReporter);
         countsState.close();
     }
 
     @Test
-    void shouldAddNumberOfUsedNodes()
-    {
+    void shouldAddNumberOfUsedNodes() {
         // when
-        race.addContestants( NUMBER_OF_RACE_THREADS, () -> countsState.incrementNodeLabel( ANY_LABEL, 5 ), NUMBER_OF_RACE_ITERATIONS );
+        race.addContestants(
+                NUMBER_OF_RACE_THREADS, () -> countsState.incrementNodeLabel(ANY_LABEL, 5), NUMBER_OF_RACE_ITERATIONS);
         race.goUnchecked();
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( noConsistencyReporter ) )
-        {
-            checker.visitNodeCount( ANY_LABEL, TOTAL_COUNT * 5 );
+        try (CountsState.CountsChecker checker = countsState.checker(noConsistencyReporter)) {
+            checker.visitNodeCount(ANY_LABEL, TOTAL_COUNT * 5);
         }
     }
 
     @Test
-    void shouldIncrementNodeCount()
-    {
+    void shouldIncrementNodeCount() {
         // when
-        race.addContestants( NUMBER_OF_RACE_THREADS, () -> countsState.incrementNodeLabel( 7, 1 ), NUMBER_OF_RACE_ITERATIONS );
+        race.addContestants(
+                NUMBER_OF_RACE_THREADS, () -> countsState.incrementNodeLabel(7, 1), NUMBER_OF_RACE_ITERATIONS);
         race.goUnchecked();
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( noConsistencyReporter ) )
-        {
-            checker.visitNodeCount( 7, TOTAL_COUNT );
+        try (CountsState.CountsChecker checker = countsState.checker(noConsistencyReporter)) {
+            checker.visitNodeCount(7, TOTAL_COUNT);
         }
     }
 
     @Test
-    void shouldIncrementNodeCountAboveHighLabelId()
-    {
+    void shouldIncrementNodeCountAboveHighLabelId() {
         // when
-        race.addContestants( NUMBER_OF_RACE_THREADS, () -> countsState.incrementNodeLabel( 70, 1 ), NUMBER_OF_RACE_ITERATIONS );
+        race.addContestants(
+                NUMBER_OF_RACE_THREADS, () -> countsState.incrementNodeLabel(70, 1), NUMBER_OF_RACE_ITERATIONS);
         race.goUnchecked();
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( noConsistencyReporter ) )
-        {
-            checker.visitNodeCount( 70, TOTAL_COUNT );
+        try (CountsState.CountsChecker checker = countsState.checker(noConsistencyReporter)) {
+            checker.visitNodeCount(70, TOTAL_COUNT);
         }
     }
 
     @Test
-    void shouldIncrementNodeCountForNegativeLabelId()
-    {
+    void shouldIncrementNodeCountForNegativeLabelId() {
         // when
-        race.addContestants( NUMBER_OF_RACE_THREADS, () -> countsState.incrementNodeLabel( -10, 1 ), NUMBER_OF_RACE_ITERATIONS );
+        race.addContestants(
+                NUMBER_OF_RACE_THREADS, () -> countsState.incrementNodeLabel(-10, 1), NUMBER_OF_RACE_ITERATIONS);
         race.goUnchecked();
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( noConsistencyReporter ) )
-        {
-            checker.visitNodeCount( -10, TOTAL_COUNT );
+        try (CountsState.CountsChecker checker = countsState.checker(noConsistencyReporter)) {
+            checker.visitNodeCount(-10, TOTAL_COUNT);
         }
     }
 
     @Test
-    void shouldReportNodeCountMismatches()
-    {
+    void shouldReportNodeCountMismatches() {
         // when
-        countsState.incrementNodeLabel( 7, 1 );
-        countsState.incrementNodeLabel( 70, 1 );
-        countsState.incrementNodeLabel( 6, 1 );
-        countsState.incrementNodeLabel( 60, 1 );
+        countsState.incrementNodeLabel(7, 1);
+        countsState.incrementNodeLabel(70, 1);
+        countsState.incrementNodeLabel(6, 1);
+        countsState.incrementNodeLabel(60, 1);
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( inconsistencyReporter ) )
-        {
+        try (CountsState.CountsChecker checker = countsState.checker(inconsistencyReporter)) {
             // visiting node count for unseen label ids
-            checker.visitNodeCount( 5, 1 );
-            checker.visitNodeCount( 50, 1 );
+            checker.visitNodeCount(5, 1);
+            checker.visitNodeCount(50, 1);
 
             // visiting node count with wrong counts
-            checker.visitNodeCount( 6, 2 );
-            checker.visitNodeCount( 60, 2 );
+            checker.visitNodeCount(6, 2);
+            checker.visitNodeCount(60, 2);
 
             // not visiting label ids 7 and 70
         }
-        verify( inconsistencyReporter, times( 6 ) ).forCounts( any() );
+        verify(inconsistencyReporter, times(6)).forCounts(any());
     }
 
     @Test
-    void shouldIncrementRelationshipCount()
-    {
+    void shouldIncrementRelationshipCount() {
         // given some labels on our nodes
-        putLabelsOnNodes( nodeLabels( 10, 1 ), nodeLabels( 20, 3 ) );
+        putLabelsOnNodes(nodeLabels(10, 1), nodeLabels(20, 3));
 
         // when
-        race.addContestants( NUMBER_OF_RACE_THREADS, id -> new RelationshipIncrementer(
-                counter -> incrementCounts( counter, relationship( 10, 2, 20 ) ) ),
-                NUMBER_OF_RACE_ITERATIONS );
+        race.addContestants(
+                NUMBER_OF_RACE_THREADS,
+                id -> new RelationshipIncrementer(counter -> incrementCounts(counter, relationship(10, 2, 20))),
+                NUMBER_OF_RACE_ITERATIONS);
         race.goUnchecked();
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( noConsistencyReporter ) )
-        {
-            visitRelationshipCountForAllPermutations( checker, 1, 2, 3, TOTAL_COUNT );
+        try (CountsState.CountsChecker checker = countsState.checker(noConsistencyReporter)) {
+            visitRelationshipCountForAllPermutations(checker, 1, 2, 3, TOTAL_COUNT);
         }
     }
 
-    private void incrementCounts( RelationshipCounter counter, RelationshipRecord relationship )
-    {
-        countsState.incrementRelationshipTypeCounts( counter, relationship );
-        countsState.incrementRelationshipNodeCounts( counter, relationship, true, true );
+    private void incrementCounts(RelationshipCounter counter, RelationshipRecord relationship) {
+        countsState.incrementRelationshipTypeCounts(counter, relationship);
+        countsState.incrementRelationshipNodeCounts(counter, relationship, true, true);
     }
 
     @Test
-    void shouldIncrementRelationshipCountAboveHighLabelId()
-    {
+    void shouldIncrementRelationshipCountAboveHighLabelId() {
         // given
-        putLabelsOnNodes( nodeLabels( 1, 50 ), nodeLabels( 3, 60 ) );
+        putLabelsOnNodes(nodeLabels(1, 50), nodeLabels(3, 60));
 
         // when
-        race.addContestants( NUMBER_OF_RACE_THREADS, id -> new RelationshipIncrementer(
-                counter -> incrementCounts( counter, relationship( 1, 2, 3 ) ) ), NUMBER_OF_RACE_ITERATIONS );
+        race.addContestants(
+                NUMBER_OF_RACE_THREADS,
+                id -> new RelationshipIncrementer(counter -> incrementCounts(counter, relationship(1, 2, 3))),
+                NUMBER_OF_RACE_ITERATIONS);
         race.goUnchecked();
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( noConsistencyReporter ) )
-        {
-            visitRelationshipCountForAllPermutations( checker, 50, 2, 60, TOTAL_COUNT );
+        try (CountsState.CountsChecker checker = countsState.checker(noConsistencyReporter)) {
+            visitRelationshipCountForAllPermutations(checker, 50, 2, 60, TOTAL_COUNT);
         }
     }
 
     @Test
-    void shouldIncrementRelationshipCountForNegativeLabelId()
-    {
+    void shouldIncrementRelationshipCountForNegativeLabelId() {
         // given
-        putLabelsOnNodes( nodeLabels( 1, -50 ), nodeLabels( 3, -60 ) );
+        putLabelsOnNodes(nodeLabels(1, -50), nodeLabels(3, -60));
 
         // when
-        race.addContestants( NUMBER_OF_RACE_THREADS, id -> new RelationshipIncrementer(
-                counter -> incrementCounts( counter, relationship( 1, 2, 3 ) ) ), NUMBER_OF_RACE_ITERATIONS );
+        race.addContestants(
+                NUMBER_OF_RACE_THREADS,
+                id -> new RelationshipIncrementer(counter -> incrementCounts(counter, relationship(1, 2, 3))),
+                NUMBER_OF_RACE_ITERATIONS);
         race.goUnchecked();
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( noConsistencyReporter ) )
-        {
-            visitRelationshipCountForAllPermutations( checker, -50, 2, -60, TOTAL_COUNT );
+        try (CountsState.CountsChecker checker = countsState.checker(noConsistencyReporter)) {
+            visitRelationshipCountForAllPermutations(checker, -50, 2, -60, TOTAL_COUNT);
         }
     }
 
     @Test
-    void shouldIncrementRelationshipCountAboveHighRelationshipTypeId()
-    {
+    void shouldIncrementRelationshipCountAboveHighRelationshipTypeId() {
         // given
-        putLabelsOnNodes( nodeLabels( 1, 5 ), nodeLabels( 3, 7 ) );
+        putLabelsOnNodes(nodeLabels(1, 5), nodeLabels(3, 7));
 
         // when
-        race.addContestants( NUMBER_OF_RACE_THREADS, id -> new RelationshipIncrementer(
-                counter -> incrementCounts( counter, relationship( 1, 27, 3 ) ) ), NUMBER_OF_RACE_ITERATIONS );
+        race.addContestants(
+                NUMBER_OF_RACE_THREADS,
+                id -> new RelationshipIncrementer(counter -> incrementCounts(counter, relationship(1, 27, 3))),
+                NUMBER_OF_RACE_ITERATIONS);
         race.goUnchecked();
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( noConsistencyReporter ) )
-        {
-            visitRelationshipCountForAllPermutations( checker, 5, 27, 7, TOTAL_COUNT );
+        try (CountsState.CountsChecker checker = countsState.checker(noConsistencyReporter)) {
+            visitRelationshipCountForAllPermutations(checker, 5, 27, 7, TOTAL_COUNT);
         }
     }
 
     @Test
-    void shouldIncrementRelationshipCountForNegativeHighRelationshipTypeId()
-    {
+    void shouldIncrementRelationshipCountForNegativeHighRelationshipTypeId() {
         // given
-        putLabelsOnNodes( nodeLabels( 1, 5 ), nodeLabels( 3, 7 ) );
+        putLabelsOnNodes(nodeLabels(1, 5), nodeLabels(3, 7));
 
         // when
-        race.addContestants( NUMBER_OF_RACE_THREADS, id -> new RelationshipIncrementer(
-                counter -> incrementCounts( counter, relationship( 1, -27, 3 ) ) ), NUMBER_OF_RACE_ITERATIONS );
+        race.addContestants(
+                NUMBER_OF_RACE_THREADS,
+                id -> new RelationshipIncrementer(counter -> incrementCounts(counter, relationship(1, -27, 3))),
+                NUMBER_OF_RACE_ITERATIONS);
         race.goUnchecked();
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( noConsistencyReporter ) )
-        {
-            visitRelationshipCountForAllPermutations( checker, 5, -27, 7, TOTAL_COUNT );
+        try (CountsState.CountsChecker checker = countsState.checker(noConsistencyReporter)) {
+            visitRelationshipCountForAllPermutations(checker, 5, -27, 7, TOTAL_COUNT);
         }
     }
 
     @Test
-    void shouldReportRelationshipCountMismatches()
-    {
+    void shouldReportRelationshipCountMismatches() {
         // when
         RelationshipCounter counter = countsState.instantiateRelationshipCounter();
         long node1 = 1;
         long node2 = 2;
         long node3 = 3;
-        putLabelsOnNodes(
-                nodeLabels( node1, 7 ),
-                nodeLabels( node2, 6 ),
-                nodeLabels( node3, 70 ) );
-        incrementCounts( counter, relationship( node1, 1, node2 ) );
-        incrementCounts( counter, relationship( node1, 1, node3 ) );
-        incrementCounts( counter, relationship( node1, 100, node2 ) );
-        incrementCounts( counter, relationship( node1, 100, node3 ) );
+        putLabelsOnNodes(nodeLabels(node1, 7), nodeLabels(node2, 6), nodeLabels(node3, 70));
+        incrementCounts(counter, relationship(node1, 1, node2));
+        incrementCounts(counter, relationship(node1, 1, node3));
+        incrementCounts(counter, relationship(node1, 100, node2));
+        incrementCounts(counter, relationship(node1, 100, node3));
 
         // The increments above results in the following actual increments:
         // Combination      Count
@@ -296,72 +280,74 @@ class CountsStateTest
         // ANY,ANY,70       2
 
         // then
-        try ( CountsState.CountsChecker checker = countsState.checker( inconsistencyReporter ) )
-        {
+        try (CountsState.CountsChecker checker = countsState.checker(inconsistencyReporter)) {
             // visiting unseen relationship counts
-            checker.visitRelationshipCount( 2, 1, ANY_LABEL, 1 );
-            checker.visitRelationshipCount( 6, 2, ANY_LABEL, 1 );
-            checker.visitRelationshipCount( ANY_LABEL, 1, 8, 1 );
-            checker.visitRelationshipCount( ANY_LABEL, 100, 71, 1 );
-            checker.visitRelationshipCount( 7, 99, ANY_LABEL, 1 );
-            checker.visitRelationshipCount( ANY_LABEL, 100, 7, 1 );
+            checker.visitRelationshipCount(2, 1, ANY_LABEL, 1);
+            checker.visitRelationshipCount(6, 2, ANY_LABEL, 1);
+            checker.visitRelationshipCount(ANY_LABEL, 1, 8, 1);
+            checker.visitRelationshipCount(ANY_LABEL, 100, 71, 1);
+            checker.visitRelationshipCount(7, 99, ANY_LABEL, 1);
+            checker.visitRelationshipCount(ANY_LABEL, 100, 7, 1);
 
             // visiting wrong counts
-            checker.visitRelationshipCount( ANY_LABEL, 1, 6, 999 );
-            checker.visitRelationshipCount( 7, 100, ANY_LABEL, 999 );
+            checker.visitRelationshipCount(ANY_LABEL, 1, 6, 999);
+            checker.visitRelationshipCount(7, 100, ANY_LABEL, 999);
 
             // not visiting 10 counts
         }
-        verify( inconsistencyReporter, times( 18 ) ).forCounts( any() );
+        verify(inconsistencyReporter, times(18)).forCounts(any());
     }
 
-    private static void visitRelationshipCountForAllPermutations( CountsState.CountsChecker checker, int startLabel, int relationshipType, int endLabel,
-            long count )
-    {
-        checker.visitRelationshipCount( startLabel, relationshipType, ANY_LABEL, count );
-        checker.visitRelationshipCount( startLabel, ANY_RELATIONSHIP_TYPE, ANY_LABEL, count );
-        checker.visitRelationshipCount( ANY_LABEL, relationshipType, endLabel, count );
-        checker.visitRelationshipCount( ANY_LABEL, relationshipType, ANY_LABEL, count );
-        checker.visitRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, endLabel, count );
-        checker.visitRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, count );
+    private static void visitRelationshipCountForAllPermutations(
+            CountsState.CountsChecker checker, int startLabel, int relationshipType, int endLabel, long count) {
+        checker.visitRelationshipCount(startLabel, relationshipType, ANY_LABEL, count);
+        checker.visitRelationshipCount(startLabel, ANY_RELATIONSHIP_TYPE, ANY_LABEL, count);
+        checker.visitRelationshipCount(ANY_LABEL, relationshipType, endLabel, count);
+        checker.visitRelationshipCount(ANY_LABEL, relationshipType, ANY_LABEL, count);
+        checker.visitRelationshipCount(ANY_LABEL, ANY_RELATIONSHIP_TYPE, endLabel, count);
+        checker.visitRelationshipCount(ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, count);
     }
 
     @SafeVarargs
-    private void putLabelsOnNodes( Pair<Long,long[]>... labelDefinitions )
-    {
+    private void putLabelsOnNodes(Pair<Long, long[]>... labelDefinitions) {
         CacheAccess.Client client = cacheAccess.client();
-        for ( Pair<Long,long[]> labelDefinition : labelDefinitions )
-        {
-            long index = countsState.cacheDynamicNodeLabels( labelDefinition.other() );
-            client.putToCacheSingle( labelDefinition.first(), SLOT_LABELS, index );
+        for (Pair<Long, long[]> labelDefinition : labelDefinitions) {
+            long index = countsState.cacheDynamicNodeLabels(labelDefinition.other());
+            client.putToCacheSingle(labelDefinition.first(), SLOT_LABELS, index);
         }
     }
 
-    private static Pair<Long,long[]> nodeLabels( long nodeId, long... labelIds )
-    {
-        return Pair.of( nodeId, labelIds );
+    private static Pair<Long, long[]> nodeLabels(long nodeId, long... labelIds) {
+        return Pair.of(nodeId, labelIds);
     }
 
-    private static RelationshipRecord relationship( long startNodeId, int relationshipType, long endNodeId )
-    {
-        return new RelationshipRecord( 0 ).initialize( true, NULL_REFERENCE.longValue(), startNodeId, endNodeId, relationshipType,
-                NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), true, true );
+    private static RelationshipRecord relationship(long startNodeId, int relationshipType, long endNodeId) {
+        return new RelationshipRecord(0)
+                .initialize(
+                        true,
+                        NULL_REFERENCE.longValue(),
+                        startNodeId,
+                        endNodeId,
+                        relationshipType,
+                        NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue(),
+                        true,
+                        true);
     }
 
-    private class RelationshipIncrementer implements Runnable
-    {
+    private class RelationshipIncrementer implements Runnable {
         private final RelationshipCounter counter = countsState.instantiateRelationshipCounter();
         private final Consumer<RelationshipCounter> increment;
 
-        RelationshipIncrementer( Consumer<RelationshipCounter> increment )
-        {
+        RelationshipIncrementer(Consumer<RelationshipCounter> increment) {
             this.increment = increment;
         }
 
         @Override
-        public void run()
-        {
-            increment.accept( counter );
+        public void run() {
+            increment.accept(counter);
         }
     }
 }

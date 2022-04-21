@@ -19,60 +19,54 @@
  */
 package org.neo4j.consistency.checking.cache;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.statistics.DefaultCounts;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-class DefaultClientTest
-{
+class DefaultClientTest {
     private static ExecutorService executor;
 
     @BeforeAll
-    static void setUp()
-    {
+    static void setUp() {
         executor = Executors.newSingleThreadExecutor();
     }
 
     @AfterAll
-    static void tearDown()
-    {
+    static void tearDown() {
         executor.shutdown();
     }
 
     @Test
-    void checkClientsIdBounds() throws ExecutionException, InterruptedException
-    {
+    void checkClientsIdBounds() throws ExecutionException, InterruptedException {
         int threads = 2;
-        DefaultCounts counts = new DefaultCounts( threads );
-        DefaultCacheAccess cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( 100, INSTANCE ), counts, threads );
-        cacheAccess.prepareForProcessingOfSingleStore( 34 );
+        DefaultCounts counts = new DefaultCounts(threads);
+        DefaultCacheAccess cacheAccess =
+                new DefaultCacheAccess(DefaultCacheAccess.defaultByteArray(100, INSTANCE), counts, threads);
+        cacheAccess.prepareForProcessingOfSingleStore(34);
 
         CacheAccess.Client client1 = cacheAccess.client();
-        assertTrue( client1.withinBounds( 0 ) );
-        assertTrue( client1.withinBounds( 10 ) );
-        assertTrue( client1.withinBounds( 33 ) );
-        assertFalse( client1.withinBounds( 34 ) );
+        assertTrue(client1.withinBounds(0));
+        assertTrue(client1.withinBounds(10));
+        assertTrue(client1.withinBounds(33));
+        assertFalse(client1.withinBounds(34));
 
-        Future<?> secondClientIdChecks = executor.submit( () ->
-        {
+        Future<?> secondClientIdChecks = executor.submit(() -> {
             CacheAccess.Client client = cacheAccess.client();
-            assertFalse( client.withinBounds( 5 ) );
-            assertFalse( client.withinBounds( 33 ) );
-            assertTrue( client.withinBounds( 34 ) );
-            assertTrue( client.withinBounds( 67 ) );
-            assertFalse( client.withinBounds( 68 ) );
-        } );
+            assertFalse(client.withinBounds(5));
+            assertFalse(client.withinBounds(33));
+            assertTrue(client.withinBounds(34));
+            assertTrue(client.withinBounds(67));
+            assertFalse(client.withinBounds(68));
+        });
         secondClientIdChecks.get();
     }
 }

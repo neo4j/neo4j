@@ -19,32 +19,28 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.Bits;
-
 import static java.lang.Integer.numberOfLeadingZeros;
 import static java.lang.Math.max;
+
+import java.util.concurrent.atomic.AtomicLong;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Bits;
 
 /**
  * Caches labels for each node. Tries to keep memory as 8b (a long) per node. If a particular node has many labels
  * it will spill over into two or more longs in a separate array.
  */
-public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoCloseable
-{
-    public static class Client
-    {
+public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoCloseable {
+    public static class Client {
         private final long[] labelScratch;
         private final Bits labelBits;
         private final long[] fieldScratch = new long[1];
-        private final Bits fieldBits = Bits.bitsFromLongs( fieldScratch );
+        private final Bits fieldBits = Bits.bitsFromLongs(fieldScratch);
         private long[] target = new long[20];
 
-        public Client( int worstCaseLongsNeeded )
-        {
+        public Client(int worstCaseLongsNeeded) {
             this.labelScratch = new long[worstCaseLongsNeeded];
-            this.labelBits = Bits.bitsFromLongs( labelScratch );
+            this.labelBits = Bits.bitsFromLongs(labelScratch);
         }
     }
 
@@ -55,18 +51,23 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
     private final int worstCaseLongsNeeded;
     private final Client putClient;
 
-    public NodeLabelsCache( NumberArrayFactory cacheFactory, long highNodeId, int highLabelId, MemoryTracker memoryTracker )
-    {
-        this( cacheFactory, highNodeId, highLabelId, 2_000_000, memoryTracker );
+    public NodeLabelsCache(
+            NumberArrayFactory cacheFactory, long highNodeId, int highLabelId, MemoryTracker memoryTracker) {
+        this(cacheFactory, highNodeId, highLabelId, 2_000_000, memoryTracker);
     }
 
-    public NodeLabelsCache( NumberArrayFactory cacheFactory, long highNodeId, int highLabelId, int spillOverChunkSize, MemoryTracker memoryTracker )
-    {
-        this.cache = cacheFactory.newLongArray( highNodeId, 0, memoryTracker );
-        this.spillOver = cacheFactory.newDynamicLongArray( spillOverChunkSize, 0, memoryTracker ); // expect way less of these
-        this.bitsPerLabel = max( Integer.SIZE - numberOfLeadingZeros( highLabelId ), 1 );
+    public NodeLabelsCache(
+            NumberArrayFactory cacheFactory,
+            long highNodeId,
+            int highLabelId,
+            int spillOverChunkSize,
+            MemoryTracker memoryTracker) {
+        this.cache = cacheFactory.newLongArray(highNodeId, 0, memoryTracker);
+        this.spillOver =
+                cacheFactory.newDynamicLongArray(spillOverChunkSize, 0, memoryTracker); // expect way less of these
+        this.bitsPerLabel = max(Integer.SIZE - numberOfLeadingZeros(highLabelId), 1);
         this.worstCaseLongsNeeded = ((bitsPerLabel * (highLabelId + 1 /*length slot*/)) - 1) / Long.SIZE + 1;
-        this.putClient = new Client( worstCaseLongsNeeded );
+        this.putClient = new Client(worstCaseLongsNeeded);
     }
 
     /**
@@ -74,14 +75,12 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
      * mutable state and so each thread calling {@link #get(Client, long)} must create their own
      * client instance once and (re)use it for every get-call they do.
      */
-    public Client newClient()
-    {
-        return new Client( worstCaseLongsNeeded );
+    public Client newClient() {
+        return new Client(worstCaseLongsNeeded);
     }
 
-    public void put( long nodeId, long[] labelIds )
-    {
-        put( putClient, nodeId, labelIds );
+    public void put(long nodeId, long[] labelIds) {
+        put(putClient, nodeId, labelIds);
     }
 
     /**
@@ -96,35 +95,29 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
      * This method may only be called by a single thread, putting from multiple threads may cause undeterministic
      * behaviour.
      */
-    public void put( Client putClient, long nodeId, long[] labelIds )
-    {
-        putClient.labelBits.clear( true );
-        putClient.labelBits.put( labelIds.length, bitsPerLabel );
-        for ( long labelId : labelIds )
-        {
-            putClient.labelBits.put( (int) labelId, bitsPerLabel );
+    public void put(Client putClient, long nodeId, long[] labelIds) {
+        putClient.labelBits.clear(true);
+        putClient.labelBits.put(labelIds.length, bitsPerLabel);
+        for (long labelId : labelIds) {
+            putClient.labelBits.put((int) labelId, bitsPerLabel);
         }
 
         int longsInUse = putClient.labelBits.longsInUse();
         assert longsInUse > 0 : "Uhm";
-        if ( longsInUse == 1 )
-        {   // We only require one long, so put it right in there
-            cache.set( nodeId, putClient.labelScratch[0] );
-        }
-        else
-        {   // Now it gets tricky, we have to spill over into another array
+        if (longsInUse == 1) { // We only require one long, so put it right in there
+            cache.set(nodeId, putClient.labelScratch[0]);
+        } else { // Now it gets tricky, we have to spill over into another array
             // So create the reference
-            putClient.fieldBits.clear( true );
-            putClient.fieldBits.put( labelIds.length, bitsPerLabel );
-            long spillOverIndex = this.spillOverIndex.getAndAdd( longsInUse );
-            putClient.fieldBits.put( spillOverIndex, Long.SIZE - bitsPerLabel );
-            cache.set( nodeId, putClient.fieldBits.getLongs()[0] );
+            putClient.fieldBits.clear(true);
+            putClient.fieldBits.put(labelIds.length, bitsPerLabel);
+            long spillOverIndex = this.spillOverIndex.getAndAdd(longsInUse);
+            putClient.fieldBits.put(spillOverIndex, Long.SIZE - bitsPerLabel);
+            cache.set(nodeId, putClient.fieldBits.getLongs()[0]);
 
             // And set the longs in the spill over array. For simplicity we put the encoded bits as they
             // are right into the spill over array, where the first slot will have the length "again".
-            for ( int i = 0; i < longsInUse; i++ )
-            {
-                spillOver.set( spillOverIndex++, putClient.labelScratch[i] );
+            for (int i = 0; i < longsInUse; i++) {
+                spillOver.set(spillOverIndex++, putClient.labelScratch[i]);
             }
         }
     }
@@ -136,70 +129,56 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
      * Multiple threads may call this method simultaneously, given that they do so with each their own {@link Client}
      * instance.
      */
-    public long[] get( Client client, long nodeId )
-    {
+    public long[] get(Client client, long nodeId) {
         // make this field available to our Bits instance, hackish? meh
-        client.fieldBits.clear( false );
-        client.fieldScratch[0] = cache.get( nodeId );
-        if ( client.fieldScratch[0] == 0 )
-        {   // Nothing here
+        client.fieldBits.clear(false);
+        client.fieldScratch[0] = cache.get(nodeId);
+        if (client.fieldScratch[0] == 0) { // Nothing here
             client.target[0] = -1; // mark the end
             return client.target;
         }
 
-        int length = client.fieldBits.getInt( bitsPerLabel );
+        int length = client.fieldBits.getInt(bitsPerLabel);
         int longsInUse = ((bitsPerLabel * (length + 1)) - 1) / Long.SIZE + 1;
-        client.target = ensureCapacity( client.target, length );
-        if ( longsInUse == 1 )
-        {
-            decode( client.fieldBits, length, client.target );
-        }
-        else
-        {
+        client.target = ensureCapacity(client.target, length);
+        if (longsInUse == 1) {
+            decode(client.fieldBits, length, client.target);
+        } else {
             // Read data from spill over cache into the label bits array for decoding
-            long spillOverIndex = client.fieldBits.getLong( Long.SIZE - bitsPerLabel );
-            client.labelBits.clear( false );
-            for ( int i = 0; i < longsInUse; i++ )
-            {
-                client.labelScratch[i] = spillOver.get( spillOverIndex + i );
+            long spillOverIndex = client.fieldBits.getLong(Long.SIZE - bitsPerLabel);
+            client.labelBits.clear(false);
+            for (int i = 0; i < longsInUse; i++) {
+                client.labelScratch[i] = spillOver.get(spillOverIndex + i);
             }
-            client.labelBits.getInt( bitsPerLabel ); // first one ignored, since it's just the length
-            decode( client.labelBits, length, client.target );
+            client.labelBits.getInt(bitsPerLabel); // first one ignored, since it's just the length
+            decode(client.labelBits, length, client.target);
         }
 
         return client.target;
     }
 
     @Override
-    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-    {
-        cache.acceptMemoryStatsVisitor( visitor );
-        spillOver.acceptMemoryStatsVisitor( visitor );
+    public void acceptMemoryStatsVisitor(MemoryStatsVisitor visitor) {
+        cache.acceptMemoryStatsVisitor(visitor);
+        spillOver.acceptMemoryStatsVisitor(visitor);
     }
 
-    private void decode( Bits bits, int length, long[] target )
-    {
-        for ( int i = 0; i < length; i++ )
-        {
-            target[i] = bits.getInt( bitsPerLabel );
+    private void decode(Bits bits, int length, long[] target) {
+        for (int i = 0; i < length; i++) {
+            target[i] = bits.getInt(bitsPerLabel);
         }
 
-        if ( target.length > length )
-        {   // we have to mark the end here, since the target array is larger
+        if (target.length > length) { // we have to mark the end here, since the target array is larger
             target[length] = -1;
         }
     }
 
-    private static long[] ensureCapacity( long[] target, int capacity )
-    {
-        return capacity > target.length
-                ? new long[capacity]
-                : target;
+    private static long[] ensureCapacity(long[] target, int capacity) {
+        return capacity > target.length ? new long[capacity] : target;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         cache.close();
         spillOver.close();
     }

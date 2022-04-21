@@ -60,7 +60,7 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case m@Match(_, pattern: Pattern, _, where: Option[Where]) =>
+    case m @ Match(_, pattern: Pattern, _, where: Option[Where]) =>
       val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
       if (uniqueRels.size < 2) {
         m
@@ -68,7 +68,7 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
         val newWhere = addPredicate(m, uniqueRels, where)
         m.copy(where = newWhere)(m.position)
       }
-    case m@Merge(pattern: PatternPart, _, where: Option[Where]) =>
+    case m @ Merge(pattern: PatternPart, _, where: Option[Where]) =>
       val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
       if (uniqueRels.size < 2) {
         m
@@ -78,7 +78,7 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
       }
   }
 
-  private def addPredicate(clause: Clause, uniqueRels:  Seq[UniqueRel], where: Option[Where]): Option[Where] = {
+  private def addPredicate(clause: Clause, uniqueRels: Seq[UniqueRel], where: Option[Where]): Option[Where] = {
     val maybePredicate: Option[Expression] = createPredicateFor(uniqueRels, clause.position)
     val newWhere: Option[Where] = (where, maybePredicate) match {
       case (Some(oldWhere), Some(newPredicate)) =>
@@ -96,15 +96,16 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
 
   def collectUniqueRels(pattern: ASTNode): Seq[UniqueRel] =
     pattern.folder.treeFold(Seq.empty[UniqueRel]) {
-      case _:ScopeExpression =>
+      case _: ScopeExpression =>
         acc => SkipChildren(acc)
 
       case _: ShortestPaths =>
         acc => SkipChildren(acc)
 
-      case RelationshipChain(_, patRel@RelationshipPattern(optIdent, types, _, _, _, _, _), _) =>
+      case RelationshipChain(_, patRel @ RelationshipPattern(optIdent, types, _, _, _, _, _), _) =>
         acc => {
-          val ident = optIdent.getOrElse(throw new IllegalStateException("This rewriter cannot work with unnamed patterns"))
+          val ident =
+            optIdent.getOrElse(throw new IllegalStateException("This rewriter cannot work with unnamed patterns"))
           TraverseChildren(acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength))
         }
     }
@@ -133,7 +134,11 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
         case (false, false) =>
           val innerX = Variable(anonymousVariableNameGenerator.nextName)(x.variable.position)
           val innerY = Variable(anonymousVariableNameGenerator.nextName)(y.variable.position)
-          NoneIterablePredicate(innerX, x.variable.copyId, Some(AnyIterablePredicate(innerY, y.variable.copyId, Some(Equals(innerX.copyId, innerY.copyId)(pos)))(pos)))(pos)
+          NoneIterablePredicate(
+            innerX,
+            x.variable.copyId,
+            Some(AnyIterablePredicate(innerY, y.variable.copyId, Some(Equals(innerX.copyId, innerY.copyId)(pos)))(pos))
+          )(pos)
       }
     }
 
@@ -146,6 +151,7 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
 }
 
 object AddUniquenessPredicates extends Step with ASTRewriterFactory {
+
   override def preConditions: Set[StepSequencer.Condition] = Set(
     noUnnamedPatternElementsInMatch,
     noUnnamedPatternElementsInPatternComprehension
@@ -155,11 +161,13 @@ object AddUniquenessPredicates extends Step with ASTRewriterFactory {
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = AddUniquenessPredicates(anonymousVariableNameGenerator)
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = AddUniquenessPredicates(anonymousVariableNameGenerator)
 }

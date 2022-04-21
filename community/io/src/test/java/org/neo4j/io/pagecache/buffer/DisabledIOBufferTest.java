@@ -19,25 +19,22 @@
  */
 package org.neo4j.io.pagecache.buffer;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.io.pagecache.buffer.DisabledIOBuffer.DISABLED_IO_BUFFER;
 
-class DisabledIOBufferTest
-{
+import org.junit.jupiter.api.Test;
+
+class DisabledIOBufferTest {
     @Test
-    void disabledBufferDoesNotHaveAnyCapacity()
-    {
-        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 0, 1 ) );
-        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( -1, 2 ) );
-        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 1, 3 ) );
-        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 42, 4 ) );
+    void disabledBufferDoesNotHaveAnyCapacity() {
+        assertFalse(DISABLED_IO_BUFFER.hasMoreCapacity(0, 1));
+        assertFalse(DISABLED_IO_BUFFER.hasMoreCapacity(-1, 2));
+        assertFalse(DISABLED_IO_BUFFER.hasMoreCapacity(1, 3));
+        assertFalse(DISABLED_IO_BUFFER.hasMoreCapacity(42, 4));
     }
 
     @Test
-    void disabledBufferIsNotEnabled()
-    {
-        assertFalse( DISABLED_IO_BUFFER.isEnabled() );
+    void disabledBufferIsNotEnabled() {
+        assertFalse(DISABLED_IO_BUFFER.isEnabled());
     }
 }

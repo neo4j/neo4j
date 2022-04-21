@@ -51,8 +51,8 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
   }
 
   test("Close should close current RHS and LHS.") {
-    val lhs = new FakePipe(Seq(Map("a"->10),Map("a"->11)))
-    val rhs = new FakePipe(Seq(Map("b"->20),Map("b"->21)))
+    val lhs = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11)))
+    val rhs = new FakePipe(Seq(Map("b" -> 20), Map("b" -> 21)))
     val pipe = ApplyPipe(lhs, rhs)()
     val result = pipe.createResults(QueryStateHelper.empty)
     result.next() // First row

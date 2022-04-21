@@ -19,58 +19,40 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.jupiter.api.Test;
-
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.map;
 
-class MapTest
-{
-    @Test
-    void shouldBeEqualToItself()
-    {
-        assertEqual(
-                map( "1", false, "20", new short[]{4} ),
-                map( "1", false, "20", new short[]{4} ) );
+import org.junit.jupiter.api.Test;
 
-        assertEqual(
-                map( "1", 101L, "20", "yo" ),
-                map( "1", 101L, "20", "yo" ) );
+class MapTest {
+    @Test
+    void shouldBeEqualToItself() {
+        assertEqual(map("1", false, "20", new short[] {4}), map("1", false, "20", new short[] {4}));
+
+        assertEqual(map("1", 101L, "20", "yo"), map("1", 101L, "20", "yo"));
     }
 
     @Test
-    void shouldCoerce()
-    {
-        assertEqual(
-                map( "1", 1, "20", 'a' ),
-                map( "1", 1.0, "20", "a" ) );
+    void shouldCoerce() {
+        assertEqual(map("1", 1, "20", 'a'), map("1", 1.0, "20", "a"));
 
         assertEqual(
-                map( "1", new byte[]{1}, "20", new String[]{"x"} ),
-                map( "1", new short[]{1}, "20", new char[]{'x'} ) );
+                map("1", new byte[] {1}, "20", new String[] {"x"}), map("1", new short[] {1}, "20", new char[] {'x'}));
 
         assertEqual(
-                map( "1", new int[]{1}, "20", new double[]{2.0} ),
-                map( "1", new float[]{1.0f}, "20", new float[]{2.0f} ) );
+                map("1", new int[] {1}, "20", new double[] {2.0}),
+                map("1", new float[] {1.0f}, "20", new float[] {2.0f}));
     }
 
     @Test
-    void shouldRecurse()
-    {
-        assertEqual(
-                map( "1", map( "2", map( "3", "hi" ) ) ),
-                map( "1", map( "2", map( "3", "hi" ) ) ) );
+    void shouldRecurse() {
+        assertEqual(map("1", map("2", map("3", "hi"))), map("1", map("2", map("3", "hi"))));
     }
 
     @Test
-    void shouldRecurseAndCoerce()
-    {
-        assertEqual(
-                map( "1", map( "2", map( "3", "x" ) ) ),
-                map( "1", map( "2", map( "3", 'x' ) ) ) );
+    void shouldRecurseAndCoerce() {
+        assertEqual(map("1", map("2", map("3", "x"))), map("1", map("2", map("3", 'x'))));
 
-        assertEqual(
-                map( "1", map( "2", map( "3", 1.0 ) ) ),
-                map( "1", map( "2", map( "3", 1 ) ) ) );
+        assertEqual(map("1", map("2", map("3", 1.0))), map("1", map("2", map("3", 1))));
     }
 }

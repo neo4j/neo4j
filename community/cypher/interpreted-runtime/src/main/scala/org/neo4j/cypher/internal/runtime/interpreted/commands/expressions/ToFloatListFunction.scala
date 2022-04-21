@@ -25,13 +25,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
-case class ToFloatListFunction(arg: Expression) extends NullInNullOutExpression(arg){
+case class ToFloatListFunction(arg: Expression) extends NullInNullOutExpression(arg) {
 
   override def arguments: Seq[Expression] = Seq(arg)
 
   override def rewrite(f: Expression => Expression): Expression = f(ToFloatListFunction(arg.rewrite(f)))
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.toFloatList(value)
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toFloatList(value)
 
   override def children: Seq[AstNode[_]] = Seq(arg)
 }

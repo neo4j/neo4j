@@ -19,9 +19,30 @@
  */
 package org.neo4j.cypher.operations;
 
+import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDate;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDateTime;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDuration;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalDateTime;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalTime;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
+import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe;
@@ -55,34 +76,10 @@ import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDate;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDateTime;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDuration;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalDateTime;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalTime;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
-import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
-@SuppressWarnings( {"WeakerAccess"} )
-public final class CypherCoercions
-{
-    private CypherCoercions()
-    {
-        throw new UnsupportedOperationException( "do not instantiate" );
+@SuppressWarnings({"WeakerAccess"})
+public final class CypherCoercions {
+    private CypherCoercions() {
+        throw new UnsupportedOperationException("do not instantiate");
     }
 
     /**
@@ -91,304 +88,244 @@ public final class CypherCoercions
      *
      * TODO: makeValueNeoSafe is not fast, rewrite it here and use this method instead.
      */
-    public static Value asStorableValue( AnyValue value )
-    {
-        return makeValueNeoSafe.apply( value );
+    public static Value asStorableValue(AnyValue value) {
+        return makeValueNeoSafe.apply(value);
     }
 
-    public static TextValue asTextValue( AnyValue value )
-    {
+    public static TextValue asTextValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof TextValue) )
-        {
-            throw cantCoerce( value, "String" );
+        if (!(value instanceof TextValue)) {
+            throw cantCoerce(value, "String");
         }
         return (TextValue) value;
     }
 
-    public static VirtualNodeValue asNodeValue( AnyValue value )
-    {
+    public static VirtualNodeValue asNodeValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof VirtualNodeValue) )
-        {
-            throw cantCoerce( value, "Node" );
+        if (!(value instanceof VirtualNodeValue)) {
+            throw cantCoerce(value, "Node");
         }
         return (VirtualNodeValue) value;
     }
 
-    public static VirtualRelationshipValue asRelationshipValue( AnyValue value )
-    {
+    public static VirtualRelationshipValue asRelationshipValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof VirtualRelationshipValue) )
-        {
-            throw cantCoerce( value, "Relationship" );
+        if (!(value instanceof VirtualRelationshipValue)) {
+            throw cantCoerce(value, "Relationship");
         }
         return (VirtualRelationshipValue) value;
     }
 
-    public static VirtualPathValue asPathValue( AnyValue value )
-    {
+    public static VirtualPathValue asPathValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof VirtualPathValue) )
-        {
-            throw cantCoerce( value, "Path" );
+        if (!(value instanceof VirtualPathValue)) {
+            throw cantCoerce(value, "Path");
         }
         return (VirtualPathValue) value;
     }
 
-    public static IntegralValue asIntegralValue( AnyValue value )
-    {
+    public static IntegralValue asIntegralValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof NumberValue) )
-        {
-            throw cantCoerce( value, "Integer" );
+        if (!(value instanceof NumberValue)) {
+            throw cantCoerce(value, "Integer");
         }
-        return Values.longValue( ((NumberValue) value).longValue() );
+        return Values.longValue(((NumberValue) value).longValue());
     }
 
-    public static FloatingPointValue asFloatingPointValue( AnyValue value )
-    {
+    public static FloatingPointValue asFloatingPointValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof NumberValue) )
-        {
-            throw cantCoerce( value, "Float" );
+        if (!(value instanceof NumberValue)) {
+            throw cantCoerce(value, "Float");
         }
-        return Values.doubleValue( ((NumberValue) value).doubleValue() );
+        return Values.doubleValue(((NumberValue) value).doubleValue());
     }
 
-    public static BooleanValue asBooleanValue( AnyValue value )
-    {
+    public static BooleanValue asBooleanValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof BooleanValue) )
-        {
-            throw cantCoerce( value, "Boolean" );
+        if (!(value instanceof BooleanValue)) {
+            throw cantCoerce(value, "Boolean");
         }
         return (BooleanValue) value;
     }
 
-    public static NumberValue asNumberValue( AnyValue value )
-    {
+    public static NumberValue asNumberValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof NumberValue) )
-        {
-            throw cantCoerce( value, "Number" );
+        if (!(value instanceof NumberValue)) {
+            throw cantCoerce(value, "Number");
         }
         return (NumberValue) value;
     }
 
-    public static PointValue asPointValue( AnyValue value )
-    {
+    public static PointValue asPointValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof PointValue) )
-        {
-            throw cantCoerce( value, "Point" );
+        if (!(value instanceof PointValue)) {
+            throw cantCoerce(value, "Point");
         }
         return (PointValue) value;
     }
 
-    public static DateValue asDateValue( AnyValue value )
-    {
+    public static DateValue asDateValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof DateValue) )
-        {
-            throw cantCoerce( value, "Date" );
+        if (!(value instanceof DateValue)) {
+            throw cantCoerce(value, "Date");
         }
         return (DateValue) value;
     }
 
-    public static TimeValue asTimeValue( AnyValue value )
-    {
+    public static TimeValue asTimeValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof TimeValue) )
-        {
-            throw cantCoerce( value, "Time" );
+        if (!(value instanceof TimeValue)) {
+            throw cantCoerce(value, "Time");
         }
         return (TimeValue) value;
     }
 
-    public static LocalTimeValue asLocalTimeValue( AnyValue value )
-    {
+    public static LocalTimeValue asLocalTimeValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof LocalTimeValue) )
-        {
-            throw cantCoerce( value, "LocalTime" );
+        if (!(value instanceof LocalTimeValue)) {
+            throw cantCoerce(value, "LocalTime");
         }
         return (LocalTimeValue) value;
     }
 
-    public static LocalDateTimeValue asLocalDateTimeValue( AnyValue value )
-    {
+    public static LocalDateTimeValue asLocalDateTimeValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof LocalDateTimeValue) )
-        {
-            throw cantCoerce( value, "LocalDateTime" );
+        if (!(value instanceof LocalDateTimeValue)) {
+            throw cantCoerce(value, "LocalDateTime");
         }
         return (LocalDateTimeValue) value;
     }
 
-    public static DateTimeValue asDateTimeValue( AnyValue value )
-    {
+    public static DateTimeValue asDateTimeValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof DateTimeValue) )
-        {
-            throw cantCoerce( value, "DateTime" );
+        if (!(value instanceof DateTimeValue)) {
+            throw cantCoerce(value, "DateTime");
         }
         return (DateTimeValue) value;
     }
 
-    public static DurationValue asDurationValue( AnyValue value )
-    {
+    public static DurationValue asDurationValue(AnyValue value) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof DurationValue) )
-        {
-            throw cantCoerce( value, "Duration" );
+        if (!(value instanceof DurationValue)) {
+            throw cantCoerce(value, "Duration");
         }
         return (DurationValue) value;
     }
 
-    public static MapValue asMapValue( AnyValue value,
-                                       DbAccess access,
-                                       NodeCursor nodeCursor,
-                                       RelationshipScanCursor relationshipCursor,
-                                       PropertyCursor propertyCursor )
-    {
+    public static MapValue asMapValue(
+            AnyValue value,
+            DbAccess access,
+            NodeCursor nodeCursor,
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( value instanceof MapValue )
-        {
+        if (value instanceof MapValue) {
             return (MapValue) value;
-        }
-        else if ( value instanceof VirtualNodeValue )
-        {
-            return access.nodeAsMap( ((VirtualNodeValue) value).id(), nodeCursor, propertyCursor );
-        }
-        else if ( value instanceof VirtualRelationshipValue )
-        {
-            return access.relationshipAsMap( ((VirtualRelationshipValue) value).id(), relationshipCursor, propertyCursor );
-        }
-        else
-        {
-            throw cantCoerce( value, "Map" );
+        } else if (value instanceof VirtualNodeValue) {
+            return access.nodeAsMap(((VirtualNodeValue) value).id(), nodeCursor, propertyCursor);
+        } else if (value instanceof VirtualRelationshipValue) {
+            return access.relationshipAsMap(
+                    ((VirtualRelationshipValue) value).id(), relationshipCursor, propertyCursor);
+        } else {
+            throw cantCoerce(value, "Map");
         }
     }
 
-    public static ListValue asList( AnyValue value,
-                                    Neo4jTypes.AnyType innerType,
-                                    DbAccess access,
-                                    ExpressionCursors cursors )
-    {
+    public static ListValue asList(
+            AnyValue value, Neo4jTypes.AnyType innerType, DbAccess access, ExpressionCursors cursors) {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        return new ListCoercer().apply( value, innerType, access, cursors );
+        return new ListCoercer().apply(value, innerType, access, cursors);
     }
 
-    private static CypherTypeException cantCoerce( AnyValue value, String type )
-    {
-        return new CypherTypeException( format( "Can't coerce `%s` to %s", value, type ) );
+    private static CypherTypeException cantCoerce(AnyValue value, String type) {
+        return new CypherTypeException(format("Can't coerce `%s` to %s", value, type));
     }
 
     @FunctionalInterface
-    interface Coercer
-    {
-        AnyValue apply( AnyValue value, Neo4jTypes.AnyType coerceTo, DbAccess access, ExpressionCursors cursors );
+    interface Coercer {
+        AnyValue apply(AnyValue value, Neo4jTypes.AnyType coerceTo, DbAccess access, ExpressionCursors cursors);
     }
 
-    private static final Map<Class<? extends Neo4jTypes.AnyType>,Coercer> CONVERTERS = new HashMap<>();
+    private static final Map<Class<? extends Neo4jTypes.AnyType>, Coercer> CONVERTERS = new HashMap<>();
 
-    private static class ListCoercer implements Coercer
-    {
+    private static class ListCoercer implements Coercer {
         @Override
-        public ListValue apply( AnyValue value, Neo4jTypes.AnyType innerType, DbAccess access, ExpressionCursors cursors )
-        {
-            //Fast route
-            if ( innerType == NTAny )
-            {
-                return fastListConversion( value );
+        public ListValue apply(
+                AnyValue value, Neo4jTypes.AnyType innerType, DbAccess access, ExpressionCursors cursors) {
+            // Fast route
+            if (innerType == NTAny) {
+                return fastListConversion(value);
             }
 
-            //slow route, recursively convert the list
-            if ( !(value instanceof SequenceValue listValue) )
-            {
-                throw cantCoerce( value, "List" );
+            // slow route, recursively convert the list
+            if (!(value instanceof SequenceValue listValue)) {
+                throw cantCoerce(value, "List");
             }
-            Coercer innerCoercer = CONVERTERS.get( innerType.getClass() );
-            Neo4jTypes.AnyType nextInner = nextInner( innerType );
-            if ( listValue.iterationPreference() == RANDOM_ACCESS )
-            {
+            Coercer innerCoercer = CONVERTERS.get(innerType.getClass());
+            Neo4jTypes.AnyType nextInner = nextInner(innerType);
+            if (listValue.iterationPreference() == RANDOM_ACCESS) {
                 int length = listValue.length();
-                ListValueBuilder builder = ListValueBuilder.newListBuilder( length );
-                for ( int i = 0; i < length; i++ )
-                {
-                    AnyValue nextItem = listValue.value( i );
-                    builder.add( nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply( nextItem, nextInner, access, cursors ) );
+                ListValueBuilder builder = ListValueBuilder.newListBuilder(length);
+                for (int i = 0; i < length; i++) {
+                    AnyValue nextItem = listValue.value(i);
+                    builder.add(
+                            nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply(nextItem, nextInner, access, cursors));
                 }
                 return builder.build();
-            }
-            else
-            {
+            } else {
                 ListValueBuilder builder = ListValueBuilder.newListBuilder();
                 int i = 0;
-                for ( AnyValue anyValue : listValue )
-                {
-                    AnyValue nextItem = listValue.value( i );
-                    builder.add( nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply( anyValue, nextInner, access, cursors ) );
+                for (AnyValue anyValue : listValue) {
+                    AnyValue nextItem = listValue.value(i);
+                    builder.add(
+                            nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply(anyValue, nextInner, access, cursors));
                 }
                 return builder.build();
             }
         }
     }
 
-    private static Neo4jTypes.AnyType nextInner( Neo4jTypes.AnyType type )
-    {
-        if ( type instanceof Neo4jTypes.ListType )
-        {
+    private static Neo4jTypes.AnyType nextInner(Neo4jTypes.AnyType type) {
+        if (type instanceof Neo4jTypes.ListType) {
             return ((Neo4jTypes.ListType) type).innerType();
-        }
-        else
-        {
+        } else {
             return type;
         }
     }
 
-    private static ListValue fastListConversion( AnyValue value )
-    {
-        if ( value instanceof ListValue )
-        {
+    private static ListValue fastListConversion(AnyValue value) {
+        if (value instanceof ListValue) {
             return (ListValue) value;
-        }
-        else if ( value instanceof ArrayValue )
-        {
-            return VirtualValues.fromArray( (ArrayValue) value );
-        }
-        else if ( value instanceof VirtualPathValue )
-        {
+        } else if (value instanceof ArrayValue) {
+            return VirtualValues.fromArray((ArrayValue) value);
+        } else if (value instanceof VirtualPathValue) {
             return ((VirtualPathValue) value).asList();
         }
-        throw cantCoerce( value, "List" );
+        throw cantCoerce(value, "List");
     }
 
-    static
-    {
-        CONVERTERS.put( NTAny.getClass(), ( a, ignore1, ignore2, cursors ) -> a );
-        CONVERTERS.put( NTString.getClass(), ( a, ignore1, ignore2, cursors ) -> asTextValue( a ) );
-        CONVERTERS.put( NTNumber.getClass(), ( a, ignore1, ignore2, cursors ) -> asNumberValue( a ) );
-        CONVERTERS.put( NTInteger.getClass(), ( a, ignore1, ignore2, cursors ) -> asIntegralValue( a ) );
-        CONVERTERS.put( NTFloat.getClass(), ( a, ignore1, ignore2, cursors ) -> asFloatingPointValue( a ) );
-        CONVERTERS.put( NTBoolean.getClass(), ( a, ignore1, ignore2, cursors ) -> asBooleanValue( a ) );
-        CONVERTERS.put( NTMap.getClass(), ( a, ignore, c, cursors ) -> asMapValue( a,
-                                                                                   c,
-                                                                                   cursors.nodeCursor(),
-                                                                                   cursors.relationshipScanCursor(),
-                                                                                   cursors.propertyCursor() ) );
-        CONVERTERS.put( NTNode.getClass(), ( a, ignore1, ignore2, cursors ) -> asNodeValue( a ) );
-        CONVERTERS.put( NTRelationship.getClass(), ( a, ignore1, ignore2, cursors ) -> asRelationshipValue( a ) );
-        CONVERTERS.put( NTPath.getClass(), ( a, ignore1, ignore2, cursors ) -> asPathValue( a ) );
-        CONVERTERS.put( NTGeometry.getClass(), ( a, ignore1, ignore2, cursors ) -> asPointValue( a ) );
-        CONVERTERS.put( NTPoint.getClass(), ( a, ignore1, ignore2, cursors ) -> asPointValue( a ) );
-        CONVERTERS.put( NTDateTime.getClass(), ( a, ignore1, ignore2, cursors ) -> asDateTimeValue( a ) );
-        CONVERTERS.put( NTLocalDateTime.getClass(), ( a, ignore1, ignore2, cursors ) -> asLocalDateTimeValue( a ) );
-        CONVERTERS.put( NTDate.getClass(), ( a, ignore1, ignore2, cursors ) -> asDateValue( a ) );
-        CONVERTERS.put( NTTime.getClass(), ( a, ignore1, ignore2, cursors ) -> asTimeValue( a ) );
-        CONVERTERS.put( NTLocalTime.getClass(), ( a, ignore1, ignore2, cursors ) -> asLocalTimeValue( a ) );
-        CONVERTERS.put( NTDuration.getClass(), ( a, ignore1, ignore2, cursors ) -> asDurationValue( a ) );
-        CONVERTERS.put( Neo4jTypes.ListType.class, new ListCoercer() );
+    static {
+        CONVERTERS.put(NTAny.getClass(), (a, ignore1, ignore2, cursors) -> a);
+        CONVERTERS.put(NTString.getClass(), (a, ignore1, ignore2, cursors) -> asTextValue(a));
+        CONVERTERS.put(NTNumber.getClass(), (a, ignore1, ignore2, cursors) -> asNumberValue(a));
+        CONVERTERS.put(NTInteger.getClass(), (a, ignore1, ignore2, cursors) -> asIntegralValue(a));
+        CONVERTERS.put(NTFloat.getClass(), (a, ignore1, ignore2, cursors) -> asFloatingPointValue(a));
+        CONVERTERS.put(NTBoolean.getClass(), (a, ignore1, ignore2, cursors) -> asBooleanValue(a));
+        CONVERTERS.put(
+                NTMap.getClass(),
+                (a, ignore, c, cursors) -> asMapValue(
+                        a, c, cursors.nodeCursor(), cursors.relationshipScanCursor(), cursors.propertyCursor()));
+        CONVERTERS.put(NTNode.getClass(), (a, ignore1, ignore2, cursors) -> asNodeValue(a));
+        CONVERTERS.put(NTRelationship.getClass(), (a, ignore1, ignore2, cursors) -> asRelationshipValue(a));
+        CONVERTERS.put(NTPath.getClass(), (a, ignore1, ignore2, cursors) -> asPathValue(a));
+        CONVERTERS.put(NTGeometry.getClass(), (a, ignore1, ignore2, cursors) -> asPointValue(a));
+        CONVERTERS.put(NTPoint.getClass(), (a, ignore1, ignore2, cursors) -> asPointValue(a));
+        CONVERTERS.put(NTDateTime.getClass(), (a, ignore1, ignore2, cursors) -> asDateTimeValue(a));
+        CONVERTERS.put(NTLocalDateTime.getClass(), (a, ignore1, ignore2, cursors) -> asLocalDateTimeValue(a));
+        CONVERTERS.put(NTDate.getClass(), (a, ignore1, ignore2, cursors) -> asDateValue(a));
+        CONVERTERS.put(NTTime.getClass(), (a, ignore1, ignore2, cursors) -> asTimeValue(a));
+        CONVERTERS.put(NTLocalTime.getClass(), (a, ignore1, ignore2, cursors) -> asLocalTimeValue(a));
+        CONVERTERS.put(NTDuration.getClass(), (a, ignore1, ignore2, cursors) -> asDurationValue(a));
+        CONVERTERS.put(Neo4jTypes.ListType.class, new ListCoercer());
     }
 }

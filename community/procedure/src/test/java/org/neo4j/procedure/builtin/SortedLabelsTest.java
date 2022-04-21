@@ -19,47 +19,44 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-class SortedLabelsTest
-{
+import org.junit.jupiter.api.Test;
+
+class SortedLabelsTest {
     @Test
-    void testEquals()
-    {
-        long[] longsA = new long[]{1L, 2L, 3L};
-        long[] longsB = new long[]{3L, 2L, 1L};
-        long[] longsC = new long[]{1L, 2L, 3L, 4L};
-        SortedLabels a = SortedLabels.from( longsA );
-        SortedLabels b = SortedLabels.from( longsB );
-        SortedLabels c = SortedLabels.from( longsC );
+    void testEquals() {
+        long[] longsA = new long[] {1L, 2L, 3L};
+        long[] longsB = new long[] {3L, 2L, 1L};
+        long[] longsC = new long[] {1L, 2L, 3L, 4L};
+        SortedLabels a = SortedLabels.from(longsA);
+        SortedLabels b = SortedLabels.from(longsB);
+        SortedLabels c = SortedLabels.from(longsC);
 
         // self
         //noinspection EqualsWithItself
-        assertEquals( a, a );
+        assertEquals(a, a);
 
         // unordered self
-        assertEquals( a, b );
-        assertEquals( b, a );
+        assertEquals(a, b);
+        assertEquals(b, a);
 
         // other
-        assertNotEquals( a, c );
-        assertNotEquals( c, a );
+        assertNotEquals(a, c);
+        assertNotEquals(c, a);
     }
 
     @Test
-    void testHashCodeOfLabelSet()
-    {
-        long[] longsA = new long[]{1L, 2L, 3L};
-        long[] longsB = new long[]{3L, 2L, 1L};
-        long[] longsC = new long[]{1L, 2L, 3L, 4L};
-        SortedLabels a = SortedLabels.from( longsA );
-        SortedLabels b = SortedLabels.from( longsB );
-        SortedLabels c = SortedLabels.from( longsC );
+    void testHashCodeOfLabelSet() {
+        long[] longsA = new long[] {1L, 2L, 3L};
+        long[] longsB = new long[] {3L, 2L, 1L};
+        long[] longsC = new long[] {1L, 2L, 3L, 4L};
+        SortedLabels a = SortedLabels.from(longsA);
+        SortedLabels b = SortedLabels.from(longsB);
+        SortedLabels c = SortedLabels.from(longsC);
 
-        assertEquals( a.hashCode(), b.hashCode() );
-        assertNotEquals( a.hashCode(), c.hashCode() );
+        assertEquals(a.hashCode(), b.hashCode());
+        assertNotEquals(a.hashCode(), c.hashCode());
     }
 }

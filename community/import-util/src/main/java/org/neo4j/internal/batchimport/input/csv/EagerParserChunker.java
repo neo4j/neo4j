@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
-import java.io.IOException;
+import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 
+import java.io.IOException;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Chunker;
@@ -31,61 +32,59 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
-import static org.neo4j.csv.reader.CharSeekers.charSeeker;
-
 /**
  * {@link Chunker} which parses a chunk of entities when calling {@link #nextChunk(Chunk)},
  * injecting them into {@link EagerCsvInputChunk}, which simply hands them out one by one.
  */
-public class EagerParserChunker implements Chunker
-{
+public class EagerParserChunker implements Chunker {
     private final CharSeeker seeker;
     private final CsvInputParser parser;
     private final int chunkSize;
     private final Decorator decorator;
 
-    public EagerParserChunker( CharReadable reader, IdType idType, Header header, Collector badCollector, Extractors extractors,
-            int chunkSize, Configuration config, Decorator decorator, boolean autoSkipHeaders )
-    {
+    public EagerParserChunker(
+            CharReadable reader,
+            IdType idType,
+            Header header,
+            Collector badCollector,
+            Extractors extractors,
+            int chunkSize,
+            Configuration config,
+            Decorator decorator,
+            boolean autoSkipHeaders) {
         this.chunkSize = chunkSize;
         this.decorator = decorator;
-        this.seeker = charSeeker( reader, config, true );
-        this.parser = new CsvInputParser( seeker, config.delimiter(), idType, header, badCollector, extractors );
+        this.seeker = charSeeker(reader, config, true);
+        this.parser = new CsvInputParser(seeker, config.delimiter(), idType, header, badCollector, extractors);
     }
 
     @Override
-    public boolean nextChunk( Chunk chunk ) throws IOException
-    {
-        InputEntityArray entities = new InputEntityArray( chunkSize );
-        InputEntityVisitor decorated = decorator.apply( entities );
+    public boolean nextChunk(Chunk chunk) throws IOException {
+        InputEntityArray entities = new InputEntityArray(chunkSize);
+        InputEntityVisitor decorated = decorator.apply(entities);
         int cursor = 0;
-        for ( ; cursor < chunkSize && parser.next( decorated ); cursor++ )
-        {   // just loop through and parse
+        for (; cursor < chunkSize && parser.next(decorated); cursor++) { // just loop through and parse
         }
 
-        if ( cursor > 0 )
-        {
-            ((EagerCsvInputChunk)chunk).initialize( entities.toArray() );
+        if (cursor > 0) {
+            ((EagerCsvInputChunk) chunk).initialize(entities.toArray());
             return true;
         }
         return false;
     }
 
     @Override
-    public long position()
-    {
+    public long position() {
         return seeker.position();
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         parser.close();
     }
 
     @Override
-    public Chunk newChunk()
-    {
+    public Chunk newChunk() {
         throw new UnsupportedOperationException();
     }
 }

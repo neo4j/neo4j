@@ -21,61 +21,51 @@ package org.neo4j.kernel.impl.store.record;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class PropertyKeyTokenRecord extends TokenRecord
-{
-    public static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyKeyTokenRecord.class );
+public class PropertyKeyTokenRecord extends TokenRecord {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance(PropertyKeyTokenRecord.class);
     private int propCount;
 
-    public PropertyKeyTokenRecord( int id )
-    {
-        super( id );
+    public PropertyKeyTokenRecord(int id) {
+        super(id);
     }
 
-    public PropertyKeyTokenRecord( PropertyKeyTokenRecord other )
-    {
-        super( other );
+    public PropertyKeyTokenRecord(PropertyKeyTokenRecord other) {
+        super(other);
         this.propCount = other.propCount;
     }
 
-    public PropertyKeyTokenRecord initialize( boolean inUse, int nameId, int propertyCount )
-    {
-        super.initialize( inUse, nameId );
+    public PropertyKeyTokenRecord initialize(boolean inUse, int nameId, int propertyCount) {
+        super.initialize(inUse, nameId);
         this.propCount = propertyCount;
         return this;
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         super.clear();
         propCount = 0;
     }
 
     @Override
-    protected String simpleName()
-    {
+    protected String simpleName() {
         return "PropertyKey";
     }
 
-    public int getPropertyCount()
-    {
+    public int getPropertyCount() {
         return propCount;
     }
 
-    public void setPropertyCount( int count )
-    {
+    public void setPropertyCount(int count) {
         this.propCount = count;
     }
 
     @Override
-    protected void additionalToString( StringBuilder buf )
-    {
-        buf.append( ",propCount=" ).append( propCount );
+    protected void additionalToString(StringBuilder buf) {
+        buf.append(",propCount=").append(propCount);
     }
 
     @Override
-    public PropertyKeyTokenRecord copy()
-    {
-        return new PropertyKeyTokenRecord( this );
+    public PropertyKeyTokenRecord copy() {
+        return new PropertyKeyTokenRecord(this);
     }
 }

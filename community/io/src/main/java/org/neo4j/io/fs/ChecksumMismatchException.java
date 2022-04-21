@@ -19,10 +19,8 @@
  */
 package org.neo4j.io.fs;
 
-public class ChecksumMismatchException extends RuntimeException
-{
-    public ChecksumMismatchException( int storedChecksum, int checksum )
-    {
-        super( "The checksum " + checksum + " did not match the stored checksum of " + storedChecksum );
+public class ChecksumMismatchException extends RuntimeException {
+    public ChecksumMismatchException(int storedChecksum, int checksum) {
+        super("The checksum " + checksum + " did not match the stored checksum of " + storedChecksum);
     }
 }

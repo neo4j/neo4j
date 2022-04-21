@@ -19,111 +19,89 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.io.IOUtils;
 import org.neo4j.util.FeatureToggles;
 
-public interface DirectoryFactory extends AutoCloseable
-{
-    static DirectoryFactory directoryFactory( boolean ephemeral )
-    {
+public interface DirectoryFactory extends AutoCloseable {
+    static DirectoryFactory directoryFactory(boolean ephemeral) {
         return ephemeral ? new DirectoryFactory.InMemoryDirectoryFactory() : DirectoryFactory.PERSISTENT;
     }
 
-    Directory open( Path dir ) throws IOException;
+    Directory open(Path dir) throws IOException;
 
-    DirectoryFactory PERSISTENT = new DirectoryFactory()
-    {
-        private final int MAX_MERGE_SIZE_MB =
-                FeatureToggles.getInteger( DirectoryFactory.class, "max_merge_size_mb", 5 );
-        private final int MAX_CACHED_MB =
-                FeatureToggles.getInteger( DirectoryFactory.class, "max_cached_mb", 50 );
+    DirectoryFactory PERSISTENT = new DirectoryFactory() {
+        private final int MAX_MERGE_SIZE_MB = FeatureToggles.getInteger(DirectoryFactory.class, "max_merge_size_mb", 5);
+        private final int MAX_CACHED_MB = FeatureToggles.getInteger(DirectoryFactory.class, "max_cached_mb", 50);
         private final boolean USE_DEFAULT_DIRECTORY_FACTORY =
-                FeatureToggles.flag( DirectoryFactory.class, "default_directory_factory", true );
+                FeatureToggles.flag(DirectoryFactory.class, "default_directory_factory", true);
 
-        @SuppressWarnings( "ResultOfMethodCallIgnored" )
+        @SuppressWarnings("ResultOfMethodCallIgnored")
         @Override
-        public Directory open( Path dir ) throws IOException
-        {
-            Files.createDirectories( dir );
-            FSDirectory directory = USE_DEFAULT_DIRECTORY_FACTORY ? FSDirectory.open( dir ) : new NIOFSDirectory( dir );
-            return new NRTCachingDirectory( directory, MAX_MERGE_SIZE_MB, MAX_CACHED_MB );
+        public Directory open(Path dir) throws IOException {
+            Files.createDirectories(dir);
+            FSDirectory directory = USE_DEFAULT_DIRECTORY_FACTORY ? FSDirectory.open(dir) : new NIOFSDirectory(dir);
+            return new NRTCachingDirectory(directory, MAX_MERGE_SIZE_MB, MAX_CACHED_MB);
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             // No resources to release. This method only exists as a hook for test implementations.
         }
-
     };
 
-    final class InMemoryDirectoryFactory implements DirectoryFactory
-    {
+    final class InMemoryDirectoryFactory implements DirectoryFactory {
         private final Map<Path, Directory> directories = new HashMap<>();
 
         @Override
-        public synchronized Directory open( Path dir )
-        {
-            if ( !directories.containsKey( dir ) )
-            {
-                directories.put( dir, new ByteBuffersDirectory() );
+        public synchronized Directory open(Path dir) {
+            if (!directories.containsKey(dir)) {
+                directories.put(dir, new ByteBuffersDirectory());
             }
-            return new UncloseableDirectory( directories.get( dir ) );
+            return new UncloseableDirectory(directories.get(dir));
         }
 
         @Override
-        public synchronized void close() throws IOException
-        {
-            IOUtils.closeAll( directories.values() );
+        public synchronized void close() throws IOException {
+            IOUtils.closeAll(directories.values());
             directories.clear();
         }
     }
 
-    final class Single implements DirectoryFactory
-    {
+    final class Single implements DirectoryFactory {
         private final Directory directory;
 
-        public Single( Directory directory )
-        {
+        public Single(Directory directory) {
             this.directory = directory;
         }
 
         @Override
-        public Directory open( Path dir )
-        {
+        public Directory open(Path dir) {
             return directory;
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     }
 
-    final class UncloseableDirectory extends FilterDirectory
-    {
+    final class UncloseableDirectory extends FilterDirectory {
 
-        public UncloseableDirectory( Directory delegate )
-        {
-            super( delegate );
+        public UncloseableDirectory(Directory delegate) {
+            super(delegate);
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             // No-op
         }
     }

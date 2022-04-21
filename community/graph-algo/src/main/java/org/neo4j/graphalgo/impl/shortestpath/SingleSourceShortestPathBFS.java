@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
@@ -38,23 +37,20 @@ import org.neo4j.internal.helpers.collection.Iterables;
  * @complexity This algorithm runs in O(m) time (not including the case when m
  *             is zero).
  */
-public class SingleSourceShortestPathBFS implements
-    SingleSourceShortestPath<Integer>
-{
+public class SingleSourceShortestPathBFS implements SingleSourceShortestPath<Integer> {
     protected Node startNode;
     protected Direction relationShipDirection;
     protected RelationshipType[] relationShipTypes;
-    protected Map<Node,Integer> distances = new HashMap<>();
-    protected Map<Node,List<Relationship>> predecessors = new HashMap<>();
+    protected Map<Node, Integer> distances = new HashMap<>();
+    protected Map<Node, List<Relationship>> predecessors = new HashMap<>();
     // Limits
     protected long maxDepth = Long.MAX_VALUE;
     protected long depth;
     LinkedList<Node> currentLayer = new LinkedList<>();
     LinkedList<Node> nextLayer = new LinkedList<>();
 
-    public SingleSourceShortestPathBFS( Node startNode,
-        Direction relationShipDirection, RelationshipType... relationShipTypes )
-    {
+    public SingleSourceShortestPathBFS(
+            Node startNode, Direction relationShipDirection, RelationshipType... relationShipTypes) {
         super();
         this.startNode = startNode;
         this.relationShipDirection = relationShipDirection;
@@ -65,8 +61,7 @@ public class SingleSourceShortestPathBFS implements
     /**
      * This sets the maximum depth to scan.
      */
-    public void limitDepth( long maxDepth )
-    {
+    public void limitDepth(long maxDepth) {
         this.maxDepth = maxDepth;
     }
 
@@ -74,8 +69,7 @@ public class SingleSourceShortestPathBFS implements
      * @see SingleSourceShortestPath
      */
     @Override
-    public void setStartNode( Node node )
-    {
+    public void setStartNode(Node node) {
         startNode = node;
         reset();
     }
@@ -84,13 +78,12 @@ public class SingleSourceShortestPathBFS implements
      * @see SingleSourceShortestPath
      */
     @Override
-    public void reset()
-    {
+    public void reset() {
         distances = new HashMap<>();
         predecessors = new HashMap<>();
         currentLayer = new LinkedList<>();
         nextLayer = new LinkedList<>();
-        currentLayer.add( startNode );
+        currentLayer.add(startNode);
         depth = 0;
     }
 
@@ -98,124 +91,99 @@ public class SingleSourceShortestPathBFS implements
      * @see SingleSourceShortestPath
      */
     @Override
-    public Integer getCost( Node targetNode )
-    {
-        calculate( targetNode );
-        return distances.get( targetNode );
+    public Integer getCost(Node targetNode) {
+        calculate(targetNode);
+        return distances.get(targetNode);
     }
 
     /**
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<Entity> getPath( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<Entity> getPath(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculate(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return Util.constructSinglePathToNode( targetNode, predecessors, true,
-            false );
+        return Util.constructSinglePathToNode(targetNode, predecessors, true, false);
     }
 
     /**
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<Node> getPathAsNodes( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<Node> getPathAsNodes(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculate(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return Util.constructSinglePathToNodeAsNodes( targetNode, predecessors,
-            true, false );
+        return Util.constructSinglePathToNodeAsNodes(targetNode, predecessors, true, false);
     }
 
     /**
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<Relationship> getPathAsRelationships( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<Relationship> getPathAsRelationships(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculate(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return Util.constructSinglePathToNodeAsRelationships( targetNode,
-            predecessors, false );
+        return Util.constructSinglePathToNodeAsRelationships(targetNode, predecessors, false);
     }
 
     /**
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<List<Entity>> getPaths( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<List<Entity>> getPaths(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculate(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return Util.constructAllPathsToNode( targetNode, predecessors, true,
-            false );
+        return Util.constructAllPathsToNode(targetNode, predecessors, true, false);
     }
 
     /**
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<List<Node>> getPathsAsNodes( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<List<Node>> getPathsAsNodes(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculate(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return Util.constructAllPathsToNodeAsNodes( targetNode, predecessors,
-            true, false );
+        return Util.constructAllPathsToNodeAsNodes(targetNode, predecessors, true, false);
     }
 
     /**
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<List<Relationship>> getPathsAsRelationships( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<List<Relationship>> getPathsAsRelationships(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculate(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return Util.constructAllPathsToNodeAsRelationships( targetNode,
-            predecessors, false );
+        return Util.constructAllPathsToNodeAsRelationships(targetNode, predecessors, false);
     }
 
     /**
@@ -223,13 +191,10 @@ public class SingleSourceShortestPathBFS implements
      * @return True if evaluate was made. False if no more computation could be
      *         done.
      */
-    public boolean processNextNode()
-    {
+    public boolean processNextNode() {
         // finished with current layer? increase depth
-        if ( currentLayer.isEmpty() )
-        {
-            if ( nextLayer.isEmpty() )
-            {
+        if (currentLayer.isEmpty()) {
+            if (nextLayer.isEmpty()) {
                 return false;
             }
             currentLayer = nextLayer;
@@ -239,28 +204,24 @@ public class SingleSourceShortestPathBFS implements
         Node node = currentLayer.poll();
         // Multiple paths to a certain node might make it appear several
         // times, just process it once
-        if ( distances.containsKey( node ) )
-        {
+        if (distances.containsKey(node)) {
             return true;
         }
         // Put it in distances
-        distances.put( node, (int) depth );
+        distances.put(node, (int) depth);
         // Follow all edges
-        for ( RelationshipType relationshipType : relationShipTypes )
-        {
-            Iterables.forEach( node.getRelationships( relationShipDirection, relationshipType ), relationship ->
-            {
-                Node targetNode = relationship.getOtherNode( node );
+        for (RelationshipType relationshipType : relationShipTypes) {
+            Iterables.forEach(node.getRelationships(relationShipDirection, relationshipType), relationship -> {
+                Node targetNode = relationship.getOtherNode(node);
                 // Are we going back into the already finished area?
                 // That would be more expensive.
-                if ( !distances.containsKey( targetNode ) )
-                {
+                if (!distances.containsKey(targetNode)) {
                     // Put this into the next layer and the predecessors
-                    nextLayer.add( targetNode );
-                    List<Relationship> targetPreds = predecessors.computeIfAbsent( targetNode, k -> new LinkedList<>() );
-                    targetPreds.add( relationship );
+                    nextLayer.add(targetNode);
+                    List<Relationship> targetPreds = predecessors.computeIfAbsent(targetNode, k -> new LinkedList<>());
+                    targetPreds.add(relationship);
                 }
-            } );
+            });
         }
         return true;
     }
@@ -269,22 +230,17 @@ public class SingleSourceShortestPathBFS implements
      * Internal calculate method that will do the calculation. This can however
      * be called externally to manually trigger the calculation.
      */
-    public boolean calculate()
-    {
-        return calculate( null );
+    public boolean calculate() {
+        return calculate(null);
     }
 
     /**
      * Internal calculate method that will run the calculation until either the
      * limit is reached or a result has been generated for a given node.
      */
-    public boolean calculate( Node targetNode )
-    {
-        while ( depth <= maxDepth
-            && (targetNode == null || !distances.containsKey( targetNode )) )
-        {
-            if ( !processNextNode() )
-            {
+    public boolean calculate(Node targetNode) {
+        while (depth <= maxDepth && (targetNode == null || !distances.containsKey(targetNode))) {
+            if (!processNextNode()) {
                 return false;
             }
         }
@@ -295,18 +251,14 @@ public class SingleSourceShortestPathBFS implements
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<Node> getPredecessorNodes( Node node )
-    {
+    public List<Node> getPredecessorNodes(Node node) {
         List<Node> result = new LinkedList<>();
-        List<Relationship> predecessorRelationShips = predecessors.get( node );
-        if ( predecessorRelationShips == null
-            || predecessorRelationShips.isEmpty() )
-        {
+        List<Relationship> predecessorRelationShips = predecessors.get(node);
+        if (predecessorRelationShips == null || predecessorRelationShips.isEmpty()) {
             return null;
         }
-        for ( Relationship relationship : predecessorRelationShips )
-        {
-            result.add( relationship.getOtherNode( node ) );
+        for (Relationship relationship : predecessorRelationShips) {
+            result.add(relationship.getOtherNode(node));
         }
         return result;
     }
@@ -315,8 +267,7 @@ public class SingleSourceShortestPathBFS implements
      * @see SingleSourceShortestPath
      */
     @Override
-    public Map<Node,List<Relationship>> getPredecessors()
-    {
+    public Map<Node, List<Relationship>> getPredecessors() {
         calculate();
         return predecessors;
     }
@@ -325,8 +276,7 @@ public class SingleSourceShortestPathBFS implements
      * @see SingleSourceShortestPath
      */
     @Override
-    public Direction getDirection()
-    {
+    public Direction getDirection() {
         return relationShipDirection;
     }
 
@@ -334,8 +284,7 @@ public class SingleSourceShortestPathBFS implements
      * @see SingleSourceShortestPath
      */
     @Override
-    public RelationshipType[] getRelationshipTypes()
-    {
+    public RelationshipType[] getRelationshipTypes() {
         return relationShipTypes;
     }
 }

@@ -19,16 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
-
-import org.neo4j.test.Race;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -36,223 +26,212 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.Race.throwing;
 
-class TreeNodeLatchServiceTest extends LatchTestBase
-{
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
+import org.junit.jupiter.api.Test;
+import org.neo4j.test.Race;
+
+class TreeNodeLatchServiceTest extends LatchTestBase {
     @Test
-    void shouldReturnSameLatchInstanceForAcquiredRead()
-    {
+    void shouldReturnSameLatchInstanceForAcquiredRead() {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
         long treeNodeId = 456L;
-        LongSpinLatch latch = service.acquireRead( treeNodeId );
+        LongSpinLatch latch = service.acquireRead(treeNodeId);
 
         // when
-        LongSpinLatch again = service.acquireRead( treeNodeId );
+        LongSpinLatch again = service.acquireRead(treeNodeId);
 
         // then
-        assertSame( again, latch );
+        assertSame(again, latch);
         latch.releaseRead();
         latch.releaseRead();
     }
 
     @Test
-    void shouldReturnNewLatchInstanceForAcquireReadAfterPreviousReleased()
-    {
+    void shouldReturnNewLatchInstanceForAcquireReadAfterPreviousReleased() {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
         long treeNodeId = 123L;
-        LongSpinLatch first = service.acquireRead( treeNodeId );
+        LongSpinLatch first = service.acquireRead(treeNodeId);
         first.releaseRead();
 
         // when
-        LongSpinLatch second = service.acquireRead( treeNodeId );
+        LongSpinLatch second = service.acquireRead(treeNodeId);
 
         // then
-        assertNotSame( second, first );
+        assertNotSame(second, first);
         second.releaseRead();
     }
 
     @Test
-    void shouldReturnNewLatchInstanceForAcquireWriteAfterPreviousReleased()
-    {
+    void shouldReturnNewLatchInstanceForAcquireWriteAfterPreviousReleased() {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
         long treeNodeId = 123L;
-        LongSpinLatch first = service.acquireWrite( treeNodeId );
+        LongSpinLatch first = service.acquireWrite(treeNodeId);
         first.releaseWrite();
 
         // when
-        LongSpinLatch second = service.acquireWrite( treeNodeId );
+        LongSpinLatch second = service.acquireWrite(treeNodeId);
 
         // then
-        assertNotSame( second, first );
+        assertNotSame(second, first);
         second.releaseWrite();
     }
 
     @Test
-    void shouldAcquireReadStressfully() throws Throwable
-    {
+    void shouldAcquireReadStressfully() throws Throwable {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
-        Race race = new Race().withMaxDuration( 500, TimeUnit.MILLISECONDS );
+        Race race = new Race().withMaxDuration(500, TimeUnit.MILLISECONDS);
         long treeNodeId = 5;
         LongAdder count = new LongAdder();
-        race.addContestants( Runtime.getRuntime().availableProcessors(), () ->
-        {
-            LongSpinLatch latch = service.acquireRead( treeNodeId );
+        race.addContestants(Runtime.getRuntime().availableProcessors(), () -> {
+            LongSpinLatch latch = service.acquireRead(treeNodeId);
             latch.releaseRead();
-            count.add( 1 );
-        } );
+            count.add(1);
+        });
 
         // when
         race.go();
 
         // then
-        assertTrue( count.sum() > 0 );
-        assertEquals( 0, service.size() );
+        assertTrue(count.sum() > 0);
+        assertEquals(0, service.size());
     }
 
     @Test
-    void shouldAcquireWriteStressfully() throws Throwable
-    {
+    void shouldAcquireWriteStressfully() throws Throwable {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
-        Race race = new Race().withMaxDuration( 500, TimeUnit.MILLISECONDS );
+        Race race = new Race().withMaxDuration(500, TimeUnit.MILLISECONDS);
         long treeNodeId = 5;
         LongAdder count = new LongAdder();
-        race.addContestants( Runtime.getRuntime().availableProcessors(), () ->
-        {
-            LongSpinLatch latch = service.acquireWrite( treeNodeId );
+        race.addContestants(Runtime.getRuntime().availableProcessors(), () -> {
+            LongSpinLatch latch = service.acquireWrite(treeNodeId);
             latch.releaseWrite();
-            count.add( 1 );
-        } );
+            count.add(1);
+        });
 
         // when
         race.go();
 
         // then
-        assertTrue( count.sum() > 0 );
-        assertEquals( 0, service.size() );
+        assertTrue(count.sum() > 0);
+        assertEquals(0, service.size());
     }
 
     @Test
-    void shouldAcquireAndReleaseReadsAndWritesStressfully() throws Throwable
-    {
+    void shouldAcquireAndReleaseReadsAndWritesStressfully() throws Throwable {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
-        Race race = new Race().withMaxDuration( 500, TimeUnit.MILLISECONDS );
+        Race race = new Race().withMaxDuration(500, TimeUnit.MILLISECONDS);
         AtomicLong reads = new AtomicLong();
         AtomicLong writes = new AtomicLong();
-        race.addContestants( 2, new Runnable()
-        {
+        race.addContestants(2, new Runnable() {
             private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
             @Override
-            public void run()
-            {
-                LongSpinLatch latch = service.acquireRead( random.nextLong( 1, 100 ) );
+            public void run() {
+                LongSpinLatch latch = service.acquireRead(random.nextLong(1, 100));
                 latch.releaseRead();
                 reads.incrementAndGet();
             }
-        } );
-        race.addContestants( 2, new Runnable()
-        {
+        });
+        race.addContestants(2, new Runnable() {
             private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
             @Override
-            public void run()
-            {
-                LongSpinLatch latch = service.acquireWrite( random.nextLong( 1, 100 ) );
+            public void run() {
+                LongSpinLatch latch = service.acquireWrite(random.nextLong(1, 100));
                 latch.releaseWrite();
                 writes.incrementAndGet();
             }
-        } );
+        });
 
         // when
         race.go();
 
         // then
-        assertEquals( 0, service.size() );
-        assertTrue( reads.get() > 0 );
-        assertTrue( writes.get() > 0 );
+        assertEquals(0, service.size());
+        assertTrue(reads.get() > 0);
+        assertTrue(writes.get() > 0);
     }
 
     @Test
-    void shouldAcquireSameWriteLatchConcurrently()
-    {
+    void shouldAcquireSameWriteLatchConcurrently() {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
         long id = 999;
-        Race race = new Race().withEndCondition( () -> false );
+        Race race = new Race().withEndCondition(() -> false);
         AtomicInteger concurrent = new AtomicInteger();
-        race.addContestants( 4, throwing( () ->
-        {
-            LongSpinLatch latch = service.acquireWrite( id );
-            assertThat( concurrent.incrementAndGet() ).isOne();
-            concurrent.decrementAndGet();
-            latch.releaseWrite();
-        } ), 1_000 );
+        race.addContestants(
+                4,
+                throwing(() -> {
+                    LongSpinLatch latch = service.acquireWrite(id);
+                    assertThat(concurrent.incrementAndGet()).isOne();
+                    concurrent.decrementAndGet();
+                    latch.releaseWrite();
+                }),
+                1_000);
         race.goUnchecked();
     }
 
     @Test
-    void shouldStressRandomAcquisitionsAndReleases()
-    {
+    void shouldStressRandomAcquisitionsAndReleases() {
         // given
         var service = new TreeNodeLatchService();
         var treeNodeId = 99;
-        var race = new Race().withMaxDuration( 1, TimeUnit.SECONDS );
+        var race = new Race().withMaxDuration(1, TimeUnit.SECONDS);
         // READ
         var reads = new AtomicInteger();
         var upgrades = new AtomicInteger();
         var writes = new AtomicInteger();
         var numCurrentWriteOwners = new AtomicInteger();
         var numCurrentReadOwners = new AtomicInteger();
-        race.addContestants( 2, () ->
-        {
-            var latch = service.acquireRead( treeNodeId );
-            assertThat( numCurrentReadOwners.incrementAndGet() ).isGreaterThanOrEqualTo( 1 );
-            assertThat( numCurrentWriteOwners.get() ).isZero();
-            assertThat( numCurrentReadOwners.decrementAndGet() ).isGreaterThanOrEqualTo( 0 );
+        race.addContestants(2, () -> {
+            var latch = service.acquireRead(treeNodeId);
+            assertThat(numCurrentReadOwners.incrementAndGet()).isGreaterThanOrEqualTo(1);
+            assertThat(numCurrentWriteOwners.get()).isZero();
+            assertThat(numCurrentReadOwners.decrementAndGet()).isGreaterThanOrEqualTo(0);
             latch.releaseRead();
             reads.incrementAndGet();
-        } );
+        });
         // UPGRADE
-        race.addContestant( () ->
-        {
-            var latch = service.acquireRead( treeNodeId );
-            assertThat( numCurrentReadOwners.incrementAndGet() ).isGreaterThanOrEqualTo( 1 );
-            assertThat( numCurrentWriteOwners.get() ).isZero();
-            if ( latch.tryUpgradeToWrite() )
-            {
-                assertThat( numCurrentWriteOwners.incrementAndGet() ).isOne();
-                assertThat( numCurrentReadOwners.decrementAndGet() ).isZero();
-                assertThat( numCurrentWriteOwners.decrementAndGet() ).isZero();
+        race.addContestant(() -> {
+            var latch = service.acquireRead(treeNodeId);
+            assertThat(numCurrentReadOwners.incrementAndGet()).isGreaterThanOrEqualTo(1);
+            assertThat(numCurrentWriteOwners.get()).isZero();
+            if (latch.tryUpgradeToWrite()) {
+                assertThat(numCurrentWriteOwners.incrementAndGet()).isOne();
+                assertThat(numCurrentReadOwners.decrementAndGet()).isZero();
+                assertThat(numCurrentWriteOwners.decrementAndGet()).isZero();
                 latch.releaseWrite();
                 upgrades.incrementAndGet();
-            }
-            else
-            {
-                assertThat( numCurrentReadOwners.decrementAndGet() ).isGreaterThanOrEqualTo( 0 );
+            } else {
+                assertThat(numCurrentReadOwners.decrementAndGet()).isGreaterThanOrEqualTo(0);
                 latch.releaseRead();
             }
-        } );
+        });
         // WRITE
-        race.addContestant( () ->
-        {
-            var latch = service.acquireWrite( treeNodeId );
-            assertThat( numCurrentWriteOwners.incrementAndGet() ).isOne();
-            assertThat( numCurrentWriteOwners.decrementAndGet() ).isZero();
+        race.addContestant(() -> {
+            var latch = service.acquireWrite(treeNodeId);
+            assertThat(numCurrentWriteOwners.incrementAndGet()).isOne();
+            assertThat(numCurrentWriteOwners.decrementAndGet()).isZero();
             latch.releaseWrite();
             writes.incrementAndGet();
-        } );
+        });
 
         // when
         race.goUnchecked();
 
         // then
-        assertTrue( reads.get() > 0 );
-        assertTrue( upgrades.get() > 0 );
-        assertTrue( writes.get() > 0 );
+        assertTrue(reads.get() > 0);
+        assertTrue(upgrades.get() > 0);
+        assertTrue(writes.get() > 0);
     }
 }

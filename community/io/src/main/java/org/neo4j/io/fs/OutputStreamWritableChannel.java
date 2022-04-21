@@ -24,80 +24,68 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class OutputStreamWritableChannel implements FlushableChannel
-{
+public class OutputStreamWritableChannel implements FlushableChannel {
     private final DataOutputStream dataOutputStream;
 
-    public OutputStreamWritableChannel( OutputStream outputStream )
-    {
-        this.dataOutputStream = new DataOutputStream( outputStream );
+    public OutputStreamWritableChannel(OutputStream outputStream) {
+        this.dataOutputStream = new DataOutputStream(outputStream);
     }
 
     @Override
-    public Flushable prepareForFlush() throws IOException
-    {
+    public Flushable prepareForFlush() throws IOException {
         return dataOutputStream;
     }
 
     @Override
-    public FlushableChannel put( byte value ) throws IOException
-    {
-        dataOutputStream.writeByte( value );
+    public FlushableChannel put(byte value) throws IOException {
+        dataOutputStream.writeByte(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putShort( short value ) throws IOException
-    {
-        dataOutputStream.writeShort( value );
+    public FlushableChannel putShort(short value) throws IOException {
+        dataOutputStream.writeShort(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putInt( int value ) throws IOException
-    {
-        dataOutputStream.writeInt( value );
+    public FlushableChannel putInt(int value) throws IOException {
+        dataOutputStream.writeInt(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putLong( long value ) throws IOException
-    {
-        dataOutputStream.writeLong( value );
+    public FlushableChannel putLong(long value) throws IOException {
+        dataOutputStream.writeLong(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putFloat( float value ) throws IOException
-    {
-        dataOutputStream.writeFloat( value );
+    public FlushableChannel putFloat(float value) throws IOException {
+        dataOutputStream.writeFloat(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putDouble( double value ) throws IOException
-    {
-        dataOutputStream.writeDouble( value );
+    public FlushableChannel putDouble(double value) throws IOException {
+        dataOutputStream.writeDouble(value);
         return this;
     }
 
     @Override
-    public FlushableChannel put( byte[] value, int length ) throws IOException
-    {
-        dataOutputStream.write( value, 0, length );
+    public FlushableChannel put(byte[] value, int length) throws IOException {
+        dataOutputStream.write(value, 0, length);
         return this;
     }
 
     @Override
-    public FlushableChannel put( byte[] value, int offset, int length ) throws IOException
-    {
-        dataOutputStream.write( value, offset, length );
+    public FlushableChannel put(byte[] value, int offset, int length) throws IOException {
+        dataOutputStream.write(value, offset, length);
         return this;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         dataOutputStream.close();
     }
 }

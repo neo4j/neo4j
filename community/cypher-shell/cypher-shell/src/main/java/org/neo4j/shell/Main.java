@@ -19,8 +19,12 @@
  */
 package org.neo4j.shell;
 
-import java.io.PrintStream;
+import static org.neo4j.shell.ShellRunner.shouldBeInteractive;
+import static org.neo4j.shell.log.Logger.setupLogging;
+import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
+import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
+import java.io.PrintStream;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.shell.build.Build;
@@ -44,13 +48,7 @@ import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.shell.ShellRunner.shouldBeInteractive;
-import static org.neo4j.shell.log.Logger.setupLogging;
-import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
-import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
-
-public class Main
-{
+public class Main {
     private static final Logger log = Logger.create();
     public static final int EXIT_FAILURE = 1;
     public static final int EXIT_SUCCESS = 0;
@@ -64,36 +62,44 @@ public class Main
     private final StatementParser statementParser = new ShellStatementParser();
     private final ParameterService parameters;
 
-    public Main( CliArgs args )
-    {
+    public Main(CliArgs args) {
         boolean isInteractive = !args.getNonInteractive() && ShellRunner.isInputInteractive();
-        this.printer = new AnsiPrinter( Format.VERBOSE, System.out, System.err );
+        this.printer = new AnsiPrinter(Format.VERBOSE, System.out, System.err);
         this.args = args;
-        var boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, isInteractive ) );
-        this.parameters = ParameterService.create( boltStateHandler );
-        this.terminal = terminalBuilder().interactive( isInteractive ).logger( printer ).parameters( parameters ).build();
-        this.shell = new CypherShell( printer, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
+        var boltStateHandler = new BoltStateHandler(shouldBeInteractive(args, isInteractive));
+        this.parameters = ParameterService.create(boltStateHandler);
+        this.terminal = terminalBuilder()
+                .interactive(isInteractive)
+                .logger(printer)
+                .parameters(parameters)
+                .build();
+        this.shell = new CypherShell(printer, boltStateHandler, new PrettyPrinter(new PrettyConfig(args)), parameters);
         this.isOutputInteractive = !args.getNonInteractive() && ShellRunner.isOutputInteractive();
         this.runnerFactory = new ShellRunner.Factory();
     }
 
     @VisibleForTesting
-    public Main( CliArgs args, PrintStream out, PrintStream err, boolean outputInteractive, CypherShellTerminal terminal )
-    {
+    public Main(
+            CliArgs args, PrintStream out, PrintStream err, boolean outputInteractive, CypherShellTerminal terminal) {
         this.terminal = terminal;
         this.args = args;
-        this.printer = new AnsiPrinter( Format.VERBOSE, out, err );
-        var boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, terminal.isInteractive() ) );
-        this.parameters = ParameterService.create( boltStateHandler );
-        this.shell = new CypherShell( printer, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
+        this.printer = new AnsiPrinter(Format.VERBOSE, out, err);
+        var boltStateHandler = new BoltStateHandler(shouldBeInteractive(args, terminal.isInteractive()));
+        this.parameters = ParameterService.create(boltStateHandler);
+        this.shell = new CypherShell(printer, boltStateHandler, new PrettyPrinter(new PrettyConfig(args)), parameters);
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = new ShellRunner.Factory();
     }
 
     @VisibleForTesting
-    public Main( CliArgs args, AnsiPrinter logger, CypherShell shell, ParameterService parameters,
-                 boolean outputInteractive, ShellRunner.Factory runnerFactory, CypherShellTerminal terminal )
-    {
+    public Main(
+            CliArgs args,
+            AnsiPrinter logger,
+            CypherShell shell,
+            ParameterService parameters,
+            boolean outputInteractive,
+            ShellRunner.Factory runnerFactory,
+            CypherShellTerminal terminal) {
         this.terminal = terminal;
         this.args = args;
         this.printer = logger;
@@ -103,94 +109,81 @@ public class Main
         this.parameters = parameters;
     }
 
-    public static void main( String[] args )
-    {
-        CliArgs cliArgs = CliArgHelper.parse( args );
+    public static void main(String[] args) {
+        CliArgs cliArgs = CliArgHelper.parse(args);
 
         // if null, then command line parsing went wrong
         // CliArgs has already printed errors.
-        if ( cliArgs == null )
-        {
-            System.exit( 1 );
+        if (cliArgs == null) {
+            System.exit(1);
         }
 
-        setupLogging( cliArgs.logLevel().javaLevel() );
+        setupLogging(cliArgs.logLevel().javaLevel());
 
-        System.exit( new Main( cliArgs ).startShell() );
+        System.exit(new Main(cliArgs).startShell());
     }
 
-    public int startShell()
-    {
-        if ( args.getVersion() )
-        {
-            terminal.write().println( "Cypher-Shell " + Build.version() );
+    public int startShell() {
+        if (args.getVersion()) {
+            terminal.write().println("Cypher-Shell " + Build.version());
             return EXIT_SUCCESS;
         }
-        if ( args.getDriverVersion() )
-        {
-            terminal.write().println( "Neo4j Driver " + Build.driverVersion() );
+        if (args.getDriverVersion()) {
+            terminal.write().println("Neo4j Driver " + Build.driverVersion());
             return EXIT_SUCCESS;
         }
-        if ( args.getChangePassword() )
-        {
+        if (args.getChangePassword()) {
             return runSetNewPassword();
         }
 
         return runShell();
     }
 
-    private int runSetNewPassword()
-    {
-        try
-        {
-            promptAndChangePassword( args.connectionConfig(), null );
-        }
-        catch ( Exception e )
-        {
-            log.error( e );
-            printer.printError( "Failed to change password: " + e.getMessage() );
+    private int runSetNewPassword() {
+        try {
+            promptAndChangePassword(args.connectionConfig(), null);
+        } catch (Exception e) {
+            log.error(e);
+            printer.printError("Failed to change password: " + e.getMessage());
             return EXIT_FAILURE;
         }
         return EXIT_SUCCESS;
     }
 
-    private int runShell()
-    {
+    private int runShell() {
         ConnectionConfig connectionConfig = args.connectionConfig();
-        try
-        {
-            //If user is passing in a cypher statement just run that and be done with it
-            if ( args.getCypher().isPresent() )
-            {
+        try {
+            // If user is passing in a cypher statement just run that and be done with it
+            if (args.getCypher().isPresent()) {
                 // Can only prompt for password if input has not been redirected
-                connectMaybeInteractively( connectionConfig );
-                shell.execute( statementParser.parse( args.getCypher().get() ).statements() );
+                connectMaybeInteractively(connectionConfig);
+                shell.execute(statementParser.parse(args.getCypher().get()).statements());
                 return EXIT_SUCCESS;
-            }
-            else
-            {
+            } else {
                 // Can only prompt for password if input has not been redirected
-                connectMaybeInteractively( connectionConfig );
+                connectMaybeInteractively(connectionConfig);
 
-                if ( !shell.driverUrl().equals( connectionConfig.driverUrl() ) )
-                {
-                    var fallbackWarning = "Failed to connect to " + connectionConfig.driverUrl() + ", fallback to " + shell.driverUrl();
-                    printer.printIfVerbose( AnsiFormattedText.s().colorOrange().append( fallbackWarning ).formattedString() );
+                if (!shell.driverUrl().equals(connectionConfig.driverUrl())) {
+                    var fallbackWarning = "Failed to connect to " + connectionConfig.driverUrl() + ", fallback to "
+                            + shell.driverUrl();
+                    printer.printIfVerbose(AnsiFormattedText.s()
+                            .colorOrange()
+                            .append(fallbackWarning)
+                            .formattedString());
                 }
 
                 // Construct shellrunner after connecting, due to interrupt handling
-                ShellRunner shellRunner = runnerFactory.create( args, shell, printer, terminal );
-                CommandHelper commandHelper = new CommandHelper( printer, shellRunner.getHistorian(), shell, terminal, parameters );
+                ShellRunner shellRunner = runnerFactory.create(args, shell, printer, terminal);
+                CommandHelper commandHelper =
+                        new CommandHelper(printer, shellRunner.getHistorian(), shell, terminal, parameters);
 
-                shell.setCommandHelper( commandHelper );
+                shell.setCommandHelper(commandHelper);
 
                 return shellRunner.runUntilEnd();
             }
-        }
-        catch ( Throwable e )
-        {
-            log.error( e );
-            printer.printError( e );
+        } catch (Throwable e) {
+            log.error(e);
+            printer.printError(e);
             return EXIT_FAILURE;
         }
     }
@@ -198,145 +191,117 @@ public class Main
     /**
      * Connect the shell to the server, and try to handle missing passwords and such.
      */
-    private void connectMaybeInteractively( ConnectionConfig connectionConfig ) throws Exception
-    {
+    private void connectMaybeInteractively(ConnectionConfig connectionConfig) throws Exception {
         boolean didPrompt = false;
 
         // Prompt directly in interactive mode if user provided username but not password
-        if ( terminal.isInteractive() && !connectionConfig.username().isEmpty() && connectionConfig.password().isEmpty() )
-        {
-            connectionConfig = promptForUsernameAndPassword( connectionConfig );
+        if (terminal.isInteractive()
+                && !connectionConfig.username().isEmpty()
+                && connectionConfig.password().isEmpty()) {
+            connectionConfig = promptForUsernameAndPassword(connectionConfig);
             didPrompt = true;
         }
 
-        while ( true )
-        {
-            try
-            {
+        while (true) {
+            try {
                 // Try to connect
-                shell.connect( connectionConfig );
+                shell.connect(connectionConfig);
                 setArgumentParameters();
                 return;
-            }
-            catch ( AuthenticationException e )
-            {
+            } catch (AuthenticationException e) {
                 // Fail if we already prompted,
                 // or do not have interactive input,
                 // or already tried with both username and password
-                if ( didPrompt || !terminal.isInteractive() || !connectionConfig.username().isEmpty() && !connectionConfig.password().isEmpty() )
-                {
-                    log.error( "Failed to connect", e );
+                if (didPrompt
+                        || !terminal.isInteractive()
+                        || !connectionConfig.username().isEmpty()
+                                && !connectionConfig.password().isEmpty()) {
+                    log.error("Failed to connect", e);
                     throw e;
                 }
 
                 // Otherwise we prompt for username and password, and try to connect again
-                log.info( "Failed to connect, prompting for user name and password..." );
-                connectionConfig = promptForUsernameAndPassword( connectionConfig );
+                log.info("Failed to connect, prompting for user name and password...");
+                connectionConfig = promptForUsernameAndPassword(connectionConfig);
                 didPrompt = true;
-            }
-            catch ( Neo4jException e )
-            {
-                if ( terminal.isInteractive() && isPasswordChangeRequiredException( e ) )
-                {
-                    connectionConfig = promptAndChangePassword( connectionConfig, "Password change required" );
+            } catch (Neo4jException e) {
+                if (terminal.isInteractive() && isPasswordChangeRequiredException(e)) {
+                    connectionConfig = promptAndChangePassword(connectionConfig, "Password change required");
                     didPrompt = true;
-                }
-                else
-                {
-                    log.error( "Failed to connect", e );
+                } else {
+                    log.error("Failed to connect", e);
                     throw e;
                 }
             }
         }
     }
 
-    private void setArgumentParameters() throws CommandException
-    {
-        for ( var parameter : args.getParameters() )
-        {
-            parameters.setParameter( parameters.evaluate( parameter ) );
+    private void setArgumentParameters() throws CommandException {
+        for (var parameter : args.getParameters()) {
+            parameters.setParameter(parameters.evaluate(parameter));
         }
     }
 
-    private ConnectionConfig promptForUsernameAndPassword( ConnectionConfig connectionConfig ) throws Exception
-    {
+    private ConnectionConfig promptForUsernameAndPassword(ConnectionConfig connectionConfig) throws Exception {
         String username = connectionConfig.username();
         String password = connectionConfig.password();
-        if ( username.isEmpty() )
-        {
-            username = isOutputInteractive ?
-                    promptForNonEmptyText( "username", null ) :
-                    promptForText( "username", null );
+        if (username.isEmpty()) {
+            username = isOutputInteractive ? promptForNonEmptyText("username", null) : promptForText("username", null);
         }
-        if ( password.isEmpty() )
-        {
-            password =  promptForText( "password", '*' );
+        if (password.isEmpty()) {
+            password = promptForText("password", '*');
         }
-        return connectionConfig.withUsernameAndPassword( username, password );
+        return connectionConfig.withUsernameAndPassword(username, password);
     }
 
-    private ConnectionConfig promptAndChangePassword( ConnectionConfig connectionConfig, String message ) throws Exception
-    {
-        log.info( "Password change triggered." );
-        if ( message != null )
-        {
-            terminal.write().println( message );
+    private ConnectionConfig promptAndChangePassword(ConnectionConfig connectionConfig, String message)
+            throws Exception {
+        log.info("Password change triggered.");
+        if (message != null) {
+            terminal.write().println(message);
         }
         String username = connectionConfig.username();
-        if ( username.isEmpty() )
-        {
-            username = isOutputInteractive ?
-                    promptForNonEmptyText( "username", null ) :
-                    promptForText( "username", null );
+        if (username.isEmpty()) {
+            username = isOutputInteractive ? promptForNonEmptyText("username", null) : promptForText("username", null);
         }
         String password = connectionConfig.password();
-        if ( password.isEmpty() )
-        {
-            password =  promptForText( "password", '*' );
+        if (password.isEmpty()) {
+            password = promptForText("password", '*');
         }
-        connectionConfig = connectionConfig.withUsernameAndPassword( username, password );
-        String newPassword = isOutputInteractive ?
-                             promptForNonEmptyText( "new password", '*' ) :
-                             promptForText( "new password", '*' );
-        String reenteredNewPassword = promptForText( "confirm password", '*' );
+        connectionConfig = connectionConfig.withUsernameAndPassword(username, password);
+        String newPassword =
+                isOutputInteractive ? promptForNonEmptyText("new password", '*') : promptForText("new password", '*');
+        String reenteredNewPassword = promptForText("confirm password", '*');
 
-        if ( !reenteredNewPassword.equals( newPassword ) )
-        {
-            throw new CommandException( "Passwords are not matching." );
+        if (!reenteredNewPassword.equals(newPassword)) {
+            throw new CommandException("Passwords are not matching.");
         }
 
-        shell.changePassword( connectionConfig, newPassword );
-        return connectionConfig.withPassword( newPassword );
+        shell.changePassword(connectionConfig, newPassword);
+        return connectionConfig.withPassword(newPassword);
     }
 
     @VisibleForTesting
-    protected CypherShell getCypherShell()
-    {
+    protected CypherShell getCypherShell() {
         return shell;
     }
 
-    private String promptForNonEmptyText( String prompt, Character mask ) throws Exception
-    {
-        String text = promptForText( prompt, mask );
-        if ( !text.isEmpty() )
-        {
+    private String promptForNonEmptyText(String prompt, Character mask) throws Exception {
+        String text = promptForText(prompt, mask);
+        if (!text.isEmpty()) {
             return text;
         }
-        terminal.write().println( prompt + " cannot be empty" );
+        terminal.write().println(prompt + " cannot be empty");
         terminal.write().println();
-        return promptForNonEmptyText( prompt, mask );
+        return promptForNonEmptyText(prompt, mask);
     }
 
-    private String promptForText( String prompt, Character mask ) throws CommandException
-    {
-        try
-        {
-            return terminal.read().simplePrompt( prompt + ": ", mask );
-        }
-        catch ( NoMoreInputException | UserInterruptException e )
-        {
-            log.error( e );
-            throw new CommandException( "No text could be read, exiting..." );
+    private String promptForText(String prompt, Character mask) throws CommandException {
+        try {
+            return terminal.read().simplePrompt(prompt + ": ", mask);
+        } catch (NoMoreInputException | UserInterruptException e) {
+            log.error(e);
+            throw new CommandException("No text could be read, exiting...");
         }
     }
 }

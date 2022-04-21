@@ -19,12 +19,13 @@
  */
 package org.neo4j.tracers;
 
+import static org.neo4j.graphdb.RelationshipType.withName;
+
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,16 +41,14 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.neo4j.graphdb.RelationshipType.withName;
-
-@ExtendWith( SoftAssertionsExtension.class )
+@ExtendWith(SoftAssertionsExtension.class)
 @DbmsExtension
-class TransactionTracingIT
-{
+class TransactionTracingIT {
     private static final int ENTITY_COUNT = 1_000;
 
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private DatabaseManagementService managementService;
 
@@ -57,193 +56,220 @@ class TransactionTracingIT
     private SoftAssertions softly;
 
     @Test
-    void tracePageCacheAccessOnAllNodesAccess()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < ENTITY_COUNT; i++ )
-            {
+    void tracePageCacheAccessOnAllNodesAccess() {
+        try (Transaction transaction = database.beginTx()) {
+            for (int i = 0; i < ENTITY_COUNT; i++) {
                 transaction.createNode();
             }
             transaction.commit();
         }
 
-        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
-        {
+        try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
             var cursorContext = transaction.kernelTransaction().cursorContext();
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
 
-            softly.assertThat( Iterables.count( transaction.getAllNodes() ) )
-                  .as( "Number of expected nodes" ).isEqualTo( ENTITY_COUNT );
+            softly.assertThat(Iterables.count(transaction.getAllNodes()))
+                    .as("Number of expected nodes")
+                    .isEqualTo(ENTITY_COUNT);
 
-            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 2 );
-            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 2 );
-            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 2 );
+            softly.assertThat(cursorContext.getCursorTracer().pins())
+                    .as("Number of cursor pins")
+                    .isEqualTo(2);
+            softly.assertThat(cursorContext.getCursorTracer().unpins())
+                    .as("Number of cursor unpins")
+                    .isEqualTo(2);
+            softly.assertThat(cursorContext.getCursorTracer().hits())
+                    .as("Number of cursor hits")
+                    .isEqualTo(2);
         }
     }
 
     @Test
-    void tracePageCacheAccessOnNodeCreation()
-    {
-        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
-        {
+    void tracePageCacheAccessOnNodeCreation() {
+        try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
             var cursorContext = transaction.kernelTransaction().cursorContext();
 
-            var commitCursorChecker = new CommitCursorChecker( cursorContext );
-            managementService.registerTransactionEventListener( database.databaseName(), commitCursorChecker );
+            var commitCursorChecker = new CommitCursorChecker(cursorContext);
+            managementService.registerTransactionEventListener(database.databaseName(), commitCursorChecker);
 
-            for ( int i = 0; i < ENTITY_COUNT; i++ )
-            {
+            for (int i = 0; i < ENTITY_COUNT; i++) {
                 transaction.createNode();
             }
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
 
             transaction.commit();
-            softly.assertThat( commitCursorChecker.isInvoked() ).as( "Transaction committed" ).isTrue();
+            softly.assertThat(commitCursorChecker.isInvoked())
+                    .as("Transaction committed")
+                    .isTrue();
         }
     }
 
     @Test
-    void tracePageCacheAccessOnAllRelationshipsAccess()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < ENTITY_COUNT; i++ )
-            {
+    void tracePageCacheAccessOnAllRelationshipsAccess() {
+        try (Transaction transaction = database.beginTx()) {
+            for (int i = 0; i < ENTITY_COUNT; i++) {
                 var source = transaction.createNode();
-                source.createRelationshipTo( transaction.createNode(), withName( "connection" ) );
+                source.createRelationshipTo(transaction.createNode(), withName("connection"));
             }
             transaction.commit();
         }
 
-        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
-        {
+        try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
             var cursorContext = transaction.kernelTransaction().cursorContext();
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
 
-            softly.assertThat( Iterables.count( transaction.getAllRelationships() ) ).as( "Number of expected relationships" ).isEqualTo( ENTITY_COUNT );
+            softly.assertThat(Iterables.count(transaction.getAllRelationships()))
+                    .as("Number of expected relationships")
+                    .isEqualTo(ENTITY_COUNT);
 
-            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 5 );
-            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 5 );
-            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 5 );
+            softly.assertThat(cursorContext.getCursorTracer().pins())
+                    .as("Number of cursor pins")
+                    .isEqualTo(5);
+            softly.assertThat(cursorContext.getCursorTracer().unpins())
+                    .as("Number of cursor unpins")
+                    .isEqualTo(5);
+            softly.assertThat(cursorContext.getCursorTracer().hits())
+                    .as("Number of cursor hits")
+                    .isEqualTo(5);
         }
     }
 
     @Test
-    void tracePageCacheAccessOnFindNodes()
-    {
-        var marker = Label.label( "marker" );
-        var type = withName( "connection" );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < ENTITY_COUNT; i++ )
-            {
-                var source = transaction.createNode( marker );
-                source.createRelationshipTo( transaction.createNode(), type );
+    void tracePageCacheAccessOnFindNodes() {
+        var marker = Label.label("marker");
+        var type = withName("connection");
+        try (Transaction transaction = database.beginTx()) {
+            for (int i = 0; i < ENTITY_COUNT; i++) {
+                var source = transaction.createNode(marker);
+                source.createRelationshipTo(transaction.createNode(), type);
             }
             transaction.commit();
         }
 
-        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
-        {
+        try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
             var cursorContext = transaction.kernelTransaction().cursorContext();
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
 
-            softly.assertThat( Iterators.count( transaction.findNodes( marker ) ) ).as( "Number of expected nodes" ).isEqualTo( ENTITY_COUNT );
+            softly.assertThat(Iterators.count(transaction.findNodes(marker)))
+                    .as("Number of expected nodes")
+                    .isEqualTo(ENTITY_COUNT);
 
-            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 1 );
-            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1 );
-            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 1 );
+            softly.assertThat(cursorContext.getCursorTracer().pins())
+                    .as("Number of cursor pins")
+                    .isEqualTo(1);
+            softly.assertThat(cursorContext.getCursorTracer().unpins())
+                    .as("Number of cursor unpins")
+                    .isEqualTo(1);
+            softly.assertThat(cursorContext.getCursorTracer().hits())
+                    .as("Number of cursor hits")
+                    .isEqualTo(1);
         }
     }
 
     @Test
-    void tracePageCacheAccessOnFindRelationships()
-    {
-        var marker = Label.label( "marker" );
-        var type = withName( "connection" );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < ENTITY_COUNT; i++ )
-            {
-                var source = transaction.createNode( marker );
-                source.createRelationshipTo( transaction.createNode(), type );
+    void tracePageCacheAccessOnFindRelationships() {
+        var marker = Label.label("marker");
+        var type = withName("connection");
+        try (Transaction transaction = database.beginTx()) {
+            for (int i = 0; i < ENTITY_COUNT; i++) {
+                var source = transaction.createNode(marker);
+                source.createRelationshipTo(transaction.createNode(), type);
             }
             transaction.commit();
         }
 
-        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
-        {
+        try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
             var cursorContext = transaction.kernelTransaction().cursorContext();
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
 
-            softly.assertThat( Iterators.count( transaction.findRelationships( type ) ) ).as( "Number of expected relationships" ).isEqualTo( ENTITY_COUNT );
+            softly.assertThat(Iterators.count(transaction.findRelationships(type)))
+                    .as("Number of expected relationships")
+                    .isEqualTo(ENTITY_COUNT);
 
-            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 1 );
-            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1 );
-            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 1 );
+            softly.assertThat(cursorContext.getCursorTracer().pins())
+                    .as("Number of cursor pins")
+                    .isEqualTo(1);
+            softly.assertThat(cursorContext.getCursorTracer().unpins())
+                    .as("Number of cursor unpins")
+                    .isEqualTo(1);
+            softly.assertThat(cursorContext.getCursorTracer().hits())
+                    .as("Number of cursor hits")
+                    .isEqualTo(1);
         }
     }
 
     @Test
-    void tracePageCacheAccessOnDetachDelete() throws KernelException
-    {
-        var type = withName( "connection" );
+    void tracePageCacheAccessOnDetachDelete() throws KernelException {
+        var type = withName("connection");
         long sourceId;
-        try ( Transaction transaction = database.beginTx() )
-        {
+        try (Transaction transaction = database.beginTx()) {
             var source = transaction.createNode();
-            for ( int i = 0; i < 10; i++ )
-            {
-                source.createRelationshipTo( transaction.createNode(), type );
+            for (int i = 0; i < 10; i++) {
+                source.createRelationshipTo(transaction.createNode(), type);
             }
             sourceId = source.getId();
             transaction.commit();
         }
 
-        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
-        {
+        try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
             var cursorContext = transaction.kernelTransaction().cursorContext();
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
 
-            transaction.kernelTransaction().dataWrite().nodeDetachDelete( sourceId );
+            transaction.kernelTransaction().dataWrite().nodeDetachDelete(sourceId);
 
-            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 5 );
-            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1 );
-            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 5 );
+            softly.assertThat(cursorContext.getCursorTracer().pins())
+                    .as("Number of cursor pins")
+                    .isEqualTo(5);
+            softly.assertThat(cursorContext.getCursorTracer().unpins())
+                    .as("Number of cursor unpins")
+                    .isEqualTo(1);
+            softly.assertThat(cursorContext.getCursorTracer().hits())
+                    .as("Number of cursor hits")
+                    .isEqualTo(5);
         }
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
-    {
-        softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isZero();
-        softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isZero();
-        softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isZero();
-        softly.assertThat( cursorContext.getCursorTracer().faults() ).as( "Number of cursor faults" ).isZero();
+    private void assertZeroCursor(CursorContext cursorContext) {
+        softly.assertThat(cursorContext.getCursorTracer().pins())
+                .as("Number of cursor pins")
+                .isZero();
+        softly.assertThat(cursorContext.getCursorTracer().unpins())
+                .as("Number of cursor unpins")
+                .isZero();
+        softly.assertThat(cursorContext.getCursorTracer().hits())
+                .as("Number of cursor hits")
+                .isZero();
+        softly.assertThat(cursorContext.getCursorTracer().faults())
+                .as("Number of cursor faults")
+                .isZero();
     }
 
-    private class CommitCursorChecker extends TransactionEventListenerAdapter<Object>
-    {
+    private class CommitCursorChecker extends TransactionEventListenerAdapter<Object> {
         private final CursorContext cursorContext;
         private volatile boolean invoked;
 
-        CommitCursorChecker( CursorContext cursorContext )
-        {
+        CommitCursorChecker(CursorContext cursorContext) {
             this.cursorContext = cursorContext;
         }
 
-        public boolean isInvoked()
-        {
+        public boolean isInvoked() {
             return invoked;
         }
 
         @Override
-        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
-        {
-            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 1001 );
-            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1001 );
-            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 999 );
-            softly.assertThat( cursorContext.getCursorTracer().faults() ).as( "Number of cursor faults" ).isEqualTo( 2 );
+        public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
+            softly.assertThat(cursorContext.getCursorTracer().pins())
+                    .as("Number of cursor pins")
+                    .isEqualTo(1001);
+            softly.assertThat(cursorContext.getCursorTracer().unpins())
+                    .as("Number of cursor unpins")
+                    .isEqualTo(1001);
+            softly.assertThat(cursorContext.getCursorTracer().hits())
+                    .as("Number of cursor hits")
+                    .isEqualTo(999);
+            softly.assertThat(cursorContext.getCursorTracer().faults())
+                    .as("Number of cursor faults")
+                    .isEqualTo(2);
             invoked = true;
         }
     }

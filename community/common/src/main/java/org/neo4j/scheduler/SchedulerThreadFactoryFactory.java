@@ -19,7 +19,6 @@
  */
 package org.neo4j.scheduler;
 
-public interface SchedulerThreadFactoryFactory
-{
-    SchedulerThreadFactory newSchedulerThreadFactory( Group group, ThreadGroup parentThreadGroup );
+public interface SchedulerThreadFactoryFactory {
+    SchedulerThreadFactory newSchedulerThreadFactory(Group group, ThreadGroup parentThreadGroup);
 }

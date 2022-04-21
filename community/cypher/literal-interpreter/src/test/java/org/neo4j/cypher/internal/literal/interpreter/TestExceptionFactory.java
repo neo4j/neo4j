@@ -20,20 +20,17 @@
 package org.neo4j.cypher.internal.literal.interpreter;
 
 import java.util.List;
-
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 
-public class TestExceptionFactory implements ASTExceptionFactory
-{
+public class TestExceptionFactory implements ASTExceptionFactory {
     @Override
-    public Exception syntaxException( String got, List<String> expected, Exception source, int offset, int line, int column )
-    {
-        return new Exception( "SyntaxException!", source );
+    public Exception syntaxException(
+            String got, List<String> expected, Exception source, int offset, int line, int column) {
+        return new Exception("SyntaxException!", source);
     }
 
     @Override
-    public Exception syntaxException( Exception source, int offset, int line, int column )
-    {
-        return new Exception( "SyntaxException!", source );
+    public Exception syntaxException(Exception source, int offset, int line, int column) {
+        return new Exception("SyntaxException!", source);
     }
 }

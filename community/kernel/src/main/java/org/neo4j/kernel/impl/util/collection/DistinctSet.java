@@ -19,65 +19,56 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.eclipse.collections.api.block.procedure.Procedure;
-import org.eclipse.collections.api.set.MutableSet;
-
-import org.neo4j.internal.kernel.api.DefaultCloseListenable;
-import org.neo4j.memory.Measurable;
-import org.neo4j.memory.MemoryTracker;
-
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newSet;
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
+import org.eclipse.collections.api.block.procedure.Procedure;
+import org.eclipse.collections.api.set.MutableSet;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
+import org.neo4j.memory.Measurable;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * A specialized heap tracking set used for distinct query operators.
  * @param <T> element type
  */
-public class DistinctSet<T extends Measurable> extends DefaultCloseListenable
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( DistinctSet.class );
+public class DistinctSet<T extends Measurable> extends DefaultCloseListenable {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(DistinctSet.class);
     private final MemoryTracker scopedMemoryTracker;
     private final MutableSet<T> distinctSet;
 
-    public static <T extends Measurable> DistinctSet<T> createDistinctSet( MemoryTracker memoryTracker )
-    {
+    public static <T extends Measurable> DistinctSet<T> createDistinctSet(MemoryTracker memoryTracker) {
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
-        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
-        return new DistinctSet<>( scopedMemoryTracker );
+        scopedMemoryTracker.allocateHeap(SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
+        return new DistinctSet<>(scopedMemoryTracker);
     }
 
-    private DistinctSet( MemoryTracker scopedMemoryTracker )
-    {
+    private DistinctSet(MemoryTracker scopedMemoryTracker) {
         this.scopedMemoryTracker = scopedMemoryTracker;
-        distinctSet = newSet( scopedMemoryTracker );
+        distinctSet = newSet(scopedMemoryTracker);
     }
 
-    public boolean add( T element )
-    {
-        boolean wasAdded = distinctSet.add( element );
-        if ( wasAdded )
-        {
-            scopedMemoryTracker.allocateHeap( element.estimatedHeapUsage() );
+    public boolean add(T element) {
+        boolean wasAdded = distinctSet.add(element);
+        if (wasAdded) {
+            scopedMemoryTracker.allocateHeap(element.estimatedHeapUsage());
         }
         return wasAdded;
     }
 
-    public void each( Procedure<? super T> procedure )
-    {
-        distinctSet.each( procedure );
+    public void each(Procedure<? super T> procedure) {
+        distinctSet.each(procedure);
     }
 
     @Override
-    public void closeInternal()
-    {
+    public void closeInternal() {
         // No need to close distinctSet individually since it uses scopedMemoryTracker anyway
         scopedMemoryTracker.close();
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return false;
     }
 }

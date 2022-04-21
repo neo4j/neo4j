@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import java.util.function.Supplier;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexWriterConfig;
-
-import java.util.function.Supplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -33,8 +31,7 @@ import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.token.api.TokenHolder;
 
-public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextIndexBuilder>
-{
+public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextIndexBuilder> {
     private final IndexDescriptor descriptor;
     private final TokenHolder propertyKeyTokenHolder;
     private final Analyzer analyzer;
@@ -43,10 +40,14 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
     private IndexUpdateSink indexUpdateSink = NullIndexUpdateSink.INSTANCE;
     private final Config config;
 
-    private FulltextIndexBuilder( IndexDescriptor descriptor, Config config, DatabaseReadOnlyChecker readOnlyChecker, TokenHolder propertyKeyTokenHolder,
-            Analyzer analyzer, String[] propertyNames )
-    {
-        super( readOnlyChecker );
+    private FulltextIndexBuilder(
+            IndexDescriptor descriptor,
+            Config config,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            TokenHolder propertyKeyTokenHolder,
+            Analyzer analyzer,
+            String[] propertyNames) {
+        super(readOnlyChecker);
         this.config = config;
         this.descriptor = descriptor;
         this.analyzer = analyzer;
@@ -61,10 +62,15 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
      * @param propertyKeyTokenHolder A token holder used to look up property key token names by id.
      * @return new FulltextIndexBuilder
      */
-    public static FulltextIndexBuilder create( IndexDescriptor descriptor, Config config, DatabaseReadOnlyChecker readOnlyChecker,
-            TokenHolder propertyKeyTokenHolder, Analyzer analyzer, String[] propertyNames )
-    {
-        return new FulltextIndexBuilder( descriptor, config, readOnlyChecker, propertyKeyTokenHolder, analyzer, propertyNames );
+    public static FulltextIndexBuilder create(
+            IndexDescriptor descriptor,
+            Config config,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            TokenHolder propertyKeyTokenHolder,
+            Analyzer analyzer,
+            String[] propertyNames) {
+        return new FulltextIndexBuilder(
+                descriptor, config, readOnlyChecker, propertyKeyTokenHolder, analyzer, propertyNames);
     }
 
     /**
@@ -74,14 +80,12 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
      * @param isPopulating {@code true} if the index should be created in a populating mode.
      * @return this index builder.
      */
-    FulltextIndexBuilder withPopulatingMode( boolean isPopulating )
-    {
+    FulltextIndexBuilder withPopulatingMode(boolean isPopulating) {
         this.populating = isPopulating;
         return this;
     }
 
-    FulltextIndexBuilder withIndexUpdateSink( IndexUpdateSink indexUpdateSink )
-    {
+    FulltextIndexBuilder withIndexUpdateSink(IndexUpdateSink indexUpdateSink) {
         this.indexUpdateSink = indexUpdateSink;
         return this;
     }
@@ -91,20 +95,22 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
      *
      * @return lucene schema index
      */
-    public DatabaseIndex<FulltextIndexReader> build()
-    {
+    public DatabaseIndex<FulltextIndexReader> build() {
         Supplier<IndexWriterConfig> writerConfigFactory;
-        if ( populating )
-        {
-            writerConfigFactory = () -> IndexWriterConfigs.population( config, analyzer );
+        if (populating) {
+            writerConfigFactory = () -> IndexWriterConfigs.population(config, analyzer);
+        } else {
+            writerConfigFactory = () -> IndexWriterConfigs.standard(config, analyzer);
         }
-        else
-        {
-            writerConfigFactory = () -> IndexWriterConfigs.standard( config, analyzer );
-        }
-        WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( writerConfigFactory );
-        LuceneFulltextIndex fulltextIndex =
-                new LuceneFulltextIndex( storageBuilder.build(), partitionFactory, descriptor, propertyKeyTokenHolder, config, analyzer, propertyNames );
-        return new WritableFulltextIndex( indexUpdateSink, fulltextIndex, readOnlyChecker );
+        WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory(writerConfigFactory);
+        LuceneFulltextIndex fulltextIndex = new LuceneFulltextIndex(
+                storageBuilder.build(),
+                partitionFactory,
+                descriptor,
+                propertyKeyTokenHolder,
+                config,
+                analyzer,
+                propertyNames);
+        return new WritableFulltextIndex(indexUpdateSink, fulltextIndex, readOnlyChecker);
     }
 }

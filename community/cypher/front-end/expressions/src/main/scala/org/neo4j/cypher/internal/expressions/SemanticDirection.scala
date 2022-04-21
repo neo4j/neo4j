@@ -23,6 +23,7 @@ sealed trait SemanticDirection {
 }
 
 case object SemanticDirection {
+
   case object OUTGOING extends SemanticDirection {
     override def reversed: SemanticDirection = INCOMING
     override def leftArrowCanonicalString: String = "-"

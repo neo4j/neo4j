@@ -19,70 +19,59 @@
  */
 package org.neo4j.bolt.transport;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryPools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class BoltMemoryPoolIT
-{
-    private final int requestedSize = (int) ByteUnit.kibiBytes( 10 );
+class BoltMemoryPoolIT {
+    private final int requestedSize = (int) ByteUnit.kibiBytes(10);
 
     @Test
-    void reportConsumedHeapMemory()
-    {
-        var bufAllocator = createTestAllocator( false );
+    void reportConsumedHeapMemory() {
+        var bufAllocator = createTestAllocator(false);
         var allocatorMetric = bufAllocator.metric();
-        assertEquals(0, allocatorMetric.usedDirectMemory() );
-        assertEquals(0, allocatorMetric.usedDirectMemory() );
+        assertEquals(0, allocatorMetric.usedDirectMemory());
+        assertEquals(0, allocatorMetric.usedDirectMemory());
 
-        var memoryTracker = new BoltMemoryPool( new MemoryPools(), allocatorMetric );
-        var buffer = bufAllocator.buffer( requestedSize );
-        try
-        {
-            assertEquals( requestedSize, buffer.capacity() );
-            assertEquals( requestedSize, memoryTracker.usedHeap() );
-            assertEquals( requestedSize, memoryTracker.totalUsed() );
-        }
-        finally
-        {
+        var memoryTracker = new BoltMemoryPool(new MemoryPools(), allocatorMetric);
+        var buffer = bufAllocator.buffer(requestedSize);
+        try {
+            assertEquals(requestedSize, buffer.capacity());
+            assertEquals(requestedSize, memoryTracker.usedHeap());
+            assertEquals(requestedSize, memoryTracker.totalUsed());
+        } finally {
             buffer.release();
         }
 
-        assertEquals( 0, memoryTracker.usedHeap() );
-        assertEquals( 0, memoryTracker.totalUsed() );
+        assertEquals(0, memoryTracker.usedHeap());
+        assertEquals(0, memoryTracker.totalUsed());
     }
 
     @Test
-    void reportConsumedDirectMemory()
-    {
-        var bufAllocator = createTestAllocator( true );
+    void reportConsumedDirectMemory() {
+        var bufAllocator = createTestAllocator(true);
         var allocatorMetric = bufAllocator.metric();
-        assertEquals(0, allocatorMetric.usedDirectMemory() );
-        assertEquals(0, allocatorMetric.usedDirectMemory() );
+        assertEquals(0, allocatorMetric.usedDirectMemory());
+        assertEquals(0, allocatorMetric.usedDirectMemory());
 
-        var memoryTracker = new BoltMemoryPool( new MemoryPools(), allocatorMetric );
-        var buffer = bufAllocator.buffer( requestedSize );
-        try
-        {
-            assertEquals( requestedSize, buffer.capacity() );
-            assertEquals( requestedSize, memoryTracker.usedNative() );
-            assertEquals( requestedSize, memoryTracker.totalUsed() );
-        }
-        finally
-        {
+        var memoryTracker = new BoltMemoryPool(new MemoryPools(), allocatorMetric);
+        var buffer = bufAllocator.buffer(requestedSize);
+        try {
+            assertEquals(requestedSize, buffer.capacity());
+            assertEquals(requestedSize, memoryTracker.usedNative());
+            assertEquals(requestedSize, memoryTracker.totalUsed());
+        } finally {
             buffer.release();
         }
 
-        assertEquals( 0, memoryTracker.usedNative() );
-        assertEquals( 0, memoryTracker.totalUsed() );
+        assertEquals(0, memoryTracker.usedNative());
+        assertEquals(0, memoryTracker.totalUsed());
     }
 
-    private static PooledByteBufAllocator createTestAllocator( boolean preferDirect )
-    {
-        return new PooledByteBufAllocator( preferDirect, 1, 1, (int) ByteUnit.kibiBytes( 4 ), 1, 0, 0, 0, true );
+    private static PooledByteBufAllocator createTestAllocator(boolean preferDirect) {
+        return new PooledByteBufAllocator(preferDirect, 1, 1, (int) ByteUnit.kibiBytes(4), 1, 0, 0, 0, true);
     }
 }

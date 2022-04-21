@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport.cache.idmapping;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-
 import org.neo4j.internal.batchimport.PropertyValueLookup;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Collector;
@@ -31,8 +30,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 /**
  * Maps input node ids as specified by data read into {@link InputEntityVisitor} into actual node ids.
  */
-public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
-{
+public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable {
     long ID_NOT_FOUND = -1;
 
     /**
@@ -45,7 +43,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
      * It is required that all input ids belonging to a specific group are put in sequence before putting any
      * input ids for another group.
      */
-    void put( Object inputId, long actualId, Group group );
+    void put(Object inputId, long actualId, Group group);
 
     /**
      * @return whether or not a call to {@link #prepare(PropertyValueLookup, Collector, ProgressListener)} needs to commence after all calls to
@@ -63,7 +61,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
      * @param collector {@link Collector} for bad entries, such as duplicate node ids.
      * @param progress reports preparation progress.
      */
-    void prepare( PropertyValueLookup inputIdLookup, Collector collector, ProgressListener progress );
+    void prepare(PropertyValueLookup inputIdLookup, Collector collector, ProgressListener progress);
 
     /**
      * Returns an actual node id representing {@code inputId}.
@@ -76,7 +74,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
      * @param group {@link Group} the given {@code inputId} must exist in, i.e. have been put with.
      * @return the actual node id previously specified by {@link #put(Object, long, Group)}, or {@code -1} if not found.
      */
-    long get( Object inputId, Group group );
+    long get(Object inputId, Group group);
 
     /**
      * Releases all resources used by this {@link IdMapper}.
@@ -90,7 +88,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
      * @param numberOfNodes number of nodes to calculate memory for.
      * @return instance capable of calculating memory usage for the given number of nodes.
      */
-    MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes );
+    MemoryStatsVisitor.Visitable memoryEstimation(long numberOfNodes);
 
     LongIterator leftOverDuplicateNodesIds();
 }

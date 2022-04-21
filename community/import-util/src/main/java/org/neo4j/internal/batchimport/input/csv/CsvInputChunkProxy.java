@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.input.csv;
 
 import java.io.IOException;
 import java.util.function.Supplier;
-
 import org.neo4j.csv.reader.Chunker;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
@@ -34,15 +33,12 @@ import org.neo4j.internal.batchimport.input.InputEntityVisitor;
  * The problem it has is that it doesn't know exactly which type of {@link CsvInputChunk} it wants to create,
  * because that's up to each input group. This gap is bridged here in this class.
  */
-public class CsvInputChunkProxy implements CsvInputChunk
-{
+public class CsvInputChunkProxy implements CsvInputChunk {
     private CsvInputChunk actual;
     private int groupId = -1;
 
-    public void ensureInstantiated( Supplier<CsvInputChunk> newChunk, int groupId ) throws IOException
-    {
-        if ( actual == null || groupId != this.groupId )
-        {
+    public void ensureInstantiated(Supplier<CsvInputChunk> newChunk, int groupId) throws IOException {
+        if (actual == null || groupId != this.groupId) {
             closeCurrent();
             actual = newChunk.get();
         }
@@ -50,28 +46,23 @@ public class CsvInputChunkProxy implements CsvInputChunk
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         closeCurrent();
     }
 
-    private void closeCurrent() throws IOException
-    {
-        if ( actual != null )
-        {
+    private void closeCurrent() throws IOException {
+        if (actual != null) {
             actual.close();
         }
     }
 
     @Override
-    public boolean fillFrom( Chunker chunker ) throws IOException
-    {
-        return actual.fillFrom( chunker );
+    public boolean fillFrom(Chunker chunker) throws IOException {
+        return actual.fillFrom(chunker);
     }
 
     @Override
-    public boolean next( InputEntityVisitor visitor ) throws IOException
-    {
-        return actual.next( visitor );
+    public boolean next(InputEntityVisitor visitor) throws IOException {
+        return actual.next(visitor);
     }
 }

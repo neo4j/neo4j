@@ -19,97 +19,90 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class FileSizeThresholdTest
-{
+import java.io.IOException;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
-    private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private final LogFileInformation source = mock( LogFileInformation.class );
-    private final Path file = mock( Path.class );
+class FileSizeThresholdTest {
+
+    private FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
+    private final LogFileInformation source = mock(LogFileInformation.class);
+    private final Path file = mock(Path.class);
     private final long version = 1;
 
     @Test
-    void shouldReturnFalseWhenFileSizeIsLowerThanMaxSize() throws IOException
-    {
+    void shouldReturnFalseWhenFileSizeIsLowerThanMaxSize() throws IOException {
         // given
         final long maxSize = 10;
-        final FileSizeThreshold threshold = new FileSizeThreshold( fs, maxSize );
+        final FileSizeThreshold threshold = new FileSizeThreshold(fs, maxSize);
 
-        when( fs.getFileSize( file ) ).thenReturn( 5L );
+        when(fs.getFileSize(file)).thenReturn(5L);
 
         // when
         threshold.init();
-        final boolean result = threshold.reached( file, version, source );
+        final boolean result = threshold.reached(file, version, source);
 
         // then
-        assertFalse( result );
+        assertFalse(result);
     }
 
     @Test
-    void shouldReturnTrueWhenASingleFileSizeIsGreaterOrEqualThanMaxSize() throws IOException
-    {
+    void shouldReturnTrueWhenASingleFileSizeIsGreaterOrEqualThanMaxSize() throws IOException {
         // given
         long sixteenGigabytes = 16L * 1024 * 1024 * 1024;
 
-        final FileSizeThreshold threshold = new FileSizeThreshold( fs, sixteenGigabytes );
+        final FileSizeThreshold threshold = new FileSizeThreshold(fs, sixteenGigabytes);
 
-        when( fs.getFileSize( file ) ).thenReturn( sixteenGigabytes );
+        when(fs.getFileSize(file)).thenReturn(sixteenGigabytes);
 
         // when
         threshold.init();
-        final boolean result = threshold.reached( file, version, source );
+        final boolean result = threshold.reached(file, version, source);
 
         // then
-        assertTrue( result );
+        assertTrue(result);
     }
 
     @Test
-    void shouldSumSizeWhenCalledMultipleTimes() throws IOException
-    {
+    void shouldSumSizeWhenCalledMultipleTimes() throws IOException {
         // given
         final long maxSize = 10;
-        final FileSizeThreshold threshold = new FileSizeThreshold( fs, maxSize );
+        final FileSizeThreshold threshold = new FileSizeThreshold(fs, maxSize);
 
-        when( fs.getFileSize( file ) ).thenReturn( 5L );
+        when(fs.getFileSize(file)).thenReturn(5L);
 
         // when
         threshold.init();
-        threshold.reached( file, version, source );
-        final boolean result = threshold.reached( file, version, source );
+        threshold.reached(file, version, source);
+        final boolean result = threshold.reached(file, version, source);
 
         // then
-        assertTrue( result );
+        assertTrue(result);
     }
 
     @Test
-    void shouldForgetPreviousValuesAfterAInitCall() throws IOException
-    {
+    void shouldForgetPreviousValuesAfterAInitCall() throws IOException {
         // given
         final long maxSize = 10;
-        final FileSizeThreshold threshold = new FileSizeThreshold( fs, maxSize );
+        final FileSizeThreshold threshold = new FileSizeThreshold(fs, maxSize);
 
-        when( fs.getFileSize( file ) ).thenReturn( 5L );
+        when(fs.getFileSize(file)).thenReturn(5L);
 
         // when
         threshold.init();
-        threshold.reached( file, version, source );
-        threshold.reached( file, version, source );
+        threshold.reached(file, version, source);
+        threshold.reached(file, version, source);
         threshold.init();
-        final boolean result = threshold.reached( file, version, source );
+        final boolean result = threshold.reached(file, version, source);
 
         // then
-        assertFalse( result );
+        assertFalse(result);
     }
 }

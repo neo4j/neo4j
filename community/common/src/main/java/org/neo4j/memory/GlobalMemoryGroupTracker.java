@@ -19,14 +19,13 @@
  */
 package org.neo4j.memory;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.neo4j.util.Preconditions.checkState;
-
-public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements ScopedMemoryPool
-{
+public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements ScopedMemoryPool {
     private final MemoryPools pools;
     private final MemoryGroup group;
 
@@ -34,49 +33,49 @@ public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements Sc
     private final MemoryTracker memoryTracker;
     private final boolean trackingEnabled;
 
-    public GlobalMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict, boolean trackingEnabled, String limitSettingName )
-    {
-        super( new MemoryPoolImpl( limit, strict, limitSettingName ) );
+    public GlobalMemoryGroupTracker(
+            MemoryPools pools,
+            MemoryGroup group,
+            long limit,
+            boolean strict,
+            boolean trackingEnabled,
+            String limitSettingName) {
+        super(new MemoryPoolImpl(limit, strict, limitSettingName));
         this.pools = pools;
         this.group = group;
         this.trackingEnabled = trackingEnabled;
-        this.memoryTracker = trackingEnabled ? new MemoryPoolTracker( this ) : EmptyMemoryTracker.INSTANCE;
+        this.memoryTracker = trackingEnabled ? new MemoryPoolTracker(this) : EmptyMemoryTracker.INSTANCE;
     }
 
-    void releasePool( DatabaseMemoryGroupTracker databaseMemoryGroupTracker )
-    {
-        databasePools.remove( databaseMemoryGroupTracker );
+    void releasePool(DatabaseMemoryGroupTracker databaseMemoryGroupTracker) {
+        databasePools.remove(databaseMemoryGroupTracker);
     }
 
     @Override
-    public MemoryGroup group()
-    {
+    public MemoryGroup group() {
         return group;
     }
 
     @Override
-    public void close()
-    {
-        checkState( databasePools.isEmpty(), "All sub pools must be closed before closing top pool" );
-        pools.releasePool( this );
+    public void close() {
+        checkState(databasePools.isEmpty(), "All sub pools must be closed before closing top pool");
+        pools.releasePool(this);
         memoryTracker.close();
     }
 
-    public ScopedMemoryPool newDatabasePool( String name, long limit, String limitSettingName )
-    {
-        DatabaseMemoryGroupTracker subTracker = new DatabaseMemoryGroupTracker( this, name, limit, true, trackingEnabled, limitSettingName );
-        databasePools.add( subTracker );
+    public ScopedMemoryPool newDatabasePool(String name, long limit, String limitSettingName) {
+        DatabaseMemoryGroupTracker subTracker =
+                new DatabaseMemoryGroupTracker(this, name, limit, true, trackingEnabled, limitSettingName);
+        databasePools.add(subTracker);
         return subTracker;
     }
 
     @Override
-    public MemoryTracker getPoolMemoryTracker()
-    {
+    public MemoryTracker getPoolMemoryTracker() {
         return memoryTracker;
     }
 
-    public List<ScopedMemoryPool> getDatabasePools()
-    {
-        return new ArrayList<>( databasePools );
+    public List<ScopedMemoryPool> getDatabasePools() {
+        return new ArrayList<>(databasePools);
     }
 }

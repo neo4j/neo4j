@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
-
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
@@ -35,90 +34,76 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * Used to figure out what logical log file to open when the database
  * starts up.
  */
-public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
-{
-    public static final DirectoryStream.Filter<Path> DEFAULT_FILENAME_FILTER = TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
+public class TransactionLogFiles extends LifecycleAdapter implements LogFiles {
+    public static final DirectoryStream.Filter<Path> DEFAULT_FILENAME_FILTER =
+            TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
 
     private final CheckpointFile checkpointLogFile;
     private final TransactionLogFile logFile;
     private final Path logsDirectory;
     private LifeSupport logFilesLife;
 
-    TransactionLogFiles( Path logsDirectory, String name, TransactionLogFilesContext context )
-    {
+    TransactionLogFiles(Path logsDirectory, String name, TransactionLogFilesContext context) {
         this.logsDirectory = logsDirectory;
-        this.logFile = new TransactionLogFile( this, context, name );
-        this.checkpointLogFile = new CheckpointLogFile( this, context );
+        this.logFile = new TransactionLogFile(this, context, name);
+        this.checkpointLogFile = new CheckpointLogFile(this, context);
     }
 
     @Override
-    public void init() throws IOException
-    {
+    public void init() throws IOException {
         // life support is not restartable so we need to create a new one each time
         logFilesLife = new LifeSupport();
-        logFilesLife.add( logFile );
-        logFilesLife.add( checkpointLogFile );
+        logFilesLife.add(logFile);
+        logFilesLife.add(checkpointLogFile);
         logFilesLife.init();
     }
 
     @Override
-    public void start() throws IOException
-    {
+    public void start() throws IOException {
         logFilesLife.start();
     }
 
     @Override
-    public void stop() throws IOException
-    {
+    public void stop() throws IOException {
         logFilesLife.stop();
     }
 
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         logFilesLife.shutdown();
     }
 
     @Override
-    public Path[] logFiles() throws IOException
-    {
-        return ArrayUtil.concat( logFile.getMatchedFiles(), checkpointLogFile.getDetachedCheckpointFiles() );
+    public Path[] logFiles() throws IOException {
+        return ArrayUtil.concat(logFile.getMatchedFiles(), checkpointLogFile.getDetachedCheckpointFiles());
     }
 
     @Override
-    public boolean isLogFile( Path path )
-    {
-        try
-        {
-            return DEFAULT_FILENAME_FILTER.accept( path );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public boolean isLogFile(Path path) {
+        try {
+            return DEFAULT_FILENAME_FILTER.accept(path);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public LogTailMetadata getTailMetadata()
-    {
+    public LogTailMetadata getTailMetadata() {
         return checkpointLogFile.getTailMetadata();
     }
 
     @Override
-    public Path logFilesDirectory()
-    {
+    public Path logFilesDirectory() {
         return logsDirectory;
     }
 
     @Override
-    public LogFile getLogFile()
-    {
+    public LogFile getLogFile() {
         return logFile;
     }
 
     @Override
-    public CheckpointFile getCheckpointFile()
-    {
+    public CheckpointFile getCheckpointFile() {
         return checkpointLogFile;
     }
 }

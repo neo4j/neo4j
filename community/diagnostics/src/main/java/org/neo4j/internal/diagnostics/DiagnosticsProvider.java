@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.diagnostics;
 
-public interface DiagnosticsProvider
-{
+public interface DiagnosticsProvider {
     /**
      * Return an identifier for this {@link DiagnosticsProvider}. The result of
      * this method must be stable, i.e. invoking this method multiple times on
@@ -47,5 +46,5 @@ public interface DiagnosticsProvider
      *
      * @param logger to dump messages to.
      */
-    void dump( DiagnosticsLogger logger );
+    void dump(DiagnosticsLogger logger);
 }

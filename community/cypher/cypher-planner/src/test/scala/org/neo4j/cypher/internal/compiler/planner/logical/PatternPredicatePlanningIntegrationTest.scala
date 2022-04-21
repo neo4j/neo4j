@@ -98,8 +98,8 @@ import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
-                                              with LogicalPlanningTestSupport2
-                                              with LogicalPlanningIntegrationTestSupport {
+    with LogicalPlanningTestSupport2
+    with LogicalPlanningIntegrationTestSupport {
 
   test("should consider variables introduced by outer list comprehensions when planning pattern predicates") {
     val plan = (new given {
@@ -108,7 +108,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 10
         // argument
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if containsArgumentOnly(queryGraph) => 1
-        case _ => 4000000
+        case _                                                                                     => 4000000
       }
       lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
     } getLogicalPlanFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""")._1
@@ -122,7 +122,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
                 ands(hasLabels("anon_4", "ComedyClub")),
                 Expand(
                   Argument(Set("f")),
-                  "f", OUTGOING, Seq(RelTypeName("WORKS_AT")_), "anon_4", "anon_3", ExpandAll
+                  "f",
+                  OUTGOING,
+                  Seq(RelTypeName("WORKS_AT") _),
+                  "anon_4",
+                  "anon_3",
+                  ExpandAll
                 )
               )
             )
@@ -134,7 +139,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     // The important thing for this test is "RETURN u.id" instead of "RETURN u".
     // Like this the scoping is challenged to propagate `u` from the previous scope into the pattern expression
 
-    val logicalPlan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])", deduplicateNames = false, stripProduceResults = false)._1
+    val logicalPlan = planFor(
+      "MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])",
+      deduplicateNames = false,
+      stripProduceResults = false
+    )._1
 
     logicalPlan should equal(
       new LogicalPlanBuilder()
@@ -237,7 +246,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SelectOrSemiApply for a pattern predicate and multiple expressions") {
-    val logicalPlan = planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a", stripProduceResults = false)._1
+    val logicalPlan =
+      planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -262,7 +272,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with LetSelectOrSemiApply and SelectOrAntiSemiApply for two pattern predicates and expressions") {
+  test(
+    "should build plans with LetSelectOrSemiApply and SelectOrAntiSemiApply for two pattern predicates and expressions"
+  ) {
     val config = new given {
       lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
     }
@@ -277,7 +289,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .selectOrAntiSemiApply("anon_8")
         .|.expandAll("(a)-[anon_6:X]->(anon_7)")
         .|.argument("a")
-        .letSelectOrSemiApply("anon_8", "a.prop = 9") // anon_8 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .letSelectOrSemiApply(
+          "anon_8",
+          "a.prop = 9"
+        ) // anon_8 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
         .|.expandAll("(a)-[anon_4:Y]->(anon_5)")
         .|.argument("a")
         .allNodeScan("a")
@@ -373,7 +388,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with AntiSemiApply for a single negated pattern predicate with exists with Label on other node") {
+  test(
+    "should build plans with AntiSemiApply for a single negated pattern predicate with exists with Label on other node"
+  ) {
     val logicalPlan = planFor("MATCH (a) WHERE NOT exists((a)-[:X]->(:Foo)) RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
@@ -390,12 +407,24 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   test("should plan all predicates along with named varlength pattern") {
     planFor("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p")._1 should beLike {
       case Projection(
-      VarExpand(_, _, _, _, _, _, _, _, _,
-                Some(VariablePredicate(
-                  Variable("r_NODES"),
-                  Equals(Property(Variable("r_NODES"), PropertyKeyName("prop") ), SignedDecimalIntegerLiteral("1337"))
-                )),
-                _), _) => ()
+          VarExpand(
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            Some(VariablePredicate(
+              Variable("r_NODES"),
+              Equals(Property(Variable("r_NODES"), PropertyKeyName("prop")), SignedDecimalIntegerLiteral("1337"))
+            )),
+            _
+          ),
+          _
+        ) => ()
 
     }
   }
@@ -403,12 +432,24 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   test("should plan none predicates along with named varlength pattern") {
     planFor("MATCH p=(a)-[r*]->(b) WHERE none(n in nodes(p) WHERE n.prop = 1337) RETURN p")._1 should beLike {
       case Projection(
-      VarExpand(_, _, _, _, _, _, _, _, _,
-                Some(VariablePredicate(
-                  Variable("r_NODES"),
-                  Not(Equals(Property(Variable("r_NODES"), PropertyKeyName("prop") ), SignedDecimalIntegerLiteral("1337")))
-                )),
-                _), _) => ()
+          VarExpand(
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            Some(VariablePredicate(
+              Variable("r_NODES"),
+              Not(Equals(Property(Variable("r_NODES"), PropertyKeyName("prop")), SignedDecimalIntegerLiteral("1337")))
+            )),
+            _
+          ),
+          _
+        ) => ()
 
     }
   }
@@ -448,7 +489,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     val plan = planFor(q)._1
     plan.folder.treeExists({
-      case _:RollUpApply => true
+      case _: RollUpApply => true
     }) should be(false)
   }
 
@@ -465,7 +506,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     val plan = planFor(q)._1
     plan.folder.treeExists({
-      case _:RollUpApply => true
+      case _: RollUpApply => true
     }) should be(false)
   }
 
@@ -479,9 +520,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-                 NodeByIdSeek("n", _, SetExtractor(argumentName)), _
-                ) if collectionName == argumentName => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          NodeByIdSeek("n", _, SetExtractor(argumentName)),
+          _
+        ) if collectionName == argumentName => ()
     }
   }
 
@@ -495,9 +537,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-                 DirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName)), _
-                ) if collectionName == argumentName => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          DirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName)),
+          _
+        ) if collectionName == argumentName => ()
     }
   }
 
@@ -511,9 +554,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-                 UndirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName)), _
-                ) if collectionName == argumentName => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          UndirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName)),
+          _
+        ) if collectionName == argumentName => ()
     }
   }
 
@@ -524,15 +568,17 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
         |RETURN n
       """.stripMargin
-    val (plan, _, _) = new given {
-      indexOn("Label", "prop")
-    } getLogicalPlanFor q
+    val (plan, _, _) =
+      new given {
+        indexOn("Label", "prop")
+      } getLogicalPlanFor q
 
     plan should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-                 NodeIndexSeek("n", _, _, _, SetExtractor(argumentName), _, _), _
-                ) if collectionName == argumentName => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          NodeIndexSeek("n", _, _, _, SetExtractor(argumentName), _, _),
+          _
+        ) if collectionName == argumentName => ()
     }
   }
 
@@ -554,11 +600,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     plan should beLike {
-      case Apply
-        (RollUpApply
-          (Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-        DirectedRelationshipIndexSeek("r", _, _, _, _, _, SetExtractor(argumentName), _, _),
-        _
+      case Apply(
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          DirectedRelationshipIndexSeek("r", _, _, _, _, _, SetExtractor(argumentName), _, _),
+          _
         ) if collectionName == argumentName => ()
     }
   }
@@ -570,15 +615,17 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
         |RETURN n
       """.stripMargin
-    val (plan, _, _) = new given {
-      uniqueIndexOn("Label", "prop")
-    } getLogicalPlanFor q
+    val (plan, _, _) =
+      new given {
+        uniqueIndexOn("Label", "prop")
+      } getLogicalPlanFor q
 
     plan should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-                 NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName), _, _), _
-                ) if collectionName == argumentName => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName), _, _),
+          _
+        ) if collectionName == argumentName => ()
     }
   }
 
@@ -589,15 +636,17 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE n.prop CONTAINS toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN n
       """.stripMargin
-    val (plan, _, _) = new given {
-      textIndexOn("Label", "prop")
-    } getLogicalPlanFor q
+    val (plan, _, _) =
+      new given {
+        textIndexOn("Label", "prop")
+      } getLogicalPlanFor q
 
     plan should beLike {
       case Apply(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-      NodeIndexContainsScan("n", _, _, _, SetExtractor(argumentName), _, _), _
-      ) if collectionName == argumentName => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          NodeIndexContainsScan("n", _, _, _, SetExtractor(argumentName), _, _),
+          _
+        ) if collectionName == argumentName => ()
     }
   }
 
@@ -608,15 +657,17 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE r.prop CONTAINS toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN r
       """.stripMargin
-    val (plan, _, _) = new given {
-      relationshipTextIndexOn("R", "prop")
-    } getLogicalPlanFor q
+    val (plan, _, _) =
+      new given {
+        relationshipTextIndexOn("R", "prop")
+      } getLogicalPlanFor q
 
     plan should beLike {
       case Apply(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-      DirectedRelationshipIndexContainsScan("r", _, _, _, _, _, SetExtractor(argumentName), _, _), _
-      ) if collectionName == argumentName => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          DirectedRelationshipIndexContainsScan("r", _, _, _, _, _, SetExtractor(argumentName), _, _),
+          _
+        ) if collectionName == argumentName => ()
     }
   }
 
@@ -627,15 +678,17 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE r.prop ENDS WITH toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN r
       """.stripMargin
-    val (plan, _, _) = new given {
-      relationshipTextIndexOn("R", "prop")
-    } getLogicalPlanFor q
+    val (plan, _, _) =
+      new given {
+        relationshipTextIndexOn("R", "prop")
+      } getLogicalPlanFor q
 
     plan should beLike {
       case Apply(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-      UndirectedRelationshipIndexEndsWithScan("r", _, _, _, _, _, SetExtractor(argumentName), _, _), _
-      ) if collectionName == argumentName => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          UndirectedRelationshipIndexEndsWithScan("r", _, _, _, _, _, SetExtractor(argumentName), _, _),
+          _
+        ) if collectionName == argumentName => ()
     }
   }
 
@@ -646,15 +699,17 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE n.prop ENDS WITH toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN n
       """.stripMargin
-    val (plan, _, _) = new given {
-      textIndexOn("Label", "prop")
-    } getLogicalPlanFor q
+    val (plan, _, _) =
+      new given {
+        textIndexOn("Label", "prop")
+      } getLogicalPlanFor q
 
     plan should beLike {
       case Apply(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-      NodeIndexEndsWithScan("n", _, _, _, SetExtractor(argumentName), _, _), _
-      ) if collectionName == argumentName => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName, _),
+          NodeIndexEndsWithScan("n", _, _, _, SetExtractor(argumentName), _, _),
+          _
+        ) if collectionName == argumentName => ()
     }
   }
 
@@ -668,9 +723,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case Selection(
-      Ands(Seq(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
-      ) => ()
+          Ands(Seq(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
+          RollUpApply(AllNodesScan("n", SetExtractor()), _ /* <- This is the subQuery */, _, _)
+        ) => ()
     }
   }
 
@@ -685,9 +740,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case Selection(
-      Ands(Seq(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
-      RollUpApply(Projection(AllNodesScan("n", SetExtractor()), MapKeys("one"))/* <- This is the subQuery */, _, _, _),
-      ) => ()
+          Ands(Seq(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
+          RollUpApply(
+            Projection(AllNodesScan("n", SetExtractor()), MapKeys("one")) /* <- This is the subQuery */,
+            _,
+            _,
+            _
+          )
+        ) => ()
     }
   }
 
@@ -701,10 +761,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case SelectOrAntiSemiApply(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
-      _ /* <- This is the (n)-[:R]->(:M) subQuery */,
-      _
-      ) => ()
+          RollUpApply(AllNodesScan("n", SetExtractor()), _ /* <- This is the (a)-->(b) subQuery */, _, _),
+          _ /* <- This is the (n)-[:R]->(:M) subQuery */,
+          _
+        ) => ()
     }
   }
 
@@ -718,15 +778,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case SelectOrAntiSemiApply(
-      LetSelectOrAntiSemiApply(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
-      _ /* <- This is the (n)-[:R]->(:M) subQuery */,
-      _,
-      _
-      ),
-      _ /* <- This is the (n)-[:Q]->(:O) subQuery */,
-      _
-      ) => ()
+          LetSelectOrAntiSemiApply(
+            RollUpApply(AllNodesScan("n", SetExtractor()), _ /* <- This is the (a)-->(b) subQuery */, _, _),
+            _ /* <- This is the (n)-[:R]->(:M) subQuery */,
+            _,
+            _
+          ),
+          _ /* <- This is the (n)-[:Q]->(:O) subQuery */,
+          _
+        ) => ()
     }
   }
 
@@ -740,10 +800,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case SelectOrSemiApply(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
-      _ /* <- This is the (n)-[:R]->(:M) subQuery */,
-      _
-      ) => ()
+          RollUpApply(AllNodesScan("n", SetExtractor()), _ /* <- This is the (a)-->(b) subQuery */, _, _),
+          _ /* <- This is the (n)-[:R]->(:M) subQuery */,
+          _
+        ) => ()
     }
   }
 
@@ -757,15 +817,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case SelectOrSemiApply(
-      LetSelectOrSemiApply(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
-      _ /* <- This is the (n)-[:R]->(:M) subQuery */,
-      _,
-      _
-      ),
-      _ /* <- This is the (n)-[:Q]->(:O) subQuery */,
-      _
-      ) => ()
+          LetSelectOrSemiApply(
+            RollUpApply(AllNodesScan("n", SetExtractor()), _ /* <- This is the (a)-->(b) subQuery */, _, _),
+            _ /* <- This is the (n)-[:R]->(:M) subQuery */,
+            _,
+            _
+          ),
+          _ /* <- This is the (n)-[:Q]->(:O) subQuery */,
+          _
+        ) => ()
     }
   }
 
@@ -777,7 +837,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     planFor(q)._1 should beLike {
-      case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _) => ()
+      case RollUpApply(AllNodesScan("n", _), _ /* <- This is the subQuery */, "ages", _) => ()
     }
   }
 
@@ -789,7 +849,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     planFor(q)._1 should beLike {
-      case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "bs", _) => ()
+      case RollUpApply(AllNodesScan("n", _), _ /* <- This is the subQuery */, "bs", _) => ()
     }
   }
 
@@ -802,10 +862,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case Aggregation(
-        RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _),
-      _,
-      _
-      ) => ()
+          RollUpApply(AllNodesScan("n", _), _ /* <- This is the subQuery */, "ages", _),
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -818,10 +878,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case Aggregation(
-        RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, _, _),
-      _,
-      _
-      ) => ()
+          RollUpApply(AllNodesScan("n", _), _ /* <- This is the subQuery */, _, _),
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -834,9 +894,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case Distinct(
-      RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _),
-      _
-      ) => ()
+          RollUpApply(AllNodesScan("n", _), _ /* <- This is the subQuery */, "ages", _),
+          _
+        ) => ()
     }
   }
 
@@ -848,9 +908,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case LoadCSV(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
-      _, _, _, _, _, _
-      ) => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, _, _),
+          _,
+          _,
+          _,
+          _,
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -862,10 +927,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case UnwindCollection(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
-      "foo",
-      _
-      ) => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, _, _),
+          "foo",
+          _
+        ) => ()
     }
   }
 
@@ -877,9 +942,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     // This will be solved with a NestedPlanExpression instead of RollupApply
     planFor(q)._1 should beLike {
-      case FindShortestPaths(_, _, Seq(
-      NoneIterablePredicate(FilterScope(_, Some(Equals(_, ReduceExpression(_, _, _:NestedPlanExpression)))), _)
-      ), _, _) => ()
+      case FindShortestPaths(
+          _,
+          _,
+          Seq(
+            NoneIterablePredicate(FilterScope(_, Some(Equals(_, ReduceExpression(_, _, _: NestedPlanExpression)))), _)
+          ),
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -891,9 +962,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case Create(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
-      _, _
-      ) => ()
+          RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, _, _),
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -907,11 +979,16 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
     }.getLogicalPlanFor(q)._1 should beLike {
       case Merge(
-            Selection(_,
-              RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _) // Match part
-            ),
-            Seq(CreateNode("n", Seq(), Some(_:MapExpression))), Seq(), Seq(), Seq(), _
-      ) => ()
+          Selection(
+            _,
+            RollUpApply(AllNodesScan("n", SetExtractor()), _ /* <- This is the subQuery */, _, _) // Match part
+          ),
+          Seq(CreateNode("n", Seq(), Some(_: MapExpression))),
+          Seq(),
+          Seq(),
+          Seq(),
+          _
+        ) => ()
     }
   }
 
@@ -926,11 +1003,21 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
     }.getLogicalPlanFor(q)._1 should beLike {
       case Merge(
-               Selection(_,
-                       RollUpApply(
-                          Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _) // Match part
-               ), _, _, _, _, _
-      ) => ()
+          Selection(
+            _,
+            RollUpApply(
+              Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _),
+              _ /* <- This is the subQuery */,
+              _,
+              _
+            ) // Match part
+          ),
+          _,
+          _,
+          _,
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -944,8 +1031,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case EmptyResult(
-        DeleteNode(_, ContainerIndex(Variable("nodes"), ReduceExpression(_, _, NestedPlanCollectExpression(_, _, _))))
-      ) => ()
+          DeleteNode(_, ContainerIndex(Variable("nodes"), ReduceExpression(_, _, NestedPlanCollectExpression(_, _, _))))
+        ) => ()
     }
   }
 
@@ -959,8 +1046,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case EmptyResult(
-        DeleteRelationship(_, ContainerIndex(Variable("rels"), ReduceExpression(_, _, NestedPlanCollectExpression(_, _, _))))
-      ) => ()
+          DeleteRelationship(
+            _,
+            ContainerIndex(Variable("rels"), ReduceExpression(_, _, NestedPlanCollectExpression(_, _, _)))
+          )
+        ) => ()
     }
   }
 
@@ -974,8 +1064,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case EmptyResult(
-        DeleteExpression(_, ContainerIndex(Variable("rels"), FunctionInvocation(_, _, _, Vector(ReduceExpression(_, _, NestedPlanCollectExpression(_, _, _))))
-      ))) => ()
+          DeleteExpression(
+            _,
+            ContainerIndex(
+              Variable("rels"),
+              FunctionInvocation(_, _, _, Vector(ReduceExpression(_, _, NestedPlanCollectExpression(_, _, _))))
+            )
+          )
+        ) => ()
     }
   }
 
@@ -987,9 +1083,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case SetNodeProperty(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
-      _, _, _
-      ) => ()
+          RollUpApply(AllNodesScan("n", SetExtractor()), _ /* <- This is the subQuery */, _, _),
+          _,
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -1001,9 +1099,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case SetNodePropertiesFromMap(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
-      _, _, _
-      ) => ()
+          RollUpApply(AllNodesScan("n", SetExtractor()), _ /* <- This is the subQuery */, _, _),
+          _,
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -1015,9 +1115,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case SetRelationshipProperty(
-      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
-      _, _, _
-      ) => ()
+          RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _ /* <- This is the subQuery */, _, _),
+          _,
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -1029,9 +1131,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case SetRelationshipPropertiesFromMap(
-      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
-      _, _, _
-      ) => ()
+          RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _ /* <- This is the subQuery */, _, _),
+          _,
+          _,
+          _
+        ) => ()
     }
   }
 
@@ -1043,10 +1147,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case EmptyResult(
-                       SetProperty(
-                                   RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
-      _, _, _
-      )) => ()
+          SetProperty(
+            RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, _, _),
+            _,
+            _,
+            _
+          )
+        ) => ()
     }
   }
 
@@ -1059,10 +1166,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case EmptyResult(
-                       ForeachApply(
-                                   RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
-      _, _, _
-      )) => ()
+          ForeachApply(
+            RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, _, _),
+            _,
+            _,
+            _
+          )
+        ) => ()
     }
   }
 
@@ -1075,8 +1185,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     planFor(q)._1 should beLike {
       case EmptyResult(
-      Foreach(
-        RollUpApply(Eager(Argument(SetExtractor()), _), _/* <- This is the subQuery */, _, _), _, _, _)) => ()
+          Foreach(
+            RollUpApply(Eager(Argument(SetExtractor()), _), _ /* <- This is the subQuery */, _, _),
+            _,
+            _,
+            _
+          )
+        ) => ()
     }
   }
 
@@ -1090,7 +1205,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     val plan = planFor(q)._1
     plan.folder.treeExists({
-      case _:RollUpApply => true
+      case _: RollUpApply => true
     }) should be(false)
   }
 
@@ -1104,7 +1219,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     val plan = planFor(q)._1
     plan.folder.treeExists({
-      case _:RollUpApply => true
+      case _: RollUpApply => true
     }) should be(false)
   }
 
@@ -1118,7 +1233,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     val plan = planFor(q)._1
     plan.folder.treeExists({
-      case _:RollUpApply => true
+      case _: RollUpApply => true
     }) should be(false)
   }
 
@@ -1132,7 +1247,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     val plan = planFor(q)._1
     plan.folder.treeExists({
-      case _:RollUpApply => true
+      case _: RollUpApply => true
     }) should be(false)
   }
 

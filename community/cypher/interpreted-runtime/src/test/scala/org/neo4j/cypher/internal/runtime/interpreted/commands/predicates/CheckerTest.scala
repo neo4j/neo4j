@@ -163,7 +163,8 @@ class CheckerTest extends CypherFunSuite {
   }
 
   test("handles maps with even more null on buildup") {
-    val buildUp = new BuildUp(iterator(VirtualValues.map(Array("a"), Array(intValue(1))), intValue(1), stringValue("oh no")))
+    val buildUp =
+      new BuildUp(iterator(VirtualValues.map(Array("a"), Array(intValue(1))), intValue(1), stringValue("oh no")))
     val (result, newChecker) = buildUp.contains(intValue(1))
     result should equal(Some(true))
     newChecker shouldBe a[BuildUp]
@@ -204,6 +205,6 @@ class CheckerTest extends CypherFunSuite {
     result4 should equal(Some(true))
   }
 
-  private def iterator(a: Any*) = list(a.map(ValueUtils.of):_*)
+  private def iterator(a: Any*) = list(a.map(ValueUtils.of): _*)
 
 }

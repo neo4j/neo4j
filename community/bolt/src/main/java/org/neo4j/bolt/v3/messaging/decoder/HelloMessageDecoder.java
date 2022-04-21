@@ -22,7 +22,6 @@ package org.neo4j.bolt.v3.messaging.decoder;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
@@ -32,55 +31,46 @@ import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthToken;
 
-public class HelloMessageDecoder implements RequestMessageDecoder
-{
+public class HelloMessageDecoder implements RequestMessageDecoder {
     private final BoltResponseHandler responseHandler;
 
-    public HelloMessageDecoder( BoltResponseHandler responseHandler )
-    {
+    public HelloMessageDecoder(BoltResponseHandler responseHandler) {
         this.responseHandler = responseHandler;
     }
 
     @Override
-    public int signature()
-    {
+    public int signature() {
         return HelloMessage.SIGNATURE;
     }
 
     @Override
-    public BoltResponseHandler responseHandler()
-    {
+    public BoltResponseHandler responseHandler() {
         return responseHandler;
     }
 
     @Override
-    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
-        Map<String,Object> meta = readMetaDataMap( unpacker );
-        assertUserAgentPresent( meta );
-        return new HelloMessage( meta );
+    public RequestMessage decode(Neo4jPack.Unpacker unpacker) throws IOException {
+        Map<String, Object> meta = readMetaDataMap(unpacker);
+        assertUserAgentPresent(meta);
+        return new HelloMessage(meta);
     }
 
-    protected static Map<String,Object> readMetaDataMap( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
+    protected static Map<String, Object> readMetaDataMap(Neo4jPack.Unpacker unpacker) throws IOException {
         var metaDataMapValue = unpacker.unpackMap();
         var writer = new PrimitiveOnlyValueWriter();
-        var metaDataMap = new HashMap<String,Object>( metaDataMapValue.size() );
-        metaDataMapValue.foreach( ( key, value ) ->
-        {
-            Object convertedValue = AuthToken.containsSensitiveInformation( key ) ?
-                                    writer.sensitiveValueAsObject( value ) :
-                                    writer.valueAsObject( value );
-            metaDataMap.put( key, convertedValue );
-        } );
+        var metaDataMap = new HashMap<String, Object>(metaDataMapValue.size());
+        metaDataMapValue.foreach((key, value) -> {
+            Object convertedValue = AuthToken.containsSensitiveInformation(key)
+                    ? writer.sensitiveValueAsObject(value)
+                    : writer.valueAsObject(value);
+            metaDataMap.put(key, convertedValue);
+        });
         return metaDataMap;
     }
 
-    private static void assertUserAgentPresent( Map<String,Object> metaData ) throws BoltIOException
-    {
-        if ( !metaData.containsKey( "user_agent" ) )
-        {
-            throw new BoltIOException( Status.Request.Invalid, "Expected \"user_agent\" in metadata" );
+    private static void assertUserAgentPresent(Map<String, Object> metaData) throws BoltIOException {
+        if (!metaData.containsKey("user_agent")) {
+            throw new BoltIOException(Status.Request.Invalid, "Expected \"user_agent\" in metadata");
         }
     }
 }

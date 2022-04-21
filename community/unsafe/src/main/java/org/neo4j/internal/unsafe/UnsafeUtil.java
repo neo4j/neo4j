@@ -19,10 +19,12 @@
  */
 package org.neo4j.internal.unsafe;
 
+import static java.lang.Long.compareUnsigned;
+import static java.lang.String.format;
+import static org.neo4j.util.FeatureToggles.flag;
+
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import sun.misc.Unsafe;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -37,12 +39,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.memory.MemoryTracker;
-
-import static java.lang.Long.compareUnsigned;
-import static java.lang.String.format;
-import static org.neo4j.util.FeatureToggles.flag;
+import sun.misc.Unsafe;
 
 /**
  * Always check that the Unsafe utilities are available with the {@link UnsafeUtil#assertHasUnsafe} method, before
@@ -51,8 +49,7 @@ import static org.neo4j.util.FeatureToggles.flag;
  * Avoid `import static` for these individual methods. Always qualify method usages with `UnsafeUtil` so use sites
  * show up in code greps.
  */
-public final class UnsafeUtil
-{
+public final class UnsafeUtil {
     /**
      * Whether or not to explicitly dirty the allocated memory. This is off by default.
      * The {@link UnsafeUtil#allocateMemory(long, MemoryTracker)} method is not guaranteed to allocate
@@ -61,15 +58,18 @@ public final class UnsafeUtil
      * Enabling this feature will make sure that the allocated memory is full of random data, such that we can test
      * and verify that our code does not assume that memory is clean when allocated.
      */
-    private static final boolean DIRTY_MEMORY = flag( UnsafeUtil.class, "DIRTY_MEMORY", false );
-    private static final boolean CHECK_NATIVE_ACCESS = flag( UnsafeUtil.class, "CHECK_NATIVE_ACCESS", false );
+    private static final boolean DIRTY_MEMORY = flag(UnsafeUtil.class, "DIRTY_MEMORY", false);
+
+    private static final boolean CHECK_NATIVE_ACCESS = flag(UnsafeUtil.class, "CHECK_NATIVE_ACCESS", false);
     // this allows us to temporarily disable the checking, for performance:
     private static boolean nativeAccessCheckEnabled = true;
 
     private static final Unsafe unsafe;
-    private static final String allowUnalignedMemoryAccessProperty = "org.neo4j.internal.unsafe.UnsafeUtil.allowUnalignedMemoryAccess";
+    private static final String allowUnalignedMemoryAccessProperty =
+            "org.neo4j.internal.unsafe.UnsafeUtil.allowUnalignedMemoryAccess";
 
-    private static final ConcurrentSkipListMap<Long, Allocation> allocations = new ConcurrentSkipListMap<>( Long::compareUnsigned );
+    private static final ConcurrentSkipListMap<Long, Allocation> allocations =
+            new ConcurrentSkipListMap<>(Long::compareUnsigned);
     private static final ThreadLocal<Allocation> lastUsedAllocation = new ThreadLocal<>();
     private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS ? new FreeTrace[4096] : null;
     private static final AtomicLong freeCounter = new AtomicLong();
@@ -88,23 +88,19 @@ public final class UnsafeUtil
     public static final boolean allowUnalignedMemoryAccess;
     public static final boolean nativeByteOrderIsLittleEndian;
 
-    static
-    {
+    static {
         unsafe = UnsafeAccessor.getUnsafe();
         pageSize = unsafe.pageSize();
 
         // See java.nio.Bits.unaligned() and its uses.
-        String alignmentProperty = System.getProperty( allowUnalignedMemoryAccessProperty );
-        if ( alignmentProperty != null &&
-             (alignmentProperty.equalsIgnoreCase( "true" )
-              || alignmentProperty.equalsIgnoreCase( "false" )) )
-        {
-            allowUnalignedMemoryAccess = Boolean.parseBoolean( alignmentProperty );
-        }
-        else
-        {
-            String arch = System.getProperty( "os.arch", "?" );
-            allowUnalignedMemoryAccess = switch ( arch ) // list of architectures that support unaligned access to memory
+        String alignmentProperty = System.getProperty(allowUnalignedMemoryAccessProperty);
+        if (alignmentProperty != null
+                && (alignmentProperty.equalsIgnoreCase("true") || alignmentProperty.equalsIgnoreCase("false"))) {
+            allowUnalignedMemoryAccess = Boolean.parseBoolean(alignmentProperty);
+        } else {
+            String arch = System.getProperty("os.arch", "?");
+            allowUnalignedMemoryAccess =
+                    switch (arch) // list of architectures that support unaligned access to memory
                     {
                         case "x86_64", "i386", "x86", "amd64", "ppc64", "ppc64le", "ppc64be" -> true;
                         default -> false;
@@ -120,30 +116,26 @@ public final class UnsafeUtil
         VarHandle bbAddress = null;
         VarHandle dbbAttachment = null;
         MethodHandle dbbCtor = null;
-        try
-        {
-            var bufferLookup = MethodHandles.privateLookupIn( Buffer.class, MethodHandles.lookup() );
-            bbMark = bufferLookup.findVarHandle( Buffer.class, "mark", int.class );
-            bbPosition = bufferLookup.findVarHandle( Buffer.class, "position", int.class );
-            bbLimit = bufferLookup.findVarHandle( Buffer.class, "limit", int.class );
-            bbCapacity = bufferLookup.findVarHandle( Buffer.class, "capacity", int.class );
-            bbAddress = bufferLookup.findVarHandle( Buffer.class, "address", long.class );
+        try {
+            var bufferLookup = MethodHandles.privateLookupIn(Buffer.class, MethodHandles.lookup());
+            bbMark = bufferLookup.findVarHandle(Buffer.class, "mark", int.class);
+            bbPosition = bufferLookup.findVarHandle(Buffer.class, "position", int.class);
+            bbLimit = bufferLookup.findVarHandle(Buffer.class, "limit", int.class);
+            bbCapacity = bufferLookup.findVarHandle(Buffer.class, "capacity", int.class);
+            bbAddress = bufferLookup.findVarHandle(Buffer.class, "address", long.class);
 
-            dbbClass = Class.forName( "java.nio.DirectByteBuffer" );
-            MethodHandles.Lookup directByteBufferLookup = MethodHandles.privateLookupIn( dbbClass, MethodHandles.lookup() );
-            dbbAttachment = directByteBufferLookup.findVarHandle( dbbClass, "att", Object.class );
-        }
-        catch ( Throwable e )
-        {
-            if ( dbbClass != null )
-            {
-                try
-                {
-                    MethodHandles.Lookup directByteBufferLookup = MethodHandles.privateLookupIn( dbbClass, MethodHandles.lookup() );
-                    dbbCtor = directByteBufferLookup.findConstructor( dbbClass, MethodType.methodType( void.class, long.class, int.class ) );
-                }
-                catch ( Throwable e1 )
-                {
+            dbbClass = Class.forName("java.nio.DirectByteBuffer");
+            MethodHandles.Lookup directByteBufferLookup =
+                    MethodHandles.privateLookupIn(dbbClass, MethodHandles.lookup());
+            dbbAttachment = directByteBufferLookup.findVarHandle(dbbClass, "att", Object.class);
+        } catch (Throwable e) {
+            if (dbbClass != null) {
+                try {
+                    MethodHandles.Lookup directByteBufferLookup =
+                            MethodHandles.privateLookupIn(dbbClass, MethodHandles.lookup());
+                    dbbCtor = directByteBufferLookup.findConstructor(
+                            dbbClass, MethodType.methodType(void.class, long.class, int.class));
+                } catch (Throwable e1) {
                     // ignore
                 }
             }
@@ -158,43 +150,34 @@ public final class UnsafeUtil
         DIRECT_BYTE_BUFFER_CONSTRUCTOR = dbbCtor;
     }
 
-    private UnsafeUtil()
-    {
-    }
+    private UnsafeUtil() {}
 
     /**
      * @throws java.lang.LinkageError if the Unsafe tools are not available on in this JVM.
      */
-    public static void assertHasUnsafe()
-    {
-        if ( unsafe == null )
-        {
-            throw new LinkageError( "Unsafe not available" );
+    public static void assertHasUnsafe() {
+        if (unsafe == null) {
+            throw new LinkageError("Unsafe not available");
         }
     }
 
     /**
      * Get the object-relative field offset.
      */
-    public static long getFieldOffset( Class<?> type, String field )
-    {
-        try
-        {
-            return unsafe.objectFieldOffset( type.getDeclaredField( field ) );
-        }
-        catch ( NoSuchFieldException e )
-        {
+    public static long getFieldOffset(Class<?> type, String field) {
+        try {
+            return unsafe.objectFieldOffset(type.getDeclaredField(field));
+        } catch (NoSuchFieldException e) {
             String message = "Could not get offset of '" + field + "' field on type " + type;
-            throw new LinkageError( message, e );
+            throw new LinkageError(message, e);
         }
     }
 
     /**
      * Get the object-relative field offset.
      */
-    public static long getFieldOffset( Field field )
-    {
-        return unsafe.objectFieldOffset( field );
+    public static long getFieldOffset(Field field) {
+        return unsafe.objectFieldOffset(field);
     }
 
     /**
@@ -202,9 +185,8 @@ public final class UnsafeUtil
      * <p>
      * This has the memory visibility semantics of a volatile read followed by a volatile write.
      */
-    public static long getAndAddLong( Object obj, long offset, long delta )
-    {
-        return unsafe.getAndAddLong( obj, offset, delta );
+    public static long getAndAddLong(Object obj, long offset, long delta) {
+        return unsafe.getAndAddLong(obj, offset, delta);
     }
 
     /**
@@ -214,36 +196,29 @@ public final class UnsafeUtil
      * If this method returns true, then it has the memory visibility semantics of a volatile read followed by a
      * volatile write.
      */
-    public static boolean compareAndSwapLong(
-            Object obj, long offset, long expected, long update )
-    {
-        return unsafe.compareAndSwapLong( obj, offset, expected, update );
+    public static boolean compareAndSwapLong(Object obj, long offset, long expected, long update) {
+        return unsafe.compareAndSwapLong(obj, offset, expected, update);
     }
 
     /**
      * Atomically exchanges provided <code>newValue</code> with the current value of field or array element, with
      * provided <code>offset</code>.
      */
-    public static long getAndSetLong( Object object, long offset, long newValue )
-    {
-        return unsafe.getAndSetLong( object, offset, newValue );
+    public static long getAndSetLong(Object object, long offset, long newValue) {
+        return unsafe.getAndSetLong(object, offset, newValue);
     }
 
     /**
      * Atomically set field or array element to a maximum between current value and provided <code>newValue</code>
      */
-    public static void compareAndSetMaxLong( Object object, long fieldOffset, long newValue )
-    {
+    public static void compareAndSetMaxLong(Object object, long fieldOffset, long newValue) {
         long currentValue;
-        do
-        {
-            currentValue = UnsafeUtil.getLongVolatile( object, fieldOffset );
-            if ( currentValue >= newValue )
-            {
+        do {
+            currentValue = UnsafeUtil.getLongVolatile(object, fieldOffset);
+            if (currentValue >= newValue) {
                 return;
             }
-        }
-        while ( !UnsafeUtil.compareAndSwapLong( object, fieldOffset, currentValue, newValue ) );
+        } while (!UnsafeUtil.compareAndSwapLong(object, fieldOffset, currentValue, newValue));
     }
 
     /**
@@ -254,21 +229,19 @@ public final class UnsafeUtil
      *
      * @return a pointer to the allocated memory
      */
-    public static long allocateMemory( long bytes, MemoryTracker memoryTracker ) throws NativeMemoryAllocationRefusedError
-    {
-        memoryTracker.allocateNative( bytes );
+    public static long allocateMemory(long bytes, MemoryTracker memoryTracker)
+            throws NativeMemoryAllocationRefusedError {
+        memoryTracker.allocateNative(bytes);
 
-        final long pointer = Native.malloc( bytes );
-        if ( pointer == 0 )
-        {
-            memoryTracker.releaseNative( bytes );
-            throw new NativeMemoryAllocationRefusedError( bytes, memoryTracker.usedNativeMemory() );
+        final long pointer = Native.malloc(bytes);
+        if (pointer == 0) {
+            memoryTracker.releaseNative(bytes);
+            throw new NativeMemoryAllocationRefusedError(bytes, memoryTracker.usedNativeMemory());
         }
 
-        addAllocatedPointer( pointer, bytes );
-        if ( DIRTY_MEMORY )
-        {
-            setMemory( pointer, bytes, (byte) 0xA5 );
+        addAllocatedPointer(pointer, bytes);
+        if (DIRTY_MEMORY) {
+            setMemory(pointer, bytes, (byte) 0xA5);
         }
         return pointer;
     }
@@ -276,79 +249,65 @@ public final class UnsafeUtil
     /**
      * Free the memory that was allocated with {@link #allocateMemory} and update memory allocation tracker accordingly.
      */
-    public static void free( long pointer, long bytes, MemoryTracker memoryTracker )
-    {
-        checkFree( pointer );
-        Native.free( pointer );
-        memoryTracker.releaseNative( bytes );
+    public static void free(long pointer, long bytes, MemoryTracker memoryTracker) {
+        checkFree(pointer);
+        Native.free(pointer);
+        memoryTracker.releaseNative(bytes);
     }
 
-    private static void addAllocatedPointer( long pointer, long sizeInBytes )
-    {
-        if ( CHECK_NATIVE_ACCESS )
-        {
-            allocations.put( pointer, new Allocation( pointer, sizeInBytes, freeCounter.get() ) );
+    private static void addAllocatedPointer(long pointer, long sizeInBytes) {
+        if (CHECK_NATIVE_ACCESS) {
+            allocations.put(pointer, new Allocation(pointer, sizeInBytes, freeCounter.get()));
         }
     }
 
-    private static void checkFree( long pointer )
-    {
-        if ( CHECK_NATIVE_ACCESS )
-        {
-            doCheckFree( pointer );
+    private static void checkFree(long pointer) {
+        if (CHECK_NATIVE_ACCESS) {
+            doCheckFree(pointer);
         }
     }
 
-    private static void doCheckFree( long pointer )
-    {
+    private static void doCheckFree(long pointer) {
         long count = freeCounter.getAndIncrement();
-        Allocation allocation = allocations.remove( pointer );
-        if ( allocation == null )
-        {
-            StringBuilder sb = new StringBuilder( format( "Bad free: 0x%x, valid pointers are:", pointer ) );
-            allocations.forEach( ( k, v ) -> sb.append( '\n' ).append( "0x" ).append( Long.toHexString( k ) ) );
-            throw new AssertionError( sb.toString() );
+        Allocation allocation = allocations.remove(pointer);
+        if (allocation == null) {
+            StringBuilder sb = new StringBuilder(format("Bad free: 0x%x, valid pointers are:", pointer));
+            allocations.forEach((k, v) -> sb.append('\n').append("0x").append(Long.toHexString(k)));
+            throw new AssertionError(sb.toString());
         }
         allocation.freed = true;
         int idx = (int) (count & 4095);
-        freeTraces[idx] = new FreeTrace( pointer, allocation, count );
+        freeTraces[idx] = new FreeTrace(pointer, allocation, count);
     }
 
-    private static void checkAccess( long pointer, long size )
-    {
-        if ( CHECK_NATIVE_ACCESS && nativeAccessCheckEnabled )
-        {
-            doCheckAccess( pointer, size );
+    private static void checkAccess(long pointer, long size) {
+        if (CHECK_NATIVE_ACCESS && nativeAccessCheckEnabled) {
+            doCheckAccess(pointer, size);
         }
     }
 
-    private static void doCheckAccess( long pointer, long size )
-    {
+    private static void doCheckAccess(long pointer, long size) {
         long boundary = pointer + size;
         Allocation allocation = lastUsedAllocation.get();
-        if ( allocation != null && !allocation.freed )
-        {
-            if ( compareUnsigned( allocation.pointer, pointer ) <= 0 &&
-                 compareUnsigned( allocation.boundary, boundary ) > 0 &&
-                 allocation.freeCounter == freeCounter.get() )
-            {
+        if (allocation != null && !allocation.freed) {
+            if (compareUnsigned(allocation.pointer, pointer) <= 0
+                    && compareUnsigned(allocation.boundary, boundary) > 0
+                    && allocation.freeCounter == freeCounter.get()) {
                 return;
             }
         }
 
-        Map.Entry<Long,Allocation> fentry = allocations.floorEntry( boundary );
-        if ( fentry == null || compareUnsigned( fentry.getValue().boundary, boundary ) < 0 )
-        {
-            Map.Entry<Long,Allocation> centry = allocations.ceilingEntry( pointer );
-            throwBadAccess( pointer, size, fentry, centry );
+        Map.Entry<Long, Allocation> fentry = allocations.floorEntry(boundary);
+        if (fentry == null || compareUnsigned(fentry.getValue().boundary, boundary) < 0) {
+            Map.Entry<Long, Allocation> centry = allocations.ceilingEntry(pointer);
+            throwBadAccess(pointer, size, fentry, centry);
         }
         //noinspection ConstantConditions
-        lastUsedAllocation.set( fentry.getValue() );
+        lastUsedAllocation.set(fentry.getValue());
     }
 
-    private static void throwBadAccess( long pointer, long size, Map.Entry<Long,Allocation> fentry,
-                                        Map.Entry<Long,Allocation> centry )
-    {
+    private static void throwBadAccess(
+            long pointer, long size, Map.Entry<Long, Allocation> fentry, Map.Entry<Long, Allocation> centry) {
         long now = System.nanoTime();
         long faddr = fentry == null ? 0 : fentry.getKey();
         long fsize = fentry == null ? 0 : fentry.getValue().sizeInBytes;
@@ -360,19 +319,19 @@ public final class UnsafeUtil
         long naddr = floorIsNearest ? faddr : caddr;
         long nsize = floorIsNearest ? fsize : csize;
         long noffset = floorIsNearest ? foffset : coffset;
-        List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
-                .filter( Objects::nonNull )
-                .filter( trace -> trace.contains( pointer ) )
-                .sorted().toList();
-        AssertionError error = new AssertionError( format(
-                "Bad access to address 0x%x with size %s, nearest valid allocation is " +
-                "0x%x (%s bytes, off by %s bytes). " +
-                "Recent relevant frees (of %s) are attached as suppressed exceptions.",
-                pointer, size, naddr, nsize, noffset, freeCounter.get() ) );
-        for ( FreeTrace recentFree : recentFrees )
-        {
+        List<FreeTrace> recentFrees = Arrays.stream(freeTraces)
+                .filter(Objects::nonNull)
+                .filter(trace -> trace.contains(pointer))
+                .sorted()
+                .toList();
+        AssertionError error = new AssertionError(format(
+                "Bad access to address 0x%x with size %s, nearest valid allocation is "
+                        + "0x%x (%s bytes, off by %s bytes). "
+                        + "Recent relevant frees (of %s) are attached as suppressed exceptions.",
+                pointer, size, naddr, nsize, noffset, freeCounter.get()));
+        for (FreeTrace recentFree : recentFrees) {
             recentFree.referenceTime = now;
-            error.addSuppressed( recentFree );
+            error.addSuppressed(recentFree);
         }
         throw error;
     }
@@ -380,132 +339,111 @@ public final class UnsafeUtil
     /**
      * Return the power-of-2 native memory page size.
      */
-    public static int pageSize()
-    {
+    public static int pageSize() {
         return pageSize;
     }
 
-    public static void putByte( long address, byte value )
-    {
-        checkAccess( address, Byte.BYTES );
-        unsafe.putByte( address, value );
+    public static void putByte(long address, byte value) {
+        checkAccess(address, Byte.BYTES);
+        unsafe.putByte(address, value);
     }
 
-    public static byte getByte( long address )
-    {
-        checkAccess( address, Byte.BYTES );
-        return unsafe.getByte( address );
+    public static byte getByte(long address) {
+        checkAccess(address, Byte.BYTES);
+        return unsafe.getByte(address);
     }
 
-    public static void putByte( Object obj, long offset, byte value )
-    {
-        unsafe.putByte( obj, offset, value );
+    public static void putByte(Object obj, long offset, byte value) {
+        unsafe.putByte(obj, offset, value);
     }
 
-    public static byte getByte( Object obj, long offset )
-    {
-        return unsafe.getByte( obj, offset );
+    public static byte getByte(Object obj, long offset) {
+        return unsafe.getByte(obj, offset);
     }
 
-    public static void putShort( long address, short value )
-    {
-        checkAccess( address, Short.BYTES );
-        unsafe.putShort( address, value );
+    public static void putShort(long address, short value) {
+        checkAccess(address, Short.BYTES);
+        unsafe.putShort(address, value);
     }
 
-    public static short getShort( long address )
-    {
-        checkAccess( address, Short.BYTES );
-        return unsafe.getShort( address );
+    public static short getShort(long address) {
+        checkAccess(address, Short.BYTES);
+        return unsafe.getShort(address);
     }
 
-    public static void putInt( long address, int value )
-    {
-        checkAccess( address, Integer.BYTES );
-        unsafe.putInt( address, value );
+    public static void putInt(long address, int value) {
+        checkAccess(address, Integer.BYTES);
+        unsafe.putInt(address, value);
     }
 
-    public static int getInt( long address )
-    {
-        checkAccess( address, Integer.BYTES );
-        return unsafe.getInt( address );
+    public static int getInt(long address) {
+        checkAccess(address, Integer.BYTES);
+        return unsafe.getInt(address);
     }
 
-    public static void putLongVolatile( long address, long value )
-    {
-        checkAccess( address, Long.BYTES );
-        unsafe.putLongVolatile( null, address, value );
+    public static void putLongVolatile(long address, long value) {
+        checkAccess(address, Long.BYTES);
+        unsafe.putLongVolatile(null, address, value);
     }
 
-    public static long getLongVolatile( long address )
-    {
-        checkAccess( address, Long.BYTES );
-        return unsafe.getLongVolatile( null, address );
+    public static long getLongVolatile(long address) {
+        checkAccess(address, Long.BYTES);
+        return unsafe.getLongVolatile(null, address);
     }
 
-    public static void putLong( long address, long value )
-    {
-        checkAccess( address, Long.BYTES );
-        unsafe.putLong( address, value );
+    public static void putLong(long address, long value) {
+        checkAccess(address, Long.BYTES);
+        unsafe.putLong(address, value);
     }
 
-    public static long getLong( long address )
-    {
-        checkAccess( address, Long.BYTES );
-        return unsafe.getLong( address );
+    public static long getLong(long address) {
+        checkAccess(address, Long.BYTES);
+        return unsafe.getLong(address);
     }
 
-    public static long getLongVolatile( Object obj, long offset )
-    {
-        return unsafe.getLongVolatile( obj, offset );
+    public static long getLongVolatile(Object obj, long offset) {
+        return unsafe.getLongVolatile(obj, offset);
     }
 
-    public static int arrayBaseOffset( Class<?> klass )
-    {
-        return unsafe.arrayBaseOffset( klass );
+    public static int arrayBaseOffset(Class<?> klass) {
+        return unsafe.arrayBaseOffset(klass);
     }
 
-    public static int arrayIndexScale( Class<?> klass )
-    {
-        int scale = unsafe.arrayIndexScale( klass );
-        if ( scale == 0 )
-        {
-            throw new AssertionError( "Array type too narrow for unsafe access: " + klass );
+    public static int arrayIndexScale(Class<?> klass) {
+        int scale = unsafe.arrayIndexScale(klass);
+        if (scale == 0) {
+            throw new AssertionError("Array type too narrow for unsafe access: " + klass);
         }
         return scale;
     }
 
-    public static int arrayOffset( int index, int base, int scale )
-    {
+    public static int arrayOffset(int index, int base, int scale) {
         return base + index * scale;
     }
 
     /**
      * Set the given number of bytes to the given value, starting from the given address.
      */
-    public static void setMemory( long address, long bytes, byte value )
-    {
-        checkAccess( address, bytes );
-        new Pointer( address ).setMemory( 0, bytes, value );
+    public static void setMemory(long address, long bytes, byte value) {
+        checkAccess(address, bytes);
+        new Pointer(address).setMemory(0, bytes, value);
     }
 
     /**
      * Copy the given number of bytes from the source address to the destination address.
      */
-    public static void copyMemory( long srcAddress, long destAddress, long bytes )
-    {
-        checkAccess( srcAddress, bytes );
-        checkAccess( destAddress, bytes );
-        unsafe.copyMemory( srcAddress, destAddress, bytes );
+    public static void copyMemory(long srcAddress, long destAddress, long bytes) {
+        checkAccess(srcAddress, bytes);
+        checkAccess(destAddress, bytes);
+        unsafe.copyMemory(srcAddress, destAddress, bytes);
     }
 
     /**
      * Same as {@link #copyMemory(long, long, long)}, but with an object-relative addressing mode,
      * where {@code null} object bases imply that the offset is an absolute address.
      */
-    public static void copyMemory( Object srcBase, long srcOffset, Object destBase, long destOffset, long bytes )
-    {
-        unsafe.copyMemory( srcBase, srcOffset, destBase, destOffset, bytes );
+    public static void copyMemory(Object srcBase, long srcOffset, Object destBase, long destOffset, long bytes) {
+        unsafe.copyMemory(srcBase, srcOffset, destBase, destOffset, bytes);
     }
 
     /**
@@ -523,8 +461,7 @@ public final class UnsafeUtil
      * @param newSetting The new setting.
      * @return the previous value of this setting.
      */
-    public static boolean exchangeNativeAccessCheckEnabled( boolean newSetting )
-    {
+    public static boolean exchangeNativeAccessCheckEnabled(boolean newSetting) {
         boolean previousSetting = nativeAccessCheckEnabled;
         nativeAccessCheckEnabled = newSetting;
         return previousSetting;
@@ -539,10 +476,9 @@ public final class UnsafeUtil
      * @param p address pointer to start reading at.
      * @return the read value, which was read byte for byte.
      */
-    public static short getShortByteWiseLittleEndian( long p )
-    {
-        short a = (short) (UnsafeUtil.getByte( p ) & 0xFF);
-        short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
+    public static short getShortByteWiseLittleEndian(long p) {
+        short a = (short) (UnsafeUtil.getByte(p) & 0xFF);
+        short b = (short) (UnsafeUtil.getByte(p + 1) & 0xFF);
         return (short) ((b << 8) | a);
     }
 
@@ -555,12 +491,11 @@ public final class UnsafeUtil
      * @param p address pointer to start reading at.
      * @return the read value, which was read byte for byte.
      */
-    public static int getIntByteWiseLittleEndian( long p )
-    {
-        int a = UnsafeUtil.getByte( p ) & 0xFF;
-        int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
-        int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
-        int d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
+    public static int getIntByteWiseLittleEndian(long p) {
+        int a = UnsafeUtil.getByte(p) & 0xFF;
+        int b = UnsafeUtil.getByte(p + 1) & 0xFF;
+        int c = UnsafeUtil.getByte(p + 2) & 0xFF;
+        int d = UnsafeUtil.getByte(p + 3) & 0xFF;
         return (d << 24) | (c << 16) | (b << 8) | a;
     }
 
@@ -573,16 +508,15 @@ public final class UnsafeUtil
      * @param p address pointer to start reading at.
      * @return the read value, which was read byte for byte.
      */
-    public static long getLongByteWiseLittleEndian( long p )
-    {
-        long a = UnsafeUtil.getByte( p ) & 0xFF;
-        long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
-        long c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
-        long d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
-        long e = UnsafeUtil.getByte( p + 4 ) & 0xFF;
-        long f = UnsafeUtil.getByte( p + 5 ) & 0xFF;
-        long g = UnsafeUtil.getByte( p + 6 ) & 0xFF;
-        long h = UnsafeUtil.getByte( p + 7 ) & 0xFF;
+    public static long getLongByteWiseLittleEndian(long p) {
+        long a = UnsafeUtil.getByte(p) & 0xFF;
+        long b = UnsafeUtil.getByte(p + 1) & 0xFF;
+        long c = UnsafeUtil.getByte(p + 2) & 0xFF;
+        long d = UnsafeUtil.getByte(p + 3) & 0xFF;
+        long e = UnsafeUtil.getByte(p + 4) & 0xFF;
+        long f = UnsafeUtil.getByte(p + 5) & 0xFF;
+        long g = UnsafeUtil.getByte(p + 6) & 0xFF;
+        long h = UnsafeUtil.getByte(p + 7) & 0xFF;
         return (h << 56) | (g << 48) | (f << 40) | (e << 32) | (d << 24) | (c << 16) | (b << 8) | a;
     }
 
@@ -595,10 +529,9 @@ public final class UnsafeUtil
      * @param p address pointer to start writing at.
      * @param value value to write byte for byte.
      */
-    public static void putShortByteWiseLittleEndian( long p, short value )
-    {
-        UnsafeUtil.putByte( p, (byte) value );
-        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
+    public static void putShortByteWiseLittleEndian(long p, short value) {
+        UnsafeUtil.putByte(p, (byte) value);
+        UnsafeUtil.putByte(p + 1, (byte) (value >> 8));
     }
 
     /**
@@ -610,12 +543,11 @@ public final class UnsafeUtil
      * @param p address pointer to start writing at.
      * @param value value to write byte for byte.
      */
-    public static void putIntByteWiseLittleEndian( long p, int value )
-    {
-        UnsafeUtil.putByte( p, (byte) value );
-        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
-        UnsafeUtil.putByte( p + 2, (byte) (value >> 16) );
-        UnsafeUtil.putByte( p + 3, (byte) (value >> 24) );
+    public static void putIntByteWiseLittleEndian(long p, int value) {
+        UnsafeUtil.putByte(p, (byte) value);
+        UnsafeUtil.putByte(p + 1, (byte) (value >> 8));
+        UnsafeUtil.putByte(p + 2, (byte) (value >> 16));
+        UnsafeUtil.putByte(p + 3, (byte) (value >> 24));
     }
 
     /**
@@ -627,16 +559,15 @@ public final class UnsafeUtil
      * @param p address pointer to start writing at.
      * @param value value to write byte for byte.
      */
-    public static void putLongByteWiseLittleEndian( long p, long value )
-    {
-        UnsafeUtil.putByte( p, (byte) value );
-        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
-        UnsafeUtil.putByte( p + 2, (byte) (value >> 16) );
-        UnsafeUtil.putByte( p + 3, (byte) (value >> 24) );
-        UnsafeUtil.putByte( p + 4, (byte) (value >> 32) );
-        UnsafeUtil.putByte( p + 5, (byte) (value >> 40) );
-        UnsafeUtil.putByte( p + 6, (byte) (value >> 48) );
-        UnsafeUtil.putByte( p + 7, (byte) (value >> 56) );
+    public static void putLongByteWiseLittleEndian(long p, long value) {
+        UnsafeUtil.putByte(p, (byte) value);
+        UnsafeUtil.putByte(p + 1, (byte) (value >> 8));
+        UnsafeUtil.putByte(p + 2, (byte) (value >> 16));
+        UnsafeUtil.putByte(p + 3, (byte) (value >> 24));
+        UnsafeUtil.putByte(p + 4, (byte) (value >> 32));
+        UnsafeUtil.putByte(p + 5, (byte) (value >> 40));
+        UnsafeUtil.putByte(p + 6, (byte) (value >> 48));
+        UnsafeUtil.putByte(p + 7, (byte) (value >> 56));
     }
 
     /**
@@ -644,16 +575,13 @@ public final class UnsafeUtil
      *
      * @return if deep reflection access for ByteBuffer's is available
      */
-    public static boolean unsafeByteBufferAccessAvailable()
-    {
+    public static boolean unsafeByteBufferAccessAvailable() {
         return DIRECT_BYTE_BUFFER_CLASS != null;
     }
 
-    private static void assertUnsafeByteBufferAccess()
-    {
-        if ( !unsafeByteBufferAccessAvailable() )
-        {
-            throw new IllegalStateException( "java.nio.DirectByteBuffer is not available" );
+    private static void assertUnsafeByteBufferAccess() {
+        if (!unsafeByteBufferAccessAvailable()) {
+            throw new IllegalStateException("java.nio.DirectByteBuffer is not available");
         }
     }
 
@@ -662,18 +590,14 @@ public final class UnsafeUtil
      *
      * @param size The size of the buffer to allocate
      */
-    public static ByteBuffer allocateByteBuffer( int size, MemoryTracker memoryTracker )
-    {
+    public static ByteBuffer allocateByteBuffer(int size, MemoryTracker memoryTracker) {
         assertUnsafeByteBufferAccess();
-        try
-        {
-            long addr = allocateMemory( size, memoryTracker );
-            setMemory( addr, size, (byte) 0 );
-            return newDirectByteBuffer( addr, size );
-        }
-        catch ( Throwable e )
-        {
-            throw new RuntimeException( e );
+        try {
+            long addr = allocateMemory(size, memoryTracker);
+            setMemory(addr, size, (byte) 0);
+            return newDirectByteBuffer(addr, size);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -681,31 +605,28 @@ public final class UnsafeUtil
      * Releases a {@link ByteBuffer}
      * @param byteBuffer The ByteBuffer to free, allocated by {@link UnsafeUtil#allocateByteBuffer(int, MemoryTracker)}
      */
-    public static void freeByteBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
-    {
+    public static void freeByteBuffer(ByteBuffer byteBuffer, MemoryTracker memoryTracker) {
         assertUnsafeByteBufferAccess();
         int bytes = byteBuffer.capacity();
-        long addr = getDirectByteBufferAddress( byteBuffer );
-        if ( addr == 0 )
-        {
+        long addr = getDirectByteBufferAddress(byteBuffer);
+        if (addr == 0) {
             return; // This buffer has already been freed.
         }
 
         // Nerf the byte buffer, causing all future accesses to get out-of-bounds.
-        nerfBuffer( byteBuffer );
+        nerfBuffer(byteBuffer);
 
         // Free the buffer.
-        free( addr, bytes, memoryTracker );
+        free(addr, bytes, memoryTracker);
     }
 
-    private static void nerfBuffer( ByteBuffer byteBuffer )
-    {
+    private static void nerfBuffer(ByteBuffer byteBuffer) {
         assertUnsafeByteBufferAccess();
-        BYTE_BUFFER_MARK.set( byteBuffer, -1 );
-        BYTE_BUFFER_POSITION.set( byteBuffer, 0 );
-        BYTE_BUFFER_LIMIT.set( byteBuffer, 0 );
-        BYTE_BUFFER_CAPACITY.set( byteBuffer, 0 );
-        BYTE_BUFFER_ADDRESS.set( byteBuffer, 0L );
+        BYTE_BUFFER_MARK.set(byteBuffer, -1);
+        BYTE_BUFFER_POSITION.set(byteBuffer, 0);
+        BYTE_BUFFER_LIMIT.set(byteBuffer, 0);
+        BYTE_BUFFER_CAPACITY.set(byteBuffer, 0);
+        BYTE_BUFFER_ADDRESS.set(byteBuffer, 0L);
     }
 
     /**
@@ -713,14 +634,12 @@ public final class UnsafeUtil
      * <p>
      * This method works only with direct buffers and an exception will be thrown if a heap buffer is submitted.
      */
-    public static ByteBuffer getOriginalBufferFromSlice( ByteBuffer byteBuffer )
-    {
+    public static ByteBuffer getOriginalBufferFromSlice(ByteBuffer byteBuffer) {
         assertUnsafeByteBufferAccess();
-        if ( !byteBuffer.isDirect() )
-        {
-            throw new IllegalArgumentException( "The submitted buffer is not a direct one:" + byteBuffer );
+        if (!byteBuffer.isDirect()) {
+            throw new IllegalArgumentException("The submitted buffer is not a direct one:" + byteBuffer);
         }
-        return (ByteBuffer) DIRECT_BYTE_BUFFER_ATTACHMENT.get( byteBuffer );
+        return (ByteBuffer) DIRECT_BYTE_BUFFER_ATTACHMENT.get(byteBuffer);
     }
 
     /**
@@ -728,34 +647,31 @@ public final class UnsafeUtil
      * <p>
      * The ByteBuffer does NOT create a Cleaner, or otherwise register the pointer for freeing.
      */
-    public static ByteBuffer newDirectByteBuffer( long addr, int cap ) throws Throwable
-    {
+    public static ByteBuffer newDirectByteBuffer(long addr, int cap) throws Throwable {
         assertUnsafeByteBufferAccess();
-        checkAccess( addr, cap );
-        if ( DIRECT_BYTE_BUFFER_CONSTRUCTOR == null )
-        {
+        checkAccess(addr, cap);
+        if (DIRECT_BYTE_BUFFER_CONSTRUCTOR == null) {
             // Simulate the JNI NewDirectByteBuffer(void*, long) invocation.
-            ByteBuffer dbb = (ByteBuffer) unsafe.allocateInstance( DIRECT_BYTE_BUFFER_CLASS );
-            initDirectByteBuffer( dbb, addr, cap );
+            ByteBuffer dbb = (ByteBuffer) unsafe.allocateInstance(DIRECT_BYTE_BUFFER_CLASS);
+            initDirectByteBuffer(dbb, addr, cap);
             return dbb;
         }
         // Reflection based fallback code.
-        return (ByteBuffer) DIRECT_BYTE_BUFFER_CONSTRUCTOR.invokeExact( addr, cap );
+        return (ByteBuffer) DIRECT_BYTE_BUFFER_CONSTRUCTOR.invokeExact(addr, cap);
     }
 
     /**
      * Initialize (simulate calling the constructor of) the given DirectByteBuffer.
      */
-    public static void initDirectByteBuffer( ByteBuffer dbb, long addr, int cap )
-    {
+    public static void initDirectByteBuffer(ByteBuffer dbb, long addr, int cap) {
         assertUnsafeByteBufferAccess();
-        checkAccess( addr, cap );
-        dbb.order( ByteOrder.BIG_ENDIAN );
-        BYTE_BUFFER_MARK.set( dbb, -1 );
-        BYTE_BUFFER_POSITION.set( dbb, 0 );
-        BYTE_BUFFER_LIMIT.set( dbb, cap );
-        BYTE_BUFFER_CAPACITY.set( dbb, cap );
-        BYTE_BUFFER_ADDRESS.set( dbb, addr );
+        checkAccess(addr, cap);
+        dbb.order(ByteOrder.BIG_ENDIAN);
+        BYTE_BUFFER_MARK.set(dbb, -1);
+        BYTE_BUFFER_POSITION.set(dbb, 0);
+        BYTE_BUFFER_LIMIT.set(dbb, cap);
+        BYTE_BUFFER_CAPACITY.set(dbb, cap);
+        BYTE_BUFFER_ADDRESS.set(dbb, addr);
     }
 
     /**
@@ -766,10 +682,9 @@ public final class UnsafeUtil
      * @param dbb The direct byte buffer to read the address field from.
      * @return The native memory address in the given direct byte buffer.
      */
-    public static long getDirectByteBufferAddress( ByteBuffer dbb )
-    {
+    public static long getDirectByteBufferAddress(ByteBuffer dbb) {
         assertUnsafeByteBufferAccess();
-        return (long) BYTE_BUFFER_ADDRESS.get( dbb );
+        return (long) BYTE_BUFFER_ADDRESS.get(dbb);
     }
 
     /**
@@ -777,47 +692,40 @@ public final class UnsafeUtil
      *
      * @param byteBuffer provided byte buffer.
      */
-    public static void invokeCleaner( ByteBuffer byteBuffer )
-    {
-        unsafe.invokeCleaner( byteBuffer );
+    public static void invokeCleaner(ByteBuffer byteBuffer) {
+        unsafe.invokeCleaner(byteBuffer);
     }
 
     /**
      * Releases provided buffer. Resets buffer capacity to 0 which makes it impossible to use after that.
      */
-    public static void releaseBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
-    {
-        if ( !byteBuffer.isDirect() )
-        {
-            freeHeapByteBuffer( byteBuffer, memoryTracker );
+    public static void releaseBuffer(ByteBuffer byteBuffer, MemoryTracker memoryTracker) {
+        if (!byteBuffer.isDirect()) {
+            freeHeapByteBuffer(byteBuffer, memoryTracker);
             return;
         }
-        freeByteBuffer( byteBuffer, memoryTracker );
+        freeByteBuffer(byteBuffer, memoryTracker);
     }
 
-    private static void freeHeapByteBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
-    {
+    private static void freeHeapByteBuffer(ByteBuffer byteBuffer, MemoryTracker memoryTracker) {
         var capacity = byteBuffer.capacity();
-        if ( capacity == 0 )
-        {
+        if (capacity == 0) {
             // nothing to "free"
             return;
         }
         // nerf buffer to break any future access
-        nerfBuffer( byteBuffer );
-        memoryTracker.releaseHeap( capacity );
+        nerfBuffer(byteBuffer);
+        memoryTracker.releaseHeap(capacity);
     }
 
-    private static final class Allocation
-    {
+    private static final class Allocation {
         private final long pointer;
         private final long sizeInBytes;
         private final long boundary;
         private final long freeCounter;
         public volatile boolean freed;
 
-        Allocation( long pointer, long sizeInBytes, long freeCounter )
-        {
+        Allocation(long pointer, long sizeInBytes, long freeCounter) {
             this.pointer = pointer;
             this.sizeInBytes = sizeInBytes;
             this.freeCounter = freeCounter;
@@ -825,44 +733,41 @@ public final class UnsafeUtil
         }
 
         @Override
-        public String toString()
-        {
-            return format( "Allocation[pointer=%s (%x), size=%s, boundary=%s (%x), free counter=%s]",
-                    pointer, pointer, sizeInBytes, boundary, boundary, freeCounter );
+        public String toString() {
+            return format(
+                    "Allocation[pointer=%s (%x), size=%s, boundary=%s (%x), free counter=%s]",
+                    pointer, pointer, sizeInBytes, boundary, boundary, freeCounter);
         }
     }
 
-    private static final class FreeTrace extends Throwable implements Comparable<FreeTrace>
-    {
+    private static final class FreeTrace extends Throwable implements Comparable<FreeTrace> {
         private final long pointer;
         private final Allocation allocation;
         private final long id;
         private final long nanoTime;
         private long referenceTime;
 
-        private FreeTrace( long pointer, Allocation allocation, long id )
-        {
+        private FreeTrace(long pointer, Allocation allocation, long id) {
             this.pointer = pointer;
             this.allocation = allocation;
             this.id = id;
             this.nanoTime = System.nanoTime();
         }
 
-        private boolean contains( long pointer )
-        {
+        private boolean contains(long pointer) {
             return this.pointer <= pointer && pointer <= this.pointer + allocation.sizeInBytes;
         }
 
         @Override
-        public int compareTo( FreeTrace that )
-        {
-            return Long.compare( this.id, that.id );
+        public int compareTo(FreeTrace that) {
+            return Long.compare(this.id, that.id);
         }
 
         @Override
-        public String getMessage()
-        {
-            return format( "0x%x of %6d bytes, freed %s µs ago at", pointer, allocation.sizeInBytes, (referenceTime - nanoTime) / 1000 );
+        public String getMessage() {
+            return format(
+                    "0x%x of %6d bytes, freed %s µs ago at",
+                    pointer, allocation.sizeInBytes, (referenceTime - nanoTime) / 1000);
         }
     }
 }

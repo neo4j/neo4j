@@ -21,7 +21,6 @@ package org.neo4j.bolt.routing;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -30,8 +29,7 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * Interface which provides the routing table given a routing context and a database name.
  */
-public interface RoutingTableGetter
-{
+public interface RoutingTableGetter {
     /**
      * Retrieves the routing table
      *
@@ -43,6 +41,12 @@ public interface RoutingTableGetter
      * @param connectionId the connectionId which requested the routing table.
      * @return A promise of a routing table
      */
-    CompletableFuture<MapValue> get( String programId, LoginContext loginContext, TransactionManager transactionManager, MapValue routingContext,
-                                     List<Bookmark> bookmarks, String databaseName, String connectionId );
+    CompletableFuture<MapValue> get(
+            String programId,
+            LoginContext loginContext,
+            TransactionManager transactionManager,
+            MapValue routingContext,
+            List<Bookmark> bookmarks,
+            String databaseName,
+            String connectionId);
 }

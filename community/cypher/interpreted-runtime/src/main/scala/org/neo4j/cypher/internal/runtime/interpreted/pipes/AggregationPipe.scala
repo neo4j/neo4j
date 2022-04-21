@@ -135,10 +135,13 @@ object AggregationPipe {
   /**
    * Precompute a function that creates new aggregators for a given grouping key
    */
-  def computeNewAggregatorsFunction[KeyType <: AnyValue](aggregations: Array[AggregationExpression]): Function2[KeyType, MemoryTracker, Array[AggregationFunction]] =
+  def computeNewAggregatorsFunction[KeyType <: AnyValue](aggregations: Array[AggregationExpression])
+    : Function2[KeyType, MemoryTracker, Array[AggregationFunction]] =
     (groupingValue: KeyType, scopedMemoryTracker: MemoryTracker) => {
       val nAggregations = aggregations.length
-      scopedMemoryTracker.allocateHeap(groupingValue.estimatedHeapUsage() + HeapEstimator.shallowSizeOfObjectArray(nAggregations))
+      scopedMemoryTracker.allocateHeap(
+        groupingValue.estimatedHeapUsage() + HeapEstimator.shallowSizeOfObjectArray(nAggregations)
+      )
       val functions = new Array[AggregationFunction](nAggregations)
       var i = 0
       while (i < nAggregations) {

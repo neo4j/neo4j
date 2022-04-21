@@ -55,20 +55,32 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = Some(CypherRuntimeOption.interpreted)
 
   override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
-    val Result(logicalPlan, nExpressionSlots, availableExpressionVars) = expressionVariableAllocation.allocate(query.logicalPlan)
+    val Result(logicalPlan, nExpressionSlots, availableExpressionVars) =
+      expressionVariableAllocation.allocate(query.logicalPlan)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
 
-    val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext, context.anonymousVariableNameGenerator))
+    val converters = new ExpressionConverters(CommunityExpressionConverter(
+      context.tokenContext,
+      context.anonymousVariableNameGenerator
+    ))
     val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
-    val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexRegistrator, context.anonymousVariableNameGenerator)(query.semanticTable)
+    val pipeMapper = InterpretedPipeMapper(
+      query.readOnly,
+      converters,
+      context.tokenContext,
+      queryIndexRegistrator,
+      context.anonymousVariableNameGenerator
+    )(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
-    val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, withSlottedParameters, availableExpressionVars)
+    val logicalPlanWithConvertedNestedPlans =
+      NestedPipeExpressions.build(pipeTreeBuilder, withSlottedParameters, availableExpressionVars)
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
     val columns = query.resultColumns
 
     val startsTransactions = doesStartTransactions(query)
 
-    val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe,
+    val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(
+      pipe,
       queryIndexRegistrator.result(),
       nExpressionSlots,
       parameterMapping,
@@ -76,7 +88,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       context.config.lenientCreateRelationship,
       context.config.memoryTrackingController,
       query.hasLoadCSV,
-      startsTransactions)
+      startsTransactions
+    )
 
     new InterpretedExecutionPlan(
       resultBuilderFactory,
@@ -97,22 +110,27 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
    * Executable plan for a single cypher query. Warning, this class will get cached! Do not leak transaction objects
    * or other resources in here.
    */
-  class InterpretedExecutionPlan(resultBuilderFactory: ExecutionResultBuilderFactory,
-                                 override val runtimeName: RuntimeName,
-                                 readOnly: Boolean,
-                                 startsTransactions: Boolean,
-                                 override val metadata: Seq[Argument],
-                                 warnings: Set[InternalNotification]) extends ExecutionPlan {
+  class InterpretedExecutionPlan(
+    resultBuilderFactory: ExecutionResultBuilderFactory,
+    override val runtimeName: RuntimeName,
+    readOnly: Boolean,
+    startsTransactions: Boolean,
+    override val metadata: Seq[Argument],
+    warnings: Set[InternalNotification]
+  ) extends ExecutionPlan {
 
-    override def run(queryContext: QueryContext,
-                     executionMode: ExecutionMode,
-                     params: MapValue,
-                     prePopulateResults: Boolean,
-                     input: InputDataStream,
-                     subscriber: QuerySubscriber): RuntimeResult = {
+    override def run(
+      queryContext: QueryContext,
+      executionMode: ExecutionMode,
+      params: MapValue,
+      prePopulateResults: Boolean,
+      input: InputDataStream,
+      subscriber: QuerySubscriber
+    ): RuntimeResult = {
       val doProfile = executionMode == ProfileMode
       val wrappedContext = if (!readOnly || doProfile) new UpdateCountingQueryContext(queryContext) else queryContext
-      val builderContext = if (startsTransactions) new TransactionsCountingQueryContext(wrappedContext) else wrappedContext
+      val builderContext =
+        if (startsTransactions) new TransactionsCountingQueryContext(wrappedContext) else wrappedContext
       val builder = resultBuilderFactory.create(builderContext)
 
       val profileInformation = new InterpretedProfileInformation

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.kernel.impl.index.schema.GenericKey.BIGGEST_STATIC_SIZE;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -31,22 +33,21 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKey.BIGGEST_STATIC_SIZE;
-
 /**
  * Validates Value[] tuples, whether or not they fit inside a {@link GBPTree} with a layout using {@link GenericKey}.
  * Most values won't even be serialized to {@link GenericKey}, values that fit well within the margin.
  */
-class GenericIndexKeyValidator implements IndexValueValidator
-{
+class GenericIndexKeyValidator implements IndexValueValidator {
     private final IndexDescriptor descriptor;
     private final int maxLength;
-    private final Layout<? extends GenericKey<?>,NullValue> layout;
+    private final Layout<? extends GenericKey<?>, NullValue> layout;
     private final TokenNameLookup tokenNameLookup;
 
-    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<? extends GenericKey<?>,NullValue> layout,
-            TokenNameLookup tokenNameLookup )
-    {
+    GenericIndexKeyValidator(
+            int maxLength,
+            IndexDescriptor descriptor,
+            Layout<? extends GenericKey<?>, NullValue> layout,
+            TokenNameLookup tokenNameLookup) {
         this.maxLength = maxLength;
         this.descriptor = descriptor;
         this.layout = layout;
@@ -54,15 +55,12 @@ class GenericIndexKeyValidator implements IndexValueValidator
     }
 
     @Override
-    public void validate( long entityId, Value... values )
-    {
-        int worstCaseSize = worstCaseLength( values );
-        if ( worstCaseSize > maxLength )
-        {
-            int size = actualLength( values );
-            if ( size > maxLength )
-            {
-                IndexValueValidator.throwSizeViolationException( descriptor, tokenNameLookup, entityId, size, values );
+    public void validate(long entityId, Value... values) {
+        int worstCaseSize = worstCaseLength(values);
+        if (worstCaseSize > maxLength) {
+            int size = actualLength(values);
+            if (size > maxLength) {
+                IndexValueValidator.throwSizeViolationException(descriptor, tokenNameLookup, entityId, size, values);
             }
         }
     }
@@ -74,59 +72,47 @@ class GenericIndexKeyValidator implements IndexValueValidator
      * @param values the value tuple to calculate some exaggerated worst-case size of.
      * @return the calculated worst-case size of the value tuple.
      */
-    private static int worstCaseLength( Value[] values )
-    {
+    private static int worstCaseLength(Value[] values) {
         int length = Long.BYTES;
-        for ( Value value : values )
-        {
+        for (Value value : values) {
             // Add some generic overhead, slightly exaggerated
             length += Long.BYTES;
             // Add worst-case length of this value
-            length += worstCaseLength( value );
+            length += worstCaseLength(value);
         }
         return length;
     }
 
-    private static int worstCaseLength( AnyValue value )
-    {
-        if ( value.isSequenceValue() )
-        {
+    private static int worstCaseLength(AnyValue value) {
+        if (value.isSequenceValue()) {
             SequenceValue sequenceValue = (SequenceValue) value;
-            if ( sequenceValue instanceof TextArray textArray )
-            {
+            if (sequenceValue instanceof TextArray textArray) {
                 int length = 0;
-                for ( int i = 0; i < textArray.length(); i++ )
-                {
-                    length += stringWorstCaseLength( textArray.stringValue( i ).length() );
+                for (int i = 0; i < textArray.length(); i++) {
+                    length += stringWorstCaseLength(textArray.stringValue(i).length());
                 }
                 return length;
             }
             return sequenceValue.length() * BIGGEST_STATIC_SIZE;
-        }
-        else
-        {
-            if ( ((Value) value).valueGroup().category() == ValueCategory.TEXT )
-            {
+        } else {
+            if (((Value) value).valueGroup().category() == ValueCategory.TEXT) {
                 // For text, which is very dynamic in its nature do a worst-case off of number of characters in it
-                return stringWorstCaseLength( ((TextValue) value).length() );
+                return stringWorstCaseLength(((TextValue) value).length());
             }
             // For all else then use the biggest possible value for a non-dynamic, non-array value a state can occupy
             return BIGGEST_STATIC_SIZE;
         }
     }
 
-    private static int stringWorstCaseLength( int stringLength )
-    {
+    private static int stringWorstCaseLength(int stringLength) {
         return Types.SIZE_STRING_LENGTH + stringLength * 4;
     }
 
-    private int actualLength( Value[] values )
-    {
+    private int actualLength(Value[] values) {
         GenericKey<?> key = layout.newKey();
-        key.initialize( 0 /*doesn't quite matter for size calculations, but an important method to call*/ );
-        for ( int i = 0; i < values.length; i++ )
-        {
-            key.initFromValue( i, values[i], NativeIndexKey.Inclusion.NEUTRAL );
+        key.initialize(0 /*doesn't quite matter for size calculations, but an important method to call*/);
+        for (int i = 0; i < values.length; i++) {
+            key.initFromValue(i, values[i], NativeIndexKey.Inclusion.NEUTRAL);
         }
         return key.size();
     }

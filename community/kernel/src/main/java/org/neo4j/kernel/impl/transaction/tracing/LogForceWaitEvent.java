@@ -24,11 +24,8 @@ package org.neo4j.kernel.impl.transaction.tracing;
  * to the log. This transaction might not actually end up performing the force itself, but could be included in a
  * force batch performed by another thread. This is the total force latency that this thread experienced.
  */
-public interface LogForceWaitEvent extends AutoCloseable
-{
-    LogForceWaitEvent NULL = () ->
-    {
-    };
+public interface LogForceWaitEvent extends AutoCloseable {
+    LogForceWaitEvent NULL = () -> {};
 
     /**
      * Mark the end of forcing the transaction log.

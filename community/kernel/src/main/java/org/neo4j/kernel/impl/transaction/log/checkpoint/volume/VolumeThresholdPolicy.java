@@ -29,19 +29,17 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.time.SystemNanoClock;
 
 @ServiceProvider
-public class VolumeThresholdPolicy implements CheckPointThresholdPolicy
-{
+public class VolumeThresholdPolicy implements CheckPointThresholdPolicy {
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "volume";
     }
 
     @Override
-    public CheckPointThreshold createThreshold( Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider )
-    {
-        long checkpointIntervalVolume = config.get( GraphDatabaseSettings.check_point_interval_volume );
-        long logFileSize = config.get( GraphDatabaseSettings.logical_log_rotation_threshold );
-        return new VolumeCheckPointThreshold( checkpointIntervalVolume, logFileSize );
+    public CheckPointThreshold createThreshold(
+            Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider) {
+        long checkpointIntervalVolume = config.get(GraphDatabaseSettings.check_point_interval_volume);
+        long logFileSize = config.get(GraphDatabaseSettings.logical_log_rotation_threshold);
+        return new VolumeCheckPointThreshold(checkpointIntervalVolume, logFileSize);
     }
 }

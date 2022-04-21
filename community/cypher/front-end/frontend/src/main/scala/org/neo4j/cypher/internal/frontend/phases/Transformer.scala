@@ -34,7 +34,7 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
 
   final protected[Transformer] def checkConditions(state: Any, conditions: Set[StepSequencer.Condition]): Boolean = {
     val messages: Seq[String] = conditions.toSeq.collect {
-      case v:ValidatingCondition => v(state)
+      case v: ValidatingCondition => v(state)
     }.flatten
     if (messages.nonEmpty) {
       val prefix = s"Conditions started failing after running these phases: $name\n"
@@ -45,6 +45,7 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
 }
 
 object Transformer {
+
   def identity[C <: BaseContext, FROM]: Transformer[C, FROM, FROM] = new Transformer[C, FROM, FROM] {
     override def transform(from: FROM, context: C): FROM = from
 
@@ -57,20 +58,23 @@ object Transformer {
    * Transformer that can be inserted when debugging, to help detect
    * what part of the compilation introduces an ast issue.
    */
-  def printAst(tag: String): Transformer[BaseContext, BaseState, BaseState] = new Transformer[BaseContext, BaseState, BaseState] {
-    override def transform(from: BaseState, context: BaseContext): BaseState = {
-      println("     |||||||| PRINT AST: "+tag)
-      println(Prettifier(ExpressionStringifier()).asString(from.maybeStatement.get))
-      from
+  def printAst(tag: String): Transformer[BaseContext, BaseState, BaseState] =
+    new Transformer[BaseContext, BaseState, BaseState] {
+
+      override def transform(from: BaseState, context: BaseContext): BaseState = {
+        println("     |||||||| PRINT AST: " + tag)
+        println(Prettifier(ExpressionStringifier()).asString(from.maybeStatement.get))
+        from
+      }
+
+      override def postConditions: Set[StepSequencer.Condition] = Set.empty
+
+      override def name: String = "print ast"
     }
-
-    override def postConditions: Set[StepSequencer.Condition] = Set.empty
-
-    override def name: String = "print ast"
-  }
 }
 
-class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO]) extends Transformer[C, FROM, TO] {
+class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO])
+    extends Transformer[C, FROM, TO] {
 
   override def postConditions: Set[StepSequencer.Condition] = first.postConditions ++ after.postConditions
 
@@ -89,8 +93,9 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
   override def toString: String = name
 }
 
+case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT: Transformer[C, FROM, STATE])
+    extends Transformer[C, STATE, STATE] {
 
-case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT: Transformer[C, FROM, STATE]) extends Transformer[C, STATE, STATE] {
   override def transform(from: STATE, context: C): STATE = {
     if (f(from))
       thenT.transform(from, context)

@@ -39,14 +39,20 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
    * Container for all values that define a NodeIndexScan plan
    */
   case class NodeIndexScanParameters(
-                                      idName: String,
-                                      token: LabelToken,
-                                      properties: Seq[IndexedProperty],
-                                      argumentIds: Set[String],
-                                      indexOrder: IndexOrder,
-                                    )
+    idName: String,
+    token: LabelToken,
+    properties: Seq[IndexedProperty],
+    argumentIds: Set[String],
+    indexOrder: IndexOrder
+  )
 
-  override def createPlans(indexMatches: Set[NodeIndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = {
+  override def createPlans(
+    indexMatches: Set[NodeIndexMatch],
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    restrictions: LeafPlanRestrictions,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
 
     val solutions = for {
       indexMatch <- indexMatches
@@ -68,13 +74,19 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
         providedOrder = solution.providedOrder,
         indexOrder = solution.indexScanParameters.indexOrder,
         context = context,
-        indexType = solution.indexType,
+        indexType = solution.indexType
       )
     )
   }
 
-  private def createSolution(indexMatch: NodeIndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Solution[NodeIndexScanParameters] = {
-    val predicateSet = indexMatch.predicateSet(predicatesForIndexScan(indexMatch.propertyPredicates), exactPredicatesCanGetValue = false)
+  private def createSolution(
+    indexMatch: NodeIndexMatch,
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): Solution[NodeIndexScanParameters] = {
+    val predicateSet =
+      indexMatch.predicateSet(predicatesForIndexScan(indexMatch.propertyPredicates), exactPredicatesCanGetValue = false)
 
     val hint = predicateSet
       .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)
@@ -86,12 +98,12 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
         token = indexMatch.labelToken,
         properties = predicateSet.indexedProperties(context),
         argumentIds = argumentIds,
-        indexOrder = indexMatch.indexOrder,
+        indexOrder = indexMatch.indexOrder
       ),
       solvedPredicates = predicateSet.allSolvedPredicates,
       solvedHint = hint,
       providedOrder = indexMatch.providedOrder,
-      indexType = indexMatch.indexDescriptor.indexType,
+      indexType = indexMatch.indexDescriptor.indexType
     )
   }
 }

@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * }
  */
 case class SemiApply(override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen)
-  extends AbstractSemiApply(left)(idGen) {
+    extends AbstractSemiApply(left)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 }
@@ -50,13 +50,13 @@ case class SemiApply(override val left: LogicalPlan, override val right: Logical
  * }
  */
 case class AntiSemiApply(override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen)
-  extends AbstractSemiApply(left)(idGen) {
+    extends AbstractSemiApply(left)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 }
 
 abstract class AbstractSemiApply(left: LogicalPlan)(idGen: IdGen)
-  extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
+    extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
 
   val availableSymbols: Set[String] = left.availableSymbols
 }

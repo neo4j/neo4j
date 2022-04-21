@@ -25,24 +25,19 @@ import java.lang.management.ThreadMXBean;
 /**
  * Measures CPU time by thread.
  */
-public interface CpuClock
-{
-    CpuClock CPU_CLOCK = new CpuClock()
-    {
+public interface CpuClock {
+    CpuClock CPU_CLOCK = new CpuClock() {
         private final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
         @Override
-        public long cpuTimeNanos( long threadId )
-        {
-            if ( !threadMXBean.isThreadCpuTimeSupported() )
-            {
+        public long cpuTimeNanos(long threadId) {
+            if (!threadMXBean.isThreadCpuTimeSupported()) {
                 return -1;
             }
-            if ( !threadMXBean.isThreadCpuTimeEnabled() )
-            {
-                threadMXBean.setThreadCpuTimeEnabled( true );
+            if (!threadMXBean.isThreadCpuTimeEnabled()) {
+                threadMXBean.setThreadCpuTimeEnabled(true);
             }
-            return threadMXBean.getThreadCpuTime( threadId );
+            return threadMXBean.getThreadCpuTime(threadId);
         }
     };
     CpuClock NOT_AVAILABLE = threadId -> -1;
@@ -55,5 +50,5 @@ public interface CpuClock
      * @return the current CPU time used by the thread, in nanoseconds, or {@code -1} if getting the CPU time is not
      * supported.
      */
-    long cpuTimeNanos( long threadId );
+    long cpuTimeNanos(long threadId);
 }

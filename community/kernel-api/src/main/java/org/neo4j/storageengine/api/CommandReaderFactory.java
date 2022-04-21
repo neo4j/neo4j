@@ -24,8 +24,7 @@ import org.neo4j.kernel.KernelVersion;
 /**
  * Provides {@link CommandReader} instances for specific versions.
  */
-public interface CommandReaderFactory
-{
+public interface CommandReaderFactory {
     /**
      * Returns a {@link CommandReader} able to read commands of {@code logEntryVersion}. Previously the log entry version was coupled
      * with the command version, and to keep backwards compatibility this log entry version is still passed in here.
@@ -38,10 +37,9 @@ public interface CommandReaderFactory
      * @return {@link CommandReader} for reading commands of that version.
      * @throws IllegalArgumentException on invalid or unrecognized version.
      */
-    CommandReader get( KernelVersion version );
+    CommandReader get(KernelVersion version);
 
-    CommandReaderFactory NO_COMMANDS = version ->
-    {
-        throw new IllegalArgumentException( "No commands supported" );
+    CommandReaderFactory NO_COMMANDS = version -> {
+        throw new IllegalArgumentException("No commands supported");
     };
 }

@@ -23,6 +23,7 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 
 class DataCollectorMatchersTest extends FunSuite {
+
   test("arraySafeEquals") {
     DataCollectorMatchers.arraySafeEquals(Array(), Seq()) shouldBe true
     DataCollectorMatchers.arraySafeEquals(Array(1), Seq(1)) shouldBe true
@@ -32,7 +33,8 @@ class DataCollectorMatchersTest extends FunSuite {
     DataCollectorMatchers.arraySafeEquals(Array(Array(1)), Array(Seq(1))) shouldBe true
     DataCollectorMatchers.arraySafeEquals(Seq(Array(1)), Seq(Seq(1))) shouldBe false
 
-    val equalTuples = Seq((1, 1), ("1", "1"), (Array(3, 4), Seq(3, 4)), (Seq(5), Array(5)), (Array(Array(1)), Array(Seq(1))))
+    val equalTuples =
+      Seq((1, 1), ("1", "1"), (Array(3, 4), Seq(3, 4)), (Seq(5), Array(5)), (Array(Array(1)), Array(Seq(1))))
     val equalData = subsequences(equalTuples)
     for (testDatum <- equalData) {
       val firstSequence = testDatum.map(_._1).toArray

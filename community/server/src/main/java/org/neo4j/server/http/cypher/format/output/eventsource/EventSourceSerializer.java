@@ -21,7 +21,6 @@ package org.neo4j.server.http.cypher.format.output.eventsource;
 
 import org.neo4j.server.http.cypher.format.api.OutputEvent;
 
-public interface EventSourceSerializer
-{
-    void handleEvent( OutputEvent event );
+public interface EventSourceSerializer {
+    void handleEvent(OutputEvent event);
 }

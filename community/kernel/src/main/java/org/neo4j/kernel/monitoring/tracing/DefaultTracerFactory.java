@@ -20,7 +20,6 @@
 package org.neo4j.kernel.monitoring.tracing;
 
 import java.time.Clock;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -37,23 +36,20 @@ import org.neo4j.time.SystemNanoClock;
  * The default TracerFactory, when nothing else is otherwise configured.
  */
 @ServiceProvider
-public class DefaultTracerFactory implements TracerFactory
-{
+public class DefaultTracerFactory implements TracerFactory {
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "default";
     }
 
     @Override
-    public PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, InternalLog log, Config config )
-    {
-        return new DefaultPageCacheTracer( config.get( GraphDatabaseInternalSettings.per_file_metrics_counters ) );
+    public PageCacheTracer createPageCacheTracer(
+            Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, InternalLog log, Config config) {
+        return new DefaultPageCacheTracer(config.get(GraphDatabaseInternalSettings.per_file_metrics_counters));
     }
 
     @Override
-    public DatabaseTracer createDatabaseTracer( Clock clock )
-    {
+    public DatabaseTracer createDatabaseTracer(Clock clock) {
         return new DefaultTracer();
     }
 }

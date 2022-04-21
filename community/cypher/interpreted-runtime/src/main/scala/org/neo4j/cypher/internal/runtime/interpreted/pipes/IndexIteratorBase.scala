@@ -32,12 +32,12 @@ abstract class IndexIteratorBase[T](val cursor: Cursor) extends ClosingIterator[
 
   protected def closeMore(): Unit = cursor.close()
 
-  override final def innerHasNext: Boolean = {
+  final override def innerHasNext: Boolean = {
     ensureInitialized()
     _next != null
   }
 
-  override final def next(): T = {
+  final override def next(): T = {
     ensureInitialized()
 
     if (!hasNext) {

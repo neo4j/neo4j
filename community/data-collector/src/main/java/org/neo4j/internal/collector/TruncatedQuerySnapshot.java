@@ -20,7 +20,6 @@
 package org.neo4j.internal.collector;
 
 import java.util.function.Supplier;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.memory.HeapEstimator;
@@ -53,8 +52,7 @@ import org.neo4j.values.virtual.VirtualValues;
  * constant query collection. This is crucial to avoid bloating memory use for data import scenarios, and in general
  * to avoid hogging lot's of memory that will be long-lived and likely tenured.
  */
-public class TruncatedQuerySnapshot
-{
+public class TruncatedQuerySnapshot {
     final NamedDatabaseId databaseId;
     final int fullQueryTextHash;
     final String queryText;
@@ -65,50 +63,46 @@ public class TruncatedQuerySnapshot
     final long startTimestampMillis;
     final long estimatedHeap;
 
-    static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TruncatedQuerySnapshot.class ) +
-                                     HeapEstimator.shallowSizeOfInstance( Supplier.class );
+    static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TruncatedQuerySnapshot.class)
+            + HeapEstimator.shallowSizeOfInstance(Supplier.class);
 
-    public TruncatedQuerySnapshot( NamedDatabaseId databaseId,
-                            String fullQueryText,
-                            Supplier<ExecutionPlanDescription> queryPlanSupplier,
-                            MapValue queryParameters,
-                            long elapsedTimeMicros,
-                            long compilationTimeMicros,
-                            long startTimestampMillis,
-                            int maxQueryTextLength )
-    {
+    public TruncatedQuerySnapshot(
+            NamedDatabaseId databaseId,
+            String fullQueryText,
+            Supplier<ExecutionPlanDescription> queryPlanSupplier,
+            MapValue queryParameters,
+            long elapsedTimeMicros,
+            long compilationTimeMicros,
+            long startTimestampMillis,
+            int maxQueryTextLength) {
         this.databaseId = databaseId;
         this.fullQueryTextHash = fullQueryText.hashCode();
-        this.queryText = truncateQueryText( fullQueryText, maxQueryTextLength );
+        this.queryText = truncateQueryText(fullQueryText, maxQueryTextLength);
         this.queryPlanSupplier = queryPlanSupplier;
-        this.queryParameters = truncateParameters( queryParameters );
+        this.queryParameters = truncateParameters(queryParameters);
         this.elapsedTimeMicros = elapsedTimeMicros;
         this.compilationTimeMicros = compilationTimeMicros;
         this.startTimestampMillis = startTimestampMillis;
-        this.estimatedHeap = SHALLOW_SIZE + HeapEstimator.sizeOf( this.queryText ) + this.queryParameters.estimatedHeapUsage();
+        this.estimatedHeap =
+                SHALLOW_SIZE + HeapEstimator.sizeOf(this.queryText) + this.queryParameters.estimatedHeapUsage();
     }
 
-    private static String truncateQueryText( String queryText, int maxLength )
-    {
-        return queryText.length() > maxLength ? queryText.substring( 0, maxLength ) : queryText;
+    private static String truncateQueryText(String queryText, int maxLength) {
+        return queryText.length() > maxLength ? queryText.substring(0, maxLength) : queryText;
     }
 
-    private static MapValue truncateParameters( MapValue parameters )
-    {
+    private static MapValue truncateParameters(MapValue parameters) {
         int size = parameters.size();
-        if ( size == 0 )
-        {
+        if (size == 0) {
             return VirtualValues.EMPTY_MAP;
         }
-        MapValueBuilder mapValueBuilder = new MapValueBuilder( size );
+        MapValueBuilder mapValueBuilder = new MapValueBuilder(size);
 
-        parameters.foreach( ( key, value ) ->
-        {
+        parameters.foreach((key, value) -> {
             mapValueBuilder.add(
-                    key.length() <= MAX_PARAMETER_KEY_LENGTH ? key : key.substring( 0, MAX_PARAMETER_KEY_LENGTH ),
-                    value.map( VALUE_TRUNCATER )
-            );
-        } );
+                    key.length() <= MAX_PARAMETER_KEY_LENGTH ? key : key.substring(0, MAX_PARAMETER_KEY_LENGTH),
+                    value.map(VALUE_TRUNCATER));
+        });
 
         return mapValueBuilder.build();
     }
@@ -118,127 +112,106 @@ public class TruncatedQuerySnapshot
     private static final int MAX_PARAMETER_KEY_LENGTH = 1000;
 
     @VisibleForTesting
-    public long estimatedHeap()
-    {
+    public long estimatedHeap() {
         return estimatedHeap;
     }
 
     @VisibleForTesting
-    public MapValue queryParameters()
-    {
+    public MapValue queryParameters() {
         return queryParameters;
     }
 
-    static class ValueTruncater implements ValueMapper<AnyValue>
-    {
+    static class ValueTruncater implements ValueMapper<AnyValue> {
 
         @Override
-        public AnyValue mapPath( VirtualPathValue value )
-        {
-            return Values.stringValue( "§PATH[" + value.size() + "]" );
+        public AnyValue mapPath(VirtualPathValue value) {
+            return Values.stringValue("§PATH[" + value.size() + "]");
         }
 
         @Override
-        public AnyValue mapNode( VirtualNodeValue value )
-        {
-            if ( value instanceof NodeValue )
-            {
+        public AnyValue mapNode(VirtualNodeValue value) {
+            if (value instanceof NodeValue) {
                 // Note: we do not want to keep a reference to the whole node value as it could contain a lot of data.
-                return VirtualValues.node( value.id() );
+                return VirtualValues.node(value.id());
             }
             return value;
         }
 
         @Override
-        public AnyValue mapRelationship( VirtualRelationshipValue value )
-        {
-            if ( value instanceof RelationshipValue )
-            {
-                // Note: we do not want to keep a reference to the whole relationship value as it could contain a lot of data.
-                return VirtualValues.relationship( value.id() );
+        public AnyValue mapRelationship(VirtualRelationshipValue value) {
+            if (value instanceof RelationshipValue) {
+                // Note: we do not want to keep a reference to the whole relationship value as it could contain a lot of
+                // data.
+                return VirtualValues.relationship(value.id());
             }
             return value;
         }
 
         @Override
-        public AnyValue mapMap( MapValue map )
-        {
-            return Values.stringValue( "§MAP[" + map.size() + "]" );
+        public AnyValue mapMap(MapValue map) {
+            return Values.stringValue("§MAP[" + map.size() + "]");
         }
 
         @Override
-        public AnyValue mapNoValue()
-        {
+        public AnyValue mapNoValue() {
             return Values.NO_VALUE;
         }
 
         @Override
-        public AnyValue mapSequence( SequenceValue value )
-        {
-            return Values.stringValue( "§LIST[" + value.length() + "]" );
+        public AnyValue mapSequence(SequenceValue value) {
+            return Values.stringValue("§LIST[" + value.length() + "]");
         }
 
         @Override
-        public AnyValue mapText( TextValue value )
-        {
-            if ( value.length() > MAX_TEXT_PARAMETER_LENGTH )
-            {
-                return Values.stringValue( value.stringValue().substring( 0, MAX_TEXT_PARAMETER_LENGTH ) );
+        public AnyValue mapText(TextValue value) {
+            if (value.length() > MAX_TEXT_PARAMETER_LENGTH) {
+                return Values.stringValue(value.stringValue().substring(0, MAX_TEXT_PARAMETER_LENGTH));
             }
             return value;
         }
 
         @Override
-        public AnyValue mapBoolean( BooleanValue value )
-        {
+        public AnyValue mapBoolean(BooleanValue value) {
             return value;
         }
 
         @Override
-        public AnyValue mapNumber( NumberValue value )
-        {
+        public AnyValue mapNumber(NumberValue value) {
             return value;
         }
 
         @Override
-        public AnyValue mapDateTime( DateTimeValue value )
-        {
+        public AnyValue mapDateTime(DateTimeValue value) {
             return value;
         }
 
         @Override
-        public AnyValue mapLocalDateTime( LocalDateTimeValue value )
-        {
+        public AnyValue mapLocalDateTime(LocalDateTimeValue value) {
             return value;
         }
 
         @Override
-        public AnyValue mapDate( DateValue value )
-        {
+        public AnyValue mapDate(DateValue value) {
             return value;
         }
 
         @Override
-        public AnyValue mapTime( TimeValue value )
-        {
+        public AnyValue mapTime(TimeValue value) {
             return value;
         }
 
         @Override
-        public AnyValue mapLocalTime( LocalTimeValue value )
-        {
+        public AnyValue mapLocalTime(LocalTimeValue value) {
             return value;
         }
 
         @Override
-        public AnyValue mapDuration( DurationValue value )
-        {
+        public AnyValue mapDuration(DurationValue value) {
             return value;
         }
 
         @Override
-        public AnyValue mapPoint( PointValue value )
-        {
+        public AnyValue mapPoint(PointValue value) {
             return value;
         }
     }

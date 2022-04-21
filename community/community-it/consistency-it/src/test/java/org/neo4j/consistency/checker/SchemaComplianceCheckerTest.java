@@ -19,15 +19,26 @@
  */
 package org.neo4j.consistency.checker;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.pointValue;
+import static org.neo4j.values.storable.Values.stringValue;
+
+import java.util.function.Function;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.Test;
-
-import java.util.function.Function;
-
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -50,21 +61,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
-import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
-import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
-import static org.neo4j.values.storable.Values.intValue;
-import static org.neo4j.values.storable.Values.pointValue;
-import static org.neo4j.values.storable.Values.stringValue;
-
-class SchemaComplianceCheckerTest extends CheckerTestBase
-{
+class SchemaComplianceCheckerTest extends CheckerTestBase {
     private int propertyKey1;
     private int propertyKey2;
     private int propertyKey3;
@@ -74,201 +71,205 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private int relType1;
 
     @Override
-    void initialData( KernelTransaction tx ) throws KernelException
-    {
+    void initialData(KernelTransaction tx) throws KernelException {
         TokenWrite tokenWrite = tx.tokenWrite();
-        propertyKey1 = tokenWrite.propertyKeyGetOrCreateForName( "1" );
-        propertyKey2 = tokenWrite.propertyKeyGetOrCreateForName( "2" );
-        propertyKey3 = tokenWrite.propertyKeyGetOrCreateForName( "3" );
-        label1 = tokenWrite.labelGetOrCreateForName( "A" );
-        label2 = tokenWrite.labelGetOrCreateForName( "B" );
-        label3 = tokenWrite.labelGetOrCreateForName( "C" );
-        relType1 = tokenWrite.relationshipTypeGetOrCreateForName( "R" );
+        propertyKey1 = tokenWrite.propertyKeyGetOrCreateForName("1");
+        propertyKey2 = tokenWrite.propertyKeyGetOrCreateForName("2");
+        propertyKey3 = tokenWrite.propertyKeyGetOrCreateForName("3");
+        label1 = tokenWrite.labelGetOrCreateForName("A");
+        label2 = tokenWrite.labelGetOrCreateForName("B");
+        label3 = tokenWrite.labelGetOrCreateForName("C");
+        relType1 = tokenWrite.relationshipTypeGetOrCreateForName("R");
     }
 
     @Test
-    void shouldReportMissingMandatoryProperty() throws Exception
-    {
+    void shouldReportMissingMandatoryProperty() throws Exception {
         // given
         long nodeId = 0;
         MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
-        propertyValues.put( propertyKey2, intValue( 99 ) );
-        long[] labels = new long[]{label1, label3};
+        propertyValues.put(propertyKey2, intValue(99));
+        long[] labels = new long[] {label1, label3};
         MutableIntObjectMap<MutableIntSet> mandatoryProperties = IntObjectMaps.mutable.empty();
-        mandatoryProperties.put( label1, IntSets.mutable.of( propertyKey1, propertyKey2 ) );
-        mandatoryProperties.put( label2, IntSets.mutable.of( propertyKey1, propertyKey3 ) );
-        mandatoryProperties.put( label3, IntSets.mutable.of( propertyKey1 ) );
+        mandatoryProperties.put(label1, IntSets.mutable.of(propertyKey1, propertyKey2));
+        mandatoryProperties.put(label2, IntSets.mutable.of(propertyKey1, propertyKey3));
+        mandatoryProperties.put(label3, IntSets.mutable.of(propertyKey1));
 
         // when
-        try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), mandatoryProperties, context().indexAccessors.onlineRules( NODE ),
-                CursorContext.NULL_CONTEXT, storeCursors ) )
-        {
-            checker.checkContainsMandatoryProperties( new NodeRecord( nodeId ), labels, propertyValues, reporter::forNode );
+        try (SchemaComplianceChecker checker = new SchemaComplianceChecker(
+                context(),
+                mandatoryProperties,
+                context().indexAccessors.onlineRules(NODE),
+                CursorContext.NULL_CONTEXT,
+                storeCursors)) {
+            checker.checkContainsMandatoryProperties(new NodeRecord(nodeId), labels, propertyValues, reporter::forNode);
         }
 
         // then
-        expect( ConsistencyReport.NodeConsistencyReport.class, report -> report.missingMandatoryProperty( anyInt() ) );
+        expect(ConsistencyReport.NodeConsistencyReport.class, report -> report.missingMandatoryProperty(anyInt()));
     }
 
     @Test
-    void shouldReportNotUniquelyIndexed() throws Exception
-    {
+    void shouldReportNotUniquelyIndexed() throws Exception {
         // given
-        LabelSchemaDescriptor descriptor = forLabel( label1, propertyKey1 );
-        long indexId = uniqueIndex( descriptor );
+        LabelSchemaDescriptor descriptor = forLabel(label1, propertyKey1);
+        long indexId = uniqueIndex(descriptor);
         long nodeId;
-        try ( AutoCloseable ignored = tx() )
-        {
-            TextValue value = stringValue( "a" );
+        try (AutoCloseable ignored = tx()) {
+            TextValue value = stringValue("a");
             // (N1) indexed w/ property A
             {
-                long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
-                nodeId = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
-                property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
-                indexValue( descriptor, indexId, nodeId, value );
+                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+                nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                property(propId, NULL, NULL, propertyValue(propertyKey1, value));
+                indexValue(descriptor, indexId, nodeId, value);
             }
             // (N2) indexed w/ property A
             {
-                long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
-                long nodeId2 = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
-                property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
-                indexValue( descriptor, indexId, nodeId2, value );
+                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+                long nodeId2 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                property(propId, NULL, NULL, propertyValue(propertyKey1, value));
+                indexValue(descriptor, indexId, nodeId2, value);
             }
         }
 
         // when
-        checkIndexed( nodeId );
+        checkIndexed(nodeId);
 
         // then
-        expect( ConsistencyReport.NodeConsistencyReport.class, report -> report.uniqueIndexNotUnique( any(), any(), anyLong() ) );
+        expect(
+                ConsistencyReport.NodeConsistencyReport.class,
+                report -> report.uniqueIndexNotUnique(any(), any(), anyLong()));
     }
 
     @Test
-    void shouldReportNotIndexed() throws Exception
-    {
+    void shouldReportNotIndexed() throws Exception {
         // given
-        LabelSchemaDescriptor descriptor = forLabel( label1, propertyKey1 );
-        index( descriptor );
+        LabelSchemaDescriptor descriptor = forLabel(label1, propertyKey1);
+        index(descriptor);
         long nodeId;
-        try ( AutoCloseable ignored = tx() )
-        {
+        try (AutoCloseable ignored = tx()) {
             // (N1) w/ property A (NOT indexed)
-            long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
-            nodeId = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
-            property( propId, NULL, NULL, propertyValue( propertyKey1, stringValue( "a" ) ) );
+            long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+            nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+            property(propId, NULL, NULL, propertyValue(propertyKey1, stringValue("a")));
         }
 
         // when
-        checkIndexed( nodeId );
+        checkIndexed(nodeId);
 
         // then
-        expect( ConsistencyReport.NodeConsistencyReport.class, report -> report.notIndexed( any(), any() ) );
+        expect(ConsistencyReport.NodeConsistencyReport.class, report -> report.notIndexed(any(), any()));
     }
 
     @Test
-    void shouldReportNotIndexedRelationship() throws Exception
-    {
+    void shouldReportNotIndexedRelationship() throws Exception {
         // given
-        RelationTypeSchemaDescriptor descriptor = forRelType( relType1, propertyKey1 );
-        index( descriptor );
+        RelationTypeSchemaDescriptor descriptor = forRelType(relType1, propertyKey1);
+        index(descriptor);
         long relId;
-        try ( AutoCloseable ignored = tx() )
-        {
+        try (AutoCloseable ignored = tx()) {
             // Rel w/ property (NOT indexed)
-            long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
-            relId = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
-            long nodeId = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relId );
-            relationship( relId, nodeId, nodeId, relType1, propId, NULL, NULL, NULL, NULL, true, true );
-            property( propId, NULL, NULL, propertyValue( propertyKey1, stringValue( "a" ) ) );
+            long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+            relId = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relId);
+            relationship(relId, nodeId, nodeId, relType1, propId, NULL, NULL, NULL, NULL, true, true);
+            property(propId, NULL, NULL, propertyValue(propertyKey1, stringValue("a")));
         }
 
         // when
-        checkRelationshipIndexed( relId );
+        checkRelationshipIndexed(relId);
 
         // then
-        expect( ConsistencyReport.RelationshipConsistencyReport.class, report -> report.notIndexed( any(), any() ) );
+        expect(ConsistencyReport.RelationshipConsistencyReport.class, report -> report.notIndexed(any(), any()));
     }
 
     @Test
-    void shouldCheckIndexesWithLookupFiltering() throws Exception
-    {
+    void shouldCheckIndexesWithLookupFiltering() throws Exception {
         // given
-        LabelSchemaDescriptor descriptor = forLabel( label1, propertyKey1 );
-        long indexId = uniqueIndex( descriptor );
+        LabelSchemaDescriptor descriptor = forLabel(label1, propertyKey1);
+        long indexId = uniqueIndex(descriptor);
         long nodeId;
-        try ( AutoCloseable ignored = tx() )
-        {
-            PointValue value = pointValue( CoordinateReferenceSystem.WGS_84, 2, 4 );
+        try (AutoCloseable ignored = tx()) {
+            PointValue value = pointValue(CoordinateReferenceSystem.WGS_84, 2, 4);
 
             // (N1) w/ property
             {
-                long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
-                nodeId = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
-                property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
-                indexValue( descriptor, indexId, nodeId, value );
+                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+                nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                property(propId, NULL, NULL, propertyValue(propertyKey1, value));
+                indexValue(descriptor, indexId, nodeId, value);
             }
 
             // (N2) w/ property
             {
-                long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
-                long nodeId2 = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
-                property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
-                indexValue( descriptor, indexId, nodeId2, value );
+                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+                long nodeId2 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                property(propId, NULL, NULL, propertyValue(propertyKey1, value));
+                indexValue(descriptor, indexId, nodeId2, value);
             }
         }
 
         // when
-        checkIndexed( nodeId );
+        checkIndexed(nodeId);
 
         // then it should be successful
-        expect( ConsistencyReport.NodeConsistencyReport.class, report -> report.uniqueIndexNotUnique( any(), any(), anyLong() ) );
+        expect(
+                ConsistencyReport.NodeConsistencyReport.class,
+                report -> report.uniqueIndexNotUnique(any(), any(), anyLong()));
     }
 
-    private void indexValue( LabelSchemaDescriptor descriptor, long indexId, long nodeId, Value value )
-            throws IndexNotFoundKernelException, IndexEntryConflictException
-    {
-        IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
-        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE, CursorContext.NULL_CONTEXT, false ) )
-        {
-            indexUpdater.process( add( nodeId, () -> descriptor, value ) );
+    private void indexValue(LabelSchemaDescriptor descriptor, long indexId, long nodeId, Value value)
+            throws IndexNotFoundKernelException, IndexEntryConflictException {
+        IndexingService indexingService = db.getDependencyResolver().resolveDependency(IndexingService.class);
+        try (IndexUpdater indexUpdater =
+                indexingService.getIndexProxy(indexId).newUpdater(ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            indexUpdater.process(add(nodeId, () -> descriptor, value));
         }
     }
 
-    private void checkIndexed( long nodeId ) throws Exception
-    {
-        try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( NODE ), CursorContext.NULL_CONTEXT, storeCursors ) )
-        {
-            NodeRecord node = loadNode( nodeId );
-            checker.checkCorrectlyIndexed( node, nodeLabels( node ), readPropertyValues( node, reporter::forNode ), reporter::forNode );
+    private void checkIndexed(long nodeId) throws Exception {
+        try (SchemaComplianceChecker checker = new SchemaComplianceChecker(
+                context(),
+                new IntObjectHashMap<>(),
+                context().indexAccessors.onlineRules(NODE),
+                CursorContext.NULL_CONTEXT,
+                storeCursors)) {
+            NodeRecord node = loadNode(nodeId);
+            checker.checkCorrectlyIndexed(
+                    node, nodeLabels(node), readPropertyValues(node, reporter::forNode), reporter::forNode);
         }
     }
 
-    private void checkRelationshipIndexed( long relId ) throws Exception
-    {
-        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT );
-                SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL_CONTEXT, storeCursors ) )
-        {
+    private void checkRelationshipIndexed(long relId) throws Exception {
+        try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT);
+                SchemaComplianceChecker checker = new SchemaComplianceChecker(
+                        context(),
+                        new IntObjectHashMap<>(),
+                        context().indexAccessors.onlineRules(RELATIONSHIP),
+                        CursorContext.NULL_CONTEXT,
+                        storeCursors)) {
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             RelationshipRecord record;
-            try ( var cursor = relationshipStore.openPageCursorForReading( relId, CursorContext.NULL_CONTEXT ) )
-            {
-                record = relationshipStore.getRecordByCursor( relId, relationshipStore.newRecord(), RecordLoad.NORMAL, cursor );
+            try (var cursor = relationshipStore.openPageCursorForReading(relId, CursorContext.NULL_CONTEXT)) {
+                record = relationshipStore.getRecordByCursor(
+                        relId, relationshipStore.newRecord(), RecordLoad.NORMAL, cursor);
             }
 
-            checker.checkCorrectlyIndexed( record, new long[]{record.getType()}, readPropertyValues( record, reporter::forRelationship ),
-                    reporter::forRelationship );
+            checker.checkCorrectlyIndexed(
+                    record,
+                    new long[] {record.getType()},
+                    readPropertyValues(record, reporter::forRelationship),
+                    reporter::forRelationship);
         }
     }
 
-    private <PRIMITIVE extends PrimitiveRecord> MutableIntObjectMap<Value> readPropertyValues( PRIMITIVE entity,
-            Function<PRIMITIVE,ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter ) throws Exception
-    {
-        try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting(), CursorContext.NULL_CONTEXT ) )
-        {
+    private <PRIMITIVE extends PrimitiveRecord> MutableIntObjectMap<Value> readPropertyValues(
+            PRIMITIVE entity, Function<PRIMITIVE, ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter)
+            throws Exception {
+        try (SafePropertyChainReader reader =
+                new SafePropertyChainReader(context().withoutReporting(), CursorContext.NULL_CONTEXT)) {
             MutableIntObjectMap<Value> values = new IntObjectHashMap<>();
-            reader.read( values, entity, primitiveReporter, storeCursors );
+            reader.read(values, entity, primitiveReporter, storeCursors);
             return values;
         }
     }

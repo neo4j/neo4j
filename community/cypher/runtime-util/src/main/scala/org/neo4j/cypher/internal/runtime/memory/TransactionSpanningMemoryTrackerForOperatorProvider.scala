@@ -26,6 +26,7 @@ import org.neo4j.memory.HeapMemoryTracker
  * Also allows to inspect the maximum memory per operator.
  */
 trait TransactionSpanningMemoryTrackerForOperatorProvider {
+
   /**
    * Get the high water mark of allocated heap memory of this operator, in bytes.
    *

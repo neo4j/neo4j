@@ -19,9 +19,12 @@
  */
 package org.neo4j.server.http.cypher;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 import java.time.Clock;
@@ -30,7 +33,9 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -41,15 +46,7 @@ import org.neo4j.memory.MemoryPool;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-class LegacyTransactionServiceTest
-{
+class LegacyTransactionServiceTest {
 
     private HttpServletRequest request;
     private DefaultDatabaseResolver databaseResolver;
@@ -58,53 +55,57 @@ class LegacyTransactionServiceTest
     private InternalLog log;
 
     @BeforeEach
-    void prepareDependencies()
-    {
-        request = mock( HttpServletRequest.class );
-        databaseResolver = mock( DefaultDatabaseResolver.class );
-        httpTransactionManager =
-                spy( new HttpTransactionManager( null, mock( MemoryPool.class ), mock( JobScheduler.class ), Clock.systemUTC(), Duration.ofMinutes( 2 ),
-                        mock( InternalLogProvider.class ), mock( TransactionManager.class ), mock( BoltGraphDatabaseManagementServiceSPI.class ),
-                        mock( AuthManager.class ), true ) );
-        uriInfo = mock( UriInfo.class );
-        log = mock( InternalLog.class );
+    void prepareDependencies() {
+        request = mock(HttpServletRequest.class);
+        databaseResolver = mock(DefaultDatabaseResolver.class);
+        httpTransactionManager = spy(new HttpTransactionManager(
+                null,
+                mock(MemoryPool.class),
+                mock(JobScheduler.class),
+                Clock.systemUTC(),
+                Duration.ofMinutes(2),
+                mock(InternalLogProvider.class),
+                mock(TransactionManager.class),
+                mock(BoltGraphDatabaseManagementServiceSPI.class),
+                mock(AuthManager.class),
+                true));
+        uriInfo = mock(UriInfo.class);
+        log = mock(InternalLog.class);
 
-        doReturn( UriBuilder.fromUri( "http://localhost:7474/db/data/transaction" ) )
-                .when( uriInfo )
+        doReturn(UriBuilder.fromUri("http://localhost:7474/db/data/transaction"))
+                .when(uriInfo)
                 .getBaseUriBuilder();
 
-        doReturn( Optional.empty() )
-                .when( httpTransactionManager )
-                .getGraphDatabaseAPI( anyString() );
+        doReturn(Optional.empty()).when(httpTransactionManager).getGraphDatabaseAPI(anyString());
     }
 
     @ParameterizedTest
-    @CsvSource( "neo4j, andy, greg" )
-    void shouldSwitchDefaultDatabaseBasedOnAuthenticatedUser( String user )
-    {
+    @CsvSource("neo4j, andy, greg")
+    void shouldSwitchDefaultDatabaseBasedOnAuthenticatedUser(String user) {
         // Given
-        var userPrincipalA = mock( Principal.class );
+        var userPrincipalA = mock(Principal.class);
 
-        when( userPrincipalA.getName() )
-                .thenReturn( user );
+        when(userPrincipalA.getName()).thenReturn(user);
 
-        when( request.getUserPrincipal() )
-                .thenReturn( userPrincipalA );
+        when(request.getUserPrincipal()).thenReturn(userPrincipalA);
 
-        when( databaseResolver.defaultDatabase( anyString() ) )
-                .thenReturn( "neo4j" );
-        when( databaseResolver.defaultDatabase( user ) )
-                .thenReturn( "db-" + user );
+        when(databaseResolver.defaultDatabase(anyString())).thenReturn("neo4j");
+        when(databaseResolver.defaultDatabase(user)).thenReturn("db-" + user);
 
         // When
-        var transactionService = new LegacyTransactionService( request, databaseResolver, httpTransactionManager, uriInfo, mock( MemoryPool.class ), log,
-                                                               Clocks.nanoClock() );
-        transactionService.rollbackTransaction( 42 );
+        var transactionService = new LegacyTransactionService(
+                request,
+                databaseResolver,
+                httpTransactionManager,
+                uriInfo,
+                mock(MemoryPool.class),
+                log,
+                Clocks.nanoClock());
+        transactionService.rollbackTransaction(42);
 
         // Verify
-        verify( databaseResolver )
-                .defaultDatabase( user );
+        verify(databaseResolver).defaultDatabase(user);
 
-        verify( httpTransactionManager ).getGraphDatabaseAPI( "db-" + user );
+        verify(httpTransactionManager).getGraphDatabaseAPI("db-" + user);
     }
 }

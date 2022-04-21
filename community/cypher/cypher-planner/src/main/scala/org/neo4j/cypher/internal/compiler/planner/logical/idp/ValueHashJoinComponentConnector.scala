@@ -27,35 +27,48 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object ValueHashJoinComponentConnector
-  extends ComponentConnector {
+    extends ComponentConnector {
 
-  override def solverStep(goalBitAllocation: GoalBitAllocation,
-                          queryGraph: QueryGraph,
-                          interestingOrderConfig: InterestingOrderConfig,
-                          kit: QueryPlannerKit,
-                          context: LogicalPlanningContext): ComponentConnectorSolverStep = {
+  override def solverStep(
+    goalBitAllocation: GoalBitAllocation,
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    kit: QueryPlannerKit,
+    context: LogicalPlanningContext
+  ): ComponentConnectorSolverStep = {
     val predicates = joinPredicateCandidates(queryGraph.selections.flatPredicates)
 
     if (predicates.isEmpty) {
       IDPSolverStep.empty[QueryGraph, LogicalPlan, LogicalPlanningContext]
     } else {
-      (_: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
-        for {
-          predicate <- predicates.toIterator
+      (_: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) =>
+        {
+          for {
+            predicate <- predicates.toIterator
 
-          (leftGoal, rightGoal) <- goal.coveringSplits
+            (leftGoal, rightGoal) <- goal.coveringSplits
 
-          leftPlan <- table(leftGoal).iterator
-          if leftPlan.satisfiesExpressionDependencies(predicate.lhs) && !leftPlan.satisfiesExpressionDependencies(predicate.rhs)
-          rightPlan <- table(rightGoal).iterator
-          if rightPlan.satisfiesExpressionDependencies(predicate.rhs) && !rightPlan.satisfiesExpressionDependencies(predicate.lhs)
+            leftPlan <- table(leftGoal).iterator
+            if leftPlan.satisfiesExpressionDependencies(predicate.lhs) && !leftPlan.satisfiesExpressionDependencies(
+              predicate.rhs
+            )
+            rightPlan <- table(rightGoal).iterator
+            if rightPlan.satisfiesExpressionDependencies(predicate.rhs) && !rightPlan.satisfiesExpressionDependencies(
+              predicate.lhs
+            )
 
-          plan <- Iterator(
-            context.logicalPlanProducer.planValueHashJoin(leftPlan, rightPlan, predicate, predicate, context),
-            context.logicalPlanProducer.planValueHashJoin(rightPlan, leftPlan, predicate.switchSides, predicate, context),
-          )
-        } yield plan
-      }
+            plan <- Iterator(
+              context.logicalPlanProducer.planValueHashJoin(leftPlan, rightPlan, predicate, predicate, context),
+              context.logicalPlanProducer.planValueHashJoin(
+                rightPlan,
+                leftPlan,
+                predicate.switchSides,
+                predicate,
+                context
+              )
+            )
+          } yield plan
+        }
     }
   }
 }

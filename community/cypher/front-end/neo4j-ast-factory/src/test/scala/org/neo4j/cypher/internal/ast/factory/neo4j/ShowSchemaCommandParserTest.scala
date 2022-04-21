@@ -43,44 +43,64 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   // Show indexes
 
   Seq("INDEX", "INDEXES").foreach { indexKeyword =>
-
     // No explicit output
 
     test(s"SHOW $indexKeyword") {
-      assertAst(query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW ALL $indexKeyword") {
-     assertAst(query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW BTREE $indexKeyword") {
-     assertAst(query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW RANGE $indexKeyword") {
-     assertAst(query(ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW FULLTEXT $indexKeyword") {
-     assertAst(query(ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW TEXT $indexKeyword") {
-     assertAst(query(ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW POINT $indexKeyword") {
-     assertAst(query(ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW LOOKUP $indexKeyword") {
-     assertAst(query(ShowIndexesClause(LookupIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(LookupIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"USE db SHOW $indexKeyword") {
-     assertAst(query(use(varFor("db")), ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(pos)),
-       comparePosition = false)
+      assertAst(
+        query(
+          use(varFor("db")),
+          ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(pos)
+        ),
+        comparePosition = false
+      )
     }
 
     // Brief output (deprecated)
@@ -102,7 +122,9 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     }
 
     test(s"SHOW BTREE $indexKeyword BRIEF") {
-      assertAst(query(ShowIndexesClause(BtreeIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(BtreeIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     // Verbose output (deprecated)
@@ -116,87 +138,143 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     }
 
     test(s"SHOW BTREE $indexKeyword VERBOSE OUTPUT") {
-      assertAst(query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos)))
+      assertAst(
+        query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos))
+      )
     }
   }
 
   // Show indexes filtering
 
   test("SHOW INDEX WHERE uniqueness = 'UNIQUE'") {
-    assertAst(query(ShowIndexesClause(AllIndexes, brief = false, verbose = false,
-      Some(where(equals(varFor("uniqueness"), literalString("UNIQUE")))), hasYield = false)(pos)
-    ), comparePosition = false)
+    assertAst(
+      query(ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        Some(where(equals(varFor("uniqueness"), literalString("UNIQUE")))),
+        hasYield = false
+      )(pos)),
+      comparePosition = false
+    )
   }
 
   test("SHOW INDEXES YIELD populationPercent") {
-    assertAst(query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(variableReturnItem("populationPercent")))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnItems(variableReturnItem("populationPercent")))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW POINT INDEXES YIELD populationPercent") {
-    assertAst(query(ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(variableReturnItem("populationPercent")))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnItems(variableReturnItem("populationPercent")))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW BTREE INDEXES YIELD *") {
-    assertAst(query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnAllItems)
-    ), comparePosition = false)
+    assertAst(
+      query(
+        ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnAllItems)
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW INDEXES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    assertAst(query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW RANGE INDEXES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    assertAst(query(ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+      ),
+      comparePosition = false
+    )
   }
 
   test("USE db SHOW FULLTEXT INDEXES YIELD name, populationPercent AS pp WHERE pp < 50.0 RETURN name") {
-    assertAst(query(
-      use(varFor("db")),
-      ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
-        where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
-      return_(variableReturnItem("name"))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        use(varFor("db")),
+        ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(
+          returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+          where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))
+        ),
+        return_(variableReturnItem("name"))
+      ),
+      comparePosition = false
+    )
   }
 
-  test("USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name") {
-    assertAst(query(
-      use(varFor("db")),
-      ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
-        Some(orderBy(sortItem(varFor("pp")))),
-        Some(skip(2)),
-        Some(limit(5)),
-        Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
-      return_(variableReturnItem("name"))
-    ), comparePosition = false)
+  test(
+    "USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
+  ) {
+    assertAst(
+      query(
+        use(varFor("db")),
+        ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(
+          returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+          Some(orderBy(sortItem(varFor("pp")))),
+          Some(skip(2)),
+          Some(limit(5)),
+          Some(where(lessThan(varFor("pp"), literalFloat(50.0))))
+        ),
+        return_(variableReturnItem("name"))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW INDEXES YIELD name AS INDEX, type AS OUTPUT") {
-    assertAst(query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW TEXT INDEXES YIELD name AS INDEX, type AS OUTPUT") {
-    assertAst(query(ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW LOOKUP INDEXES WHERE name = 'GRANT'") {
-    assertAst(query(ShowIndexesClause(LookupIndexes, brief = false, verbose = false,
-      Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)
-    ), comparePosition = false)
+    assertAst(
+      query(ShowIndexesClause(
+        LookupIndexes,
+        brief = false,
+        verbose = false,
+        Some(where(equals(varFor("name"), literalString("GRANT")))),
+        hasYield = false
+      )(pos)),
+      comparePosition = false
+    )
   }
 
   // Negative tests for show indexes
@@ -210,7 +288,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW ALL BTREE INDEXES") {
-    assertFailsWithMessage(testName,
+    assertFailsWithMessage(
+      testName,
       """Invalid input 'BTREE': expected
         |  "CONSTRAINT"
         |  "CONSTRAINTS"
@@ -220,7 +299,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "INDEXES"
         |  "PRIVILEGE"
         |  "PRIVILEGES"
-        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
+    )
   }
 
   test("SHOW INDEX OUTPUT") {
@@ -343,7 +423,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     ("NODE EXIST", NodeExistsConstraints(ValidSyntax)),
     ("NODE EXISTS", NodeExistsConstraints(RemovedSyntax)),
     ("RELATIONSHIP EXIST", RelExistsConstraints(ValidSyntax)),
-    ("RELATIONSHIP EXISTS", RelExistsConstraints(RemovedSyntax)),
+    ("RELATIONSHIP EXISTS", RelExistsConstraints(RemovedSyntax))
   )
 
   private val newExistenceConstraintType = Seq(
@@ -359,22 +439,31 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     ("REL PROPERTY EXISTENCE", RelExistsConstraints(ValidSyntax)),
     ("REL PROPERTY EXIST", RelExistsConstraints(ValidSyntax)),
     ("REL EXISTENCE", RelExistsConstraints(ValidSyntax)),
-    ("REL EXIST", RelExistsConstraints(ValidSyntax)),
+    ("REL EXIST", RelExistsConstraints(ValidSyntax))
   )
 
   Seq("CONSTRAINT", "CONSTRAINTS").foreach {
     constraintKeyword =>
       (oldConstraintTypes ++ newExistenceConstraintType).foreach {
         case (constraintTypeKeyword, constraintType) =>
-
           test(s"SHOW $constraintTypeKeyword $constraintKeyword") {
-            assertAst(query(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(defaultPos)))
+            assertAst(query(ShowConstraintsClause(
+              constraintType,
+              brief = false,
+              verbose = false,
+              None,
+              hasYield = false
+            )(defaultPos)))
           }
 
           test(s"USE db SHOW $constraintTypeKeyword $constraintKeyword") {
-            assertAst(query(use(varFor("db")),
-              ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos)
-            ), comparePosition = false)
+            assertAst(
+              query(
+                use(varFor("db")),
+                ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos)
+              ),
+              comparePosition = false
+            )
           }
 
       }
@@ -383,21 +472,44 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
       oldConstraintTypes.foreach {
         case (constraintTypeKeyword, constraintType) =>
-
           test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF") {
-            assertAst(query(ShowConstraintsClause(constraintType, brief = true, verbose = false, None, hasYield = false)(defaultPos)))
+            assertAst(query(ShowConstraintsClause(
+              constraintType,
+              brief = true,
+              verbose = false,
+              None,
+              hasYield = false
+            )(defaultPos)))
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF OUTPUT") {
-            assertAst(query(ShowConstraintsClause(constraintType, brief = true, verbose = false, None, hasYield = false)(defaultPos)))
+            assertAst(query(ShowConstraintsClause(
+              constraintType,
+              brief = true,
+              verbose = false,
+              None,
+              hasYield = false
+            )(defaultPos)))
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE") {
-            assertAst(query(ShowConstraintsClause(constraintType, brief = false, verbose = true, None, hasYield = false)(defaultPos)))
+            assertAst(query(ShowConstraintsClause(
+              constraintType,
+              brief = false,
+              verbose = true,
+              None,
+              hasYield = false
+            )(defaultPos)))
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE OUTPUT") {
-            assertAst(query(ShowConstraintsClause(constraintType, brief = false, verbose = true, None, hasYield = false)(defaultPos)))
+            assertAst(query(ShowConstraintsClause(
+              constraintType,
+              brief = false,
+              verbose = true,
+              None,
+              hasYield = false
+            )(defaultPos)))
           }
       }
   }
@@ -405,60 +517,108 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   // Show constraints filtering
 
   test("SHOW CONSTRAINT WHERE entityType = 'RELATIONSHIP'") {
-    assertAst(query(ShowConstraintsClause(AllConstraints, brief = false, verbose = false,
-      Some(where(equals(varFor("entityType"), literalString("RELATIONSHIP")))), hasYield = false)(pos)
-    ), comparePosition = false)
+    assertAst(
+      query(ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        Some(where(equals(varFor("entityType"), literalString("RELATIONSHIP")))),
+        hasYield = false
+      )(pos)),
+      comparePosition = false
+    )
   }
 
   test("SHOW REL PROPERTY EXISTENCE CONSTRAINTS YIELD labelsOrTypes") {
-    assertAst(query(ShowConstraintsClause(RelExistsConstraints(ValidSyntax), brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(variableReturnItem("labelsOrTypes")))), comparePosition = false)
+    assertAst(
+      query(
+        ShowConstraintsClause(RelExistsConstraints(ValidSyntax), brief = false, verbose = false, None, hasYield = true)(
+          pos
+        ),
+        yieldClause(returnItems(variableReturnItem("labelsOrTypes")))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW UNIQUE CONSTRAINTS YIELD *") {
-    assertAst(query(ShowConstraintsClause(UniqueConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnAllItems)), comparePosition = false)
+    assertAst(
+      query(
+        ShowConstraintsClause(UniqueConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnAllItems)
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW CONSTRAINTS YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    assertAst(query(ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+      ),
+      comparePosition = false
+    )
   }
 
   test("USE db SHOW NODE KEY CONSTRAINTS YIELD name, properties AS pp WHERE size(pp) > 1 RETURN name") {
-    assertAst(query(
-      use(varFor("db")),
-      ShowConstraintsClause(NodeKeyConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("properties", "pp")),
-        where = Some(where(greaterThan(function("size", varFor("pp")), literalInt(1))))),
-      return_(variableReturnItem("name"))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        use(varFor("db")),
+        ShowConstraintsClause(NodeKeyConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(
+          returnItems(variableReturnItem("name"), aliasedReturnItem("properties", "pp")),
+          where = Some(where(greaterThan(function("size", varFor("pp")), literalInt(1))))
+        ),
+        return_(variableReturnItem("name"))
+      ),
+      comparePosition = false
+    )
   }
 
-  test("USE db SHOW CONSTRAINTS YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name") {
-    assertAst(query(
-      use(varFor("db")),
-      ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
-        Some(orderBy(sortItem(varFor("pp")))),
-        Some(skip(2)),
-        Some(limit(5)),
-        Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
-      return_(variableReturnItem("name"))
-    ), comparePosition = false)
+  test(
+    "USE db SHOW CONSTRAINTS YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
+  ) {
+    assertAst(
+      query(
+        use(varFor("db")),
+        ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(
+          returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+          Some(orderBy(sortItem(varFor("pp")))),
+          Some(skip(2)),
+          Some(limit(5)),
+          Some(where(lessThan(varFor("pp"), literalFloat(50.0))))
+        ),
+        return_(variableReturnItem("name"))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW EXISTENCE CONSTRAINTS YIELD name AS CONSTRAINT, type AS OUTPUT") {
-    assertAst(query(ShowConstraintsClause(ExistsConstraints(ValidSyntax), brief = false, verbose = false, None, hasYield = true)(pos),
-      yieldClause(returnItems(aliasedReturnItem("name", "CONSTRAINT"), aliasedReturnItem("type", "OUTPUT")))
-    ), comparePosition = false)
+    assertAst(
+      query(
+        ShowConstraintsClause(ExistsConstraints(ValidSyntax), brief = false, verbose = false, None, hasYield = true)(
+          pos
+        ),
+        yieldClause(returnItems(aliasedReturnItem("name", "CONSTRAINT"), aliasedReturnItem("type", "OUTPUT")))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW NODE EXIST CONSTRAINTS WHERE name = 'GRANT'") {
-    assertAst(query(ShowConstraintsClause(NodeExistsConstraints(ValidSyntax), brief = false, verbose = false,
-      Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)
-    ), comparePosition = false)
+    assertAst(
+      query(ShowConstraintsClause(
+        NodeExistsConstraints(ValidSyntax),
+        brief = false,
+        verbose = false,
+        Some(where(equals(varFor("name"), literalString("GRANT")))),
+        hasYield = false
+      )(pos)),
+      comparePosition = false
+    )
   }
 
   // Negative tests for show constraints
@@ -468,7 +628,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW UNIQUENESS CONSTRAINTS") {
-    assertFailsWithMessage(testName,
+    assertFailsWithMessage(
+      testName,
       """Invalid input 'UNIQUENESS': expected
         |  "ALL"
         |  "BTREE"
@@ -507,7 +668,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "TRANSACTIONS"
         |  "UNIQUE"
         |  "USER"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
+    )
   }
 
   test("SHOW NODE CONSTRAINTS") {
@@ -519,7 +681,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW NODES EXIST CONSTRAINTS") {
-    assertFailsWithMessage(testName,
+    assertFailsWithMessage(
+      testName,
       """Invalid input 'NODES': expected
         |  "ALL"
         |  "BTREE"
@@ -558,7 +721,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "TRANSACTIONS"
         |  "UNIQUE"
         |  "USER"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
+    )
   }
 
   test("SHOW RELATIONSHIP CONSTRAINTS") {
@@ -570,7 +734,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW RELATIONSHIPS EXIST CONSTRAINTS") {
-    assertFailsWithMessage(testName,
+    assertFailsWithMessage(
+      testName,
       """Invalid input 'RELATIONSHIPS': expected
         |  "ALL"
         |  "BTREE"
@@ -609,11 +774,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "TRANSACTIONS"
         |  "UNIQUE"
         |  "USER"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
+    )
   }
 
   test("SHOW REL EXISTS CONSTRAINTS") {
-    assertFailsWithMessage(testName, """Invalid input 'EXISTS': expected "EXIST", "EXISTENCE" or "PROPERTY" (line 1, column 10 (offset: 9))""")
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'EXISTS': expected "EXIST", "EXISTENCE" or "PROPERTY" (line 1, column 10 (offset: 9))"""
+    )
   }
 
   test("SHOW KEY CONSTRAINTS") {
@@ -733,8 +902,10 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   // Invalid clause order tests for indexes and constraints
 
-  for {prefix <- Seq("USE neo4j", "")
-       entity <- Seq("INDEXES", "CONSTRAINTS")} {
+  for {
+    prefix <- Seq("USE neo4j", "")
+    entity <- Seq("INDEXES", "CONSTRAINTS")
+  } {
     test(s"$prefix SHOW $entity YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
       assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")

@@ -29,27 +29,36 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 case class PlansPerAvailableSymbols(groupedPlans: Iterable[Seq[LogicalPlan]])
 
 trait LeafPlannerIterable {
-  def candidates(qg: QueryGraph,
-                 f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
-                 interestingOrderConfig: InterestingOrderConfig,
-                 context: LogicalPlanningContext): Set[LogicalPlan]
+
+  def candidates(
+    qg: QueryGraph,
+    f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan]
 }
 
 case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPlannerIterable {
-  override def candidates(qg: QueryGraph,
-                          f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
-                          interestingOrderConfig: InterestingOrderConfig,
-                          context: LogicalPlanningContext): Set[LogicalPlan] = {
+
+  override def candidates(
+    qg: QueryGraph,
+    f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     leafPlanners.flatMap(_.apply(qg, interestingOrderConfig, context)).map(f(_, qg)).toSet
   }
 }
 
-case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: LeafPlannerIterable) extends LeafPlannerIterable {
+case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: LeafPlannerIterable)
+    extends LeafPlannerIterable {
 
-  override def candidates(qg: QueryGraph,
-                          f: (LogicalPlan, QueryGraph) => LogicalPlan,
-                          interestingOrderConfig: InterestingOrderConfig,
-                          context: LogicalPlanningContext): Set[LogicalPlan] = {
+  override def candidates(
+    qg: QueryGraph,
+    f: (LogicalPlan, QueryGraph) => LogicalPlan,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     val priorityPlans = priority.candidates(qg, f, interestingOrderConfig, context)
     if (priorityPlans.nonEmpty) priorityPlans
     else fallback.candidates(qg, f, interestingOrderConfig, context)

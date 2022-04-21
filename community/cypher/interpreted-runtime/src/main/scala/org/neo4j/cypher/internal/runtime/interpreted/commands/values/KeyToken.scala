@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.values
 
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.values.AnyValue
 
 /*
@@ -55,11 +55,12 @@ object KeyToken {
     override def getIdOrFail(state: ReadTokenContext): Int = typ.getIdForNameOrFail(name, state)
     override def getOptId(state: ReadTokenContext): Option[Int] = typ.getOptIdForName(name, state)
 
-    override def resolve(tokenContext: ReadTokenContext): KeyToken = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
+    override def resolve(tokenContext: ReadTokenContext): KeyToken =
+      getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
 
     override def children: Seq[AstNode[_]] = Seq.empty
 
-    override def toString:String = name
+    override def toString: String = name
   }
 
   case class Resolved(name: String, id: Int, typ: TokenType) extends KeyToken(typ) {
@@ -71,7 +72,7 @@ object KeyToken {
 
     override def children: Seq[AstNode[_]] = Seq.empty
 
-    override def toString:String = s"$name($id)"
+    override def toString: String = s"$name($id)"
   }
 
   object Ordering extends Ordering[KeyToken] {

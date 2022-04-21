@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
+
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.staging.ProcessContext;
 import org.neo4j.internal.batchimport.staging.PullingProducerStep;
@@ -36,25 +37,26 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
-
-public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.ReadEntityProcessContext>
-{
+public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.ReadEntityProcessContext> {
     private static final String CURSOR_TRACER_TAG = "indexPopulationReadEntityIds";
 
     private final StoreScan.ExternalUpdatesCheck externalUpdatesCheck;
     private final AtomicBoolean continueScanning;
-    private final BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier;
-    private final Function<CursorContext,StoreCursors> storeCursorsFactory;
+    private final BiFunction<CursorContext, StoreCursors, EntityIdIterator> entityIdIteratorSupplier;
+    private final Function<CursorContext, StoreCursors> storeCursorsFactory;
     private final CursorContextFactory contextFactory;
     private final AtomicLong position = new AtomicLong();
     private volatile long lastEntityId;
 
-    public ReadEntityIdsStep( StageControl control, Configuration configuration,
-            BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier, Function<CursorContext,StoreCursors> storeCursorsFactory,
-            CursorContextFactory contextFactory, StoreScan.ExternalUpdatesCheck externalUpdatesCheck, AtomicBoolean continueScanning )
-    {
-        super( control, configuration );
+    public ReadEntityIdsStep(
+            StageControl control,
+            Configuration configuration,
+            BiFunction<CursorContext, StoreCursors, EntityIdIterator> entityIdIteratorSupplier,
+            Function<CursorContext, StoreCursors> storeCursorsFactory,
+            CursorContextFactory contextFactory,
+            StoreScan.ExternalUpdatesCheck externalUpdatesCheck,
+            AtomicBoolean continueScanning) {
+        super(control, configuration);
         this.entityIdIteratorSupplier = entityIdIteratorSupplier;
         this.storeCursorsFactory = storeCursorsFactory;
         this.contextFactory = contextFactory;
@@ -63,90 +65,78 @@ public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.Rea
     }
 
     @Override
-    protected ReadEntityProcessContext processContext()
-    {
-        return new ReadEntityProcessContext( contextFactory, storeCursorsFactory, entityIdIteratorSupplier );
+    protected ReadEntityProcessContext processContext() {
+        return new ReadEntityProcessContext(contextFactory, storeCursorsFactory, entityIdIteratorSupplier);
     }
 
     @Override
-    protected Object nextBatchOrNull( long ticket, int batchSize, ReadEntityProcessContext processContext )
-    {
-        if ( !continueScanning.get() || !processContext.entityIdIterator.hasNext() )
-        {
+    protected Object nextBatchOrNull(long ticket, int batchSize, ReadEntityProcessContext processContext) {
+        if (!continueScanning.get() || !processContext.entityIdIterator.hasNext()) {
             return null;
         }
 
-        checkAndApplyExternalUpdates( processContext.entityIdIterator );
+        checkAndApplyExternalUpdates(processContext.entityIdIterator);
 
         long[] entityIds = new long[batchSize];
         int cursor = 0;
-        while ( cursor < batchSize && processContext.entityIdIterator.hasNext() )
-        {
+        while (cursor < batchSize && processContext.entityIdIterator.hasNext()) {
             entityIds[cursor++] = processContext.entityIdIterator.next();
         }
-        position.getAndAdd( cursor );
+        position.getAndAdd(cursor);
         lastEntityId = entityIds[cursor - 1];
-        return cursor == entityIds.length ? entityIds : Arrays.copyOf( entityIds, cursor );
+        return cursor == entityIds.length ? entityIds : Arrays.copyOf(entityIds, cursor);
     }
 
-    private void checkAndApplyExternalUpdates( EntityIdIterator entityIdIterator )
-    {
-        if ( externalUpdatesCheck.needToApplyExternalUpdates() )
-        {
-            // Block here until all batches that have been sent already have been fully processed by the downstream steps
-            // control.isIdle returns true when all steps in this processing stage have processed all batches they have received
-            for ( long i = 0; !control.isIdle(); i++ )
-            {
-                incrementalBackoff( i );
+    private void checkAndApplyExternalUpdates(EntityIdIterator entityIdIterator) {
+        if (externalUpdatesCheck.needToApplyExternalUpdates()) {
+            // Block here until all batches that have been sent already have been fully processed by the downstream
+            // steps
+            // control.isIdle returns true when all steps in this processing stage have processed all batches they have
+            // received
+            for (long i = 0; !control.isIdle(); i++) {
+                incrementalBackoff(i);
             }
-            externalUpdatesCheck.applyExternalUpdates( lastEntityId );
+            externalUpdatesCheck.applyExternalUpdates(lastEntityId);
             entityIdIterator.invalidateCache();
         }
     }
 
-    private static void incrementalBackoff( long iteration ) throws AcquireLockTimeoutException
-    {
-        if ( iteration < 1000 )
-        {
+    private static void incrementalBackoff(long iteration) throws AcquireLockTimeoutException {
+        if (iteration < 1000) {
             Thread.onSpinWait();
             return;
         }
 
-        try
-        {
-            Thread.sleep( 1 );
-        }
-        catch ( InterruptedException e )
-        {
+        try {
+            Thread.sleep(1);
+        } catch (InterruptedException e) {
             Thread.interrupted();
-            throw new AcquireLockTimeoutException( "Interrupted while waiting.", e, Interrupted );
+            throw new AcquireLockTimeoutException("Interrupted while waiting.", e, Interrupted);
         }
     }
 
     @Override
-    protected long position()
-    {
+    protected long position() {
         return position.get();
     }
 
-    static class ReadEntityProcessContext implements ProcessContext
-    {
+    static class ReadEntityProcessContext implements ProcessContext {
         private final CursorContext cursorContext;
         private final StoreCursors storeCursors;
         private final EntityIdIterator entityIdIterator;
 
-        ReadEntityProcessContext( CursorContextFactory contextFactory, Function<CursorContext,StoreCursors> storeCursorsFactory,
-                BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier )
-        {
-            cursorContext = contextFactory.create( CURSOR_TRACER_TAG );
-            storeCursors = storeCursorsFactory.apply( cursorContext );
-            entityIdIterator = entityIdIteratorSupplier.apply( cursorContext, storeCursors );
+        ReadEntityProcessContext(
+                CursorContextFactory contextFactory,
+                Function<CursorContext, StoreCursors> storeCursorsFactory,
+                BiFunction<CursorContext, StoreCursors, EntityIdIterator> entityIdIteratorSupplier) {
+            cursorContext = contextFactory.create(CURSOR_TRACER_TAG);
+            storeCursors = storeCursorsFactory.apply(cursorContext);
+            entityIdIterator = entityIdIteratorSupplier.apply(cursorContext, storeCursors);
         }
 
         @Override
-        public void close()
-        {
-            IOUtils.closeAllUnchecked( entityIdIterator, storeCursors, cursorContext );
+        public void close() {
+            IOUtils.closeAllUnchecked(entityIdIterator, storeCursors, cursorContext);
         }
     }
 }

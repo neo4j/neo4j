@@ -20,56 +20,45 @@
 package org.neo4j.collection.trackable;
 
 import java.util.EmptyStackException;
-
 import org.neo4j.graphdb.Resource;
 
-public class HeapTrackingLongStack implements Resource
-{
+public class HeapTrackingLongStack implements Resource {
     private final HeapTrackingLongArrayList delegate;
 
-    public HeapTrackingLongStack( HeapTrackingLongArrayList delegate )
-    {
+    public HeapTrackingLongStack(HeapTrackingLongArrayList delegate) {
         this.delegate = delegate;
     }
 
-    public long peek()
-    {
+    public long peek() {
         int size = delegate.size();
-        if ( size == 0 )
-        {
+        if (size == 0) {
             throw new EmptyStackException();
         }
-        return delegate.get( size - 1 );
+        return delegate.get(size - 1);
     }
 
-    public void push( long item )
-    {
-        delegate.add( item );
+    public void push(long item) {
+        delegate.add(item);
     }
 
-    public long pop()
-    {
+    public long pop() {
         return delegate.removeLast();
     }
 
-    public int size()
-    {
+    public int size() {
         return delegate.size();
     }
 
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return size() == 0;
     }
 
-    public boolean notEmpty()
-    {
+    public boolean notEmpty() {
         return size() != 0;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         delegate.close();
     }
 }

@@ -28,6 +28,7 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.time.Stopwatch
 
 import java.util.concurrent.TimeUnit
+
 import scala.collection.immutable.BitSet
 
 trait IDPSolverMonitor {
@@ -52,13 +53,14 @@ object ExtraRequirement {
  * @param bestResult The best result overall. May or may not fulfill the extra requirement
  * @param bestResultFulfillingReq The best result that fulfills the extra requirement. May be the same as bestResult.
  */
-case class BestResults[+Result](bestResult: Result,
-                                bestResultFulfillingReq: Option[Result]) {
+case class BestResults[+Result](bestResult: Result, bestResultFulfillingReq: Option[Result]) {
   def map[B](f: Result => B): BestResults[B] = BestResults(f(bestResult), bestResultFulfillingReq.map(f))
+
   /**
    * Returns iterator over all unique results
    */
   def allResults: Iterator[Result] = (Set(bestResult) ++ bestResultFulfillingReq).toIterator
+
   /**
    * Gets the bestResultFulfillingReq if present, otherwise gets bestResult
    */
@@ -72,16 +74,20 @@ case class BestResults[+Result](bestResult: Result,
  *
  * written by Donald Kossmann and Konrad Stocker
  */
-class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Result, Context], // generates candidates at each step
-                                           projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
-                                           candidateProjector: Result => Result = (r:Result) => r, // map candidates before giving them to the ProjectingSelector, but keep the unmapped candidates.
-                                           registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
-                                           tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
-                                           maxTableSize: Int, // limits computation effort, reducing result quality
-                                           iterationDurationLimit: Long, // limits computation effort, reducing result quality
-                                           extraRequirement: ExtraRequirement[Result],
-                                           monitor: IDPSolverMonitor,
-                                           stopWatchFactory: () => Stopwatch) {
+class IDPSolver[Solvable, Result, Context](
+  generator: IDPSolverStep[Solvable, Result, Context], // generates candidates at each step
+  projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
+  candidateProjector: Result => Result =
+    (r: Result) => r, // map candidates before giving them to the ProjectingSelector, but keep the unmapped candidates.
+  registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
+  tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] =
+    (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
+  maxTableSize: Int, // limits computation effort, reducing result quality
+  iterationDurationLimit: Long, // limits computation effort, reducing result quality
+  extraRequirement: ExtraRequirement[Result],
+  monitor: IDPSolverMonitor,
+  stopWatchFactory: () => Stopwatch
+) {
 
   /**
    * Run the IDP solver
@@ -94,10 +100,15 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     val table = tableFactory(registry, seed)
 
     // utility functions
-    def candidateSelector(resolved: => String): Selector[Result] = projectingSelector.apply[Result](candidateProjector, _, resolved)
-    def goalSelector(resolved: => String): Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)]({
-      case (_, result) => candidateProjector(result)
-    }, _, resolved)
+    def candidateSelector(resolved: => String): Selector[Result] =
+      projectingSelector.apply[Result](candidateProjector, _, resolved)
+    def goalSelector(resolved: => String): Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](
+      {
+        case (_, result) => candidateProjector(result)
+      },
+      _,
+      resolved
+    )
 
     def generateBestCandidates(maxBlockSize: Int): Int = {
       var largestFinishedIteration = 0
@@ -114,13 +125,17 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
           if (!table.contains(goal, sorted = false)) {
             val candidates = LazyIterable(generator(registry, goal, table, context))
             val (extraCandidates, baseCandidates) = candidates.partition(extraRequirement.fulfils)
-            val bestExtraCandidate = candidateSelector(s"best sorted plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}")(extraCandidates)
+            val bestExtraCandidate = candidateSelector(
+              s"best sorted plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}"
+            )(extraCandidates)
 
             // We don't want to compare just the ones that do not fulfil the requirement
             // in isolation, because it could be that the best overall candidate fulfils the requirement.
             // bestExtraCandidate has already been determined to be cheaper than any other extraCandidate,
             // therefore it is enough to cost estimate the bestExtraCandidate against all baseCandidates.
-            candidateSelector(s"best overall plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}")(baseCandidates ++ bestExtraCandidate.toIterable).foreach { candidate =>
+            candidateSelector(s"best overall plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}")(
+              baseCandidates ++ bestExtraCandidate.toIterable
+            ).foreach { candidate =>
               foundNoCandidate = false
               table.put(goal, sorted = false, candidate)
             }
@@ -144,11 +159,13 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
       val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.unsortedPlansOfSize(blockSize)).toIndexedSeq
       // Select the best of those. These candidates solve different things.
       // The best of the candidates is likely to appear in larger plans, so it is a good idea to compact that one.
-      val bestInBlock: Option[(Goal, Result)] = goalSelector(s"Best candidate for block size $blockSize")(blockCandidates)
+      val bestInBlock: Option[(Goal, Result)] =
+        goalSelector(s"Best candidate for block size $blockSize")(blockCandidates)
       val (goal, _) = bestInBlock.getOrElse {
         throw new InternalException(
           s"""Found no solution for block with size $blockSize,
-             |$blockCandidates were the selected candidates from the table $table""".stripMargin)
+             |$blockCandidates were the selected candidates from the table $table""".stripMargin
+        )
       }
       goal
     }
@@ -174,7 +191,8 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
         s"""Unfortunately, the planner was unable to find a plan within the constraints provided.
            |Try increasing the config values `${GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold.name()}`
            |and `${GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold.name()}` to allow
-           |for a larger sub-plan table and longer planning time.""".stripMargin)
+           |for a larger sub-plan table and longer planning time.""".stripMargin
+      )
       val bestGoal = findBestCandidateInBlock(largestFinished)
       monitor.endIteration(iterations, largestFinished, table.size)
       // Compaction is either done at the very end of the algorithm, or when we hit a table size or time limit.
@@ -185,7 +203,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     }
     monitor.foundPlanAfter(iterations)
 
-    val (plansFulfillingReq, plans) =  table.plans
+    val (plansFulfillingReq, plans) = table.plans
       .map { case ((_, fulfilsReq), result) => (fulfilsReq, result) }
       .partition { case (fulfilsReq, _) => fulfilsReq }
 
@@ -196,7 +214,9 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     if (plansFulfillingReq.hasNext) {
       val (_, plan) = plansFulfillingReq
         .toSingleOption
-        .getOrElse(throw new InternalException("Expected a single plan that fulfils the requirements to be left in the plan table"))
+        .getOrElse(throw new InternalException(
+          "Expected a single plan that fulfils the requirements to be left in the plan table"
+        ))
 
       BestResults(bestResult, Some(plan))
     } else {

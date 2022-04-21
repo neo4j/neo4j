@@ -19,15 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.assertj.core.api.SoftAssertions;
-import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
-import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
-import org.eclipse.collections.api.factory.Sets;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -40,7 +33,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-
+import org.assertj.core.api.SoftAssertions;
+import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
+import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
+import org.eclipse.collections.api.factory.Sets;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
@@ -92,30 +93,27 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
-@ExtendWith( SoftAssertionsExtension.class )
-class FulltextIndexEntryUpdateTest
-{
+@ExtendWith(SoftAssertionsExtension.class)
+class FulltextIndexEntryUpdateTest {
     private static final Config CONFIG = Config.defaults();
-    private static final IndexSamplingConfig SAMPLING_CONFIG = new IndexSamplingConfig( CONFIG );
+    private static final IndexSamplingConfig SAMPLING_CONFIG = new IndexSamplingConfig(CONFIG);
 
     private final LifeSupport life = new LifeSupport();
-    private final TokenHolders tokenHolders =
-            new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
-                              new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
-                              new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-    private final IndexPopulator.PopulationWorkScheduler populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
-    {
-        @Override
-        public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
-        {
-            return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, new JobMonitoringParams( null, null, null ), job );
-        }
-    };
+    private final TokenHolders tokenHolders = new TokenHolders(
+            new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
+            new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL),
+            new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
+    private final IndexPopulator.PopulationWorkScheduler populationWorkScheduler =
+            new IndexPopulator.PopulationWorkScheduler() {
+                @Override
+                public <T> JobHandle<T> schedule(
+                        IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job) {
+                    return jobScheduler.schedule(
+                            Group.INDEX_POPULATION_WORK, new JobMonitoringParams(null, null, null), job);
+                }
+            };
 
     private IndexProvider provider;
     private IndexDescriptor index;
@@ -123,41 +121,55 @@ class FulltextIndexEntryUpdateTest
 
     @Inject
     private PageCache pageCache;
+
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @InjectSoftAssertions
     private SoftAssertions softly;
 
     @BeforeEach
-    final void setup()
-    {
-        CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY );
-        var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
-        DatabaseIdRepository databaseIdRepository = mock( DatabaseIdRepository.class );
-        Mockito.when( databaseIdRepository.getByName( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( defaultDatabaseId ) );
-        var configBasedLookup = new ConfigBasedLookupFactory( CONFIG, databaseIdRepository );
-        var readOnlyDatabases = new ReadOnlyDatabases( configBasedLookup );
-        final var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
+    final void setup() {
+        CursorContextFactory contextFactory =
+                new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY);
+        var defaultDatabaseId = DatabaseIdFactory.from(
+                DEFAULT_DATABASE_NAME, UUID.randomUUID()); // UUID required, but ignored by config lookup
+        DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
+        Mockito.when(databaseIdRepository.getByName(DEFAULT_DATABASE_NAME)).thenReturn(Optional.of(defaultDatabaseId));
+        var configBasedLookup = new ConfigBasedLookupFactory(CONFIG, databaseIdRepository);
+        var readOnlyDatabases = new ReadOnlyDatabases(configBasedLookup);
+        final var readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        provider = new FulltextIndexProviderFactory().create( pageCache, fs, NullLogService.getInstance(), new Monitors(), CONFIG, readOnlyChecker,
-                                                              DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(), databaseLayout,
-                                                              tokenHolders, jobScheduler, contextFactory );
-        life.add( provider );
+        provider = new FulltextIndexProviderFactory()
+                .create(
+                        pageCache,
+                        fs,
+                        NullLogService.getInstance(),
+                        new Monitors(),
+                        CONFIG,
+                        readOnlyChecker,
+                        DbmsInfo.UNKNOWN,
+                        RecoveryCleanupWorkCollector.ignore(),
+                        databaseLayout,
+                        tokenHolders,
+                        jobScheduler,
+                        contextFactory);
+        life.add(provider);
         life.start();
 
-        final var schema = SchemaDescriptors.fulltext( EntityType.NODE, new int[]{123}, new int[]{321} );
-        index = provider.completeConfiguration( IndexPrototype.forSchema( schema )
-                                                              .withIndexType( provider.getIndexType() )
-                                                              .withIndexProvider( provider.getProviderDescriptor() )
-                                                              .withName( "FulltextIndex" )
-                                                              .materialise( 0 ) );
+        final var schema = SchemaDescriptors.fulltext(EntityType.NODE, new int[] {123}, new int[] {321});
+        index = provider.completeConfiguration(IndexPrototype.forSchema(schema)
+                .withIndexType(provider.getIndexType())
+                .withIndexProvider(provider.getProviderDescriptor())
+                .withName("FulltextIndex")
+                .materialise(0));
     }
 
     @AfterEach
-    final void teardown() throws Exception
-    {
+    final void teardown() throws Exception {
         life.shutdown();
         jobScheduler.shutdown();
     }
@@ -165,307 +177,289 @@ class FulltextIndexEntryUpdateTest
     // Populator
 
     @Test
-    final void populatorShouldNotIgnoreSupportedValueTypes() throws Exception
-    {
-        final var ids = generateIds( 0, 10 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.add( id, index, supportedValue( id ) ) );
-        populatorTest( updates, ids );
+    final void populatorShouldNotIgnoreSupportedValueTypes() throws Exception {
+        final var ids = generateIds(0, 10);
+        final var updates = generateUpdates(ids, id -> IndexEntryUpdate.add(id, index, supportedValue(id)));
+        populatorTest(updates, ids);
     }
 
     @Test
-    final void populatorShouldIgnoreUnsupportedValueTypes() throws Exception
-    {
-        final var ids = generateIds( 0, 10 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.add( id, index, unsupportedValue( id ) ) );
-        populatorTest( updates, List.of() );
+    final void populatorShouldIgnoreUnsupportedValueTypes() throws Exception {
+        final var ids = generateIds(0, 10);
+        final var updates = generateUpdates(ids, id -> IndexEntryUpdate.add(id, index, unsupportedValue(id)));
+        populatorTest(updates, List.of());
     }
 
-    private void populatorTest( Collection<ValueIndexEntryUpdate<IndexDescriptor>> updates, Iterable<Long> expectedIds ) throws Exception
-    {
+    private void populatorTest(Collection<ValueIndexEntryUpdate<IndexDescriptor>> updates, Iterable<Long> expectedIds)
+            throws Exception {
         final var populator = getPopulator();
-        try
-        {
-            populator.add( updates, CursorContext.NULL_CONTEXT );
-            completePopulation( populator );
+        try {
+            populator.add(updates, CursorContext.NULL_CONTEXT);
+            completePopulation(populator);
+        } finally {
+            populator.close(true, CursorContext.NULL_CONTEXT);
         }
-        finally
-        {
-            populator.close( true, CursorContext.NULL_CONTEXT );
-        }
-        assertIndexed( expectedIds );
+        assertIndexed(expectedIds);
     }
 
     // PopulatingUpdater
 
     @Test
-    final void populatingUpdaterShouldNotIgnoreAddedSupportedValueType() throws Exception
-    {
-        final var ids = generateIds( 0, 10 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.add( id, index, supportedValue( id ) ) );
-        populatingUpdaterTest( updates, ids );
+    final void populatingUpdaterShouldNotIgnoreAddedSupportedValueType() throws Exception {
+        final var ids = generateIds(0, 10);
+        final var updates = generateUpdates(ids, id -> IndexEntryUpdate.add(id, index, supportedValue(id)));
+        populatingUpdaterTest(updates, ids);
     }
 
     @Test
-    final void populatingUpdaterShouldIgnoreAddedUnsupportedValueType() throws Exception
-    {
-        final var ids = generateIds( 0, 10 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.add( id, index, unsupportedValue( id ) ) );
-        populatingUpdaterTest( updates, List.of() );
+    final void populatingUpdaterShouldIgnoreAddedUnsupportedValueType() throws Exception {
+        final var ids = generateIds(0, 10);
+        final var updates = generateUpdates(ids, id -> IndexEntryUpdate.add(id, index, unsupportedValue(id)));
+        populatingUpdaterTest(updates, List.of());
     }
 
     @Test
-    final void populatingUpdaterShouldNotIgnoreRemovedSupportedValueType() throws Exception
-    {
-        final var addedIds = generateIds( 0, 20 );
-        final var removedIds = generateIds( 11, 17 );
-        final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, supportedValue( id ) ) ),
-                                       generateUpdates( removedIds, id -> IndexEntryUpdate.remove( id, index, supportedValue( id ) ) ) )
-                                  .flatMap( Collection::stream )
-                                  .toList();
+    final void populatingUpdaterShouldNotIgnoreRemovedSupportedValueType() throws Exception {
+        final var addedIds = generateIds(0, 20);
+        final var removedIds = generateIds(11, 17);
+        final var updates = Stream.of(
+                        generateUpdates(addedIds, id -> IndexEntryUpdate.add(id, index, supportedValue(id))),
+                        generateUpdates(removedIds, id -> IndexEntryUpdate.remove(id, index, supportedValue(id))))
+                .flatMap(Collection::stream)
+                .toList();
 
-        final var expectedIds = new HashSet<>( addedIds );
-        expectedIds.removeAll( removedIds );
-        populatingUpdaterTest( updates, expectedIds );
+        final var expectedIds = new HashSet<>(addedIds);
+        expectedIds.removeAll(removedIds);
+        populatingUpdaterTest(updates, expectedIds);
     }
 
     @Test
-    final void populatingUpdaterShouldIgnoreRemovedUnsupportedValueType() throws Exception
-    {
-        final var addedIds = generateIds( 0, 20 );
-        final var removedIds = generateIds( 11, 17 );
-        final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, unsupportedValue( id ) ) ),
-                                       generateUpdates( removedIds, id -> IndexEntryUpdate.remove( id, index, unsupportedValue( id ) ) ) )
-                                  .flatMap( Collection::stream )
-                                  .toList();
-        populatingUpdaterTest( updates, List.of() );
+    final void populatingUpdaterShouldIgnoreRemovedUnsupportedValueType() throws Exception {
+        final var addedIds = generateIds(0, 20);
+        final var removedIds = generateIds(11, 17);
+        final var updates = Stream.of(
+                        generateUpdates(addedIds, id -> IndexEntryUpdate.add(id, index, unsupportedValue(id))),
+                        generateUpdates(removedIds, id -> IndexEntryUpdate.remove(id, index, unsupportedValue(id))))
+                .flatMap(Collection::stream)
+                .toList();
+        populatingUpdaterTest(updates, List.of());
     }
 
     @Test
-    final void populatingUpdaterShouldNotIgnoreChangedBetweenSupportedValueTypes() throws Exception
-    {
-        final var ids = generateIds( 0, 20 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.change( id, index, supportedValue( id ), supportedValue( id + 1 ) ) );
-        populatingUpdaterTest( updates, ids );
+    final void populatingUpdaterShouldNotIgnoreChangedBetweenSupportedValueTypes() throws Exception {
+        final var ids = generateIds(0, 20);
+        final var updates = generateUpdates(
+                ids, id -> IndexEntryUpdate.change(id, index, supportedValue(id), supportedValue(id + 1)));
+        populatingUpdaterTest(updates, ids);
     }
 
     @Test
-    final void populatingUpdaterShouldTreatChangedFromUnsupportedToSupportedValueTypesAsAdded() throws Exception
-    {
-        final var addedIds = generateIds( 0, 20 );
-        final var changedIds = generateIds( 11, 17 );
-        final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, unsupportedValue( id ) ) ),
-                                       generateUpdates( changedIds,
-                                                        id -> IndexEntryUpdate.change( id, index, unsupportedValue( id ), supportedValue( id ) ) ) )
-                                  .flatMap( Collection::stream )
-                                  .toList();
-        populatingUpdaterTest( updates, changedIds );
+    final void populatingUpdaterShouldTreatChangedFromUnsupportedToSupportedValueTypesAsAdded() throws Exception {
+        final var addedIds = generateIds(0, 20);
+        final var changedIds = generateIds(11, 17);
+        final var updates = Stream.of(
+                        generateUpdates(addedIds, id -> IndexEntryUpdate.add(id, index, unsupportedValue(id))),
+                        generateUpdates(
+                                changedIds,
+                                id -> IndexEntryUpdate.change(id, index, unsupportedValue(id), supportedValue(id))))
+                .flatMap(Collection::stream)
+                .toList();
+        populatingUpdaterTest(updates, changedIds);
     }
 
     @Test
-    final void populatingUpdaterShouldTreatChangedFromSupportedToUnsupportedValueTypesAsRemoved() throws Exception
-    {
-        final var addedIds = generateIds( 0, 20 );
-        final var changedIds = generateIds( 11, 17 );
-        final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, supportedValue( id ) ) ),
-                                       generateUpdates( changedIds,
-                                                        id -> IndexEntryUpdate.change( id, index, supportedValue( id ), unsupportedValue( id ) ) ) )
-                                  .flatMap( Collection::stream )
-                                  .toList();
+    final void populatingUpdaterShouldTreatChangedFromSupportedToUnsupportedValueTypesAsRemoved() throws Exception {
+        final var addedIds = generateIds(0, 20);
+        final var changedIds = generateIds(11, 17);
+        final var updates = Stream.of(
+                        generateUpdates(addedIds, id -> IndexEntryUpdate.add(id, index, supportedValue(id))),
+                        generateUpdates(
+                                changedIds,
+                                id -> IndexEntryUpdate.change(id, index, supportedValue(id), unsupportedValue(id))))
+                .flatMap(Collection::stream)
+                .toList();
 
-        final var expectedIds = new HashSet<>( addedIds );
-        expectedIds.removeAll( changedIds );
-        populatingUpdaterTest( updates, expectedIds );
+        final var expectedIds = new HashSet<>(addedIds);
+        expectedIds.removeAll(changedIds);
+        populatingUpdaterTest(updates, expectedIds);
     }
 
     @Test
-    final void populatingUpdaterShouldIgnoreChangedBetweenUnsupportedValueTypes() throws Exception
-    {
-        final var ids = generateIds( 0, 20 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.change( id, index, unsupportedValue( id ), unsupportedValue( id + 1 ) ) );
-        populatingUpdaterTest( updates, List.of() );
+    final void populatingUpdaterShouldIgnoreChangedBetweenUnsupportedValueTypes() throws Exception {
+        final var ids = generateIds(0, 20);
+        final var updates = generateUpdates(
+                ids, id -> IndexEntryUpdate.change(id, index, unsupportedValue(id), unsupportedValue(id + 1)));
+        populatingUpdaterTest(updates, List.of());
     }
 
-    private void populatingUpdaterTest( Iterable<ValueIndexEntryUpdate<IndexDescriptor>> updates, Iterable<Long> expectedIds ) throws Exception
-    {
+    private void populatingUpdaterTest(
+            Iterable<ValueIndexEntryUpdate<IndexDescriptor>> updates, Iterable<Long> expectedIds) throws Exception {
         final var populator = getPopulator();
-        try ( var updater = getPopulatingUpdater( populator ) )
-        {
-            for ( final var update : updates )
-            {
-                updater.process( update );
+        try (var updater = getPopulatingUpdater(populator)) {
+            for (final var update : updates) {
+                updater.process(update);
             }
-            completePopulation( populator );
+            completePopulation(populator);
+        } finally {
+            populator.close(true, CursorContext.NULL_CONTEXT);
         }
-        finally
-        {
-            populator.close( true, CursorContext.NULL_CONTEXT );
-        }
-        assertIndexed( expectedIds );
+        assertIndexed(expectedIds);
     }
 
     // Updater
 
     @Test
-    final void updaterShouldNotIgnoreAddedSupportedValueType() throws Exception
-    {
-        final var ids = generateIds( 0, 10 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.add( id, index, supportedValue( id ) ) );
-        updaterTest( updates, ids );
+    final void updaterShouldNotIgnoreAddedSupportedValueType() throws Exception {
+        final var ids = generateIds(0, 10);
+        final var updates = generateUpdates(ids, id -> IndexEntryUpdate.add(id, index, supportedValue(id)));
+        updaterTest(updates, ids);
     }
 
     @Test
-    final void updaterShouldIgnoreAddedUnsupportedValueType() throws Exception
-    {
-        final var ids = generateIds( 0, 10 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.add( id, index, unsupportedValue( id ) ) );
-        updaterTest( updates, List.of() );
+    final void updaterShouldIgnoreAddedUnsupportedValueType() throws Exception {
+        final var ids = generateIds(0, 10);
+        final var updates = generateUpdates(ids, id -> IndexEntryUpdate.add(id, index, unsupportedValue(id)));
+        updaterTest(updates, List.of());
     }
 
     @Test
-    final void updaterShouldNotIgnoreRemovedSupportedValueType() throws Exception
-    {
-        final var addedIds = generateIds( 0, 20 );
-        final var removedIds = generateIds( 11, 17 );
-        final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, supportedValue( id ) ) ),
-                                       generateUpdates( removedIds, id -> IndexEntryUpdate.remove( id, index, supportedValue( id ) ) ) )
-                                  .flatMap( Collection::stream )
-                                  .toList();
+    final void updaterShouldNotIgnoreRemovedSupportedValueType() throws Exception {
+        final var addedIds = generateIds(0, 20);
+        final var removedIds = generateIds(11, 17);
+        final var updates = Stream.of(
+                        generateUpdates(addedIds, id -> IndexEntryUpdate.add(id, index, supportedValue(id))),
+                        generateUpdates(removedIds, id -> IndexEntryUpdate.remove(id, index, supportedValue(id))))
+                .flatMap(Collection::stream)
+                .toList();
 
-        final var expectedIds = new HashSet<>( addedIds );
-        expectedIds.removeAll( removedIds );
-        updaterTest( updates, expectedIds );
+        final var expectedIds = new HashSet<>(addedIds);
+        expectedIds.removeAll(removedIds);
+        updaterTest(updates, expectedIds);
     }
 
     @Test
-    final void updaterShouldIgnoreRemovedUnsupportedValueType() throws Exception
-    {
-        final var addedIds = generateIds( 0, 20 );
-        final var removedIds = generateIds( 11, 17 );
-        final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, unsupportedValue( id ) ) ),
-                                       generateUpdates( removedIds, id -> IndexEntryUpdate.remove( id, index, unsupportedValue( id ) ) ) )
-                                  .flatMap( Collection::stream )
-                                  .toList();
-        updaterTest( updates, List.of() );
+    final void updaterShouldIgnoreRemovedUnsupportedValueType() throws Exception {
+        final var addedIds = generateIds(0, 20);
+        final var removedIds = generateIds(11, 17);
+        final var updates = Stream.of(
+                        generateUpdates(addedIds, id -> IndexEntryUpdate.add(id, index, unsupportedValue(id))),
+                        generateUpdates(removedIds, id -> IndexEntryUpdate.remove(id, index, unsupportedValue(id))))
+                .flatMap(Collection::stream)
+                .toList();
+        updaterTest(updates, List.of());
     }
 
     @Test
-    final void updaterShouldNotIgnoreChangedBetweenSupportedValueTypes() throws Exception
-    {
-        final var ids = generateIds( 0, 20 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.change( id, index, supportedValue( id ), supportedValue( id + 1 ) ) );
-        updaterTest( updates, ids );
+    final void updaterShouldNotIgnoreChangedBetweenSupportedValueTypes() throws Exception {
+        final var ids = generateIds(0, 20);
+        final var updates = generateUpdates(
+                ids, id -> IndexEntryUpdate.change(id, index, supportedValue(id), supportedValue(id + 1)));
+        updaterTest(updates, ids);
     }
 
     @Test
-    final void updaterShouldTreatChangedFromUnsupportedToSupportedValueTypesAsAdded() throws Exception
-    {
-        final var addedIds = generateIds( 0, 20 );
-        final var changedIds = generateIds( 11, 17 );
-        final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, unsupportedValue( id ) ) ),
-                                       generateUpdates( changedIds,
-                                                        id -> IndexEntryUpdate.change( id, index, unsupportedValue( id ), supportedValue( id ) ) ) )
-                                  .flatMap( Collection::stream )
-                                  .toList();
-        updaterTest( updates, changedIds );
+    final void updaterShouldTreatChangedFromUnsupportedToSupportedValueTypesAsAdded() throws Exception {
+        final var addedIds = generateIds(0, 20);
+        final var changedIds = generateIds(11, 17);
+        final var updates = Stream.of(
+                        generateUpdates(addedIds, id -> IndexEntryUpdate.add(id, index, unsupportedValue(id))),
+                        generateUpdates(
+                                changedIds,
+                                id -> IndexEntryUpdate.change(id, index, unsupportedValue(id), supportedValue(id))))
+                .flatMap(Collection::stream)
+                .toList();
+        updaterTest(updates, changedIds);
     }
 
     @Test
-    final void updaterShouldTreatChangedFromSupportedToUnsupportedValueTypesAsRemoved() throws Exception
-    {
-        final var addedIds = generateIds( 0, 20 );
-        final var changedIds = generateIds( 11, 17 );
-        final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, supportedValue( id ) ) ),
-                                       generateUpdates( changedIds,
-                                                        id -> IndexEntryUpdate.change( id, index, supportedValue( id ), unsupportedValue( id ) ) ) )
-                                  .flatMap( Collection::stream )
-                                  .toList();
+    final void updaterShouldTreatChangedFromSupportedToUnsupportedValueTypesAsRemoved() throws Exception {
+        final var addedIds = generateIds(0, 20);
+        final var changedIds = generateIds(11, 17);
+        final var updates = Stream.of(
+                        generateUpdates(addedIds, id -> IndexEntryUpdate.add(id, index, supportedValue(id))),
+                        generateUpdates(
+                                changedIds,
+                                id -> IndexEntryUpdate.change(id, index, supportedValue(id), unsupportedValue(id))))
+                .flatMap(Collection::stream)
+                .toList();
 
-        final var expectedIds = new HashSet<>( addedIds );
-        expectedIds.removeAll( changedIds );
-        updaterTest( updates, expectedIds );
+        final var expectedIds = new HashSet<>(addedIds);
+        expectedIds.removeAll(changedIds);
+        updaterTest(updates, expectedIds);
     }
 
     @Test
-    final void updaterShouldIgnoreChangedBetweenUnsupportedValueTypes() throws Exception
-    {
-        final var ids = generateIds( 0, 20 );
-        final var updates = generateUpdates( ids, id -> IndexEntryUpdate.change( id, index, unsupportedValue( id ), unsupportedValue( id + 1 ) ) );
-        updaterTest( updates, List.of() );
+    final void updaterShouldIgnoreChangedBetweenUnsupportedValueTypes() throws Exception {
+        final var ids = generateIds(0, 20);
+        final var updates = generateUpdates(
+                ids, id -> IndexEntryUpdate.change(id, index, unsupportedValue(id), unsupportedValue(id + 1)));
+        updaterTest(updates, List.of());
     }
 
-    private void updaterTest( Iterable<ValueIndexEntryUpdate<IndexDescriptor>> updates, Iterable<Long> expectedIds ) throws Exception
-    {
-        try ( var accessor = getAccessor();
-              var updater = getUpdater( accessor ) )
-        {
-            for ( final var update : updates )
-            {
-                updater.process( update );
+    private void updaterTest(Iterable<ValueIndexEntryUpdate<IndexDescriptor>> updates, Iterable<Long> expectedIds)
+            throws Exception {
+        try (var accessor = getAccessor();
+                var updater = getUpdater(accessor)) {
+            for (final var update : updates) {
+                updater.process(update);
             }
         }
-        assertIndexed( expectedIds );
+        assertIndexed(expectedIds);
     }
 
-    private static Collection<ValueIndexEntryUpdate<IndexDescriptor>> generateUpdates( Collection<Long> ids,
-                                                                                       Function<Long,ValueIndexEntryUpdate<IndexDescriptor>> toUpdate )
-    {
-        return ids.stream().map( toUpdate ).toList();
+    private static Collection<ValueIndexEntryUpdate<IndexDescriptor>> generateUpdates(
+            Collection<Long> ids, Function<Long, ValueIndexEntryUpdate<IndexDescriptor>> toUpdate) {
+        return ids.stream().map(toUpdate).toList();
     }
 
-    private static Collection<Long> generateIds( long from, long to )
-    {
-        return LongStream.range( from, to ).boxed().collect( Collectors.toUnmodifiableSet() );
+    private static Collection<Long> generateIds(long from, long to) {
+        return LongStream.range(from, to).boxed().collect(Collectors.toUnmodifiableSet());
     }
 
-    private static Value supportedValue( long i )
-    {
-        return Values.of( "string_" + i );
+    private static Value supportedValue(long i) {
+        return Values.of("string_" + i);
     }
 
-    private static Value unsupportedValue( long i )
-    {
-        return Values.of( i );
+    private static Value unsupportedValue(long i) {
+        return Values.of(i);
     }
 
-    private IndexPopulator getPopulator() throws IOException
-    {
-        final var populator = provider.getPopulator( index, SAMPLING_CONFIG, ByteBufferFactory.heapBufferFactory( (int) ByteUnit.kibiBytes( 100 ) ),
-                                                     EmptyMemoryTracker.INSTANCE, tokenHolders.lookupWithIds(), Sets.immutable.empty() );
+    private IndexPopulator getPopulator() throws IOException {
+        final var populator = provider.getPopulator(
+                index,
+                SAMPLING_CONFIG,
+                ByteBufferFactory.heapBufferFactory((int) ByteUnit.kibiBytes(100)),
+                EmptyMemoryTracker.INSTANCE,
+                tokenHolders.lookupWithIds(),
+                Sets.immutable.empty());
         populator.create();
         return populator;
     }
 
-    private void completePopulation( IndexPopulator populator ) throws IndexEntryConflictException
-    {
-        populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
+    private void completePopulation(IndexPopulator populator) throws IndexEntryConflictException {
+        populator.scanCompleted(PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);
     }
 
-    private IndexUpdater getPopulatingUpdater( IndexPopulator populator )
-    {
-        return populator.newPopulatingUpdater( CursorContext.NULL_CONTEXT );
+    private IndexUpdater getPopulatingUpdater(IndexPopulator populator) {
+        return populator.newPopulatingUpdater(CursorContext.NULL_CONTEXT);
     }
 
-    private IndexAccessor getAccessor() throws IOException
-    {
-        return provider.getOnlineAccessor( index, SAMPLING_CONFIG, tokenHolders.lookupWithIds(), Sets.immutable.empty() );
+    private IndexAccessor getAccessor() throws IOException {
+        return provider.getOnlineAccessor(index, SAMPLING_CONFIG, tokenHolders.lookupWithIds(), Sets.immutable.empty());
     }
 
-    private IndexUpdater getUpdater( IndexAccessor accessor )
-    {
-        return accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false );
+    private IndexUpdater getUpdater(IndexAccessor accessor) {
+        return accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false);
     }
 
-    private BoundedIterable<Long> getReader( IndexAccessor accessor )
-    {
-        return accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT );
+    private BoundedIterable<Long> getReader(IndexAccessor accessor) {
+        return accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT);
     }
 
-    private void assertIndexed( Iterable<Long> expectedIds ) throws Exception
-    {
-        try ( var accessor = getAccessor();
-              var reader = getReader( accessor ) )
-        {
-            softly.assertThat( reader ).containsExactlyInAnyOrderElementsOf( expectedIds );
+    private void assertIndexed(Iterable<Long> expectedIds) throws Exception {
+        try (var accessor = getAccessor();
+                var reader = getReader(accessor)) {
+            softly.assertThat(reader).containsExactlyInAnyOrderElementsOf(expectedIds);
         }
     }
 }

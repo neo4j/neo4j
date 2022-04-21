@@ -37,7 +37,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
 
   test("find shortest path with length predicate and WITH should not plan fallback") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
-    val plan = cfg.plan("MATCH (a), (b), p = shortestPath((a)-[r]->(b)) WITH p WHERE length(p) > 1 RETURN p").stripProduceResults
+    val plan =
+      cfg.plan("MATCH (a), (b), p = shortestPath((a)-[r]->(b)) WITH p WHERE length(p) > 1 RETURN p").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .filter("length(p) > 1")
       .shortestPath("(a)-[r]->(b)", pathName = Some("p"))
@@ -66,7 +67,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setRelationshipCardinality("()-[]->(:X)", 100)
       .build()
 
-    val plan = cfg.plan("MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").stripProduceResults
+    val plan =
+      cfg.plan("MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .shortestPath("(a)-[r]->(c)", pathName = Some("p"))
       .filter("not r1 = r2")

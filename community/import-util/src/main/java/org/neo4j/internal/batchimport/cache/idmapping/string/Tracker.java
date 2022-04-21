@@ -38,13 +38,12 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
  * a smaller data structure for smaller datasets, for example those that fit inside {@code int} range.
  * That's why this abstraction exists so that the best suited implementation can be picked for every import.
  */
-public interface Tracker extends MemoryStatsVisitor.Visitable, AutoCloseable
-{
+public interface Tracker extends MemoryStatsVisitor.Visitable, AutoCloseable {
     /**
      * @param index data index to get the value for.
      * @return value previously {@link #set(long, long)}.
      */
-    long get( long index );
+    long get(long index);
 
     /**
      * Swaps values from {@code fromIndex} to {@code toIndex}.
@@ -52,7 +51,7 @@ public interface Tracker extends MemoryStatsVisitor.Visitable, AutoCloseable
      * @param fromIndex index to swap from.
      * @param toIndex index to swap to.
      */
-    void swap( long fromIndex, long toIndex );
+    void swap(long fromIndex, long toIndex);
 
     /**
      * Sets {@code value} at the specified {@code index}.
@@ -60,11 +59,11 @@ public interface Tracker extends MemoryStatsVisitor.Visitable, AutoCloseable
      * @param index data index to set value at.
      * @param value value to set at that index.
      */
-    void set( long index, long value );
+    void set(long index, long value);
 
-    void markAsDuplicate( long index );
+    void markAsDuplicate(long index);
 
-    boolean isMarkedAsDuplicate( long index );
+    boolean isMarkedAsDuplicate(long index);
 
     @Override
     void close();

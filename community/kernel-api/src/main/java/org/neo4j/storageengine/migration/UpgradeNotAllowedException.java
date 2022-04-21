@@ -21,18 +21,16 @@ package org.neo4j.storageengine.migration;
 
 import org.neo4j.exceptions.StoreFailureException;
 
-public class UpgradeNotAllowedException extends StoreFailureException
-{
-    private static final String BASE_MSG = "Neo4j cannot be started because the database files require upgrading and upgrades are disabled "
-                                       + "in the configuration. Please set 'dbms.allow_upgrade' to 'true' in your configuration file and try again.";
+public class UpgradeNotAllowedException extends StoreFailureException {
+    private static final String BASE_MSG =
+            "Neo4j cannot be started because the database files require upgrading and upgrades are disabled "
+                    + "in the configuration. Please set 'dbms.allow_upgrade' to 'true' in your configuration file and try again.";
 
-    public UpgradeNotAllowedException( String msg )
-    {
-        super( String.format( "%s Detailed description: %s", BASE_MSG, msg ) );
+    public UpgradeNotAllowedException(String msg) {
+        super(String.format("%s Detailed description: %s", BASE_MSG, msg));
     }
 
-    public UpgradeNotAllowedException()
-    {
-        super( BASE_MSG );
+    public UpgradeNotAllowedException() {
+        super(BASE_MSG);
     }
 }

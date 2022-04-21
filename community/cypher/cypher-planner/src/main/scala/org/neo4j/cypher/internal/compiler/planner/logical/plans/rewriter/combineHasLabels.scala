@@ -41,7 +41,7 @@ case object combineHasLabels extends Rewriter {
   private def rewrite(ors: Ors): Expression = {
     val (lonelyHasLabels, nonRewritable) = ors.exprs.partition {
       case HasLabels(_, labels) if labels.size == 1 => true
-      case _ => false
+      case _                                        => false
     }
 
     val rewrittenHasLabels = lonelyHasLabels
@@ -58,7 +58,7 @@ case object combineHasLabels extends Rewriter {
       val predicates = nonRewritable ++ rewrittenHasLabels
       predicates match {
         case Seq(singlePredicate) => singlePredicate
-        case manyPredicates => Ors(manyPredicates)(ors.position)
+        case manyPredicates       => Ors(manyPredicates)(ors.position)
       }
     }
   }

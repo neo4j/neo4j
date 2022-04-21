@@ -19,46 +19,42 @@
  */
 package org.neo4j.internal.batchimport.store;
 
-
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 import java.util.concurrent.Future;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-
 @ActorsExtension
-class PageCacheFlusherTest
-{
+class PageCacheFlusherTest {
     @Inject
     Actor t2;
 
     @Test
-    void shouldWaitForCompletionInHalt() throws Exception
-    {
+    void shouldWaitForCompletionInHalt() throws Exception {
         // GIVEN
-        PageCache pageCache = mock( PageCache.class );
+        PageCache pageCache = mock(PageCache.class);
         Barrier.Control barrier = new Barrier.Control();
-        doAnswer( invocation ->
-        {
-            barrier.reached();
-            return null;
-        } ).when( pageCache ).flushAndForce();
-        PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
+        doAnswer(invocation -> {
+                    barrier.reached();
+                    return null;
+                })
+                .when(pageCache)
+                .flushAndForce();
+        PageCacheFlusher flusher = new PageCacheFlusher(pageCache);
         flusher.start();
 
         // WHEN
         barrier.await();
-        Future<Void> halt = t2.submit( flusher::halt );
-        t2.untilWaitingIn( PageCacheFlusher.class.getDeclaredMethod( "halt" ) );
+        Future<Void> halt = t2.submit(flusher::halt);
+        t2.untilWaitingIn(PageCacheFlusher.class.getDeclaredMethod("halt"));
         barrier.release();
 
         // THEN halt call exits normally after (confirmed) ongoing flushAndForce call completed.
@@ -66,21 +62,21 @@ class PageCacheFlusherTest
     }
 
     @Test
-    void shouldExitOnErrorInHalt() throws Exception
-    {
+    void shouldExitOnErrorInHalt() throws Exception {
         // GIVEN
-        PageCache pageCache = mock( PageCache.class );
+        PageCache pageCache = mock(PageCache.class);
         RuntimeException failure = new RuntimeException();
-        doAnswer( invocation ->
-        {
-            throw failure;
-        } ).when( pageCache ).flushAndForce();
-        PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
+        doAnswer(invocation -> {
+                    throw failure;
+                })
+                .when(pageCache)
+                .flushAndForce();
+        PageCacheFlusher flusher = new PageCacheFlusher(pageCache);
         flusher.run();
 
         // WHEN
-        RuntimeException e = assertThrows( RuntimeException.class, flusher::halt );
+        RuntimeException e = assertThrows(RuntimeException.class, flusher::halt);
         // THEN
-        assertSame( failure, e );
+        assertSame(failure, e);
     }
 }

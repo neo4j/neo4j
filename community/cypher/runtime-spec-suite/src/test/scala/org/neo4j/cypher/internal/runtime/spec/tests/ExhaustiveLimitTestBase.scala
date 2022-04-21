@@ -28,10 +28,11 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.exceptions.InvalidArgumentException
 
-abstract class ExhaustiveLimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                  runtime: CypherRuntime[CONTEXT],
-                                                                  sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class ExhaustiveLimitTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("exhaustive limit 0") {
     // when
@@ -151,7 +152,7 @@ abstract class ExhaustiveLimitTestBase[CONTEXT <: RuntimeContext](edition: Editi
       .input(nodes = Seq("x"))
       .build()
 
-    val input = inputValues(aNodes.map(n => Array[Any](n)):_*)
+    val input = inputValues(aNodes.map(n => Array[Any](n)): _*)
     val stream = input.stream()
 
     // then
@@ -178,7 +179,7 @@ abstract class ExhaustiveLimitTestBase[CONTEXT <: RuntimeContext](edition: Editi
       .build()
 
     // then
-    an [ArithmeticException] should be thrownBy consume(execute(logicalQuery, runtime))
+    an[ArithmeticException] should be thrownBy consume(execute(logicalQuery, runtime))
   }
 
   test("should support exhaustive exhaustive limit on top of apply") {
@@ -197,7 +198,7 @@ abstract class ExhaustiveLimitTestBase[CONTEXT <: RuntimeContext](edition: Editi
       .input(nodes = Seq("x"))
       .build()
 
-    val input = inputValues(aNodes.map(n => Array[Any](n)):_*)
+    val input = inputValues(aNodes.map(n => Array[Any](n)): _*)
     val stream = input.stream()
 
     // then

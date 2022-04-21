@@ -57,15 +57,18 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Inside
 
-class OptionalMatchIDPPlanningIntegrationTest extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
-class OptionalMatchGreedyPlanningIntegrationTest extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithGreedyConnectComponents)
+class OptionalMatchIDPPlanningIntegrationTest
+    extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
+
+class OptionalMatchGreedyPlanningIntegrationTest
+    extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithGreedyConnectComponents)
 
 abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSolverSetup)
-  extends CypherFunSuite
-  with LogicalPlanningTestSupport2
-  with LogicalPlanningIntegrationTestSupport
-  with LogicalPlanningAttributesTestSupport
-  with Inside {
+    extends CypherFunSuite
+    with LogicalPlanningTestSupport2
+    with LogicalPlanningIntegrationTestSupport
+    with LogicalPlanningAttributesTestSupport
+    with Inside {
 
   locally {
     queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
@@ -74,18 +77,33 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test("should build plans containing left outer joins") {
     (new given {
       cost = {
-        case (_: AllNodesScan, _, _, _) => 2000000.0
-        case (_: NodeByLabelScan, _, _, _) => 20.0
+        case (_: AllNodesScan, _, _, _)                                                 => 2000000.0
+        case (_: NodeByLabelScan, _, _, _)                                              => 20.0
         case (p: Expand, _, _, _) if p.folder.findAllByClass[CartesianProduct].nonEmpty => Double.MaxValue
-        case (_: Expand, _, _, _) => 10.0
-        case (_: LeftOuterHashJoin, _, _, _) => 20.0
-        case (_: Argument, _, _, _) => 1.0
-        case _ => Double.MaxValue
+        case (_: Expand, _, _, _)                                                       => 10.0
+        case (_: LeftOuterHashJoin, _, _, _)                                            => 20.0
+        case (_: Argument, _, _, _)                                                     => 1.0
+        case _                                                                          => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
-      LeftOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
-        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
+      LeftOuterHashJoin(
+        Set("b"),
+        Expand(
+          NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone),
+          "a",
+          SemanticDirection.OUTGOING,
+          Seq(),
+          "b",
+          "r1"
+        ),
+        Expand(
+          NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone),
+          "c",
+          SemanticDirection.INCOMING,
+          Seq(),
+          "b",
+          "r2"
+        )
       )
     )
   }
@@ -93,18 +111,33 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test("should build plans containing right outer joins") {
     (new given {
       cost = {
-        case (_: AllNodesScan, _, _, _) => 2000000.0
-        case (_: NodeByLabelScan, _, _, _) => 20.0
+        case (_: AllNodesScan, _, _, _)                                                 => 2000000.0
+        case (_: NodeByLabelScan, _, _, _)                                              => 20.0
         case (p: Expand, _, _, _) if p.folder.findAllByClass[CartesianProduct].nonEmpty => Double.MaxValue
-        case (_: Expand, _, _, _) => 10.0
-        case (_: RightOuterHashJoin, _, _, _) => 20.0
-        case (_: Argument, _, _, _) => 1.0
-        case _ => Double.MaxValue
+        case (_: Expand, _, _, _)                                                       => 10.0
+        case (_: RightOuterHashJoin, _, _, _)                                           => 20.0
+        case (_: Argument, _, _, _)                                                     => 1.0
+        case _                                                                          => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
-      RightOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
+      RightOuterHashJoin(
+        Set("b"),
+        Expand(
+          NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone),
+          "c",
+          SemanticDirection.INCOMING,
+          Seq(),
+          "b",
+          "r2"
+        ),
+        Expand(
+          NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone),
+          "a",
+          SemanticDirection.OUTGOING,
+          Seq(),
+          "b",
+          "r1"
+        )
       )
     )
   }
@@ -113,7 +146,11 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     (new given {
       labelCardinality = Map("X" -> 1.0, "Y" -> 10.0)
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
-        override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
+        override def patternStepCardinality(
+          fromLabel: Option[LabelId],
+          relTypeId: Option[RelTypeId],
+          toLabel: Option[LabelId]
+        ): Cardinality = {
           // X = 0, Y = 1
           if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) {
             // low from a to b
@@ -130,9 +167,24 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         case (_: OptionalExpand, _, _, _) => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
-      LeftOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
-        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
+      LeftOuterHashJoin(
+        Set("b"),
+        Expand(
+          NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone),
+          "a",
+          SemanticDirection.OUTGOING,
+          Seq(),
+          "b",
+          "r1"
+        ),
+        Expand(
+          NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone),
+          "c",
+          SemanticDirection.INCOMING,
+          Seq(),
+          "b",
+          "r2"
+        )
       )
     )
   }
@@ -141,12 +193,16 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     (new given {
       labelCardinality = Map("X" -> 10.0, "Y" -> 1.0)
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
-        override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
+        override def patternStepCardinality(
+          fromLabel: Option[LabelId],
+          relTypeId: Option[RelTypeId],
+          toLabel: Option[LabelId]
+        ): Cardinality = {
           // X = 0, Y = 1
           if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) {
             // high from a to b
             1000000000.0
-          } else if ( fromLabel.isEmpty && relTypeId.isEmpty && toLabel.exists(_.id == 1)) {
+          } else if (fromLabel.isEmpty && relTypeId.isEmpty && toLabel.exists(_.id == 1)) {
             // low from b to c
             100.0
           } else {
@@ -158,16 +214,32 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         case (_: OptionalExpand, _, _, _) => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
-      RightOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
+      RightOuterHashJoin(
+        Set("b"),
+        Expand(
+          NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone),
+          "c",
+          SemanticDirection.INCOMING,
+          Seq(),
+          "b",
+          "r2"
+        ),
+        Expand(
+          NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone),
+          "a",
+          SemanticDirection.OUTGOING,
+          Seq(),
+          "b",
+          "r1"
+        )
       )
     )
   }
 
   test("should build simple optional match plans") { // This should be built using plan rewriting
     planFor("OPTIONAL MATCH (a) RETURN a")._1 should equal(
-      Optional(AllNodesScan("a", Set.empty)))
+      Optional(AllNodesScan("a", Set.empty))
+    )
   }
 
   test("should allow MATCH after OPTIONAL MATCH") {
@@ -182,58 +254,87 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test("should allow MATCH after OPTIONAL MATCH on same node") {
     planFor("OPTIONAL MATCH (a) MATCH (a:A) RETURN a")._1 shouldEqual
       new LogicalPlanBuilder(wholePlan = false)
-      .filterExpression(assertIsNode("a"), hasLabels("a", "A"))
-      .optional()
-      .allNodeScan("a")
-      .build()
+        .filterExpression(assertIsNode("a"), hasLabels("a", "A"))
+        .optional()
+        .allNodeScan("a")
+        .build()
   }
 
   test("should build simple optional expand") {
     planFor("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n")._1.endoRewrite(unnestOptional) match {
       case OptionalExpand(
-      AllNodesScan("n", _),
-      "n",
-      SemanticDirection.OUTGOING,
-      _,
-      "x",
-      _,
-      _,
-      _,
-      ) => ()
+          AllNodesScan("n", _),
+          "n",
+          SemanticDirection.OUTGOING,
+          _,
+          "x",
+          _,
+          _,
+          _
+        ) => ()
     }
   }
 
   test("should build optional ProjectEndpoints") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")._1 match {
-      case
-        Apply(
-        Limit(
-        Expand(
-        AllNodesScan(_, _), _, _, _, _, _, _), _),
-        Optional(
-        ProjectEndpoints(
-        Argument(args), "r", "b2", false, "a1", true, None, true, SimplePatternLength
-        ), _
-        ), _
+      case Apply(
+          Limit(
+            Expand(
+              AllNodesScan(_, _),
+              _,
+              _,
+              _,
+              _,
+              _,
+              _
+            ),
+            _
+          ),
+          Optional(
+            ProjectEndpoints(
+              Argument(args),
+              "r",
+              "b2",
+              false,
+              "a1",
+              true,
+              None,
+              true,
+              SimplePatternLength
+            ),
+            _
+          ),
+          _
         ) =>
         args should equal(Set("r", "a1"))
     }
   }
 
   test("should build optional ProjectEndpoints with extra predicates") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2")._1 match {
+    planFor(
+      "MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2"
+    )._1 match {
       case Apply(
-      Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
-      Optional(
-      Selection(
-      predicates,
-      ProjectEndpoints(
-      Argument(args),
-      "r", "b2", false, "a2", false, None, true, SimplePatternLength
-      )
-      ), _
-      ), _
-      ) =>
+          Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
+          Optional(
+            Selection(
+              predicates,
+              ProjectEndpoints(
+                Argument(args),
+                "r",
+                "b2",
+                false,
+                "a2",
+                false,
+                None,
+                true,
+                SimplePatternLength
+              )
+            ),
+            _
+          ),
+          _
+        ) =>
         args should equal(Set("r", "a1"))
         val predicate = equals(varFor("a1"), varFor("a2"))
         predicates.exprs should equal(Seq(predicate))
@@ -243,20 +344,30 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test("should build optional ProjectEndpoints with extra predicates 2") {
     planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")._1 match {
       case Apply(
-      Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
-      Optional(
-      ProjectEndpoints(
-      Argument(args),
-      "r", "a2", false, "b2", false, None, true, SimplePatternLength
-      ), _
-      ), _
-      ) =>
+          Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
+          Optional(
+            ProjectEndpoints(
+              Argument(args),
+              "r",
+              "a2",
+              false,
+              "b2",
+              false,
+              None,
+              true,
+              SimplePatternLength
+            ),
+            _
+          ),
+          _
+        ) =>
         args should equal(Set("r"))
     }
   }
 
   test("should solve multiple optional matches") {
-    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[r1:R1]->(x1) OPTIONAL MATCH (a)-[r2:R2]->(x2) RETURN a, x1, x2")._1
+    val plan =
+      planFor("MATCH (a) OPTIONAL MATCH (a)-[r1:R1]->(x1) OPTIONAL MATCH (a)-[r2:R2]->(x2) RETURN a, x1, x2")._1
     val alternative1 = new LogicalPlanBuilder(wholePlan = false)
       .optionalExpandAll("(a)-[r2:R2]->(x2)")
       .optionalExpandAll("(a)-[r1:R1]->(x1)")
@@ -279,12 +390,21 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       """MATCH (n:X)
         |OPTIONAL MATCH (n)-[r]-(m:Y)
         |WHERE m.prop = 42
-        |RETURN m""".stripMargin)._1.endoRewrite(unnestOptional)
+        |RETURN m""".stripMargin
+    )._1.endoRewrite(unnestOptional)
     val allNodesN: LogicalPlan = NodeByLabelScan("n", labelName("X"), Set.empty, IndexOrderNone)
 
     plan should equal(
-      OptionalExpand(allNodesN, "n", SemanticDirection.BOTH, Seq.empty, "m", "r", ExpandAll,
-        Some(Ands.create(Seq(hasLabels("m", "Y"), equals(prop("m", "prop"), literalInt(42))))))
+      OptionalExpand(
+        allNodesN,
+        "n",
+        SemanticDirection.BOTH,
+        Seq.empty,
+        "m",
+        "r",
+        ExpandAll,
+        Some(Ands.create(Seq(hasLabels("m", "Y"), equals(prop("m", "prop"), literalInt(42)))))
+      )
     )
   }
 
@@ -358,18 +478,18 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
 
   test("should not plan outer hash joins when rhs has arguments other than join nodes") {
     val query = """
-        |WITH 1 AS x
-        |MATCH (a)
-        |OPTIONAL MATCH (a)-[r]->(c)
-        |WHERE c.id = x
-        |RETURN c
-        |""".stripMargin
+                  |WITH 1 AS x
+                  |MATCH (a)
+                  |OPTIONAL MATCH (a)-[r]->(c)
+                  |WHERE c.id = x
+                  |RETURN c
+                  |""".stripMargin
 
     val cfg = new given {
       cost = {
         case (_: RightOuterHashJoin, _, _, _) => 1.0
-        case (_: LeftOuterHashJoin, _, _, _) => 1.0
-        case _ => Double.MaxValue
+        case (_: LeftOuterHashJoin, _, _, _)  => 1.0
+        case _                                => Double.MaxValue
       }
     }
 
@@ -377,7 +497,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     withClue(plan) {
       plan.folder.treeExists {
         case _: RightOuterHashJoin => true
-        case _: LeftOuterHashJoin => true
+        case _: LeftOuterHashJoin  => true
       } should be(false)
     }
   }
@@ -450,12 +570,15 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
          |OPTIONAL MATCH (a)-[r]-(b:Foo)
          |WHERE NOT b:Model
          |  AND ANY (p IN b.latest WHERE p IN [1, 2])
-         |RETURN a""".stripMargin)
+         |RETURN a""".stripMargin
+    )
 
     plan.stripProduceResults shouldBe an[OptionalExpand]
   }
 
-  test("should pick a right outer hash join with hint if it is cheaper than left outer hash join, also in a tail query") {
+  test(
+    "should pick a right outer hash join with hint if it is cheaper than left outer hash join, also in a tail query"
+  ) {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(52)
       .setLabelCardinality("A", 50)
@@ -549,7 +672,12 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .|.optional("n0", "n1")
       .|.expandInto("(n0)-[anon_0]-(n2)")
       .|.filterExpression(assertIsNode("n1"))
-      .|.nodeIndexOperator("n2:L0(prop = 42)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
+      .|.nodeIndexOperator(
+        "n2:L0(prop = 42)",
+        indexOrder = IndexOrderNone,
+        argumentIds = Set("n0", "n1"),
+        indexType = IndexType.RANGE
+      )
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")
@@ -563,7 +691,12 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .|.optional("n0", "n1")
       .|.expandInto("(n0)-[anon_0]-(n2)")
       .|.filterExpression(propEquality("n2", "prop", 42), assertIsNode("n1"))
-      .|.nodeIndexOperator("n2:L0(prop)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
+      .|.nodeIndexOperator(
+        "n2:L0(prop)",
+        indexOrder = IndexOrderNone,
+        argumentIds = Set("n0", "n1"),
+        indexType = IndexType.RANGE
+      )
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")
@@ -576,7 +709,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   Cannot get the planner to generate the plan with relationship index scan as the leaf of the right hand side with 2.13.
   Hoping we can re-enable it once we replace Set with ListSet or something similar.
   The logic inside apply optional is covered by the other similar tests in this file anyway.
-  */
+   */
   ignore("should produce a valid plan for optional match with solved arguments passed to a relationship index scan") {
     val config = new given {
       cost = {
@@ -604,7 +737,12 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .|.filter("not anon_0 = anon_2")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
       .|.filterExpression(assertIsNode("n1"))
-      .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop = 42)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
+      .|.relationshipIndexOperator(
+        "(anon_1)-[anon_2:R0(prop = 42)]->(anon_3)",
+        indexOrder = IndexOrderNone,
+        argumentIds = Set("n0", "n1"),
+        indexType = IndexType.RANGE
+      )
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")
@@ -619,7 +757,12 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .|.filter("not anon_0 = anon_2")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
       .|.filterExpression(propEquality("anon_2", "prop", 42), assertIsNode("n1"))
-      .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
+      .|.relationshipIndexOperator(
+        "(anon_1)-[anon_2:R0(prop)]->(anon_3)",
+        indexOrder = IndexOrderNone,
+        argumentIds = Set("n0", "n1"),
+        indexType = IndexType.RANGE
+      )
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")
@@ -628,7 +771,9 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     plan should (equal(expected) or equal(otherwiseExpected))
   }
 
-  test("should produce a valid plan for optional match with solved arguments passed to an undirected relationship type scan") {
+  test(
+    "should produce a valid plan for optional match with solved arguments passed to an undirected relationship type scan"
+  ) {
     val config = new given {
       cost = {
         case (expand: OptionalExpand, _, _, _) if expand.mode == ExpandAll => Double.MaxValue
@@ -661,7 +806,9 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     plan should equal(expected)
   }
 
-  test("should produce a valid plan for optional match with solved arguments passed to a directed relationship type scan") {
+  test(
+    "should produce a valid plan for optional match with solved arguments passed to a directed relationship type scan"
+  ) {
     val config = new given {
       cost = {
         case (expand: OptionalExpand, _, _, _) if expand.mode == ExpandAll => Double.MaxValue
@@ -726,7 +873,9 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     plan should equal(expected)
   }
 
-  test("should produce a valid plan for optional match with solved arguments passed to an undirected relationship by id seek") {
+  test(
+    "should produce a valid plan for optional match with solved arguments passed to an undirected relationship by id seek"
+  ) {
     val config = new given {
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def nodesAllCardinality(): Cardinality = 100000.0
@@ -757,7 +906,9 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     plan should equal(expected)
   }
 
-  test("should produce a valid plan for optional match with solved arguments passed to a directed relationship by id seek") {
+  test(
+    "should produce a valid plan for optional match with solved arguments passed to a directed relationship by id seek"
+  ) {
     val config = new given {
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def nodesAllCardinality(): Cardinality = 100000.0

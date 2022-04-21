@@ -19,10 +19,15 @@
  */
 package org.neo4j.bolt.runtime.statemachine.impl;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 import java.time.Duration;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
@@ -39,73 +44,65 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-
-class DefaultDatabaseTransactionStateMachineSPIProviderTest
-{
-    private final BoltChannel mockBoltChannel = mock( BoltChannel.class );
+class DefaultDatabaseTransactionStateMachineSPIProviderTest {
+    private final BoltChannel mockBoltChannel = mock(BoltChannel.class);
 
     @Test
-    void shouldReturnDefaultTransactionStateMachineSPIWithEmptyDatabaseName() throws Throwable
-    {
-        DatabaseManagementService managementService = managementServiceWithDatabase( "neo4j" );
-        TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
+    void shouldReturnDefaultTransactionStateMachineSPIWithEmptyDatabaseName() throws Throwable {
+        DatabaseManagementService managementService = managementServiceWithDatabase("neo4j");
+        TransactionStateMachineSPIProvider spiProvider = newSpiProvider(managementService);
 
-        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( ABSENT_DB_NAME, mock( StatementProcessorReleaseManager.class ), "123" );
-        assertThat( spi ).isInstanceOf( TransactionStateMachineSPI.class );
+        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI(
+                ABSENT_DB_NAME, mock(StatementProcessorReleaseManager.class), "123");
+        assertThat(spi).isInstanceOf(TransactionStateMachineSPI.class);
     }
 
     @Test
-    void shouldErrorIfDatabaseNotFound()
-    {
-        DatabaseManagementService managementService = managementServiceWithDatabase( "database" );
-        TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
+    void shouldErrorIfDatabaseNotFound() {
+        DatabaseManagementService managementService = managementServiceWithDatabase("database");
+        TransactionStateMachineSPIProvider spiProvider = newSpiProvider(managementService);
 
-        BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () ->
-                spiProvider.getTransactionStateMachineSPI( "database", mock( StatementProcessorReleaseManager.class ), "123" ) );
-        assertThat( error.getMessage() ).contains( "Database selection by name not supported by Bolt protocol version lower than BoltV4." );
+        BoltProtocolBreachFatality error = assertThrows(
+                BoltProtocolBreachFatality.class,
+                () -> spiProvider.getTransactionStateMachineSPI(
+                        "database", mock(StatementProcessorReleaseManager.class), "123"));
+        assertThat(error.getMessage())
+                .contains("Database selection by name not supported by Bolt protocol version lower than BoltV4.");
     }
 
-    private DatabaseManagementService managementServiceWithDatabase( String databaseName )
-    {
-        DatabaseManagementService managementService = mock( DatabaseManagementService.class );
-        GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
-        when( databaseFacade.isAvailable() ).thenReturn( true );
-        when( managementService.database( databaseName ) ).thenReturn( databaseFacade );
-        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
-        when( databaseFacade.getDependencyResolver() ).thenReturn( dependencyResolver );
-        GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
-        when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
-        when( dependencyResolver.resolveDependency( Database.class ) ).thenReturn( mock( Database.class ) );
-        when( mockBoltChannel.defaultDatabase() ).thenReturn( "neo4j" );
+    private DatabaseManagementService managementServiceWithDatabase(String databaseName) {
+        DatabaseManagementService managementService = mock(DatabaseManagementService.class);
+        GraphDatabaseFacade databaseFacade = mock(GraphDatabaseFacade.class);
+        when(databaseFacade.isAvailable()).thenReturn(true);
+        when(managementService.database(databaseName)).thenReturn(databaseFacade);
+        DependencyResolver dependencyResolver = mock(DependencyResolver.class);
+        when(databaseFacade.getDependencyResolver()).thenReturn(dependencyResolver);
+        GraphDatabaseQueryService queryService = mock(GraphDatabaseQueryService.class);
+        when(dependencyResolver.resolveDependency(GraphDatabaseQueryService.class))
+                .thenReturn(queryService);
+        when(queryService.getDependencyResolver()).thenReturn(dependencyResolver);
+        when(dependencyResolver.resolveDependency(Database.class)).thenReturn(mock(Database.class));
+        when(mockBoltChannel.defaultDatabase()).thenReturn("neo4j");
 
         return managementService;
     }
 
-    private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManagementService managementService )
-    {
-        var clock = mock( SystemNanoClock.class );
-        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), clock, Duration.ZERO );
-        return new AbstractTransactionStatementSPIProvider( dbProvider, mockBoltChannel, clock, mock( MemoryTracker.class, RETURNS_MOCKS ) )
-        {
+    private TransactionStateMachineSPIProvider newSpiProvider(DatabaseManagementService managementService) {
+        var clock = mock(SystemNanoClock.class);
+        var dbProvider = new BoltKernelDatabaseManagementServiceProvider(
+                managementService, new Monitors(), clock, Duration.ZERO);
+        return new AbstractTransactionStatementSPIProvider(
+                dbProvider, mockBoltChannel, clock, mock(MemoryTracker.class, RETURNS_MOCKS)) {
             @Override
-            protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
-                                                                                StatementProcessorReleaseManager resourceReleaseManager,
-                                                                                String transactionId )
-            {
-                return mock( TransactionStateMachineSPI.class );
+            protected TransactionStateMachineSPI newTransactionStateMachineSPI(
+                    BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
+                    StatementProcessorReleaseManager resourceReleaseManager,
+                    String transactionId) {
+                return mock(TransactionStateMachineSPI.class);
             }
 
             @Override
-            public void releaseTransactionStateMachineSPI()
-            {
-            }
+            public void releaseTransactionStateMachineSPI() {}
         };
     }
 }

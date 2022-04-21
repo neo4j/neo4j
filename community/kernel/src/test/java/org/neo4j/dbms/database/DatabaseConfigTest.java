@@ -19,12 +19,18 @@
  */
 package org.neo4j.dbms.database;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -34,85 +40,75 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Race;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-
-class DatabaseConfigTest
-{
+class DatabaseConfigTest {
     @Test
-    void shouldHandleRegisterDynamicUpdateListenersConcurrently() throws Throwable
-    {
+    void shouldHandleRegisterDynamicUpdateListenersConcurrently() throws Throwable {
         // given
-        NamedDatabaseId namedDatabaseId = from( DEFAULT_DATABASE_NAME, UUID.randomUUID() );
-        DatabaseConfig dbConfig = new DatabaseConfig( Collections.emptyMap(), Config.defaults(), namedDatabaseId );
-        Setting<GraphDatabaseSettings.TransactionTracingLevel> setting = GraphDatabaseSettings.transaction_tracing_level;
-        int threads = 100; // big because we want to exercise what happens when the potentially backing List wants to grow
+        NamedDatabaseId namedDatabaseId = from(DEFAULT_DATABASE_NAME, UUID.randomUUID());
+        DatabaseConfig dbConfig = new DatabaseConfig(Collections.emptyMap(), Config.defaults(), namedDatabaseId);
+        Setting<GraphDatabaseSettings.TransactionTracingLevel> setting =
+                GraphDatabaseSettings.transaction_tracing_level;
+        int threads =
+                100; // big because we want to exercise what happens when the potentially backing List wants to grow
         Listener[] listeners = new Listener[threads];
-        for ( int i = 0; i < threads; i++ )
-        {
+        for (int i = 0; i < threads; i++) {
             listeners[i] = new Listener();
         }
 
         // when
         Race race = new Race();
-        for ( int i = 0; i < threads; i++ )
-        {
+        for (int i = 0; i < threads; i++) {
             int slot = i;
-            race.addContestant( () -> dbConfig.addListener( setting, listeners[slot] ), 1 );
+            race.addContestant(() -> dbConfig.addListener(setting, listeners[slot]), 1);
         }
         race.go();
 
         // then
-        dbConfig.setDynamic( setting, GraphDatabaseSettings.TransactionTracingLevel.DISABLED, getClass().getSimpleName() );
-        for ( int i = 0; i < threads; i++ )
-        {
-            assertEquals( 1, listeners[i].callCount );
+        dbConfig.setDynamic(
+                setting,
+                GraphDatabaseSettings.TransactionTracingLevel.DISABLED,
+                getClass().getSimpleName());
+        for (int i = 0; i < threads; i++) {
+            assertEquals(1, listeners[i].callCount);
         }
     }
 
     @Test
-    void shouldBeAbleToBuildConfigFromDatabaseConfig()
-    {
-        //Given
-        Config globalConfig = Config.defaults( default_database, "foo" );
-        Config dbConfig = new DatabaseConfig( Map.of(), globalConfig, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ) );
-        //When
-        Config newConfig = Config.newBuilder().fromConfig( dbConfig ).build();
-        //Then
-        assertThat( newConfig.get( default_database ) ).isEqualTo( "foo" );
+    void shouldBeAbleToBuildConfigFromDatabaseConfig() {
+        // Given
+        Config globalConfig = Config.defaults(default_database, "foo");
+        Config dbConfig = new DatabaseConfig(Map.of(), globalConfig, from(DEFAULT_DATABASE_NAME, UUID.randomUUID()));
+        // When
+        Config newConfig = Config.newBuilder().fromConfig(dbConfig).build();
+        // Then
+        assertThat(newConfig.get(default_database)).isEqualTo("foo");
     }
 
     @Test
-    void shouldUnregisterDatabaseConfigListenersOnShutdown()
-    {
+    void shouldUnregisterDatabaseConfigListenersOnShutdown() {
         // given
-        Config globalConfig = mock( Config.class );
+        Config globalConfig = mock(Config.class);
         LifeSupport life = new LifeSupport();
-        DatabaseConfig databaseConfig = life.add( new DatabaseConfig( Map.of(), globalConfig, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ) ) );
+        DatabaseConfig databaseConfig =
+                life.add(new DatabaseConfig(Map.of(), globalConfig, from(DEFAULT_DATABASE_NAME, UUID.randomUUID())));
         life.init();
-        SettingChangeListener<Boolean> listener = mock( SettingChangeListener.class );
-        databaseConfig.addListener( GraphDatabaseSettings.read_only_database_default, listener );
-        verify( globalConfig ).addListener( GraphDatabaseSettings.read_only_database_default, listener );
+        SettingChangeListener<Boolean> listener = mock(SettingChangeListener.class);
+        databaseConfig.addListener(GraphDatabaseSettings.read_only_database_default, listener);
+        verify(globalConfig).addListener(GraphDatabaseSettings.read_only_database_default, listener);
 
         // when
         life.shutdown();
 
         // then
-        verify( globalConfig ).removeListener( GraphDatabaseSettings.read_only_database_default, listener );
+        verify(globalConfig).removeListener(GraphDatabaseSettings.read_only_database_default, listener);
     }
 
-    private static class Listener implements SettingChangeListener<GraphDatabaseSettings.TransactionTracingLevel>
-    {
+    private static class Listener implements SettingChangeListener<GraphDatabaseSettings.TransactionTracingLevel> {
         private int callCount;
 
         @Override
-        public void accept( GraphDatabaseSettings.TransactionTracingLevel from, GraphDatabaseSettings.TransactionTracingLevel to )
-        {
+        public void accept(
+                GraphDatabaseSettings.TransactionTracingLevel from, GraphDatabaseSettings.TransactionTracingLevel to) {
             callCount++;
         }
     }

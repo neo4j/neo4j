@@ -19,21 +19,6 @@
  */
 package org.neo4j.io.fs.watcher;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.stubbing.Answer;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.WatchKey;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.neo4j.io.fs.watcher.resource.WatchedResource;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.utils.TestDirectory;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -41,79 +26,84 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.WatchKey;
+import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
+import org.neo4j.io.fs.watcher.resource.WatchedResource;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 @Neo4jLayoutExtension
-class DatabaseLayoutWatcherTest
-{
+class DatabaseLayoutWatcherTest {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     private DatabaseLayoutWatcher watcher;
     private FileWatcher fileWatcher;
     private FileWatchEventListener eventListener;
 
     @BeforeEach
-    void setUp() throws IOException
-    {
-        fileWatcher = mock( FileWatcher.class );
-        when( fileWatcher.watch( any() ) ).then( (Answer<WatchedResource>) call -> new CountingWatchedResource( call.getArgument( 0 ) ) );
-        eventListener = new FileWatchEventListener()
-        {
-        };
+    void setUp() throws IOException {
+        fileWatcher = mock(FileWatcher.class);
+        when(fileWatcher.watch(any()))
+                .then((Answer<WatchedResource>) call -> new CountingWatchedResource(call.getArgument(0)));
+        eventListener = new FileWatchEventListener() {};
 
         FileWatchEventListenerFactory listenerFactory = set -> eventListener;
-        watcher = new DatabaseLayoutWatcher( fileWatcher, databaseLayout, listenerFactory );
+        watcher = new DatabaseLayoutWatcher(fileWatcher, databaseLayout, listenerFactory);
     }
 
     @Test
-    void watchDatabaseDirectoryOnStart() throws Throwable
-    {
-        verifyNoInteractions( fileWatcher );
+    void watchDatabaseDirectoryOnStart() throws Throwable {
+        verifyNoInteractions(fileWatcher);
 
         watcher.start();
 
-        verify( fileWatcher ).watch( databaseLayout.databaseDirectory() );
-        verify( fileWatcher ).watch( testDirectory.homePath() );
-        verify( fileWatcher ).addFileWatchEventListener( eventListener );
+        verify(fileWatcher).watch(databaseLayout.databaseDirectory());
+        verify(fileWatcher).watch(testDirectory.homePath());
+        verify(fileWatcher).addFileWatchEventListener(eventListener);
     }
 
     @Test
-    void stopWatchingDatabaseDirectoriesOnStop() throws Throwable
-    {
-        verifyNoInteractions( fileWatcher );
+    void stopWatchingDatabaseDirectoriesOnStop() throws Throwable {
+        verifyNoInteractions(fileWatcher);
 
         watcher.start();
         watcher.stop();
 
-        verify( fileWatcher ).removeFileWatchEventListener( eventListener );
-        assertEquals( 5, CountingWatchedResource.COUNTER.get() );
+        verify(fileWatcher).removeFileWatchEventListener(eventListener);
+        assertEquals(5, CountingWatchedResource.COUNTER.get());
     }
 
-    private static class CountingWatchedResource implements WatchedResource
-    {
+    private static class CountingWatchedResource implements WatchedResource {
         private static final AtomicLong COUNTER = new AtomicLong();
         private final Path file;
 
-        CountingWatchedResource( Path path )
-        {
+        CountingWatchedResource(Path path) {
             this.file = path;
         }
 
         @Override
-        public Path getWatchedFile()
-        {
+        public Path getWatchedFile() {
             return file;
         }
 
         @Override
-        public WatchKey getWatchKey()
-        {
+        public WatchKey getWatchKey() {
             return null;
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             COUNTER.incrementAndGet();
         }
     }

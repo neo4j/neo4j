@@ -21,26 +21,22 @@ package org.neo4j.bolt.runtime.statemachine.impl;
 
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 
-public class ExplicitTxStatementMetadata implements StatementMetadata
-{
+public class ExplicitTxStatementMetadata implements StatementMetadata {
     private final String[] fieldNames;
     private final int statementId;
 
-    public ExplicitTxStatementMetadata( String[] fieldNames, int statementId )
-    {
+    public ExplicitTxStatementMetadata(String[] fieldNames, int statementId) {
         this.fieldNames = fieldNames;
         this.statementId = statementId;
     }
 
     @Override
-    public String[] fieldNames()
-    {
+    public String[] fieldNames() {
         return fieldNames;
     }
 
     @Override
-    public int queryId()
-    {
+    public int queryId() {
         return statementId;
     }
 }

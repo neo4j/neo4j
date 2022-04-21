@@ -19,85 +19,71 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
+import java.io.IOException;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
-public class PageCacheByteArrayConcurrencyTest extends PageCacheNumberArrayConcurrencyTest
-{
+public class PageCacheByteArrayConcurrencyTest extends PageCacheNumberArrayConcurrencyTest {
     @Override
-    protected Runnable wholeFileRacer( NumberArray array, int contestant )
-    {
-        return new WholeFileRacer( (ByteArray) array );
+    protected Runnable wholeFileRacer(NumberArray array, int contestant) {
+        return new WholeFileRacer((ByteArray) array);
     }
 
     @Override
-    protected Runnable fileRangeRacer( NumberArray array, int contestant )
-    {
-        return new FileRangeRacer( (ByteArray) array, contestant );
+    protected Runnable fileRangeRacer(NumberArray array, int contestant) {
+        return new FileRangeRacer((ByteArray) array, contestant);
     }
 
     @Override
-    protected ByteArray getNumberArray( PagedFile file ) throws IOException
-    {
-        return new PageCacheByteArray( file, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), COUNT, new byte[]{-1, -1, -1, -1}, 0 );
+    protected ByteArray getNumberArray(PagedFile file) throws IOException {
+        return new PageCacheByteArray(
+                file, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), COUNT, new byte[] {-1, -1, -1, -1}, 0);
     }
 
-    private static class WholeFileRacer implements Runnable
-    {
+    private static class WholeFileRacer implements Runnable {
         private final ByteArray array;
 
-        WholeFileRacer( ByteArray array )
-        {
+        WholeFileRacer(ByteArray array) {
             this.array = array;
         }
 
         @Override
-        public void run()
-        {
-            for ( int o = 0; o < LAPS; o++ )
-            {
-                for ( int i = 0; i < COUNT; i++ )
-                {
+        public void run() {
+            for (int o = 0; o < LAPS; o++) {
+                for (int i = 0; i < COUNT; i++) {
                     byte[] value = {1, 2, 3, 4};
-                    array.set( i, value );
+                    array.set(i, value);
                     byte[] actual = new byte[4];
-                    array.get( i, actual );
-                    assertArrayEquals( value, actual );
+                    array.get(i, actual);
+                    assertArrayEquals(value, actual);
                 }
             }
         }
     }
 
-    private class FileRangeRacer implements Runnable
-    {
+    private class FileRangeRacer implements Runnable {
         private final ByteArray array;
         private final int contestant;
 
-        FileRangeRacer( ByteArray array, int contestant )
-        {
+        FileRangeRacer(ByteArray array, int contestant) {
             this.array = array;
             this.contestant = contestant;
         }
 
         @Override
-        public void run()
-        {
-            for ( int o = 0; o < LAPS; o++ )
-            {
-                for ( int i = contestant; i < COUNT; i += CONTESTANTS )
-                {
+        public void run() {
+            for (int o = 0; o < LAPS; o++) {
+                for (int i = contestant; i < COUNT; i += CONTESTANTS) {
                     byte[] value = new byte[4];
                     byte[] actual = new byte[4];
-                    random.nextBytes( value );
-                    array.set( i, value );
-                    array.get( i, actual );
-                    assertArrayEquals( value, actual );
+                    random.nextBytes(value);
+                    array.set(i, value);
+                    array.get(i, actual);
+                    assertArrayEquals(value, actual);
                 }
             }
         }

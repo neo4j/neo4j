@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.utils;
 
+import static java.time.ZoneOffset.UTC;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -26,10 +28,7 @@ import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-
 import org.neo4j.values.storable.ValueWriter;
-
-import static java.time.ZoneOffset.UTC;
 
 /**
  * A {@link ValueWriter} that defines format for all temporal types, except duration.
@@ -40,52 +39,43 @@ import static java.time.ZoneOffset.UTC;
  *
  * @param <E> the error type.
  */
-public abstract class TemporalValueWriterAdapter<E extends Exception> extends ValueWriter.Adapter<E>
-{
+public abstract class TemporalValueWriterAdapter<E extends Exception> extends ValueWriter.Adapter<E> {
     @Override
-    public final void writeDate( LocalDate localDate ) throws E
-    {
-        writeDate( localDate.toEpochDay() );
+    public final void writeDate(LocalDate localDate) throws E {
+        writeDate(localDate.toEpochDay());
     }
 
     @Override
-    public final void writeLocalTime( LocalTime localTime ) throws E
-    {
-        writeLocalTime( localTime.toNanoOfDay() );
+    public final void writeLocalTime(LocalTime localTime) throws E {
+        writeLocalTime(localTime.toNanoOfDay());
     }
 
     @Override
-    public final void writeTime( OffsetTime offsetTime ) throws E
-    {
-        long nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC( offsetTime );
+    public final void writeTime(OffsetTime offsetTime) throws E {
+        long nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC(offsetTime);
         int offsetSeconds = offsetTime.getOffset().getTotalSeconds();
-        writeTime( nanosOfDayUTC, offsetSeconds );
+        writeTime(nanosOfDayUTC, offsetSeconds);
     }
 
     @Override
-    public final void writeLocalDateTime( LocalDateTime localDateTime ) throws E
-    {
-        long epochSecond = localDateTime.toEpochSecond( UTC );
+    public final void writeLocalDateTime(LocalDateTime localDateTime) throws E {
+        long epochSecond = localDateTime.toEpochSecond(UTC);
         int nano = localDateTime.getNano();
-        writeLocalDateTime( epochSecond, nano );
+        writeLocalDateTime(epochSecond, nano);
     }
 
     @Override
-    public final void writeDateTime( ZonedDateTime zonedDateTime ) throws E
-    {
+    public final void writeDateTime(ZonedDateTime zonedDateTime) throws E {
         long epochSecondUTC = zonedDateTime.toEpochSecond();
         int nano = zonedDateTime.getNano();
 
         ZoneId zone = zonedDateTime.getZone();
-        if ( zone instanceof ZoneOffset )
-        {
+        if (zone instanceof ZoneOffset) {
             int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
-            writeDateTime( epochSecondUTC, nano, offsetSeconds );
-        }
-        else
-        {
+            writeDateTime(epochSecondUTC, nano, offsetSeconds);
+        } else {
             String zoneId = zone.getId();
-            writeDateTime( epochSecondUTC, nano, zoneId );
+            writeDateTime(epochSecondUTC, nano, zoneId);
         }
     }
 
@@ -94,18 +84,14 @@ public abstract class TemporalValueWriterAdapter<E extends Exception> extends Va
      *
      * @param epochDay the epoch day.
      */
-    protected void writeDate( long epochDay ) throws E
-    {
-    }
+    protected void writeDate(long epochDay) throws E {}
 
     /**
      * Write local time value obtained from {@link LocalTime} in {@link #writeLocalTime(LocalTime)}.
      *
      * @param nanoOfDay the nanosecond of the day.
      */
-    protected void writeLocalTime( long nanoOfDay ) throws E
-    {
-    }
+    protected void writeLocalTime(long nanoOfDay) throws E {}
 
     /**
      * Write time value obtained from {@link OffsetTime} in {@link #writeTime(OffsetTime)}.
@@ -113,9 +99,7 @@ public abstract class TemporalValueWriterAdapter<E extends Exception> extends Va
      * @param nanosOfDayUTC nanoseconds of day in UTC. will be between -18h and +42h
      * @param offsetSeconds time zone offset in seconds
      */
-    protected void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E
-    {
-    }
+    protected void writeTime(long nanosOfDayUTC, int offsetSeconds) throws E {}
 
     /**
      * Write local date-time value obtained from {@link LocalDateTime} in {@link #writeLocalDateTime(LocalDateTime)}.
@@ -123,9 +107,7 @@ public abstract class TemporalValueWriterAdapter<E extends Exception> extends Va
      * @param epochSecond the epoch second in UTC.
      * @param nano the nanosecond.
      */
-    protected void writeLocalDateTime( long epochSecond, int nano ) throws E
-    {
-    }
+    protected void writeLocalDateTime(long epochSecond, int nano) throws E {}
 
     /**
      * Write zoned date-time value obtained from {@link ZonedDateTime} in {@link #writeDateTime(ZonedDateTime)}.
@@ -134,9 +116,7 @@ public abstract class TemporalValueWriterAdapter<E extends Exception> extends Va
      * @param nano the nanosecond.
      * @param offsetSeconds the offset in seconds.
      */
-    protected void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws E
-    {
-    }
+    protected void writeDateTime(long epochSecondUTC, int nano, int offsetSeconds) throws E {}
 
     /**
      * Write zoned date-time value obtained from {@link ZonedDateTime} in {@link #writeDateTime(ZonedDateTime)}.
@@ -145,7 +125,5 @@ public abstract class TemporalValueWriterAdapter<E extends Exception> extends Va
      * @param nano the nanosecond.
      * @param zoneId the timezone id.
      */
-    protected void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws E
-    {
-    }
+    protected void writeDateTime(long epochSecondUTC, int nano, String zoneId) throws E {}
 }

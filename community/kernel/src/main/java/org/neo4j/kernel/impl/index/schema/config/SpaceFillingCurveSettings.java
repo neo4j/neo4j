@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema.config;
 
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D;
@@ -50,8 +49,7 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
  * </dl>
  * </p>
  */
-public class SpaceFillingCurveSettings
-{
+public class SpaceFillingCurveSettings {
     /**
      * Number of bits to use for the space filling curve value in 1D.
      * This number affects the physical structure of indexed spatial values
@@ -60,12 +58,12 @@ public class SpaceFillingCurveSettings
      * 2D and 3D mapping.
      */
     private static final int NBR_OF_BITS = 60;
+
     private final int dimensions;
     private final int maxLevels;
     private final Envelope extents;
 
-    public SpaceFillingCurveSettings( int dimensions, Envelope extents )
-    {
+    public SpaceFillingCurveSettings(int dimensions, Envelope extents) {
         this.dimensions = dimensions;
         this.extents = extents;
         this.maxLevels = NBR_OF_BITS / dimensions;
@@ -74,8 +72,7 @@ public class SpaceFillingCurveSettings
     /**
      * @return The number of dimensions (2D or 3D)
      */
-    public int getDimensions()
-    {
+    public int getDimensions() {
         return dimensions;
     }
 
@@ -89,8 +86,7 @@ public class SpaceFillingCurveSettings
      *
      * @return the extents of the 2D (or 3D) region that is covered by the space filling curve.
      */
-    public Envelope indexExtents()
-    {
+    public Envelope indexExtents() {
         return extents;
     }
 
@@ -99,47 +95,40 @@ public class SpaceFillingCurveSettings
      *
      * @return a configured instance of SpaceFillingCurve
      */
-    public SpaceFillingCurve curve()
-    {
-        if ( dimensions == 2 )
-        {
-            return new HilbertSpaceFillingCurve2D( extents, maxLevels );
-        }
-        else if ( dimensions == 3 )
-        {
-            return new HilbertSpaceFillingCurve3D( extents, maxLevels );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + dimensions + "D" );
+    public SpaceFillingCurve curve() {
+        if (dimensions == 2) {
+            return new HilbertSpaceFillingCurve2D(extents, maxLevels);
+        } else if (dimensions == 3) {
+            return new HilbertSpaceFillingCurve3D(extents, maxLevels);
+        } else {
+            throw new IllegalArgumentException(
+                    "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + dimensions
+                            + "D");
         }
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         // dimension is also represented in the extents and so not explicitly included here
         return 31 * extents.hashCode() + maxLevels;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         SpaceFillingCurveSettings that = (SpaceFillingCurveSettings) o;
-        return dimensions == that.dimensions && maxLevels == that.maxLevels && Objects.equals( extents, that.extents ); }
+        return dimensions == that.dimensions && maxLevels == that.maxLevels && Objects.equals(extents, that.extents);
+    }
 
     @Override
-    public String toString()
-    {
-        return String.format( "Space filling curves settings: dimensions=%d, maxLevels=%d, min=%s, max=%s", dimensions, maxLevels,
-                Arrays.toString( extents.getMin() ), Arrays.toString( extents.getMax() ) );
+    public String toString() {
+        return String.format(
+                "Space filling curves settings: dimensions=%d, maxLevels=%d, min=%s, max=%s",
+                dimensions, maxLevels, Arrays.toString(extents.getMin()), Arrays.toString(extents.getMax()));
     }
 }

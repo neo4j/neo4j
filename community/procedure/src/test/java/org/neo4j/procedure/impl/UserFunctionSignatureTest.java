@@ -19,38 +19,38 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.kernel.api.procs.FieldSignature;
-import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
-import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 
-class UserFunctionSignatureTest
-{
-    private final UserFunctionSignature signature =
-            functionSignature( "asd" ).in( "in", Neo4jTypes.NTAny ).out( Neo4jTypes.NTAny ).build();
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+
+class UserFunctionSignatureTest {
+    private final UserFunctionSignature signature = functionSignature("asd")
+            .in("in", Neo4jTypes.NTAny)
+            .out(Neo4jTypes.NTAny)
+            .build();
 
     @Test
-    void inputSignatureShouldNotBeModifiable()
-    {
-        assertThrows( UnsupportedOperationException.class, () -> signature.inputSignature().add( FieldSignature.inputField( "in2", Neo4jTypes.NTAny ) ) );
+    void inputSignatureShouldNotBeModifiable() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> signature.inputSignature().add(FieldSignature.inputField("in2", Neo4jTypes.NTAny)));
     }
 
     @Test
-    void toStringShouldMatchCypherSyntax()
-    {
+    void toStringShouldMatchCypherSyntax() {
         // When
-        String toStr = functionSignature( "org", "myProcedure" )
-                .in( "in", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
-                .out( Neo4jTypes.NTNumber )
+        String toStr = functionSignature("org", "myProcedure")
+                .in("in", Neo4jTypes.NTList(Neo4jTypes.NTString))
+                .out(Neo4jTypes.NTNumber)
                 .build()
                 .toString();
 
         // Then
-        assertEquals( "org.myProcedure(in :: LIST? OF STRING?) :: (NUMBER?)", toStr );
+        assertEquals("org.myProcedure(in :: LIST? OF STRING?) :: (NUMBER?)", toStr);
     }
 }

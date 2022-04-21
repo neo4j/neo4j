@@ -26,31 +26,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Jolt typically produces results in the format: {@code {<type> : <value>} }.
  * For example: {@code {"Z": 1}} where "Z" indicates the value is an integer.
  */
-public class JoltCodec extends ObjectMapper
-{
+public class JoltCodec extends ObjectMapper {
     /**
      * Construct a codec with strict mode enabled/disabled depending on {@code strictModeEnabled}. When strict
      * mode is enabled, values are <em>always</em> paired with their type whereas when disabled some type information
      * is omitted for brevity.
      * @param strictModeEnabled {@code true} to enable strict mode, {@code false} to disable strict mode.
      */
-    public JoltCodec( boolean strictModeEnabled )
-    {
-        if ( strictModeEnabled )
-        {
-            registerModules( JoltModule.STRICT.getInstance() );
-        }
-        else
-        {
-            registerModules( JoltModule.DEFAULT.getInstance() );
+    public JoltCodec(boolean strictModeEnabled) {
+        if (strictModeEnabled) {
+            registerModules(JoltModule.STRICT.getInstance());
+        } else {
+            registerModules(JoltModule.DEFAULT.getInstance());
         }
     }
 
     /**
      * Constuct a codec with strict mode disabled.
      */
-    public JoltCodec()
-    {
-        registerModules( JoltModule.DEFAULT.getInstance() );
+    public JoltCodec() {
+        registerModules(JoltModule.DEFAULT.getInstance());
     }
 }

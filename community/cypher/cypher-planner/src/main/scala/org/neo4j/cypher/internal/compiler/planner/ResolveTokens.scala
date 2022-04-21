@@ -41,7 +41,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 /**
  * Resolve token ids for labels, property keys and relationship types.
  */
-case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
+
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext): Unit = {
     ast.folder.fold(()) {
       case token: PropertyKeyName =>
@@ -53,7 +55,10 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
     }
   }
 
-  private def resolvePropertyKeyName(name: String)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext): Unit = {
+  private def resolvePropertyKeyName(name: String)(
+    implicit semanticTable: SemanticTable,
+    tokenContext: ReadTokenContext
+  ): Unit = {
     tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId) match {
       case Some(id) =>
         semanticTable.resolvedPropertyKeyNames += name -> id
@@ -61,7 +66,10 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
     }
   }
 
-  private def resolveLabelName(name: String)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext): Unit = {
+  private def resolveLabelName(name: String)(
+    implicit semanticTable: SemanticTable,
+    tokenContext: ReadTokenContext
+  ): Unit = {
     tokenContext.getOptLabelId(name).map(LabelId) match {
       case Some(id) =>
         semanticTable.resolvedLabelNames += name -> id
@@ -69,7 +77,10 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
     }
   }
 
-  private def resolveRelTypeName(name: String)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext): Unit = {
+  private def resolveRelTypeName(name: String)(
+    implicit semanticTable: SemanticTable,
+    tokenContext: ReadTokenContext
+  ): Unit = {
     tokenContext.getOptRelTypeId(name).map(RelTypeId) match {
       case Some(id) =>
         semanticTable.resolvedRelTypeNames += name -> id
@@ -82,9 +93,12 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
   override def visit(value: BaseState, context: PlannerContext): Unit = {
     value.statement() match {
       case q: Query => resolve(q)(value.semanticTable(), context.planContext)
-      case _ =>
+      case _        =>
     }
-    context.planContext.getPropertiesWithExistenceConstraint.foreach(resolvePropertyKeyName(_)(value.semanticTable(), context.planContext))
+    context.planContext.getPropertiesWithExistenceConstraint.foreach(resolvePropertyKeyName(_)(
+      value.semanticTable(),
+      context.planContext
+    ))
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
@@ -96,6 +110,8 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): VisitorPhase[PlannerContext, BaseState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): VisitorPhase[PlannerContext, BaseState] = this
 }

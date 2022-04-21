@@ -19,42 +19,37 @@
  */
 package org.neo4j.kernel.api.impl.index.storage.layout;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class IndexFolderLayoutTest
-{
-    private final Path indexRoot = Path.of( "indexRoot" );
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+
+class IndexFolderLayoutTest {
+    private final Path indexRoot = Path.of("indexRoot");
 
     @Test
-    void testIndexFolder()
-    {
+    void testIndexFolder() {
         IndexFolderLayout indexLayout = createTestIndex();
         Path indexFolder = indexLayout.getIndexFolder();
 
-        assertEquals( indexRoot, indexFolder );
+        assertEquals(indexRoot, indexFolder);
     }
 
     @Test
-    void testIndexPartitionFolder()
-    {
+    void testIndexPartitionFolder() {
         IndexFolderLayout indexLayout = createTestIndex();
 
         Path indexFolder = indexLayout.getIndexFolder();
-        Path partitionFolder1 = indexLayout.getPartitionFolder( 1 );
-        Path partitionFolder3 = indexLayout.getPartitionFolder( 3 );
+        Path partitionFolder1 = indexLayout.getPartitionFolder(1);
+        Path partitionFolder3 = indexLayout.getPartitionFolder(3);
 
-        assertEquals( partitionFolder1.getParent(), partitionFolder3.getParent() );
-        assertEquals( indexFolder, partitionFolder1.getParent() );
-        assertEquals( "1", partitionFolder1.getFileName().toString() );
-        assertEquals( "3", partitionFolder3.getFileName().toString() );
+        assertEquals(partitionFolder1.getParent(), partitionFolder3.getParent());
+        assertEquals(indexFolder, partitionFolder1.getParent());
+        assertEquals("1", partitionFolder1.getFileName().toString());
+        assertEquals("3", partitionFolder3.getFileName().toString());
     }
 
-    private IndexFolderLayout createTestIndex()
-    {
-        return new IndexFolderLayout( indexRoot );
+    private IndexFolderLayout createTestIndex() {
+        return new IndexFolderLayout(indexRoot);
     }
 }

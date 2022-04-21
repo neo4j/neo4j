@@ -24,8 +24,7 @@ package org.neo4j.internal.batchimport.cache;
  *
  * @see NumberArrayFactory
  */
-public interface NumberArray<N extends NumberArray<N>> extends MemoryStatsVisitor.Visitable, AutoCloseable
-{
+public interface NumberArray<N extends NumberArray<N>> extends MemoryStatsVisitor.Visitable, AutoCloseable {
     /**
      * @return length of the array, i.e. the capacity.
      */
@@ -38,7 +37,7 @@ public interface NumberArray<N extends NumberArray<N>> extends MemoryStatsVisito
      *  @param fromIndex where to start swapping from.
      * @param toIndex where to start swapping to.
      */
-    void swap( long fromIndex, long toIndex );
+    void swap(long fromIndex, long toIndex);
 
     /**
      * Sets all values to a default value.
@@ -63,5 +62,5 @@ public interface NumberArray<N extends NumberArray<N>> extends MemoryStatsVisito
      * @param index index into the array which the returned array will contain.
      * @return array sure to hold the given index.
      */
-    N at( long index );
+    N at(long index);
 }

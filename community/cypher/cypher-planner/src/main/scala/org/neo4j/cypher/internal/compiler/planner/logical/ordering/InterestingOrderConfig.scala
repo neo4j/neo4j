@@ -31,8 +31,9 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
  */
 final case class InterestingOrderConfig(
   orderToReport: InterestingOrder,
-  orderToSolve: InterestingOrder,
+  orderToSolve: InterestingOrder
 ) {
+
   /**
    * Add an interesting order candidate to the order to solve. Leave order to report untouched.
    */
@@ -41,6 +42,7 @@ final case class InterestingOrderConfig(
 }
 
 object InterestingOrderConfig {
+
   /**
    * An InterestingOrderConfig with the same order to report and order to solve.
    */
@@ -49,7 +51,12 @@ object InterestingOrderConfig {
 
   val empty: InterestingOrderConfig = InterestingOrderConfig(InterestingOrder.empty)
 
-  def interestingOrderForPart(query: SinglePlannerQuery, isRhs: Boolean, isHorizon: Boolean, disallowSplittingTop: Boolean): InterestingOrderConfig = {
+  def interestingOrderForPart(
+    query: SinglePlannerQuery,
+    isRhs: Boolean,
+    isHorizon: Boolean,
+    disallowSplittingTop: Boolean
+  ): InterestingOrderConfig = {
     val readOnly = if (isHorizon) query.tail.forall(_.readOnly) else query.readOnly
 
     if (isRhs || !readOnly) {

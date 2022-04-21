@@ -19,21 +19,19 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.jctools.queues.MpmcArrayQueue;
-
-import java.util.Queue;
-
-import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.io.ByteUnit;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
-
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.internal.helpers.Numbers.log2floor;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requirePositive;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
+
+import java.util.Queue;
+import org.jctools.queues.MpmcArrayQueue;
+import org.neo4j.internal.unsafe.UnsafeUtil;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Block allocator that caches freed blocks matching following criteria:
@@ -44,127 +42,107 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
  * <p>
  * This class is thread safe.
  */
-public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
-{
+public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator {
     /**
      * Max size of cached blocks, a power of 2
      */
     private final long maxCacheableBlockSize;
+
     private volatile boolean released;
     private final Queue<MemoryBlock>[] caches;
 
     @VisibleForTesting
-    public CachingOffHeapBlockAllocator()
-    {
-        this( ByteUnit.kibiBytes( 512 ), 128 );
+    public CachingOffHeapBlockAllocator() {
+        this(ByteUnit.kibiBytes(512), 128);
     }
 
     /**
      * @param maxCacheableBlockSize Max size of cached blocks including alignment padding, must be a power of 2
      * @param maxCachedBlocks Max number of blocks of each size to store
      */
-    public CachingOffHeapBlockAllocator( long maxCacheableBlockSize, int maxCachedBlocks )
-    {
-        requirePositive( maxCachedBlocks );
-        this.maxCacheableBlockSize = requirePowerOfTwo( maxCacheableBlockSize );
+    public CachingOffHeapBlockAllocator(long maxCacheableBlockSize, int maxCachedBlocks) {
+        requirePositive(maxCachedBlocks);
+        this.maxCacheableBlockSize = requirePowerOfTwo(maxCacheableBlockSize);
 
-        final int numOfCaches = log2floor( maxCacheableBlockSize ) + 1;
+        final int numOfCaches = log2floor(maxCacheableBlockSize) + 1;
         //noinspection unchecked
         this.caches = new Queue[numOfCaches];
-        for ( int i = 0; i < caches.length; i++ )
-        {
-            caches[i] = new MpmcArrayQueue<>( maxCachedBlocks );
+        for (int i = 0; i < caches.length; i++) {
+            caches[i] = new MpmcArrayQueue<>(maxCachedBlocks);
         }
     }
 
     @Override
-    public MemoryBlock allocate( long size, MemoryTracker tracker )
-    {
-        requirePositive( size );
-        checkState( !released, "Allocator is already released" );
-        if ( notCacheable( size ) )
-        {
-            return allocateNew( size, tracker );
+    public MemoryBlock allocate(long size, MemoryTracker tracker) {
+        requirePositive(size);
+        checkState(!released, "Allocator is already released");
+        if (notCacheable(size)) {
+            return allocateNew(size, tracker);
         }
 
-        final Queue<MemoryBlock> cache = caches[log2floor( size )];
+        final Queue<MemoryBlock> cache = caches[log2floor(size)];
         MemoryBlock block = cache.poll();
-        if ( block == null )
-        {
-            block = allocateNew( size, tracker );
-        }
-        else
-        {
-            tracker.allocateNative( block.size );
+        if (block == null) {
+            block = allocateNew(size, tracker);
+        } else {
+            tracker.allocateNative(block.size);
         }
         return block;
     }
 
     @Override
-    public void free( MemoryBlock block, MemoryTracker tracker )
-    {
-        if ( released || notCacheable( block.size ) )
-        {
-            doFree( block, tracker );
+    public void free(MemoryBlock block, MemoryTracker tracker) {
+        if (released || notCacheable(block.size)) {
+            doFree(block, tracker);
             return;
         }
 
-        final Queue<MemoryBlock> cache = caches[log2floor( block.size )];
-        if ( !cache.offer( block ) )
-        {
-            doFree( block, tracker );
+        final Queue<MemoryBlock> cache = caches[log2floor(block.size)];
+        if (!cache.offer(block)) {
+            doFree(block, tracker);
             return;
         }
 
         // it is possible that allocator is released just before we put the block into queue;
         // in such case case we need to free memory right away, since release() will never be called again
-        if ( released && cache.remove( block ) )
-        {
-            doFree( block, tracker );
+        if (released && cache.remove(block)) {
+            doFree(block, tracker);
             return;
         }
 
-        tracker.releaseNative( block.size );
+        tracker.releaseNative(block.size);
     }
 
     @Override
-    public void release()
-    {
+    public void release() {
         released = true;
-        for ( Queue<MemoryBlock> cache : caches )
-        {
+        for (Queue<MemoryBlock> cache : caches) {
             MemoryBlock block;
-            while ( (block = cache.poll()) != null )
-            {
-                UnsafeUtil.free( block.addr, block.size, INSTANCE );
+            while ((block = cache.poll()) != null) {
+                UnsafeUtil.free(block.addr, block.size, INSTANCE);
             }
         }
     }
 
     @VisibleForTesting
-    static void doFree( MemoryBlock block, MemoryTracker tracker )
-    {
-        UnsafeUtil.free( block.addr, block.size, tracker );
+    static void doFree(MemoryBlock block, MemoryTracker tracker) {
+        UnsafeUtil.free(block.addr, block.size, tracker);
     }
 
     @VisibleForTesting
-    static MemoryBlock allocateNew( long size, MemoryTracker tracker )
-    {
-        final long addr = UnsafeUtil.allocateMemory( size, tracker );
-        return new MemoryBlock( addr, size );
+    static MemoryBlock allocateNew(long size, MemoryTracker tracker) {
+        final long addr = UnsafeUtil.allocateMemory(size, tracker);
+        return new MemoryBlock(addr, size);
     }
 
-    private boolean notCacheable( long size )
-    {
-        return !isPowerOfTwo( size ) || size > maxCacheableBlockSize;
+    private boolean notCacheable(long size) {
+        return !isPowerOfTwo(size) || size > maxCacheableBlockSize;
     }
 
     @VisibleForTesting
-    long numberOfCachedBlocks()
-    {
+    long numberOfCachedBlocks() {
         long num = 0;
-        for ( Queue<MemoryBlock> cache : caches )
-        {
+        for (Queue<MemoryBlock> cache : caches) {
             num += cache.size();
         }
         return num;

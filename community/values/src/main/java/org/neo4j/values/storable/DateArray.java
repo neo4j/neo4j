@@ -19,104 +19,89 @@
  */
 package org.neo4j.values.storable;
 
-import java.time.LocalDate;
-import java.util.Arrays;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static org.neo4j.memory.HeapEstimator.LOCAL_DATE_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 
-public final class DateArray extends TemporalArray<LocalDate>
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( DateArray.class );
+import java.time.LocalDate;
+import java.util.Arrays;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public final class DateArray extends TemporalArray<LocalDate> {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(DateArray.class);
 
     private final LocalDate[] value;
 
-    DateArray( LocalDate[] value )
-    {
+    DateArray(LocalDate[] value) {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    protected LocalDate[] value()
-    {
+    protected LocalDate[] value() {
         return value;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapDateArray( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapDateArray(this);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+    public boolean equals(Value other) {
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( LocalDate[] x )
-    {
-        return Arrays.equals( value, x );
+    public boolean equals(LocalDate[] x) {
+        return Arrays.equals(value, x);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writeTo( writer, ValueWriter.ArrayType.DATE, value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writeTo(writer, ValueWriter.ArrayType.DATE, value);
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.DATE_ARRAY;
     }
 
     @Override
-    protected int unsafeCompareTo( Value otherValue )
-    {
-        return compareToNonPrimitiveArray( (DateArray) otherValue );
+    protected int unsafeCompareTo(Value otherValue) {
+        return compareToNonPrimitiveArray((DateArray) otherValue);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "DateArray";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOfObjectArray( LOCAL_DATE_SIZE, value.length );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOfObjectArray(LOCAL_DATE_SIZE, value.length);
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof DateValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        LocalDate[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        LocalDate[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = ((DateValue) added).temporal();
-        return new DateArray( newArray );
+        return new DateArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         LocalDate[] newArray = new LocalDate[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
+        System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((DateValue) prepended).temporal();
-        return new DateArray( newArray );
+        return new DateArray(newArray);
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -33,33 +32,32 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.values.AnyValue;
 
-public interface Procedures
-{
+public interface Procedures {
     /**
      * Get a handle to the given function
      * @param name the name of the function
      * @return A handle to the function or null if no function was found.
      */
-    UserFunctionHandle functionGet( QualifiedName name );
+    UserFunctionHandle functionGet(QualifiedName name);
 
     /**
      * Fetch all non-aggregating functions
      * @return all non-aggregating functions
      */
-    Stream<UserFunctionSignature> functionGetAll( );
+    Stream<UserFunctionSignature> functionGetAll();
 
     /**
      * Get a handle to the given aggregation function
      * @param name the name of the function
      * @return A handle to the function or null if no function was found.
      */
-    UserFunctionHandle aggregationFunctionGet( QualifiedName name );
+    UserFunctionHandle aggregationFunctionGet(QualifiedName name);
 
     /**
      * Fetch all aggregating functions
      * @return all aggregating functions
      */
-    Stream<UserFunctionSignature> aggregationFunctionGetAll( );
+    Stream<UserFunctionSignature> aggregationFunctionGetAll();
 
     /**
      * Fetch a procedure handle
@@ -67,14 +65,14 @@ public interface Procedures
      * @return a procedure handle
      * @throws ProcedureException if there is no procedure was found for the name.
      */
-    ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException;
+    ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException;
 
     /**
      * Fetch all procedures
      * @return all procedures
      * @throws ProcedureException
      */
-    Set<ProcedureSignature> proceduresGetAll( ) throws ProcedureException;
+    Set<ProcedureSignature> proceduresGetAll() throws ProcedureException;
 
     /**
      * Invoke a read-only procedure by id.
@@ -84,8 +82,8 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallRead( int id, AnyValue[] arguments, ProcedureCallContext context )
-            throws ProcedureException;
+    RawIterator<AnyValue[], ProcedureException> procedureCallRead(
+            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /**
      * Invoke a read/write procedure by id.
@@ -95,8 +93,8 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallWrite( int id, AnyValue[] arguments, ProcedureCallContext context )
-            throws ProcedureException;
+    RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /**
      * Invoke a schema write procedure by id.
@@ -106,8 +104,8 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallSchema( int id, AnyValue[] arguments, ProcedureCallContext context )
-            throws ProcedureException;
+    RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /**
      * Invoke a dbms procedure by id.
@@ -117,22 +115,22 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallDbms( int id, AnyValue[] arguments, ProcedureCallContext context )
-            throws ProcedureException;
+    RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
+            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /** Invoke a read-only function by id
      * @param id the id of the function.
      * @param arguments the function arguments.
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException;
+    AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException;
 
     /** Invoke a read-only built in function by id
      * @param id the id of the function.
      * @param arguments the function arguments.
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    AnyValue builtInFunctionCall( int id, AnyValue[] arguments ) throws ProcedureException;
+    AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException;
 
     /**
      * Create a read-only aggregation function by id
@@ -140,7 +138,7 @@ public interface Procedures
      * @return the aggregation function
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    UserAggregator aggregationFunction( int id ) throws ProcedureException;
+    UserAggregator aggregationFunction(int id) throws ProcedureException;
 
     /**
      * Create a read-only built-in aggregation function by id
@@ -148,5 +146,5 @@ public interface Procedures
      * @return the aggregation function
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    UserAggregator builtInAggregationFunction( int id ) throws ProcedureException;
+    UserAggregator builtInAggregationFunction(int id) throws ProcedureException;
 }

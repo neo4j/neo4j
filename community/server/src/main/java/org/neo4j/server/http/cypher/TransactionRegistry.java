@@ -24,17 +24,16 @@ package org.neo4j.server.http.cypher;
  * transaction contexts back, as well as timing out and closing transaction contexts that have been
  * left unused.
  */
-public interface TransactionRegistry
-{
-    long begin( TransactionHandle handle );
+public interface TransactionRegistry {
+    long begin(TransactionHandle handle);
 
-    long release( long id, TransactionHandle transactionHandle );
+    long release(long id, TransactionHandle transactionHandle);
 
-    TransactionHandle acquire( long id ) throws TransactionLifecycleException;
+    TransactionHandle acquire(long id) throws TransactionLifecycleException;
 
-    void forget( long id );
+    void forget(long id);
 
-    TransactionHandle terminate( long id ) throws TransactionLifecycleException;
+    TransactionHandle terminate(long id) throws TransactionLifecycleException;
 
     void rollbackAllSuspendedTransactions();
 }

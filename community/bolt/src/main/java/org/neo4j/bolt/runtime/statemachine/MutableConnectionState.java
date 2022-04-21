@@ -20,7 +20,6 @@
 package org.neo4j.bolt.runtime.statemachine;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
@@ -32,8 +31,7 @@ import org.neo4j.values.AnyValue;
 /**
  * Keeps state of the connection and bolt state machine.
  */
-public class MutableConnectionState implements BoltResponseHandler
-{
+public class MutableConnectionState implements BoltResponseHandler {
     private Neo4jError pendingError;
     private boolean pendingIgnore;
     private volatile boolean terminated;
@@ -59,174 +57,135 @@ public class MutableConnectionState implements BoltResponseHandler
     private Status pendingTerminationNotice;
 
     @Override
-    public boolean onPullRecords( BoltResult result, long size ) throws Throwable
-    {
-        if ( responseHandler != null )
-        {
-            return responseHandler.onPullRecords( result, size );
-        }
-        else
-        {
+    public boolean onPullRecords(BoltResult result, long size) throws Throwable {
+        if (responseHandler != null) {
+            return responseHandler.onPullRecords(result, size);
+        } else {
             return false;
         }
     }
 
     @Override
-    public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
-    {
-        if ( responseHandler != null )
-        {
-            return responseHandler.onDiscardRecords( result, size );
-        }
-        else
-        {
+    public boolean onDiscardRecords(BoltResult result, long size) throws Throwable {
+        if (responseHandler != null) {
+            return responseHandler.onDiscardRecords(result, size);
+        } else {
             return false;
         }
     }
 
     @Override
-    public void onMetadata( String key, AnyValue value )
-    {
-        if ( responseHandler != null )
-        {
-            responseHandler.onMetadata( key, value );
+    public void onMetadata(String key, AnyValue value) {
+        if (responseHandler != null) {
+            responseHandler.onMetadata(key, value);
         }
     }
 
     @Override
-    public void markIgnored()
-    {
-        if ( responseHandler != null )
-        {
+    public void markIgnored() {
+        if (responseHandler != null) {
             responseHandler.markIgnored();
-        }
-        else
-        {
+        } else {
             pendingIgnore = true;
         }
     }
 
     @Override
-    public void markFailed( Neo4jError error )
-    {
-        if ( responseHandler != null )
-        {
-            responseHandler.markFailed( error );
-        }
-        else
-        {
+    public void markFailed(Neo4jError error) {
+        if (responseHandler != null) {
+            responseHandler.markFailed(error);
+        } else {
             pendingError = error;
         }
     }
 
     @Override
-    public void onFinish()
-    {
-        if ( responseHandler != null )
-        {
+    public void onFinish() {
+        if (responseHandler != null) {
             responseHandler.onFinish();
         }
     }
 
-    public Neo4jError getPendingError()
-    {
+    public Neo4jError getPendingError() {
         return pendingError;
     }
 
-    public boolean hasPendingIgnore()
-    {
+    public boolean hasPendingIgnore() {
         return pendingIgnore;
     }
 
-    public void resetPendingFailedAndIgnored()
-    {
+    public void resetPendingFailedAndIgnored() {
         pendingError = null;
         pendingIgnore = false;
     }
 
-    public boolean canProcessMessage()
-    {
+    public boolean canProcessMessage() {
         return !closed && pendingError == null && !pendingIgnore;
     }
 
-    public BoltResponseHandler getResponseHandler()
-    {
+    public BoltResponseHandler getResponseHandler() {
         return responseHandler;
     }
 
-    public void setResponseHandler( BoltResponseHandler responseHandler )
-    {
+    public void setResponseHandler(BoltResponseHandler responseHandler) {
         this.responseHandler = responseHandler;
     }
 
-    public void setPendingTerminationNotice( Status terminationNotice )
-    {
+    public void setPendingTerminationNotice(Status terminationNotice) {
         this.pendingTerminationNotice = terminationNotice;
     }
 
-    public boolean isInterrupted()
-    {
+    public boolean isInterrupted() {
         return interruptCounter.get() > 0;
     }
 
-    public int incrementInterruptCounter()
-    {
+    public int incrementInterruptCounter() {
         return interruptCounter.incrementAndGet();
     }
 
-    public int decrementInterruptCounter()
-    {
+    public int decrementInterruptCounter() {
         return interruptCounter.decrementAndGet();
     }
 
-    public boolean isTerminated()
-    {
+    public boolean isTerminated() {
         return terminated;
     }
 
-    public void markTerminated()
-    {
+    public void markTerminated() {
         terminated = true;
     }
 
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return closed;
     }
 
-    public void markClosed()
-    {
+    public void markClosed() {
         closed = true;
     }
 
-    public void ensureNoPendingTerminationNotice()
-    {
-        if ( pendingTerminationNotice != null )
-        {
+    public void ensureNoPendingTerminationNotice() {
+        if (pendingTerminationNotice != null) {
             Status status = pendingTerminationNotice;
 
             pendingTerminationNotice = null;
 
-            throw new TransactionTerminatedException( status );
+            throw new TransactionTerminatedException(status);
         }
     }
 
-    public void setCurrentTransactionId( String transactionId ) throws BoltProtocolBreachFatality
-    {
-        if ( this.currentTransactionId != null )
-        {
-            throw new BoltProtocolBreachFatality( "Cannot assign new transaction id without clearing the old id: " + currentTransactionId );
+    public void setCurrentTransactionId(String transactionId) throws BoltProtocolBreachFatality {
+        if (this.currentTransactionId != null) {
+            throw new BoltProtocolBreachFatality(
+                    "Cannot assign new transaction id without clearing the old id: " + currentTransactionId);
         }
         this.currentTransactionId = transactionId;
     }
 
-    public void clearCurrentTransactionId()
-    {
+    public void clearCurrentTransactionId() {
         this.currentTransactionId = null;
     }
 
-    public String getCurrentTransactionId()
-    {
+    public String getCurrentTransactionId() {
         return currentTransactionId;
     }
 }

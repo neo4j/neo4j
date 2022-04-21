@@ -20,7 +20,6 @@
 package org.neo4j.graphdb;
 
 import java.util.Map;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -77,8 +76,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * Doing so will lead to undefined behavior.
  */
 @PublicApi
-public interface Transaction extends AutoCloseable
-{
+public interface Transaction extends AutoCloseable {
 
     /**
      * Creates a new node.
@@ -93,7 +91,7 @@ public interface Transaction extends AutoCloseable
      * @param labels {@link Label labels} to add to the created node.
      * @return the created node.
      */
-    Node createNode( Label... labels );
+    Node createNode(Label... labels);
 
     /**
      * Looks up a node by id. Please note: Neo4j reuses its internal ids when
@@ -105,8 +103,8 @@ public interface Transaction extends AutoCloseable
      * @throws NotFoundException if not found
      * @deprecated in favor of {@link #getNodeByElementId(String)}.
      */
-    @Deprecated( since = "5.0", forRemoval = true )
-    Node getNodeById( long id );
+    @Deprecated(since = "5.0", forRemoval = true)
+    Node getNodeById(long id);
 
     /**
      * Looks up a node by element id. Please note: Neo4j reuses its internal ids when
@@ -117,7 +115,7 @@ public interface Transaction extends AutoCloseable
      * @return the node with id <code>id</code> if found
      * @throws NotFoundException if not found
      */
-    Node getNodeByElementId( String elementId );
+    Node getNodeByElementId(String elementId);
 
     /**
      * Looks up a relationship by id. Please note: Neo4j reuses its internal ids
@@ -129,8 +127,8 @@ public interface Transaction extends AutoCloseable
      * @throws NotFoundException if not found
      * @deprecated in favor of {@link #getRelationshipByElementId(String)}.
      */
-    @Deprecated( since = "5.0", forRemoval = true )
-    Relationship getRelationshipById( long id );
+    @Deprecated(since = "5.0", forRemoval = true)
+    Relationship getRelationshipById(long id);
 
     /**
      * Looks up a relationship by element id. Please note: Neo4j reuses its internal ids
@@ -141,7 +139,7 @@ public interface Transaction extends AutoCloseable
      * @return the relationship with id <code>id</code> if found
      * @throws NotFoundException if not found
      */
-    Relationship getRelationshipByElementId( String elementId );
+    Relationship getRelationshipByElementId(String elementId);
 
     /**
      * Factory method for bidirectional traversal descriptions.
@@ -170,7 +168,7 @@ public interface Transaction extends AutoCloseable
      * @return A {@link org.neo4j.graphdb.Result} that contains the result set.
      * @throws QueryExecutionException If the Query contains errors
      */
-    Result execute( String query ) throws QueryExecutionException;
+    Result execute(String query) throws QueryExecutionException;
 
     /**
      * Executes a query and returns an iterable that contains the result set.
@@ -180,7 +178,7 @@ public interface Transaction extends AutoCloseable
      * @return A {@link org.neo4j.graphdb.Result} that contains the result set
      * @throws QueryExecutionException If the Query contains errors
      */
-    Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException;
+    Result execute(String query, Map<String, Object> parameters) throws QueryExecutionException;
 
     /**
      * Returns all labels currently in the underlying store. Labels are added to the store the first time
@@ -269,7 +267,7 @@ public interface Transaction extends AutoCloseable
      * @param searchMode search mode to use for finding matches
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode );
+    ResourceIterator<Node> findNodes(Label label, String key, String template, StringSearchMode searchMode);
 
     /**
      * Returns all nodes having the label, and the wanted property values.
@@ -293,7 +291,7 @@ public interface Transaction extends AutoCloseable
      * @param propertyValues required property key-value combinations
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label, Map<String, Object> propertyValues );
+    ResourceIterator<Node> findNodes(Label label, Map<String, Object> propertyValues);
 
     /**
      * Returns all nodes having the label, and the wanted property values.
@@ -322,7 +320,8 @@ public interface Transaction extends AutoCloseable
      * @param value3 required property value of key3
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2, String key3, Object value3 );
+    ResourceIterator<Node> findNodes(
+            Label label, String key1, Object value1, String key2, Object value2, String key3, Object value3);
 
     /**
      * Returns all nodes having the label, and the wanted property values.
@@ -349,7 +348,7 @@ public interface Transaction extends AutoCloseable
      * @param value2 required property value of key2
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 );
+    ResourceIterator<Node> findNodes(Label label, String key1, Object value1, String key2, Object value2);
 
     /**
      * Equivalent to {@link #findNodes(Label, String, Object)}, however it must find no more than one
@@ -361,7 +360,7 @@ public interface Transaction extends AutoCloseable
      * @return the matching node or <code>null</code> if none could be found
      * @throws MultipleFoundException if more than one matching {@link Node node} is found
      */
-    Node findNode( Label label, String key, Object value );
+    Node findNode(Label label, String key, Object value);
 
     /**
      * Returns all nodes having the label, and the wanted property value.
@@ -386,7 +385,7 @@ public interface Transaction extends AutoCloseable
      * @param value required property value
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label, String key, Object value );
+    ResourceIterator<Node> findNodes(Label label, String key, Object value);
 
     /**
      * Returns all {@link Node nodes} with a specific {@link Label label}.
@@ -397,7 +396,7 @@ public interface Transaction extends AutoCloseable
      * @param label the {@link Label} to return nodes for.
      * @return an iterator containing all nodes matching the label. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label );
+    ResourceIterator<Node> findNodes(Label label);
 
     /**
      * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and a property value of type String or Character matching the
@@ -428,7 +427,8 @@ public interface Transaction extends AutoCloseable
      * @param searchMode       search mode to use for finding matches
      * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, String template, StringSearchMode searchMode );
+    ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, String key, String template, StringSearchMode searchMode);
 
     /**
      * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property values.
@@ -452,7 +452,8 @@ public interface Transaction extends AutoCloseable
      * @param propertyValues    required property key-value combinations
      * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, Map<String, Object> propertyValues );
+    ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, Map<String, Object> propertyValues);
 
     /**
      * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property values.
@@ -481,8 +482,14 @@ public interface Transaction extends AutoCloseable
      * @param value3            required property value of key3
      * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1,
-                                                      String key2, Object value2, String key3, Object value3 );
+    ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType,
+            String key1,
+            Object value1,
+            String key2,
+            Object value2,
+            String key3,
+            Object value3);
 
     /**
      * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property values.
@@ -509,7 +516,8 @@ public interface Transaction extends AutoCloseable
      * @param value2            required property value of key2
      * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2 );
+    ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, String key1, Object value1, String key2, Object value2);
 
     /**
      * Equivalent to {@link #findRelationships(RelationshipType, String, Object)}, however it must find no more than one {@link Relationship relationship} or it
@@ -521,7 +529,7 @@ public interface Transaction extends AutoCloseable
      * @return the matching relationship or <code>null</code> if none could be found
      * @throws MultipleFoundException if more than one matching {@link Relationship relationship} is found
      */
-    Relationship findRelationship( RelationshipType relationshipType, String key, Object value );
+    Relationship findRelationship(RelationshipType relationshipType, String key, Object value);
 
     /**
      * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property value.
@@ -546,7 +554,7 @@ public interface Transaction extends AutoCloseable
      * @param value            required property value
      * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, Object value );
+    ResourceIterator<Relationship> findRelationships(RelationshipType relationshipType, String key, Object value);
 
     /**
      * Returns all {@link Relationship relationships} of a specific {@link RelationshipType type}.
@@ -558,7 +566,7 @@ public interface Transaction extends AutoCloseable
      * @return an iterator containing all relationships with matching type. See {@link ResourceIterator} for responsibilities.
      * @throws IllegalStateException if relationship index feature not enabled
      */
-    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType );
+    ResourceIterator<Relationship> findRelationships(RelationshipType relationshipType);
 
     /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
@@ -603,7 +611,7 @@ public interface Transaction extends AutoCloseable
      * (with {@link Lock#release()} it's going to be released when the
      * transaction finishes.
      */
-    Lock acquireWriteLock( Entity entity );
+    Lock acquireWriteLock(Entity entity);
 
     /**
      * Acquires a read lock for {@code entity} for this transaction.
@@ -618,7 +626,7 @@ public interface Transaction extends AutoCloseable
      * (with {@link Lock#release()} it's going to be released with the
      * transaction finishes.
      */
-    Lock acquireReadLock( Entity entity );
+    Lock acquireReadLock(Entity entity);
 
     /**
      * Returns the {@link Schema schema manager} where all things related to schema,

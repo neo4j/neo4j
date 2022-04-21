@@ -19,9 +19,19 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.apache.commons.lang3.RandomUtils;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,7 +39,9 @@ import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
-
+import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -50,231 +62,207 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @EphemeralPageCacheExtension
-class AbstractDynamicStoreTest
-{
+class AbstractDynamicStoreTest {
     private static final int BLOCK_SIZE = 60;
 
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private PageCache pageCache;
 
-    private final Path storeFile = Path.of( "store" );
-    private final Path idFile = Path.of( "idStore" );
+    private final Path storeFile = Path.of("store");
+    private final Path idFile = Path.of("idStore");
     private final RecordFormats formats = defaultFormat();
 
     @BeforeEach
-    void before() throws IOException
-    {
-        try ( StoreChannel channel = fs.write( storeFile ) )
-        {
-            ByteBuffer buffer = ByteBuffers.allocate( pageCache.payloadSize(), ByteOrder.BIG_ENDIAN, INSTANCE );
-            while ( buffer.hasRemaining() )
-            {
-                buffer.putInt( BLOCK_SIZE );
+    void before() throws IOException {
+        try (StoreChannel channel = fs.write(storeFile)) {
+            ByteBuffer buffer = ByteBuffers.allocate(pageCache.payloadSize(), ByteOrder.BIG_ENDIAN, INSTANCE);
+            while (buffer.hasRemaining()) {
+                buffer.putInt(BLOCK_SIZE);
             }
             buffer.flip();
-            channel.writeAll( buffer );
+            channel.writeAll(buffer);
         }
     }
 
     @Test
-    void tracePageCacheAccessOnNextRecord()
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnNextRecord" );
-              var store = newTestableDynamicStore() )
-        {
-            assertZeroCursor( cursorContext );
-            prepareDirtyGenerator( store );
+    void tracePageCacheAccessOnNextRecord() {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        try (var cursorContext = contextFactory.create("tracePageCacheAccessOnNextRecord");
+                var store = newTestableDynamicStore()) {
+            assertZeroCursor(cursorContext);
+            prepareDirtyGenerator(store);
 
-            store.getIdGenerator().maintenance( cursorContext );
-            store.nextRecord( cursorContext );
+            store.getIdGenerator().maintenance(cursorContext);
+            store.nextRecord(cursorContext);
 
-            assertOneCursor( cursorContext );
+            assertOneCursor(cursorContext);
         }
     }
 
     @Test
-    void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext()
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        try ( var cursorContext = contextFactory.create( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext" );
-              var store = newTestableDynamicStore() )
-        {
-            assertZeroCursor( cursorContext );
+    void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext() {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        try (var cursorContext =
+                        contextFactory.create("noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext");
+                var store = newTestableDynamicStore()) {
+            assertZeroCursor(cursorContext);
 
-            store.nextRecord( cursorContext );
+            store.nextRecord(cursorContext);
 
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
         }
     }
 
     @Test
-    void tracePageCacheAccessOnRecordsAllocation()
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnRecordsAllocation" );
-              var store = newTestableDynamicStore() )
-        {
-            assertZeroCursor( cursorContext );
-            prepareDirtyGenerator( store );
+    void tracePageCacheAccessOnRecordsAllocation() {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        try (var cursorContext = contextFactory.create("tracePageCacheAccessOnRecordsAllocation");
+                var store = newTestableDynamicStore()) {
+            assertZeroCursor(cursorContext);
+            prepareDirtyGenerator(store);
 
-            store.getIdGenerator().maintenance( cursorContext );
-            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorContext, INSTANCE );
+            store.getIdGenerator().maintenance(cursorContext);
+            store.allocateRecordsFromBytes(new ArrayList<>(), new byte[] {0, 1, 2, 3, 4}, cursorContext, INSTANCE);
 
-            assertOneCursor( cursorContext );
+            assertOneCursor(cursorContext);
         }
     }
 
     @Test
-    void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree()
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        try ( var cursorContext = contextFactory.create( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree" );
-              var store = newTestableDynamicStore() )
-        {
-            assertZeroCursor( cursorContext );
+    void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree() {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        try (var cursorContext = contextFactory.create("noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree");
+                var store = newTestableDynamicStore()) {
+            assertZeroCursor(cursorContext);
 
-            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorContext, INSTANCE );
+            store.allocateRecordsFromBytes(new ArrayList<>(), new byte[] {0, 1, 2, 3, 4}, cursorContext, INSTANCE);
 
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
         }
     }
 
     @Test
-    void dynamicRecordCursorReadsInUseRecords()
-    {
-        try ( AbstractDynamicStore store = newTestableDynamicStore() )
-        {
-            DynamicRecord first = createDynamicRecord( 1, store, 0 );
-            DynamicRecord second = createDynamicRecord( 2, store, 0 );
-            DynamicRecord third = createDynamicRecord( 3, store, 10 );
-            store.setHighId( 3 );
+    void dynamicRecordCursorReadsInUseRecords() {
+        try (AbstractDynamicStore store = newTestableDynamicStore()) {
+            DynamicRecord first = createDynamicRecord(1, store, 0);
+            DynamicRecord second = createDynamicRecord(2, store, 0);
+            DynamicRecord third = createDynamicRecord(3, store, 10);
+            store.setHighId(3);
 
-            first.setNextBlock( second.getId() );
-            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
-            {
-                store.updateRecord( first, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
-                second.setNextBlock( third.getId() );
-                store.updateRecord( second, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
+            first.setNextBlock(second.getId());
+            try (var storeCursor = store.openPageCursorForWriting(0, NULL_CONTEXT)) {
+                store.updateRecord(first, storeCursor, NULL_CONTEXT, StoreCursors.NULL);
+                second.setNextBlock(third.getId());
+                store.updateRecord(second, storeCursor, NULL_CONTEXT, StoreCursors.NULL);
             }
 
-            try ( var storeCursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
-            {
-                Iterator<DynamicRecord> records = store.getRecords( 1, NORMAL, false, storeCursor ).iterator();
-                assertTrue( records.hasNext() );
-                assertEquals( first, records.next() );
-                assertTrue( records.hasNext() );
-                assertEquals( second, records.next() );
-                assertTrue( records.hasNext() );
-                assertEquals( third, records.next() );
-                assertFalse( records.hasNext() );
+            try (var storeCursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
+                Iterator<DynamicRecord> records =
+                        store.getRecords(1, NORMAL, false, storeCursor).iterator();
+                assertTrue(records.hasNext());
+                assertEquals(first, records.next());
+                assertTrue(records.hasNext());
+                assertEquals(second, records.next());
+                assertTrue(records.hasNext());
+                assertEquals(third, records.next());
+                assertFalse(records.hasNext());
             }
         }
     }
 
     @Test
-    void dynamicRecordCursorReadsNotInUseRecords()
-    {
-        try ( AbstractDynamicStore store = newTestableDynamicStore() )
-        {
-            DynamicRecord first = createDynamicRecord( 1, store, 0 );
-            DynamicRecord second = createDynamicRecord( 2, store, 0 );
-            DynamicRecord third = createDynamicRecord( 3, store, 10 );
-            store.setHighId( 3 );
+    void dynamicRecordCursorReadsNotInUseRecords() {
+        try (AbstractDynamicStore store = newTestableDynamicStore()) {
+            DynamicRecord first = createDynamicRecord(1, store, 0);
+            DynamicRecord second = createDynamicRecord(2, store, 0);
+            DynamicRecord third = createDynamicRecord(3, store, 10);
+            store.setHighId(3);
 
-            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
-            {
-                first.setNextBlock( second.getId() );
-                store.updateRecord( first, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
-                second.setNextBlock( third.getId() );
-                store.updateRecord( second, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
-                second.setInUse( false );
-                store.updateRecord( second, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
+            try (var storeCursor = store.openPageCursorForWriting(0, NULL_CONTEXT)) {
+                first.setNextBlock(second.getId());
+                store.updateRecord(first, storeCursor, NULL_CONTEXT, StoreCursors.NULL);
+                second.setNextBlock(third.getId());
+                store.updateRecord(second, storeCursor, NULL_CONTEXT, StoreCursors.NULL);
+                second.setInUse(false);
+                store.updateRecord(second, storeCursor, NULL_CONTEXT, StoreCursors.NULL);
             }
 
-            try ( var storeCursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
-            {
-                Iterator<DynamicRecord> records = store.getRecords( 1, FORCE, false, storeCursor ).iterator();
-                assertTrue( records.hasNext() );
-                assertEquals( first, records.next() );
-                assertTrue( records.hasNext() );
+            try (var storeCursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
+                Iterator<DynamicRecord> records =
+                        store.getRecords(1, FORCE, false, storeCursor).iterator();
+                assertTrue(records.hasNext());
+                assertEquals(first, records.next());
+                assertTrue(records.hasNext());
                 DynamicRecord secondReadRecord = records.next();
-                assertEquals( second, secondReadRecord );
-                assertFalse( secondReadRecord.inUse() );
+                assertEquals(second, secondReadRecord);
+                assertFalse(secondReadRecord.inUse());
                 // because mode == FORCE we can still move through the chain
-                assertTrue( records.hasNext() );
-                assertEquals( third, records.next() );
-                assertFalse( records.hasNext() );
+                assertTrue(records.hasNext());
+                assertEquals(third, records.next());
+                assertFalse(records.hasNext());
             }
         }
     }
 
-    private static void prepareDirtyGenerator( AbstractDynamicStore store )
-    {
+    private static void prepareDirtyGenerator(AbstractDynamicStore store) {
         var idGenerator = store.getIdGenerator();
-        var marker = idGenerator.marker( NULL_CONTEXT );
-        marker.markDeleted( 1L );
-        idGenerator.clearCache( NULL_CONTEXT );
+        var marker = idGenerator.marker(NULL_CONTEXT);
+        marker.markDeleted(1L);
+        idGenerator.clearCache(NULL_CONTEXT);
     }
 
-    private static void assertOneCursor( CursorContext cursorContext )
-    {
-        assertThat( cursorContext.getCursorTracer().hits() ).isOne();
-        assertThat( cursorContext.getCursorTracer().pins() ).isOne();
-        assertThat( cursorContext.getCursorTracer().unpins() ).isOne();
+    private static void assertOneCursor(CursorContext cursorContext) {
+        assertThat(cursorContext.getCursorTracer().hits()).isOne();
+        assertThat(cursorContext.getCursorTracer().pins()).isOne();
+        assertThat(cursorContext.getCursorTracer().unpins()).isOne();
     }
 
-    private static void assertZeroCursor( CursorContext cursorContext )
-    {
-        assertThat( cursorContext.getCursorTracer().hits() ).isZero();
-        assertThat( cursorContext.getCursorTracer().pins() ).isZero();
-        assertThat( cursorContext.getCursorTracer().unpins() ).isZero();
+    private static void assertZeroCursor(CursorContext cursorContext) {
+        assertThat(cursorContext.getCursorTracer().hits()).isZero();
+        assertThat(cursorContext.getCursorTracer().pins()).isZero();
+        assertThat(cursorContext.getCursorTracer().unpins()).isZero();
     }
 
-    private DynamicRecord createDynamicRecord( long id, AbstractDynamicStore store, int dataSize )
-    {
-        DynamicRecord first = new DynamicRecord( id );
-        first.setInUse( true );
-        first.setData( RandomUtils.nextBytes( dataSize == 0 ? BLOCK_SIZE - formats.dynamic().getRecordHeaderSize() : 10 ) );
-        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
-        {
-            store.updateRecord( first, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
+    private DynamicRecord createDynamicRecord(long id, AbstractDynamicStore store, int dataSize) {
+        DynamicRecord first = new DynamicRecord(id);
+        first.setInUse(true);
+        first.setData(RandomUtils.nextBytes(
+                dataSize == 0 ? BLOCK_SIZE - formats.dynamic().getRecordHeaderSize() : 10));
+        try (var storeCursor = store.openPageCursorForWriting(0, NULL_CONTEXT)) {
+            store.updateRecord(first, storeCursor, NULL_CONTEXT, StoreCursors.NULL);
         }
         return first;
     }
 
-    private AbstractDynamicStore newTestableDynamicStore()
-    {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
-        AbstractDynamicStore store = new AbstractDynamicStore( storeFile, idFile, Config.defaults(), RecordIdType.ARRAY_BLOCK,
-                idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
-                formats.dynamic(), formats.storeVersion(), DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME,
-                                                               immutable.of( PageCacheOpenOptions.BIG_ENDIAN ) )
-        {
-            @Override
-            public String getTypeDescriptor()
-            {
-                return "TestDynamicStore";
-            }
-        };
-        store.initialise( true, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+    private AbstractDynamicStore newTestableDynamicStore() {
+        DefaultIdGeneratorFactory idGeneratorFactory =
+                new DefaultIdGeneratorFactory(fs, immediate(), DEFAULT_DATABASE_NAME);
+        AbstractDynamicStore store =
+                new AbstractDynamicStore(
+                        storeFile,
+                        idFile,
+                        Config.defaults(),
+                        RecordIdType.ARRAY_BLOCK,
+                        idGeneratorFactory,
+                        pageCache,
+                        NullLogProvider.getInstance(),
+                        "test",
+                        BLOCK_SIZE,
+                        formats.dynamic(),
+                        formats.storeVersion(),
+                        DatabaseReadOnlyChecker.writable(),
+                        DEFAULT_DATABASE_NAME,
+                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)) {
+                    @Override
+                    public String getTypeDescriptor() {
+                        return "TestDynamicStore";
+                    }
+                };
+        store.initialise(true, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
         return store;
     }
 }

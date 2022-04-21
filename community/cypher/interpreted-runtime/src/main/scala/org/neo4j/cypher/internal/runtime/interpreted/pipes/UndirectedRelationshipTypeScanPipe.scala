@@ -26,8 +26,13 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-case class UndirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ: LazyType, toNode: String, indexOrder: IndexOrder)
-                                             (val id: Id = Id.INVALID_ID) extends Pipe {
+case class UndirectedRelationshipTypeScanPipe(
+  ident: String,
+  fromNode: String,
+  typ: LazyType,
+  toNode: String,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val typeId = typ.getId(state.query)
@@ -38,13 +43,15 @@ case class UndirectedRelationshipTypeScanPipe(ident: String, fromNode: String, t
   }
 }
 
-private class UndirectedIterator(relName: String,
-                                 relToken: Int,
-                                 fromNode: String,
-                                 toNode: String,
-                                 rowFactory: CypherRowFactory,
-                                 state: QueryState,
-                                 indexOrder: IndexOrder) extends ClosingIterator[CypherRow] {
+private class UndirectedIterator(
+  relName: String,
+  relToken: Int,
+  fromNode: String,
+  toNode: String,
+  rowFactory: CypherRowFactory,
+  state: QueryState,
+  indexOrder: IndexOrder
+) extends ClosingIterator[CypherRow] {
 
   private var emitSibling = false
   private var lastRelationship: VirtualRelationshipValue = _

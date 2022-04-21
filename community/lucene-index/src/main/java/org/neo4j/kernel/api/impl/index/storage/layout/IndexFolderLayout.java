@@ -26,24 +26,20 @@ import java.nio.file.Path;
  *
  * @see FolderLayout
  */
-public class IndexFolderLayout implements FolderLayout
-{
+public class IndexFolderLayout implements FolderLayout {
     private final Path indexFolder;
 
-    public IndexFolderLayout( Path rootDirectory )
-    {
+    public IndexFolderLayout(Path rootDirectory) {
         this.indexFolder = rootDirectory;
     }
 
     @Override
-    public Path getIndexFolder()
-    {
+    public Path getIndexFolder() {
         return indexFolder;
     }
 
     @Override
-    public Path getPartitionFolder( int partition )
-    {
-        return indexFolder.resolve( String.valueOf( partition ) );
+    public Path getPartitionFolder(int partition) {
+        return indexFolder.resolve(String.valueOf(partition));
     }
 }

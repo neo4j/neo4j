@@ -26,8 +26,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 /**
  * TokenScans are used for accessing entities with a given token.
  */
-public interface TokenScan
-{
+public interface TokenScan {
     /**
      * Initialize the client for scanning for a token.
      *
@@ -36,7 +35,8 @@ public interface TokenScan
      * @param indexOrder the order in which to obtain results
      * @return a progressor used for reading data
      */
-    IndexProgressor initialize( IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, CursorContext cursorContext );
+    IndexProgressor initialize(
+            IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, CursorContext cursorContext);
 
     /**
      * Initialize the client for reading a batch of tokens.
@@ -46,5 +46,6 @@ public interface TokenScan
      * @param cursorContext underlying page cursor context
      * @return an iterator used for reading data
      */
-    IndexProgressor initializeBatch( IndexProgressor.EntityTokenClient client, int sizeHint, CursorContext cursorContext );
+    IndexProgressor initializeBatch(
+            IndexProgressor.EntityTokenClient client, int sizeHint, CursorContext cursorContext);
 }

@@ -20,7 +20,6 @@
 package org.neo4j.commandline.dbms;
 
 import java.util.Objects;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
@@ -41,28 +40,35 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.time.Clocks;
 
-public class StoreVersionLoader implements AutoCloseable
-{
+public class StoreVersionLoader implements AutoCloseable {
     private final FileSystemAbstraction fs;
     private final Config config;
     private final CursorContextFactory contextFactory;
     private final JobScheduler jobScheduler;
     private final PageCache pageCache;
 
-    public StoreVersionLoader( FileSystemAbstraction fs, Config config, CursorContextFactory contextFactory )
-    {
+    public StoreVersionLoader(FileSystemAbstraction fs, Config config, CursorContextFactory contextFactory) {
         this.fs = fs;
-        this.config = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) ).build();
+        this.config = Config.newBuilder()
+                .fromConfig(config)
+                .set(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8))
+                .build();
         this.contextFactory = contextFactory;
         this.jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        this.pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(), jobScheduler, Clocks.nanoClock(),
-                new MemoryPools() ).getOrCreatePageCache();
+        this.pageCache = new ConfiguringPageCacheFactory(
+                        fs,
+                        config,
+                        PageCacheTracer.NULL,
+                        NullLog.getInstance(),
+                        jobScheduler,
+                        Clocks.nanoClock(),
+                        new MemoryPools())
+                .getOrCreatePageCache();
     }
 
     @Override
-    public void close()
-    {
-        IOUtils.closeAllSilently( pageCache, jobScheduler );
+    public void close() {
+        IOUtils.closeAllSilently(pageCache, jobScheduler);
     }
 
     /**
@@ -70,27 +76,28 @@ public class StoreVersionLoader implements AutoCloseable
      * @param layout The la
      * @return the {@link Result} of the store version if the format can not be read.
      */
-    public Result loadStoreVersion( DatabaseLayout layout )
-    {
-        StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine( fs, layout, pageCache ).orElseGet( StorageEngineFactory::defaultStorageEngine );
-        StoreVersionCheck versionCheck = sef.versionCheck( fs, layout, config, pageCache, NullLogService.getInstance(), contextFactory );
+    public Result loadStoreVersion(DatabaseLayout layout) {
+        StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine(fs, layout, pageCache)
+                .orElseGet(StorageEngineFactory::defaultStorageEngine);
+        StoreVersionCheck versionCheck =
+                sef.versionCheck(fs, layout, config, pageCache, NullLogService.getInstance(), contextFactory);
 
-        String storeVersion = versionCheck.storeVersion( CursorContext.NULL_CONTEXT )
-            .orElseThrow( () -> new IllegalStateException( "Can not read store version of database " + layout.getDatabaseName() ) );
-        return new Result( storeVersion, sef.versionInformation( storeVersion ).latestStoreVersion( config ) );
+        String storeVersion = versionCheck
+                .storeVersion(CursorContext.NULL_CONTEXT)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Can not read store version of database " + layout.getDatabaseName()));
+        return new Result(storeVersion, sef.versionInformation(storeVersion).latestStoreVersion(config));
     }
 
-    public static class Result
-    {
+    public static class Result {
         public final String currentFormatName;
         public final String latestFormatName;
         public final boolean isLatest;
 
-        private Result( String currentFormatName, String latestFormatName )
-        {
+        private Result(String currentFormatName, String latestFormatName) {
             this.currentFormatName = currentFormatName;
             this.latestFormatName = latestFormatName;
-            this.isLatest = Objects.equals( currentFormatName, latestFormatName );
+            this.isLatest = Objects.equals(currentFormatName, latestFormatName);
         }
     }
 }

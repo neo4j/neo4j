@@ -26,18 +26,25 @@ import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
-
-import scala.jdk.CollectionConverters.MapHasAsJava
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
+import scala.jdk.CollectionConverters.MapHasAsJava
+
 class DeprecationBoltAcceptanceTest extends DeprecationAcceptanceTestBase {
+
   val boltConfig: Map[Setting[_], Object] =
-    Map(BoltConnector.enabled -> java.lang.Boolean.TRUE, BoltConnector.listen_address -> new SocketAddress("localhost", 0))
+    Map(
+      BoltConnector.enabled -> java.lang.Boolean.TRUE,
+      BoltConnector.listen_address -> new SocketAddress("localhost", 0)
+    )
 
   private val config = Config.newBuilder().set(boltConfig.asJava).build()
-  private val managementService: DatabaseManagementService = new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
+
+  private val managementService: DatabaseManagementService =
+    new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
   private val executorFactory: CypherExecutorFactory = DriverCypherExecutorFactory(managementService, config)
 
-  override protected val dbms: FeatureDatabaseManagementService = FeatureDatabaseManagementService(managementService, executorFactory)
+  override protected val dbms: FeatureDatabaseManagementService =
+    FeatureDatabaseManagementService(managementService, executorFactory)
 }

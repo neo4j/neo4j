@@ -19,55 +19,50 @@
  */
 package org.neo4j.memory;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class GlobalMemoryGroupTrackerTest
-{
-    private final GlobalMemoryGroupTracker globalPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, 100, null );
+import org.junit.jupiter.api.Test;
+
+class GlobalMemoryGroupTrackerTest {
+    private final GlobalMemoryGroupTracker globalPool = new MemoryPools().pool(MemoryGroup.TRANSACTION, 100, null);
 
     @Test
-    void trackedHeapFromTrackerAndPoolMatch()
-    {
+    void trackedHeapFromTrackerAndPoolMatch() {
         var memoryTracker = globalPool.getPoolMemoryTracker();
 
-        memoryTracker.allocateHeap( 12 );
+        memoryTracker.allocateHeap(12);
 
-        assertEquals( 12, globalPool.usedHeap() );
-        assertEquals( 12, memoryTracker.estimatedHeapMemory() );
+        assertEquals(12, globalPool.usedHeap());
+        assertEquals(12, memoryTracker.estimatedHeapMemory());
     }
 
     @Test
-    void trackedNativeFromTrackerAndPoolMatch()
-    {
+    void trackedNativeFromTrackerAndPoolMatch() {
         var memoryTracker = globalPool.getPoolMemoryTracker();
 
-        memoryTracker.allocateNative( 13 );
+        memoryTracker.allocateNative(13);
 
-        assertEquals( 13, globalPool.usedNative() );
-        assertEquals( 13, memoryTracker.usedNativeMemory() );
+        assertEquals(13, globalPool.usedNative());
+        assertEquals(13, memoryTracker.usedNativeMemory());
     }
 
     @Test
-    void trackedHeapFromPoolAndTrackerMatch()
-    {
+    void trackedHeapFromPoolAndTrackerMatch() {
         var memoryTracker = globalPool.getPoolMemoryTracker();
 
-        globalPool.reserveHeap( 12 );
+        globalPool.reserveHeap(12);
 
-        assertEquals( 12, globalPool.usedHeap() );
-        assertEquals( 12, memoryTracker.estimatedHeapMemory() );
+        assertEquals(12, globalPool.usedHeap());
+        assertEquals(12, memoryTracker.estimatedHeapMemory());
     }
 
     @Test
-    void trackedNativeFromPoolAndTrackerMatch()
-    {
+    void trackedNativeFromPoolAndTrackerMatch() {
         var memoryTracker = globalPool.getPoolMemoryTracker();
 
-        globalPool.reserveNative( 13 );
+        globalPool.reserveNative(13);
 
-        assertEquals( 13, globalPool.usedNative() );
-        assertEquals( 13, memoryTracker.usedNativeMemory() );
+        assertEquals(13, globalPool.usedNative());
+        assertEquals(13, memoryTracker.usedNativeMemory());
     }
 }

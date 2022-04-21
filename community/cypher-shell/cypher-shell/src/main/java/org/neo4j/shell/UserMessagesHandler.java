@@ -19,43 +19,40 @@
  */
 package org.neo4j.shell;
 
-import org.neo4j.shell.printer.AnsiFormattedText;
-
 import static org.neo4j.shell.util.Versions.version;
 
-public record UserMessagesHandler( Connector connector )
-{
-    public String getWelcomeMessage()
-    {
-        final var message = AnsiFormattedText.from( "Connected to Neo4j" );
+import org.neo4j.shell.printer.AnsiFormattedText;
+
+public record UserMessagesHandler(Connector connector) {
+    public String getWelcomeMessage() {
+        final var message = AnsiFormattedText.from("Connected to Neo4j");
 
         String protocolVersion = connector.getProtocolVersion();
-        if ( !protocolVersion.isEmpty() )
-        {
-            message.append( " using Bolt protocol version " + version( protocolVersion ).majorMinorString());
+        if (!protocolVersion.isEmpty()) {
+            message.append(
+                    " using Bolt protocol version " + version(protocolVersion).majorMinorString());
         }
 
-        message.append( " at " ).bold( connector.driverUrl() );
+        message.append(" at ").bold(connector.driverUrl());
 
-        if ( !connector.username().isEmpty() )
-        {
-            message.append( " as user " ).bold( connector.username() );
+        if (!connector.username().isEmpty()) {
+            message.append(" as user ").bold(connector.username());
         }
 
-        connector.impersonatedUser().ifPresent( impersonated ->
-                message.orange( " impersonating " ).bold( impersonated )
-        );
+        connector.impersonatedUser().ifPresent(impersonated -> message.orange(" impersonating ")
+                .bold(impersonated));
 
-        return message
-                .append( ".\nType " ).bold( ":help" )
-                .append( " for a list of available commands or " )
-                .bold( ":exit" ).append( " to exit the shell." )
-                .append( "\nNote that Cypher queries must end with a " ).bold( "semicolon." )
+        return message.append(".\nType ")
+                .bold(":help")
+                .append(" for a list of available commands or ")
+                .bold(":exit")
+                .append(" to exit the shell.")
+                .append("\nNote that Cypher queries must end with a ")
+                .bold("semicolon.")
                 .formattedString();
     }
 
-    public static String getExitMessage()
-    {
-        return AnsiFormattedText.s().append( "\nBye!" ).formattedString();
+    public static String getExitMessage() {
+        return AnsiFormattedText.s().append("\nBye!").formattedString();
     }
 }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.cursor;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -34,68 +37,56 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-@DbmsExtension( configurationCallback = "configure" )
-class CachedStoreCursorsIT
-{
+@DbmsExtension(configurationCallback = "configure")
+class CachedStoreCursorsIT {
     @Inject
     private RecordStorageEngine storageEngine;
+
     @Inject
     private CursorContextFactory contextFactory;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME);
     }
 
     @Test
-    void checkValidationOfClosedReadCursors()
-    {
-        try ( var cursorContext = contextFactory.create( "checkValidationOfClosedReadCursors" ) )
-        {
-            var storageCursors = storageEngine.createStorageCursors( cursorContext );
-            storageCursors.readCursor( RecordCursorTypes.NODE_CURSOR ).close();
-            assertThrows( IllegalStateException.class, storageCursors::close );
+    void checkValidationOfClosedReadCursors() {
+        try (var cursorContext = contextFactory.create("checkValidationOfClosedReadCursors")) {
+            var storageCursors = storageEngine.createStorageCursors(cursorContext);
+            storageCursors.readCursor(RecordCursorTypes.NODE_CURSOR).close();
+            assertThrows(IllegalStateException.class, storageCursors::close);
         }
     }
 
     @Test
-    void cacheRequestedCursors()
-    {
+    void cacheRequestedCursors() {
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
-        PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "cacheRequestedCursors" );
-        try ( var cursorContext = contextFactory.create( cursorTracer );
-              var storageCursors = storageEngine.createStorageCursors( cursorContext ) )
-        {
+        PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer("cacheRequestedCursors");
+        try (var cursorContext = contextFactory.create(cursorTracer);
+                var storageCursors = storageEngine.createStorageCursors(cursorContext)) {
             Object[] cursors = new Object[RecordCursorTypes.MAX_TYPE + 1];
-            for ( RecordCursorTypes type : RecordCursorTypes.values() )
-            {
-                cursors[type.value()] = storageCursors.readCursor( type );
+            for (RecordCursorTypes type : RecordCursorTypes.values()) {
+                cursors[type.value()] = storageCursors.readCursor(type);
             }
 
-            for ( int i = 0; i < 10; i++ )
-            {
-                for ( RecordCursorTypes type : RecordCursorTypes.values() )
-                {
-                    assertEquals( cursors[type.value()], storageCursors.readCursor( type ) );
+            for (int i = 0; i < 10; i++) {
+                for (RecordCursorTypes type : RecordCursorTypes.values()) {
+                    assertEquals(cursors[type.value()], storageCursors.readCursor(type));
                 }
             }
         }
     }
 
     @Test
-    void shouldOnlyAcceptRecordStorageTypes()
-    {
+    void shouldOnlyAcceptRecordStorageTypes() {
         CursorType anotherType = () -> (short) 1;
-        try ( var cursorContext = contextFactory.create( "shouldOnlyAcceptRecordStorageTypes" );
-                var storageCursors = storageEngine.createStorageCursors( cursorContext ) )
-        {
-            assertThatThrownBy( () -> storageCursors.readCursor( anotherType ) ).isInstanceOf( IllegalArgumentException.class );
-            assertThatThrownBy( () -> storageCursors.writeCursor( anotherType ) ).isInstanceOf( IllegalArgumentException.class );
+        try (var cursorContext = contextFactory.create("shouldOnlyAcceptRecordStorageTypes");
+                var storageCursors = storageEngine.createStorageCursors(cursorContext)) {
+            assertThatThrownBy(() -> storageCursors.readCursor(anotherType))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> storageCursors.writeCursor(anotherType))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 }

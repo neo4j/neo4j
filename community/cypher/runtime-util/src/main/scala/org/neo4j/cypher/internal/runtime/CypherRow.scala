@@ -58,7 +58,9 @@ case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean 
   override def ternaryEquals(other: AnyValue): Equality = throw new UnsupportedOperationException()
   override def map[T](mapper: ValueMapper[T]): T = throw new UnsupportedOperationException()
   override def getTypeName: String = "ResourceLinenumber"
-  override def estimatedHeapUsage(): Long = ResourceLinenumber.SHALLOW_SIZE // NOTE: The filename string is expected to be repeated so we do not count it here
+
+  override def estimatedHeapUsage(): Long =
+    ResourceLinenumber.SHALLOW_SIZE // NOTE: The filename string is expected to be repeated so we do not count it here
   override def valueRepresentation(): ValueRepresentation = ValueRepresentation.UNKNOWN
 }
 
@@ -70,6 +72,7 @@ trait CypherRow extends ReadWriteRow with Measurable {
 
   @deprecated("We shouldn't check for the existence of variables at runtime", since = "4.0")
   def containsName(name: String): Boolean
+
   @deprecated("We shouldn't check for the existence of variables at runtime", since = "4.1")
   def numberOfColumns: Int
 
@@ -77,7 +80,15 @@ trait CypherRow extends ReadWriteRow with Measurable {
 
   def copyWith(key: String, value: AnyValue): CypherRow
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): CypherRow
-  def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): CypherRow
+
+  def copyWith(
+    key1: String,
+    value1: AnyValue,
+    key2: String,
+    value2: AnyValue,
+    key3: String,
+    value3: AnyValue
+  ): CypherRow
   def copyWith(newEntries: collection.Seq[(String, AnyValue)]): CypherRow
 
   /** Create a copy of this row, with all values transformed by the given function (including cached values)  */
@@ -87,13 +98,17 @@ trait CypherRow extends ReadWriteRow with Measurable {
 }
 
 object MapCypherRow {
-  private final val SHALLOW_SIZE_OF_MUTABLE_MAP = shallowSizeOfInstance(classOf[mutable.OpenHashMap[_,_]])
-  private final val SHALLOW_SIZE = shallowSizeOfInstance(classOf[MapCypherRow])
-  private final val INITAL_SIZE_OF_MUTABLE_MAP = SHALLOW_SIZE_OF_MUTABLE_MAP + shallowSizeOfObjectArray(8) // OpenHashMap initial size 8
+  final private val SHALLOW_SIZE_OF_MUTABLE_MAP = shallowSizeOfInstance(classOf[mutable.OpenHashMap[_, _]])
+  final private val SHALLOW_SIZE = shallowSizeOfInstance(classOf[MapCypherRow])
+
+  final private val INITAL_SIZE_OF_MUTABLE_MAP =
+    SHALLOW_SIZE_OF_MUTABLE_MAP + shallowSizeOfObjectArray(8) // OpenHashMap initial size 8
 }
 
-class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cachedProperties: mutable.Map[ASTCachedProperty.RuntimeKey, Value] = null)
-  extends CypherRow {
+class MapCypherRow(
+  private val m: mutable.Map[String, AnyValue],
+  private var cachedProperties: mutable.Map[ASTCachedProperty.RuntimeKey, Value] = null
+) extends CypherRow {
 
   private var linenumber: Option[ResourceLinenumber] = None
 
@@ -104,7 +119,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
   // Used to copy the linenumber when copying or merging a row where we don't want to overwrite it
   def setLinenumberIfEmpty(line: Option[ResourceLinenumber]): Unit = linenumber match {
     case None => linenumber = line
-    case _ =>
+    case _    =>
   }
 
   override def getLinenumber: Option[ResourceLinenumber] = linenumber
@@ -113,13 +128,20 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
 
   override def copyFrom(input: ReadableRow, nLongs: Int, nRefs: Int): Unit = fail()
 
-  override def copyFromOffset(input: ReadableRow, sourceLongOffset: Int, sourceRefOffset: Int, targetLongOffset: Int, targetRefOffset: Int): Unit = fail()
+  override def copyFromOffset(
+    input: ReadableRow,
+    sourceLongOffset: Int,
+    sourceRefOffset: Int,
+    targetLongOffset: Int,
+    targetRefOffset: Int
+  ): Unit = fail()
 
   def remove(name: String): Option[AnyValue] = m.remove(name)
-  //used for testing
+  // used for testing
   def toMap: Map[String, AnyValue] = m.toMap
 
-  override def getByName(name: String): AnyValue = m.getOrElse(name, throw new NotFoundException(s"Unknown variable `$name`."))
+  override def getByName(name: String): AnyValue =
+    m.getOrElse(name, throw new NotFoundException(s"Unknown variable `$name`."))
   override def containsName(name: String): Boolean = m.contains(name)
   override def numberOfColumns: Int = m.size
 
@@ -131,21 +153,22 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
 
   private def fail(): Nothing = throw new InternalException("Tried using a map context as a slotted context")
 
-  override def mergeWith(other: ReadableRow, entityById: EntityById, checkNullability: Boolean = true): Unit = other match {
-    case otherMapCtx: MapCypherRow =>
-      m ++= otherMapCtx.m
-      if (otherMapCtx.cachedProperties != null) {
-        if (cachedProperties == null) {
-          cachedProperties = otherMapCtx.cachedProperties.clone()
+  override def mergeWith(other: ReadableRow, entityById: EntityById, checkNullability: Boolean = true): Unit =
+    other match {
+      case otherMapCtx: MapCypherRow =>
+        m ++= otherMapCtx.m
+        if (otherMapCtx.cachedProperties != null) {
+          if (cachedProperties == null) {
+            cachedProperties = otherMapCtx.cachedProperties.clone()
+          } else {
+            cachedProperties ++= otherMapCtx.cachedProperties
+          }
         } else {
-          cachedProperties ++= otherMapCtx.cachedProperties
+          // otherMapCtx.cachedProperties is null so do nothing
         }
-      } else {
-        //otherMapCtx.cachedProperties is null so do nothing
-      }
-      setLinenumberIfEmpty(otherMapCtx.getLinenumber)
-    case _ => fail()
-  }
+        setLinenumberIfEmpty(otherMapCtx.getLinenumber)
+      case _ => fail()
+    }
 
   override def set(newEntries: collection.Seq[(String, AnyValue)]): Unit =
     m ++= newEntries
@@ -160,7 +183,14 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
     m.put(key2, value2)
   }
 
-  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit = {
+  override def set(
+    key1: String,
+    value1: AnyValue,
+    key2: String,
+    value2: AnyValue,
+    key3: String,
+    value3: AnyValue
+  ): Unit = {
     m.put(key1, value1)
     m.put(key2, value2)
     m.put(key3, value3)
@@ -179,9 +209,14 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
     cloneFromMap(newMap)
   }
 
-  override def copyWith(key1: String, value1: AnyValue,
-                        key2: String, value2: AnyValue,
-                        key3: String, value3: AnyValue): CypherRow = {
+  override def copyWith(
+    key1: String,
+    value1: AnyValue,
+    key2: String,
+    value2: AnyValue,
+    key3: String,
+    value3: AnyValue
+  ): CypherRow = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
@@ -195,7 +230,8 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
 
   def copyMapped(func: AnyValue => AnyValue): CypherRow = {
     val newMap = m.map({ case (k, v) => k -> func(v) })
-    val newCachedProperties = if (cachedProperties == null) null else cachedProperties.map({ case (k, v) => k -> func(v).asInstanceOf[Value] })
+    val newCachedProperties =
+      if (cachedProperties == null) null else cachedProperties.map({ case (k, v) => k -> func(v).asInstanceOf[Value] })
     val row = new MapCypherRow(newMap, newCachedProperties)
     row.setLinenumberIfEmpty(getLinenumber)
     row
@@ -206,7 +242,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
   override def isNull(key: String): Boolean =
     m.get(key) match {
       case Some(v) if v eq Values.NO_VALUE => true
-      case _ => false
+      case _                               => false
     }
 
   override def setCachedProperty(key: ASTCachedProperty.RuntimeKey, value: Value): Unit = {
@@ -234,19 +270,23 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
 
   override def invalidateCachedNodeProperties(node: Long): Unit = {
     if (cachedProperties != null) {
-      cachedProperties.keys.filter(cnp => getByName(cnp.entityName) match {
-        case n: VirtualNodeValue => n.id() == node
-        case _ => false
-      }).foreach(cnp => setCachedProperty(cnp, null))
+      cachedProperties.keys.filter(cnp =>
+        getByName(cnp.entityName) match {
+          case n: VirtualNodeValue => n.id() == node
+          case _                   => false
+        }
+      ).foreach(cnp => setCachedProperty(cnp, null))
     }
   }
 
   override def invalidateCachedRelationshipProperties(rel: Long): Unit = {
     if (cachedProperties != null) {
-      cachedProperties.keys.filter(cnp => getByName(cnp.entityName) match {
-        case r: VirtualRelationshipValue => r.id() == rel
-        case _ => false
-      }).foreach(cnp => setCachedProperty(cnp, null))
+      cachedProperties.keys.filter(cnp =>
+        getByName(cnp.entityName) match {
+          case r: VirtualRelationshipValue => r.id() == rel
+          case _                           => false
+        }
+      ).foreach(cnp => setCachedProperty(cnp, null))
     }
   }
 
@@ -264,7 +304,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
       val iterator = cachedProperties.valuesIterator
       while (iterator.hasNext) {
         val value = iterator.next()
-        if (value != null ) {
+        if (value != null) {
           total += value.estimatedHeapUsage()
         }
       }

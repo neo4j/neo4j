@@ -20,29 +20,24 @@
 package org.neo4j.bolt.v41.messaging;
 
 import java.time.Duration;
-
 import org.neo4j.time.SystemNanoClock;
 
-public class MessageWriterTimer
-{
+public class MessageWriterTimer {
     private final SystemNanoClock clock;
     private final long keepAliveNano;
 
     private volatile long startNano;
 
-    public MessageWriterTimer( SystemNanoClock clock, Duration keepAlive )
-    {
+    public MessageWriterTimer(SystemNanoClock clock, Duration keepAlive) {
         this.clock = clock;
         this.keepAliveNano = keepAlive.toNanos();
     }
 
-    public void reset()
-    {
+    public void reset() {
         startNano = clock.nanos();
     }
 
-    public boolean isTimedOut()
-    {
+    public boolean isTimedOut() {
         return clock.nanos() - startNano > keepAliveNano;
     }
 }

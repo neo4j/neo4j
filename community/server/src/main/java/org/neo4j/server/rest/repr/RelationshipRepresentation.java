@@ -19,105 +19,87 @@
  */
 package org.neo4j.server.rest.repr;
 
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.http.cypher.entity.HttpRelationship;
 
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-
-public final class RelationshipRepresentation extends ObjectRepresentation implements ExtensibleRepresentation,
-        EntityRepresentation
-{
+public final class RelationshipRepresentation extends ObjectRepresentation
+        implements ExtensibleRepresentation, EntityRepresentation {
     private final Relationship rel;
 
-    public RelationshipRepresentation( Relationship rel )
-    {
-        super( RepresentationType.RELATIONSHIP );
+    public RelationshipRepresentation(Relationship rel) {
+        super(RepresentationType.RELATIONSHIP);
         this.rel = rel;
     }
 
     @Override
-    public String getIdentity()
-    {
-        return Long.toString( rel.getId() );
+    public String getIdentity() {
+        return Long.toString(rel.getId());
     }
 
-    public long getId()
-    {
+    public long getId() {
         return rel.getId();
     }
 
     @Override
-    @Mapping( "self" )
-    public ValueRepresentation selfUri()
-    {
-        return ValueRepresentation.uri( path( "" ) );
+    @Mapping("self")
+    public ValueRepresentation selfUri() {
+        return ValueRepresentation.uri(path(""));
     }
 
-    private String path( String path )
-    {
+    private String path(String path) {
         return "relationship/" + rel.getId() + path;
     }
 
-    static String path( Relationship rel )
-    {
+    static String path(Relationship rel) {
         return "relationship/" + rel.getId();
     }
 
-    @Mapping( "type" )
-    public ValueRepresentation getType()
-    {
-        return ValueRepresentation.relationshipType( rel.getType() );
+    @Mapping("type")
+    public ValueRepresentation getType() {
+        return ValueRepresentation.relationshipType(rel.getType());
     }
 
-    @Mapping( "start" )
-    public ValueRepresentation startNodeUri()
-    {
-        return ValueRepresentation.uri( NodeRepresentation.path( rel.getStartNodeId() ) );
+    @Mapping("start")
+    public ValueRepresentation startNodeUri() {
+        return ValueRepresentation.uri(NodeRepresentation.path(rel.getStartNodeId()));
     }
 
-    @Mapping( "end" )
-    public ValueRepresentation endNodeUri()
-    {
-        return ValueRepresentation.uri( NodeRepresentation.path( rel.getEndNodeId() ) );
+    @Mapping("end")
+    public ValueRepresentation endNodeUri() {
+        return ValueRepresentation.uri(NodeRepresentation.path(rel.getEndNodeId()));
     }
 
-    @Mapping( "properties" )
-    public ValueRepresentation propertiesUri()
-    {
-        return ValueRepresentation.uri( path( "/properties" ) );
+    @Mapping("properties")
+    public ValueRepresentation propertiesUri() {
+        return ValueRepresentation.uri(path("/properties"));
     }
 
-    @Mapping( "property" )
-    public ValueRepresentation propertyUriTemplate()
-    {
-        return ValueRepresentation.template( path( "/properties/{key}" ) );
+    @Mapping("property")
+    public ValueRepresentation propertyUriTemplate() {
+        return ValueRepresentation.template(path("/properties/{key}"));
     }
 
-    @Mapping( "metadata" )
-    public MapRepresentation metadata()
-    {
-        if ( isDeleted() )
-        {
-            return new MapRepresentation( map( "id", rel.getId(), "deleted", Boolean.TRUE ) );
-        }
-        else
-        {
-            return new MapRepresentation( map( "id", rel.getId(), "type", rel.getType().name() ) );
+    @Mapping("metadata")
+    public MapRepresentation metadata() {
+        if (isDeleted()) {
+            return new MapRepresentation(map("id", rel.getId(), "deleted", Boolean.TRUE));
+        } else {
+            return new MapRepresentation(
+                    map("id", rel.getId(), "type", rel.getType().name()));
         }
     }
 
-    private boolean isDeleted()
-    {
+    private boolean isDeleted() {
         return ((HttpRelationship) rel).isDeleted();
     }
 
     @Override
-    public void extraData( MappingSerializer serializer )
-    {
-        if ( !isDeleted() )
-        {
-            MappingWriter properties = serializer.writer.newMapping( RepresentationType.PROPERTIES, "data" );
-            new PropertiesRepresentation( rel ).serialize( properties );
+    public void extraData(MappingSerializer serializer) {
+        if (!isDeleted()) {
+            MappingWriter properties = serializer.writer.newMapping(RepresentationType.PROPERTIES, "data");
+            new PropertiesRepresentation(rel).serialize(properties);
             properties.done();
         }
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.collector;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.util.Collections;
 import java.util.Map;
@@ -28,26 +28,22 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-
-class CollectorStateMachineTest
-{
+class CollectorStateMachineTest {
     @Test
-    void shouldHandleStress() throws ExecutionException, InterruptedException
-    {
+    void shouldHandleStress() throws ExecutionException, InterruptedException {
         // given
         int n = 1000;
         TestStateMachine stateMachine = new TestStateMachine();
-        ExecutorService executor = Executors.newFixedThreadPool( 3 );
+        ExecutorService executor = Executors.newFixedThreadPool(3);
 
         // when
-        Future<?> collect = executor.submit( stress( n, () -> collect( stateMachine ) ) );
-        Future<?> stop = executor.submit( stress( n, () -> stateMachine.stop( Long.MAX_VALUE ) ) );
-        Future<?> clear = executor.submit( stress( n, stateMachine::clear ) );
-        Future<?> status = executor.submit( stress( n, stateMachine::status ) );
+        Future<?> collect = executor.submit(stress(n, () -> collect(stateMachine)));
+        Future<?> stop = executor.submit(stress(n, () -> stateMachine.stop(Long.MAX_VALUE)));
+        Future<?> clear = executor.submit(stress(n, stateMachine::clear));
+        Future<?> status = executor.submit(stress(n, stateMachine::status));
 
         // then without illegal transitions or exceptions
         collect.get();
@@ -57,37 +53,28 @@ class CollectorStateMachineTest
         executor.shutdown();
     }
 
-    private static <T> Runnable stress( int n, Supplier<T> action )
-    {
+    private static <T> Runnable stress(int n, Supplier<T> action) {
         return () -> {
-            for ( int i = 0; i < n; i++ )
-            {
+            for (int i = 0; i < n; i++) {
                 action.get();
             }
         };
     }
 
-    public static CollectorStateMachine.Result collect( CollectorStateMachine stateMachine )
-    {
-        try
-        {
-            return stateMachine.collect( Collections.emptyMap() );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            throw new IllegalStateException( e );
+    public static CollectorStateMachine.Result collect(CollectorStateMachine stateMachine) {
+        try {
+            return stateMachine.collect(Collections.emptyMap());
+        } catch (InvalidArgumentsException e) {
+            throw new IllegalStateException(e);
         }
     }
 
-    static class TestStateMachine extends CollectorStateMachine<String>
-    {
-        TestStateMachine()
-        {
-            super( false );
+    static class TestStateMachine extends CollectorStateMachine<String> {
+        TestStateMachine() {
+            super(false);
         }
 
-        enum State
-        {
+        enum State {
             IDLE,
             COLLECTING
         }
@@ -95,32 +82,28 @@ class CollectorStateMachineTest
         volatile State state = State.IDLE;
 
         @Override
-        protected Result doCollect( Map<String,Object> config, long collectionId )
-        {
-            assertSame( state, State.IDLE );
+        protected Result doCollect(Map<String, Object> config, long collectionId) {
+            assertSame(state, State.IDLE);
             state = State.COLLECTING;
             return null;
         }
 
         @Override
-        protected Result doStop()
-        {
-            assertSame( state, State.COLLECTING );
+        protected Result doStop() {
+            assertSame(state, State.COLLECTING);
             state = State.IDLE;
             return null;
         }
 
         @Override
-        protected Result doClear()
-        {
-            assertSame( state, State.IDLE );
+        protected Result doClear() {
+            assertSame(state, State.IDLE);
             return null;
         }
 
         @Override
-        protected String doGetData()
-        {
-            assertSame( state, State.IDLE );
+        protected String doGetData() {
+            assertSame(state, State.IDLE);
             return "Data";
         }
     }

@@ -22,7 +22,6 @@ package org.neo4j.server.rest.dbms;
 import java.security.Principal;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
-
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -31,29 +30,24 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
-public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
-{
-    public static LoginContext getLoginContextFromHttpServletRequest( HttpServletRequest request )
-    {
+public class AuthorizedRequestWrapper extends HttpServletRequestWrapper {
+    public static LoginContext getLoginContextFromHttpServletRequest(HttpServletRequest request) {
         Principal principal = request.getUserPrincipal();
-        ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
-        return getLoginContextFromUserPrincipal( principal, connectionInfo );
+        ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create(request);
+        return getLoginContextFromUserPrincipal(principal, connectionInfo);
     }
 
-    public static LoginContext getLoginContextFromUserPrincipal( Principal principal, ClientConnectionInfo connectionInfo )
-    {
-        if ( principal instanceof DelegatingPrincipal )
-        {
+    public static LoginContext getLoginContextFromUserPrincipal(
+            Principal principal, ClientConnectionInfo connectionInfo) {
+        if (principal instanceof DelegatingPrincipal) {
             return ((DelegatingPrincipal) principal).getLoginContext();
         }
         // If whitelisted uris can start transactions we cannot throw exception here
-        //throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
-        return new LoginContext( AuthSubject.ANONYMOUS, connectionInfo )
-        {
+        // throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
+        return new LoginContext(AuthSubject.ANONYMOUS, connectionInfo) {
             @Override
-            public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
-            {
-                return new SecurityContext( subject(), AccessMode.Static.ACCESS, connectionInfo(), dbName );
+            public SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog) {
+                return new SecurityContext(subject(), AccessMode.Static.ACCESS, connectionInfo(), dbName);
             }
         };
     }
@@ -61,64 +55,51 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
     private final String authType;
     private final DelegatingPrincipal principal;
 
-    public AuthorizedRequestWrapper( final String authType, final String username, final HttpServletRequest request,
-            LoginContext loginContext )
-    {
-        super( request );
+    public AuthorizedRequestWrapper(
+            final String authType, final String username, final HttpServletRequest request, LoginContext loginContext) {
+        super(request);
         this.authType = authType;
-        this.principal = new DelegatingPrincipal( username, loginContext );
+        this.principal = new DelegatingPrincipal(username, loginContext);
     }
 
     @Override
-    public String getAuthType()
-    {
+    public String getAuthType() {
         return authType;
     }
 
     @Override
-    public Principal getUserPrincipal()
-    {
+    public Principal getUserPrincipal() {
         return principal;
     }
 
     @Override
-    public boolean isUserInRole( String role )
-    {
+    public boolean isUserInRole(String role) {
         return true;
     }
 
     @Override
-    public String toString()
-    {
-        return "AuthorizedRequestWrapper{" +
-               "authType='" + authType + '\'' +
-               ", principal=" + principal +
-               '}';
+    public String toString() {
+        return "AuthorizedRequestWrapper{" + "authType='" + authType + '\'' + ", principal=" + principal + '}';
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         AuthorizedRequestWrapper that = (AuthorizedRequestWrapper) o;
-        if ( !authType.equals( that.authType ) )
-        {
+        if (!authType.equals(that.authType)) {
             return false;
         }
-        return principal.equals( that.principal );
+        return principal.equals(that.principal);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = authType.hashCode();
         result = 31 * result + principal.hashCode();
         return result;

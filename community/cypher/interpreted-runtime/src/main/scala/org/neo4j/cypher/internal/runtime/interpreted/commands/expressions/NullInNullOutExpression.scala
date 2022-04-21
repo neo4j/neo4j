@@ -29,6 +29,6 @@ abstract class NullInNullOutExpression(argument: Expression) extends Expression 
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = argument(row, state) match {
     case x if x eq Values.NO_VALUE => Values.NO_VALUE
-    case x    => compute(x, row, state)
+    case x                         => compute(x, row, state)
   }
 }

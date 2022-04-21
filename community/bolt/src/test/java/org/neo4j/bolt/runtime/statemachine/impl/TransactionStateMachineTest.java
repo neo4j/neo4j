@@ -19,14 +19,31 @@
  */
 package org.neo4j.bolt.runtime.statemachine.impl;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.messaging.ResultConsumer;
@@ -47,467 +64,425 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.time.FakeClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-import static org.neo4j.internal.helpers.Strings.joinAsLines;
-import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-
-class TransactionStateMachineTest
-{
+class TransactionStateMachineTest {
     private static final String CALL_IN_TRANSACTIONS_QUERY = joinAsLines(
             "LOAD CSV FROM ''https://neo4j.com/test.csv'' AS line",
             "CALL { ",
             "  CREATE (:Node {id: line[0], name: line[1]})",
-            "} IN TRANSACTIONS OF 1 ROW"
-    );
+            "} IN TRANSACTIONS OF 1 ROW");
 
     private TransactionStateMachineSPI stateMachineSPI;
     private MutableTransactionState mutableState;
     private static final EmptyResultConsumer EMPTY = new EmptyResultConsumer();
-    private static final EmptyResultConsumer ERROR = new EmptyResultConsumer()
-    {
+    private static final EmptyResultConsumer ERROR = new EmptyResultConsumer() {
         @Override
-        public void consume( BoltResult boltResult )
-        {
-            throw new RuntimeException( "some error" );
+        public void consume(BoltResult boltResult) {
+            throw new RuntimeException("some error");
         }
     };
 
     @BeforeEach
-    void createMocks()
-    {
+    void createMocks() {
         FakeClock clock = new FakeClock();
-        stateMachineSPI = mock( TransactionStateMachineSPI.class );
-        mutableState = new MutableTransactionState( LoginContext.AUTH_DISABLED, clock, null );
+        stateMachineSPI = mock(TransactionStateMachineSPI.class);
+        mutableState = new MutableTransactionState(LoginContext.AUTH_DISABLED, clock, null);
     }
 
     @Test
-    void shouldTransitionToExplicitTransactionOnBegin() throws Exception
-    {
-        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION,
-                TransactionStateMachine.State.AUTO_COMMIT.beginTransaction( mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null ) );
+    void shouldTransitionToExplicitTransactionOnBegin() throws Exception {
+        assertEquals(
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION,
+                TransactionStateMachine.State.AUTO_COMMIT.beginTransaction(
+                        mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null));
     }
 
     @Test
-    void shouldTransitionToAutoCommitOnCommit() throws Exception
-    {
-        assertEquals( TransactionStateMachine.State.AUTO_COMMIT,
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION.commitTransaction( mutableState, stateMachineSPI ) );
+    void shouldTransitionToAutoCommitOnCommit() throws Exception {
+        assertEquals(
+                TransactionStateMachine.State.AUTO_COMMIT,
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION.commitTransaction(mutableState, stateMachineSPI));
     }
 
     @Test
-    void shouldTransitionToAutoCommitOnRollback() throws Exception
-    {
-        assertEquals( TransactionStateMachine.State.AUTO_COMMIT,
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION.rollbackTransaction( mutableState, stateMachineSPI ) );
+    void shouldTransitionToAutoCommitOnRollback() throws Exception {
+        assertEquals(
+                TransactionStateMachine.State.AUTO_COMMIT,
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION.rollbackTransaction(mutableState, stateMachineSPI));
     }
 
     @Test
-    void shouldThrowOnBeginInExplicitTransaction()
-    {
-        QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction( mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null ) );
+    void shouldThrowOnBeginInExplicitTransaction() {
+        QueryExecutionKernelException e = assertThrows(
+                QueryExecutionKernelException.class,
+                () -> TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction(
+                        mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null));
 
-        assertEquals( "Nested transactions are not supported.", e.getMessage() );
+        assertEquals("Nested transactions are not supported.", e.getMessage());
     }
 
     @Test
-    void shouldAllowRollbackInAutoCommit() throws Exception
-    {
-        assertEquals( TransactionStateMachine.State.AUTO_COMMIT,
-                TransactionStateMachine.State.AUTO_COMMIT.rollbackTransaction( mutableState, stateMachineSPI ) );
+    void shouldAllowRollbackInAutoCommit() throws Exception {
+        assertEquals(
+                TransactionStateMachine.State.AUTO_COMMIT,
+                TransactionStateMachine.State.AUTO_COMMIT.rollbackTransaction(mutableState, stateMachineSPI));
     }
 
     @Test
-    void shouldThrowOnCommitInAutoCommit()
-    {
-        QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
-                TransactionStateMachine.State.AUTO_COMMIT.commitTransaction( mutableState, stateMachineSPI ) );
+    void shouldThrowOnCommitInAutoCommit() {
+        QueryExecutionKernelException e = assertThrows(
+                QueryExecutionKernelException.class,
+                () -> TransactionStateMachine.State.AUTO_COMMIT.commitTransaction(mutableState, stateMachineSPI));
 
-        assertEquals( "No current transaction to commit.", e.getMessage() );
+        assertEquals("No current transaction to commit.", e.getMessage());
     }
 
     @Test
-    void shouldStartWithAutoCommitState()
-    {
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+    void shouldStartWithAutoCommitState() {
+        TransactionStateMachineSPI stateMachineSPI = mock(TransactionStateMachineSPI.class);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.AUTO_COMMIT);
+        assertNull(stateMachine.ctx.currentTransaction);
+        assertThat(stateMachine.ctx.statementOutcomes.entrySet()).isEmpty();
     }
 
     @Test
-    void shouldDoNothingInAutoCommitTransactionUponInitialisationWhenValidated() throws Exception
-    {
+    void shouldDoNothingInAutoCommitTransactionUponInitialisationWhenValidated() throws Exception {
         BoltTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
         // We're in auto-commit state
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.AUTO_COMMIT);
+        assertNull(stateMachine.ctx.currentTransaction);
 
         // call validate transaction
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.AUTO_COMMIT);
+        assertNull(stateMachine.ctx.currentTransaction);
 
-        verify( transaction, never() ).getReasonIfTerminated();
-        verify( transaction, never() ).rollback();
+        verify(transaction, never()).getReasonIfTerminated();
+        verify(transaction, never()).rollback();
     }
 
     @Test
-    void shouldTryToTerminateAllActiveStatements() throws Exception
-    {
+    void shouldTryToTerminateAllActiveStatements() throws Exception {
         BoltTransaction transaction = newTimedOutTransaction();
 
         BoltResultHandle resultHandle = newResultHandle();
-        doThrow( new RuntimeException( "You shall not pass" ) ).doThrow( new RuntimeException( "Not pass twice" ) ).when( resultHandle ).terminate();
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        doThrow(new RuntimeException("You shall not pass"))
+                .doThrow(new RuntimeException("Not pass twice"))
+                .when(resultHandle)
+                .terminate();
+        TransactionStateMachineSPI stateMachineSPI = mock(TransactionStateMachineSPI.class);
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any(), any()) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any() , anyString(), any() ) ).thenReturn( resultHandle );
-        when( stateMachineSPI.supportsNestedStatementsInTransaction() ).thenReturn( true ); // V4
+        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(transaction);
+        when(stateMachineSPI.executeQuery(any(), anyString(), any())).thenReturn(resultHandle);
+        when(stateMachineSPI.supportsNestedStatementsInTransaction()).thenReturn(true); // V4
 
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
         // We're in explicit-commit state
-        beginTx( stateMachine, List.of() );
+        beginTx(stateMachine, List.of());
 
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
-        assertNotNull( stateMachine.ctx.currentTransaction );
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.EXPLICIT_TRANSACTION);
+        assertNotNull(stateMachine.ctx.currentTransaction);
 
         // We run two statements
-        stateMachine.run( "RETURN 1", null );
-        stateMachine.run( "RETURN 2", null );
+        stateMachine.run("RETURN 1", null);
+        stateMachine.run("RETURN 2", null);
 
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
-        assertNotNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementCounter ).isEqualTo( 2 );
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.EXPLICIT_TRANSACTION);
+        assertNotNull(stateMachine.ctx.currentTransaction);
+        assertThat(stateMachine.ctx.statementCounter).isEqualTo(2);
 
-        RuntimeException error = assertThrows( RuntimeException.class, () -> stateMachine.reset() );
+        RuntimeException error = assertThrows(RuntimeException.class, () -> stateMachine.reset());
 
-        assertThat( error.getCause().getMessage() ).isEqualTo( "You shall not pass" );
-        assertThat( error.getSuppressed() ).hasSize( 1 );
-        assertThat( error.getSuppressed()[0].getMessage() ).isEqualTo( "Not pass twice" );
+        assertThat(error.getCause().getMessage()).isEqualTo("You shall not pass");
+        assertThat(error.getSuppressed()).hasSize(1);
+        assertThat(error.getSuppressed()[0].getMessage()).isEqualTo("Not pass twice");
     }
 
     @Test
-    void shouldResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception
-    {
+    void shouldResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception {
         BoltTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
         // We're in auto-commit state
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.AUTO_COMMIT);
+        assertNull(stateMachine.ctx.currentTransaction);
 
-        stateMachine.run( "RETURN 1", null );
+        stateMachine.run("RETURN 1", null);
 
         // We're in auto-commit state
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNotNull( stateMachine.ctx.currentTransaction );
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.AUTO_COMMIT);
+        assertNotNull(stateMachine.ctx.currentTransaction);
 
         // call validate transaction
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.AUTO_COMMIT);
+        assertNull(stateMachine.ctx.currentTransaction);
+        assertThat(stateMachine.ctx.statementOutcomes.entrySet()).isEmpty();
 
-        verify( transaction ).getReasonIfTerminated();
-        verify( transaction ).rollback();
+        verify(transaction).getReasonIfTerminated();
+        verify(transaction).rollback();
     }
 
     @Test
-    void shouldResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception
-    {
+    void shouldResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception {
         BoltTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
         // start an explicit transaction
-        beginTx( stateMachine );
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
-        assertNotNull( stateMachine.ctx.currentTransaction );
+        beginTx(stateMachine);
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.EXPLICIT_TRANSACTION);
+        assertNotNull(stateMachine.ctx.currentTransaction);
 
         // verify transaction, which is timed out
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.AUTO_COMMIT);
+        assertNull(stateMachine.ctx.currentTransaction);
+        assertThat(stateMachine.ctx.statementOutcomes.entrySet()).isEmpty();
 
-        verify( transaction ).getReasonIfTerminated();
-        verify( transaction ).rollback();
+        verify(transaction).getReasonIfTerminated();
+        verify(transaction).rollback();
     }
 
     @Test
-    void shouldResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception
-    {
+    void shouldResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception {
         BoltTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
         // start an explicit transaction
-        beginTx( stateMachine );
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
-        assertNotNull( stateMachine.ctx.currentTransaction );
+        beginTx(stateMachine);
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.EXPLICIT_TRANSACTION);
+        assertNotNull(stateMachine.ctx.currentTransaction);
 
-        stateMachine.run( "RETURN 1", null );
+        stateMachine.run("RETURN 1", null);
 
         // verify transaction, which is timed out
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
+        assertThat(stateMachine.state).isEqualTo(TransactionStateMachine.State.AUTO_COMMIT);
+        assertNull(stateMachine.ctx.currentTransaction);
+        assertThat(stateMachine.ctx.statementOutcomes.entrySet()).isEmpty();
 
-        verify( transaction ).getReasonIfTerminated();
-        verify( transaction ).rollback();
+        verify(transaction).getReasonIfTerminated();
+        verify(transaction).rollback();
     }
 
     @Test
-    void shouldUnbindTxAfterRun() throws Exception
-    {
+    void shouldUnbindTxAfterRun() throws Exception {
         BoltTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
-        stateMachine.run( "SOME STATEMENT", null );
+        stateMachine.run("SOME STATEMENT", null);
     }
 
     @Test
-    void shouldUnbindTxAfterStreamResult() throws Throwable
-    {
+    void shouldUnbindTxAfterStreamResult() throws Throwable {
         BoltTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
-        stateMachine.run( "SOME STATEMENT", null );
-        stateMachine.streamResult( StatementMetadata.ABSENT_QUERY_ID, EMPTY );
+        stateMachine.run("SOME STATEMENT", null);
+        stateMachine.streamResult(StatementMetadata.ABSENT_QUERY_ID, EMPTY);
     }
 
     @Test
-    void shouldCloseResultAndTransactionHandlesWhenExecutionFails() throws Exception
-    {
+    void shouldCloseResultAndTransactionHandlesWhenExecutionFails() throws Exception {
         BoltTransaction transaction = newTransaction();
-        BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        BoltResultHandle resultHandle = newResultHandle(new RuntimeException("some error"));
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction, resultHandle);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> stateMachine.run( "SOME STATEMENT", null ) );
-        assertEquals( "some error", e.getMessage() );
+        RuntimeException e = assertThrows(RuntimeException.class, () -> stateMachine.run("SOME STATEMENT", null));
+        assertEquals("some error", e.getMessage());
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
-        assertNull( stateMachine.ctx.currentTransaction );
+        assertThat(stateMachine.ctx.statementOutcomes.entrySet()).isEmpty();
+        assertNull(stateMachine.ctx.currentTransaction);
     }
 
     @Test
-    void shouldCloseResultAndTransactionHandlesWhenConsumeFails() throws Exception
-    {
+    void shouldCloseResultAndTransactionHandlesWhenConsumeFails() throws Exception {
         BoltTransaction transaction = newTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
-        stateMachine.run( "SOME STATEMENT", null );
+        stateMachine.run("SOME STATEMENT", null);
 
-        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get( StatementMetadata.ABSENT_QUERY_ID );
-        assertNotNull( outcome );
-        assertNotNull( outcome.resultHandle );
-        assertNotNull( outcome.result );
+        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get(StatementMetadata.ABSENT_QUERY_ID);
+        assertNotNull(outcome);
+        assertNotNull(outcome.resultHandle);
+        assertNotNull(outcome.result);
 
-        RuntimeException e = assertThrows( RuntimeException.class, () ->
-        {
-            stateMachine.streamResult( StatementMetadata.ABSENT_QUERY_ID, ERROR );
-        } );
-        assertEquals( "some error", e.getMessage() );
+        RuntimeException e = assertThrows(RuntimeException.class, () -> {
+            stateMachine.streamResult(StatementMetadata.ABSENT_QUERY_ID, ERROR);
+        });
+        assertEquals("some error", e.getMessage());
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
-        assertNull( stateMachine.ctx.currentTransaction );
+        assertThat(stateMachine.ctx.statementOutcomes.entrySet()).isEmpty();
+        assertNull(stateMachine.ctx.currentTransaction);
     }
 
     @Test
-    void shouldCloseResultHandlesWhenExecutionFailsInExplicitTransaction() throws Exception
-    {
+    void shouldCloseResultHandlesWhenExecutionFailsInExplicitTransaction() throws Exception {
         BoltTransaction transaction = newTransaction();
-        BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        BoltResultHandle resultHandle = newResultHandle(new RuntimeException("some error"));
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction, resultHandle);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
-        RuntimeException e = assertThrows( RuntimeException.class, () ->
-        {
-            beginTx( stateMachine );
-            stateMachine.run( "SOME STATEMENT", null );
-        } );
-        assertEquals( "some error", e.getMessage() );
+        RuntimeException e = assertThrows(RuntimeException.class, () -> {
+            beginTx(stateMachine);
+            stateMachine.run("SOME STATEMENT", null);
+        });
+        assertEquals("some error", e.getMessage());
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
-        assertNotNull( stateMachine.ctx.currentTransaction );
+        assertThat(stateMachine.ctx.statementOutcomes.entrySet()).isEmpty();
+        assertNotNull(stateMachine.ctx.currentTransaction);
     }
 
     @Test
-    void shouldOpenImplicitTransactionForCallInTransactionsQuery() throws Exception
-    {
+    void shouldOpenImplicitTransactionForCallInTransactionsQuery() throws Exception {
         BoltTransaction transaction = newTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        final BoltTransaction periodicTransaction = mock( BoltTransaction.class );
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any(), any() )).thenReturn( periodicTransaction );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
+        final BoltTransaction periodicTransaction = mock(BoltTransaction.class);
+        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(periodicTransaction);
 
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
-        stateMachine.run( CALL_IN_TRANSACTIONS_QUERY, EMPTY_MAP );
+        stateMachine.run(CALL_IN_TRANSACTIONS_QUERY, EMPTY_MAP);
 
         // transaction was created only to stream back result of the query
-        assertEquals( periodicTransaction, stateMachine.ctx.currentTransaction );
+        assertEquals(periodicTransaction, stateMachine.ctx.currentTransaction);
 
-        InOrder inOrder = inOrder( stateMachineSPI );
+        InOrder inOrder = inOrder(stateMachineSPI);
         // implicit transaction was started for query execution
-        inOrder.verify( stateMachineSPI ).beginTransaction( eq(IMPLICIT), any( LoginContext.class ), any(), any(), any(), any(), any() );
+        inOrder.verify(stateMachineSPI)
+                .beginTransaction(eq(IMPLICIT), any(LoginContext.class), any(), any(), any(), any(), any());
         // query was executed after specific transaction started
-        inOrder.verify( stateMachineSPI ).executeQuery( any( BoltQueryExecutor.class ), eq( CALL_IN_TRANSACTIONS_QUERY ), eq( EMPTY_MAP ) );
+        inOrder.verify(stateMachineSPI)
+                .executeQuery(any(BoltQueryExecutor.class), eq(CALL_IN_TRANSACTIONS_QUERY), eq(EMPTY_MAP));
     }
 
     @Test
-    void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Throwable
-    {
+    void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Throwable {
         BoltTransaction transaction = newTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
-        beginTx( stateMachine );
-        stateMachine.run( "SOME STATEMENT", null );
+        beginTx(stateMachine);
+        stateMachine.run("SOME STATEMENT", null);
 
-        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get( StatementMetadata.ABSENT_QUERY_ID );
-        assertNotNull( outcome );
-        assertNotNull( outcome.resultHandle );
-        assertNotNull( outcome.result );
+        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get(StatementMetadata.ABSENT_QUERY_ID);
+        assertNotNull(outcome);
+        assertNotNull(outcome.resultHandle);
+        assertNotNull(outcome.result);
 
-        RuntimeException e = assertThrows( RuntimeException.class, () ->
-        {
-            stateMachine.streamResult( StatementMetadata.ABSENT_QUERY_ID, ERROR );
-        } );
-        assertEquals( "some error", e.getMessage() );
+        RuntimeException e = assertThrows(RuntimeException.class, () -> {
+            stateMachine.streamResult(StatementMetadata.ABSENT_QUERY_ID, ERROR);
+        });
+        assertEquals("some error", e.getMessage());
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
-        assertNotNull( stateMachine.ctx.currentTransaction );
+        assertThat(stateMachine.ctx.statementOutcomes.entrySet()).isEmpty();
+        assertNotNull(stateMachine.ctx.currentTransaction);
     }
 
     @Test
-    void shouldNotMarkForTerminationWhenNoTransaction() throws Exception
-    {
+    void shouldNotMarkForTerminationWhenNoTransaction() throws Exception {
         BoltTransaction transaction = newTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
 
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+        TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
 
         stateMachine.markCurrentTransactionForTermination();
-        verify( transaction, never() ).markForTermination( any() );
+        verify(transaction, never()).markForTermination(any());
     }
 
-    private static void beginTx( TransactionStateMachine stateMachine ) throws KernelException
-    {
-        stateMachine.beginTransaction( null, null, AccessMode.WRITE, Map.of() );
+    private static void beginTx(TransactionStateMachine stateMachine) throws KernelException {
+        stateMachine.beginTransaction(null, null, AccessMode.WRITE, Map.of());
     }
 
-    private static void beginTx( TransactionStateMachine stateMachine, List<Bookmark> bookmarks ) throws KernelException
-    {
-        stateMachine.beginTransaction( bookmarks, null, AccessMode.WRITE, Map.of() );
+    private static void beginTx(TransactionStateMachine stateMachine, List<Bookmark> bookmarks) throws KernelException {
+        stateMachine.beginTransaction(bookmarks, null, AccessMode.WRITE, Map.of());
     }
 
-    private static BoltTransaction newTransaction()
-    {
-        return mock( BoltTransaction.class );
+    private static BoltTransaction newTransaction() {
+        return mock(BoltTransaction.class);
     }
 
-    private static BoltTransaction newTimedOutTransaction()
-    {
+    private static BoltTransaction newTimedOutTransaction() {
         BoltTransaction transaction = newTransaction();
 
-        when( transaction.getReasonIfTerminated() ).thenReturn( Optional.of( Status.Transaction.TransactionTimedOut ) );
+        when(transaction.getReasonIfTerminated()).thenReturn(Optional.of(Status.Transaction.TransactionTimedOut));
 
         return transaction;
     }
 
-    private static TransactionStateMachine newTransactionStateMachine( TransactionStateMachineSPI stateMachineSPI )
-    {
-        return new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, LoginContext.AUTH_DISABLED, new FakeClock(), null, "123" );
+    private static TransactionStateMachine newTransactionStateMachine(TransactionStateMachineSPI stateMachineSPI) {
+        return new TransactionStateMachine(
+                ABSENT_DB_NAME, stateMachineSPI, LoginContext.AUTH_DISABLED, new FakeClock(), null, "123");
     }
 
-    private static MapValue map( Object... keyValues )
-    {
-        return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
+    private static MapValue map(Object... keyValues) {
+        return ValueUtils.asMapValue(MapUtil.map(keyValues));
     }
 
-    private static TransactionStateMachineSPI newTransactionStateMachineSPI( BoltTransaction transaction ) throws KernelException
-    {
+    private static TransactionStateMachineSPI newTransactionStateMachineSPI(BoltTransaction transaction)
+            throws KernelException {
         BoltResultHandle resultHandle = newResultHandle();
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        TransactionStateMachineSPI stateMachineSPI = mock(TransactionStateMachineSPI.class);
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any(), any() ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
-
-        return stateMachineSPI;
-    }
-
-    private static TransactionStateMachineSPI newTransactionStateMachineSPI( BoltTransaction transaction,
-            BoltResultHandle resultHandle )
-    {
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
-
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any(), any()) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
+        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(transaction);
+        when(stateMachineSPI.executeQuery(any(), anyString(), any())).thenReturn(resultHandle);
 
         return stateMachineSPI;
     }
 
-    private static BoltResultHandle newResultHandle() throws KernelException
-    {
-        BoltResultHandle resultHandle = mock( BoltResultHandle.class );
+    private static TransactionStateMachineSPI newTransactionStateMachineSPI(
+            BoltTransaction transaction, BoltResultHandle resultHandle) {
+        TransactionStateMachineSPI stateMachineSPI = mock(TransactionStateMachineSPI.class);
 
-        when( resultHandle.start() ).thenReturn( BoltResult.EMPTY );
+        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(transaction);
+        when(stateMachineSPI.executeQuery(any(), anyString(), any())).thenReturn(resultHandle);
+
+        return stateMachineSPI;
+    }
+
+    private static BoltResultHandle newResultHandle() throws KernelException {
+        BoltResultHandle resultHandle = mock(BoltResultHandle.class);
+
+        when(resultHandle.start()).thenReturn(BoltResult.EMPTY);
 
         return resultHandle;
     }
 
-    private static BoltResultHandle newResultHandle( Throwable t ) throws KernelException
-    {
-        BoltResultHandle resultHandle = mock( BoltResultHandle.class );
+    private static BoltResultHandle newResultHandle(Throwable t) throws KernelException {
+        BoltResultHandle resultHandle = mock(BoltResultHandle.class);
 
-        when( resultHandle.start() ).thenThrow( t );
+        when(resultHandle.start()).thenThrow(t);
 
         return resultHandle;
     }
 
-    private static class EmptyResultConsumer implements ResultConsumer
-    {
+    private static class EmptyResultConsumer implements ResultConsumer {
         @Override
-        public boolean hasMore()
-        {
+        public boolean hasMore() {
             return false;
         }
 
         @Override
-        public void consume( BoltResult boltResult )
-        {
-        }
+        public void consume(BoltResult boltResult) {}
     }
 }

@@ -43,8 +43,7 @@ object QgWithLeafInfo {
     def isIdStable: Boolean
   }
 
-  case class StableIdentifier(override val name: String,
-                              override val isIdStable: Boolean) extends Identifier {
+  case class StableIdentifier(override val name: String, override val isIdStable: Boolean) extends Identifier {
     override def isStable: Boolean = true
   }
 
@@ -71,10 +70,12 @@ object QgWithLeafInfo {
  * @param unstableLeaves         The unstable leaves of the considered plan.
  * @param stableIdentifier       The identifier of the node found in the stable iterator.
  */
-case class QgWithLeafInfo(private val solvedQg: QueryGraph,
-                          private val stablySolvedPredicates: Set[Predicate],
-                          private val unstableLeaves: Set[String],
-                          private val stableIdentifier: Option[StableIdentifier]) {
+case class QgWithLeafInfo(
+  private val solvedQg: QueryGraph,
+  private val stablySolvedPredicates: Set[Predicate],
+  private val unstableLeaves: Set[String],
+  private val stableIdentifier: Option[StableIdentifier]
+) {
 
   /**
    * We exclude all stably solved predicates from the eagerness analysis.
@@ -86,7 +87,8 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
 
   lazy val unstablePatternNodes: Set[String] = queryGraph.allPatternNodesRead -- stableIdentifier.map(_.name)
 
-  lazy val unstablePatternRelationships: Set[PatternRelationship] = queryGraph.allPatternRelationshipsRead.filterNot(rel => stableIdentifier.exists(i => i.name == rel.name))
+  lazy val unstablePatternRelationships: Set[PatternRelationship] =
+    queryGraph.allPatternRelationshipsRead.filterNot(rel => stableIdentifier.exists(i => i.name == rel.name))
 
   lazy val patternNodes: Set[Identifier] = {
     val unstableIdentifiers: Set[Identifier] = unstablePatternNodes.map(UnstableIdentifier)
@@ -97,7 +99,7 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
   lazy val leafPatternNodes: Set[Identifier] = {
     patternNodes.filter {
       case UnstableIdentifier(name) => unstableLeaves.contains(name)
-      case _: StableIdentifier => true
+      case _: StableIdentifier      => true
     }
   }
 
@@ -119,27 +121,29 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
     patternNodes ++ entityArguments(semanticTable).map(UnstableIdentifier)
   })
 
-  val patternRelationshipsAndArguments: SemanticTable => Set[Identifier] = CachedFunction((semanticTable: SemanticTable) => {
-    patternRelationships ++ entityArguments(semanticTable).map(UnstableIdentifier)
-  })
+  val patternRelationshipsAndArguments: SemanticTable => Set[Identifier] =
+    CachedFunction((semanticTable: SemanticTable) => {
+      patternRelationships ++ entityArguments(semanticTable).map(UnstableIdentifier)
+    })
 
   lazy val patternRelationships: Set[Identifier] = {
     val unstableIdentifiers: Set[Identifier] = unstablePatternRelationships.map(rel => UnstableIdentifier(rel.name))
-    val maybeStableIdentifier = stableIdentifier.filter(i => queryGraph.patternRelationships.exists(rel => i.name == rel.name))
+    val maybeStableIdentifier =
+      stableIdentifier.filter(i => queryGraph.patternRelationships.exists(rel => i.name == rel.name))
     unstableIdentifiers ++ maybeStableIdentifier
   }
 
-  val allKnownUnstableNodeLabelsFor: Identifier => Set[LabelName] = CachedFunction((identifier:Identifier) => {
+  val allKnownUnstableNodeLabelsFor: Identifier => Set[LabelName] = CachedFunction((identifier: Identifier) => {
     if (identifier.isIdStable) Set.empty[LabelName]
     else queryGraph.allPossibleLabelsOnNode(identifier.name)
   })
 
-  val allPossibleUnstableRelTypesFor: Identifier => Set[RelTypeName] = CachedFunction((identifier:Identifier) => {
+  val allPossibleUnstableRelTypesFor: Identifier => Set[RelTypeName] = CachedFunction((identifier: Identifier) => {
     if (identifier.isIdStable) Set.empty[RelTypeName]
     else queryGraph.allPossibleTypesOnRel(identifier.name)
   })
 
-  val allKnownUnstablePropertiesFor: Identifier => Set[PropertyKeyName] = CachedFunction((identifier:Identifier) => {
+  val allKnownUnstablePropertiesFor: Identifier => Set[PropertyKeyName] = CachedFunction((identifier: Identifier) => {
     if (identifier.isIdStable) Set.empty[PropertyKeyName]
     else queryGraph.allKnownPropertiesOnIdentifier(identifier.name)
   })
@@ -148,16 +152,23 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
     patternNodesAndArguments(semanticTable).flatMap(allKnownUnstableNodeLabelsFor)
   })
 
-  val allKnownUnstableNodeProperties: SemanticTable => Set[PropertyKeyName] = CachedFunction((semanticTable: SemanticTable) => {
-    patternNodesAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
-  })
+  val allKnownUnstableNodeProperties: SemanticTable => Set[PropertyKeyName] =
+    CachedFunction((semanticTable: SemanticTable) => {
+      patternNodesAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
+    })
 
-  val allKnownUnstableRelProperties: SemanticTable => Set[PropertyKeyName] = CachedFunction((semanticTable: SemanticTable) => {
-    patternRelationshipsAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
-  })
+  val allKnownUnstableRelProperties: SemanticTable => Set[PropertyKeyName] = CachedFunction(
+    (semanticTable: SemanticTable) => {
+      patternRelationshipsAndArguments(semanticTable).flatMap(
+        allKnownUnstablePropertiesFor
+      ) ++ patternExpressionProperties
+    }
+  )
 
   private lazy val patternExpressionProperties: Set[PropertyKeyName] = {
-    (queryGraph.folder.findAllByClass[PatternComprehension] ++ queryGraph.folder.findAllByClass[PatternExpression]).flatMap {
+    (queryGraph.folder.findAllByClass[PatternComprehension] ++ queryGraph.folder.findAllByClass[
+      PatternExpression
+    ]).flatMap {
       _.folder.findAllByClass[PropertyKeyName]
     }.toSet
   }

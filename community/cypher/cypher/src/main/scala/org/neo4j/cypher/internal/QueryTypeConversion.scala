@@ -33,11 +33,11 @@ object QueryTypeConversion {
 
   def asPublic(internal: InternalQueryType): QueryType =
     internal match {
-      case READ_ONLY => QueryExecutionType.QueryType.READ_ONLY
-      case READ_WRITE => QueryExecutionType.QueryType.READ_WRITE
-      case WRITE => QueryExecutionType.QueryType.WRITE
+      case READ_ONLY    => QueryExecutionType.QueryType.READ_ONLY
+      case READ_WRITE   => QueryExecutionType.QueryType.READ_WRITE
+      case WRITE        => QueryExecutionType.QueryType.WRITE
       case SCHEMA_WRITE => QueryExecutionType.QueryType.SCHEMA_WRITE
-      case DBMS => QueryExecutionType.QueryType.DBMS
-      case DBMS_READ => QueryExecutionType.QueryType.DBMS
+      case DBMS         => QueryExecutionType.QueryType.DBMS
+      case DBMS_READ    => QueryExecutionType.QueryType.DBMS
     }
 }

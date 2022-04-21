@@ -19,70 +19,65 @@
  */
 package org.neo4j.bolt.runtime.scheduling;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.Collection;
-
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.Job;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class BoltConnectionQueueMonitorAggregateTest
-{
-    private final BoltConnection connection = mock( BoltConnection.class );
+import java.util.ArrayList;
+import java.util.Collection;
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.Job;
+
+public class BoltConnectionQueueMonitorAggregateTest {
+    private final BoltConnection connection = mock(BoltConnection.class);
 
     @Test
-    void shouldCallEnqueuedOnSingleMonitor()
-    {
-        Job job = mock( Job.class );
-        BoltConnectionQueueMonitor monitor = mock( BoltConnectionQueueMonitor.class );
-        BoltConnectionQueueMonitorAggregate monitorAggregate = new BoltConnectionQueueMonitorAggregate( monitor );
+    void shouldCallEnqueuedOnSingleMonitor() {
+        Job job = mock(Job.class);
+        BoltConnectionQueueMonitor monitor = mock(BoltConnectionQueueMonitor.class);
+        BoltConnectionQueueMonitorAggregate monitorAggregate = new BoltConnectionQueueMonitorAggregate(monitor);
 
-        monitorAggregate.enqueued( connection, job );
+        monitorAggregate.enqueued(connection, job);
 
-        verify( monitor ).enqueued( connection, job );
+        verify(monitor).enqueued(connection, job);
     }
 
     @Test
-    void shouldCallDrainedOnSingleMonitor()
-    {
+    void shouldCallDrainedOnSingleMonitor() {
         Collection<Job> batch = new ArrayList<>();
-        BoltConnectionQueueMonitor monitor = mock( BoltConnectionQueueMonitor.class );
-        BoltConnectionQueueMonitorAggregate monitorAggregate = new BoltConnectionQueueMonitorAggregate( monitor );
+        BoltConnectionQueueMonitor monitor = mock(BoltConnectionQueueMonitor.class);
+        BoltConnectionQueueMonitorAggregate monitorAggregate = new BoltConnectionQueueMonitorAggregate(monitor);
 
-        monitorAggregate.drained( connection, batch );
+        monitorAggregate.drained(connection, batch);
 
-        verify( monitor ).drained( connection, batch );
+        verify(monitor).drained(connection, batch);
     }
 
     @Test
-    void shouldCallEnqueuedOnEachMonitor()
-    {
-        Job job = mock( Job.class );
-        BoltConnectionQueueMonitor monitor1 = mock( BoltConnectionQueueMonitor.class );
-        BoltConnectionQueueMonitor monitor2 = mock( BoltConnectionQueueMonitor.class );
-        BoltConnectionQueueMonitorAggregate monitorAggregate = new BoltConnectionQueueMonitorAggregate( monitor1, monitor2 );
+    void shouldCallEnqueuedOnEachMonitor() {
+        Job job = mock(Job.class);
+        BoltConnectionQueueMonitor monitor1 = mock(BoltConnectionQueueMonitor.class);
+        BoltConnectionQueueMonitor monitor2 = mock(BoltConnectionQueueMonitor.class);
+        BoltConnectionQueueMonitorAggregate monitorAggregate =
+                new BoltConnectionQueueMonitorAggregate(monitor1, monitor2);
 
-        monitorAggregate.enqueued( connection, job );
+        monitorAggregate.enqueued(connection, job);
 
-        verify( monitor1 ).enqueued( connection, job );
-        verify( monitor2 ).enqueued( connection, job );
+        verify(monitor1).enqueued(connection, job);
+        verify(monitor2).enqueued(connection, job);
     }
 
     @Test
-    void shouldCallDrainedOnEachMonitor()
-    {
+    void shouldCallDrainedOnEachMonitor() {
         Collection<Job> batch = new ArrayList<>();
-        BoltConnectionQueueMonitor monitor1 = mock( BoltConnectionQueueMonitor.class );
-        BoltConnectionQueueMonitor monitor2 = mock( BoltConnectionQueueMonitor.class );
-        BoltConnectionQueueMonitorAggregate monitorAggregate = new BoltConnectionQueueMonitorAggregate( monitor1, monitor2 );
+        BoltConnectionQueueMonitor monitor1 = mock(BoltConnectionQueueMonitor.class);
+        BoltConnectionQueueMonitor monitor2 = mock(BoltConnectionQueueMonitor.class);
+        BoltConnectionQueueMonitorAggregate monitorAggregate =
+                new BoltConnectionQueueMonitorAggregate(monitor1, monitor2);
 
-        monitorAggregate.drained( connection, batch );
+        monitorAggregate.drained(connection, batch);
 
-        verify( monitor1 ).drained( connection, batch );
-        verify( monitor2 ).drained( connection, batch );
+        verify(monitor1).drained(connection, batch);
+        verify(monitor2).drained(connection, batch);
     }
 }

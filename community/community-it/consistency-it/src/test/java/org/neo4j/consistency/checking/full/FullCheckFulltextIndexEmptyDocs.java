@@ -19,10 +19,13 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -43,16 +46,11 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-
 @TestDirectoryExtension
-public class FullCheckFulltextIndexEmptyDocs
-{
+public class FullCheckFulltextIndexEmptyDocs {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private FileSystemAbstraction fs;
 
@@ -63,49 +61,51 @@ public class FullCheckFulltextIndexEmptyDocs
      * when they actually are usable.
      */
     @Test
-    void shouldNotReportEmptyDocsInFulltextIndexAsInconsistencies() throws Throwable
-    {
-        Config config = Config.newBuilder()
-                .set( neo4j_home, testDirectory.homePath() ).build();
+    void shouldNotReportEmptyDocsInFulltextIndexAsInconsistencies() throws Throwable {
+        Config config =
+                Config.newBuilder().set(neo4j_home, testDirectory.homePath()).build();
 
-        DatabaseManagementService managementService = startUpOldDb( config );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = startUpOldDb(config);
+        GraphDatabaseAPI db =
+                (GraphDatabaseAPI) managementService.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();
 
-        ConsistencyCheckService.Result result = check( config, layout );
-        assertTrue( result.isSuccessful() );
+        ConsistencyCheckService.Result result = check(config, layout);
+        assertTrue(result.isSuccessful());
     }
 
-    private ConsistencyCheckService.Result check( Config config, DatabaseLayout layout ) throws Exception
-    {
+    private ConsistencyCheckService.Result check(Config config, DatabaseLayout layout) throws Exception {
         JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        ConfiguringPageCacheFactory pageCacheFactory =
-                new ConfiguringPageCacheFactory( fs, config, NULL, NullLog.getInstance(),
-                        jobScheduler, Clocks.nanoClock(), new MemoryPools( config.get( memory_tracking ) ) );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                fs,
+                config,
+                NULL,
+                NullLog.getInstance(),
+                jobScheduler,
+                Clocks.nanoClock(),
+                new MemoryPools(config.get(memory_tracking)));
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         ConsistencyCheckService.Result result;
-        try
-        {
-            result = new ConsistencyCheckService( layout )
-                    .with( config )
-                    .with( fs )
-                    .with( pageCache )
-                    .with( layout.databaseDirectory() )
+        try {
+            result = new ConsistencyCheckService(layout)
+                    .with(config)
+                    .with(fs)
+                    .with(pageCache)
+                    .with(layout.databaseDirectory())
                     .runFullConsistencyCheck();
-        }
-        finally
-        {
+        } finally {
             pageCache.close();
             jobScheduler.close();
         }
         return result;
     }
 
-    private DatabaseManagementService startUpOldDb( Config config ) throws IOException
-    {
-        Unzip.unzip( getClass(), "SF5.0.0_fulltextWithEmptyDocs.zip", testDirectory.homePath() );
+    private DatabaseManagementService startUpOldDb(Config config) throws IOException {
+        Unzip.unzip(getClass(), "SF5.0.0_fulltextWithEmptyDocs.zip", testDirectory.homePath());
 
-        return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( config ).build();
+        return new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setConfig(config)
+                .build();
     }
 }

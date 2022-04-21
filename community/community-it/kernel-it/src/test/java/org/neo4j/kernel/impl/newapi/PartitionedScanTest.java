@@ -21,55 +21,42 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Nested;
 
-class PartitionedScanTest
-{
+class PartitionedScanTest {
     // Token Indexes
 
     @Nested
-    class NodeLabelIndexScan extends NodeLabelIndexScanPartitionedScanTestSuite
-    {
-    }
+    class NodeLabelIndexScan extends NodeLabelIndexScanPartitionedScanTestSuite {}
 
     @Nested
-    class RelationshipTypeIndexScan extends RelationshipTypeIndexScanPartitionedScanTestSuite
-    {
-    }
+    class RelationshipTypeIndexScan extends RelationshipTypeIndexScanPartitionedScanTestSuite {}
 
     // Property Indexes
 
     @Nested
-    class NodePropertyIndexSeek extends NodePropertyIndexSeekPartitionedScanTestSuite
-    {
-        NodePropertyIndexSeek()
-        {
-            super( TestIndexType.RANGE );
+    class NodePropertyIndexSeek extends NodePropertyIndexSeekPartitionedScanTestSuite {
+        NodePropertyIndexSeek() {
+            super(TestIndexType.RANGE);
         }
     }
 
     @Nested
-    class NodePropertyIndexScan extends NodePropertyIndexScanPartitionedScanTestSuite
-    {
-        NodePropertyIndexScan()
-        {
-            super( TestIndexType.RANGE );
+    class NodePropertyIndexScan extends NodePropertyIndexScanPartitionedScanTestSuite {
+        NodePropertyIndexScan() {
+            super(TestIndexType.RANGE);
         }
     }
 
     @Nested
-    class RelationshipPropertyIndexSeek extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
-    {
-        RelationshipPropertyIndexSeek()
-        {
-            super( TestIndexType.RANGE );
+    class RelationshipPropertyIndexSeek extends RelationshipPropertyIndexSeekPartitionedScanTestSuite {
+        RelationshipPropertyIndexSeek() {
+            super(TestIndexType.RANGE);
         }
     }
 
     @Nested
-    class RelationshipPropertyIndexScan extends RelationshipPropertyIndexScanPartitionedScanTestSuite
-    {
-        RelationshipPropertyIndexScan()
-        {
-            super( TestIndexType.RANGE );
+    class RelationshipPropertyIndexScan extends RelationshipPropertyIndexScanPartitionedScanTestSuite {
+        RelationshipPropertyIndexScan() {
+            super(TestIndexType.RANGE);
         }
     }
 }

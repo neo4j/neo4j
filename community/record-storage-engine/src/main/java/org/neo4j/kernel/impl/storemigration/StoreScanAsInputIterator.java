@@ -19,45 +19,39 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static java.lang.Long.min;
+
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-
-import static java.lang.Long.min;
 
 /**
  * An {@link InputIterator} backed by a {@link RecordStore}, iterating over all used records.
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> implements InputIterator
-{
+abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> implements InputIterator {
     private final int batchSize;
     private final long highId;
     private long id;
 
-    StoreScanAsInputIterator( RecordStore<RECORD> store )
-    {
+    StoreScanAsInputIterator(RecordStore<RECORD> store) {
         this.batchSize = store.getRecordsPerPage() * 10;
         this.highId = store.getHighId();
     }
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 
     @Override
-    public synchronized boolean next( InputChunk chunk )
-    {
-        if ( id >= highId )
-        {
+    public synchronized boolean next(InputChunk chunk) {
+        if (id >= highId) {
             return false;
         }
         long startId = id;
-        id = min( highId, startId + batchSize );
-        ((StoreScanChunk<?>) chunk).initialize( startId, id );
+        id = min(highId, startId + batchSize);
+        ((StoreScanChunk<?>) chunk).initialize(startId, id);
         return true;
     }
 }

@@ -36,14 +36,14 @@ package org.neo4j.storageengine.api;
  * transaction imposes have been applied to the store.
  * </ol>
  */
-public interface TransactionIdStore
-{
+public interface TransactionIdStore {
     /**
      * Tx id counting starting from this value (this value means no transaction ever committed).
      *
      * Note that a read only transaction will get txId = 0.
      */
     long BASE_TX_ID = 1;
+
     int BASE_TX_CHECKSUM = 0xDEAD5EED;
 
     /**
@@ -61,7 +61,8 @@ public interface TransactionIdStore
      */
     long UNKNOWN_TX_COMMIT_TIMESTAMP = 1;
 
-    TransactionId UNKNOWN_TRANSACTION_ID = new TransactionId( BASE_TX_ID - 1, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP );
+    TransactionId UNKNOWN_TRANSACTION_ID =
+            new TransactionId(BASE_TX_ID - 1, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP);
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}
@@ -82,7 +83,7 @@ public interface TransactionIdStore
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
      */
-    void transactionCommitted( long transactionId, int checksum, long commitTimestamp );
+    void transactionCommitted(long transactionId, int checksum, long commitTimestamp);
 
     /**
      * @return highest seen {@link #transactionCommitted(long, int, long)}  committed transaction id}.
@@ -118,7 +119,8 @@ public interface TransactionIdStore
      * @param byteOffset offset in the log file where the committed entry has been written.
      * @param logVersion version of log the committed entry has been written into.
      */
-    void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion );
+    void setLastCommittedAndClosedTransactionId(
+            long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion);
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method
@@ -129,7 +131,7 @@ public interface TransactionIdStore
      * @param checksum applied transaction checksum
      * @param commitTimestamp applied transaction commit timestamp
      */
-    void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp );
+    void transactionClosed(long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp);
 
     /**
      * Unconditionally set last closed transaction info. Should be used for cases where last closed transaction info should be
@@ -141,5 +143,6 @@ public interface TransactionIdStore
      * @param checksum new last closed transaction checksum
      * @param commitTimestamp new last closed transaction commit timestamp
      */
-    void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp );
+    void resetLastClosedTransaction(
+            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp);
 }

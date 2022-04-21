@@ -24,10 +24,8 @@ import static java.lang.Integer.min;
 /**
  * Various utilities for manipulating and understanding bit-sets.
  */
-final class BitsUtil
-{
-    private BitsUtil()
-    {
+final class BitsUtil {
+    private BitsUtil() {
         // util
     }
 
@@ -38,8 +36,7 @@ final class BitsUtil
      * @param slots number of bits to set.
      * @return a {@code long} with the desired bits set.
      */
-    static long bitsInSingleLong( int start, int slots )
-    {
+    static long bitsInSingleLong(int start, int slots) {
         long bits = (start + slots == Long.SIZE) ? -1 : (1L << (start + slots)) - 1;
         return bits & -(1L << start);
     }
@@ -52,14 +49,12 @@ final class BitsUtil
      * @param slots number of bits to set.
      * @param bitsArraySlot the index into {@code bits} which will have the bits set.
      */
-    static void setBits( long[] bits, int start, int slots, int bitsArraySlot )
-    {
+    static void setBits(long[] bits, int start, int slots, int bitsArraySlot) {
         int firstArraySlot = bitsArraySlot + start / Long.SIZE;
         start %= Long.SIZE;
-        for ( int arraySlot = firstArraySlot; slots > 0; arraySlot++ )
-        {
-            int slotsInThisLong = min( slots, Long.SIZE - start );
-            long bitsInThisSlot = bitsInSingleLong( start, slotsInThisLong );
+        for (int arraySlot = firstArraySlot; slots > 0; arraySlot++) {
+            int slotsInThisLong = min(slots, Long.SIZE - start);
+            long bitsInThisSlot = bitsInSingleLong(start, slotsInThisLong);
             assert bits[arraySlot] == 0;
             bits[arraySlot] = bitsInThisSlot;
             slots -= slotsInThisLong;

@@ -19,73 +19,71 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptors;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 
-class IndexMapTest
-{
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
+
+class IndexMapTest {
     private IndexMap indexMap;
 
-    private final LabelSchemaDescriptor schema3_4 = SchemaDescriptors.forLabel( 3, 4 );
-    private final IndexDescriptor index3_4 = forSchema( schema3_4 ).withName( "index_1" ).materialise( 1 );
-    private final LabelSchemaDescriptor schema5_6_7 = SchemaDescriptors.forLabel( 5, 6, 7 );
-    private final IndexDescriptor index5_6_7 = forSchema( schema5_6_7 ).withName( "index_2" ).materialise( 2 );
-    private final LabelSchemaDescriptor schema5_8 = SchemaDescriptors.forLabel( 5, 8 );
-    private final IndexDescriptor index5_8 = forSchema( schema5_8 ).withName( "index_3" ).materialise( 3 );
-    private final SchemaDescriptor node35_8 = SchemaDescriptors.fulltext( NODE, new int[]{3, 5}, new int[]{8} );
-    private final IndexDescriptor index_node35_8 = forSchema( node35_8 ).withName( "index_4" ).materialise( 4 );
-    private final SchemaDescriptor rel35_8 = SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{3, 5}, new int[]{8} );
-    private final IndexDescriptor index_rel35_8 = forSchema( rel35_8 ).withName( "index_5" ).materialise( 5 );
+    private final LabelSchemaDescriptor schema3_4 = SchemaDescriptors.forLabel(3, 4);
+    private final IndexDescriptor index3_4 =
+            forSchema(schema3_4).withName("index_1").materialise(1);
+    private final LabelSchemaDescriptor schema5_6_7 = SchemaDescriptors.forLabel(5, 6, 7);
+    private final IndexDescriptor index5_6_7 =
+            forSchema(schema5_6_7).withName("index_2").materialise(2);
+    private final LabelSchemaDescriptor schema5_8 = SchemaDescriptors.forLabel(5, 8);
+    private final IndexDescriptor index5_8 =
+            forSchema(schema5_8).withName("index_3").materialise(3);
+    private final SchemaDescriptor node35_8 = SchemaDescriptors.fulltext(NODE, new int[] {3, 5}, new int[] {8});
+    private final IndexDescriptor index_node35_8 =
+            forSchema(node35_8).withName("index_4").materialise(4);
+    private final SchemaDescriptor rel35_8 = SchemaDescriptors.fulltext(RELATIONSHIP, new int[] {3, 5}, new int[] {8});
+    private final IndexDescriptor index_rel35_8 =
+            forSchema(rel35_8).withName("index_5").materialise(5);
 
     @BeforeEach
-    void setup()
-    {
+    void setup() {
         indexMap = new IndexMap();
-        indexMap.putIndexProxy( new TestIndexProxy( index3_4 ) );
-        indexMap.putIndexProxy( new TestIndexProxy( index5_6_7 ) );
-        indexMap.putIndexProxy( new TestIndexProxy( index5_8 ) );
-        indexMap.putIndexProxy( new TestIndexProxy( index_node35_8 ) );
-        indexMap.putIndexProxy( new TestIndexProxy( index_rel35_8 ) );
+        indexMap.putIndexProxy(new TestIndexProxy(index3_4));
+        indexMap.putIndexProxy(new TestIndexProxy(index5_6_7));
+        indexMap.putIndexProxy(new TestIndexProxy(index5_8));
+        indexMap.putIndexProxy(new TestIndexProxy(index_node35_8));
+        indexMap.putIndexProxy(new TestIndexProxy(index_rel35_8));
     }
 
     @Test
-    void shouldGetById()
-    {
-        assertEquals( schema3_4, indexMap.getIndexProxy( 1L ).getDescriptor().schema() );
-        assertEquals( schema5_6_7, indexMap.getIndexProxy( 2L ).getDescriptor().schema() );
+    void shouldGetById() {
+        assertEquals(schema3_4, indexMap.getIndexProxy(1L).getDescriptor().schema());
+        assertEquals(schema5_6_7, indexMap.getIndexProxy(2L).getDescriptor().schema());
     }
 
     @Test
-    void shouldGetByDescriptor()
-    {
-        assertEquals( schema5_8, indexMap.getIndexProxy( index5_8 ).getDescriptor().schema() );
-        assertEquals( node35_8, indexMap.getIndexProxy( index_node35_8 ).getDescriptor().schema() );
+    void shouldGetByDescriptor() {
+        assertEquals(schema5_8, indexMap.getIndexProxy(index5_8).getDescriptor().schema());
+        assertEquals(
+                node35_8, indexMap.getIndexProxy(index_node35_8).getDescriptor().schema());
     }
 
     // HELPERS
 
-    private static class TestIndexProxy extends IndexProxyAdapter
-    {
+    private static class TestIndexProxy extends IndexProxyAdapter {
         private final IndexDescriptor descriptor;
 
-        private TestIndexProxy( IndexDescriptor descriptor )
-        {
+        private TestIndexProxy(IndexDescriptor descriptor) {
             this.descriptor = descriptor;
         }
 
         @Override
-        public IndexDescriptor getDescriptor()
-        {
+        public IndexDescriptor getDescriptor() {
             return descriptor;
         }
     }

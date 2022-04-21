@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.discovery;
 
+import static org.neo4j.server.http.cypher.CypherResource.absoluteDatabaseTransactionPath;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
@@ -26,27 +28,23 @@ import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.CypherResource;
 
-import static org.neo4j.server.http.cypher.CypherResource.absoluteDatabaseTransactionPath;
-
-public class CommunityDiscoverableURIs
-{
+public class CommunityDiscoverableURIs {
     /**
      * URIs exposed at the root HTTP endpoint, to help clients discover the rest of the service.
      */
-    public static DiscoverableURIs communityDiscoverableURIs( Config config, ConnectorPortRegister portRegister,
-                                                              ClientRoutingDomainChecker clientRoutingDomainChecker )
-    {
-        return communityDiscoverableURIsBuilder( config, portRegister, clientRoutingDomainChecker ).build();
+    public static DiscoverableURIs communityDiscoverableURIs(
+            Config config, ConnectorPortRegister portRegister, ClientRoutingDomainChecker clientRoutingDomainChecker) {
+        return communityDiscoverableURIsBuilder(config, portRegister, clientRoutingDomainChecker)
+                .build();
     }
 
-    public static DiscoverableURIs.Builder communityDiscoverableURIsBuilder( Config config, ConnectorPortRegister portRegister,
-                                                                             ClientRoutingDomainChecker clientRoutingDomainChecker )
-    {
-        var builder = new DiscoverableURIs.Builder( clientRoutingDomainChecker );
-        if ( config.get( ServerSettings.http_enabled_modules ).contains( ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS ) )
-        {
-            builder = builder.addEndpoint( CypherResource.NAME, absoluteDatabaseTransactionPath( config ) );
+    public static DiscoverableURIs.Builder communityDiscoverableURIsBuilder(
+            Config config, ConnectorPortRegister portRegister, ClientRoutingDomainChecker clientRoutingDomainChecker) {
+        var builder = new DiscoverableURIs.Builder(clientRoutingDomainChecker);
+        if (config.get(ServerSettings.http_enabled_modules)
+                .contains(ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS)) {
+            builder = builder.addEndpoint(CypherResource.NAME, absoluteDatabaseTransactionPath(config));
         }
-        return builder.addBoltEndpoint( config, portRegister );
+        return builder.addBoltEndpoint(config, portRegister);
     }
 }

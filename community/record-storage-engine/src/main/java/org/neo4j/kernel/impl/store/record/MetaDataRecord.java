@@ -21,50 +21,41 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
 
-public class MetaDataRecord extends AbstractBaseRecord
-{
+public class MetaDataRecord extends AbstractBaseRecord {
     private long value;
 
-    public MetaDataRecord()
-    {
-        super( -1 );
+    public MetaDataRecord() {
+        super(-1);
     }
 
-    public MetaDataRecord initialize( boolean inUse, long value )
-    {
-        super.initialize( inUse );
+    public MetaDataRecord initialize(boolean inUse, long value) {
+        super.initialize(inUse);
         this.value = value;
         return this;
     }
 
     @Override
-    public void clear()
-    {
-        initialize( false, -1 );
+    public void clear() {
+        initialize(false, -1);
     }
 
-    public long getValue()
-    {
+    public long getValue() {
         return value;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "Meta[%d,value:%d]", getId(), value );
+    public String toString() {
+        return String.format("Meta[%d,value:%d]", getId(), value);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( super.hashCode(), value );
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), value);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( !super.equals( obj ) )
-        {
+    public boolean equals(Object obj) {
+        if (!super.equals(obj)) {
             return false;
         }
         MetaDataRecord other = (MetaDataRecord) obj;

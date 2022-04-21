@@ -22,8 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
-public interface PartitionedTokenScan
-{
+public interface PartitionedTokenScan {
     /**
      * @return the number of partitions that can be reserved by this instance.
      */
@@ -35,5 +34,5 @@ public interface PartitionedTokenScan
      * @return An {@link IndexProgressor} used for reading the data of one partition
      * or {@link IndexProgressor#EMPTY} if there are no more partitions.
      */
-    IndexProgressor reservePartition( IndexProgressor.EntityTokenClient client, CursorContext cursorContext );
+    IndexProgressor reservePartition(IndexProgressor.EntityTokenClient client, CursorContext cursorContext);
 }

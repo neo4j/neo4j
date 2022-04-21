@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.util.collection;
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
-
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
@@ -30,13 +29,12 @@ import org.neo4j.values.storable.Value;
  * The purpose of this factory is the ability to switch between multiple collection implementations (e.g. on- or off-heap),
  * keeping track of underlying memory allocations.
  */
-public interface CollectionsFactory
-{
-    MutableLongSet newLongSet( MemoryTracker memoryTracker );
+public interface CollectionsFactory {
+    MutableLongSet newLongSet(MemoryTracker memoryTracker);
 
-    MutableLongDiffSets newLongDiffSets( MemoryTracker memoryTracker );
+    MutableLongDiffSets newLongDiffSets(MemoryTracker memoryTracker);
 
-    MutableLongObjectMap<Value> newValuesMap( MemoryTracker memoryTracker );
+    MutableLongObjectMap<Value> newValuesMap(MemoryTracker memoryTracker);
 
     /**
      * Release previously created collections. This method does not invalidate the factory.

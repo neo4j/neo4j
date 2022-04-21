@@ -39,16 +39,19 @@ object groupInequalityPredicatesForLegacy extends (NonEmptyList[Predicate] => No
   def apply(inputPredicates: NonEmptyList[Predicate]): NonEmptyList[Predicate] = {
 
     // categorize predicates according to whether they contain an inequality or not
-    val partitions: Either[(NonEmptyList[ComparablePredicate], Option[NonEmptyList[Predicate]]), (Option[NonEmptyList[ComparablePredicate]], NonEmptyList[Predicate])] = inputPredicates.partition {
+    val partitions: Either[
+      (NonEmptyList[ComparablePredicate], Option[NonEmptyList[Predicate]]),
+      (Option[NonEmptyList[ComparablePredicate]], NonEmptyList[Predicate])
+    ] = inputPredicates.partition {
       case comparable: ComparablePredicate => Left(comparable)
-      case predicate => Right(predicate)
+      case predicate                       => Right(predicate)
     }
 
     // detect if we need to transform the input
     val optInequalities = partitions match {
-      case Left((comparables, remainder)) => Some(comparables -> remainder)
+      case Left((comparables, remainder))        => Some(comparables -> remainder)
       case Right((Some(comparables), remainder)) => Some(comparables -> Some(remainder))
-      case Right((None, _)) => None
+      case Right((None, _))                      => None
     }
 
     optInequalities match {
@@ -76,8 +79,8 @@ object groupInequalityPredicatesForLegacy extends (NonEmptyList[Predicate] => No
   private def groupedComparablePredicates(comparables: NonEmptyList[ComparablePredicate]) = {
     comparables.groupBy { input: ComparablePredicate =>
       input.left match {
-        case prop@Property(ident: Variable, _) => Some(ident -> prop)
-        case _ => None
+        case prop @ Property(ident: Variable, _) => Some(ident -> prop)
+        case _                                   => None
       }
     }.toNonEmptyListOption.get
   }

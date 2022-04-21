@@ -19,24 +19,23 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-public interface SpaceFillingCurveMonitor
-{
+public interface SpaceFillingCurveMonitor {
     /**
      * Tells the monitor that a range was added at a certain depth in the space filling curve.
      * Can be used to build a histogram showing how many ranges were added at which depth.
      *
      * @param depth the current recursion depth
      */
-    void addRangeAtDepth( int depth );
+    void addRangeAtDepth(int depth);
 
     /**
      * Tell the monitor about the size of the search area in normalized space.
      */
-    void registerSearchArea( long size );
+    void registerSearchArea(long size);
 
     /**
      * Tell the monitor that a new area of the search space was covered (with the given size)
      * by adding a range.
      */
-    void addToCoveredArea( long size );
+    void addToCoveredArea(long size);
 }

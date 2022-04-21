@@ -28,10 +28,10 @@ import org.neo4j.kernel.api.exceptions.Status;
  *
  * @see KernelTransaction#thawLocks()
  */
-public class LocksNotFrozenException extends KernelException
-{
-    public LocksNotFrozenException()
-    {
-        super( Status.Transaction.TransactionAccessedConcurrently, "Attempted to thaw Transaction locks that were not frozen." );
+public class LocksNotFrozenException extends KernelException {
+    public LocksNotFrozenException() {
+        super(
+                Status.Transaction.TransactionAccessedConcurrently,
+                "Attempted to thaw Transaction locks that were not frozen.");
     }
 }

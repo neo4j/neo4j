@@ -35,6 +35,7 @@ import org.neo4j.values.virtual.VirtualValues
 class ConstantCachedInTest extends CachedInTest {
   override def createPredicate(lhs: Variable, rhs: Expression): Predicate = ConstantCachedIn(lhs, rhs, Id.INVALID_ID)
 }
+
 class DynamicConstantInTest extends CachedInTest {
   override def createPredicate(lhs: Variable, rhs: Expression): Predicate = DynamicCachedIn(lhs, rhs, Id.INVALID_ID)
 }
@@ -90,7 +91,6 @@ abstract class CachedInTest extends CypherFunSuite {
 
     val state = QueryStateHelper.empty
 
-
     val v1 = CypherRow.empty.copyWith("x", intValue(1))
     val vNull = CypherRow.empty.copyWith("x", NO_VALUE)
     val v14 = CypherRow.empty.copyWith("x", intValue(14))
@@ -110,7 +110,8 @@ abstract class CachedInTest extends CypherFunSuite {
     // given
     val listInList = ListLiteral(
       ListLiteral(literal(1), literal(2)),
-      ListLiteral(literal(3), literal(4)))
+      ListLiteral(literal(3), literal(4))
+    )
     val predicate = createPredicate(Variable("x"), listInList)
 
     val state = QueryStateHelper.empty

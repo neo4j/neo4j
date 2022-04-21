@@ -23,8 +23,7 @@ package org.neo4j.graphdb.traversal;
  * Interface for filters preventing the traversal from visiting already seen parts of the graph. Implementations can
  * allow for different heuristics to use to determine what may be re-visited.
  */
-public interface UniquenessFilter
-{
+public interface UniquenessFilter {
     /**
      * The check whether or not to expand the first branch is a separate
      * method because it may contain checks which would be unnecessary for
@@ -35,7 +34,7 @@ public interface UniquenessFilter
      * @return whether or not {@code branch} is unique, and hence can be
      *         visited in this traversal.
      */
-    boolean checkFirst( TraversalBranch branch );
+    boolean checkFirst(TraversalBranch branch);
 
     /**
      * Checks whether or not {@code branch} is unique, and hence can be
@@ -45,5 +44,5 @@ public interface UniquenessFilter
      * @return whether or not {@code branch} is unique, and hence can be
      *         visited in this traversal.
      */
-    boolean check( TraversalBranch branch );
+    boolean check(TraversalBranch branch);
 }

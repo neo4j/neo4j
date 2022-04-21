@@ -19,14 +19,21 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -54,31 +61,26 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
-
 @PageCacheExtension
-@ExtendWith( RandomExtension.class )
-abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
-{
+@ExtendWith(RandomExtension.class)
+abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>> {
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS_84;
     private static final Config config = Config.defaults();
-    static final IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
-    static final SpaceFillingCurve curve = indexSettings.forCrs( crs );
+    static final IndexSpecificSpaceFillingCurveSettings indexSettings =
+            IndexSpecificSpaceFillingCurveSettings.fromConfig(config);
+    static final SpaceFillingCurve curve = indexSettings.forCrs(crs);
 
     @Inject
     FileSystemAbstraction fs;
+
     @Inject
     TestDirectory directory;
+
     @Inject
     PageCache pageCache;
+
     CursorContextFactory contextFactory;
+
     @Inject
     RandomSupport random;
 
@@ -90,16 +92,14 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
     abstract NativeIndexAccessor<KEY> createAccessor();
 
     @BeforeEach
-    void setup()
-    {
-        contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+    void setup() {
+        contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         descriptor = createDescriptor();
         accessor = createAccessor();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         accessor.close();
     }
 
@@ -109,39 +109,38 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
      * We verify this by asserting that we always get exactly one hit on an exact match and that the value is what we expect.
      */
     @Test
-    void mustHandlePointsWithinSameTile() throws IndexEntryConflictException, IndexNotApplicableKernelException
-    {
+    void mustHandlePointsWithinSameTile() throws IndexEntryConflictException, IndexNotApplicableKernelException {
         // given
-        // Many random points that all are close enough to each other to belong to the same tile on the space filling curve.
+        // Many random points that all are close enough to each other to belong to the same tile on the space filling
+        // curve.
         int nbrOfValues = 10000;
-        PointValue origin = Values.pointValue( WGS_84, 0.0, 0.0 );
-        Long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
-        double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint );
-        double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2;
-        double yWidthMultiplier = curve.getTileWidth( 1, curve.getMaxLevel() ) / 2;
+        PointValue origin = Values.pointValue(WGS_84, 0.0, 0.0);
+        Long derivedValueForCenterPoint = curve.derivedValueFor(origin.coordinate());
+        double[] centerPoint = curve.centerPointFor(derivedValueForCenterPoint);
+        double xWidthMultiplier = curve.getTileWidth(0, curve.getMaxLevel()) / 2;
+        double yWidthMultiplier = curve.getTileWidth(1, curve.getMaxLevel()) / 2;
 
         List<Value> pointValues = new ArrayList<>();
         List<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
         long nodeId = 1;
-        for ( int i = 0; i < nbrOfValues / 4; i++ )
-        {
+        for (int i = 0; i < nbrOfValues / 4; i++) {
             double x1 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
             double x2 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
             double y1 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
             double y2 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
-            PointValue value11 = Values.pointValue( WGS_84, centerPoint[0] + x1, centerPoint[1] + y1 );
-            PointValue value12 = Values.pointValue( WGS_84, centerPoint[0] + x1, centerPoint[1] + y2 );
-            PointValue value21 = Values.pointValue( WGS_84, centerPoint[0] + x2, centerPoint[1] + y1 );
-            PointValue value22 = Values.pointValue( WGS_84, centerPoint[0] + x2, centerPoint[1] + y2 );
-            assertDerivedValue( derivedValueForCenterPoint, value11, value12, value21, value22 );
+            PointValue value11 = Values.pointValue(WGS_84, centerPoint[0] + x1, centerPoint[1] + y1);
+            PointValue value12 = Values.pointValue(WGS_84, centerPoint[0] + x1, centerPoint[1] + y2);
+            PointValue value21 = Values.pointValue(WGS_84, centerPoint[0] + x2, centerPoint[1] + y1);
+            PointValue value22 = Values.pointValue(WGS_84, centerPoint[0] + x2, centerPoint[1] + y2);
+            assertDerivedValue(derivedValueForCenterPoint, value11, value12, value21, value22);
 
-            nodeId = addPointsToLists( pointValues, updates, nodeId, value11, value12, value21, value22 );
+            nodeId = addPointsToLists(pointValues, updates, nodeId, value11, value12, value21, value22);
         }
 
-        processAll( updates );
+        processAll(updates);
 
         // then
-        exactMatchOnAllValues( pointValues );
+        exactMatchOnAllValues(pointValues);
     }
 
     /**
@@ -150,25 +149,25 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
      * This test uses a specific point that triggers that exact failure in a non-flaky way.
      */
     @Test
-    void shouldNotGetRoundingErrorsWithPointsJustWithinTheTileUpperBound()
-    {
-        PointValue origin = Values.pointValue( WGS_84, 0.0, 0.0 );
-        long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
-        double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint ); // [1.6763806343078613E-7, 8.381903171539307E-8]
+    void shouldNotGetRoundingErrorsWithPointsJustWithinTheTileUpperBound() {
+        PointValue origin = Values.pointValue(WGS_84, 0.0, 0.0);
+        long derivedValueForCenterPoint = curve.derivedValueFor(origin.coordinate());
+        double[] centerPoint =
+                curve.centerPointFor(derivedValueForCenterPoint); // [1.6763806343078613E-7, 8.381903171539307E-8]
 
-        double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2; // 1.6763806343078613E-7
-        double yWidthMultiplier = curve.getTileWidth( 1, curve.getMaxLevel() ) / 2; // 8.381903171539307E-8
+        double xWidthMultiplier = curve.getTileWidth(0, curve.getMaxLevel()) / 2; // 1.6763806343078613E-7
+        double yWidthMultiplier = curve.getTileWidth(1, curve.getMaxLevel()) / 2; // 8.381903171539307E-8
 
         double[] faultyCoords = {1.874410632171803E-8, 1.6763806281859016E-7};
 
-        assertTrue( centerPoint[0] + xWidthMultiplier > faultyCoords[0], "inside upper x limit" );
-        assertTrue( centerPoint[0] - xWidthMultiplier < faultyCoords[0], "inside lower x limit" );
+        assertTrue(centerPoint[0] + xWidthMultiplier > faultyCoords[0], "inside upper x limit");
+        assertTrue(centerPoint[0] - xWidthMultiplier < faultyCoords[0], "inside lower x limit");
 
-        assertTrue( centerPoint[1] + yWidthMultiplier > faultyCoords[1], "inside upper y limit" );
-        assertTrue( centerPoint[1] - yWidthMultiplier < faultyCoords[1], "inside lower y limit" );
+        assertTrue(centerPoint[1] + yWidthMultiplier > faultyCoords[1], "inside upper y limit");
+        assertTrue(centerPoint[1] - yWidthMultiplier < faultyCoords[1], "inside lower y limit");
 
-        long derivedValueForFaultyCoords = curve.derivedValueFor( faultyCoords );
-        assertEquals( derivedValueForCenterPoint, derivedValueForFaultyCoords, "expected same derived value" );
+        long derivedValueForFaultyCoords = curve.derivedValueFor(faultyCoords);
+        assertEquals(derivedValueForCenterPoint, derivedValueForFaultyCoords, "expected same derived value");
     }
 
     /**
@@ -180,100 +179,96 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
      * Therefore {@link IndexReader} implementation must post-process raw index results and filter out such false positives.
      */
     @Test
-    void shouldNotGetFalsePositivesForRangesSpanningMultipleTiles() throws IndexNotApplicableKernelException, IndexEntryConflictException
-    {
-        PointValue origin = Values.pointValue( WGS_84, 0.0, 0.0 );
-        long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
-        double[] searchStart = curve.centerPointFor( derivedValueForCenterPoint );
+    void shouldNotGetFalsePositivesForRangesSpanningMultipleTiles()
+            throws IndexNotApplicableKernelException, IndexEntryConflictException {
+        PointValue origin = Values.pointValue(WGS_84, 0.0, 0.0);
+        long derivedValueForCenterPoint = curve.derivedValueFor(origin.coordinate());
+        double[] searchStart = curve.centerPointFor(derivedValueForCenterPoint);
 
-        double xTileWidth = curve.getTileWidth( 0, curve.getMaxLevel() );
+        double xTileWidth = curve.getTileWidth(0, curve.getMaxLevel());
 
-        // to make it easier to imagine this, the search start is a center point of one tile and the limit is a center point of the next tile on the x-axis
-        PointValue limitPoint = Values.pointValue( WGS_84, searchStart[0] + xTileWidth, searchStart[1] );
+        // to make it easier to imagine this, the search start is a center point of one tile and the limit is a center
+        // point of the next tile on the x-axis
+        PointValue limitPoint = Values.pointValue(WGS_84, searchStart[0] + xTileWidth, searchStart[1]);
 
         int nbrOfValues = 10_000;
 
         List<PointValue> pointsInside = new ArrayList<>();
         List<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
 
-        for ( int i = 0; i < nbrOfValues; i++ )
-        {
+        for (int i = 0; i < nbrOfValues; i++) {
             double distanceMultiplier = random.nextDouble() * 2;
-            PointValue point = Values.pointValue( WGS_84, searchStart[0] + distanceMultiplier * xTileWidth, searchStart[1] );
+            PointValue point =
+                    Values.pointValue(WGS_84, searchStart[0] + distanceMultiplier * xTileWidth, searchStart[1]);
 
-            updates.add( IndexEntryUpdate.add( 0, descriptor, point ) );
+            updates.add(IndexEntryUpdate.add(0, descriptor, point));
 
-            if ( distanceMultiplier <= 1 )
-            {
-                pointsInside.add( point );
+            if (distanceMultiplier <= 1) {
+                pointsInside.add(point);
             }
         }
 
-        processAll( updates );
+        processAll(updates);
 
-        try ( var indexReader = accessor.newValueReader() )
-        {
+        try (var indexReader = accessor.newValueReader()) {
             SimpleEntityValueClient client = new SimpleEntityValueClient();
 
-            var boundingBox = PropertyIndexQuery.boundingBox( descriptor.schema().getPropertyId(),
-                                                              Values.pointValue( WGS_84, searchStart ),
-                                                              limitPoint );
-            indexReader.query( client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), boundingBox );
+            var boundingBox = PropertyIndexQuery.boundingBox(
+                    descriptor.schema().getPropertyId(), Values.pointValue(WGS_84, searchStart), limitPoint);
+            indexReader.query(
+                    client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), boundingBox);
 
             List<Value> queryResult = new ArrayList<>();
-            while ( client.next() )
-            {
-                queryResult.add( client.values[0] );
+            while (client.next()) {
+                queryResult.add(client.values[0]);
             }
 
-            assertThat( queryResult ).containsExactlyInAnyOrderElementsOf( pointsInside );
+            assertThat(queryResult).containsExactlyInAnyOrderElementsOf(pointsInside);
         }
     }
 
-    private long addPointsToLists( List<Value> pointValues, List<IndexEntryUpdate<IndexDescriptor>> updates, long nodeId, PointValue... values )
-    {
-        for ( PointValue value : values )
-        {
-            pointValues.add( value );
-            updates.add( IndexEntryUpdate.add( nodeId++, descriptor, value ) );
+    private long addPointsToLists(
+            List<Value> pointValues,
+            List<IndexEntryUpdate<IndexDescriptor>> updates,
+            long nodeId,
+            PointValue... values) {
+        for (PointValue value : values) {
+            pointValues.add(value);
+            updates.add(IndexEntryUpdate.add(nodeId++, descriptor, value));
         }
         return nodeId;
     }
 
-    static void assertDerivedValue( Long targetDerivedValue, PointValue... values )
-    {
-        for ( PointValue value : values )
-        {
-            Long derivedValueForValue = curve.derivedValueFor( value.coordinate() );
-            assertEquals( targetDerivedValue, derivedValueForValue, "expected random value to belong to same tile as center point" );
+    static void assertDerivedValue(Long targetDerivedValue, PointValue... values) {
+        for (PointValue value : values) {
+            Long derivedValueForValue = curve.derivedValueFor(value.coordinate());
+            assertEquals(
+                    targetDerivedValue,
+                    derivedValueForValue,
+                    "expected random value to belong to same tile as center point");
         }
     }
 
-    void processAll( List<IndexEntryUpdate<IndexDescriptor>> updates ) throws IndexEntryConflictException
-    {
-        try ( NativeIndexUpdater<KEY> updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
-        {
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-            {
-                updater.process( update );
+    void processAll(List<IndexEntryUpdate<IndexDescriptor>> updates) throws IndexEntryConflictException {
+        try (NativeIndexUpdater<KEY> updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
+            for (IndexEntryUpdate<IndexDescriptor> update : updates) {
+                updater.process(update);
             }
         }
     }
 
-    void exactMatchOnAllValues( List<Value> values ) throws IndexNotApplicableKernelException
-    {
-        try ( var indexReader = accessor.newValueReader() )
-        {
+    void exactMatchOnAllValues(List<Value> values) throws IndexNotApplicableKernelException {
+        try (var indexReader = accessor.newValueReader()) {
             SimpleEntityValueClient client = new SimpleEntityValueClient();
-            for ( Value value : values )
-            {
-                PropertyIndexQuery.ExactPredicate exact = PropertyIndexQuery.exact( descriptor.schema().getPropertyId(), value );
-                indexReader.query( client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ , unorderedValues(), exact );
+            for (Value value : values) {
+                PropertyIndexQuery.ExactPredicate exact =
+                        PropertyIndexQuery.exact(descriptor.schema().getPropertyId(), value);
+                indexReader.query(client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), exact);
 
                 // then
-                assertTrue( client.next() );
-                assertEquals( value, client.values[0] );
-                assertFalse( client.next() );
+                assertTrue(client.next());
+                assertEquals(value, client.values[0]);
+                assertFalse(client.next());
             }
         }
     }

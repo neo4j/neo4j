@@ -22,68 +22,52 @@ package org.neo4j.internal.id;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
-
 import org.neo4j.io.IOUtils;
 
 /**
  * Keeps buffered IDs in the heap in an unbounded queue.
  */
-class HeapBufferedIds implements BufferedIds
-{
+class HeapBufferedIds implements BufferedIds {
     private final ConcurrentLinkedDeque<Entry> queue = new ConcurrentLinkedDeque<>();
 
     @Override
-    public void write( IdController.TransactionSnapshot snapshot, List<BufferingIdGeneratorFactory.IdBuffer> idBuffers ) throws IOException
-    {
-        queue.add( new Entry( snapshot, idBuffers ) );
+    public void write(IdController.TransactionSnapshot snapshot, List<BufferingIdGeneratorFactory.IdBuffer> idBuffers)
+            throws IOException {
+        queue.add(new Entry(snapshot, idBuffers));
     }
 
     @Override
-    public void read( BufferedIds.BufferedIdVisitor visitor ) throws IOException
-    {
+    public void read(BufferedIds.BufferedIdVisitor visitor) throws IOException {
         Entry entry;
-        while ( (entry = queue.peek()) != null )
-        {
-            if ( !visitor.startChunk( entry.snapshot ) )
-            {
+        while ((entry = queue.peek()) != null) {
+            if (!visitor.startChunk(entry.snapshot)) {
                 // Snapshot still open
                 break;
             }
 
-            try
-            {
+            try {
                 queue.remove();
-                for ( var idBuffer : entry.idBuffers )
-                {
-                    visitor.startType( idBuffer.idTypeOrdinal() );
-                    try
-                    {
+                for (var idBuffer : entry.idBuffers) {
+                    visitor.startType(idBuffer.idTypeOrdinal());
+                    try {
                         var ids = idBuffer.ids().iterator();
-                        while ( ids.hasNext() )
-                        {
-                            visitor.id( ids.next() );
+                        while (ids.hasNext()) {
+                            visitor.id(ids.next());
                         }
-                    }
-                    finally
-                    {
+                    } finally {
                         visitor.endType();
                     }
                 }
-            }
-            finally
-            {
+            } finally {
                 visitor.endChunk();
-                IOUtils.closeAll( entry.idBuffers );
+                IOUtils.closeAll(entry.idBuffers);
             }
         }
     }
 
     @Override
-    public void close() throws IOException
-    {
-    }
+    public void close() throws IOException {}
 
-    private record Entry(IdController.TransactionSnapshot snapshot, List<BufferingIdGeneratorFactory.IdBuffer> idBuffers)
-    {
-    }
+    private record Entry(
+            IdController.TransactionSnapshot snapshot, List<BufferingIdGeneratorFactory.IdBuffer> idBuffers) {}
 }

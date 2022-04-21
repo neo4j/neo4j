@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.cypher.internal.NonFatalCypherError;
 import org.neo4j.cypher.internal.result.string.ResultStringBuilder;
 import org.neo4j.exceptions.CypherExecutionException;
@@ -55,8 +54,8 @@ import org.neo4j.values.ValueMapper;
  * This implementation wraps a {@link QueryExecution} and presents both an iterator-based API and a visitor-based API
  * using the underlying {@link QueryExecution} to serve the results.
  */
-public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result
-{
+public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Object>>
+        implements QuerySubscriber, Result {
     private final ValueMapper<Object> valueMapper;
     private final TransactionalContext context;
     private QueryExecution execution;
@@ -65,396 +64,304 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     private QueryStatistics statistics;
     private ResultVisitor<?> visitor;
     private Exception visitException;
-    private List<Map<String,Object>> materializeResult;
-    private Iterator<Map<String,Object>> materializedIterator;
+    private List<Map<String, Object>> materializeResult;
+    private Iterator<Map<String, Object>> materializedIterator;
 
-    public ResultSubscriber( TransactionalContext context )
-    {
-        this( context, new DefaultValueMapper( context.transaction() ) );
+    public ResultSubscriber(TransactionalContext context) {
+        this(context, new DefaultValueMapper(context.transaction()));
     }
 
-    public ResultSubscriber( TransactionalContext context, ValueMapper<Object> valueMapper )
-    {
+    public ResultSubscriber(TransactionalContext context, ValueMapper<Object> valueMapper) {
         this.context = context;
         this.valueMapper = valueMapper;
     }
 
-    public void init( QueryExecution execution )
-    {
+    public void init(QueryExecution execution) {
         this.execution = execution;
         assertNoErrors();
     }
 
-    public void materialize( QueryExecution execution )
-    {
-       this.execution = execution;
-       this.materializeResult = new ArrayList<>();
-       fetchResults( Long.MAX_VALUE );
+    public void materialize(QueryExecution execution) {
+        this.execution = execution;
+        this.materializeResult = new ArrayList<>();
+        fetchResults(Long.MAX_VALUE);
     }
 
     // QuerySubscriber part
     @Override
-    public void onResult( int numberOfFields )
-    {
+    public void onResult(int numberOfFields) {
         this.currentRecord = new AnyValue[numberOfFields];
     }
 
     @Override
-    public void onRecord()
-    {
-        //do nothing
+    public void onRecord() {
+        // do nothing
     }
 
     @Override
-    public void onField( int offset, AnyValue value )
-    {
+    public void onField(int offset, AnyValue value) {
         currentRecord[offset] = value;
     }
 
     @Override
-    public void onRecordCompleted()
-    {
-        //We are coming from a call to accept
-        if ( visitor != null )
-        {
-            try
-            {
-                if ( !visitor.visit( new ResultRowImpl( createPublicRecord() ) ) )
-                {
+    public void onRecordCompleted() {
+        // We are coming from a call to accept
+        if (visitor != null) {
+            try {
+                if (!visitor.visit(new ResultRowImpl(createPublicRecord()))) {
                     execution.cancel();
                     visitor = null;
                 }
-            }
-            catch ( Exception exception )
-            {
+            } catch (Exception exception) {
                 this.visitException = exception;
             }
         }
 
-        //we are materializing the result
-        if ( materializeResult != null )
-        {
-            materializeResult.add( createPublicRecord() );
+        // we are materializing the result
+        if (materializeResult != null) {
+            materializeResult.add(createPublicRecord());
         }
     }
 
     @Override
-    public void onError( Throwable throwable )
-    {
-        if ( this.error == null )
-        {
+    public void onError(Throwable throwable) {
+        if (this.error == null) {
             this.error = throwable;
-        }
-        else if ( this.error != throwable )
-        {
-            this.error.addSuppressed( throwable );
+        } else if (this.error != throwable) {
+            this.error.addSuppressed(throwable);
         }
     }
 
     @Override
-    public void onResultCompleted( QueryStatistics statistics )
-    {
+    public void onResultCompleted(QueryStatistics statistics) {
         this.statistics = statistics;
     }
 
     // Result part
     @Override
-    public QueryExecutionType getQueryExecutionType()
-    {
-        try
-        {
+    public QueryExecutionType getQueryExecutionType() {
+        try {
             return execution.executionType();
-        }
-        catch ( Throwable throwable )
-        {
+        } catch (Throwable throwable) {
             close();
-            throw converted( throwable );
+            throw converted(throwable);
         }
     }
 
     @Override
-    public List<String> columns()
-    {
-        return Arrays.asList( execution.fieldNames() );
+    public List<String> columns() {
+        return Arrays.asList(execution.fieldNames());
     }
 
     @Override
-    public <T> ResourceIterator<T> columnAs( String name )
-    {
-        return new ResourceIterator<>()
-        {
+    public <T> ResourceIterator<T> columnAs(String name) {
+        return new ResourceIterator<>() {
             @Override
-            public void close()
-            {
+            public void close() {
                 ResultSubscriber.this.close();
             }
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return ResultSubscriber.this.hasNext();
             }
 
-            @SuppressWarnings( "unchecked" )
+            @SuppressWarnings("unchecked")
             @Override
-            public T next()
-            {
-                Map<String,Object> next = ResultSubscriber.this.next();
-                return (T) next.get( name );
+            public T next() {
+                Map<String, Object> next = ResultSubscriber.this.next();
+                return (T) next.get(name);
             }
         };
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         execution.cancel();
     }
 
     @Override
-    public QueryStatistics getQueryStatistics()
-    {
+    public QueryStatistics getQueryStatistics() {
         return statistics == null ? QueryStatistics.EMPTY : statistics;
     }
 
     @Override
-    public ExecutionPlanDescription getExecutionPlanDescription()
-    {
-        try
-        {
+    public ExecutionPlanDescription getExecutionPlanDescription() {
+        try {
             return execution.executionPlanDescription();
-        }
-        catch ( Exception e )
-        {
-            throw converted( e );
+        } catch (Exception e) {
+            throw converted(e);
         }
     }
 
     @Override
-    public String resultAsString()
-    {
+    public String resultAsString() {
         StringWriter out = new StringWriter();
-        PrintWriter writer = new PrintWriter( out );
-        writeAsStringTo( writer );
+        PrintWriter writer = new PrintWriter(out);
+        writeAsStringTo(writer);
         writer.flush();
         return out.toString();
     }
 
     @Override
-    public void writeAsStringTo( PrintWriter writer )
-    {
-        ResultStringBuilder stringBuilder =
-                ResultStringBuilder.apply( execution.fieldNames(), context );
-        try
-        {
-            //don't materialize since that will close down the underlying transaction
-            //and we need it to be open in order to serialize nodes, relationships, and
-            //paths
-            if ( this.hasFetchedNext() )
-            {
-                stringBuilder.addRow( new ResultRowImpl( this.getNextObject() ) );
+    public void writeAsStringTo(PrintWriter writer) {
+        ResultStringBuilder stringBuilder = ResultStringBuilder.apply(execution.fieldNames(), context);
+        try {
+            // don't materialize since that will close down the underlying transaction
+            // and we need it to be open in order to serialize nodes, relationships, and
+            // paths
+            if (this.hasFetchedNext()) {
+                stringBuilder.addRow(new ResultRowImpl(this.getNextObject()));
             }
-            accept( stringBuilder );
-            stringBuilder.result( writer, statistics );
-            for ( Notification notification : getNotifications() )
-            {
-                writer.println( notification.getDescription() );
+            accept(stringBuilder);
+            stringBuilder.result(writer, statistics);
+            for (Notification notification : getNotifications()) {
+                writer.println(notification.getDescription());
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             close();
-            throw converted( e );
+            throw converted(e);
         }
     }
 
     @Override
-    public Iterable<Notification> getNotifications()
-    {
+    public Iterable<Notification> getNotifications() {
         return execution.getNotifications();
     }
 
     @Override
-    public <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
-            throws VisitationException
-    {
-        if ( isMaterialized() )
-        {
-            acceptFromMaterialized( visitor );
-        }
-        else
-        {
-            acceptFromSubscriber( visitor );
+    public <VisitationException extends Exception> void accept(ResultVisitor<VisitationException> visitor)
+            throws VisitationException {
+        if (isMaterialized()) {
+            acceptFromMaterialized(visitor);
+        } else {
+            acceptFromSubscriber(visitor);
         }
         close();
     }
 
     @Override
-    protected Map<String,Object> fetchNextOrNull()
-    {
-        if ( isMaterialized() )
-        {
+    protected Map<String, Object> fetchNextOrNull() {
+        if (isMaterialized()) {
             return nextFromMaterialized();
-        }
-        else
-        {
+        } else {
             return nextFromSubscriber();
         }
     }
 
-    private Map<String,Object> nextFromMaterialized()
-    {
+    private Map<String, Object> nextFromMaterialized() {
         assertNoErrors();
-        if ( materializedIterator == null )
-        {
+        if (materializedIterator == null) {
             materializedIterator = materializeResult.iterator();
         }
-        if ( materializedIterator.hasNext() )
-        {
-            Map<String,Object> next = materializedIterator.next();
-            if ( !materializedIterator.hasNext() )
-            {
+        if (materializedIterator.hasNext()) {
+            Map<String, Object> next = materializedIterator.next();
+            if (!materializedIterator.hasNext()) {
                 close();
             }
             return next;
-        }
-        else
-        {
+        } else {
             close();
             return null;
         }
     }
 
-    private Map<String,Object> nextFromSubscriber()
-    {
-        fetchResults( 1 );
+    private Map<String, Object> nextFromSubscriber() {
+        fetchResults(1);
         assertNoErrors();
-        if ( hasNewValues() )
-        {
-            Map<String,Object> record = createPublicRecord();
+        if (hasNewValues()) {
+            Map<String, Object> record = createPublicRecord();
             markAsRead();
             return record;
-        }
-        else
-        {
+        } else {
             close();
             return null;
         }
     }
 
-    private boolean hasNewValues()
-    {
+    private boolean hasNewValues() {
         return currentRecord.length > 0 && currentRecord[0] != null;
     }
 
-    private void markAsRead()
-    {
-        if ( currentRecord.length > 0 )
-        {
+    private void markAsRead() {
+        if (currentRecord.length > 0) {
             currentRecord[0] = null;
         }
     }
 
-    private void fetchResults( long numberOfResults )
-    {
-        try
-        {
-            execution.request( numberOfResults );
+    private void fetchResults(long numberOfResults) {
+        try {
+            execution.request(numberOfResults);
             assertNoErrors();
             execution.await();
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             close();
-            throw converted( e );
+            throw converted(e);
         }
     }
 
-    private Map<String,Object> createPublicRecord()
-    {
+    private Map<String, Object> createPublicRecord() {
         String[] fieldNames = execution.fieldNames();
-        Map<String,Object> result = new HashMap<>( (int) (Math.ceil( fieldNames.length * 1.33 )) );
+        Map<String, Object> result = new HashMap<>((int) (Math.ceil(fieldNames.length * 1.33)));
 
-        try
-        {
-            for ( int i = 0; i < fieldNames.length; i++ )
-            {
-                result.put( fieldNames[i], currentRecord[i].map( valueMapper ) );
+        try {
+            for (int i = 0; i < fieldNames.length; i++) {
+                result.put(fieldNames[i], currentRecord[i].map(valueMapper));
             }
-        }
-        catch ( Throwable t )
-        {
-            throw converted( t );
+        } catch (Throwable t) {
+            throw converted(t);
         }
         return result;
     }
 
-    private void assertNoErrors()
-    {
-        if ( error != null )
-        {
-            if ( NonFatalCypherError.isNonFatal( error ) )
-            {
-                try
-                {
+    private void assertNoErrors() {
+        if (error != null) {
+            if (NonFatalCypherError.isNonFatal(error)) {
+                try {
                     close();
-                }
-                catch ( Throwable suppressed )
-                {
-                    error.addSuppressed( suppressed );
+                } catch (Throwable suppressed) {
+                    error.addSuppressed(suppressed);
                 }
             }
-            throw converted( error );
+            throw converted(error);
         }
     }
 
-    private static QueryExecutionException converted( Throwable e )
-    {
+    private static QueryExecutionException converted(Throwable e) {
         Neo4jException neo4jException;
-        if ( e instanceof Neo4jException )
-        {
+        if (e instanceof Neo4jException) {
             neo4jException = (Neo4jException) e;
-        }
-        else if ( e instanceof RuntimeException )
-        {
+        } else if (e instanceof RuntimeException) {
             throw (RuntimeException) e;
+        } else {
+            neo4jException = new CypherExecutionException(e.getMessage(), e);
         }
-        else
-        {
-            neo4jException = new CypherExecutionException( e.getMessage(), e );
-        }
-        return new QueryExecutionKernelException( neo4jException ).asUserException();
+        return new QueryExecutionKernelException(neo4jException).asUserException();
     }
 
     private <VisitationException extends Exception> void acceptFromMaterialized(
-            ResultVisitor<VisitationException> visitor ) throws VisitationException
-    {
+            ResultVisitor<VisitationException> visitor) throws VisitationException {
         assertNoErrors();
-        for ( Map<String,Object> materialized : materializeResult )
-        {
-            if ( !visitor.visit( new ResultRowImpl( materialized ) ) )
-            {
+        for (Map<String, Object> materialized : materializeResult) {
+            if (!visitor.visit(new ResultRowImpl(materialized))) {
                 break;
             }
         }
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     private <VisitationException extends Exception> void acceptFromSubscriber(
-            ResultVisitor<VisitationException> visitor ) throws VisitationException
-    {
+            ResultVisitor<VisitationException> visitor) throws VisitationException {
         this.visitor = visitor;
-        fetchResults( Long.MAX_VALUE );
-        if ( visitException != null )
-        {
+        fetchResults(Long.MAX_VALUE);
+        if (visitException != null) {
             throw (VisitationException) visitException;
         }
         assertNoErrors();
     }
 
     @VisibleForTesting
-    public boolean isMaterialized()
-    {
+    public boolean isMaterialized() {
         return materializeResult != null;
     }
 }

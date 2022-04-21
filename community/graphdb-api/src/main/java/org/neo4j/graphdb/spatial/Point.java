@@ -27,22 +27,18 @@ import org.neo4j.annotations.api.PublicApi;
  * A call to {@link #getCoordinates()} must return a single element list.
  */
 @PublicApi
-public interface Point extends Geometry
-{
+public interface Point extends Geometry {
     /**
      * Returns the single coordinate in space defining this point.
      *
      * @return The coordinate of this point.
      */
-    default Coordinate getCoordinate()
-    {
-        return getCoordinates().get( 0 );
+    default Coordinate getCoordinate() {
+        return getCoordinates().get(0);
     }
 
     @Override
-    default String getGeometryType()
-    {
+    default String getGeometryType() {
         return "Point";
     }
 }
-

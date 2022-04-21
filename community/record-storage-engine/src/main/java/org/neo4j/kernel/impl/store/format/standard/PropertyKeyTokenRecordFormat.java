@@ -22,36 +22,33 @@ package org.neo4j.kernel.impl.store.format.standard;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 
-public class PropertyKeyTokenRecordFormat extends TokenRecordFormat<PropertyKeyTokenRecord>
-{
-    public PropertyKeyTokenRecordFormat()
-    {
-        this( false );
+public class PropertyKeyTokenRecordFormat extends TokenRecordFormat<PropertyKeyTokenRecord> {
+    public PropertyKeyTokenRecordFormat() {
+        this(false);
     }
 
-    public PropertyKeyTokenRecordFormat( boolean pageAligned )
-    {
-        super( BASE_RECORD_SIZE + 4/*prop count field*/, StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS, pageAligned );
-    }
-
-    @Override
-    public PropertyKeyTokenRecord newRecord()
-    {
-        return new PropertyKeyTokenRecord( -1 );
+    public PropertyKeyTokenRecordFormat(boolean pageAligned) {
+        super(
+                BASE_RECORD_SIZE + 4 /*prop count field*/,
+                StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS,
+                pageAligned);
     }
 
     @Override
-    protected void readRecordData( PageCursor cursor, PropertyKeyTokenRecord record, boolean inUse )
-    {
+    public PropertyKeyTokenRecord newRecord() {
+        return new PropertyKeyTokenRecord(-1);
+    }
+
+    @Override
+    protected void readRecordData(PageCursor cursor, PropertyKeyTokenRecord record, boolean inUse) {
         int propertyCount = cursor.getInt();
         int nameId = cursor.getInt();
-        record.initialize( inUse, nameId, propertyCount );
+        record.initialize(inUse, nameId, propertyCount);
     }
 
     @Override
-    protected void writeRecordData( PropertyKeyTokenRecord record, PageCursor cursor )
-    {
-        cursor.putInt( record.getPropertyCount() );
-        cursor.putInt( record.getNameId() );
+    protected void writeRecordData(PropertyKeyTokenRecord record, PageCursor cursor) {
+        cursor.putInt(record.getPropertyCount());
+        cursor.putInt(record.getNameId());
     }
 }

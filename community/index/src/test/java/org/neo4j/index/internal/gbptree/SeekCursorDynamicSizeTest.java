@@ -19,18 +19,15 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes,RawBytes>
-{
+class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes, RawBytes> {
     @Override
-    TestLayout<RawBytes,RawBytes> getLayout()
-    {
+    TestLayout<RawBytes, RawBytes> getLayout() {
         return new SimpleByteArrayLayout();
     }
 
     @Override
-    TreeNode<RawBytes,RawBytes> getTreeNode( int pageSize, TestLayout<RawBytes,RawBytes> layout,
-            OffloadStore<RawBytes,RawBytes> offloadStore )
-    {
-        return new TreeNodeDynamicSize<>( pageSize, layout, offloadStore );
+    TreeNode<RawBytes, RawBytes> getTreeNode(
+            int pageSize, TestLayout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
+        return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
     }
 }

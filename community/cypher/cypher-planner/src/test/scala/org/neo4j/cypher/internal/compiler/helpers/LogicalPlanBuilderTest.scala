@@ -46,11 +46,17 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       .build()
 
     plan should beLike {
-      case ProduceResult(Selection(Ands(Seq(
-      HasLabels(Variable("n"), Seq(LabelName("N"))),
-      HasTypes(Variable("r"), Seq(RelTypeName("R"))),
-      HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V"))),
-      )), _), _) =>
+      case ProduceResult(
+          Selection(
+            Ands(Seq(
+              HasLabels(Variable("n"), Seq(LabelName("N"))),
+              HasTypes(Variable("r"), Seq(RelTypeName("R"))),
+              HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V")))
+            )),
+            _
+          ),
+          _
+        ) =>
     }
   }
 
@@ -62,9 +68,15 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       .build()
 
     plan should beLike {
-      case ProduceResult(Selection(Ands(Seq(
-      HasLabels(Variable("n"), Seq(LabelName("N"))),
-      )), _), _) =>
+      case ProduceResult(
+          Selection(
+            Ands(Seq(
+              HasLabels(Variable("n"), Seq(LabelName("N")))
+            )),
+            _
+          ),
+          _
+        ) =>
     }
   }
 
@@ -77,11 +89,17 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       .build()
 
     plan should beLike {
-      case ProduceResult(Selection(Ands(Seq(
-      HasLabels(Variable("n"), Seq(LabelName("N"))),
-      HasTypes(Variable("r"), Seq(RelTypeName("R"))),
-      HasLabels(Variable("m"), Seq(LabelName("M"))),
-      )), _), _) =>
+      case ProduceResult(
+          Selection(
+            Ands(Seq(
+              HasLabels(Variable("n"), Seq(LabelName("N"))),
+              HasTypes(Variable("r"), Seq(RelTypeName("R"))),
+              HasLabels(Variable("m"), Seq(LabelName("M")))
+            )),
+            _
+          ),
+          _
+        ) =>
     }
   }
 
@@ -93,9 +111,15 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       .build()
 
     plan should beLike {
-      case ProduceResult(Selection(Ands(Seq(
-      HasLabels(Variable("n"), Seq(LabelName("N"))),
-      )), _), _) =>
+      case ProduceResult(
+          Selection(
+            Ands(Seq(
+              HasLabels(Variable("n"), Seq(LabelName("N")))
+            )),
+            _
+          ),
+          _
+        ) =>
     }
   }
 
@@ -107,11 +131,17 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       .build()
 
     plan should beLike {
-      case ProduceResult(Selection(Ands(Seq(
-      HasLabels(Variable("n"), Seq(LabelName("N"))),
-      HasTypes(Variable("r"), Seq(RelTypeName("R"))),
-      HasLabels(Variable("m"), Seq(LabelName("M"))),
-      )), _), _) =>
+      case ProduceResult(
+          Selection(
+            Ands(Seq(
+              HasLabels(Variable("n"), Seq(LabelName("N"))),
+              HasTypes(Variable("r"), Seq(RelTypeName("R"))),
+              HasLabels(Variable("m"), Seq(LabelName("M")))
+            )),
+            _
+          ),
+          _
+        ) =>
     }
   }
 
@@ -125,11 +155,21 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       .build()
 
     plan should beLike {
-      case ProduceResult(Apply(_, Selection(Ands(Seq(
-      HasLabels(Variable("n"), Seq(LabelName("N"))),
-      HasTypes(Variable("r"), Seq(RelTypeName("R"))),
-      HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V"))),
-      )), _), _), _) =>
+      case ProduceResult(
+          Apply(
+            _,
+            Selection(
+              Ands(Seq(
+                HasLabels(Variable("n"), Seq(LabelName("N"))),
+                HasTypes(Variable("r"), Seq(RelTypeName("R"))),
+                HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V")))
+              )),
+              _
+            ),
+            _
+          ),
+          _
+        ) =>
     }
   }
 
@@ -142,11 +182,17 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       .build()
 
     plan should beLike {
-      case ProduceResult(Selection(Ands(Seq(
-      HasLabels(Variable("n2"), Seq(LabelName("N"))),
-      HasTypes(Variable("r2"), Seq(RelTypeName("R"))),
-      HasLabelsOrTypes(Variable("v2"), Seq(LabelOrRelTypeName("V"))),
-      )), _), _) =>
+      case ProduceResult(
+          Selection(
+            Ands(Seq(
+              HasLabels(Variable("n2"), Seq(LabelName("N"))),
+              HasTypes(Variable("r2"), Seq(RelTypeName("R"))),
+              HasLabelsOrTypes(Variable("v2"), Seq(LabelOrRelTypeName("V")))
+            )),
+            _
+          ),
+          _
+        ) =>
     }
   }
 
@@ -159,11 +205,17 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       .build()
 
     plan should beLike {
-      case ProduceResult(Selection(Ands(Seq(
-      HasLabelsOrTypes(Variable("n"), Seq(LabelOrRelTypeName("N"))),
-      HasLabelsOrTypes(Variable("r"), Seq(LabelOrRelTypeName("R"))),
-      HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V"))),
-      )), _), _) =>
+      case ProduceResult(
+          Selection(
+            Ands(Seq(
+              HasLabelsOrTypes(Variable("n"), Seq(LabelOrRelTypeName("N"))),
+              HasLabelsOrTypes(Variable("r"), Seq(LabelOrRelTypeName("R"))),
+              HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V")))
+            )),
+            _
+          ),
+          _
+        ) =>
     }
   }
 
@@ -179,7 +231,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
         projections shouldEqual Map(
           "n2" -> hasLabels("n", "N"),
           "r2" -> hasTypes("r", "R"),
-          "v2" -> hasLabelsOrTypes("v", "V"),
+          "v2" -> hasLabelsOrTypes("v", "V")
         )
     }
   }
@@ -196,7 +248,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
         projections shouldEqual Map(
           "n" -> hasLabels("n", "N"),
           "r" -> hasTypes("r", "R"),
-          "v" -> hasLabelsOrTypes("v", "V"),
+          "v" -> hasLabelsOrTypes("v", "V")
         )
     }
   }

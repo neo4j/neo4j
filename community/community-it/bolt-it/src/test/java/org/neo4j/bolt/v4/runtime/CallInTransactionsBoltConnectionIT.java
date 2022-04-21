@@ -19,14 +19,6 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import org.neo4j.bolt.runtime.SessionExtension;
-import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.internal.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.util.ValueUtils;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.bolt.testing.BoltConditions.succeeded;
@@ -37,43 +29,49 @@ import static org.neo4j.bolt.v4.runtime.BoltConnectionIT.IRIS_DATA;
 import static org.neo4j.bolt.v4.runtime.BoltConnectionIT.createLocalIrisData;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 
-class CallInTransactionsBoltConnectionIT
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.neo4j.bolt.runtime.SessionExtension;
+import org.neo4j.bolt.testing.BoltResponseRecorder;
+import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.util.ValueUtils;
+
+class CallInTransactionsBoltConnectionIT {
     @RegisterExtension
     static final SessionExtension env = new SessionExtension();
 
     @Test
-    void shouldSupportUsingCallInTransactionsInSession() throws Exception
-    {
+    void shouldSupportUsingCallInTransactionsInSession() throws Exception {
         // Given
         var machine = BoltStateMachineV4StateTestBase.newStateMachineAfterAuth(env);
-        var params = ValueUtils.asMapValue( MapUtil.map( "csvFileUrl", createLocalIrisData( machine ) ) );
+        var params = ValueUtils.asMapValue(MapUtil.map("csvFileUrl", createLocalIrisData(machine)));
         var txIdBeforeQuery = env.lastClosedTxId();
         var batch = 40;
 
         // When
         var recorder = new BoltResponseRecorder();
-        machine.process( run(
-                joinAsLines(
-                        "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l",
-                        "CALL {",
-                        "  WITH l",
-                        "  MATCH (c:Class {name: l.class_name})",
-                        "  CREATE (s:Sample {sepal_length: l.sepal_length,",
-                        "                    sepal_width: l.sepal_width,",
-                        "                    petal_length: l.petal_length,",
-                        "                    petal_width: l.petal_width})",
-                        "  CREATE (c)<-[:HAS_CLASS]-(s)",
-                        "  RETURN c, s",
-                        "} IN TRANSACTIONS OF 40 ROWS",
-                        "RETURN count(*) AS c"
-                ), params ), recorder
-        );
-        machine.process( pullAll(), recorder );
+        machine.process(
+                run(
+                        joinAsLines(
+                                "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l",
+                                "CALL {",
+                                "  WITH l",
+                                "  MATCH (c:Class {name: l.class_name})",
+                                "  CREATE (s:Sample {sepal_length: l.sepal_length,",
+                                "                    sepal_width: l.sepal_width,",
+                                "                    petal_length: l.petal_length,",
+                                "                    petal_width: l.petal_width})",
+                                "  CREATE (c)<-[:HAS_CLASS]-(s)",
+                                "  RETURN c, s",
+                                "} IN TRANSACTIONS OF 40 ROWS",
+                                "RETURN count(*) AS c"),
+                        params),
+                recorder);
+        machine.process(pullAll(), recorder);
 
         // Then
-        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
-        assertThat( recorder.nextResponse() ).satisfies( succeededWithRecord( 150L ) );
+        assertThat(recorder.nextResponse()).satisfies(succeeded());
+        assertThat(recorder.nextResponse()).satisfies(succeededWithRecord(150L));
 
         /*
          * 7 tokens have been created for
@@ -85,8 +83,8 @@ class CallInTransactionsBoltConnectionIT
          * be counted again here
          */
         var tokensCommits = 7;
-        var commits = (IRIS_DATA.split( "\n" ).length - 1 /* header */) / batch;
+        var commits = (IRIS_DATA.split("\n").length - 1 /* header */) / batch;
         var txId = env.lastClosedTxId();
-        assertEquals( tokensCommits + commits + txIdBeforeQuery, txId );
+        assertEquals(tokensCommits + commits + txIdBeforeQuery, txId);
     }
 }

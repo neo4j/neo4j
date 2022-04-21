@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.ga.IrishAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Irish extends AnalyzerProvider
-{
-    public Irish()
-    {
-        super( "irish" );
+public class Irish extends AnalyzerProvider {
+    public Irish() {
+        super("irish");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
-        return new IrishAnalyzer( cleanStopWordSet( IrishAnalyzer.getDefaultStopSet() ) );
+    public Analyzer createAnalyzer() {
+        return new IrishAnalyzer(cleanStopWordSet(IrishAnalyzer.getDefaultStopSet()));
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Irish analyzer with stemming and stop word filtering.";
     }
 }

@@ -22,15 +22,14 @@ package org.neo4j.internal.id.indexed;
 /**
  * Concurrent primitive {@code long} queue with a fixed max capacity.
  */
-interface ConcurrentLongQueue
-{
+interface ConcurrentLongQueue {
     /**
      * Offers value {@code v} to this queue. The value may or may not be accepted, which will be signaled by the return value.
      *
      * @param v value to offer to the queue.
      * @return {@code true} if the value was accepted, i.e. typically if there was space available in the queue, otherwise {@code false}.
      */
-    boolean offer( long v );
+    boolean offer(long v);
 
     /**
      * Takes a value from this queue, or if no value was available returns the {@code defaultValue} which was passed in.
@@ -38,7 +37,7 @@ interface ConcurrentLongQueue
      * @param defaultValue value to return if there was no value available to take from the queue.
      * @return next value from this queue, or the {@code defaultValue} if there was no value available to take.
      */
-    long takeOrDefault( long defaultValue );
+    long takeOrDefault(long defaultValue);
 
     /**
      * @return max capacity of this queue.

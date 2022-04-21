@@ -24,8 +24,7 @@ import org.neo4j.graphdb.schema.IndexSettingImpl;
 /**
  * Responsible for naming of
  */
-public final class FulltextIndexSettingsKeys
-{
+public final class FulltextIndexSettingsKeys {
     public static final String FULLTEXT_PREFIX = "fulltext.";
     public static final String ANALYZER = IndexSettingImpl.FULLTEXT_ANALYZER.getSettingName();
     public static final String EVENTUALLY_CONSISTENT = IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName();
@@ -34,6 +33,5 @@ public final class FulltextIndexSettingsKeys
     public static final String PROCEDURE_ANALYZER = "analyzer";
     public static final String PROCEDURE_EVENTUALLY_CONSISTENT = "eventually_consistent";
 
-    private FulltextIndexSettingsKeys()
-    {}
+    private FulltextIndexSettingsKeys() {}
 }

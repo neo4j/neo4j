@@ -79,10 +79,8 @@ final case class SymbolUse(use: Ref[LogicalVariable]) {
  * @param uses       all uses of the symbol. The definition is not a use.
  * @param types      the type specification
  */
-final case class Symbol(name: String,
-                        types: TypeSpec,
-                        definition: SymbolUse,
-                        uses: Set[SymbolUse]) {
+final case class Symbol(name: String, types: TypeSpec, definition: SymbolUse, uses: Set[SymbolUse]) {
+
   /**
    * All references to this symbol. This includes the definition and the uses.
    */
@@ -109,8 +107,7 @@ object Scope {
   val empty: Scope = Scope(symbolTable = HashMap.empty, children = Vector())
 }
 
-final case class Scope(symbolTable: Map[String, Symbol],
-                       children: Seq[Scope]) extends TreeElem[Scope] {
+final case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends TreeElem[Scope] {
 
   self =>
 
@@ -194,7 +191,6 @@ final case class Scope(symbolTable: Map[String, Symbol],
     builder.toString()
   }
 
-
   private def dumpSingle(indent: String, builder: StringBuilder): Unit = {
     builder.append(s"$indent${self.toIdString} {${System.lineSeparator}")
     dumpTree(s"  $indent", builder)
@@ -215,7 +211,12 @@ object SemanticState {
 
   implicit object ScopeZipper extends TreeZipper[Scope]
 
-  val clean: SemanticState = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty, NotImplementedErrorMessageProvider)
+  val clean: SemanticState = SemanticState(
+    Scope.empty.location,
+    ASTAnnotationMap.empty,
+    ASTAnnotationMap.empty,
+    NotImplementedErrorMessageProvider
+  )
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
     def scope: Scope = location.elem
@@ -258,13 +259,15 @@ object SemanticState {
     s => SemanticCheckResult.success(s.recordCurrentScope(node))
 }
 
-case class SemanticState(currentScope: ScopeLocation,
-                         typeTable: ASTAnnotationMap[Expression, ExpressionTypeInfo],
-                         recordedScopes: ASTAnnotationMap[ASTNode, ScopeLocation],
-                         errorMessageProvider: ErrorMessageProvider,
-                         notifications: Set[InternalNotification] = Set.empty,
-                         features: Set[SemanticFeature] = Set.empty,
-                         declareVariablesToSuppressDuplicateErrors: Boolean = true) {
+case class SemanticState(
+  currentScope: ScopeLocation,
+  typeTable: ASTAnnotationMap[Expression, ExpressionTypeInfo],
+  recordedScopes: ASTAnnotationMap[ASTNode, ScopeLocation],
+  errorMessageProvider: ErrorMessageProvider,
+  notifications: Set[InternalNotification] = Set.empty,
+  features: Set[SemanticFeature] = Set.empty,
+  declareVariablesToSuppressDuplicateErrors: Boolean = true
+) {
 
   def scopeTree: Scope = currentScope.rootScope
 
@@ -291,21 +294,23 @@ case class SemanticState(currentScope: ScopeLocation,
    * @param overriding if `true` then a previous occurrence of that variable is overridden.
    *                   if `false` then a previous occurrence of that variable leads to an error
    */
-  def declareVariable(variable: LogicalVariable,
-                      possibleTypes: TypeSpec,
-                      maybePreviousDeclaration: Option[Symbol] = None,
-                      overriding: Boolean = false): Either[SemanticError, SemanticState] =
+  def declareVariable(
+    variable: LogicalVariable,
+    possibleTypes: TypeSpec,
+    maybePreviousDeclaration: Option[Symbol] = None,
+    overriding: Boolean = false
+  ): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
       case Some(symbol) if !overriding =>
         Left(SemanticError(s"Variable `${variable.name}` already declared", variable.position))
       case _ =>
         val (definition, uses) = maybePreviousDeclaration match {
-          case Some(previousDeclaration) => (previousDeclaration.definition, previousDeclaration.uses ++ Set(SymbolUse(variable)))
+          case Some(previousDeclaration) =>
+            (previousDeclaration.definition, previousDeclaration.uses ++ Set(SymbolUse(variable)))
           case None => (SymbolUse(variable), Set.empty[SymbolUse])
         }
         Right(updateVariable(variable, possibleTypes, definition, uses))
     }
-
 
   def addNotification(notification: InternalNotification): SemanticState =
     copy(notifications = notifications + notification)
@@ -323,7 +328,8 @@ case class SemanticState(currentScope: ScopeLocation,
           val expectedTypes = possibleTypes.mkString(", ", " or ")
           Left(SemanticError(
             s"Type mismatch: ${variable.name} defined with conflicting type $existingTypes (expected $expectedTypes)",
-            variable.position))
+            variable.position
+          ))
         }
     }
 
@@ -352,7 +358,8 @@ case class SemanticState(currentScope: ScopeLocation,
   def withFeatures(features: SemanticFeature*): SemanticState =
     features.foldLeft(this)(_.withFeature(_))
 
-  def expressionType(expression: Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
+  def expressionType(expression: Expression): ExpressionTypeInfo =
+    typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
   private def updateVariable(variable: LogicalVariable, types: TypeSpec, definition: SymbolUse, uses: Set[SymbolUse]) =
     copy(
@@ -368,5 +375,6 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def withFeature(feature: SemanticFeature): SemanticState = copy(features = features + feature)
 
-  def withErrorMessageProvider(errorMessageProvider: ErrorMessageProvider): SemanticState = copy(errorMessageProvider = errorMessageProvider)
+  def withErrorMessageProvider(errorMessageProvider: ErrorMessageProvider): SemanticState =
+    copy(errorMessageProvider = errorMessageProvider)
 }

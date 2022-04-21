@@ -20,10 +20,9 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.PagedFile;
 
-interface GBPTreeUnsafe<KEY,VALUE>
-{
-    void access( PagedFile pagedFile, Layout<KEY,VALUE> layout, TreeNode<KEY,VALUE> node, TreeState treeState ) throws IOException;
+interface GBPTreeUnsafe<KEY, VALUE> {
+    void access(PagedFile pagedFile, Layout<KEY, VALUE> layout, TreeNode<KEY, VALUE> node, TreeState treeState)
+            throws IOException;
 }

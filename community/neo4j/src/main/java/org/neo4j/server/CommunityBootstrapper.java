@@ -19,20 +19,19 @@
  */
 package org.neo4j.server;
 
+import static org.neo4j.kernel.impl.factory.DbmsInfo.COMMUNITY;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 
-import static org.neo4j.kernel.impl.factory.DbmsInfo.COMMUNITY;
-
-public class CommunityBootstrapper extends NeoBootstrapper
-{
+public class CommunityBootstrapper extends NeoBootstrapper {
     @Override
-    protected DatabaseManagementService createNeo( Config config, GraphDatabaseDependencies dependencies )
-    {
-        DatabaseManagementServiceFactory facadeFactory = new DatabaseManagementServiceFactory( COMMUNITY, CommunityEditionModule::new );
-        return facadeFactory.build( config, dependencies );
+    protected DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies) {
+        DatabaseManagementServiceFactory facadeFactory =
+                new DatabaseManagementServiceFactory(COMMUNITY, CommunityEditionModule::new);
+        return facadeFactory.build(config, dependencies);
     }
 }

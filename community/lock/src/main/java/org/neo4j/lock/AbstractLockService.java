@@ -46,68 +46,56 @@ import java.util.Objects;
  *
  * @param <HANDLE> A handle that the concrete implementation used for releasing the lock.
  */
-abstract class AbstractLockService<HANDLE> implements LockService
-{
+abstract class AbstractLockService<HANDLE> implements LockService {
     @Override
-    public Lock acquireNodeLock( long nodeId, LockType type )
-    {
-        return lock( new LockedNode( nodeId ) );
+    public Lock acquireNodeLock(long nodeId, LockType type) {
+        return lock(new LockedNode(nodeId));
     }
 
     @Override
-    public Lock acquireRelationshipLock( long relationshipId, LockType type )
-    {
-        return lock( new LockedRelationship( relationshipId ) );
+    public Lock acquireRelationshipLock(long relationshipId, LockType type) {
+        return lock(new LockedRelationship(relationshipId));
     }
 
     @Override
-    public Lock acquireCustomLock( int resourceType, long id, LockType type )
-    {
-        return lock( new CustomLockedEntity( resourceType, id ) );
+    public Lock acquireCustomLock(int resourceType, long id, LockType type) {
+        return lock(new CustomLockedEntity(resourceType, id));
     }
 
-    private Lock lock( LockedEntity key )
-    {
-        return new LockReference( key, acquire( key ) );
+    private Lock lock(LockedEntity key) {
+        return new LockReference(key, acquire(key));
     }
 
-    protected abstract HANDLE acquire( LockedEntity key );
+    protected abstract HANDLE acquire(LockedEntity key);
 
-    protected abstract void release( LockedEntity key, HANDLE handle );
+    protected abstract void release(LockedEntity key, HANDLE handle);
 
-    protected abstract static class LockedEntity
-    {
+    protected abstract static class LockedEntity {
         final long id;
 
-        private LockedEntity( long id )
-        {
+        private LockedEntity(long id) {
             this.id = id;
         }
 
         @Override
-        public final String toString()
-        {
-            StringBuilder repr = new StringBuilder( getClass().getSimpleName() ).append( '[' );
-            toString( repr );
-            return repr.append( ']' ).toString();
+        public final String toString() {
+            StringBuilder repr = new StringBuilder(getClass().getSimpleName()).append('[');
+            toString(repr);
+            return repr.append(']').toString();
         }
 
-        void toString( StringBuilder repr )
-        {
-            repr.append( "id=" ).append( id );
+        void toString(StringBuilder repr) {
+            repr.append("id=").append(id);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return (int) (id ^ (id >>> 32));
         }
 
         @Override
-        public boolean equals( Object obj )
-        {
-            if ( obj != null && obj.getClass().equals( getClass() ) )
-            {
+        public boolean equals(Object obj) {
+            if (obj != null && obj.getClass().equals(getClass())) {
                 LockedEntity that = (LockedEntity) obj;
                 return this.id == that.id;
             }
@@ -115,88 +103,68 @@ abstract class AbstractLockService<HANDLE> implements LockService
         }
     }
 
-    private class LockReference extends Lock
-    {
+    private class LockReference extends Lock {
         private final LockedEntity key;
         private HANDLE handle;
 
-        LockReference( LockedEntity key, HANDLE handle )
-        {
+        LockReference(LockedEntity key, HANDLE handle) {
             this.key = key;
             this.handle = handle;
         }
 
         @Override
-        public String toString()
-        {
-            StringBuilder repr = new StringBuilder( key.getClass().getSimpleName() ).append( '[' );
-            key.toString( repr );
-            if ( handle != null )
-            {
-                repr.append( "; HELD_BY=" ).append( handle );
+        public String toString() {
+            StringBuilder repr = new StringBuilder(key.getClass().getSimpleName()).append('[');
+            key.toString(repr);
+            if (handle != null) {
+                repr.append("; HELD_BY=").append(handle);
+            } else {
+                repr.append("; RELEASED");
             }
-            else
-            {
-                repr.append( "; RELEASED" );
-            }
-            return repr.append( ']' ).toString();
+            return repr.append(']').toString();
         }
 
         @Override
-        public void release()
-        {
-            if ( handle == null )
-            {
+        public void release() {
+            if (handle == null) {
                 return;
             }
-            try
-            {
-                AbstractLockService.this.release( key, handle );
-            }
-            finally
-            {
+            try {
+                AbstractLockService.this.release(key, handle);
+            } finally {
                 handle = null;
             }
         }
     }
 
-    static final class LockedNode extends LockedEntity
-    {
-        LockedNode( long nodeId )
-        {
-            super( nodeId );
+    static final class LockedNode extends LockedEntity {
+        LockedNode(long nodeId) {
+            super(nodeId);
         }
     }
 
-    static final class LockedRelationship extends LockedEntity
-    {
-        LockedRelationship( long relationshipId )
-        {
-            super( relationshipId );
+    static final class LockedRelationship extends LockedEntity {
+        LockedRelationship(long relationshipId) {
+            super(relationshipId);
         }
     }
 
-    private static class CustomLockedEntity extends LockedEntity
-    {
+    private static class CustomLockedEntity extends LockedEntity {
         private final int type;
 
-        private CustomLockedEntity( int type, long id )
-        {
-            super( id );
+        private CustomLockedEntity(int type, long id) {
+            super(id);
             this.type = type;
         }
 
         @Override
-        public int hashCode()
-        {
-            return Objects.hash( type, id );
+        public int hashCode() {
+            return Objects.hash(type, id);
         }
 
         @Override
-        public boolean equals( Object obj )
-        {
-            if ( !super.equals( obj ) )
-            {
+        public boolean equals(Object obj) {
+            if (!super.equals(obj)) {
                 return false;
             }
             CustomLockedEntity that = (CustomLockedEntity) obj;

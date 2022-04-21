@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable
 
-
 class PartialSortPipeTest extends CypherFunSuite {
 
   test("partial sort is lazy") {
@@ -42,10 +41,12 @@ class PartialSortPipeTest extends CypherFunSuite {
     )
     val source = new FakePipe(list)
 
-    val sortPipe = PartialSortPipe(source,
+    val sortPipe = PartialSortPipe(
+      source,
       InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"))),
       InterpretedExecutionContextOrdering.asComparator(List(Ascending("y"))),
-      None)()
+      None
+    )()
 
     val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
 

@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.Semaphore;
-
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -36,81 +35,62 @@ import org.neo4j.util.concurrent.BinaryLatch;
 /**
  * A sink for index updates that will eventually be applied.
  */
-public class IndexUpdateSink
-{
+public class IndexUpdateSink {
     private final JobScheduler scheduler;
     private final Semaphore updateQueueLimit;
 
-    IndexUpdateSink( JobScheduler scheduler, int eventuallyConsistentUpdateQueueLimit )
-    {
+    IndexUpdateSink(JobScheduler scheduler, int eventuallyConsistentUpdateQueueLimit) {
         this.scheduler = scheduler;
-        updateQueueLimit = new Semaphore( eventuallyConsistentUpdateQueueLimit );
+        updateQueueLimit = new Semaphore(eventuallyConsistentUpdateQueueLimit);
     }
 
-    public void enqueueUpdate( DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater, IndexEntryUpdate<?> update )
-    {
+    public void enqueueUpdate(
+            DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater, IndexEntryUpdate<?> update) {
         updateQueueLimit.acquireUninterruptibly();
-        Runnable eventualUpdate = () ->
-        {
-            try
-            {
-                indexUpdater.process( update );
-            }
-            catch ( IndexEntryConflictException e )
-            {
-                markAsFailed( index, e );
-            }
-            finally
-            {
+        Runnable eventualUpdate = () -> {
+            try {
+                indexUpdater.process(update);
+            } catch (IndexEntryConflictException e) {
+                markAsFailed(index, e);
+            } finally {
                 updateQueueLimit.release();
             }
         };
 
-        try
-        {
-            var monitoringParams = JobMonitoringParams.systemJob( "Background update of index '" + index.getDescriptor().getName() + "'" );
-            scheduler.schedule( Group.INDEX_UPDATING, monitoringParams, eventualUpdate );
-        }
-        catch ( Exception e )
-        {
+        try {
+            var monitoringParams = JobMonitoringParams.systemJob(
+                    "Background update of index '" + index.getDescriptor().getName() + "'");
+            scheduler.schedule(Group.INDEX_UPDATING, monitoringParams, eventualUpdate);
+        } catch (Exception e) {
             updateQueueLimit.release(); // Avoid leaking permits if job scheduling fails.
             throw e;
         }
     }
 
-    private static void markAsFailed( DatabaseIndex<? extends IndexReader> index, IndexEntryConflictException conflict )
-    {
-        try
-        {
-            index.markAsFailed( conflict.getMessage() );
-        }
-        catch ( IOException ioe )
-        {
-            ioe.addSuppressed( conflict );
-            throw new UncheckedIOException( ioe );
+    private static void markAsFailed(DatabaseIndex<? extends IndexReader> index, IndexEntryConflictException conflict) {
+        try {
+            index.markAsFailed(conflict.getMessage());
+        } catch (IOException ioe) {
+            ioe.addSuppressed(conflict);
+            throw new UncheckedIOException(ioe);
         }
     }
 
-    public void closeUpdater( DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater )
-    {
-        var monitoringParams = JobMonitoringParams.systemJob( "Closing of an updater for index '" + index.getDescriptor().getName() + "'" );
-        scheduler.schedule( Group.INDEX_UPDATING, monitoringParams, () ->
-        {
-            try
-            {
+    public void closeUpdater(DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater) {
+        var monitoringParams = JobMonitoringParams.systemJob(
+                "Closing of an updater for index '" + index.getDescriptor().getName() + "'");
+        scheduler.schedule(Group.INDEX_UPDATING, monitoringParams, () -> {
+            try {
                 indexUpdater.close();
+            } catch (IndexEntryConflictException e) {
+                markAsFailed(index, e);
             }
-            catch ( IndexEntryConflictException e )
-            {
-                markAsFailed( index, e );
-            }
-        } );
+        });
     }
 
-    public void awaitUpdateApplication()
-    {
+    public void awaitUpdateApplication() {
         BinaryLatch updateLatch = new BinaryLatch();
-        scheduler.schedule( Group.INDEX_UPDATING, JobMonitoringParams.NOT_MONITORED, updateLatch::release );
+        scheduler.schedule(Group.INDEX_UPDATING, JobMonitoringParams.NOT_MONITORED, updateLatch::release);
         updateLatch.await();
     }
 }

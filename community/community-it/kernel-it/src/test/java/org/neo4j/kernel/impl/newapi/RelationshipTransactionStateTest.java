@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class RelationshipTransactionStateTest extends RelationshipTransactionStateTestBase<WriteTestSupport>
-{
+public class RelationshipTransactionStateTest extends RelationshipTransactionStateTestBase<WriteTestSupport> {
     @Override
-    public WriteTestSupport newTestSupport()
-    {
+    public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();
     }
 }

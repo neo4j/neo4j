@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.internal.schema.IndexOrderCapability.NONE;
+import static org.neo4j.internal.schema.IndexValueCapability.NO;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexCapability;
@@ -36,103 +40,92 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
-import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
-import static org.neo4j.internal.schema.IndexOrderCapability.NONE;
-import static org.neo4j.internal.schema.IndexValueCapability.NO;
-
-public class TextIndexProvider extends AbstractLuceneIndexProvider
-{
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "text", "1.0" );
+public class TextIndexProvider extends AbstractLuceneIndexProvider {
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text", "1.0");
     public static final IndexCapability CAPABILITY = new TextIndexCapability();
 
-    public TextIndexProvider( FileSystemAbstraction fileSystem,
-                              DirectoryFactory directoryFactory,
-                              IndexDirectoryStructure.Factory directoryStructureFactory,
-                              Monitors monitors, Config config,
-                              DatabaseReadOnlyChecker readOnlyChecker )
-    {
-        super( IndexType.TEXT, DESCRIPTOR, fileSystem, directoryFactory, directoryStructureFactory, monitors, config, readOnlyChecker );
+    public TextIndexProvider(
+            FileSystemAbstraction fileSystem,
+            DirectoryFactory directoryFactory,
+            IndexDirectoryStructure.Factory directoryStructureFactory,
+            Monitors monitors,
+            Config config,
+            DatabaseReadOnlyChecker readOnlyChecker) {
+        super(
+                IndexType.TEXT,
+                DESCRIPTOR,
+                fileSystem,
+                directoryFactory,
+                directoryStructureFactory,
+                monitors,
+                config,
+                readOnlyChecker);
     }
 
     @Override
-    public IndexDescriptor completeConfiguration( IndexDescriptor index )
-    {
-        return index.getCapability().equals( NO_CAPABILITY ) ? index.withIndexCapability( CAPABILITY ) : index;
+    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+        return index.getCapability().equals(NO_CAPABILITY) ? index.withIndexCapability(CAPABILITY) : index;
     }
 
     @Override
-    public IndexType getIndexType()
-    {
+    public IndexType getIndexType() {
         return IndexType.TEXT;
     }
 
-    public static class TextIndexCapability implements IndexCapability
-    {
+    public static class TextIndexCapability implements IndexCapability {
         @Override
-        public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
-        {
+        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
             return NONE;
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-        {
+        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
             return NO;
         }
 
         @Override
-        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
-        {
-            Preconditions.requireNonEmpty( valueCategories );
-            Preconditions.requireNoNullElements( valueCategories );
+        public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
+            Preconditions.requireNonEmpty(valueCategories);
+            Preconditions.requireNoNullElements(valueCategories);
             return valueCategories.length == 1 && valueCategories[0] == ValueCategory.TEXT;
         }
 
         @Override
-        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
-        {
+        public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
 
-            if ( queryType == IndexQueryType.ALL_ENTRIES )
-            {
+            if (queryType == IndexQueryType.ALL_ENTRIES) {
                 return true;
             }
 
-            if ( !areValueCategoriesAccepted( valueCategory ) )
-            {
+            if (!areValueCategoriesAccepted(valueCategory)) {
                 return false;
             }
 
-            return switch ( queryType )
-            {
+            return switch (queryType) {
                 case EXACT, RANGE, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
                 default -> false;
             };
         }
 
         @Override
-        public double getCostMultiplier( IndexQueryType... queryTypes )
-        {
+        public double getCostMultiplier(IndexQueryType... queryTypes) {
             // for now, just make the operations which are more efficiently supported by
             // btree-based indexes slightly more expensive so the planner would choose a
             // btree-based index instead of lucene-based index if there is a choice
 
             var preferBTreeBasedIndex = false;
-            for ( int i = 0; i < queryTypes.length && !preferBTreeBasedIndex; i++ )
-            {
-                preferBTreeBasedIndex = switch ( queryTypes[i] )
-                {
+            for (int i = 0; i < queryTypes.length && !preferBTreeBasedIndex; i++) {
+                preferBTreeBasedIndex = switch (queryTypes[i]) {
                     case EXACT, RANGE, STRING_PREFIX -> true;
-                    default -> false;
-                };
+                    default -> false;};
             }
             return preferBTreeBasedIndex ? 1.1 : 1.0;
         }
 
         @Override
-        public boolean supportPartitionedScan( IndexQuery... queries )
-        {
-            Preconditions.requireNonEmpty( queries );
-            Preconditions.requireNoNullElements( queries );
+        public boolean supportPartitionedScan(IndexQuery... queries) {
+            Preconditions.requireNonEmpty(queries);
+            Preconditions.requireNoNullElements(queries);
             return false;
         }
     }

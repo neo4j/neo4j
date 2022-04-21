@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Optional.ofNullable;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -34,166 +35,137 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.lock.ActiveLock;
 
-import static java.util.Optional.ofNullable;
-
 /**
  * A test implementation of {@link KernelTransactionHandle} that simply wraps a given {@link KernelTransaction}.
  */
-public class TestKernelTransactionHandle implements KernelTransactionHandle
-{
+public class TestKernelTransactionHandle implements KernelTransactionHandle {
     private static final String USER_TRANSACTION_NAME_PREFIX = "transaction-";
     private final KernelTransaction tx;
 
-    public TestKernelTransactionHandle( KernelTransaction tx )
-    {
-        this.tx = Objects.requireNonNull( tx );
+    public TestKernelTransactionHandle(KernelTransaction tx) {
+        this.tx = Objects.requireNonNull(tx);
     }
 
     @Override
-    public long lastTransactionTimestampWhenStarted()
-    {
+    public long lastTransactionTimestampWhenStarted() {
         return tx.lastTransactionTimestampWhenStarted();
     }
 
     @Override
-    public long startTime()
-    {
+    public long startTime() {
         return tx.startTime();
     }
 
     @Override
-    public long startTimeNanos()
-    {
+    public long startTimeNanos() {
         return tx.startTimeNanos();
     }
 
     @Override
-    public long timeoutMillis()
-    {
+    public long timeoutMillis() {
         return tx.timeout();
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return tx.isOpen();
     }
 
     @Override
-    public boolean isClosing()
-    {
+    public boolean isClosing() {
         return tx.isClosing();
     }
 
     @Override
-    public boolean markForTermination( Status reason )
-    {
-        tx.markForTermination( reason );
+    public boolean markForTermination(Status reason) {
+        tx.markForTermination(reason);
         return true;
     }
 
     @Override
-    public AuthSubject subject()
-    {
+    public AuthSubject subject() {
         return tx.subjectOrAnonymous();
     }
 
     @Override
-    public Map<String,Object> getMetaData()
-    {
+    public Map<String, Object> getMetaData() {
         return Collections.emptyMap();
     }
 
     @Override
-    public Optional<Status> terminationReason()
-    {
+    public Optional<Status> terminationReason() {
         return tx.getReasonIfTerminated();
     }
 
     @Override
-    public boolean isUnderlyingTransaction( KernelTransaction tx )
-    {
+    public boolean isUnderlyingTransaction(KernelTransaction tx) {
         return this.tx == tx;
     }
 
     @Override
-    public long getUserTransactionId()
-    {
+    public long getUserTransactionId() {
         return tx.getUserTransactionId();
     }
 
     @Override
-    public String getUserTransactionName()
-    {
+    public String getUserTransactionName() {
         return USER_TRANSACTION_NAME_PREFIX + getUserTransactionId();
     }
 
     @Override
-    public Optional<ExecutingQuery> executingQuery()
-    {
+    public Optional<ExecutingQuery> executingQuery() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks()
-    {
+    public Stream<ActiveLock> activeLocks() {
         return Stream.empty();
     }
 
     @Override
-    public TransactionExecutionStatistic transactionStatistic()
-    {
+    public TransactionExecutionStatistic transactionStatistic() {
         return TransactionExecutionStatistic.NOT_AVAILABLE;
     }
 
     @Override
-    public TransactionInitializationTrace transactionInitialisationTrace()
-    {
+    public TransactionInitializationTrace transactionInitialisationTrace() {
         return TransactionInitializationTrace.NONE;
     }
 
     @Override
-    public Optional<ClientConnectionInfo> clientInfo()
-    {
-        return ofNullable( tx.clientInfo() );
+    public Optional<ClientConnectionInfo> clientInfo() {
+        return ofNullable(tx.clientInfo());
     }
 
     @Override
-    public boolean isSchemaTransaction()
-    {
+    public boolean isSchemaTransaction() {
         return tx.isSchemaTransaction();
     }
 
     @Override
-    public String getStatusDetails()
-    {
+    public String getStatusDetails() {
         return tx.statusDetails();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         TestKernelTransactionHandle that = (TestKernelTransactionHandle) o;
-        return tx.equals( that.tx );
+        return tx.equals(that.tx);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return tx.hashCode();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "TestKernelTransactionHandle{tx=" + tx + "}";
     }
 }

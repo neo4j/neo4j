@@ -54,7 +54,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
       val plans = step(registry, goal, table, ctx).toSeq
       plans should contain theSameElementsAs (Seq(
         ValueHashJoin(nPlan, mPlan, joinPred),
-        ValueHashJoin(mPlan, nPlan, joinPred.switchSides),
+        ValueHashJoin(mPlan, nPlan, joinPred.switchSides)
       ))
       // We should be able to call step twice and get the same result
       step(registry, goal, table, ctx).toSeq should contain theSameElementsAs plans
@@ -77,7 +77,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
       val fullQg = (nQg ++ mQg ++ oQg).withSelections(Selections(Set(
         Predicate(Set("n", "m"), joinPred1),
         Predicate(Set("m", "o"), joinPred2),
-        Predicate(Set("n", "o"), joinPred3),
+        Predicate(Set("n", "o"), joinPred3)
       )))
 
       val nPlan = fakeLogicalPlanFor(ctx.planningAttributes, "n")
@@ -101,16 +101,14 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
         ValueHashJoin(moPlan, nPlan, joinPred1.switchSides),
         ValueHashJoin(nPlan, moPlan, joinPred3),
         ValueHashJoin(moPlan, nPlan, joinPred3.switchSides),
-
         ValueHashJoin(oPlan, nmPlan, joinPred2.switchSides),
         ValueHashJoin(nmPlan, oPlan, joinPred2),
         ValueHashJoin(oPlan, nmPlan, joinPred3.switchSides),
         ValueHashJoin(nmPlan, oPlan, joinPred3),
-
         ValueHashJoin(mPlan, noPlan, joinPred1.switchSides),
         ValueHashJoin(noPlan, mPlan, joinPred1),
         ValueHashJoin(mPlan, noPlan, joinPred2),
-        ValueHashJoin(noPlan, mPlan, joinPred2.switchSides),
+        ValueHashJoin(noPlan, mPlan, joinPred2.switchSides)
       ))
     }
   }

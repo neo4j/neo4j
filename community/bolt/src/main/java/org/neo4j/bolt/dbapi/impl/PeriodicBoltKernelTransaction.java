@@ -21,7 +21,6 @@ package org.neo4j.bolt.dbapi.impl;
 
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -31,60 +30,54 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.memory.HeapEstimator;
 
-public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl implements BoltTransaction
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( PeriodicBoltKernelTransaction.class );
+public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl implements BoltTransaction {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(PeriodicBoltKernelTransaction.class);
 
     private final InternalTransaction internalTransaction;
     private final Supplier<BookmarkMetadata> bookmarkSupplier;
 
-    public PeriodicBoltKernelTransaction( QueryExecutionEngine queryExecutionEngine,
-            TransactionalContextFactory transactionalContextFactory, InternalTransaction transaction, Supplier<BookmarkMetadata> bookmarkSupplier )
-    {
-        super( queryExecutionEngine, transactionalContextFactory, transaction );
+    public PeriodicBoltKernelTransaction(
+            QueryExecutionEngine queryExecutionEngine,
+            TransactionalContextFactory transactionalContextFactory,
+            InternalTransaction transaction,
+            Supplier<BookmarkMetadata> bookmarkSupplier) {
+        super(queryExecutionEngine, transactionalContextFactory, transaction);
         this.internalTransaction = transaction;
         this.bookmarkSupplier = bookmarkSupplier;
     }
 
     @Override
-    public void commit() throws TransactionFailureException
-    {
+    public void commit() throws TransactionFailureException {
         internalTransaction.commit();
     }
 
     @Override
-    public void rollback() throws TransactionFailureException
-    {
+    public void rollback() throws TransactionFailureException {
         internalTransaction.rollback();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         // internal transaction already manage close on commit/rollback
     }
 
     @Override
-    public void markForTermination( Status reason )
-    {
-        internalTransaction.kernelTransaction().markForTermination( reason );
+    public void markForTermination(Status reason) {
+        internalTransaction.kernelTransaction().markForTermination(reason);
     }
 
     @Override
-    public void markForTermination()
-    {
-        internalTransaction.kernelTransaction().markForTermination( Status.Transaction.Terminated );
+    public void markForTermination() {
+        internalTransaction.kernelTransaction().markForTermination(Status.Transaction.Terminated);
     }
 
     @Override
-    public Optional<Status> getReasonIfTerminated()
-    {
+    public Optional<Status> getReasonIfTerminated() {
         return internalTransaction.kernelTransaction().getReasonIfTerminated();
     }
 
     @Override
-    public BookmarkMetadata getBookmarkMetadata()
-    {
+    public BookmarkMetadata getBookmarkMetadata() {
         return bookmarkSupplier.get();
     }
 }

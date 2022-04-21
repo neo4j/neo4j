@@ -26,44 +26,44 @@ import org.neo4j.memory.MemoryTracker;
  * Allocates Cursors. To read data from the Kernel, Cursors are needed. A Cursor factory let's the Kernel consumer
  * allocate all types of cursors, which can then be reused for multiple read operations.
  */
-public interface CursorFactory
-{
+public interface CursorFactory {
     // entities
 
-    NodeCursor allocateNodeCursor( CursorContext cursorContext );
+    NodeCursor allocateNodeCursor(CursorContext cursorContext);
 
-    NodeCursor allocateFullAccessNodeCursor( CursorContext cursorContext );
+    NodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext);
 
-    RelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext );
+    RelationshipScanCursor allocateRelationshipScanCursor(CursorContext cursorContext);
 
-    RelationshipScanCursor allocateFullAccessRelationshipScanCursor( CursorContext cursorContext );
+    RelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext);
 
     // traversal
 
-    RelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext );
+    RelationshipTraversalCursor allocateRelationshipTraversalCursor(CursorContext cursorContext);
 
-    RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( CursorContext cursorContext );
+    RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(CursorContext cursorContext);
 
     // properties
 
-    PropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
+    PropertyCursor allocatePropertyCursor(CursorContext cursorContext, MemoryTracker memoryTracker);
 
-    PropertyCursor allocateFullAccessPropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
+    PropertyCursor allocateFullAccessPropertyCursor(CursorContext cursorContext, MemoryTracker memoryTracker);
 
     // schema indexes
 
-    NodeValueIndexCursor allocateNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
+    NodeValueIndexCursor allocateNodeValueIndexCursor(CursorContext cursorContext, MemoryTracker memoryTracker);
 
-    NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
+    NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker);
 
-    NodeLabelIndexCursor allocateNodeLabelIndexCursor( CursorContext cursorContext );
+    NodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext);
 
-    NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( CursorContext cursorContext );
+    NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor(CursorContext cursorContext);
 
-    RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
+    RelationshipValueIndexCursor allocateRelationshipValueIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker);
 
-    RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( CursorContext cursorContext );
+    RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext);
 
     RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor();
-
 }

@@ -20,45 +20,33 @@
 package org.neo4j.server.http.cypher.entity;
 
 import java.io.IOException;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.core.NodeEntity;
-import org.neo4j.kernel.impl.core.RelationshipEntity;
 
 /**
  * Provides predicates for http cypher objects.
  */
-public final class Predicates
-{
-    public static boolean isDeleted( Relationship relationship ) throws IOException
-    {
-        if ( relationship instanceof HttpRelationship )
-        {
+public final class Predicates {
+    public static boolean isDeleted(Relationship relationship) throws IOException {
+        if (relationship instanceof HttpRelationship) {
             return ((HttpRelationship) relationship).isDeleted();
         }
-        throw new IOException( "Expected HttpRelationship" );
+        throw new IOException("Expected HttpRelationship");
     }
 
-    public static boolean isDeleted( Node node ) throws IOException
-    {
-        if ( node instanceof HttpNode )
-        {
+    public static boolean isDeleted(Node node) throws IOException {
+        if (node instanceof HttpNode) {
             return ((HttpNode) node).isDeleted();
         }
-        throw new IOException( "Expected HttpNode" );
+        throw new IOException("Expected HttpNode");
     }
 
-    public static boolean isFullNode( Node node )
-    {
-        if ( node instanceof HttpNode )
-        {
+    public static boolean isFullNode(Node node) {
+        if (node instanceof HttpNode) {
             return ((HttpNode) node).isFullNode();
         }
         return true;
     }
 
-    private Predicates()
-    {
-    }
+    private Predicates() {}
 }

@@ -21,33 +21,26 @@ package org.neo4j.logging;
 
 import static org.mockito.Mockito.spy;
 
-public class SpiedAssertableLogProvider extends AssertableLogProvider
-{
+public class SpiedAssertableLogProvider extends AssertableLogProvider {
     private final String spied;
 
-    public SpiedAssertableLogProvider( Class<?> loggingClass )
-    {
-        super( false );
+    public SpiedAssertableLogProvider(Class<?> loggingClass) {
+        super(false);
         this.spied = loggingClass.getName();
     }
 
     @Override
-    protected InternalLog buildLog( Class<?> loggingClass )
-    {
+    protected InternalLog buildLog(Class<?> loggingClass) {
         var name = loggingClass.getName();
-        return buildLog( name );
+        return buildLog(name);
     }
 
     @Override
-    protected InternalLog buildLog( String context )
-    {
-        if ( context.equals( spied ) )
-        {
-            return spy( new AssertableLog( context ) );
-        }
-        else
-        {
-            return new AssertableLog( context );
+    protected InternalLog buildLog(String context) {
+        if (context.equals(spied)) {
+            return spy(new AssertableLog(context));
+        } else {
+            return new AssertableLog(context);
         }
     }
 }

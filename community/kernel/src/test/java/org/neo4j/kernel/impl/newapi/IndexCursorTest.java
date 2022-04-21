@@ -19,76 +19,63 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.api.index.IndexProgressor;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class IndexCursorTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.index.IndexProgressor;
+
+class IndexCursorTest {
     @Test
-    void shouldClosePreviousBeforeReinitialize()
-    {
+    void shouldClosePreviousBeforeReinitialize() {
         // given
         StubIndexCursor cursor = new StubIndexCursor();
         StubProgressor progressor = new StubProgressor();
-        cursor.initialize( progressor );
-        assertFalse( progressor.isClosed, "open before re-initialize" );
+        cursor.initialize(progressor);
+        assertFalse(progressor.isClosed, "open before re-initialize");
 
         // when
         StubProgressor otherProgressor = new StubProgressor();
-        cursor.initialize( otherProgressor );
+        cursor.initialize(otherProgressor);
 
         // then
-        assertTrue( progressor.isClosed, "closed after re-initialize" );
-        assertFalse( otherProgressor.isClosed, "new still open" );
+        assertTrue(progressor.isClosed, "closed after re-initialize");
+        assertFalse(otherProgressor.isClosed, "new still open");
     }
 
-    private static class StubIndexCursor extends IndexCursor<StubProgressor,StubIndexCursor>
-    {
-        StubIndexCursor()
-        {
-            super( c -> {} );
+    private static class StubIndexCursor extends IndexCursor<StubProgressor, StubIndexCursor> {
+        StubIndexCursor() {
+            super(c -> {});
         }
 
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return false;
         }
 
         @Override
-        public void closeInternal()
-        {
-        }
+        public void closeInternal() {}
 
         @Override
-        public boolean isClosed()
-        {
+        public boolean isClosed() {
             return false;
         }
     }
 
-    private static class StubProgressor implements IndexProgressor
-    {
+    private static class StubProgressor implements IndexProgressor {
         boolean isClosed;
 
-        StubProgressor()
-        {
+        StubProgressor() {
             isClosed = false;
         }
 
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return false;
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             isClosed = true;
         }
     }

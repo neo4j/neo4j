@@ -31,68 +31,66 @@ import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
-
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.ReturnTypeError;
 
-public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
-{
+public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>, Void> {
 
     private final Types typeUtils;
     private final Elements elementUtils;
-    private final ElementVisitor<Stream<CompilationMessage>,Void> classVisitor;
-    private final TypeVisitor<Stream<CompilationMessage>,Void> recordVisitor;
-    private final ElementVisitor<Stream<CompilationMessage>,Void> parameterVisitor;
+    private final ElementVisitor<Stream<CompilationMessage>, Void> classVisitor;
+    private final TypeVisitor<Stream<CompilationMessage>, Void> recordVisitor;
+    private final ElementVisitor<Stream<CompilationMessage>, Void> parameterVisitor;
 
-    public ProcedureVisitor( Types typeUtils, Elements elementUtils, boolean ignoresWarnings )
-    {
-        TypeMirrorUtils typeMirrors = new TypeMirrorUtils( typeUtils, elementUtils );
+    public ProcedureVisitor(Types typeUtils, Elements elementUtils, boolean ignoresWarnings) {
+        TypeMirrorUtils typeMirrors = new TypeMirrorUtils(typeUtils, elementUtils);
 
         this.typeUtils = typeUtils;
         this.elementUtils = elementUtils;
-        this.classVisitor = new ExtensionClassVisitor( typeUtils, elementUtils, ignoresWarnings );
-        this.recordVisitor = new RecordTypeVisitor( typeUtils, typeMirrors );
-        this.parameterVisitor = new ParameterVisitor( new ParameterTypeVisitor( typeUtils, typeMirrors ) );
+        this.classVisitor = new ExtensionClassVisitor(typeUtils, elementUtils, ignoresWarnings);
+        this.recordVisitor = new RecordTypeVisitor(typeUtils, typeMirrors);
+        this.parameterVisitor = new ParameterVisitor(new ParameterTypeVisitor(typeUtils, typeMirrors));
     }
 
     /**
      * Validates method parameters and return type
      */
     @Override
-    public Stream<CompilationMessage> visitExecutable( ExecutableElement executableElement, Void ignored )
-    {
-        return Stream.of( classVisitor.visit( executableElement.getEnclosingElement() ),
-                validateParameters( executableElement.getParameters() ),
-                validateReturnType( executableElement ) )
-                .flatMap( Function.identity() );
+    public Stream<CompilationMessage> visitExecutable(ExecutableElement executableElement, Void ignored) {
+        return Stream.of(
+                        classVisitor.visit(executableElement.getEnclosingElement()),
+                        validateParameters(executableElement.getParameters()),
+                        validateReturnType(executableElement))
+                .flatMap(Function.identity());
     }
 
-    private Stream<CompilationMessage> validateParameters( List<? extends VariableElement> parameters )
-    {
-        return parameters.stream().flatMap( parameterVisitor::visit );
+    private Stream<CompilationMessage> validateParameters(List<? extends VariableElement> parameters) {
+        return parameters.stream().flatMap(parameterVisitor::visit);
     }
 
-    private Stream<CompilationMessage> validateReturnType( ExecutableElement method )
-    {
+    private Stream<CompilationMessage> validateReturnType(ExecutableElement method) {
         String streamClassName = Stream.class.getCanonicalName();
 
-        TypeMirror streamType = typeUtils.erasure( elementUtils.getTypeElement( streamClassName ).asType() );
+        TypeMirror streamType =
+                typeUtils.erasure(elementUtils.getTypeElement(streamClassName).asType());
         TypeMirror returnType = method.getReturnType();
-        TypeMirror erasedReturnType = typeUtils.erasure( returnType );
+        TypeMirror erasedReturnType = typeUtils.erasure(returnType);
 
-        TypeMirror voidType = typeUtils.getNoType( TypeKind.VOID );
-        if ( typeUtils.isSameType( returnType, voidType ) )
-        {
+        TypeMirror voidType = typeUtils.getNoType(TypeKind.VOID);
+        if (typeUtils.isSameType(returnType, voidType)) {
             return Stream.empty();
         }
 
-        if ( !typeUtils.isSubtype( erasedReturnType, streamType ) )
-        {
-            return Stream.of( new ReturnTypeError( method, "Return type of %s#%s must be %s",
-                    method.getEnclosingElement().getSimpleName(), method.getSimpleName(), streamClassName ) );
+        if (!typeUtils.isSubtype(erasedReturnType, streamType)) {
+            return Stream.of(new ReturnTypeError(
+                    method,
+                    "Return type of %s#%s must be %s",
+                    method.getEnclosingElement().getSimpleName(),
+                    method.getSimpleName(),
+                    streamClassName));
         }
 
-        return recordVisitor.visit( returnType );
+        return recordVisitor.visit(returnType);
     }
 }

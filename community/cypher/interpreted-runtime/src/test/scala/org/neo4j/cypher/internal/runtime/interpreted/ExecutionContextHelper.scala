@@ -26,9 +26,10 @@ import org.neo4j.values.AnyValue
 object ExecutionContextHelper {
 
   implicit class RichExecutionContext(context: CypherRow) {
+
     def toMap: Map[String, AnyValue] = context match {
       case m: MapCypherRow => m.toMap
-      case _ => throw new UnsupportedOperationException(s"cannot make a map out of $context")
+      case _               => throw new UnsupportedOperationException(s"cannot make a map out of $context")
     }
   }
 }

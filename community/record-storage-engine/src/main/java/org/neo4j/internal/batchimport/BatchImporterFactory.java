@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import java.util.NoSuchElementException;
-
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.input.Collector;
@@ -38,34 +37,40 @@ import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 
 @Service
-public abstract class BatchImporterFactory implements NamedService
-{
+public abstract class BatchImporterFactory implements NamedService {
     private final int priority;
 
-    protected BatchImporterFactory( int priority )
-    {
+    protected BatchImporterFactory(int priority) {
         this.priority = priority;
     }
 
-    public abstract BatchImporter instantiate( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem, PageCacheTracer cacheTracer,
-            Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds, LogTailMetadata logTailMetadata, Config dbConfig, Monitor monitor,
-            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
-            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker, CursorContextFactory contextFactory );
+    public abstract BatchImporter instantiate(
+            DatabaseLayout directoryStructure,
+            FileSystemAbstraction fileSystem,
+            PageCacheTracer cacheTracer,
+            Configuration config,
+            LogService logService,
+            ExecutionMonitor executionMonitor,
+            AdditionalInitialIds additionalInitialIds,
+            LogTailMetadata logTailMetadata,
+            Config dbConfig,
+            Monitor monitor,
+            JobScheduler jobScheduler,
+            Collector badCollector,
+            LogFilesInitializer logFilesInitializer,
+            IndexImporterFactory indexImporterFactory,
+            MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory);
 
-    public static BatchImporterFactory withHighestPriority()
-    {
+    public static BatchImporterFactory withHighestPriority() {
         BatchImporterFactory highestPrioritized = null;
-        for ( BatchImporterFactory candidate : Services.loadAll( BatchImporterFactory.class ) )
-        {
-            if ( highestPrioritized == null || candidate.priority > highestPrioritized.priority )
-            {
+        for (BatchImporterFactory candidate : Services.loadAll(BatchImporterFactory.class)) {
+            if (highestPrioritized == null || candidate.priority > highestPrioritized.priority) {
                 highestPrioritized = candidate;
             }
         }
-        if ( highestPrioritized == null )
-        {
-            throw new NoSuchElementException( "No batch importers found" );
+        if (highestPrioritized == null) {
+            throw new NoSuchElementException("No batch importers found");
         }
         return highestPrioritized;
     }

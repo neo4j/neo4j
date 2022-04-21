@@ -22,7 +22,4 @@ package org.neo4j.io.fs;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
-public class EphemeralFileSystemUtilsTest extends FileSystemUtilsTest
-{
-
-}
+public class EphemeralFileSystemUtilsTest extends FileSystemUtilsTest {}

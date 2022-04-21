@@ -86,7 +86,9 @@ object LogicalPlans {
           resultStack.push(result)
 
         case (Some(left), Some(right)) if right eq left =>
-          throw new IllegalStateException(s"Tried to map bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan")
+          throw new IllegalStateException(
+            s"Tried to map bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan"
+          )
 
         case (Some(left), Some(_)) if comingFrom eq left =>
           val arg1 = resultStack.pop()
@@ -125,10 +127,11 @@ object LogicalPlans {
    * @param mapArguments        maps an accumulator before giving it to the LHS leaves of ApplyPlans.
    *                            Invoked with the accumulator of LHS children of ApplyPlans and the ApplyPlan.
    */
-  def foldPlan[ACC](initialAcc: ACC)(root: LogicalPlan,
-                                     f: (ACC, LogicalPlan) => ACC,
-                                     combineLeftAndRight: (ACC, ACC, LogicalPlan) => ACC,
-                                     mapArguments: (ACC, LogicalPlan) => ACC = (acc: ACC, _:LogicalPlan) => acc
+  def foldPlan[ACC](initialAcc: ACC)(
+    root: LogicalPlan,
+    f: (ACC, LogicalPlan) => ACC,
+    combineLeftAndRight: (ACC, ACC, LogicalPlan) => ACC,
+    mapArguments: (ACC, LogicalPlan) => ACC = (acc: ACC, _: LogicalPlan) => acc
   ): ACC = {
     var stack: List[LogicalPlan] = root :: Nil
 

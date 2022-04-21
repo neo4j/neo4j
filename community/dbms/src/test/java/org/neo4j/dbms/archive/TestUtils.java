@@ -26,17 +26,13 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 
-public class TestUtils
-{
+public class TestUtils {
 
-    private TestUtils()
-    {
-    }
+    private TestUtils() {}
 
-    public static Closeable withPermissions( Path file, Set<PosixFilePermission> permissions ) throws IOException
-    {
-        Set<PosixFilePermission> originalPermissions = Files.getPosixFilePermissions( file );
-        Files.setPosixFilePermissions( file, permissions );
-        return () -> Files.setPosixFilePermissions( file, originalPermissions );
+    public static Closeable withPermissions(Path file, Set<PosixFilePermission> permissions) throws IOException {
+        Set<PosixFilePermission> originalPermissions = Files.getPosixFilePermissions(file);
+        Files.setPosixFilePermissions(file, permissions);
+        return () -> Files.setPosixFilePermissions(file, originalPermissions);
     }
 }

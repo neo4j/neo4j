@@ -19,6 +19,4 @@
  */
 package org.neo4j.lock;
 
-public record ActiveLock( ResourceType resourceType, LockType lockType, long transactionId, long resourceId )
-{
-}
+public record ActiveLock(ResourceType resourceType, LockType lockType, long transactionId, long resourceId) {}

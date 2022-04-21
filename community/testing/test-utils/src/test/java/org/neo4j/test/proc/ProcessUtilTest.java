@@ -19,54 +19,49 @@
  */
 package org.neo4j.test.proc;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.test.proc.ProcessUtil.start;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.test.proc.ProcessUtil.start;
-
-class ProcessUtilTest
-{
+class ProcessUtilTest {
     private static final String HELLO_WORLD = "Hello World";
 
-    public static void main( String[] args )
-    {
-        System.out.println( HELLO_WORLD );
+    public static void main(String[] args) {
+        System.out.println(HELLO_WORLD);
     }
 
     @Test
-    void mustFindWorkingJavaExecutableAndClassPath() throws Exception
-    {
+    void mustFindWorkingJavaExecutableAndClassPath() throws Exception {
         List<String> command = new ArrayList<>();
-        command.add( ProcessUtil.getJavaExecutable().toString() );
-        command.add( "-cp" );
-        command.add( ProcessUtil.getClassPath() );
-        command.add( getClass().getName() );
+        command.add(ProcessUtil.getJavaExecutable().toString());
+        command.add("-cp");
+        command.add(ProcessUtil.getClassPath());
+        command.add(getClass().getName());
 
-        ProcessBuilder builder = new ProcessBuilder( command );
+        ProcessBuilder builder = new ProcessBuilder(command);
         Process process = builder.start();
 
-        BufferedReader in = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+        BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line = in.readLine();
 
-        assertThat( process.waitFor() ).isEqualTo( 0 );
-        assertThat( line ).isEqualTo( HELLO_WORLD );
+        assertThat(process.waitFor()).isEqualTo(0);
+        assertThat(line).isEqualTo(HELLO_WORLD);
     }
 
     @Test
-    void startJavaProcessUsingProcessUtil() throws IOException, InterruptedException
-    {
-        var process = start( pb -> {}, getClass().getName() );
+    void startJavaProcessUsingProcessUtil() throws IOException, InterruptedException {
+        var process = start(pb -> {}, getClass().getName());
 
-        BufferedReader in = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+        BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line = in.readLine();
 
-        assertThat( process.waitFor() ).isEqualTo( 0 );
-        assertThat( line ).isEqualTo( HELLO_WORLD );
+        assertThat(process.waitFor()).isEqualTo(0);
+        assertThat(line).isEqualTo(HELLO_WORLD);
     }
 }

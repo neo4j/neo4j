@@ -19,49 +19,44 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class Neo4jErrorTest
-{
+class Neo4jErrorTest {
     @Test
-    void shouldAssignUnknownStatusToUnpredictedException()
-    {
+    void shouldAssignUnknownStatusToUnpredictedException() {
         // Given
-        Throwable cause = new Throwable( "This is not an error we know how to handle." );
-        Neo4jError error = Neo4jError.from( cause );
+        Throwable cause = new Throwable("This is not an error we know how to handle.");
+        Neo4jError error = Neo4jError.from(cause);
 
         // Then
-        assertThat( error.status() ).isEqualTo( Status.General.UnknownError );
+        assertThat(error.status()).isEqualTo(Status.General.UnknownError);
     }
 
     @Test
-    void shouldConvertDeadlockException()
-    {
+    void shouldConvertDeadlockException() {
         // When
-        Neo4jError error = Neo4jError.from( new DeadlockDetectedException( null ) );
+        Neo4jError error = Neo4jError.from(new DeadlockDetectedException(null));
 
         // Then
-        assertEquals( Status.Transaction.DeadlockDetected, error.status() );
+        assertEquals(Status.Transaction.DeadlockDetected, error.status());
     }
 
     @Test
-    void shouldSetStatusToDatabaseUnavailableOnDatabaseShutdownException()
-    {
+    void shouldSetStatusToDatabaseUnavailableOnDatabaseShutdownException() {
         // Given
         DatabaseShutdownException ex = new DatabaseShutdownException();
 
         // When
-        Neo4jError error = Neo4jError.from( ex );
+        Neo4jError error = Neo4jError.from(ex);
 
         // Then
-        assertThat( error.status() ).isEqualTo( Status.Database.DatabaseUnavailable );
-        assertThat( error.cause() ).isEqualTo( ex );
+        assertThat(error.status()).isEqualTo(Status.Database.DatabaseUnavailable);
+        assertThat(error.cause()).isEqualTo(ex);
     }
 }

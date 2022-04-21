@@ -22,6 +22,4 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.schema.IndexDescriptor;
 
-public record IndexFailureRecord(IndexDescriptor descriptor, UnderlyingStorageException exception)
-{
-}
+public record IndexFailureRecord(IndexDescriptor descriptor, UnderlyingStorageException exception) {}

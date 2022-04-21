@@ -21,46 +21,38 @@ package org.neo4j.io.pagecache.tracing.recording;
 
 import org.neo4j.io.pagecache.PageSwapper;
 
-public abstract class Event
-{
+public abstract class Event {
     public final PageSwapper io;
     public final long pageId;
 
-    public Event( PageSwapper io, long pageId )
-    {
+    public Event(PageSwapper io, long pageId) {
         this.io = io;
         this.pageId = pageId;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         Event event = (Event) o;
 
-        return pageId == event.pageId && !(io != null ? !io.equals( event.io ) : event.io != null);
-
+        return pageId == event.pageId && !(io != null ? !io.equals(event.io) : event.io != null);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = io != null ? io.hashCode() : 0;
         result = 31 * result + (int) (pageId ^ (pageId >>> 32));
         return result;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "%s{io=%s, pageId=%s}", getClass().getSimpleName(), io, pageId );
+    public String toString() {
+        return String.format("%s{io=%s, pageId=%s}", getClass().getSimpleName(), io, pageId);
     }
 }

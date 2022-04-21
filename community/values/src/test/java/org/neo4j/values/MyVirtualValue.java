@@ -19,73 +19,60 @@
  */
 package org.neo4j.values;
 
-import java.util.Comparator;
-
-import org.neo4j.values.virtual.VirtualValueGroup;
-
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class MyVirtualValue extends VirtualValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( MyVirtualValue.class );
+import java.util.Comparator;
+import org.neo4j.values.virtual.VirtualValueGroup;
+
+public class MyVirtualValue extends VirtualValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(MyVirtualValue.class);
 
     private final int hashCode;
 
-    MyVirtualValue( int hashCode )
-    {
+    MyVirtualValue(int hashCode) {
         this.hashCode = hashCode;
     }
 
     @Override
-    public boolean equals( VirtualValue other )
-    {
+    public boolean equals(VirtualValue other) {
         return this == other;
     }
 
     @Override
-    public VirtualValueGroup valueGroup()
-    {
+    public VirtualValueGroup valueGroup() {
         return null;
     }
 
     @Override
-    public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )
-    {
+    public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
         return 0;
     }
 
     @Override
-    public Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator )
-    {
+    public Comparison unsafeTernaryCompareTo(VirtualValue other, TernaryComparator<AnyValue> comparator) {
         return Comparison.EQUAL;
     }
 
     @Override
-    protected final int computeHashToMemoize()
-    {
+    protected final int computeHashToMemoize() {
         return hashCode;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
+    public <T> T map(ValueMapper<T> mapper) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "MyVirtualValue";
     }
 
     @Override
-    public void writeTo( AnyValueWriter writer )
-    {
-    }
+    public void writeTo(AnyValueWriter writer) {}
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return SHALLOW_SIZE;
     }
 }

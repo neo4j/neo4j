@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.Comparator
-
 import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -29,13 +27,16 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialSortPipe.NO_MORE_ROWS_TO_SKIP_SORTING
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class PartialTopNPipe(source: Pipe,
-                           countExpression: Expression,
-                           skipExpression: Option[Expression],
-                           prefixComparator: Comparator[ReadableRow],
-                           suffixComparator: Comparator[ReadableRow])
-                          (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source: Pipe) with OrderedInputPipe {
+import java.util.Comparator
+
+case class PartialTopNPipe(
+  source: Pipe,
+  countExpression: Expression,
+  skipExpression: Option[Expression],
+  prefixComparator: Comparator[ReadableRow],
+  suffixComparator: Comparator[ReadableRow]
+)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source: Pipe) with OrderedInputPipe {
 
   override def getReceiver(state: QueryState): OrderedChunkReceiver = throw new IllegalStateException()
 
@@ -57,7 +58,8 @@ case class PartialTopNPipe(source: Pipe,
       rowsMemoryTracker.close()
     }
 
-    override def isSameChunk(first: CypherRow, current: CypherRow): Boolean = prefixComparator.compare(first, current) == 0
+    override def isSameChunk(first: CypherRow, current: CypherRow): Boolean =
+      prefixComparator.compare(first, current) == 0
 
     override def processRow(row: CypherRow): Unit = {
       val evictedRow = topTable.addAndGetEvicted(row)
@@ -83,7 +85,10 @@ case class PartialTopNPipe(source: Pipe,
     override def processNextChunk: Boolean = remainingLimit > 0
   }
 
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     if (input.isEmpty) {
       ClosingIterator.empty
     } else {
@@ -104,10 +109,16 @@ case class PartialTopNPipe(source: Pipe,
  * Special case for when we only have one element, in this case it is no idea to store
  * an array, instead just store a single value.
  */
-case class PartialTop1Pipe(source: Pipe, prefixComparator: Comparator[ReadableRow], suffixComparator: Comparator[ReadableRow])
-                          (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class PartialTop1Pipe(
+  source: Pipe,
+  prefixComparator: Comparator[ReadableRow],
+  suffixComparator: Comparator[ReadableRow]
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     if (input.isEmpty) {
       ClosingIterator.empty
     } else {

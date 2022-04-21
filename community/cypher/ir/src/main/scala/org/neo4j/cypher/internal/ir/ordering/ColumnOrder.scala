@@ -55,7 +55,7 @@ sealed trait ColumnOrder {
   def dependencies: Set[LogicalVariable] = {
     var currExpr = expression
     var prevExpr = projectExpression(expression, projections)
-    while(currExpr != prevExpr) {
+    while (currExpr != prevExpr) {
       currExpr = prevExpr
       prevExpr = projectExpression(currExpr, projections)
     }
@@ -64,9 +64,11 @@ sealed trait ColumnOrder {
 }
 
 object ColumnOrder {
+
   def unapply(arg: ColumnOrder): Option[Expression] = {
     Some(arg.expression)
   }
+
   def apply(expression: Expression, ascending: Boolean): ColumnOrder = {
     if (ascending) Asc(expression) else Desc(expression)
   }
@@ -74,6 +76,7 @@ object ColumnOrder {
   case class Asc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder {
     override val isAscending: Boolean = true
   }
+
   case class Desc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder {
     override val isAscending: Boolean = false
   }
@@ -87,7 +90,7 @@ object ColumnOrder {
    */
   def projectExpression(expression: Expression, projections: Map[String, Expression]): Expression = {
     expression.endoRewrite(topDown(Rewriter.lift {
-      case v@Variable(varName) =>
+      case v @ Variable(varName) =>
         projections.getOrElse(varName, v)
     }))
   }

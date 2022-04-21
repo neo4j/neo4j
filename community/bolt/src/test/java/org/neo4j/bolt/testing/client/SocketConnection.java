@@ -19,93 +19,79 @@
  */
 package org.neo4j.bolt.testing.client;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-
 import org.neo4j.common.HexPrinter;
 import org.neo4j.internal.helpers.HostnamePort;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-
-public class SocketConnection implements TransportConnection
-{
+public class SocketConnection implements TransportConnection {
     protected Socket socket;
     protected InputStream in;
     protected OutputStream out;
 
-    public SocketConnection()
-    {
-        this( new Socket() );
+    public SocketConnection() {
+        this(new Socket());
     }
 
-    public SocketConnection( Socket socket )
-    {
+    public SocketConnection(Socket socket) {
         this.socket = socket;
     }
 
-    protected void setSocket( Socket socket )
-    {
+    protected void setSocket(Socket socket) {
         this.socket = socket;
     }
 
-    protected Socket getSocket()
-    {
+    protected Socket getSocket() {
         return socket;
     }
 
     @Override
-    public TransportConnection connect( HostnamePort address ) throws IOException
-    {
-        socket.setSoTimeout( (int) MINUTES.toMillis( 5 ) );
+    public TransportConnection connect(HostnamePort address) throws IOException {
+        socket.setSoTimeout((int) MINUTES.toMillis(5));
 
-        socket.connect( new InetSocketAddress( address.getHost(), address.getPort() ) );
+        socket.connect(new InetSocketAddress(address.getHost(), address.getPort()));
         in = socket.getInputStream();
         out = socket.getOutputStream();
         return this;
     }
 
     @Override
-    public TransportConnection send( byte[] rawBytes ) throws IOException
-    {
-        out.write( rawBytes );
+    public TransportConnection send(byte[] rawBytes) throws IOException {
+        out.write(rawBytes);
         return this;
     }
 
     @Override
-    public byte[] recv( int length ) throws IOException
-    {
+    public byte[] recv(int length) throws IOException {
         byte[] bytes = new byte[length];
         int left = length;
         int read;
 
-        try
-        {
-            while ( left > 0 && (read = in.read( bytes, length - left, left )) != -1 )
-            {
+        try {
+            while (left > 0 && (read = in.read(bytes, length - left, left)) != -1) {
                 left -= read;
             }
+        } catch (SocketTimeoutException e) {
+            throw new SocketTimeoutException(
+                    "Reading data timed out, missing " + left + " bytes. Buffer: " + HexPrinter.hex(bytes));
         }
-        catch ( SocketTimeoutException e )
-        {
-            throw new SocketTimeoutException( "Reading data timed out, missing " + left + " bytes. Buffer: " + HexPrinter.hex( bytes ) );
-        }
-        //all the bytes could not be read, fail
-        if ( left != 0 )
-        {
-            throw new IOException( "Failed to read " + length + " bytes, missing " + left + " bytes. Buffer: " + HexPrinter.hex( bytes ) );
+        // all the bytes could not be read, fail
+        if (left != 0) {
+            throw new IOException("Failed to read " + length + " bytes, missing " + left + " bytes. Buffer: "
+                    + HexPrinter.hex(bytes));
         }
         return bytes;
     }
 
     @Override
-    public void disconnect() throws IOException
-    {
-        if ( socket != null && socket.isConnected() )
-        {
+    public void disconnect() throws IOException {
+        if (socket != null && socket.isConnected()) {
             socket.close();
         }
     }

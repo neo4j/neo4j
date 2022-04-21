@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
@@ -35,8 +34,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * TODO: The aim is to have this as the only representation of store ID and store version
  * and get rid of the 'String' and 'long' representation of store version and {@link LegacyStoreId}.
  */
-public class StoreId
-{
+public class StoreId {
     private final long creationTime;
     private final long random;
     private final String storageEngineName;
@@ -44,8 +42,13 @@ public class StoreId
     private final int majorVersion;
     private final int minorVersion;
 
-    public StoreId( long creationTime, long random, String storageEngineName, String formatFamilyName, int majorVersion, int minorVersion )
-    {
+    public StoreId(
+            long creationTime,
+            long random,
+            String storageEngineName,
+            String formatFamilyName,
+            int majorVersion,
+            int minorVersion) {
         this.creationTime = creationTime;
         this.random = random;
         this.storageEngineName = storageEngineName;
@@ -54,33 +57,27 @@ public class StoreId
         this.minorVersion = minorVersion;
     }
 
-    long getCreationTime()
-    {
+    long getCreationTime() {
         return creationTime;
     }
 
-    long getRandom()
-    {
+    long getRandom() {
         return random;
     }
 
-    String getStorageEngineName()
-    {
+    String getStorageEngineName() {
         return storageEngineName;
     }
 
-    String getFormatFamilyName()
-    {
+    String getFormatFamilyName() {
         return formatFamilyName;
     }
 
-    int getMajorVersion()
-    {
+    int getMajorVersion() {
         return majorVersion;
     }
 
-    int getMinorVersion()
-    {
+    int getMinorVersion() {
         return minorVersion;
     }
 
@@ -90,14 +87,12 @@ public class StoreId
      * The result of this method should be used in logging, error messages and similar cases,
      * when the store version needs to be represented to the end user.
      */
-    public String versionToUserString()
-    {
+    public String versionToUserString() {
         return storageEngineName + "-" + formatFamilyName + "-" + majorVersion + "-" + minorVersion;
     }
 
-    public void serialize( WritableChannel channel ) throws IOException
-    {
-        StoreIdSerialization.serialize( this, channel );
+    public void serialize(WritableChannel channel) throws IOException {
+        StoreIdSerialization.serialize(this, channel);
     }
 
     /**
@@ -106,55 +101,50 @@ public class StoreId
      * and the minor store version of the submitted {@code anotherId} is greater than or equal to the minor version
      * of this store version.
      */
-    public boolean isSameOrUpgradeSuccessor( StoreId anotherId )
-    {
+    public boolean isSameOrUpgradeSuccessor(StoreId anotherId) {
         return creationTime == anotherId.creationTime
                 && random == anotherId.random
-                && storageEngineName.equals( anotherId.storageEngineName )
-                && formatFamilyName.equals( anotherId.formatFamilyName )
+                && storageEngineName.equals(anotherId.storageEngineName)
+                && formatFamilyName.equals(anotherId.formatFamilyName)
                 && majorVersion == anotherId.majorVersion
                 && minorVersion <= anotherId.minorVersion;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         StoreId storeId = (StoreId) o;
-        return creationTime == storeId.creationTime && random == storeId.random && majorVersion == storeId.majorVersion &&
-                minorVersion == storeId.minorVersion && storageEngineName.equals( storeId.storageEngineName ) &&
-                formatFamilyName.equals( storeId.formatFamilyName );
+        return creationTime == storeId.creationTime
+                && random == storeId.random
+                && majorVersion == storeId.majorVersion
+                && minorVersion == storeId.minorVersion
+                && storageEngineName.equals(storeId.storageEngineName)
+                && formatFamilyName.equals(storeId.formatFamilyName);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( creationTime, random, storageEngineName, formatFamilyName, majorVersion, minorVersion );
+    public int hashCode() {
+        return Objects.hash(creationTime, random, storageEngineName, formatFamilyName, majorVersion, minorVersion);
     }
 
     @Override
-    public String toString()
-    {
-        return "StoreId{" +
-                "creationTime=" + creationTime +
-                ", random=" + random +
-                ", storageEngineName='" + storageEngineName + '\'' +
-                ", formatFamilyName='" + formatFamilyName + '\'' +
-                ", majorVersion=" + majorVersion +
-                ", minorVersion=" + minorVersion +
-                '}';
+    public String toString() {
+        return "StoreId{" + "creationTime="
+                + creationTime + ", random="
+                + random + ", storageEngineName='"
+                + storageEngineName + '\'' + ", formatFamilyName='"
+                + formatFamilyName + '\'' + ", majorVersion="
+                + majorVersion + ", minorVersion="
+                + minorVersion + '}';
     }
 
-    public static StoreId deserialize( ReadableChannel channel ) throws IOException
-    {
-        return StoreIdSerialization.deserialize( channel );
+    public static StoreId deserialize(ReadableChannel channel) throws IOException {
+        return StoreIdSerialization.deserialize(channel);
     }
 
     /**
@@ -162,15 +152,14 @@ public class StoreId
      * <p>
      * This method will return {@code null} if the layout points to an empty or uninitialised store.
      */
-    public static StoreId retrieveFromStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache,
-            CursorContext cursorContext ) throws IOException
-    {
-        var maybeEngine = StorageEngineFactory.selectStorageEngine( fs, databaseLayout, pageCache );
-        if ( maybeEngine.isEmpty() )
-        {
+    public static StoreId retrieveFromStore(
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext)
+            throws IOException {
+        var maybeEngine = StorageEngineFactory.selectStorageEngine(fs, databaseLayout, pageCache);
+        if (maybeEngine.isEmpty()) {
             return null;
         }
 
-        return maybeEngine.get().retrieveStoreId( fs, databaseLayout, pageCache, cursorContext );
+        return maybeEngine.get().retrieveStoreId(fs, databaseLayout, pageCache, cursorContext);
     }
 }

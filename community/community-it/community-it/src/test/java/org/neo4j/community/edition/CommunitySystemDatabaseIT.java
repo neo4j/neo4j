@@ -19,13 +19,23 @@
  */
 package org.neo4j.community.edition;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static java.lang.String.valueOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -48,23 +58,11 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.lang.String.valueOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.internal.helpers.collection.Iterators.count;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-
 @TestDirectoryExtension
-class CommunitySystemDatabaseIT
-{
+class CommunitySystemDatabaseIT {
     @Inject
     private TestDirectory testDirectory;
+
     private GraphDatabaseService database;
     private DatabaseManager<?> databaseManager;
     private GraphDatabaseFacade defaultDb;
@@ -72,182 +70,163 @@ class CommunitySystemDatabaseIT
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setUp()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
+    void setUp() {
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .noOpSystemGraphInitializer()
                 .build();
-        database = managementService.database( DEFAULT_DATABASE_NAME );
-        databaseManager = getDatabaseManager( database );
-        defaultDb = getDatabaseByName( databaseManager, databaseManager.databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get() );
-        systemDb = getDatabaseByName( databaseManager, NAMED_SYSTEM_DATABASE_ID );
+        database = managementService.database(DEFAULT_DATABASE_NAME);
+        databaseManager = getDatabaseManager(database);
+        defaultDb = getDatabaseByName(
+                databaseManager,
+                databaseManager
+                        .databaseIdRepository()
+                        .getByName(DEFAULT_DATABASE_NAME)
+                        .get());
+        systemDb = getDatabaseByName(databaseManager, NAMED_SYSTEM_DATABASE_ID);
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         managementService.shutdown();
     }
 
     @Test
-    void systemAndDefaultDatabasesAvailable()
-    {
-        assertNotNull( defaultDb );
-        assertNotNull( systemDb );
-        assertNotSame( defaultDb, systemDb );
+    void systemAndDefaultDatabasesAvailable() {
+        assertNotNull(defaultDb);
+        assertNotNull(systemDb);
+        assertNotSame(defaultDb, systemDb);
     }
 
     @Test
-    void systemDatabaseDataNotAvailableInDefaultDatabase()
-    {
-        Label systemLabel = label( "systemLabel" );
-        try ( Transaction transaction = systemDb.beginTx() )
-        {
-            Node node = transaction.createNode( systemLabel );
-            node.setProperty( "a", "b" );
+    void systemDatabaseDataNotAvailableInDefaultDatabase() {
+        Label systemLabel = label("systemLabel");
+        try (Transaction transaction = systemDb.beginTx()) {
+            Node node = transaction.createNode(systemLabel);
+            node.setProperty("a", "b");
             transaction.commit();
         }
-        try ( Transaction transaction = defaultDb.beginTx() )
-        {
-            assertEquals( 0, count( transaction.findNodes( systemLabel ) ) );
-            assertEquals( 0, count( transaction.getAllLabels() ) );
+        try (Transaction transaction = defaultDb.beginTx()) {
+            assertEquals(0, count(transaction.findNodes(systemLabel)));
+            assertEquals(0, count(transaction.getAllLabels()));
         }
-        try ( Transaction transaction = systemDb.beginTx() )
-        {
-            assertEquals( 1, count( transaction.findNodes( systemLabel ) ) );
-            assertEquals( 1, count( transaction.getAllLabels() ) );
+        try (Transaction transaction = systemDb.beginTx()) {
+            assertEquals(1, count(transaction.findNodes(systemLabel)));
+            assertEquals(1, count(transaction.getAllLabels()));
         }
     }
 
     @Test
-    void separateTransactionLogsForSystemDatabase() throws IOException
-    {
+    void separateTransactionLogsForSystemDatabase() throws IOException {
 
         int systemDatabaseTransactions = 100;
         int defaultDatabaseTransactions = 15;
 
-        var systemTxCountBefore = countTransactionInLogicalStore( systemDb );
-        var defaultTxCountBefore = countTransactionInLogicalStore( defaultDb );
+        var systemTxCountBefore = countTransactionInLogicalStore(systemDb);
+        var defaultTxCountBefore = countTransactionInLogicalStore(defaultDb);
 
-        for ( int i = 0; i < systemDatabaseTransactions; i++ )
-        {
-            try ( Transaction transaction = systemDb.beginTx() )
-            {
+        for (int i = 0; i < systemDatabaseTransactions; i++) {
+            try (Transaction transaction = systemDb.beginTx()) {
                 Node nodeA = transaction.createNode();
                 Node nodeB = transaction.createNode();
-                nodeA.createRelationshipTo( nodeB, RelationshipType.withName( valueOf( i ) ) );
+                nodeA.createRelationshipTo(nodeB, RelationshipType.withName(valueOf(i)));
                 transaction.commit();
             }
         }
 
-        for ( int i = 0; i < defaultDatabaseTransactions; i++ )
-        {
-            try ( Transaction transaction = defaultDb.beginTx() )
-            {
-                transaction.createNode( label( valueOf( i ) ) );
+        for (int i = 0; i < defaultDatabaseTransactions; i++) {
+            try (Transaction transaction = defaultDb.beginTx()) {
+                transaction.createNode(label(valueOf(i)));
                 transaction.commit();
             }
         }
 
-        var systemTxCountAfter = countTransactionInLogicalStore( systemDb );
-        var defaultTxCountAfter = countTransactionInLogicalStore( defaultDb );
+        var systemTxCountAfter = countTransactionInLogicalStore(systemDb);
+        var defaultTxCountAfter = countTransactionInLogicalStore(defaultDb);
 
-        assertEquals( systemTxCountAfter - systemTxCountBefore, systemDatabaseTransactions * 2 );
-        assertEquals( defaultTxCountAfter - defaultTxCountBefore, defaultDatabaseTransactions * 2 );
+        assertEquals(systemTxCountAfter - systemTxCountBefore, systemDatabaseTransactions * 2);
+        assertEquals(defaultTxCountAfter - defaultTxCountBefore, defaultDatabaseTransactions * 2);
     }
 
     @Test
-    void differentDatabaseHaveDifferentTxLogsDirectories()
-    {
-        LogFiles systemLogFiles = systemDb.getDependencyResolver().resolveDependency( LogFiles.class );
-        LogFiles defaultLogFiles = defaultDb.getDependencyResolver().resolveDependency( LogFiles.class );
-        assertNotEquals( defaultLogFiles.logFilesDirectory(), systemLogFiles.logFilesDirectory() );
+    void differentDatabaseHaveDifferentTxLogsDirectories() {
+        LogFiles systemLogFiles = systemDb.getDependencyResolver().resolveDependency(LogFiles.class);
+        LogFiles defaultLogFiles = defaultDb.getDependencyResolver().resolveDependency(LogFiles.class);
+        assertNotEquals(defaultLogFiles.logFilesDirectory(), systemLogFiles.logFilesDirectory());
     }
 
     @Test
-    void systemAndDefaultDatabasesAreConsistentAfterShutdown() throws ConsistencyCheckIncompleteException
-    {
+    void systemAndDefaultDatabasesAreConsistentAfterShutdown() throws ConsistencyCheckIncompleteException {
         int systemDatabaseTransactions = 100;
         int defaultDatabaseTransactions = 15;
         DatabaseLayout systemDatabaseLayout = systemDb.databaseLayout();
         DatabaseLayout defaultDbLayout = defaultDb.databaseLayout();
 
-        for ( int i = 0; i < systemDatabaseTransactions; i++ )
-        {
-            try ( Transaction transaction = systemDb.beginTx() )
-            {
+        for (int i = 0; i < systemDatabaseTransactions; i++) {
+            try (Transaction transaction = systemDb.beginTx()) {
                 Node nodeA = transaction.createNode();
                 Node nodeB = transaction.createNode();
-                nodeA.createRelationshipTo( nodeB, RelationshipType.withName( valueOf( i ) ) );
+                nodeA.createRelationshipTo(nodeB, RelationshipType.withName(valueOf(i)));
                 transaction.commit();
             }
         }
 
-        for ( int i = 0; i < defaultDatabaseTransactions; i++ )
-        {
-            try ( Transaction transaction = defaultDb.beginTx() )
-            {
-                transaction.createNode( label( valueOf( i ) ) );
+        for (int i = 0; i < defaultDatabaseTransactions; i++) {
+            try (Transaction transaction = defaultDb.beginTx()) {
+                transaction.createNode(label(valueOf(i)));
                 transaction.commit();
             }
         }
 
         managementService.shutdown();
 
-        assertTrue( runConsistencyCheck( systemDatabaseLayout ).isSuccessful() );
-        assertTrue( runConsistencyCheck( defaultDbLayout ).isSuccessful() );
+        assertTrue(runConsistencyCheck(systemDatabaseLayout).isSuccessful());
+        assertTrue(runConsistencyCheck(defaultDbLayout).isSuccessful());
     }
 
     @Test
-    void systemDatabaseEnabledByDefault()
-    {
+    void systemDatabaseEnabledByDefault() {
         GraphDatabaseService databaseWithSystemDb = null;
         DatabaseManagementService managementService = null;
-        try
-        {
-            Path disabledSystemDbDirectory = testDirectory.homePath( "withSystemDd" );
-            managementService = new TestDatabaseManagementServiceBuilder( disabledSystemDbDirectory ).build();
-            databaseWithSystemDb = managementService.database( DEFAULT_DATABASE_NAME );
-            DatabaseManager<?> databaseManager = getDatabaseManager( databaseWithSystemDb );
-            assertTrue( databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).isPresent() );
-        }
-        finally
-        {
-            if ( databaseWithSystemDb != null )
-            {
+        try {
+            Path disabledSystemDbDirectory = testDirectory.homePath("withSystemDd");
+            managementService = new TestDatabaseManagementServiceBuilder(disabledSystemDbDirectory).build();
+            databaseWithSystemDb = managementService.database(DEFAULT_DATABASE_NAME);
+            DatabaseManager<?> databaseManager = getDatabaseManager(databaseWithSystemDb);
+            assertTrue(
+                    databaseManager.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID).isPresent());
+        } finally {
+            if (databaseWithSystemDb != null) {
                 managementService.shutdown();
             }
         }
     }
 
-    private static ConsistencyCheckService.Result runConsistencyCheck( DatabaseLayout databaseLayout )
-            throws ConsistencyCheckIncompleteException
-    {
-        return new ConsistencyCheckService( databaseLayout ).runFullConsistencyCheck();
+    private static ConsistencyCheckService.Result runConsistencyCheck(DatabaseLayout databaseLayout)
+            throws ConsistencyCheckIncompleteException {
+        return new ConsistencyCheckService(databaseLayout).runFullConsistencyCheck();
     }
 
-    private static int countTransactionInLogicalStore( GraphDatabaseFacade facade ) throws IOException
-    {
-        LogicalTransactionStore transactionStore = facade.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
-        try ( TransactionCursor cursor = transactionStore.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
-        {
+    private static int countTransactionInLogicalStore(GraphDatabaseFacade facade) throws IOException {
+        LogicalTransactionStore transactionStore =
+                facade.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
+        try (TransactionCursor cursor = transactionStore.getTransactions(TransactionIdStore.BASE_TX_ID + 1)) {
             var count = 0;
-            while ( cursor.next() )
-            {
+            while (cursor.next()) {
                 count++;
             }
             return count;
         }
     }
 
-    private static GraphDatabaseFacade getDatabaseByName( DatabaseManager<?> databaseManager, NamedDatabaseId namedDatabaseId )
-    {
-        return databaseManager.getDatabaseContext( namedDatabaseId ).orElseThrow( IllegalStateException::new ).databaseFacade();
+    private static GraphDatabaseFacade getDatabaseByName(
+            DatabaseManager<?> databaseManager, NamedDatabaseId namedDatabaseId) {
+        return databaseManager
+                .getDatabaseContext(namedDatabaseId)
+                .orElseThrow(IllegalStateException::new)
+                .databaseFacade();
     }
 
-    private static DatabaseManager<?> getDatabaseManager( GraphDatabaseService database )
-    {
-        return ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( DatabaseManager.class );
+    private static DatabaseManager<?> getDatabaseManager(GraphDatabaseService database) {
+        return ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(DatabaseManager.class);
     }
-
 }

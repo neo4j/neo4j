@@ -24,41 +24,36 @@ import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.ValueRepresentation;
 
-public abstract class AnyValue implements Measurable
-{
+public abstract class AnyValue implements Measurable {
     // this should be final, but Mockito barfs if it is,
     // so we need to just manually ensure it isn't overridden
     @Override
-    public boolean equals( Object other )
-    {
-        return this == other || other != null && equalTo( other );
+    public boolean equals(Object other) {
+        return this == other || other != null && equalTo(other);
     }
 
     @Override
-    public final int hashCode()
-    {
-      return computeHash();
+    public final int hashCode() {
+        return computeHash();
     }
 
-    protected abstract boolean equalTo( Object other );
+    protected abstract boolean equalTo(Object other);
 
     protected abstract int computeHash();
 
-    public abstract <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E;
+    public abstract <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E;
 
-    public boolean isSequenceValue()
-    {
+    public boolean isSequenceValue() {
         return false; // per default Values are no SequenceValues
     }
 
-    public boolean isIncomparableType()
-    {
+    public boolean isIncomparableType() {
         return false;
     }
 
-    public abstract Equality ternaryEquals( AnyValue other );
+    public abstract Equality ternaryEquals(AnyValue other);
 
-    public abstract <T> T map( ValueMapper<T> mapper );
+    public abstract <T> T map(ValueMapper<T> mapper);
 
     public abstract String getTypeName();
 
@@ -67,18 +62,20 @@ public abstract class AnyValue implements Measurable
     /**
      * @return {@code true} if at least one operand is NaN and the other is a number
      */
-    public static boolean isNanAndNumber( AnyValue value1, AnyValue value2 )
-    {
-        return (value1 instanceof FloatingPointValue && ((FloatingPointValue) value1).isNaN() && value2 instanceof NumberValue)
-               || (value2 instanceof FloatingPointValue && ((FloatingPointValue) value2).isNaN() && value1 instanceof NumberValue);
+    public static boolean isNanAndNumber(AnyValue value1, AnyValue value2) {
+        return (value1 instanceof FloatingPointValue
+                        && ((FloatingPointValue) value1).isNaN()
+                        && value2 instanceof NumberValue)
+                || (value2 instanceof FloatingPointValue
+                        && ((FloatingPointValue) value2).isNaN()
+                        && value1 instanceof NumberValue);
     }
 
     /**
      * @return {@code true} if at least one operand is NaN
      */
-    public static boolean hasNaNOperand( AnyValue value1, AnyValue value2 )
-    {
+    public static boolean hasNaNOperand(AnyValue value1, AnyValue value2) {
         return (value1 instanceof FloatingPointValue && ((FloatingPointValue) value1).isNaN())
-               || (value2 instanceof FloatingPointValue && ((FloatingPointValue) value2).isNaN());
+                || (value2 instanceof FloatingPointValue && ((FloatingPointValue) value2).isNaN());
     }
 }

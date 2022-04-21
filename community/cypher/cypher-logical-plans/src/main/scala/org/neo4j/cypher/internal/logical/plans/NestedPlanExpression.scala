@@ -28,19 +28,19 @@ import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class NestedPlanCollectExpression(
-                                        override val plan: LogicalPlan,
-                                        projection: Expression,
-                                        // We cannot put the actual pattern expression in the case class, that would lead to endless recursion
-                                        // while trying to rewrite such pattern expressions away.
-                                        override val solvedExpressionAsString: String
-                                      )(val position: InputPosition) extends NestedPlanExpression
+  override val plan: LogicalPlan,
+  projection: Expression,
+  // We cannot put the actual pattern expression in the case class, that would lead to endless recursion
+  // while trying to rewrite such pattern expressions away.
+  override val solvedExpressionAsString: String
+)(val position: InputPosition) extends NestedPlanExpression
 
 case class NestedPlanExistsExpression(
-                                       override val plan: LogicalPlan,
-                                       // We cannot put the actual exists pattern expression in the case class, that would lead to endless recursion
-                                       // while trying to rewrite such exists expressions away.
-                                       override val solvedExpressionAsString: String
-                                     )(val position: InputPosition) extends NestedPlanExpression
+  override val plan: LogicalPlan,
+  // We cannot put the actual exists pattern expression in the case class, that would lead to endless recursion
+  // while trying to rewrite such exists expressions away.
+  override val solvedExpressionAsString: String
+)(val position: InputPosition) extends NestedPlanExpression
 
 abstract class NestedPlanExpression extends Expression with SemanticCheckableExpression {
 
@@ -63,8 +63,10 @@ object NestedPlanExpression {
   def exists(plan: LogicalPlan, solvedExpression: Expression)(position: InputPosition): NestedPlanExistsExpression =
     NestedPlanExistsExpression(plan, stringifier(solvedExpression))(position)
 
-  def collect(plan: LogicalPlan, projection: Expression, solvedExpression: Expression)(position: InputPosition): NestedPlanCollectExpression =
+  def collect(
+    plan: LogicalPlan,
+    projection: Expression,
+    solvedExpression: Expression
+  )(position: InputPosition): NestedPlanCollectExpression =
     NestedPlanCollectExpression(plan, projection, stringifier(solvedExpression))(position)
 }
-
-

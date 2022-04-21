@@ -19,37 +19,33 @@
  */
 package org.neo4j.time;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class StopwatchTest
-{
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.Test;
+
+class StopwatchTest {
     private MutableLong time = new MutableLong();
-    private Stopwatch stopwatch = new Stopwatch( time::longValue );
+    private Stopwatch stopwatch = new Stopwatch(time::longValue);
 
     @Test
-    void tick()
-    {
-        assertEquals( 0, stopwatch.elapsed( TimeUnit.NANOSECONDS ) );
-        time.add( 3 );
-        assertEquals( 3, stopwatch.elapsed( TimeUnit.NANOSECONDS ) );
+    void tick() {
+        assertEquals(0, stopwatch.elapsed(TimeUnit.NANOSECONDS));
+        time.add(3);
+        assertEquals(3, stopwatch.elapsed(TimeUnit.NANOSECONDS));
     }
 
     @Test
-    void testTimeout()
-    {
-        Duration timeout = Duration.ofNanos( 10 );
-        assertFalse( stopwatch.hasTimedOut( timeout ) );
-        time.add( 5 );
-        assertFalse( stopwatch.hasTimedOut( timeout ) );
-        time.add( 5 );
-        assertTrue( stopwatch.hasTimedOut( timeout ) );
+    void testTimeout() {
+        Duration timeout = Duration.ofNanos(10);
+        assertFalse(stopwatch.hasTimedOut(timeout));
+        time.add(5);
+        assertFalse(stopwatch.hasTimedOut(timeout));
+        time.add(5);
+        assertTrue(stopwatch.hasTimedOut(timeout));
     }
 }

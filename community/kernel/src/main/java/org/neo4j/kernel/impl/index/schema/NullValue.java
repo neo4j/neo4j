@@ -22,15 +22,13 @@ package org.neo4j.kernel.impl.index.schema;
 /**
  * Null-object used by {@link IndexLayout}
  */
-class NullValue
-{
+class NullValue {
     static final int SIZE = 0;
 
     static final NullValue INSTANCE = new NullValue();
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "[no value]";
     }
 }

@@ -19,23 +19,19 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.neo4j.values.ValueMapper;
-import org.neo4j.values.virtual.ListValue;
-
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
-public abstract class TextValue extends HashMemoizingScalarValue
-{
-    static final ListValue EMPTY_SPLIT = fromArray( stringArray( "", "" ) );
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.ListValue;
 
-    TextValue()
-    {
-    }
+public abstract class TextValue extends HashMemoizingScalarValue {
+    static final ListValue EMPTY_SPLIT = fromArray(stringArray("", ""));
+
+    TextValue() {}
 
     public abstract String stringValue();
 
@@ -48,11 +44,10 @@ public abstract class TextValue extends HashMemoizingScalarValue
 
     public abstract boolean isEmpty();
 
-    public abstract TextValue substring( int start, int length );
+    public abstract TextValue substring(int start, int length);
 
-    public TextValue substring( int start )
-    {
-        return substring( start, Math.max( length() - start, start ) );
+    public TextValue substring(int start) {
+        return substring(start, Math.max(length() - start, start));
     }
 
     public abstract TextValue trim();
@@ -65,59 +60,53 @@ public abstract class TextValue extends HashMemoizingScalarValue
 
     public abstract TextValue toUpper();
 
-    public abstract ListValue split( String separator );
+    public abstract ListValue split(String separator);
 
-    public abstract ListValue split( List<String> separators );
+    public abstract ListValue split(List<String> separators);
 
-    public abstract TextValue replace( String find, String replace );
+    public abstract TextValue replace(String find, String replace);
 
     public abstract TextValue reverse();
 
-    public abstract TextValue plus( TextValue other );
+    public abstract TextValue plus(TextValue other);
 
-    public abstract boolean startsWith( TextValue other );
+    public abstract boolean startsWith(TextValue other);
 
-    public abstract boolean endsWith( TextValue other );
+    public abstract boolean endsWith(TextValue other);
 
-    public abstract boolean contains( TextValue other );
+    public abstract boolean contains(TextValue other);
 
-    public abstract int compareTo( TextValue other );
+    public abstract int compareTo(TextValue other);
 
     @Override
-    protected int unsafeCompareTo( Value otherValue )
-    {
-        return compareTo( (TextValue) otherValue );
+    protected int unsafeCompareTo(Value otherValue) {
+        return compareTo((TextValue) otherValue);
     }
 
     @Override
-    public final boolean equals( boolean x )
-    {
+    public final boolean equals(boolean x) {
         return false;
     }
 
     @Override
-    public final boolean equals( long x )
-    {
+    public final boolean equals(long x) {
         return false;
     }
 
     @Override
-    public final boolean equals( double x )
-    {
+    public final boolean equals(double x) {
         return false;
     }
 
     @Override
-    public NumberType numberType()
-    {
+    public NumberType numberType() {
         return NumberType.NO_NUMBER;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapText( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapText(this);
     }
 
-    abstract Matcher matcher( Pattern pattern );
+    abstract Matcher matcher(Pattern pattern);
 }

@@ -23,68 +23,49 @@ package org.neo4j.internal.kernel.api.security;
  * Represent the result of a permission check but provide more detail than a simple boolean Also allows for results to be combined such that denies override
  * grants and grants override nothing
  */
-public enum PermissionState
-{
+public enum PermissionState {
     NOT_GRANTED,
     EXPLICIT_GRANT,
     EXPLICIT_DENY;
 
-    public PermissionState combine( PermissionState p )
-    {
-        int order = this.compareTo( p );
-        if ( order <= 0 )
-        {
+    public PermissionState combine(PermissionState p) {
+        int order = this.compareTo(p);
+        if (order <= 0) {
             return p;
-        }
-        else
-        {
+        } else {
             return this;
         }
     }
 
-    public PermissionState restrict( PermissionState restricting )
-    {
+    public PermissionState restrict(PermissionState restricting) {
         // If both allow access, allow access
-        if ( this.allowsAccess() && restricting.allowsAccess() )
-        {
+        if (this.allowsAccess() && restricting.allowsAccess()) {
             return PermissionState.EXPLICIT_GRANT;
         }
         // Else return worst case
-        if ( this == EXPLICIT_DENY || restricting == EXPLICIT_DENY )
-        {
+        if (this == EXPLICIT_DENY || restricting == EXPLICIT_DENY) {
             return EXPLICIT_DENY;
-        }
-        else
-        {
+        } else {
             return NOT_GRANTED;
         }
     }
 
-    public boolean allowsAccess()
-    {
+    public boolean allowsAccess() {
         return this == EXPLICIT_GRANT;
     }
 
-    public static PermissionState fromAllowList( boolean permitted )
-    {
-        if ( permitted )
-        {
+    public static PermissionState fromAllowList(boolean permitted) {
+        if (permitted) {
             return EXPLICIT_GRANT;
-        }
-        else
-        {
+        } else {
             return NOT_GRANTED;
         }
     }
 
-    public static PermissionState fromDenyList( boolean permitted )
-    {
-        if ( permitted )
-        {
+    public static PermissionState fromDenyList(boolean permitted) {
+        if (permitted) {
             return NOT_GRANTED;
-        }
-        else
-        {
+        } else {
             return EXPLICIT_DENY;
         }
     }

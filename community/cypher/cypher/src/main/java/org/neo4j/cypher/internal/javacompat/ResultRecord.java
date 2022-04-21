@@ -22,23 +22,19 @@ package org.neo4j.cypher.internal.javacompat;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 
-public class ResultRecord implements QueryResult.Record
-{
+public class ResultRecord implements QueryResult.Record {
     private final AnyValue[] fields;
 
-    //NOTE do not remove, used from generated code
-    public ResultRecord( int size )
-    {
+    // NOTE do not remove, used from generated code
+    public ResultRecord(int size) {
         this.fields = new AnyValue[size];
     }
 
-    public ResultRecord( AnyValue[] fields )
-    {
+    public ResultRecord(AnyValue[] fields) {
         this.fields = fields;
     }
 
-    public void set( int i, AnyValue value )
-    {
+    public void set(int i, AnyValue value) {
         assert value != null;
         assert i >= 0 && i < fields.length;
 
@@ -46,8 +42,7 @@ public class ResultRecord implements QueryResult.Record
     }
 
     @Override
-    public AnyValue[] fields()
-    {
+    public AnyValue[] fields() {
         return fields;
     }
 }

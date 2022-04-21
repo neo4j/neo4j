@@ -46,11 +46,16 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
 import java.util
 import java.util.concurrent.TimeUnit
+
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 // SHOW TRANSACTION[S] [transaction-id[,...]] [WHERE clause|YIELD clause]
-case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], verbose: Boolean, defaultColumns: List[ShowColumn]) extends Command(defaultColumns) {
+case class ShowTransactionsCommand(
+  givenIds: Either[List[String], Expression],
+  verbose: Boolean,
+  defaultColumns: List[ShowColumn]
+) extends Command(defaultColumns) {
 
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val ids = TransactionCommandHelper.extractIds(givenIds, state.params)
@@ -73,16 +78,18 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
         })
       })
 
-    val askedForTransactions = if (ids.nonEmpty) allowedTransactions.filter {
-      case (transaction: KernelTransactionHandle, _, dbName: String) =>
-        val txId = TransactionId(dbName, transaction.getUserTransactionId).toString
-        ids.contains(txId)
-    } else allowedTransactions
+    val askedForTransactions =
+      if (ids.nonEmpty) allowedTransactions.filter {
+        case (transaction: KernelTransactionHandle, _, dbName: String) =>
+          val txId = TransactionId(dbName, transaction.getUserTransactionId).toString
+          ids.contains(txId)
+      }
+      else allowedTransactions
 
     val handleQuerySnapshotsMap = new util.HashMap[KernelTransactionHandle, util.Optional[QuerySnapshot]]
     askedForTransactions.foreach {
       case (transaction: KernelTransactionHandle, querySnapshot: util.Optional[QuerySnapshot], _) =>
-        handleQuerySnapshotsMap.put( transaction, querySnapshot )
+        handleQuerySnapshotsMap.put(transaction, querySnapshot)
     }
     val transactionDependenciesResolver = new TransactionDependenciesResolver(handleQuerySnapshotsMap)
 
@@ -90,20 +97,19 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
     val rows = askedForTransactions.map {
 
       case (transaction: KernelTransactionHandle, querySnapshot: util.Optional[QuerySnapshot], dbName: String) =>
-
         def getLongOrNull(long: lang.Long) = long match {
           case l: lang.Long => Values.longValue(l)
-          case _ => Values.NO_VALUE
+          case _            => Values.NO_VALUE
         }
 
         def getDurationOrNullFromMillis(long: lang.Long) = long match {
           case l: java.lang.Long => Values.durationValue(Duration.ofMillis(l))
-          case _ => Values.NO_VALUE
+          case _                 => Values.NO_VALUE
         }
 
         def getDurationOrNullFromMicro(long: lang.Long) = long match {
           case l: java.lang.Long => Values.durationValue(Duration.ofMillis(TimeUnit.MICROSECONDS.toMillis(l)))
-          case _ => Values.NO_VALUE
+          case _                 => Values.NO_VALUE
         }
 
         val statistic = transaction.transactionStatistic
@@ -111,14 +117,15 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
 
         val txId = TransactionId(dbName, transaction.getUserTransactionId).toString
         val username = transaction.subject.executingUser()
-        val startTime = formatTime( transaction.startTime(), zoneId )
+        val startTime = formatTime(transaction.startTime(), zoneId)
         val elapsedTime = getDurationOrNullFromMillis(statistic.getElapsedTimeMillis)
-        val (currentQueryId, currentQuery) = if (querySnapshot.isPresent) {
-          val snapshot = querySnapshot.get
-          val currentQueryId = QueryId(snapshot.internalQueryId).toString
-          val currentQuery = snapshot.obfuscatedQueryText.orElse(null)
-          (currentQueryId, currentQuery)
-        } else (EMPTY, EMPTY)
+        val (currentQueryId, currentQuery) =
+          if (querySnapshot.isPresent) {
+            val snapshot = querySnapshot.get
+            val currentQueryId = QueryId(snapshot.internalQueryId).toString
+            val currentQuery = snapshot.obfuscatedQueryText.orElse(null)
+            (currentQueryId, currentQuery)
+          } else (EMPTY, EMPTY)
         val connectionId = clientInfo.map[String](_.connectionId).orElse(EMPTY)
         val clientAddress = clientInfo.map[String](_.clientAddress).orElse(EMPTY)
         val status = getStatus(transaction, transactionDependenciesResolver)
@@ -153,44 +160,99 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
             VirtualValues.map(keys, vals)
           }
 
-          val (outerTransactionId, parameters, planner, runtime, indexes, queryStartTime, queryStatus, queryActiveLockCount,
-          queryElapsedTime, queryCpuTime, queryWaitTime, queryIdleTime, queryAllocatedBytes, queryPageHits, queryPageFaults) = if (querySnapshot.isPresent) {
-            val query = querySnapshot.get
-            val queryTransactionId = TransactionId(dbName, query.transactionId).toString
-            val outerTransactionId = if (queryTransactionId == txId) EMPTY else queryTransactionId
-            val parameters = query.obfuscatedQueryParameters().orElse(MapValue.EMPTY)
-            val planner = query.planner
-            val runtime = query.runtime
-            val indexes = VirtualValues.list(query.indexes.asScala.toList.map(m => {
-              val scalaMap = m.asScala
-              val keys = scalaMap.keys.toArray
-              val vals: Array[AnyValue] = scalaMap.values.map(Values.stringValue).toArray
-              VirtualValues.map(keys, vals)
-            }): _*)
+          val (
+            outerTransactionId,
+            parameters,
+            planner,
+            runtime,
+            indexes,
+            queryStartTime,
+            queryStatus,
+            queryActiveLockCount,
+            queryElapsedTime,
+            queryCpuTime,
+            queryWaitTime,
+            queryIdleTime,
+            queryAllocatedBytes,
+            queryPageHits,
+            queryPageFaults
+          ) =
+            if (querySnapshot.isPresent) {
+              val query = querySnapshot.get
+              val queryTransactionId = TransactionId(dbName, query.transactionId).toString
+              val outerTransactionId = if (queryTransactionId == txId) EMPTY else queryTransactionId
+              val parameters = query.obfuscatedQueryParameters().orElse(MapValue.EMPTY)
+              val planner = query.planner
+              val runtime = query.runtime
+              val indexes = VirtualValues.list(query.indexes.asScala.toList.map(m => {
+                val scalaMap = m.asScala
+                val keys = scalaMap.keys.toArray
+                val vals: Array[AnyValue] = scalaMap.values.map(Values.stringValue).toArray
+                VirtualValues.map(keys, vals)
+              }): _*)
 
-            val queryStartTime = formatTime(query.startTimestampMillis, zoneId)
-            val queryStatus = query.status
-            val queryActiveLockCount = Values.longValue(query.activeLockCount)
-            val queryElapsedTime = getDurationOrNullFromMicro(query.elapsedTimeMicros)
-            val optionalCpuTime = query.cpuTimeMicros
-            val queryCpuTime = if (optionalCpuTime.isPresent) getDurationOrNullFromMicro(optionalCpuTime.getAsLong) else Values.NO_VALUE
-            val queryWaitTime = Values.durationValue(Duration.ofMillis(TimeUnit.MICROSECONDS.toMillis(query.waitTimeMicros)))
-            val optionalIdleTime = query.idleTimeMicros
-            val queryIdleTime = if (optionalIdleTime.isPresent) getDurationOrNullFromMicro(optionalIdleTime.getAsLong) else Values.NO_VALUE
-            val queryBytes = query.allocatedBytes
-            val queryAllocatedBytes = if (queryBytes == HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED) Values.NO_VALUE else getLongOrNull(queryBytes)
-            val queryPageHits = Values.longValue(query.pageHits)
-            val queryPageFaults = Values.longValue(query.pageFaults)
+              val queryStartTime = formatTime(query.startTimestampMillis, zoneId)
+              val queryStatus = query.status
+              val queryActiveLockCount = Values.longValue(query.activeLockCount)
+              val queryElapsedTime = getDurationOrNullFromMicro(query.elapsedTimeMicros)
+              val optionalCpuTime = query.cpuTimeMicros
+              val queryCpuTime =
+                if (optionalCpuTime.isPresent) getDurationOrNullFromMicro(optionalCpuTime.getAsLong)
+                else Values.NO_VALUE
+              val queryWaitTime =
+                Values.durationValue(Duration.ofMillis(TimeUnit.MICROSECONDS.toMillis(query.waitTimeMicros)))
+              val optionalIdleTime = query.idleTimeMicros
+              val queryIdleTime =
+                if (optionalIdleTime.isPresent) getDurationOrNullFromMicro(optionalIdleTime.getAsLong)
+                else Values.NO_VALUE
+              val queryBytes = query.allocatedBytes
+              val queryAllocatedBytes =
+                if (queryBytes == HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED) Values.NO_VALUE
+                else getLongOrNull(queryBytes)
+              val queryPageHits = Values.longValue(query.pageHits)
+              val queryPageFaults = Values.longValue(query.pageFaults)
 
-            (outerTransactionId, parameters, planner, runtime, indexes, queryStartTime, queryStatus, queryActiveLockCount,
-              queryElapsedTime, queryCpuTime, queryWaitTime, queryIdleTime, queryAllocatedBytes, queryPageHits, queryPageFaults)
-          } else (EMPTY, MapValue.EMPTY, EMPTY, EMPTY, VirtualValues.EMPTY_LIST, EMPTY, EMPTY, Values.NO_VALUE,
-            Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE)
+              (
+                outerTransactionId,
+                parameters,
+                planner,
+                runtime,
+                indexes,
+                queryStartTime,
+                queryStatus,
+                queryActiveLockCount,
+                queryElapsedTime,
+                queryCpuTime,
+                queryWaitTime,
+                queryIdleTime,
+                queryAllocatedBytes,
+                queryPageHits,
+                queryPageFaults
+              )
+            } else (
+              EMPTY,
+              MapValue.EMPTY,
+              EMPTY,
+              EMPTY,
+              VirtualValues.EMPTY_LIST,
+              EMPTY,
+              EMPTY,
+              Values.NO_VALUE,
+              Values.NO_VALUE,
+              Values.NO_VALUE,
+              Values.NO_VALUE,
+              Values.NO_VALUE,
+              Values.NO_VALUE,
+              Values.NO_VALUE,
+              Values.NO_VALUE
+            )
           val metaData = getMapValue(transaction.getMetaData)
           val protocol = clientInfo.map[String](_.protocol).orElse(EMPTY)
           val requestUri = clientInfo.map[String](_.requestURI).orElse(EMPTY)
           val statusDetails = transaction.getStatusDetails
-          val resourceInformation = getMapValue(querySnapshot.map[util.Map[String, AnyRef]](_.resourceInformation()).orElse(util.Collections.emptyMap()))
+          val resourceInformation = getMapValue(
+            querySnapshot.map[util.Map[String, AnyRef]](_.resourceInformation()).orElse(util.Collections.emptyMap())
+          )
           val activeLockCount = transaction.activeLocks.count
           val cpuTime = getDurationOrNullFromMillis(statistic.getCpuTimeMillis)
           val waitTime = Values.durationValue(Duration.ofMillis(statistic.getWaitTimeMillis))
@@ -259,7 +321,7 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
             // The page faults of the currently executing query
             "currentQueryPageFaults" -> queryPageFaults,
             // The initialization stacktrace
-            "initializationStackTrace" -> Values.stringValue(initializationStackTrace),
+            "initializationStackTrace" -> Values.stringValue(initializationStackTrace)
           )
         } else {
           briefResult
@@ -276,12 +338,19 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
       .ofInstant(Instant.ofEpochMilli(startTime), zoneId)
       .format(ISO_OFFSET_DATE_TIME)
 
-  private def getStatus(handle: KernelTransactionHandle, transactionDependenciesResolver: TransactionDependenciesResolver): String =
+  private def getStatus(
+    handle: KernelTransactionHandle,
+    transactionDependenciesResolver: TransactionDependenciesResolver
+  ): String =
     handle.terminationReason.map[String](reason => String.format(TransactionId.TERMINATED_STATE, reason.code))
       .orElseGet(() => getExecutingStatus(handle, transactionDependenciesResolver))
 
-  private def getExecutingStatus(handle: KernelTransactionHandle, transactionDependenciesResolver: TransactionDependenciesResolver): String =
-    if (transactionDependenciesResolver.isBlocked(handle)) TransactionId.BLOCKED_STATE + transactionDependenciesResolver.describeBlockingTransactions(handle)
+  private def getExecutingStatus(
+    handle: KernelTransactionHandle,
+    transactionDependenciesResolver: TransactionDependenciesResolver
+  ): String =
+    if (transactionDependenciesResolver.isBlocked(handle))
+      TransactionId.BLOCKED_STATE + transactionDependenciesResolver.describeBlockingTransactions(handle)
     else if (handle.isClosing) TransactionId.CLOSING_STATE
     else TransactionId.RUNNING_STATE
 

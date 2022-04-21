@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.util.Ref
 
-
 object ScopeTreeVerifier {
+
   def verify(root: Scope): Seq[String] = {
     val localSymbolTableIssues = root.allScopes.flatMap {
       scope =>

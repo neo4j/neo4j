@@ -19,119 +19,101 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.Arrays;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 
-public class DurationArray extends NonPrimitiveArray<DurationValue>
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( DurationArray.class );
+import java.util.Arrays;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public class DurationArray extends NonPrimitiveArray<DurationValue> {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(DurationArray.class);
 
     private final DurationValue[] value;
 
-    DurationArray( DurationValue[] value )
-    {
+    DurationArray(DurationValue[] value) {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    protected DurationValue[] value()
-    {
+    protected DurationValue[] value() {
         return value;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapDurationArray( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapDurationArray(this);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+    public boolean equals(Value other) {
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( DurationValue[] x )
-    {
-        return Arrays.equals( value, x);
+    public boolean equals(DurationValue[] x) {
+        return Arrays.equals(value, x);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.beginArray( value.length, ValueWriter.ArrayType.DURATION );
-        for ( DurationValue x : value )
-        {
-            x.writeTo( writer );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.beginArray(value.length, ValueWriter.ArrayType.DURATION);
+        for (DurationValue x : value) {
+            x.writeTo(writer);
         }
         writer.endArray();
     }
 
     @Override
-    public AnyValue value( int offset )
-    {
-        return Values.durationValue( value[offset] );
+    public AnyValue value(int offset) {
+        return Values.durationValue(value[offset]);
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.DURATION_ARRAY;
     }
 
     @Override
-    protected int unsafeCompareTo( Value otherValue )
-    {
-        return compareToNonPrimitiveArray( (DurationArray) otherValue );
+    protected int unsafeCompareTo(Value otherValue) {
+        return compareToNonPrimitiveArray((DurationArray) otherValue);
     }
 
     @Override
-    public boolean isIncomparableType()
-    {
+    public boolean isIncomparableType() {
         return true;
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "DurationArray";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOfObjectArray( DurationValue.SHALLOW_SIZE, value.length );
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + sizeOfObjectArray(DurationValue.SHALLOW_SIZE, value.length);
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof DurationValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        DurationValue[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        DurationValue[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = (DurationValue) added;
-        return new DurationArray( newArray );
+        return new DurationArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         DurationValue[] newArray = new DurationValue[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
+        System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = (DurationValue) prepended;
-        return new DurationArray( newArray );
+        return new DurationArray(newArray);
     }
 }

@@ -20,21 +20,19 @@
 package org.neo4j.kernel.api.database;
 
 import java.io.IOException;
-
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
  * Service to evaluate databases sizes
  */
-public interface DatabaseSizeService
-{
+public interface DatabaseSizeService {
     /**
      * Calculate total size of all files that are related to requested database. Includes all database files and transaction logs
      * @param databaseId id of the database to evaluate size
      * @return total size of the database
      * @throws IOException on exception during evaluating underlying files size
      */
-    long getDatabaseTotalSize( NamedDatabaseId databaseId ) throws IOException;
+    long getDatabaseTotalSize(NamedDatabaseId databaseId) throws IOException;
 
     /**
      * Calculate size of data files that are related to requested database. Includes database files but not transaction logs
@@ -42,5 +40,5 @@ public interface DatabaseSizeService
      * @return size of the database files
      * @throws IOException on exception during evaluating underlying files size
      */
-    long getDatabaseDataSize( NamedDatabaseId databaseId ) throws IOException;
+    long getDatabaseDataSize(NamedDatabaseId databaseId) throws IOException;
 }

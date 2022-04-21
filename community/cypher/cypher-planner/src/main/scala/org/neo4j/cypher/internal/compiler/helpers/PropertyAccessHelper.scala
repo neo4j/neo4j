@@ -41,11 +41,11 @@ object PropertyAccessHelper {
   def findLocalPropertyAccesses(query: SinglePlannerQuery): Set[PropertyAccess] = {
     val horizonPropertyAccesses = query.horizon.folder.treeFold(Set[PropertyAccess]()) {
       case Property(Variable(varName), PropertyKeyName(propName)) => set =>
-        SkipChildren(set + PropertyAccess(varName, propName))
+          SkipChildren(set + PropertyAccess(varName, propName))
     }
     val queryGraphPropertyAccesses = query.queryGraph.folder.treeFold(Set[PropertyAccess]()) {
       case Property(Variable(varName), PropertyKeyName(propName)) => set =>
-        SkipChildren(set + PropertyAccess(varName, propName))
+          SkipChildren(set + PropertyAccess(varName, propName))
     }
     horizonPropertyAccesses ++ queryGraphPropertyAccesses
   }
@@ -65,7 +65,8 @@ object PropertyAccessHelper {
       currentQuery.horizon match {
         case aggr: AggregatingQueryProjection =>
           // needed here to not enter next case
-          if (aggr.groupingExpressions.isEmpty) AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings)
+          if (aggr.groupingExpressions.isEmpty)
+            AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings)
           else Set.empty
 
         case proj: QueryProjection =>

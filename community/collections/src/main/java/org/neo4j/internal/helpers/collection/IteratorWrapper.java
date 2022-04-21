@@ -28,32 +28,27 @@ import java.util.Iterator;
  * @param <T> the type of items to return
  * @param <U> the type of items to wrap/convert from
  */
-public abstract class IteratorWrapper<T, U> implements Iterator<T>
-{
+public abstract class IteratorWrapper<T, U> implements Iterator<T> {
     private Iterator<U> source;
 
-    public IteratorWrapper( Iterator<U> iteratorToWrap )
-    {
+    public IteratorWrapper(Iterator<U> iteratorToWrap) {
         this.source = iteratorToWrap;
     }
 
     @Override
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         return this.source.hasNext();
     }
 
     @Override
-    public T next()
-    {
-        return underlyingObjectToObject( this.source.next() );
+    public T next() {
+        return underlyingObjectToObject(this.source.next());
     }
 
     @Override
-    public void remove()
-    {
+    public void remove() {
         this.source.remove();
     }
 
-    protected abstract T underlyingObjectToObject( U object );
+    protected abstract T underlyingObjectToObject(U object);
 }

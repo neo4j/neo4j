@@ -20,13 +20,10 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -37,64 +34,59 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 /**
  * Used for reading transactions off of file.
  */
-public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionStore
-{
+public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionStore {
     private final LifeSupport life = new LifeSupport();
     private final LogicalTransactionStore physicalStore;
 
-    public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout fromDatabaseLayout, Config config,
-            Monitors monitors, CommandReaderFactory commandReaderFactory ) throws IOException
-    {
+    public ReadOnlyTransactionStore(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            DatabaseLayout fromDatabaseLayout,
+            Config config,
+            Monitors monitors,
+            CommandReaderFactory commandReaderFactory)
+            throws IOException {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
-        LogFiles logFiles = LogFilesBuilder
-                .activeFilesBuilder( fromDatabaseLayout, fs, pageCache )
-                .withCommandReaderFactory( commandReaderFactory )
-                .withConfig( config )
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder(fromDatabaseLayout, fs, pageCache)
+                .withCommandReaderFactory(commandReaderFactory)
+                .withConfig(config)
                 .build();
-        physicalStore = new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, commandReaderFactory,
-                                                             monitors, true, config );
+        physicalStore = new PhysicalLogicalTransactionStore(
+                logFiles, transactionMetadataCache, commandReaderFactory, monitors, true, config);
     }
 
     @Override
-    public TransactionCursor getTransactions( long transactionIdToStartFrom )
-            throws IOException
-    {
-        return physicalStore.getTransactions( transactionIdToStartFrom );
+    public TransactionCursor getTransactions(long transactionIdToStartFrom) throws IOException {
+        return physicalStore.getTransactions(transactionIdToStartFrom);
     }
 
     @Override
-    public TransactionCursor getTransactions( LogPosition position ) throws IOException
-    {
-        return physicalStore.getTransactions( position );
+    public TransactionCursor getTransactions(LogPosition position) throws IOException {
+        return physicalStore.getTransactions(position);
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws IOException
-    {
-        return physicalStore.getTransactionsInReverseOrder( backToPosition );
+    public TransactionCursor getTransactionsInReverseOrder(LogPosition backToPosition) throws IOException {
+        return physicalStore.getTransactionsInReverseOrder(backToPosition);
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         life.init();
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         life.start();
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         life.stop();
     }
 
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         life.shutdown();
     }
 }

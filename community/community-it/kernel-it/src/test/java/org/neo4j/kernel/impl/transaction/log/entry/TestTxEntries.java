@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,59 +36,51 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @EphemeralTestDirectoryExtension
-class TestTxEntries
-{
+class TestTxEntries {
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void testStartEntryWrittenOnceOnRollback()
-    {
+    void testStartEntryWrittenOnceOnRollback() {
         Path storeDir = testDirectory.homePath();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
-                .setFileSystem( fs )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir)
+                .setFileSystem(fs)
                 .impermanent()
                 .build();
-        final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        createSomeTransactions( db );
+        final GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+        createSomeTransactions(db);
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         managementService.shutdown();
 
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir )
-                .setFileSystem( snapshot )
+        managementService = new TestDatabaseManagementServiceBuilder(storeDir)
+                .setFileSystem(snapshot)
                 .impermanent()
                 .build();
         managementService.shutdown();
     }
 
-    private static void createSomeTransactions( GraphDatabaseService db )
-    {
+    private static void createSomeTransactions(GraphDatabaseService db) {
         Node node1;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             node1 = tx.createNode();
             Node node2 = tx.createNode();
-            node1.createRelationshipTo( node2, RelationshipType.withName( "relType1" ) );
+            node1.createRelationshipTo(node2, RelationshipType.withName("relType1"));
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.getNodeById( node1.getId() ).delete();
+        try (Transaction tx = db.beginTx()) {
+            tx.getNodeById(node1.getId()).delete();
             // Will throw exception, causing the tx to be rolledback.
             // InvalidRecordException coming, node1 has rels
-            assertThrows( ConstraintViolationException.class, tx::commit );
+            assertThrows(ConstraintViolationException.class, tx::commit);
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.getNodeById( node1.getId() ).setProperty( "foo", "bar" );
+        try (Transaction tx = db.beginTx()) {
+            tx.getNodeById(node1.getId()).setProperty("foo", "bar");
             tx.commit();
         }
     }

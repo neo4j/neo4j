@@ -19,20 +19,19 @@
  */
 package org.neo4j.kernel.internal.event;
 
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.neo4j.graphdb.event.TransactionEventListener;
 
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-
-public class GlobalTransactionEventListeners
-{
-    private final ConcurrentHashMap<String,List<TransactionEventListener<?>>> globalTransactionEventListeners = new ConcurrentHashMap<>();
+public class GlobalTransactionEventListeners {
+    private final ConcurrentHashMap<String, List<TransactionEventListener<?>>> globalTransactionEventListeners =
+            new ConcurrentHashMap<>();
 
     /**
      * Registers {@code listener} as a listener for transaction events which
@@ -43,20 +42,18 @@ public class GlobalTransactionEventListeners
      * @param listener the listener to receive events about different states
      *                in transaction life cycles.
      */
-    public void registerTransactionEventListener( String databaseName, TransactionEventListener<?> listener )
-    {
-        requireNonNull( databaseName, "Database name is required." );
-        requireNonNull( listener, "Transaction event listener is required." );
-        globalTransactionEventListeners.compute( databaseName, ( s, transactionEventListeners ) ->
-        {
-            List<TransactionEventListener<?>> listeners = transactionEventListeners != null ? transactionEventListeners : new CopyOnWriteArrayList<>();
-            if ( listeners.contains( listener ) )
-            {
+    public void registerTransactionEventListener(String databaseName, TransactionEventListener<?> listener) {
+        requireNonNull(databaseName, "Database name is required.");
+        requireNonNull(listener, "Transaction event listener is required.");
+        globalTransactionEventListeners.compute(databaseName, (s, transactionEventListeners) -> {
+            List<TransactionEventListener<?>> listeners =
+                    transactionEventListeners != null ? transactionEventListeners : new CopyOnWriteArrayList<>();
+            if (listeners.contains(listener)) {
                 return listeners;
             }
-            listeners.add( listener );
+            listeners.add(listener);
             return listeners;
-        } );
+        });
     }
 
     /**
@@ -71,27 +68,23 @@ public class GlobalTransactionEventListeners
      * @throws IllegalStateException if {@code listener} wasn't registered prior
      *                               to calling this method.
      */
-    public void unregisterTransactionEventListener( String databaseName, TransactionEventListener<?> listener )
-    {
-        requireNonNull( databaseName );
-        requireNonNull( listener );
-        globalTransactionEventListeners.compute( databaseName, ( s, transactionEventListeners ) ->
-        {
-            if ( transactionEventListeners == null || !transactionEventListeners.remove( listener ) )
-            {
-                throw new IllegalStateException(
-                        format( "Transaction event listener `%s` is not registered as listener for database `%s`.", listener, databaseName ) );
+    public void unregisterTransactionEventListener(String databaseName, TransactionEventListener<?> listener) {
+        requireNonNull(databaseName);
+        requireNonNull(listener);
+        globalTransactionEventListeners.compute(databaseName, (s, transactionEventListeners) -> {
+            if (transactionEventListeners == null || !transactionEventListeners.remove(listener)) {
+                throw new IllegalStateException(format(
+                        "Transaction event listener `%s` is not registered as listener for database `%s`.",
+                        listener, databaseName));
             }
-            if ( transactionEventListeners.isEmpty() )
-            {
+            if (transactionEventListeners.isEmpty()) {
                 return null;
             }
             return transactionEventListeners;
-        } );
+        });
     }
 
-    public Collection<TransactionEventListener<?>> getDatabaseTransactionEventListeners( String databaseName )
-    {
-        return globalTransactionEventListeners.getOrDefault( databaseName, Collections.emptyList() );
+    public Collection<TransactionEventListener<?>> getDatabaseTransactionEventListeners(String databaseName) {
+        return globalTransactionEventListeners.getOrDefault(databaseName, Collections.emptyList());
     }
 }

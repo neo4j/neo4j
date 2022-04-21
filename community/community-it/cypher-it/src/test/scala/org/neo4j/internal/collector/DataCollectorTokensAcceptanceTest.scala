@@ -32,7 +32,8 @@ class DataCollectorTokensAcceptanceTest extends ExecutionEngineFunSuite {
          CREATE (o:Office)
          CREATE (u)-[:KNOWS]->(m)
          CREATE (m)-[:BOSSES {since:"forever"}]->(u)
-         CREATE (m)-[:AT]->(o)""".stripMargin)
+         CREATE (m)-[:AT]->(o)""".stripMargin
+    )
 
     // when
     val res = execute("CALL db.stats.retrieve('TOKENS')").single
@@ -51,21 +52,22 @@ class DataCollectorTokensAcceptanceTest extends ExecutionEngineFunSuite {
          CREATE (m:Manager {firstName:'Joe', lastName:'Lee'})
          CREATE (o:Office)
          CREATE (m)-[:BOSSES {since:"forever"}]->(u)
-         CREATE (m)-[:AT]->(o)""".stripMargin)
+         CREATE (m)-[:AT]->(o)""".stripMargin
+    )
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myGraphToken')")
 
     // then
     res.toList.head should beMapContaining(
-        "section" -> "META",
-        "data" -> beMapContaining(
-          "graphToken" -> "myGraphToken",
-          "labelCount" -> 3,
-          "relationshipTypeCount" -> 2,
-          "propertyKeyCount" -> 6
-        )
+      "section" -> "META",
+      "data" -> beMapContaining(
+        "graphToken" -> "myGraphToken",
+        "labelCount" -> 3,
+        "relationshipTypeCount" -> 2,
+        "propertyKeyCount" -> 6
       )
+    )
 
   }
 

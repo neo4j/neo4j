@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.graphdb.schema.IndexType
 
-
 /**
  * For every relationship with the given type and property values, produces rows with that relationship.
  *
@@ -33,27 +32,29 @@ import org.neo4j.graphdb.schema.IndexType
  *
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
-case class DirectedRelationshipIndexSeek(idName: String,
-                                         startNode: String,
-                                         endNode: String,
-                                         override val typeToken: RelationshipTypeToken,
-                                         properties: Seq[IndexedProperty],
-                                         valueExpr: QueryExpression[Expression],
-                                         argumentIds: Set[String],
-                                         indexOrder: IndexOrder,
-                                         override val indexType: IndexType)
-                                        (implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
+case class DirectedRelationshipIndexSeek(
+  idName: String,
+  startNode: String,
+  endNode: String,
+  override val typeToken: RelationshipTypeToken,
+  properties: Seq[IndexedProperty],
+  valueExpr: QueryExpression[Expression],
+  argumentIds: Set[String],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType
+)(implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexSeek =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
-  override def withMappedProperties(f: IndexedProperty => IndexedProperty):  DirectedRelationshipIndexSeek =
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipIndexSeek =
     copy(properties = properties.map(f))(SameId(this.id))
 
   override def leftNode: String = startNode

@@ -19,69 +19,62 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-
-import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-class FileCountThresholdTest
-{
-    private final Path file = mock( Path.class );
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
+
+class FileCountThresholdTest {
+    private final Path file = mock(Path.class);
     private final long version = 1L;
-    private final LogFileInformation source = mock( LogFileInformation.class );
+    private final LogFileInformation source = mock(LogFileInformation.class);
 
     @Test
-    void shouldReturnFalseWhenTheMaxNonEmptyLogCountIsNotReached()
-    {
+    void shouldReturnFalseWhenTheMaxNonEmptyLogCountIsNotReached() {
         // given
         final int maxNonEmptyLogCount = 2;
-        final FileCountThreshold threshold = new FileCountThreshold( maxNonEmptyLogCount );
+        final FileCountThreshold threshold = new FileCountThreshold(maxNonEmptyLogCount);
 
         // when
         threshold.init();
-        final boolean result = threshold.reached( file, version, source );
+        final boolean result = threshold.reached(file, version, source);
 
         // then
-        assertFalse( result );
+        assertFalse(result);
     }
 
     @Test
-    void shouldReturnTrueWhenTheMaxNonEmptyLogCountIsReached()
-    {
+    void shouldReturnTrueWhenTheMaxNonEmptyLogCountIsReached() {
         // given
         final int maxNonEmptyLogCount = 2;
-        final FileCountThreshold threshold = new FileCountThreshold( maxNonEmptyLogCount );
+        final FileCountThreshold threshold = new FileCountThreshold(maxNonEmptyLogCount);
 
         // when
         threshold.init();
-        threshold.reached( file, version, source );
-        final boolean result = threshold.reached( file, version, source );
+        threshold.reached(file, version, source);
+        final boolean result = threshold.reached(file, version, source);
 
         // then
-        assertTrue( result );
+        assertTrue(result);
     }
 
     @Test
-    void shouldResetTheCounterWhenInitIsCalled()
-    {
+    void shouldResetTheCounterWhenInitIsCalled() {
         // given
         final int maxNonEmptyLogCount = 2;
-        final FileCountThreshold threshold = new FileCountThreshold( maxNonEmptyLogCount );
+        final FileCountThreshold threshold = new FileCountThreshold(maxNonEmptyLogCount);
 
         // when
         threshold.init();
-        threshold.reached( file, version, source );
-        threshold.reached( file, version, source );
+        threshold.reached(file, version, source);
+        threshold.reached(file, version, source);
         threshold.init();
-        final boolean result = threshold.reached( file, version, source );
+        final boolean result = threshold.reached(file, version, source);
 
         // then
-        assertFalse( result );
+        assertFalse(result);
     }
-
 }

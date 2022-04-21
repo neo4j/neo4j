@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 object IteratorSupport {
+
   implicit final class RichIterator[T](iterator: Iterator[T]) {
+
     def toSingleOption: Option[T] = {
       if (!iterator.hasNext)
         None

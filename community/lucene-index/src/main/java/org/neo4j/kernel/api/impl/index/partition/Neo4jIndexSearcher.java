@@ -19,22 +19,18 @@
  */
 package org.neo4j.kernel.api.impl.index.partition;
 
+import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
 
-import java.io.IOException;
-
-public class Neo4jIndexSearcher extends IndexSearcher
-{
-    public Neo4jIndexSearcher( IndexReader reader )
-    {
-        super( reader );
+public class Neo4jIndexSearcher extends IndexSearcher {
+    public Neo4jIndexSearcher(IndexReader reader) {
+        super(reader);
     }
 
-    public void search( Weight weight, Collector results ) throws IOException
-    {
-        search( leafContexts, weight, results );
+    public void search(Weight weight, Collector results) throws IOException {
+        search(leafContexts, weight, results);
     }
 }

@@ -21,11 +21,10 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import org.neo4j.storageengine.api.txstate.DiffSets;
 
-public interface MutableDiffSets<T> extends DiffSets<T>
-{
-    boolean add( T elem );
+public interface MutableDiffSets<T> extends DiffSets<T> {
+    boolean add(T elem);
 
-    boolean remove( T elem );
+    boolean remove(T elem);
 
-    boolean unRemove( T item );
+    boolean unRemove(T item);
 }

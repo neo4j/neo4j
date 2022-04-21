@@ -21,38 +21,32 @@ package org.neo4j.internal.helpers.collection;
 
 import org.neo4j.graphdb.ResourceIterator;
 
-public abstract class MappingResourceIterator<T, S> implements ResourceIterator<T>
-{
+public abstract class MappingResourceIterator<T, S> implements ResourceIterator<T> {
     private ResourceIterator<S> sourceIterator;
 
-    public MappingResourceIterator( ResourceIterator<S> sourceResourceIterator )
-    {
+    public MappingResourceIterator(ResourceIterator<S> sourceResourceIterator) {
         this.sourceIterator = sourceResourceIterator;
     }
 
-    protected abstract T map( S object );
+    protected abstract T map(S object);
 
     @Override
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         return sourceIterator.hasNext();
     }
 
     @Override
-    public T next()
-    {
-        return map( sourceIterator.next() );
+    public T next() {
+        return map(sourceIterator.next());
     }
 
     @Override
-    public void remove()
-    {
+    public void remove() {
         sourceIterator.remove();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         sourceIterator.close();
     }
 }

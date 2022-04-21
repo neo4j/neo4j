@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -59,11 +59,8 @@ import org.neo4j.storageengine.migration.TokenIndexMigrator;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
-import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
-
-public class TokenIndexProvider extends IndexProvider
-{
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "token-lookup", "1.0" );
+public class TokenIndexProvider extends IndexProvider {
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("token-lookup", "1.0");
     public static final IndexCapability CAPABILITY = new TokenIndexCapability();
 
     private final DatabaseIndexContext databaseIndexContext;
@@ -71,179 +68,174 @@ public class TokenIndexProvider extends IndexProvider
     private final Monitor monitor;
     private final DatabaseLayout databaseLayout;
 
-    protected TokenIndexProvider( DatabaseIndexContext databaseIndexContext, IndexDirectoryStructure.Factory directoryStructureFactory,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout )
-    {
-        super( DESCRIPTOR, directoryStructureFactory );
+    protected TokenIndexProvider(
+            DatabaseIndexContext databaseIndexContext,
+            IndexDirectoryStructure.Factory directoryStructureFactory,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseLayout databaseLayout) {
+        super(DESCRIPTOR, directoryStructureFactory);
         this.databaseIndexContext = databaseIndexContext;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
-        this.monitor = databaseIndexContext.monitors.newMonitor( IndexProvider.Monitor.class, databaseIndexContext.monitorTag );
+        this.monitor =
+                databaseIndexContext.monitors.newMonitor(IndexProvider.Monitor.class, databaseIndexContext.monitorTag);
         this.databaseLayout = databaseLayout;
     }
 
     @Override
-    public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
-    {
-        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ), databaseIndexContext.readOnlyChecker );
+    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
+        return new NativeMinimalIndexAccessor(descriptor, indexFiles(descriptor), databaseIndexContext.readOnlyChecker);
     }
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                        ImmutableSet<OpenOption> openOptions )
-    {
-        if ( databaseIndexContext.readOnlyChecker.isReadOnly() )
-        {
-            throw new UnsupportedOperationException( "Can't create populator for read only index" );
+    public IndexPopulator getPopulator(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        if (databaseIndexContext.readOnlyChecker.isReadOnly()) {
+            throw new UnsupportedOperationException("Can't create populator for read only index");
         }
 
-        return new WorkSyncedIndexPopulator( new TokenIndexPopulator( databaseIndexContext, indexFiles( descriptor ), descriptor, openOptions ) );
+        return new WorkSyncedIndexPopulator(
+                new TokenIndexPopulator(databaseIndexContext, indexFiles(descriptor), descriptor, openOptions));
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                            ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        return new TokenIndexAccessor( databaseIndexContext, indexFiles( descriptor ), descriptor, recoveryCleanupWorkCollector, openOptions );
+    public IndexAccessor getOnlineAccessor(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        return new TokenIndexAccessor(
+                databaseIndexContext, indexFiles(descriptor), descriptor, recoveryCleanupWorkCollector, openOptions);
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
-    {
-        try
-        {
-            String failureMessage = TokenIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName,
-                                                                     cursorContext, openOptions );
-            return defaultIfEmpty( failureMessage, StringUtils.EMPTY );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+    public String getPopulationFailure(
+            IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+        try {
+            String failureMessage = TokenIndexes.readFailureMessage(
+                    databaseIndexContext.pageCache,
+                    storeFile(descriptor),
+                    databaseIndexContext.databaseName,
+                    cursorContext,
+                    openOptions);
+            return defaultIfEmpty(failureMessage, StringUtils.EMPTY);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
-                                               ImmutableSet<OpenOption> openOptions )
-    {
-        try
-        {
-            return TokenIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName, cursorContext,
-                                           openOptions );
-        }
-        catch ( MetadataMismatchException | IOException e )
-        {
-            monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
+    public InternalIndexState getInitialState(
+            IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+        try {
+            return TokenIndexes.readState(
+                    databaseIndexContext.pageCache,
+                    storeFile(descriptor),
+                    databaseIndexContext.databaseName,
+                    cursorContext,
+                    openOptions);
+        } catch (MetadataMismatchException | IOException e) {
+            monitor.failedToOpenIndex(descriptor, "Requesting re-population.", e);
             return InternalIndexState.POPULATING;
         }
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
-            CursorContextFactory contextFactory )
-    {
-        return new TokenIndexMigrator( "Token indexes", fs, pageCache, storageEngineFactory, databaseLayout, this::storeFile, contextFactory );
+    public StoreMigrationParticipant storeMigrationParticipant(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            StorageEngineFactory storageEngineFactory,
+            CursorContextFactory contextFactory) {
+        return new TokenIndexMigrator(
+                "Token indexes", fs, pageCache, storageEngineFactory, databaseLayout, this::storeFile, contextFactory);
     }
 
     @Override
-    public IndexDescriptor completeConfiguration( IndexDescriptor index )
-    {
-        if ( index.getCapability().equals( IndexCapability.NO_CAPABILITY ) )
-        {
-            index = index.withIndexCapability( CAPABILITY );
+    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+        if (index.getCapability().equals(IndexCapability.NO_CAPABILITY)) {
+            index = index.withIndexCapability(CAPABILITY);
         }
         return index;
     }
 
     @Override
-    public void validatePrototype( IndexPrototype prototype )
-    {
+    public void validatePrototype(IndexPrototype prototype) {
         IndexType indexType = prototype.getIndexType();
-        if ( indexType != IndexType.LOOKUP )
-        {
-            throw new IllegalArgumentException(
-                    "The '" + getProviderDescriptor().name() + "' index provider does not support " + indexType + " indexes: " + prototype );
+        if (indexType != IndexType.LOOKUP) {
+            throw new IllegalArgumentException("The '" + getProviderDescriptor().name()
+                    + "' index provider does not support " + indexType + " indexes: " + prototype);
         }
-        if ( !prototype.schema().isAnyTokenSchemaDescriptor() )
-        {
-            throw new IllegalArgumentException(
-                    "The " + prototype.schema() + " index schema is not an any-token index schema, which it is required to be for the '" +
-                    getProviderDescriptor().name() + "' index provider to be able to create an index." );
+        if (!prototype.schema().isAnyTokenSchemaDescriptor()) {
+            throw new IllegalArgumentException("The " + prototype.schema()
+                    + " index schema is not an any-token index schema, which it is required to be for the '"
+                    + getProviderDescriptor().name() + "' index provider to be able to create an index.");
         }
-        if ( !prototype.getIndexProvider().equals( DESCRIPTOR ) )
-        {
-            throw new IllegalArgumentException(
-                    "The '" + getProviderDescriptor().name() + "' index provider does not support " + prototype.getIndexProvider() + " indexes: " + prototype );
+        if (!prototype.getIndexProvider().equals(DESCRIPTOR)) {
+            throw new IllegalArgumentException("The '" + getProviderDescriptor().name()
+                    + "' index provider does not support " + prototype.getIndexProvider() + " indexes: " + prototype);
         }
-        if ( prototype.isUnique() )
-        {
-            throw new IllegalArgumentException(
-                    "The '" + getProviderDescriptor().name() + "' index provider does not support uniqueness indexes: " + prototype );
+        if (prototype.isUnique()) {
+            throw new IllegalArgumentException("The '" + getProviderDescriptor().name()
+                    + "' index provider does not support uniqueness indexes: " + prototype);
         }
     }
 
     @Override
-    public IndexType getIndexType()
-    {
+    public IndexType getIndexType() {
         return IndexType.LOOKUP;
     }
 
-    private Path storeFile( SchemaRule schemaRule )
-    {
-        IndexFiles indexFiles = indexFiles( schemaRule );
+    private Path storeFile(SchemaRule schemaRule) {
+        IndexFiles indexFiles = indexFiles(schemaRule);
         return indexFiles.getStoreFile();
     }
 
-    private IndexFiles indexFiles( SchemaRule schemaRule )
-    {
-        return indexFiles( schemaRule, databaseIndexContext.fileSystem, directoryStructure() );
+    private IndexFiles indexFiles(SchemaRule schemaRule) {
+        return indexFiles(schemaRule, databaseIndexContext.fileSystem, directoryStructure());
     }
 
-    public static IndexFiles indexFiles( SchemaRule schemaRule, FileSystemAbstraction fileSystem,
-            IndexDirectoryStructure indexDirectoryStructure )
-    {
-        return new IndexFiles.Directory( fileSystem, indexDirectoryStructure, schemaRule.getId() );
+    public static IndexFiles indexFiles(
+            SchemaRule schemaRule, FileSystemAbstraction fileSystem, IndexDirectoryStructure indexDirectoryStructure) {
+        return new IndexFiles.Directory(fileSystem, indexDirectoryStructure, schemaRule.getId());
     }
 
-    private static class TokenIndexCapability implements IndexCapability
-    {
+    private static class TokenIndexCapability implements IndexCapability {
         @Override
-        public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
-        {
+        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
             return IndexOrderCapability.BOTH_FULLY_SORTED;
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-        {
+        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
             return IndexValueCapability.YES;
         }
 
         @Override
-        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
-        {
-            Preconditions.requireNonEmpty( valueCategories );
-            Preconditions.requireNoNullElements( valueCategories );
+        public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
+            Preconditions.requireNonEmpty(valueCategories);
+            Preconditions.requireNoNullElements(valueCategories);
             return false;
         }
 
         @Override
-        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
-        {
+        public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
             return queryType == IndexQueryType.TOKEN_LOOKUP && valueCategory == ValueCategory.NO_CATEGORY;
         }
 
         @Override
-        public double getCostMultiplier( IndexQueryType... queryTypes )
-        {
+        public double getCostMultiplier(IndexQueryType... queryTypes) {
             return 1.0;
         }
 
         @Override
-        public boolean supportPartitionedScan( IndexQuery... queries )
-        {
-            Preconditions.requireNonEmpty( queries );
-            Preconditions.requireNoNullElements( queries );
+        public boolean supportPartitionedScan(IndexQuery... queries) {
+            Preconditions.requireNonEmpty(queries);
+            Preconditions.requireNoNullElements(queries);
             return queries.length == 1 && queries[0].type() == IndexQueryType.TOKEN_LOOKUP;
         }
     }

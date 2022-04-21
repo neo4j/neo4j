@@ -23,10 +23,8 @@ import org.neo4j.common.DependencySatisfier;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 
-public class GlobalExtensionContext extends BaseExtensionContext
-{
-    public GlobalExtensionContext( Neo4jLayout storeLayout, DbmsInfo dbmsInfo, DependencySatisfier satisfier )
-    {
-        super( storeLayout.databasesDirectory(), dbmsInfo, satisfier );
+public class GlobalExtensionContext extends BaseExtensionContext {
+    public GlobalExtensionContext(Neo4jLayout storeLayout, DbmsInfo dbmsInfo, DependencySatisfier satisfier) {
+        super(storeLayout.databasesDirectory(), dbmsInfo, satisfier);
     }
 }

@@ -19,18 +19,6 @@
  */
 package org.neo4j.server.http.cypher.format.input.json;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.neo4j.server.http.cypher.format.api.InputFormatException;
-import org.neo4j.string.UTF8;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,202 +28,206 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
-class StatementDeserializerTest
-{
-    private final JsonFactory jsonFactory = new JsonFactory().setCodec( new ObjectMapper() );
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.http.cypher.format.api.InputFormatException;
+import org.neo4j.string.UTF8;
+
+class StatementDeserializerTest {
+    private final JsonFactory jsonFactory = new JsonFactory().setCodec(new ObjectMapper());
 
     @Test
-    void shouldDeserializeSingleStatement()
-    {
+    void shouldDeserializeSingleStatement() {
         // Given
-        String json = createJsonFrom( map( "statements", singletonList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) ) );
+        String json = createJsonFrom(
+                map("statements", singletonList(map("statement", "Blah blah", "parameters", map("one", 12)))));
 
         // When
-        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer(jsonFactory, new ByteArrayInputStream(UTF8.encode(json)));
 
         // Then
         InputStatement stmt = de.read();
-        assertNotNull( stmt );
+        assertNotNull(stmt);
 
-        assertThat( stmt.statement() ).isEqualTo( "Blah blah" );
-        assertThat( stmt.parameters() ).isEqualTo( map( "one", 12 ) );
+        assertThat(stmt.statement()).isEqualTo("Blah blah");
+        assertThat(stmt.parameters()).isEqualTo(map("one", 12));
 
-        assertNull( de.read() );
+        assertNull(de.read());
     }
 
     @Test
-    void shouldRejectMapWithADifferentFieldBeforeStatement()
-    {
+    void shouldRejectMapWithADifferentFieldBeforeStatement() {
         // NOTE: We don't really want this behaviour, but it's a symptom of keeping
         // streaming behaviour while moving the statement list into a map.
 
         String json = "{ \"timeout\" : 200, \"statements\" : [ { \"statement\" : \"ignored\", \"parameters\" : {}} ] }";
 
-        assertYieldsErrors( json, "Unable to deserialize request. Expected first field to be 'statements', but was 'timeout'." );
+        assertYieldsErrors(
+                json, "Unable to deserialize request. Expected first field to be 'statements', but was 'timeout'.");
     }
 
     @Test
-    void shouldTotallyIgnoreInvalidJsonAfterStatementArrayHasFinished()
-    {
+    void shouldTotallyIgnoreInvalidJsonAfterStatementArrayHasFinished() {
         // NOTE: We don't really want this behaviour, but it's a symptom of keeping
         // streaming behaviour while moving the statement list into a map.
 
         // Given
-        String json =  "{ \"statements\" : [ { \"statement\" : \"Blah blah\", \"parameters\" : {\"one\" : 12}} ] " +
-                "totally invalid json is totally ignored";
+        String json = "{ \"statements\" : [ { \"statement\" : \"Blah blah\", \"parameters\" : {\"one\" : 12}} ] "
+                + "totally invalid json is totally ignored";
 
         // When
-        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer(jsonFactory, new ByteArrayInputStream(UTF8.encode(json)));
 
         // Then
         InputStatement stmt = de.read();
-        assertNotNull( stmt );
+        assertNotNull(stmt);
 
-        assertThat( stmt.statement() ).isEqualTo( "Blah blah" );
+        assertThat(stmt.statement()).isEqualTo("Blah blah");
 
-        assertNull( de.read() );
+        assertNull(de.read());
     }
 
     @Test
-    void shouldIgnoreUnknownFields()
-    {
+    void shouldIgnoreUnknownFields() {
         // Given
-        String json =  "{ \"statements\" : [ { \"a\" : \"\", \"b\" : { \"k\":1 }, \"statement\" : \"blah\" } ] }";
+        String json = "{ \"statements\" : [ { \"a\" : \"\", \"b\" : { \"k\":1 }, \"statement\" : \"blah\" } ] }";
 
         // When
-        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer(jsonFactory, new ByteArrayInputStream(UTF8.encode(json)));
 
         // Then
         InputStatement stmt = de.read();
-        assertNotNull( stmt );
+        assertNotNull(stmt);
 
-        assertThat( stmt.statement() ).isEqualTo( "blah" );
+        assertThat(stmt.statement()).isEqualTo("blah");
 
-        assertNull( de.read() );
+        assertNull(de.read());
     }
 
     @Test
-    void shouldTakeParametersBeforeStatement()
-    {
+    void shouldTakeParametersBeforeStatement() {
         // Given
-        String json =  "{ \"statements\" : [ { \"a\" : \"\", \"parameters\" : { \"k\":1 }, \"statement\" : \"blah\"}]}";
+        String json = "{ \"statements\" : [ { \"a\" : \"\", \"parameters\" : { \"k\":1 }, \"statement\" : \"blah\"}]}";
 
         // When
-        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer(jsonFactory, new ByteArrayInputStream(UTF8.encode(json)));
 
         // Then
         InputStatement stmt = de.read();
-        assertNotNull( stmt );
-        assertThat( stmt.statement() ).isEqualTo( "blah" );
-        assertThat( stmt.parameters() ).isEqualTo( map( "k", 1 ) );
+        assertNotNull(stmt);
+        assertThat(stmt.statement()).isEqualTo("blah");
+        assertThat(stmt.parameters()).isEqualTo(map("k", 1));
 
-        assertNull( de.read() );
+        assertNull(de.read());
     }
 
     @Test
-    void shouldTreatEmptyInputStreamAsEmptyStatementList()
-    {
+    void shouldTreatEmptyInputStreamAsEmptyStatementList() {
         // Given
         byte[] json = new byte[0];
 
         // When
-        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( json ) );
+        StatementDeserializer de = new StatementDeserializer(jsonFactory, new ByteArrayInputStream(json));
 
         // Then
-        assertNull( de.read() );
+        assertNull(de.read());
     }
 
     @Test
-    void shouldDeserializeMultipleStatements()
-    {
+    void shouldDeserializeMultipleStatements() {
         // Given
-        String json = createJsonFrom( map( "statements", asList(
-                map( "statement", "Blah blah", "parameters", map( "one", 12 ) ),
-                map( "statement", "Blah bluh", "parameters", map( "asd", singletonList( "one, two" ) ) ) ) ) );
+        String json = createJsonFrom(map(
+                "statements",
+                asList(
+                        map("statement", "Blah blah", "parameters", map("one", 12)),
+                        map("statement", "Blah bluh", "parameters", map("asd", singletonList("one, two"))))));
 
         // When
-        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer(jsonFactory, new ByteArrayInputStream(UTF8.encode(json)));
 
         // Then
         InputStatement stmt = de.read();
-        assertNotNull( stmt );
+        assertNotNull(stmt);
 
-        assertThat( stmt.statement() ).isEqualTo( "Blah blah" );
-        assertThat( stmt.parameters() ).isEqualTo( map( "one", 12 ) );
+        assertThat(stmt.statement()).isEqualTo("Blah blah");
+        assertThat(stmt.parameters()).isEqualTo(map("one", 12));
 
         InputStatement stmt2 = de.read();
-        assertNotNull( stmt2 );
+        assertNotNull(stmt2);
 
-        assertThat( stmt2.statement() ).isEqualTo( "Blah bluh" );
-        assertThat( stmt2.parameters() ).isEqualTo( map( "asd", singletonList( "one, two" ) ) );
+        assertThat(stmt2.statement()).isEqualTo("Blah bluh");
+        assertThat(stmt2.parameters()).isEqualTo(map("asd", singletonList("one, two")));
 
-        assertNull( de.read() );
+        assertNull(de.read());
     }
 
     @Test
-    void shouldNotThrowButReportErrorOnInvalidInput()
-    {
-        assertYieldsErrors( "{}", "Unable to " +
-                        "deserialize request. " +
-                        "Expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
-                        "found [START_OBJECT, END_OBJECT, null]." );
+    void shouldNotThrowButReportErrorOnInvalidInput() {
+        assertYieldsErrors(
+                "{}",
+                "Unable to " + "deserialize request. "
+                        + "Expected [START_OBJECT, FIELD_NAME, START_ARRAY], "
+                        + "found [START_OBJECT, END_OBJECT, null].");
 
-        assertYieldsErrors( "{ \"statements\":\"WAIT WAT A STRING NOO11!\" }",
-                "Unable to " +
-                        "deserialize request. Expected [START_OBJECT, FIELD_NAME, START_ARRAY], found [START_OBJECT, " +
-                        "FIELD_NAME, VALUE_STRING]."  );
+        assertYieldsErrors(
+                "{ \"statements\":\"WAIT WAT A STRING NOO11!\" }",
+                "Unable to "
+                        + "deserialize request. Expected [START_OBJECT, FIELD_NAME, START_ARRAY], found [START_OBJECT, "
+                        + "FIELD_NAME, VALUE_STRING].");
 
-        assertYieldsErrors( "[{]}",
-                "Could not parse the incoming JSON", "Unexpected close marker ']': " +
-                                "expected '}' " +
-                                "(for Object starting at [Source: (ByteArrayInputStream); line: 1, column: 2])\n " +
-                                "at [Source: (ByteArrayInputStream); line: 1, column: 4]" );
+        assertYieldsErrors(
+                "[{]}",
+                "Could not parse the incoming JSON",
+                "Unexpected close marker ']': " + "expected '}' "
+                        + "(for Object starting at [Source: (ByteArrayInputStream); line: 1, column: 2])\n "
+                        + "at [Source: (ByteArrayInputStream); line: 1, column: 4]");
 
-        assertYieldsErrors( "{ \"statements\" : \"ITS A STRING\" }",
-                         "Unable to deserialize request. " +
-                                "Expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
-                                "found [START_OBJECT, FIELD_NAME, VALUE_STRING]." );
+        assertYieldsErrors(
+                "{ \"statements\" : \"ITS A STRING\" }",
+                "Unable to deserialize request. " + "Expected [START_OBJECT, FIELD_NAME, START_ARRAY], "
+                        + "found [START_OBJECT, FIELD_NAME, VALUE_STRING].");
 
-        assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : [\"dd\"] } ] }",
-                "Could not map the incoming JSON", "Cannot deserialize value of type" +
-                                " `java.lang.String` from Array value (token `JsonToken.START_ARRAY`)\n at [Source: (ByteArrayInputStream); line: 1, " +
-                                "column: 36]" );
+        assertYieldsErrors(
+                "{ \"statements\" : [ { \"statement\" : [\"dd\"] } ] }",
+                "Could not map the incoming JSON",
+                "Cannot deserialize value of type"
+                        + " `java.lang.String` from Array value (token `JsonToken.START_ARRAY`)\n at [Source: (ByteArrayInputStream); line: 1, "
+                        + "column: 36]");
 
-        assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : \"stmt\", \"parameters\" : [\"AN ARRAY!!\"] } ] }",
-                         "Could not map the incoming JSON", "Cannot deserialize value of type" +
-                                " `java.util.LinkedHashMap<java.lang.Object,java.lang.Object>` from Array value (token `JsonToken.START_ARRAY`)\n " +
-                        "at [Source: (ByteArrayInputStream); line: 1, column: 59]" );
+        assertYieldsErrors(
+                "{ \"statements\" : [ { \"statement\" : \"stmt\", \"parameters\" : [\"AN ARRAY!!\"] } ] }",
+                "Could not map the incoming JSON",
+                "Cannot deserialize value of type"
+                        + " `java.util.LinkedHashMap<java.lang.Object,java.lang.Object>` from Array value (token `JsonToken.START_ARRAY`)\n "
+                        + "at [Source: (ByteArrayInputStream); line: 1, column: 59]");
     }
 
-    private void assertYieldsErrors( String json, String... expectedErrorMessages )
-    {
-        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
+    private void assertYieldsErrors(String json, String... expectedErrorMessages) {
+        StatementDeserializer de = new StatementDeserializer(jsonFactory, new ByteArrayInputStream(UTF8.encode(json)));
 
-        try
-        {
-            while ( de.read() != null )
-            {
-            }
-            fail( "An exception should have been thrown" );
-        }
-        catch ( InputFormatException e )
-        {
+        try {
+            while (de.read() != null) {}
+            fail("An exception should have been thrown");
+        } catch (InputFormatException e) {
             List<String> errorMessages = new ArrayList<>();
-            errorMessages.add( e.getMessage() );
+            errorMessages.add(e.getMessage());
 
             Throwable t = e;
-            while ( true )
-            {
+            while (true) {
                 t = t.getCause();
 
-                if ( t == null )
-                {
+                if (t == null) {
                     break;
                 }
-                errorMessages.add( t.getMessage() );
+                errorMessages.add(t.getMessage());
             }
 
-            assertThat( errorMessages ).isEqualTo( Arrays.asList( expectedErrorMessages ) );
+            assertThat(errorMessages).isEqualTo(Arrays.asList(expectedErrorMessages));
         }
     }
 }

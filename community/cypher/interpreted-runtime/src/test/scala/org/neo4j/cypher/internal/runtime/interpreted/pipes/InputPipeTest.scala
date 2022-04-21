@@ -31,6 +31,7 @@ import org.neo4j.values.AnyValue
 import scala.collection.mutable
 
 class InputPipeTest extends CypherFunSuite {
+
   private class MyInputCursor(data: Iterator[Array[AnyValue]]) extends IteratorInputCursor(data) {
     private var _wasClosed = false
 
@@ -38,8 +39,10 @@ class InputPipeTest extends CypherFunSuite {
 
     def wasClosed: Boolean = _wasClosed
   }
+
   private class MyInputStream(data: Array[Any]*) extends InputDataStream {
     private val cursors = mutable.ArrayBuffer[MyInputCursor]()
+
     override def nextInputBatch(): InputCursor = {
       val c = new MyInputCursor(data.map(_.map(ValueUtils.of)).toIterator)
       cursors += c

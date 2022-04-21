@@ -21,10 +21,8 @@ package org.neo4j.dbms.archive;
 
 import java.io.IOException;
 
-public class IncorrectFormat extends Exception
-{
-    IncorrectFormat( String input, IOException cause )
-    {
-        super( input, cause );
+public class IncorrectFormat extends Exception {
+    IncorrectFormat(String input, IOException cause) {
+        super(input, cause);
     }
 }

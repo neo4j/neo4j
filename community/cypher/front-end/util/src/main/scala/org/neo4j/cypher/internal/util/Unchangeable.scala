@@ -48,7 +48,7 @@ final class Unchangeable[A]() {
   }
 
   // Copy from another Unchangeable[A] iff set
-  def copyFrom(other: Unchangeable[A]): Unit = if(other.hasValue)
+  def copyFrom(other: Unchangeable[A]): Unit = if (other.hasValue)
     value_=(other.value)
 
   override def toString: String = s"Unchangeable(${_value.getOrElse("NOT SET")})"
@@ -59,7 +59,7 @@ final class Unchangeable[A]() {
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case that:Unchangeable[_] =>
+      case that: Unchangeable[_] =>
         if (this eq that) return true
         this._seen == that._seen && this._value == that._value
       case _ => false

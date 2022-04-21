@@ -36,25 +36,31 @@ case class nameAllPatternElements(anonymousVariableNameGenerator: AnonymousVaria
 
   override def apply(that: AnyRef): AnyRef = namingRewriter.apply(that)
 
-  private def namingRewriter: Rewriter = bottomUp(Rewriter.lift {
-    case pattern: NodePattern if pattern.variable.isEmpty =>
-      val syntheticName = anonymousVariableNameGenerator.nextName
-      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
+  private def namingRewriter: Rewriter = bottomUp(
+    Rewriter.lift {
+      case pattern: NodePattern if pattern.variable.isEmpty =>
+        val syntheticName = anonymousVariableNameGenerator.nextName
+        pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
 
-    case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
-      val syntheticName = anonymousVariableNameGenerator.nextName
-      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
-  }, stopper = {
-    case _: ShortestPathExpression => true
-    case _ => false
-  })
+      case pattern: RelationshipPattern if pattern.variable.isEmpty =>
+        val syntheticName = anonymousVariableNameGenerator.nextName
+        pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
+    },
+    stopper = {
+      case _: ShortestPathExpression => true
+      case _                         => false
+    }
+  )
 }
 
 object nameAllPatternElements extends StepSequencer.Step with ASTRewriterFactory {
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = nameAllPatternElements(anonymousVariableNameGenerator)
+
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = nameAllPatternElements(anonymousVariableNameGenerator)
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -65,6 +71,6 @@ object nameAllPatternElements extends StepSequencer.Step with ASTRewriterFactory
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 }

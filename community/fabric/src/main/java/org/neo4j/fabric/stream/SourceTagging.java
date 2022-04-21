@@ -19,35 +19,27 @@
  */
 package org.neo4j.fabric.stream;
 
-public class SourceTagging
-{
+public class SourceTagging {
     private static final int ID_MAX_BITS = 50;
     private static final long TAG_MAX_VALUE = 0x3FFF;
 
-    public static long makeSourceTag( long sourceId )
-    {
-        if ( sourceId < 0 || TAG_MAX_VALUE < sourceId )
-        {
-            throw new IllegalArgumentException( "Source ids must be in range 0-16383. Got: " + sourceId );
-        }
-        else
-        {
-            return shiftToMsb( sourceId );
+    public static long makeSourceTag(long sourceId) {
+        if (sourceId < 0 || TAG_MAX_VALUE < sourceId) {
+            throw new IllegalArgumentException("Source ids must be in range 0-16383. Got: " + sourceId);
+        } else {
+            return shiftToMsb(sourceId);
         }
     }
 
-    private static long shiftToMsb( long value )
-    {
+    private static long shiftToMsb(long value) {
         return value << ID_MAX_BITS;
     }
 
-    public static long tagId( long id, long sourceTag )
-    {
+    public static long tagId(long id, long sourceTag) {
         return id | sourceTag;
     }
 
-    public static long extractSourceId( long id )
-    {
+    public static long extractSourceId(long id) {
         return id >> ID_MAX_BITS;
     }
 }

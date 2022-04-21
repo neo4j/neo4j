@@ -29,14 +29,16 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
  * Performs {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener)}
  * embedded in a {@link Stage} as to take advantage of statistics and monitoring provided by that framework.
  */
-public class IdMapperPreparationStage extends Stage
-{
+public class IdMapperPreparationStage extends Stage {
     public static final String NAME = "Prepare node index";
 
-    public IdMapperPreparationStage( Configuration config, IdMapper idMapper, PropertyValueLookup inputIdLookup,
-            Collector collector, StatsProvider memoryUsageStats )
-    {
-        super( NAME, null, config, 0 );
-        add( new IdMapperPreparationStep( control(), config, idMapper, inputIdLookup, collector, memoryUsageStats ) );
+    public IdMapperPreparationStage(
+            Configuration config,
+            IdMapper idMapper,
+            PropertyValueLookup inputIdLookup,
+            Collector collector,
+            StatsProvider memoryUsageStats) {
+        super(NAME, null, config, 0);
+        add(new IdMapperPreparationStep(control(), config, idMapper, inputIdLookup, collector, memoryUsageStats));
     }
 }

@@ -33,6 +33,6 @@ class CountFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(intValue(1), NO_VALUE, stringValue("foo"))
 
     result should equal(intValue(2))
-    result shouldBe a [LongValue]
+    result shouldBe a[LongValue]
   }
 }

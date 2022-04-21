@@ -19,13 +19,18 @@
  */
 package org.neo4j.security;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
+import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
+import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFails;
+import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
+import static org.neo4j.security.BasicSystemGraphRealmTestHelper.createUser;
+
+import java.time.Clock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
-import java.time.Clock;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.security.SecureHasher;
@@ -43,23 +48,15 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
-import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
-import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFails;
-import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
-import static org.neo4j.security.BasicSystemGraphRealmTestHelper.createUser;
-
 /**
  * This class tests initialization of a fresh system database.
  */
 @TestDirectoryExtension
-class UserSecurityGraphInitializationIT
-{
+class UserSecurityGraphInitializationIT {
     private BasicSystemGraphRealmTestHelper.TestDatabaseManager dbManager;
     private SystemGraphRealmHelper realmHelper;
 
-    @SuppressWarnings( "unused" )
+    @SuppressWarnings("unused")
     @Inject
     private TestDirectory testDirectory;
 
@@ -67,121 +64,112 @@ class UserSecurityGraphInitializationIT
     private SystemGraphInitializer systemGraphInitializer;
 
     @BeforeEach
-    void setUp()
-    {
-        dbManager = new BasicSystemGraphRealmTestHelper.TestDatabaseManager( testDirectory );
+    void setUp() {
+        dbManager = new BasicSystemGraphRealmTestHelper.TestDatabaseManager(testDirectory);
         SecureHasher secureHasher = new SecureHasher();
-        realmHelper = new SystemGraphRealmHelper( SystemGraphRealmHelper.makeSystemSupplier( dbManager ), secureHasher );
+        realmHelper = new SystemGraphRealmHelper(SystemGraphRealmHelper.makeSystemSupplier(dbManager), secureHasher);
         initialPassword = new InMemoryUserRepository();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         dbManager.getManagementService().shutdown();
     }
 
     @Test
-    void shouldCreateDefaultUserIfNoneExist() throws Throwable
-    {
+    void shouldCreateDefaultUserIfNoneExist() throws Throwable {
         startSystemGraphRealm();
-        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
+        assertAuthenticationSucceeds(realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true);
     }
 
     @Test
-    void shouldLoadInitialUserWithInitialPassword() throws Throwable
-    {
-        initialPassword.create( createUser( INITIAL_USER_NAME, "123", false ) );
+    void shouldLoadInitialUserWithInitialPassword() throws Throwable {
+        initialPassword.create(createUser(INITIAL_USER_NAME, "123", false));
         startSystemGraphRealm();
-        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, "123" );
+        assertAuthenticationSucceeds(realmHelper, INITIAL_USER_NAME, "123");
     }
 
     @Test
-    void shouldLoadInitialUserWithInitialPasswordOnRestart() throws Throwable
-    {
+    void shouldLoadInitialUserWithInitialPasswordOnRestart() throws Throwable {
         // Given
         startSystemGraphRealm();
 
-        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
+        assertAuthenticationSucceeds(realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true);
 
-        initialPassword.create( createUser( INITIAL_USER_NAME, "abc", false ) );
+        initialPassword.create(createUser(INITIAL_USER_NAME, "abc", false));
 
         // When
         systemGraphInitializer.start();
 
         // Then
-        assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD );
-        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, "abc" );
+        assertAuthenticationFails(realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD);
+        assertAuthenticationSucceeds(realmHelper, INITIAL_USER_NAME, "abc");
     }
 
     @Test
-    void shouldNotLoadInitialUserWithInitialPasswordOnRestartWhenAlreadyChanged() throws Throwable
-    {
+    void shouldNotLoadInitialUserWithInitialPasswordOnRestartWhenAlreadyChanged() throws Throwable {
         // Given
         startSystemGraphRealm();
-        initialPassword.create( createUser( INITIAL_USER_NAME, "neo4j2", false ) );
+        initialPassword.create(createUser(INITIAL_USER_NAME, "neo4j2", false));
         systemGraphInitializer.start();
 
         // When
         initialPassword.clear();
-        initialPassword.create( createUser( INITIAL_USER_NAME, "abc", false ) );
+        initialPassword.create(createUser(INITIAL_USER_NAME, "abc", false));
         systemGraphInitializer.start();
 
         // Then
-        assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD );
-        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, "neo4j2" );
-        assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, "abc" );
+        assertAuthenticationFails(realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD);
+        assertAuthenticationSucceeds(realmHelper, INITIAL_USER_NAME, "neo4j2");
+        assertAuthenticationFails(realmHelper, INITIAL_USER_NAME, "abc");
     }
 
     @Test
-    void shouldNotLoadInitialUserWithInitialPasswordWhenOtherUsersExist() throws Throwable
-    {
+    void shouldNotLoadInitialUserWithInitialPasswordWhenOtherUsersExist() throws Throwable {
         // Given
         startSystemGraphRealm();
-        try ( var tx = dbManager.testSystemDb.beginTx() )
-        {
-            tx.execute( "CREATE USER Alice SET PASSWORD 'meh'" );
+        try (var tx = dbManager.testSystemDb.beginTx()) {
+            tx.execute("CREATE USER Alice SET PASSWORD 'meh'");
             tx.commit();
         }
         // When
-        initialPassword.create( createUser( INITIAL_USER_NAME, "neo4j2", false ) );
+        initialPassword.create(createUser(INITIAL_USER_NAME, "neo4j2", false));
         systemGraphInitializer.start();
 
         // Then
-        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
-        assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, "neo4j2" );
+        assertAuthenticationSucceeds(realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true);
+        assertAuthenticationFails(realmHelper, INITIAL_USER_NAME, "neo4j2");
     }
 
     @Test
-    void shouldNotReCreateInitialUser() throws Throwable
-    {
+    void shouldNotReCreateInitialUser() throws Throwable {
         // Given
         startSystemGraphRealm();
-        try ( var tx = dbManager.testSystemDb.beginTx() )
-        {
-            tx.execute( String.format( "DROP USER %s", INITIAL_USER_NAME ) );
+        try (var tx = dbManager.testSystemDb.beginTx()) {
+            tx.execute(String.format("DROP USER %s", INITIAL_USER_NAME));
             tx.commit();
         }
         // When
-        initialPassword.create( createUser( INITIAL_USER_NAME, "neo4j2", false ) );
+        initialPassword.create(createUser(INITIAL_USER_NAME, "neo4j2", false));
         systemGraphInitializer.start();
 
         // Then
-        assertThatThrownBy( () -> realmHelper.getUser( INITIAL_USER_NAME ) )
-                .isInstanceOf( InvalidArgumentsException.class )
-                .hasMessage( String.format( "User '%s' does not exist.", INITIAL_USER_NAME ) );
+        assertThatThrownBy(() -> realmHelper.getUser(INITIAL_USER_NAME))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessage(String.format("User '%s' does not exist.", INITIAL_USER_NAME));
     }
 
-    private void startSystemGraphRealm() throws Exception
-    {
-        Config config = Config.defaults( GraphDatabaseInternalSettings.auth_store_directory, testDirectory.directory( "data/dbms" ) );
+    private void startSystemGraphRealm() throws Exception {
+        Config config = Config.defaults(
+                GraphDatabaseInternalSettings.auth_store_directory, testDirectory.directory("data/dbms"));
 
         var systemGraphComponents = new SystemGraphComponents();
-        systemGraphComponents.register( new DefaultSystemGraphComponent( config, Clock.systemUTC() ) );
-        systemGraphComponents.register( new UserSecurityGraphComponent( Mockito.mock( AbstractSecurityLog.class ), initialPassword, config ) );
+        systemGraphComponents.register(new DefaultSystemGraphComponent(config, Clock.systemUTC()));
+        systemGraphComponents.register(
+                new UserSecurityGraphComponent(Mockito.mock(AbstractSecurityLog.class), initialPassword, config));
 
-        var systemGraphSupplier = SystemGraphRealmHelper.makeSystemSupplier( dbManager );
-        systemGraphInitializer = new DefaultSystemGraphInitializer( systemGraphSupplier, systemGraphComponents );
+        var systemGraphSupplier = SystemGraphRealmHelper.makeSystemSupplier(dbManager);
+        systemGraphInitializer = new DefaultSystemGraphInitializer(systemGraphSupplier, systemGraphComponents);
         systemGraphInitializer.start();
     }
 }

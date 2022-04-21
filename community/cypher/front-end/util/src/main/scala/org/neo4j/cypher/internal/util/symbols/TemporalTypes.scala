@@ -17,31 +17,37 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object TemporalTypes {
+
   val datetime = new DateTimeType {
     val parentType = CTAny
     override val toString = "DateTime"
     override val toNeoTypeString = "DATETIME?"
   }
+
   val localdatetime = new LocalDateTimeType {
     val parentType = CTAny
     override val toString = "LocalDateTime"
     override val toNeoTypeString = "LOCALDATETIME?"
   }
+
   val date = new DateType {
     val parentType = CTAny
     override val toString = "Date"
     override val toNeoTypeString = "DATE?"
   }
+
   val time = new TimeType {
     val parentType = CTAny
     override val toString = "Time"
     override val toNeoTypeString = "TIME?"
   }
+
   val localtime = new LocalTimeType {
     val parentType = CTAny
     override val toString = "LocalTime"
     override val toNeoTypeString = "LOCALTIME?"
   }
+
   val duration = new DurationType {
     val parentType = CTAny
     override val toString = "Duration"

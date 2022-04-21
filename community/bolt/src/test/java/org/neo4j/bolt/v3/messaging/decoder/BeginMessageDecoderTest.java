@@ -19,12 +19,16 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoderTest.assertOriginalMessageEqualsToDecoded;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.virtual.MapValue.EMPTY;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
@@ -32,36 +36,27 @@ import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoderTest.assertOriginalMessageEqualsToDecoded;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.virtual.MapValue.EMPTY;
-
-class BeginMessageDecoderTest
-{
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final RequestMessageDecoder decoder = new BeginMessageDecoder( responseHandler );
+class BeginMessageDecoderTest {
+    private final BoltResponseHandler responseHandler = mock(BoltResponseHandler.class);
+    private final RequestMessageDecoder decoder = new BeginMessageDecoder(responseHandler);
 
     @Test
-    void shouldReturnCorrectSignature()
-    {
-        assertEquals( BeginMessage.SIGNATURE, decoder.signature() );
+    void shouldReturnCorrectSignature() {
+        assertEquals(BeginMessage.SIGNATURE, decoder.signature());
     }
 
     @Test
-    void shouldReturnConnectResponseHandler()
-    {
-        assertEquals( responseHandler, decoder.responseHandler() );
+    void shouldReturnConnectResponseHandler() {
+        assertEquals(responseHandler, decoder.responseHandler());
     }
 
     @Test
-    void shouldDecodeBeginMessage() throws Exception
-    {
-        var txTimeout = Duration.ofMillis( 10000 );
-        var txMetadata = Map.<String,Object>of();
-        var meta = VirtualValues.map( new String[]{"tx_metadata", "tx_timeout"}, new AnyValue[]{EMPTY, longValue( txTimeout.toMillis() )} );
-        var originalMessage = new BeginMessage( meta, List.of(), txTimeout, AccessMode.WRITE, txMetadata );
-        assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
+    void shouldDecodeBeginMessage() throws Exception {
+        var txTimeout = Duration.ofMillis(10000);
+        var txMetadata = Map.<String, Object>of();
+        var meta = VirtualValues.map(
+                new String[] {"tx_metadata", "tx_timeout"}, new AnyValue[] {EMPTY, longValue(txTimeout.toMillis())});
+        var originalMessage = new BeginMessage(meta, List.of(), txTimeout, AccessMode.WRITE, txMetadata);
+        assertOriginalMessageEqualsToDecoded(originalMessage, decoder);
     }
 }

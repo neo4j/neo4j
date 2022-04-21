@@ -25,32 +25,27 @@ import java.nio.file.WatchKey;
 /**
  * Default {@link WatchedResource} implementation.
  */
-public class WatchedFile implements WatchedResource
-{
+public class WatchedFile implements WatchedResource {
     private final WatchKey watchKey;
     private final Path path;
 
-    public WatchedFile( WatchKey watchKey, Path path )
-    {
+    public WatchedFile(WatchKey watchKey, Path path) {
         this.watchKey = watchKey;
         this.path = path;
     }
 
     @Override
-    public Path getWatchedFile()
-    {
+    public Path getWatchedFile() {
         return path;
     }
 
     @Override
-    public WatchKey getWatchKey()
-    {
+    public WatchKey getWatchKey() {
         return watchKey;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         watchKey.cancel();
     }
 }

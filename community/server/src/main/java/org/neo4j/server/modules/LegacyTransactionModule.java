@@ -20,7 +20,6 @@
 package org.neo4j.server.modules;
 
 import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.LegacyTransactionService;
@@ -33,38 +32,33 @@ import org.neo4j.time.SystemNanoClock;
 /**
  * Mounts the legacy transaction module.
  */
-public class LegacyTransactionModule implements ServerModule
-{
+public class LegacyTransactionModule implements ServerModule {
     private final Config config;
     private final WebServer webServer;
     private final SystemNanoClock clock;
 
-    public LegacyTransactionModule( WebServer webServer, Config config, SystemNanoClock clock )
-    {
+    public LegacyTransactionModule(WebServer webServer, Config config, SystemNanoClock clock) {
         this.webServer = webServer;
         this.config = config;
         this.clock = clock;
     }
 
     @Override
-    public void start()
-    {
-        webServer.addJAXRSClasses( jaxRsClasses(), mountPoint(), List.of( Injectable.injectable( SystemNanoClock.class, clock ) ) );
+    public void start() {
+        webServer.addJAXRSClasses(
+                jaxRsClasses(), mountPoint(), List.of(Injectable.injectable(SystemNanoClock.class, clock)));
     }
 
-    private static List<Class<?>> jaxRsClasses()
-    {
-        return List.of( LegacyTransactionService.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class );
+    private static List<Class<?>> jaxRsClasses() {
+        return List.of(LegacyTransactionService.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class);
     }
 
     @Override
-    public void stop()
-    {
-        webServer.removeJAXRSClasses( jaxRsClasses(), mountPoint() );
+    public void stop() {
+        webServer.removeJAXRSClasses(jaxRsClasses(), mountPoint());
     }
 
-    private String mountPoint()
-    {
-        return config.get( ServerSettings.rest_api_path ).getPath();
+    private String mountPoint() {
+        return config.get(ServerSettings.rest_api_path).getPath();
     }
 }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.csv.reader;
 
+import static java.lang.Math.min;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
-
-import static java.lang.Math.min;
 
 /**
  * Has a similar role to a {@link CharBuffer}, but is tailored to how {@link BufferedCharSeeker}
@@ -53,8 +53,7 @@ import static java.lang.Math.min;
  * buffer every call to {@link ThreadAheadReadable#read(SectionedCharBuffer, int)}. Without these sections
  * the entire double buffer would have to be copied into the char seekers buffer to get the same behavior.
  */
-public class SectionedCharBuffer
-{
+public class SectionedCharBuffer {
     private final char[] buffer;
     private final int pivot;
     private int back;
@@ -64,8 +63,7 @@ public class SectionedCharBuffer
      * @param effectiveBuffserSize Size of each section, i.e. effective buffer size that can be
      * {@link #readFrom(Reader) read} each time.
      */
-    public SectionedCharBuffer( int effectiveBuffserSize )
-    {
+    public SectionedCharBuffer(int effectiveBuffserSize) {
         this.buffer = new char[effectiveBuffserSize * 2];
         this.back = this.front = this.pivot = effectiveBuffserSize;
     }
@@ -74,8 +72,7 @@ public class SectionedCharBuffer
      * @return the underlying array which characters are {@link #readFrom(Reader) read into}.
      * {@link #back()}, {@link #pivot()} and {@link #front()} marks the noteworthy indexes into this array.
      */
-    public char[] array()
-    {
+    public char[] array() {
         return buffer;
     }
 
@@ -102,12 +99,11 @@ public class SectionedCharBuffer
      * @param into which buffer to compact into.
      * @param from the array index to start compacting from.
      */
-    public void compact( SectionedCharBuffer into, int from )
-    {
+    public void compact(SectionedCharBuffer into, int from) {
         assert buffer.length == into.buffer.length;
         int diff = front - from;
         into.back = pivot - diff;
-        System.arraycopy( buffer, from, into.buffer, into.back, diff );
+        System.arraycopy(buffer, from, into.buffer, into.back, diff);
     }
 
     /**
@@ -118,9 +114,8 @@ public class SectionedCharBuffer
      * @param reader {@link Reader} to read from.
      * @throws IOException any exception from the {@link Reader}.
      */
-    public void readFrom( Reader reader ) throws IOException
-    {
-        readFrom( reader, pivot );
+    public void readFrom(Reader reader) throws IOException {
+        readFrom(reader, pivot);
     }
 
     /**
@@ -129,15 +124,11 @@ public class SectionedCharBuffer
      *
      * @see #readFrom(Reader)
      */
-    public void readFrom( Reader reader, int max ) throws IOException
-    {
-        int read = reader.read( buffer, pivot, min( max, pivot ) );
-        if ( read == -1 )
-        {   // we reached the end
+    public void readFrom(Reader reader, int max) throws IOException {
+        int read = reader.read(buffer, pivot, min(max, pivot));
+        if (read == -1) { // we reached the end
             front = pivot;
-        }
-        else
-        {   // we did read something
+        } else { // we did read something
             front = pivot + read;
         }
     }
@@ -146,8 +137,7 @@ public class SectionedCharBuffer
      * Puts a character into the front section of the buffer and increments the front index.
      * @param ch
      */
-    public void append( char ch )
-    {
+    public void append(char ch) {
         buffer[front++] = ch;
     }
 
@@ -156,8 +146,7 @@ public class SectionedCharBuffer
      * from a previous {@link #compact(SectionedCharBuffer, int) compaction} and after (and including) this point
      * are characters read from {@link #readFrom(Reader)}.
      */
-    public int pivot()
-    {
+    public int pivot() {
         return pivot;
     }
 
@@ -165,32 +154,28 @@ public class SectionedCharBuffer
      * @return index of first available character, might be before pivot point if there have been
      * characters moved over from a previous compaction.
      */
-    public int back()
-    {
+    public int back() {
         return back;
     }
 
     /**
      * @return index of the last available character plus one.
      */
-    public int front()
-    {
+    public int front() {
         return front;
     }
 
     /**
      * @return whether or not there are characters read into the front section of the buffer.
      */
-    public boolean hasAvailable()
-    {
+    public boolean hasAvailable() {
         return front > pivot;
     }
 
     /**
      * @return the number of characters available in the front section of the buffer.
      */
-    public int available()
-    {
+    public int available() {
         return front - pivot;
     }
 }

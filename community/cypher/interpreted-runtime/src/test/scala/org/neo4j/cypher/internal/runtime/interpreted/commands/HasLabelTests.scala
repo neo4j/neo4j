@@ -29,15 +29,16 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 
 class HasLabelTests extends CypherFunSuite {
+
   test("should_handle_null_values") {
-    //given match n-[?]-m
+    // given match n-[?]-m
     val predicate = HasLabel(Literal(NO_VALUE), KeyToken.Unresolved("Person", TokenType.Label))
 
-    //when
+    // when
     val ctx = CypherRow.empty
     val state = QueryStateHelper.empty
 
-    //then
+    // then
     predicate.isMatch(ctx, state) should equal(None)
   }
 }

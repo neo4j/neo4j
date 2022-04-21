@@ -22,33 +22,27 @@ package org.neo4j.scheduler;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-
 import org.neo4j.util.VisibleForTesting;
 
-public class CallableExecutorService implements CallableExecutor
-{
+public class CallableExecutorService implements CallableExecutor {
     private final ExecutorService executorService;
 
-    public CallableExecutorService( ExecutorService executorService )
-    {
+    public CallableExecutorService(ExecutorService executorService) {
         this.executorService = executorService;
     }
 
     @Override
-    public <T> Future<T> submit( Callable<T> callable )
-    {
-        return executorService.submit( callable );
+    public <T> Future<T> submit(Callable<T> callable) {
+        return executorService.submit(callable);
     }
 
     @Override
-    public void execute( Runnable command )
-    {
-        executorService.submit( command );
+    public void execute(Runnable command) {
+        executorService.submit(command);
     }
 
     @VisibleForTesting
-    public Object delegate()
-    {
+    public Object delegate() {
         return executorService;
     }
 }

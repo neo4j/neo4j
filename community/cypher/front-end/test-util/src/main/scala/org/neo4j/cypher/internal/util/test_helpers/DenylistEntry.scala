@@ -20,23 +20,29 @@ import org.opencypher.tools.tck.api.Scenario
 
 import scala.util.matching.Regex
 
-case class DenylistEntry(featureName: Option[String], scenarioName: String, exampleNumberOrName: Option[String], isFlaky: Boolean) {
+case class DenylistEntry(
+  featureName: Option[String],
+  scenarioName: String,
+  exampleNumberOrName: Option[String],
+  isFlaky: Boolean
+) {
+
   def isDenylisted(scenario: Scenario): Boolean = {
     scenarioName == scenario.name &&
-      (featureName.isEmpty || featureName.get == scenario.featureName) &&
-      (exampleNumberOrName.isEmpty || exampleNumberOrName.get == scenario.exampleIndex.map(_.toString).getOrElse(""))
+    (featureName.isEmpty || featureName.get == scenario.featureName) &&
+    (exampleNumberOrName.isEmpty || exampleNumberOrName.get == scenario.exampleIndex.map(_.toString).getOrElse(""))
   }
 
-  def isFlaky(scenario: Scenario): Boolean  = {
+  def isFlaky(scenario: Scenario): Boolean = {
     isFlaky && isDenylisted(scenario)
   }
 
   override def toString: String = {
     if (featureName.isDefined) {
       s"""Feature "${featureName.get}": Scenario "$scenarioName"""" +
-        (if(exampleNumberOrName.isEmpty) "" else s""": Example "${exampleNumberOrName.get}"""")
+        (if (exampleNumberOrName.isEmpty) "" else s""": Example "${exampleNumberOrName.get}"""")
     } else {
-      s"""$scenarioName"""  // legacy version
+      s"""$scenarioName""" // legacy version
     }
   }
 }

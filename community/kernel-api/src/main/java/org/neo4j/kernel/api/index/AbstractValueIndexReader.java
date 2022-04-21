@@ -21,12 +21,10 @@ package org.neo4j.kernel.api.index;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 
-public abstract class AbstractValueIndexReader implements ValueIndexReader
-{
+public abstract class AbstractValueIndexReader implements ValueIndexReader {
     protected final IndexDescriptor descriptor;
 
-    protected AbstractValueIndexReader( IndexDescriptor descriptor )
-    {
+    protected AbstractValueIndexReader(IndexDescriptor descriptor) {
         this.descriptor = descriptor;
     }
 }

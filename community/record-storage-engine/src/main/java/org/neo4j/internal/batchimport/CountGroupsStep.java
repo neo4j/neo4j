@@ -31,25 +31,24 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  * After this step is {@link #done()} all BOTH ID fields in the rel group cache will contain,
  * for each node, the absolute number of groups from node 0 up to this point there is.
  */
-public class CountGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
-{
+public class CountGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
     private final RelationshipGroupCache cache;
 
-    public CountGroupsStep( StageControl control, Configuration config, RelationshipGroupCache groupCache, CursorContextFactory contextFactory,
-            StatsProvider... additionalStatsProviders )
-    {
-        super( control, "COUNT", config, 1, contextFactory, additionalStatsProviders );
+    public CountGroupsStep(
+            StageControl control,
+            Configuration config,
+            RelationshipGroupCache groupCache,
+            CursorContextFactory contextFactory,
+            StatsProvider... additionalStatsProviders) {
+        super(control, "COUNT", config, 1, contextFactory, additionalStatsProviders);
         this.cache = groupCache;
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext )
-    {
-        for ( RelationshipGroupRecord record : batch )
-        {
-            if ( record.inUse() )
-            {
-                cache.incrementGroupCount( record.getOwningNode() );
+    protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext) {
+        for (RelationshipGroupRecord record : batch) {
+            if (record.inUse()) {
+                cache.incrementGroupCount(record.getOwningNode());
             }
         }
     }

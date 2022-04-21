@@ -31,7 +31,8 @@ case class ToFloatOrNullFunction(arg: Expression) extends NullInNullOutExpressio
 
   override def rewrite(f: Expression => Expression): Expression = f(ToFloatOrNullFunction(arg.rewrite(f)))
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.toFloatOrNull(value)
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toFloatOrNull(value)
 
   override def children: Seq[AstNode[_]] = Seq(arg)
 }

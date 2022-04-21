@@ -22,27 +22,22 @@ package org.neo4j.annotations.documented;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
-public class ReporterFactories
-{
+public class ReporterFactories {
     private static final InvocationHandler throwingHandler = new ThrowingInvocationHandler();
-    private static final InvocationHandler noopHandler = ( proxy, method, args ) -> null;
+    private static final InvocationHandler noopHandler = (proxy, method, args) -> null;
 
-    public static ReporterFactory throwingReporterFactory()
-    {
-        return new ReporterFactory( throwingHandler );
+    public static ReporterFactory throwingReporterFactory() {
+        return new ReporterFactory(throwingHandler);
     }
 
-    public static ReporterFactory noopReporterFactory()
-    {
-        return new ReporterFactory( noopHandler );
+    public static ReporterFactory noopReporterFactory() {
+        return new ReporterFactory(noopHandler);
     }
 
-    private static class ThrowingInvocationHandler implements InvocationHandler
-    {
+    private static class ThrowingInvocationHandler implements InvocationHandler {
         @Override
-        public Object invoke( Object proxy, Method method, Object[] args )
-        {
-            throw new RuntimeException( DocumentedUtils.extractFormattedMessage( method, args ) );
+        public Object invoke(Object proxy, Method method, Object[] args) {
+            throw new RuntimeException(DocumentedUtils.extractFormattedMessage(method, args));
         }
     }
 }

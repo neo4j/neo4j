@@ -72,7 +72,10 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   test("not deprecated binding variable length relationship") {
-    assertNoNotificationInSupportedVersions("MATCH p = ()-[*]-() RETURN relationships(p) AS rs", DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP)
+    assertNoNotificationInSupportedVersions(
+      "MATCH p = ()-[*]-() RETURN relationships(p) AS rs",
+      DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP
+    )
   }
 
   test("deprecated coercion list to boolean") {
@@ -88,7 +91,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "RETURN NOT (TRUE AND [])",
       "MATCH (n) WHERE [] RETURN TRUE",
       "MATCH (n) WHERE range(0, 10) RETURN TRUE",
-      "MATCH (n) WHERE range(0, 10) RETURN range(0, 10)",
+      "MATCH (n) WHERE range(0, 10) RETURN range(0, 10)"
     )
 
     assertNotificationInSupportedVersions(queries, DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
@@ -102,12 +105,12 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "RETURN ()--() OR ()--()--()",
       "MATCH (n) WHERE (n)-[]->() RETURN n",
       """
-      |MATCH (a), (b)
-      |WITH a, b
-      |WHERE a.id = 0
-      |  AND (a)-[:T]->(b:Label1)
-      |  OR (a)-[:T*]->(b:Label2)
-      |RETURN DISTINCT b
+        |MATCH (a), (b)
+        |WITH a, b
+        |WHERE a.id = 0
+        |  AND (a)-[:T]->(b:Label1)
+        |  OR (a)-[:T*]->(b:Label2)
+        |RETURN DISTINCT b
       """.stripMargin,
       """
         |MATCH (a), (b)
@@ -134,7 +137,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         |WITH movie, collect(actor) AS cast
         |WHERE ANY(actor IN cast WHERE (actor)-[:WON]->(:Award))
         |RETURN movie
-        |""".stripMargin,
+        |""".stripMargin
     )
     assertNoDeprecations(queries)
   }

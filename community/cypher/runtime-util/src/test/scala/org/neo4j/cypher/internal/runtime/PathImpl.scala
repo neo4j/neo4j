@@ -33,29 +33,32 @@ import scala.jdk.CollectionConverters.IterableHasAsJava
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 case class PathImpl(pathEntities: Entity*)
-  extends org.neo4j.graphdb.Path {
+    extends org.neo4j.graphdb.Path {
 
   val sz = pathEntities.size
 
-  val (nodeList,relList) = {
+  val (nodeList, relList) = {
     if (sz % 2 == 0)
       throw new IllegalArgumentException(
-        s"Tried to construct a path that is not built like a path: even number of elements ($sz)")
+        s"Tried to construct a path that is not built like a path: even number of elements ($sz)"
+      )
     var x = 0
-    val nodes = new Array[Node](pathEntities.size/2+1)
-    val rels = new Array[Relationship](pathEntities.size/2)
+    val nodes = new Array[Node](pathEntities.size / 2 + 1)
+    val rels = new Array[Relationship](pathEntities.size / 2)
     try {
       pathEntities.foreach(e => {
-        if ((x % 2) == 0) nodes.update(x/2, e.asInstanceOf[Node])
-        else rels.update((x-1)/2, e.asInstanceOf[Relationship])
-        x+=1
+        if ((x % 2) == 0) nodes.update(x / 2, e.asInstanceOf[Node])
+        else rels.update((x - 1) / 2, e.asInstanceOf[Relationship])
+        x += 1
       })
     } catch {
       case e: ClassCastException =>
         throw new IllegalArgumentException(
-          s"Tried to construct a path that is not built like a path: $pathEntities", e)
+          s"Tried to construct a path that is not built like a path: $pathEntities",
+          e
+        )
     }
-    (new mutable.WrappedArray.ofRef(nodes),new mutable.WrappedArray.ofRef(rels))
+    (new mutable.WrappedArray.ofRef(nodes), new mutable.WrappedArray.ofRef(rels))
   }
 
   require(isProperPath, s"Tried to construct a path that is not built like a path: $pathEntities")
@@ -84,7 +87,7 @@ case class PathImpl(pathEntities: Entity*)
 
   override def canEqual(that: Any): Boolean = that != null && that.isInstanceOf[Path]
 
-  override def equals(p1: Any):Boolean = {
+  override def equals(p1: Any): Boolean = {
     if (!canEqual(p1)) return false
 
     val that = p1.asInstanceOf[Path]

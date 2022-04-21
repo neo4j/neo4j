@@ -35,28 +35,27 @@ case object normalizeInequalities extends Rewriter with CnfPhase {
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val instance: Rewriter = topDown(Rewriter.lift {
-    case o@Or(Equals(a1, b1), LessThan(a2, b2)) if a1 == a2 && b1 == b2 =>
+    case o @ Or(Equals(a1, b1), LessThan(a2, b2)) if a1 == a2 && b1 == b2 =>
       LessThanOrEqual(a1, b1)(o.position)
-    case o@Or(Equals(b1, a1), LessThan(a2, b2)) if a1 == a2 && b1 == b2 =>
+    case o @ Or(Equals(b1, a1), LessThan(a2, b2)) if a1 == a2 && b1 == b2 =>
       LessThanOrEqual(a1, b1)(o.position)
-    case o@Or(LessThan(a2, b2), Equals(a1, b1)) if a1 == a2 && b1 == b2 =>
+    case o @ Or(LessThan(a2, b2), Equals(a1, b1)) if a1 == a2 && b1 == b2 =>
       LessThanOrEqual(a1, b1)(o.position)
-    case o@Or(LessThan(a2, b2), Equals(b1, a1)) if a1 == a2 && b1 == b2 =>
+    case o @ Or(LessThan(a2, b2), Equals(b1, a1)) if a1 == a2 && b1 == b2 =>
       LessThanOrEqual(a1, b1)(o.position)
-    case o@Or(Equals(a1, b1), GreaterThan(a2, b2)) if a1 == a2 && b1 == b2 =>
+    case o @ Or(Equals(a1, b1), GreaterThan(a2, b2)) if a1 == a2 && b1 == b2 =>
       GreaterThanOrEqual(a1, b1)(o.position)
-    case o@Or(Equals(b1, a1), GreaterThan(a2, b2)) if a1 == a2 && b1 == b2 =>
+    case o @ Or(Equals(b1, a1), GreaterThan(a2, b2)) if a1 == a2 && b1 == b2 =>
       GreaterThanOrEqual(a1, b1)(o.position)
-    case o@Or(GreaterThan(a2, b2), Equals(a1, b1)) if a1 == a2 && b1 == b2 =>
+    case o @ Or(GreaterThan(a2, b2), Equals(a1, b1)) if a1 == a2 && b1 == b2 =>
       GreaterThanOrEqual(a1, b1)(o.position)
-    case o@Or(GreaterThan(a2, b2), Equals(b1, a1)) if a1 == a2 && b1 == b2 =>
+    case o @ Or(GreaterThan(a2, b2), Equals(b1, a1)) if a1 == a2 && b1 == b2 =>
       GreaterThanOrEqual(a1, b1)(o.position)
   })
 
   override def toString: String = "normalizeInequalities"
 
-  override def getRewriter(from: BaseState,
-                           context: BaseContext): Rewriter = this
+  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = this
 
   override def preConditions: Set[StepSequencer.Condition] = Set(!AndRewrittenToAnds)
 

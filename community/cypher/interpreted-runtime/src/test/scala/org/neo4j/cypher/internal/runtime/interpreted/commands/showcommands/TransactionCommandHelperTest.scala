@@ -30,7 +30,7 @@ class TransactionCommandHelperTest extends CypherFunSuite {
   }
 
   test("does not print negative transaction ids") {
-    assertThrows[InvalidArgumentsException]( TransactionId("neo4j", -15L))
+    assertThrows[InvalidArgumentsException](TransactionId("neo4j", -15L))
   }
 
   test("parses transaction ids") {
@@ -38,28 +38,30 @@ class TransactionCommandHelperTest extends CypherFunSuite {
   }
 
   test("does not parse negative transaction ids") {
-    assertThrows[InvalidArgumentsException]( TransactionId.parse("neo4j-transaction--12"))
+    assertThrows[InvalidArgumentsException](TransactionId.parse("neo4j-transaction--12"))
   }
 
   test("does not parse wrong separator") {
-    assertThrows[InvalidArgumentsException]( TransactionId.parse("neo4j-transactioo-12"))
+    assertThrows[InvalidArgumentsException](TransactionId.parse("neo4j-transactioo-12"))
   }
 
   test("does not parse random text") {
-    assertThrows[InvalidArgumentsException]( TransactionId.parse("blarglbarf"))
+    assertThrows[InvalidArgumentsException](TransactionId.parse("blarglbarf"))
   }
 
   test("does not parse trailing random text") {
-    assertThrows[InvalidArgumentsException]( TransactionId.parse("neo4j-transaction-12  "))
+    assertThrows[InvalidArgumentsException](TransactionId.parse("neo4j-transaction-12  "))
   }
 
   test("does not parse empty text") {
-    assertThrows[InvalidArgumentsException]( TransactionId.parse(""))
+    assertThrows[InvalidArgumentsException](TransactionId.parse(""))
   }
 
   test("validate and normalise database name") {
     TransactionId.parse("NEO4J-transaction-14") shouldBe TransactionId("neo4j", 14L)
-    val e = the[InvalidArgumentsException] thrownBy TransactionId.parse("a".repeat(MAXIMUM_DATABASE_NAME_LENGTH + 1) + "-transaction-14")
+    val e = the[InvalidArgumentsException] thrownBy TransactionId.parse(
+      "a".repeat(MAXIMUM_DATABASE_NAME_LENGTH + 1) + "-transaction-14"
+    )
     e.getMessage should include(" must have a length between ")
   }
 

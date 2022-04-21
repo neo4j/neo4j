@@ -19,7 +19,13 @@
  */
 package org.neo4j.io.fs;
 
-import org.apache.commons.lang3.ArrayUtils;
+import static java.lang.Math.min;
+import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.util.Arrays.asList;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,7 +56,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.collection.CombiningIterator;
 import org.neo4j.io.ByteUnit;
@@ -59,56 +65,40 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
-import static java.lang.Math.min;
-import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.util.Arrays.asList;
-import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
-{
+public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
     private final Clock clock;
     private final AtomicInteger keepFiles = new AtomicInteger();
     private final Set<Path> directories = ConcurrentHashMap.newKeySet();
-    private final Map<Path,EphemeralFileData> files;
+    private final Map<Path, EphemeralFileData> files;
     private volatile boolean closed;
 
-    public EphemeralFileSystemAbstraction()
-    {
-        this( Clock.systemUTC() );
+    public EphemeralFileSystemAbstraction() {
+        this(Clock.systemUTC());
     }
 
-    public EphemeralFileSystemAbstraction( Clock clock )
-    {
+    public EphemeralFileSystemAbstraction(Clock clock) {
         this.clock = clock;
         this.files = new ConcurrentHashMap<>();
         initCurrentWorkingDirectory();
     }
 
-    private void initCurrentWorkingDirectory()
-    {
-        try
-        {
-            mkdirs( Path.of( "." ).toAbsolutePath().normalize() );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( "EphemeralFileSystemAbstraction could not initialise current working directory", e );
+    private void initCurrentWorkingDirectory() {
+        try {
+            mkdirs(Path.of(".").toAbsolutePath().normalize());
+        } catch (IOException e) {
+            throw new UncheckedIOException(
+                    "EphemeralFileSystemAbstraction could not initialise current working directory", e);
         }
     }
 
-    private EphemeralFileSystemAbstraction( Set<Path> directories, Map<Path,EphemeralFileData> files, Clock clock )
-    {
+    private EphemeralFileSystemAbstraction(Set<Path> directories, Map<Path, EphemeralFileData> files, Clock clock) {
         this.clock = clock;
-        this.files = new ConcurrentHashMap<>( files );
-        this.directories.addAll( directories );
+        this.files = new ConcurrentHashMap<>(files);
+        this.directories.addAll(directories);
         initCurrentWorkingDirectory();
     }
 
-    public void clear()
-    {
+    public void clear() {
         closeFiles();
     }
 
@@ -116,480 +106,393 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
      * Simulate a filesystem crash, in which any changes that have not been {@link StoreChannel#force}d
      * will be lost. Practically, all files revert to the state when they are last {@link StoreChannel#force}d.
      */
-    public void crash()
-    {
-        files.values().forEach( EphemeralFileData::crash );
+    public void crash() {
+        files.values().forEach(EphemeralFileData::crash);
     }
 
-    public Resource keepFiles()
-    {
+    public Resource keepFiles() {
         keepFiles.getAndIncrement();
         return keepFiles::decrementAndGet;
     }
 
     @Override
-    public synchronized void close() throws IOException
-    {
-        if ( keepFiles.get() > 0 )
-        {
+    public synchronized void close() throws IOException {
+        if (keepFiles.get() > 0) {
             return;
         }
         closeFiles();
         closed = true;
     }
 
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return closed;
     }
 
-    private void closeFiles()
-    {
-        for ( EphemeralFileData file : files.values() )
-        {
+    private void closeFiles() {
+        for (EphemeralFileData file : files.values()) {
             file.free();
         }
         files.clear();
     }
 
-    public void assertNoOpenFiles() throws Exception
-    {
+    public void assertNoOpenFiles() throws Exception {
         Exception exception = null;
-        for ( EphemeralFileData file : files.values() )
-        {
+        for (EphemeralFileData file : files.values()) {
             Iterator<EphemeralFileChannel> channels = file.getOpenChannels();
-            while ( channels.hasNext() )
-            {
+            while (channels.hasNext()) {
                 EphemeralFileChannel channel = channels.next();
-                if ( exception == null )
-                {
-                    exception = new IOException( "Expected no open files. " +
-                            "The stack traces of the currently open files are attached as suppressed exceptions." );
+                if (exception == null) {
+                    exception = new IOException("Expected no open files. "
+                            + "The stack traces of the currently open files are attached as suppressed exceptions.");
                 }
-                exception.addSuppressed( channel.openedAt );
+                exception.addSuppressed(channel.openedAt);
             }
         }
-        if ( exception != null )
-        {
+        if (exception != null) {
             throw exception;
         }
     }
 
     @Override
-    public FileWatcher fileWatcher()
-    {
+    public FileWatcher fileWatcher() {
         return FileWatcher.SILENT_WATCHER;
     }
 
     @Override
-    public synchronized StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
-    {
-        return getStoreChannel( fileName );
+    public synchronized StoreChannel open(Path fileName, Set<OpenOption> options) throws IOException {
+        return getStoreChannel(fileName);
     }
 
     @Override
-    public OutputStream openAsOutputStream( Path fileName, boolean append ) throws IOException
-    {
-        return new ChannelOutputStream( write( fileName ), append, INSTANCE );
+    public OutputStream openAsOutputStream(Path fileName, boolean append) throws IOException {
+        return new ChannelOutputStream(write(fileName), append, INSTANCE);
     }
 
     @Override
-    public InputStream openAsInputStream( Path fileName ) throws IOException
-    {
-        return new ChannelInputStream( read( fileName), INSTANCE );
+    public InputStream openAsInputStream(Path fileName) throws IOException {
+        return new ChannelInputStream(read(fileName), INSTANCE);
     }
 
     @Override
-    public Reader openAsReader( Path fileName, Charset charset ) throws IOException
-    {
-        return new InputStreamReader( openAsInputStream( fileName ), charset );
+    public Reader openAsReader(Path fileName, Charset charset) throws IOException {
+        return new InputStreamReader(openAsInputStream(fileName), charset);
     }
 
     @Override
-    public Writer openAsWriter( Path fileName, Charset charset, boolean append ) throws IOException
-    {
-        return new OutputStreamWriter( openAsOutputStream( fileName, append ), charset );
+    public Writer openAsWriter(Path fileName, Charset charset, boolean append) throws IOException {
+        return new OutputStreamWriter(openAsOutputStream(fileName, append), charset);
     }
 
     @Override
-    public synchronized StoreChannel write( Path fileName ) throws IOException
-    {
+    public synchronized StoreChannel write(Path fileName) throws IOException {
         Path parentFile = fileName.getParent();
-        if ( parentFile != null /*means that this is the 'default location'*/ && !fileExists( parentFile ) )
-        {
-            throw new NoSuchFileException( "'" + fileName + "' (The system cannot find the path specified)" );
+        if (parentFile != null /*means that this is the 'default location'*/ && !fileExists(parentFile)) {
+            throw new NoSuchFileException("'" + fileName + "' (The system cannot find the path specified)");
         }
 
-        EphemeralFileData data = files.computeIfAbsent( canonicalFile( fileName ), key -> new EphemeralFileData( key, clock ) );
-        return new StoreFileChannel( new EphemeralFileChannel( data, new EphemeralFileStillOpenException( fileName.toString() ) ) );
+        EphemeralFileData data =
+                files.computeIfAbsent(canonicalFile(fileName), key -> new EphemeralFileData(key, clock));
+        return new StoreFileChannel(
+                new EphemeralFileChannel(data, new EphemeralFileStillOpenException(fileName.toString())));
     }
 
     @Override
-    public synchronized StoreChannel read( Path fileName ) throws IOException
-    {
-        return getStoreChannel( fileName );
+    public synchronized StoreChannel read(Path fileName) throws IOException {
+        return getStoreChannel(fileName);
     }
 
     @Override
-    public long getFileSize( Path fileName )
-    {
-        EphemeralFileData file = files.get( canonicalFile( fileName ) );
+    public long getFileSize(Path fileName) {
+        EphemeralFileData file = files.get(canonicalFile(fileName));
         return file == null ? 0 : file.size();
     }
 
     @Override
-    public long getBlockSize( Path file )
-    {
+    public long getBlockSize(Path file) {
         return 512;
     }
 
     @Override
-    public boolean fileExists( Path file )
-    {
-        file = canonicalFile( file );
-        return directories.contains( file ) || files.containsKey( file );
+    public boolean fileExists(Path file) {
+        file = canonicalFile(file);
+        return directories.contains(file) || files.containsKey(file);
     }
 
-    private static Path canonicalFile( Path path )
-    {
+    private static Path canonicalFile(Path path) {
         return path.toAbsolutePath().normalize();
     }
 
     @Override
-    public boolean isDirectory( Path file )
-    {
-        return directories.contains( canonicalFile( file ) );
+    public boolean isDirectory(Path file) {
+        return directories.contains(canonicalFile(file));
     }
 
     @Override
-    public void mkdir( Path directory )
-    {
-        directories.add( canonicalFile( directory ) );
+    public void mkdir(Path directory) {
+        directories.add(canonicalFile(directory));
     }
 
     @Override
-    public void mkdirs( Path directory ) throws IOException
-    {
-        Path currentDirectory = canonicalFile( directory );
+    public void mkdirs(Path directory) throws IOException {
+        Path currentDirectory = canonicalFile(directory);
 
-        while ( currentDirectory != null )
-        {
-            if ( files.containsKey( currentDirectory ) )
-            {
-                throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, currentDirectory ) );
-            }
-            else
-            {
-                mkdir( currentDirectory );
+        while (currentDirectory != null) {
+            if (files.containsKey(currentDirectory)) {
+                throw new IOException(format(UNABLE_TO_CREATE_DIRECTORY_FORMAT, currentDirectory));
+            } else {
+                mkdir(currentDirectory);
             }
             currentDirectory = currentDirectory.getParent();
         }
     }
 
     @Override
-    public void deleteFile( Path fileName ) throws IOException
-    {
-        fileName = canonicalFile( fileName );
-        EphemeralFileData removed = files.remove( fileName );
-        if ( removed != null )
-        {
+    public void deleteFile(Path fileName) throws IOException {
+        fileName = canonicalFile(fileName);
+        EphemeralFileData removed = files.remove(fileName);
+        if (removed != null) {
             removed.free();
-        }
-        else
-        {
-            if ( !fileExists( fileName ) )
-            {
+        } else {
+            if (!fileExists(fileName)) {
                 return;
             }
-            Path[] fileList = listFiles( fileName );
-            if ( fileList.length > 0 )
-            {
-                throw new DirectoryNotEmptyException( fileName.toString() );
+            Path[] fileList = listFiles(fileName);
+            if (fileList.length > 0) {
+                throw new DirectoryNotEmptyException(fileName.toString());
             }
-            if ( !directories.remove( fileName ) )
-            {
-                throw new NoSuchFileException( fileName.toString() );
+            if (!directories.remove(fileName)) {
+                throw new NoSuchFileException(fileName.toString());
             }
         }
     }
 
     @Override
-    public void deleteRecursively( Path directory ) throws IOException
-    {
-        if ( isDirectory( directory ) )
-        {
+    public void deleteRecursively(Path directory) throws IOException {
+        if (isDirectory(directory)) {
             // Delete all files in directory and sub-directory
-            directory = canonicalFile( directory );
-            for ( Map.Entry<Path,EphemeralFileData> file : files.entrySet() )
-            {
+            directory = canonicalFile(directory);
+            for (Map.Entry<Path, EphemeralFileData> file : files.entrySet()) {
                 Path fileName = file.getKey();
-                if ( fileName.startsWith( directory ) && !fileName.equals( directory ) )
-                {
-                    deleteFile( fileName );
+                if (fileName.startsWith(directory) && !fileName.equals(directory)) {
+                    deleteFile(fileName);
                 }
             }
 
             // Delete all sub-directories
             Path finalDirectory = directory;
             List<Path> subDirectories = directories.stream()
-                                                   .filter( p -> p.startsWith( finalDirectory ) && !p.equals( finalDirectory ) )
-                                                   .sorted( Comparator.reverseOrder() )
-                                                   .toList();
-            for ( Path subDirectory : subDirectories )
-            {
-                deleteFile( subDirectory );
+                    .filter(p -> p.startsWith(finalDirectory) && !p.equals(finalDirectory))
+                    .sorted(Comparator.reverseOrder())
+                    .toList();
+            for (Path subDirectory : subDirectories) {
+                deleteFile(subDirectory);
             }
         }
-        deleteFile( directory );
+        deleteFile(directory);
     }
 
     @Override
-    public void renameFile( Path from, Path to, CopyOption... copyOptions ) throws IOException
-    {
-        from = canonicalFile( from );
-        to = canonicalFile( to );
+    public void renameFile(Path from, Path to, CopyOption... copyOptions) throws IOException {
+        from = canonicalFile(from);
+        to = canonicalFile(to);
 
-        if ( !files.containsKey( from ) )
-        {
-            throw new NoSuchFileException( "'" + from + "' doesn't exist" );
+        if (!files.containsKey(from)) {
+            throw new NoSuchFileException("'" + from + "' doesn't exist");
         }
 
         boolean replaceExisting = false;
-        for ( CopyOption copyOption : copyOptions )
-        {
+        for (CopyOption copyOption : copyOptions) {
             replaceExisting |= copyOption == REPLACE_EXISTING;
         }
-        if ( files.containsKey( to ) && !replaceExisting )
-        {
-            throw new FileAlreadyExistsException( "'" + to + "' already exists" );
+        if (files.containsKey(to) && !replaceExisting) {
+            throw new FileAlreadyExistsException("'" + to + "' already exists");
         }
-        if ( !isDirectory( to.getParent() ) )
-        {
-            throw new NoSuchFileException( "Target directory[" + to.getParent() + "] does not exists" );
+        if (!isDirectory(to.getParent())) {
+            throw new NoSuchFileException("Target directory[" + to.getParent() + "] does not exists");
         }
-        files.put( to, files.remove( from ) );
+        files.put(to, files.remove(from));
     }
 
     @Override
-    public Path[] listFiles( Path directory ) throws IOException
-    {
-        directory = canonicalFile( directory );
-        if ( files.containsKey( directory ) )
-        {
-            throw new NotDirectoryException( directory.toString() );
+    public Path[] listFiles(Path directory) throws IOException {
+        directory = canonicalFile(directory);
+        if (files.containsKey(directory)) {
+            throw new NotDirectoryException(directory.toString());
         }
-        if ( !directories.contains( directory ) )
-        {
-            throw new NoSuchFileException( directory.toString() );
+        if (!directories.contains(directory)) {
+            throw new NoSuchFileException(directory.toString());
         }
 
         Set<Path> found = new HashSet<>();
-        Iterator<Path> filesAndFolders = new CombiningIterator<>( asList( this.files.keySet().iterator(), directories.iterator() ) );
-        while ( filesAndFolders.hasNext() )
-        {
+        Iterator<Path> filesAndFolders =
+                new CombiningIterator<>(asList(this.files.keySet().iterator(), directories.iterator()));
+        while (filesAndFolders.hasNext()) {
             Path file = filesAndFolders.next();
-            if ( directory.equals( file.getParent() ) )
-            {
-                found.add( file );
+            if (directory.equals(file.getParent())) {
+                found.add(file);
             }
         }
 
-        return found.toArray( new Path[0] );
+        return found.toArray(new Path[0]);
     }
 
     @Override
-    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
-    {
-        directory = canonicalFile( directory );
-        if ( files.containsKey( directory ) )
+    public Path[] listFiles(Path directory, DirectoryStream.Filter<Path> filter) {
+        directory = canonicalFile(directory);
+        if (files.containsKey(directory))
         // This means that you're trying to list files on a file, not a directory.
         {
             return null;
         }
 
         Set<Path> found = new HashSet<>();
-        Iterator<Path> files = new CombiningIterator<>( asList( this.files.keySet().iterator(), directories.iterator() ) );
-        while ( files.hasNext() )
-        {
+        Iterator<Path> files =
+                new CombiningIterator<>(asList(this.files.keySet().iterator(), directories.iterator()));
+        while (files.hasNext()) {
             Path path = files.next();
-            if ( directory.equals( path.getParent() ) )
-            {
-                try
-                {
-                    if ( filter.accept( path ) )
-                    {
-                        found.add( path );
+            if (directory.equals(path.getParent())) {
+                try {
+                    if (filter.accept(path)) {
+                        found.add(path);
                     }
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
             }
         }
-        return found.toArray( new Path[0] );
+        return found.toArray(new Path[0]);
     }
 
-    private StoreChannel getStoreChannel( Path fileName ) throws IOException
-    {
-        EphemeralFileData data = files.get( canonicalFile( fileName ) );
-        if ( data != null )
-        {
-            return new StoreFileChannel( new EphemeralFileChannel( data, new EphemeralFileStillOpenException( fileName.toAbsolutePath().toString() ) ) );
+    private StoreChannel getStoreChannel(Path fileName) throws IOException {
+        EphemeralFileData data = files.get(canonicalFile(fileName));
+        if (data != null) {
+            return new StoreFileChannel(new EphemeralFileChannel(
+                    data,
+                    new EphemeralFileStillOpenException(
+                            fileName.toAbsolutePath().toString())));
         }
-        return write( fileName );
+        return write(fileName);
     }
 
     @Override
-    public void moveToDirectory( Path file, Path toDirectory ) throws IOException
-    {
-        Path destinationFile = toDirectory.resolve( file.getFileName() );
-        if ( isDirectory( file ) )
-        {
-            mkdir( destinationFile );
-            for ( Path f : listFiles( file ) )
-            {
-                moveToDirectory( f, destinationFile );
+    public void moveToDirectory(Path file, Path toDirectory) throws IOException {
+        Path destinationFile = toDirectory.resolve(file.getFileName());
+        if (isDirectory(file)) {
+            mkdir(destinationFile);
+            for (Path f : listFiles(file)) {
+                moveToDirectory(f, destinationFile);
             }
-            deleteFile( file );
-        }
-        else
-        {
-            EphemeralFileData fileToMove = files.remove( canonicalFile( file ) );
-            if ( fileToMove == null )
-            {
-                throw new NoSuchFileException( file.toAbsolutePath().toString() );
+            deleteFile(file);
+        } else {
+            EphemeralFileData fileToMove = files.remove(canonicalFile(file));
+            if (fileToMove == null) {
+                throw new NoSuchFileException(file.toAbsolutePath().toString());
             }
-            files.put( canonicalFile( destinationFile ), fileToMove );
+            files.put(canonicalFile(destinationFile), fileToMove);
         }
     }
 
     @Override
-    public void copyToDirectory( Path file, Path toDirectory ) throws IOException
-    {
-        Path targetFile = toDirectory.resolve( file.getFileName() );
-        copyFile( file, targetFile );
+    public void copyToDirectory(Path file, Path toDirectory) throws IOException {
+        Path targetFile = toDirectory.resolve(file.getFileName());
+        copyFile(file, targetFile);
     }
 
     @Override
-    public void copyFile( Path from, Path to, CopyOption... copyOptions ) throws IOException
-    {
-        EphemeralFileData data = files.get( canonicalFile( from ) );
-        if ( data == null )
-        {
-            throw new NoSuchFileException( "File " + from + " not found" );
+    public void copyFile(Path from, Path to, CopyOption... copyOptions) throws IOException {
+        EphemeralFileData data = files.get(canonicalFile(from));
+        if (data == null) {
+            throw new NoSuchFileException("File " + from + " not found");
         }
-        if ( !ArrayUtils.contains( copyOptions, REPLACE_EXISTING ) && files.get( canonicalFile( from ) ) != null )
-        {
-            throw new FileAlreadyExistsException( to.toAbsolutePath().toString() );
+        if (!ArrayUtils.contains(copyOptions, REPLACE_EXISTING) && files.get(canonicalFile(from)) != null) {
+            throw new FileAlreadyExistsException(to.toAbsolutePath().toString());
         }
-        copyFile( from, this, to, newCopyBuffer() );
+        copyFile(from, this, to, newCopyBuffer());
     }
 
     @Override
-    public void copyRecursively( Path fromDirectory, Path toDirectory ) throws IOException
-    {
-        copyRecursivelyFromOtherFs( fromDirectory, this, toDirectory, newCopyBuffer() );
+    public void copyRecursively(Path fromDirectory, Path toDirectory) throws IOException {
+        copyRecursivelyFromOtherFs(fromDirectory, this, toDirectory, newCopyBuffer());
     }
 
-    public synchronized EphemeralFileSystemAbstraction snapshot()
-    {
-        Map<Path,EphemeralFileData> copiedFiles = new HashMap<>();
-        for ( Map.Entry<Path,EphemeralFileData> file : files.entrySet() )
-        {
-            copiedFiles.put( file.getKey(), file.getValue().copy() );
+    public synchronized EphemeralFileSystemAbstraction snapshot() {
+        Map<Path, EphemeralFileData> copiedFiles = new HashMap<>();
+        for (Map.Entry<Path, EphemeralFileData> file : files.entrySet()) {
+            copiedFiles.put(file.getKey(), file.getValue().copy());
         }
-        return new EphemeralFileSystemAbstraction( directories, copiedFiles, clock );
+        return new EphemeralFileSystemAbstraction(directories, copiedFiles, clock);
     }
 
-    private void copyRecursivelyFromOtherFs( Path from, FileSystemAbstraction fromFs, Path to ) throws IOException
-    {
-        copyRecursivelyFromOtherFs( from, fromFs, to, newCopyBuffer() );
+    private void copyRecursivelyFromOtherFs(Path from, FileSystemAbstraction fromFs, Path to) throws IOException {
+        copyRecursivelyFromOtherFs(from, fromFs, to, newCopyBuffer());
     }
 
-    private static ByteBuffer newCopyBuffer()
-    {
-        return ByteBuffers.allocate( toIntExact( ByteUnit.MebiByte.toBytes( 1 ) ), INSTANCE );
+    private static ByteBuffer newCopyBuffer() {
+        return ByteBuffers.allocate(toIntExact(ByteUnit.MebiByte.toBytes(1)), INSTANCE);
     }
 
-    private void copyRecursivelyFromOtherFs( Path from, FileSystemAbstraction fromFs, Path to, ByteBuffer buffer )
-            throws IOException
-    {
-        this.mkdirs( to );
-        for ( Path fromFile : fromFs.listFiles( from ) )
-        {
-            Path toFile = to.resolve( fromFile.getFileName() );
-            if ( fromFs.isDirectory( fromFile ) )
-            {
-                copyRecursivelyFromOtherFs( fromFile, fromFs, toFile );
-            }
-            else
-            {
-                copyFile( fromFile, fromFs, toFile, buffer );
+    private void copyRecursivelyFromOtherFs(Path from, FileSystemAbstraction fromFs, Path to, ByteBuffer buffer)
+            throws IOException {
+        this.mkdirs(to);
+        for (Path fromFile : fromFs.listFiles(from)) {
+            Path toFile = to.resolve(fromFile.getFileName());
+            if (fromFs.isDirectory(fromFile)) {
+                copyRecursivelyFromOtherFs(fromFile, fromFs, toFile);
+            } else {
+                copyFile(fromFile, fromFs, toFile, buffer);
             }
         }
     }
 
-    private void copyFile( Path from, FileSystemAbstraction fromFs, Path to, ByteBuffer buffer ) throws IOException
-    {
-        try ( StoreChannel source = fromFs.read( from );
-              StoreChannel sink = this.write( to ) )
-        {
-            sink.truncate( 0 );
+    private void copyFile(Path from, FileSystemAbstraction fromFs, Path to, ByteBuffer buffer) throws IOException {
+        try (StoreChannel source = fromFs.read(from);
+                StoreChannel sink = this.write(to)) {
+            sink.truncate(0);
             long sourceSize = source.size();
-            for ( int available; (available = (int) (sourceSize - source.position())) > 0; )
-            {
+            for (int available; (available = (int) (sourceSize - source.position())) > 0; ) {
                 buffer.clear();
-                buffer.limit( min( available, buffer.capacity() ) );
-                source.read( buffer );
+                buffer.limit(min(available, buffer.capacity()));
+                source.read(buffer);
                 buffer.flip();
-                sink.write( buffer );
+                sink.write(buffer);
             }
         }
     }
 
     @Override
-    public void truncate( Path file, long size ) throws IOException
-    {
-        EphemeralFileData data = files.get( canonicalFile( file ) );
-        if ( data == null )
-        {
-            throw new NoSuchFileException( "File " + file + " not found" );
+    public void truncate(Path file, long size) throws IOException {
+        EphemeralFileData data = files.get(canonicalFile(file));
+        if (data == null) {
+            throw new NoSuchFileException("File " + file + " not found");
         }
-        data.truncate( size );
+        data.truncate(size);
     }
 
     @Override
-    public long lastModifiedTime( Path file )
-    {
-        EphemeralFileData data = files.get( canonicalFile( file ) );
-        if ( data == null )
-        {
+    public long lastModifiedTime(Path file) {
+        EphemeralFileData data = files.get(canonicalFile(file));
+        if (data == null) {
             return 0;
         }
         return data.getLastModified();
     }
 
     @Override
-    public void deleteFileOrThrow( Path file ) throws IOException
-    {
-        file = canonicalFile( file );
-        if ( !fileExists( file ) )
-        {
-            throw new NoSuchFileException( file.toAbsolutePath().toString() );
+    public void deleteFileOrThrow(Path file) throws IOException {
+        file = canonicalFile(file);
+        if (!fileExists(file)) {
+            throw new NoSuchFileException(file.toAbsolutePath().toString());
         }
-        deleteFile( file );
+        deleteFile(file);
     }
 
     @Override
-    public Stream<FileHandle> streamFilesRecursive( Path directory ) throws IOException
-    {
-        return StreamFilesRecursive.streamFilesRecursive( directory, this );
+    public Stream<FileHandle> streamFilesRecursive(Path directory) throws IOException {
+        return StreamFilesRecursive.streamFilesRecursive(directory, this);
     }
 
     @Override
-    public int getFileDescriptor( StoreChannel channel )
-    {
+    public int getFileDescriptor(StoreChannel channel) {
         return INVALID_FILE_DESCRIPTOR;
     }
 }

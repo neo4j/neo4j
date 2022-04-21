@@ -29,15 +29,14 @@ package org.neo4j.memory;
  *   that you don't release memory you don't own. It's up to the caller
  *   to do the appropriate checks.
  */
-public interface MemoryPool
-{
+public interface MemoryPool {
     /**
      * Grab a chunk of memory. This method might throw if there is no available memory.
      *
      * @param bytes number of bytes to reserve
      * @throws MemoryLimitExceededException if the are not enough free memory to fulfill the reservation
      */
-    void reserveHeap( long bytes );
+    void reserveHeap(long bytes);
 
     /**
      * Grab a chunk of native memory. This method might throw if there is no available memory.
@@ -45,21 +44,21 @@ public interface MemoryPool
      * @param bytes number of bytes to reserve
      * @throws MemoryLimitExceededException if the are not enough free memory to fulfill the reservation
      */
-    void reserveNative( long bytes );
+    void reserveNative(long bytes);
 
     /**
      * Give back previously reserved heap memory. This will never throw.
      *
      * @param bytes number of bytes to give back
      */
-    void releaseHeap( long bytes );
+    void releaseHeap(long bytes);
 
     /**
      * Give back previously reserved native memory. This will never throw.
      *
      * @param bytes number of bytes to give back
      */
-    void releaseNative( long bytes );
+    void releaseNative(long bytes);
 
     /**
      * Returns the total size of this pool in bytes.
@@ -87,8 +86,7 @@ public interface MemoryPool
      *
      * @return the total number or reserved bytes.
      */
-    default long totalUsed()
-    {
+    default long totalUsed() {
         return usedHeap() + usedNative();
     }
 
@@ -104,5 +102,5 @@ public interface MemoryPool
      *
      * @param size the new size of the pool.
      */
-    void setSize( long size );
+    void setSize(long size);
 }

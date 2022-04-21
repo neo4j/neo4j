@@ -30,7 +30,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Stream;
-
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.Kernel;
@@ -39,56 +38,52 @@ import org.neo4j.kernel.api.Kernel;
  * Data collector section that contains meta data about the System,
  * Neo4j deployment, graph token counts, and retrieval.
  */
-final class MetaSection
-{
-    private MetaSection()
-    { // only static methods
+final class MetaSection {
+    private MetaSection() { // only static methods
     }
 
-    static Stream<RetrieveResult> retrieve( String graphToken,
-                                            Kernel kernel,
-                                            long numSilentQueryDrops ) throws TransactionFailureException
-    {
+    static Stream<RetrieveResult> retrieve(String graphToken, Kernel kernel, long numSilentQueryDrops)
+            throws TransactionFailureException {
         Map<String, Object> systemData = new HashMap<>();
-        systemData.put( "jvmMemoryFree", Runtime.getRuntime().freeMemory() );
-        systemData.put( "jvmMemoryTotal", Runtime.getRuntime().totalMemory() );
-        systemData.put( "jvmMemoryMax", Runtime.getRuntime().maxMemory() );
-        systemData.put( "systemTotalPhysicalMemory", OsBeanUtil.getTotalPhysicalMemory() );
-        systemData.put( "systemFreePhysicalMemory", OsBeanUtil.getFreePhysicalMemory() );
-        systemData.put( "systemCommittedVirtualMemory", OsBeanUtil.getCommittedVirtualMemory() );
-        systemData.put( "systemTotalSwapSpace", OsBeanUtil.getTotalSwapSpace() );
-        systemData.put( "systemFreeSwapSpace", OsBeanUtil.getFreeSwapSpace() );
+        systemData.put("jvmMemoryFree", Runtime.getRuntime().freeMemory());
+        systemData.put("jvmMemoryTotal", Runtime.getRuntime().totalMemory());
+        systemData.put("jvmMemoryMax", Runtime.getRuntime().maxMemory());
+        systemData.put("systemTotalPhysicalMemory", OsBeanUtil.getTotalPhysicalMemory());
+        systemData.put("systemFreePhysicalMemory", OsBeanUtil.getFreePhysicalMemory());
+        systemData.put("systemCommittedVirtualMemory", OsBeanUtil.getCommittedVirtualMemory());
+        systemData.put("systemTotalSwapSpace", OsBeanUtil.getTotalSwapSpace());
+        systemData.put("systemFreeSwapSpace", OsBeanUtil.getFreeSwapSpace());
 
         OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-        systemData.put( "osArch", os.getArch() );
-        systemData.put( "osName", os.getName() );
-        systemData.put( "osVersion", os.getVersion() );
-        systemData.put( "availableProcessors", os.getAvailableProcessors() );
-        systemData.put( "byteOrder", ByteOrder.nativeOrder().toString() );
+        systemData.put("osArch", os.getArch());
+        systemData.put("osName", os.getName());
+        systemData.put("osVersion", os.getVersion());
+        systemData.put("availableProcessors", os.getAvailableProcessors());
+        systemData.put("byteOrder", ByteOrder.nativeOrder().toString());
 
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
-        systemData.put( "jvmName", runtime.getVmName() );
-        systemData.put( "jvmVendor", runtime.getVmVendor() );
-        systemData.put( "jvmVersion", runtime.getVmVersion() );
+        systemData.put("jvmName", runtime.getVmName());
+        systemData.put("jvmVendor", runtime.getVmVendor());
+        systemData.put("jvmVersion", runtime.getVmVersion());
         CompilationMXBean compiler = ManagementFactory.getCompilationMXBean();
-        systemData.put( "jvmJITCompiler", compiler == null ? "unknown" : compiler.getName() );
+        systemData.put("jvmJITCompiler", compiler == null ? "unknown" : compiler.getName());
 
-        systemData.put( "userLanguage", Locale.getDefault().getLanguage() );
-        systemData.put( "userCountry", Locale.getDefault().getCountry() );
-        systemData.put( "userTimezone", TimeZone.getDefault().getID() );
-        systemData.put( "fileEncoding",  System.getProperty( "file.encoding" ) );
+        systemData.put("userLanguage", Locale.getDefault().getLanguage());
+        systemData.put("userCountry", Locale.getDefault().getCountry());
+        systemData.put("userTimezone", TimeZone.getDefault().getID());
+        systemData.put("fileEncoding", System.getProperty("file.encoding"));
 
         Map<String, Object> internalData = new HashMap<>();
-        internalData.put( "numSilentQueryCollectionMisses", numSilentQueryDrops );
+        internalData.put("numSilentQueryCollectionMisses", numSilentQueryDrops);
 
         Map<String, Object> metaData = new HashMap<>();
-        metaData.put( "graphToken", graphToken );
-        metaData.put( "retrieveTime", ZonedDateTime.now() );
-        metaData.put( "system", systemData );
-        metaData.put( "internal", internalData );
+        metaData.put("graphToken", graphToken);
+        metaData.put("retrieveTime", ZonedDateTime.now());
+        metaData.put("system", systemData);
+        metaData.put("internal", internalData);
 
-        TokensSection.putTokenCounts( metaData, kernel );
+        TokensSection.putTokenCounts(metaData, kernel);
 
-        return Stream.of( new RetrieveResult( Sections.META, metaData ) );
+        return Stream.of(new RetrieveResult(Sections.META, metaData));
     }
 }

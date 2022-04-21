@@ -21,20 +21,17 @@ package org.neo4j.graphdb;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class WriteOperationsNotAllowedException extends RuntimeException implements Status.HasStatus
-{
+public class WriteOperationsNotAllowedException extends RuntimeException implements Status.HasStatus {
     private final Status statusCode;
 
-    public WriteOperationsNotAllowedException( String msg, Status statusCode )
-    {
-        super( msg );
+    public WriteOperationsNotAllowedException(String msg, Status statusCode) {
+        super(msg);
         this.statusCode = statusCode;
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
-    public Status status()
-    {
+    public Status status() {
         return statusCode;
     }
 }

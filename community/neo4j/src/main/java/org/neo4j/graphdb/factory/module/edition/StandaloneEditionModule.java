@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
@@ -35,29 +37,34 @@ import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.InternalLogProvider;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-
-public abstract class StandaloneEditionModule extends AbstractEditionModule
-{
+public abstract class StandaloneEditionModule extends AbstractEditionModule {
     @Override
-    public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule, DatabaseManager<?> databaseManager,
-            Dependencies dependencies, DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent )
-    {
-        var dbmsRuntimeRepository = new StandaloneDbmsRuntimeRepository( databaseManager, dbmsRuntimeSystemGraphComponent );
-        globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, dbmsRuntimeRepository );
+    public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository(
+            GlobalModule globalModule,
+            DatabaseManager<?> databaseManager,
+            Dependencies dependencies,
+            DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent) {
+        var dbmsRuntimeRepository =
+                new StandaloneDbmsRuntimeRepository(databaseManager, dbmsRuntimeSystemGraphComponent);
+        globalModule
+                .getTransactionEventListeners()
+                .registerTransactionEventListener(SYSTEM_DATABASE_NAME, dbmsRuntimeRepository);
         return dbmsRuntimeRepository;
     }
 
-    protected static ReadOnlyDatabases createGlobalReadOnlyChecker( DatabaseManager<?> databaseManager, Config globalConfig,
-            GlobalTransactionEventListeners txListeners, LifeSupport globalLife, InternalLogProvider logProvider )
-    {
-        var systemGraphReadOnlyLookup = new SystemGraphReadOnlyDatabaseLookupFactory( databaseManager, logProvider );
-        var configReadOnlyLookup = new ConfigBasedLookupFactory( globalConfig, databaseManager.databaseIdRepository() );
-        var globalChecker = new ReadOnlyDatabases( systemGraphReadOnlyLookup, configReadOnlyLookup );
-        var configListener = new ConfigReadOnlyDatabaseListener( globalChecker, globalConfig );
-        var systemGraphListener = new SystemGraphReadOnlyListener( txListeners, globalChecker );
-        globalLife.add( configListener );
-        globalLife.add( systemGraphListener );
+    protected static ReadOnlyDatabases createGlobalReadOnlyChecker(
+            DatabaseManager<?> databaseManager,
+            Config globalConfig,
+            GlobalTransactionEventListeners txListeners,
+            LifeSupport globalLife,
+            InternalLogProvider logProvider) {
+        var systemGraphReadOnlyLookup = new SystemGraphReadOnlyDatabaseLookupFactory(databaseManager, logProvider);
+        var configReadOnlyLookup = new ConfigBasedLookupFactory(globalConfig, databaseManager.databaseIdRepository());
+        var globalChecker = new ReadOnlyDatabases(systemGraphReadOnlyLookup, configReadOnlyLookup);
+        var configListener = new ConfigReadOnlyDatabaseListener(globalChecker, globalConfig);
+        var systemGraphListener = new SystemGraphReadOnlyListener(txListeners, globalChecker);
+        globalLife.add(configListener);
+        globalLife.add(systemGraphListener);
         return globalChecker;
     }
 }

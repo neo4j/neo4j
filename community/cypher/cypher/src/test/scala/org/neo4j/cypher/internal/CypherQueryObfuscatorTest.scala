@@ -35,7 +35,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector.empty,
-          Set.empty))
+          Set.empty
+        )
+      )
 
     ob.obfuscateText(originalText) should equal(originalText)
   }
@@ -47,7 +49,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector(offsetOf(originalText, "'here'")),
-          Set.empty))
+          Set.empty
+        )
+      )
 
     ob.obfuscateText(originalText) should equal(expectedText)
   }
@@ -59,7 +63,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector(offsetOf(originalText, "'here is a\nmultiline\npassword'")),
-          Set.empty))
+          Set.empty
+        )
+      )
 
     ob.obfuscateText(originalText) should equal(expectedText)
   }
@@ -71,7 +77,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector(offsetOf(originalText, "'here is a \"password\"'")),
-          Set.empty))
+          Set.empty
+        )
+      )
 
     ob.obfuscateText(originalText) should equal(expectedText)
   }
@@ -83,7 +91,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector(offsetOf(originalText, "'here is a \\'password\\''")),
-          Set.empty))
+          Set.empty
+        )
+      )
 
     ob.obfuscateText(originalText) should equal(expectedText)
   }
@@ -95,7 +105,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector(offsetOf(originalText, "'here'"), offsetOf(originalText, "'also here'")),
-          Set.empty))
+          Set.empty
+        )
+      )
 
     ob.obfuscateText(originalText) should equal(expectedText)
   }
@@ -107,7 +119,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector(offsetOf(originalText, "'here'"), offsetOf(originalText, "'and also here'")),
-          Set.empty))
+          Set.empty
+        )
+      )
 
     ob.obfuscateText(originalText) should equal(expectedText)
   }
@@ -118,13 +132,15 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector.empty,
-          Set.empty))
+          Set.empty
+        )
+      )
 
     ob.obfuscateParameters(originalParams) should equal(originalParams)
   }
 
   test("should obfuscated sensitive parameters") {
-    val originalParams = makeParams("a" -> "b",      "c" -> "d", "e" -> "f")
+    val originalParams = makeParams("a" -> "b", "c" -> "d", "e" -> "f")
     val expectedParams = makeParams("a" -> "******", "c" -> "d", "e" -> "******")
     val ob =
       CypherQueryObfuscator(
@@ -143,7 +159,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector(offsetOf(originalText, "here")),
-          Set.empty))
+          Set.empty
+        )
+      )
 
     an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
   }
@@ -154,7 +172,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector(offsetOf(originalText, "'here")),
-          Set.empty))
+          Set.empty
+        )
+      )
 
     an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
   }
@@ -165,7 +185,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
       CypherQueryObfuscator(
         ObfuscationMetadata(
           Vector(offsetOf(originalText, "'here'"), LiteralOffset(999, Some(10))),
-          Set.empty))
+          Set.empty
+        )
+      )
 
     an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
   }
@@ -174,7 +196,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
     ValueUtils.asMapValue(Map(params: _*).asJava)
   }
 
-  private def offsetOf(originalText: String, word: String) : LiteralOffset = {
+  private def offsetOf(originalText: String, word: String): LiteralOffset = {
     LiteralOffset(originalText.indexOf(word), None)
   }
 

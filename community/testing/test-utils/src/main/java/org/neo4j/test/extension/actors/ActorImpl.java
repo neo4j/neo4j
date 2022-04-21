@@ -29,196 +29,153 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
-class ActorImpl implements Actor
-{
-    private static final FutureTask<Void> STOP_SIGNAL = new FutureTask<>( () -> null );
+class ActorImpl implements Actor {
+    private static final FutureTask<Void> STOP_SIGNAL = new FutureTask<>(() -> null);
     private final LinkedTransferQueue<FutureTask<?>> queue;
     private final Thread thread;
     private final AtomicBoolean started = new AtomicBoolean();
     private volatile boolean stopped;
     private volatile boolean executing;
 
-    ActorImpl( ThreadGroup threadGroup, String name )
-    {
+    ActorImpl(ThreadGroup threadGroup, String name) {
         queue = new LinkedTransferQueue<>();
-        thread = new Thread( threadGroup, this::runActor, name );
+        thread = new Thread(threadGroup, this::runActor, name);
     }
 
-    private <T> void enqueue( FutureTask<T> task )
-    {
-        if ( stopped )
-        {
-            throw new IllegalStateException( "Test actor is stopped: " + thread );
+    private <T> void enqueue(FutureTask<T> task) {
+        if (stopped) {
+            throw new IllegalStateException("Test actor is stopped: " + thread);
         }
-        queue.offer( task );
-        if ( !started.get() && started.compareAndSet( false, true ) )
-        {
+        queue.offer(task);
+        if (!started.get() && started.compareAndSet(false, true)) {
             thread.start();
         }
     }
 
-    private void runActor()
-    {
-        try
-        {
+    private void runActor() {
+        try {
             FutureTask<?> task;
-            while ( !stopped && (task = queue.take()) != STOP_SIGNAL )
-            {
-                try
-                {
+            while (!stopped && (task = queue.take()) != STOP_SIGNAL) {
+                try {
                     executing = true;
                     task.run();
-                }
-                finally
-                {
+                } finally {
                     executing = false;
                 }
             }
-        }
-        catch ( Throwable e )
-        {
-            throw new RuntimeException( e );
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public void stop()
-    {
+    public void stop() {
         stopped = true;
-        queue.offer( STOP_SIGNAL );
+        queue.offer(STOP_SIGNAL);
     }
 
-    @SuppressWarnings( "ResultOfMethodCallIgnored" )
-    public void join() throws InterruptedException
-    {
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void join() throws InterruptedException {
         Thread.interrupted(); // Clear interrupted flag.
         thread.join();
     }
 
     @Override
-    public <T> Future<T> submit( Callable<T> callable )
-    {
-        FutureTask<T> task = new FutureTask<>( callable );
-        enqueue( task );
+    public <T> Future<T> submit(Callable<T> callable) {
+        FutureTask<T> task = new FutureTask<>(callable);
+        enqueue(task);
         return task;
     }
 
     @Override
-    public <T> Future<T> submit( Runnable runnable, T result )
-    {
-        FutureTask<T> task = new FutureTask<>( runnable, result );
-        enqueue( task );
+    public <T> Future<T> submit(Runnable runnable, T result) {
+        FutureTask<T> task = new FutureTask<>(runnable, result);
+        enqueue(task);
         return task;
     }
 
     @Override
-    public Future<Void> submit( Runnable runnable )
-    {
-        return submit( runnable, null );
+    public Future<Void> submit(Runnable runnable) {
+        return submit(runnable, null);
     }
 
     @Override
-    public void untilWaiting() throws InterruptedException
-    {
-        do
-        {
+    public void untilWaiting() throws InterruptedException {
+        do {
             Thread.State state = thread.getState();
             boolean executing = this.executing;
-            if ( executing && (state == Thread.State.WAITING || state == Thread.State.TIMED_WAITING) )
-            {
+            if (executing && (state == Thread.State.WAITING || state == Thread.State.TIMED_WAITING)) {
                 return;
             }
-            if ( state == Thread.State.TERMINATED )
-            {
-                throw new AssertionError( "Actor thread " + thread.getName() + " has terminated." );
+            if (state == Thread.State.TERMINATED) {
+                throw new AssertionError("Actor thread " + thread.getName() + " has terminated.");
             }
-            if ( state == Thread.State.NEW )
-            {
-                throw new IllegalStateException( "Actor thread " + thread.getName() + " has not yet started." );
+            if (state == Thread.State.NEW) {
+                throw new IllegalStateException("Actor thread " + thread.getName() + " has not yet started.");
             }
-            if ( queue.hasWaitingConsumer() && queue.isEmpty() )
-            {
-                throw new IllegalStateException( "There are no tasks running or queued up that we can wait for." );
+            if (queue.hasWaitingConsumer() && queue.isEmpty()) {
+                throw new IllegalStateException("There are no tasks running or queued up that we can wait for.");
             }
-            if ( Thread.interrupted() )
-            {
+            if (Thread.interrupted()) {
                 throw new InterruptedException();
             }
             Thread.onSpinWait();
-        }
-        while ( true );
+        } while (true);
     }
 
     @Override
-    public void untilWaitingIn( Executable constructorOrMethod ) throws InterruptedException
-    {
-        untilWaitingIn( methodPredicate( constructorOrMethod ) );
+    public void untilWaitingIn(Executable constructorOrMethod) throws InterruptedException {
+        untilWaitingIn(methodPredicate(constructorOrMethod));
     }
 
     @Override
-    public void untilWaitingIn( String methodName ) throws InterruptedException
-    {
-        untilWaitingIn( methodPredicate( methodName ) );
+    public void untilWaitingIn(String methodName) throws InterruptedException {
+        untilWaitingIn(methodPredicate(methodName));
     }
 
-    private void untilWaitingIn( Predicate<StackTraceElement> predicate ) throws InterruptedException
-    {
-        do
-        {
+    private void untilWaitingIn(Predicate<StackTraceElement> predicate) throws InterruptedException {
+        do {
             untilWaiting();
-            if ( isIn( predicate ) )
-            {
+            if (isIn(predicate)) {
                 return;
             }
-            Thread.sleep( 1 );
-        }
-        while ( true );
+            Thread.sleep(1);
+        } while (true);
     }
 
     @Override
-    public void untilThreadState( Thread.State... states )
-    {
-        EnumSet<Thread.State> set = EnumSet.copyOf( Arrays.asList( states ) );
-        do
-        {
-            if ( !queue.hasWaitingConsumer() )
-            {
+    public void untilThreadState(Thread.State... states) {
+        EnumSet<Thread.State> set = EnumSet.copyOf(Arrays.asList(states));
+        do {
+            if (!queue.hasWaitingConsumer()) {
                 Thread.State state = thread.getState();
-                if ( set.contains( state ) )
-                {
+                if (set.contains(state)) {
                     return;
                 }
             }
             Thread.onSpinWait();
-        }
-        while ( true );
+        } while (true);
     }
 
     @Override
-    public void interrupt()
-    {
+    public void interrupt() {
         thread.interrupt();
     }
 
-    private static Predicate<StackTraceElement> methodPredicate( Executable constructorOrMethod )
-    {
+    private static Predicate<StackTraceElement> methodPredicate(Executable constructorOrMethod) {
         String targetMethodName = constructorOrMethod.getName();
         String targetClassName = constructorOrMethod.getDeclaringClass().getName();
-        return element ->
-            element.getMethodName().equals( targetMethodName ) && element.getClassName().equals( targetClassName );
+        return element -> element.getMethodName().equals(targetMethodName)
+                && element.getClassName().equals(targetClassName);
     }
 
-    private static Predicate<StackTraceElement> methodPredicate( String methodName )
-    {
-        return element -> element.getMethodName().equals( methodName );
+    private static Predicate<StackTraceElement> methodPredicate(String methodName) {
+        return element -> element.getMethodName().equals(methodName);
     }
 
-    private boolean isIn( Predicate<StackTraceElement> predicate )
-    {
+    private boolean isIn(Predicate<StackTraceElement> predicate) {
         StackTraceElement[] stackTrace = thread.getStackTrace();
-        for ( StackTraceElement element : stackTrace )
-        {
-            if ( predicate.test( element ) )
-            {
+        for (StackTraceElement element : stackTrace) {
+            if (predicate.test(element)) {
                 return true;
             }
         }

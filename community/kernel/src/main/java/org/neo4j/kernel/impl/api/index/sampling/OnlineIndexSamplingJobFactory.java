@@ -25,16 +25,17 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.InternalLogProvider;
 
-public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
-{
+public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory {
     private final IndexStatisticsStore indexStatisticsStore;
     private final InternalLogProvider logProvider;
     private final TokenNameLookup nameLookup;
     private final CursorContextFactory contextFactory;
 
-    public OnlineIndexSamplingJobFactory( IndexStatisticsStore indexStatisticsStore, TokenNameLookup nameLookup, InternalLogProvider logProvider,
-            CursorContextFactory contextFactory )
-    {
+    public OnlineIndexSamplingJobFactory(
+            IndexStatisticsStore indexStatisticsStore,
+            TokenNameLookup nameLookup,
+            InternalLogProvider logProvider,
+            CursorContextFactory contextFactory) {
         this.indexStatisticsStore = indexStatisticsStore;
         this.logProvider = logProvider;
         this.nameLookup = nameLookup;
@@ -42,10 +43,16 @@ public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
     }
 
     @Override
-    public IndexSamplingJob create( long indexId, IndexProxy indexProxy )
-    {
-        final String indexUserDescription = indexProxy.getDescriptor().userDescription( nameLookup );
+    public IndexSamplingJob create(long indexId, IndexProxy indexProxy) {
+        final String indexUserDescription = indexProxy.getDescriptor().userDescription(nameLookup);
         String indexName = indexProxy.getDescriptor().getName();
-        return new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, indexUserDescription, indexName, logProvider, contextFactory );
+        return new OnlineIndexSamplingJob(
+                indexId,
+                indexProxy,
+                indexStatisticsStore,
+                indexUserDescription,
+                indexName,
+                logProvider,
+                contextFactory);
     }
 }

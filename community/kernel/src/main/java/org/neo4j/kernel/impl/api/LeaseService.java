@@ -19,31 +19,25 @@
  */
 package org.neo4j.kernel.impl.api;
 
-public interface LeaseService
-{
+public interface LeaseService {
     int NO_LEASE = -1;
 
     LeaseClient newClient();
 
     LeaseService NO_LEASES = () -> NoLeaseClient.INSTANCE;
 
-    class NoLeaseClient implements LeaseClient
-    {
+    class NoLeaseClient implements LeaseClient {
         public static final NoLeaseClient INSTANCE = new NoLeaseClient();
 
-        private NoLeaseClient()
-        {
-        }
+        private NoLeaseClient() {}
 
         @Override
-        public int leaseId()
-        {
+        public int leaseId() {
             return NO_LEASE;
         }
 
         @Override
-        public void ensureValid() throws LeaseException
-        {
+        public void ensureValid() throws LeaseException {
             // always valid
         }
     }

@@ -41,16 +41,18 @@ object combineSetProperty extends Rewriter with StepSequencer.Step with ASTRewri
   override def postConditions: Set[StepSequencer.Condition] = Set(PropertiesCombined)
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set()
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = this
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = this
 
   override def apply(input: AnyRef): AnyRef = instance(input)
 
   private def onSameEntity(setItem: SetItem, entity: Expression) = setItem match {
     case SetPropertyItem(Property(map, _), _) => map == entity
-    case _ => false
+    case _                                    => false
   }
 
   private def combine(entity: Expression, ops: Seq[SetPropertyItem]): SetProperty =
@@ -58,18 +60,18 @@ object combineSetProperty extends Rewriter with StepSequencer.Step with ASTRewri
     else SetPropertyItems(entity, ops.map(o => (o.property.propertyKey, o.expression)))(ops.head.position)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case s@SetClause(items) =>
+    case s @ SetClause(items) =>
       val newItems = ArrayBuffer.empty[SetItem]
       val itemsArray = items.toArray
 
-      //find all contiguous blocks of SetPropertyItem on the same item, e.g., SET n.p1 = 1, n.p2 = 2
-      //we are not allowed to change the order of the SET operations so it is only safe to combine
-      //contiguous blocks.
+      // find all contiguous blocks of SetPropertyItem on the same item, e.g., SET n.p1 = 1, n.p2 = 2
+      // we are not allowed to change the order of the SET operations so it is only safe to combine
+      // contiguous blocks.
       var i = 0
       while (i < itemsArray.length) {
         val item = itemsArray(i)
         item match {
-          case s@SetPropertyItem(Property(map, _), _) if i < itemsArray.length - 1 =>
+          case s @ SetPropertyItem(Property(map, _), _) if i < itemsArray.length - 1 =>
             val itemsToCombine: mutable.ArrayBuffer[SetPropertyItem] = ArrayBuffer(s)
             while (i + 1 < itemsArray.length && onSameEntity(itemsArray(i + 1), map)) {
               itemsToCombine += itemsArray(i + 1).asInstanceOf[SetPropertyItem]

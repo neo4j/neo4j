@@ -46,8 +46,10 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
 
-class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalContext,
-                                          private[this] val threadSafeCursors: CursorFactory) extends TransactionalContextWrapper {
+class ParallelTransactionalContextWrapper(
+  private[this] val tc: TransactionalContext,
+  private[this] val threadSafeCursors: CursorFactory
+) extends TransactionalContextWrapper {
   // TODO: Make parallel transaction use safe.
   //       We want all methods going through kernelExecutionContext when it is supported instead of through tc.kernelTransaction, which is not thread-safe
   private[this] val kernelExecutionContext: ExecutionContext = tc.kernelTransaction.createExecutionContext()
@@ -56,14 +58,16 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
 
   override def commitTransaction(): Unit = unsupported
 
-  override def kernelQueryContext: QueryContext = tc.kernelTransaction.queryContext() // kernelExecutionContext.queryContext
+  override def kernelQueryContext: QueryContext =
+    tc.kernelTransaction.queryContext() // kernelExecutionContext.queryContext
 
   // TODO: We eventually want to use kernelExecutionContext.cursors() when it is supported and then we can remove threadSafeCursors
   override def cursors: CursorFactory = threadSafeCursors // kernelExecutionContext.cursors()
 
   override def cursorContext: CursorContext = kernelExecutionContext.cursorContext
 
-  override def memoryTracker: MemoryTracker = tc.kernelTransaction.memoryTracker() // kernelExecutionContext.memoryTracker()
+  override def memoryTracker: MemoryTracker =
+    tc.kernelTransaction.memoryTracker() // kernelExecutionContext.memoryTracker()
 
   override def locks: Locks = tc.kernelTransaction.locks() // kernelExecutionContext.locks()
 
@@ -83,9 +87,11 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
 
   override def procedures: Procedures = tc.kernelTransaction.procedures() // kernelExecutionContext.procedures()
 
-  override def securityContext: SecurityContext = tc.kernelTransaction.securityContext() // kernelExecutionContext.securityContext()
+  override def securityContext: SecurityContext =
+    tc.kernelTransaction.securityContext() // kernelExecutionContext.securityContext()
 
-  override def securityAuthorizationHandler: SecurityAuthorizationHandler = tc.kernelTransaction.securityAuthorizationHandler() // kernelExecutionContext.securityAuthorizationHandler()
+  override def securityAuthorizationHandler: SecurityAuthorizationHandler =
+    tc.kernelTransaction.securityAuthorizationHandler() // kernelExecutionContext.securityAuthorizationHandler()
 
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
@@ -95,7 +101,8 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
     // tc and threadSafeCursors needs to be closed by external owner
   }
 
-  override def kernelStatisticProvider: KernelStatisticProvider = ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
+  override def kernelStatisticProvider: KernelStatisticProvider =
+    ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 
   override def dbmsInfo: DbmsInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DbmsInfo])
 

@@ -19,12 +19,11 @@
  */
 package org.neo4j.csv.reader;
 
-public interface HeaderSkipper
-{
-    HeaderSkipper NO_SKIP = ( data, offset, length ) -> 0;
+public interface HeaderSkipper {
+    HeaderSkipper NO_SKIP = (data, offset, length) -> 0;
 
     /**
      * @return number of characters to skip in this data array.
      */
-    int skipHeader( char[] data, int offset, int length );
+    int skipHeader(char[] data, int offset, int length);
 }

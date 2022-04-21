@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.topDown
 
-import scala.collection.mutable
 import scala.Iterable
+import scala.collection.mutable
 
 /**
  * Piece of physical planning which
@@ -55,18 +55,17 @@ object expressionVariableAllocation {
    */
   class AvailableExpressionVariables extends Attribute[LogicalPlan, Seq[ExpressionVariable]]
 
-  case class Result[T](rewritten: T,
-                       nExpressionSlots: Int,
-                       availableExpressionVars: AvailableExpressionVariables)
+  case class Result[T](rewritten: T, nExpressionSlots: Int, availableExpressionVars: AvailableExpressionVariables)
 
   def allocate[T <: Foldable with Rewritable](input: T): Result[T] = {
 
     val globalMapping = mutable.Map[String, ExpressionVariable]()
     val availableExpressionVars = new AvailableExpressionVariables
 
-    def allocateVariables(outerVars: List[ExpressionVariable],
-                          variables: Iterable[LogicalVariable]
-                         ): List[ExpressionVariable] = {
+    def allocateVariables(
+      outerVars: List[ExpressionVariable],
+      variables: Iterable[LogicalVariable]
+    ): List[ExpressionVariable] = {
       var innerVars = outerVars
       for (variable <- variables) {
         val nextVariable = ExpressionVariable(innerVars.length, variable.name)
@@ -108,12 +107,12 @@ object expressionVariableAllocation {
     }
 
     val rewriter =
-      topDown( Rewriter.lift {
+      topDown(Rewriter.lift {
         // Cached properties would have to be cached together with the Expression Variables.
         // Not caching the property until we have support for that.
-        case cp@CachedProperty(_, v, p, _, _) if globalMapping.contains(v.name) =>
+        case cp @ CachedProperty(_, v, p, _, _) if globalMapping.contains(v.name) =>
           Property(globalMapping(v.name), p)(cp.position)
-        case cp@CachedHasProperty(_, v, p, _, _) if globalMapping.contains(v.name) =>
+        case cp @ CachedHasProperty(_, v, p, _, _) if globalMapping.contains(v.name) =>
           Property(globalMapping(v.name), p)(cp.position)
         case x: LogicalVariable if globalMapping.contains(x.name) =>
           globalMapping(x.name)

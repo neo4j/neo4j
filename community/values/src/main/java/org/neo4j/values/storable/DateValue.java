@@ -19,6 +19,14 @@
  */
 package org.neo4j.values.storable;
 
+import static java.lang.Integer.parseInt;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.memory.HeapEstimator.LOCAL_DATE_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
+
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -35,7 +43,6 @@ import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.TemporalParseException;
 import org.neo4j.exceptions.UnsupportedTemporalUnitException;
@@ -43,284 +50,213 @@ import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.lang.Integer.parseInt;
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.memory.HeapEstimator.LOCAL_DATE_SIZE;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.util.FeatureToggles.flag;
-import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
-import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
+public final class DateValue extends TemporalValue<LocalDate, DateValue> {
+    private static final long INSTANCE_SIZE = shallowSizeOfInstance(DateValue.class) + LOCAL_DATE_SIZE;
 
-public final class DateValue extends TemporalValue<LocalDate,DateValue>
-{
-    private static final long INSTANCE_SIZE = shallowSizeOfInstance( DateValue.class ) + LOCAL_DATE_SIZE;
-
-    public static final DateValue MIN_VALUE = new DateValue( LocalDate.MIN );
-    public static final DateValue MAX_VALUE = new DateValue( LocalDate.MAX );
+    public static final DateValue MIN_VALUE = new DateValue(LocalDate.MIN);
+    public static final DateValue MAX_VALUE = new DateValue(LocalDate.MAX);
 
     private final LocalDate value;
 
-    private DateValue( LocalDate value )
-    {
+    private DateValue(LocalDate value) {
         this.value = value;
     }
 
-    public static DateValue date( LocalDate value )
-    {
-        return new DateValue( requireNonNull( value, "LocalDate" ) );
+    public static DateValue date(LocalDate value) {
+        return new DateValue(requireNonNull(value, "LocalDate"));
     }
 
-    public static DateValue date( int year, int month, int day )
-    {
-        return new DateValue( assertValidArgument( () -> LocalDate.of( year, month, day ) ) );
+    public static DateValue date(int year, int month, int day) {
+        return new DateValue(assertValidArgument(() -> LocalDate.of(year, month, day)));
     }
 
-    public static DateValue weekDate( int year, int week, int dayOfWeek )
-    {
-        return new DateValue( assertValidArgument( () -> localWeekDate( year, week, dayOfWeek ) ) );
+    public static DateValue weekDate(int year, int week, int dayOfWeek) {
+        return new DateValue(assertValidArgument(() -> localWeekDate(year, week, dayOfWeek)));
     }
 
-    public static DateValue quarterDate( int year, int quarter, int dayOfQuarter )
-    {
-        return new DateValue( assertValidArgument( () -> localQuarterDate( year, quarter, dayOfQuarter ) ) );
+    public static DateValue quarterDate(int year, int quarter, int dayOfQuarter) {
+        return new DateValue(assertValidArgument(() -> localQuarterDate(year, quarter, dayOfQuarter)));
     }
 
-    public static DateValue ordinalDate( int year, int dayOfYear )
-    {
-        return new DateValue( assertValidArgument( () -> LocalDate.ofYearDay( year, dayOfYear ) ) );
+    public static DateValue ordinalDate(int year, int dayOfYear) {
+        return new DateValue(assertValidArgument(() -> LocalDate.ofYearDay(year, dayOfYear)));
     }
 
-    public static DateValue epochDate( long epochDay )
-    {
-        return new DateValue( epochDateRaw( epochDay ) );
+    public static DateValue epochDate(long epochDay) {
+        return new DateValue(epochDateRaw(epochDay));
     }
 
-    public static LocalDate epochDateRaw( long epochDay )
-    {
-        return assertValidArgument( () -> LocalDate.ofEpochDay( epochDay ) );
+    public static LocalDate epochDateRaw(long epochDay) {
+        return assertValidArgument(() -> LocalDate.ofEpochDay(epochDay));
     }
 
-    public static DateValue parse( CharSequence text )
-    {
-        return parse( DateValue.class, PATTERN, DateValue::parse, text );
+    public static DateValue parse(CharSequence text) {
+        return parse(DateValue.class, PATTERN, DateValue::parse, text);
     }
 
-    public static DateValue parse( TextValue text )
-    {
-        return parse( DateValue.class, PATTERN, DateValue::parse, text );
+    public static DateValue parse(TextValue text) {
+        return parse(DateValue.class, PATTERN, DateValue::parse, text);
     }
 
-    public static DateValue now( Clock clock )
-    {
-        return new DateValue( LocalDate.now( clock ) );
+    public static DateValue now(Clock clock) {
+        return new DateValue(LocalDate.now(clock));
     }
 
-    public static DateValue now( Clock clock, String timezone )
-    {
-        return now( clock.withZone( parseZoneName( timezone ) ) );
+    public static DateValue now(Clock clock, String timezone) {
+        return now(clock.withZone(parseZoneName(timezone)));
     }
 
-    public static DateValue now( Clock clock, Supplier<ZoneId> defaultZone )
-    {
-        return now( clock.withZone( defaultZone.get() ) );
+    public static DateValue now(Clock clock, Supplier<ZoneId> defaultZone) {
+        return now(clock.withZone(defaultZone.get()));
     }
 
-    public static DateValue build( MapValue map, Supplier<ZoneId> defaultZone )
-    {
-        return StructureBuilder.build( builder( defaultZone ), map );
+    public static DateValue build(MapValue map, Supplier<ZoneId> defaultZone) {
+        return StructureBuilder.build(builder(defaultZone), map);
     }
 
-    public static DateValue select( org.neo4j.values.AnyValue from, Supplier<ZoneId> defaultZone )
-    {
-        return builder( defaultZone ).selectDate( from );
+    public static DateValue select(org.neo4j.values.AnyValue from, Supplier<ZoneId> defaultZone) {
+        return builder(defaultZone).selectDate(from);
     }
 
     public static DateValue truncate(
-            TemporalUnit unit,
-            TemporalValue input,
-            MapValue fields,
-            Supplier<ZoneId> defaultZone )
-    {
+            TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone) {
         LocalDate localDate = input.getDatePart();
-        DateValue truncated = date( truncateTo( localDate, unit ) );
-        if ( fields.size() == 0 )
-        {
+        DateValue truncated = date(truncateTo(localDate, unit));
+        if (fields.size() == 0) {
             return truncated;
-        }
-        else
-        {
-            MapValue updatedFields = fields.updatedWith( "date", truncated );
-            return build( updatedFields, defaultZone );
+        } else {
+            MapValue updatedFields = fields.updatedWith("date", truncated);
+            return build(updatedFields, defaultZone);
         }
     }
 
-    static LocalDate truncateTo( LocalDate value, TemporalUnit unit )
-    {
-        if ( unit == ChronoUnit.MILLENNIA )
-        {
-            return value.with( Neo4JTemporalField.YEAR_OF_MILLENNIUM, 0 );
-        }
-        else if ( unit == ChronoUnit.CENTURIES )
-        {
-            return value.with( Neo4JTemporalField.YEAR_OF_CENTURY, 0 );
-        }
-        else if ( unit == ChronoUnit.DECADES )
-        {
-            return value.with( Neo4JTemporalField.YEAR_OF_DECADE, 0 );
-        }
-        else if ( unit == ChronoUnit.YEARS )
-        {
-            return value.with( TemporalAdjusters.firstDayOfYear() );
-        }
-        else if ( unit == IsoFields.WEEK_BASED_YEARS )
-        {
-            return value.with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 ).with( ChronoField.DAY_OF_WEEK, 1 );
-        }
-        else if ( unit == IsoFields.QUARTER_YEARS )
-        {
-            return value.with( IsoFields.DAY_OF_QUARTER, 1 );
-        }
-        else if ( unit == ChronoUnit.MONTHS )
-        {
-            return value.with( TemporalAdjusters.firstDayOfMonth() );
-        }
-        else if ( unit == ChronoUnit.WEEKS )
-        {
-            return value.with( TemporalAdjusters.previousOrSame( DayOfWeek.MONDAY ) );
-        }
-        else if ( unit == ChronoUnit.DAYS )
-        {
+    static LocalDate truncateTo(LocalDate value, TemporalUnit unit) {
+        if (unit == ChronoUnit.MILLENNIA) {
+            return value.with(Neo4JTemporalField.YEAR_OF_MILLENNIUM, 0);
+        } else if (unit == ChronoUnit.CENTURIES) {
+            return value.with(Neo4JTemporalField.YEAR_OF_CENTURY, 0);
+        } else if (unit == ChronoUnit.DECADES) {
+            return value.with(Neo4JTemporalField.YEAR_OF_DECADE, 0);
+        } else if (unit == ChronoUnit.YEARS) {
+            return value.with(TemporalAdjusters.firstDayOfYear());
+        } else if (unit == IsoFields.WEEK_BASED_YEARS) {
+            return value.with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1).with(ChronoField.DAY_OF_WEEK, 1);
+        } else if (unit == IsoFields.QUARTER_YEARS) {
+            return value.with(IsoFields.DAY_OF_QUARTER, 1);
+        } else if (unit == ChronoUnit.MONTHS) {
+            return value.with(TemporalAdjusters.firstDayOfMonth());
+        } else if (unit == ChronoUnit.WEEKS) {
+            return value.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        } else if (unit == ChronoUnit.DAYS) {
             return value;
-        }
-        else
-        {
-            throw new UnsupportedTemporalUnitException( "Unit too small for truncation: " + unit );
+        } else {
+            throw new UnsupportedTemporalUnitException("Unit too small for truncation: " + unit);
         }
     }
 
-    private static DateBuilder builder( Supplier<ZoneId> defaultZone )
-    {
-        return new DateBuilder( defaultZone );
+    private static DateBuilder builder(Supplier<ZoneId> defaultZone) {
+        return new DateBuilder(defaultZone);
     }
 
     @Override
-    protected int unsafeCompareTo( Value otherValue )
-    {
+    protected int unsafeCompareTo(Value otherValue) {
         DateValue other = (DateValue) otherValue;
-        return value.compareTo( other.value );
+        return value.compareTo(other.value);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Date";
     }
 
     @Override
-    LocalDate temporal()
-    {
+    LocalDate temporal() {
         return value;
     }
 
     @Override
-    LocalDate getDatePart()
-    {
+    LocalDate getDatePart() {
         return value;
     }
 
     @Override
-    LocalTime getLocalTimePart()
-    {
-        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the time of: %s", this ) );
+    LocalTime getLocalTimePart() {
+        throw new UnsupportedTemporalUnitException(String.format("Cannot get the time of: %s", this));
     }
 
     @Override
-    OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
-    {
-        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the time of: %s", this ) );
+    OffsetTime getTimePart(Supplier<ZoneId> defaultZone) {
+        throw new UnsupportedTemporalUnitException(String.format("Cannot get the time of: %s", this));
     }
 
     @Override
-    ZoneId getZoneId( Supplier<ZoneId> defaultZone )
-    {
-        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the time zone of: %s", this ) );
+    ZoneId getZoneId(Supplier<ZoneId> defaultZone) {
+        throw new UnsupportedTemporalUnitException(String.format("Cannot get the time zone of: %s", this));
     }
 
     @Override
-    ZoneOffset getZoneOffset()
-    {
-        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the offset of: %s", this ) );
+    ZoneOffset getZoneOffset() {
+        throw new UnsupportedTemporalUnitException(String.format("Cannot get the offset of: %s", this));
     }
 
     @Override
-    public boolean supportsTimeZone()
-    {
+    public boolean supportsTimeZone() {
         return false;
     }
 
     @Override
-    boolean hasTime()
-    {
+    boolean hasTime() {
         return false;
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other instanceof DateValue && value.equals( ((DateValue) other).value );
+    public boolean equals(Value other) {
+        return other instanceof DateValue && value.equals(((DateValue) other).value);
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeDate( value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeDate(value);
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return assertPrintable( () -> value.format( DateTimeFormatter.ISO_DATE ) );
+    public String prettyPrint() {
+        return assertPrintable(() -> value.format(DateTimeFormatter.ISO_DATE));
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.DATE;
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
-        return Long.hashCode( value.toEpochDay() );
+    protected int computeHashToMemoize() {
+        return Long.hashCode(value.toEpochDay());
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapDate( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapDate(this);
     }
 
     @Override
-    public DateValue add( DurationValue duration )
-    {
-        return replacement( assertValidArithmetic(
-                () -> value.plusMonths( duration.totalMonths() ).plusDays( duration.totalDays() ) ) );
+    public DateValue add(DurationValue duration) {
+        return replacement(assertValidArithmetic(
+                () -> value.plusMonths(duration.totalMonths()).plusDays(duration.totalDays())));
     }
 
     @Override
-    public DateValue sub( DurationValue duration )
-    {
-        return replacement( assertValidArithmetic(
-                () -> value.minusMonths( duration.totalMonths() ).minusDays( duration.totalDays() ) ) );
+    public DateValue sub(DurationValue duration) {
+        return replacement(assertValidArithmetic(
+                () -> value.minusMonths(duration.totalMonths()).minusDays(duration.totalDays())));
     }
 
     @Override
-    DateValue replacement( LocalDate date )
-    {
-        return date == value ? this : new DateValue( date );
+    DateValue replacement(LocalDate date) {
+        return date == value ? this : new DateValue(date);
     }
 
-    static final boolean QUARTER_DATES = flag( DateValue.class, "QUARTER_DATES", true );
+    static final boolean QUARTER_DATES = flag(DateValue.class, "QUARTER_DATES", true);
     /**
      * The regular expression pattern for parsing dates. All fields come in two versions - long and short form, the
      * long form is for formats containing dashes, the short form is for formats without dashes. The long format is
@@ -379,21 +315,22 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
      * </ul>
      */
     static final String DATE_PATTERN = "(?:"
-                                       // short formats - without dashes:
-                                       + "(?<shortYear>[0-9]{4})(?:"
-                                       + "(?<shortMonth>[0-9]{2})(?<shortDay>[0-9]{2})?|" // calendar date
-                                       + "W(?<shortWeek>[0-9]{2})(?<shortDOW>[0-9])?|" // week date
-                                       + (QUARTER_DATES ? "Q(?<shortQuarter>[0-9])(?<shortDOQ>[0-9]{2})?|" : "")
-                                       // quarter date
-                                       + "(?<shortDOY>[0-9]{3}))" + "|" // ordinal date
-                                       // long formats - includes dashes:
-                                       + "(?<longYear>(?:[0-9]{4}|[+-][0-9]{1,9}))(?:"
-                                       + "-(?<longMonth>[0-9]{1,2})(?:-(?<longDay>[0-9]{1,2}))?|" // calendar date
-                                       + "-?W(?<longWeek>[0-9]{1,2})(?:-(?<longDOW>[0-9]))?|" // week date
-                                       + (QUARTER_DATES ? "-?Q(?<longQuarter>[0-9])(?:-(?<longDOQ>[0-9]{1,2}))?|" : "")
-                                       // quarter date
-                                       + "-(?<longDOY>[0-9]{3}))?" + ")"; // ordinal date
-    private static final Pattern PATTERN = Pattern.compile( DATE_PATTERN );
+            // short formats - without dashes:
+            + "(?<shortYear>[0-9]{4})(?:"
+            + "(?<shortMonth>[0-9]{2})(?<shortDay>[0-9]{2})?|" // calendar date
+            + "W(?<shortWeek>[0-9]{2})(?<shortDOW>[0-9])?|" // week date
+            + (QUARTER_DATES ? "Q(?<shortQuarter>[0-9])(?<shortDOQ>[0-9]{2})?|" : "")
+            // quarter date
+            + "(?<shortDOY>[0-9]{3}))" + "|" // ordinal date
+            // long formats - includes dashes:
+            + "(?<longYear>(?:[0-9]{4}|[+-][0-9]{1,9}))(?:"
+            + "-(?<longMonth>[0-9]{1,2})(?:-(?<longDay>[0-9]{1,2}))?|" // calendar date
+            + "-?W(?<longWeek>[0-9]{1,2})(?:-(?<longDOW>[0-9]))?|" // week date
+            + (QUARTER_DATES ? "-?Q(?<longQuarter>[0-9])(?:-(?<longDOQ>[0-9]{1,2}))?|" : "")
+            // quarter date
+            + "-(?<longDOY>[0-9]{3}))?" + ")"; // ordinal date
+
+    private static final Pattern PATTERN = Pattern.compile(DATE_PATTERN);
 
     /**
      * Creates a {@link LocalDate} from a {@link Matcher} that matches the regular expression defined by
@@ -403,29 +340,46 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
      * @param matcher a {@link Matcher} that matches the regular expression defined in {@link #DATE_PATTERN}.
      * @return a {@link LocalDate} parsed from the given {@link Matcher}.
      */
-    static LocalDate parseDate( Matcher matcher )
-    {
-        String longYear = matcher.group( "longYear" );
-        if ( longYear != null )
-        {
-            return parse( matcher, parseInt( longYear ),
-                    "longMonth", "longDay", "longWeek", "longDOW", "longQuarter", "longDOQ", "longDOY" );
-        }
-        else
-        {
-            return parse( matcher, parseInt( matcher.group( "shortYear" ) ),
-                    "shortMonth", "shortDay", "shortWeek", "shortDOW", "shortQuarter", "shortDOQ", "shortDOY" );
+    static LocalDate parseDate(Matcher matcher) {
+        String longYear = matcher.group("longYear");
+        if (longYear != null) {
+            return parse(
+                    matcher,
+                    parseInt(longYear),
+                    "longMonth",
+                    "longDay",
+                    "longWeek",
+                    "longDOW",
+                    "longQuarter",
+                    "longDOQ",
+                    "longDOY");
+        } else {
+            return parse(
+                    matcher,
+                    parseInt(matcher.group("shortYear")),
+                    "shortMonth",
+                    "shortDay",
+                    "shortWeek",
+                    "shortDOW",
+                    "shortQuarter",
+                    "shortDOQ",
+                    "shortDOY");
         }
     }
 
     private static LocalDate parse(
-            Matcher matcher, int year,
-            String MONTH, String DAY, String WEEK, String DOW, String QUARTER, String DOQ, String DOY )
-    {
-        String month = matcher.group( MONTH );
-        if ( month != null )
-        {
-            var day = matcher.group( DAY );
+            Matcher matcher,
+            int year,
+            String MONTH,
+            String DAY,
+            String WEEK,
+            String DOW,
+            String QUARTER,
+            String DOQ,
+            String DOY) {
+        String month = matcher.group(MONTH);
+        if (month != null) {
+            var day = matcher.group(DAY);
 
             /*
              * Validation
@@ -435,160 +389,131 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
              * with a single digit for month (e.g. 2015-2), which are ambiguous
              * to ordinal dates, we fail in this validation.
              */
-            if ( day == null && month.length() == 1 )
-            {
+            if (day == null && month.length() == 1) {
                 throw new TemporalParseException(
-                        "Text cannot be parsed to a Date. Hint, year+month needs to have two digits for " +
-                        "month (e.g. 2015-02) and " + "ordinal dates three digits (e.g. 2015-032).", null
-                );
+                        "Text cannot be parsed to a Date. Hint, year+month needs to have two digits for "
+                                + "month (e.g. 2015-02) and " + "ordinal dates three digits (e.g. 2015-032).",
+                        null);
             }
 
-            return assertParsable( () -> LocalDate.of( year, parseInt( month ), optInt( day ) ) );
+            return assertParsable(() -> LocalDate.of(year, parseInt(month), optInt(day)));
         }
-        String week = matcher.group( WEEK );
-        if ( week != null )
-        {
-            return assertParsable( () -> localWeekDate( year, parseInt( week ), optInt( matcher.group( DOW ) ) ) );
+        String week = matcher.group(WEEK);
+        if (week != null) {
+            return assertParsable(() -> localWeekDate(year, parseInt(week), optInt(matcher.group(DOW))));
         }
-        String quarter = matcher.group( QUARTER );
-        if ( quarter != null )
-        {
-            return assertParsable(
-                    () -> localQuarterDate( year, parseInt( quarter ), optInt( matcher.group( DOQ ) ) ) );
+        String quarter = matcher.group(QUARTER);
+        if (quarter != null) {
+            return assertParsable(() -> localQuarterDate(year, parseInt(quarter), optInt(matcher.group(DOQ))));
         }
-        String doy = matcher.group( DOY );
-        if ( doy != null )
-        {
-            return assertParsable( () -> LocalDate.ofYearDay( year, parseInt( doy ) ) );
+        String doy = matcher.group(DOY);
+        if (doy != null) {
+            return assertParsable(() -> LocalDate.ofYearDay(year, parseInt(doy)));
         }
-        return assertParsable( () -> LocalDate.of( year, 1, 1 ) );
+        return assertParsable(() -> LocalDate.of(year, 1, 1));
     }
 
-    private static DateValue parse( Matcher matcher )
-    {
-        return new DateValue( parseDate( matcher ) );
+    private static DateValue parse(Matcher matcher) {
+        return new DateValue(parseDate(matcher));
     }
 
-    private static int optInt( String value )
-    {
-        return value == null ? 1 : parseInt( value );
+    private static int optInt(String value) {
+        return value == null ? 1 : parseInt(value);
     }
 
-    private static LocalDate localWeekDate( int year, int week, int dayOfWeek )
-    {
-        LocalDate weekOne = LocalDate.of( year, 1, 4 ); // the fourth is guaranteed to be in week 1 by definition
-        LocalDate withWeek = weekOne.with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, week );
+    private static LocalDate localWeekDate(int year, int week, int dayOfWeek) {
+        LocalDate weekOne = LocalDate.of(year, 1, 4); // the fourth is guaranteed to be in week 1 by definition
+        LocalDate withWeek = weekOne.with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, week);
         // the implementation of WEEK_OF_WEEK_BASED_YEAR uses addition to adjust the date, this means that it accepts
         // week 53 of years that don't have 53 weeks, so we have to guard for this:
-        if ( week == 53 && withWeek.get( IsoFields.WEEK_BASED_YEAR ) != year )
-        {
-            throw new InvalidArgumentException(
-                    String.format( "Year %d does not contain %d weeks.", year, week ) );
+        if (week == 53 && withWeek.get(IsoFields.WEEK_BASED_YEAR) != year) {
+            throw new InvalidArgumentException(String.format("Year %d does not contain %d weeks.", year, week));
         }
-        return withWeek.with( ChronoField.DAY_OF_WEEK, dayOfWeek );
+        return withWeek.with(ChronoField.DAY_OF_WEEK, dayOfWeek);
     }
 
-    private static LocalDate localQuarterDate( int year, int quarter, int dayOfQuarter )
-    {
+    private static LocalDate localQuarterDate(int year, int quarter, int dayOfQuarter) {
         // special handling for the range of Q1 and Q2, since they are shorter than Q3 and Q4
-        if ( quarter == 2 && dayOfQuarter == 92 )
-        {
-            throw new InvalidArgumentException( "Quarter 2 only has 91 days." );
+        if (quarter == 2 && dayOfQuarter == 92) {
+            throw new InvalidArgumentException("Quarter 2 only has 91 days.");
         }
         // instantiate the yearDate now, because we use it to know if it is a leap year
-        LocalDate yearDate = LocalDate.ofYearDay( year, dayOfQuarter ); // guess on the day
-        if ( quarter == 1 && dayOfQuarter > 90 && (!yearDate.isLeapYear() || dayOfQuarter == 92) )
-        {
-            throw new InvalidArgumentException( String.format(
-                    "Quarter 1 of %d only has %d days.", year, yearDate.isLeapYear() ? 91 : 90 ) );
+        LocalDate yearDate = LocalDate.ofYearDay(year, dayOfQuarter); // guess on the day
+        if (quarter == 1 && dayOfQuarter > 90 && (!yearDate.isLeapYear() || dayOfQuarter == 92)) {
+            throw new InvalidArgumentException(
+                    String.format("Quarter 1 of %d only has %d days.", year, yearDate.isLeapYear() ? 91 : 90));
         }
-        return yearDate
-                .with( IsoFields.QUARTER_OF_YEAR, quarter )
-                .with( IsoFields.DAY_OF_QUARTER, dayOfQuarter );
+        return yearDate.with(IsoFields.QUARTER_OF_YEAR, quarter).with(IsoFields.DAY_OF_QUARTER, dayOfQuarter);
     }
 
-    static final LocalDate DEFAULT_CALENDER_DATE = LocalDate
-            .of( TemporalFields.year.defaultValue, TemporalFields.month.defaultValue, TemporalFields.day.defaultValue );
+    static final LocalDate DEFAULT_CALENDER_DATE = LocalDate.of(
+            TemporalFields.year.defaultValue, TemporalFields.month.defaultValue, TemporalFields.day.defaultValue);
 
-    private static class DateBuilder extends Builder<DateValue>
-    {
+    private static class DateBuilder extends Builder<DateValue> {
         @Override
-        protected boolean supportsTimeZone()
-        {
+        protected boolean supportsTimeZone() {
             return false;
         }
 
         @Override
-        protected boolean supportsEpoch()
-        {
+        protected boolean supportsEpoch() {
             return false;
         }
 
-        DateBuilder( Supplier<ZoneId> defaultZone )
-        {
-            super( defaultZone );
+        DateBuilder(Supplier<ZoneId> defaultZone) {
+            super(defaultZone);
         }
 
         @Override
-        protected final boolean supportsDate()
-        {
+        protected final boolean supportsDate() {
             return true;
         }
 
         @Override
-        protected final boolean supportsTime()
-        {
+        protected final boolean supportsTime() {
             return false;
         }
 
-        private static LocalDate getDateOf( org.neo4j.values.AnyValue temporal )
-        {
-            if ( temporal instanceof TemporalValue v )
-            {
+        private static LocalDate getDateOf(org.neo4j.values.AnyValue temporal) {
+            if (temporal instanceof TemporalValue v) {
                 return v.getDatePart();
             }
-            throw new InvalidArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
+            throw new InvalidArgumentException(String.format("Cannot construct date from: %s", temporal));
         }
 
         @Override
-        public DateValue buildInternal()
-        {
+        public DateValue buildInternal() {
             LocalDate result;
-            if ( fields.containsKey( TemporalFields.date ) )
-            {
-                result = getDateOf( fields.get( TemporalFields.date ) );
-            }
-            else if ( fields.containsKey( TemporalFields.week ) )
-            {
+            if (fields.containsKey(TemporalFields.date)) {
+                result = getDateOf(fields.get(TemporalFields.date));
+            } else if (fields.containsKey(TemporalFields.week)) {
                 // Be sure to be in the start of the week based year (which can be later than 1st Jan)
                 result = DEFAULT_CALENDER_DATE
-                        .with( IsoFields.WEEK_BASED_YEAR,
-                                safeCastIntegral( TemporalFields.year.name(), fields.get( TemporalFields.year ),
-                                        TemporalFields.year.defaultValue ) )
-                        .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
-                        .with( ChronoField.DAY_OF_WEEK, 1 );
-            }
-            else
-            {
+                        .with(
+                                IsoFields.WEEK_BASED_YEAR,
+                                safeCastIntegral(
+                                        TemporalFields.year.name(),
+                                        fields.get(TemporalFields.year),
+                                        TemporalFields.year.defaultValue))
+                        .with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1)
+                        .with(ChronoField.DAY_OF_WEEK, 1);
+            } else {
                 result = DEFAULT_CALENDER_DATE;
             }
-            result = assignAllFields( result );
-            return date( result );
+            result = assignAllFields(result);
+            return date(result);
         }
 
-        static DateValue selectDate( org.neo4j.values.AnyValue date )
-        {
-            if ( date instanceof DateValue )
-            {
+        static DateValue selectDate(org.neo4j.values.AnyValue date) {
+            if (date instanceof DateValue) {
                 return (DateValue) date;
             }
-            return date( getDateOf( date ) );
+            return date(getDateOf(date));
         }
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return INSTANCE_SIZE;
     }
 }

@@ -49,7 +49,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should introduce variables when needed") {
-    //match (n) return n.y, sum(n.x)
+    // match (n) return n.y, sum(n.x)
     val aggregationMap = Map("count(n.prop)" -> count(prop("n", "prop")))
     val groupingMap = Map("n.bar" -> prop("n", "bar"))
     val projectionPlan = AggregatingQueryProjection(
@@ -66,7 +66,10 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = aggregation(startPlan, projectionPlan, InterestingOrder.empty, None, context)
     result should equal(
       Aggregation(
-        startPlan, groupingMap, aggregationMap)
+        startPlan,
+        groupingMap,
+        aggregationMap
+      )
     )
   }
 

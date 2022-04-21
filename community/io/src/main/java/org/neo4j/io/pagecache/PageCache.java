@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -27,10 +27,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Optional;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
-
-import static org.eclipse.collections.impl.factory.Sets.immutable;
 
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
@@ -40,8 +38,7 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
  * backed by implementations that map entire files into RAM, or implementations with smart
  * eviction strategies, trying to keep "hot" pages in RAM.
  */
-public interface PageCache extends AutoCloseable
-{
+public interface PageCache extends AutoCloseable {
     /**
      * The default {@link #pageSize()}.
      */
@@ -50,7 +47,7 @@ public interface PageCache extends AutoCloseable
     /**
      * Page reserved bytes
      */
-    int RESERVED_BYTES = Boolean.getBoolean( "internal.dbms.multiversioned.store.override" ) ? Long.BYTES * 3 : 0;
+    int RESERVED_BYTES = Boolean.getBoolean("internal.dbms.multiversioned.store.override") ? Long.BYTES * 3 : 0;
 
     /**
      * Ask for a handle to a paged file, backed by an empty set of file open options.
@@ -66,9 +63,8 @@ public interface PageCache extends AutoCloseable
      * @throws java.nio.file.NoSuchFileException if the given file does not exist.
      * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
      */
-    default PagedFile map( Path path, int pageSize, String databaseName ) throws IOException
-    {
-        return map( path, pageSize, databaseName, immutable.empty() );
+    default PagedFile map(Path path, int pageSize, String databaseName) throws IOException {
+        return map(path, pageSize, databaseName, immutable.empty());
     }
 
     /**
@@ -93,9 +89,9 @@ public interface PageCache extends AutoCloseable
      * {@link StandardOpenOption#CREATE} option was not specified.
      * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
      */
-    default PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        return map( path, pageSize, databaseName, openOptions, IOController.DISABLED );
+    default PagedFile map(Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        return map(path, pageSize, databaseName, openOptions, IOController.DISABLED);
     }
 
     /**
@@ -121,8 +117,13 @@ public interface PageCache extends AutoCloseable
      * {@link StandardOpenOption#CREATE} option was not specified.
      * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
      */
-    PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
-            IOController ioController ) throws IOException;
+    PagedFile map(
+            Path path,
+            int pageSize,
+            String databaseName,
+            ImmutableSet<OpenOption> openOptions,
+            IOController ioController)
+            throws IOException;
 
     /**
      * Ask for an already mapped paged file, backed by this page cache.
@@ -140,7 +141,7 @@ public interface PageCache extends AutoCloseable
      * empty {@link Optional} if no mapping exist.
      * @throws IOException if page cache has been closed or page eviction problems occur.
      */
-    Optional<PagedFile> getExistingMapping( Path path ) throws IOException;
+    Optional<PagedFile> getExistingMapping(Path path) throws IOException;
 
     /**
      * List a snapshot of the current file mappings.

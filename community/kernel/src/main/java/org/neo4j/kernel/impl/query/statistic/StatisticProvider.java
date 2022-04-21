@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.query.statistic;
 
-public interface StatisticProvider
-{
+public interface StatisticProvider {
     long getPageCacheHits();
 
     long getPageCacheMisses();

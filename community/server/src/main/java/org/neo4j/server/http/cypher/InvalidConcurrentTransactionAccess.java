@@ -21,16 +21,13 @@ package org.neo4j.server.http.cypher;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-class InvalidConcurrentTransactionAccess extends TransactionLifecycleException
-{
-    InvalidConcurrentTransactionAccess()
-    {
-        super( "The requested transaction is being used concurrently by another request." );
+class InvalidConcurrentTransactionAccess extends TransactionLifecycleException {
+    InvalidConcurrentTransactionAccess() {
+        super("The requested transaction is being used concurrently by another request.");
     }
 
     @Override
-    protected Status getStatusCode()
-    {
+    protected Status getStatusCode() {
         return Status.Transaction.TransactionAccessedConcurrently;
     }
 }

@@ -19,10 +19,9 @@
  */
 package org.neo4j.shell.test;
 
+import java.util.Locale;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-
-import java.util.Locale;
 
 /**
  * A helper class to mark tests as locale dependent. It has been introduced to capture / assert a couple of locale dependent tests. Alternatives that have been
@@ -33,24 +32,20 @@ import java.util.Locale;
  *     <li>Locally inside failing tests (discarded, duplicate work, will fail the next test)</li>
  * </ul>
  */
-public abstract class LocaleDependentTestBase
-{
+public abstract class LocaleDependentTestBase {
     private static Locale OLD_DEFAULT_LOCALE;
 
     @BeforeAll
-    static void enforceEnglishLocale()
-    {
+    static void enforceEnglishLocale() {
         OLD_DEFAULT_LOCALE = Locale.getDefault();
-        Locale.setDefault( Locale.ENGLISH );
+        Locale.setDefault(Locale.ENGLISH);
     }
 
     @AfterAll
-    static void restoreDefaultLocale()
-    {
-        if ( OLD_DEFAULT_LOCALE == null )
-        {
+    static void restoreDefaultLocale() {
+        if (OLD_DEFAULT_LOCALE == null) {
             return;
         }
-        Locale.setDefault( OLD_DEFAULT_LOCALE );
+        Locale.setDefault(OLD_DEFAULT_LOCALE);
     }
 }

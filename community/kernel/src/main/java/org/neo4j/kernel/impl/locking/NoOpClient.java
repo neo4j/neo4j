@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
@@ -30,81 +29,60 @@ import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
 
-public class NoOpClient implements Locks.Client
-{
+public class NoOpClient implements Locks.Client {
     @Override
-    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config )
-    {
-    }
+    public void initialize(LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config) {}
 
     @Override
-    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
-    {
-    }
+    public void acquireShared(LockTracer tracer, ResourceType resourceType, long... resourceIds)
+            throws AcquireLockTimeoutException {}
 
     @Override
-    public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
-    {
-    }
+    public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds)
+            throws AcquireLockTimeoutException {}
 
     @Override
-    public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
-    {
+    public boolean tryExclusiveLock(ResourceType resourceType, long resourceId) {
         return false;
     }
 
     @Override
-    public boolean trySharedLock( ResourceType resourceType, long resourceId )
-    {
+    public boolean trySharedLock(ResourceType resourceType, long resourceId) {
         return false;
     }
 
     @Override
-    public void releaseShared( ResourceType resourceType, long... resourceIds )
-    {
-    }
+    public void releaseShared(ResourceType resourceType, long... resourceIds) {}
 
     @Override
-    public void releaseExclusive( ResourceType resourceType, long... resourceIds )
-    {
-    }
+    public void releaseExclusive(ResourceType resourceType, long... resourceIds) {}
 
     @Override
-    public void prepareForCommit()
-    {
-    }
+    public void prepareForCommit() {}
 
     @Override
-    public void stop()
-    {
-    }
+    public void stop() {}
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 
     @Override
-    public long getTransactionId()
-    {
+    public long getTransactionId() {
         return -1;
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks()
-    {
+    public Stream<ActiveLock> activeLocks() {
         return Stream.empty();
     }
 
     @Override
-    public boolean holdsLock( long id, ResourceType resource, LockType lockType )
-    {
+    public boolean holdsLock(long id, ResourceType resource, LockType lockType) {
         return false;
     }
 
     @Override
-    public long activeLockCount()
-    {
+    public long activeLockCount() {
         return 0;
     }
 }

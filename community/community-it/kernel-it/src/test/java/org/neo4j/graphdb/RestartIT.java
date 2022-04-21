@@ -19,46 +19,39 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @TestDirectoryExtension
-class RestartIT
-{
+class RestartIT {
     @Inject
     private TestDirectory testDir;
 
     @Test
-    void shouldBeAbleToReadExistingStoreOnRestart() throws IOException
-    {
+    void shouldBeAbleToReadExistingStoreOnRestart() throws IOException {
         // Given an existing store
         testDir.cleanup();
         var storeDir = testDir.absolutePath();
-        var oldManagementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
+        var oldManagementService = new TestDatabaseManagementServiceBuilder(storeDir).build();
         oldManagementService.shutdown();
 
         // When start with that store
-        var managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
+        var managementService = new TestDatabaseManagementServiceBuilder(storeDir).build();
 
         // Then should be able to access it
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
 
-        try ( var tx = db.beginTx();
-              ResourceIterable<Node> allNodes = tx.getAllNodes() )
-        {
-            assertThat( allNodes ).isEmpty();
-        }
-        finally
-        {
+        try (var tx = db.beginTx();
+                ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+            assertThat(allNodes).isEmpty();
+        } finally {
             managementService.shutdown();
         }
     }

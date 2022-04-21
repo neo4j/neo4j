@@ -22,32 +22,29 @@ package org.neo4j.internal.kernel.api.security;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 
 /** Controls the capabilities of a KernelTransaction. */
-public interface AccessMode
-{
-    enum Static implements AccessMode
-    {
+public interface AccessMode {
+    enum Static implements AccessMode {
         /** No reading or writing allowed. */
-        ACCESS( false, false, false, false, false ),
+        ACCESS(false, false, false, false, false),
         /** No reading or writing allowed because of expired credentials. */
-        CREDENTIALS_EXPIRED( false, false, false, false, false ),
+        CREDENTIALS_EXPIRED(false, false, false, false, false),
 
         /** Allows reading data and schema, but not writing. */
-        READ( true, false, false, false, false ),
+        READ(true, false, false, false, false),
         /** Allows writing data */
-        WRITE_ONLY( false, true, false, false, false ),
+        WRITE_ONLY(false, true, false, false, false),
         /** Allows reading and writing data, but not schema. */
-        WRITE( true, true, false, false, false ),
+        WRITE(true, true, false, false, false),
         /** Allows reading and writing data and creating new tokens, but not schema. */
-        TOKEN_WRITE( true, true, true, false, false ),
+        TOKEN_WRITE(true, true, true, false, false),
         /** Allows reading and writing data and creating new tokens and changing schema. */
-        SCHEMA( true, true, true, true, false ),
+        SCHEMA(true, true, true, true, false),
         /** Allows all operations. */
-        FULL( true, true, true, true, true );
+        FULL(true, true, true, true, true);
 
         private final boolean read;
         private final boolean write;
@@ -55,8 +52,7 @@ public interface AccessMode
         private final boolean schema;
         private final boolean procedureBoost;
 
-        Static( boolean read, boolean write, boolean token, boolean schema, boolean procedureBoost )
-        {
+        Static(boolean read, boolean write, boolean token, boolean schema, boolean procedureBoost) {
             this.read = read;
             this.write = write;
             this.token = token;
@@ -65,225 +61,197 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsWrites()
-        {
+        public boolean allowsWrites() {
             return write;
         }
 
         @Override
-        public PermissionState allowsTokenCreates( PrivilegeAction action )
-        {
-            return PermissionState.fromAllowList( token);
+        public PermissionState allowsTokenCreates(PrivilegeAction action) {
+            return PermissionState.fromAllowList(token);
         }
 
         @Override
-        public boolean allowsSchemaWrites()
-        {
+        public boolean allowsSchemaWrites() {
             return schema;
         }
 
         @Override
-        public PermissionState allowsSchemaWrites( PrivilegeAction action )
-        {
-            return PermissionState.fromAllowList( schema );
+        public PermissionState allowsSchemaWrites(PrivilegeAction action) {
+            return PermissionState.fromAllowList(schema);
         }
 
         @Override
-        public boolean allowsShowIndex()
-        {
+        public boolean allowsShowIndex() {
             return schema;
         }
 
         @Override
-        public boolean allowsShowConstraint()
-        {
+        public boolean allowsShowConstraint() {
             return schema;
         }
 
         @Override
-        public boolean allowsTraverseAllLabels()
-        {
+        public boolean allowsTraverseAllLabels() {
             return read;
         }
 
         @Override
-        public boolean allowsTraverseAllNodesWithLabel( long label )
-        {
+        public boolean allowsTraverseAllNodesWithLabel(long label) {
             return read;
         }
 
         @Override
-        public boolean disallowsTraverseLabel( long label )
-        {
+        public boolean disallowsTraverseLabel(long label) {
             return false;
         }
 
         @Override
-        public boolean allowsTraverseNode( long... labels )
-        {
+        public boolean allowsTraverseNode(long... labels) {
             return read;
         }
 
         @Override
-        public boolean allowsTraverseAllRelTypes()
-        {
+        public boolean allowsTraverseAllRelTypes() {
             return read;
         }
 
         @Override
-        public boolean allowsTraverseRelType( int relType )
-        {
+        public boolean allowsTraverseRelType(int relType) {
             return read;
         }
 
         @Override
-        public boolean disallowsTraverseRelType( int relType )
-        {
+        public boolean disallowsTraverseRelType(int relType) {
             return false;
         }
 
         @Override
-        public boolean allowsReadPropertyAllLabels( int propertyKey )
-        {
+        public boolean allowsReadPropertyAllLabels(int propertyKey) {
             return read;
         }
 
         @Override
-        public boolean disallowsReadPropertyForSomeLabel( int propertyKey )
-        {
+        public boolean disallowsReadPropertyForSomeLabel(int propertyKey) {
             return false;
         }
 
         @Override
-        public boolean allowsReadNodeProperty( Supplier<TokenSet> labels, int propertyKey )
-        {
+        public boolean allowsReadNodeProperty(Supplier<TokenSet> labels, int propertyKey) {
             return read;
         }
 
         @Override
-        public boolean allowsReadPropertyAllRelTypes( int propertyKey )
-        {
+        public boolean allowsReadPropertyAllRelTypes(int propertyKey) {
             return read;
         }
 
         @Override
-        public boolean allowsReadRelationshipProperty( RelTypeSupplier relType, int propertyKey )
-        {
+        public boolean allowsReadRelationshipProperty(RelTypeSupplier relType, int propertyKey) {
             return read;
         }
 
         @Override
-        public boolean allowsSeePropertyKeyToken( int propertyKey )
-        {
+        public boolean allowsSeePropertyKeyToken(int propertyKey) {
             return read;
         }
 
         @Override
-        public PermissionState allowsExecuteProcedure( int procedureId )
-        {
+        public PermissionState allowsExecuteProcedure(int procedureId) {
             return PermissionState.EXPLICIT_GRANT;
         }
 
         @Override
-        public PermissionState shouldBoostProcedure( int procedureId )
-        {
-            return PermissionState.fromAllowList( procedureBoost );
+        public PermissionState shouldBoostProcedure(int procedureId) {
+            return PermissionState.fromAllowList(procedureBoost);
         }
 
         @Override
-        public PermissionState allowsExecuteFunction( int id )
-        {
+        public PermissionState allowsExecuteFunction(int id) {
             return PermissionState.EXPLICIT_GRANT;
         }
 
         @Override
-        public PermissionState shouldBoostFunction( int id )
-        {
-            return PermissionState.fromAllowList( procedureBoost );
+        public PermissionState shouldBoostFunction(int id) {
+            return PermissionState.fromAllowList(procedureBoost);
         }
 
         @Override
-        public PermissionState allowsExecuteAggregatingFunction( int id )
-        {
+        public PermissionState allowsExecuteAggregatingFunction(int id) {
             return PermissionState.EXPLICIT_GRANT;
         }
 
         @Override
-        public PermissionState shouldBoostAggregatingFunction( int id )
-        {
-            return PermissionState.fromAllowList( procedureBoost );
+        public PermissionState shouldBoostAggregatingFunction(int id) {
+            return PermissionState.fromAllowList(procedureBoost);
         }
 
         @Override
-        public boolean allowsSetLabel( long labelId )
-        {
+        public boolean allowsSetLabel(long labelId) {
             return write;
         }
 
         @Override
-        public boolean allowsRemoveLabel( long labelId )
-        {
+        public boolean allowsRemoveLabel(long labelId) {
             return write;
         }
 
         @Override
-        public boolean allowsCreateNode( int[] labelIds )
-        {
+        public boolean allowsCreateNode(int[] labelIds) {
             return write;
         }
 
         @Override
-        public boolean allowsDeleteNode( Supplier<TokenSet> labelSupplier )
-        {
+        public boolean allowsDeleteNode(Supplier<TokenSet> labelSupplier) {
             return write;
         }
 
         @Override
-        public boolean allowsCreateRelationship( int relType )
-        {
+        public boolean allowsCreateRelationship(int relType) {
             return write;
         }
 
         @Override
-        public boolean allowsDeleteRelationship( int relType )
-        {
+        public boolean allowsDeleteRelationship(int relType) {
             return write;
         }
 
         @Override
-        public boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey )
-        {
+        public boolean allowsSetProperty(Supplier<TokenSet> labels, int propertyKey) {
             return write;
         }
 
         @Override
-        public boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey )
-        {
+        public boolean allowsSetProperty(RelTypeSupplier relType, int propertyKey) {
             return write;
         }
     }
 
     boolean allowsWrites();
-    PermissionState allowsTokenCreates( PrivilegeAction action );
+
+    PermissionState allowsTokenCreates(PrivilegeAction action);
+
     boolean allowsSchemaWrites();
-    PermissionState allowsSchemaWrites( PrivilegeAction action );
+
+    PermissionState allowsSchemaWrites(PrivilegeAction action);
+
     boolean allowsShowIndex();
+
     boolean allowsShowConstraint();
 
     /** true if all nodes can be traversed */
     boolean allowsTraverseAllLabels();
 
     /** true if all nodes with this label always can be traversed */
-    boolean allowsTraverseAllNodesWithLabel( long label );
+    boolean allowsTraverseAllNodesWithLabel(long label);
 
     /** true if this label is blacklisted for traversal */
-    boolean disallowsTraverseLabel( long label );
+    boolean disallowsTraverseLabel(long label);
 
     /** true if a particular node with exactly these labels can be traversed.
      * @param labels the labels on the node to be checked. If labels only contains {@link org.neo4j.token.api.TokenConstants#ANY_LABEL} it will work
      *               the same as {@link #allowsTraverseAllLabels}
      */
-    boolean allowsTraverseNode( long... labels );
+    boolean allowsTraverseNode(long... labels);
 
     /** true if all relationships can be traversed */
     boolean allowsTraverseAllRelTypes();
@@ -293,30 +261,32 @@ public interface AccessMode
      * @param relType the relationship type to check access for. If relType is {@link org.neo4j.token.api.TokenConstants#ANY_RELATIONSHIP_TYPE} it will work
      *               the same as {@link #allowsTraverseAllRelTypes}
      */
-    boolean allowsTraverseRelType( int relType );
+    boolean allowsTraverseRelType(int relType);
 
     /**
      * true if the relType is blacklisted for traversal.
      * @param relType the relationship type to check access for.
      */
-    boolean disallowsTraverseRelType( int relType );
+    boolean disallowsTraverseRelType(int relType);
 
-    boolean allowsReadPropertyAllLabels( int propertyKey );
-    boolean disallowsReadPropertyForSomeLabel( int propertyKey );
-    boolean allowsReadNodeProperty( Supplier<TokenSet> labels, int propertyKey );
+    boolean allowsReadPropertyAllLabels(int propertyKey);
 
-    boolean allowsReadPropertyAllRelTypes( int propertyKey );
+    boolean disallowsReadPropertyForSomeLabel(int propertyKey);
 
-    boolean allowsReadRelationshipProperty( RelTypeSupplier relType, int propertyKey );
+    boolean allowsReadNodeProperty(Supplier<TokenSet> labels, int propertyKey);
 
-    boolean allowsSeePropertyKeyToken( int propertyKey );
+    boolean allowsReadPropertyAllRelTypes(int propertyKey);
+
+    boolean allowsReadRelationshipProperty(RelTypeSupplier relType, int propertyKey);
+
+    boolean allowsSeePropertyKeyToken(int propertyKey);
 
     /**
      * Check if execution of a procedure is allowed
      * @param procedureId id of the procedure
      * @return true if the procedure with this id is allowed to be executed
      */
-    PermissionState allowsExecuteProcedure( int procedureId );
+    PermissionState allowsExecuteProcedure(int procedureId);
 
     /**
      * Check if execution of a procedure should be done with boosted privileges.
@@ -325,14 +295,14 @@ public interface AccessMode
      * @param procedureId id of the procedure
      * @return true if the procedure with this id should be executed with boosted privileges
      */
-    PermissionState shouldBoostProcedure( int procedureId );
+    PermissionState shouldBoostProcedure(int procedureId);
 
     /**
      * Check if execution of a user defined function is allowed
      * @param id id of the function
      * @return true if the function with this id is allowed to be executed
      */
-    PermissionState allowsExecuteFunction( int id );
+    PermissionState allowsExecuteFunction(int id);
 
     /**
      * Check if execution of a user defined function should be done with boosted privileges.
@@ -341,14 +311,14 @@ public interface AccessMode
      * @param id id of the function
      * @return true if the function with this id should be executed with boosted privileges
      */
-    PermissionState shouldBoostFunction( int id );
+    PermissionState shouldBoostFunction(int id);
 
     /**
      * Check if execution of a aggregating user defined function is allowed
      * @param id id of the function
      * @return true if the function with this id is allowed to be executed
      */
-    PermissionState allowsExecuteAggregatingFunction( int id );
+    PermissionState allowsExecuteAggregatingFunction(int id);
 
     /**
      * Check if execution of a aggregating user defined function should be done with boosted privileges.
@@ -357,33 +327,31 @@ public interface AccessMode
      * @param id id of the function
      * @return true if the function with this id should be executed with boosted privileges
      */
-    PermissionState shouldBoostAggregatingFunction( int id );
+    PermissionState shouldBoostAggregatingFunction(int id);
 
-    boolean allowsSetLabel( long labelId );
+    boolean allowsSetLabel(long labelId);
 
-    boolean allowsRemoveLabel( long labelId );
+    boolean allowsRemoveLabel(long labelId);
 
-    boolean allowsCreateNode( int[] labelIds );
+    boolean allowsCreateNode(int[] labelIds);
 
-    boolean allowsDeleteNode( Supplier<TokenSet> labelSupplier );
+    boolean allowsDeleteNode(Supplier<TokenSet> labelSupplier);
 
-    boolean allowsCreateRelationship( int relType );
+    boolean allowsCreateRelationship(int relType);
 
-    boolean allowsDeleteRelationship( int relType );
+    boolean allowsDeleteRelationship(int relType);
 
-    boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey );
+    boolean allowsSetProperty(Supplier<TokenSet> labels, int propertyKey);
 
-    boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey );
+    boolean allowsSetProperty(RelTypeSupplier relType, int propertyKey);
 
     String name();
 
-    default Set<String> roles()
-    {
+    default Set<String> roles() {
         return Collections.emptySet();
     }
 
-    default boolean isOverridden()
-    {
+    default boolean isOverridden() {
         return false;
     }
 }

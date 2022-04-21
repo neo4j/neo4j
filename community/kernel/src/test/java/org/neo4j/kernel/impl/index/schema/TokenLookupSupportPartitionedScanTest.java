@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public class TokenLookupSupportPartitionedScanTest extends SupportPartitionedScanTestSuite
-{
-    TokenLookupSupportPartitionedScanTest()
-    {
-        super( TokenIndexProvider.CAPABILITY, supports( Query.TOKEN_LOOKUP ) );
+public class TokenLookupSupportPartitionedScanTest extends SupportPartitionedScanTestSuite {
+    TokenLookupSupportPartitionedScanTest() {
+        super(TokenIndexProvider.CAPABILITY, supports(Query.TOKEN_LOOKUP));
     }
 }

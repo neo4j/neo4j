@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
 
 object TokenType extends Enumeration {
+
   case object Label extends TokenType {
     def getOptIdForName(name: String, tokenContext: ReadTokenContext) = tokenContext.getOptLabelId(name)
 
@@ -48,7 +49,7 @@ object TokenType extends Enumeration {
   }
 }
 
-trait TokenType  {
+trait TokenType {
   def apply(name: String) = KeyToken.Unresolved(name, this)
 
   def apply(name: String, id: Int) = KeyToken.Resolved(name, id, this)
@@ -59,5 +60,3 @@ trait TokenType  {
 
   def getOrCreateIdForName(name: String, queryContext: QueryContext): Int
 }
-
-

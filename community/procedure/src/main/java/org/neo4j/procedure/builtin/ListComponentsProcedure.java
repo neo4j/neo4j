@@ -19,6 +19,14 @@
  */
 package org.neo4j.procedure.builtin;
 
+import static java.util.Collections.singletonList;
+import static org.neo4j.internal.helpers.collection.Iterators.asRawIterator;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
+
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -29,14 +37,6 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.VirtualValues;
-
-import static java.util.Collections.singletonList;
-import static org.neo4j.internal.helpers.collection.Iterators.asRawIterator;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
  * This procedure lists "components" and their version.
@@ -52,33 +52,31 @@ import static org.neo4j.values.storable.Values.utf8Value;
  * This would include things like Kernel, Storage Engine, Query Engines,
  * Bolt protocol versions et cetera.
  */
-public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
-{
-    private static final TextValue NEO4J_KERNEL = utf8Value( "Neo4j Kernel" );
+public class ListComponentsProcedure extends CallableProcedure.BasicProcedure {
+    private static final TextValue NEO4J_KERNEL = utf8Value("Neo4j Kernel");
     private final TextValue neo4jVersion;
     private final TextValue neo4jEdition;
 
-    public ListComponentsProcedure( QualifiedName name, String neo4jVersion, String neo4jEdition )
-    {
-        super( procedureSignature( name )
-                .out( "name", NTString )
+    public ListComponentsProcedure(QualifiedName name, String neo4jVersion, String neo4jEdition) {
+        super(procedureSignature(name)
+                .out("name", NTString)
                 // Since Bolt, Cypher and other components support multiple versions
                 // at the same time, list of versions rather than single version.
-                .out( "versions", NTList( NTString ) )
-                .out( "edition", NTString )
-                .mode( Mode.DBMS )
-                .description( "List DBMS components and their versions." )
+                .out("versions", NTList(NTString))
+                .out("edition", NTString)
+                .mode(Mode.DBMS)
+                .description("List DBMS components and their versions.")
                 .systemProcedure()
-                .build() );
-        this.neo4jVersion = stringValue( neo4jVersion );
-        this.neo4jEdition = stringValue( neo4jEdition );
+                .build());
+        this.neo4jVersion = stringValue(neo4jVersion);
+        this.neo4jEdition = stringValue(neo4jEdition);
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker )
-            throws ProcedureException
-    {
-        return asRawIterator( singletonList(
-                new AnyValue[]{NEO4J_KERNEL, VirtualValues.list( neo4jVersion ),  neo4jEdition }).iterator() );
+    public RawIterator<AnyValue[], ProcedureException> apply(
+            Context ctx, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
+        return asRawIterator(
+                singletonList(new AnyValue[] {NEO4J_KERNEL, VirtualValues.list(neo4jVersion), neo4jEdition})
+                        .iterator());
     }
 }

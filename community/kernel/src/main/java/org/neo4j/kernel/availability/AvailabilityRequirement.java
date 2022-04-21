@@ -25,7 +25,6 @@ package org.neo4j.kernel.availability;
  * who is blocking access to the database.
  */
 @FunctionalInterface
-public interface AvailabilityRequirement
-{
+public interface AvailabilityRequirement {
     String description();
 }

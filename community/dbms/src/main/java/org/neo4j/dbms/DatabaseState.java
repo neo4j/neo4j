@@ -20,15 +20,13 @@
 package org.neo4j.dbms;
 
 import java.util.Optional;
-
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
  * Instances of this class record the current {@link OperatorState} of a database with the given {@link NamedDatabaseId}
  *
  */
-public interface DatabaseState
-{
+public interface DatabaseState {
     NamedDatabaseId databaseId();
 
     OperatorState operatorState();

@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Represents the specific transactional context in which an index query is executed.
@@ -31,43 +31,35 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
  * Some index implementations, such as the fulltext schema indexes, prefer to take the transaction state into account themselves, rather than relying on
  * the index cursor implementations to do the transaction state filtering.
  */
-public interface QueryContext
-{
-    QueryContext NULL_CONTEXT = new QueryContext()
-    {
+public interface QueryContext {
+    QueryContext NULL_CONTEXT = new QueryContext() {
         @Override
-        public Read getRead()
-        {
-            throw new UnsupportedOperationException( "The NULL_CONTEXT QueryContext has no Read instance." );
+        public Read getRead() {
+            throw new UnsupportedOperationException("The NULL_CONTEXT QueryContext has no Read instance.");
         }
 
         @Override
-        public CursorFactory cursors()
-        {
-            throw new UnsupportedOperationException( "The NULL_CONTEXT QueryContext has no CursorFactory instance." );
+        public CursorFactory cursors() {
+            throw new UnsupportedOperationException("The NULL_CONTEXT QueryContext has no CursorFactory instance.");
         }
 
         @Override
-        public ReadableTransactionState getTransactionStateOrNull()
-        {
+        public ReadableTransactionState getTransactionStateOrNull() {
             return null;
         }
 
         @Override
-        public CursorContext cursorContext()
-        {
+        public CursorContext cursorContext() {
             return CursorContext.NULL_CONTEXT;
         }
 
         @Override
-        public MemoryTracker memoryTracker()
-        {
+        public MemoryTracker memoryTracker() {
             return INSTANCE;
         }
 
         @Override
-        public IndexMonitor monitor()
-        {
+        public IndexMonitor monitor() {
             return IndexMonitor.NO_MONITOR;
         }
     };

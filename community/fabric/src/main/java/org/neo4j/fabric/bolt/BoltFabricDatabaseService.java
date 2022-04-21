@@ -19,11 +19,12 @@
  */
 package org.neo4j.fabric.bolt;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltTransaction;
@@ -50,12 +51,10 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
-
-public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltFabricDatabaseService.class );
-    private static final long BOLT_TRANSACTION_SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltTransactionImpl.class );
+public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BoltFabricDatabaseService.class);
+    private static final long BOLT_TRANSACTION_SHALLOW_SIZE =
+            HeapEstimator.shallowSizeOfInstance(BoltTransactionImpl.class);
 
     private final FabricExecutor fabricExecutor;
     private final NamedDatabaseId namedDatabaseId;
@@ -65,14 +64,14 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
     private final TransactionBookmarkManagerFactory transactionBookmarkManagerFactory;
     private final MemoryTracker memoryTracker;
 
-    public BoltFabricDatabaseService( NamedDatabaseId namedDatabaseId,
-                                      FabricExecutor fabricExecutor,
-                                      FabricConfig config,
-                                      TransactionManager transactionManager,
-                                      LocalGraphTransactionIdTracker transactionIdTracker,
-                                      TransactionBookmarkManagerFactory transactionBookmarkManagerFactory,
-                                      MemoryTracker memoryTracker )
-    {
+    public BoltFabricDatabaseService(
+            NamedDatabaseId namedDatabaseId,
+            FabricExecutor fabricExecutor,
+            FabricConfig config,
+            TransactionManager transactionManager,
+            LocalGraphTransactionIdTracker transactionIdTracker,
+            TransactionBookmarkManagerFactory transactionBookmarkManagerFactory,
+            MemoryTracker memoryTracker) {
         this.namedDatabaseId = namedDatabaseId;
         this.config = config;
         this.transactionManager = transactionManager;
@@ -83,13 +82,18 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
     }
 
     @Override
-    public BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, List<Bookmark> bookmarks,
-                                             Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext )
-    {
-        memoryTracker.allocateHeap( BOLT_TRANSACTION_SHALLOW_SIZE );
+    public BoltTransaction beginTransaction(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo clientInfo,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            RoutingContext routingContext) {
+        memoryTracker.allocateHeap(BOLT_TRANSACTION_SHALLOW_SIZE);
 
-        if ( txTimeout == null )
-        {
+        if (txTimeout == null) {
             txTimeout = config.getTransactionTimeout();
         }
 
@@ -101,91 +105,77 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
                 KernelTransaction.Type.IMPLICIT == type,
                 txTimeout,
                 txMetadata,
-                TestOverrides.routingContext( routingContext )
-        );
+                TestOverrides.routingContext(routingContext));
 
-        var transactionBookmarkManager = transactionBookmarkManagerFactory.createTransactionBookmarkManager( transactionIdTracker );
-        transactionBookmarkManager.processSubmittedByClient( bookmarks );
+        var transactionBookmarkManager =
+                transactionBookmarkManagerFactory.createTransactionBookmarkManager(transactionIdTracker);
+        transactionBookmarkManager.processSubmittedByClient(bookmarks);
 
-        FabricTransaction fabricTransaction = transactionManager.begin( transactionInfo, transactionBookmarkManager );
-        return new BoltTransactionImpl( transactionInfo, fabricTransaction );
+        FabricTransaction fabricTransaction = transactionManager.begin(transactionInfo, transactionBookmarkManager);
+        return new BoltTransactionImpl(transactionInfo, fabricTransaction);
     }
 
     @Override
-    public NamedDatabaseId getNamedDatabaseId()
-    {
+    public NamedDatabaseId getNamedDatabaseId() {
         return namedDatabaseId;
     }
 
     @Override
-    public void freeTransaction()
-    {
-        memoryTracker.releaseHeap( BOLT_TRANSACTION_SHALLOW_SIZE );
+    public void freeTransaction() {
+        memoryTracker.releaseHeap(BOLT_TRANSACTION_SHALLOW_SIZE);
     }
 
-    public class BoltTransactionImpl implements BoltTransaction
-    {
+    public class BoltTransactionImpl implements BoltTransaction {
 
         private final FabricTransaction fabricTransaction;
 
-        BoltTransactionImpl( FabricTransactionInfo transactionInfo, FabricTransaction fabricTransaction )
-        {
+        BoltTransactionImpl(FabricTransactionInfo transactionInfo, FabricTransaction fabricTransaction) {
             this.fabricTransaction = fabricTransaction;
         }
 
         @Override
-        public void commit()
-        {
+        public void commit() {
             fabricTransaction.commit();
         }
 
         @Override
-        public void rollback()
-        {
+        public void rollback() {
             fabricTransaction.rollback();
         }
 
         @Override
-        public void close()
-        {
+        public void close() {}
+
+        @Override
+        public void markForTermination(Status reason) {
+            fabricTransaction.markForTermination(reason);
         }
 
         @Override
-        public void markForTermination( Status reason )
-        {
-            fabricTransaction.markForTermination( reason );
+        public void markForTermination() {
+            fabricTransaction.markForTermination(Terminated);
         }
 
         @Override
-        public void markForTermination()
-        {
-            fabricTransaction.markForTermination( Terminated );
-        }
-
-        @Override
-        public Optional<Status> getReasonIfTerminated()
-        {
+        public Optional<Status> getReasonIfTerminated() {
             return fabricTransaction.getReasonIfTerminated();
         }
 
         @Override
-        public BookmarkMetadata getBookmarkMetadata()
-        {
+        public BookmarkMetadata getBookmarkMetadata() {
             return fabricTransaction.getBookmarkManager().constructFinalBookmark();
         }
 
         @Override
-        public BoltQueryExecution executeQuery( String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber )
-        {
-            StatementResult statementResult = fabricExecutor.run( fabricTransaction, query, parameters );
-            final BoltQueryExecutionImpl queryExecution = new BoltQueryExecutionImpl( statementResult, subscriber, config );
-            try
-            {
+        public BoltQueryExecution executeQuery(
+                String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber) {
+            StatementResult statementResult = fabricExecutor.run(fabricTransaction, query, parameters);
+            final BoltQueryExecutionImpl queryExecution =
+                    new BoltQueryExecutionImpl(statementResult, subscriber, config);
+            try {
                 queryExecution.initialize();
-            }
-            catch ( Exception e )
-            {
-                QuerySubscriber.safelyOnError( subscriber, e );
+            } catch (Exception e) {
+                QuerySubscriber.safelyOnError(subscriber, e);
             }
             return queryExecution;
         }
@@ -194,8 +184,7 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
          * This is a hack to be able to get an InternalTransaction for the TestFabricTransaction tx wrapper
          */
         @Deprecated
-        public FabricTransaction getFabricTransaction()
-        {
+        public FabricTransaction getFabricTransaction() {
             return fabricTransaction;
         }
     }

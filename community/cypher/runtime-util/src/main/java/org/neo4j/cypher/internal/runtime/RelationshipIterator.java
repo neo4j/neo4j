@@ -20,60 +20,51 @@
 package org.neo4j.cypher.internal.runtime;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 
-public interface RelationshipIterator extends RelationshipVisitor.Home, LongIterator
-{
+public interface RelationshipIterator extends RelationshipVisitor.Home, LongIterator {
     /**
      * Can be called to visit the data about the most recent id returned from {@link #next()}.
      */
     @Override
-    <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
-            RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
+    <EXCEPTION extends Exception> boolean relationshipVisit(long relationshipId, RelationshipVisitor<EXCEPTION> visitor)
+            throws EXCEPTION;
 
     long startNodeId();
 
     long endNodeId();
 
-    default long otherNodeId( long node )
-    {
+    default long otherNodeId(long node) {
         return node == startNodeId() ? endNodeId() : startNodeId();
     }
 
     int typeId();
 
-    class Empty extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator implements RelationshipIterator
-    {
+    class Empty extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator implements RelationshipIterator {
         @Override
-        public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
-                RelationshipVisitor<EXCEPTION> visitor )
-        {   // Nothing to visit
+        public <EXCEPTION extends Exception> boolean relationshipVisit(
+                long relationshipId, RelationshipVisitor<EXCEPTION> visitor) { // Nothing to visit
             return false;
         }
 
         @Override
-        protected boolean fetchNext()
-        {
+        protected boolean fetchNext() {
             return false;
         }
 
         @Override
-        public long startNodeId()
-        {
+        public long startNodeId() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long endNodeId()
-        {
+        public long endNodeId() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public int typeId()
-        {
+        public int typeId() {
             throw new UnsupportedOperationException();
         }
     }

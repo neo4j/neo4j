@@ -21,24 +21,20 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class LeaseException extends RuntimeException implements Status.HasStatus
-{
+public class LeaseException extends RuntimeException implements Status.HasStatus {
     private final Status status;
 
-    public LeaseException( String message, Status status )
-    {
-        this( message, null, status );
+    public LeaseException(String message, Status status) {
+        this(message, null, status);
     }
 
-    public LeaseException( String message, Throwable cause, Status status )
-    {
-        super( message, cause );
+    public LeaseException(String message, Throwable cause, Status status) {
+        super(message, cause);
         this.status = status;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 }

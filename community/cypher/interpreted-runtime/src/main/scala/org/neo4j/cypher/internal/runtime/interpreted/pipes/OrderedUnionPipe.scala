@@ -28,8 +28,9 @@ import org.neo4j.cypher.internal.util.attribution.Id
 
 import java.util.Comparator
 
-case class OrderedUnionPipe(lhs: Pipe, rhs:Pipe, comparator: Comparator[ReadableRow])
-                           (val id: Id = Id.INVALID_ID) extends Pipe {
+case class OrderedUnionPipe(lhs: Pipe, rhs: Pipe, comparator: Comparator[ReadableRow])(val id: Id = Id.INVALID_ID)
+    extends Pipe {
+
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val leftRows = new PeekingIterator(lhs.createResults(state))
     val rightRows = new PeekingIterator(rhs.createResults(state))
@@ -38,7 +39,13 @@ case class OrderedUnionPipe(lhs: Pipe, rhs:Pipe, comparator: Comparator[Readable
 }
 
 object OrderedUnionPipe {
-  class OrderedUnionIterator[T](leftRows: PeekingIterator[T], rightRows: PeekingIterator[T], comparator: Comparator[_ >: T]) extends ClosingIterator[T] {
+
+  class OrderedUnionIterator[T](
+    leftRows: PeekingIterator[T],
+    rightRows: PeekingIterator[T],
+    comparator: Comparator[_ >: T]
+  ) extends ClosingIterator[T] {
+
     override protected[this] def closeMore(): Unit = {
       leftRows.close()
       rightRows.close()

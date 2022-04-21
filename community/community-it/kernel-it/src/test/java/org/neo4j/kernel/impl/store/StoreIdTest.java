@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
-
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -34,35 +37,31 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-class StoreIdTest
-{
+class StoreIdTest {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
     @ParameterizedTest
-    @CsvSource( {"standard,record-standard-1-1", "aligned,record-aligned-1-1"} )
-    void testRetrievalOfStoreId( GraphDatabaseSettings.DatabaseRecordFormat format, String expectedStoreVersion ) throws IOException
-    {
-        assertNull( StoreId.retrieveFromStore( fileSystem, databaseLayout, pageCache, NULL_CONTEXT ) );
-        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setFileSystem( fileSystem )
-                .setConfig( GraphDatabaseSettings.record_format_created_db, format )
+    @CsvSource({"standard,record-standard-1-1", "aligned,record-aligned-1-1"})
+    void testRetrievalOfStoreId(GraphDatabaseSettings.DatabaseRecordFormat format, String expectedStoreVersion)
+            throws IOException {
+        assertNull(StoreId.retrieveFromStore(fileSystem, databaseLayout, pageCache, NULL_CONTEXT));
+        var dbms = new TestDatabaseManagementServiceBuilder(databaseLayout)
+                .setFileSystem(fileSystem)
+                .setConfig(GraphDatabaseSettings.record_format_created_db, format)
                 .build();
         dbms.shutdown();
 
-        StoreId storeId = StoreId.retrieveFromStore( fileSystem, databaseLayout, pageCache, NULL_CONTEXT );
-        assertNotNull( storeId );
-        assertEquals( expectedStoreVersion, storeId.versionToUserString() );
+        StoreId storeId = StoreId.retrieveFromStore(fileSystem, databaseLayout, pageCache, NULL_CONTEXT);
+        assertNotNull(storeId);
+        assertEquals(expectedStoreVersion, storeId.versionToUserString());
     }
 }

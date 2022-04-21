@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.ckb.SoraniAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Sorani extends AnalyzerProvider
-{
-    public Sorani()
-    {
-        super( "sorani" );
+public class Sorani extends AnalyzerProvider {
+    public Sorani() {
+        super("sorani");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
-        return new SoraniAnalyzer( cleanStopWordSet( SoraniAnalyzer.getDefaultStopSet() ) );
+    public Analyzer createAnalyzer() {
+        return new SoraniAnalyzer(cleanStopWordSet(SoraniAnalyzer.getDefaultStopSet()));
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Sorani Kurdish analyzer with stemming and stop word filtering.";
     }
 }

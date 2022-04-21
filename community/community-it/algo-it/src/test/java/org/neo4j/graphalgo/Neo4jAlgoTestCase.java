@@ -19,9 +19,10 @@
  */
 package org.neo4j.graphalgo;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +30,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,175 +44,153 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 /**
  * Base class for test cases working on a NeoService. It sets up a NeoService
  * and a transaction.
  */
-public abstract class Neo4jAlgoTestCase
-{
+public abstract class Neo4jAlgoTestCase {
     protected static GraphDatabaseService graphDb;
     protected static SimpleGraphBuilder graph;
     private static DatabaseManagementService managementService;
 
-    public enum MyRelTypes implements RelationshipType
-    {
-        R1, R2, R3
+    public enum MyRelTypes implements RelationshipType {
+        R1,
+        R2,
+        R3
     }
 
     @BeforeAll
-    public static void setUpGraphDb()
-    {
+    public static void setUpGraphDb() {
         managementService = new TestDatabaseManagementServiceBuilder()
-                // There's a general issue with the traversal framework not closing traversal branches on not exhausting the traversal
-                // and it's made harder because it's public API and adding a close method is a breaking change. At some point it should
+                // There's a general issue with the traversal framework not closing traversal branches on not exhausting
+                // the traversal
+                // and it's made harder because it's public API and adding a close method is a breaking change. At some
+                // point it should
                 // be done, but perhaps in a major version.
-                .setConfig( GraphDatabaseInternalSettings.track_cursor_close, false )
-                .impermanent().build();
-        graphDb = managementService.database( DEFAULT_DATABASE_NAME );
-        graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
+                .setConfig(GraphDatabaseInternalSettings.track_cursor_close, false)
+                .impermanent()
+                .build();
+        graphDb = managementService.database(DEFAULT_DATABASE_NAME);
+        graph = new SimpleGraphBuilder(graphDb, MyRelTypes.R1);
     }
 
     @AfterAll
-    public static void tearDownGraphDb()
-    {
+    public static void tearDownGraphDb() {
         managementService.shutdown();
     }
 
     @AfterEach
-    public void tearDownTransactionAndGraph()
-    {
+    public void tearDownTransactionAndGraph() {
         graph.clear();
     }
 
-    protected static void assertPathDef( Path path, String... names )
-    {
+    protected static void assertPathDef(Path path, String... names) {
         int i = 0;
-        for ( Node node : path.nodes() )
-        {
+        for (Node node : path.nodes()) {
             assertEquals(
-                names[i++], node.getProperty( SimpleGraphBuilder.KEY_ID ), "Wrong node " + i + " in " + getPathDef( path ) );
+                    names[i++],
+                    node.getProperty(SimpleGraphBuilder.KEY_ID),
+                    "Wrong node " + i + " in " + getPathDef(path));
         }
-        assertEquals( names.length, i );
+        assertEquals(names.length, i);
     }
 
-    protected static void assertPath( Transaction tx, Path path, String commaSeparatedNodePath )
-    {
-        String[] nodeIds = commaSeparatedNodePath.split( "," );
+    protected static void assertPath(Transaction tx, Path path, String commaSeparatedNodePath) {
+        String[] nodeIds = commaSeparatedNodePath.split(",");
         Node[] nodes = new Node[nodeIds.length];
         int i = 0;
-        for ( String id : nodeIds )
-        {
-            nodes[i] = tx.getNodeById( graph.getNode( tx, id ).getId() );
+        for (String id : nodeIds) {
+            nodes[i] = tx.getNodeById(graph.getNode(tx, id).getId());
             i++;
         }
-        assertPath( path, nodes );
+        assertPath(path, nodes);
     }
 
-    protected static void assertPath( Path path, Node... nodes )
-    {
+    protected static void assertPath(Path path, Node... nodes) {
         int i = 0;
-        for ( Node node : path.nodes() )
-        {
+        for (Node node : path.nodes()) {
             assertEquals(
-                nodes[i++].getProperty( SimpleGraphBuilder.KEY_ID ), node.getProperty( SimpleGraphBuilder.KEY_ID ),
-                "Wrong node " + i + " in " + getPathDef( path ) );
+                    nodes[i++].getProperty(SimpleGraphBuilder.KEY_ID),
+                    node.getProperty(SimpleGraphBuilder.KEY_ID),
+                    "Wrong node " + i + " in " + getPathDef(path));
         }
-        assertEquals( nodes.length, i );
+        assertEquals(nodes.length, i);
     }
 
-    protected static <E> void assertContains( Iterable<E> actual, E... expected )
-    {
-        Set<E> expectation = new HashSet<>( Arrays.asList( expected ) );
-        for ( E element : actual )
-        {
-            if ( !expectation.remove( element ) )
-            {
-                fail( "unexpected element <" + element + ">" );
+    protected static <E> void assertContains(Iterable<E> actual, E... expected) {
+        Set<E> expectation = new HashSet<>(Arrays.asList(expected));
+        for (E element : actual) {
+            if (!expectation.remove(element)) {
+                fail("unexpected element <" + element + ">");
             }
         }
-        if ( !expectation.isEmpty() )
-        {
-            fail( "the expected elements <" + expectation
-                  + "> were not contained" );
+        if (!expectation.isEmpty()) {
+            fail("the expected elements <" + expectation + "> were not contained");
         }
     }
 
-    protected static String getPathDef( Path path )
-    {
+    protected static String getPathDef(Path path) {
         StringBuilder builder = new StringBuilder();
-        for ( Node node : path.nodes() )
-        {
-            if ( builder.length() > 0 )
-            {
-                builder.append( ',' );
+        for (Node node : path.nodes()) {
+            if (builder.length() > 0) {
+                builder.append(',');
             }
-            builder.append( node.getProperty( SimpleGraphBuilder.KEY_ID ) );
+            builder.append(node.getProperty(SimpleGraphBuilder.KEY_ID));
         }
         return builder.toString();
     }
 
-    private static void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
-    {
+    private static void assertPaths(Iterable<? extends Path> paths, List<String> pathDefs) {
         List<String> unexpectedDefs = new ArrayList<>();
-        try ( ResourceIterator<? extends Path> iterator = Iterators.asResourceIterator( paths.iterator() ) )
-        {
-            while ( iterator.hasNext() )
-            {
+        try (ResourceIterator<? extends Path> iterator = Iterators.asResourceIterator(paths.iterator())) {
+            while (iterator.hasNext()) {
                 Path path = iterator.next();
 
-                String pathDef = getPathDef( path );
-                int index = pathDefs.indexOf( pathDef );
-                if ( index != -1 )
-                {
-                    pathDefs.remove( index );
-                }
-                else
-                {
-                    unexpectedDefs.add( getPathDef( path ) );
+                String pathDef = getPathDef(path);
+                int index = pathDefs.indexOf(pathDef);
+                if (index != -1) {
+                    pathDefs.remove(index);
+                } else {
+                    unexpectedDefs.add(getPathDef(path));
                 }
             }
         }
-        assertTrue( unexpectedDefs.isEmpty(), "These unexpected paths were found: " + unexpectedDefs +
-                ". In addition these expected paths weren't found:" + pathDefs );
-        assertTrue( pathDefs.isEmpty(), "These were expected, but not found: " + pathDefs );
+        assertTrue(
+                unexpectedDefs.isEmpty(),
+                "These unexpected paths were found: " + unexpectedDefs
+                        + ". In addition these expected paths weren't found:" + pathDefs);
+        assertTrue(pathDefs.isEmpty(), "These were expected, but not found: " + pathDefs);
     }
 
-    protected static void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
-    {
-        assertPaths( paths, new ArrayList<>( Arrays.asList( pathDefinitions ) ) );
+    protected static void assertPaths(Iterable<? extends Path> paths, String... pathDefinitions) {
+        assertPaths(paths, new ArrayList<>(Arrays.asList(pathDefinitions)));
     }
 
-    protected static void assertPathsWithPaths( Iterable<? extends Path> actualPaths, Path... expectedPaths )
-    {
-        List<String> pathDefs = new ArrayList<>( );
-        for ( Path path : expectedPaths )
-        {
-            pathDefs.add( getPathDef( path ) );
+    protected static void assertPathsWithPaths(Iterable<? extends Path> actualPaths, Path... expectedPaths) {
+        List<String> pathDefs = new ArrayList<>();
+        for (Path path : expectedPaths) {
+            pathDefs.add(getPathDef(path));
         }
-        assertPaths( actualPaths, pathDefs );
+        assertPaths(actualPaths, pathDefs);
     }
 
-    protected static void assertPathDef( Path expected, Path actual )
-    {
+    protected static void assertPathDef(Path expected, Path actual) {
         int expectedLength = expected.length();
         int actualLength = actual.length();
         assertEquals(
-            expectedLength, actualLength, "Actual path length " + actualLength + " differ from expected path length " + expectedLength );
+                expectedLength,
+                actualLength,
+                "Actual path length " + actualLength + " differ from expected path length " + expectedLength);
         Iterator<Node> expectedNodes = expected.nodes().iterator();
         Iterator<Node> actualNodes = actual.nodes().iterator();
         int position = 0;
-        while ( expectedNodes.hasNext() && actualNodes.hasNext() )
-        {
+        while (expectedNodes.hasNext() && actualNodes.hasNext()) {
             assertEquals(
-                expectedNodes.next().getProperty( SimpleGraphBuilder.KEY_ID ),
-                    actualNodes.next().getProperty( SimpleGraphBuilder.KEY_ID ), "Path differ on position " + position +
-                                  ". Expected " + getPathDef( expected ) +
-                                  ", actual " + getPathDef( actual ) );
+                    expectedNodes.next().getProperty(SimpleGraphBuilder.KEY_ID),
+                    actualNodes.next().getProperty(SimpleGraphBuilder.KEY_ID),
+                    "Path differ on position " + position + ". Expected "
+                            + getPathDef(expected) + ", actual "
+                            + getPathDef(actual));
             position++;
         }
     }

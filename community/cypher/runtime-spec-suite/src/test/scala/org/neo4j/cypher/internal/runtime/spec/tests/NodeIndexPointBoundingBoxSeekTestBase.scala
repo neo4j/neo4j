@@ -36,29 +36,38 @@ import org.neo4j.values.storable.Values.pointValue
 import scala.util.Random
 
 abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
-                                                                              edition: Edition[CONTEXT],
-                                                                              runtime: CypherRuntime[CONTEXT],
-                                                                              sizeHint: Int
-                                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should seek 2d cartesian points") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN, i, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        "{x: 2.0, y: 2.0, crs: 'cartesian'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
   }
@@ -66,21 +75,30 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should seek 3d cartesian points") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", "{x: 2.0, y: 2.0, z: 2.0, crs: 'cartesian-3d'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}",
+        "{x: 2.0, y: 2.0, z: 2.0, crs: 'cartesian-3d'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
   }
@@ -88,96 +106,131 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should seek 2d geographic points") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(180, {
-        case i => Map("location" -> pointValue(WGS_84, i % 180, 0))
-      }, "Place")
+      nodePropertyGraph(
+        180,
+        {
+          case i => Map("location" -> pointValue(WGS_84, i % 180, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", "{longitude: 10.0, latitude: 0.0, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}",
+        "{longitude: 10.0, latitude: 0.0, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5 , 6, 7, 8, 9, 10)))
+    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
   }
 
   test("should seek 3d geographic points") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(180, {
-        case i => Map("location" -> pointValue(WGS_84_3D, i % 180, 0, 0))
-      }, "Place")
+      nodePropertyGraph(
+        180,
+        {
+          case i => Map("location" -> pointValue(WGS_84_3D, i % 180, 0, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-                              "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
         "{longitude: 10.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
-        indexType = IndexType.POINT)
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5 , 6, 7, 8, 9, 10)))
+    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
   }
-
 
   test("should cache properties") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN, i, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("cache[n.location] AS location")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}",
-                              "{x: 2.0, y: 2.0, crs: 'cartesian'}",
-                              getValue = GetValue,
-                              indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        "{x: 2.0, y: 2.0, crs: 'cartesian'}",
+        getValue = GetValue,
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location")
-      .withRows(singleColumn(List(pointValue(CARTESIAN, 0, 0),
-                                  pointValue(CARTESIAN, 1, 0),
-                                  pointValue(CARTESIAN, 2, 0))))
+      .withRows(singleColumn(List(
+        pointValue(CARTESIAN, 0, 0),
+        pointValue(CARTESIAN, 1, 0),
+        pointValue(CARTESIAN, 2, 0)
+      )))
   }
 
   test("should handle bbox on the north-western hemisphere") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 50, latitude: 50, crs: 'wgs-84'}", "{longitude: 60, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 50, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: 60, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -191,23 +244,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox on the north-eastern hemisphere") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: -60, latitude: 50, crs: 'wgs-84'}", "{longitude: -50, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: -60, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: -50, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -221,23 +283,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox on the south-western hemisphere") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 50, latitude: -60, crs: 'wgs-84'}", "{longitude: 60, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 50, latitude: -60, crs: 'wgs-84'}",
+        "{longitude: 60, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -251,23 +322,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox on the south-eastern hemisphere") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: -60, latitude: -60, crs: 'wgs-84'}", "{longitude: -50, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: -60, latitude: -60, crs: 'wgs-84'}",
+        "{longitude: -50, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -281,28 +361,37 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox crossing the dateline") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 170, latitude: 50, crs: 'wgs-84'}", "{longitude: -170, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 170, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: -170, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
       val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
-      (longitude >= 170 || longitude <= -170) && (latitude>= 50 && latitude <= 60)
+      (longitude >= 170 || longitude <= -170) && (latitude >= 50 && latitude <= 60)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
   }
@@ -310,23 +399,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox crossing the equator") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(180, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        180,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 5, latitude: -10, crs: 'wgs-84'}", "{longitude: 10, latitude: 10, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 5, latitude: -10, crs: 'wgs-84'}",
+        "{longitude: 10, latitude: 10, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -339,28 +437,37 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox crossing the dateline and the equator") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 170, latitude: -10, crs: 'wgs-84'}", "{longitude: -170, latitude: 10, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 170, latitude: -10, crs: 'wgs-84'}",
+        "{longitude: -170, latitude: 10, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
       val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
-      (longitude >= 170 || longitude <= -170) && (latitude>= -10 && latitude <= 10)
+      (longitude >= 170 || longitude <= -170) && (latitude >= -10 && latitude <= 10)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
   }
@@ -368,23 +475,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox with lowerLeft east of upperRight on the north-western hemisphere") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 20, latitude: 50, crs: 'wgs-84'}", "{longitude: 10, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 20, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: 10, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -397,23 +513,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox with lowerLeft east of upperRight on the north-eastern hemisphere") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: -10, latitude: 50, crs: 'wgs-84'}", "{longitude: -20, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: -10, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: -20, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -426,23 +551,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox with lowerLeft east of upperRight on the south-western hemisphere") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 20, latitude: -60, crs: 'wgs-84'}", "{longitude: 10, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 20, latitude: -60, crs: 'wgs-84'}",
+        "{longitude: 10, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -455,23 +589,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox with lowerLeft east of upperRight on the south-eastern hemisphere") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: -10, latitude: -60, crs: 'wgs-84'}", "{longitude: -20, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: -10, latitude: -60, crs: 'wgs-84'}",
+        "{longitude: -20, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -484,23 +627,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle bbox crossing the dateline with lowerLeft east of upperRight") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: -170, latitude: 50, crs: 'wgs-84'}", "{longitude: 170, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: -170, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: 170, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -513,23 +665,32 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("bbox with lowerLeft north of upperRight is empty") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(180, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS_84, longitude, latitude ))
-      }, "Place")
+      nodePropertyGraph(
+        180,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            Map("location" -> pointValue(WGS_84, longitude, latitude))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 10, latitude: 50, crs: 'wgs-84'}", "{longitude: 20, latitude: 40, crs: 'wgs-84'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 10, latitude: 50, crs: 'wgs-84'}",
+        "{longitude: 20, latitude: 40, crs: 'wgs-84'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n").withNoRows()
   }
@@ -537,24 +698,33 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle 3D bbox") {
     val nodes = given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(sizeHint, {
-        case _ =>
-          val longitude = 180 - Random.nextInt(361)
-          val latitude = 90 - Random.nextInt(181)
-          val height = Random.nextInt(1000)
-          Map("location" -> pointValue(WGS_84_3D, longitude, latitude, height ))
-      }, "Place")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ =>
+            val longitude = 180 - Random.nextInt(361)
+            val latitude = 90 - Random.nextInt(181)
+            val height = Random.nextInt(1000)
+            Map("location" -> pointValue(WGS_84_3D, longitude, latitude, height))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{longitude: 50, latitude: 50, height: 100, crs: 'wgs-84-3d'}", "{longitude: 60, latitude: 60, height: 200, crs: 'wgs-84-3d'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{longitude: 50, latitude: 50, height: 100, crs: 'wgs-84-3d'}",
+        "{longitude: 60, latitude: 60, height: 200, crs: 'wgs-84-3d'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
       val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
@@ -562,8 +732,8 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       val height = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(2)
 
       (longitude >= 50 && longitude <= 60) &&
-        (latitude >= 50 && latitude <= 60) &&
-        (height >= 100 && height <= 200)
+      (latitude >= 50 && latitude <= 60) &&
+      (height >= 100 && height <= 200)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
   }
@@ -571,33 +741,58 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   test("should ignore non-points and points with different CRS") {
     given {
       nodeIndex(IndexType.POINT, "Place", "location")
-      nodePropertyGraph(100, {
-        case i => Map("location" -> i)
-      }, "Place")
-      nodePropertyGraph(100, {
-        case i => Map("location" -> pointValue(WGS_84, i, 0))
-      }, "Place")
-      nodePropertyGraph(100, {
-        case i => Map("location" -> pointValue(WGS_84_3D, i, 0, 0))
-      }, "Place")
-      nodePropertyGraph(100, {
-        case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
-      }, "Place")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
-      }, "Place")
+      nodePropertyGraph(
+        100,
+        {
+          case i => Map("location" -> i)
+        },
+        "Place"
+      )
+      nodePropertyGraph(
+        100,
+        {
+          case i => Map("location" -> pointValue(WGS_84, i, 0))
+        },
+        "Place"
+      )
+      nodePropertyGraph(
+        100,
+        {
+          case i => Map("location" -> pointValue(WGS_84_3D, i, 0, 0))
+        },
+        "Place"
+      )
+      nodePropertyGraph(
+        100,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
+        },
+        "Place"
+      )
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN, i, 0))
+        },
+        "Place"
+      )
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
-        "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}",
-        indexType = IndexType.POINT)
+      .pointBoundingBoxNodeIndexSeekExpr(
+        "n",
+        "Place",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        "{x: 2.0, y: 2.0, crs: 'cartesian'}",
+        indexType = IndexType.POINT
+      )
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
   }

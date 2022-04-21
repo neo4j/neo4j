@@ -19,16 +19,20 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.analysis.Analyzer;
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAnalyzer;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
-
+import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.analysis.Analyzer;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.FulltextSettings;
@@ -82,22 +86,12 @@ import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAnalyzer;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
-
-public class FulltextIndexProvider extends IndexProvider
-{
-    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = values ->
-    {
-        for ( final var value : values )
-        {
-            if ( value != null &&
-                 (value.valueGroup().category() == ValueCategory.TEXT ||
-                  value.valueGroup().category() == ValueCategory.TEXT_ARRAY) )
-            {
+public class FulltextIndexProvider extends IndexProvider {
+    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = values -> {
+        for (final var value : values) {
+            if (value != null
+                    && (value.valueGroup().category() == ValueCategory.TEXT
+                            || value.valueGroup().category() == ValueCategory.TEXT_ARRAY)) {
                 return false;
             }
         }
@@ -114,35 +108,40 @@ public class FulltextIndexProvider extends IndexProvider
     private final IndexUpdateSink indexUpdateSink;
     private final IndexStorageFactory indexStorageFactory;
 
-    public FulltextIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
-            FileSystemAbstraction fileSystem, Config config, TokenHolders tokenHolders, DirectoryFactory directoryFactory,
-            DatabaseReadOnlyChecker readOnlyChecker, JobScheduler scheduler, InternalLog log )
-    {
-        super( descriptor, directoryStructureFactory );
+    public FulltextIndexProvider(
+            IndexProviderDescriptor descriptor,
+            IndexDirectoryStructure.Factory directoryStructureFactory,
+            FileSystemAbstraction fileSystem,
+            Config config,
+            TokenHolders tokenHolders,
+            DirectoryFactory directoryFactory,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            JobScheduler scheduler,
+            InternalLog log) {
+        super(descriptor, directoryStructureFactory);
         this.fileSystem = fileSystem;
         this.config = config;
         this.tokenHolders = tokenHolders;
         this.readOnlyChecker = readOnlyChecker;
         this.log = log;
 
-        defaultAnalyzerName = config.get( FulltextSettings.fulltext_default_analyzer );
-        defaultEventuallyConsistentSetting = config.get( FulltextSettings.eventually_consistent );
-        indexUpdateSink = new IndexUpdateSink( scheduler, config.get( FulltextSettings.eventually_consistent_index_update_queue_max_length ) );
-        indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory, directoryStructure() );
+        defaultAnalyzerName = config.get(FulltextSettings.fulltext_default_analyzer);
+        defaultEventuallyConsistentSetting = config.get(FulltextSettings.eventually_consistent);
+        indexUpdateSink = new IndexUpdateSink(
+                scheduler, config.get(FulltextSettings.eventually_consistent_index_update_queue_max_length));
+        indexStorageFactory = buildIndexStorageFactory(fileSystem, directoryFactory, directoryStructure());
     }
 
-    private static IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-            IndexDirectoryStructure structure )
-    {
-        return new IndexStorageFactory( directoryFactory, fileSystem, structure );
+    private static IndexStorageFactory buildIndexStorageFactory(
+            FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory, IndexDirectoryStructure structure) {
+        return new IndexStorageFactory(directoryFactory, fileSystem, structure);
     }
 
-    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor ) throws IOException
-    {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, readOnlyChecker, config ).withIndexStorage( indexStorage ).build() )
-        {
-            if ( index.exists() )
-            {
+    private boolean indexIsOnline(PartitionedIndexStorage indexStorage, IndexDescriptor descriptor) throws IOException {
+        try (SchemaIndex index = LuceneSchemaIndexBuilder.create(descriptor, readOnlyChecker, config)
+                .withIndexStorage(indexStorage)
+                .build()) {
+            if (index.exists()) {
                 index.open();
                 return index.isOnline();
             }
@@ -150,248 +149,226 @@ public class FulltextIndexProvider extends IndexProvider
         }
     }
 
-    private PartitionedIndexStorage getIndexStorage( long indexId )
-    {
-        return indexStorageFactory.indexStorageOf( indexId );
+    private PartitionedIndexStorage getIndexStorage(long indexId) {
+        return indexStorageFactory.indexStorageOf(indexId);
     }
 
     @Override
-    public void shutdown() throws Exception
-    {
+    public void shutdown() throws Exception {
         // Closing the index storage factory also closes all Lucene Directory instances.
-        // This has to be done at shutdown, which happens after all of the index accessors have been closed, and thus committed any pent up changes.
+        // This has to be done at shutdown, which happens after all of the index accessors have been closed, and thus
+        // committed any pent up changes.
         indexStorageFactory.close();
     }
 
     @Override
-    public IndexDescriptor completeConfiguration( IndexDescriptor index )
-    {
+    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
         IndexConfig indexConfig = index.getIndexConfig();
-        indexConfig = addMissingDefaultIndexConfig( indexConfig );
-        index = index.withIndexConfig( indexConfig );
-        if ( index.getCapability().equals( IndexCapability.NO_CAPABILITY ) )
-        {
-            index = index.withIndexCapability( getCapability( index ) );
+        indexConfig = addMissingDefaultIndexConfig(indexConfig);
+        index = index.withIndexConfig(indexConfig);
+        if (index.getCapability().equals(IndexCapability.NO_CAPABILITY)) {
+            index = index.withIndexCapability(getCapability(index));
         }
         return index;
     }
 
-    private static IndexCapability getCapability( IndexDescriptor index )
-    {
-        return new FulltextIndexCapability( isEventuallyConsistent( index ) );
+    private static IndexCapability getCapability(IndexDescriptor index) {
+        return new FulltextIndexCapability(isEventuallyConsistent(index));
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
-                                        ImmutableSet<OpenOption> openOptions )
-    {
-        return defaultIfEmpty( getIndexStorage( descriptor.getId() ).getStoredIndexFailure(), StringUtils.EMPTY );
+    public String getPopulationFailure(
+            IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+        return defaultIfEmpty(getIndexStorage(descriptor.getId()).getStoredIndexFailure(), StringUtils.EMPTY);
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor index, CursorContext cursorContext,
-                                               ImmutableSet<OpenOption> openOptions )
-    {
-        PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
+    public InternalIndexState getInitialState(
+            IndexDescriptor index, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+        PartitionedIndexStorage indexStorage = getIndexStorage(index.getId());
         String failure = indexStorage.getStoredIndexFailure();
-        if ( failure != null )
-        {
+        if (failure != null) {
             return InternalIndexState.FAILED;
         }
 
         // Verify that the index configuration is still valid.
         // For instance, that it doesn't refer to an analyzer that has since been removed.
-        try
-        {
-            validateIndexRef( index );
-        }
-        catch ( Exception e )
-        {
-            try
-            {
-                indexStorage.storeIndexFailure( Exceptions.stringify( e ) );
-            }
-            catch ( IOException ex )
-            {
-                ex.addSuppressed( e );
-                log.warn( "Failed to persist index failure. Index failure added as suppressed exception.", ex );
+        try {
+            validateIndexRef(index);
+        } catch (Exception e) {
+            try {
+                indexStorage.storeIndexFailure(Exceptions.stringify(e));
+            } catch (IOException ex) {
+                ex.addSuppressed(e);
+                log.warn("Failed to persist index failure. Index failure added as suppressed exception.", ex);
             }
             return InternalIndexState.FAILED;
         }
 
-        try
-        {
-            return indexIsOnline( indexStorage, index ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
-        }
-        catch ( IOException e )
-        {
+        try {
+            return indexIsOnline(indexStorage, index) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+        } catch (IOException e) {
             return InternalIndexState.POPULATING;
         }
     }
 
     @Override
-    public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
-    {
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
+    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
+        PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
         DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableIndex<>(
-                new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor, config ) );
-        log.debug( "Creating dropper for fulltext schema index: %s", descriptor );
-        return new LuceneMinimalIndexAccessor<>( descriptor, fulltextIndex, isReadOnly() );
+                new DroppableLuceneIndex<>(indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor, config));
+        log.debug("Creating dropper for fulltext schema index: %s", descriptor);
+        return new LuceneMinimalIndexAccessor<>(descriptor, fulltextIndex, isReadOnly());
     }
 
-    private boolean isReadOnly()
-    {
+    private boolean isReadOnly() {
         return readOnlyChecker.isReadOnly();
     }
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
-                                        ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                        ImmutableSet<OpenOption> openOptions )
-    {
-        if ( isReadOnly() )
-        {
-            throw new UnsupportedOperationException( "Can't create populator for read only index" );
+    public IndexPopulator getPopulator(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        if (isReadOnly()) {
+            throw new UnsupportedOperationException("Can't create populator for read only index");
         }
-        try
-        {
-            PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-            Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
-            String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
-            DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
-                    .create( descriptor, config, readOnlyChecker, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
-                    .withFileSystem( fileSystem )
-                    .withIndexStorage( indexStorage )
-                    .withPopulatingMode( true )
+        try {
+            PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
+            Analyzer analyzer = createAnalyzer(descriptor, tokenNameLookup);
+            String[] propertyNames = createPropertyNames(descriptor, tokenNameLookup);
+            DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder.create(
+                            descriptor,
+                            config,
+                            readOnlyChecker,
+                            tokenHolders.propertyKeyTokens(),
+                            analyzer,
+                            propertyNames)
+                    .withFileSystem(fileSystem)
+                    .withIndexStorage(indexStorage)
+                    .withPopulatingMode(true)
                     .build();
-            log.debug( "Creating populator for fulltext schema index: %s", descriptor );
-            return new FulltextIndexPopulator( descriptor, fulltextIndex, propertyNames, UPDATE_IGNORE_STRATEGY );
-        }
-        catch ( Exception e )
-        {
-            PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
+            log.debug("Creating populator for fulltext schema index: %s", descriptor);
+            return new FulltextIndexPopulator(descriptor, fulltextIndex, propertyNames, UPDATE_IGNORE_STRATEGY);
+        } catch (Exception e) {
+            PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
             DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableIndex<>(
-                    new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor, config ) );
-            log.debug( "Creating failed index populator for fulltext schema index: %s", descriptor, e );
-            return new FailedFulltextIndexPopulator( descriptor, fulltextIndex, e );
+                    new DroppableLuceneIndex<>(indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor, config));
+            log.debug("Creating failed index populator for fulltext schema index: %s", descriptor, e);
+            return new FailedFulltextIndexPopulator(descriptor, fulltextIndex, e);
         }
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor index, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                            ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
-        Analyzer analyzer = createAnalyzer( index, tokenHolders );
-        String[] propertyNames = createPropertyNames( index, tokenHolders );
-        FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder
-                .create( index, config, readOnlyChecker, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
-                .withFileSystem( fileSystem )
-                .withIndexStorage( indexStorage )
-                .withPopulatingMode( false );
-        if ( isEventuallyConsistent( index ) )
-        {
-            fulltextIndexBuilder = fulltextIndexBuilder.withIndexUpdateSink( indexUpdateSink );
+    public IndexAccessor getOnlineAccessor(
+            IndexDescriptor index,
+            IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        PartitionedIndexStorage indexStorage = getIndexStorage(index.getId());
+        Analyzer analyzer = createAnalyzer(index, tokenHolders);
+        String[] propertyNames = createPropertyNames(index, tokenHolders);
+        FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder.create(
+                        index, config, readOnlyChecker, tokenHolders.propertyKeyTokens(), analyzer, propertyNames)
+                .withFileSystem(fileSystem)
+                .withIndexStorage(indexStorage)
+                .withPopulatingMode(false);
+        if (isEventuallyConsistent(index)) {
+            fulltextIndexBuilder = fulltextIndexBuilder.withIndexUpdateSink(indexUpdateSink);
         }
         DatabaseIndex<FulltextIndexReader> fulltextIndex = fulltextIndexBuilder.build();
         fulltextIndex.open();
 
-        FulltextIndexAccessor accessor = new FulltextIndexAccessor( indexUpdateSink, fulltextIndex, index, propertyNames, UPDATE_IGNORE_STRATEGY );
-        log.debug( "Created online accessor for fulltext schema index %s: %s", index, accessor );
+        FulltextIndexAccessor accessor =
+                new FulltextIndexAccessor(indexUpdateSink, fulltextIndex, index, propertyNames, UPDATE_IGNORE_STRATEGY);
+        log.debug("Created online accessor for fulltext schema index %s: %s", index, accessor);
         return accessor;
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
-            CursorContextFactory contextFactory )
-    {
-        return new SchemaIndexMigrator( "Fulltext indexes", fs, pageCache, this.directoryStructure(), storageEngineFactory,
-                                        contextFactory );
+    public StoreMigrationParticipant storeMigrationParticipant(
+            final FileSystemAbstraction fs,
+            PageCache pageCache,
+            StorageEngineFactory storageEngineFactory,
+            CursorContextFactory contextFactory) {
+        return new SchemaIndexMigrator(
+                "Fulltext indexes", fs, pageCache, this.directoryStructure(), storageEngineFactory, contextFactory);
     }
 
     @Override
-    public void validatePrototype( IndexPrototype prototype )
-    {
-        validateIndexRef( prototype );
+    public void validatePrototype(IndexPrototype prototype) {
+        validateIndexRef(prototype);
     }
 
     @Override
-    public IndexType getIndexType()
-    {
+    public IndexType getIndexType() {
         return IndexType.FULLTEXT;
     }
 
-    private void validateIndexRef( IndexRef<?> ref )
-    {
+    private void validateIndexRef(IndexRef<?> ref) {
         String providerName = getProviderDescriptor().name();
-        if ( ref.getIndexType() != IndexType.FULLTEXT )
-        {
-            throw new IllegalArgumentException( "The '" + providerName + "' index provider only supports FULLTEXT index types: " + ref );
+        if (ref.getIndexType() != IndexType.FULLTEXT) {
+            throw new IllegalArgumentException(
+                    "The '" + providerName + "' index provider only supports FULLTEXT index types: " + ref);
         }
-        if ( !ref.schema().isFulltextSchemaDescriptor() )
-        {
-            throw new IllegalArgumentException( "The " + ref.schema() + " index schema is not a full-text index schema, " +
-                    "which it is required to be for the '" + providerName + "' index provider to be able to create an index." );
+        if (!ref.schema().isFulltextSchemaDescriptor()) {
+            throw new IllegalArgumentException("The " + ref.schema() + " index schema is not a full-text index schema, "
+                    + "which it is required to be for the '" + providerName
+                    + "' index provider to be able to create an index.");
         }
-        Value value = ref.getIndexConfig().get( ANALYZER );
-        if ( value != null )
-        {
-            if ( value.valueGroup() == ValueGroup.TEXT )
-            {
+        Value value = ref.getIndexConfig().get(ANALYZER);
+        if (value != null) {
+            if (value.valueGroup() == ValueGroup.TEXT) {
                 String analyzerName = ((TextValue) value).stringValue();
                 Optional<AnalyzerProvider> analyzerProvider = listAvailableAnalyzers()
-                        .filter( analyzer -> analyzer.getName().equals( analyzerName ) )
+                        .filter(analyzer -> analyzer.getName().equals(analyzerName))
                         .findFirst();
-                if ( analyzerProvider.isPresent() )
-                {
+                if (analyzerProvider.isPresent()) {
                     // Verify that the analyzer provider works.
                     Analyzer analyzer = analyzerProvider.get().createAnalyzer();
-                    Objects.requireNonNull( analyzer, "The '" + analyzerName + "' analyzer returned a 'null' analyzer." );
+                    Objects.requireNonNull(analyzer, "The '" + analyzerName + "' analyzer returned a 'null' analyzer.");
+                } else {
+                    throw new IllegalArgumentException("No such full-text analyzer: '" + analyzerName + "'.");
                 }
-                else
-                {
-                    throw new IllegalArgumentException( "No such full-text analyzer: '" + analyzerName + "'." );
-                }
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Wrong index setting value type for fulltext analyzer: '" + value + "'." );
+            } else {
+                throw new IllegalArgumentException(
+                        "Wrong index setting value type for fulltext analyzer: '" + value + "'.");
             }
         }
 
         TokenHolder propertyKeyTokens = tokenHolders.propertyKeyTokens();
-        for ( int propertyId : ref.schema().getPropertyIds() )
-        {
-            try
-            {
-                NamedToken token = propertyKeyTokens.getTokenById( propertyId );
-                if ( token.name().equals( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) )
-                {
-                    throw new IllegalArgumentException( "Unable to index the property, the name is reserved for internal use " +
-                            LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
+        for (int propertyId : ref.schema().getPropertyIds()) {
+            try {
+                NamedToken token = propertyKeyTokens.getTokenById(propertyId);
+                if (token.name().equals(LuceneFulltextDocumentStructure.FIELD_ENTITY_ID)) {
+                    throw new IllegalArgumentException(
+                            "Unable to index the property, the name is reserved for internal use "
+                                    + LuceneFulltextDocumentStructure.FIELD_ENTITY_ID);
                 }
-            }
-            catch ( TokenNotFoundException e )
-            {
-                throw new IllegalArgumentException( "Schema references non-existing property key token id: " + propertyId + ".", e );
+            } catch (TokenNotFoundException e) {
+                throw new IllegalArgumentException(
+                        "Schema references non-existing property key token id: " + propertyId + ".", e);
             }
         }
     }
 
-    private IndexConfig addMissingDefaultIndexConfig( IndexConfig indexConfig )
-    {
-        indexConfig = indexConfig.withIfAbsent( ANALYZER, Values.stringValue( defaultAnalyzerName ) );
-        indexConfig = indexConfig.withIfAbsent( FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, Values.booleanValue( defaultEventuallyConsistentSetting ) );
+    private IndexConfig addMissingDefaultIndexConfig(IndexConfig indexConfig) {
+        indexConfig = indexConfig.withIfAbsent(ANALYZER, Values.stringValue(defaultAnalyzerName));
+        indexConfig = indexConfig.withIfAbsent(
+                FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT,
+                Values.booleanValue(defaultEventuallyConsistentSetting));
         return indexConfig;
     }
 
-    public void awaitRefresh()
-    {
+    public void awaitRefresh() {
         indexUpdateSink.awaitUpdateApplication();
     }
 
-    public Stream<AnalyzerProvider> listAvailableAnalyzers()
-    {
-        return Services.loadAll( AnalyzerProvider.class ).stream();
+    public Stream<AnalyzerProvider> listAvailableAnalyzers() {
+        return Services.loadAll(AnalyzerProvider.class).stream();
     }
 }

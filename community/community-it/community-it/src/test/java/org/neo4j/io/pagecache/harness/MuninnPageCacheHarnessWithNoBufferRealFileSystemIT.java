@@ -19,15 +19,13 @@
  */
 package org.neo4j.io.pagecache.harness;
 
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 
-class MuninnPageCacheHarnessWithNoBufferRealFileSystemIT extends MuninnPageCacheHarnessWithRealFileSystemIT
-{
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+
+class MuninnPageCacheHarnessWithNoBufferRealFileSystemIT extends MuninnPageCacheHarnessWithRealFileSystemIT {
     @Override
-    protected Fixture<MuninnPageCache> createFixture()
-    {
-        return super.createFixture().withBufferFactory( DISABLED_BUFFER_FACTORY );
+    protected Fixture<MuninnPageCache> createFixture() {
+        return super.createFixture().withBufferFactory(DISABLED_BUFFER_FACTORY);
     }
 }

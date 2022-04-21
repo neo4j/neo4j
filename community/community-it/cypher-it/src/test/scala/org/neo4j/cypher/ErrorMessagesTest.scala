@@ -93,7 +93,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     expectError(
       "CALL no.such.procedure",
       "There is no procedure with the name `no.such.procedure` registered for this database instance. " +
-      "Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."
+        "Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."
     )
   }
 
@@ -165,8 +165,10 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
     expectError(
       "CREATE CONSTRAINT my_constraint FOR (person:Person) REQUIRE person.name IS UNIQUE",
-      String.format("Unable to create Constraint( name='my_constraint', type='UNIQUENESS', schema=(:Person {name}) ):%n" +
-        "Both Node(" + node1 + ") and Node(" + node2 + ") have the label `Person` and property `name` = 'A'")
+      String.format(
+        "Unable to create Constraint( name='my_constraint', type='UNIQUENESS', schema=(:Person {name}) ):%n" +
+          "Both Node(" + node1 + ") and Node(" + node2 + ") have the label `Person` and property `name` = 'A'"
+      )
     )
   }
 
@@ -195,17 +197,21 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("should give nice error when trying to parse multiple statements") {
     expectError(
       "RETURN 42; RETURN 42",
-      "Expected exactly one statement per query but got: 2")
+      "Expected exactly one statement per query but got: 2"
+    )
   }
 
   test("should give proper error message when trying to use Node Key constraint on community") {
-    expectError("CREATE CONSTRAINT FOR (n:Person) REQUIRE (n.firstname) IS NODE KEY",
-                String.format("Unable to create Constraint( type='NODE PROPERTY EXISTENCE', schema=(:Person {firstname}) ):%n" +
-                  "Node Key constraint requires Neo4j Enterprise Edition"))
+    expectError(
+      "CREATE CONSTRAINT FOR (n:Person) REQUIRE (n.firstname) IS NODE KEY",
+      String.format("Unable to create Constraint( type='NODE PROPERTY EXISTENCE', schema=(:Person {firstname}) ):%n" +
+        "Node Key constraint requires Neo4j Enterprise Edition")
+    )
   }
 
   test("trying to store mixed type array") {
-    expectError("CREATE (a) SET a.value = [datetime(), time()] RETURN a.value",
+    expectError(
+      "CREATE (a) SET a.value = [datetime(), time()] RETURN a.value",
       "Neo4j only supports a subset of Cypher types for storage as singleton or array properties. " +
         "Please refer to section cypher/syntax/values of the manual for more details."
     )
@@ -215,28 +221,32 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     testSyntaxErrorWithCaret(
       "Invalid input '1",
       "MATCH 123",
-      "      ^")
+      "      ^"
+    )
   }
 
   test("should render caret correctly in parser errors for queries with prefix") {
     testSyntaxErrorWithCaret(
       "Invalid input '1",
       "EXPLAIN MATCH 123",
-      "              ^")
+      "              ^"
+    )
   }
 
   test("should render caret correctly in planner errors for queries without prefix") {
     testSyntaxErrorWithCaret(
       "Type mismatch: expected Integer but was String (line 1, column 22 (offset: 21))",
       "CALL db.awaitIndexes('wrong')",
-      "                     ^")
+      "                     ^"
+    )
   }
 
   test("should render caret correctly in planner errors for queries with prefix") {
     testSyntaxErrorWithCaret(
       "Type mismatch: expected Integer but was String (line 1, column 30 (offset: 29))",
       "EXPLAIN CALL db.awaitIndexes('wrong')",
-      "                             ^")
+      "                             ^"
+    )
   }
 
   private def expectError(query: String, expectedError: String): Unit = {

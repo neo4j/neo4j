@@ -51,26 +51,26 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
-                                                                 val edition: Edition[CONTEXT],
-                                                                 runtime: CypherRuntime[CONTEXT],
-                                                                 val sizeHint: Int,
-                                                                 costOfGetPropertyChain: Long, // the reported dbHits for getting the property chain
-                                                                 val costOfPropertyToken: Long, // the reported dbHits for looking up a property token
-                                                                 val costOfSetProperty: Long, // the reported dbHits for setting a property token
-                                                                 costOfPropertyJumpedOverInChain: Long, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
-                                                                 val costOfPropertyExists: Long, // the reported dbHits for a single checking if a property exists on a node
-                                                                 val costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
-                                                                 val costOfLabelCheck: Long, // the reported dbHits for getting label of a node
-                                                                 val costOfLabelLookup: Long, // the reported dbHits for finding the id of a label
-                                                                 costOfExpandGetRelCursor: Long, // the reported dbHits for obtaining a relationship cursor for expanding
-                                                                 costOfExpandOneRel: Long, // the reported dbHits for expanding one relationship
-                                                                 val costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
-                                                                 val costOfCompositeUniqueIndexCursorRow: Long, // the reported dbHits for finding one row from a composite unique index
-                                                                 cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
-                                                                 val canReuseAllNodesScanLookup: Boolean, // operator following AllNodesScan does not need to lookup node again
-                                                                 val canFuseOverPipelines: Boolean,
-                                                                 val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
-                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  val edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int,
+  costOfGetPropertyChain: Long, // the reported dbHits for getting the property chain
+  val costOfPropertyToken: Long, // the reported dbHits for looking up a property token
+  val costOfSetProperty: Long, // the reported dbHits for setting a property token
+  costOfPropertyJumpedOverInChain: Long, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
+  val costOfPropertyExists: Long, // the reported dbHits for a single checking if a property exists on a node
+  val costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
+  val costOfLabelCheck: Long, // the reported dbHits for getting label of a node
+  val costOfLabelLookup: Long, // the reported dbHits for finding the id of a label
+  costOfExpandGetRelCursor: Long, // the reported dbHits for obtaining a relationship cursor for expanding
+  costOfExpandOneRel: Long, // the reported dbHits for expanding one relationship
+  val costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
+  val costOfCompositeUniqueIndexCursorRow: Long, // the reported dbHits for finding one row from a composite unique index
+  cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
+  val canReuseAllNodesScanLookup: Boolean, // operator following AllNodesScan does not need to lookup node again
+  val canFuseOverPipelines: Boolean,
+  val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("HasLabel on top of AllNodesScan") {
     val cost = if (canReuseAllNodesScanLookup) costOfLabelCheck - 1 else costOfLabelCheck
@@ -90,7 +90,11 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     hasLabelOnTopOfLeaf(_.nodeByLabelScan("n", "Label"), expression = "n.prop IS NOT NULL", costOfPropertyExists)
   }
 
-  private def hasLabelOnTopOfLeaf(leaf: LogicalQueryBuilder => LogicalQueryBuilder, expression: String, expressionPerRowCost: Long) = {
+  private def hasLabelOnTopOfLeaf(
+    leaf: LogicalQueryBuilder => LogicalQueryBuilder,
+    expression: String,
+    expressionPerRowCost: Long
+  ) = {
     val nodes = given {
       nodeIndex("Label", "prop")
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "Label")
@@ -103,7 +107,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = leaf(builder).build()
 
     // only used when Input is leaf
-    val input = inputValues(nodes.map(n => Array[Any](n)):_*)
+    val input = inputValues(nodes.map(n => Array[Any](n)): _*)
 
     val runtimeResult = profile(logicalQuery, runtime, input)
     consume(runtimeResult)
@@ -133,7 +137,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = leaf(builder).build()
 
     // only used when Input is leaf
-    val input = inputValues(rels.map(r => Array[Any](r)):_*)
+    val input = inputValues(rels.map(r => Array[Any](r)): _*)
 
     val runtimeResult = profile(logicalQuery, runtime, input)
     consume(runtimeResult)
@@ -157,7 +161,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all nodes scan
+    queryProfile.operatorProfile(1).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all nodes scan
   }
 
   test("should profile dbHits of label scan") {
@@ -178,15 +182,21 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be(sizeHint + costOfLabelLookup) or be(sizeHint + 1 + costOfLabelLookup)) // label scan
+    queryProfile.operatorProfile(1).dbHits() should (be(sizeHint + costOfLabelLookup) or be(
+      sizeHint + 1 + costOfLabelLookup
+    )) // label scan
   }
 
   test("should profile dbHits of node index seek with range predicate") {
     given {
       nodeIndex("Language", "difficulty")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("difficulty" -> i)
-      }, "Language")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 => Map("difficulty" -> i)
+        },
+        "Language"
+      )
     }
 
     // when
@@ -198,17 +208,22 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   test("should profile dbHits of node index seek with IN predicate") {
     val nodes = given {
       nodeIndex("Language", "difficulty")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("difficulty" -> i)
-      }, "Language")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 => Map("difficulty" -> i)
+        },
+        "Language"
+      )
     }
 
-    val difficulties = nodes.filter(_.hasProperty("difficulty")).map(_.getProperty("difficulty").asInstanceOf[Int].longValue())
+    val difficulties =
+      nodes.filter(_.hasProperty("difficulty")).map(_.getProperty("difficulty").asInstanceOf[Int].longValue())
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties.toSeq:_*)))
+      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties.toSeq: _*)))
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -217,15 +232,21 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val seekProfile = result.runtimeResult.queryProfile()
 
     // then
-    seekProfile.operatorProfile(1).dbHits() shouldBe (difficulties.size /*row of seek*/ + 1 * difficulties.size /*last next per seek*/) // node index seek
+    seekProfile.operatorProfile(
+      1
+    ).dbHits() shouldBe (difficulties.size /*row of seek*/ + 1 * difficulties.size /*last next per seek*/ ) // node index seek
   }
 
   test("should profile dbHits of node index seek with IN predicate on composite index") {
     val nodes = given {
       nodeIndex("Language", "difficulty", "usefulness")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("difficulty" -> i, "usefulness" -> i)
-      }, "Language")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 => Map("difficulty" -> i, "usefulness" -> i)
+        },
+        "Language"
+      )
     }
 
     // when
@@ -241,15 +262,19 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expectedRowCount: Int = sizeHint / 10 / 2
     result should beColumns("x").withRows(rowCount(expectedRowCount))
-    seekProfile.operatorProfile(1).dbHits() shouldBe (expectedRowCount + 1 /*DB Hits are incremented per next() call, even though last call will return false*/)
+    seekProfile.operatorProfile(1).dbHits() shouldBe (expectedRowCount + 1 /*DB Hits are incremented per next() call, even though last call will return false*/ )
   }
 
   test("should profile dbHits of node index scan") {
     given {
       nodeIndex("Language", "difficulty")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("difficulty" -> i)
-      }, "Language")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 => Map("difficulty" -> i)
+        },
+        "Language"
+      )
     }
 
     // when
@@ -261,9 +286,13 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   test("should profile dbHits of node index contains") {
     given {
       nodeIndex(IndexType.TEXT, "Language", "difficulty")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("difficulty" -> s"x${i % 2}")
-      }, "Language")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("difficulty" -> s"x${i % 2}")
+        },
+        "Language"
+      )
     }
 
     // when
@@ -305,7 +334,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should(be (sizeHint / 10 + 1)  or be (2 * (sizeHint / 10) + 1))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 + 1) or be(
+      2 * (sizeHint / 10) + 1
+    ))
   }
 
   test("should profile dbHits of directed relationship index range seek") {
@@ -315,7 +346,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 10 == 0 => r.setProperty("difficulty", i)
-        case _ =>
+        case _                     =>
       }
     }
 
@@ -329,7 +360,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should(be (sizeHint / 10 / 2 + 1)  or be (2*(sizeHint / 10 / 2) + 1))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 / 2 + 1) or be(
+      2 * (sizeHint / 10 / 2) + 1
+    ))
   }
 
   test("should profile dbHits of directed relationship multiple index exact seek") {
@@ -352,7 +385,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should(be (sizeHint / 5 + 2)  or be (2 * (sizeHint / 5) + 2))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 5 + 2) or be(
+      2 * (sizeHint / 5) + 2
+    ))
   }
 
   test("should profile dbHits of undirected relationship index exact seek") {
@@ -375,7 +410,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should(be (sizeHint / 10 + 1)  or be (2 * (sizeHint / 10) + 1))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 + 1) or be(
+      2 * (sizeHint / 10) + 1
+    ))
   }
 
   test("should profile dbHits of undirected relationship range index seek") {
@@ -385,7 +422,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 10 == 0 => r.setProperty("difficulty", i)
-        case _ =>
+        case _                     =>
       }
     }
 
@@ -399,7 +436,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should(be (sizeHint / 10 / 2 + 1)  or be (2*(sizeHint / 10 / 2) + 1))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 / 2 + 1) or be(
+      2 * (sizeHint / 10 / 2) + 1
+    ))
   }
 
   test("should profile dbHits of undirected relationship multiple index exact seek") {
@@ -422,7 +461,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should(be (sizeHint / 5 + 2)  or be (2 * (sizeHint / 5) + 2))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 5 + 2) or be(
+      2 * (sizeHint / 5) + 2
+    ))
   }
 
   test("should profile dbHits of directed relationship index scan") {
@@ -430,8 +471,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       relationshipIndex("R", "difficulty")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
-        case (r, i)  if i % 10 == 0 => r.setProperty("difficulty", i)
-        case _ =>
+        case (r, i) if i % 10 == 0 => r.setProperty("difficulty", i)
+        case _                     =>
       }
     }
 
@@ -445,7 +486,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be (sizeHint / 10 + 1) or be (2 * (sizeHint / 10) + 1))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 + 1) or be(
+      2 * (sizeHint / 10) + 1
+    ))
   }
 
   test("should profile dbHits of undirected relationship index scan") {
@@ -453,8 +496,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       relationshipIndex("R", "difficulty")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
-        case (r, i)  if i % 10 == 0 => r.setProperty("difficulty", i)
-        case _ =>
+        case (r, i) if i % 10 == 0 => r.setProperty("difficulty", i)
+        case _                     =>
       }
     }
 
@@ -468,7 +511,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be (sizeHint / 10 + 1) or be (2 * (sizeHint / 10) + 1))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 + 1) or be(
+      2 * (sizeHint / 10) + 1
+    ))
   }
 
   test("should profile dbHits of node by id") {
@@ -523,7 +568,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     // expand into. If no node is in the input twice the rel cache does not help and then you get
     // 2 (check start and end for `isDense`) + costOfExpand per row.
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel)))
+    queryProfile.operatorProfile(
+      1
+    ).dbHits() shouldBe (sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel)))
     // No assertion on the expand because db hits can vary, given that the nodes have 2 relationships.
   }
 
@@ -546,33 +593,53 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (LegacyDbHitsTestBase.costOfExpandGetRelCursor + LegacyDbHitsTestBase.costOfExpandOneRel) + extraNodes) // optional expand all
+    queryProfile.operatorProfile(
+      1
+    ).dbHits() shouldBe (sizeHint * (LegacyDbHitsTestBase.costOfExpandGetRelCursor + LegacyDbHitsTestBase.costOfExpandOneRel) + extraNodes) // optional expand all
     // label scan, In non-parallel we count the actual labelscan-call as a dbhit whereas for parallel we don't
-    queryProfile.operatorProfile(2).dbHits() should (be (sizeHint + extraNodes + 1 + costOfLabelLookup) or be (sizeHint + extraNodes + costOfLabelLookup))
+    queryProfile.operatorProfile(2).dbHits() should (be(sizeHint + extraNodes + 1 + costOfLabelLookup) or be(
+      sizeHint + extraNodes + costOfLabelLookup
+    ))
   }
 
   test("should profile dbhits with optional expand into") {
-    //TODO: parallel scans don't seem on the rhs of apply are flaky, expected
+    // TODO: parallel scans don't seem on the rhs of apply are flaky, expected
     assume(runtime.name.toLowerCase != "parallel")
     // given
     val n = Math.sqrt(sizeHint).toInt
     val extraNodes = 20
     given {
-      val xs = nodePropertyGraph(n, {
-        case i: Int => Map("prop" -> i)
-      }, "X")
-      val ys = nodePropertyGraph(n, {
-        case i: Int => Map("prop" -> i)
-      }, "Y")
+      val xs = nodePropertyGraph(
+        n,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "X"
+      )
+      val ys = nodePropertyGraph(
+        n,
+        {
+          case i: Int => Map("prop" -> i)
+        },
+        "Y"
+      )
 
       connect(xs ++ ys, xs.indices.map(i => (i, i + xs.length, "R")))
 
-      nodePropertyGraph(extraNodes, {
-        case i: Int => Map("prop" -> (i + xs.length))
-      }, "X")
-      nodePropertyGraph(extraNodes, {
-        case i: Int => Map("prop" -> (i + ys.length))
-      }, "Y")
+      nodePropertyGraph(
+        extraNodes,
+        {
+          case i: Int => Map("prop" -> (i + xs.length))
+        },
+        "X"
+      )
+      nodePropertyGraph(
+        extraNodes,
+        {
+          case i: Int => Map("prop" -> (i + ys.length))
+        },
+        "Y"
+      )
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -591,20 +658,31 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     // optional expand into (uses legacy pipe). If no node is in the input twice the rel cache does not help and then you get
     // 2 (check start and end for `isDense`) + costOfExpand for each relationship on top.
-    queryProfile.operatorProfile(1).dbHits() shouldBe ((n + extraNodes) * 2 + n * costOfExpandOneRel) // optional expand into
+    queryProfile.operatorProfile(
+      1
+    ).dbHits() shouldBe ((n + extraNodes) * 2 + n * costOfExpandOneRel) // optional expand into
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
-    queryProfile.operatorProfile(3).dbHits() shouldBe ((n + extraNodes) * (n + extraNodes) * 2 * (costOfGetPropertyChain + costOfProperty)) // filter (reads 2 properties))
+    queryProfile.operatorProfile(
+      3
+    ).dbHits() shouldBe ((n + extraNodes) * (n + extraNodes) * 2 * (costOfGetPropertyChain + costOfProperty)) // filter (reads 2 properties))
 
-    //TODO: parallel scans don't seem to add up the dbhits correctly when on the rhs of apply, investigate why that is?
-    queryProfile.operatorProfile(4).dbHits() should (be ((n + extraNodes) * (n + extraNodes) + costOfLabelLookup) or be ((n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup)) // label scan OK
-    queryProfile.operatorProfile(5).dbHits() should (be (n + extraNodes + costOfLabelLookup) or be (n + extraNodes + 1 + costOfLabelLookup)) // label scan OK
+    // TODO: parallel scans don't seem to add up the dbhits correctly when on the rhs of apply, investigate why that is?
+    queryProfile.operatorProfile(4).dbHits() should (be((n + extraNodes) * (n + extraNodes) + costOfLabelLookup) or be(
+      (n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup
+    )) // label scan OK
+    queryProfile.operatorProfile(5).dbHits() should (be(n + extraNodes + costOfLabelLookup) or be(
+      n + extraNodes + 1 + costOfLabelLookup
+    )) // label scan OK
   }
 
   test("should profile dbHits with node hash join") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -623,17 +701,24 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // node hash join
-    queryProfile.operatorProfile(2).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty) // filter
-    queryProfile.operatorProfile(3).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
-    queryProfile.operatorProfile(4).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty) // filter
-    queryProfile.operatorProfile(5).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
+    queryProfile.operatorProfile(
+      2
+    ).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty) // filter
+    queryProfile.operatorProfile(3).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
+    queryProfile.operatorProfile(
+      4
+    ).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty) // filter
+    queryProfile.operatorProfile(5).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
   }
 
   test("should profile dbHits with value hash join") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -649,8 +734,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe 2 * sizeHint // value hash join
-    queryProfile.operatorProfile(2).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
-    queryProfile.operatorProfile(3).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
+    queryProfile.operatorProfile(2).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
+    queryProfile.operatorProfile(3).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
   }
 
   test("should profile dbHits of cached properties") {
@@ -673,7 +758,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // projection
-    queryProfile.operatorProfile(2).dbHits() shouldBe (sizeHint * (fusedCostOfGetPropertyChain + costOfProperty)) // cacheProperties
+    queryProfile.operatorProfile(
+      2
+    ).dbHits() shouldBe (sizeHint * (fusedCostOfGetPropertyChain + costOfProperty)) // cacheProperties
   }
 
   test("should profile dbHits of many cached properties") {
@@ -702,9 +789,12 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   test("should profile dbHits with apply") {
     val size = sizeHint / 10
     given {
-      nodePropertyGraph(size, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        size,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -722,15 +812,21 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (size / 2 * size) * (costOfGetPropertyChain + costOfProperty) // filter
+    queryProfile.operatorProfile(
+      1
+    ).dbHits() shouldBe (size / 2 * size) * (costOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
-    queryProfile.operatorProfile(3).dbHits() shouldBe size * size * (fusedCostOfGetPropertyChain + costOfProperty) // filter
-    queryProfile.operatorProfile(4).dbHits().toInt should be > size // all node scan (in parallel scans we can have different number of db hits here)
-    queryProfile.operatorProfile(5).dbHits() should (be (size) or be (size + 1)) // all node scan
+    queryProfile.operatorProfile(
+      3
+    ).dbHits() shouldBe size * size * (fusedCostOfGetPropertyChain + costOfProperty) // filter
+    queryProfile.operatorProfile(
+      4
+    ).dbHits().toInt should be > size // all node scan (in parallel scans we can have different number of db hits here)
+    queryProfile.operatorProfile(5).dbHits() should (be(size) or be(size + 1)) // all node scan
   }
 
   test("should profile dbHits of expression reads") {
-    given { nodePropertyGraph(sizeHint, { case i => Map("list" -> Array(i, i+1), "prop" -> i)}) }
+    given { nodePropertyGraph(sizeHint, { case i => Map("list" -> Array(i, i + 1), "prop" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -748,12 +844,16 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // assertions on property dbHits are tricky because in pipelined more dbHits are reported for
     // properties late in the chain, while in interpreted/slotted all property reads cost only 1 dbHit
     queryProfile.operatorProfile(1).dbHits() should
-      (be (sizeHint * (2 * (fusedCostOfGetPropertyChain + costOfProperty) + (fusedCostOfGetPropertyChain + costOfProperty))) or // prop is the first prop
-        be (sizeHint * ((fusedCostOfGetPropertyChain + costOfProperty) + 2 * (fusedCostOfGetPropertyChain + costOfProperty)))) // prop is the second prop
+      (be(
+        sizeHint * (2 * (fusedCostOfGetPropertyChain + costOfProperty) + (fusedCostOfGetPropertyChain + costOfProperty))
+      ) or // prop is the first prop
+        be(
+          sizeHint * ((fusedCostOfGetPropertyChain + costOfProperty) + 2 * (fusedCostOfGetPropertyChain + costOfProperty))
+        )) // prop is the second prop
   }
 
   test("should profile dbHits of aggregation") {
-    given { nodePropertyGraph(sizeHint, { case i => Map("prop" -> i)}) }
+    given { nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -774,7 +874,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   test("should profile dbHits of aggregation with grouping") {
     // given
     val aggregationGroups = sizeHint / 2
-    given { nodePropertyGraph(sizeHint, { case i => Map("group" -> i % aggregationGroups, "prop" -> i)}) }
+    given { nodePropertyGraph(sizeHint, { case i => Map("group" -> i % aggregationGroups, "prop" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -813,8 +913,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toInt
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // cartesian product
-    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be (numberOfChunks * size) or be (numberOfChunks * (size + 1))) // all node scan b
-    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be (size) or be (size + 1)) // all node scan a
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be(numberOfChunks * size) or be(
+      numberOfChunks * (size + 1)
+    )) // all node scan b
+    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be(size) or be(size + 1)) // all node scan a
   }
 
   test("should profile dbHits of skip") {
@@ -837,9 +939,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val propCost = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).dbHits() shouldBe 0 // produce result
-    queryProfile.operatorProfile(1).dbHits() shouldBe 1 + propCost// projection
+    queryProfile.operatorProfile(1).dbHits() shouldBe 1 + propCost // projection
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // skip
-    queryProfile.operatorProfile(3).dbHits() should (be (sizeHint) or be (sizeHint + 1))  //allNodesScan
+    queryProfile.operatorProfile(3).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // allNodesScan
   }
 
   test("should profile dbHits of union") {
@@ -860,8 +962,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // union
-    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be (size) or be (size + 1)) // all node scan
-    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be (size) or be (size + 1)) // all node scan
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be(size) or be(size + 1)) // all node scan
+    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be(size) or be(size + 1)) // all node scan
   }
 
   test("should profile dbHits with project endpoints") {
@@ -879,18 +981,18 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val input = aRels.map(r => Array[Any](r))
 
     // then
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq: _*))
     consume(runtimeResult)
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    //Note: in interpreted we don't count rel.getStart, rel.getEnd as dbhits
-    queryProfile.operatorProfile(1).dbHits() should (be (0) or be (aRels.size)) // project endpoints
+    // Note: in interpreted we don't count rel.getStart, rel.getEnd as dbhits
+    queryProfile.operatorProfile(1).dbHits() should (be(0) or be(aRels.size)) // project endpoints
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // input
   }
 
   test("should profile dbHits of populating nodes in produceresults") {
-    given { nodePropertyGraph(sizeHint, { case i => Map("p" -> i, "q" -> -i) }, "somelabel")}
+    given { nodePropertyGraph(sizeHint, { case i => Map("p" -> i, "q" -> -i) }, "somelabel") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -904,7 +1006,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
 
-    queryProfile.operatorProfile(0).dbHits() should be (sizeHint * (1 /* read node */ + 2 * costOfProperty)) // produceresults
+    queryProfile.operatorProfile(0).dbHits() should be(
+      sizeHint * (1 /* read node */ + 2 * costOfProperty)
+    ) // produceresults
   }
 
   test("should profile dbHits of populating relationships in produceresults") {
@@ -925,7 +1029,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (sizeHint * (1 + 2 * costOfProperty)) // produceresults
+    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be(
+      sizeHint * (1 + 2 * costOfProperty)
+    ) // produceresults
   }
 
   test("should profile dbHits of populating collections in produceresults") {
@@ -946,7 +1052,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (2 *(sizeHint * (1 /* read node */ + 2 * costOfProperty)))// produceresults
+    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be(
+      2 * (sizeHint * (1 /* read node */ + 2 * costOfProperty))
+    ) // produceresults
   }
 
   test("should profile dbhits with bfs pruning var-expand") {
@@ -969,7 +1077,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    runtimeResult.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be (3)
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be(3)
   }
 }
 
@@ -979,17 +1087,26 @@ trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
   test("should profile dbHits of node index seek with IN predicate on locking unique index") {
     val nodes = given {
       uniqueIndex("Language", "difficulty")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("difficulty" -> i)
-      }, "Language")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 => Map("difficulty" -> i)
+        },
+        "Language"
+      )
     }
 
-    val difficulties = nodes.filter(_.hasProperty("difficulty")).map(_.getProperty("difficulty").asInstanceOf[Int].longValue())
+    val difficulties =
+      nodes.filter(_.hasProperty("difficulty")).map(_.getProperty("difficulty").asInstanceOf[Int].longValue())
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties.toSeq: _*)), unique = true)
+      .nodeIndexOperator(
+        "x:Language(difficulty IN ???)",
+        paramExpr = Some(listOfInt(difficulties.toSeq: _*)),
+        unique = true
+      )
       .build(readOnly = false)
 
     val result = profile(logicalQuery, runtime)
@@ -998,17 +1115,22 @@ trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val seekProfile = result.runtimeResult.queryProfile()
 
     // then
-    val expectedRowCount = difficulties.size * costOfCompositeUniqueIndexCursorRow /*DB Hits are incremented per next() call, even though last call will return false*/
+    val expectedRowCount =
+      difficulties.size * costOfCompositeUniqueIndexCursorRow /*DB Hits are incremented per next() call, even though last call will return false*/
     seekProfile.operatorProfile(1).dbHits() shouldBe expectedRowCount // locking unique node index seek
   }
 
   test("should profile dbHits of node index seek with node key") {
     val nodes = given {
       nodeKey("Language", "difficulty", "usefulness")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("difficulty" -> i, "usefulness" -> i)
-        case i => Map("difficulty" -> -i, "usefulness" -> -i)
-      }, "Language")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 10 == 0 => Map("difficulty" -> i, "usefulness" -> i)
+          case i                => Map("difficulty" -> -i, "usefulness" -> -i)
+        },
+        "Language"
+      )
     }
 
     // when
@@ -1051,7 +1173,7 @@ trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe OperatorProfile.NO_DATA // procedure call
-    queryProfile.operatorProfile(2).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
+    queryProfile.operatorProfile(2).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
   }
 }
 
@@ -1060,7 +1182,7 @@ trait TransactionForeachDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile dbHits of populating nodes inside transactionForeach") {
 
-    givenWithTransactionType (
+    givenWithTransactionType(
       nodeGraph(sizeHint),
       KernelTransaction.Type.IMPLICIT
     )
@@ -1085,10 +1207,10 @@ trait TransactionForeachDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val numberOfNodesFoundByAllNodeScans = (1 + 2) * sizeHint
     // allNodeScan is the 5th operator in the plan
     val allNodeScanPlanId = 4
-    queryProfile.operatorProfile(allNodeScanPlanId).dbHits() should(
-      be (numberOfNodesFoundByAllNodeScans) or
-        be (numberOfNodesFoundByAllNodeScans + numberOfAllNodeScans)
-      )
+    queryProfile.operatorProfile(allNodeScanPlanId).dbHits() should (
+      be(numberOfNodesFoundByAllNodeScans) or
+        be(numberOfNodesFoundByAllNodeScans + numberOfAllNodeScans)
+    )
   }
 }
 
@@ -1111,7 +1233,9 @@ trait NestedPlanDbHitsTestBase[CONTEXT <: RuntimeContext] {
     consume(result)
 
     // then
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be (size * size) or be (size * (size + 1))) // projection w. nested plan expression
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(size * size) or be(
+      size * (size + 1)
+    )) // projection w. nested plan expression
   }
 }
 
@@ -1138,13 +1262,14 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val produceResultProfile = queryProfile.operatorProfile(0)
     val setPropertyProfile = queryProfile.operatorProfile(1)
 
-    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val propertyTokenDbHits = 1 * sizeHint
-      val writeNodePropertyDbHits = 1 * sizeHint
-      propertyTokenDbHits + writeNodePropertyDbHits
-    } else {
-      3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ + sizeHint * costOfProperty
-    }
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val propertyTokenDbHits = 1 * sizeHint
+        val writeNodePropertyDbHits = 1 * sizeHint
+        propertyTokenDbHits + writeNodePropertyDbHits
+      } else {
+        3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ + sizeHint * costOfProperty
+      }
 
     setPropertyProfile.rows() shouldBe sizeHint
     setPropertyProfile.dbHits() shouldBe expectedDbHits
@@ -1182,7 +1307,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val chainCount = 3
     val chainLength = sizeHint / chainCount
     val types = Range(0, chainLength).map(_ => "LIKES")
-    chainGraphs(chainCount, types:_*)
+    chainGraphs(chainCount, types: _*)
 
     val nodeCount = (chainLength + 1) * chainCount
     val relationshipCount = chainCount * chainLength
@@ -1212,7 +1337,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val chainCount = 3
     val chainLength = sizeHint / chainCount
     val types = Range(0, chainLength).map(_ => "LIKES")
-    chainGraphs(chainCount, types:_*)
+    chainGraphs(chainCount, types: _*)
     val relationshipCount = chainCount * chainLength
 
     // when
@@ -1241,7 +1366,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val chainCount = 3
     val chainLength = sizeHint / chainCount
     val types = Range(0, chainLength - 1).map(_ => "LIKES") :+ "LAST_LIKE"
-    chainGraphs(chainCount, types:_*)
+    chainGraphs(chainCount, types: _*)
 
     val nodeCount = (chainLength + 1) * chainCount
     val relationshipCount = chainCount * chainLength
@@ -1368,8 +1493,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
-        Seq(setNodeProperty("x", "prop", "i")))
+      .foreach("i", "[1, 2, 3]", Seq(setNodeProperty("x", "prop", "i")))
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -1381,13 +1505,14 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val produceResultProfile = queryProfile.operatorProfile(0)
     val foreachProfile = queryProfile.operatorProfile(1)
 
-    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val propertyTokenDbHits = 3 * sizeHint
-      val writeNodePropertyDbHits = 3 * sizeHint
-      propertyTokenDbHits + writeNodePropertyDbHits
-    } else {
-      3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ + 3 * sizeHint * costOfProperty
-    }
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val propertyTokenDbHits = 3 * sizeHint
+        val writeNodePropertyDbHits = 3 * sizeHint
+        propertyTokenDbHits + writeNodePropertyDbHits
+      } else {
+        3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ + 3 * sizeHint * costOfProperty
+      }
 
     foreachProfile.rows() shouldBe sizeHint
     foreachProfile.dbHits() shouldBe expectedDbHits
@@ -1413,19 +1538,20 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     consume(runtimeResult)
     val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
 
-    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val propertyTokenDbHits = sizeHint * 3
-      val writeNodePropertyDbHits = sizeHint * 3 * 2
-      propertyTokenDbHits + writeNodePropertyDbHits
-    } else if (useWritesWithProfiling) {
-      val setPropertyDbHits = sizeHint * 3 * 2
-      val tokenDbHits = sizeHint * 2 * 3 * costOfPropertyToken
-      setPropertyDbHits + tokenDbHits
-    } else {
-      val setPropertyDbHits = sizeHint * 3
-      val tokenDbHits = sizeHint * 2 * 3 * costOfPropertyToken
-      setPropertyDbHits + tokenDbHits
-    }
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val propertyTokenDbHits = sizeHint * 3
+        val writeNodePropertyDbHits = sizeHint * 3 * 2
+        propertyTokenDbHits + writeNodePropertyDbHits
+      } else if (useWritesWithProfiling) {
+        val setPropertyDbHits = sizeHint * 3 * 2
+        val tokenDbHits = sizeHint * 2 * 3 * costOfPropertyToken
+        setPropertyDbHits + tokenDbHits
+      } else {
+        val setPropertyDbHits = sizeHint * 3
+        val tokenDbHits = sizeHint * 2 * 3 * costOfPropertyToken
+        setPropertyDbHits + tokenDbHits
+      }
 
     setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
   }
@@ -1442,7 +1568,11 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("i", "[1,2,3]", Seq(setRelationshipPropertiesFromMap("r", "{prop: 42, foo: i}", removeOtherProps = false)))
+      .foreach(
+        "i",
+        "[1,2,3]",
+        Seq(setRelationshipPropertiesFromMap("r", "{prop: 42, foo: i}", removeOtherProps = false))
+      )
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -1452,19 +1582,20 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     consume(runtimeResult)
     val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
 
-    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val setPropertyDbHits = relationshipCount * 3
-      val tokenDbHits = relationshipCount * 3 * 2
-      setPropertyDbHits + tokenDbHits
-    } else if (useWritesWithProfiling) {
-      val setPropertyDbHits = relationshipCount * 3 * 2
-      val tokenDbHits = relationshipCount * 3 * 2 * costOfPropertyToken
-      setPropertyDbHits + tokenDbHits
-    } else {
-      val setPropertyDbHits = relationshipCount * 3
-      val tokenDbHits = relationshipCount * 3 * 2 * costOfPropertyToken
-      setPropertyDbHits + tokenDbHits
-    }
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val setPropertyDbHits = relationshipCount * 3
+        val tokenDbHits = relationshipCount * 3 * 2
+        setPropertyDbHits + tokenDbHits
+      } else if (useWritesWithProfiling) {
+        val setPropertyDbHits = relationshipCount * 3 * 2
+        val tokenDbHits = relationshipCount * 3 * 2 * costOfPropertyToken
+        setPropertyDbHits + tokenDbHits
+      } else {
+        val setPropertyDbHits = relationshipCount * 3
+        val tokenDbHits = relationshipCount * 3 * 2 * costOfPropertyToken
+        setPropertyDbHits + tokenDbHits
+      }
 
     setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
   }
@@ -1477,11 +1608,14 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
+      .foreach(
+        "i",
+        "[1, 2, 3]",
         Seq(createPattern(
           nodes = Seq(createNode("n"), createNode("m")),
           relationships = Seq(createRelationship("r", "x", "R", "x"))
-        )))
+        ))
+      )
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -1504,8 +1638,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
-        Seq(setLabel("x", "L", "M")))
+      .foreach("i", "[1, 2, 3]", Seq(setLabel("x", "L", "M")))
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -1516,13 +1649,14 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     val foreachProfile = queryProfile.operatorProfile(1)
 
-    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val tokenLookup = 2 * 3 * sizeHint
-      val setLabelToNode = 2 * sizeHint
-      tokenLookup + setLabelToNode
-    } else {
-      2 * costOfLabelLookup + 3 * sizeHint
-    }
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val tokenLookup = 2 * 3 * sizeHint
+        val setLabelToNode = 2 * sizeHint
+        tokenLookup + setLabelToNode
+      } else {
+        2 * costOfLabelLookup + 3 * sizeHint
+      }
 
     foreachProfile.rows() shouldBe sizeHint
     foreachProfile.dbHits() shouldBe expectedDbHits
@@ -1536,8 +1670,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
-        Seq(removeLabel("x", "A")))
+      .foreach("i", "[1, 2, 3]", Seq(removeLabel("x", "A")))
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -1548,13 +1681,14 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     val foreachProfile = queryProfile.operatorProfile(1)
 
-    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val tokenLookup = 1 * sizeHint
-      val setLabelToNode = 3 * sizeHint
-      tokenLookup + setLabelToNode
-    } else {
-      costOfLabelLookup + 3 * sizeHint
-    }
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val tokenLookup = 1 * sizeHint
+        val setLabelToNode = 3 * sizeHint
+        tokenLookup + setLabelToNode
+      } else {
+        costOfLabelLookup + 3 * sizeHint
+      }
 
     foreachProfile.rows() shouldBe sizeHint
     foreachProfile.dbHits() shouldBe expectedDbHits
@@ -1568,8 +1702,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("n", "[x]",
-        Seq(delete("n")))
+      .foreach("n", "[x]", Seq(delete("n")))
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -1589,7 +1722,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val emptyNodes = 2
     val nodesWithLabel = sizeHint - emptyNodes
     val label = "ExistingLabel"
-    val newLabels= Seq("Label", "OtherLabel")
+    val newLabels = Seq("Label", "OtherLabel")
     val labelsSet = label +: newLabels
 
     given {
@@ -1610,11 +1743,12 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     consume(runtimeResult)
     val setLabelsProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(2)
 
-    val setLabelsToNodeDbHits = if (useWritesWithProfiling) {
-      emptyNodes * 3 + nodesWithLabel * 2
-    } else {
-      sizeHint
-    }
+    val setLabelsToNodeDbHits =
+      if (useWritesWithProfiling) {
+        emptyNodes * 3 + nodesWithLabel * 2
+      } else {
+        sizeHint
+      }
 
     val labelTokenLookup = labelsSet.size
 
@@ -1645,11 +1779,12 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     val expectedLabelLookups = 2
 
-    val labelsRemovedFromNodeDbHits = if (useWritesWithProfiling) {
-      (nodeCount - 3) * Seq("Label", "OtherLabel").size + 1 * Seq("Label").size + 1 * Seq("OtherLabel").size
-    } else {
-      nodeCount
-    }
+    val labelsRemovedFromNodeDbHits =
+      if (useWritesWithProfiling) {
+        (nodeCount - 3) * Seq("Label", "OtherLabel").size + 1 * Seq("Label").size + 1 * Seq("OtherLabel").size
+      } else {
+        nodeCount
+      }
 
     removeLabelsProfile.dbHits() shouldBe labelsRemovedFromNodeDbHits + expectedLabelLookups
   }
@@ -1672,19 +1807,20 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     consume(runtimeResult)
     val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
 
-    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val setPropertyDbHits = sizeHint
-      val tokenDbHits = sizeHint * 2
-      setPropertyDbHits + tokenDbHits
-    } else if (useWritesWithProfiling) {
-      val setPropertyDbHits = sizeHint * 2
-      val tokenDbHits = sizeHint * 2 * costOfPropertyToken
-      setPropertyDbHits + tokenDbHits
-    } else {
-      val setPropertyDbHits = sizeHint
-      val tokenDbHits = sizeHint * 2 * costOfPropertyToken
-      setPropertyDbHits + tokenDbHits
-    }
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val setPropertyDbHits = sizeHint
+        val tokenDbHits = sizeHint * 2
+        setPropertyDbHits + tokenDbHits
+      } else if (useWritesWithProfiling) {
+        val setPropertyDbHits = sizeHint * 2
+        val tokenDbHits = sizeHint * 2 * costOfPropertyToken
+        setPropertyDbHits + tokenDbHits
+      } else {
+        val setPropertyDbHits = sizeHint
+        val tokenDbHits = sizeHint * 2 * costOfPropertyToken
+        setPropertyDbHits + tokenDbHits
+      }
 
     setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
   }
@@ -1698,7 +1834,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .setNodeProperties("n", ("prop",  "42"), ("foo", "1"))
+      .setNodeProperties("n", ("prop", "42"), ("foo", "1"))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -1713,11 +1849,10 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
         val tokenDbHits = sizeHint * 2
         setPropertyDbHits + tokenDbHits
       } else if (useWritesWithProfiling) {
-        //In non-fused pipeline we only count the number of set properties
+        // In non-fused pipeline we only count the number of set properties
         sizeHint * 2
-      }
-      else {
-        //In interpreted runtimes we use lazy property types which will amount
+      } else {
+        // In interpreted runtimes we use lazy property types which will amount
         // to the following count:
         // - first time we will try to read the two props, 2 db hits
         // - since the props are not there we will create the two, +2 db hits
@@ -1740,7 +1875,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .setRelationshipPropertiesFromMap("r","{prop: 42, foo: 1}", removeOtherProps = false)
+      .setRelationshipPropertiesFromMap("r", "{prop: 42, foo: 1}", removeOtherProps = false)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -1750,19 +1885,20 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     consume(runtimeResult)
     val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
 
-    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val setPropertyDbHits = relationshipCount
-      val tokenDbHits = relationshipCount * 2
-      setPropertyDbHits + tokenDbHits
-    } else if (useWritesWithProfiling) {
-      val setPropertyDbHits = relationshipCount * 2
-      val tokenDbHits = relationshipCount * 2 * costOfPropertyToken
-      setPropertyDbHits + tokenDbHits
-    } else {
-      val setPropertyDbHits = relationshipCount
-      val tokenDbHits = relationshipCount * 2 * costOfPropertyToken
-      setPropertyDbHits + tokenDbHits
-    }
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val setPropertyDbHits = relationshipCount
+        val tokenDbHits = relationshipCount * 2
+        setPropertyDbHits + tokenDbHits
+      } else if (useWritesWithProfiling) {
+        val setPropertyDbHits = relationshipCount * 2
+        val tokenDbHits = relationshipCount * 2 * costOfPropertyToken
+        setPropertyDbHits + tokenDbHits
+      } else {
+        val setPropertyDbHits = relationshipCount
+        val tokenDbHits = relationshipCount * 2 * costOfPropertyToken
+        setPropertyDbHits + tokenDbHits
+      }
 
     setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
   }
@@ -1778,7 +1914,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .setRelationshipProperties("r",("prop", "42"), ("foo", "1"))
+      .setRelationshipProperties("r", ("prop", "42"), ("foo", "1"))
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -1794,10 +1930,10 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
         val tokenDbHits = relationshipCount * 2
         setPropertyDbHits + tokenDbHits
       } else if (useWritesWithProfiling) {
-        //In non-fused pipeline we only count the number of set properties
+        // In non-fused pipeline we only count the number of set properties
         relationshipCount * 2
       } else {
-        //In interpreted runtimes we use lazy property types which will amount
+        // In interpreted runtimes we use lazy property types which will amount
         // to the following count:
         // - first time we will try to read the two props, 2 db hits
         // - since the props are not there we will create the two, +2 db hits
@@ -1825,7 +1961,8 @@ trait NonFusedWriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] extends Wr
       .sliding(2)
       .zipWithIndex
       .map {
-        case (Seq(a, b), i) => createRelationship(s"r$i", a.idName, "REL", b.idName, properties = Some(propertiesString(properties)))
+        case (Seq(a, b), i) =>
+          createRelationship(s"r$i", a.idName, "REL", b.idName, properties = Some(propertiesString(properties)))
       }
       .toSeq
     // given empty db
@@ -1847,7 +1984,8 @@ trait NonFusedWriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] extends Wr
     val createProfile = queryProfile.operatorProfile(2)
     val propertyHits = createRelationships.size
     val propertyTokenHits = createRelationships.size * properties.size
-    val relationshipHits = /* create relationships */ createRelationships.size + /* create relationship type */ createRelationships.size
+    val relationshipHits = /* create relationships */
+      createRelationships.size + /* create relationship type */ createRelationships.size
     val nodeHits = createNodeCount
     createProfile.dbHits() shouldBe (nodeHits + relationshipHits + propertyHits + propertyTokenHits)
   }

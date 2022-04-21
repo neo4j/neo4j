@@ -19,13 +19,12 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import static java.util.Collections.emptyList;
+
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Value;
-
-import static java.util.Collections.emptyList;
 
 /**
  * Represents the property changes to a {@link NodeState node} or {@link RelationshipState relationship}:
@@ -35,8 +34,7 @@ import static java.util.Collections.emptyList;
  * <li>{@linkplain #changedProperties() changed property values}.</li>
  * </ul>
  */
-public interface EntityState
-{
+public interface EntityState {
     Iterable<StorageProperty> addedProperties();
 
     Iterable<StorageProperty> changedProperties();
@@ -47,53 +45,45 @@ public interface EntityState
 
     boolean hasPropertyChanges();
 
-    boolean isPropertyChangedOrRemoved( int propertyKey );
+    boolean isPropertyChangedOrRemoved(int propertyKey);
 
-    Value propertyValue( int propertyKey );
+    Value propertyValue(int propertyKey);
 
     EntityState EMPTY = new EmptyEntityState();
 
-    class EmptyEntityState implements EntityState
-    {
+    class EmptyEntityState implements EntityState {
         @Override
-        public Iterable<StorageProperty> addedProperties()
-        {
+        public Iterable<StorageProperty> addedProperties() {
             return emptyList();
         }
 
         @Override
-        public Iterable<StorageProperty> changedProperties()
-        {
+        public Iterable<StorageProperty> changedProperties() {
             return emptyList();
         }
 
         @Override
-        public IntIterable removedProperties()
-        {
+        public IntIterable removedProperties() {
             return IntSets.immutable.empty();
         }
 
         @Override
-        public Iterable<StorageProperty> addedAndChangedProperties()
-        {
+        public Iterable<StorageProperty> addedAndChangedProperties() {
             return emptyList();
         }
 
         @Override
-        public boolean hasPropertyChanges()
-        {
+        public boolean hasPropertyChanges() {
             return false;
         }
 
         @Override
-        public boolean isPropertyChangedOrRemoved( int propertyKey )
-        {
+        public boolean isPropertyChangedOrRemoved(int propertyKey) {
             return false;
         }
 
         @Override
-        public Value propertyValue( int propertyKey )
-        {
+        public Value propertyValue(int propertyKey) {
             return null;
         }
     }

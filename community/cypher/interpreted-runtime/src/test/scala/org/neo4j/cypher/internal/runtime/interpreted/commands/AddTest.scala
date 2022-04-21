@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import java.nio.charset.StandardCharsets
-
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
@@ -34,6 +32,8 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.storable.Values.utf8Value
+
+import java.nio.charset.StandardCharsets
 
 class AddTest extends CypherFunSuite {
 
@@ -77,7 +77,7 @@ class AddTest extends CypherFunSuite {
     // Given
     val hello = "hello".getBytes(StandardCharsets.UTF_8)
     val world = "world".getBytes(StandardCharsets.UTF_8)
-    val state = QueryStateHelper.emptyWith(params = Array( utf8Value(hello), utf8Value(world)))
+    val state = QueryStateHelper.emptyWith(params = Array(utf8Value(hello), utf8Value(world)))
 
     // When
     val result = Add(ParameterFromSlot(0, "p1"), ParameterFromSlot(1, "p2"))(m, state)

@@ -25,11 +25,19 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
 
-case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean, rhsOnlySymbols: Set[String])
-                               (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class ConditionalApplyPipe(
+  source: Pipe,
+  inner: Pipe,
+  items: Seq[String],
+  negated: Boolean,
+  rhsOnlySymbols: Set[String]
+)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] =
     input.flatMap {
       outerContext =>
         if (condition(outerContext)) {

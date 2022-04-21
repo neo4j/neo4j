@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Looks up "input id" from a node. This is used when importing nodes and where the input data specifies ids
@@ -35,27 +35,27 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  * of the input id in memory. The input ids are stored as properties on the nodes to be able to retrieve
  * them for such an event. This class can look up those input id properties for arbitrary nodes.
  */
-class NodeInputIdPropertyLookup implements PropertyValueLookup
-{
+class NodeInputIdPropertyLookup implements PropertyValueLookup {
     private final PropertyStore propertyStore;
     private final PropertyRecord propertyRecord;
     private final StoreCursors storeCursors;
 
-    NodeInputIdPropertyLookup( PropertyStore propertyStore, StoreCursors storeCursors )
-    {
+    NodeInputIdPropertyLookup(PropertyStore propertyStore, StoreCursors storeCursors) {
         this.propertyStore = propertyStore;
         this.propertyRecord = propertyStore.newRecord();
         this.storeCursors = storeCursors;
     }
 
     @Override
-    public Object lookupProperty( long nodeId )
-    {
-        propertyStore.getRecordByCursor( nodeId, propertyRecord, CHECK, storeCursors.readCursor( PROPERTY_CURSOR ) );
-        if ( !propertyRecord.inUse() )
-        {
+    public Object lookupProperty(long nodeId) {
+        propertyStore.getRecordByCursor(nodeId, propertyRecord, CHECK, storeCursors.readCursor(PROPERTY_CURSOR));
+        if (!propertyRecord.inUse()) {
             return null;
         }
-        return propertyRecord.iterator().next().newPropertyValue( propertyStore, storeCursors ).asObject();
+        return propertyRecord
+                .iterator()
+                .next()
+                .newPropertyValue(propertyStore, storeCursors)
+                .asObject();
     }
 }

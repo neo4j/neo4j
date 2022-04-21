@@ -19,6 +19,11 @@
  */
 package org.neo4j.logging.log4j;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -30,21 +35,13 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.spi.ExtendedLogger;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
  * Should be used for files where rotation is required and the messages needs no additional formatting by the logging framework.
  */
-public class RotatingLogFileWriter implements Closeable
-{
+public class RotatingLogFileWriter implements Closeable {
     private static final String APPENDER_NAME = "rotatingWriter";
 
     private final ExtendedLogger log;
@@ -59,71 +56,82 @@ public class RotatingLogFileWriter implements Closeable
      *                   the compression scheme that matches the suffix. Empty string if no additional file suffix should be added.
      * @param header String to print at beginning of each new file. Note that the header has no implicit newline so that must be added in the string if desired.
      */
-    public RotatingLogFileWriter( FileSystemAbstraction fs, Path logPath, long rotationThreshold, int maxArchives, String fileSuffix, String header )
-    {
-        ctx = setupLogFile( fs, logPath, rotationThreshold, maxArchives, fileSuffix, header );
-        log = ctx.getLogger( "" );
+    public RotatingLogFileWriter(
+            FileSystemAbstraction fs,
+            Path logPath,
+            long rotationThreshold,
+            int maxArchives,
+            String fileSuffix,
+            String header) {
+        ctx = setupLogFile(fs, logPath, rotationThreshold, maxArchives, fileSuffix, header);
+        log = ctx.getLogger("");
     }
 
-    public void printf( String pattern, Object... params )
-    {
-        log.printf( Level.DEBUG, pattern, params );
+    public void printf(String pattern, Object... params) {
+        log.printf(Level.DEBUG, pattern, params);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         ctx.close();
     }
 
-    private static Neo4jLoggerContext setupLogFile( FileSystemAbstraction fileSystemAbstraction, Path logPath, long rotationThreshold, int maxArchives,
-            String fileSuffix, String header )
-    {
-        try
-        {
+    private static Neo4jLoggerContext setupLogFile(
+            FileSystemAbstraction fileSystemAbstraction,
+            Path logPath,
+            long rotationThreshold,
+            int maxArchives,
+            String fileSuffix,
+            String header) {
+        try {
             Closeable additionalCloseable = null;
             Configuration configuration = new Neo4jConfiguration();
 
             // Just adds a header to the beginning of each file - no transformation will be done on the log messages.
-            PatternLayout layout = PatternLayout.newBuilder().withConfiguration( configuration ).withHeader( header ).build();
+            PatternLayout layout = PatternLayout.newBuilder()
+                    .withConfiguration(configuration)
+                    .withHeader(header)
+                    .build();
 
             Appender appender;
-            if ( fileSystemAbstraction instanceof DefaultFileSystemAbstraction )
-            {
+            if (fileSystemAbstraction instanceof DefaultFileSystemAbstraction) {
                 appender = RollingFileAppender.newBuilder()
-                        .setName( APPENDER_NAME + "." + logPath.getFileName().toString() )
-                        .setLayout( layout )
-                        .withFileName( logPath.toString() )
-                        .withFilePattern( logPath + ".%i" + fileSuffix )
-                        .withPolicy( SizeBasedTriggeringPolicy.createPolicy( String.valueOf( rotationThreshold ) ) )
-                        .withStrategy( DefaultRolloverStrategy.newBuilder().withMax( String.valueOf( maxArchives ) ).withFileIndex( "min" ).build() )
+                        .setName(APPENDER_NAME + "." + logPath.getFileName().toString())
+                        .setLayout(layout)
+                        .withFileName(logPath.toString())
+                        .withFilePattern(logPath + ".%i" + fileSuffix)
+                        .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(rotationThreshold)))
+                        .withStrategy(DefaultRolloverStrategy.newBuilder()
+                                .withMax(String.valueOf(maxArchives))
+                                .withFileIndex("min")
+                                .build())
                         .build();
-            }
-            else
-            {
-                // When using a different file system than DefaultFileSystemAbstraction for tests, we cannot use log4j file appenders since
+            } else {
+                // When using a different file system than DefaultFileSystemAbstraction for tests, we cannot use log4j
+                // file appenders since
                 // it will create files directly in the real filesystem ignoring our abstraction.
-                fileSystemAbstraction.mkdirs( logPath.getParent() );
-                OutputStream outputStream = fileSystemAbstraction.openAsOutputStream( logPath, true );
+                fileSystemAbstraction.mkdirs(logPath.getParent());
+                OutputStream outputStream = fileSystemAbstraction.openAsOutputStream(logPath, true);
                 additionalCloseable = outputStream;
                 appender = ((OutputStreamAppender.Builder<?>) OutputStreamAppender.newBuilder()
-                                                                                  .setName( APPENDER_NAME + "." + logPath.getFileName().toString() )
-                                                                                  .setLayout( layout ) ).setTarget( outputStream ).build();
+                                .setName(APPENDER_NAME + "."
+                                        + logPath.getFileName().toString())
+                                .setLayout(layout))
+                        .setTarget(outputStream)
+                        .build();
             }
             appender.start();
-            configuration.addAppender( appender );
+            configuration.addAppender(appender);
 
             LoggerConfig rootLogger = configuration.getRootLogger();
-            rootLogger.addAppender( appender, null, null );
-            rootLogger.setLevel( Level.DEBUG );
+            rootLogger.addAppender(appender, null, null);
+            rootLogger.setLevel(Level.DEBUG);
 
-            LoggerContext context = new LoggerContext( "loggercontext" );
-            context.setConfiguration( configuration );
-            return new Neo4jLoggerContext( context, additionalCloseable );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+            LoggerContext context = new LoggerContext("loggercontext");
+            context.setConfiguration(configuration);
+            return new Neo4jLoggerContext(context, additionalCloseable);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

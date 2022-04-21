@@ -38,13 +38,16 @@ import org.neo4j.memory.MemoryTracker
  *
  * @param cursorFactory cursor factor to allocate cursors with.
  */
-class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
-                        private[this] var cursorContext: CursorContext,
-                        memoryTracker: MemoryTracker)
-  extends DefaultCloseListenable with ResourceManagedCursorPool {
+class ExpressionCursors(
+  private[this] var cursorFactory: CursorFactory,
+  private[this] var cursorContext: CursorContext,
+  memoryTracker: MemoryTracker
+) extends DefaultCloseListenable with ResourceManagedCursorPool {
 
   private[this] var _nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
-  private[this] var _relationshipScanCursor: RelationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext)
+
+  private[this] var _relationshipScanCursor: RelationshipScanCursor =
+    cursorFactory.allocateRelationshipScanCursor(cursorContext)
   private[this] var _propertyCursor: PropertyCursor = cursorFactory.allocatePropertyCursor(cursorContext, memoryTracker)
 
   def nodeCursor: NodeCursor = {
@@ -103,7 +106,7 @@ class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
   private def notReturnedToPool(cursor: Cursor): Boolean = {
     cursor match {
       case tc: TraceableCursor[_] => !tc.returnedToPool()
-      case _ => true
+      case _                      => true
     }
   }
 }

@@ -19,44 +19,41 @@
  */
 package org.neo4j.fabric.executor;
 
-import reactor.core.publisher.Mono;
-
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.transaction.CompositeTransaction;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.values.virtual.MapValue;
+import reactor.core.publisher.Mono;
 
-public class ThrowingFabricRemoteExecutor implements FabricRemoteExecutor
-{
+public class ThrowingFabricRemoteExecutor implements FabricRemoteExecutor {
     @Override
-    public RemoteTransactionContext startTransactionContext( CompositeTransaction compositeTransaction, FabricTransactionInfo transactionInfo,
-            TransactionBookmarkManager bookmarkManager )
-    {
+    public RemoteTransactionContext startTransactionContext(
+            CompositeTransaction compositeTransaction,
+            FabricTransactionInfo transactionInfo,
+            TransactionBookmarkManager bookmarkManager) {
         return new RemoteTransactionContextImpl();
     }
 
-    private static class RemoteTransactionContextImpl implements RemoteTransactionContext
-    {
+    private static class RemoteTransactionContextImpl implements RemoteTransactionContext {
 
         @Override
-        public Mono<StatementResult> run( Location.Remote location, ExecutionOptions executionOptions, String query, TransactionMode transactionMode,
-                MapValue params )
-        {
-            throw new IllegalStateException( "Remote query execution not supported" );
+        public Mono<StatementResult> run(
+                Location.Remote location,
+                ExecutionOptions executionOptions,
+                String query,
+                TransactionMode transactionMode,
+                MapValue params) {
+            throw new IllegalStateException("Remote query execution not supported");
         }
 
         @Override
-        public boolean isEmptyContext()
-        {
+        public boolean isEmptyContext() {
             return true;
         }
 
         @Override
-        public void close()
-        {
-
-        }
+        public void close() {}
     }
 }

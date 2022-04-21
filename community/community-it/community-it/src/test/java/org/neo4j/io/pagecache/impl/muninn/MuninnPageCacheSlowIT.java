@@ -21,11 +21,9 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.io.pagecache.PageCacheSlowTest;
 
-public class MuninnPageCacheSlowIT extends PageCacheSlowTest<MuninnPageCache>
-{
+public class MuninnPageCacheSlowIT extends PageCacheSlowTest<MuninnPageCache> {
     @Override
-    protected Fixture<MuninnPageCache> createFixture()
-    {
+    protected Fixture<MuninnPageCache> createFixture() {
         return new MuninnPageCacheFixture();
     }
 }

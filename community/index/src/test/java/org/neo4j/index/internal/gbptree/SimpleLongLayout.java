@@ -20,175 +20,147 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-
 import org.neo4j.io.pagecache.PageCursor;
 
-public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
-{
+public class SimpleLongLayout extends TestLayout<MutableLong, MutableLong> {
     private final int keyPadding;
 
-    public static class Builder
-    {
+    public static class Builder {
         private int keyPadding;
         private int identifier = 999;
         private int majorVersion;
         private int minorVersion;
         private boolean fixedSize = true;
 
-        public Builder withKeyPadding( int keyPadding )
-        {
+        public Builder withKeyPadding(int keyPadding) {
             this.keyPadding = keyPadding;
             return this;
         }
 
-        public Builder withIdentifier( int identifier )
-        {
+        public Builder withIdentifier(int identifier) {
             this.identifier = identifier;
             return this;
         }
 
-        public Builder withMajorVersion( int majorVersion )
-        {
+        public Builder withMajorVersion(int majorVersion) {
             this.majorVersion = majorVersion;
             return this;
         }
 
-        public Builder withMinorVersion( int minorVersion )
-        {
+        public Builder withMinorVersion(int minorVersion) {
             this.minorVersion = minorVersion;
             return this;
         }
 
-        public Builder withFixedSize( boolean fixedSize )
-        {
+        public Builder withFixedSize(boolean fixedSize) {
             this.fixedSize = fixedSize;
             return this;
         }
 
-        public SimpleLongLayout build()
-        {
-            return new SimpleLongLayout( keyPadding, fixedSize, identifier, majorVersion, minorVersion );
+        public SimpleLongLayout build() {
+            return new SimpleLongLayout(keyPadding, fixedSize, identifier, majorVersion, minorVersion);
         }
     }
 
-    public static Builder longLayout()
-    {
+    public static Builder longLayout() {
         return new Builder();
     }
 
-    private SimpleLongLayout( int keyPadding, boolean fixedSize, int identifier, int majorVersion, int minorVersion )
-    {
-        super( fixedSize, identifier, majorVersion, minorVersion );
+    private SimpleLongLayout(int keyPadding, boolean fixedSize, int identifier, int majorVersion, int minorVersion) {
+        super(fixedSize, identifier, majorVersion, minorVersion);
         this.keyPadding = keyPadding;
     }
 
     @Override
-    public int compare( MutableLong o1, MutableLong o2 )
-    {
-        return Long.compare( o1.longValue(), o2.longValue() );
+    public int compare(MutableLong o1, MutableLong o2) {
+        return Long.compare(o1.longValue(), o2.longValue());
     }
 
     @Override
-    int compareValue( MutableLong v1, MutableLong v2 )
-    {
-        return compare( v1, v2 );
+    int compareValue(MutableLong v1, MutableLong v2) {
+        return compare(v1, v2);
     }
 
     @Override
-    public MutableLong newKey()
-    {
+    public MutableLong newKey() {
         return new MutableLong();
     }
 
     @Override
-    public MutableLong copyKey( MutableLong key, MutableLong into )
-    {
-        into.setValue( key.longValue() );
+    public MutableLong copyKey(MutableLong key, MutableLong into) {
+        into.setValue(key.longValue());
         return into;
     }
 
     @Override
-    public MutableLong newValue()
-    {
+    public MutableLong newValue() {
         return new MutableLong();
     }
 
     @Override
-    public int keySize( MutableLong key )
-    {
+    public int keySize(MutableLong key) {
         // pad the key here to affect the max key count, useful to get odd or even max key count
         return Long.BYTES + keyPadding;
     }
 
     @Override
-    public int valueSize( MutableLong value )
-    {
+    public int valueSize(MutableLong value) {
         return Long.BYTES;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, MutableLong key )
-    {
-        cursor.putLong( key.longValue() );
-        cursor.putBytes( keyPadding, (byte) 0 );
+    public void writeKey(PageCursor cursor, MutableLong key) {
+        cursor.putLong(key.longValue());
+        cursor.putBytes(keyPadding, (byte) 0);
     }
 
     @Override
-    public void writeValue( PageCursor cursor, MutableLong value )
-    {
-        cursor.putLong( value.longValue() );
+    public void writeValue(PageCursor cursor, MutableLong value) {
+        cursor.putLong(value.longValue());
     }
 
     @Override
-    public void readKey( PageCursor cursor, MutableLong into, int keySize )
-    {
-        into.setValue( cursor.getLong() );
-        cursor.getBytes( new byte[keyPadding] );
+    public void readKey(PageCursor cursor, MutableLong into, int keySize) {
+        into.setValue(cursor.getLong());
+        cursor.getBytes(new byte[keyPadding]);
     }
 
     @Override
-    public void readValue( PageCursor cursor, MutableLong into, int valueSize )
-    {
-        into.setValue( cursor.getLong() );
+    public void readValue(PageCursor cursor, MutableLong into, int valueSize) {
+        into.setValue(cursor.getLong());
     }
 
     @Override
-    public MutableLong key( long seed )
-    {
+    public MutableLong key(long seed) {
         MutableLong key = newKey();
-        key.setValue( seed );
+        key.setValue(seed);
         return key;
     }
 
     @Override
-    public MutableLong value( long seed )
-    {
+    public MutableLong value(long seed) {
         MutableLong value = newValue();
-        value.setValue( seed );
+        value.setValue(seed);
         return value;
     }
 
     @Override
-    public long keySeed( MutableLong key )
-    {
+    public long keySeed(MutableLong key) {
         return key.getValue();
     }
 
     @Override
-    public long valueSeed( MutableLong value )
-    {
+    public long valueSeed(MutableLong value) {
         return value.getValue();
     }
 
     @Override
-    public void initializeAsLowest( MutableLong key )
-    {
-        key.setValue( Long.MIN_VALUE );
+    public void initializeAsLowest(MutableLong key) {
+        key.setValue(Long.MIN_VALUE);
     }
 
     @Override
-    public void initializeAsHighest( MutableLong key )
-    {
-        key.setValue( Long.MAX_VALUE );
+    public void initializeAsHighest(MutableLong key) {
+        key.setValue(Long.MAX_VALUE);
     }
 }

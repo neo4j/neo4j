@@ -19,61 +19,52 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.Iterator;
-import java.util.function.Consumer;
-
-import org.neo4j.graphdb.schema.IndexDefinition;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class FacadeMethod<T> implements Consumer<T>
-{
-    public static final Label LABEL = Label.label( "Label" );
-    public static final RelationshipType FOO = withName( "foo" );
-    public static final RelationshipType BAR = withName( "bar" );
-    public static final Label QUUX = label( "quux" );
-    public static final IndexDefinition INDEX_DEFINITION = mock( IndexDefinition.class );
+import java.util.Iterator;
+import java.util.function.Consumer;
+import org.neo4j.graphdb.schema.IndexDefinition;
+
+public class FacadeMethod<T> implements Consumer<T> {
+    public static final Label LABEL = Label.label("Label");
+    public static final RelationshipType FOO = withName("foo");
+    public static final RelationshipType BAR = withName("bar");
+    public static final Label QUUX = label("quux");
+    public static final IndexDefinition INDEX_DEFINITION = mock(IndexDefinition.class);
 
     private final String methodSignature;
     private final Consumer<T> callable;
 
-    public FacadeMethod( String methodSignature, Consumer<T> callable )
-    {
+    public FacadeMethod(String methodSignature, Consumer<T> callable) {
         this.methodSignature = methodSignature;
         this.callable = callable;
     }
 
     @Override
-    public void accept( T t )
-    {
-        callable.accept( t );
+    public void accept(T t) {
+        callable.accept(t);
     }
 
-    public void call( T self )
-    {
-        callable.accept( self );
+    public void call(T self) {
+        callable.accept(self);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return methodSignature;
     }
 
-    public static <T> void consume( Iterator<T> iterator )
-    {
+    public static <T> void consume(Iterator<T> iterator) {
         Iterable<T> iterable = () -> iterator;
-        consume( iterable );
+        consume(iterable);
     }
 
-    public static void consume( Iterable<?> iterable )
-    {
-        for ( Object o : iterable )
-        {
-            assertNotNull( o );
+    public static void consume(Iterable<?> iterable) {
+        for (Object o : iterable) {
+            assertNotNull(o);
         }
     }
 }

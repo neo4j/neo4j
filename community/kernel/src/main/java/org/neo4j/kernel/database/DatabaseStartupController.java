@@ -23,9 +23,8 @@ package org.neo4j.kernel.database;
  * Controller that checked during database startup to react on incoming stop/shutdown requests.
  */
 @FunctionalInterface
-public interface DatabaseStartupController
-{
+public interface DatabaseStartupController {
     DatabaseStartupController NEVER_ABORT = id -> false;
 
-    boolean shouldAbort( NamedDatabaseId namedDatabaseId );
+    boolean shouldAbort(NamedDatabaseId namedDatabaseId);
 }

@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LetSelectOrSemiApplyPipeTest extends CypherFunSuite {
+
   test("Each row should immediately close RHS. Exhaust should close LHS.") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val lhs = new FakePipe(Seq(Map("a"->10),Map("a"->11)))
-    val rhs = new FakePipe(Seq(Map("b"->20),Map("b"->21)))
+    val lhs = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11)))
+    val rhs = new FakePipe(Seq(Map("b" -> 20), Map("b" -> 21)))
     val pipe = LetSelectOrSemiApplyPipe(lhs, rhs, "c", Not(True()), negated = false)()
     val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     result.next() // First row

@@ -19,28 +19,25 @@
  */
 package org.neo4j.test;
 
+import static java.util.Objects.requireNonNull;
+
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-import static java.util.Objects.requireNonNull;
-
-public final class PortUtils
-{
-    private PortUtils()
-    {
+public final class PortUtils {
+    private PortUtils() {
         // nop
     }
 
-    public static int getBoltPort( GraphDatabaseService db )
-    {
-        return getConnectorAddress( (GraphDatabaseAPI) db, "bolt" ).getPort();
+    public static int getBoltPort(GraphDatabaseService db) {
+        return getConnectorAddress((GraphDatabaseAPI) db, "bolt").getPort();
     }
 
-    public static HostnamePort getConnectorAddress( GraphDatabaseAPI db, String connectorKey )
-    {
-        final ConnectorPortRegister portRegister = db.getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
-        return requireNonNull( portRegister.getLocalAddress( connectorKey ), "Connector not found: " + connectorKey);
+    public static HostnamePort getConnectorAddress(GraphDatabaseAPI db, String connectorKey) {
+        final ConnectorPortRegister portRegister =
+                db.getDependencyResolver().resolveDependency(ConnectorPortRegister.class);
+        return requireNonNull(portRegister.getLocalAddress(connectorKey), "Connector not found: " + connectorKey);
     }
 }

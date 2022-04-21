@@ -28,8 +28,7 @@ package org.neo4j.util.concurrent;
  * that is the logical next one, whenever that arrives, will move the externally visible number to
  * the highest gap-free number set.
  */
-public interface OutOfOrderSequence
-{
+public interface OutOfOrderSequence {
     /**
      * Offers a number to this sequence.
      *
@@ -37,7 +36,7 @@ public interface OutOfOrderSequence
      * @param meta meta data about the number
      * @return {@code true} if highest gap-free number changed as part of this call, otherwise {@code false}.
      */
-    boolean offer( long number, long[] meta );
+    boolean offer(long number, long[] meta);
 
     /**
      * @return the highest number, without its meta data.
@@ -57,12 +56,11 @@ public interface OutOfOrderSequence
     /**
      * Used in recovery. I don't like the visibility of this method at all.
      */
-    void set( long number, long[] meta );
+    void set(long number, long[] meta);
 
     Snapshot snapshot();
 
-    interface Snapshot
-    {
+    interface Snapshot {
         long[] highestGapFree();
 
         long[][] idsOutOfOrder();

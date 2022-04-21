@@ -23,11 +23,14 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.exceptions.InternalException
 
 object ExpressionVariable {
+
   def cast(variable: LogicalVariable): ExpressionVariable =
     variable match {
       case ev: ExpressionVariable => ev
       case v =>
-        throw new InternalException(s"Error during interpreted physical planning: expression variable '$v' has not been allocated")
+        throw new InternalException(
+          s"Error during interpreted physical planning: expression variable '$v' has not been allocated"
+        )
     }
 }
 

@@ -25,19 +25,19 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
   private val condition: Any => Seq[String] = aggregationsAreIsolated
 
   test("happy when aggregation are top level in expressions") {
-    val ast = CountStar()_
+    val ast = CountStar() _
 
     condition(ast) shouldBe empty
   }
 
   test("unhappy when aggregation is sub-expression of the expressions") {
-    val ast = equals(CountStar()_, literalUnsignedInt(42))
+    val ast = equals(CountStar() _, literalUnsignedInt(42))
 
     condition(ast) should equal(Seq(s"Expression $ast contains child expressions which are aggregations"))
   }
 
   test("unhappy when aggregations are both top-level and sub-expression of the expression") {
-    val innerEquals = equals(CountStar()_, literalUnsignedInt(42))
+    val innerEquals = equals(CountStar() _, literalUnsignedInt(42))
     val ast = count(innerEquals)
 
     condition(ast) should equal(Seq(s"Expression $innerEquals contains child expressions which are aggregations"))

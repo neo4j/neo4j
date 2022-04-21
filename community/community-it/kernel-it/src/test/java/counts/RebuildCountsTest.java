@@ -19,12 +19,19 @@
  */
 package counts;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
+
+import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -48,25 +55,16 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
-import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
 @EphemeralNeo4jLayoutExtension
-class RebuildCountsTest
-{
+class RebuildCountsTest {
     private static final int ALIENS = 16;
     private static final int HUMANS = 16;
-    private static final Label ALIEN = label( "Alien" );
-    private static final Label HUMAN = label( "Human" );
+    private static final Label ALIEN = label("Alien");
+    private static final Label HUMAN = label("Human");
 
     @Inject
     private EphemeralFileSystemAbstraction fileSystem;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
@@ -77,35 +75,31 @@ class RebuildCountsTest
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void before()
-    {
-        restart( fileSystem );
+    void before() {
+        restart(fileSystem);
     }
 
     @AfterEach
-    void after()
-    {
+    void after() {
         doCleanShutdown();
     }
 
     @Test
-    void shouldRebuildMissingCountsStoreOnStart() throws IOException, TransactionFailureException
-    {
+    void shouldRebuildMissingCountsStoreOnStart() throws IOException, TransactionFailureException {
         // given
         createAliensAndHumans();
 
         // when
         FileSystemAbstraction fs = shutdown();
-        deleteCounts( fs );
-        restart( fs );
+        deleteCounts(fs);
+        restart(fs);
 
         // then
-        Kernel kernel = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
-        {
-            assertEquals( ALIENS + HUMANS, tx.dataRead().countsForNode( -1 ) );
-            assertEquals( ALIENS, tx.dataRead().countsForNode( labelId( ALIEN ) ) );
-            assertEquals( HUMANS, tx.dataRead().countsForNode( labelId( HUMAN ) ) );
+        Kernel kernel = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(Kernel.class);
+        try (KernelTransaction tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            assertEquals(ALIENS + HUMANS, tx.dataRead().countsForNode(-1));
+            assertEquals(ALIENS, tx.dataRead().countsForNode(labelId(ALIEN)));
+            assertEquals(HUMANS, tx.dataRead().countsForNode(labelId(HUMAN)));
         }
 
         // and also
@@ -113,8 +107,7 @@ class RebuildCountsTest
     }
 
     @Test
-    void shouldRebuildMissingCountsStoreAfterRecovery() throws IOException, TransactionFailureException
-    {
+    void shouldRebuildMissingCountsStoreAfterRecovery() throws IOException, TransactionFailureException {
         // given
         createAliensAndHumans();
 
@@ -122,46 +115,37 @@ class RebuildCountsTest
         rotateLog();
         deleteHumans();
         FileSystemAbstraction fs = crash();
-        deleteCounts( fs );
-        restart( fs );
+        deleteCounts(fs);
+        restart(fs);
 
         // then
-        Kernel kernel = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
-        {
-            assertEquals( ALIENS, tx.dataRead().countsForNode( -1 ) );
-            assertEquals( ALIENS, tx.dataRead().countsForNode( labelId( ALIEN ) ) );
-            assertEquals( 0, tx.dataRead().countsForNode( labelId( HUMAN ) ) );
+        Kernel kernel = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(Kernel.class);
+        try (KernelTransaction tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            assertEquals(ALIENS, tx.dataRead().countsForNode(-1));
+            assertEquals(ALIENS, tx.dataRead().countsForNode(labelId(ALIEN)));
+            assertEquals(0, tx.dataRead().countsForNode(labelId(HUMAN)));
         }
 
         // and also
         assertRebuildLogged();
     }
 
-    private void createAliensAndHumans()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < ALIENS; i++ )
-            {
-                tx.createNode( ALIEN );
+    private void createAliensAndHumans() {
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < ALIENS; i++) {
+                tx.createNode(ALIEN);
             }
-            for ( int i = 0; i < HUMANS; i++ )
-            {
-                tx.createNode( HUMAN );
+            for (int i = 0; i < HUMANS; i++) {
+                tx.createNode(HUMAN);
             }
             tx.commit();
         }
     }
 
-    private void deleteHumans()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            try ( ResourceIterator<Node> humans = tx.findNodes( HUMAN ) )
-            {
-                while ( humans.hasNext() )
-                {
+    private void deleteHumans() {
+        try (Transaction tx = db.beginTx()) {
+            try (ResourceIterator<Node> humans = tx.findNodes(HUMAN)) {
+                while (humans.hasNext()) {
                     humans.next().delete();
                 }
             }
@@ -169,68 +153,59 @@ class RebuildCountsTest
         }
     }
 
-    private int labelId( Label alien )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel( alien.name() );
+    private int labelId(Label alien) {
+        try (Transaction tx = db.beginTx()) {
+            return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel(alien.name());
         }
     }
 
-    private void deleteCounts( FileSystemAbstraction snapshot ) throws IOException
-    {
-        snapshot.deleteFile( databaseLayout.countStore() );
+    private void deleteCounts(FileSystemAbstraction snapshot) throws IOException {
+        snapshot.deleteFile(databaseLayout.countStore());
     }
 
-    private FileSystemAbstraction shutdown()
-    {
+    private FileSystemAbstraction shutdown() {
         doCleanShutdown();
         return fileSystem.snapshot();
     }
 
-    private void rotateLog() throws IOException
-    {
-        ((GraphDatabaseAPI) db).getDependencyResolver()
-                               .resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+    private void rotateLog() throws IOException {
+        ((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency(CheckPointer.class)
+                .forceCheckPoint(new SimpleTriggerInfo("test"));
     }
 
-    private FileSystemAbstraction crash()
-    {
+    private FileSystemAbstraction crash() {
         return fileSystem.snapshot();
     }
 
-    private void restart( FileSystemAbstraction fs )
-    {
-        if ( db != null )
-        {
+    private void restart(FileSystemAbstraction fs) {
+        if (db != null) {
             managementService.shutdown();
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setUserLogProvider( userLogProvider )
-                .setInternalLogProvider( internalLogProvider )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+        managementService = new TestDatabaseManagementServiceBuilder(databaseLayout)
+                .setUserLogProvider(userLogProvider)
+                .setInternalLogProvider(internalLogProvider)
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                 .impermanent()
-                .setConfig( index_background_sampling_enabled, false )
+                .setConfig(index_background_sampling_enabled, false)
                 .build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+        db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void doCleanShutdown()
-    {
-        try
-        {
+    private void doCleanShutdown() {
+        try {
             managementService.shutdown();
-        }
-        finally
-        {
+        } finally {
             db = null;
         }
     }
 
-    private void assertRebuildLogged()
-    {
-        assertThat( internalLogProvider ).forClass( MetaDataStore.class ).forLevel( WARN )
-                .containsMessages( "Missing counts store, rebuilding it.", "Counts store rebuild completed." );
+    private void assertRebuildLogged() {
+        assertThat(internalLogProvider)
+                .forClass(MetaDataStore.class)
+                .forLevel(WARN)
+                .containsMessages("Missing counts store, rebuilding it.", "Counts store rebuild completed.");
     }
 }

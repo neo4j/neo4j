@@ -21,17 +21,15 @@ package org.neo4j.tooling.procedure.procedures.invalid.bad_record_field_type;
 
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-public class BadRecordGenericFieldType
-{
+public class BadRecordGenericFieldType {
 
-    public Map<String,Integer> wrongType1;
+    public Map<String, Integer> wrongType1;
     public List<Integer> wrongType2;
-    public List<List<Map<String,Integer>>> wrongType3;
+    public List<List<Map<String, Integer>>> wrongType3;
     public List<String> okType1;
     public List<Long> okType2;
     public List<Double> okType4;
@@ -41,8 +39,8 @@ public class BadRecordGenericFieldType
     public List<Node> okType10;
     public List<Relationship> okType11;
     public List<Object> okType12;
-    public Map<String,Object> okType13;
-    public Map<String,Object> okType14;
+    public Map<String, Object> okType13;
+    public Map<String, Object> okType14;
     public List<Boolean> okType15;
     public List<Object> okType16;
 }

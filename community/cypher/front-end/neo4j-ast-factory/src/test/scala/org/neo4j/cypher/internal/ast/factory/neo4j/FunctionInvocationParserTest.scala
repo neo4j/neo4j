@@ -32,6 +32,7 @@ class FunctionInvocationParserTest extends JavaccParserAstTestBase[Expression] {
   test("foo('test', 1 + 2)") {
     gives(function("foo", literalString("test"), add(literalInt(1), literalInt(2))))
   }
+
   test("my.namespace.foo()") {
     gives(function(List("my", "namespace"), "foo"))
   }

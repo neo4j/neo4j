@@ -33,9 +33,8 @@ import scala.language.implicitConversions
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
 QueryGraphs and EventHorizons
  */
-case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(),
-                           tailPlanner: TailPlanner = PlanWithTail())
-  extends SingleQueryPlanner {
+case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(), tailPlanner: TailPlanner = PlanWithTail())
+    extends SingleQueryPlanner {
 
   private type StepResult = (BestPlans, LogicalPlanningContext)
 
@@ -58,19 +57,27 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(),
     bestPlan
   }
 
-  private def planRemainingParts(plans: BestPlans,
-                                 query: SinglePlannerQuery,
-                                 context: LogicalPlanningContext,
-                                 limitSelectivityConfigs: List[LimitSelectivityConfig]): StepResult = {
+  private def planRemainingParts(
+    plans: BestPlans,
+    query: SinglePlannerQuery,
+    context: LogicalPlanningContext,
+    limitSelectivityConfigs: List[LimitSelectivityConfig]
+  ): StepResult = {
     val remainingPartsWithExtras = {
       val allParts = query.allPlannerQueries
-      assert(allParts.length == limitSelectivityConfigs.length, "We should have limit selectivities for all query parts.")
+      assert(
+        allParts.length == limitSelectivityConfigs.length,
+        "We should have limit selectivities for all query parts."
+      )
       allParts.tail.lazyZip(limitSelectivityConfigs.tail).lazyZip(allParts)
     }
 
     remainingPartsWithExtras.foldLeft((plans, context)) {
       case ((plans, context), (queryPart, limitSelectivityConfig, prevQueryPart)) =>
-        tailPlanner.plan(plans, queryPart, prevQueryPart.interestingOrder,
+        tailPlanner.plan(
+          plans,
+          queryPart,
+          prevQueryPart.interestingOrder,
           context
             .withLimitSelectivityConfig(limitSelectivityConfig)
             .withLastSolvedQueryPart(prevQueryPart)
@@ -92,6 +99,7 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(),
 }
 
 sealed trait PlannerType
+
 object PlannerType {
   case object Match extends PlannerType
   case object Horizon extends PlannerType
@@ -105,15 +113,20 @@ trait MatchPlanner {
 }
 
 trait EventHorizonPlanner {
-  protected def doPlanHorizon(plannerQuery: SinglePlannerQuery,
-                              incomingPlans: BestResults[LogicalPlan],
-                              prevInterestingOrder: Option[InterestingOrder],
-                              context: LogicalPlanningContext): BestResults[LogicalPlan]
 
-  final def planHorizon(plannerQuery: SinglePlannerQuery,
-                        incomingPlans: BestResults[LogicalPlan],
-                        prevInterestingOrder: Option[InterestingOrder],
-                        context: LogicalPlanningContext): BestResults[LogicalPlan] =
+  protected def doPlanHorizon(
+    plannerQuery: SinglePlannerQuery,
+    incomingPlans: BestResults[LogicalPlan],
+    prevInterestingOrder: Option[InterestingOrder],
+    context: LogicalPlanningContext
+  ): BestResults[LogicalPlan]
+
+  final def planHorizon(
+    plannerQuery: SinglePlannerQuery,
+    incomingPlans: BestResults[LogicalPlan],
+    prevInterestingOrder: Option[InterestingOrder],
+    context: LogicalPlanningContext
+  ): BestResults[LogicalPlan] =
     doPlanHorizon(plannerQuery, incomingPlans, prevInterestingOrder, context.withActivePlanner(PlannerType.Horizon))
 }
 
@@ -122,12 +135,21 @@ trait HeadPlanner {
 }
 
 trait TailPlanner {
-  def plan(lhsPlans: BestPlans,
-            tailQuery: SinglePlannerQuery,
-            previousInterestingOrder: InterestingOrder,
-            context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext)
+
+  def plan(
+    lhsPlans: BestPlans,
+    tailQuery: SinglePlannerQuery,
+    previousInterestingOrder: InterestingOrder,
+    context: LogicalPlanningContext
+  ): (BestPlans, LogicalPlanningContext)
 }
 
 trait UpdatesPlanner {
-  def plan(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): LogicalPlan
+
+  def plan(
+    query: SinglePlannerQuery,
+    in: LogicalPlan,
+    firstPlannerQuery: Boolean,
+    context: LogicalPlanningContext
+  ): LogicalPlan
 }

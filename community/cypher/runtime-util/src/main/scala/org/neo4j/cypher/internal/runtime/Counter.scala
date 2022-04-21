@@ -52,6 +52,7 @@ class Counter(initialCount: Long) {
 
   def track[T](tracked: Iterator[T]) = new CountingIterator[T] {
     override def hasNext = tracked.hasNext
+
     override def next() = {
       val result = tracked.next()
       self += 1

@@ -31,55 +31,102 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.booleanValue
 import org.neo4j.values.virtual.VirtualNodeValue
 
-abstract class CheckDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression) extends NullInNullOutExpression(node) {
+abstract class CheckDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression)
+    extends NullInNullOutExpression(node) {
+
   protected val getDegree: (Int, QueryState, Long) => Long = typ match {
-    case None    => (max, state, node) => state.query.nodeGetDegreeWithMax(max, node, direction, state.cursors.nodeCursor)
-    case Some(t) => (max, state, node) => t.getOptId(state.query) match {
-      case None            => 0
-      case Some(relTypeId) => state.query.nodeGetDegreeWithMax(max, node, direction, relTypeId, state.cursors.nodeCursor)
-    }
+    case None => (max, state, node) => state.query.nodeGetDegreeWithMax(max, node, direction, state.cursors.nodeCursor)
+    case Some(t) => (max, state, node) =>
+        t.getOptId(state.query) match {
+          case None => 0
+          case Some(relTypeId) =>
+            state.query.nodeGetDegreeWithMax(max, node, direction, relTypeId, state.cursors.nodeCursor)
+        }
   }
 
   protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean
+
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = value match {
     case n: VirtualNodeValue => maxDegree.apply(ctx, state) match {
-      case x if x eq NO_VALUE => NO_VALUE
-      case e => booleanValue(computePredicate(state, n.id(), asPrimitiveInt(e)))
-    }
-    case other   => throw new CypherTypeException(s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}")
+        case x if x eq NO_VALUE => NO_VALUE
+        case e                  => booleanValue(computePredicate(state, n.id(), asPrimitiveInt(e)))
+      }
+    case other => throw new CypherTypeException(
+        s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}"
+      )
   }
 
   override def arguments: Seq[Expression] = Seq(node)
   override def children: Seq[AstNode[_]] = Seq(node) ++ typ
 }
 
-case class HasDegreeGreaterThan(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression) extends CheckDegree(node, typ, direction, maxDegree) {
-  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean = getDegree(max + 1, state, node) > max
-  override def rewrite(f: Expression => Expression): Expression = f(HasDegreeGreaterThan(node.rewrite(f), typ, direction, maxDegree))
+case class HasDegreeGreaterThan(
+  node: Expression,
+  typ: Option[KeyToken],
+  direction: SemanticDirection,
+  maxDegree: Expression
+) extends CheckDegree(node, typ, direction, maxDegree) {
+
+  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean =
+    getDegree(max + 1, state, node) > max
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(HasDegreeGreaterThan(node.rewrite(f), typ, direction, maxDegree))
 
 }
 
-case class HasDegreeGreaterThanOrEqual(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression) extends CheckDegree(node, typ, direction, maxDegree) {
-  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean = getDegree(max, state, node) >= max
-  override def rewrite(f: Expression => Expression): Expression = f(HasDegreeGreaterThanOrEqual(node.rewrite(f), typ, direction, maxDegree))
+case class HasDegreeGreaterThanOrEqual(
+  node: Expression,
+  typ: Option[KeyToken],
+  direction: SemanticDirection,
+  maxDegree: Expression
+) extends CheckDegree(node, typ, direction, maxDegree) {
+
+  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean =
+    getDegree(max, state, node) >= max
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(HasDegreeGreaterThanOrEqual(node.rewrite(f), typ, direction, maxDegree))
 
 }
 
-case class HasDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression) extends CheckDegree(node, typ, direction, maxDegree) {
-  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean = getDegree(max + 1, state, node) == max
-  override def rewrite(f: Expression => Expression): Expression = f(HasDegree(node.rewrite(f), typ, direction, maxDegree))
+case class HasDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression)
+    extends CheckDegree(node, typ, direction, maxDegree) {
+
+  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean =
+    getDegree(max + 1, state, node) == max
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(HasDegree(node.rewrite(f), typ, direction, maxDegree))
 
 }
 
-case class HasDegreeLessThan(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression) extends CheckDegree(node, typ, direction, maxDegree) {
-  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean = getDegree(max, state, node) < max
-  override def rewrite(f: Expression => Expression): Expression = f(HasDegreeLessThan(node.rewrite(f), typ, direction, maxDegree))
+case class HasDegreeLessThan(
+  node: Expression,
+  typ: Option[KeyToken],
+  direction: SemanticDirection,
+  maxDegree: Expression
+) extends CheckDegree(node, typ, direction, maxDegree) {
+
+  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean =
+    getDegree(max, state, node) < max
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(HasDegreeLessThan(node.rewrite(f), typ, direction, maxDegree))
 
 }
 
-case class HasDegreeLessThanOrEqual(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression) extends CheckDegree(node, typ, direction, maxDegree) {
-  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean = getDegree(max + 1, state, node) <= max
-  override def rewrite(f: Expression => Expression): Expression = f(HasDegreeLessThanOrEqual(node.rewrite(f), typ, direction, maxDegree))
+case class HasDegreeLessThanOrEqual(
+  node: Expression,
+  typ: Option[KeyToken],
+  direction: SemanticDirection,
+  maxDegree: Expression
+) extends CheckDegree(node, typ, direction, maxDegree) {
+
+  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean =
+    getDegree(max + 1, state, node) <= max
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(HasDegreeLessThanOrEqual(node.rewrite(f), typ, direction, maxDegree))
 
 }
-

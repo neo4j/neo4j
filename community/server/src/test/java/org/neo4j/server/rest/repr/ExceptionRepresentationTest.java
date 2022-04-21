@@ -19,78 +19,68 @@
  */
 package org.neo4j.server.rest.repr;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.kernel.api.exceptions.Status.General.UnknownError;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.MapWrappingWriter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.api.exceptions.Status.General.UnknownError;
-
-class ExceptionRepresentationTest
-{
+class ExceptionRepresentationTest {
     @Test
-    void shouldIncludeCause() throws Exception
-    {
+    void shouldIncludeCause() throws Exception {
         // Given
         ExceptionRepresentation rep = new ExceptionRepresentation(
-                new RuntimeException( "Hoho", new RuntimeException( "Haha", new RuntimeException( "HAHA!" ) ) ) );
+                new RuntimeException("Hoho", new RuntimeException("Haha", new RuntimeException("HAHA!"))));
 
         // When
-        JsonNode out = serialize( rep );
+        JsonNode out = serialize(rep);
 
         // Then
-        assertThat( out.get( "cause" ).get( "message" ).asText() ).isEqualTo( "Haha" );
-        assertThat( out.get( "cause" ).get( "cause" ).get( "message" ).asText() ).isEqualTo( "HAHA!" );
+        assertThat(out.get("cause").get("message").asText()).isEqualTo("Haha");
+        assertThat(out.get("cause").get("cause").get("message").asText()).isEqualTo("HAHA!");
     }
 
     @Test
-    void shouldRenderErrorsWithNeo4jStatusCode() throws Exception
-    {
+    void shouldRenderErrorsWithNeo4jStatusCode() throws Exception {
         // Given
-        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" )
-        {
-        } );
+        ExceptionRepresentation rep = new ExceptionRepresentation(new KernelException(UnknownError, "Hello") {});
 
         // When
-        JsonNode out = serialize( rep );
+        JsonNode out = serialize(rep);
 
         // Then
-        assertThat( out.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( "Neo.DatabaseError.General.UnknownError" );
-        assertThat( out.get( "errors" ).get( 0 ).get( "message" ).asText() ).isEqualTo( "Hello" );
+        assertThat(out.get("errors").get(0).get("code").asText()).isEqualTo("Neo.DatabaseError.General.UnknownError");
+        assertThat(out.get("errors").get(0).get("message").asText()).isEqualTo("Hello");
     }
 
     @Test
-    void shouldExcludeLegacyFormatIfAsked() throws Exception
-    {
+    void shouldExcludeLegacyFormatIfAsked() throws Exception {
         // Given
-        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" )
-        {
-        }, /*legacy*/false );
+        ExceptionRepresentation rep =
+                new ExceptionRepresentation(new KernelException(UnknownError, "Hello") {}, /*legacy*/ false);
 
         // When
-        JsonNode out = serialize( rep );
+        JsonNode out = serialize(rep);
 
         // Then
-        assertThat( out.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( "Neo.DatabaseError.General.UnknownError" );
-        assertThat( out.get( "errors" ).get( 0 ).get( "message" ).asText() ).isEqualTo( "Hello" );
-        assertThat( out.has( "message" ) ).isEqualTo( false );
+        assertThat(out.get("errors").get(0).get("code").asText()).isEqualTo("Neo.DatabaseError.General.UnknownError");
+        assertThat(out.get("errors").get(0).get("message").asText()).isEqualTo("Hello");
+        assertThat(out.has("message")).isEqualTo(false);
     }
 
-    private static JsonNode serialize( ExceptionRepresentation rep ) throws JsonParseException
-    {
+    private static JsonNode serialize(ExceptionRepresentation rep) throws JsonParseException {
         Map<String, Object> output = new HashMap<>();
-        MappingSerializer serializer = new MappingSerializer( new MapWrappingWriter( output ), URI.create( "" ) );
+        MappingSerializer serializer = new MappingSerializer(new MapWrappingWriter(output), URI.create(""));
 
         // When
-        rep.serialize( serializer );
-        return JsonHelper.jsonNode( JsonHelper.createJsonFrom( output ) );
+        rep.serialize(serializer);
+        return JsonHelper.jsonNode(JsonHelper.createJsonFrom(output));
     }
 }

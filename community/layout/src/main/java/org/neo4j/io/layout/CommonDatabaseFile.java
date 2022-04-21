@@ -19,27 +19,23 @@
  */
 package org.neo4j.io.layout;
 
-public enum CommonDatabaseFile implements DatabaseFile
-{
-    INDEX_STATISTICS_STORE( "neostore.indexstats.db" ),
-    METADATA_STORE( "neostore" );
+public enum CommonDatabaseFile implements DatabaseFile {
+    INDEX_STATISTICS_STORE("neostore.indexstats.db"),
+    METADATA_STORE("neostore");
 
     private final String name;
 
-    CommonDatabaseFile( String name )
-    {
+    CommonDatabaseFile(String name) {
         this.name = name;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     @Override
-    public boolean hasIdFile()
-    {
+    public boolean hasIdFile() {
         return false;
     }
 }

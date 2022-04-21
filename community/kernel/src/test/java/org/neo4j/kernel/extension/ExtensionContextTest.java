@@ -19,8 +19,15 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -36,168 +43,137 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.internal.helpers.collection.Iterables.iterable;
-
 @Neo4jLayoutExtension
-class ExtensionContextTest
-{
+class ExtensionContextTest {
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private Neo4jLayout neo4jLayout;
 
     @Test
-    void shouldConsultUnsatisfiedDependencyHandlerOnMissingDependencies()
-    {
-        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
-        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
+    void shouldConsultUnsatisfiedDependencyHandlerOnMissingDependencies() {
+        GlobalExtensionContext context = mock(GlobalExtensionContext.class);
+        ExtensionFailureStrategy handler = mock(ExtensionFailureStrategy.class);
         Dependencies dependencies = new Dependencies(); // that hasn't got anything.
         TestingExtensionFactory extensionFactory = new TestingExtensionFactory();
-        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
+        GlobalExtensions extensions = new GlobalExtensions(context, iterable(extensionFactory), dependencies, handler);
 
-        try ( Lifespan ignored = new Lifespan( extensions ) )
-        {
-            verify( handler ).handle( eq( extensionFactory ), any( UnsatisfiedDependencyException.class ) );
+        try (Lifespan ignored = new Lifespan(extensions)) {
+            verify(handler).handle(eq(extensionFactory), any(UnsatisfiedDependencyException.class));
         }
     }
 
     @Test
-    void shouldFindDependenciesFromHierarchyBottomUp()
-    {
-        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
-        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
+    void shouldFindDependenciesFromHierarchyBottomUp() {
+        GlobalExtensionContext context = mock(GlobalExtensionContext.class);
+        ExtensionFailureStrategy handler = mock(ExtensionFailureStrategy.class);
         Dependencies dependencies = new Dependencies();
-        JobScheduler jobScheduler = mock( JobScheduler.class );
-        dependencies.satisfyDependencies( jobScheduler );
+        JobScheduler jobScheduler = mock(JobScheduler.class);
+        dependencies.satisfyDependencies(jobScheduler);
         SubTestingExtensionFactory extensionFactory = new SubTestingExtensionFactory();
-        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
+        GlobalExtensions extensions = new GlobalExtensions(context, iterable(extensionFactory), dependencies, handler);
 
-        try ( Lifespan ignored = new Lifespan( extensions ) )
-        {
-            assertNotNull( dependencies.resolveDependency( TestingExtension.class ) );
+        try (Lifespan ignored = new Lifespan(extensions)) {
+            assertNotNull(dependencies.resolveDependency(TestingExtension.class));
         }
     }
 
     @Test
-    void shouldFindDependenciesFromHierarchyBottomUpWithGenericsInTheMiddle()
-    {
-        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
-        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
+    void shouldFindDependenciesFromHierarchyBottomUpWithGenericsInTheMiddle() {
+        GlobalExtensionContext context = mock(GlobalExtensionContext.class);
+        ExtensionFailureStrategy handler = mock(ExtensionFailureStrategy.class);
         Dependencies dependencies = new Dependencies();
-        JobScheduler jobScheduler = mock( JobScheduler.class );
-        dependencies.satisfyDependencies( jobScheduler );
+        JobScheduler jobScheduler = mock(JobScheduler.class);
+        dependencies.satisfyDependencies(jobScheduler);
         var extensionFactory = new SubGenericTestingExtensionFactory();
-        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
+        GlobalExtensions extensions = new GlobalExtensions(context, iterable(extensionFactory), dependencies, handler);
 
-        try ( Lifespan ignored = new Lifespan( extensions ) )
-        {
-            assertNotNull( dependencies.resolveDependency( TestingExtension.class ) );
+        try (Lifespan ignored = new Lifespan(extensions)) {
+            assertNotNull(dependencies.resolveDependency(TestingExtension.class));
         }
     }
 
     @Test
-    void shouldFindDependenciesFromWhenExtensionIsGenerified()
-    {
-        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
-        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
+    void shouldFindDependenciesFromWhenExtensionIsGenerified() {
+        GlobalExtensionContext context = mock(GlobalExtensionContext.class);
+        ExtensionFailureStrategy handler = mock(ExtensionFailureStrategy.class);
         Dependencies dependencies = new Dependencies();
-        JobScheduler jobScheduler = mock( JobScheduler.class );
-        dependencies.satisfyDependencies( jobScheduler );
+        JobScheduler jobScheduler = mock(JobScheduler.class);
+        dependencies.satisfyDependencies(jobScheduler);
         var extensionFactory = new GenericTestingExtensionFactory<>();
-        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
+        GlobalExtensions extensions = new GlobalExtensions(context, iterable(extensionFactory), dependencies, handler);
 
-        try ( Lifespan ignored = new Lifespan( extensions ) )
-        {
-            assertNotNull( dependencies.resolveDependency( TestingExtension.class ) );
+        try (Lifespan ignored = new Lifespan(extensions)) {
+            assertNotNull(dependencies.resolveDependency(TestingExtension.class));
         }
     }
 
     @Test
-    void shouldConsultUnsatisfiedDependencyHandlerOnFailingDependencyClasses()
-    {
-        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
-        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
+    void shouldConsultUnsatisfiedDependencyHandlerOnFailingDependencyClasses() {
+        GlobalExtensionContext context = mock(GlobalExtensionContext.class);
+        ExtensionFailureStrategy handler = mock(ExtensionFailureStrategy.class);
         Dependencies dependencies = new Dependencies(); // that hasn't got anything.
         UninitializableExtensionFactory extensionFactory = new UninitializableExtensionFactory();
-        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
+        GlobalExtensions extensions = new GlobalExtensions(context, iterable(extensionFactory), dependencies, handler);
 
-        try ( Lifespan ignored = new Lifespan( extensions ) )
-        {
-            verify( handler ).handle( eq( extensionFactory ), any( IllegalArgumentException.class ) );
+        try (Lifespan ignored = new Lifespan(extensions)) {
+            verify(handler).handle(eq(extensionFactory), any(IllegalArgumentException.class));
         }
     }
 
     @Test
-    void globalContextRootDirectoryEqualToStoreDirectory()
-    {
-        GlobalExtensionContext context = new GlobalExtensionContext( neo4jLayout, DbmsInfo.TOOL, new Dependencies() );
-        assertSame( neo4jLayout.databasesDirectory(), context.directory() );
+    void globalContextRootDirectoryEqualToStoreDirectory() {
+        GlobalExtensionContext context = new GlobalExtensionContext(neo4jLayout, DbmsInfo.TOOL, new Dependencies());
+        assertSame(neo4jLayout.databasesDirectory(), context.directory());
     }
 
     @Test
-    void databaseContextRootDirectoryEqualToDatabaseDirectory()
-    {
-        DatabaseExtensionContext context = new DatabaseExtensionContext( databaseLayout, DbmsInfo.TOOL, new Dependencies() );
-        assertSame( databaseLayout.databaseDirectory(), context.directory() );
+    void databaseContextRootDirectoryEqualToDatabaseDirectory() {
+        DatabaseExtensionContext context =
+                new DatabaseExtensionContext(databaseLayout, DbmsInfo.TOOL, new Dependencies());
+        assertSame(databaseLayout.databaseDirectory(), context.directory());
     }
 
-    private interface TestingDependencies
-    {
+    private interface TestingDependencies {
         // Just some dependency
         JobScheduler jobScheduler();
     }
 
-    private static class TestingExtensionFactory extends ExtensionFactory<TestingDependencies>
-    {
-        TestingExtensionFactory()
-        {
-            super( "testing" );
+    private static class TestingExtensionFactory extends ExtensionFactory<TestingDependencies> {
+        TestingExtensionFactory() {
+            super("testing");
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, TestingDependencies dependencies )
-        {
+        public Lifecycle newInstance(ExtensionContext context, TestingDependencies dependencies) {
             dependencies.jobScheduler();
             return new TestingExtension();
         }
     }
 
-    private static class SubTestingExtensionFactory extends TestingExtensionFactory
-    {
+    private static class SubTestingExtensionFactory extends TestingExtensionFactory {
         // Nothing to override.
     }
 
-    private static class TestingExtension extends LifecycleAdapter
-    {
-        TestingExtension()
-        {
+    private static class TestingExtension extends LifecycleAdapter {
+        TestingExtension() {
             // We don't need it right now
         }
     }
 
-    private static class GenericTestingExtensionFactory<T> extends ExtensionFactory<TestingDependencies>
-    {
+    private static class GenericTestingExtensionFactory<T> extends ExtensionFactory<TestingDependencies> {
 
-        protected GenericTestingExtensionFactory()
-        {
-            super( "testing generics" );
+        protected GenericTestingExtensionFactory() {
+            super("testing generics");
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, TestingDependencies dependencies )
-        {
+        public Lifecycle newInstance(ExtensionContext context, TestingDependencies dependencies) {
             dependencies.jobScheduler();
             return new TestingExtension();
         }
     }
 
-    private static class SubGenericTestingExtensionFactory extends GenericTestingExtensionFactory<TestingExtension>
-    {
-    }
+    private static class SubGenericTestingExtensionFactory extends GenericTestingExtensionFactory<TestingExtension> {}
 }

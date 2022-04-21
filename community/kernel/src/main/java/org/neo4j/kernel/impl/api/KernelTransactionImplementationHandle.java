@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Optional.ofNullable;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -33,16 +34,13 @@ import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrac
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.util.Optional.ofNullable;
-
 /**
  * A {@link KernelTransactionHandle} that wraps the given {@link KernelTransactionImplementation}.
  * This handle knows that {@link KernelTransactionImplementation}s can be reused and represents a single logical
  * transaction. This means that methods like {@link #markForTermination(Status)} can only terminate running
  * transaction this handle was created for.
  */
-class KernelTransactionImplementationHandle implements KernelTransactionHandle
-{
+class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     private static final String USER_TRANSACTION_NAME_SEPARATOR = "-transaction-";
 
     private final long lastTransactionTimestampWhenStarted;
@@ -55,16 +53,15 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final AuthSubject subject;
     private final Optional<Status> terminationReason;
     private final Optional<ExecutingQuery> executingQuery;
-    private final Map<String,Object> metaData;
+    private final Map<String, Object> metaData;
     private final String statusDetails;
     private final long userTransactionId;
     private final TransactionInitializationTrace initializationTrace;
     private final KernelTransactionStamp transactionStamp;
     private final String databaseName;
 
-    KernelTransactionImplementationHandle( KernelTransactionImplementation tx, SystemNanoClock clock )
-    {
-        this.transactionStamp = new KernelTransactionStamp( tx );
+    KernelTransactionImplementationHandle(KernelTransactionImplementation tx, SystemNanoClock clock) {
+        this.transactionStamp = new KernelTransactionStamp(tx);
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
         this.startTimeNanos = tx.startTimeNanos();
@@ -83,156 +80,129 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public long lastTransactionTimestampWhenStarted()
-    {
+    public long lastTransactionTimestampWhenStarted() {
         return lastTransactionTimestampWhenStarted;
     }
 
     @Override
-    public long startTime()
-    {
+    public long startTime() {
         return startTime;
     }
 
     @Override
-    public long startTimeNanos()
-    {
+    public long startTimeNanos() {
         return startTimeNanos;
     }
 
     @Override
-    public long timeoutMillis()
-    {
+    public long timeoutMillis() {
         return timeoutMillis;
     }
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return transactionStamp.isOpen();
     }
 
     @Override
-    public boolean isClosing()
-    {
+    public boolean isClosing() {
         return transactionStamp.isClosing();
     }
 
     @Override
-    public boolean markForTermination( Status reason )
-    {
-        return tx.markForTermination( transactionStamp.getUserTransactionId(), reason );
+    public boolean markForTermination(Status reason) {
+        return tx.markForTermination(transactionStamp.getUserTransactionId(), reason);
     }
 
     @Override
-    public AuthSubject subject()
-    {
+    public AuthSubject subject() {
         return subject;
     }
 
     @Override
-    public Map<String,Object> getMetaData()
-    {
+    public Map<String, Object> getMetaData() {
         return metaData;
     }
 
     @Override
-    public String getStatusDetails()
-    {
+    public String getStatusDetails() {
         return statusDetails;
     }
 
     @Override
-    public Optional<Status> terminationReason()
-    {
+    public Optional<Status> terminationReason() {
         return terminationReason;
     }
 
     @Override
-    public boolean isUnderlyingTransaction( KernelTransaction tx )
-    {
+    public boolean isUnderlyingTransaction(KernelTransaction tx) {
         return this.tx == tx;
     }
 
     @Override
-    public long getUserTransactionId()
-    {
+    public long getUserTransactionId() {
         return userTransactionId;
     }
 
     @Override
-    public String getUserTransactionName()
-    {
+    public String getUserTransactionName() {
         return databaseName + USER_TRANSACTION_NAME_SEPARATOR + getUserTransactionId();
     }
 
     @Override
-    public Optional<ExecutingQuery> executingQuery()
-    {
+    public Optional<ExecutingQuery> executingQuery() {
         return executingQuery;
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks()
-    {
+    public Stream<ActiveLock> activeLocks() {
         return tx.activeLocks();
     }
 
     @Override
-    public TransactionExecutionStatistic transactionStatistic()
-    {
-        if ( transactionStamp.isNotExpired() )
-        {
-            return new TransactionExecutionStatistic( tx, clock, startTime );
-        }
-        else
-        {
+    public TransactionExecutionStatistic transactionStatistic() {
+        if (transactionStamp.isNotExpired()) {
+            return new TransactionExecutionStatistic(tx, clock, startTime);
+        } else {
             return TransactionExecutionStatistic.NOT_AVAILABLE;
         }
     }
 
     @Override
-    public TransactionInitializationTrace transactionInitialisationTrace()
-    {
+    public TransactionInitializationTrace transactionInitialisationTrace() {
         return initializationTrace;
     }
 
     @Override
-    public Optional<ClientConnectionInfo> clientInfo()
-    {
-        return ofNullable( clientInfo );
+    public Optional<ClientConnectionInfo> clientInfo() {
+        return ofNullable(clientInfo);
     }
 
     @Override
-    public boolean isSchemaTransaction()
-    {
+    public boolean isSchemaTransaction() {
         return tx.isSchemaTransaction();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         KernelTransactionImplementationHandle that = (KernelTransactionImplementationHandle) o;
-        return transactionStamp.equals( that.transactionStamp );
+        return transactionStamp.equals(that.transactionStamp);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return transactionStamp.hashCode();
     }
 
     @Override
-    public String toString()
-    {
-        return "KernelTransactionImplementationHandle{userTransactionId=" + transactionStamp.getUserTransactionId() + ", tx=" + tx + "}";
+    public String toString() {
+        return "KernelTransactionImplementationHandle{userTransactionId=" + transactionStamp.getUserTransactionId()
+                + ", tx=" + tx + "}";
     }
 }

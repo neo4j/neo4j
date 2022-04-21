@@ -19,15 +19,28 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
+import static org.neo4j.lock.LockType.SHARED;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -54,38 +67,25 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
-import static org.neo4j.lock.LockType.SHARED;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @DbmsExtension
-class FullScanStoreViewTest
-{
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+class FullScanStoreViewTest {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
     @Inject
     private GraphDatabaseAPI graphDb;
+
     @Inject
     private StorageEngine storageEngine;
+
     @Inject
     private CheckPointer checkPointer;
+
     @Inject
     private JobScheduler jobScheduler;
 
     private final Map<Long, Lock> lockMocks = new HashMap<>();
-    private final Label label = Label.label( "Person" );
-    private final RelationshipType relationshipType = RelationshipType.withName( "Knows" );
+    private final Label label = Label.label("Person");
+    private final RelationshipType relationshipType = RelationshipType.withName("Knows");
 
     private FullScanStoreView storeView;
 
@@ -102,264 +102,308 @@ class FullScanStoreViewTest
     private StorageReader reader;
 
     @BeforeEach
-    void before() throws KernelException
-    {
+    void before() throws KernelException {
         createAlistairAndStefanNodes();
         getOrCreateIds();
 
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
-        locks = mock( LockService.class );
-        when( locks.acquireNodeLock( anyLong(), any() ) ).thenAnswer(
-                invocation ->
-                {
-                    Long nodeId = invocation.getArgument( 0 );
-                    return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
-                } );
-        when( locks.acquireRelationshipLock( anyLong(), any() ) ).thenAnswer( invocation ->
-        {
-            Long nodeId = invocation.getArgument( 0 );
-            return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
-        } );
-        storeView = new FullScanStoreView( locks, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
+        locks = mock(LockService.class);
+        when(locks.acquireNodeLock(anyLong(), any())).thenAnswer(invocation -> {
+            Long nodeId = invocation.getArgument(0);
+            return lockMocks.computeIfAbsent(nodeId, k -> mock(Lock.class));
+        });
+        when(locks.acquireRelationshipLock(anyLong(), any())).thenAnswer(invocation -> {
+            Long nodeId = invocation.getArgument(0);
+            return lockMocks.computeIfAbsent(nodeId, k -> mock(Lock.class));
+        });
+        storeView = new FullScanStoreView(
+                locks, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler);
         reader = storageEngine.newReader();
     }
 
     @AfterEach
-    void after() throws Exception
-    {
+    void after() throws Exception {
         jobScheduler.close();
         reader.close();
     }
 
     @Test
-    void shouldScanExistingNodesForALabel()
-    {
+    void shouldScanExistingNodesForALabel() {
         // given
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
-        StoreScan storeScan = storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, propertyScanConsumer, new TestTokenScanConsumer(),
-                false, true, CONTEXT_FACTORY, INSTANCE );
+        StoreScan storeScan = storeView.visitNodes(
+                new int[] {labelId},
+                id -> id == propertyKeyId,
+                propertyScanConsumer,
+                new TestTokenScanConsumer(),
+                false,
+                true,
+                CONTEXT_FACTORY,
+                INSTANCE);
 
         // when
-        storeScan.run( NO_EXTERNAL_UPDATES );
+        storeScan.run(NO_EXTERNAL_UPDATES);
 
         // then
-        assertThat( propertyScanConsumer.batches.get( 0 ) ).containsExactlyInAnyOrder(
-                record( alistair.getId(), propertyKeyId, "Alistair", new long[]{labelId} ),
-                record( stefan.getId(), propertyKeyId, "Stefan", new long[]{labelId} )
-        );
+        assertThat(propertyScanConsumer.batches.get(0))
+                .containsExactlyInAnyOrder(
+                        record(alistair.getId(), propertyKeyId, "Alistair", new long[] {labelId}),
+                        record(stefan.getId(), propertyKeyId, "Stefan", new long[] {labelId}));
     }
 
     @Test
-    void shouldScanExistingRelationshipsForARelationshipType()
-    {
+    void shouldScanExistingRelationshipsForARelationshipType() {
         // given
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
-        StoreScan storeScan =
-                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, propertyScanConsumer, null, true, true, CONTEXT_FACTORY,
-                        INSTANCE );
+        StoreScan storeScan = storeView.visitRelationships(
+                new int[] {relTypeId},
+                id -> id == relPropertyKeyId,
+                propertyScanConsumer,
+                null,
+                true,
+                true,
+                CONTEXT_FACTORY,
+                INSTANCE);
 
         // when
-        storeScan.run( NO_EXTERNAL_UPDATES );
+        storeScan.run(NO_EXTERNAL_UPDATES);
 
         // then
-        assertThat( propertyScanConsumer.batches.get( 0 ) ).containsExactlyInAnyOrder(
-                record( aKnowsS.getId(), relPropertyKeyId, "long", new long[]{relTypeId} ),
-                record( sKnowsA.getId(), relPropertyKeyId, "lengthy", new long[]{relTypeId} )
-        );
+        assertThat(propertyScanConsumer.batches.get(0))
+                .containsExactlyInAnyOrder(
+                        record(aKnowsS.getId(), relPropertyKeyId, "long", new long[] {relTypeId}),
+                        record(sKnowsA.getId(), relPropertyKeyId, "lengthy", new long[] {relTypeId}));
     }
 
     @Test
-    void shouldIgnoreDeletedNodesDuringScan()
-    {
+    void shouldIgnoreDeletedNodesDuringScan() {
         // given
         deleteAlistairAndStefanNodes();
 
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
-        StoreScan storeScan = storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, propertyScanConsumer, new TestTokenScanConsumer(),
-                false, true, CONTEXT_FACTORY, INSTANCE );
+        StoreScan storeScan = storeView.visitNodes(
+                new int[] {labelId},
+                id -> id == propertyKeyId,
+                propertyScanConsumer,
+                new TestTokenScanConsumer(),
+                false,
+                true,
+                CONTEXT_FACTORY,
+                INSTANCE);
 
         // when
-        storeScan.run( NO_EXTERNAL_UPDATES );
+        storeScan.run(NO_EXTERNAL_UPDATES);
 
         // then
-        assertTrue( propertyScanConsumer.batches.isEmpty() );
+        assertTrue(propertyScanConsumer.batches.isEmpty());
     }
 
     @Test
-    void shouldIgnoreDeletedRelationshipsDuringScan()
-    {
+    void shouldIgnoreDeletedRelationshipsDuringScan() {
         // given
         deleteAlistairAndStefanNodes();
 
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
-        StoreScan storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, propertyScanConsumer, null,
-                true, true, CONTEXT_FACTORY, INSTANCE );
+        StoreScan storeScan = storeView.visitRelationships(
+                new int[] {relTypeId},
+                id -> id == relPropertyKeyId,
+                propertyScanConsumer,
+                null,
+                true,
+                true,
+                CONTEXT_FACTORY,
+                INSTANCE);
 
         // when
-        storeScan.run( NO_EXTERNAL_UPDATES );
+        storeScan.run(NO_EXTERNAL_UPDATES);
 
         // then
-        assertTrue( propertyScanConsumer.batches.isEmpty() );
+        assertTrue(propertyScanConsumer.batches.isEmpty());
     }
 
     @Test
-    void shouldLockNodesWhileReadingThem()
-    {
+    void shouldLockNodesWhileReadingThem() {
         // given
-        StoreScan storeScan =
-                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, new TestPropertyScanConsumer(), null, false, true, CONTEXT_FACTORY,
-                        INSTANCE );
+        StoreScan storeScan = storeView.visitNodes(
+                new int[] {labelId},
+                id -> id == propertyKeyId,
+                new TestPropertyScanConsumer(),
+                null,
+                false,
+                true,
+                CONTEXT_FACTORY,
+                INSTANCE);
 
         // when
-        storeScan.run( NO_EXTERNAL_UPDATES );
+        storeScan.run(NO_EXTERNAL_UPDATES);
 
         // then
-        assertThat( lockMocks.size() ).as( "allocated locks: " + lockMocks.keySet() ).isGreaterThanOrEqualTo( 2 );
-        Lock lock0 = lockMocks.get( 0L );
-        Lock lock1 = lockMocks.get( 1L );
-        assertNotNull( lock0, "Lock[node=0] never acquired" );
-        assertNotNull( lock1, "Lock[node=1] never acquired" );
-        InOrder order = inOrder( locks, lock0, lock1 );
-        order.verify( locks ).acquireNodeLock( 0, SHARED );
-        order.verify( lock0 ).release();
-        order.verify( locks ).acquireNodeLock( 1, SHARED );
-        order.verify( lock1 ).release();
+        assertThat(lockMocks.size())
+                .as("allocated locks: " + lockMocks.keySet())
+                .isGreaterThanOrEqualTo(2);
+        Lock lock0 = lockMocks.get(0L);
+        Lock lock1 = lockMocks.get(1L);
+        assertNotNull(lock0, "Lock[node=0] never acquired");
+        assertNotNull(lock1, "Lock[node=1] never acquired");
+        InOrder order = inOrder(locks, lock0, lock1);
+        order.verify(locks).acquireNodeLock(0, SHARED);
+        order.verify(lock0).release();
+        order.verify(locks).acquireNodeLock(1, SHARED);
+        order.verify(lock1).release();
     }
 
     @Test
-    void shouldLockRelationshipsWhileReadingThem()
-    {
+    void shouldLockRelationshipsWhileReadingThem() {
         // given
-        StoreScan storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, new TestPropertyScanConsumer(), null,
-                true, true, CONTEXT_FACTORY, INSTANCE );
+        StoreScan storeScan = storeView.visitRelationships(
+                new int[] {relTypeId},
+                id -> id == relPropertyKeyId,
+                new TestPropertyScanConsumer(),
+                null,
+                true,
+                true,
+                CONTEXT_FACTORY,
+                INSTANCE);
 
         // when
-        storeScan.run( NO_EXTERNAL_UPDATES );
+        storeScan.run(NO_EXTERNAL_UPDATES);
 
         // then
-        assertThat( lockMocks.size() ).as( "allocated locks: " + lockMocks.keySet() ).isGreaterThanOrEqualTo( 2 );
-        Lock lock0 = lockMocks.get( 0L );
-        Lock lock1 = lockMocks.get( 1L );
-        assertNotNull( lock0, "Lock[relationship=0] never acquired" );
-        assertNotNull( lock1, "Lock[relationship=1] never acquired" );
-        InOrder order = inOrder( locks, lock0, lock1 );
-        order.verify( locks ).acquireRelationshipLock( 0, SHARED );
-        order.verify( lock0 ).release();
-        order.verify( locks ).acquireRelationshipLock( 1, SHARED );
-        order.verify( lock1 ).release();
+        assertThat(lockMocks.size())
+                .as("allocated locks: " + lockMocks.keySet())
+                .isGreaterThanOrEqualTo(2);
+        Lock lock0 = lockMocks.get(0L);
+        Lock lock1 = lockMocks.get(1L);
+        assertNotNull(lock0, "Lock[relationship=0] never acquired");
+        assertNotNull(lock1, "Lock[relationship=1] never acquired");
+        InOrder order = inOrder(locks, lock0, lock1);
+        order.verify(locks).acquireRelationshipLock(0, SHARED);
+        order.verify(lock0).release();
+        order.verify(locks).acquireRelationshipLock(1, SHARED);
+        order.verify(lock1).release();
     }
 
     @Test
-    void tracePageCacheAccessOnStoreViewNodeScan() throws IOException
-    {
-        //enforce checkpoint to flush tree caches
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+    void tracePageCacheAccessOnStoreViewNodeScan() throws IOException {
+        // enforce checkpoint to flush tree caches
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("forcedCheckpoint"));
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         var propertyScanConsumer = new TestPropertyScanConsumer();
-        var scan = new NodeStoreScan( Config.defaults(), storageEngine.newReader(), storageEngine::createStorageCursors, locks, null, propertyScanConsumer,
-                new int[]{labelId}, id -> true, false, jobScheduler, contextFactory, INSTANCE );
-        scan.run( NO_EXTERNAL_UPDATES );
+        var scan = new NodeStoreScan(
+                Config.defaults(),
+                storageEngine.newReader(),
+                storageEngine::createStorageCursors,
+                locks,
+                null,
+                propertyScanConsumer,
+                new int[] {labelId},
+                id -> true,
+                false,
+                jobScheduler,
+                contextFactory,
+                INSTANCE);
+        scan.run(NO_EXTERNAL_UPDATES);
 
-        assertThat( propertyScanConsumer.batches.get( 0 ).size() ).isEqualTo( 2 );
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 4 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 4 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 4 );
+        assertThat(propertyScanConsumer.batches.get(0).size()).isEqualTo(2);
+        assertThat(pageCacheTracer.pins()).isEqualTo(4);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(4);
+        assertThat(pageCacheTracer.hits()).isEqualTo(4);
     }
 
     @Test
-    void tracePageCacheAccessOnRelationshipStoreScan() throws Exception
-    {
-        //enforce checkpoint to flush tree caches
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+    void tracePageCacheAccessOnRelationshipStoreScan() throws Exception {
+        // enforce checkpoint to flush tree caches
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("forcedCheckpoint"));
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         var propertyScanConsumer = new TestPropertyScanConsumer();
-        var scan =
-                new RelationshipStoreScan( Config.defaults(), storageEngine.newReader(), storageEngine::createStorageCursors, locks, null, propertyScanConsumer,
-                        new int[]{relTypeId}, id -> true, false, jobScheduler, contextFactory, INSTANCE );
-        scan.run( NO_EXTERNAL_UPDATES );
+        var scan = new RelationshipStoreScan(
+                Config.defaults(),
+                storageEngine.newReader(),
+                storageEngine::createStorageCursors,
+                locks,
+                null,
+                propertyScanConsumer,
+                new int[] {relTypeId},
+                id -> true,
+                false,
+                jobScheduler,
+                contextFactory,
+                INSTANCE);
+        scan.run(NO_EXTERNAL_UPDATES);
 
-        assertThat( propertyScanConsumer.batches.get( 0 ).size() ).isEqualTo( 2 );
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 3 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 3 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 3 );
+        assertThat(propertyScanConsumer.batches.get(0).size()).isEqualTo(2);
+        assertThat(pageCacheTracer.pins()).isEqualTo(3);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(3);
+        assertThat(pageCacheTracer.hits()).isEqualTo(3);
     }
 
     @Test
-    void processAllRelationshipTypes()
-    {
+    void processAllRelationshipTypes() {
         // Given
         TestTokenScanConsumer tokenScanConsumer = new TestTokenScanConsumer();
-        StoreScan storeViewRelationshipStoreScan =
-                storeView.visitRelationships( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenScanConsumer, true, true, CONTEXT_FACTORY, INSTANCE );
+        StoreScan storeViewRelationshipStoreScan = storeView.visitRelationships(
+                EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenScanConsumer, true, true, CONTEXT_FACTORY, INSTANCE);
 
         // When
-        storeViewRelationshipStoreScan.run( NO_EXTERNAL_UPDATES );
+        storeViewRelationshipStoreScan.run(NO_EXTERNAL_UPDATES);
 
         // Then
-        var updates = tokenScanConsumer.batches.get( 0 );
-        assertThat( updates.size() ).isEqualTo( 2 );
-        for ( var update : updates )
-        {
+        var updates = tokenScanConsumer.batches.get(0);
+        assertThat(updates.size()).isEqualTo(2);
+        for (var update : updates) {
             long[] tokensAfter = update.getTokens();
-            assertThat( tokensAfter.length ).isEqualTo( 1 );
-            assertThat( tokensAfter[0] ).isEqualTo( 0 );
-            assertThat( update.getEntityId() ).satisfiesAnyOf(
-                    id -> assertThat( id ).isEqualTo( 0 ),
-                    id -> assertThat( id ).isEqualTo( 1 ) );
+            assertThat(tokensAfter.length).isEqualTo(1);
+            assertThat(tokensAfter[0]).isEqualTo(0);
+            assertThat(update.getEntityId()).satisfiesAnyOf(id -> assertThat(id).isEqualTo(0), id -> assertThat(id)
+                    .isEqualTo(1));
         }
     }
 
-    private static TestPropertyScanConsumer.Record record( long nodeId, int propertyKeyId, Object value, long[] labels )
-    {
-        return new TestPropertyScanConsumer.Record( nodeId, labels, Map.of( propertyKeyId, Values.of( value ) ) );
+    private static TestPropertyScanConsumer.Record record(long nodeId, int propertyKeyId, Object value, long[] labels) {
+        return new TestPropertyScanConsumer.Record(nodeId, labels, Map.of(propertyKeyId, Values.of(value)));
     }
 
-    private void createAlistairAndStefanNodes()
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            alistair = tx.createNode( label );
-            alistair.setProperty( "name", "Alistair" );
-            alistair.setProperty( "country", "UK" );
-            stefan = tx.createNode( label );
-            stefan.setProperty( "name", "Stefan" );
-            stefan.setProperty( "country", "Deutschland" );
-            aKnowsS = alistair.createRelationshipTo( stefan, relationshipType );
-            aKnowsS.setProperty( "duration", "long" );
-            aKnowsS.setProperty( "irrelevant", "prop" );
-            sKnowsA = stefan.createRelationshipTo( alistair, relationshipType );
-            sKnowsA.setProperty( "duration", "lengthy" );
-            sKnowsA.setProperty( "irrelevant", "prop" );
+    private void createAlistairAndStefanNodes() {
+        try (Transaction tx = graphDb.beginTx()) {
+            alistair = tx.createNode(label);
+            alistair.setProperty("name", "Alistair");
+            alistair.setProperty("country", "UK");
+            stefan = tx.createNode(label);
+            stefan.setProperty("name", "Stefan");
+            stefan.setProperty("country", "Deutschland");
+            aKnowsS = alistair.createRelationshipTo(stefan, relationshipType);
+            aKnowsS.setProperty("duration", "long");
+            aKnowsS.setProperty("irrelevant", "prop");
+            sKnowsA = stefan.createRelationshipTo(alistair, relationshipType);
+            sKnowsA.setProperty("duration", "lengthy");
+            sKnowsA.setProperty("irrelevant", "prop");
             tx.commit();
         }
     }
 
-    private void deleteAlistairAndStefanNodes()
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            tx.getRelationshipById( aKnowsS.getId() ).delete();
-            tx.getRelationshipById( sKnowsA.getId() ).delete();
-            tx.getNodeById( alistair.getId() ).delete();
-            tx.getNodeById( stefan.getId() ).delete();
+    private void deleteAlistairAndStefanNodes() {
+        try (Transaction tx = graphDb.beginTx()) {
+            tx.getRelationshipById(aKnowsS.getId()).delete();
+            tx.getRelationshipById(sKnowsA.getId()).delete();
+            tx.getNodeById(alistair.getId()).delete();
+            tx.getNodeById(stefan.getId()).delete();
             tx.commit();
         }
     }
 
-    private void getOrCreateIds() throws KernelException
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            TokenWrite tokenWrite = ((InternalTransaction) tx ).kernelTransaction().tokenWrite();
-            labelId = tokenWrite.labelGetOrCreateForName( "Person" );
-            relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( "Knows" );
-            propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "name" );
-            relPropertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "duration" );
+    private void getOrCreateIds() throws KernelException {
+        try (Transaction tx = graphDb.beginTx()) {
+            TokenWrite tokenWrite =
+                    ((InternalTransaction) tx).kernelTransaction().tokenWrite();
+            labelId = tokenWrite.labelGetOrCreateForName("Person");
+            relTypeId = tokenWrite.relationshipTypeGetOrCreateForName("Knows");
+            propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName("name");
+            relPropertyKeyId = tokenWrite.propertyKeyGetOrCreateForName("duration");
             tx.commit();
         }
     }

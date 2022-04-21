@@ -21,7 +21,6 @@ package org.neo4j.graphdb;
 
 import java.io.PrintStream;
 import java.util.function.BiFunction;
-
 import org.neo4j.graphdb.impl.StandardExpander;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Paths;
@@ -31,17 +30,15 @@ import org.neo4j.graphdb.traversal.Paths;
  * <p>
  * Use {@link PathExpanderBuilder} to build specialized {@link PathExpander}s.
  */
-public abstract class PathExpanders
-{
+public abstract class PathExpanders {
     /**
      * A very permissive {@link PathExpander} that follows any type in any direction.
      *
      * @param <STATE> the type of the object that holds the state
      * @return a very permissive {@link PathExpander} that follows any type in any direction
      */
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> allTypesAndDirections()
-    {
+    @SuppressWarnings("unchecked")
+    public static <STATE> PathExpander<STATE> allTypesAndDirections() {
         return StandardExpander.DEFAULT;
     }
 
@@ -52,10 +49,9 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a very permissive {@link PathExpander} that follows {@code type} relationships in any direction
      */
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> forType( RelationshipType type )
-    {
-        return StandardExpander.create( type, Direction.BOTH );
+    @SuppressWarnings("unchecked")
+    public static <STATE> PathExpander<STATE> forType(RelationshipType type) {
+        return StandardExpander.create(type, Direction.BOTH);
     }
 
     /**
@@ -65,10 +61,9 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a very permissive {@link PathExpander} that follows any type in {@code direction}
      */
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> forDirection( Direction direction )
-    {
-        return StandardExpander.create( direction );
+    @SuppressWarnings("unchecked")
+    public static <STATE> PathExpander<STATE> forDirection(Direction direction) {
+        return StandardExpander.create(direction);
     }
 
     /**
@@ -79,10 +74,9 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a very restricted {@link PathExpander} that follows {@code type} in {@code direction}
      */
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> forTypeAndDirection( RelationshipType type, Direction direction )
-    {
-        return StandardExpander.create( type, direction );
+    @SuppressWarnings("unchecked")
+    public static <STATE> PathExpander<STATE> forTypeAndDirection(RelationshipType type, Direction direction) {
+        return StandardExpander.create(type, direction);
     }
 
     /**
@@ -96,12 +90,14 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a very restricted {@link PathExpander} that follows only the {@code type}/{@code direction} pairs that you list
      */
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> forTypesAndDirections( RelationshipType type1, Direction direction1,
-                                                                     RelationshipType type2, Direction direction2,
-                                                                     Object... more )
-    {
-        return StandardExpander.create( type1, direction1, type2, direction2, more );
+    @SuppressWarnings("unchecked")
+    public static <STATE> PathExpander<STATE> forTypesAndDirections(
+            RelationshipType type1,
+            Direction direction1,
+            RelationshipType type2,
+            Direction direction2,
+            Object... more) {
+        return StandardExpander.create(type1, direction1, type2, direction2, more);
     }
 
     /**
@@ -111,36 +107,27 @@ public abstract class PathExpanders
      * @param <STATE> the type of the object that holds the state
      * @return a {@link PathExpander} which enforces constant relationship direction
      */
-    public static <STATE> PathExpander<STATE> forConstantDirectionWithTypes( final RelationshipType... types )
-    {
-        return new PathExpander<>()
-        {
+    public static <STATE> PathExpander<STATE> forConstantDirectionWithTypes(final RelationshipType... types) {
+        return new PathExpander<>() {
             @Override
-            public Iterable<Relationship> expand( Path path, BranchState<STATE> state )
-            {
-                if ( path.length() == 0 )
-                {
-                    return path.endNode().getRelationships( types );
-                }
-                else
-                {
-                    Direction direction = getDirectionOfLastRelationship( path );
-                    return path.endNode().getRelationships( direction, types );
+            public Iterable<Relationship> expand(Path path, BranchState<STATE> state) {
+                if (path.length() == 0) {
+                    return path.endNode().getRelationships(types);
+                } else {
+                    Direction direction = getDirectionOfLastRelationship(path);
+                    return path.endNode().getRelationships(direction, types);
                 }
             }
 
             @Override
-            public PathExpander<STATE> reverse()
-            {
+            public PathExpander<STATE> reverse() {
                 return this;
             }
 
-            private Direction getDirectionOfLastRelationship( Path path )
-            {
+            private Direction getDirectionOfLastRelationship(Path path) {
                 assert path.length() > 0;
                 Direction direction = Direction.INCOMING;
-                if ( path.endNode().equals( path.lastRelationship().getEndNode() ) )
-                {
+                if (path.endNode().equals(path.lastRelationship().getEndNode())) {
                     direction = Direction.OUTGOING;
                 }
                 return direction;
@@ -148,8 +135,7 @@ public abstract class PathExpanders
         };
     }
 
-    private PathExpanders()
-    {
+    private PathExpanders() {
         // you should never instantiate this
     }
 
@@ -160,9 +146,8 @@ public abstract class PathExpanders
      * @param <STATE>   the type of the object that holds the state
      * @return A new {@link PathExpander}.
      */
-    public static <STATE> PathExpander<STATE> printingWrapper( final PathExpander<STATE> source )
-    {
-        return printingWrapper( source, new Paths.DefaultPathDescriptor() );
+    public static <STATE> PathExpander<STATE> printingWrapper(final PathExpander<STATE> source) {
+        return printingWrapper(source, new Paths.DefaultPathDescriptor());
     }
 
     /**
@@ -175,10 +160,8 @@ public abstract class PathExpanders
      * @return          A new {@link PathExpander}.
      */
     public static <STATE> PathExpander<STATE> printingWrapper(
-            final PathExpander<STATE> source,
-            final BiFunction<Path, BranchState, Boolean> pred )
-    {
-        return printingWrapper( source, pred, new Paths.DefaultPathDescriptor() );
+            final PathExpander<STATE> source, final BiFunction<Path, BranchState, Boolean> pred) {
+        return printingWrapper(source, pred, new Paths.DefaultPathDescriptor());
     }
 
     /**
@@ -192,10 +175,8 @@ public abstract class PathExpanders
      * @return              A new {@link PathExpander}.
      */
     public static <STATE> PathExpander<STATE> printingWrapper(
-            final PathExpander<STATE> source,
-            final Paths.PathDescriptor descriptor )
-    {
-        return printingWrapper( source, ( entities, stateBranchState ) -> Boolean.TRUE, descriptor );
+            final PathExpander<STATE> source, final Paths.PathDescriptor descriptor) {
+        return printingWrapper(source, (entities, stateBranchState) -> Boolean.TRUE, descriptor);
     }
 
     /**
@@ -211,9 +192,8 @@ public abstract class PathExpanders
     public static <STATE> PathExpander<STATE> printingWrapper(
             final PathExpander<STATE> source,
             final BiFunction<Path, BranchState, Boolean> pred,
-            final Paths.PathDescriptor descriptor )
-    {
-        return printingWrapper( source, pred, descriptor, System.out );
+            final Paths.PathDescriptor descriptor) {
+        return printingWrapper(source, pred, descriptor, System.out);
     }
 
     /**
@@ -230,24 +210,19 @@ public abstract class PathExpanders
             final PathExpander<STATE> source,
             final BiFunction<Path, BranchState, Boolean> pred,
             final Paths.PathDescriptor descriptor,
-            final PrintStream out )
-    {
-        return new PathExpander<>()
-        {
+            final PrintStream out) {
+        return new PathExpander<>() {
             @Override
-            public Iterable<Relationship> expand( Path path, BranchState state )
-            {
-                if ( pred.apply( path, state ) )
-                {
-                    out.println( Paths.pathToString( path, descriptor ) );
+            public Iterable<Relationship> expand(Path path, BranchState state) {
+                if (pred.apply(path, state)) {
+                    out.println(Paths.pathToString(path, descriptor));
                 }
-                return source.expand( path, state );
+                return source.expand(path, state);
             }
 
             @Override
-            public PathExpander<STATE> reverse()
-            {
-                return printingWrapper( source.reverse(), pred, descriptor, out );
+            public PathExpander<STATE> reverse() {
+                return printingWrapper(source.reverse(), pred, descriptor, out);
             }
         };
     }

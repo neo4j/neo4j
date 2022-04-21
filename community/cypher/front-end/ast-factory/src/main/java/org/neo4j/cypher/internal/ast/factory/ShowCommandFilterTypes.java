@@ -19,43 +19,40 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-public enum ShowCommandFilterTypes
-{
+public enum ShowCommandFilterTypes {
     // index specific
-    BTREE( "BTREE" ),
-    RANGE( "RANGE" ),
-    FULLTEXT( "FULLTEXT" ),
-    TEXT( "TEXT" ),
-    POINT( "POINT" ),
-    LOOKUP( "LOOKUP" ),
+    BTREE("BTREE"),
+    RANGE("RANGE"),
+    FULLTEXT("FULLTEXT"),
+    TEXT("TEXT"),
+    POINT("POINT"),
+    LOOKUP("LOOKUP"),
     // constraint specific
-    UNIQUE( "UNIQUE" ),
-    NODE_KEY( "NODE KEY" ),
-    OLD_EXISTS( "EXISTS" ),
-    OLD_EXIST( "EXIST" ),
-    EXIST( "[PROPERTY] EXIST[ENCE]" ),
-    NODE_OLD_EXISTS( "NODE EXISTS" ),
-    NODE_OLD_EXIST( "NODE EXIST" ),
-    NODE_EXIST( "NODE [PROPERTY] EXIST[ENCE]" ),
-    RELATIONSHIP_OLD_EXISTS( "RELATIONSHIP EXISTS" ),
-    RELATIONSHIP_OLD_EXIST( "RELATIONSHIP EXIST" ),
-    RELATIONSHIP_EXIST( "REL[ATIONSHIP] [PROPERTY] EXIST[ENCE]" ),
+    UNIQUE("UNIQUE"),
+    NODE_KEY("NODE KEY"),
+    OLD_EXISTS("EXISTS"),
+    OLD_EXIST("EXIST"),
+    EXIST("[PROPERTY] EXIST[ENCE]"),
+    NODE_OLD_EXISTS("NODE EXISTS"),
+    NODE_OLD_EXIST("NODE EXIST"),
+    NODE_EXIST("NODE [PROPERTY] EXIST[ENCE]"),
+    RELATIONSHIP_OLD_EXISTS("RELATIONSHIP EXISTS"),
+    RELATIONSHIP_OLD_EXIST("RELATIONSHIP EXIST"),
+    RELATIONSHIP_EXIST("REL[ATIONSHIP] [PROPERTY] EXIST[ENCE]"),
     // function specific
-    BUILT_IN( "BUILT IN" ),
-    USER_DEFINED( "USER DEFINED" ),
+    BUILT_IN("BUILT IN"),
+    USER_DEFINED("USER DEFINED"),
     // general
-    ALL( "ALL" ),
-    INVALID( "INVALID" );
+    ALL("ALL"),
+    INVALID("INVALID");
 
     private final String description;
 
-    ShowCommandFilterTypes( String description )
-    {
+    ShowCommandFilterTypes(String description) {
         this.description = description;
     }
 
-    public String description()
-    {
+    public String description() {
         return description;
     }
 }

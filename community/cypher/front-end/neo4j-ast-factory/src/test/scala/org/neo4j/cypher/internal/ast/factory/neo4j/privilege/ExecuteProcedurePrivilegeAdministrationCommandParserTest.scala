@@ -36,13 +36,11 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
     ("REVOKE", "FROM", revokeExecuteProcedurePrivilege: executeProcedurePrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, func: executeProcedurePrivilegeFunc) =>
-
       Seq(
         ("EXECUTE PROCEDURE", ExecuteProcedureAction),
         ("EXECUTE BOOSTED PROCEDURE", ExecuteBoostedProcedureAction)
       ).foreach {
         case (execute, action) =>
-
           test(s"$verb $execute * ON DBMS $preposition role") {
             yields(func(action, List(procedureQualifier("*")), Seq(literalRole)))
           }
@@ -138,97 +136,121 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
           }
 
           test(s"$verb $execute apoc.math.sin, math.* ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("apoc.math.sin"), procedureQualifier("math.*")), Seq(literalRole)))
+            yields(func(
+              action,
+              List(procedureQualifier("apoc.math.sin"), procedureQualifier("math.*")),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $execute * $preposition role") {
             val offset = testName.length
-            assertFailsWithMessage(testName, s"""Invalid input '': expected
-                                               |  "*"
-                                               |  "."
-                                               |  "?"
-                                               |  "ON"
-                                               |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input '': expected
+                 |  "*"
+                 |  "."
+                 |  "?"
+                 |  "ON"
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
 
           test(s"$verb $execute * ON DATABASE * $preposition role") {
             val offset = testName.length
-            assertFailsWithMessage(testName, s"""Invalid input '': expected
-                                               |  "*"
-                                               |  "."
-                                               |  "?"
-                                               |  "ON"
-                                               |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input '': expected
+                 |  "*"
+                 |  "."
+                 |  "?"
+                 |  "ON"
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
 
           // Tests for invalid escaping
 
           test(s"$verb $execute `ab?`* ON DBMS $preposition role") {
             val offset = s"$verb $execute ".length
-            assertFailsWithMessage(testName,
-              s"""Invalid input 'ab?': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input 'ab?': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
 
           test(s"$verb $execute a`ab?` ON DBMS $preposition role") {
             val offset = s"$verb $execute a".length
-            assertFailsWithMessage(testName,
+            assertFailsWithMessage(
+              testName,
               s"""Invalid input 'ab?': expected
                  |  "*"
                  |  "."
                  |  "?"
                  |  "ON"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
 
           test(s"$verb $execute ab?`%ab`* ON DBMS $preposition role") {
             val offset = s"$verb $execute ab?".length
-            assertFailsWithMessage(testName,
+            assertFailsWithMessage(
+              testName,
               s"""Invalid input '%ab': expected
                  |  "*"
                  |  "."
                  |  "?"
                  |  "ON"
                  |  "YIELD"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
 
           test(s"$verb $execute apoc.`*`ab? ON DBMS $preposition role") {
             val offset = s"$verb $execute apoc.".length
-            assertFailsWithMessage(testName,
+            assertFailsWithMessage(
+              testName,
               s"""Invalid input '*': expected
                  |  "*"
                  |  "."
                  |  "?"
                  |  "YIELD"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
 
           test(s"$verb $execute apoc.*`ab?` ON DBMS $preposition role") {
             val offset = s"$verb $execute apoc.*".length
-            assertFailsWithMessage(testName,
+            assertFailsWithMessage(
+              testName,
               s"""Invalid input 'ab?': expected
                  |  "*"
                  |  "."
                  |  "?"
                  |  "ON"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
 
           test(s"$verb $execute `ap`oc.ab? ON DBMS $preposition role") {
             val offset = s"$verb $execute ".length
-            assertFailsWithMessage(testName,
-              s"""Invalid input 'ap': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input 'ap': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
 
           test(s"$verb $execute ap`oc`.ab? ON DBMS $preposition role") {
             val offset = s"$verb $execute ap".length
-            assertFailsWithMessage(testName,
+            assertFailsWithMessage(
+              testName,
               s"""Invalid input 'oc': expected
                  |  "*"
                  |  "."
                  |  "?"
                  |  "ON"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
       }
   }
@@ -246,28 +268,37 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
         "EXECUTE ADMINISTRATOR PROCEDURES"
       ).foreach {
         command =>
-
           test(s"$verb $command ON DBMS $preposition role") {
             yields(func(ExecuteAdminProcedureAction, Seq(literalRole)))
           }
 
           test(s"$verb $command * ON DBMS $preposition role") {
             val offset = s"$verb $command ".length
-            assertFailsWithMessage(testName, s"""Invalid input '*': expected "ON" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input '*': expected "ON" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
 
           test(s"$verb $command ON DATABASE * $preposition role") {
             val offset = s"$verb $command ON ".length
-            assertFailsWithMessage(testName, s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+            )
           }
-          
+
       }
 
       test(s"$verb EXECUTE ADMIN PROCEDURE ON DBMS $preposition role") {
         val offset = s"$verb EXECUTE ADMIN ".length
-        assertFailsWithMessage(testName, s"""Invalid input 'PROCEDURE': expected "PROCEDURES" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+        assertFailsWithMessage(
+          testName,
+          s"""Invalid input 'PROCEDURE': expected "PROCEDURES" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+        )
       }
   }
 
-  private def procedureQualifier(procName: String): InputPosition => ProcedureQualifier = ProcedureQualifier(procName)(_)
+  private def procedureQualifier(procName: String): InputPosition => ProcedureQualifier =
+    ProcedureQualifier(procName)(_)
 }

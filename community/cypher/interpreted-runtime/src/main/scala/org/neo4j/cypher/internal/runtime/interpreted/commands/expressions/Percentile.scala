@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
 case class PercentileCont(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
+
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
     memoryTracker.allocateHeap(PercentileContFunction.SHALLOW_SIZE)
     new PercentileContFunction(anInner, percentile, memoryTracker)
@@ -35,20 +36,23 @@ case class PercentileCont(anInner: Expression, percentile: Expression) extends A
 
   def expectedInnerType: CypherType = CTNumber
 
-  override def rewrite(f: Expression => Expression): Expression = f(PercentileCont(anInner.rewrite(f), percentile.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(PercentileCont(anInner.rewrite(f), percentile.rewrite(f)))
 
   override def children: Seq[AstNode[_]] = Seq(anInner, percentile)
 }
 
 case class PercentileDisc(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
+
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
     memoryTracker.allocateHeap(PercentileDiscFunction.SHALLOW_SIZE)
     new PercentileDiscFunction(anInner, percentile, memoryTracker)
   }
 
-  def expectedInnerType: CypherType  = CTNumber
+  def expectedInnerType: CypherType = CTNumber
 
-  override def rewrite(f: Expression => Expression): Expression = f(PercentileDisc(anInner.rewrite(f), percentile.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(PercentileDisc(anInner.rewrite(f), percentile.rewrite(f)))
 
   override def children: Seq[AstNode[_]] = Seq(anInner, percentile)
 }

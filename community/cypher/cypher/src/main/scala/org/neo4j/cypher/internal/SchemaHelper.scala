@@ -25,16 +25,19 @@ import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.collection.immutable.ArraySeq
 
 case class SchemaToken(x: Long) extends AnyVal
 
-class SchemaHelper(val queryCache: QueryCache[_,_], val masterCompiler: MasterCompiler) {
+class SchemaHelper(val queryCache: QueryCache[_, _], val masterCompiler: MasterCompiler) {
 
   private val schemaToken = new AtomicLong()
   private val schemaStateKey = SchemaStateKey.newKey()
+
   private val creator =
     new java.util.function.Function[SchemaStateKey, SchemaToken]() {
+
       def apply(key: SchemaStateKey): SchemaToken = {
         queryCache.clear()
         masterCompiler.clearExecutionPlanCaches()
@@ -46,9 +49,11 @@ class SchemaHelper(val queryCache: QueryCache[_,_], val masterCompiler: MasterCo
     tc.kernelTransaction().schemaRead().schemaStateGetOrCreate(schemaStateKey, creator)
   }
 
-  def lockEntities(schemaTokenBefore: SchemaToken,
-                   executionPlan: ExecutableQuery,
-                   tc: TransactionalContext): LockedEntities = {
+  def lockEntities(
+    schemaTokenBefore: SchemaToken,
+    executionPlan: ExecutableQuery,
+    tc: TransactionalContext
+  ): LockedEntities = {
     // Lock all used indexes
     val labelIds = executionPlan.labelIdsOfUsedIndexes
     val relationshipIds = executionPlan.relationshipsOfUsedIndexes
@@ -69,7 +74,12 @@ class SchemaHelper(val queryCache: QueryCache[_,_], val masterCompiler: MasterCo
     LockedEntities(successful = true, needsReplan = false)
   }
 
-  private def acquireLocks(tc: TransactionalContext, labelIds: Array[Long], relationshipIds: Array[Long], lookupTypes: Seq[EntityType]): Unit = {
+  private def acquireLocks(
+    tc: TransactionalContext,
+    labelIds: Array[Long],
+    relationshipIds: Array[Long],
+    lookupTypes: Seq[EntityType]
+  ): Unit = {
     if (labelIds.nonEmpty) {
       tc.kernelTransaction.locks().acquireSharedLabelLock(labelIds: _*)
     }
@@ -81,7 +91,12 @@ class SchemaHelper(val queryCache: QueryCache[_,_], val masterCompiler: MasterCo
     lookupTypes.foreach(tc.kernelTransaction.locks().acquireSharedLookupLock(_))
   }
 
-  private def releaseLocks(tc: TransactionalContext, labelIds: Array[Long], relationshipIds: Array[Long], lookupTypes: Seq[EntityType]): Unit = {
+  private def releaseLocks(
+    tc: TransactionalContext,
+    labelIds: Array[Long],
+    relationshipIds: Array[Long],
+    lookupTypes: Seq[EntityType]
+  ): Unit = {
     if (labelIds.nonEmpty) {
       tc.kernelTransaction.locks().releaseSharedLabelLock(labelIds: _*)
     }
@@ -93,15 +108,21 @@ class SchemaHelper(val queryCache: QueryCache[_,_], val masterCompiler: MasterCo
     lookupTypes.foreach(tc.kernelTransaction.locks().releaseSharedLookupLock(_))
   }
 
-  private def indexExists(tc: TransactionalContext, labelIndexes: Map[Long, Array[Int]], relIndexes: Map[Long, Array[Int]],
-                          lookupEntities: Seq[EntityType]): Boolean = {
+  private def indexExists(
+    tc: TransactionalContext,
+    labelIndexes: Map[Long, Array[Int]],
+    relIndexes: Map[Long, Array[Int]],
+    lookupEntities: Seq[EntityType]
+  ): Boolean = {
     labelIndexes.forall { case (label, properties) => hasLabelIndex(tc, label, properties) } &&
-      relIndexes.forall { case (relType, properties) => hasRelationshipTypeIndex(tc, relType, properties) } &&
-      lookupEntities.forall(hasLookupIndex(tc, _))
+    relIndexes.forall { case (relType, properties) => hasRelationshipTypeIndex(tc, relType, properties) } &&
+    lookupEntities.forall(hasLookupIndex(tc, _))
   }
 
   private def hasLookupIndex(tc: TransactionalContext, entityType: EntityType): Boolean =
-    tc.kernelTransaction.schemaRead().indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(entityType)).hasNext
+    tc.kernelTransaction.schemaRead().indexForSchemaNonTransactional(
+      SchemaDescriptors.forAnyEntityTokens(entityType)
+    ).hasNext
 
   private def hasRelationshipTypeIndex(tc: TransactionalContext, relType: Long, properties: Array[Int]): Boolean =
     tc.kernelTransaction

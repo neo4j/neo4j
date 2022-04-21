@@ -19,72 +19,66 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class TransactionMetadataCacheTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+
+class TransactionMetadataCacheTest {
     @Test
-    void shouldReturnNullWhenMissingATxInTheCache()
-    {
+    void shouldReturnNullWhenMissingATxInTheCache() {
         // given
         final TransactionMetadataCache cache = new TransactionMetadataCache();
 
         // when
-        final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata( 42 );
+        final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata(42);
 
         // then
-        assertNull( metadata );
+        assertNull(metadata);
     }
 
     @Test
-    void shouldReturnTheTxValueTIfInTheCached()
-    {
+    void shouldReturnTheTxValueTIfInTheCached() {
         // given
         final TransactionMetadataCache cache = new TransactionMetadataCache();
-        final LogPosition position = new LogPosition( 3, 4 );
+        final LogPosition position = new LogPosition(3, 4);
         final int txId = 42;
 
         // when
-        cache.cacheTransactionMetadata( txId, position );
-        final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata( txId );
+        cache.cacheTransactionMetadata(txId, position);
+        final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata(txId);
 
         // then
-        assertEquals( new TransactionMetadataCache.TransactionMetadata( position ), metadata );
+        assertEquals(new TransactionMetadataCache.TransactionMetadata(position), metadata);
     }
 
     @Test
-    void shouldThrowWhenCachingATxWithNegativeOffsetPosition()
-    {
+    void shouldThrowWhenCachingATxWithNegativeOffsetPosition() {
         // given
         final TransactionMetadataCache cache = new TransactionMetadataCache();
-        final LogPosition position = new LogPosition( 3, -1 );
+        final LogPosition position = new LogPosition(3, -1);
         final int txId = 42;
 
-        var e = assertThrows( RuntimeException.class, () -> cache.cacheTransactionMetadata( txId, position ) );
-        assertEquals( "StartEntry.position is " + position, e.getMessage() );
+        var e = assertThrows(RuntimeException.class, () -> cache.cacheTransactionMetadata(txId, position));
+        assertEquals("StartEntry.position is " + position, e.getMessage());
     }
 
     @Test
-    void shouldClearTheCache()
-    {
+    void shouldClearTheCache() {
         // given
         final TransactionMetadataCache cache = new TransactionMetadataCache();
-        final LogPosition position = new LogPosition( 3, 4 );
+        final LogPosition position = new LogPosition(3, 4);
         final int txId = 42;
 
         // when
-        cache.cacheTransactionMetadata( txId, position );
+        cache.cacheTransactionMetadata(txId, position);
         cache.clear();
-        final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata( txId );
+        final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata(txId);
 
         // then
-        assertNull( metadata );
+        assertNull(metadata);
     }
 }

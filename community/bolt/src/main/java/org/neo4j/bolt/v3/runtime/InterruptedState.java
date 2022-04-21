@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
@@ -27,63 +29,51 @@ import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.memory.HeapEstimator;
 
-import static org.neo4j.util.Preconditions.checkState;
-
 /**
  * If the state machine has been INTERRUPTED then a RESET message
  * has entered the queue and is waiting to be processed. The initial
  * interrupt forces the current statement to stop and all subsequent
  * requests to be IGNORED until the RESET itself is processed.
  */
-public class InterruptedState implements BoltStateMachineState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( InterruptedState.class );
+public class InterruptedState implements BoltStateMachineState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(InterruptedState.class);
 
     private BoltStateMachineState readyState;
 
     @Override
-    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
-    {
+    public BoltStateMachineState process(RequestMessage message, StateMachineContext context)
+            throws BoltConnectionFatality {
         assertInitialized();
-        if ( message instanceof InterruptSignal )
-        {
+        if (message instanceof InterruptSignal) {
             return this;
         }
-        if ( message instanceof ResetMessage )
-        {
-            if ( context.connectionState().decrementInterruptCounter() > 0 )
-            {
+        if (message instanceof ResetMessage) {
+            if (context.connectionState().decrementInterruptCounter() > 0) {
                 context.connectionState().markIgnored();
                 return this;
             }
 
-            if ( context.resetMachine() )
-            {
+            if (context.resetMachine()) {
                 context.connectionState().resetPendingFailedAndIgnored();
                 return readyState;
             }
             return null;
-        }
-        else
-        {
+        } else {
             context.connectionState().markIgnored();
             return this;
         }
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "INTERRUPTED";
     }
 
-    public void setReadyState( BoltStateMachineState readyState )
-    {
+    public void setReadyState(BoltStateMachineState readyState) {
         this.readyState = readyState;
     }
 
-    private void assertInitialized()
-    {
-        checkState( readyState != null, "Ready state not set" );
+    private void assertInitialized() {
+        checkState(readyState != null, "Ready state not set");
     }
 }

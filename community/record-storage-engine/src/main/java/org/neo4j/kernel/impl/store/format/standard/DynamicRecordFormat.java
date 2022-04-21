@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format.standard;
 
+import static java.lang.String.format;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
@@ -26,33 +28,30 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
-import static java.lang.String.format;
-
-public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
-{
+public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord> {
     // (in_use+next high)(1 byte)+nr_of_bytes(3 bytes)+next_block(int)
     public static final int RECORD_HEADER_SIZE = 1 + 3 + 4; // = 8
 
-    public DynamicRecordFormat()
-    {
-        this( false );
+    public DynamicRecordFormat() {
+        this(false);
     }
 
-    public DynamicRecordFormat( boolean pageAligned )
-    {
-        super( INT_STORE_HEADER_READER, RECORD_HEADER_SIZE, 0x10/*the inUse bit is the lsb in the second nibble*/,
-                StandardFormatSettings.DYNAMIC_MAXIMUM_ID_BITS, pageAligned );
-    }
-
-    @Override
-    public DynamicRecord newRecord()
-    {
-        return new DynamicRecord( -1 );
+    public DynamicRecordFormat(boolean pageAligned) {
+        super(
+                INT_STORE_HEADER_READER,
+                RECORD_HEADER_SIZE,
+                0x10 /*the inUse bit is the lsb in the second nibble*/,
+                StandardFormatSettings.DYNAMIC_MAXIMUM_ID_BITS,
+                pageAligned);
     }
 
     @Override
-    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
-    {
+    public DynamicRecord newRecord() {
+        return new DynamicRecord(-1);
+    }
+
+    @Override
+    public void read(DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
         /*
          * First 4b
          * [x   ,    ][    ,    ][    ,    ][    ,    ] 0: start record, 1: linked record
@@ -64,15 +63,13 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
         long firstInteger = cursor.getInt() & 0xFFFFFFFFL;
         boolean isStartRecord = (firstInteger & 0x80000000) == 0;
         boolean inUse = (firstInteger & 0x10000000) != 0;
-        if ( mode.shouldLoad( inUse ) )
-        {
+        if (mode.shouldLoad(inUse)) {
             int dataSize = recordSize - getRecordHeaderSize();
             int nrOfBytes = (int) (firstInteger & 0xFFFFFF);
-            if ( nrOfBytes > dataSize )
-            {
+            if (nrOfBytes > dataSize) {
                 // We must have performed an inconsistent read,
                 // because this many bytes cannot possibly fit in a record!
-                cursor.setCursorException( payloadTooBigErrorMessage( record, recordSize, nrOfBytes ) );
+                cursor.setCursorException(payloadTooBigErrorMessage(record, recordSize, nrOfBytes));
                 return;
             }
 
@@ -82,53 +79,46 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             long nextBlock = cursor.getInt() & 0xFFFFFFFFL;
             long nextModifier = (firstInteger & 0xF000000L) << 8;
 
-            long longNextBlock = BaseRecordFormat.longFromIntAndMod( nextBlock, nextModifier );
-            record.initialize( inUse, isStartRecord, longNextBlock, -1 );
-            readData( record, cursor, nrOfBytes );
-            if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue() && nrOfBytes != dataSize )
-            {
+            long longNextBlock = BaseRecordFormat.longFromIntAndMod(nextBlock, nextModifier);
+            record.initialize(inUse, isStartRecord, longNextBlock, -1);
+            readData(record, cursor, nrOfBytes);
+            if (longNextBlock != Record.NO_NEXT_BLOCK.intValue() && nrOfBytes != dataSize) {
                 // If we have a next block, but don't use the whole current block
-                cursor.setCursorException( illegalBlockSizeMessage( record, dataSize ) );
+                cursor.setCursorException(illegalBlockSizeMessage(record, dataSize));
             }
-        }
-        else
-        {
-            record.setInUse( inUse );
+        } else {
+            record.setInUse(inUse);
         }
     }
 
-    public static String payloadTooBigErrorMessage( DynamicRecord record, int recordSize, int nrOfBytes )
-    {
-        return format( "DynamicRecord[%s] claims to have a payload of %s bytes, " +
-                       "which is larger than the record size of %s bytes.",
-                record.getId(), nrOfBytes, recordSize );
+    public static String payloadTooBigErrorMessage(DynamicRecord record, int recordSize, int nrOfBytes) {
+        return format(
+                "DynamicRecord[%s] claims to have a payload of %s bytes, "
+                        + "which is larger than the record size of %s bytes.",
+                record.getId(), nrOfBytes, recordSize);
     }
 
-    private static String illegalBlockSizeMessage( DynamicRecord record, int dataSize )
-    {
-        return format( "Next block set[%d] current block illegal size[%d/%d]",
-                record.getNextBlock(), record.getLength(), dataSize );
+    private static String illegalBlockSizeMessage(DynamicRecord record, int dataSize) {
+        return format(
+                "Next block set[%d] current block illegal size[%d/%d]",
+                record.getNextBlock(), record.getLength(), dataSize);
     }
 
-    public static void readData( DynamicRecord record, PageCursor cursor, int len )
-    {
+    public static void readData(DynamicRecord record, PageCursor cursor, int len) {
         byte[] data = record.getData();
-        if ( data == null || data.length != len )
-        {
+        if (data == null || data.length != len) {
             data = new byte[len];
         }
-        cursor.getBytes( data );
-        record.setData( data );
+        cursor.getBytes(data);
+        record.setData(data);
     }
 
     @Override
-    public void write( DynamicRecord record, PageCursor cursor, int recordSize, int recordsPerPage )
-    {
-        if ( record.inUse() )
-        {
+    public void write(DynamicRecord record, PageCursor cursor, int recordSize, int recordsPerPage) {
+        if (record.inUse()) {
             long nextBlock = record.getNextBlock();
-            int highByteInFirstInteger = nextBlock == Record.NO_NEXT_BLOCK.intValue() ? 0
-                    : (int) ((nextBlock & 0xF00000000L) >> 8);
+            int highByteInFirstInteger =
+                    nextBlock == Record.NO_NEXT_BLOCK.intValue() ? 0 : (int) ((nextBlock & 0xF00000000L) >> 8);
             highByteInFirstInteger |= Record.IN_USE.byteValue() << 28;
             highByteInFirstInteger |= (record.isStartRecord() ? 0 : 1) << 31;
 
@@ -145,19 +135,16 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
 
             firstInteger |= highByteInFirstInteger;
 
-            cursor.putInt( firstInteger );
-            cursor.putInt( (int) nextBlock );
-            cursor.putBytes( record.getData() );
-        }
-        else
-        {
-            cursor.putByte( Record.NOT_IN_USE.byteValue() );
+            cursor.putInt(firstInteger);
+            cursor.putInt((int) nextBlock);
+            cursor.putBytes(record.getData());
+        } else {
+            cursor.putByte(Record.NOT_IN_USE.byteValue());
         }
     }
 
     @Override
-    public long getNextRecordReference( DynamicRecord record )
-    {
+    public long getNextRecordReference(DynamicRecord record) {
         return record.getNextBlock();
     }
 }

@@ -21,16 +21,14 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-public class FullAccessRelationshipScanCursor extends DefaultRelationshipScanCursor
-{
-    FullAccessRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor )
-    {
-        super( pool, storeCursor, null );
+public class FullAccessRelationshipScanCursor extends DefaultRelationshipScanCursor {
+    FullAccessRelationshipScanCursor(
+            CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor) {
+        super(pool, storeCursor, null);
     }
 
     @Override
-    final boolean allowed()
-    {
+    final boolean allowed() {
         return true;
     }
 }

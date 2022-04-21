@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -34,18 +33,15 @@ import org.neo4j.values.storable.Value;
  * A {@link IndexProgressor} + {@link IndexProgressor.EntityValueClient} combo presented as a {@link LongIterator}.
  */
 public class NodeValueIterator extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator
-        implements IndexProgressor.EntityValueClient, PrimitiveLongResourceIterator, LongIterator
-{
+        implements IndexProgressor.EntityValueClient, PrimitiveLongResourceIterator, LongIterator {
     private boolean closed;
     private IndexProgressor progressor;
 
     @Override
-    protected boolean fetchNext()
-    {
+    protected boolean fetchNext() {
         // progressor.next() will progress underlying SeekCursor
         // and feed result into this with node( long reference, Value... values )
-        if ( closed || !progressor.next() )
-        {
+        if (closed || !progressor.next()) {
             close();
             return false;
         }
@@ -53,29 +49,29 @@ public class NodeValueIterator extends PrimitiveLongCollections.AbstractPrimitiv
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
-                            boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
-    {
+    public void initialize(
+            IndexDescriptor descriptor,
+            IndexProgressor progressor,
+            AccessMode accessMode,
+            boolean indexIncludesTransactionState,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query) {
         this.progressor = progressor;
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value... values )
-    {
-        return next( reference );
+    public boolean acceptEntity(long reference, float score, Value... values) {
+        return next(reference);
     }
 
     @Override
-    public boolean needsValues()
-    {
+    public boolean needsValues() {
         return false;
     }
 
     @Override
-    public void close()
-    {
-        if ( !closed )
-        {
+    public void close() {
+        if (!closed) {
             closed = true;
             progressor.close();
             progressor = null;

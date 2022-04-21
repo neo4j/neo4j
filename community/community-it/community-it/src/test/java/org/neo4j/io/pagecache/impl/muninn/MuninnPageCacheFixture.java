@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.util.concurrent.CountDownLatch;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.io.mem.MemoryAllocator;
@@ -31,41 +30,47 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
-public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnPageCache>
-{
+public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnPageCache> {
     CountDownLatch backgroundFlushLatch;
     private MemoryAllocator allocator;
 
     @Override
-    public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
-            JobScheduler jobScheduler, IOBufferFactory bufferFactory )
-    {
-        return createPageCache( swapperFactory, maxPages, tracer, jobScheduler, bufferFactory, getReservedBytes() );
+    public MuninnPageCache createPageCache(
+            PageSwapperFactory swapperFactory,
+            int maxPages,
+            PageCacheTracer tracer,
+            JobScheduler jobScheduler,
+            IOBufferFactory bufferFactory) {
+        return createPageCache(swapperFactory, maxPages, tracer, jobScheduler, bufferFactory, getReservedBytes());
     }
 
-    public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
-            JobScheduler jobScheduler, IOBufferFactory bufferFactory, int reservedBytes )
-    {
-        long memory = MuninnPageCache.memoryRequiredForPages( maxPages );
+    public MuninnPageCache createPageCache(
+            PageSwapperFactory swapperFactory,
+            int maxPages,
+            PageCacheTracer tracer,
+            JobScheduler jobScheduler,
+            IOBufferFactory bufferFactory,
+            int reservedBytes) {
+        long memory = MuninnPageCache.memoryRequiredForPages(maxPages);
         var memoryTracker = new LocalMemoryTracker();
-        allocator = MemoryAllocator.createAllocator( memory, memoryTracker );
-        MuninnPageCache.Configuration configuration = MuninnPageCache.config( allocator )
-                .pageCacheTracer( tracer )
-                .bufferFactory( selectBufferFactory( bufferFactory, memoryTracker ) )
-                .reservedPageBytes( reservedBytes );
-        return new MuninnPageCache( swapperFactory, jobScheduler, configuration );
+        allocator = MemoryAllocator.createAllocator(memory, memoryTracker);
+        MuninnPageCache.Configuration configuration = MuninnPageCache.config(allocator)
+                .pageCacheTracer(tracer)
+                .bufferFactory(selectBufferFactory(bufferFactory, memoryTracker))
+                .reservedPageBytes(reservedBytes);
+        return new MuninnPageCache(swapperFactory, jobScheduler, configuration);
     }
 
-    private static IOBufferFactory selectBufferFactory( IOBufferFactory bufferFactory, LocalMemoryTracker memoryTracker )
-    {
-        return bufferFactory != null ? bufferFactory : new ConfigurableIOBufferFactory( Config.defaults(), memoryTracker );
+    private static IOBufferFactory selectBufferFactory(
+            IOBufferFactory bufferFactory, LocalMemoryTracker memoryTracker) {
+        return bufferFactory != null
+                ? bufferFactory
+                : new ConfigurableIOBufferFactory(Config.defaults(), memoryTracker);
     }
 
     @Override
-    public void tearDownPageCache( MuninnPageCache pageCache )
-    {
-        if ( backgroundFlushLatch != null )
-        {
+    public void tearDownPageCache(MuninnPageCache pageCache) {
+        if (backgroundFlushLatch != null) {
             backgroundFlushLatch.countDown();
             backgroundFlushLatch = null;
         }

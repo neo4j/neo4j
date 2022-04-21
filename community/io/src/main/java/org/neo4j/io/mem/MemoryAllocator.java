@@ -24,11 +24,9 @@ import org.neo4j.memory.MemoryTracker;
 /**
  * A MemoryAllocator is simple: it only allocates memory, until it is closed and frees it all in one go.
  */
-public interface MemoryAllocator
-{
-    static MemoryAllocator createAllocator( long expectedMemory, MemoryTracker memoryTracker )
-    {
-        return new GrabAllocator( expectedMemory, memoryTracker );
+public interface MemoryAllocator {
+    static MemoryAllocator createAllocator(long expectedMemory, MemoryTracker memoryTracker) {
+        return new GrabAllocator(expectedMemory, memoryTracker);
     }
 
     /**
@@ -48,7 +46,7 @@ public interface MemoryAllocator
      * @return A pointer to the allocated memory.
      * @throws OutOfMemoryError if the requested memory could not be allocated.
      */
-    long allocateAligned( long bytes, long alignment );
+    long allocateAligned(long bytes, long alignment);
 
     /**
      * Close all allocated resources and free all allocated memory.

@@ -19,8 +19,9 @@
  */
 package org.neo4j.commandline.dbms;
 
-import java.io.IOException;
+import static picocli.CommandLine.Command;
 
+import java.io.IOException;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
@@ -30,55 +31,41 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.locker.FileLockException;
 
-import static picocli.CommandLine.Command;
-
 @Command(
         name = "unbind",
         header = "Removes server identifier.",
-        description = "Removes server identifier. Next start instance will create a new identity for itself."
-)
-public class UnbindCommand extends AbstractCommand
-{
-    public UnbindCommand( ExecutionContext ctx )
-    {
-        super( ctx );
+        description = "Removes server identifier. Next start instance will create a new identity for itself.")
+public class UnbindCommand extends AbstractCommand {
+    public UnbindCommand(ExecutionContext ctx) {
+        super(ctx);
     }
 
     @Override
-    public void execute()
-    {
-        try
-        {
+    public void execute() {
+        try {
             var config = buildConfig();
-            var neo4jLayout = Neo4jLayout.of( config );
-            try ( var ignored = LockChecker.checkDbmsLock( neo4jLayout ) )
-            {
-                execute( config, neo4jLayout );
+            var neo4jLayout = Neo4jLayout.of(config);
+            try (var ignored = LockChecker.checkDbmsLock(neo4jLayout)) {
+                execute(config, neo4jLayout);
             }
-        }
-        catch ( FileLockException e )
-        {
-            throw new CommandFailedException( "Database is currently locked. Please shutdown database.", e );
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e.getMessage(), e );
+        } catch (FileLockException e) {
+            throw new CommandFailedException("Database is currently locked. Please shutdown database.", e);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 
-    protected void execute( Config config, Neo4jLayout neo4jLayout ) throws IOException
-    {
-        ctx.fs().deleteFile( neo4jLayout.serverIdFile() );
+    protected void execute(Config config, Neo4jLayout neo4jLayout) throws IOException {
+        ctx.fs().deleteFile(neo4jLayout.serverIdFile());
     }
 
-    private Config buildConfig()
-    {
+    private Config buildConfig() {
         var cfg = Config.newBuilder()
-                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .commandExpansion( allowCommandExpansion )
-                .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() )
+                .fromFileNoThrow(ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME))
+                .commandExpansion(allowCommandExpansion)
+                .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir())
                 .build();
-        ConfigUtils.disableAllConnectors( cfg );
+        ConfigUtils.disableAllConnectors(cfg);
         return cfg;
     }
 }

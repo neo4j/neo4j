@@ -19,12 +19,14 @@
  */
 package org.neo4j.files;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
@@ -35,15 +37,11 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-
 @TestDirectoryExtension
-class NativeIndexFileFilterTest
-{
+class NativeIndexFileFilterTest {
     @Inject
     private DefaultFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory directory;
 
@@ -51,63 +49,62 @@ class NativeIndexFileFilterTest
     private NativeIndexFileFilter filter;
 
     @BeforeEach
-    void before()
-    {
+    void before() {
         storeDir = directory.homePath();
-        filter = new NativeIndexFileFilter( storeDir );
+        filter = new NativeIndexFileFilter(storeDir);
     }
 
     @Test
-    void shouldNotAcceptTextIndex() throws IOException
-    {
+    void shouldNotAcceptTextIndex() throws IOException {
         // given
-        Path dir = directoriesByProvider( storeDir ).forProvider( TextIndexProvider.DESCRIPTOR ).directoryForIndex( 1 );
-        shouldNotAcceptFileInDirectory( dir );
+        Path dir = directoriesByProvider(storeDir)
+                .forProvider(TextIndexProvider.DESCRIPTOR)
+                .directoryForIndex(1);
+        shouldNotAcceptFileInDirectory(dir);
     }
 
     @Test
-    void shouldNotAcceptFulltextIndex() throws IOException
-    {
+    void shouldNotAcceptFulltextIndex() throws IOException {
         // given
-        Path dir = directoriesByProvider( storeDir ).forProvider( FulltextIndexProviderFactory.DESCRIPTOR ).directoryForIndex( 1 );
-        shouldNotAcceptFileInDirectory( dir );
+        Path dir = directoriesByProvider(storeDir)
+                .forProvider(FulltextIndexProviderFactory.DESCRIPTOR)
+                .directoryForIndex(1);
+        shouldNotAcceptFileInDirectory(dir);
     }
 
     @Test
-    void shouldAcceptRangeIndexFile() throws IOException
-    {
+    void shouldAcceptRangeIndexFile() throws IOException {
         // given
-        Path dir = directoriesByProvider( storeDir ).forProvider( RangeIndexProvider.DESCRIPTOR ).directoryForIndex( 1 );
-        shouldAcceptFileInDirectory( dir );
+        Path dir = directoriesByProvider(storeDir)
+                .forProvider(RangeIndexProvider.DESCRIPTOR)
+                .directoryForIndex(1);
+        shouldAcceptFileInDirectory(dir);
     }
 
-    private void shouldAcceptFileInDirectory( Path dir ) throws IOException
-    {
-        Path file = dir.resolve( "some-file" );
-        createFile( file );
+    private void shouldAcceptFileInDirectory(Path dir) throws IOException {
+        Path file = dir.resolve("some-file");
+        createFile(file);
 
         // when
-        boolean accepted = filter.test( file );
+        boolean accepted = filter.test(file);
 
         // then
-        assertTrue( accepted, "Expected to accept file " + file );
+        assertTrue(accepted, "Expected to accept file " + file);
     }
 
-    private void shouldNotAcceptFileInDirectory( Path dir ) throws IOException
-    {
-        Path file = dir.resolve( "some-file" );
-        createFile( file );
+    private void shouldNotAcceptFileInDirectory(Path dir) throws IOException {
+        Path file = dir.resolve("some-file");
+        createFile(file);
 
         // when
-        boolean accepted = filter.test( file );
+        boolean accepted = filter.test(file);
 
         // then
-        assertFalse( accepted, "Did not expect to accept file " + file );
+        assertFalse(accepted, "Did not expect to accept file " + file);
     }
 
-    private void createFile( Path file ) throws IOException
-    {
-        fs.mkdirs( file.getParent() );
-        ((StoreChannel) fs.write( file )).close();
+    private void createFile(Path file) throws IOException {
+        fs.mkdirs(file.getParent());
+        ((StoreChannel) fs.write(file)).close();
     }
 }

@@ -19,6 +19,11 @@
  */
 package org.neo4j.configuration.connectors;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
+
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
@@ -26,30 +31,24 @@ import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
-import static org.neo4j.configuration.SettingImpl.newBuilder;
-import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
-
 @ServiceProvider
 @PublicApi
-public final class HttpsConnector implements SettingsDeclaration
-{
+public final class HttpsConnector implements SettingsDeclaration {
     public static final int DEFAULT_PORT = 7473;
     public static final String NAME = "https";
 
-    @Description( "Enable the https connector" )
+    @Description("Enable the https connector")
     public static final Setting<Boolean> enabled = ConnectorDefaults.https_enabled;
 
-    @Description( "Address the connector should bind to" )
-    public static final Setting<SocketAddress> listen_address =
-            newBuilder( "dbms.connector.https.listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) )
-                    .setDependency( default_listen_address )
-                    .build();
+    @Description("Address the connector should bind to")
+    public static final Setting<SocketAddress> listen_address = newBuilder(
+                    "dbms.connector.https.listen_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
+            .setDependency(default_listen_address)
+            .build();
 
-    @Description( "Advertised address for this connector" )
-    public static final Setting<SocketAddress> advertised_address =
-            newBuilder( "dbms.connector.https.advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) )
-                    .setDependency( default_advertised_address )
-                    .build();
+    @Description("Advertised address for this connector")
+    public static final Setting<SocketAddress> advertised_address = newBuilder(
+                    "dbms.connector.https.advertised_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
+            .setDependency(default_advertised_address)
+            .build();
 }

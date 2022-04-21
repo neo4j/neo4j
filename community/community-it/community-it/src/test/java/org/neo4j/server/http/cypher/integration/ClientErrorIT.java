@@ -19,109 +19,76 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.server.HTTP;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class ClientErrorIT extends AbstractRestFunctionalTestBase
-{
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.test.server.HTTP;
+
+public class ClientErrorIT extends AbstractRestFunctionalTestBase {
     private static final int UNIQUE_ISBN = 12345;
 
-    private static Stream<Arguments> argumentsProvider()
-    {
+    private static Stream<Arguments> argumentsProvider() {
         return Stream.of(
+                Arguments.of("Not a valid query", Status.Statement.SyntaxError),
+                Arguments.of("RETURN $foo", Status.Statement.ParameterMissing),
+                Arguments.of("MATCH (n) WITH n.prop AS n2 RETURN n2.prop", Status.Statement.TypeError),
+                Arguments.of("CYPHER 1.9 EXPLAIN MATCH n RETURN n", Status.Statement.ArgumentError),
+                Arguments.of("RETURN 10 / 0", Status.Statement.ArithmeticError),
+                Arguments.of("SHOW DATABASES", Status.Transaction.ForbiddenDueToTransactionType),
                 Arguments.of(
-                        "Not a valid query",
-                        Status.Statement.SyntaxError
-                ),
-                Arguments.of(
-                        "RETURN $foo",
-                        Status.Statement.ParameterMissing
-                ),
-                Arguments.of(
-                        "MATCH (n) WITH n.prop AS n2 RETURN n2.prop",
-                        Status.Statement.TypeError
-                ),
-                Arguments.of(
-                        "CYPHER 1.9 EXPLAIN MATCH n RETURN n",
-                        Status.Statement.ArgumentError
-                ),
-                Arguments.of(
-                        "RETURN 10 / 0",
-                        Status.Statement.ArithmeticError
-                ),
-                Arguments.of(
-                        "SHOW DATABASES",
-                        Status.Transaction.ForbiddenDueToTransactionType
-                ),
-                Arguments.of(
-                        "CREATE INDEX FOR (n:Person) ON (n.name)",
-                        Status.Transaction.ForbiddenDueToTransactionType
-                ),
-                Arguments.of(
-                        "CREATE (n:``)",
-                        Status.Statement.SyntaxError
-                ),
-                Arguments.of(
-                        "CREATE (b:Book {isbn: " + UNIQUE_ISBN + "})",
-                        Status.Schema.ConstraintValidationFailed
-                ),
+                        "CREATE INDEX FOR (n:Person) ON (n.name)", Status.Transaction.ForbiddenDueToTransactionType),
+                Arguments.of("CREATE (n:``)", Status.Statement.SyntaxError),
+                Arguments.of("CREATE (b:Book {isbn: " + UNIQUE_ISBN + "})", Status.Schema.ConstraintValidationFailed),
                 Arguments.of(
                         "LOAD CSV FROM 'http://127.0.0.1/null/' AS line CREATE (a {name:line[0]})", // invalid for json
-                        Status.Request.InvalidFormat
-                )
-        );
+                        Status.Request.InvalidFormat));
     }
 
     @BeforeAll
-    public static void prepareDatabase()
-    {
-        POST( txCommitUri(), quotedJson(
-                "{'statements': [{'statement': 'CREATE INDEX FOR (n:Book) ON (n.name)'}]}" ) );
+    public static void prepareDatabase() {
+        POST(txCommitUri(), quotedJson("{'statements': [{'statement': 'CREATE INDEX FOR (n:Book) ON (n.name)'}]}"));
 
-        POST( txCommitUri(), quotedJson(
-                "{'statements': [{'statement': 'CREATE CONSTRAINT FOR (b:Book) REQUIRE b.isbn IS UNIQUE'}]}" ) );
+        POST(
+                txCommitUri(),
+                quotedJson(
+                        "{'statements': [{'statement': 'CREATE CONSTRAINT FOR (b:Book) REQUIRE b.isbn IS UNIQUE'}]}"));
 
-        POST( txCommitUri(), quotedJson(
-                "{'statements': [{'statement': 'CREATE (b:Book {isbn: " + UNIQUE_ISBN + "})'}]}" ) );
+        POST(
+                txCommitUri(),
+                quotedJson("{'statements': [{'statement': 'CREATE (b:Book {isbn: " + UNIQUE_ISBN + "})'}]}"));
     }
 
-    @ParameterizedTest( name = "{0} should cause {1}" )
-    @MethodSource( "argumentsProvider" )
-    public void clientErrorShouldRollbackTheTransaction( String query, Status errorStatus ) throws JsonParseException
-    {
+    @ParameterizedTest(name = "{0} should cause {1}")
+    @MethodSource("argumentsProvider")
+    public void clientErrorShouldRollbackTheTransaction(String query, Status errorStatus) throws JsonParseException {
         // Given
-        HTTP.Response first = POST( txUri(), quotedJson( "{'statements': [{'statement': 'CREATE (n {prop : 1})'}]}" ) );
-        assertThat( first.status() ).isEqualTo( 201 );
-        assertThat( first ).satisfies( containsNoErrors() );
-        long txId = extractTxId( first );
+        HTTP.Response first = POST(txUri(), quotedJson("{'statements': [{'statement': 'CREATE (n {prop : 1})'}]}"));
+        assertThat(first.status()).isEqualTo(201);
+        assertThat(first).satisfies(containsNoErrors());
+        long txId = extractTxId(first);
 
         // When
-        HTTP.Response malformed = POST( txUri( txId ),
-                quotedJson( "{'statements': [{'statement': '" + query + "'}]}" ) );
+        HTTP.Response malformed = POST(txUri(txId), quotedJson("{'statements': [{'statement': '" + query + "'}]}"));
 
         // Then
 
         // malformed POST contains expected error
-        assertThat( malformed.status() ).isEqualTo( 200 );
-        assertThat( malformed ).satisfies( hasErrors( errorStatus ) );
+        assertThat(malformed.status()).isEqualTo(200);
+        assertThat(malformed).satisfies(hasErrors(errorStatus));
 
         // transaction was rolled back on the previous step and we can't commit it
-        HTTP.Response commit = POST( first.stringFromContent( "commit" ) );
-        assertThat( commit.status() ).isEqualTo( 404 );
+        HTTP.Response commit = POST(first.stringFromContent("commit"));
+        assertThat(commit.status()).isEqualTo(404);
     }
 }

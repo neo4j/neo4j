@@ -19,14 +19,13 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-public interface NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
-{
+public interface NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor {
     @Override
-    NodeKeyConstraintDescriptor withId( long id );
+    NodeKeyConstraintDescriptor withId(long id);
 
     @Override
-    NodeKeyConstraintDescriptor withName( String name );
+    NodeKeyConstraintDescriptor withName(String name);
 
     @Override
-    NodeKeyConstraintDescriptor withOwnedIndexId( long id );
+    NodeKeyConstraintDescriptor withOwnedIndexId(long id);
 }

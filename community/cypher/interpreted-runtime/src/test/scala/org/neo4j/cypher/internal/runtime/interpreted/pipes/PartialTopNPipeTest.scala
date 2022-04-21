@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.Comparator
-
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
@@ -28,6 +26,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.IntValue
+
+import java.util.Comparator
 
 class PartialTopNPipeTest extends CypherFunSuite {
 
@@ -77,7 +77,7 @@ class PartialTopNPipeTest extends CypherFunSuite {
       Map("x" -> 2, "y" -> 5),
       Map("x" -> 3, "y" -> 1),
       Map("x" -> 3, "y" -> 0),
-      Map("x" -> 3, "y" -> 5),
+      Map("x" -> 3, "y" -> 5)
     )
 
     val source = new FakePipe(input)
@@ -85,7 +85,12 @@ class PartialTopNPipeTest extends CypherFunSuite {
 
     val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
 
-    iterator.toList.map(r => Map("x" -> r.getByName("x").asInstanceOf[IntValue].longValue(), "y" -> r.getByName("y").asInstanceOf[IntValue].longValue())) shouldBe
+    iterator.toList.map(r =>
+      Map(
+        "x" -> r.getByName("x").asInstanceOf[IntValue].longValue(),
+        "y" -> r.getByName("y").asInstanceOf[IntValue].longValue()
+      )
+    ) shouldBe
       input.sortBy(m => (m("x"), m("y"))).take(4)
   }
 

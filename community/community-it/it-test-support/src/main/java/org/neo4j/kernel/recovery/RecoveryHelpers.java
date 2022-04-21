@@ -22,7 +22,6 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Optional;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -31,33 +30,27 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 
-public final class RecoveryHelpers
-{
-     private RecoveryHelpers()
-     { // non-constructable
-     }
+public final class RecoveryHelpers {
+    private RecoveryHelpers() { // non-constructable
+    }
 
-     public static void removeLastCheckpointRecordFromLastLogFile( DatabaseLayout dbLayout, FileSystemAbstraction fs ) throws IOException
-     {
-          LogFiles logFiles = buildLogFiles( dbLayout, fs );
-          var checkpointFile = logFiles.getCheckpointFile();
-          Optional<CheckpointInfo> latestCheckpoint = checkpointFile.findLatestCheckpoint();
-          latestCheckpoint.ifPresent( checkpointInfo ->
-              {
-              LogPosition entryPosition = checkpointInfo.getCheckpointEntryPosition();
-              try ( StoreChannel storeChannel = fs.write( checkpointFile.getCurrentFile() ) )
-              {
-                  storeChannel.truncate( entryPosition.getByteOffset() );
-              }
-              catch ( IOException e )
-              {
-                  throw new UncheckedIOException( e );
-              }
-          } );
-     }
+    public static void removeLastCheckpointRecordFromLastLogFile(DatabaseLayout dbLayout, FileSystemAbstraction fs)
+            throws IOException {
+        LogFiles logFiles = buildLogFiles(dbLayout, fs);
+        var checkpointFile = logFiles.getCheckpointFile();
+        Optional<CheckpointInfo> latestCheckpoint = checkpointFile.findLatestCheckpoint();
+        latestCheckpoint.ifPresent(checkpointInfo -> {
+            LogPosition entryPosition = checkpointInfo.getCheckpointEntryPosition();
+            try (StoreChannel storeChannel = fs.write(checkpointFile.getCurrentFile())) {
+                storeChannel.truncate(entryPosition.getByteOffset());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
 
-     private static LogFiles buildLogFiles( DatabaseLayout dbLayout, FileSystemAbstraction fs ) throws IOException
-     {
-         return LogFilesBuilder.logFilesBasedOnlyBuilder( dbLayout.getTransactionLogsDirectory(), fs ).build();
-     }
+    private static LogFiles buildLogFiles(DatabaseLayout dbLayout, FileSystemAbstraction fs) throws IOException {
+        return LogFilesBuilder.logFilesBasedOnlyBuilder(dbLayout.getTransactionLogsDirectory(), fs)
+                .build();
+    }
 }

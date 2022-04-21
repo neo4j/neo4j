@@ -19,25 +19,22 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.unmodifiableList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Collections.unmodifiableList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
-
-class RawBitsTest
-{
-    public RangeLayout layout = new RangeLayout( 1 );
+class RawBitsTest {
+    public RangeLayout layout = new RangeLayout(1);
 
     private final List<Object> objects = Arrays.asList(
             Double.NEGATIVE_INFINITY,
@@ -81,127 +78,109 @@ class RawBitsTest
             Double.MAX_VALUE,
             Double.POSITIVE_INFINITY,
             Double.NaN,
-            Math.nextDown( Math.E ),
-            Math.nextUp( Math.E ),
-            Math.nextDown( Math.PI ),
-            Math.nextUp( Math.PI )
-    );
+            Math.nextDown(Math.E),
+            Math.nextUp(Math.E),
+            Math.nextDown(Math.PI),
+            Math.nextUp(Math.PI));
 
     @Test
-    void mustSortInSameOrderAsValueComparator()
-    {
+    void mustSortInSameOrderAsValueComparator() {
         // given
-        List<Value> values = asValueObjects( objects );
-        List<RangeKey> numberIndexKeys = asNumberIndexKeys( values );
-        Collections.shuffle( values );
-        Collections.shuffle( numberIndexKeys );
+        List<Value> values = asValueObjects(objects);
+        List<RangeKey> numberIndexKeys = asNumberIndexKeys(values);
+        Collections.shuffle(values);
+        Collections.shuffle(numberIndexKeys);
 
         // when
-        values.sort( Values.COMPARATOR );
-        numberIndexKeys.sort( layout );
-        List<Value> actual = asValues( numberIndexKeys );
+        values.sort(Values.COMPARATOR);
+        numberIndexKeys.sort(layout);
+        List<Value> actual = asValues(numberIndexKeys);
 
         // then
-        assertSameOrder( actual, values );
+        assertSameOrder(actual, values);
     }
 
     @Test
-    void shouldCompareAllValuesToAllOtherValuesLikeValueComparator()
-    {
+    void shouldCompareAllValuesToAllOtherValuesLikeValueComparator() {
         // given
-        List<Value> values = asValueObjects( objects );
-        List<RangeKey> numberIndexKeys = asNumberIndexKeys( values );
-        values.sort( Values.COMPARATOR );
+        List<Value> values = asValueObjects(objects);
+        List<RangeKey> numberIndexKeys = asNumberIndexKeys(values);
+        values.sort(Values.COMPARATOR);
 
         // when
-        for ( RangeKey rangeKey : numberIndexKeys )
-        {
-            List<RangeKey> withoutThisOne = new ArrayList<>( numberIndexKeys );
-            assertTrue( withoutThisOne.remove( rangeKey ) );
-            withoutThisOne = unmodifiableList( withoutThisOne );
-            for ( int i = 0; i < withoutThisOne.size(); i++ )
-            {
-                List<RangeKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
-                withThisOneInWrongPlace.add( i, rangeKey );
-                withThisOneInWrongPlace.sort( layout );
-                List<Value> actual = asValues( withThisOneInWrongPlace );
+        for (RangeKey rangeKey : numberIndexKeys) {
+            List<RangeKey> withoutThisOne = new ArrayList<>(numberIndexKeys);
+            assertTrue(withoutThisOne.remove(rangeKey));
+            withoutThisOne = unmodifiableList(withoutThisOne);
+            for (int i = 0; i < withoutThisOne.size(); i++) {
+                List<RangeKey> withThisOneInWrongPlace = new ArrayList<>(withoutThisOne);
+                withThisOneInWrongPlace.add(i, rangeKey);
+                withThisOneInWrongPlace.sort(layout);
+                List<Value> actual = asValues(withThisOneInWrongPlace);
 
                 // then
-                assertSameOrder( actual, values );
+                assertSameOrder(actual, values);
             }
         }
     }
 
     @Test
-    void shouldHaveSameCompareResultsAsValueCompare()
-    {
+    void shouldHaveSameCompareResultsAsValueCompare() {
         // given
-        List<Value> values = asValueObjects( objects );
-        List<RangeKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<Value> values = asValueObjects(objects);
+        List<RangeKey> numberIndexKeys = asNumberIndexKeys(values);
 
         // when
-        for ( int i = 0; i < values.size(); i++ )
-        {
-            Value value1 = values.get( i );
-            RangeKey numberIndexKey1 = numberIndexKeys.get( i );
-            for ( int j = 0; j < values.size(); j++ )
-            {
+        for (int i = 0; i < values.size(); i++) {
+            Value value1 = values.get(i);
+            RangeKey numberIndexKey1 = numberIndexKeys.get(i);
+            for (int j = 0; j < values.size(); j++) {
                 // then
-                Value value2 = values.get( j );
-                RangeKey numberIndexKey2 = numberIndexKeys.get( j );
-                assertEquals( Values.COMPARATOR.compare( value1, value2 ),
-                        layout.compare( numberIndexKey1, numberIndexKey2 ) );
-                assertEquals( Values.COMPARATOR.compare( value2, value1 ),
-                        layout.compare( numberIndexKey2, numberIndexKey1 ) );
+                Value value2 = values.get(j);
+                RangeKey numberIndexKey2 = numberIndexKeys.get(j);
+                assertEquals(
+                        Values.COMPARATOR.compare(value1, value2), layout.compare(numberIndexKey1, numberIndexKey2));
+                assertEquals(
+                        Values.COMPARATOR.compare(value2, value1), layout.compare(numberIndexKey2, numberIndexKey1));
             }
         }
     }
 
-    private static List<Value> asValues( List<RangeKey> numberIndexKeys )
-    {
+    private static List<Value> asValues(List<RangeKey> numberIndexKeys) {
         return numberIndexKeys.stream()
-                .map( k -> RawBits.asNumberValue( k.long0, (byte) k.long1 ) )
-                .collect( Collectors.toList() );
+                .map(k -> RawBits.asNumberValue(k.long0, (byte) k.long1))
+                .collect(Collectors.toList());
     }
 
-    private static void assertSameOrder( List<Value> actual, List<Value> values )
-    {
-        assertEquals( actual.size(), values.size() );
-        for ( int i = 0; i < actual.size(); i++ )
-        {
-            Number actualAsNumber = (Number) actual.get( i ).asObject();
-            Number valueAsNumber = (Number) values.get( i ).asObject();
+    private static void assertSameOrder(List<Value> actual, List<Value> values) {
+        assertEquals(actual.size(), values.size());
+        for (int i = 0; i < actual.size(); i++) {
+            Number actualAsNumber = (Number) actual.get(i).asObject();
+            Number valueAsNumber = (Number) values.get(i).asObject();
             //noinspection StatementWithEmptyBody
-            if ( Double.isNaN( actualAsNumber.doubleValue() ) && Double.isNaN( valueAsNumber.doubleValue() ) )
-            {
+            if (Double.isNaN(actualAsNumber.doubleValue()) && Double.isNaN(valueAsNumber.doubleValue())) {
                 // Don't compare equals because NaN does not equal itself
-            }
-            else
-            {
-                assertEquals( actual.get( i ), values.get( i ) );
+            } else {
+                assertEquals(actual.get(i), values.get(i));
             }
         }
     }
 
-    private static List<Value> asValueObjects( List<Object> objects )
-    {
+    private static List<Value> asValueObjects(List<Object> objects) {
         List<Value> values = new ArrayList<>();
-        for ( Object object : objects )
-        {
-            values.add( Values.of( object ) );
+        for (Object object : objects) {
+            values.add(Values.of(object));
         }
         return values;
     }
 
-    private List<RangeKey> asNumberIndexKeys( List<Value> values )
-    {
+    private List<RangeKey> asNumberIndexKeys(List<Value> values) {
         List<RangeKey> numberIndexKeys = new ArrayList<>();
-        for ( Value value : values )
-        {
+        for (Value value : values) {
             RangeKey key = layout.newKey();
-            key.initialize( 0 );
-            key.initFromValue( 0, value, NEUTRAL );
-            numberIndexKeys.add( key );
+            key.initialize(0);
+            key.initFromValue(0, value, NEUTRAL);
+            numberIndexKeys.add(key);
         }
         return numberIndexKeys;
     }

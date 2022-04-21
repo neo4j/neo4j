@@ -31,7 +31,9 @@ class SolvablesTest extends CypherFunSuite {
   val node2Name = "b"
 
   val relName = "rel"
-  val rel = PatternRelationship(relName, (node1Name, node2Name), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+
+  val rel =
+    PatternRelationship(relName, (node1Name, node2Name), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("should compute solvables from empty query graph") {
     val qg = QueryGraph.empty

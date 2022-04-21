@@ -19,14 +19,18 @@
  */
 package org.neo4j.test.server;
 
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
+import static org.neo4j.test.extension.SuppressOutput.suppressAll;
+import static org.neo4j.test.server.WebContainerHolder.release;
+import static org.neo4j.test.server.WebContainerHolder.setWebContainerBuilderProperty;
+
+import java.util.concurrent.Callable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-
-import java.util.concurrent.Callable;
-
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -35,59 +39,47 @@ import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.server.helpers.WebContainerHelper;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
-import static org.neo4j.test.extension.SuppressOutput.suppressAll;
-import static org.neo4j.test.server.WebContainerHolder.release;
-import static org.neo4j.test.server.WebContainerHolder.setWebContainerBuilderProperty;
-
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( SHARED_RESOURCE )
-@ResourceLock( Resources.SYSTEM_OUT )
-public class SharedWebContainerTestBase
-{
-    protected static TestWebContainer container()
-    {
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(SHARED_RESOURCE)
+@ResourceLock(Resources.SYSTEM_OUT)
+public class SharedWebContainerTestBase {
+    protected static TestWebContainer container() {
         return testWebContainer;
     }
 
     private static TestWebContainer testWebContainer;
 
     @BeforeAll
-    public static void allocateServer() throws Throwable
-    {
-        System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );
-        suppressAll().call( (Callable<Void>) () ->
-        {
-            setWebContainerBuilderProperty( GraphDatabaseSettings.cypher_hints_error.name(), TRUE );
-            setWebContainerBuilderProperty( BoltConnector.enabled.name(), TRUE );
-            setWebContainerBuilderProperty( BoltConnector.listen_address.name(), "localhost:0" );
-            setWebContainerBuilderProperty( GraphDatabaseSettings.transaction_timeout.name(), "300s" );
-            setWebContainerBuilderProperty( ServerSettings.transaction_idle_timeout.name(), "300s" );
-            // Disable tracking of statement close calls, the reason being how periodic commit interacts with ResultSubscriber
-            // such that some statement somehow is expected to stay open after one of the internal transactions created by periodic commit
-            // has committed and will be closed later. The strict verification that statements should be closed happens to early
+    public static void allocateServer() throws Throwable {
+        System.setProperty("org.neo4j.useInsecureCertificateGeneration", "true");
+        suppressAll().call((Callable<Void>) () -> {
+            setWebContainerBuilderProperty(GraphDatabaseSettings.cypher_hints_error.name(), TRUE);
+            setWebContainerBuilderProperty(BoltConnector.enabled.name(), TRUE);
+            setWebContainerBuilderProperty(BoltConnector.listen_address.name(), "localhost:0");
+            setWebContainerBuilderProperty(GraphDatabaseSettings.transaction_timeout.name(), "300s");
+            setWebContainerBuilderProperty(ServerSettings.transaction_idle_timeout.name(), "300s");
+            // Disable tracking of statement close calls, the reason being how periodic commit interacts with
+            // ResultSubscriber
+            // such that some statement somehow is expected to stay open after one of the internal transactions created
+            // by periodic commit
+            // has committed and will be closed later. The strict verification that statements should be closed happens
+            // to early
             // in this scenario and will always fail the internal transaction.
-            setWebContainerBuilderProperty( GraphDatabaseInternalSettings.track_tx_statement_close.name(), "false" );
+            setWebContainerBuilderProperty(GraphDatabaseInternalSettings.track_tx_statement_close.name(), "false");
             testWebContainer = WebContainerHolder.allocate();
-            WebContainerHelper.cleanTheDatabase( testWebContainer );
+            WebContainerHelper.cleanTheDatabase(testWebContainer);
             return null;
-        } );
+        });
     }
 
     @AfterAll
-    public static void releaseServer() throws Exception
-    {
-        try
-        {
-            suppressAll().call( (Callable<Void>) () ->
-            {
-                release( testWebContainer );
+    public static void releaseServer() throws Exception {
+        try {
+            suppressAll().call((Callable<Void>) () -> {
+                release(testWebContainer);
                 return null;
-            } );
-        }
-        finally
-        {
+            });
+        } finally {
             testWebContainer = null;
         }
     }

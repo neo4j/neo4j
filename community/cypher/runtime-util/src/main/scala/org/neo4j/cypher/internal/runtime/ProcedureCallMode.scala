@@ -30,23 +30,35 @@ import org.neo4j.values.AnyValue
 import scala.collection.mutable.ArrayBuffer
 
 object ProcedureCallMode {
+
   def fromAccessMode(mode: ProcedureAccessMode): ProcedureCallMode = mode match {
-    case ProcedureReadOnlyAccess => LazyReadOnlyCallMode
-    case ProcedureReadWriteAccess => EagerReadWriteCallMode
+    case ProcedureReadOnlyAccess    => LazyReadOnlyCallMode
+    case ProcedureReadWriteAccess   => EagerReadWriteCallMode
     case ProcedureSchemaWriteAccess => SchemaWriteCallMode
-    case ProcedureDbmsAccess => DbmsCallMode
+    case ProcedureDbmsAccess        => DbmsCallMode
   }
 }
+
 sealed trait ProcedureCallMode {
   val queryType: InternalQueryType
 
-  def callProcedure(ctx: ReadQueryContext, id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
+  def callProcedure(
+    ctx: ReadQueryContext,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]]
 }
 
 case object LazyReadOnlyCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_ONLY
 
-  override def callProcedure(ctx: ReadQueryContext, id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callProcedure(
+    ctx: ReadQueryContext,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]] =
     ctx.callReadOnlyProcedure(id, args, context)
 }
 
@@ -61,7 +73,12 @@ case object EagerReadWriteCallMode extends ProcedureCallMode {
     builder.result().iterator
   }
 
-  override def callProcedure(ctx: ReadQueryContext, id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callProcedure(
+    ctx: ReadQueryContext,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]] =
     call(ctx.callReadWriteProcedure(id, args, context))
 }
 
@@ -76,14 +93,24 @@ case object SchemaWriteCallMode extends ProcedureCallMode {
     builder.result().iterator
   }
 
-  override def callProcedure(ctx: ReadQueryContext, id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callProcedure(
+    ctx: ReadQueryContext,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]] =
     call(ctx.callSchemaWriteProcedure(id, args, context))
 }
 
 case object DbmsCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = DBMS
 
-  override def callProcedure(ctx: ReadQueryContext, id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callProcedure(
+    ctx: ReadQueryContext,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): Iterator[Array[AnyValue]] =
     call(ctx.callDbmsProcedure(id, args, context))
 
   private def call(iterator: Iterator[Array[AnyValue]]) = {

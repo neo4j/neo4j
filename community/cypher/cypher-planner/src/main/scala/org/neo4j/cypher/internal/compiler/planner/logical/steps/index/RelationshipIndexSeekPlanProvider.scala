@@ -34,34 +34,44 @@ import org.neo4j.cypher.internal.logical.plans.QueryExpression
 
 object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
 
-  override def createPlans(indexMatches: Set[RelationshipIndexMatch],
-                           hints: Set[Hint],
-                           argumentIds: Set[String],
-                           restrictions: LeafPlanRestrictions,
-                           context: LogicalPlanningContext): Set[LogicalPlan] = for {
+  override def createPlans(
+    indexMatches: Set[RelationshipIndexMatch],
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    restrictions: LeafPlanRestrictions,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch.propertyPredicates, restrictions)
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 
   private def predicateSetToSolve(indexMatch: RelationshipIndexMatch): Option[PredicateSet] = {
-    val predicateSet = indexMatch.predicateSet(predicatesForIndexSeek(indexMatch.propertyPredicates), exactPredicatesCanGetValue = true)
+    val predicateSet =
+      indexMatch.predicateSet(predicatesForIndexSeek(indexMatch.propertyPredicates), exactPredicatesCanGetValue = true)
     if (predicateSet.propertyPredicates.forall(_.isExists))
       None
     else
       Some(predicateSet)
   }
 
-  private def doCreatePlans(indexMatch: RelationshipIndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
+  private def doCreatePlans(
+    indexMatch: RelationshipIndexMatch,
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan] = {
     val predicateSet = predicateSetToSolve(indexMatch)
     predicateSet.map(constructPlan(_, indexMatch, hints, argumentIds, context)).toSet
   }
 
-  private def constructPlan(predicateSet: PredicateSet,
-                            indexMatch: RelationshipIndexMatch,
-                            hints: Set[Hint],
-                            argumentIds: Set[String],
-                            context: LogicalPlanningContext): LogicalPlan = {
+  private def constructPlan(
+    predicateSet: PredicateSet,
+    indexMatch: RelationshipIndexMatch,
+    hints: Set[Hint],
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
 
     val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(predicateSet.propertyPredicates)
 
@@ -69,9 +79,11 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
       .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = false)
       .headOption
 
-    def getRelationshipLeafPlan(patternForLeafPlan: PatternRelationship,
-                                originalPattern: PatternRelationship,
-                                hiddenSelections: Seq[Expression]): LogicalPlan = context.logicalPlanProducer.planRelationshipIndexSeek(
+    def getRelationshipLeafPlan(
+      patternForLeafPlan: PatternRelationship,
+      originalPattern: PatternRelationship,
+      hiddenSelections: Seq[Expression]
+    ): LogicalPlan = context.logicalPlanProducer.planRelationshipIndexSeek(
       idName = indexMatch.variableName,
       typeToken = indexMatch.relationshipTypeToken,
       properties = predicateSet.indexedProperties(context),
@@ -85,10 +97,15 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
       hiddenSelections = hiddenSelections,
       providedOrder = indexMatch.providedOrder,
       context = context,
-      indexType = indexMatch.indexDescriptor.indexType,
+      indexType = indexMatch.indexDescriptor.indexType
     )
 
-    planHiddenSelectionAndRelationshipLeafPlan(argumentIds, indexMatch.patternRelationship, context, getRelationshipLeafPlan)
+    planHiddenSelectionAndRelationshipLeafPlan(
+      argumentIds,
+      indexMatch.patternRelationship,
+      context,
+      getRelationshipLeafPlan
+    )
 
   }
 }

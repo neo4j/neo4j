@@ -31,11 +31,13 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
-                     (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(src) with GraphElementPropertyFunctions {
+case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(src) with GraphElementPropertyFunctions {
 
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.map { row =>
       DeletePipe.delete(expression(row, state), state, forced)
       row
@@ -45,7 +47,7 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
 
 object DeletePipe {
 
-  def delete(toDelete: AnyValue,state:  QueryState,  forced: Boolean): Unit = toDelete match {
+  def delete(toDelete: AnyValue, state: QueryState, forced: Boolean): Unit = toDelete match {
     case IsNoValue() => // do nothing
     case r: VirtualRelationshipValue =>
       deleteRelationship(r, state)
@@ -57,10 +59,11 @@ object DeletePipe {
       throw new CypherTypeException(s"Expected a Node, Relationship or Path, but got a ${other.getClass.getSimpleName}")
   }
 
-  private def deleteNode(n: VirtualNodeValue, state: QueryState, forced: Boolean) = if (!state.query.nodeReadOps.isDeletedInThisTx(n.id())) {
-    if (forced) state.query.detachDeleteNode(n.id())
-    else state.query.nodeWriteOps.delete(n.id())
-  }
+  private def deleteNode(n: VirtualNodeValue, state: QueryState, forced: Boolean) =
+    if (!state.query.nodeReadOps.isDeletedInThisTx(n.id())) {
+      if (forced) state.query.detachDeleteNode(n.id())
+      else state.query.nodeWriteOps.delete(n.id())
+    }
 
   private def deleteRelationship(r: VirtualRelationshipValue, state: QueryState): Unit =
     if (!state.query.relationshipReadOps.isDeletedInThisTx(r.id())) state.query.relationshipWriteOps.delete(r.id())

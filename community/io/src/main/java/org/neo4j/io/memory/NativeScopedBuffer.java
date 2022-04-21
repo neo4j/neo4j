@@ -19,44 +19,37 @@
  */
 package org.neo4j.io.memory;
 
-import java.nio.ByteBuffer;
-
-import org.neo4j.memory.MemoryTracker;
-
 import static java.lang.Math.toIntExact;
+
+import java.nio.ByteBuffer;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * A life-time scope for the contained direct byte buffer.
  */
-public final class NativeScopedBuffer implements ScopedBuffer
-{
+public final class NativeScopedBuffer implements ScopedBuffer {
     private final ByteBuffer buffer;
     private final MemoryTracker memoryTracker;
     private boolean closed;
 
-    public NativeScopedBuffer( long capacity, MemoryTracker memoryTracker )
-    {
-        this( toIntExact( capacity ), memoryTracker );
+    public NativeScopedBuffer(long capacity, MemoryTracker memoryTracker) {
+        this(toIntExact(capacity), memoryTracker);
     }
 
-    public NativeScopedBuffer( int capacity, MemoryTracker memoryTracker )
-    {
-        buffer = ByteBuffers.allocateDirect( capacity, memoryTracker );
+    public NativeScopedBuffer(int capacity, MemoryTracker memoryTracker) {
+        buffer = ByteBuffers.allocateDirect(capacity, memoryTracker);
         this.memoryTracker = memoryTracker;
     }
 
     @Override
-    public ByteBuffer getBuffer()
-    {
+    public ByteBuffer getBuffer() {
         return buffer;
     }
 
     @Override
-    public void close()
-    {
-        if ( !closed )
-        {
-            ByteBuffers.releaseBuffer( buffer, memoryTracker );
+    public void close() {
+        if (!closed) {
+            ByteBuffers.releaseBuffer(buffer, memoryTracker);
             closed = true;
         }
     }

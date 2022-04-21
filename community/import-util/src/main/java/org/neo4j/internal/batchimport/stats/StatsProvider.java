@@ -22,9 +22,8 @@ package org.neo4j.internal.batchimport.stats;
 /**
  * Ability to provide statistics.
  */
-public interface StatsProvider
-{
-    Stat stat( Key key );
+public interface StatsProvider {
+    Stat stat(Key key);
 
     Key[] keys();
 }

@@ -26,41 +26,32 @@ import org.neo4j.memory.MemoryTracker;
  * Off-heap version of {@link IntArray} using {@code sun.misc.Unsafe}. Supports arrays with length beyond
  * Integer.MAX_VALUE.
  */
-public class OffHeapIntArray extends OffHeapRegularNumberArray<IntArray> implements IntArray
-{
+public class OffHeapIntArray extends OffHeapRegularNumberArray<IntArray> implements IntArray {
     private final int defaultValue;
 
-    public OffHeapIntArray( long length, int defaultValue, long base, MemoryTracker memoryTracker )
-    {
-        super( length, 2, base, memoryTracker );
+    public OffHeapIntArray(long length, int defaultValue, long base, MemoryTracker memoryTracker) {
+        super(length, 2, base, memoryTracker);
         this.defaultValue = defaultValue;
         clear();
     }
 
     @Override
-    public int get( long index )
-    {
-        return UnsafeUtil.getInt( addressOf( index ) );
+    public int get(long index) {
+        return UnsafeUtil.getInt(addressOf(index));
     }
 
     @Override
-    public void set( long index, int value )
-    {
-        UnsafeUtil.putInt( addressOf( index ), value );
+    public void set(long index, int value) {
+        UnsafeUtil.putInt(addressOf(index), value);
     }
 
     @Override
-    public void clear()
-    {
-        if ( isByteUniform( defaultValue ) )
-        {
-            UnsafeUtil.setMemory( address, length << shift, (byte)defaultValue );
-        }
-        else
-        {
-            for ( long i = 0, adr = address; i < length; i++, adr += itemSize )
-            {
-                UnsafeUtil.putInt( adr, defaultValue );
+    public void clear() {
+        if (isByteUniform(defaultValue)) {
+            UnsafeUtil.setMemory(address, length << shift, (byte) defaultValue);
+        } else {
+            for (long i = 0, adr = address; i < length; i++, adr += itemSize) {
+                UnsafeUtil.putInt(adr, defaultValue);
             }
         }
     }

@@ -22,19 +22,16 @@ package org.neo4j.server.rest.web;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.repr.BadInputException;
 
-//TODO: move this to another package. domain? or repr?
-public class PropertyValueException extends BadInputException
-{
+// TODO: move this to another package. domain? or repr?
+public class PropertyValueException extends BadInputException {
     private static final long serialVersionUID = -7810255514347322861L;
 
-    public PropertyValueException( String message )
-    {
-        super( message );
+    public PropertyValueException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.ArgumentError;
     }
 }

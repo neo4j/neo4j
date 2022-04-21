@@ -37,9 +37,10 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeNotFoundException
 import scala.util.control.Exception.catching
 
 trait IndexDescriptorCompatibility {
+
   def kernelToCypher(behaviour: schema.IndexBehaviour): IndexBehaviour = {
     behaviour match {
-      case schema.IndexBehaviour.SKIP_AND_LIMIT => SkipAndLimit
+      case schema.IndexBehaviour.SKIP_AND_LIMIT        => SkipAndLimit
       case schema.IndexBehaviour.EVENTUALLY_CONSISTENT => EventuallyConsistent
       case _ => throw new IllegalStateException("Missing kernel to cypher mapping for index behaviour: " + behaviour)
     }
@@ -47,29 +48,31 @@ trait IndexDescriptorCompatibility {
 
   def kernelToCypher(indexType: schema.IndexType): Option[IndexDescriptor.IndexType] = indexType match {
     case schema.IndexType.BTREE => Some(IndexDescriptor.IndexType.Btree)
-    case schema.IndexType.TEXT => Some(IndexDescriptor.IndexType.Text)
+    case schema.IndexType.TEXT  => Some(IndexDescriptor.IndexType.Text)
     case schema.IndexType.RANGE => Some(IndexDescriptor.IndexType.Range)
     case schema.IndexType.POINT => Some(IndexDescriptor.IndexType.Point)
-    case _ => None
+    case _                      => None
   }
 
   def cypherToKernelSchema(index: spi.IndexDescriptor): SchemaDescriptor = index.entityType match {
     case IndexDescriptor.EntityType.Node(label) =>
-      SchemaDescriptors.forLabel(label.id, index.properties.map(_.id):_*)
+      SchemaDescriptors.forLabel(label.id, index.properties.map(_.id): _*)
     case IndexDescriptor.EntityType.Relationship(relType) =>
-      SchemaDescriptors.forRelType(relType.id, index.properties.map(_.id):_*)
+      SchemaDescriptors.forRelType(relType.id, index.properties.map(_.id): _*)
   }
 
   def cypherToKernel(indexType: spi.IndexDescriptor.IndexType): schema.IndexType = indexType match {
     case IndexDescriptor.IndexType.Btree => schema.IndexType.BTREE
-    case IndexDescriptor.IndexType.Text => schema.IndexType.TEXT
+    case IndexDescriptor.IndexType.Text  => schema.IndexType.TEXT
     case IndexDescriptor.IndexType.Range => schema.IndexType.RANGE
     case IndexDescriptor.IndexType.Point => schema.IndexType.POINT
   }
 
-  def toLabelSchemaDescriptor(tc: TransactionBoundReadTokenContext,
-                              labelName: String,
-                              propertyKeys: Seq[String]): Option[LabelSchemaDescriptor] = {
+  def toLabelSchemaDescriptor(
+    tc: TransactionBoundReadTokenContext,
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[LabelSchemaDescriptor] = {
     catching(classOf[LabelNotFoundKernelException], classOf[PropertyKeyNotFoundException]) opt {
       val labelId: Int = tc.getLabelId(labelName)
       val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
@@ -77,9 +80,11 @@ trait IndexDescriptorCompatibility {
     }
   }
 
-  def toRelTypeSchemaDescriptor(tc: TransactionBoundReadTokenContext,
-                                relTypeName: String,
-                                propertyKeys: Seq[String]): Option[RelationTypeSchemaDescriptor] = {
+  def toRelTypeSchemaDescriptor(
+    tc: TransactionBoundReadTokenContext,
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[RelationTypeSchemaDescriptor] = {
     catching(classOf[RelationshipTypeNotFoundException], classOf[PropertyKeyNotFoundException]) opt {
       val relTypeId: Int = tc.getRelTypeId(relTypeName)
       val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)

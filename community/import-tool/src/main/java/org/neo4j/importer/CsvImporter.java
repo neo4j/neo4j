@@ -19,6 +19,24 @@
  */
 package org.neo4j.importer;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_format;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
+import static org.neo4j.internal.batchimport.input.Collectors.collect;
+import static org.neo4j.internal.batchimport.input.Collectors.silentBadCollector;
+import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
+import static org.neo4j.internal.batchimport.input.InputEntityDecorators.additiveLabels;
+import static org.neo4j.internal.batchimport.input.InputEntityDecorators.defaultRelationshipType;
+import static org.neo4j.internal.batchimport.input.csv.DataFactories.data;
+import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
+import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.io.ByteUnit.bytesToString;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -33,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -71,26 +88,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
-import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_format;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
-import static org.neo4j.internal.batchimport.input.Collectors.collect;
-import static org.neo4j.internal.batchimport.input.Collectors.silentBadCollector;
-import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
-import static org.neo4j.internal.batchimport.input.InputEntityDecorators.additiveLabels;
-import static org.neo4j.internal.batchimport.input.InputEntityDecorators.defaultRelationshipType;
-import static org.neo4j.internal.batchimport.input.csv.DataFactories.data;
-import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
-import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
-import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
-import static org.neo4j.io.ByteUnit.bytesToString;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
-
-class CsvImporter implements Importer
-{
+class CsvImporter implements Importer {
     static final String DEFAULT_REPORT_FILE_NAME = "import.report";
 
     private final RecordDatabaseLayout databaseLayout;
@@ -118,15 +116,14 @@ class CsvImporter implements Importer
     private final MemoryTracker memoryTracker;
     private final boolean force;
 
-    private CsvImporter( Builder b )
-    {
-        this.databaseLayout = requireNonNull( b.databaseLayout );
-        this.databaseConfig = requireNonNull( b.databaseConfig );
-        this.csvConfig = requireNonNull( b.csvConfig );
-        this.importConfig = requireNonNull( b.importConfig );
-        this.reportFile = requireNonNull( b.reportFile );
-        this.idType = requireNonNull( b.idType );
-        this.inputEncoding = requireNonNull( b.inputEncoding );
+    private CsvImporter(Builder b) {
+        this.databaseLayout = requireNonNull(b.databaseLayout);
+        this.databaseConfig = requireNonNull(b.databaseConfig);
+        this.csvConfig = requireNonNull(b.csvConfig);
+        this.importConfig = requireNonNull(b.importConfig);
+        this.reportFile = requireNonNull(b.reportFile);
+        this.idType = requireNonNull(b.idType);
+        this.inputEncoding = requireNonNull(b.inputEncoding);
         this.ignoreExtraColumns = b.ignoreExtraColumns;
         this.skipBadRelationships = b.skipBadRelationships;
         this.skipDuplicateNodes = b.skipDuplicateNodes;
@@ -135,54 +132,57 @@ class CsvImporter implements Importer
         this.normalizeTypes = b.normalizeTypes;
         this.verbose = b.verbose;
         this.autoSkipHeaders = b.autoSkipHeaders;
-        this.nodeFiles = requireNonNull( b.nodeFiles );
-        this.relationshipFiles = requireNonNull( b.relationshipFiles );
-        this.fileSystem = requireNonNull( b.fileSystem );
-        this.pageCacheTracer = requireNonNull( b.pageCacheTracer );
-        this.contextFactory = requireNonNull( b.contextFactory );
-        this.memoryTracker = requireNonNull( b.memoryTracker );
-        this.stdOut = requireNonNull( b.stdOut );
-        this.stdErr = requireNonNull( b.stdErr );
+        this.nodeFiles = requireNonNull(b.nodeFiles);
+        this.relationshipFiles = requireNonNull(b.relationshipFiles);
+        this.fileSystem = requireNonNull(b.fileSystem);
+        this.pageCacheTracer = requireNonNull(b.pageCacheTracer);
+        this.contextFactory = requireNonNull(b.contextFactory);
+        this.memoryTracker = requireNonNull(b.memoryTracker);
+        this.stdOut = requireNonNull(b.stdOut);
+        this.stdErr = requireNonNull(b.stdErr);
         this.force = b.force;
     }
 
     @Override
-    public void doImport() throws IOException
-    {
-        if ( force )
-        {
-            fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
-            fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
+    public void doImport() throws IOException {
+        if (force) {
+            fileSystem.deleteRecursively(databaseLayout.databaseDirectory());
+            fileSystem.deleteRecursively(databaseLayout.getTransactionLogsDirectory());
         }
 
-        try ( OutputStream badOutput = fileSystem.openAsOutputStream( reportFile, false );
-                Collector badCollector = getBadCollector( skipBadEntriesLogging, badOutput ) )
-        {
+        try (OutputStream badOutput = fileSystem.openAsOutputStream(reportFile, false);
+                Collector badCollector = getBadCollector(skipBadEntriesLogging, badOutput)) {
             // Extract the default time zone from the database configuration
-            ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );
+            ZoneId dbTimeZone = databaseConfig.get(GraphDatabaseSettings.db_temporal_timezone);
             Supplier<ZoneId> defaultTimeZone = () -> dbTimeZone;
 
             final var nodeData = nodeData();
             final var relationshipsData = relationshipData();
 
-            try ( CsvInput input = new CsvInput( nodeData, defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ), relationshipsData,
-                    defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType, csvConfig, autoSkipHeaders,
-                    new CsvInput.PrintingMonitor( stdOut ), memoryTracker ) )
-            {
-                doImport( input, badCollector );
+            try (CsvInput input = new CsvInput(
+                    nodeData,
+                    defaultFormatNodeFileHeader(defaultTimeZone, normalizeTypes),
+                    relationshipsData,
+                    defaultFormatRelationshipFileHeader(defaultTimeZone, normalizeTypes),
+                    idType,
+                    csvConfig,
+                    autoSkipHeaders,
+                    new CsvInput.PrintingMonitor(stdOut),
+                    memoryTracker)) {
+                doImport(input, badCollector);
             }
         }
     }
 
-    private void doImport( Input input, Collector badCollector )
-    {
+    private void doImport(Input input, Collector badCollector) {
         boolean success = false;
 
-        Path internalLogFile = databaseConfig.get( store_internal_log_path );
-        try ( JobScheduler jobScheduler = createInitialisedScheduler();
-              OutputStream outputStream = FileSystemUtils.createOrOpenAsOutputStream( fileSystem, internalLogFile, true );
-              Log4jLogProvider logProvider = Util.configuredLogProvider( databaseConfig, outputStream, databaseConfig.get( store_internal_log_format ) ) )
-        {
+        Path internalLogFile = databaseConfig.get(store_internal_log_path);
+        try (JobScheduler jobScheduler = createInitialisedScheduler();
+                OutputStream outputStream =
+                        FileSystemUtils.createOrOpenAsOutputStream(fileSystem, internalLogFile, true);
+                Log4jLogProvider logProvider = Util.configuredLogProvider(
+                        databaseConfig, outputStream, databaseConfig.get(store_internal_log_format))) {
             // Let the storage engine factory be configurable in the tool later on...
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
             BatchImporter importer = storageEngineFactory.batchImporter(
@@ -190,46 +190,44 @@ class CsvImporter implements Importer
                     fileSystem,
                     pageCacheTracer,
                     importConfig,
-                    new SimpleLogService( NullLogProvider.getInstance(), new PrefixedLogProvider( logProvider, databaseLayout.getDatabaseName() ) ),
+                    new SimpleLogService(
+                            NullLogProvider.getInstance(),
+                            new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName())),
                     stdOut,
-                    verbose, AdditionalInitialIds.EMPTY,
+                    verbose,
+                    AdditionalInitialIds.EMPTY,
                     databaseConfig,
-                    new PrintingImportLogicMonitor( stdOut, stdErr ),
+                    new PrintingImportLogicMonitor(stdOut, stdErr),
                     jobScheduler,
                     badCollector,
                     TransactionLogInitializer.getLogFilesInitializer(),
                     new IndexImporterFactoryImpl(),
                     memoryTracker,
-                    contextFactory );
+                    contextFactory);
 
-            printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );
+            printOverview(databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut);
 
-            importer.doImport( input );
+            importer.doImport(input);
 
             success = true;
-        }
-        catch ( Exception e )
-        {
-            throw andPrintError( "Import error", e, verbose, stdErr );
-        }
-        finally
-        {
+        } catch (Exception e) {
+            throw andPrintError("Import error", e, verbose, stdErr);
+        } finally {
             long numberOfBadEntries = badCollector.badEntries();
 
-            if ( reportFile != null )
-            {
-                if ( numberOfBadEntries > 0 )
-                {
-                    stdOut.println( "There were bad entries which were skipped and logged into " + reportFile.toAbsolutePath() );
+            if (reportFile != null) {
+                if (numberOfBadEntries > 0) {
+                    stdOut.println(
+                            "There were bad entries which were skipped and logged into " + reportFile.toAbsolutePath());
                 }
             }
 
-            if ( !success )
-            {
-                stdErr.println( "WARNING Import failed. The store files in " + databaseLayout.databaseDirectory().toAbsolutePath() +
-                        " are left as they are, although they are likely in an unusable state. " +
-                        "Starting a database on these store files will likely fail or observe inconsistent records so " +
-                        "start at your own risk or delete the store manually" );
+            if (!success) {
+                stdErr.println("WARNING Import failed. The store files in "
+                        + databaseLayout.databaseDirectory().toAbsolutePath()
+                        + " are left as they are, although they are likely in an unusable state. "
+                        + "Starting a database on these store files will likely fail or observe inconsistent records so "
+                        + "start at your own risk or delete the store manually");
             }
         }
     }
@@ -239,40 +237,42 @@ class CsvImporter implements Importer
      *
      * @param stackTrace whether or not to also print the stack trace of the error.
      */
-    private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace,
-            PrintStream err )
-    {
+    private static RuntimeException andPrintError(
+            String typeOfError, Exception e, boolean stackTrace, PrintStream err) {
         // List of common errors that can be explained to the user
-        if ( DuplicateInputIdException.class.equals( e.getClass() ) )
-        {
-            printErrorMessage( "Duplicate input ids that would otherwise clash can be put into separate id space.", e, stackTrace, err );
-        }
-        else if ( MissingRelationshipDataException.class.equals( e.getClass() ) )
-        {
-            printErrorMessage( "Relationship missing mandatory field", e, stackTrace, err );
-        }
-        else if ( DirectoryNotEmptyException.class.equals( e.getClass() ) )
-        {
-            printErrorMessage( "Database already exist. Re-run with `--force` to remove the database prior to import", e, stackTrace, err );
+        if (DuplicateInputIdException.class.equals(e.getClass())) {
+            printErrorMessage(
+                    "Duplicate input ids that would otherwise clash can be put into separate id space.",
+                    e,
+                    stackTrace,
+                    err);
+        } else if (MissingRelationshipDataException.class.equals(e.getClass())) {
+            printErrorMessage("Relationship missing mandatory field", e, stackTrace, err);
+        } else if (DirectoryNotEmptyException.class.equals(e.getClass())) {
+            printErrorMessage(
+                    "Database already exist. Re-run with `--force` to remove the database prior to import",
+                    e,
+                    stackTrace,
+                    err);
         }
         // This type of exception is wrapped since our input code throws InputException consistently,
         // and so IllegalMultilineFieldException comes from the csv component, which has no access to InputException
         // therefore it's wrapped.
-        else if ( indexOfThrowable( e, IllegalMultilineFieldException.class ) != -1 )
-        {
-            printErrorMessage( "Detected field which spanned multiple lines for an import where " +
-                    "--multiline-fields=false. If you know that your input data " +
-                    "include fields containing new-line characters then import with this option set to " +
-                    "true.", e, stackTrace, err );
-        }
-        else if ( indexOfThrowable( e, InputException.class ) != -1 )
-        {
-            printErrorMessage( "Error in input data", e, stackTrace, err );
+        else if (indexOfThrowable(e, IllegalMultilineFieldException.class) != -1) {
+            printErrorMessage(
+                    "Detected field which spanned multiple lines for an import where "
+                            + "--multiline-fields=false. If you know that your input data "
+                            + "include fields containing new-line characters then import with this option set to "
+                            + "true.",
+                    e,
+                    stackTrace,
+                    err);
+        } else if (indexOfThrowable(e, InputException.class) != -1) {
+            printErrorMessage("Error in input data", e, stackTrace, err);
         }
         // Fallback to printing generic error and stack trace
-        else
-        {
-            printErrorMessage( typeOfError + ": " + e.getMessage(), e, true, err );
+        else {
+            printErrorMessage(typeOfError + ": " + e.getMessage(), e, true, err);
         }
         err.println();
 
@@ -280,136 +280,118 @@ class CsvImporter implements Importer
         // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
         // a specific exit code. On the other hand It's very inconvenient to have any System.exit
         // call in code that is tested.
-        Thread.currentThread().setUncaughtExceptionHandler( ( t, e1 ) ->
-        {
+        Thread.currentThread().setUncaughtExceptionHandler((t, e1) -> {
             /* Shhhh */
-        } );
-        throwIfUnchecked( e );
-        return new RuntimeException( e ); // throw in order to have process exit with !0
+        });
+        throwIfUnchecked(e);
+        return new RuntimeException(e); // throw in order to have process exit with !0
     }
 
-    private static void printErrorMessage( String string, Exception e, boolean stackTrace, PrintStream err )
-    {
-        err.println( string );
-        err.println( "Caused by:" + e.getMessage() );
-        if ( stackTrace )
-        {
-            e.printStackTrace( err );
+    private static void printErrorMessage(String string, Exception e, boolean stackTrace, PrintStream err) {
+        err.println(string);
+        err.println("Caused by:" + e.getMessage());
+        if (stackTrace) {
+            e.printStackTrace(err);
         }
     }
 
-    private static void printOverview( Path storeDir, Map<Set<String>, List<Path[]>> nodesFiles, Map<String, List<Path[]>> relationshipsFiles,
-        Configuration configuration, PrintStream out )
-    {
-        out.println( "Neo4j version: " + Version.getNeo4jVersion() );
-        out.println( "Importing the contents of these files into " + storeDir + ":" );
-        printInputFiles( "Nodes", nodesFiles, out );
-        printInputFiles( "Relationships", relationshipsFiles, out );
+    private static void printOverview(
+            Path storeDir,
+            Map<Set<String>, List<Path[]>> nodesFiles,
+            Map<String, List<Path[]>> relationshipsFiles,
+            Configuration configuration,
+            PrintStream out) {
+        out.println("Neo4j version: " + Version.getNeo4jVersion());
+        out.println("Importing the contents of these files into " + storeDir + ":");
+        printInputFiles("Nodes", nodesFiles, out);
+        printInputFiles("Relationships", relationshipsFiles, out);
         out.println();
-        out.println( "Available resources:" );
-        printIndented( "Total machine memory: " + bytesToString( OsBeanUtil.getTotalPhysicalMemory() ), out );
-        printIndented( "Free machine memory: " + bytesToString( OsBeanUtil.getFreePhysicalMemory() ), out );
-        printIndented( "Max heap memory : " + bytesToString( Runtime.getRuntime().maxMemory() ), out );
-        printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
-        printIndented( "Configured max memory: " + bytesToString( configuration.maxMemoryUsage() ), out );
-        printIndented( "High-IO: " + configuration.highIO(), out );
+        out.println("Available resources:");
+        printIndented("Total machine memory: " + bytesToString(OsBeanUtil.getTotalPhysicalMemory()), out);
+        printIndented("Free machine memory: " + bytesToString(OsBeanUtil.getFreePhysicalMemory()), out);
+        printIndented("Max heap memory : " + bytesToString(Runtime.getRuntime().maxMemory()), out);
+        printIndented("Processors: " + configuration.maxNumberOfProcessors(), out);
+        printIndented("Configured max memory: " + bytesToString(configuration.maxMemoryUsage()), out);
+        printIndented("High-IO: " + configuration.highIO(), out);
         out.println();
     }
 
-    private static void printInputFiles( String name, Map<?, List<Path[]>> inputFiles, PrintStream out )
-    {
-        if ( inputFiles.isEmpty() )
-        {
+    private static void printInputFiles(String name, Map<?, List<Path[]>> inputFiles, PrintStream out) {
+        if (inputFiles.isEmpty()) {
             return;
         }
 
-        out.println( name + ":" );
+        out.println(name + ":");
 
-        inputFiles.forEach( ( k, files ) ->
-        {
-            if ( !isEmptyKey( k ) )
-            {
-                printIndented( k + ":", out );
+        inputFiles.forEach((k, files) -> {
+            if (!isEmptyKey(k)) {
+                printIndented(k + ":", out);
             }
 
-            for ( Path[] arr : files )
-            {
-                for ( final Path file : arr )
-                {
-                    printIndented( file, out );
+            for (Path[] arr : files) {
+                for (final Path file : arr) {
+                    printIndented(file, out);
                 }
             }
             out.println();
-        } );
+        });
     }
 
-    private static boolean isEmptyKey( Object k )
-    {
-        if ( k instanceof String )
-        {
+    private static boolean isEmptyKey(Object k) {
+        if (k instanceof String) {
             return ((String) k).isEmpty();
-        }
-        else if ( k instanceof Set )
-        {
+        } else if (k instanceof Set) {
             return ((Set) k).isEmpty();
         }
         return false;
     }
 
-    private static void printIndented( Object value, PrintStream out )
-    {
-        out.println( "  " + value );
+    private static void printIndented(Object value, PrintStream out) {
+        out.println("  " + value);
     }
 
-    private Iterable<DataFactory> relationshipData()
-    {
+    private Iterable<DataFactory> relationshipData() {
         final var result = new ArrayList<DataFactory>();
-        relationshipFiles.forEach( ( defaultTypeName, fileSets ) ->
-        {
-            final var decorator = defaultRelationshipType( defaultTypeName );
-            for ( Path[] files : fileSets )
-            {
-                final var data = data( decorator, inputEncoding, files );
-                result.add( data );
+        relationshipFiles.forEach((defaultTypeName, fileSets) -> {
+            final var decorator = defaultRelationshipType(defaultTypeName);
+            for (Path[] files : fileSets) {
+                final var data = data(decorator, inputEncoding, files);
+                result.add(data);
             }
-        } );
+        });
         return result;
     }
 
-    private Iterable<DataFactory> nodeData()
-    {
+    private Iterable<DataFactory> nodeData() {
         final var result = new ArrayList<DataFactory>();
-        nodeFiles.forEach( ( labels, fileSets ) ->
-        {
-            final var decorator = labels.isEmpty() ? NO_DECORATOR : additiveLabels( labels.toArray( new String[0] ) );
-            for ( Path[] files : fileSets )
-            {
-                final var data = data( decorator, inputEncoding, files );
-                result.add( data );
+        nodeFiles.forEach((labels, fileSets) -> {
+            final var decorator = labels.isEmpty() ? NO_DECORATOR : additiveLabels(labels.toArray(new String[0]));
+            for (Path[] files : fileSets) {
+                final var data = data(decorator, inputEncoding, files);
+                result.add(data);
             }
-        } );
+        });
         return result;
     }
 
-    private Collector getBadCollector( boolean skipBadEntriesLogging, OutputStream badOutput )
-    {
-        return skipBadEntriesLogging ? silentBadCollector( badTolerance ) :
-               badCollector( badOutput, isIgnoringSomething() ? BadCollector.UNLIMITED_TOLERANCE : 0,
-                       collect( skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns ) );
+    private Collector getBadCollector(boolean skipBadEntriesLogging, OutputStream badOutput) {
+        return skipBadEntriesLogging
+                ? silentBadCollector(badTolerance)
+                : badCollector(
+                        badOutput,
+                        isIgnoringSomething() ? BadCollector.UNLIMITED_TOLERANCE : 0,
+                        collect(skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns));
     }
 
-    private boolean isIgnoringSomething()
-    {
+    private boolean isIgnoringSomething() {
         return skipBadRelationships || skipDuplicateNodes || ignoreExtraColumns;
     }
 
-    static Builder builder()
-    {
+    static Builder builder() {
         return new Builder();
     }
 
-    static class Builder
-    {
+    static class Builder {
         private RecordDatabaseLayout databaseLayout;
         private Config databaseConfig;
         private org.neo4j.csv.reader.Configuration csvConfig = org.neo4j.csv.reader.Configuration.COMMAS;
@@ -435,150 +417,126 @@ class CsvImporter implements Importer
         private PrintStream stdErr = System.err;
         private boolean force;
 
-        Builder withDatabaseLayout( DatabaseLayout databaseLayout )
-        {
-            this.databaseLayout = RecordDatabaseLayout.convert( databaseLayout );
+        Builder withDatabaseLayout(DatabaseLayout databaseLayout) {
+            this.databaseLayout = RecordDatabaseLayout.convert(databaseLayout);
             return this;
         }
 
-        Builder withDatabaseConfig( Config databaseConfig )
-        {
+        Builder withDatabaseConfig(Config databaseConfig) {
             this.databaseConfig = databaseConfig;
             return this;
         }
 
-        Builder withCsvConfig( org.neo4j.csv.reader.Configuration csvConfig )
-        {
+        Builder withCsvConfig(org.neo4j.csv.reader.Configuration csvConfig) {
             this.csvConfig = csvConfig;
             return this;
         }
 
-        Builder withImportConfig( Configuration importConfig )
-        {
+        Builder withImportConfig(Configuration importConfig) {
             this.importConfig = importConfig;
             return this;
         }
 
-        Builder withReportFile( Path reportFile )
-        {
+        Builder withReportFile(Path reportFile) {
             this.reportFile = reportFile;
             return this;
         }
 
-        Builder withIdType( IdType idType )
-        {
+        Builder withIdType(IdType idType) {
             this.idType = idType;
             return this;
         }
 
-        Builder withInputEncoding( Charset inputEncoding )
-        {
+        Builder withInputEncoding(Charset inputEncoding) {
             this.inputEncoding = inputEncoding;
             return this;
         }
 
-        Builder withIgnoreExtraColumns( boolean ignoreExtraColumns )
-        {
+        Builder withIgnoreExtraColumns(boolean ignoreExtraColumns) {
             this.ignoreExtraColumns = ignoreExtraColumns;
             return this;
         }
 
-        Builder withSkipBadRelationships( boolean skipBadRelationships )
-        {
+        Builder withSkipBadRelationships(boolean skipBadRelationships) {
             this.skipBadRelationships = skipBadRelationships;
             return this;
         }
 
-        Builder withSkipDuplicateNodes( boolean skipDuplicateNodes )
-        {
+        Builder withSkipDuplicateNodes(boolean skipDuplicateNodes) {
             this.skipDuplicateNodes = skipDuplicateNodes;
             return this;
         }
 
-        Builder withSkipBadEntriesLogging( boolean skipBadEntriesLogging )
-        {
+        Builder withSkipBadEntriesLogging(boolean skipBadEntriesLogging) {
             this.skipBadEntriesLogging = skipBadEntriesLogging;
             return this;
         }
 
-        Builder withBadTolerance( long badTolerance )
-        {
+        Builder withBadTolerance(long badTolerance) {
             this.badTolerance = badTolerance;
             return this;
         }
 
-        Builder withNormalizeTypes( boolean normalizeTypes )
-        {
+        Builder withNormalizeTypes(boolean normalizeTypes) {
             this.normalizeTypes = normalizeTypes;
             return this;
         }
 
-        Builder withVerbose( boolean verbose )
-        {
+        Builder withVerbose(boolean verbose) {
             this.verbose = verbose;
             return this;
         }
 
-        Builder withAutoSkipHeaders( boolean autoSkipHeaders )
-        {
+        Builder withAutoSkipHeaders(boolean autoSkipHeaders) {
             this.autoSkipHeaders = autoSkipHeaders;
             return this;
         }
 
-        Builder addNodeFiles( Set<String> labels, Path[] files )
-        {
-            final var list = nodeFiles.computeIfAbsent( labels, unused -> new ArrayList<>() );
-            list.add( files );
+        Builder addNodeFiles(Set<String> labels, Path[] files) {
+            final var list = nodeFiles.computeIfAbsent(labels, unused -> new ArrayList<>());
+            list.add(files);
             return this;
         }
 
-        Builder addRelationshipFiles( String defaultRelType, Path[] files )
-        {
-            final var list = relationshipFiles.computeIfAbsent( defaultRelType, unused -> new ArrayList<>() );
-            list.add( files );
+        Builder addRelationshipFiles(String defaultRelType, Path[] files) {
+            final var list = relationshipFiles.computeIfAbsent(defaultRelType, unused -> new ArrayList<>());
+            list.add(files);
             return this;
         }
 
-        Builder withFileSystem( FileSystemAbstraction fileSystem )
-        {
+        Builder withFileSystem(FileSystemAbstraction fileSystem) {
             this.fileSystem = fileSystem;
             return this;
         }
 
-        Builder withPageCacheTracer( PageCacheTracer pageCacheTracer )
-        {
+        Builder withPageCacheTracer(PageCacheTracer pageCacheTracer) {
             this.pageCacheTracer = pageCacheTracer;
-            this.contextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
+            this.contextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
             return this;
         }
 
-        Builder withMemoryTracker( MemoryTracker memoryTracker )
-        {
+        Builder withMemoryTracker(MemoryTracker memoryTracker) {
             this.memoryTracker = memoryTracker;
             return this;
         }
 
-        Builder withStdOut( PrintStream stdOut )
-        {
+        Builder withStdOut(PrintStream stdOut) {
             this.stdOut = stdOut;
             return this;
         }
 
-        Builder withStdErr( PrintStream stdErr )
-        {
+        Builder withStdErr(PrintStream stdErr) {
             this.stdErr = stdErr;
             return this;
         }
 
-        Builder withForce( boolean force )
-        {
+        Builder withForce(boolean force) {
             this.force = force;
             return this;
         }
 
-        CsvImporter build()
-        {
-            return new CsvImporter( this );
+        CsvImporter build() {
+            return new CsvImporter(this);
         }
     }
 }

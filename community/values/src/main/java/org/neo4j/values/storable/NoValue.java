@@ -30,107 +30,88 @@ import org.neo4j.values.ValueMapper;
  * The NULL object of the Value world. Is implemented as a singleton, to allow direct reference equality checks (==),
  * and avoid unnecessary object creation.
  */
-public final class NoValue extends Value
-{
+public final class NoValue extends Value {
     public static final NoValue NO_VALUE = new NoValue();
 
-    private NoValue()
-    {
-    }
+    private NoValue() {}
 
     @Override
-    public boolean equalTo( Object other )
-    {
+    public boolean equalTo(Object other) {
         return this == other;
     }
 
     @Override
-    public Equality ternaryEquals( AnyValue other )
-    {
+    public Equality ternaryEquals(AnyValue other) {
         return Equality.UNDEFINED;
     }
 
     @Override
-    boolean ternaryUndefined()
-    {
+    boolean ternaryUndefined() {
         return true;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
+    public <T> T map(ValueMapper<T> mapper) {
         return mapper.mapNoValue();
     }
 
     @Override
-    public long updateHash( HashFunction hashFunction, long hash )
-    {
-        return hashFunction.update( hash, hashCode() );
+    public long updateHash(HashFunction hashFunction, long hash) {
+        return hashFunction.update(hash, hashCode());
     }
 
     @Override
-    protected int computeHash()
-    {
-        return System.identityHashCode( this );
+    protected int computeHash() {
+        return System.identityHashCode(this);
     }
 
     @Override
-    public boolean equals( Value other )
-    {
+    public boolean equals(Value other) {
         return this == other;
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
         writer.writeNull();
     }
 
     @Override
-    public Object asObjectCopy()
-    {
+    public Object asObjectCopy() {
         return null;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return prettyPrint();
     }
 
     @Override
-    public String prettyPrint()
-    {
+    public String prettyPrint() {
         return getTypeName();
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "NO_VALUE";
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.NO_VALUE;
     }
 
     @Override
-    public NumberType numberType()
-    {
+    public NumberType numberType() {
         return NumberType.NO_NUMBER;
     }
 
     @Override
-    protected int unsafeCompareTo( Value other )
-    {
+    protected int unsafeCompareTo(Value other) {
         return 0;
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return 0L;
     }
 }

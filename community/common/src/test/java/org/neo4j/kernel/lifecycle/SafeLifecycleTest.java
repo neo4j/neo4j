@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.lifecycle;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.function.ThrowingConsumer;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,213 +27,174 @@ import static org.neo4j.kernel.lifecycle.LifecycleStatus.SHUTDOWN;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.STARTED;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.STOPPED;
 
-class SafeLifecycleTest
-{
-    private ThrowingConsumer<Lifecycle,Throwable> init = Lifecycle::init;
-    private ThrowingConsumer<Lifecycle,Throwable> start = Lifecycle::start;
-    private ThrowingConsumer<Lifecycle,Throwable> stop = Lifecycle::stop;
-    private ThrowingConsumer<Lifecycle,Throwable> shutdown = Lifecycle::shutdown;
-    @SuppressWarnings( "unchecked" )
-    private ThrowingConsumer<Lifecycle,Throwable>[] ops = new ThrowingConsumer[]{init, start, stop, shutdown};
-    private LifecycleStatus[] states = new LifecycleStatus[]{NONE,STOPPED,STARTED,SHUTDOWN};
+import org.junit.jupiter.api.Test;
+import org.neo4j.function.ThrowingConsumer;
 
-    private Object[][] onSuccess = new Object[][]{
-            //                       init()  start()  stop()  shutdown()
-            new LifecycleStatus[] { STOPPED,  null,     null,     NONE }, // from NONE
-            new LifecycleStatus[] { null,     STARTED,  STOPPED,  SHUTDOWN }, // from STOPPED
-            new LifecycleStatus[] { null,     null,     STOPPED,  null }, // from STARTED
-            new LifecycleStatus[] { null,     null,     null,     null }, // from SHUTDOWN
+class SafeLifecycleTest {
+    private ThrowingConsumer<Lifecycle, Throwable> init = Lifecycle::init;
+    private ThrowingConsumer<Lifecycle, Throwable> start = Lifecycle::start;
+    private ThrowingConsumer<Lifecycle, Throwable> stop = Lifecycle::stop;
+    private ThrowingConsumer<Lifecycle, Throwable> shutdown = Lifecycle::shutdown;
+
+    @SuppressWarnings("unchecked")
+    private ThrowingConsumer<Lifecycle, Throwable>[] ops = new ThrowingConsumer[] {init, start, stop, shutdown};
+
+    private LifecycleStatus[] states = new LifecycleStatus[] {NONE, STOPPED, STARTED, SHUTDOWN};
+
+    private Object[][] onSuccess = new Object[][] {
+        //                       init()  start()  stop()  shutdown()
+        new LifecycleStatus[] {STOPPED, null, null, NONE}, // from NONE
+        new LifecycleStatus[] {null, STARTED, STOPPED, SHUTDOWN}, // from STOPPED
+        new LifecycleStatus[] {null, null, STOPPED, null}, // from STARTED
+        new LifecycleStatus[] {null, null, null, null}, // from SHUTDOWN
     };
 
-    private Object[][] onFailed = new Object[][]{
-            //                      init()  start()  stop()  shutdown()
-            new LifecycleStatus[] { NONE,    null,    null,     NONE }, // from NONE
-            new LifecycleStatus[] { null,    STOPPED, STOPPED,  SHUTDOWN }, // from STOPPED
-            new LifecycleStatus[] { null,    null,    STOPPED,  null }, // from STARTED
-            new LifecycleStatus[] { null,    null,    null,     null }, // from SHUTDOWN
+    private Object[][] onFailed = new Object[][] {
+        //                      init()  start()  stop()  shutdown()
+        new LifecycleStatus[] {NONE, null, null, NONE}, // from NONE
+        new LifecycleStatus[] {null, STOPPED, STOPPED, SHUTDOWN}, // from STOPPED
+        new LifecycleStatus[] {null, null, STOPPED, null}, // from STARTED
+        new LifecycleStatus[] {null, null, null, null}, // from SHUTDOWN
     };
 
-    private Boolean[][] ignored = new Boolean[][]{
-            //              init()  start()  stop()  shutdown()
-            new Boolean[] { false,  false,   false,    true },  // from NONE
-            new Boolean[] { false,  false,   true,     false }, // from STOPPED
-            new Boolean[] { false,  false,   false,    false }, // from STARTED
-            new Boolean[] { false,  false,   false,    false }, // from SHUTDOWN
+    private Boolean[][] ignored = new Boolean[][] {
+        //              init()  start()  stop()  shutdown()
+        new Boolean[] {false, false, false, true}, // from NONE
+        new Boolean[] {false, false, true, false}, // from STOPPED
+        new Boolean[] {false, false, false, false}, // from STARTED
+        new Boolean[] {false, false, false, false}, // from SHUTDOWN
     };
 
     @Test
-    void shouldPerformSuccessfulTransitionsCorrectly() throws Throwable
-    {
-        for ( int state = 0; state < states.length; state++ )
-        {
-            for ( int op = 0; op < ops.length; op++ )
-            {
-                MySafeAndSuccessfulLife sf = new MySafeAndSuccessfulLife( states[state] );
+    void shouldPerformSuccessfulTransitionsCorrectly() throws Throwable {
+        for (int state = 0; state < states.length; state++) {
+            for (int op = 0; op < ops.length; op++) {
+                MySafeAndSuccessfulLife sf = new MySafeAndSuccessfulLife(states[state]);
                 boolean caughtIllegalTransition = false;
-                try
-                {
-                    ops[op].accept( sf );
-                }
-                catch ( IllegalStateException e )
-                {
+                try {
+                    ops[op].accept(sf);
+                } catch (IllegalStateException e) {
                     caughtIllegalTransition = true;
                 }
 
-                if ( onSuccess[state][op] == null )
-                {
-                    assertTrue( caughtIllegalTransition );
-                    assertEquals( states[state], sf.getStatus() );
-                }
-                else
-                {
-                    assertFalse( caughtIllegalTransition );
-                    assertEquals( onSuccess[state][op], sf.getStatus() );
+                if (onSuccess[state][op] == null) {
+                    assertTrue(caughtIllegalTransition);
+                    assertEquals(states[state], sf.getStatus());
+                } else {
+                    assertFalse(caughtIllegalTransition);
+                    assertEquals(onSuccess[state][op], sf.getStatus());
                     int expectedOpCode = ignored[state][op] ? -1 : op;
-                    assertEquals( expectedOpCode, sf.opCode );
+                    assertEquals(expectedOpCode, sf.opCode);
                 }
             }
         }
     }
 
     @Test
-    void shouldPerformFailedTransitionsCorrectly() throws Throwable
-    {
-        for ( int state = 0; state < states.length; state++ )
-        {
-            for ( int op = 0; op < ops.length; op++ )
-            {
-                MyFailedLife sf = new MyFailedLife( states[state] );
+    void shouldPerformFailedTransitionsCorrectly() throws Throwable {
+        for (int state = 0; state < states.length; state++) {
+            for (int op = 0; op < ops.length; op++) {
+                MyFailedLife sf = new MyFailedLife(states[state]);
                 boolean caughtIllegalTransition = false;
                 boolean failedOperation = false;
-                try
-                {
-                    ops[op].accept( sf );
-                }
-                catch ( IllegalStateException e )
-                {
+                try {
+                    ops[op].accept(sf);
+                } catch (IllegalStateException e) {
                     caughtIllegalTransition = true;
-                }
-                catch ( UnsupportedOperationException e )
-                {
+                } catch (UnsupportedOperationException e) {
                     failedOperation = true;
                 }
 
-                if ( onFailed[state][op] == null )
-                {
-                    assertTrue( caughtIllegalTransition );
-                    assertEquals( states[state], sf.getStatus() );
-                }
-                else
-                {
-                    assertFalse( caughtIllegalTransition );
-                    assertEquals( onFailed[state][op], sf.getStatus() );
+                if (onFailed[state][op] == null) {
+                    assertTrue(caughtIllegalTransition);
+                    assertEquals(states[state], sf.getStatus());
+                } else {
+                    assertFalse(caughtIllegalTransition);
+                    assertEquals(onFailed[state][op], sf.getStatus());
 
-                    if ( ignored[state][op] )
-                    {
-                        assertEquals( -1, sf.opCode );
-                        assertFalse( failedOperation );
-                    }
-                    else
-                    {
-                        assertEquals( op, sf.opCode );
-                        assertTrue( failedOperation );
+                    if (ignored[state][op]) {
+                        assertEquals(-1, sf.opCode);
+                        assertFalse(failedOperation);
+                    } else {
+                        assertEquals(op, sf.opCode);
+                        assertTrue(failedOperation);
                     }
                 }
             }
         }
     }
 
-    private static class MySafeAndSuccessfulLife extends SafeLifecycle
-    {
+    private static class MySafeAndSuccessfulLife extends SafeLifecycle {
         int opCode;
 
-        MySafeAndSuccessfulLife( LifecycleStatus state )
-        {
-            super( state );
+        MySafeAndSuccessfulLife(LifecycleStatus state) {
+            super(state);
             opCode = -1;
         }
 
         @Override
-        public void init0()
-        {
-            invoke( 0 );
+        public void init0() {
+            invoke(0);
         }
 
         @Override
-        public void start0()
-        {
-            invoke( 1 );
+        public void start0() {
+            invoke(1);
         }
 
         @Override
-        public void stop0()
-        {
-            invoke( 2 );
+        public void stop0() {
+            invoke(2);
         }
 
         @Override
-        public void shutdown0()
-        {
-            invoke( 3 );
+        public void shutdown0() {
+            invoke(3);
         }
 
-        private void invoke( int opCode )
-        {
-            if ( this.opCode == -1 )
-            {
+        private void invoke(int opCode) {
+            if (this.opCode == -1) {
                 this.opCode = opCode;
-            }
-            else
-            {
-                throw new RuntimeException( "Double invocation" );
+            } else {
+                throw new RuntimeException("Double invocation");
             }
         }
     }
 
-    private static class MyFailedLife extends SafeLifecycle
-    {
+    private static class MyFailedLife extends SafeLifecycle {
         int opCode;
 
-        MyFailedLife( LifecycleStatus state )
-        {
-            super( state );
+        MyFailedLife(LifecycleStatus state) {
+            super(state);
             opCode = -1;
         }
 
         @Override
-        public void init0()
-        {
-            invoke( 0 );
+        public void init0() {
+            invoke(0);
         }
 
         @Override
-        public void start0()
-        {
-            invoke( 1 );
+        public void start0() {
+            invoke(1);
         }
 
         @Override
-        public void stop0()
-        {
-            invoke( 2 );
+        public void stop0() {
+            invoke(2);
         }
 
         @Override
-        public void shutdown0()
-        {
-            invoke( 3 );
+        public void shutdown0() {
+            invoke(3);
         }
 
-        private void invoke( int opCode )
-        {
-            if ( this.opCode == -1 )
-            {
+        private void invoke(int opCode) {
+            if (this.opCode == -1) {
                 this.opCode = opCode;
-                throw new UnsupportedOperationException( "I made a bo-bo" );
-            }
-            else
-            {
-                throw new RuntimeException( "Double invocation" );
+                throw new UnsupportedOperationException("I made a bo-bo");
+            } else {
+                throw new RuntimeException("Double invocation");
             }
         }
     }

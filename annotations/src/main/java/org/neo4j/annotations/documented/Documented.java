@@ -29,9 +29,8 @@ import java.lang.annotation.Target;
  *
  * Use {@link DocumentedUtils} to extract message from method annotated with {@link Documented}.
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( { ElementType.TYPE, ElementType.FIELD, ElementType.METHOD } )
-public @interface Documented
-{
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD})
+public @interface Documented {
     String value();
 }

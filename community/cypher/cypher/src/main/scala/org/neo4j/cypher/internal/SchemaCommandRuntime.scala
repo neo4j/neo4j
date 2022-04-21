@@ -79,7 +79,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
     throw new CantCompileQueryException(
-      s"Plan is not a schema command: ${unknownPlan.getClass.getSimpleName}")
+      s"Plan is not a schema command: ${unknownPlan.getClass.getSimpleName}"
+    )
   }
 
   def queryType(logicalPlan: LogicalPlan): Option[InternalQueryType] =
@@ -90,191 +91,260 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   val logicalToExecutable: PartialFunction[LogicalPlan, RuntimeContext => ExecutionPlan] = {
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
     case CreateNodeKeyConstraint(source, _, label, props, name, options) => context =>
-      SchemaExecutionPlan("CreateNodeKeyConstraint", (ctx, params) => {
-        val (indexProvider, indexConfig) = IndexBackedConstraintsOptionsConverter("node key constraint").convert(options, params) match {
-          case None => (None, IndexConfig.empty())
-          case Some(CreateIndexWithStringProviderOptions(provider, config)) => (provider, config)
-        }
-        val labelId = ctx.getOrCreateLabelId(label.name)
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-        ctx.createNodeKeyConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+        SchemaExecutionPlan(
+          "CreateNodeKeyConstraint",
+          (ctx, params) => {
+            val (indexProvider, indexConfig) =
+              IndexBackedConstraintsOptionsConverter("node key constraint").convert(options, params) match {
+                case None                                                         => (None, IndexConfig.empty())
+                case Some(CreateIndexWithStringProviderOptions(provider, config)) => (provider, config)
+              }
+            val labelId = ctx.getOrCreateLabelId(label.name)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
+            ctx.createNodeKeyConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
     case CreateUniquePropertyConstraint(source, _, label, props, name, options) => context =>
-      SchemaExecutionPlan("CreateUniqueConstraint", (ctx, params) => {
-        val (indexProvider, indexConfig) = IndexBackedConstraintsOptionsConverter("uniqueness constraint").convert(options, params) match {
-          case None => (None, IndexConfig.empty())
-          case Some(CreateIndexWithStringProviderOptions(provider, config)) => (provider, config)
-        }
-        val labelId = ctx.getOrCreateLabelId(label.name)
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-        ctx.createUniqueConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+        SchemaExecutionPlan(
+          "CreateUniqueConstraint",
+          (ctx, params) => {
+            val (indexProvider, indexConfig) =
+              IndexBackedConstraintsOptionsConverter("uniqueness constraint").convert(options, params) match {
+                case None                                                         => (None, IndexConfig.empty())
+                case Some(CreateIndexWithStringProviderOptions(provider, config)) => (provider, config)
+              }
+            val labelId = ctx.getOrCreateLabelId(label.name)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
+            ctx.createUniqueConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS NOT NULL
     case CreateNodePropertyExistenceConstraint(source, label, prop, name, options) => context =>
-      SchemaExecutionPlan("CreateNodePropertyExistenceConstraint", (ctx, params) => {
-        PropertyExistenceConstraintOptionsConverter("node").convert(options, params) // Assert empty options
-        (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(label, prop.propertyKey, name))
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+        SchemaExecutionPlan(
+          "CreateNodePropertyExistenceConstraint",
+          (ctx, params) => {
+            PropertyExistenceConstraintOptionsConverter("node").convert(options, params) // Assert empty options
+            (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(label, prop.propertyKey, name))
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL
     case CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name, options) => context =>
-      SchemaExecutionPlan("CreateRelationshipPropertyExistenceConstraint", (ctx, params) => {
-        PropertyExistenceConstraintOptionsConverter("relationship").convert(options, params) // Assert empty options
-        (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typePropWithName(ctx)(relType, prop.propertyKey, name))
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+        SchemaExecutionPlan(
+          "CreateRelationshipPropertyExistenceConstraint",
+          (ctx, params) => {
+            PropertyExistenceConstraintOptionsConverter("relationship").convert(options, params) // Assert empty options
+            (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typePropWithName(ctx)(
+              relType,
+              prop.propertyKey,
+              name
+            ))
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
 
     // DROP CONSTRAINT name [IF EXISTS]
     case DropConstraintOnName(name, ifExists) => _ =>
-      SchemaExecutionPlan("DropConstraint", (ctx, _) => {
-        if (!ifExists || ctx.constraintExists(name)) {
-          ctx.dropNamedConstraint(name)
-        }
-        SuccessResult
-      })
+        SchemaExecutionPlan(
+          "DropConstraint",
+          (ctx, _) => {
+            if (!ifExists || ctx.constraintExists(name)) {
+              ctx.dropNamedConstraint(name)
+            }
+            SuccessResult
+          }
+        )
 
     // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateRangeIndex(source, entityName, props, name, options) => context =>
-      SchemaExecutionPlan("CreateIndex", (ctx, params) => {
-        val (entityId, entityType) = getEntityInfo(entityName, ctx)
-        val schemaType = entityType match {
-          case EntityType.NODE => "range node property index"
-          case EntityType.RELATIONSHIP =>"range relationship property index"
-        }
-        val provider = CreateRangeIndexOptionsConverter(schemaType).convert(options, params).flatMap(_.provider)
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addRangeIndexRule(entityId, entityType, propertyKeyIds, name, provider)
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+        SchemaExecutionPlan(
+          "CreateIndex",
+          (ctx, params) => {
+            val (entityId, entityType) = getEntityInfo(entityName, ctx)
+            val schemaType = entityType match {
+              case EntityType.NODE         => "range node property index"
+              case EntityType.RELATIONSHIP => "range relationship property index"
+            }
+            val provider = CreateRangeIndexOptionsConverter(schemaType).convert(options, params).flatMap(_.provider)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
+            ctx.addRangeIndexRule(entityId, entityType, propertyKeyIds, name, provider)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
 
     // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
     // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)
     case CreateLookupIndex(source, entityType, name, options) => context =>
-      SchemaExecutionPlan("CreateIndex", (ctx, params) => {
-        val provider = CreateLookupIndexOptionsConverter.convert(options, params).flatMap(_.provider)
-        ctx.addLookupIndexRule(entityType, name, provider)
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+        SchemaExecutionPlan(
+          "CreateIndex",
+          (ctx, params) => {
+            val provider = CreateLookupIndexOptionsConverter.convert(options, params).flatMap(_.provider)
+            ctx.addLookupIndexRule(entityType, name, provider)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
 
     // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON EACH (n.prop) [OPTIONS {...}]
     // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON EACH (n.prop) [OPTIONS {...}]
     case CreateFulltextIndex(source, entityNames, props, name, options) => context =>
-      SchemaExecutionPlan("CreateIndex", (ctx, params) => {
-        val (indexProvider, indexConfig) = CreateFulltextIndexOptionsConverter.convert(options, params) match {
-          case None => (None, IndexConfig.empty())
-          case Some(CreateIndexWithProviderDescriptorOptions(provider, config)) => (provider, config)
-        }
-        val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, indexProvider, indexConfig)
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+        SchemaExecutionPlan(
+          "CreateIndex",
+          (ctx, params) => {
+            val (indexProvider, indexConfig) = CreateFulltextIndexOptionsConverter.convert(options, params) match {
+              case None                                                             => (None, IndexConfig.empty())
+              case Some(CreateIndexWithProviderDescriptorOptions(provider, config)) => (provider, config)
+            }
+            val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
+            ctx.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, indexProvider, indexConfig)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
 
     // CREATE TEXT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     // CREATE TEXT INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateTextIndex(source, entityName, props, name, options) => context =>
-      SchemaExecutionPlan("CreateIndex", (ctx, params) => {
-        val provider = CreateTextIndexOptionsConverter.convert(options, params).flatMap(_.provider)
-        val (entityId, entityType) = getEntityInfo(entityName, ctx)
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addTextIndexRule(entityId, entityType, propertyKeyIds, name, provider)
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+        SchemaExecutionPlan(
+          "CreateIndex",
+          (ctx, params) => {
+            val provider = CreateTextIndexOptionsConverter.convert(options, params).flatMap(_.provider)
+            val (entityId, entityType) = getEntityInfo(entityName, ctx)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
+            ctx.addTextIndexRule(entityId, entityType, propertyKeyIds, name, provider)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
 
     // CREATE POINT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     // CREATE POINT INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreatePointIndex(source, entityName, props, name, options) => context =>
-      SchemaExecutionPlan("CreateIndex", (ctx, params) => {
-        val (indexProvider, indexConfig) = CreatePointIndexOptionsConverter.convert(options, params) match {
-          case None => (None, IndexConfig.empty())
-          case Some(CreateIndexWithProviderDescriptorOptions(provider, config)) => (provider, config)
-        }
-        val (entityId, entityType) = getEntityInfo(entityName, ctx)
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addPointIndexRule(entityId, entityType, propertyKeyIds, name, indexProvider, indexConfig)
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+        SchemaExecutionPlan(
+          "CreateIndex",
+          (ctx, params) => {
+            val (indexProvider, indexConfig) = CreatePointIndexOptionsConverter.convert(options, params) match {
+              case None                                                             => (None, IndexConfig.empty())
+              case Some(CreateIndexWithProviderDescriptorOptions(provider, config)) => (provider, config)
+            }
+            val (entityId, entityType) = getEntityInfo(entityName, ctx)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
+            ctx.addPointIndexRule(entityId, entityType, propertyKeyIds, name, indexProvider, indexConfig)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
 
     // DROP INDEX name [IF EXISTS]
     case DropIndexOnName(name, ifExists) => _ =>
-      SchemaExecutionPlan("DropIndex", (ctx, _) => {
-        if (!ifExists || ctx.indexExists(name)) {
-          ctx.dropIndexRule(name)
-        }
-        SuccessResult
-      })
+        SchemaExecutionPlan(
+          "DropIndex",
+          (ctx, _) => {
+            if (!ifExists || ctx.indexExists(name)) {
+              ctx.dropIndexRule(name)
+            }
+            SuccessResult
+          }
+        )
 
     case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, name) => _ =>
-      val innerIndexType = indexType match {
-        case POINT => IndexType.POINT
-        case RANGE => IndexType.RANGE
-        case TEXT  => IndexType.TEXT
-        case it    => throw new IllegalStateException(s"Did not expect index type $it here: only point, range or text indexes." )
-      }
-      SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
-        val (entityId, entityType) = getEntityInfo(entityName, ctx)
-        val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
-        if (Try(ctx.indexReference(innerIndexType, entityId, entityType, propertyKeyIds: _*).getName).isSuccess) {
-          IgnoredResult
-        } else if (name.exists(ctx.indexExists)) {
-          IgnoredResult
-        } else {
-          SuccessResult
+        val innerIndexType = indexType match {
+          case POINT => IndexType.POINT
+          case RANGE => IndexType.RANGE
+          case TEXT  => IndexType.TEXT
+          case it =>
+            throw new IllegalStateException(s"Did not expect index type $it here: only point, range or text indexes.")
         }
-      }, None)
+        SchemaExecutionPlan(
+          "DoNothingIfExist",
+          (ctx, _) => {
+            val (entityId, entityType) = getEntityInfo(entityName, ctx)
+            val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
+            if (Try(ctx.indexReference(innerIndexType, entityId, entityType, propertyKeyIds: _*).getName).isSuccess) {
+              IgnoredResult
+            } else if (name.exists(ctx.indexExists)) {
+              IgnoredResult
+            } else {
+              SuccessResult
+            }
+          },
+          None
+        )
 
     case DoNothingIfExistsForLookupIndex(entityType, name) => _ =>
-      SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
-        if (Try(ctx.lookupIndexReference(entityType).getName).isSuccess) {
-          IgnoredResult
-        } else if (name.exists(ctx.indexExists)) {
-          IgnoredResult
-        } else {
-          SuccessResult
-        }
-      }, None)
+        SchemaExecutionPlan(
+          "DoNothingIfExist",
+          (ctx, _) => {
+            if (Try(ctx.lookupIndexReference(entityType).getName).isSuccess) {
+              IgnoredResult
+            } else if (name.exists(ctx.indexExists)) {
+              IgnoredResult
+            } else {
+              SuccessResult
+            }
+          },
+          None
+        )
 
     case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, name) => _ =>
-      SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
-        val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
-        val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
-        if (Try(ctx.fulltextIndexReference(entityIds, entityType, propertyKeyIds: _*).getName).isSuccess) {
-          IgnoredResult
-        } else if (name.exists(ctx.indexExists)) {
-          IgnoredResult
-        } else {
-          SuccessResult
-        }
-      }, None)
+        SchemaExecutionPlan(
+          "DoNothingIfExist",
+          (ctx, _) => {
+            val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
+            val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
+            if (Try(ctx.fulltextIndexReference(entityIds, entityType, propertyKeyIds: _*).getName).isSuccess) {
+              IgnoredResult
+            } else if (name.exists(ctx.indexExists)) {
+              IgnoredResult
+            } else {
+              SuccessResult
+            }
+          },
+          None
+        )
 
     case DoNothingIfExistsForConstraint(_, entityName, props, assertion, name, options) => _ =>
-      SchemaExecutionPlan("DoNothingIfExist", (ctx, params) => {
-        // Assert correct options to get errors even if matching constraint already exists
-        assertion match {
-          case NodeKey                       => IndexBackedConstraintsOptionsConverter("node key constraint").convert(options, params)
-          case Uniqueness                    => IndexBackedConstraintsOptionsConverter("uniqueness constraint").convert(options, params)
-          case NodePropertyExistence         => PropertyExistenceConstraintOptionsConverter("node").convert(options, params)
-          case RelationshipPropertyExistence => PropertyExistenceConstraintOptionsConverter("relationship").convert(options, params)
-        }
+        SchemaExecutionPlan(
+          "DoNothingIfExist",
+          (ctx, params) => {
+            // Assert correct options to get errors even if matching constraint already exists
+            assertion match {
+              case NodeKey => IndexBackedConstraintsOptionsConverter("node key constraint").convert(options, params)
+              case Uniqueness =>
+                IndexBackedConstraintsOptionsConverter("uniqueness constraint").convert(options, params)
+              case NodePropertyExistence => PropertyExistenceConstraintOptionsConverter("node").convert(options, params)
+              case RelationshipPropertyExistence =>
+                PropertyExistenceConstraintOptionsConverter("relationship").convert(options, params)
+            }
 
-        val (entityId, _) = getEntityInfo(entityName, ctx)
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-        if (ctx.constraintExists(convertConstraintTypeToConstraintMatcher(assertion), entityId, propertyKeyIds: _*)) {
-          IgnoredResult
-        } else if (name.exists(ctx.constraintExists)) {
-          IgnoredResult
-        } else {
-          SuccessResult
-        }
-      }, None)
+            val (entityId, _) = getEntityInfo(entityName, ctx)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
+            if (
+              ctx.constraintExists(convertConstraintTypeToConstraintMatcher(assertion), entityId, propertyKeyIds: _*)
+            ) {
+              IgnoredResult
+            } else if (name.exists(ctx.constraintExists)) {
+              IgnoredResult
+            } else {
+              SuccessResult
+            }
+          },
+          None
+        )
   }
 
   private def getEntityInfo(entityName: Either[LabelName, RelTypeName], ctx: QueryContext) = entityName match {
@@ -283,13 +353,15 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     case Right(relType) => (ctx.getOrCreateRelTypeId(relType.name), EntityType.RELATIONSHIP)
   }
 
-  private def getMultipleEntityInfo(entityName: Either[List[LabelName], List[RelTypeName]], ctx: QueryContext) = entityName match {
-    // returns (entityIds, EntityType)
-    case Left(labels)    => (labels.map(label => ctx.getOrCreateLabelId(label.name)), EntityType.NODE)
-    case Right(relTypes) => (relTypes.map(relType => ctx.getOrCreateRelTypeId(relType.name)), EntityType.RELATIONSHIP)
-  }
+  private def getMultipleEntityInfo(entityName: Either[List[LabelName], List[RelTypeName]], ctx: QueryContext) =
+    entityName match {
+      // returns (entityIds, EntityType)
+      case Left(labels)    => (labels.map(label => ctx.getOrCreateLabelId(label.name)), EntityType.NODE)
+      case Right(relTypes) => (relTypes.map(relType => ctx.getOrCreateRelTypeId(relType.name)), EntityType.RELATIONSHIP)
+    }
 
-  def isApplicable(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
+  def isApplicable(logicalPlanState: LogicalPlanState): Boolean =
+    logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
 
   def convertConstraintTypeToConstraintMatcher(assertion: ConstraintType): ConstraintDescriptor => Boolean =
     assertion match {

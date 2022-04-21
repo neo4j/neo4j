@@ -20,34 +20,30 @@
 package org.neo4j.dbms.identity;
 
 import java.util.UUID;
-
 import org.neo4j.graphdb.factory.module.GlobalModule;
 
-public class DefaultIdentityModule extends AbstractIdentityModule
-{
+public class DefaultIdentityModule extends AbstractIdentityModule {
     private final ServerId serverId;
 
-    public static ServerIdentityFactory fromGlobalModule()
-    {
+    public static ServerIdentityFactory fromGlobalModule() {
         return DefaultIdentityModule::new;
     }
 
-    private DefaultIdentityModule( GlobalModule globalModule )
-    {
-        this( globalModule, UUID.randomUUID() );
+    private DefaultIdentityModule(GlobalModule globalModule) {
+        this(globalModule, UUID.randomUUID());
     }
 
-    public DefaultIdentityModule( GlobalModule globalModule, UUID uuid )
-    {
+    public DefaultIdentityModule(GlobalModule globalModule, UUID uuid) {
         var logService = globalModule.getLogService();
-        var storage = createServerIdStorage( globalModule.getFileSystem(), globalModule.getNeo4jLayout().serverIdFile() );
-        this.serverId = readOrGenerate( storage, logService.getInternalLog( getClass() ), ServerId.class, ServerId::new, () -> uuid );
-        logService.getUserLog( getClass() ).info( "This instance is %s (%s)", serverId, serverId.uuid() );
+        var storage = createServerIdStorage(
+                globalModule.getFileSystem(), globalModule.getNeo4jLayout().serverIdFile());
+        this.serverId = readOrGenerate(
+                storage, logService.getInternalLog(getClass()), ServerId.class, ServerId::new, () -> uuid);
+        logService.getUserLog(getClass()).info("This instance is %s (%s)", serverId, serverId.uuid());
     }
 
     @Override
-    public ServerId serverId()
-    {
+    public ServerId serverId() {
         return serverId;
     }
 }

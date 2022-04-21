@@ -20,10 +20,11 @@
 
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.io.IOUtils.closeAllSilently;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Predicate;
-
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -35,17 +36,13 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
-import static org.neo4j.io.IOUtils.closeAllSilently;
-
-public class FilteringNodeCursorWrapper implements NodeCursor
-{
+public class FilteringNodeCursorWrapper implements NodeCursor {
     private final NodeCursor delegate;
     private final Predicate<NodeCursor> filter;
     private final Collection<AutoCloseable> resources;
 
-    public FilteringNodeCursorWrapper( NodeCursor delegate, Predicate<NodeCursor> filter )
-    {
-        this( delegate, filter, Collections.emptyList() );
+    public FilteringNodeCursorWrapper(NodeCursor delegate, Predicate<NodeCursor> filter) {
+        this(delegate, filter, Collections.emptyList());
     }
 
     /**
@@ -53,20 +50,17 @@ public class FilteringNodeCursorWrapper implements NodeCursor
      * @param filter filter to apply
      * @param resources additional resources to close with this cursor, i.e. resources allocated for filter
      */
-    public FilteringNodeCursorWrapper( NodeCursor delegate, Predicate<NodeCursor> filter, Collection<AutoCloseable> resources )
-    {
+    public FilteringNodeCursorWrapper(
+            NodeCursor delegate, Predicate<NodeCursor> filter, Collection<AutoCloseable> resources) {
         this.delegate = delegate;
         this.filter = filter;
         this.resources = resources;
     }
 
     @Override
-    public boolean next()
-    {
-        while ( delegate.next() )
-        {
-            if ( filter.test( delegate ) )
-            {
+    public boolean next() {
+        while (delegate.next()) {
+            if (filter.test(delegate)) {
                 return true;
             }
         }
@@ -74,142 +68,119 @@ public class FilteringNodeCursorWrapper implements NodeCursor
     }
 
     @Override
-    public void close()
-    {
-        closeAllSilently( resources );
+    public void close() {
+        closeAllSilently(resources);
         delegate.close();
     }
 
     @Override
-    public void closeInternal()
-    {
+    public void closeInternal() {
         delegate.closeInternal();
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return delegate.isClosed();
     }
 
     @Override
-    public void setCloseListener( CloseListener closeListener )
-    {
-        delegate.setCloseListener( closeListener );
+    public void setCloseListener(CloseListener closeListener) {
+        delegate.setCloseListener(closeListener);
     }
 
     @Override
-    public void setToken( int token )
-    {
-        delegate.setToken( token );
+    public void setToken(int token) {
+        delegate.setToken(token);
     }
 
     @Override
-    public int getToken()
-    {
+    public int getToken() {
         return delegate.getToken();
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        delegate.setTracer( tracer );
+    public void setTracer(KernelReadTracer tracer) {
+        delegate.setTracer(tracer);
     }
 
     @Override
-    public void removeTracer()
-    {
+    public void removeTracer() {
         delegate.removeTracer();
     }
 
     @Override
-    public long nodeReference()
-    {
+    public long nodeReference() {
         return delegate.nodeReference();
     }
 
     @Override
-    public TokenSet labels()
-    {
+    public TokenSet labels() {
         return delegate.labels();
     }
 
     @Override
-    public TokenSet labelsIgnoringTxStateSetRemove()
-    {
+    public TokenSet labelsIgnoringTxStateSetRemove() {
         return delegate.labelsIgnoringTxStateSetRemove();
     }
 
     @Override
-    public boolean hasLabel( int label )
-    {
-        return delegate.hasLabel( label );
+    public boolean hasLabel(int label) {
+        return delegate.hasLabel(label);
     }
 
     @Override
-    public boolean supportsFastRelationshipsTo()
-    {
+    public boolean supportsFastRelationshipsTo() {
         return delegate.supportsFastRelationshipsTo();
     }
 
     @Override
-    public void relationshipsTo( RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference )
-    {
-        delegate.relationshipsTo( relationships, selection, neighbourNodeReference );
+    public void relationshipsTo(
+            RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference) {
+        delegate.relationshipsTo(relationships, selection, neighbourNodeReference);
     }
 
     @Override
-    public void relationships( RelationshipTraversalCursor relationships,
-            RelationshipSelection selection )
-    {
-        delegate.relationships( relationships, selection );
+    public void relationships(RelationshipTraversalCursor relationships, RelationshipSelection selection) {
+        delegate.relationships(relationships, selection);
     }
 
     @Override
-    public void properties( PropertyCursor cursor, PropertySelection selection )
-    {
-        delegate.properties( cursor, selection );
+    public void properties(PropertyCursor cursor, PropertySelection selection) {
+        delegate.properties(cursor, selection);
     }
 
     @Override
-    public long relationshipsReference()
-    {
+    public long relationshipsReference() {
         return delegate.relationshipsReference();
     }
 
     @Override
-    public Reference propertiesReference()
-    {
+    public Reference propertiesReference() {
         return delegate.propertiesReference();
     }
 
     @Override
-    public boolean supportsFastDegreeLookup()
-    {
+    public boolean supportsFastDegreeLookup() {
         return delegate.supportsFastDegreeLookup();
     }
 
     @Override
-    public int[] relationshipTypes()
-    {
+    public int[] relationshipTypes() {
         return delegate.relationshipTypes();
     }
 
     @Override
-    public Degrees degrees( RelationshipSelection selection )
-    {
-        return delegate.degrees( selection );
+    public Degrees degrees(RelationshipSelection selection) {
+        return delegate.degrees(selection);
     }
 
     @Override
-    public int degree( RelationshipSelection selection )
-    {
-        return delegate.degree( selection );
+    public int degree(RelationshipSelection selection) {
+        return delegate.degree(selection);
     }
 
     @Override
-    public int degreeWithMax( int maxDegree, RelationshipSelection selection )
-    {
-        return delegate.degreeWithMax( maxDegree, selection );
+    public int degreeWithMax(int maxDegree, RelationshipSelection selection) {
+        return delegate.degreeWithMax(maxDegree, selection);
     }
 }

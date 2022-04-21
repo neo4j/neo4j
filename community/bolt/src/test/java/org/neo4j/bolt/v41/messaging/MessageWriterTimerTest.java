@@ -19,64 +19,57 @@
  */
 package org.neo4j.bolt.v41.messaging;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.time.Duration;
-import java.util.stream.Stream;
-
-import org.neo4j.time.SystemNanoClock;
-
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class MessageWriterTimerTest
-{
-    static Stream<Arguments> clocks()
-    {
+import java.time.Duration;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.time.SystemNanoClock;
+
+class MessageWriterTimerTest {
+    static Stream<Arguments> clocks() {
         return Stream.of(
                 // The second clock timestamp should always be later than the first
-                of( 100L, 1000L ),
-                of( 0L, 0L ),
-                of( 0L, Long.MAX_VALUE ),
-                of( Long.MAX_VALUE, Long.MAX_VALUE ),
-                of( Long.MAX_VALUE, -100L ),
-                of( Long.MAX_VALUE, -1000L )
-        );
+                of(100L, 1000L),
+                of(0L, 0L),
+                of(0L, Long.MAX_VALUE),
+                of(Long.MAX_VALUE, Long.MAX_VALUE),
+                of(Long.MAX_VALUE, -100L),
+                of(Long.MAX_VALUE, -1000L));
     }
 
     @ParameterizedTest
-    @MethodSource( "clocks" )
-    void shouldNeverTimeoutIfKeepAliveIsSetToLongMax( long first, long second ) throws Throwable
-    {
+    @MethodSource("clocks")
+    void shouldNeverTimeoutIfKeepAliveIsSetToLongMax(long first, long second) throws Throwable {
         // Given
-        var clock = mock( SystemNanoClock.class );
-        var timer = new MessageWriterTimer( clock, Duration.ofNanos( Long.MAX_VALUE ) );
-        when( clock.nanos() ).thenReturn( first ).thenReturn( second );
+        var clock = mock(SystemNanoClock.class);
+        var timer = new MessageWriterTimer(clock, Duration.ofNanos(Long.MAX_VALUE));
+        when(clock.nanos()).thenReturn(first).thenReturn(second);
 
         // When
         timer.reset();
 
         // Then
-        assertThat( timer.isTimedOut() ).isFalse();
+        assertThat(timer.isTimedOut()).isFalse();
     }
 
     @ParameterizedTest
-    @MethodSource( "clocks" )
-    void shouldAlwaysTimeoutIfKeepAliveIsSetToNegative( long first, long second ) throws Throwable
-    {
+    @MethodSource("clocks")
+    void shouldAlwaysTimeoutIfKeepAliveIsSetToNegative(long first, long second) throws Throwable {
         // Given
-        var clock = mock( SystemNanoClock.class );
-        var timer = new MessageWriterTimer( clock, Duration.ofNanos( -500 ) );
-        when( clock.nanos() ).thenReturn( first ).thenReturn( second );
+        var clock = mock(SystemNanoClock.class);
+        var timer = new MessageWriterTimer(clock, Duration.ofNanos(-500));
+        when(clock.nanos()).thenReturn(first).thenReturn(second);
 
         // When
         timer.reset();
 
         // Then
-        assertThat( timer.isTimedOut() ).isTrue();
+        assertThat(timer.isTimedOut()).isTrue();
     }
 }

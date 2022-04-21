@@ -65,43 +65,46 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 object coerce {
 
   def apply(value: AnyValue, state: QueryState, typ: CypherType): AnyValue = {
-    val result = if (value eq Values.NO_VALUE) Values.NO_VALUE else try {
-      typ match {
-        case CTAny => value
-        case CTString => value.asInstanceOf[TextValue]
-        case CTNode => value.asInstanceOf[VirtualNodeValue]
-        case CTRelationship => value.asInstanceOf[VirtualRelationshipValue]
-        case CTPath => value.asInstanceOf[VirtualPathValue]
-        case CTInteger => Values.longValue(value.asInstanceOf[NumberValue].longValue())
-        case CTFloat => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
-        case CTMap => value match {
-          case IsMap(m) => m(state)
-          case _ => throw cantCoerce(value, typ)
+    val result =
+      if (value eq Values.NO_VALUE) Values.NO_VALUE
+      else
+        try {
+          typ match {
+            case CTAny          => value
+            case CTString       => value.asInstanceOf[TextValue]
+            case CTNode         => value.asInstanceOf[VirtualNodeValue]
+            case CTRelationship => value.asInstanceOf[VirtualRelationshipValue]
+            case CTPath         => value.asInstanceOf[VirtualPathValue]
+            case CTInteger      => Values.longValue(value.asInstanceOf[NumberValue].longValue())
+            case CTFloat        => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
+            case CTMap => value match {
+                case IsMap(m) => m(state)
+                case _        => throw cantCoerce(value, typ)
+              }
+            case t: ListType => value match {
+                case _: VirtualPathValue if t.innerType == CTNode         => throw cantCoerce(value, typ)
+                case _: VirtualPathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
+                case p: VirtualPathValue                                  => p.asList
+                case IsList(coll) if t.innerType == CTAny                 => coll
+                case IsList(coll) =>
+                  VirtualValues.list(coll.iterator().asScala.map(coerce(_, state, t.innerType)).toArray: _*)
+                case _ => throw cantCoerce(value, typ)
+              }
+            case CTBoolean       => value.asInstanceOf[BooleanValue]
+            case CTNumber        => value.asInstanceOf[NumberValue]
+            case CTPoint         => value.asInstanceOf[PointValue]
+            case CTGeometry      => value.asInstanceOf[PointValue]
+            case CTDate          => value.asInstanceOf[DateValue]
+            case CTLocalTime     => value.asInstanceOf[LocalTimeValue]
+            case CTTime          => value.asInstanceOf[TimeValue]
+            case CTLocalDateTime => value.asInstanceOf[LocalDateTimeValue]
+            case CTDateTime      => value.asInstanceOf[DateTimeValue]
+            case CTDuration      => value.asInstanceOf[DurationValue]
+            case _               => throw cantCoerce(value, typ)
+          }
+        } catch {
+          case e: ClassCastException => throw cantCoerce(value, typ, Some(e))
         }
-        case t: ListType => value match {
-          case _: VirtualPathValue if t.innerType == CTNode => throw cantCoerce(value, typ)
-          case _: VirtualPathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
-          case p: VirtualPathValue => p.asList
-          case IsList(coll) if t.innerType == CTAny => coll
-          case IsList(coll) => VirtualValues.list(coll.iterator().asScala.map(coerce(_, state, t.innerType)).toArray:_*)
-          case _ => throw cantCoerce(value, typ)
-        }
-        case CTBoolean => value.asInstanceOf[BooleanValue]
-        case CTNumber => value.asInstanceOf[NumberValue]
-        case CTPoint => value.asInstanceOf[PointValue]
-        case CTGeometry => value.asInstanceOf[PointValue]
-        case CTDate => value.asInstanceOf[DateValue]
-        case CTLocalTime => value.asInstanceOf[LocalTimeValue]
-        case CTTime => value.asInstanceOf[TimeValue]
-        case CTLocalDateTime => value.asInstanceOf[LocalDateTimeValue]
-        case CTDateTime => value.asInstanceOf[DateTimeValue]
-        case CTDuration => value.asInstanceOf[DurationValue]
-        case _ => throw cantCoerce(value, typ)
-      }
-    }
-    catch {
-      case e: ClassCastException => throw cantCoerce(value, typ, Some(e))
-    }
     result
   }
 

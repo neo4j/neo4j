@@ -20,30 +20,25 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
-class TestPageCursor extends DelegatingPageCursor
-{
+class TestPageCursor extends DelegatingPageCursor {
     private boolean shouldRetry;
 
-    TestPageCursor( PageCursor delegate )
-    {
-        super( delegate );
+    TestPageCursor(PageCursor delegate) {
+        super(delegate);
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
-    {
+    public boolean shouldRetry() throws IOException {
         // Always call delegate to reset state
         boolean toReturn = super.shouldRetry() || shouldRetry;
         shouldRetry = false;
         return toReturn;
     }
 
-    void changed()
-    {
+    void changed() {
         shouldRetry = true;
     }
 }

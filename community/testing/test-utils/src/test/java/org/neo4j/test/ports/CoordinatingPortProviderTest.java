@@ -19,53 +19,49 @@
  */
 package org.neo4j.test.ports;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class CoordinatingPortProviderTest
-{
+import org.junit.jupiter.api.Test;
+
+class CoordinatingPortProviderTest {
     @Test
-    void shouldProvideUniquePorts()
-    {
-        PortRepository portRepository = mock( PortRepository.class );
-        PortProvider portProvider = new CoordinatingPortProvider( portRepository, port -> false );
+    void shouldProvideUniquePorts() {
+        PortRepository portRepository = mock(PortRepository.class);
+        PortProvider portProvider = new CoordinatingPortProvider(portRepository, port -> false);
 
-        when( portRepository.reserveNextPort( "foo" ) ).thenReturn( 40, 41 );
-        int port1 = portProvider.getNextFreePort( "foo" );
-        int port2 = portProvider.getNextFreePort( "foo" );
+        when(portRepository.reserveNextPort("foo")).thenReturn(40, 41);
+        int port1 = portProvider.getNextFreePort("foo");
+        int port2 = portProvider.getNextFreePort("foo");
 
-        assertThat( port1 ).isNotEqualTo( port2 );
+        assertThat(port1).isNotEqualTo(port2);
     }
 
     @Test
-    void shouldSkipReservedPorts()
-    {
-        PortRepository portRepository = mock( PortRepository.class );
-        PortProvider portProvider = new CoordinatingPortProvider( portRepository, port -> false );
+    void shouldSkipReservedPorts() {
+        PortRepository portRepository = mock(PortRepository.class);
+        PortProvider portProvider = new CoordinatingPortProvider(portRepository, port -> false);
 
-        when( portRepository.reserveNextPort( "foo" ) ).thenReturn( 40, 41, 43 );
-        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 40 );
-        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 41 );
-        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 43 );
+        when(portRepository.reserveNextPort("foo")).thenReturn(40, 41, 43);
+        assertThat(portProvider.getNextFreePort("foo")).isEqualTo(40);
+        assertThat(portProvider.getNextFreePort("foo")).isEqualTo(41);
+        assertThat(portProvider.getNextFreePort("foo")).isEqualTo(43);
     }
 
     @Test
-    void shouldSkipOccupiedPorts()
-    {
-        PortRepository portRepository = mock( PortRepository.class );
-        PortProbe portProbe = mock( PortProbe.class );
-        PortProvider portProvider = new CoordinatingPortProvider( portRepository, portProbe );
+    void shouldSkipOccupiedPorts() {
+        PortRepository portRepository = mock(PortRepository.class);
+        PortProbe portProbe = mock(PortProbe.class);
+        PortProvider portProvider = new CoordinatingPortProvider(portRepository, portProbe);
 
-        when( portRepository.reserveNextPort( "foo" ) ).thenReturn( 40, 41, 42, 43 );
-        when( portProbe.isOccupied( 40 ) ).thenReturn( false );
-        when( portProbe.isOccupied( 41 ) ).thenReturn( false );
-        when( portProbe.isOccupied( 42 ) ).thenReturn( true );
-        when( portProbe.isOccupied( 43 ) ).thenReturn( false );
-        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 40 );
-        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 41 );
-        assertThat( portProvider.getNextFreePort( "foo" ) ).isEqualTo( 43 );
+        when(portRepository.reserveNextPort("foo")).thenReturn(40, 41, 42, 43);
+        when(portProbe.isOccupied(40)).thenReturn(false);
+        when(portProbe.isOccupied(41)).thenReturn(false);
+        when(portProbe.isOccupied(42)).thenReturn(true);
+        when(portProbe.isOccupied(43)).thenReturn(false);
+        assertThat(portProvider.getNextFreePort("foo")).isEqualTo(40);
+        assertThat(portProvider.getNextFreePort("foo")).isEqualTo(41);
+        assertThat(portProvider.getNextFreePort("foo")).isEqualTo(43);
     }
 }

@@ -19,26 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.list.primitive.LongList;
-import org.eclipse.collections.api.list.primitive.MutableLongList;
-import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.function.ToLongFunction;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.io.pagecache.context.CursorContext;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,22 +31,38 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
 import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
 
-public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
-{
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.ToLongFunction;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.io.pagecache.context.CursorContext;
+
+public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIReadTestSupport>
+        extends KernelAPIReadTestBase<G> {
     private static LongList RELATIONSHIPS;
     private static final int NUMBER_OF_RELATIONSHIPS = 128;
     private static final ToLongFunction<RelationshipScanCursor> REL_GET = RelationshipScanCursor::relationshipReference;
 
     @Override
-    public void createTestGraph( GraphDatabaseService graphDb )
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            MutableLongList list = new LongArrayList( NUMBER_OF_RELATIONSHIPS );
-            for ( int i = 0; i < NUMBER_OF_RELATIONSHIPS; i++ )
-            {
-                list.add( tx.createNode()
-                        .createRelationshipTo( tx.createNode(), RelationshipType.withName( "R" ) ).getId() );
+    public void createTestGraph(GraphDatabaseService graphDb) {
+        try (Transaction tx = graphDb.beginTx()) {
+            MutableLongList list = new LongArrayList(NUMBER_OF_RELATIONSHIPS);
+            for (int i = 0; i < NUMBER_OF_RELATIONSHIPS; i++) {
+                list.add(tx.createNode()
+                        .createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
+                        .getId());
             }
             RELATIONSHIPS = list;
             tx.commit();
@@ -74,165 +70,155 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     }
 
     @Test
-    void shouldScanASubsetOfRelationships()
-    {
+    void shouldScanASubsetOfRelationships() {
         CursorContext cursorContext = tx.cursorContext();
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( cursorContext ) )
-        {
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
-            assertTrue( scan.reserveBatch( relationships, 3, cursorContext, tx.securityContext().mode() ) );
+            assertTrue(scan.reserveBatch(
+                    relationships, 3, cursorContext, tx.securityContext().mode()));
 
-            assertTrue( relationships.next() );
-            assertEquals( RELATIONSHIPS.get( 0 ), relationships.relationshipReference() );
-            assertTrue( relationships.next() );
-            assertEquals( RELATIONSHIPS.get( 1 ), relationships.relationshipReference() );
-            assertTrue( relationships.next() );
-            assertEquals( RELATIONSHIPS.get( 2 ), relationships.relationshipReference() );
-            assertFalse( relationships.next() );
+            assertTrue(relationships.next());
+            assertEquals(RELATIONSHIPS.get(0), relationships.relationshipReference());
+            assertTrue(relationships.next());
+            assertEquals(RELATIONSHIPS.get(1), relationships.relationshipReference());
+            assertTrue(relationships.next());
+            assertEquals(RELATIONSHIPS.get(2), relationships.relationshipReference());
+            assertFalse(relationships.next());
         }
     }
 
     @Test
-    void shouldHandleSizeHintOverflow()
-    {
+    void shouldHandleSizeHintOverflow() {
         CursorContext cursorContext = tx.cursorContext();
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( cursorContext ) )
-        {
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
-            assertTrue( scan.reserveBatch( relationships, NUMBER_OF_RELATIONSHIPS * 2, cursorContext, tx.securityContext().mode() ) );
+            assertTrue(scan.reserveBatch(
+                    relationships,
+                    NUMBER_OF_RELATIONSHIPS * 2,
+                    cursorContext,
+                    tx.securityContext().mode()));
 
             LongArrayList ids = new LongArrayList();
-            while ( relationships.next() )
-            {
-                ids.add( relationships.relationshipReference() );
+            while (relationships.next()) {
+                ids.add(relationships.relationshipReference());
             }
 
-            assertEquals( RELATIONSHIPS, ids );
+            assertEquals(RELATIONSHIPS, ids);
         }
     }
 
     @Test
-    void shouldFailForSizeHintZero()
-    {
+    void shouldFailForSizeHintZero() {
         CursorContext cursorContext = tx.cursorContext();
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( cursorContext ) )
-        {
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
             // given
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
 
             // when
-            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( relationships, 0, cursorContext, tx.securityContext().mode() ) );
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> scan.reserveBatch(
+                            relationships,
+                            0,
+                            cursorContext,
+                            tx.securityContext().mode()));
         }
     }
 
     @Test
-    void shouldScanAllRelationshipsInBatches()
-    {
+    void shouldScanAllRelationshipsInBatches() {
         // given
         LongArrayList ids = new LongArrayList();
         CursorContext cursorContext = tx.cursorContext();
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( cursorContext ) )
-        {
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
-            while ( scan.reserveBatch( relationships, 3, cursorContext, tx.securityContext().mode() ) )
-            {
-                while ( relationships.next() )
-                {
-                    ids.add( relationships.relationshipReference() );
+            while (scan.reserveBatch(
+                    relationships, 3, cursorContext, tx.securityContext().mode())) {
+                while (relationships.next()) {
+                    ids.add(relationships.relationshipReference());
                 }
             }
         }
 
         // then
-        assertEquals( RELATIONSHIPS, ids );
+        assertEquals(RELATIONSHIPS, ids);
     }
 
     @Test
-    void shouldScanAllRelationshipsFromMultipleThreads() throws InterruptedException, ExecutionException
-    {
+    void shouldScanAllRelationshipsFromMultipleThreads() throws InterruptedException, ExecutionException {
         // given
         int numberOfWorkers = 4;
-        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
+        ExecutorService service = Executors.newFixedThreadPool(numberOfWorkers);
         Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
-        try
-        {
-            var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, numberOfWorkers );
-            var futures = service.invokeAll( createWorkers( 32, scan, numberOfWorkers, workerContexts, REL_GET ) );
+        try {
+            var workerContexts = createContexts(tx, cursors::allocateRelationshipScanCursor, numberOfWorkers);
+            var futures = service.invokeAll(createWorkers(32, scan, numberOfWorkers, workerContexts, REL_GET));
 
-            List<LongList> lists = getAllResults( futures );
-            closeWorkContexts( workerContexts );
+            List<LongList> lists = getAllResults(futures);
+            closeWorkContexts(workerContexts);
 
-            assertDistinct( lists );
-            LongList concat = concat( lists ).toSortedList();
-            assertEquals( RELATIONSHIPS, concat );
-        }
-        finally
-        {
+            assertDistinct(lists);
+            LongList concat = concat(lists).toSortedList();
+            assertEquals(RELATIONSHIPS, concat);
+        } finally {
             service.shutdown();
-            service.awaitTermination( 1, TimeUnit.MINUTES );
+            service.awaitTermination(1, TimeUnit.MINUTES);
         }
     }
 
     @Test
-    void shouldScanAllRelationshipsFromMultipleThreadWithBigSizeHints() throws InterruptedException, ExecutionException
-    {
+    void shouldScanAllRelationshipsFromMultipleThreadWithBigSizeHints()
+            throws InterruptedException, ExecutionException {
         // given
         int numberOfWorkers = 4;
-        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
+        ExecutorService service = Executors.newFixedThreadPool(numberOfWorkers);
         Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
-        try
-        {
-            var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, numberOfWorkers );
-            var futures = service.invokeAll( createWorkers( 100, scan, numberOfWorkers, workerContexts, REL_GET ) );
+        try {
+            var workerContexts = createContexts(tx, cursors::allocateRelationshipScanCursor, numberOfWorkers);
+            var futures = service.invokeAll(createWorkers(100, scan, numberOfWorkers, workerContexts, REL_GET));
 
-            List<LongList> lists = getAllResults( futures );
-            closeWorkContexts( workerContexts );
+            List<LongList> lists = getAllResults(futures);
+            closeWorkContexts(workerContexts);
 
-            assertDistinct( lists );
-            LongList concat = concat( lists ).toSortedList();
-            assertEquals( RELATIONSHIPS, concat );
-        }
-        finally
-        {
+            assertDistinct(lists);
+            LongList concat = concat(lists).toSortedList();
+            assertEquals(RELATIONSHIPS, concat);
+        } finally {
             service.shutdown();
-            service.awaitTermination( 1, TimeUnit.MINUTES );
+            service.awaitTermination(1, TimeUnit.MINUTES);
         }
     }
 
     @Test
-    void shouldScanAllRelationshipsFromRandomlySizedWorkers() throws InterruptedException, ExecutionException
-    {
+    void shouldScanAllRelationshipsFromRandomlySizedWorkers() throws InterruptedException, ExecutionException {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        ExecutorService service = Executors.newFixedThreadPool(4);
         Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
-        try
-        {
+        try {
             int numberOfWorkers = 11;
-            var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, numberOfWorkers );
-            var futures = service.invokeAll( createRandomWorkers( scan, numberOfWorkers, workerContexts, REL_GET ) );
+            var workerContexts = createContexts(tx, cursors::allocateRelationshipScanCursor, numberOfWorkers);
+            var futures = service.invokeAll(createRandomWorkers(scan, numberOfWorkers, workerContexts, REL_GET));
 
             service.shutdown();
-            service.awaitTermination( 1, TimeUnit.MINUTES );
+            service.awaitTermination(1, TimeUnit.MINUTES);
 
-            List<LongList> lists = getAllResults( futures );
-            closeWorkContexts( workerContexts );
+            List<LongList> lists = getAllResults(futures);
+            closeWorkContexts(workerContexts);
 
-            assertDistinct( lists );
-            LongList concat = concat( lists ).toSortedList();
-            assertEquals( RELATIONSHIPS, concat );
-        }
-        finally
-        {
+            assertDistinct(lists);
+            LongList concat = concat(lists).toSortedList();
+            assertEquals(RELATIONSHIPS, concat);
+        } finally {
             service.shutdown();
-            service.awaitTermination( 1, TimeUnit.MINUTES );
+            service.awaitTermination(1, TimeUnit.MINUTES);
         }
     }
 }

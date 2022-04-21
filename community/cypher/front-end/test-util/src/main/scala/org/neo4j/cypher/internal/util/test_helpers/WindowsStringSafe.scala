@@ -20,6 +20,7 @@ import org.scalactic.Equality
 
 // Makes it easy to compare strings without having to worry about new lines
 object WindowsStringSafe extends Equality[String] {
+
   override def areEqual(a: String, b: Any) = b match {
     case b: String =>
       a.replaceAll("\r\n", "\n") equals b.replaceAll("\r\n", "\n")

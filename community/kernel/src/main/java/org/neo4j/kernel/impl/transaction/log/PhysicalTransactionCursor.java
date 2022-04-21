@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
@@ -31,40 +32,33 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.storageengine.api.StorageCommand;
 
-import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-
-public class PhysicalTransactionCursor implements TransactionCursor
-{
+public class PhysicalTransactionCursor implements TransactionCursor {
     private final ReadableClosablePositionAwareChecksumChannel channel;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
     private CommittedTransactionRepresentation current;
 
-    public PhysicalTransactionCursor( ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader ) throws IOException
-    {
+    public PhysicalTransactionCursor(ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader)
+            throws IOException {
         this.channel = channel;
-        channel.getCurrentPosition( lastGoodPositionMarker );
-        this.logEntryCursor = new LogEntryCursor( entryReader, channel );
+        channel.getCurrentPosition(lastGoodPositionMarker);
+        this.logEntryCursor = new LogEntryCursor(entryReader, channel);
     }
 
     @Override
-    public CommittedTransactionRepresentation get()
-    {
+    public CommittedTransactionRepresentation get() {
         return current;
     }
 
     @Override
-    public boolean next() throws IOException
-    {
+    public boolean next() throws IOException {
         // Clear the previous deserialized transaction so that it won't have to be kept in heap while deserializing
         // the next one. Could be problematic if both are really big.
         current = null;
 
-        while ( true )
-        {
-            if ( !logEntryCursor.next() )
-            {
+        while (true) {
+            if (!logEntryCursor.next()) {
                 return false;
             }
 
@@ -74,36 +68,37 @@ public class PhysicalTransactionCursor implements TransactionCursor
             LogEntryCommit commitEntry;
 
             List<StorageCommand> entries = new ArrayList<>();
-            while ( true )
-            {
-                if ( !logEntryCursor.next() )
-                {
+            while (true) {
+                if (!logEntryCursor.next()) {
                     return false;
                 }
 
                 entry = logEntryCursor.get();
-                if ( entry instanceof LogEntryCommit )
-                {
+                if (entry instanceof LogEntryCommit) {
                     commitEntry = (LogEntryCommit) entry;
                     break;
                 }
 
                 LogEntryCommand command = (LogEntryCommand) entry;
-                entries.add( command.getCommand() );
+                entries.add(command.getCommand());
             }
 
-            PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
-            transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getTimeWritten(),
-                    startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten(), -1, ANONYMOUS );
-            current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
-            channel.getCurrentPosition( lastGoodPositionMarker );
+            PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(entries);
+            transaction.setHeader(
+                    startEntry.getAdditionalHeader(),
+                    startEntry.getTimeWritten(),
+                    startEntry.getLastCommittedTxWhenTransactionStarted(),
+                    commitEntry.getTimeWritten(),
+                    -1,
+                    ANONYMOUS);
+            current = new CommittedTransactionRepresentation(startEntry, transaction, commitEntry);
+            channel.getCurrentPosition(lastGoodPositionMarker);
             return true;
         }
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         logEntryCursor.close();
     }
 
@@ -111,8 +106,7 @@ public class PhysicalTransactionCursor implements TransactionCursor
      * @return last known good position, which is a {@link LogPosition} after a {@link LogEntryCommit}.
      */
     @Override
-    public LogPosition position()
-    {
+    public LogPosition position() {
         return lastGoodPositionMarker.newPosition();
     }
 }

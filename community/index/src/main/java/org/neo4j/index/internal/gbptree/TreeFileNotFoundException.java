@@ -19,10 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-public class TreeFileNotFoundException extends RuntimeException
-{
-    TreeFileNotFoundException( String message, Exception cause )
-    {
-        super( message, cause );
+public class TreeFileNotFoundException extends RuntimeException {
+    TreeFileNotFoundException(String message, Exception cause) {
+        super(message, cause);
     }
 }

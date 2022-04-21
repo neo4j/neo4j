@@ -19,17 +19,19 @@
  */
 package org.neo4j.kernel.impl.newapi.parallel;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -40,166 +42,134 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.Futures;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-
 @DbmsExtension
-public class ExecutionContextIT
-{
+public class ExecutionContextIT {
     private static final int NUMBER_OF_WORKERS = 20;
 
     @Inject
     private GraphDatabaseAPI databaseAPI;
+
     private ExecutorService executors;
 
     @BeforeEach
-    void setUp()
-    {
-        executors = Executors.newFixedThreadPool( NUMBER_OF_WORKERS );
+    void setUp() {
+        executors = Executors.newFixedThreadPool(NUMBER_OF_WORKERS);
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         executors.shutdown();
     }
 
-    @RepeatedTest( 10 )
-    void contextAccessNodeExist() throws ExecutionException
-    {
+    @RepeatedTest(10)
+    void contextAccessNodeExist() throws ExecutionException {
         int numberOfNodes = 1024;
         long[] nodeIds = new long[numberOfNodes];
-        try ( var transaction = databaseAPI.beginTx() )
-        {
-            for ( int i = 0; i < numberOfNodes; i++ )
-            {
+        try (var transaction = databaseAPI.beginTx()) {
+            for (int i = 0; i < numberOfNodes; i++) {
                 Node node = transaction.createNode();
                 nodeIds[i] = node.getId();
             }
             transaction.commit();
         }
 
-        try ( Transaction transaction = databaseAPI.beginTx() )
-        {
+        try (Transaction transaction = databaseAPI.beginTx()) {
             var ktx = ((InternalTransaction) transaction).kernelTransaction();
-            var futures = new ArrayList<Future<?>>( NUMBER_OF_WORKERS );
-            var contexts = new ArrayList<ExecutionContext>( NUMBER_OF_WORKERS );
-            for ( int i = 0; i < NUMBER_OF_WORKERS; i++ )
-            {
+            var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
+            var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
+            for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
                 var executionContext = ktx.createExecutionContext();
-                futures.add( executors.submit( () ->
-                {
-                    for ( long nodeId : nodeIds )
-                    {
-                        assertTrue( executionContext.dataRead().nodeExists( nodeId ) );
+                futures.add(executors.submit(() -> {
+                    for (long nodeId : nodeIds) {
+                        assertTrue(executionContext.dataRead().nodeExists(nodeId));
                     }
                     executionContext.complete();
-                } ) );
-                contexts.add( executionContext );
+                }));
+                contexts.add(executionContext);
             }
-            Futures.getAll( futures );
-            closeAllUnchecked( contexts );
+            Futures.getAll(futures);
+            closeAllUnchecked(contexts);
         }
     }
 
-    @RepeatedTest( 10 )
-    void contextAccessRelationshipExist() throws ExecutionException
-    {
+    @RepeatedTest(10)
+    void contextAccessRelationshipExist() throws ExecutionException {
         int numberOfRelationships = 1024;
         long[] relIds = new long[numberOfRelationships];
-        try ( var transaction = databaseAPI.beginTx() )
-        {
-            for ( int i = 0; i < numberOfRelationships; i++ )
-            {
+        try (var transaction = databaseAPI.beginTx()) {
+            for (int i = 0; i < numberOfRelationships; i++) {
                 Node start = transaction.createNode();
                 Node end = transaction.createNode();
-                var relationship = start.createRelationshipTo( end, RelationshipType.withName( "maker" ) );
+                var relationship = start.createRelationshipTo(end, RelationshipType.withName("maker"));
                 relIds[i] = relationship.getId();
             }
             transaction.commit();
         }
 
-        try ( Transaction transaction = databaseAPI.beginTx() )
-        {
+        try (Transaction transaction = databaseAPI.beginTx()) {
             var ktx = ((InternalTransaction) transaction).kernelTransaction();
-            var futures = new ArrayList<Future<?>>( NUMBER_OF_WORKERS );
-            var contexts = new ArrayList<ExecutionContext>( NUMBER_OF_WORKERS );
-            for ( int i = 0; i < NUMBER_OF_WORKERS; i++ )
-            {
+            var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
+            var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
+            for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
                 var executionContext = ktx.createExecutionContext();
-                futures.add( executors.submit( () ->
-                {
-                    for ( long relId : relIds )
-                    {
-                        assertTrue( executionContext.dataRead().relationshipExists( relId ) );
+                futures.add(executors.submit(() -> {
+                    for (long relId : relIds) {
+                        assertTrue(executionContext.dataRead().relationshipExists(relId));
                     }
                     executionContext.complete();
-                } ) );
-                contexts.add( executionContext );
+                }));
+                contexts.add(executionContext);
             }
-            Futures.getAll( futures );
-            closeAllUnchecked( contexts );
+            Futures.getAll(futures);
+            closeAllUnchecked(contexts);
         }
     }
 
-    @RepeatedTest( 10 )
-    void contextPeriodicReport() throws ExecutionException
-    {
+    @RepeatedTest(10)
+    void contextPeriodicReport() throws ExecutionException {
         int numberOfNodes = 32768;
         long[] nodeIds = new long[numberOfNodes];
-        try ( var transaction = databaseAPI.beginTx() )
-        {
-            for ( int i = 0; i < numberOfNodes; i++ )
-            {
+        try (var transaction = databaseAPI.beginTx()) {
+            for (int i = 0; i < numberOfNodes; i++) {
                 Node node = transaction.createNode();
                 nodeIds[i] = node.getId();
             }
             transaction.commit();
         }
 
-        try ( Transaction transaction = databaseAPI.beginTx() )
-        {
+        try (Transaction transaction = databaseAPI.beginTx()) {
             var ktx = ((InternalTransaction) transaction).kernelTransaction();
-            var futures = new ArrayList<Future<?>>( NUMBER_OF_WORKERS );
-            var contexts = new ArrayList<ExecutionContext>( NUMBER_OF_WORKERS );
-            for ( int i = 0; i < NUMBER_OF_WORKERS; i++ )
-            {
+            var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
+            var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
+            for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
                 var executionContext = ktx.createExecutionContext();
-                futures.add( executors.submit( () ->
-                {
-                    for ( long nodeId : nodeIds )
-                    {
-                        assertTrue( executionContext.dataRead().nodeExists( nodeId ) );
-                        if ( nodeId % 100 == 0 )
-                        {
+                futures.add(executors.submit(() -> {
+                    for (long nodeId : nodeIds) {
+                        assertTrue(executionContext.dataRead().nodeExists(nodeId));
+                        if (nodeId % 100 == 0) {
                             executionContext.report();
                         }
                     }
                     executionContext.complete();
-                } ) );
-                contexts.add( executionContext );
+                }));
+                contexts.add(executionContext);
             }
-            Futures.getAll( futures );
-            closeAllUnchecked( contexts );
+            Futures.getAll(futures);
+            closeAllUnchecked(contexts);
 
             var tracer = ktx.cursorContext().getCursorTracer();
-            assertEquals( 1220, tracer.pins() );
-            assertEquals( 1220, tracer.unpins() );
-            assertEquals( 1220, tracer.hits() );
+            assertEquals(1220, tracer.pins());
+            assertEquals(1220, tracer.unpins());
+            assertEquals(1220, tracer.hits());
         }
     }
 
     @Test
-    void closingExecutionContextDoNotLeakCursors()
-    {
-        for ( int i = 0; i < 1024; i++ )
-        {
-            try ( Transaction transaction = databaseAPI.beginTx() )
-            {
+    void closingExecutionContextDoNotLeakCursors() {
+        for (int i = 0; i < 1024; i++) {
+            try (Transaction transaction = databaseAPI.beginTx()) {
                 var ktx = ((InternalTransaction) transaction).kernelTransaction();
-                try ( var executionContext = ktx.createExecutionContext() )
-                {
+                try (var executionContext = ktx.createExecutionContext()) {
                     executionContext.complete();
                 }
             }

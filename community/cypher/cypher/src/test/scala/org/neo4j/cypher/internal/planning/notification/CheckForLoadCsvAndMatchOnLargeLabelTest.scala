@@ -39,8 +39,8 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CheckForLoadCsvAndMatchOnLargeLabelTest
-  extends CypherFunSuite
-  with LogicalPlanningTestSupport {
+    extends CypherFunSuite
+    with LogicalPlanningTestSupport {
 
   private val url = literalString("file:///tmp/foo.csv")
 
@@ -49,7 +49,9 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
   private val labelUnderThreshold = "B"
   private val indexFor = Map(labelOverThreshold -> 1, labelUnderThreshold -> 2)
   private val planContext = mock[PlanContext]
+
   when(planContext.getOptLabelId(anyString)).thenAnswer(new Answer[Option[Int]] {
+
     override def answer(invocationOnMock: InvocationOnMock): Option[Int] = {
       val label: String = invocationOnMock.getArgument(0)
       indexFor.get(label)
@@ -105,8 +107,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
   test("should not notify when doing large label scan on top of LoadCSV") {
     val start = NodeByLabelScan("bar", labelName(labelOverThreshold), Set.empty, IndexOrderNone)
     val plan =
-      LoadCSV(start, url, "foo", HasHeaders, None, legacyCsvQuoteEscaping = false,
-        CSVResources.DEFAULT_BUFFER_SIZE)
+      LoadCSV(start, url, "foo", HasHeaders, None, legacyCsvQuoteEscaping = false, CSVResources.DEFAULT_BUFFER_SIZE)
 
     checker(plan) should equal(List.empty)
   }

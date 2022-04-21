@@ -24,38 +24,31 @@ import java.util.Objects;
 /**
  * A bookmark received after interacting with a remote graph.
  */
-public class RemoteBookmark
-{
+public class RemoteBookmark {
     private final String serialisedState;
 
-    public RemoteBookmark( String serialisedState )
-    {
+    public RemoteBookmark(String serialisedState) {
         this.serialisedState = serialisedState;
     }
 
-    public String getSerialisedState()
-    {
+    public String getSerialisedState() {
         return serialisedState;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         RemoteBookmark that = (RemoteBookmark) o;
-        return serialisedState.equals( that.serialisedState );
+        return serialisedState.equals(that.serialisedState);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( serialisedState );
+    public int hashCode() {
+        return Objects.hash(serialisedState);
     }
 }

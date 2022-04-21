@@ -19,17 +19,6 @@
  */
 package org.neo4j.bolt.v41.messaging;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.PackOutput;
-import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
-import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3Test;
-import org.neo4j.logging.internal.NullLogService;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -37,134 +26,132 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class BoltResponseMessageWriterV41Test extends BoltResponseMessageWriterV3Test
-{
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackOutput;
+import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
+import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3Test;
+import org.neo4j.logging.internal.NullLogService;
+
+class BoltResponseMessageWriterV41Test extends BoltResponseMessageWriterV3Test {
 
     @Test
-    void flushShouldResetTimer() throws Throwable
-    {
+    void flushShouldResetTimer() throws Throwable {
         // Given
-        var delegator = mock( BoltResponseMessageWriterV3.class );
-        var timer = mock( MessageWriterTimer.class );
-        var writer = newWriter( delegator, timer );
+        var delegator = mock(BoltResponseMessageWriterV3.class);
+        var timer = mock(MessageWriterTimer.class);
+        var writer = newWriter(delegator, timer);
 
         // When
         writer.flush();
 
         // Then
-        verify( timer ).reset();
+        verify(timer).reset();
     }
 
     @Test
-    void shouldEndRecordFlushIfKeepAliveInvokedDuringWritingARecord() throws Throwable
-    {
+    void shouldEndRecordFlushIfKeepAliveInvokedDuringWritingARecord() throws Throwable {
         // Given
-        var delegator = mock( BoltResponseMessageWriterV3.class );
+        var delegator = mock(BoltResponseMessageWriterV3.class);
         var timer = timedOutTimer();
-        var writer = newWriter( delegator, timer );
+        var writer = newWriter(delegator, timer);
 
         // When
-        writer.beginRecord( 0 );
+        writer.beginRecord(0);
         writer.keepAlive();
-        verify( delegator, never() ).flush();
+        verify(delegator, never()).flush();
 
         // Then
         writer.endRecord();
-        verify( delegator ).flush();
+        verify(delegator).flush();
     }
 
     @Test
-    void shouldOnErrorFlushIfKeepAliveInvokedDuringWritingARecord() throws Throwable
-    {
+    void shouldOnErrorFlushIfKeepAliveInvokedDuringWritingARecord() throws Throwable {
         // Given
-        var delegator = mock( BoltResponseMessageWriterV3.class );
+        var delegator = mock(BoltResponseMessageWriterV3.class);
         var timer = timedOutTimer();
-        var writer = newWriter( delegator, timer );
+        var writer = newWriter(delegator, timer);
 
         // When
-        writer.beginRecord( 0 );
+        writer.beginRecord(0);
         writer.keepAlive();
-        verify( delegator, never() ).flush();
+        verify(delegator, never()).flush();
 
         // Then
         writer.onError();
-        verify( delegator ).flush();
+        verify(delegator).flush();
     }
 
     @Test
-    void shouldWriteKeepAliveAndFlush() throws Throwable
-    {
+    void shouldWriteKeepAliveAndFlush() throws Throwable {
         // Given
-        var output = mock( PackOutput.class );
-        var delegator = mock( BoltResponseMessageWriterV3.class );
-        when( delegator.output() ).thenReturn( output );
+        var output = mock(PackOutput.class);
+        var delegator = mock(BoltResponseMessageWriterV3.class);
+        when(delegator.output()).thenReturn(output);
 
         var timer = timedOutTimer();
-        var writer = newWriter( delegator, timer );
+        var writer = newWriter(delegator, timer);
 
         // When
         writer.keepAlive();
 
         // Then
-        verify( output ).beginMessage();
-        verify( output ).messageSucceeded();
-        verify( delegator ).flush();
+        verify(output).beginMessage();
+        verify(output).messageSucceeded();
+        verify(delegator).flush();
     }
 
     @Test
-    void shouldSkipKeepAliveWhenInvokedAfterClose() throws IOException
-    {
+    void shouldSkipKeepAliveWhenInvokedAfterClose() throws IOException {
         // Given
-        var output = mock( PackOutput.class );
-        var delegator = mock( BoltResponseMessageWriterV3.class );
-        when( delegator.output() ).thenReturn( output );
+        var output = mock(PackOutput.class);
+        var delegator = mock(BoltResponseMessageWriterV3.class);
+        when(delegator.output()).thenReturn(output);
 
         var timer = timedOutTimer();
-        var writer = newWriter( delegator, timer );
+        var writer = newWriter(delegator, timer);
 
         // When
         writer.close();
         writer.keepAlive();
 
         // Then
-        verify( delegator ).close();
-        verifyNoMoreInteractions( delegator );
-        verifyNoInteractions( output );
+        verify(delegator).close();
+        verifyNoMoreInteractions(delegator);
+        verifyNoInteractions(output);
     }
 
     @Test
-    void initTimerShouldResetTimer() throws Throwable
-    {
+    void initTimerShouldResetTimer() throws Throwable {
         // Given
-        var delegator = mock( BoltResponseMessageWriterV3.class );
-        var timer = mock( MessageWriterTimer.class );
-        var writer = newWriter( delegator, timer );
+        var delegator = mock(BoltResponseMessageWriterV3.class);
+        var timer = mock(MessageWriterTimer.class);
+        var writer = newWriter(delegator, timer);
 
         // When
         writer.initKeepAliveTimer();
 
         // Then
-        verify( timer ).reset();
+        verify(timer).reset();
     }
 
     @Override
-    protected BoltResponseMessageWriter newWriter( PackOutput output, Neo4jPack.Packer packer )
-    {
-        var timer = mock( MessageWriterTimer.class );
+    protected BoltResponseMessageWriter newWriter(PackOutput output, Neo4jPack.Packer packer) {
+        var timer = mock(MessageWriterTimer.class);
         return new BoltResponseMessageWriterV41(
-                new BoltResponseMessageWriterV3( out -> packer, output, NullLogService.getInstance() ),
-                timer );
+                new BoltResponseMessageWriterV3(out -> packer, output, NullLogService.getInstance()), timer);
     }
 
-    protected static BoltResponseMessageWriter newWriter( BoltResponseMessageWriterV3 writer, MessageWriterTimer timer )
-    {
-        return new BoltResponseMessageWriterV41( writer, timer );
+    protected static BoltResponseMessageWriter newWriter(BoltResponseMessageWriterV3 writer, MessageWriterTimer timer) {
+        return new BoltResponseMessageWriterV41(writer, timer);
     }
 
-    private static MessageWriterTimer timedOutTimer()
-    {
-        var timer = mock( MessageWriterTimer.class );
-        when( timer.isTimedOut() ).thenReturn( true );
+    private static MessageWriterTimer timedOutTimer() {
+        var timer = mock(MessageWriterTimer.class);
+        when(timer.isTimedOut()).thenReturn(true);
         return timer;
     }
 }

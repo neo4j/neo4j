@@ -35,10 +35,14 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 // TERMINATE TRANSACTION[S] transaction-id[,...]
-case class TerminateTransactionsCommand(givenIds: Either[List[String], Expression], columns: List[ShowColumn]) extends Command(columns) {
+case class TerminateTransactionsCommand(givenIds: Either[List[String], Expression], columns: List[ShowColumn])
+    extends Command(columns) {
+
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val ids = TransactionCommandHelper.extractIds(givenIds, state.params)
-    if (ids.isEmpty) throw new InvalidSemanticsException("Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`.")
+    if (ids.isEmpty) throw new InvalidSemanticsException(
+      "Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`."
+    )
     val ctx = state.query
     val securityContext = ctx.transactionalContext.securityContext
     val executingUser = securityContext.subject.executingUser()
@@ -51,39 +55,43 @@ case class TerminateTransactionsCommand(givenIds: Either[List[String], Expressio
     val databaseManager = ctx.getDatabaseManager
     val databaseIdRepository = databaseManager.databaseIdRepository
 
-    val (transactionsByDatabase, otherTxIds) = ids.foldLeft[(Map[NamedDatabaseId, Set[TransactionId]], Set[TransactionId])]((Map.empty, Set.empty)) {
-      case ((accMap, accSet), idText) =>
-        val id = TransactionId.parse(idText)
-        val namedDatabaseId = databaseIdRepository.getByName(id.database)
-        if (namedDatabaseId.isPresent) {
-          val databaseId = namedDatabaseId.get
-          val transactions = accMap.getOrElse(databaseId, Set.empty[TransactionId])
-          (accMap ++ Map(databaseId -> (transactions + id)), accSet)
-        } else {
-          // transactions on non-existing databases
-          // added to get a result for 'transaction not found' instead of just missing from the result set
-          (accMap, accSet + id)
-        }
-    }
+    val (transactionsByDatabase, otherTxIds) =
+      ids.foldLeft[(Map[NamedDatabaseId, Set[TransactionId]], Set[TransactionId])]((Map.empty, Set.empty)) {
+        case ((accMap, accSet), idText) =>
+          val id = TransactionId.parse(idText)
+          val namedDatabaseId = databaseIdRepository.getByName(id.database)
+          if (namedDatabaseId.isPresent) {
+            val databaseId = namedDatabaseId.get
+            val transactions = accMap.getOrElse(databaseId, Set.empty[TransactionId])
+            (accMap ++ Map(databaseId -> (transactions + id)), accSet)
+          } else {
+            // transactions on non-existing databases
+            // added to get a result for 'transaction not found' instead of just missing from the result set
+            (accMap, accSet + id)
+          }
+      }
 
     val rows = transactionsByDatabase.flatMap {
       case (databaseId: NamedDatabaseId, txIds: Set[TransactionId]) =>
         val maybeDatabaseContext = databaseManager.getDatabaseContext(databaseId)
         val dbName = databaseId.name
 
-        val allowedTransactions = if (maybeDatabaseContext.isPresent) {
-          val databaseContext = maybeDatabaseContext.get
-          val dbScope = new AdminActionOnResource.DatabaseScope(dbName)
-          TransactionCommandHelper.getExecutingTransactions(databaseContext).map(tx => {
-            val txIdRepresentation = TransactionId(dbName, tx.getUserTransactionId)
-            (txIdRepresentation, tx)
-          }).filter {
-            case (txIdRepresentation, tx) =>
-              val username = tx.subject.executingUser()
-              val action = new AdminActionOnResource(TERMINATE_TRANSACTION, dbScope, new UserSegment(username))
-              TransactionCommandHelper.isSelfOrAllows(username, action, securityContext) && txIds.contains(txIdRepresentation)
-          }.toMap[TransactionId, KernelTransactionHandle]
-        } else Map.empty[TransactionId, KernelTransactionHandle]
+        val allowedTransactions =
+          if (maybeDatabaseContext.isPresent) {
+            val databaseContext = maybeDatabaseContext.get
+            val dbScope = new AdminActionOnResource.DatabaseScope(dbName)
+            TransactionCommandHelper.getExecutingTransactions(databaseContext).map(tx => {
+              val txIdRepresentation = TransactionId(dbName, tx.getUserTransactionId)
+              (txIdRepresentation, tx)
+            }).filter {
+              case (txIdRepresentation, tx) =>
+                val username = tx.subject.executingUser()
+                val action = new AdminActionOnResource(TERMINATE_TRANSACTION, dbScope, new UserSegment(username))
+                TransactionCommandHelper.isSelfOrAllows(username, action, securityContext) && txIds.contains(
+                  txIdRepresentation
+                )
+            }.toMap[TransactionId, KernelTransactionHandle]
+          } else Map.empty[TransactionId, KernelTransactionHandle]
 
         txIds.map(txId => {
           val txHandle = allowedTransactions.get(txId)

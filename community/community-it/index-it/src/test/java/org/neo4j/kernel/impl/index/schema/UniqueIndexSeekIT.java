@@ -19,10 +19,17 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfClosedReaders;
+import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfOpenReaders;
 
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -46,105 +53,88 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfClosedReaders;
-import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfOpenReaders;
-
 @TestDirectoryExtension
-class UniqueIndexSeekIT
-{
+class UniqueIndexSeekIT {
     private static final String CONSTRAINT_NAME = "uniqueConstraint";
 
     @Inject
     private TestDirectory directory;
+
     private DatabaseManagementService managementService;
 
     @Test
-    void uniqueIndexSeekDoNotLeakIndexReaders() throws KernelException
-    {
-        TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory( new RangeIndexProviderFactory() );
-        GraphDatabaseAPI database = createDatabase( indexExtensionFactory );
+    void uniqueIndexSeekDoNotLeakIndexReaders() throws KernelException {
+        TrackingIndexExtensionFactory indexExtensionFactory =
+                new TrackingIndexExtensionFactory(new RangeIndexProviderFactory());
+        GraphDatabaseAPI database = createDatabase(indexExtensionFactory);
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        Config config = dependencyResolver.resolveDependency( Config.class );
-        try
-        {
-            Label label = label( "spaceship" );
+        Config config = dependencyResolver.resolveDependency(Config.class);
+        try {
+            Label label = label("spaceship");
             String nameProperty = "name";
-            createUniqueConstraint( database, label, nameProperty );
+            createUniqueConstraint(database, label, nameProperty);
 
-            generateRandomData( database, label, nameProperty );
+            generateRandomData(database, label, nameProperty);
 
-            assertNotNull( indexExtensionFactory.getIndexProvider( config.get( default_database ) ) );
-            assertThat( numberOfClosedReaders() ).isGreaterThan( 0L );
-            assertThat( numberOfOpenReaders() ).isGreaterThan( 0L );
-            assertThat( numberOfClosedReaders() ).isCloseTo( numberOfOpenReaders(), within( 1L ) );
+            assertNotNull(indexExtensionFactory.getIndexProvider(config.get(default_database)));
+            assertThat(numberOfClosedReaders()).isGreaterThan(0L);
+            assertThat(numberOfOpenReaders()).isGreaterThan(0L);
+            assertThat(numberOfClosedReaders()).isCloseTo(numberOfOpenReaders(), within(1L));
 
-            lockNodeUsingUniqueIndexSeek( database, nameProperty );
+            lockNodeUsingUniqueIndexSeek(database, nameProperty);
 
-            assertThat( numberOfClosedReaders() ).isCloseTo( numberOfOpenReaders(), within( 1L ) );
-        }
-        finally
-        {
+            assertThat(numberOfClosedReaders()).isCloseTo(numberOfOpenReaders(), within(1L));
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory )
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
-                .addExtension( indexExtensionFactory )
+    private GraphDatabaseAPI createDatabase(TrackingIndexExtensionFactory indexExtensionFactory) {
+        managementService = new TestDatabaseManagementServiceBuilder(directory.homePath())
+                .addExtension(indexExtensionFactory)
                 .build();
-        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        return (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private static void lockNodeUsingUniqueIndexSeek( GraphDatabaseAPI database, String nameProperty ) throws KernelException
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
+    private static void lockNodeUsingUniqueIndexSeek(GraphDatabaseAPI database, String nameProperty)
+            throws KernelException {
+        try (Transaction transaction = database.beginTx()) {
             KernelTransaction kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             TokenRead tokenRead = kernelTransaction.tokenRead();
             Read dataRead = kernelTransaction.dataRead();
 
-            int propertyId = tokenRead.propertyKey( nameProperty );
-            IndexDescriptor indexReference = kernelTransaction.schemaRead().indexGetForName( CONSTRAINT_NAME );
-            try ( NodeValueIndexCursor cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.cursorContext(),
-                                                                                                          kernelTransaction.memoryTracker() ) )
-            {
-                dataRead.lockingNodeUniqueIndexSeek( indexReference, cursor, PropertyIndexQuery.ExactPredicate.exact( propertyId, "value" ) );
+            int propertyId = tokenRead.propertyKey(nameProperty);
+            IndexDescriptor indexReference = kernelTransaction.schemaRead().indexGetForName(CONSTRAINT_NAME);
+            try (NodeValueIndexCursor cursor = kernelTransaction
+                    .cursors()
+                    .allocateNodeValueIndexCursor(
+                            kernelTransaction.cursorContext(), kernelTransaction.memoryTracker())) {
+                dataRead.lockingNodeUniqueIndexSeek(
+                        indexReference, cursor, PropertyIndexQuery.ExactPredicate.exact(propertyId, "value"));
             }
             transaction.commit();
         }
     }
 
-    private static void generateRandomData( GraphDatabaseAPI database, Label label, String nameProperty )
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < 1000; i++ )
-            {
-                Node node = transaction.createNode( label );
-                node.setProperty( nameProperty, "PlanetExpress" + i );
+    private static void generateRandomData(GraphDatabaseAPI database, Label label, String nameProperty) {
+        try (Transaction transaction = database.beginTx()) {
+            for (int i = 0; i < 1000; i++) {
+                Node node = transaction.createNode(label);
+                node.setProperty(nameProperty, "PlanetExpress" + i);
             }
             transaction.commit();
         }
     }
 
-    private static void createUniqueConstraint( GraphDatabaseAPI database, Label label, String nameProperty ) throws KernelException
-    {
-        try ( TransactionImpl transaction = (TransactionImpl) database.beginTx() )
-        {
-            IndexingTestUtil.createNodePropUniqueConstraintWithSpecifiedProvider( transaction, TrackingIndexExtensionFactory.DESCRIPTOR, label,
-                    nameProperty, CONSTRAINT_NAME );
+    private static void createUniqueConstraint(GraphDatabaseAPI database, Label label, String nameProperty)
+            throws KernelException {
+        try (TransactionImpl transaction = (TransactionImpl) database.beginTx()) {
+            IndexingTestUtil.createNodePropUniqueConstraintWithSpecifiedProvider(
+                    transaction, TrackingIndexExtensionFactory.DESCRIPTOR, label, nameProperty, CONSTRAINT_NAME);
             transaction.commit();
         }
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction transaction = database.beginTx()) {
+            transaction.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             transaction.commit();
         }
     }

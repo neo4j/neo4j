@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import java.io.IOException;
+import static java.lang.Math.toIntExact;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
+import java.io.IOException;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -32,77 +35,72 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static java.lang.Math.toIntExact;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-
-class LenientNodeReader extends LenientStoreInputChunk
-{
+class LenientNodeReader extends LenientStoreInputChunk {
     private final NodeStore nodeStore;
     private final NodeRecord record;
     private final boolean compactNodeStore;
 
-    LenientNodeReader( ReadBehaviour readBehaviour, NodeStore nodeStore, PropertyStore propertyStore, TokenHolders tokenHolders,
-            CursorContextFactory cursorFactory, StoreCursors storeCursors, boolean compactNodeStore )
-    {
-        super( readBehaviour, propertyStore, tokenHolders, cursorFactory, storeCursors, storeCursors.readCursor( NODE_CURSOR ) );
+    LenientNodeReader(
+            ReadBehaviour readBehaviour,
+            NodeStore nodeStore,
+            PropertyStore propertyStore,
+            TokenHolders tokenHolders,
+            CursorContextFactory cursorFactory,
+            StoreCursors storeCursors,
+            boolean compactNodeStore) {
+        super(
+                readBehaviour,
+                propertyStore,
+                tokenHolders,
+                cursorFactory,
+                storeCursors,
+                storeCursors.readCursor(NODE_CURSOR));
         this.nodeStore = nodeStore;
         this.record = nodeStore.newRecord();
         this.compactNodeStore = compactNodeStore;
     }
 
     @Override
-    void readAndVisit( long id, InputEntityVisitor visitor, StoreCursors storeCursors ) throws IOException
-    {
-        nodeStore.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, cursor );
-        if ( record.inUse() )
-        {
-            nodeStore.ensureHeavy( record, storeCursors );
-            long[] labelIds = parseLabelsField( record ).get( nodeStore, storeCursors );
-            String[] labels = toNames( tokenHolders.labelTokens(), labelIds );
-            if ( readBehaviour.shouldIncludeNode( labels ) )
-            {
-                labels = readBehaviour.filterLabels( labels );
-                if ( compactNodeStore )
-                {
+    void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors) throws IOException {
+        nodeStore.getRecordByCursor(id, record, RecordLoad.LENIENT_CHECK, cursor);
+        if (record.inUse()) {
+            nodeStore.ensureHeavy(record, storeCursors);
+            long[] labelIds = parseLabelsField(record).get(nodeStore, storeCursors);
+            String[] labels = toNames(tokenHolders.labelTokens(), labelIds);
+            if (readBehaviour.shouldIncludeNode(labels)) {
+                labels = readBehaviour.filterLabels(labels);
+                if (compactNodeStore) {
                     // this is the variant where read node ID will map 1-to-1 with created node ID
-                    visitor.id( id, Group.GLOBAL );
-                }
-                else
-                {
+                    visitor.id(id, Group.GLOBAL);
+                } else {
                     // this is the variant where the target store will generate new IDs
-                    visitor.id( id, Group.GLOBAL, cursorContext -> id );
+                    visitor.id(id, Group.GLOBAL, cursorContext -> id);
                 }
-                visitor.labels( labels );
-                visitPropertyChainNoThrow( visitor, record, EntityType.NODE, labels );
+                visitor.labels(labels);
+                visitPropertyChainNoThrow(visitor, record, EntityType.NODE, labels);
                 visitor.endOfEntity();
             }
-        }
-        else
-        {
+        } else {
             readBehaviour.unused();
         }
     }
 
-    private String[] toNames( TokenHolder labelTokens, long[] labelIds )
-    {
+    private String[] toNames(TokenHolder labelTokens, long[] labelIds) {
         String[] names = new String[labelIds.length];
-        for ( int i = 0; i < labelIds.length; i++ )
-        {
-            names[i] = LenientStoreInput.getTokenByIdSafe( labelTokens, toIntExact( labelIds[i] ) ).name();
+        for (int i = 0; i < labelIds.length; i++) {
+            names[i] = LenientStoreInput.getTokenByIdSafe(labelTokens, toIntExact(labelIds[i]))
+                    .name();
         }
         return names;
     }
 
     @Override
-    String recordType()
-    {
+    String recordType() {
         return "Node";
     }
 
     @Override
-    boolean shouldIncludeProperty( ReadBehaviour readBehaviour, String key, String[] owningEntityTokens )
-    {
-        return readBehaviour.shouldIncludeNodeProperty( key, owningEntityTokens );
+    boolean shouldIncludeProperty(ReadBehaviour readBehaviour, String key, String[] owningEntityTokens) {
+        return readBehaviour.shouldIncludeNodeProperty(key, owningEntityTokens);
     }
 }

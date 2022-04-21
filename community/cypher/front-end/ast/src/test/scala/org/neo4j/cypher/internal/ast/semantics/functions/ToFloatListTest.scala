@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class ToFloatListTest extends FunctionTestBase("toFloatList")  {
+class ToFloatListTest extends FunctionTestBase("toFloatList") {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTList(CTAny))(CTList(CTFloat))
@@ -48,7 +48,6 @@ class ToFloatListTest extends FunctionTestBase("toFloatList")  {
       "Type mismatch: expected List<T> but was String"
     )
   }
-
 
   test("shouldFailIfWrongNumberOfArguments") {
     testInvalidApplication()(

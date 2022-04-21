@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-class IndexStatisticsValue
-{
+class IndexStatisticsValue {
     static final int SIZE = Long.SIZE * 4;
 
     private long sampleUniqueValues;
@@ -28,55 +27,44 @@ class IndexStatisticsValue
     private long updatesCount;
     private long indexSize;
 
-    IndexStatisticsValue()
-    {
-    }
+    IndexStatisticsValue() {}
 
-    IndexStatisticsValue( long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize )
-    {
+    IndexStatisticsValue(long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize) {
         this.sampleUniqueValues = sampleUniqueValues;
         this.sampleSize = sampleSize;
         this.updatesCount = updatesCount;
         this.indexSize = indexSize;
     }
 
-    long getSampleUniqueValues()
-    {
+    long getSampleUniqueValues() {
         return sampleUniqueValues;
     }
 
-    void setSampleUniqueValues( long sampleUniqueValues )
-    {
+    void setSampleUniqueValues(long sampleUniqueValues) {
         this.sampleUniqueValues = sampleUniqueValues;
     }
 
-    public long getSampleSize()
-    {
+    public long getSampleSize() {
         return sampleSize;
     }
 
-    public void setSampleSize( long sampleSize )
-    {
+    public void setSampleSize(long sampleSize) {
         this.sampleSize = sampleSize;
     }
 
-    long getUpdatesCount()
-    {
+    long getUpdatesCount() {
         return updatesCount;
     }
 
-    void setUpdatesCount( long updatesCount )
-    {
+    void setUpdatesCount(long updatesCount) {
         this.updatesCount = updatesCount;
     }
 
-    public long getIndexSize()
-    {
+    public long getIndexSize() {
         return indexSize;
     }
 
-    public void setIndexSize( long indexSize )
-    {
+    public void setIndexSize(long indexSize) {
         this.indexSize = indexSize;
     }
 }

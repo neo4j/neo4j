@@ -29,10 +29,11 @@ import org.neo4j.graphdb.Label
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
 
-abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                     runtime: CypherRuntime[CONTEXT],
-                                                                     var sizeHint: Int
-                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  var sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should support simple hash join over nodes") {
     val nodes = given {
@@ -86,7 +87,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
 
     val rhsRows = for {
       n <- nodes.filter(_.hasLabel(Label.label("Right")))
-      r  = n.getProperty("rightProp").asInstanceOf[Int]
+      r = n.getProperty("rightProp").asInstanceOf[Int]
     } yield (n, r)
 
     val expectedRows = for {
@@ -128,7 +129,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
 
     val rhsRows = for {
       n <- nodes.filter(_.hasLabel(Label.label("Right")))
-      r  = n.getProperty("rightProp").asInstanceOf[Int]
+      r = n.getProperty("rightProp").asInstanceOf[Int]
     } yield (n, r)
 
     val expectedRows = for {
@@ -388,7 +389,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
     val lhsFilterDbHits = runtimeResult.runtimeResult.queryProfile().operatorProfile(5).dbHits()
 
     // final projection should only need to look up n.leftProp for :Right nodes
-    runtimeResult.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe lhsFilterDbHits/2
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe lhsFilterDbHits / 2
   }
 
   // Emulates outer join.
@@ -397,8 +398,8 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
   // or a single row (k', null) if no key matches
   private def matchingRowsOuter[K, V >: Null](rows: Seq[(K, V)], key: K): Seq[(K, V)] = {
     // Get matching rows. Null keys match nothing. No matches gives a null value
-    rows.collect { case row@(candidate, _) if matches(key, candidate) => row }
-        .padTo(1, (key, null))
+    rows.collect { case row @ (candidate, _) if matches(key, candidate) => row }
+      .padTo(1, (key, null))
   }
 
   private def matches[K](key: K, candidate: K): Boolean = key match {
@@ -425,10 +426,11 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, y, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
@@ -495,7 +497,6 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
       .|.unwind("[yLong] as y")
       .|.allNodeScan("yLong")
       .allNodeScan("y")
-
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)
@@ -523,10 +524,11 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, x, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, x, y)
     runtimeResult should beColumns("x", "x2", "y").withRows(expectedResultRows)
   }
 
@@ -548,10 +550,11 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, y, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
@@ -573,10 +576,11 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, x, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, x, y)
     runtimeResult should beColumns("x", "x2", "y").withRows(expectedResultRows)
   }
 
@@ -602,10 +606,11 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, y, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
@@ -629,10 +634,11 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {y <- nodes
-                                  rel <- y.getRelationships().asScala
-                                  x = rel.getOtherNode(y)
-                                  } yield Array(x, y, y)
+    val expectedResultRows = for {
+      y <- nodes
+      rel <- y.getRelationships().asScala
+      x = rel.getOtherNode(y)
+    } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 

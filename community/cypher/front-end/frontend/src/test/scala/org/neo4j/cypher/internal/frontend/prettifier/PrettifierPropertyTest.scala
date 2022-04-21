@@ -23,10 +23,11 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 class PrettifierPropertyTest extends CypherFunSuite
-  with ScalaCheckDrivenPropertyChecks
-  with PrettifierTestUtils {
+    with ScalaCheckDrivenPropertyChecks
+    with PrettifierTestUtils {
 
-  val prettifier: Prettifier = Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true, sensitiveParamsAsParams = true))
+  val prettifier: Prettifier =
+    Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true, sensitiveParamsAsParams = true))
 
   val astGenerator = new AstGenerator(simpleStrings = false)
 

@@ -24,57 +24,46 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class ReadSupport
-{
+public class ReadSupport {
     private final StorageReader storageReader;
     private final DefaultPooledCursors cursors;
     private final org.neo4j.internal.kernel.api.Read readDelegate;
 
-    public ReadSupport( StorageReader storageReader, DefaultPooledCursors cursors, org.neo4j.internal.kernel.api.Read readDelegate )
-    {
+    public ReadSupport(
+            StorageReader storageReader,
+            DefaultPooledCursors cursors,
+            org.neo4j.internal.kernel.api.Read readDelegate) {
         this.storageReader = storageReader;
         this.cursors = cursors;
         this.readDelegate = readDelegate;
     }
 
-    public boolean nodeExistsWithoutTxState( long reference, AccessMode accessMode, StoreCursors storeCursors, CursorContext cursorContext )
-    {
-        boolean existsInNodeStore = storageReader.nodeExists( reference, storeCursors );
+    public boolean nodeExistsWithoutTxState(
+            long reference, AccessMode accessMode, StoreCursors storeCursors, CursorContext cursorContext) {
+        boolean existsInNodeStore = storageReader.nodeExists(reference, storeCursors);
 
-        if ( accessMode.allowsTraverseAllLabels() )
-        {
+        if (accessMode.allowsTraverseAllLabels()) {
             return existsInNodeStore;
-        }
-        else if ( !existsInNodeStore )
-        {
+        } else if (!existsInNodeStore) {
             return false;
-        }
-        else
-        {
-            try ( DefaultNodeCursor node = cursors.allocateNodeCursor( cursorContext ) )
-            {
-                readDelegate.singleNode( reference, node );
+        } else {
+            try (DefaultNodeCursor node = cursors.allocateNodeCursor(cursorContext)) {
+                readDelegate.singleNode(reference, node);
                 return node.next();
             }
         }
     }
 
-    public boolean relationshipExistsWithoutTx( long reference, AccessMode accessMode, StoreCursors storeCursors, CursorContext cursorContext )
-    {
-        boolean existsInRelStore = storageReader.relationshipExists( reference, storeCursors );
-        if ( accessMode.allowsTraverseAllRelTypes() )
-        {
+    public boolean relationshipExistsWithoutTx(
+            long reference, AccessMode accessMode, StoreCursors storeCursors, CursorContext cursorContext) {
+        boolean existsInRelStore = storageReader.relationshipExists(reference, storeCursors);
+        if (accessMode.allowsTraverseAllRelTypes()) {
             return existsInRelStore;
-        }
-        else if ( !existsInRelStore )
-        {
+        } else if (!existsInRelStore) {
             return false;
-        }
-        else
-        {
-            try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor( cursorContext ) )
-            {
-                readDelegate.singleRelationship( reference, rels );
+        } else {
+            try (DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor(cursorContext)) {
+                readDelegate.singleRelationship(reference, rels);
                 return rels.next();
             }
         }

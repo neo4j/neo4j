@@ -27,8 +27,7 @@ import java.util.function.Supplier;
  * @param <T> the type of results supplied by this supplier
  * @param <E> the type of exception that may be thrown from the function
  */
-public interface ThrowingSupplier<T, E extends Exception>
-{
+public interface ThrowingSupplier<T, E extends Exception> {
     /**
      * Gets a result.
      *
@@ -37,19 +36,15 @@ public interface ThrowingSupplier<T, E extends Exception>
      */
     T get() throws E;
 
-    static <TYPE> ThrowingSupplier<TYPE,RuntimeException> throwingSupplier( Supplier<TYPE> supplier )
-    {
-        return new ThrowingSupplier<>()
-        {
+    static <TYPE> ThrowingSupplier<TYPE, RuntimeException> throwingSupplier(Supplier<TYPE> supplier) {
+        return new ThrowingSupplier<>() {
             @Override
-            public TYPE get()
-            {
+            public TYPE get() {
                 return supplier.get();
             }
 
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return supplier.toString();
             }
         };

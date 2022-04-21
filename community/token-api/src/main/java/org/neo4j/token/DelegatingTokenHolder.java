@@ -19,36 +19,32 @@
  */
 package org.neo4j.token;
 
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntPredicate;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.IntPredicate;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.NonUniqueTokenException;
 
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-
 /**
  * Keeps a registry of tokens using {@link TokenRegistry}.
  * When asked for a token that isn't in the registry, delegates to a {@link TokenCreator} to create the token,
  * then stores it in the registry.
  */
-public class DelegatingTokenHolder extends AbstractTokenHolderBase
-{
+public class DelegatingTokenHolder extends AbstractTokenHolderBase {
     private final TokenCreator tokenCreator;
 
-    public DelegatingTokenHolder( TokenCreator tokenCreator, String tokenType )
-    {
-        super( new TokenRegistry( tokenType ) );
+    public DelegatingTokenHolder(TokenCreator tokenCreator, String tokenType) {
+        super(new TokenRegistry(tokenType));
         this.tokenCreator = tokenCreator;
     }
 
@@ -59,78 +55,66 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
      * @return newly created token id
      */
     @Override
-    protected synchronized int createToken( String name, boolean internal ) throws KernelException
-    {
-        Integer id = internal ? tokenRegistry.getIdInternal( name ) : tokenRegistry.getId( name );
-        if ( id != null )
-        {
+    protected synchronized int createToken(String name, boolean internal) throws KernelException {
+        Integer id = internal ? tokenRegistry.getIdInternal(name) : tokenRegistry.getId(name);
+        if (id != null) {
             return id;
         }
 
-        id = tokenCreator.createToken( name, internal );
-        try
-        {
-            tokenRegistry.put( new NamedToken( name, id, internal ) );
-        }
-        catch ( NonUniqueTokenException e )
-        {
-            throw new UnspecifiedKernelException( Status.General.UnknownError, e, "Newly created token should be unique." );
+        id = tokenCreator.createToken(name, internal);
+        try {
+            tokenRegistry.put(new NamedToken(name, id, internal));
+        } catch (NonUniqueTokenException e) {
+            throw new UnspecifiedKernelException(
+                    Status.General.UnknownError, e, "Newly created token should be unique.");
         }
         return id;
     }
 
     @Override
-    public void getOrCreateIds( String[] names, int[] ids ) throws KernelException
-    {
-        innerBatchGetOrCreate( names, ids, false );
+    public void getOrCreateIds(String[] names, int[] ids) throws KernelException {
+        innerBatchGetOrCreate(names, ids, false);
     }
 
     @Override
-    public void getOrCreateInternalIds( String[] names, int[] ids ) throws KernelException
-    {
-        innerBatchGetOrCreate( names, ids, true );
+    public void getOrCreateInternalIds(String[] names, int[] ids) throws KernelException {
+        innerBatchGetOrCreate(names, ids, true);
     }
 
-    private void innerBatchGetOrCreate( String[] names, int[] ids, boolean internal ) throws KernelException
-    {
-        assertSameArrayLength( names, ids );
+    private void innerBatchGetOrCreate(String[] names, int[] ids, boolean internal) throws KernelException {
+        assertSameArrayLength(names, ids);
         // Assume all tokens exist and try to resolve them. Break out on the first missing token.
-        boolean hasUnresolvedTokens = resolveIds( names, ids, internal, ALWAYS_TRUE_INT );
+        boolean hasUnresolvedTokens = resolveIds(names, ids, internal, ALWAYS_TRUE_INT);
 
-        if ( hasUnresolvedTokens )
-        {
-            createMissingTokens( names, ids, internal );
+        if (hasUnresolvedTokens) {
+            createMissingTokens(names, ids, internal);
         }
     }
 
-    private static void assertSameArrayLength( String[] names, int[] ids )
-    {
-        if ( names.length != ids.length )
-        {
-            throw new IllegalArgumentException( "Name and id arrays must have the same length." );
+    private static void assertSameArrayLength(String[] names, int[] ids) {
+        if (names.length != ids.length) {
+            throw new IllegalArgumentException("Name and id arrays must have the same length.");
         }
     }
 
-    private synchronized void createMissingTokens( String[] names, int[] ids, boolean internal ) throws KernelException
-    {
+    private synchronized void createMissingTokens(String[] names, int[] ids, boolean internal) throws KernelException {
         // We redo the resolving under the lock, to make sure that these ids are really missing, and won't be
         // created concurrently with us.
         MutableIntSet unresolvedIndexes = new IntHashSet();
-        resolveIds( names, ids, internal, i -> !unresolvedIndexes.add( i ) );
-        if ( !unresolvedIndexes.isEmpty() )
-        {
+        resolveIds(names, ids, internal, i -> !unresolvedIndexes.add(i));
+        if (!unresolvedIndexes.isEmpty()) {
             // We still have unresolved ids to create.
-            ObjectIntHashMap<String> createdTokens = createUnresolvedTokens( unresolvedIndexes, names, ids, internal );
-            List<NamedToken> createdTokensList = new ArrayList<>( createdTokens.size() );
-            createdTokens.forEachKeyValue( ( name, index ) ->
-                    createdTokensList.add( new NamedToken( name, ids[index], internal ) ) );
+            ObjectIntHashMap<String> createdTokens = createUnresolvedTokens(unresolvedIndexes, names, ids, internal);
+            List<NamedToken> createdTokensList = new ArrayList<>(createdTokens.size());
+            createdTokens.forEachKeyValue(
+                    (name, index) -> createdTokensList.add(new NamedToken(name, ids[index], internal)));
 
-            tokenRegistry.putAll( createdTokensList );
+            tokenRegistry.putAll(createdTokensList);
         }
     }
 
-    private ObjectIntHashMap<String> createUnresolvedTokens( IntSet unresolvedIndexes, String[] names, int[] ids, boolean internal ) throws KernelException
-    {
+    private ObjectIntHashMap<String> createUnresolvedTokens(
+            IntSet unresolvedIndexes, String[] names, int[] ids, boolean internal) throws KernelException {
         // First, we need to filter out all of the tokens that are already resolved, so we only create tokens for
         // indexes that are in the unresolvedIndexes set.
         // However, we also need to deal with duplicate token names. For any token index we decide needs to have a
@@ -146,19 +130,16 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
         // index 'a'.
         ObjectIntHashMap<String> createdTokens = new ObjectIntHashMap<>();
         IntIntHashMap remappingIndexes = new IntIntHashMap();
-        IntPredicate tokenCreateFilter = index ->
-        {
-            boolean needsCreate = unresolvedIndexes.contains( index );
-            if ( needsCreate )
-            {
+        IntPredicate tokenCreateFilter = index -> {
+            boolean needsCreate = unresolvedIndexes.contains(index);
+            if (needsCreate) {
                 // The name at this index is unresolved.
                 String name = names[index];
-                int creatingIndex = createdTokens.getIfAbsentPut( name, index );
-                if ( creatingIndex != index )
-                {
+                int creatingIndex = createdTokens.getIfAbsentPut(name, index);
+                if (creatingIndex != index) {
                     // This entry has a duplicate name, so we need to remap this entry instead of creating a token
                     // for it.
-                    remappingIndexes.put( index, creatingIndex );
+                    remappingIndexes.put(index, creatingIndex);
                     needsCreate = false;
                 }
             }
@@ -166,12 +147,11 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
         };
 
         // Create tokens for all the indexes that we don't filter out.
-        tokenCreator.createTokens( names, ids, internal, tokenCreateFilter );
+        tokenCreator.createTokens(names, ids, internal, tokenCreateFilter);
 
         // Remap duplicate tokens to the token id we created for the first instance of any duplicate token name.
-        if ( remappingIndexes.notEmpty() )
-        {
-            remappingIndexes.forEachKeyValue( ( index, creatingIndex ) -> ids[index] = ids[creatingIndex] );
+        if (remappingIndexes.notEmpty()) {
+            remappingIndexes.forEachKeyValue((index, creatingIndex) -> ids[index] = ids[creatingIndex]);
         }
 
         return createdTokens;

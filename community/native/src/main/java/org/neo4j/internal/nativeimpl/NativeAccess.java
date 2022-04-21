@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.nativeimpl;
 
-public interface NativeAccess
-{
+public interface NativeAccess {
     /**
      * Operation completed successfully
      */
@@ -43,7 +42,7 @@ public interface NativeAccess
      * @param fd file descriptor
      * @return returns zero on success, or an error number on failure
      */
-    NativeCallResult tryEvictFromCache( int fd );
+    NativeCallResult tryEvictFromCache(int fd);
 
     /**
      * Try to advice that file referenced by provided file descriptor will be accessed in a sequential fashion.
@@ -51,7 +50,7 @@ public interface NativeAccess
      * @param fd file descriptor
      * @return returns zero on success, or an error number on failure
      */
-    NativeCallResult tryAdviseSequentialAccess( int fd );
+    NativeCallResult tryAdviseSequentialAccess(int fd);
 
     /**
      * Try to advice that file referenced by provided file descriptor will be accessed again in the near future and we will need those pages again.
@@ -59,7 +58,7 @@ public interface NativeAccess
      * @param fd file descriptor
      * @return returns zero on success, or an error number on failure
      */
-    NativeCallResult tryAdviseToKeepInCache( int fd );
+    NativeCallResult tryAdviseToKeepInCache(int fd);
 
     /**
      * Try to preallocate disk space for file referenced by provided file descriptor.
@@ -67,7 +66,7 @@ public interface NativeAccess
      * @param bytes number of bytes to preallocate
      * @return returns zero on success, or an error number on failure
      */
-    NativeCallResult tryPreallocateSpace( int fd, long bytes );
+    NativeCallResult tryPreallocateSpace(int fd, long bytes);
 
     /**
      * High level error translator to be able to map high level exceptions checks with low level error codes on particular system

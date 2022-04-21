@@ -19,67 +19,57 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.neo4j.io.ByteUnit;
-
 import static java.lang.Long.max;
+
+import org.neo4j.io.ByteUnit;
 
 /**
  * {@link MemoryStatsVisitor} that can gather stats from multiple sources and give a total.
  */
-public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor
-{
+public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor {
     private long heapUsage;
     private long offHeapUsage;
 
     @Override
-    public void heapUsage( long bytes )
-    {
+    public void heapUsage(long bytes) {
         heapUsage += bytes;
     }
 
     @Override
-    public void offHeapUsage( long bytes )
-    {
+    public void offHeapUsage(long bytes) {
         offHeapUsage += bytes;
     }
 
-    public long getHeapUsage()
-    {
+    public long getHeapUsage() {
         return heapUsage;
     }
 
-    public long getOffHeapUsage()
-    {
+    public long getOffHeapUsage() {
         return offHeapUsage;
     }
 
-    public long getTotalUsage()
-    {
+    public long getTotalUsage() {
         return heapUsage + offHeapUsage;
     }
 
     @Override
-    public String toString()
-    {
-        return "Memory usage[heap:" + ByteUnit.bytesToString( heapUsage ) + ", off-heap:" + ByteUnit.bytesToString( offHeapUsage ) + "]";
+    public String toString() {
+        return "Memory usage[heap:" + ByteUnit.bytesToString(heapUsage) + ", off-heap:"
+                + ByteUnit.bytesToString(offHeapUsage) + "]";
     }
 
-    public static long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... memoryUsers )
-    {
+    public static long totalMemoryUsageOf(MemoryStatsVisitor.Visitable... memoryUsers) {
         GatheringMemoryStatsVisitor memoryVisitor = new GatheringMemoryStatsVisitor();
-        for ( MemoryStatsVisitor.Visitable memoryUser : memoryUsers )
-        {
-            memoryUser.acceptMemoryStatsVisitor( memoryVisitor );
+        for (MemoryStatsVisitor.Visitable memoryUser : memoryUsers) {
+            memoryUser.acceptMemoryStatsVisitor(memoryVisitor);
         }
         return memoryVisitor.getTotalUsage();
     }
 
-    public static long highestMemoryUsageOf( MemoryStatsVisitor.Visitable... memoryUsers )
-    {
+    public static long highestMemoryUsageOf(MemoryStatsVisitor.Visitable... memoryUsers) {
         long max = 0;
-        for ( MemoryStatsVisitor.Visitable visitable : memoryUsers )
-        {
-            max = max( max, totalMemoryUsageOf( visitable ) );
+        for (MemoryStatsVisitor.Visitable visitable : memoryUsers) {
+            max = max(max, totalMemoryUsageOf(visitable));
         }
         return max;
     }

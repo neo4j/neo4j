@@ -22,11 +22,12 @@ package org.neo4j.kernel.extension;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 
-public class DatabaseExtensions extends AbstractExtensions
-{
-    public DatabaseExtensions( DatabaseExtensionContext extensionContext, Iterable<ExtensionFactory<?>> extensionFactories,
-                             Dependencies dependencies, ExtensionFailureStrategy extensionFailureStrategy )
-    {
-        super( extensionContext, extensionFactories, dependencies, extensionFailureStrategy, ExtensionType.DATABASE );
+public class DatabaseExtensions extends AbstractExtensions {
+    public DatabaseExtensions(
+            DatabaseExtensionContext extensionContext,
+            Iterable<ExtensionFactory<?>> extensionFactories,
+            Dependencies dependencies,
+            ExtensionFailureStrategy extensionFailureStrategy) {
+        super(extensionContext, extensionFactories, dependencies, extensionFailureStrategy, ExtensionType.DATABASE);
     }
 }

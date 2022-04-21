@@ -22,33 +22,27 @@ package org.neo4j.io.pagecache.impl.muninn;
 /**
  * A base class for page cache background tasks.
  */
-abstract class BackgroundTask implements Runnable
-{
+abstract class BackgroundTask implements Runnable {
     private final MuninnPageCache pageCache;
 
-    BackgroundTask( MuninnPageCache pageCache )
-    {
+    BackgroundTask(MuninnPageCache pageCache) {
         this.pageCache = pageCache;
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         int pageCacheId = pageCache.getPageCacheId();
         String taskName = getClass().getSimpleName();
         String threadName = "MuninnPageCache[" + pageCacheId + "]-" + taskName;
         Thread thread = Thread.currentThread();
         String previousName = thread.getName();
-        try
-        {
-            thread.setName( threadName );
-            run( pageCache );
-        }
-        finally
-        {
-            thread.setName( previousName );
+        try {
+            thread.setName(threadName);
+            run(pageCache);
+        } finally {
+            thread.setName(previousName);
         }
     }
 
-    protected abstract void run( MuninnPageCache pageCache );
+    protected abstract void run(MuninnPageCache pageCache);
 }

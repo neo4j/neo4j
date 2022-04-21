@@ -22,17 +22,12 @@ package org.neo4j.test.ports;
 import java.io.IOException;
 import java.net.ServerSocket;
 
-public class DefaultPortProbe implements PortProbe
-{
+public class DefaultPortProbe implements PortProbe {
     @Override
-    public boolean isOccupied( int port )
-    {
-        try ( ServerSocket ignored = new ServerSocket( port ) )
-        {
+    public boolean isOccupied(int port) {
+        try (ServerSocket ignored = new ServerSocket(port)) {
             return false;
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             return true;
         }
     }

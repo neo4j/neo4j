@@ -25,32 +25,25 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 /**
  * Means of parameterizing selection of {@link RelationshipGroupRecord} pointers.
  */
-enum RelationshipGroupLink
-{
-    OUT
-    {
+enum RelationshipGroupLink {
+    OUT {
         @Override
-        boolean isFirstInChain( RelationshipRecord relationshipRecord )
-        {
+        boolean isFirstInChain(RelationshipRecord relationshipRecord) {
             return relationshipRecord.isFirstInFirstChain();
         }
     },
-    IN
-    {
+    IN {
         @Override
-        boolean isFirstInChain( RelationshipRecord relationshipRecord )
-        {
+        boolean isFirstInChain(RelationshipRecord relationshipRecord) {
             return relationshipRecord.isFirstInSecondChain();
         }
     },
-    LOOP
-    {
+    LOOP {
         @Override
-        boolean isFirstInChain( RelationshipRecord relationshipRecord )
-        {
+        boolean isFirstInChain(RelationshipRecord relationshipRecord) {
             return relationshipRecord.isFirstInFirstChain() && relationshipRecord.isFirstInSecondChain();
         }
     };
 
-    abstract boolean isFirstInChain( RelationshipRecord relationshipRecord );
+    abstract boolean isFirstInChain(RelationshipRecord relationshipRecord);
 }

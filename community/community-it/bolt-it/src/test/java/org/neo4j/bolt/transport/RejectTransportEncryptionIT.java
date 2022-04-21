@@ -19,16 +19,18 @@
  */
 package org.neo4j.bolt.transport;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
+
+import java.io.IOException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.io.IOException;
-import java.util.stream.Stream;
-
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.bolt.testing.client.SecureWebSocketConnection;
@@ -37,62 +39,51 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
-
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-public class RejectTransportEncryptionIT
-{
+public class RejectTransportEncryptionIT {
     @Inject
     private Neo4jWithSocket server;
 
     @BeforeEach
-    public void setup( TestInfo testInfo ) throws IOException
-    {
-        server.setConfigure( settings ->
-        {
-            settings.put( BoltConnector.encryption_level, DISABLED );
-        } );
-        server.init( testInfo );
+    public void setup(TestInfo testInfo) throws IOException {
+        server.setConfigure(settings -> {
+            settings.put(BoltConnector.encryption_level, DISABLED);
+        });
+        server.init(testInfo);
     }
 
     private TransportConnection client;
     private TransportTestUtil util;
 
-    public static Stream<Arguments> transportFactory()
-    {
+    public static Stream<Arguments> transportFactory() {
         return Stream.of(
-                Arguments.of( SecureWebSocketConnection.class,
-                        new IOException( "Failed to connect to the server within 5 minutes" ) ),
-                Arguments.of( SecureSocketConnection.class,
-                        new IOException( "Remote host terminated the handshake" )
-                ) );
+                Arguments.of(
+                        SecureWebSocketConnection.class,
+                        new IOException("Failed to connect to the server within 5 minutes")),
+                Arguments.of(SecureSocketConnection.class, new IOException("Remote host terminated the handshake")));
     }
 
     @BeforeEach
-    public void setup()
-    {
+    public void setup() {
         this.util = new TransportTestUtil();
     }
 
     @AfterEach
-    public void teardown() throws Exception
-    {
-        if ( client != null )
-        {
+    public void teardown() throws Exception {
+        if (client != null) {
             client.disconnect();
         }
     }
 
-    @ParameterizedTest( name = "{displayName} {index}" )
-    @MethodSource( "transportFactory" )
-    public void shouldRejectConnectionAfterHandshake( Class<? extends TransportConnection> c, Exception expected ) throws Exception
-    {
+    @ParameterizedTest(name = "{displayName} {index}")
+    @MethodSource("transportFactory")
+    public void shouldRejectConnectionAfterHandshake(Class<? extends TransportConnection> c, Exception expected)
+            throws Exception {
         this.client = c.getDeclaredConstructor().newInstance();
 
-        var exception = assertThrows( expected.getClass(), () -> client.connect( server.lookupDefaultConnector() ).send( util.defaultAcceptedVersions() ) );
-        assertEquals( expected.getMessage(), exception.getMessage() );
+        var exception = assertThrows(expected.getClass(), () -> client.connect(server.lookupDefaultConnector())
+                .send(util.defaultAcceptedVersions()));
+        assertEquals(expected.getMessage(), exception.getMessage());
     }
 }

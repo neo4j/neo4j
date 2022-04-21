@@ -19,10 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,20 +49,10 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
-
 @EphemeralTestDirectoryExtension
-class IndexRestartIT
-{
+class IndexRestartIT {
     private static final String myKey = "number_of_bananas_owned";
-    private static final Label myLabel = label( "MyLabel" );
+    private static final Label myLabel = label("MyLabel");
 
     @Inject
     private FileSystemAbstraction fs;
@@ -65,16 +63,14 @@ class IndexRestartIT
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void before()
-    {
+    void before() {
         factory = new TestDatabaseManagementServiceBuilder();
-        factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
-        factory.addExtension( singleInstanceIndexProviderFactory( "test", provider ) );
+        factory.setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs));
+        factory.addExtension(singleInstanceIndexProviderFactory("test", provider));
     }
 
     @AfterEach
-    void after()
-    {
+    void after() {
         managementService.shutdown();
     }
 
@@ -83,36 +79,32 @@ class IndexRestartIT
      * as possible. If this proves to be flaky, remove it right away.
      */
     @Test
-    void shouldBeAbleToDropIndexWhileItIsPopulating() throws InterruptedException, KernelException
-    {
+    void shouldBeAbleToDropIndexWhileItIsPopulating() throws InterruptedException, KernelException {
         // GIVEN
         startDb();
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < 10; i++ )
-            {
-                tx.createNode( myLabel ).setProperty( myKey, i );
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < 10; i++) {
+                tx.createNode(myLabel).setProperty(myKey, i);
             }
             tx.commit();
         }
-        Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.ADD_BATCH );
+        Barrier.Control barrier =
+                provider.installPopulationLatch(ControlledPopulationIndexProvider.PopulationLatchMethod.ADD_BATCH);
         IndexDefinition index = createIndex();
         barrier.await();
 
         // WHEN
-        dropIndex( index, barrier );
-        try ( Transaction transaction = db.beginTx() )
-        {
+        dropIndex(index, barrier);
+        try (Transaction transaction = db.beginTx()) {
             // THEN
-            assertThat( getIndexes( transaction, myLabel ) ).isEmpty();
-            var e = assertThrows( NotFoundException.class, () -> indexState( transaction, index ) );
-            assertThat( e ).hasMessageContaining( myLabel.name() );
+            assertThat(getIndexes(transaction, myLabel)).isEmpty();
+            var e = assertThrows(NotFoundException.class, () -> indexState(transaction, index));
+            assertThat(e).hasMessageContaining(myLabel.name());
         }
     }
 
     @Test
-    void shouldHandleRestartOfOnlineIndex() throws KernelException
-    {
+    void shouldHandleRestartOfOnlineIndex() throws KernelException {
         // Given
         startDb();
         createIndex();
@@ -120,103 +112,85 @@ class IndexRestartIT
 
         // And Given
         stopDb();
-        provider.setInitialIndexState( ONLINE );
+        provider.setInitialIndexState(ONLINE);
 
         // When
         startDb();
 
         // Then
-        try ( Transaction transaction = db.beginTx() )
-        {
-            var indexes = getIndexes( transaction, myLabel );
-            for ( IndexDefinition definition : indexes )
-            {
-                assertThat( indexState( transaction, definition ) ).isEqualTo( Schema.IndexState.ONLINE );
+        try (Transaction transaction = db.beginTx()) {
+            var indexes = getIndexes(transaction, myLabel);
+            for (IndexDefinition definition : indexes) {
+                assertThat(indexState(transaction, definition)).isEqualTo(Schema.IndexState.ONLINE);
             }
         }
-        assertEquals( 1, provider.populatorCallCount.get() );
-        assertEquals( 2, provider.writerCallCount.get() );
+        assertEquals(1, provider.populatorCallCount.get());
+        assertEquals(2, provider.writerCallCount.get());
     }
 
     @Test
-    void shouldHandleRestartIndexThatHasNotComeOnlineYet() throws KernelException
-    {
+    void shouldHandleRestartIndexThatHasNotComeOnlineYet() throws KernelException {
         // Given
         startDb();
         createIndex();
 
         // And Given
         stopDb();
-        provider.setInitialIndexState( POPULATING );
+        provider.setInitialIndexState(POPULATING);
 
         // When
         startDb();
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            var indexes = getIndexes( transaction, myLabel );
-            for ( IndexDefinition definition : indexes )
-            {
-                assertThat( indexState( transaction, definition ) ).isNotEqualTo( Schema.IndexState.FAILED );
+        try (Transaction transaction = db.beginTx()) {
+            var indexes = getIndexes(transaction, myLabel);
+            for (IndexDefinition definition : indexes) {
+                assertThat(indexState(transaction, definition)).isNotEqualTo(Schema.IndexState.FAILED);
             }
         }
-        assertEquals( 2, provider.populatorCallCount.get() );
+        assertEquals(2, provider.populatorCallCount.get());
     }
 
-    private IndexDefinition createIndex() throws KernelException
-    {
-        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
-        {
-            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, provider.getProviderDescriptor(), myLabel, myKey );
+    private IndexDefinition createIndex() throws KernelException {
+        try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider(
+                    tx, provider.getProviderDescriptor(), myLabel, myKey);
             tx.commit();
         }
 
         // Return the IndexDefinition for the index instead since that is what we want later
-        try ( Transaction transaction = db.beginTx() )
-        {
-            return Iterables.first( getIndexes( transaction, myLabel ) );
+        try (Transaction transaction = db.beginTx()) {
+            return Iterables.first(getIndexes(transaction, myLabel));
         }
     }
 
-    private void dropIndex( IndexDefinition index, Barrier.Control populationCompletionLatch )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().getIndexByName( index.getName() ).drop();
+    private void dropIndex(IndexDefinition index, Barrier.Control populationCompletionLatch) {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().getIndexByName(index.getName()).drop();
             populationCompletionLatch.release();
             tx.commit();
         }
     }
 
-    private void startDb()
-    {
-        if ( managementService != null )
-        {
+    private void startDb() {
+        if (managementService != null) {
             managementService.shutdown();
         }
 
-        managementService = factory
-                .impermanent()
-                .noOpSystemGraphInitializer()
-                .build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+        managementService = factory.impermanent().noOpSystemGraphInitializer().build();
+        db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void stopDb()
-    {
-        if ( managementService != null )
-        {
+    private void stopDb() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
 
-    private static Iterable<IndexDefinition> getIndexes( Transaction transaction, Label label )
-    {
-        return transaction.schema().getIndexes( label );
+    private static Iterable<IndexDefinition> getIndexes(Transaction transaction, Label label) {
+        return transaction.schema().getIndexes(label);
     }
 
-    private static Schema.IndexState indexState( Transaction transaction, IndexDefinition index )
-    {
-        return transaction.schema().getIndexState( index );
+    private static Schema.IndexState indexState(Transaction transaction, IndexDefinition index) {
+        return transaction.schema().getIndexState(index);
     }
 }

@@ -123,18 +123,18 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   protected val pos: InputPosition = DummyPosition(0)
   protected val defaultPos: InputPosition = InputPosition(0, 1, 1)
 
-  //noinspection LanguageFeature
+  // noinspection LanguageFeature
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
   def varFor(name: String, position: InputPosition = pos): Variable = Variable(name)(position)
 
-  def labelName(s: String, position:InputPosition = pos): LabelName = LabelName(s)(position)
+  def labelName(s: String, position: InputPosition = pos): LabelName = LabelName(s)(position)
 
-  def relTypeName(s: String, position:InputPosition = pos): RelTypeName = RelTypeName(s)(position)
+  def relTypeName(s: String, position: InputPosition = pos): RelTypeName = RelTypeName(s)(position)
 
-  def labelOrRelTypeName(s: String, position:InputPosition = pos): LabelOrRelTypeName = LabelOrRelTypeName(s)(position)
+  def labelOrRelTypeName(s: String, position: InputPosition = pos): LabelOrRelTypeName = LabelOrRelTypeName(s)(position)
 
-  def propName(s: String, position:InputPosition = pos): PropertyKeyName = PropertyKeyName(s)(position)
+  def propName(s: String, position: InputPosition = pos): PropertyKeyName = PropertyKeyName(s)(position)
 
   def hasLabels(v: String, label: String): HasLabels =
     hasLabels(varFor(v), label)
@@ -166,13 +166,23 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def cachedNodePropFromStore(variable: String, propKey: String): CachedProperty =
     cachedNodeProp(variable, propKey, variable, knownToAccessStore = true)
 
-  def cachedNodeProp(variable: String, propKey: String, currentVarName: String, knownToAccessStore: Boolean = false): CachedProperty =
+  def cachedNodeProp(
+    variable: String,
+    propKey: String,
+    currentVarName: String,
+    knownToAccessStore: Boolean = false
+  ): CachedProperty =
     CachedProperty(variable, varFor(currentVarName), propName(propKey), NODE_TYPE, knownToAccessStore)(pos)
 
   def cachedNodeHasProp(variable: String, propKey: String): CachedHasProperty =
     cachedNodeHasProp(variable, propKey, variable)
 
-  def cachedNodeHasProp(variable: String, propKey: String, currentVarName: String, knownToAccessStore: Boolean = false): CachedHasProperty =
+  def cachedNodeHasProp(
+    variable: String,
+    propKey: String,
+    currentVarName: String,
+    knownToAccessStore: Boolean = false
+  ): CachedHasProperty =
     CachedHasProperty(variable, varFor(currentVarName), propName(propKey), NODE_TYPE, knownToAccessStore)(pos)
 
   def cachedRelProp(variable: String, propKey: String): CachedProperty =
@@ -181,7 +191,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def cachedRelPropFromStore(variable: String, propKey: String): CachedProperty =
     cachedRelProp(variable, propKey, variable, knownToAccessStore = true)
 
-  def cachedRelProp(variable: String, propKey: String, currentVarName: String, knownToAccessStore: Boolean = false): CachedProperty =
+  def cachedRelProp(
+    variable: String,
+    propKey: String,
+    currentVarName: String,
+    knownToAccessStore: Boolean = false
+  ): CachedProperty =
     CachedProperty(variable, varFor(currentVarName), propName(propKey), RELATIONSHIP_TYPE, knownToAccessStore)(pos)
 
   def prop(map: Expression, key: String): Property =
@@ -237,16 +252,16 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def falseLiteral: False = False()(pos)
 
   def literal(a: Any): Expression = a match {
-    case null => nullLiteral
-    case s: String => literalString(s)
-    case d: Double => literalFloat(d)
+    case null               => nullLiteral
+    case s: String          => literalString(s)
+    case d: Double          => literalFloat(d)
     case d: java.lang.Float => literalFloat(d.doubleValue())
-    case i: Byte => literalInt(i)
-    case i: Short => literalInt(i)
-    case i: Int => literalInt(i)
-    case l: Long => SignedDecimalIntegerLiteral(l.toString)(pos)
-    case true => trueLiteral
-    case false => falseLiteral
+    case i: Byte            => literalInt(i)
+    case i: Short           => literalInt(i)
+    case i: Int             => literalInt(i)
+    case l: Long            => SignedDecimalIntegerLiteral(l.toString)(pos)
+    case true               => trueLiteral
+    case false              => falseLiteral
     case other =>
       throw new RuntimeException(s"Unexpected type ${other.getClass.getName} ($other)")
   }
@@ -261,7 +276,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
   def function(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
-    FunctionInvocation(Namespace(ns.toList)(pos), FunctionName(name)(pos), distinct = false, args.toIndexedSeq) (pos)
+    FunctionInvocation(Namespace(ns.toList)(pos), FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
   def distinctFunction(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = true, args.toIndexedSeq)(pos)
@@ -307,14 +322,17 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def greaterThanOrEqual(lhs: Expression, rhs: Expression): GreaterThanOrEqual = GreaterThanOrEqual(lhs, rhs)(pos)
 
-  def andedPropertyInequalities(firstInequality: InequalityExpression, otherInequalities: InequalityExpression*): AndedPropertyInequalities = {
+  def andedPropertyInequalities(
+    firstInequality: InequalityExpression,
+    otherInequalities: InequalityExpression*
+  ): AndedPropertyInequalities = {
     val property = firstInequality.lhs match {
       case p: Property => p
-      case _ => throw new IllegalStateException("Must specify property as LHS of InequalityExpression")
+      case _           => throw new IllegalStateException("Must specify property as LHS of InequalityExpression")
     }
     val variable = property.map match {
       case v: Variable => v
-      case _ => throw new IllegalStateException("Must specify variable as map of property")
+      case _           => throw new IllegalStateException("Must specify variable as map of property")
     }
     AndedPropertyInequalities(variable, property, NonEmptyList(firstInequality, otherInequalities: _*))
   }
@@ -345,28 +363,32 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     ListSlice(list, Some(from), Some(to))(pos)
 
   def singleInList(variable: LogicalVariable, collection: Expression, predicate: Expression): SingleIterablePredicate =
-    SingleIterablePredicate(variable, collection, Some(predicate) )(pos)
+    SingleIterablePredicate(variable, collection, Some(predicate))(pos)
 
   def noneInList(variable: LogicalVariable, collection: Expression, predicate: Expression): NoneIterablePredicate =
-    NoneIterablePredicate(variable, collection, Some(predicate) )(pos)
+    NoneIterablePredicate(variable, collection, Some(predicate))(pos)
 
   def anyInList(variable: LogicalVariable, collection: Expression, predicate: Expression): AnyIterablePredicate =
-    AnyIterablePredicate(variable, collection, Some(predicate) )(pos)
+    AnyIterablePredicate(variable, collection, Some(predicate))(pos)
 
   def allInList(variable: LogicalVariable, collection: Expression, predicate: Expression): AllIterablePredicate =
-    AllIterablePredicate(variable, collection, Some(predicate) )(pos)
+    AllIterablePredicate(variable, collection, Some(predicate))(pos)
 
-  def reduce(accumulator: LogicalVariable,
-             init: Expression,
-             variable: LogicalVariable,
-             collection: Expression,
-             expression: Expression): ReduceExpression =
+  def reduce(
+    accumulator: LogicalVariable,
+    init: Expression,
+    variable: LogicalVariable,
+    collection: Expression,
+    expression: Expression
+  ): ReduceExpression =
     ReduceExpression(ReduceScope(accumulator, variable, expression)(pos), init, collection)(pos)
 
-  def listComprehension(variable: LogicalVariable,
-                        collection: Expression,
-                        predicate: Option[Expression],
-                        extractExpression: Option[Expression]): ListComprehension =
+  def listComprehension(
+    variable: LogicalVariable,
+    collection: Expression,
+    predicate: Option[Expression],
+    extractExpression: Option[Expression]
+  ): ListComprehension =
     ListComprehension(variable, collection, predicate, extractExpression)(pos)
 
   def add(lhs: Expression, rhs: Expression): Add = Add(lhs, rhs)(pos)
@@ -395,17 +417,25 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def and(lhs: Expression, rhs: Expression): And = And(lhs, rhs)(pos)
 
-  def labelConjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression = LabelExpression.Conjunction(lhs, rhs)(position)
+  def labelConjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression =
+    LabelExpression.Conjunction(lhs, rhs)(position)
 
-  def labelColonConjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression = LabelExpression.ColonConjunction(lhs, rhs)(position)
+  def labelColonConjunction(
+    lhs: LabelExpression,
+    rhs: LabelExpression,
+    position: InputPosition = pos
+  ): LabelExpression = LabelExpression.ColonConjunction(lhs, rhs)(position)
 
-  def labelDisjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression = LabelExpression.Disjunction(lhs, rhs)(position)
+  def labelDisjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression =
+    LabelExpression.Disjunction(lhs, rhs)(position)
 
-  def labelNegation(e: LabelExpression, position: InputPosition = pos): LabelExpression = LabelExpression.Negation(e)(position)
+  def labelNegation(e: LabelExpression, position: InputPosition = pos): LabelExpression =
+    LabelExpression.Negation(e)(position)
 
   def labelWildcard(position: InputPosition = pos): LabelExpression = LabelExpression.Wildcard()(position)
 
-  def labelAtom(name: String, position: InputPosition = pos): LabelExpression = LabelExpression.Label(LabelName(name)(position))(position)
+  def labelAtom(name: String, position: InputPosition = pos): LabelExpression =
+    LabelExpression.Label(LabelName(name)(position))(position)
 
   def labelExpressionPredicate(v: String, labelExpression: LabelExpression): LabelExpressionPredicate =
     labelExpressionPredicate(varFor(v), labelExpression)
@@ -418,13 +448,14 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
 
-  def nodePat(name: Option[String] = None,
-              labelExpression: Option[LabelExpression] = None,
-              properties: Option[Expression] = None,
-              predicates: Option[Expression] = None,
-              namePos: InputPosition = pos,
-              position: InputPosition = pos
-              ): NodePattern =
+  def nodePat(
+    name: Option[String] = None,
+    labelExpression: Option[LabelExpression] = None,
+    properties: Option[Expression] = None,
+    predicates: Option[Expression] = None,
+    namePos: InputPosition = pos,
+    position: InputPosition = pos
+  ): NodePattern =
     NodePattern(name.map(Variable(_)(namePos)), labelExpression, properties, predicates)(position)
 
   def patternExpression(nodeVar1: Variable, nodeVar2: Variable): PatternExpression =
@@ -440,7 +471,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def query(cs: Clause*): Query =
     Query(SingleQuery(cs)(defaultPos))(defaultPos)
 
-  def query(cs: Clause, position: InputPosition ): Query =
+  def query(cs: Clause, position: InputPosition): Query =
     Query(SingleQuery(List(cs))(position))(position)
 
   def singleQuery(cs: Clause*): SingleQuery =
@@ -456,12 +487,15 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     SubqueryCall(part, None)(pos)
 
   def subqueryCallInTransactions(cs: Clause*): SubqueryCall = {
-    val call = subqueryCall(cs:_*)
+    val call = subqueryCall(cs: _*)
     call.copy(inTransactionsParameters = Some(inTransactionsParameters(None)))(pos)
   }
 
-  def subqueryCallInTransactions(inTransactionParameters: SubqueryCall.InTransactionsParameters, cs: Clause*): SubqueryCall = {
-    val call = subqueryCall(cs:_*)
+  def subqueryCallInTransactions(
+    inTransactionParameters: SubqueryCall.InTransactionsParameters,
+    cs: Clause*
+  ): SubqueryCall = {
+    val call = subqueryCall(cs: _*)
     call.copy(inTransactionsParameters = Some(inTransactionParameters))(pos)
   }
 
@@ -480,7 +514,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def with_(items: ReturnItem*): With =
     With(ReturnItems(includeExisting = false, items)(pos))(pos)
 
-  def withAll(where: Option[Where] = None): With = With(distinct = false, returnAllItems, None, None, None, where = where)(pos)
+  def withAll(where: Option[Where] = None): With =
+    With(distinct = false, returnAllItems, None, None, None, where = where)(pos)
 
   def return_(items: ReturnItem*): Return =
     Return(ReturnItems(includeExisting = false, items)(pos))(pos)
@@ -499,22 +534,28 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def returnItems(items: ReturnItem*): ReturnItems = ReturnItems(includeExisting = false, items)(pos)
 
-  def returnItem(expr: Expression, text: String, position: InputPosition = pos): UnaliasedReturnItem = UnaliasedReturnItem(expr, text)(position)
+  def returnItem(expr: Expression, text: String, position: InputPosition = pos): UnaliasedReturnItem =
+    UnaliasedReturnItem(expr, text)(position)
 
-  def variableReturnItem(text: String, position: InputPosition = pos): UnaliasedReturnItem = returnItem(varFor(text, position), text, position)
+  def variableReturnItem(text: String, position: InputPosition = pos): UnaliasedReturnItem =
+    returnItem(varFor(text, position), text, position)
 
   def aliasedReturnItem(variable: Variable): AliasedReturnItem = AliasedReturnItem(variable)
 
-  def aliasedReturnItem(originalName: String, newName: String, position: InputPosition = pos): AliasedReturnItem = AliasedReturnItem(
-    varFor(originalName, position),
-    varFor(newName, increasePos(position, originalName.length + 4)))(pos, isAutoAliased = false)
+  def aliasedReturnItem(originalName: String, newName: String, position: InputPosition = pos): AliasedReturnItem =
+    AliasedReturnItem(
+      varFor(originalName, position),
+      varFor(newName, increasePos(position, originalName.length + 4))
+    )(pos, isAutoAliased = false)
 
   def orderBy(items: SortItem*): OrderBy =
     OrderBy(items)(pos)
 
-  def skip(value: Long, position: InputPosition = pos): Skip = Skip(literalInt(value, increasePos(position, 5)))(position)
+  def skip(value: Long, position: InputPosition = pos): Skip =
+    Skip(literalInt(value, increasePos(position, 5)))(position)
 
-  def limit(value: Long, position: InputPosition = pos): Limit = Limit(literalInt(value, increasePos(position, 6)))(position)
+  def limit(value: Long, position: InputPosition = pos): Limit =
+    Limit(literalInt(value, increasePos(position, 6)))(position)
 
   def sortItem(e: Expression): AscSortItem =
     AscSortItem(e)(pos)
@@ -527,10 +568,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def unwind(e: Expression, v: Variable): Unwind =
     Unwind(e, v)(pos)
 
-  def call(ns: Seq[String], name: String,
-           args: Option[Seq[Expression]] = Some(Vector()),
-           yields: Option[Seq[Variable]] = None
-          ): UnresolvedCall =
+  def call(
+    ns: Seq[String],
+    name: String,
+    args: Option[Seq[Expression]] = Some(Vector()),
+    yields: Option[Seq[Variable]] = None
+  ): UnresolvedCall =
     UnresolvedCall(
       Namespace(ns.toList)(pos),
       ProcedureName(name)(pos),
@@ -543,11 +586,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def union(part: QueryPart, query: SingleQuery): UnionDistinct = UnionDistinct(part, query)(pos)
 
-  def yieldClause(returnItems: ReturnItems,
-                  orderBy: Option[OrderBy] = None,
-                  skip: Option[Skip] = None,
-                  limit: Option[Limit] = None,
-                  where: Option[Where] = None): Yield =
+  def yieldClause(
+    returnItems: ReturnItems,
+    orderBy: Option[OrderBy] = None,
+    skip: Option[Skip] = None,
+    limit: Option[Limit] = None,
+    where: Option[Where] = None
+  ): Yield =
     Yield(returnItems, orderBy, skip, limit, where)(pos)
 
   def range(lower: Option[Int], upper: Option[Int]): Range =
@@ -583,7 +628,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     def all: UnionAll = UnionAll(u.part, u.query)(pos)
   }
 
-  def increasePos(position: InputPosition, inc:Int):InputPosition = {
+  def increasePos(position: InputPosition, inc: Int): InputPosition = {
     InputPosition(position.offset + inc, position.line, position.column + inc)
   }
 }

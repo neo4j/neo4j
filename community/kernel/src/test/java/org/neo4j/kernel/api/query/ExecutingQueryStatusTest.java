@@ -19,112 +19,94 @@
  */
 package org.neo4j.kernel.api.query;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.lock.LockType.EXCLUSIVE;
-
-class ExecutingQueryStatusTest
-{
-    private static final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-16T16:14:12+01:00" ) );
+class ExecutingQueryStatusTest {
+    private static final FakeClock clock = Clocks.fakeClock(ZonedDateTime.parse("2016-12-16T16:14:12+01:00"));
 
     @Test
-    void shouldProduceSensibleMapRepresentationInRunningState()
-    {
+    void shouldProduceSensibleMapRepresentationInRunningState() {
         // when
         String status = SimpleState.running().name();
 
         // then
-        assertEquals( "running", status );
+        assertEquals("running", status);
     }
 
     @Test
-    void shouldProduceSensibleMapRepresentationInPlanningState()
-    {
+    void shouldProduceSensibleMapRepresentationInPlanningState() {
         // when
         String status = SimpleState.planning().name();
 
         // then
-        assertEquals( "planning", status );
+        assertEquals("planning", status);
     }
 
     @Test
-    void shouldProduceSensibleMapRepresentationInPlannedState()
-    {
+    void shouldProduceSensibleMapRepresentationInPlannedState() {
         // when
         String status = SimpleState.planned().name();
 
         // then
-        assertEquals( "planned", status );
+        assertEquals("planned", status);
     }
 
     @Test
-    void shouldProduceSensibleMapRepresentationInParsingState()
-    {
+    void shouldProduceSensibleMapRepresentationInParsingState() {
         // when
         String status = SimpleState.parsing().name();
 
         // then
-        assertEquals( "parsing", status );
+        assertEquals("parsing", status);
     }
 
     @Test
-    void shouldProduceSensibleMapRepresentationInWaitingOnLockState()
-    {
+    void shouldProduceSensibleMapRepresentationInWaitingOnLockState() {
         // given
         long[] resourceIds = {17};
         long userTransactionId = 7;
         WaitingOnLock status =
-                new WaitingOnLock(
-                        EXCLUSIVE,
-                        resourceType( "NODE" ),
-                        userTransactionId,
-                        resourceIds,
-                        clock.nanos() );
-        clock.forward( 17, TimeUnit.MILLISECONDS );
+                new WaitingOnLock(EXCLUSIVE, resourceType("NODE"), userTransactionId, resourceIds, clock.nanos());
+        clock.forward(17, TimeUnit.MILLISECONDS);
 
         // when
-        Map<String,Object> statusMap = status.toMap( clock.nanos() );
+        Map<String, Object> statusMap = status.toMap(clock.nanos());
 
         // then
-        assertEquals( "waiting", status.name() );
-        Map<String,Object> expected = new HashMap<>();
-        expected.put( "waitTimeMillis", 17L );
-        expected.put( "lockMode", "EXCLUSIVE" );
-        expected.put( "resourceType", "NODE" );
-        expected.put( "resourceIds", resourceIds );
-        expected.put( "transactionId", userTransactionId );
-        assertEquals( expected, statusMap );
+        assertEquals("waiting", status.name());
+        Map<String, Object> expected = new HashMap<>();
+        expected.put("waitTimeMillis", 17L);
+        expected.put("lockMode", "EXCLUSIVE");
+        expected.put("resourceType", "NODE");
+        expected.put("resourceIds", resourceIds);
+        expected.put("transactionId", userTransactionId);
+        assertEquals(expected, statusMap);
     }
 
-    private static ResourceType resourceType( String name )
-    {
-        return new ResourceType()
-        {
+    private static ResourceType resourceType(String name) {
+        return new ResourceType() {
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return name();
             }
 
             @Override
-            public int typeId()
-            {
-                throw new UnsupportedOperationException( "not used" );
+            public int typeId() {
+                throw new UnsupportedOperationException("not used");
             }
 
             @Override
-            public String name()
-            {
+            public String name() {
                 return name;
             }
         };

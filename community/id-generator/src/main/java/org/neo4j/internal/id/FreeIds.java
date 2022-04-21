@@ -25,8 +25,7 @@ import java.util.function.LongConsumer;
 /**
  * Accessor/stream of free ids, for rebuild purposes.
  */
-public interface FreeIds
-{
+public interface FreeIds {
     /**
      * Convenient instance for telling the {@link IdGenerator} that there are no free ids to rebuild its id generator from.
      * {@code -1} simply means that the highest id return was -1 so that "high id" becomes 0 (highest id + 1).
@@ -38,5 +37,5 @@ public interface FreeIds
      * @return the highest id visited.
      * @throws IOException on I/O error.
      */
-    long accept( LongConsumer visitor ) throws IOException;
+    long accept(LongConsumer visitor) throws IOException;
 }

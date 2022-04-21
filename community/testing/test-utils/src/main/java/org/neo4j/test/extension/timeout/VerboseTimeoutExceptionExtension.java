@@ -19,46 +19,40 @@
  */
 package org.neo4j.test.extension.timeout;
 
+import static java.lang.String.format;
+import static org.neo4j.internal.utils.DumpUtils.threadDump;
+
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.concurrent.TimeoutException;
-
-import static java.lang.String.format;
-import static org.neo4j.internal.utils.DumpUtils.threadDump;
-
-public class VerboseTimeoutExceptionExtension implements TestWatcher
-{
+public class VerboseTimeoutExceptionExtension implements TestWatcher {
     @Override
-    public void testFailed( ExtensionContext context, Throwable cause )
-    {
-        if ( isTimeout( cause ) )
-        {
-            cause.addSuppressed( new ThreadDump( format( "Test %s-%s timed out. ", context.getRequiredTestMethod().getName(), context.getDisplayName() ) ) );
+    public void testFailed(ExtensionContext context, Throwable cause) {
+        if (isTimeout(cause)) {
+            cause.addSuppressed(new ThreadDump(format(
+                    "Test %s-%s timed out. ", context.getRequiredTestMethod().getName(), context.getDisplayName())));
         }
     }
 
-    private static boolean isTimeout( Throwable throwable )
-    {
-        return throwable != null && (
-                   throwable instanceof TimeoutException
-                || throwable instanceof ConditionTimeoutException
-                || StringUtils.contains( throwable.getMessage(),"timed out" )
-                || (!Objects.equals( throwable, throwable.getCause() ) && isTimeout( throwable.getCause() ))
-                || Arrays.stream( throwable.getSuppressed() ).anyMatch( VerboseTimeoutExceptionExtension::isTimeout )
-        );
+    private static boolean isTimeout(Throwable throwable) {
+        return throwable != null
+                && (throwable instanceof TimeoutException
+                        || throwable instanceof ConditionTimeoutException
+                        || StringUtils.contains(throwable.getMessage(), "timed out")
+                        || (!Objects.equals(throwable, throwable.getCause()) && isTimeout(throwable.getCause()))
+                        || Arrays.stream(throwable.getSuppressed())
+                                .anyMatch(VerboseTimeoutExceptionExtension::isTimeout));
     }
 
-    static class ThreadDump extends RuntimeException
-    {
-        ThreadDump( String header )
-        {
-            super( header + threadDump() );
-            this.setStackTrace( new StackTraceElement[0] );
+    static class ThreadDump extends RuntimeException {
+        ThreadDump(String header) {
+            super(header + threadDump());
+            this.setStackTrace(new StackTraceElement[0]);
         }
     }
 }

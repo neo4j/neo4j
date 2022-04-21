@@ -33,15 +33,19 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
-abstract class OptionalExpandAllPipe(source: Pipe,
-                                     fromName: String,
-                                     relName: String,
-                                     toName: String,
-                                     dir: SemanticDirection,
-                                     types: RelationshipTypes)
-  extends PipeWithSource(source) {
+abstract class OptionalExpandAllPipe(
+  source: Pipe,
+  fromName: String,
+  relName: String,
+  toName: String,
+  dir: SemanticDirection,
+  types: RelationshipTypes
+) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.flatMap {
       row =>
         val fromNode = getFromNode(row)
@@ -64,10 +68,12 @@ abstract class OptionalExpandAllPipe(source: Pipe,
     }
   }
 
-  def findMatchIterator(row: CypherRow,
-                        state: QueryState,
-                        relationships: ClosingLongIterator with RelationshipIterator,
-                        n: VirtualNodeValue): ClosingIterator[CypherRow]
+  def findMatchIterator(
+    row: CypherRow,
+    state: QueryState,
+    relationships: ClosingLongIterator with RelationshipIterator,
+    n: VirtualNodeValue
+  ): ClosingIterator[CypherRow]
 
   private def withNulls(row: CypherRow) = {
     row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
@@ -78,56 +84,83 @@ abstract class OptionalExpandAllPipe(source: Pipe,
 }
 
 object OptionalExpandAllPipe {
-  def apply(source: Pipe,
-            fromName: String,
-            relName: String,
-            toName: String,
-            dir: SemanticDirection,
-            types: RelationshipTypes,
-            maybePredicate: Option[Expression])(id: Id = Id.INVALID_ID): OptionalExpandAllPipe = maybePredicate match {
+
+  def apply(
+    source: Pipe,
+    fromName: String,
+    relName: String,
+    toName: String,
+    dir: SemanticDirection,
+    types: RelationshipTypes,
+    maybePredicate: Option[Expression]
+  )(id: Id = Id.INVALID_ID): OptionalExpandAllPipe = maybePredicate match {
     case Some(predicate) => FilteringOptionalExpandAllPipe(source, fromName, relName, toName, dir, types, predicate)(id)
-    case None => NonFilteringOptionalExpandAllPipe(source, fromName, relName, toName, dir, types)(id)
+    case None            => NonFilteringOptionalExpandAllPipe(source, fromName, relName, toName, dir, types)(id)
   }
 }
 
-case class NonFilteringOptionalExpandAllPipe(source: Pipe,
-                                             fromName: String,
-                                             relName: String,
-                                             toName: String,
-                                             dir: SemanticDirection,
-                                             types: RelationshipTypes)
-                                            (val id: Id = Id.INVALID_ID)
-  extends OptionalExpandAllPipe(source, fromName, relName, toName, dir, types) {
+case class NonFilteringOptionalExpandAllPipe(
+  source: Pipe,
+  fromName: String,
+  relName: String,
+  toName: String,
+  dir: SemanticDirection,
+  types: RelationshipTypes
+)(val id: Id = Id.INVALID_ID)
+    extends OptionalExpandAllPipe(source, fromName, relName, toName, dir, types) {
 
-  override def findMatchIterator(row: CypherRow,
-                                 ignore: QueryState,
-                                 relationships: ClosingLongIterator with RelationshipIterator,
-                                 n: VirtualNodeValue): ClosingIterator[CypherRow] = {
-    PrimitiveLongHelper.map(relationships, r => {
-      val other = relationships.otherNodeId(n.id())
-      rowFactory.copyWith(row, relName, VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()), toName, VirtualValues.node(other))
-    })
+  override def findMatchIterator(
+    row: CypherRow,
+    ignore: QueryState,
+    relationships: ClosingLongIterator with RelationshipIterator,
+    n: VirtualNodeValue
+  ): ClosingIterator[CypherRow] = {
+    PrimitiveLongHelper.map(
+      relationships,
+      r => {
+        val other = relationships.otherNodeId(n.id())
+        rowFactory.copyWith(
+          row,
+          relName,
+          VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()),
+          toName,
+          VirtualValues.node(other)
+        )
+      }
+    )
   }
 }
 
-case class FilteringOptionalExpandAllPipe(source: Pipe,
-                                          fromName: String,
-                                          relName: String,
-                                          toName: String,
-                                          dir: SemanticDirection,
-                                          types: RelationshipTypes,
-                                          predicate: Expression)
-                                         (val id: Id = Id.INVALID_ID)
-  extends OptionalExpandAllPipe(source, fromName, relName, toName, dir, types) {
+case class FilteringOptionalExpandAllPipe(
+  source: Pipe,
+  fromName: String,
+  relName: String,
+  toName: String,
+  dir: SemanticDirection,
+  types: RelationshipTypes,
+  predicate: Expression
+)(val id: Id = Id.INVALID_ID)
+    extends OptionalExpandAllPipe(source, fromName, relName, toName, dir, types) {
 
-  override def findMatchIterator(row: CypherRow,
-                                 state: QueryState,
-                                 relationships: ClosingLongIterator with RelationshipIterator,
-                                 n: VirtualNodeValue): ClosingIterator[CypherRow] = {
+  override def findMatchIterator(
+    row: CypherRow,
+    state: QueryState,
+    relationships: ClosingLongIterator with RelationshipIterator,
+    n: VirtualNodeValue
+  ): ClosingIterator[CypherRow] = {
 
-    PrimitiveLongHelper.map(relationships, r => {
-      val other = relationships.otherNodeId(n.id())
-      rowFactory.copyWith(row, relName, VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()), toName, VirtualValues.node(other))
-    }).filter(ctx => predicate(ctx, state) eq Values.TRUE)
+    PrimitiveLongHelper.map(
+      relationships,
+      r => {
+        val other = relationships.otherNodeId(n.id())
+        rowFactory.copyWith(
+          row,
+          relName,
+          VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()),
+          toName,
+          VirtualValues.node(other)
+        )
+      }
+    ).filter(ctx => predicate(ctx, state) eq Values.TRUE)
   }
 }

@@ -21,12 +21,10 @@ package org.neo4j.kernel.api.net;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public final class NetworkConnectionIdGenerator
-{
+public final class NetworkConnectionIdGenerator {
     private final AtomicLong idGenerator = new AtomicLong();
 
-    public String newConnectionId( String connector )
-    {
+    public String newConnectionId(String connector) {
         return connector + '-' + idGenerator.getAndIncrement();
     }
 }

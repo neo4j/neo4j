@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.eclipse.collections.api.iterator.LongIterator;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -34,12 +37,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-
-public class DeleteDuplicateNodesStep extends LonelyProcessingStep
-{
+public class DeleteDuplicateNodesStep extends LonelyProcessingStep {
     private static final String DELETE_DUPLICATE_IMPORT_STEP_TAG = "deleteDuplicateImportStep";
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
@@ -51,10 +49,14 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     private long nodesRemoved;
     private long propertiesRemoved;
 
-    public DeleteDuplicateNodesStep( StageControl control, Configuration config, LongIterator nodeIds, NeoStores neoStores,
-            DataImporter.Monitor storeMonitor, CursorContextFactory contextFactory )
-    {
-        super( control, "DEDUP", config );
+    public DeleteDuplicateNodesStep(
+            StageControl control,
+            Configuration config,
+            LongIterator nodeIds,
+            NeoStores neoStores,
+            DataImporter.Monitor storeMonitor,
+            CursorContextFactory contextFactory) {
+        super(control, "DEDUP", config);
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
         this.propertyStore = neoStores.getPropertyStore();
@@ -64,72 +66,62 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     }
 
     @Override
-    protected void process()
-    {
+    protected void process() {
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
-        try ( var cursorContext = contextFactory.create( DELETE_DUPLICATE_IMPORT_STEP_TAG );
-              var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
-        {
-            while ( nodeIds.hasNext() )
-            {
+        try (var cursorContext = contextFactory.create(DELETE_DUPLICATE_IMPORT_STEP_TAG);
+                var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
+            while (nodeIds.hasNext()) {
                 long duplicateNodeId = nodeIds.next();
-                nodeStore.getRecordByCursor( duplicateNodeId, nodeRecord, NORMAL, storeCursors.readCursor( NODE_CURSOR ) );
+                nodeStore.getRecordByCursor(duplicateNodeId, nodeRecord, NORMAL, storeCursors.readCursor(NODE_CURSOR));
                 assert nodeRecord.inUse() : nodeRecord;
                 // Ensure heavy so that the dynamic label records gets loaded (and then deleted) too
-                nodeStore.ensureHeavy( nodeRecord, storeCursors );
+                nodeStore.ensureHeavy(nodeRecord, storeCursors);
 
                 // Delete property records
                 long nextProp = nodeRecord.getNextProp();
-                while ( !Record.NULL_REFERENCE.is( nextProp ) )
-                {
-                    propertyStore.getRecordByCursor( nextProp, propertyRecord, NORMAL, storeCursors.readCursor( PROPERTY_CURSOR ) );
+                while (!Record.NULL_REFERENCE.is(nextProp)) {
+                    propertyStore.getRecordByCursor(
+                            nextProp, propertyRecord, NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
                     assert propertyRecord.inUse() : propertyRecord + " for " + nodeRecord;
-                    propertyStore.ensureHeavy( propertyRecord, storeCursors );
+                    propertyStore.ensureHeavy(propertyRecord, storeCursors);
                     propertiesRemoved += propertyRecord.numberOfProperties();
                     nextProp = propertyRecord.getNextProp();
-                    deletePropertyRecordIncludingValueRecords( propertyRecord );
-                    try ( var propertyWriteCursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
-                    {
-                        propertyStore.updateRecord( propertyRecord, propertyWriteCursor, cursorContext, storeCursors );
+                    deletePropertyRecordIncludingValueRecords(propertyRecord);
+                    try (var propertyWriteCursor = storeCursors.writeCursor(PROPERTY_CURSOR)) {
+                        propertyStore.updateRecord(propertyRecord, propertyWriteCursor, cursorContext, storeCursors);
                     }
                 }
 
                 // Delete node (and dynamic label records, if any)
-                nodeRecord.setInUse( false );
-                for ( DynamicRecord labelRecord : nodeRecord.getDynamicLabelRecords() )
-                {
-                    labelRecord.setInUse( false );
+                nodeRecord.setInUse(false);
+                for (DynamicRecord labelRecord : nodeRecord.getDynamicLabelRecords()) {
+                    labelRecord.setInUse(false);
                 }
-                try ( var nodeWriteCursor = storeCursors.writeCursor( NODE_CURSOR ) )
-                {
-                    nodeStore.updateRecord( nodeRecord, nodeWriteCursor, cursorContext, storeCursors );
+                try (var nodeWriteCursor = storeCursors.writeCursor(NODE_CURSOR)) {
+                    nodeStore.updateRecord(nodeRecord, nodeWriteCursor, cursorContext, storeCursors);
                 }
                 nodesRemoved++;
             }
         }
     }
 
-    private static void deletePropertyRecordIncludingValueRecords( PropertyRecord record )
-    {
-        for ( PropertyBlock block : record )
-        {
-            for ( DynamicRecord valueRecord : block.getValueRecords() )
-            {
+    private static void deletePropertyRecordIncludingValueRecords(PropertyRecord record) {
+        for (PropertyBlock block : record) {
+            for (DynamicRecord valueRecord : block.getValueRecords()) {
                 assert valueRecord.inUse();
-                valueRecord.setInUse( false );
-                record.addDeletedRecord( valueRecord );
+                valueRecord.setInUse(false);
+                record.addDeletedRecord(valueRecord);
             }
         }
         record.clearPropertyBlocks();
-        record.setInUse( false );
+        record.setInUse(false);
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         super.close();
-        storeMonitor.nodesRemoved( nodesRemoved );
-        storeMonitor.propertiesRemoved( propertiesRemoved );
+        storeMonitor.nodesRemoved(nodesRemoved);
+        storeMonitor.propertiesRemoved(propertiesRemoved);
     }
 }

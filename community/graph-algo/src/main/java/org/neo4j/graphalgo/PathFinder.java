@@ -30,8 +30,7 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
  * @param <P> the path type that the algorithm produces
  */
 @PublicApi
-public interface PathFinder<P extends Path>
-{
+public interface PathFinder<P extends Path> {
     /**
      * Tries to find a single path between {@code start} and {@code end}
      * nodes. If a path is found a {@link Path} is returned with that path
@@ -43,7 +42,7 @@ public interface PathFinder<P extends Path>
      * @return a single {@link Path} between {@code start} and {@code end},
      * or {@code null} if no path was found.
      */
-    P findSinglePath( Node start, Node end );
+    P findSinglePath(Node start, Node end);
 
     /**
      * Tries to find all paths between {@code start} and {@code end} nodes.
@@ -54,7 +53,7 @@ public interface PathFinder<P extends Path>
      * @param end the end {@link Node} which defines the end of the path.
      * @return all {@link Path}s between {@code start} and {@code end}.
      */
-    Iterable<P> findAllPaths( Node start, Node end );
+    Iterable<P> findAllPaths(Node start, Node end);
 
     TraversalMetadata metadata();
 }

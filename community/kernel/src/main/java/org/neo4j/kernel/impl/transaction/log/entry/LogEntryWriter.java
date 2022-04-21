@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
+
 import java.io.IOException;
 import java.util.Collection;
-
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
@@ -30,105 +33,88 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
-
-public class LogEntryWriter<T extends WritableChecksumChannel>
-{
-    private final Visitor<StorageCommand,IOException> serializer;
+public class LogEntryWriter<T extends WritableChecksumChannel> {
+    private final Visitor<StorageCommand, IOException> serializer;
     protected final T channel;
     private final byte parserSetVersion;
 
-    public LogEntryWriter( T channel, KernelVersion version )
-    {
+    public LogEntryWriter(T channel, KernelVersion version) {
         this.channel = channel;
         this.parserSetVersion = version.version();
-        this.serializer = new StorageCommandSerializer( channel, this );
+        this.serializer = new StorageCommandSerializer(channel, this);
     }
 
-    public void writeLogEntryHeader( byte type, WritableChannel channel ) throws IOException
-    {
-        channel.put( parserSetVersion ).put( type );
+    public void writeLogEntryHeader(byte type, WritableChannel channel) throws IOException {
+        channel.put(parserSetVersion).put(type);
     }
 
-    private void writeStartEntry( LogEntryStart entry ) throws IOException
-    {
-        writeStartEntry( entry.getTimeWritten(), entry.getLastCommittedTxWhenTransactionStarted(),
-                entry.getPreviousChecksum(), entry.getAdditionalHeader() );
+    private void writeStartEntry(LogEntryStart entry) throws IOException {
+        writeStartEntry(
+                entry.getTimeWritten(),
+                entry.getLastCommittedTxWhenTransactionStarted(),
+                entry.getPreviousChecksum(),
+                entry.getAdditionalHeader());
     }
 
-    public void writeStartEntry( long timeWritten, long latestCommittedTxWhenStarted,
-            int previousChecksum, byte[] additionalHeaderData ) throws IOException
-    {
+    public void writeStartEntry(
+            long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData)
+            throws IOException {
         channel.beginChecksum();
-        writeLogEntryHeader( TX_START, channel );
-        channel.putLong( timeWritten )
-                .putLong( latestCommittedTxWhenStarted )
-                .putInt( previousChecksum )
-                .putInt( additionalHeaderData.length )
-                .put( additionalHeaderData, additionalHeaderData.length );
+        writeLogEntryHeader(TX_START, channel);
+        channel.putLong(timeWritten)
+                .putLong(latestCommittedTxWhenStarted)
+                .putInt(previousChecksum)
+                .putInt(additionalHeaderData.length)
+                .put(additionalHeaderData, additionalHeaderData.length);
     }
 
-    private void writeCommitEntry( LogEntryCommit entry ) throws IOException
-    {
-        writeCommitEntry( entry.getTxId(), entry.getTimeWritten() );
+    private void writeCommitEntry(LogEntryCommit entry) throws IOException {
+        writeCommitEntry(entry.getTxId(), entry.getTimeWritten());
     }
 
-    public int writeCommitEntry( long transactionId, long timeWritten ) throws IOException
-    {
-        writeLogEntryHeader( TX_COMMIT, channel );
-        channel.putLong( transactionId )
-                .putLong( timeWritten );
+    public int writeCommitEntry(long transactionId, long timeWritten) throws IOException {
+        writeLogEntryHeader(TX_COMMIT, channel);
+        channel.putLong(transactionId).putLong(timeWritten);
         return channel.putChecksum();
     }
 
-    public void serialize( TransactionRepresentation tx ) throws IOException
-    {
-        tx.accept( serializer );
+    public void serialize(TransactionRepresentation tx) throws IOException {
+        tx.accept(serializer);
     }
 
-    public void serialize( CommittedTransactionRepresentation tx ) throws IOException
-    {
-        writeStartEntry( tx.getStartEntry() );
-        serialize( tx.getTransactionRepresentation() );
-        writeCommitEntry( tx.getCommitEntry() );
+    public void serialize(CommittedTransactionRepresentation tx) throws IOException {
+        writeStartEntry(tx.getStartEntry());
+        serialize(tx.getTransactionRepresentation());
+        writeCommitEntry(tx.getCommitEntry());
     }
 
-    public void serialize( Collection<StorageCommand> commands ) throws IOException
-    {
-        for ( StorageCommand command : commands )
-        {
-            serializer.visit( command );
+    public void serialize(Collection<StorageCommand> commands) throws IOException {
+        for (StorageCommand command : commands) {
+            serializer.visit(command);
         }
     }
 
-    public void serialize( StorageCommand command ) throws IOException
-    {
-        serializer.visit( command );
+    public void serialize(StorageCommand command) throws IOException {
+        serializer.visit(command);
     }
 
-    public T getChannel()
-    {
+    public T getChannel() {
         return channel;
     }
 
-    private static class StorageCommandSerializer implements Visitor<StorageCommand,IOException>
-    {
+    private static class StorageCommandSerializer implements Visitor<StorageCommand, IOException> {
         private final WritableChannel channel;
         private final LogEntryWriter entryWriter;
 
-        StorageCommandSerializer( WritableChannel channel, LogEntryWriter entryWriter )
-        {
+        StorageCommandSerializer(WritableChannel channel, LogEntryWriter entryWriter) {
             this.channel = channel;
             this.entryWriter = entryWriter;
         }
 
         @Override
-        public boolean visit( StorageCommand command ) throws IOException
-        {
-            entryWriter.writeLogEntryHeader( COMMAND, channel );
-            command.serialize( channel );
+        public boolean visit(StorageCommand command) throws IOException {
+            entryWriter.writeLogEntryHeader(COMMAND, channel);
+            command.serialize(channel);
             return false;
         }
     }

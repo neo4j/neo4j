@@ -19,23 +19,19 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
-import org.neo4j.test.RandomSupport;
-
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
-public class GBPTreeFixedSizeIT extends GBPTreeITBase<MutableLong,MutableLong>
-{
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.neo4j.test.RandomSupport;
+
+public class GBPTreeFixedSizeIT extends GBPTreeITBase<MutableLong, MutableLong> {
     @Override
-    protected TestLayout<MutableLong,MutableLong> getLayout( RandomSupport random, int pageSize )
-    {
-        return longLayout().withKeyPadding( random.intBetween( 0, 10 ) ).build();
+    protected TestLayout<MutableLong, MutableLong> getLayout(RandomSupport random, int pageSize) {
+        return longLayout().withKeyPadding(random.intBetween(0, 10)).build();
     }
 
     @Override
-    Class<MutableLong> getKeyClass()
-    {
+    Class<MutableLong> getKeyClass() {
         return MutableLong.class;
     }
 }

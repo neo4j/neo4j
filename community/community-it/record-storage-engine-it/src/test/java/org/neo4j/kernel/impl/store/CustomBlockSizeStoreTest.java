@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
@@ -30,28 +31,27 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-public class CustomBlockSizeStoreTest
-{
+@ImpermanentDbmsExtension(configurationCallback = "configure")
+public class CustomBlockSizeStoreTest {
     @Inject
     private RecordStorageEngine storageEngine;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
-        builder.setConfig( GraphDatabaseInternalSettings.string_block_size, 62 );
-        builder.setConfig( GraphDatabaseInternalSettings.array_block_size, 302 );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME);
+        builder.setConfig(GraphDatabaseInternalSettings.string_block_size, 62);
+        builder.setConfig(GraphDatabaseInternalSettings.array_block_size, 302);
     }
 
     @Test
-    public void testSetBlockSize()
-    {
+    public void testSetBlockSize() {
         var neoStores = storageEngine.testAccessNeoStores();
         final PropertyStore propertyStore = neoStores.getPropertyStore();
-        assertEquals( 62 + DynamicRecordFormat.RECORD_HEADER_SIZE, propertyStore.getStringStore().getRecordSize() );
-        assertEquals( 302 + DynamicRecordFormat.RECORD_HEADER_SIZE, propertyStore.getArrayStore().getRecordSize() );
+        assertEquals(
+                62 + DynamicRecordFormat.RECORD_HEADER_SIZE,
+                propertyStore.getStringStore().getRecordSize());
+        assertEquals(
+                302 + DynamicRecordFormat.RECORD_HEADER_SIZE,
+                propertyStore.getArrayStore().getRecordSize());
     }
 }

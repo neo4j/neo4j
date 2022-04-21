@@ -19,17 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-
-import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.io.fs.FileSystemAbstraction;
-
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
@@ -37,56 +26,75 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
-class PointIndexProviderTest extends IndexProviderTests
-{
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.io.fs.FileSystemAbstraction;
+
+class PointIndexProviderTest extends IndexProviderTests {
     private static final ProviderFactory factory =
-            ( pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout, contextFactory ) ->
-            {
-                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME ).withMonitors( monitors )
-                                                                   .withReadOnlyChecker( readOnlyChecker ).build();
-                return new PointIndexProvider( context, dir, collector, Config.defaults() );
+            (pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout, contextFactory) -> {
+                DatabaseIndexContext context = DatabaseIndexContext.builder(
+                                pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME)
+                        .withMonitors(monitors)
+                        .withReadOnlyChecker(readOnlyChecker)
+                        .build();
+                return new PointIndexProvider(context, dir, collector, Config.defaults());
             };
 
-    PointIndexProviderTest()
-    {
-        super( factory );
+    PointIndexProviderTest() {
+        super(factory);
     }
 
     @Override
-    void setupIndexFolders( FileSystemAbstraction fs ) throws IOException
-    {
-        Path nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
-        fs.mkdirs( nativeSchemaIndexStoreDirectory );
+    void setupIndexFolders(FileSystemAbstraction fs) throws IOException {
+        Path nativeSchemaIndexStoreDirectory =
+                newProvider().directoryStructure().rootDirectory();
+        fs.mkdirs(nativeSchemaIndexStoreDirectory);
     }
 
     @Override
-    IndexDescriptor descriptor()
-    {
-        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.POINT )
-                                                                                                   .withName( "index" ).materialise( indexId ) );
+    IndexDescriptor descriptor() {
+        return completeConfiguration(forSchema(forLabel(labelId, propId), PROVIDER_DESCRIPTOR)
+                .withIndexType(IndexType.POINT)
+                .withName("index")
+                .materialise(indexId));
     }
 
     @Override
-    IndexDescriptor otherDescriptor()
-    {
-        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.POINT )
-                                                                                                   .withName( "otherIndex" ).materialise( indexId + 1 ) );
+    IndexDescriptor otherDescriptor() {
+        return completeConfiguration(forSchema(forLabel(labelId, propId), PROVIDER_DESCRIPTOR)
+                .withIndexType(IndexType.POINT)
+                .withName("otherIndex")
+                .materialise(indexId + 1));
     }
 
     @Override
-    IndexPrototype validPrototype()
-    {
-        return forSchema( forLabel( labelId, propId ), PointIndexProvider.DESCRIPTOR ).withIndexType( IndexType.POINT ).withName( "index" );
+    IndexPrototype validPrototype() {
+        return forSchema(forLabel(labelId, propId), PointIndexProvider.DESCRIPTOR)
+                .withIndexType(IndexType.POINT)
+                .withName("index");
     }
 
     @Override
-    List<IndexPrototype> invalidPrototypes()
-    {
+    List<IndexPrototype> invalidPrototypes() {
         return List.of(
-                forSchema( forAnyEntityTokens( EntityType.NODE ) ).withName( "unsupported" ),
-                forSchema( fulltext( EntityType.NODE, new int[]{labelId}, new int[]{propId} ) ).withName( "unsupported" ),
-                forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.RANGE ).withName( "unsupported" ),
-                forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.TEXT ).withName( "unsupported" ),
-                forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ) );
+                forSchema(forAnyEntityTokens(EntityType.NODE)).withName("unsupported"),
+                forSchema(fulltext(EntityType.NODE, new int[] {labelId}, new int[] {propId}))
+                        .withName("unsupported"),
+                forSchema(forLabel(labelId, propId))
+                        .withIndexType(IndexType.RANGE)
+                        .withName("unsupported"),
+                forSchema(forLabel(labelId, propId))
+                        .withIndexType(IndexType.TEXT)
+                        .withName("unsupported"),
+                forSchema(forLabel(labelId, propId), PROVIDER_DESCRIPTOR)
+                        .withIndexType(IndexType.LOOKUP)
+                        .withName("unsupported"));
     }
 }

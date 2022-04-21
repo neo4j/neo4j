@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api.format;
 
-public enum CapabilityType
-{
+public enum CapabilityType {
     FORMAT,
     STORE
 }

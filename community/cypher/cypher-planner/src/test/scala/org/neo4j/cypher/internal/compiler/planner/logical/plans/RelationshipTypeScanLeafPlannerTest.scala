@@ -44,10 +44,11 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("simple outgoing directed type scan") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // when
@@ -62,7 +63,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("simple incoming directed type scan") {
     // given
     val context = planningContext()
-    //(a)<-[:R]-(b)
+    // (a)<-[:R]-(b)
     val qg = pattern("r", "a", "b", INCOMING, "R")
 
     // when
@@ -77,7 +78,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("simple undirected type scan") {
     // given
     val context = planningContext()
-    //(a)-[:R]-(b)
+    // (a)-[:R]-(b)
     val qg = pattern("r", "a", "b", BOTH, "R")
 
     // when
@@ -92,7 +93,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("should not scan if multiple types") {
     // given
     val context = planningContext()
-    //(a)-[:R1|R2]->(b)
+    // (a)-[:R1|R2]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R1", "R2")
 
     // when
@@ -105,7 +106,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("should not scan if variable length pattern") {
     // given
     val context = planningContext()
-    //(a)-[:R*]->(b)
+    // (a)-[:R*]->(b)
     val qg = varPattern("r", "a", "b", OUTGOING, "R")
 
     // when
@@ -118,7 +119,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("should not plan type scan for skipped ids") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // then
@@ -129,19 +130,23 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
   test("should not plan type scan when rel id is in arguments") {
     // given
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val context = planningContext()
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // then
-    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("r")), InterestingOrderConfig.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set.empty)(
+      qg.withArgumentIds(Set("r")),
+      InterestingOrderConfig.empty,
+      context
+    ) should be(empty)
   }
 
   test("should not plan type scan if no type index") {
     // given
     val context = planningContext(typeScanEnabled = false)
 
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // when
@@ -154,15 +159,17 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("outgoing directed relationship type scan with required ascending order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // when
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))),
-      context)
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -173,15 +180,17 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("outgoing directed relationship type scan with required descending order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // when
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))),
-      context)
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -192,15 +201,17 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("incoming directed relationship type scan with required ascending order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", INCOMING, "R")
 
     // when
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))),
-      context)
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -211,15 +222,17 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("incoming directed relationship type scan with required descending order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", INCOMING, "R")
 
     // when
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))),
-      context)
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -230,16 +243,20 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("outgoing directed relationship type scan with interesting order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // when
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq.empty),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
-      context)
+        InterestingOrder(
+          RequiredOrderCandidate(Seq.empty),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+        )
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -250,7 +267,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("outgoing directed relationship type scan with required and interesting order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // when
@@ -259,8 +276,11 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
       InterestingOrderConfig(
         InterestingOrder(
           RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
-      context)
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+        )
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -271,15 +291,17 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("undirected relationship type scan with required ascending order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", BOTH, "R")
 
     // when
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))),
-      context)
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -290,15 +312,17 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("undirected relationship type scan with required descending order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", BOTH, "R")
 
     // when
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))),
-      context)
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -309,16 +333,20 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("undirected relationship type scan with interesting order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", BOTH, "R")
 
     // when
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq.empty),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
-      context)
+        InterestingOrder(
+          RequiredOrderCandidate(Seq.empty),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+        )
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -329,7 +357,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("undirected relationship type scan with required and interesting order") {
     // given
     val context = planningContext()
-    //(a)-[:R]->(b)
+    // (a)-[:R]->(b)
     val qg = pattern("r", "a", "b", BOTH, "R")
 
     // when
@@ -338,8 +366,11 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
       InterestingOrderConfig(
         InterestingOrder(
           RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
-      context)
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+        )
+      ),
+      context
+    )
 
     // then
     resultPlans should equal(Set(
@@ -350,12 +381,16 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   private def pattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
     QueryGraph(
       patternNodes = Set(name, from, to),
-      patternRelationships = Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), SimplePatternLength)))
+      patternRelationships =
+        Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), SimplePatternLength))
+    )
 
   private def varPattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
     QueryGraph(
       patternNodes = Set(name, from, to),
-      patternRelationships = Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), VarPatternLength(1, None))))
+      patternRelationships =
+        Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), VarPatternLength(1, None)))
+    )
 
   def planningContext(typeScanEnabled: Boolean = true): LogicalPlanningContext = {
     val planContext = newMockedPlanContext()

@@ -21,39 +21,33 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
-{
+class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold {
     private final int notificationThreshold;
 
     private volatile long nextTransactionIdTarget;
 
-    CountCommittedTransactionThreshold( int notificationThreshold )
-    {
-        super( "every " + notificationThreshold + " transactions threshold" );
+    CountCommittedTransactionThreshold(int notificationThreshold) {
+        super("every " + notificationThreshold + " transactions threshold");
         this.notificationThreshold = notificationThreshold;
     }
 
     @Override
-    public void initialize( long transactionId, LogPosition logPosition )
-    {
+    public void initialize(long transactionId, LogPosition logPosition) {
         nextTransactionIdTarget = transactionId + notificationThreshold;
     }
 
     @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId, LogPosition logPosition )
-    {
+    protected boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition) {
         return lastCommittedTransactionId >= nextTransactionIdTarget;
     }
 
     @Override
-    public void checkPointHappened( long transactionId, LogPosition logPosition )
-    {
+    public void checkPointHappened(long transactionId, LogPosition logPosition) {
         nextTransactionIdTarget = transactionId + notificationThreshold;
     }
 
     @Override
-    public long checkFrequencyMillis()
-    {
+    public long checkFrequencyMillis() {
         // Transaction counts can change at any time, so we need to check fairly regularly to see if a checkpoint
         // should be triggered.
         return DEFAULT_CHECKING_FREQUENCY_MILLIS;

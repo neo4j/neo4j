@@ -22,15 +22,14 @@ package org.neo4j.dbms.database;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
-public class TestSystemGraphComponent implements SystemGraphComponent
-{
+public class TestSystemGraphComponent implements SystemGraphComponent {
     final String component;
     SystemGraphComponent.Status status;
     Exception onInit;
     Exception onMigrate;
 
-    public TestSystemGraphComponent( String component, SystemGraphComponent.Status status, Exception onInit, Exception onMigrate )
-    {
+    public TestSystemGraphComponent(
+            String component, SystemGraphComponent.Status status, Exception onInit, Exception onMigrate) {
         this.component = component;
         this.status = status;
         this.onInit = onInit;
@@ -38,44 +37,32 @@ public class TestSystemGraphComponent implements SystemGraphComponent
     }
 
     @Override
-    public String componentName()
-    {
+    public String componentName() {
         return component;
     }
 
     @Override
-    public Status detect( Transaction tx )
-    {
+    public Status detect(Transaction tx) {
         return status;
     }
 
     @Override
-    public void initializeSystemGraph( GraphDatabaseService system, boolean firstInitialization ) throws Exception
-    {
-        if ( status == Status.UNINITIALIZED )
-        {
-            if ( onInit == null )
-            {
+    public void initializeSystemGraph(GraphDatabaseService system, boolean firstInitialization) throws Exception {
+        if (status == Status.UNINITIALIZED) {
+            if (onInit == null) {
                 status = Status.CURRENT;
-            }
-            else
-            {
+            } else {
                 throw onInit;
             }
         }
     }
 
     @Override
-    public void upgradeToCurrent( GraphDatabaseService system ) throws Exception
-    {
-        if ( status == Status.REQUIRES_UPGRADE )
-        {
-            if ( onMigrate == null )
-            {
+    public void upgradeToCurrent(GraphDatabaseService system) throws Exception {
+        if (status == Status.REQUIRES_UPGRADE) {
+            if (onMigrate == null) {
                 status = Status.CURRENT;
-            }
-            else
-            {
+            } else {
                 throw onMigrate;
             }
         }

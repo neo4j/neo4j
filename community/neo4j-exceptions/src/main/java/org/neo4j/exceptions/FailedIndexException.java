@@ -19,28 +19,27 @@
  */
 package org.neo4j.exceptions;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
 import static java.lang.System.lineSeparator;
 
-public class FailedIndexException extends Neo4jException
-{
-    public FailedIndexException( String indexName, String failureMessage )
-    {
-        super( msg( indexName, failureMessage ), null );
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class FailedIndexException extends Neo4jException {
+    public FailedIndexException(String indexName, String failureMessage) {
+        super(msg(indexName, failureMessage), null);
     }
 
-    private static String msg( String indexName, String failureMessage )
-    {
-        String actualFailure = failureMessage != null ?
-                               String.format( " Actual failure:%s==================%s%s%s==================", lineSeparator(), lineSeparator(), failureMessage,
-                                              lineSeparator() ) : "";
-        return String.format( "Index `%s` has failed. Drop and recreate it to get it back online.%s", indexName, actualFailure );
+    private static String msg(String indexName, String failureMessage) {
+        String actualFailure = failureMessage != null
+                ? String.format(
+                        " Actual failure:%s==================%s%s%s==================",
+                        lineSeparator(), lineSeparator(), failureMessage, lineSeparator())
+                : "";
+        return String.format(
+                "Index `%s` has failed. Drop and recreate it to get it back online.%s", indexName, actualFailure);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.General.IndexCorruptionDetected;
     }
 }

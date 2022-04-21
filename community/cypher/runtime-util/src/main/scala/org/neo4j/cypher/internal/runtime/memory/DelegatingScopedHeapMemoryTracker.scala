@@ -26,10 +26,12 @@ import org.neo4j.memory.HeapMemoryTracker
  * It also forwards all allocate and deallocate calls to a delegate.
  */
 class DelegatingScopedHeapMemoryTracker(delegate: HeapMemoryTracker) extends HeapMemoryTracker {
+
   /**
    * The current size of the tracked heap in this class. May be less than the size of the delegate.
    */
   private var allocatedBytesHeap = 0L
+
   /**
    * The heap high water mark, i.e. the maximum observed allocated heap bytes.
    */

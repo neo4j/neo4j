@@ -19,12 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -32,27 +26,30 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class StoreFileChannelTest
-{
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.Test;
+
+class StoreFileChannelTest {
     @Test
-    void shouldHandlePartialWrites() throws Exception
-    {
+    void shouldHandlePartialWrites() throws Exception {
         // Given
         FileChannel mockChannel = mock(FileChannel.class);
-        when(mockChannel.write( any(ByteBuffer.class), anyLong() )).thenReturn( 4 );
+        when(mockChannel.write(any(ByteBuffer.class), anyLong())).thenReturn(4);
 
-        ByteBuffer buffer = ByteBuffer.wrap( "Hello, world!".getBytes( StandardCharsets.UTF_8 ) );
+        ByteBuffer buffer = ByteBuffer.wrap("Hello, world!".getBytes(StandardCharsets.UTF_8));
 
-        StoreFileChannel channel = new StoreFileChannel( mockChannel );
+        StoreFileChannel channel = new StoreFileChannel(mockChannel);
 
         // When
-        channel.writeAll( buffer, 20 );
+        channel.writeAll(buffer, 20);
 
         // Then
-        verify( mockChannel ).write( buffer, 20 );
-        verify( mockChannel ).write( buffer, 24 );
-        verify( mockChannel ).write( buffer, 28 );
-        verify( mockChannel ).write( buffer, 32 );
-        verifyNoMoreInteractions( mockChannel );
+        verify(mockChannel).write(buffer, 20);
+        verify(mockChannel).write(buffer, 24);
+        verify(mockChannel).write(buffer, 28);
+        verify(mockChannel).write(buffer, 32);
+        verifyNoMoreInteractions(mockChannel);
     }
 }

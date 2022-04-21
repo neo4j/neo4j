@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Whitespace extends AnalyzerProvider
-{
-    public Whitespace()
-    {
-        super( "whitespace" );
+public class Whitespace extends AnalyzerProvider {
+    public Whitespace() {
+        super("whitespace");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new WhitespaceAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Breaks text into terms by characters that are considered \"Java whitespace\".";
     }
 }

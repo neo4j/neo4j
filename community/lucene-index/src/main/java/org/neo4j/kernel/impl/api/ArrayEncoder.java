@@ -25,7 +25,6 @@ import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.Base64;
-
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -38,224 +37,189 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
-public final class ArrayEncoder
-{
+public final class ArrayEncoder {
     private static final Base64.Encoder base64Encoder = Base64.getEncoder();
 
-    private ArrayEncoder()
-    {
-        throw new AssertionError( "Not for instantiation!" );
+    private ArrayEncoder() {
+        throw new AssertionError("Not for instantiation!");
     }
 
-    public static String encode( Value array )
-    {
-        if ( !Values.isArrayValue( array ) )
-        {
-            throw new IllegalArgumentException( "Only works with arrays" );
+    public static String encode(Value array) {
+        if (!Values.isArrayValue(array)) {
+            throw new IllegalArgumentException("Only works with arrays");
         }
 
         ValueEncoder encoder = new ValueEncoder();
-        array.writeTo( encoder );
+        array.writeTo(encoder);
         return encoder.result();
     }
 
-    static class ValueEncoder implements ValueWriter<RuntimeException>
-    {
+    static class ValueEncoder implements ValueWriter<RuntimeException> {
         private final StringBuilder builder;
 
-        ValueEncoder()
-        {
+        ValueEncoder() {
             builder = new StringBuilder();
         }
 
-        public String result()
-        {
+        public String result() {
             return builder.toString();
         }
 
         @Override
-        public void writeNull()
-        {
+        public void writeNull() {}
+
+        @Override
+        public void writeBoolean(boolean value) {
+            builder.append(value);
+            builder.append('|');
         }
 
         @Override
-        public void writeBoolean( boolean value )
-        {
-            builder.append( value );
-            builder.append( '|' );
+        public void writeInteger(byte value) {
+            builder.append((double) value);
+            builder.append('|');
         }
 
         @Override
-        public void writeInteger( byte value )
-        {
-            builder.append( (double)value );
-            builder.append( '|' );
+        public void writeInteger(short value) {
+            builder.append((double) value);
+            builder.append('|');
         }
 
         @Override
-        public void writeInteger( short value )
-        {
-            builder.append( (double)value );
-            builder.append( '|' );
+        public void writeInteger(int value) {
+            builder.append((double) value);
+            builder.append('|');
         }
 
         @Override
-        public void writeInteger( int value )
-        {
-            builder.append( (double)value );
-            builder.append( '|' );
+        public void writeInteger(long value) {
+            builder.append((double) value);
+            builder.append('|');
         }
 
         @Override
-        public void writeInteger( long value )
-        {
-            builder.append( (double)value );
-            builder.append( '|' );
+        public void writeFloatingPoint(float value) {
+            builder.append((double) value);
+            builder.append('|');
         }
 
         @Override
-        public void writeFloatingPoint( float value )
-        {
-            builder.append( (double)value );
-            builder.append( '|' );
+        public void writeFloatingPoint(double value) {
+            builder.append(value);
+            builder.append('|');
         }
 
         @Override
-        public void writeFloatingPoint( double value )
-        {
-            builder.append( value );
-            builder.append( '|' );
+        public void writeString(String value) {
+            builder.append(base64Encoder.encodeToString(UTF8.encode(value)));
+            builder.append('|');
         }
 
         @Override
-        public void writeString( String value )
-        {
-            builder.append( base64Encoder.encodeToString( UTF8.encode( value ) ) );
-            builder.append( '|' );
+        public void writeString(char value) {
+            builder.append(base64Encoder.encodeToString(UTF8.encode(Character.toString(value))));
+            builder.append('|');
         }
 
         @Override
-        public void writeString( char value )
-        {
-            builder.append( base64Encoder.encodeToString( UTF8.encode( Character.toString( value ) ) ) );
-            builder.append( '|' );
-        }
-
-        @Override
-        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
-        {
-            builder.append( crs.getTable().getTableId() );
-            builder.append( ':' );
-            builder.append( crs.getCode() );
-            builder.append( ':' );
+        public void writePoint(CoordinateReferenceSystem crs, double[] coordinate) throws RuntimeException {
+            builder.append(crs.getTable().getTableId());
+            builder.append(':');
+            builder.append(crs.getCode());
+            builder.append(':');
             int index = 0;
-            for ( double c : coordinate )
-            {
-                if ( index > 0 )
-                {
-                    builder.append( ';' );
+            for (double c : coordinate) {
+                if (index > 0) {
+                    builder.append(';');
                 }
-                builder.append( c );
+                builder.append(c);
                 index++;
             }
-            builder.append( '|' );
+            builder.append('|');
         }
 
         @Override
-        public void writeDuration( long months, long days, long seconds, int nanos ) throws RuntimeException
-        {
-            builder.append( DurationValue.duration( months, days, seconds, nanos ).prettyPrint() );
-            builder.append( '|' );
+        public void writeDuration(long months, long days, long seconds, int nanos) throws RuntimeException {
+            builder.append(DurationValue.duration(months, days, seconds, nanos).prettyPrint());
+            builder.append('|');
         }
 
         @Override
-        public void writeDate( LocalDate localDate ) throws RuntimeException
-        {
-            builder.append( DateValue.date( localDate ).prettyPrint() );
-            builder.append( '|' );
+        public void writeDate(LocalDate localDate) throws RuntimeException {
+            builder.append(DateValue.date(localDate).prettyPrint());
+            builder.append('|');
         }
 
         @Override
-        public void writeLocalTime( LocalTime localTime ) throws RuntimeException
-        {
-            builder.append( LocalTimeValue.localTime( localTime ).prettyPrint() );
-            builder.append( '|' );
+        public void writeLocalTime(LocalTime localTime) throws RuntimeException {
+            builder.append(LocalTimeValue.localTime(localTime).prettyPrint());
+            builder.append('|');
         }
 
         @Override
-        public void writeTime( OffsetTime offsetTime ) throws RuntimeException
-        {
-            builder.append( TimeValue.time( offsetTime ).prettyPrint() );
-            builder.append( '|' );
+        public void writeTime(OffsetTime offsetTime) throws RuntimeException {
+            builder.append(TimeValue.time(offsetTime).prettyPrint());
+            builder.append('|');
         }
 
         @Override
-        public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
-        {
-            builder.append( LocalDateTimeValue.localDateTime( localDateTime ).prettyPrint() );
-            builder.append( '|' );
+        public void writeLocalDateTime(LocalDateTime localDateTime) throws RuntimeException {
+            builder.append(LocalDateTimeValue.localDateTime(localDateTime).prettyPrint());
+            builder.append('|');
         }
 
         @Override
-        public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
-        {
-            builder.append( DateTimeValue.datetime( zonedDateTime ).prettyPrint() );
-            builder.append( '|' );
+        public void writeDateTime(ZonedDateTime zonedDateTime) throws RuntimeException {
+            builder.append(DateTimeValue.datetime(zonedDateTime).prettyPrint());
+            builder.append('|');
         }
 
         @Override
-        public void beginArray( int size, ArrayType arrayType )
-        {
-            if ( size > 0 )
-            {
-                builder.append( typeChar( arrayType ) );
+        public void beginArray(int size, ArrayType arrayType) {
+            if (size > 0) {
+                builder.append(typeChar(arrayType));
             }
         }
 
         @Override
-        public void endArray()
-        {
-        }
+        public void endArray() {}
 
         @Override
-        public void writeByteArray( byte[] value )
-        {
-            builder.append( 'D' );
-            for ( byte b : value )
-            {
-                builder.append( (double)b );
-                builder.append( '|' );
+        public void writeByteArray(byte[] value) {
+            builder.append('D');
+            for (byte b : value) {
+                builder.append((double) b);
+                builder.append('|');
             }
         }
 
-        private static char typeChar( ArrayType arrayType )
-        {
-            switch ( arrayType )
-            {
-            case BOOLEAN:
-                return 'Z';
-            case BYTE:
-            case SHORT:
-            case INT:
-            case LONG:
-            case FLOAT:
-            case DOUBLE:
-                return 'D';
-            case CHAR:
-            case STRING:
-                return 'L';
-            case POINT:
-                return 'P';
-            case ZONED_DATE_TIME:
-            case LOCAL_DATE_TIME:
-            case DATE:
-            case ZONED_TIME:
-            case LOCAL_TIME:
-                return 'T';
-            case DURATION:
-                return 'A';
-            default:
-                throw new UnsupportedOperationException( "Not supported array type: " + arrayType );
+        private static char typeChar(ArrayType arrayType) {
+            switch (arrayType) {
+                case BOOLEAN:
+                    return 'Z';
+                case BYTE:
+                case SHORT:
+                case INT:
+                case LONG:
+                case FLOAT:
+                case DOUBLE:
+                    return 'D';
+                case CHAR:
+                case STRING:
+                    return 'L';
+                case POINT:
+                    return 'P';
+                case ZONED_DATE_TIME:
+                case LOCAL_DATE_TIME:
+                case DATE:
+                case ZONED_TIME:
+                case LOCAL_TIME:
+                    return 'T';
+                case DURATION:
+                    return 'A';
+                default:
+                    throw new UnsupportedOperationException("Not supported array type: " + arrayType);
             }
         }
     }

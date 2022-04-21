@@ -21,8 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.token.api.TokenConstants;
 
-public final class StatementConstants
-{
+public final class StatementConstants {
     public static final int NO_SUCH_RELATIONSHIP_TYPE = TokenConstants.ANY_RELATIONSHIP_TYPE;
     public static final int NO_SUCH_LABEL = TokenConstants.ANY_LABEL;
     public static final int NO_SUCH_PROPERTY_KEY = TokenConstants.ANY_PROPERTY_KEY;
@@ -30,8 +29,7 @@ public final class StatementConstants
     public static final long NO_SUCH_RELATIONSHIP = -1;
     public static final long NO_SUCH_ENTITY = -1;
 
-    private StatementConstants()
-    {
+    private StatementConstants() {
         throw new UnsupportedOperationException();
     }
 }

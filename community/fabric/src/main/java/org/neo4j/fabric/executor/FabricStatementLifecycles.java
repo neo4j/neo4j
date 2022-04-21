@@ -21,7 +21,6 @@ package org.neo4j.fabric.executor;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
@@ -39,213 +38,181 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public class FabricStatementLifecycles
-{
+public class FabricStatementLifecycles {
     private final DatabaseManager<DatabaseContext> databaseManager;
     private final QueryExecutionMonitor dbmsMonitor;
     private final ExecutingQueryFactory executingQueryFactory;
 
-    public FabricStatementLifecycles( DatabaseManager<DatabaseContext> databaseManager, Monitors dbmsMonitors, Config config, SystemNanoClock systemNanoClock )
-    {
+    public FabricStatementLifecycles(
+            DatabaseManager<DatabaseContext> databaseManager,
+            Monitors dbmsMonitors,
+            Config config,
+            SystemNanoClock systemNanoClock) {
         this.databaseManager = databaseManager;
-        this.dbmsMonitor = dbmsMonitors.newMonitor( QueryExecutionMonitor.class );
-        this.executingQueryFactory = new ExecutingQueryFactory(
-                systemNanoClock,
-                setupCpuClockAtomicReference( config ),
-                config );
+        this.dbmsMonitor = dbmsMonitors.newMonitor(QueryExecutionMonitor.class);
+        this.executingQueryFactory =
+                new ExecutingQueryFactory(systemNanoClock, setupCpuClockAtomicReference(config), config);
     }
 
-    private static AtomicReference<CpuClock> setupCpuClockAtomicReference( Config config )
-    {
-        AtomicReference<CpuClock> cpuClock = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
-        SettingChangeListener<Boolean> cpuClockUpdater = ( before, after ) ->
-        {
-            if ( after )
-            {
-                cpuClock.set( CpuClock.CPU_CLOCK );
-            }
-            else
-            {
-                cpuClock.set( CpuClock.NOT_AVAILABLE );
+    private static AtomicReference<CpuClock> setupCpuClockAtomicReference(Config config) {
+        AtomicReference<CpuClock> cpuClock = new AtomicReference<>(CpuClock.NOT_AVAILABLE);
+        SettingChangeListener<Boolean> cpuClockUpdater = (before, after) -> {
+            if (after) {
+                cpuClock.set(CpuClock.CPU_CLOCK);
+            } else {
+                cpuClock.set(CpuClock.NOT_AVAILABLE);
             }
         };
-        cpuClockUpdater.accept( null, config.get( GraphDatabaseSettings.track_query_cpu_time ) );
-        config.addListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
+        cpuClockUpdater.accept(null, config.get(GraphDatabaseSettings.track_query_cpu_time));
+        config.addListener(GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater);
         return cpuClock;
     }
 
-    StatementLifecycle create( FabricTransactionInfo transactionInfo, String statement, MapValue params )
-    {
+    StatementLifecycle create(FabricTransactionInfo transactionInfo, String statement, MapValue params) {
         var executingQuery = executingQueryFactory.createUnbound(
-                statement, params,
+                statement,
+                params,
                 transactionInfo.getClientConnectionInfo(),
                 transactionInfo.getLoginContext().subject().executingUser(),
                 transactionInfo.getLoginContext().subject().authenticatedUser(),
-                transactionInfo.getTxMetadata() );
+                transactionInfo.getTxMetadata());
 
-        return new StatementLifecycle( executingQuery );
+        return new StatementLifecycle(executingQuery);
     }
 
-    public enum StatementPhase
-    {
-        FABRIC, CYPHER, ENDED
+    public enum StatementPhase {
+        FABRIC,
+        CYPHER,
+        ENDED
     }
 
-    public class StatementLifecycle
-    {
+    public class StatementLifecycle {
         private final ExecutingQuery executingQuery;
 
         private QueryExecutionMonitor dbMonitor;
         private StatementPhase phase;
         private MonitoringMode monitoringMode;
 
-        private StatementLifecycle( ExecutingQuery executingQuery )
-        {
+        private StatementLifecycle(ExecutingQuery executingQuery) {
             this.executingQuery = executingQuery;
             this.phase = StatementPhase.FABRIC;
         }
 
-        void startProcessing()
-        {
-            getQueryExecutionMonitor().startProcessing( executingQuery );
+        void startProcessing() {
+            getQueryExecutionMonitor().startProcessing(executingQuery);
         }
 
-        void doneFabricProcessing( FabricPlan plan )
-        {
-            executingQuery.onObfuscatorReady( CypherQueryObfuscator.apply( plan.obfuscationMetadata() ) );
+        void doneFabricProcessing(FabricPlan plan) {
+            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(plan.obfuscationMetadata()));
 
-            if ( plan.inFabricContext() )
-            {
+            if (plan.inFabricContext()) {
                 monitoringMode = new ParentChildMonitoringMode();
-            }
-            else
-            {
+            } else {
                 monitoringMode = new SingleQueryMonitoringMode();
             }
         }
 
-        void startExecution( Boolean shouldLogIfSingleQuery )
-        {
-                monitoringMode.startExecution(shouldLogIfSingleQuery);
+        void startExecution(Boolean shouldLogIfSingleQuery) {
+            monitoringMode.startExecution(shouldLogIfSingleQuery);
         }
 
-        void doneFabricPhase()
-        {
+        void doneFabricPhase() {
             phase = StatementPhase.CYPHER;
         }
 
-        void endSuccess()
-        {
+        void endSuccess() {
             phase = StatementPhase.ENDED;
             QueryExecutionMonitor monitor = getQueryExecutionMonitor();
-            monitor.beforeEnd( executingQuery, true );
-            monitor.endSuccess( executingQuery );
+            monitor.beforeEnd(executingQuery, true);
+            monitor.endSuccess(executingQuery);
         }
 
-        void endFailure( Throwable failure )
-        {
+        void endFailure(Throwable failure) {
             phase = StatementPhase.ENDED;
             QueryExecutionMonitor monitor = getQueryExecutionMonitor();
-            monitor.beforeEnd( executingQuery, false );
-            monitor.endFailure( executingQuery, failure.getMessage() );
+            monitor.beforeEnd(executingQuery, false);
+            monitor.endFailure(executingQuery, failure.getMessage());
         }
 
-        private QueryExecutionMonitor getQueryExecutionMonitor()
-        {
-            return getDbMonitor().orElse( dbmsMonitor );
+        private QueryExecutionMonitor getQueryExecutionMonitor() {
+            return getDbMonitor().orElse(dbmsMonitor);
         }
 
-        private Optional<QueryExecutionMonitor> getDbMonitor()
-        {
-            if ( dbMonitor == null )
-            {
-                executingQuery.databaseId()
-                              .flatMap( databaseManager::getDatabaseContext )
-                              .map( dbm -> dbm.dependencies().resolveDependency( Monitors.class ) )
-                              .map( monitors -> monitors.newMonitor( QueryExecutionMonitor.class ) )
-                              .ifPresent( monitor -> dbMonitor = monitor );
+        private Optional<QueryExecutionMonitor> getDbMonitor() {
+            if (dbMonitor == null) {
+                executingQuery
+                        .databaseId()
+                        .flatMap(databaseManager::getDatabaseContext)
+                        .map(dbm -> dbm.dependencies().resolveDependency(Monitors.class))
+                        .map(monitors -> monitors.newMonitor(QueryExecutionMonitor.class))
+                        .ifPresent(monitor -> dbMonitor = monitor);
             }
 
-            return Optional.ofNullable( dbMonitor );
+            return Optional.ofNullable(dbMonitor);
         }
 
-        public boolean inFabricPhase()
-        {
+        public boolean inFabricPhase() {
             return phase == StatementPhase.FABRIC;
         }
 
-        public ExecutingQuery getMonitoredQuery()
-        {
+        public ExecutingQuery getMonitoredQuery() {
             return executingQuery;
         }
 
-        QueryExecutionMonitor getChildQueryMonitor()
-        {
+        QueryExecutionMonitor getChildQueryMonitor() {
             return monitoringMode.getChildQueryMonitor();
         }
 
-        boolean isParentChildMonitoringMode()
-        {
+        boolean isParentChildMonitoringMode() {
             return monitoringMode.isParentChildMonitoringMode();
         }
 
-        private abstract class MonitoringMode
-        {
+        private abstract class MonitoringMode {
             abstract boolean isParentChildMonitoringMode();
 
             abstract QueryExecutionMonitor getChildQueryMonitor();
 
-            abstract void startExecution( Boolean shouldLogIfSingleQuery );
+            abstract void startExecution(Boolean shouldLogIfSingleQuery);
         }
 
-        private class SingleQueryMonitoringMode extends MonitoringMode
-        {
+        private class SingleQueryMonitoringMode extends MonitoringMode {
             @Override
-            boolean isParentChildMonitoringMode()
-            {
+            boolean isParentChildMonitoringMode() {
                 return false;
             }
 
             @Override
-            void startExecution( Boolean shouldLogIfSingleQuery )
-            {
+            void startExecution(Boolean shouldLogIfSingleQuery) {
                 // Query state events triggered by cypher engine
-                if ( shouldLogIfSingleQuery )
-                {
-                    getQueryExecutionMonitor().startExecution( executingQuery );
+                if (shouldLogIfSingleQuery) {
+                    getQueryExecutionMonitor().startExecution(executingQuery);
                 }
             }
 
             @Override
-            QueryExecutionMonitor getChildQueryMonitor()
-            {
+            QueryExecutionMonitor getChildQueryMonitor() {
                 // Query monitoring events handled by fabric
                 return QueryExecutionMonitor.NO_OP;
             }
         }
 
-        private class ParentChildMonitoringMode extends MonitoringMode
-        {
+        private class ParentChildMonitoringMode extends MonitoringMode {
             @Override
-            boolean isParentChildMonitoringMode()
-            {
+            boolean isParentChildMonitoringMode() {
                 return true;
             }
 
             @Override
-            void startExecution( Boolean shouldLogIfSingleQuery )
-            {
-                if ( !shouldLogIfSingleQuery )
-                {
-                    getQueryExecutionMonitor().startExecution( executingQuery );
-                    executingQuery.onCompilationCompleted( null, null );
-                    executingQuery.onExecutionStarted( HeapHighWaterMarkTracker.NONE );
+            void startExecution(Boolean shouldLogIfSingleQuery) {
+                if (!shouldLogIfSingleQuery) {
+                    getQueryExecutionMonitor().startExecution(executingQuery);
+                    executingQuery.onCompilationCompleted(null, null);
+                    executingQuery.onExecutionStarted(HeapHighWaterMarkTracker.NONE);
                 }
             }
 
             @Override
-            QueryExecutionMonitor getChildQueryMonitor()
-            {
+            QueryExecutionMonitor getChildQueryMonitor() {
                 return getQueryExecutionMonitor();
             }
         }

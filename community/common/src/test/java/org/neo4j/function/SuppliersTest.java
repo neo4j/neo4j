@@ -19,11 +19,6 @@
  */
 package org.neo4j.function;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,86 +31,84 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings( "unchecked" )
-class SuppliersTest
-{
-    @Test
-    void singletonSupplierShouldAlwaysReturnSame()
-    {
-        Object o = new Object();
-        Supplier<Object> supplier = Suppliers.singleton( o );
+import java.util.function.Function;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.Test;
 
-        assertThat( supplier.get() ).isSameAs( o );
-        assertThat( supplier.get() ).isSameAs( o );
-        assertThat( supplier.get() ).isSameAs( o );
+@SuppressWarnings("unchecked")
+class SuppliersTest {
+    @Test
+    void singletonSupplierShouldAlwaysReturnSame() {
+        Object o = new Object();
+        Supplier<Object> supplier = Suppliers.singleton(o);
+
+        assertThat(supplier.get()).isSameAs(o);
+        assertThat(supplier.get()).isSameAs(o);
+        assertThat(supplier.get()).isSameAs(o);
     }
 
     @Test
-    void lazySingletonSupplierShouldOnlyRequestInstanceWhenRequired()
-    {
+    void lazySingletonSupplierShouldOnlyRequestInstanceWhenRequired() {
         Object o = new Object();
-        Supplier<Object> mockSupplier = mock( Supplier.class );
-        when( mockSupplier.get() ).thenReturn( o );
-        Supplier<Object> supplier = Suppliers.lazySingleton( mockSupplier );
+        Supplier<Object> mockSupplier = mock(Supplier.class);
+        when(mockSupplier.get()).thenReturn(o);
+        Supplier<Object> supplier = Suppliers.lazySingleton(mockSupplier);
 
-        verifyNoInteractions( mockSupplier );
+        verifyNoInteractions(mockSupplier);
 
-        assertThat( supplier.get() ).isSameAs( o );
-        assertThat( supplier.get() ).isSameAs( o );
-        assertThat( supplier.get() ).isSameAs( o );
+        assertThat(supplier.get()).isSameAs(o);
+        assertThat(supplier.get()).isSameAs(o);
+        assertThat(supplier.get()).isSameAs(o);
 
-        verify( mockSupplier ).get();
-        verifyNoMoreInteractions( mockSupplier );
+        verify(mockSupplier).get();
+        verifyNoMoreInteractions(mockSupplier);
     }
 
     @Test
-    void adaptedSupplierShouldOnlyCallAdaptorOnceForEachNewInstance()
-    {
+    void adaptedSupplierShouldOnlyCallAdaptorOnceForEachNewInstance() {
         Object o1 = new Object();
         Object o1a = new Object();
         Object o2 = new Object();
         Object o2a = new Object();
         Object o3 = new Object();
         Object o3a = new Object();
-        Supplier<Object> mockSupplier = mock( Supplier.class );
-        when( mockSupplier.get() ).thenReturn( o1, o1, o1, o2, o3, o3 );
+        Supplier<Object> mockSupplier = mock(Supplier.class);
+        when(mockSupplier.get()).thenReturn(o1, o1, o1, o2, o3, o3);
 
-        Function<Object,Object> mockFunction = mock( Function.class );
-        when( mockFunction.apply( o1 ) ).thenReturn( o1a );
-        when( mockFunction.apply( o2 ) ).thenReturn( o2a );
-        when( mockFunction.apply( o3 ) ).thenReturn( o3a );
+        Function<Object, Object> mockFunction = mock(Function.class);
+        when(mockFunction.apply(o1)).thenReturn(o1a);
+        when(mockFunction.apply(o2)).thenReturn(o2a);
+        when(mockFunction.apply(o3)).thenReturn(o3a);
 
-        Supplier<Object> supplier = Suppliers.adapted( mockSupplier, mockFunction );
+        Supplier<Object> supplier = Suppliers.adapted(mockSupplier, mockFunction);
 
-        assertThat( supplier.get() ).isSameAs( o1a );
-        assertThat( supplier.get() ).isSameAs( o1a );
-        assertThat( supplier.get() ).isSameAs( o1a );
-        assertThat( supplier.get() ).isSameAs( o2a );
-        assertThat( supplier.get() ).isSameAs( o3a );
-        assertThat( supplier.get() ).isSameAs( o3a );
+        assertThat(supplier.get()).isSameAs(o1a);
+        assertThat(supplier.get()).isSameAs(o1a);
+        assertThat(supplier.get()).isSameAs(o1a);
+        assertThat(supplier.get()).isSameAs(o2a);
+        assertThat(supplier.get()).isSameAs(o3a);
+        assertThat(supplier.get()).isSameAs(o3a);
 
-        verify( mockFunction ).apply( o1 );
-        verify( mockFunction ).apply( o2 );
-        verify( mockFunction ).apply( o3 );
-        verifyNoMoreInteractions( mockFunction );
+        verify(mockFunction).apply(o1);
+        verify(mockFunction).apply(o2);
+        verify(mockFunction).apply(o3);
+        verifyNoMoreInteractions(mockFunction);
     }
 
     @Test
-    void correctlyReportNotInitialisedSuppliers()
-    {
-        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton( () -> "a" );
-        assertFalse( lazySingleton.isInitialised() );
-        assertNull( lazySingleton.getIfPresent() );
-        assertEquals( "null", lazySingleton.toString() );
+    void correctlyReportNotInitialisedSuppliers() {
+        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton(() -> "a");
+        assertFalse(lazySingleton.isInitialised());
+        assertNull(lazySingleton.getIfPresent());
+        assertEquals("null", lazySingleton.toString());
     }
 
     @Test
-    void correctlyReportInitialisedSuppliers()
-    {
-        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton( () -> "a" );
-        assertNotNull( lazySingleton.get() );
-        assertTrue( lazySingleton.isInitialised() );
-        assertNotNull( lazySingleton.getIfPresent() );
-        assertEquals( "a", lazySingleton.toString() );
+    void correctlyReportInitialisedSuppliers() {
+        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton(() -> "a");
+        assertNotNull(lazySingleton.get());
+        assertTrue(lazySingleton.isInitialised());
+        assertNotNull(lazySingleton.getIfPresent());
+        assertEquals("a", lazySingleton.toString());
     }
 }

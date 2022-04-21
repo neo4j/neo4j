@@ -19,11 +19,34 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static java.util.UUID.randomUUID;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.io.ByteUnit.KibiByte;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
+import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
+import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
+import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +54,11 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -75,9 +102,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -86,47 +113,20 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.util.UUID.randomUUID;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.io.ByteUnit.KibiByte;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
-import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
-import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
-import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
-import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-
 @Neo4jLayoutExtension
-class TransactionLogsRecoveryTest
-{
+class TransactionLogsRecoveryTest {
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private TestDirectory testDirectory;
+
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
-    private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 5L, 0,
-            BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
+    private final TransactionIdStore transactionIdStore =
+            new SimpleTransactionIdStore(5L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0);
     private final int logVersion = 0;
 
     private LogEntry lastCommittedTxStartEntry;
@@ -141,512 +141,551 @@ class TransactionLogsRecoveryTest
     private LifeSupport life;
 
     @BeforeEach
-    void setUp() throws Exception
-    {
+    void setUp() throws Exception {
         storeDir = testDirectory.homePath();
         logFiles = buildLogFiles();
         life = new LifeSupport();
-        life.add( logFiles );
+        life.add(logFiles);
         life.start();
         schemaLife = new LifecycleAdapter();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         life.shutdown();
     }
 
     @Test
-    void shouldRecoverExistingData() throws Exception
-    {
-        var contextFactory = new CursorContextFactory( NULL, EmptyVersionContextSupplier.EMPTY );
+    void shouldRecoverExistingData() throws Exception {
+        var contextFactory = new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
         LogFile logFile = logFiles.getLogFile();
-        Path file = logFile.getLogFileForVersion( logVersion );
+        Path file = logFile.getLogFileForVersion(logVersion);
 
-        writeSomeData( file, pair ->
-        {
+        writeSomeData(file, pair -> {
             LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
             LogPositionMarker marker = new LogPositionMarker();
 
             // last committed tx
             int previousChecksum = BASE_TX_CHECKSUM;
-            consumer.accept( marker );
+            consumer.accept(marker);
             LogPosition lastCommittedTxPosition = marker.newPosition();
-            writer.writeStartEntry( 2L, 3L, previousChecksum, new byte[0] );
-            lastCommittedTxStartEntry = new LogEntryStart( 2L, 3L, previousChecksum, new byte[0], lastCommittedTxPosition );
-            previousChecksum = writer.writeCommitEntry( 4L, 5L );
-            lastCommittedTxCommitEntry = new LogEntryCommit( 4L, 5L, previousChecksum );
+            writer.writeStartEntry(2L, 3L, previousChecksum, new byte[0]);
+            lastCommittedTxStartEntry =
+                    new LogEntryStart(2L, 3L, previousChecksum, new byte[0], lastCommittedTxPosition);
+            previousChecksum = writer.writeCommitEntry(4L, 5L);
+            lastCommittedTxCommitEntry = new LogEntryCommit(4L, 5L, previousChecksum);
 
             // check point pointing to the previously committed transaction
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, new TransactionId( 4L, 2, 5L ), lastCommittedTxPosition, Instant.now(), "test" );
+            checkpointAppender.checkPoint(
+                    LogCheckPointEvent.NULL,
+                    new TransactionId(4L, 2, 5L),
+                    lastCommittedTxPosition,
+                    Instant.now(),
+                    "test");
 
             // tx committed after checkpoint
-            consumer.accept( marker );
-            writer.writeStartEntry( 6L, 4L, previousChecksum, new byte[0] );
-            expectedStartEntry = new LogEntryStart( 6L, 4L, previousChecksum, new byte[0], marker.newPosition() );
+            consumer.accept(marker);
+            writer.writeStartEntry(6L, 4L, previousChecksum, new byte[0]);
+            expectedStartEntry = new LogEntryStart(6L, 4L, previousChecksum, new byte[0], marker.newPosition());
 
-            previousChecksum = writer.writeCommitEntry( 5L, 7L );
-            expectedCommitEntry = new LogEntryCommit( 5L, 7L, previousChecksum );
+            previousChecksum = writer.writeCommitEntry(5L, 7L);
+            expectedCommitEntry = new LogEntryCommit(5L, 7L, previousChecksum);
 
             return true;
-        } );
+        });
 
         LifeSupport life = new LifeSupport();
         var recoveryRequired = new AtomicBoolean();
         var recoveredTransactions = new MutableInt();
-        RecoveryMonitor monitor = new RecoveryMonitor()
-        {
+        RecoveryMonitor monitor = new RecoveryMonitor() {
             @Override
-            public void recoveryRequired( LogPosition recoveryPosition )
-            {
-                recoveryRequired.set( true );
+            public void recoveryRequired(LogPosition recoveryPosition) {
+                recoveryRequired.set(true);
             }
 
             @Override
-            public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
-            {
-                recoveredTransactions.setValue( numberOfRecoveredTransactions );
+            public void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
+                recoveredTransactions.setValue(numberOfRecoveredTransactions);
             }
         };
-        try
-        {
+        try {
             var recoveryLogFiles = buildLogFiles();
-            life.add( recoveryLogFiles );
-            StorageEngine storageEngine = mock( StorageEngine.class );
-            when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
+            life.add(recoveryLogFiles);
+            StorageEngine storageEngine = mock(StorageEngine.class);
+            when(storageEngine.createStorageCursors(any())).thenReturn(mock(StoreCursors.class));
             Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( recoveryLogFiles, metadataCache, new TestCommandReaderFactory(),
-                                                                                   monitors, false, config );
-            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, recoveryLogFiles, fileSystem, INSTANCE );
-            monitors.addMonitorListener( monitor );
-            life.add( new TransactionLogsRecovery(
-                    new DefaultRecoveryService( storageEngine, transactionIdStore, txStore, versionRepository, recoveryLogFiles, NO_MONITOR,
-                            mock( InternalLog.class ),
-                            false )
-                    {
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
+                    recoveryLogFiles, metadataCache, new TestCommandReaderFactory(), monitors, false, config);
+            CorruptedLogsTruncator logPruner =
+                    new CorruptedLogsTruncator(storeDir, recoveryLogFiles, fileSystem, INSTANCE);
+            monitors.addMonitorListener(monitor);
+            life.add(new TransactionLogsRecovery(
+                    new DefaultRecoveryService(
+                            storageEngine,
+                            transactionIdStore,
+                            txStore,
+                            versionRepository,
+                            recoveryLogFiles,
+                            NO_MONITOR,
+                            mock(InternalLog.class),
+                            false) {
                         private int nr;
 
                         @Override
-                        public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag )
-                        {
-                            RecoveryApplier actual = super.getRecoveryApplier( mode, contextFactory, tracerTag );
-                            if ( mode == TransactionApplicationMode.REVERSE_RECOVERY )
-                            {
+                        public RecoveryApplier getRecoveryApplier(
+                                TransactionApplicationMode mode,
+                                CursorContextFactory contextFactory,
+                                String tracerTag) {
+                            RecoveryApplier actual = super.getRecoveryApplier(mode, contextFactory, tracerTag);
+                            if (mode == TransactionApplicationMode.REVERSE_RECOVERY) {
                                 return actual;
                             }
 
-                            return new RecoveryApplier()
-                            {
+                            return new RecoveryApplier() {
                                 @Override
-                                public void close() throws Exception
-                                {
+                                public void close() throws Exception {
                                     actual.close();
                                 }
 
                                 @Override
-                                public boolean visit( CommittedTransactionRepresentation tx ) throws Exception
-                                {
-                                    actual.visit( tx );
-                                    switch ( nr++ )
-                                    {
-                                    case 0 -> {
-                                        assertEquals( lastCommittedTxStartEntry, tx.getStartEntry() );
-                                        assertEquals( lastCommittedTxCommitEntry, tx.getCommitEntry() );
+                                public boolean visit(CommittedTransactionRepresentation tx) throws Exception {
+                                    actual.visit(tx);
+                                    switch (nr++) {
+                                        case 0 -> {
+                                            assertEquals(lastCommittedTxStartEntry, tx.getStartEntry());
+                                            assertEquals(lastCommittedTxCommitEntry, tx.getCommitEntry());
                                         }
-                                    case 1 -> {
-                                        assertEquals( expectedStartEntry, tx.getStartEntry() );
-                                        assertEquals( expectedCommitEntry, tx.getCommitEntry() );
+                                        case 1 -> {
+                                            assertEquals(expectedStartEntry, tx.getStartEntry());
+                                            assertEquals(expectedCommitEntry, tx.getCommitEntry());
                                         }
-                                    default ->
-                                        fail( "Too many recovered transactions" );
+                                        default -> fail("Too many recovered transactions");
                                     }
                                     return false;
                                 }
                             };
                         }
-                    }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, RecoveryPredicate.ALL, contextFactory ) );
+                    },
+                    logPruner,
+                    schemaLife,
+                    monitor,
+                    ProgressReporter.SILENT,
+                    false,
+                    EMPTY_CHECKER,
+                    RecoveryPredicate.ALL,
+                    contextFactory));
 
             life.start();
 
-            assertTrue( recoveryRequired.get() );
-            assertEquals( 2, recoveredTransactions.getValue() );
-        }
-        finally
-        {
+            assertTrue(recoveryRequired.get());
+            assertEquals(2, recoveredTransactions.getValue());
+        } finally {
             life.shutdown();
         }
     }
 
     @Test
-    void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
-    {
-        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
-        var contextFactory = new CursorContextFactory( NULL, EmptyVersionContextSupplier.EMPTY );
+    void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception {
+        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        var contextFactory = new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
 
         LogPositionMarker marker = new LogPositionMarker();
-        writeSomeDataWithVersion( file, pair ->
-        {
-            LogEntryWriter<?> writer = pair.first();
-            Consumer<LogPositionMarker> consumer = pair.other();
-            TransactionId transactionId = new TransactionId( 4L, BASE_TX_CHECKSUM, 5L );
+        writeSomeDataWithVersion(
+                file,
+                pair -> {
+                    LogEntryWriter<?> writer = pair.first();
+                    Consumer<LogPositionMarker> consumer = pair.other();
+                    TransactionId transactionId = new TransactionId(4L, BASE_TX_CHECKSUM, 5L);
 
-            // last committed tx
-            consumer.accept( marker );
-            writer.writeStartEntry( 2L, 3L, BASE_TX_CHECKSUM, new byte[0] );
-            writer.writeCommitEntry( 4L, 5L );
+                    // last committed tx
+                    consumer.accept(marker);
+                    writer.writeStartEntry(2L, 3L, BASE_TX_CHECKSUM, new byte[0]);
+                    writer.writeCommitEntry(4L, 5L);
 
-            // check point
-            consumer.accept( marker );
-            var checkpointFile = logFiles.getCheckpointFile();
-            var checkpointAppender = checkpointFile.getCheckpointAppender();
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(), "test" );
-            return true;
-        }, KernelVersion.LATEST );
+                    // check point
+                    consumer.accept(marker);
+                    var checkpointFile = logFiles.getCheckpointFile();
+                    var checkpointAppender = checkpointFile.getCheckpointAppender();
+                    checkpointAppender.checkPoint(
+                            LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(), "test");
+                    return true;
+                },
+                KernelVersion.LATEST);
 
         LifeSupport life = new LifeSupport();
-        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
-        try
-        {
-            StorageEngine storageEngine = mock( StorageEngine.class );
+        RecoveryMonitor monitor = mock(RecoveryMonitor.class);
+        try {
+            StorageEngine storageEngine = mock(StorageEngine.class);
             Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, new TestCommandReaderFactory(),
-                                                                                   monitors, false, config );
-            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
-            monitors.addMonitorListener( new RecoveryMonitor()
-            {
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
+                    logFiles, metadataCache, new TestCommandReaderFactory(), monitors, false, config);
+            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, logFiles, fileSystem, INSTANCE);
+            monitors.addMonitorListener(new RecoveryMonitor() {
                 @Override
-                public void recoveryRequired( LogPosition recoveryPosition )
-                {
-                    fail( "Recovery should not be required" );
+                public void recoveryRequired(LogPosition recoveryPosition) {
+                    fail("Recovery should not be required");
                 }
-            } );
-            life.add( new TransactionLogsRecovery(
-                    new DefaultRecoveryService( storageEngine, transactionIdStore, txStore, versionRepository, logFiles, NO_MONITOR, mock( InternalLog.class ),
-                            false ), logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, RecoveryPredicate.ALL, contextFactory ) );
+            });
+            life.add(new TransactionLogsRecovery(
+                    new DefaultRecoveryService(
+                            storageEngine,
+                            transactionIdStore,
+                            txStore,
+                            versionRepository,
+                            logFiles,
+                            NO_MONITOR,
+                            mock(InternalLog.class),
+                            false),
+                    logPruner,
+                    schemaLife,
+                    monitor,
+                    ProgressReporter.SILENT,
+                    false,
+                    EMPTY_CHECKER,
+                    RecoveryPredicate.ALL,
+                    contextFactory));
 
             life.start();
 
-            verifyNoInteractions( monitor );
-        }
-        finally
-        {
+            verifyNoInteractions(monitor);
+        } finally {
             life.shutdown();
         }
     }
 
     @Test
-    void shouldTruncateLogAfterSinglePartialTransaction() throws Exception
-    {
+    void shouldTruncateLogAfterSinglePartialTransaction() throws Exception {
         // GIVEN
-        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
-        writeSomeData( file, pair ->
-        {
+        writeSomeData(file, pair -> {
             LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // incomplete tx
-            consumer.accept( marker ); // <-- marker has the last good position
-            writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
+            consumer.accept(marker); // <-- marker has the last good position
+            writer.writeStartEntry(5L, 4L, 0, new byte[0]);
 
             return true;
-        } );
+        });
 
         // WHEN
-        boolean recoveryRequired = recovery( storeDir );
+        boolean recoveryRequired = recovery(storeDir);
 
         // THEN
-        assertTrue( recoveryRequired );
-        assertEquals( marker.getByteOffset(), Files.size( file ) );
+        assertTrue(recoveryRequired);
+        assertEquals(marker.getByteOffset(), Files.size(file));
     }
 
     @Test
-    void doNotTruncateCheckpointsAfterLastTransaction() throws IOException
-    {
-        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
+    void doNotTruncateCheckpointsAfterLastTransaction() throws IOException {
+        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         LogPositionMarker marker = new LogPositionMarker();
-        writeSomeData( file, pair ->
-        {
+        writeSomeData(file, pair -> {
             LogEntryWriter<?> writer = pair.first();
-            writer.writeStartEntry( 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY );
-            TransactionId transactionId = new TransactionId( 1L, BASE_TX_CHECKSUM, 2L );
+            writer.writeStartEntry(1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
+            TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L);
 
-            writer.writeCommitEntry( 1L, 2L );
+            writer.writeCommitEntry(1L, 2L);
             Consumer<LogPositionMarker> other = pair.other();
-            other.accept( marker );
+            other.accept(marker);
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(), "test" );
+            checkpointAppender.checkPoint(
+                    LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(), "test");
 
             // write incomplete tx to trigger recovery
-            writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
+            writer.writeStartEntry(5L, 4L, 0, new byte[0]);
             return true;
-        } );
-        assertTrue( recovery( storeDir ) );
+        });
+        assertTrue(recovery(storeDir));
 
-        assertEquals( marker.getByteOffset(), Files.size( file ) );
-        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
-                ((DetachedCheckpointAppender) logFiles.getCheckpointFile().getCheckpointAppender()).getCurrentPosition() );
+        assertEquals(marker.getByteOffset(), Files.size(file));
+        assertEquals(
+                CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
+                ((DetachedCheckpointAppender) logFiles.getCheckpointFile().getCheckpointAppender())
+                        .getCurrentPosition());
 
-        if ( NativeAccessProvider.getNativeAccess().isAvailable() )
-        {
-            assertEquals( ByteUnit.mebiBytes( 1 ), Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
-        }
-        else
-        {
-            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        if (NativeAccessProvider.getNativeAccess().isAvailable()) {
+            assertEquals(
+                    ByteUnit.mebiBytes(1),
+                    Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+        } else {
+            assertEquals(
+                    CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
+                    Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         }
     }
 
     @Test
-    void shouldTruncateInvalidCheckpointAndAllCorruptTransactions() throws IOException
-    {
-        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
+    void shouldTruncateInvalidCheckpointAndAllCorruptTransactions() throws IOException {
+        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         LogPositionMarker marker = new LogPositionMarker();
-        writeSomeData( file, pair ->
-        {
+        writeSomeData(file, pair -> {
             LogEntryWriter<?> writer = pair.first();
-            writer.writeStartEntry( 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY );
-            writer.writeCommitEntry( 1L, 2L );
-            TransactionId transactionId = new TransactionId( 1L, BASE_TX_CHECKSUM, 2L );
+            writer.writeStartEntry(1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
+            writer.writeCommitEntry(1L, 2L);
+            TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L);
 
             Consumer<LogPositionMarker> other = pair.other();
-            other.accept( marker );
+            other.accept(marker);
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(),"valid checkpoint" );
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, transactionId, new LogPosition( marker.getLogVersion() + 1, marker.getByteOffset() ),
-                    Instant.now(), "invalid checkpoint" );
+            checkpointAppender.checkPoint(
+                    LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(), "valid checkpoint");
+            checkpointAppender.checkPoint(
+                    LogCheckPointEvent.NULL,
+                    transactionId,
+                    new LogPosition(marker.getLogVersion() + 1, marker.getByteOffset()),
+                    Instant.now(),
+                    "invalid checkpoint");
 
             // incomplete tx
-            writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
+            writer.writeStartEntry(5L, 4L, 0, new byte[0]);
             return true;
-        } );
-        assertTrue( recovery( storeDir ) );
+        });
+        assertTrue(recovery(storeDir));
 
-        assertEquals( marker.getByteOffset(), Files.size( file ) );
-        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        assertEquals(marker.getByteOffset(), Files.size(file));
+        assertEquals(
+                CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
+                Files.size(logFiles.getCheckpointFile().getCurrentFile()));
     }
 
     @Test
-    void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfulRecovery() throws Exception
-    {
+    void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfulRecovery() throws Exception {
         // GIVEN
-        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
-        writeSomeData( file, pair ->
-        {
+        writeSomeData(file, pair -> {
             LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // last committed tx
             int previousChecksum = BASE_TX_CHECKSUM;
-            writer.writeStartEntry( 2L, 3L, previousChecksum, new byte[0] );
-            previousChecksum = writer.writeCommitEntry( 4L, 5L );
+            writer.writeStartEntry(2L, 3L, previousChecksum, new byte[0]);
+            previousChecksum = writer.writeCommitEntry(4L, 5L);
 
             // incomplete tx
-            consumer.accept( marker ); // <-- marker has the last good position
-            writer.writeStartEntry( 5L, 4L, previousChecksum, new byte[0] );
+            consumer.accept(marker); // <-- marker has the last good position
+            writer.writeStartEntry(5L, 4L, previousChecksum, new byte[0]);
 
             return true;
-        } );
+        });
 
         // WHEN
-        boolean recoveryRequired = recovery( storeDir );
+        boolean recoveryRequired = recovery(storeDir);
 
         // THEN
-        assertTrue( recoveryRequired );
-        assertEquals( marker.getByteOffset(), Files.size( file ) );
+        assertTrue(recoveryRequired);
+        assertEquals(marker.getByteOffset(), Files.size(file));
     }
 
     @Test
-    void shouldTellTransactionIdStoreAfterSuccessfulRecovery() throws Exception
-    {
+    void shouldTellTransactionIdStoreAfterSuccessfulRecovery() throws Exception {
         // GIVEN
-        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
         final byte[] additionalHeaderData = new byte[0];
         final long transactionId = 4;
         final long commitTimestamp = 5;
-        writeSomeData( file, pair ->
-        {
+        writeSomeData(file, pair -> {
             LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // last committed tx
-            writer.writeStartEntry( 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData );
-            writer.writeCommitEntry( transactionId, commitTimestamp );
-            consumer.accept( marker );
+            writer.writeStartEntry(2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
+            writer.writeCommitEntry(transactionId, commitTimestamp);
+            consumer.accept(marker);
 
             return true;
-        } );
+        });
 
         // WHEN
-        boolean recoveryRequired = recovery( storeDir );
+        boolean recoveryRequired = recovery(storeDir);
 
         // THEN
-        assertTrue( recoveryRequired );
+        assertTrue(recoveryRequired);
         var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
         LogPosition logPosition = lastClosedTransaction.logPosition();
-        assertEquals( transactionId, lastClosedTransaction.transactionId() );
-        assertEquals( commitTimestamp, transactionIdStore.getLastCommittedTransaction().commitTimestamp() );
-        assertEquals( logVersion, logPosition.getLogVersion() );
-        assertEquals( marker.getByteOffset(), logPosition.getByteOffset() );
+        assertEquals(transactionId, lastClosedTransaction.transactionId());
+        assertEquals(
+                commitTimestamp,
+                transactionIdStore.getLastCommittedTransaction().commitTimestamp());
+        assertEquals(logVersion, logPosition.getLogVersion());
+        assertEquals(marker.getByteOffset(), logPosition.getByteOffset());
     }
 
     @Test
-    void shouldInitSchemaLifeWhenRecoveryNotRequired() throws Exception
-    {
-        Lifecycle schemaLife = mock( Lifecycle.class );
-        var contextFactory = new CursorContextFactory( NULL, EmptyVersionContextSupplier.EMPTY );
+    void shouldInitSchemaLifeWhenRecoveryNotRequired() throws Exception {
+        Lifecycle schemaLife = mock(Lifecycle.class);
+        var contextFactory = new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
 
-        RecoveryService recoveryService = mock( RecoveryService.class );
-        when( recoveryService.getRecoveryStartInformation() ).thenReturn( NO_RECOVERY_REQUIRED );
+        RecoveryService recoveryService = mock(RecoveryService.class);
+        when(recoveryService.getRecoveryStartInformation()).thenReturn(NO_RECOVERY_REQUIRED);
 
-        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
-        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
+        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, logFiles, fileSystem, INSTANCE);
+        RecoveryMonitor monitor = mock(RecoveryMonitor.class);
 
-        TransactionLogsRecovery logsRecovery = new TransactionLogsRecovery( recoveryService, logPruner, schemaLife, monitor, ProgressReporter.SILENT,
-                true, EMPTY_CHECKER, RecoveryPredicate.ALL, contextFactory );
+        TransactionLogsRecovery logsRecovery = new TransactionLogsRecovery(
+                recoveryService,
+                logPruner,
+                schemaLife,
+                monitor,
+                ProgressReporter.SILENT,
+                true,
+                EMPTY_CHECKER,
+                RecoveryPredicate.ALL,
+                contextFactory);
 
         logsRecovery.init();
 
-        verify( monitor, never() ).recoveryRequired( any() );
-        verify( schemaLife ).init();
+        verify(monitor, never()).recoveryRequired(any());
+        verify(schemaLife).init();
     }
 
     @Test
-    void shouldFailRecoveryWhenCanceled() throws Exception
-    {
-        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
+    void shouldFailRecoveryWhenCanceled() throws Exception {
+        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
         final byte[] additionalHeaderData = new byte[0];
         final long transactionId = 4;
         final long commitTimestamp = 5;
-        writeSomeData( file, pair ->
-        {
+        writeSomeData(file, pair -> {
             LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // last committed tx
-            writer.writeStartEntry( 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData );
-            writer.writeCommitEntry( transactionId, commitTimestamp );
-            consumer.accept( marker );
+            writer.writeStartEntry(2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
+            writer.writeCommitEntry(transactionId, commitTimestamp);
+            consumer.accept(marker);
 
             return true;
-        } );
+        });
 
-        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
-        var startupController = mock( DatabaseStartupController.class );
-        var databaseId = from( "db", randomUUID() );
-        when( startupController.shouldAbort( databaseId ) ).thenReturn( false, true );
-        var recoveryStartupChecker = new RecoveryStartupChecker( startupController, databaseId );
-        var logsTruncator = mock( CorruptedLogsTruncator.class );
+        RecoveryMonitor monitor = mock(RecoveryMonitor.class);
+        var startupController = mock(DatabaseStartupController.class);
+        var databaseId = from("db", randomUUID());
+        when(startupController.shouldAbort(databaseId)).thenReturn(false, true);
+        var recoveryStartupChecker = new RecoveryStartupChecker(startupController, databaseId);
+        var logsTruncator = mock(CorruptedLogsTruncator.class);
 
-        var exception = assertThrows( Exception.class, () -> recovery( storeDir, recoveryStartupChecker ) );
-        var rootCause = getRootCause( exception );
-        assertThat( rootCause ).isInstanceOf( DatabaseStartAbortedException.class );
+        var exception = assertThrows(Exception.class, () -> recovery(storeDir, recoveryStartupChecker));
+        var rootCause = getRootCause(exception);
+        assertThat(rootCause).isInstanceOf(DatabaseStartAbortedException.class);
 
-        verify( logsTruncator, never() ).truncate( any() );
-        verify( monitor, never() ).recoveryCompleted( anyInt(), anyLong() );
+        verify(logsTruncator, never()).truncate(any());
+        verify(monitor, never()).recoveryCompleted(anyInt(), anyLong());
     }
 
-    private boolean recovery( Path storeDir ) throws IOException
-    {
-        return recovery( storeDir, EMPTY_CHECKER );
+    private boolean recovery(Path storeDir) throws IOException {
+        return recovery(storeDir, EMPTY_CHECKER);
     }
 
-    private boolean recovery( Path storeDir, RecoveryStartupChecker startupChecker ) throws IOException
-    {
+    private boolean recovery(Path storeDir, RecoveryStartupChecker startupChecker) throws IOException {
         LifeSupport life = new LifeSupport();
-        var contextFactory = new CursorContextFactory( NULL, EmptyVersionContextSupplier.EMPTY );
+        var contextFactory = new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
 
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
-        RecoveryMonitor monitor = new RecoveryMonitor()
-        {
+        RecoveryMonitor monitor = new RecoveryMonitor() {
             @Override
-            public void recoveryRequired( LogPosition recoveryPosition )
-            {
-                recoveryRequired.set( true );
+            public void recoveryRequired(LogPosition recoveryPosition) {
+                recoveryRequired.set(true);
             }
         };
-        try
-        {
+        try {
             var logFiles = buildLogFiles();
-            life.add( logFiles );
-            StorageEngine storageEngine = mock( StorageEngine.class );
-            when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
+            life.add(logFiles);
+            StorageEngine storageEngine = mock(StorageEngine.class);
+            when(storageEngine.createStorageCursors(any())).thenReturn(mock(StoreCursors.class));
             Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-            LogicalTransactionStore txStore =
-                    new PhysicalLogicalTransactionStore( logFiles, metadataCache, new TestCommandReaderFactory(), monitors, false, config );
-            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
-            monitors.addMonitorListener( monitor );
-            life.add( new TransactionLogsRecovery(
-                    new DefaultRecoveryService( storageEngine, transactionIdStore, txStore, versionRepository, logFiles, NO_MONITOR, mock( InternalLog.class ),
-                            false ), logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker, RecoveryPredicate.ALL, contextFactory ) );
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
+                    logFiles, metadataCache, new TestCommandReaderFactory(), monitors, false, config);
+            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, logFiles, fileSystem, INSTANCE);
+            monitors.addMonitorListener(monitor);
+            life.add(new TransactionLogsRecovery(
+                    new DefaultRecoveryService(
+                            storageEngine,
+                            transactionIdStore,
+                            txStore,
+                            versionRepository,
+                            logFiles,
+                            NO_MONITOR,
+                            mock(InternalLog.class),
+                            false),
+                    logPruner,
+                    schemaLife,
+                    monitor,
+                    ProgressReporter.SILENT,
+                    false,
+                    startupChecker,
+                    RecoveryPredicate.ALL,
+                    contextFactory));
 
             life.start();
-        }
-        finally
-        {
+        } finally {
             life.shutdown();
         }
         return recoveryRequired.get();
     }
 
-    private void writeSomeData( Path file, Visitor<Pair<LogEntryWriter<?>,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
-    {
-        writeSomeDataWithVersion( file, visitor, KernelVersion.LATEST );
+    private void writeSomeData(
+            Path file, Visitor<Pair<LogEntryWriter<?>, Consumer<LogPositionMarker>>, IOException> visitor)
+            throws IOException {
+        writeSomeDataWithVersion(file, visitor, KernelVersion.LATEST);
     }
 
-    private void writeSomeDataWithVersion( Path file, Visitor<Pair<LogEntryWriter<?>,Consumer<LogPositionMarker>>,IOException> visitor,
-            KernelVersion version ) throws IOException
-    {
-        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
-                CURRENT_LOG_FORMAT_VERSION, file, EMPTY_ACCESSOR, DatabaseTracer.NULL );
-              PositionAwarePhysicalFlushableChecksumChannel writableLogChannel =
-                      new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, new HeapScopedBuffer( 1, KibiByte, INSTANCE ) ) )
-        {
-            writeLogHeader( writableLogChannel, new LogHeader( logVersion, 2L, LegacyStoreId.UNKNOWN ) );
+    private void writeSomeDataWithVersion(
+            Path file,
+            Visitor<Pair<LogEntryWriter<?>, Consumer<LogPositionMarker>>, IOException> visitor,
+            KernelVersion version)
+            throws IOException {
+        try (LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
+                        fileSystem.write(file),
+                        logVersion,
+                        CURRENT_LOG_FORMAT_VERSION,
+                        file,
+                        EMPTY_ACCESSOR,
+                        DatabaseTracer.NULL);
+                PositionAwarePhysicalFlushableChecksumChannel writableLogChannel =
+                        new PositionAwarePhysicalFlushableChecksumChannel(
+                                versionedStoreChannel, new HeapScopedBuffer(1, KibiByte, INSTANCE))) {
+            writeLogHeader(writableLogChannel, new LogHeader(logVersion, 2L, LegacyStoreId.UNKNOWN));
             writableLogChannel.beginChecksum();
-            Consumer<LogPositionMarker> consumer = marker ->
-            {
-                try
-                {
-                    writableLogChannel.getCurrentPosition( marker );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
+            Consumer<LogPositionMarker> consumer = marker -> {
+                try {
+                    writableLogChannel.getCurrentPosition(marker);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             };
-            LogEntryWriter<?> first = new LogEntryWriter<>( writableLogChannel, version );
-            visitor.visit( Pair.of( first, consumer ) );
+            LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, version);
+            visitor.visit(Pair.of(first, consumer));
         }
     }
 
-    private LogFiles buildLogFiles() throws IOException
-    {
-        return LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withLogVersionRepository( logVersionRepository )
-                .withTransactionIdStore( transactionIdStore )
-                .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( LegacyStoreId.UNKNOWN )
-                .withConfig( Config.newBuilder().set( GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false ).build() )
+    private LogFiles buildLogFiles() throws IOException {
+        return LogFilesBuilder.builder(databaseLayout, fileSystem)
+                .withLogVersionRepository(logVersionRepository)
+                .withTransactionIdStore(transactionIdStore)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withConfig(Config.newBuilder()
+                        .set(GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false)
+                        .build())
                 .build();
     }
 }

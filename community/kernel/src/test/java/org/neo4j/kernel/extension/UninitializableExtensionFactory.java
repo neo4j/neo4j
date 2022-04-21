@@ -25,16 +25,13 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 /**
  * This kernel extension cannot be initialised, because an exception will be thrown we the machinery tries to create a proxy of the UnproxyableDepencies class.
  */
-public class UninitializableExtensionFactory extends ExtensionFactory<UnproxyableDependencies>
-{
-    public UninitializableExtensionFactory()
-    {
-        super( "uninitializable" );
+public class UninitializableExtensionFactory extends ExtensionFactory<UnproxyableDependencies> {
+    public UninitializableExtensionFactory() {
+        super("uninitializable");
     }
 
     @Override
-    public Lifecycle newInstance( ExtensionContext context, UnproxyableDependencies dependencies )
-    {
+    public Lifecycle newInstance(ExtensionContext context, UnproxyableDependencies dependencies) {
         return null;
     }
 }

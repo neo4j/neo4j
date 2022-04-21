@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-public interface ReversedTransactionCursorMonitor
-{
-    void transactionalLogRecordReadFailure( long[] offsets, int offsetCursor, long logVersion );
+public interface ReversedTransactionCursorMonitor {
+    void transactionalLogRecordReadFailure(long[] offsets, int offsetCursor, long logVersion);
 
     void presketchingTransactionLogs();
 }

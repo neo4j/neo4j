@@ -21,18 +21,12 @@ package org.neo4j.tooling.procedure.procedures.invalid.aggregation;
 
 import org.neo4j.procedure.UserAggregationFunction;
 
-public class FunctionWithoutAggregationMethods
-{
+public class FunctionWithoutAggregationMethods {
 
     @UserAggregationFunction
-    public MyAggregation aggregateAllTheThings()
-    {
+    public MyAggregation aggregateAllTheThings() {
         return new MyAggregation();
     }
 
-    public static class MyAggregation
-    {
-
-    }
-
+    public static class MyAggregation {}
 }

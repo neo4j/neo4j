@@ -32,22 +32,24 @@ import org.neo4j.graphdb.schema.IndexType
  *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
-case class UndirectedRelationshipIndexScan(idName: String,
-                                           leftNode: String,
-                                           rightNode: String,
-                                           override val typeToken: RelationshipTypeToken,
-                                           properties: Seq[IndexedProperty],
-                                           argumentIds: Set[String],
-                                           indexOrder: IndexOrder,
-                                           override val indexType: IndexType)
-                                          (implicit idGen: IdGen)
-  extends RelationshipIndexLeafPlan(idGen) {
+case class UndirectedRelationshipIndexScan(
+  idName: String,
+  leftNode: String,
+  rightNode: String,
+  override val typeToken: RelationshipTypeToken,
+  properties: Seq[IndexedProperty],
+  argumentIds: Set[String],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType
+)(implicit idGen: IdGen)
+    extends RelationshipIndexLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexScan =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))

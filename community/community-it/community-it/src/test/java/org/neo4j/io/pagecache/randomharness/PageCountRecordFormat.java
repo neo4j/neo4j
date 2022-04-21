@@ -23,143 +23,108 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Arrays;
-
 import org.neo4j.io.pagecache.PageCursor;
 
-public class PageCountRecordFormat extends RecordFormat
-{
+public class PageCountRecordFormat extends RecordFormat {
     @Override
-    public int getRecordSize()
-    {
+    public int getRecordSize() {
         return 16;
     }
 
     @Override
-    public Record createRecord( Path path, int recordId, int page, int offset )
-    {
-        return new PageCountRecord( recordId, getRecordSize(), page, offset );
+    public Record createRecord(Path path, int recordId, int page, int offset) {
+        return new PageCountRecord(recordId, getRecordSize(), page, offset);
     }
 
     @Override
-    public Record readRecord( PageCursor cursor ) throws IOException
-    {
+    public Record readRecord(PageCursor cursor) throws IOException {
         int offset = cursor.getOffset();
         byte[] bytes = new byte[getRecordSize()];
-        do
-        {
-            cursor.setOffset( offset );
-            cursor.getBytes( bytes );
-        }
-        while ( cursor.shouldRetry() );
-        return new PageCountRecord( bytes );
+        do {
+            cursor.setOffset(offset);
+            cursor.getBytes(bytes);
+        } while (cursor.shouldRetry());
+        return new PageCountRecord(bytes);
     }
 
     @Override
-    public Record zeroRecord()
-    {
-        return new PageCountRecord( 0, getRecordSize(), 0, 0 );
+    public Record zeroRecord() {
+        return new PageCountRecord(0, getRecordSize(), 0, 0);
     }
 
     @Override
-    public void write( Record record, PageCursor cursor )
-    {
+    public void write(Record record, PageCursor cursor) {
         PageCountRecord r = (PageCountRecord) record;
         int shorts = getRecordSize() / 2;
-        for ( int i = 0; i < shorts; i++ )
-        {
-            cursor.putShort( r.getRecordId() );
+        for (int i = 0; i < shorts; i++) {
+            cursor.putShort(r.getRecordId());
         }
     }
 
-    private static final class PageCountRecord implements Record
-    {
+    private static final class PageCountRecord implements Record {
         private final byte[] bytes;
         private final ByteBuffer buf;
 
-        PageCountRecord( int recordId, int recordSize, int page, int offset )
-        {
-            if ( recordId > Short.MAX_VALUE )
-            {
-                throw new IllegalArgumentException(
-                        "Record ID greater than Short.MAX_VALUE: " + recordId );
+        PageCountRecord(int recordId, int recordSize, int page, int offset) {
+            if (recordId > Short.MAX_VALUE) {
+                throw new IllegalArgumentException("Record ID greater than Short.MAX_VALUE: " + recordId);
             }
-            if ( recordSize < 2 )
-            {
-                throw new IllegalArgumentException(
-                        "Record size must be positive: " + recordSize );
+            if (recordSize < 2) {
+                throw new IllegalArgumentException("Record size must be positive: " + recordSize);
             }
-            if ( recordSize % 2 != 0 )
-            {
-                throw new IllegalArgumentException(
-                        "Record size must be even: " + recordSize );
+            if (recordSize % 2 != 0) {
+                throw new IllegalArgumentException("Record size must be even: " + recordSize);
             }
             bytes = new byte[recordSize];
-            buf = ByteBuffer.wrap( bytes );
-            for ( int i = 0; i < bytes.length; i += 2 )
-            {
-                buf.putShort( (short) recordId );
+            buf = ByteBuffer.wrap(bytes);
+            for (int i = 0; i < bytes.length; i += 2) {
+                buf.putShort((short) recordId);
             }
         }
 
-        PageCountRecord( byte[] bytes )
-        {
-            if ( bytes.length == 0 )
-            {
-                throw new IllegalArgumentException( "Bytes cannot be empty" );
+        PageCountRecord(byte[] bytes) {
+            if (bytes.length == 0) {
+                throw new IllegalArgumentException("Bytes cannot be empty");
             }
-            if ( bytes.length % 2 != 0 )
-            {
-                throw new IllegalArgumentException(
-                        "Record size must be even: " + bytes.length );
+            if (bytes.length % 2 != 0) {
+                throw new IllegalArgumentException("Record size must be even: " + bytes.length);
             }
             byte first = bytes[0];
-            for ( byte b : bytes )
-            {
-                if ( b != first )
-                {
-                    throw new IllegalArgumentException(
-                            "All bytes must be the same: " + Arrays.toString( bytes ) );
+            for (byte b : bytes) {
+                if (b != first) {
+                    throw new IllegalArgumentException("All bytes must be the same: " + Arrays.toString(bytes));
                 }
             }
             this.bytes = bytes;
-            this.buf = ByteBuffer.wrap( bytes );
+            this.buf = ByteBuffer.wrap(bytes);
         }
 
-        public short getRecordId()
-        {
-            return buf.getShort( 0 );
+        public short getRecordId() {
+            return buf.getShort(0);
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
 
             PageCountRecord that = (PageCountRecord) o;
 
-            return Arrays.equals( bytes, that.bytes );
-
+            return Arrays.equals(bytes, that.bytes);
         }
 
         @Override
-        public int hashCode()
-        {
-            return Arrays.hashCode( bytes );
+        public int hashCode() {
+            return Arrays.hashCode(bytes);
         }
 
         @Override
-        public String toString()
-        {
-            return "PageCountRecord[" +
-                   "bytes=" + Arrays.toString( bytes ) +
-                   ']';
+        public String toString() {
+            return "PageCountRecord[" + "bytes=" + Arrays.toString(bytes) + ']';
         }
     }
 }

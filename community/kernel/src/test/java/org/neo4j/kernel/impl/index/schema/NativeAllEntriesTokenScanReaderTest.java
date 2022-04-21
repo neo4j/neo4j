@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static java.lang.Long.max;
+import static java.lang.Math.toIntExact;
+import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.internal.helpers.collection.Iterables.reverse;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -32,138 +33,117 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.IntFunction;
-
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
-import static java.lang.Long.max;
-import static java.lang.Math.toIntExact;
-import static org.neo4j.collection.PrimitiveLongCollections.asArray;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.internal.helpers.collection.Iterables.reverse;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
-
-@ExtendWith( RandomExtension.class )
-class NativeAllEntriesTokenScanReaderTest
-{
+@ExtendWith(RandomExtension.class)
+class NativeAllEntriesTokenScanReaderTest {
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldSeeNonOverlappingRanges() throws Exception
-    {
+    void shouldSeeNonOverlappingRanges() throws Exception {
         int rangeSize = 4;
         // new ranges at: 0, 4, 8, 12 ...
         shouldIterateCorrectlyOver(
-                labels( 0, rangeSize, 0, 1, 2, 3 ),
-                labels( 1, rangeSize, 4, 6 ),
-                labels( 2, rangeSize, 12 ),
-                labels( 3, rangeSize, 17, 18 ) );
+                labels(0, rangeSize, 0, 1, 2, 3),
+                labels(1, rangeSize, 4, 6),
+                labels(2, rangeSize, 12),
+                labels(3, rangeSize, 17, 18));
     }
 
     @Test
-    void shouldSeeOverlappingRanges() throws Exception
-    {
+    void shouldSeeOverlappingRanges() throws Exception {
         int rangeSize = 4;
         // new ranges at: 0, 4, 8, 12 ...
         shouldIterateCorrectlyOver(
-                labels( 0, rangeSize, 0, 1, 3, 55 ),
-                labels( 3, rangeSize, 1, 2, 5, 6, 43 ),
-                labels( 5, rangeSize, 8, 9, 15, 42 ),
-                labels( 6, rangeSize, 4, 8, 12 ) );
+                labels(0, rangeSize, 0, 1, 3, 55),
+                labels(3, rangeSize, 1, 2, 5, 6, 43),
+                labels(5, rangeSize, 8, 9, 15, 42),
+                labels(6, rangeSize, 4, 8, 12));
     }
 
     @Test
-    void shouldSeeRangesFromRandomData() throws Exception
-    {
-        List<Labels> labels = randomData( random );
+    void shouldSeeRangesFromRandomData() throws Exception {
+        List<Labels> labels = randomData(random);
 
-        shouldIterateCorrectlyOver( labels.toArray( new Labels[0] ) );
+        shouldIterateCorrectlyOver(labels.toArray(new Labels[0]));
     }
 
-    private static void shouldIterateCorrectlyOver( Labels... data ) throws Exception
-    {
+    private static void shouldIterateCorrectlyOver(Labels... data) throws Exception {
         // GIVEN
-        try ( AllEntriesTokenScanReader reader = new NativeAllEntriesTokenScanReader( store( data ), highestLabelId( data ), NODE ) )
-        {
+        try (AllEntriesTokenScanReader reader =
+                new NativeAllEntriesTokenScanReader(store(data), highestLabelId(data), NODE)) {
             // WHEN/THEN
-            assertRanges( reader, data );
+            assertRanges(reader, data);
         }
     }
 
-    static List<Labels> randomData( RandomSupport random )
-    {
+    static List<Labels> randomData(RandomSupport random) {
         List<Labels> labels = new ArrayList<>();
-        int labelCount = random.intBetween( 30, 100 );
+        int labelCount = random.intBetween(30, 100);
         int labelId = 0;
-        for ( int i = 0; i < labelCount; i++ )
-        {
-            labelId += random.intBetween( 1, 20 );
-            int nodeCount = random.intBetween( 20, 100 );
+        for (int i = 0; i < labelCount; i++) {
+            labelId += random.intBetween(1, 20);
+            int nodeCount = random.intBetween(20, 100);
             long[] nodeIds = new long[nodeCount];
             long nodeId = 0;
-            for ( int j = 0; j < nodeCount; j++ )
-            {
-                nodeId += random.intBetween( 1, 100 );
+            for (int j = 0; j < nodeCount; j++) {
+                nodeId += random.intBetween(1, 100);
                 nodeIds[j] = nodeId;
             }
-            labels.add( labels( labelId, nodeIds ) );
+            labels.add(labels(labelId, nodeIds));
         }
         return labels;
     }
 
-    private static int highestLabelId( Labels[] data )
-    {
+    private static int highestLabelId(Labels[] data) {
         int highest = 0;
-        for ( Labels labels : data )
-        {
-            highest = Integer.max( highest, labels.labelId );
+        for (Labels labels : data) {
+            highest = Integer.max(highest, labels.labelId);
         }
         return highest;
     }
 
-    private static void assertRanges( AllEntriesTokenScanReader reader, Labels[] data )
-    {
+    private static void assertRanges(AllEntriesTokenScanReader reader, Labels[] data) {
         Iterator<EntityTokenRange> iterator = reader.iterator();
-        long highestRangeId = highestRangeId( data );
-        for ( long rangeId = 0; rangeId <= highestRangeId; rangeId++ )
-        {
-            SortedMap<Long/*nodeId*/,List<Long>/*labelIds*/> expected = rangeOf( data, rangeId );
-            if ( expected != null )
-            {
-                Assertions.assertTrue( iterator.hasNext(), "Was expecting range " + expected );
+        long highestRangeId = highestRangeId(data);
+        for (long rangeId = 0; rangeId <= highestRangeId; rangeId++) {
+            SortedMap<Long /*nodeId*/, List<Long> /*labelIds*/> expected = rangeOf(data, rangeId);
+            if (expected != null) {
+                Assertions.assertTrue(iterator.hasNext(), "Was expecting range " + expected);
                 EntityTokenRange range = iterator.next();
 
-                Assertions.assertEquals( rangeId, range.id() );
-                for ( Map.Entry<Long,List<Long>> expectedEntry : expected.entrySet() )
-                {
-                    long[] labels = range.tokens( expectedEntry.getKey() );
-                    Assertions.assertArrayEquals( asArray( expectedEntry.getValue().iterator() ), labels );
+                Assertions.assertEquals(rangeId, range.id());
+                for (Map.Entry<Long, List<Long>> expectedEntry : expected.entrySet()) {
+                    long[] labels = range.tokens(expectedEntry.getKey());
+                    Assertions.assertArrayEquals(
+                            asArray(expectedEntry.getValue().iterator()), labels);
                 }
             }
             // else there was nothing in this range
         }
-        Assertions.assertFalse( iterator.hasNext() );
+        Assertions.assertFalse(iterator.hasNext());
     }
 
-    private static SortedMap<Long,List<Long>> rangeOf( Labels[] data, long rangeId )
-    {
-        SortedMap<Long,List<Long>> result = new TreeMap<>();
-        for ( Labels label : data )
-        {
-            for ( Pair<TokenScanKey,TokenScanValue> entry : label.entries )
-            {
-                if ( entry.first().idRange == rangeId )
-                {
+    private static SortedMap<Long, List<Long>> rangeOf(Labels[] data, long rangeId) {
+        SortedMap<Long, List<Long>> result = new TreeMap<>();
+        for (Labels label : data) {
+            for (Pair<TokenScanKey, TokenScanValue> entry : label.entries) {
+                if (entry.first().idRange == rangeId) {
                     long baseNodeId = entry.first().idRange * RANGE_SIZE;
                     long bits = entry.other().bits;
-                    while ( bits != 0 )
-                    {
-                        long nodeId = baseNodeId + Long.numberOfTrailingZeros( bits );
-                        result.computeIfAbsent( nodeId, id -> new ArrayList<>() ).add( (long) label.labelId );
+                    while (bits != 0) {
+                        long nodeId = baseNodeId + Long.numberOfTrailingZeros(bits);
+                        result.computeIfAbsent(nodeId, id -> new ArrayList<>()).add((long) label.labelId);
                         bits &= bits - 1;
                     }
                 }
@@ -172,119 +152,98 @@ class NativeAllEntriesTokenScanReaderTest
         return result.isEmpty() ? null : result;
     }
 
-    private static long highestRangeId( Labels[] data )
-    {
+    private static long highestRangeId(Labels[] data) {
         long highest = 0;
-        for ( Labels labels : data )
-        {
-            Pair<TokenScanKey,TokenScanValue> highestEntry = labels.entries.get( labels.entries.size() - 1 );
-            highest = max( highest, highestEntry.first().idRange );
+        for (Labels labels : data) {
+            Pair<TokenScanKey, TokenScanValue> highestEntry = labels.entries.get(labels.entries.size() - 1);
+            highest = max(highest, highestEntry.first().idRange);
         }
         return highest;
     }
 
-    private static IntFunction<Seeker<TokenScanKey,TokenScanValue>> store( Labels... labels )
-    {
-        final MutableIntObjectMap<Labels> labelsMap = new IntObjectHashMap<>( labels.length );
-        for ( Labels item : labels )
-        {
-            labelsMap.put( item.labelId, item );
+    private static IntFunction<Seeker<TokenScanKey, TokenScanValue>> store(Labels... labels) {
+        final MutableIntObjectMap<Labels> labelsMap = new IntObjectHashMap<>(labels.length);
+        for (Labels item : labels) {
+            labelsMap.put(item.labelId, item);
         }
 
-        return labelId ->
-        {
-            Labels item = labelsMap.get( labelId );
+        return labelId -> {
+            Labels item = labelsMap.get(labelId);
             return item != null ? item.cursor() : EMPTY_CURSOR;
         };
     }
 
-    static Labels labels( int labelId, long... nodeIds )
-    {
-        List<Pair<TokenScanKey,TokenScanValue>> entries = new ArrayList<>();
+    static Labels labels(int labelId, long... nodeIds) {
+        List<Pair<TokenScanKey, TokenScanValue>> entries = new ArrayList<>();
         long currentRange = 0;
         TokenScanValue value = new TokenScanValue();
-        for ( long nodeId : nodeIds )
-        {
+        for (long nodeId : nodeIds) {
             long range = nodeId / RANGE_SIZE;
-            if ( range != currentRange )
-            {
-                if ( value.bits != 0 )
-                {
-                    entries.add( Pair.of( new TokenScanKey().set( labelId, currentRange ), value ) );
+            if (range != currentRange) {
+                if (value.bits != 0) {
+                    entries.add(Pair.of(new TokenScanKey().set(labelId, currentRange), value));
                     value = new TokenScanValue();
                 }
             }
-            value.set( toIntExact( nodeId % RANGE_SIZE ) );
+            value.set(toIntExact(nodeId % RANGE_SIZE));
             currentRange = range;
         }
 
-        if ( value.bits != 0 )
-        {
-            entries.add( Pair.of( new TokenScanKey().set( labelId, currentRange ), value ) );
+        if (value.bits != 0) {
+            entries.add(Pair.of(new TokenScanKey().set(labelId, currentRange), value));
         }
 
-        return new Labels( labelId, entries, nodeIds );
+        return new Labels(labelId, entries, nodeIds);
     }
 
-    static class Labels
-    {
+    static class Labels {
         private final int labelId;
-        private final List<Pair<TokenScanKey,TokenScanValue>> entries;
+        private final List<Pair<TokenScanKey, TokenScanValue>> entries;
         private final long[] nodeIds;
 
-        Labels( int labelId, List<Pair<TokenScanKey,TokenScanValue>> entries, long... nodeIds )
-        {
+        Labels(int labelId, List<Pair<TokenScanKey, TokenScanValue>> entries, long... nodeIds) {
             this.labelId = labelId;
             this.entries = entries;
             this.nodeIds = nodeIds;
         }
 
-        Seeker<TokenScanKey,TokenScanValue> cursor()
-        {
-            return new LabelsSeeker<>( entries );
+        Seeker<TokenScanKey, TokenScanValue> cursor() {
+            return new LabelsSeeker<>(entries);
         }
 
-        Seeker<TokenScanKey,TokenScanValue> descendingCursor()
-        {
-            return new LabelsSeeker<>( reverse( entries ) );
+        Seeker<TokenScanKey, TokenScanValue> descendingCursor() {
+            return new LabelsSeeker<>(reverse(entries));
         }
 
-        public long[] getNodeIds()
-        {
+        public long[] getNodeIds() {
             return nodeIds;
         }
     }
 
-    static final class LabelsSeeker<TokenScanKey, TokenScanValue> implements Seeker<TokenScanKey,TokenScanValue>
-    {
+    static final class LabelsSeeker<TokenScanKey, TokenScanValue> implements Seeker<TokenScanKey, TokenScanValue> {
         int cursor = -1;
         private boolean closed;
-        private final List<Pair<TokenScanKey,TokenScanValue>> entries;
+        private final List<Pair<TokenScanKey, TokenScanValue>> entries;
 
-        LabelsSeeker( List<Pair<TokenScanKey,TokenScanValue>> entries )
-        {
+        LabelsSeeker(List<Pair<TokenScanKey, TokenScanValue>> entries) {
             this.entries = entries;
         }
 
         @Override
-        public TokenScanKey key()
-        {
-            Assertions.assertFalse( closed );
-            return entries.get( cursor ).first();
+        public TokenScanKey key() {
+            Assertions.assertFalse(closed);
+            return entries.get(cursor).first();
         }
 
         @Override
-        public TokenScanValue value()
-        {
-            Assertions.assertFalse( closed );
-            return entries.get( cursor ).other();
+        public TokenScanValue value() {
+            Assertions.assertFalse(closed);
+            return entries.get(cursor).other();
         }
 
         @Override
-        public boolean next()
-        {
-            if ( cursor + 1 >= entries.size() )
-            {
+        public boolean next() {
+            if (cursor + 1 >= entries.size()) {
                 close();
                 return false;
             }
@@ -293,34 +252,28 @@ class NativeAllEntriesTokenScanReaderTest
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             closed = true;
         }
     }
 
-    static final Seeker<TokenScanKey,TokenScanValue> EMPTY_CURSOR = new Seeker<>()
-    {
+    static final Seeker<TokenScanKey, TokenScanValue> EMPTY_CURSOR = new Seeker<>() {
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return false;
         }
 
         @Override
-        public void close()
-        {   // Nothing to close
+        public void close() { // Nothing to close
         }
 
         @Override
-        public TokenScanKey key()
-        {
+        public TokenScanKey key() {
             throw new IllegalStateException();
         }
 
         @Override
-        public TokenScanValue value()
-        {
+        public TokenScanValue value() {
             throw new IllegalStateException();
         }
     };

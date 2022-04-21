@@ -19,12 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.storageengine.api.StorageNodeCursor;
-import org.neo4j.storageengine.api.StoragePropertyCursor;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
-
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,65 +28,65 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
+import org.junit.jupiter.api.Test;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+
 /**
  * Test read access to committed label data.
  */
-class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
-{
+class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase {
     @Test
-    void shouldBeAbleToListLabelsForNode() throws Exception
-    {
+    void shouldBeAbleToListLabelsForNode() throws Exception {
         // GIVEN
         long nodeId;
-        nodeId = createNode( map(), label1, label2 );
-        int labelId1 = labelId( label1 );
-        int labelId2 = labelId( label2 );
+        nodeId = createNode(map(), label1, label2);
+        int labelId1 = labelId(label1);
+        int labelId2 = labelId(label2);
 
         // THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL );
-        nodeCursor.single( nodeId );
-        assertTrue( nodeCursor.next() );
-        assertEquals( newSetWith( labelId1, labelId2 ), newSetWith( nodeCursor.labels() ) );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL);
+        nodeCursor.single(nodeId);
+        assertTrue(nodeCursor.next());
+        assertEquals(newSetWith(labelId1, labelId2), newSetWith(nodeCursor.labels()));
     }
 
     @Test
-    void labelsShouldNotLeakOutAsProperties() throws Exception
-    {
+    void labelsShouldNotLeakOutAsProperties() throws Exception {
         // GIVEN
-        long nodeId = createNode( map( "name", "Node" ), label1 );
-        int namePropertyKeyId = propertyKeyId( "name" );
+        long nodeId = createNode(map("name", "Node"), label1);
+        int namePropertyKeyId = propertyKeyId("name");
 
         // WHEN THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL );
-        StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
-        nodeCursor.single( nodeId );
-        assertTrue( nodeCursor.next() );
-        nodeCursor.properties( propertyCursor, ALL_PROPERTIES );
-        assertTrue( propertyCursor.next() );
-        assertEquals( namePropertyKeyId, propertyCursor.propertyKey() );
-        assertFalse( propertyCursor.next() );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL);
+        StoragePropertyCursor propertyCursor =
+                storageReader.allocatePropertyCursor(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+        nodeCursor.single(nodeId);
+        assertTrue(nodeCursor.next());
+        nodeCursor.properties(propertyCursor, ALL_PROPERTIES);
+        assertTrue(propertyCursor.next());
+        assertEquals(namePropertyKeyId, propertyCursor.propertyKey());
+        assertFalse(propertyCursor.next());
     }
 
     @Test
-    void shouldCountAllNodes() throws Exception
-    {
+    void shouldCountAllNodes() throws Exception {
         // given
         int nodeCountPerLabel = 5;
         long[] label2Nodes = new long[nodeCountPerLabel];
-        for ( int i = 0; i < nodeCountPerLabel; i++ )
-        {
-            createNode( map(), label1 );
-            label2Nodes[i] = createNode( map(), label2 );
+        for (int i = 0; i < nodeCountPerLabel; i++) {
+            createNode(map(), label1);
+            label2Nodes[i] = createNode(map(), label2);
         }
-        for ( long label2Node : label2Nodes )
-        {
-            deleteNode( label2Node );
+        for (long label2Node : label2Nodes) {
+            deleteNode(label2Node);
         }
 
         // when
-        long count = storageReader.nodesGetCount( NULL_CONTEXT );
+        long count = storageReader.nodesGetCount(NULL_CONTEXT);
 
         // then
-        assertEquals( nodeCountPerLabel, count );
+        assertEquals(nodeCountPerLabel, count);
     }
 }

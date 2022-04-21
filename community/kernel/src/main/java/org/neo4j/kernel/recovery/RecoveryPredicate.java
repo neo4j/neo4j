@@ -21,86 +21,69 @@ package org.neo4j.kernel.recovery;
 
 import java.time.Instant;
 import java.util.function.Predicate;
-
 import org.neo4j.internal.helpers.Format;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
-public interface RecoveryPredicate extends Predicate<CommittedTransactionRepresentation>
-{
+public interface RecoveryPredicate extends Predicate<CommittedTransactionRepresentation> {
     RecoveryPredicate ALL = new AllTransactionsPredicate();
 
-    static RecoveryPredicate untilTransactionId( long txId )
-    {
-        return new TransactionIdPredicate( txId );
+    static RecoveryPredicate untilTransactionId(long txId) {
+        return new TransactionIdPredicate(txId);
     }
 
-    static RecoveryPredicate untilInstant( Instant date )
-    {
-        return new TransactionDatePredicate( date );
+    static RecoveryPredicate untilInstant(Instant date) {
+        return new TransactionDatePredicate(date);
     }
 
     String describe();
 
-    class AllTransactionsPredicate implements RecoveryPredicate
-    {
-        private AllTransactionsPredicate()
-        {
-        }
+    class AllTransactionsPredicate implements RecoveryPredicate {
+        private AllTransactionsPredicate() {}
 
         @Override
-        public String describe()
-        {
+        public String describe() {
             return "all transactions predicate.";
         }
 
         @Override
-        public boolean test( CommittedTransactionRepresentation committedTransactionRepresentation )
-        {
+        public boolean test(CommittedTransactionRepresentation committedTransactionRepresentation) {
             return true;
         }
     }
 
-    class TransactionIdPredicate implements RecoveryPredicate
-    {
+    class TransactionIdPredicate implements RecoveryPredicate {
         private final long txId;
 
-        private TransactionIdPredicate( long txId )
-        {
+        private TransactionIdPredicate(long txId) {
             this.txId = txId;
         }
 
         @Override
-        public boolean test( CommittedTransactionRepresentation transaction )
-        {
+        public boolean test(CommittedTransactionRepresentation transaction) {
             return transaction.getCommitEntry().getTxId() < txId;
         }
 
         @Override
-        public String describe()
-        {
+        public String describe() {
             return "transaction id should be < " + txId;
         }
     }
 
-    class TransactionDatePredicate implements RecoveryPredicate
-    {
+    class TransactionDatePredicate implements RecoveryPredicate {
         private final Instant instant;
 
-        private TransactionDatePredicate( Instant instant )
-        {
+        private TransactionDatePredicate(Instant instant) {
             this.instant = instant;
         }
 
         @Override
-        public boolean test( CommittedTransactionRepresentation transaction )
-        {
+        public boolean test(CommittedTransactionRepresentation transaction) {
             return transaction.getStartEntry().getTimeWritten() < instant.toEpochMilli();
         }
 
         @Override
-        public String describe()
-        {
-            return "transaction date should be before " + Format.date( instant );
+        public String describe() {
+            return "transaction date should be before " + Format.date(instant);
         }
     }
 }

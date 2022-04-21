@@ -21,98 +21,83 @@ package org.neo4j.values.storable;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 
 /**
  * Array of one of the storable primitives
  */
-public abstract class ArrayValue extends HashMemoizingValue implements SequenceValue
-{
+public abstract class ArrayValue extends HashMemoizingValue implements SequenceValue {
     @Override
     public abstract int length();
 
-    public abstract boolean hasCompatibleType( AnyValue value );
-    public abstract ArrayValue copyWithAppended( AnyValue added );
+    public abstract boolean hasCompatibleType(AnyValue value);
 
-    public abstract ArrayValue copyWithPrepended( AnyValue prepended );
+    public abstract ArrayValue copyWithAppended(AnyValue added);
+
+    public abstract ArrayValue copyWithPrepended(AnyValue prepended);
 
     @Override
-    public IterationPreference iterationPreference()
-    {
+    public IterationPreference iterationPreference() {
         return IterationPreference.RANDOM_ACCESS;
     }
 
     @Override
-    public Iterator<AnyValue> iterator()
-    {
-        return new Iterator<>()
-        {
+    public Iterator<AnyValue> iterator() {
+        return new Iterator<>() {
             private int offset;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return offset < length();
             }
 
             @Override
-            public AnyValue next()
-            {
-                if ( !hasNext() )
-                {
+            public AnyValue next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                return value( offset++ );
+                return value(offset++);
             }
         };
     }
 
     @Override
-    public final boolean equalTo( Object other )
-    {
-        if ( other == null )
-        {
+    public final boolean equalTo(Object other) {
+        if (other == null) {
             return false;
         }
 
-        return other instanceof SequenceValue && this.equals( (SequenceValue) other );
+        return other instanceof SequenceValue && this.equals((SequenceValue) other);
     }
 
     @Override
-    public final boolean equals( boolean x )
-    {
+    public final boolean equals(boolean x) {
         return false;
     }
 
     @Override
-    public final boolean equals( long x )
-    {
+    public final boolean equals(long x) {
         return false;
     }
 
     @Override
-    public final boolean equals( double x )
-    {
+    public final boolean equals(double x) {
         return false;
     }
 
     @Override
-    public final boolean equals( char x )
-    {
+    public final boolean equals(char x) {
         return false;
     }
 
     @Override
-    public final boolean equals( String x )
-    {
+    public final boolean equals(String x) {
         return false;
     }
 
     @Override
-    public boolean isSequenceValue()
-    {
+    public boolean isSequenceValue() {
         return true;
     }
 }

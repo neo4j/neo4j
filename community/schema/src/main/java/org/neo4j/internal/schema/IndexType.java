@@ -24,8 +24,7 @@ package org.neo4j.internal.schema;
  * <p>
  * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
-public enum IndexType
-{
+public enum IndexType {
     /**
      * @see org.neo4j.graphdb.schema.IndexType#BTREE
      */
@@ -51,54 +50,48 @@ public enum IndexType
      */
     POINT;
 
-    public static IndexType fromPublicApi( org.neo4j.graphdb.schema.IndexType type )
-    {
-        if ( type == null )
-        {
+    public static IndexType fromPublicApi(org.neo4j.graphdb.schema.IndexType type) {
+        if (type == null) {
             return null;
         }
-        switch ( type )
-        {
-        case BTREE:
-            return BTREE;
-        case FULLTEXT:
-            return FULLTEXT;
-        case LOOKUP:
-            return LOOKUP;
-        case TEXT:
-            return TEXT;
-        case RANGE:
-            return RANGE;
-        case POINT:
-            return POINT;
-        default:
-            throw new IllegalArgumentException( "Unknown index type: " + type );
+        switch (type) {
+            case BTREE:
+                return BTREE;
+            case FULLTEXT:
+                return FULLTEXT;
+            case LOOKUP:
+                return LOOKUP;
+            case TEXT:
+                return TEXT;
+            case RANGE:
+                return RANGE;
+            case POINT:
+                return POINT;
+            default:
+                throw new IllegalArgumentException("Unknown index type: " + type);
         }
     }
 
-    public org.neo4j.graphdb.schema.IndexType toPublicApi()
-    {
-        switch ( this )
-        {
-        case BTREE:
-            return org.neo4j.graphdb.schema.IndexType.BTREE;
-        case FULLTEXT:
-            return org.neo4j.graphdb.schema.IndexType.FULLTEXT;
-        case LOOKUP:
-            return org.neo4j.graphdb.schema.IndexType.LOOKUP;
-        case TEXT:
-            return org.neo4j.graphdb.schema.IndexType.TEXT;
-        case RANGE:
-            return org.neo4j.graphdb.schema.IndexType.RANGE;
-        case POINT:
-            return org.neo4j.graphdb.schema.IndexType.POINT;
-        default:
-            throw new IllegalStateException( "Missing index type variant in IndexType.toPublicApi: " + this );
+    public org.neo4j.graphdb.schema.IndexType toPublicApi() {
+        switch (this) {
+            case BTREE:
+                return org.neo4j.graphdb.schema.IndexType.BTREE;
+            case FULLTEXT:
+                return org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+            case LOOKUP:
+                return org.neo4j.graphdb.schema.IndexType.LOOKUP;
+            case TEXT:
+                return org.neo4j.graphdb.schema.IndexType.TEXT;
+            case RANGE:
+                return org.neo4j.graphdb.schema.IndexType.RANGE;
+            case POINT:
+                return org.neo4j.graphdb.schema.IndexType.POINT;
+            default:
+                throw new IllegalStateException("Missing index type variant in IndexType.toPublicApi: " + this);
         }
     }
 
-    public boolean isLookup()
-    {
+    public boolean isLookup() {
         return this == LOOKUP;
     }
 }

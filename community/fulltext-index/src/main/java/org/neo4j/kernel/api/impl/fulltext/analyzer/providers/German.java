@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.de.GermanAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class German extends AnalyzerProvider
-{
-    public German()
-    {
-        super( "german" );
+public class German extends AnalyzerProvider {
+    public German() {
+        super("german");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new GermanAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "German analyzer with stemming and stop word filtering.";
     }
 }

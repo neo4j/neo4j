@@ -19,9 +19,20 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -49,55 +60,75 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
-
-public class RecordStorageEngineTestUtils
-{
-    public static RecordStorageEngine openSimpleStorageEngine( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout layout, Config config )
-    {
+public class RecordStorageEngineTestUtils {
+    public static RecordStorageEngine openSimpleStorageEngine(
+            FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout layout, Config config) {
         TokenHolders tokenHolders = new TokenHolders(
-                createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
-                createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
-                createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        return new RecordStorageEngine( layout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
-                mock( SchemaState.class ), new StandardConstraintRuleAccessor(), c -> c, NO_LOCK_SERVICE, mock( Health.class ),
-                new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), immediate(),  true,
-                EmptyMemoryTracker.INSTANCE, writable(), EMPTY_LOG_TAIL, CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE,
-                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+                createReadOnlyTokenHolder(TokenHolder.TYPE_PROPERTY_KEY),
+                createReadOnlyTokenHolder(TokenHolder.TYPE_LABEL),
+                createReadOnlyTokenHolder(TokenHolder.TYPE_RELATIONSHIP_TYPE));
+        return new RecordStorageEngine(
+                layout,
+                config,
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                NullLogProvider.getInstance(),
+                tokenHolders,
+                mock(SchemaState.class),
+                new StandardConstraintRuleAccessor(),
+                c -> c,
+                NO_LOCK_SERVICE,
+                mock(Health.class),
+                new DefaultIdGeneratorFactory(fs, immediate(), DEFAULT_DATABASE_NAME),
+                immediate(),
+                true,
+                EmptyMemoryTracker.INSTANCE,
+                writable(),
+                EMPTY_LOG_TAIL,
+                CommandLockVerification.Factory.IGNORE,
+                LockVerificationMonitor.Factory.IGNORE,
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
     }
 
-    public static void applyLogicalChanges( RecordStorageEngine storageEngine, ThrowingBiConsumer<ReadableTransactionState,TxStateVisitor,Exception> changes )
-            throws Exception
-    {
-        ReadableTransactionState txState = mock( ReadableTransactionState.class );
-        doAnswer( invocationOnMock ->
-        {
-            TxStateVisitor visitor = invocationOnMock.getArgument( 0 );
-            changes.accept( txState, visitor );
-            return null;
-        } ).when( txState ).accept( any() );
+    public static void applyLogicalChanges(
+            RecordStorageEngine storageEngine,
+            ThrowingBiConsumer<ReadableTransactionState, TxStateVisitor, Exception> changes)
+            throws Exception {
+        ReadableTransactionState txState = mock(ReadableTransactionState.class);
+        doAnswer(invocationOnMock -> {
+                    TxStateVisitor visitor = invocationOnMock.getArgument(0);
+                    changes.accept(txState, visitor);
+                    return null;
+                })
+                .when(txState)
+                .accept(any());
         List<StorageCommand> commands = new ArrayList<>();
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         CursorContext cursorContext = NULL_CONTEXT;
-        try ( RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( EmptyMemoryTracker.INSTANCE );
-              StoreCursors storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
-        {
-            commandCreationContext.initialize( cursorContext, storeCursors );
-            storageEngine.createCommands( commands, txState, storageEngine.newReader(), commandCreationContext, ResourceLocker.IGNORE, LockTracer.NONE,
-                    metaDataStore.getLastCommittedTransactionId(), t -> t, cursorContext, storeCursors, EmptyMemoryTracker.INSTANCE );
-            storageEngine.apply( new GroupOfCommands( metaDataStore.nextCommittingTransactionId(), storeCursors,
-                            commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
+        try (RecordStorageCommandCreationContext commandCreationContext =
+                        storageEngine.newCommandCreationContext(EmptyMemoryTracker.INSTANCE);
+                StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
+            commandCreationContext.initialize(cursorContext, storeCursors);
+            storageEngine.createCommands(
+                    commands,
+                    txState,
+                    storageEngine.newReader(),
+                    commandCreationContext,
+                    ResourceLocker.IGNORE,
+                    LockTracer.NONE,
+                    metaDataStore.getLastCommittedTransactionId(),
+                    t -> t,
+                    cursorContext,
+                    storeCursors,
+                    EmptyMemoryTracker.INSTANCE);
+            storageEngine.apply(
+                    new GroupOfCommands(
+                            metaDataStore.nextCommittingTransactionId(),
+                            storeCursors,
+                            commands.toArray(new StorageCommand[0])),
+                    TransactionApplicationMode.EXTERNAL);
         }
     }
 }

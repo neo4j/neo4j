@@ -26,33 +26,25 @@ import org.neo4j.io.pagecache.PagedFile;
  * When page cache will map new page file, on all registered listeners {@link #fileMapped(PagedFile)} will be invoked.
  * In the same way, during unmap - {@link #fileUnmapped(PagedFile)} will be invoked on all registered listeners
  */
-public interface FileMappedListener
-{
-    FileMappedListener EMPTY = new FileMappedListener()
-    {
+public interface FileMappedListener {
+    FileMappedListener EMPTY = new FileMappedListener() {
         @Override
-        public void fileMapped( PagedFile pagedFile )
-        {
-
-        }
+        public void fileMapped(PagedFile pagedFile) {}
 
         @Override
-        public void fileUnmapped( PagedFile pagedFile )
-        {
-
-        }
+        public void fileUnmapped(PagedFile pagedFile) {}
     };
 
     /**
      * Called from page cache after new file mapping was performed
      * @param pagedFile newly mapped paged file
      */
-    void fileMapped( PagedFile pagedFile );
+    void fileMapped(PagedFile pagedFile);
 
     /**
      * Called from page cache before file will be unmapped
      *
      * @param pagedFile page file that will be unmapped
      */
-    void fileUnmapped( PagedFile pagedFile );
+    void fileUnmapped(PagedFile pagedFile);
 }

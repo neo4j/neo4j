@@ -28,113 +28,91 @@ import org.neo4j.lock.ResourceType;
  * <p>
  * The instance is acquired via the {@link SchemaDescriptors#noSchema()} method.
  */
-class NoSchemaDescriptor implements SchemaDescriptor
-{
+class NoSchemaDescriptor implements SchemaDescriptor {
     static final SchemaDescriptor NO_SCHEMA = new NoSchemaDescriptor();
 
-    private NoSchemaDescriptor()
-    {
-    }
+    private NoSchemaDescriptor() {}
 
     @Override
-    public boolean isLabelSchemaDescriptor()
-    {
+    public boolean isLabelSchemaDescriptor() {
         return false;
     }
 
     @Override
-    public LabelSchemaDescriptor asLabelSchemaDescriptor()
-    {
-        throw new IllegalStateException( "NO_SCHEMA cannot be cast to a LabelSchemaDescriptor." );
+    public LabelSchemaDescriptor asLabelSchemaDescriptor() {
+        throw new IllegalStateException("NO_SCHEMA cannot be cast to a LabelSchemaDescriptor.");
     }
 
     @Override
-    public boolean isRelationshipTypeSchemaDescriptor()
-    {
+    public boolean isRelationshipTypeSchemaDescriptor() {
         return false;
     }
 
     @Override
-    public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor()
-    {
-        throw new IllegalStateException( "NO_SCHEMA cannot be cast to a RelationTypeSchemaDescriptor." );
+    public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor() {
+        throw new IllegalStateException("NO_SCHEMA cannot be cast to a RelationTypeSchemaDescriptor.");
     }
 
     @Override
-    public boolean isFulltextSchemaDescriptor()
-    {
+    public boolean isFulltextSchemaDescriptor() {
         return false;
     }
 
     @Override
-    public FulltextSchemaDescriptor asFulltextSchemaDescriptor()
-    {
-        throw new IllegalStateException( "NO_SCHEMA cannot be cast to a FulltextSchemaDescriptor." );
+    public FulltextSchemaDescriptor asFulltextSchemaDescriptor() {
+        throw new IllegalStateException("NO_SCHEMA cannot be cast to a FulltextSchemaDescriptor.");
     }
 
     @Override
-    public boolean isAnyTokenSchemaDescriptor()
-    {
+    public boolean isAnyTokenSchemaDescriptor() {
         return false;
     }
 
     @Override
-    public AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor()
-    {
-        throw new IllegalStateException( "NO_SCHEMA cannot be cast to a AnyTokenSchemaDescriptor." );
+    public AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor() {
+        throw new IllegalStateException("NO_SCHEMA cannot be cast to a AnyTokenSchemaDescriptor.");
     }
 
     @Override
-    public boolean isAffected( long[] entityIds )
-    {
+    public boolean isAffected(long[] entityIds) {
         return false;
     }
 
     @Override
-    public void processWith( SchemaProcessor processor )
-    {
-    }
+    public void processWith(SchemaProcessor processor) {}
 
     @Override
-    public String userDescription( TokenNameLookup tokenNameLookup )
-    {
+    public String userDescription(TokenNameLookup tokenNameLookup) {
         return "NO_SCHEMA";
     }
 
     @Override
-    public int[] getPropertyIds()
-    {
+    public int[] getPropertyIds() {
         return new int[0];
     }
 
     @Override
-    public int[] getEntityTokenIds()
-    {
+    public int[] getEntityTokenIds() {
         return new int[0];
     }
 
     @Override
-    public ResourceType keyType()
-    {
+    public ResourceType keyType() {
         return null;
     }
 
     @Override
-    public EntityType entityType()
-    {
+    public EntityType entityType() {
         return null;
     }
 
     @Override
-    public PropertySchemaType propertySchemaType()
-    {
+    public PropertySchemaType propertySchemaType() {
         return null;
     }
 
     @Override
-    public long[] lockingKeys()
-    {
+    public long[] lockingKeys() {
         return new long[0];
     }
-
 }

@@ -21,8 +21,7 @@ package org.neo4j.proxy;
 
 import java.io.Closeable;
 
-public interface Neo4jProxy extends Closeable
-{
+public interface Neo4jProxy extends Closeable {
     /**
      * Freeze all connections for selected instance and network type but keeps accepting new connections
      */

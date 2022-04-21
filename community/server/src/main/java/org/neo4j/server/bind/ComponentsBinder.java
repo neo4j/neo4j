@@ -19,21 +19,19 @@
  */
 package org.neo4j.server.bind;
 
-import org.glassfish.jersey.internal.inject.AbstractBinder;
-import org.glassfish.jersey.server.ResourceConfig;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javax.ws.rs.core.Context;
+import org.glassfish.jersey.internal.inject.AbstractBinder;
+import org.glassfish.jersey.server.ResourceConfig;
 
 /**
  * Jersey dependency injection configuration.
  * Used by {@link ResourceConfig} to know how to deal with fields annotated with {@link Context}.
  */
-public class ComponentsBinder extends AbstractBinder
-{
+public class ComponentsBinder extends AbstractBinder {
     private final List<SingletonBinding> singletonBindings = new ArrayList<>();
     private final List<LazyBinding> lazyBindings = new ArrayList<>();
     private final List<LazyFactoryBinding<?>> lazyFactoryBindings = new ArrayList<>();
@@ -47,10 +45,9 @@ public class ComponentsBinder extends AbstractBinder
      * @param type the type of the field where the singleton needs to be injected.
      * @param <T> type of the component.
      */
-    public <T> void addSingletonBinding( T component, Class<T> type )
-    {
-        verifyBinding( component, type );
-        singletonBindings.add( new SingletonBinding( component, type ) );
+    public <T> void addSingletonBinding(T component, Class<T> type) {
+        verifyBinding(component, type);
+        singletonBindings.add(new SingletonBinding(component, type));
     }
 
     /**
@@ -59,10 +56,9 @@ public class ComponentsBinder extends AbstractBinder
      * @param componentSupplier the component supplier.
      * @param type the type of the field where the provided component needs to be injected.
      */
-    public void addLazyBinding( Supplier<?> componentSupplier, Class<?> type )
-    {
-        verifyBinding( componentSupplier, type );
-        lazyBindings.add( new LazyBinding( componentSupplier, type ) );
+    public void addLazyBinding(Supplier<?> componentSupplier, Class<?> type) {
+        verifyBinding(componentSupplier, type);
+        lazyBindings.add(new LazyBinding(componentSupplier, type));
     }
 
     /**
@@ -73,45 +69,37 @@ public class ComponentsBinder extends AbstractBinder
      * @param type the type of the field where the provided component needs to be injected.
      * @param <T> type of the component.
      */
-    public <T> void addLazyBinding( Class<? extends Supplier<T>> supplierType, Class<T> type )
-    {
-        verifyBinding( supplierType, type );
-        lazyFactoryBindings.add( new LazyFactoryBinding<>( supplierType, type ) );
+    public <T> void addLazyBinding(Class<? extends Supplier<T>> supplierType, Class<T> type) {
+        verifyBinding(supplierType, type);
+        lazyFactoryBindings.add(new LazyFactoryBinding<>(supplierType, type));
     }
 
     @Override
-    protected void configure()
-    {
-        if ( configured )
-        {
+    protected void configure() {
+        if (configured) {
             return;
         }
         configured = true;
 
-        for ( SingletonBinding binding : singletonBindings )
-        {
-            bind( binding.component() ).to( binding.type() );
+        for (SingletonBinding binding : singletonBindings) {
+            bind(binding.component()).to(binding.type());
         }
 
-        for ( LazyBinding binding : lazyBindings )
-        {
-            bindFactory( binding.supplier() ).to( binding.type() );
+        for (LazyBinding binding : lazyBindings) {
+            bindFactory(binding.supplier()).to(binding.type());
         }
 
-        for ( LazyFactoryBinding<?> binding : lazyFactoryBindings )
-        {
-            bindFactory( binding.supplierType() ).to( binding.type() );
+        for (LazyFactoryBinding<?> binding : lazyFactoryBindings) {
+            bindFactory(binding.supplierType()).to(binding.type());
         }
     }
 
-    private void verifyBinding( Object binding, Class<?> type )
-    {
-        Objects.requireNonNull( binding, "binding" );
-        Objects.requireNonNull( type, "type" );
+    private void verifyBinding(Object binding, Class<?> type) {
+        Objects.requireNonNull(binding, "binding");
+        Objects.requireNonNull(type, "type");
 
-        if ( configured )
-        {
-            throw new IllegalStateException( "Unable to add new binding. Binder has already been configured" );
+        if (configured) {
+            throw new IllegalStateException("Unable to add new binding. Binder has already been configured");
         }
     }
 }

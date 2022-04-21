@@ -57,8 +57,8 @@ import org.neo4j.monitoring.Monitors
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 class FabricParsingPropertyTest extends CypherFunSuite
-                                with ScalaCheckDrivenPropertyChecks
-                                with AstConstructionTestSupport {
+    with ScalaCheckDrivenPropertyChecks
+    with AstConstructionTestSupport {
 
   private val astGenerator = new AstGenerator(simpleStrings = false)
 
@@ -70,7 +70,8 @@ class FabricParsingPropertyTest extends CypherFunSuite
     val qualifiedName = QualifiedName(ns.parts, name.name)
     val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
-    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
+    val signature =
+      ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
 
     new ProcedureSignatureResolver {
       override def procedureSignature(name: QualifiedName): ProcedureSignature = signature
@@ -80,9 +81,11 @@ class FabricParsingPropertyTest extends CypherFunSuite
 
   private val fabricParsing = CompilationPhases.fabricParsing(ParsingConfig(), resolver)
 
-  private val prettifier: Prettifier = Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true, sensitiveParamsAsParams = true))
+  private val prettifier: Prettifier =
+    Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true, sensitiveParamsAsParams = true))
 
   class DummyException() extends Exception
+
   private val dummyExceptionFactory = new CypherExceptionFactory {
     override def arithmeticException(message: String, cause: Exception): Exception = new DummyException
     override def syntaxException(message: String, pos: InputPosition): Exception = new DummyException
@@ -100,7 +103,8 @@ class FabricParsingPropertyTest extends CypherFunSuite
           queryString,
           None,
           IDPPlannerName,
-          new AnonymousVariableNameGenerator)
+          new AnonymousVariableNameGenerator
+        )
 
         val context = new BaseContext {
           override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
@@ -122,7 +126,7 @@ class FabricParsingPropertyTest extends CypherFunSuite
         } catch {
           case _: DummyException =>
           // Ignore. We can get those for certain semantic errors caught by the rewriters.
-          case _: IllegalStateException =>
+          case _: IllegalStateException  =>
           case _: NoSuchElementException =>
           // Ignore. We can reach invalid states by ignoring semantic errors and continuing.
         }

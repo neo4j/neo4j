@@ -47,7 +47,7 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 
-class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp  {
+class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
   implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   private val label = LabelToken(LabelName("LabelName") _, LabelId(11))
@@ -72,7 +72,14 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue, NODE_TYPE), 0, literal("hello"), IndexOrderNone)()
+    val pipe = NodeIndexEndsWithScanPipe(
+      "n",
+      label,
+      IndexedProperty(propertyKey, GetValue, NODE_TYPE),
+      0,
+      literal("hello"),
+      IndexOrderNone
+    )()
     val result = pipe.createResults(queryState).toList
 
     // then
@@ -92,7 +99,14 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue, NODE_TYPE), 0, literal("bye"), IndexOrderNone)()
+    val pipe = NodeIndexContainsScanPipe(
+      "n",
+      label,
+      IndexedProperty(propertyKey, GetValue, NODE_TYPE),
+      0,
+      literal("bye"),
+      IndexOrderNone
+    )()
     val result = pipe.createResults(queryState).toList
 
     // then
@@ -108,8 +122,10 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.nodeIndexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
-      //NOTE: this is what is done in TransactionBoundQueryContext
+    when(
+      state.query.nodeIndexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])
+    ).thenAnswer((_: InvocationOnMock) => {
+      // NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
     })
@@ -120,10 +136,11 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
       IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE),
       0,
       LiteralHelper.literal("text"),
-      IndexOrderNone)()
+      IndexOrderNone
+    )()
     // exhaust
     pipe.createResults(state).toList
-    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size (1)
   }
 
   test("Contains: close should close cursor") {
@@ -132,8 +149,10 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.nodeIndexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
-      //NOTE: this is what is done in TransactionBoundQueryContext
+    when(
+      state.query.nodeIndexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])
+    ).thenAnswer((_: InvocationOnMock) => {
+      // NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
     })
@@ -143,10 +162,11 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
       IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE),
       0,
       LiteralHelper.literal("text"),
-      IndexOrderNone)()
+      IndexOrderNone
+    )()
     val result = pipe.createResults(state)
     result.close()
-    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size (1)
   }
 
   test("Ends with: exhaust should close cursor") {
@@ -155,8 +175,10 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.nodeIndexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
-      //NOTE: this is what is done in TransactionBoundQueryContext
+    when(
+      state.query.nodeIndexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])
+    ).thenAnswer((_: InvocationOnMock) => {
+      // NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
     })
@@ -166,10 +188,11 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
       IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE),
       0,
       LiteralHelper.literal("text"),
-      IndexOrderNone)()
+      IndexOrderNone
+    )()
     // exhaust
     pipe.createResults(state).toList
-    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size (1)
   }
 
   test("Ends with: close should close cursor") {
@@ -178,8 +201,10 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.nodeIndexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
-      //NOTE: this is what is done in TransactionBoundQueryContext
+    when(
+      state.query.nodeIndexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])
+    ).thenAnswer((_: InvocationOnMock) => {
+      // NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
     })
@@ -189,9 +214,10 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
       IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE),
       0,
       LiteralHelper.literal("text"),
-      IndexOrderNone)()
+      IndexOrderNone
+    )()
     val result = pipe.createResults(state)
     result.close()
-    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size (1)
   }
 }

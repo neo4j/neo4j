@@ -22,7 +22,12 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexDescriptor
 
-case class IndexStatus(state: String, failureMessage: String, populationProgress: Double, maybeConstraint: Option[ConstraintDescriptor])
+case class IndexStatus(
+  state: String,
+  failureMessage: String,
+  populationProgress: Double,
+  maybeConstraint: Option[ConstraintDescriptor]
+)
 
 case class IndexInfo(indexStatus: IndexStatus, labelsOrTypes: List[String], properties: List[String])
 

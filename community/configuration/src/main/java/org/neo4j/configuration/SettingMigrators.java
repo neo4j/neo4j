@@ -19,30 +19,6 @@
  */
 package org.neo4j.configuration;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.configuration.ssl.SslPolicyConfig;
-import org.neo4j.configuration.ssl.SslPolicyScope;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.logging.FormattedLogFormat;
-import org.neo4j.logging.InternalLog;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
@@ -60,304 +36,314 @@ import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_ma
 import static org.neo4j.configuration.SettingValueParsers.LIST_SEPARATOR;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 
-public final class SettingMigrators
-{
-    private SettingMigrators()
-    {
-    }
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyScope;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.logging.FormattedLogFormat;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+
+public final class SettingMigrators {
+    private SettingMigrators() {}
 
     @ServiceProvider
-    public static class ActiveDatabaseMigrator implements SettingMigrator
-    {
+    public static class ActiveDatabaseMigrator implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingNameChange( values, log, "dbms.active_database", default_database );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.active_database", default_database);
         }
     }
 
     @ServiceProvider
-    public static class CrsConfigMigrator implements SettingMigrator
-    {
+    public static class CrsConfigMigrator implements SettingMigrator {
         private static final String PREFIX = "internal.dbms.db.spatial.crs";
-        private static final Pattern oldConnector = Pattern.compile( "^unsupported\\.dbms\\.db\\.spatial\\.crs\\.([^.]+)\\.(min|max)\\.([xyz])$");
+        private static final Pattern oldConnector =
+                Pattern.compile("^unsupported\\.dbms\\.db\\.spatial\\.crs\\.([^.]+)\\.(min|max)\\.([xyz])$");
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
             List<String> oldCrs = new ArrayList<>();
             Map<String, List<String>> crsValues = new HashMap<>();
-            values.forEach( ( setting, value ) ->
-            {
-                Matcher matcher = oldConnector.matcher( setting );
-                if ( matcher.find() )
-                {
-                    String crsName = matcher.group( 1 );
-                    String crsPlusSetting = format( "%s.%s", crsName, matcher.group( 2 ) );
-                    CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName( crsName );
-                    List<String> valueList = crsValues.computeIfAbsent( crsPlusSetting,
-                            s -> new ArrayList<>( Collections.nCopies( crs.getDimension(), Double.toString( Double.NaN ) ) ) );
-                    valueList.set( matcher.group( 3 ).charAt( 0 ) - 'x' , value );
-                    oldCrs.add( setting );
+            values.forEach((setting, value) -> {
+                Matcher matcher = oldConnector.matcher(setting);
+                if (matcher.find()) {
+                    String crsName = matcher.group(1);
+                    String crsPlusSetting = format("%s.%s", crsName, matcher.group(2));
+                    CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName(crsName);
+                    List<String> valueList = crsValues.computeIfAbsent(
+                            crsPlusSetting,
+                            s -> new ArrayList<>(Collections.nCopies(crs.getDimension(), Double.toString(Double.NaN))));
+                    valueList.set(matcher.group(3).charAt(0) - 'x', value);
+                    oldCrs.add(setting);
                 }
-            } );
+            });
 
-            oldCrs.forEach( setting -> {
-                values.remove( setting );
-                log.warn( "Use of deprecated setting %s.", setting );
-            } );
-            crsValues.forEach( ( name, valueList ) -> {
-                String setting = format( "%s.%s", PREFIX, name );
-                String value = String.join( LIST_SEPARATOR, valueList );
-                values.putIfAbsent( setting, value );
-                log.warn( "Settings migrated to %s = %s", setting, value );
-            } );
+            oldCrs.forEach(setting -> {
+                values.remove(setting);
+                log.warn("Use of deprecated setting %s.", setting);
+            });
+            crsValues.forEach((name, valueList) -> {
+                String setting = format("%s.%s", PREFIX, name);
+                String value = String.join(LIST_SEPARATOR, valueList);
+                values.putIfAbsent(setting, value);
+                log.warn("Settings migrated to %s = %s", setting, value);
+            });
         }
     }
 
     @ServiceProvider
-    public static class ConnectorMigrator implements SettingMigrator
-    {
-        private static final Pattern oldConnector = Pattern.compile( "^dbms\\.connector\\.([^.]+)\\.([^.]+)$");
+    public static class ConnectorMigrator implements SettingMigrator {
+        private static final Pattern oldConnector = Pattern.compile("^dbms\\.connector\\.([^.]+)\\.([^.]+)$");
         private static final String ANY_CONNECTOR = "bolt|http|https";
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateOldConnectors( values, log );
-            migrateConnectorAddresses( values, defaultValues, log );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateOldConnectors(values, log);
+            migrateConnectorAddresses(values, defaultValues, log);
         }
 
-        private static void migrateOldConnectors( Map<String,String> values, InternalLog log )
-        {
+        private static void migrateOldConnectors(Map<String, String> values, InternalLog log) {
             Map<String, Matcher> oldConnectors = new HashMap<>();
-            values.forEach( ( setting, value ) ->
-            {
-                Matcher matcher = oldConnector.matcher( setting );
-                if ( matcher.find() )
-                {
-                    oldConnectors.put( setting, matcher );
+            values.forEach((setting, value) -> {
+                Matcher matcher = oldConnector.matcher(setting);
+                if (matcher.find()) {
+                    oldConnectors.put(setting, matcher);
                 }
-            } );
+            });
 
-            oldConnectors.forEach( ( setting, matcher ) -> {
-                String settingName = matcher.group( 2 );
-                String id = matcher.group( 1 );
-                if ( id.matches( ANY_CONNECTOR ) )
-                {
-                    if ( Objects.equals( "type", settingName ) )
-                    {
-                        values.remove( setting );
-                        log.warn( "Use of deprecated setting %s. Type is no longer required", setting );
+            oldConnectors.forEach((setting, matcher) -> {
+                String settingName = matcher.group(2);
+                String id = matcher.group(1);
+                if (id.matches(ANY_CONNECTOR)) {
+                    if (Objects.equals("type", settingName)) {
+                        values.remove(setting);
+                        log.warn("Use of deprecated setting %s. Type is no longer required", setting);
                     }
+                } else {
+                    values.remove(setting);
+                    log.warn(
+                            "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
+                            setting);
                 }
-                else
-                {
-                    values.remove( setting );
-                    log.warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.", setting );
-                }
-            } );
+            });
         }
 
-        private static void migrateConnectorAddresses( Map<String,String> values, Map<String,String> defValues,  InternalLog log )
-        {
-            migrateAdvertisedAddressInheritanceChange( values, defValues, log, BoltConnector.listen_address.name(), BoltConnector.advertised_address.name() );
-            migrateAdvertisedAddressInheritanceChange( values, defValues, log, HttpConnector.listen_address.name(), HttpConnector.advertised_address.name() );
-            migrateAdvertisedAddressInheritanceChange( values, defValues, log, HttpsConnector.listen_address.name(), HttpsConnector.advertised_address.name() );
+        private static void migrateConnectorAddresses(
+                Map<String, String> values, Map<String, String> defValues, InternalLog log) {
+            migrateAdvertisedAddressInheritanceChange(
+                    values,
+                    defValues,
+                    log,
+                    BoltConnector.listen_address.name(),
+                    BoltConnector.advertised_address.name());
+            migrateAdvertisedAddressInheritanceChange(
+                    values,
+                    defValues,
+                    log,
+                    HttpConnector.listen_address.name(),
+                    HttpConnector.advertised_address.name());
+            migrateAdvertisedAddressInheritanceChange(
+                    values,
+                    defValues,
+                    log,
+                    HttpsConnector.listen_address.name(),
+                    HttpsConnector.advertised_address.name());
         }
     }
 
     @ServiceProvider
-    public static class DefaultAddressMigrator implements SettingMigrator
-    {
+    public static class DefaultAddressMigrator implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingNameChange( values, log, "dbms.connectors.default_listen_address", default_listen_address );
-            migrateSettingNameChange( values, log, "dbms.connectors.default_advertised_address", default_advertised_address );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.connectors.default_listen_address", default_listen_address);
+            migrateSettingNameChange(
+                    values, log, "dbms.connectors.default_advertised_address", default_advertised_address);
         }
     }
 
     @ServiceProvider
-    public static class SslPolicyMigrator implements SettingMigrator
-    {
-        private static final Pattern pattern = Pattern.compile( "^(dbms\\.ssl\\.policy\\.)([^.]+)(\\.[^.]+)$" );
-        private static final Map<String,SslPolicyScope> settingScopeMap = Map.of(
+    public static class SslPolicyMigrator implements SettingMigrator {
+        private static final Pattern pattern = Pattern.compile("^(dbms\\.ssl\\.policy\\.)([^.]+)(\\.[^.]+)$");
+        private static final Map<String, SslPolicyScope> settingScopeMap = Map.of(
                 "bolt.ssl_policy", SslPolicyScope.BOLT,
                 "https.ssl_policy", SslPolicyScope.HTTPS,
                 "dbms.backup.ssl_policy", SslPolicyScope.BACKUP,
-                "causal_clustering.ssl_policy", SslPolicyScope.CLUSTER
-        );
+                "causal_clustering.ssl_policy", SslPolicyScope.CLUSTER);
 
-        private static final List<String> legacySettings =
-                List.of( "dbms.directories.certificates", "unsupported.dbms.security.tls_certificate_file", "unsupported.dbms.security.tls_key_file" );
+        private static final List<String> legacySettings = List.of(
+                "dbms.directories.certificates",
+                "unsupported.dbms.security.tls_certificate_file",
+                "unsupported.dbms.security.tls_key_file");
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migratePolicies( values, log );
-            warnUseOfLegacyPolicy( values, log );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migratePolicies(values, log);
+            warnUseOfLegacyPolicy(values, log);
         }
 
-        private static void migratePolicies( Map<String,String> values, InternalLog log )
-        {
-            Map<String,String> valueCopy = new HashMap<>( values );
-            Map<String,SslPolicyScope> oldNameToScope = new HashMap<>();
-            valueCopy.forEach( ( setting, value ) -> {
-                if ( settingScopeMap.containsKey( setting ) )
-                {
-                    log.warn( "Use of deprecated setting '%s'.", setting );
-                    SslPolicyScope scope = settingScopeMap.get( setting );
-                    oldNameToScope.put( value, scope );
-                    values.put( SslPolicyConfig.forScope( scope ).enabled.name(), Boolean.TRUE.toString() );
-                    values.remove( setting );
+        private static void migratePolicies(Map<String, String> values, InternalLog log) {
+            Map<String, String> valueCopy = new HashMap<>(values);
+            Map<String, SslPolicyScope> oldNameToScope = new HashMap<>();
+            valueCopy.forEach((setting, value) -> {
+                if (settingScopeMap.containsKey(setting)) {
+                    log.warn("Use of deprecated setting '%s'.", setting);
+                    SslPolicyScope scope = settingScopeMap.get(setting);
+                    oldNameToScope.put(value, scope);
+                    values.put(SslPolicyConfig.forScope(scope).enabled.name(), Boolean.TRUE.toString());
+                    values.remove(setting);
                 }
-            } );
+            });
 
-            valueCopy.forEach( ( setting, value ) -> {
-                var matcher = pattern.matcher( setting );
-                if ( matcher.find() )
-                {
-                    String groupName = matcher.group( 2 );
-                    if ( oldNameToScope.containsKey( groupName ) )
-                    {
-                        String newGroupName = oldNameToScope.get( groupName ).name().toLowerCase();
-                        if ( !Objects.equals( groupName, newGroupName ) )
-                        {
-                            String prefix = matcher.group( 1 );
-                            String suffix = matcher.group( 3 );
+            valueCopy.forEach((setting, value) -> {
+                var matcher = pattern.matcher(setting);
+                if (matcher.find()) {
+                    String groupName = matcher.group(2);
+                    if (oldNameToScope.containsKey(groupName)) {
+                        String newGroupName =
+                                oldNameToScope.get(groupName).name().toLowerCase();
+                        if (!Objects.equals(groupName, newGroupName)) {
+                            String prefix = matcher.group(1);
+                            String suffix = matcher.group(3);
                             String newSetting = prefix + newGroupName + suffix;
 
-                            log.warn( "Use of deprecated setting '%s'. It is replaced by '%s'.", setting, newSetting );
-                            values.remove( setting );
-                            values.put( newSetting, value );
+                            log.warn("Use of deprecated setting '%s'. It is replaced by '%s'.", setting, newSetting);
+                            values.remove(setting);
+                            values.put(newSetting, value);
                         }
                     }
                 }
-            } );
+            });
         }
 
-        private static void warnUseOfLegacyPolicy( Map<String,String> values, InternalLog log )
-        {
-            for ( String legacySetting : legacySettings )
-            {
-                if ( values.remove( legacySetting ) != null )
-                {
-                    log.warn( "Use of deprecated setting '%s'. Legacy ssl policy is no longer supported.", legacySetting );
+        private static void warnUseOfLegacyPolicy(Map<String, String> values, InternalLog log) {
+            for (String legacySetting : legacySettings) {
+                if (values.remove(legacySetting) != null) {
+                    log.warn(
+                            "Use of deprecated setting '%s'. Legacy ssl policy is no longer supported.", legacySetting);
                 }
             }
         }
     }
 
     @ServiceProvider
-    public static class AllowKeyGenerationMigrator implements SettingMigrator
-    {
-        private static final Pattern pattern = Pattern.compile( "^dbms\\.ssl\\.policy\\.([^.]+)\\.allow_key_generation$" );
+    public static class AllowKeyGenerationMigrator implements SettingMigrator {
+        private static final Pattern pattern =
+                Pattern.compile("^dbms\\.ssl\\.policy\\.([^.]+)\\.allow_key_generation$");
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
             var toRemove = new HashSet<String>();
 
-            for ( var setting : values.keySet() )
-            {
-                var matcher = pattern.matcher( setting );
-                if ( matcher.find() )
-                {
-                    log.warn( "Setting %s is removed. A valid key and certificate are required" +
-                            " to be present in the key and certificate path configured in this ssl policy.", setting );
-                    toRemove.add( setting );
+            for (var setting : values.keySet()) {
+                var matcher = pattern.matcher(setting);
+                if (matcher.find()) {
+                    log.warn(
+                            "Setting %s is removed. A valid key and certificate are required"
+                                    + " to be present in the key and certificate path configured in this ssl policy.",
+                            setting);
+                    toRemove.add(setting);
                 }
             }
 
-            values.keySet().removeAll( toRemove );
+            values.keySet().removeAll(toRemove);
         }
     }
 
     @ServiceProvider
-    public static class KillQueryVerboseMigrator implements SettingMigrator
-    {
+    public static class KillQueryVerboseMigrator implements SettingMigrator {
         private static final String settingName = "dbms.procedures.kill_query_verbose";
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingRemoval( values, log, settingName, "It's no longer possible to disable verbose kill query logging" );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingRemoval(
+                    values, log, settingName, "It's no longer possible to disable verbose kill query logging");
         }
     }
 
     @ServiceProvider
-    public static class MultiThreadedSchemaIndexPopulationEnabledMigrator implements SettingMigrator
-    {
+    public static class MultiThreadedSchemaIndexPopulationEnabledMigrator implements SettingMigrator {
         private static final String settingName = "unsupported.dbms.multi_threaded_schema_index_population_enabled";
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingRemoval( values, log, settingName, "It's no longer possible to disable multi-threaded index population" );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingRemoval(
+                    values, log, settingName, "It's no longer possible to disable multi-threaded index population");
         }
     }
 
     @ServiceProvider
-    public static class QueryLoggerMigrator implements SettingMigrator
-    {
-        private static final String deprecationMessage = "Use of deprecated setting value %s=%s. It is replaced by %s=%s";
+    public static class QueryLoggerMigrator implements SettingMigrator {
+        private static final String deprecationMessage =
+                "Use of deprecated setting value %s=%s. It is replaced by %s=%s";
         private static final String settingName = GraphDatabaseSettings.log_queries.name();
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            String value = values.get( settingName );
-            if ( SettingValueParsers.TRUE.equalsIgnoreCase( value ) )
-            {
-                log.warn( deprecationMessage, settingName, value, settingName, LogQueryLevel.INFO.name() );
-                values.put( settingName, LogQueryLevel.INFO.name() );
-            }
-            else if ( SettingValueParsers.FALSE.equalsIgnoreCase( value ) )
-            {
-                log.warn( deprecationMessage, settingName, value, settingName, LogQueryLevel.OFF.name() );
-                values.put( settingName, LogQueryLevel.OFF.name() );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            String value = values.get(settingName);
+            if (SettingValueParsers.TRUE.equalsIgnoreCase(value)) {
+                log.warn(deprecationMessage, settingName, value, settingName, LogQueryLevel.INFO.name());
+                values.put(settingName, LogQueryLevel.INFO.name());
+            } else if (SettingValueParsers.FALSE.equalsIgnoreCase(value)) {
+                log.warn(deprecationMessage, settingName, value, settingName, LogQueryLevel.OFF.name());
+                values.put(settingName, LogQueryLevel.OFF.name());
             }
         }
     }
 
     @ServiceProvider
-    public static class DatabaseMemoryMigrator implements SettingMigrator
-    {
+    public static class DatabaseMemoryMigrator implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingNameChange( values, log, "dbms.tx_state.max_off_heap_memory", tx_state_max_off_heap_memory );
-            migrateSettingNameChange( values, log, "dbms.tx_state.off_heap.max_cacheable_block_size", tx_state_off_heap_max_cacheable_block_size );
-            migrateSettingNameChange( values, log, "dbms.tx_state.off_heap.block_cache_size", tx_state_off_heap_block_cache_size );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.tx_state.max_off_heap_memory", tx_state_max_off_heap_memory);
+            migrateSettingNameChange(
+                    values,
+                    log,
+                    "dbms.tx_state.off_heap.max_cacheable_block_size",
+                    tx_state_off_heap_max_cacheable_block_size);
+            migrateSettingNameChange(
+                    values, log, "dbms.tx_state.off_heap.block_cache_size", tx_state_off_heap_block_cache_size);
 
             // Migrate cypher.query_max_allocations to new setting, if new settings is not configured
-            String maxAllocations = values.remove( "cypher.query_max_allocations" );
-            if ( isNotBlank( maxAllocations ) )
-            {
-                if ( !values.containsKey( memory_transaction_max_size.name() ) )
-                {
-                    log.warn( "The setting cypher.query_max_allocations is removed and replaced by %s.", memory_transaction_max_size.name() );
-                    values.put( memory_transaction_max_size.name(), maxAllocations );
-                }
-                else
-                {
-                    log.warn( "The setting cypher.query_max_allocations is removed and replaced by %s. Since both are set, %s will take " +
-                                    "precedence and the value of cypher.query_max_allocations, %s, will be ignored.",
-                            memory_transaction_max_size.name(), memory_transaction_max_size.name(), maxAllocations );
+            String maxAllocations = values.remove("cypher.query_max_allocations");
+            if (isNotBlank(maxAllocations)) {
+                if (!values.containsKey(memory_transaction_max_size.name())) {
+                    log.warn(
+                            "The setting cypher.query_max_allocations is removed and replaced by %s.",
+                            memory_transaction_max_size.name());
+                    values.put(memory_transaction_max_size.name(), maxAllocations);
+                } else {
+                    log.warn(
+                            "The setting cypher.query_max_allocations is removed and replaced by %s. Since both are set, %s will take "
+                                    + "precedence and the value of cypher.query_max_allocations, %s, will be ignored.",
+                            memory_transaction_max_size.name(), memory_transaction_max_size.name(), maxAllocations);
                 }
             }
         }
     }
 
     @ServiceProvider
-    public static class WhitelistSettingsMigrator implements SettingMigrator
-    {
+    public static class WhitelistSettingsMigrator implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingNameChange( values, log, "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist );
-            migrateSettingNameChange( values, log, "dbms.security.procedures.whitelist", procedure_allowlist );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist);
+            migrateSettingNameChange(values, log, "dbms.security.procedures.whitelist", procedure_allowlist);
         }
     }
 
@@ -365,89 +351,79 @@ public final class SettingMigrators
      * Fix typo in setting name: datababase -> database
      */
     @ServiceProvider
-    public static class DatababaseMigrator implements SettingMigrator
-    {
+    public static class DatababaseMigrator implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingNameChange( values, log, "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values, log, "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size);
         }
     }
 
     @ServiceProvider
-    public static class ReadOnlyMigration implements SettingMigrator
-    {
+    public static class ReadOnlyMigration implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingNameChange( values, log, "dbms.read_only", read_only_database_default );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.read_only", read_only_database_default);
         }
     }
 
     @ServiceProvider
-    public static class RefuseToBeLeaderMigration implements SettingMigrator
-    {
+    public static class RefuseToBeLeaderMigration implements SettingMigrator {
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
             final var refuseToBeLeader = "causal_clustering.refuse_to_be_leader";
-            final var refuseToBeLeaderValue = values.get( refuseToBeLeader );
-            if ( isNotBlank( refuseToBeLeaderValue ) )
-            {
-                log.warn( "The setting '" + refuseToBeLeader + "' is deprecated. Use please '%s' as a replacement", read_only_database_default.name() );
+            final var refuseToBeLeaderValue = values.get(refuseToBeLeader);
+            if (isNotBlank(refuseToBeLeaderValue)) {
+                log.warn(
+                        "The setting '" + refuseToBeLeader + "' is deprecated. Use please '%s' as a replacement",
+                        read_only_database_default.name());
             }
-            migrateSettingNameChange( values, log, refuseToBeLeader, read_only_database_default );
+            migrateSettingNameChange(values, log, refuseToBeLeader, read_only_database_default);
         }
     }
 
-    public static void migrateAdvertisedAddressInheritanceChange( Map<String,String> values, Map<String,String> defaultValues,
-            InternalLog log, String listenAddress, String advertisedAddress )
-    {
-        String listenValue = values.get( listenAddress );
-        if ( isNotBlank( listenValue ) )
-        {
-            String advertisedValue = values.get( advertisedAddress );
+    public static void migrateAdvertisedAddressInheritanceChange(
+            Map<String, String> values,
+            Map<String, String> defaultValues,
+            InternalLog log,
+            String listenAddress,
+            String advertisedAddress) {
+        String listenValue = values.get(listenAddress);
+        if (isNotBlank(listenValue)) {
+            String advertisedValue = values.get(advertisedAddress);
             boolean advertisedAlreadyHasPort = false;
-            try
-            {
-                if ( isNotBlank( advertisedValue ) )
-                {
-                    advertisedAlreadyHasPort = SOCKET_ADDRESS.parse( advertisedValue ).getPort() >= 0;
+            try {
+                if (isNotBlank(advertisedValue)) {
+                    advertisedAlreadyHasPort =
+                            SOCKET_ADDRESS.parse(advertisedValue).getPort() >= 0;
                 }
-            }
-            catch ( RuntimeException e )
-            {
+            } catch (RuntimeException e) {
                 // If we cant parse the advertised address we act as if it has no port specified
                 // If invalid hostname config will report the error
             }
 
-            if ( !advertisedAlreadyHasPort )
-            {
-                try
-                {
-                    int port = SOCKET_ADDRESS.parse( listenValue ).getPort();
-                    if ( port >= 0 ) //valid port on listen, and none on advertised, migrate!
+            if (!advertisedAlreadyHasPort) {
+                try {
+                    int port = SOCKET_ADDRESS.parse(listenValue).getPort();
+                    if (port >= 0) // valid port on listen, and none on advertised, migrate!
                     {
-                        SocketAddress newAdvertised = new SocketAddress( advertisedValue, port );
-                        String msg = "Note that since you did not explicitly set the port in %s Neo4j automatically set it to %s to match %s." +
-                                " This behavior may change in the future and we recommend you to explicitly set it.";
-                        if ( isNotBlank( advertisedValue ) )
-                        {
-                            //If advertised has an address set (not inherited or default value we treat this as a warning, since is is likely to be used.
-                            log.warn( msg, advertisedAddress, port, listenAddress );
+                        SocketAddress newAdvertised = new SocketAddress(advertisedValue, port);
+                        String msg =
+                                "Note that since you did not explicitly set the port in %s Neo4j automatically set it to %s to match %s."
+                                        + " This behavior may change in the future and we recommend you to explicitly set it.";
+                        if (isNotBlank(advertisedValue)) {
+                            // If advertised has an address set (not inherited or default value we treat this as a
+                            // warning, since is is likely to be used.
+                            log.warn(msg, advertisedAddress, port, listenAddress);
+                        } else {
+                            // No value was set, likely the user does not care or won't use this. Just provide the info
+                            log.info(msg, advertisedAddress, port, listenAddress);
                         }
-                        else
-                        {
-                            //No value was set, likely the user does not care or won't use this. Just provide the info
-                            log.info( msg, advertisedAddress, port, listenAddress );
-                        }
-                        defaultValues.put( advertisedAddress, newAdvertised.toString() );
+                        defaultValues.put(advertisedAddress, newAdvertised.toString());
                     }
-                }
-                catch ( RuntimeException e )
-                {
-                    //If we cant parse the listen address we have no information on how to proceed with the migration
+                } catch (RuntimeException e) {
+                    // If we cant parse the listen address we have no information on how to proceed with the migration
                     // The config will handle the error later
                 }
             }
@@ -455,372 +431,630 @@ public final class SettingMigrators
     }
 
     @ServiceProvider
-    public static class ConsistencyCheckerSettingsMigrator implements SettingMigrator
-    {
+    public static class ConsistencyCheckerSettingsMigrator implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingRemoval( values, log, "unsupported.consistency_checker.experimental",
-                    "There is no longer multiple different consistency checkers to choose from" );
-            migrateSettingNameChange( values, log, "unsupported.consistency_checker.experimental.fail_fast", consistency_checker_fail_fast_threshold );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingRemoval(
+                    values,
+                    log,
+                    "unsupported.consistency_checker.experimental",
+                    "There is no longer multiple different consistency checkers to choose from");
+            migrateSettingNameChange(
+                    values,
+                    log,
+                    "unsupported.consistency_checker.experimental.fail_fast",
+                    consistency_checker_fail_fast_threshold);
         }
     }
 
     @ServiceProvider
-    public static class ConnectorKeepAliveSettingsMigrator implements SettingMigrator
-    {
+    public static class ConnectorKeepAliveSettingsMigrator implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            migrateSettingNameChange( values, log, "dbms.connector.bolt.connection_keep_alive_scheduling_interval",
-                                      BoltConnector.connection_keep_alive_streaming_scheduling_interval );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values,
+                    log,
+                    "dbms.connector.bolt.connection_keep_alive_scheduling_interval",
+                    BoltConnector.connection_keep_alive_streaming_scheduling_interval);
         }
     }
 
     @ServiceProvider
-    public static class LogFormatMigrator implements SettingMigrator
-    {
+    public static class LogFormatMigrator implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            String value = values.remove( "unsupported.dbms.logs.format" );
-            if ( isNotBlank( value ) )
-            {
-                log.warn( "Use of deprecated setting 'unsupported.dbms.logs.format'." );
-                if ( "STANDARD_FORMAT".equals( value ) )
-                {
-                    values.put( GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.PLAIN.name() );
-                }
-                else if ( "JSON_FORMAT".equals( value ) )
-                {
-                    values.put( GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.JSON.name() );
-                }
-                else
-                {
-                    log.warn( "Unrecognized value for 'unsupported.dbms.logs.format'. Was %s but expected STANDARD_FORMAT or JSON_FORMAT.", value );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            String value = values.remove("unsupported.dbms.logs.format");
+            if (isNotBlank(value)) {
+                log.warn("Use of deprecated setting 'unsupported.dbms.logs.format'.");
+                if ("STANDARD_FORMAT".equals(value)) {
+                    values.put(GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.PLAIN.name());
+                } else if ("JSON_FORMAT".equals(value)) {
+                    values.put(GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.JSON.name());
+                } else {
+                    log.warn(
+                            "Unrecognized value for 'unsupported.dbms.logs.format'. Was %s but expected STANDARD_FORMAT or JSON_FORMAT.",
+                            value);
                 }
             }
         }
     }
 
     @ServiceProvider
-    public static class ForsetiMigrator implements SettingMigrator
-    {
+    public static class ForsetiMigrator implements SettingMigrator {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            String value = values.remove( "unsupported.dbms.locks.forseti_deadlock_resolution_strategy" );
-            if ( isNotBlank( value ) )
-            {
-                log.warn( "'unsupported.dbms.locks.forseti_deadlock_resolution_strategy' no longer exists. Value have no effect." );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            String value = values.remove("unsupported.dbms.locks.forseti_deadlock_resolution_strategy");
+            if (isNotBlank(value)) {
+                log.warn(
+                        "'unsupported.dbms.locks.forseti_deadlock_resolution_strategy' no longer exists. Value have no effect.");
             }
         }
     }
 
     @ServiceProvider
-    public static class InternalSettingsMigrator implements SettingMigrator
-    {
+    public static class InternalSettingsMigrator implements SettingMigrator {
         private static final Collection<Mapping> legacyUnsupportedSettingsMapping = List.of(
-                new Mapping( "causal_clustering.akka_actor_system_restarter.initial_delay",
-                        "internal.causal_clustering.akka_actor_system_restarter.initial_delay" ),
-                new Mapping( "causal_clustering.akka_actor_system_restarter.max_acceptable_failures",
-                        "internal.causal_clustering.akka_actor_system_restarter.max_acceptable_failures" ),
-                new Mapping( "causal_clustering.akka_actor_system_restarter.max_delay", "internal.causal_clustering.akka_actor_system_restarter.max_delay" ),
-                new Mapping( "causal_clustering.cluster_binding_retry_timeout", "internal.causal_clustering.cluster_binding_retry_timeout" ),
-                new Mapping( "causal_clustering.cluster_id_publish_timeout", "internal.causal_clustering.cluster_id_publish_timeout" ),
-                new Mapping( "causal_clustering.cluster_info_polling_max_wait", "internal.causal_clustering.cluster_info_polling_max_wait" ),
-                new Mapping( "causal_clustering.discovery_resolution_retry_interval", "internal.causal_clustering.discovery_resolution_retry_interval" ),
-                new Mapping( "causal_clustering.discovery_resolution_timeout", "internal.causal_clustering.discovery_resolution_timeout" ),
-                new Mapping( "causal_clustering.enable_seed_validation", "internal.causal_clustering.enable_seed_validation" ),
-                new Mapping( "causal_clustering.leader_transfer_interval", "internal.causal_clustering.leader_transfer_interval" ),
-                new Mapping( "causal_clustering.leader_transfer_member_backoff", "internal.causal_clustering.leader_transfer_member_backoff" ),
-                new Mapping( "causal_clustering.leader_transfer_timeout", "internal.causal_clustering.leader_transfer_timeout" ),
-                new Mapping( "causal_clustering.max_commits_delay_id_reuse", "internal.causal_clustering.max_commits_delay_id_reuse" ),
-                new Mapping( "causal_clustering.max_time_delay_id_reuse", "internal.causal_clustering.max_time_delay_id_reuse" ),
-                new Mapping( "causal_clustering.middleware.akka.allow_any_core_to_bootstrap",
-                        "internal.causal_clustering.middleware.akka.allow_any_core_to_bootstrap" ),
-                new Mapping( "causal_clustering.middleware.akka.bind_timeout", "internal.causal_clustering.middleware.akka.bind_timeout" ),
-                new Mapping( "causal_clustering.middleware.akka.cluster.min_nr_of_members",
-                        "internal.causal_clustering.middleware.akka.cluster.min_nr_of_members" ),
-                new Mapping( "causal_clustering.middleware.akka.cluster.seed_node_timeout",
-                        "internal.causal_clustering.middleware.akka.cluster.seed_node_timeout" ),
-                new Mapping( "causal_clustering.middleware.akka.cluster.seed_node_timeout_on_first_start",
-                        "internal.causal_clustering.middleware.akka.cluster.seed_node_timeout_on_first_start" ),
-                new Mapping( "causal_clustering.middleware.akka.connection_timeout", "internal.causal_clustering.middleware.akka.connection_timeout" ),
-                new Mapping( "causal_clustering.middleware.akka.default_parallelism", "internal.causal_clustering.middleware.akka.default_parallelism" ),
-                new Mapping( "causal_clustering.middleware.akka.down_unreachable_on_new_joiner",
-                        "internal.causal_clustering.middleware.akka.down_unreachable_on_new_joiner" ),
-                new Mapping( "causal_clustering.middleware.akka.external_config", "internal.causal_clustering.middleware.akka.external_config" ),
-                new Mapping( "causal_clustering.middleware.akka.failure_detector.acceptable_heartbeat_pause",
-                        "internal.causal_clustering.middleware.akka.failure_detector.acceptable_heartbeat_pause" ),
-                new Mapping( "causal_clustering.middleware.akka.failure_detector.expected_response_after",
-                        "internal.causal_clustering.middleware.akka.failure_detector.expected_response_after" ),
-                new Mapping( "causal_clustering.middleware.akka.failure_detector.heartbeat_interval",
-                        "internal.causal_clustering.middleware.akka.failure_detector.heartbeat_interval" ),
-                new Mapping( "causal_clustering.middleware.akka.failure_detector.max_sample_size",
-                        "internal.causal_clustering.middleware.akka.failure_detector.max_sample_size" ),
-                new Mapping( "causal_clustering.middleware.akka.failure_detector.min_std_deviation",
-                        "internal.causal_clustering.middleware.akka.failure_detector.min_std_deviation" ),
-                new Mapping( "causal_clustering.middleware.akka.failure_detector.monitored_by_nr_of_members",
-                        "internal.causal_clustering.middleware.akka.failure_detector.monitored_by_nr_of_members" ),
-                new Mapping( "causal_clustering.middleware.akka.failure_detector.threshold",
-                        "internal.causal_clustering.middleware.akka.failure_detector.threshold" ),
-                new Mapping( "causal_clustering.middleware.akka.handshake_timeout", "internal.causal_clustering.middleware.akka.handshake_timeout" ),
-                new Mapping( "causal_clustering.middleware.akka.shutdown_timeout", "internal.causal_clustering.middleware.akka.shutdown_timeout" ),
-                new Mapping( "causal_clustering.middleware.akka.sink_parallelism", "internal.causal_clustering.middleware.akka.sink_parallelism" ),
-                new Mapping( "causal_clustering.min_time_delay_id_reuse", "internal.causal_clustering.min_time_delay_id_reuse" ),
-                new Mapping( "causal_clustering.raft_group_graveyard_state_size", "internal.causal_clustering.raft_group_graveyard_state_size" ),
-                new Mapping( "causal_clustering.raft_in_queue_max_batch", "internal.causal_clustering.raft_in_queue_max_batch" ),
-                new Mapping( "causal_clustering.raft_in_queue_size", "internal.causal_clustering.raft_in_queue_size" ),
-                new Mapping( "causal_clustering.raft_messages_log_enable", "internal.causal_clustering.raft_messages_log_enable" ),
-                new Mapping( "causal_clustering.raft_messages_log_path", "internal.causal_clustering.raft_messages_log_path" ),
-                new Mapping( "causal_clustering.read_replica_transaction_applier_batch_size",
-                        "internal.causal_clustering.read_replica_transaction_applier_batch_size" ),
-                new Mapping( "causal_clustering.read_replica_transaction_applier_max_queue_size",
-                        "internal.causal_clustering.read_replica_transaction_applier_max_queue_size" ),
-                new Mapping( "causal_clustering.seed_validation_timeout", "internal.causal_clustering.seed_validation_timeout" ),
-                new Mapping( "causal_clustering.store_copy_backoff_max_wait", "internal.causal_clustering.store_copy_backoff_max_wait" ),
-                new Mapping( "causal_clustering.store_size_service_cache_timeout", "internal.causal_clustering.store_size_service_cache_timeout" ),
-                new Mapping( "causal_clustering.temporary_database.extension_package_names",
-                        "internal.causal_clustering.temporary_database.extension_package_names" ),
-                new Mapping( "causal_clustering.topology_graph.default_num_primaries", "internal.causal_clustering.topology_graph.default_num_primaries" ),
-                new Mapping( "causal_clustering.topology_graph.default_num_secondaries", "internal.causal_clustering.topology_graph.default_num_secondaries" ),
-                new Mapping( "dbms.capabilities.blocked", "internal.dbms.capabilities.blocked" ),
-                new Mapping( "dbms.connector.bolt.tcp_keep_alive", "internal.dbms.connector.bolt.tcp_keep_alive" ),
-                new Mapping( "dbms.connector.bolt.unsupported_thread_pool_queue_size", "internal.dbms.connector.bolt.thread_pool_queue_size" ),
-                new Mapping( "dbms.connector.bolt.unsupported_unauth_connection_timeout", "internal.dbms.connector.bolt.unauth_connection_timeout" ),
-                new Mapping( "dbms.connector.bolt.unsupported_unauth_max_inbound_bytes", "internal.dbms.connector.bolt.unauth_max_inbound_bytes" ),
-                new Mapping( "dbms.init_file", "internal.dbms.init_file" ),
-                new Mapping( "dbms.log_inconsistent_data_deletion", "internal.dbms.log_inconsistent_data_deletion" ),
-                new Mapping( "dbms.routing.driver.event_loop_count", "internal.dbms.routing.driver.event_loop_count" ),
-                new Mapping( "dbms.routing.driver.idle_check_interval", "internal.dbms.routing.driver.idle_check_interval" ),
-                new Mapping( "dbms.routing.driver.logging.leaked_sessions", "internal.dbms.routing.driver.logging.leaked_sessions" ),
-                new Mapping( "dbms.routing.driver.timeout", "internal.dbms.routing.driver.timeout" ),
-                new Mapping( "fabric.driver.event_loop_count", "internal.fabric.driver.event_loop_count" ),
-                new Mapping( "fabric.driver.idle_check_interval", "internal.fabric.driver.idle_check_interval" ),
-                new Mapping( "fabric.driver.logging.leaked_sessions", "internal.fabric.driver.logging.leaked_sessions" ),
-                new Mapping( "fabric.driver.timeout", "internal.fabric.driver.timeout" ),
-                new Mapping( "fabric.enabled_by_default", "internal.fabric.enabled_by_default" ),
-                new Mapping( "fabric.stream.batch_size", "internal.fabric.stream.batch_size" ),
-                new Mapping( "unsupported.bootloader.auto.configuration", "internal.bootloader.auto.configuration" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.codecache.max", "internal.bootloader.auto.configuration.codecache.max" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.codecache.min", "internal.bootloader.auto.configuration.codecache.min" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.dataset.file", "internal.bootloader.auto.configuration.dataset.file" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.execution_plan_cache.max",
-                        "internal.bootloader.auto.configuration.execution_plan_cache.max" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.execution_plan_cache.min",
-                        "internal.bootloader.auto.configuration.execution_plan_cache.min" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.heap.max", "internal.bootloader.auto.configuration.heap.max" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.heap.min", "internal.bootloader.auto.configuration.heap.min" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.memory.limit", "internal.bootloader.auto.configuration.memory.limit" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.pagecache.max", "internal.bootloader.auto.configuration.pagecache.max" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.pagecache.min", "internal.bootloader.auto.configuration.pagecache.min" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.query_cache.max", "internal.bootloader.auto.configuration.query_cache.max" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.query_cache.min", "internal.bootloader.auto.configuration.query_cache.min" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.search.radius", "internal.bootloader.auto.configuration.search.radius" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.tx_limit.max", "internal.bootloader.auto.configuration.tx_limit.max" ),
-                new Mapping( "unsupported.bootloader.auto.configuration.tx_limit.min", "internal.bootloader.auto.configuration.tx_limit.min" ),
-                new Mapping( "unsupported.causal_clustering.cluster_status_request_maximum_wait",
-                        "internal.causal_clustering.cluster_status_request_maximum_wait" ),
-                new Mapping( "unsupported.causal_clustering.experimental_catchup_protocol_enabled",
-                        "internal.causal_clustering.experimental_catchup_protocol_enabled" ),
-                new Mapping( "unsupported.causal_clustering.experimental_consensus_protocol_enabled",
-                        "internal.causal_clustering.experimental_consensus_protocol_enabled" ),
-                new Mapping( "unsupported.causal_clustering.experimental_dbms_protocol_enabled",
-                        "internal.causal_clustering.experimental_dbms_protocol_enabled" ),
-                new Mapping( "unsupported.causal_clustering.experimental_raft_protocol_enabled",
-                        "internal.causal_clustering.experimental_raft_protocol_enabled" ),
-                new Mapping( "unsupported.causal_clustering.inbound_connection_initialization_logging_enabled",
-                        "internal.causal_clustering.inbound_connection_initialization_logging_enabled" ),
-                new Mapping( "unsupported.consistency_checker.fail_fast_threshold", "internal.consistency_checker.fail_fast_threshold" ),
-                new Mapping( "unsupported.consistency_checker.memory_limit_factor", "internal.consistency_checker.memory_limit_factor" ),
-                new Mapping( "unsupported.cypher.compiler_tracing", "internal.cypher.compiler_tracing" ),
-                new Mapping( "unsupported.cypher.enable_extra_semantic_features", "internal.cypher.enable_extra_semantic_features" ),
-                new Mapping( "unsupported.cypher.enable_runtime_monitors", "internal.cypher.enable_runtime_monitors" ),
-                new Mapping( "unsupported.cypher.expression_engine", "internal.cypher.expression_engine" ),
-                new Mapping( "unsupported.cypher.expression_recompilation_limit", "internal.cypher.expression_recompilation_limit" ),
-                new Mapping( "unsupported.cypher.idp_solver_duration_threshold", "internal.cypher.idp_solver_duration_threshold" ),
-                new Mapping( "unsupported.cypher.idp_solver_table_threshold", "internal.cypher.idp_solver_table_threshold" ),
-                new Mapping( "unsupported.cypher.non_indexed_label_warning_threshold", "internal.cypher.non_indexed_label_warning_threshold" ),
-                new Mapping( "unsupported.cypher.number_of_workers", "internal.cypher.number_of_workers" ),
-                new Mapping( "unsupported.cypher.pipelined.batch_size_big", "internal.cypher.pipelined.batch_size_big" ),
-                new Mapping( "unsupported.cypher.pipelined.batch_size_small", "internal.cypher.pipelined.batch_size_small" ),
-                new Mapping( "unsupported.cypher.pipelined.enable_runtime_trace", "internal.cypher.pipelined.enable_runtime_trace" ),
-                new Mapping( "unsupported.cypher.pipelined.operator_engine", "internal.cypher.pipelined.operator_engine" ),
-                new Mapping( "unsupported.cypher.pipelined.operator_fusion_over_pipeline_limit",
-                        "internal.cypher.pipelined.operator_fusion_over_pipeline_limit" ),
-                new Mapping( "unsupported.cypher.pipelined.runtime_trace_path", "internal.cypher.pipelined.runtime_trace_path" ),
-                new Mapping( "unsupported.cypher.pipelined_interpreted_pipes_fallback", "internal.cypher.pipelined_interpreted_pipes_fallback" ),
-                new Mapping( "unsupported.cypher.planning_point_indexes_enabled", "internal.cypher.planning_point_indexes_enabled" ),
-                new Mapping( "unsupported.cypher.planning_range_indexes_enabled", "internal.cypher.planning_range_indexes_enabled" ),
-                new Mapping( "unsupported.cypher.planning_text_indexes_enabled", "internal.cypher.planning_text_indexes_enabled" ),
-                new Mapping( "unsupported.cypher.replan_algorithm", "internal.cypher.replan_algorithm" ),
-                new Mapping( "unsupported.cypher.runtime", "internal.cypher.runtime" ),
-                new Mapping( "unsupported.cypher.splitting_top_behavior", "internal.cypher.splitting_top_behavior" ),
-                new Mapping( "unsupported.cypher.statistics_divergence_target", "internal.cypher.statistics_divergence_target" ),
-                new Mapping( "unsupported.cypher.target_replan_interval", "internal.cypher.target_replan_interval" ),
-                new Mapping( "unsupported.cypher.var_expand_relationship_id_set_threshold", "internal.cypher.var_expand_relationship_id_set_threshold" ),
-                new Mapping( "unsupported.datacollector.max_query_text_size", "internal.datacollector.max_query_text_size" ),
-                new Mapping( "unsupported.datacollector.max_recent_query_count", "internal.datacollector.max_recent_query_count" ),
-                new Mapping( "unsupported.dbms.block_alter_database", "internal.dbms.block_alter_database" ),
-                new Mapping( "unsupported.dbms.block_create_drop_database", "internal.dbms.block_create_drop_database" ),
-                new Mapping( "unsupported.dbms.block_size.array_properties", "internal.dbms.block_size.array_properties" ),
-                new Mapping( "unsupported.dbms.block_size.labels", "internal.dbms.block_size.labels" ),
-                new Mapping( "unsupported.dbms.block_size.strings", "internal.dbms.block_size.strings" ),
-                new Mapping( "unsupported.dbms.block_start_stop_database", "internal.dbms.block_start_stop_database" ),
-                new Mapping( "unsupported.dbms.bolt.inbound_message_throttle.high_watermark", "internal.dbms.bolt.inbound_message_throttle.high_watermark" ),
-                new Mapping( "unsupported.dbms.bolt.inbound_message_throttle.low_watermark", "internal.dbms.bolt.inbound_message_throttle.low_watermark" ),
-                new Mapping( "unsupported.dbms.bolt.netty_message_merge_cumulator", "internal.dbms.bolt.netty_message_merge_cumulator" ),
-                new Mapping( "unsupported.dbms.bolt.netty_server_shutdown_quiet_period", "internal.dbms.bolt.netty_server_shutdown_quiet_period" ),
-                new Mapping( "unsupported.dbms.bolt.netty_server_shutdown_timeout", "internal.dbms.bolt.netty_server_shutdown_timeout" ),
-                new Mapping( "unsupported.dbms.bolt.netty_server_use_epoll", "internal.dbms.bolt.netty_server_use_epoll" ),
-                new Mapping( "unsupported.dbms.bolt.outbound_buffer_throttle", "internal.dbms.bolt.outbound_buffer_throttle" ),
-                new Mapping( "unsupported.dbms.bolt.outbound_buffer_throttle.high_watermark", "internal.dbms.bolt.outbound_buffer_throttle.high_watermark" ),
-                new Mapping( "unsupported.dbms.bolt.outbound_buffer_throttle.low_watermark", "internal.dbms.bolt.outbound_buffer_throttle.low_watermark" ),
-                new Mapping( "unsupported.dbms.bolt.outbound_buffer_throttle.max_duration", "internal.dbms.bolt.outbound_buffer_throttle.max_duration" ),
-                new Mapping( "unsupported.dbms.checkpoint_log.rotation.keep.files", "internal.dbms.checkpoint_log.rotation.keep.files" ),
-                new Mapping( "unsupported.dbms.checkpoint_log.rotation.size", "internal.dbms.checkpoint_log.rotation.size" ),
-                new Mapping( "unsupported.dbms.config.command_evaluation_timeout", "internal.dbms.config.command_evaluation_timeout" ),
-                new Mapping( "unsupported.dbms.counts_store_rotation_timeout", "internal.dbms.counts_store_rotation_timeout" ),
-                new Mapping( "unsupported.dbms.cypher_ip_blocklist", "internal.dbms.cypher_ip_blocklist" ),
-                new Mapping( "unsupported.dbms.debug.page_cache_tracer_speed_reporting_threshold",
-                        "internal.dbms.debug.page_cache_tracer_speed_reporting_threshold" ),
-                new Mapping( "unsupported.dbms.debug.print_page_buffer_allocation_trace", "internal.dbms.debug.print_page_buffer_allocation_trace" ),
-                new Mapping( "unsupported.dbms.debug.trace_cursors", "internal.dbms.debug.trace_cursors" ),
-                new Mapping( "unsupported.dbms.debug.trace_tx_statement", "internal.dbms.debug.trace_tx_statement" ),
-                new Mapping( "unsupported.dbms.debug.track_cursor_close", "internal.dbms.debug.track_cursor_close" ),
-                new Mapping( "unsupported.dbms.debug.track_tx_statement_close", "internal.dbms.debug.track_tx_statement_close" ),
-                new Mapping( "unsupported.dbms.directories.auth", "internal.dbms.directories.auth" ),
-                new Mapping( "unsupported.dbms.directories.databases.root", "internal.dbms.directories.databases.root" ),
-                new Mapping( "unsupported.dbms.directories.pid_file", "internal.dbms.directories.pid_file" ),
-                new Mapping( "unsupported.dbms.directories.scripts", "internal.dbms.directories.scripts" ),
-                new Mapping( "unsupported.dbms.directories.windows_tools", "internal.dbms.directories.windows_tools" ),
-                new Mapping( "unsupported.dbms.discoverable_bolt_address", "internal.dbms.discoverable_bolt_address" ),
-                new Mapping( "unsupported.dbms.discoverable_bolt_routing_address", "internal.dbms.discoverable_bolt_routing_address" ),
-                new Mapping( "unsupported.dbms.dump_diagnostics", "internal.dbms.dump_diagnostics" ),
-                new Mapping( "unsupported.dbms.enable_transaction_heap_allocation_tracking", "internal.dbms.enable_transaction_heap_allocation_tracking" ),
-                new Mapping( "unsupported.dbms.executiontime_limit.time", "internal.dbms.executiontime_limit.time" ),
-                new Mapping( "unsupported.dbms.extra_lock_verification", "internal.dbms.extra_lock_verification" ),
-                new Mapping( "unsupported.dbms.force_small_id_cache", "internal.dbms.force_small_id_cache" ),
-                new Mapping( "unsupported.dbms.http_paths_blacklist", "internal.dbms.http_paths_blacklist" ),
-                new Mapping( "unsupported.dbms.id_buffering.offload_to_disk", "internal.dbms.id_buffering.offload_to_disk" ),
-                new Mapping( "unsupported.dbms.idgenerator.log.enabled", "internal.dbms.idgenerator.log.enabled" ),
-                new Mapping( "unsupported.dbms.idgenerator.log.prune_threshold", "internal.dbms.idgenerator.log.prune_threshold" ),
-                new Mapping( "unsupported.dbms.idgenerator.log.rotation_threshold", "internal.dbms.idgenerator.log.rotation_threshold" ),
-                new Mapping( "unsupported.dbms.include_dev_record_format_versions", "internal.dbms.include_dev_record_format_versions" ),
-                new Mapping( "unsupported.dbms.index.archive_failed", "internal.dbms.index.archive_failed" ),
-                new Mapping( "unsupported.dbms.index.default_fulltext_provider", "internal.dbms.index.default_fulltext_provider" ),
-                new Mapping( "unsupported.dbms.index.lucene.merge_factor", "internal.dbms.index.lucene.merge_factor" ),
-                new Mapping( "unsupported.dbms.index.lucene.min_merge", "internal.dbms.index.lucene.min_merge" ),
-                new Mapping( "unsupported.dbms.index.lucene.nocfs.ratio", "internal.dbms.index.lucene.nocfs.ratio" ),
-                new Mapping( "unsupported.dbms.index.lucene.population_max_buffered_docs", "internal.dbms.index.lucene.population_max_buffered_docs" ),
-                new Mapping( "unsupported.dbms.index.lucene.population_ram_buffer_size", "internal.dbms.index.lucene.population_ram_buffer_size" ),
-                new Mapping( "unsupported.dbms.index.lucene.population_serial_merge_scheduler",
-                        "internal.dbms.index.lucene.population_serial_merge_scheduler" ),
-                new Mapping( "unsupported.dbms.index.lucene.standard_ram_buffer_size", "internal.dbms.index.lucene.standard_ram_buffer_size" ),
-                new Mapping( "unsupported.dbms.index.lucene.writer_max_buffered_docs", "internal.dbms.index.lucene.writer_max_buffered_docs" ),
-                new Mapping( "unsupported.dbms.index.population_batch_max_byte_size", "internal.dbms.index.population_batch_max_byte_size" ),
-                new Mapping( "unsupported.dbms.index.population_print_debug", "internal.dbms.index.population_print_debug" ),
-                new Mapping( "unsupported.dbms.index.population_queue_threshold", "internal.dbms.index.population_queue_threshold" ),
-                new Mapping( "unsupported.dbms.index.populator_block_size", "internal.dbms.index.populator_block_size" ),
-                new Mapping( "unsupported.dbms.index.populator_merge_factor", "internal.dbms.index.populator_merge_factor" ),
-                new Mapping( "unsupported.dbms.index.sampling.async_recovery", "internal.dbms.index.sampling.async_recovery" ),
-                new Mapping( "unsupported.dbms.index.sampling.async_recovery_wait", "internal.dbms.index.sampling.async_recovery_wait" ),
-                new Mapping( "unsupported.dbms.index.sampling.log_recovered_samples", "internal.dbms.index.sampling.log_recovered_samples" ),
-                new Mapping( "unsupported.dbms.index.skip_default_indexes_on_creation", "internal.dbms.index.skip_default_indexes_on_creation" ),
-                new Mapping( "unsupported.dbms.index.spatial.curve.bottom_threshold", "internal.dbms.index.spatial.curve.bottom_threshold" ),
-                new Mapping( "unsupported.dbms.index.spatial.curve.extra_levels", "internal.dbms.index.spatial.curve.extra_levels" ),
-                new Mapping( "unsupported.dbms.index.spatial.curve.top_threshold", "internal.dbms.index.spatial.curve.top_threshold" ),
-                new Mapping( "unsupported.dbms.index_population.parallelism", "internal.dbms.index_population.parallelism" ),
-                new Mapping( "unsupported.dbms.index_population.workers", "internal.dbms.index_population.workers" ),
-                new Mapping( "unsupported.dbms.index_sampling.parallelism", "internal.dbms.index_sampling.parallelism" ),
-                new Mapping( "unsupported.dbms.initial_transaction_heap_grab_size", "internal.dbms.initial_transaction_heap_grab_size" ),
-                new Mapping( "unsupported.dbms.io.controller.consider.external.enabled", "internal.dbms.io.controller.consider.external.enabled" ),
-                new Mapping( "unsupported.dbms.kernel_id", "internal.dbms.kernel_id" ),
-                new Mapping( "unsupported.dbms.large_cluster.enable", "internal.dbms.large_cluster.enable" ),
-                new Mapping( "unsupported.dbms.lock_manager", "internal.dbms.lock_manager" ),
-                new Mapping( "unsupported.dbms.lock_manager.verbose_deadlocks", "internal.dbms.lock_manager.verbose_deadlocks" ),
-                new Mapping( "unsupported.dbms.logs.query.heap_dump_enabled", "internal.dbms.logs.query.heap_dump_enabled" ),
-                new Mapping( "unsupported.dbms.loopback_delete", "internal.dbms.loopback_delete" ),
-                new Mapping( "unsupported.dbms.loopback_enabled", "internal.dbms.loopback_enabled" ),
-                new Mapping( "unsupported.dbms.loopback_file", "internal.dbms.loopback_file" ),
-                new Mapping( "unsupported.dbms.lucene.ephemeral", "internal.dbms.lucene.ephemeral" ),
-                new Mapping( "unsupported.dbms.lucene.max_partition_size", "internal.dbms.lucene.max_partition_size" ),
-                new Mapping( "unsupported.dbms.max_http_request_header_size", "internal.dbms.max_http_request_header_size" ),
-                new Mapping( "unsupported.dbms.max_http_response_header_size", "internal.dbms.max_http_response_header_size" ),
-                new Mapping( "unsupported.dbms.memory.counts_store_max_cached_entries", "internal.dbms.memory.counts_store_max_cached_entries" ),
-                new Mapping( "unsupported.dbms.memory.managed_network_buffers", "internal.dbms.memory.managed_network_buffers" ),
-                new Mapping( "unsupported.dbms.multiversioned.store", "internal.dbms.multiversioned.store" ),
-                new Mapping( "unsupported.dbms.page.file.tracer", "internal.dbms.page.file.tracer" ),
-                new Mapping( "unsupported.dbms.parallel_index_updates_apply", "internal.dbms.parallel_index_updates_apply" ),
-                new Mapping( "unsupported.dbms.query.snapshot", "internal.dbms.query.snapshot" ),
-                new Mapping( "unsupported.dbms.query.snapshot.retries", "internal.dbms.query.snapshot.retries" ),
-                new Mapping( "unsupported.dbms.query_execution_plan_cache_size", "internal.dbms.query_execution_plan_cache_size" ),
-                new Mapping( "unsupported.dbms.readonly.failover", "internal.dbms.readonly.failover" ),
-                new Mapping( "unsupported.dbms.recovery.enable_parallelism", "internal.dbms.recovery.enable_parallelism" ),
-                new Mapping( "unsupported.dbms.report_configuration", "internal.dbms.report_configuration" ),
-                new Mapping( "unsupported.dbms.reserved.page.header.bytes", "internal.dbms.reserved.page.header.bytes" ),
-                new Mapping( "unsupported.dbms.security.ldap.authorization.connection_pooling",
-                        "internal.dbms.security.ldap.authorization.connection_pooling" ),
-                new Mapping( "unsupported.dbms.select_specfic_record_format", "internal.dbms.select_specfic_record_format" ),
-                new Mapping( "unsupported.dbms.ssl.system.ignore_dot_files", "internal.dbms.ssl.system.ignore_dot_files" ),
-                new Mapping( "unsupported.dbms.storage.consistency_check_on_apply", "internal.dbms.storage.consistency_check_on_apply" ),
-                new Mapping( "unsupported.dbms.storage_engine", "internal.dbms.storage_engine" ),
-                new Mapping( "unsupported.dbms.strictly_prioritize_id_freelist", "internal.dbms.strictly_prioritize_id_freelist" ),
-                new Mapping( "unsupported.dbms.topology_graph_updater.enable", "internal.dbms.topology_graph_updater.enable" ),
-                new Mapping( "unsupported.dbms.tracer", "internal.dbms.tracer" ),
-                new Mapping( "unsupported.dbms.transaction_start_timeout", "internal.dbms.transaction_start_timeout" ),
-                new Mapping( "unsupported.dbms.tx.logs.dedicated.appender", "internal.dbms.tx.logs.dedicated.appender" ),
-                new Mapping( "unsupported.dbms.tx_log.fail_on_corrupted_log_files", "internal.dbms.tx_log.fail_on_corrupted_log_files" ),
-                new Mapping( "unsupported.dbms.tx_log.presketch", "internal.dbms.tx_log.presketch" ),
-                new Mapping( "unsupported.dbms.upgrade_restriction_enabled", "internal.dbms.upgrade_restriction_enabled" ),
-                new Mapping( "unsupported.dbms.uris.browser", "internal.dbms.uris.browser" ),
-                new Mapping( "unsupported.dbms.uris.db", "internal.dbms.uris.db" ),
-                new Mapping( "unsupported.dbms.uris.dbms", "internal.dbms.uris.dbms" ),
-                new Mapping( "unsupported.dbms.uris.management", "internal.dbms.uris.management" ),
-                new Mapping( "unsupported.dbms.uris.rest", "internal.dbms.uris.rest" ),
-                new Mapping( "unsupported.dbms.use_old_token_index_location", "internal.dbms.use_old_token_index_location" ),
-                new Mapping( "unsupported.dbms.wadl_generation_enabled", "internal.dbms.wadl_generation_enabled" ),
-                new Mapping( "unsupported.metrics.cypher.cache.entries.enabled", "internal.metrics.cypher.cache.entries.enabled" ),
-                new Mapping( "unsupported.tools.batch_inserter.batch_size", "internal.tools.batch_inserter.batch_size" ),
-                new Mapping( "unsupported.vm_pause_monitor.measurement_duration", "internal.vm_pause_monitor.measurement_duration" ),
-                new Mapping( "unsupported.vm_pause_monitor.stall_alert_threshold", "internal.vm_pause_monitor.stall_alert_threshold" ),
-                new Mapping( "dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time",
-                        "internal.dbms.connector.bolt.thread_pool_shutdown_wait_time" ) );
+                new Mapping(
+                        "causal_clustering.akka_actor_system_restarter.initial_delay",
+                        "internal.causal_clustering.akka_actor_system_restarter.initial_delay"),
+                new Mapping(
+                        "causal_clustering.akka_actor_system_restarter.max_acceptable_failures",
+                        "internal.causal_clustering.akka_actor_system_restarter.max_acceptable_failures"),
+                new Mapping(
+                        "causal_clustering.akka_actor_system_restarter.max_delay",
+                        "internal.causal_clustering.akka_actor_system_restarter.max_delay"),
+                new Mapping(
+                        "causal_clustering.cluster_binding_retry_timeout",
+                        "internal.causal_clustering.cluster_binding_retry_timeout"),
+                new Mapping(
+                        "causal_clustering.cluster_id_publish_timeout",
+                        "internal.causal_clustering.cluster_id_publish_timeout"),
+                new Mapping(
+                        "causal_clustering.cluster_info_polling_max_wait",
+                        "internal.causal_clustering.cluster_info_polling_max_wait"),
+                new Mapping(
+                        "causal_clustering.discovery_resolution_retry_interval",
+                        "internal.causal_clustering.discovery_resolution_retry_interval"),
+                new Mapping(
+                        "causal_clustering.discovery_resolution_timeout",
+                        "internal.causal_clustering.discovery_resolution_timeout"),
+                new Mapping(
+                        "causal_clustering.enable_seed_validation",
+                        "internal.causal_clustering.enable_seed_validation"),
+                new Mapping(
+                        "causal_clustering.leader_transfer_interval",
+                        "internal.causal_clustering.leader_transfer_interval"),
+                new Mapping(
+                        "causal_clustering.leader_transfer_member_backoff",
+                        "internal.causal_clustering.leader_transfer_member_backoff"),
+                new Mapping(
+                        "causal_clustering.leader_transfer_timeout",
+                        "internal.causal_clustering.leader_transfer_timeout"),
+                new Mapping(
+                        "causal_clustering.max_commits_delay_id_reuse",
+                        "internal.causal_clustering.max_commits_delay_id_reuse"),
+                new Mapping(
+                        "causal_clustering.max_time_delay_id_reuse",
+                        "internal.causal_clustering.max_time_delay_id_reuse"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.allow_any_core_to_bootstrap",
+                        "internal.causal_clustering.middleware.akka.allow_any_core_to_bootstrap"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.bind_timeout",
+                        "internal.causal_clustering.middleware.akka.bind_timeout"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.cluster.min_nr_of_members",
+                        "internal.causal_clustering.middleware.akka.cluster.min_nr_of_members"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.cluster.seed_node_timeout",
+                        "internal.causal_clustering.middleware.akka.cluster.seed_node_timeout"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.cluster.seed_node_timeout_on_first_start",
+                        "internal.causal_clustering.middleware.akka.cluster.seed_node_timeout_on_first_start"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.connection_timeout",
+                        "internal.causal_clustering.middleware.akka.connection_timeout"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.default_parallelism",
+                        "internal.causal_clustering.middleware.akka.default_parallelism"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.down_unreachable_on_new_joiner",
+                        "internal.causal_clustering.middleware.akka.down_unreachable_on_new_joiner"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.external_config",
+                        "internal.causal_clustering.middleware.akka.external_config"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.failure_detector.acceptable_heartbeat_pause",
+                        "internal.causal_clustering.middleware.akka.failure_detector.acceptable_heartbeat_pause"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.failure_detector.expected_response_after",
+                        "internal.causal_clustering.middleware.akka.failure_detector.expected_response_after"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.failure_detector.heartbeat_interval",
+                        "internal.causal_clustering.middleware.akka.failure_detector.heartbeat_interval"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.failure_detector.max_sample_size",
+                        "internal.causal_clustering.middleware.akka.failure_detector.max_sample_size"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.failure_detector.min_std_deviation",
+                        "internal.causal_clustering.middleware.akka.failure_detector.min_std_deviation"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.failure_detector.monitored_by_nr_of_members",
+                        "internal.causal_clustering.middleware.akka.failure_detector.monitored_by_nr_of_members"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.failure_detector.threshold",
+                        "internal.causal_clustering.middleware.akka.failure_detector.threshold"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.handshake_timeout",
+                        "internal.causal_clustering.middleware.akka.handshake_timeout"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.shutdown_timeout",
+                        "internal.causal_clustering.middleware.akka.shutdown_timeout"),
+                new Mapping(
+                        "causal_clustering.middleware.akka.sink_parallelism",
+                        "internal.causal_clustering.middleware.akka.sink_parallelism"),
+                new Mapping(
+                        "causal_clustering.min_time_delay_id_reuse",
+                        "internal.causal_clustering.min_time_delay_id_reuse"),
+                new Mapping(
+                        "causal_clustering.raft_group_graveyard_state_size",
+                        "internal.causal_clustering.raft_group_graveyard_state_size"),
+                new Mapping(
+                        "causal_clustering.raft_in_queue_max_batch",
+                        "internal.causal_clustering.raft_in_queue_max_batch"),
+                new Mapping("causal_clustering.raft_in_queue_size", "internal.causal_clustering.raft_in_queue_size"),
+                new Mapping(
+                        "causal_clustering.raft_messages_log_enable",
+                        "internal.causal_clustering.raft_messages_log_enable"),
+                new Mapping(
+                        "causal_clustering.raft_messages_log_path",
+                        "internal.causal_clustering.raft_messages_log_path"),
+                new Mapping(
+                        "causal_clustering.read_replica_transaction_applier_batch_size",
+                        "internal.causal_clustering.read_replica_transaction_applier_batch_size"),
+                new Mapping(
+                        "causal_clustering.read_replica_transaction_applier_max_queue_size",
+                        "internal.causal_clustering.read_replica_transaction_applier_max_queue_size"),
+                new Mapping(
+                        "causal_clustering.seed_validation_timeout",
+                        "internal.causal_clustering.seed_validation_timeout"),
+                new Mapping(
+                        "causal_clustering.store_copy_backoff_max_wait",
+                        "internal.causal_clustering.store_copy_backoff_max_wait"),
+                new Mapping(
+                        "causal_clustering.store_size_service_cache_timeout",
+                        "internal.causal_clustering.store_size_service_cache_timeout"),
+                new Mapping(
+                        "causal_clustering.temporary_database.extension_package_names",
+                        "internal.causal_clustering.temporary_database.extension_package_names"),
+                new Mapping(
+                        "causal_clustering.topology_graph.default_num_primaries",
+                        "internal.causal_clustering.topology_graph.default_num_primaries"),
+                new Mapping(
+                        "causal_clustering.topology_graph.default_num_secondaries",
+                        "internal.causal_clustering.topology_graph.default_num_secondaries"),
+                new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
+                new Mapping("dbms.connector.bolt.tcp_keep_alive", "internal.dbms.connector.bolt.tcp_keep_alive"),
+                new Mapping(
+                        "dbms.connector.bolt.unsupported_thread_pool_queue_size",
+                        "internal.dbms.connector.bolt.thread_pool_queue_size"),
+                new Mapping(
+                        "dbms.connector.bolt.unsupported_unauth_connection_timeout",
+                        "internal.dbms.connector.bolt.unauth_connection_timeout"),
+                new Mapping(
+                        "dbms.connector.bolt.unsupported_unauth_max_inbound_bytes",
+                        "internal.dbms.connector.bolt.unauth_max_inbound_bytes"),
+                new Mapping("dbms.init_file", "internal.dbms.init_file"),
+                new Mapping("dbms.log_inconsistent_data_deletion", "internal.dbms.log_inconsistent_data_deletion"),
+                new Mapping("dbms.routing.driver.event_loop_count", "internal.dbms.routing.driver.event_loop_count"),
+                new Mapping(
+                        "dbms.routing.driver.idle_check_interval", "internal.dbms.routing.driver.idle_check_interval"),
+                new Mapping(
+                        "dbms.routing.driver.logging.leaked_sessions",
+                        "internal.dbms.routing.driver.logging.leaked_sessions"),
+                new Mapping("dbms.routing.driver.timeout", "internal.dbms.routing.driver.timeout"),
+                new Mapping("fabric.driver.event_loop_count", "internal.fabric.driver.event_loop_count"),
+                new Mapping("fabric.driver.idle_check_interval", "internal.fabric.driver.idle_check_interval"),
+                new Mapping("fabric.driver.logging.leaked_sessions", "internal.fabric.driver.logging.leaked_sessions"),
+                new Mapping("fabric.driver.timeout", "internal.fabric.driver.timeout"),
+                new Mapping("fabric.enabled_by_default", "internal.fabric.enabled_by_default"),
+                new Mapping("fabric.stream.batch_size", "internal.fabric.stream.batch_size"),
+                new Mapping("unsupported.bootloader.auto.configuration", "internal.bootloader.auto.configuration"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.codecache.max",
+                        "internal.bootloader.auto.configuration.codecache.max"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.codecache.min",
+                        "internal.bootloader.auto.configuration.codecache.min"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.dataset.file",
+                        "internal.bootloader.auto.configuration.dataset.file"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.execution_plan_cache.max",
+                        "internal.bootloader.auto.configuration.execution_plan_cache.max"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.execution_plan_cache.min",
+                        "internal.bootloader.auto.configuration.execution_plan_cache.min"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.heap.max",
+                        "internal.bootloader.auto.configuration.heap.max"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.heap.min",
+                        "internal.bootloader.auto.configuration.heap.min"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.memory.limit",
+                        "internal.bootloader.auto.configuration.memory.limit"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.pagecache.max",
+                        "internal.bootloader.auto.configuration.pagecache.max"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.pagecache.min",
+                        "internal.bootloader.auto.configuration.pagecache.min"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.query_cache.max",
+                        "internal.bootloader.auto.configuration.query_cache.max"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.query_cache.min",
+                        "internal.bootloader.auto.configuration.query_cache.min"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.search.radius",
+                        "internal.bootloader.auto.configuration.search.radius"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.tx_limit.max",
+                        "internal.bootloader.auto.configuration.tx_limit.max"),
+                new Mapping(
+                        "unsupported.bootloader.auto.configuration.tx_limit.min",
+                        "internal.bootloader.auto.configuration.tx_limit.min"),
+                new Mapping(
+                        "unsupported.causal_clustering.cluster_status_request_maximum_wait",
+                        "internal.causal_clustering.cluster_status_request_maximum_wait"),
+                new Mapping(
+                        "unsupported.causal_clustering.experimental_catchup_protocol_enabled",
+                        "internal.causal_clustering.experimental_catchup_protocol_enabled"),
+                new Mapping(
+                        "unsupported.causal_clustering.experimental_consensus_protocol_enabled",
+                        "internal.causal_clustering.experimental_consensus_protocol_enabled"),
+                new Mapping(
+                        "unsupported.causal_clustering.experimental_dbms_protocol_enabled",
+                        "internal.causal_clustering.experimental_dbms_protocol_enabled"),
+                new Mapping(
+                        "unsupported.causal_clustering.experimental_raft_protocol_enabled",
+                        "internal.causal_clustering.experimental_raft_protocol_enabled"),
+                new Mapping(
+                        "unsupported.causal_clustering.inbound_connection_initialization_logging_enabled",
+                        "internal.causal_clustering.inbound_connection_initialization_logging_enabled"),
+                new Mapping(
+                        "unsupported.consistency_checker.fail_fast_threshold",
+                        "internal.consistency_checker.fail_fast_threshold"),
+                new Mapping(
+                        "unsupported.consistency_checker.memory_limit_factor",
+                        "internal.consistency_checker.memory_limit_factor"),
+                new Mapping("unsupported.cypher.compiler_tracing", "internal.cypher.compiler_tracing"),
+                new Mapping(
+                        "unsupported.cypher.enable_extra_semantic_features",
+                        "internal.cypher.enable_extra_semantic_features"),
+                new Mapping("unsupported.cypher.enable_runtime_monitors", "internal.cypher.enable_runtime_monitors"),
+                new Mapping("unsupported.cypher.expression_engine", "internal.cypher.expression_engine"),
+                new Mapping(
+                        "unsupported.cypher.expression_recompilation_limit",
+                        "internal.cypher.expression_recompilation_limit"),
+                new Mapping(
+                        "unsupported.cypher.idp_solver_duration_threshold",
+                        "internal.cypher.idp_solver_duration_threshold"),
+                new Mapping(
+                        "unsupported.cypher.idp_solver_table_threshold", "internal.cypher.idp_solver_table_threshold"),
+                new Mapping(
+                        "unsupported.cypher.non_indexed_label_warning_threshold",
+                        "internal.cypher.non_indexed_label_warning_threshold"),
+                new Mapping("unsupported.cypher.number_of_workers", "internal.cypher.number_of_workers"),
+                new Mapping("unsupported.cypher.pipelined.batch_size_big", "internal.cypher.pipelined.batch_size_big"),
+                new Mapping(
+                        "unsupported.cypher.pipelined.batch_size_small", "internal.cypher.pipelined.batch_size_small"),
+                new Mapping(
+                        "unsupported.cypher.pipelined.enable_runtime_trace",
+                        "internal.cypher.pipelined.enable_runtime_trace"),
+                new Mapping(
+                        "unsupported.cypher.pipelined.operator_engine", "internal.cypher.pipelined.operator_engine"),
+                new Mapping(
+                        "unsupported.cypher.pipelined.operator_fusion_over_pipeline_limit",
+                        "internal.cypher.pipelined.operator_fusion_over_pipeline_limit"),
+                new Mapping(
+                        "unsupported.cypher.pipelined.runtime_trace_path",
+                        "internal.cypher.pipelined.runtime_trace_path"),
+                new Mapping(
+                        "unsupported.cypher.pipelined_interpreted_pipes_fallback",
+                        "internal.cypher.pipelined_interpreted_pipes_fallback"),
+                new Mapping(
+                        "unsupported.cypher.planning_point_indexes_enabled",
+                        "internal.cypher.planning_point_indexes_enabled"),
+                new Mapping(
+                        "unsupported.cypher.planning_range_indexes_enabled",
+                        "internal.cypher.planning_range_indexes_enabled"),
+                new Mapping(
+                        "unsupported.cypher.planning_text_indexes_enabled",
+                        "internal.cypher.planning_text_indexes_enabled"),
+                new Mapping("unsupported.cypher.replan_algorithm", "internal.cypher.replan_algorithm"),
+                new Mapping("unsupported.cypher.runtime", "internal.cypher.runtime"),
+                new Mapping("unsupported.cypher.splitting_top_behavior", "internal.cypher.splitting_top_behavior"),
+                new Mapping(
+                        "unsupported.cypher.statistics_divergence_target",
+                        "internal.cypher.statistics_divergence_target"),
+                new Mapping("unsupported.cypher.target_replan_interval", "internal.cypher.target_replan_interval"),
+                new Mapping(
+                        "unsupported.cypher.var_expand_relationship_id_set_threshold",
+                        "internal.cypher.var_expand_relationship_id_set_threshold"),
+                new Mapping(
+                        "unsupported.datacollector.max_query_text_size", "internal.datacollector.max_query_text_size"),
+                new Mapping(
+                        "unsupported.datacollector.max_recent_query_count",
+                        "internal.datacollector.max_recent_query_count"),
+                new Mapping("unsupported.dbms.block_alter_database", "internal.dbms.block_alter_database"),
+                new Mapping("unsupported.dbms.block_create_drop_database", "internal.dbms.block_create_drop_database"),
+                new Mapping(
+                        "unsupported.dbms.block_size.array_properties", "internal.dbms.block_size.array_properties"),
+                new Mapping("unsupported.dbms.block_size.labels", "internal.dbms.block_size.labels"),
+                new Mapping("unsupported.dbms.block_size.strings", "internal.dbms.block_size.strings"),
+                new Mapping("unsupported.dbms.block_start_stop_database", "internal.dbms.block_start_stop_database"),
+                new Mapping(
+                        "unsupported.dbms.bolt.inbound_message_throttle.high_watermark",
+                        "internal.dbms.bolt.inbound_message_throttle.high_watermark"),
+                new Mapping(
+                        "unsupported.dbms.bolt.inbound_message_throttle.low_watermark",
+                        "internal.dbms.bolt.inbound_message_throttle.low_watermark"),
+                new Mapping(
+                        "unsupported.dbms.bolt.netty_message_merge_cumulator",
+                        "internal.dbms.bolt.netty_message_merge_cumulator"),
+                new Mapping(
+                        "unsupported.dbms.bolt.netty_server_shutdown_quiet_period",
+                        "internal.dbms.bolt.netty_server_shutdown_quiet_period"),
+                new Mapping(
+                        "unsupported.dbms.bolt.netty_server_shutdown_timeout",
+                        "internal.dbms.bolt.netty_server_shutdown_timeout"),
+                new Mapping(
+                        "unsupported.dbms.bolt.netty_server_use_epoll", "internal.dbms.bolt.netty_server_use_epoll"),
+                new Mapping(
+                        "unsupported.dbms.bolt.outbound_buffer_throttle",
+                        "internal.dbms.bolt.outbound_buffer_throttle"),
+                new Mapping(
+                        "unsupported.dbms.bolt.outbound_buffer_throttle.high_watermark",
+                        "internal.dbms.bolt.outbound_buffer_throttle.high_watermark"),
+                new Mapping(
+                        "unsupported.dbms.bolt.outbound_buffer_throttle.low_watermark",
+                        "internal.dbms.bolt.outbound_buffer_throttle.low_watermark"),
+                new Mapping(
+                        "unsupported.dbms.bolt.outbound_buffer_throttle.max_duration",
+                        "internal.dbms.bolt.outbound_buffer_throttle.max_duration"),
+                new Mapping(
+                        "unsupported.dbms.checkpoint_log.rotation.keep.files",
+                        "internal.dbms.checkpoint_log.rotation.keep.files"),
+                new Mapping(
+                        "unsupported.dbms.checkpoint_log.rotation.size", "internal.dbms.checkpoint_log.rotation.size"),
+                new Mapping(
+                        "unsupported.dbms.config.command_evaluation_timeout",
+                        "internal.dbms.config.command_evaluation_timeout"),
+                new Mapping(
+                        "unsupported.dbms.counts_store_rotation_timeout",
+                        "internal.dbms.counts_store_rotation_timeout"),
+                new Mapping("unsupported.dbms.cypher_ip_blocklist", "internal.dbms.cypher_ip_blocklist"),
+                new Mapping(
+                        "unsupported.dbms.debug.page_cache_tracer_speed_reporting_threshold",
+                        "internal.dbms.debug.page_cache_tracer_speed_reporting_threshold"),
+                new Mapping(
+                        "unsupported.dbms.debug.print_page_buffer_allocation_trace",
+                        "internal.dbms.debug.print_page_buffer_allocation_trace"),
+                new Mapping("unsupported.dbms.debug.trace_cursors", "internal.dbms.debug.trace_cursors"),
+                new Mapping("unsupported.dbms.debug.trace_tx_statement", "internal.dbms.debug.trace_tx_statement"),
+                new Mapping("unsupported.dbms.debug.track_cursor_close", "internal.dbms.debug.track_cursor_close"),
+                new Mapping(
+                        "unsupported.dbms.debug.track_tx_statement_close",
+                        "internal.dbms.debug.track_tx_statement_close"),
+                new Mapping("unsupported.dbms.directories.auth", "internal.dbms.directories.auth"),
+                new Mapping("unsupported.dbms.directories.databases.root", "internal.dbms.directories.databases.root"),
+                new Mapping("unsupported.dbms.directories.pid_file", "internal.dbms.directories.pid_file"),
+                new Mapping("unsupported.dbms.directories.scripts", "internal.dbms.directories.scripts"),
+                new Mapping("unsupported.dbms.directories.windows_tools", "internal.dbms.directories.windows_tools"),
+                new Mapping("unsupported.dbms.discoverable_bolt_address", "internal.dbms.discoverable_bolt_address"),
+                new Mapping(
+                        "unsupported.dbms.discoverable_bolt_routing_address",
+                        "internal.dbms.discoverable_bolt_routing_address"),
+                new Mapping("unsupported.dbms.dump_diagnostics", "internal.dbms.dump_diagnostics"),
+                new Mapping(
+                        "unsupported.dbms.enable_transaction_heap_allocation_tracking",
+                        "internal.dbms.enable_transaction_heap_allocation_tracking"),
+                new Mapping("unsupported.dbms.executiontime_limit.time", "internal.dbms.executiontime_limit.time"),
+                new Mapping("unsupported.dbms.extra_lock_verification", "internal.dbms.extra_lock_verification"),
+                new Mapping("unsupported.dbms.force_small_id_cache", "internal.dbms.force_small_id_cache"),
+                new Mapping("unsupported.dbms.http_paths_blacklist", "internal.dbms.http_paths_blacklist"),
+                new Mapping(
+                        "unsupported.dbms.id_buffering.offload_to_disk", "internal.dbms.id_buffering.offload_to_disk"),
+                new Mapping("unsupported.dbms.idgenerator.log.enabled", "internal.dbms.idgenerator.log.enabled"),
+                new Mapping(
+                        "unsupported.dbms.idgenerator.log.prune_threshold",
+                        "internal.dbms.idgenerator.log.prune_threshold"),
+                new Mapping(
+                        "unsupported.dbms.idgenerator.log.rotation_threshold",
+                        "internal.dbms.idgenerator.log.rotation_threshold"),
+                new Mapping(
+                        "unsupported.dbms.include_dev_record_format_versions",
+                        "internal.dbms.include_dev_record_format_versions"),
+                new Mapping("unsupported.dbms.index.archive_failed", "internal.dbms.index.archive_failed"),
+                new Mapping(
+                        "unsupported.dbms.index.default_fulltext_provider",
+                        "internal.dbms.index.default_fulltext_provider"),
+                new Mapping("unsupported.dbms.index.lucene.merge_factor", "internal.dbms.index.lucene.merge_factor"),
+                new Mapping("unsupported.dbms.index.lucene.min_merge", "internal.dbms.index.lucene.min_merge"),
+                new Mapping("unsupported.dbms.index.lucene.nocfs.ratio", "internal.dbms.index.lucene.nocfs.ratio"),
+                new Mapping(
+                        "unsupported.dbms.index.lucene.population_max_buffered_docs",
+                        "internal.dbms.index.lucene.population_max_buffered_docs"),
+                new Mapping(
+                        "unsupported.dbms.index.lucene.population_ram_buffer_size",
+                        "internal.dbms.index.lucene.population_ram_buffer_size"),
+                new Mapping(
+                        "unsupported.dbms.index.lucene.population_serial_merge_scheduler",
+                        "internal.dbms.index.lucene.population_serial_merge_scheduler"),
+                new Mapping(
+                        "unsupported.dbms.index.lucene.standard_ram_buffer_size",
+                        "internal.dbms.index.lucene.standard_ram_buffer_size"),
+                new Mapping(
+                        "unsupported.dbms.index.lucene.writer_max_buffered_docs",
+                        "internal.dbms.index.lucene.writer_max_buffered_docs"),
+                new Mapping(
+                        "unsupported.dbms.index.population_batch_max_byte_size",
+                        "internal.dbms.index.population_batch_max_byte_size"),
+                new Mapping(
+                        "unsupported.dbms.index.population_print_debug", "internal.dbms.index.population_print_debug"),
+                new Mapping(
+                        "unsupported.dbms.index.population_queue_threshold",
+                        "internal.dbms.index.population_queue_threshold"),
+                new Mapping("unsupported.dbms.index.populator_block_size", "internal.dbms.index.populator_block_size"),
+                new Mapping(
+                        "unsupported.dbms.index.populator_merge_factor", "internal.dbms.index.populator_merge_factor"),
+                new Mapping(
+                        "unsupported.dbms.index.sampling.async_recovery",
+                        "internal.dbms.index.sampling.async_recovery"),
+                new Mapping(
+                        "unsupported.dbms.index.sampling.async_recovery_wait",
+                        "internal.dbms.index.sampling.async_recovery_wait"),
+                new Mapping(
+                        "unsupported.dbms.index.sampling.log_recovered_samples",
+                        "internal.dbms.index.sampling.log_recovered_samples"),
+                new Mapping(
+                        "unsupported.dbms.index.skip_default_indexes_on_creation",
+                        "internal.dbms.index.skip_default_indexes_on_creation"),
+                new Mapping(
+                        "unsupported.dbms.index.spatial.curve.bottom_threshold",
+                        "internal.dbms.index.spatial.curve.bottom_threshold"),
+                new Mapping(
+                        "unsupported.dbms.index.spatial.curve.extra_levels",
+                        "internal.dbms.index.spatial.curve.extra_levels"),
+                new Mapping(
+                        "unsupported.dbms.index.spatial.curve.top_threshold",
+                        "internal.dbms.index.spatial.curve.top_threshold"),
+                new Mapping(
+                        "unsupported.dbms.index_population.parallelism", "internal.dbms.index_population.parallelism"),
+                new Mapping("unsupported.dbms.index_population.workers", "internal.dbms.index_population.workers"),
+                new Mapping("unsupported.dbms.index_sampling.parallelism", "internal.dbms.index_sampling.parallelism"),
+                new Mapping(
+                        "unsupported.dbms.initial_transaction_heap_grab_size",
+                        "internal.dbms.initial_transaction_heap_grab_size"),
+                new Mapping(
+                        "unsupported.dbms.io.controller.consider.external.enabled",
+                        "internal.dbms.io.controller.consider.external.enabled"),
+                new Mapping("unsupported.dbms.kernel_id", "internal.dbms.kernel_id"),
+                new Mapping("unsupported.dbms.large_cluster.enable", "internal.dbms.large_cluster.enable"),
+                new Mapping("unsupported.dbms.lock_manager", "internal.dbms.lock_manager"),
+                new Mapping(
+                        "unsupported.dbms.lock_manager.verbose_deadlocks",
+                        "internal.dbms.lock_manager.verbose_deadlocks"),
+                new Mapping(
+                        "unsupported.dbms.logs.query.heap_dump_enabled", "internal.dbms.logs.query.heap_dump_enabled"),
+                new Mapping("unsupported.dbms.loopback_delete", "internal.dbms.loopback_delete"),
+                new Mapping("unsupported.dbms.loopback_enabled", "internal.dbms.loopback_enabled"),
+                new Mapping("unsupported.dbms.loopback_file", "internal.dbms.loopback_file"),
+                new Mapping("unsupported.dbms.lucene.ephemeral", "internal.dbms.lucene.ephemeral"),
+                new Mapping("unsupported.dbms.lucene.max_partition_size", "internal.dbms.lucene.max_partition_size"),
+                new Mapping(
+                        "unsupported.dbms.max_http_request_header_size", "internal.dbms.max_http_request_header_size"),
+                new Mapping(
+                        "unsupported.dbms.max_http_response_header_size",
+                        "internal.dbms.max_http_response_header_size"),
+                new Mapping(
+                        "unsupported.dbms.memory.counts_store_max_cached_entries",
+                        "internal.dbms.memory.counts_store_max_cached_entries"),
+                new Mapping(
+                        "unsupported.dbms.memory.managed_network_buffers",
+                        "internal.dbms.memory.managed_network_buffers"),
+                new Mapping("unsupported.dbms.multiversioned.store", "internal.dbms.multiversioned.store"),
+                new Mapping("unsupported.dbms.page.file.tracer", "internal.dbms.page.file.tracer"),
+                new Mapping(
+                        "unsupported.dbms.parallel_index_updates_apply", "internal.dbms.parallel_index_updates_apply"),
+                new Mapping("unsupported.dbms.query.snapshot", "internal.dbms.query.snapshot"),
+                new Mapping("unsupported.dbms.query.snapshot.retries", "internal.dbms.query.snapshot.retries"),
+                new Mapping(
+                        "unsupported.dbms.query_execution_plan_cache_size",
+                        "internal.dbms.query_execution_plan_cache_size"),
+                new Mapping("unsupported.dbms.readonly.failover", "internal.dbms.readonly.failover"),
+                new Mapping(
+                        "unsupported.dbms.recovery.enable_parallelism", "internal.dbms.recovery.enable_parallelism"),
+                new Mapping("unsupported.dbms.report_configuration", "internal.dbms.report_configuration"),
+                new Mapping("unsupported.dbms.reserved.page.header.bytes", "internal.dbms.reserved.page.header.bytes"),
+                new Mapping(
+                        "unsupported.dbms.security.ldap.authorization.connection_pooling",
+                        "internal.dbms.security.ldap.authorization.connection_pooling"),
+                new Mapping(
+                        "unsupported.dbms.select_specfic_record_format", "internal.dbms.select_specfic_record_format"),
+                new Mapping(
+                        "unsupported.dbms.ssl.system.ignore_dot_files", "internal.dbms.ssl.system.ignore_dot_files"),
+                new Mapping(
+                        "unsupported.dbms.storage.consistency_check_on_apply",
+                        "internal.dbms.storage.consistency_check_on_apply"),
+                new Mapping("unsupported.dbms.storage_engine", "internal.dbms.storage_engine"),
+                new Mapping(
+                        "unsupported.dbms.strictly_prioritize_id_freelist",
+                        "internal.dbms.strictly_prioritize_id_freelist"),
+                new Mapping(
+                        "unsupported.dbms.topology_graph_updater.enable",
+                        "internal.dbms.topology_graph_updater.enable"),
+                new Mapping("unsupported.dbms.tracer", "internal.dbms.tracer"),
+                new Mapping("unsupported.dbms.transaction_start_timeout", "internal.dbms.transaction_start_timeout"),
+                new Mapping("unsupported.dbms.tx.logs.dedicated.appender", "internal.dbms.tx.logs.dedicated.appender"),
+                new Mapping(
+                        "unsupported.dbms.tx_log.fail_on_corrupted_log_files",
+                        "internal.dbms.tx_log.fail_on_corrupted_log_files"),
+                new Mapping("unsupported.dbms.tx_log.presketch", "internal.dbms.tx_log.presketch"),
+                new Mapping(
+                        "unsupported.dbms.upgrade_restriction_enabled", "internal.dbms.upgrade_restriction_enabled"),
+                new Mapping("unsupported.dbms.uris.browser", "internal.dbms.uris.browser"),
+                new Mapping("unsupported.dbms.uris.db", "internal.dbms.uris.db"),
+                new Mapping("unsupported.dbms.uris.dbms", "internal.dbms.uris.dbms"),
+                new Mapping("unsupported.dbms.uris.management", "internal.dbms.uris.management"),
+                new Mapping("unsupported.dbms.uris.rest", "internal.dbms.uris.rest"),
+                new Mapping(
+                        "unsupported.dbms.use_old_token_index_location", "internal.dbms.use_old_token_index_location"),
+                new Mapping("unsupported.dbms.wadl_generation_enabled", "internal.dbms.wadl_generation_enabled"),
+                new Mapping(
+                        "unsupported.metrics.cypher.cache.entries.enabled",
+                        "internal.metrics.cypher.cache.entries.enabled"),
+                new Mapping("unsupported.tools.batch_inserter.batch_size", "internal.tools.batch_inserter.batch_size"),
+                new Mapping(
+                        "unsupported.vm_pause_monitor.measurement_duration",
+                        "internal.vm_pause_monitor.measurement_duration"),
+                new Mapping(
+                        "unsupported.vm_pause_monitor.stall_alert_threshold",
+                        "internal.vm_pause_monitor.stall_alert_threshold"),
+                new Mapping(
+                        "dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time",
+                        "internal.dbms.connector.bolt.thread_pool_shutdown_wait_time"));
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            legacyUnsupportedSettingsMapping.forEach(
-                    mapping -> migrateSettingNameChange( values, log, mapping.oldSettingName(), mapping.newSettingName() ) );
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            legacyUnsupportedSettingsMapping.forEach(mapping ->
+                    migrateSettingNameChange(values, log, mapping.oldSettingName(), mapping.newSettingName()));
         }
 
-        private record Mapping(String oldSettingName, String newSettingName)
-        {
-        }
+        private record Mapping(String oldSettingName, String newSettingName) {}
     }
 
-    public static void migrateSettingNameChange( Map<String,String> values, InternalLog log, String oldSetting, Setting<?> newSetting )
-    {
-        migrateSettingNameChange( values, log, oldSetting, newSetting.name() );
+    public static void migrateSettingNameChange(
+            Map<String, String> values, InternalLog log, String oldSetting, Setting<?> newSetting) {
+        migrateSettingNameChange(values, log, oldSetting, newSetting.name());
     }
 
-    public static void migrateSettingNameChange( Map<String,String> values, InternalLog log, String oldSettingName, String newSettingName )
-    {
-        String value = values.remove( oldSettingName );
-        if ( isNotBlank( value ) )
-        {
-            log.warn( "Use of deprecated setting '%s'. It is replaced by '%s'.", oldSettingName, newSettingName );
-            values.putIfAbsent( newSettingName, value );
+    public static void migrateSettingNameChange(
+            Map<String, String> values, InternalLog log, String oldSettingName, String newSettingName) {
+        String value = values.remove(oldSettingName);
+        if (isNotBlank(value)) {
+            log.warn("Use of deprecated setting '%s'. It is replaced by '%s'.", oldSettingName, newSettingName);
+            values.putIfAbsent(newSettingName, value);
         }
     }
 
-    public static void migrateSettingRemoval( Map<String,String> values, InternalLog log, String name, String additionalDescription )
-    {
-        if ( values.containsKey( name ) )
-        {
-            log.warn( "Setting '%s' is removed. %s.", name, additionalDescription );
-            values.remove( name );
+    public static void migrateSettingRemoval(
+            Map<String, String> values, InternalLog log, String name, String additionalDescription) {
+        if (values.containsKey(name)) {
+            log.warn("Setting '%s' is removed. %s.", name, additionalDescription);
+            values.remove(name);
         }
     }
 }

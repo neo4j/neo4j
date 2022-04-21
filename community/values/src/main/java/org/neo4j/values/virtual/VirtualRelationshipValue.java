@@ -21,73 +21,63 @@ package org.neo4j.values.virtual;
 
 import java.util.Comparator;
 import java.util.function.Consumer;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
-public abstract class VirtualRelationshipValue extends VirtualValue
-{
+public abstract class VirtualRelationshipValue extends VirtualValue {
     public abstract long id();
 
     public abstract String elementId();
 
-    public abstract long startNodeId( Consumer<RelationshipVisitor> consumer );
+    public abstract long startNodeId(Consumer<RelationshipVisitor> consumer);
 
-    public abstract String startNodeElementId( Consumer<RelationshipVisitor> consumer );
+    public abstract String startNodeElementId(Consumer<RelationshipVisitor> consumer);
 
-    public abstract long endNodeId( Consumer<RelationshipVisitor> consumer );
+    public abstract long endNodeId(Consumer<RelationshipVisitor> consumer);
 
-    public abstract String endNodeElementId( Consumer<RelationshipVisitor> consumer );
+    public abstract String endNodeElementId(Consumer<RelationshipVisitor> consumer);
 
-    public final long otherNodeId( long node, Consumer<RelationshipVisitor> consumer )
-    {
-        long startNodeId = startNodeId( consumer );
-        return node == startNodeId ? endNodeId( consumer ) : startNodeId;
+    public final long otherNodeId(long node, Consumer<RelationshipVisitor> consumer) {
+        long startNodeId = startNodeId(consumer);
+        return node == startNodeId ? endNodeId(consumer) : startNodeId;
     }
 
-    public abstract int relationshipTypeId( Consumer<RelationshipVisitor> consumer );
+    public abstract int relationshipTypeId(Consumer<RelationshipVisitor> consumer);
 
     @Override
-    public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )
-    {
+    public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
         VirtualRelationshipValue otherNode = (VirtualRelationshipValue) other;
-        return Long.compare( id(), otherNode.id() );
+        return Long.compare(id(), otherNode.id());
     }
 
     @Override
-    public Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator )
-    {
-        return Comparison.from( unsafeCompareTo( other, comparator ) );
+    public Comparison unsafeTernaryCompareTo(VirtualValue other, TernaryComparator<AnyValue> comparator) {
+        return Comparison.from(unsafeCompareTo(other, comparator));
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
-        return Long.hashCode( id() );
+    protected int computeHashToMemoize() {
+        return Long.hashCode(id());
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapRelationship( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapRelationship(this);
     }
 
     @Override
-    public boolean equals( VirtualValue other )
-    {
-        if ( !(other instanceof VirtualRelationshipValue that) )
-        {
+    public boolean equals(VirtualValue other) {
+        if (!(other instanceof VirtualRelationshipValue that)) {
             return false;
         }
         return id() == that.id();
     }
 
     @Override
-    public VirtualValueGroup valueGroup()
-    {
+    public VirtualValueGroup valueGroup() {
         return VirtualValueGroup.EDGE;
     }
 }

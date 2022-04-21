@@ -19,27 +19,24 @@
  */
 package org.neo4j.memory;
 
-public enum MemoryGroup
-{
-    TRANSACTION( "Transaction" ),
-    BOLT( "Bolt" ),
-    HTTP( "HTTP" ),
-    HTTP_TRANSACTION( "HTTP Transaction" ),
-    PAGE_CACHE( "Page Cache" ),
-    OTHER( "Other" ),
-    RECENT_QUERY_BUFFER( "Recent Query Buffer" ),
-    CENTRAL_BYTE_BUFFER_MANAGER( "Central Byte Buffer Manager" ),
-    NO_TRACKING( "No Tracking" );
+public enum MemoryGroup {
+    TRANSACTION("Transaction"),
+    BOLT("Bolt"),
+    HTTP("HTTP"),
+    HTTP_TRANSACTION("HTTP Transaction"),
+    PAGE_CACHE("Page Cache"),
+    OTHER("Other"),
+    RECENT_QUERY_BUFFER("Recent Query Buffer"),
+    CENTRAL_BYTE_BUFFER_MANAGER("Central Byte Buffer Manager"),
+    NO_TRACKING("No Tracking");
 
     private final String name;
 
-    MemoryGroup( String name )
-    {
+    MemoryGroup(String name) {
         this.name = name;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 }

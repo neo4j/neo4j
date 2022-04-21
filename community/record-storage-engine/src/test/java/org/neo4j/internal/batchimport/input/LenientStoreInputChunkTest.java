@@ -19,19 +19,6 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.common.EntityType;
-import org.neo4j.internal.batchimport.ReadBehaviour;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.token.TokenHolders;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -42,62 +29,75 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
-class LenientStoreInputChunkTest
-{
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
+import org.junit.jupiter.api.Test;
+import org.neo4j.common.EntityType;
+import org.neo4j.internal.batchimport.ReadBehaviour;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.token.TokenHolders;
+
+class LenientStoreInputChunkTest {
     @Test
-    void shouldHandleCircularPropertyChain()
-    {
+    void shouldHandleCircularPropertyChain() {
         // given
-        PropertyStore propertyStore = mock( PropertyStore.class );
-        when( propertyStore.newRecord() ).thenAnswer( invocationOnMock -> new PropertyRecord( -1 ) );
+        PropertyStore propertyStore = mock(PropertyStore.class);
+        when(propertyStore.newRecord()).thenAnswer(invocationOnMock -> new PropertyRecord(-1));
         MutableLongObjectMap<PropertyRecord> propertyRecords = LongObjectMaps.mutable.empty();
-        long[] propertyRecordIds = new long[]{12, 13, 14, 15};
-        for ( int i = 0; i < propertyRecordIds.length; i++ )
-        {
+        long[] propertyRecordIds = new long[] {12, 13, 14, 15};
+        for (int i = 0; i < propertyRecordIds.length; i++) {
             long prev = i == 0 ? NULL_REFERENCE.longValue() : propertyRecordIds[i - 1];
             long id = propertyRecordIds[i];
             long next = i == propertyRecordIds.length - 1 ? propertyRecordIds[1] : propertyRecordIds[i + 1];
-            propertyRecords.put( id, new PropertyRecord( id ).initialize( true, prev, next ) );
+            propertyRecords.put(id, new PropertyRecord(id).initialize(true, prev, next));
         }
-        doAnswer( invocationOnMock ->
-        {
-            long id = invocationOnMock.getArgument( 0 );
-            PropertyRecord sourceRecord = propertyRecords.get( id );
-            PropertyRecord targetRecord = invocationOnMock.getArgument( 1 );
-            targetRecord.setId( id );
-            targetRecord.initialize( true, sourceRecord.getPrevProp(), sourceRecord.getNextProp() );
-            return null;
-        } ).when( propertyStore ).getRecordByCursor( anyLong(), any(), any(), any() );
+        doAnswer(invocationOnMock -> {
+                    long id = invocationOnMock.getArgument(0);
+                    PropertyRecord sourceRecord = propertyRecords.get(id);
+                    PropertyRecord targetRecord = invocationOnMock.getArgument(1);
+                    targetRecord.setId(id);
+                    targetRecord.initialize(true, sourceRecord.getPrevProp(), sourceRecord.getNextProp());
+                    return null;
+                })
+                .when(propertyStore)
+                .getRecordByCursor(anyLong(), any(), any(), any());
 
-        ReadBehaviour readBehaviour = mock( ReadBehaviour.class );
-        LenientStoreInputChunk chunk = new LenientStoreInputChunk( readBehaviour, propertyStore, mock( TokenHolders.class ),
-                NULL_CONTEXT_FACTORY, StoreCursors.NULL, mock( PageCursor.class ) )
-        {
-            @Override
-            void readAndVisit( long id, InputEntityVisitor visitor, StoreCursors storeCursors )
-            {
-            }
+        ReadBehaviour readBehaviour = mock(ReadBehaviour.class);
+        LenientStoreInputChunk chunk =
+                new LenientStoreInputChunk(
+                        readBehaviour,
+                        propertyStore,
+                        mock(TokenHolders.class),
+                        NULL_CONTEXT_FACTORY,
+                        StoreCursors.NULL,
+                        mock(PageCursor.class)) {
+                    @Override
+                    void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors) {}
 
-            @Override
-            String recordType()
-            {
-                return "test";
-            }
+                    @Override
+                    String recordType() {
+                        return "test";
+                    }
 
-            @Override
-            boolean shouldIncludeProperty( ReadBehaviour readBehaviour, String key, String[] owningEntityTokens )
-            {
-                return true;
-            }
-        };
+                    @Override
+                    boolean shouldIncludeProperty(
+                            ReadBehaviour readBehaviour, String key, String[] owningEntityTokens) {
+                        return true;
+                    }
+                };
 
         // when
-        NodeRecord primitiveRecord = new NodeRecord( 9 );
-        primitiveRecord.initialize( true, propertyRecordIds[0], false, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue() );
-        InputEntityVisitor visitor = mock( InputEntityVisitor.class );
-        chunk.visitPropertyChainNoThrow( visitor, primitiveRecord, EntityType.NODE, new String[0] );
+        NodeRecord primitiveRecord = new NodeRecord(9);
+        primitiveRecord.initialize(
+                true, propertyRecordIds[0], false, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue());
+        InputEntityVisitor visitor = mock(InputEntityVisitor.class);
+        chunk.visitPropertyChainNoThrow(visitor, primitiveRecord, EntityType.NODE, new String[0]);
 
         // then
-        verify( readBehaviour ).error( argThat( format -> format.contains( "circular property chain" ) ), any() );
+        verify(readBehaviour).error(argThat(format -> format.contains("circular property chain")), any());
     }
 }

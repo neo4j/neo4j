@@ -23,7 +23,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
-public interface PropertySizeCalculator
-{
-    int calculateSize( Value[] values, CursorContext cursorContext, MemoryTracker memoryTracker );
+public interface PropertySizeCalculator {
+    int calculateSize(Value[] values, CursorContext cursorContext, MemoryTracker memoryTracker);
 }

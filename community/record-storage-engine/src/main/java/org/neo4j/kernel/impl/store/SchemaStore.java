@@ -19,17 +19,21 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.map.primitive.IntObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.schema.SchemaRuleMapifier.PROP_OWNING_CONSTRAINT;
+import static org.neo4j.internal.schema.SchemaRuleMapifier.mapifySchemaRule;
+import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
@@ -51,12 +55,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
-
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.internal.schema.SchemaRuleMapifier.PROP_OWNING_CONSTRAINT;
-import static org.neo4j.internal.schema.SchemaRuleMapifier.mapifySchemaRule;
-import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 /**
  * In this schema store implementation, each schema record is really just a pointer to a property chain in the property store.
@@ -95,11 +93,11 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
  *     </ul>
  * </ul>
  */
-public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader>
-{
-    // We technically don't need a store header, but we reserve record id 0 anyway, both to stay compatible with the old schema store,
+public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeader> {
+    // We technically don't need a store header, but we reserve record id 0 anyway, both to stay compatible with the old
+    // schema store,
     // and to have it in reserve, just in case we might need it in the future.
-    private static final IntStoreHeaderFormat VALID_STORE_HEADER = new IntStoreHeaderFormat( 0 );
+    private static final IntStoreHeaderFormat VALID_STORE_HEADER = new IntStoreHeaderFormat(0);
 
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
     private final PropertyStore propertyStore;
@@ -116,110 +114,114 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schema(),
-                getStoreHeaderFormat(), recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                conf,
+                idType,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                TYPE_DESCRIPTOR,
+                recordFormats.schema(),
+                getStoreHeaderFormat(),
+                recordFormats.storeVersion(),
+                readOnlyChecker,
+                databaseName,
+                openOptions);
         this.propertyStore = propertyStore;
     }
 
-    private static IntStoreHeaderFormat getStoreHeaderFormat()
-    {
+    private static IntStoreHeaderFormat getStoreHeaderFormat() {
         return VALID_STORE_HEADER;
     }
 
-    public PropertyStore propertyStore()
-    {
+    public PropertyStore propertyStore() {
         return propertyStore;
     }
 
-    public static int getOwningConstraintPropertyKeyId( TokenHolders tokenHolders ) throws KernelException
-    {
+    public static int getOwningConstraintPropertyKeyId(TokenHolders tokenHolders) throws KernelException {
         int[] ids = new int[1];
-        tokenHolders.propertyKeyTokens().getOrCreateInternalIds( new String[]{PROP_OWNING_CONSTRAINT}, ids );
+        tokenHolders.propertyKeyTokens().getOrCreateInternalIds(new String[] {PROP_OWNING_CONSTRAINT}, ids);
         return ids[0];
     }
 
-    public static SchemaRule readSchemaRule( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders, StoreCursors storeCursors )
-            throws MalformedSchemaRuleException
-    {
-        Map<String,Value> map = schemaRecordToMap( record, propertyStore, tokenHolders, storeCursors );
-        return unmapifySchemaRule( record.getId(), map );
+    public static SchemaRule readSchemaRule(
+            SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders, StoreCursors storeCursors)
+            throws MalformedSchemaRuleException {
+        Map<String, Value> map = schemaRecordToMap(record, propertyStore, tokenHolders, storeCursors);
+        return unmapifySchemaRule(record.getId(), map);
     }
 
-    private static Map<String,Value> schemaRecordToMap( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders,
-            StoreCursors storeCursors ) throws MalformedSchemaRuleException
-    {
-        Map<String,Value> props = new HashMap<>();
+    private static Map<String, Value> schemaRecordToMap(
+            SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders, StoreCursors storeCursors)
+            throws MalformedSchemaRuleException {
+        Map<String, Value> props = new HashMap<>();
         PropertyRecord propRecord = propertyStore.newRecord();
         long nextProp = record.getNextProp();
-        while ( nextProp != NO_NEXT_PROPERTY.longValue() )
-        {
-            try
-            {
-                propertyStore.getRecordByCursor( nextProp, propRecord, RecordLoad.NORMAL, storeCursors.readCursor( PROPERTY_CURSOR ) );
-            }
-            catch ( InvalidRecordException e )
-            {
+        while (nextProp != NO_NEXT_PROPERTY.longValue()) {
+            try {
+                propertyStore.getRecordByCursor(
+                        nextProp, propRecord, RecordLoad.NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
+            } catch (InvalidRecordException e) {
                 throw new MalformedSchemaRuleException(
-                        "Cannot read schema rule because it is referencing a property record (id " + nextProp + ") that is invalid: " + propRecord, e );
+                        "Cannot read schema rule because it is referencing a property record (id " + nextProp
+                                + ") that is invalid: " + propRecord,
+                        e);
             }
-            for ( PropertyBlock propertyBlock : propRecord )
-            {
-                PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue( propertyStore, storeCursors );
-                insertPropertyIntoMap( propertyKeyValue, props, tokenHolders );
+            for (PropertyBlock propertyBlock : propRecord) {
+                PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue(propertyStore, storeCursors);
+                insertPropertyIntoMap(propertyKeyValue, props, tokenHolders);
             }
             nextProp = propRecord.getNextProp();
         }
-        if ( props.isEmpty() )
-        {
-            IndexDescriptor descriptor = IndexDescriptor.NLI_PROTOTYPE.materialise( record.getId() );
-            props.putAll( mapifySchemaRule( descriptor ) );
-
+        if (props.isEmpty()) {
+            IndexDescriptor descriptor = IndexDescriptor.NLI_PROTOTYPE.materialise(record.getId());
+            props.putAll(mapifySchemaRule(descriptor));
         }
         return props;
     }
 
-    private static void insertPropertyIntoMap( PropertyKeyValue propertyKeyValue, Map<String,Value> props, TokenHolders tokenHolders )
-            throws MalformedSchemaRuleException
-    {
-        try
-        {
-            NamedToken propertyKeyTokenName = tokenHolders.propertyKeyTokens().getInternalTokenById( propertyKeyValue.propertyKeyId() );
-            props.put( propertyKeyTokenName.name(), propertyKeyValue.value() );
-        }
-        catch ( TokenNotFoundException | InvalidRecordException e )
-        {
+    private static void insertPropertyIntoMap(
+            PropertyKeyValue propertyKeyValue, Map<String, Value> props, TokenHolders tokenHolders)
+            throws MalformedSchemaRuleException {
+        try {
+            NamedToken propertyKeyTokenName =
+                    tokenHolders.propertyKeyTokens().getInternalTokenById(propertyKeyValue.propertyKeyId());
+            props.put(propertyKeyTokenName.name(), propertyKeyValue.value());
+        } catch (TokenNotFoundException | InvalidRecordException e) {
             int id = propertyKeyValue.propertyKeyId();
             throw new MalformedSchemaRuleException(
-                    "Cannot read schema rule because it is referring to a property key token (id " + id + ") that does not exist.", e );
+                    "Cannot read schema rule because it is referring to a property key token (id " + id
+                            + ") that does not exist.",
+                    e);
         }
     }
 
-    public static IntObjectMap<Value> convertSchemaRuleToMap( SchemaRule rule, TokenHolders tokenHolders ) throws KernelException
-    {
-        // The dance we do in here with map to arrays to another map, allows us to resolve (and allocate) all of the tokens in a single batch operation.
-        Map<String,Value> stringlyMap = mapifySchemaRule( rule );
+    public static IntObjectMap<Value> convertSchemaRuleToMap(SchemaRule rule, TokenHolders tokenHolders)
+            throws KernelException {
+        // The dance we do in here with map to arrays to another map, allows us to resolve (and allocate) all of the
+        // tokens in a single batch operation.
+        Map<String, Value> stringlyMap = mapifySchemaRule(rule);
 
         int size = stringlyMap.size();
         String[] keys = new String[size];
         int[] keyIds = new int[size];
         Value[] values = new Value[size];
 
-        Iterator<Map.Entry<String,Value>> itr = stringlyMap.entrySet().iterator();
-        for ( int i = 0; i < size; i++ )
-        {
-            Map.Entry<String,Value> entry = itr.next();
+        Iterator<Map.Entry<String, Value>> itr = stringlyMap.entrySet().iterator();
+        for (int i = 0; i < size; i++) {
+            Map.Entry<String, Value> entry = itr.next();
             keys[i] = entry.getKey();
             values[i] = entry.getValue();
         }
 
-        tokenHolders.propertyKeyTokens().getOrCreateInternalIds( keys, keyIds );
+        tokenHolders.propertyKeyTokens().getOrCreateInternalIds(keys, keyIds);
 
         MutableIntObjectMap<Value> tokenisedMap = new IntObjectHashMap<>();
-        for ( int i = 0; i < size; i++ )
-        {
-            tokenisedMap.put( keyIds[i], values[i] );
+        for (int i = 0; i < size; i++) {
+            tokenisedMap.put(keyIds[i], values[i]);
         }
 
         return tokenisedMap;

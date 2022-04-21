@@ -19,45 +19,38 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-
-import org.neo4j.graphdb.ResourceIterator;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ResourceClosingIteratorTest
-{
-    @Test
-    void fromResourceIterableShouldCloseParentIterable()
-    {
-        final var iterableClosed = new MutableBoolean( false );
-        final var iteratorClosed = new MutableBoolean( false );
+import java.util.Arrays;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.ResourceIterator;
 
-        final var items = Arrays.asList( 0, 1, 2 );
+public class ResourceClosingIteratorTest {
+    @Test
+    void fromResourceIterableShouldCloseParentIterable() {
+        final var iterableClosed = new MutableBoolean(false);
+        final var iteratorClosed = new MutableBoolean(false);
+
+        final var items = Arrays.asList(0, 1, 2);
 
         // When
-        final var iterable = new AbstractResourceIterable<Integer>()
-        {
+        final var iterable = new AbstractResourceIterable<Integer>() {
             @Override
-            protected ResourceIterator<Integer> newIterator()
-            {
-                return Iterators.resourceIterator( items.iterator(), iteratorClosed::setTrue );
+            protected ResourceIterator<Integer> newIterator() {
+                return Iterators.resourceIterator(items.iterator(), iteratorClosed::setTrue);
             }
 
             @Override
-            protected void onClosed()
-            {
+            protected void onClosed() {
                 iterableClosed.setTrue();
             }
         };
-        ResourceIterator<Integer> iterator = ResourceClosingIterator.fromResourceIterable( iterable );
+        ResourceIterator<Integer> iterator = ResourceClosingIterator.fromResourceIterable(iterable);
 
         // Then
-        assertThat( Iterators.asList( iterator ) ).containsExactlyElementsOf( items );
-        assertThat( iteratorClosed.isTrue() ).isTrue();
-        assertThat( iterableClosed.isTrue() ).isTrue();
+        assertThat(Iterators.asList(iterator)).containsExactlyElementsOf(items);
+        assertThat(iteratorClosed.isTrue()).isTrue();
+        assertThat(iterableClosed.isTrue()).isTrue();
     }
 }

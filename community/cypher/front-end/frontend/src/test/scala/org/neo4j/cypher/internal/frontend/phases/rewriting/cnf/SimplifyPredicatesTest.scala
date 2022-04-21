@@ -71,7 +71,10 @@ class SimplifyPredicatesTest extends CypherFunSuite {
 
   test("OR + double negation") {
     // or(not(not(P)), not(not(Q))) <=> or(P, Q)
-    assertRewrittenMatches("NOT NOT 'P' OR NOT NOT 'Q'", { case Ors(List(StringLiteral("P"), StringLiteral("Q"))) => () })
+    assertRewrittenMatches(
+      "NOT NOT 'P' OR NOT NOT 'Q'",
+      { case Ors(List(StringLiteral("P"), StringLiteral("Q"))) => () }
+    )
   }
 
   test("NOT IS NULL is rewritten") {
@@ -81,34 +84,40 @@ class SimplifyPredicatesTest extends CypherFunSuite {
 
   test("Simplify OR of identical expressions with interspersed condition") {
     // We should be able to remove one of those redundant $n = 2.
-    assertRewrittenMatches("$n = 2 OR $n = 1 OR $n = 2", { case Ors(Seq(Equals(_, _), Equals(_,_))) => () })
+    assertRewrittenMatches("$n = 2 OR $n = 1 OR $n = 2", { case Ors(Seq(Equals(_, _), Equals(_, _))) => () })
   }
 
   test("Do not simplify expressions with different auto extracted parameters") {
     val position = InputPosition(0, 0, 0)
     // AST for $n = 2 OR $n = 3
     val ast = Ors(Seq(
-      Equals(ExplicitParameter("n", CTAny)(position), AutoExtractedParameter("AUTOINT0", CTInteger, SignedDecimalIntegerLiteral("2")(position))(position))(position),
-      Equals(ExplicitParameter("n", CTAny)(position), AutoExtractedParameter("AUTOINT1", CTInteger, SignedDecimalIntegerLiteral("3")(position))(position))(position)
+      Equals(
+        ExplicitParameter("n", CTAny)(position),
+        AutoExtractedParameter("AUTOINT0", CTInteger, SignedDecimalIntegerLiteral("2")(position))(position)
+      )(position),
+      Equals(
+        ExplicitParameter("n", CTAny)(position),
+        AutoExtractedParameter("AUTOINT1", CTInteger, SignedDecimalIntegerLiteral("3")(position))(position)
+      )(position)
     ))(position)
     val rewriter = flattenBooleanOperators andThen simplifyPredicates(SemanticState.clean)
     val result = ast.rewrite(rewriter)
     ast should equal(result)
   }
 
-
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
+
   private def assertRewrittenMatches(originalQuery: String, matcher: PartialFunction[Any, Unit]): Unit = {
-    val original = JavaCCParser.parse("RETURN " +  originalQuery, exceptionFactory, new AnonymousVariableNameGenerator())
+    val original = JavaCCParser.parse("RETURN " + originalQuery, exceptionFactory, new AnonymousVariableNameGenerator())
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = flattenBooleanOperators andThen simplifyPredicates(checkResult.state)
     val result = original.endoRewrite(rewriter)
-    val maybeReturnExp = result.folder.treeFind ({
+    val maybeReturnExp = result.folder.treeFind({
       case UnaliasedReturnItem(expression, _) => {
         assert(matcher.isDefinedAt(expression), expression)
         true
       }
-    } : PartialFunction[AnyRef, Boolean])
+    }: PartialFunction[AnyRef, Boolean])
     assert(maybeReturnExp.isDefined, "Could not find return in parsed query!")
   }
 }

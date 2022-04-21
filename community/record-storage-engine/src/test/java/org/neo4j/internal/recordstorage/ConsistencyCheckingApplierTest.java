@@ -19,10 +19,21 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.ConsistencyCheckingApplierFactory.ConsistencyCheckingApplier;
@@ -45,21 +56,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-
 @PageCacheExtension
-class ConsistencyCheckingApplierTest
-{
+class ConsistencyCheckingApplierTest {
     private static final long NULL = Record.NULL_REFERENCE.longValue();
     private static final int TYPE = 0;
     private static final long NODE1 = 0;
@@ -79,38 +77,49 @@ class ConsistencyCheckingApplierTest
     private CachedStoreCursors storeCursors;
 
     @BeforeEach
-    void setUp()
-    {
-        Config config = Config.defaults( neo4j_home, directory.homePath() );
-        RecordDatabaseLayout layout = RecordDatabaseLayout.of( config );
-        neoStores = new StoreFactory( layout, config, new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), DEFAULT_DATABASE_NAME ), pageCache,
-                directory.getFileSystem(), NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                writable(), EMPTY_LOG_TAIL ).openAllNeoStores( true );
+    void setUp() {
+        Config config = Config.defaults(neo4j_home, directory.homePath());
+        RecordDatabaseLayout layout = RecordDatabaseLayout.of(config);
+        neoStores = new StoreFactory(
+                        layout,
+                        config,
+                        new DefaultIdGeneratorFactory(directory.getFileSystem(), immediate(), DEFAULT_DATABASE_NAME),
+                        pageCache,
+                        directory.getFileSystem(),
+                        NullLogProvider.getInstance(),
+                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        writable(),
+                        EMPTY_LOG_TAIL)
+                .openAllNeoStores(true);
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT );
-        checker = new ConsistencyCheckingApplier( relationshipStore, CursorContext.NULL_CONTEXT );
-        BatchContext batchContext = mock( BatchContext.class );
-        when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
-        applier = new NeoStoreTransactionApplier( CommandVersion.AFTER, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, 0,
-                batchContext, CursorContext.NULL_CONTEXT, storeCursors );
-        appliers = new TransactionApplier[]{checker, applier};
+        storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT);
+        checker = new ConsistencyCheckingApplier(relationshipStore, CursorContext.NULL_CONTEXT);
+        BatchContext batchContext = mock(BatchContext.class);
+        when(batchContext.getLockGroup()).thenReturn(new LockGroup());
+        applier = new NeoStoreTransactionApplier(
+                CommandVersion.AFTER,
+                neoStores,
+                mock(CacheAccessBackDoor.class),
+                LockService.NO_LOCK_SERVICE,
+                0,
+                batchContext,
+                CursorContext.NULL_CONTEXT,
+                storeCursors);
+        appliers = new TransactionApplier[] {checker, applier};
     }
 
     @AfterEach
-    void tearDown()
-    {
-        closeAllUnchecked( storeCursors, neoStores );
+    void tearDown() {
+        closeAllUnchecked(storeCursors, neoStores);
     }
 
     @Test
-    void shouldNotReportAnythingOnConsistentChanges() throws Exception
-    {
+    void shouldNotReportAnythingOnConsistentChanges() throws Exception {
         // when
         apply(
-                create( new RelationshipRecord( 0 ).initialize( true, NULL, 0, 1, TYPE, 1, 1, 1, 2, true, true ) ),
-                create( new RelationshipRecord( 1 ).initialize( true, NULL, 0, 10, TYPE, 0, NULL, 1, NULL, false, true ) ),
-                create( new RelationshipRecord( 2 ).initialize( true, NULL, 1, 20, TYPE, 0, NULL, 1, NULL, false, true ) )
-        );
+                create(new RelationshipRecord(0).initialize(true, NULL, 0, 1, TYPE, 1, 1, 1, 2, true, true)),
+                create(new RelationshipRecord(1).initialize(true, NULL, 0, 10, TYPE, 0, NULL, 1, NULL, false, true)),
+                create(new RelationshipRecord(2).initialize(true, NULL, 1, 20, TYPE, 0, NULL, 1, NULL, false, true)));
 
         // then not throwing exception is wonderful
     }
@@ -118,205 +127,198 @@ class ConsistencyCheckingApplierTest
     // ===== PREV =====
 
     @Test
-    void shouldDetectSourcePrevNotInUse()
-    {
+    void shouldDetectSourcePrevNotInUse() {
         // given
-        Command.RelationshipCommand command = create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE1, NODE2, TYPE, 0, NULL, 1, NULL, false, true ) );
-        //                                                                                                                    ^                   ^
+        Command.RelationshipCommand command = create(
+                new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 0, NULL, 1, NULL, false, true));
+        //
+        //      ^                   ^
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( command ) );
-        assertThat( error.getMessage() ).contains( "prev refers to unused" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(command));
+        assertThat(error.getMessage()).contains("prev refers to unused");
     }
 
     @Test
-    void shouldDetectTargetPrevNotInUse()
-    {
+    void shouldDetectTargetPrevNotInUse() {
         // given
-        Command.RelationshipCommand command = create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, NULL, 0, NULL, true, false ) );
-        //                                                                                                                             ^                ^
+        Command.RelationshipCommand command = create(
+                new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 0, NULL, true, false));
+        //
+        //               ^                ^
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( command ) );
-        assertThat( error.getMessage() ).contains( "prev refers to unused" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(command));
+        assertThat(error.getMessage()).contains("prev refers to unused");
     }
 
     @Test
-    void shouldDetectSourcePrevNotReferringBack()
-    {
+    void shouldDetectSourcePrevNotReferringBack() {
         // given
-        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[]{
-                create( new RelationshipRecord( 0 ).initialize( true, NULL, NODE1, NODE3, TYPE, 1, 99, 1, NULL, true, true ) ),
-                //                                                                                 ^
-                create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE1, NODE2, TYPE, 0, NULL, 1, NULL, false, true ) ),
-                //                                                                              ^
-                create( new RelationshipRecord( 99 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, NULL, true, true ) ),
+        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
+            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE3, TYPE, 1, 99, 1, NULL, true, true)),
+            //                                                                                 ^
+            create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 0, NULL, 1, NULL, false, true)),
+            //                                                                              ^
+            create(new RelationshipRecord(99).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, NULL, true, true)),
         };
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage() ).contains( "that doesn't refer back" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(commands));
+        assertThat(error.getMessage()).contains("that doesn't refer back");
     }
 
     @Test
-    void shouldDetectTargetPrevNotReferringBack()
-    {
+    void shouldDetectTargetPrevNotReferringBack() {
         // given
-        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[]{
-                create( new RelationshipRecord( 0 ).initialize( true, NULL, NODE2, NODE3, TYPE, 1, 99, 1, NULL, true, true ) ),
-                //                                                                                 ^
-                create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, NULL, 0, NULL, true, false ) ),
-                //                                                                                       ^
-                create( new RelationshipRecord( 99 ).initialize( true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true ) ),
+        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
+            create(new RelationshipRecord(0).initialize(true, NULL, NODE2, NODE3, TYPE, 1, 99, 1, NULL, true, true)),
+            //                                                                                 ^
+            create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 0, NULL, true, false)),
+            //                                                                                       ^
+            create(new RelationshipRecord(99).initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
         };
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage() ).contains( "that doesn't refer back" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(commands));
+        assertThat(error.getMessage()).contains("that doesn't refer back");
     }
 
     @Test
-    void shouldDetectSourcePrevHasOtherNodes()
-    {
+    void shouldDetectSourcePrevHasOtherNodes() {
         // given
-        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[]{
-                create( new RelationshipRecord( 0 ).initialize( true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, false, true ) ),
-                //                                                            ^                 ^
-                create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true ) ),
-                //                                                            ^      ^
+        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
+            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, false, true)),
+            //                                                            ^                 ^
+            create(new RelationshipRecord(1).initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
+            //                                                            ^      ^
         };
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage() ).contains( "which is a relationship between other nodes" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(commands));
+        assertThat(error.getMessage()).contains("which is a relationship between other nodes");
     }
 
     @Test
-    void shouldDetectTargetPrevHasOtherNodes()
-    {
+    void shouldDetectTargetPrevHasOtherNodes() {
         // given
-        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[]{
-                create( new RelationshipRecord( 0 ).initialize( true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, true, false ) ),
-                //                                                                   ^                   ^
-                create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE2, NODE1, TYPE, 1, NULL, 1, NULL, true, true ) ),
-                //                                                            ^      ^
+        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
+            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, true, false)),
+            //                                                                   ^                   ^
+            create(new RelationshipRecord(1).initialize(true, NULL, NODE2, NODE1, TYPE, 1, NULL, 1, NULL, true, true)),
+            //                                                            ^      ^
         };
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage() ).contains( "which is a relationship between other nodes" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(commands));
+        assertThat(error.getMessage()).contains("which is a relationship between other nodes");
     }
 
     // ===== NEXT =====
 
     @Test
-    void shouldDetectSourceNextNotInUse()
-    {
+    void shouldDetectSourceNextNotInUse() {
         // given
-        Command.RelationshipCommand command = create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, 0, 1, NULL, true, true ) );
-        //                                                                                                                       ^
+        Command.RelationshipCommand command =
+                create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 1, 0, 1, NULL, true, true));
+        //
+        //         ^
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( command ) );
-        assertThat( error.getMessage() ).contains( "next refers to unused" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(command));
+        assertThat(error.getMessage()).contains("next refers to unused");
     }
 
     @Test
-    void shouldDetectTargetNextNotInUse()
-    {
+    void shouldDetectTargetNextNotInUse() {
         // given
-        Command.RelationshipCommand command = create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 0, true, true ) );
-        //                                                                                                                                ^
+        Command.RelationshipCommand command =
+                create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 0, true, true));
+        //
+        //                  ^
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( command ) );
-        assertThat( error.getMessage() ).contains( "next refers to unused" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(command));
+        assertThat(error.getMessage()).contains("next refers to unused");
     }
 
     @Test
-    void shouldDetectSourceNextNotReferringBack()
-    {
+    void shouldDetectSourceNextNotReferringBack() {
         // given
-        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[]{
-                create( new RelationshipRecord( 0 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, 1, 1, NULL, true, true ) ),
-                //                                                                                 ^
-                create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE1, NODE2, TYPE, 99, NULL, 1, NULL, false, true ) ),
-                //                                                                              ^
-                create( new RelationshipRecord( 99 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, NULL, true, true ) ),
+        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
+            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE2, TYPE, 1, 1, 1, NULL, true, true)),
+            //                                                                                 ^
+            create(new RelationshipRecord(1)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 99, NULL, 1, NULL, false, true)),
+            //                                                                              ^
+            create(new RelationshipRecord(99).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, NULL, true, true)),
         };
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage() ).contains( "that doesn't refer back" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(commands));
+        assertThat(error.getMessage()).contains("that doesn't refer back");
     }
 
     @Test
-    void shouldDetectTargetNextNotReferringBack()
-    {
+    void shouldDetectTargetNextNotReferringBack() {
         // given
-        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[]{
-                create( new RelationshipRecord( 0 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 1, true, true ) ),
-                //                                                                                          ^
-                create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, NULL, 99, NULL, true, false ) ),
-                //                                                                                       ^
-                create( new RelationshipRecord( 99 ).initialize( true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true ) ),
+        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
+            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 1, true, true)),
+            //                                                                                          ^
+            create(new RelationshipRecord(1)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 99, NULL, true, false)),
+            //                                                                                       ^
+            create(new RelationshipRecord(99).initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
         };
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage() ).contains( "that doesn't refer back" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(commands));
+        assertThat(error.getMessage()).contains("that doesn't refer back");
     }
 
     @Test
-    void shouldDetectSourceNextHasOtherNodes()
-    {
+    void shouldDetectSourceNextHasOtherNodes() {
         // given
-        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[]{
-                create( new RelationshipRecord( 0 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, 1, 1, NULL, true, true ) ),
-                //                                                            ^                    ^
-                create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true ) ),
-                //                                                            ^      ^
+        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
+            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE2, TYPE, 1, 1, 1, NULL, true, true)),
+            //                                                            ^                    ^
+            create(new RelationshipRecord(1).initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
+            //                                                            ^      ^
         };
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage() ).contains( "which is a relationship between other nodes" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(commands));
+        assertThat(error.getMessage()).contains("which is a relationship between other nodes");
     }
 
     @Test
-    void shouldDetectTargetNextHasOtherNodes()
-    {
+    void shouldDetectTargetNextHasOtherNodes() {
         // given
-        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[]{
-                create( new RelationshipRecord( 0 ).initialize( true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 1, true, true ) ),
-                //                                                                   ^                      ^
-                create( new RelationshipRecord( 1 ).initialize( true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, true, true ) ),
-                //                                                            ^      ^
+        Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
+            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 1, true, true)),
+            //                                                                   ^                      ^
+            create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
+            //                                                            ^      ^
         };
 
         // when/then
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> apply( commands ) );
-        assertThat( error.getMessage() ).contains( "which is a relationship between other nodes" );
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(commands));
+        assertThat(error.getMessage()).contains("which is a relationship between other nodes");
     }
 
-    private void apply( Command.RelationshipCommand... commands ) throws Exception
-    {
-        for ( Command.RelationshipCommand command : commands )
-        {
-            for ( TransactionApplier applier : appliers )
-            {
-                applier.visit( command );
+    private void apply(Command.RelationshipCommand... commands) throws Exception {
+        for (Command.RelationshipCommand command : commands) {
+            for (TransactionApplier applier : appliers) {
+                applier.visit(command);
             }
         }
         // Close manually here to not wrap the exception
-        for ( TransactionApplier applier : appliers )
-        {
+        for (TransactionApplier applier : appliers) {
             applier.close();
         }
     }
 
-    private static Command.RelationshipCommand create( RelationshipRecord relationship )
-    {
-        return new Command.RelationshipCommand( new RelationshipRecord( relationship.getId() ), relationship );
+    private static Command.RelationshipCommand create(RelationshipRecord relationship) {
+        return new Command.RelationshipCommand(new RelationshipRecord(relationship.getId()), relationship);
     }
 }

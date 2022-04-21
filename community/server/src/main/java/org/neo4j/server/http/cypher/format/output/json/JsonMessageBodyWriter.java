@@ -22,41 +22,44 @@ package org.neo4j.server.http.cypher.format.output.json;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
-
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.http.cypher.format.api.OutputEventSource;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 
 @Provider
-@Produces( JsonMessageBodyWriter.JSON_MIME_TYPE_WITH_QUALITY )
-public class JsonMessageBodyWriter implements MessageBodyWriter<OutputEventSource>
-{
+@Produces(JsonMessageBodyWriter.JSON_MIME_TYPE_WITH_QUALITY)
+public class JsonMessageBodyWriter implements MessageBodyWriter<OutputEventSource> {
     // ensures this MessageBodyWriter is the default when no accept header is provided by giving it a higher qs score
     public static final String JSON_MIME_TYPE_WITH_QUALITY = MediaType.APPLICATION_JSON + ";qs=0.9";
 
     @Override
-    public boolean isWriteable( Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType )
-    {
-        return OutputEventSource.class.isAssignableFrom( type );
+    public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+        return OutputEventSource.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeTo( OutputEventSource outputEventSource, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String,Object> httpHeaders, OutputStream entityStream ) throws WebApplicationException
-    {
+    public void writeTo(
+            OutputEventSource outputEventSource,
+            Class<?> type,
+            Type genericType,
+            Annotation[] annotations,
+            MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders,
+            OutputStream entityStream)
+            throws WebApplicationException {
         var parameters = outputEventSource.getParameters();
         var uriInfo = outputEventSource.getUriInfo();
 
         var jsonFactory = DefaultJsonFactory.INSTANCE.get();
-        var serializer = new ExecutionResultSerializer( parameters, uriInfo.dbUri(), Neo4jJsonCodec.class, jsonFactory, entityStream );
+        var serializer = new ExecutionResultSerializer(
+                parameters, uriInfo.dbUri(), Neo4jJsonCodec.class, jsonFactory, entityStream);
 
-        outputEventSource.produceEvents( serializer::handleEvent );
+        outputEventSource.produceEvents(serializer::handleEvent);
     }
 }

@@ -19,15 +19,15 @@
  */
 package org.neo4j.codegen;
 
-import org.neo4j.util.Preconditions;
-import org.neo4j.util.VisibleForTesting;
-
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.codegen.ByteCodeVisitor.DO_NOTHING;
 import static org.neo4j.codegen.CodeGenerationStrategy.codeGenerator;
 import static org.neo4j.codegen.TypeReference.OBJECT;
 import static org.neo4j.codegen.TypeReference.typeReference;
 import static org.neo4j.codegen.TypeReference.typeReferences;
+
+import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Do you also want to generate code? Start here.
@@ -62,105 +62,86 @@ import static org.neo4j.codegen.TypeReference.typeReferences;
  *                         // instantiate a c2, or if we reflectively access c1 for example.
  * </pre>
  */
-public abstract class CodeGenerator
-{
+public abstract class CodeGenerator {
     private final CodeLoader loader;
     private long currentCompilationUnit;
     private long openClassCount;
     private ByteCodeVisitor byteCodeVisitor = DO_NOTHING;
 
-    public static CodeGenerator generateCode( CodeGenerationStrategy<?> strategy, CodeGeneratorOption... options )
-            throws CodeGenerationNotSupportedException
-    {
-        return generateCode( Thread.currentThread().getContextClassLoader(), strategy, options );
+    public static CodeGenerator generateCode(CodeGenerationStrategy<?> strategy, CodeGeneratorOption... options)
+            throws CodeGenerationNotSupportedException {
+        return generateCode(Thread.currentThread().getContextClassLoader(), strategy, options);
     }
 
-    public static CodeGenerator generateCode( ClassLoader loader, CodeGenerationStrategy<?> strategy, CodeGeneratorOption... options )
-            throws CodeGenerationNotSupportedException
-    {
-        return codeGenerator( requireNonNull( loader, "ClassLoader" ), strategy, options );
+    public static CodeGenerator generateCode(
+            ClassLoader loader, CodeGenerationStrategy<?> strategy, CodeGeneratorOption... options)
+            throws CodeGenerationNotSupportedException {
+        return codeGenerator(requireNonNull(loader, "ClassLoader"), strategy, options);
     }
 
-    public CodeGenerator( ClassLoader loader )
-    {
-        this.loader = new CodeLoader( loader );
+    public CodeGenerator(ClassLoader loader) {
+        this.loader = new CodeLoader(loader);
     }
 
-    private synchronized ClassHandle openClass( String packageName, String name, TypeReference parent )
-    {
+    private synchronized ClassHandle openClass(String packageName, String name, TypeReference parent) {
         openClassCount++;
-        return new ClassHandle( packageName, name, parent, this, currentCompilationUnit );
+        return new ClassHandle(packageName, name, parent, this, currentCompilationUnit);
     }
 
-    synchronized void closeClass()
-    {
+    synchronized void closeClass() {
         openClassCount--;
     }
 
     @VisibleForTesting
-    public void setByteCodeVisitor( ByteCodeVisitor visitor )
-    {
+    public void setByteCodeVisitor(ByteCodeVisitor visitor) {
         this.byteCodeVisitor = visitor;
     }
 
     // GENERATE
 
-    public ClassGenerator generateClass( String packageName, String name, Class<?> firstInterface, Class<?>... more )
-    {
-        return generateClass( packageName, name, typeReferences( firstInterface, more ) );
+    public ClassGenerator generateClass(String packageName, String name, Class<?> firstInterface, Class<?>... more) {
+        return generateClass(packageName, name, typeReferences(firstInterface, more));
     }
 
-    public ClassGenerator generateClass( Class<?> base, String packageName, String name, Class<?>... interfaces )
-    {
-        return generateClass( typeReference( base ), packageName, name, typeReferences( interfaces ) );
+    public ClassGenerator generateClass(Class<?> base, String packageName, String name, Class<?>... interfaces) {
+        return generateClass(typeReference(base), packageName, name, typeReferences(interfaces));
     }
 
-    public ClassGenerator generateClass( String packageName, String name, TypeReference... interfaces )
-    {
-        return generateClass( OBJECT, packageName, name, interfaces );
+    public ClassGenerator generateClass(String packageName, String name, TypeReference... interfaces) {
+        return generateClass(OBJECT, packageName, name, interfaces);
     }
 
-    public ClassGenerator generateClass( TypeReference base, String packageName, String name,
-            TypeReference... interfaces )
-    {
-        return generateClass( openClass( packageName, name, base ), base, interfaces );
+    public ClassGenerator generateClass(
+            TypeReference base, String packageName, String name, TypeReference... interfaces) {
+        return generateClass(openClass(packageName, name, base), base, interfaces);
     }
 
-    private ClassGenerator generateClass( ClassHandle handle, TypeReference base, TypeReference... interfaces )
-    {
-        return new ClassGenerator( handle, generate( handle, base, interfaces ) );
+    private ClassGenerator generateClass(ClassHandle handle, TypeReference base, TypeReference... interfaces) {
+        return new ClassGenerator(handle, generate(handle, base, interfaces));
     }
 
-    protected abstract ClassWriter generate( TypeReference type, TypeReference base, TypeReference... interfaces );
+    protected abstract ClassWriter generate(TypeReference type, TypeReference base, TypeReference... interfaces);
 
     // COMPILE AND LOAD
 
-    protected abstract Iterable<? extends ByteCodes> compile( ClassLoader classpathLoader )
+    protected abstract Iterable<? extends ByteCodes> compile(ClassLoader classpathLoader)
             throws CompilationFailureException;
 
-    synchronized Class<?> loadClass( String name, long generation ) throws CompilationFailureException
-    {
-        compileAndStageForLoading( generation );
-        try
-        {
-            return loader.findClass( name );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            throw new IllegalStateException( "Could not find defined class.", e );
+    synchronized Class<?> loadClass(String name, long generation) throws CompilationFailureException {
+        compileAndStageForLoading(generation);
+        try {
+            return loader.findClass(name);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Could not find defined class.", e);
         }
     }
 
-    synchronized Class<?> loadAnonymousClass( String name, long generation ) throws CompilationFailureException
-    {
-        compileAndStageForLoading( generation );
-        try
-        {
-            return loader.defineHiddenClass( name );
-        }
-        catch ( Throwable e )
-        {
-            throw new IllegalStateException( "Could not find defined class.", e );
+    synchronized Class<?> loadAnonymousClass(String name, long generation) throws CompilationFailureException {
+        compileAndStageForLoading(generation);
+        try {
+            return loader.defineHiddenClass(name);
+        } catch (Throwable e) {
+            throw new IllegalStateException("Could not find defined class.", e);
         }
     }
 
@@ -172,16 +153,15 @@ public abstract class CodeGenerator
      *
      * @param compilationUnit the target compilation unit
      */
-    private void compileAndStageForLoading( long compilationUnit ) throws CompilationFailureException
-    {
-        Preconditions.checkState( compilationUnit <= this.currentCompilationUnit, "Future compilation units are not supported" );
+    private void compileAndStageForLoading(long compilationUnit) throws CompilationFailureException {
+        Preconditions.checkState(
+                compilationUnit <= this.currentCompilationUnit, "Future compilation units are not supported");
 
-        if ( compilationUnit == this.currentCompilationUnit )
-        {
-            Preconditions.checkState( openClassCount == 0, "Compilation has not completed." );
+        if (compilationUnit == this.currentCompilationUnit) {
+            Preconditions.checkState(openClassCount == 0, "Compilation has not completed.");
 
             this.currentCompilationUnit++;
-            loader.stageForLoading( compile( loader.getParent() ), byteCodeVisitor );
+            loader.stageForLoading(compile(loader.getParent()), byteCodeVisitor);
         }
     }
 }

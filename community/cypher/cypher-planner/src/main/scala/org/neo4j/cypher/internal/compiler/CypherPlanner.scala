@@ -52,43 +52,43 @@ import java.time.Clock
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
-                                                    metricsFactory: MetricsFactory,
-                                                    config: CypherPlannerConfiguration,
-                                                    updateStrategy: UpdateStrategy,
-                                                    clock: Clock) {
+case class CypherPlanner[Context <: PlannerContext](
+  monitors: Monitors,
+  metricsFactory: MetricsFactory,
+  config: CypherPlannerConfiguration,
+  updateStrategy: UpdateStrategy,
+  clock: Clock
+) {
 
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
   def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {
-    val pipeLine = if(config.planSystemCommands)
-      systemPipeLine
-    else if (context.debugOptions.toStringEnabled)
-      planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures) andThen DebugPrinter
-    else
-      planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures)
+    val pipeLine =
+      if (config.planSystemCommands)
+        systemPipeLine
+      else if (context.debugOptions.toStringEnabled)
+        planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures) andThen DebugPrinter
+      else
+        planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures)
 
     pipeLine.transform(state, context)
   }
 
-  def parseQuery(queryText: String,
-                 rawQueryText: String,
-                 notificationLogger: InternalNotificationLogger,
-                 plannerNameText: String = IDPPlannerName.name,
-                 offset: Option[InputPosition],
-                 tracer: CompilationPhaseTracer,
-                 params: MapValue,
-                 compatibilityMode: CypherCompatibilityVersion,
-                 cancellationChecker: CancellationChecker): BaseState = {
+  def parseQuery(
+    queryText: String,
+    rawQueryText: String,
+    notificationLogger: InternalNotificationLogger,
+    plannerNameText: String = IDPPlannerName.name,
+    offset: Option[InputPosition],
+    tracer: CompilationPhaseTracer,
+    params: MapValue,
+    compatibilityMode: CypherCompatibilityVersion,
+    cancellationChecker: CancellationChecker
+  ): BaseState = {
 
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
-    val context = BaseContextImpl(tracer,
-                                 notificationLogger,
-                                 rawQueryText,
-                                 offset,
-                                 monitors,
-                                 cancellationChecker)
+    val context = BaseContextImpl(tracer, notificationLogger, rawQueryText, offset, monitors, cancellationChecker)
     CompilationPhases.parsing(ParsingConfig(
       compatibilityMode,
       semanticFeatures = config.enabledSemanticFeatures,
@@ -100,7 +100,12 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
 }
 
 object CypherPlannerConfiguration {
-  def fromCypherConfiguration(config: CypherConfiguration, cfg: Config, planSystemCommands: Boolean): CypherPlannerConfiguration =
+
+  def fromCypherConfiguration(
+    config: CypherConfiguration,
+    cfg: Config,
+    planSystemCommands: Boolean
+  ): CypherPlannerConfiguration =
     new CypherPlannerConfiguration(config, cfg, planSystemCommands)
 
   def defaults(): CypherPlannerConfiguration = {
@@ -119,19 +124,25 @@ object CypherPlannerConfiguration {
 
 class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val planSystemCommands: Boolean) {
   def queryCacheSize: Int = config.queryCacheSize
-  def statsDivergenceCalculator: StatsDivergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.statsDivergenceCalculator)
+
+  def statsDivergenceCalculator: StatsDivergenceCalculator =
+    StatsDivergenceCalculator.divergenceCalculatorFor(config.statsDivergenceCalculator)
   def useErrorsOverWarnings: Boolean = config.useErrorsOverWarnings
   def idpMaxTableSize: Int = config.idpMaxTableSize
   def idpIterationDuration: Long = config.idpIterationDuration
-  def errorIfShortestPathFallbackUsedAtRuntime: Boolean =  config.errorIfShortestPathFallbackUsedAtRuntime
+  def errorIfShortestPathFallbackUsedAtRuntime: Boolean = config.errorIfShortestPathFallbackUsedAtRuntime
   def errorIfShortestPathHasCommonNodesAtRuntime: Boolean = config.errorIfShortestPathHasCommonNodesAtRuntime
   def legacyCsvQuoteEscaping: Boolean = config.legacyCsvQuoteEscaping
   def csvBufferSize: Int = config.csvBufferSize
-  def nonIndexedLabelWarningThreshold: Long = cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue()
+
+  def nonIndexedLabelWarningThreshold: Long =
+    cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue()
   def obfuscateLiterals: Boolean = config.obfuscateLiterals
   def pipelinedBatchSizeSmall: Int = config.pipelinedBatchSizeSmall
   def pipelinedBatchSizeBig: Int = config.pipelinedBatchSizeBig
-  def enabledSemanticFeatures: Seq[SemanticFeature] = CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures)
+
+  def enabledSemanticFeatures: Seq[SemanticFeature] =
+    CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures)
   def planningTextIndexesEnabled: Boolean = config.planningTextIndexesEnabled
   def planningRangeIndexesEnabled: Boolean = config.planningRangeIndexesEnabled
   def planningPointIndexesEnabled: Boolean = config.planningPointIndexesEnabled

@@ -24,43 +24,41 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class CreateConstraintFailureException extends SchemaKernelException
-{
+public class CreateConstraintFailureException extends SchemaKernelException {
     private final ConstraintDescriptor constraint;
 
     private final String cause;
-    public CreateConstraintFailureException( ConstraintDescriptor constraint, Throwable cause )
-    {
-        super( Status.Schema.ConstraintCreationFailed, cause, "Unable to create constraint %s: %s", constraint,
-                cause.getMessage() );
+
+    public CreateConstraintFailureException(ConstraintDescriptor constraint, Throwable cause) {
+        super(
+                Status.Schema.ConstraintCreationFailed,
+                cause,
+                "Unable to create constraint %s: %s",
+                constraint,
+                cause.getMessage());
         this.constraint = constraint;
         this.cause = null;
     }
 
-    public CreateConstraintFailureException( ConstraintDescriptor constraint, String cause )
-    {
-        super( Status.Schema.ConstraintCreationFailed, null, "Unable to create constraint %s: %s", constraint, cause );
+    public CreateConstraintFailureException(ConstraintDescriptor constraint, String cause) {
+        super(Status.Schema.ConstraintCreationFailed, null, "Unable to create constraint %s: %s", constraint, cause);
         this.constraint = constraint;
         this.cause = cause;
     }
 
-    public ConstraintDescriptor constraint()
-    {
+    public ConstraintDescriptor constraint() {
         return constraint;
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
-        String message = "Unable to create " + constraint.userDescription( tokenNameLookup );
-        if ( cause != null )
-        {
-            message = String.format( "%s:%n%s", message, cause );
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
+        String message = "Unable to create " + constraint.userDescription(tokenNameLookup);
+        if (cause != null) {
+            message = String.format("%s:%n%s", message, cause);
         }
-        if ( getCause() instanceof KernelException cause )
-        {
+        if (getCause() instanceof KernelException cause) {
 
-            return String.format( "%s:%n%s", message, cause.getUserMessage( tokenNameLookup ) );
+            return String.format("%s:%n%s", message, cause.getUserMessage(tokenNameLookup));
         }
         return message;
     }

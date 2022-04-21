@@ -19,8 +19,15 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.shell.ConnectionConfig.connectionConfig;
+import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
+import static org.neo4j.shell.util.Versions.majorVersion;
+import static org.neo4j.shell.util.Versions.minorVersion;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.StringLinePrinter;
@@ -31,99 +38,91 @@ import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.state.BoltStateHandler;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.shell.ConnectionConfig.connectionConfig;
-import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
-import static org.neo4j.shell.util.Versions.majorVersion;
-import static org.neo4j.shell.util.Versions.minorVersion;
-
-class CypherShellProtocolIntegrationTest
-{
+class CypherShellProtocolIntegrationTest {
 
     @Test
-    void shouldConnectWithBoltProtocol() throws Exception
-    {
+    void shouldConnectWithBoltProtocol() throws Exception {
         CypherShell shell = shell();
-        try
-        {
-            shell.connect( connectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
+        try {
+            shell.connect(connectionConfig(
+                    "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
             assertTrue(shell.isConnected());
-        }
-        finally
-        {
+        } finally {
             shell.disconnect();
         }
     }
 
     @Test
-    void shouldConnectWithNeo4jProtocol() throws Exception
-    {
+    void shouldConnectWithNeo4jProtocol() throws Exception {
         CypherShell shell = shell();
-        try
-        {
+        try {
             // This should work even on older databases without the neo4j protocol, by falling back to bolt
-            shell.connect( connectionConfig( "neo4j", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
-            assertTrue( shell.isConnected() );
-        }
-        finally
-        {
+            shell.connect(connectionConfig(
+                    "neo4j", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
+            assertTrue(shell.isConnected());
+        } finally {
             shell.disconnect();
         }
     }
 
     @Test
-    void shouldConnectWithBoltSSCProtocol() throws Exception
-    {
+    void shouldConnectWithBoltSSCProtocol() throws Exception {
         CypherShell shell = shell();
-        try
-        {
+        try {
             // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
-            onlyIn3_2to3_6( shell );
-            shell.connect( connectionConfig( "bolt+ssc", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
-            assertTrue( shell.isConnected() );
-        }
-        finally
-        {
+            onlyIn3_2to3_6(shell);
+            shell.connect(connectionConfig(
+                    "bolt+ssc",
+                    "localhost",
+                    7687,
+                    "neo4j",
+                    "neo",
+                    Encryption.DEFAULT,
+                    ABSENT_DB_NAME,
+                    new Environment()));
+            assertTrue(shell.isConnected());
+        } finally {
             shell.disconnect();
         }
     }
 
     @Test
-    void shouldConnectWithNeo4jSSCProtocol() throws Exception
-    {
+    void shouldConnectWithNeo4jSSCProtocol() throws Exception {
         CypherShell shell = shell();
-        try
-        {
+        try {
             // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
-            onlyIn3_2to3_6( shell );
+            onlyIn3_2to3_6(shell);
             // This should work by falling back to bolt+ssc
-            shell.connect( connectionConfig( "neo4j+ssc", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
-            assertTrue( shell.isConnected() );
-        }
-        finally
-        {
+            shell.connect(connectionConfig(
+                    "neo4j+ssc",
+                    "localhost",
+                    7687,
+                    "neo4j",
+                    "neo",
+                    Encryption.DEFAULT,
+                    ABSENT_DB_NAME,
+                    new Environment()));
+            assertTrue(shell.isConnected());
+        } finally {
             shell.disconnect();
         }
     }
 
-    private CypherShell shell()
-    {
-        var boltHandler = new BoltStateHandler( true );
-        var printer = new PrettyPrinter( new PrettyConfig( Format.PLAIN, true, 1000 ) );
-        var parameters = mock( ParameterService.class );
-        return new CypherShell( new StringLinePrinter(), boltHandler, printer, parameters );
+    private CypherShell shell() {
+        var boltHandler = new BoltStateHandler(true);
+        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000));
+        var parameters = mock(ParameterService.class);
+        return new CypherShell(new StringLinePrinter(), boltHandler, printer, parameters);
     }
 
     // Here should be tests for "neo4j+s" and "bolt+s", but we don't have the infrastructure for those.
 
-    private static void onlyIn3_2to3_6( CypherShell shell ) throws Exception
-    {
+    private static void onlyIn3_2to3_6(CypherShell shell) throws Exception {
         // Default connection settings
-        shell.connect( connectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
-        assumeTrue( majorVersion( shell.getServerVersion() ) == 3 );
-        assumeTrue( minorVersion( shell.getServerVersion() ) > 1 );
+        shell.connect(connectionConfig(
+                "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment()));
+        assumeTrue(majorVersion(shell.getServerVersion()) == 3);
+        assumeTrue(minorVersion(shell.getServerVersion()) > 1);
         shell.disconnect();
     }
 }

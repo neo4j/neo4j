@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
@@ -47,89 +49,89 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-class RecordStoreMigratorTest
-{
+class RecordStoreMigratorTest {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private Neo4jLayout neo4jLayout;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     private JobScheduler jobScheduler;
     private final BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
-    private final CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+    private final CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         jobScheduler = new ThreadPoolJobScheduler();
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
+    void tearDown() throws Exception {
         jobScheduler.close();
     }
 
     @Test
-    void shouldNotMigrateFilesForVersionsWithSameCapability() throws Exception
-    {
+    void shouldNotMigrateFilesForVersionsWithSameCapability() throws Exception {
         // Prepare migrator and file
         RecordStorageMigrator migrator = newStoreMigrator();
         DatabaseLayout dbLayout = databaseLayout;
         Path neoStore = dbLayout.metadataStore();
-        Files.createFile( neoStore );
+        Files.createFile(neoStore);
 
         // Monitor what happens
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
-        DatabaseLayout migrationLayout = neo4jLayout.databaseLayout( "migrationDir" );
-        fileSystem.mkdirs( migrationLayout.databaseDirectory() );
-        fileSystem.write( migrationLayout.metadataStore() ).close();
+        DatabaseLayout migrationLayout = neo4jLayout.databaseLayout("migrationDir");
+        fileSystem.mkdirs(migrationLayout.databaseDirectory());
+        fileSystem.write(migrationLayout.metadataStore()).close();
 
         var storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        migrator.migrate( dbLayout, migrationLayout, progressReporter, storageEngineFactory.versionInformation( Standard.LATEST_STORE_VERSION ),
-                          storageEngineFactory.versionInformation( Standard.LATEST_STORE_VERSION ), IndexImporterFactory.EMPTY,
-                          LogTailMetadata.EMPTY_LOG_TAIL );
+        migrator.migrate(
+                dbLayout,
+                migrationLayout,
+                progressReporter,
+                storageEngineFactory.versionInformation(Standard.LATEST_STORE_VERSION),
+                storageEngineFactory.versionInformation(Standard.LATEST_STORE_VERSION),
+                IndexImporterFactory.EMPTY,
+                LogTailMetadata.EMPTY_LOG_TAIL);
 
         // Should not have started any migration
-        assertFalse( progressReporter.started );
+        assertFalse(progressReporter.started);
     }
 
-    private RecordStorageMigrator newStoreMigrator()
-    {
-        return new RecordStorageMigrator( fileSystem, pageCache, PageCacheTracer.NULL, Config.defaults(), NullLogService.getInstance(), jobScheduler,
-                contextFactory, batchImporterFactory, INSTANCE );
+    private RecordStorageMigrator newStoreMigrator() {
+        return new RecordStorageMigrator(
+                fileSystem,
+                pageCache,
+                PageCacheTracer.NULL,
+                Config.defaults(),
+                NullLogService.getInstance(),
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE);
     }
 
-    private static class MyProgressReporter implements ProgressReporter
-    {
+    private static class MyProgressReporter implements ProgressReporter {
         public boolean started;
 
         @Override
-        public void start( long max )
-        {
+        public void start(long max) {
             started = true;
         }
 
         @Override
-        public void progress( long add )
-        {
-
-        }
+        public void progress(long add) {}
 
         @Override
-        public void completed()
-        {
-
-        }
+        public void completed() {}
     }
 }

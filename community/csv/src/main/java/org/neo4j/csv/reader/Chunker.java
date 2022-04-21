@@ -21,7 +21,6 @@ package org.neo4j.csv.reader;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.neo4j.csv.reader.Source.Chunk;
 
 /**
@@ -30,8 +29,7 @@ import org.neo4j.csv.reader.Source.Chunk;
  * next chunk from the stream. This design allows for efficient reuse of chunks when there are multiple concurrent
  * processors, each processing chunks of data.
  */
-public interface Chunker extends Closeable
-{
+public interface Chunker extends Closeable {
     /**
      * @return a new allocated {@link Chunk} which is to be later passed into {@link #nextChunk(Chunk)}
      * to fill it with data. When a {@link Chunk} has been fully processed then it can be passed into
@@ -48,7 +46,7 @@ public interface Chunker extends Closeable
      * otherwise {@code false} denoting the end of the stream.
      * @throws IOException on I/O error.
      */
-    boolean nextChunk( Chunk chunk ) throws IOException;
+    boolean nextChunk(Chunk chunk) throws IOException;
 
     /**
      * @return byte position of how much data has been returned from {@link #nextChunk(Chunk)}.

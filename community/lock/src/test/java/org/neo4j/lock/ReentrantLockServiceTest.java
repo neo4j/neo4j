@@ -19,14 +19,6 @@
  */
 package org.neo4j.lock;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.neo4j.lock.ReentrantLockService.OwnerQueueElement;
-
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.getBlocker;
@@ -35,121 +27,112 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
-class ReentrantLockServiceTest
-{
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.neo4j.lock.ReentrantLockService.OwnerQueueElement;
+
+class ReentrantLockServiceTest {
     private final ReentrantLockService locks = new ReentrantLockService();
 
     @Test
-    void shouldFormLinkedListOfWaitingLockOwners()
-    {
+    void shouldFormLinkedListOfWaitingLockOwners() {
         // given
-        OwnerQueueElement<Integer> queue = new OwnerQueueElement<>( 0 );
-        OwnerQueueElement<Integer> element1 = new OwnerQueueElement<>( 1 );
-        OwnerQueueElement<Integer> element2 = new OwnerQueueElement<>( 2 );
-        OwnerQueueElement<Integer> element3 = new OwnerQueueElement<>( 3 );
-        OwnerQueueElement<Integer> element4 = new OwnerQueueElement<>( 4 );
+        OwnerQueueElement<Integer> queue = new OwnerQueueElement<>(0);
+        OwnerQueueElement<Integer> element1 = new OwnerQueueElement<>(1);
+        OwnerQueueElement<Integer> element2 = new OwnerQueueElement<>(2);
+        OwnerQueueElement<Integer> element3 = new OwnerQueueElement<>(3);
+        OwnerQueueElement<Integer> element4 = new OwnerQueueElement<>(4);
 
         // when
-        queue.enqueue( element1 );
+        queue.enqueue(element1);
         // then
-        assertEquals( 1, queue.dequeue().intValue() );
+        assertEquals(1, queue.dequeue().intValue());
 
         // when
-        queue.enqueue( element2 );
-        queue.enqueue( element3 );
-        queue.enqueue( element4 );
+        queue.enqueue(element2);
+        queue.enqueue(element3);
+        queue.enqueue(element4);
         // then
-        assertEquals( 2, queue.dequeue().intValue() );
-        assertEquals( 3, queue.dequeue().intValue() );
-        assertEquals( 4, queue.dequeue().intValue() );
-        assertEquals( 4, queue.dequeue().intValue(), "should get the current element when dequeuing the current head" );
-        assertNull( queue.dequeue(), "should get null when dequeuing from a dead list" );
-        assertNull( queue.dequeue(), "should get null continuously when dequeuing from a dead list" );
+        assertEquals(2, queue.dequeue().intValue());
+        assertEquals(3, queue.dequeue().intValue());
+        assertEquals(4, queue.dequeue().intValue());
+        assertEquals(4, queue.dequeue().intValue(), "should get the current element when dequeuing the current head");
+        assertNull(queue.dequeue(), "should get null when dequeuing from a dead list");
+        assertNull(queue.dequeue(), "should get null continuously when dequeuing from a dead list");
     }
 
     @Test
-    void shouldAllowReEntrance()
-    {
-        var lock = locks.acquireNodeLock( 11, EXCLUSIVE );
-        var lock2 = locks.acquireNodeLock( 11, EXCLUSIVE );
-        var lock3 = locks.acquireNodeLock( 11, EXCLUSIVE );
+    void shouldAllowReEntrance() {
+        var lock = locks.acquireNodeLock(11, EXCLUSIVE);
+        var lock2 = locks.acquireNodeLock(11, EXCLUSIVE);
+        var lock3 = locks.acquireNodeLock(11, EXCLUSIVE);
     }
 
     @Test
-    @Timeout( 60 )
-    void shouldBlockOnLockedLock()
-    {
+    @Timeout(60)
+    void shouldBlockOnLockedLock() {
         // given
         var executor = Executors.newSingleThreadExecutor();
 
-        try
-        {
+        try {
             var threadHolder = new AtomicReference<Thread>();
-            try ( var lock = locks.acquireNodeLock( 17, EXCLUSIVE ) )
-            {
-                executor.execute( () -> {
-                    threadHolder.set( currentThread() );
-                    locks.acquireNodeLock( 17, EXCLUSIVE );
-                } );
+            try (var lock = locks.acquireNodeLock(17, EXCLUSIVE)) {
+                executor.execute(() -> {
+                    threadHolder.set(currentThread());
+                    locks.acquireNodeLock(17, EXCLUSIVE);
+                });
 
-                while ( true )
-                {
-                    if ( threadHolder.get() != null )
-                    {
-                        var blocker = getBlocker( threadHolder.get() );
-                        if ( blocker != null )
-                        {
+                while (true) {
+                    if (threadHolder.get() != null) {
+                        var blocker = getBlocker(threadHolder.get());
+                        if (blocker != null) {
                             return;
                         }
                     }
-                    parkNanos( MILLISECONDS.toNanos( 10 ) );
+                    parkNanos(MILLISECONDS.toNanos(10));
                 }
             }
-        }
-        finally
-        {
+        } finally {
             executor.shutdown();
         }
     }
 
     @Test
-    void shouldNotLeaveResidualLockStateAfterAllLocksHaveBeenReleased()
-    {
+    void shouldNotLeaveResidualLockStateAfterAllLocksHaveBeenReleased() {
         // when
-        locks.acquireNodeLock( 42, EXCLUSIVE ).release();
+        locks.acquireNodeLock(42, EXCLUSIVE).release();
 
         // then
-        assertEquals( 0, locks.lockCount() );
+        assertEquals(0, locks.lockCount());
     }
 
     @Test
-    void shouldPresentLockStateInStringRepresentationOfLock()
-    {
+    void shouldPresentLockStateInStringRepresentationOfLock() {
         // given
         Lock first;
         Lock second;
 
         // when
         var currentThread = currentThread();
-        try ( Lock lock = first = locks.acquireNodeLock( 666, EXCLUSIVE ) )
-        {
+        try (Lock lock = first = locks.acquireNodeLock(666, EXCLUSIVE)) {
             // then
-            assertEquals( "LockedNode[id=666; HELD_BY=1*" + currentThread + "]", lock.toString() );
+            assertEquals("LockedNode[id=666; HELD_BY=1*" + currentThread + "]", lock.toString());
 
             // when
-            try ( Lock inner = second = locks.acquireNodeLock( 666, EXCLUSIVE ) )
-            {
-                assertEquals( "LockedNode[id=666; HELD_BY=2*" + currentThread + "]", lock.toString() );
-                assertEquals( lock.toString(), inner.toString() );
+            try (Lock inner = second = locks.acquireNodeLock(666, EXCLUSIVE)) {
+                assertEquals("LockedNode[id=666; HELD_BY=2*" + currentThread + "]", lock.toString());
+                assertEquals(lock.toString(), inner.toString());
             }
 
             // then
-            assertEquals( "LockedNode[id=666; HELD_BY=1*" + currentThread + "]", lock.toString() );
-            assertEquals( "LockedNode[id=666; RELEASED]", second.toString() );
+            assertEquals("LockedNode[id=666; HELD_BY=1*" + currentThread + "]", lock.toString());
+            assertEquals("LockedNode[id=666; RELEASED]", second.toString());
         }
 
         // then
-        assertEquals( "LockedNode[id=666; RELEASED]", first.toString() );
-        assertEquals( "LockedNode[id=666; RELEASED]", second.toString() );
+        assertEquals("LockedNode[id=666; RELEASED]", first.toString());
+        assertEquals("LockedNode[id=666; RELEASED]", second.toString());
     }
 }

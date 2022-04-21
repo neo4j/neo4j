@@ -22,18 +22,16 @@ package org.neo4j.procedure.builtin;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.graphdb.config.Setting;
 
-public class ConfigResult
-{
+public class ConfigResult {
     public final String name;
     public final String description;
     public final String value;
     public final boolean dynamic;
 
-    ConfigResult( Setting<Object> setting, Object value )
-    {
+    ConfigResult(Setting<Object> setting, Object value) {
         this.name = setting.name();
         this.description = setting.description();
-        this.value = ((SettingImpl<Object>) setting).valueToString( value );
+        this.value = ((SettingImpl<Object>) setting).valueToString(value);
         this.dynamic = setting.dynamic();
     }
 }

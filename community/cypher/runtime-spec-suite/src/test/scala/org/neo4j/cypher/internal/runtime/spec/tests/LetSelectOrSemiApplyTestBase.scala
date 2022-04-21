@@ -26,18 +26,19 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
-abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                       runtime: CypherRuntime[CONTEXT],
-                                                                       val sizeHint: Int
-                                                                      ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("idName should only be true when RHS is non empty if expression is false") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false")
@@ -46,19 +47,19 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     val expectedValues = (0 until sizeHint).map(i => if (i % 3 == 1) Array(i, true) else Array(i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
   test("idName should always be false if rhs is empty and expression is false") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false")
@@ -67,19 +68,19 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     val expectedValues = (0 until sizeHint).map(i => Array(i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
   test("idName should always be true if rhs is nonEmpty and the expression is false") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false")
@@ -88,14 +89,14 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     val expectedValues = (0 until sizeHint).map(i => Array(i, true))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
   test("if lhs is empty, rhs should not be touched regardless the given expression") {
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false")
@@ -104,18 +105,18 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .input(variables = Seq("x"))
       .build()
 
-    //then should not throw "/ by zero"
+    // then should not throw "/ by zero"
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x", "idName").withNoRows()
   }
 
   test("rhs should not be touched if the predicate in letSelectOrSemiApply always is true") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .letSelectOrSemiApply("idName", "true")
@@ -124,18 +125,18 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .input(variables = Seq("x"))
       .build()
 
-    //then should not throw "/ by zero"
+    // then should not throw "/ by zero"
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(inputRows)
   }
 
   test("idName should be true for the row which are satisfying the expression even if the rhs is empty") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "x < 11")
@@ -144,19 +145,19 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     val expectedValues = (0 until sizeHint).map(i => if (i < 11L) Array(i, true) else Array(i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
   test("idName should be true for the one that matches and the one satisfying the expression") {
-    //given
+    // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
 
-    //when
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "x = 22")
@@ -165,7 +166,7 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .input(variables = Seq("x"))
       .build()
 
-    //then
+    // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     val expectedValues = (0 until sizeHint).map(i => if (i < 20L || i == 22L) Array(i, true) else Array(i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)

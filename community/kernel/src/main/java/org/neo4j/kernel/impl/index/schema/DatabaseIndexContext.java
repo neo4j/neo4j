@@ -25,8 +25,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.monitoring.Monitors;
 
-public class DatabaseIndexContext
-{
+public class DatabaseIndexContext {
     final PageCache pageCache;
     final CursorContextFactory contextFactory;
     final FileSystemAbstraction fileSystem;
@@ -35,9 +34,14 @@ public class DatabaseIndexContext
     final DatabaseReadOnlyChecker readOnlyChecker;
     final String databaseName;
 
-    private DatabaseIndexContext( PageCache pageCache, FileSystemAbstraction fileSystem, Monitors monitors, String monitorTag,
-                                  DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory, String databaseName )
-    {
+    private DatabaseIndexContext(
+            PageCache pageCache,
+            FileSystemAbstraction fileSystem,
+            Monitors monitors,
+            String monitorTag,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            CursorContextFactory contextFactory,
+            String databaseName) {
         this.pageCache = pageCache;
         this.fileSystem = fileSystem;
         this.monitors = monitors;
@@ -53,9 +57,12 @@ public class DatabaseIndexContext
      * @param databaseName database name
      * @return {@link Builder} to use for creating {@link DatabaseIndexContext}.
      */
-    public static Builder builder( PageCache pageCache, FileSystemAbstraction fileSystem, CursorContextFactory contextFactory, String databaseName )
-    {
-        return new Builder( pageCache, fileSystem, contextFactory, databaseName );
+    public static Builder builder(
+            PageCache pageCache,
+            FileSystemAbstraction fileSystem,
+            CursorContextFactory contextFactory,
+            String databaseName) {
+        return new Builder(pageCache, fileSystem, contextFactory, databaseName);
     }
 
     /**
@@ -64,16 +71,14 @@ public class DatabaseIndexContext
      * @return {@link Builder} to use for creating {@link DatabaseIndexContext}, pre-loaded with
      *         all fields from copy.
      */
-    public static Builder builder( DatabaseIndexContext copy )
-    {
-        return new Builder( copy.pageCache, copy.fileSystem, copy.contextFactory, copy.databaseName )
-                .withReadOnlyChecker( copy.readOnlyChecker )
-                .withMonitors( copy.monitors )
-                .withTag( copy.monitorTag );
+    public static Builder builder(DatabaseIndexContext copy) {
+        return new Builder(copy.pageCache, copy.fileSystem, copy.contextFactory, copy.databaseName)
+                .withReadOnlyChecker(copy.readOnlyChecker)
+                .withMonitors(copy.monitors)
+                .withTag(copy.monitorTag);
     }
 
-    public static class Builder
-    {
+    public static class Builder {
         private final PageCache pageCache;
         private final CursorContextFactory contextFactory;
         private final FileSystemAbstraction fileSystem;
@@ -82,8 +87,11 @@ public class DatabaseIndexContext
         private String monitorTag;
         private DatabaseReadOnlyChecker readOnlyChecker;
 
-        private Builder( PageCache pageCache, FileSystemAbstraction fileSystem, CursorContextFactory contextFactory, String databaseName )
-        {
+        private Builder(
+                PageCache pageCache,
+                FileSystemAbstraction fileSystem,
+                CursorContextFactory contextFactory,
+                String databaseName) {
             this.pageCache = pageCache;
             this.fileSystem = fileSystem;
             this.contextFactory = contextFactory;
@@ -99,8 +107,7 @@ public class DatabaseIndexContext
          * @param readOnlyChecker checks if underlying database is readonly.
          * @return {@link Builder this builder}
          */
-        public Builder withReadOnlyChecker( DatabaseReadOnlyChecker readOnlyChecker )
-        {
+        public Builder withReadOnlyChecker(DatabaseReadOnlyChecker readOnlyChecker) {
             this.readOnlyChecker = readOnlyChecker;
             return this;
         }
@@ -111,8 +118,7 @@ public class DatabaseIndexContext
          * @param monitors {@link Monitors monitors} to use.
          * @return {@link Builder this builder}
          */
-        public Builder withMonitors( Monitors monitors )
-        {
+        public Builder withMonitors(Monitors monitors) {
             this.monitors = monitors;
             return this;
         }
@@ -123,15 +129,14 @@ public class DatabaseIndexContext
          * @param monitorTag {@link String} to use as tag for monitor listeners.
          * @return {@link Builder this builder}
          */
-        public Builder withTag( String monitorTag )
-        {
+        public Builder withTag(String monitorTag) {
             this.monitorTag = monitorTag;
             return this;
         }
 
-        public DatabaseIndexContext build()
-        {
-            return new DatabaseIndexContext( pageCache, fileSystem, monitors, monitorTag, readOnlyChecker, contextFactory, databaseName );
+        public DatabaseIndexContext build() {
+            return new DatabaseIndexContext(
+                    pageCache, fileSystem, monitors, monitorTag, readOnlyChecker, contextFactory, databaseName);
         }
     }
 }

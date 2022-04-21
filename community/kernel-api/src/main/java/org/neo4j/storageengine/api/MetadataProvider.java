@@ -21,13 +21,17 @@ package org.neo4j.storageengine.api;
 
 import java.io.Closeable;
 import java.util.UUID;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Provider for metadata that describes stores properties, ids, store level implementation details
  */
-public interface MetadataProvider extends DatabaseIdStore, TransactionIdStore, LogVersionRepository, StoreIdProvider, KernelVersionRepository, Closeable
-{
-    void regenerateMetadata( LegacyStoreId storeId, UUID externalStoreUUID, CursorContext cursorContext );
+public interface MetadataProvider
+        extends DatabaseIdStore,
+                TransactionIdStore,
+                LogVersionRepository,
+                StoreIdProvider,
+                KernelVersionRepository,
+                Closeable {
+    void regenerateMetadata(LegacyStoreId storeId, UUID externalStoreUUID, CursorContext cursorContext);
 }

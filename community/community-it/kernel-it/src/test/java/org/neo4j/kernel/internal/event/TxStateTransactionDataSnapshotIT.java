@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.internal.event;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 import java.util.List;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
@@ -37,324 +40,289 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.RelationshipType.withName;
-
 @DbmsExtension
-class TxStateTransactionDataSnapshotIT
-{
+class TxStateTransactionDataSnapshotIT {
     @Inject
     private GraphDatabaseAPI database;
+
     private long emptySnapshotSize;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         emptySnapshotSize = countEmptySnapshotSize();
     }
 
     @Test
-    void countRemovedNodeWithPropertiesInTransactionStateSnapshot()
-    {
+    void countRemovedNodeWithPropertiesInTransactionStateSnapshot() {
         long nodeIdToDelete;
-        int attachedPropertySize = (int) ByteUnit.mebiBytes( 1 );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var node = transaction.createNode( label( "label1" ), label( "label2" ) );
-            node.setProperty( "a", randomAscii( attachedPropertySize ) );
-            node.setProperty( "b", randomAscii( attachedPropertySize ) );
+        int attachedPropertySize = (int) ByteUnit.mebiBytes(1);
+        try (Transaction transaction = database.beginTx()) {
+            var node = transaction.createNode(label("label1"), label("label2"));
+            node.setProperty("a", randomAscii(attachedPropertySize));
+            node.setProperty("b", randomAscii(attachedPropertySize));
             nodeIdToDelete = node.getId();
             transaction.commit();
         }
 
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.getNodeById( nodeIdToDelete ).delete();
+        try (Transaction transaction = database.beginTx()) {
+            transaction.getNodeById(nodeIdToDelete).delete();
 
-            var kernelTransaction = getKernelTransaction( transaction );
+            var kernelTransaction = getKernelTransaction(transaction);
             var transactionState = kernelTransaction.txState();
             final MemoryTracker memoryTracker = kernelTransaction.memoryTracker();
 
             // reset to count only snapshot memory
-            var trackingData = resetMemoryTracker( memoryTracker );
+            var trackingData = resetMemoryTracker(memoryTracker);
 
-            try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )
-            {
-                assertThat( memoryTracker.usedNativeMemory() ).isZero();
-                assertThat( memoryTracker.estimatedHeapMemory() ).isGreaterThanOrEqualTo( emptySnapshotSize +
-                        (2 * attachedPropertySize) +
-                        (2 * NodePropertyEntryView.SHALLOW_SIZE) +
-                        (2 * LabelEntryView.SHALLOW_SIZE) );
-            }
-            finally
-            {
-                restoreMemoryTracker( memoryTracker, trackingData );
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                assertThat(memoryTracker.usedNativeMemory()).isZero();
+                assertThat(memoryTracker.estimatedHeapMemory())
+                        .isGreaterThanOrEqualTo(emptySnapshotSize
+                                + (2 * attachedPropertySize)
+                                + (2 * NodePropertyEntryView.SHALLOW_SIZE)
+                                + (2 * LabelEntryView.SHALLOW_SIZE));
+            } finally {
+                restoreMemoryTracker(memoryTracker, trackingData);
             }
         }
     }
 
     @Test
-    void countRemovedRelationshipsWithPropertiesInTransactionStateSnapshot()
-    {
+    void countRemovedRelationshipsWithPropertiesInTransactionStateSnapshot() {
         List<Long> relationshipsIdToDelete;
-        int attachedPropertySize = (int) ByteUnit.mebiBytes( 1 );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var start = transaction.createNode( );
-            var end = transaction.createNode( );
-            var relationship1 = start.createRelationshipTo( end, withName( "type1" ) );
-            var relationship2 = start.createRelationshipTo( end, withName( "type2" ) );
+        int attachedPropertySize = (int) ByteUnit.mebiBytes(1);
+        try (Transaction transaction = database.beginTx()) {
+            var start = transaction.createNode();
+            var end = transaction.createNode();
+            var relationship1 = start.createRelationshipTo(end, withName("type1"));
+            var relationship2 = start.createRelationshipTo(end, withName("type2"));
 
-            relationship1.setProperty( "a", randomAscii( attachedPropertySize ) );
-            relationship2.setProperty( "a", randomAscii( attachedPropertySize ) );
-            relationship2.setProperty( "b", randomAscii( attachedPropertySize ) );
+            relationship1.setProperty("a", randomAscii(attachedPropertySize));
+            relationship2.setProperty("a", randomAscii(attachedPropertySize));
+            relationship2.setProperty("b", randomAscii(attachedPropertySize));
 
-            relationshipsIdToDelete = List.of( relationship1.getId(), relationship2.getId() );
+            relationshipsIdToDelete = List.of(relationship1.getId(), relationship2.getId());
             transaction.commit();
         }
 
-        assertThat( relationshipsIdToDelete ).hasSize( 2 );
+        assertThat(relationshipsIdToDelete).hasSize(2);
 
-        try ( Transaction transaction = database.beginTx() )
-        {
-            relationshipsIdToDelete.forEach( id -> transaction.getRelationshipById( id ).delete() );
+        try (Transaction transaction = database.beginTx()) {
+            relationshipsIdToDelete.forEach(
+                    id -> transaction.getRelationshipById(id).delete());
 
-            var kernelTransaction = getKernelTransaction( transaction );
+            var kernelTransaction = getKernelTransaction(transaction);
             var transactionState = kernelTransaction.txState();
             final MemoryTracker memoryTracker = kernelTransaction.memoryTracker();
 
             // reset to count only snapshot memory
-            var trackingData = resetMemoryTracker( memoryTracker );
+            var trackingData = resetMemoryTracker(memoryTracker);
 
-            try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )
-            {
-                assertThat( memoryTracker.usedNativeMemory() ).isZero();
-                assertThat( memoryTracker.estimatedHeapMemory() ).isGreaterThanOrEqualTo( emptySnapshotSize +
-                        (3 * attachedPropertySize) +
-                        (2 * RelationshipPropertyEntryView.SHALLOW_SIZE) );
-            }
-            finally
-            {
-                restoreMemoryTracker( memoryTracker, trackingData );
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                assertThat(memoryTracker.usedNativeMemory()).isZero();
+                assertThat(memoryTracker.estimatedHeapMemory())
+                        .isGreaterThanOrEqualTo(emptySnapshotSize
+                                + (3 * attachedPropertySize)
+                                + (2 * RelationshipPropertyEntryView.SHALLOW_SIZE));
+            } finally {
+                restoreMemoryTracker(memoryTracker, trackingData);
             }
         }
     }
 
     @Test
-    void countChangedNodeInTransactionStateSnapshot()
-    {
+    void countChangedNodeInTransactionStateSnapshot() {
         long nodeIdToChange;
-        int attachedPropertySize = (int) ByteUnit.mebiBytes( 1 );
+        int attachedPropertySize = (int) ByteUnit.mebiBytes(1);
         int doublePropertySize = attachedPropertySize * 2;
-        Label label1 = label( "label1" );
-        Label label2 = label( "label2" );
+        Label label1 = label("label1");
+        Label label2 = label("label2");
         final String property = "a";
         final String doubleProperty = "b";
 
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var node = transaction.createNode( label1, label2 );
-            node.setProperty( property, randomAscii( attachedPropertySize ) );
-            node.setProperty( doubleProperty, randomAscii( doublePropertySize ) );
+        try (Transaction transaction = database.beginTx()) {
+            var node = transaction.createNode(label1, label2);
+            node.setProperty(property, randomAscii(attachedPropertySize));
+            node.setProperty(doubleProperty, randomAscii(doublePropertySize));
             nodeIdToChange = node.getId();
             transaction.commit();
         }
 
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var node = transaction.getNodeById( nodeIdToChange );
-            node.removeLabel( label1 );
-            node.setProperty( doubleProperty, randomAscii( attachedPropertySize ) );
-            node.removeProperty( property );
-            node.addLabel( Label.label( "newLabel" ) );
+        try (Transaction transaction = database.beginTx()) {
+            var node = transaction.getNodeById(nodeIdToChange);
+            node.removeLabel(label1);
+            node.setProperty(doubleProperty, randomAscii(attachedPropertySize));
+            node.removeProperty(property);
+            node.addLabel(Label.label("newLabel"));
 
-            var kernelTransaction = getKernelTransaction( transaction );
+            var kernelTransaction = getKernelTransaction(transaction);
             var transactionState = kernelTransaction.txState();
             final MemoryTracker memoryTracker = kernelTransaction.memoryTracker();
 
             // reset to count only snapshot memory
-            var trackingData = resetMemoryTracker( memoryTracker );
+            var trackingData = resetMemoryTracker(memoryTracker);
 
-            try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )
-            {
-                assertThat( memoryTracker.usedNativeMemory() ).isZero();
-                assertThat( memoryTracker.estimatedHeapMemory() ).isGreaterThanOrEqualTo( emptySnapshotSize +
-                        (attachedPropertySize + doublePropertySize) +
-                        (2 * NodePropertyEntryView.SHALLOW_SIZE) +
-                        (2 * LabelEntryView.SHALLOW_SIZE) );
-            }
-            finally
-            {
-                restoreMemoryTracker( memoryTracker, trackingData );
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                assertThat(memoryTracker.usedNativeMemory()).isZero();
+                assertThat(memoryTracker.estimatedHeapMemory())
+                        .isGreaterThanOrEqualTo(emptySnapshotSize
+                                + (attachedPropertySize + doublePropertySize)
+                                + (2 * NodePropertyEntryView.SHALLOW_SIZE)
+                                + (2 * LabelEntryView.SHALLOW_SIZE));
+            } finally {
+                restoreMemoryTracker(memoryTracker, trackingData);
             }
         }
     }
 
     @Test
-    void countChangedRelationshipInTransactionStateSnapshot()
-    {
+    void countChangedRelationshipInTransactionStateSnapshot() {
         long relationshipIdToChange;
-        int attachedPropertySize = (int) ByteUnit.mebiBytes( 1 );
+        int attachedPropertySize = (int) ByteUnit.mebiBytes(1);
         int doublePropertySize = attachedPropertySize * 2;
         final String property = "a";
         final String doubleProperty = "b";
 
-        try ( Transaction transaction = database.beginTx() )
-        {
+        try (Transaction transaction = database.beginTx()) {
             var start = transaction.createNode();
             var end = transaction.createNode();
-            var relationship = start.createRelationshipTo( end, withName( "relType" ) );
-            relationship.setProperty( property, randomAscii( attachedPropertySize ) );
-            relationship.setProperty( doubleProperty, randomAscii( doublePropertySize ) );
+            var relationship = start.createRelationshipTo(end, withName("relType"));
+            relationship.setProperty(property, randomAscii(attachedPropertySize));
+            relationship.setProperty(doubleProperty, randomAscii(doublePropertySize));
             relationshipIdToChange = relationship.getId();
             transaction.commit();
         }
 
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var relationship = transaction.getRelationshipById( relationshipIdToChange );
-            relationship.setProperty( doubleProperty, randomAscii( attachedPropertySize ) );
-            relationship.removeProperty( property );
+        try (Transaction transaction = database.beginTx()) {
+            var relationship = transaction.getRelationshipById(relationshipIdToChange);
+            relationship.setProperty(doubleProperty, randomAscii(attachedPropertySize));
+            relationship.removeProperty(property);
 
-            var kernelTransaction = getKernelTransaction( transaction );
+            var kernelTransaction = getKernelTransaction(transaction);
             var transactionState = kernelTransaction.txState();
             final MemoryTracker memoryTracker = kernelTransaction.memoryTracker();
 
             // reset to count only snapshot memory
-            var trackingData = resetMemoryTracker( memoryTracker );
+            var trackingData = resetMemoryTracker(memoryTracker);
 
-            try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )
-            {
-                assertThat( memoryTracker.usedNativeMemory() ).isZero();
-                assertThat( memoryTracker.estimatedHeapMemory() ).isGreaterThanOrEqualTo( emptySnapshotSize +
-                        (attachedPropertySize + doublePropertySize) +
-                        (2 * RelationshipPropertyEntryView.SHALLOW_SIZE) );
-            }
-            finally
-            {
-                restoreMemoryTracker( memoryTracker, trackingData );
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                assertThat(memoryTracker.usedNativeMemory()).isZero();
+                assertThat(memoryTracker.estimatedHeapMemory())
+                        .isGreaterThanOrEqualTo(emptySnapshotSize
+                                + (attachedPropertySize + doublePropertySize)
+                                + (2 * RelationshipPropertyEntryView.SHALLOW_SIZE));
+            } finally {
+                restoreMemoryTracker(memoryTracker, trackingData);
             }
         }
     }
 
     @Test
-    void noPageCacheAccessOnEmptyTransactionSnapshot()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var kernelTransaction = getKernelTransaction( transaction );
+    void noPageCacheAccessOnEmptyTransactionSnapshot() {
+        try (Transaction transaction = database.beginTx()) {
+            var kernelTransaction = getKernelTransaction(transaction);
             var transactionState = kernelTransaction.txState();
             var cursorContext = kernelTransaction.cursorContext();
-            try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )
-            {
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
                 // empty
             }
-            assertZeroTracer( cursorContext );
+            assertZeroTracer(cursorContext);
         }
     }
 
     @Test
-    void tracePageCacheAccessOnTransactionSnapshotCreation()
-    {
+    void tracePageCacheAccessOnTransactionSnapshotCreation() {
         long nodeId;
         long relationshipId;
-        try ( Transaction transaction = database.beginTx() )
-        {
+        try (Transaction transaction = database.beginTx()) {
             var node1 = transaction.createNode();
             var node2 = transaction.createNode();
-            var relationship = node1.createRelationshipTo( node2, withName( "marker" ) );
-            node1.setProperty( "foo", "bar" );
+            var relationship = node1.createRelationshipTo(node2, withName("marker"));
+            node1.setProperty("foo", "bar");
             nodeId = node1.getId();
             relationshipId = relationship.getId();
             transaction.commit();
         }
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.getNodeById( nodeId ).delete();
-            transaction.getRelationshipById( relationshipId ).delete();
+        try (Transaction transaction = database.beginTx()) {
+            transaction.getNodeById(nodeId).delete();
+            transaction.getRelationshipById(relationshipId).delete();
 
-            var kernelTransaction = getKernelTransaction( transaction );
+            var kernelTransaction = getKernelTransaction(transaction);
             var transactionState = kernelTransaction.txState();
             var cursorContext = kernelTransaction.cursorContext();
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );
+            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck(true);
             cursorTracer.reportEvents();
 
-            try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )
-            {
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
                 // no work for snapshot
             }
-            assertThat( cursorTracer.pins() ).isEqualTo( 3 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 3 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
+            assertThat(cursorTracer.pins()).isEqualTo(3);
+            assertThat(cursorTracer.hits()).isEqualTo(3);
+            assertThat(cursorTracer.unpins()).isEqualTo(3);
         }
     }
 
-    private static KernelTransactionImplementation getKernelTransaction( Transaction transaction )
-    {
+    private static KernelTransactionImplementation getKernelTransaction(Transaction transaction) {
         return (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
     }
 
-    private static void assertZeroTracer( CursorContext cursorContext )
-    {
+    private static void assertZeroTracer(CursorContext cursorContext) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.hits() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat(cursorTracer.pins()).isZero();
+        assertThat(cursorTracer.hits()).isZero();
+        assertThat(cursorTracer.unpins()).isZero();
     }
 
-    private long countEmptySnapshotSize()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var kernelTransaction = getKernelTransaction( transaction );
+    private long countEmptySnapshotSize() {
+        try (Transaction transaction = database.beginTx()) {
+            var kernelTransaction = getKernelTransaction(transaction);
             var transactionState = kernelTransaction.txState();
             final MemoryTracker memoryTracker = kernelTransaction.memoryTracker();
 
             // reset to count only snapshot memory
-            resetMemoryTracker( memoryTracker );
+            resetMemoryTracker(memoryTracker);
 
-            try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )
-            {
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
                 return memoryTracker.estimatedHeapMemory();
             }
         }
     }
 
-    private static MemoryTrackingData resetMemoryTracker( MemoryTracker memoryTracker )
-    {
-        var trackingData = new MemoryTrackingData( memoryTracker.estimatedHeapMemory(), memoryTracker.usedNativeMemory() );
-        memoryTracker.releaseHeap( trackingData.getHeapUsage() );
-        memoryTracker.releaseNative( trackingData.getNativeUsage() );
+    private static MemoryTrackingData resetMemoryTracker(MemoryTracker memoryTracker) {
+        var trackingData =
+                new MemoryTrackingData(memoryTracker.estimatedHeapMemory(), memoryTracker.usedNativeMemory());
+        memoryTracker.releaseHeap(trackingData.getHeapUsage());
+        memoryTracker.releaseNative(trackingData.getNativeUsage());
         return trackingData;
     }
 
-    private static void restoreMemoryTracker( MemoryTracker memoryTracker, MemoryTrackingData restoreData )
-    {
-        memoryTracker.allocateHeap( restoreData.getHeapUsage() );
-        memoryTracker.allocateNative( restoreData.getNativeUsage() );
+    private static void restoreMemoryTracker(MemoryTracker memoryTracker, MemoryTrackingData restoreData) {
+        memoryTracker.allocateHeap(restoreData.getHeapUsage());
+        memoryTracker.allocateNative(restoreData.getNativeUsage());
     }
 
-    private static class MemoryTrackingData
-    {
+    private static class MemoryTrackingData {
         private final long heapUsage;
         private final long nativeUsage;
 
-        MemoryTrackingData( long heapUsage, long nativeUsage )
-        {
+        MemoryTrackingData(long heapUsage, long nativeUsage) {
             this.heapUsage = heapUsage;
             this.nativeUsage = nativeUsage;
         }
 
-        public long getHeapUsage()
-        {
+        public long getHeapUsage() {
             return heapUsage;
         }
 
-        public long getNativeUsage()
-        {
+        public long getNativeUsage() {
             return nativeUsage;
         }
     }

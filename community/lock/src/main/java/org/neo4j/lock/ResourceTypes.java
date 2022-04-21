@@ -25,44 +25,38 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 /**
  * Generic Locking types. See storage engine specific resource types for details
  */
-public enum ResourceTypes implements ResourceType
-{
-    NODE( 0 ),
-    RELATIONSHIP( 1 ),
-    INDEX_ENTRY( 2 ),
-    LABEL( 3 ),
-    RELATIONSHIP_TYPE( 4 ),
-    SCHEMA_NAME( 5 ),
-    RELATIONSHIP_DELETE( 6 ),
-    NODE_RELATIONSHIP_GROUP_DELETE( 7 ),
-    DEGREES( 8 ),
-    RELATIONSHIP_GROUP( 9 );
+public enum ResourceTypes implements ResourceType {
+    NODE(0),
+    RELATIONSHIP(1),
+    INDEX_ENTRY(2),
+    LABEL(3),
+    RELATIONSHIP_TYPE(4),
+    SCHEMA_NAME(5),
+    RELATIONSHIP_DELETE(6),
+    NODE_RELATIONSHIP_GROUP_DELETE(7),
+    DEGREES(8),
+    RELATIONSHIP_GROUP(9);
 
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
 
-    static
-    {
-        for ( ResourceTypes resourceTypes : ResourceTypes.values() )
-        {
-            idToType.put( resourceTypes.typeId, resourceTypes );
+    static {
+        for (ResourceTypes resourceTypes : ResourceTypes.values()) {
+            idToType.put(resourceTypes.typeId, resourceTypes);
         }
     }
 
     private final int typeId;
 
-    ResourceTypes( int typeId )
-    {
+    ResourceTypes(int typeId) {
         this.typeId = typeId;
     }
 
     @Override
-    public int typeId()
-    {
+    public int typeId() {
         return typeId;
     }
 
-    public static ResourceType fromId( int typeId )
-    {
-        return idToType.get( typeId );
+    public static ResourceType fromId(int typeId) {
+        return idToType.get(typeId);
     }
 }

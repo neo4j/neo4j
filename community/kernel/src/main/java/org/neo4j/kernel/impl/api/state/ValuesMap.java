@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Optional;
 import org.eclipse.collections.api.LazyIterable;
 import org.eclipse.collections.api.LazyLongIterable;
 import org.eclipse.collections.api.LongIterable;
@@ -90,987 +99,843 @@ import org.eclipse.collections.impl.lazy.LazyIterableAdapter;
 import org.eclipse.collections.impl.map.mutable.primitive.SynchronizedLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.UnmodifiableLongObjectMap;
 import org.eclipse.collections.impl.tuple.primitive.PrimitiveTuples;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Optional;
-
 import org.neo4j.values.storable.Value;
 
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-
-public class ValuesMap implements MutableLongObjectMap<Value>
-{
+public class ValuesMap implements MutableLongObjectMap<Value> {
     private static final long NONE = -1L;
     private final MutableLongLongMap refs;
     private final ValuesContainer valuesContainer;
 
-    public ValuesMap( MutableLongLongMap refs, ValuesContainer valuesContainer )
-    {
+    public ValuesMap(MutableLongLongMap refs, ValuesContainer valuesContainer) {
         this.valuesContainer = valuesContainer;
         this.refs = refs;
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return refs.size();
     }
 
     @Override
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return refs.isEmpty();
     }
 
     @Override
-    public Value getFirst()
-    {
+    public Value getFirst() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Value getLast()
-    {
+    public Value getLast() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean contains( Object object )
-    {
+    public boolean contains(Object object) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean containsAllIterable( Iterable<?> source )
-    {
+    public boolean containsAllIterable(Iterable<?> source) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean containsAll( Collection<?> source )
-    {
+    public boolean containsAll(Collection<?> source) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean containsAllArguments( Object... elements )
-    {
+    public boolean containsAllArguments(Object... elements) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public RichIterable<LongObjectPair<Value>> keyValuesView()
-    {
+    public RichIterable<LongObjectPair<Value>> keyValuesView() {
         return new KeyValuesView();
     }
 
     @Override
-    public Value put( long key, Value value )
-    {
-        requireNonNull( value, "Cannot put null values" );
-        final Value prev = get( key );
-        final long ref = valuesContainer.add( value );
-        refs.put( key, ref );
+    public Value put(long key, Value value) {
+        requireNonNull(value, "Cannot put null values");
+        final Value prev = get(key);
+        final long ref = valuesContainer.add(value);
+        refs.put(key, ref);
         return prev;
     }
 
     @Override
-    public void putAll( LongObjectMap<? extends Value> map )
-    {
-        map.forEachKeyValue( this::put );
+    public void putAll(LongObjectMap<? extends Value> map) {
+        map.forEachKeyValue(this::put);
     }
 
     @Override
-    public Value get( long key )
-    {
-        final long ref = refs.getIfAbsent( key, NONE );
-        return ref == NONE ? null : valuesContainer.get( ref );
+    public Value get(long key) {
+        final long ref = refs.getIfAbsent(key, NONE);
+        return ref == NONE ? null : valuesContainer.get(ref);
     }
 
     @Override
-    public Value getIfAbsentPut( long key, Value value )
-    {
-        final Value existing = get( key );
-        if ( existing != null )
-        {
+    public Value getIfAbsentPut(long key, Value value) {
+        final Value existing = get(key);
+        if (existing != null) {
             return existing;
         }
-        put( key, value );
+        put(key, value);
         return value;
     }
 
     @Override
-    public Value getIfAbsentPut( long key, Function0<? extends Value> supplier )
-    {
-        final Value existing = get( key );
-        if ( existing != null )
-        {
+    public Value getIfAbsentPut(long key, Function0<? extends Value> supplier) {
+        final Value existing = get(key);
+        if (existing != null) {
             return existing;
         }
         final Value value = supplier.value();
-        put( key, value );
+        put(key, value);
         return value;
     }
 
     @Override
-    public Value getIfAbsentPutWithKey( long key, LongToObjectFunction<? extends Value> function )
-    {
-        final Value existing = get( key );
-        if ( existing != null )
-        {
+    public Value getIfAbsentPutWithKey(long key, LongToObjectFunction<? extends Value> function) {
+        final Value existing = get(key);
+        if (existing != null) {
             return existing;
         }
-        final Value value = function.valueOf( key );
-        put( key, value );
+        final Value value = function.valueOf(key);
+        put(key, value);
         return value;
     }
 
     @Override
-    public <P> Value getIfAbsentPutWith( long key, Function<? super P, ? extends Value> function, P parameter )
-    {
-        final Value existing = get( key );
-        if ( existing != null )
-        {
+    public <P> Value getIfAbsentPutWith(long key, Function<? super P, ? extends Value> function, P parameter) {
+        final Value existing = get(key);
+        if (existing != null) {
             return existing;
         }
-        final Value value = function.valueOf( parameter );
-        put( key, value );
+        final Value value = function.valueOf(parameter);
+        put(key, value);
         return value;
     }
 
     @Override
-    public Value updateValue( long key, Function0<? extends Value> factory, Function<? super Value, ? extends Value> function )
-    {
+    public Value updateValue(
+            long key, Function0<? extends Value> factory, Function<? super Value, ? extends Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> Value updateValueWith( long key, Function0<? extends Value> factory, Function2<? super Value, ? super P, ? extends Value> function, P parameter )
-    {
+    public <P> Value updateValueWith(
+            long key,
+            Function0<? extends Value> factory,
+            Function2<? super Value, ? super P, ? extends Value> function,
+            P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableObjectLongMap<Value> flipUniqueValues()
-    {
+    public MutableObjectLongMap<Value> flipUniqueValues() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableLongObjectMap<Value> tap( Procedure<? super Value> procedure )
-    {
-        forEachValue( procedure );
+    public MutableLongObjectMap<Value> tap(Procedure<? super Value> procedure) {
+        forEachValue(procedure);
         return this;
     }
 
     @Override
-    public void each( Procedure<? super Value> procedure )
-    {
-        refs.forEachKey( ref ->
-        {
-            final Value value = valuesContainer.get( ref );
-            procedure.value( value );
-        } );
+    public void each(Procedure<? super Value> procedure) {
+        refs.forEachKey(ref -> {
+            final Value value = valuesContainer.get(ref);
+            procedure.value(value);
+        });
     }
 
     @Override
-    public MutableLongObjectMap<Value> select( LongObjectPredicate<? super Value> predicate )
-    {
+    public MutableLongObjectMap<Value> select(LongObjectPredicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableLongObjectMap<Value> reject( LongObjectPredicate<? super Value> predicate )
-    {
+    public MutableLongObjectMap<Value> reject(LongObjectPredicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ImmutableLongObjectMap<Value> toImmutable()
-    {
+    public ImmutableLongObjectMap<Value> toImmutable() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableLongSet keySet()
-    {
+    public MutableLongSet keySet() {
         return refs.keySet().asUnmodifiable();
     }
 
     @Override
-    public LazyLongIterable keysView()
-    {
+    public LazyLongIterable keysView() {
         return refs.keysView();
     }
 
     @Override
-    public ValuesMap withKeyValue( long key, Value value )
-    {
-        put( key, value );
+    public ValuesMap withKeyValue(long key, Value value) {
+        put(key, value);
         return this;
     }
 
     @Override
-    public ValuesMap withoutKey( long key )
-    {
-        removeKey( key );
+    public ValuesMap withoutKey(long key) {
+        removeKey(key);
         return this;
     }
 
     @Override
-    public ValuesMap withoutAllKeys( LongIterable keys )
-    {
-        keys.forEach( this::removeKey );
+    public ValuesMap withoutAllKeys(LongIterable keys) {
+        keys.forEach(this::removeKey);
         return this;
     }
 
     @Override
-    public MutableLongObjectMap<Value> asUnmodifiable()
-    {
-        return new UnmodifiableLongObjectMap<>( this );
+    public MutableLongObjectMap<Value> asUnmodifiable() {
+        return new UnmodifiableLongObjectMap<>(this);
     }
 
     @Override
-    public MutableLongObjectMap<Value> asSynchronized()
-    {
-        return new SynchronizedLongObjectMap<>( this );
+    public MutableLongObjectMap<Value> asSynchronized() {
+        return new SynchronizedLongObjectMap<>(this);
     }
 
     @Override
-    public Value getIfAbsent( long key, Function0<? extends Value> ifAbsent )
-    {
-        final Value existing = get( key );
-        if ( existing != null )
-        {
+    public Value getIfAbsent(long key, Function0<? extends Value> ifAbsent) {
+        final Value existing = get(key);
+        if (existing != null) {
             return existing;
         }
         return ifAbsent.value();
     }
 
     @Override
-    public boolean containsKey( long key )
-    {
-        return refs.containsKey( key );
+    public boolean containsKey(long key) {
+        return refs.containsKey(key);
     }
 
     @Override
-    public Value removeKey( long key )
-    {
-        final long ref = refs.removeKeyIfAbsent( key, NONE );
-        return ref == NONE ? null : valuesContainer.remove( ref );
+    public Value removeKey(long key) {
+        final long ref = refs.removeKeyIfAbsent(key, NONE);
+        return ref == NONE ? null : valuesContainer.remove(ref);
     }
 
     @Override
-    public Value remove( long key )
-    {
-        return removeKey( key );
+    public Value remove(long key) {
+        return removeKey(key);
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         refs.clear();
     }
 
     @Override
-    public <K, VV> MutableMap<K, VV> aggregateInPlaceBy( Function<? super Value, ? extends K> groupBy, Function0<? extends VV> zeroValueFactory,
-            Procedure2<? super VV, ? super Value> mutatingAggregator )
-    {
+    public <K, VV> MutableMap<K, VV> aggregateInPlaceBy(
+            Function<? super Value, ? extends K> groupBy,
+            Function0<? extends VV> zeroValueFactory,
+            Procedure2<? super VV, ? super Value> mutatingAggregator) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <K, VV> MutableMap<K, VV> aggregateBy( Function<? super Value, ? extends K> groupBy, Function0<? extends VV> zeroValueFactory,
-            Function2<? super VV, ? super Value, ? extends VV> nonMutatingAggregator )
-    {
+    public <K, VV> MutableMap<K, VV> aggregateBy(
+            Function<? super Value, ? extends K> groupBy,
+            Function0<? extends VV> zeroValueFactory,
+            Function2<? super VV, ? super Value, ? extends VV> nonMutatingAggregator) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableBagMultimap<VV, Value> groupByEach( Function<? super Value, ? extends Iterable<VV>> function )
-    {
+    public <VV> MutableBagMultimap<VV, Value> groupByEach(Function<? super Value, ? extends Iterable<VV>> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V, R extends MutableMultimap<V, Value>> R groupByEach( Function<? super Value, ? extends Iterable<V>> function, R target )
-    {
+    public <V, R extends MutableMultimap<V, Value>> R groupByEach(
+            Function<? super Value, ? extends Iterable<V>> function, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableBagMultimap<VV, Value> groupBy( Function<? super Value, ? extends VV> function )
-    {
+    public <VV> MutableBagMultimap<VV, Value> groupBy(Function<? super Value, ? extends VV> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V, R extends MutableMultimap<V, Value>> R groupBy( Function<? super Value, ? extends V> function, R target )
-    {
+    public <V, R extends MutableMultimap<V, Value>> R groupBy(Function<? super Value, ? extends V> function, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableMap<VV, Value> groupByUniqueKey( Function<? super Value, ? extends VV> function )
-    {
+    public <VV> MutableMap<VV, Value> groupByUniqueKey(Function<? super Value, ? extends VV> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V, R extends MutableMapIterable<V,Value>> R groupByUniqueKey( Function<? super Value,? extends V> function, R target )
-    {
+    public <V, R extends MutableMapIterable<V, Value>> R groupByUniqueKey(
+            Function<? super Value, ? extends V> function, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableBag<VV> collectIf( Predicate<? super Value> predicate, Function<? super Value, ? extends VV> function )
-    {
+    public <VV> MutableBag<VV> collectIf(
+            Predicate<? super Value> predicate, Function<? super Value, ? extends VV> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V, R extends Collection<V>> R collectIf( Predicate<? super Value> predicate, Function<? super Value, ? extends V> function, R target )
-    {
+    public <V, R extends Collection<V>> R collectIf(
+            Predicate<? super Value> predicate, Function<? super Value, ? extends V> function, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableBag<VV> collect( Function<? super Value, ? extends VV> function )
-    {
+    public <VV> MutableBag<VV> collect(Function<? super Value, ? extends VV> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V, R extends Collection<V>> R collect( Function<? super Value, ? extends V> function, R target )
-    {
+    public <V, R extends Collection<V>> R collect(Function<? super Value, ? extends V> function, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableBooleanBag collectBoolean( BooleanFunction<? super Value> booleanFunction )
-    {
+    public MutableBooleanBag collectBoolean(BooleanFunction<? super Value> booleanFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends MutableBooleanCollection> R collectBoolean( BooleanFunction<? super Value> booleanFunction, R target )
-    {
+    public <R extends MutableBooleanCollection> R collectBoolean(
+            BooleanFunction<? super Value> booleanFunction, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableByteBag collectByte( ByteFunction<? super Value> byteFunction )
-    {
+    public MutableByteBag collectByte(ByteFunction<? super Value> byteFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends MutableByteCollection> R collectByte( ByteFunction<? super Value> byteFunction, R target )
-    {
+    public <R extends MutableByteCollection> R collectByte(ByteFunction<? super Value> byteFunction, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableCharBag collectChar( CharFunction<? super Value> charFunction )
-    {
+    public MutableCharBag collectChar(CharFunction<? super Value> charFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends MutableCharCollection> R collectChar( CharFunction<? super Value> charFunction, R target )
-    {
+    public <R extends MutableCharCollection> R collectChar(CharFunction<? super Value> charFunction, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableDoubleBag collectDouble( DoubleFunction<? super Value> doubleFunction )
-    {
+    public MutableDoubleBag collectDouble(DoubleFunction<? super Value> doubleFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends MutableDoubleCollection> R collectDouble( DoubleFunction<? super Value> doubleFunction, R target )
-    {
+    public <R extends MutableDoubleCollection> R collectDouble(DoubleFunction<? super Value> doubleFunction, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableFloatBag collectFloat( FloatFunction<? super Value> floatFunction )
-    {
+    public MutableFloatBag collectFloat(FloatFunction<? super Value> floatFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends MutableFloatCollection> R collectFloat( FloatFunction<? super Value> floatFunction, R target )
-    {
+    public <R extends MutableFloatCollection> R collectFloat(FloatFunction<? super Value> floatFunction, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableIntBag collectInt( IntFunction<? super Value> intFunction )
-    {
+    public MutableIntBag collectInt(IntFunction<? super Value> intFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends MutableIntCollection> R collectInt( IntFunction<? super Value> intFunction, R target )
-    {
+    public <R extends MutableIntCollection> R collectInt(IntFunction<? super Value> intFunction, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableLongBag collectLong( LongFunction<? super Value> longFunction )
-    {
+    public MutableLongBag collectLong(LongFunction<? super Value> longFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends MutableLongCollection> R collectLong( LongFunction<? super Value> longFunction, R target )
-    {
+    public <R extends MutableLongCollection> R collectLong(LongFunction<? super Value> longFunction, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableShortBag collectShort( ShortFunction<? super Value> shortFunction )
-    {
+    public MutableShortBag collectShort(ShortFunction<? super Value> shortFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends MutableShortCollection> R collectShort( ShortFunction<? super Value> shortFunction, R target )
-    {
+    public <R extends MutableShortCollection> R collectShort(ShortFunction<? super Value> shortFunction, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P, VV> MutableBag<VV> collectWith( Function2<? super Value, ? super P, ? extends VV> function, P parameter )
-    {
+    public <P, VV> MutableBag<VV> collectWith(Function2<? super Value, ? super P, ? extends VV> function, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P, V, R extends Collection<V>> R collectWith( Function2<? super Value, ? super P, ? extends V> function, P parameter, R targetCollection )
-    {
+    public <P, V, R extends Collection<V>> R collectWith(
+            Function2<? super Value, ? super P, ? extends V> function, P parameter, R targetCollection) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableBag<VV> flatCollect( Function<? super Value, ? extends Iterable<VV>> function )
-    {
+    public <VV> MutableBag<VV> flatCollect(Function<? super Value, ? extends Iterable<VV>> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V, R extends Collection<V>> R flatCollect( Function<? super Value, ? extends Iterable<V>> function, R target )
-    {
+    public <V, R extends Collection<V>> R flatCollect(
+            Function<? super Value, ? extends Iterable<V>> function, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Value detect( Predicate<? super Value> predicate )
-    {
+    public Value detect(Predicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> Value detectWith( Predicate2<? super Value, ? super P> predicate, P parameter )
-    {
+    public <P> Value detectWith(Predicate2<? super Value, ? super P> predicate, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Optional<Value> detectOptional( Predicate<? super Value> predicate )
-    {
+    public Optional<Value> detectOptional(Predicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> Optional<Value> detectWithOptional( Predicate2<? super Value, ? super P> predicate, P parameter )
-    {
+    public <P> Optional<Value> detectWithOptional(Predicate2<? super Value, ? super P> predicate, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> Value detectWithIfNone( Predicate2<? super Value, ? super P> predicate, P parameter, Function0<? extends Value> function )
-    {
+    public <P> Value detectWithIfNone(
+            Predicate2<? super Value, ? super P> predicate, P parameter, Function0<? extends Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int count( Predicate<? super Value> predicate )
-    {
+    public int count(Predicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> int countWith( Predicate2<? super Value, ? super P> predicate, P parameter )
-    {
+    public <P> int countWith(Predicate2<? super Value, ? super P> predicate, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean anySatisfy( Predicate<? super Value> predicate )
-    {
+    public boolean anySatisfy(Predicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> boolean anySatisfyWith( Predicate2<? super Value, ? super P> predicate, P parameter )
-    {
+    public <P> boolean anySatisfyWith(Predicate2<? super Value, ? super P> predicate, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean allSatisfy( Predicate<? super Value> predicate )
-    {
+    public boolean allSatisfy(Predicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> boolean allSatisfyWith( Predicate2<? super Value, ? super P> predicate, P parameter )
-    {
+    public <P> boolean allSatisfyWith(Predicate2<? super Value, ? super P> predicate, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean noneSatisfy( Predicate<? super Value> predicate )
-    {
+    public boolean noneSatisfy(Predicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> boolean noneSatisfyWith( Predicate2<? super Value, ? super P> predicate, P parameter )
-    {
+    public <P> boolean noneSatisfyWith(Predicate2<? super Value, ? super P> predicate, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <IV> IV injectInto( IV injectedValue, Function2<? super IV, ? super Value, ? extends IV> function )
-    {
+    public <IV> IV injectInto(IV injectedValue, Function2<? super IV, ? super Value, ? extends IV> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int injectInto( int injectedValue, IntObjectToIntFunction<? super Value> function )
-    {
+    public int injectInto(int injectedValue, IntObjectToIntFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long injectInto( long injectedValue, LongObjectToLongFunction<? super Value> function )
-    {
+    public long injectInto(long injectedValue, LongObjectToLongFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float injectInto( float injectedValue, FloatObjectToFloatFunction<? super Value> function )
-    {
+    public float injectInto(float injectedValue, FloatObjectToFloatFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public double injectInto( double injectedValue, DoubleObjectToDoubleFunction<? super Value> function )
-    {
+    public double injectInto(double injectedValue, DoubleObjectToDoubleFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends Collection<Value>> R into( R target )
-    {
+    public <R extends Collection<Value>> R into(R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableList<Value> toList()
-    {
+    public MutableList<Value> toList() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V extends Comparable<? super V>> MutableList<Value> toSortedListBy( Function<? super Value, ? extends V> function )
-    {
+    public <V extends Comparable<? super V>> MutableList<Value> toSortedListBy(
+            Function<? super Value, ? extends V> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableSet<Value> toSet()
-    {
+    public MutableSet<Value> toSet() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableSortedSet<Value> toSortedSet()
-    {
+    public MutableSortedSet<Value> toSortedSet() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableSortedSet<Value> toSortedSet( Comparator<? super Value> comparator )
-    {
+    public MutableSortedSet<Value> toSortedSet(Comparator<? super Value> comparator) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V extends Comparable<? super V>> MutableSortedSet<Value> toSortedSetBy( Function<? super Value, ? extends V> function )
-    {
+    public <V extends Comparable<? super V>> MutableSortedSet<Value> toSortedSetBy(
+            Function<? super Value, ? extends V> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableBag<Value> toBag()
-    {
+    public MutableBag<Value> toBag() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableSortedBag<Value> toSortedBag()
-    {
+    public MutableSortedBag<Value> toSortedBag() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableSortedBag<Value> toSortedBag( Comparator<? super Value> comparator )
-    {
+    public MutableSortedBag<Value> toSortedBag(Comparator<? super Value> comparator) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V extends Comparable<? super V>> MutableSortedBag<Value> toSortedBagBy( Function<? super Value, ? extends V> function )
-    {
+    public <V extends Comparable<? super V>> MutableSortedBag<Value> toSortedBagBy(
+            Function<? super Value, ? extends V> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <NK, NV> MutableMap<NK, NV> toMap( Function<? super Value, ? extends NK> keyFunction, Function<? super Value, ? extends NV> valueFunction )
-    {
+    public <NK, NV> MutableMap<NK, NV> toMap(
+            Function<? super Value, ? extends NK> keyFunction, Function<? super Value, ? extends NV> valueFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <NK, NV> MutableSortedMap<NK, NV> toSortedMap( Function<? super Value, ? extends NK> keyFunction,
-            Function<? super Value, ? extends NV> valueFunction )
-    {
+    public <NK, NV> MutableSortedMap<NK, NV> toSortedMap(
+            Function<? super Value, ? extends NK> keyFunction, Function<? super Value, ? extends NV> valueFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <NK, NV> MutableSortedMap<NK, NV> toSortedMap( Comparator<? super NK> comparator, Function<? super Value, ? extends NK> keyFunction,
-            Function<? super Value, ? extends NV> valueFunction )
-    {
+    public <NK, NV> MutableSortedMap<NK, NV> toSortedMap(
+            Comparator<? super NK> comparator,
+            Function<? super Value, ? extends NK> keyFunction,
+            Function<? super Value, ? extends NV> valueFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <NK, NV> MutableBiMap<NK,NV> toBiMap( Function<? super Value,? extends NK> keyFunction, Function<? super Value,? extends NV> valueFunction )
-    {
+    public <NK, NV> MutableBiMap<NK, NV> toBiMap(
+            Function<? super Value, ? extends NK> keyFunction, Function<? super Value, ? extends NV> valueFunction) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public LazyIterable<Value> asLazy()
-    {
-        return new LazyIterableAdapter<>( this );
+    public LazyIterable<Value> asLazy() {
+        return new LazyIterableAdapter<>(this);
     }
 
     @Override
-    public Object[] toArray()
-    {
+    public Object[] toArray() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <T> T[] toArray( T[] target )
-    {
+    public <T> T[] toArray(T[] target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Value min( Comparator<? super Value> comparator )
-    {
+    public Value min(Comparator<? super Value> comparator) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Value max( Comparator<? super Value> comparator )
-    {
+    public Value max(Comparator<? super Value> comparator) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Value min()
-    {
+    public Value min() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Value max()
-    {
+    public Value max() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V extends Comparable<? super V>> Value minBy( Function<? super Value, ? extends V> function )
-    {
+    public <V extends Comparable<? super V>> Value minBy(Function<? super Value, ? extends V> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <V extends Comparable<? super V>> Value maxBy( Function<? super Value, ? extends V> function )
-    {
+    public <V extends Comparable<? super V>> Value maxBy(Function<? super Value, ? extends V> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long sumOfInt( IntFunction<? super Value> function )
-    {
+    public long sumOfInt(IntFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public double sumOfFloat( FloatFunction<? super Value> function )
-    {
+    public double sumOfFloat(FloatFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long sumOfLong( LongFunction<? super Value> function )
-    {
+    public long sumOfLong(LongFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public double sumOfDouble( DoubleFunction<? super Value> function )
-    {
+    public double sumOfDouble(DoubleFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <S> MutableBag<S> selectInstancesOf( Class<S> clazz )
-    {
+    public <S> MutableBag<S> selectInstancesOf(Class<S> clazz) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableBag<Value> select( Predicate<? super Value> predicate )
-    {
+    public MutableBag<Value> select(Predicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends Collection<Value>> R select( Predicate<? super Value> predicate, R target )
-    {
+    public <R extends Collection<Value>> R select(Predicate<? super Value> predicate, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> MutableBag<Value> selectWith( Predicate2<? super Value, ? super P> predicate, P parameter )
-    {
+    public <P> MutableBag<Value> selectWith(Predicate2<? super Value, ? super P> predicate, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P, R extends Collection<Value>> R selectWith( Predicate2<? super Value, ? super P> predicate, P parameter, R targetCollection )
-    {
+    public <P, R extends Collection<Value>> R selectWith(
+            Predicate2<? super Value, ? super P> predicate, P parameter, R targetCollection) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableBag<Value> reject( Predicate<? super Value> predicate )
-    {
+    public MutableBag<Value> reject(Predicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> MutableBag<Value> rejectWith( Predicate2<? super Value, ? super P> predicate, P parameter )
-    {
+    public <P> MutableBag<Value> rejectWith(Predicate2<? super Value, ? super P> predicate, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends Collection<Value>> R reject( Predicate<? super Value> predicate, R target )
-    {
+    public <R extends Collection<Value>> R reject(Predicate<? super Value> predicate, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P, R extends Collection<Value>> R rejectWith( Predicate2<? super Value, ? super P> predicate, P parameter, R targetCollection )
-    {
+    public <P, R extends Collection<Value>> R rejectWith(
+            Predicate2<? super Value, ? super P> predicate, P parameter, R targetCollection) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PartitionMutableBag<Value> partition( Predicate<? super Value> predicate )
-    {
+    public PartitionMutableBag<Value> partition(Predicate<? super Value> predicate) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> PartitionMutableBag<Value> partitionWith( Predicate2<? super Value, ? super P> predicate, P parameter )
-    {
+    public <P> PartitionMutableBag<Value> partitionWith(Predicate2<? super Value, ? super P> predicate, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <S> MutableBag<Pair<Value, S>> zip( Iterable<S> that )
-    {
+    public <S> MutableBag<Pair<Value, S>> zip(Iterable<S> that) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <S, R extends Collection<Pair<Value, S>>> R zip( Iterable<S> that, R target )
-    {
+    public <S, R extends Collection<Pair<Value, S>>> R zip(Iterable<S> that, R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MutableSet<Pair<Value, Integer>> zipWithIndex()
-    {
+    public MutableSet<Pair<Value, Integer>> zipWithIndex() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R extends Collection<Pair<Value, Integer>>> R zipWithIndex( R target )
-    {
+    public <R extends Collection<Pair<Value, Integer>>> R zipWithIndex(R target) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public RichIterable<RichIterable<Value>> chunk( int size )
-    {
+    public RichIterable<RichIterable<Value>> chunk(int size) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableObjectLongMap<VV> sumByInt( Function<? super Value, ? extends VV> groupBy, IntFunction<? super Value> function )
-    {
+    public <VV> MutableObjectLongMap<VV> sumByInt(
+            Function<? super Value, ? extends VV> groupBy, IntFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableObjectDoubleMap<VV> sumByFloat( Function<? super Value, ? extends VV> groupBy, FloatFunction<? super Value> function )
-    {
+    public <VV> MutableObjectDoubleMap<VV> sumByFloat(
+            Function<? super Value, ? extends VV> groupBy, FloatFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableObjectLongMap<VV> sumByLong( Function<? super Value, ? extends VV> groupBy, LongFunction<? super Value> function )
-    {
+    public <VV> MutableObjectLongMap<VV> sumByLong(
+            Function<? super Value, ? extends VV> groupBy, LongFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <VV> MutableObjectDoubleMap<VV> sumByDouble( Function<? super Value, ? extends VV> groupBy, DoubleFunction<? super Value> function )
-    {
+    public <VV> MutableObjectDoubleMap<VV> sumByDouble(
+            Function<? super Value, ? extends VV> groupBy, DoubleFunction<? super Value> function) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void appendString( Appendable appendable, String start, String separator, String end )
-    {
-        try
-        {
-            appendable.append( format( "ValuesMap[size: %d]", refs.size() ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public void appendString(Appendable appendable, String start, String separator, String end) {
+        try {
+            appendable.append(format("ValuesMap[size: %d]", refs.size()));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void forEachKey( LongProcedure procedure )
-    {
-        refs.forEachKey( procedure );
+    public void forEachKey(LongProcedure procedure) {
+        refs.forEachKey(procedure);
     }
 
     @Override
-    public void forEachKeyValue( LongObjectProcedure<? super Value> procedure )
-    {
-        refs.forEachKeyValue( ( key, ref ) ->
-        {
-            final Value value = valuesContainer.get( ref );
-            procedure.value( key, value );
-        } );
+    public void forEachKeyValue(LongObjectProcedure<? super Value> procedure) {
+        refs.forEachKeyValue((key, ref) -> {
+            final Value value = valuesContainer.get(ref);
+            procedure.value(key, value);
+        });
     }
 
     @Override
-    public boolean containsValue( Object value )
-    {
+    public boolean containsValue(Object value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void forEachValue( Procedure<? super Value> procedure )
-    {
-        forEachKeyValue( ( k, v ) -> procedure.value( v ) );
+    public void forEachValue(Procedure<? super Value> procedure) {
+        forEachKeyValue((k, v) -> procedure.value(v));
     }
 
     @Override
-    public Collection<Value> values()
-    {
+    public Collection<Value> values() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void forEach( Procedure<? super Value> procedure )
-    {
-        forEachValue( procedure );
+    public void forEach(Procedure<? super Value> procedure) {
+        forEachValue(procedure);
     }
 
     @Override
-    public void forEachWithIndex( ObjectIntProcedure<? super Value> objectIntProcedure )
-    {
+    public void forEachWithIndex(ObjectIntProcedure<? super Value> objectIntProcedure) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <P> void forEachWith( Procedure2<? super Value, ? super P> procedure, P parameter )
-    {
+    public <P> void forEachWith(Procedure2<? super Value, ? super P> procedure, P parameter) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterator<Value> iterator()
-    {
+    public Iterator<Value> iterator() {
         throw new UnsupportedOperationException();
     }
 
-    private class KeyValuesView extends AbstractLazyIterable<LongObjectPair<Value>>
-    {
+    private class KeyValuesView extends AbstractLazyIterable<LongObjectPair<Value>> {
         @Override
-        public void each( Procedure<? super LongObjectPair<Value>> procedure )
-        {
-            for ( LongObjectPair<Value> valueLongObjectPair : this )
-            {
-                procedure.value( valueLongObjectPair );
+        public void each(Procedure<? super LongObjectPair<Value>> procedure) {
+            for (LongObjectPair<Value> valueLongObjectPair : this) {
+                procedure.value(valueLongObjectPair);
             }
         }
 
         @Override
-        public Iterator<LongObjectPair<Value>> iterator()
-        {
+        public Iterator<LongObjectPair<Value>> iterator() {
             Iterator<LongLongPair> refsIterator = refs.keyValuesView().iterator();
-            return new Iterator<>()
-            {
+            return new Iterator<>() {
                 @Override
-                public boolean hasNext()
-                {
+                public boolean hasNext() {
                     return refsIterator.hasNext();
                 }
 
                 @Override
-                public LongObjectPair<Value> next()
-                {
+                public LongObjectPair<Value> next() {
                     final LongLongPair key2ref = refsIterator.next();
                     final long key = key2ref.getOne();
                     final long ref = key2ref.getTwo();
-                    final Value value = valuesContainer.get( ref );
-                    return PrimitiveTuples.pair( key, value );
+                    final Value value = valuesContainer.get(ref);
+                    return PrimitiveTuples.pair(key, value);
                 }
             };
         }

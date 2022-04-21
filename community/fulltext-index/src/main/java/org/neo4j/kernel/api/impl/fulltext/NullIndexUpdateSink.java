@@ -27,27 +27,20 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 /**
  * An implementation of {@link IndexUpdateSink} that does not actually do anything.
  */
-public class NullIndexUpdateSink extends IndexUpdateSink
-{
+public class NullIndexUpdateSink extends IndexUpdateSink {
     public static final NullIndexUpdateSink INSTANCE = new NullIndexUpdateSink();
 
-    private NullIndexUpdateSink()
-    {
-        super( null, 0 );
+    private NullIndexUpdateSink() {
+        super(null, 0);
     }
 
     @Override
-    public void enqueueUpdate( DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater, IndexEntryUpdate<?> update )
-    {
-    }
+    public void enqueueUpdate(
+            DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater, IndexEntryUpdate<?> update) {}
 
     @Override
-    public void closeUpdater( DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater )
-    {
-    }
+    public void closeUpdater(DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater) {}
 
     @Override
-    public void awaitUpdateApplication()
-    {
-    }
+    public void awaitUpdateApplication() {}
 }

@@ -34,8 +34,7 @@ import java.util.function.ToLongFunction;
  * @see #javaUtilHashing()
  * @see #xorShift32()
  */
-public interface HashFunction
-{
+public interface HashFunction {
     /**
      * Initialise the hash function with the given seed.
      * <p>
@@ -44,7 +43,7 @@ public interface HashFunction
      * @param seed The initialisation seed for the hash function.
      * @return An initialised intermediate hash state.
      */
-    long initialise( long seed );
+    long initialise(long seed);
 
     /**
      * Update the hash state by mixing the given value into the given intermediate hash state.
@@ -54,7 +53,7 @@ public interface HashFunction
      * @param value The value to add to the hash state.
      * @return a new intermediate hash state with the value mixed in.
      */
-    long update( long intermediateHash, long value );
+    long update(long intermediateHash, long value);
 
     /**
      * Produce a final hash value from the given intermediate hash state.
@@ -62,7 +61,7 @@ public interface HashFunction
      * @param intermediateHash the intermediate hash state from which to produce a final hash value.
      * @return the final hash value.
      */
-    long finalise( long intermediateHash );
+    long finalise(long intermediateHash);
 
     /**
      * Reduce the given 64-bit hash value to a 32-bit value.
@@ -70,8 +69,7 @@ public interface HashFunction
      * @param hash The hash value to reduce.
      * @return The 32-bit representation of the given hash value.
      */
-    default int toInt( long hash )
-    {
+    default int toInt(long hash) {
         return (int) ((hash >> 32) ^ hash);
     }
 
@@ -81,9 +79,8 @@ public interface HashFunction
      * @param value The single value to hash.
      * @return The hash of the given value.
      */
-    default long hashSingleValue( long value )
-    {
-        return finalise( update( initialise( 0 ), value ) );
+    default long hashSingleValue(long value) {
+        return finalise(update(initialise(0), value));
     }
 
     /**
@@ -92,9 +89,8 @@ public interface HashFunction
      * @param value The single value to hash.
      * @return The hash of the given value.
      */
-    default int hashSingleValueToInt( long value )
-    {
-        return toInt( hashSingleValue( value ) );
+    default int hashSingleValueToInt(long value) {
+        return toInt(hashSingleValue(value));
     }
 
     /**
@@ -108,18 +104,16 @@ public interface HashFunction
      * @param <T> The type of array elements.
      * @return the new intermediate hash state with the array mixed in.
      */
-    default <T> long updateWithArray( long intermediateHash, T[] array, ToLongFunction<T> projectionToLong )
-    {
-        if ( array == null )
-        {
-            // Even if the array is null, we still need to permute the hash, so we leave a trace of this step in the hashing.
-            return update( intermediateHash, -1 );
+    default <T> long updateWithArray(long intermediateHash, T[] array, ToLongFunction<T> projectionToLong) {
+        if (array == null) {
+            // Even if the array is null, we still need to permute the hash, so we leave a trace of this step in the
+            // hashing.
+            return update(intermediateHash, -1);
         }
 
-        long hash = update( intermediateHash, array.length );
-        for ( T obj : array )
-        {
-            hash = update( hash, projectionToLong.applyAsLong( obj ) );
+        long hash = update(intermediateHash, array.length);
+        for (T obj : array) {
+            hash = update(hash, projectionToLong.applyAsLong(obj));
         }
         return hash;
     }
@@ -147,8 +141,7 @@ public interface HashFunction
      * <a href="https://github.com/OpenHFT/Zero-Allocation-Hashing">Zero Allocation Hashing</a> library.
      * Credit for <a href="https://github.com/aappleby/smhasher">SMHasher</a> goes to Austin Appleby.
      */
-    static HashFunction incrementalXXH64()
-    {
+    static HashFunction incrementalXXH64() {
         return IncrementalXXH64.INSTANCE;
     }
 
@@ -164,8 +157,7 @@ public interface HashFunction
      * This hash function is stateless, so the returned instance can be freely cached and accessed concurrently by
      * multiple threads.
      */
-    static HashFunction javaUtilHashing()
-    {
+    static HashFunction javaUtilHashing() {
         return JavaUtilHashFunction.INSTANCE;
     }
 
@@ -177,8 +169,7 @@ public interface HashFunction
      * This hash function is stateless, so the returned instance can be freely cached and accessed concurrently by
      * multiple threads.
      */
-    static HashFunction xorShift32()
-    {
+    static HashFunction xorShift32() {
         return XorShift32HashFunction.INSTANCE;
     }
 }

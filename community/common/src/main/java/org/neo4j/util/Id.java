@@ -19,60 +19,50 @@
  */
 package org.neo4j.util;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Objects;
 import java.util.UUID;
 
-import static java.util.Objects.requireNonNull;
-
-public class Id
-{
+public class Id {
     protected final UUID uuid;
     private String shortName;
 
-    public Id( UUID uuid )
-    {
-        requireNonNull( uuid, "UUID should be not null." );
+    public Id(UUID uuid) {
+        requireNonNull(uuid, "UUID should be not null.");
         this.uuid = uuid;
     }
 
-    public UUID uuid()
-    {
+    public UUID uuid() {
         return uuid;
     }
 
-    protected String shortName()
-    {
-        if ( shortName == null )
-        {
-            shortName = uuid.toString().substring( 0, 8 );
+    protected String shortName() {
+        if (shortName == null) {
+            shortName = uuid.toString().substring(0, 8);
         }
         return shortName;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         Id id = (Id) o;
-        return Objects.equals( uuid, id.uuid );
+        return Objects.equals(uuid, id.uuid);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( uuid );
+    public int hashCode() {
+        return Objects.hash(uuid);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return shortName();
     }
 }

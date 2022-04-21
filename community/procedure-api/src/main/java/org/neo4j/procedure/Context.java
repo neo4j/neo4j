@@ -23,7 +23,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -36,9 +35,7 @@ import org.neo4j.annotations.api.PublicApi;
  *
  * @see Procedure
  */
-@Target( ElementType.FIELD )
-@Retention( RetentionPolicy.RUNTIME )
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
 @PublicApi
-public @interface Context
-{
-}
+public @interface Context {}

@@ -19,13 +19,19 @@
  */
 package org.neo4j.recovery;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
+
+import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.IOException;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -43,102 +49,83 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
-
-@ExtendWith( EphemeralFileSystemExtension.class )
-class CountsStoreRecoveryTest
-{
+@ExtendWith(EphemeralFileSystemExtension.class)
+class CountsStoreRecoveryTest {
     @Inject
     private EphemeralFileSystemAbstraction fs;
+
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void before()
-    {
-        managementService = databaseFactory( fs ).impermanent().build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+    void before() {
+        managementService = databaseFactory(fs).impermanent().build();
+        db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
     @AfterEach
-    void after()
-    {
+    void after() {
         managementService.shutdown();
     }
 
     @Test
-    void shouldRecoverTheCountsStoreEvenWhenIfNeoStoreDoesNotNeedRecovery() throws Exception
-    {
+    void shouldRecoverTheCountsStoreEvenWhenIfNeoStoreDoesNotNeedRecovery() throws Exception {
         // given
-        createNode( "A" );
+        createNode("A");
         checkPoint();
-        createNode( "B" );
+        createNode("B");
         flushNeoStoreOnly();
 
         // when
         crashAndRestart();
 
         // then
-        Kernel kernel = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
-        {
-            assertEquals( 1, tx.dataRead().countsForNode( tx.tokenRead().nodeLabel( "A" ) ) );
-            assertEquals( 1, tx.dataRead().countsForNode( tx.tokenRead().nodeLabel( "B" ) ) );
-            assertEquals( 2, tx.dataRead().countsForNode( NO_TOKEN ) );
+        Kernel kernel = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(Kernel.class);
+        try (KernelTransaction tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            assertEquals(1, tx.dataRead().countsForNode(tx.tokenRead().nodeLabel("A")));
+            assertEquals(1, tx.dataRead().countsForNode(tx.tokenRead().nodeLabel("B")));
+            assertEquals(2, tx.dataRead().countsForNode(NO_TOKEN));
         }
     }
 
-    private void flushNeoStoreOnly()
-    {
-        NeoStores neoStores = ((GraphDatabaseAPI) db).getDependencyResolver()
-                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+    private void flushNeoStoreOnly() {
+        NeoStores neoStores = ((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency(RecordStorageEngine.class)
+                .testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        metaDataStore.flush( NULL_CONTEXT );
+        metaDataStore.flush(NULL_CONTEXT);
     }
 
-    private void checkPoint() throws IOException
-    {
-        ((GraphDatabaseAPI) db).getDependencyResolver()
-                               .resolveDependency( CheckPointer.class ).forceCheckPoint(
-                new SimpleTriggerInfo( "test" )
-        );
+    private void checkPoint() throws IOException {
+        ((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency(CheckPointer.class)
+                .forceCheckPoint(new SimpleTriggerInfo("test"));
     }
 
-    private void crashAndRestart() throws Exception
-    {
+    private void crashAndRestart() throws Exception {
         var uncleanFs = fs.snapshot();
-        try
-        {
+        try {
             managementService.shutdown();
-        }
-        finally
-        {
+        } finally {
             fs.close();
             fs = uncleanFs;
         }
 
-        managementService = databaseFactory( uncleanFs ).impermanent().build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+        managementService = databaseFactory(uncleanFs).impermanent().build();
+        db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void createNode( String label )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode( label( label ) );
+    private void createNode(String label) {
+        try (Transaction tx = db.beginTx()) {
+            tx.createNode(label(label));
 
             tx.commit();
         }
     }
 
-    private static TestDatabaseManagementServiceBuilder databaseFactory( FileSystemAbstraction fs )
-    {
-        return new TestDatabaseManagementServiceBuilder().setFileSystem( fs );
+    private static TestDatabaseManagementServiceBuilder databaseFactory(FileSystemAbstraction fs) {
+        return new TestDatabaseManagementServiceBuilder().setFileSystem(fs);
     }
 }

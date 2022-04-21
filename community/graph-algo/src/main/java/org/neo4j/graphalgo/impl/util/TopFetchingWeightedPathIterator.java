@@ -22,15 +22,13 @@ package org.neo4j.graphalgo.impl.util;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Path;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-public class TopFetchingWeightedPathIterator extends PrefetchingIterator<WeightedPath>
-{
+public class TopFetchingWeightedPathIterator extends PrefetchingIterator<WeightedPath> {
     private final Iterator<Path> paths;
     private List<WeightedPath> shortestPaths;
     private Iterator<WeightedPath> shortestIterator;
@@ -38,8 +36,7 @@ public class TopFetchingWeightedPathIterator extends PrefetchingIterator<Weighte
     private double foundWeight;
     private final double epsilon;
 
-    public TopFetchingWeightedPathIterator( Iterator<Path> paths, CostEvaluator<Double> costEvaluator, double epsilon )
-    {
+    public TopFetchingWeightedPathIterator(Iterator<Path> paths, CostEvaluator<Double> costEvaluator, double epsilon) {
         this.paths = paths;
         this.costEvaluator = costEvaluator;
         this.epsilon = epsilon;
@@ -47,24 +44,19 @@ public class TopFetchingWeightedPathIterator extends PrefetchingIterator<Weighte
     }
 
     @Override
-    protected WeightedPath fetchNextOrNull()
-    {
-        if ( shortestIterator == null )
-        {
+    protected WeightedPath fetchNextOrNull() {
+        if (shortestIterator == null) {
             shortestPaths = new ArrayList<>();
 
-            while ( paths.hasNext() )
-            {
-                WeightedPath path = new WeightedPathImpl( costEvaluator, paths.next() );
+            while (paths.hasNext()) {
+                WeightedPath path = new WeightedPathImpl(costEvaluator, paths.next());
 
-                if ( MathUtil.compare( path.weight(), foundWeight, epsilon ) < 0 )
-                {
+                if (MathUtil.compare(path.weight(), foundWeight, epsilon) < 0) {
                     foundWeight = path.weight();
                     shortestPaths.clear();
                 }
-                if ( MathUtil.compare( path.weight(), foundWeight, epsilon ) <= 0 )
-                {
-                    shortestPaths.add( path );
+                if (MathUtil.compare(path.weight(), foundWeight, epsilon) <= 0) {
+                    shortestPaths.add(path);
                 }
             }
             shortestIterator = shortestPaths.iterator();

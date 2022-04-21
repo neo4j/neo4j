@@ -21,14 +21,12 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
 import java.util.function.BooleanSupplier;
-
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
  * This interface represent a check pointer which is responsible to write check points in the transaction log.
  */
-public interface CheckPointer
-{
+public interface CheckPointer {
     /**
      * This method will verify that the conditions for triggering a check point hold and in such a case it will write
      * a check point in the transaction log.
@@ -40,7 +38,7 @@ public interface CheckPointer
      * @return the transaction id used for the check pointing or -1 if check pointing wasn't needed
      * @throws IOException if writing the check point fails
      */
-    long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException;
+    long checkPointIfNeeded(TriggerInfo triggerInfo) throws IOException;
 
     /**
      * This method tries the write of a check point in the transaction log. If there is no running check pointing it
@@ -50,7 +48,7 @@ public interface CheckPointer
      * @return the transaction id used for the check pointing.
      * @throws IOException if writing the check point fails
      */
-    long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException;
+    long tryCheckPoint(TriggerInfo triggerInfo) throws IOException;
 
     /**
      * This method tries the write of a check point in the transaction log. If there is no running check pointing it
@@ -64,7 +62,7 @@ public interface CheckPointer
      * telling us to give up waiting.
      * @throws IOException if writing the check point fails
      */
-    long tryCheckPoint( TriggerInfo triggerInfo, BooleanSupplier timeout ) throws IOException;
+    long tryCheckPoint(TriggerInfo triggerInfo, BooleanSupplier timeout) throws IOException;
 
     /**
      * This method tries the write of a check point in the transaction log. If there is no running check pointing it
@@ -74,7 +72,7 @@ public interface CheckPointer
      * @return the transaction id used for the check pointing or {@code -1} when the invocation did not trigger a check point.
      * @throws IOException if writing the check point fails
      */
-    long tryCheckPointNoWait( TriggerInfo triggerInfo ) throws IOException;
+    long tryCheckPointNoWait(TriggerInfo triggerInfo) throws IOException;
 
     /**
      * This method forces the write of a check point in the transaction log.
@@ -85,7 +83,7 @@ public interface CheckPointer
      * @return the transaction id used for the check pointing
      * @throws IOException if writing the check point fails
      */
-    long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException;
+    long forceCheckPoint(TriggerInfo triggerInfo) throws IOException;
 
     /**
      * @return the transaction id which the last checkpoint was made it. If there's no checkpoint then

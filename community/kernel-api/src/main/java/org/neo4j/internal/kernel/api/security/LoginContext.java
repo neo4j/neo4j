@@ -19,24 +19,21 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import java.util.Objects;
-
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
+
+import java.util.Objects;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 
 /**
  * The LoginContext hold the executing authenticated user (subject).
  * By calling {@link #authorize(IdLookup, String, AbstractSecurityLog)} the user is also authorized, and a full SecurityContext is returned,
  * which can be used to assert user permissions during query execution.
  */
-public abstract class LoginContext
-{
+public abstract class LoginContext {
     protected final AuthSubject subject;
     private final ClientConnectionInfo connectionInfo;
 
-    public LoginContext( AuthSubject subject, ClientConnectionInfo connectionInfo )
-    {
+    public LoginContext(AuthSubject subject, ClientConnectionInfo connectionInfo) {
         this.subject = subject;
         this.connectionInfo = connectionInfo;
     }
@@ -44,19 +41,16 @@ public abstract class LoginContext
     /**
      * Get the authenticated user.
      */
-    public AuthSubject subject()
-    {
+    public AuthSubject subject() {
         return subject;
     }
 
-    public ClientConnectionInfo connectionInfo()
-    {
+    public ClientConnectionInfo connectionInfo() {
         return connectionInfo;
     }
 
-    public boolean impersonating()
-    {
-        return !Objects.equals( subject.executingUser(), subject.authenticatedUser() );
+    public boolean impersonating() {
+        return !Objects.equals(subject.executingUser(), subject.authenticatedUser());
     }
 
     /**
@@ -67,21 +61,18 @@ public abstract class LoginContext
      * @param securityLog where to log security related messages
      * @return the security context
      */
-    public abstract SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog );
+    public abstract SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog);
 
     /**
      * Get a login context with full privileges.
      *
      * @param connectionInfo information about the clients connection.
      */
-    public static LoginContext fullAccess( ClientConnectionInfo connectionInfo )
-    {
-        return new LoginContext( AuthSubject.AUTH_DISABLED, connectionInfo )
-        {
+    public static LoginContext fullAccess(ClientConnectionInfo connectionInfo) {
+        return new LoginContext(AuthSubject.AUTH_DISABLED, connectionInfo) {
             @Override
-            public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
-            {
-                return SecurityContext.authDisabled( AccessMode.Static.FULL, connectionInfo(), dbName );
+            public SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog) {
+                return SecurityContext.authDisabled(AccessMode.Static.FULL, connectionInfo(), dbName);
             }
         };
     }
@@ -89,67 +80,58 @@ public abstract class LoginContext
     /**
      * A login context with full privileges, should only be used for transactions without external connection.
      */
-    public static final LoginContext AUTH_DISABLED = fullAccess( EMBEDDED_CONNECTION );
+    public static final LoginContext AUTH_DISABLED = fullAccess(EMBEDDED_CONNECTION);
 
-    public interface IdLookup
-    {
+    public interface IdLookup {
         int[] NO_SUCH_PROCEDURE = new int[0];
 
-        int getPropertyKeyId( String name );
+        int getPropertyKeyId(String name);
 
-        int getLabelId( String name );
+        int getLabelId(String name);
 
-        int getRelTypeId( String name );
+        int getRelTypeId(String name);
 
-        int[] getProcedureIds( String procedureGlobbing );
+        int[] getProcedureIds(String procedureGlobbing);
 
         int[] getAdminProcedureIds();
 
-        int[] getFunctionIds( String functionGlobbing );
+        int[] getFunctionIds(String functionGlobbing);
 
-        int[] getAggregatingFunctionIds( String functionGlobbing );
+        int[] getAggregatingFunctionIds(String functionGlobbing);
 
-        IdLookup EMPTY = new IdLookup()
-        {
+        IdLookup EMPTY = new IdLookup() {
             @Override
-            public int getPropertyKeyId( String name )
-            {
+            public int getPropertyKeyId(String name) {
                 return -1;
             }
 
             @Override
-            public int getLabelId( String name )
-            {
+            public int getLabelId(String name) {
                 return -1;
             }
 
             @Override
-            public int getRelTypeId( String name )
-            {
+            public int getRelTypeId(String name) {
                 return -1;
             }
 
             @Override
-            public int[] getProcedureIds( String procedureGlobbing )
-            {
+            public int[] getProcedureIds(String procedureGlobbing) {
                 return NO_SUCH_PROCEDURE;
             }
 
             @Override
-            public int[] getAdminProcedureIds()
-            {
+            public int[] getAdminProcedureIds() {
                 return NO_SUCH_PROCEDURE;
             }
 
             @Override
-            public int[] getFunctionIds( String functionGlobbing )
-            {
+            public int[] getFunctionIds(String functionGlobbing) {
                 return NO_SUCH_PROCEDURE;
             }
 
             @Override
-            public int[] getAggregatingFunctionIds( String functionGlobbing )
-            {
+            public int[] getAggregatingFunctionIds(String functionGlobbing) {
                 return NO_SUCH_PROCEDURE;
             }
         };

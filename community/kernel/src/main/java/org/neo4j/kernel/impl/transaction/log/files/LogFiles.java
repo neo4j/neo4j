@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
@@ -32,8 +31,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * Provide access to low level file based operations, log file headers, {@link LogFile}
  * and {@link PhysicalLogVersionedStoreChannel}
  */
-public interface LogFiles extends Lifecycle
-{
+public interface LogFiles extends Lifecycle {
     CheckpointFile getCheckpointFile();
 
     LogFile getLogFile();
@@ -42,7 +40,7 @@ public interface LogFiles extends Lifecycle
 
     Path[] logFiles() throws IOException;
 
-    boolean isLogFile( Path path );
+    boolean isLogFile(Path path);
 
     LogTailMetadata getTailMetadata();
 }

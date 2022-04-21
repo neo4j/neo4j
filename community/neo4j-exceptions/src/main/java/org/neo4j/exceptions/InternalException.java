@@ -21,21 +21,17 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class InternalException extends Neo4jException
-{
-    public InternalException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class InternalException extends Neo4jException {
+    public InternalException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public InternalException( String message )
-    {
-        super( message );
+    public InternalException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.ExecutionFailed;
     }
 }

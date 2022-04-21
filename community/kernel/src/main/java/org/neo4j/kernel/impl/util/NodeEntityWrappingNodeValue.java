@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.exceptions.StoreFailureException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -36,216 +38,166 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
-
-public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEntity<Node>
-{
-    static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeEntityWrappingNodeValue.class ) + NodeEntity.SHALLOW_SIZE;
+public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEntity<Node> {
+    static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeEntityWrappingNodeValue.class) + NodeEntity.SHALLOW_SIZE;
 
     private final Node node;
     private volatile TextArray labels;
     private volatile MapValue properties;
 
-    NodeEntityWrappingNodeValue( Node node )
-    {
-        super( node.getId(), null );
+    NodeEntityWrappingNodeValue(Node node) {
+        super(node.getId(), null);
         this.node = node;
     }
 
     @Override
-    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-    {
-        if ( writer.entityMode() == REFERENCE )
-        {
-            writer.writeNodeReference( id() );
-        }
-        else
-        {
+    public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {
+        if (writer.entityMode() == REFERENCE) {
+            writer.writeNodeReference(id());
+        } else {
             TextArray l;
             MapValue p;
             boolean isDeleted = false;
-            try
-            {
+            try {
                 l = labels();
                 p = properties();
-            }
-            catch ( ReadAndDeleteTransactionConflictException e )
-            {
-                if ( !e.wasDeletedInThisTransaction() )
-                {
+            } catch (ReadAndDeleteTransactionConflictException e) {
+                if (!e.wasDeletedInThisTransaction()) {
                     throw e;
                 }
-                // If it isn't a transient error then the node was deleted in the current transaction and we should write an 'empty' node.
+                // If it isn't a transient error then the node was deleted in the current transaction and we should
+                // write an 'empty' node.
                 l = Values.stringArray();
                 p = VirtualValues.EMPTY_MAP;
                 isDeleted = true;
             }
 
-            if ( id() < 0 )
-            {
-                writer.writeVirtualNodeHack( node );
+            if (id() < 0) {
+                writer.writeVirtualNodeHack(node);
             }
 
-            writer.writeNode( node.getId(), l, p, isDeleted );
+            writer.writeNode(node.getId(), l, p, isDeleted);
         }
     }
 
-    public void populate( NodeCursor nodeCursor, PropertyCursor propertyCursor )
-    {
-        try
-        {
-            labels( nodeCursor );
-            properties( nodeCursor, propertyCursor );
-        }
-        catch ( ReadAndDeleteTransactionConflictException e )
-        {
+    public void populate(NodeCursor nodeCursor, PropertyCursor propertyCursor) {
+        try {
+            labels(nodeCursor);
+            properties(nodeCursor, propertyCursor);
+        } catch (ReadAndDeleteTransactionConflictException e) {
             // best effort, cannot do more
         }
     }
 
-    public boolean isPopulated()
-    {
+    public boolean isPopulated() {
         return labels != null && properties != null;
     }
 
-    public TextArray labels( NodeCursor nodeCursor )
-    {
+    public TextArray labels(NodeCursor nodeCursor) {
         TextArray l = labels;
-        if ( l == null )
-        {
-            try
-            {
-                synchronized ( this )
-                {
+        if (l == null) {
+            try {
+                synchronized (this) {
                     l = labels;
-                    if ( l == null )
-                    {
+                    if (l == null) {
                         List<String> ls = new ArrayList<>();
                         // No DBHits for Virtual node hacks.
-                        var nodeLabels = node instanceof NodeEntity ? ((NodeEntity) node).getLabels( nodeCursor ) : node.getLabels();
-                        for ( Label label : nodeLabels )
-                        {
-                            ls.add( label.name() );
+                        var nodeLabels = node instanceof NodeEntity
+                                ? ((NodeEntity) node).getLabels(nodeCursor)
+                                : node.getLabels();
+                        for (Label label : nodeLabels) {
+                            ls.add(label.name());
                         }
-                        l = labels = Values.stringArray( ls.toArray( new String[0] ) );
+                        l = labels = Values.stringArray(ls.toArray(new String[0]));
                     }
                 }
-            }
-            catch ( NotFoundException | IllegalStateException | StoreFailureException e )
-            {
-                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
+            } catch (NotFoundException | IllegalStateException | StoreFailureException e) {
+                throw new ReadAndDeleteTransactionConflictException(NodeEntity.isDeletedInCurrentTransaction(node), e);
             }
         }
         return l;
     }
 
     @Override
-    public String elementId()
-    {
+    public String elementId() {
         return node.getElementId();
     }
 
     @Override
-    public TextArray labels()
-    {
+    public TextArray labels() {
         TextArray l = labels;
-        if ( l == null )
-        {
-            try
-            {
-                synchronized ( this )
-                {
+        if (l == null) {
+            try {
+                synchronized (this) {
                     l = labels;
-                    if ( l == null )
-                    {
+                    if (l == null) {
                         List<String> ls = new ArrayList<>();
-                        for ( Label label : node.getLabels() )
-                        {
-                            ls.add( label.name() );
+                        for (Label label : node.getLabels()) {
+                            ls.add(label.name());
                         }
-                        l = labels = Values.stringArray( ls.toArray( new String[0] ) );
+                        l = labels = Values.stringArray(ls.toArray(new String[0]));
                     }
                 }
-            }
-            catch ( NotFoundException | IllegalStateException | StoreFailureException e )
-            {
-                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
+            } catch (NotFoundException | IllegalStateException | StoreFailureException e) {
+                throw new ReadAndDeleteTransactionConflictException(NodeEntity.isDeletedInCurrentTransaction(node), e);
             }
         }
         return l;
     }
 
     @Override
-    public MapValue properties()
-    {
+    public MapValue properties() {
         MapValue m = properties;
-        if ( m == null )
-        {
-            try
-            {
-                synchronized ( this )
-                {
+        if (m == null) {
+            try {
+                synchronized (this) {
                     m = properties;
-                    if ( m == null )
-                    {
-                        m = properties = ValueUtils.asMapValue( node.getAllProperties() );
+                    if (m == null) {
+                        m = properties = ValueUtils.asMapValue(node.getAllProperties());
                     }
                 }
-            }
-            catch ( NotFoundException | IllegalStateException | StoreFailureException e )
-            {
-                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
+            } catch (NotFoundException | IllegalStateException | StoreFailureException e) {
+                throw new ReadAndDeleteTransactionConflictException(NodeEntity.isDeletedInCurrentTransaction(node), e);
             }
         }
         return m;
     }
 
-    public MapValue properties( NodeCursor nodeCursor, PropertyCursor propertyCursor )
-    {
+    public MapValue properties(NodeCursor nodeCursor, PropertyCursor propertyCursor) {
         MapValue m = properties;
-        if ( m == null )
-        {
-            try
-            {
-                synchronized ( this )
-                {
+        if (m == null) {
+            try {
+                synchronized (this) {
                     m = properties;
-                    if ( m == null )
-                    {
+                    if (m == null) {
                         // No DBHits for Virtual node hacks.
-                        var nodeProperties = node instanceof NodeEntity ?
-                                             ((NodeEntity) node).getAllProperties( nodeCursor, propertyCursor ) : node.getAllProperties();
-                        m = properties = ValueUtils.asMapValue( nodeProperties );
+                        var nodeProperties = node instanceof NodeEntity
+                                ? ((NodeEntity) node).getAllProperties(nodeCursor, propertyCursor)
+                                : node.getAllProperties();
+                        m = properties = ValueUtils.asMapValue(nodeProperties);
                     }
                 }
-            }
-            catch ( NotFoundException | IllegalStateException | StoreFailureException e )
-            {
-                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
+            } catch (NotFoundException | IllegalStateException | StoreFailureException e) {
+                throw new ReadAndDeleteTransactionConflictException(NodeEntity.isDeletedInCurrentTransaction(node), e);
             }
         }
         return m;
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         long size = SHALLOW_SIZE;
-        if ( labels != null )
-        {
+        if (labels != null) {
             size += labels.estimatedHeapUsage();
         }
-        if ( properties != null )
-        {
+        if (properties != null) {
             size += properties.estimatedHeapUsage();
         }
         return size;
     }
 
     @Override
-    public Node getEntity()
-    {
+    public Node getEntity() {
         return node;
     }
 }

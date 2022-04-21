@@ -71,16 +71,18 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 object WithSeekableArgs {
+
   def unapply(v: Any): Option[(Expression, SeekableArgs)] = v match {
-    case In(lhs, rhs) => Some(lhs -> ManySeekableArgs(rhs))
+    case In(lhs, rhs)     => Some(lhs -> ManySeekableArgs(rhs))
     case Equals(lhs, rhs) => Some(lhs -> SingleSeekableArg(rhs))
-    case _ => None
+    case _                => None
   }
 }
 
 object AsIdSeekable {
+
   def unapply(v: Any): Option[IdSeekable] = v match {
-    case WithSeekableArgs(func@FunctionInvocation(_, _, _, IndexedSeq(ident: LogicalVariable)), rhs)
+    case WithSeekableArgs(func @ FunctionInvocation(_, _, _, IndexedSeq(ident: LogicalVariable)), rhs)
       if func.function == functions.Id && !rhs.dependencies(ident) =>
       Some(IdSeekable(func, ident, rhs))
     case _ =>
@@ -89,9 +91,9 @@ object AsIdSeekable {
 }
 
 object AsPropertySeekable {
+
   def unapply(v: Any): Option[PropertySeekable] = v match {
-    case WithSeekableArgs(prop@Property(ident: LogicalVariable, _), rhs)
-      if !rhs.dependencies(ident) =>
+    case WithSeekableArgs(prop @ Property(ident: LogicalVariable, _), rhs) if !rhs.dependencies(ident) =>
       Some(PropertySeekable(prop, ident, rhs))
     case _ =>
       None
@@ -99,8 +101,9 @@ object AsPropertySeekable {
 }
 
 object AsExplicitlyPropertyScannable {
+
   def unapply(v: Any): Option[ExplicitlyPropertyScannable] = v match {
-    case expr@IsNotNull(property@Property(ident: LogicalVariable, _)) =>
+    case expr @ IsNotNull(property @ Property(ident: LogicalVariable, _)) =>
       Some(ExplicitlyPropertyScannable(expr, ident, property))
 
     case _ =>
@@ -109,6 +112,7 @@ object AsExplicitlyPropertyScannable {
 }
 
 object AsPropertyScannable {
+
   def unapply(v: Any): Option[Scannable[Expression]] = v match {
 
     case AsExplicitlyPropertyScannable(scannable) =>
@@ -120,7 +124,7 @@ object AsPropertyScannable {
     case expr: InequalityExpression =>
       partialPropertyPredicate(expr, expr.lhs, solves = false)
 
-    case outerExpr@AndedPropertyInequalities(_, _, NonEmptyList(expr: InequalityExpression)) =>
+    case outerExpr @ AndedPropertyInequalities(_, _, NonEmptyList(expr: InequalityExpression)) =>
       partialPropertyPredicate(outerExpr, expr.lhs, solves = false)
 
     case startsWith: StartsWith =>
@@ -137,7 +141,7 @@ object AsPropertyScannable {
   }
 
   private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression, solves: Boolean) = lhs match {
-    case property@Property(ident: LogicalVariable, _) =>
+    case property @ Property(ident: LogicalVariable, _) =>
       PartialPredicate.ifNotEqual(
         IsNotNull(property)(predicate.position),
         predicate
@@ -149,10 +153,12 @@ object AsPropertyScannable {
 }
 
 object AsStringRangeSeekable {
+
   def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
-    case startsWith@StartsWith(prop@Property(ident: LogicalVariable, propertyKey), lit@StringLiteral(prefix)) if prefix.nonEmpty =>
+    case startsWith @ StartsWith(prop @ Property(ident: LogicalVariable, propertyKey), lit @ StringLiteral(prefix))
+      if prefix.nonEmpty =>
       Some(PrefixRangeSeekable(PrefixRange(lit), startsWith, ident, prop))
-    case startsWith@StartsWith(prop@Property(ident: LogicalVariable, propertyKey), rhs) =>
+    case startsWith @ StartsWith(prop @ Property(ident: LogicalVariable, propertyKey), rhs) =>
       Some(PrefixRangeSeekable(PrefixRange(rhs), startsWith, ident, prop))
     case _ =>
       None
@@ -160,16 +166,17 @@ object AsStringRangeSeekable {
 }
 
 object AsValueRangeSeekable {
+
   def unapply(v: Any): Option[InequalityRangeSeekable] = v match {
-    case inequalities@AndedPropertyInequalities(ident, prop, _) =>
+    case inequalities @ AndedPropertyInequalities(ident, prop, _) =>
       Some(InequalityRangeSeekable(ident, prop, inequalities))
-    case inequality@LessThan(property@Property(variable: Variable, _), _) =>
+    case inequality @ LessThan(property @ Property(variable: Variable, _), _) =>
       Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
-    case inequality@LessThanOrEqual(property@Property(variable: Variable, _), _) =>
+    case inequality @ LessThanOrEqual(property @ Property(variable: Variable, _), _) =>
       Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
-    case inequality@GreaterThan(property@Property(variable: Variable, _), _) =>
+    case inequality @ GreaterThan(property @ Property(variable: Variable, _), _) =>
       Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
-    case inequality@GreaterThanOrEqual(property@Property(variable: Variable, _), _) =>
+    case inequality @ GreaterThanOrEqual(property @ Property(variable: Variable, _), _) =>
       Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
     case _ =>
       None
@@ -179,30 +186,30 @@ object AsValueRangeSeekable {
 // WHERE point.distance(p.prop, otherPoint) < number
 // and the like
 object AsDistanceSeekable {
+
   def unapply(v: Any): Option[PointDistanceSeekable] = v match {
-    case LessThan(DistanceFunction(prop@Property(variable: Variable, _), otherPoint), distanceExpr) =>
+    case LessThan(DistanceFunction(prop @ Property(variable: Variable, _), otherPoint), distanceExpr) =>
       Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case LessThan(DistanceFunction(otherPoint, prop@Property(variable: Variable, _)), distanceExpr) =>
+    case LessThan(DistanceFunction(otherPoint, prop @ Property(variable: Variable, _)), distanceExpr) =>
       Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case LessThanOrEqual(DistanceFunction(prop@Property(variable: Variable, _), otherPoint), distanceExpr) =>
+    case LessThanOrEqual(DistanceFunction(prop @ Property(variable: Variable, _), otherPoint), distanceExpr) =>
       Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
-    case LessThanOrEqual(DistanceFunction(otherPoint, prop@Property(variable: Variable, _)), distanceExpr) =>
+    case LessThanOrEqual(DistanceFunction(otherPoint, prop @ Property(variable: Variable, _)), distanceExpr) =>
       Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
 
-
-    case GreaterThan(distanceExpr, DistanceFunction(prop@Property(variable: Variable, _), otherPoint)) =>
+    case GreaterThan(distanceExpr, DistanceFunction(prop @ Property(variable: Variable, _), otherPoint)) =>
       Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case GreaterThan(distanceExpr, DistanceFunction(otherPoint, prop@Property(variable: Variable, _))) =>
+    case GreaterThan(distanceExpr, DistanceFunction(otherPoint, prop @ Property(variable: Variable, _))) =>
       Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case GreaterThanOrEqual(distanceExpr, DistanceFunction(prop@Property(variable: Variable, _), otherPoint)) =>
+    case GreaterThanOrEqual(distanceExpr, DistanceFunction(prop @ Property(variable: Variable, _), otherPoint)) =>
       Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
-    case GreaterThanOrEqual(distanceExpr, DistanceFunction(otherPoint, prop@Property(variable: Variable, _))) =>
+    case GreaterThanOrEqual(distanceExpr, DistanceFunction(otherPoint, prop @ Property(variable: Variable, _))) =>
       Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
 
     case AndedPropertyInequalities(_, _, inequalities) if inequalities.size == 1 =>
       inequalities.head match {
         case AsDistanceSeekable(seekable) => Some(seekable)
-        case _ => None
+        case _                            => None
       }
 
     case _ =>
@@ -211,15 +218,23 @@ object AsDistanceSeekable {
 }
 
 object DistanceFunction {
+
   def unapply(v: Expression): Option[(Expression, Expression)] = v match {
-    case FunctionInvocation(Namespace(List(namespace)), FunctionName(functionName), _, args) if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("distance") => Some((args.head, args(1)))
+    case FunctionInvocation(Namespace(List(namespace)), FunctionName(functionName), _, args)
+      if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("distance") => Some((args.head, args(1)))
     case _ => None
   }
 }
 
 object AsBoundingBoxSeekable {
+
   def unapply(v: Any): Option[PointBoundingBoxSeekable] = v match {
-    case f@FunctionInvocation(Namespace(List(namespace)), FunctionName(functionName), _, Seq(prop@Property(ident: LogicalVariable, PropertyKeyName(_)), lowerLeft, upperRight)) if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("withinbbox") =>
+    case f @ FunctionInvocation(
+        Namespace(List(namespace)),
+        FunctionName(functionName),
+        _,
+        Seq(prop @ Property(ident: LogicalVariable, PropertyKeyName(_)), lowerLeft, upperRight)
+      ) if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("withinbbox") =>
       Some(PointBoundingBoxSeekable(ident, prop, f, PointBoundingBoxRange(lowerLeft, upperRight)))
     case _ =>
       None
@@ -234,6 +249,7 @@ sealed trait Sargable[+T <: Expression] {
 }
 
 object Seekable {
+
   /**
    * Find a common super-type for cases where we have multiple TypeSpecs, by combing all TypeSpecs as well as their contained type ranges.
    * For example two range predicates over the same property, with different value types.
@@ -270,7 +286,7 @@ sealed trait EqualitySeekable[T <: Expression] extends Seekable[T] {
 }
 
 case class IdSeekable(expr: FunctionInvocation, ident: LogicalVariable, args: SeekableArgs)
-  extends EqualitySeekable[FunctionInvocation] {
+    extends EqualitySeekable[FunctionInvocation] {
 
   def dependencies: Set[LogicalVariable] = args.dependencies
 
@@ -278,7 +294,7 @@ case class IdSeekable(expr: FunctionInvocation, ident: LogicalVariable, args: Se
 }
 
 case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args: SeekableArgs)
-  extends EqualitySeekable[LogicalProperty] {
+    extends EqualitySeekable[LogicalProperty] {
 
   def propertyKey: PropertyKeyName = expr.propertyKey
   def dependencies: Set[LogicalVariable] = args.dependencies
@@ -317,6 +333,7 @@ case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args:
 }
 
 object PropertySeekable {
+
   def findCompatibleIndexTypes(cypherType: CypherType): Set[IndexType] = {
     val otherIndexTypes = cypherType match {
       case CTString => Set(IndexType.Text)
@@ -331,8 +348,12 @@ sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {
   def range: SeekRange[V]
 }
 
-case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr: StartsWith, ident: LogicalVariable, property: Property)
-  extends RangeSeekable[StartsWith, Expression] {
+case class PrefixRangeSeekable(
+  override val range: PrefixRange[Expression],
+  expr: StartsWith,
+  ident: LogicalVariable,
+  property: Property
+) extends RangeSeekable[StartsWith, Expression] {
 
   def dependencies: Set[LogicalVariable] = expr.rhs.dependencies
 
@@ -344,10 +365,11 @@ case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr
   def propertyKeyName: PropertyKeyName = property.propertyKey
 }
 
-case class PointDistanceSeekable(ident: LogicalVariable,
-                                 property: LogicalProperty,
-                                 range: PointDistanceRange[Expression])
-  extends RangeSeekable[Expression, Expression] {
+case class PointDistanceSeekable(
+  ident: LogicalVariable,
+  property: LogicalProperty,
+  range: PointDistanceRange[Expression]
+) extends RangeSeekable[Expression, Expression] {
 
   override def expr: Expression = range.point
 
@@ -361,11 +383,12 @@ case class PointDistanceSeekable(ident: LogicalVariable,
   def propertyKeyName: PropertyKeyName = property.propertyKey
 }
 
-case class PointBoundingBoxSeekable(ident: LogicalVariable,
-                                    property: LogicalProperty,
-                                    expr: Expression,
-                                    range: PointBoundingBoxRange[Expression])
-  extends RangeSeekable[Expression, Expression] {
+case class PointBoundingBoxSeekable(
+  ident: LogicalVariable,
+  property: LogicalProperty,
+  expr: Expression,
+  range: PointBoundingBoxRange[Expression]
+) extends RangeSeekable[Expression, Expression] {
 
   override def dependencies: Set[LogicalVariable] = range.lowerLeft.dependencies ++ range.upperRight.dependencies
 
@@ -378,16 +401,16 @@ case class PointBoundingBoxSeekable(ident: LogicalVariable,
 }
 
 case class InequalityRangeSeekable(ident: LogicalVariable, property: LogicalProperty, expr: AndedPropertyInequalities)
-  extends RangeSeekable[AndedPropertyInequalities, Expression] {
+    extends RangeSeekable[AndedPropertyInequalities, Expression] {
 
   def dependencies: Set[LogicalVariable] = expr.inequalities.map(_.rhs.dependencies).toSet.flatten
 
   def range: InequalitySeekRange[Expression] =
     InequalitySeekRange.fromPartitionedBounds(expr.inequalities.partition {
-      case GreaterThan(_, value) => Left(ExclusiveBound(value))
+      case GreaterThan(_, value)        => Left(ExclusiveBound(value))
       case GreaterThanOrEqual(_, value) => Left(InclusiveBound(value))
-      case LessThan(_, value) => Right(ExclusiveBound(value))
-      case LessThanOrEqual(_, value) => Right(InclusiveBound(value))
+      case LessThan(_, value)           => Right(ExclusiveBound(value))
+      case LessThanOrEqual(_, value)    => Right(InclusiveBound(value))
     })
 
   def hasEquality: Boolean = expr.inequalities.map(_.includeEquality).reduceLeft(_ || _)
@@ -396,7 +419,9 @@ case class InequalityRangeSeekable(ident: LogicalVariable, property: LogicalProp
     RangeQueryExpression(InequalitySeekRangeWrapper(range)(ident.position))
 
   override def propertyValueType(semanticTable: SemanticTable): CypherType = {
-    Seekable.combineMultipleTypeSpecs(expr.inequalities.map(ineq => semanticTable.getActualTypeFor(ineq.rhs)).toIndexedSeq)
+    Seekable.combineMultipleTypeSpecs(expr.inequalities.map(ineq =>
+      semanticTable.getActualTypeFor(ineq.rhs)
+    ).toIndexedSeq)
   }
 
   def propertyKeyName: PropertyKeyName = property.propertyKey
@@ -411,6 +436,7 @@ sealed trait Scannable[+T <: Expression] extends Sargable[T] {
 }
 
 object Scannable {
+
   def isEquivalentScannable(predicate1: Expression, predicate2: Expression): Boolean = {
     def explicitlyScannableProperty(predicate: Expression) = predicate match {
       case AsExplicitlyPropertyScannable(scannable) => Some(scannable.property)
@@ -422,6 +448,7 @@ object Scannable {
 }
 
 object ExplicitlyPropertyScannable {
+
   def apply(expr: FunctionInvocation, ident: LogicalVariable, property: LogicalProperty) =
     new ExplicitlyPropertyScannable(expr, ident, property)
 
@@ -430,9 +457,13 @@ object ExplicitlyPropertyScannable {
 }
 
 case class ExplicitlyPropertyScannable private (expr: Expression, ident: LogicalVariable, property: LogicalProperty)
-  extends Scannable[Expression] {
+    extends Scannable[Expression] {
   val solvesPredicate = true
 }
 
-case class ImplicitlyPropertyScannable[+T <: Expression](expr: PartialPredicate[T], ident: LogicalVariable, property: LogicalProperty, solvesPredicate: Boolean)
-  extends Scannable[PartialPredicate[T]]
+case class ImplicitlyPropertyScannable[+T <: Expression](
+  expr: PartialPredicate[T],
+  ident: LogicalVariable,
+  property: LogicalProperty,
+  solvesPredicate: Boolean
+) extends Scannable[PartialPredicate[T]]

@@ -26,38 +26,31 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.neo4j.util.Preconditions;
 
-import static org.apache.commons.lang3.reflect.FieldUtils.readField;
+public final class ReflectionUtil {
+    private ReflectionUtil() {}
 
-public final class ReflectionUtil
-{
-    private ReflectionUtil()
-    {
-    }
-
-    public static void verifyMethodExists( Class<?> owner, String methodName )
-    {
+    public static void verifyMethodExists(Class<?> owner, String methodName) {
         Set<String> methods = new HashSet<>();
         // Includes methods declared/implemented specifically in the owner class, even private/protected and such
-        Arrays.stream( owner.getDeclaredMethods() ).forEach( method -> methods.add( method.getName() ) );
+        Arrays.stream(owner.getDeclaredMethods()).forEach(method -> methods.add(method.getName()));
         // Includes public methods specified by interfaces and subclasses too
-        Arrays.stream( owner.getMethods() ).forEach( method -> methods.add( method.getName() ) );
-        Preconditions.checkState( methods.stream().anyMatch( existingMethodName -> existingMethodName.equals( methodName ) ),
-                "Method '%s' does not exist in class %s", methodName, owner );
+        Arrays.stream(owner.getMethods()).forEach(method -> methods.add(method.getName()));
+        Preconditions.checkState(
+                methods.stream().anyMatch(existingMethodName -> existingMethodName.equals(methodName)),
+                "Method '%s' does not exist in class %s",
+                methodName,
+                owner);
     }
 
-    public static List<Field> getAllFields( Class<?> baseClazz )
-    {
+    public static List<Field> getAllFields(Class<?> baseClazz) {
         List<Field> fields = new ArrayList<>();
         Class<?> clazz = baseClazz;
-        do
-        {
-            Collections.addAll( fields, clazz.getDeclaredFields() );
+        do {
+            Collections.addAll(fields, clazz.getDeclaredFields());
             clazz = clazz.getSuperclass();
-        }
-        while ( clazz != null );
+        } while (clazz != null);
         return fields;
     }
 }

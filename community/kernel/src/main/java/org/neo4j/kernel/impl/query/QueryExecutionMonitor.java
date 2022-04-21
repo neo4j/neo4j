@@ -21,50 +21,36 @@ package org.neo4j.kernel.impl.query;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
 
-public interface QueryExecutionMonitor
-{
-    void startProcessing( ExecutingQuery query );
+public interface QueryExecutionMonitor {
+    void startProcessing(ExecutingQuery query);
 
-    void startExecution( ExecutingQuery query );
+    void startExecution(ExecutingQuery query);
 
-    void endFailure( ExecutingQuery query, Throwable failure );
+    void endFailure(ExecutingQuery query, Throwable failure);
 
-    void endFailure( ExecutingQuery query, String reason );
+    void endFailure(ExecutingQuery query, String reason);
 
-    void endSuccess( ExecutingQuery query );
+    void endSuccess(ExecutingQuery query);
 
-    default void beforeEnd( ExecutingQuery query, boolean success ) {}
+    default void beforeEnd(ExecutingQuery query, boolean success) {}
 
-    QueryExecutionMonitor NO_OP = new QueryExecutionMonitor()
-    {
+    QueryExecutionMonitor NO_OP = new QueryExecutionMonitor() {
         @Override
-        public void startProcessing( ExecutingQuery query )
-        {
-        }
+        public void startProcessing(ExecutingQuery query) {}
 
         @Override
-        public void startExecution( ExecutingQuery query )
-        {
-        }
+        public void startExecution(ExecutingQuery query) {}
 
         @Override
-        public void endFailure( ExecutingQuery query, Throwable failure )
-        {
-        }
+        public void endFailure(ExecutingQuery query, Throwable failure) {}
 
         @Override
-        public void endFailure( ExecutingQuery query, String reason )
-        {
-        }
+        public void endFailure(ExecutingQuery query, String reason) {}
 
         @Override
-        public void endSuccess( ExecutingQuery query )
-        {
-        }
+        public void endSuccess(ExecutingQuery query) {}
 
         @Override
-        public void beforeEnd( ExecutingQuery query, boolean success )
-        {
-        }
+        public void beforeEnd(ExecutingQuery query, boolean success) {}
     };
 }

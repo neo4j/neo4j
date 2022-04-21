@@ -24,12 +24,11 @@ import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 /**
  * Factory for {@link Tracker} instances.
  */
-public interface TrackerFactory
-{
+public interface TrackerFactory {
     /**
      * @param arrayFactory {@link NumberArrayFactory} to use as backing data structure for the {@link Tracker}.
      * @param size size of the tracker.
      * @return {@link Tracker} capable of keeping track of {@code size} items.
      */
-    Tracker create( NumberArrayFactory arrayFactory, long size );
+    Tracker create(NumberArrayFactory arrayFactory, long size);
 }

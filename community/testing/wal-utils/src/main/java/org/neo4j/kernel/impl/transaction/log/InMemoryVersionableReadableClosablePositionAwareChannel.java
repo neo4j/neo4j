@@ -21,23 +21,19 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
-public class InMemoryVersionableReadableClosablePositionAwareChannel extends InMemoryClosableChannel implements
-        ReadableLogChannel
-{
-    public InMemoryVersionableReadableClosablePositionAwareChannel()
-    {
-        super( true );
+public class InMemoryVersionableReadableClosablePositionAwareChannel extends InMemoryClosableChannel
+        implements ReadableLogChannel {
+    public InMemoryVersionableReadableClosablePositionAwareChannel() {
+        super(true);
     }
 
     @Override
-    public long getVersion()
-    {
+    public long getVersion() {
         return 0;
     }
 
     @Override
-    public byte getLogFormatVersion()
-    {
+    public byte getLogFormatVersion() {
         return CURRENT_LOG_FORMAT_VERSION;
     }
 }

@@ -52,40 +52,61 @@ case object expandShowWhere extends Rewriter with Step with PreparatoryRewriting
 
   private val instance = bottomUp(Rewriter.lift {
     // move freestanding WHERE to YIELD * WHERE and add default columns to the YIELD
-    case s@ShowDatabase(_, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
-    case s@ShowRoles(_, _, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
-    case s@ShowPrivileges(_, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
-    case s@ShowPrivilegeCommands(_, _, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
-    case s@ShowUsers(Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
-    case s@ShowCurrentUser(Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s @ ShowDatabase(_, Some(Right(where)), _) =>
+      s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s @ ShowRoles(_, _, Some(Right(where)), _) =>
+      s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s @ ShowPrivileges(_, Some(Right(where)), _) =>
+      s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s @ ShowPrivilegeCommands(_, _, Some(Right(where)), _) =>
+      s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s @ ShowUsers(Some(Right(where)), _) =>
+      s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s @ ShowCurrentUser(Some(Right(where)), _) =>
+      s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
 
     // add default columns to explicit YIELD/RETURN * as well
-    case s@ShowDatabase(_, Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+    case s @ ShowDatabase(_, Some(Left((yieldClause, returnClause))), _)
+      if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
-    case s@ShowRoles(_, _, Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+    case s @ ShowRoles(_, _, Some(Left((yieldClause, returnClause))), _)
+      if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
-    case s@ShowPrivileges(_, Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+    case s @ ShowPrivileges(_, Some(Left((yieldClause, returnClause))), _)
+      if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
-    case s@ShowPrivilegeCommands(_, _, Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+    case s @ ShowPrivilegeCommands(_, _, Some(Left((yieldClause, returnClause))), _)
+      if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
-    case s@ShowUsers(Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+    case s @ ShowUsers(Some(Left((yieldClause, returnClause))), _)
+      if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
-    case s@ShowCurrentUser(Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+    case s @ ShowCurrentUser(Some(Left((yieldClause, returnClause))), _)
+      if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
   })
 
   private def whereToYield(where: Where, defaultColumns: List[String]): Yield =
-    Yield(ReturnItems(includeExisting = true, Seq.empty, Some(defaultColumns))(where.position), None, None, None, Some(where))(where.position)
+    Yield(
+      ReturnItems(includeExisting = true, Seq.empty, Some(defaultColumns))(where.position),
+      None,
+      None,
+      None,
+      Some(where)
+    )(where.position)
 
-  private def addDefaultColumns(yieldClause: Yield, maybeReturn: Option[Return], defaultColumns: List[String]): YieldOrWhere = {
+  private def addDefaultColumns(
+    yieldClause: Yield,
+    maybeReturn: Option[Return],
+    defaultColumns: List[String]
+  ): YieldOrWhere = {
     // Update yield clause with default columns if includeExisting
     val (newYield, yieldColumns) =
       if (yieldClause.returnItems.includeExisting) {
         val yieldColumns = yieldClause.returnItems.defaultOrderOnColumns.getOrElse(defaultColumns)
         val newYield = yieldClause.withReturnItems(yieldClause.returnItems.withDefaultOrderOnColumns(yieldColumns))
         (newYield, yieldColumns)
-      }
-      else (yieldClause, yieldClause.returnItems.items.map(_.name).toList)
+      } else (yieldClause, yieldClause.returnItems.items.map(_.name).toList)
 
     // Update the return clause with default columns if includeExisting,
     // using the columns from the yield clause (either the default or the explicitly yielded ones)
@@ -100,6 +121,8 @@ case object expandShowWhere extends Rewriter with Step with PreparatoryRewriting
     Some(Left(newYield -> newReturn))
   }
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory,
-                           notificationLogger: InternalNotificationLogger): Rewriter = instance
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    notificationLogger: InternalNotificationLogger
+  ): Rewriter = instance
 }

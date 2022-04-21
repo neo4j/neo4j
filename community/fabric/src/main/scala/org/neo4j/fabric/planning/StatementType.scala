@@ -34,15 +34,18 @@ object StatementType {
   case class Query(queryType: QueryType) extends StatementType {
     override def toString: String = queryType.toString
     override def isQuery: Boolean = true
+
     override def isReadQuery: Boolean = queryType match {
       case QueryType.Read => true
       case _              => false
     }
   }
+
   case object SchemaCommand extends StatementType {
     override def toString: String = "Schema modification"
     override def isSchemaCommand: Boolean = true
   }
+
   case object AdminCommand extends StatementType {
     override def toString: String = "Administration command"
     override def isAdminCommand: Boolean = true

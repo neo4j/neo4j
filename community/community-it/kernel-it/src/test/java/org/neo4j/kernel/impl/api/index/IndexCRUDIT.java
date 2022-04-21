@@ -19,10 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -30,7 +37,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
@@ -62,53 +72,40 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.values.storable.Values;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-
-@ExtendWith( EphemeralFileSystemExtension.class )
-class IndexCRUDIT
-{
+@ExtendWith(EphemeralFileSystemExtension.class)
+class IndexCRUDIT {
     private FileSystemAbstraction fs;
 
     private GraphDatabaseAPI db;
-    private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
-    private final ExtensionFactory<?> mockedIndexProviderFactory = singleInstanceIndexProviderFactory( "none", mockedIndexProvider );
-    private final Label myLabel = Label.label( "MYLABEL" );
+    private final IndexProvider mockedIndexProvider = mock(IndexProvider.class);
+    private final ExtensionFactory<?> mockedIndexProviderFactory =
+            singleInstanceIndexProviderFactory("none", mockedIndexProvider);
+    private final Label myLabel = Label.label("MYLABEL");
 
     private DatabaseManagementService managementService;
 
     @Test
-    void addingANodeWithPropertyShouldGetIndexed() throws Exception
-    {
+    void addingANodeWithPropertyShouldGetIndexed() throws Exception {
         // Given
         String indexProperty = "indexProperty";
         GatheringIndexWriter writer = newWriter();
-        createIndex( db, myLabel, indexProperty );
+        createIndex(db, myLabel, indexProperty);
 
         // When
         int value1 = 12;
         String otherProperty = "otherProperty";
         int otherValue = 17;
-        Node node = createNode( map( indexProperty, value1, otherProperty, otherValue ), myLabel );
+        Node node = createNode(map(indexProperty, value1, otherProperty, otherValue), myLabel);
 
         // Then, for now, this should trigger two NodePropertyUpdates
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             TokenRead tokenRead = ktx.tokenRead();
-            int propertyKey1 = tokenRead.propertyKey( indexProperty );
-            int label = tokenRead.nodeLabel( myLabel.name() );
-            var descriptor = SchemaDescriptors.forLabel( label, propertyKey1 );
-            assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), () -> descriptor, Values.of( value1 ) ) ) );
+            int propertyKey1 = tokenRead.propertyKey(indexProperty);
+            int label = tokenRead.nodeLabel(myLabel.name());
+            var descriptor = SchemaDescriptors.forLabel(label, propertyKey1);
+            assertThat(writer.updatesCommitted)
+                    .isEqualTo(asSet(IndexEntryUpdate.add(node.getId(), () -> descriptor, Values.of(value1))));
             tx.commit();
         }
         // We get two updates because we both add a label and a property to be indexed
@@ -117,51 +114,46 @@ class IndexCRUDIT
     }
 
     @Test
-    void addingALabelToPreExistingNodeShouldGetIndexed() throws Exception
-    {
+    void addingALabelToPreExistingNodeShouldGetIndexed() throws Exception {
         // GIVEN
         String indexProperty = "indexProperty";
         GatheringIndexWriter writer = newWriter();
-        createIndex( db, myLabel, indexProperty );
+        createIndex(db, myLabel, indexProperty);
 
         // WHEN
         String otherProperty = "otherProperty";
         int value = 12;
         int otherValue = 17;
-        Node node = createNode( map( indexProperty, value, otherProperty, otherValue ) );
+        Node node = createNode(map(indexProperty, value, otherProperty, otherValue));
 
         // THEN
-        assertThat( writer.updatesCommitted.size() ).isEqualTo( 0 );
+        assertThat(writer.updatesCommitted.size()).isEqualTo(0);
 
         // AND WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = tx.getNodeById( node.getId() );
-            node.addLabel( myLabel );
+        try (Transaction tx = db.beginTx()) {
+            node = tx.getNodeById(node.getId());
+            node.addLabel(myLabel);
             tx.commit();
         }
 
         // THEN
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             TokenRead tokenRead = ktx.tokenRead();
-            int propertyKey1 = tokenRead.propertyKey( indexProperty );
-            int label = tokenRead.nodeLabel( myLabel.name() );
-            var descriptor = SchemaDescriptors.forLabel( label, propertyKey1 );
-            assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), () -> descriptor, Values.of( value ) ) ) );
+            int propertyKey1 = tokenRead.propertyKey(indexProperty);
+            int label = tokenRead.nodeLabel(myLabel.name());
+            var descriptor = SchemaDescriptors.forLabel(label, propertyKey1);
+            assertThat(writer.updatesCommitted)
+                    .isEqualTo(asSet(IndexEntryUpdate.add(node.getId(), () -> descriptor, Values.of(value))));
             tx.commit();
         }
     }
 
-    private Node createNode( Map<String, Object> properties, Label ... labels )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode( labels );
-            for ( Map.Entry<String, Object> prop : properties.entrySet() )
-            {
-                node.setProperty( prop.getKey(), prop.getValue() );
+    private Node createNode(Map<String, Object> properties, Label... labels) {
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.createNode(labels);
+            for (Map.Entry<String, Object> prop : properties.entrySet()) {
+                node.setProperty(prop.getKey(), prop.getValue());
             }
             tx.commit();
             return node;
@@ -169,113 +161,101 @@ class IndexCRUDIT
     }
 
     @BeforeEach
-    void before()
-    {
-        when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any(), any() ) )
-                .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
-        when( mockedIndexProvider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
+    void before() {
+        when(mockedIndexProvider.getProviderDescriptor()).thenReturn(PROVIDER_DESCRIPTOR);
+        when(mockedIndexProvider.storeMigrationParticipant(
+                        any(FileSystemAbstraction.class), any(PageCache.class), any(), any()))
+                .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
+        when(mockedIndexProvider.completeConfiguration(any(IndexDescriptor.class)))
+                .then(inv -> inv.getArgument(0));
 
         managementService = new TestDatabaseManagementServiceBuilder()
-            .setFileSystem( fs )
-                .addExtension( mockedIndexProviderFactory )
+                .setFileSystem(fs)
+                .addExtension(mockedIndexProviderFactory)
                 .noOpSystemGraphInitializer()
                 .impermanent()
                 .build();
 
-        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private GatheringIndexWriter newWriter() throws IOException
-    {
+    private GatheringIndexWriter newWriter() throws IOException {
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ),
-                                                any() ) )
-                .thenReturn( writer );
-        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ), any() ) )
-                .thenReturn( writer );
+        when(mockedIndexProvider.getPopulator(
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(),
+                        any(),
+                        any(TokenNameLookup.class),
+                        any()))
+                .thenReturn(writer);
+        when(mockedIndexProvider.getOnlineAccessor(
+                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                .thenReturn(writer);
         return writer;
     }
 
     @AfterEach
-    void after()
-    {
+    void after() {
         managementService.shutdown();
     }
 
-    private static class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
-    {
+    private static class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator {
         private final Set<IndexEntryUpdate<?>> updatesCommitted = new HashSet<>();
-        private final Map<Object,Set<Long>> indexSamples = new HashMap<>();
+        private final Map<Object, Set<Long>> indexSamples = new HashMap<>();
 
         @Override
-        public void create()
-        {
+        public void create() {}
+
+        @Override
+        public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {
+            updatesCommitted.addAll(updates);
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
-        {
-            updatesCommitted.addAll( updates );
+        public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
+            return newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false);
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
-        {
-            return newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false );
+        public IndexUpdater newUpdater(final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+            return new CollectingIndexUpdater(updatesCommitted::addAll);
         }
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-        {
-            return new CollectingIndexUpdater( updatesCommitted::addAll );
+        public void close(boolean populationCompletedSuccessfully, CursorContext cursorContext) {}
+
+        @Override
+        public void markAsFailed(String failure) {}
+
+        @Override
+        public void includeSample(IndexEntryUpdate<?> update) {
+            addValueToSample(update.getEntityId(), ((ValueIndexEntryUpdate<?>) update).values()[0]);
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
-        {
-        }
-
-        @Override
-        public void markAsFailed( String failure )
-        {
-        }
-
-        @Override
-        public void includeSample( IndexEntryUpdate<?> update )
-        {
-            addValueToSample( update.getEntityId(), ((ValueIndexEntryUpdate<?>) update).values()[0] );
-        }
-
-        @Override
-        public IndexSample sample( CursorContext cursorContext )
-        {
+        public IndexSample sample(CursorContext cursorContext) {
             long indexSize = 0;
-            for ( Set<Long> nodeIds : indexSamples.values() )
-            {
+            for (Set<Long> nodeIds : indexSamples.values()) {
                 indexSize += nodeIds.size();
             }
-            return new IndexSample( indexSize, indexSamples.size(), indexSize );
+            return new IndexSample(indexSize, indexSamples.size(), indexSize);
         }
 
-        private void addValueToSample( long nodeId, Object propertyValue )
-        {
-            Set<Long> nodeIds = indexSamples.computeIfAbsent( propertyValue, k -> new HashSet<>() );
-            nodeIds.add( nodeId );
+        private void addValueToSample(long nodeId, Object propertyValue) {
+            Set<Long> nodeIds = indexSamples.computeIfAbsent(propertyValue, k -> new HashSet<>());
+            nodeIds.add(nodeId);
         }
     }
 
-    private static void createIndex( GraphDatabaseAPI db, Label label, String property ) throws KernelException
-    {
-        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
-        {
-            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, PROVIDER_DESCRIPTOR, label, property );
+    private static void createIndex(GraphDatabaseAPI db, Label label, String property) throws KernelException {
+        try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider(tx, PROVIDER_DESCRIPTOR, label, property);
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, MINUTES);
         }
     }
 }

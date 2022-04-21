@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.factory;
 
 import org.eclipse.jetty.util.StringUtil;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -31,45 +30,39 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.service.Services;
 import org.neo4j.time.SystemNanoClock;
 
-public final class EditionLocksFactories
-{
+public final class EditionLocksFactories {
     private static final String OLD_COMMUNITY_LOCK_MANAGER_NAME = "community";
 
-    private EditionLocksFactories()
-    {
+    private EditionLocksFactories() {}
+
+    public static Locks createLockManager(LocksFactory locksFactory, Config config, SystemNanoClock clock) {
+        return locksFactory.newInstance(config, clock);
     }
 
-    public static Locks createLockManager( LocksFactory locksFactory, Config config, SystemNanoClock clock )
-    {
-        return locksFactory.newInstance( config, clock );
-    }
-
-    public static LocksFactory createLockFactory( Config config, LogService logService )
-    {
-        InternalLog lockFactoriesLog = logService.getInternalLog( EditionLocksFactories.class );
-        LocksFactory locksFactory = getLocksFactory( config.get( GraphDatabaseInternalSettings.lock_manager ), lockFactoriesLog );
-        lockFactoriesLog.info( "Locking implementation '" + locksFactory.getName() + "' selected." );
+    public static LocksFactory createLockFactory(Config config, LogService logService) {
+        InternalLog lockFactoriesLog = logService.getInternalLog(EditionLocksFactories.class);
+        LocksFactory locksFactory =
+                getLocksFactory(config.get(GraphDatabaseInternalSettings.lock_manager), lockFactoriesLog);
+        lockFactoriesLog.info("Locking implementation '" + locksFactory.getName() + "' selected.");
         return locksFactory;
     }
 
-    private static LocksFactory getLocksFactory( String key, InternalLog lockFactoriesLog )
-    {
+    private static LocksFactory getLocksFactory(String key, InternalLog lockFactoriesLog) {
         // we can have community lock manager configured in the wild. Ignore that and log warning message.
-        var factoryKey = checkForOldCommunityValue( lockFactoriesLog, key );
-        if ( StringUtil.isEmpty( factoryKey ) )
-        {
-            return Services.loadByPriority( LocksFactory.class ).orElseThrow( () -> new IllegalArgumentException( "No lock manager found" ) );
+        var factoryKey = checkForOldCommunityValue(lockFactoriesLog, key);
+        if (StringUtil.isEmpty(factoryKey)) {
+            return Services.loadByPriority(LocksFactory.class)
+                    .orElseThrow(() -> new IllegalArgumentException("No lock manager found"));
         }
 
-        return Services.load( LocksFactory.class, factoryKey )
-                .orElseThrow(() -> new IllegalArgumentException( "No lock manager found with the name '" + key + "'." ) );
+        return Services.load(LocksFactory.class, factoryKey)
+                .orElseThrow(() -> new IllegalArgumentException("No lock manager found with the name '" + key + "'."));
     }
 
-    private static String checkForOldCommunityValue( InternalLog lockFactoriesLog, String factoryKey )
-    {
-        if ( OLD_COMMUNITY_LOCK_MANAGER_NAME.equals( factoryKey ) )
-        {
-            lockFactoriesLog.warn( "Old community lock manager is configured to be used. Ignoring and fallback to default lock manager." );
+    private static String checkForOldCommunityValue(InternalLog lockFactoriesLog, String factoryKey) {
+        if (OLD_COMMUNITY_LOCK_MANAGER_NAME.equals(factoryKey)) {
+            lockFactoriesLog.warn(
+                    "Old community lock manager is configured to be used. Ignoring and fallback to default lock manager.");
             return ForsetiLocksFactory.FORSETI_LOCKS_NAME;
         }
         return factoryKey;

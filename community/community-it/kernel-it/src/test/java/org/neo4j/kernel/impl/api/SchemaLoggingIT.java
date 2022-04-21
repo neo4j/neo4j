@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -36,61 +38,58 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-class SchemaLoggingIT
-{
+@ImpermanentDbmsExtension(configurationCallback = "configure")
+class SchemaLoggingIT {
     private static final String CREATION_FINISHED = "Index creation finished for index [%s].";
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private IndexProviderMap indexProviderMap;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setInternalLogProvider( logProvider );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setInternalLogProvider(logProvider);
     }
 
     @Test
-    void shouldLogUserReadableLabelAndPropertyNames()
-    {
+    void shouldLogUserReadableLabelAndPropertyNames() {
         String labelName = "User";
         String property = "name";
         String indexName = "usernameIndex";
 
         // when
-        long indexId = createIndex( db, labelName, property, indexName );
+        long indexId = createIndex(db, labelName, property, indexName);
 
         // then
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
-        String indexDescription = "Index( id=" + indexId + ", name='" + indexName + "', type='GENERAL RANGE', " +
-                           "schema=(:User {name}), indexProvider='" + providerDescriptor.name() + "' )";
+        String indexDescription = "Index( id=" + indexId + ", name='" + indexName + "', type='GENERAL RANGE', "
+                + "schema=(:User {name}), indexProvider='" + providerDescriptor.name() + "' )";
 
-        assertThat( logProvider ).forLevel( INFO )
-                .containsMessageWithArguments( "Index population started: [%s]", indexDescription )
-                .containsMessageWithArguments( CREATION_FINISHED, indexDescription );
+        assertThat(logProvider)
+                .forLevel(INFO)
+                .containsMessageWithArguments("Index population started: [%s]", indexDescription)
+                .containsMessageWithArguments(CREATION_FINISHED, indexDescription);
     }
 
-    private static long createIndex( GraphDatabaseAPI db, String labelName, String property, String name )
-    {
+    private static long createIndex(GraphDatabaseAPI db, String labelName, String property, String name) {
         long indexId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            IndexDefinition indexDefinition = tx.schema().indexFor( label( labelName ) ).on( property ).withName( name ).create();
-            indexId = ((IndexDefinitionImpl) indexDefinition).getIndexReference().getId();
+        try (Transaction tx = db.beginTx()) {
+            IndexDefinition indexDefinition = tx.schema()
+                    .indexFor(label(labelName))
+                    .on(property)
+                    .withName(name)
+                    .create();
+            indexId =
+                    ((IndexDefinitionImpl) indexDefinition).getIndexReference().getId();
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
         return indexId;

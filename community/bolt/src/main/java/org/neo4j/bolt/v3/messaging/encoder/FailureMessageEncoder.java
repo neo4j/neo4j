@@ -20,41 +20,35 @@
 package org.neo4j.bolt.v3.messaging.encoder;
 
 import java.io.IOException;
-
 import org.neo4j.bolt.messaging.ResponseMessageEncoder;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.bolt.v3.messaging.response.FatalFailureMessage;
 import org.neo4j.logging.InternalLog;
 
-public class FailureMessageEncoder implements ResponseMessageEncoder<FailureMessage>
-{
+public class FailureMessageEncoder implements ResponseMessageEncoder<FailureMessage> {
     private final InternalLog log;
 
-    public FailureMessageEncoder( InternalLog log )
-    {
+    public FailureMessageEncoder(InternalLog log) {
         this.log = log;
     }
 
     @Override
-    public void encode( Neo4jPack.Packer packer, FailureMessage message ) throws IOException
-    {
-        if ( message instanceof FatalFailureMessage )
-        {
-            log.debug( "Encoding a fatal failure message to send. Message: %s", message );
+    public void encode(Neo4jPack.Packer packer, FailureMessage message) throws IOException {
+        if (message instanceof FatalFailureMessage) {
+            log.debug("Encoding a fatal failure message to send. Message: %s", message);
         }
-        encodeFailure( message, packer );
+        encodeFailure(message, packer);
     }
 
-    private static void encodeFailure( FailureMessage message, Neo4jPack.Packer packer ) throws IOException
-    {
-        packer.packStructHeader( 1, message.signature() );
-        packer.packMapHeader( 2 );
+    private static void encodeFailure(FailureMessage message, Neo4jPack.Packer packer) throws IOException {
+        packer.packStructHeader(1, message.signature());
+        packer.packMapHeader(2);
 
-        packer.pack( "code" );
-        packer.pack( message.status().code().serialize() );
+        packer.pack("code");
+        packer.pack(message.status().code().serialize());
 
-        packer.pack( "message" );
-        packer.pack( message.message() );
+        packer.pack("message");
+        packer.pack(message.message());
     }
 }

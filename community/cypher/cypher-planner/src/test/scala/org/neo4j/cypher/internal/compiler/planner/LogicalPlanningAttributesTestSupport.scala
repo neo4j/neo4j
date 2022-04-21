@@ -39,10 +39,15 @@ trait LogicalPlanningAttributesTestSupport {
   private val precision = 0.00001
 
   def haveSamePlanAndEffectiveCardinalitiesAsBuilder(
-   expected: LogicalPlanBuilder,
-   attributeComparisonStrategy: AttributeComparisonStrategy = AttributeComparisonStrategy.ComparingAllAttributes
+    expected: LogicalPlanBuilder,
+    attributeComparisonStrategy: AttributeComparisonStrategy = AttributeComparisonStrategy.ComparingAllAttributes
   ): Matcher[LogicalPlanState] =
-    matchPlanAndAttributesUsing(_.effectiveCardinalities, expected, _.effectiveCardinalities, attributeComparisonStrategy)(isEffectiveCardinalityWithinBound)
+    matchPlanAndAttributesUsing(
+      _.effectiveCardinalities,
+      expected,
+      _.effectiveCardinalities,
+      attributeComparisonStrategy
+    )(isEffectiveCardinalityWithinBound)
 
   def haveSamePlanAndEffectiveCardinalitiesAs(
     expected: (LogicalPlan, EffectiveCardinalities),
@@ -57,7 +62,9 @@ trait LogicalPlanningAttributesTestSupport {
     expected: LogicalPlanBuilder,
     attributeComparisonStrategy: AttributeComparisonStrategy = AttributeComparisonStrategy.ComparingAllAttributes
   ): Matcher[LogicalPlanState] =
-    matchPlanAndAttributesUsing(_.cardinalities, expected, _.cardinalities, attributeComparisonStrategy)(isCardinalityWithinBound)
+    matchPlanAndAttributesUsing(_.cardinalities, expected, _.cardinalities, attributeComparisonStrategy)(
+      isCardinalityWithinBound
+    )
 
   def haveSamePlanAndCardinalitiesAs(
     expected: (LogicalPlan, Cardinalities),
@@ -88,7 +95,10 @@ trait LogicalPlanningAttributesTestSupport {
   )(
     checkMatches: (A, A) => Boolean
   ): Matcher[LogicalPlanState] = actualPlanState =>
-    matchPlanAndAttributes((expectedPlanBuilder.build(), getExpectedAttributes(expectedPlanBuilder)), attributeComparisonStrategy)(checkMatches)
+    matchPlanAndAttributes(
+      (expectedPlanBuilder.build(), getExpectedAttributes(expectedPlanBuilder)),
+      attributeComparisonStrategy
+    )(checkMatches)
       .apply((actualPlanState.logicalPlan, getActualAttributes(actualPlanState.planningAttributes)))
 
   private def matchPlanAndAttributes[A](
@@ -108,8 +118,10 @@ trait LogicalPlanningAttributesTestSupport {
         val expectedPlanString = LogicalPlanToPlanBuilderString(expectedPlan)
         Some(MatchResult(
           matches = false,
-          rawFailureMessage = s"Expected same plan but actual contained:\n$actualPlanString\nand expected contained:\n$expectedPlanString",
-          rawNegatedFailureMessage = ""))
+          rawFailureMessage =
+            s"Expected same plan but actual contained:\n$actualPlanString\nand expected contained:\n$expectedPlanString",
+          rawNegatedFailureMessage = ""
+        ))
       } else {
         None
       }
@@ -118,7 +130,8 @@ trait LogicalPlanningAttributesTestSupport {
       (actualOperator, expectedOperator) <- actualPlan.flatten.zip(expectedPlan.flatten)
       expectedAttribute <- attributeComparisonStrategy match {
         case AttributeComparisonStrategy.ComparingAllAttributes => Some(expectedAttributes.get(expectedOperator.id))
-        case AttributeComparisonStrategy.ComparingProvidedAttributesOnly => expectedAttributes.getOption(expectedOperator.id)
+        case AttributeComparisonStrategy.ComparingProvidedAttributesOnly =>
+          expectedAttributes.getOption(expectedOperator.id)
       }
       actualAttribute = actualAttributes.get(actualOperator.id)
       actualPlanString = LogicalPlanToPlanBuilderString(actualOperator)
@@ -130,7 +143,8 @@ trait LogicalPlanningAttributesTestSupport {
     val ok = MatchResult(
       matches = true,
       rawFailureMessage = "",
-      rawNegatedFailureMessage = "")
+      rawNegatedFailureMessage = ""
+    )
 
     (planMismatch orElse attributeMismatch) getOrElse ok
   }
@@ -143,6 +157,7 @@ trait LogicalPlanningAttributesTestSupport {
  *  - [[AttributeComparisonStrategy.ComparingProvidedAttributesOnly]] will only compare explicitly provided attributes, ignoring default values.
  */
 sealed trait AttributeComparisonStrategy
+
 object AttributeComparisonStrategy {
   case object ComparingAllAttributes extends AttributeComparisonStrategy
   case object ComparingProvidedAttributesOnly extends AttributeComparisonStrategy

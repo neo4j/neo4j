@@ -22,26 +22,25 @@ package org.neo4j.values.storable;
 /**
  * Contains a collection of strings that needs to be supported throughout the product.
  */
-class StringsLibrary
-{
+class StringsLibrary {
     static final String[] STRINGS = {
-            "",
-            "1337",
-            " ",
-            "普通�?/普通話",
-            "\uD83D\uDE21",
-            "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B",
-            " a b c ",
-            "䤹᳽",
-            "熨",
-            "ۼ",
-            "ⲹ楡�?톜ഷۢ⼈�?�늉�?�₭샺ጚ砧攡跿家䯶�?⬖�?�犽ۼ",
-            " 㺂�?鋦毠",//first character is a thin space,
-            "\u0018",
-            ";먵�?裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩�?� ",
-            "\u001cӳ",
-            "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ 1234567890-´!\"@#$%^&*()_+",
-            "йцукенгшщзхъфывапролджэячсмитьбю"
-            // TODO longer lorem ipsum string?
+        "",
+        "1337",
+        " ",
+        "普通�?/普通話",
+        "\uD83D\uDE21",
+        "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B",
+        " a b c ",
+        "䤹᳽",
+        "熨",
+        "ۼ",
+        "ⲹ楡�?톜ഷۢ⼈�?�늉�?�₭샺ጚ砧攡跿家䯶�?⬖�?�犽ۼ",
+        " 㺂�?鋦毠", // first character is a thin space,
+        "\u0018",
+        ";먵�?裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩�?� ",
+        "\u001cӳ",
+        "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ 1234567890-´!\"@#$%^&*()_+",
+        "йцукенгшщзхъфывапролджэячсмитьбю"
+        // TODO longer lorem ipsum string?
     };
 }

@@ -24,94 +24,73 @@ import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.neo4j.common.Subject;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
-class IndexSamplingJobTracker
-{
+class IndexSamplingJobTracker {
     private final JobScheduler jobScheduler;
     private final Set<Long> executingJobs;
-    private final Lock lock = new ReentrantLock( true );
+    private final Lock lock = new ReentrantLock(true);
     private final Condition allJobsFinished = lock.newCondition();
     private final String databaseName;
 
     private boolean stopped;
 
-    IndexSamplingJobTracker( JobScheduler jobScheduler, String databaseName )
-    {
+    IndexSamplingJobTracker(JobScheduler jobScheduler, String databaseName) {
         this.jobScheduler = jobScheduler;
         this.executingJobs = new HashSet<>();
         this.databaseName = databaseName;
     }
 
-    JobHandle scheduleSamplingJob( final IndexSamplingJob samplingJob )
-    {
+    JobHandle scheduleSamplingJob(final IndexSamplingJob samplingJob) {
         lock.lock();
-        try
-        {
-            if ( stopped )
-            {
+        try {
+            if (stopped) {
                 return JobHandle.EMPTY;
             }
 
             long indexId = samplingJob.indexId();
-            if ( executingJobs.contains( indexId ) )
-            {
+            if (executingJobs.contains(indexId)) {
                 return JobHandle.EMPTY;
             }
 
-            executingJobs.add( indexId );
-            var monitoringParams = new JobMonitoringParams( Subject.SYSTEM, databaseName, "Sampling of index '" + samplingJob.indexName() + "'" );
-            return jobScheduler.schedule( Group.INDEX_SAMPLING, monitoringParams, () ->
-            {
-                try
-                {
+            executingJobs.add(indexId);
+            var monitoringParams = new JobMonitoringParams(
+                    Subject.SYSTEM, databaseName, "Sampling of index '" + samplingJob.indexName() + "'");
+            return jobScheduler.schedule(Group.INDEX_SAMPLING, monitoringParams, () -> {
+                try {
                     samplingJob.run();
+                } finally {
+                    samplingJobCompleted(samplingJob);
                 }
-                finally
-                {
-                    samplingJobCompleted( samplingJob );
-                }
-            } );
-        }
-        finally
-        {
+            });
+        } finally {
             lock.unlock();
         }
     }
 
-    private void samplingJobCompleted( IndexSamplingJob samplingJob )
-    {
+    private void samplingJobCompleted(IndexSamplingJob samplingJob) {
         lock.lock();
-        try
-        {
-            executingJobs.remove( samplingJob.indexId() );
+        try {
+            executingJobs.remove(samplingJob.indexId());
             allJobsFinished.signalAll();
-        }
-        finally
-        {
+        } finally {
             lock.unlock();
         }
     }
 
-    void stopAndAwaitAllJobs()
-    {
+    void stopAndAwaitAllJobs() {
         lock.lock();
-        try
-        {
+        try {
             stopped = true;
 
-            while ( !executingJobs.isEmpty() )
-            {
+            while (!executingJobs.isEmpty()) {
                 allJobsFinished.awaitUninterruptibly();
             }
-        }
-        finally
-        {
+        } finally {
             lock.unlock();
         }
     }

@@ -19,32 +19,25 @@
  */
 package org.neo4j.internal.batchimport.stats;
 
+import static java.lang.String.format;
+
 import java.util.ArrayList;
 import java.util.Collection;
-
-import org.neo4j.internal.helpers.collection.Pair;
-
-import static java.lang.String.format;
 
 /**
  * Generic implementation for providing {@link Stat statistics}.
  */
-public class GenericStatsProvider implements StatsProvider
-{
+public class GenericStatsProvider implements StatsProvider {
     private final Collection<KeyStatistics> stats = new ArrayList<>();
 
-    public void add( Key key, Stat stat )
-    {
-        this.stats.add( new KeyStatistics( key, stat ) );
+    public void add(Key key, Stat stat) {
+        this.stats.add(new KeyStatistics(key, stat));
     }
 
     @Override
-    public Stat stat( Key key )
-    {
-        for ( KeyStatistics stat1 : stats )
-        {
-            if ( stat1.key().name().equals( key.name() ) )
-            {
+    public Stat stat(Key key) {
+        for (KeyStatistics stat1 : stats) {
+            if (stat1.key().name().equals(key.name())) {
                 return stat1.stat();
             }
         }
@@ -52,30 +45,24 @@ public class GenericStatsProvider implements StatsProvider
     }
 
     @Override
-    public Key[] keys()
-    {
+    public Key[] keys() {
         Key[] keys = new Key[stats.size()];
         int i = 0;
-        for ( KeyStatistics stat : stats )
-        {
+        for (KeyStatistics stat : stats) {
             keys[i++] = stat.key();
         }
         return keys;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder builder = new StringBuilder();
-        for ( KeyStatistics stat : stats )
-        {
-            builder.append( builder.length() > 0 ? ", " : "" )
-                    .append( format( "%s: %s", stat.key().shortName(), stat.stat() ) );
+        for (KeyStatistics stat : stats) {
+            builder.append(builder.length() > 0 ? ", " : "")
+                    .append(format("%s: %s", stat.key().shortName(), stat.stat()));
         }
         return builder.toString();
     }
 
-    private record KeyStatistics(Key key, Stat stat)
-    {
-    }
+    private record KeyStatistics(Key key, Stat stat) {}
 }

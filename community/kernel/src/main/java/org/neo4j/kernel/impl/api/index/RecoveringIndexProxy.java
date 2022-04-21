@@ -22,80 +22,65 @@ package org.neo4j.kernel.impl.api.index;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.values.storable.Value;
 
-public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
-{
-    RecoveringIndexProxy( IndexProxyStrategy indexProxyStrategy )
-    {
-        super( indexProxyStrategy, null );
+public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy {
+    RecoveringIndexProxy(IndexProxyStrategy indexProxyStrategy) {
+        super(indexProxyStrategy, null);
     }
 
     @Override
-    public InternalIndexState getState()
-    {
+    public InternalIndexState getState() {
         return InternalIndexState.POPULATING;
     }
 
     @Override
-    public boolean awaitStoreScanCompleted( long time, TimeUnit unit )
-    {
-        throw unsupportedOperation( "Cannot await population on a recovering index." );
+    public boolean awaitStoreScanCompleted(long time, TimeUnit unit) {
+        throw unsupportedOperation("Cannot await population on a recovering index.");
     }
 
     @Override
-    public void activate()
-    {
-        throw unsupportedOperation( "Cannot activate recovering index." );
+    public void activate() {
+        throw unsupportedOperation("Cannot activate recovering index.");
     }
 
     @Override
-    public void validate()
-    {
-        throw unsupportedOperation( "Cannot validate recovering index." );
+    public void validate() {
+        throw unsupportedOperation("Cannot validate recovering index.");
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple, long entityId )
-    {
-        throw unsupportedOperation( "Unexpected call for validating value while recovering." );
+    public void validateBeforeCommit(Value[] tuple, long entityId) {
+        throw unsupportedOperation("Unexpected call for validating value while recovering.");
     }
 
     @Override
-    public ResourceIterator<Path> snapshotFiles()
-    {
-        throw unsupportedOperation( "Cannot snapshot a recovering index." );
+    public ResourceIterator<Path> snapshotFiles() {
+        throw unsupportedOperation("Cannot snapshot a recovering index.");
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
-        throw unsupportedOperation( "Cannot get index configuration from recovering index." );
+    public Map<String, Value> indexConfig() {
+        throw unsupportedOperation("Cannot get index configuration from recovering index.");
     }
 
     @Override
-    public void drop()
-    {
+    public void drop() {}
+
+    @Override
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException {
+        throw new IllegalStateException(this + " is recovering");
     }
 
     @Override
-    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
-    {
-        throw new IllegalStateException( this + " is recovering" );
+    public PopulationProgress getIndexPopulationProgress() {
+        throw new IllegalStateException(this + " is recovering");
     }
 
-    @Override
-    public PopulationProgress getIndexPopulationProgress()
-    {
-        throw new IllegalStateException( this + " is recovering" );
-    }
-
-    private UnsupportedOperationException unsupportedOperation( String message )
-    {
-        return new UnsupportedOperationException( message + " Recovering Index" + getDescriptor() );
+    private UnsupportedOperationException unsupportedOperation(String message) {
+        return new UnsupportedOperationException(message + " Recovering Index" + getDescriptor());
     }
 }

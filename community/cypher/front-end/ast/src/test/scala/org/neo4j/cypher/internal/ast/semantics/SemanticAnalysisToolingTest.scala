@@ -43,7 +43,7 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
     val state = (
       toTest.specifyType(CTNode | CTInteger, expression) chain
         toTest.expectType(CTNumber.covariant, expression)
-      )(SemanticState.clean).state
+    )(SemanticState.clean).state
 
     state.expressionType(expression).actual should equal(CTInteger.invariant)
   }
@@ -52,20 +52,23 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
     val result = (
       toTest.specifyType(CTNode | CTInteger, expression) chain
         toTest.expectType(CTString.covariant, expression)
-      )(SemanticState.clean)
+    )(SemanticState.clean)
 
     result.errors should have size 1
     result.errors.head.position should equal(expression.position)
     toTest.types(expression)(result.state) shouldBe empty
-    result.errors.head.msg should equal ("Type mismatch: expected String but was Integer or Node")
+    result.errors.head.msg should equal("Type mismatch: expected String but was Integer or Node")
   }
 
   test("shouldRaiseTypeErrorWithCustomMessageWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
     val result = (
       toTest.specifyType(CTNode | CTInteger, expression) chain
-        toTest.expectType(CTString.covariant, expression,
-          (expected: String, existing: String) => s"lhs was $expected yet rhs was $existing")
-      )(SemanticState.clean)
+        toTest.expectType(
+          CTString.covariant,
+          expression,
+          (expected: String, existing: String) => s"lhs was $expected yet rhs was $existing"
+        )
+    )(SemanticState.clean)
 
     result.errors should have size 1
     result.errors.head.position should equal(expression.position)

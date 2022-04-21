@@ -66,21 +66,24 @@ import scala.collection.mutable.ArrayBuffer
 object QueryStateHelper extends MockitoSugar {
   def empty: QueryState = emptyWith()
 
-  def emptyWith(db: GraphDatabaseQueryService = null,
-                query: QueryContext = null,
-                resources: ExternalCSVResource = null,
-                params: Array[AnyValue] = Array.empty,
-                expressionCursors: ExpressionCursors = new ExpressionCursors(mockCursorFactory, CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE),
-                queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
-                nodeTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
-                relTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
-                expressionVariables: Array[AnyValue] = Array.empty,
-                subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
-                decorator: PipeDecorator = NullPipeDecorator,
-                initialContext: Option[CypherRow] = None,
-                input: InputDataStream = NoInput
-               ):QueryState =
-    new QueryState(query,
+  def emptyWith(
+    db: GraphDatabaseQueryService = null,
+    query: QueryContext = null,
+    resources: ExternalCSVResource = null,
+    params: Array[AnyValue] = Array.empty,
+    expressionCursors: ExpressionCursors =
+      new ExpressionCursors(mockCursorFactory, CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE),
+    queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
+    nodeTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
+    relTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
+    expressionVariables: Array[AnyValue] = Array.empty,
+    subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
+    decorator: PipeDecorator = NullPipeDecorator,
+    initialContext: Option[CypherRow] = None,
+    input: InputDataStream = NoInput
+  ): QueryState =
+    new QueryState(
+      query,
       resources,
       params,
       expressionCursors,
@@ -93,26 +96,39 @@ object QueryStateHelper extends MockitoSugar {
       NoOpMemoryTrackerForOperatorProvider,
       decorator = decorator,
       initialContext = initialContext,
-      input = input)
+      input = input
+    )
 
-  def queryStateFrom(db: GraphDatabaseQueryService,
-                     tx: InternalTransaction,
-                     params: Array[AnyValue] = Array.empty,
-                     subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER
-                    ): QueryState = {
+  def queryStateFrom(
+    db: GraphDatabaseQueryService,
+    tx: InternalTransaction,
+    params: Array[AnyValue] = Array.empty,
+    subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER
+  ): QueryState = {
     val searchMonitor = new Monitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db)
     val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(tx, "X", EMPTY_MAP))
     val queryContext = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(searchMonitor)
-    emptyWith(db = db,
+    emptyWith(
+      db = db,
       query = queryContext,
       params = params,
-      expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.cursorContext, transactionalContext.memoryTracker),
-      subscriber = subscriber)
+      expressionCursors = new ExpressionCursors(
+        transactionalContext.cursors,
+        transactionalContext.cursorContext,
+        transactionalContext.memoryTracker
+      ),
+      subscriber = subscriber
+    )
   }
 
-  def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: Array[AnyValue] = Array.empty,
-                        f: QueryState => T, subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER): T = {
+  def withQueryState[T](
+    db: GraphDatabaseQueryService,
+    tx: InternalTransaction,
+    params: Array[AnyValue] = Array.empty,
+    f: QueryState => T,
+    subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER
+  ): T = {
     val queryState = queryStateFrom(db, tx, params, subscriber)
     try {
       f(queryState)
@@ -127,7 +143,9 @@ object QueryStateHelper extends MockitoSugar {
 
   def emptyWithValueSerialization: QueryState = {
     val context = mock[QueryContext](Mockito.RETURNS_DEEP_STUBS)
-    Mockito.when(context.asObject(ArgumentMatchers.any())).thenAnswer((invocationOnMock: InvocationOnMock) => toObject(invocationOnMock.getArgument(0)))
+    Mockito.when(context.asObject(ArgumentMatchers.any())).thenAnswer((invocationOnMock: InvocationOnMock) =>
+      toObject(invocationOnMock.getArgument(0))
+    )
     emptyWith(query = context)
   }
 

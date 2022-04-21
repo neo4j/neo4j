@@ -23,11 +23,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 
-public class Neo4jSearcherFactory extends SearcherFactory
-{
+public class Neo4jSearcherFactory extends SearcherFactory {
     @Override
-    public IndexSearcher newSearcher( IndexReader reader, IndexReader previousReader )
-    {
-        return new Neo4jIndexSearcher( reader );
+    public IndexSearcher newSearcher(IndexReader reader, IndexReader previousReader) {
+        return new Neo4jIndexSearcher(reader);
     }
 }

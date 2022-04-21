@@ -20,7 +20,6 @@
 package org.neo4j.storageengine.migration;
 
 import java.io.IOException;
-
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
@@ -29,29 +28,34 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.StoreVersion;
 
-public interface StoreMigrationParticipant
-{
+public interface StoreMigrationParticipant {
     /**
      * Default empty implementation of StoreMigrationParticipant
      */
-    StoreMigrationParticipant NOT_PARTICIPATING = new AbstractStoreMigrationParticipant( "Nothing" )
-    {
+    StoreMigrationParticipant NOT_PARTICIPATING = new AbstractStoreMigrationParticipant("Nothing") {
         @Override
-        public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, StoreVersion fromVersion,
-                StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata )
-        {
+        public void migrate(
+                DatabaseLayout directoryLayout,
+                DatabaseLayout migrationLayout,
+                ProgressReporter progress,
+                StoreVersion fromVersion,
+                StoreVersion toVersion,
+                IndexImporterFactory indexImporterFactory,
+                LogTailMetadata tailMetadata) {
             // nop
         }
 
         @Override
-        public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
-        {
+        public void moveMigratedFiles(
+                DatabaseLayout migrationLayout,
+                DatabaseLayout directoryLayout,
+                String versionToMigrateFrom,
+                String versionToMigrateTo) {
             // nop
         }
 
         @Override
-        public void cleanup( DatabaseLayout migrationLayout )
-        {
+        public void cleanup(DatabaseLayout migrationLayout) {
             // nop
         }
     };
@@ -73,8 +77,14 @@ public interface StoreMigrationParticipant
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
-    void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress,
-            StoreVersion fromVersion, StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata )
+    void migrate(
+            DatabaseLayout directoryLayout,
+            DatabaseLayout migrationLayout,
+            ProgressReporter progress,
+            StoreVersion fromVersion,
+            StoreVersion toVersion,
+            IndexImporterFactory indexImporterFactory,
+            LogTailMetadata tailMetadata)
             throws IOException, KernelException;
 
     /**
@@ -87,7 +97,11 @@ public interface StoreMigrationParticipant
      * @param versionToMigrateTo the version we want to migrate to
      * @throws IOException if unable to move one or more files.
      */
-    void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
+    void moveMigratedFiles(
+            DatabaseLayout migrationLayout,
+            DatabaseLayout directoryLayout,
+            String versionToMigrateFrom,
+            String versionToMigrateTo)
             throws IOException;
 
     /**
@@ -95,7 +109,7 @@ public interface StoreMigrationParticipant
      * @param migrationLayout the directory where migrated files end up.
      * @throws IOException if unable to clean up one or more files.
      */
-    void cleanup( DatabaseLayout migrationLayout ) throws IOException;
+    void cleanup(DatabaseLayout migrationLayout) throws IOException;
 
     /**
      * @return descriptive name of this migration participant.

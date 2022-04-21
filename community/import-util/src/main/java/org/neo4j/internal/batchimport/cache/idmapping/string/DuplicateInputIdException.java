@@ -19,19 +19,16 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.neo4j.internal.batchimport.input.DataException;
-
 import static java.lang.String.format;
 
-public class DuplicateInputIdException extends DataException
-{
-    public DuplicateInputIdException( Object id, String groupName )
-    {
-        super( message( id, groupName ) );
+import org.neo4j.internal.batchimport.input.DataException;
+
+public class DuplicateInputIdException extends DataException {
+    public DuplicateInputIdException(Object id, String groupName) {
+        super(message(id, groupName));
     }
 
-    public static String message( Object id, String groupName )
-    {
-        return format( "Id '%s' is defined more than once in group '%s'", id, groupName );
+    public static String message(Object id, String groupName) {
+        return format("Id '%s' is defined more than once in group '%s'", id, groupName);
     }
 }

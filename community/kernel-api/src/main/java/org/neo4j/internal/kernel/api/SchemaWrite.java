@@ -22,20 +22,17 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 
 /**
  * Surface for creating and dropping indexes and constraints.
  */
-public interface SchemaWrite
-{
+public interface SchemaWrite {
     /**
      * Translate an index provider name, into an {@link IndexProviderDescriptor}.
      *
@@ -46,7 +43,7 @@ public interface SchemaWrite
      * @return The provider descriptor with the given provider name.
      * @throws RuntimeException if there is no index provider by the given name.
      */
-    IndexProviderDescriptor indexProviderByName( String providerName );
+    IndexProviderDescriptor indexProviderByName(String providerName);
 
     /**
      * Translate an index provider name, into an {@link IndexType}.
@@ -57,7 +54,7 @@ public interface SchemaWrite
      * @return The index type that the given provider corresponds to.
      * @throws RuntimeException if there is no index provider by the given name.
      */
-    IndexType indexTypeByProviderName( String providerName );
+    IndexType indexTypeByProviderName(String providerName);
 
     /**
      * Create index using the given {@link IndexPrototype}.
@@ -66,20 +63,20 @@ public interface SchemaWrite
      * @return the {@link IndexDescriptor} for the created index.
      * @throws KernelException if the index cannot be created for some reason.
      */
-    IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException;
+    IndexDescriptor indexCreate(IndexPrototype prototype) throws KernelException;
 
     /**
      * Drop the given index
      *
      * @param index the index to drop
      */
-    void indexDrop( IndexDescriptor index ) throws SchemaKernelException;
+    void indexDrop(IndexDescriptor index) throws SchemaKernelException;
 
     /**
      * Drop the index by the given name.
      * @param indexName the name of the index to drop.
      */
-    void indexDrop( String indexName ) throws SchemaKernelException;
+    void indexDrop(String indexName) throws SchemaKernelException;
 
     /**
      * Create a unique property constraint based on the given uniqueness index prototype.
@@ -89,7 +86,7 @@ public interface SchemaWrite
      * @return The {@link ConstraintDescriptor} of the created constraint.
      * @throws KernelException if the constraint cannot be created for some reason.
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( IndexPrototype prototype ) throws KernelException;
+    ConstraintDescriptor uniquePropertyConstraintCreate(IndexPrototype prototype) throws KernelException;
 
     /**
      * Create node key constraint based on the given uniqueness index prototype.
@@ -99,33 +96,35 @@ public interface SchemaWrite
      * @return the created constraint.
      * @throws KernelException if the constraint cannot be created for some reason.
      */
-    ConstraintDescriptor nodeKeyConstraintCreate( IndexPrototype prototype ) throws KernelException;
+    ConstraintDescriptor nodeKeyConstraintCreate(IndexPrototype prototype) throws KernelException;
 
     /**
      * Create node property existence constraint
      *
      * @param schema description of the constraint
      */
-    ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException;
+    ConstraintDescriptor nodePropertyExistenceConstraintCreate(LabelSchemaDescriptor schema, String name)
+            throws KernelException;
 
     /**
      * Create relationship property existence constraint
      *
      * @param schema description of the constraint
      */
-    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor schema, String name ) throws KernelException;
+    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate(RelationTypeSchemaDescriptor schema, String name)
+            throws KernelException;
 
     /**
      * Drop the constraint with the given name.
      *
      * @param name The name of the constraint to be dropped.
      */
-    void constraintDrop( String name ) throws SchemaKernelException;
+    void constraintDrop(String name) throws SchemaKernelException;
 
     /**
      * Drop the specific constraint.
      *
      * @param constraint description of the constraint
      */
-    void constraintDrop( ConstraintDescriptor constraint ) throws SchemaKernelException;
+    void constraintDrop(ConstraintDescriptor constraint) throws SchemaKernelException;
 }

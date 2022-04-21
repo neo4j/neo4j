@@ -54,7 +54,10 @@ class PeekingIterator[T](inner: ClosingIterator[T]) extends ClosingIterator[T] {
     }
     if (buffer == null) {
       val t = inner.next()
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(t != null, "Inner of PeekingIterator returned `null` on `next()` call.")
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        t != null,
+        "Inner of PeekingIterator returned `null` on `next()` call."
+      )
       buffer = t
       t
     } else {

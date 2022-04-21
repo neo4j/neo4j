@@ -19,27 +19,29 @@
  */
 package org.neo4j.kernel.info;
 
+import static java.util.Collections.emptyList;
+
 import java.lang.Runtime.Version;
 import java.lang.management.MemoryUsage;
 import java.util.List;
 
-import static java.util.Collections.emptyList;
-
-public class CannedJvmMetadataRepository extends JvmMetadataRepository
-{
+public class CannedJvmMetadataRepository extends JvmMetadataRepository {
     private final String javaVmName;
     private final String javaVersion;
     private final List<String> inputArguments;
     private final long initialHeapSize;
     private final long maxHeapSize;
 
-    CannedJvmMetadataRepository( String javaVmName, String javaVersion )
-    {
-        this( javaVmName, javaVersion, emptyList(), 1, 2 );
+    CannedJvmMetadataRepository(String javaVmName, String javaVersion) {
+        this(javaVmName, javaVersion, emptyList(), 1, 2);
     }
 
-    CannedJvmMetadataRepository( String javaVmName, String javaVersion, List<String> inputArguments, long initialHeapSize, long maxHeapSize )
-    {
+    CannedJvmMetadataRepository(
+            String javaVmName,
+            String javaVersion,
+            List<String> inputArguments,
+            long initialHeapSize,
+            long maxHeapSize) {
         this.javaVmName = javaVmName;
         this.javaVersion = javaVersion;
         this.inputArguments = inputArguments;
@@ -48,26 +50,22 @@ public class CannedJvmMetadataRepository extends JvmMetadataRepository
     }
 
     @Override
-    public String getJavaVmName()
-    {
+    public String getJavaVmName() {
         return javaVmName;
     }
 
     @Override
-    public Version getJavaVersion()
-    {
-        return Runtime.Version.parse( javaVersion );
+    public Version getJavaVersion() {
+        return Runtime.Version.parse(javaVersion);
     }
 
     @Override
-    public List<String> getJvmInputArguments()
-    {
+    public List<String> getJvmInputArguments() {
         return inputArguments;
     }
 
     @Override
-    public MemoryUsage getHeapMemoryUsage()
-    {
-        return new MemoryUsage( initialHeapSize, 0, 0, maxHeapSize );
+    public MemoryUsage getHeapMemoryUsage() {
+        return new MemoryUsage(initialHeapSize, 0, 0, maxHeapSize);
     }
 }

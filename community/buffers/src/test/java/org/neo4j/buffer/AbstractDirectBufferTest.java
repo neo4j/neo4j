@@ -19,93 +19,78 @@
  */
 package org.neo4j.buffer;
 
-import io.netty.buffer.ByteBuf;
-import org.junit.jupiter.api.BeforeEach;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import io.netty.buffer.ByteBuf;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.io.bufferpool.ByteBufferManger;
 import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-abstract class AbstractDirectBufferTest
-{
+abstract class AbstractDirectBufferTest {
     NettyMemoryManagerWrapper nettyBufferAllocator;
     private TracingPoolWrapper tracingPoolWrapper;
 
     @BeforeEach
-    void setUp()
-    {
-        var bufferManger = new NeoByteBufferPool( new MemoryPools(), null );
-        tracingPoolWrapper = new TracingPoolWrapper( bufferManger );
-        nettyBufferAllocator = new NettyMemoryManagerWrapper( tracingPoolWrapper );
+    void setUp() {
+        var bufferManger = new NeoByteBufferPool(new MemoryPools(), null);
+        tracingPoolWrapper = new TracingPoolWrapper(bufferManger);
+        nettyBufferAllocator = new NettyMemoryManagerWrapper(tracingPoolWrapper);
     }
 
-    static void write( ByteBuf buf, int size )
-    {
-        for ( var i = 0; i < size; i++ )
-        {
-            buf.writeByte( 1 );
+    static void write(ByteBuf buf, int size) {
+        for (var i = 0; i < size; i++) {
+            buf.writeByte(1);
         }
     }
 
-    void assertAcquiredAndReleased( Integer... capacities )
-    {
-        assertAcquired( capacities );
-        assertReleased( capacities );
+    void assertAcquiredAndReleased(Integer... capacities) {
+        assertAcquired(capacities);
+        assertReleased(capacities);
     }
 
-    private void assertAcquired( Integer... capacities )
-    {
-        assertThat( tracingPoolWrapper.acquired ).contains( capacities );
+    private void assertAcquired(Integer... capacities) {
+        assertThat(tracingPoolWrapper.acquired).contains(capacities);
     }
 
-    private void assertReleased( Integer... capacities )
-    {
-        assertThat( tracingPoolWrapper.released ).contains( capacities );
+    private void assertReleased(Integer... capacities) {
+        assertThat(tracingPoolWrapper.released).contains(capacities);
     }
 
-    static class TracingPoolWrapper implements ByteBufferManger
-    {
+    static class TracingPoolWrapper implements ByteBufferManger {
         private final List<Integer> acquired = new ArrayList<>();
         private final List<Integer> released = new ArrayList<>();
 
         private final ByteBufferManger wrappedPool;
 
-        TracingPoolWrapper( ByteBufferManger wrappedPool )
-        {
+        TracingPoolWrapper(ByteBufferManger wrappedPool) {
             this.wrappedPool = wrappedPool;
         }
 
         @Override
-        public ByteBuffer acquire( int size )
-        {
-            var buffer = wrappedPool.acquire( size );
-            acquired.add( buffer.capacity() );
+        public ByteBuffer acquire(int size) {
+            var buffer = wrappedPool.acquire(size);
+            acquired.add(buffer.capacity());
             return buffer;
         }
 
         @Override
-        public void release( ByteBuffer buffer )
-        {
-            released.add( buffer.capacity() );
-            wrappedPool.release( buffer );
+        public void release(ByteBuffer buffer) {
+            released.add(buffer.capacity());
+            wrappedPool.release(buffer);
         }
 
         @Override
-        public int recommendNewCapacity( int minNewCapacity, int maxCapacity )
-        {
-            return wrappedPool.recommendNewCapacity( minNewCapacity, maxCapacity );
+        public int recommendNewCapacity(int minNewCapacity, int maxCapacity) {
+            return wrappedPool.recommendNewCapacity(minNewCapacity, maxCapacity);
         }
 
         @Override
-        public MemoryTracker getHeapBufferMemoryTracker()
-        {
+        public MemoryTracker getHeapBufferMemoryTracker() {
             return wrappedPool.getHeapBufferMemoryTracker();
         }
     }

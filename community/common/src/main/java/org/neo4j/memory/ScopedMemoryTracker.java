@@ -24,93 +24,79 @@ package org.neo4j.memory;
  * Can be useful for collections when the items are tracked, to avoid iterating over all
  * of the elements and releasing them individual.
  */
-public class ScopedMemoryTracker implements MemoryTracker
-{
+public class ScopedMemoryTracker implements MemoryTracker {
     private final MemoryTracker delegate;
     private long trackedNative;
     private long trackedHeap;
     private boolean isClosed;
 
-    public ScopedMemoryTracker( MemoryTracker delegate )
-    {
+    public ScopedMemoryTracker(MemoryTracker delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public long usedNativeMemory()
-    {
+    public long usedNativeMemory() {
         return trackedNative;
     }
 
     @Override
-    public long estimatedHeapMemory()
-    {
+    public long estimatedHeapMemory() {
         return trackedHeap;
     }
 
     @Override
-    public void allocateNative( long bytes )
-    {
+    public void allocateNative(long bytes) {
         throwIfClosed();
-        delegate.allocateNative( bytes );
+        delegate.allocateNative(bytes);
         trackedNative += bytes;
     }
 
     @Override
-    public void releaseNative( long bytes )
-    {
+    public void releaseNative(long bytes) {
         throwIfClosed();
-        delegate.releaseNative( bytes );
+        delegate.releaseNative(bytes);
         trackedNative -= bytes;
     }
 
     @Override
-    public void allocateHeap( long bytes )
-    {
+    public void allocateHeap(long bytes) {
         throwIfClosed();
-        delegate.allocateHeap( bytes );
+        delegate.allocateHeap(bytes);
         trackedHeap += bytes;
     }
 
     @Override
-    public void releaseHeap( long bytes )
-    {
+    public void releaseHeap(long bytes) {
         throwIfClosed();
-        delegate.releaseHeap( bytes );
+        delegate.releaseHeap(bytes);
         trackedHeap -= bytes;
     }
 
-    private void throwIfClosed()
-    {
-        if ( isClosed )
-        {
-            throw new IllegalStateException( "Should not use a closed ScopedMemoryTracker" );
+    private void throwIfClosed() {
+        if (isClosed) {
+            throw new IllegalStateException("Should not use a closed ScopedMemoryTracker");
         }
     }
 
     @Override
-    public long heapHighWaterMark()
-    {
+    public long heapHighWaterMark() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void reset()
-    {
-        delegate.releaseNative( trackedNative );
-        delegate.releaseHeap( trackedHeap );
+    public void reset() {
+        delegate.releaseNative(trackedNative);
+        delegate.releaseHeap(trackedHeap);
         trackedNative = 0;
         trackedHeap = 0;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
-        if ( !(delegate instanceof ScopedMemoryTracker) || !((ScopedMemoryTracker) delegate).isClosed )
-        {
-            delegate.releaseNative( trackedNative );
-            delegate.releaseHeap( trackedHeap );
+        if (!(delegate instanceof ScopedMemoryTracker) || !((ScopedMemoryTracker) delegate).isClosed) {
+            delegate.releaseNative(trackedNative);
+            delegate.releaseHeap(trackedHeap);
         }
         trackedNative = 0;
         trackedHeap = 0;
@@ -118,8 +104,7 @@ public class ScopedMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public MemoryTracker getScopedMemoryTracker()
-    {
-        return new ScopedMemoryTracker( this );
+    public MemoryTracker getScopedMemoryTracker() {
+        return new ScopedMemoryTracker(this);
     }
 }

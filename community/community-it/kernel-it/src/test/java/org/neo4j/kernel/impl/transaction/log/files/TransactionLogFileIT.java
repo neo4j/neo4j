@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Clock;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.time.Clock;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -40,96 +42,88 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
-
 @DbmsExtension
-@ExtendWith( LifeExtension.class )
-class TransactionLogFileIT
-{
+@ExtendWith(LifeExtension.class)
+class TransactionLogFileIT {
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private LifeSupport life;
+
     @Inject
     private LogVersionRepository logVersionRepository;
+
     @Inject
     private TransactionIdStore transactionIdStore;
 
     @Test
-    @EnabledOnOs( OS.LINUX )
-    void doNotScanDirectoryOnRotate() throws IOException
-    {
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withStoreId( LegacyStoreId.UNKNOWN )
+    @EnabledOnOs(OS.LINUX)
+    void doNotScanDirectoryOnRotate() throws IOException {
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem)
+                .withTransactionIdStore(transactionIdStore)
+                .withLogVersionRepository(logVersionRepository)
+                .withStoreId(LegacyStoreId.UNKNOWN)
                 .build();
-        life.add( logFiles );
+        life.add(logFiles);
         life.start();
 
         MutableLong rotationObservedVersion = new MutableLong();
-        LogRotation logRotation =
-                FileLogRotation.transactionLogRotation( logFiles.getLogFile(), Clock.systemUTC(), new DatabaseHealth( NO_OP, NullLog.getInstance() ),
-                        new LogRotationMonitorAdapter()
-                        {
-                            @Override
-                            public void startRotation( long currentLogVersion )
-                            {
-                                rotationObservedVersion.setValue( currentLogVersion );
-                            }
-                        } );
+        LogRotation logRotation = FileLogRotation.transactionLogRotation(
+                logFiles.getLogFile(),
+                Clock.systemUTC(),
+                new DatabaseHealth(NO_OP, NullLog.getInstance()),
+                new LogRotationMonitorAdapter() {
+                    @Override
+                    public void startRotation(long currentLogVersion) {
+                        rotationObservedVersion.setValue(currentLogVersion);
+                    }
+                });
 
-        for ( int i = 0; i < 6; i++ )
-        {
-            for ( Path path : logFiles.logFiles() )
-            {
-                FileUtils.deleteFile( path );
+        for (int i = 0; i < 6; i++) {
+            for (Path path : logFiles.logFiles()) {
+                FileUtils.deleteFile(path);
             }
-            logRotation.rotateLogFile( LogAppendEvent.NULL );
+            logRotation.rotateLogFile(LogAppendEvent.NULL);
         }
 
-        assertEquals( 5, rotationObservedVersion.getValue() );
-        assertEquals( 6, logFiles.getLogFile().getCurrentLogVersion() );
+        assertEquals(5, rotationObservedVersion.getValue());
+        assertEquals(6, logFiles.getLogFile().getCurrentLogVersion());
     }
 
     @Test
-    void trackTransactionLogFileMemory() throws IOException
-    {
+    void trackTransactionLogFileMemory() throws IOException {
         var memoryTracker = new LocalMemoryTracker();
         var life = new LifeSupport();
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withStoreId( LegacyStoreId.UNKNOWN )
-                .withMemoryTracker( memoryTracker )
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem)
+                .withTransactionIdStore(transactionIdStore)
+                .withLogVersionRepository(logVersionRepository)
+                .withStoreId(LegacyStoreId.UNKNOWN)
+                .withMemoryTracker(memoryTracker)
                 .build();
 
-        life.add( logFiles );
-        try
-        {
+        life.add(logFiles);
+        try {
             life.start();
 
-            assertThat( memoryTracker.estimatedHeapMemory() ).isZero();
-            assertThat( memoryTracker.usedNativeMemory() ).isGreaterThan( 0 );
-        }
-        finally
-        {
+            assertThat(memoryTracker.estimatedHeapMemory()).isZero();
+            assertThat(memoryTracker.usedNativeMemory()).isGreaterThan(0);
+        } finally {
             life.stop();
             life.shutdown();
         }
 
-        assertThat( memoryTracker.usedNativeMemory() ).isZero();
-        assertThat( memoryTracker.estimatedHeapMemory() ).isZero();
+        assertThat(memoryTracker.usedNativeMemory()).isZero();
+        assertThat(memoryTracker.estimatedHeapMemory()).isZero();
     }
 }

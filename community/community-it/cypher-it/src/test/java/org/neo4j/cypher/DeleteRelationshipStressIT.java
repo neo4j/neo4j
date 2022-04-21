@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.neo4j.graphdb.Label.label;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -36,33 +36,25 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.neo4j.graphdb.Label.label;
-
 @ImpermanentDbmsExtension
-class DeleteRelationshipStressIT
-{
-    private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
+class DeleteRelationshipStressIT {
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Inject
     private GraphDatabaseService db;
 
     @BeforeEach
-    void setup()
-    {
-        for ( int i = 0; i < 100; i++ )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
+    void setup() {
+        for (int i = 0; i < 100; i++) {
+            try (Transaction tx = db.beginTx()) {
 
                 Node prev = null;
-                for ( int j = 0; j < 100; j++ )
-                {
-                    Node node = tx.createNode( label( "L" ) );
+                for (int j = 0; j < 100; j++) {
+                    Node node = tx.createNode(label("L"));
 
-                    if ( prev != null )
-                    {
-                        Relationship rel = prev.createRelationshipTo( node, RelationshipType.withName( "T" ) );
-                        rel.setProperty( "prop", i + j );
+                    if (prev != null) {
+                        Relationship rel = prev.createRelationshipTo(node, RelationshipType.withName("T"));
+                        rel.setProperty("prop", i + j);
                     }
                     prev = node;
                 }
@@ -72,53 +64,16 @@ class DeleteRelationshipStressIT
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         executorService.shutdown();
     }
 
     @Test
-    void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws InterruptedException, ExecutionException
-    {
-        // Given
-        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() return r" );
-        Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
-
-        // When
-        query1.get();
-        query2.get();
-    }
-
-    @Test
-    void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws InterruptedException, ExecutionException
-    {
-        // Given
-        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() return r.prop" );
-        Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
-
-        // When
-        query1.get();
-        query2.get();
-    }
-
-    @Test
-    void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
-    {
+    void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws InterruptedException, ExecutionException {
         // Given
         Future query1 = executeInThread(
-                "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() return r.prop IS NOT NULL" );
-        Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
-
-        query1.get();
-        query2.get();
-    }
-
-    @Test
-    void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
-    {
-        // Given
-        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() REMOVE r.prop" );
-        Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
+                "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() return r");
+        Future query2 = executeInThread("MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r");
 
         // When
         query1.get();
@@ -126,26 +81,58 @@ class DeleteRelationshipStressIT
     }
 
     @Test
-    void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
-    {
+    void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws InterruptedException, ExecutionException {
         // Given
-        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() SET r.foo = 'bar'" );
-        Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
+        Future query1 = executeInThread(
+                "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() return r.prop");
+        Future query2 = executeInThread("MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r");
 
         // When
         query1.get();
         query2.get();
     }
 
-    private Future executeInThread( final String query )
-    {
-        return executorService.submit( () ->
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
-                transaction.execute( query ).resultAsString();
+    @Test
+    void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException {
+        // Given
+        Future query1 = executeInThread(
+                "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() return r.prop IS NOT NULL");
+        Future query2 = executeInThread("MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r");
+
+        query1.get();
+        query2.get();
+    }
+
+    @Test
+    void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException {
+        // Given
+        Future query1 = executeInThread(
+                "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() REMOVE r.prop");
+        Future query2 = executeInThread("MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r");
+
+        // When
+        query1.get();
+        query2.get();
+    }
+
+    @Test
+    void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException {
+        // Given
+        Future query1 = executeInThread(
+                "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() SET r.foo = 'bar'");
+        Future query2 = executeInThread("MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r");
+
+        // When
+        query1.get();
+        query2.get();
+    }
+
+    private Future executeInThread(final String query) {
+        return executorService.submit(() -> {
+            try (Transaction transaction = db.beginTx()) {
+                transaction.execute(query).resultAsString();
                 transaction.commit();
             }
-        } );
+        });
     }
 }

@@ -20,147 +20,119 @@
 package org.neo4j.shell;
 
 import java.util.Optional;
-
 import org.neo4j.shell.cli.Encryption;
 
-@SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
-public record ConnectionConfig( String scheme,
-                                String host,
-                                int port,
-                                String username,
-                                String password,
-                                Encryption encryption,
-                                String database,
-                                Environment environment,
-                                Optional<String> impersonatedUser )
-{
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+public record ConnectionConfig(
+        String scheme,
+        String host,
+        int port,
+        String username,
+        String password,
+        Encryption encryption,
+        String database,
+        Environment environment,
+        Optional<String> impersonatedUser) {
     public static final String USERNAME_ENV_VAR = "NEO4J_USERNAME";
     public static final String PASSWORD_ENV_VAR = "NEO4J_PASSWORD";
     public static final String DATABASE_ENV_VAR = "NEO4J_DATABASE";
 
-    public static ConnectionConfig connectionConfig( String scheme,
-                                                     String host,
-                                                     int port,
-                                                     String username,
-                                                     String password,
-                                                     Encryption encryption,
-                                                     String database,
-                                                     Environment environment,
-                                                     Optional<String> impersonatedUser )
-    {
-        return new ConnectionConfig( scheme,
-                                     host,
-                                     port,
-                                     fallbackToEnvVariable( environment, username, USERNAME_ENV_VAR ),
-                                     fallbackToEnvVariable( environment, password, PASSWORD_ENV_VAR ),
-                                     encryption,
-                                     fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR ),
-                                     environment,
-                                     impersonatedUser
-        );
+    public static ConnectionConfig connectionConfig(
+            String scheme,
+            String host,
+            int port,
+            String username,
+            String password,
+            Encryption encryption,
+            String database,
+            Environment environment,
+            Optional<String> impersonatedUser) {
+        return new ConnectionConfig(
+                scheme,
+                host,
+                port,
+                fallbackToEnvVariable(environment, username, USERNAME_ENV_VAR),
+                fallbackToEnvVariable(environment, password, PASSWORD_ENV_VAR),
+                encryption,
+                fallbackToEnvVariable(environment, database, DATABASE_ENV_VAR),
+                environment,
+                impersonatedUser);
     }
 
-    public static ConnectionConfig connectionConfig( String scheme,
-                                                     String host,
-                                                     int port,
-                                                     String username,
-                                                     String password,
-                                                     Encryption encryption,
-                                                     String database,
-                                                     Environment environment )
-    {
-        return new ConnectionConfig( scheme,
-                                     host,
-                                     port,
-                                     fallbackToEnvVariable( environment, username, USERNAME_ENV_VAR ),
-                                     fallbackToEnvVariable( environment, password, PASSWORD_ENV_VAR ),
-                                     encryption,
-                                     fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR ),
-                                     environment,
-                                     Optional.empty()
-        );
+    public static ConnectionConfig connectionConfig(
+            String scheme,
+            String host,
+            int port,
+            String username,
+            String password,
+            Encryption encryption,
+            String database,
+            Environment environment) {
+        return new ConnectionConfig(
+                scheme,
+                host,
+                port,
+                fallbackToEnvVariable(environment, username, USERNAME_ENV_VAR),
+                fallbackToEnvVariable(environment, password, PASSWORD_ENV_VAR),
+                encryption,
+                fallbackToEnvVariable(environment, database, DATABASE_ENV_VAR),
+                environment,
+                Optional.empty());
     }
 
     /**
      * @return preferredValue if not empty, else the contents of the fallback environment variable
      */
-    private static String fallbackToEnvVariable( Environment environment, String preferredValue, String fallbackEnvVar )
-    {
-        String result = environment.getVariable( fallbackEnvVar );
-        if ( result == null || !preferredValue.isEmpty() )
-        {
+    private static String fallbackToEnvVariable(Environment environment, String preferredValue, String fallbackEnvVar) {
+        String result = environment.getVariable(fallbackEnvVar);
+        if (result == null || !preferredValue.isEmpty()) {
             result = preferredValue;
         }
         return result;
     }
 
-    public String driverUrl()
-    {
-        return String.format( "%s://%s:%d", scheme(), host(), port() );
+    public String driverUrl() {
+        return String.format("%s://%s:%d", scheme(), host(), port());
     }
 
-    public ConnectionConfig withPassword( String password )
-    {
-        return new ConnectionConfig( scheme,
-                                     host,
-                                     port,
-                                     username,
-                                     password,
-                                     encryption,
-                                     database,
-                                     environment,
-                                     impersonatedUser );
+    public ConnectionConfig withPassword(String password) {
+        return new ConnectionConfig(
+                scheme, host, port, username, password, encryption, database, environment, impersonatedUser);
     }
 
-    public ConnectionConfig withUsernameAndPassword( String username, String password )
-    {
-        return new ConnectionConfig( scheme,
-                                     host,
-                                     port,
-                                     username,
-                                     password,
-                                     encryption,
-                                     database,
-                                     environment,
-                                     impersonatedUser );
+    public ConnectionConfig withUsernameAndPassword(String username, String password) {
+        return new ConnectionConfig(
+                scheme, host, port, username, password, encryption, database, environment, impersonatedUser);
     }
 
-    public ConnectionConfig withUsernameAndPasswordAndDatabase( String username, String password, String database )
-    {
-        return new ConnectionConfig( scheme,
-                                     host,
-                                     port,
-                                     username,
-                                     password,
-                                     encryption,
-                                     fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR ),
-                                     environment,
-                                     impersonatedUser );
+    public ConnectionConfig withUsernameAndPasswordAndDatabase(String username, String password, String database) {
+        return new ConnectionConfig(
+                scheme,
+                host,
+                port,
+                username,
+                password,
+                encryption,
+                fallbackToEnvVariable(environment, database, DATABASE_ENV_VAR),
+                environment,
+                impersonatedUser);
     }
 
-    public ConnectionConfig withScheme( String scheme )
-    {
-        return new ConnectionConfig( scheme,
-                                     host,
-                                     port,
-                                     username,
-                                     password,
-                                     encryption,
-                                     database,
-                                     environment,
-                                     impersonatedUser );
+    public ConnectionConfig withScheme(String scheme) {
+        return new ConnectionConfig(
+                scheme, host, port, username, password, encryption, database, environment, impersonatedUser);
     }
 
-    public ConnectionConfig withImpersonatedUser( String impersonatedUser )
-    {
-        return new ConnectionConfig( scheme,
-                                     host,
-                                     port,
-                                     username,
-                                     password,
-                                     encryption,
-                                     database,
-                                     environment,
-                                     Optional.ofNullable( impersonatedUser ) );
+    public ConnectionConfig withImpersonatedUser(String impersonatedUser) {
+        return new ConnectionConfig(
+                scheme,
+                host,
+                port,
+                username,
+                password,
+                encryption,
+                database,
+                environment,
+                Optional.ofNullable(impersonatedUser));
     }
 }

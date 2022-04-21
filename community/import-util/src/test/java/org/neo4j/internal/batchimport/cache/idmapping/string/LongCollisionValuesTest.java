@@ -19,18 +19,6 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.Arrays;
-import java.util.Collection;
-
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.CHUNKED_FIXED_SIZE;
@@ -38,38 +26,42 @@ import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.HEAP;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.OFF_HEAP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@ExtendWith( RandomExtension.class )
-class LongCollisionValuesTest
-{
+import java.util.Arrays;
+import java.util.Collection;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+
+@ExtendWith(RandomExtension.class)
+class LongCollisionValuesTest {
     @Inject
     private RandomSupport random;
 
-    static Collection<NumberArrayFactory> data()
-    {
-        return Arrays.asList( HEAP, OFF_HEAP, AUTO_WITHOUT_PAGECACHE, CHUNKED_FIXED_SIZE );
+    static Collection<NumberArrayFactory> data() {
+        return Arrays.asList(HEAP, OFF_HEAP, AUTO_WITHOUT_PAGECACHE, CHUNKED_FIXED_SIZE);
     }
 
     @ParameterizedTest
-    @MethodSource( "data" )
-    void shouldStoreAndLoadLongs( NumberArrayFactory factory )
-    {
+    @MethodSource("data")
+    void shouldStoreAndLoadLongs(NumberArrayFactory factory) {
         // given
-        try ( LongCollisionValues values = new LongCollisionValues( factory, 100, INSTANCE ) )
-        {
+        try (LongCollisionValues values = new LongCollisionValues(factory, 100, INSTANCE)) {
             // when
             long[] offsets = new long[100];
             long[] longs = new long[offsets.length];
-            for ( int i = 0; i < offsets.length; i++ )
-            {
-                long value = random.nextLong( Long.MAX_VALUE );
-                offsets[i] = values.add( value );
+            for (int i = 0; i < offsets.length; i++) {
+                long value = random.nextLong(Long.MAX_VALUE);
+                offsets[i] = values.add(value);
                 longs[i] = value;
             }
 
             // then
-            for ( int i = 0; i < offsets.length; i++ )
-            {
-                assertEquals( longs[i], (long) values.get( offsets[i] ) );
+            for (int i = 0; i < offsets.length; i++) {
+                assertEquals(longs[i], (long) values.get(offsets[i]));
             }
         }
     }

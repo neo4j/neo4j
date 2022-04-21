@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.evaluator;
 
-public final class Evaluator
-{
-    private Evaluator()
-    {
-        throw new UnsupportedOperationException( "Do not instantiate" );
+public final class Evaluator {
+    private Evaluator() {
+        throw new UnsupportedOperationException("Do not instantiate");
     }
 
-    public static ExpressionEvaluator expressionEvaluator()
-    {
+    public static ExpressionEvaluator expressionEvaluator() {
         return new SimpleExpressionEvaluator();
     }
 }

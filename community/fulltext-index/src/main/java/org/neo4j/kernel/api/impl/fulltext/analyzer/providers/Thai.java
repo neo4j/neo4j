@@ -21,28 +21,23 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.th.ThaiAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Thai extends AnalyzerProvider
-{
-    public Thai()
-    {
-        super( "thai" );
+public class Thai extends AnalyzerProvider {
+    public Thai() {
+        super("thai");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new ThaiAnalyzer();
     }
 
     @Override
-    public String description()
-    {
-        return "Thai analyzer with stop word filtering. It relies on the Java built-in localization support for the Thai locale in order to break apart " +
-                "and tokenize words, which might not be available depending on Java version and JRE vendor.";
+    public String description() {
+        return "Thai analyzer with stop word filtering. It relies on the Java built-in localization support for the Thai locale in order to break apart "
+                + "and tokenize words, which might not be available depending on Java version and JRE vendor.";
     }
 }

@@ -24,32 +24,26 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-
 import java.io.IOException;
 import java.util.Map;
 
-final class JoltMapSerializer extends StdSerializer<Map<String,?>>
-{
-    static final JavaType HANDLED_TYPE = TypeFactory.defaultInstance()
-                                                    .constructMapType( Map.class, String.class, Object.class );
+final class JoltMapSerializer extends StdSerializer<Map<String, ?>> {
+    static final JavaType HANDLED_TYPE =
+            TypeFactory.defaultInstance().constructMapType(Map.class, String.class, Object.class);
 
-    JoltMapSerializer()
-    {
-        super( HANDLED_TYPE );
+    JoltMapSerializer() {
+        super(HANDLED_TYPE);
     }
 
     @Override
-    public void serialize( Map<String,?> map, JsonGenerator generator, SerializerProvider provider )
-            throws IOException
-    {
-        generator.writeStartObject( map );
-        generator.writeFieldName( Sigil.MAP.getValue() );
+    public void serialize(Map<String, ?> map, JsonGenerator generator, SerializerProvider provider) throws IOException {
+        generator.writeStartObject(map);
+        generator.writeFieldName(Sigil.MAP.getValue());
         generator.writeStartObject();
 
-        for ( var entry : map.entrySet() )
-        {
-            generator.writeFieldName( entry.getKey() );
-            generator.writeObject( entry.getValue() );
+        for (var entry : map.entrySet()) {
+            generator.writeFieldName(entry.getKey());
+            generator.writeObject(entry.getValue());
         }
 
         generator.writeEndObject();

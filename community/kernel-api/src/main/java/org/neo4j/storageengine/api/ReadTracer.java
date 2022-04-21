@@ -19,14 +19,13 @@
  */
 package org.neo4j.storageengine.api;
 
-public interface ReadTracer
-{
+public interface ReadTracer {
     /**
      * Called when reading a node.
      *
      * @param nodeReference the node reference that will be available.
      */
-    void onNode( long nodeReference );
+    void onNode(long nodeReference);
 
     /**
      * Called on all-node scan.
@@ -38,19 +37,19 @@ public interface ReadTracer
      *
      * @param relationshipReference the relationship reference that will be available.
      */
-    void onRelationship( long relationshipReference );
+    void onRelationship(long relationshipReference);
 
     /**
      * Called when reading a property.
      *
      * @param propertyKey the property key of the next property.
      */
-    void onProperty( int propertyKey );
+    void onProperty(int propertyKey);
 
     /**
      * Called when checking for existence of a label.
      */
-    void onHasLabel( int label );
+    void onHasLabel(int label);
 
     void dbHit();
 }

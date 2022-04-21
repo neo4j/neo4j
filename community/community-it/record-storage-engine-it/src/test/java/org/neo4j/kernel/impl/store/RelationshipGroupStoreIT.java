@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
@@ -34,61 +36,52 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
-
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-class RelationshipGroupStoreIT
-{
+@ImpermanentDbmsExtension(configurationCallback = "configure")
+class RelationshipGroupStoreIT {
     private static final int RELATIONSHIP_COUNT = 20;
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private RecordStorageEngine storageEngine;
 
     @ExtensionCallback
-    static void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 );
+    static void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME);
+        builder.setConfig(GraphDatabaseSettings.dense_node_threshold, 1);
     }
 
     @Test
-    void shouldCreateAllTheseRelationshipTypes()
-    {
+    void shouldCreateAllTheseRelationshipTypes() {
         shiftHighId();
 
         Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             node = tx.createNode();
-            for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
-            {
-                node.createRelationshipTo( tx.createNode(), type( i ) );
+            for (int i = 0; i < RELATIONSHIP_COUNT; i++) {
+                node.createRelationshipTo(tx.createNode(), type(i));
             }
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = tx.getNodeById( node.getId() );
-            for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
-            {
-                assertEquals( 1, count( node.getRelationships( type( i ) ) ),
-                        "Should be possible to get relationships of type with id in unsigned short range." );
+        try (Transaction tx = db.beginTx()) {
+            node = tx.getNodeById(node.getId());
+            for (int i = 0; i < RELATIONSHIP_COUNT; i++) {
+                assertEquals(
+                        1,
+                        count(node.getRelationships(type(i))),
+                        "Should be possible to get relationships of type with id in unsigned short range.");
             }
         }
     }
 
-    private void shiftHighId()
-    {
+    private void shiftHighId() {
         NeoStores neoStores = storageEngine.testAccessNeoStores();
-        neoStores.getRelationshipTypeTokenStore().setHighId( Short.MAX_VALUE - RELATIONSHIP_COUNT / 2 );
+        neoStores.getRelationshipTypeTokenStore().setHighId(Short.MAX_VALUE - RELATIONSHIP_COUNT / 2);
     }
 
-    private static RelationshipType type( int i )
-    {
-        return RelationshipType.withName( "TYPE_" + i );
+    private static RelationshipType type(int i) {
+        return RelationshipType.withName("TYPE_" + i);
     }
 }

@@ -19,115 +19,94 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.Comparator;
-
 import static java.lang.String.format;
 
-class KeyRange<KEY>
-{
+import java.util.Comparator;
+
+class KeyRange<KEY> {
     private final int level;
     private final long pageId;
     private final Comparator<KEY> comparator;
     private final KEY fromInclusive;
     private final KEY toExclusive;
-    private final Layout<KEY,?> layout;
+    private final Layout<KEY, ?> layout;
     private final KeyRange<KEY> superRange;
 
-    KeyRange( int level, long pageId, Comparator<KEY> comparator, KEY fromInclusive, KEY toExclusive, Layout<KEY,?> layout,
-            KeyRange<KEY> superRange )
-    {
+    KeyRange(
+            int level,
+            long pageId,
+            Comparator<KEY> comparator,
+            KEY fromInclusive,
+            KEY toExclusive,
+            Layout<KEY, ?> layout,
+            KeyRange<KEY> superRange) {
         this.level = level;
         this.pageId = pageId;
         this.comparator = comparator;
         this.superRange = superRange;
-        this.fromInclusive = fromInclusive == null ? null : layout.copyKey( fromInclusive, layout.newKey() );
-        this.toExclusive = toExclusive == null ? null : layout.copyKey( toExclusive, layout.newKey() );
+        this.fromInclusive = fromInclusive == null ? null : layout.copyKey(fromInclusive, layout.newKey());
+        this.toExclusive = toExclusive == null ? null : layout.copyKey(toExclusive, layout.newKey());
         this.layout = layout;
     }
 
-    boolean inRange( KEY key )
-    {
-        if ( fromInclusive != null )
-        {
-            if ( toExclusive != null )
-            {
-                return comparator.compare( key, fromInclusive ) >= 0 && comparator.compare( key, toExclusive ) < 0;
+    boolean inRange(KEY key) {
+        if (fromInclusive != null) {
+            if (toExclusive != null) {
+                return comparator.compare(key, fromInclusive) >= 0 && comparator.compare(key, toExclusive) < 0;
             }
-            return comparator.compare( key, fromInclusive ) >= 0;
+            return comparator.compare(key, fromInclusive) >= 0;
         }
-        return toExclusive == null || comparator.compare( key, toExclusive ) < 0;
+        return toExclusive == null || comparator.compare(key, toExclusive) < 0;
     }
 
-    KeyRange<KEY> newSubRange( int level, long pageId )
-    {
-        return new KeyRange<>( level, pageId, comparator, fromInclusive, toExclusive, layout, this );
+    KeyRange<KEY> newSubRange(int level, long pageId) {
+        return new KeyRange<>(level, pageId, comparator, fromInclusive, toExclusive, layout, this);
     }
 
-    boolean hasPageIdInStack( long pageId )
-    {
-        if ( this.pageId == pageId )
-        {
+    boolean hasPageIdInStack(long pageId) {
+        if (this.pageId == pageId) {
             return true;
         }
-        if ( superRange != null )
-        {
-            return superRange.hasPageIdInStack( pageId );
+        if (superRange != null) {
+            return superRange.hasPageIdInStack(pageId);
         }
         return false;
     }
 
-    KeyRange<KEY> restrictLeft( KEY left )
-    {
+    KeyRange<KEY> restrictLeft(KEY left) {
         KEY newLeft;
-        if ( fromInclusive == null )
-        {
+        if (fromInclusive == null) {
             newLeft = left;
-        }
-        else if ( left == null )
-        {
+        } else if (left == null) {
+            newLeft = fromInclusive;
+        } else if (comparator.compare(fromInclusive, left) < 0) {
+            newLeft = left;
+        } else {
             newLeft = fromInclusive;
         }
-        else if ( comparator.compare( fromInclusive, left ) < 0 )
-        {
-            newLeft = left;
-        }
-        else
-        {
-            newLeft = fromInclusive;
-        }
-        return new KeyRange<>( level, pageId, comparator, newLeft, toExclusive, layout, superRange );
+        return new KeyRange<>(level, pageId, comparator, newLeft, toExclusive, layout, superRange);
     }
 
-    KeyRange<KEY> restrictRight( KEY right )
-    {
+    KeyRange<KEY> restrictRight(KEY right) {
         KEY newRight;
-        if ( toExclusive == null )
-        {
+        if (toExclusive == null) {
             newRight = right;
-        }
-        else if ( right == null )
-        {
+        } else if (right == null) {
+            newRight = toExclusive;
+        } else if (comparator.compare(toExclusive, right) > 0) {
+            newRight = right;
+        } else {
             newRight = toExclusive;
         }
-        else if ( comparator.compare( toExclusive, right ) > 0 )
-        {
-            newRight = right;
-        }
-        else
-        {
-            newRight = toExclusive;
-        }
-        return new KeyRange<>( level, pageId, comparator, fromInclusive, newRight, layout, superRange );
+        return new KeyRange<>(level, pageId, comparator, fromInclusive, newRight, layout, superRange);
     }
 
     @Override
-    public String toString()
-    {
-        return (superRange != null ? format( "%s%n", superRange ) : "") + singleLevel();
+    public String toString() {
+        return (superRange != null ? format("%s%n", superRange) : "") + singleLevel();
     }
 
-    private String singleLevel()
-    {
+    private String singleLevel() {
         return "level: " + level + " {" + pageId + "} " + fromInclusive + " ≤ key < " + toExclusive;
     }
 }

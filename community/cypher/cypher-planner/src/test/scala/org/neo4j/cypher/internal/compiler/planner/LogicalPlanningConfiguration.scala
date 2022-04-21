@@ -51,10 +51,17 @@ import scala.collection.mutable
 
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                       selectivityCalculator: SelectivityCalculator,
-                       expressionEvaluator: ExpressionEvaluator): CardinalityModel
-  def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost]
+
+  def cardinalityModel(
+    queryGraphCardinalityModel: QueryGraphCardinalityModel,
+    selectivityCalculator: SelectivityCalculator,
+    expressionEvaluator: ExpressionEvaluator
+  ): CardinalityModel
+
+  def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[
+    (LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor),
+    Cost
+  ]
   def graphStatistics: GraphStatistics
   def indexes: Map[IndexDef, IndexAttributes]
   def nodeConstraints: Set[(String, Set[String])]
@@ -69,18 +76,27 @@ trait LogicalPlanningConfiguration {
   def executionModel: ExecutionModel
   def lookupRelationshipsByType: LookupRelationshipsByType
 
-  protected def mapCardinality(pf: PartialFunction[PlannerQueryPart, Double]): PartialFunction[PlannerQueryPart, Cardinality] = pf.andThen(Cardinality.apply(_))
-  protected def selectivitiesCardinality(selectivities: Map[Expression, Double],
-                                         baseCardinality: QueryGraph => Double): PartialFunction[PlannerQueryPart, Cardinality] = mapCardinality {
+  protected def mapCardinality(pf: PartialFunction[PlannerQueryPart, Double])
+    : PartialFunction[PlannerQueryPart, Cardinality] = pf.andThen(Cardinality.apply(_))
+
+  protected def selectivitiesCardinality(
+    selectivities: Map[Expression, Double],
+    baseCardinality: QueryGraph => Double
+  ): PartialFunction[PlannerQueryPart, Cardinality] = mapCardinality {
     case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
-      queryGraph.selections.predicates.foldLeft(baseCardinality(queryGraph)){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      queryGraph.selections.predicates.foldLeft(baseCardinality(queryGraph)) { case (rows, predicate) =>
+        rows * selectivities(predicate.expr)
+      }
   }
 }
 
 case class IndexDef(entityType: IndexDefinition.EntityType, propertyKeys: Seq[String], indexType: IndexType)
-class IndexAttributes(var isUnique: Boolean = false,
-                      var withValues: Boolean = false,
-                      var withOrdering: IndexOrderCapability = IndexOrderCapability.NONE)
+
+class IndexAttributes(
+  var isUnique: Boolean = false,
+  var withValues: Boolean = false,
+  var withOrdering: IndexOrderCapability = IndexOrderCapability.NONE
+)
 
 trait LogicalPlanningConfigurationAdHocSemanticTable {
   self: LogicalPlanningConfiguration =>
@@ -116,7 +132,7 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
     knownRelationships.foreach(addRelationshipTypeIfUnknown)
 
     var theTable = table
-    for((expr, typ) <- mappings) {
+    for ((expr, typ) <- mappings) {
       theTable = theTable.copy(types = theTable.types + ((expr, ExpressionTypeInfo(typ, None))))
     }
 
@@ -125,11 +141,13 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
 }
 
 sealed trait LookupRelationshipsByType {
+
   def canLookupRelationshipsByType: Boolean = this match {
-    case LookupRelationshipsByTypeEnabled => true
+    case LookupRelationshipsByTypeEnabled  => true
     case LookupRelationshipsByTypeDisabled => false
   }
 }
+
 object LookupRelationshipsByType {
   def default: LookupRelationshipsByType = LookupRelationshipsByTypeEnabled
 }

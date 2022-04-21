@@ -19,35 +19,31 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 import java.util.Map;
-
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-
-public class DefaultResponseFormatIT extends AbstractRestFunctionalTestBase
-{
-    HTTP.Builder http = HTTP.withBaseUri( container().getBaseUri() );
+public class DefaultResponseFormatIT extends AbstractRestFunctionalTestBase {
+    HTTP.Builder http = HTTP.withBaseUri(container().getBaseUri());
 
     @Test
-    void testDefaultResponseFormatIsJson() throws JsonParseException
-    {
+    void testDefaultResponseFormatIsJson() throws JsonParseException {
         // Given
-        HTTP.Response response = http.POST( txCommitUri(), HTTP.RawPayload.quotedJson( "{ 'statements': [ { 'statement': 'RETURN 1' } ] }" ) );
+        HTTP.Response response = http.POST(
+                txCommitUri(), HTTP.RawPayload.quotedJson("{ 'statements': [ { 'statement': 'RETURN 1' } ] }"));
 
         // Then
-        assertThat( response.status() ).isEqualTo( 200 );
-        assertThat( response.header( HttpHeaders.CONTENT_TYPE ) ).isEqualTo( MediaType.APPLICATION_JSON );
+        assertThat(response.status()).isEqualTo(200);
+        assertThat(response.header(HttpHeaders.CONTENT_TYPE)).isEqualTo(MediaType.APPLICATION_JSON);
 
-        Map<String,Object> result = jsonToMap( response.rawContent() );
-        assertThat( result.containsKey( "results" ) ).isTrue();
+        Map<String, Object> result = jsonToMap(response.rawContent());
+        assertThat(result.containsKey("results")).isTrue();
     }
 }

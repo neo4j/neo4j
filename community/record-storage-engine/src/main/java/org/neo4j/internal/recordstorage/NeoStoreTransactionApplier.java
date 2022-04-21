@@ -19,6 +19,15 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
+
 import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.recordstorage.Command.BaseCommand;
 import org.neo4j.internal.schema.SchemaRule;
@@ -35,15 +44,6 @@ import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
-
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
  * What happens in here is what will happen in a "internal" transaction, i.e. a transaction that has been
@@ -52,8 +52,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
  * For other modes of application, like recovery or external there are other, added functionality, decorated
  * outside this applier.
  */
-public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
-{
+public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
     private final CommandVersion version;
     private final LockGroup lockGroup;
     private final long transactionId;
@@ -64,9 +63,15 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
 
-    public NeoStoreTransactionApplier( CommandVersion version, NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
-            long transactionId, BatchContext batchContext, CursorContext cursorContext, StoreCursors storeCursors )
-    {
+    public NeoStoreTransactionApplier(
+            CommandVersion version,
+            NeoStores neoStores,
+            CacheAccessBackDoor cacheAccess,
+            LockService lockService,
+            long transactionId,
+            BatchContext batchContext,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
         this.version = version;
         this.lockGroup = batchContext.getLockGroup();
         this.transactionId = transactionId;
@@ -79,77 +84,65 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitNodeCommand( Command.NodeCommand command )
-    {
+    public boolean visitNodeCommand(Command.NodeCommand command) {
         // acquire lock
-        lockGroup.add( lockService.acquireNodeLock( command.getKey(), LockType.EXCLUSIVE ) );
+        lockGroup.add(lockService.acquireNodeLock(command.getKey(), LockType.EXCLUSIVE));
 
         // update store
-        updateStore( neoStores.getNodeStore(), command, NODE_CURSOR );
+        updateStore(neoStores.getNodeStore(), command, NODE_CURSOR);
         return false;
     }
 
     @Override
-    public boolean visitRelationshipCommand( Command.RelationshipCommand command )
-    {
-        lockGroup.add( lockService.acquireRelationshipLock( command.getKey(), LockType.EXCLUSIVE ) );
+    public boolean visitRelationshipCommand(Command.RelationshipCommand command) {
+        lockGroup.add(lockService.acquireRelationshipLock(command.getKey(), LockType.EXCLUSIVE));
 
-        updateStore( neoStores.getRelationshipStore(), command, RELATIONSHIP_CURSOR );
+        updateStore(neoStores.getRelationshipStore(), command, RELATIONSHIP_CURSOR);
         return false;
     }
 
     @Override
-    public boolean visitPropertyCommand( Command.PropertyCommand command )
-    {
+    public boolean visitPropertyCommand(Command.PropertyCommand command) {
         // acquire lock
-        if ( command.after.isNodeSet() )
-        {
-            lockGroup.add( lockService.acquireNodeLock( command.getNodeId(), LockType.EXCLUSIVE ) );
-        }
-        else if ( command.after.isRelSet() )
-        {
-            lockGroup.add( lockService.acquireRelationshipLock( command.getRelId(), LockType.EXCLUSIVE ) );
-        }
-        else if ( command.after.isSchemaSet() )
-        {
-            lockGroup.add( lockService.acquireCustomLock( Command.RECOVERY_LOCK_TYPE_SCHEMA_RULE, command.getSchemaRuleId(), LockType.EXCLUSIVE ) );
+        if (command.after.isNodeSet()) {
+            lockGroup.add(lockService.acquireNodeLock(command.getNodeId(), LockType.EXCLUSIVE));
+        } else if (command.after.isRelSet()) {
+            lockGroup.add(lockService.acquireRelationshipLock(command.getRelId(), LockType.EXCLUSIVE));
+        } else if (command.after.isSchemaSet()) {
+            lockGroup.add(lockService.acquireCustomLock(
+                    Command.RECOVERY_LOCK_TYPE_SCHEMA_RULE, command.getSchemaRuleId(), LockType.EXCLUSIVE));
         }
 
-        updateStore( neoStores.getPropertyStore(), command, PROPERTY_CURSOR );
+        updateStore(neoStores.getPropertyStore(), command, PROPERTY_CURSOR);
         return false;
     }
 
     @Override
-    public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command )
-    {
-        updateStore( neoStores.getRelationshipGroupStore(), command, GROUP_CURSOR );
+    public boolean visitRelationshipGroupCommand(Command.RelationshipGroupCommand command) {
+        updateStore(neoStores.getRelationshipGroupStore(), command, GROUP_CURSOR);
         return false;
     }
 
     @Override
-    public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command )
-    {
-        updateStore( neoStores.getRelationshipTypeTokenStore(), command, REL_TYPE_TOKEN_CURSOR );
+    public boolean visitRelationshipTypeTokenCommand(Command.RelationshipTypeTokenCommand command) {
+        updateStore(neoStores.getRelationshipTypeTokenStore(), command, REL_TYPE_TOKEN_CURSOR);
         return false;
     }
 
     @Override
-    public boolean visitLabelTokenCommand( Command.LabelTokenCommand command )
-    {
-        updateStore( neoStores.getLabelTokenStore(), command, LABEL_TOKEN_CURSOR );
+    public boolean visitLabelTokenCommand(Command.LabelTokenCommand command) {
+        updateStore(neoStores.getLabelTokenStore(), command, LABEL_TOKEN_CURSOR);
         return false;
     }
 
     @Override
-    public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command )
-    {
-        updateStore( neoStores.getPropertyKeyTokenStore(), command, PROPERTY_KEY_TOKEN_CURSOR );
+    public boolean visitPropertyKeyTokenCommand(Command.PropertyKeyTokenCommand command) {
+        updateStore(neoStores.getPropertyKeyTokenStore(), command, PROPERTY_KEY_TOKEN_CURSOR);
         return false;
     }
 
     @Override
-    public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command )
-    {
+    public boolean visitSchemaRuleCommand(Command.SchemaRuleCommand command) {
         // schema rules. Execute these after generating the property updates so. If executed
         // before and we've got a transaction that sets properties/labels as well as creating an index
         // we might end up with this corner-case:
@@ -159,62 +152,55 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         //    job might get those as updates
         // 4) the population job will apply those updates as added properties, and might end up with duplicate
         //    entries for the same property
-        updateStore( neoStores.getSchemaStore(), command, SCHEMA_CURSOR );
+        updateStore(neoStores.getSchemaStore(), command, SCHEMA_CURSOR);
         SchemaRule schemaRule = command.getSchemaRule();
         boolean isConstraint = command.getAfter().isConstraint();
-        onSchemaRuleChange( command.getMode(), command.getKey(), schemaRule, isConstraint );
+        onSchemaRuleChange(command.getMode(), command.getKey(), schemaRule, isConstraint);
         return false;
     }
 
     @Override
-    public boolean visitMetaDataCommand( Command.MetaDataCommand command )
-    {
-        KernelVersion kernelVersion = KernelVersion.getForVersion( Numbers.safeCastLongToByte( command.getAfter().getValue() ) );
-        neoStores.getMetaDataStore().setKernelVersion( kernelVersion );
+    public boolean visitMetaDataCommand(Command.MetaDataCommand command) {
+        KernelVersion kernelVersion = KernelVersion.getForVersion(
+                Numbers.safeCastLongToByte(command.getAfter().getValue()));
+        neoStores.getMetaDataStore().setKernelVersion(kernelVersion);
         return false;
     }
 
-    private void onSchemaRuleChange( Command.Mode commandMode, long schemaRuleId, SchemaRule schemaRule, boolean isConstraint )
-    {
-        if ( isConstraint )
-        {
-            switch ( commandMode )
-            {
-            case UPDATE:
-            case CREATE:
-                neoStores.getMetaDataStore().setLatestConstraintIntroducingTx( transactionId );
-                break;
-            case DELETE:
-                break;
-            default:
-                throw new IllegalStateException( commandMode.name() );
+    private void onSchemaRuleChange(
+            Command.Mode commandMode, long schemaRuleId, SchemaRule schemaRule, boolean isConstraint) {
+        if (isConstraint) {
+            switch (commandMode) {
+                case UPDATE:
+                case CREATE:
+                    neoStores.getMetaDataStore().setLatestConstraintIntroducingTx(transactionId);
+                    break;
+                case DELETE:
+                    break;
+                default:
+                    throw new IllegalStateException(commandMode.name());
             }
         }
 
-        if ( commandMode == Command.Mode.DELETE )
-        {
-            cacheAccess.removeSchemaRuleFromCache( schemaRuleId );
-        }
-        else
-        {
-            cacheAccess.addSchemaRule( schemaRule );
+        if (commandMode == Command.Mode.DELETE) {
+            cacheAccess.removeSchemaRuleFromCache(schemaRuleId);
+        } else {
+            cacheAccess.addSchemaRule(schemaRule);
         }
     }
 
-    private <RECORD extends AbstractBaseRecord> void updateStore( CommonAbstractStore<RECORD,?> store, BaseCommand<RECORD> command, CursorType cursorType )
-    {
-        try ( var cursor = storeCursors.writeCursor( cursorType ) )
-        {
-            store.updateRecord( selectRecordByCommandVersion( command ), idUpdateListener, cursor, cursorContext, storeCursors );
+    private <RECORD extends AbstractBaseRecord> void updateStore(
+            CommonAbstractStore<RECORD, ?> store, BaseCommand<RECORD> command, CursorType cursorType) {
+        try (var cursor = storeCursors.writeCursor(cursorType)) {
+            store.updateRecord(
+                    selectRecordByCommandVersion(command), idUpdateListener, cursor, cursorContext, storeCursors);
         }
     }
 
-    private <RECORD extends AbstractBaseRecord> RECORD selectRecordByCommandVersion( BaseCommand<RECORD> command )
-    {
-        return switch ( version )
-                {
-                    case BEFORE -> command.getBefore();
-                    case AFTER -> command.getAfter();
-                };
+    private <RECORD extends AbstractBaseRecord> RECORD selectRecordByCommandVersion(BaseCommand<RECORD> command) {
+        return switch (version) {
+            case BEFORE -> command.getBefore();
+            case AFTER -> command.getAfter();
+        };
     }
 }

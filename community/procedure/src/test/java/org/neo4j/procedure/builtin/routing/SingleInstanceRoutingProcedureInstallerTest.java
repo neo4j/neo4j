@@ -19,10 +19,17 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import org.junit.jupiter.api.Test;
+import static java.util.stream.Collectors.toSet;
+import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.util.Set;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -33,43 +40,31 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 
-import static java.util.stream.Collectors.toSet;
-import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-class SingleInstanceRoutingProcedureInstallerTest
-{
+class SingleInstanceRoutingProcedureInstallerTest {
     @Test
-    void shouldRegisterRoutingProcedures() throws Exception
-    {
-        DatabaseManager<?> databaseManager = mock( DatabaseManager.class );
-        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
-        ClientRoutingDomainChecker clientRoutingDomainChecker = mock( ClientRoutingDomainChecker.class );
+    void shouldRegisterRoutingProcedures() throws Exception {
+        DatabaseManager<?> databaseManager = mock(DatabaseManager.class);
+        ConnectorPortRegister portRegister = mock(ConnectorPortRegister.class);
+        ClientRoutingDomainChecker clientRoutingDomainChecker = mock(ClientRoutingDomainChecker.class);
         Config config = Config.defaults();
         InternalLogProvider logProvider = NullLogProvider.getInstance();
 
-        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker,
-                                                                                                         portRegister, config, logProvider );
-        GlobalProcedures procedures = spy( new GlobalProceduresRegistry() );
+        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller(
+                databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider);
+        GlobalProcedures procedures = spy(new GlobalProceduresRegistry());
 
-        installer.install( procedures );
+        installer.install(procedures);
 
-        verify( procedures, times( 2 ) ).register( any( GetRoutingTableProcedure.class ) );
+        verify(procedures, times(2)).register(any(GetRoutingTableProcedure.class));
 
         Set<QualifiedName> expectedNames = newSetWith(
-                new QualifiedName( new String[]{"dbms", "routing"}, "getRoutingTable" ),
-                new QualifiedName( new String[]{"dbms", "cluster", "routing"}, "getRoutingTable" ) );
+                new QualifiedName(new String[] {"dbms", "routing"}, "getRoutingTable"),
+                new QualifiedName(new String[] {"dbms", "cluster", "routing"}, "getRoutingTable"));
 
-        Set<QualifiedName> actualNames = procedures.getAllProcedures()
-                .stream()
-                .map( ProcedureSignature::name )
-                .collect( toSet() );
+        Set<QualifiedName> actualNames = procedures.getAllProcedures().stream()
+                .map(ProcedureSignature::name)
+                .collect(toSet());
 
-        assertEquals( expectedNames, actualNames );
+        assertEquals(expectedNames, actualNames);
     }
 }

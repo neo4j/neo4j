@@ -19,6 +19,11 @@
  */
 package org.neo4j.procedure.builtin;
 
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.procedure.Mode.READ;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.Node;
@@ -55,19 +59,13 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.util.FeatureToggles;
 
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.procedure.Mode.READ;
-
 /**
  * Procedures for querying the Fulltext indexes.
  */
-@SuppressWarnings( "WeakerAccess" )
-public class FulltextProcedures
-{
-    private static final long INDEX_ONLINE_QUERY_TIMEOUT_SECONDS = FeatureToggles.getInteger(
-            FulltextProcedures.class, "INDEX_ONLINE_QUERY_TIMEOUT_SECONDS", 30 );
+@SuppressWarnings("WeakerAccess")
+public class FulltextProcedures {
+    private static final long INDEX_ONLINE_QUERY_TIMEOUT_SECONDS =
+            FeatureToggles.getInteger(FulltextProcedures.class, "INDEX_ONLINE_QUERY_TIMEOUT_SECONDS", 30);
 
     @Context
     public KernelTransaction tx;
@@ -88,20 +86,18 @@ public class FulltextProcedures
     public ProcedureCallContext callContext;
 
     @SystemProcedure
-    @Description( "List the available analyzers that the full-text indexes can be configured with." )
-    @Procedure( name = "db.index.fulltext.listAvailableAnalyzers", mode = READ )
-    public Stream<AvailableAnalyzer> listAvailableAnalyzers()
-    {
-        return accessor.listAvailableAnalyzers().map( AvailableAnalyzer::new );
+    @Description("List the available analyzers that the full-text indexes can be configured with.")
+    @Procedure(name = "db.index.fulltext.listAvailableAnalyzers", mode = READ)
+    public Stream<AvailableAnalyzer> listAvailableAnalyzers() {
+        return accessor.listAvailableAnalyzers().map(AvailableAnalyzer::new);
     }
 
     @SystemProcedure
-    @Description( "Wait for the updates from recently committed transactions to be applied to any eventually-consistent full-text indexes." )
-    @Procedure( name = "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", mode = READ )
-    public void awaitRefresh()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description(
+            "Wait for the updates from recently committed transactions to be applied to any eventually-consistent full-text indexes.")
+    @Procedure(name = "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", mode = READ)
+    public void awaitRefresh() {
+        if (callContext.isSystemDatabase()) {
             return;
         }
 
@@ -109,45 +105,42 @@ public class FulltextProcedures
     }
 
     @SystemProcedure
-    @Description( "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. " +
-            "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned." )
-    @Procedure( name = "db.index.fulltext.queryNodes", mode = READ )
+    @Description(
+            "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. "
+                    + "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned.")
+    @Procedure(name = "db.index.fulltext.queryNodes", mode = READ)
     public Stream<NodeOutput> queryFulltextForNodes(
-            @Name( "indexName" ) String name,
-            @Name( "queryString" ) String query,
-            @Name( value = "options", defaultValue = "{}" ) Map<String, Object> options ) throws Exception
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+            @Name("indexName") String name,
+            @Name("queryString") String query,
+            @Name(value = "options", defaultValue = "{}") Map<String, Object> options)
+            throws Exception {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
-        IndexDescriptor indexReference = getValidIndex( name );
-        awaitOnline( indexReference );
+        IndexDescriptor indexReference = getValidIndex(name);
+        awaitOnline(indexReference);
         EntityType entityType = indexReference.schema().entityType();
-        if ( entityType != NODE )
-        {
-            throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
-                    ", so it cannot be queried for nodes." );
+        if (entityType != NODE) {
+            throw new IllegalArgumentException("The '" + name + "' index (" + indexReference + ") is an index on "
+                    + entityType + ", so it cannot be queried for nodes.");
         }
-        NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
-        IndexReadSession indexSession = tx.dataRead().indexReadSession( indexReference );
-        IndexQueryConstraints constraints = queryConstraints( options );
-        tx.dataRead().nodeIndexSeek( tx.queryContext(), indexSession, cursor, constraints, PropertyIndexQuery.fulltextSearch( query ) );
+        NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor(tx.cursorContext(), tx.memoryTracker());
+        IndexReadSession indexSession = tx.dataRead().indexReadSession(indexReference);
+        IndexQueryConstraints constraints = queryConstraints(options);
+        tx.dataRead()
+                .nodeIndexSeek(
+                        tx.queryContext(), indexSession, cursor, constraints, PropertyIndexQuery.fulltextSearch(query));
 
-        Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<>()
-        {
+        Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<>() {
             @Override
-            public boolean tryAdvance( Consumer<? super NodeOutput> action )
-            {
-                while ( cursor.next() )
-                {
+            public boolean tryAdvance(Consumer<? super NodeOutput> action) {
+                while (cursor.next()) {
                     long nodeReference = cursor.nodeReference();
                     float score = cursor.score();
-                    NodeOutput nodeOutput = NodeOutput.forExistingEntityOrNull( transaction, nodeReference, score );
-                    if ( nodeOutput != null )
-                    {
-                        action.accept( nodeOutput );
+                    NodeOutput nodeOutput = NodeOutput.forExistingEntityOrNull(transaction, nodeReference, score);
+                    if (nodeOutput != null) {
+                        action.accept(nodeOutput);
                         return true;
                     }
                 }
@@ -155,67 +148,66 @@ public class FulltextProcedures
                 return false;
             }
         };
-        Stream<NodeOutput> stream = StreamSupport.stream( spliterator, false );
-        return stream.onClose( cursor::close );
+        Stream<NodeOutput> stream = StreamSupport.stream(spliterator, false);
+        return stream.onClose(cursor::close);
     }
 
-    protected static IndexQueryConstraints queryConstraints( Map<String,Object> options )
-    {
+    protected static IndexQueryConstraints queryConstraints(Map<String, Object> options) {
         IndexQueryConstraints constraints = unconstrained();
         Object skip;
-        if ( ( skip = options.get( "skip" ) ) != null && skip instanceof Number )
-        {
-            constraints = constraints.skip( ((Number) skip).longValue() );
+        if ((skip = options.get("skip")) != null && skip instanceof Number) {
+            constraints = constraints.skip(((Number) skip).longValue());
         }
         Object limit;
-        if ( ( limit = options.get( "limit" ) ) != null && limit instanceof Number )
-        {
-            constraints = constraints.limit( ((Number) limit).longValue() );
+        if ((limit = options.get("limit")) != null && limit instanceof Number) {
+            constraints = constraints.limit(((Number) limit).longValue());
         }
         return constraints;
     }
 
     @SystemProcedure
-    @Description( "Query the given full-text index. Returns the matching relationships, and their Lucene query score, ordered by score. " +
-            "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned." )
-    @Procedure( name = "db.index.fulltext.queryRelationships", mode = READ )
+    @Description(
+            "Query the given full-text index. Returns the matching relationships, and their Lucene query score, ordered by score. "
+                    + "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned.")
+    @Procedure(name = "db.index.fulltext.queryRelationships", mode = READ)
     public Stream<RelationshipOutput> queryFulltextForRelationships(
-            @Name( "indexName" ) String name,
-            @Name( "queryString" ) String query,
-            @Name( value = "options", defaultValue = "{}" ) Map<String, Object> options ) throws Exception
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+            @Name("indexName") String name,
+            @Name("queryString") String query,
+            @Name(value = "options", defaultValue = "{}") Map<String, Object> options)
+            throws Exception {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
-        IndexDescriptor indexReference = getValidIndex( name );
-        awaitOnline( indexReference );
+        IndexDescriptor indexReference = getValidIndex(name);
+        awaitOnline(indexReference);
         EntityType entityType = indexReference.schema().entityType();
-        if ( entityType != RELATIONSHIP )
-        {
-            throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
-                    ", so it cannot be queried for relationships." );
+        if (entityType != RELATIONSHIP) {
+            throw new IllegalArgumentException("The '" + name + "' index (" + indexReference + ") is an index on "
+                    + entityType + ", so it cannot be queried for relationships.");
         }
-        RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
-        IndexReadSession indexReadSession = tx.dataRead().indexReadSession( indexReference );
-        IndexQueryConstraints constraints = queryConstraints( options );
-        tx.dataRead().relationshipIndexSeek( tx.queryContext(), indexReadSession, cursor, constraints, PropertyIndexQuery.fulltextSearch( query ) );
+        RelationshipValueIndexCursor cursor =
+                tx.cursors().allocateRelationshipValueIndexCursor(tx.cursorContext(), tx.memoryTracker());
+        IndexReadSession indexReadSession = tx.dataRead().indexReadSession(indexReference);
+        IndexQueryConstraints constraints = queryConstraints(options);
+        tx.dataRead()
+                .relationshipIndexSeek(
+                        tx.queryContext(),
+                        indexReadSession,
+                        cursor,
+                        constraints,
+                        PropertyIndexQuery.fulltextSearch(query));
 
-        Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<>()
-        {
+        Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<>() {
             @Override
-            public boolean tryAdvance( Consumer<? super RelationshipOutput> action )
-            {
-                while ( cursor.next() )
-                {
+            public boolean tryAdvance(Consumer<? super RelationshipOutput> action) {
+                while (cursor.next()) {
                     long relationshipReference = cursor.relationshipReference();
                     float score = cursor.score();
                     RelationshipOutput relationshipOutput =
-                            RelationshipOutput.forExistingEntityOrNull( transaction, relationshipReference, score );
-                    if ( relationshipOutput != null )
-                    {
-                        action.accept( relationshipOutput );
+                            RelationshipOutput.forExistingEntityOrNull(transaction, relationshipReference, score);
+                    if (relationshipOutput != null) {
+                        action.accept(relationshipOutput);
                         return true;
                     }
                 }
@@ -223,145 +215,126 @@ public class FulltextProcedures
                 return false;
             }
         };
-        return StreamSupport.stream( spliterator, false ).onClose( cursor::close );
+        return StreamSupport.stream(spliterator, false).onClose(cursor::close);
     }
 
-    private IndexDescriptor getValidIndex( @Name( "indexName" ) String name )
-    {
-        IndexDescriptor indexReference = tx.schemaRead().indexGetForName( name );
-        if ( indexReference == IndexDescriptor.NO_INDEX || indexReference.getIndexType() != IndexType.FULLTEXT )
-        {
-            throw new IllegalArgumentException( "There is no such fulltext schema index: " + name );
+    private IndexDescriptor getValidIndex(@Name("indexName") String name) {
+        IndexDescriptor indexReference = tx.schemaRead().indexGetForName(name);
+        if (indexReference == IndexDescriptor.NO_INDEX || indexReference.getIndexType() != IndexType.FULLTEXT) {
+            throw new IllegalArgumentException("There is no such fulltext schema index: " + name);
         }
         return indexReference;
     }
 
-    private void awaitOnline( IndexDescriptor index )
-    {
-        // We do the isAdded check on the transaction state first, because indexGetState will grab a schema read-lock, which can deadlock on the write-lock
-        // held by the index populator. Also, if the index was created in this transaction, then we will never see it come online in this transaction anyway.
+    private void awaitOnline(IndexDescriptor index) {
+        // We do the isAdded check on the transaction state first, because indexGetState will grab a schema read-lock,
+        // which can deadlock on the write-lock
+        // held by the index populator. Also, if the index was created in this transaction, then we will never see it
+        // come online in this transaction anyway.
         // Indexes don't come online until the transaction that creates them has committed.
         KernelTransactionImplementation txImpl = (KernelTransactionImplementation) this.tx;
-        if ( !txImpl.hasTxStateWithChanges() || !txImpl.txState().indexDiffSetsBySchema( index.schema() ).isAdded( index ) )
-        {
+        if (!txImpl.hasTxStateWithChanges()
+                || !txImpl.txState().indexDiffSetsBySchema(index.schema()).isAdded(index)) {
             // If the index was not created in this transaction, then wait for it to come online before querying.
             Schema schema = transaction.schema();
-            schema.awaitIndexOnline( index.getName(), INDEX_ONLINE_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS );
+            schema.awaitIndexOnline(index.getName(), INDEX_ONLINE_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         }
         // If the index was created in this transaction, then we skip this check entirely.
         // We will get an exception later, when we try to get an IndexReader, so this is fine.
     }
 
-    private abstract static class SpliteratorAdaptor<T> implements Spliterator<T>
-    {
+    private abstract static class SpliteratorAdaptor<T> implements Spliterator<T> {
         @Override
-        public Spliterator<T> trySplit()
-        {
+        public Spliterator<T> trySplit() {
             return null;
         }
 
         @Override
-        public long estimateSize()
-        {
+        public long estimateSize() {
             return Long.MAX_VALUE;
         }
 
         @Override
-        public int characteristics()
-        {
-            return Spliterator.ORDERED | Spliterator.SORTED | Spliterator.DISTINCT | Spliterator.NONNULL | Spliterator.IMMUTABLE;
+        public int characteristics() {
+            return Spliterator.ORDERED
+                    | Spliterator.SORTED
+                    | Spliterator.DISTINCT
+                    | Spliterator.NONNULL
+                    | Spliterator.IMMUTABLE;
         }
 
         @Override
-        public Comparator<? super T> getComparator()
-        {
+        public Comparator<? super T> getComparator() {
             // Returning 'null' here means the items are sorted by their "natural" sort order.
             return null;
         }
     }
 
-    public static final class NodeOutput implements Comparable<NodeOutput>
-    {
+    public static final class NodeOutput implements Comparable<NodeOutput> {
         public final Node node;
         public final double score;
 
-        public NodeOutput( Node node, float score )
-        {
+        public NodeOutput(Node node, float score) {
             this.node = node;
             this.score = score;
         }
 
-        public static NodeOutput forExistingEntityOrNull( Transaction transaction, long nodeId, float score )
-        {
-            try
-            {
-                return new NodeOutput( transaction.getNodeById( nodeId ), score );
-            }
-            catch ( NotFoundException ignore )
-            {
+        public static NodeOutput forExistingEntityOrNull(Transaction transaction, long nodeId, float score) {
+            try {
+                return new NodeOutput(transaction.getNodeById(nodeId), score);
+            } catch (NotFoundException ignore) {
                 // This node was most likely deleted by a concurrent transaction, so we just ignore it.
                 return null;
             }
         }
 
         @Override
-        public int compareTo( NodeOutput that )
-        {
-            return Double.compare( that.score, this.score );
+        public int compareTo(NodeOutput that) {
+            return Double.compare(that.score, this.score);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "ScoredNode(" + node + ", score=" + score + ')';
         }
     }
 
-    public static final class RelationshipOutput implements Comparable<RelationshipOutput>
-    {
+    public static final class RelationshipOutput implements Comparable<RelationshipOutput> {
         public final Relationship relationship;
         public final double score;
 
-        public RelationshipOutput( Relationship relationship, float score )
-        {
+        public RelationshipOutput(Relationship relationship, float score) {
             this.relationship = relationship;
             this.score = score;
         }
 
-        public static RelationshipOutput forExistingEntityOrNull( Transaction transaction, long relationshipId, float score )
-        {
-            try
-            {
-                return new RelationshipOutput( transaction.getRelationshipById( relationshipId ), score );
-            }
-            catch ( NotFoundException ignore )
-            {
+        public static RelationshipOutput forExistingEntityOrNull(
+                Transaction transaction, long relationshipId, float score) {
+            try {
+                return new RelationshipOutput(transaction.getRelationshipById(relationshipId), score);
+            } catch (NotFoundException ignore) {
                 // This relationship was most likely deleted by a concurrent transaction, so we just ignore it.
                 return null;
             }
         }
 
         @Override
-        public int compareTo( RelationshipOutput that )
-        {
-            return Double.compare( that.score, this.score );
+        public int compareTo(RelationshipOutput that) {
+            return Double.compare(that.score, this.score);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "ScoredRelationship(" + relationship + ", score=" + score + ')';
         }
     }
 
-    public static final class AvailableAnalyzer
-    {
+    public static final class AvailableAnalyzer {
         public final String analyzer;
         public final String description;
         public final List<String> stopwords;
 
-        AvailableAnalyzer( AnalyzerProvider provider )
-        {
+        AvailableAnalyzer(AnalyzerProvider provider) {
             this.analyzer = provider.getName();
             this.description = provider.description();
             this.stopwords = provider.stopwords();

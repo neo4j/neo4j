@@ -19,30 +19,31 @@
  */
 package org.neo4j.cypher.testing.impl.embedded
 
-import java.util
-
 import org.neo4j.cypher.testing.api
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.spatial.Point
 
+import java.util
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 object EmbeddedRecordConverter {
+
   def convertMap(embeddedValue: util.Map[String, AnyRef]): Map[String, AnyRef] =
     embeddedValue.asScala.map { case (key, value) => (key, convertValue(value)) }.toMap
 
   private def convertValue(embeddedValue: AnyRef): AnyRef = embeddedValue match {
-    case null                            => null
-    case value: Node                     => convertNode(value)
-    case value: Relationship             => convertRelationship(value)
-    case value: Path                     => convertPath(value)
-    case _: Point                        => throw new IllegalStateException("Point type is not supported yet")
-    case value: util.Map[_, _]           => convertMap(value.asInstanceOf[util.Map[String, AnyRef]])
-    case value: util.List[_]             => convertList(value.asInstanceOf[util.List[AnyRef]])
-    case value                           => value.asInstanceOf[AnyRef]
+    case null                  => null
+    case value: Node           => convertNode(value)
+    case value: Relationship   => convertRelationship(value)
+    case value: Path           => convertPath(value)
+    case _: Point              => throw new IllegalStateException("Point type is not supported yet")
+    case value: util.Map[_, _] => convertMap(value.asInstanceOf[util.Map[String, AnyRef]])
+    case value: util.List[_]   => convertList(value.asInstanceOf[util.List[AnyRef]])
+    case value                 => value.asInstanceOf[AnyRef]
   }
 
   private def convertList(embeddedValue: util.List[AnyRef]): Seq[AnyRef] =

@@ -31,26 +31,47 @@ import org.neo4j.cypher.internal.util.Cardinality
 
 class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalityModel) extends CardinalityModel {
 
-  private val singleCached = CachedFunction[SinglePlannerQuery, Metrics.QueryGraphSolverInput, SemanticTable, IndexCompatiblePredicatesProviderContext, Cardinality] { (a, b, c, d) => wrapped.singlePlannerQueryCardinality(a, b, c, d) }
-  private val unionCached = CachedFunction[UnionQuery, Cardinality, Cardinality, Cardinality] { (a, b, c) => wrapped.combineUnion(a, b, c) }
-  private val cached = CachedFunction[PlannerQueryPart, Metrics.QueryGraphSolverInput, SemanticTable, IndexCompatiblePredicatesProviderContext, Cardinality] { (a, b, c, d) => cachedCardinality(a, b, c, d) }
+  private val singleCached = CachedFunction[
+    SinglePlannerQuery,
+    Metrics.QueryGraphSolverInput,
+    SemanticTable,
+    IndexCompatiblePredicatesProviderContext,
+    Cardinality
+  ] { (a, b, c, d) => wrapped.singlePlannerQueryCardinality(a, b, c, d) }
 
-  private def cachedCardinality(queryPart: PlannerQueryPart,
-                                input: QueryGraphSolverInput,
-                                semanticTable: SemanticTable,
-                                indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality = queryPart match {
-    case singlePlannerQuery: SinglePlannerQuery => singleCached(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
-    case uq@UnionQuery(part, query, _, _) =>
-      unionCached(uq,
-        apply(part, input, semanticTable, indexPredicateProviderContext),
-        apply(query, input, semanticTable, indexPredicateProviderContext))
+  private val unionCached = CachedFunction[UnionQuery, Cardinality, Cardinality, Cardinality] { (a, b, c) =>
+    wrapped.combineUnion(a, b, c)
   }
 
-  override def apply(queryPart: PlannerQueryPart,
-                     input: QueryGraphSolverInput,
-                     semanticTable: SemanticTable,
-                     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality =
+  private val cached = CachedFunction[
+    PlannerQueryPart,
+    Metrics.QueryGraphSolverInput,
+    SemanticTable,
+    IndexCompatiblePredicatesProviderContext,
+    Cardinality
+  ] { (a, b, c, d) => cachedCardinality(a, b, c, d) }
+
+  private def cachedCardinality(
+    queryPart: PlannerQueryPart,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Cardinality = queryPart match {
+    case singlePlannerQuery: SinglePlannerQuery =>
+      singleCached(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
+    case uq @ UnionQuery(part, query, _, _) =>
+      unionCached(
+        uq,
+        apply(part, input, semanticTable, indexPredicateProviderContext),
+        apply(query, input, semanticTable, indexPredicateProviderContext)
+      )
+  }
+
+  override def apply(
+    queryPart: PlannerQueryPart,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Cardinality =
     cached(queryPart, input, semanticTable, indexPredicateProviderContext)
 }
-
-

@@ -19,19 +19,21 @@
  */
 package org.neo4j.admin.commands;
 
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
-import picocli.CommandLine;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
-
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
@@ -52,22 +54,20 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import picocli.CommandLine;
 
 @TestDirectoryExtension
 // Config files created in our build server doesn't get the right permissions,
-// However this test is only interested in the parsing of config entries with --expand-command option, so not necessary to run it on Windows.
-@DisabledOnOs( OS.WINDOWS )
-class AdminCommandsIT
-{
+// However this test is only interested in the parsing of config entries with --expand-command option, so not necessary
+// to run it on Windows.
+@DisabledOnOs(OS.WINDOWS)
+class AdminCommandsIT {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private FileSystemAbstraction fs;
+
     private Path confDir;
     private PrintStream out;
     private PrintStream err;
@@ -75,61 +75,60 @@ class AdminCommandsIT
     private Path home;
 
     @BeforeEach
-    void setup() throws Exception
-    {
-        out = mock( PrintStream.class );
-        err = mock( PrintStream.class );
-        confDir = testDirectory.directory( "test.conf" );
-        home = testDirectory.homePath( "home" );
-        context = new ExecutionContext( home, confDir, out, err, testDirectory.getFileSystem() );
-        Path configFile = confDir.resolve( "neo4j.conf" );
-        Files.createFile( configFile, PosixFilePermissions.asFileAttribute( Set.of( OWNER_READ, OWNER_WRITE ) ) );
+    void setup() throws Exception {
+        out = mock(PrintStream.class);
+        err = mock(PrintStream.class);
+        confDir = testDirectory.directory("test.conf");
+        home = testDirectory.homePath("home");
+        context = new ExecutionContext(home, confDir, out, err, testDirectory.getFileSystem());
+        Path configFile = confDir.resolve("neo4j.conf");
+        Files.createFile(configFile, PosixFilePermissions.asFileAttribute(Set.of(OWNER_READ, OWNER_WRITE)));
         GraphDatabaseSettings.strict_config_validation.name();
-        Files.write( configFile, (BootloaderSettings.initial_heap_size.name() + "=$(expr 500)").getBytes() );
+        Files.write(configFile, (BootloaderSettings.initial_heap_size.name() + "=$(expr 500)").getBytes());
     }
 
     @Test
-    void shouldExpandCommands() throws Exception
-    {
-        assertSuccess( new SetInitialPasswordCommand( context ), "--expand-commands", "pass" );
-        assertSuccess( new SetDefaultAdminCommand( context ), "--expand-commands", "admin" );
-        assertSuccess( new StoreInfoCommand( context ), "--expand-commands", "path" );
-        assertSuccess( new CheckConsistencyCommand( context ), "--expand-commands", "--database", "neo4j" );
-        assertSuccess( new DiagnosticsReportCommand( context ), "--expand-commands" );
-        assertSuccess( new LoadCommand( context, new Loader() ), "--expand-commands", "--from", "test" );
-        assertSuccess( new MemoryRecommendationsCommand( context ), "--expand-commands" );
-        assertSuccess( new DumpCommand( context, new Dumper( context.err() ) ), "--expand-commands", "--to", "test" );
-        assertSuccess( new UnbindCommand( context ), "--expand-commands" );
+    void shouldExpandCommands() throws Exception {
+        assertSuccess(new SetInitialPasswordCommand(context), "--expand-commands", "pass");
+        assertSuccess(new SetDefaultAdminCommand(context), "--expand-commands", "admin");
+        assertSuccess(new StoreInfoCommand(context), "--expand-commands", "path");
+        assertSuccess(new CheckConsistencyCommand(context), "--expand-commands", "--database", "neo4j");
+        assertSuccess(new DiagnosticsReportCommand(context), "--expand-commands");
+        assertSuccess(new LoadCommand(context, new Loader()), "--expand-commands", "--from", "test");
+        assertSuccess(new MemoryRecommendationsCommand(context), "--expand-commands");
+        assertSuccess(new DumpCommand(context, new Dumper(context.err())), "--expand-commands", "--to", "test");
+        assertSuccess(new UnbindCommand(context), "--expand-commands");
     }
 
     @Test
-    void shouldNotExpandCommands()
-    {
-        assertExpansionError( new SetInitialPasswordCommand( context ), "pass" );
-        assertExpansionError( new SetDefaultAdminCommand( context ), "user" );
-        assertExpansionError( new StoreInfoCommand( context ), "path" );
-        assertExpansionError( new CheckConsistencyCommand( context ), "--database", "neo4j" );
-        assertExpansionError( new DiagnosticsReportCommand( context ) );
-        assertExpansionError( new LoadCommand( context, new Loader() ), "--from", "test" );
-        assertExpansionError( new MemoryRecommendationsCommand( context ) );
-        assertExpansionError( new ImportCommand( context ), "--nodes=" + testDirectory.createFile( "foo.csv" ).toAbsolutePath() );
-        assertExpansionError( new DumpCommand( context, new Dumper( context.err() ) ), "--to", "test" );
-        assertExpansionError( new UnbindCommand( context ) );
+    void shouldNotExpandCommands() {
+        assertExpansionError(new SetInitialPasswordCommand(context), "pass");
+        assertExpansionError(new SetDefaultAdminCommand(context), "user");
+        assertExpansionError(new StoreInfoCommand(context), "path");
+        assertExpansionError(new CheckConsistencyCommand(context), "--database", "neo4j");
+        assertExpansionError(new DiagnosticsReportCommand(context));
+        assertExpansionError(new LoadCommand(context, new Loader()), "--from", "test");
+        assertExpansionError(new MemoryRecommendationsCommand(context));
+        assertExpansionError(
+                new ImportCommand(context),
+                "--nodes=" + testDirectory.createFile("foo.csv").toAbsolutePath());
+        assertExpansionError(new DumpCommand(context, new Dumper(context.err())), "--to", "test");
+        assertExpansionError(new UnbindCommand(context));
     }
 
-    private static void assertSuccess( AbstractCommand command, String... args ) throws Exception
-    {
-        CommandLine.populateCommand( command, args ).call();
+    private static void assertSuccess(AbstractCommand command, String... args) throws Exception {
+        CommandLine.populateCommand(command, args).call();
     }
 
-    private static void assertExpansionError( AbstractCommand command, String... args )
-    {
+    private static void assertExpansionError(AbstractCommand command, String... args) {
         var exception = new MutableObject<Exception>();
-        new CommandLine( command ).setExecutionExceptionHandler( ( ex, commandLine, parseResult ) ->
-                                                                 {
-                                                                     exception.setValue( ex );
-                                                                     return 1;
-                                                                 } ).execute( args );
-        assertThat( exception.getValue() ).hasMessageContaining( "is a command, but config is not explicitly told to expand it." );
+        new CommandLine(command)
+                .setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
+                    exception.setValue(ex);
+                    return 1;
+                })
+                .execute(args);
+        assertThat(exception.getValue())
+                .hasMessageContaining("is a command, but config is not explicitly told to expand it.");
     }
 }

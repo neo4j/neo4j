@@ -19,109 +19,99 @@
  */
 package org.neo4j.ssl;
 
-import io.netty.handler.ssl.util.SelfSignedCertificate;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.PrivateKey;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
-class PkiUtilsTest
-{
+class PkiUtilsTest {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void shouldCreateASelfSignedCertificate() throws Exception
-    {
+    void shouldCreateASelfSignedCertificate() throws Exception {
         // Given
         var sslFactory = new SelfSignedCertificateFactory();
-        var cPath = testDirectory.homePath().resolve( "certificate" );
-        var pkPath = testDirectory.homePath().resolve( "key" );
+        var cPath = testDirectory.homePath().resolve("certificate");
+        var pkPath = testDirectory.homePath().resolve("key");
 
         // When
-        sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );
+        sslFactory.createSelfSignedCertificate(cPath, pkPath, "myhost");
 
         // Then
         // Attempt to load certificate
-        var certificates = PkiUtils.loadCertificates( cPath );
-        assertThat( certificates.length ).isGreaterThan( 0 );
+        var certificates = PkiUtils.loadCertificates(cPath);
+        assertThat(certificates.length).isGreaterThan(0);
 
         // Attempt to load private key
-        PrivateKey pk = PkiUtils.loadPrivateKey( pkPath, null );
-        assertThat( pk ).isNotNull();
+        PrivateKey pk = PkiUtils.loadPrivateKey(pkPath, null);
+        assertThat(pk).isNotNull();
     }
 
     @Test
-    void shouldLoadPEMCertificates() throws Throwable
-    {
+    void shouldLoadPEMCertificates() throws Throwable {
         // Given
-        var cert = new SelfSignedCertificate( "example.com" );
+        var cert = new SelfSignedCertificate("example.com");
 
         var pemCertificate = cert.certificate().toPath();
 
         // When
-        var certificates = PkiUtils.loadCertificates( pemCertificate );
+        var certificates = PkiUtils.loadCertificates(pemCertificate);
 
         // Then
-        assertThat( certificates.length ).isEqualTo( 1 );
+        assertThat(certificates.length).isEqualTo(1);
     }
 
     @Test
-    void shouldLoadPEMPrivateKey() throws Throwable
-    {
+    void shouldLoadPEMPrivateKey() throws Throwable {
         // Given
-        var cert = new SelfSignedCertificate( "example.com" );
+        var cert = new SelfSignedCertificate("example.com");
 
         var privateKey = cert.privateKey().toPath();
 
         // When
-        var pk = PkiUtils.loadPrivateKey( privateKey, null );
+        var pk = PkiUtils.loadPrivateKey(privateKey, null);
 
         // Then
-        assertNotNull( pk );
+        assertNotNull(pk);
     }
 
     @Test
-    void shouldReadEncryptedPrivateKey() throws Exception
-    {
-        Path keyFile = testDirectory.file( "private.key" );
-        URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
-        copy( resource, keyFile );
+    void shouldReadEncryptedPrivateKey() throws Exception {
+        Path keyFile = testDirectory.file("private.key");
+        URL resource = this.getClass().getResource("test-certificates/encrypted/private.key");
+        copy(resource, keyFile);
 
-        PrivateKey pk = PkiUtils.loadPrivateKey( keyFile, "neo4j" );
-        assertThat( pk.getAlgorithm() ).isEqualTo( "RSA" );
+        PrivateKey pk = PkiUtils.loadPrivateKey(keyFile, "neo4j");
+        assertThat(pk.getAlgorithm()).isEqualTo("RSA");
     }
 
     @Test
-    void shouldThrowOnMissingPassphraseForEncryptedPrivateKey() throws Exception
-    {
-        Path keyFile = testDirectory.file( "private.key" );
-        URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
-        copy( resource, keyFile );
+    void shouldThrowOnMissingPassphraseForEncryptedPrivateKey() throws Exception {
+        Path keyFile = testDirectory.file("private.key");
+        URL resource = this.getClass().getResource("test-certificates/encrypted/private.key");
+        copy(resource, keyFile);
 
-        assertThrows( IOException.class, () -> PkiUtils.loadPrivateKey( keyFile, null ) );
+        assertThrows(IOException.class, () -> PkiUtils.loadPrivateKey(keyFile, null));
     }
 
-    private void copy( URL in, Path outFile ) throws IOException
-    {
-        try ( InputStream is = in.openStream();
-                OutputStream os = testDirectory.getFileSystem().openAsOutputStream( outFile, false ) )
-        {
-            is.transferTo( os );
+    private void copy(URL in, Path outFile) throws IOException {
+        try (InputStream is = in.openStream();
+                OutputStream os = testDirectory.getFileSystem().openAsOutputStream(outFile, false)) {
+            is.transferTo(os);
         }
     }
 }

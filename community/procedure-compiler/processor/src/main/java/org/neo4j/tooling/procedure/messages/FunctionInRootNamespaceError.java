@@ -21,26 +21,22 @@ package org.neo4j.tooling.procedure.messages;
 
 import javax.lang.model.element.Element;
 
-public class FunctionInRootNamespaceError implements CompilationMessage
-{
+public class FunctionInRootNamespaceError implements CompilationMessage {
     private final Element element;
     private final String contents;
 
-    public FunctionInRootNamespaceError( Element element, String message, Object... args )
-    {
+    public FunctionInRootNamespaceError(Element element, String message, Object... args) {
         this.element = element;
-        this.contents = String.format( message, args );
+        this.contents = String.format(message, args);
     }
 
     @Override
-    public Element getElement()
-    {
+    public Element getElement() {
         return element;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return contents;
     }
 }

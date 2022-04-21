@@ -19,129 +19,102 @@
  */
 package org.neo4j.internal.id;
 
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
+
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.util.Preconditions;
-
-import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
 
 /**
  * Defines which slot sizes for IDs to use, e.g. a slot size of 4 contains IDs where the ID + the 3 next IDs are available.
  */
-public interface IdSlotDistribution
-{
-    IdSlotDistribution SINGLE_IDS = capacity -> new Slot[]{new Slot( capacity, 1 )};
+public interface IdSlotDistribution {
+    IdSlotDistribution SINGLE_IDS = capacity -> new Slot[] {new Slot(capacity, 1)};
 
-    static IdSlotDistribution evenSlotDistribution( int... slotSizes )
-    {
-        return evenSlotDistribution( IDS_PER_ENTRY, slotSizes );
+    static IdSlotDistribution evenSlotDistribution(int... slotSizes) {
+        return evenSlotDistribution(IDS_PER_ENTRY, slotSizes);
     }
 
-    static IdSlotDistribution evenSlotDistribution( int idsPerEntry, int... slotSizes )
-    {
-        return new BaseIdSlotDistribution( idsPerEntry )
-        {
+    static IdSlotDistribution evenSlotDistribution(int idsPerEntry, int... slotSizes) {
+        return new BaseIdSlotDistribution(idsPerEntry) {
             @Override
-            public Slot[] slots( int capacity )
-            {
+            public Slot[] slots(int capacity) {
                 Slot[] slots = new Slot[slotSizes.length];
-                int capacityPerSlot = nearestHigherPowerOfTwo( capacity / slotSizes.length );
-                for ( int i = 0; i < slotSizes.length; i++ )
-                {
-                    slots[i] = new Slot( capacityPerSlot, slotSizes[i] );
+                int capacityPerSlot = nearestHigherPowerOfTwo(capacity / slotSizes.length);
+                for (int i = 0; i < slotSizes.length; i++) {
+                    slots[i] = new Slot(capacityPerSlot, slotSizes[i]);
                 }
                 return slots;
             }
 
-            private int nearestHigherPowerOfTwo( int value )
-            {
-                return Integer.bitCount( value ) == 1
-                       ? value
-                       : Integer.highestOneBit( value ) << 1;
+            private int nearestHigherPowerOfTwo(int value) {
+                return Integer.bitCount(value) == 1 ? value : Integer.highestOneBit(value) << 1;
             }
         };
     }
 
-    static IdSlotDistribution diminishingSlotDistribution( int... slotSizes )
-    {
-        return diminishingSlotDistribution( IDS_PER_ENTRY, slotSizes );
+    static IdSlotDistribution diminishingSlotDistribution(int... slotSizes) {
+        return diminishingSlotDistribution(IDS_PER_ENTRY, slotSizes);
     }
 
-    static IdSlotDistribution diminishingSlotDistribution( int idsPerEntry, int... slotSizes )
-    {
-        return new BaseIdSlotDistribution( idsPerEntry )
-        {
+    static IdSlotDistribution diminishingSlotDistribution(int idsPerEntry, int... slotSizes) {
+        return new BaseIdSlotDistribution(idsPerEntry) {
             @Override
-            public Slot[] slots( int capacity )
-            {
+            public Slot[] slots(int capacity) {
                 Slot[] slots = new Slot[slotSizes.length];
-                for ( int i = 0; i < slotSizes.length; i++ )
-                {
-                    slots[i] = new Slot( capacity / (1 << (i + 1)), slotSizes[i] );
+                for (int i = 0; i < slotSizes.length; i++) {
+                    slots[i] = new Slot(capacity / (1 << (i + 1)), slotSizes[i]);
                 }
                 return slots;
             }
         };
     }
 
-    static IdSlotDistribution allWithSameCapacity( int... slotSizes )
-    {
-        return allWithSameCapacity( IDS_PER_ENTRY, slotSizes );
+    static IdSlotDistribution allWithSameCapacity(int... slotSizes) {
+        return allWithSameCapacity(IDS_PER_ENTRY, slotSizes);
     }
 
-    static IdSlotDistribution allWithSameCapacity( int idsPerEntry, int... slotSizes )
-    {
-        return new BaseIdSlotDistribution( idsPerEntry )
-        {
+    static IdSlotDistribution allWithSameCapacity(int idsPerEntry, int... slotSizes) {
+        return new BaseIdSlotDistribution(idsPerEntry) {
             @Override
-            public Slot[] slots( int capacity )
-            {
+            public Slot[] slots(int capacity) {
                 Slot[] slots = new Slot[slotSizes.length];
-                for ( int i = 0; i < slotSizes.length; i++ )
-                {
-                    slots[i] = new Slot( capacity, slotSizes[i] );
+                for (int i = 0; i < slotSizes.length; i++) {
+                    slots[i] = new Slot(capacity, slotSizes[i]);
                 }
                 return slots;
             }
         };
     }
 
-    static int[] powerTwoSlotSizesDownwards( int highSlotSize )
-    {
-        Preconditions.checkArgument( Integer.bitCount( highSlotSize ) == 1, "Requires a power of two" );
-        int[] slots = new int[Integer.numberOfTrailingZeros( highSlotSize ) + 1];
-        for ( int i = 0; i < slots.length; i++ )
-        {
+    static int[] powerTwoSlotSizesDownwards(int highSlotSize) {
+        Preconditions.checkArgument(Integer.bitCount(highSlotSize) == 1, "Requires a power of two");
+        int[] slots = new int[Integer.numberOfTrailingZeros(highSlotSize) + 1];
+        for (int i = 0; i < slots.length; i++) {
             slots[i] = 1 << i;
         }
         return slots;
     }
 
-    Slot[] slots( int capacity );
+    Slot[] slots(int capacity);
 
     /**
      * This affects high ID and how {@link IdGenerator#nextConsecutiveIdRange(int, CursorContext)} decides when to cross a store "page"
      */
-    default int idsPerEntry()
-    {
+    default int idsPerEntry() {
         return IDS_PER_ENTRY;
     }
 
-    record Slot( int capacity, int slotSize )
-    {
-    }
+    record Slot(int capacity, int slotSize) {}
 
-    abstract class BaseIdSlotDistribution implements IdSlotDistribution
-    {
+    abstract class BaseIdSlotDistribution implements IdSlotDistribution {
         private final int idsPerEntry;
 
-        BaseIdSlotDistribution( int idsPerEntry )
-        {
+        BaseIdSlotDistribution(int idsPerEntry) {
             this.idsPerEntry = idsPerEntry;
         }
 
         @Override
-        public int idsPerEntry()
-        {
+        public int idsPerEntry() {
             return idsPerEntry;
         }
     }

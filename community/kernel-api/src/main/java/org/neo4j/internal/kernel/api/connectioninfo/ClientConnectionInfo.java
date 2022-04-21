@@ -24,8 +24,7 @@ package org.neo4j.internal.kernel.api.connectioninfo;
  * when this method is no longer needed, and we move to a standardized format across all types of connections, we can
  * turn this class into a simpler value type that just holds the fields that are actually used.
  */
-public abstract class ClientConnectionInfo
-{
+public abstract class ClientConnectionInfo {
     /**
      * This method provides the custom format for each type of connection.
      * <p>
@@ -59,8 +58,7 @@ public abstract class ClientConnectionInfo
      *
      * @return the address of the client. or {@code null} if the address is not available.
      */
-    public String clientAddress()
-    {
+    public String clientAddress() {
         return null;
     }
 
@@ -69,28 +67,23 @@ public abstract class ClientConnectionInfo
      *
      * @return the URI of this server that the client connected to, or {@code null} if the URI is not available.
      */
-    public String requestURI()
-    {
+    public String requestURI() {
         return null;
     }
 
-    public static final ClientConnectionInfo EMBEDDED_CONNECTION = new ClientConnectionInfo()
-    {
+    public static final ClientConnectionInfo EMBEDDED_CONNECTION = new ClientConnectionInfo() {
         @Override
-        public String asConnectionDetails()
-        {
+        public String asConnectionDetails() {
             return "embedded-session\t";
         }
 
         @Override
-        public String protocol()
-        {
+        public String protocol() {
             return "embedded";
         }
 
         @Override
-        public String connectionId()
-        {
+        public String connectionId() {
             return null;
         }
     };

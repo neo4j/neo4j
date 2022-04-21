@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.kernel.impl.index.schema.BlockEntryStreamMerger.QUEUE_SIZE;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.api.index.IndexPopulator.PopulationWorkScheduler;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobHandles;
-
-import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.kernel.impl.index.schema.BlockEntryStreamMerger.QUEUE_SIZE;
 
 /**
  * The idea is to merge multiple (already individually sorted) parts of {@link BlockEntry block entries} into one stream.
@@ -47,23 +46,26 @@ import static org.neo4j.kernel.impl.index.schema.BlockEntryStreamMerger.QUEUE_SI
  *         (----------C-------------)
  * </pre>
  */
-class PartMerger<KEY,VALUE> implements AutoCloseable
-{
+class PartMerger<KEY, VALUE> implements AutoCloseable {
     static final int DEFAULT_BATCH_SIZE = 100;
     private static final int MERGE_FACTOR = 4;
 
     private final PopulationWorkScheduler populationWorkScheduler;
-    private final List<BlockEntryCursor<KEY,VALUE>> parts;
-    private final Layout<KEY,VALUE> layout;
+    private final List<BlockEntryCursor<KEY, VALUE>> parts;
+    private final Layout<KEY, VALUE> layout;
     private final BlockStorage.Cancellation cancellation;
     private final int batchSize;
     private final Comparator<KEY> samplingComparator;
-    private final List<BlockEntryStreamMerger<KEY,VALUE>> allMergers = new ArrayList<>();
+    private final List<BlockEntryStreamMerger<KEY, VALUE>> allMergers = new ArrayList<>();
     private final List<JobHandle<Void>> mergeHandles = new ArrayList<>();
 
-    PartMerger( PopulationWorkScheduler populationWorkScheduler, List<BlockEntryCursor<KEY,VALUE>> parts,
-            Layout<KEY,VALUE> layout, Comparator<KEY> samplingComparator, BlockStorage.Cancellation cancellation, int batchSize )
-    {
+    PartMerger(
+            PopulationWorkScheduler populationWorkScheduler,
+            List<BlockEntryCursor<KEY, VALUE>> parts,
+            Layout<KEY, VALUE> layout,
+            Comparator<KEY> samplingComparator,
+            BlockStorage.Cancellation cancellation,
+            int batchSize) {
         this.populationWorkScheduler = populationWorkScheduler;
         this.parts = parts;
         this.layout = layout;
@@ -72,56 +74,46 @@ class PartMerger<KEY,VALUE> implements AutoCloseable
         this.samplingComparator = samplingComparator;
     }
 
-    BlockEntryStreamMerger<KEY,VALUE> startMerge()
-    {
-        List<BlockEntryCursor<KEY,VALUE>> remainingParts = new ArrayList<>( parts );
-        while ( remainingParts.size() > MERGE_FACTOR )
-        {
+    BlockEntryStreamMerger<KEY, VALUE> startMerge() {
+        List<BlockEntryCursor<KEY, VALUE>> remainingParts = new ArrayList<>(parts);
+        while (remainingParts.size() > MERGE_FACTOR) {
             // Build one "level" of mergers, each merger in this level merging "merge factor" number of streams
-            List<BlockEntryCursor<KEY,VALUE>> current = new ArrayList<>();
-            List<BlockEntryCursor<KEY,VALUE>> levelParts = new ArrayList<>();
-            for ( BlockEntryCursor<KEY,VALUE> remainingPart : remainingParts )
-            {
-                current.add( remainingPart );
-                if ( current.size() == MERGE_FACTOR )
-                {
-                    BlockEntryStreamMerger<KEY,VALUE> merger = new BlockEntryStreamMerger<>( current, layout, null, cancellation, batchSize, QUEUE_SIZE );
-                    allMergers.add( merger );
-                    levelParts.add( merger );
+            List<BlockEntryCursor<KEY, VALUE>> current = new ArrayList<>();
+            List<BlockEntryCursor<KEY, VALUE>> levelParts = new ArrayList<>();
+            for (BlockEntryCursor<KEY, VALUE> remainingPart : remainingParts) {
+                current.add(remainingPart);
+                if (current.size() == MERGE_FACTOR) {
+                    BlockEntryStreamMerger<KEY, VALUE> merger =
+                            new BlockEntryStreamMerger<>(current, layout, null, cancellation, batchSize, QUEUE_SIZE);
+                    allMergers.add(merger);
+                    levelParts.add(merger);
                     current = new ArrayList<>();
                 }
             }
-            levelParts.addAll( current );
+            levelParts.addAll(current);
             remainingParts = levelParts;
         }
 
-        BlockEntryStreamMerger<KEY,VALUE> merger =
-                new BlockEntryStreamMerger<>( remainingParts, layout, samplingComparator, cancellation, batchSize, QUEUE_SIZE );
-        allMergers.add( merger );
-        allMergers.forEach( merge -> mergeHandles.add(
-                populationWorkScheduler.schedule( indexName -> "Part merger while writing scan update for " + indexName, merge ) ) );
+        BlockEntryStreamMerger<KEY, VALUE> merger = new BlockEntryStreamMerger<>(
+                remainingParts, layout, samplingComparator, cancellation, batchSize, QUEUE_SIZE);
+        allMergers.add(merger);
+        allMergers.forEach(merge -> mergeHandles.add(populationWorkScheduler.schedule(
+                indexName -> "Part merger while writing scan update for " + indexName, merge)));
         return merger;
     }
 
     @Override
-    public void close() throws IOException
-    {
-        allMergers.forEach( BlockEntryStreamMerger::halt );
-        try
-        {
-            JobHandles.getAllResults( mergeHandles );
-        }
-        catch ( ExecutionException e )
-        {
-            if ( e.getCause() instanceof IOException )
-            {
+    public void close() throws IOException {
+        allMergers.forEach(BlockEntryStreamMerger::halt);
+        try {
+            JobHandles.getAllResults(mergeHandles);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof IOException) {
                 throw (IOException) e.getCause();
             }
-            throw new IOException( e.getCause() );
-        }
-        finally
-        {
-            closeAll( () -> closeAll( allMergers ), () -> closeAll( parts ) );
+            throw new IOException(e.getCause());
+        } finally {
+            closeAll(() -> closeAll(allMergers), () -> closeAll(parts));
         }
     }
 }

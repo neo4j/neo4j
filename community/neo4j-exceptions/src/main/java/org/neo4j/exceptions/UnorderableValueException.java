@@ -19,10 +19,8 @@
  */
 package org.neo4j.exceptions;
 
-public class UnorderableValueException extends CypherTypeException
-{
-    public UnorderableValueException( String value, Throwable cause )
-    {
-        super( "Do not know how to order " + value, cause );
+public class UnorderableValueException extends CypherTypeException {
+    public UnorderableValueException(String value, Throwable cause) {
+        super("Do not know how to order " + value, cause);
     }
 }

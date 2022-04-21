@@ -19,24 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
-
-import org.neo4j.function.ThrowingAction;
-import org.neo4j.graphdb.Resource;
-import org.neo4j.test.Barrier;
-import org.neo4j.test.Race;
-import org.neo4j.test.extension.OtherThread;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,9 +31,24 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.function.ThrowingAction.noop;
 import static org.neo4j.test.Race.throwing;
 
-class StoreCopyCheckPointMutexTest
-{
-    private static final ThrowingAction<IOException> ASSERT_NOT_CALLED = () -> fail( "Should not be called" );
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.function.ThrowingAction;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.test.Barrier;
+import org.neo4j.test.Race;
+import org.neo4j.test.extension.OtherThread;
+
+class StoreCopyCheckPointMutexTest {
+    private static final ThrowingAction<IOException> ASSERT_NOT_CALLED = () -> fail("Should not be called");
 
     private final OtherThread t2 = new OtherThread();
     private final OtherThread t3 = new OtherThread();
@@ -59,124 +56,106 @@ class StoreCopyCheckPointMutexTest
     private final StoreCopyCheckPointMutex mutex = new StoreCopyCheckPointMutex();
 
     @BeforeEach
-    void setUp()
-    {
-        t2.init( "T2" );
-        t3.init( "T3" );
+    void setUp() {
+        t2.init("T2");
+        t3.init("T3");
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         t2.close();
         t3.close();
     }
 
     @Test
-    void checkPointShouldBlockStoreCopy() throws Exception
-    {
+    void checkPointShouldBlockStoreCopy() throws Exception {
         // GIVEN
-        try ( Resource lock = mutex.checkPoint() )
-        {
+        try (Resource lock = mutex.checkPoint()) {
             // WHEN
-            t2.execute( () -> mutex.storeCopy( noop() ) );
+            t2.execute(() -> mutex.storeCopy(noop()));
 
             // THEN
-            t2.get().waitUntilWaiting( details -> details.isAt( StoreCopyCheckPointMutex.class, "storeCopy" ) );
+            t2.get().waitUntilWaiting(details -> details.isAt(StoreCopyCheckPointMutex.class, "storeCopy"));
         }
     }
 
     @Test
-    void checkPointShouldBlockAnotherCheckPoint() throws Exception
-    {
+    void checkPointShouldBlockAnotherCheckPoint() throws Exception {
         // GIVEN
-        try ( Resource lock = mutex.checkPoint() )
-        {
+        try (Resource lock = mutex.checkPoint()) {
             // WHEN
-            t2.execute( mutex::checkPoint );
+            t2.execute(mutex::checkPoint);
 
             // THEN
-            t2.get().waitUntilWaiting( details -> details.isAt( StoreCopyCheckPointMutex.class, "checkPoint" ) );
+            t2.get().waitUntilWaiting(details -> details.isAt(StoreCopyCheckPointMutex.class, "checkPoint"));
         }
     }
 
     @Test
-    void storeCopyShouldBlockCheckPoint() throws Exception
-    {
+    void storeCopyShouldBlockCheckPoint() throws Exception {
         // GIVEN
-        try ( Resource lock = mutex.storeCopy( noop() ) )
-        {
+        try (Resource lock = mutex.storeCopy(noop())) {
             // WHEN
-            t2.execute( mutex::checkPoint );
+            t2.execute(mutex::checkPoint);
 
             // THEN
-            t2.get().waitUntilWaiting( details -> details.isAt( StoreCopyCheckPointMutex.class, "checkPoint" ) );
+            t2.get().waitUntilWaiting(details -> details.isAt(StoreCopyCheckPointMutex.class, "checkPoint"));
         }
     }
 
     @Test
-    void storeCopyShouldHaveTryCheckPointBackOff() throws Exception
-    {
+    void storeCopyShouldHaveTryCheckPointBackOff() throws Exception {
         // GIVEN
-        try ( Resource lock = mutex.storeCopy( noop() ) )
-        {
+        try (Resource lock = mutex.storeCopy(noop())) {
             // WHEN
-            assertNull( mutex.tryCheckPoint() );
+            assertNull(mutex.tryCheckPoint());
         }
     }
 
     @Test
-    void storeCopyShouldAllowAnotherStoreCopy() throws Exception
-    {
+    void storeCopyShouldAllowAnotherStoreCopy() throws Exception {
         // GIVEN
-        try ( Resource lock = mutex.storeCopy( noop() ) )
-        {
+        try (Resource lock = mutex.storeCopy(noop())) {
             // WHEN
-            try ( Resource otherLock = mutex.storeCopy( noop() ) )
-            {
+            try (Resource otherLock = mutex.storeCopy(noop())) {
                 // THEN good
             }
         }
     }
 
     @Test
-    void storeCopyShouldAllowAnotherStoreCopyButOnlyFirstShouldPerformBeforeAction() throws Exception
-    {
+    void storeCopyShouldAllowAnotherStoreCopyButOnlyFirstShouldPerformBeforeAction() throws Exception {
         // GIVEN
-        @SuppressWarnings( "unchecked" )
-        ThrowingAction<IOException> action = mock( ThrowingAction.class );
-        try ( Resource lock = mutex.storeCopy( action ) )
-        {
-            verify( action ).apply();
+        @SuppressWarnings("unchecked")
+        ThrowingAction<IOException> action = mock(ThrowingAction.class);
+        try (Resource lock = mutex.storeCopy(action)) {
+            verify(action).apply();
 
             // WHEN
-            try ( Resource otherLock = mutex.storeCopy( action ) )
-            {
+            try (Resource otherLock = mutex.storeCopy(action)) {
                 // THEN good
-                verify( action ).apply();
+                verify(action).apply();
             }
         }
     }
 
     @Test
-    void shouldHandleMultipleConcurrentStoreCopyWhenBeforeActionPerformsCheckPoint() throws Throwable
-    {
+    void shouldHandleMultipleConcurrentStoreCopyWhenBeforeActionPerformsCheckPoint() throws Throwable {
         // GIVEN a check-point action which asserts calls to it along the way
-        CheckPointingAction checkPointingAction = new CheckPointingAction( mutex );
-        for ( int i = 0; i < 2; i++ )
-        {
+        CheckPointingAction checkPointingAction = new CheckPointingAction(mutex);
+        for (int i = 0; i < 2; i++) {
             // Start first store-copy and assert that the check-point action is triggered
-            Resource firstLock = mutex.storeCopy( checkPointingAction );
-            assertNotNull( checkPointingAction.lock );
+            Resource firstLock = mutex.storeCopy(checkPointingAction);
+            assertNotNull(checkPointingAction.lock);
 
             // A second store-copy starts while the first is still going
-            Resource secondLock = mutex.storeCopy( checkPointingAction );
+            Resource secondLock = mutex.storeCopy(checkPointingAction);
 
             // The first store-copy completes
             firstLock.close();
 
             // A third store-copy starts and completes
-            Resource thirdLock = mutex.storeCopy( checkPointingAction );
+            Resource thirdLock = mutex.storeCopy(checkPointingAction);
             thirdLock.close();
 
             // Second store-copy completes
@@ -189,135 +168,112 @@ class StoreCopyCheckPointMutexTest
     }
 
     @Test
-    void shouldHandleMultipleConcurrentStoreCopyRequests() throws Throwable
-    {
+    void shouldHandleMultipleConcurrentStoreCopyRequests() throws Throwable {
         // GIVEN
         Race race = new Race();
         CountingAction action = new CountingAction();
         int threads = Runtime.getRuntime().availableProcessors() * 10;
-        race.addContestants( threads, throwing( () ->
-        {
+        race.addContestants(threads, throwing(() -> {
             parkARandomWhile();
-            try ( Resource lock = mutex.storeCopy( action ) )
-            {
+            try (Resource lock = mutex.storeCopy(action)) {
                 parkARandomWhile();
             }
-        } ) );
+        }));
         race.go();
 
         // THEN
         // It's hard to make predictions about what should have been seen. Most importantly is that
         // The lock doesn't hang any requests and that number of calls to the action less than number of threads
-        assertThat( action.count() ).isLessThan( threads );
+        assertThat(action.count()).isLessThan(threads);
     }
 
     @Test
-    void shouldPropagateStoreCopyActionFailureToOtherStoreCopyRequests() throws Exception
-    {
+    void shouldPropagateStoreCopyActionFailureToOtherStoreCopyRequests() throws Exception {
         // GIVEN
         Barrier.Control barrier = new Barrier.Control();
-        IOException controlledFailure = new IOException( "My own fault" );
+        IOException controlledFailure = new IOException("My own fault");
         AtomicReference<Future<Object>> secondRequest = new AtomicReference<>();
-        ThrowingAction<IOException> controllableAndFailingAction = () ->
-        {
+        ThrowingAction<IOException> controllableAndFailingAction = () -> {
             // Now that we know we're first, start the second request...
-            secondRequest.set( t3.execute( () -> mutex.storeCopy( ASSERT_NOT_CALLED ) ) );
+            secondRequest.set(t3.execute(() -> mutex.storeCopy(ASSERT_NOT_CALLED)));
             // ...and wait for it to reach its destination
             barrier.awaitUninterruptibly();
-            try
-            {
+            try {
                 // OK, second request has made progress into the request, so we can now produce our failure
                 throw controlledFailure;
-            }
-            finally
-            {
+            } finally {
                 barrier.release();
             }
         };
 
-        Future<Object> firstRequest = t2.execute( () -> mutex.storeCopy( controllableAndFailingAction ) );
-        while ( secondRequest.get() == null )
-        {
+        Future<Object> firstRequest = t2.execute(() -> mutex.storeCopy(controllableAndFailingAction));
+        while (secondRequest.get() == null) {
             parkARandomWhile();
         }
-        t3.get().waitUntilWaiting( details -> details.isAt( StoreCopyCheckPointMutex.class,
-                "waitForFirstStoreCopyActionToComplete" ) );
+        t3.get()
+                .waitUntilWaiting(details ->
+                        details.isAt(StoreCopyCheckPointMutex.class, "waitForFirstStoreCopyActionToComplete"));
 
         // WHEN
         barrier.reached();
 
         // THEN
-        try
-        {
+        try {
             firstRequest.get();
+        } catch (ExecutionException e) {
+            assertSame(controlledFailure, e.getCause());
         }
-        catch ( ExecutionException e )
-        {
-            assertSame( controlledFailure, e.getCause() );
-        }
-        try
-        {
+        try {
             secondRequest.get().get();
-        }
-        catch ( ExecutionException e )
-        {
+        } catch (ExecutionException e) {
             Throwable cooperativeActionFailure = e.getCause();
-            assertThat( cooperativeActionFailure.getMessage() ).contains( "Co-operative" );
-            assertSame( controlledFailure, cooperativeActionFailure.getCause() );
+            assertThat(cooperativeActionFailure.getMessage()).contains("Co-operative");
+            assertSame(controlledFailure, cooperativeActionFailure.getCause());
         }
 
         // WHEN afterwards trying another store-copy
         CountingAction action = new CountingAction();
-        try ( Resource lock = mutex.storeCopy( action ) )
-        {
+        try (Resource lock = mutex.storeCopy(action)) {
             // THEN
-            assertEquals( 1, action.count() );
+            assertEquals(1, action.count());
         }
     }
 
-    private static void parkARandomWhile()
-    {
-        LockSupport.parkNanos( MILLISECONDS.toNanos( ThreadLocalRandom.current().nextInt( 10 ) ) );
+    private static void parkARandomWhile() {
+        LockSupport.parkNanos(MILLISECONDS.toNanos(ThreadLocalRandom.current().nextInt(10)));
     }
 
-    private static class CheckPointingAction implements ThrowingAction<IOException>
-    {
+    private static class CheckPointingAction implements ThrowingAction<IOException> {
         private final StoreCopyCheckPointMutex mutex;
         private Resource lock;
 
-        CheckPointingAction( StoreCopyCheckPointMutex mutex )
-        {
+        CheckPointingAction(StoreCopyCheckPointMutex mutex) {
             this.mutex = mutex;
         }
 
         @Override
-        public void apply()
-        {
-            assertNull( lock );
+        public void apply() {
+            assertNull(lock);
             lock = mutex.checkPoint();
         }
 
-        void unlock()
-        {
-            assertNotNull( lock );
+        void unlock() {
+            assertNotNull(lock);
             lock.close();
             lock = null;
         }
     }
 
-    private static class CountingAction implements ThrowingAction<IOException>
-    {
+    private static class CountingAction implements ThrowingAction<IOException> {
         private final AtomicInteger count = new AtomicInteger();
 
         @Override
-        public void apply()
-        {
+        public void apply() {
             parkARandomWhile();
             count.incrementAndGet();
         }
 
-        int count()
-        {
+        int count() {
             return count.get();
         }
     }

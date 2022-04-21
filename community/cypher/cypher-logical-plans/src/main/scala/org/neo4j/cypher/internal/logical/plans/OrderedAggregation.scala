@@ -27,12 +27,13 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * OrderedAggregation is like Aggregation, except that it relies on the input coming
  * in a particular order, which it can leverage by keeping less state to aggregate at any given time.
  */
-case class OrderedAggregation(override val source: LogicalPlan,
-                              override val groupingExpressions: Map[String, Expression],
-                              override val aggregationExpressions: Map[String, Expression],
-                              orderToLeverage: Seq[Expression])
-                             (implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen)  with AggregatingPlan with ProjectingPlan {
+case class OrderedAggregation(
+  override val source: LogicalPlan,
+  override val groupingExpressions: Map[String, Expression],
+  override val aggregationExpressions: Map[String, Expression],
+  orderToLeverage: Seq[Expression]
+)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) with AggregatingPlan with ProjectingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
@@ -42,10 +43,12 @@ case class OrderedAggregation(override val source: LogicalPlan,
 
   val availableSymbols: Set[String] = groupingKeys ++ aggregationExpressions.keySet
 
-  AssertMacros.checkOnlyWhenAssertionsAreEnabled(orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),
+  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),
     s"""orderToLeverage expressions can only be grouping expression values, i.e. the expressions _before_ the aggregation.
        |Grouping expressions: $groupingExpressions
        |   Order to leverage: $orderToLeverage
-       |   """.stripMargin)
+       |   """.stripMargin
+  )
 
 }

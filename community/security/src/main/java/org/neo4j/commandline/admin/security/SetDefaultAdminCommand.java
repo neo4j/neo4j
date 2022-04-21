@@ -19,8 +19,10 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.nio.file.Path;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Parameters;
 
+import java.nio.file.Path;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
@@ -34,61 +36,50 @@ import org.neo4j.server.security.auth.LegacyCredential;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.util.VisibleForTesting;
 
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Parameters;
-
 @Command(
         name = "set-default-admin",
-        description = "Sets the default admin user.%n" +
-                      "This user will be granted the admin role on startup if the system has no roles."
-)
-public class SetDefaultAdminCommand extends AbstractCommand
-{
+        description = "Sets the default admin user.%n"
+                + "This user will be granted the admin role on startup if the system has no roles.")
+public class SetDefaultAdminCommand extends AbstractCommand {
     public static final String ADMIN_INI = "admin.ini";
 
     @Parameters
     private String username;
 
-    public SetDefaultAdminCommand( ExecutionContext ctx )
-    {
-        super( ctx );
+    public SetDefaultAdminCommand(ExecutionContext ctx) {
+        super(ctx);
     }
 
     @Override
-    public void execute()
-    {
+    public void execute() {
         Config config = loadNeo4jConfig();
-        try
-        {
-            Path adminIniFile = CommunitySecurityModule.getInitialUserRepositoryFile( config ).resolveSibling( ADMIN_INI );
-            if ( ctx.fs().fileExists( adminIniFile ) )
-            {
-                ctx.fs().deleteFile( adminIniFile );
+        try {
+            Path adminIniFile =
+                    CommunitySecurityModule.getInitialUserRepositoryFile(config).resolveSibling(ADMIN_INI);
+            if (ctx.fs().fileExists(adminIniFile)) {
+                ctx.fs().deleteFile(adminIniFile);
             }
-            UserRepository admins = new FileUserRepository( ctx.fs(), adminIniFile, NullLogProvider.getInstance() );
+            UserRepository admins = new FileUserRepository(ctx.fs(), adminIniFile, NullLogProvider.getInstance());
             admins.init();
             admins.start();
-            admins.create( new User.Builder( username, LegacyCredential.INACCESSIBLE ).build() );
+            admins.create(new User.Builder(username, LegacyCredential.INACCESSIBLE).build());
             admins.stop();
             admins.shutdown();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
-        ctx.out().println( "default admin user set to '" + username + "'" );
+        ctx.out().println("default admin user set to '" + username + "'");
     }
 
     @VisibleForTesting
-    Config loadNeo4jConfig()
-    {
+    Config loadNeo4jConfig() {
         Config cfg = Config.newBuilder()
-                           .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                           .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
-                           .commandExpansion( allowCommandExpansion )
-                           .build();
-        ConfigUtils.disableAllConnectors( cfg );
+                .fromFileNoThrow(ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME))
+                .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath())
+                .commandExpansion(allowCommandExpansion)
+                .build();
+        ConfigUtils.disableAllConnectors(cfg);
         return cfg;
     }
 }

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.coreapi.internal;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.internal.kernel.api.Cursor;
 
-public interface CursorEntityFactory<CURSOR extends Cursor, E extends Entity>
-{
-    E make( CURSOR cursor );
+public interface CursorEntityFactory<CURSOR extends Cursor, E extends Entity> {
+    E make(CURSOR cursor);
 }

@@ -21,16 +21,12 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.exceptions.StoreFailureException;
 
-class StoreNotFoundException extends StoreFailureException
-{
-    StoreNotFoundException( String msg )
-    {
-        super( msg );
+class StoreNotFoundException extends StoreFailureException {
+    StoreNotFoundException(String msg) {
+        super(msg);
     }
 
-    StoreNotFoundException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    StoreNotFoundException(String msg, Throwable cause) {
+        super(msg, cause);
     }
-
 }

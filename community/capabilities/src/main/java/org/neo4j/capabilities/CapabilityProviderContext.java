@@ -26,37 +26,32 @@ import org.neo4j.logging.InternalLog;
 /**
  * Provides access to core DBMS components during capability registration.
  */
-public final class CapabilityProviderContext
-{
+public final class CapabilityProviderContext {
     private final CapabilityProviderDependencies dependencies;
 
-    CapabilityProviderContext( CapabilityProviderDependencies dependencies )
-    {
+    CapabilityProviderContext(CapabilityProviderDependencies dependencies) {
         this.dependencies = dependencies;
     }
 
     /**
      * @return configuration component.
      */
-    public Configuration config()
-    {
-        return get( Configuration.class );
+    public Configuration config() {
+        return get(Configuration.class);
     }
 
     /**
      * @return database management service component.
      */
-    public DatabaseManagementService dbms()
-    {
-        return get( DatabaseManagementService.class );
+    public DatabaseManagementService dbms() {
+        return get(DatabaseManagementService.class);
     }
 
     /**
      * @return log component.
      */
-    public InternalLog log()
-    {
-        return get( InternalLog.class );
+    public InternalLog log() {
+        return get(InternalLog.class);
     }
 
     /**
@@ -66,8 +61,7 @@ public final class CapabilityProviderContext
      * @param <T> type parameter.
      * @return component of provided type that is registered as a dependency.
      */
-    public <T> T get( Class<T> cls )
-    {
-        return dependencies.get( cls );
+    public <T> T get(Class<T> cls) {
+        return dependencies.get(cls);
     }
 }

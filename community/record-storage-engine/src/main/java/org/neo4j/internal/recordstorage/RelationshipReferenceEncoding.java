@@ -46,13 +46,12 @@ import org.neo4j.internal.kernel.api.Read;
  * the reference, the encoding must be cleared with {@link #clearEncoding(long)}. To guard against using an
  * encoded reference, all encoded references are marked so they appear negative.
  */
-enum RelationshipReferenceEncoding
-{
+enum RelationshipReferenceEncoding {
     /** No encoding */
-    NONE( 0 ),
+    NONE(0),
 
     /** @see #encodeDense(long) */
-    DENSE( 1 );
+    DENSE(1);
 
     private static final RelationshipReferenceEncoding[] ENCODINGS = RelationshipReferenceEncoding.values();
     static final long FLAG_MARKER = 0x8000_0000_0000_0000L;
@@ -62,31 +61,26 @@ enum RelationshipReferenceEncoding
     final long id;
     final long bits;
 
-    RelationshipReferenceEncoding( long id )
-    {
+    RelationshipReferenceEncoding(long id) {
         this.id = id;
         this.bits = id << 60;
     }
 
-    static RelationshipReferenceEncoding parseEncoding( long reference )
-    {
-        if ( reference == Read.NO_ID )
-        {
+    static RelationshipReferenceEncoding parseEncoding(long reference) {
+        if (reference == Read.NO_ID) {
             return NONE;
         }
-        return ENCODINGS[encodingId( reference )];
+        return ENCODINGS[encodingId(reference)];
     }
 
-    private static int encodingId( long reference )
-    {
-        return (int)((reference & FLAG_MASK) >> 60);
+    private static int encodingId(long reference) {
+        return (int) ((reference & FLAG_MASK) >> 60);
     }
 
     /**
      * Encode the fact that an all-relationships references came from a dense node.
      */
-    static long encodeDense( long reference )
-    {
+    static long encodeDense(long reference) {
         return reference | DENSE.bits | FLAG_MARKER;
     }
 
@@ -96,8 +90,7 @@ enum RelationshipReferenceEncoding
      * @param reference The reference to clear.
      * @return The cleared reference.
      */
-    static long clearEncoding( long reference )
-    {
+    static long clearEncoding(long reference) {
         assert reference != Read.NO_ID;
         return reference & ~FLAGS;
     }

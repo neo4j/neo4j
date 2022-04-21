@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.internal.helpers.Format.date;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.LongConsumer;
-
 import org.neo4j.common.HexPrinter;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -36,8 +37,6 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-
-import static org.neo4j.internal.helpers.Format.date;
 
 /**
  * A chain of transactions to apply. Transactions form a linked list, each pointing to the {@link #next()}
@@ -62,8 +61,7 @@ import static org.neo4j.internal.helpers.Format.date;
  * {@link #transactionRepresentation()} and {@link #next()} are called</li>
  * </ol>
  */
-public class TransactionToApply implements CommandsToApply, AutoCloseable
-{
+public class TransactionToApply implements CommandsToApply, AutoCloseable {
     public static final long TRANSACTION_ID_NOT_SPECIFIED = 0;
 
     // These fields are provided by user
@@ -81,13 +79,18 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
      */
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, cursorContext, storeCursors );
+    public TransactionToApply(
+            TransactionRepresentation transactionRepresentation,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
+        this(transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, cursorContext, storeCursors);
     }
 
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, CursorContext cursorContext, StoreCursors storeCursors )
-    {
+    public TransactionToApply(
+            TransactionRepresentation transactionRepresentation,
+            long transactionId,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
         this.transactionRepresentation = transactionRepresentation;
         this.transactionId = transactionId;
         this.cursorContext = cursorContext;
@@ -95,144 +98,118 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     }
 
     // These methods are called by the user when building a batch
-    public void next( TransactionToApply next )
-    {
+    public void next(TransactionToApply next) {
         nextTransactionInBatch = next;
     }
 
-    public void publishAsCommitted()
-    {
+    public void publishAsCommitted() {
         commitment.publishAsCommitted();
     }
 
-    public void publishAsClosed()
-    {
-        if ( commitment.markedAsCommitted() )
-        {
+    public void publishAsClosed() {
+        if (commitment.markedAsCommitted()) {
             commitment.publishAsClosed();
         }
     }
 
     @Override
-    public long transactionId()
-    {
+    public long transactionId() {
         return transactionId;
     }
 
     @Override
-    public Subject subject()
-    {
-        if ( transactionRepresentation.getAuthSubject() == AuthSubject.AUTH_DISABLED )
-        {
+    public Subject subject() {
+        if (transactionRepresentation.getAuthSubject() == AuthSubject.AUTH_DISABLED) {
             return Subject.AUTH_DISABLED;
         }
 
-        if ( transactionRepresentation.getAuthSubject() == AuthSubject.ANONYMOUS )
-        {
+        if (transactionRepresentation.getAuthSubject() == AuthSubject.ANONYMOUS) {
             return Subject.ANONYMOUS;
         }
 
-        return new Subject( transactionRepresentation.getAuthSubject().executingUser() );
+        return new Subject(transactionRepresentation.getAuthSubject().executingUser());
     }
 
     @Override
-    public CursorContext cursorContext()
-    {
+    public CursorContext cursorContext() {
         return cursorContext;
     }
 
     @Override
-    public StoreCursors storeCursors()
-    {
+    public StoreCursors storeCursors() {
         return storeCursors;
     }
 
     @Override
-    public boolean accept( Visitor<StorageCommand,IOException> visitor ) throws IOException
-    {
-        return transactionRepresentation.accept( visitor );
+    public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
+        return transactionRepresentation.accept(visitor);
     }
 
-    public TransactionRepresentation transactionRepresentation()
-    {
+    public TransactionRepresentation transactionRepresentation() {
         return transactionRepresentation;
     }
 
-    public void commitment( Commitment commitment, long transactionId )
-    {
+    public void commitment(Commitment commitment, long transactionId) {
         this.commitment = commitment;
         this.transactionId = transactionId;
-        this.cursorContext.getVersionContext().initWrite( transactionId );
+        this.cursorContext.getVersionContext().initWrite(transactionId);
     }
 
-    public void logPosition( LogPosition position )
-    {
+    public void logPosition(LogPosition position) {
         this.logPosition = position;
     }
 
     @Override
-    public TransactionToApply next()
-    {
+    public TransactionToApply next() {
         return nextTransactionInBatch;
     }
 
-    public void onClose( LongConsumer closedCallback )
-    {
+    public void onClose(LongConsumer closedCallback) {
         this.closedCallback = closedCallback;
     }
 
     @Override
-    public void close()
-    {
-        if ( closedCallback != null )
-        {
-            closedCallback.accept( transactionId );
+    public void close() {
+        if (closedCallback != null) {
+            closedCallback.accept(transactionId);
         }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         TransactionRepresentation tr = this.transactionRepresentation;
-        return "Transaction #" + transactionId +
-               (logPosition != null ? " at log position " + logPosition : " (no log position)") +
-               " {started " + date( tr.getTimeStarted() ) +
-               ", committed " + date( tr.getTimeCommitted() ) +
-               ", with " + countCommands() + " commands in this transaction" +
-               ", lease " + tr.getLeaseId() +
-               ", latest committed transaction id when started was " + tr.getLatestCommittedTxWhenStarted() +
-               ", additional header bytes: " + HexPrinter.hex( tr.additionalHeader(), Integer.MAX_VALUE, "" ) + "}";
+        return "Transaction #" + transactionId
+                + (logPosition != null ? " at log position " + logPosition : " (no log position)")
+                + " {started "
+                + date(tr.getTimeStarted()) + ", committed "
+                + date(tr.getTimeCommitted()) + ", with "
+                + countCommands() + " commands in this transaction" + ", lease "
+                + tr.getLeaseId() + ", latest committed transaction id when started was "
+                + tr.getLatestCommittedTxWhenStarted() + ", additional header bytes: "
+                + HexPrinter.hex(tr.additionalHeader(), Integer.MAX_VALUE, "") + "}";
     }
 
-    private String countCommands()
-    {
-        class Counter implements Visitor<StorageCommand,IOException>
-        {
+    private String countCommands() {
+        class Counter implements Visitor<StorageCommand, IOException> {
             private int count;
 
             @Override
-            public boolean visit( StorageCommand element )
-            {
+            public boolean visit(StorageCommand element) {
                 count++;
                 return false;
             }
         }
-        try
-        {
+        try {
             Counter counter = new Counter();
-            accept( counter );
-            return String.valueOf( counter.count );
-        }
-        catch ( Throwable e )
-        {
+            accept(counter);
+            return String.valueOf(counter.count);
+        } catch (Throwable e) {
             return "(unable to count: " + e.getMessage() + ")";
         }
     }
 
     @Override
-    public Iterator<StorageCommand> iterator()
-    {
+    public Iterator<StorageCommand> iterator() {
         return transactionRepresentation.iterator();
     }
-
 }

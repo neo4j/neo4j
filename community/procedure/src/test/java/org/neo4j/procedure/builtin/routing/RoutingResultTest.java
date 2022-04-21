@@ -19,64 +19,57 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import org.neo4j.configuration.helpers.SocketAddress;
-
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class RoutingResultTest
-{
-    @Test
-    void shouldExposeEndpointsWhenEmpty()
-    {
-        var result = new RoutingResult( emptyList(), emptyList(), emptyList(), 42 );
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.helpers.SocketAddress;
 
-        assertThat( result.readEndpoints() ).isEmpty();
-        assertThat( result.writeEndpoints() ).isEmpty();
-        assertThat( result.routeEndpoints() ).isEmpty();
+class RoutingResultTest {
+    @Test
+    void shouldExposeEndpointsWhenEmpty() {
+        var result = new RoutingResult(emptyList(), emptyList(), emptyList(), 42);
+
+        assertThat(result.readEndpoints()).isEmpty();
+        assertThat(result.writeEndpoints()).isEmpty();
+        assertThat(result.routeEndpoints()).isEmpty();
     }
 
     @Test
-    void shouldExposeEndpoints()
-    {
-        var address1 = new SocketAddress( "localhost", 1 );
-        var address2 = new SocketAddress( "localhost", 2 );
-        var address3 = new SocketAddress( "localhost", 3 );
+    void shouldExposeEndpoints() {
+        var address1 = new SocketAddress("localhost", 1);
+        var address2 = new SocketAddress("localhost", 2);
+        var address3 = new SocketAddress("localhost", 3);
 
-        var readers = List.of( address1, address3 );
-        var writers = List.of( address3, address2 );
-        var routers = List.of( address1, address2, address3 );
+        var readers = List.of(address1, address3);
+        var writers = List.of(address3, address2);
+        var routers = List.of(address1, address2, address3);
 
-        var result = new RoutingResult( routers, writers, readers, 42 );
+        var result = new RoutingResult(routers, writers, readers, 42);
 
-        assertEquals( result.readEndpoints(), readers );
-        assertEquals( result.writeEndpoints(), writers );
-        assertEquals( result.routeEndpoints(), routers );
+        assertEquals(result.readEndpoints(), readers);
+        assertEquals(result.writeEndpoints(), writers);
+        assertEquals(result.routeEndpoints(), routers);
     }
 
     @Test
-    void shouldExposeTtl()
-    {
-        var result = new RoutingResult( emptyList(), emptyList(), emptyList(), 424242 );
+    void shouldExposeTtl() {
+        var result = new RoutingResult(emptyList(), emptyList(), emptyList(), 424242);
 
-        assertEquals( 424242, result.ttlMillis() );
+        assertEquals(424242, result.ttlMillis());
     }
 
     @Test
-    void shouldCheckIfContainsEndpoints()
-    {
-        var address = new SocketAddress( "localhost", 1 );
-        var emptyResult = new RoutingResult( emptyList(), emptyList(), emptyList(), 42 );
-        var nonEmptyResult = new RoutingResult( List.of( address ), List.of( address ), List.of( address ), 42 );
+    void shouldCheckIfContainsEndpoints() {
+        var address = new SocketAddress("localhost", 1);
+        var emptyResult = new RoutingResult(emptyList(), emptyList(), emptyList(), 42);
+        var nonEmptyResult = new RoutingResult(List.of(address), List.of(address), List.of(address), 42);
 
-        assertTrue( emptyResult.containsNoEndpoints() );
-        assertFalse( nonEmptyResult.containsNoEndpoints() );
+        assertTrue(emptyResult.containsNoEndpoints());
+        assertFalse(nonEmptyResult.containsNoEndpoints());
     }
 }

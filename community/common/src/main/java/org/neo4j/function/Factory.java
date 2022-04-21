@@ -26,7 +26,6 @@ package org.neo4j.function;
  *
  * @param <T> a new instance
  */
-public interface Factory<T>
-{
+public interface Factory<T> {
     T newInstance();
 }

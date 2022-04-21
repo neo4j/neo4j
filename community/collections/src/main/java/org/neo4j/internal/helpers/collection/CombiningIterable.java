@@ -29,24 +29,20 @@ import java.util.List;
  *
  * @param <T> the type of items in the iteration.
  */
-public class CombiningIterable<T> implements Iterable<T>
-{
+public class CombiningIterable<T> implements Iterable<T> {
     private final Iterable<Iterable<T>> iterables;
 
-    @SuppressWarnings( "unchecked" )
-    <INNER extends Iterable<T>> CombiningIterable( Iterable<INNER> iterables )
-    {
+    @SuppressWarnings("unchecked")
+    <INNER extends Iterable<T>> CombiningIterable(Iterable<INNER> iterables) {
         this.iterables = (Iterable<Iterable<T>>) iterables;
     }
 
     @Override
-    public Iterator<T> iterator()
-    {
+    public Iterator<T> iterator() {
         List<Iterator<T>> iterators = new ArrayList<>();
-        for ( Iterable<T> iterable : iterables )
-        {
-            iterators.add( iterable.iterator() );
+        for (Iterable<T> iterable : iterables) {
+            iterators.add(iterable.iterator());
         }
-        return new CombiningIterator<>( iterators );
+        return new CombiningIterator<>(iterators);
     }
 }

@@ -19,55 +19,48 @@
  */
 package org.neo4j.server;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-
-import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.server.helpers.TestWebContainer;
-import org.neo4j.test.server.ExclusiveWebContainerTestBase;
-
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.AbstractNeoWebServer.NEO4J_IS_STARTING_MESSAGE;
 import static org.neo4j.server.helpers.WebContainerHelper.createNonPersistentContainer;
 
-class NeoWebServerStartupLoggingIT extends ExclusiveWebContainerTestBase
-{
+import java.io.ByteArrayOutputStream;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.server.helpers.TestWebContainer;
+import org.neo4j.test.server.ExclusiveWebContainerTestBase;
+
+class NeoWebServerStartupLoggingIT extends ExclusiveWebContainerTestBase {
     private static ByteArrayOutputStream out;
     private static TestWebContainer webContainer;
 
     @BeforeAll
-    static void setupServer() throws Exception
-    {
+    static void setupServer() throws Exception {
         out = new ByteArrayOutputStream();
-        webContainer = createNonPersistentContainer( new Log4jLogProvider( out ) );
+        webContainer = createNonPersistentContainer(new Log4jLogProvider(out));
     }
 
     @AfterAll
-    static void stopServer()
-    {
+    static void stopServer() {
         webContainer.shutdown();
     }
 
     @Test
-    void shouldLogStartup() throws Exception
-    {
+    void shouldLogStartup() throws Exception {
         // Check the logs
         var logContent = out.toString();
-        assertThat( logContent.length() ).isGreaterThan( 0 );
-        assertThat( logContent ).contains( NEO4J_IS_STARTING_MESSAGE );
+        assertThat(logContent.length()).isGreaterThan(0);
+        assertThat(logContent).contains(NEO4J_IS_STARTING_MESSAGE);
 
         // Check the server is alive
-        var request = HttpRequest.newBuilder( webContainer.getBaseUri() ).GET().build();
-        var client = HttpClient.newBuilder().followRedirects( NEVER ).build();
-        var response = client.send( request, discarding() );
-        assertThat( response.statusCode() ).isGreaterThan( 199 );
-
+        var request = HttpRequest.newBuilder(webContainer.getBaseUri()).GET().build();
+        var client = HttpClient.newBuilder().followRedirects(NEVER).build();
+        var response = client.send(request, discarding());
+        assertThat(response.statusCode()).isGreaterThan(199);
     }
 }

@@ -30,18 +30,21 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  *   - the start node as 'startNode'
  *   - the end node as 'endNode'
  */
-case class DirectedRelationshipByIdSeek(idName: String,
-                                        relIds: SeekableArgs,
-                                        startNode: String,
-                                        endNode: String,
-                                        argumentIds: Set[String])(implicit idGen: IdGen)
-  extends RelationshipLogicalLeafPlan(idGen) {
+case class DirectedRelationshipByIdSeek(
+  idName: String,
+  relIds: SeekableArgs,
+  startNode: String,
+  endNode: String,
+  argumentIds: Set[String]
+)(implicit idGen: IdGen)
+    extends RelationshipLogicalLeafPlan(idGen) {
 
   val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = relIds.expr.dependencies.map(_.name)
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipByIdSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipByIdSeek =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def leftNode: String = startNode
 

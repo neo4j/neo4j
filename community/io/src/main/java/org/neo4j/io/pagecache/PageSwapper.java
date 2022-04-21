@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 
 /**
@@ -31,8 +30,7 @@ import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
  * executing, then they must either throw an InterruptedException, or leave the interrupted-status
  * flag alone.
  */
-public interface PageSwapper extends Closeable
-{
+public interface PageSwapper extends Closeable {
     /**
      * Read the page with the given filePageId, from the concrete file on the
      * file system, into the page given by the bufferAddress and default bufferSize.
@@ -46,7 +44,7 @@ public interface PageSwapper extends Closeable
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    long read( long filePageId, long bufferAddress ) throws IOException;
+    long read(long filePageId, long bufferAddress) throws IOException;
 
     /**
      * Read the page with the given filePageId, from the concrete file on the
@@ -61,7 +59,7 @@ public interface PageSwapper extends Closeable
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    long read( long filePageId, long bufferAddress, int bufferLength ) throws IOException;
+    long read(long filePageId, long bufferAddress, int bufferLength) throws IOException;
 
     /**
      * Read pages from the file into the pages given by the bufferAddresses, starting from the given startFilePageId.
@@ -79,7 +77,7 @@ public interface PageSwapper extends Closeable
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    long read( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length ) throws IOException;
+    long read(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length) throws IOException;
 
     /**
      * Write the contents of the page given by the bufferAddress and default length of page buffer,
@@ -93,7 +91,7 @@ public interface PageSwapper extends Closeable
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    long write( long filePageId, long bufferAddress ) throws IOException;
+    long write(long filePageId, long bufferAddress) throws IOException;
 
     /**
      * Write the contents of the page given by the bufferAddress and the bufferLength,
@@ -107,7 +105,7 @@ public interface PageSwapper extends Closeable
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    long write( long filePageId, long bufferAddress, int bufferLength ) throws IOException;
+    long write(long filePageId, long bufferAddress, int bufferLength) throws IOException;
 
     /**
      * Write the contents of the given pages, to the concrete file on the file system,
@@ -125,13 +123,14 @@ public interface PageSwapper extends Closeable
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages ) throws IOException;
+    long write(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages)
+            throws IOException;
 
     /**
      * Notification that a page has been evicted, used to clean up state in structures
      * outside the page table.
      */
-    void evicted( long pageId );
+    void evicted(long pageId);
 
     /**
      * Get the file that this PageSwapper represents.
@@ -176,7 +175,7 @@ public interface PageSwapper extends Closeable
      * The hope is that this might speed up future operations and reduce fragmentation.
      * @param newFileSize The new size of the file; following this call, the file system may anticipate to receive IOs in this range.
      */
-    void allocate( long newFileSize ) throws IOException;
+    void allocate(long newFileSize) throws IOException;
 
     /**
      * Each page swapper have a id that is unique for the lifetime of a swapper. Ids can be reused later on if particular swapper is closed.

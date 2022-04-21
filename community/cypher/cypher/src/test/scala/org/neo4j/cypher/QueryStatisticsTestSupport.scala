@@ -27,22 +27,23 @@ import org.scalatestplus.mockito.MockitoSugar
 trait QueryStatisticsTestSupport extends MockitoSugar {
   self: Assertions =>
 
-  def assertStats(result: RewindableExecutionResult,
-                  nodesCreated: Int = 0,
-                  relationshipsCreated: Int = 0,
-                  propertiesWritten: Int = 0,
-                  nodesDeleted: Int = 0,
-                  relationshipsDeleted: Int = 0,
-                  labelsAdded: Int = 0,
-                  labelsRemoved: Int = 0,
-                  indexesAdded: Int = 0,
-                  indexesRemoved: Int = 0,
-                  uniqueConstraintsAdded: Int = 0,
-                  existenceConstraintsAdded: Int = 0,
-                  nodekeyConstraintsAdded: Int = 0,
-                  constraintsRemoved: Int = 0,
-                  transactionsCommitted: Int = 0,
-                 ): Unit = {
+  def assertStats(
+    result: RewindableExecutionResult,
+    nodesCreated: Int = 0,
+    relationshipsCreated: Int = 0,
+    propertiesWritten: Int = 0,
+    nodesDeleted: Int = 0,
+    relationshipsDeleted: Int = 0,
+    labelsAdded: Int = 0,
+    labelsRemoved: Int = 0,
+    indexesAdded: Int = 0,
+    indexesRemoved: Int = 0,
+    uniqueConstraintsAdded: Int = 0,
+    existenceConstraintsAdded: Int = 0,
+    nodekeyConstraintsAdded: Int = 0,
+    constraintsRemoved: Int = 0,
+    transactionsCommitted: Int = 0
+  ): Unit = {
     val expected =
       QueryStatistics(
         nodesCreated,
@@ -58,8 +59,8 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
         existenceConstraintsAdded,
         nodekeyConstraintsAdded,
         constraintsRemoved,
-        transactionsCommitted,
-    )
+        transactionsCommitted
+      )
 
     assertResult(expected)(result.queryStatistics())
   }

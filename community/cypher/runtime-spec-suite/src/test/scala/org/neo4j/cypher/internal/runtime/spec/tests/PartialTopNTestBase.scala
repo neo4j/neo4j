@@ -34,12 +34,17 @@ import org.neo4j.graphdb.schema.IndexType
 import scala.util.Random
 
 abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  private def unsortedPrefixThenTop(input: IndexedSeq[Array[Any]], chunkSize: Int, skip: Int, topLimit: Int): IndexedSeq[Array[Any]] = {
+  private def unsortedPrefixThenTop(
+    input: IndexedSeq[Array[Any]],
+    chunkSize: Int,
+    skip: Int,
+    topLimit: Int
+  ): IndexedSeq[Array[Any]] = {
     val skipPrefixLength = skip - skip % chunkSize
     val allSorted = input.sortBy(firstTwoColumns)
     val skipPrefixThenSortedTop =
@@ -59,7 +64,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Random.shuffle(sortedInput):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Random.shuffle(sortedInput): _*))
 
     // then
     runtimeResult should beColumns("x", "y").withNoRows()
@@ -108,7 +113,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Random.shuffle(sortedInput):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Random.shuffle(sortedInput): _*))
 
     // then
     runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
@@ -126,7 +131,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Random.shuffle(sortedInput):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Random.shuffle(sortedInput): _*))
 
     // then
     runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
@@ -143,7 +148,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     runtimeResult should beColumns("x", "y").withRows(inOrder(input.take(topLimit)))
@@ -161,7 +166,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     runtimeResult should beColumns("x", "y").withRows(inOrder(input.take(topLimit)))
@@ -180,7 +185,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
@@ -199,7 +204,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
@@ -218,7 +223,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expectedResult = unsortedPrefixThenTop(input, chunkSize, skip, topLimit)
@@ -238,7 +243,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expectedResult = unsortedPrefixThenTop(input, chunkSize, skip, topLimit)
@@ -258,7 +263,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expectedResult = unsortedPrefixThenTop(input, chunkSize, skip, topLimit)
@@ -278,7 +283,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expectedResult = unsortedPrefixThenTop(input, chunkSize, skip, topLimit)
@@ -298,7 +303,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
@@ -317,7 +322,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
@@ -335,7 +340,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput))
@@ -356,7 +361,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     // Then
     result.request(Long.MaxValue)
     result.await() shouldBe false
-    //we shouldn't have exhausted the entire input
+    // we shouldn't have exhausted the entire input
     stream.hasMore shouldBe true
   }
 
@@ -366,9 +371,13 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     nodeIndex("B", "x")
     val aNodes = given {
       val aNodes = nodeGraph(2, "A")
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
-      }, "B")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
+        },
+        "B"
+      )
       aNodes
     }
 
@@ -384,7 +393,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val rhs = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, - i)
+    val rhs = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, -i)
 
     val expected = for {
       a <- aNodes
@@ -401,9 +410,13 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     nodeIndex("B", "x")
     val aNodes = given {
       val aNodes = nodeGraph(2, "A")
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
-      }, "B")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
+        },
+        "B"
+      )
       aNodes
     }
 
@@ -419,7 +432,8 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val rhs = unsortedPrefixThenTop(for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, - i), chunkSize, skip, topLimit)
+    val rhs =
+      unsortedPrefixThenTop(for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, -i), chunkSize, skip, topLimit)
 
     val expected = for {
       a <- aNodes
@@ -445,7 +459,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("a"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expected = for {

@@ -20,7 +20,6 @@
 package org.neo4j.dbms.identity;
 
 @FunctionalInterface
-public interface ServerIdentity
-{
+public interface ServerIdentity {
     ServerId serverId();
 }

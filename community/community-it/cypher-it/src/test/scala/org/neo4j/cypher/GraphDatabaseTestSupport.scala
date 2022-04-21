@@ -57,13 +57,14 @@ import org.scalatest.matchers.Matcher
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.Try
 
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
-  self: CypherFunSuite  =>
+  self: CypherFunSuite =>
 
   var graphOps: GraphDatabaseService = _
   var graph: GraphDatabaseCypherService = _
@@ -71,7 +72,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   var nodes: List[Node] = _
   protected var tx: InternalTransaction = _
 
-  def databaseConfig(): Map[Setting[_],Object] = Map()
+  def databaseConfig(): Map[Setting[_], Object] = Map()
 
   def logProvider: InternalLogProvider = NullLogProvider.getInstance()
 
@@ -85,11 +86,14 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     startGraphDatabase()
   }
 
-  protected def startGraphDatabase(config: Map[Setting[_], Object] = databaseConfig(),
-                                   maybeExternalDatabase: Option[(String, String)] = externalDatabase): Unit = {
+  protected def startGraphDatabase(
+    config: Map[Setting[_], Object] = databaseConfig(),
+    maybeExternalDatabase: Option[(String, String)] = externalDatabase
+  ): Unit = {
     maybeExternalDatabase match {
       case Some((url, databaseName)) =>
-        managementService = graphDatabaseFactory(Path.of(url)).setConfig(config.asJava).setInternalLogProvider(logProvider).build()
+        managementService =
+          graphDatabaseFactory(Path.of(url)).setConfig(config.asJava).setInternalLogProvider(logProvider).build()
         graphOps = managementService.database(databaseName)
       case _ =>
         managementService = graphDatabaseFactory(Files.createTempDirectory("test").getParent).impermanent()
@@ -105,7 +109,9 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   protected def beginTransaction(`type`: KernelTransaction.Type, loginContext: LoginContext): InternalTransaction = {
     if (tx != null) {
-      throw new TransactionFailureException("Failed to start a new transaction. Already have an open transaction in `tx` in this test.")
+      throw new TransactionFailureException(
+        "Failed to start a new transaction. Already have an open transaction in `tx` in this test."
+      )
     }
     tx = graph.beginTransaction(`type`, loginContext)
     tx
@@ -132,7 +138,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
-  protected final def graphDatabaseFactory(databaseRootDir: Path): TestDatabaseManagementServiceBuilder = {
+  final protected def graphDatabaseFactory(databaseRootDir: Path): TestDatabaseManagementServiceBuilder = {
     val factory = createDatabaseFactory(databaseRootDir)
     this match {
       case custom: FakeClock =>
@@ -145,7 +151,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   /**
    * Override this method when you need an enterprise ManagementServiceBuilder
    */
-  protected def createDatabaseFactory(databaseRootDir: Path): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder(databaseRootDir)
+  protected def createDatabaseFactory(databaseRootDir: Path): TestDatabaseManagementServiceBuilder =
+    new TestDatabaseManagementServiceBuilder(databaseRootDir)
 
   protected def restartWithConfig(config: Map[Setting[_], Object] = databaseConfig()): Unit = {
     managementService.shutdown()
@@ -159,8 +166,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
         tx = null
       }
       super.stopTest()
-    }
-    finally {
+    } finally {
       if (managementService != null) {
         managementService.shutdown()
       }
@@ -173,7 +179,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def assertInTx(f: => Option[String]): Unit = {
-    inTestTx { f match {
+    inTestTx {
+      f match {
         case Some(error) => fail(error)
         case _           =>
       }
@@ -208,7 +215,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     Iterables.count(tx.getAllNodes).toInt
   })
 
-  def countRelationships() = graph.withTx( tx => {
+  def countRelationships() = graph.withTx(tx => {
     Iterables.count(tx.getAllRelationships).toInt
   })
 
@@ -226,7 +233,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def createLabeledNode(props: Map[String, Any], labels: String*): Node = {
-    inTestTx( tx => {
+    inTestTx(tx => {
       val n = tx.createNode()
       labels.foreach {
         name => n.addLabel(Label.label(name))
@@ -236,7 +243,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
         case (k, v) => n.setProperty(k, v)
       }
       n
-    } )
+    })
   }
 
   def createLabeledNode(labels: String*): Node = createLabeledNode(Map[String, Any](), labels: _*)
@@ -244,7 +251,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
   def deleteAllEntities() = {
-    withTx( tx => {
+    withTx(tx => {
       val relationships = tx.getAllRelationships
       try {
         val relIterator = relationships.iterator()
@@ -279,15 +286,16 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def relate(a: Node, b: Node, pk: (String, Any)*): Relationship = relate(a, b, "REL", pk.toMap)
 
-  def relate(n1: Node, n2: Node, relType: String, name: String): Relationship = relate(n1, n2, relType, Map("name" -> name))
+  def relate(n1: Node, n2: Node, relType: String, name: String): Relationship =
+    relate(n1, n2, relType, Map("name" -> name))
 
-  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = inTestTx( tx => {
+  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = inTestTx(tx => {
     val r = tx.getNodeById(n1.getId).createRelationshipTo(tx.getNodeById(n2.getId), RelationshipType.withName(relType))
     props.foreach((kv) => r.setProperty(kv._1, kv._2))
     r
-  } )
+  })
 
-  def relate(x: ((String, String), String)): Relationship = graph.withTx( tx => {
+  def relate(x: ((String, String), String)): Relationship = graph.withTx(tx => {
     x match {
       case ((from, relType), to) => {
         val f = tx.getNodeById(node(tx, from).getId)
@@ -295,13 +303,14 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
         f.createRelationshipTo(t, RelationshipType.withName(relType))
       }
     }
-  } )
+  })
 
-  def node( transaction: Transaction, name: String): Node = {
+  def node(transaction: Transaction, name: String): Node = {
     nodes.find(n => transaction.getNodeById(n.getId).getProperty("name") == name).get
   }
 
-  def relType(name: String): RelationshipType = graph.withTx( tx => tx.getAllRelationshipTypes.asScala.find(_.name() == name).get )
+  def relType(name: String): RelationshipType =
+    graph.withTx(tx => tx.getAllRelationshipTypes.asScala.find(_.name() == name).get)
 
   def createNodes(names: String*): List[Node] = {
     nodes = names.map(x => createNode(Map("name" -> x))).toList
@@ -337,35 +346,44 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     registerProcedure(namespace: _*)(name)(f)
   }
 
-  def registerProcedure[T <: CallableProcedure](namespace: String*)(name: String)(f: ProcedureSignature.Builder => T): T = {
+  def registerProcedure[T <: CallableProcedure](namespace: String*)(name: String)(f: ProcedureSignature.Builder => T)
+    : T = {
     val builder = ProcedureSignature.procedureSignature(namespace.toArray, name)
     val proc = f(builder)
     kernelAPI.registerProcedure(proc)
     proc
   }
 
-  def registerUserDefinedFunction[T <: CallableUserFunction](qualifiedName: String)(f: UserFunctionSignature.Builder => T): T = {
+  def registerUserDefinedFunction[T <: CallableUserFunction](qualifiedName: String)(
+    f: UserFunctionSignature.Builder => T
+  ): T = {
     val parts = qualifiedName.split('.')
     val namespace = parts.reverse.tail.reverse
     val name = parts.last
     registerUserFunction(namespace: _*)(name)(f)
   }
 
-  def registerUserDefinedAggregationFunction[T <: CallableUserAggregationFunction](qualifiedName: String)(f: UserFunctionSignature.Builder => T): T = {
+  def registerUserDefinedAggregationFunction[T <: CallableUserAggregationFunction](qualifiedName: String)(
+    f: UserFunctionSignature.Builder => T
+  ): T = {
     val parts = qualifiedName.split('.')
     val namespace = parts.reverse.tail.reverse
     val name = parts.last
     registerUserAggregationFunction(namespace: _*)(name)(f)
   }
 
-  def registerUserFunction[T <: CallableUserFunction](namespace: String*)(name: String)(f: UserFunctionSignature.Builder => T): T = {
+  def registerUserFunction[T <: CallableUserFunction](namespace: String*)(name: String)(
+    f: UserFunctionSignature.Builder => T
+  ): T = {
     val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
     val func = f(builder)
     kernelAPI.registerUserFunction(func)
     func
   }
 
-  def registerUserAggregationFunction[T <: CallableUserAggregationFunction](namespace: String*)(name: String)(f: UserFunctionSignature.Builder => T): T = {
+  def registerUserAggregationFunction[T <: CallableUserAggregationFunction](namespace: String*)(name: String)(
+    f: UserFunctionSignature.Builder => T
+  ): T = {
     val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
     val func = f(builder)
     kernelAPI.registerUserAggregationFunction(func)
@@ -385,20 +403,24 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   private def kernelAPI: Kernel = graph.getDependencyResolver.resolveDependency(classOf[Kernel])
 
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
+
     def apply(graph: GraphDatabaseQueryService): MatchResult = {
-      graph.withTx( tx => {
-        val constraintNames = tx.schema().getConstraints.asScala.toList.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
+      graph.withTx(tx => {
+        val constraintNames = tx.schema().getConstraints.asScala.toList.map(i =>
+          s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})"
+        )
         val result = expectedConstraints.forall(i => constraintNames.contains(i.toString))
         MatchResult(
           result,
           s"Expected graph to have constraints ${expectedConstraints.mkString(", ")}, but it was ${constraintNames.mkString(", ")}",
           s"Expected graph to not have constraints ${expectedConstraints.mkString(", ")}, but it did."
         )
-      } )
+      })
     }
   }
 
   case class beAValidUUID() extends Matcher[AnyRef] {
+
     def apply(value: AnyRef): MatchResult = {
       MatchResult(
         Try(UUID.fromString(value.asInstanceOf[String])).isSuccess,

@@ -21,7 +21,6 @@ package org.neo4j.server.modules;
 
 import java.util.Collections;
 import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -29,49 +28,41 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.web.WebServer;
 
-public class ThirdPartyJAXRSModule implements ServerModule
-{
+public class ThirdPartyJAXRSModule implements ServerModule {
     private final Config config;
     private final WebServer webServer;
 
     private List<ThirdPartyJaxRsPackage> packages;
     private final InternalLog log;
 
-    public ThirdPartyJAXRSModule( WebServer webServer, Config config, InternalLogProvider logProvider )
-    {
+    public ThirdPartyJAXRSModule(WebServer webServer, Config config, InternalLogProvider logProvider) {
         this.webServer = webServer;
         this.config = config;
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
     }
 
     @Override
-    public void start()
-    {
-        this.packages = config.get( ServerSettings.third_party_packages );
-        for ( ThirdPartyJaxRsPackage tpp : packages )
-        {
-            List<String> packageNames = packagesFor( tpp );
-            webServer.addJAXRSPackages( packageNames, tpp.getMountPoint(), null );
-            log.info( "Mounted unmanaged extension [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
+    public void start() {
+        this.packages = config.get(ServerSettings.third_party_packages);
+        for (ThirdPartyJaxRsPackage tpp : packages) {
+            List<String> packageNames = packagesFor(tpp);
+            webServer.addJAXRSPackages(packageNames, tpp.getMountPoint(), null);
+            log.info("Mounted unmanaged extension [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint());
         }
     }
 
-    private static List<String> packagesFor( ThirdPartyJaxRsPackage tpp )
-    {
-        return Collections.singletonList( tpp.getPackageName() );
+    private static List<String> packagesFor(ThirdPartyJaxRsPackage tpp) {
+        return Collections.singletonList(tpp.getPackageName());
     }
 
     @Override
-    public void stop()
-    {
-        if ( packages == null )
-        {
+    public void stop() {
+        if (packages == null) {
             return;
         }
 
-        for ( ThirdPartyJaxRsPackage tpp : packages )
-        {
-            webServer.removeJAXRSPackages( packagesFor( tpp ), tpp.getMountPoint() );
+        for (ThirdPartyJaxRsPackage tpp : packages) {
+            webServer.removeJAXRSPackages(packagesFor(tpp), tpp.getMountPoint());
         }
     }
 }

@@ -20,38 +20,30 @@
 package org.neo4j.bolt.runtime.scheduling;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
-
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
-
 import org.neo4j.kernel.impl.scheduler.GroupedDaemonThreadFactory;
 import org.neo4j.scheduler.Group;
 
 /**
  * Factory for providing {@link FastThreadLocalThread}s for netty to allow faster access and cleanup.
  */
-public class NettyThreadFactory extends GroupedDaemonThreadFactory
-{
-    public NettyThreadFactory( Group group, ThreadGroup parentThreadGroup )
-    {
-        super( group, parentThreadGroup );
+public class NettyThreadFactory extends GroupedDaemonThreadFactory {
+    public NettyThreadFactory(Group group, ThreadGroup parentThreadGroup) {
+        super(group, parentThreadGroup);
     }
 
     @Override
-    public ForkJoinWorkerThread newThread( ForkJoinPool pool )
-    {
-        throw new UnsupportedOperationException( "ForkJoinWorkerThread are not supported by netty" );
+    public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+        throw new UnsupportedOperationException("ForkJoinWorkerThread are not supported by netty");
     }
 
     @Override
-    public Thread newThread( Runnable r )
-    {
-        return new FastThreadLocalThread( threadGroup, r, group.threadName() )
-        {
+    public Thread newThread(Runnable r) {
+        return new FastThreadLocalThread(threadGroup, r, group.threadName()) {
             @Override
-            public String toString()
-            {
-                return threadToString( this );
+            public String toString() {
+                return threadToString(this);
             }
         };
     }

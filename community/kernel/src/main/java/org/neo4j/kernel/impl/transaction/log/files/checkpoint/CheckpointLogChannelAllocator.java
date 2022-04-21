@@ -28,10 +28,13 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
  * While technically checkpoint log files do not need store id to be present in file header its easier to reuse the same
  * log header as other files
  */
-public class CheckpointLogChannelAllocator extends TransactionLogChannelAllocator
-{
-    public CheckpointLogChannelAllocator( TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper )
-    {
-        super( logFilesContext, fileHelper, new LogHeaderCache( 1 ), new CheckpointFileChannelNativeAccessor( logFilesContext ) );
+public class CheckpointLogChannelAllocator extends TransactionLogChannelAllocator {
+    public CheckpointLogChannelAllocator(
+            TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper) {
+        super(
+                logFilesContext,
+                fileHelper,
+                new LogHeaderCache(1),
+                new CheckpointFileChannelNativeAccessor(logFilesContext));
     }
 }

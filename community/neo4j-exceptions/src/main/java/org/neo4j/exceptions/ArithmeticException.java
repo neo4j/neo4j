@@ -21,21 +21,17 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class ArithmeticException extends Neo4jException
-{
-    public ArithmeticException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class ArithmeticException extends Neo4jException {
+    public ArithmeticException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public ArithmeticException( String message )
-    {
-        super( message );
+    public ArithmeticException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.ArithmeticError;
     }
 }

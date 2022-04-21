@@ -19,27 +19,29 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import static java.lang.String.format;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-
-import static java.lang.String.format;
 
 /**
  * Attempting to validate constraints, but the apparatus for validation was not available. For example,
  * this exception is thrown when an index required to implement a uniqueness constraint is not available.
  */
-public class UnableToValidateConstraintException extends ConstraintValidationException
-{
-    public UnableToValidateConstraintException( ConstraintDescriptor constraint, Throwable cause, TokenNameLookup tokenNameLookup )
-    {
-        super( constraint, Phase.VERIFICATION,
-                format( "Unable to validate constraint %s", constraint.userDescription( tokenNameLookup ) ), cause, tokenNameLookup );
+public class UnableToValidateConstraintException extends ConstraintValidationException {
+    public UnableToValidateConstraintException(
+            ConstraintDescriptor constraint, Throwable cause, TokenNameLookup tokenNameLookup) {
+        super(
+                constraint,
+                Phase.VERIFICATION,
+                format("Unable to validate constraint %s", constraint.userDescription(tokenNameLookup)),
+                cause,
+                tokenNameLookup);
     }
 
     @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
-        return format( "Unable to validate constraint %s", constraint.userDescription( tokenNameLookup ) );
+    public String getUserMessage(TokenNameLookup tokenNameLookup) {
+        return format("Unable to validate constraint %s", constraint.userDescription(tokenNameLookup));
     }
 }

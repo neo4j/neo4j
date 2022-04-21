@@ -19,100 +19,85 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Nested;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.test.Tags.Suppliers.UUID.LABEL;
 
 import java.util.List;
-
+import org.junit.jupiter.api.Nested;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodeLabelIndexScan;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.test.Tags.Suppliers.UUID.LABEL;
-
 abstract class NodeLabelIndexScanPartitionedScanTestSuite
-        extends TokenIndexScanPartitionedScanTestSuite<NodeLabelIndexCursor>
-{
+        extends TokenIndexScanPartitionedScanTestSuite<NodeLabelIndexCursor> {
     @Override
-    public final NodeLabelIndexScan getFactory()
-    {
+    public final NodeLabelIndexScan getFactory() {
         return NodeLabelIndexScan.FACTORY;
     }
 
     @Nested
-    class WithoutData extends TokenIndexScanPartitionedScanTestSuite.WithoutData<NodeLabelIndexCursor>
-    {
-        WithoutData()
-        {
-            super( NodeLabelIndexScanPartitionedScanTestSuite.this );
+    class WithoutData extends TokenIndexScanPartitionedScanTestSuite.WithoutData<NodeLabelIndexCursor> {
+        WithoutData() {
+            super(NodeLabelIndexScanPartitionedScanTestSuite.this);
         }
 
         @Override
-        Queries<TokenScanQuery> setupDatabase()
-        {
+        Queries<TokenScanQuery> setupDatabase() {
             final var numberOfLabels = 3;
 
-            final var labelIds = createTags( numberOfLabels, LABEL );
-            return emptyQueries( EntityType.NODE, labelIds );
+            final var labelIds = createTags(numberOfLabels, LABEL);
+            return emptyQueries(EntityType.NODE, labelIds);
         }
     }
 
     @Nested
-    class WithData extends TokenIndexScanPartitionedScanTestSuite.WithData<NodeLabelIndexCursor>
-    {
-        WithData()
-        {
-            super( NodeLabelIndexScanPartitionedScanTestSuite.this );
+    class WithData extends TokenIndexScanPartitionedScanTestSuite.WithData<NodeLabelIndexCursor> {
+        WithData() {
+            super(NodeLabelIndexScanPartitionedScanTestSuite.this);
         }
 
         @Override
-        Queries<TokenScanQuery> setupDatabase()
-        {
+        Queries<TokenScanQuery> setupDatabase() {
             final var numberOfLabels = 3;
             final var numberOfNodes = 100_000;
 
-            final var labelIds = createTags( numberOfLabels, LABEL );
-            return createData( numberOfNodes, labelIds );
+            final var labelIds = createTags(numberOfLabels, LABEL);
+            return createData(numberOfNodes, labelIds);
         }
 
         @Override
-        Queries<TokenScanQuery> createData( int numberOfNodes, List<Integer> labelIds )
-        {
+        Queries<TokenScanQuery> createData(int numberOfNodes, List<Integer> labelIds) {
             // given  a number of nodes to create
             final var nodesWithLabelId = new EntityIdsMatchingQuery<TokenScanQuery>();
-            final var indexName = getTokenIndexName( EntityType.NODE );
-            try ( var tx = beginTx() )
-            {
+            final var indexName = getTokenIndexName(EntityType.NODE);
+            try (var tx = beginTx()) {
                 final var write = tx.dataWrite();
-                for ( int i = 0; i < numberOfNodes; i++ )
-                {
+                for (int i = 0; i < numberOfNodes; i++) {
                     // when   nodes are created
                     final var nodeId = write.nodeCreate();
-                    final var labelId = random.among( labelIds );
-                    if ( write.nodeAddLabel( nodeId, labelId ) )
-                    {
+                    final var labelId = random.among(labelIds);
+                    if (write.nodeAddLabel(nodeId, labelId)) {
                         // when   and tracked against a query
-                        nodesWithLabelId.getOrCreate( new TokenScanQuery( indexName, new TokenPredicate( labelId ) ) ).add( nodeId );
+                        nodesWithLabelId
+                                .getOrCreate(new TokenScanQuery(indexName, new TokenPredicate(labelId)))
+                                .add(nodeId);
                     }
                 }
 
                 tx.commit();
-            }
-            catch ( Exception e )
-            {
-                throw new AssertionError( "failed to create database", e );
+            } catch (Exception e) {
+                throw new AssertionError("failed to create database", e);
             }
 
             var numberOfCreatedNodes = 0;
-            for ( final var entry : nodesWithLabelId )
-            {
+            for (final var entry : nodesWithLabelId) {
                 numberOfCreatedNodes += entry.getValue().size();
             }
             // then   and the number created should be equal to what was asked
-            assertThat( numberOfCreatedNodes ).as( "nodes created" ).isEqualTo( numberOfNodes );
+            assertThat(numberOfCreatedNodes).as("nodes created").isEqualTo(numberOfNodes);
 
-            return new Queries<>( nodesWithLabelId );
+            return new Queries<>(nodesWithLabelId);
         }
     }
 }

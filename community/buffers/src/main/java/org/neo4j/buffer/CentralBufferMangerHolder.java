@@ -20,18 +20,15 @@
 package org.neo4j.buffer;
 
 import io.netty.buffer.ByteBufAllocator;
-
 import org.neo4j.io.bufferpool.ByteBufferManger;
 
-public class CentralBufferMangerHolder
-{
-    public static final CentralBufferMangerHolder EMPTY = new CentralBufferMangerHolder( null, null );
+public class CentralBufferMangerHolder {
+    public static final CentralBufferMangerHolder EMPTY = new CentralBufferMangerHolder(null, null);
 
     private final ByteBufAllocator nettyBufferAllocator;
     private final ByteBufferManger byteBufferManger;
 
-    public CentralBufferMangerHolder( ByteBufAllocator nettyBufferAllocator, ByteBufferManger byteBufferManger )
-    {
+    public CentralBufferMangerHolder(ByteBufAllocator nettyBufferAllocator, ByteBufferManger byteBufferManger) {
         this.nettyBufferAllocator = nettyBufferAllocator;
         this.byteBufferManger = byteBufferManger;
     }
@@ -40,8 +37,7 @@ public class CentralBufferMangerHolder
      * Gets an instance of Netty's {@link ByteBufAllocator} if there is an instance
      * managed centrally for the entire DBMS or {@code null } otherwise.
      */
-    public ByteBufAllocator getNettyBufferAllocator()
-    {
+    public ByteBufAllocator getNettyBufferAllocator() {
         return nettyBufferAllocator;
     }
 
@@ -49,8 +45,7 @@ public class CentralBufferMangerHolder
      * Gets an instance of {@link ByteBufferManger} if there is an instance
      * managed centrally for the entire DBMS or {@code null } otherwise.
      */
-    public ByteBufferManger getByteBufferManger()
-    {
+    public ByteBufferManger getByteBufferManger() {
         return byteBufferManger;
     }
 }

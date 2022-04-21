@@ -19,32 +19,29 @@
  */
 package org.neo4j.server.http.cypher.format.jolt;
 
-enum Sigil
-{
-    INTEGER( "Z" ),
-    REAL( "R" ),
-    UNICODE( "U" ),
-    BINARY( "#" ),
-    LIST( "[]" ),
-    MAP( "{}" ),
-    TIME( "T" ),
-    SPATIAL( "@" ),
-    NODE( "()" ),
-    RELATIONSHIP( "->" ),
-    RELATIONSHIP_REVERSED( "<-" ),
-    PATH( ".." ),
-    BOOLEAN( "?" ),
-    NULL( "" );
+enum Sigil {
+    INTEGER("Z"),
+    REAL("R"),
+    UNICODE("U"),
+    BINARY("#"),
+    LIST("[]"),
+    MAP("{}"),
+    TIME("T"),
+    SPATIAL("@"),
+    NODE("()"),
+    RELATIONSHIP("->"),
+    RELATIONSHIP_REVERSED("<-"),
+    PATH(".."),
+    BOOLEAN("?"),
+    NULL("");
 
-    Sigil( String value )
-    {
+    Sigil(String value) {
         this.value = value;
     }
 
     private final String value;
 
-    public String getValue()
-    {
+    public String getValue() {
         return value;
     }
 }

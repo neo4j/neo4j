@@ -19,67 +19,66 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-
-import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.stats.Keys;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.batchimport.staging.ControlledStep.stepWithAverageOf;
 
-class StageExecutionTest
-{
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.stats.Keys;
+
+class StageExecutionTest {
     @Test
-    void shouldOrderStepsAscending()
-    {
+    void shouldOrderStepsAscending() {
         // GIVEN
         Collection<Step<?>> steps = new ArrayList<>();
-        steps.add( stepWithAverageOf( "step1", 0, 10 ) );
-        steps.add( stepWithAverageOf( "step2", 0, 5 ) );
-        steps.add( stepWithAverageOf( "step3", 0, 30 ) );
-        StageExecution execution = new StageExecution( "Test", null, Configuration.DEFAULT, steps, Step.ORDER_SEND_DOWNSTREAM );
+        steps.add(stepWithAverageOf("step1", 0, 10));
+        steps.add(stepWithAverageOf("step2", 0, 5));
+        steps.add(stepWithAverageOf("step3", 0, 30));
+        StageExecution execution =
+                new StageExecution("Test", null, Configuration.DEFAULT, steps, Step.ORDER_SEND_DOWNSTREAM);
 
         // WHEN
-        Iterator<WeightedStep> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, true ).iterator();
+        Iterator<WeightedStep> ordered =
+                execution.stepsOrderedBy(Keys.avg_processing_time, true).iterator();
 
         // THEN
         WeightedStep fastest = ordered.next();
-        assertEquals( 1f / 2f, fastest.weight(), 0f );
+        assertEquals(1f / 2f, fastest.weight(), 0f);
         WeightedStep faster = ordered.next();
-        assertEquals( 1f / 3f, faster.weight(), 0f );
+        assertEquals(1f / 3f, faster.weight(), 0f);
         WeightedStep fast = ordered.next();
-        assertEquals( 1f, fast.weight(), 0f );
-        assertFalse( ordered.hasNext() );
+        assertEquals(1f, fast.weight(), 0f);
+        assertFalse(ordered.hasNext());
     }
 
     @Test
-    void shouldOrderStepsDescending()
-    {
+    void shouldOrderStepsDescending() {
         // GIVEN
         Collection<Step<?>> steps = new ArrayList<>();
-        steps.add( stepWithAverageOf( "step1", 0, 10 ) );
-        steps.add( stepWithAverageOf( "step2", 0, 5 ) );
-        steps.add( stepWithAverageOf( "step3", 0, 30 ) );
-        steps.add( stepWithAverageOf( "step4", 0, 5 ) );
-        StageExecution execution = new StageExecution( "Test", null, Configuration.DEFAULT, steps, Step.ORDER_SEND_DOWNSTREAM );
+        steps.add(stepWithAverageOf("step1", 0, 10));
+        steps.add(stepWithAverageOf("step2", 0, 5));
+        steps.add(stepWithAverageOf("step3", 0, 30));
+        steps.add(stepWithAverageOf("step4", 0, 5));
+        StageExecution execution =
+                new StageExecution("Test", null, Configuration.DEFAULT, steps, Step.ORDER_SEND_DOWNSTREAM);
 
         // WHEN
-        Iterator<WeightedStep> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator();
+        Iterator<WeightedStep> ordered =
+                execution.stepsOrderedBy(Keys.avg_processing_time, false).iterator();
 
         // THEN
         WeightedStep slowest = ordered.next();
-        assertEquals( 3f, slowest.weight(), 0f );
+        assertEquals(3f, slowest.weight(), 0f);
         WeightedStep slower = ordered.next();
-        assertEquals( 2f, slower.weight(), 0f );
+        assertEquals(2f, slower.weight(), 0f);
         WeightedStep slow = ordered.next();
-        assertEquals( 1f, slow.weight(), 0f );
+        assertEquals(1f, slow.weight(), 0f);
         WeightedStep alsoSlow = ordered.next();
-        assertEquals( 1f, alsoSlow.weight(), 0f );
-        assertFalse( ordered.hasNext() );
+        assertEquals(1f, alsoSlow.weight(), 0f);
+        assertFalse(ordered.hasNext());
     }
 }

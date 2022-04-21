@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
+import java.io.IOException;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
@@ -32,69 +33,56 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
-class TestShutdownSequence
-{
+class TestShutdownSequence {
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void createGraphDb()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+    void createGraphDb() {
+        managementService =
+                new TestDatabaseManagementServiceBuilder().impermanent().build();
     }
 
     @Test
-    void canInvokeShutdownMultipleTimes()
-    {
+    void canInvokeShutdownMultipleTimes() {
         managementService.shutdown();
         managementService.shutdown();
     }
 
     @Test
-    void notifyEventListenersOnShutdown()
-    {
+    void notifyEventListenersOnShutdown() {
         MutableInt counter = new MutableInt();
-        managementService.registerDatabaseEventListener( new DatabaseEventListenerAdapter()
-        {
+        managementService.registerDatabaseEventListener(new DatabaseEventListenerAdapter() {
             @Override
-            public void databaseShutdown( DatabaseEventContext eventContext )
-            {
+            public void databaseShutdown(DatabaseEventContext eventContext) {
                 counter.incrementAndGet();
             }
-        } );
+        });
         managementService.shutdown();
         managementService.shutdown();
-        assertEquals( 2, counter.intValue() );
+        assertEquals(2, counter.intValue());
     }
 
     @Test
-    void canRemoveFilesAndReinvokeShutdown() throws IOException
-    {
-        GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        FileSystemAbstraction fileSystemAbstraction = getDatabaseFileSystem( databaseAPI );
+    void canRemoveFilesAndReinvokeShutdown() throws IOException {
+        GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        FileSystemAbstraction fileSystemAbstraction = getDatabaseFileSystem(databaseAPI);
         managementService.shutdown();
-        fileSystemAbstraction.deleteRecursively( databaseAPI.databaseLayout().databaseDirectory() );
+        fileSystemAbstraction.deleteRecursively(databaseAPI.databaseLayout().databaseDirectory());
         managementService.shutdown();
     }
 
     @Test
-    void canInvokeShutdownFromShutdownListener()
-    {
-        managementService.registerDatabaseEventListener( new DatabaseEventListenerAdapter()
-        {
+    void canInvokeShutdownFromShutdownListener() {
+        managementService.registerDatabaseEventListener(new DatabaseEventListenerAdapter() {
             @Override
-            public void databaseShutdown( DatabaseEventContext eventContext )
-            {
+            public void databaseShutdown(DatabaseEventContext eventContext) {
                 managementService.shutdown();
             }
-        } );
+        });
         managementService.shutdown();
     }
 
-    private static FileSystemAbstraction getDatabaseFileSystem( GraphDatabaseAPI databaseAPI )
-    {
-        return databaseAPI.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
+    private static FileSystemAbstraction getDatabaseFileSystem(GraphDatabaseAPI databaseAPI) {
+        return databaseAPI.getDependencyResolver().resolveDependency(FileSystemAbstraction.class);
     }
 }

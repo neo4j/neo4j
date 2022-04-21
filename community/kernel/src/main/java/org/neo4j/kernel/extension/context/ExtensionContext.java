@@ -20,15 +20,13 @@
 package org.neo4j.kernel.extension.context;
 
 import java.nio.file.Path;
-
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 
 /**
  * Context that provide information about outside environment into the extension.
  */
-public interface ExtensionContext
-{
+public interface ExtensionContext {
     DbmsInfo dbmsInfo();
 
     DependencySatisfier dependencySatisfier();

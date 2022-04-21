@@ -24,16 +24,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * A hint was not be fulfilled for unknown reasons. This possibly points to a bug in the planner.
  */
-public class HintException extends Neo4jException
-{
-    public HintException( String message )
-    {
-        super( message );
+public class HintException extends Neo4jException {
+    public HintException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.ExecutionFailed;
     }
 }

@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-public interface ResourceMonitor
-{
+public interface ResourceMonitor {
     /**
      * Register a closeable resource that needs to be closed automatically
      * at the end of the scope of the resource.
@@ -30,10 +29,10 @@ public interface ResourceMonitor
      * If the given resource can be closed elsewhere, e.g. by exhausting an iterator,
      * the close() method of the resource should be idempotent.
      */
-    void registerCloseableResource( AutoCloseable closeableResource );
+    void registerCloseableResource(AutoCloseable closeableResource);
 
     /**
      * @see #registerCloseableResource
      */
-    void unregisterCloseableResource( AutoCloseable closeableResource );
+    void unregisterCloseableResource(AutoCloseable closeableResource);
 }

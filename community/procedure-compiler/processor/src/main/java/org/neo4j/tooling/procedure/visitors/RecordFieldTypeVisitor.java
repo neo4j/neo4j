@@ -25,30 +25,28 @@ import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.SimpleTypeVisitor8;
 import javax.lang.model.util.Types;
-
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.validators.AllowedTypesValidator;
 
-class RecordFieldTypeVisitor extends SimpleTypeVisitor8<Boolean,Void>
-{
+class RecordFieldTypeVisitor extends SimpleTypeVisitor8<Boolean, Void> {
 
     private final Predicate<TypeMirror> allowedTypesValidator;
 
-    RecordFieldTypeVisitor( Types typeUtils, TypeMirrorUtils typeMirrors )
-    {
-        allowedTypesValidator = new AllowedTypesValidator( typeMirrors, typeUtils );
+    RecordFieldTypeVisitor(Types typeUtils, TypeMirrorUtils typeMirrors) {
+        allowedTypesValidator = new AllowedTypesValidator(typeMirrors, typeUtils);
     }
 
     @Override
-    public Boolean visitDeclared( DeclaredType declaredType, Void ignored )
-    {
-        return allowedTypesValidator.test( declaredType ) &&
-                declaredType.getTypeArguments().stream().map( this::visit ).reduce( ( a, b ) -> a && b ).orElse( Boolean.TRUE );
+    public Boolean visitDeclared(DeclaredType declaredType, Void ignored) {
+        return allowedTypesValidator.test(declaredType)
+                && declaredType.getTypeArguments().stream()
+                        .map(this::visit)
+                        .reduce((a, b) -> a && b)
+                        .orElse(Boolean.TRUE);
     }
 
     @Override
-    public Boolean visitPrimitive( PrimitiveType primitiveType, Void ignored )
-    {
-        return allowedTypesValidator.test( primitiveType );
+    public Boolean visitPrimitive(PrimitiveType primitiveType, Void ignored) {
+        return allowedTypesValidator.test(primitiveType);
     }
 }

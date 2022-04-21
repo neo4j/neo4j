@@ -41,7 +41,8 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   private def plannerBaseConfigForIndexOnLabelPropTests(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     plannerBuilder()
@@ -59,18 +60,30 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   private def plannerConfigForRangeIndexOnRelationshipTypePropTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForIndexOnLabelPropTests()
       .setRelationshipCardinality("()-[:Type]->()", 20)
-      .addRelationshipIndex("Type", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
+      .addRelationshipIndex(
+        "Type",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.RANGE
+      )
       .build()
 
   test("should plan ranged index usage if predicate depends on simple variable from horizon") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
-      val plan = cfg.plan(s"WITH 'foo' AS foo MATCH (a)-[r]->(b:Label) WHERE b.prop $op foo RETURN a").stripProduceResults
+      val plan =
+        cfg.plan(s"WITH 'foo' AS foo MATCH (a)-[r]->(b:Label) WHERE b.prop $op foo RETURN a").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .expandAll("(b)<-[r]-(a)")
         .apply()
-        .|.nodeIndexOperator(s"b:Label(prop $op ???)", paramExpr = Some(varFor("foo")), argumentIds = Set("foo"), indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          s"b:Label(prop $op ???)",
+          paramExpr = Some(varFor("foo")),
+          argumentIds = Set("foo"),
+          indexType = IndexType.RANGE
+        )
         .projection("'foo' AS foo")
         .argument()
         .build()
@@ -81,7 +94,13 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg =
       plannerBaseConfigForIndexOnLabelPropTests()
         .enablePlanningRangeIndexes(false)
-        .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
+        .addNodeIndex(
+          "Label",
+          Seq("prop"),
+          existsSelectivity = 1.0,
+          uniqueSelectivity = 0.1,
+          indexType = IndexType.RANGE
+        )
         .build()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
@@ -97,7 +116,12 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   test("should plan range index scan for partial existence predicate if predicate is for points") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
-    for (predicate <- List("point.withinBBox(a.prop, point({x:1, y:1}), point({x:2, y:2}))", "point.distance(a.prop, point({x:1, y:1})) < 10")) {
+    for (
+      predicate <- List(
+        "point.withinBBox(a.prop, point({x:1, y:1}), point({x:2, y:2}))",
+        "point.distance(a.prop, point({x:1, y:1})) < 10"
+      )
+    ) {
       val plan = cfg.plan(s"MATCH (a:Label) WHERE $predicate RETURN a").stripProduceResults
 
       plan shouldEqual cfg.subPlanBuilder()
@@ -214,7 +238,8 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         s"""WITH point({x:1, y:1}) AS point
            |MATCH (a:Label)
            |WHERE a.prop $op point
-           |RETURN a""".stripMargin).stripProduceResults
+           |RETURN a""".stripMargin
+      ).stripProduceResults
 
       plan shouldEqual cfg.subPlanBuilder()
         .apply()
@@ -251,11 +276,17 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
-      val plan = cfg.plan(s"WITH 'foo' AS foo MATCH (a)-[r]->(b:Label) WHERE b.prop $op foo RETURN a").stripProduceResults
+      val plan =
+        cfg.plan(s"WITH 'foo' AS foo MATCH (a)-[r]->(b:Label) WHERE b.prop $op foo RETURN a").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .expandAll("(b)<-[r]-(a)")
         .apply()
-        .|.nodeIndexOperator(s"b:Label(prop $op ???)", paramExpr = Some(varFor("foo")), argumentIds = Set("foo"), indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          s"b:Label(prop $op ???)",
+          paramExpr = Some(varFor("foo")),
+          argumentIds = Set("foo"),
+          indexType = IndexType.RANGE
+        )
         .projection("'foo' AS foo")
         .argument()
         .build()
@@ -266,11 +297,18 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
-      val plan = cfg.plan(s"WITH {prop: 'foo'} AS foo MATCH (a)-[r]->(b:Label) WHERE b.prop $op foo.prop RETURN a").stripProduceResults
+      val plan = cfg.plan(
+        s"WITH {prop: 'foo'} AS foo MATCH (a)-[r]->(b:Label) WHERE b.prop $op foo.prop RETURN a"
+      ).stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .expandAll("(b)<-[r]-(a)")
         .apply()
-        .|.nodeIndexOperator(s"b:Label(prop $op ???)", paramExpr = Some(prop("foo", "prop")) , argumentIds = Set("foo"), indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          s"b:Label(prop $op ???)",
+          paramExpr = Some(prop("foo", "prop")),
+          argumentIds = Set("foo"),
+          indexType = IndexType.RANGE
+        )
         .projection("{prop: 'foo'} AS foo")
         .argument()
         .build()
@@ -295,16 +333,22 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   private def plannerBaseConfigForDistancePredicateTests(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     plannerBuilder()
-    .setAllNodesCardinality(100)
-    .setLabelCardinality("Place", 50)
-    .setLabelCardinality("Preference", 50)
-    .setRelationshipCardinality("(:Place)-[]->()", 20)
-    .setRelationshipCardinality("(:Place)-[]->(:Preference)", 20)
-    .setRelationshipCardinality("()-[]->(:Preference)", 20)
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Place", 50)
+      .setLabelCardinality("Preference", 50)
+      .setRelationshipCardinality("(:Place)-[]->()", 20)
+      .setRelationshipCardinality("(:Place)-[]->(:Preference)", 20)
+      .setRelationshipCardinality("()-[]->(:Preference)", 20)
 
   private def plannerConfigWithPointIndexForDistancePredicateTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForDistancePredicateTests()
-      .addNodeIndex("Place", Seq("location"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
+      .addNodeIndex(
+        "Place",
+        Seq("location"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.POINT
+      )
       .build()
 
   test("should not plan index usage if distance predicate depends on variable from same QueryGraph") {
@@ -318,7 +362,10 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheN[p.location] AS point")
-      .filter("x.maxDistance >= point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))", "x:Preference")
+      .filter(
+        "x.maxDistance >= point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))",
+        "x:Preference"
+      )
       .expandAll("(p)-[r]->(x)")
       .nodeByLabelScan("p", "Place")
       .build()
@@ -326,9 +373,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   test("should plan index usage if distance predicate depends on variable from the horizon") {
     val query = """WITH 10 AS maxDistance
-        |MATCH (p:Place)
-        |WHERE point.distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance
-        |RETURN p.location as point
+                  |MATCH (p:Place)
+                  |WHERE point.distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance
+                  |RETURN p.location as point
         """.stripMargin
 
     val cfg = plannerConfigWithPointIndexForDistancePredicateTests()
@@ -337,7 +384,16 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .projection("cacheN[p.location] AS point")
       .filter("point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance")
       .apply()
-      .|.pointDistanceNodeIndexSeekExpr("p", "Place", "location", "{x: 0, y: 0, crs: 'cartesian'}", distanceExpr = varFor("maxDistance"), argumentIds = Set("maxDistance"), inclusive = true, indexType = IndexType.POINT)
+      .|.pointDistanceNodeIndexSeekExpr(
+        "p",
+        "Place",
+        "location",
+        "{x: 0, y: 0, crs: 'cartesian'}",
+        distanceExpr = varFor("maxDistance"),
+        argumentIds = Set("maxDistance"),
+        inclusive = true,
+        indexType = IndexType.POINT
+      )
       .projection("10 AS maxDistance")
       .argument()
       .build()
@@ -357,7 +413,16 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .projection("cacheN[p.location] AS point")
       .filter("x.maxDistance >= point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))")
       .apply()
-      .|.pointDistanceNodeIndexSeekExpr("p", "Place", "location", "{x: 0, y: 0, crs: 'cartesian'}", distanceExpr = prop("x", "maxDistance"), argumentIds = Set("x"), inclusive = true, indexType = IndexType.POINT)
+      .|.pointDistanceNodeIndexSeekExpr(
+        "p",
+        "Place",
+        "location",
+        "{x: 0, y: 0, crs: 'cartesian'}",
+        distanceExpr = prop("x", "maxDistance"),
+        argumentIds = Set("x"),
+        inclusive = true,
+        indexType = IndexType.POINT
+      )
       .projection("{maxDistance: 10} AS x")
       .argument()
       .build()
@@ -375,8 +440,20 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   private def plannerConfigWithRangeIndexForUsingHintTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForUsingHintTests()
       .addNodeIndex("S", Seq("p"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
-      .addNodeIndex("T", Seq("p"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE) // This index is enforced by hint
-      .addNodeIndex("T", Seq("foo"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE) // This index would normally be preferred
+      .addNodeIndex(
+        "T",
+        Seq("p"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.RANGE
+      ) // This index is enforced by hint
+      .addNodeIndex(
+        "T",
+        Seq("foo"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.RANGE
+      ) // This index would normally be preferred
       .build()
 
   test("should allow one join and one index hint on the same variable using range indexes") {
@@ -467,7 +544,8 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
             |        n.name IN $p25) AND n.legal)
             |RETURN n.name as name
         """.stripMargin
-        })
+        }
+      )
 
     Await.result(futurePlan, 1.minutes)
   }
@@ -491,7 +569,12 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .|.argument("a", "b")
       .cartesianProduct()
       .|.allNodeScan("b")
-      .nodeIndexOperator("a:Label(prop = ???)", paramExpr = Some(parameter("param", CTAny)), getValue = _ => GetValue, indexType = IndexType.RANGE)
+      .nodeIndexOperator(
+        "a:Label(prop = ???)",
+        paramExpr = Some(parameter("param", CTAny)),
+        getValue = _ => GetValue,
+        indexType = IndexType.RANGE
+      )
       .build()
   }
 
@@ -507,9 +590,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (n:Label) RETURN n")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("n")
-                            .nodeByLabelScan("n", "Label")
-                            .build()
+      .produceResults("n")
+      .nodeByLabelScan("n", "Label")
+      .build()
   }
 
   test("should prefer label scan to node index scan from existence constraint with same cardinality, when filtered") {
@@ -524,10 +607,10 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (n:Label) WHERE n.x = 1 RETURN n")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("n")
-                            .filter("n.x = 1")
-                            .nodeByLabelScan("n", "Label")
-                            .build()
+      .produceResults("n")
+      .filter("n.x = 1")
+      .nodeByLabelScan("n", "Label")
+      .build()
   }
 
   test("should prefer type scan to relationship index scan from existence constraint with same cardinality") {
@@ -542,12 +625,14 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) RETURN r")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("r")
-                            .relationshipTypeScan("(a)-[r:REL]->(b)")
-                            .build()
+      .produceResults("r")
+      .relationshipTypeScan("(a)-[r:REL]->(b)")
+      .build()
   }
 
-  test("should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used") {
+  test(
+    "should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used"
+  ) {
 
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -559,13 +644,15 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (n:Label) RETURN n.prop AS p")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("p")
-                            .projection("n.prop AS p")
-                            .nodeIndexOperator("n:Label(prop)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("p")
+      .projection("n.prop AS p")
+      .nodeIndexOperator("n:Label(prop)", indexType = IndexType.RANGE)
+      .build()
   }
 
-  test("should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used") {
+  test(
+    "should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used"
+  ) {
 
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -577,13 +664,15 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) RETURN r.prop AS p")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("p")
-                            .projection("r.prop AS p")
-                            .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("p")
+      .projection("r.prop AS p")
+      .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.RANGE)
+      .build()
   }
 
-  test("should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used, when filtered") {
+  test(
+    "should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used, when filtered"
+  ) {
 
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -595,14 +684,16 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (n:Label) WHERE n.x = 1 RETURN n.prop AS p")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("p")
-                            .projection("n.prop AS p")
-                            .filter("n.x = 1")
-                            .nodeIndexOperator("n:Label(prop)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("p")
+      .projection("n.prop AS p")
+      .filter("n.x = 1")
+      .nodeIndexOperator("n:Label(prop)", indexType = IndexType.RANGE)
+      .build()
   }
 
-  test("should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used, when filtered") {
+  test(
+    "should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used, when filtered"
+  ) {
 
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -614,14 +705,16 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.x = 1 RETURN r.prop AS p")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("p")
-                            .projection("r.prop AS p")
-                            .filter("r.x = 1")
-                            .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("p")
+      .projection("r.prop AS p")
+      .filter("r.x = 1")
+      .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.RANGE)
+      .build()
   }
 
-  test("should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality") {
+  test(
+    "should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality"
+  ) {
 
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -634,13 +727,15 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (n:Label) RETURN count(n.counted) AS c")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("c")
-                            .aggregation(Seq(), Seq("count(n.counted) AS c"))
-                            .nodeIndexOperator("n:Label(counted)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("c")
+      .aggregation(Seq(), Seq("count(n.counted) AS c"))
+      .nodeIndexOperator("n:Label(counted)", indexType = IndexType.RANGE)
+      .build()
   }
 
-  test("should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality") {
+  test(
+    "should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality"
+  ) {
 
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -653,13 +748,15 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) RETURN count(r.counted) AS c")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("c")
-                            .aggregation(Seq(), Seq("count(r.counted) AS c"))
-                            .relationshipIndexOperator("(a)-[r:REL(counted)]->(b)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("c")
+      .aggregation(Seq(), Seq("count(r.counted) AS c"))
+      .relationshipIndexOperator("(a)-[r:REL(counted)]->(b)", indexType = IndexType.RANGE)
+      .build()
   }
 
-  test("should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality, when filtered") {
+  test(
+    "should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality, when filtered"
+  ) {
 
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -672,14 +769,16 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (n:Label) WHERE n.x = 1 RETURN count(n.counted) AS c")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("c")
-                            .aggregation(Seq(), Seq("count(n.counted) AS c"))
-                            .filter("n.x = 1")
-                            .nodeIndexOperator("n:Label(counted)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("c")
+      .aggregation(Seq(), Seq("count(n.counted) AS c"))
+      .filter("n.x = 1")
+      .nodeIndexOperator("n:Label(counted)", indexType = IndexType.RANGE)
+      .build()
   }
 
-  test("should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality, when filtered") {
+  test(
+    "should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality, when filtered"
+  ) {
 
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -692,11 +791,11 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.x = 1 RETURN count(r.counted) AS c")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("c")
-                            .aggregation(Seq(), Seq("count(r.counted) AS c"))
-                            .filter("r.x = 1")
-                            .relationshipIndexOperator("(a)-[r:REL(counted)]->(b)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("c")
+      .aggregation(Seq(), Seq("count(r.counted) AS c"))
+      .filter("r.x = 1")
+      .relationshipIndexOperator("(a)-[r:REL(counted)]->(b)", indexType = IndexType.RANGE)
+      .build()
   }
 
   test("should prefer node index scan for aggregated property, even if other property is referenced") {
@@ -712,11 +811,11 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (n:Label) WHERE n.prop <> 1 AND n.x = 1 RETURN count(n.counted) AS c")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("c")
-                            .aggregation(Seq(), Seq("count(n.counted) AS c"))
-                            .filter("not n.prop = 1", "n.x = 1")
-                            .nodeIndexOperator("n:Label(counted)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("c")
+      .aggregation(Seq(), Seq("count(n.counted) AS c"))
+      .filter("not n.prop = 1", "n.x = 1")
+      .nodeIndexOperator("n:Label(counted)", indexType = IndexType.RANGE)
+      .build()
   }
 
   test("should prefer relationship index scan for aggregated property, even if other property is referenced") {
@@ -732,11 +831,11 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop <> 1 AND r.x = 1 RETURN count(r.counted) AS c")
 
     plan shouldEqual planner.planBuilder()
-                            .produceResults("c")
-                            .aggregation(Seq(), Seq("count(r.counted) AS c"))
-                            .filter("not r.prop = 1", "r.x = 1")
-                            .relationshipIndexOperator("(a)-[r:REL(counted)]->(b)", indexType = IndexType.RANGE)
-                            .build()
+      .produceResults("c")
+      .aggregation(Seq(), Seq("count(r.counted) AS c"))
+      .filter("not r.prop = 1", "r.x = 1")
+      .relationshipIndexOperator("(a)-[r:REL(counted)]->(b)", indexType = IndexType.RANGE)
+      .build()
   }
 
   test("should not plan node index scan with existence constraint if query has updates before the match") {
@@ -768,7 +867,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
   }
 
-  test("should not plan node index scan with existence constraint if query has updates before the match in a subquery") {
+  test(
+    "should not plan node index scan with existence constraint if query has updates before the match in a subquery"
+  ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("Label", 1000)
@@ -895,12 +996,15 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .aggregation(Seq(), Seq("count(*) AS c"))
       .create(
         nodes = Seq(createNode("a"), createNode("b")),
-        relationships = Seq(createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING)))
+        relationships = Seq(createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING))
+      )
       .argument()
       .build()
   }
 
-  test("should not plan relationship index scan with existence constraint if query has updates before the match in a subquery") {
+  test(
+    "should not plan relationship index scan with existence constraint if query has updates before the match in a subquery"
+  ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 100)
@@ -930,7 +1034,8 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .aggregation(Seq(), Seq("count(*) AS c"))
       .create(
         nodes = Seq(createNode("a"), createNode("b")),
-        relationships = Seq(createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING)))
+        relationships = Seq(createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING))
+      )
       .argument()
       .build()
   }
@@ -976,13 +1081,27 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .emptyResult()
       .create(
         nodes = Seq(createNode("c"), createNode("d")),
-        relationships = Seq(createRelationship("r2", "c", "REL", "d", SemanticDirection.OUTGOING, Some("{prop: cacheR[r1.prop] * 2}"))))
+        relationships = Seq(createRelationship(
+          "r2",
+          "c",
+          "REL",
+          "d",
+          SemanticDirection.OUTGOING,
+          Some("{prop: cacheR[r1.prop] * 2}")
+        ))
+      )
       .eager()
-      .relationshipIndexOperator("(a)-[r1:REL(prop)]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.RANGE)
+      .relationshipIndexOperator(
+        "(a)-[r1:REL(prop)]->(b)",
+        getValue = Map("prop" -> GetValue),
+        indexType = IndexType.RANGE
+      )
       .build()
   }
 
-  test("should plan relationship index scan with existence constraint for aggregation if transaction state has changes") {
+  test(
+    "should plan relationship index scan with existence constraint for aggregation if transaction state has changes"
+  ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 100)
@@ -1014,7 +1133,8 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   test("should plan index usage for a pattern comprehension with IS NOT NULL predicate") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
-    val plan = cfg.plan("RETURN [ (a:Label)-[r]->(b) WHERE a.prop IS NOT NULL | [a, a.prop] ] AS result ").stripProduceResults
+    val plan =
+      cfg.plan("RETURN [ (a:Label)-[r]->(b) WHERE a.prop IS NOT NULL | [a, a.prop] ] AS result ").stripProduceResults
 
     plan shouldBe cfg.subPlanBuilder()
       .rollUpApply("result", "anon_0")
@@ -1027,7 +1147,8 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   test("should plan index usage for a pattern comprehension with IS NOT NULL predicate inside a node pattern") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
-    val plan = cfg.plan("RETURN [ (a:Label WHERE a.prop IS NOT NULL)-[r]->(b) | [a, a.prop] ] AS result ").stripProduceResults
+    val plan =
+      cfg.plan("RETURN [ (a:Label WHERE a.prop IS NOT NULL)-[r]->(b) | [a, a.prop] ] AS result ").stripProduceResults
 
     plan shouldBe cfg.subPlanBuilder()
       .rollUpApply("result", "anon_0")
@@ -1057,7 +1178,13 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT
+      )
       .build()
 
     val plan = planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN r, r.prop").stripProduceResults
@@ -1090,7 +1217,13 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT
+      )
       .enablePlanningTextIndexes(false)
       .build()
 
@@ -1196,7 +1329,13 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT
+      )
       .build()
 
     for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS", "<", "<=", ">", ">=")) {
@@ -1211,7 +1350,11 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+        .relationshipIndexOperator(
+          s"(a)-[r:REL(prop $op 'hello')]->(b)",
+          getValue = Map("prop" -> GetValue),
+          indexType = IndexType.TEXT
+        )
         .build()
     }
   }
@@ -1220,8 +1363,20 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT
+      )
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.RANGE
+      )
       .build()
 
     for (op <- List("ENDS WITH", "CONTAINS")) {
@@ -1244,7 +1399,11 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.RANGE)
+        .relationshipIndexOperator(
+          s"(a)-[r:REL(prop $op 'hello')]->(b)",
+          getValue = Map("prop" -> GetValue),
+          indexType = IndexType.RANGE
+        )
         .build()
     }
   }
@@ -1254,7 +1413,13 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setAllNodesCardinality(1000)
       .setAllRelationshipsCardinality(1000)
       .setRelationshipCardinality("()-[:R]->()", 500)
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .addRelationshipIndex(
+        "R",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT
+      )
       .build()
 
     val queryStr = (op: String, arg: String) => s"MATCH (a)-[r:R]->(b) WHERE r.prop $op $arg RETURN r, r.prop"
@@ -1263,7 +1428,11 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val indexPlan = cfg.plan(queryStr("=", "'string'")).stripProduceResults
     indexPlan shouldEqual cfg.subPlanBuilder()
       .projection("cacheR[r.prop] AS `r.prop`")
-      .relationshipIndexOperator("(a)-[r:R(prop = 'string')]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+      .relationshipIndexOperator(
+        "(a)-[r:R(prop = 'string')]->(b)",
+        getValue = Map("prop" -> GetValue),
+        indexType = IndexType.TEXT
+      )
       .build()
 
     for (arg <- List("3", "a.prop2", "[\"a\", \"b\", \"c\"]", "$param")) {
@@ -1299,7 +1468,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       """MATCH (a:A WHERE a.prop > 10)
         |USING INDEX a:A(prop)
         |RETURN a, a.prop
-        |""".stripMargin,
+        |""".stripMargin
     )
 
     for (query <- queries) withClue(query) {
@@ -1330,7 +1499,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       """MATCH ()-[r:R WHERE r.prop > 10]->()
         |USING INDEX r:R(prop)
         |RETURN r, r.prop
-        |""".stripMargin,
+        |""".stripMargin
     )
 
     for (query <- queries) withClue(query) {
@@ -1355,13 +1524,20 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop = point({x:1.0, y:2.0}) RETURN a, a.prop").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheN[a.prop] AS `a.prop`")
-      .nodeIndexOperator(s"a:A(prop = ???)", paramExpr = Some(point(1.0, 2.0)), getValue = Map("prop" -> GetValue), indexType = IndexType.POINT)
+      .nodeIndexOperator(
+        s"a:A(prop = ???)",
+        paramExpr = Some(point(1.0, 2.0)),
+        getValue = Map("prop" -> GetValue),
+        indexType = IndexType.POINT
+      )
       .build()
   }
 
   test("should plan node point index usage for point.distance") {
     val cfg = plannerConfigForNodePointIndex
-    val plan = cfg.plan(s"MATCH (a:A) WHERE point.distance(a.prop, point({x:1, y:2})) < 1.0 RETURN a, a.prop").stripProduceResults
+    val plan = cfg.plan(
+      s"MATCH (a:A) WHERE point.distance(a.prop, point({x:1, y:2})) < 1.0 RETURN a, a.prop"
+    ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheN[a.prop] AS `a.prop`")
       .filter("point.distance(cacheNFromStore[a.prop], point({x:1, y:2})) < 1.0")
@@ -1371,7 +1547,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   test("should plan node point index usage for point.withinBBox") {
     val cfg = plannerConfigForNodePointIndex
-    val plan = cfg.plan(s"MATCH (a:A) WHERE point.withinBBox(a.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN a, a.prop").stripProduceResults
+    val plan = cfg.plan(
+      s"MATCH (a:A) WHERE point.withinBBox(a.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN a, a.prop"
+    ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("a.prop AS `a.prop`")
       .pointBoundingBoxNodeIndexSeek("a", "A", "prop", "{x:1, y:2}", "{x:3, y:4}", indexType = IndexType.POINT)
@@ -1404,21 +1582,35 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.POINT
+      )
       .build()
 
   test("should plan relationship point index usage for equality") {
     val cfg = plannerConfigForRelPointIndex
-    val plan = cfg.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop = point({x:1.0, y:2.0}) RETURN r, r.prop").stripProduceResults
+    val plan =
+      cfg.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop = point({x:1.0, y:2.0}) RETURN r, r.prop").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheR[r.prop] AS `r.prop`")
-      .relationshipIndexOperator("(a)-[r:REL(prop = ???)]->(b)", paramExpr = Some(point(1.0, 2.0)), getValue = Map("prop" -> GetValue), indexType = IndexType.POINT)
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop = ???)]->(b)",
+        paramExpr = Some(point(1.0, 2.0)),
+        getValue = Map("prop" -> GetValue),
+        indexType = IndexType.POINT
+      )
       .build()
   }
 
   test("should plan relationship point index usage for point.distance") {
     val cfg = plannerConfigForRelPointIndex
-    val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE point.distance(r.prop, point({x:1, y:2})) < 1.0 RETURN r, r.prop").stripProduceResults
+    val plan = cfg.plan(
+      s"MATCH (a)-[r:REL]->(b) WHERE point.distance(r.prop, point({x:1, y:2})) < 1.0 RETURN r, r.prop"
+    ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheR[r.prop] AS `r.prop`")
       .filter("point.distance(cacheRFromStore[r.prop], point({x:1, y:2})) < 1.0")
@@ -1428,7 +1620,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   test("should plan relationship point index usage for point.distance (case insensitive)") {
     val cfg = plannerConfigForRelPointIndex
-    val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE pOinT.dIsTaNcE(r.prop, point({x:1, y:2})) < 1.0 RETURN r, r.prop").stripProduceResults
+    val plan = cfg.plan(
+      s"MATCH (a)-[r:REL]->(b) WHERE pOinT.dIsTaNcE(r.prop, point({x:1, y:2})) < 1.0 RETURN r, r.prop"
+    ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheR[r.prop] AS `r.prop`")
       .filter("pOinT.dIsTaNcE(cacheRFromStore[r.prop], point({x:1, y:2})) < 1.0")
@@ -1438,16 +1632,29 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   test("should plan relationship point index usage for point.withinBBox") {
     val cfg = plannerConfigForRelPointIndex
-    val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE point.withinBBox(r.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN r, r.prop").stripProduceResults
+    val plan = cfg.plan(
+      s"MATCH (a)-[r:REL]->(b) WHERE point.withinBBox(r.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN r, r.prop"
+    ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("r.prop AS `r.prop`")
-      .pointBoundingBoxRelationshipIndexSeek("r", "a", "b", "REL", "prop", "{x:1, y:2}", "{x:3, y:4}", indexType = IndexType.POINT)
+      .pointBoundingBoxRelationshipIndexSeek(
+        "r",
+        "a",
+        "b",
+        "REL",
+        "prop",
+        "{x:1, y:2}",
+        "{x:3, y:4}",
+        indexType = IndexType.POINT
+      )
       .build()
   }
 
   test("should plan node point index usage for point.withinBBox (case insensitive)") {
     val cfg = plannerConfigForNodePointIndex
-    val plan = cfg.plan(s"MATCH (a:A) WHERE PoInT.wItHinBbOx(a.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN a, a.prop").stripProduceResults
+    val plan = cfg.plan(
+      s"MATCH (a:A) WHERE PoInT.wItHinBbOx(a.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN a, a.prop"
+    ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("a.prop AS `a.prop`")
       .pointBoundingBoxNodeIndexSeek("a", "A", "prop", "{x:1, y:2}", "{x:3, y:4}", indexType = IndexType.POINT)
@@ -1457,7 +1664,8 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   test("should not plan relationship point index usage for inequalities") {
     val cfg = plannerConfigForRelPointIndex
     for (op <- Seq("<", "<=", ">", ">=")) {
-      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op point({x:1, y:2}) RETURN r, r.prop").stripProduceResults
+      val plan =
+        cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op point({x:1, y:2}) RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
         .filter(s"cacheRFromStore[r.prop] $op point({x:1, y:2})")
@@ -1484,11 +1692,13 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
       .build()
 
-    for (predicate <- Seq(
-      "a.prop = point({x:1, y:2})",
-      "point.withinBBox(a.prop, point({x:1, y:2}), point({x:3, y:4}))",
-      "point.distance(a.prop, point({x:1, y:2})) < 1.0",
-    )) {
+    for (
+      predicate <- Seq(
+        "a.prop = point({x:1, y:2})",
+        "point.withinBBox(a.prop, point({x:1, y:2}), point({x:3, y:4}))",
+        "point.distance(a.prop, point({x:1, y:2})) < 1.0"
+      )
+    ) {
       val query = s"MATCH (a:A) WHERE $predicate RETURN a, a.prop"
       val plan = cfg.plan(query)
       withClue(plan.asLogicalPlanBuilderString() + "\n\n") {
@@ -1503,15 +1713,29 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.POINT
+      )
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.RANGE
+      )
       .build()
 
-    for (predicate <- Seq(
-      "r.prop = point({x:1, y:2})",
-      "point.withinBBox(r.prop, point({x:1, y:2}), point({x:3, y:4}))",
-      "point.distance(r.prop, point({x:1, y:2})) < 1.0",
-    )) {
+    for (
+      predicate <- Seq(
+        "r.prop = point({x:1, y:2})",
+        "point.withinBBox(r.prop, point({x:1, y:2}), point({x:3, y:4}))",
+        "point.distance(r.prop, point({x:1, y:2})) < 1.0"
+      )
+    ) {
       val query = s"MATCH ()-[r:REL]->() WHERE $predicate RETURN r, r.prop"
       val plan = cfg.plan(query)
       withClue(plan.asLogicalPlanBuilderString() + "\n\n") {

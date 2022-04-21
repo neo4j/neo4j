@@ -19,6 +19,9 @@
  */
 package org.neo4j.test.extension;
 
+import static java.lang.System.lineSeparator;
+import static java.util.Arrays.asList;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -35,111 +38,86 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
-import static java.lang.System.lineSeparator;
-import static java.util.Arrays.asList;
-
 /**
  * Suppresses outputs such as System.out, System.err and java.util.logging for example when running a test.
  *
  * The suppressing occurs visitor-style and if there's an exception in the code executed when being muted
  * all the logging that was temporarily muted will be resent to the peers as if they weren't muted to begin with.
  */
-public final class SuppressOutput
-{
-    private static final Suppressible java_util_logging = java_util_logging( new ByteArrayOutputStream(), null );
+public final class SuppressOutput {
+    private static final Suppressible java_util_logging = java_util_logging(new ByteArrayOutputStream(), null);
 
-    public static SuppressOutput suppress( Suppressible... suppressibles )
-    {
-        return new SuppressOutput( suppressibles );
+    public static SuppressOutput suppress(Suppressible... suppressibles) {
+        return new SuppressOutput(suppressibles);
     }
 
-    public static SuppressOutput suppressAll()
-    {
-        return suppress( System.out, System.err, java_util_logging );
+    public static SuppressOutput suppressAll() {
+        return suppress(System.out, System.err, java_util_logging);
     }
 
-    public enum System implements Suppressible
-    {
-        out
-        {
+    public enum System implements Suppressible {
+        out {
             @Override
-            PrintStream replace( PrintStream replacement )
-            {
+            PrintStream replace(PrintStream replacement) {
                 PrintStream old = java.lang.System.out;
-                java.lang.System.setOut( replacement );
+                java.lang.System.setOut(replacement);
                 return old;
             }
         },
-        err
-        {
+        err {
             @Override
-            PrintStream replace( PrintStream replacement )
-            {
+            PrintStream replace(PrintStream replacement) {
                 PrintStream old = java.lang.System.err;
-                java.lang.System.setErr( replacement );
+                java.lang.System.setErr(replacement);
                 return old;
             }
         };
 
         @Override
-        public Voice suppress()
-        {
+        public Voice suppress() {
             final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            final PrintStream original = replace( new PrintStream( buffer ) );
-            return new Voice( this, buffer, original )
-            {
+            final PrintStream original = replace(new PrintStream(buffer));
+            return new Voice(this, buffer, original) {
                 @Override
-                void restore( boolean failure ) throws IOException
-                {
-                    replace( original ).flush();
-                    if ( failure )
-                    {
-                        buffer.writeTo( original );
+                void restore(boolean failure) throws IOException {
+                    replace(original).flush();
+                    if (failure) {
+                        buffer.writeTo(original);
                     }
                 }
             };
         }
 
-        abstract PrintStream replace( PrintStream replacement );
+        abstract PrintStream replace(PrintStream replacement);
     }
 
-    private static Suppressible java_util_logging( final ByteArrayOutputStream redirectTo, Level level )
-    {
-        final Handler replacement = redirectTo == null ? null : new StreamHandler( redirectTo, new SimpleFormatter() );
-        if ( replacement != null && level != null )
-        {
-            replacement.setLevel( level );
+    private static Suppressible java_util_logging(final ByteArrayOutputStream redirectTo, Level level) {
+        final Handler replacement = redirectTo == null ? null : new StreamHandler(redirectTo, new SimpleFormatter());
+        if (replacement != null && level != null) {
+            replacement.setLevel(level);
         }
-        return new Suppressible()
-        {
+        return new Suppressible() {
             @Override
-            public Voice suppress()
-            {
-                final Logger logger = LogManager.getLogManager().getLogger( "" );
+            public Voice suppress() {
+                final Logger logger = LogManager.getLogManager().getLogger("");
                 final Level level = logger.getLevel();
                 final Handler[] handlers = logger.getHandlers();
-                for ( Handler handler : handlers )
-                {
-                    logger.removeHandler( handler );
+                for (Handler handler : handlers) {
+                    logger.removeHandler(handler);
                 }
-                if ( replacement != null )
-                {
-                    logger.addHandler( replacement );
-                    logger.setLevel( Level.ALL );
+                if (replacement != null) {
+                    logger.addHandler(replacement);
+                    logger.setLevel(Level.ALL);
                 }
-                return new Voice( this, redirectTo )
-                {
+                return new Voice(this, redirectTo) {
                     @Override
-                    void restore( boolean failure )
-                    {
-                        for ( Handler handler : handlers )
-                        {
-                            logger.addHandler( handler );
+                    void restore(boolean failure) {
+                        for (Handler handler : handlers) {
+                            logger.addHandler(handler);
                         }
-                        logger.setLevel( level );
-                        if ( replacement != null )
-                        {
-                            logger.removeHandler( replacement );
+                        logger.setLevel(level);
+                        if (replacement != null) {
+                            logger.removeHandler(replacement);
                         }
                     }
                 };
@@ -147,176 +125,134 @@ public final class SuppressOutput
         };
     }
 
-    public <T> T call( Callable<T> callable ) throws Exception
-    {
+    public <T> T call(Callable<T> callable) throws Exception {
         captureVoices();
         boolean failure = true;
-        try
-        {
+        try {
             T result = callable.call();
             failure = false;
             return result;
-        }
-        finally
-        {
-            releaseVoices( voices, failure );
+        } finally {
+            releaseVoices(voices, failure);
         }
     }
 
     private final Suppressible[] suppressibles;
     private Voice[] voices;
 
-    private SuppressOutput( Suppressible[] suppressibles )
-    {
+    private SuppressOutput(Suppressible[] suppressibles) {
         this.suppressibles = suppressibles;
     }
 
-    public Voice[] getAllVoices()
-    {
+    public Voice[] getAllVoices() {
         return voices;
     }
 
-    public Voice getOutputVoice()
-    {
-        return getVoice( System.out );
+    public Voice getOutputVoice() {
+        return getVoice(System.out);
     }
 
-    public Voice getErrorVoice()
-    {
-        return getVoice( System.err );
+    public Voice getErrorVoice() {
+        return getVoice(System.err);
     }
 
-    private Voice getVoice( Suppressible suppressible )
-    {
-        for ( Voice voice : voices )
-        {
-            if ( suppressible.equals( voice.getSuppressible() ) )
-            {
+    private Voice getVoice(Suppressible suppressible) {
+        for (Voice voice : voices) {
+            if (suppressible.equals(voice.getSuppressible())) {
                 return voice;
             }
         }
         return null;
     }
 
-    public interface Suppressible
-    {
+    public interface Suppressible {
         Voice suppress();
     }
 
-    public abstract static class Voice
-    {
+    public abstract static class Voice {
         private final Suppressible suppressible;
         private final ByteArrayOutputStream replacementBuffer;
         private final PrintStream original;
 
-        public Voice( Suppressible suppressible, ByteArrayOutputStream replacementBuffer )
-        {
-            this( suppressible, replacementBuffer, null );
+        public Voice(Suppressible suppressible, ByteArrayOutputStream replacementBuffer) {
+            this(suppressible, replacementBuffer, null);
         }
 
-        public Voice( Suppressible suppressible, ByteArrayOutputStream replacementBuffer, PrintStream original )
-        {
+        public Voice(Suppressible suppressible, ByteArrayOutputStream replacementBuffer, PrintStream original) {
             this.suppressible = suppressible;
             this.replacementBuffer = replacementBuffer;
             this.original = original;
         }
 
-        Suppressible getSuppressible()
-        {
+        Suppressible getSuppressible() {
             return suppressible;
         }
 
-        public boolean containsMessage( String message )
-        {
-            return replacementBuffer.toString().contains( message );
+        public boolean containsMessage(String message) {
+            return replacementBuffer.toString().contains(message);
         }
 
         /** Get each line written to this voice since it was suppressed */
-        public List<String> lines()
-        {
-            return asList( toString().split( lineSeparator() ) );
+        public List<String> lines() {
+            return asList(toString().split(lineSeparator()));
         }
 
         @Override
-        public String toString()
-        {
-            try
-            {
-                return replacementBuffer.toString( StandardCharsets.UTF_8.name() );
-            }
-            catch ( UnsupportedEncodingException e )
-            {
-                throw new RuntimeException( e );
+        public String toString() {
+            try {
+                return replacementBuffer.toString(StandardCharsets.UTF_8.name());
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
             }
         }
 
-        abstract void restore( boolean failure ) throws IOException;
+        abstract void restore(boolean failure) throws IOException;
 
-        public Optional<PrintStream> originalStream()
-        {
-            return Optional.ofNullable( original );
+        public Optional<PrintStream> originalStream() {
+            return Optional.ofNullable(original);
         }
     }
 
-    public void captureVoices()
-    {
+    public void captureVoices() {
         Voice[] voices = new Voice[suppressibles.length];
         boolean ok = false;
-        try
-        {
-            for ( int i = 0; i < voices.length; i++ )
-            {
+        try {
+            for (int i = 0; i < voices.length; i++) {
                 voices[i] = suppressibles[i].suppress();
             }
             ok = true;
-        }
-        finally
-        {
-            if ( !ok )
-            {
-                releaseVoices( voices, false );
+        } finally {
+            if (!ok) {
+                releaseVoices(voices, false);
             }
         }
         this.voices = voices;
     }
 
-    public void releaseVoices( boolean failure )
-    {
-        releaseVoices( voices, failure );
+    public void releaseVoices(boolean failure) {
+        releaseVoices(voices, failure);
     }
 
-    private static void releaseVoices( Voice[] voices, boolean failure )
-    {
+    private static void releaseVoices(Voice[] voices, boolean failure) {
         List<Throwable> failures = null;
-        try
-        {
-            failures = new ArrayList<>( voices.length );
-        }
-        catch ( Throwable oom )
-        {
+        try {
+            failures = new ArrayList<>(voices.length);
+        } catch (Throwable oom) {
             // nothing we can do...
         }
-        for ( Voice voice : voices )
-        {
-            if ( voice != null )
-            {
-                try
-                {
-                    voice.restore( failure );
-                }
-                catch ( Throwable exception )
-                {
-                    if ( failures != null )
-                    {
-                        failures.add( exception );
+        for (Voice voice : voices) {
+            if (voice != null) {
+                try {
+                    voice.restore(failure);
+                } catch (Throwable exception) {
+                    if (failures != null) {
+                        failures.add(exception);
                     }
                 }
             }
         }
-        if ( failures != null && !failures.isEmpty() )
-        {
-            for ( Throwable exception : failures )
-            {
+        if (failures != null && !failures.isEmpty()) {
+            for (Throwable exception : failures) {
                 exception.printStackTrace();
             }
         }

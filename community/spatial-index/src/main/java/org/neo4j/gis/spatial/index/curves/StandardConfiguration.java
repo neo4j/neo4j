@@ -21,8 +21,7 @@ package org.neo4j.gis.spatial.index.curves;
 
 import org.neo4j.gis.spatial.index.Envelope;
 
-public class StandardConfiguration implements SpaceFillingCurveConfiguration
-{
+public class StandardConfiguration implements SpaceFillingCurveConfiguration {
     public static final int DEFAULT_EXTRA_LEVELS = 1;
     private static final double LOG_2 = Math.log(2);
 
@@ -33,13 +32,11 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
      */
     protected int extraLevels;
 
-    public StandardConfiguration()
-    {
-        this( DEFAULT_EXTRA_LEVELS );
+    public StandardConfiguration() {
+        this(DEFAULT_EXTRA_LEVELS);
     }
 
-    public StandardConfiguration( int extraLevels )
-    {
+    public StandardConfiguration(int extraLevels) {
         this.extraLevels = extraLevels;
     }
 
@@ -50,8 +47,7 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
      * {@inheritDoc}
      */
     @Override
-    public boolean stopAtThisDepth( double overlap, int depth, int maxDepth )
-    {
+    public boolean stopAtThisDepth(double overlap, int depth, int maxDepth) {
         return overlap >= 0.99 || depth >= maxDepth;
     }
 
@@ -63,27 +59,23 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
      * {@inheritDoc}
      */
     @Override
-    public int maxDepth( Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel )
-    {
+    public int maxDepth(Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel) {
         Envelope paddedEnvelope = referenceEnvelope.withSideRatioNotTooSmall();
         double searchRatio = range.getArea() / paddedEnvelope.getArea();
-        if ( Double.isInfinite( searchRatio ) )
-        {
+        if (Double.isInfinite(searchRatio)) {
             return maxLevel;
         }
-        //log(2^x) = xlog(2)
-        return Math.min( maxLevel, (int) (Math.log( searchRatio ) /  (nbrDim * LOG_2)) + extraLevels );
+        // log(2^x) = xlog(2)
+        return Math.min(maxLevel, (int) (Math.log(searchRatio) / (nbrDim * LOG_2)) + extraLevels);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + "(" + extraLevels + ")";
     }
 
     @Override
-    public int initialRangesListCapacity()
-    {
+    public int initialRangesListCapacity() {
         // Probably big enough to for the majority of index queries.
         return 1000;
     }

@@ -33,7 +33,10 @@ object TranslateExceptionMacros {
    */
   def translateException[A](tokenNameLookup: AnyRef, f: A): A = macro translateExceptionImpl[A]
 
-  def translateExceptionImpl[A: c.WeakTypeTag](c: blackbox.Context)(tokenNameLookup: c.Tree, f: c.Tree): c.universe.Tree = {
+  def translateExceptionImpl[A: c.WeakTypeTag](c: blackbox.Context)(
+    tokenNameLookup: c.Tree,
+    f: c.Tree
+  ): c.universe.Tree = {
     import c.universe.Quasiquote
     q"""
         try {
@@ -54,9 +57,11 @@ object TranslateExceptionMacros {
       """
   }
 
-  def translateIterator[A](tokenNameLookup: AnyRef, iteratorFactory: => Iterator[A]): Iterator[A] = macro translateIteratorImp[A]
+  def translateIterator[A](tokenNameLookup: AnyRef, iteratorFactory: => Iterator[A]): Iterator[A] =
+    macro translateIteratorImp[A]
 
-  def translateIteratorImp[A](c: blackbox.Context)(tokenNameLookup: c.Tree, iteratorFactory: c.Tree)(implicit tag: c.WeakTypeTag[A]): c.universe.Tree = {
+  def translateIteratorImp[A](c: blackbox.Context)(tokenNameLookup: c.Tree, iteratorFactory: c.Tree)(implicit
+  tag: c.WeakTypeTag[A]): c.universe.Tree = {
     import c.universe.Quasiquote
     import c.universe.TypeName
     import c.universe.Ident

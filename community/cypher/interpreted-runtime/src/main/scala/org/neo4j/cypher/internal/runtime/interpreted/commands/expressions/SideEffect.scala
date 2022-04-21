@@ -46,47 +46,55 @@ trait SideEffect {
 }
 
 case class CreateNode(command: CreateNodeCommand, allowNullOrNaNProperty: Boolean) extends SideEffect {
-  override def execute(row: CypherRow,
-                       state: QueryState): Unit = {
+
+  override def execute(row: CypherRow, state: QueryState): Unit = {
     val query = state.query
     val labelIds = command.labels.map(_.getOrCreateId(query)).toArray
     val node = query.createNodeId(labelIds)
-    command.properties.foreach(p => p.apply(row, state) match {
-      case IsMap(map) =>
-        map(state).foreach {
-          case (k, v) if v eq Values.NO_VALUE =>
-            if (!allowNullOrNaNProperty) {
-              handleNoValue(command.labels.map(_.name), k)
-            }
-          case (k, v: FloatingPointValue) if !allowNullOrNaNProperty && v.isNaN => handleNaNValue(command.labels.map(_.name), k)
-          case (k, v) =>
-            val propId = query.getOrCreatePropertyKeyId(k)
-            query.nodeWriteOps.setProperty(node, propId, makeValueNeoSafe(v))
+    command.properties.foreach(p =>
+      p.apply(row, state) match {
+        case IsMap(map) =>
+          map(state).foreach {
+            case (k, v) if v eq Values.NO_VALUE =>
+              if (!allowNullOrNaNProperty) {
+                handleNoValue(command.labels.map(_.name), k)
+              }
+            case (k, v: FloatingPointValue) if !allowNullOrNaNProperty && v.isNaN =>
+              handleNaNValue(command.labels.map(_.name), k)
+            case (k, v) =>
+              val propId = query.getOrCreatePropertyKeyId(k)
+              query.nodeWriteOps.setProperty(node, propId, makeValueNeoSafe(v))
           }
 
-      case value =>
-        throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
+        case value =>
+          throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
 
-    })
+      }
+    )
     row.set(command.idName, VirtualValues.node(node))
   }
 }
 
 object CreateNode {
+
   def handleNoValue(labels: Seq[String], key: String): Unit = {
     val labelsString = if (labels.nonEmpty) ":" + labels.mkString(":") else ""
-    throw new InvalidSemanticsException(s"Cannot merge the following node because of null property value for '$key': ($labelsString {$key: null})")
+    throw new InvalidSemanticsException(
+      s"Cannot merge the following node because of null property value for '$key': ($labelsString {$key: null})"
+    )
   }
 
   def handleNaNValue(labels: Seq[String], key: String): Unit = {
     val labelsString = if (labels.nonEmpty) ":" + labels.mkString(":") else ""
-    throw new InvalidSemanticsException(s"Cannot merge the following node because of NaN property value for '$key': ($labelsString {$key: NaN})")
+    throw new InvalidSemanticsException(
+      s"Cannot merge the following node because of NaN property value for '$key': ($labelsString {$key: NaN})"
+    )
   }
 }
 
 case class CreateRelationship(command: CreateRelationshipCommand, allowNullOrNaNProperty: Boolean) extends SideEffect {
-  override def execute(row: CypherRow,
-                       state: QueryState): Unit = {
+
+  override def execute(row: CypherRow, state: QueryState): Unit = {
     val start = getNode(row, command.idName, command.startNode, state.lenientCreateRelationship)
     val end = getNode(row, command.idName, command.endNode, state.lenientCreateRelationship)
 
@@ -96,26 +104,28 @@ case class CreateRelationship(command: CreateRelationshipCommand, allowNullOrNaN
     else {
       val typeId = state.query.getOrCreateRelTypeId(command.relType.name)
       val relationship = state.query.createRelationshipId(start.id(), end.id(), typeId)
-      command.properties.foreach(p => p.apply(row, state) match {
-        case IsMap(map) =>
-          map(state).foreach {
-            case (k, v) if v eq Values.NO_VALUE =>
-              if (!allowNullOrNaNProperty) {
-                CreateRelationship.handleNoValue(command.startNode, command.relType.name, command.endNode, k)
-              }
-            case (k, v: FloatingPointValue) if v.isNaN =>
-              if (!allowNullOrNaNProperty) {
-                CreateRelationship.handleNaNValue(command.startNode, command.relType.name, command.endNode, k)
-              }
-            case (k, v) =>
-              val propId = state.query.getOrCreatePropertyKeyId(k)
-              state.query.relationshipWriteOps.setProperty(relationship, propId, makeValueNeoSafe(v))
-          }
+      command.properties.foreach(p =>
+        p.apply(row, state) match {
+          case IsMap(map) =>
+            map(state).foreach {
+              case (k, v) if v eq Values.NO_VALUE =>
+                if (!allowNullOrNaNProperty) {
+                  CreateRelationship.handleNoValue(command.startNode, command.relType.name, command.endNode, k)
+                }
+              case (k, v: FloatingPointValue) if v.isNaN =>
+                if (!allowNullOrNaNProperty) {
+                  CreateRelationship.handleNaNValue(command.startNode, command.relType.name, command.endNode, k)
+                }
+              case (k, v) =>
+                val propId = state.query.getOrCreatePropertyKeyId(k)
+                state.query.relationshipWriteOps.setProperty(relationship, propId, makeValueNeoSafe(v))
+            }
 
-        case value =>
-          throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
+          case value =>
+            throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
 
-      })
+        }
+      )
       row.set(command.idName, VirtualValues.relationship(relationship, start.id(), end.id(), typeId))
     }
 
@@ -132,11 +142,14 @@ case class CreateRelationship(command: CreateRelationshipCommand, allowNullOrNaN
 }
 
 object CreateRelationship {
-  private def fail(startVariableName: String,
-                      relTypeName:String,
-                      endVariableName:String,
-                      key: String,
-                      value: String) = {
+
+  private def fail(
+    startVariableName: String,
+    relTypeName: String,
+    endVariableName: String,
+    key: String,
+    value: String
+  ) = {
     val startVarPart =
       if (startVariableName.startsWith(" ")) {
         ""
@@ -151,13 +164,14 @@ object CreateRelationship {
       }
     s"($startVarPart)-[:$relTypeName {$key: $value}]->($endVarPart)"
     throw new InvalidSemanticsException(
-      s"Cannot merge the following relationship because of $value property value for '$key': ($startVarPart)-[:$relTypeName {$key: $value}]->($endVarPart)")
+      s"Cannot merge the following relationship because of $value property value for '$key': ($startVarPart)-[:$relTypeName {$key: $value}]->($endVarPart)"
+    )
   }
 
-  def handleNoValue(startVariableName: String, relTypeName:String, endVariableName:String, key: String): Unit =
+  def handleNoValue(startVariableName: String, relTypeName: String, endVariableName: String, key: String): Unit =
     fail(startVariableName, relTypeName, endVariableName, key, "null")
 
-  def handleNaNValue(startVariableName: String, relTypeName:String, endVariableName:String, key: String): Unit =
+  def handleNaNValue(startVariableName: String, relTypeName: String, endVariableName: String, key: String): Unit =
     fail(startVariableName, relTypeName, endVariableName, key, "NaN")
 }
 
@@ -174,6 +188,7 @@ case class RemoveLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) exten
 }
 
 case class DeleteOperation(expression: Expression, forced: Boolean) extends SideEffect {
+
   override def execute(executionContext: CypherRow, state: QueryState): Unit = {
     DeletePipe.delete(expression(executionContext, state), state, forced)
   }

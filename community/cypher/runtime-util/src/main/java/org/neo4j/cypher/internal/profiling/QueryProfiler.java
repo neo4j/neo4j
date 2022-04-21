@@ -21,28 +21,23 @@ package org.neo4j.cypher.internal.profiling;
 
 import org.neo4j.cypher.internal.util.attribution.Id;
 
-public interface QueryProfiler
-{
-    OperatorProfileEvent executeOperator( Id queryId );
+public interface QueryProfiler {
+    OperatorProfileEvent executeOperator(Id queryId);
 
-    OperatorProfileEvent executeOperator( Id operatorId, boolean trackTime );
+    OperatorProfileEvent executeOperator(Id operatorId, boolean trackTime);
 
-    default OperatorProfileEvent executeOperator( int operatorId, boolean trackTime )
-    {
-        return executeOperator( new Id( operatorId ), trackTime );
+    default OperatorProfileEvent executeOperator(int operatorId, boolean trackTime) {
+        return executeOperator(new Id(operatorId), trackTime);
     }
 
-    QueryProfiler NONE = new QueryProfiler()
-    {
+    QueryProfiler NONE = new QueryProfiler() {
         @Override
-        public OperatorProfileEvent executeOperator( Id queryId )
-        {
+        public OperatorProfileEvent executeOperator(Id queryId) {
             return null;
         }
 
         @Override
-        public OperatorProfileEvent executeOperator( Id operatorId, boolean trackTime )
-        {
+        public OperatorProfileEvent executeOperator(Id operatorId, boolean trackTime) {
             return null;
         }
     };

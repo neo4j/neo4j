@@ -75,7 +75,7 @@ case class Selections private (predicates: Set[Predicate]) {
    */
   lazy val labelPredicates: Map[String, Set[HasLabels]] =
     predicates.foldLeft(Map.empty[String, Set[HasLabels]]) {
-      case (acc, Predicate(_, hasLabels@HasLabels(Variable(name), _))) =>
+      case (acc, Predicate(_, hasLabels @ HasLabels(Variable(name), _))) =>
         acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
       case (acc, _) => acc
     }
@@ -86,7 +86,7 @@ case class Selections private (predicates: Set[Predicate]) {
    */
   lazy val relTypePredicates: Map[String, Set[HasTypes]] =
     predicates.foldLeft(Map.empty[String, Set[HasTypes]]) {
-      case (acc, Predicate(_, hasTypes@HasTypes(Variable(name), _))) =>
+      case (acc, Predicate(_, hasTypes @ HasTypes(Variable(name), _))) =>
         acc.updated(name, acc.getOrElse(name, Set.empty) + hasTypes)
       case (acc, _) => acc
     }
@@ -97,9 +97,9 @@ case class Selections private (predicates: Set[Predicate]) {
    */
   lazy val allHasLabelsInvolving: Map[String, Set[HasLabels]] = {
     predicates.folder.treeFold(Map.empty[String, Set[HasLabels]]) {
-      case hasLabels@HasLabels(Variable(name), _) => acc =>
-        val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
-        SkipChildren(newMap)
+      case hasLabels @ HasLabels(Variable(name), _) => acc =>
+          val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
+          SkipChildren(newMap)
     }
   }
 
@@ -109,9 +109,9 @@ case class Selections private (predicates: Set[Predicate]) {
    */
   lazy val allHasLabelsOrTypesInvolving: Map[String, Set[HasLabelsOrTypes]] = {
     predicates.folder.treeFold(Map.empty[String, Set[HasLabelsOrTypes]]) {
-      case hasLabels@HasLabelsOrTypes(Variable(name), _) => acc =>
-        val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
-        SkipChildren(newMap)
+      case hasLabels @ HasLabelsOrTypes(Variable(name), _) => acc =>
+          val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
+          SkipChildren(newMap)
     }
   }
 
@@ -121,9 +121,9 @@ case class Selections private (predicates: Set[Predicate]) {
    */
   lazy val allHasTypesInvolving: Map[String, Set[HasTypes]] = {
     predicates.folder.treeFold(Map.empty[String, Set[HasTypes]]) {
-      case hasTypes@HasTypes(Variable(name), _) => acc =>
-        val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasTypes)
-        SkipChildren(newMap)
+      case hasTypes @ HasTypes(Variable(name), _) => acc =>
+          val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasTypes)
+          SkipChildren(newMap)
     }
   }
 
@@ -133,9 +133,9 @@ case class Selections private (predicates: Set[Predicate]) {
    */
   lazy val allPropertyPredicatesInvolving: Map[String, Set[Property]] = {
     predicates.folder.treeFold(Map.empty[String, Set[Property]]) {
-      case prop@Property(Variable(name), _) => acc =>
-        val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + prop)
-        SkipChildren(newMap)
+      case prop @ Property(Variable(name), _) => acc =>
+          val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + prop)
+          SkipChildren(newMap)
     }
   }
 
@@ -152,7 +152,7 @@ case class Selections private (predicates: Set[Predicate]) {
     relTypePredicates.view.mapValues(_.map(_.types.head)).toMap
 
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
-    flatPredicates.forall( solvedPredicates.contains )
+    flatPredicates.forall(solvedPredicates.contains)
 
   def contains(e: Expression): Boolean = predicates.exists { _.expr == e }
 

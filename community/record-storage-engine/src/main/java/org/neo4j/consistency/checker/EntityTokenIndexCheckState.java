@@ -21,23 +21,19 @@ package org.neo4j.consistency.checker;
 
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 
-class EntityTokenIndexCheckState
-{
+class EntityTokenIndexCheckState {
     EntityTokenRange currentRange;
     long lastCheckedEntityId;
 
-    EntityTokenIndexCheckState( EntityTokenRange currentRange, long lastCheckedEntityId )
-    {
+    EntityTokenIndexCheckState(EntityTokenRange currentRange, long lastCheckedEntityId) {
         this.currentRange = currentRange;
         this.lastCheckedEntityId = lastCheckedEntityId;
     }
 
-    boolean needToMoveRangeForwardToReachEntity( long entityId )
-    {
-        if ( currentRange == null )
-        {
+    boolean needToMoveRangeForwardToReachEntity(long entityId) {
+        if (currentRange == null) {
             return true;
         }
-        return currentRange.isBelow( entityId );
+        return currentRange.isBelow(entityId);
     }
 }

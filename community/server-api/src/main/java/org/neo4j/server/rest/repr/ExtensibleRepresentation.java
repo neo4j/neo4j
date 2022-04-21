@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-public interface ExtensibleRepresentation
-{
+public interface ExtensibleRepresentation {
     String getIdentity();
 }

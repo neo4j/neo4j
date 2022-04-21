@@ -19,33 +19,29 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.values.storable.TextValue;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class IndexEntryTestUtil
-{
-    public static <KEY extends NativeIndexKey<KEY>> String generateStringResultingInIndexEntrySize( int size )
-    {
-        RangeLayout layout = new RangeLayout( 1 );
-        return generateStringValueResultingInIndexEntrySize( layout, size ).stringValue();
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.values.storable.TextValue;
+
+public class IndexEntryTestUtil {
+    public static <KEY extends NativeIndexKey<KEY>> String generateStringResultingInIndexEntrySize(int size) {
+        RangeLayout layout = new RangeLayout(1);
+        return generateStringValueResultingInIndexEntrySize(layout, size).stringValue();
     }
 
-    public static <KEY extends NativeIndexKey<KEY>> TextValue generateStringValueResultingInIndexEntrySize( Layout<KEY,?> layout, int size )
-    {
+    public static <KEY extends NativeIndexKey<KEY>> TextValue generateStringValueResultingInIndexEntrySize(
+            Layout<KEY, ?> layout, int size) {
         TextValue value;
         KEY key = layout.newKey();
-        key.initialize( 0 );
+        key.initialize(0);
         int stringLength = size;
-        do
-        {
-            value = stringValue( "A".repeat( stringLength-- ) );
-            key.initFromValue( 0, value, NativeIndexKey.Inclusion.NEUTRAL );
-        }
-        while ( layout.keySize( key ) > size );
-        assertEquals( size, layout.keySize( key ) );
+        do {
+            value = stringValue("A".repeat(stringLength--));
+            key.initFromValue(0, value, NativeIndexKey.Inclusion.NEUTRAL);
+        } while (layout.keySize(key) > size);
+        assertEquals(size, layout.keySize(key));
         return value;
     }
 }

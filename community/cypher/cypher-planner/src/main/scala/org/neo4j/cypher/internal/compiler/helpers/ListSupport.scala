@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 object IsList extends ListSupport {
-  def unapply(x: Any):Option[Iterable[Any]] = {
+
+  def unapply(x: Any): Option[Iterable[Any]] = {
     val collection = isList(x)
     if (collection) {
       Some(makeTraversable(x))
@@ -36,12 +37,12 @@ object IsList extends ListSupport {
 
 trait ListSupport {
 
-  def singleOr[T](in:Iterator[T], or: => Exception):Iterator[T] = new Iterator[T] {
+  def singleOr[T](in: Iterator[T], or: => Exception): Iterator[T] = new Iterator[T] {
     var used = false
     def hasNext: Boolean = in.hasNext
 
     def next(): T = {
-      if(used) {
+      if (used) {
         throw or
       }
 
@@ -55,46 +56,49 @@ trait ListSupport {
 
   def isList(x: Any): Boolean = castToIterable.isDefinedAt(x)
 
-  def liftAsList[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] = try {
-    input match {
-      case single if test.isDefinedAt(single) => Some(Seq(test(single)))
+  def liftAsList[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] =
+    try {
+      input match {
+        case single if test.isDefinedAt(single) => Some(Seq(test(single)))
 
-      case IsList(coll) =>
-        val mappedCollection = coll map {
-          case elem if test.isDefinedAt(elem) => test(elem)
-          case _                              => throw new NoValidValuesExceptions
-        }
+        case IsList(coll) =>
+          val mappedCollection = coll map {
+            case elem if test.isDefinedAt(elem) => test(elem)
+            case _                              => throw new NoValidValuesExceptions
+          }
 
-        Some(mappedCollection)
+          Some(mappedCollection)
 
-      case _ => None
+        case _ => None
+      }
+    } catch {
+      case _: NoValidValuesExceptions => None
     }
-  } catch {
-    case _: NoValidValuesExceptions => None
-  }
 
   def asListOf[T](test: PartialFunction[Any, T])(input: Iterable[Any]): Option[Iterable[T]] =
     Some(input map { elem: Any => if (test.isDefinedAt(elem)) test(elem) else return None })
 
-  def makeTraversable(z: Any): Iterable[Any] = if (isList(z)) {
-    castToIterable(z)
-  } else {
-    if (z == null) Iterable() else Iterable(z)
-  }
+  def makeTraversable(z: Any): Iterable[Any] =
+    if (isList(z)) {
+      castToIterable(z)
+    } else {
+      if (z == null) Iterable() else Iterable(z)
+    }
 
   protected def castToIterable: PartialFunction[Any, Iterable[Any]] = {
-    case x: Array[_]        => x
-    case x: Map[_, _]       => Iterable(x)
-    case x: java.util.Map[_, _]   => Iterable(x.asScala)
-    case x: Iterable[_]  => x
-    case x: Iterator[_]     => x.iterator.to(Iterable)
+    case x: Array[_]            => x
+    case x: Map[_, _]           => Iterable(x)
+    case x: java.util.Map[_, _] => Iterable(x.asScala)
+    case x: Iterable[_]         => x
+    case x: Iterator[_]         => x.iterator.to(Iterable)
     case x: java.lang.Iterable[_] => x.asScala.map {
-      case y: java.util.Map[_, _] => y.asScala
-      case y                => y
-    }
+        case y: java.util.Map[_, _] => y.asScala
+        case y                      => y
+      }
   }
 
   implicit class RichSeq[T](inner: Seq[T]) {
+
     def foldMap[A](acc: A)(f: (A, T) => (A, T)): (A, Seq[T]) = {
       val builder = Seq.newBuilder[T]
       var current = acc

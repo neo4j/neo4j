@@ -23,27 +23,23 @@ import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 
-public class DiscardResultConsumer implements ResultConsumer
-{
+public class DiscardResultConsumer implements ResultConsumer {
     private final StateMachineContext context;
     private final long size;
     private boolean hasMore;
 
-    public DiscardResultConsumer( StateMachineContext context, long size )
-    {
+    public DiscardResultConsumer(StateMachineContext context, long size) {
         this.context = context;
         this.size = size;
     }
 
     @Override
-    public void consume( BoltResult boltResult ) throws Throwable
-    {
-        hasMore = context.connectionState().getResponseHandler().onDiscardRecords( boltResult, size );
+    public void consume(BoltResult boltResult) throws Throwable {
+        hasMore = context.connectionState().getResponseHandler().onDiscardRecords(boltResult, size);
     }
 
     @Override
-    public boolean hasMore()
-    {
+    public boolean hasMore() {
         return hasMore;
     }
 }

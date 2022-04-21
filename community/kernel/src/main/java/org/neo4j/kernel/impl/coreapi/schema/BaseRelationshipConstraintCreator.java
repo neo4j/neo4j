@@ -19,59 +19,56 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import java.util.Map;
+import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
 
+import java.util.Map;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
-import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
-
-public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator
-{
+public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator {
     protected final RelationshipType type;
 
-    BaseRelationshipConstraintCreator( InternalSchemaActions actions, String name, RelationshipType type, IndexType indexType, IndexConfig indexConfig )
-    {
-        super( actions, name, indexType, indexConfig );
+    BaseRelationshipConstraintCreator(
+            InternalSchemaActions actions,
+            String name,
+            RelationshipType type,
+            IndexType indexType,
+            IndexConfig indexConfig) {
+        super(actions, name, indexType, indexConfig);
         this.type = type;
     }
 
     @Override
-    public ConstraintCreator assertPropertyIsUnique( String propertyKey )
-    {
-        throw new UnsupportedOperationException( "Uniqueness constraints are not supported on relationships." );
+    public ConstraintCreator assertPropertyIsUnique(String propertyKey) {
+        throw new UnsupportedOperationException("Uniqueness constraints are not supported on relationships.");
     }
 
     @Override
-    public ConstraintCreator assertPropertyExists( String propertyKey )
-    {
-        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey, indexType, indexConfig );
+    public ConstraintCreator assertPropertyExists(String propertyKey) {
+        return new RelationshipPropertyExistenceCreator(actions, name, type, propertyKey, indexType, indexConfig);
     }
 
     @Override
-    public ConstraintCreator assertPropertyIsNodeKey( String propertyKey )
-    {
-        throw new UnsupportedOperationException( "Node key constraints are not supported on relationships." );
+    public ConstraintCreator assertPropertyIsNodeKey(String propertyKey) {
+        throw new UnsupportedOperationException("Node key constraints are not supported on relationships.");
     }
 
     @Override
-    public ConstraintCreator withName( String name )
-    {
-        return new BaseRelationshipConstraintCreator( actions, name, type, indexType, indexConfig );
+    public ConstraintCreator withName(String name) {
+        return new BaseRelationshipConstraintCreator(actions, name, type, indexType, indexConfig);
     }
 
     @Override
-    public ConstraintCreator withIndexType( IndexType indexType )
-    {
-        return new BaseRelationshipConstraintCreator( actions, name, type, indexType, indexConfig );
+    public ConstraintCreator withIndexType(IndexType indexType) {
+        return new BaseRelationshipConstraintCreator(actions, name, type, indexType, indexConfig);
     }
 
     @Override
-    public ConstraintCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration )
-    {
-        return new BaseRelationshipConstraintCreator( actions, name, type, indexType, toIndexConfigFromIndexSettingObjectMap( indexConfiguration ) );
+    public ConstraintCreator withIndexConfiguration(Map<IndexSetting, Object> indexConfiguration) {
+        return new BaseRelationshipConstraintCreator(
+                actions, name, type, indexType, toIndexConfigFromIndexSettingObjectMap(indexConfiguration));
     }
 }

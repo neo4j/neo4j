@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.attribution.Id
 
 object WorkIdentity {
+
   def fromPlan(plan: LogicalPlan, postfix: String = ""): WorkIdentity =
     WorkIdentityImpl(plan.id, plan.getClass.getSimpleName + postfix)
 
@@ -37,6 +38,7 @@ trait HasWorkIdentity {
 }
 
 trait WorkIdentity {
+
   /**
    * Identifies the work/computation performed by this task, as opposed to identifying the task itself.
    * If multiple different tasks all execute the same logic (e.g., operator pipeline) they should return the same <code>workId</code>.
@@ -62,7 +64,8 @@ case class WorkIdentityImpl(workId: Id, workDescription: String) extends WorkIde
   override def workIdentity: WorkIdentity = this
 }
 
-case class WorkIdentityMutableDescriptionImpl(workId: Id, fixedPrefix: String, var mutableDescription: String) extends WorkIdentityMutableDescription with HasWorkIdentity {
+case class WorkIdentityMutableDescriptionImpl(workId: Id, fixedPrefix: String, var mutableDescription: String)
+    extends WorkIdentityMutableDescription with HasWorkIdentity {
   // Optimized for updates rather than reads since we do not know if it will be ever used
 
   override def workIdentity: WorkIdentity = this

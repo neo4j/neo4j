@@ -19,28 +19,25 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import static java.util.Arrays.asList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Arrays.asList;
-
 /**
  * Mapping from name to {@link Group}. Assigns proper {@link Group#id() ids} to created groups.
  */
-public class Groups implements ReadableGroups
-{
+public class Groups implements ReadableGroups {
     static final int LOWEST_NONGLOBAL_ID = 1;
 
-    private final Map<String,Group> byName = new HashMap<>();
-    private final List<Group> byId = new ArrayList<>( asList( Group.GLOBAL ) );
+    private final Map<String, Group> byName = new HashMap<>();
+    private final List<Group> byId = new ArrayList<>(asList(Group.GLOBAL));
     private int nextId = LOWEST_NONGLOBAL_ID;
 
-    public Groups()
-    {
-    }
+    public Groups() {}
 
     /**
      * @param name group name or {@code null} for a {@link Group#GLOBAL global group}.
@@ -49,60 +46,49 @@ public class Groups implements ReadableGroups
      * This method also prevents mixing global and non-global groups, i.e. if first call is {@code null},
      * then consecutive calls have to specify {@code null} name as well. The same holds true for non-null values.
      */
-    public synchronized Group getOrCreate( String name )
-    {
-        if ( isGlobalGroup( name ) )
-        {
+    public synchronized Group getOrCreate(String name) {
+        if (isGlobalGroup(name)) {
             return Group.GLOBAL;
         }
 
-        Group group = byName.get( name );
-        if ( group == null )
-        {
-            byName.put( name, group = new Group.Adapter( nextId++, name ) );
-            byId.add( group );
+        Group group = byName.get(name);
+        if (group == null) {
+            byName.put(name, group = new Group.Adapter(nextId++, name));
+            byId.add(group);
         }
         return group;
     }
 
-    private static boolean isGlobalGroup( String name )
-    {
-        return name == null || Group.GLOBAL.name().equals( name );
+    private static boolean isGlobalGroup(String name) {
+        return name == null || Group.GLOBAL.name().equals(name);
     }
 
-    public synchronized Group get( String name )
-    {
-        if ( isGlobalGroup( name ) )
-        {
+    public synchronized Group get(String name) {
+        if (isGlobalGroup(name)) {
             return Group.GLOBAL;
         }
 
-        Group group = byName.get( name );
-        if ( group == null )
-        {
-            throw new HeaderException( "Group '" + name + "' not found. Available groups are: " + groupNames() );
+        Group group = byName.get(name);
+        if (group == null) {
+            throw new HeaderException("Group '" + name + "' not found. Available groups are: " + groupNames());
         }
         return group;
     }
 
     @Override
-    public Group get( int id )
-    {
-        if ( id < 0 || id >= byId.size() )
-        {
-            throw new HeaderException( "Group with id " + id + " not found" );
+    public Group get(int id) {
+        if (id < 0 || id >= byId.size()) {
+            throw new HeaderException("Group with id " + id + " not found");
         }
-        return byId.get( id );
+        return byId.get(id);
     }
 
-    private String groupNames()
-    {
-        return Arrays.toString( byName.keySet().toArray( new String[0] ) );
+    private String groupNames() {
+        return Arrays.toString(byName.keySet().toArray(new String[0]));
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return nextId;
     }
 }

@@ -25,8 +25,7 @@ import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
-public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRule
-{
+public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRule {
     int NO_ID = -1;
 
     @Override
@@ -98,7 +97,7 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
      * @param id The id of the new constraint descriptor.
      * @return a modified copy of this constraint descriptor.
      */
-    ConstraintDescriptor withId( long id );
+    ConstraintDescriptor withId(long id);
 
     /**
      * Produce a copy of this constraint descriptor, that has the given name.
@@ -107,14 +106,14 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
      * @return a modified copy of this constraint descriptor.
      */
     @Override
-    ConstraintDescriptor withName( String name );
+    ConstraintDescriptor withName(String name);
 
     /**
      * Produce a copy of this constraint descriptor, that has the given owned index id.
      * @param id the id of the index that this constraint descriptor owns.
      * @return a modified copy of this constraint descriptor.
      */
-    IndexBackedConstraintDescriptor withOwnedIndexId( long id );
+    IndexBackedConstraintDescriptor withOwnedIndexId(long id);
 
     /**
      * Return the id of this constraint descriptor, if it has any, or throw an {@link IllegalStateException}.

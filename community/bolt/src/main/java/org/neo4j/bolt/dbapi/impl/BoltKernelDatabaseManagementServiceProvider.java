@@ -19,8 +19,9 @@
  */
 package org.neo4j.bolt.dbapi.impl;
 
-import java.time.Duration;
+import static java.lang.String.format;
 
+import java.time.Duration;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
@@ -32,33 +33,32 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.lang.String.format;
-
-public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDatabaseManagementServiceSPI
-{
+public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDatabaseManagementServiceSPI {
     private final DatabaseManagementService managementService;
     private final TransactionIdTracker transactionIdTracker;
     private final Duration bookmarkAwaitDuration;
 
-    public BoltKernelDatabaseManagementServiceProvider( DatabaseManagementService managementService,
-            Monitors monitors, SystemNanoClock clock, Duration bookmarkAwaitDuration )
-    {
+    public BoltKernelDatabaseManagementServiceProvider(
+            DatabaseManagementService managementService,
+            Monitors monitors,
+            SystemNanoClock clock,
+            Duration bookmarkAwaitDuration) {
         this.managementService = managementService;
-        this.transactionIdTracker = new TransactionIdTracker( managementService, monitors, clock );
+        this.transactionIdTracker = new TransactionIdTracker(managementService, monitors, clock);
         this.bookmarkAwaitDuration = bookmarkAwaitDuration;
     }
 
     @Override
-    public BoltGraphDatabaseServiceSPI database( String databaseName, MemoryTracker memoryTracker ) throws DatabaseNotFoundException, UnavailableException
-    {
-        memoryTracker.allocateHeap( BoltKernelGraphDatabaseServiceProvider.SHALLOW_SIZE );
+    public BoltGraphDatabaseServiceSPI database(String databaseName, MemoryTracker memoryTracker)
+            throws DatabaseNotFoundException, UnavailableException {
+        memoryTracker.allocateHeap(BoltKernelGraphDatabaseServiceProvider.SHALLOW_SIZE);
 
-        var databaseAPI = (GraphDatabaseAPI) managementService.database( databaseName );
+        var databaseAPI = (GraphDatabaseAPI) managementService.database(databaseName);
 
-        if ( !databaseAPI.isAvailable() )
-        {
-            throw new UnavailableException( format( "Database '%s' is unavailable.", databaseName ) );
+        if (!databaseAPI.isAvailable()) {
+            throw new UnavailableException(format("Database '%s' is unavailable.", databaseName));
         }
-        return new BoltKernelGraphDatabaseServiceProvider( databaseAPI, transactionIdTracker, bookmarkAwaitDuration, memoryTracker );
+        return new BoltKernelGraphDatabaseServiceProvider(
+                databaseAPI, transactionIdTracker, bookmarkAwaitDuration, memoryTracker);
     }
 }

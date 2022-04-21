@@ -23,26 +23,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 
-record KeyPartitioning<KEY>(Layout<KEY,?> layout)
-{
-    public List<KEY> partition( SortedSet<KEY> keyCandidates, KEY fromInclusive, KEY toExclusive, int numberOfPartitions )
-    {
+record KeyPartitioning<KEY>(Layout<KEY, ?> layout) {
+    public List<KEY> partition(
+            SortedSet<KEY> keyCandidates, KEY fromInclusive, KEY toExclusive, int numberOfPartitions) {
         // the inclusivity of fromInclusive is handled by adding it directly to the List
         final var keys = keyCandidates.stream()
-                                      .filter( key -> layout.compare( key, fromInclusive ) > 0 && layout.compare( key, toExclusive ) < 0 )
-                                      .toList();
+                .filter(key -> layout.compare(key, fromInclusive) > 0 && layout.compare(key, toExclusive) < 0)
+                .toList();
 
         final var partitions = new ArrayList<KEY>();
-        partitions.add( fromInclusive );
+        partitions.add(fromInclusive);
 
-        final var stride = Math.max( (1f + keys.size()) / numberOfPartitions, 1 );
-        for ( int i = 0; i < numberOfPartitions - 1 && i < keys.size(); i++ )
-        {
+        final var stride = Math.max((1f + keys.size()) / numberOfPartitions, 1);
+        for (int i = 0; i < numberOfPartitions - 1 && i < keys.size(); i++) {
             final var pos = (i + 1) * stride;
-            final var split = keys.get( Math.round( pos ) - 1 );
-            partitions.add( split );
+            final var split = keys.get(Math.round(pos) - 1);
+            partitions.add(split);
         }
-        partitions.add( toExclusive );
+        partitions.add(toExclusive);
 
         return partitions;
     }

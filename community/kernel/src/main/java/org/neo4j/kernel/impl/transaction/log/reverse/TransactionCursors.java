@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.Closeable;
 import java.util.Optional;
-
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 
-public interface TransactionCursors extends Closeable
-{
+public interface TransactionCursors extends Closeable {
     TransactionCursor NO_MORE_CURSORS = new NullTransactionCursor();
 
     Optional<TransactionCursor> next();

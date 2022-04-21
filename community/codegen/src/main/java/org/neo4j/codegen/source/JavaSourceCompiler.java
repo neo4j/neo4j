@@ -20,35 +20,28 @@
 package org.neo4j.codegen.source;
 
 import java.util.List;
-
 import org.neo4j.codegen.ByteCodes;
 import org.neo4j.codegen.CodeGenerationStrategy;
 import org.neo4j.codegen.CodeGenerationStrategyNotSupportedException;
 import org.neo4j.codegen.CodeGeneratorOption;
 import org.neo4j.codegen.CompilationFailureException;
 
-interface JavaSourceCompiler
-{
-    Iterable<? extends ByteCodes> compile( List<JavaSourceFile> sourceFiles, ClassLoader loader )
+interface JavaSourceCompiler {
+    Iterable<? extends ByteCodes> compile(List<JavaSourceFile> sourceFiles, ClassLoader loader)
             throws CompilationFailureException;
 
-    abstract class Factory implements CodeGeneratorOption
-    {
+    abstract class Factory implements CodeGeneratorOption {
         @Override
-        public final void applyTo( Object target )
-        {
-            if ( target instanceof Configuration configuration )
-            {
+        public final void applyTo(Object target) {
+            if (target instanceof Configuration configuration) {
                 configuration.compiler = this;
-                configure( configuration );
+                configure(configuration);
             }
         }
 
-        abstract JavaSourceCompiler sourceCompilerFor( Configuration configuration, CodeGenerationStrategy<?> strategy )
+        abstract JavaSourceCompiler sourceCompilerFor(Configuration configuration, CodeGenerationStrategy<?> strategy)
                 throws CodeGenerationStrategyNotSupportedException;
 
-        void configure( Configuration configuration )
-        {
-        }
+        void configure(Configuration configuration) {}
     }
 }

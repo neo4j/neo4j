@@ -19,60 +19,48 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import java.util.function.Supplier;
-
-import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
-
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
+
+import java.util.function.Supplier;
+import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 
 /**
  * A simple {@link StageControl} for tests with multiple steps and where an error or assertion failure
  * propagates to other steps. Create the {@link SimpleStageControl}, pass it into the {@link Step steps}
  * and then when all steps are created, call {@link #steps(Step...)} to let the control know about them.
  */
-public class SimpleStageControl implements StageControl
-{
+public class SimpleStageControl implements StageControl {
     private volatile Throwable panic;
     private volatile Step<?>[] steps;
 
-    public void steps( Step<?>... steps )
-    {
+    public void steps(Step<?>... steps) {
         this.steps = steps;
     }
 
     @Override
-    public void panic( Throwable cause )
-    {
+    public void panic(Throwable cause) {
         this.panic = cause;
-        for ( Step<?> step : steps )
-        {
-            step.receivePanic( cause );
+        for (Step<?> step : steps) {
+            step.receivePanic(cause);
             step.endOfUpstream();
         }
     }
 
     @Override
-    public void assertHealthy()
-    {
-        if ( panic != null )
-        {
-            throwIfUnchecked( panic );
-            throw new RuntimeException( panic );
+    public void assertHealthy() {
+        if (panic != null) {
+            throwIfUnchecked(panic);
+            throw new RuntimeException(panic);
         }
     }
 
     @Override
-    public void recycle( Object batch )
-    {
-    }
+    public void recycle(Object batch) {}
 
     @Override
-    public boolean isIdle()
-    {
-        for ( int i = 1; i < steps.length; i++ )
-        {
-            if ( !steps[i].isIdle() )
-            {
+    public boolean isIdle() {
+        for (int i = 1; i < steps.length; i++) {
+            if (!steps[i].isIdle()) {
                 return false;
             }
         }
@@ -80,14 +68,12 @@ public class SimpleStageControl implements StageControl
     }
 
     @Override
-    public <T> T reuse( Supplier<T> fallback )
-    {
+    public <T> T reuse(Supplier<T> fallback) {
         return fallback.get();
     }
 
     @Override
-    public ProcessorScheduler scheduler()
-    {
+    public ProcessorScheduler scheduler() {
         return ProcessorScheduler.SPAWN_THREAD;
     }
 }

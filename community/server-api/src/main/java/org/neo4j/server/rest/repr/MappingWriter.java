@@ -19,69 +19,57 @@
  */
 package org.neo4j.server.rest.repr;
 
-public abstract class MappingWriter
-{
-    public MappingWriter newMapping( RepresentationType type, String param )
-    {
-        return newMapping( type.valueName, param );
+public abstract class MappingWriter {
+    public MappingWriter newMapping(RepresentationType type, String param) {
+        return newMapping(type.valueName, param);
     }
 
-    protected abstract MappingWriter newMapping( String type, String key );
+    protected abstract MappingWriter newMapping(String type, String key);
 
-    ListWriter newList( RepresentationType type, String param )
-    {
-        if ( type.valueName.equals( "map" ) )
-        {
-            return newList( type.listName, param );
+    ListWriter newList(RepresentationType type, String param) {
+        if (type.valueName.equals("map")) {
+            return newList(type.listName, param);
         }
-        if ( type.listName == null )
-        {
-            throw new IllegalStateException( "Invalid list type: " + type );
+        if (type.listName == null) {
+            throw new IllegalStateException("Invalid list type: " + type);
         }
-        return newList( type.listName, param );
+        return newList(type.listName, param);
     }
 
-    protected abstract ListWriter newList( String type, String key );
+    protected abstract ListWriter newList(String type, String key);
 
-    protected void writeString( String key, String value )
-    {
-        writeValue( RepresentationType.STRING, key, value );
+    protected void writeString(String key, String value) {
+        writeValue(RepresentationType.STRING, key, value);
     }
 
-    void writeInteger( RepresentationType type, String param, long property )
-    {
-        writeInteger( type.valueName, param, property );
+    void writeInteger(RepresentationType type, String param, long property) {
+        writeInteger(type.valueName, param, property);
     }
 
-    @SuppressWarnings( "boxing" )
-    protected void writeInteger( String type, String key, long value )
-    {
-        writeValue( type, key, value );
+    @SuppressWarnings("boxing")
+    protected void writeInteger(String type, String key, long value) {
+        writeValue(type, key, value);
     }
 
-    void writeFloatingPointNumber( RepresentationType type, String key, double value )
-    {
-        writeFloatingPointNumber( type.valueName, key, value );
+    void writeFloatingPointNumber(RepresentationType type, String key, double value) {
+        writeFloatingPointNumber(type.valueName, key, value);
     }
 
-    @SuppressWarnings( "boxing" )
-    protected void writeFloatingPointNumber( String type, String key, double value )
-    {
-        writeValue( type, key, value );
+    @SuppressWarnings("boxing")
+    protected void writeFloatingPointNumber(String type, String key, double value) {
+        writeValue(type, key, value);
     }
 
-    @SuppressWarnings( "boxing" )
-    protected void writeBoolean( String key, boolean value )
-    {
-        writeValue( RepresentationType.BOOLEAN, key, value );
+    @SuppressWarnings("boxing")
+    protected void writeBoolean(String key, boolean value) {
+        writeValue(RepresentationType.BOOLEAN, key, value);
     }
 
-    void writeValue( RepresentationType type, String key, Object value )
-    {
-        writeValue( type.valueName, key, value );
+    void writeValue(RepresentationType type, String key, Object value) {
+        writeValue(type.valueName, key, value);
     }
 
-    protected abstract void writeValue( String type, String key, Object value );
+    protected abstract void writeValue(String type, String key, Object value);
 
     public abstract void done();
 }

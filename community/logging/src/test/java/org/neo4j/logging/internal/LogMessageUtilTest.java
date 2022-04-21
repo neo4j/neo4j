@@ -19,37 +19,38 @@
  */
 package org.neo4j.logging.internal;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlaceholders;
 
-class LogMessageUtilTest
-{
+import org.junit.jupiter.api.Test;
+
+class LogMessageUtilTest {
     @Test
-    void shouldThrowWhenStringIsNull()
-    {
-        assertThrows( NullPointerException.class, () -> slf4jToStringFormatPlaceholders( null ) );
+    void shouldThrowWhenStringIsNull() {
+        assertThrows(NullPointerException.class, () -> slf4jToStringFormatPlaceholders(null));
     }
 
     @Test
-    void shouldDoNothingForEmptyString()
-    {
-        assertEquals( "", slf4jToStringFormatPlaceholders( "" ) );
+    void shouldDoNothingForEmptyString() {
+        assertEquals("", slf4jToStringFormatPlaceholders(""));
     }
 
     @Test
-    void shouldDoNothingForStringWithoutPlaceholders()
-    {
-        assertEquals( "Simple log message", slf4jToStringFormatPlaceholders( "Simple log message" ) );
+    void shouldDoNothingForStringWithoutPlaceholders() {
+        assertEquals("Simple log message", slf4jToStringFormatPlaceholders("Simple log message"));
     }
 
     @Test
-    void shouldReplaceSlf4jPlaceholderWithStringFormatPlaceholder()
-    {
-        assertEquals( "Log message with %s single placeholder", slf4jToStringFormatPlaceholders( "Log message with {} single placeholder" ) );
-        assertEquals( "Log message %s with two %s placeholders", slf4jToStringFormatPlaceholders( "Log message {} with two {} placeholders" ) );
-        assertEquals( "Log %s message %s with three %s placeholders", slf4jToStringFormatPlaceholders( "Log {} message {} with three {} placeholders" ) );
+    void shouldReplaceSlf4jPlaceholderWithStringFormatPlaceholder() {
+        assertEquals(
+                "Log message with %s single placeholder",
+                slf4jToStringFormatPlaceholders("Log message with {} single placeholder"));
+        assertEquals(
+                "Log message %s with two %s placeholders",
+                slf4jToStringFormatPlaceholders("Log message {} with two {} placeholders"));
+        assertEquals(
+                "Log %s message %s with three %s placeholders",
+                slf4jToStringFormatPlaceholders("Log {} message {} with three {} placeholders"));
     }
 }

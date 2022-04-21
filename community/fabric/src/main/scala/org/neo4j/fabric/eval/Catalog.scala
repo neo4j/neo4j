@@ -19,7 +19,6 @@
  */
 package org.neo4j.fabric.eval
 
-import java.util.UUID
 import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.util.InputPosition
@@ -28,6 +27,8 @@ import org.neo4j.fabric.util.Errors.show
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.IntegralValue
+
+import java.util.UUID
 
 object Catalog {
 
@@ -97,7 +98,12 @@ object Catalog {
 
   case class Arg[T <: AnyValue](name: String, tpe: Class[T])
 
-  def create(internalGraphs: Seq[Graph], externalGraphs: Seq[Graph], graphAliases: Seq[Graph], fabricNamespace: Option[String]): Catalog = {
+  def create(
+    internalGraphs: Seq[Graph],
+    externalGraphs: Seq[Graph],
+    graphAliases: Seq[Graph],
+    fabricNamespace: Option[String]
+  ): Catalog = {
     if (fabricNamespace.isEmpty) {
       val internalByName = byName(internalGraphs)
       val aliasesByName = byName(graphAliases)

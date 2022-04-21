@@ -32,7 +32,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
-
 import org.neo4j.collection.AbstractPrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
@@ -45,146 +44,119 @@ import org.neo4j.logging.InternalLog;
  * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
  * instances.
  */
-class ProcedureJarLoader
-{
+class ProcedureJarLoader {
     private final ProcedureCompiler compiler;
     private final InternalLog log;
 
-    ProcedureJarLoader( ProcedureCompiler compiler, InternalLog log )
-    {
+    ProcedureJarLoader(ProcedureCompiler compiler, InternalLog log) {
         this.compiler = compiler;
         this.log = log;
     }
 
-    Callables loadProceduresFromDir( Path root ) throws IOException, KernelException
-    {
-        if ( root == null || Files.notExists( root ) )
-        {
+    Callables loadProceduresFromDir(Path root) throws IOException, KernelException {
+        if (root == null || Files.notExists(root)) {
             return Callables.empty();
         }
 
         List<Path> jarFiles = new ArrayList<>();
         List<String> failedJarFiles = new ArrayList<>();
-        try ( DirectoryStream<Path> list = Files.newDirectoryStream( root, "*.jar" ) )
-        {
-            for ( Path path : list )
-            {
-                if ( isInvalidJarFile( path ) )
-                {
-                    failedJarFiles.add( path.getFileName().toString() );
+        try (DirectoryStream<Path> list = Files.newDirectoryStream(root, "*.jar")) {
+            for (Path path : list) {
+                if (isInvalidJarFile(path)) {
+                    failedJarFiles.add(path.getFileName().toString());
                 }
-                jarFiles.add( path );
+                jarFiles.add(path);
             }
         }
 
-        if ( !failedJarFiles.isEmpty() )
-        {
-            throw new ZipException( String.format( "Some jar procedure files (%s) are invalid, see log for details.", String.join( ", ", failedJarFiles ) ) );
+        if (!failedJarFiles.isEmpty()) {
+            throw new ZipException(String.format(
+                    "Some jar procedure files (%s) are invalid, see log for details.",
+                    String.join(", ", failedJarFiles)));
         }
 
-        if ( jarFiles.size() == 0 )
-        {
+        if (jarFiles.size() == 0) {
             return Callables.empty();
         }
 
-        URL[] jarFilesURLs = jarFiles.stream().map( this::toURL ).toArray( URL[]::new );
-        URLClassLoader loader = new URLClassLoader( jarFilesURLs, this.getClass().getClassLoader() );
+        URL[] jarFilesURLs = jarFiles.stream().map(this::toURL).toArray(URL[]::new);
+        URLClassLoader loader = new URLClassLoader(jarFilesURLs, this.getClass().getClassLoader());
 
         Callables out = new Callables();
-        for ( URL jarFile : jarFilesURLs )
-        {
-            loadProcedures( jarFile, loader, out );
+        for (URL jarFile : jarFilesURLs) {
+            loadProcedures(jarFile, loader, out);
         }
         return out;
     }
 
-    private boolean isInvalidJarFile( Path jarFile )
-    {
-        try
-        {
-            new ZipFile( jarFile.toFile() ).close();
+    private boolean isInvalidJarFile(Path jarFile) {
+        try {
+            new ZipFile(jarFile.toFile()).close();
             return false;
-        }
-        catch ( IOException e )
-        {
-            log.error( String.format( "Plugin jar file: %s corrupted.", jarFile ) );
+        } catch (IOException e) {
+            log.error(String.format("Plugin jar file: %s corrupted.", jarFile));
             return true;
         }
     }
 
-    private Callables loadProcedures( URL jar, ClassLoader loader, Callables target )
-            throws IOException, KernelException
-    {
-        RawIterator<Class<?>,IOException> classes = listClassesIn( jar, loader );
-        while ( classes.hasNext() )
-        {
+    private Callables loadProcedures(URL jar, ClassLoader loader, Callables target)
+            throws IOException, KernelException {
+        RawIterator<Class<?>, IOException> classes = listClassesIn(jar, loader);
+        while (classes.hasNext()) {
             Class<?> next = classes.next();
-            target.addAllProcedures( compiler.compileProcedure( next, null, false ) );
-            target.addAllFunctions( compiler.compileFunction( next, false ) );
-            target.addAllAggregationFunctions( compiler.compileAggregationFunction( next ) );
+            target.addAllProcedures(compiler.compileProcedure(next, null, false));
+            target.addAllFunctions(compiler.compileFunction(next, false));
+            target.addAllAggregationFunctions(compiler.compileAggregationFunction(next));
         }
         return target;
     }
 
-    private URL toURL( Path f )
-    {
-        try
-        {
+    private URL toURL(Path f) {
+        try {
             return f.toUri().toURL();
-        }
-        catch ( MalformedURLException e )
-        {
-            throw new RuntimeException( e );
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    @SuppressWarnings( "ReturnValueIgnored" )
-    private RawIterator<Class<?>,IOException> listClassesIn( URL jar, ClassLoader loader ) throws IOException
-    {
-        ZipInputStream zip = new ZipInputStream( jar.openStream() );
+    @SuppressWarnings("ReturnValueIgnored")
+    private RawIterator<Class<?>, IOException> listClassesIn(URL jar, ClassLoader loader) throws IOException {
+        ZipInputStream zip = new ZipInputStream(jar.openStream());
 
-        return new AbstractPrefetchingRawIterator<>()
-        {
+        return new AbstractPrefetchingRawIterator<>() {
             @Override
-            protected Class<?> fetchNextOrNull() throws IOException
-            {
-                try
-                {
-                    while ( true )
-                    {
+            protected Class<?> fetchNextOrNull() throws IOException {
+                try {
+                    while (true) {
                         ZipEntry nextEntry = zip.getNextEntry();
-                        if ( nextEntry == null )
-                        {
+                        if (nextEntry == null) {
                             zip.close();
                             return null;
                         }
 
                         String name = nextEntry.getName();
-                        if ( name.endsWith( ".class" ) )
-                        {
-                            String className = name.substring( 0, name.length() - ".class".length() ).replace( '/', '.' );
+                        if (name.endsWith(".class")) {
+                            String className = name.substring(0, name.length() - ".class".length())
+                                    .replace('/', '.');
 
-                            try
-                            {
-                                Class<?> aClass = loader.loadClass( className );
-                                // We do getDeclaredMethods and getDeclaredFields to trigger NoClassDefErrors, which loadClass above does
+                            try {
+                                Class<?> aClass = loader.loadClass(className);
+                                // We do getDeclaredMethods and getDeclaredFields to trigger NoClassDefErrors, which
+                                // loadClass above does
                                 // not do.
                                 // This way, even if some of the classes in a jar cannot be loaded, we still check
                                 // the others.
                                 aClass.getDeclaredMethods();
                                 aClass.getDeclaredFields();
                                 return aClass;
-                            }
-                            catch ( LinkageError | Exception e )
-                            {
-                                log.warn( "Failed to load `%s` from plugin jar `%s`: %s: %s", className,
-                                          jar.getFile(), e.getClass().getName(), e.getMessage() );
+                            } catch (LinkageError | Exception e) {
+                                log.warn(
+                                        "Failed to load `%s` from plugin jar `%s`: %s: %s",
+                                        className, jar.getFile(), e.getClass().getName(), e.getMessage());
                             }
                         }
                     }
-                }
-                catch ( IOException | RuntimeException e )
-                {
+                } catch (IOException | RuntimeException e) {
                     zip.close();
                     throw e;
                 }
@@ -192,56 +164,46 @@ class ProcedureJarLoader
         };
     }
 
-    public static class Callables
-    {
+    public static class Callables {
         private final List<CallableProcedure> procedures = new ArrayList<>();
         private final List<CallableUserFunction> functions = new ArrayList<>();
         private final List<CallableUserAggregationFunction> aggregationFunctions = new ArrayList<>();
 
-        public void add( CallableProcedure proc )
-        {
-            procedures.add( proc );
+        public void add(CallableProcedure proc) {
+            procedures.add(proc);
         }
 
-        public void add( CallableUserFunction func )
-        {
-            functions.add( func );
+        public void add(CallableUserFunction func) {
+            functions.add(func);
         }
 
-        public List<CallableProcedure> procedures()
-        {
+        public List<CallableProcedure> procedures() {
             return procedures;
         }
 
-        public List<CallableUserFunction> functions()
-        {
+        public List<CallableUserFunction> functions() {
             return functions;
         }
 
-        public List<CallableUserAggregationFunction> aggregationFunctions()
-        {
+        public List<CallableUserAggregationFunction> aggregationFunctions() {
             return aggregationFunctions;
         }
 
-        void addAllProcedures( List<CallableProcedure> callableProcedures )
-        {
-            procedures.addAll( callableProcedures );
+        void addAllProcedures(List<CallableProcedure> callableProcedures) {
+            procedures.addAll(callableProcedures);
         }
 
-        void addAllFunctions( List<CallableUserFunction> callableFunctions )
-        {
-            functions.addAll( callableFunctions );
+        void addAllFunctions(List<CallableUserFunction> callableFunctions) {
+            functions.addAll(callableFunctions);
         }
 
-        void addAllAggregationFunctions( List<CallableUserAggregationFunction> callableFunctions )
-        {
-            aggregationFunctions.addAll( callableFunctions );
+        void addAllAggregationFunctions(List<CallableUserAggregationFunction> callableFunctions) {
+            aggregationFunctions.addAll(callableFunctions);
         }
 
         private static final Callables EMPTY = new Callables();
 
-        public static Callables empty()
-        {
+        public static Callables empty() {
             return EMPTY;
         }
     }

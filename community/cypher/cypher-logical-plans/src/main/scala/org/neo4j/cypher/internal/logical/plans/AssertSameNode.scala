@@ -32,7 +32,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  * This operator is planned for merges using unique index seeks.
  */
-case class AssertSameNode(node: String, override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) {
+case class AssertSameNode(node: String, override val left: LogicalPlan, override val right: LogicalPlan)(implicit
+idGen: IdGen) extends LogicalBinaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)

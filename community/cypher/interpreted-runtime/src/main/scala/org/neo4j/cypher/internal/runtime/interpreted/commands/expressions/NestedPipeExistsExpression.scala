@@ -30,10 +30,11 @@ import org.neo4j.values.storable.Values
 /**
  * Expression that executes a pipe on evaluation. Returns true if the pipe produces rows, and false if no rows are produced.
  */
-case class NestedPipeExistsExpression(pipe: Pipe,
-                                      availableExpressionVariables: Array[ExpressionVariable],
-                                      owningPlanId: Id)
-  extends NestedPipeExpression(pipe, availableExpressionVariables, owningPlanId) {
+case class NestedPipeExistsExpression(
+  pipe: Pipe,
+  availableExpressionVariables: Array[ExpressionVariable],
+  owningPlanId: Id
+) extends NestedPipeExpression(pipe, availableExpressionVariables, owningPlanId) {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val results = createNestedResults(row, state)

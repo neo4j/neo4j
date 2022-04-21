@@ -20,31 +20,27 @@
 package org.neo4j.server.security.auth;
 
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.InternalLog;
 
-public interface FileRepository
-{
+public interface FileRepository {
     /**
      * This is used by different flavors of file repositories to agree on a naming convention
      * for repository files that are renamed after migration to prevent accidental reuse.
      */
-    static Path getMigratedFile( Path path )
-    {
-        return path.resolveSibling( path.getFileName() + ".migrated" );
+    static Path getMigratedFile(Path path) {
+        return path.resolveSibling(path.getFileName() + ".migrated");
     }
 
-    static void assertNotMigrated( Path path, FileSystemAbstraction fileSystem, InternalLog log )
-    {
-        Path migratedFile = getMigratedFile( path );
-        if ( fileSystem.fileExists( migratedFile ) )
-        {
-            String message = "The repository file '" + path.toAbsolutePath() + "' has been marked as migrated. " +
-                    "If you are sure that you want use this repository you need to manually rename the file '" +
-                    migratedFile.toAbsolutePath() + "' to '" + path.getFileName() + "'";
-            log.error( message );
-            throw new IllegalStateException( message );
+    static void assertNotMigrated(Path path, FileSystemAbstraction fileSystem, InternalLog log) {
+        Path migratedFile = getMigratedFile(path);
+        if (fileSystem.fileExists(migratedFile)) {
+            String message = "The repository file '" + path.toAbsolutePath() + "' has been marked as migrated. "
+                    + "If you are sure that you want use this repository you need to manually rename the file '"
+                    + migratedFile.toAbsolutePath()
+                    + "' to '" + path.getFileName() + "'";
+            log.error(message);
+            throw new IllegalStateException(message);
         }
     }
 }

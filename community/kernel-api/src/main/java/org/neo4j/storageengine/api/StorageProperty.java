@@ -27,8 +27,7 @@ import org.neo4j.values.storable.Value;
  * property values, distinguished by {@link #isDefined()}. Undefined property instances can be used for
  * passing property key id and signaling that it doesn't exist.
  */
-public interface StorageProperty
-{
+public interface StorageProperty {
     /**
      * @return property key token id for this property.
      */
@@ -44,5 +43,5 @@ public interface StorageProperty
      */
     boolean isDefined();
 
-    String toString( TokenHolder tokenHolder );
+    String toString(TokenHolder tokenHolder);
 }

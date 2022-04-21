@@ -19,9 +19,13 @@
  */
 package org.neo4j.test.extension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -31,55 +35,52 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @DbmsExtension
-class DbmsExtensionInjectionTest
-{
+class DbmsExtensionInjectionTest {
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private DatabaseManagementService dbms;
+
     @Inject
     private GraphDatabaseService db;
+
     @Inject
     private GraphDatabaseAPI dbApi;
+
     @Inject
     private Neo4jLayout neo4jLayout;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
     @Test
-    void shouldInject()
-    {
-        assertNotNull( fs );
-        assertNotNull( testDirectory );
-        assertNotNull( dbms );
-        assertNotNull( db );
-        assertNotNull( dbApi );
-        assertNotNull( neo4jLayout );
-        assertNotNull( databaseLayout );
+    void shouldInject() {
+        assertNotNull(fs);
+        assertNotNull(testDirectory);
+        assertNotNull(dbms);
+        assertNotNull(db);
+        assertNotNull(dbApi);
+        assertNotNull(neo4jLayout);
+        assertNotNull(databaseLayout);
 
-        assertEquals( testDirectory.getFileSystem(), fs );
-        assertTrue( fs instanceof DefaultFileSystemAbstraction );
+        assertEquals(testDirectory.getFileSystem(), fs);
+        assertTrue(fs instanceof DefaultFileSystemAbstraction);
 
-        assertSame( db, dbApi );
-        assertEquals( testDirectory.homePath(), neo4jLayout.homeDirectory() );
-        assertEquals( db.databaseName(), databaseLayout.getDatabaseName() );
-        assertEquals( databaseLayout.getNeo4jLayout(), neo4jLayout );
+        assertSame(db, dbApi);
+        assertEquals(testDirectory.homePath(), neo4jLayout.homeDirectory());
+        assertEquals(db.databaseName(), databaseLayout.getDatabaseName());
+        assertEquals(databaseLayout.getNeo4jLayout(), neo4jLayout);
     }
 
     @Nested
-    class NestedTest
-    {
+    class NestedTest {
         @Test
-        void injectedFieldsShouldBeAvailableForNestedTests()
-        {
+        void injectedFieldsShouldBeAvailableForNestedTests() {
             shouldInject();
         }
     }

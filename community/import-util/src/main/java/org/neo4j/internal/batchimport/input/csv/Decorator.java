@@ -20,24 +20,20 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import java.util.function.Function;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
-public interface Decorator extends Function<InputEntityVisitor,InputEntityVisitor>, Resource
-{
+public interface Decorator extends Function<InputEntityVisitor, InputEntityVisitor>, Resource {
     /**
      * @return whether or not this decorator is mutable. This is important because a state-less decorator
      * can be called from multiple parallel processing threads. A mutable decorator has to be called by
      * a single thread and may incur a performance penalty.
      */
-    default boolean isMutable()
-    {
+    default boolean isMutable() {
         return false;
     }
 
     @Override
-    default void close()
-    {   // Nothing to close by default
+    default void close() { // Nothing to close by default
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static java.lang.System.arraycopy;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -31,7 +31,7 @@ import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.Collection;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -52,8 +52,6 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-
-import static java.lang.System.arraycopy;
 
 /**
  * Dynamic store that stores arrays.
@@ -94,11 +92,10 @@ import static java.lang.System.arraycopy;
  *     </li>
  * </ul>
  */
-public class DynamicArrayStore extends AbstractDynamicStore
-{
+public class DynamicArrayStore extends AbstractDynamicStore {
     public static final int NUMBER_HEADER_SIZE = 3;
     public static final int STRING_HEADER_SIZE = 5;
-    public static final int GEOMETRY_HEADER_SIZE = 6;   // This should match contents of GeometryType.GeometryHeader
+    public static final int GEOMETRY_HEADER_SIZE = 6; // This should match contents of GeometryType.GeometryHeader
     public static final int TEMPORAL_HEADER_SIZE = 2;
 
     // store version, each store ends with this string (byte encoded)
@@ -116,98 +113,104 @@ public class DynamicArrayStore extends AbstractDynamicStore
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration,
-                recordFormats.dynamic(), recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                configuration,
+                idType,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                TYPE_DESCRIPTOR,
+                dataSizeFromConfiguration,
+                recordFormats.dynamic(),
+                recordFormats.storeVersion(),
+                readOnlyChecker,
+                databaseName,
+                openOptions);
     }
 
-    public static byte[] encodeFromNumbers( Object array, int offsetBytes )
-    {
-        ShortArray type = ShortArray.typeOf( array );
-        if ( type == null )
-        {
-            throw new IllegalArgumentException( array + " not a valid array type." );
+    public static byte[] encodeFromNumbers(Object array, int offsetBytes) {
+        ShortArray type = ShortArray.typeOf(array);
+        if (type == null) {
+            throw new IllegalArgumentException(array + " not a valid array type.");
         }
 
-        if ( type == ShortArray.DOUBLE || type == ShortArray.FLOAT )
-        {
+        if (type == ShortArray.DOUBLE || type == ShortArray.FLOAT) {
             // Skip array compaction for floating point numbers where compaction makes very little difference
-            return createUncompactedArray( type, array, offsetBytes );
-        }
-        else
-        {
-            return createBitCompactedArray( type, array, offsetBytes );
+            return createUncompactedArray(type, array, offsetBytes);
+        } else {
+            return createBitCompactedArray(type, array, offsetBytes);
         }
     }
 
-    private static byte[] createBitCompactedArray( ShortArray type, Object array, int offsetBytes )
-    {
+    private static byte[] createBitCompactedArray(ShortArray type, Object array, int offsetBytes) {
         Class<?> componentType = array.getClass().getComponentType();
-        boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
-        boolean isByteArray = componentType.equals( Byte.class ) || isPrimitiveByteArray;
-        int arrayLength = Array.getLength( array );
-        int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array, arrayLength );
+        boolean isPrimitiveByteArray = componentType.equals(Byte.TYPE);
+        boolean isByteArray = componentType.equals(Byte.class) || isPrimitiveByteArray;
+        int arrayLength = Array.getLength(array);
+        int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray(array, arrayLength);
         int totalBits = requiredBits * arrayLength;
         int bitsUsedInLastByte = totalBits % 8;
         bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
-        if ( isByteArray )
-        {
-            return createBitCompactedByteArray( type, isPrimitiveByteArray, array, bitsUsedInLastByte, requiredBits, offsetBytes );
-        }
-        else
-        {
+        if (isByteArray) {
+            return createBitCompactedByteArray(
+                    type, isPrimitiveByteArray, array, bitsUsedInLastByte, requiredBits, offsetBytes);
+        } else {
             int numberOfBytes = (totalBits - 1) / 8 + 1;
             numberOfBytes += NUMBER_HEADER_SIZE; // type + rest + requiredBits header. TODO no need to use full bytes
-            Bits bits = Bits.bits( numberOfBytes );
-            bits.put( (byte) type.intValue() );
-            bits.put( (byte) bitsUsedInLastByte );
-            bits.put( (byte) requiredBits );
-            type.writeAll( array, arrayLength, requiredBits, bits );
-            return bits.asBytes( offsetBytes );
+            Bits bits = Bits.bits(numberOfBytes);
+            bits.put((byte) type.intValue());
+            bits.put((byte) bitsUsedInLastByte);
+            bits.put((byte) requiredBits);
+            type.writeAll(array, arrayLength, requiredBits, bits);
+            return bits.asBytes(offsetBytes);
         }
     }
 
-    private static byte[] createBitCompactedByteArray( ShortArray type, boolean isPrimitiveByteArray, Object array,
-            int bitsUsedInLastByte, int requiredBits, int offsetBytes )
-    {
-        int arrayLength = Array.getLength( array );
+    private static byte[] createBitCompactedByteArray(
+            ShortArray type,
+            boolean isPrimitiveByteArray,
+            Object array,
+            int bitsUsedInLastByte,
+            int requiredBits,
+            int offsetBytes) {
+        int arrayLength = Array.getLength(array);
         byte[] bytes = new byte[NUMBER_HEADER_SIZE + arrayLength + offsetBytes];
         bytes[offsetBytes] = (byte) type.intValue();
         bytes[offsetBytes + 1] = (byte) bitsUsedInLastByte;
         bytes[offsetBytes + 2] = (byte) requiredBits;
-        if ( isPrimitiveByteArray )
-        {
-            arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE + offsetBytes, arrayLength );
-        }
-        else
-        {
+        if (isPrimitiveByteArray) {
+            arraycopy(array, 0, bytes, NUMBER_HEADER_SIZE + offsetBytes, arrayLength);
+        } else {
             Byte[] source = (Byte[]) array;
-            for ( int i = 0; i < source.length; i++ )
-            {
+            for (int i = 0; i < source.length; i++) {
                 bytes[NUMBER_HEADER_SIZE + offsetBytes + i] = source[i];
             }
         }
         return bytes;
     }
 
-    private static byte[] createUncompactedArray( ShortArray type, Object array, int offsetBytes )
-    {
-        int arrayLength = Array.getLength( array );
+    private static byte[] createUncompactedArray(ShortArray type, Object array, int offsetBytes) {
+        int arrayLength = Array.getLength(array);
         int bytesPerElement = type.maxBits / 8;
         byte[] bytes = new byte[NUMBER_HEADER_SIZE + bytesPerElement * arrayLength + offsetBytes];
         bytes[offsetBytes] = (byte) type.intValue();
         bytes[offsetBytes + 1] = (byte) 8;
         bytes[offsetBytes + 2] = (byte) type.maxBits;
-        type.writeAll( array, bytes, NUMBER_HEADER_SIZE + offsetBytes );
+        type.writeAll(array, bytes, NUMBER_HEADER_SIZE + offsetBytes);
         return bytes;
     }
 
-    public static void allocateFromNumbers( Collection<DynamicRecord> target, Object array, DynamicRecordAllocator recordAllocator,
-            CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        byte[] bytes = encodeFromNumbers( array, 0 );
-        allocateRecordsFromBytes( target, bytes, recordAllocator, cursorContext, memoryTracker );
+    public static void allocateFromNumbers(
+            Collection<DynamicRecord> target,
+            Object array,
+            DynamicRecordAllocator recordAllocator,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
+        byte[] bytes = encodeFromNumbers(array, 0);
+        allocateRecordsFromBytes(target, bytes, recordAllocator, cursorContext, memoryTracker);
     }
 
     private static void allocateFromCompositeType(
@@ -215,157 +218,156 @@ public class DynamicArrayStore extends AbstractDynamicStore
             byte[] bytes,
             DynamicRecordAllocator recordAllocator,
             CursorContext cursorContext,
-            MemoryTracker memoryTracker )
-    {
-        allocateRecordsFromBytes( target, bytes, recordAllocator, cursorContext, memoryTracker );
+            MemoryTracker memoryTracker) {
+        allocateRecordsFromBytes(target, bytes, recordAllocator, cursorContext, memoryTracker);
     }
 
-    private static void allocateFromString( Collection<DynamicRecord> target, String[] array,
-            DynamicRecordAllocator recordAllocator, CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
+    private static void allocateFromString(
+            Collection<DynamicRecord> target,
+            String[] array,
+            DynamicRecordAllocator recordAllocator,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         byte[][] stringsAsBytes = new byte[array.length][];
         int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
-        for ( int i = 0; i < array.length; i++ )
-        {
+        for (int i = 0; i < array.length; i++) {
             String string = array[i];
-            byte[] bytes = PropertyStore.encodeString( string );
+            byte[] bytes = PropertyStore.encodeString(string);
             stringsAsBytes[i] = bytes;
-            totalBytesRequired += 4/*byte[].length*/ + bytes.length;
+            totalBytesRequired += 4 /*byte[].length*/ + bytes.length;
         }
 
-        try ( var scopedBuffer = new HeapScopedBuffer( totalBytesRequired, memoryTracker ) )
-        {
+        try (var scopedBuffer = new HeapScopedBuffer(totalBytesRequired, memoryTracker)) {
             var buffer = scopedBuffer.getBuffer();
-            buffer.put( PropertyType.STRING.byteValue() );
-            buffer.putInt( array.length );
-            for ( byte[] stringAsBytes : stringsAsBytes )
-            {
-                buffer.putInt( stringAsBytes.length );
-                buffer.put( stringAsBytes );
+            buffer.put(PropertyType.STRING.byteValue());
+            buffer.putInt(array.length);
+            for (byte[] stringAsBytes : stringsAsBytes) {
+                buffer.putInt(stringAsBytes.length);
+                buffer.put(stringAsBytes);
             }
-            allocateRecordsFromBytes( target, buffer.array(), recordAllocator, cursorContext, memoryTracker );
+            allocateRecordsFromBytes(target, buffer.array(), recordAllocator, cursorContext, memoryTracker);
         }
     }
 
-    public void allocateRecords( Collection<DynamicRecord> target, Object array, CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        allocateRecords( target, array, this, cursorContext, memoryTracker );
+    public void allocateRecords(
+            Collection<DynamicRecord> target, Object array, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        allocateRecords(target, array, this, cursorContext, memoryTracker);
     }
 
-    public static void allocateRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator, CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        if ( !array.getClass().isArray() )
-        {
-            throw new IllegalArgumentException( array + " not an array" );
+    public static void allocateRecords(
+            Collection<DynamicRecord> target,
+            Object array,
+            DynamicRecordAllocator recordAllocator,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
+        if (!array.getClass().isArray()) {
+            throw new IllegalArgumentException(array + " not an array");
         }
 
         Class<?> type = array.getClass().getComponentType();
-        if ( type.equals( String.class ) )
-        {
-            allocateFromString( target, (String[]) array, recordAllocator, cursorContext, memoryTracker );
-        }
-        else if ( type.equals( PointValue.class ) )
-        {
-            allocateFromCompositeType( target,GeometryType.encodePointArray( (PointValue[]) array ),
-                    recordAllocator, cursorContext, memoryTracker );
-        }
-        else if ( type.equals( LocalDate.class ) )
-        {
-            allocateFromCompositeType( target, TemporalType.encodeDateArray( (LocalDate[]) array ),
-                    recordAllocator, cursorContext, memoryTracker );
-        }
-        else if ( type.equals( LocalTime.class ) )
-        {
-            allocateFromCompositeType( target, TemporalType.encodeLocalTimeArray( (LocalTime[]) array ),
-                    recordAllocator, cursorContext, memoryTracker );
-        }
-        else if ( type.equals( LocalDateTime.class ) )
-        {
-            allocateFromCompositeType( target, TemporalType.encodeLocalDateTimeArray( (LocalDateTime[]) array ),
-                    recordAllocator, cursorContext, memoryTracker );
-        }
-        else if ( type.equals( OffsetTime.class ) )
-        {
-            allocateFromCompositeType( target, TemporalType.encodeTimeArray( (OffsetTime[]) array ),
-                    recordAllocator, cursorContext, memoryTracker );
-        }
-        else if ( type.equals( ZonedDateTime.class ) )
-        {
-            allocateFromCompositeType( target, TemporalType.encodeDateTimeArray( (ZonedDateTime[]) array ),
-                    recordAllocator, cursorContext, memoryTracker );
-        }
-        else if ( type.equals( DurationValue.class ) )
-        {
-            allocateFromCompositeType( target, TemporalType.encodeDurationArray( (DurationValue[]) array ),
-                    recordAllocator, cursorContext, memoryTracker );
-        }
-        else
-        {
-            allocateFromNumbers( target, array, recordAllocator, cursorContext, memoryTracker );
+        if (type.equals(String.class)) {
+            allocateFromString(target, (String[]) array, recordAllocator, cursorContext, memoryTracker);
+        } else if (type.equals(PointValue.class)) {
+            allocateFromCompositeType(
+                    target,
+                    GeometryType.encodePointArray((PointValue[]) array),
+                    recordAllocator,
+                    cursorContext,
+                    memoryTracker);
+        } else if (type.equals(LocalDate.class)) {
+            allocateFromCompositeType(
+                    target,
+                    TemporalType.encodeDateArray((LocalDate[]) array),
+                    recordAllocator,
+                    cursorContext,
+                    memoryTracker);
+        } else if (type.equals(LocalTime.class)) {
+            allocateFromCompositeType(
+                    target,
+                    TemporalType.encodeLocalTimeArray((LocalTime[]) array),
+                    recordAllocator,
+                    cursorContext,
+                    memoryTracker);
+        } else if (type.equals(LocalDateTime.class)) {
+            allocateFromCompositeType(
+                    target,
+                    TemporalType.encodeLocalDateTimeArray((LocalDateTime[]) array),
+                    recordAllocator,
+                    cursorContext,
+                    memoryTracker);
+        } else if (type.equals(OffsetTime.class)) {
+            allocateFromCompositeType(
+                    target,
+                    TemporalType.encodeTimeArray((OffsetTime[]) array),
+                    recordAllocator,
+                    cursorContext,
+                    memoryTracker);
+        } else if (type.equals(ZonedDateTime.class)) {
+            allocateFromCompositeType(
+                    target,
+                    TemporalType.encodeDateTimeArray((ZonedDateTime[]) array),
+                    recordAllocator,
+                    cursorContext,
+                    memoryTracker);
+        } else if (type.equals(DurationValue.class)) {
+            allocateFromCompositeType(
+                    target,
+                    TemporalType.encodeDurationArray((DurationValue[]) array),
+                    recordAllocator,
+                    cursorContext,
+                    memoryTracker);
+        } else {
+            allocateFromNumbers(target, array, recordAllocator, cursorContext, memoryTracker);
         }
     }
 
-    public static Value getRightArray( HeavyRecordData data )
-    {
+    public static Value getRightArray(HeavyRecordData data) {
         byte[] header = data.header();
         byte[] bArray = data.data();
-        return getRightArray( header, bArray );
+        return getRightArray(header, bArray);
     }
 
-    public static ArrayValue getRightArray( byte[] header, byte[] bArray )
-    {
+    public static ArrayValue getRightArray(byte[] header, byte[] bArray) {
         byte typeId = header[0];
-        if ( typeId == PropertyType.STRING.intValue() )
-        {
-            ByteBuffer headerBuffer = ByteBuffer.wrap( header, 1/*skip the type*/, header.length - 1 );
+        if (typeId == PropertyType.STRING.intValue()) {
+            ByteBuffer headerBuffer = ByteBuffer.wrap(header, 1 /*skip the type*/, header.length - 1);
             int arrayLength = headerBuffer.getInt();
             String[] result = new String[arrayLength];
 
-            ByteBuffer dataBuffer = ByteBuffer.wrap( bArray );
-            for ( int i = 0; i < arrayLength; i++ )
-            {
+            ByteBuffer dataBuffer = ByteBuffer.wrap(bArray);
+            for (int i = 0; i < arrayLength; i++) {
                 int byteLength = dataBuffer.getInt();
                 byte[] stringByteArray = new byte[byteLength];
-                dataBuffer.get( stringByteArray );
-                result[i] = PropertyStore.decodeString( stringByteArray );
+                dataBuffer.get(stringByteArray);
+                result[i] = PropertyStore.decodeString(stringByteArray);
             }
-            return Values.stringArray( result );
-        }
-        else if ( typeId == PropertyType.GEOMETRY.intValue() )
-        {
-            GeometryType.GeometryHeader geometryHeader = GeometryType.GeometryHeader.fromArrayHeaderBytes( header );
-            return GeometryType.decodeGeometryArray( geometryHeader, bArray );
-        }
-        else if ( typeId == PropertyType.TEMPORAL.intValue() )
-        {
-            TemporalType.TemporalHeader temporalHeader = TemporalType.TemporalHeader.fromArrayHeaderBytes( header );
-            return TemporalType.decodeTemporalArray( temporalHeader, bArray );
-        }
-        else
-        {
-            ShortArray type = ShortArray.typeOf( typeId );
+            return Values.stringArray(result);
+        } else if (typeId == PropertyType.GEOMETRY.intValue()) {
+            GeometryType.GeometryHeader geometryHeader = GeometryType.GeometryHeader.fromArrayHeaderBytes(header);
+            return GeometryType.decodeGeometryArray(geometryHeader, bArray);
+        } else if (typeId == PropertyType.TEMPORAL.intValue()) {
+            TemporalType.TemporalHeader temporalHeader = TemporalType.TemporalHeader.fromArrayHeaderBytes(header);
+            return TemporalType.decodeTemporalArray(temporalHeader, bArray);
+        } else {
+            ShortArray type = ShortArray.typeOf(typeId);
             int bitsUsedInLastByte = header[1];
             int requiredBits = header[2];
-            if ( requiredBits == 0 )
-            {
+            if (requiredBits == 0) {
                 return type.createEmptyArray();
             }
-            if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
-            {   // Optimization for byte arrays (probably large ones)
-                return Values.byteArray( bArray );
-            }
-            else
-            {   // Fallback to the generic approach, which is a slower
-                Bits bits = Bits.bitsFromBytes( bArray );
+            if (type == ShortArray.BYTE
+                    && requiredBits == Byte.SIZE) { // Optimization for byte arrays (probably large ones)
+                return Values.byteArray(bArray);
+            } else { // Fallback to the generic approach, which is a slower
+                Bits bits = Bits.bitsFromBytes(bArray);
                 int length = (bArray.length * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
-                return type.createArray( length, bits, requiredBits );
+                return type.createArray(length, bits, requiredBits);
             }
         }
     }
 
-    public Object getArrayFor( Iterable<DynamicRecord> records, StoreCursors storeCursors )
-    {
-        return getRightArray( readFullByteArray( records, PropertyType.ARRAY, storeCursors ) ).asObject();
+    public Object getArrayFor(Iterable<DynamicRecord> records, StoreCursors storeCursors) {
+        return getRightArray(readFullByteArray(records, PropertyType.ARRAY, storeCursors))
+                .asObject();
     }
 }

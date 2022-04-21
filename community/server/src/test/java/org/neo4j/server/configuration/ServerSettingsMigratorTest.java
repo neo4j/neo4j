@@ -19,44 +19,43 @@
  */
 package org.neo4j.server.configuration;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
-import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
-
 @TestDirectoryExtension
-class ServerSettingsMigratorTest
-{
+class ServerSettingsMigratorTest {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void testWhitelistSettingsRename() throws IOException
-    {
-        Path confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile, List.of( "dbms.security.http_auth_whitelist=a,b" ) );
+    void testWhitelistSettingsRename() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("dbms.security.http_auth_whitelist=a,b"));
 
-        Config config = Config.newBuilder().fromFile( confFile ).build();
+        Config config = Config.newBuilder().fromFile(confFile).build();
         var logProvider = new AssertableLogProvider();
-        config.setLogger( logProvider.getLog( Config.class ) );
+        config.setLogger(logProvider.getLog(Config.class));
 
-        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
-                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.",
-                        "dbms.security.http_auth_whitelist", http_auth_allowlist.name() );
+        assertThat(logProvider)
+                .forClass(Config.class)
+                .forLevel(WARN)
+                .containsMessageWithArguments(
+                        "Use of deprecated setting '%s'. It is replaced by '%s'.",
+                        "dbms.security.http_auth_whitelist", http_auth_allowlist.name());
 
-        assertEquals( List.of( "a", "b"), config.get( http_auth_allowlist ) );
+        assertEquals(List.of("a", "b"), config.get(http_auth_allowlist));
     }
 }

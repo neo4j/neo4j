@@ -21,39 +21,32 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class BrokenAnalyzerProvider extends AnalyzerProvider
-{
+public class BrokenAnalyzerProvider extends AnalyzerProvider {
     static final String NAME = "broken-analyzer";
     static volatile boolean shouldThrow;
     static volatile boolean shouldReturnNull;
 
-    public BrokenAnalyzerProvider()
-    {
-        super( NAME );
+    public BrokenAnalyzerProvider() {
+        super(NAME);
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
-        if ( shouldThrow )
-        {
-            throw new RuntimeException( "boom" );
+    public Analyzer createAnalyzer() {
+        if (shouldThrow) {
+            throw new RuntimeException("boom");
         }
-        if ( shouldReturnNull )
-        {
+        if (shouldReturnNull) {
             return null;
         }
         return new StandardAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "An implementation of the standard analyzer, which can be broken in various ways.";
     }
 }

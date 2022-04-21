@@ -19,14 +19,18 @@
  */
 package org.neo4j.server;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static java.net.http.HttpClient.newHttpClient;
+import static java.net.http.HttpResponse.BodyHandlers.ofString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
 import java.io.IOException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -35,93 +39,82 @@ import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
-import static java.net.http.HttpClient.newHttpClient;
-import static java.net.http.HttpResponse.BodyHandlers.ofString;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
-
-class BoltIT extends ExclusiveWebContainerTestBase
-{
+class BoltIT extends ExclusiveWebContainerTestBase {
     private TestWebContainer testWebContainer;
 
     @AfterEach
-    void stopTheServer()
-    {
-        if ( testWebContainer != null )
-        {
+    void stopTheServer() {
+        if (testWebContainer != null) {
             testWebContainer.shutdown();
         }
     }
 
     @Test
-    void shouldLaunchBolt() throws Throwable
-    {
+    void shouldLaunchBolt() throws Throwable {
         // When I run Neo4j with Bolt enabled
         startServerWithBoltEnabled();
 
-        ConnectorPortRegister connectorPortRegister = getDependency( ConnectorPortRegister.class );
+        ConnectorPortRegister connectorPortRegister = getDependency(ConnectorPortRegister.class);
 
         // Then
-        assertEventuallyServerResponds( "localhost", connectorPortRegister.getLocalAddress( "bolt" ).getPort() );
+        assertEventuallyServerResponds(
+                "localhost", connectorPortRegister.getLocalAddress("bolt").getPort());
     }
 
     @Test
-    void shouldBeAbleToSpecifyHostAndPort() throws Throwable
-    {
+    void shouldBeAbleToSpecifyHostAndPort() throws Throwable {
         // When
         startServerWithBoltEnabled();
 
-        ConnectorPortRegister connectorPortRegister = getDependency( ConnectorPortRegister.class );
+        ConnectorPortRegister connectorPortRegister = getDependency(ConnectorPortRegister.class);
         // Then
-        assertEventuallyServerResponds( "localhost", connectorPortRegister.getLocalAddress( "bolt" ).getPort()  );
+        assertEventuallyServerResponds(
+                "localhost", connectorPortRegister.getLocalAddress("bolt").getPort());
     }
 
     @Test
-    void boltAddressShouldComeFromConnectorAdvertisedAddress() throws Throwable
-    {
+    void boltAddressShouldComeFromConnectorAdvertisedAddress() throws Throwable {
         // Given
         String host = "neo4j.com";
 
-        startServerWithBoltEnabled( host, 9999, "localhost", 0 );
+        startServerWithBoltEnabled(host, 9999, "localhost", 0);
 
-        HttpRequest request = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
+        HttpRequest request =
+                HttpRequest.newBuilder(testWebContainer.getBaseUri()).GET().build();
 
         // When
-        HttpResponse<String> response = newHttpClient().send( request, ofString() );
+        HttpResponse<String> response = newHttpClient().send(request, ofString());
 
         // Then
-        Map<String,Object> map = JsonHelper.jsonToMap( response.body() );
-        assertThat( String.valueOf( map.get( "bolt_direct" ) ) ).contains( "bolt://" + host + ":" + 9999 );
+        Map<String, Object> map = JsonHelper.jsonToMap(response.body());
+        assertThat(String.valueOf(map.get("bolt_direct"))).contains("bolt://" + host + ":" + 9999);
     }
 
-    private void startServerWithBoltEnabled() throws IOException
-    {
-        startServerWithBoltEnabled( "localhost", 7687, "localhost", 7687 );
+    private void startServerWithBoltEnabled() throws IOException {
+        startServerWithBoltEnabled("localhost", 7687, "localhost", 7687);
     }
 
-    private void startServerWithBoltEnabled( String advertisedHost, int advertisedPort, String listenHost, int listenPort ) throws IOException
-    {
+    private void startServerWithBoltEnabled(
+            String advertisedHost, int advertisedPort, String listenHost, int listenPort) throws IOException {
         testWebContainer = serverOnRandomPorts()
-                .withProperty( BoltConnector.enabled.name(), TRUE )
-                .withProperty( BoltConnector.encryption_level.name(), "DISABLED" )
-                .withProperty( BoltConnector.advertised_address.name(), advertisedHost + ":" + advertisedPort )
-                .withProperty( BoltConnector.listen_address.name(), listenHost + ":" + listenPort )
-                .usingDataDir( testDirectory.homePath().toString() ).build();
+                .withProperty(BoltConnector.enabled.name(), TRUE)
+                .withProperty(BoltConnector.encryption_level.name(), "DISABLED")
+                .withProperty(BoltConnector.advertised_address.name(), advertisedHost + ":" + advertisedPort)
+                .withProperty(BoltConnector.listen_address.name(), listenHost + ":" + listenPort)
+                .usingDataDir(testDirectory.homePath().toString())
+                .build();
     }
 
-    private static void assertEventuallyServerResponds( String host, int port ) throws Exception
-    {
+    private static void assertEventuallyServerResponds(String host, int port) throws Exception {
         SocketConnection conn = new SocketConnection();
-        conn.connect( new HostnamePort( host, port ) );
-        conn.send(
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                        0, 0} );
-        assertThat( conn.recv( 4 ) ).isEqualTo( new byte[]{0, 0, 0, 4} );
+        conn.connect(new HostnamePort(host, port));
+        conn.send(new byte[] {
+            (byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        });
+        assertThat(conn.recv(4)).isEqualTo(new byte[] {0, 0, 0, 4});
     }
 
-    private <T> T getDependency( Class<T> clazz )
-    {
-        return testWebContainer.resolveDependency( clazz );
+    private <T> T getDependency(Class<T> clazz) {
+        return testWebContainer.resolveDependency(clazz);
     }
 }

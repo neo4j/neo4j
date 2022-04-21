@@ -21,24 +21,19 @@ package org.neo4j.bolt.transport;
 
 import io.netty.channel.Channel;
 
-public class DefaultThrottleLock implements ThrottleLock
-{
+public class DefaultThrottleLock implements ThrottleLock {
     private final Object syncObject = new Object();
 
     @Override
-    public void lock( Channel channel, long timeout ) throws InterruptedException
-    {
-        synchronized ( syncObject )
-        {
-            syncObject.wait( timeout );
+    public void lock(Channel channel, long timeout) throws InterruptedException {
+        synchronized (syncObject) {
+            syncObject.wait(timeout);
         }
     }
 
     @Override
-    public void unlock( Channel channel )
-    {
-        synchronized ( syncObject )
-        {
+    public void unlock(Channel channel) {
+        synchronized (syncObject) {
             syncObject.notifyAll();
         }
     }

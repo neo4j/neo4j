@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.nio.file.Path
-import java.time.Clock
-
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
@@ -43,9 +40,13 @@ import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
 import org.scalatest.OptionValues
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
+import java.nio.file.Path
+import java.time.Clock
+
 import scala.collection.Map
 
-class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase with OptionValues {
+class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase
+    with OptionValues {
   private val onlineStatus = DatabaseStatus.Online.stringValue()
   private val defaultConfig = Config.defaults()
   private val accessString = "read-write"
@@ -250,9 +251,11 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASE $db YIELD name, address, role", dbDefaultMap)
 
     // THEN
-    result.toList should be(List(Map("name" -> DEFAULT_DATABASE_NAME,
+    result.toList should be(List(Map(
+      "name" -> DEFAULT_DATABASE_NAME,
       "address" -> localHostString,
-      "role" -> "standalone")))
+      "role" -> "standalone"
+    )))
   }
 
   test("should show database with yield and where") {
@@ -260,12 +263,15 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     setup(defaultConfig)
 
     // WHEN
-    val result = execute(s"SHOW DATABASE $$db YIELD name, address, role WHERE name = '$DEFAULT_DATABASE_NAME'", dbDefaultMap)
+    val result =
+      execute(s"SHOW DATABASE $$db YIELD name, address, role WHERE name = '$DEFAULT_DATABASE_NAME'", dbDefaultMap)
 
     // THEN
-    result.toList should be(List(Map("name" -> DEFAULT_DATABASE_NAME,
+    result.toList should be(List(Map(
+      "name" -> DEFAULT_DATABASE_NAME,
       "address" -> localHostString,
-      "role" -> "standalone")))
+      "role" -> "standalone"
+    )))
   }
 
   test("should show databases with yield and where") {
@@ -276,9 +282,11 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute(s"SHOW DATABASES YIELD name, address, role WHERE name = '$DEFAULT_DATABASE_NAME'")
 
     // THEN
-    result.toList should be(List(Map("name" -> DEFAULT_DATABASE_NAME,
+    result.toList should be(List(Map(
+      "name" -> DEFAULT_DATABASE_NAME,
       "address" -> localHostString,
-      "role" -> "standalone")))
+      "role" -> "standalone"
+    )))
   }
 
   test("should show databases with yield and skip") {
@@ -374,7 +382,8 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     setup(defaultConfig)
 
     // WHEN
-    val result = execute(s"SHOW DATABASE $DEFAULT_DATABASE_NAME YIELD name AS foo WHERE foo = '$DEFAULT_DATABASE_NAME' RETURN foo")
+    val result =
+      execute(s"SHOW DATABASE $DEFAULT_DATABASE_NAME YIELD name AS foo WHERE foo = '$DEFAULT_DATABASE_NAME' RETURN foo")
 
     // THEN
     result.toList should be(List(Map("foo" -> DEFAULT_DATABASE_NAME)))
@@ -398,7 +407,6 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     result("databaseID") shouldBe dbId
   }
 
-
   test("should show database with yield verbose columns should produce verbose but not polled columns") {
     // GIVEN
     setup(defaultConfig)
@@ -407,9 +415,9 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASES YIELD name, databaseID, serverID")
 
     // THEN
-    result.toList.foreach{ map =>
+    result.toList.foreach { map =>
       map should have size 3
-      map.get("name") should contain oneOf("neo4j", "system")
+      map.get("name") should contain oneOf ("neo4j", "system")
 
       // Lookup the real store id from db.info()
       selectDatabase(map("name").asInstanceOf[String])
@@ -420,7 +428,6 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     }
   }
 
-
   test("should show database and yield only verbose columns") {
     // GIVEN
     setup(defaultConfig)
@@ -429,7 +436,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASES YIELD lastCommittedTxn, serverID").toList
 
     // THEN
-    result.foreach{ map =>
+    result.foreach { map =>
       map should have size 2
       map.get("serverID").value should beAValidUUID()
       map.get("lastCommittedTxn").value shouldBe null
@@ -564,17 +571,25 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     assertFailure("CREATE DATABASE $foo", "Unsupported administration command: CREATE DATABASE $foo")
 
-    assertFailure(s"CREATE DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME")
+    assertFailure(
+      s"CREATE DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME"
+    )
 
-    assertFailure(s"CREATE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS",
-      s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS")
+    assertFailure(
+      s"CREATE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS",
+      s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS"
+    )
 
-    assertFailure(s"CREATE OR REPLACE DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported administration command: CREATE OR REPLACE DATABASE $DEFAULT_DATABASE_NAME")
+    assertFailure(
+      s"CREATE OR REPLACE DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: CREATE OR REPLACE DATABASE $DEFAULT_DATABASE_NAME"
+    )
 
-    assertFailure(s"CREATE DATABASE $DEFAULT_DATABASE_NAME OPTIONS {existingData: 'use', existingDataSeedInstance: '1'}",
-      s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME OPTIONS {existingData: 'use', existingDataSeedInstance: '1'}")
+    assertFailure(
+      s"CREATE DATABASE $DEFAULT_DATABASE_NAME OPTIONS {existingData: 'use', existingDataSeedInstance: '1'}",
+      s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME OPTIONS {existingData: 'use', existingDataSeedInstance: '1'}"
+    )
   }
 
   test("should fail on dropping database from community") {
@@ -587,11 +602,15 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     assertFailure("DROP DATABASE $foo", "Unsupported administration command: DROP DATABASE $foo")
 
-    assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME")
+    assertFailure(
+      s"DROP DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME"
+    )
 
-    assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS",
-      s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS")
+    assertFailure(
+      s"DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS",
+      s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS"
+    )
   }
 
   test("should fail on altering database from community") {
@@ -599,10 +618,15 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     setup(defaultConfig)
 
     // THEN
-    assertFailure("ALTER DATABASE foo SET ACCESS READ ONLY", "Unsupported administration command: ALTER DATABASE foo SET ACCESS READ ONLY")
+    assertFailure(
+      "ALTER DATABASE foo SET ACCESS READ ONLY",
+      "Unsupported administration command: ALTER DATABASE foo SET ACCESS READ ONLY"
+    )
 
-    assertFailure(s"ALTER DATABASE $DEFAULT_DATABASE_NAME SET ACCESS READ WRITE",
-      s"Unsupported administration command: ALTER DATABASE $DEFAULT_DATABASE_NAME SET ACCESS READ WRITE")
+    assertFailure(
+      s"ALTER DATABASE $DEFAULT_DATABASE_NAME SET ACCESS READ WRITE",
+      s"Unsupported administration command: ALTER DATABASE $DEFAULT_DATABASE_NAME SET ACCESS READ WRITE"
+    )
   }
 
   test("should fail on starting database from community") {
@@ -615,8 +639,10 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     assertFailure("START DATABASE $foo", "Unsupported administration command: START DATABASE $foo")
 
-    assertFailure(s"START DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported administration command: START DATABASE $DEFAULT_DATABASE_NAME")
+    assertFailure(
+      s"START DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: START DATABASE $DEFAULT_DATABASE_NAME"
+    )
   }
 
   test("should fail on stopping database from community") {
@@ -629,8 +655,10 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     assertFailure("STOP DATABASE $foo", "Unsupported administration command: STOP DATABASE $foo")
 
-    assertFailure(s"STOP DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported administration command: STOP DATABASE $DEFAULT_DATABASE_NAME")
+    assertFailure(
+      s"STOP DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: STOP DATABASE $DEFAULT_DATABASE_NAME"
+    )
   }
 
   // Helper methods
@@ -650,20 +678,24 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     )
 
   private def homeOrdefaultDb(name: String): Map[String, Any] =
-    Map("name" -> name,
+    Map(
+      "name" -> name,
       "aliases" -> Seq.empty,
       "access" -> accessString,
       "address" -> localHostString,
       "role" -> "standalone",
       "requestedStatus" -> onlineStatus,
       "currentStatus" -> onlineStatus,
-      "error" -> "")
+      "error" -> ""
+    )
 
   // Disable normal database creation because we need different settings on each test
   override protected def initTest(): Unit = {}
 
   private def setup(config: Config): Unit = {
-    managementService = graphDatabaseFactory(Path.of("test")).impermanent().setConfig(Config.newBuilder().fromConfig(config).build()).setInternalLogProvider(logProvider).build()
+    managementService = graphDatabaseFactory(Path.of("test")).impermanent().setConfig(
+      Config.newBuilder().fromConfig(config).build()
+    ).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(SYSTEM_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
 
@@ -674,7 +706,11 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val systemGraphComponents = new SystemGraphComponents()
     systemGraphComponents.register(new DefaultSystemGraphComponent(config, Clock.systemUTC))
     systemGraphComponents.register(new CommunityTopologyGraphComponent(config, NullLogProvider.getInstance()))
-    systemGraphComponents.register(new UserSecurityGraphComponent(mock[AbstractSecurityLog], new InMemoryUserRepository, config))
+    systemGraphComponents.register(new UserSecurityGraphComponent(
+      mock[AbstractSecurityLog],
+      new InMemoryUserRepository,
+      config
+    ))
 
     val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
     val systemSupplier = SystemGraphRealmHelper.makeSystemSupplier(databaseManager)

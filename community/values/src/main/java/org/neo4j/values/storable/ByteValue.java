@@ -19,96 +19,81 @@
  */
 package org.neo4j.values.storable;
 
-import org.neo4j.values.ValueMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public final class ByteValue extends IntegralValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ByteValue.class );
+import org.neo4j.values.ValueMapper;
+
+public final class ByteValue extends IntegralValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(ByteValue.class);
 
     private final byte value;
 
-    ByteValue( byte value )
-    {
+    ByteValue(byte value) {
         this.value = value;
     }
 
-    public byte value()
-    {
+    public byte value() {
         return value;
     }
 
     @Override
-    public long longValue()
-    {
+    public long longValue() {
         return value;
     }
 
     @Override
-    public int intValue()
-    {
+    public int intValue() {
         return value;
     }
 
     @Override
-    public short shortValue()
-    {
+    public short shortValue() {
         return value;
     }
 
     @Override
-    public byte byteValue()
-    {
+    public byte byteValue() {
         return value;
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeInteger( value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeInteger(value);
     }
 
     @Override
-    public Byte asObjectCopy()
-    {
+    public Byte asObjectCopy() {
         return value;
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return Byte.toString( value );
+    public String prettyPrint() {
+        return Byte.toString(value);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s(%d)", getTypeName(), value );
+    public String toString() {
+        return format("%s(%d)", getTypeName(), value);
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapByte( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapByte(this);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Byte";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return SHALLOW_SIZE;
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.INT8;
     }
 }

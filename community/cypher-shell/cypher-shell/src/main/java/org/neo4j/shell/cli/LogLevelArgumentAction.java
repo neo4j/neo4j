@@ -19,51 +19,41 @@
  */
 package org.neo4j.shell.cli;
 
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
+
+import java.util.Map;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.ArgumentAction;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-
-import java.util.Map;
-
 import org.neo4j.shell.log.Logger;
-
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.joining;
 
 /**
  * Action that parses and appends query parameters.
  */
-public class LogLevelArgumentAction implements ArgumentAction
-{
+public class LogLevelArgumentAction implements ArgumentAction {
     @Override
-    public void run( ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value ) throws ArgumentParserException
-    {
-        try
-        {
-            attrs.put( arg.getDest(), Logger.Level.from( value.toString() ) );
-        }
-        catch ( Exception e )
-        {
-            throw new ArgumentParserException( "Incorrect usage.\n" + usage(), parser );
+    public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value)
+            throws ArgumentParserException {
+        try {
+            attrs.put(arg.getDest(), Logger.Level.from(value.toString()));
+        } catch (Exception e) {
+            throw new ArgumentParserException("Incorrect usage.\n" + usage(), parser);
         }
     }
 
-    static String usage()
-    {
-        var levels = stream( Logger.Level.values() ).map( l -> l.name().toLowerCase() ).collect( joining( ", " ) );
+    static String usage() {
+        var levels =
+                stream(Logger.Level.values()).map(l -> l.name().toLowerCase()).collect(joining(", "));
         return "Usage: `--log` to log everything, or `--log <level>` where level is one of " + levels + ".";
     }
 
     @Override
-    public void onAttach( Argument arg )
-    {
-
-    }
+    public void onAttach(Argument arg) {}
 
     @Override
-    public boolean consumeArgument()
-    {
+    public boolean consumeArgument() {
         return true;
     }
 }

@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.storageengine.api.RelationshipVisitor
 
-import scala.collection.Map
 import scala.Iterable
+import scala.collection.Map
 
 case class FakePipe(data: Iterable[Map[String, Any]]) extends Pipe {
 
@@ -38,7 +38,9 @@ case class FakePipe(data: Iterable[Map[String, Any]]) extends Pipe {
   def this(data: Iterator[Map[String, Any]]) = this(data.toList)
 
   override def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
-    _countingIterator = new CountingIterator(data.map(m => CypherRow(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))).iterator)
+    _countingIterator = new CountingIterator(data.map(m =>
+      CypherRow(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))
+    ).iterator)
     _countingIterator
   }
 
@@ -54,6 +56,7 @@ case class FakePipe(data: Iterable[Map[String, Any]]) extends Pipe {
 }
 
 object FakePipe {
+
   class CountingIterator[T](inner: Iterator[T]) extends ClosingIterator[T] {
     private var _count = 0
     private var _closed = false
@@ -95,7 +98,8 @@ object FakePipe {
 
   }
 
-  class CountingRelationshipIterator(inner: ClosingLongIterator with RelationshipIterator) extends ClosingLongIterator with RelationshipIterator {
+  class CountingRelationshipIterator(inner: ClosingLongIterator with RelationshipIterator) extends ClosingLongIterator
+      with RelationshipIterator {
     private var _count = 0
     private var _closed = false
 
@@ -114,8 +118,10 @@ object FakePipe {
 
     def resetClosed(): Unit = _closed = false
 
-    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
-                                                           visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
+    override def relationshipVisit[EXCEPTION <: Exception](
+      relationshipId: Long,
+      visitor: RelationshipVisitor[EXCEPTION]
+    ): Boolean = {
       visitor.visit(relationshipId, typeId(), startNodeId(), endNodeId())
       true
     }

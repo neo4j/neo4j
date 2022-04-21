@@ -19,12 +19,21 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_MOCKS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.batchimport.ReadGroupsFromCacheStepTest.Group;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
@@ -39,121 +48,100 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Answers.RETURNS_MOCKS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
-class EncodeGroupsStepTest
-{
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+class EncodeGroupsStepTest {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
     private final StageControl control = new SimpleStageControl();
-    private final RecordStore<RelationshipGroupRecord> store = mock( RecordStore.class );
+    private final RecordStore<RelationshipGroupRecord> store = mock(RecordStore.class);
 
     @Test
-    void shouldEncodeGroupChains() throws Throwable
-    {
+    void shouldEncodeGroupChains() throws Throwable {
         final AtomicLong nextId = new AtomicLong();
-        when( store.nextId( NULL_CONTEXT ) ).thenAnswer( invocation -> nextId.incrementAndGet() );
-        doAnswer( invocation ->
-        {
-            // our own way of marking that this has record been prepared (firstOut=1)
-            invocation.<RelationshipGroupRecord>getArgument( 0 ).setFirstOut( 1 );
-            return null;
-        } ).when( store ).prepareForCommit( any( RelationshipGroupRecord.class ), any( CursorContext.class ) );
-        Configuration config = Configuration.withBatchSize( Configuration.DEFAULT, 10 );
-        EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store, CONTEXT_FACTORY );
+        when(store.nextId(NULL_CONTEXT)).thenAnswer(invocation -> nextId.incrementAndGet());
+        doAnswer(invocation -> {
+                    // our own way of marking that this has record been prepared (firstOut=1)
+                    invocation.<RelationshipGroupRecord>getArgument(0).setFirstOut(1);
+                    return null;
+                })
+                .when(store)
+                .prepareForCommit(any(RelationshipGroupRecord.class), any(CursorContext.class));
+        Configuration config = Configuration.withBatchSize(Configuration.DEFAULT, 10);
+        EncodeGroupsStep encoder = new EncodeGroupsStep(control, config, store, CONTEXT_FACTORY);
 
         // WHEN
-        encoder.start( Step.ORDER_SEND_DOWNSTREAM );
+        encoder.start(Step.ORDER_SEND_DOWNSTREAM);
         Catcher catcher = new Catcher();
-        encoder.process( batch( new Group( 1, 3 ), new Group( 2, 3 ), new Group( 3, 4 ) ), catcher, NULL_CONTEXT );
-        encoder.process( batch( new Group( 4, 2 ), new Group( 5, 10 ) ), catcher, NULL_CONTEXT );
-        encoder.process( batch( new Group( 6, 35 ) ), catcher, NULL_CONTEXT );
-        encoder.process( batch( new Group( 7, 2 ) ), catcher, NULL_CONTEXT );
+        encoder.process(batch(new Group(1, 3), new Group(2, 3), new Group(3, 4)), catcher, NULL_CONTEXT);
+        encoder.process(batch(new Group(4, 2), new Group(5, 10)), catcher, NULL_CONTEXT);
+        encoder.process(batch(new Group(6, 35)), catcher, NULL_CONTEXT);
+        encoder.process(batch(new Group(7, 2)), catcher, NULL_CONTEXT);
         encoder.endOfUpstream();
         encoder.awaitCompleted();
         encoder.close();
 
         // THEN
-        assertEquals( 4, catcher.batches.size() );
+        assertEquals(4, catcher.batches.size());
         long lastOwningNodeLastBatch = -1;
-        for ( RelationshipGroupRecord[] batch : catcher.batches )
-        {
-            assertBatch( batch, lastOwningNodeLastBatch );
+        for (RelationshipGroupRecord[] batch : catcher.batches) {
+            assertBatch(batch, lastOwningNodeLastBatch);
             lastOwningNodeLastBatch = batch[batch.length - 1].getOwningNode();
         }
     }
 
     @Test
-    void tracePageCacheAccessOnEncode() throws Exception
-    {
-        when( store.nextId( any( CursorContext.class ) ) ).thenAnswer( invocation -> {
-            CursorContext cursorContext = invocation.getArgument( 0 );
-            var swapper = mock( PageSwapper.class, RETURNS_MOCKS );
-            try ( var event = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
-            {
+    void tracePageCacheAccessOnEncode() throws Exception {
+        when(store.nextId(any(CursorContext.class))).thenAnswer(invocation -> {
+            CursorContext cursorContext = invocation.getArgument(0);
+            var swapper = mock(PageSwapper.class, RETURNS_MOCKS);
+            try (var event = cursorContext.getCursorTracer().beginPin(false, 1, swapper)) {
                 event.hit();
             }
-            cursorContext.getCursorTracer().unpin( 1, swapper );
+            cursorContext.getCursorTracer().unpin(1, swapper);
             return 1L;
-        } );
+        });
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = CONTEXT_FACTORY.create( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnEncode" ) );
-        Configuration config = Configuration.withBatchSize( Configuration.DEFAULT, 10 );
-        try ( EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store, CONTEXT_FACTORY ) )
-        {
-            encoder.start( Step.ORDER_SEND_DOWNSTREAM );
+        var cursorContext = CONTEXT_FACTORY.create(cacheTracer.createPageCursorTracer("tracePageCacheAccessOnEncode"));
+        Configuration config = Configuration.withBatchSize(Configuration.DEFAULT, 10);
+        try (EncodeGroupsStep encoder = new EncodeGroupsStep(control, config, store, CONTEXT_FACTORY)) {
+            encoder.start(Step.ORDER_SEND_DOWNSTREAM);
             Catcher catcher = new Catcher();
-            encoder.process( batch( new Group( 1, 3 ), new Group( 2, 3 ), new Group( 3, 4 ) ), catcher, cursorContext );
+            encoder.process(batch(new Group(1, 3), new Group(2, 3), new Group(3, 4)), catcher, cursorContext);
             encoder.endOfUpstream();
             encoder.awaitCompleted();
         }
 
-        assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 10 );
-        assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 10 );
-        assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 10 );
+        assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(10);
+        assertThat(cursorContext.getCursorTracer().hits()).isEqualTo(10);
+        assertThat(cursorContext.getCursorTracer().unpins()).isEqualTo(10);
     }
 
-    private static void assertBatch( RelationshipGroupRecord[] batch, long lastOwningNodeLastBatch )
-    {
-        for ( int i = 0; i < batch.length; i++ )
-        {
+    private static void assertBatch(RelationshipGroupRecord[] batch, long lastOwningNodeLastBatch) {
+        for (int i = 0; i < batch.length; i++) {
             RelationshipGroupRecord record = batch[i];
-            assertTrue( record.getId() > Record.NULL_REFERENCE.longValue() );
-            assertTrue( record.getOwningNode() > lastOwningNodeLastBatch );
-            assertEquals( 1, record.getFirstOut() ); // the mark our store mock sets when preparing
-            if ( record.getNext() == Record.NULL_REFERENCE.longValue() )
-            {
+            assertTrue(record.getId() > Record.NULL_REFERENCE.longValue());
+            assertTrue(record.getOwningNode() > lastOwningNodeLastBatch);
+            assertEquals(1, record.getFirstOut()); // the mark our store mock sets when preparing
+            if (record.getNext() == Record.NULL_REFERENCE.longValue()) {
                 // This is the last in the chain, verify that this is either:
                 assertTrue(
                         // - the last one in the batch, or
-                        i == batch.length - 1 ||
-                        // - the last one for this node
-                        batch[i + 1].getOwningNode() > record.getOwningNode() );
+                        i == batch.length - 1
+                                ||
+                                // - the last one for this node
+                                batch[i + 1].getOwningNode() > record.getOwningNode());
             }
         }
     }
 
-    private static RelationshipGroupRecord[] batch( Group... groups )
-    {
-        return ReadGroupsFromCacheStepTest.groups( groups ).toArray( new RelationshipGroupRecord[0] );
+    private static RelationshipGroupRecord[] batch(Group... groups) {
+        return ReadGroupsFromCacheStepTest.groups(groups).toArray(new RelationshipGroupRecord[0]);
     }
 
-    private static class Catcher implements BatchSender
-    {
+    private static class Catcher implements BatchSender {
         private final List<RelationshipGroupRecord[]> batches = new ArrayList<>();
 
         @Override
-        public void send( Object batch )
-        {
-            batches.add( (RelationshipGroupRecord[]) batch );
+        public void send(Object batch) {
+            batches.add((RelationshipGroupRecord[]) batch);
         }
     }
 }

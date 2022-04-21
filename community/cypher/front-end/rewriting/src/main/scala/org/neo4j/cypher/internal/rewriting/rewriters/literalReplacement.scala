@@ -65,18 +65,19 @@ object literalReplacement {
     })
   }
 
-  private val literalMatcher: PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
+  private val literalMatcher
+    : PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
     case _: Match |
-         _: Create |
-         _: Merge |
-         _: SetClause |
-         _: Return |
-         _: With |
-         _: Unwind |
-         _: CallClause =>
+      _: Create |
+      _: Merge |
+      _: SetClause |
+      _: Return |
+      _: With |
+      _: Unwind |
+      _: CallClause =>
       acc => TraverseChildren(acc)
     case _: Clause |
-         _: Limit =>
+      _: Limit =>
       acc => SkipChildren(acc)
     case n: NodePattern =>
       acc => SkipChildren(n.properties.folder.treeFold(acc)(literalMatcher))
@@ -86,29 +87,38 @@ object literalReplacement {
       acc => SkipChildren(acc)
     case l: StringLiteral =>
       acc =>
-        if (acc.contains(l)) SkipChildren(acc) else {
+        if (acc.contains(l)) SkipChildren(acc)
+        else {
           val parameter = AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l)(l.position)
           SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
     case l: IntegerLiteral =>
       acc =>
-        if (acc.contains(l)) SkipChildren(acc) else {
+        if (acc.contains(l)) SkipChildren(acc)
+        else {
           val parameter = AutoExtractedParameter(s"  AUTOINT${acc.size}", CTInteger, l)(l.position)
           SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
     case l: DoubleLiteral =>
       acc =>
-        if (acc.contains(l)) SkipChildren(acc) else {
+        if (acc.contains(l)) SkipChildren(acc)
+        else {
           val parameter = AutoExtractedParameter(s"  AUTODOUBLE${acc.size}", CTFloat, l)(l.position)
           SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
     case l: ListLiteral if l.expressions.forall(_.isInstanceOf[Literal]) =>
       acc =>
-        if (acc.contains(l)) SkipChildren(acc) else {
+        if (acc.contains(l)) SkipChildren(acc)
+        else {
           val literals = l.expressions.map(_.asInstanceOf[Literal])
           val innerType = if (literals.nonEmpty && literals.forall(_.isInstanceOf[StringLiteral])) CTString else CTAny
           val bucket = ListSizeBucket.computeBucket(l.expressions.size)
-          val parameter = AutoExtractedParameter(s"  AUTOLIST${acc.size}", CTList(innerType), ListOfLiteralWriter(literals), Some(bucket))(l.position)
+          val parameter = AutoExtractedParameter(
+            s"  AUTOLIST${acc.size}",
+            CTList(innerType),
+            ListOfLiteralWriter(literals),
+            Some(bucket)
+          )(l.position)
           SkipChildren(acc + (l -> LiteralReplacement(parameter, literals.map(_.value))))
         }
   }
@@ -123,19 +133,20 @@ object literalReplacement {
     (ExtractParameterRewriter(replaceableLiterals), extractedParams)
   }
 
-  def apply(term: ASTNode, paramExtraction: LiteralExtractionStrategy): (Rewriter, Map[String, Any]) = paramExtraction match {
-    case Never =>
-      Rewriter.noop -> Map.empty
-    case Forced =>
-      doIt(term)
-    case IfNoParameter =>
-      val containsParameter: Boolean = term.folder.treeExists {
-        case _: Parameter => true
-      }
+  def apply(term: ASTNode, paramExtraction: LiteralExtractionStrategy): (Rewriter, Map[String, Any]) =
+    paramExtraction match {
+      case Never =>
+        Rewriter.noop -> Map.empty
+      case Forced =>
+        doIt(term)
+      case IfNoParameter =>
+        val containsParameter: Boolean = term.folder.treeExists {
+          case _: Parameter => true
+        }
 
-      if (containsParameter) Rewriter.noop -> Map.empty
-      else doIt(term)
-  }
+        if (containsParameter) Rewriter.noop -> Map.empty
+        else doIt(term)
+    }
 }
 
 sealed trait LiteralExtractionStrategy

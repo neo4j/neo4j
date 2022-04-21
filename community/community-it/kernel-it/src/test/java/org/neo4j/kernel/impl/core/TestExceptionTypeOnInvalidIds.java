@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
+
+import java.nio.file.Path;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.nio.file.Path;
-import java.util.stream.Stream;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
@@ -36,13 +38,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
-
 @EphemeralTestDirectoryExtension
-public class TestExceptionTypeOnInvalidIds
-{
+public class TestExceptionTypeOnInvalidIds {
     private static final long SMALL_POSITIVE_INTEGER = 5;
     private static final long SMALL_NEGATIVE_INTEGER = -5;
     private static final long BIG_POSITIVE_INTEGER = Integer.MAX_VALUE;
@@ -61,31 +58,29 @@ public class TestExceptionTypeOnInvalidIds
     private GraphDatabaseService readOnlyDb;
 
     @BeforeEach
-    void createDatabase()
-    {
-        Path writableLayout = testDirectory.homePath( "writable" );
-        writableService = new TestDatabaseManagementServiceBuilder( writableLayout ).build();
-        writableDb = writableService.database( DEFAULT_DATABASE_NAME );
+    void createDatabase() {
+        Path writableLayout = testDirectory.homePath("writable");
+        writableService = new TestDatabaseManagementServiceBuilder(writableLayout).build();
+        writableDb = writableService.database(DEFAULT_DATABASE_NAME);
 
-        Path readOnlyLayout = testDirectory.homePath( "readOnly" );
-        TestDatabaseManagementServiceBuilder readOnlyBuilder = new TestDatabaseManagementServiceBuilder( readOnlyLayout );
-        //Create database
+        Path readOnlyLayout = testDirectory.homePath("readOnly");
+        TestDatabaseManagementServiceBuilder readOnlyBuilder = new TestDatabaseManagementServiceBuilder(readOnlyLayout);
+        // Create database
         readOnlyBuilder.build().shutdown();
-        readOnlyService = readOnlyBuilder.setConfig( read_only_database_default, true ).build();
-        readOnlyDb = readOnlyService.database( DEFAULT_DATABASE_NAME );
+        readOnlyService =
+                readOnlyBuilder.setConfig(read_only_database_default, true).build();
+        readOnlyDb = readOnlyService.database(DEFAULT_DATABASE_NAME);
     }
 
     @AfterEach
-    void destroyDatabase()
-    {
+    void destroyDatabase() {
         readOnlyService.shutdown();
         writableService.shutdown();
         writableDb = null;
         readOnlyDb = null;
     }
 
-    private static Stream<Long> inputValues()
-    {
+    private static Stream<Long> inputValues() {
         return Stream.of(
                 SMALL_POSITIVE_INTEGER,
                 SMALL_NEGATIVE_INTEGER,
@@ -94,39 +89,32 @@ public class TestExceptionTypeOnInvalidIds
                 SMALL_POSITIVE_LONG,
                 SMALL_NEGATIVE_LONG,
                 BIG_POSITIVE_LONG,
-                BIG_NEGATIVE_LONG
-        );
+                BIG_NEGATIVE_LONG);
     }
 
     @ParameterizedTest
-    @MethodSource( "inputValues" )
-    void shouldThrowOnGetNodeByIdWithNonExistingId( long id )
-    {
-        getNonExistingNodeById( writableDb, id );
-        getNonExistingNodeById( readOnlyDb, id );
+    @MethodSource("inputValues")
+    void shouldThrowOnGetNodeByIdWithNonExistingId(long id) {
+        getNonExistingNodeById(writableDb, id);
+        getNonExistingNodeById(readOnlyDb, id);
     }
 
     @ParameterizedTest
-    @MethodSource( "inputValues" )
-    void shouldThrowOnGetRelationshipByIdWithNonExistingId( long id )
-    {
-        getNonExistingRelationshipById( writableDb, id );
-        getNonExistingRelationshipById( readOnlyDb, id );
+    @MethodSource("inputValues")
+    void shouldThrowOnGetRelationshipByIdWithNonExistingId(long id) {
+        getNonExistingRelationshipById(writableDb, id);
+        getNonExistingRelationshipById(readOnlyDb, id);
     }
 
-    private static void getNonExistingNodeById( GraphDatabaseService db, long index )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThrows( NotFoundException.class, () -> tx.getNodeById( index ) );
+    private static void getNonExistingNodeById(GraphDatabaseService db, long index) {
+        try (Transaction tx = db.beginTx()) {
+            assertThrows(NotFoundException.class, () -> tx.getNodeById(index));
         }
     }
 
-    private static void getNonExistingRelationshipById( GraphDatabaseService db, long index )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThrows( NotFoundException.class, () -> tx.getRelationshipById( index ) );
+    private static void getNonExistingRelationshipById(GraphDatabaseService db, long index) {
+        try (Transaction tx = db.beginTx()) {
+            assertThrows(NotFoundException.class, () -> tx.getRelationshipById(index));
         }
     }
 }

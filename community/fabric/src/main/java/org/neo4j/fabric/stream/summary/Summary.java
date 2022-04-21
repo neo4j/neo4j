@@ -20,13 +20,11 @@
 package org.neo4j.fabric.stream.summary;
 
 import java.util.Collection;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 
-public interface Summary
-{
+public interface Summary {
     /**
      * @return The plan description of the query.
      */

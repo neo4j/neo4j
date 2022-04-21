@@ -28,8 +28,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
 class SumFunction(val value: Expression)
-  extends AggregationFunction
-  with NumericOrDurationAggregationExpression {
+    extends AggregationFunction
+    with NumericOrDurationAggregationExpression {
 
   def name = "SUM"
 
@@ -46,7 +46,8 @@ class SumFunction(val value: Expression)
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
     val vl = value(data, state)
-    actOnNumberOrDuration(vl,
+    actOnNumberOrDuration(
+      vl,
       number => {
         sumNumber = overflowSafeAdd(sumNumber, number)
       },

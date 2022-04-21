@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,7 +30,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
+import org.apache.commons.lang3.ArrayUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.ByteUnit;
@@ -60,21 +62,19 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.util.concurrent.Futures;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
-
 @Neo4jLayoutExtension
-@ExtendWith( LifeExtension.class )
-@ExtendWith( RandomExtension.class )
-class QueueTransactionAppenderConcurrencyIT
-{
+@ExtendWith(LifeExtension.class)
+@ExtendWith(RandomExtension.class)
+class QueueTransactionAppenderConcurrencyIT {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private LifeSupport life;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private RandomSupport random;
 
@@ -88,8 +88,7 @@ class QueueTransactionAppenderConcurrencyIT
     private ExecutorService executor;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         jobScheduler = new ThreadPoolJobScheduler();
 
         logVersionRepository = new SimpleLogVersionRepository();
@@ -97,161 +96,152 @@ class QueueTransactionAppenderConcurrencyIT
         logProvider = NullLogProvider.getInstance();
         metadataCache = new TransactionMetadataCache();
         config = Config.defaults();
-        databaseHealth = new DatabaseHealth( NO_OP, logProvider.getLog( DatabaseHealth.class ) );
-        executor = Executors.newFixedThreadPool( 20 );
+        databaseHealth = new DatabaseHealth(NO_OP, logProvider.getLog(DatabaseHealth.class));
+        executor = Executors.newFixedThreadPool(20);
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         executor.shutdown();
         life.shutdown();
         jobScheduler.close();
     }
 
     @Test
-    void multiThreadedTransactionProcessing() throws IOException, ExecutionException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void multiThreadedTransactionProcessing() throws IOException, ExecutionException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
-        life.add( transactionAppender );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        life.add(transactionAppender);
 
         int numberOfTransactions = 10_000;
         long initialCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
 
-        var results = new ArrayList<Future<?>>( numberOfTransactions );
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            results.add( executor.submit( () -> transactionAppender.append( createTransaction(), LogAppendEvent.NULL ) ) );
+        var results = new ArrayList<Future<?>>(numberOfTransactions);
+        for (int i = 0; i < numberOfTransactions; i++) {
+            results.add(executor.submit(() -> transactionAppender.append(createTransaction(), LogAppendEvent.NULL)));
         }
-        Futures.getAll( results );
+        Futures.getAll(results);
 
-        assertEquals( transactionIdStore.getLastCommittedTransactionId(), initialCommittedTxId + numberOfTransactions );
+        assertEquals(transactionIdStore.getLastCommittedTransactionId(), initialCommittedTxId + numberOfTransactions);
     }
 
     @Test
-    void multiThreadedTransactionWithStop() throws IOException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void multiThreadedTransactionWithStop() throws IOException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
-        life.add( transactionAppender );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        life.add(transactionAppender);
 
         int numberOfTransactions = 100_000;
         long initialCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-        var results = new ArrayList<Future<?>>( numberOfTransactions );
+        var results = new ArrayList<Future<?>>(numberOfTransactions);
 
-        int poisonIndex = random.nextInt( numberOfTransactions / 10, numberOfTransactions - 400 );
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            results.add( executor.submit( () -> transactionAppender.append( createTransaction(), LogAppendEvent.NULL ) ) );
-            if ( i == poisonIndex )
-            {
-                executor.submit( () -> life.shutdown() );
+        int poisonIndex = random.nextInt(numberOfTransactions / 10, numberOfTransactions - 400);
+        for (int i = 0; i < numberOfTransactions; i++) {
+            results.add(executor.submit(() -> transactionAppender.append(createTransaction(), LogAppendEvent.NULL)));
+            if (i == poisonIndex) {
+                executor.submit(() -> life.shutdown());
             }
         }
 
-        var futureStatistic = processFutures( results );
+        var futureStatistic = processFutures(results);
 
-        assertEquals( transactionIdStore.getLastCommittedTransactionId(), initialCommittedTxId + futureStatistic.getCompletedFutures() );
-        assertThat( futureStatistic.getFailedFutures() ).isNotZero();
-        assertThat( futureStatistic.getFailedFutures() + futureStatistic.getCompletedFutures() ).isEqualTo( numberOfTransactions );
+        assertEquals(
+                transactionIdStore.getLastCommittedTransactionId(),
+                initialCommittedTxId + futureStatistic.getCompletedFutures());
+        assertThat(futureStatistic.getFailedFutures()).isNotZero();
+        assertThat(futureStatistic.getFailedFutures() + futureStatistic.getCompletedFutures())
+                .isEqualTo(numberOfTransactions);
     }
 
     @Test
-    void multiThreadedTransactionWithPanic() throws IOException
-    {
-        LogFiles logFiles = buildLogFiles( logVersionRepository, transactionIdStore );
-        life.add( logFiles );
+    void multiThreadedTransactionWithPanic() throws IOException {
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        life.add(logFiles);
 
-        QueueTransactionAppender transactionAppender = createAppender( logFiles );
-        life.add( transactionAppender );
+        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        life.add(transactionAppender);
 
         int numberOfTransactions = 100_000;
         long initialCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-        var results = new ArrayList<Future<?>>( numberOfTransactions );
+        var results = new ArrayList<Future<?>>(numberOfTransactions);
 
-        int poisonIndex = random.nextInt( numberOfTransactions / 10, numberOfTransactions - 400 );
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            results.add( executor.submit( () -> transactionAppender.append( createTransaction(), LogAppendEvent.NULL ) ) );
-            if ( i == poisonIndex )
-            {
-                executor.submit( () -> databaseHealth.panic( new RuntimeException( "Period of intense transaction failures" ) ) );
+        int poisonIndex = random.nextInt(numberOfTransactions / 10, numberOfTransactions - 400);
+        for (int i = 0; i < numberOfTransactions; i++) {
+            results.add(executor.submit(() -> transactionAppender.append(createTransaction(), LogAppendEvent.NULL)));
+            if (i == poisonIndex) {
+                executor.submit(
+                        () -> databaseHealth.panic(new RuntimeException("Period of intense transaction failures")));
             }
         }
 
-        var futureStatistic = processFutures( results );
+        var futureStatistic = processFutures(results);
 
-        assertEquals( transactionIdStore.getLastCommittedTransactionId(), initialCommittedTxId + futureStatistic.getCompletedFutures() );
-        assertThat( futureStatistic.getFailedFutures() ).isNotZero();
-        assertThat( futureStatistic.getFailedFutures() + futureStatistic.getCompletedFutures() ).isEqualTo( numberOfTransactions );
+        assertEquals(
+                transactionIdStore.getLastCommittedTransactionId(),
+                initialCommittedTxId + futureStatistic.getCompletedFutures());
+        assertThat(futureStatistic.getFailedFutures()).isNotZero();
+        assertThat(futureStatistic.getFailedFutures() + futureStatistic.getCompletedFutures())
+                .isEqualTo(numberOfTransactions);
     }
 
-    private QueueTransactionAppender createAppender( LogFiles logFiles )
-    {
-        TransactionLogQueue logQueue = new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider );
-        return new QueueTransactionAppender( logQueue );
+    private QueueTransactionAppender createAppender(LogFiles logFiles) {
+        TransactionLogQueue logQueue = new TransactionLogQueue(
+                logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider);
+        return new QueueTransactionAppender(logQueue);
     }
 
-    private static TransactionToApply createTransaction()
-    {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( List.of( new TestCommand() ) );
-        tx.setHeader( ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, AuthSubject.ANONYMOUS );
-        return new TransactionToApply( tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL );
+    private static TransactionToApply createTransaction() {
+        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(List.of(new TestCommand()));
+        tx.setHeader(ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, AuthSubject.ANONYMOUS);
+        return new TransactionToApply(tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL);
     }
 
-    private LogFiles buildLogFiles( SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore ) throws IOException
-    {
-        return LogFilesBuilder.builder( databaseLayout, fileSystem ).withLogVersionRepository( logVersionRepository )
-                              .withRotationThreshold( ByteUnit.mebiBytes( 1 ) ).withTransactionIdStore( transactionIdStore )
-                              .withCommandReaderFactory( new TestCommandReaderFactory() )
-                              .withStoreId( LegacyStoreId.UNKNOWN ).build();
+    private LogFiles buildLogFiles(
+            SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore)
+            throws IOException {
+        return LogFilesBuilder.builder(databaseLayout, fileSystem)
+                .withLogVersionRepository(logVersionRepository)
+                .withRotationThreshold(ByteUnit.mebiBytes(1))
+                .withTransactionIdStore(transactionIdStore)
+                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withStoreId(LegacyStoreId.UNKNOWN)
+                .build();
     }
 
-    private static FutureStatistic processFutures( List<Future<?>> futures )
-    {
+    private static FutureStatistic processFutures(List<Future<?>> futures) {
         FutureStatistic statistic = new FutureStatistic();
-        for ( Future<?> future : futures )
-        {
-            try
-            {
+        for (Future<?> future : futures) {
+            try {
                 future.get();
                 statistic.incrementCompleted();
-            }
-            catch ( Exception ignored )
-            {
+            } catch (Exception ignored) {
                 statistic.incrementFailed();
             }
         }
         return statistic;
     }
 
-    private static final class FutureStatistic
-    {
+    private static final class FutureStatistic {
         int completedFutures;
         int failedFutures;
 
-        void incrementCompleted()
-        {
+        void incrementCompleted() {
             completedFutures++;
         }
 
-        void incrementFailed()
-        {
+        void incrementFailed() {
             failedFutures++;
         }
 
-        public int getCompletedFutures()
-        {
+        public int getCompletedFutures() {
             return completedFutures;
         }
 
-        public int getFailedFutures()
-        {
+        public int getFailedFutures() {
             return failedFutures;
         }
     }

@@ -19,49 +19,43 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.internal.batchimport.stats.DetailLevel;
-import org.neo4j.internal.batchimport.stats.Stat;
-
 import static java.lang.System.nanoTime;
 import static org.neo4j.io.ByteUnit.bytesToString;
+
+import java.util.concurrent.TimeUnit;
+import org.neo4j.internal.batchimport.stats.DetailLevel;
+import org.neo4j.internal.batchimport.stats.Stat;
 
 /**
  * {@link Stat} that provides a simple Mb/s stat, mostly used for getting an insight into I/O throughput.
  */
-public class IoThroughputStat implements Stat
-{
+public class IoThroughputStat implements Stat {
     private final long startTime;
     private final long endTime;
     private final long position;
 
-    public IoThroughputStat( long startTime, long endTime, long position )
-    {
+    public IoThroughputStat(long startTime, long endTime, long position) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.position = position;
     }
 
     @Override
-    public DetailLevel detailLevel()
-    {
+    public DetailLevel detailLevel() {
         return DetailLevel.IMPORTANT;
     }
 
     @Override
-    public long asLong()
-    {
+    public long asLong() {
         long endTime = this.endTime != 0 ? this.endTime : nanoTime();
         long totalTime = endTime - startTime;
-        int seconds = (int) TimeUnit.NANOSECONDS.toSeconds( totalTime );
+        int seconds = (int) TimeUnit.NANOSECONDS.toSeconds(totalTime);
         return seconds > 0 ? position / seconds : -1;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         long stat = asLong();
-        return stat == -1 ? "??" : bytesToString( stat ) + "/s";
+        return stat == -1 ? "??" : bytesToString(stat) + "/s";
     }
 }

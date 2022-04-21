@@ -32,6 +32,7 @@ trait PipeMapper extends LogicalPlans.Mapper[Pipe] {
 }
 
 case class PipeTreeBuilder(pipeMapper: PipeMapper) {
+
   def build(logicalPlan: LogicalPlan): Pipe = {
     LogicalPlans.map(logicalPlan, pipeMapper)
   }

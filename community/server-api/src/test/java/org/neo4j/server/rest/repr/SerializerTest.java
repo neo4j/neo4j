@@ -19,26 +19,21 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SerializerTest
-{
+import java.net.URI;
+import org.junit.jupiter.api.Test;
+
+class SerializerTest {
     @Test
-    void shouldPrependBaseUriToRelativePaths()
-    {
+    void shouldPrependBaseUriToRelativePaths() {
         String baseUrl = "http://baseurl/";
-        Serializer serializer = new Serializer( URI.create( baseUrl ) )
-        {
-            // empty
-        };
+        Serializer serializer = new Serializer(URI.create(baseUrl)) {
+                    // empty
+                };
 
         String aRelativeUrl = "/path/path/path";
-        assertThat( serializer.relativeUri( aRelativeUrl ) ).isEqualTo( baseUrl + aRelativeUrl.substring( 1 ) );
-        assertThat( serializer.relativeTemplate( aRelativeUrl ) ).isEqualTo( baseUrl + aRelativeUrl.substring( 1 ) );
+        assertThat(serializer.relativeUri(aRelativeUrl)).isEqualTo(baseUrl + aRelativeUrl.substring(1));
+        assertThat(serializer.relativeTemplate(aRelativeUrl)).isEqualTo(baseUrl + aRelativeUrl.substring(1));
     }
-
 }

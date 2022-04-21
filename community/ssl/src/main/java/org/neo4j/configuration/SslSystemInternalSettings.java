@@ -19,16 +19,16 @@
  */
 package org.neo4j.configuration;
 
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
+
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.configuration.SettingValueParsers.BOOL;
-
 @ServiceProvider
-public class SslSystemInternalSettings implements SettingsDeclaration
-{
+public class SslSystemInternalSettings implements SettingsDeclaration {
     @Internal
-    @Description( "Don't try and read dot-prefixed files or dot-prefixed directories in ssl policy directories" )
-    public static final Setting<Boolean> ignore_dotfiles =
-            SettingImpl.newBuilder( "internal.dbms.ssl.system.ignore_dot_files", BOOL, false ).build();
+    @Description("Don't try and read dot-prefixed files or dot-prefixed directories in ssl policy directories")
+    public static final Setting<Boolean> ignore_dotfiles = SettingImpl.newBuilder(
+                    "internal.dbms.ssl.system.ignore_dot_files", BOOL, false)
+            .build();
 }

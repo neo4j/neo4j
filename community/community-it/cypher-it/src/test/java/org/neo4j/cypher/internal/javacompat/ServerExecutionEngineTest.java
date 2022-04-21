@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.jupiter.api.Test;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -35,43 +37,36 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER;
-
 @ImpermanentDbmsExtension
-class ServerExecutionEngineTest
-{
+class ServerExecutionEngineTest {
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private QueryExecutionEngine executionEngine;
+
     @Inject
     private KernelTransactionFactory transactionFactory;
+
     @Inject
     private GraphDatabaseQueryService queryService;
 
     @Test
-    void shouldCloseResourcesInCancel() throws Exception
-    {
+    void shouldCloseResourcesInCancel() throws Exception {
         // GIVEN
-        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( () -> queryService, transactionFactory );
+        TransactionalContextFactory contextFactory =
+                Neo4jTransactionalContextFactory.create(() -> queryService, transactionFactory);
         // We need two node vars to have one non-pooled cursor
         String query = "MATCH (n), (m) WHERE true RETURN n, m, n.name, m.name";
 
-        try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.EXPLICIT, AUTH_DISABLED ) )
-        {
+        try (InternalTransaction tx = db.beginTransaction(KernelTransaction.Type.EXPLICIT, AUTH_DISABLED)) {
             tx.createNode();
             tx.createNode();
 
-            TransactionalContext context = contextFactory.newContext( tx, query, MapValue.EMPTY );
-            QueryExecution execution = executionEngine.executeQuery( query,
-                                                            MapValue.EMPTY,
-                                                            context,
-                                                            false,
-                                                            DO_NOTHING_SUBSCRIBER );
-            execution.request( 1 );
+            TransactionalContext context = contextFactory.newContext(tx, query, MapValue.EMPTY);
+            QueryExecution execution =
+                    executionEngine.executeQuery(query, MapValue.EMPTY, context, false, DO_NOTHING_SUBSCRIBER);
+            execution.request(1);
             execution.cancel(); // This should close all cursors
             tx.commit();
         }

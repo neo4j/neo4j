@@ -24,39 +24,36 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.token.TokenHolders;
 
-public class DirectStoreAccess
-{
+public class DirectStoreAccess {
     private final NeoStores nativeStores;
     private final IndexProviderMap indexes;
     private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
 
-    public DirectStoreAccess( NeoStores nativeStores, IndexProviderMap indexes, TokenHolders tokenHolders,
-            IdGeneratorFactory idGeneratorFactory )
-    {
+    public DirectStoreAccess(
+            NeoStores nativeStores,
+            IndexProviderMap indexes,
+            TokenHolders tokenHolders,
+            IdGeneratorFactory idGeneratorFactory) {
         this.nativeStores = nativeStores;
         this.indexes = indexes;
         this.tokenHolders = tokenHolders;
         this.idGeneratorFactory = idGeneratorFactory;
     }
 
-    public NeoStores nativeStores()
-    {
+    public NeoStores nativeStores() {
         return nativeStores;
     }
 
-    public IndexProviderMap indexes()
-    {
+    public IndexProviderMap indexes() {
         return indexes;
     }
 
-    public TokenHolders tokenHolders()
-    {
+    public TokenHolders tokenHolders() {
         return tokenHolders;
     }
 
-    public IdGeneratorFactory idGeneratorFactory()
-    {
+    public IdGeneratorFactory idGeneratorFactory() {
         return idGeneratorFactory;
     }
 }

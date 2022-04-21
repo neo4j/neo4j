@@ -34,24 +34,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  * lock, new acquisitions will not be possible anymore, all locks that client holds are preserved.</li>
  * </ul>
  */
-public final class LockClientStateHolder
-{
+public final class LockClientStateHolder {
     private static final int FLAG_BITS = 2;
     private static final int CLIENT_BITS = Integer.SIZE - FLAG_BITS;
     private static final int STOPPED = 1 << CLIENT_BITS;
     private static final int PREPARE = 1 << CLIENT_BITS - 1;
     private static final int STATE_BIT_MASK = STOPPED | PREPARE;
     private static final int INITIAL_STATE = 0;
-    private final AtomicInteger clientState = new AtomicInteger( INITIAL_STATE );
+    private final AtomicInteger clientState = new AtomicInteger(INITIAL_STATE);
 
     /**
      * Check if we still have any active client
      *
      * @return true if have any open client, false otherwise.
      */
-    public boolean hasActiveClients()
-    {
-        return getActiveClients( clientState.get() ) > 0;
+    public boolean hasActiveClients() {
+        return getActiveClients(clientState.get()) > 0;
     }
 
     /**
@@ -59,67 +57,54 @@ public final class LockClientStateHolder
      *
      * @return true if have one open client, false otherwise.
      */
-    public boolean isSingleClient()
-    {
-        return getActiveClients( clientState.get() ) == 1;
+    public boolean isSingleClient() {
+        return getActiveClients(clientState.get()) == 1;
     }
 
     /**
      * Move the client to the PREPARE state, unless it is already STOPPED.
      */
-    public void prepare( Locks.Client client )
-    {
+    public void prepare(Locks.Client client) {
         int currentValue;
         int newValue;
-        do
-        {
+        do {
             currentValue = clientState.get();
-            if ( isStopped( currentValue ) )
-            {
-                throw new LockClientStoppedException( client );
+            if (isStopped(currentValue)) {
+                throw new LockClientStoppedException(client);
             }
-            newValue = stateWithNewStatus( currentValue, PREPARE );
-        }
-        while ( !clientState.compareAndSet( currentValue, newValue ) );
+            newValue = stateWithNewStatus(currentValue, PREPARE);
+        } while (!clientState.compareAndSet(currentValue, newValue));
     }
 
     /**
      * Move the client to STOPPED, unless it is already in PREPARE or STOPPED
      */
-    public boolean stopClient()
-    {
+    public boolean stopClient() {
         int currentValue;
         int newValue;
-        do
-        {
+        do {
             currentValue = clientState.get();
-            if ( isPrepare( currentValue ) )
-            {
+            if (isPrepare(currentValue)) {
                 return false; // Can't stop clients that are in PREPARE
             }
-            if ( isStopped( currentValue ) )
-            {
+            if (isStopped(currentValue)) {
                 return false;
             }
-            newValue = stateWithNewStatus( currentValue, STOPPED );
-        }
-        while ( !clientState.compareAndSet( currentValue, newValue ) );
+            newValue = stateWithNewStatus(currentValue, STOPPED);
+        } while (!clientState.compareAndSet(currentValue, newValue));
         return true;
     }
 
     /**
      * Move the client to STOPPED as part of closing the current client, regardless of what state it is currently in.
      */
-    public void closeClient()
-    {
+    public void closeClient() {
         int currentValue;
         int newValue;
-        do
-        {
+        do {
             currentValue = clientState.get();
-            newValue = stateWithNewStatus( currentValue, STOPPED );
-        }
-        while ( !clientState.compareAndSet( currentValue, newValue ) );
+            newValue = stateWithNewStatus(currentValue, STOPPED);
+        } while (!clientState.compareAndSet(currentValue, newValue));
     }
 
     /**
@@ -129,31 +114,24 @@ public final class LockClientStateHolder
      * with {@link LockClientStoppedException#LockClientStoppedException(Locks.Client)}.
      * @throws LockClientStoppedException when stopped.
      */
-    public void incrementActiveClients( Locks.Client client )
-    {
+    public void incrementActiveClients(Locks.Client client) {
         int currentState;
-        do
-        {
+        do {
             currentState = clientState.get();
-            if ( isStopped( currentState ) )
-            {
-                throw new LockClientStoppedException( client );
+            if (isStopped(currentState)) {
+                throw new LockClientStoppedException(client);
             }
-        }
-        while ( !clientState.compareAndSet( currentState, incrementActiveClients( currentState ) ) );
+        } while (!clientState.compareAndSet(currentState, incrementActiveClients(currentState)));
     }
 
     /**
      * Decrement number of active clients that use current client state object.
      */
-    public void decrementActiveClients()
-    {
+    public void decrementActiveClients() {
         int currentState;
-        do
-        {
+        do {
             currentState = clientState.get();
-        }
-        while ( !clientState.compareAndSet( currentState, decrementActiveClients( currentState ) ) );
+        } while (!clientState.compareAndSet(currentState, decrementActiveClients(currentState)));
     }
 
     /**
@@ -161,9 +139,8 @@ public final class LockClientStateHolder
      *
      * @return true if client is stopped, false otherwise
      */
-    public boolean isStopped()
-    {
-        return isStopped( clientState.get() );
+    public boolean isStopped() {
+        return isStopped(clientState.get());
     }
 
     /**
@@ -171,51 +148,42 @@ public final class LockClientStateHolder
      *
      * @return true if client is prepared, false otherwise
      */
-    public boolean isPrepared()
-    {
-        return isPrepare( clientState.get() );
+    public boolean isPrepared() {
+        return isPrepare(clientState.get());
     }
 
     /**
      * Reset state to initial state disregard any current state or number of active clients
      */
-    public void reset()
-    {
-        clientState.set( INITIAL_STATE );
+    public void reset() {
+        clientState.set(INITIAL_STATE);
     }
 
-    private static boolean isPrepare( int clientState )
-    {
-        return getStatus( clientState ) == PREPARE;
+    private static boolean isPrepare(int clientState) {
+        return getStatus(clientState) == PREPARE;
     }
 
-    private static boolean isStopped( int clientState )
-    {
-        return getStatus( clientState ) == STOPPED;
+    private static boolean isStopped(int clientState) {
+        return getStatus(clientState) == STOPPED;
     }
 
-    private static int getStatus( int clientState )
-    {
+    private static int getStatus(int clientState) {
         return clientState & STATE_BIT_MASK;
     }
 
-    private static int getActiveClients( int clientState )
-    {
+    private static int getActiveClients(int clientState) {
         return clientState & ~STATE_BIT_MASK;
     }
 
-    private static int stateWithNewStatus( int clientState, int newStatus )
-    {
-        return newStatus | getActiveClients( clientState );
+    private static int stateWithNewStatus(int clientState, int newStatus) {
+        return newStatus | getActiveClients(clientState);
     }
 
-    private static int incrementActiveClients( int clientState )
-    {
-        return getStatus( clientState ) | Math.incrementExact( getActiveClients( clientState ) );
+    private static int incrementActiveClients(int clientState) {
+        return getStatus(clientState) | Math.incrementExact(getActiveClients(clientState));
     }
 
-    private static int decrementActiveClients( int clientState )
-    {
-        return getStatus( clientState ) | Math.decrementExact( getActiveClients( clientState ) );
+    private static int decrementActiveClients(int clientState) {
+        return getStatus(clientState) | Math.decrementExact(getActiveClients(clientState));
     }
 }

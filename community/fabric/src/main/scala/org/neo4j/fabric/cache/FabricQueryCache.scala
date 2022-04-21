@@ -41,10 +41,13 @@ class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
   private var hits: Long = 0
   private var misses: Long = 0
 
-  def computeIfAbsent(query: Query, params: Params, defaultContextName: DefaultContextName,
-                      compute: () => FabricPlan,
-                      shouldCache: FabricPlan => Boolean
-                     ): FabricPlan = {
+  def computeIfAbsent(
+    query: Query,
+    params: Params,
+    defaultContextName: DefaultContextName,
+    compute: () => FabricPlan,
+    shouldCache: FabricPlan => Boolean
+  ): FabricPlan = {
     val paramTypes = QueryCache.extractParameterTypeMap(params)
     val key = (query, paramTypes, defaultContextName)
     cache.get(key) match {

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.internal.schema.IndexType;
-
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -29,21 +27,25 @@ import static org.neo4j.values.storable.ValueType.CARTESIAN_POINT_3D;
 import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT;
 import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT_3D;
 
-class PointIndexPopulationStressTest extends IndexPopulationStressTest
-{
+import org.neo4j.internal.schema.IndexType;
 
-    PointIndexPopulationStressTest()
-    {
-        super( true, randomValues -> randomValues.nextValueOfTypes( GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_3D, CARTESIAN_POINT, CARTESIAN_POINT_3D ), test ->
-        {
-            DatabaseIndexContext context = DatabaseIndexContext.builder( test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME ).build();
-            return new PointIndexProvider( context, test.directory(), immediate(), defaults() );
-        } );
+class PointIndexPopulationStressTest extends IndexPopulationStressTest {
+
+    PointIndexPopulationStressTest() {
+        super(
+                true,
+                randomValues -> randomValues.nextValueOfTypes(
+                        GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_3D, CARTESIAN_POINT, CARTESIAN_POINT_3D),
+                test -> {
+                    DatabaseIndexContext context = DatabaseIndexContext.builder(
+                                    test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME)
+                            .build();
+                    return new PointIndexProvider(context, test.directory(), immediate(), defaults());
+                });
     }
 
     @Override
-    IndexType indexType()
-    {
+    IndexType indexType() {
         return IndexType.POINT;
     }
 }

@@ -23,10 +23,14 @@ import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.graphdb.Transaction
 
-case class EmbeddedTransaction(private val embeddedTransaction: Transaction) extends CypherExecutorTransaction with EmbeddedExceptionConverter {
+case class EmbeddedTransaction(private val embeddedTransaction: Transaction) extends CypherExecutorTransaction
+    with EmbeddedExceptionConverter {
 
   override def execute(statement: String, parameters: Map[String, Any]): StatementResult = convertExceptions {
-    EmbeddedStatementResult(embeddedTransaction.execute(statement, EmbeddedParameterConverter.convertParameters(parameters)))
+    EmbeddedStatementResult(embeddedTransaction.execute(
+      statement,
+      EmbeddedParameterConverter.convertParameters(parameters)
+    ))
   }
 
   override def commit(): Unit = convertExceptions {

@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -44,8 +43,7 @@ import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
  * <p>
  * Since index format can be completely incompatible between version should be executed before org.neo4j.kernel.impl.storemigration.StoreMigrator
  */
-public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
-{
+public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final IndexDirectoryStructure indexDirectoryStructure;
@@ -53,10 +51,14 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     private final CursorContextFactory contextFactory;
     private boolean deleteRelationshipIndexes;
 
-    public SchemaIndexMigrator( String name, FileSystemAbstraction fileSystem, PageCache pageCache, IndexDirectoryStructure indexDirectoryStructure,
-                                StorageEngineFactory storageEngineFactory, CursorContextFactory contextFactory )
-    {
-        super( name );
+    public SchemaIndexMigrator(
+            String name,
+            FileSystemAbstraction fileSystem,
+            PageCache pageCache,
+            IndexDirectoryStructure indexDirectoryStructure,
+            StorageEngineFactory storageEngineFactory,
+            CursorContextFactory contextFactory) {
+        super(name);
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.indexDirectoryStructure = indexDirectoryStructure;
@@ -65,40 +67,42 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
-            StoreVersion fromVersion, StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata )
-    {
-        deleteRelationshipIndexes = !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.FORMAT );
+    public void migrate(
+            DatabaseLayout directoryLayout,
+            DatabaseLayout migrationLayout,
+            ProgressReporter progressReporter,
+            StoreVersion fromVersion,
+            StoreVersion toVersion,
+            IndexImporterFactory indexImporterFactory,
+            LogTailMetadata tailMetadata) {
+        deleteRelationshipIndexes = !fromVersion.hasCompatibleCapabilities(toVersion, CapabilityType.FORMAT);
     }
 
     @Override
-    public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
-            String versionToMigrateTo ) throws IOException
-    {
+    public void moveMigratedFiles(
+            DatabaseLayout migrationLayout,
+            DatabaseLayout directoryLayout,
+            String versionToUpgradeFrom,
+            String versionToMigrateTo)
+            throws IOException {
         Path schemaIndexDirectory = indexDirectoryStructure.rootDirectory();
-        if ( schemaIndexDirectory != null )
-        {
-            if ( deleteRelationshipIndexes )
-            {
-                deleteRelationshipIndexes( directoryLayout );
+        if (schemaIndexDirectory != null) {
+            if (deleteRelationshipIndexes) {
+                deleteRelationshipIndexes(directoryLayout);
             }
         }
     }
 
     @Override
-    public void cleanup( DatabaseLayout migrationLayout )
-    {
+    public void cleanup(DatabaseLayout migrationLayout) {
         // nop
     }
 
-    private void deleteRelationshipIndexes( DatabaseLayout databaseLayout ) throws IOException
-    {
-        for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout,
-                false, r -> r, contextFactory ) )
-        {
-            if ( schemaRule.schema().entityType() == EntityType.RELATIONSHIP )
-            {
-                fileSystem.deleteRecursively( indexDirectoryStructure.directoryForIndex( schemaRule.getId() ) );
+    private void deleteRelationshipIndexes(DatabaseLayout databaseLayout) throws IOException {
+        for (SchemaRule schemaRule : storageEngineFactory.loadSchemaRules(
+                fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r, contextFactory)) {
+            if (schemaRule.schema().entityType() == EntityType.RELATIONSHIP) {
+                fileSystem.deleteRecursively(indexDirectoryStructure.directoryForIndex(schemaRule.getId()));
             }
         }
     }

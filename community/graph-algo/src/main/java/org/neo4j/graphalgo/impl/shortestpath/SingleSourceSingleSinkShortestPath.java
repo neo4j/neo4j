@@ -20,7 +20,6 @@
 package org.neo4j.graphalgo.impl.shortestpath;
 
 import java.util.List;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
@@ -34,8 +33,7 @@ import org.neo4j.graphdb.RelationshipType;
  * @param <CostType>
  *            The datatype the edge weights are represented by.
  */
-public interface SingleSourceSingleSinkShortestPath<CostType>
-{
+public interface SingleSourceSingleSinkShortestPath<CostType> {
     /**
      * This resets the calculation if we for some reason would like to redo it.
      */
@@ -46,14 +44,14 @@ public interface SingleSourceSingleSinkShortestPath<CostType>
      * @param node
      *            The start node.
      */
-    void setStartNode( Node node );
+    void setStartNode(Node node);
 
     /**
      * This sets the end node. The found paths will end in this node.
      * @param node
      *            The end node.
      */
-    void setEndNode( Node node );
+    void setEndNode(Node node);
 
     /**
      * A call to this will run the algorithm to find a single shortest path, if

@@ -22,27 +22,22 @@ package org.neo4j.io.pagecache.randomharness;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
-public class StandardRecordFormat extends RecordFormat
-{
+public class StandardRecordFormat extends RecordFormat {
     @Override
-    public int getRecordSize()
-    {
+    public int getRecordSize() {
         return 32;
     }
 
     @Override
-    public Record createRecord( Path path, int recordId, int page, int offset )
-    {
-        return new StandardRecord( path, recordId, page, offset );
+    public Record createRecord(Path path, int recordId, int page, int offset) {
+        return new StandardRecord(path, recordId, page, offset);
     }
 
     @Override
-    public Record readRecord( PageCursor cursor ) throws IOException
-    {
+    public Record readRecord(PageCursor cursor) throws IOException {
         int offset = cursor.getOffset();
         byte t;
         byte f;
@@ -51,9 +46,8 @@ public class StandardRecordFormat extends RecordFormat
         int page;
         int recordOffset;
         long f2;
-        do
-        {
-            cursor.setOffset( offset );
+        do {
+            cursor.setOffset(offset);
             t = cursor.getByte();
             f = cursor.getByte();
             f1 = cursor.getShort();
@@ -62,39 +56,35 @@ public class StandardRecordFormat extends RecordFormat
             page = cursor.getInt();
             recordOffset = cursor.getInt();
             cursor.getLong(); // empty space
-        }
-        while ( cursor.shouldRetry() );
-        return new StandardRecord( t, f, f1, recordId, f2, page, recordOffset );
+        } while (cursor.shouldRetry());
+        return new StandardRecord(t, f, f1, recordId, f2, page, recordOffset);
     }
 
     @Override
-    public Record zeroRecord()
-    {
+    public Record zeroRecord() {
         byte z = MuninnPageCache.ZERO_BYTE;
         short sz = (short) ((z << 8) + z);
         int iz = (sz << 16) + sz;
         long lz = (((long) iz) << 32) + iz;
-        return new StandardRecord( z, z, sz, iz, lz, 0, 0 );
+        return new StandardRecord(z, z, sz, iz, lz, 0, 0);
     }
 
     @Override
-    public void write( Record record, PageCursor cursor )
-    {
+    public void write(Record record, PageCursor cursor) {
         StandardRecord r = (StandardRecord) record;
-        byte[] pathBytes = r.path.toString().getBytes( StandardCharsets.UTF_8 );
+        byte[] pathBytes = r.path.toString().getBytes(StandardCharsets.UTF_8);
         byte fileByte = pathBytes[pathBytes.length - 1];
-        cursor.putByte( r.type );
-        cursor.putByte( fileByte );
-        cursor.putShort( r.fill1 );
-        cursor.putInt( r.recordId );
-        cursor.putLong( r.fill2 );
-        cursor.putInt( r.page );
-        cursor.putInt( r.offset );
-        cursor.putLong( 0 );
+        cursor.putByte(r.type);
+        cursor.putByte(fileByte);
+        cursor.putShort(r.fill1);
+        cursor.putInt(r.recordId);
+        cursor.putLong(r.fill2);
+        cursor.putInt(r.page);
+        cursor.putInt(r.offset);
+        cursor.putLong(0);
     }
 
-    static final class StandardRecord implements Record
-    {
+    static final class StandardRecord implements Record {
         final byte type;
         final Path path;
         final int recordId;
@@ -103,8 +93,7 @@ public class StandardRecordFormat extends RecordFormat
         private final int page;
         private final int offset;
 
-        StandardRecord( Path path, int recordId, int page, int offset )
-        {
+        StandardRecord(Path path, int recordId, int page, int offset) {
             this.type = 42;
             this.path = path;
             this.recordId = recordId;
@@ -112,9 +101,9 @@ public class StandardRecordFormat extends RecordFormat
             this.offset = offset;
             int fileHash = path.hashCode();
 
-            int a = xorshift( fileHash ^ xorshift( recordId ) );
-            int b = xorshift( a );
-            int c = xorshift( b );
+            int a = xorshift(fileHash ^ xorshift(recordId));
+            int b = xorshift(a);
+            int c = xorshift(b);
             long d = b;
             d = d << 32;
             d += c;
@@ -122,10 +111,9 @@ public class StandardRecordFormat extends RecordFormat
             fill2 = d;
         }
 
-        StandardRecord( byte type, byte fileName, short fill1, int recordId, long fill2, int page, int offset )
-        {
+        StandardRecord(byte type, byte fileName, short fill1, int recordId, long fill2, int page, int offset) {
             this.type = type;
-            this.path = fileName == 0 ? null : Path.of( new String( new byte[]{fileName} ) );
+            this.path = fileName == 0 ? null : Path.of(new String(new byte[] {fileName}));
             this.fill1 = fill1;
             this.recordId = recordId;
             this.page = page;
@@ -134,43 +122,38 @@ public class StandardRecordFormat extends RecordFormat
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
 
             StandardRecord record = (StandardRecord) o;
 
-            return type == record.type && recordId == record.recordId && fill1 == record.fill1 &&
-                    fill2 == record.fill2 && filesEqual( record );
-
+            return type == record.type
+                    && recordId == record.recordId
+                    && fill1 == record.fill1
+                    && fill2 == record.fill2
+                    && filesEqual(record);
         }
 
-        private boolean filesEqual( StandardRecord record )
-        {
-            if ( path == record.path )
-            {
+        private boolean filesEqual(StandardRecord record) {
+            if (path == record.path) {
                 return true;
             }
-            if ( path == null || record.path == null )
-            {
+            if (path == null || record.path == null) {
                 return false;
             }
             // We only look at the last letter of the path, because that's all that we can store in the record.
-            byte[] thisPath = path.toString().getBytes( StandardCharsets.UTF_8 );
-            byte[] thatPath = record.path.toString().getBytes( StandardCharsets.UTF_8 );
+            byte[] thisPath = path.toString().getBytes(StandardCharsets.UTF_8);
+            byte[] thatPath = record.path.toString().getBytes(StandardCharsets.UTF_8);
             return thisPath[thisPath.length - 1] == thatPath[thatPath.length - 1];
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             int result = type;
             result = 31 * result + (path != null ? path.hashCode() : 0);
             result = 31 * result + recordId;
@@ -179,24 +162,21 @@ public class StandardRecordFormat extends RecordFormat
             return result;
         }
 
-        private static int xorshift( int x )
-        {
+        private static int xorshift(int x) {
             x ^= x << 6;
             x ^= x >>> 21;
             return x ^ (x << 7);
         }
 
         @Override
-        public String toString()
-        {
-            return format( type, path, recordId, fill1, fill2 );
+        public String toString() {
+            return format(type, path, recordId, fill1, fill2);
         }
 
-        public String format( byte type, Path path, int recordId, short fill1, long fill2 )
-        {
+        public String format(byte type, Path path, int recordId, short fill1, long fill2) {
             return String.format(
                     "Record%s on page: %s offset: %s [file=%s, recordId=%s; %04x %016x]",
-                    type, page, offset, path, recordId, fill1, fill2 );
+                    type, page, offset, path, recordId, fill1, fill2);
         }
     }
 }

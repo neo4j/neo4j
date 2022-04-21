@@ -32,14 +32,15 @@ import org.neo4j.graphdb.schema.IndexType
 import scala.util.Random
 
 abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
-                                                                   edition: Edition[CONTEXT],
-                                                                   runtime: CypherRuntime[CONTEXT],
-                                                                   sizeHint: Int,
-                                                                   protected val tokenLookupDbHits: Int
-                                                                 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int,
+  protected val tokenLookupDbHits: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
   test("should not explode on cached properties") {
     // given
-    val nodes = given { nodePropertyGraph(sizeHint, { case i => Map("p" -> i)}) }
+    val nodes = given { nodePropertyGraph(sizeHint, { case i => Map("p" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -78,7 +79,6 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
   }
-
 
   test("node index range seek should cache properties") {
     given {
@@ -203,31 +203,31 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
   }
 
-    test("directed relationship index range seek should cache properties") {
-      given {
-        relationshipIndex("R", "prop")
-        val (_, rels) = circleGraph(sizeHint, "A")
-        rels.zipWithIndex.foreach {
-          case (r, i) => r.setProperty("prop", i % 3)
-        }
+  test("directed relationship index range seek should cache properties") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint, "A")
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i % 3)
       }
-
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("r")
-        .union()
-        .|.filter("cacheR[r.prop] IN [1, 2]")
-        .|.relationshipIndexOperator("(a)-[r:R(prop>=2)]->(b)", getValue = _ => GetValue)
-        .relationshipTypeScan("(a)-[r:R]->(b)")
-        .build()
-
-      val runtimeResult = profile(logicalQuery, runtime)
-      consume(runtimeResult)
-
-      // then
-      val queryProfile = runtimeResult.runtimeResult.queryProfile()
-      queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
     }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .union()
+      .|.filter("cacheR[r.prop] IN [1, 2]")
+      .|.relationshipIndexOperator("(a)-[r:R(prop>=2)]->(b)", getValue = _ => GetValue)
+      .relationshipTypeScan("(a)-[r:R]->(b)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
+  }
 
   test("undirected relationship index range seek should cache properties") {
     given {
@@ -312,8 +312,11 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val b = given {
       nodeIndex("B", "id")
       nodePropertyGraph(
-        sizeHint, { case i => Map("id" -> i)}, "A")
-      nodePropertyGraph(1, {case _ => Map("id" -> 1)}, "B").head
+        sizeHint,
+        { case i => Map("id" -> i) },
+        "A"
+      )
+      nodePropertyGraph(1, { case _ => Map("id" -> 1) }, "B").head
     }
 
     // when
@@ -343,7 +346,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("n"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(nodes.map(n => Array[Any](n)):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(nodes.map(n => Array[Any](n)): _*))
 
     // then
     val expected = nodes.map(_ => Array(null, null))
@@ -407,13 +410,13 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = profile(logicalQuery, runtime)
     queryProfile should beColumns("x").withSingleRow(42L)
     queryProfile.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0
-    queryProfile.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be >0L
+    queryProfile.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be > 0L
   }
 
   test("should handle missing property value") {
     // given
     val size = 10
-    given { nodePropertyGraph(size, { case i => if (i % 2 == 0) Map() else Map("p" -> i)}) }
+    given { nodePropertyGraph(size, { case i => if (i % 2 == 0) Map() else Map("p" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -431,7 +434,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle token being created") {
-    val node = given { nodePropertyGraph(1, {case _ => Map("x1" -> "1") }) }.head
+    val node = given { nodePropertyGraph(1, { case _ => Map("x1" -> "1") }) }.head
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -470,7 +473,8 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val numProps = 100
     val numStoreProperties = 51
     val numUnresolvedPropertyTokens = numProps - numStoreProperties
-    val node = given { nodePropertyGraph(1, {case _ => Map((0 until numStoreProperties).map(i => "p"+i -> i):_*) }) }.head
+    val node =
+      given { nodePropertyGraph(1, { case _ => Map((0 until numStoreProperties).map(i => "p" + i -> i): _*) }) }.head
     val random = new Random()
     def inAnyOrder[T](f: Int => T) =
       random.shuffle((0 until numProps).map(f))
@@ -479,9 +483,9 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val resultColumnNames = resultColumns.map(i => s"x$i")
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults(resultColumnNames:_*)
-      .projection(inAnyOrder(i => s"cache[n.p$i] AS x$i"):_*)
-      .cacheProperties(inAnyOrder(i => s"cache[n.p$i]"):_*)
+      .produceResults(resultColumnNames: _*)
+      .projection(inAnyOrder(i => s"cache[n.p$i] AS x$i"): _*)
+      .cacheProperties(inAnyOrder(i => s"cache[n.p$i]"): _*)
       .allNodeScan("n")
       .build()
 
@@ -490,17 +494,21 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val resultNoTokenUpdates = profile(executionPlan, NoInput, readOnly = true)
 
     // then
-    resultNoTokenUpdates should beColumns(resultColumnNames: _*).withSingleRow(resultColumns.map(i => if (i < numStoreProperties) i else null): _*)
+    resultNoTokenUpdates should beColumns(resultColumnNames: _*).withSingleRow(resultColumns.map(i =>
+      if (i < numStoreProperties) i else null
+    ): _*)
 
     // DB hits in projection
-    resultNoTokenUpdates.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe tokenLookupDbHits * numUnresolvedPropertyTokens
+    resultNoTokenUpdates.runtimeResult.queryProfile().operatorProfile(
+      1
+    ).dbHits() shouldBe tokenLookupDbHits * numUnresolvedPropertyTokens
 
     // DB hits in cache properties
     val cachePropsDBHits1 = resultNoTokenUpdates.runtimeResult.queryProfile().operatorProfile(2).dbHits()
     if (tokenLookupDbHits == 1) {
       // For existing properties: one db to get property value.
       // For properties which doesn't have a resolved token: 1 db hit to resolve token
-      cachePropsDBHits1 shouldBe  numStoreProperties + numUnresolvedPropertyTokens
+      cachePropsDBHits1 shouldBe numStoreProperties + numUnresolvedPropertyTokens
     } else {
       cachePropsDBHits1 should be >= 0L
     }
@@ -509,15 +517,19 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val numTxProperties = 25
     val numExistingProperties = numStoreProperties + numTxProperties
     given {
-      (numStoreProperties until numExistingProperties).map(i => node.setProperty("p"+i, i))
+      (numStoreProperties until numExistingProperties).map(i => node.setProperty("p" + i, i))
     }
     val resultTokenWithUpdates = profile(executionPlan, NoInput, readOnly = true)
 
     // then
-    resultTokenWithUpdates should beColumns(resultColumnNames:_*).withSingleRow(resultColumns.map(i => if (i < numExistingProperties) i else null):_*)
+    resultTokenWithUpdates should beColumns(resultColumnNames: _*).withSingleRow(resultColumns.map(i =>
+      if (i < numExistingProperties) i else null
+    ): _*)
 
     // DB hits in projection
-    resultTokenWithUpdates.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe tokenLookupDbHits * numUnresolvedPropertyTokens
+    resultTokenWithUpdates.runtimeResult.queryProfile().operatorProfile(
+      1
+    ).dbHits() shouldBe tokenLookupDbHits * numUnresolvedPropertyTokens
 
     // DB hits in cache properties
     val cachePropsDBHits2 = resultTokenWithUpdates.runtimeResult.queryProfile().operatorProfile(2).dbHits()
@@ -532,7 +544,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should cached node property existence") {
     // given
-    val nodes = given { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i)}) }
+    val nodes = given { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -552,7 +564,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache node property existence on rhs of an apply") {
     // given
-    val nodes = given { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i)}) }
+    val nodes = given { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -576,9 +588,9 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     // given
     val rels = given {
       val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach{
+      rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("prop", i)
-        case _ => //do nothing
+        case _                    => // do nothing
       }
       rels
     }
@@ -603,9 +615,9 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     // given
     val rels = given {
       val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach{
+      rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("prop", i)
-        case _ => //do nothing
+        case _                    => // do nothing
       }
       rels
     }
@@ -633,7 +645,7 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
 
   test("should not have any db hits if properties are in transaction state") {
     // given
-    val node = given {  nodePropertyGraph(1, { case i =>  Map("p1" -> 1, "p2" -> 2)}) }.head
+    val node = given { nodePropertyGraph(1, { case i => Map("p1" -> 1, "p2" -> 2) }) }.head
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -653,8 +665,14 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
 
   test("should not whole chain when one sought property has been removed in transaction state") {
     // given
-    val node = given { nodePropertyGraph(1, { case i =>
-      Map("removed" -> 1, "p2" -> 2, "middle" -> 3, "p4" -> 4, "p5" -> 5, "p6" -> 6) }) }.head
+    val node = given {
+      nodePropertyGraph(
+        1,
+        { case i =>
+          Map("removed" -> 1, "p2" -> 2, "middle" -> 3, "p4" -> 4, "p5" -> 5, "p6" -> 6)
+        }
+      )
+    }.head
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("removed", "middle")
@@ -669,7 +687,7 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     result should beColumns("removed", "middle").withSingleRow(null, 3)
-     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0
     result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be < 5L // less that num remaining props
   }
 
@@ -677,7 +695,8 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
 
     val numProps = 100
     val numStoreProperties = 51
-    val node = given { nodePropertyGraph(1, {case _ => Map((0 until numStoreProperties).map(i => "p"+i -> i):_*) }) }.head
+    val node =
+      given { nodePropertyGraph(1, { case _ => Map((0 until numStoreProperties).map(i => "p" + i -> i): _*) }) }.head
     val random = new Random()
     def inAnyOrder[T](f: Int => T) =
       random.shuffle((0 until numProps).map(f))
@@ -686,9 +705,9 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
     val resultColumnNames = resultColumns.map(i => s"x$i")
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults(resultColumnNames:_*)
-      .projection(inAnyOrder(i => s"cache[n.p$i] AS x$i"):_*)
-      .cacheProperties(inAnyOrder(i => s"cache[n.p$i]"):_*)
+      .produceResults(resultColumnNames: _*)
+      .projection(inAnyOrder(i => s"cache[n.p$i] AS x$i"): _*)
+      .cacheProperties(inAnyOrder(i => s"cache[n.p$i]"): _*)
       .allNodeScan("n")
       .build()
 
@@ -696,17 +715,21 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
     val result1 = profile(logicalQuery, runtime)
 
     // then
-    result1 should beColumns(resultColumnNames:_*).withSingleRow(resultColumns.map(i => if (i < numStoreProperties) i else null):_*)
-    result1.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe(tokenLookupDbHits * (numProps - numStoreProperties))
+    result1 should beColumns(resultColumnNames: _*).withSingleRow(resultColumns.map(i =>
+      if (i < numStoreProperties) i else null
+    ): _*)
+    result1.runtimeResult.queryProfile().operatorProfile(
+      1
+    ).dbHits() shouldBe (tokenLookupDbHits * (numProps - numStoreProperties))
     result1.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be > 0L
 
     // when
-    (25 until 75).foreach(i => node.setProperty("p"+i, numProps+i))
+    (25 until 75).foreach(i => node.setProperty("p" + i, numProps + i))
 
     val result2 = profile(logicalQuery, runtime)
 
     // then
-    result2 should beColumns(resultColumnNames:_*).withSingleRow(resultColumns
+    result2 should beColumns(resultColumnNames: _*).withSingleRow(resultColumns
       .map(i =>
         if (i < 25) {
           i
@@ -715,7 +738,7 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
         } else {
           null
         }
-      ):_*)
+      ): _*)
 
     result2.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe (25 * tokenLookupDbHits)
     result2.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be > 0L

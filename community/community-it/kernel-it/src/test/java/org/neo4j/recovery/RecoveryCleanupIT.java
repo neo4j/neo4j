@@ -19,9 +19,10 @@
  */
 package org.neo4j.recovery;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +35,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -58,226 +61,222 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
-
 @TestDirectoryExtension
-class RecoveryCleanupIT
-{
+class RecoveryCleanupIT {
     @Inject
     private TestDirectory testDirectory;
 
     private GraphDatabaseService db;
     private TestDatabaseManagementServiceBuilder factory;
-    private final ExecutorService executor = Executors.newFixedThreadPool( 2 );
-    private final Label label = Label.label( "label" );
+    private final ExecutorService executor = Executors.newFixedThreadPool(2);
+    private final Label label = Label.label("label");
     private final String propKey = "propKey";
-    private final Map<Setting<?>,Object> testSpecificConfig = new HashMap<>();
+    private final Map<Setting<?>, Object> testSpecificConfig = new HashMap<>();
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setup()
-    {
-        factory = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() );
+    void setup() {
+        factory = new TestDatabaseManagementServiceBuilder(testDirectory.homePath());
     }
 
     @AfterEach
-    void tearDown() throws InterruptedException
-    {
-        if ( managementService != null )
-        {
+    void tearDown() throws InterruptedException {
+        if (managementService != null) {
             managementService.shutdown();
         }
         executor.shutdown();
-        executor.awaitTermination( 10, TimeUnit.SECONDS );
+        executor.awaitTermination(10, TimeUnit.SECONDS);
     }
 
     @Test
-    void recoveryCleanupShouldBlockRecoveryWritingToCleanedIndexes() throws IOException, ExecutionException, InterruptedException
-    {
+    void recoveryCleanupShouldBlockRecoveryWritingToCleanedIndexes()
+            throws IOException, ExecutionException, InterruptedException {
         // GIVEN
         dirtyDatabase();
 
         // WHEN
         Barrier.Control recoveryCompleteBarrier = new Barrier.Control();
-        GBPTree.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
-        setMonitor( recoveryBarrierMonitor );
-        Future<GraphDatabaseService> recovery = executor.submit( () -> db = startDatabase() );
+        GBPTree.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor(recoveryCompleteBarrier);
+        setMonitor(recoveryBarrierMonitor);
+        Future<GraphDatabaseService> recovery = executor.submit(() -> db = startDatabase());
         recoveryCompleteBarrier.awaitUninterruptibly(); // Ensure we are mid recovery cleanup
 
         // THEN
-        shouldWait( recovery );
+        shouldWait(recovery);
         recoveryCompleteBarrier.release();
         recovery.get();
     }
 
     @Test
-    void scanStoreMustLogCrashPointerCleanupDuringRecovery() throws Exception
-    {
+    void scanStoreMustLogCrashPointerCleanupDuringRecovery() throws Exception {
         // given
         dirtyDatabase();
 
         // when
-        AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        factory.setUserLogProvider( logProvider );
-        factory.setInternalLogProvider( logProvider );
+        AssertableLogProvider logProvider = new AssertableLogProvider(true);
+        factory.setUserLogProvider(logProvider);
+        factory.setInternalLogProvider(logProvider);
         startDatabase();
         managementService.shutdown();
 
         // then
-        assertThat( logProvider )
-                .containsMessageWithAll( "Schema index cleanup job registered", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=" )
-                .containsMessageWithAll( "Schema index cleanup job started", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=" )
-                .containsMessageWithAll( "Schema index cleanup job closed", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=" )
-                .containsMessageWithAll( "Schema index cleanup job finished",
+        assertThat(logProvider)
+                .containsMessageWithAll(
+                        "Schema index cleanup job registered",
+                        "descriptor",
+                        "type='TOKEN LOOKUP'",
+                        "schema=(:<any-labels>)",
+                        "indexFile=")
+                .containsMessageWithAll(
+                        "Schema index cleanup job started",
+                        "descriptor",
+                        "type='TOKEN LOOKUP'",
+                        "schema=(:<any-labels>)",
+                        "indexFile=")
+                .containsMessageWithAll(
+                        "Schema index cleanup job closed",
+                        "descriptor",
+                        "type='TOKEN LOOKUP'",
+                        "schema=(:<any-labels>)",
+                        "indexFile=")
+                .containsMessageWithAll(
+                        "Schema index cleanup job finished",
                         "descriptor",
                         "type='TOKEN LOOKUP'",
                         "schema=(:<any-labels>)",
                         "indexFile=",
                         "Number of pages visited",
                         "Number of cleaned crashed pointers",
-                        "Time spent" );
+                        "Time spent");
     }
 
     @Test
-    void nativeIndexRangeMustLogCrashPointerCleanupDuringRecovery() throws Exception
-    {
+    void nativeIndexRangeMustLogCrashPointerCleanupDuringRecovery() throws Exception {
         // given
         dirtyDatabase();
 
         // when
-        AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        factory.setInternalLogProvider( logProvider );
+        AssertableLogProvider logProvider = new AssertableLogProvider(true);
+        factory.setInternalLogProvider(logProvider);
         startDatabase();
         managementService.shutdown();
 
         // then
         String providerString = RangeIndexProvider.DESCRIPTOR.name();
-        assertThat( logProvider )
-                .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job registered", providerString ) )
-                .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job started", providerString ) )
-                .containsMessageWithAll( indexRecoveryFinishedLogMatcher( providerString ) )
-                .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job closed", providerString ) );
+        assertThat(logProvider)
+                .containsMessageWithAll(indexRecoveryLogMatcher("Schema index cleanup job registered", providerString))
+                .containsMessageWithAll(indexRecoveryLogMatcher("Schema index cleanup job started", providerString))
+                .containsMessageWithAll(indexRecoveryFinishedLogMatcher(providerString))
+                .containsMessageWithAll(indexRecoveryLogMatcher("Schema index cleanup job closed", providerString));
     }
 
-    private static String[] indexRecoveryLogMatcher( String logMessage, String providerString )
-    {
-        return new String[] { logMessage, "descriptor", "type='GENERAL RANGE'", "indexFile=", File.separator + providerString };
+    private static String[] indexRecoveryLogMatcher(String logMessage, String providerString) {
+        return new String[] {
+            logMessage, "descriptor", "type='GENERAL RANGE'", "indexFile=", File.separator + providerString
+        };
     }
 
-    private static String[] indexRecoveryFinishedLogMatcher( String providerString )
-    {
-        return new String[] { "Schema index cleanup job finished",
-                "descriptor",
-                "type='GENERAL RANGE'",
-                "indexFile=",
-                File.separator + providerString,
-                "Number of pages visited",
-                "Number of cleaned crashed pointers",
-                "Time spent" };
+    private static String[] indexRecoveryFinishedLogMatcher(String providerString) {
+        return new String[] {
+            "Schema index cleanup job finished",
+            "descriptor",
+            "type='GENERAL RANGE'",
+            "indexFile=",
+            File.separator + providerString,
+            "Number of pages visited",
+            "Number of cleaned crashed pointers",
+            "Time spent"
+        };
     }
 
-    private void dirtyDatabase() throws IOException
-    {
+    private void dirtyDatabase() throws IOException {
         db = startDatabase();
 
-        Health databaseHealth = databaseHealth( db );
-        index( db );
-        someData( db );
-        checkpoint( db );
-        someData( db );
-        databaseHealth.panic( new Throwable( "Trigger recovery on next startup" ) );
+        Health databaseHealth = databaseHealth(db);
+        index(db);
+        someData(db);
+        checkpoint(db);
+        someData(db);
+        databaseHealth.panic(new Throwable("Trigger recovery on next startup"));
         managementService.shutdown();
         db = null;
     }
 
-    private <T> void setTestConfig( Setting<T> setting, T value )
-    {
-        testSpecificConfig.put( setting, value );
+    private <T> void setTestConfig(Setting<T> setting, T value) {
+        testSpecificConfig.put(setting, value);
     }
 
-    private void setMonitor( Object monitor )
-    {
+    private void setMonitor(Object monitor) {
         Monitors monitors = new Monitors();
-        monitors.addMonitorListener( monitor );
-        factory.setMonitors( monitors );
+        monitors.addMonitorListener(monitor);
+        factory.setMonitors(monitors);
     }
 
-    private void index( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( label ).on( propKey ).create();
+    private void index(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().indexFor(label).on(propKey).create();
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
     }
 
-    private static void checkpoint( GraphDatabaseService db ) throws IOException
-    {
-        CheckPointer checkPointer = checkPointer( db );
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+    private static void checkpoint(GraphDatabaseService db) throws IOException {
+        CheckPointer checkPointer = checkPointer(db);
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("test"));
     }
 
-    private void someData( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode( label ).setProperty( propKey, 1 );
-            tx.createNode( label ).setProperty( propKey, "string" );
-            tx.createNode( label ).setProperty( propKey, Values.pointValue( CARTESIAN, 0.5, 0.5 ) );
-            tx.createNode( label ).setProperty( propKey, LocalTime.of( 0, 0 ) );
+    private void someData(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
+            tx.createNode(label).setProperty(propKey, 1);
+            tx.createNode(label).setProperty(propKey, "string");
+            tx.createNode(label).setProperty(propKey, Values.pointValue(CARTESIAN, 0.5, 0.5));
+            tx.createNode(label).setProperty(propKey, LocalTime.of(0, 0));
             tx.commit();
         }
     }
 
-    private static void shouldWait( Future<?> future )
-    {
-        assertThrows(TimeoutException.class, () -> future.get( 200L, TimeUnit.MILLISECONDS ));
+    private static void shouldWait(Future<?> future) {
+        assertThrows(TimeoutException.class, () -> future.get(200L, TimeUnit.MILLISECONDS));
     }
 
-    private GraphDatabaseService startDatabase()
-    {
-        factory.setConfig( testSpecificConfig );
+    private GraphDatabaseService startDatabase() {
+        factory.setConfig(testSpecificConfig);
         managementService = factory.build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private static Health databaseHealth( GraphDatabaseService db )
-    {
-        return dependencyResolver( db ).resolveDependency( DatabaseHealth.class );
+    private static Health databaseHealth(GraphDatabaseService db) {
+        return dependencyResolver(db).resolveDependency(DatabaseHealth.class);
     }
 
-    private static CheckPointer checkPointer( GraphDatabaseService db )
-    {
-        DependencyResolver dependencyResolver = dependencyResolver( db );
-        return dependencyResolver.resolveDependency( Database.class ).getDependencyResolver()
-                .resolveDependency( CheckPointer.class );
+    private static CheckPointer checkPointer(GraphDatabaseService db) {
+        DependencyResolver dependencyResolver = dependencyResolver(db);
+        return dependencyResolver
+                .resolveDependency(Database.class)
+                .getDependencyResolver()
+                .resolveDependency(CheckPointer.class);
     }
 
-    private static DependencyResolver dependencyResolver( GraphDatabaseService db )
-    {
+    private static DependencyResolver dependencyResolver(GraphDatabaseService db) {
         return ((GraphDatabaseAPI) db).getDependencyResolver();
     }
 
-    private static class RecoveryBarrierMonitor extends GBPTree.Monitor.Adaptor
-    {
+    private static class RecoveryBarrierMonitor extends GBPTree.Monitor.Adaptor {
         private final Barrier.Control barrier;
 
-        RecoveryBarrierMonitor( Barrier.Control barrier )
-        {
+        RecoveryBarrierMonitor(Barrier.Control barrier) {
             this.barrier = barrier;
         }
 
         @Override
-        public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
-        {
+        public void cleanupFinished(
+                long numberOfPagesVisited,
+                long numberOfTreeNodes,
+                long numberOfCleanedCrashPointers,
+                long durationMillis) {
             barrier.reached();
         }
     }

@@ -27,10 +27,8 @@ package org.neo4j.kernel.api.impl.index.backup;
  * @see org.apache.lucene.index.SnapshotDeletionPolicy
  * @see org.apache.lucene.index.IndexCommit
  */
-class SnapshotReleaseException extends RuntimeException
-{
-    SnapshotReleaseException( String message, Throwable e )
-    {
-        super( message, e );
+class SnapshotReleaseException extends RuntimeException {
+    SnapshotReleaseException(String message, Throwable e) {
+        super(message, e);
     }
 }

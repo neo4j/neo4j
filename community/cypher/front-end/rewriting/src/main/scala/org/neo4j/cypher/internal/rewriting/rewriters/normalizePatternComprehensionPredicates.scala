@@ -38,16 +38,18 @@ object normalizePatternComprehensionPredicates extends Rewriter with StepSequenc
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = this
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = this
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val normalizer = MatchPredicateNormalizerChain(
     NodePatternPredicateNormalizer,
-    RelationshipPatternPredicateNormalizer,
+    RelationshipPatternPredicateNormalizer
   )
 
   private val rewriter = Rewriter.lift {

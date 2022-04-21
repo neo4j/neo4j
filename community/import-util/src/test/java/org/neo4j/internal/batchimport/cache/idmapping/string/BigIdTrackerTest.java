@@ -19,48 +19,42 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@ExtendWith( RandomExtension.class )
-class BigIdTrackerTest
-{
+@ExtendWith(RandomExtension.class)
+class BigIdTrackerTest {
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldKeepIdsAndMarkDuplicates()
-    {
+    void shouldKeepIdsAndMarkDuplicates() {
         // given
         int length = 10_000;
-        try ( BigIdTracker tracker = new BigIdTracker( NumberArrayFactories.HEAP.newByteArray( length, BigIdTracker.DEFAULT_VALUE, INSTANCE ) ) )
-        {
+        try (BigIdTracker tracker = new BigIdTracker(
+                NumberArrayFactories.HEAP.newByteArray(length, BigIdTracker.DEFAULT_VALUE, INSTANCE))) {
             // when
             long[] values = new long[length];
             boolean[] marks = new boolean[length];
-            for ( int i = 0; i < length; i++ )
-            {
-                tracker.set( i, values[i] = random.nextLong( BigIdTracker.MAX_ID ) );
-                if ( random.nextBoolean() )
-                {
-                    tracker.markAsDuplicate( i );
+            for (int i = 0; i < length; i++) {
+                tracker.set(i, values[i] = random.nextLong(BigIdTracker.MAX_ID));
+                if (random.nextBoolean()) {
+                    tracker.markAsDuplicate(i);
                     marks[i] = true;
                 }
             }
 
             // then
-            for ( int i = 0; i < length; i++ )
-            {
-                assertEquals( values[i], tracker.get( i ) );
-                assertEquals( marks[i], tracker.isMarkedAsDuplicate( i ) );
+            for (int i = 0; i < length; i++) {
+                assertEquals(values[i], tracker.get(i));
+                assertEquals(marks[i], tracker.isMarkedAsDuplicate(i));
             }
         }
     }

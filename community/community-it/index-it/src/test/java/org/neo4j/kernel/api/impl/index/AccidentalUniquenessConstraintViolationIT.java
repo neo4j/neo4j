@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -33,62 +35,52 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ImpermanentDbmsExtension
-class AccidentalUniquenessConstraintViolationIT
-{
-    private static final Label Foo = Label.label( "Foo" );
+class AccidentalUniquenessConstraintViolationIT {
+    private static final Label Foo = Label.label("Foo");
     private static final String BAR = "bar";
 
-    private static Stream<Arguments> parameters()
-    {
-        return Stream.of( Arguments.of( 42, 41 ), Arguments.of( "a", "b" ) );
+    private static Stream<Arguments> parameters() {
+        return Stream.of(Arguments.of(42, 41), Arguments.of("a", "b"));
     }
 
     @Inject
     private GraphDatabaseService db;
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
-    void shouldApplyChangesWithIntermediateConstraintViolations( Object value1, Object value2 )
-    {
+    @MethodSource("parameters")
+    void shouldApplyChangesWithIntermediateConstraintViolations(Object value1, Object value2) {
         // given
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( Foo ).assertPropertyIsUnique( BAR ).create();
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().constraintFor(Foo).assertPropertyIsUnique(BAR).create();
             tx.commit();
         }
         Node fourtyTwo;
         Node fourtyOne;
-        try ( Transaction tx = db.beginTx() )
-        {
-            fourtyTwo = tx.createNode( Foo );
-            fourtyTwo.setProperty( BAR, value1 );
-            fourtyOne = tx.createNode( Foo );
-            fourtyOne.setProperty( BAR, value2 );
+        try (Transaction tx = db.beginTx()) {
+            fourtyTwo = tx.createNode(Foo);
+            fourtyTwo.setProperty(BAR, value1);
+            fourtyOne = tx.createNode(Foo);
+            fourtyOne.setProperty(BAR, value2);
             tx.commit();
         }
 
         // when
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.getNodeById( fourtyOne.getId() ).delete();
-            tx.getNodeById( fourtyTwo.getId() ).setProperty( BAR, value2 );
+        try (Transaction tx = db.beginTx()) {
+            tx.getNodeById(fourtyOne.getId()).delete();
+            tx.getNodeById(fourtyTwo.getId()).setProperty(BAR, value2);
             tx.commit();
         }
 
         // then
-        try ( Transaction tx = db.beginTx() )
-        {
-            fourtyTwo = tx.getNodeById( fourtyTwo.getId() );
-            assertEquals( value2, fourtyTwo.getProperty( BAR ) );
-            assertThrows( NotFoundException.class, () -> tx.getNodeById( fourtyOne.getId() ).getProperty( BAR ) );
+        try (Transaction tx = db.beginTx()) {
+            fourtyTwo = tx.getNodeById(fourtyTwo.getId());
+            assertEquals(value2, fourtyTwo.getProperty(BAR));
+            assertThrows(NotFoundException.class, () -> tx.getNodeById(fourtyOne.getId())
+                    .getProperty(BAR));
 
-            assertEquals( fourtyTwo, tx.findNode( Foo, BAR, value2 ) );
-            assertNull( tx.findNode( Foo, BAR, value1 ) );
+            assertEquals(fourtyTwo, tx.findNode(Foo, BAR, value2));
+            assertNull(tx.findNode(Foo, BAR, value1));
             tx.commit();
         }
     }

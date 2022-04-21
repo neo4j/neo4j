@@ -19,13 +19,20 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -42,90 +49,91 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
-import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
 @EphemeralTestDirectoryExtension
-class ConfiguringPageCacheFactoryTest
-{
+class ConfiguringPageCacheFactoryTest {
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDirectory;
 
     private JobScheduler jobScheduler;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         jobScheduler = new ThreadPoolJobScheduler();
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
+    void tearDown() throws Exception {
         jobScheduler.close();
     }
 
     @Test
-    void shouldFitAsManyPagesAsItCan()
-    {
+    void shouldFitAsManyPagesAsItCan() {
         // Given
         long pageCount = 60;
-        long memory = MuninnPageCache.memoryRequiredForPages( pageCount );
-        Config config = Config.defaults( pagecache_memory, memory );
+        long memory = MuninnPageCache.memoryRequiredForPages(pageCount);
+        Config config = Config.defaults(pagecache_memory, memory);
 
         // When
-        ConfiguringPageCacheFactory factory =
-                new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(), jobScheduler, Clocks.nanoClock(), new MemoryPools() );
+        ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
+                fs,
+                config,
+                PageCacheTracer.NULL,
+                NullLog.getInstance(),
+                jobScheduler,
+                Clocks.nanoClock(),
+                new MemoryPools());
 
         // Then
-        try ( PageCache cache = factory.getOrCreatePageCache() )
-        {
-            assertThat( cache.pageSize() ).isEqualTo( PAGE_SIZE );
-            assertThat( cache.maxCachedPages() ).isEqualTo( pageCount );
+        try (PageCache cache = factory.getOrCreatePageCache()) {
+            assertThat(cache.pageSize()).isEqualTo(PAGE_SIZE);
+            assertThat(cache.maxCachedPages()).isEqualTo(pageCount);
         }
     }
 
     @Test
-    void createPageCacheWithoutPreallocationEnabled() throws IOException
-    {
-        Config config = Config.defaults( preallocate_store_files, false );
+    void createPageCacheWithoutPreallocationEnabled() throws IOException {
+        Config config = Config.defaults(preallocate_store_files, false);
 
-        ConfiguringPageCacheFactory factory =
-                new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(), jobScheduler, Clocks.nanoClock(), new MemoryPools() );
+        ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
+                fs,
+                config,
+                PageCacheTracer.NULL,
+                NullLog.getInstance(),
+                jobScheduler,
+                Clocks.nanoClock(),
+                new MemoryPools());
 
-        Path testFile = testDirectory.createFile( "a" );
-        try ( var cache = factory.getOrCreatePageCache();
-              var file = cache.map( testFile, PAGE_SIZE, "foo" );
-              var io = file.io( 1024, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
-        {
+        Path testFile = testDirectory.createFile("a");
+        try (var cache = factory.getOrCreatePageCache();
+                var file = cache.map(testFile, PAGE_SIZE, "foo");
+                var io = file.io(1024, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             int bigPageToExpand = 20021;
-            assertDoesNotThrow( () -> io.next( bigPageToExpand ) );
-            assertEquals( bigPageToExpand, file.getLastPageId() );
+            assertDoesNotThrow(() -> io.next(bigPageToExpand));
+            assertEquals(bigPageToExpand, file.getLastPageId());
         }
     }
 
     @Test
-    void shouldDumpConfigurationWithUnspecifiedPageCacheMemorySetting()
-    {
+    void shouldDumpConfigurationWithUnspecifiedPageCacheMemorySetting() {
         // givben
         Config config = Config.defaults();
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        ConfiguringPageCacheFactory factory =
-                new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, logProvider.getLog( ConfiguringPageCacheFactory.class ), jobScheduler,
-                        Clocks.nanoClock(), new MemoryPools() );
+        ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
+                fs,
+                config,
+                PageCacheTracer.NULL,
+                logProvider.getLog(ConfiguringPageCacheFactory.class),
+                jobScheduler,
+                Clocks.nanoClock(),
+                new MemoryPools());
 
         // when
         factory.dumpConfiguration();
 
         // then
-        LogAssertions.assertThat( logProvider ).containsMessages( "Page cache: <not specified>" );
+        LogAssertions.assertThat(logProvider).containsMessages("Page cache: <not specified>");
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.graphdb;
 
 import java.util.function.Function;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -31,8 +30,7 @@ import org.neo4j.annotations.api.PublicApi;
  */
 @PublicApi
 @FunctionalInterface
-public interface ResultTransformer<T> extends Function<Result, T>
-{
+public interface ResultTransformer<T> extends Function<Result, T> {
     /**
      * Result consumer that does nothing
      */

@@ -19,12 +19,6 @@
  */
 package org.neo4j.io.memory;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-
-import org.neo4j.memory.LocalMemoryTracker;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
@@ -32,83 +26,74 @@ import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 
-class ByteBuffersTest
-{
-    @Test
-    void trackMemoryAllocationsForNativeByteBuffers()
-    {
-        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0, null );
-        var byteBuffer = allocateDirect( 30, memoryTracker );
-        try
-        {
-            assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-            assertEquals( 30, memoryTracker.usedNativeMemory() );
-        }
-        finally
-        {
-            releaseBuffer( byteBuffer, memoryTracker );
-        }
+import java.nio.ByteBuffer;
+import org.junit.jupiter.api.Test;
+import org.neo4j.memory.LocalMemoryTracker;
 
-        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-        assertEquals( 0, memoryTracker.usedNativeMemory() );
-    }
-
+class ByteBuffersTest {
     @Test
-    void trackMemoryAllocationsForHeapByteBuffers()
-    {
-        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0, null );
-        var byteBuffer = allocate( 30, memoryTracker );
-        try
-        {
-            assertEquals( 30, memoryTracker.estimatedHeapMemory() );
-            assertEquals( 0, memoryTracker.usedNativeMemory() );
-        }
-        finally
-        {
-            releaseBuffer( byteBuffer, memoryTracker );
+    void trackMemoryAllocationsForNativeByteBuffers() {
+        var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 100, 0, null);
+        var byteBuffer = allocateDirect(30, memoryTracker);
+        try {
+            assertEquals(0, memoryTracker.estimatedHeapMemory());
+            assertEquals(30, memoryTracker.usedNativeMemory());
+        } finally {
+            releaseBuffer(byteBuffer, memoryTracker);
         }
 
-        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-        assertEquals( 0, memoryTracker.usedNativeMemory() );
+        assertEquals(0, memoryTracker.estimatedHeapMemory());
+        assertEquals(0, memoryTracker.usedNativeMemory());
     }
 
     @Test
-    void byteBufferMustThrowOutOfBoundsAfterRelease()
-    {
-        var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES, tracker );
-        buffer.get( 0 );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) );
+    void trackMemoryAllocationsForHeapByteBuffers() {
+        var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 100, 0, null);
+        var byteBuffer = allocate(30, memoryTracker);
+        try {
+            assertEquals(30, memoryTracker.estimatedHeapMemory());
+            assertEquals(0, memoryTracker.usedNativeMemory());
+        } finally {
+            releaseBuffer(byteBuffer, memoryTracker);
+        }
+
+        assertEquals(0, memoryTracker.estimatedHeapMemory());
+        assertEquals(0, memoryTracker.usedNativeMemory());
     }
 
     @Test
-    void heapByteBufferMustThrowOutOfBoundsAfterRelease()
-    {
+    void byteBufferMustThrowOutOfBoundsAfterRelease() {
         var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES, tracker );
-        buffer.get( 0 );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) );
+        ByteBuffer buffer = ByteBuffers.allocateDirect(Long.BYTES, tracker);
+        buffer.get(0);
+        ByteBuffers.releaseBuffer(buffer, tracker);
+        assertThrows(IndexOutOfBoundsException.class, () -> buffer.get(0));
     }
 
     @Test
-    void doubleFreeOfByteBufferIsOkay()
-    {
+    void heapByteBufferMustThrowOutOfBoundsAfterRelease() {
         var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker ); // This must not throw.
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) ); // And this still throws.
+        ByteBuffer buffer = ByteBuffers.allocateDirect(Long.BYTES, tracker);
+        buffer.get(0);
+        ByteBuffers.releaseBuffer(buffer, tracker);
+        assertThrows(IndexOutOfBoundsException.class, () -> buffer.get(0));
     }
 
     @Test
-    void doubleFreeOfHeapByteBufferIsOkay()
-    {
+    void doubleFreeOfByteBufferIsOkay() {
         var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker ); // This must not throw.
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) ); // And this still throws.
+        ByteBuffer buffer = ByteBuffers.allocate(Long.BYTES, tracker);
+        ByteBuffers.releaseBuffer(buffer, tracker);
+        ByteBuffers.releaseBuffer(buffer, tracker); // This must not throw.
+        assertThrows(IndexOutOfBoundsException.class, () -> buffer.get(0)); // And this still throws.
+    }
+
+    @Test
+    void doubleFreeOfHeapByteBufferIsOkay() {
+        var tracker = new LocalMemoryTracker();
+        ByteBuffer buffer = ByteBuffers.allocate(Long.BYTES, tracker);
+        ByteBuffers.releaseBuffer(buffer, tracker);
+        ByteBuffers.releaseBuffer(buffer, tracker); // This must not throw.
+        assertThrows(IndexOutOfBoundsException.class, () -> buffer.get(0)); // And this still throws.
     }
 }

@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -44,214 +49,223 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-class RecordStoreVersionCheckTest
-{
+class RecordStoreVersionCheckTest {
     @Inject
     protected TestDirectory testDirectory;
+
     @Inject
     protected FileSystemAbstraction fileSystem;
+
     @Inject
     protected PageCache pageCache;
+
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
     @Test
-    void migrationCheckShouldFailIfMetadataStoreDoesNotExist()
-    {
+    void migrationCheckShouldFailIfMetadataStoreDoesNotExist() {
         // given
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.MigrationCheckResult result = storeVersionCheck.getAndCheckMigrationTargetVersion( "version", NULL_CONTEXT );
+        StoreVersionCheck.MigrationCheckResult result =
+                storeVersionCheck.getAndCheckMigrationTargetVersion("version", NULL_CONTEXT);
 
         // then
-        assertEquals( StoreVersionCheck.MigrationOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome() );
-        assertNull( result.versionToMigrateFrom() );
-        assertNotNull( result.cause() );
-        assertThat( result.cause() ).hasMessageContaining( "neostore: Cannot map non-existing file" );
+        assertEquals(StoreVersionCheck.MigrationOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome());
+        assertNull(result.versionToMigrateFrom());
+        assertNotNull(result.cause());
+        assertThat(result.cause()).hasMessageContaining("neostore: Cannot map non-existing file");
     }
 
     @Test
-    void upgradeCheckShouldFailIfMetadataStoreDoesNotExist()
-    {
+    void upgradeCheckShouldFailIfMetadataStoreDoesNotExist() {
         // given
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.UpgradeCheckResult result = storeVersionCheck.getAndCheckUpgradeTargetVersion( NULL_CONTEXT );
+        StoreVersionCheck.UpgradeCheckResult result = storeVersionCheck.getAndCheckUpgradeTargetVersion(NULL_CONTEXT);
 
         // then
-        assertEquals( StoreVersionCheck.UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome() );
-        assertNull( result.versionToUpgradeFrom() );
-        assertNotNull( result.cause() );
-        assertThat( result.cause() ).hasMessageContaining( "neostore: Cannot map non-existing file" );
+        assertEquals(StoreVersionCheck.UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome());
+        assertNull(result.versionToUpgradeFrom());
+        assertNotNull(result.cause());
+        assertThat(result.cause()).hasMessageContaining("neostore: Cannot map non-existing file");
     }
 
     @Test
-    void migrationCheckShouldFailWithCorruptedMetadataStore() throws IOException
-    {
+    void migrationCheckShouldFailWithCorruptedMetadataStore() throws IOException {
         // given
-        metaDataFileContaining( databaseLayout, fileSystem, "nothing interesting" );
+        metaDataFileContaining(databaseLayout, fileSystem, "nothing interesting");
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.MigrationCheckResult result = storeVersionCheck.getAndCheckMigrationTargetVersion( null, NULL_CONTEXT );
+        StoreVersionCheck.MigrationCheckResult result =
+                storeVersionCheck.getAndCheckMigrationTargetVersion(null, NULL_CONTEXT);
 
         // then
-        assertEquals( StoreVersionCheck.MigrationOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome() );
-        assertNull( result.versionToMigrateFrom() );
-        assertNotNull( result.cause() );
-        assertThat( result.cause() ).hasMessageContaining( "Uninitialized version field in" );
+        assertEquals(StoreVersionCheck.MigrationOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome());
+        assertNull(result.versionToMigrateFrom());
+        assertNotNull(result.cause());
+        assertThat(result.cause()).hasMessageContaining("Uninitialized version field in");
     }
 
     @Test
-    void upgradeCheckShouldFailWithCorruptedMetadataStore() throws IOException
-    {
+    void upgradeCheckShouldFailWithCorruptedMetadataStore() throws IOException {
         // given
-        metaDataFileContaining( databaseLayout, fileSystem, "nothing interesting" );
+        metaDataFileContaining(databaseLayout, fileSystem, "nothing interesting");
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.UpgradeCheckResult result = storeVersionCheck.getAndCheckUpgradeTargetVersion( NULL_CONTEXT );
+        StoreVersionCheck.UpgradeCheckResult result = storeVersionCheck.getAndCheckUpgradeTargetVersion(NULL_CONTEXT);
 
         // then
-        assertEquals( StoreVersionCheck.UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome() );
-        assertNull( result.versionToUpgradeFrom() );
-        assertNotNull( result.cause() );
-        assertThat( result.cause() ).hasMessageContaining( "Uninitialized version field in" );
+        assertEquals(StoreVersionCheck.UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome());
+        assertNull(result.versionToUpgradeFrom());
+        assertNotNull(result.cause());
+        assertThat(result.cause()).hasMessageContaining("Uninitialized version field in");
     }
 
     @Test
-    void migrationCheckShouldFailWithUnknownVersion() throws IOException
-    {
+    void migrationCheckShouldFailWithUnknownVersion() throws IOException {
         // given
-        Path neoStore = emptyFile( fileSystem );
-        long v1 = StoreVersion.versionStringToLong( "V1" );
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL_CONTEXT );
+        Path neoStore = emptyFile(fileSystem);
+        long v1 = StoreVersion.versionStringToLong("V1");
+        MetaDataStore.setRecord(
+                pageCache,
+                neoStore,
+                MetaDataStore.Position.STORE_VERSION,
+                v1,
+                databaseLayout.getDatabaseName(),
+                NULL_CONTEXT);
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.MigrationCheckResult result = storeVersionCheck.getAndCheckMigrationTargetVersion( null, NULL_CONTEXT );
+        StoreVersionCheck.MigrationCheckResult result =
+                storeVersionCheck.getAndCheckMigrationTargetVersion(null, NULL_CONTEXT);
 
         // then
-        assertEquals( StoreVersionCheck.MigrationOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome() );
-        assertNull( result.versionToMigrateFrom() );
-        assertNotNull( result.cause() );
-        assertThat( result.cause() ).hasMessageContaining( "Unknown store version 'V1'" );
+        assertEquals(StoreVersionCheck.MigrationOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome());
+        assertNull(result.versionToMigrateFrom());
+        assertNotNull(result.cause());
+        assertThat(result.cause()).hasMessageContaining("Unknown store version 'V1'");
     }
 
     @Test
-    void upgradeCheckShouldFailWithUnknownVersion() throws IOException
-    {
+    void upgradeCheckShouldFailWithUnknownVersion() throws IOException {
         // given
-        Path neoStore = emptyFile( fileSystem );
-        long v1 = StoreVersion.versionStringToLong( "V1" );
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL_CONTEXT );
+        Path neoStore = emptyFile(fileSystem);
+        long v1 = StoreVersion.versionStringToLong("V1");
+        MetaDataStore.setRecord(
+                pageCache,
+                neoStore,
+                MetaDataStore.Position.STORE_VERSION,
+                v1,
+                databaseLayout.getDatabaseName(),
+                NULL_CONTEXT);
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.UpgradeCheckResult result = storeVersionCheck.getAndCheckUpgradeTargetVersion( NULL_CONTEXT );
+        StoreVersionCheck.UpgradeCheckResult result = storeVersionCheck.getAndCheckUpgradeTargetVersion(NULL_CONTEXT);
 
         // then
-        assertEquals( StoreVersionCheck.UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome() );
-        assertNull( result.versionToUpgradeFrom() );
-        assertNotNull( result.cause() );
-        assertThat( result.cause() ).hasMessageContaining( "Unknown store version 'V1'" );
+        assertEquals(StoreVersionCheck.UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome());
+        assertNull(result.versionToUpgradeFrom());
+        assertNotNull(result.cause());
+        assertThat(result.cause()).hasMessageContaining("Unknown store version 'V1'");
     }
 
     @Test
-    void tracePageCacheAccessOnMigrationCheck() throws IOException
-    {
+    void tracePageCacheAccessOnMigrationCheck() throws IOException {
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
-        doTestTraceOnCheck( cursorContext ->
-        {
-            StoreVersionCheck.MigrationCheckResult result = storeVersionCheck.getAndCheckMigrationTargetVersion( null, cursorContext );
-            assertEquals( StoreVersionCheck.MigrationOutcome.NO_OP, result.outcome() );
-        } );
+        doTestTraceOnCheck(cursorContext -> {
+            StoreVersionCheck.MigrationCheckResult result =
+                    storeVersionCheck.getAndCheckMigrationTargetVersion(null, cursorContext);
+            assertEquals(StoreVersionCheck.MigrationOutcome.NO_OP, result.outcome());
+        });
     }
 
     @Test
-    void tracePageCacheAccessOnUpgradeCheck() throws IOException
-    {
+    void tracePageCacheAccessOnUpgradeCheck() throws IOException {
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
-        doTestTraceOnCheck( cursorContext ->
-        {
-            StoreVersionCheck.UpgradeCheckResult result = storeVersionCheck.getAndCheckUpgradeTargetVersion( cursorContext );
-            assertEquals( StoreVersionCheck.UpgradeOutcome.NO_OP, result.outcome() );
-        } );
+        doTestTraceOnCheck(cursorContext -> {
+            StoreVersionCheck.UpgradeCheckResult result =
+                    storeVersionCheck.getAndCheckUpgradeTargetVersion(cursorContext);
+            assertEquals(StoreVersionCheck.UpgradeOutcome.NO_OP, result.outcome());
+        });
     }
 
-    private void doTestTraceOnCheck( Consumer<CursorContext> performCheck ) throws IOException
-    {
-        Path neoStore = emptyFile( fileSystem );
+    private void doTestTraceOnCheck(Consumer<CursorContext> performCheck) throws IOException {
+        Path neoStore = emptyFile(fileSystem);
         String storeVersion = PageAligned.LATEST_NAME;
-        long v1 = StoreVersion.versionStringToLong( storeVersion );
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL_CONTEXT );
+        long v1 = StoreVersion.versionStringToLong(storeVersion);
+        MetaDataStore.setRecord(
+                pageCache,
+                neoStore,
+                MetaDataStore.Position.STORE_VERSION,
+                v1,
+                databaseLayout.getDatabaseName(),
+                NULL_CONTEXT);
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        var cursorContext = contextFactory.create( "tracePageCacheAccessOnCheckUpgradable" );
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnCheckUpgradable");
 
-        performCheck.accept( cursorContext );
+        performCheck.accept(cursorContext);
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isOne();
-        assertThat( cursorTracer.unpins() ).isOne();
-        assertThat( cursorTracer.faults() ).isOne();
+        assertThat(cursorTracer.pins()).isOne();
+        assertThat(cursorTracer.unpins()).isOne();
+        assertThat(cursorTracer.faults()).isOne();
     }
 
     @Test
-    void tracePageCacheAccessOnStoreVersionAccess() throws IOException
-    {
+    void tracePageCacheAccessOnStoreVersionAccess() throws IOException {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        var cursorContext = contextFactory.create( "tracePageCacheAccessOnStoreVersionAccessConstruction" );
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnStoreVersionAccessConstruction");
 
-        Path neoStore = emptyFile( fileSystem );
+        Path neoStore = emptyFile(fileSystem);
         String storeVersion = "V1";
-        long v1 = StoreVersion.versionStringToLong( storeVersion );
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL_CONTEXT );
+        long v1 = StoreVersion.versionStringToLong(storeVersion);
+        MetaDataStore.setRecord(
+                pageCache,
+                neoStore,
+                MetaDataStore.Position.STORE_VERSION,
+                v1,
+                databaseLayout.getDatabaseName(),
+                NULL_CONTEXT);
 
         var versionCheck = newStoreVersionCheck();
-        assertEquals( storeVersion, versionCheck.storeVersion( cursorContext ).get() );
+        assertEquals(storeVersion, versionCheck.storeVersion(cursorContext).get());
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isOne();
-        assertThat( cursorTracer.unpins() ).isOne();
-        assertThat( cursorTracer.faults() ).isOne();
+        assertThat(cursorTracer.pins()).isOne();
+        assertThat(cursorTracer.unpins()).isOne();
+        assertThat(cursorTracer.faults()).isOne();
     }
 
-    private Path emptyFile( FileSystemAbstraction fs ) throws IOException
-    {
+    private Path emptyFile(FileSystemAbstraction fs) throws IOException {
         Path shortFile = databaseLayout.metadataStore();
-        fs.deleteFile( shortFile );
-        fs.write( shortFile ).close();
+        fs.deleteFile(shortFile);
+        fs.write(shortFile).close();
         return shortFile;
     }
 
-    private static void metaDataFileContaining( RecordDatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
-    {
+    private static void metaDataFileContaining(RecordDatabaseLayout layout, FileSystemAbstraction fs, String content)
+            throws IOException {
         Path shortFile = layout.metadataStore();
-        fs.deleteFile( shortFile );
-        try ( OutputStream outputStream = fs.openAsOutputStream( shortFile, false ) )
-        {
-            outputStream.write( UTF8.encode( content ) );
+        fs.deleteFile(shortFile);
+        try (OutputStream outputStream = fs.openAsOutputStream(shortFile, false)) {
+            outputStream.write(UTF8.encode(content));
         }
     }
 
-    private RecordStoreVersionCheck newStoreVersionCheck()
-    {
-        return new RecordStoreVersionCheck( pageCache, databaseLayout, Config.defaults() );
+    private RecordStoreVersionCheck newStoreVersionCheck() {
+        return new RecordStoreVersionCheck(pageCache, databaseLayout, Config.defaults());
     }
 }

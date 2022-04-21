@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
+import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
@@ -37,7 +41,6 @@ import org.neo4j.internal.nativeimpl.AbsentNativeAccess;
 import org.neo4j.internal.nativeimpl.ErrorTranslator;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -47,188 +50,153 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
-import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
-
-@DbmsExtension( configurationCallback = "configure" )
-class DynamicReadOnlyFailoverIT
-{
+@DbmsExtension(configurationCallback = "configure")
+class DynamicReadOnlyFailoverIT {
     private static final String TEST_SCOPE = "preallocation test";
     private static final int NUMBER_OF_NODES = 100;
+
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private Config config;
+
     @Inject
     private Monitors monitors;
+
     private FailingNativeAccess nativeAccess;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
+    void configure(TestDatabaseManagementServiceBuilder builder) {
         Dependencies dependencies = new Dependencies();
         nativeAccess = new FailingNativeAccess();
-        dependencies.satisfyDependency( nativeAccess );
-        builder.setExternalDependencies( dependencies );
+        dependencies.satisfyDependency(nativeAccess);
+        builder.setExternalDependencies(dependencies);
     }
 
     @Test
-    void switchDatabaseToReadOnlyModeOnPreallocationFailure()
-    {
-        long initialRotationThreshold = ByteUnit.kibiBytes( 128 );
-        Label marker = Label.label( "marker" );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < NUMBER_OF_NODES; i++ )
-            {
-                transaction.createNode( marker );
+    void switchDatabaseToReadOnlyModeOnPreallocationFailure() {
+        long initialRotationThreshold = ByteUnit.kibiBytes(128);
+        Label marker = Label.label("marker");
+        try (Transaction transaction = database.beginTx()) {
+            for (int i = 0; i < NUMBER_OF_NODES; i++) {
+                transaction.createNode(marker);
             }
             transaction.commit();
         }
 
-        config.setDynamic( logical_log_rotation_threshold, initialRotationThreshold, TEST_SCOPE );
-        monitors.addMonitorListener( new LogRotationMonitorAdapter()
-        {
+        config.setDynamic(logical_log_rotation_threshold, initialRotationThreshold, TEST_SCOPE);
+        monitors.addMonitorListener(new LogRotationMonitorAdapter() {
             @Override
-            public void startRotation( long currentLogVersion )
-            {
-                config.setDynamic( logical_log_rotation_threshold, getUnavailableBytes(), TEST_SCOPE );
+            public void startRotation(long currentLogVersion) {
+                config.setDynamic(logical_log_rotation_threshold, getUnavailableBytes(), TEST_SCOPE);
                 nativeAccess.startFailing();
-                super.startRotation( currentLogVersion );
+                super.startRotation(currentLogVersion);
             }
-        } );
+        });
 
-        try ( Transaction transaction = database.beginTx() )
-        {
+        try (Transaction transaction = database.beginTx()) {
             Node node = transaction.createNode();
-            node.setProperty( "a", RandomStringUtils.randomAscii( (int) (initialRotationThreshold + 100) ) );
+            node.setProperty("a", RandomStringUtils.randomAscii((int) (initialRotationThreshold + 100)));
             transaction.commit();
         }
 
-        assertThatThrownBy( () ->
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                transaction.createNode();
-                transaction.commit();
-            }
-        } ).hasMessageContaining( "read-only" );
+        assertThatThrownBy(() -> {
+                    try (Transaction transaction = database.beginTx()) {
+                        transaction.createNode();
+                        transaction.commit();
+                    }
+                })
+                .hasMessageContaining("read-only");
 
-        assertDoesNotThrow( () ->
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                assertEquals( NUMBER_OF_NODES, Iterators.count( transaction.findNodes( marker ) ) );
+        assertDoesNotThrow(() -> {
+            try (Transaction transaction = database.beginTx()) {
+                assertEquals(NUMBER_OF_NODES, Iterators.count(transaction.findNodes(marker)));
             }
-        } );
+        });
 
-        assertThatThrownBy( () ->
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                transaction.createNode();
-                transaction.commit();
-            }
-        } ).hasMessageContaining( "read-only" );
+        assertThatThrownBy(() -> {
+                    try (Transaction transaction = database.beginTx()) {
+                        transaction.createNode();
+                        transaction.commit();
+                    }
+                })
+                .hasMessageContaining("read-only");
     }
 
     @Test
-    void doNotSwitchDatabaseToReadOnlyModeWhenFailoverIsDisabled()
-    {
-        long initialRotationThreshold = ByteUnit.kibiBytes( 128 );
-        Label marker = Label.label( "marker" );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < NUMBER_OF_NODES; i++ )
-            {
-                transaction.createNode( marker );
+    void doNotSwitchDatabaseToReadOnlyModeWhenFailoverIsDisabled() {
+        long initialRotationThreshold = ByteUnit.kibiBytes(128);
+        Label marker = Label.label("marker");
+        try (Transaction transaction = database.beginTx()) {
+            for (int i = 0; i < NUMBER_OF_NODES; i++) {
+                transaction.createNode(marker);
             }
             transaction.commit();
         }
 
-        config.setDynamic( dynamic_read_only_failover, false, TEST_SCOPE );
-        config.setDynamic( logical_log_rotation_threshold, initialRotationThreshold, TEST_SCOPE );
-        monitors.addMonitorListener( new LogRotationMonitorAdapter()
-        {
+        config.setDynamic(dynamic_read_only_failover, false, TEST_SCOPE);
+        config.setDynamic(logical_log_rotation_threshold, initialRotationThreshold, TEST_SCOPE);
+        monitors.addMonitorListener(new LogRotationMonitorAdapter() {
             @Override
-            public void startRotation( long currentLogVersion )
-            {
-                config.setDynamic( logical_log_rotation_threshold, getUnavailableBytes(), TEST_SCOPE );
-                super.startRotation( currentLogVersion );
+            public void startRotation(long currentLogVersion) {
+                config.setDynamic(logical_log_rotation_threshold, getUnavailableBytes(), TEST_SCOPE);
+                super.startRotation(currentLogVersion);
             }
-        } );
+        });
 
-        assertDoesNotThrow( () ->
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
+        assertDoesNotThrow(() -> {
+            try (Transaction transaction = database.beginTx()) {
                 Node node = transaction.createNode();
-                node.setProperty( "a", RandomStringUtils.randomAscii( (int) (initialRotationThreshold + 100) ) );
+                node.setProperty("a", RandomStringUtils.randomAscii((int) (initialRotationThreshold + 100)));
                 transaction.commit();
             }
-        } );
+        });
 
-        assertDoesNotThrow( () ->
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                assertEquals( NUMBER_OF_NODES, Iterators.count( transaction.findNodes( marker ) ) );
+        assertDoesNotThrow(() -> {
+            try (Transaction transaction = database.beginTx()) {
+                assertEquals(NUMBER_OF_NODES, Iterators.count(transaction.findNodes(marker)));
             }
-        } );
+        });
 
-        assertDoesNotThrow( () ->
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
+        assertDoesNotThrow(() -> {
+            try (Transaction transaction = database.beginTx()) {
                 transaction.createNode();
                 transaction.commit();
             }
-        } );
+        });
     }
 
-    private long getUnavailableBytes()
-    {
-        try
-        {
-            return Files.getFileStore( testDirectory.homePath() ).getUsableSpace() + ByteUnit.gibiBytes( 10 );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    private long getUnavailableBytes() {
+        try {
+            return Files.getFileStore(testDirectory.homePath()).getUsableSpace() + ByteUnit.gibiBytes(10);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private static class FailingNativeAccess extends AbsentNativeAccess
-    {
+    private static class FailingNativeAccess extends AbsentNativeAccess {
         private static final int ERROR_CODE = 28;
         private final AtomicBoolean fail = new AtomicBoolean();
 
         @Override
-        public ErrorTranslator errorTranslator()
-        {
+        public ErrorTranslator errorTranslator() {
             return callResult -> callResult.getErrorCode() == ERROR_CODE;
         }
 
         @Override
-        public NativeCallResult tryPreallocateSpace( int fd, long bytes )
-        {
-            if ( fail.get() )
-            {
-                return new NativeCallResult( ERROR_CODE, "20 minutes adventure" );
+        public NativeCallResult tryPreallocateSpace(int fd, long bytes) {
+            if (fail.get()) {
+                return new NativeCallResult(ERROR_CODE, "20 minutes adventure");
             }
-            return super.tryPreallocateSpace( fd, bytes );
+            return super.tryPreallocateSpace(fd, bytes);
         }
 
-        public void startFailing()
-        {
-            fail.set( true );
+        public void startFailing() {
+            fail.set(true);
         }
     }
 }

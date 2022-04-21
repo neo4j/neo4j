@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.util.Optional;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -28,76 +27,67 @@ import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
-public class RecordStoreVersion implements StoreVersion
-{
+public class RecordStoreVersion implements StoreVersion {
     private final RecordFormats format;
 
-    public RecordStoreVersion( RecordFormats format )
-    {
+    public RecordStoreVersion(RecordFormats format) {
         this.format = format;
     }
 
     @Override
-    public String storeVersion()
-    {
+    public String storeVersion() {
         return format.storeVersion();
     }
 
     @Override
-    public boolean hasCapability( Capability capability )
-    {
-        return format.hasCapability( capability );
+    public boolean hasCapability(Capability capability) {
+        return format.hasCapability(capability);
     }
 
     @Override
-    public boolean hasCompatibleCapabilities( StoreVersion otherVersion, CapabilityType type )
-    {
-        return format.hasCompatibleCapabilities( RecordFormatSelector.selectForVersion( otherVersion.storeVersion() ), type );
+    public boolean hasCompatibleCapabilities(StoreVersion otherVersion, CapabilityType type) {
+        return format.hasCompatibleCapabilities(
+                RecordFormatSelector.selectForVersion(otherVersion.storeVersion()), type);
     }
 
     @Override
-    public String introductionNeo4jVersion()
-    {
+    public String introductionNeo4jVersion() {
         return format.introductionVersion();
     }
 
     @Override
-    public Optional<String> successorStoreVersion()
-    {
-        return RecordFormatSelector.findSupportedSuccessor( format ).map( RecordFormats::storeVersion );
+    public Optional<String> successorStoreVersion() {
+        return RecordFormatSelector.findSupportedSuccessor(format).map(RecordFormats::storeVersion);
     }
 
     @Override
-    public String latestStoreVersion( Config config )
-    {
-        return RecordFormatSelector.findLatestSupportedFormatInFamily( format, config ).map( RecordFormats::storeVersion ).orElse( storeVersion() );
+    public String latestStoreVersion(Config config) {
+        return RecordFormatSelector.findLatestSupportedFormatInFamily(format, config)
+                .map(RecordFormats::storeVersion)
+                .orElse(storeVersion());
     }
 
     @Override
-    public String formatFamilyName()
-    {
+    public String formatFamilyName() {
         return format.getFormatFamily().name();
     }
 
     @Override
-    public boolean isCompatibleWith( StoreVersion otherVersion )
-    {
-        if ( !(otherVersion instanceof RecordStoreVersion) )
-        {
+    public boolean isCompatibleWith(StoreVersion otherVersion) {
+        if (!(otherVersion instanceof RecordStoreVersion)) {
             return false;
         }
-        return RecordFormatSelector.isStoreAndConfigFormatsCompatible( format, ((RecordStoreVersion) otherVersion).format );
+        return RecordFormatSelector.isStoreAndConfigFormatsCompatible(
+                format, ((RecordStoreVersion) otherVersion).format);
     }
 
     @Override
-    public boolean onlyForMigration()
-    {
+    public boolean onlyForMigration() {
         return format.onlyForMigration();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "RecordStoreVersion{" + "format=" + format + '}';
     }
 }

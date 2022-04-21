@@ -19,62 +19,49 @@
  */
 package org.neo4j.bolt.v43;
 
+import static org.neo4j.kernel.impl.util.ValueUtils.asListValue;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.stream.Collectors;
-
 import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v4.BoltRequestMessageWriterV4;
 import org.neo4j.bolt.v43.messaging.request.RouteMessage;
 
-import static org.neo4j.kernel.impl.util.ValueUtils.asListValue;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
 /**
  * This writer simulates the client.
  */
-public class BoltRequestMessageWriterV43 extends BoltRequestMessageWriterV4
-{
-    public BoltRequestMessageWriterV43( Neo4jPack.Packer packer )
-    {
-        super( packer );
+public class BoltRequestMessageWriterV43 extends BoltRequestMessageWriterV4 {
+    public BoltRequestMessageWriterV43(Neo4jPack.Packer packer) {
+        super(packer);
     }
 
     @Override
-    public BoltRequestMessageWriter write( RequestMessage message ) throws IOException
-    {
-        if ( message instanceof RouteMessage )
-        {
-            writeHandleN( (RouteMessage) message );
-        }
-        else
-        {
-            super.write( message );
+    public BoltRequestMessageWriter write(RequestMessage message) throws IOException {
+        if (message instanceof RouteMessage) {
+            writeHandleN((RouteMessage) message);
+        } else {
+            super.write(message);
         }
         return this;
     }
 
-    private void writeHandleN( RouteMessage message )
-    {
-        try
-        {
-            packer.packStructHeader( 0, RouteMessage.SIGNATURE );
-            packer.pack( message.getRequestContext() );
-            packer.pack( asListValue( message.getBookmarks().stream().map( Object::toString ).collect( Collectors.toList() ) ) );
-            if ( message.getDatabaseName() != null )
-            {
-                packer.pack( message.getDatabaseName() );
+    private void writeHandleN(RouteMessage message) {
+        try {
+            packer.packStructHeader(0, RouteMessage.SIGNATURE);
+            packer.pack(message.getRequestContext());
+            packer.pack(asListValue(
+                    message.getBookmarks().stream().map(Object::toString).collect(Collectors.toList())));
+            if (message.getDatabaseName() != null) {
+                packer.pack(message.getDatabaseName());
+            } else {
+                packer.pack(NO_VALUE);
             }
-            else
-            {
-                packer.pack( NO_VALUE );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

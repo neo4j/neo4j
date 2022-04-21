@@ -19,85 +19,73 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.Arrays;
+import static java.lang.System.nanoTime;
+import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 
+import java.util.Arrays;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.ProducerStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static java.lang.System.nanoTime;
-import static org.neo4j.collection.PrimitiveLongCollections.iterator;
-
 /**
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those
  * {@link NodeRecord} and sends downwards.
  */
-public class ReadNodeIdsByCacheStep extends ProducerStep
-{
+public class ReadNodeIdsByCacheStep extends ProducerStep {
     private final int nodeTypes;
     private final NodeRelationshipCache cache;
     private volatile long highId;
 
-    public ReadNodeIdsByCacheStep( StageControl control, Configuration config,
-            NodeRelationshipCache cache, int nodeTypes )
-    {
-        super( control, config );
+    public ReadNodeIdsByCacheStep(
+            StageControl control, Configuration config, NodeRelationshipCache cache, int nodeTypes) {
+        super(control, config);
         this.cache = cache;
         this.nodeTypes = nodeTypes;
     }
 
     @Override
-    protected void process()
-    {
-        try ( NodeVisitor visitor = new NodeVisitor() )
-        {
-            cache.visitChangedNodes( visitor, nodeTypes );
+    protected void process() {
+        try (NodeVisitor visitor = new NodeVisitor()) {
+            cache.visitChangedNodes(visitor, nodeTypes);
         }
     }
 
-    private class NodeVisitor implements NodeRelationshipCache.NodeChangeVisitor, AutoCloseable
-    {
+    private class NodeVisitor implements NodeRelationshipCache.NodeChangeVisitor, AutoCloseable {
         private long[] batch = new long[batchSize];
         private int cursor;
         private long time = nanoTime();
 
         @Override
-        public void change( long nodeId, ByteArray array )
-        {
+        public void change(long nodeId, ByteArray array) {
             batch[cursor++] = nodeId;
-            if ( cursor == batchSize )
-            {
+            if (cursor == batchSize) {
                 send();
                 batch = new long[batchSize];
                 cursor = 0;
             }
         }
 
-        private void send()
-        {
-            totalProcessingTime.add( nanoTime() - time );
-            sendDownstream( iterator( batch ) );
+        private void send() {
+            totalProcessingTime.add(nanoTime() - time);
+            sendDownstream(iterator(batch));
             time = nanoTime();
             assertHealthy();
             highId = batch[cursor - 1];
         }
 
         @Override
-        public void close()
-        {
-            if ( cursor > 0 )
-            {
-                batch = Arrays.copyOf( batch, cursor );
+        public void close() {
+            if (cursor > 0) {
+                batch = Arrays.copyOf(batch, cursor);
                 send();
             }
         }
     }
 
     @Override
-    protected long position()
-    {
+    protected long position() {
         return highId * Long.BYTES;
     }
 }

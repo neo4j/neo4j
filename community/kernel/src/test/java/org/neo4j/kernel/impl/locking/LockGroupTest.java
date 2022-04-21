@@ -19,35 +19,31 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.lock.Lock;
-import org.neo4j.lock.LockGroup;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class LockGroupTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.lock.Lock;
+import org.neo4j.lock.LockGroup;
+
+class LockGroupTest {
     @Test
-    void shouldReleaseAllLocksWhenExitingTheLockGroupRegion()
-    {
+    void shouldReleaseAllLocksWhenExitingTheLockGroupRegion() {
         // given
-        Lock lock1 = mock( Lock.class );
-        Lock lock2 = mock( Lock.class );
-        Lock lock3 = mock( Lock.class );
+        Lock lock1 = mock(Lock.class);
+        Lock lock2 = mock(Lock.class);
+        Lock lock3 = mock(Lock.class);
 
         // when
-        try ( LockGroup locks = new LockGroup() )
-        {
-            locks.add( lock1 );
-            locks.add( lock2 );
-            locks.add( lock3 );
+        try (LockGroup locks = new LockGroup()) {
+            locks.add(lock1);
+            locks.add(lock2);
+            locks.add(lock3);
         }
 
         // then
-        verify( lock1 ).release();
-        verify( lock2 ).release();
-        verify( lock3 ).release();
+        verify(lock1).release();
+        verify(lock2).release();
+        verify(lock3).release();
     }
 }

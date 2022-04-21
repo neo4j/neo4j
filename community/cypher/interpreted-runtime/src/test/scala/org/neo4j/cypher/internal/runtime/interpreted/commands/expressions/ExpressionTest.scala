@@ -36,6 +36,7 @@ import org.neo4j.values.AnyValue
 import scala.collection.Map
 
 class ExpressionTest extends CypherFunSuite {
+
   test("replacePropWithCache") {
     val a = Collect(Property(Variable("r"), PropertyKey("age")))
 
@@ -51,31 +52,34 @@ class ExpressionTest extends CypherFunSuite {
     testMerge(
       Map("a" -> CTAny),
       Map("b" -> CTAny),
-      Map("a" -> CTAny, "b" -> CTAny))
+      Map("a" -> CTAny, "b" -> CTAny)
+    )
   }
 
   test("merge_two_deps_on_the_same_variable") {
     testMerge(
       Map("a" -> CTAny),
       Map("a" -> CTAny),
-      Map("a" -> CTAny))
+      Map("a" -> CTAny)
+    )
   }
 
   test("merge_two_deps_same_id_different_types") {
     testMerge(
       Map("a" -> CTAny),
       Map("a" -> CTMap),
-      Map("a" -> CTAny))
+      Map("a" -> CTAny)
+    )
   }
 
   test("should_find_inner_aggregations") {
-    //GIVEN
+    // GIVEN
     val e = LengthFunction(Collect(Property(Variable("n"), PropertyKey("bar"))))
 
-    //WHEN
+    // WHEN
     val hasAggregates = e.exists(e => e.isInstanceOf[AggregationExpression])
 
-    //THEN
+    // THEN
     hasAggregates shouldBe true
   }
 
@@ -93,7 +97,11 @@ class ExpressionTest extends CypherFunSuite {
     result should equal(Not(CoercedPredicate(literal(true))))
   }
 
-  private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]): Unit = {
+  private def testMerge(
+    a: Map[String, CypherType],
+    b: Map[String, CypherType],
+    expected: Map[String, CypherType]
+  ): Unit = {
     merge(a, b, expected)
     merge(b, a, expected)
   }
@@ -108,12 +116,14 @@ class ExpressionTest extends CypherFunSuite {
       fail("Wrong keys found: " + keys + " vs. " + expected.keys.toSet)
     }
 
-    val result = keys.toSeq.map(k => (a.get(k), b.get(k)) match {
-      case (Some(x), None)    => k -> x
-      case (None, Some(x))    => k -> x
-      case (Some(x), Some(y)) => k -> x.leastUpperBound(y)
-      case (None, None)       => throw new AssertionError("only here to stop warnings")
-    }).toMap
+    val result = keys.toSeq.map(k =>
+      (a.get(k), b.get(k)) match {
+        case (Some(x), None)    => k -> x
+        case (None, Some(x))    => k -> x
+        case (Some(x), Some(y)) => k -> x.leastUpperBound(y)
+        case (None, None)       => throw new AssertionError("only here to stop warnings")
+      }
+    ).toMap
 
     if (result != expected) {
       fail(s"""

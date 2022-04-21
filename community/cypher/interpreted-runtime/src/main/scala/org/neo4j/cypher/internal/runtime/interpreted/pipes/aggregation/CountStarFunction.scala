@@ -26,7 +26,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 class CountStarFunction extends AggregationFunction {
-  var count:Long = 0
+  var count: Long = 0
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
     count += 1

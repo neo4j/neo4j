@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -34,107 +35,78 @@ import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
-
-public class IndexProxyAdapter implements IndexProxy
-{
+public class IndexProxyAdapter implements IndexProxy {
     @Override
-    public void start()
-    {
-    }
+    public void start() {}
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
+    public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
         return SwallowingIndexUpdater.INSTANCE;
     }
 
     @Override
-    public void drop()
-    {
-    }
+    public void drop() {}
 
     @Override
-    public InternalIndexState getState()
-    {
+    public InternalIndexState getState() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void force( CursorContext cursorContext )
-    {
-    }
+    public void force(CursorContext cursorContext) {}
 
     @Override
-    public void refresh()
-    {
-    }
+    public void refresh() {}
 
     @Override
-    public void close( CursorContext cursorContext )
-    {
-    }
+    public void close(CursorContext cursorContext) {}
 
     @Override
-    public IndexDescriptor getDescriptor()
-    {
+    public IndexDescriptor getDescriptor() {
         return null;
     }
 
     @Override
-    public ValueIndexReader newValueReader()
-    {
+    public ValueIndexReader newValueReader() {
         return ValueIndexReader.EMPTY;
     }
 
     @Override
-    public TokenIndexReader newTokenReader()
-    {
+    public TokenIndexReader newTokenReader() {
         return TokenIndexReader.EMPTY;
     }
 
     @Override
-    public boolean awaitStoreScanCompleted( long time, TimeUnit unit )
-    {
+    public boolean awaitStoreScanCompleted(long time, TimeUnit unit) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void activate()
-    {
-    }
+    public void activate() {}
 
     @Override
-    public void validate()
-    {
-    }
+    public void validate() {}
 
     @Override
-    public void validateBeforeCommit( Value[] tuple, long entityId )
-    {
-    }
+    public void validateBeforeCommit(Value[] tuple, long entityId) {}
 
     @Override
-    public ResourceIterator<Path> snapshotFiles()
-    {
+    public ResourceIterator<Path> snapshotFiles() {
         return emptyResourceIterator();
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
+    public Map<String, Value> indexConfig() {
         return Collections.emptyMap();
     }
 
     @Override
-    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
-    {
-        throw new IllegalStateException( "This index isn't failed" );
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException {
+        throw new IllegalStateException("This index isn't failed");
     }
 
     @Override
-    public PopulationProgress getIndexPopulationProgress()
-    {
+    public PopulationProgress getIndexPopulationProgress() {
         return PopulationProgress.NONE;
     }
 }

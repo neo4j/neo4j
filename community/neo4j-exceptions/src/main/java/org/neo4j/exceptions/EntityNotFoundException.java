@@ -21,21 +21,17 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class EntityNotFoundException extends Neo4jException
-{
-    public EntityNotFoundException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class EntityNotFoundException extends Neo4jException {
+    public EntityNotFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public EntityNotFoundException( String message )
-    {
-        super( message );
+    public EntityNotFoundException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.EntityNotFound;
     }
 }

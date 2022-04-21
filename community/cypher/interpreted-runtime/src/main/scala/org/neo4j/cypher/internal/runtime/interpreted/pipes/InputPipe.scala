@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.InputCursor
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class InputPipe(variables: Array[String])
-                    (val id: Id = Id.INVALID_ID) extends Pipe {
+case class InputPipe(variables: Array[String])(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     new ClosingIterator[CypherRow] {

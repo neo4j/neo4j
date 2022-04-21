@@ -55,8 +55,7 @@ import org.neo4j.annotations.api.PublicApi;
  * refer to them this way. Instead, use application generated ids.
  */
 @PublicApi
-public interface Node extends Entity
-{
+public interface Node extends Entity {
     /**
      * {@inheritDoc}
      *
@@ -94,7 +93,7 @@ public interface Node extends Entity
      * @param types the given relationship type(s)
      * @return all relationships of the given type(s) that are attached to this node
      */
-    ResourceIterable<Relationship> getRelationships( RelationshipType... types );
+    ResourceIterable<Relationship> getRelationships(RelationshipType... types);
 
     /**
      * Returns all the relationships of any of the types in <code>types</code>
@@ -106,7 +105,7 @@ public interface Node extends Entity
      * @param direction the direction of the relationships to return.
      * @return all relationships of the given type(s) that are attached to this node
      */
-    ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
+    ResourceIterable<Relationship> getRelationships(Direction direction, RelationshipType... types);
 
     /**
      * Returns <code>true</code> if there are any relationships of any of the
@@ -118,7 +117,7 @@ public interface Node extends Entity
      *         types in <code>types</code> attached to this node,
      *         <code>false</code> otherwise
      */
-    boolean hasRelationship( RelationshipType... types );
+    boolean hasRelationship(RelationshipType... types);
 
     /**
      * Returns <code>true</code> if there are any relationships of any of the
@@ -131,7 +130,7 @@ public interface Node extends Entity
      *         types in <code>types</code> attached to this node,
      *         <code>false</code> otherwise
      */
-    boolean hasRelationship( Direction direction, RelationshipType... types );
+    boolean hasRelationship(Direction direction, RelationshipType... types);
 
     /**
      * Returns all {@link Direction#OUTGOING OUTGOING} or
@@ -149,7 +148,7 @@ public interface Node extends Entity
      *            {@link Relationship#getEndNode() end node}
      * @return all relationships with the given direction that are attached to this node
      */
-    ResourceIterable<Relationship> getRelationships( Direction dir );
+    ResourceIterable<Relationship> getRelationships(Direction dir);
 
     /**
      * Returns <code>true</code> if there are any relationships in the given
@@ -167,7 +166,7 @@ public interface Node extends Entity
      * @return <code>true</code> if there are any relationships in the given
      *         direction attached to this node, <code>false</code> otherwise
      */
-    boolean hasRelationship( Direction dir );
+    boolean hasRelationship(Direction dir);
 
     /**
      * Returns the only relationship of a given type and direction that is
@@ -204,7 +203,7 @@ public interface Node extends Entity
      * @throws RuntimeException if more than one relationship matches the given
      *             type and direction
      */
-    Relationship getSingleRelationship( RelationshipType type, Direction dir );
+    Relationship getSingleRelationship(RelationshipType type, Direction dir);
 
     /**
      * Creates a relationship between this node and another node. The
@@ -219,7 +218,7 @@ public interface Node extends Entity
      * @param type the type of the new relationship
      * @return the newly created relationship
      */
-    Relationship createRelationshipTo( Node otherNode, RelationshipType type );
+    Relationship createRelationshipTo(Node otherNode, RelationshipType type);
 
     /**
      * Returns relationship types which this node has one more relationships
@@ -242,7 +241,7 @@ public interface Node extends Entity
      * @param type the type of relationships to get the degree for
      * @return the number of relationships of a given {@code type} connected to this node.
      */
-    int getDegree( RelationshipType type );
+    int getDegree(RelationshipType type);
 
     /**
      * Returns the number of relationships of a given {@code direction} connected to this node.
@@ -250,7 +249,7 @@ public interface Node extends Entity
      * @param direction the direction of the relationships
      * @return the number of relationships of a given {@code direction} for this node.
      */
-    int getDegree( Direction direction );
+    int getDegree(Direction direction);
 
     /**
      * Returns the number of relationships of a given {@code type} and {@code direction}
@@ -261,7 +260,7 @@ public interface Node extends Entity
      * @return the number of relationships of a given {@code type} and {@code direction}
      * for this node.
      */
-    int getDegree( RelationshipType type, Direction direction );
+    int getDegree(RelationshipType type, Direction direction);
 
     /**
      * Adds a {@link Label} to this node. If this node doesn't already have
@@ -269,7 +268,7 @@ public interface Node extends Entity
      *
      * @param label the label to add to this node.
      */
-    void addLabel( Label label );
+    void addLabel(Label label);
 
     /**
      * Removes a {@link Label} from this node. If this node doesn't have this label,
@@ -277,7 +276,7 @@ public interface Node extends Entity
      *
      * @param label the label to remove from this node.
      */
-    void removeLabel( Label label );
+    void removeLabel(Label label);
 
     /**
      * Checks whether or not this node has the given label.
@@ -285,7 +284,7 @@ public interface Node extends Entity
      * @param label the label to check for.
      * @return {@code true} if this node has the given label, otherwise {@code false}.
      */
-    boolean hasLabel( Label label );
+    boolean hasLabel(Label label);
 
     /**
      * Lists all labels attached to this node. If this node has no

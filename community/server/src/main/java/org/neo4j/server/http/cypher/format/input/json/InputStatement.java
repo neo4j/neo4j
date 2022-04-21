@@ -21,7 +21,6 @@ package org.neo4j.server.http.cypher.format.input.json;
 
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
 
@@ -30,6 +29,8 @@ import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
  * <p>
  * It has some extra format-specific information over {@link Statement}.
  */
-public record InputStatement( String statement, Map<String,Object> parameters, boolean includeStats, List<ResultDataContent> resultDataContents )
-{
-}
+public record InputStatement(
+        String statement,
+        Map<String, Object> parameters,
+        boolean includeStats,
+        List<ResultDataContent> resultDataContents) {}

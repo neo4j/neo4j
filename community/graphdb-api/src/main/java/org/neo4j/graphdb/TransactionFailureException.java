@@ -25,15 +25,12 @@ import org.neo4j.annotations.api.PublicApi;
  * Signals that a transaction failed and has been rolled back.
  */
 @PublicApi
-public class TransactionFailureException extends RuntimeException
-{
-    public TransactionFailureException( String msg )
-    {
-        super( msg );
+public class TransactionFailureException extends RuntimeException {
+    public TransactionFailureException(String msg) {
+        super(msg);
     }
 
-    public TransactionFailureException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public TransactionFailureException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

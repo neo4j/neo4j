@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.logging.FormattedLogFormat;
 
-public class JsonOperationsTest extends OperationsTest
-{
+public class JsonOperationsTest extends OperationsTest {
     @Override
-    FormattedLogFormat getFormat()
-    {
+    FormattedLogFormat getFormat() {
         return FormattedLogFormat.JSON;
     }
 }

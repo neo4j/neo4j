@@ -21,18 +21,14 @@ package org.neo4j.test.mockito.mock;
 
 import org.neo4j.graphdb.Entity;
 
-public final class Property
-{
-    public static Property property( String key, Object value )
-    {
-        return new Property( key, value );
+public final class Property {
+    public static Property property(String key, Object value) {
+        return new Property(key, value);
     }
 
-    public static <E extends Entity> E set( E entity, Property... properties )
-    {
-        for ( Property property : properties )
-        {
-            entity.setProperty( property.key, property.value );
+    public static <E extends Entity> E set(E entity, Property... properties) {
+        for (Property property : properties) {
+            entity.setProperty(property.key, property.value);
         }
         return entity;
     }
@@ -40,25 +36,21 @@ public final class Property
     private final String key;
     private final Object value;
 
-    private Property( String key, Object value )
-    {
+    private Property(String key, Object value) {
         this.key = key;
         this.value = value;
     }
 
-    public String key()
-    {
+    public String key() {
         return key;
     }
 
-    public Object value()
-    {
+    public Object value() {
         return value;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "%s: %s", key, value );
+    public String toString() {
+        return String.format("%s: %s", key, value);
     }
 }

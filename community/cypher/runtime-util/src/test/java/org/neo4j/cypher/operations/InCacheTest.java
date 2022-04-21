@@ -19,22 +19,6 @@
  */
 package org.neo4j.cypher.operations;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.VirtualValues;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -47,111 +31,125 @@ import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
-class InCacheTest
-{
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Map.Entry;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.VirtualValues;
+
+class InCacheTest {
     @Test
-    void shouldHandleListWithNoNulls()
-    {
+    void shouldHandleListWithNoNulls() {
         InCache cache = new InCache();
-        ListValue list = list( stringValue( "a" ), stringValue( "b" ), stringValue( "c" ) );
+        ListValue list = list(stringValue("a"), stringValue("b"), stringValue("c"));
 
-        Map<Value,Value> expected =
-                Map.of(
-                        stringValue( "a" ), TRUE,
-                        stringValue( "b" ), TRUE,
-                        stringValue( "c" ), TRUE,
-                        stringValue( "d" ), FALSE,
-                        NO_VALUE, NO_VALUE
-                );
+        Map<Value, Value> expected = Map.of(
+                stringValue("a"),
+                TRUE,
+                stringValue("b"),
+                TRUE,
+                stringValue("c"),
+                TRUE,
+                stringValue("d"),
+                FALSE,
+                NO_VALUE,
+                NO_VALUE);
 
-        for ( Entry<Value,Value> entry : shuffled( expected ) )
-        {
-            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE ) ).isEqualTo( entry.getValue() );
+        for (Entry<Value, Value> entry : shuffled(expected)) {
+            assertThat(cache.check(entry.getKey(), list, EmptyMemoryTracker.INSTANCE))
+                    .isEqualTo(entry.getValue());
         }
     }
 
     @Test
-    void shouldHandleListContainingNulls()
-    {
+    void shouldHandleListContainingNulls() {
         InCache cache = new InCache();
-        ListValue list = list( stringValue( "a" ), NO_VALUE, stringValue( "c" ), NO_VALUE );
-        Map<Value,Value> expected =
-                Map.of(
-                        stringValue( "a" ), TRUE,
-                        stringValue( "b" ), NO_VALUE,
-                        stringValue( "c" ), TRUE,
-                        stringValue( "d" ), NO_VALUE,
-                        NO_VALUE, NO_VALUE
-                );
+        ListValue list = list(stringValue("a"), NO_VALUE, stringValue("c"), NO_VALUE);
+        Map<Value, Value> expected = Map.of(
+                stringValue("a"),
+                TRUE,
+                stringValue("b"),
+                NO_VALUE,
+                stringValue("c"),
+                TRUE,
+                stringValue("d"),
+                NO_VALUE,
+                NO_VALUE,
+                NO_VALUE);
 
-        for ( Entry<Value,Value> entry : shuffled( expected ) )
-        {
-            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE ) ).isEqualTo( entry.getValue() );
+        for (Entry<Value, Value> entry : shuffled(expected)) {
+            assertThat(cache.check(entry.getKey(), list, EmptyMemoryTracker.INSTANCE))
+                    .isEqualTo(entry.getValue());
         }
     }
 
     @Test
-    void shouldHandleEmptyListAndNull()
-    {
-        //given
+    void shouldHandleEmptyListAndNull() {
+        // given
         InCache cache = new InCache();
 
-        //when
-        Value check = cache.check( NO_VALUE, VirtualValues.EMPTY_LIST, EmptyMemoryTracker.INSTANCE );
-
-        //then
-        assertThat( check ).isEqualTo( FALSE );
-    }
-
-    @Test
-    void shouldTrackMemory()
-    {
-        //given
-        InCache cache = new InCache();
-        ListValue list = list( stringValue( "a" ), stringValue( "b" ), stringValue( "c" ) );
-
-        //when
-        MemoryTracker memoryTracker = mock( MemoryTracker.class );
-        cache.check( stringValue( "a" ), list, memoryTracker );
-
-        //then
-        ArgumentCaptor<Long> arg = ArgumentCaptor.forClass( Long.class );
-        verify( memoryTracker ).allocateHeap( arg.capture() );
-        assertThat( arg.getValue() ).isGreaterThan( 0 );
-    }
-
-    @Test
-    void shouldHandleArraysWithNulls()
-    {
-        //given
-        InCache cache = new InCache();
-
-        //when
-        var list = list( list( intValue( 1 ), intValue( 2 ) ), list( intValue( 3 ), intValue( 4 ) ) );
+        // when
+        Value check = cache.check(NO_VALUE, VirtualValues.EMPTY_LIST, EmptyMemoryTracker.INSTANCE);
 
         // then
-        assertEquals( BooleanValue.FALSE, cache.check( intValue( 0 ), list, EmptyMemoryTracker.INSTANCE ) );
-        assertEquals( NO_VALUE, cache.check( list( intValue( 1 ), NO_VALUE ), list, EmptyMemoryTracker.INSTANCE ) );
+        assertThat(check).isEqualTo(FALSE);
     }
 
     @Test
-    void shouldHandleMapsWithNulls()
-    {
-        //given
+    void shouldTrackMemory() {
+        // given
         InCache cache = new InCache();
+        ListValue list = list(stringValue("a"), stringValue("b"), stringValue("c"));
 
-        //when
-        var list = list( map( new String[]{ "a" }, new AnyValue[]{ intValue( 1 ) } ) );
+        // when
+        MemoryTracker memoryTracker = mock(MemoryTracker.class);
+        cache.check(stringValue("a"), list, memoryTracker);
 
         // then
-        assertEquals( BooleanValue.FALSE, cache.check( intValue( 0 ), list, EmptyMemoryTracker.INSTANCE ) );
-        assertEquals( NO_VALUE, cache.check( map( new String[]{ "a" }, new AnyValue[]{ NO_VALUE } ), list, EmptyMemoryTracker.INSTANCE ) );
+        ArgumentCaptor<Long> arg = ArgumentCaptor.forClass(Long.class);
+        verify(memoryTracker).allocateHeap(arg.capture());
+        assertThat(arg.getValue()).isGreaterThan(0);
     }
 
-    private static <K, V> Iterable<Entry<K,V>> shuffled( Map<K,V> map )
-    {
-        ArrayList<Entry<K,V>> list = new ArrayList<>( map.entrySet() );
-        Collections.shuffle( list );
+    @Test
+    void shouldHandleArraysWithNulls() {
+        // given
+        InCache cache = new InCache();
+
+        // when
+        var list = list(list(intValue(1), intValue(2)), list(intValue(3), intValue(4)));
+
+        // then
+        assertEquals(BooleanValue.FALSE, cache.check(intValue(0), list, EmptyMemoryTracker.INSTANCE));
+        assertEquals(NO_VALUE, cache.check(list(intValue(1), NO_VALUE), list, EmptyMemoryTracker.INSTANCE));
+    }
+
+    @Test
+    void shouldHandleMapsWithNulls() {
+        // given
+        InCache cache = new InCache();
+
+        // when
+        var list = list(map(new String[] {"a"}, new AnyValue[] {intValue(1)}));
+
+        // then
+        assertEquals(BooleanValue.FALSE, cache.check(intValue(0), list, EmptyMemoryTracker.INSTANCE));
+        assertEquals(
+                NO_VALUE,
+                cache.check(map(new String[] {"a"}, new AnyValue[] {NO_VALUE}), list, EmptyMemoryTracker.INSTANCE));
+    }
+
+    private static <K, V> Iterable<Entry<K, V>> shuffled(Map<K, V> map) {
+        ArrayList<Entry<K, V>> list = new ArrayList<>(map.entrySet());
+        Collections.shuffle(list);
         return list;
     }
 }

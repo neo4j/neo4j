@@ -19,57 +19,49 @@
  */
 package org.neo4j.bolt.v43.messaging.decoder;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Optional;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
+import java.io.IOException;
+import java.util.Optional;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.v43.messaging.request.RouteMessage;
 import org.neo4j.values.storable.TextValue;
 
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
 /**
  * Responsible for decoding the RouteMessage and its fields.
  */
-public class RouteMessageDecoder implements RequestMessageDecoder
-{
+public class RouteMessageDecoder implements RequestMessageDecoder {
     private final BoltResponseHandler responseHandler;
     private final BookmarksParser bookmarksParser;
 
-    public RouteMessageDecoder( BoltResponseHandler responseHandler, BookmarksParser bookmarksParser )
-    {
+    public RouteMessageDecoder(BoltResponseHandler responseHandler, BookmarksParser bookmarksParser) {
         this.responseHandler = responseHandler;
         this.bookmarksParser = bookmarksParser;
     }
 
     @Override
-    public int signature()
-    {
+    public int signature() {
         return RouteMessage.SIGNATURE;
     }
 
     @Override
-    public BoltResponseHandler responseHandler()
-    {
+    public BoltResponseHandler responseHandler() {
         return responseHandler;
     }
 
     @Override
-    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
+    public RequestMessage decode(Neo4jPack.Unpacker unpacker) throws IOException {
         var routingContext = unpacker.unpackMap();
 
-        var bookmarkList = bookmarksParser.parseBookmarks( unpacker.unpack() );
-        var databaseName = Optional.of( unpacker.unpack() )
-                                   .filter( any -> any != NO_VALUE && any instanceof TextValue )
-                                   .map( any -> ((TextValue) any).stringValue() )
-                                   .orElse( null );
-        return new RouteMessage( routingContext, bookmarkList, databaseName );
+        var bookmarkList = bookmarksParser.parseBookmarks(unpacker.unpack());
+        var databaseName = Optional.of(unpacker.unpack())
+                .filter(any -> any != NO_VALUE && any instanceof TextValue)
+                .map(any -> ((TextValue) any).stringValue())
+                .orElse(null);
+        return new RouteMessage(routingContext, bookmarkList, databaseName);
     }
 }

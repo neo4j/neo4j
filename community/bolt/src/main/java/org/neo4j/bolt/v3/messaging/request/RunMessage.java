@@ -23,71 +23,63 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class RunMessage extends TransactionInitiatingMessage
-{
+public class RunMessage extends TransactionInitiatingMessage {
     public static final byte SIGNATURE = 0x10;
 
     private final String statement;
     private final MapValue params;
 
-    public RunMessage( String statement )
-    {
-        this( statement, VirtualValues.EMPTY_MAP );
+    public RunMessage(String statement) {
+        this(statement, VirtualValues.EMPTY_MAP);
     }
 
-    public RunMessage( String statement, MapValue params )
-    {
-        this( statement, params, VirtualValues.EMPTY_MAP, List.of(), null, AccessMode.WRITE, Map.of() );
+    public RunMessage(String statement, MapValue params) {
+        this(statement, params, VirtualValues.EMPTY_MAP, List.of(), null, AccessMode.WRITE, Map.of());
     }
 
-    public RunMessage( String statement, MapValue params, MapValue meta, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
-            Map<String,Object> txMetadata )
-    {
-        super( meta, bookmarks, txTimeout, accessMode, txMetadata );
+    public RunMessage(
+            String statement,
+            MapValue params,
+            MapValue meta,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata) {
+        super(meta, bookmarks, txTimeout, accessMode, txMetadata);
         this.statement = statement;
         this.params = params;
     }
 
-    public String statement()
-    {
+    public String statement() {
         return statement;
     }
 
-    public MapValue params()
-    {
+    public MapValue params() {
         return params;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( super.equals( o ) )
-        {
+    public boolean equals(Object o) {
+        if (super.equals(o)) {
             RunMessage that = (RunMessage) o;
-            return Objects.equals( statement, that.statement ) && Objects.equals( params, that.params );
-        }
-        else
-        {
+            return Objects.equals(statement, that.statement) && Objects.equals(params, that.params);
+        } else {
             return false;
         }
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( statement, params, meta() );
+    public int hashCode() {
+        return Objects.hash(statement, params, meta());
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "RUN " + statement + ' ' + params + ' ' + meta();
     }
-
 }

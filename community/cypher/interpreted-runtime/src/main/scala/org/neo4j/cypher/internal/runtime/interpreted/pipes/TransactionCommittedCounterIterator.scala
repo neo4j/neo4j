@@ -26,7 +26,8 @@ import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.exceptions.StatusWrapCypherException.ExtraInformation.TRANSACTIONS_COMMITTED
 
-class TransactionCommittedCounterIterator(inner: ClosingIterator[CypherRow], queryState: QueryState) extends ClosingIterator[CypherRow] {
+class TransactionCommittedCounterIterator(inner: ClosingIterator[CypherRow], queryState: QueryState)
+    extends ClosingIterator[CypherRow] {
   override protected[this] def closeMore(): Unit = inner.close()
 
   def innerHasNext: Boolean = executeWithHandling(inner.hasNext, queryState)
@@ -35,10 +36,14 @@ class TransactionCommittedCounterIterator(inner: ClosingIterator[CypherRow], que
 }
 
 object TransactionCommittedCounterIterator {
+
   def wrap(f: () => ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
-    executeWithHandling({
-    new TransactionCommittedCounterIterator(f(), state)
-  }, state)
+    executeWithHandling(
+      {
+        new TransactionCommittedCounterIterator(f(), state)
+      },
+      state
+    )
 
   def executeWithHandling[T](f: => T, queryState: QueryState): T = {
     try {

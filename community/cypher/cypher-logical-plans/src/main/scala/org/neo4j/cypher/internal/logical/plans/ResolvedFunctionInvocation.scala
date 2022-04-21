@@ -37,7 +37,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 object ResolvedFunctionInvocation {
 
-  def apply(signatureLookup: QualifiedName => Option[UserFunctionSignature])(unresolved: FunctionInvocation): ResolvedFunctionInvocation = {
+  def apply(signatureLookup: QualifiedName => Option[UserFunctionSignature])(unresolved: FunctionInvocation)
+    : ResolvedFunctionInvocation = {
     val position = unresolved.position
     val name = QualifiedName(unresolved)
     ResolvedFunctionInvocation(name, signatureLookup(name), unresolved.args)(position)
@@ -54,11 +55,12 @@ object ResolvedFunctionInvocation {
  * @param callArguments The argument list to the function
  * @param position The position in the original query string.
  */
-case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
-                                      fcnSignature: Option[UserFunctionSignature],
-                                      callArguments: IndexedSeq[Expression])
-                                     (val position: InputPosition)
-  extends Expression with UserDefinedFunctionInvocation with SemanticCheckableExpression {
+case class ResolvedFunctionInvocation(
+  qualifiedName: QualifiedName,
+  fcnSignature: Option[UserFunctionSignature],
+  callArguments: IndexedSeq[Expression]
+)(val position: InputPosition)
+    extends Expression with UserDefinedFunctionInvocation with SemanticCheckableExpression {
 
   def coerceArguments: ResolvedFunctionInvocation = fcnSignature match {
     case Some(signature) =>
@@ -79,8 +81,11 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
     case None =>
       qualifiedName match {
         case QualifiedName(Seq(), qn) if qn.equalsIgnoreCase("not") =>
-          SemanticError(s"Unknown function '$qualifiedName'. " +
-            s"If you intended to use the negation expression, surround it with parentheses.", position)
+          SemanticError(
+            s"Unknown function '$qualifiedName'. " +
+              s"If you intended to use the negation expression, surround it with parentheses.",
+            position
+          )
         case _ => SemanticError(s"Unknown function '$qualifiedName'", position)
       }
     case Some(signature) =>
@@ -88,34 +93,42 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
       val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
       val actualNumArgs = callArguments.length + usedDefaultArgs.length
 
-        if (expectedNumArgs == actualNumArgs) {
-          //this zip is fine since it will only verify provided args in callArguments
-          //default values are checked at load time
-          signature.inputSignature.zip(callArguments).map {
-            case (field, arg) =>
-              SemanticExpressionCheck.check(SemanticContext.Results, arg) chain
-                SemanticExpressionCheck.expectType(field.typ.covariant, arg)
-          }.foldLeft(success)(_ chain _) chain
-            SemanticExpressionCheck.specifyType(signature.outputType.covariant, this)
-        } else {
-          val msg = (if (signature.inputSignature.isEmpty) "arguments"
-          else if (signature.inputSignature.size == 1) s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
-          else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
+      if (expectedNumArgs == actualNumArgs) {
+        // this zip is fine since it will only verify provided args in callArguments
+        // default values are checked at load time
+        signature.inputSignature.zip(callArguments).map {
+          case (field, arg) =>
+            SemanticExpressionCheck.check(SemanticContext.Results, arg) chain
+              SemanticExpressionCheck.expectType(field.typ.covariant, arg)
+        }.foldLeft(success)(_ chain _) chain
+          SemanticExpressionCheck.specifyType(signature.outputType.covariant, this)
+      } else {
+        val msg =
+          (if (signature.inputSignature.isEmpty) "arguments"
+           else if (signature.inputSignature.size == 1)
+             s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
+           else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
             signature.description.map(d => s"${System.lineSeparator()}Description: $d").getOrElse("")
-          error(_: SemanticState, SemanticError( s"""Function call does not provide the required number of arguments: expected $expectedNumArgs got $actualNumArgs.
-             |
-             |Function ${signature.name} has signature: $signature
-             |meaning that it expects $expectedNumArgs $msg""".stripMargin, position))
-        }
+        error(
+          _: SemanticState,
+          SemanticError(
+            s"""Function call does not provide the required number of arguments: expected $expectedNumArgs got $actualNumArgs.
+               |
+               |Function ${signature.name} has signature: $signature
+               |meaning that it expects $expectedNumArgs $msg""".stripMargin,
+            position
+          )
+        )
+      }
   }
 
   override def isAggregate: Boolean = fcnSignature.exists(_.isAggregate)
 
- override def asUnresolvedFunction: FunctionInvocation = FunctionInvocation(
+  override def asUnresolvedFunction: FunctionInvocation = FunctionInvocation(
     namespace = Namespace(qualifiedName.namespace.toList)(position),
     functionName = FunctionName(qualifiedName.name)(position),
     distinct = false,
-    args = arguments.toIndexedSeq,
+    args = arguments.toIndexedSeq
   )(position)
 
 }

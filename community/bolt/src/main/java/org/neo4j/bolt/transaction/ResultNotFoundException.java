@@ -19,11 +19,8 @@
  */
 package org.neo4j.bolt.transaction;
 
-public class ResultNotFoundException extends Exception
-{
-    public ResultNotFoundException( String txId, int statementId )
-    {
-        super( "Result for transaction: " + txId + " and id: "
-               + statementId + " was not found." );
+public class ResultNotFoundException extends Exception {
+    public ResultNotFoundException(String txId, int statementId) {
+        super("Result for transaction: " + txId + " and id: " + statementId + " was not found.");
     }
 }

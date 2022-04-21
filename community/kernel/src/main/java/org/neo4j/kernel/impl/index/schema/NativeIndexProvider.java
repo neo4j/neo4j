@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -50,28 +50,28 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
-import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
-
 /**
  * Base class for native indexes on top of {@link GBPTree}.
  *
  * @param <KEY> type of {@link NativeIndexKey}
  * @param <LAYOUT> type of {@link IndexLayout}
  */
-abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,LAYOUT extends IndexLayout<KEY>>
-        extends IndexProvider
-{
+abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT extends IndexLayout<KEY>>
+        extends IndexProvider {
     protected final DatabaseIndexContext databaseIndexContext;
     protected final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final Monitor monitor;
 
-    protected NativeIndexProvider( DatabaseIndexContext databaseIndexContext, IndexProviderDescriptor descriptor,
-            Factory directoryStructureFactory, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
-    {
-        super( descriptor, directoryStructureFactory );
+    protected NativeIndexProvider(
+            DatabaseIndexContext databaseIndexContext,
+            IndexProviderDescriptor descriptor,
+            Factory directoryStructureFactory,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
+        super(descriptor, directoryStructureFactory);
         this.databaseIndexContext = databaseIndexContext;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
-        this.monitor = databaseIndexContext.monitors.newMonitor( IndexProvider.Monitor.class, databaseIndexContext.monitorTag );
+        this.monitor =
+                databaseIndexContext.monitors.newMonitor(IndexProvider.Monitor.class, databaseIndexContext.monitorTag);
     }
 
     /**
@@ -82,92 +82,118 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,LAYOUT extend
      *                   file before or while instantiating the layout.
      * @return the correct {@link Layout} for the index.
      */
-    abstract LAYOUT layout( IndexDescriptor descriptor, Path storeFile );
+    abstract LAYOUT layout(IndexDescriptor descriptor, Path storeFile);
 
     @Override
-    public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
-    {
-        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ), databaseIndexContext.readOnlyChecker );
+    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
+        return new NativeMinimalIndexAccessor(descriptor, indexFiles(descriptor), databaseIndexContext.readOnlyChecker);
     }
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                        ImmutableSet<OpenOption> openOptions )
-    {
-        if ( databaseIndexContext.readOnlyChecker.isReadOnly() )
-        {
-            throw new UnsupportedOperationException( "Can't create populator for read only index" );
+    public IndexPopulator getPopulator(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        if (databaseIndexContext.readOnlyChecker.isReadOnly()) {
+            throw new UnsupportedOperationException("Can't create populator for read only index");
         }
 
-        IndexFiles indexFiles = indexFiles( descriptor );
-        return newIndexPopulator( indexFiles, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor,
-                                  bufferFactory, memoryTracker, tokenNameLookup, openOptions );
+        IndexFiles indexFiles = indexFiles(descriptor);
+        return newIndexPopulator(
+                indexFiles,
+                layout(descriptor, null /*meaning don't read from this file since we're recreating it anyway*/),
+                descriptor,
+                bufferFactory,
+                memoryTracker,
+                tokenNameLookup,
+                openOptions);
     }
 
-    protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor,
-                                                         ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                                         ImmutableSet<OpenOption> openOptions );
+    protected abstract IndexPopulator newIndexPopulator(
+            IndexFiles indexFiles,
+            LAYOUT layout,
+            IndexDescriptor descriptor,
+            ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions);
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                            ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        IndexFiles indexFiles = indexFiles( descriptor );
-        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor, tokenNameLookup, openOptions );
+    public IndexAccessor getOnlineAccessor(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        IndexFiles indexFiles = indexFiles(descriptor);
+        return newIndexAccessor(
+                indexFiles, layout(descriptor, indexFiles.getStoreFile()), descriptor, tokenNameLookup, openOptions);
     }
 
-    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup,
-                                                       ImmutableSet<OpenOption> openOptions )
+    protected abstract IndexAccessor newIndexAccessor(
+            IndexFiles indexFiles,
+            LAYOUT layout,
+            IndexDescriptor descriptor,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions)
             throws IOException;
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
-    {
-        try
-        {
-            String failureMessage =
-                    NativeIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName,
-                                                      cursorContext, openOptions );
-            return defaultIfEmpty( failureMessage, StringUtils.EMPTY );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+    public String getPopulationFailure(
+            IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+        try {
+            String failureMessage = NativeIndexes.readFailureMessage(
+                    databaseIndexContext.pageCache,
+                    storeFile(descriptor),
+                    databaseIndexContext.databaseName,
+                    cursorContext,
+                    openOptions);
+            return defaultIfEmpty(failureMessage, StringUtils.EMPTY);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
-    {
-        try
-        {
-            return NativeIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName, cursorContext,
-                                            openOptions );
-        }
-        catch ( MetadataMismatchException | IOException e )
-        {
-            monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
+    public InternalIndexState getInitialState(
+            IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+        try {
+            return NativeIndexes.readState(
+                    databaseIndexContext.pageCache,
+                    storeFile(descriptor),
+                    databaseIndexContext.databaseName,
+                    cursorContext,
+                    openOptions);
+        } catch (MetadataMismatchException | IOException e) {
+            monitor.failedToOpenIndex(descriptor, "Requesting re-population.", e);
             return InternalIndexState.POPULATING;
         }
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
-            CursorContextFactory contextFactory )
-    {
-        return new SchemaIndexMigrator( getProviderDescriptor().name() + " indexes", fs, pageCache, directoryStructure(), storageEngineFactory,
-                                        contextFactory );
+    public StoreMigrationParticipant storeMigrationParticipant(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            StorageEngineFactory storageEngineFactory,
+            CursorContextFactory contextFactory) {
+        return new SchemaIndexMigrator(
+                getProviderDescriptor().name() + " indexes",
+                fs,
+                pageCache,
+                directoryStructure(),
+                storageEngineFactory,
+                contextFactory);
     }
 
-    private Path storeFile( IndexDescriptor descriptor )
-    {
-        IndexFiles indexFiles = indexFiles( descriptor );
+    private Path storeFile(IndexDescriptor descriptor) {
+        IndexFiles indexFiles = indexFiles(descriptor);
         return indexFiles.getStoreFile();
     }
 
-    private IndexFiles indexFiles( IndexDescriptor descriptor )
-    {
-        return new IndexFiles.Directory( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
+    private IndexFiles indexFiles(IndexDescriptor descriptor) {
+        return new IndexFiles.Directory(databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId());
     }
 }

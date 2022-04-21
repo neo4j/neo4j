@@ -19,30 +19,31 @@
  */
 package org.neo4j.kernel.availability;
 
-import java.time.Clock;
-
-import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
+
+import java.time.Clock;
+import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * This class handles whether the database as a whole is available to use at all.
  * As it runs as the last service in the lifecycle list, the stop() is called first
  * on stop, shutdown or restart, and thus blocks access to everything else for outsiders.
  */
-public class DatabaseAvailability extends LifecycleAdapter
-{
-    private static final AvailabilityRequirement UNAVAILABILITY_REQUIREMENT = new DescriptiveAvailabilityRequirement( "Database unavailable" );
+public class DatabaseAvailability extends LifecycleAdapter {
+    private static final AvailabilityRequirement UNAVAILABILITY_REQUIREMENT =
+            new DescriptiveAvailabilityRequirement("Database unavailable");
     private final AvailabilityGuard databaseAvailabilityGuard;
     private final TransactionCounters transactionCounters;
     private final Clock clock;
     private final long awaitActiveTransactionDeadlineMillis;
 
-    public DatabaseAvailability( AvailabilityGuard databaseAvailabilityGuard, TransactionCounters transactionCounters, Clock clock,
-            long awaitActiveTransactionDeadlineMillis )
-    {
+    public DatabaseAvailability(
+            AvailabilityGuard databaseAvailabilityGuard,
+            TransactionCounters transactionCounters,
+            Clock clock,
+            long awaitActiveTransactionDeadlineMillis) {
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.transactionCounters = transactionCounters;
         this.awaitActiveTransactionDeadlineMillis = awaitActiveTransactionDeadlineMillis;
@@ -50,34 +51,29 @@ public class DatabaseAvailability extends LifecycleAdapter
     }
 
     @Override
-    public void init() throws Exception
-    {
-        databaseAvailabilityGuard.require( UNAVAILABILITY_REQUIREMENT );
+    public void init() throws Exception {
+        databaseAvailabilityGuard.require(UNAVAILABILITY_REQUIREMENT);
     }
 
     @Override
-    public void start()
-    {
-        databaseAvailabilityGuard.fulfill( UNAVAILABILITY_REQUIREMENT );
+    public void start() {
+        databaseAvailabilityGuard.fulfill(UNAVAILABILITY_REQUIREMENT);
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         // Database is no longer available for use
         // Deny beginning new transactions
-        databaseAvailabilityGuard.require( UNAVAILABILITY_REQUIREMENT );
+        databaseAvailabilityGuard.require(UNAVAILABILITY_REQUIREMENT);
 
         // Await transactions stopped
         awaitTransactionsClosedWithinTimeout();
     }
 
-    private void awaitTransactionsClosedWithinTimeout()
-    {
+    private void awaitTransactionsClosedWithinTimeout() {
         long deadline = clock.millis() + awaitActiveTransactionDeadlineMillis;
-        while ( transactionCounters.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline )
-        {
-            parkNanos( MILLISECONDS.toNanos( 10 ) );
+        while (transactionCounters.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline) {
+            parkNanos(MILLISECONDS.toNanos(10));
         }
     }
 }

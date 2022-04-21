@@ -19,16 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceLocker;
-import org.neo4j.memory.EmptyMemoryTracker;
-
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.recordstorage.RecordAssert.assertThat;
 import static org.neo4j.internal.recordstorage.RecordBuilders.filterType;
@@ -52,165 +42,179 @@ import static org.neo4j.internal.recordstorage.RecordBuilders.tNext;
 import static org.neo4j.internal.recordstorage.RecordBuilders.tPrev;
 import static org.neo4j.internal.recordstorage.RecordBuilders.to;
 
-class RelationshipCreatorTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.EmptyMemoryTracker;
+
+class RelationshipCreatorTest {
     private AbstractBaseRecord[] givenState;
     private RecordChangeSet changeset;
     private int denseNodeThreshold = 10;
 
     @Test
-    void newRelWithNoPriorRels()
-    {
-        givenState(
-                node( 0 ),
-                node( 1 )
-        );
+    void newRelWithNoPriorRels() {
+        givenState(node(0), node(1));
 
-        createRelationshipBetween( 0, 1 );
+        createRelationshipBetween(0, 1);
 
-        assertThat( changeset ).containsChanges( node( 0, nextRel( 0 ) ), node( 1, nextRel( 0 ) ), rel( 0, from( 0 ), to( 1 ), sCount( 1 ), tCount( 1 ) ) );
+        assertThat(changeset)
+                .containsChanges(
+                        node(0, nextRel(0)), node(1, nextRel(0)), rel(0, from(0), to(1), sCount(1), tCount(1)));
     }
 
     @Test
-    void selfRelWithNoPriorRels()
-    {
-        givenState(
-                node( 0 )
-        );
+    void selfRelWithNoPriorRels() {
+        givenState(node(0));
 
-        createRelationshipBetween( 0, 0 );
+        createRelationshipBetween(0, 0);
 
-        assertThat( changeset ).containsChanges( node( 0, nextRel( 0 ) ), rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) ) );
+        assertThat(changeset).containsChanges(node(0, nextRel(0)), rel(0, from(0), to(0), sCount(1), tCount(1)));
     }
 
     @Test
-    void sourceHas1PriorRel()
-    {
+    void sourceHas1PriorRel() {
         givenState(
-                node( 0, nextRel( 0 ) ),
-                node( 1, nextRel( 0 ) ),
-                node( 2 ), // target node
-                rel( 0, from( 0 ), to( 1 ), sCount( 1 ), tCount( 1 ) )
-        );
+                node(0, nextRel(0)),
+                node(1, nextRel(0)),
+                node(2), // target node
+                rel(0, from(0), to(1), sCount(1), tCount(1)));
 
-        createRelationshipBetween( 0, 2 );
+        createRelationshipBetween(0, 2);
 
-        assertThat( changeset ).containsChanges( node( 0, nextRel( 1 ) ), node( 2, nextRel( 1 ) ), rel( 0, from( 0 ), to( 1 ), sPrev( 1 ), tCount( 1 ) ),
-                rel( 1, from( 0 ), to( 2 ), sCount( 2 ), sNext( 0 ), tCount( 1 ) ) );
+        assertThat(changeset)
+                .containsChanges(
+                        node(0, nextRel(1)),
+                        node(2, nextRel(1)),
+                        rel(0, from(0), to(1), sPrev(1), tCount(1)),
+                        rel(1, from(0), to(2), sCount(2), sNext(0), tCount(1)));
     }
 
     @Test
-    void targetHas1PriorRel()
-    {
+    void targetHas1PriorRel() {
         givenState(
-                node( 0, nextRel( 0 ) ),
-                node( 1, nextRel( 0 ) ),
-                node( 2 ), // source node
-                rel( 0, from( 0 ), to( 1 ), sCount( 1 ), tCount( 1 ) )
-        );
+                node(0, nextRel(0)),
+                node(1, nextRel(0)),
+                node(2), // source node
+                rel(0, from(0), to(1), sCount(1), tCount(1)));
 
-        createRelationshipBetween( 2, 0 );
+        createRelationshipBetween(2, 0);
 
-        assertThat( changeset ).containsChanges( node( 0, nextRel( 1 ) ), node( 2, nextRel( 1 ) ), rel( 0, from( 0 ), to( 1 ), sPrev( 1 ), tCount( 1 ) ),
-                rel( 1, from( 2 ), to( 0 ), sCount( 1 ), tNext( 0 ), tCount( 2 ) ) );
+        assertThat(changeset)
+                .containsChanges(
+                        node(0, nextRel(1)),
+                        node(2, nextRel(1)),
+                        rel(0, from(0), to(1), sPrev(1), tCount(1)),
+                        rel(1, from(2), to(0), sCount(1), tNext(0), tCount(2)));
     }
 
     @Test
-    void sourceAndTargetShare1PriorRel()
-    {
-        givenState(
-                node( 0, nextRel( 0 ) ),
-                node( 1, nextRel( 0 ) ),
-                rel( 0, from( 0 ), to( 1 ), sCount( 1 ), tCount( 1 ) )
-        );
+    void sourceAndTargetShare1PriorRel() {
+        givenState(node(0, nextRel(0)), node(1, nextRel(0)), rel(0, from(0), to(1), sCount(1), tCount(1)));
 
-        createRelationshipBetween( 0, 1 );
+        createRelationshipBetween(0, 1);
 
-        assertThat( changeset ).containsChanges( node( 0, nextRel( 1 ) ), node( 1, nextRel( 1 ) ), rel( 0, from( 0 ), to( 1 ), sPrev( 1 ), tPrev( 1 ) ),
-                rel( 1, from( 0 ), to( 1 ), sCount( 2 ), sNext( 0 ), tCount( 2 ), tNext( 0 ) ) );
+        assertThat(changeset)
+                .containsChanges(
+                        node(0, nextRel(1)),
+                        node(1, nextRel(1)),
+                        rel(0, from(0), to(1), sPrev(1), tPrev(1)),
+                        rel(1, from(0), to(1), sCount(2), sNext(0), tCount(2), tNext(0)));
     }
 
     @Test
-    void selfRelWith1PriorRel()
-    {
-        givenState(
-                node( 0, nextRel( 0 ) ),
-                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) )
-        );
+    void selfRelWith1PriorRel() {
+        givenState(node(0, nextRel(0)), rel(0, from(0), to(0), sCount(1), tCount(1)));
 
-        createRelationshipBetween( 0, 0 );
+        createRelationshipBetween(0, 0);
 
-        assertThat( changeset ).containsChanges( node( 0, nextRel( 1 ) ), rel( 0, from( 0 ), to( 0 ), sPrev( 1 ), tPrev( 1 ) ),
-                rel( 1, from( 0 ), to( 0 ), sCount( 2 ), sNext( 0 ), tCount( 2 ), tNext( 0 ) ) );
+        assertThat(changeset)
+                .containsChanges(
+                        node(0, nextRel(1)),
+                        rel(0, from(0), to(0), sPrev(1), tPrev(1)),
+                        rel(1, from(0), to(0), sCount(2), sNext(0), tCount(2), tNext(0)));
     }
 
     @Test
-    void selfRelUpgradesToDense()
-    {
-        givenState(
-                node( 0, nextRel( 0 ) ),
-                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) )
-        );
+    void selfRelUpgradesToDense() {
+        givenState(node(0, nextRel(0)), rel(0, from(0), to(0), sCount(1), tCount(1)));
 
         denseNodeThreshold = 1;
-        createRelationshipBetween( 0, 0 );
+        createRelationshipBetween(0, 0);
 
-        assertThat( changeset ).containsChanges( node( 0, group( 0 ) ), relGroup( 0, owningNode( 0 ), firstLoop( 1 ) ),
-                rel( 0, from( 0 ), to( 0 ), sPrev( 1 ), tPrev( 1 ) ), rel( 1, from( 0 ), to( 0 ), sCount( 2 ), sNext( 0 ), tCount( 2 ), tNext( 0 ) ) );
+        assertThat(changeset)
+                .containsChanges(
+                        node(0, group(0)),
+                        relGroup(0, owningNode(0), firstLoop(1)),
+                        rel(0, from(0), to(0), sPrev(1), tPrev(1)),
+                        rel(1, from(0), to(0), sCount(2), sNext(0), tCount(2), tNext(0)));
     }
 
     @Test
-    void sourceNodeUpdatesToDense()
-    {
-        givenState(
-                node( 0, nextRel( 0 ) ),
-                node( 1 ),
-                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) )
-        );
+    void sourceNodeUpdatesToDense() {
+        givenState(node(0, nextRel(0)), node(1), rel(0, from(0), to(0), sCount(1), tCount(1)));
 
         denseNodeThreshold = 1;
-        createRelationshipBetween( 0, 1 );
+        createRelationshipBetween(0, 1);
 
-        assertThat( changeset ).containsChanges( node( 0, group( 0 ) ), node( 1, nextRel( 1 ) ), relGroup( 0, owningNode( 0 ), firstLoop( 0 ), firstOut( 1 ) ),
-                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) ), rel( 1, from( 0 ), to( 1 ), sCount( 1 ), tCount( 1 ) ) );
+        assertThat(changeset)
+                .containsChanges(
+                        node(0, group(0)),
+                        node(1, nextRel(1)),
+                        relGroup(0, owningNode(0), firstLoop(0), firstOut(1)),
+                        rel(0, from(0), to(0), sCount(1), tCount(1)),
+                        rel(1, from(0), to(1), sCount(1), tCount(1)));
     }
 
     @Test
-    void targetNodeUpdatesToDense()
-    {
-        givenState(
-                node( 0, nextRel( 0 ) ),
-                node( 1 ),
-                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) )
-        );
+    void targetNodeUpdatesToDense() {
+        givenState(node(0, nextRel(0)), node(1), rel(0, from(0), to(0), sCount(1), tCount(1)));
 
         denseNodeThreshold = 1;
-        createRelationshipBetween( 1, 0 );
+        createRelationshipBetween(1, 0);
 
-        assertThat( changeset ).containsChanges( node( 0, group( 0 ) ), node( 1, nextRel( 1 ) ), relGroup( 0, owningNode( 0 ), firstLoop( 0 ), firstIn( 1 ) ),
-                rel( 0, from( 0 ), to( 0 ), sCount( 1 ), tCount( 1 ) ), rel( 1, from( 1 ), to( 0 ), sCount( 1 ), tCount( 1 ) ) );
+        assertThat(changeset)
+                .containsChanges(
+                        node(0, group(0)),
+                        node(1, nextRel(1)),
+                        relGroup(0, owningNode(0), firstLoop(0), firstIn(1)),
+                        rel(0, from(0), to(0), sCount(1), tCount(1)),
+                        rel(1, from(1), to(0), sCount(1), tCount(1)));
     }
 
-    private void givenState( AbstractBaseRecord... records )
-    {
+    private void givenState(AbstractBaseRecord... records) {
         givenState = records;
-        changeset = newChangeSet( givenState );
+        changeset = newChangeSet(givenState);
     }
 
-    private void createRelationshipBetween( long fromNode, long toNode )
-    {
-        RelationshipModifier logic = new RelationshipModifier( newRelGroupGetter( givenState ), null, denseNodeThreshold, true,
+    private void createRelationshipBetween(long fromNode, long toNode) {
+        RelationshipModifier logic = new RelationshipModifier(
+                newRelGroupGetter(givenState),
+                null,
+                denseNodeThreshold,
+                true,
                 CursorContext.NULL_CONTEXT,
-                EmptyMemoryTracker.INSTANCE );
+                EmptyMemoryTracker.INSTANCE);
 
-        FlatRelationshipModifications
-                data = new FlatRelationshipModifications( new FlatRelationshipModifications.RelationshipData( nextRelId( givenState ), 0, fromNode, toNode ) );
-        logic.modifyRelationships( data, changeset, mock( RelationshipGroupDegreesStore.Updater.class ), ResourceLocker.IGNORE, LockTracer.NONE );
+        FlatRelationshipModifications data = new FlatRelationshipModifications(
+                new FlatRelationshipModifications.RelationshipData(nextRelId(givenState), 0, fromNode, toNode));
+        logic.modifyRelationships(
+                data,
+                changeset,
+                mock(RelationshipGroupDegreesStore.Updater.class),
+                ResourceLocker.IGNORE,
+                LockTracer.NONE);
     }
 
-    private static long nextRelId( AbstractBaseRecord[] existingRecords )
-    {
-        return filterType( existingRecords, RelationshipRecord.class ).map(
-                AbstractBaseRecord::getId ).max( Long::compareTo ).orElse( -1L ) + 1;
+    private static long nextRelId(AbstractBaseRecord[] existingRecords) {
+        return filterType(existingRecords, RelationshipRecord.class)
+                        .map(AbstractBaseRecord::getId)
+                        .max(Long::compareTo)
+                        .orElse(-1L)
+                + 1;
     }
 }

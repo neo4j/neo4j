@@ -19,39 +19,37 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class ExecutingQueryFactoryTest
-{
+class ExecutingQueryFactoryTest {
     @Test
-    void executingQueryWithNoTransactionBindingShouldNotExplode()
-    {
+    void executingQueryWithNoTransactionBindingShouldNotExplode() {
         // GIVEN
-        var factory = new ExecutingQueryFactory( Clocks.nanoClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ), Config.newBuilder().build() );
+        var factory = new ExecutingQueryFactory(
+                Clocks.nanoClock(),
+                new AtomicReference<>(CpuClock.NOT_AVAILABLE),
+                Config.newBuilder().build());
         var executingQuery = factory.createUnbound(
                 "<query text>",
                 MapValue.EMPTY,
                 ClientConnectionInfo.EMBEDDED_CONNECTION,
                 "user",
                 "user",
-                Collections.emptyMap()
-        );
+                Collections.emptyMap());
 
         // WHEN
         var snapshot = executingQuery.snapshot();
 
         // THEN
-        assertEquals( -1L, snapshot.transactionId() );
+        assertEquals(-1L, snapshot.transactionId());
     }
 }

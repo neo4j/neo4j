@@ -22,27 +22,22 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
-public class LogHeaderCache
-{
-    private final LfuCache<Long,LogHeader> cache;
+public class LogHeaderCache {
+    private final LfuCache<Long, LogHeader> cache;
 
-    public LogHeaderCache( int headerCacheSize )
-    {
-        this.cache = new LfuCache<>( "Log header cache", headerCacheSize );
+    public LogHeaderCache(int headerCacheSize) {
+        this.cache = new LfuCache<>("Log header cache", headerCacheSize);
     }
 
-    public void clear()
-    {
+    public void clear() {
         cache.clear();
     }
 
-    public void putHeader( long logVersion, LogHeader logHeader )
-    {
-        cache.put( logVersion, logHeader );
+    public void putHeader(long logVersion, LogHeader logHeader) {
+        cache.put(logVersion, logHeader);
     }
 
-    public LogHeader getLogHeader( long logVersion )
-    {
-        return cache.get( logVersion );
+    public LogHeader getLogHeader(long logVersion) {
+        return cache.get(logVersion);
     }
 }

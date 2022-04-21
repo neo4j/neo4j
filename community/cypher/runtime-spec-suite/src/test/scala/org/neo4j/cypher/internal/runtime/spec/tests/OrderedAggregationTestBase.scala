@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util.Collections
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -31,11 +30,13 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.schema.IndexType
 
+import java.util.Collections
+
 abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
-                                                                      edition: Edition[CONTEXT],
-                                                                      runtime: CypherRuntime[CONTEXT],
-                                                                      sizeHint: Int
-                                                                    ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should count(*) on single ordered grouping column") {
     // given
@@ -79,10 +80,14 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single ordered grouping column with nulls") {
     given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
-        case i: Int if i % 2 == 1 => Map("num" -> i)
-      }, "Honey")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i, "name" -> s"bob${i % 10}")
+          case i: Int if i % 2 == 1 => Map("num" -> i)
+        },
+        "Honey"
+      )
     }
 
     // when
@@ -120,7 +125,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for(node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array(node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 
@@ -139,10 +144,13 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "c").withRows(
-      for {x <- 0 until sizeHint
-           y <- 0 to 1} yield {
+      for {
+        x <- 0 until sizeHint
+        y <- 0 to 1
+      } yield {
         Array(x, y, 5) // (x / 10, y % 2) as grouping gives 5 duplicates per group
-      })
+      }
+    )
   }
 
   test("should count(*) on two grouping columns, two ordered") {
@@ -160,10 +168,13 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "c").withRows(
-      for {x <- 0 until sizeHint / 10
-           y <- 0 until 10} yield {
+      for {
+        x <- 0 until sizeHint / 10
+        y <- 0 until 10
+      } yield {
         Array(x, y, 10) // (x / 100, (y % 100) / 10) as grouping gives 10 duplicates per group
-      })
+      }
+    )
   }
 
   test("should count(*) on two primitive grouping columns with nulls, one ordered") {
@@ -185,7 +196,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for(node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array(node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 
@@ -208,7 +219,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for(node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array(node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 
@@ -227,10 +238,13 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "z", "c").withRows(
-      for {x <- 0 until sizeHint
-           yz <- 0 to 1} yield {
+      for {
+        x <- 0 until sizeHint
+        yz <- 0 to 1
+      } yield {
         Array(x, yz, yz, 5) //  (x / 10, y % 2, z % 2) as grouping gives 5 duplicates per group
-      })
+      }
+    )
   }
 
   test("should count(*) on three grouping columns, two ordered") {
@@ -248,11 +262,14 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "z", "c").withRows(
-      for {x <- 0 until sizeHint / 10
-           y <- 0 until 10
-           z <- 0 to 1} yield {
+      for {
+        x <- 0 until sizeHint / 10
+        y <- 0 until 10
+        z <- 0 to 1
+      } yield {
         Array(x, y, z, 5) //  (x / 100, (y % 100) / 10, z % 2) as grouping gives 5 duplicates per group
-      })
+      }
+    )
   }
 
   test("should count(*) on three grouping columns, three ordered") {
@@ -270,11 +287,14 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "z", "c").withRows(
-      for {x <- 0 until sizeHint / 10
-           y <- 0 until 10
-           z <- 0 to 1} yield {
+      for {
+        x <- 0 until sizeHint / 10
+        y <- 0 until 10
+        z <- 0 to 1
+      } yield {
         Array(x, y, z, 5) //  (x / 100, (y % 100) / 10, (z % 10) / 5) as grouping gives 5 duplicates per group
-      })
+      }
+    )
   }
 
   test("should sum(x) on two grouping columns, two ordered") {
@@ -292,10 +312,17 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "c").withRows(
-      for {i <- 0 until sizeHint / 10
-           j <- 0 until 10} yield {
-        Array(i, j, List(0, 1, 2, 3, 4, 0, 1, 2, 3, 4).sum) //  (x / 100, (y % 100) / 10) as grouping gives 10 duplicates per group, with the z values [0,1,2,3,4,0,1,2,3,4]
-      })
+      for {
+        i <- 0 until sizeHint / 10
+        j <- 0 until 10
+      } yield {
+        Array(
+          i,
+          j,
+          List(0, 1, 2, 3, 4, 0, 1, 2, 3, 4).sum
+        ) //  (x / 100, (y % 100) / 10) as grouping gives 10 duplicates per group, with the z values [0,1,2,3,4,0,1,2,3,4]
+      }
+    )
   }
 
   test("should return nothing for empty input") {
@@ -303,29 +330,61 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "maxD", "min", "minD", "sum", "sumD")
-      .orderedAggregation(Seq("x AS x"), Seq(
-        "count(*) AS countStar",
-        "count(x.num) AS count",
-        "count(DISTINCT x.num) AS countD",
-        "avg(x.num) AS avg",
-        "avg(DISTINCT x.num) AS avgD",
-        "collect(x.num) AS collect",
-        "collect(DISTINCT x.num) AS collectD",
-        "max(x.num) AS max",
-        "max(DISTINCT x.num) AS maxD",
-        "min(x.num) AS min",
-        "min(DISTINCT x.num) AS minD",
-        "sum(x.num) AS sum",
-        "sum(DISTINCT x.num) AS sumD",
-      ), Seq("x"))
+      .produceResults(
+        "countStar",
+        "count",
+        "countD",
+        "avg",
+        "avgD",
+        "collect",
+        "collectD",
+        "max",
+        "maxD",
+        "min",
+        "minD",
+        "sum",
+        "sumD"
+      )
+      .orderedAggregation(
+        Seq("x AS x"),
+        Seq(
+          "count(*) AS countStar",
+          "count(x.num) AS count",
+          "count(DISTINCT x.num) AS countD",
+          "avg(x.num) AS avg",
+          "avg(DISTINCT x.num) AS avgD",
+          "collect(x.num) AS collect",
+          "collect(DISTINCT x.num) AS collectD",
+          "max(x.num) AS max",
+          "max(DISTINCT x.num) AS maxD",
+          "min(x.num) AS min",
+          "min(DISTINCT x.num) AS minD",
+          "sum(x.num) AS sum",
+          "sum(DISTINCT x.num) AS sumD"
+        ),
+        Seq("x")
+      )
       .input(variables = Seq("x"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, inputValues())
 
     // then
-    runtimeResult should beColumns("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "maxD", "min", "minD", "sum", "sumD").withNoRows()
+    runtimeResult should beColumns(
+      "countStar",
+      "count",
+      "countD",
+      "avg",
+      "avgD",
+      "collect",
+      "collectD",
+      "max",
+      "maxD",
+      "min",
+      "minD",
+      "sum",
+      "sumD"
+    ).withNoRows()
   }
 
   test("should return one row for one input row") {
@@ -334,29 +393,61 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "maxD", "min", "minD", "sum", "sumD")
-      .orderedAggregation(Seq("x AS x"), Seq(
-        "count(*) AS countStar",
-        "count(x) AS count",
-        "count(DISTINCT x) AS countD",
-        "avg(x) AS avg",
-        "avg(DISTINCT x) AS avgD",
-        "collect(x) AS collect",
-        "collect(DISTINCT x) AS collectD",
-        "max(x) AS max",
-        "max(DISTINCT x) AS maxD",
-        "min(x) AS min",
-        "min(DISTINCT x) AS minD",
-        "sum(x) AS sum",
-        "sum(DISTINCT x) AS sumD",
-      ), Seq("x"))
+      .produceResults(
+        "countStar",
+        "count",
+        "countD",
+        "avg",
+        "avgD",
+        "collect",
+        "collectD",
+        "max",
+        "maxD",
+        "min",
+        "minD",
+        "sum",
+        "sumD"
+      )
+      .orderedAggregation(
+        Seq("x AS x"),
+        Seq(
+          "count(*) AS countStar",
+          "count(x) AS count",
+          "count(DISTINCT x) AS countD",
+          "avg(x) AS avg",
+          "avg(DISTINCT x) AS avgD",
+          "collect(x) AS collect",
+          "collect(DISTINCT x) AS collectD",
+          "max(x) AS max",
+          "max(DISTINCT x) AS maxD",
+          "min(x) AS min",
+          "min(DISTINCT x) AS minD",
+          "sum(x) AS sum",
+          "sum(DISTINCT x) AS sumD"
+        ),
+        Seq("x")
+      )
       .input(variables = Seq("x"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "maxD", "min", "minD", "sum", "sumD")
+    runtimeResult should beColumns(
+      "countStar",
+      "count",
+      "countD",
+      "avg",
+      "avgD",
+      "collect",
+      "collectD",
+      "max",
+      "maxD",
+      "min",
+      "minD",
+      "sum",
+      "sumD"
+    )
       .withSingleRow(1, 1, 1, 1, 1, Collections.singletonList(1), Collections.singletonList(1), 1, 1, 1, 1, 1, 1)
   }
 
@@ -383,9 +474,13 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     nodeIndex("B", "prop")
     val (aNodes, bNodes) = given {
       val aNodes = nodeGraph(nodesPerLabel, "A")
-      val bNodes = nodePropertyGraph(nodesPerLabel, {
-        case i: Int => Map("prop" -> (if (i % 2 == 0) 5 else 0))
-      }, "B")
+      val bNodes = nodePropertyGraph(
+        nodesPerLabel,
+        {
+          case i: Int => Map("prop" -> (if (i % 2 == 0) 5 else 0))
+        },
+        "B"
+      )
       (aNodes, bNodes)
     }
 
@@ -404,16 +499,14 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       a <- aNodes
       b <- bNodes if b.getProperty("prop").asInstanceOf[Int] == 5
-    }  yield Array[Any](a, b, 5)
+    } yield Array[Any](a, b, 5)
 
     runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
   }
 
   test("should handle long chunks") {
     // given
-    val input = inputColumns(nBatches = sizeHint / 10, batchSize = 10,
-      rowNumber => rowNumber / 100,
-      identity)
+    val input = inputColumns(nBatches = sizeHint / 10, batchSize = 10, rowNumber => rowNumber / 100, identity)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -435,9 +528,13 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     nodeIndex("B", "prop")
     val (aNodes, bNodes) = given {
       val aNodes = nodeGraph(nodesPerLabel, "A")
-      val bNodes = nodePropertyGraph(nodesPerLabel, {
-        case i: Int => Map("prop" -> (if (i % 2 == 0) propValue else 0))
-      }, "B")
+      val bNodes = nodePropertyGraph(
+        nodesPerLabel,
+        {
+          case i: Int => Map("prop" -> (if (i % 2 == 0) propValue else 0))
+        },
+        "B"
+      )
       (aNodes, bNodes)
     }
 
@@ -457,7 +554,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       a <- aNodes
       b <- bNodes if b.getProperty("prop").asInstanceOf[Int] == propValue
       n <- Range.inclusive(1, propValue)
-    }  yield Array[Any](a, b, n, 1)
+    } yield Array[Any](a, b, n, 1)
 
     runtimeResult should beColumns("a", "b", "n", "c").withRows(inOrder(expected))
   }
@@ -478,7 +575,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // Then
     result.request(1)
     result.await() shouldBe true
-    //we shouldn't have exhausted the entire input
+    // we shouldn't have exhausted the entire input
     stream.hasMore shouldBe true
   }
 
@@ -498,7 +595,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // Then
     result.request(1)
     result.await() shouldBe true
-    //we shouldn't have exhausted the entire input
+    // we shouldn't have exhausted the entire input
     stream.hasMore shouldBe true
   }
 

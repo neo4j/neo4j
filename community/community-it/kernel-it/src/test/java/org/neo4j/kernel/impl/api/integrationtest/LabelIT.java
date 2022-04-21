@@ -19,32 +19,29 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 
 import java.util.Iterator;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.token.api.NamedToken;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
-
-class LabelIT extends KernelIntegrationTest
-{
+class LabelIT extends KernelIntegrationTest {
     @Test
-    void shouldListAllLabels() throws Exception
-    {
+    void shouldListAllLabels() throws Exception {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
-        int label1Id = transaction.tokenWrite().labelGetOrCreateForName( "label1" );
-        int label2Id = transaction.tokenWrite().labelGetOrCreateForName( "label2" );
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+        int label1Id = transaction.tokenWrite().labelGetOrCreateForName("label1");
+        int label2Id = transaction.tokenWrite().labelGetOrCreateForName("label2");
 
         // when
         Iterator<NamedToken> labelIdsBeforeCommit = transaction.tokenRead().labelsGetAllTokens();
 
         // then
-        assertThat( asCollection( labelIdsBeforeCommit ) ).contains( new NamedToken( "label1", label1Id ), new NamedToken( "label2", label2Id ) );
+        assertThat(asCollection(labelIdsBeforeCommit))
+                .contains(new NamedToken("label1", label1Id), new NamedToken("label2", label2Id));
 
         // when
         commit();
@@ -53,7 +50,8 @@ class LabelIT extends KernelIntegrationTest
         Iterator<NamedToken> labelIdsAfterCommit = transaction.tokenRead().labelsGetAllTokens();
 
         // then
-        assertThat( asCollection( labelIdsAfterCommit ) ).contains( new NamedToken( "label1", label1Id ), new NamedToken( "label2", label2Id ) );
+        assertThat(asCollection(labelIdsAfterCommit))
+                .contains(new NamedToken("label1", label1Id), new NamedToken("label2", label2Id));
         commit();
     }
 }

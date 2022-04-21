@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+
 import java.io.IOException;
 import java.util.Iterator;
-
 import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -31,64 +32,51 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
-public class GroupOfCommands implements CommandsToApply
-{
+public class GroupOfCommands implements CommandsToApply {
     private final long transactionId;
     private final StoreCursors storeCursors;
     private final StorageCommand[] commands;
     GroupOfCommands next;
 
-    public GroupOfCommands( StoreCursors storeCursors, StorageCommand... commands )
-    {
-        this( TransactionIdStore.BASE_TX_ID, storeCursors, commands );
+    public GroupOfCommands(StoreCursors storeCursors, StorageCommand... commands) {
+        this(TransactionIdStore.BASE_TX_ID, storeCursors, commands);
     }
 
-    public GroupOfCommands( long transactionId, StoreCursors storeCursors, StorageCommand... commands )
-    {
+    public GroupOfCommands(long transactionId, StoreCursors storeCursors, StorageCommand... commands) {
         this.transactionId = transactionId;
         this.storeCursors = storeCursors;
         this.commands = commands;
     }
 
     @Override
-    public long transactionId()
-    {
+    public long transactionId() {
         return transactionId;
     }
 
     @Override
-    public Subject subject()
-    {
+    public Subject subject() {
         return Subject.SYSTEM;
     }
 
     @Override
-    public CursorContext cursorContext()
-    {
+    public CursorContext cursorContext() {
         return NULL_CONTEXT;
     }
 
     @Override
-    public StoreCursors storeCursors()
-    {
+    public StoreCursors storeCursors() {
         return storeCursors;
     }
 
     @Override
-    public CommandsToApply next()
-    {
+    public CommandsToApply next() {
         return next;
     }
 
     @Override
-    public boolean accept( Visitor<StorageCommand,IOException> visitor ) throws IOException
-    {
-        for ( StorageCommand command : commands )
-        {
-            if ( visitor.visit( command ) )
-            {
+    public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
+        for (StorageCommand command : commands) {
+            if (visitor.visit(command)) {
                 return true;
             }
         }
@@ -96,8 +84,7 @@ public class GroupOfCommands implements CommandsToApply
     }
 
     @Override
-    public Iterator<StorageCommand> iterator()
-    {
-        return Iterators.iterator( commands );
+    public Iterator<StorageCommand> iterator() {
+        return Iterators.iterator(commands);
     }
 }

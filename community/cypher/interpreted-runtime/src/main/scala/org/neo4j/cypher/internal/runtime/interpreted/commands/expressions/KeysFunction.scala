@@ -29,7 +29,13 @@ import org.neo4j.values.virtual.ListValue
 case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): ListValue =
-    CypherFunctions.keys(value, state.query, state.cursors.nodeCursor, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)
+    CypherFunctions.keys(
+      value,
+      state.query,
+      state.cursors.nodeCursor,
+      state.cursors.relationshipScanCursor,
+      state.cursors.propertyCursor
+    )
 
   override def rewrite(f: Expression => Expression): Expression = f(KeysFunction(expr.rewrite(f)))
 

@@ -21,15 +21,13 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 
 /**
  * The representation of a file that has been mapped into the associated page cache.
  */
-public interface PagedFile extends AutoCloseable
-{
+public interface PagedFile extends AutoCloseable {
     /**
      * Pin the pages with a shared lock.
      * <p>
@@ -138,7 +136,7 @@ public interface PagedFile extends AutoCloseable
      * Never <code>null</code>.
      * @throws IOException if there was an error accessing the underlying file.
      */
-    PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException;
+    PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException;
 
     /**
      * Get the size of the file-pages, in bytes.
@@ -193,7 +191,7 @@ public interface PagedFile extends AutoCloseable
      * that is marked for deletion can be significantly faster.
      * @param deleteOnClose true if file can be deleted on close, false otherwise.
      */
-    void setDeleteOnClose( boolean deleteOnClose );
+    void setDeleteOnClose(boolean deleteOnClose);
 
     /**
      * Check if this can be deleted on close.

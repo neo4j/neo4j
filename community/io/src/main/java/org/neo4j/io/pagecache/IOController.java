@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache;
 
 import java.io.Flushable;
 import java.io.IOException;
-
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 
 /**
@@ -35,8 +34,7 @@ import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
  * implying that the OS pages are cleared as well. In other words, the IOController can make sure that the operating
  * system does not pile up too much IO work in its page cache, by flushing those caches as well on regular intervals.
  */
-public interface IOController
-{
+public interface IOController {
 
     /**
      * An IOController implementation that does not do anything. Use this implementation if you want the
@@ -57,20 +55,19 @@ public interface IOController
      * out the IO load on the storage device.
      * @param flushEvent A {@link MajorFlushEvent} event that describes ongoing io represented by flushable instance.
      */
-    void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent );
+    void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent);
 
     /**
      * Report any external IO that could be taken into account during evaluation of limits, to inject pauses or sleeps.
      *
      * @param completedIOs - number of completed external IOs.
      */
-    void reportIO( int completedIOs );
+    void reportIO(int completedIOs);
 
     /**
      * @return {@code true} if controller is currently enabled
      */
-    default boolean isEnabled()
-    {
+    default boolean isEnabled() {
         return false;
     }
 }

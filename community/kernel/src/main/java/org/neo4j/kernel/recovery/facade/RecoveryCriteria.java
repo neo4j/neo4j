@@ -20,64 +20,52 @@
 package org.neo4j.kernel.recovery.facade;
 
 import java.time.Instant;
-
 import org.neo4j.kernel.recovery.RecoveryPredicate;
 
-public interface RecoveryCriteria
-{
+public interface RecoveryCriteria {
     RecoveryCriteria ALL = () -> RecoveryPredicate.ALL;
 
-    static RecoveryCriteria until( long txId )
-    {
-        return new TransactionIdCriteria( txId );
+    static RecoveryCriteria until(long txId) {
+        return new TransactionIdCriteria(txId);
     }
 
-    static RecoveryCriteria until( Instant date )
-    {
-        return new TransactionDateCriteria( date );
+    static RecoveryCriteria until(Instant date) {
+        return new TransactionDateCriteria(date);
     }
 
     RecoveryPredicate toPredicate();
 
-    class TransactionDateCriteria implements RecoveryCriteria
-    {
+    class TransactionDateCriteria implements RecoveryCriteria {
         private final Instant instant;
 
-        TransactionDateCriteria( Instant instant )
-        {
+        TransactionDateCriteria(Instant instant) {
             this.instant = instant;
         }
 
-        public long getEpochMillis()
-        {
+        public long getEpochMillis() {
             return instant.toEpochMilli();
         }
 
         @Override
-        public RecoveryPredicate toPredicate()
-        {
-            return RecoveryPredicate.untilInstant( instant );
+        public RecoveryPredicate toPredicate() {
+            return RecoveryPredicate.untilInstant(instant);
         }
     }
 
-    class TransactionIdCriteria implements RecoveryCriteria
-    {
+    class TransactionIdCriteria implements RecoveryCriteria {
         private final long txId;
 
-        TransactionIdCriteria( long txId )
-        {
+        TransactionIdCriteria(long txId) {
             this.txId = txId;
         }
 
-        public long getTxId()
-        {
+        public long getTxId() {
             return txId;
         }
 
         @Override
-        public RecoveryPredicate toPredicate()
-        {
-            return RecoveryPredicate.untilTransactionId( txId );
+        public RecoveryPredicate toPredicate() {
+            return RecoveryPredicate.untilTransactionId(txId);
         }
     }
 }

@@ -20,55 +20,53 @@
 package org.neo4j.bolt.v4.runtime.bookmarking;
 
 import java.util.UUID;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.ListValue;
 
-class BookmarkParsingException extends BoltIOException
-{
-    private BookmarkParsingException( Status status, String message, Throwable cause )
-    {
-        super( status, message, cause );
+class BookmarkParsingException extends BoltIOException {
+    private BookmarkParsingException(Status status, String message, Throwable cause) {
+        super(status, message, cause);
     }
 
-    private BookmarkParsingException( Status status, String message )
-    {
-        super( status, message );
+    private BookmarkParsingException(Status status, String message) {
+        super(status, message);
     }
 
-    static BookmarkParsingException newInvalidBookmarkError( String message )
-    {
-        return new BookmarkParsingException( Status.Transaction.InvalidBookmark, message );
+    static BookmarkParsingException newInvalidBookmarkError(String message) {
+        return new BookmarkParsingException(Status.Transaction.InvalidBookmark, message);
     }
 
-    static BookmarkParsingException newInvalidBookmarkError( String message, Throwable cause )
-    {
-        return new BookmarkParsingException( Status.Transaction.InvalidBookmark, message, cause );
+    static BookmarkParsingException newInvalidBookmarkError(String message, Throwable cause) {
+        return new BookmarkParsingException(Status.Transaction.InvalidBookmark, message, cause);
     }
 
-    static BookmarkParsingException newInvalidSingleBookmarkError( Object bookmarkObject, String message, Throwable cause )
-    {
-        return new BookmarkParsingException( Status.Transaction.InvalidBookmark,
-                String.format( "Supplied bookmark '%s' does not conform to pattern {database_id}:{tx_id}. %s", bookmarkObject, message ),
-                cause );
+    static BookmarkParsingException newInvalidSingleBookmarkError(
+            Object bookmarkObject, String message, Throwable cause) {
+        return new BookmarkParsingException(
+                Status.Transaction.InvalidBookmark,
+                String.format(
+                        "Supplied bookmark '%s' does not conform to pattern {database_id}:{tx_id}. %s",
+                        bookmarkObject, message),
+                cause);
     }
 
-    static BookmarkParsingException newInvalidSingleBookmarkError( Object bookmarkObject )
-    {
-        return new BookmarkParsingException( Status.Transaction.InvalidBookmark,
-                String.format( "Supplied bookmarks '%s' does not conform to pattern {database_id}:{tx_id}.", bookmarkObject ) );
+    static BookmarkParsingException newInvalidSingleBookmarkError(Object bookmarkObject) {
+        return new BookmarkParsingException(
+                Status.Transaction.InvalidBookmark,
+                String.format(
+                        "Supplied bookmarks '%s' does not conform to pattern {database_id}:{tx_id}.", bookmarkObject));
     }
 
-    static BookmarkParsingException newInvalidBookmarkMixtureError( ListValue bookmarks )
-    {
-        return new BookmarkParsingException( Status.Transaction.InvalidBookmarkMixture,
-                String.format( "Supplied bookmarks are from different databases. Bookmarks: %s.", bookmarks ) );
+    static BookmarkParsingException newInvalidBookmarkMixtureError(ListValue bookmarks) {
+        return new BookmarkParsingException(
+                Status.Transaction.InvalidBookmarkMixture,
+                String.format("Supplied bookmarks are from different databases. Bookmarks: %s.", bookmarks));
     }
 
-    static BookmarkParsingException newInvalidBookmarkForUnknownDatabaseError( UUID databaseUuid )
-    {
-        return new BookmarkParsingException( Status.Transaction.InvalidBookmark,
-                String.format( "Supplied bookmark is for an unknown database: %s.", databaseUuid ) );
+    static BookmarkParsingException newInvalidBookmarkForUnknownDatabaseError(UUID databaseUuid) {
+        return new BookmarkParsingException(
+                Status.Transaction.InvalidBookmark,
+                String.format("Supplied bookmark is for an unknown database: %s.", databaseUuid));
     }
 }

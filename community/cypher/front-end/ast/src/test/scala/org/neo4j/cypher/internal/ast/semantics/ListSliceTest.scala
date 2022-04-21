@@ -26,11 +26,14 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 class ListSliceTest extends SemanticFunSuite {
+
   val dummyList = DummyExpression(
-    CTList(CTNode) | CTNode | CTList(CTString))
+    CTList(CTNode) | CTNode | CTList(CTString)
+  )
 
   test("shouldReturnCollectionTypesOfExpression") {
-    val slice = ListSlice(dummyList,
+    val slice = ListSlice(
+      dummyList,
       Some(SignedDecimalIntegerLiteral("1")(DummyPosition(5))),
       Some(SignedDecimalIntegerLiteral("2")(DummyPosition(7)))
     )(DummyPosition(4))
@@ -44,7 +47,10 @@ class ListSliceTest extends SemanticFunSuite {
     val slice = ListSlice(dummyList, None, None)(DummyPosition(4))
 
     val result = SemanticExpressionCheck.simple(slice)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("The start or end (or both) is required for a collection slice", slice.position)))
+    result.errors should equal(Seq(SemanticError(
+      "The start or end (or both) is required for a collection slice",
+      slice.position
+    )))
   }
 
   test("shouldRaiseErrorIfStartingFromFraction") {

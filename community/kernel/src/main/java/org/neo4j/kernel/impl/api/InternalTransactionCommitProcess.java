@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionLogError;
+
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -27,66 +30,50 @@ import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionLogError;
-
-public class InternalTransactionCommitProcess implements TransactionCommitProcess
-{
+public class InternalTransactionCommitProcess implements TransactionCommitProcess {
     private final TransactionAppender appender;
     private final StorageEngine storageEngine;
 
-    public InternalTransactionCommitProcess( TransactionAppender appender, StorageEngine storageEngine )
-    {
+    public InternalTransactionCommitProcess(TransactionAppender appender, StorageEngine storageEngine) {
         this.appender = appender;
         this.storageEngine = storageEngine;
     }
 
     @Override
-    public long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode ) throws TransactionFailureException
-    {
-        long lastTxId = appendToLog( batch, commitEvent );
-        try
-        {
-            applyToStore( batch, commitEvent, mode );
+    public long commit(TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+            throws TransactionFailureException {
+        long lastTxId = appendToLog(batch, commitEvent);
+        try {
+            applyToStore(batch, commitEvent, mode);
             return lastTxId;
-        }
-        finally
-        {
-            close( batch );
+        } finally {
+            close(batch);
         }
     }
 
-    private long appendToLog( TransactionToApply batch, CommitEvent commitEvent ) throws TransactionFailureException
-    {
-        try ( LogAppendEvent logAppendEvent = commitEvent.beginLogAppend() )
-        {
-            return appender.append( batch, logAppendEvent );
-        }
-        catch ( Throwable cause )
-        {
-            throw new TransactionFailureException( TransactionLogError, cause,
-                    "Could not append transaction representation to log" );
+    private long appendToLog(TransactionToApply batch, CommitEvent commitEvent) throws TransactionFailureException {
+        try (LogAppendEvent logAppendEvent = commitEvent.beginLogAppend()) {
+            return appender.append(batch, logAppendEvent);
+        } catch (Throwable cause) {
+            throw new TransactionFailureException(
+                    TransactionLogError, cause, "Could not append transaction representation to log");
         }
     }
 
-    protected void applyToStore( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
-            throws TransactionFailureException
-    {
-        try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
-        {
-            storageEngine.apply( batch, mode );
-        }
-        catch ( Throwable cause )
-        {
-            throw new TransactionFailureException( TransactionCommitFailed, cause,
-                    "Could not apply the transaction to the store after written to log" );
+    protected void applyToStore(TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+            throws TransactionFailureException {
+        try (StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply()) {
+            storageEngine.apply(batch, mode);
+        } catch (Throwable cause) {
+            throw new TransactionFailureException(
+                    TransactionCommitFailed,
+                    cause,
+                    "Could not apply the transaction to the store after written to log");
         }
     }
 
-    private static void close( TransactionToApply batch )
-    {
-        while ( batch != null )
-        {
+    private static void close(TransactionToApply batch) {
+        while (batch != null) {
             batch.publishAsClosed();
             batch.close();
             batch = batch.next();

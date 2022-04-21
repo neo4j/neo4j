@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class ParallelRelationshipCursorTransactionStateTest extends ParallelRelationshipCursorTransactionStateTestBase<WriteTestSupport>
-{
+public class ParallelRelationshipCursorTransactionStateTest
+        extends ParallelRelationshipCursorTransactionStateTestBase<WriteTestSupport> {
     @Override
-    public WriteTestSupport newTestSupport()
-    {
+    public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();
     }
 }

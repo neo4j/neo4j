@@ -39,7 +39,7 @@ case object normalizeSargablePredicates extends Rewriter with CnfPhase with ASTR
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
   override def apply(that: AnyRef): AnyRef = instance(that)
@@ -51,13 +51,14 @@ case object normalizeSargablePredicates extends Rewriter with CnfPhase with ASTR
       inequality.negated
   })
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = instance
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
 
-  override def getRewriter(from: BaseState,
-                           context: BaseContext): Rewriter = this
+  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = this
 
   override def toString = "normalizeSargablePredicates"
 }

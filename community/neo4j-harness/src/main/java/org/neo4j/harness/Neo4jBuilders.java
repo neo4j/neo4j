@@ -20,7 +20,6 @@
 package org.neo4j.harness;
 
 import java.nio.file.Path;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.harness.internal.InProcessNeo4jBuilder;
 
@@ -28,23 +27,20 @@ import org.neo4j.harness.internal.InProcessNeo4jBuilder;
  * Factories for creating {@link Neo4jBuilder} instances.
  */
 @PublicApi
-public final class Neo4jBuilders
-{
+public final class Neo4jBuilders {
     /**
      * Create a builder capable of starting an in-process Neo4j instance. This builder will use the standard java temp
      * directory (configured via the 'java.io.tmpdir' system property) as the location for the temporary Neo4j directory.
      */
-    public static Neo4jBuilder newInProcessBuilder()
-    {
+    public static Neo4jBuilder newInProcessBuilder() {
         return new InProcessNeo4jBuilder();
     }
 
     /**
      * Create a builder capable of starting an in-process Neo4j instance, running in a subdirectory of the specified directory.
      */
-    public static Neo4jBuilder newInProcessBuilder( Path workingDirectory )
-    {
-        return new InProcessNeo4jBuilder( workingDirectory );
+    public static Neo4jBuilder newInProcessBuilder(Path workingDirectory) {
+        return new InProcessNeo4jBuilder(workingDirectory);
     }
 
     private Neo4jBuilders() {}

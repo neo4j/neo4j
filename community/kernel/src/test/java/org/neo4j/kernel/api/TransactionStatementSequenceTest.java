@@ -19,23 +19,20 @@
  */
 package org.neo4j.kernel.api;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.security.AnonymousContext;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 
-class TransactionStatementSequenceTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.security.AnonymousContext;
+
+class TransactionStatementSequenceTest {
     @Test
-    void shouldAllowReadStatementAfterReadStatement()
-    {
+    void shouldAllowReadStatementAfterReadStatement() {
         // given
-        KernelTransaction tx = kernelTransaction( AnonymousContext.read() );
+        KernelTransaction tx = kernelTransaction(AnonymousContext.read());
         tx.dataRead();
 
         // when / then
@@ -43,10 +40,9 @@ class TransactionStatementSequenceTest
     }
 
     @Test
-    void shouldAllowDataStatementAfterReadStatement() throws Exception
-    {
+    void shouldAllowDataStatementAfterReadStatement() throws Exception {
         // given
-        KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
+        KernelTransaction tx = kernelTransaction(AnonymousContext.write());
         tx.dataRead();
 
         // when / then
@@ -54,10 +50,9 @@ class TransactionStatementSequenceTest
     }
 
     @Test
-    void shouldAllowSchemaStatementAfterReadStatement() throws Exception
-    {
+    void shouldAllowSchemaStatementAfterReadStatement() throws Exception {
         // given
-        KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
+        KernelTransaction tx = kernelTransaction(AUTH_DISABLED);
         tx.dataRead();
 
         // when / then
@@ -65,34 +60,37 @@ class TransactionStatementSequenceTest
     }
 
     @Test
-    void shouldRejectSchemaStatementAfterDataStatement() throws Exception
-    {
+    void shouldRejectSchemaStatementAfterDataStatement() throws Exception {
         // given
-        KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
+        KernelTransaction tx = kernelTransaction(AUTH_DISABLED);
         tx.dataWrite();
 
         // when
-        InvalidTransactionTypeKernelException exception = assertThrows( InvalidTransactionTypeKernelException.class, tx::schemaWrite );
-        assertEquals( "Cannot perform schema updates in a transaction that has performed data updates.", exception.getMessage() );
+        InvalidTransactionTypeKernelException exception =
+                assertThrows(InvalidTransactionTypeKernelException.class, tx::schemaWrite);
+        assertEquals(
+                "Cannot perform schema updates in a transaction that has performed data updates.",
+                exception.getMessage());
     }
 
     @Test
-    void shouldRejectDataStatementAfterSchemaStatement() throws Exception
-    {
+    void shouldRejectDataStatementAfterSchemaStatement() throws Exception {
         // given
-        KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
+        KernelTransaction tx = kernelTransaction(AUTH_DISABLED);
         tx.schemaWrite();
 
         // when
-        InvalidTransactionTypeKernelException exception = assertThrows( InvalidTransactionTypeKernelException.class, tx::dataWrite );
-        assertEquals( "Cannot perform data updates in a transaction that has performed schema updates.", exception.getMessage() );
+        InvalidTransactionTypeKernelException exception =
+                assertThrows(InvalidTransactionTypeKernelException.class, tx::dataWrite);
+        assertEquals(
+                "Cannot perform data updates in a transaction that has performed schema updates.",
+                exception.getMessage());
     }
 
     @Test
-    void shouldAllowDataStatementAfterDataStatement() throws Exception
-    {
+    void shouldAllowDataStatementAfterDataStatement() throws Exception {
         // given
-        KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
+        KernelTransaction tx = kernelTransaction(AnonymousContext.write());
         tx.dataWrite();
 
         // when / then
@@ -100,10 +98,9 @@ class TransactionStatementSequenceTest
     }
 
     @Test
-    void shouldAllowSchemaStatementAfterSchemaStatement() throws Exception
-    {
+    void shouldAllowSchemaStatementAfterSchemaStatement() throws Exception {
         // given
-        KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
+        KernelTransaction tx = kernelTransaction(AUTH_DISABLED);
         tx.schemaWrite();
 
         // when / then
@@ -111,10 +108,9 @@ class TransactionStatementSequenceTest
     }
 
     @Test
-    void shouldAllowReadStatementAfterDataStatement() throws Exception
-    {
+    void shouldAllowReadStatementAfterDataStatement() throws Exception {
         // given
-        KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
+        KernelTransaction tx = kernelTransaction(AnonymousContext.write());
         tx.dataWrite();
 
         // when / then
@@ -122,10 +118,9 @@ class TransactionStatementSequenceTest
     }
 
     @Test
-    void shouldAllowReadStatementAfterSchemaStatement() throws Exception
-    {
+    void shouldAllowReadStatementAfterSchemaStatement() throws Exception {
         // given
-        KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
+        KernelTransaction tx = kernelTransaction(AUTH_DISABLED);
         tx.schemaWrite();
 
         // when / then

@@ -23,8 +23,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class CheckpointInfo
-{
+public class CheckpointInfo {
     private final LogPosition transactionLogPosition;
     private final LogPosition checkpointEntryPosition;
     private final LogPosition channelPositionAfterCheckpoint;
@@ -34,10 +33,15 @@ public class CheckpointInfo
     private final TransactionId transactionId;
     private final String reason;
 
-    public CheckpointInfo( LogPosition transactionLogPosition, LegacyStoreId storeId, LogPosition checkpointEntryPosition,
-            LogPosition channelPositionAfterCheckpoint, LogPosition checkpointFilePostReadPosition, KernelVersion version, TransactionId transactionId,
-            String reason )
-    {
+    public CheckpointInfo(
+            LogPosition transactionLogPosition,
+            LegacyStoreId storeId,
+            LogPosition checkpointEntryPosition,
+            LogPosition channelPositionAfterCheckpoint,
+            LogPosition checkpointFilePostReadPosition,
+            KernelVersion version,
+            TransactionId transactionId,
+            String reason) {
         this.transactionLogPosition = transactionLogPosition;
         this.storeId = storeId;
         this.checkpointEntryPosition = checkpointEntryPosition;
@@ -48,51 +52,45 @@ public class CheckpointInfo
         this.reason = reason;
     }
 
-    public LogPosition getTransactionLogPosition()
-    {
+    public LogPosition getTransactionLogPosition() {
         return transactionLogPosition;
     }
 
-    public LogPosition getCheckpointEntryPosition()
-    {
+    public LogPosition getCheckpointEntryPosition() {
         return checkpointEntryPosition;
     }
 
-    public LogPosition getChannelPositionAfterCheckpoint()
-    {
+    public LogPosition getChannelPositionAfterCheckpoint() {
         return channelPositionAfterCheckpoint;
     }
 
-    public LegacyStoreId storeId()
-    {
+    public LegacyStoreId storeId() {
         return storeId;
     }
 
-    public LogPosition getCheckpointFilePostReadPosition()
-    {
+    public LogPosition getCheckpointFilePostReadPosition() {
         return checkpointFilePostReadPosition;
     }
 
-    public KernelVersion getVersion()
-    {
+    public KernelVersion getVersion() {
         return version;
     }
 
-    public TransactionId getTransactionId()
-    {
+    public TransactionId getTransactionId() {
         return transactionId;
     }
 
-    public String getReason()
-    {
+    public String getReason() {
         return reason;
     }
 
     @Override
-    public String toString()
-    {
-        return "CheckpointInfo{" + "transactionLogPosition=" + transactionLogPosition + ", checkpointEntryPosition=" + checkpointEntryPosition +
-                ", channelPositionAfterCheckpoint=" + channelPositionAfterCheckpoint + ", checkpointFilePostReadPosition=" + checkpointFilePostReadPosition +
-                ", version=" + version + ", storeId=" + storeId + ", transactionId=" + transactionId + ", reason='" + reason + '\'' + '}';
+    public String toString() {
+        return "CheckpointInfo{" + "transactionLogPosition=" + transactionLogPosition + ", checkpointEntryPosition="
+                + checkpointEntryPosition + ", channelPositionAfterCheckpoint="
+                + channelPositionAfterCheckpoint + ", checkpointFilePostReadPosition=" + checkpointFilePostReadPosition
+                + ", version="
+                + version + ", storeId=" + storeId + ", transactionId=" + transactionId + ", reason='" + reason + '\''
+                + '}';
     }
 }

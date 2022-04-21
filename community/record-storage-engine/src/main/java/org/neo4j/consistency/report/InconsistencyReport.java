@@ -22,57 +22,56 @@ package org.neo4j.consistency.report;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-public class InconsistencyReport implements InconsistencyLogger
-{
+public class InconsistencyReport implements InconsistencyLogger {
     private final InconsistencyLogger logger;
     private final ConsistencySummaryStatistics summary;
 
-    public InconsistencyReport( InconsistencyLogger logger, ConsistencySummaryStatistics summary )
-    {
+    public InconsistencyReport(InconsistencyLogger logger, ConsistencySummaryStatistics summary) {
         this.logger = logger;
         this.summary = summary;
     }
 
     @Override
-    public void error( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
-    {
-        logger.error( recordType, record, message, args );
+    public void error(RecordType recordType, AbstractBaseRecord record, String message, Object... args) {
+        logger.error(recordType, record, message, args);
     }
 
     @Override
-    public void error( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
-                       String message, Object... args )
-    {
-        logger.error( recordType, oldRecord, newRecord, message, args );
+    public void error(
+            RecordType recordType,
+            AbstractBaseRecord oldRecord,
+            AbstractBaseRecord newRecord,
+            String message,
+            Object... args) {
+        logger.error(recordType, oldRecord, newRecord, message, args);
     }
 
     @Override
-    public void error( String message )
-    {
-        logger.error( message );
+    public void error(String message) {
+        logger.error(message);
     }
 
     @Override
-    public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
-    {
-        logger.warning( recordType, record, message, args );
+    public void warning(RecordType recordType, AbstractBaseRecord record, String message, Object... args) {
+        logger.warning(recordType, record, message, args);
     }
 
     @Override
-    public void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
-                         String message, Object... args )
-    {
-        logger.warning( recordType, oldRecord, newRecord, message, args );
+    public void warning(
+            RecordType recordType,
+            AbstractBaseRecord oldRecord,
+            AbstractBaseRecord newRecord,
+            String message,
+            Object... args) {
+        logger.warning(recordType, oldRecord, newRecord, message, args);
     }
 
     @Override
-    public void warning( String message )
-    {
-        logger.warning( message );
+    public void warning(String message) {
+        logger.warning(message);
     }
 
-    public void updateSummary( RecordType type, int errors, int warnings )
-    {
-        summary.update( type.name(), errors, warnings );
+    public void updateSummary(RecordType type, int errors, int warnings) {
+        summary.update(type.name(), errors, warnings);
     }
 }

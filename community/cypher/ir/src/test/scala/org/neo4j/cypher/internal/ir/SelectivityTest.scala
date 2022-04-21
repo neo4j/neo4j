@@ -27,8 +27,8 @@ class SelectivityTest extends CypherFunSuite {
 
   test("negating a selectivity behaves as expected") {
     Selectivity.of(.1).get.negate should not equal Selectivity.ONE
-    Selectivity.of(5.6e-17).get.negate should not equal Selectivity.ONE
-    Selectivity.of(1e-300).get.negate should not equal Selectivity.ONE
+    Selectivity.of(5.6E-17).get.negate should not equal Selectivity.ONE
+    Selectivity.of(1E-300).get.negate should not equal Selectivity.ONE
 
     Selectivity.ZERO.negate should equal(Selectivity.ONE)
     Selectivity.ZERO.negate should equal(Selectivity.ONE)
@@ -40,13 +40,13 @@ class SelectivityTest extends CypherFunSuite {
   }
 
   test("selectivity and cardinality should not be able to produce NaN or Infinity through multiplication") {
-    ( Cardinality(Double.PositiveInfinity) * Selectivity.ZERO ) should equal ( Cardinality.EMPTY )
+    (Cardinality(Double.PositiveInfinity) * Selectivity.ZERO) should equal(Cardinality.EMPTY)
 
     val maxCardinality = Cardinality(Double.MaxValue)
-    ( Cardinality(Double.PositiveInfinity) * Cardinality.SINGLE ) should equal ( maxCardinality )
-    ( Cardinality(Double.PositiveInfinity) * Cardinality(12) ) should equal ( maxCardinality )
-    ( maxCardinality * Cardinality(1.00001) ) should equal ( maxCardinality )
+    (Cardinality(Double.PositiveInfinity) * Cardinality.SINGLE) should equal(maxCardinality)
+    (Cardinality(Double.PositiveInfinity) * Cardinality(12)) should equal(maxCardinality)
+    (maxCardinality * Cardinality(1.00001)) should equal(maxCardinality)
 
-    ( Cardinality(3223143) ^ 50 ) should equal ( maxCardinality )
+    (Cardinality(3223143) ^ 50) should equal(maxCardinality)
   }
 }

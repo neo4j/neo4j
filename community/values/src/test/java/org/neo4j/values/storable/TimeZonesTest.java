@@ -19,81 +19,71 @@
  */
 package org.neo4j.values.storable;
 
-import org.apache.commons.codec.digest.DigestUtils;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZoneId;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
-
-class TimeZonesTest
-{
+class TimeZonesTest {
     @Test
-    void weSupportAllJavaZoneIds()
-    {
-        ZoneId.getAvailableZoneIds().forEach( s ->
-        {
-            short num = TimeZones.map( s );
-            assertThat( num ).as( "Our time zone table does not have a mapping for " + s ).isGreaterThanOrEqualTo( (short) 0 );
+    void weSupportAllJavaZoneIds() {
+        ZoneId.getAvailableZoneIds().forEach(s -> {
+            short num = TimeZones.map(s);
+            assertThat(num)
+                    .as("Our time zone table does not have a mapping for " + s)
+                    .isGreaterThanOrEqualTo((short) 0);
 
-            String nameFromTable = TimeZones.map( num );
-            if ( !s.equals( nameFromTable ) )
-            {
-                // The test is running on an older Java version and `s` has been removed since, thus it points to a different zone now.
+            String nameFromTable = TimeZones.map(num);
+            if (!s.equals(nameFromTable)) {
+                // The test is running on an older Java version and `s` has been removed since, thus it points to a
+                // different zone now.
                 // That zone should point to itself, however.
-                assertThat( TimeZones.map( TimeZones.map( nameFromTable ) ) ).as(
-                        "Our time zone table has inconsistent mapping for " + nameFromTable ).isEqualTo( nameFromTable );
+                assertThat(TimeZones.map(TimeZones.map(nameFromTable)))
+                        .as("Our time zone table has inconsistent mapping for " + nameFromTable)
+                        .isEqualTo(nameFromTable);
             }
-        } );
+        });
     }
 
     @Test
-    void weSupportDeletedZoneIdEastSaskatchewan()
-    {
-        try
-        {
-            short eastSaskatchewan = TimeZones.map( "Canada/East-Saskatchewan" );
-            assertThat( TimeZones.map( eastSaskatchewan ) ).as(
-                    "Our time zone table does not remap Canada/East-Saskatchewan to Canada/Saskatchewan" ).isEqualTo( "Canada/Saskatchewan" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            fail( "Our time zone table does not support Canada/East-Saskatchewan" );
-        }
-    }
-
-    @Test
-    void weSupportDeletedZoneIdUSPacificNew()
-    {
-        try
-        {
-            short pacificNew = TimeZones.map( "US/Pacific-New" );
-            assertThat( TimeZones.map( pacificNew ) ).as(
-                    "Our time zone table does not remap US/Pacific-New to US/Pacific" ).isEqualTo( "US/Pacific" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            fail( "Our time zone table does not support US/Pacific-New" );
+    void weSupportDeletedZoneIdEastSaskatchewan() {
+        try {
+            short eastSaskatchewan = TimeZones.map("Canada/East-Saskatchewan");
+            assertThat(TimeZones.map(eastSaskatchewan))
+                    .as("Our time zone table does not remap Canada/East-Saskatchewan to Canada/Saskatchewan")
+                    .isEqualTo("Canada/Saskatchewan");
+        } catch (IllegalArgumentException e) {
+            fail("Our time zone table does not support Canada/East-Saskatchewan");
         }
     }
 
     @Test
-    void weSupportDeletedZoneIdUSPacificNewForDeserialization()
-    {
-        try
-        {
+    void weSupportDeletedZoneIdUSPacificNew() {
+        try {
+            short pacificNew = TimeZones.map("US/Pacific-New");
+            assertThat(TimeZones.map(pacificNew))
+                    .as("Our time zone table does not remap US/Pacific-New to US/Pacific")
+                    .isEqualTo("US/Pacific");
+        } catch (IllegalArgumentException e) {
+            fail("Our time zone table does not support US/Pacific-New");
+        }
+    }
+
+    @Test
+    void weSupportDeletedZoneIdUSPacificNewForDeserialization() {
+        try {
             short pacificNew = 58; // Old timezone id for US/Pacific-New
-            assertThat( TimeZones.map( pacificNew ) ).as(
-                    "Our time zone table does not remap US/Pacific-New to US/Pacific" ).isEqualTo( "US/Pacific" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            fail( "Our time zone table does not support US/Pacific-New" );
+            assertThat(TimeZones.map(pacificNew))
+                    .as("Our time zone table does not remap US/Pacific-New to US/Pacific")
+                    .isEqualTo("US/Pacific");
+        } catch (IllegalArgumentException e) {
+            fail("Our time zone table does not support US/Pacific-New");
         }
     }
 
@@ -102,13 +92,13 @@ class TimeZonesTest
      * timezone. You are not allowed to change the order of lines or remove a line. p> If your changes were legit, please change the expected byte[] below.
      */
     @Test
-    void tzidsOrderMustNotChange() throws URISyntaxException, IOException
-    {
-        Path path = Path.of( TimeZones.class.getResource( "/TZIDS" ).toURI() );
-        String timeZonesInfo = Files.readString( path ).replace( "\r\n", "\n" );
-        byte[] timeZonesHash = DigestUtils.sha256( timeZonesInfo );
-        assertThat( timeZonesHash ).isEqualTo(
-                new byte[]{127, -106, 4, -18, -64, -55, 95, 19, -88, 99, -90, -47, -33, 71, -15, 0, -63, 122, 83, -10, -13, -126, 110, -38, -63, -10, -86, -41,
-                           -1, -77, -3, -84} );
+    void tzidsOrderMustNotChange() throws URISyntaxException, IOException {
+        Path path = Path.of(TimeZones.class.getResource("/TZIDS").toURI());
+        String timeZonesInfo = Files.readString(path).replace("\r\n", "\n");
+        byte[] timeZonesHash = DigestUtils.sha256(timeZonesInfo);
+        assertThat(timeZonesHash).isEqualTo(new byte[] {
+            127, -106, 4, -18, -64, -55, 95, 19, -88, 99, -90, -47, -33, 71, -15, 0, -63, 122, 83, -10, -13, -126, 110,
+            -38, -63, -10, -86, -41, -1, -77, -3, -84
+        });
     }
 }

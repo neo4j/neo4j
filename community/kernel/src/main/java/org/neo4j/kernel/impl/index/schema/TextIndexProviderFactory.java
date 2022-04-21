@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.ephemeral_lucene;
+import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -34,35 +38,41 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.ephemeral_lucene;
-import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-
-public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextIndexProvider>
-{
+public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextIndexProvider> {
     private static final String KEY = "text";
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, "1.0" );
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor(KEY, "1.0");
 
     @Override
-    protected Class<?> loggingClass()
-    {
+    protected Class<?> loggingClass() {
         return TextIndexProvider.class;
     }
 
     @Override
-    public IndexProviderDescriptor descriptor()
-    {
+    public IndexProviderDescriptor descriptor() {
         return DESCRIPTOR;
     }
 
     @Override
-    protected TextIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
-                                                Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
-                                                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
-                                                InternalLog log, TokenHolders tokenHolders, JobScheduler scheduler,
-                                                CursorContextFactory contextFactory )
-    {
-        IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() );
-        return new TextIndexProvider( fs, directoryFactory( config.get( ephemeral_lucene ) ), directoryStructure, monitors, config, readOnlyDatabaseChecker );
+    protected TextIndexProvider internalCreate(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            Monitors monitors,
+            String monitorTag,
+            Config config,
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseLayout databaseLayout,
+            InternalLog log,
+            TokenHolders tokenHolders,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory) {
+        IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider(databaseLayout.databaseDirectory());
+        return new TextIndexProvider(
+                fs,
+                directoryFactory(config.get(ephemeral_lucene)),
+                directoryStructure,
+                monitors,
+                config,
+                readOnlyDatabaseChecker);
     }
 }

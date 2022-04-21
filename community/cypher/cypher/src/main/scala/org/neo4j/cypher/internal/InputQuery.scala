@@ -83,18 +83,23 @@ case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends Inp
 /**
  * Query execution options
  */
-case class QueryOptions(offset: InputPosition,
-                        queryOptions: CypherQueryOptions,
-                        recompilationLimitReached: Boolean = false,
-                        materializedEntitiesMode: Boolean = false) {
+case class QueryOptions(
+  offset: InputPosition,
+  queryOptions: CypherQueryOptions,
+  recompilationLimitReached: Boolean = false,
+  materializedEntitiesMode: Boolean = false
+) {
 
-  def compileWhenHot: Boolean = queryOptions.expressionEngine == CypherExpressionEngineOption.onlyWhenHot || queryOptions.expressionEngine == CypherExpressionEngineOption.default
+  def compileWhenHot: Boolean =
+    queryOptions.expressionEngine == CypherExpressionEngineOption.onlyWhenHot || queryOptions.expressionEngine == CypherExpressionEngineOption.default
 
-  def useCompiledExpressions: Boolean = queryOptions.expressionEngine == CypherExpressionEngineOption.compiled || (compileWhenHot && recompilationLimitReached)
+  def useCompiledExpressions: Boolean =
+    queryOptions.expressionEngine == CypherExpressionEngineOption.compiled || (compileWhenHot && recompilationLimitReached)
 
   def withRecompilationLimitReached: QueryOptions = copy(recompilationLimitReached = true)
 
-  def withReplanOption(replanOption: CypherReplanOption): QueryOptions = copy(queryOptions = queryOptions.copy(replan = replanOption))
+  def withReplanOption(replanOption: CypherReplanOption): QueryOptions =
+    copy(queryOptions = queryOptions.copy(replan = replanOption))
 
   def withExecutionMode(executionMode: CypherExecutionMode): QueryOptions =
     copy(queryOptions = queryOptions.copy(executionMode = executionMode))
@@ -116,9 +121,10 @@ case class QueryOptions(offset: InputPosition,
 }
 
 object QueryOptions {
+
   val default: QueryOptions = QueryOptions(
     offset = InputPosition.NONE,
-    queryOptions = CypherQueryOptions.default,
+    queryOptions = CypherQueryOptions.default
   )
 
 }

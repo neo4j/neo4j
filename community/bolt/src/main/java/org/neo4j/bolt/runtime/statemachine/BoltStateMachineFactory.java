@@ -27,8 +27,7 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * Factory class for Bolt runtime environments.
  */
-public interface BoltStateMachineFactory
-{
+public interface BoltStateMachineFactory {
     /**
      * Generate a new state machine.
      *
@@ -37,5 +36,9 @@ public interface BoltStateMachineFactory
      * @param memoryTracker   memory tracker to allocate state machine heap from.
      * @return new {@link BoltStateMachine} instance
      */
-    BoltStateMachine newStateMachine( BoltProtocolVersion protocolVersion, BoltChannel boltChannel, MapValue connectionHints, MemoryTracker memoryTracker );
+    BoltStateMachine newStateMachine(
+            BoltProtocolVersion protocolVersion,
+            BoltChannel boltChannel,
+            MapValue connectionHints,
+            MemoryTracker memoryTracker);
 }

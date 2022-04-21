@@ -21,8 +21,7 @@ package org.neo4j.bolt.security.auth;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
 
-public interface AuthenticationResult
-{
+public interface AuthenticationResult {
     LoginContext getLoginContext();
 
     boolean credentialsExpired();

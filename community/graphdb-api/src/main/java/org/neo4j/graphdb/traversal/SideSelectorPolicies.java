@@ -24,30 +24,23 @@ package org.neo4j.graphdb.traversal;
  *
  * Copied from kernel package so that we can hide kernel from the public API.
  */
-public enum SideSelectorPolicies implements SideSelectorPolicy
-{
-    LEVEL
-    {
+public enum SideSelectorPolicies implements SideSelectorPolicy {
+    LEVEL {
         @Override
-        public SideSelector create( BranchSelector start, BranchSelector end, int maxDepth )
-        {
-            return new LevelSelectorOrderer( start, end, false, maxDepth );
+        public SideSelector create(BranchSelector start, BranchSelector end, int maxDepth) {
+            return new LevelSelectorOrderer(start, end, false, maxDepth);
         }
     },
-    LEVEL_STOP_DESCENT_ON_RESULT
-    {
+    LEVEL_STOP_DESCENT_ON_RESULT {
         @Override
-        public SideSelector create( BranchSelector start, BranchSelector end, int maxDepth )
-        {
-            return new LevelSelectorOrderer( start, end, true, maxDepth );
+        public SideSelector create(BranchSelector start, BranchSelector end, int maxDepth) {
+            return new LevelSelectorOrderer(start, end, true, maxDepth);
         }
     },
-    ALTERNATING
-    {
+    ALTERNATING {
         @Override
-        public SideSelector create( BranchSelector start, BranchSelector end, int maxDepth )
-        {
-            return new AlternatingSelectorOrderer( start, end );
+        public SideSelector create(BranchSelector start, BranchSelector end, int maxDepth) {
+            return new AlternatingSelectorOrderer(start, end);
         }
     }
 }

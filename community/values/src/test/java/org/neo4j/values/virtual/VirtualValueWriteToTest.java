@@ -19,17 +19,6 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.Arrays;
-import java.util.stream.Stream;
-
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.BufferAnyValueWriter;
-import org.neo4j.values.storable.BufferValueWriter.Specials;
-
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.beginList;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.beginMap;
@@ -52,135 +41,124 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.relationship;
 
-@SuppressWarnings( "ReferenceEquality" )
-class VirtualValueWriteToTest
-{
-    private static Stream<Arguments> parameters()
-    {
+import java.util.Arrays;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.BufferAnyValueWriter;
+import org.neo4j.values.storable.BufferValueWriter.Specials;
+
+@SuppressWarnings("ReferenceEquality")
+class VirtualValueWriteToTest {
+    private static Stream<Arguments> parameters() {
         return Stream.of(
                 of(shouldWrite(
-                        VirtualValues.list(
-                                booleanValue( false ),
-                                byteArray( new byte[]{3, 4, 5} ),
-                                stringValue( "yo" )
-                        ),
-                        beginList( 3 ),
+                        VirtualValues.list(booleanValue(false), byteArray(new byte[] {3, 4, 5}), stringValue("yo")),
+                        beginList(3),
                         false,
-                        Specials.byteArray( new byte[]{3, 4, 5} ),
+                        Specials.byteArray(new byte[] {3, 4, 5}),
                         "yo",
-                        endList()
-                ) ),
+                        endList())),
                 of(shouldWrite(
-                        VirtualValues.map(
-                                new String[]{"foo", "bar"},
-                                new AnyValue[]{intValue( 100 ), charValue( 'c' )}
-                        ),
-                        beginMap( 2 ),
-                        "bar", 'c',
-                        "foo", 100,
-                        endMap()
-                ) ),
-                of(shouldWrite(
-                        VirtualValues.node( 1L ),
-                        writeNodeReference( 1L )
-                ) ),
-                of(shouldWrite(
-                        relationship( 2L ),
-                        writeRelationshipReference( 2L )
-                ) ),
+                        VirtualValues.map(new String[] {"foo", "bar"}, new AnyValue[] {intValue(100), charValue('c')}),
+                        beginMap(2),
+                        "bar",
+                        'c',
+                        "foo",
+                        100,
+                        endMap())),
+                of(shouldWrite(VirtualValues.node(1L), writeNodeReference(1L))),
+                of(shouldWrite(relationship(2L), writeRelationshipReference(2L))),
                 of(shouldWrite(
                         VirtualValues.path(
-                                new NodeValue[]{node( 20L, stringArray( "L" ), EMPTY_MAP ),
-                                        node( 40L, stringArray( "L" ), EMPTY_MAP )},
-                                new RelationshipValue[]{
-                                        rel( 100L, node( 40L, stringArray( "L" ), EMPTY_MAP ),
-                                                node( 20L, stringArray( "L" ), EMPTY_MAP ),
-                                                stringValue( "T" ), EMPTY_MAP )} ),
+                                new NodeValue[] {
+                                    node(20L, stringArray("L"), EMPTY_MAP), node(40L, stringArray("L"), EMPTY_MAP)
+                                },
+                                new RelationshipValue[] {
+                                    rel(
+                                            100L,
+                                            node(40L, stringArray("L"), EMPTY_MAP),
+                                            node(20L, stringArray("L"), EMPTY_MAP),
+                                            stringValue("T"),
+                                            EMPTY_MAP)
+                                }),
                         writePath(
-                                new NodeValue[]{node( 20L, stringArray( "L" ), EMPTY_MAP ),
-                                        node( 40L, stringArray( "L" ), EMPTY_MAP )},
-                                new RelationshipValue[]{
-                                        rel( 100L, node( 40L, stringArray( "L" ), EMPTY_MAP ),
-                                                node( 20L, stringArray( "L" ), EMPTY_MAP ),
-                                                stringValue( "T" ), EMPTY_MAP )} )
-                ) ),
+                                new NodeValue[] {
+                                    node(20L, stringArray("L"), EMPTY_MAP), node(40L, stringArray("L"), EMPTY_MAP)
+                                },
+                                new RelationshipValue[] {
+                                    rel(
+                                            100L,
+                                            node(40L, stringArray("L"), EMPTY_MAP),
+                                            node(20L, stringArray("L"), EMPTY_MAP),
+                                            stringValue("T"),
+                                            EMPTY_MAP)
+                                }))),
                 // map( list( map( list() ) ) )
                 of(shouldWrite(
-                        VirtualValues.map(
-                                new String[]{"foo"},
-                                new AnyValue[]{
-                                        VirtualValues.list(
-                                                VirtualValues.map(
-                                                        new String[]{"bar"},
-                                                        new AnyValue[]{
-                                                                VirtualValues.list()}
-                                                )
-                                        )}
-                        ),
-                        beginMap( 1 ),
+                        VirtualValues.map(new String[] {"foo"}, new AnyValue[] {
+                            VirtualValues.list(
+                                    VirtualValues.map(new String[] {"bar"}, new AnyValue[] {VirtualValues.list()}))
+                        }),
+                        beginMap(1),
                         "foo",
-                        beginList( 1 ),
-                        beginMap( 1 ),
+                        beginList(1),
+                        beginMap(1),
                         "bar",
-                        beginList( 0 ),
+                        beginList(0),
                         endList(),
                         endMap(),
                         endList(),
-                        endMap()
-                ) ) ,
+                        endMap())),
                 of(shouldWrite(
-                        node( 1337L,
-                                stringArray( "L1", "L2" ),
-                                map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
-                        writeNode( 1337L,
-                                stringArray( "L1", "L2" ) ,
-                                map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) )
-                ) ),
+                        node(1337L, stringArray("L1", "L2"), map(new String[] {"foo"}, new AnyValue[] {
+                            stringValue("foo")
+                        })),
+                        writeNode(1337L, stringArray("L1", "L2"), map(new String[] {"foo"}, new AnyValue[] {
+                            stringValue("foo")
+                        })))),
                 of(shouldWrite(
-                        rel( 1337L, node( 42L, stringArray( "L" ), EMPTY_MAP ),
-                                node( 43L, stringArray( "L" ), EMPTY_MAP ),
-                                stringValue( "T" ),
-                                map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
-                        writeRelationship( 1337L, 42L, 43L,
-                                stringValue( "T" ),
-                                map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ) ) )
-        );
+                        rel(
+                                1337L,
+                                node(42L, stringArray("L"), EMPTY_MAP),
+                                node(43L, stringArray("L"), EMPTY_MAP),
+                                stringValue("T"),
+                                map(new String[] {"foo"}, new AnyValue[] {stringValue("foo")})),
+                        writeRelationship(1337L, 42L, 43L, stringValue("T"), map(new String[] {"foo"}, new AnyValue[] {
+                            stringValue("foo")
+                        })))));
     }
 
-    private static WriteTest shouldWrite( AnyValue value, Object... expected )
-    {
-        return new WriteTest( value, expected );
+    private static WriteTest shouldWrite(AnyValue value, Object... expected) {
+        return new WriteTest(value, expected);
     }
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
-    void runTest( WriteTest test )
-    {
+    @MethodSource("parameters")
+    void runTest(WriteTest test) {
         test.verifyWriteTo();
     }
 
-    private static class WriteTest
-    {
+    private static class WriteTest {
         private final AnyValue value;
         private final Object[] expected;
 
-        private WriteTest( AnyValue value, Object... expected )
-        {
+        private WriteTest(AnyValue value, Object... expected) {
             this.value = value;
             this.expected = expected;
         }
 
         @Override
-        public String toString()
-        {
-            return String.format( "%s should write %s", value, Arrays.toString( expected ) );
+        public String toString() {
+            return String.format("%s should write %s", value, Arrays.toString(expected));
         }
 
-        void verifyWriteTo()
-        {
+        void verifyWriteTo() {
             BufferAnyValueWriter writer = new BufferAnyValueWriter();
-            value.writeTo( writer );
-            writer.assertBuffer( expected );
+            value.writeTo(writer);
+            writer.assertBuffer(expected);
         }
     }
 }

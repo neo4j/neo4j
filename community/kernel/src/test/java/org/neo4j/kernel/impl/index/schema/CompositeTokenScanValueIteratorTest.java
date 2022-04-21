@@ -19,19 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
-
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -42,206 +29,210 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.neo4j.collection.PrimitiveLongResourceCollections.emptyIterator;
 import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
 
-@Execution( CONCURRENT )
-class CompositeTokenScanValueIteratorTest
-{
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
+
+@Execution(CONCURRENT)
+class CompositeTokenScanValueIteratorTest {
     @Test
-    void mustHandleEmptyListOfIterators()
-    {
+    void mustHandleEmptyListOfIterators() {
         // given
         List<PrimitiveLongResourceIterator> iterators = emptyList();
 
         // when
-        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator(iterators, false);
 
         // then
-        assertFalse( iterator.hasNext() );
-        assertThrows( NoSuchElementException.class, iterator::next );
+        assertFalse(iterator.hasNext());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 
     @Test
-    void mustHandleEmptyIterator()
-    {
+    void mustHandleEmptyIterator() {
         // given
-        List<PrimitiveLongResourceIterator> iterators = singletonList( emptyIterator() );
+        List<PrimitiveLongResourceIterator> iterators = singletonList(emptyIterator());
 
         // when
-        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator(iterators, false);
 
         // then
-        assertFalse( iterator.hasNext() );
+        assertFalse(iterator.hasNext());
     }
 
     @Test
-    void mustHandleMultipleEmptyIterators()
-    {
+    void mustHandleMultipleEmptyIterators() {
         // given
         List<PrimitiveLongResourceIterator> iterators =
-                asMutableList( emptyIterator(), emptyIterator(), emptyIterator() );
+                asMutableList(emptyIterator(), emptyIterator(), emptyIterator());
 
         // when
-        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator(iterators, false);
 
         // then
-        assertFalse( iterator.hasNext() );
+        assertFalse(iterator.hasNext());
     }
 
     /* ALL = FALSE */
     @Test
-    void mustReportAllFromSingleIterator()
-    {
+    void mustReportAllFromSingleIterator() {
         // given
         long[] expected = {0L, 1L, Long.MAX_VALUE};
-        List<PrimitiveLongResourceIterator> iterators = Collections.singletonList( iterator( null, expected ) );
+        List<PrimitiveLongResourceIterator> iterators = Collections.singletonList(iterator(null, expected));
 
         // when
-        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator(iterators, false);
 
         // then
-        assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+        assertArrayEquals(expected, PrimitiveLongCollections.asArray(iterator));
     }
 
     @Test
-    void mustReportAllFromNonOverlappingMultipleIterators()
-    {
+    void mustReportAllFromNonOverlappingMultipleIterators() {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
-        long[] firstIter  = {0L,     2L,     Long.MAX_VALUE};
-        long[] secondIter = {    1L,     3L                };
-        long[] expected   = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
+        long[] firstIter = {0L, 2L, Long.MAX_VALUE};
+        long[] secondIter = {1L, 3L};
+        long[] expected = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
         List<PrimitiveLongResourceIterator> iterators = asMutableList(
-                iterator( closeCounter::incrementAndGet, firstIter ),
-                iterator( closeCounter::incrementAndGet, secondIter ) );
+                iterator(closeCounter::incrementAndGet, firstIter),
+                iterator(closeCounter::incrementAndGet, secondIter));
 
         // when
-        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator(iterators, false);
 
         // then
-        assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+        assertArrayEquals(expected, PrimitiveLongCollections.asArray(iterator));
 
         // when
         iterator.close();
 
         // then
-        assertEquals( 2, closeCounter.get(), "expected close count" );
+        assertEquals(2, closeCounter.get(), "expected close count");
     }
 
     @Test
-    void mustReportUniqueValuesFromOverlappingIterators()
-    {
+    void mustReportUniqueValuesFromOverlappingIterators() {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
-        long[] firstIter  = {0L,     2L,     Long.MAX_VALUE};
-        long[] secondIter = {    1L,     3L                };
-        long[] thirdIter  = {0L,         3L                };
-        long[] expected   = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
+        long[] firstIter = {0L, 2L, Long.MAX_VALUE};
+        long[] secondIter = {1L, 3L};
+        long[] thirdIter = {0L, 3L};
+        long[] expected = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
         List<PrimitiveLongResourceIterator> iterators = asMutableList(
-                iterator( closeCounter::incrementAndGet, firstIter ),
-                iterator( closeCounter::incrementAndGet, secondIter ),
-                iterator( closeCounter::incrementAndGet, thirdIter ) );
+                iterator(closeCounter::incrementAndGet, firstIter),
+                iterator(closeCounter::incrementAndGet, secondIter),
+                iterator(closeCounter::incrementAndGet, thirdIter));
 
         // when
-        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator(iterators, false);
 
         // then
-        assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+        assertArrayEquals(expected, PrimitiveLongCollections.asArray(iterator));
 
         // when
         iterator.close();
 
         // then
-        assertEquals( 3, closeCounter.get(), "expected close count" );
+        assertEquals(3, closeCounter.get(), "expected close count");
     }
 
     @Test
-    void mustReportUniqueValuesFromOverlappingIteratorsWithOneEmpty()
-    {
+    void mustReportUniqueValuesFromOverlappingIteratorsWithOneEmpty() {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
-        long[] firstIter  = {0L,     2L,     Long.MAX_VALUE};
-        long[] secondIter = {    1L,     3L                };
-        long[] thirdIter  = {0L,         3L                };
-        long[] fourthIter = {/* Empty */                   };
-        long[] expected   = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
+        long[] firstIter = {0L, 2L, Long.MAX_VALUE};
+        long[] secondIter = {1L, 3L};
+        long[] thirdIter = {0L, 3L};
+        long[] fourthIter = {
+            /* Empty */
+        };
+        long[] expected = {0L, 1L, 2L, 3L, Long.MAX_VALUE};
         List<PrimitiveLongResourceIterator> iterators = asMutableList(
-                iterator( closeCounter::incrementAndGet, firstIter ),
-                iterator( closeCounter::incrementAndGet, secondIter ),
-                iterator( closeCounter::incrementAndGet, thirdIter ),
-                iterator( closeCounter::incrementAndGet, fourthIter ) );
+                iterator(closeCounter::incrementAndGet, firstIter),
+                iterator(closeCounter::incrementAndGet, secondIter),
+                iterator(closeCounter::incrementAndGet, thirdIter),
+                iterator(closeCounter::incrementAndGet, fourthIter));
 
         // when
-        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator(iterators, false);
 
         // then
-        assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+        assertArrayEquals(expected, PrimitiveLongCollections.asArray(iterator));
 
         // when
         iterator.close();
 
         // then
-        assertEquals( 4, closeCounter.get(), "expected close count" );
+        assertEquals(4, closeCounter.get(), "expected close count");
     }
 
     /* ALL = TRUE */
     @Test
-    void mustOnlyReportValuesReportedByAll()
-    {
+    void mustOnlyReportValuesReportedByAll() {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
-        long[] firstIter  = {0L,         Long.MAX_VALUE};
-        long[] secondIter = {0L, 1L,     Long.MAX_VALUE};
-        long[] thirdIter  = {0L, 1L, 2L, Long.MAX_VALUE};
-        long[] expected   = {0L,         Long.MAX_VALUE};
+        long[] firstIter = {0L, Long.MAX_VALUE};
+        long[] secondIter = {0L, 1L, Long.MAX_VALUE};
+        long[] thirdIter = {0L, 1L, 2L, Long.MAX_VALUE};
+        long[] expected = {0L, Long.MAX_VALUE};
         List<PrimitiveLongResourceIterator> iterators = asMutableList(
-                iterator( closeCounter::incrementAndGet, firstIter ),
-                iterator( closeCounter::incrementAndGet, secondIter ),
-                iterator( closeCounter::incrementAndGet, thirdIter ) );
+                iterator(closeCounter::incrementAndGet, firstIter),
+                iterator(closeCounter::incrementAndGet, secondIter),
+                iterator(closeCounter::incrementAndGet, thirdIter));
 
         // when
-        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, true );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator(iterators, true);
 
         // then
-        assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+        assertArrayEquals(expected, PrimitiveLongCollections.asArray(iterator));
 
         // when
         iterator.close();
 
         // then
-        assertEquals( 3, closeCounter.get(), "expected close count" );
+        assertEquals(3, closeCounter.get(), "expected close count");
     }
 
     @Test
-    void mustOnlyReportValuesReportedByAllWithOneEmpty()
-    {
+    void mustOnlyReportValuesReportedByAllWithOneEmpty() {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
-        long[] firstIter  = {0L,         Long.MAX_VALUE};
-        long[] secondIter = {0L, 1L,     Long.MAX_VALUE};
-        long[] thirdIter  = {0L, 1L, 2L, Long.MAX_VALUE};
-        long[] fourthIter = {/* Empty */               };
-        long[] expected   = {                          };
+        long[] firstIter = {0L, Long.MAX_VALUE};
+        long[] secondIter = {0L, 1L, Long.MAX_VALUE};
+        long[] thirdIter = {0L, 1L, 2L, Long.MAX_VALUE};
+        long[] fourthIter = {
+            /* Empty */
+        };
+        long[] expected = {};
         List<PrimitiveLongResourceIterator> iterators = asMutableList(
-                iterator( closeCounter::incrementAndGet, firstIter ),
-                iterator( closeCounter::incrementAndGet, secondIter ),
-                iterator( closeCounter::incrementAndGet, thirdIter ),
-                iterator( closeCounter::incrementAndGet, fourthIter ) );
+                iterator(closeCounter::incrementAndGet, firstIter),
+                iterator(closeCounter::incrementAndGet, secondIter),
+                iterator(closeCounter::incrementAndGet, thirdIter),
+                iterator(closeCounter::incrementAndGet, fourthIter));
 
         // when
-        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, true );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator(iterators, true);
 
         // then
-        assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
+        assertArrayEquals(expected, PrimitiveLongCollections.asArray(iterator));
 
         // when
         iterator.close();
 
         // then
-        assertEquals( 4, closeCounter.get(), "expected close count" );
+        assertEquals(4, closeCounter.get(), "expected close count");
     }
 
     @SafeVarargs
-    private static <T> List<T> asMutableList( T... objects )
-    {
-        return new ArrayList<>( Arrays.asList( objects ) );
+    private static <T> List<T> asMutableList(T... objects) {
+        return new ArrayList<>(Arrays.asList(objects));
     }
 }

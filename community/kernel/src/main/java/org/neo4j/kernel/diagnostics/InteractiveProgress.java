@@ -25,8 +25,7 @@ import java.io.PrintStream;
  * Tracks progress in an interactive way, relies on the fact that the {@code PrintStream} echoes to a terminal that can
  * interpret the carrier return to reset the current line.
  */
-public class InteractiveProgress implements DiagnosticsReporterProgress
-{
+public class InteractiveProgress implements DiagnosticsReporterProgress {
     private String prefix;
     private String suffix;
     private String totalSteps = "?";
@@ -35,75 +34,62 @@ public class InteractiveProgress implements DiagnosticsReporterProgress
     private String info = "";
     private int longestInfo;
 
-    public InteractiveProgress( PrintStream out, boolean verbose )
-    {
+    public InteractiveProgress(PrintStream out, boolean verbose) {
         this.out = out;
         this.verbose = verbose;
     }
 
     @Override
-    public void percentChanged( int percent )
-    {
-        out.print( String.format( "\r%8s [", prefix ) );
+    public void percentChanged(int percent) {
+        out.print(String.format("\r%8s [", prefix));
         int totalWidth = 20;
 
         int numBars = totalWidth * percent / 100;
-        for ( int i = 0; i < totalWidth; i++ )
-        {
-            if ( i < numBars )
-            {
-                out.print( '#' );
-            }
-            else
-            {
-                out.print( ' ' );
+        for (int i = 0; i < totalWidth; i++) {
+            if (i < numBars) {
+                out.print('#');
+            } else {
+                out.print(' ');
             }
         }
-        out.print( String.format( "] %3s%%   %s %s", percent, suffix, info ) );
+        out.print(String.format("] %3s%%   %s %s", percent, suffix, info));
     }
 
     @Override
-    public void started( long currentStepIndex, String target )
-    {
+    public void started(long currentStepIndex, String target) {
         this.prefix = currentStepIndex + "/" + totalSteps;
         this.suffix = target;
-        percentChanged( 0 );
+        percentChanged(0);
     }
 
     @Override
-    public void finished()
-    {
+    public void finished() {
         // Pad string to erase info string
-        info = " ".repeat( longestInfo );
+        info = " ".repeat(longestInfo);
 
-        percentChanged( 100 );
+        percentChanged(100);
         out.println();
     }
 
     @Override
-    public void info( String info )
-    {
+    public void info(String info) {
         this.info = info;
-        if ( info.length() > longestInfo )
-        {
+        if (info.length() > longestInfo) {
             longestInfo = info.length();
         }
     }
 
     @Override
-    public void error( String msg, Throwable throwable )
-    {
+    public void error(String msg, Throwable throwable) {
         out.println();
-        out.println( "Error: " + msg );
-        if ( verbose )
-        {
-            throwable.printStackTrace( out );
+        out.println("Error: " + msg);
+        if (verbose) {
+            throwable.printStackTrace(out);
         }
     }
 
     @Override
-    public void setTotalSteps( long steps )
-    {
-        this.totalSteps = String.valueOf( steps );
+    public void setTotalSteps(long steps) {
+        this.totalSteps = String.valueOf(steps);
     }
 }

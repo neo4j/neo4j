@@ -19,8 +19,10 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.Comparator;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 
+import java.util.Comparator;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -29,75 +31,64 @@ import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.sizeOf;
-
 /**
  * The ErrorValue allow delaying errors in value creation until runtime, which is useful
  * if it turns out that the value is never used.
  */
-public final class ErrorValue extends VirtualValue
-{
-    private static final long INVALID_ARGUMENT_EXCEPTION_SHALLOW_SIZE = shallowSizeOfInstance( InvalidArgumentException.class );
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ErrorValue.class ) + INVALID_ARGUMENT_EXCEPTION_SHALLOW_SIZE;
+public final class ErrorValue extends VirtualValue {
+    private static final long INVALID_ARGUMENT_EXCEPTION_SHALLOW_SIZE =
+            shallowSizeOfInstance(InvalidArgumentException.class);
+    private static final long SHALLOW_SIZE =
+            shallowSizeOfInstance(ErrorValue.class) + INVALID_ARGUMENT_EXCEPTION_SHALLOW_SIZE;
     private final InvalidArgumentException e;
 
-    ErrorValue( Exception e )
-    {
-        this.e = new InvalidArgumentException( e.getMessage() );
+    ErrorValue(Exception e) {
+        this.e = new InvalidArgumentException(e.getMessage());
     }
 
     @Override
-    public boolean equals( VirtualValue other )
-    {
+    public boolean equals(VirtualValue other) {
         throw e;
     }
 
     @Override
-    public VirtualValueGroup valueGroup()
-    {
+    public VirtualValueGroup valueGroup() {
         return VirtualValueGroup.ERROR;
     }
 
     @Override
-    public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )
-    {
+    public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
         throw e;
     }
 
     @Override
-    public Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator )
-    {
+    public Comparison unsafeTernaryCompareTo(VirtualValue other, TernaryComparator<AnyValue> comparator) {
         throw e;
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
+    protected int computeHashToMemoize() {
         throw e;
     }
 
     @Override
-    public <E extends Exception> void writeTo( AnyValueWriter<E> writer )
-    {
+    public <E extends Exception> void writeTo(AnyValueWriter<E> writer) {
         throw e;
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
+    public <T> T map(ValueMapper<T> mapper) {
         throw e;
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Error";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + sizeOf( e.getMessage() ); // We ignore stacktrace for now, ideally we should get rid of this whole class
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE
+                + sizeOf(e.getMessage()); // We ignore stacktrace for now, ideally we should get rid of this whole class
     }
 }

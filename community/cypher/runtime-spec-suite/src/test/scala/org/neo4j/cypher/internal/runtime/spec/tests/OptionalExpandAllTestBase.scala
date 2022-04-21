@@ -36,13 +36,13 @@ import scala.util.Random
 abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  protected  val sizeHint: Int
+  protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should optional expand and provide variables for relationship and end node - outgoing") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -75,7 +75,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - outgoing, one type") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -108,7 +108,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - outgoing, two types") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT"),
@@ -142,7 +142,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should optional expand and provide variables for relationship and end node - incoming") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -176,7 +176,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - incoming, one type") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -210,7 +210,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - incoming, two types") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT"),
@@ -245,7 +245,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should optional expand and provide variables for relationship and end node - undirected") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 1 until n by 4) yield {
+    val relTuples = (for (i <- 1 until n by 4) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -279,7 +279,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - undirected, one type") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 1 until n by 4) yield {
+    val relTuples = (for (i <- 1 until n by 4) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -303,11 +303,12 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val nodesWithOtherRels = relTuples.filter(_._3 == "OTHER").flatMap(t => Seq(t._1, t._2)).distinct
-    val expected = (for {
-      ((f, t, typ), rel) <- relTuples.zip(rels) if typ == "OTHER"
-      (from, to) <- Seq((f, t), (t, f))
-    } yield Array(nodes(to), nodes(from), rel)) ++
-      (for (i <- 0 until n if !nodesWithOtherRels.contains(i)) yield Array(nodes(i), null, null))
+    val expected =
+      (for {
+        ((f, t, typ), rel) <- relTuples.zip(rels) if typ == "OTHER"
+        (from, to) <- Seq((f, t), (t, f))
+      } yield Array(nodes(to), nodes(from), rel)) ++
+        (for (i <- 0 until n if !nodesWithOtherRels.contains(i)) yield Array(nodes(i), null, null))
 
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
@@ -315,7 +316,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and provide variables for relationship and end node - undirected, two types") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 1 until n by 4) yield {
+    val relTuples = (for (i <- 1 until n by 4) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT"),
@@ -339,12 +340,14 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val nodesWithOtherOrNextRels = relTuples.filter(t => t._3 == "OTHER" || t._3 == "NEXT").flatMap(t => Seq(t._1, t._2)).distinct
-    val expected = (for {
-      ((f, t, typ), rel) <- relTuples.zip(rels) if typ == "OTHER" || typ == "NEXT"
-      (from, to) <- Seq((f, t), (t, f))
-    } yield Array(nodes(to), nodes(from), rel)) ++
-      (for (i <- 0 until n if !nodesWithOtherOrNextRels.contains(i)) yield Array(nodes(i), null, null))
+    val nodesWithOtherOrNextRels =
+      relTuples.filter(t => t._3 == "OTHER" || t._3 == "NEXT").flatMap(t => Seq(t._1, t._2)).distinct
+    val expected =
+      (for {
+        ((f, t, typ), rel) <- relTuples.zip(rels) if typ == "OTHER" || typ == "NEXT"
+        (from, to) <- Seq((f, t), (t, f))
+      } yield Array(nodes(to), nodes(from), rel)) ++
+        (for (i <- 0 until n if !nodesWithOtherOrNextRels.contains(i)) yield Array(nodes(i), null, null))
 
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
@@ -352,7 +355,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should optional expand when not possible to fully fuse") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -386,7 +389,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand and handle self loops") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, i, "ME")
       )
@@ -449,7 +452,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       Array(n2, null)
     ))
 
-    //CREATE S
+    // CREATE S
     val (m1, m2, m3, m4) = given {
       val m3 = tx.createNode()
       val m4 = tx.createNode()
@@ -463,7 +466,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       Array(m4, null)
     ))
 
-    //CREATE R
+    // CREATE R
     val (o1, o2, o3, o4, o5, o6) = given {
       val o5 = tx.createNode()
       val o6 = tx.createNode()
@@ -501,7 +504,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       Array(n2, null)
     ))
 
-    //CREATE S
+    // CREATE S
     val (m1, m2, m3, m4) = given {
       val m3 = tx.createNode()
       val m4 = tx.createNode()
@@ -515,7 +518,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       Array(m4, null)
     ))
 
-    //CREATE R
+    // CREATE R
     val (o1, o2, o3, o4, o5, o6) = given {
       val o5 = tx.createNode()
       val o6 = tx.createNode()
@@ -551,7 +554,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle node reference as input") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
@@ -594,7 +597,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    a [ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
+    a[ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
   }
 
   test("should support expandInto on RHS of apply") {
@@ -620,8 +623,8 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expectedSingle = (for {a <- as; b <- bs} yield Array(a, b)) ++
-      (for {a <- moreAs} yield Array(a, null))
+    val expectedSingle = (for { a <- as; b <- bs } yield Array(a, b)) ++
+      (for { a <- moreAs } yield Array(a, null))
     val expected = expectedSingle.flatMap(List.fill(5)(_))
 
     // then
@@ -652,9 +655,9 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expectedSingle = (for {a <- as; b <- bs} yield Array(a, b)) ++
-      (for {a <- as2; b <- bs2} yield Array(a, b)) ++
-      (for {a <- moreAs} yield Array(a, null))
+    val expectedSingle = (for { a <- as; b <- bs } yield Array(a, b)) ++
+      (for { a <- as2; b <- bs2 } yield Array(a, b)) ++
+      (for { a <- moreAs } yield Array(a, null))
     val expected = expectedSingle.flatMap(List.fill(5)(_))
 
     // then
@@ -686,9 +689,9 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expectedSingle = (for {a <- as; b <- bs} yield Array(a, b)) ++
-      (for {a <- as2; b <- bs2} yield Array(a, b)) ++
-      (for {a <- moreAs} yield Array(a, null))
+    val expectedSingle = (for { a <- as; b <- bs } yield Array(a, b)) ++
+      (for { a <- as2; b <- bs2 } yield Array(a, b)) ++
+      (for { a <- moreAs } yield Array(a, null))
     val expected = expectedSingle.flatMap(List.fill(5)(_))
 
     // then
@@ -698,16 +701,20 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should filter with a predicate") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER")
       )
     }).reduce(_ ++ _)
 
     val (nodes, rels) = given {
-      val nodes = nodePropertyGraph(n, {
-        case i: Int => Map("num" -> i)
-      }, "Honey")
+      val nodes = nodePropertyGraph(
+        n,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
       val rels = connect(nodes, relTuples)
       (nodes, rels)
     }
@@ -735,16 +742,20 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should write null row if all is filtered out") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER")
       )
     }).reduce(_ ++ _)
 
     val (nodes, rels) = given {
-      val nodes = nodePropertyGraph(n, {
-        case i: Int => Map("num" -> i)
-      }, "Honey")
+      val nodes = nodePropertyGraph(
+        n,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
       val rels = connect(nodes, relTuples)
       (nodes, rels)
     }
@@ -766,16 +777,20 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle nested optional expands") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n by 2) yield {
+    val relTuples = (for (i <- 0 until n by 2) yield {
       Seq(
         (i, (2 * i) % n, "OTHER")
       )
     }).reduce(_ ++ _)
 
     val (nodes, rels) = given {
-      val nodes = nodePropertyGraph(n, {
-        case i: Int => Map("num" -> i)
-      }, "Honey")
+      val nodes = nodePropertyGraph(
+        n,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
       val rels = connect(nodes, relTuples)
       (nodes, rels)
     }
@@ -813,7 +828,8 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
         "R",
         aProperties = {
           case i: Int => Map("prop" -> i)
-        })
+        }
+      )
     }
 
     // when
@@ -849,7 +865,8 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
         "R",
         bProperties = {
           case i: Int => Map("prop" -> i)
-        })
+        }
+      )
     }
 
     // when
@@ -866,7 +883,10 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       for {
         a <- aNodes
         b <- bNodes
-        row <- if (b.getProperty("prop").asInstanceOf[Int] > 20  && b.getProperty("prop").asInstanceOf[Int] < 40 ) List(Array(a, b)) else List.empty
+        row <-
+          if (b.getProperty("prop").asInstanceOf[Int] > 20 && b.getProperty("prop").asInstanceOf[Int] < 40)
+            List(Array(a, b))
+          else List.empty
       } yield row
 
     runtimeResult should beColumns("a", "b").withRows(expected)
@@ -1060,7 +1080,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .nonFuseable()
       .optionalExpandAll("(x)-[r2:B]->(z)", Some(s"z:${nodeLabel.name()}"))
-      .optionalExpandAll("(x)-[r1:A]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .optionalExpandAll("(x)-[r1:A]->(y)", Some("y:NOT_THERE")) // this predicate will always fail
       .nodeByLabelScan("x", "N")
       .build()
 
@@ -1089,7 +1109,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nonFuseable()
-      .optionalExpandAll("(x)-[r2:B]->(z)", Some("z:NOT_THERE"))//this predicate will always fail
+      .optionalExpandAll("(x)-[r2:B]->(z)", Some("z:NOT_THERE")) // this predicate will always fail
       .optionalExpandAll("(x)-[r1:A]->(y)", Some(s"y:${nodeLabel.name()}"))
       .nodeByLabelScan("x", "N")
       .build()
@@ -1107,11 +1127,21 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       def randomLabel = label(allLabels(Random.nextInt(allLabels.length)))
       val nodes = nodeGraph(sizeHint, "N")
       nodes.foreach(n => {
-        (1 to Random.nextInt(10)).foreach(_ => n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("R")))
-        (1 to Random.nextInt(10)).foreach(_ => n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("S")))
-        (1 to Random.nextInt(10)).foreach(_ => n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("T")))
-        (1 to Random.nextInt(10)).foreach(_ => n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("U")))
-        (1 to Random.nextInt(10)).foreach(_ => n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("V")))
+        (1 to Random.nextInt(10)).foreach(_ =>
+          n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("R"))
+        )
+        (1 to Random.nextInt(10)).foreach(_ =>
+          n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("S"))
+        )
+        (1 to Random.nextInt(10)).foreach(_ =>
+          n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("T"))
+        )
+        (1 to Random.nextInt(10)).foreach(_ =>
+          n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("U"))
+        )
+        (1 to Random.nextInt(10)).foreach(_ =>
+          n.createRelationshipTo(tx.createNode(randomLabel), RelationshipType.withName("V"))
+        )
       })
       nodes
     }
@@ -1155,7 +1185,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .limit(10)
       .optionalExpandAll("(x)-[r2:B]->(z)", Some(s"z:${nodeLabel.name()}"))
-      .optionalExpandAll("(x)-[r1:A]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .optionalExpandAll("(x)-[r1:A]->(y)", Some("y:NOT_THERE")) // this predicate will always fail
       .nodeByLabelScan("x", "N")
       .build()
 
@@ -1185,7 +1215,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .nonFuseable()
       .limit(10)
-      .optionalExpandAll("(x)-[r2:B]->(z)", Some("z:NOT_THERE"))//this predicate will always fail
+      .optionalExpandAll("(x)-[r2:B]->(z)", Some("z:NOT_THERE")) // this predicate will always fail
       .optionalExpandAll("(x)-[r1:A]->(y)", Some(s"y:${nodeLabel.name()}"))
       .nodeByLabelScan("x", "N")
       .build()
@@ -1217,12 +1247,12 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .apply()
       .|.optionalExpandAll("(x)-[r2:B]->(z)", Some(s"z:${nodeLabel.name()}"))
-      .|.optionalExpandAll("(x)-[r1:A]->(y)", Some("y:NOT_THERE")) //this predicate will always fail
+      .|.optionalExpandAll("(x)-[r1:A]->(y)", Some("y:NOT_THERE")) // this predicate will always fail
       .|.nodeByLabelScan("x", "N", IndexOrderNone, "i")
       .input(variables = Seq("i"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)): _*))
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(nodes.flatMap(n => Seq.fill(30)(n))))
@@ -1248,13 +1278,13 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .nonFuseable()
       .apply()
-      .|.optionalExpandAll("(x)-[r2:B]->(z)", Some("z:NOT_THERE"))//this predicate will always fail
+      .|.optionalExpandAll("(x)-[r2:B]->(z)", Some("z:NOT_THERE")) // this predicate will always fail
       .|.optionalExpandAll("(x)-[r1:A]->(y)", Some(s"y:${nodeLabel.name()}"))
       .|.nodeByLabelScan("x", "N", IndexOrderNone, "i")
       .input(variables = Seq("i"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)):_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)): _*))
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(nodes.flatMap(n => Seq.fill(20)(n))))

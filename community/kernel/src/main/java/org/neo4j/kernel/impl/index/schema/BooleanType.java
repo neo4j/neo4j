@@ -19,101 +19,81 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.StringJoiner;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
 
+import java.util.StringJoiner;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
-
-class BooleanType extends Type
-{
+class BooleanType extends Type {
     // Affected key state:
     // long0
 
-    BooleanType( byte typeId )
-    {
-        super( ValueGroup.BOOLEAN, typeId, Values.of( false ), Values.of( true ) );
+    BooleanType(byte typeId) {
+        super(ValueGroup.BOOLEAN, typeId, Values.of(false), Values.of(true));
     }
 
     @Override
-    int valueSize( GenericKey<?> state )
-    {
+    int valueSize(GenericKey<?> state) {
         return Types.SIZE_BOOLEAN;
     }
 
     @Override
-    void copyValue( GenericKey<?> to, GenericKey<?> from )
-    {
+    void copyValue(GenericKey<?> to, GenericKey<?> from) {
         to.long0 = from.long0;
     }
 
     @Override
-    Value asValue( GenericKey<?> state )
-    {
-        return asValue( state.long0 );
+    Value asValue(GenericKey<?> state) {
+        return asValue(state.long0);
     }
 
     @Override
-    int compareValue( GenericKey<?> left, GenericKey<?> right )
-    {
-        return compare(
-                left.long0,
-                right.long0 );
+    int compareValue(GenericKey<?> left, GenericKey<?> right) {
+        return compare(left.long0, right.long0);
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey<?> state )
-    {
-        put( cursor, state.long0 );
+    void putValue(PageCursor cursor, GenericKey<?> state) {
+        put(cursor, state.long0);
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey<?> into )
-    {
-        return read( cursor, into );
+    boolean readValue(PageCursor cursor, int size, GenericKey<?> into) {
+        return read(cursor, into);
     }
 
-    static BooleanValue asValue( long long0 )
-    {
-        return Values.booleanValue( asValueRaw( long0 ) );
+    static BooleanValue asValue(long long0) {
+        return Values.booleanValue(asValueRaw(long0));
     }
 
-    static boolean asValueRaw( long long0 )
-    {
-        return booleanOf( long0 );
+    static boolean asValueRaw(long long0) {
+        return booleanOf(long0);
     }
 
-    static int compare(
-            long this_long0,
-            long that_long0 )
-    {
-        return Long.compare( this_long0, that_long0 );
+    static int compare(long this_long0, long that_long0) {
+        return Long.compare(this_long0, that_long0);
     }
 
-    static void put( PageCursor cursor, long long0 )
-    {
-        cursor.putByte( (byte) long0 );
+    static void put(PageCursor cursor, long long0) {
+        cursor.putByte((byte) long0);
     }
 
-    static boolean read( PageCursor cursor, GenericKey<?> into )
-    {
-        into.writeBoolean( cursor.getByte() == TRUE );
+    static boolean read(PageCursor cursor, GenericKey<?> into) {
+        into.writeBoolean(cursor.getByte() == TRUE);
         return true;
     }
 
-    static void write( GenericKey<?> state, boolean value )
-    {
+    static void write(GenericKey<?> state, boolean value) {
         state.long0 = value ? TRUE : FALSE;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
-    {
-        joiner.add( "long0=" + state.long0 );
+    protected void addTypeSpecificDetails(StringJoiner joiner, GenericKey<?> state) {
+        joiner.add("long0=" + state.long0);
     }
 }

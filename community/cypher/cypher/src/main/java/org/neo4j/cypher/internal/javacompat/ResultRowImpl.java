@@ -22,89 +22,72 @@ package org.neo4j.cypher.internal.javacompat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 
-public class ResultRowImpl implements Result.ResultRow
-{
-    private final Map<String,Object> results;
+public class ResultRowImpl implements Result.ResultRow {
+    private final Map<String, Object> results;
 
-    public ResultRowImpl( Map<String,Object> results )
-    {
+    public ResultRowImpl(Map<String, Object> results) {
         this.results = results;
     }
 
-    public ResultRowImpl()
-    {
-        this( new HashMap<>() );
+    public ResultRowImpl() {
+        this(new HashMap<>());
     }
 
-    public void set( String k, Object value )
-    {
-        results.put( k, value );
-    }
-
-    @Override
-    public Object get( String key )
-    {
-        return get( key, Object.class );
+    public void set(String k, Object value) {
+        results.put(k, value);
     }
 
     @Override
-    public Node getNode( String key )
-    {
-        return get( key, Node.class );
+    public Object get(String key) {
+        return get(key, Object.class);
     }
 
     @Override
-    public Relationship getRelationship( String key )
-    {
-        return get( key, Relationship.class );
+    public Node getNode(String key) {
+        return get(key, Node.class);
     }
 
     @Override
-    public String getString( String key )
-    {
-        return get( key, String.class );
+    public Relationship getRelationship(String key) {
+        return get(key, Relationship.class);
     }
 
     @Override
-    public Number getNumber( String key )
-    {
-        return get( key, Number.class );
+    public String getString(String key) {
+        return get(key, String.class);
     }
 
     @Override
-    public Boolean getBoolean( String key )
-    {
-        return get( key, Boolean.class );
+    public Number getNumber(String key) {
+        return get(key, Number.class);
     }
 
     @Override
-    public Path getPath( String key )
-    {
-        return get( key, Path.class );
+    public Boolean getBoolean(String key) {
+        return get(key, Boolean.class);
     }
 
-    private <T> T get( String key, Class<T> type )
-    {
-        Object value = results.get( key );
-        if ( value == null && !results.containsKey( key ) )
-        {
-            throw new IllegalArgumentException( "No column \"" + key + "\" exists" );
+    @Override
+    public Path getPath(String key) {
+        return get(key, Path.class);
+    }
+
+    private <T> T get(String key, Class<T> type) {
+        Object value = results.get(key);
+        if (value == null && !results.containsKey(key)) {
+            throw new IllegalArgumentException("No column \"" + key + "\" exists");
         }
-        try
-        {
-            return type.cast( value );
-        }
-        catch ( ClassCastException e )
-        {
-            String message = String.format( "The current item in column \"%s\" is not a %s; it's \"%s\"",
-                    key, type.getSimpleName(), value );
-            throw new NoSuchElementException( message );
+        try {
+            return type.cast(value);
+        } catch (ClassCastException e) {
+            String message = String.format(
+                    "The current item in column \"%s\" is not a %s; it's \"%s\"", key, type.getSimpleName(), value);
+            throw new NoSuchElementException(message);
         }
     }
 }

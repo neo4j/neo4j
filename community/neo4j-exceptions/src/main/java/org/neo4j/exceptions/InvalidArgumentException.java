@@ -21,21 +21,17 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class InvalidArgumentException extends Neo4jException
-{
-    public InvalidArgumentException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class InvalidArgumentException extends Neo4jException {
+    public InvalidArgumentException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public InvalidArgumentException( String message )
-    {
-        super( message );
+    public InvalidArgumentException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.ArgumentError;
     }
 }

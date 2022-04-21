@@ -20,113 +20,92 @@
 package org.neo4j.kernel.impl.transaction.tracing;
 
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
-{
-    DatabaseTracer NULL = new DatabaseTracer()
-    {
+public interface DatabaseTracer extends TransactionTracer, CheckPointTracer {
+    DatabaseTracer NULL = new DatabaseTracer() {
         @Override
-        public long numberOfCheckPoints()
-        {
+        public long numberOfCheckPoints() {
             return 0;
         }
 
         @Override
-        public long checkPointAccumulatedTotalTimeMillis()
-        {
+        public long checkPointAccumulatedTotalTimeMillis() {
             return 0;
         }
 
         @Override
-        public long lastCheckpointTimeMillis()
-        {
+        public long lastCheckpointTimeMillis() {
             return 0;
         }
 
         @Override
-        public LogFileCreateEvent createLogFile()
-        {
+        public LogFileCreateEvent createLogFile() {
             return LogFileCreateEvent.NULL;
         }
 
         @Override
-        public void openLogFile( Path filePath )
-        {
-        }
+        public void openLogFile(Path filePath) {}
 
         @Override
-        public void closeLogFile( Path filePath )
-        {
-        }
+        public void closeLogFile(Path filePath) {}
 
         @Override
-        public LogAppendEvent logAppend()
-        {
+        public LogAppendEvent logAppend() {
             return LogAppendEvent.NULL;
         }
 
         @Override
-        public LogFileFlushEvent flushFile()
-        {
+        public LogFileFlushEvent flushFile() {
             return LogFileFlushEvent.NULL;
         }
 
         @Override
-        public LogCheckPointEvent beginCheckPoint()
-        {
+        public LogCheckPointEvent beginCheckPoint() {
             return LogCheckPointEvent.NULL;
         }
 
         @Override
-        public TransactionEvent beginTransaction( CursorContext cursorContext )
-        {
+        public TransactionEvent beginTransaction(CursorContext cursorContext) {
             return TransactionEvent.NULL;
         }
 
         @Override
-        public long appendedBytes()
-        {
+        public long appendedBytes() {
             return 0;
         }
 
         @Override
-        public long numberOfLogRotations()
-        {
+        public long numberOfLogRotations() {
             return 0;
         }
 
         @Override
-        public long logRotationAccumulatedTotalTimeMillis()
-        {
+        public long logRotationAccumulatedTotalTimeMillis() {
             return 0;
         }
 
         @Override
-        public long lastLogRotationTimeMillis()
-        {
+        public long lastLogRotationTimeMillis() {
             return 0;
         }
 
         @Override
-        public long numberOfFlushes()
-        {
+        public long numberOfFlushes() {
             return 0;
         }
 
         @Override
-        public long lastTransactionLogAppendBatch()
-        {
+        public long lastTransactionLogAppendBatch() {
             return 0;
         }
     };
 
     LogFileCreateEvent createLogFile();
 
-    void openLogFile( Path filePath );
+    void openLogFile(Path filePath);
 
-    void closeLogFile( Path filePath );
+    void closeLogFile(Path filePath);
 
     LogAppendEvent logAppend();
 

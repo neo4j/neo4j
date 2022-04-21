@@ -62,15 +62,18 @@ object MemoryDeallocationTestBase {
  * compareMemoryUsage, compareMemoryUsageWithInputRows or compareMemoryUsageWithInputStreams
  */
 abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
-                                                                    edition: Edition[CONTEXT],
-                                                                    runtime: CypherRuntime[CONTEXT],
-                                                                    val sizeHint: Int
-                                                                  )
-  extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
-    GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith(
+        GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
+        GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)
+      ),
+      runtime
+    ) with InputStreams[CONTEXT] {
 
-  //-----------------------------------------------------------------
+  // -----------------------------------------------------------------
   // A little helper to collect dependencies on runtime name in one place
   sealed trait Runtime
   case object Interpreted extends Runtime
@@ -81,12 +84,12 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   protected def runtimeUsed: Runtime = {
     runtime.name.toLowerCase match {
       case "interpreted" => Interpreted
-      case "slotted" => Slotted
-      case "pipelined" => Pipelined
-      case _ => NotSupported
+      case "slotted"     => Slotted
+      case "pipelined"   => Pipelined
+      case _             => NotSupported
     }
   }
-  //-----------------------------------------------------------------
+  // -----------------------------------------------------------------
 
   test("should deallocate memory between grouping aggregation - many groups") {
     // given
@@ -108,7 +111,12 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val nRows = sizeHint
 
     // then
-    compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, toleratedDeviation = 0.05) // Pipelined is not exact
+    compareMemoryUsageWithInputRows(
+      logicalQuery1,
+      logicalQuery2,
+      nRows,
+      toleratedDeviation = 0.05
+    ) // Pipelined is not exact
   }
 
   test("should deallocate memory between grouping aggregation - one large group") {
@@ -136,7 +144,13 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val input2 = finiteInput(nRows, Some(_ => Array(0)))
 
     // then
-    compareMemoryUsageWithInputStreams(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation = 0.05) // Pipelined is not exact
+    compareMemoryUsageWithInputStreams(
+      logicalQuery1,
+      logicalQuery2,
+      input1,
+      input2,
+      toleratedDeviation = 0.05
+    ) // Pipelined is not exact
   }
 
   test("should deallocate memory between eager") {
@@ -193,17 +207,17 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery1 = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Descending("x")), nRows/2)
-      .top(Seq(Ascending("x")), nRows/2)
+      .top(Seq(Descending("x")), nRows / 2)
+      .top(Seq(Ascending("x")), nRows / 2)
       .input(variables = Seq("x"))
       .build()
 
     val logicalQuery2 = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Descending("x")), nRows/2)
-      .top(Seq(Ascending("x")), nRows/2)
-      .top(Seq(Descending("x")), nRows/2)
-      .top(Seq(Ascending("x")), nRows/2)
+      .top(Seq(Descending("x")), nRows / 2)
+      .top(Seq(Ascending("x")), nRows / 2)
+      .top(Seq(Descending("x")), nRows / 2)
+      .top(Seq(Ascending("x")), nRows / 2)
       .input(variables = Seq("x"))
       .build()
 
@@ -285,7 +299,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     // then
     val toleratedDeviation = runtimeUsed match {
       case Interpreted => 0.2 // TODO: Improve accuracy of interpreted
-      case _ => 0.1
+      case _           => 0.1
     }
     compareMemoryUsage(logicalQuery1, logicalQuery2, () => input1, () => input2, toleratedDeviation)
   }
@@ -293,12 +307,14 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   test("should deallocate memory between left outer hash joins") {
     val nNodes = sizeHint
 
-    val n = nodeGraph(nNodes/2)
+    val n = nodeGraph(nNodes / 2)
 
     def input(): InputDataStream = {
       val nodes = given { n }
       val random = new Random(seed = 1337)
-      val payload: Array[ListValue] = (1 to nNodes).map { _ => VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*) }.toArray
+      val payload: Array[ListValue] = (1 to nNodes).map { _ =>
+        VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*)
+      }.toArray
       val data = (0 until nNodes / 2).map { i => Array[Any](nodes(i), payload(i)) }
       val nullData = (nNodes / 2 until nNodes).map { i => Array[Any](VirtualValues.node(-1L), payload(i)) }
       val shuffledData = random.shuffle(data ++ nullData).toArray
@@ -340,13 +356,15 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   test("should deallocate memory between right outer hash joins") {
     val nNodes = sizeHint
 
-    val n = nodeGraph(nNodes/2)
+    val n = nodeGraph(nNodes / 2)
     def input(): InputDataStream = {
       val nodes = given { n }
       val random = new Random(seed = 1337)
-      val payload: Array[ListValue] = (1 to nNodes).map { _ => VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*)}.toArray
-      val data = (0 until nNodes/2).map { i => Array[Any](nodes(i), payload(i)) }
-      val nullData = (nNodes/2 until nNodes).map { i => Array[Any](VirtualValues.node(-1L), payload(i)) }
+      val payload: Array[ListValue] = (1 to nNodes).map { _ =>
+        VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*)
+      }.toArray
+      val data = (0 until nNodes / 2).map { i => Array[Any](nodes(i), payload(i)) }
+      val nullData = (nNodes / 2 until nNodes).map { i => Array[Any](VirtualValues.node(-1L), payload(i)) }
       val shuffledData = random.shuffle(data ++ nullData).toArray
       val dataFunction = (i: Long) => shuffledData(i.toInt - 1)
       finiteInput(nNodes, Some(dataFunction))
@@ -388,7 +406,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
 
     given {
       val nodes = nodeGraph(nNodes)
-      nodes.foreach(n => n.setProperty("prop",  n.getId))
+      nodes.foreach(n => n.setProperty("prop", n.getId))
     }
 
     // when
@@ -415,16 +433,16 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     // then
     val toleratedDeviation = runtimeUsed match {
       case Interpreted => 0.2 // TODO: Improve accuracy of interpreted
-      case _ => 0.1
+      case _           => 0.1
     }
     compareMemoryUsage(logicalQuery1, logicalQuery2, toleratedDeviation)
   }
 
   test("should deallocate memory for distinct on RHS of apply") {
-    val ys = Seq(1,1,2,3,4,4,5,1,3,2,5,4,1)
+    val ys = Seq(1, 1, 2, 3, 4, 4, 5, 1, 3, 2, 5, 4, 1)
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -447,7 +465,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
 
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -469,7 +487,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
 
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -488,7 +506,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val ys = Seq()
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -507,7 +525,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   test("should deallocate memory for empty single primitive distinct on RHS of apply") {
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -525,7 +543,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   test("should deallocate memory for empty multiple primitive distinct on RHS of apply") {
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -541,10 +559,10 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory for limit on RHS of apply") {
-    val ys = Seq(1,2,3,4,5,6,7,8,9)
+    val ys = Seq(1, 2, 3, 4, 5, 6, 7, 8, 9)
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -564,7 +582,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val ys = Seq()
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -581,10 +599,10 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory for skip on RHS of apply") {
-    val ys = Seq(1,2,3,4,5,6,7,8,9)
+    val ys = Seq(1, 2, 3, 4, 5, 6, 7, 8, 9)
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -604,7 +622,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val ys = Seq()
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -624,7 +642,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val nRows = sizeHint
     val topLimit = 17
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -645,7 +663,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val nRows = sizeHint
     val topLimit = 17
     val input1 = finiteInput(nRows)
-    val input2 = finiteInput(nRows*3)
+    val input2 = finiteInput(nRows * 3)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -662,34 +680,42 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
   }
 
-  protected def compareMemoryUsage(logicalQuery1: LogicalQuery,
-                                   logicalQuery2: LogicalQuery,
-                                   toleratedDeviation: Double = 0.0d): Unit = {
+  protected def compareMemoryUsage(
+    logicalQuery1: LogicalQuery,
+    logicalQuery2: LogicalQuery,
+    toleratedDeviation: Double = 0.0d
+  ): Unit = {
     compareMemoryUsage(logicalQuery1, logicalQuery2, () => NoInput, () => NoInput, toleratedDeviation)
   }
 
-  protected def compareMemoryUsageWithInputRows(logicalQuery1: LogicalQuery,
-                                                logicalQuery2: LogicalQuery,
-                                                nRows: Int,
-                                                toleratedDeviation: Double = 0.0d): Unit = {
+  protected def compareMemoryUsageWithInputRows(
+    logicalQuery1: LogicalQuery,
+    logicalQuery2: LogicalQuery,
+    nRows: Int,
+    toleratedDeviation: Double = 0.0d
+  ): Unit = {
     val input1 = finiteInput(nRows)
     val input2 = finiteInput(nRows)
     compareMemoryUsage(logicalQuery1, logicalQuery2, () => input1, () => input2, toleratedDeviation)
   }
 
-  protected def compareMemoryUsageWithInputStreams(logicalQuery1: LogicalQuery,
-                                                   logicalQuery2: LogicalQuery,
-                                                   input1: InputDataStream,
-                                                   input2: InputDataStream,
-                                                   toleratedDeviation: Double = 0.0d): Unit = {
+  protected def compareMemoryUsageWithInputStreams(
+    logicalQuery1: LogicalQuery,
+    logicalQuery2: LogicalQuery,
+    input1: InputDataStream,
+    input2: InputDataStream,
+    toleratedDeviation: Double = 0.0d
+  ): Unit = {
     compareMemoryUsage(logicalQuery1, logicalQuery2, () => input1, () => input2, toleratedDeviation)
   }
 
-  private def compareMemoryUsage(logicalQuery1: LogicalQuery,
-                                 logicalQuery2: LogicalQuery,
-                                 input1: () => InputDataStream,
-                                 input2: () => InputDataStream,
-                                 toleratedDeviation: Double): Unit = {
+  private def compareMemoryUsage(
+    logicalQuery1: LogicalQuery,
+    logicalQuery2: LogicalQuery,
+    input1: () => InputDataStream,
+    input2: () => InputDataStream,
+    toleratedDeviation: Double
+  ): Unit = {
     restartTx()
     val runtimeResult1 = profile(logicalQuery1, runtime, input1())
     consume(runtimeResult1)
@@ -707,9 +733,13 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val deviation = Math.abs(maxMem1 - maxMem2) / maxMem1.toDouble
     val deviationPercentage = Math.round(deviation * 100)
     val toleratedDeviationPercentage = Math.round(toleratedDeviation * 100)
-    val deviationMessage = s"$deviationPercentage%${if (toleratedDeviation > 0.0d) s" is more than tolerated ${toleratedDeviationPercentage}%" else ""}"
+    val deviationMessage =
+      s"$deviationPercentage%${if (toleratedDeviation > 0.0d) s" is more than tolerated ${toleratedDeviationPercentage}%"
+      else ""}"
 
-    withClue(s"Query 1 used $maxMem1 bytes and Query 2 used $maxMem2 bytes ($memDiff bytes difference, $deviationMessage):\n") {
+    withClue(
+      s"Query 1 used $maxMem1 bytes and Query 2 used $maxMem2 bytes ($memDiff bytes difference, $deviationMessage):\n"
+    ) {
       if (toleratedDeviation == 0.0d) {
         maxMem1 shouldEqual maxMem2
       } else {

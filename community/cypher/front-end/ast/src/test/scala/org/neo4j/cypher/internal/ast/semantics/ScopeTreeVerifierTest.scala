@@ -30,6 +30,8 @@ class ScopeTreeVerifierTest extends CypherFunSuite with AstConstructionTestSuppo
 
     val result = ScopeTreeVerifier.verify(given).map(_.fixNewLines)
 
-    result.head should startWith(s"'b' points to symbol with different name '$x' in scope ${given.toIdString}. Scope tree:")
+    result.head should startWith(
+      s"'b' points to symbol with different name '$x' in scope ${given.toIdString}. Scope tree:"
+    )
   }
 }

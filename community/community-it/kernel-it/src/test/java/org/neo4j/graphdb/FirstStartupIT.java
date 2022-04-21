@@ -19,43 +19,37 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
-
 @TestDirectoryExtension
-class FirstStartupIT
-{
+class FirstStartupIT {
     @Inject
     private TestDirectory testDir;
 
     @Test
-    void shouldBeEmptyWhenFirstStarted()
-    {
+    void shouldBeEmptyWhenFirstStarted() {
         // When
         var storeDir = testDir.absolutePath();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir).build();
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
 
         // Then
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertEquals( 0, count( transaction.getAllNodes() ) );
-            assertEquals( 0, count( transaction.getAllRelationships() ) );
-            assertEquals( 0, count( transaction.getAllRelationshipTypes() ) );
-            assertEquals( 0, count( transaction.getAllLabels() ) );
-            assertEquals( 0, count( transaction.getAllPropertyKeys() ) );
-        }
-        finally
-        {
+        try (Transaction transaction = db.beginTx()) {
+            assertEquals(0, count(transaction.getAllNodes()));
+            assertEquals(0, count(transaction.getAllRelationships()));
+            assertEquals(0, count(transaction.getAllRelationshipTypes()));
+            assertEquals(0, count(transaction.getAllLabels()));
+            assertEquals(0, count(transaction.getAllPropertyKeys()));
+        } finally {
             managementService.shutdown();
         }
     }

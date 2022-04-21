@@ -19,48 +19,41 @@
  */
 package org.neo4j.kernel.impl.store.cursor;
 
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
+import static org.neo4j.util.FeatureToggles.flag;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
-import static org.neo4j.util.FeatureToggles.flag;
-
-public abstract class AbstractCachedStoreCursors implements StoreCursors
-{
-    private static final boolean CHECK_READ_CURSORS = flag( AbstractCachedStoreCursors.class, "CHECK_READ_CURSORS", false );
+public abstract class AbstractCachedStoreCursors implements StoreCursors {
+    private static final boolean CHECK_READ_CURSORS =
+            flag(AbstractCachedStoreCursors.class, "CHECK_READ_CURSORS", false);
     protected CursorContext cursorContext;
     private final int numTypes;
 
     private PageCursor[] cursorsByType;
 
-    public AbstractCachedStoreCursors( CursorContext cursorContext, int numTypes )
-    {
+    public AbstractCachedStoreCursors(CursorContext cursorContext, int numTypes) {
         this.cursorContext = cursorContext;
         this.numTypes = numTypes;
         this.cursorsByType = createEmptyCursorArray();
     }
 
     @Override
-    public void reset( CursorContext cursorContext )
-    {
+    public void reset(CursorContext cursorContext) {
         this.cursorContext = cursorContext;
         resetCursors();
     }
 
-    private void resetCursors()
-    {
-        for ( int i = 0; i < cursorsByType.length; i++ )
-        {
+    private void resetCursors() {
+        for (int i = 0; i < cursorsByType.length; i++) {
             PageCursor pageCursor = cursorsByType[i];
-            if ( pageCursor != null )
-            {
-                if ( CHECK_READ_CURSORS )
-                {
-                    checkReadCursor( pageCursor, safeCastIntToShort( i ) );
+            if (pageCursor != null) {
+                if (CHECK_READ_CURSORS) {
+                    checkReadCursor(pageCursor, safeCastIntToShort(i));
                 }
                 pageCursor.close();
             }
@@ -69,37 +62,31 @@ public abstract class AbstractCachedStoreCursors implements StoreCursors
     }
 
     @Override
-    public PageCursor readCursor( CursorType type )
-    {
+    public PageCursor readCursor(CursorType type) {
         short value = type.value();
         var cursor = cursorsByType[value];
-        if ( cursor == null )
-        {
-            cursor = createReadCursor( type );
+        if (cursor == null) {
+            cursor = createReadCursor(type);
             cursorsByType[value] = cursor;
         }
         return cursor;
     }
 
-    protected abstract PageCursor createReadCursor( CursorType type );
+    protected abstract PageCursor createReadCursor(CursorType type);
 
     @Override
-    public void close()
-    {
+    public void close() {
         resetCursors();
     }
 
-    private PageCursor[] createEmptyCursorArray()
-    {
+    private PageCursor[] createEmptyCursorArray() {
         return new PageCursor[numTypes];
     }
 
-    private static void checkReadCursor( PageCursor pageCursor, short type )
-    {
-        if ( pageCursor.getRawCurrentFile() == null )
-        {
-            throw new IllegalStateException(
-                    "Read cursor " + ReflectionToStringBuilder.toString( pageCursor ) + " with type: " + type + " is closed outside of owning store cursors." );
+    private static void checkReadCursor(PageCursor pageCursor, short type) {
+        if (pageCursor.getRawCurrentFile() == null) {
+            throw new IllegalStateException("Read cursor " + ReflectionToStringBuilder.toString(pageCursor)
+                    + " with type: " + type + " is closed outside of owning store cursors.");
         }
     }
 }

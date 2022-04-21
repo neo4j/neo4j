@@ -19,43 +19,33 @@
  */
 package org.neo4j.codegen;
 
-abstract class Statement
-{
-    static Statement expression( final ExpressionTemplate expression )
-    {
-        return new Statement()
-        {
+abstract class Statement {
+    static Statement expression(final ExpressionTemplate expression) {
+        return new Statement() {
             @Override
-            void generate( CodeBlock method )
-            {
-                method.expression( expression.materialize( method ) );
+            void generate(CodeBlock method) {
+                method.expression(expression.materialize(method));
             }
         };
     }
 
-    public static Statement returns( final ExpressionTemplate expression )
-    {
-        return new Statement()
-        {
+    public static Statement returns(final ExpressionTemplate expression) {
+        return new Statement() {
             @Override
-            void generate( CodeBlock method )
-            {
-                method.returns( expression.materialize( method ) );
+            void generate(CodeBlock method) {
+                method.returns(expression.materialize(method));
             }
         };
     }
 
-    abstract void generate( CodeBlock method );
+    abstract void generate(CodeBlock method);
 
-    public static Statement put( final ExpressionTemplate target, final Lookup<FieldReference> field,
-            final ExpressionTemplate expression )
-    {
-        return new Statement()
-        {
+    public static Statement put(
+            final ExpressionTemplate target, final Lookup<FieldReference> field, final ExpressionTemplate expression) {
+        return new Statement() {
             @Override
-            void generate( CodeBlock method )
-            {
-                method.put( target.materialize( method ), field.lookup( method ), expression.materialize( method ) );
+            void generate(CodeBlock method) {
+                method.put(target.materialize(method), field.lookup(method), expression.materialize(method));
             }
         };
     }

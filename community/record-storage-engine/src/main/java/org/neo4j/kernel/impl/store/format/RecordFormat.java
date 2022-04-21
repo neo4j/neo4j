@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.format;
 
 import java.io.IOException;
-
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -36,8 +35,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
  *
  * @param <RECORD> type of {@link AbstractBaseRecord} this format handles.
  */
-public interface RecordFormat<RECORD extends AbstractBaseRecord>
-{
+public interface RecordFormat<RECORD extends AbstractBaseRecord> {
     int NO_RECORD_SIZE = 1;
 
     /**
@@ -57,7 +55,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @param storeHeader {@link StoreHeader} with header information from the store.
      * @return record size of records of this format and store.
      */
-    int getRecordSize( StoreHeader storeHeader );
+    int getRecordSize(StoreHeader storeHeader);
 
     /**
      * @return header size of records of this format. This is only applicable to {@link DynamicRecord}
@@ -73,7 +71,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * in use status of.
      * @return whether or not the record at where the {@code cursor} is placed is in use.
      */
-    boolean isInUse( PageCursor cursor );
+    boolean isInUse(PageCursor cursor);
 
     /**
      * Reads data from {@code cursor} of the format specified by this implementation into {@code record}.
@@ -88,7 +86,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * know the record size in advance, but may be read from store header when opening the store.
      * @throws IOException on error reading.
      */
-    void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage ) throws IOException;
+    void read(RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) throws IOException;
 
     /**
      * Called when all changes about a record has been gathered
@@ -105,7 +103,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @param idSequence source of new ids if such are required be generated.
      * @param cursorContext underlying page cursor context
      */
-    void prepare( RECORD record, int recordSize, IdSequence idSequence, CursorContext cursorContext );
+    void prepare(RECORD record, int recordSize, IdSequence idSequence, CursorContext cursorContext);
 
     /**
      * Writes record contents to the {@code cursor} in the format specified by this implementation.
@@ -117,13 +115,13 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @param recordsPerPage number of records per page. All stores know in advance how many records of particular format can fit on a page.
      * @throws IOException on error writing.
      */
-    void write( RECORD record, PageCursor cursor, int recordSize, int recordsPerPage ) throws IOException;
+    void write(RECORD record, PageCursor cursor, int recordSize, int recordsPerPage) throws IOException;
 
     /**
      * @param record to obtain "next" reference from.
      * @return "next" reference of records of this type.
      */
-    long getNextRecordReference( RECORD record );
+    long getNextRecordReference(RECORD record);
 
     /**
      * Can be used to compare against another {@link RecordFormat}, returns {@code true} the format
@@ -133,7 +131,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @return whether or not the other format is the same as this one.
      */
     @Override
-    boolean equals( Object otherFormat );
+    boolean equals(Object otherFormat);
 
     /**
      * To match {@link #equals(Object)}.
@@ -153,5 +151,5 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @param recordSize store format record size
      * @return page size for file
      */
-    int getFilePageSize( int pageSize, int recordSize );
+    int getFilePageSize(int pageSize, int recordSize);
 }

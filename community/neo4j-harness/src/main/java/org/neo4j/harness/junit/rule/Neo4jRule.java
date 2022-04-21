@@ -19,16 +19,14 @@
  */
 package org.neo4j.harness.junit.rule;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,46 +49,34 @@ import org.neo4j.procedure.UserFunction;
  * In case if starting embedded web server is not desirable it can be fully disabled by using {@link #withDisabledServer()} configuration option.
  */
 @PublicApi
-public class Neo4jRule implements TestRule
-{
+public class Neo4jRule implements TestRule {
     private Neo4jBuilder builder;
     private Neo4j neo4j;
     private Supplier<PrintStream> dumpLogsOnFailureTarget;
 
-    protected Neo4jRule( Neo4jBuilder builder )
-    {
+    protected Neo4jRule(Neo4jBuilder builder) {
         this.builder = builder;
     }
 
-    public Neo4jRule()
-    {
-        this( Neo4jBuilders.newInProcessBuilder() );
+    public Neo4jRule() {
+        this(Neo4jBuilders.newInProcessBuilder());
     }
 
-    public Neo4jRule( Path workingDirectory )
-    {
-        this( Neo4jBuilders.newInProcessBuilder( workingDirectory ) );
+    public Neo4jRule(Path workingDirectory) {
+        this(Neo4jBuilders.newInProcessBuilder(workingDirectory));
     }
 
     @Override
-    public Statement apply( final Statement base, Description description )
-    {
-        return new Statement()
-        {
+    public Statement apply(final Statement base, Description description) {
+        return new Statement() {
             @Override
-            public void evaluate() throws Throwable
-            {
-                try ( Neo4j sc = neo4j = builder.build() )
-                {
-                    try
-                    {
+            public void evaluate() throws Throwable {
+                try (Neo4j sc = neo4j = builder.build()) {
+                    try {
                         base.evaluate();
-                    }
-                    catch ( Throwable t )
-                    {
-                        if ( dumpLogsOnFailureTarget != null )
-                        {
-                            sc.printLogs( dumpLogsOnFailureTarget.get() );
+                    } catch (Throwable t) {
+                        if (dumpLogsOnFailureTarget != null) {
+                            sc.printLogs(dumpLogsOnFailureTarget.get());
                         }
 
                         throw t;
@@ -109,9 +95,8 @@ public class Neo4jRule implements TestRule
      * @param <T> the type of the setting
      * @return this configurator instance
      */
-    public <T> Neo4jRule withConfig( Setting<T> key, T value )
-    {
-        builder = builder.withConfig( key, value );
+    public <T> Neo4jRule withConfig(Setting<T> key, T value) {
+        builder = builder.withConfig(key, value);
         return this;
     }
 
@@ -123,9 +108,8 @@ public class Neo4jRule implements TestRule
      * @param extension the unmanaged extension class.
      * @return this configurator instance
      */
-    public Neo4jRule withUnmanagedExtension( String mountPath, Class<?> extension )
-    {
-        builder = builder.withUnmanagedExtension( mountPath, extension );
+    public Neo4jRule withUnmanagedExtension(String mountPath, Class<?> extension) {
+        builder = builder.withUnmanagedExtension(mountPath, extension);
         return this;
     }
 
@@ -136,9 +120,8 @@ public class Neo4jRule implements TestRule
      * @param packageName a java package with extension classes.
      * @return this configurator instance
      */
-    public Neo4jRule withUnmanagedExtension( String mountPath, String packageName )
-    {
-        builder = builder.withUnmanagedExtension( mountPath, packageName );
+    public Neo4jRule withUnmanagedExtension(String mountPath, String packageName) {
+        builder = builder.withUnmanagedExtension(mountPath, packageName);
         return this;
     }
 
@@ -147,8 +130,7 @@ public class Neo4jRule implements TestRule
      * For cases where web server is not required to test specific functionality it can be fully disabled using this tuning option.
      * @return this configurator instance.
      */
-    public Neo4jRule withDisabledServer()
-    {
+    public Neo4jRule withDisabledServer() {
         builder = builder.withDisabledServer();
         return this;
     }
@@ -159,9 +141,8 @@ public class Neo4jRule implements TestRule
      * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
      * @return this configurator instance
      */
-    public Neo4jRule withFixture( Path cypherFileOrDirectory )
-    {
-        builder = builder.withFixture( cypherFileOrDirectory );
+    public Neo4jRule withFixture(Path cypherFileOrDirectory) {
+        builder = builder.withFixture(cypherFileOrDirectory);
         return this;
     }
 
@@ -170,9 +151,8 @@ public class Neo4jRule implements TestRule
      * @param fixtureStatement a cypher statement
      * @return this configurator instance
      */
-    public Neo4jRule withFixture( String fixtureStatement )
-    {
-        builder = builder.withFixture( fixtureStatement );
+    public Neo4jRule withFixture(String fixtureStatement) {
+        builder = builder.withFixture(fixtureStatement);
         return this;
     }
 
@@ -182,9 +162,8 @@ public class Neo4jRule implements TestRule
      * @param fixtureFunction a fixture function
      * @return this configurator instance
      */
-    public Neo4jRule withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
-    {
-        builder = builder.withFixture( fixtureFunction );
+    public Neo4jRule withFixture(Function<GraphDatabaseService, Void> fixtureFunction) {
+        builder = builder.withFixture(fixtureFunction);
         return this;
     }
 
@@ -194,9 +173,8 @@ public class Neo4jRule implements TestRule
      * @param sourceDirectory the directory to copy from
      * @return this configurator instance
      */
-    public Neo4jRule copyFrom( Path sourceDirectory )
-    {
-        builder = builder.copyFrom( sourceDirectory );
+    public Neo4jRule copyFrom(Path sourceDirectory) {
+        builder = builder.copyFrom(sourceDirectory);
         return this;
     }
 
@@ -208,9 +186,8 @@ public class Neo4jRule implements TestRule
      * @param procedureClass a class containing one or more procedure definitions
      * @return this configurator instance
      */
-    public Neo4jRule withProcedure( Class<?> procedureClass )
-    {
-        builder = builder.withProcedure( procedureClass );
+    public Neo4jRule withProcedure(Class<?> procedureClass) {
+        builder = builder.withProcedure(procedureClass);
         return this;
     }
 
@@ -222,9 +199,8 @@ public class Neo4jRule implements TestRule
      * @param functionClass a class containing one or more function definitions
      * @return this configurator instance
      */
-    public Neo4jRule withFunction( Class<?> functionClass )
-    {
-        builder = builder.withFunction( functionClass );
+    public Neo4jRule withFunction(Class<?> functionClass) {
+        builder = builder.withFunction(functionClass);
         return this;
     }
 
@@ -236,9 +212,8 @@ public class Neo4jRule implements TestRule
      * @param functionClass a class containing one or more function definitions
      * @return this configurator instance
      */
-    public Neo4jRule withAggregationFunction( Class<?> functionClass )
-    {
-        builder = builder.withAggregationFunction( functionClass );
+    public Neo4jRule withAggregationFunction(Class<?> functionClass) {
+        builder = builder.withAggregationFunction(functionClass);
         return this;
     }
 
@@ -247,8 +222,7 @@ public class Neo4jRule implements TestRule
      * @param out stream used to dump logs into.
      * @return this configurator instance
      */
-    public Neo4jRule dumpLogsOnFailure( PrintStream out )
-    {
+    public Neo4jRule dumpLogsOnFailure(PrintStream out) {
         dumpLogsOnFailureTarget = () -> out;
         return this;
     }
@@ -261,8 +235,7 @@ public class Neo4jRule implements TestRule
      * @param out the supplier of the stream that will be used to dump logs info.
      * @return this configurator instance.
      */
-    public Neo4jRule dumpLogsOnFailure( Supplier<PrintStream> out )
-    {
+    public Neo4jRule dumpLogsOnFailure(Supplier<PrintStream> out) {
         dumpLogsOnFailureTarget = out;
         return this;
     }
@@ -271,8 +244,7 @@ public class Neo4jRule implements TestRule
      * Returns the URI to the Bolt Protocol connector of the instance.
      * @return the bolt address.
      */
-    public URI boltURI()
-    {
+    public URI boltURI() {
         assertInitialised();
         return neo4j.boltURI();
     }
@@ -281,8 +253,7 @@ public class Neo4jRule implements TestRule
      * Returns the URI to the root resource of the instance. For example, http://localhost:7474/
      * @return the http address to the root resource.
      */
-    public URI httpURI()
-    {
+    public URI httpURI() {
         assertInitialised();
         return neo4j.httpURI();
     }
@@ -292,8 +263,7 @@ public class Neo4jRule implements TestRule
      * For example, https://localhost:7475/.
      * @return the https address to the root resource.
      */
-    public URI httpsURI()
-    {
+    public URI httpsURI() {
         assertInitialised();
         return neo4j.httpsURI();
     }
@@ -302,8 +272,7 @@ public class Neo4jRule implements TestRule
      * Access the {@link DatabaseManagementService} used by the server.
      * @return the database management service backing this instance.
      */
-    public DatabaseManagementService databaseManagementService()
-    {
+    public DatabaseManagementService databaseManagementService() {
         assertInitialised();
         return neo4j.databaseManagementService();
     }
@@ -312,8 +281,7 @@ public class Neo4jRule implements TestRule
      * Access default database service.
      * @return default database service.
      */
-    public GraphDatabaseService defaultDatabaseService()
-    {
+    public GraphDatabaseService defaultDatabaseService() {
         assertInitialised();
         return neo4j.defaultDatabaseService();
     }
@@ -322,17 +290,14 @@ public class Neo4jRule implements TestRule
      * Returns the server's configuration.
      * @return the current configuration of the instance.
      */
-    public Configuration config()
-    {
+    public Configuration config() {
         assertInitialised();
         return neo4j.config();
     }
 
-    private void assertInitialised()
-    {
-        if ( neo4j == null )
-        {
-            throw new IllegalStateException( "Cannot access Neo4j before or after the test runs." );
+    private void assertInitialised() {
+        if (neo4j == null) {
+            throw new IllegalStateException("Cannot access Neo4j before or after the test runs.");
         }
     }
 }

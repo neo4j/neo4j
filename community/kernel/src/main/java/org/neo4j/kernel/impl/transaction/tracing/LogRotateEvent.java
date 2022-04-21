@@ -22,26 +22,20 @@ package org.neo4j.kernel.impl.transaction.tracing;
 /**
  * Represents the event of a log rotation.
  */
-public interface LogRotateEvent extends AutoCloseable
-{
-    LogRotateEvent NULL = new LogRotateEvent()
-    {
+public interface LogRotateEvent extends AutoCloseable {
+    LogRotateEvent NULL = new LogRotateEvent() {
         @Override
-        public void rotationCompleted( long rotationMillis )
-        {
-        }
+        public void rotationCompleted(long rotationMillis) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     };
 
     /**
      * Notify about completion of rotation that took {@code rotationMillis} to complete
      * @param rotationMillis transaction log rotation duration
      */
-    void rotationCompleted( long rotationMillis );
+    void rotationCompleted(long rotationMillis);
 
     /**
      * Marks the end of the log rotation process.

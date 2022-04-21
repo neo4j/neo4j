@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.expressions.TypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
-case object EndNode extends Function  {
+case object EndNode extends Function {
   def name = "endNode"
 
   override val signatures = Vector(

@@ -21,14 +21,12 @@ package org.neo4j.kernel.api.query;
 
 import java.util.Map;
 
-public abstract class IndexUsage
-{
+public abstract class IndexUsage {
     protected final String identifier;
 
-    IndexUsage( String identifier )
-    {
+    IndexUsage(String identifier) {
         this.identifier = identifier;
     }
 
-    public abstract Map<String,String> asMap();
+    public abstract Map<String, String> asMap();
 }

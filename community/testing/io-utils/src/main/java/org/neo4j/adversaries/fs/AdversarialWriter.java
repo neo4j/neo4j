@@ -21,99 +21,94 @@ package org.neo4j.adversaries.fs;
 
 import java.io.IOException;
 import java.io.Writer;
-
 import org.neo4j.adversaries.Adversary;
 
-@SuppressWarnings( "unchecked" )
-public class AdversarialWriter extends Writer
-{
+@SuppressWarnings("unchecked")
+public class AdversarialWriter extends Writer {
     private final Writer writer;
     private final Adversary adversary;
 
-    public AdversarialWriter( Writer writer, Adversary adversary )
-    {
+    public AdversarialWriter(Writer writer, Adversary adversary) {
         this.writer = writer;
         this.adversary = adversary;
     }
 
     @Override
-    public void write( int c ) throws IOException
-    {
-        adversary.injectFailure( IOException.class );
-        writer.write( c );
+    public void write(int c) throws IOException {
+        adversary.injectFailure(IOException.class);
+        writer.write(c);
     }
 
     @Override
-    public void write( char[] cbuf ) throws IOException
-    {
-        adversary.injectFailure( IOException.class );
-        writer.write( cbuf );
+    public void write(char[] cbuf) throws IOException {
+        adversary.injectFailure(IOException.class);
+        writer.write(cbuf);
     }
 
     @Override
-    public void write( char[] cbuf, int off, int len ) throws IOException
-    {
-        writer.write( cbuf, off, len );
+    public void write(char[] cbuf, int off, int len) throws IOException {
+        writer.write(cbuf, off, len);
     }
 
     @Override
-    public void write( String str ) throws IOException
-    {
+    public void write(String str) throws IOException {
         adversary.injectFailure(
-                StringIndexOutOfBoundsException.class, IOException.class,
-                IndexOutOfBoundsException.class, ArrayStoreException.class,
-                NullPointerException.class );
-        writer.write( str );
+                StringIndexOutOfBoundsException.class,
+                IOException.class,
+                IndexOutOfBoundsException.class,
+                ArrayStoreException.class,
+                NullPointerException.class);
+        writer.write(str);
     }
 
     @Override
-    public void write( String str, int off, int len ) throws IOException
-    {
+    public void write(String str, int off, int len) throws IOException {
         adversary.injectFailure(
-                StringIndexOutOfBoundsException.class, IOException.class,
-                IndexOutOfBoundsException.class, ArrayStoreException.class,
-                NullPointerException.class );
-        writer.write( str, off, len );
+                StringIndexOutOfBoundsException.class,
+                IOException.class,
+                IndexOutOfBoundsException.class,
+                ArrayStoreException.class,
+                NullPointerException.class);
+        writer.write(str, off, len);
     }
 
     @Override
-    public Writer append( CharSequence csq ) throws IOException
-    {
+    public Writer append(CharSequence csq) throws IOException {
         adversary.injectFailure(
-                StringIndexOutOfBoundsException.class, IOException.class,
-                IndexOutOfBoundsException.class, ArrayStoreException.class,
-                NullPointerException.class );
-        return writer.append( csq );
+                StringIndexOutOfBoundsException.class,
+                IOException.class,
+                IndexOutOfBoundsException.class,
+                ArrayStoreException.class,
+                NullPointerException.class);
+        return writer.append(csq);
     }
 
     @Override
-    public Writer append( CharSequence csq, int start, int end ) throws IOException
-    {
+    public Writer append(CharSequence csq, int start, int end) throws IOException {
         adversary.injectFailure(
-                StringIndexOutOfBoundsException.class, IOException.class,
-                IndexOutOfBoundsException.class, ArrayStoreException.class,
-                NullPointerException.class );
-        return writer.append( csq, start, end );
+                StringIndexOutOfBoundsException.class,
+                IOException.class,
+                IndexOutOfBoundsException.class,
+                ArrayStoreException.class,
+                NullPointerException.class);
+        return writer.append(csq, start, end);
     }
 
     @Override
-    public Writer append( char c ) throws IOException
-    {
-        adversary.injectFailure( IOException.class );
-        return writer.append( c );
+    public Writer append(char c) throws IOException {
+        adversary.injectFailure(IOException.class);
+        return writer.append(c);
     }
 
     @Override
-    public void flush() throws IOException
-    {
-        adversary.injectFailure( IOException.class );
+    public void flush() throws IOException {
+        adversary.injectFailure(IOException.class);
         writer.flush();
     }
 
     @Override
-    public void close() throws IOException
-    {
-        adversary.injectFailure( IOException.class );
+    public void close() throws IOException {
+        adversary.injectFailure(IOException.class);
         writer.close();
     }
 }

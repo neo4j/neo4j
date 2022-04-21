@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.io.ByteUnit.bytesToString;
+
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.stats.DetailLevel;
@@ -26,41 +28,33 @@ import org.neo4j.internal.batchimport.stats.GenericStatsProvider;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 
-import static org.neo4j.io.ByteUnit.bytesToString;
-
 /**
  * Provides {@link Stat statistics} about memory usage, as the key {@link Keys#memory_usage}
  */
-public class MemoryUsageStatsProvider extends GenericStatsProvider implements Stat
-{
+public class MemoryUsageStatsProvider extends GenericStatsProvider implements Stat {
     private final MemoryStatsVisitor.Visitable[] users;
 
-    public MemoryUsageStatsProvider( MemoryStatsVisitor.Visitable... users )
-    {
+    public MemoryUsageStatsProvider(MemoryStatsVisitor.Visitable... users) {
         this.users = users;
-        add( Keys.memory_usage, this );
+        add(Keys.memory_usage, this);
     }
 
     @Override
-    public DetailLevel detailLevel()
-    {
+    public DetailLevel detailLevel() {
         return DetailLevel.IMPORTANT;
     }
 
     @Override
-    public long asLong()
-    {
+    public long asLong() {
         GatheringMemoryStatsVisitor visitor = new GatheringMemoryStatsVisitor();
-        for ( MemoryStatsVisitor.Visitable user : users )
-        {
-            user.acceptMemoryStatsVisitor( visitor );
+        for (MemoryStatsVisitor.Visitable user : users) {
+            user.acceptMemoryStatsVisitor(visitor);
         }
         return visitor.getHeapUsage() + visitor.getOffHeapUsage();
     }
 
     @Override
-    public String toString()
-    {
-        return bytesToString( asLong() );
+    public String toString() {
+        return bytesToString(asLong());
     }
 }

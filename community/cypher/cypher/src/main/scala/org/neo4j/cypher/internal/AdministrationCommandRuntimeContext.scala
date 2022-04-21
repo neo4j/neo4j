@@ -20,4 +20,3 @@
 package org.neo4j.cypher.internal
 
 case class AdministrationCommandRuntimeContext(runtimeContext: RuntimeContext)
-

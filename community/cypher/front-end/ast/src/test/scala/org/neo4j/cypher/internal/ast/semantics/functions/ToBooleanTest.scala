@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class ToBooleanTest extends FunctionTestBase("toBoolean")  {
+class ToBooleanTest extends FunctionTestBase("toBoolean") {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTInteger)(CTBoolean)

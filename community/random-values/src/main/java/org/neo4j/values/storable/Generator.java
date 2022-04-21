@@ -25,8 +25,7 @@ package org.neo4j.values.storable;
  * For example by wrapping in a generator we can support both {@code java.util.Random} and {@code java.util
  * .SplittableRandom}
  */
-public interface Generator
-{
+public interface Generator {
     /**
      * Return a pseudorandom normally distributed long
      * @return a pseudorandom normally distributed long
@@ -50,7 +49,7 @@ public interface Generator
      * @param bound the exclusive upper bound for the number generation
      * @return a pseudorandom normally distributed int
      */
-    int nextInt( int bound );
+    int nextInt(int bound);
 
     /**
      * Return a pseudorandom normally distributed float from {@code 0.0f} (inclusive) to {@code 1.0f} (exclusive)

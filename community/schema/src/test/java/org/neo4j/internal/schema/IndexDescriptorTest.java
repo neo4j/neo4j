@@ -19,136 +19,124 @@
  */
 package org.neo4j.internal.schema;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-
-class IndexDescriptorTest
-{
+class IndexDescriptorTest {
     private static final SchemaDescriptor[] SCHEMAS = {
-            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1}, new int[] {1} ),
-            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1}, new int[] {2} ),
-            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {2}, new int[] {1} ),
-            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 1}, new int[] {1} ),
-            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1}, new int[] {1, 1} ),
-            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 1}, new int[] {1, 1} ),
-            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 2}, new int[] {1, 1} ),
-            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 1}, new int[] {1, 2} ),
-            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 2}, new int[] {1, 2} ),
-
-            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1}, new int[] {1} ),
-            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1}, new int[] {2} ),
-            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {2}, new int[] {1} ),
-            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1} ),
-            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1}, new int[] {1, 1} ),
-            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1, 1} ),
-            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 2}, new int[] {1, 1} ),
-            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1, 2} ),
-            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 2}, new int[] {1, 2} ),
-
-            SchemaDescriptors.forLabel( 1, 1 ),
-            SchemaDescriptors.forLabel( 1, 2 ),
-            SchemaDescriptors.forLabel( 2, 1 ),
-            SchemaDescriptors.forLabel( 2, 2 ),
-            SchemaDescriptors.forLabel( 1, 1, 1 ),
-            SchemaDescriptors.forLabel( 1, 1, 2 ),
-            SchemaDescriptors.forLabel( 1, 2, 1 ),
-            SchemaDescriptors.forLabel( 1, 2, 2 ),
-            SchemaDescriptors.forLabel( 2, 1, 1 ),
-            SchemaDescriptors.forLabel( 2, 2, 1 ),
-            SchemaDescriptors.forLabel( 2, 1, 2 ),
-            SchemaDescriptors.forLabel( 2, 2, 2 ),
-
-            SchemaDescriptors.forRelType( 1, 1 ),
-            SchemaDescriptors.forRelType( 1, 2 ),
-            SchemaDescriptors.forRelType( 2, 1 ),
-            SchemaDescriptors.forRelType( 2, 2 ),
-            SchemaDescriptors.forRelType( 1, 1, 1 ),
-            SchemaDescriptors.forRelType( 1, 1, 2 ),
-            SchemaDescriptors.forRelType( 1, 2, 1 ),
-            SchemaDescriptors.forRelType( 1, 2, 2 ),
-            SchemaDescriptors.forRelType( 2, 1, 1 ),
-            SchemaDescriptors.forRelType( 2, 2, 1 ),
-            SchemaDescriptors.forRelType( 2, 1, 2 ),
-            SchemaDescriptors.forRelType( 2, 2, 2 ),
-
-            SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ),
-            SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ),
-            };
+        SchemaDescriptors.fulltext(EntityType.NODE, new int[] {1}, new int[] {1}),
+        SchemaDescriptors.fulltext(EntityType.NODE, new int[] {1}, new int[] {2}),
+        SchemaDescriptors.fulltext(EntityType.NODE, new int[] {2}, new int[] {1}),
+        SchemaDescriptors.fulltext(EntityType.NODE, new int[] {1, 1}, new int[] {1}),
+        SchemaDescriptors.fulltext(EntityType.NODE, new int[] {1}, new int[] {1, 1}),
+        SchemaDescriptors.fulltext(EntityType.NODE, new int[] {1, 1}, new int[] {1, 1}),
+        SchemaDescriptors.fulltext(EntityType.NODE, new int[] {1, 2}, new int[] {1, 1}),
+        SchemaDescriptors.fulltext(EntityType.NODE, new int[] {1, 1}, new int[] {1, 2}),
+        SchemaDescriptors.fulltext(EntityType.NODE, new int[] {1, 2}, new int[] {1, 2}),
+        SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {1}, new int[] {1}),
+        SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {1}, new int[] {2}),
+        SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {2}, new int[] {1}),
+        SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1}),
+        SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {1}, new int[] {1, 1}),
+        SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1, 1}),
+        SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {1, 2}, new int[] {1, 1}),
+        SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1, 2}),
+        SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {1, 2}, new int[] {1, 2}),
+        SchemaDescriptors.forLabel(1, 1),
+        SchemaDescriptors.forLabel(1, 2),
+        SchemaDescriptors.forLabel(2, 1),
+        SchemaDescriptors.forLabel(2, 2),
+        SchemaDescriptors.forLabel(1, 1, 1),
+        SchemaDescriptors.forLabel(1, 1, 2),
+        SchemaDescriptors.forLabel(1, 2, 1),
+        SchemaDescriptors.forLabel(1, 2, 2),
+        SchemaDescriptors.forLabel(2, 1, 1),
+        SchemaDescriptors.forLabel(2, 2, 1),
+        SchemaDescriptors.forLabel(2, 1, 2),
+        SchemaDescriptors.forLabel(2, 2, 2),
+        SchemaDescriptors.forRelType(1, 1),
+        SchemaDescriptors.forRelType(1, 2),
+        SchemaDescriptors.forRelType(2, 1),
+        SchemaDescriptors.forRelType(2, 2),
+        SchemaDescriptors.forRelType(1, 1, 1),
+        SchemaDescriptors.forRelType(1, 1, 2),
+        SchemaDescriptors.forRelType(1, 2, 1),
+        SchemaDescriptors.forRelType(1, 2, 2),
+        SchemaDescriptors.forRelType(2, 1, 1),
+        SchemaDescriptors.forRelType(2, 2, 1),
+        SchemaDescriptors.forRelType(2, 1, 2),
+        SchemaDescriptors.forRelType(2, 2, 2),
+        SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
+        SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP),
+    };
 
     @Test
-    void indexDescriptorsMustBeDistinctBySchema()
-    {
-        IndexDescriptor[] indexes = Stream.of( SCHEMAS )
-                .flatMap( schema -> Stream.of( IndexPrototype.forSchema( schema ), IndexPrototype.uniqueForSchema( schema ) ) )
-                .map( prototype -> prototype.withName( "index" ).materialise( 0 ) )
-                .toArray( IndexDescriptor[]::new );
+    void indexDescriptorsMustBeDistinctBySchema() {
+        IndexDescriptor[] indexes = Stream.of(SCHEMAS)
+                .flatMap(schema -> Stream.of(IndexPrototype.forSchema(schema), IndexPrototype.uniqueForSchema(schema)))
+                .map(prototype -> prototype.withName("index").materialise(0))
+                .toArray(IndexDescriptor[]::new);
 
         Set<IndexDescriptor> indexSet = new HashSet<>();
-        for ( IndexDescriptor index : indexes )
-        {
-            if ( !indexSet.add( index ) )
-            {
+        for (IndexDescriptor index : indexes) {
+            if (!indexSet.add(index)) {
                 IndexDescriptor existing = null;
-                for ( IndexDescriptor candidate : indexSet )
-                {
-                    if ( candidate.equals( index ) )
-                    {
+                for (IndexDescriptor candidate : indexSet) {
+                    if (candidate.equals(index)) {
                         existing = candidate;
                         break;
                     }
                 }
-                fail( "Index descriptor equality collision: " + existing + " and " + index );
+                fail("Index descriptor equality collision: " + existing + " and " + index);
             }
         }
     }
 
     @Test
-    void mustThrowWhenCreatingIndexNamedAfterNoIndexName()
-    {
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () ->
-        {
-            IndexPrototype prototype = IndexPrototype.forSchema( SCHEMAS[0] );
-            prototype = prototype.withName( IndexDescriptor.NO_INDEX.getName() );
-            prototype.materialise( 0 );
-        } );
-        assertThat( exception.getMessage() ).contains( IndexDescriptor.NO_INDEX.getName() );
+    void mustThrowWhenCreatingIndexNamedAfterNoIndexName() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            IndexPrototype prototype = IndexPrototype.forSchema(SCHEMAS[0]);
+            prototype = prototype.withName(IndexDescriptor.NO_INDEX.getName());
+            prototype.materialise(0);
+        });
+        assertThat(exception.getMessage()).contains(IndexDescriptor.NO_INDEX.getName());
     }
 
     @Test
-    void userDescriptionMustIncludeSchemaDescription()
-    {
-        IndexPrototype prototype = IndexPrototype.forSchema( SCHEMAS[0] );
-        IndexDescriptor index = prototype.withName( "index" ).materialise( 1 );
+    void userDescriptionMustIncludeSchemaDescription() {
+        IndexPrototype prototype = IndexPrototype.forSchema(SCHEMAS[0]);
+        IndexDescriptor index = prototype.withName("index").materialise(1);
         InMemoryTokens tokens = new InMemoryTokens();
-        String schemaDescription = SCHEMAS[0].userDescription( tokens );
-        assertThat( prototype.userDescription( tokens ) ).contains( schemaDescription );
-        assertThat( index.userDescription( tokens ) ).contains( schemaDescription );
+        String schemaDescription = SCHEMAS[0].userDescription(tokens);
+        assertThat(prototype.userDescription(tokens)).contains(schemaDescription);
+        assertThat(index.userDescription(tokens)).contains(schemaDescription);
     }
 
     @Test
-    void updatingIndexConfigLeavesOriginalDescriptorUntouched()
-    {
-        IndexDescriptor a = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 1 );
-        IndexDescriptor aa = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 1 );
-        IndexDescriptor b = a.withIndexConfig( a.getIndexConfig().withIfAbsent( "x", Values.stringValue( "y" ) ) );
+    void updatingIndexConfigLeavesOriginalDescriptorUntouched() {
+        IndexDescriptor a = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2, 3))
+                .withName("a")
+                .materialise(1);
+        IndexDescriptor aa = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2, 3))
+                .withName("a")
+                .materialise(1);
+        IndexDescriptor b = a.withIndexConfig(a.getIndexConfig().withIfAbsent("x", Values.stringValue("y")));
 
-        assertThat( a.getIndexConfig() ).isNotEqualTo( b.getIndexConfig() );
-        assertThat( a ).isEqualTo( b );
-        assertThat( a ).isEqualTo( aa );
-        assertThat( a.getIndexConfig() ).isEqualTo( aa.getIndexConfig() );
-        assertThat( (Value) b.getIndexConfig().get( "x" ) ).isEqualTo( Values.stringValue( "y" ) );
-        assertThat( (Value) a.getIndexConfig().get( "x" ) ).isNull();
+        assertThat(a.getIndexConfig()).isNotEqualTo(b.getIndexConfig());
+        assertThat(a).isEqualTo(b);
+        assertThat(a).isEqualTo(aa);
+        assertThat(a.getIndexConfig()).isEqualTo(aa.getIndexConfig());
+        assertThat((Value) b.getIndexConfig().get("x")).isEqualTo(Values.stringValue("y"));
+        assertThat((Value) a.getIndexConfig().get("x")).isNull();
     }
 }

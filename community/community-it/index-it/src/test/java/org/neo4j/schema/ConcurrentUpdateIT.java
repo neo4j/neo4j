@@ -19,10 +19,8 @@
  */
 package org.neo4j.schema;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -30,7 +28,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -49,14 +50,10 @@ import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.values.storable.RandomValues;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.test.DoubleLatch.awaitLatch;
-
 @Neo4jLayoutExtension
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-class ConcurrentUpdateIT
-{
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+class ConcurrentUpdateIT {
     @Inject
     private SuppressOutput suppressOutput;
 
@@ -64,22 +61,17 @@ class ConcurrentUpdateIT
     private DatabaseLayout databaseLayout;
 
     @Test
-    void populateDbWithConcurrentUpdates() throws Exception
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
+    void populateDbWithConcurrentUpdates() throws Exception {
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        GraphDatabaseService database = managementService.database(DEFAULT_DATABASE_NAME);
+        try {
             RandomValues randomValues = RandomValues.create();
             int counter = 1;
-            for ( int j = 0; j < 100; j++ )
-            {
-                try ( Transaction transaction = database.beginTx() )
-                {
-                    for ( int i = 0; i < 5; i++ )
-                    {
-                        Node node = transaction.createNode( Label.label( "label" + counter ) );
-                        node.setProperty( "property", randomValues.nextValue().asObject() );
+            for (int j = 0; j < 100; j++) {
+                try (Transaction transaction = database.beginTx()) {
+                    for (int i = 0; i < 5; i++) {
+                        Node node = transaction.createNode(Label.label("label" + counter));
+                        node.setProperty("property", randomValues.nextValue().asObject());
                     }
                     transaction.commit();
                 }
@@ -87,57 +79,54 @@ class ConcurrentUpdateIT
             }
 
             int populatorCount = 5;
-            ExecutorService executor = Executors.newFixedThreadPool( populatorCount );
-            CountDownLatch startSignal = new CountDownLatch( 1 );
+            ExecutorService executor = Executors.newFixedThreadPool(populatorCount);
+            CountDownLatch startSignal = new CountDownLatch(1);
             AtomicBoolean endSignal = new AtomicBoolean();
-            for ( int i = 0; i < populatorCount; i++ )
-            {
-                executor.submit( new Populator( database, counter, startSignal, endSignal ) );
+            for (int i = 0; i < populatorCount; i++) {
+                executor.submit(new Populator(database, counter, startSignal, endSignal));
             }
 
-            try
-            {
-                try ( Transaction transaction = database.beginTx() )
-                {
-                    transaction.schema().indexFor( Label.label( "label10" ) ).on( "property" ).create();
+            try {
+                try (Transaction transaction = database.beginTx()) {
+                    transaction
+                            .schema()
+                            .indexFor(Label.label("label10"))
+                            .on("property")
+                            .create();
                     transaction.commit();
                 }
                 startSignal.countDown();
 
-                try ( Transaction transaction = database.beginTx() )
-                {
-                    transaction.schema().awaitIndexesOnline( populatorCount, TimeUnit.MINUTES );
+                try (Transaction transaction = database.beginTx()) {
+                    transaction.schema().awaitIndexesOnline(populatorCount, TimeUnit.MINUTES);
                     transaction.commit();
                 }
-            }
-            finally
-            {
-                endSignal.set( true );
+            } finally {
+                endSignal.set(true);
                 executor.shutdown();
                 // Basically we don't care to await their completion because they've done their job
             }
-        }
-        finally
-        {
+        } finally {
             managementService.shutdown();
-            Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
-            new ConsistencyCheckService( databaseLayout )
-                    .with( config )
-                    .with( new Log4jLogProvider( System.out ) )
+            Config config = Config.defaults(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
+            new ConsistencyCheckService(databaseLayout)
+                    .with(config)
+                    .with(new Log4jLogProvider(System.out))
                     .runFullConsistencyCheck();
         }
     }
 
-    private static class Populator implements Runnable
-    {
+    private static class Populator implements Runnable {
         private final GraphDatabaseService databaseService;
         private final long totalNodes;
         private final CountDownLatch startSignal;
         private final AtomicBoolean endSignal;
 
-        Populator( GraphDatabaseService databaseService, long totalNodes, CountDownLatch startSignal,
-                AtomicBoolean endSignal )
-        {
+        Populator(
+                GraphDatabaseService databaseService,
+                long totalNodes,
+                CountDownLatch startSignal,
+                AtomicBoolean endSignal) {
             this.databaseService = databaseService;
             this.totalNodes = totalNodes;
             this.startSignal = startSignal;
@@ -145,43 +134,39 @@ class ConcurrentUpdateIT
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             RandomValues randomValues = RandomValues.create();
-            awaitLatch( startSignal );
-            while ( !endSignal.get() )
-            {
-                try ( Transaction transaction = databaseService.beginTx() )
-                {
-                    try
-                    {
-                        int operationType = randomValues.nextIntValue( 3 ).value();
-                        switch ( operationType )
-                        {
-                        case 0:
-                            long targetNodeId = randomValues.nextLongValue( totalNodes ).value();
-                            transaction.getNodeById( targetNodeId ).delete();
-                            break;
-                        case 1:
-                            long nodeId = randomValues.nextLongValue( totalNodes ).value();
-                            Node node = transaction.getNodeById( nodeId );
-                            Map<String,Object> allProperties = node.getAllProperties();
-                            for ( String key : allProperties.keySet() )
-                            {
-                                node.setProperty( key, randomValues.nextValue().asObject() );
-                            }
-                            break;
-                        case 2:
-                            Node nodeToUpdate = transaction.createNode( Label.label( "label10" ) );
-                            nodeToUpdate.setProperty( "property", randomValues.nextValue().asObject()  );
-                            break;
-                        default:
-                            throw new UnsupportedOperationException( "Unknown type of index operation" );
+            awaitLatch(startSignal);
+            while (!endSignal.get()) {
+                try (Transaction transaction = databaseService.beginTx()) {
+                    try {
+                        int operationType = randomValues.nextIntValue(3).value();
+                        switch (operationType) {
+                            case 0:
+                                long targetNodeId =
+                                        randomValues.nextLongValue(totalNodes).value();
+                                transaction.getNodeById(targetNodeId).delete();
+                                break;
+                            case 1:
+                                long nodeId =
+                                        randomValues.nextLongValue(totalNodes).value();
+                                Node node = transaction.getNodeById(nodeId);
+                                Map<String, Object> allProperties = node.getAllProperties();
+                                for (String key : allProperties.keySet()) {
+                                    node.setProperty(
+                                            key, randomValues.nextValue().asObject());
+                                }
+                                break;
+                            case 2:
+                                Node nodeToUpdate = transaction.createNode(Label.label("label10"));
+                                nodeToUpdate.setProperty(
+                                        "property", randomValues.nextValue().asObject());
+                                break;
+                            default:
+                                throw new UnsupportedOperationException("Unknown type of index operation");
                         }
                         transaction.commit();
-                    }
-                    catch ( Exception e )
-                    {
+                    } catch (Exception e) {
                         transaction.rollback();
                     }
                 }

@@ -27,6 +27,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.StringJoiner
+
 import scala.collection.immutable.ListMap
 import scala.jdk.CollectionConverters.MapHasAsScala
 
@@ -36,7 +37,8 @@ object ShowSchemaCommandHelper {
   def extractOptionsMap(providerName: String, indexConfig: IndexConfig): MapValue = {
     val (configKeys, configValues) = indexConfig.asMap().asScala.toSeq.unzip
     val optionKeys = Array("indexConfig", "indexProvider")
-    val optionValues = Array(VirtualValues.map(configKeys.toArray, configValues.toArray), Values.stringValue(providerName))
+    val optionValues =
+      Array(VirtualValues.map(configKeys.toArray, configValues.toArray), Values.stringValue(providerName))
     VirtualValues.map(optionKeys, optionValues)
   }
 
@@ -69,9 +71,9 @@ object ShowSchemaCommandHelper {
     }
   }
 
-  def colonStringJoiner = new StringJoiner(":",":", "")
-  def barStringJoiner = new StringJoiner("|",":", "")
-  def propStringJoiner = new StringJoiner(", n.","n.", "")
-  def relPropStringJoiner = new StringJoiner(", r.","r.", "")
+  def colonStringJoiner = new StringJoiner(":", ":", "")
+  def barStringJoiner = new StringJoiner("|", ":", "")
+  def propStringJoiner = new StringJoiner(", n.", "n.", "")
+  def relPropStringJoiner = new StringJoiner(", r.", "r.", "")
   private def configStringJoiner = new StringJoiner(",", "{", "}")
 }

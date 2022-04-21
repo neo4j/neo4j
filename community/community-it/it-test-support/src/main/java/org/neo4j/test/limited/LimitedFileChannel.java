@@ -21,73 +21,62 @@ package org.neo4j.test.limited;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
 
-public class LimitedFileChannel extends DelegatingStoreChannel implements StoreChannel
-{
+public class LimitedFileChannel extends DelegatingStoreChannel implements StoreChannel {
     private final LimitedFilesystemAbstraction fs;
 
-    public LimitedFileChannel( StoreChannel inner, LimitedFilesystemAbstraction limitedFilesystemAbstraction )
-    {
-        super( inner );
+    public LimitedFileChannel(StoreChannel inner, LimitedFilesystemAbstraction limitedFilesystemAbstraction) {
+        super(inner);
         fs = limitedFilesystemAbstraction;
     }
 
     @Override
-    public int write( ByteBuffer byteBuffer ) throws IOException
-    {
+    public int write(ByteBuffer byteBuffer) throws IOException {
         fs.ensureHasSpace();
-        return super.write( byteBuffer );
+        return super.write(byteBuffer);
     }
 
     @Override
-    public long write( ByteBuffer[] byteBuffers, int offset, int length ) throws IOException
-    {
+    public long write(ByteBuffer[] byteBuffers, int offset, int length) throws IOException {
         fs.ensureHasSpace();
-        return super.write( byteBuffers, offset, length );
+        return super.write(byteBuffers, offset, length);
     }
 
     @Override
-    public long write( ByteBuffer[] srcs ) throws IOException
-    {
+    public long write(ByteBuffer[] srcs) throws IOException {
         fs.ensureHasSpace();
-        return super.write( srcs );
+        return super.write(srcs);
     }
 
     @Override
-    public LimitedFileChannel position( long newPosition ) throws IOException
-    {
-        super.position( newPosition );
+    public LimitedFileChannel position(long newPosition) throws IOException {
+        super.position(newPosition);
         return this;
     }
 
     @Override
-    public LimitedFileChannel truncate( long size ) throws IOException
-    {
-        super.truncate( size );
+    public LimitedFileChannel truncate(long size) throws IOException {
+        super.truncate(size);
         return this;
     }
 
     @Override
-    public void force( boolean metaData ) throws IOException
-    {
+    public void force(boolean metaData) throws IOException {
         fs.ensureHasSpace();
-        super.force( metaData );
+        super.force(metaData);
     }
 
     @Override
-    public void writeAll( ByteBuffer src, long position ) throws IOException
-    {
+    public void writeAll(ByteBuffer src, long position) throws IOException {
         fs.ensureHasSpace();
-        super.writeAll( src, position );
+        super.writeAll(src, position);
     }
 
     @Override
-    public void writeAll( ByteBuffer src ) throws IOException
-    {
+    public void writeAll(ByteBuffer src) throws IOException {
         fs.ensureHasSpace();
-        super.writeAll( src );
+        super.writeAll(src);
     }
 }

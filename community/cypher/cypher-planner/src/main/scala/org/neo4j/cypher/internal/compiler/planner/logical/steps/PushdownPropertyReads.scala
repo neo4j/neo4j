@@ -83,21 +83,25 @@ case object PushdownPropertyReads {
    *
    * Note, input position is NOT guaranteed to be accurate in cached properties.
    */
-  def pushdown(logicalPlan: LogicalPlan,
-               effectiveCardinalities: EffectiveCardinalities,
-               attributes: Attributes[LogicalPlan],
-               semanticTable: SemanticTable): LogicalPlan = {
+  def pushdown(
+    logicalPlan: LogicalPlan,
+    effectiveCardinalities: EffectiveCardinalities,
+    attributes: Attributes[LogicalPlan],
+    semanticTable: SemanticTable
+  ): LogicalPlan = {
 
     def isNodeOrRel(variable: LogicalVariable): Boolean =
       semanticTable.types.get(variable)
         .exists(t => t.actual == CTNode.invariant || t.actual == CTRelationship.invariant)
 
     case class CardinalityOptimum(cardinality: EffectiveCardinality, logicalPlanId: Id, variableName: String)
-    case class Acc(variableOptima: Map[String, CardinalityOptimum],
-                   propertyReadOptima: Seq[(CardinalityOptimum, Property)],
-                   availableProperties: Set[Property],
-                   availableWholeEntities: Set[String],
-                   incomingCardinality: EffectiveCardinality)
+    case class Acc(
+      variableOptima: Map[String, CardinalityOptimum],
+      propertyReadOptima: Seq[(CardinalityOptimum, Property)],
+      availableProperties: Set[Property],
+      availableWholeEntities: Set[String],
+      incomingCardinality: EffectiveCardinality
+    )
 
     def foldSingleChildPlan(acc: Acc, plan: LogicalPlan): Acc = {
       val newPropertyExpressions =
@@ -132,7 +136,9 @@ case object PushdownPropertyReads {
             val (optimum, _) = optimumProperties.head
             if (optimum.cardinality < acc.incomingCardinality) {
               optimumProperties
-            } else if (optimumProperties.size > 1 && plan.rhs.isEmpty && plan.lhs.nonEmpty && !plan.isInstanceOf[Selection]) {
+            } else if (
+              optimumProperties.size > 1 && plan.rhs.isEmpty && plan.lhs.nonEmpty && !plan.isInstanceOf[Selection]
+            ) {
               val uniqueProps = optimumProperties.map(_._2).toSet
               if (uniqueProps.size > 1) {
                 val beforeThisPlanOptimum = CardinalityOptimum(acc.incomingCardinality, plan.lhs.get.id, v.name)
@@ -150,14 +156,17 @@ case object PushdownPropertyReads {
 
       plan match {
         case _: Anti =>
-          throw new IllegalStateException("This plan is introduced in physical planning, I shouldn't need to know about it.")
+          throw new IllegalStateException(
+            "This plan is introduced in physical planning, I shouldn't need to know about it."
+          )
 
         case _: Aggregation |
-             _: OrderedAggregation |
-             _: Eager =>
+          _: OrderedAggregation |
+          _: Eager =>
           // Do _not_ pushdown past these plans
           val newVariables = plan.availableSymbols
-          val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
+          val outgoingVariableOptima =
+            newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
 
           Acc(outgoingVariableOptima, outgoingReadOptima, Set.empty, Set.empty, outgoingCardinality)
 
@@ -174,16 +183,21 @@ case object PushdownPropertyReads {
             }
 
           val renamedAvailableProperties =
-            (acc.availableProperties ++ newPropertyExpressions).map(
-              prop => {
-                val propVariable = prop.map.asInstanceOf[LogicalVariable].name
-                renamings.get(propVariable) match {
-                  case Some(newName) => propertyWithName(newName, prop)
-                  case None => prop
-                }
-              })
+            (acc.availableProperties ++ newPropertyExpressions).map(prop => {
+              val propVariable = prop.map.asInstanceOf[LogicalVariable].name
+              renamings.get(propVariable) match {
+                case Some(newName) => propertyWithName(newName, prop)
+                case None          => prop
+              }
+            })
 
-          Acc(renamedVariableOptima, outgoingReadOptima, renamedAvailableProperties, acc.availableWholeEntities, outgoingCardinality)
+          Acc(
+            renamedVariableOptima,
+            outgoingReadOptima,
+            renamedAvailableProperties,
+            acc.availableWholeEntities,
+            outgoingCardinality
+          )
 
         case _ =>
           val newLowestCardinalities =
@@ -252,30 +266,38 @@ case object PushdownPropertyReads {
 
           val maybeEntityFromPlan =
             plan match {
-              case SetNodePropertiesFromMap(_, idName, _, true) => Some(idName)
+              case SetNodePropertiesFromMap(_, idName, _, true)                                      => Some(idName)
               case SetNodePropertiesFromMap(_, idName, expr, _) if !expr.isInstanceOf[MapExpression] => Some(idName)
-              case SetRelationshipPropertiesFromMap(_, idName, _, true) => Some(idName)
-              case SetRelationshipPropertiesFromMap(_, idName, expr, _) if !expr.isInstanceOf[MapExpression] => Some(idName)
+              case SetRelationshipPropertiesFromMap(_, idName, _, true)                              => Some(idName)
+              case SetRelationshipPropertiesFromMap(_, idName, expr, _) if !expr.isInstanceOf[MapExpression] =>
+                Some(idName)
               case _ => None
             }
 
           val outgoingAvailableProperties = acc.availableProperties ++ newPropertyExpressions ++ propertiesFromPlan
 
-          Acc(outgoingVariableOptima.toMap, outgoingReadOptima, outgoingAvailableProperties, acc.availableWholeEntities ++ maybeEntityFromPlan, outgoingCardinality)
+          Acc(
+            outgoingVariableOptima.toMap,
+            outgoingReadOptima,
+            outgoingAvailableProperties,
+            acc.availableWholeEntities ++ maybeEntityFromPlan,
+            outgoingCardinality
+          )
       }
     }
 
     def foldTwoChildPlan(lhsAcc: Acc, rhsAcc: Acc, plan: LogicalPlan): Acc = {
       plan match {
 
-          // Do _not_ pushdown from on top of these plans to the LHS or the RHS
+        // Do _not_ pushdown from on top of these plans to the LHS or the RHS
         case _: Union |
-             _: OrderedUnion |
+          _: OrderedUnion |
           // TransactionForeach will clear caches, so it's useless to push down reads
-             _: TransactionForeach =>
+          _: TransactionForeach =>
           val newVariables = plan.availableSymbols
           val outgoingCardinality = effectiveCardinalities(plan.id)
-          val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
+          val outgoingVariableOptima =
+            newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
           Acc(
             // Keep only optima of variables introduced in these plans
             outgoingVariableOptima,
@@ -287,13 +309,13 @@ case object PushdownPropertyReads {
             outgoingCardinality
           )
 
-          // Do not pushdown from on top of these plans to the RHS, but allow pushing down to the LHS
+        // Do not pushdown from on top of these plans to the RHS, but allow pushing down to the LHS
         case _: AbstractSemiApply
-           | _: AbstractLetSemiApply
-           | _: AbstractSelectOrSemiApply
-           | _: AbstractLetSelectOrSemiApply
-           | _: ForeachApply
-           | _: RollUpApply =>
+          | _: AbstractLetSemiApply
+          | _: AbstractSelectOrSemiApply
+          | _: AbstractLetSelectOrSemiApply
+          | _: ForeachApply
+          | _: RollUpApply =>
           val mergedAcc = Acc(
             // Keep only optima for variables from the LHS
             lhsAcc.variableOptima,
@@ -321,17 +343,19 @@ case object PushdownPropertyReads {
                 }
             }
 
-          Acc(mergedVariableOptima,
+          Acc(
+            mergedVariableOptima,
             lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
             lhsAcc.availableProperties ++ rhsAcc.availableProperties,
             lhsAcc.availableWholeEntities ++ rhsAcc.availableWholeEntities,
-            effectiveCardinalities(plan.id))
+            effectiveCardinalities(plan.id)
+          )
       }
     }
 
     def mapArguments(argumentAcc: Acc, plan: LogicalPlan): Acc = {
       plan match {
-        case _:TransactionForeach =>
+        case _: TransactionForeach =>
           Acc(
             // Keep no optima of variables so that no property read can get pushed down from RHS to LHS
             Map.empty,
@@ -373,7 +397,10 @@ case object PushdownPropertyReads {
   }
 
   private def asProperty(idName: String)(indexedProperty: IndexedProperty): Property =
-    Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(indexedProperty.propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
+    Property(
+      Variable(idName)(InputPosition.NONE),
+      PropertyKeyName(indexedProperty.propertyKeyToken.name)(InputPosition.NONE)
+    )(InputPosition.NONE)
 
   private def propertyWithName(idName: String, p: Property): Property =
     p match {
@@ -388,7 +415,7 @@ case object PushdownPropertyReads {
   private def propertiesFromMap(idName: String, map: MapExpression): Seq[Property] = {
     map.items.map {
       case (prop, _) =>
-        Property(Variable(idName)(InputPosition.NONE),prop)(InputPosition.NONE)
+        Property(Variable(idName)(InputPosition.NONE), prop)(InputPosition.NONE)
     }
   }
 }

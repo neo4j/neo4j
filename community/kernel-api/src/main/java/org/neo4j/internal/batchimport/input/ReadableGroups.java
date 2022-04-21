@@ -19,23 +19,19 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-public interface ReadableGroups
-{
-    Group get( int id );
+public interface ReadableGroups {
+    Group get(int id);
 
     int size();
 
-    ReadableGroups EMPTY = new ReadableGroups()
-    {
+    ReadableGroups EMPTY = new ReadableGroups() {
         @Override
-        public Group get( int id )
-        {
-            throw new IllegalArgumentException( "No id " + id );
+        public Group get(int id) {
+            throw new IllegalArgumentException("No id " + id);
         }
 
         @Override
-        public int size()
-        {
+        public int size() {
             return 0;
         }
     };

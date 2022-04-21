@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.IOException;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
+import java.io.IOException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -35,13 +39,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-
-public class DefaultRecoveryService implements RecoveryService
-{
+public class DefaultRecoveryService implements RecoveryService {
     private final RecoveryStartInformationProvider recoveryStartInformationProvider;
     private final StorageEngine storageEngine;
     private final TransactionIdStore transactionIdStore;
@@ -50,98 +48,116 @@ public class DefaultRecoveryService implements RecoveryService
     private final InternalLog log;
     private final boolean doParallelRecovery;
 
-    DefaultRecoveryService( StorageEngine storageEngine, TransactionIdStore transactionIdStore,
-            LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository, LogFiles logFiles,
-            RecoveryStartInformationProvider.Monitor monitor, InternalLog log, boolean doParallelRecovery )
-    {
+    DefaultRecoveryService(
+            StorageEngine storageEngine,
+            TransactionIdStore transactionIdStore,
+            LogicalTransactionStore logicalTransactionStore,
+            LogVersionRepository logVersionRepository,
+            LogFiles logFiles,
+            RecoveryStartInformationProvider.Monitor monitor,
+            InternalLog log,
+            boolean doParallelRecovery) {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.logVersionRepository = logVersionRepository;
         this.log = log;
         this.doParallelRecovery = doParallelRecovery;
-        this.recoveryStartInformationProvider = new RecoveryStartInformationProvider( logFiles, monitor );
+        this.recoveryStartInformationProvider = new RecoveryStartInformationProvider(logFiles, monitor);
     }
 
     @Override
-    public RecoveryStartInformation getRecoveryStartInformation()
-    {
+    public RecoveryStartInformation getRecoveryStartInformation() {
         return recoveryStartInformationProvider.get();
     }
 
     @Override
-    public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag )
-    {
-        if ( doParallelRecovery )
-        {
-            return new ParallelRecoveryVisitor( storageEngine, mode, contextFactory, tracerTag );
+    public RecoveryApplier getRecoveryApplier(
+            TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag) {
+        if (doParallelRecovery) {
+            return new ParallelRecoveryVisitor(storageEngine, mode, contextFactory, tracerTag);
         }
-        return new RecoveryVisitor( storageEngine, mode, contextFactory, tracerTag );
+        return new RecoveryVisitor(storageEngine, mode, contextFactory, tracerTag);
     }
 
     @Override
-    public TransactionCursor getTransactions( long transactionId ) throws IOException
-    {
-        return logicalTransactionStore.getTransactions( transactionId );
+    public TransactionCursor getTransactions(long transactionId) throws IOException {
+        return logicalTransactionStore.getTransactions(transactionId);
     }
 
     @Override
-    public TransactionCursor getTransactions( LogPosition position ) throws IOException
-    {
-        return logicalTransactionStore.getTransactions( position );
+    public TransactionCursor getTransactions(LogPosition position) throws IOException {
+        return logicalTransactionStore.getTransactions(position);
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder( LogPosition position ) throws IOException
-    {
-        return logicalTransactionStore.getTransactionsInReverseOrder( position );
+    public TransactionCursor getTransactionsInReverseOrder(LogPosition position) throws IOException {
+        return logicalTransactionStore.getTransactionsInReverseOrder(position);
     }
 
     @Override
-    public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastRecoveredTransactionPosition,
-            LogPosition positionAfterLastRecoveredTransaction, LogPosition checkpointPosition, boolean missingLogs, CursorContext cursorContext )
-    {
-        if ( missingLogs )
-        {
+    public void transactionsRecovered(
+            CommittedTransactionRepresentation lastRecoveredTransaction,
+            LogPosition lastRecoveredTransactionPosition,
+            LogPosition positionAfterLastRecoveredTransaction,
+            LogPosition checkpointPosition,
+            boolean missingLogs,
+            CursorContext cursorContext) {
+        if (missingLogs) {
             // in case if logs are missing we need to reset position of last committed transaction since
             // this information influencing checkpoint that will be created and if we will not gonna do that
-            // it will still reference old offset from logs that are gone and as result log position in checkpoint record will be incorrect
+            // it will still reference old offset from logs that are gone and as result log position in checkpoint
+            // record will be incorrect
             // and that can cause partial next recovery.
             var lastClosedTransactionData = transactionIdStore.getLastClosedTransaction();
             long logVersion = lastClosedTransactionData.logPosition().getLogVersion();
-            log.warn( "Recovery detected that transaction logs were missing. " +
-                    "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
-            transactionIdStore.resetLastClosedTransaction( lastClosedTransactionData.transactionId(), logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE,
-                    lastClosedTransactionData.checksum(), lastClosedTransactionData.commitTimestamp() );
-            logVersionRepository.setCurrentLogVersion( logVersion );
+            log.warn(
+                    "Recovery detected that transaction logs were missing. "
+                            + "Resetting offset of last closed transaction to point to the head of %d transaction log file.",
+                    logVersion);
+            transactionIdStore.resetLastClosedTransaction(
+                    lastClosedTransactionData.transactionId(),
+                    logVersion,
+                    CURRENT_FORMAT_LOG_HEADER_SIZE,
+                    lastClosedTransactionData.checksum(),
+                    lastClosedTransactionData.commitTimestamp());
+            logVersionRepository.setCurrentLogVersion(logVersion);
             long checkpointLogVersion = logVersionRepository.getCheckpointLogVersion();
-            if ( checkpointLogVersion < 0 )
-            {
-                log.warn( "Recovery detected that checkpoint log version is invalid. " +
-                        "Resetting version to start from the beginning. Current recorded version: %d. New version: 0.", checkpointLogVersion );
-                logVersionRepository.setCheckpointLogVersion( INITIAL_LOG_VERSION );
+            if (checkpointLogVersion < 0) {
+                log.warn(
+                        "Recovery detected that checkpoint log version is invalid. "
+                                + "Resetting version to start from the beginning. Current recorded version: %d. New version: 0.",
+                        checkpointLogVersion);
+                logVersionRepository.setCheckpointLogVersion(INITIAL_LOG_VERSION);
             }
             return;
         }
-        if ( lastRecoveredTransaction != null )
-        {
+        if (lastRecoveredTransaction != null) {
             LogEntryCommit commitEntry = lastRecoveredTransaction.getCommitEntry();
-            transactionIdStore.setLastCommittedAndClosedTransactionId( commitEntry.getTxId(), lastRecoveredTransaction.getChecksum(),
-                    commitEntry.getTimeWritten(), lastRecoveredTransactionPosition.getByteOffset(), lastRecoveredTransactionPosition.getLogVersion() );
-        }
-        else
-        {
+            transactionIdStore.setLastCommittedAndClosedTransactionId(
+                    commitEntry.getTxId(),
+                    lastRecoveredTransaction.getChecksum(),
+                    commitEntry.getTimeWritten(),
+                    lastRecoveredTransactionPosition.getByteOffset(),
+                    lastRecoveredTransactionPosition.getLogVersion());
+        } else {
             // we do not have last recovered transaction but recovery was still triggered
             // this happens when we read past end of the log file or can't read it at all but recovery was enforced
-            // which means that log files after last recovered position can't be trusted and we need to reset last closed tx log info
+            // which means that log files after last recovered position can't be trusted and we need to reset last
+            // closed tx log info
             long lastClosedTransactionId = transactionIdStore.getLastClosedTransactionId();
-            log.warn( "Recovery detected that transaction logs tail can't be trusted. " +
-                    "Resetting offset of last closed transaction to point to the last recoverable log position: " + positionAfterLastRecoveredTransaction );
-            transactionIdStore.resetLastClosedTransaction( lastClosedTransactionId, positionAfterLastRecoveredTransaction.getLogVersion(),
-                    positionAfterLastRecoveredTransaction.getByteOffset(), BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP );
+            log.warn("Recovery detected that transaction logs tail can't be trusted. "
+                    + "Resetting offset of last closed transaction to point to the last recoverable log position: "
+                    + positionAfterLastRecoveredTransaction);
+            transactionIdStore.resetLastClosedTransaction(
+                    lastClosedTransactionId,
+                    positionAfterLastRecoveredTransaction.getLogVersion(),
+                    positionAfterLastRecoveredTransaction.getByteOffset(),
+                    BASE_TX_CHECKSUM,
+                    BASE_TX_COMMIT_TIMESTAMP);
         }
 
-        logVersionRepository.setCurrentLogVersion( positionAfterLastRecoveredTransaction.getLogVersion() );
-        logVersionRepository.setCheckpointLogVersion( checkpointPosition.getLogVersion() );
+        logVersionRepository.setCurrentLogVersion(positionAfterLastRecoveredTransaction.getLogVersion());
+        logVersionRepository.setCheckpointLogVersion(checkpointPosition.getLogVersion());
     }
 }

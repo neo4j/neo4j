@@ -43,7 +43,11 @@ trait TransactionPipe {
     internalCreateResultsForOneBatch(state, batch, keepResults = true)
   }
 
-  private def internalCreateResultsForOneBatch(state: QueryState, batch: Seq[CypherRow], keepResults: Boolean): ClosingIterator[CypherRow] = {
+  private def internalCreateResultsForOneBatch(
+    state: QueryState,
+    batch: Seq[CypherRow],
+    keepResults: Boolean
+  ): ClosingIterator[CypherRow] = {
     inNewTransaction(state) { stateWithNewTransaction =>
       val entityTransformer = new CypherRowEntityTransformer(stateWithNewTransaction.query.entityTransformer)
 
@@ -76,7 +80,8 @@ trait TransactionPipe {
   def inNewTransaction(state: QueryState)(f: QueryState => ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
 
     // Ensure that no write happens before a 'CALL { ... } IN TRANSACTIONS'
-    if (state.query.transactionalContext.dataRead.transactionStateHasChanges) throw new InternalException("Expected transaction state to be empty when calling transactional subquery.")
+    if (state.query.transactionalContext.dataRead.transactionStateHasChanges)
+      throw new InternalException("Expected transaction state to be empty when calling transactional subquery.")
 
     // beginTx()
     val stateWithNewTransaction = state.withNewTransaction()
@@ -114,6 +119,7 @@ trait TransactionPipe {
 }
 
 object TransactionPipe {
+
   /**
    * Recursively finds entity wrappers and rebinds the entities to the current transaction
    */

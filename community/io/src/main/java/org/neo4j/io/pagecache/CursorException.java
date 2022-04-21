@@ -25,10 +25,8 @@ import java.io.IOException;
  * Thrown by {@link PageCursor#checkAndClearCursorException()} if an error condition has been set on the cursor with
  * {@link PageCursor#setCursorException(String)}.
  */
-public class CursorException extends IOException
-{
-    public CursorException( String message )
-    {
-        super( message );
+public class CursorException extends IOException {
+    public CursorException(String message) {
+        super(message);
     }
 }

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class ToFloatTest extends FunctionTestBase("toFloat")  {
+class ToFloatTest extends FunctionTestBase("toFloat") {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTString)(CTFloat)

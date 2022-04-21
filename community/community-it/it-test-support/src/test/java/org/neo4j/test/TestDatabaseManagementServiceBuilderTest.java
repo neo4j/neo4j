@@ -19,8 +19,11 @@
  */
 package org.neo4j.test;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -29,53 +32,41 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-
 @TestDirectoryExtension
-class TestDatabaseManagementServiceBuilderTest
-{
+class TestDatabaseManagementServiceBuilderTest {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void databaseStartsWithSystemAndDefaultDatabase()
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            checkAvailableDatabases( database );
-        }
-        finally
-        {
+    void databaseStartsWithSystemAndDefaultDatabase() {
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
+            checkAvailableDatabases(database);
+        } finally {
             managementService.shutdown();
         }
     }
 
     @Test
-    void impermanentDatabaseStartsWithSystemAndDefaultDatabase()
-    {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).impermanent().build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            checkAvailableDatabases( database );
-        }
-        finally
-        {
+    void impermanentDatabaseStartsWithSystemAndDefaultDatabase() {
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .impermanent()
+                .build();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
+            checkAvailableDatabases(database);
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private static void checkAvailableDatabases( GraphDatabaseAPI database )
-    {
+    private static void checkAvailableDatabases(GraphDatabaseAPI database) {
         DependencyResolver resolver = database.getDependencyResolver();
-        DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
+        DatabaseManager<?> databaseManager = resolver.resolveDependency(DatabaseManager.class);
 
-        assertTrue( databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).isPresent() );
-        assertTrue( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).isPresent() );
+        assertTrue(databaseManager.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID).isPresent());
+        assertTrue(databaseManager.getDatabaseContext(DEFAULT_DATABASE_NAME).isPresent());
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
-
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
@@ -40,15 +39,14 @@ import org.neo4j.util.Preconditions;
  *
  * These scopes together allows for efficient allocation, de-allocation and sharing of buffers.
  */
-public class ByteBufferFactory implements AutoCloseable
-{
+public class ByteBufferFactory implements AutoCloseable {
     private final Allocator globalAllocator;
     private final int threadLocalBufferSize;
-    private final ThreadLocal<ThreadLocalByteBuffer> threadLocalBuffers = ThreadLocal.withInitial( ThreadLocalByteBuffer::new );
+    private final ThreadLocal<ThreadLocalByteBuffer> threadLocalBuffers =
+            ThreadLocal.withInitial(ThreadLocalByteBuffer::new);
     private final Supplier<Allocator> allocatorFactory;
 
-    public ByteBufferFactory( Supplier<Allocator> allocatorFactory, int threadLocalBufferSize )
-    {
+    public ByteBufferFactory(Supplier<Allocator> allocatorFactory, int threadLocalBufferSize) {
         this.allocatorFactory = allocatorFactory;
         this.globalAllocator = allocatorFactory.get();
         this.threadLocalBufferSize = threadLocalBufferSize;
@@ -57,16 +55,14 @@ public class ByteBufferFactory implements AutoCloseable
     /**
      * @return the global {@link Allocator} for private buffer allocation.
      */
-    public Allocator globalAllocator()
-    {
+    public Allocator globalAllocator() {
         return globalAllocator;
     }
 
     /**
      * @return a new {@link Allocator} for local use. Must be closed by the caller when done.
      */
-    public Allocator newLocalAllocator()
-    {
+    public Allocator newLocalAllocator() {
         return allocatorFactory.get();
     }
 
@@ -74,86 +70,71 @@ public class ByteBufferFactory implements AutoCloseable
      * @return thread-local buffer. The returned buffer is meant to be used in a limited closure and then {@link #releaseThreadLocalBuffer() released}
      * so that other pieces of code can use it again for this thread.
      */
-    public ByteBuffer acquireThreadLocalBuffer( MemoryTracker memoryTracker )
-    {
-        return threadLocalBuffers.get().acquire( memoryTracker );
+    public ByteBuffer acquireThreadLocalBuffer(MemoryTracker memoryTracker) {
+        return threadLocalBuffers.get().acquire(memoryTracker);
     }
 
     /**
      * Releases a previously {@link #acquireThreadLocalBuffer(MemoryTracker)} acquired} thread-local buffer.
      */
-    public void releaseThreadLocalBuffer()
-    {
+    public void releaseThreadLocalBuffer() {
         ThreadLocalByteBuffer managedByteBuffer = threadLocalBuffers.get();
-        Preconditions.checkState( managedByteBuffer != null, "Buffer doesn't exist" );
+        Preconditions.checkState(managedByteBuffer != null, "Buffer doesn't exist");
         managedByteBuffer.release();
     }
 
-    public int bufferSize()
-    {
+    public int bufferSize() {
         return threadLocalBufferSize;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         globalAllocator.close();
     }
 
-    public static ByteBufferFactory heapBufferFactory( int sharedBuffersSize )
-    {
-        return new ByteBufferFactory( () -> HEAP_ALLOCATOR, sharedBuffersSize );
+    public static ByteBufferFactory heapBufferFactory(int sharedBuffersSize) {
+        return new ByteBufferFactory(() -> HEAP_ALLOCATOR, sharedBuffersSize);
     }
 
     /**
      * Allocator of {@link ByteBuffer} instances. Also is responsible for freeing memory of allocated buffers on {@link #close()}.
      */
-    public interface Allocator extends AutoCloseable
-    {
-        ScopedBuffer allocate( int bufferSize, MemoryTracker memoryTracker );
+    public interface Allocator extends AutoCloseable {
+        ScopedBuffer allocate(int bufferSize, MemoryTracker memoryTracker);
 
         @Override
         void close();
     }
 
-    private static final Allocator HEAP_ALLOCATOR = new Allocator()
-    {
+    private static final Allocator HEAP_ALLOCATOR = new Allocator() {
         @Override
-        public ScopedBuffer allocate( int bufferSize, MemoryTracker memoryTracker )
-        {
-            return new HeapScopedBuffer( bufferSize, memoryTracker );
+        public ScopedBuffer allocate(int bufferSize, MemoryTracker memoryTracker) {
+            return new HeapScopedBuffer(bufferSize, memoryTracker);
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             // Nothing to close
         }
     };
 
-    private class ThreadLocalByteBuffer
-    {
+    private class ThreadLocalByteBuffer {
         private boolean acquired;
         private ScopedBuffer scopedBuffer;
 
-        ByteBuffer acquire( MemoryTracker memoryTracker )
-        {
-            Preconditions.checkState( !acquired, "Already acquired" );
+        ByteBuffer acquire(MemoryTracker memoryTracker) {
+            Preconditions.checkState(!acquired, "Already acquired");
             acquired = true;
-            if ( scopedBuffer == null )
-            {
-                scopedBuffer = globalAllocator.allocate( threadLocalBufferSize, memoryTracker );
-            }
-            else
-            {
+            if (scopedBuffer == null) {
+                scopedBuffer = globalAllocator.allocate(threadLocalBufferSize, memoryTracker);
+            } else {
                 scopedBuffer.getBuffer().clear();
             }
             return scopedBuffer.getBuffer();
         }
 
-        void release()
-        {
-            Preconditions.checkState( acquired, "Not acquired" );
+        void release() {
+            Preconditions.checkState(acquired, "Not acquired");
             acquired = false;
         }
     }

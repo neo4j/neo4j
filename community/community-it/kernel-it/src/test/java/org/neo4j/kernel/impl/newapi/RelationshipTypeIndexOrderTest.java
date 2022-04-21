@@ -31,44 +31,46 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 
-public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<RelationshipTypeIndexCursor>
-{
+public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<RelationshipTypeIndexCursor> {
 
     @Override
-    protected long entityWithToken( KernelTransaction tx, String name ) throws Exception
-    {
+    protected long entityWithToken(KernelTransaction tx, String name) throws Exception {
         Write write = tx.dataWrite();
         long sourceNode = write.nodeCreate();
         long targetNode = write.nodeCreate();
 
-        return write.relationshipCreate( sourceNode, tx.tokenWrite().relationshipTypeGetOrCreateForName( name ), targetNode );
+        return write.relationshipCreate(
+                sourceNode, tx.tokenWrite().relationshipTypeGetOrCreateForName(name), targetNode);
     }
 
     @Override
-    protected RelationshipTypeIndexCursor getIndexCursor( KernelTransaction tx )
-    {
-        return tx.cursors().allocateRelationshipTypeIndexCursor( tx.cursorContext() );
+    protected RelationshipTypeIndexCursor getIndexCursor(KernelTransaction tx) {
+        return tx.cursors().allocateRelationshipTypeIndexCursor(tx.cursorContext());
     }
 
     @Override
-    protected long entityReference( RelationshipTypeIndexCursor cursor )
-    {
+    protected long entityReference(RelationshipTypeIndexCursor cursor) {
         return cursor.relationshipReference();
     }
 
     @Override
-    protected void tokenScan( IndexOrder indexOrder, KernelTransaction tx, int label, RelationshipTypeIndexCursor cursor ) throws KernelException
-    {
-        IndexDescriptor index = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ) ).next();
-        TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
-        tx.dataRead().relationshipTypeScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ),
-                tx.cursorContext() );
+    protected void tokenScan(IndexOrder indexOrder, KernelTransaction tx, int label, RelationshipTypeIndexCursor cursor)
+            throws KernelException {
+        IndexDescriptor index = tx.schemaRead()
+                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP))
+                .next();
+        TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession(index);
+        tx.dataRead()
+                .relationshipTypeScan(
+                        tokenReadSession,
+                        cursor,
+                        IndexQueryConstraints.ordered(indexOrder),
+                        new TokenPredicate(label),
+                        tx.cursorContext());
     }
 
     @Override
-    protected int tokenByName( KernelTransaction tx, String name )
-    {
-        return tx.tokenRead().relationshipType( name );
+    protected int tokenByName(KernelTransaction tx, String name) {
+        return tx.tokenRead().relationshipType(name);
     }
-
 }

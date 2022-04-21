@@ -27,41 +27,35 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
-
 import org.neo4j.procedure.Context;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.FieldError;
 
-public class FieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
-{
+public class FieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>, Void> {
 
-    private final ElementVisitor<Stream<CompilationMessage>,Void> contextFieldVisitor;
+    private final ElementVisitor<Stream<CompilationMessage>, Void> contextFieldVisitor;
 
-    public FieldVisitor( Types types, Elements elements, boolean ignoresWarnings )
-    {
-        contextFieldVisitor = new ContextFieldVisitor( types, elements, ignoresWarnings );
+    public FieldVisitor(Types types, Elements elements, boolean ignoresWarnings) {
+        contextFieldVisitor = new ContextFieldVisitor(types, elements, ignoresWarnings);
     }
 
-    private static Stream<CompilationMessage> validateNonContextField( VariableElement field )
-    {
+    private static Stream<CompilationMessage> validateNonContextField(VariableElement field) {
         Set<Modifier> modifiers = field.getModifiers();
-        if ( !modifiers.contains( Modifier.STATIC ) )
-        {
-            return Stream.of( new FieldError( field, "Field %s#%s should be static",
-                    field.getEnclosingElement().getSimpleName(), field.getSimpleName() ) );
+        if (!modifiers.contains(Modifier.STATIC)) {
+            return Stream.of(new FieldError(
+                    field,
+                    "Field %s#%s should be static",
+                    field.getEnclosingElement().getSimpleName(),
+                    field.getSimpleName()));
         }
         return Stream.empty();
     }
 
     @Override
-    public Stream<CompilationMessage> visitVariable( VariableElement field, Void ignored )
-    {
-        if ( field.getAnnotation( Context.class ) != null )
-        {
-            return contextFieldVisitor.visitVariable( field, ignored );
+    public Stream<CompilationMessage> visitVariable(VariableElement field, Void ignored) {
+        if (field.getAnnotation(Context.class) != null) {
+            return contextFieldVisitor.visitVariable(field, ignored);
         }
-        return validateNonContextField( field );
-
+        return validateNonContextField(field);
     }
-
 }

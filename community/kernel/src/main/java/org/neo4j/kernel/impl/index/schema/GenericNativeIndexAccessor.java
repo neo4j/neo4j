@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.nio.file.OpenOption;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -35,49 +33,49 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 
-class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey>
-{
+class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey> {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
     private final TokenNameLookup tokenNameLookup;
     private IndexValueValidator validator;
 
-    GenericNativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-                                IndexLayout<BtreeKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
-                                IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration,
-                                TokenNameLookup tokenNameLookup, ImmutableSet<OpenOption> openOptions )
-    {
-        super( databaseIndexContext, indexFiles, layout, descriptor, openOptions );
+    GenericNativeIndexAccessor(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexLayout<BtreeKey> layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            IndexDescriptor descriptor,
+            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
+            SpaceFillingCurveConfiguration configuration,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        super(databaseIndexContext, indexFiles, layout, descriptor, openOptions);
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
         this.tokenNameLookup = tokenNameLookup;
-        instantiateTree( recoveryCleanupWorkCollector, headerWriter );
+        instantiateTree(recoveryCleanupWorkCollector, headerWriter);
     }
 
     @Override
-    protected void afterTreeInstantiation( GBPTree<BtreeKey,NullValue> tree )
-    {
-        validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
+    protected void afterTreeInstantiation(GBPTree<BtreeKey, NullValue> tree) {
+        validator = new GenericIndexKeyValidator(tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup);
     }
 
     @Override
-    public ValueIndexReader newValueReader()
-    {
+    public ValueIndexReader newValueReader() {
         assertOpen();
-        return new GenericNativeIndexReader( tree, layout, descriptor, spaceFillingCurveSettings, configuration );
+        return new GenericNativeIndexReader(tree, layout, descriptor, spaceFillingCurveSettings, configuration);
     }
 
     @Override
-    public void validateBeforeCommit( long entityId, Value[] tuple )
-    {
-        validator.validate( entityId, tuple );
+    public void validateBeforeCommit(long entityId, Value[] tuple) {
+        validator.validate(entityId, tuple);
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
-        Map<String,Value> map = new HashMap<>();
-        spaceFillingCurveSettings.visitIndexSpecificSettings( new SpatialConfigVisitor( map ) );
+    public Map<String, Value> indexConfig() {
+        Map<String, Value> map = new HashMap<>();
+        spaceFillingCurveSettings.visitIndexSpecificSettings(new SpatialConfigVisitor(map));
         return map;
     }
 }

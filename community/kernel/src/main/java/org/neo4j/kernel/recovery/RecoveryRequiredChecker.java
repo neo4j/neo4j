@@ -20,7 +20,6 @@
 package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -35,37 +34,35 @@ import org.neo4j.storageengine.api.StorageFilesState;
 /**
  * Utility that can determine if a given store will need recovery.
  */
-class RecoveryRequiredChecker
-{
+class RecoveryRequiredChecker {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final StorageEngineFactory storageEngineFactory;
     private final LogTailExtractor logTailExtractor;
 
-    RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config, StorageEngineFactory storageEngineFactory,
-            DatabaseTracers databaseTracers )
-    {
+    RecoveryRequiredChecker(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Config config,
+            StorageEngineFactory storageEngineFactory,
+            DatabaseTracers databaseTracers) {
         this.fs = fs;
         this.pageCache = pageCache;
-        this.logTailExtractor = new LogTailExtractor( fs, pageCache, config, storageEngineFactory, databaseTracers );
+        this.logTailExtractor = new LogTailExtractor(fs, pageCache, config, storageEngineFactory, databaseTracers);
         this.storageEngineFactory = storageEngineFactory;
     }
 
-    public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
-    {
-        var logTail = logTailExtractor.getTailMetadata( databaseLayout, memoryTracker );
-        return isRecoveryRequiredAt( databaseLayout, logTail );
+    public boolean isRecoveryRequiredAt(DatabaseLayout databaseLayout, MemoryTracker memoryTracker) throws IOException {
+        var logTail = logTailExtractor.getTailMetadata(databaseLayout, memoryTracker);
+        return isRecoveryRequiredAt(databaseLayout, logTail);
     }
 
-    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailMetadata logTailMetadata )
-    {
-        if ( !storageEngineFactory.storageExists( fs, databaseLayout, pageCache ) )
-        {
+    boolean isRecoveryRequiredAt(DatabaseLayout databaseLayout, LogTailMetadata logTailMetadata) {
+        if (!storageEngineFactory.storageExists(fs, databaseLayout, pageCache)) {
             return false;
         }
-        StorageFilesState filesRecoveryState = storageEngineFactory.checkStoreFileState( fs, databaseLayout, pageCache );
-        if ( filesRecoveryState.getRecoveryState() != RecoveryState.RECOVERED )
-        {
+        StorageFilesState filesRecoveryState = storageEngineFactory.checkStoreFileState(fs, databaseLayout, pageCache);
+        if (filesRecoveryState.getRecoveryState() != RecoveryState.RECOVERED) {
             return true;
         }
         return logTailMetadata.isRecoveryRequired();

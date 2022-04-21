@@ -114,5 +114,3 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
     normalizeArgumentOrder(input) should equal(lessThanOrEqual(rhs, lhs))
   }
 }
-
-

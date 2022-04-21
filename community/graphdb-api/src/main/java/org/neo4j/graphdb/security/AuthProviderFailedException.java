@@ -28,24 +28,20 @@ import org.neo4j.kernel.api.exceptions.Status;
  * but for failures where such information could not be established because of an external server problem,
  * misconfiguration etc.
  */
-public class AuthProviderFailedException extends RuntimeException implements Status.HasStatus
-{
+public class AuthProviderFailedException extends RuntimeException implements Status.HasStatus {
     private static final Status statusCode = Status.Security.AuthProviderFailed;
 
-    public AuthProviderFailedException( String msg )
-    {
-        super( msg );
+    public AuthProviderFailedException(String msg) {
+        super(msg);
     }
 
-    public AuthProviderFailedException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public AuthProviderFailedException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
-    public Status status()
-    {
+    public Status status() {
         return statusCode;
     }
 }

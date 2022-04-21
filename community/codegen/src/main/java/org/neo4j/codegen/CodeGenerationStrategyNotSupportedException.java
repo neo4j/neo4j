@@ -19,10 +19,8 @@
  */
 package org.neo4j.codegen;
 
-public class CodeGenerationStrategyNotSupportedException extends CodeGenerationNotSupportedException
-{
-    public CodeGenerationStrategyNotSupportedException( CodeGenerationStrategy<?> strategy, String reason )
-    {
-        super( null, "Cannot generate code through the '%s' strategy: %s", strategy.name(), reason );
+public class CodeGenerationStrategyNotSupportedException extends CodeGenerationNotSupportedException {
+    public CodeGenerationStrategyNotSupportedException(CodeGenerationStrategy<?> strategy, String reason) {
+        super(null, "Cannot generate code through the '%s' strategy: %s", strategy.name(), reason);
     }
 }

@@ -92,8 +92,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * </pre>
  */
 @PublicApi
-public interface RelationshipType
-{
+public interface RelationshipType {
     /**
      * Returns the name of the relationship type. The name uniquely identifies a
      * relationship type, i.e. two different RelationshipType instances with
@@ -112,43 +111,34 @@ public interface RelationshipType
      * @return a {@link RelationshipType} with the given name
      * @throws IllegalArgumentException if name is {@code null}
      */
-    static RelationshipType withName( String name )
-    {
-        if ( name == null )
-        {
-            throw new IllegalArgumentException( "A relationship type cannot have a null name" );
+    static RelationshipType withName(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("A relationship type cannot have a null name");
         }
-        return new RelationshipType()
-        {
+        return new RelationshipType() {
             @Override
-            public String name()
-            {
+            public String name() {
                 return name;
             }
 
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return name;
             }
 
             @Override
-            public boolean equals( Object that )
-            {
-                if ( this == that )
-                {
+            public boolean equals(Object that) {
+                if (this == that) {
                     return true;
                 }
-                if ( that == null || that.getClass() != getClass() )
-                {
+                if (that == null || that.getClass() != getClass()) {
                     return false;
                 }
-                return name.equals( ((RelationshipType) that).name() );
+                return name.equals(((RelationshipType) that).name());
             }
 
             @Override
-            public int hashCode()
-            {
+            public int hashCode() {
                 return name.hashCode();
             }
         };

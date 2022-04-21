@@ -24,8 +24,7 @@ import org.neo4j.graphdb.Path;
 /**
  * {@link UniquenessFilter} for {@link BidirectionalTraversalDescription bidirectional traverser}.
  */
-public interface BidirectionalUniquenessFilter extends UniquenessFilter
-{
+public interface BidirectionalUniquenessFilter extends UniquenessFilter {
     /**
      * Checks {@link Path} alone to see if it follows the uniqueness contract
      * provided by this {@link UniquenessFilter}.
@@ -34,5 +33,5 @@ public interface BidirectionalUniquenessFilter extends UniquenessFilter
      * @return {@code true} if the {@code path} fulfills the uniqueness contract,
      *         otherwise {@code false}.
      */
-    boolean checkFull( Path path );
+    boolean checkFull(Path path);
 }

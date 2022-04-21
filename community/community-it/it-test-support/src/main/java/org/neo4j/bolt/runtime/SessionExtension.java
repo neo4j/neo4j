@@ -19,9 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import static java.time.Duration.ofSeconds;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -32,16 +30,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
-import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
+import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -62,10 +62,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.time.Duration.ofSeconds;
-
-public class SessionExtension implements BeforeEachCallback, AfterEachCallback
-{
+public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
     private final Supplier<TestDatabaseManagementServiceBuilder> builderFactory;
     private GraphDatabaseAPI gdb;
     private BoltStateMachineFactoryImpl boltFactory;
@@ -73,60 +70,59 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     private DatabaseManagementService managementService;
     private boolean authEnabled;
 
-    public SessionExtension()
-    {
-        this( TestDatabaseManagementServiceBuilder::new );
+    public SessionExtension() {
+        this(TestDatabaseManagementServiceBuilder::new);
     }
 
-    public SessionExtension( Supplier<TestDatabaseManagementServiceBuilder> builderFactory )
-    {
+    public SessionExtension(Supplier<TestDatabaseManagementServiceBuilder> builderFactory) {
         this.builderFactory = builderFactory;
     }
 
-    public BoltStateMachine newMachine( BoltProtocolVersion version, BoltChannel boltChannel, MemoryTracker memoryTracker )
-    {
+    public BoltStateMachine newMachine(
+            BoltProtocolVersion version, BoltChannel boltChannel, MemoryTracker memoryTracker) {
         assertTestStarted();
-        BoltStateMachine machine = boltFactory.newStateMachine( version, boltChannel, MapValue.EMPTY, memoryTracker );
-        runningMachines.add( machine );
+        BoltStateMachine machine = boltFactory.newStateMachine(version, boltChannel, MapValue.EMPTY, memoryTracker);
+        runningMachines.add(machine);
         return machine;
     }
 
-    public DatabaseManagementService managementService()
-    {
+    public DatabaseManagementService managementService() {
         assertTestStarted();
         return managementService;
     }
 
-    public String defaultDatabaseName()
-    {
+    public String defaultDatabaseName() {
         assertTestStarted();
         DependencyResolver resolver = gdb.getDependencyResolver();
-        Config config = resolver.resolveDependency( Config.class );
-        return config.get( GraphDatabaseSettings.default_database );
+        Config config = resolver.resolveDependency(Config.class);
+        return config.get(GraphDatabaseSettings.default_database);
     }
 
-    public DatabaseIdRepository databaseIdRepository()
-    {
+    public DatabaseIdRepository databaseIdRepository() {
         assertTestStarted();
         var resolver = gdb.getDependencyResolver();
-        var databaseManager = resolver.resolveDependency( DatabaseManager.class );
+        var databaseManager = resolver.resolveDependency(DatabaseManager.class);
         return databaseManager.databaseIdRepository();
     }
 
     @Override
-    public void beforeEach( ExtensionContext extensionContext )
-    {
-        managementService = builderFactory.get().impermanent().setConfig( GraphDatabaseSettings.auth_enabled, authEnabled ).build();
-        gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    public void beforeEach(ExtensionContext extensionContext) {
+        managementService = builderFactory
+                .get()
+                .impermanent()
+                .setConfig(GraphDatabaseSettings.auth_enabled, authEnabled)
+                .build();
+        gdb = (GraphDatabaseAPI) managementService.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         DependencyResolver resolver = gdb.getDependencyResolver();
-        Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ) );
-        Config config = resolver.resolveDependency( Config.class );
+        Authentication authentication = authentication(resolver.resolveDependency(AuthManager.class));
+        Config config = resolver.resolveDependency(Config.class);
         StatementProcessorTxManager statementProcessorTxManager = new StatementProcessorTxManager();
         SystemNanoClock clock = Clocks.nanoClock();
-        DefaultDatabaseResolver defaultDatabaseResolver =
-                new CommunityDefaultDatabaseResolver( config, () -> managementService.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
-        BoltGraphDatabaseManagementServiceSPI databaseManagementService = new BoltKernelDatabaseManagementServiceProvider( managementService,
-                new Monitors(), clock, ofSeconds( 30 ) );
+        DefaultDatabaseResolver defaultDatabaseResolver = new CommunityDefaultDatabaseResolver(
+                config, () -> managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME));
+        BoltGraphDatabaseManagementServiceSPI databaseManagementService =
+                new BoltKernelDatabaseManagementServiceProvider(
+                        managementService, new Monitors(), clock, ofSeconds(30));
         boltFactory = new BoltStateMachineFactoryImpl(
                 databaseManagementService,
                 authentication,
@@ -134,60 +130,49 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
                 config,
                 NullLogService.getInstance(),
                 defaultDatabaseResolver,
-                statementProcessorTxManager
-        );
+                statementProcessorTxManager);
     }
 
     @Override
-    public void afterEach( ExtensionContext extensionContext )
-    {
-        try
-        {
-            if ( runningMachines != null )
-            {
-                IOUtils.closeAll( runningMachines );
+    public void afterEach(ExtensionContext extensionContext) {
+        try {
+            if (runningMachines != null) {
+                IOUtils.closeAll(runningMachines);
                 runningMachines.clear();
             }
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
 
         managementService.shutdown();
     }
 
-    private void assertTestStarted()
-    {
-        if ( boltFactory == null || gdb == null )
-        {
-            throw new IllegalStateException( "Cannot access test environment before test is running." );
+    private void assertTestStarted() {
+        if (boltFactory == null || gdb == null) {
+            throw new IllegalStateException("Cannot access test environment before test is running.");
         }
     }
 
-    private static Authentication authentication( AuthManager authManager )
-    {
-        return new BasicAuthentication( authManager );
+    private static Authentication authentication(AuthManager authManager) {
+        return new BasicAuthentication(authManager);
     }
 
-    public long lastClosedTxId()
-    {
-        return gdb.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+    public long lastClosedTxId() {
+        return gdb.getDependencyResolver()
+                .resolveDependency(TransactionIdStore.class)
+                .getLastClosedTransactionId();
     }
 
-    public static URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
-    {
-        Path tempFile = Files.createTempFile( prefix, suffix );
+    public static URL putTmpFile(String prefix, String suffix, String contents) throws IOException {
+        Path tempFile = Files.createTempFile(prefix, suffix);
         tempFile.toFile().deleteOnExit();
-        try ( PrintWriter out = new PrintWriter( Files.newOutputStream( tempFile ), false, StandardCharsets.UTF_8 ) )
-        {
-            out.println( contents);
+        try (PrintWriter out = new PrintWriter(Files.newOutputStream(tempFile), false, StandardCharsets.UTF_8)) {
+            out.println(contents);
         }
         return tempFile.toUri().toURL();
     }
 
-    public SessionExtension withAuthEnabled( boolean authEnabled )
-    {
+    public SessionExtension withAuthEnabled(boolean authEnabled) {
         this.authEnabled = authEnabled;
         return this;
     }

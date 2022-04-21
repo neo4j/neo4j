@@ -21,51 +21,43 @@ package org.neo4j.csv.reader;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.neo4j.csv.reader.Source.Chunk;
 
 /**
  * Chunks up a {@link CharReadable}.
  */
-public abstract class CharReadableChunker implements Chunker
-{
+public abstract class CharReadableChunker implements Chunker {
     protected final CharReadable reader;
     protected final int chunkSize;
     protected volatile long position;
     private char[] backBuffer; // grows on demand
     private int backBufferCursor;
 
-    public CharReadableChunker( CharReadable reader, int chunkSize )
-    {
+    public CharReadableChunker(CharReadable reader, int chunkSize) {
         this.reader = reader;
         this.chunkSize = chunkSize;
         this.backBuffer = new char[chunkSize >> 4];
     }
 
     @Override
-    public ChunkImpl newChunk()
-    {
-        return new ChunkImpl( new char[chunkSize] );
+    public ChunkImpl newChunk() {
+        return new ChunkImpl(new char[chunkSize]);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         reader.close();
     }
 
     @Override
-    public long position()
-    {
+    public long position() {
         return position;
     }
 
-    protected int fillFromBackBuffer( char[] into )
-    {
-        if ( backBufferCursor > 0 )
-        {   // Read from and reset back buffer
+    protected int fillFromBackBuffer(char[] into) {
+        if (backBufferCursor > 0) { // Read from and reset back buffer
             assert backBufferCursor < chunkSize;
-            System.arraycopy( backBuffer, 0, into, 0, backBufferCursor );
+            System.arraycopy(backBuffer, 0, into, 0, backBufferCursor);
             int result = backBufferCursor;
             backBufferCursor = 0;
             return result;
@@ -73,74 +65,62 @@ public abstract class CharReadableChunker implements Chunker
         return 0;
     }
 
-    protected int storeInBackBuffer( char[] data, int offset, int length )
-    {
-        System.arraycopy( data, offset, backBuffer( length ), backBufferCursor, length );
+    protected int storeInBackBuffer(char[] data, int offset, int length) {
+        System.arraycopy(data, offset, backBuffer(length), backBufferCursor, length);
         backBufferCursor += length;
         return length;
     }
 
-    private char[] backBuffer( int length )
-    {
-        if ( backBufferCursor + length > backBuffer.length )
-        {
-            backBuffer = Arrays.copyOf( backBuffer, backBufferCursor + length );
+    private char[] backBuffer(int length) {
+        if (backBufferCursor + length > backBuffer.length) {
+            backBuffer = Arrays.copyOf(backBuffer, backBufferCursor + length);
         }
         return backBuffer;
     }
 
-    public static class ChunkImpl implements Chunk
-    {
+    public static class ChunkImpl implements Chunk {
         final char[] buffer;
         private int startOffset;
         private int length;
         private String sourceDescription;
 
-        public ChunkImpl( char[] buffer )
-        {
+        public ChunkImpl(char[] buffer) {
             this.buffer = buffer;
         }
 
-        public void initialize( int startOffset, int length, String sourceDescription )
-        {
+        public void initialize(int startOffset, int length, String sourceDescription) {
             this.startOffset = startOffset;
             this.length = length;
             this.sourceDescription = sourceDescription;
         }
 
         @Override
-        public int startPosition()
-        {
+        public int startPosition() {
             return startOffset;
         }
 
         @Override
-        public String sourceDescription()
-        {
+        public String sourceDescription() {
             return sourceDescription;
         }
 
         @Override
-        public int maxFieldSize()
-        {
+        public int maxFieldSize() {
             return buffer.length;
         }
 
         @Override
-        public int length()
-        {
+        public int length() {
             return length;
         }
 
         @Override
-        public char[] data()
-        {
+        public char[] data() {
             return buffer;
         }
 
         @Override
-        public int backPosition()
-        {
+        public int backPosition() {
             return startOffset;
         }
     }

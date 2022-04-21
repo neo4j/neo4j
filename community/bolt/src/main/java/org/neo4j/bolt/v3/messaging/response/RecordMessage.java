@@ -20,63 +20,52 @@
 package org.neo4j.bolt.v3.messaging.response;
 
 import java.util.Arrays;
-
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.values.AnyValue;
 
-public class RecordMessage implements ResponseMessage
-{
+public class RecordMessage implements ResponseMessage {
     public static final byte SIGNATURE = 0x71;
     private final AnyValue[] fields;
 
-    public RecordMessage( AnyValue[] fields )
-    {
+    public RecordMessage(AnyValue[] fields) {
         this.fields = fields;
     }
 
     @Override
-    public byte signature()
-    {
+    public byte signature() {
         return SIGNATURE;
     }
 
     @Override
-    public ResponseMessage copy()
-    {
-        return new RecordMessage( Arrays.copyOf( fields, fields.length ) );
+    public ResponseMessage copy() {
+        return new RecordMessage(Arrays.copyOf(fields, fields.length));
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         RecordMessage that = (RecordMessage) o;
 
-        return Arrays.equals( fields, that.fields );
+        return Arrays.equals(fields, that.fields);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Arrays.hashCode( fields );
+    public int hashCode() {
+        return Arrays.hashCode(fields);
     }
 
     @Override
-    public String toString()
-    {
-        return "RECORD " + Arrays.toString( fields );
+    public String toString() {
+        return "RECORD " + Arrays.toString(fields);
     }
 
-    public AnyValue[] fields()
-    {
+    public AnyValue[] fields() {
         return fields;
     }
 }

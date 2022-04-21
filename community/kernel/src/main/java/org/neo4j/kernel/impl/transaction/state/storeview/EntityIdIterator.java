@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 
-public interface EntityIdIterator extends PrimitiveLongResourceIterator
-{
+public interface EntityIdIterator extends PrimitiveLongResourceIterator {
     /**
      * An {@link EntityIdIterator} is allowed to cache some ids ahead of it for performance reasons. Although during certain
      * points of execution there may be a need to bring this iterator fully up to date with concurrent changes.

@@ -22,8 +22,7 @@ package org.neo4j.internal.kernel.api;
 /**
  * Expose statistical information about the current transaction.
  */
-public interface ExecutionStatistics
-{
+public interface ExecutionStatistics {
     /**
      * Returns the number of page hits in the current counters
      * @return the number of page hits in the current counters

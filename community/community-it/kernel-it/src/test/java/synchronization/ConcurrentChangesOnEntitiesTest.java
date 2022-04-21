@@ -19,17 +19,18 @@
  */
 package synchronization;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,40 +47,34 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @Neo4jLayoutExtension
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-class ConcurrentChangesOnEntitiesTest
-{
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+class ConcurrentChangesOnEntitiesTest {
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private final CyclicBarrier barrier = new CyclicBarrier( 2 );
+    private final CyclicBarrier barrier = new CyclicBarrier(2);
     private final AtomicReference<Exception> ex = new AtomicReference<>();
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setup()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+    void setup() {
+        managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
     @Test
-    void addConcurrentlySameLabelToANode() throws Throwable
-    {
+    void addConcurrentlySameLabelToANode() throws Throwable {
 
-        final long nodeId = initWithNode( db );
+        final long nodeId = initWithNode(db);
 
-        Thread t1 = newThreadForNodeAction( nodeId, node -> node.addLabel( Label.label( "A" ) ) );
+        Thread t1 = newThreadForNodeAction(nodeId, node -> node.addLabel(Label.label("A")));
 
-        Thread t2 = newThreadForNodeAction( nodeId, node -> node.addLabel( Label.label( "A" ) ) );
+        Thread t2 = newThreadForNodeAction(nodeId, node -> node.addLabel(Label.label("A")));
 
-        startAndWait( t1, t2 );
+        startAndWait(t1, t2);
 
         managementService.shutdown();
 
@@ -87,15 +82,14 @@ class ConcurrentChangesOnEntitiesTest
     }
 
     @Test
-    void setConcurrentlySamePropertyWithDifferentValuesOnANode() throws Throwable
-    {
-        final long nodeId = initWithNode( db );
+    void setConcurrentlySamePropertyWithDifferentValuesOnANode() throws Throwable {
+        final long nodeId = initWithNode(db);
 
-        Thread t1 = newThreadForNodeAction( nodeId, node -> node.setProperty( "a", 0.788 ) );
+        Thread t1 = newThreadForNodeAction(nodeId, node -> node.setProperty("a", 0.788));
 
-        Thread t2 = newThreadForNodeAction( nodeId, node -> node.setProperty( "a", new double[]{0.999, 0.77} ) );
+        Thread t2 = newThreadForNodeAction(nodeId, node -> node.setProperty("a", new double[] {0.999, 0.77}));
 
-        startAndWait( t1, t2 );
+        startAndWait(t1, t2);
 
         managementService.shutdown();
 
@@ -103,105 +97,87 @@ class ConcurrentChangesOnEntitiesTest
     }
 
     @Test
-    void setConcurrentlySamePropertyWithDifferentValuesOnARelationship() throws Throwable
-    {
-        final long relId = initWithRel( db );
+    void setConcurrentlySamePropertyWithDifferentValuesOnARelationship() throws Throwable {
+        final long relId = initWithRel(db);
 
-        Thread t1 = newThreadForRelationshipAction( relId, relationship -> relationship.setProperty( "a", 0.788 ) );
+        Thread t1 = newThreadForRelationshipAction(relId, relationship -> relationship.setProperty("a", 0.788));
 
-        Thread t2 = newThreadForRelationshipAction( relId,
-                relationship -> relationship.setProperty( "a", new double[]{0.999, 0.77} ) );
+        Thread t2 = newThreadForRelationshipAction(
+                relId, relationship -> relationship.setProperty("a", new double[] {0.999, 0.77}));
 
-        startAndWait( t1, t2 );
+        startAndWait(t1, t2);
 
         managementService.shutdown();
 
         assertDatabaseConsistent();
     }
 
-    private static long initWithNode( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
+    private static long initWithNode(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
             Node theNode = tx.createNode();
             long id = theNode.getId();
             tx.commit();
             return id;
         }
-
     }
 
-    private static long initWithRel( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
+    private static long initWithRel(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
-            node.setProperty( "a", "prop" );
-            Relationship rel = node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "T" ) );
+            node.setProperty("a", "prop");
+            Relationship rel = node.createRelationshipTo(tx.createNode(), RelationshipType.withName("T"));
             long id = rel.getId();
             tx.commit();
             return id;
         }
     }
 
-    private Thread newThreadForNodeAction( final long nodeId, final Consumer<Node> nodeConsumer )
-    {
-        return new Thread( () -> {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node = tx.getNodeById( nodeId );
+    private Thread newThreadForNodeAction(final long nodeId, final Consumer<Node> nodeConsumer) {
+        return new Thread(() -> {
+            try (Transaction tx = db.beginTx()) {
+                Node node = tx.getNodeById(nodeId);
                 barrier.await();
-                nodeConsumer.accept( node );
+                nodeConsumer.accept(node);
                 tx.commit();
+            } catch (Exception e) {
+                ex.set(e);
             }
-            catch ( Exception e )
-            {
-                ex.set( e );
-            }
-        } );
+        });
     }
 
-    private Thread newThreadForRelationshipAction( final long relationshipId, final Consumer<Relationship> relConsumer )
-    {
-        return new Thread( () -> {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Relationship relationship = tx.getRelationshipById( relationshipId );
+    private Thread newThreadForRelationshipAction(final long relationshipId, final Consumer<Relationship> relConsumer) {
+        return new Thread(() -> {
+            try (Transaction tx = db.beginTx()) {
+                Relationship relationship = tx.getRelationshipById(relationshipId);
                 barrier.await();
-                relConsumer.accept( relationship );
+                relConsumer.accept(relationship);
                 tx.commit();
+            } catch (Exception e) {
+                ex.set(e);
             }
-            catch ( Exception e )
-            {
-                ex.set( e );
-            }
-        } );
+        });
     }
 
-    private void startAndWait( Thread t1, Thread t2 ) throws Exception
-    {
+    private void startAndWait(Thread t1, Thread t2) throws Exception {
         t1.start();
         t2.start();
 
         t1.join();
         t2.join();
 
-        if ( ex.get() != null )
-        {
+        if (ex.get() != null) {
             throw ex.get();
         }
     }
 
-    private void assertDatabaseConsistent()
-    {
-        InternalLogProvider logProvider = new Log4jLogProvider( System.out );
-        assertDoesNotThrow( () ->
-        {
-            ConsistencyCheckService.Result result = new ConsistencyCheckService( databaseLayout )
-                    .with( System.err )
-                    .with( logProvider )
+    private void assertDatabaseConsistent() {
+        InternalLogProvider logProvider = new Log4jLogProvider(System.out);
+        assertDoesNotThrow(() -> {
+            ConsistencyCheckService.Result result = new ConsistencyCheckService(databaseLayout)
+                    .with(System.err)
+                    .with(logProvider)
                     .runFullConsistencyCheck();
-            Assertions.assertTrue( result.isSuccessful() );
-        } );
+            Assertions.assertTrue(result.isSuccessful());
+        });
     }
 }

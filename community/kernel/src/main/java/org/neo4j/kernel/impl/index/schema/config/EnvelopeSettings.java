@@ -22,13 +22,11 @@ package org.neo4j.kernel.impl.index.schema.config;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-class EnvelopeSettings
-{
+class EnvelopeSettings {
     private static final double DEFAULT_MIN_EXTENT = -1_000_000;
     private static final double DEFAULT_MAX_EXTENT = 1_000_000;
     private static final double DEFAULT_MIN_LATITUDE = -90;
@@ -40,70 +38,60 @@ class EnvelopeSettings
     private Double[] min;
     private Double[] max;
 
-    EnvelopeSettings( CoordinateReferenceSystem crs )
-    {
+    EnvelopeSettings(CoordinateReferenceSystem crs) {
         this.crs = crs;
         this.min = new Double[crs.getDimension()];
         this.max = new Double[crs.getDimension()];
-        Arrays.fill( this.min, Double.NaN );
-        Arrays.fill( this.max, Double.NaN );
+        Arrays.fill(this.min, Double.NaN);
+        Arrays.fill(this.max, Double.NaN);
     }
 
-    static Map<CoordinateReferenceSystem,EnvelopeSettings> envelopeSettingsFromConfig( Config config )
-    {
-        Map<CoordinateReferenceSystem,EnvelopeSettings> env = new HashMap<>();
-        config.getGroups( CrsConfig.class ).forEach( ( id, crsConfig ) ->
-        {
-            EnvelopeSettings envelopeSettings = new EnvelopeSettings( crsConfig.crs );
-            envelopeSettings.min = config.get( crsConfig.min ).toArray( Double[]::new );
-            envelopeSettings.max = config.get( crsConfig.max ).toArray( Double[]::new );
-            env.put( crsConfig.crs, envelopeSettings );
-        } );
+    static Map<CoordinateReferenceSystem, EnvelopeSettings> envelopeSettingsFromConfig(Config config) {
+        Map<CoordinateReferenceSystem, EnvelopeSettings> env = new HashMap<>();
+        config.getGroups(CrsConfig.class).forEach((id, crsConfig) -> {
+            EnvelopeSettings envelopeSettings = new EnvelopeSettings(crsConfig.crs);
+            envelopeSettings.min = config.get(crsConfig.min).toArray(Double[]::new);
+            envelopeSettings.max = config.get(crsConfig.max).toArray(Double[]::new);
+            env.put(crsConfig.crs, envelopeSettings);
+        });
 
         return env;
     }
 
-    Envelope asEnvelope()
-    {
+    Envelope asEnvelope() {
         int dimension = crs.getDimension();
         assert dimension >= 2;
         double[] min = new double[dimension];
         double[] max = new double[dimension];
         int cartesianStartIndex = 0;
-        if ( crs.isGeographic() )
-        {
+        if (crs.isGeographic()) {
             // Geographic CRS default to extent of the earth in degrees
-            min[0] = minOrDefault( 0, DEFAULT_MIN_LONGITUDE );
-            max[0] = maxOrDefault( 0, DEFAULT_MAX_LONGITUDE );
-            min[1] = minOrDefault( 1, DEFAULT_MIN_LATITUDE );
-            max[1] = maxOrDefault( 1, DEFAULT_MAX_LATITUDE );
-            cartesianStartIndex = 2;    // if geographic index has higher than 2D, then other dimensions are cartesian
+            min[0] = minOrDefault(0, DEFAULT_MIN_LONGITUDE);
+            max[0] = maxOrDefault(0, DEFAULT_MAX_LONGITUDE);
+            min[1] = minOrDefault(1, DEFAULT_MIN_LATITUDE);
+            max[1] = maxOrDefault(1, DEFAULT_MAX_LATITUDE);
+            cartesianStartIndex = 2; // if geographic index has higher than 2D, then other dimensions are cartesian
         }
-        for ( int i = cartesianStartIndex; i < dimension; i++ )
-        {
-            min[i] = minOrDefault( i, DEFAULT_MIN_EXTENT );
-            max[i] = maxOrDefault( i, DEFAULT_MAX_EXTENT );
+        for (int i = cartesianStartIndex; i < dimension; i++) {
+            min[i] = minOrDefault(i, DEFAULT_MIN_EXTENT);
+            max[i] = maxOrDefault(i, DEFAULT_MAX_EXTENT);
         }
-        return new Envelope( min, max );
+        return new Envelope(min, max);
     }
 
-    CoordinateReferenceSystem getCrs()
-    {
+    CoordinateReferenceSystem getCrs() {
         return crs;
     }
 
-    private double minOrDefault( int i, double defVal )
-    {
-        return valOrDefault( min[i], defVal );
+    private double minOrDefault(int i, double defVal) {
+        return valOrDefault(min[i], defVal);
     }
 
-    private double maxOrDefault( int i, double defVal )
-    {
-        return valOrDefault( max[i], defVal );
+    private double maxOrDefault(int i, double defVal) {
+        return valOrDefault(max[i], defVal);
     }
 
-    private static double valOrDefault( double val, double def )
-    {
-        return Double.isNaN( val ) ? def : val;
+    private static double valOrDefault(double val, double def) {
+        return Double.isNaN(val) ? def : val;
     }
 }

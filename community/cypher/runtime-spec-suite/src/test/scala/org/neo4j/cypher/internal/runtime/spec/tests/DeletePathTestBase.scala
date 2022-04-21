@@ -87,7 +87,7 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
     restartTx() // To capture failures at commit
 
     runtimeResult should beColumns("p")
-      .withStatistics(nodesDeleted = chainCount*4, relationshipsDeleted = chainCount*3)
+      .withStatistics(nodesDeleted = chainCount * 4, relationshipsDeleted = chainCount * 3)
     Iterables.count(tx.getAllNodes) shouldBe 0
     Iterables.count(tx.getAllRelationships) shouldBe 0
   }
@@ -111,14 +111,13 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
 
-    val thrown = the [ConstraintViolationException] thrownBy restartTx()
+    val thrown = the[ConstraintViolationException] thrownBy restartTx()
     thrown.getMessage should include regex "Cannot delete.*because it still has relationships"
 
     val tx = runtimeTestSupport.startNewTx()
-    Iterables.count(tx.getAllNodes) shouldBe (4*chainCount)
-    Iterables.count(tx.getAllRelationships) shouldBe (3*chainCount)
+    Iterables.count(tx.getAllNodes) shouldBe (4 * chainCount)
+    Iterables.count(tx.getAllRelationships) shouldBe (3 * chainCount)
   }
-
 
   def multiOutgoingRelationshipPath(fromNode: String, relationships: String, toNode: String) = {
     PathExpression(

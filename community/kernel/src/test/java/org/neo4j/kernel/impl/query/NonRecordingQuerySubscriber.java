@@ -27,63 +27,48 @@ import org.neo4j.values.AnyValue;
  *
  * NOTE: This does not consume records with something like Blackhole, so should not be used for CPU profiling.
  */
-public class NonRecordingQuerySubscriber implements QuerySubscriber
-{
+public class NonRecordingQuerySubscriber implements QuerySubscriber {
     private Throwable throwable;
     private QueryStatistics statistics;
     private long count;
 
     @Override
-    public void onResult( int numberOfFields )
-    {
-    }
+    public void onResult(int numberOfFields) {}
 
     @Override
-    public void onRecord()
-    {
-    }
+    public void onRecord() {}
 
     @Override
-    public void onField( int offset, AnyValue value )
-    {
-    }
+    public void onField(int offset, AnyValue value) {}
 
     @Override
-    public void onRecordCompleted()
-    {
+    public void onRecordCompleted() {
         count++;
     }
 
     @Override
-    public void onError( Throwable throwable )
-    {
-        if ( this.throwable == null )
-        {
+    public void onError(Throwable throwable) {
+        if (this.throwable == null) {
             this.throwable = throwable;
         }
     }
 
     @Override
-    public void onResultCompleted( QueryStatistics statistics )
-    {
+    public void onResultCompleted(QueryStatistics statistics) {
         this.statistics = statistics;
     }
 
-    public void assertNoErrors() throws Throwable
-    {
-        if ( throwable != null )
-        {
+    public void assertNoErrors() throws Throwable {
+        if (throwable != null) {
             throw throwable;
         }
     }
 
-    public long recordCount()
-    {
+    public long recordCount() {
         return count;
     }
 
-    public QueryStatistics queryStatistics()
-    {
+    public QueryStatistics queryStatistics() {
         return statistics;
     }
 }

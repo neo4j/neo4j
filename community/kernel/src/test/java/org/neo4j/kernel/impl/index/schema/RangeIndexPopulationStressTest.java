@@ -19,27 +19,25 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.values.storable.RandomValues;
-
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-class RangeIndexPopulationStressTest extends IndexPopulationStressTest
-{
-    RangeIndexPopulationStressTest()
-    {
-        super( true, RandomValues::nextValue, test ->
-        {
-            DatabaseIndexContext context = DatabaseIndexContext.builder( test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME ).build();
-            return new RangeIndexProvider( context, test.directory(), immediate(), defaults() );
-        } );
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.values.storable.RandomValues;
+
+class RangeIndexPopulationStressTest extends IndexPopulationStressTest {
+    RangeIndexPopulationStressTest() {
+        super(true, RandomValues::nextValue, test -> {
+            DatabaseIndexContext context = DatabaseIndexContext.builder(
+                            test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME)
+                    .build();
+            return new RangeIndexProvider(context, test.directory(), immediate(), defaults());
+        });
     }
 
     @Override
-    IndexType indexType()
-    {
+    IndexType indexType() {
         return IndexType.RANGE;
     }
 }

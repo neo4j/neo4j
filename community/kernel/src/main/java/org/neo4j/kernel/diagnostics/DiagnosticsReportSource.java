@@ -26,8 +26,7 @@ import java.io.InputStream;
  * A diagnostic source is a pair of a destination and a function to create input stream of data to be written to that destination.
  * The destination has to be provided separately to allow flexibility in regards to how data is stored.
  */
-public interface DiagnosticsReportSource
-{
+public interface DiagnosticsReportSource {
     /**
      * The final path of the diagnostic source, it is relative to the archive base directory.
      *

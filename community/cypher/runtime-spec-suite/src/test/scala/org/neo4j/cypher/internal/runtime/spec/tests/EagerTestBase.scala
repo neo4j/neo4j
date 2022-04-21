@@ -39,10 +39,10 @@ import org.neo4j.values.storable.Values
 import scala.collection.GenTraversable
 
 abstract class EagerTestBase[CONTEXT <: RuntimeContext](
-                                                              edition: Edition[CONTEXT],
-                                                              runtime: CypherRuntime[CONTEXT],
-                                                              sizeHint: Int
-                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should exhaust input - single top-level eager") {
     val nBatches = Math.max(sizeHint / 10, 2)
@@ -66,7 +66,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     result.request(Long.MaxValue)
     result.await() shouldBe false
 
-    val expected = (0L until nBatches*batchSize).map(i => Array(Values.longValue(i)))
+    val expected = (0L until nBatches * batchSize).map(i => Array(Values.longValue(i)))
     assertRows(expected, subscriber.allSeen)
   }
 
@@ -93,7 +93,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     result.request(Long.MaxValue)
     result.await() shouldBe false
 
-    val expected = (0L until nBatches*batchSize).map(i => Array(Values.longValue(i)))
+    val expected = (0L until nBatches * batchSize).map(i => Array(Values.longValue(i)))
     assertRows(expected, subscriber.allSeen)
   }
 
@@ -204,9 +204,9 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     result.request(Long.MaxValue)
     result.await() shouldBe false
 
-    subscriber.numberOfSeenResults shouldEqual(nBatches * batchSize)
+    subscriber.numberOfSeenResults shouldEqual (nBatches * batchSize)
 
-    val expected = (0L until nBatches*batchSize).map(i => Array(Values.longValue(i)))
+    val expected = (0L until nBatches * batchSize).map(i => Array(Values.longValue(i)))
     assertRows(expected, subscriber.allSeen)
   }
 
@@ -235,9 +235,9 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     result.request(Long.MaxValue)
     result.await() shouldBe false
 
-    subscriber.numberOfSeenResults shouldEqual(nBatches * batchSize)
+    subscriber.numberOfSeenResults shouldEqual (nBatches * batchSize)
 
-    val expected = (0L until nBatches*batchSize).map(i => Array(Values.longValue(i)))
+    val expected = (0L until nBatches * batchSize).map(i => Array(Values.longValue(i)))
     assertRows(expected, subscriber.allSeen)
   }
 
@@ -440,7 +440,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "i")
       .apply()
-      .|.limit(rowsPerArgument/2)
+      .|.limit(rowsPerArgument / 2)
       .|.eager()
       .|.prober(probe)
       .|.unwind(s"range(1,$rowsPerArgument) as i")
@@ -451,7 +451,16 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     val subscriber = TestSubscriber.concurrent
     val result = execute(logicalQuery, runtime, inputStream, subscriber)
 
-    assertPerArgumentEager(result, subscriber, inputStream, probe, rowsPerArgument, nBatches, batchSize, limit = Some(rowsPerArgument/2))
+    assertPerArgumentEager(
+      result,
+      subscriber,
+      inputStream,
+      probe,
+      rowsPerArgument,
+      nBatches,
+      batchSize,
+      limit = Some(rowsPerArgument / 2)
+    )
   }
 
   test("single limit -> eager on rhs of apply") {
@@ -467,7 +476,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.eager()
       .|.prober(probe)
-      .|.limit(rowsPerArgument/2)
+      .|.limit(rowsPerArgument / 2)
       .|.unwind(s"range(1,$rowsPerArgument) as i")
       .|.argument("x")
       .input(variables = Seq("x"))
@@ -476,7 +485,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     val subscriber = TestSubscriber.concurrent
     val result = execute(logicalQuery, runtime, inputStream, subscriber)
 
-    assertPerArgumentEager(result, subscriber, inputStream, probe, rowsPerArgument/2, nBatches, batchSize)
+    assertPerArgumentEager(result, subscriber, inputStream, probe, rowsPerArgument / 2, nBatches, batchSize)
   }
 
   test("eager with empty result") {
@@ -519,11 +528,11 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     result should beColumns().withNoRows().withStatistics(nodesCreated = nBatches * batchSize)
   }
 
-  //----------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
   // Tests with varying number of input rows
-  //----------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
 
-  List(0, 1, sizeHint/2).foreach { nInputRows =>
+  List(0, 1, sizeHint / 2).foreach { nInputRows =>
     val expected: Array[Array[Long]] = (0L until nInputRows).map(Array(_)).toArray
 
     test(s"two top-level eagers with $nInputRows input rows") {
@@ -692,14 +701,16 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  protected def assertPerArgumentEager(result: RuntimeResult,
-                                       subscriber: TestSubscriber,
-                                       inputStream: BufferInputStream,
-                                       probe: RecordingRowsProbe,
-                                       rowsPerArgument: Int,
-                                       nBatches: Int,
-                                       batchSize: Int,
-                                       limit: Option[Int] = None): Unit = {
+  protected def assertPerArgumentEager(
+    result: RuntimeResult,
+    subscriber: TestSubscriber,
+    inputStream: BufferInputStream,
+    probe: RecordingRowsProbe,
+    rowsPerArgument: Int,
+    nBatches: Int,
+    batchSize: Int,
+    limit: Option[Int] = None
+  ): Unit = {
     // Pull one row
     result.request(1)
     result.await() shouldBe true
@@ -711,7 +722,8 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
 
     // Check that at least the first 10 rows (the first argument) have been buffered
     // (with fusing it is possible more rows will be buffered)
-    val expected0: Array[Array[LongValue]] = (1L to rowsPerArgument.toLong).map(i => Array(Values.longValue(0), Values.longValue(i))).toArray
+    val expected0: Array[Array[LongValue]] =
+      (1L to rowsPerArgument.toLong).map(i => Array(Values.longValue(0), Values.longValue(i))).toArray
 
     val count = probe.seenRows.size
     assertRows(expected0, probe.seenRows.take(rowsPerArgument), hasLimit = true)

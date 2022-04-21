@@ -48,11 +48,9 @@ case class repeatWithSizeLimit(rewriter: Rewriter)(implicit val monitor: AstRewr
     if (newSize > limit) {
       monitor.abortedRewriting(that)
       that
-    }
-    else if (t == that) {
+    } else if (t == that) {
       t
-    }
-    else {
+    } else {
       innerApply(t, limit)
     }
   }

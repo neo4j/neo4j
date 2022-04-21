@@ -19,40 +19,36 @@
  */
 package org.neo4j.collection;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class RangeLongIteratorTest
-{
+import org.junit.jupiter.api.Test;
+
+class RangeLongIteratorTest {
     @Test
-    void shouldIterateOverSubsetOfData()
-    {
+    void shouldIterateOverSubsetOfData() {
         // given
-        long[] array = new long[]{1L, 2L, 3L, 4L, 5L};
+        long[] array = new long[] {1L, 2L, 3L, 4L, 5L};
 
         // when
-        RangeLongIterator iterator = new RangeLongIterator( array, 2, 2 );
+        RangeLongIterator iterator = new RangeLongIterator(array, 2, 2);
 
         // then
-        assertThat( iterator.next() ).isEqualTo( 3L );
-        assertThat( iterator.next() ).isEqualTo( 4L );
-        assertThat( iterator.hasNext() ).isEqualTo( false );
+        assertThat(iterator.next()).isEqualTo(3L);
+        assertThat(iterator.next()).isEqualTo(4L);
+        assertThat(iterator.hasNext()).isEqualTo(false);
     }
 
     @Test
-    void shouldNotBeAbleToCreateInvalidRanges()
-    {
+    void shouldNotBeAbleToCreateInvalidRanges() {
         // given
-        long[] array = new long[]{1L, 2L, 3L, 4L, 5L};
+        long[] array = new long[] {1L, 2L, 3L, 4L, 5L};
 
         // expect
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, -1, 0 ) );
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 0, -1 ) );
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 10, 2 ) );
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 0, 12 ) );
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 4, 4 ) );
+        assertThrows(IllegalArgumentException.class, () -> new RangeLongIterator(array, -1, 0));
+        assertThrows(IllegalArgumentException.class, () -> new RangeLongIterator(array, 0, -1));
+        assertThrows(IllegalArgumentException.class, () -> new RangeLongIterator(array, 10, 2));
+        assertThrows(IllegalArgumentException.class, () -> new RangeLongIterator(array, 0, 12));
+        assertThrows(IllegalArgumentException.class, () -> new RangeLongIterator(array, 4, 4));
     }
-
 }

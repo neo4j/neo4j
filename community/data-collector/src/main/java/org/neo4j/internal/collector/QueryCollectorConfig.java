@@ -20,26 +20,22 @@
 package org.neo4j.internal.collector;
 
 import java.util.Map;
-
 import org.neo4j.internal.collector.DataCollectorOptions.IntOption;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 /**
  * Configuration of collect('QUERIES', config) procedure call.
  */
-class QueryCollectorConfig
-{
-    private static final IntOption DURATION_SECONDS = new IntOption( "durationSeconds", -1 );
+class QueryCollectorConfig {
+    private static final IntOption DURATION_SECONDS = new IntOption("durationSeconds", -1);
 
-    static QueryCollectorConfig of( Map<String, Object> userMap ) throws InvalidArgumentsException
-    {
-        return new QueryCollectorConfig( DURATION_SECONDS.parseOrDefault( userMap ) );
+    static QueryCollectorConfig of(Map<String, Object> userMap) throws InvalidArgumentsException {
+        return new QueryCollectorConfig(DURATION_SECONDS.parseOrDefault(userMap));
     }
 
     final int collectSeconds;
 
-    private QueryCollectorConfig( int collectSeconds )
-    {
+    private QueryCollectorConfig(int collectSeconds) {
         this.collectSeconds = collectSeconds;
     }
 }

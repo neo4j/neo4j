@@ -19,7 +19,9 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.jupiter.api.TestInfo;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
+import org.junit.jupiter.api.TestInfo;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -41,19 +43,14 @@ import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
+import org.neo4j.test.utils.TestDirectory;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
-import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
-
-public class Neo4jWithSocket
-{
+public class Neo4jWithSocket {
     static final String NEO4J_WITH_SOCKET = "org.neo4j.bolt.transport.Neo4jWithSocket";
 
     private final Supplier<FileSystemAbstraction> fileSystemProvider;
-    private Consumer<Map<Setting<?>,Object>> configure;
+    private Consumer<Map<Setting<?>, Object>> configure;
     private final TestDirectory testDirectory;
     private TestDatabaseManagementServiceBuilder graphDatabaseFactory;
     private GraphDatabaseService gdb;
@@ -61,134 +58,118 @@ public class Neo4jWithSocket
     private ConnectorPortRegister connectorRegister;
     private DatabaseManagementService managementService;
 
-    public Neo4jWithSocket( TestDatabaseManagementServiceBuilder graphDatabaseFactory,
-                            Supplier<TestDirectory> testDirectorySupplier, Consumer<Map<Setting<?>,Object>> configure )
-    {
+    public Neo4jWithSocket(
+            TestDatabaseManagementServiceBuilder graphDatabaseFactory,
+            Supplier<TestDirectory> testDirectorySupplier,
+            Consumer<Map<Setting<?>, Object>> configure) {
         this.testDirectory = testDirectorySupplier.get();
         this.graphDatabaseFactory = graphDatabaseFactory;
         this.fileSystemProvider = testDirectory::getFileSystem;
         this.configure = configure;
     }
 
-    public FileSystemAbstraction getFileSystem()
-    {
+    public FileSystemAbstraction getFileSystem() {
         return this.graphDatabaseFactory.getFileSystem();
     }
 
-    public DatabaseManagementService getManagementService()
-    {
+    public DatabaseManagementService getManagementService() {
         return managementService;
     }
 
-    public void setConfigure( Consumer<Map<Setting<?>, Object>> configure )
-    {
+    public void setConfigure(Consumer<Map<Setting<?>, Object>> configure) {
         this.configure = configure;
     }
 
-    public void setGraphDatabaseFactory( TestDatabaseManagementServiceBuilder graphDatabaseFactory )
-    {
+    public void setGraphDatabaseFactory(TestDatabaseManagementServiceBuilder graphDatabaseFactory) {
         this.graphDatabaseFactory = graphDatabaseFactory;
     }
 
-    public void init( TestInfo testInfo ) throws IOException
-    {
+    public void init(TestInfo testInfo) throws IOException {
         var testName = testInfo.getTestMethod().get().getName();
-        testDirectory.prepareDirectory( testInfo.getTestClass().get(), testName );
-        workingDirectory = testDirectory.directory( testName );
+        testDirectory.prepareDirectory(testInfo.getTestClass().get(), testName);
+        workingDirectory = testDirectory.directory(testName);
 
-        ensureDatabase( settings -> {} );
+        ensureDatabase(settings -> {});
     }
 
-    public HostnamePort lookupConnector( String connectorKey )
-    {
-        return connectorRegister.getLocalAddress( connectorKey );
+    public HostnamePort lookupConnector(String connectorKey) {
+        return connectorRegister.getLocalAddress(connectorKey);
     }
 
-    public HostnamePort lookupDefaultConnector()
-    {
-        return connectorRegister.getLocalAddress( BoltConnector.NAME );
+    public HostnamePort lookupDefaultConnector() {
+        return connectorRegister.getLocalAddress(BoltConnector.NAME);
     }
 
-    public void shutdownDatabase()
-    {
-        try
-        {
-            if ( managementService != null )
-            {
+    public void shutdownDatabase() {
+        try {
+            if (managementService != null) {
                 managementService.shutdown();
             }
-        }
-        finally
-        {
+        } finally {
             connectorRegister = null;
             gdb = null;
             managementService = null;
         }
     }
 
-    public void ensureDatabase( Consumer<Map<Setting<?>,Object>> overrideSettingsFunction )
-    {
-        if ( gdb != null )
-        {
+    public void ensureDatabase(Consumer<Map<Setting<?>, Object>> overrideSettingsFunction) {
+        if (gdb != null) {
             return;
         }
 
-        Map<Setting<?>,Object> settings = configure( overrideSettingsFunction );
-        Path storeDir = workingDirectory.resolve( "storeDir" );
+        Map<Setting<?>, Object> settings = configure(overrideSettingsFunction);
+        Path storeDir = workingDirectory.resolve("storeDir");
 
-        installSelfSignedCertificateIfEncryptionEnabled( settings );
+        installSelfSignedCertificateIfEncryptionEnabled(settings);
 
-        graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
-        managementService = graphDatabaseFactory.setDatabaseRootDirectory( storeDir ).impermanent().setConfig( settings ).build();
-        gdb = managementService.database( DEFAULT_DATABASE_NAME );
+        graphDatabaseFactory.setFileSystem(fileSystemProvider.get());
+        managementService = graphDatabaseFactory
+                .setDatabaseRootDirectory(storeDir)
+                .impermanent()
+                .setConfig(settings)
+                .build();
+        gdb = managementService.database(DEFAULT_DATABASE_NAME);
         connectorRegister =
-                ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+                ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency(ConnectorPortRegister.class);
     }
 
-    private void installSelfSignedCertificateIfEncryptionEnabled( Map<Setting<?>,Object> settings )
-    {
-        var encryptionLevel = settings.get( BoltConnector.encryption_level );
-        if ( encryptionLevel != DISABLED )
-        {
+    private void installSelfSignedCertificateIfEncryptionEnabled(Map<Setting<?>, Object> settings) {
+        var encryptionLevel = settings.get(BoltConnector.encryption_level);
+        if (encryptionLevel != DISABLED) {
             // Install self-signed certs if ssl is enabled
-            var certificates = workingDirectory.resolve( "certificates" );
-            SelfSignedCertificateFactory.create( certificates );
+            var certificates = workingDirectory.resolve("certificates");
+            SelfSignedCertificateFactory.create(certificates);
 
-            settings.put( SslPolicyConfig.forScope( SslPolicyScope.BOLT ).enabled, Boolean.TRUE );
-            settings.put( SslPolicyConfig.forScope( SslPolicyScope.BOLT ).base_directory, certificates );
+            settings.put(SslPolicyConfig.forScope(SslPolicyScope.BOLT).enabled, Boolean.TRUE);
+            settings.put(SslPolicyConfig.forScope(SslPolicyScope.BOLT).base_directory, certificates);
         }
 
-        SslPolicyConfig clusterConfig = SslPolicyConfig.forScope( SslPolicyScope.CLUSTER );
-        if ( settings.containsKey( clusterConfig.enabled ) )
-        {
-            var clusterCertificates = workingDirectory.resolve( "cluster-cert" );
-            SelfSignedCertificateFactory.create( clusterCertificates );
+        SslPolicyConfig clusterConfig = SslPolicyConfig.forScope(SslPolicyScope.CLUSTER);
+        if (settings.containsKey(clusterConfig.enabled)) {
+            var clusterCertificates = workingDirectory.resolve("cluster-cert");
+            SelfSignedCertificateFactory.create(clusterCertificates);
 
-            settings.put( SslPolicyConfig.forScope( SslPolicyScope.CLUSTER ).enabled, Boolean.TRUE );
-            settings.put( SslPolicyConfig.forScope( SslPolicyScope.CLUSTER ).base_directory, clusterCertificates );
+            settings.put(SslPolicyConfig.forScope(SslPolicyScope.CLUSTER).enabled, Boolean.TRUE);
+            settings.put(SslPolicyConfig.forScope(SslPolicyScope.CLUSTER).base_directory, clusterCertificates);
         }
     }
 
-    private Map<Setting<?>,Object> configure( Consumer<Map<Setting<?>,Object>> overrideSettingsFunction )
-    {
-        Map<Setting<?>,Object> settings = new HashMap<>();
-        settings.put( GraphDatabaseSettings.auth_enabled, false );
-        settings.put( BoltConnector.enabled, true );
-        settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
-        settings.put( BoltConnector.encryption_level, DISABLED );
-        configure.accept( settings );
-        overrideSettingsFunction.accept( settings );
+    private Map<Setting<?>, Object> configure(Consumer<Map<Setting<?>, Object>> overrideSettingsFunction) {
+        Map<Setting<?>, Object> settings = new HashMap<>();
+        settings.put(GraphDatabaseSettings.auth_enabled, false);
+        settings.put(BoltConnector.enabled, true);
+        settings.put(BoltConnector.listen_address, new SocketAddress("localhost", 0));
+        settings.put(BoltConnector.encryption_level, DISABLED);
+        configure.accept(settings);
+        overrideSettingsFunction.accept(settings);
         return settings;
     }
 
-    public static Consumer<Map<Setting<?>,Object>> withOptionalBoltEncryption()
-    {
-        return settings -> settings.put( BoltConnector.encryption_level, OPTIONAL );
+    public static Consumer<Map<Setting<?>, Object>> withOptionalBoltEncryption() {
+        return settings -> settings.put(BoltConnector.encryption_level, OPTIONAL);
     }
 
-    public GraphDatabaseService graphDatabaseService()
-    {
+    public GraphDatabaseService graphDatabaseService() {
         return gdb;
     }
-
 }

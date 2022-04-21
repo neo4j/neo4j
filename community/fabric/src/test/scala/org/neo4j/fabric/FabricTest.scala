@@ -25,6 +25,4 @@ import org.scalatest.Matchers
 import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-abstract class FabricTest extends FreeSpec with Matchers {
-
-}
+abstract class FabricTest extends FreeSpec with Matchers {}

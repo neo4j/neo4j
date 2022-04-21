@@ -19,42 +19,35 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.jupiter.api.Nested;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
+import org.junit.jupiter.api.Nested;
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
-
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 /**
  * There are a couple of very specialised indexes that cannot be tested using {@link PropertyIndexProviderCompatibilityTestSuite},
  * which is designed for testing general-purpose (supporting all types, operations and being used as a constraints ) property indexes.
  */
-abstract class SpecialisedIndexProviderCompatibilityTestSuite extends IndexProviderCompatibilityTestSuite
-{
+abstract class SpecialisedIndexProviderCompatibilityTestSuite extends IndexProviderCompatibilityTestSuite {
     @Nested
-    class SpecialisedIndexPopulator extends SpecialisedIndexPopulatorCompatibility
-    {
-        SpecialisedIndexPopulator()
-        {
-            super( SpecialisedIndexProviderCompatibilityTestSuite.this );
+    class SpecialisedIndexPopulator extends SpecialisedIndexPopulatorCompatibility {
+        SpecialisedIndexPopulator() {
+            super(SpecialisedIndexProviderCompatibilityTestSuite.this);
         }
     }
 
     @Override
-    void consistencyCheck( IndexPopulator populator )
-    {
-        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL_CONTEXT );
+    void consistencyCheck(IndexPopulator populator) {
+        ((ConsistencyCheckable) populator).consistencyCheck(ReporterFactories.throwingReporterFactory(), NULL_CONTEXT);
     }
 
-    abstract static class Compatibility extends IndexProviderCompatabilityTestBase
-    {
+    abstract static class Compatibility extends IndexProviderCompatabilityTestBase {
         final SpecialisedIndexProviderCompatibilityTestSuite testSuite;
 
-        Compatibility( SpecialisedIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
-        {
-            super( testSuite, prototype );
+        Compatibility(SpecialisedIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype) {
+            super(testSuite, prototype);
             this.testSuite = testSuite;
         }
     }

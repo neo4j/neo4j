@@ -20,7 +20,6 @@
 package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.time.Clock;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
@@ -31,17 +30,19 @@ import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.memory.MemoryTracker;
 
-public class StatementProcessorProvider
-{
+public class StatementProcessorProvider {
     private final Clock clock;
     private final TransactionStateMachineSPIProvider spiProvider;
     private final StatementProcessorReleaseManager resourceReleaseManager;
     private final RoutingContext routingContext;
     private final MemoryTracker memoryTracker;
 
-    public StatementProcessorProvider( TransactionStateMachineSPIProvider transactionSpiProvider, Clock clock,
-                                       StatementProcessorReleaseManager releaseManager, RoutingContext routingContext, MemoryTracker memoryTracker )
-    {
+    public StatementProcessorProvider(
+            TransactionStateMachineSPIProvider transactionSpiProvider,
+            Clock clock,
+            StatementProcessorReleaseManager releaseManager,
+            RoutingContext routingContext,
+            MemoryTracker memoryTracker) {
         this.spiProvider = transactionSpiProvider;
         this.clock = clock;
         this.resourceReleaseManager = releaseManager;
@@ -49,18 +50,17 @@ public class StatementProcessorProvider
         this.memoryTracker = memoryTracker;
     }
 
-    public StatementProcessor getStatementProcessor( LoginContext loginContext, String databaseName, String txId )
-            throws BoltProtocolBreachFatality, BoltIOException
-    {
-        memoryTracker.allocateHeap( TransactionStateMachine.SHALLOW_SIZE );
+    public StatementProcessor getStatementProcessor(LoginContext loginContext, String databaseName, String txId)
+            throws BoltProtocolBreachFatality, BoltIOException {
+        memoryTracker.allocateHeap(TransactionStateMachine.SHALLOW_SIZE);
 
-        TransactionStateMachineSPI transactionSPI = spiProvider.getTransactionStateMachineSPI( databaseName, resourceReleaseManager, txId );
-        return new TransactionStateMachine( databaseName, transactionSPI, loginContext, clock, routingContext, txId );
+        TransactionStateMachineSPI transactionSPI =
+                spiProvider.getTransactionStateMachineSPI(databaseName, resourceReleaseManager, txId);
+        return new TransactionStateMachine(databaseName, transactionSPI, loginContext, clock, routingContext, txId);
     }
 
-    public void releaseStatementProcessor()
-    {
-        memoryTracker.releaseHeap( TransactionStateMachine.SHALLOW_SIZE );
+    public void releaseStatementProcessor() {
+        memoryTracker.releaseHeap(TransactionStateMachine.SHALLOW_SIZE);
 
         spiProvider.releaseTransactionStateMachineSPI();
     }

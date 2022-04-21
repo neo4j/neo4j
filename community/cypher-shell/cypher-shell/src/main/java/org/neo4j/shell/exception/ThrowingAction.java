@@ -25,8 +25,7 @@ package org.neo4j.shell.exception;
  * @param <E> The type of exception this action may throw.
  */
 @FunctionalInterface
-public interface ThrowingAction<E extends Exception>
-{
+public interface ThrowingAction<E extends Exception> {
     /**
      * Apply the action for some or all of its side-effects to take place, possibly throwing an exception.
      *

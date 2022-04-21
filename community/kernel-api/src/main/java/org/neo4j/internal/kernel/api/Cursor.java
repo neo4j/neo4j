@@ -23,11 +23,10 @@ package org.neo4j.internal.kernel.api;
  * This interface should not be used generically in hot paths, but instead these use cases should use the explicit cursor
  * types.
  */
-public interface Cursor extends AutoCloseablePlus
-{
+public interface Cursor extends AutoCloseablePlus {
     boolean next();
 
-    void setTracer( KernelReadTracer tracer );
+    void setTracer(KernelReadTracer tracer);
 
     void removeTracer();
 }

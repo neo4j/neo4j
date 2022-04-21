@@ -22,19 +22,16 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
-public class StandaloneDynamicRecordAllocator implements DynamicRecordAllocator
-{
+public class StandaloneDynamicRecordAllocator implements DynamicRecordAllocator {
     private int next = 1;
 
     @Override
-    public int getRecordDataSize()
-    {
+    public int getRecordDataSize() {
         return 60;
     }
 
     @Override
-    public DynamicRecord nextRecord( CursorContext cursorContext )
-    {
-        return new DynamicRecord( next++ );
+    public DynamicRecord nextRecord(CursorContext cursorContext) {
+        return new DynamicRecord(next++);
     }
 }

@@ -19,93 +19,88 @@
  */
 package org.neo4j.memory;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ScopedMemoryTrackerTest
-{
+import org.junit.jupiter.api.Test;
+
+class ScopedMemoryTrackerTest {
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
-    private final ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
+    private final ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker(memoryTracker);
 
     @Test
-    void delegatesToParent()
-    {
-        scopedMemoryTracker.allocateNative( 10 );
-        scopedMemoryTracker.releaseNative( 2 );
-        scopedMemoryTracker.allocateHeap( 12 );
-        scopedMemoryTracker.releaseHeap( 1 );
+    void delegatesToParent() {
+        scopedMemoryTracker.allocateNative(10);
+        scopedMemoryTracker.releaseNative(2);
+        scopedMemoryTracker.allocateHeap(12);
+        scopedMemoryTracker.releaseHeap(1);
 
-        assertEquals( 8, memoryTracker.usedNativeMemory() );
-        assertEquals( 11, memoryTracker.estimatedHeapMemory() );
+        assertEquals(8, memoryTracker.usedNativeMemory());
+        assertEquals(11, memoryTracker.estimatedHeapMemory());
     }
 
     @Test
-    void dontReleaseParentsResources()
-    {
-        memoryTracker.allocateNative( 1 );
-        memoryTracker.allocateHeap( 3 );
+    void dontReleaseParentsResources() {
+        memoryTracker.allocateNative(1);
+        memoryTracker.allocateHeap(3);
 
-        scopedMemoryTracker.allocateNative( 10 );
-        scopedMemoryTracker.releaseNative( 2 );
-        scopedMemoryTracker.allocateHeap( 12 );
-        scopedMemoryTracker.releaseHeap( 1 );
+        scopedMemoryTracker.allocateNative(10);
+        scopedMemoryTracker.releaseNative(2);
+        scopedMemoryTracker.allocateHeap(12);
+        scopedMemoryTracker.releaseHeap(1);
 
-        assertEquals( 9, memoryTracker.usedNativeMemory() );
-        assertEquals( 8, scopedMemoryTracker.usedNativeMemory() );
-        assertEquals( 14, memoryTracker.estimatedHeapMemory() );
-        assertEquals( 11, scopedMemoryTracker.estimatedHeapMemory() );
+        assertEquals(9, memoryTracker.usedNativeMemory());
+        assertEquals(8, scopedMemoryTracker.usedNativeMemory());
+        assertEquals(14, memoryTracker.estimatedHeapMemory());
+        assertEquals(11, scopedMemoryTracker.estimatedHeapMemory());
 
         scopedMemoryTracker.close();
 
-        assertEquals( 1, memoryTracker.usedNativeMemory() );
-        assertEquals( 3, memoryTracker.estimatedHeapMemory() );
+        assertEquals(1, memoryTracker.usedNativeMemory());
+        assertEquals(3, memoryTracker.estimatedHeapMemory());
     }
 
     @Test
-    void closeParentThenCloseChildShouldBeOK()
-    {
+    void closeParentThenCloseChildShouldBeOK() {
         // Given
         // scopedMemoryTracker is the parent in this test
-        scopedMemoryTracker.allocateNative( 10 );
-        scopedMemoryTracker.allocateHeap( 10 );
+        scopedMemoryTracker.allocateNative(10);
+        scopedMemoryTracker.allocateHeap(10);
 
-        ScopedMemoryTracker child = new ScopedMemoryTracker( scopedMemoryTracker );
+        ScopedMemoryTracker child = new ScopedMemoryTracker(scopedMemoryTracker);
 
-        child.allocateNative( 5 );
-        child.allocateHeap( 5 );
+        child.allocateNative(5);
+        child.allocateHeap(5);
 
         // When
         scopedMemoryTracker.close();
 
-        assertEquals( 0, scopedMemoryTracker.usedNativeMemory() );
-        assertEquals( 0, scopedMemoryTracker.estimatedHeapMemory() );
+        assertEquals(0, scopedMemoryTracker.usedNativeMemory());
+        assertEquals(0, scopedMemoryTracker.estimatedHeapMemory());
 
         child.close();
 
         // Then
-        assertEquals( 0, scopedMemoryTracker.usedNativeMemory() );
-        assertEquals( 0, scopedMemoryTracker.estimatedHeapMemory() );
+        assertEquals(0, scopedMemoryTracker.usedNativeMemory());
+        assertEquals(0, scopedMemoryTracker.estimatedHeapMemory());
     }
 
     @Test
-    void closeParentThenAllocateReleaseOrResetChildShouldThrow()
-    {
+    void closeParentThenAllocateReleaseOrResetChildShouldThrow() {
         // scopedMemoryTracker is the parent in this test
-        scopedMemoryTracker.allocateNative( 10 );
-        scopedMemoryTracker.allocateHeap( 10 );
+        scopedMemoryTracker.allocateNative(10);
+        scopedMemoryTracker.allocateHeap(10);
 
-        ScopedMemoryTracker child = new ScopedMemoryTracker( scopedMemoryTracker );
+        ScopedMemoryTracker child = new ScopedMemoryTracker(scopedMemoryTracker);
 
-        child.allocateNative( 5 );
-        child.allocateHeap( 5 );
+        child.allocateNative(5);
+        child.allocateHeap(5);
         scopedMemoryTracker.close();
 
-        assertThrows( IllegalStateException.class, () -> child.allocateHeap( 10 ) );
-        assertThrows( IllegalStateException.class, () -> child.allocateNative( 10 ) );
-        assertThrows( IllegalStateException.class, () -> child.releaseHeap( 10 ) );
-        assertThrows( IllegalStateException.class, () -> child.releaseNative( 10 ) );
-        assertThrows( IllegalStateException.class, child::reset );
+        assertThrows(IllegalStateException.class, () -> child.allocateHeap(10));
+        assertThrows(IllegalStateException.class, () -> child.allocateNative(10));
+        assertThrows(IllegalStateException.class, () -> child.releaseHeap(10));
+        assertThrows(IllegalStateException.class, () -> child.releaseNative(10));
+        assertThrows(IllegalStateException.class, child::reset);
     }
 }

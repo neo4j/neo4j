@@ -21,8 +21,8 @@ package org.neo4j.bolt.messaging;
 
 import java.io.IOException;
 
-public interface BoltRequestMessageWriter
-{
-    BoltRequestMessageWriter write( RequestMessage message ) throws IOException;
+public interface BoltRequestMessageWriter {
+    BoltRequestMessageWriter write(RequestMessage message) throws IOException;
+
     void flush();
 }

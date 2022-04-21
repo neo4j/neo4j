@@ -21,10 +21,8 @@ package org.neo4j.internal.id;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 
-public class ReservedIdException extends UnderlyingStorageException
-{
-    public ReservedIdException( long id )
-    {
-        super( "Id " + id + " is reserved and can't be used as a regular record id" );
+public class ReservedIdException extends UnderlyingStorageException {
+    public ReservedIdException(long id) {
+        super("Id " + id + " is reserved and can't be used as a regular record id");
     }
 }

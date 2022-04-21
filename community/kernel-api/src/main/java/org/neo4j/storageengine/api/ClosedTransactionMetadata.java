@@ -21,6 +21,5 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-public record ClosedTransactionMetadata(long transactionId, LogPosition logPosition, int checksum, long commitTimestamp)
-{
-}
+public record ClosedTransactionMetadata(
+        long transactionId, LogPosition logPosition, int checksum, long commitTimestamp) {}

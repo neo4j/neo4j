@@ -37,33 +37,58 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
-public abstract class AbstractIndexProviderFactory<T extends IndexProvider>
-{
+public abstract class AbstractIndexProviderFactory<T extends IndexProvider> {
 
-    public T create( PageCache pageCache, FileSystemAbstraction fs, LogService logService, Monitors monitors,
-                     Config config, DatabaseReadOnlyChecker readOnlyChecker, DbmsInfo dbmsInfo,
-                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                     DatabaseLayout databaseLayout, TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
-    {
-        if ( OperationalMode.SINGLE != dbmsInfo.operationalMode )
-        {
+    public T create(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            LogService logService,
+            Monitors monitors,
+            Config config,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            DbmsInfo dbmsInfo,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseLayout databaseLayout,
+            TokenHolders tokenHolders,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory) {
+        if (OperationalMode.SINGLE != dbmsInfo.operationalMode) {
             // if running as part of cluster indexes should be writable to allow catchup process to accept transactions
             readOnlyChecker = DatabaseReadOnlyChecker.writable();
         }
-        InternalLog log = logService.getInternalLogProvider().getLog( loggingClass() );
+        InternalLog log = logService.getInternalLogProvider().getLog(loggingClass());
         String monitorTag = descriptor().toString();
-        monitors.addMonitorListener( new LoggingMonitor( log ), monitorTag );
-        return internalCreate( pageCache, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, databaseLayout,
-                               log, tokenHolders, scheduler, contextFactory );
+        monitors.addMonitorListener(new LoggingMonitor(log), monitorTag);
+        return internalCreate(
+                pageCache,
+                fs,
+                monitors,
+                monitorTag,
+                config,
+                readOnlyChecker,
+                recoveryCleanupWorkCollector,
+                databaseLayout,
+                log,
+                tokenHolders,
+                scheduler,
+                contextFactory);
     }
 
     protected abstract Class<?> loggingClass();
 
     public abstract IndexProviderDescriptor descriptor();
 
-    protected abstract T internalCreate( PageCache pageCache, FileSystemAbstraction fs,
-                                         Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
-                                         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
-                                         InternalLog log, TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory );
-
+    protected abstract T internalCreate(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            Monitors monitors,
+            String monitorTag,
+            Config config,
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseLayout databaseLayout,
+            InternalLog log,
+            TokenHolders tokenHolders,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory);
 }

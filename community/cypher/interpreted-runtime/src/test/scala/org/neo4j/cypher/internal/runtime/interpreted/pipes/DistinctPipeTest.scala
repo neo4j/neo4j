@@ -26,8 +26,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.DistinctSet
 
 class DistinctPipeTest extends CypherFunSuite {
+
   test("should be lazy") {
-    val input = new FakePipe(Seq(Map("a"->10), Map("a"->11), Map("a"->12), Map("a"->13)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11), Map("a" -> 12), Map("a" -> 13)))
     val pipe = DistinctPipe(input, Array(DistinctPipe.GroupingCol("a", Variable("a"))))()
     // when
     val res = pipe.createResults(QueryStateHelper.emptyWithValueSerialization)
@@ -40,23 +41,23 @@ class DistinctPipeTest extends CypherFunSuite {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
 
-    val input = new FakePipe(Seq(Map("a"->10), Map("a"->11), Map("a"->12), Map("a"->13)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11), Map("a" -> 12), Map("a" -> 13)))
     val pipe = DistinctPipe(input, Array(DistinctPipe.GroupingCol("a", Variable("a"))))()
     // exhaust
     pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).toList
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: DistinctSet[_] => t } should have size(1)
+    monitor.closedResources.collect { case t: DistinctSet[_] => t } should have size (1)
   }
 
   test("close should close seen set") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
 
-    val input = new FakePipe(Seq(Map("a"->10), Map("a"->11), Map("a"->12), Map("a"->13)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11), Map("a" -> 12), Map("a" -> 13)))
     val pipe = DistinctPipe(input, Array(DistinctPipe.GroupingCol("a", Variable("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     result.close()
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: DistinctSet[_] => t } should have size(1)
+    monitor.closedResources.collect { case t: DistinctSet[_] => t } should have size (1)
   }
 }

@@ -19,13 +19,11 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import com.sun.jna.Native;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -35,12 +33,9 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @TestDirectoryExtension
-@ExtendWith( RandomExtension.class )
-public class FallbackBlockSwapperIT
-{
+@ExtendWith(RandomExtension.class)
+public class FallbackBlockSwapperIT {
 
     @Inject
     private TestDirectory testDirectory;
@@ -52,41 +47,31 @@ public class FallbackBlockSwapperIT
     private RandomSupport random;
 
     @Test
-    void swapOutSwapIn() throws IOException
-    {
-        var file = testDirectory.createFile( "test" );
-        var data = random.nextBytes( new byte[100] );
-        var swapper = new FallbackBlockSwapper( EmptyMemoryTracker.INSTANCE );
+    void swapOutSwapIn() throws IOException {
+        var file = testDirectory.createFile("test");
+        var data = random.nextBytes(new byte[100]);
+        var swapper = new FallbackBlockSwapper(EmptyMemoryTracker.INSTANCE);
 
         // write some data to file
-        var source = UnsafeUtil.allocateMemory( data.length, EmptyMemoryTracker.INSTANCE );
-        try ( var channel = fs.write( file ) )
-        {
-            for ( int i = 0; i < data.length; i++ )
-            {
-                UnsafeUtil.putByte( source + (long) i, data[i] );
+        var source = UnsafeUtil.allocateMemory(data.length, EmptyMemoryTracker.INSTANCE);
+        try (var channel = fs.write(file)) {
+            for (int i = 0; i < data.length; i++) {
+                UnsafeUtil.putByte(source + (long) i, data[i]);
             }
-            swapper.swapOut( channel, source, 0, data.length );
-        }
-        finally
-        {
-            UnsafeUtil.free( source, data.length, EmptyMemoryTracker.INSTANCE );
+            swapper.swapOut(channel, source, 0, data.length);
+        } finally {
+            UnsafeUtil.free(source, data.length, EmptyMemoryTracker.INSTANCE);
         }
 
         // read back the data into another location
-        var target = UnsafeUtil.allocateMemory( data.length, EmptyMemoryTracker.INSTANCE );
-        try ( var channel = fs.read( file ) )
-        {
-            swapper.swapIn( channel, target, 0, data.length );
-            for ( int i = 0; i < data.length; i++ )
-            {
-                assertThat( UnsafeUtil.getByte( target + (long) i ) ).isEqualTo( data[i] );
+        var target = UnsafeUtil.allocateMemory(data.length, EmptyMemoryTracker.INSTANCE);
+        try (var channel = fs.read(file)) {
+            swapper.swapIn(channel, target, 0, data.length);
+            for (int i = 0; i < data.length; i++) {
+                assertThat(UnsafeUtil.getByte(target + (long) i)).isEqualTo(data[i]);
             }
+        } finally {
+            UnsafeUtil.free(target, data.length, EmptyMemoryTracker.INSTANCE);
         }
-        finally
-        {
-            UnsafeUtil.free( target, data.length, EmptyMemoryTracker.INSTANCE );
-        }
-
     }
 }

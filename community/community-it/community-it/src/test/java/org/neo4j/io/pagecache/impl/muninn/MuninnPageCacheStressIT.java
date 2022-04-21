@@ -19,16 +19,15 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.junit.jupiter.api.Test;
+import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-
-import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
 
 /**
  * A stress test for Muninn page cache.
@@ -38,21 +37,19 @@ import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
  * Configured to run until it sees a million evictions, which should take few minutes.
  */
 @TestDirectoryExtension
-class MuninnPageCacheStressIT
-{
+class MuninnPageCacheStressIT {
     @Inject
     TestDirectory testDirectory;
 
     @Test
-    void shouldHandleTheStressOfManyManyEvictions() throws Exception
-    {
+    void shouldHandleTheStressOfManyManyEvictions() throws Exception {
         DefaultPageCacheTracer monitor = new DefaultPageCacheTracer();
-        Condition condition = numberOfEvictions( monitor, 100_000 );
+        Condition condition = numberOfEvictions(monitor, 100_000);
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
-                .withWorkingDirectory( testDirectory.homePath() )
-                .with( monitor )
-                .with( condition )
+                .withWorkingDirectory(testDirectory.homePath())
+                .with(monitor)
+                .with(condition)
                 .build();
 
         runner.run();

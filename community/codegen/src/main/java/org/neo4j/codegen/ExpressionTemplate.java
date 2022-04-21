@@ -19,255 +19,201 @@
  */
 package org.neo4j.codegen;
 
-import java.lang.reflect.Modifier;
-
 import static org.neo4j.codegen.TypeReference.OBJECT;
 import static org.neo4j.codegen.TypeReference.VOID;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
-public abstract class ExpressionTemplate
-{
+import java.lang.reflect.Modifier;
+
+public abstract class ExpressionTemplate {
     protected final TypeReference type;
 
-    protected ExpressionTemplate( TypeReference type )
-    {
+    protected ExpressionTemplate(TypeReference type) {
         this.type = type;
     }
 
-    public static ExpressionTemplate self( TypeReference type )
-    {
-        return new ExpressionTemplate( type )
-        {
+    public static ExpressionTemplate self(TypeReference type) {
+        return new ExpressionTemplate(type) {
             @Override
-            void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.load( new LocalVariable( method.clazz.handle(), "this", 0 ) );
+            void templateAccept(CodeBlock method, ExpressionVisitor visitor) {
+                visitor.load(new LocalVariable(method.clazz.handle(), "this", 0));
             }
         };
     }
 
     /** invoke a static method or constructor */
-    public static ExpressionTemplate invoke( final MethodReference method, final ExpressionTemplate... arguments )
-    {
+    public static ExpressionTemplate invoke(final MethodReference method, final ExpressionTemplate... arguments) {
         // Try to materialize this expression early
-        Expression[] materialized = tryMaterialize( arguments );
-        if ( materialized != null )
-        {
-            return Expression.invoke( method, materialized );
+        Expression[] materialized = tryMaterialize(arguments);
+        if (materialized != null) {
+            return Expression.invoke(method, materialized);
         }
         // some part needs reference to the method context, so this expression will transitively need it
-        return new ExpressionTemplate( method.returns() )
-        {
+        return new ExpressionTemplate(method.returns()) {
             @Override
-            protected void templateAccept( CodeBlock generator, ExpressionVisitor visitor )
-            {
-                visitor.invoke( method, materialize( generator, arguments ) );
+            protected void templateAccept(CodeBlock generator, ExpressionVisitor visitor) {
+                visitor.invoke(method, materialize(generator, arguments));
             }
         };
     }
 
     /** invoke an instance method */
-    public static ExpressionTemplate invoke( final ExpressionTemplate target, final MethodReference method,
-            final ExpressionTemplate... arguments )
-    {
-        if ( target instanceof Expression )
-        {
-            Expression[] materialized = tryMaterialize( arguments );
-            if ( materialized != null )
-            {
-                return Expression.invoke( (Expression) target, method, materialized );
+    public static ExpressionTemplate invoke(
+            final ExpressionTemplate target, final MethodReference method, final ExpressionTemplate... arguments) {
+        if (target instanceof Expression) {
+            Expression[] materialized = tryMaterialize(arguments);
+            if (materialized != null) {
+                return Expression.invoke((Expression) target, method, materialized);
             }
         }
-        return new ExpressionTemplate( method.returns() )
-        {
+        return new ExpressionTemplate(method.returns()) {
             @Override
-            protected void templateAccept( CodeBlock generator, ExpressionVisitor visitor )
-            {
-                visitor.invoke( target.materialize( generator ), method, materialize( generator, arguments ) );
+            protected void templateAccept(CodeBlock generator, ExpressionVisitor visitor) {
+                visitor.invoke(target.materialize(generator), method, materialize(generator, arguments));
             }
         };
     }
 
     /** load a local variable */
-    public static ExpressionTemplate load( final String name, final TypeReference type )
-    {
-        return new ExpressionTemplate( type )
-        {
+    public static ExpressionTemplate load(final String name, final TypeReference type) {
+        return new ExpressionTemplate(type) {
             @Override
-            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.load( method.local( name ) );
+            protected void templateAccept(CodeBlock method, ExpressionVisitor visitor) {
+                visitor.load(method.local(name));
             }
         };
     }
 
-    public static ExpressionTemplate get( ExpressionTemplate target, Class<?> fieldType, String fieldName )
-    {
-        return get( target, typeReference( fieldType ), fieldName );
+    public static ExpressionTemplate get(ExpressionTemplate target, Class<?> fieldType, String fieldName) {
+        return get(target, typeReference(fieldType), fieldName);
     }
 
     /** instance field */
-    public static ExpressionTemplate get( ExpressionTemplate target, TypeReference fieldType, String fieldName )
-    {
-        return get( target, Lookup.field( fieldType, fieldName ), fieldType );
+    public static ExpressionTemplate get(ExpressionTemplate target, TypeReference fieldType, String fieldName) {
+        return get(target, Lookup.field(fieldType, fieldName), fieldType);
     }
 
     /** instance field */
-    public static ExpressionTemplate get( final ExpressionTemplate target, final FieldReference field )
-    {
-        if ( target instanceof Expression )
-        {
-            return Expression.get( (Expression) target, field );
+    public static ExpressionTemplate get(final ExpressionTemplate target, final FieldReference field) {
+        if (target instanceof Expression) {
+            return Expression.get((Expression) target, field);
         }
-        return new ExpressionTemplate( field.type() )
-        {
+        return new ExpressionTemplate(field.type()) {
             @Override
-            void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.getField( target.materialize( method ), field );
+            void templateAccept(CodeBlock method, ExpressionVisitor visitor) {
+                visitor.getField(target.materialize(method), field);
             }
         };
     }
 
     /** static field from the class that will host this expression */
-    public static ExpressionTemplate get( TypeReference fieldType, String fieldName )
-    {
-        return get( Lookup.field( fieldType, fieldName ), fieldType );
+    public static ExpressionTemplate get(TypeReference fieldType, String fieldName) {
+        return get(Lookup.field(fieldType, fieldName), fieldType);
     }
 
     /** instance field */
-    public static ExpressionTemplate get( final ExpressionTemplate target, final Lookup<FieldReference> field,
-            TypeReference type )
-    {
-        return new ExpressionTemplate( type )
-        {
+    public static ExpressionTemplate get(
+            final ExpressionTemplate target, final Lookup<FieldReference> field, TypeReference type) {
+        return new ExpressionTemplate(type) {
             @Override
-            void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.getField( target.materialize( method ), field.lookup( method ) );
+            void templateAccept(CodeBlock method, ExpressionVisitor visitor) {
+                visitor.getField(target.materialize(method), field.lookup(method));
             }
         };
     }
 
     /** static field */
-    public static ExpressionTemplate get( final Lookup<FieldReference> field, TypeReference type )
-    {
-        return new ExpressionTemplate( type )
-        {
+    public static ExpressionTemplate get(final Lookup<FieldReference> field, TypeReference type) {
+        return new ExpressionTemplate(type) {
             @Override
-            void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.getStatic( field.lookup( method ) );
+            void templateAccept(CodeBlock method, ExpressionVisitor visitor) {
+                visitor.getStatic(field.lookup(method));
             }
         };
     }
 
-    Expression materialize( final CodeBlock method )
-    {
-        return new Expression( type )
-        {
+    Expression materialize(final CodeBlock method) {
+        return new Expression(type) {
             @Override
-            public void accept( ExpressionVisitor visitor )
-            {
-                ExpressionTemplate.this.templateAccept( method, visitor );
+            public void accept(ExpressionVisitor visitor) {
+                ExpressionTemplate.this.templateAccept(method, visitor);
             }
         };
     }
 
-    public static ExpressionTemplate cast( Class<?> clazz, ExpressionTemplate expression )
-    {
-        return cast( typeReference( clazz ), expression );
+    public static ExpressionTemplate cast(Class<?> clazz, ExpressionTemplate expression) {
+        return cast(typeReference(clazz), expression);
     }
 
-    public static ExpressionTemplate cast( TypeReference type, ExpressionTemplate expression )
-    {
-        return new ExpressionTemplate( type )
-        {
+    public static ExpressionTemplate cast(TypeReference type, ExpressionTemplate expression) {
+        return new ExpressionTemplate(type) {
             @Override
-            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.cast( type, expression.materialize( method ) );
+            protected void templateAccept(CodeBlock method, ExpressionVisitor visitor) {
+                visitor.cast(type, expression.materialize(method));
             }
         };
     }
 
-    public static ExpressionTemplate add( ExpressionTemplate lhs, ExpressionTemplate rhs, TypeReference type )
-    {
-        return new ExpressionTemplate( type )
-        {
+    public static ExpressionTemplate add(ExpressionTemplate lhs, ExpressionTemplate rhs, TypeReference type) {
+        return new ExpressionTemplate(type) {
             @Override
-            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.add( lhs.materialize( method ), rhs.materialize( method ) );
+            protected void templateAccept(CodeBlock method, ExpressionVisitor visitor) {
+                visitor.add(lhs.materialize(method), rhs.materialize(method));
             }
         };
     }
 
-    public static ExpressionTemplate subtract( ExpressionTemplate lhs, ExpressionTemplate rhs, TypeReference type )
-    {
-        return new ExpressionTemplate( type )
-        {
+    public static ExpressionTemplate subtract(ExpressionTemplate lhs, ExpressionTemplate rhs, TypeReference type) {
+        return new ExpressionTemplate(type) {
             @Override
-            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.subtract( lhs.materialize( method ), rhs.materialize( method ) );
+            protected void templateAccept(CodeBlock method, ExpressionVisitor visitor) {
+                visitor.subtract(lhs.materialize(method), rhs.materialize(method));
             }
         };
     }
 
-    abstract void templateAccept( CodeBlock method, ExpressionVisitor visitor );
+    abstract void templateAccept(CodeBlock method, ExpressionVisitor visitor);
 
-    private static Expression[] tryMaterialize( ExpressionTemplate[] templates )
-    {
-        if ( templates instanceof Expression[] )
-        {
+    private static Expression[] tryMaterialize(ExpressionTemplate[] templates) {
+        if (templates instanceof Expression[]) {
             return (Expression[]) templates;
         }
         Expression[] materialized = new Expression[templates.length];
-        for ( int i = 0; i < materialized.length; i++ )
-        {
-            if ( templates[i] instanceof Expression )
-            {
+        for (int i = 0; i < materialized.length; i++) {
+            if (templates[i] instanceof Expression) {
                 materialized[i] = (Expression) templates[i];
-            }
-            else
-            {
+            } else {
                 return null;
             }
         }
         return materialized;
     }
 
-    static Expression[] materialize( CodeBlock method, ExpressionTemplate[] templates )
-    {
+    static Expression[] materialize(CodeBlock method, ExpressionTemplate[] templates) {
         Expression[] expressions = new Expression[templates.length];
-        for ( int i = 0; i < expressions.length; i++ )
-        {
-            expressions[i] = templates[i].materialize( method );
+        for (int i = 0; i < expressions.length; i++) {
+            expressions[i] = templates[i].materialize(method);
         }
         return expressions;
     }
 
-    //TODO I am not crazy about the way type parameters are sent here
-    public static ExpressionTemplate invokeSuperConstructor( final ExpressionTemplate[] parameters,
-            final TypeReference[] parameterTypes )
-    {
+    // TODO I am not crazy about the way type parameters are sent here
+    public static ExpressionTemplate invokeSuperConstructor(
+            final ExpressionTemplate[] parameters, final TypeReference[] parameterTypes) {
         assert parameters.length == parameterTypes.length;
-        return new ExpressionTemplate( OBJECT )
-        {
+        return new ExpressionTemplate(OBJECT) {
             @Override
-            void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.invoke( Expression.SUPER,
-                        new MethodReference( method.clazz.handle().parent(), "<init>", VOID, Modifier.PUBLIC,
-                                parameterTypes ),
-                        materialize( method, parameters ) );
+            void templateAccept(CodeBlock method, ExpressionVisitor visitor) {
+                visitor.invoke(
+                        Expression.SUPER,
+                        new MethodReference(
+                                method.clazz.handle().parent(), "<init>", VOID, Modifier.PUBLIC, parameterTypes),
+                        materialize(method, parameters));
             }
         };
     }
 
-    public TypeReference type()
-    {
+    public TypeReference type() {
         return type;
     }
 }

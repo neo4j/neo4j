@@ -19,17 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatcher;
-
-import org.neo4j.counts.CountsAccessor;
-import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -40,16 +29,24 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class RelationshipCountsProcessorTest
-{
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatcher;
+import org.neo4j.counts.CountsAccessor;
+import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+
+class RelationshipCountsProcessorTest {
 
     private static final int ANY = -1;
-    private final NodeLabelsCache nodeLabelCache = mock( NodeLabelsCache.class );
-    private final CountsAccessor.Updater countsUpdater = mock( CountsAccessor.Updater.class );
+    private final NodeLabelsCache nodeLabelCache = mock(NodeLabelsCache.class);
+    private final CountsAccessor.Updater countsUpdater = mock(CountsAccessor.Updater.class);
 
     @Test
-    void shouldHandleBigNumberOfLabelsAndRelationshipTypes()
-    {
+    void shouldHandleBigNumberOfLabelsAndRelationshipTypes() {
         /*
          * This test ensures that the RelationshipCountsProcessor does not attempt to allocate a negative amount
          * of memory when trying to get an array to store the relationship counts. This could happen when the labels
@@ -69,66 +66,69 @@ class RelationshipCountsProcessorTest
          */
         int relTypeCount = 1 << 8;
         int labelCount = 1 << 22;
-        NumberArrayFactory numberArrayFactory = mock( NumberArrayFactory.class );
+        NumberArrayFactory numberArrayFactory = mock(NumberArrayFactory.class);
 
         // When
-        new RelationshipCountsProcessor( nodeLabelCache, labelCount, relTypeCount, countsUpdater, numberArrayFactory, INSTANCE );
+        new RelationshipCountsProcessor(
+                nodeLabelCache, labelCount, relTypeCount, countsUpdater, numberArrayFactory, INSTANCE);
 
         // Then
-        verify( numberArrayFactory, times( 2 ) ).newLongArray( longThat( new IsNonNegativeLong() ), anyLong(), any( MemoryTracker.class ) );
+        verify(numberArrayFactory, times(2))
+                .newLongArray(longThat(new IsNonNegativeLong()), anyLong(), any(MemoryTracker.class));
     }
 
     @Test
-    void testRelationshipCountersUpdates()
-    {
+    void testRelationshipCountersUpdates() {
         int relationTypes = 2;
         int labels = 3;
 
-        NodeLabelsCache.Client client = mock( NodeLabelsCache.Client.class );
-        when( nodeLabelCache.newClient() ).thenReturn( client );
-        when( nodeLabelCache.get( eq( client ), eq( 1L ) ) ).thenReturn( new long[]{0, 2} );
-        when( nodeLabelCache.get( eq( client ), eq( 2L ) ) ).thenReturn( new long[]{1} );
-        when( nodeLabelCache.get( eq( client ), eq( 3L ) ) ).thenReturn( new long[]{1, 2} );
-        when( nodeLabelCache.get( eq( client ), eq( 4L ) ) ).thenReturn( new long[]{} );
+        NodeLabelsCache.Client client = mock(NodeLabelsCache.Client.class);
+        when(nodeLabelCache.newClient()).thenReturn(client);
+        when(nodeLabelCache.get(eq(client), eq(1L))).thenReturn(new long[] {0, 2});
+        when(nodeLabelCache.get(eq(client), eq(2L))).thenReturn(new long[] {1});
+        when(nodeLabelCache.get(eq(client), eq(3L))).thenReturn(new long[] {1, 2});
+        when(nodeLabelCache.get(eq(client), eq(4L))).thenReturn(new long[] {});
 
-        RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels, relationTypes, countsUpdater,
-                                                                                       NumberArrayFactories.AUTO_WITHOUT_PAGECACHE, INSTANCE );
+        RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor(
+                nodeLabelCache,
+                labels,
+                relationTypes,
+                countsUpdater,
+                NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
+                INSTANCE);
 
-        countsProcessor.process( record( 1, 0, 3 ), StoreCursors.NULL );
-        countsProcessor.process( record( 2, 1, 4 ), StoreCursors.NULL );
+        countsProcessor.process(record(1, 0, 3), StoreCursors.NULL);
+        countsProcessor.process(record(2, 1, 4), StoreCursors.NULL);
 
         countsProcessor.done();
 
         // wildcard counts
-        verify( countsUpdater ).incrementRelationshipCount( ANY, ANY, ANY, 2L );
-        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, ANY, 1L );
-        verify( countsUpdater ).incrementRelationshipCount( ANY, 1, ANY, 1L );
+        verify(countsUpdater).incrementRelationshipCount(ANY, ANY, ANY, 2L);
+        verify(countsUpdater).incrementRelationshipCount(ANY, 0, ANY, 1L);
+        verify(countsUpdater).incrementRelationshipCount(ANY, 1, ANY, 1L);
 
         // start labels counts
-        verify( countsUpdater ).incrementRelationshipCount( 0, 0, ANY, 1L );
-        verify( countsUpdater ).incrementRelationshipCount( 2, 0, ANY, 1L );
+        verify(countsUpdater).incrementRelationshipCount(0, 0, ANY, 1L);
+        verify(countsUpdater).incrementRelationshipCount(2, 0, ANY, 1L);
 
         // end labels counts
-        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 1, 1L );
-        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 2, 1L );
+        verify(countsUpdater).incrementRelationshipCount(ANY, 0, 1, 1L);
+        verify(countsUpdater).incrementRelationshipCount(ANY, 0, 2, 1L);
     }
 
-    private static class IsNonNegativeLong implements ArgumentMatcher<Long>
-    {
+    private static class IsNonNegativeLong implements ArgumentMatcher<Long> {
         @Override
-        public boolean matches( Long argument )
-        {
+        public boolean matches(Long argument) {
             return argument != null && argument >= 0;
         }
     }
 
-    private static RelationshipRecord record( long startNode, int type, long endNode )
-    {
-        RelationshipRecord record = new RelationshipRecord( 0 );
-        record.setInUse( true );
-        record.setFirstNode( startNode );
-        record.setSecondNode( endNode );
-        record.setType( type );
+    private static RelationshipRecord record(long startNode, int type, long endNode) {
+        RelationshipRecord record = new RelationshipRecord(0);
+        record.setInUse(true);
+        record.setFirstNode(startNode);
+        record.setSecondNode(endNode);
+        record.setType(type);
         return record;
     }
 }

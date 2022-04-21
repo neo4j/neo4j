@@ -21,28 +21,23 @@ package org.neo4j.kernel.diagnostics;
 
 import java.io.PrintStream;
 
-public class NonInteractiveProgress implements DiagnosticsReporterProgress
-{
+public class NonInteractiveProgress implements DiagnosticsReporterProgress {
     private String totalSteps = "?";
     private final PrintStream out;
     private final boolean verbose;
     private int lastPercentage;
 
-    public NonInteractiveProgress( PrintStream out, boolean verbose )
-    {
+    public NonInteractiveProgress(PrintStream out, boolean verbose) {
         this.out = out;
         this.verbose = verbose;
     }
 
     @Override
-    public void percentChanged( int percent )
-    {
-        for ( int i = lastPercentage + 1; i <= percent; i++ )
-        {
-            out.print( '.' );
-            if ( i % 20 == 0 )
-            {
-                out.printf( " %3d%%%n", i );
+    public void percentChanged(int percent) {
+        for (int i = lastPercentage + 1; i <= percent; i++) {
+            out.print('.');
+            if (i % 20 == 0) {
+                out.printf(" %3d%%%n", i);
             }
         }
         lastPercentage = percent;
@@ -50,39 +45,33 @@ public class NonInteractiveProgress implements DiagnosticsReporterProgress
     }
 
     @Override
-    public void started( long currentStepIndex, String target )
-    {
-        out.println( currentStepIndex + "/" + totalSteps + " " + target );
+    public void started(long currentStepIndex, String target) {
+        out.println(currentStepIndex + "/" + totalSteps + " " + target);
         lastPercentage = 0;
     }
 
     @Override
-    public void finished()
-    {
-        percentChanged( 100 );
+    public void finished() {
+        percentChanged(100);
         out.println();
     }
 
     @Override
-    public void info( String info )
-    {
+    public void info(String info) {
         // Ignore info message
     }
 
     @Override
-    public void error( String msg, Throwable throwable )
-    {
+    public void error(String msg, Throwable throwable) {
         out.println();
-        out.println( "Error: " + msg );
-        if ( verbose )
-        {
-            throwable.printStackTrace( out );
+        out.println("Error: " + msg);
+        if (verbose) {
+            throwable.printStackTrace(out);
         }
     }
 
     @Override
-    public void setTotalSteps( long steps )
-    {
-        this.totalSteps = String.valueOf( steps );
+    public void setTotalSteps(long steps) {
+        this.totalSteps = String.valueOf(steps);
     }
 }

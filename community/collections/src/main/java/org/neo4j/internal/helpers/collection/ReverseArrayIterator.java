@@ -22,36 +22,30 @@ package org.neo4j.internal.helpers.collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class ReverseArrayIterator<T> implements Iterator<T>
-{
+public class ReverseArrayIterator<T> implements Iterator<T> {
     private final T[] array;
     private int index;
 
-    public ReverseArrayIterator( T[] array )
-    {
+    public ReverseArrayIterator(T[] array) {
         this.array = array;
         this.index = array.length - 1;
     }
 
     @Override
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         return index >= 0;
     }
 
     @Override
-    public T next()
-    {
-        if ( !hasNext() )
-        {
+    public T next() {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
         return array[index--];
     }
 
     @Override
-    public void remove()
-    {
+    public void remove() {
         throw new UnsupportedOperationException();
     }
 }

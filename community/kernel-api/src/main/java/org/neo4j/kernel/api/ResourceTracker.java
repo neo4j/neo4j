@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-public interface ResourceTracker extends ResourceMonitor
-{
+public interface ResourceTracker extends ResourceMonitor {
     ResourceTracker EMPTY_RESOURCE_TRACKER = new EmptyResourceTracker();
 
     /**
@@ -28,24 +27,20 @@ public interface ResourceTracker extends ResourceMonitor
      */
     void closeAllCloseableResources();
 
-    class EmptyResourceTracker implements ResourceTracker
-    {
+    class EmptyResourceTracker implements ResourceTracker {
         @Override
-        public void closeAllCloseableResources()
-        {
+        public void closeAllCloseableResources() {
             // empty
         }
 
         @Override
-        public void registerCloseableResource( AutoCloseable closeableResource )
-        {
+        public void registerCloseableResource(AutoCloseable closeableResource) {
             // empty
         }
 
         @Override
-        public void unregisterCloseableResource( AutoCloseable closeableResource )
-        {
-            //empty
+        public void unregisterCloseableResource(AutoCloseable closeableResource) {
+            // empty
         }
     }
 }

@@ -20,104 +20,88 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable implements NodeValueIndexCursor, EntityIndexSeekClient
-{
+public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable
+        implements NodeValueIndexCursor, EntityIndexSeekClient {
     @Override
-    public void closeInternal()
-    {
-
-    }
+    public void closeInternal() {}
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return false;
     }
 
     @Override
-    public boolean next()
-    {
+    public boolean next() {
         return false;
     }
 
     @Override
-    public void node( NodeCursor cursor )
-    {
-
-    }
+    public void node(NodeCursor cursor) {}
 
     @Override
-    public long nodeReference()
-    {
+    public long nodeReference() {
         return 0;
     }
 
     @Override
-    public int numberOfProperties()
-    {
+    public int numberOfProperties() {
         return 0;
     }
 
     @Override
-    public boolean hasValue()
-    {
+    public boolean hasValue() {
         return false;
     }
 
     @Override
-    public Value propertyValue( int offset )
-    {
+    public Value propertyValue(int offset) {
         return null;
     }
 
     @Override
-    public float score()
-    {
+    public float score() {
         return 0;
     }
 
     @Override
-    public void setRead( Read read )
-    {
-    }
+    public void setRead(Read read) {}
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
-                            boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
-    {
-    }
+    public void initialize(
+            IndexDescriptor descriptor,
+            IndexProgressor progressor,
+            AccessMode accessMode,
+            boolean indexIncludesTransactionState,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query) {}
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value... values )
-    {
+    public boolean acceptEntity(long reference, float score, Value... values) {
         return false;
     }
 
     @Override
-    public boolean needsValues()
-    {
+    public boolean needsValues() {
         return false;
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void setTracer(KernelReadTracer tracer) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public void removeTracer()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    public void removeTracer() {
+        throw new UnsupportedOperationException("not implemented");
     }
 }

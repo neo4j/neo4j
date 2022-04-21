@@ -58,7 +58,8 @@ trait BaseState {
   def withObfuscationMetadata(o: ObfuscationMetadata): BaseState
 }
 
-case class InitialState(queryText: String,
+case class InitialState(
+  queryText: String,
   startPosition: Option[InputPosition],
   plannerName: PlannerName,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
@@ -68,7 +69,8 @@ case class InitialState(queryText: String,
   maybeSemanticTable: Option[SemanticTable] = None,
   accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
   maybeReturnColumns: Option[Seq[String]] = None,
-  maybeObfuscationMetadata: Option[ObfuscationMetadata] = None) extends BaseState {
+  maybeObfuscationMetadata: Option[ObfuscationMetadata] = None
+) extends BaseState {
 
   override def withStatement(s: Statement): InitialState = copy(maybeStatement = Some(s))
 

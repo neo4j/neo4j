@@ -19,10 +19,16 @@
  */
 package org.neo4j.index.lucene;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.INITIAL_STATE;
+import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.INITIAL_STATE_FAILURE_MESSAGE;
 
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,57 +46,47 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.DESCRIPTOR;
-import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.INITIAL_STATE;
-import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.INITIAL_STATE_FAILURE_MESSAGE;
-
 @TestDirectoryExtension
-class ConstraintIndexFailureIT
-{
+class ConstraintIndexFailureIT {
     @Inject
     private TestDirectory directory;
 
     @Test
-    void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
-    {
+    void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception {
         // given a perfectly normal constraint
         Path dir = directory.homePath();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( dir )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(dir)
                 // use delegating index provider with custom descriptor, so it can be replaced with failing provider
-                .addExtension( new BuiltInDelegatingIndexProviderFactory( new RangeIndexProviderFactory(), DESCRIPTOR ) )
+                .addExtension(new BuiltInDelegatingIndexProviderFactory(new RangeIndexProviderFactory(), DESCRIPTOR))
                 .noOpSystemGraphInitializer()
                 .build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
-        {
-            IndexingTestUtil.createNodePropUniqueConstraintWithSpecifiedProvider( tx, DESCRIPTOR, label( "Label1" ), "key1" );
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+        try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
+            IndexingTestUtil.createNodePropUniqueConstraintWithSpecifiedProvider(
+                    tx, DESCRIPTOR, label("Label1"), "key1");
             tx.commit();
-        }
-        finally
-        {
+        } finally {
             managementService.shutdown();
         }
 
-        // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An ordeal, I know right...
-        FileUtils.deleteDirectory( IndexDirectoryStructure.baseSchemaIndexFolder( dir ) );
-        managementService = new TestDatabaseManagementServiceBuilder( dir )
-                .addExtension( new FailingGenericNativeIndexProviderFactory( new RangeIndexProviderFactory(), INITIAL_STATE ) )
+        // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An
+        // ordeal, I know right...
+        FileUtils.deleteDirectory(IndexDirectoryStructure.baseSchemaIndexFolder(dir));
+        managementService = new TestDatabaseManagementServiceBuilder(dir)
+                .addExtension(
+                        new FailingGenericNativeIndexProviderFactory(new RangeIndexProviderFactory(), INITIAL_STATE))
                 .noOpSystemGraphInitializer()
                 .build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+        db = managementService.database(DEFAULT_DATABASE_NAME);
         // when
-        try ( Transaction tx = db.beginTx() )
-        {
-            var e = assertThrows( ConstraintViolationException.class, () -> tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" ) );
-            assertThat( e.getCause() ).isInstanceOf( UnableToValidateConstraintException.class );
-            assertThat( e.getCause().getCause().getMessage() ).contains( "The index is in a failed state:" ).contains( INITIAL_STATE_FAILURE_MESSAGE );
-        }
-        finally
-        {
+        try (Transaction tx = db.beginTx()) {
+            var e = assertThrows(ConstraintViolationException.class, () -> tx.createNode(label("Label1"))
+                    .setProperty("key1", "value1"));
+            assertThat(e.getCause()).isInstanceOf(UnableToValidateConstraintException.class);
+            assertThat(e.getCause().getCause().getMessage())
+                    .contains("The index is in a failed state:")
+                    .contains(INITIAL_STATE_FAILURE_MESSAGE);
+        } finally {
             managementService.shutdown();
         }
     }

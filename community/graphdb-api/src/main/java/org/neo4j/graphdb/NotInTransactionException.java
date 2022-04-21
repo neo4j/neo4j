@@ -27,25 +27,20 @@ import org.neo4j.annotations.api.PublicApi;
  * @see Transaction
  */
 @PublicApi
-public class NotInTransactionException extends RuntimeException
-{
-    public NotInTransactionException()
-    {
-        super( "The requested operation cannot be performed, because it has to be performed in a transaction." );
+public class NotInTransactionException extends RuntimeException {
+    public NotInTransactionException() {
+        super("The requested operation cannot be performed, because it has to be performed in a transaction.");
     }
 
-    public NotInTransactionException( String message )
-    {
-        super( message );
+    public NotInTransactionException(String message) {
+        super(message);
     }
 
-    public NotInTransactionException( Throwable cause )
-    {
-        super( cause );
+    public NotInTransactionException(Throwable cause) {
+        super(cause);
     }
 
-    public NotInTransactionException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public NotInTransactionException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

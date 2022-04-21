@@ -19,29 +19,6 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
-import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
-import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.index.internal.gbptree.ValueMerger;
-import org.neo4j.index.internal.gbptree.Writer;
-import org.neo4j.internal.id.IdValidator;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.utils.TestDirectory;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,9 +33,29 @@ import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
+import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
+import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.index.internal.gbptree.ValueMerger;
+import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.internal.id.IdValidator;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 @PageCacheExtension
-class IdRangeMarkerTest
-{
+class IdRangeMarkerTest {
     @Inject
     PageCache pageCache;
 
@@ -66,248 +63,260 @@ class IdRangeMarkerTest
     TestDirectory directory;
 
     private final int idsPerEntry = 128;
-    private final IdRangeLayout layout = new IdRangeLayout( idsPerEntry );
+    private final IdRangeLayout layout = new IdRangeLayout(idsPerEntry);
     private final AtomicLong highestWritternId = new AtomicLong();
     private GBPTree<IdRangeKey, IdRange> tree;
 
     @BeforeEach
-    void instantiateTree()
-    {
-        this.tree = new GBPTreeBuilder<>( pageCache, directory.file( "file.id" ), layout ).build();
+    void instantiateTree() {
+        this.tree = new GBPTreeBuilder<>(pageCache, directory.file("file.id"), layout).build();
     }
 
     @AfterEach
-    void close() throws IOException
-    {
+    void close() throws IOException {
         tree.close();
     }
 
     @Test
-    void shouldCreateEntryOnFirstAddition() throws IOException
-    {
+    void shouldCreateEntryOnFirstAddition() throws IOException {
         // given
-        ValueMerger merger = mock( ValueMerger.class );
+        ValueMerger merger = mock(ValueMerger.class);
 
         // when
-        try ( IdRangeMarker marker = instantiateMarker( mock( Lock.class ), merger ) )
-        {
-            marker.markDeleted( 0 );
+        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), merger)) {
+            marker.markDeleted(0);
         }
 
         // then
-        verifyNoMoreInteractions( merger );
-        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( 1 ), NULL_CONTEXT ) )
-        {
-            assertTrue( seek.next() );
-            assertEquals( 0, seek.key().getIdRangeIdx() );
+        verifyNoMoreInteractions(merger);
+        try (Seeker<IdRangeKey, IdRange> seek = tree.seek(new IdRangeKey(0), new IdRangeKey(1), NULL_CONTEXT)) {
+            assertTrue(seek.next());
+            assertEquals(0, seek.key().getIdRangeIdx());
         }
     }
 
     @Test
-    void shouldMergeAdditionIntoExistingEntry() throws IOException
-    {
+    void shouldMergeAdditionIntoExistingEntry() throws IOException {
         // given
-        try ( IdRangeMarker marker = instantiateMarker( mock( Lock.class ), mock( ValueMerger.class ) ) )
-        {
-            marker.markDeleted( 0 );
+        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), mock(ValueMerger.class))) {
+            marker.markDeleted(0);
         }
 
         // when
         ValueMerger merger = realMergerMock();
-        try ( IdRangeMarker marker = instantiateMarker( mock( Lock.class ), merger ) )
-        {
-            marker.markDeleted( 1 );
+        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), merger)) {
+            marker.markDeleted(1);
         }
 
         // then
-        verify( merger ).merge( any(), any(), any(), any() );
-        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( 1 ), NULL_CONTEXT ) )
-        {
-            assertTrue( seek.next() );
-            assertEquals( 0, seek.key().getIdRangeIdx() );
-            assertEquals( IdRange.IdState.DELETED, seek.value().getState( 0 ) );
-            assertEquals( IdRange.IdState.DELETED, seek.value().getState( 1 ) );
-            assertEquals( IdRange.IdState.USED, seek.value().getState( 2 ) );
+        verify(merger).merge(any(), any(), any(), any());
+        try (Seeker<IdRangeKey, IdRange> seek = tree.seek(new IdRangeKey(0), new IdRangeKey(1), NULL_CONTEXT)) {
+            assertTrue(seek.next());
+            assertEquals(0, seek.key().getIdRangeIdx());
+            assertEquals(IdRange.IdState.DELETED, seek.value().getState(0));
+            assertEquals(IdRange.IdState.DELETED, seek.value().getState(1));
+            assertEquals(IdRange.IdState.USED, seek.value().getState(2));
         }
     }
 
     @Test
-    void shouldNotCreateEntryOnFirstRemoval() throws IOException
-    {
+    void shouldNotCreateEntryOnFirstRemoval() throws IOException {
         // when
-        ValueMerger merger = mock( ValueMerger.class );
-        try ( IdRangeMarker marker = instantiateMarker( mock( Lock.class ), merger ) )
-        {
-            marker.markUsed( 0 );
+        ValueMerger merger = mock(ValueMerger.class);
+        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), merger)) {
+            marker.markUsed(0);
         }
 
         // then
-        verifyNoMoreInteractions( merger );
-        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( Long.MAX_VALUE ), NULL_CONTEXT ) )
-        {
-            assertFalse( seek.next() );
+        verifyNoMoreInteractions(merger);
+        try (Seeker<IdRangeKey, IdRange> seek =
+                tree.seek(new IdRangeKey(0), new IdRangeKey(Long.MAX_VALUE), NULL_CONTEXT)) {
+            assertFalse(seek.next());
         }
     }
 
     @Test
-    void shouldRemoveEntryOnLastRemoval() throws IOException
-    {
+    void shouldRemoveEntryOnLastRemoval() throws IOException {
         // given
         int ids = 5;
-        try ( IdRangeMarker marker = instantiateMarker( mock( Lock.class ), IdRangeMerger.DEFAULT ) )
-        {
-            for ( long id = 0; id < ids; id++ )
-            {
+        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), IdRangeMerger.DEFAULT)) {
+            for (long id = 0; id < ids; id++) {
                 // let the id go through the desired states
-                marker.markUsed( id );
-                marker.markDeleted( id );
-                marker.markFree( id );
-                marker.markReserved( id );
+                marker.markUsed(id);
+                marker.markDeleted(id);
+                marker.markFree(id);
+                marker.markReserved(id);
             }
         }
         AtomicBoolean exists = new AtomicBoolean();
-        tree.visit( new GBPTreeVisitor.Adaptor<>()
-        {
-            @Override
-            public void key( IdRangeKey key, boolean isLeaf, long offloadId )
-            {
-                if ( isLeaf )
-                {
-                    assertEquals( 0, key.getIdRangeIdx() );
-                    exists.set( true );
-                }
-            }
-        }, NULL_CONTEXT );
+        tree.visit(
+                new GBPTreeVisitor.Adaptor<>() {
+                    @Override
+                    public void key(IdRangeKey key, boolean isLeaf, long offloadId) {
+                        if (isLeaf) {
+                            assertEquals(0, key.getIdRangeIdx());
+                            exists.set(true);
+                        }
+                    }
+                },
+                NULL_CONTEXT);
 
         // when
-        try ( IdRangeMarker marker = instantiateMarker( mock( Lock.class ), IdRangeMerger.DEFAULT ) )
-        {
-            for ( long id = 0; id < ids; id++ )
-            {
-                marker.markUsed( id );
+        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), IdRangeMerger.DEFAULT)) {
+            for (long id = 0; id < ids; id++) {
+                marker.markUsed(id);
             }
         }
 
         // then
-        tree.visit( new GBPTreeVisitor.Adaptor<>()
-        {
-            @Override
-            public void key( IdRangeKey key, boolean isLeaf, long offloadId )
-            {
-                assertFalse( isLeaf, "Should not have any key still in the tree, but got: " + key );
-            }
-        }, NULL_CONTEXT );
+        tree.visit(
+                new GBPTreeVisitor.Adaptor<>() {
+                    @Override
+                    public void key(IdRangeKey key, boolean isLeaf, long offloadId) {
+                        assertFalse(isLeaf, "Should not have any key still in the tree, but got: " + key);
+                    }
+                },
+                NULL_CONTEXT);
     }
 
     @Test
-    void shouldUnlockOnClose() throws IOException
-    {
+    void shouldUnlockOnClose() throws IOException {
         // given
-        Lock lock = mock( Lock.class );
+        Lock lock = mock(Lock.class);
 
         // when
-        try ( IdRangeMarker marker = instantiateMarker( lock, mock( ValueMerger.class ) ) )
-        {
-            verifyNoMoreInteractions( lock );
+        try (IdRangeMarker marker = instantiateMarker(lock, mock(ValueMerger.class))) {
+            verifyNoMoreInteractions(lock);
         }
 
         // then
-        verify( lock ).unlock();
+        verify(lock).unlock();
     }
 
     @Test
-    void shouldCloseWriterOnClose() throws IOException
-    {
+    void shouldCloseWriterOnClose() throws IOException {
         // when
-        Writer writer = mock( Writer.class );
-        try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, writer, mock( Lock.class ), mock( ValueMerger.class ), true,
-                new AtomicBoolean(), 1, new AtomicLong( 0 ), true, NO_MONITOR ) )
-        {
-            verify( writer, never() ).close();
+        Writer writer = mock(Writer.class);
+        try (IdRangeMarker marker = new IdRangeMarker(
+                idsPerEntry,
+                layout,
+                writer,
+                mock(Lock.class),
+                mock(ValueMerger.class),
+                true,
+                new AtomicBoolean(),
+                1,
+                new AtomicLong(0),
+                true,
+                NO_MONITOR)) {
+            verify(writer, never()).close();
         }
 
         // then
-        verify( writer ).close();
+        verify(writer).close();
     }
 
     @Test
-    void shouldIgnoreReservedIds() throws IOException
-    {
+    void shouldIgnoreReservedIds() throws IOException {
         // given
         long reservedId = IdValidator.INTEGER_MINUS_ONE;
 
         // when
         MutableLongSet expectedIds = LongSets.mutable.empty();
-        try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, tree.writer( NULL_CONTEXT ), mock( Lock.class ), IdRangeMerger.DEFAULT, true,
-                new AtomicBoolean(), 1, new AtomicLong( reservedId - 1 ), true, NO_MONITOR ) )
-        {
-            for ( long id = reservedId - 1; id <= reservedId + 1; id++ )
-            {
-                marker.markDeleted( id );
-                if ( id != reservedId )
-                {
-                    expectedIds.add( id );
+        try (IdRangeMarker marker = new IdRangeMarker(
+                idsPerEntry,
+                layout,
+                tree.writer(NULL_CONTEXT),
+                mock(Lock.class),
+                IdRangeMerger.DEFAULT,
+                true,
+                new AtomicBoolean(),
+                1,
+                new AtomicLong(reservedId - 1),
+                true,
+                NO_MONITOR)) {
+            for (long id = reservedId - 1; id <= reservedId + 1; id++) {
+                marker.markDeleted(id);
+                if (id != reservedId) {
+                    expectedIds.add(id);
                 }
             }
         }
 
         // then
         MutableLongSet deletedIdsInTree = LongSets.mutable.empty();
-        tree.visit( new GBPTreeVisitor.Adaptor<>()
-        {
-            private IdRangeKey idRangeKey;
+        tree.visit(
+                new GBPTreeVisitor.Adaptor<>() {
+                    private IdRangeKey idRangeKey;
 
-            @Override
-            public void key( IdRangeKey idRangeKey, boolean isLeaf, long offloadId )
-            {
-                this.idRangeKey = idRangeKey;
-            }
-
-            @Override
-            public void value( IdRange idRange )
-            {
-                for ( int i = 0; i < idsPerEntry; i++ )
-                {
-                    if ( idRange.getState( i ) == DELETED )
-                    {
-                        deletedIdsInTree.add( idRangeKey.getIdRangeIdx() * idsPerEntry + i );
+                    @Override
+                    public void key(IdRangeKey idRangeKey, boolean isLeaf, long offloadId) {
+                        this.idRangeKey = idRangeKey;
                     }
-                }
-            }
-        }, NULL_CONTEXT );
-        assertEquals( expectedIds, deletedIdsInTree );
+
+                    @Override
+                    public void value(IdRange idRange) {
+                        for (int i = 0; i < idsPerEntry; i++) {
+                            if (idRange.getState(i) == DELETED) {
+                                deletedIdsInTree.add(idRangeKey.getIdRangeIdx() * idsPerEntry + i);
+                            }
+                        }
+                    }
+                },
+                NULL_CONTEXT);
+        assertEquals(expectedIds, deletedIdsInTree);
     }
 
     @Test
-    void shouldBatchWriteIdBridging()
-    {
+    void shouldBatchWriteIdBridging() {
         // given
-        Writer<IdRangeKey,IdRange> writer = mock( Writer.class );
-        try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, writer, mock( Lock.class ), IdRangeMerger.DEFAULT, true,
-                new AtomicBoolean(), 1, new AtomicLong( 0 ), true, NO_MONITOR ) )
-        {
+        Writer<IdRangeKey, IdRange> writer = mock(Writer.class);
+        try (IdRangeMarker marker = new IdRangeMarker(
+                idsPerEntry,
+                layout,
+                writer,
+                mock(Lock.class),
+                IdRangeMerger.DEFAULT,
+                true,
+                new AtomicBoolean(),
+                1,
+                new AtomicLong(0),
+                true,
+                NO_MONITOR)) {
             // when
-            marker.markUsed( 10 );
+            marker.markUsed(10);
         }
 
         // then
         // for the id bridging (one time for ids 0-9)
-        verify( writer, times( 1 ) ).merge( any(), any(), any() );
+        verify(writer, times(1)).merge(any(), any(), any());
         // for the used bit update
-        verify( writer, times( 1 ) ).mergeIfExists( any(), any(), any() );
+        verify(writer, times(1)).mergeIfExists(any(), any(), any());
     }
 
-    private static ValueMerger realMergerMock()
-    {
-        ValueMerger merger = mock( ValueMerger.class );
-        when( merger.merge( any(), any(), any(), any() ) ).thenAnswer( invocation -> IdRangeMerger.DEFAULT.merge(
-                invocation.getArgument( 0 ), invocation.getArgument( 1 ), invocation.getArgument( 2 ), invocation.getArgument( 3 ) ) );
+    private static ValueMerger realMergerMock() {
+        ValueMerger merger = mock(ValueMerger.class);
+        when(merger.merge(any(), any(), any(), any()))
+                .thenAnswer(invocation -> IdRangeMerger.DEFAULT.merge(
+                        invocation.getArgument(0),
+                        invocation.getArgument(1),
+                        invocation.getArgument(2),
+                        invocation.getArgument(3)));
         return merger;
     }
 
-    private IdRangeMarker instantiateMarker( Lock lock, ValueMerger merger ) throws IOException
-    {
-        return new IdRangeMarker( idsPerEntry, layout, tree.writer( NULL_CONTEXT ), lock, merger, true, new AtomicBoolean(), 1, highestWritternId, true,
-                NO_MONITOR );
+    private IdRangeMarker instantiateMarker(Lock lock, ValueMerger merger) throws IOException {
+        return new IdRangeMarker(
+                idsPerEntry,
+                layout,
+                tree.writer(NULL_CONTEXT),
+                lock,
+                merger,
+                true,
+                new AtomicBoolean(),
+                1,
+                highestWritternId,
+                true,
+                NO_MONITOR);
     }
 }

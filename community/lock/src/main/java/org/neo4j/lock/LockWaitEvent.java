@@ -19,8 +19,7 @@
  */
 package org.neo4j.lock;
 
-public interface LockWaitEvent extends AutoCloseable
-{
+public interface LockWaitEvent extends AutoCloseable {
     @Override
     void close();
 

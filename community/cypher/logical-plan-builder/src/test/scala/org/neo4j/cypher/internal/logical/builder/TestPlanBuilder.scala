@@ -28,6 +28,20 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 class TestPlanBuilder extends SimpleLogicalPlanBuilder(TestResolver)
 
 object TestResolver extends SimpleResolver(procedures = Set(
-  ProcedureSignature(QualifiedName(Seq("test"), "proc1"), IndexedSeq(), None, None, ProcedureReadOnlyAccess, id = 0),
-  ProcedureSignature(QualifiedName(Seq("test"), "proc2"), IndexedSeq(FieldSignature("in1", CTInteger)), Some(IndexedSeq(FieldSignature("foo", CTInteger))), None, ProcedureReadOnlyAccess, id = 0)
-))
+      ProcedureSignature(
+        QualifiedName(Seq("test"), "proc1"),
+        IndexedSeq(),
+        None,
+        None,
+        ProcedureReadOnlyAccess,
+        id = 0
+      ),
+      ProcedureSignature(
+        QualifiedName(Seq("test"), "proc2"),
+        IndexedSeq(FieldSignature("in1", CTInteger)),
+        Some(IndexedSeq(FieldSignature("foo", CTInteger))),
+        None,
+        ProcedureReadOnlyAccess,
+        id = 0
+      )
+    ))

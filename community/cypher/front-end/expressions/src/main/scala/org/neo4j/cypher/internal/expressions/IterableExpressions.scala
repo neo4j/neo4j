@@ -33,7 +33,7 @@ trait FilteringExpression extends Expression {
 }
 
 case class ListComprehension(scope: ExtractScope, expression: Expression)(val position: InputPosition)
-  extends FilteringExpression {
+    extends FilteringExpression {
 
   val name = "[...]"
 
@@ -43,20 +43,27 @@ case class ListComprehension(scope: ExtractScope, expression: Expression)(val po
 }
 
 object ListComprehension {
-  def apply(variable: LogicalVariable,
-            expression: Expression,
-            innerPredicate: Option[Expression],
-            extractExpression: Option[Expression])(position: InputPosition): ListComprehension =
+
+  def apply(
+    variable: LogicalVariable,
+    expression: Expression,
+    innerPredicate: Option[Expression],
+    extractExpression: Option[Expression]
+  )(position: InputPosition): ListComprehension =
     ListComprehension(ExtractScope(variable, innerPredicate, extractExpression)(position), expression)(position)
 }
 
-case class PatternComprehension(namedPath: Option[LogicalVariable], pattern: RelationshipsPattern,
-                                predicate: Option[Expression], projection: Expression)
-                               (val position: InputPosition,
-                                override val outerScope: Set[LogicalVariable],
-                                override val variableToCollectName: String,
-                                override val collectionName: String)
-  extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable {
+case class PatternComprehension(
+  namedPath: Option[LogicalVariable],
+  pattern: RelationshipsPattern,
+  predicate: Option[Expression],
+  projection: Expression
+)(
+  val position: InputPosition,
+  override val outerScope: Set[LogicalVariable],
+  override val variableToCollectName: String,
+  override val collectionName: String
+) extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable {
 
   self =>
 
@@ -84,13 +91,15 @@ sealed trait IterableExpressionWithInfo extends FunctionWithName with TypeSignat
 
   // TODO: Get specification formalized by CLG
   override def signatures: Seq[TypeSignature] =
-    Seq(FunctionTypeSignature(function = this,
+    Seq(FunctionTypeSignature(
+      function = this,
       CTBoolean,
       names = Vector("variable", "list"),
       description = description,
       argumentTypes = Vector(CTAny, CTList(CTAny)),
       category = Category.PREDICATE,
-      overrideDefaultAsString = Some(s"$name(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)")
+      overrideDefaultAsString =
+        Some(s"$name(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)")
     ))
 }
 
@@ -106,6 +115,7 @@ sealed trait IterablePredicateExpression extends FilteringExpression with Boolea
 }
 
 object IterablePredicateExpression {
+
   private val knownPredicateFunctions: Seq[IterableExpressionWithInfo] = Vector(
     AllIterablePredicate,
     AnyIterablePredicate,
@@ -119,7 +129,8 @@ object IterablePredicateExpression {
   })
 }
 
-case class AllIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
+case class AllIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition)
+    extends IterablePredicateExpression {
   val name: String = AllIterablePredicate.name
 }
 
@@ -127,11 +138,16 @@ object AllIterablePredicate extends IterableExpressionWithInfo {
   val name = "all"
   val description = "Returns true if the predicate holds for all elements in the given list."
 
-  def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AllIterablePredicate =
+  def apply(
+    variable: LogicalVariable,
+    expression: Expression,
+    innerPredicate: Option[Expression]
+  )(position: InputPosition): AllIterablePredicate =
     AllIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
-case class AnyIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
+case class AnyIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition)
+    extends IterablePredicateExpression {
   val name: String = AnyIterablePredicate.name
 }
 
@@ -139,11 +155,16 @@ object AnyIterablePredicate extends IterableExpressionWithInfo {
   val name = "any"
   val description = "Returns true if the predicate holds for at least one element in the given list."
 
-  def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AnyIterablePredicate =
+  def apply(
+    variable: LogicalVariable,
+    expression: Expression,
+    innerPredicate: Option[Expression]
+  )(position: InputPosition): AnyIterablePredicate =
     AnyIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
-case class NoneIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
+case class NoneIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition)
+    extends IterablePredicateExpression {
   val name: String = NoneIterablePredicate.name
 }
 
@@ -151,11 +172,16 @@ object NoneIterablePredicate extends IterableExpressionWithInfo {
   val name = "none"
   val description = "Returns true if the predicate holds for no element in the given list."
 
-  def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): NoneIterablePredicate =
+  def apply(
+    variable: LogicalVariable,
+    expression: Expression,
+    innerPredicate: Option[Expression]
+  )(position: InputPosition): NoneIterablePredicate =
     NoneIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
-case class SingleIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
+case class SingleIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition)
+    extends IterablePredicateExpression {
   val name: String = SingleIterablePredicate.name
 }
 
@@ -163,20 +189,32 @@ object SingleIterablePredicate extends IterableExpressionWithInfo {
   val name = "single"
   val description = "Returns true if the predicate holds for exactly one of the elements in the given list."
 
-  def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): SingleIterablePredicate =
+  def apply(
+    variable: LogicalVariable,
+    expression: Expression,
+    innerPredicate: Option[Expression]
+  )(position: InputPosition): SingleIterablePredicate =
     SingleIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
-case class ReduceExpression(scope: ReduceScope, init: Expression, list: Expression)(val position: InputPosition) extends Expression {
+case class ReduceExpression(scope: ReduceScope, init: Expression, list: Expression)(val position: InputPosition)
+    extends Expression {
   def variable: LogicalVariable = scope.variable
   def accumulator: LogicalVariable = scope.accumulator
   def expression: Expression = scope.expression
 }
 
 object ReduceExpression {
-  val AccumulatorExpressionTypeMismatchMessageGenerator: (String, String) => String = (expected: String, existing: String) => s"accumulator is $expected but expression has type $existing"
 
-  def apply(accumulator: Variable, init: Expression, variable: Variable, list: Expression, expression: Expression)(position: InputPosition): ReduceExpression =
+  val AccumulatorExpressionTypeMismatchMessageGenerator: (String, String) => String =
+    (expected: String, existing: String) => s"accumulator is $expected but expression has type $existing"
+
+  def apply(
+    accumulator: Variable,
+    init: Expression,
+    variable: Variable,
+    list: Expression,
+    expression: Expression
+  )(position: InputPosition): ReduceExpression =
     ReduceExpression(ReduceScope(accumulator, variable, expression)(position), init, list)(position)
 }
-

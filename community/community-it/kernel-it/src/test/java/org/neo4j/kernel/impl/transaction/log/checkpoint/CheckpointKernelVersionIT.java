@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
@@ -32,27 +32,26 @@ import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DbmsExtension
-public class CheckpointKernelVersionIT
-{
+public class CheckpointKernelVersionIT {
     @Inject
     private CheckPointer checkPointer;
+
     @Inject
     private MetadataProvider metadataProvider;
+
     @Inject
     private LogFiles logFiles;
 
     @Test
-    void checkPointRecordContainsDatabaseKernelVersion() throws IOException
-    {
-        // we can't test any earlier version since those version do not support new format of checkpoint commands so its impossible to read them back
-        ((MetaDataStore) metadataProvider).setKernelVersion( KernelVersion.V5_0 );
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Forced 5.0" ) );
+    void checkPointRecordContainsDatabaseKernelVersion() throws IOException {
+        // we can't test any earlier version since those version do not support new format of checkpoint commands so its
+        // impossible to read them back
+        ((MetaDataStore) metadataProvider).setKernelVersion(KernelVersion.V5_0);
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced 5.0"));
 
         List<CheckpointInfo> checkpointInfos = logFiles.getCheckpointFile().reachableCheckpoints();
-        assertThat( checkpointInfos ).hasSize( 1 );
-        assertThat( checkpointInfos.get( 0 ).getVersion() ).isEqualTo( KernelVersion.V5_0 );
+        assertThat(checkpointInfos).hasSize(1);
+        assertThat(checkpointInfos.get(0).getVersion()).isEqualTo(KernelVersion.V5_0);
     }
 }

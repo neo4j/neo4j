@@ -22,39 +22,32 @@ package org.neo4j.capabilities;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-final class CapabilityInstance<T>
-{
+final class CapabilityInstance<T> {
     private final Capability<T> capability;
     private volatile Supplier<T> value;
 
-    CapabilityInstance( Capability<T> capability )
-    {
-        this.capability = Objects.requireNonNull( capability );
+    CapabilityInstance(Capability<T> capability) {
+        this.capability = Objects.requireNonNull(capability);
         this.value = null;
     }
 
-    Capability<T> capability()
-    {
+    Capability<T> capability() {
         return capability;
     }
 
-    T get()
-    {
+    T get() {
         var localValue = value;
-        if ( localValue == null )
-        {
+        if (localValue == null) {
             return null;
         }
         return localValue.get();
     }
 
-    void set( T value )
-    {
+    void set(T value) {
         this.value = () -> value;
     }
 
-    void supply( Supplier<T> value )
-    {
+    void supply(Supplier<T> value) {
         this.value = value;
     }
 }

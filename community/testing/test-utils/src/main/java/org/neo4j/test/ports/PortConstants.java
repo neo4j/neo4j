@@ -19,12 +19,9 @@
  */
 package org.neo4j.test.ports;
 
-final class PortConstants
-{
+final class PortConstants {
     static final int EPHEMERAL_PORT_MINIMUM = 49152;
     static final int EPHEMERAL_PORT_MAXIMUM = 65535;
 
-    private PortConstants()
-    {
-    }
+    private PortConstants() {}
 }

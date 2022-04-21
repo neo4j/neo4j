@@ -36,18 +36,18 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
     (lower isAssignableFrom aType) && upper.fold(true)(aType isAssignableFrom)
 
   def contains(that: TypeRange): Boolean =
-    (lower isAssignableFrom that.lower) && upper.fold(true)(
-      t => that.upper.fold(false)(_ isAssignableFrom t)
-    )
+    (lower isAssignableFrom that.lower) && upper.fold(true)(t => that.upper.fold(false)(_ isAssignableFrom t))
 
   lazy val hasDefiniteSize: Boolean = upper.isDefined || !checkForAny(lower)
+
   private def checkForAny: CypherType => Boolean = {
-    case _: AnyType => true
+    case _: AnyType  => true
     case c: ListType => checkForAny(c.innerType)
-    case _ => false
+    case _           => false
   }
 
   def &(that: TypeRange): Option[TypeRange] = this intersect that
+
   def intersect(that: TypeRange): Option[TypeRange] =
     (lower greatestLowerBound that.lower).flatMap { newLower =>
       val newUpper = upper.fold(that.upper)(t => Some(that.upper.fold(t)(_ leastUpperBound t)))

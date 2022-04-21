@@ -24,12 +24,11 @@ package org.neo4j.util.concurrent;
  *
  * @param <T> The type of {@code AsyncEvent} objects this {@code AsyncEventSender} and process.
  */
-public interface AsyncEventSender<T extends AsyncEvent>
-{
+public interface AsyncEventSender<T extends AsyncEvent> {
     /**
      * Send the given event to a background thread for processing.
      *
      * @param event The event that needs to be processed in the background.
      */
-    void send( T event );
+    void send(T event);
 }

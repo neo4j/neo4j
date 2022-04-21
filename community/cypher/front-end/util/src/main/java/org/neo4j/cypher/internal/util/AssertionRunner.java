@@ -24,11 +24,9 @@ which means you can't use the same binaries and enable/disable assertions throug
 
 We want the Java behaviour in Scala, and this is how we achieve that.
  */
-public class AssertionRunner
-{
-    private AssertionRunner()
-    {
-        throw new AssertionError( "No instances" );
+public class AssertionRunner {
+    private AssertionRunner() {
+        throw new AssertionError("No instances");
     }
 
     /**
@@ -38,9 +36,8 @@ public class AssertionRunner
      */
     public static final boolean ASSERTIONS_ENABLED = isAssertionsEnabled();
 
-    @SuppressWarnings( {"AssertWithSideEffects", "ConstantConditions"} )
-    public static boolean isAssertionsEnabled()
-    {
+    @SuppressWarnings({"AssertWithSideEffects", "ConstantConditions"})
+    public static boolean isAssertionsEnabled() {
         boolean assertionsEnabled = false;
         assert assertionsEnabled = true;
         return assertionsEnabled;

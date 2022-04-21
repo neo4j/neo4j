@@ -19,24 +19,21 @@
  */
 package org.neo4j.lock;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Objects.requireNonNull;
-
-public class LockGroup implements AutoCloseable
-{
+public class LockGroup implements AutoCloseable {
     private final List<Lock> locks = new ArrayList<>();
 
-    public final void add( Lock lock )
-    {
-        requireNonNull( lock, "Cannot add null locks. See LockService.NOLOCK instead." );
-        locks.add( lock );
+    public final void add(Lock lock) {
+        requireNonNull(lock, "Cannot add null locks. See LockService.NOLOCK instead.");
+        locks.add(lock);
     }
 
     @Override
-    public void close()
-    {
-        locks.forEach( Lock::release );
+    public void close() {
+        locks.forEach(Lock::release);
     }
 }

@@ -25,8 +25,7 @@ import java.io.IOException;
  * Different options for what to do in a file operation scenario (like copy or move) where the target
  * file already exists.
  */
-enum ExistingTargetStrategy
-{
+enum ExistingTargetStrategy {
     /**
      * Fail with an {@link IOException} if the target file already exists.
      */

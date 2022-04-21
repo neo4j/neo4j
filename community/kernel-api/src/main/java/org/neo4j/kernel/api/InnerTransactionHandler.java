@@ -29,8 +29,7 @@ package org.neo4j.kernel.api;
  *      <li>The outer transaction cannot commit if it is linked to inner transactions.</li>
  * </ul>
  */
-public interface InnerTransactionHandler
-{
+public interface InnerTransactionHandler {
     /**
      * Link the inner transaction specified by the given {@code innerTransactionId} to the transaction that this handler belongs to.
      * The inner transaction will be terminated if the outer transaction gets rolled back.
@@ -38,12 +37,12 @@ public interface InnerTransactionHandler
      *
      * @param innerTransactionId user transaction id of inner transaction
      */
-    void registerInnerTransaction( long innerTransactionId );
+    void registerInnerTransaction(long innerTransactionId);
 
     /**
      * Remove link to inner transaction.
      *
      * @param innerTransactionId user transaction id of inner transaction
      */
-    void removeInnerTransaction( long innerTransactionId );
+    void removeInnerTransaction(long innerTransactionId);
 }

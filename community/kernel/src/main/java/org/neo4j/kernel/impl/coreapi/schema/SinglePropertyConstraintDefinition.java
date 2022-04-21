@@ -19,25 +19,23 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.neo4j.internal.schema.ConstraintDescriptor;
-
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
-abstract class SinglePropertyConstraintDefinition extends PropertyConstraintDefinition
-{
+import org.neo4j.internal.schema.ConstraintDescriptor;
+
+abstract class SinglePropertyConstraintDefinition extends PropertyConstraintDefinition {
     protected final String propertyKey;
 
-    SinglePropertyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, String propertyKey )
-    {
-        super( actions, constraint );
-        this.propertyKey = requireNonNull( propertyKey );
+    SinglePropertyConstraintDefinition(
+            InternalSchemaActions actions, ConstraintDescriptor constraint, String propertyKey) {
+        super(actions, constraint);
+        this.propertyKey = requireNonNull(propertyKey);
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
-    {
+    public Iterable<String> getPropertyKeys() {
         assertInUnterminatedTransaction();
-        return singleton( propertyKey );
+        return singleton(propertyKey);
     }
 }

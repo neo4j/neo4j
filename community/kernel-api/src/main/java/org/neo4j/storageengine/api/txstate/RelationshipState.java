@@ -27,11 +27,10 @@ import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
  *
  * @see EntityState
  */
-public interface RelationshipState extends EntityState
-{
+public interface RelationshipState extends EntityState {
     long getId();
 
-    <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX;
+    <EX extends Exception> boolean accept(RelationshipVisitor<EX> visitor) throws EX;
 
-    <EX extends Exception> boolean accept( RelationshipVisitorWithProperties<EX> visitor ) throws EX;
+    <EX extends Exception> boolean accept(RelationshipVisitorWithProperties<EX> visitor) throws EX;
 }

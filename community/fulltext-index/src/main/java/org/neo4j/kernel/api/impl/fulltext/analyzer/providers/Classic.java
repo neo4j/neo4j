@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.classic.ClassicAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Classic extends AnalyzerProvider
-{
-    public Classic()
-    {
-        super( "classic" );
+public class Classic extends AnalyzerProvider {
+    public Classic() {
+        super("classic");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new ClassicAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Classic Lucene analyzer. Similar to 'standard', but with worse unicode support.";
     }
 }

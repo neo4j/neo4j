@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.operations;
 
+import static org.neo4j.values.storable.Values.FALSE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.TRUE;
+
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingUnifiedSet;
 import org.neo4j.memory.MemoryTracker;
@@ -33,112 +36,82 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.values.storable.Values.FALSE;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.storable.Values.TRUE;
+public class InCache implements AutoCloseable {
+    private final LinkedHashMap<ListValue, InCacheChecker> seen;
 
-public class InCache implements AutoCloseable
-{
-        private final LinkedHashMap<ListValue,InCacheChecker> seen;
+    public InCache() {
+        this(16);
+    }
 
-        public InCache()
-        {
-            this( 16 );
-        }
+    public InCache(int maxSize) {
+        seen = new LinkedHashMap<>(maxSize >> 2, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<ListValue, InCacheChecker> eldest) {
+                return super.size() > maxSize;
+            }
+        };
+    }
 
-        public InCache( int maxSize )
-        {
-            seen = new LinkedHashMap<>( maxSize >> 2, 0.75f, true )
-            {
-                @Override
-                protected boolean removeEldestEntry( Map.Entry<ListValue,InCacheChecker> eldest )
-                {
-                    return super.size() > maxSize;
-                }
-            };
-        }
-
-    public Value check( AnyValue value, ListValue list, MemoryTracker memoryTracker )
-    {
-        if ( list.isEmpty() )
-        {
+    public Value check(AnyValue value, ListValue list, MemoryTracker memoryTracker) {
+        if (list.isEmpty()) {
             return FALSE;
-        }
-        else if ( value == NO_VALUE )
-        {
+        } else if (value == NO_VALUE) {
             return NO_VALUE;
-        }
-        else
-        {
-            InCacheChecker checker = seen.computeIfAbsent( list,
-                                                           k -> new InCacheChecker( list.iterator(), memoryTracker ) );
-            return checker.check( value );
+        } else {
+            InCacheChecker checker =
+                    seen.computeIfAbsent(list, k -> new InCacheChecker(list.iterator(), memoryTracker));
+            return checker.check(value);
         }
     }
 
     @Override
-    public void close()
-    {
-        seen.values().forEach( InCacheChecker::close );
+    public void close() {
+        seen.values().forEach(InCacheChecker::close);
     }
 
-    private static class InCacheChecker implements AutoCloseable
-    {
+    private static class InCacheChecker implements AutoCloseable {
         private final HeapTrackingUnifiedSet<AnyValue> seen;
         private final Iterator<AnyValue> iterator;
         private boolean seenUndefined; // Not valid for sequence values and maps
 
-        private InCacheChecker( Iterator<AnyValue> iterator, MemoryTracker memoryTracker )
-        {
+        private InCacheChecker(Iterator<AnyValue> iterator, MemoryTracker memoryTracker) {
             this.iterator = iterator;
-            this.seen = HeapTrackingCollections.newSet( memoryTracker );
+            this.seen = HeapTrackingCollections.newSet(memoryTracker);
         }
 
-        private Value check( AnyValue value )
-        {
+        private Value check(AnyValue value) {
             assert value != NO_VALUE;
 
-            if ( seen.contains( value ) )
-            {
+            if (seen.contains(value)) {
                 return TRUE;
             }
 
-            while ( iterator.hasNext() )
-            {
+            while (iterator.hasNext()) {
                 var next = iterator.next();
-                if ( next == NO_VALUE )
-                {
+                if (next == NO_VALUE) {
                     seenUndefined = true;
-                }
-                else
-                {
-                    seen.add( next );
+                } else {
+                    seen.add(next);
 
-                    if ( next.ternaryEquals( value ) == Equality.TRUE )
-                    {
+                    if (next.ternaryEquals(value) == Equality.TRUE) {
                         return TRUE;
                     }
                 }
             }
 
-            if ( seenUndefined )
-            {
+            if (seenUndefined) {
                 return NO_VALUE;
-            }
-            else if ( value instanceof SequenceValue || value instanceof MapValue )
-            {
-                var undefinedEquality = seen.stream().anyMatch( seenValue -> value.ternaryEquals( seenValue ) == Equality.UNDEFINED );
+            } else if (value instanceof SequenceValue || value instanceof MapValue) {
+                var undefinedEquality =
+                        seen.stream().anyMatch(seenValue -> value.ternaryEquals(seenValue) == Equality.UNDEFINED);
                 return undefinedEquality ? NO_VALUE : FALSE;
-            }
-            else
-            {
+            } else {
                 return FALSE;
             }
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             seen.close();
         }
     }

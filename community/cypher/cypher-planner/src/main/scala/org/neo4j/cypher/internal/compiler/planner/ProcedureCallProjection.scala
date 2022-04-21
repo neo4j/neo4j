@@ -23,7 +23,10 @@ import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 
 case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ call.callResults.map { result => result.variable.name }
+
+  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ call.callResults.map { result =>
+    result.variable.name
+  }
 
   override def dependingExpressions = call.callArguments
 

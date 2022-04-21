@@ -19,32 +19,6 @@
  */
 package org.neo4j.configuration;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.io.ByteUnit;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
-
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,283 +35,329 @@ import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 @TestDirectoryExtension
-class GraphDatabaseSettingsTest
-{
+class GraphDatabaseSettingsTest {
     @Inject
     private TestDirectory directory;
 
     @Test
-    void mustHaveNullDefaultPageCacheMemorySizeInBytes()
-    {
-        Long bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
-        assertThat( bytes ).isNull();
+    void mustHaveNullDefaultPageCacheMemorySizeInBytes() {
+        Long bytes = Config.defaults().get(GraphDatabaseSettings.pagecache_memory);
+        assertThat(bytes).isNull();
     }
 
     @Test
-    void pageCacheSettingMustAcceptArbitraryUserSpecifiedValue() throws IOException
-    {
-        assertPageCacheMemorySettingIsParsedAsBytes( "245760" );
-        assertPageCacheMemorySettingIsParsedAsBytes( "2244g" );
-        assertPageCacheMemorySettingIsParsedAsBytes( "8m" );
+    void pageCacheSettingMustAcceptArbitraryUserSpecifiedValue() throws IOException {
+        assertPageCacheMemorySettingIsParsedAsBytes("245760");
+        assertPageCacheMemorySettingIsParsedAsBytes("2244g");
+        assertPageCacheMemorySettingIsParsedAsBytes("8m");
     }
 
-    private void assertPageCacheMemorySettingIsParsedAsBytes( String value ) throws IOException
-    {
-        Path cfg = directory.file( "cfg" );
-        Files.writeString( cfg, GraphDatabaseSettings.pagecache_memory.name() + "=" + value, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING );
-        Config config = Config.newBuilder().fromFile( cfg ).build();
-        assertThat( config.get( GraphDatabaseSettings.pagecache_memory ) ).isEqualTo( ByteUnit.parse( value ) );
+    private void assertPageCacheMemorySettingIsParsedAsBytes(String value) throws IOException {
+        Path cfg = directory.file("cfg");
+        Files.writeString(
+                cfg,
+                GraphDatabaseSettings.pagecache_memory.name() + "=" + value,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING);
+        Config config = Config.newBuilder().fromFile(cfg).build();
+        assertThat(config.get(GraphDatabaseSettings.pagecache_memory)).isEqualTo(ByteUnit.parse(value));
     }
 
     @Test
-    void noDuplicateSettingsAreAllowed() throws Exception
-    {
-        final Map<String,String> fields = new HashMap<>();
-        for ( Field field : GraphDatabaseSettings.class.getDeclaredFields() )
-        {
-            if ( field.getType() == Setting.class )
-            {
-                Setting<?> setting = (Setting<?>) field.get( null );
+    void noDuplicateSettingsAreAllowed() throws Exception {
+        final Map<String, String> fields = new HashMap<>();
+        for (Field field : GraphDatabaseSettings.class.getDeclaredFields()) {
+            if (field.getType() == Setting.class) {
+                Setting<?> setting = (Setting<?>) field.get(null);
 
-                assertFalse( fields.containsKey( setting.name() ),
-                        format( "'%s' in %s has already been defined in %s", setting.name(), field.getName(), fields.get( setting.name() ) ) );
-                fields.put( setting.name(), field.getName() );
+                assertFalse(
+                        fields.containsKey(setting.name()),
+                        format(
+                                "'%s' in %s has already been defined in %s",
+                                setting.name(), field.getName(), fields.get(setting.name())));
+                fields.put(setting.name(), field.getName());
             }
         }
     }
 
     @Test
-    void shouldEnableBoltByDefault()
-    {
+    void shouldEnableBoltByDefault() {
         // given
-        Config config = Config.newBuilder().setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS ).build();
+        Config config = Config.newBuilder()
+                .setDefaults(GraphDatabaseSettings.SERVER_DEFAULTS)
+                .build();
 
         // when
-        SocketAddress listenSocketAddress = config.get( BoltConnector.listen_address );
+        SocketAddress listenSocketAddress = config.get(BoltConnector.listen_address);
 
         // then
-        assertEquals( new SocketAddress( "localhost", 7687 ), listenSocketAddress );
+        assertEquals(new SocketAddress("localhost", 7687), listenSocketAddress);
     }
 
     @Test
-    void shouldBeAbleToOverrideBoltListenAddressesWithJustOneParameter()
-    {
+    void shouldBeAbleToOverrideBoltListenAddressesWithJustOneParameter() {
         // given
         Config config = Config.newBuilder()
-                .set( BoltConnector.enabled, true )
-                .set( BoltConnector.listen_address, new SocketAddress( 8000 ) )
+                .set(BoltConnector.enabled, true)
+                .set(BoltConnector.listen_address, new SocketAddress(8000))
                 .build();
 
         // then
-        assertEquals( new SocketAddress( "localhost", 8000 ), config.get( BoltConnector.listen_address ) );
+        assertEquals(new SocketAddress("localhost", 8000), config.get(BoltConnector.listen_address));
     }
 
     @Test
-    void shouldDeriveBoltListenAddressFromDefaultListenAddress()
-    {
+    void shouldDeriveBoltListenAddressFromDefaultListenAddress() {
         // given
         Config config = Config.newBuilder()
-                .set( BoltConnector.enabled, true )
-                .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" ) )
+                .set(BoltConnector.enabled, true)
+                .set(GraphDatabaseSettings.default_listen_address, new SocketAddress("0.0.0.0"))
                 .build();
 
         // then
-        assertEquals( new SocketAddress( "0.0.0.0", 7687 ), config.get( BoltConnector.listen_address ) );
+        assertEquals(new SocketAddress("0.0.0.0", 7687), config.get(BoltConnector.listen_address));
     }
 
     @Test
-    void shouldDeriveBoltListenAddressFromDefaultListenAddressAndSpecifiedPort()
-    {
+    void shouldDeriveBoltListenAddressFromDefaultListenAddressAndSpecifiedPort() {
         // given
         Config config = Config.newBuilder()
-                .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" ) )
-                .set( BoltConnector.enabled, true )
-                .set( BoltConnector.listen_address, new SocketAddress( 8000 ) )
+                .set(GraphDatabaseSettings.default_listen_address, new SocketAddress("0.0.0.0"))
+                .set(BoltConnector.enabled, true)
+                .set(BoltConnector.listen_address, new SocketAddress(8000))
                 .build();
 
         // then
-        assertEquals( new SocketAddress( "0.0.0.0", 8000 ), config.get( BoltConnector.listen_address ) );
+        assertEquals(new SocketAddress("0.0.0.0", 8000), config.get(BoltConnector.listen_address));
     }
 
     @Test
-    void testServerDefaultSettings()
-    {
+    void testServerDefaultSettings() {
         // given
-        Config config = Config.newBuilder().setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS ).build();
+        Config config = Config.newBuilder()
+                .setDefaults(GraphDatabaseSettings.SERVER_DEFAULTS)
+                .build();
 
         // then
-        assertEquals( new SocketAddress( "localhost", 7474 ), config.get( HttpConnector.listen_address ) );
-        assertEquals( new SocketAddress( "localhost", 7473 ), config.get( HttpsConnector.listen_address ) );
-        assertEquals( new SocketAddress( "localhost", 7687 ), config.get( BoltConnector.listen_address ) );
+        assertEquals(new SocketAddress("localhost", 7474), config.get(HttpConnector.listen_address));
+        assertEquals(new SocketAddress("localhost", 7473), config.get(HttpsConnector.listen_address));
+        assertEquals(new SocketAddress("localhost", 7687), config.get(BoltConnector.listen_address));
 
-        assertTrue( config.get( HttpConnector.enabled ) );
-        assertFalse( config.get( HttpsConnector.enabled ) );
-        assertTrue( config.get( BoltConnector.enabled ) );
+        assertTrue(config.get(HttpConnector.enabled));
+        assertFalse(config.get(HttpsConnector.enabled));
+        assertTrue(config.get(BoltConnector.enabled));
     }
 
     @Test
-    void hasDefaultBookmarkAwaitTimeout()
-    {
+    void hasDefaultBookmarkAwaitTimeout() {
         Config config = Config.defaults();
-        long bookmarkReadyTimeoutMs = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
-        assertEquals( TimeUnit.SECONDS.toMillis( 30 ), bookmarkReadyTimeoutMs );
+        long bookmarkReadyTimeoutMs =
+                config.get(GraphDatabaseSettings.bookmark_ready_timeout).toMillis();
+        assertEquals(TimeUnit.SECONDS.toMillis(30), bookmarkReadyTimeoutMs);
     }
 
     @Test
-    void throwsForIllegalBookmarkAwaitTimeout()
-    {
-        String[] illegalValues = { "0ms", "0s", "10ms", "99ms", "999ms", "42ms" };
+    void throwsForIllegalBookmarkAwaitTimeout() {
+        String[] illegalValues = {"0ms", "0s", "10ms", "99ms", "999ms", "42ms"};
 
-        for ( String value : illegalValues )
-        {
-            assertThrows( IllegalArgumentException.class, () ->
-            {
-                Config config = Config.defaults( GraphDatabaseSettings.bookmark_ready_timeout, DURATION.parse( value ) );
-                config.get( GraphDatabaseSettings.bookmark_ready_timeout );
-            }, "Exception expected for value '" + value + "'" );
+        for (String value : illegalValues) {
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> {
+                        Config config =
+                                Config.defaults(GraphDatabaseSettings.bookmark_ready_timeout, DURATION.parse(value));
+                        config.get(GraphDatabaseSettings.bookmark_ready_timeout);
+                    },
+                    "Exception expected for value '" + value + "'");
         }
     }
 
     @Test
-    void shouldDeriveListenAddressFromDefaultListenAddress()
-    {
+    void shouldDeriveListenAddressFromDefaultListenAddress() {
         // given
         Config config = Config.newBuilder()
-                .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" )  )
-                .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
+                .set(GraphDatabaseSettings.default_listen_address, new SocketAddress("0.0.0.0"))
+                .setDefaults(GraphDatabaseSettings.SERVER_DEFAULTS)
                 .build();
 
         // then
-        assertEquals( "0.0.0.0", config.get( HttpConnector.listen_address ).getHostname() );
-        assertEquals( "0.0.0.0", config.get( HttpsConnector.listen_address ).getHostname() );
-        assertEquals( "0.0.0.0", config.get( BoltConnector.listen_address ).getHostname() );
+        assertEquals("0.0.0.0", config.get(HttpConnector.listen_address).getHostname());
+        assertEquals("0.0.0.0", config.get(HttpsConnector.listen_address).getHostname());
+        assertEquals("0.0.0.0", config.get(BoltConnector.listen_address).getHostname());
     }
 
     @Test
-    void shouldDeriveListenAddressFromDefaultListenAddressAndSpecifiedPorts()
-    {
+    void shouldDeriveListenAddressFromDefaultListenAddressAndSpecifiedPorts() {
         // given
         Config config = Config.newBuilder()
-                .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" ) )
-                .set( HttpConnector.listen_address, new SocketAddress( 8000 ) )
-                .set( HttpsConnector.listen_address, new SocketAddress( 9000 ) )
-                .set( BoltConnector.listen_address, new SocketAddress( 10000 ) )
+                .set(GraphDatabaseSettings.default_listen_address, new SocketAddress("0.0.0.0"))
+                .set(HttpConnector.listen_address, new SocketAddress(8000))
+                .set(HttpsConnector.listen_address, new SocketAddress(9000))
+                .set(BoltConnector.listen_address, new SocketAddress(10000))
                 .build();
 
         // then
-        assertEquals( new SocketAddress( "0.0.0.0", 9000 ), config.get( HttpsConnector.listen_address ) );
-        assertEquals( new SocketAddress( "0.0.0.0", 8000 ), config.get( HttpConnector.listen_address ) );
-        assertEquals( new SocketAddress( "0.0.0.0", 10000 ), config.get( BoltConnector.listen_address ) );
+        assertEquals(new SocketAddress("0.0.0.0", 9000), config.get(HttpsConnector.listen_address));
+        assertEquals(new SocketAddress("0.0.0.0", 8000), config.get(HttpConnector.listen_address));
+        assertEquals(new SocketAddress("0.0.0.0", 10000), config.get(BoltConnector.listen_address));
     }
 
     @Test
-    void validateRetentionPolicy()
-    {
-        String[] validSet =
-                new String[]{"true", "keep_all", "false", "keep_none", "10 files", "10k files", "10K size", "10m txs",
-                        "10M entries", "10g hours", "10G days"};
+    void validateRetentionPolicy() {
+        String[] validSet = new String[] {
+            "true",
+            "keep_all",
+            "false",
+            "keep_none",
+            "10 files",
+            "10k files",
+            "10K size",
+            "10m txs",
+            "10M entries",
+            "10g hours",
+            "10G days"
+        };
 
-        String[] invalidSet = new String[]{"invalid", "all", "10", "10k", "10k a"};
+        String[] invalidSet = new String[] {"invalid", "all", "10", "10k", "10k a"};
 
-        for ( String valid : validSet )
-        {
-            assertEquals( valid, Config.defaults( keep_logical_logs, valid ).get( keep_logical_logs ) );
+        for (String valid : validSet) {
+            assertEquals(valid, Config.defaults(keep_logical_logs, valid).get(keep_logical_logs));
         }
 
-        for ( String invalid : invalidSet )
-        {
-            assertThrows( IllegalArgumentException.class, () -> Config.defaults( keep_logical_logs, invalid ),
-                    "Value \"" + invalid + "\" should be considered invalid" );
-
+        for (String invalid : invalidSet) {
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> Config.defaults(keep_logical_logs, invalid),
+                    "Value \"" + invalid + "\" should be considered invalid");
         }
     }
 
     @Test
-    void transactionSamplingCanBePercentageValues()
-    {
-        IntStream range = IntStream.range( 1, 101 );
-        range.forEach( percentage ->
-        {
-            Config config = Config.defaults( transaction_sampling_percentage, percentage );
-            int configuredSampling = config.get( transaction_sampling_percentage );
-            assertEquals( percentage, configuredSampling );
-        } );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_sampling_percentage, 0 ) );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_sampling_percentage, 101 ) );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_sampling_percentage, 10101 ) );
+    void transactionSamplingCanBePercentageValues() {
+        IntStream range = IntStream.range(1, 101);
+        range.forEach(percentage -> {
+            Config config = Config.defaults(transaction_sampling_percentage, percentage);
+            int configuredSampling = config.get(transaction_sampling_percentage);
+            assertEquals(percentage, configuredSampling);
+        });
+        assertThrows(IllegalArgumentException.class, () -> Config.defaults(transaction_sampling_percentage, 0));
+        assertThrows(IllegalArgumentException.class, () -> Config.defaults(transaction_sampling_percentage, 101));
+        assertThrows(IllegalArgumentException.class, () -> Config.defaults(transaction_sampling_percentage, 10101));
     }
 
     @Test
-    void validateTransactionTracingLevelValues()
-    {
+    void validateTransactionTracingLevelValues() {
         GraphDatabaseSettings.TransactionTracingLevel[] values = GraphDatabaseSettings.TransactionTracingLevel.values();
-        for ( GraphDatabaseSettings.TransactionTracingLevel level : values )
-        {
-            assertEquals( level, Config.defaults( transaction_tracing_level, level ).get( transaction_tracing_level ) );
+        for (GraphDatabaseSettings.TransactionTracingLevel level : values) {
+            assertEquals(
+                    level, Config.defaults(transaction_tracing_level, level).get(transaction_tracing_level));
         }
-        assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().setRaw( Map.of( transaction_tracing_level.name(), "TRACE" ) ).build() );
+        assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
+                .setRaw(Map.of(transaction_tracing_level.name(), "TRACE"))
+                .build());
     }
 
     @Test
-    void configValuesContainsConnectors()
-    {
-        assertThat( GraphDatabaseSettings.SERVER_DEFAULTS.keySet().stream().map( Setting::name ).collect( Collectors.toList() ) ).contains(
-                "dbms.connector.http.enabled", "dbms.connector.https.enabled", "dbms.connector.bolt.enabled", "dbms.security.auth_enabled" );
+    void configValuesContainsConnectors() {
+        assertThat(GraphDatabaseSettings.SERVER_DEFAULTS.keySet().stream()
+                        .map(Setting::name)
+                        .collect(Collectors.toList()))
+                .contains(
+                        "dbms.connector.http.enabled",
+                        "dbms.connector.https.enabled",
+                        "dbms.connector.bolt.enabled",
+                        "dbms.security.auth_enabled");
     }
 
     @Test
-    void testDefaultAddressOnlyAllowsHostname()
-    {
-        assertDoesNotThrow( () -> Config.defaults( default_listen_address, new SocketAddress( "foo" ) ) );
-        assertDoesNotThrow( () -> Config.defaults( default_advertised_address, new SocketAddress( "bar" ) ) );
+    void testDefaultAddressOnlyAllowsHostname() {
+        assertDoesNotThrow(() -> Config.defaults(default_listen_address, new SocketAddress("foo")));
+        assertDoesNotThrow(() -> Config.defaults(default_advertised_address, new SocketAddress("bar")));
 
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_listen_address, new SocketAddress( "foo", 123 ) ) );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_advertised_address, new SocketAddress( "bar", 456 ) ) );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Config.defaults(default_listen_address, new SocketAddress("foo", 123)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Config.defaults(default_advertised_address, new SocketAddress("bar", 456)));
 
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_listen_address, new SocketAddress( 123 ) ) );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_advertised_address, new SocketAddress( 456 ) ) );
+        assertThrows(
+                IllegalArgumentException.class, () -> Config.defaults(default_listen_address, new SocketAddress(123)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Config.defaults(default_advertised_address, new SocketAddress(456)));
     }
 
     @Test
-    void testDefaultAddressMigration()
-    {
+    void testDefaultAddressMigration() {
         String oldDefaultListen = "dbms.connectors.default_listen_address";
         String oldDefaultAdvertised = "dbms.connectors.default_advertised_address";
 
-        var config = Config.newBuilder().setRaw( Map.of( oldDefaultListen, "foo", oldDefaultAdvertised, "bar" ) ).build();
+        var config = Config.newBuilder()
+                .setRaw(Map.of(oldDefaultListen, "foo", oldDefaultAdvertised, "bar"))
+                .build();
 
         var logProvider = new AssertableLogProvider();
-        config.setLogger( logProvider.getLog( Config.class ) );
+        config.setLogger(logProvider.getLog(Config.class));
 
-        assertThrows( IllegalArgumentException.class, () -> config.getSetting( oldDefaultListen ) );
-        assertThrows( IllegalArgumentException.class, () -> config.getSetting( oldDefaultAdvertised ) );
-        assertEquals( new SocketAddress( "foo" ), config.get( default_listen_address ) );
-        assertEquals( new SocketAddress( "bar" ), config.get( default_advertised_address) );
+        assertThrows(IllegalArgumentException.class, () -> config.getSetting(oldDefaultListen));
+        assertThrows(IllegalArgumentException.class, () -> config.getSetting(oldDefaultAdvertised));
+        assertEquals(new SocketAddress("foo"), config.get(default_listen_address));
+        assertEquals(new SocketAddress("bar"), config.get(default_advertised_address));
 
-        var messageMatcher = assertThat( logProvider ).forClass( Config.class ).forLevel( WARN );
-        messageMatcher.containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.", oldDefaultListen,
-                default_listen_address.name() )
-                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.", oldDefaultAdvertised,
-                default_advertised_address.name() );
-
+        var messageMatcher = assertThat(logProvider).forClass(Config.class).forLevel(WARN);
+        messageMatcher
+                .containsMessageWithArguments(
+                        "Use of deprecated setting '%s'. It is replaced by '%s'.",
+                        oldDefaultListen, default_listen_address.name())
+                .containsMessageWithArguments(
+                        "Use of deprecated setting '%s'. It is replaced by '%s'.",
+                        oldDefaultAdvertised, default_advertised_address.name());
     }
 
     @Test
-    void shouldLimitTxSizeIfCore()
-    {
-        assertThrows( IllegalArgumentException.class, () -> Config.newBuilder()
-                .set( GraphDatabaseSettings.mode, GraphDatabaseSettings.Mode.CORE )
-                .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 3 ) ).build() );
+    void shouldLimitTxSizeIfCore() {
+        assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
+                .set(GraphDatabaseSettings.mode, GraphDatabaseSettings.Mode.CORE)
+                .set(GraphDatabaseSettings.memory_transaction_max_size, gibiBytes(3))
+                .build());
     }
 
     @ParameterizedTest
-    @EnumSource( value = GraphDatabaseSettings.Mode.class, mode = EnumSource.Mode.EXCLUDE, names = {"CORE"} )
-    void shouldNotLimitTxSizeIfNotCore( GraphDatabaseSettings.Mode mode )
-    {
+    @EnumSource(
+            value = GraphDatabaseSettings.Mode.class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = {"CORE"})
+    void shouldNotLimitTxSizeIfNotCore(GraphDatabaseSettings.Mode mode) {
         Config.newBuilder()
-                .set( GraphDatabaseSettings.mode, mode )
-                .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 3 ) ).build();
+                .set(GraphDatabaseSettings.mode, mode)
+                .set(GraphDatabaseSettings.memory_transaction_max_size, gibiBytes(3))
+                .build();
     }
 }

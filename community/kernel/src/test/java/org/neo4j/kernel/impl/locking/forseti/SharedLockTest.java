@@ -19,61 +19,56 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.lock.LockType;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-class SharedLockTest
-{
-    @Test
-    void shouldUpgradeToUpdateLock()
-    {
-        // Given
-        ForsetiClient clientA = mock( ForsetiClient.class );
-        ForsetiClient clientB = mock( ForsetiClient.class );
+import org.junit.jupiter.api.Test;
+import org.neo4j.lock.LockType;
 
-        SharedLock lock = new SharedLock( clientA );
-        lock.acquire( clientB );
+class SharedLockTest {
+    @Test
+    void shouldUpgradeToUpdateLock() {
+        // Given
+        ForsetiClient clientA = mock(ForsetiClient.class);
+        ForsetiClient clientB = mock(ForsetiClient.class);
+
+        SharedLock lock = new SharedLock(clientA);
+        lock.acquire(clientB);
 
         // When
-        assertTrue( lock.tryAcquireUpdateLock() );
+        assertTrue(lock.tryAcquireUpdateLock());
 
         // Then
-        assertThat( lock.numberOfHolders() ).isEqualTo( 2 );
-        assertThat( lock.isUpdateLock() ).isEqualTo( true );
-        assertThat( lock.type() ).isEqualTo( LockType.SHARED );
+        assertThat(lock.numberOfHolders()).isEqualTo(2);
+        assertThat(lock.isUpdateLock()).isEqualTo(true);
+        assertThat(lock.type()).isEqualTo(LockType.SHARED);
     }
 
     @Test
-    void shouldReleaseSharedLock()
-    {
+    void shouldReleaseSharedLock() {
         // Given
-        ForsetiClient clientA = mock( ForsetiClient.class );
-        SharedLock lock = new SharedLock( clientA );
+        ForsetiClient clientA = mock(ForsetiClient.class);
+        SharedLock lock = new SharedLock(clientA);
 
         // When
-        assertTrue( lock.release( clientA ) );
+        assertTrue(lock.release(clientA));
 
         // Then
-        assertThat( lock.numberOfHolders() ).isEqualTo( 0 );
-        assertThat( lock.isUpdateLock() ).isEqualTo( false );
+        assertThat(lock.numberOfHolders()).isEqualTo(0);
+        assertThat(lock.isUpdateLock()).isEqualTo(false);
     }
 
     @Test
-    void lockTypeChangesToBeExclusiveAfterUpdate()
-    {
-        var client = mock( ForsetiClient.class );
+    void lockTypeChangesToBeExclusiveAfterUpdate() {
+        var client = mock(ForsetiClient.class);
 
-        SharedLock lock = new SharedLock( client );
-        assertEquals( LockType.SHARED, lock.type() );
+        SharedLock lock = new SharedLock(client);
+        assertEquals(LockType.SHARED, lock.type());
 
-        assertTrue( lock.tryAcquireUpdateLock() );
+        assertTrue(lock.tryAcquireUpdateLock());
 
-        assertEquals( LockType.EXCLUSIVE, lock.type() );
+        assertEquals(LockType.EXCLUSIVE, lock.type());
     }
 }

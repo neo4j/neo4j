@@ -44,6 +44,7 @@ trait StringArgumentsMatcher extends Matcher[InternalPlanDescription] {
  * Asserts that the arguments contain all of what is provided as `expected`
  */
 case class ContainsExactStringArgumentsMatcher(expected: Set[String]) extends StringArgumentsMatcher {
+
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val args = planArgs(plan)
     MatchResult(

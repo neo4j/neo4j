@@ -25,46 +25,37 @@ import java.util.Objects;
 /**
  * Client configured routing information
  */
-public class RoutingContext
-{
+public class RoutingContext {
     private final boolean serverRoutingEnabled;
-    private final Map<String,String> parameters;
+    private final Map<String, String> parameters;
 
-    public RoutingContext( boolean serverRoutingEnabled, Map<String,String> parameters )
-    {
+    public RoutingContext(boolean serverRoutingEnabled, Map<String, String> parameters) {
         this.serverRoutingEnabled = serverRoutingEnabled;
         this.parameters = parameters;
     }
 
-    public boolean isServerRoutingEnabled()
-    {
+    public boolean isServerRoutingEnabled() {
         return serverRoutingEnabled;
     }
 
-    public Map<String,String> getParameters()
-    {
+    public Map<String, String> getParameters() {
         return parameters;
     }
 
     @Override
-    public boolean equals( Object other )
-    {
-        if ( this == other )
-        {
+    public boolean equals(Object other) {
+        if (this == other) {
             return true;
         }
-        if ( other == null || getClass() != other.getClass() )
-        {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
         RoutingContext that = (RoutingContext) other;
-        return serverRoutingEnabled == that.serverRoutingEnabled &&
-               parameters.equals( that.parameters );
+        return serverRoutingEnabled == that.serverRoutingEnabled && parameters.equals(that.parameters);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( serverRoutingEnabled, parameters );
+    public int hashCode() {
+        return Objects.hash(serverRoutingEnabled, parameters);
     }
 }

@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.no.NorwegianAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Norwegian extends AnalyzerProvider
-{
-    public Norwegian()
-    {
-        super( "norwegian" );
+public class Norwegian extends AnalyzerProvider {
+    public Norwegian() {
+        super("norwegian");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new NorwegianAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Norwegian analyzer with stemming and stop word filtering.";
     }
 }

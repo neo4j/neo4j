@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-public final class ExceptionDuringFlipKernelException extends FlipFailedKernelException
-{
-    public ExceptionDuringFlipKernelException( Throwable cause )
-    {
-        super( cause, "Failed to transition index to new context: %s", cause.getMessage() );
+public final class ExceptionDuringFlipKernelException extends FlipFailedKernelException {
+    public ExceptionDuringFlipKernelException(Throwable cause) {
+        super(cause, "Failed to transition index to new context: %s", cause.getMessage());
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.importer;
 
 import java.io.IOException;
 
-interface Importer
-{
+interface Importer {
     void doImport() throws IOException;
 }

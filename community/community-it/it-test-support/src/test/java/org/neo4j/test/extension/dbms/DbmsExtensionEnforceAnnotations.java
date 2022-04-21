@@ -19,24 +19,19 @@
  */
 package org.neo4j.test.extension.dbms;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-public class DbmsExtensionEnforceAnnotations
-{
-    @SuppressWarnings( "unused" )
-    void missing( TestDatabaseManagementServiceBuilder builder )
-    {
-    }
+public class DbmsExtensionEnforceAnnotations {
+    @SuppressWarnings("unused")
+    void missing(TestDatabaseManagementServiceBuilder builder) {}
 
     @Test
-    @DbmsExtension( configurationCallback = "missing" )
-    void missingExtensionAnnotation()
-    {
+    @DbmsExtension(configurationCallback = "missing")
+    void missingExtensionAnnotation() {
         fail();
     }
 }

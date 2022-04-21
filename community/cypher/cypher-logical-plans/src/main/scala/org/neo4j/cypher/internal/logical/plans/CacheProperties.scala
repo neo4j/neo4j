@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * Later accesses to this property can then read from this cache instead of reading from the store.
  */
 case class CacheProperties(override val source: LogicalPlan, properties: Set[LogicalProperty])(implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen) {
+    extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols
 }

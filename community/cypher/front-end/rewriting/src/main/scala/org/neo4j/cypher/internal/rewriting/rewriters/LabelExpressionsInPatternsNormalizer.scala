@@ -24,15 +24,21 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NodePattern
 
 object LabelExpressionsInPatternsNormalizer extends MatchPredicateNormalizer {
+
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
-    case NodePattern(Some(id), Some(expression), _, _) => Vector(extractLabelExpressionPredicates(id, expression, entityType = Some(NODE_TYPE)))
+    case NodePattern(Some(id), Some(expression), _, _) =>
+      Vector(extractLabelExpressionPredicates(id, expression, entityType = Some(NODE_TYPE)))
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(Some(_), Some(_), _, _) => p.copy(labelExpression = None)(p.position)
+    case p @ NodePattern(Some(_), Some(_), _, _) => p.copy(labelExpression = None)(p.position)
   }
 
-  private def extractLabelExpressionPredicates(variable: LogicalVariable, e: LabelExpression, entityType: Option[EntityType]): Expression = {
+  private def extractLabelExpressionPredicates(
+    variable: LogicalVariable,
+    e: LabelExpression,
+    entityType: Option[EntityType]
+  ): Expression = {
     LabelExpressionNormalizer(variable, entityType)(e).asInstanceOf[Expression]
   }
 }

@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Function;
+import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
+import java.util.function.Function;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -35,27 +36,39 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
-
 /**
  * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache}
  * previously populated by f.ex {@link NodeCountsStage}.
  */
-public class RelationshipCountsStage extends Stage
-{
+public class RelationshipCountsStage extends Stage {
     public static final String NAME = "Relationship counts";
 
-    public RelationshipCountsStage( Configuration config, NodeLabelsCache cache, RelationshipStore relationshipStore,
-            int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
-            NumberArrayFactory cacheFactory, ProgressReporter progressReporter, CursorContextFactory contextFactory,
-            Function<CursorContext,StoreCursors> storeCursorsCreator,
-            MemoryTracker memoryTracker )
-    {
-        super( NAME, null, config, Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ),
-                relationshipStore.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, relationshipStore, contextFactory ) );
-        add( new ProcessRelationshipCountsDataStep( control(), cache, config,
-                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, contextFactory, storeCursorsCreator, memoryTracker ) );
+    public RelationshipCountsStage(
+            Configuration config,
+            NodeLabelsCache cache,
+            RelationshipStore relationshipStore,
+            int highLabelId,
+            int highRelationshipTypeId,
+            CountsAccessor.Updater countsUpdater,
+            NumberArrayFactory cacheFactory,
+            ProgressReporter progressReporter,
+            CursorContextFactory contextFactory,
+            Function<CursorContext, StoreCursors> storeCursorsCreator,
+            MemoryTracker memoryTracker) {
+        super(NAME, null, config, Step.RECYCLE_BATCHES);
+        add(new BatchFeedStep(control(), config, allIn(relationshipStore, config), relationshipStore.getRecordSize()));
+        add(new ReadRecordsStep<>(control(), config, false, relationshipStore, contextFactory));
+        add(new ProcessRelationshipCountsDataStep(
+                control(),
+                cache,
+                config,
+                highLabelId,
+                highRelationshipTypeId,
+                countsUpdater,
+                cacheFactory,
+                progressReporter,
+                contextFactory,
+                storeCursorsCreator,
+                memoryTracker));
     }
 }

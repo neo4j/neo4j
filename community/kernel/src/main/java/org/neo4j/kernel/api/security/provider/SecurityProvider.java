@@ -21,8 +21,7 @@ package org.neo4j.kernel.api.security.provider;
 
 import org.neo4j.kernel.api.security.AuthManager;
 
-public interface SecurityProvider
-{
+public interface SecurityProvider {
     AuthManager authManager();
 
     AuthManager inClusterAuthManager();

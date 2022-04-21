@@ -19,9 +19,12 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -29,14 +32,9 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-
 @TestDirectoryExtension
 @DbmsExtension()
-class DbmsRuntimeVersionTest
-{
+class DbmsRuntimeVersionTest {
     @Inject
     private DatabaseManager<DatabaseContext> databaseManager;
 
@@ -46,38 +44,37 @@ class DbmsRuntimeVersionTest
     private GraphDatabaseService systemDb;
 
     @BeforeEach
-    void beforeEach()
-    {
-        systemDb = databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).get().databaseFacade();
+    void beforeEach() {
+        systemDb = databaseManager
+                .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                .get()
+                .databaseFacade();
     }
 
     @Test
-    void testBasicVersionLifecycle()
-    {
+    void testBasicVersionLifecycle() {
         // the system DB will be initialised with the default version for this binary
-        assertSame( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion() );
+        assertSame(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion());
 
         // BTW this should never be manipulated directly outside tests
-        setRuntimeVersion( DbmsRuntimeVersion.V4_2 );
-        assertSame( DbmsRuntimeVersion.V4_2, dbmsRuntimeRepository.getVersion() );
+        setRuntimeVersion(DbmsRuntimeVersion.V4_2);
+        assertSame(DbmsRuntimeVersion.V4_2, dbmsRuntimeRepository.getVersion());
 
-        systemDb.executeTransactionally( "CALL dbms.upgrade()" );
+        systemDb.executeTransactionally("CALL dbms.upgrade()");
 
-        assertSame( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion() );
+        assertSame(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion());
     }
 
-    private void setRuntimeVersion( DbmsRuntimeVersion runtimeVersion )
-    {
-        try ( var tx = systemDb.beginTx();
-              ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL ) )
-        {
-            nodes
-                    .stream()
-                    .forEach( dbmsRuntimeNode -> dbmsRuntimeNode.setProperty( ComponentVersion.DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion() ) );
+    private void setRuntimeVersion(DbmsRuntimeVersion runtimeVersion) {
+        try (var tx = systemDb.beginTx();
+                ResourceIterator<Node> nodes = tx.findNodes(VERSION_LABEL)) {
+            nodes.stream()
+                    .forEach(dbmsRuntimeNode -> dbmsRuntimeNode.setProperty(
+                            ComponentVersion.DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion()));
 
             tx.commit();
         }
 
-        dbmsRuntimeRepository.setVersion( runtimeVersion );
+        dbmsRuntimeRepository.setVersion(runtimeVersion);
     }
 }

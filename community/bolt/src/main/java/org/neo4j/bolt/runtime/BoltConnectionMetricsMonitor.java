@@ -19,8 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
-public interface BoltConnectionMetricsMonitor
-{
+public interface BoltConnectionMetricsMonitor {
     void connectionOpened();
 
     void connectionActivated();
@@ -29,12 +28,11 @@ public interface BoltConnectionMetricsMonitor
 
     void messageReceived();
 
-    void messageProcessingStarted( long queueTime );
+    void messageProcessingStarted(long queueTime);
 
-    void messageProcessingCompleted( long processingTime );
+    void messageProcessingCompleted(long processingTime);
 
     void messageProcessingFailed();
 
     void connectionClosed();
-
 }

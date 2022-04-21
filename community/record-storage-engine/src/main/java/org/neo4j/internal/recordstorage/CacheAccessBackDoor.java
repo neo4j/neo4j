@@ -22,15 +22,14 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.token.api.NamedToken;
 
-public interface CacheAccessBackDoor
-{
-    void addSchemaRule( SchemaRule schemaRule );
+public interface CacheAccessBackDoor {
+    void addSchemaRule(SchemaRule schemaRule);
 
-    void removeSchemaRuleFromCache( long id );
+    void removeSchemaRuleFromCache(long id);
 
-    void addRelationshipTypeToken( NamedToken type );
+    void addRelationshipTypeToken(NamedToken type);
 
-    void addLabelToken( NamedToken labelId );
+    void addLabelToken(NamedToken labelId);
 
-    void addPropertyKeyToken( NamedToken index );
+    void addPropertyKeyToken(NamedToken index);
 }

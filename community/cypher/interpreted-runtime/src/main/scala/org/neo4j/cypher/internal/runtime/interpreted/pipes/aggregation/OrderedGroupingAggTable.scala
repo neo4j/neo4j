@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CypherRowFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedAggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedChunkReceiver
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -43,15 +43,23 @@ import org.neo4j.values.AnyValue
  * @param unorderedGroupingColumns all grouping columns that do not have a provided order
  * @param aggregations all aggregation columns
  */
-class OrderedGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
-                              orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
-                              unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
-                              unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
-                              aggregations: Array[AggregationPipe.AggregatingCol],
-                              state: QueryState,
-                              rowFactory: CypherRowFactory,
-                              operatorId: Id)
-  extends GroupingAggTable(unorderedGroupingColumns, unorderedGroupingFunction, aggregations, state, rowFactory, operatorId) with OrderedChunkReceiver {
+class OrderedGroupingAggTable(
+  orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
+  orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
+  unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
+  unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
+  aggregations: Array[AggregationPipe.AggregatingCol],
+  state: QueryState,
+  rowFactory: CypherRowFactory,
+  operatorId: Id
+) extends GroupingAggTable(
+      unorderedGroupingColumns,
+      unorderedGroupingFunction,
+      aggregations,
+      state,
+      rowFactory,
+      operatorId
+    ) with OrderedChunkReceiver {
 
   private var currentGroupKey: AnyValue = _
 
@@ -84,13 +92,29 @@ class OrderedGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState) =
 }
 
 object OrderedGroupingAggTable {
-  case class Factory(orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
-                     orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
-                     unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
-                     unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
-                     aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
-    override def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver =
-      new OrderedGroupingAggTable(orderedGroupingFunction, orderedGroupingColumns, unorderedGroupingFunction, unorderedGroupingColumns, aggregations, state, rowFactory, operatorId)
+
+  case class Factory(
+    orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
+    orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
+    unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
+    unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
+    aggregations: Array[AggregationPipe.AggregatingCol]
+  ) extends OrderedAggregationTableFactory {
+
+    override def table(
+      state: QueryState,
+      rowFactory: CypherRowFactory,
+      operatorId: Id
+    ): AggregationTable with OrderedChunkReceiver =
+      new OrderedGroupingAggTable(
+        orderedGroupingFunction,
+        orderedGroupingColumns,
+        unorderedGroupingFunction,
+        unorderedGroupingColumns,
+        aggregations,
+        state,
+        rowFactory,
+        operatorId
+      )
   }
 }
-

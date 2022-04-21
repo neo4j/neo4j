@@ -28,8 +28,7 @@ import org.neo4j.graphdb.StringSearchMode;
  * The index type describes the overall behaviour and performance profile of an index.
  */
 @PublicApi
-public enum IndexType
-{
+public enum IndexType {
     /**
      * For B+Tree based indexes. All types of values are indexed and stored in sort-order. This means they are good at all types of exact matching,
      * and range queries. They can also support index-backed order-by.
@@ -42,7 +41,7 @@ public enum IndexType
      *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
      * </ul>
      */
-    @Deprecated( since = "4.4", forRemoval = true )
+    @Deprecated(since = "4.4", forRemoval = true)
     BTREE,
     /**
      * For full-text indexes. These indexes only index string values, and cannot answer all types of queries.

@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -32,16 +31,14 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 
-public class HttpNode implements Node
-{
+public class HttpNode implements Node {
     private final long nodeId;
-    private final Map<String,Object> propertyMap;
+    private final Map<String, Object> propertyMap;
     private final List<Label> labels;
     private final boolean isDeleted;
     private final boolean isFullNode;
 
-    public HttpNode( long id, List<Label> labels, Map<String,Object> propertyMap, boolean isDeleted )
-    {
+    public HttpNode(long id, List<Label> labels, Map<String, Object> propertyMap, boolean isDeleted) {
         this.nodeId = id;
         this.labels = labels;
         this.propertyMap = propertyMap;
@@ -49,8 +46,7 @@ public class HttpNode implements Node
         this.isFullNode = true;
     }
 
-    public HttpNode( long id )
-    {
+    public HttpNode(long id) {
         this.nodeId = id;
         this.labels = new ArrayList<>();
         this.propertyMap = new HashMap<>();
@@ -59,204 +55,162 @@ public class HttpNode implements Node
     }
 
     @Override
-    public long getId()
-    {
+    public long getId() {
         return nodeId;
     }
 
     @Override
-    public String getElementId()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+    public String getElementId() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public boolean hasProperty( String key )
-    {
+    public boolean hasProperty(String key) {
         return false;
     }
 
     @Override
-    public Object getProperty( String key )
-    {
+    public Object getProperty(String key) {
         return null;
     }
 
     @Override
-    public Object getProperty( String key, Object defaultValue )
-    {
+    public Object getProperty(String key, Object defaultValue) {
         return null;
     }
 
     @Override
-    public void setProperty( String key, Object value )
-    {
-
-    }
+    public void setProperty(String key, Object value) {}
 
     @Override
-    public Object removeProperty( String key )
-    {
+    public Object removeProperty(String key) {
         return null;
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
-    {
+    public Iterable<String> getPropertyKeys() {
         return null;
     }
 
     @Override
-    public Map<String,Object> getProperties( String... keys )
-    {
+    public Map<String, Object> getProperties(String... keys) {
         return null;
     }
 
     @Override
-    public Map<String,Object> getAllProperties()
-    {
+    public Map<String, Object> getAllProperties() {
         return propertyMap;
     }
 
     @Override
-    public void delete()
-    {
-
-    }
+    public void delete() {}
 
     @Override
-    public ResourceIterable<Relationship> getRelationships()
-    {
+    public ResourceIterable<Relationship> getRelationships() {
         return null;
     }
 
     @Override
-    public boolean hasRelationship()
-    {
+    public boolean hasRelationship() {
         return false;
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( RelationshipType... types )
-    {
+    public ResourceIterable<Relationship> getRelationships(RelationshipType... types) {
         return null;
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
-    {
+    public ResourceIterable<Relationship> getRelationships(Direction direction, RelationshipType... types) {
         return null;
     }
 
     @Override
-    public boolean hasRelationship( RelationshipType... types )
-    {
+    public boolean hasRelationship(RelationshipType... types) {
         return false;
     }
 
     @Override
-    public boolean hasRelationship( Direction direction, RelationshipType... types )
-    {
+    public boolean hasRelationship(Direction direction, RelationshipType... types) {
         return false;
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( Direction dir )
-    {
+    public ResourceIterable<Relationship> getRelationships(Direction dir) {
         return null;
     }
 
     @Override
-    public boolean hasRelationship( Direction dir )
-    {
+    public boolean hasRelationship(Direction dir) {
         return false;
     }
 
     @Override
-    public Relationship getSingleRelationship( RelationshipType type, Direction dir )
-    {
+    public Relationship getSingleRelationship(RelationshipType type, Direction dir) {
         return null;
     }
 
     @Override
-    public Relationship createRelationshipTo( Node otherNode, RelationshipType type )
-    {
+    public Relationship createRelationshipTo(Node otherNode, RelationshipType type) {
         return null;
     }
 
     @Override
-    public Iterable<RelationshipType> getRelationshipTypes()
-    {
+    public Iterable<RelationshipType> getRelationshipTypes() {
         return null;
     }
 
     @Override
-    public int getDegree()
-    {
+    public int getDegree() {
         return 0;
     }
 
     @Override
-    public int getDegree( RelationshipType type )
-    {
+    public int getDegree(RelationshipType type) {
         return 0;
     }
 
     @Override
-    public int getDegree( Direction direction )
-    {
+    public int getDegree(Direction direction) {
         return 0;
     }
 
     @Override
-    public int getDegree( RelationshipType type, Direction direction )
-    {
+    public int getDegree(RelationshipType type, Direction direction) {
         return 0;
     }
 
     @Override
-    public void addLabel( Label label )
-    {
-
-    }
+    public void addLabel(Label label) {}
 
     @Override
-    public void removeLabel( Label label )
-    {
-
-    }
+    public void removeLabel(Label label) {}
 
     @Override
-    public boolean hasLabel( Label label )
-    {
+    public boolean hasLabel(Label label) {
         return false;
     }
 
     @Override
-    public Iterable<Label> getLabels()
-    {
+    public Iterable<Label> getLabels() {
         return labels;
     }
 
-    public boolean isDeleted()
-    {
+    public boolean isDeleted() {
         return isDeleted;
     }
 
-    public boolean isFullNode()
-    {
+    public boolean isFullNode() {
         return isFullNode;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
+    public boolean equals(Object o) {
         return o instanceof Node && this.getId() == ((Node) o).getId();
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( getId() );
+    public int hashCode() {
+        return Objects.hash(getId());
     }
 }

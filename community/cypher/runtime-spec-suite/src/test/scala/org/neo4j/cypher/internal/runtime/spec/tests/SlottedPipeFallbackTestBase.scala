@@ -32,15 +32,19 @@ import org.neo4j.exceptions.HintException
 abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  protected  val sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    // Set this to allow support for nonPipelined()
-    GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> CypherPipelinedInterpretedPipesFallback.ALL), runtime) {
+  protected val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith(
+        // Set this to allow support for nonPipelined()
+        GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> CypherPipelinedInterpretedPipesFallback.ALL
+      ),
+      runtime
+    ) {
 
   test("should expand into and provide variables for relationship - outgoing") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, (i + 1) % n, "NEXT")
       )
@@ -144,7 +148,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
   test("should do multiple middle correctly and profile") {
     // given
     val n = sizeHint
-    val relTuples = (for(i <- 0 until n) yield {
+    val relTuples = (for (i <- 0 until n) yield {
       Seq(
         (i, (i + 1) % n, "NEXT")
       )
@@ -204,7 +208,8 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"), relationships = Seq("r")) // 4
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, inputValues((0 until sizeHint).map(i => Array[Any](nodes(i), rels(i))): _*))
+    val runtimeResult =
+      profile(logicalQuery, runtime, inputValues((0 until sizeHint).map(i => Array[Any](nodes(i), rels(i))): _*))
     consume(runtimeResult)
 
     val queryProfile = runtimeResult.runtimeResult.queryProfile()

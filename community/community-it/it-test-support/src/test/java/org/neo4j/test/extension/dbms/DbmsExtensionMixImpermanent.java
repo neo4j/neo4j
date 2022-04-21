@@ -19,20 +19,17 @@
  */
 package org.neo4j.test.extension.dbms;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 @ImpermanentDbmsExtension
-public class DbmsExtensionMixImpermanent
-{
+public class DbmsExtensionMixImpermanent {
     @Test
     @DbmsExtension
-    void mixedExtensionAnnotation()
-    {
+    void mixedExtensionAnnotation() {
         fail();
     }
 }

@@ -29,28 +29,47 @@ import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
-case class ExpandAllPipe(source: Pipe,
-                         fromName: String,
-                         relName: String,
-                         toName: String,
-                         dir: SemanticDirection,
-                         types: RelationshipTypes)
-                        (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class ExpandAllPipe(
+  source: Pipe,
+  fromName: String,
+  relName: String,
+  toName: String,
+  dir: SemanticDirection,
+  types: RelationshipTypes
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.flatMap {
       row =>
         row.getByName(fromName) match {
           case n: VirtualNodeValue =>
             val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
-            PrimitiveLongHelper.map(relationships, relId => {
-              val other = relationships.otherNodeId(n.id())
-              rowFactory.copyWith(row, relName, VirtualValues.relationship(relId, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()), toName, VirtualValues.node(other))
+            PrimitiveLongHelper.map(
+              relationships,
+              relId => {
+                val other = relationships.otherNodeId(n.id())
+                rowFactory.copyWith(
+                  row,
+                  relName,
+                  VirtualValues.relationship(
+                    relId,
+                    relationships.startNodeId(),
+                    relationships.endNodeId(),
+                    relationships.typeId()
+                  ),
+                  toName,
+                  VirtualValues.node(other)
+                )
 
-            })
+              }
+            )
           case IsNoValue() => ClosingIterator.empty
 
-          case value => throw new ParameterWrongTypeException(s"Expected to find a node at '$fromName' but found $value instead")
+          case value =>
+            throw new ParameterWrongTypeException(s"Expected to find a node at '$fromName' but found $value instead")
         }
     }
   }

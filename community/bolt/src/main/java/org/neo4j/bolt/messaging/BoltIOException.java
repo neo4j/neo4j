@@ -20,32 +20,26 @@
 package org.neo4j.bolt.messaging;
 
 import java.io.IOException;
-
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class BoltIOException extends IOException implements Status.HasStatus
-{
+public class BoltIOException extends IOException implements Status.HasStatus {
     private final Status status;
 
-    public BoltIOException( Status status, String message, Throwable cause )
-    {
-        super( message, cause );
+    public BoltIOException(Status status, String message, Throwable cause) {
+        super(message, cause);
         this.status = status;
     }
 
-    public BoltIOException( Status status, String message )
-    {
-        this( status, message, null );
+    public BoltIOException(Status status, String message) {
+        this(status, message, null);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 
-    public boolean causesFailureMessage()
-    {
+    public boolean causesFailureMessage() {
         return status != Status.Request.InvalidFormat;
     }
 }

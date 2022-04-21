@@ -20,8 +20,6 @@
 package org.neo4j.values.virtual;
 
 import java.util.List;
-import java.util.Objects;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ValueRepresentation;
 
@@ -30,42 +28,31 @@ import org.neo4j.values.storable.ValueRepresentation;
  * <p>
  * Should we introduce dependency on primitive collections?
  */
-final class ArrayHelpers
-{
-    private ArrayHelpers()
-    {
-    }
+final class ArrayHelpers {
+    private ArrayHelpers() {}
 
-    static boolean containsNull( AnyValue[] values )
-    {
-        for ( AnyValue value : values )
-        {
-            if ( value == null )
-            {
+    static boolean containsNull(AnyValue[] values) {
+        for (AnyValue value : values) {
+            if (value == null) {
                 return true;
             }
         }
         return false;
     }
 
-    static boolean containsNull( List<AnyValue> values )
-    {
-        for ( AnyValue value : values )
-        {
-            if ( value == null )
-            {
+    static boolean containsNull(List<AnyValue> values) {
+        for (AnyValue value : values) {
+            if (value == null) {
                 return true;
             }
         }
         return false;
     }
 
-    static boolean assertValueRepresentation( AnyValue[] values, ValueRepresentation representation )
-    {
+    static boolean assertValueRepresentation(AnyValue[] values, ValueRepresentation representation) {
         ValueRepresentation actual = ValueRepresentation.ANYTHING;
-        for ( AnyValue value : values )
-        {
-            actual = actual.coerce( value.valueRepresentation() );
+        for (AnyValue value : values) {
+            actual = actual.coerce(value.valueRepresentation());
         }
         return actual == representation; // TODO reviewer: should we require anything here?
     }

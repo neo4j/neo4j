@@ -25,20 +25,16 @@ import org.neo4j.time.Clocks;
 /**
  * Convenience around executing and supervising {@link Stage stages}.
  */
-public class ExecutionSupervisors
-{
-    private ExecutionSupervisors()
-    {
-    }
+public class ExecutionSupervisors {
+    private ExecutionSupervisors() {}
 
     /**
      * Using an {@link ExecutionMonitor#INVISIBLE invisible} monitor.
      * @param stage {@link Stage} to supervise.
      * @see #superviseDynamicExecution(ExecutionMonitor, Stage)
      */
-    public static void superviseDynamicExecution( Stage stage )
-    {
-        superviseDynamicExecution( ExecutionMonitor.INVISIBLE, stage );
+    public static void superviseDynamicExecution(Stage stage) {
+        superviseDynamicExecution(ExecutionMonitor.INVISIBLE, stage);
     }
 
     /**
@@ -47,9 +43,8 @@ public class ExecutionSupervisors
      * @param stage {@link Stage} to supervise.
      * @see #superviseDynamicExecution(ExecutionMonitor, Configuration, Stage)
      */
-    public static void superviseDynamicExecution( ExecutionMonitor monitor, Stage stage )
-    {
-        superviseDynamicExecution( monitor, Configuration.DEFAULT, stage );
+    public static void superviseDynamicExecution(ExecutionMonitor monitor, Stage stage) {
+        superviseDynamicExecution(monitor, Configuration.DEFAULT, stage);
     }
 
     /**
@@ -61,9 +56,8 @@ public class ExecutionSupervisors
      *
      * @see #superviseExecution(ExecutionMonitor, Stage)
      */
-    public static void superviseDynamicExecution( ExecutionMonitor monitor, Configuration config, Stage stage )
-    {
-        superviseExecution( withDynamicProcessorAssignment( monitor, config ), stage );
+    public static void superviseDynamicExecution(ExecutionMonitor monitor, Configuration config, Stage stage) {
+        superviseExecution(withDynamicProcessorAssignment(monitor, config), stage);
     }
 
     /**
@@ -73,20 +67,15 @@ public class ExecutionSupervisors
      * @param monitor {@link ExecutionMonitor} to get insight into the execution.
      * @param stage {@link Stage stages} to execute.
      */
-    public static void superviseExecution( ExecutionMonitor monitor, Stage stage )
-    {
-        ExecutionSupervisor supervisor = new ExecutionSupervisor( Clocks.systemClock(), monitor );
+    public static void superviseExecution(ExecutionMonitor monitor, Stage stage) {
+        ExecutionSupervisor supervisor = new ExecutionSupervisor(Clocks.systemClock(), monitor);
         StageExecution execution = null;
-        try
-        {
+        try {
             execution = stage.execute();
-            supervisor.supervise( execution );
-        }
-        finally
-        {
+            supervisor.supervise(execution);
+        } finally {
             stage.close();
-            if ( execution != null )
-            {
+            if (execution != null) {
                 execution.assertHealthy();
             }
         }
@@ -101,9 +90,8 @@ public class ExecutionSupervisors
      * in a {@link Stage} will be the smallest of that value and {@link Runtime#availableProcessors()}.
      * @return the decorated monitor with dynamic processor assignment capabilities.
      */
-    public static ExecutionMonitor withDynamicProcessorAssignment( ExecutionMonitor monitor, Configuration config )
-    {
-        DynamicProcessorAssigner dynamicProcessorAssigner = new DynamicProcessorAssigner( config );
-        return new MultiExecutionMonitor( monitor, dynamicProcessorAssigner );
+    public static ExecutionMonitor withDynamicProcessorAssignment(ExecutionMonitor monitor, Configuration config) {
+        DynamicProcessorAssigner dynamicProcessorAssigner = new DynamicProcessorAssigner(config);
+        return new MultiExecutionMonitor(monitor, dynamicProcessorAssigner);
     }
 }

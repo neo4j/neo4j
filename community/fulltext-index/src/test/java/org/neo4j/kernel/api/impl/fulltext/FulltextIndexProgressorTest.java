@@ -19,142 +19,127 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.values.storable.Value;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-
-class FulltextIndexProgressorTest
-{
+class FulltextIndexProgressorTest {
     @Test
-    void mustSkipAndLimitEntriesPerConstraints()
-    {
+    void mustSkipAndLimitEntriesPerConstraints() {
         StubValuesIterator iterator = new StubValuesIterator();
-        iterator.add( 1, 1.0f );
-        iterator.add( 2, 2.0f );
-        iterator.add( 3, 3.0f );
-        iterator.add( 4, 4.0f );
+        iterator.add(1, 1.0f);
+        iterator.add(2, 2.0f);
+        iterator.add(3, 3.0f);
+        iterator.add(4, 4.0f);
 
-        IndexQueryConstraints constraints = unconstrained().skip( 1 ).limit( 2 );
+        IndexQueryConstraints constraints = unconstrained().skip(1).limit(2);
 
         StubEntityValueClient client = new StubEntityValueClient();
-        FulltextIndexProgressor progressor = new FulltextIndexProgressor( iterator, client, constraints );
+        FulltextIndexProgressor progressor = new FulltextIndexProgressor(iterator, client, constraints);
         boolean keepGoing;
-        do
-        {
+        do {
             keepGoing = progressor.next();
-        }
-        while ( keepGoing );
+        } while (keepGoing);
 
-        assertThat( client.entityIds ).containsExactly( 2L, 3L );
-        assertThat( client.scores ).containsExactly( 2.0f, 3.0f );
+        assertThat(client.entityIds).containsExactly(2L, 3L);
+        assertThat(client.scores).containsExactly(2.0f, 3.0f);
     }
 
     @Test
-    void mustLimitToOneEntryPerConstraints()
-    {
+    void mustLimitToOneEntryPerConstraints() {
         StubValuesIterator iterator = new StubValuesIterator();
-        iterator.add( 1, 1.0f );
-        iterator.add( 2, 2.0f );
-        iterator.add( 3, 3.0f );
-        iterator.add( 4, 4.0f );
+        iterator.add(1, 1.0f);
+        iterator.add(2, 2.0f);
+        iterator.add(3, 3.0f);
+        iterator.add(4, 4.0f);
 
-        IndexQueryConstraints constraints = unconstrained().skip( 1 ).limit( 1 );
+        IndexQueryConstraints constraints = unconstrained().skip(1).limit(1);
 
         StubEntityValueClient client = new StubEntityValueClient();
-        FulltextIndexProgressor progressor = new FulltextIndexProgressor( iterator, client, constraints );
+        FulltextIndexProgressor progressor = new FulltextIndexProgressor(iterator, client, constraints);
         boolean keepGoing;
-        do
-        {
+        do {
             keepGoing = progressor.next();
-        }
-        while ( keepGoing );
+        } while (keepGoing);
 
-        assertThat( client.entityIds ).containsExactly( 2L );
-        assertThat( client.scores ).containsExactly( 2.0f );
+        assertThat(client.entityIds).containsExactly(2L);
+        assertThat(client.scores).containsExactly(2.0f);
     }
 
     @Test
-    void mustReturnNoElementsWhenSkipIsGreaterThanIterator()
-    {
+    void mustReturnNoElementsWhenSkipIsGreaterThanIterator() {
         StubValuesIterator iterator = new StubValuesIterator();
-        iterator.add( 1, 1.0f );
-        iterator.add( 2, 2.0f );
-        iterator.add( 3, 3.0f );
-        iterator.add( 4, 4.0f );
+        iterator.add(1, 1.0f);
+        iterator.add(2, 2.0f);
+        iterator.add(3, 3.0f);
+        iterator.add(4, 4.0f);
 
-        IndexQueryConstraints constraints = unconstrained().skip( 4 ).limit( 1 );
+        IndexQueryConstraints constraints = unconstrained().skip(4).limit(1);
 
         StubEntityValueClient client = new StubEntityValueClient();
-        FulltextIndexProgressor progressor = new FulltextIndexProgressor( iterator, client, constraints );
+        FulltextIndexProgressor progressor = new FulltextIndexProgressor(iterator, client, constraints);
         boolean keepGoing;
-        do
-        {
+        do {
             keepGoing = progressor.next();
-        }
-        while ( keepGoing );
+        } while (keepGoing);
 
-        assertThat( client.entityIds ).isEmpty();
-        assertThat( client.scores ).isEmpty();
+        assertThat(client.entityIds).isEmpty();
+        assertThat(client.scores).isEmpty();
     }
 
     @Test
-    void mustExhaustIteratorWhenLimitIsGreaterThanIterator()
-    {
+    void mustExhaustIteratorWhenLimitIsGreaterThanIterator() {
         StubValuesIterator iterator = new StubValuesIterator();
-        iterator.add( 1, 1.0f );
-        iterator.add( 2, 2.0f );
-        iterator.add( 3, 3.0f );
-        iterator.add( 4, 4.0f );
+        iterator.add(1, 1.0f);
+        iterator.add(2, 2.0f);
+        iterator.add(3, 3.0f);
+        iterator.add(4, 4.0f);
 
-        IndexQueryConstraints constraints = unconstrained().limit( 5 );
+        IndexQueryConstraints constraints = unconstrained().limit(5);
 
         StubEntityValueClient client = new StubEntityValueClient();
-        FulltextIndexProgressor progressor = new FulltextIndexProgressor( iterator, client, constraints );
+        FulltextIndexProgressor progressor = new FulltextIndexProgressor(iterator, client, constraints);
         boolean keepGoing;
-        do
-        {
+        do {
             keepGoing = progressor.next();
-        }
-        while ( keepGoing );
+        } while (keepGoing);
 
-        assertThat( client.entityIds ).containsExactly( 1L, 2L, 3L, 4L );
-        assertThat( client.scores ).containsExactly( 1.0f, 2.0f, 3.0f, 4.0f );
+        assertThat(client.entityIds).containsExactly(1L, 2L, 3L, 4L);
+        assertThat(client.scores).containsExactly(1.0f, 2.0f, 3.0f, 4.0f);
     }
 
-    private static class StubEntityValueClient implements EntityValueClient
-    {
+    private static class StubEntityValueClient implements EntityValueClient {
         private final List<Long> entityIds = new ArrayList<>();
         private final List<Float> scores = new ArrayList<>();
 
         @Override
-        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
-                                boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
-        {
-        }
+        public void initialize(
+                IndexDescriptor descriptor,
+                IndexProgressor progressor,
+                AccessMode accessMode,
+                boolean indexIncludesTransactionState,
+                IndexQueryConstraints constraints,
+                PropertyIndexQuery... query) {}
 
         @Override
-        public boolean acceptEntity( long reference, float score, Value... values )
-        {
-            entityIds.add( reference );
-            scores.add( score );
+        public boolean acceptEntity(long reference, float score, Value... values) {
+            entityIds.add(reference);
+            scores.add(score);
             return true;
         }
 
         @Override
-        public boolean needsValues()
-        {
+        public boolean needsValues() {
             return false;
         }
     }

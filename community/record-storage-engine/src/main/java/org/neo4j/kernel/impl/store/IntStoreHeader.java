@@ -22,29 +22,24 @@ package org.neo4j.kernel.impl.store;
 /**
  * Contains an {@code int} extracted from the first 4 bytes of the first record of a store.
  */
-public class IntStoreHeader implements StoreHeader
-{
+public class IntStoreHeader implements StoreHeader {
     private final int value;
 
-    public IntStoreHeader( int value )
-    {
+    public IntStoreHeader(int value) {
         this.value = value;
     }
 
-    public int value()
-    {
+    public int value() {
         return this.value;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        return o != null && o.getClass().equals( getClass() ) && ((IntStoreHeader) o).value == value;
+    public boolean equals(Object o) {
+        return o != null && o.getClass().equals(getClass()) && ((IntStoreHeader) o).value == value;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return value;
     }
 }

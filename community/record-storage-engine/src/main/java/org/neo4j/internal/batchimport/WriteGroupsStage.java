@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Function;
+import static org.neo4j.internal.batchimport.RelationshipGroupCache.GROUP_ENTRY_SIZE;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 
+import java.util.function.Function;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -28,9 +30,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-
-import static org.neo4j.internal.batchimport.RelationshipGroupCache.GROUP_ENTRY_SIZE;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 
 /**
  * Writes cached {@link RelationshipGroupRecord} from {@link ScanAndCacheGroupsStage} to store. This is done
@@ -44,16 +43,25 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
  * <li>{@link UpdateRecordsStep} writes the relationship group records to store.</li>
  * </ol>
  */
-public class WriteGroupsStage extends Stage
-{
+public class WriteGroupsStage extends Stage {
     public static final String NAME = "Write";
 
-    public WriteGroupsStage( Configuration config, RelationshipGroupCache cache,
-            RecordStore<RelationshipGroupRecord> store, CursorContextFactory contextFactory, Function<CursorContext,StoreCursors> storeCursorsCreator )
-    {
-        super( NAME, null, config, 0 );
-        add( new ReadGroupsFromCacheStep( control(), config, cache.iterator(), GROUP_ENTRY_SIZE ) );
-        add( new EncodeGroupsStep( control(), config, store, contextFactory ) );
-        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence(), contextFactory, storeCursorsCreator, GROUP_CURSOR ) );
+    public WriteGroupsStage(
+            Configuration config,
+            RelationshipGroupCache cache,
+            RecordStore<RelationshipGroupRecord> store,
+            CursorContextFactory contextFactory,
+            Function<CursorContext, StoreCursors> storeCursorsCreator) {
+        super(NAME, null, config, 0);
+        add(new ReadGroupsFromCacheStep(control(), config, cache.iterator(), GROUP_ENTRY_SIZE));
+        add(new EncodeGroupsStep(control(), config, store, contextFactory));
+        add(new UpdateRecordsStep<>(
+                control(),
+                config,
+                store,
+                new StorePrepareIdSequence(),
+                contextFactory,
+                storeCursorsCreator,
+                GROUP_CURSOR));
     }
 }

@@ -21,26 +21,21 @@ package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class RelationshipTypeTokenRecordFormat extends TokenRecordFormat<RelationshipTypeTokenRecord>
-{
-    public RelationshipTypeTokenRecordFormat()
-    {
-        this( false );
+public class RelationshipTypeTokenRecordFormat extends TokenRecordFormat<RelationshipTypeTokenRecord> {
+    public RelationshipTypeTokenRecordFormat() {
+        this(false);
     }
 
-    public RelationshipTypeTokenRecordFormat( boolean pageAligned )
-    {
-        this( StandardFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS, pageAligned );
+    public RelationshipTypeTokenRecordFormat(boolean pageAligned) {
+        this(StandardFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS, pageAligned);
     }
 
-    public RelationshipTypeTokenRecordFormat( int maxIdBits, boolean pageAligned )
-    {
-        super( BASE_RECORD_SIZE, maxIdBits, pageAligned );
+    public RelationshipTypeTokenRecordFormat(int maxIdBits, boolean pageAligned) {
+        super(BASE_RECORD_SIZE, maxIdBits, pageAligned);
     }
 
     @Override
-    public RelationshipTypeTokenRecord newRecord()
-    {
-        return new RelationshipTypeTokenRecord( -1 );
+    public RelationshipTypeTokenRecord newRecord() {
+        return new RelationshipTypeTokenRecord(-1);
     }
 }

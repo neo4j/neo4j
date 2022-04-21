@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public interface IndexMapSnapshotProvider
-{
+public interface IndexMapSnapshotProvider {
     IndexMap indexMapSnapshot();
 }

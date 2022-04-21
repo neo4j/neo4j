@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.helpers.PartialFunctionSupport
 
 case class MatchPredicateNormalizerChain(normalizers: MatchPredicateNormalizer*) extends MatchPredicateNormalizer {
-  val extract = PartialFunctionSupport.reduceAnyDefined(normalizers.map(_.extract))(IndexedSeq.empty[Expression])(_ ++ _)
+
+  val extract =
+    PartialFunctionSupport.reduceAnyDefined(normalizers.map(_.extract))(IndexedSeq.empty[Expression])(_ ++ _)
   val replace = PartialFunctionSupport.composeIfDefined(normalizers.map(_.replace))
 }

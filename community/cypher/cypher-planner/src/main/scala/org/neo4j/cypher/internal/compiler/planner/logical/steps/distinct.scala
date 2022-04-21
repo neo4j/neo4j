@@ -25,28 +25,38 @@ import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object distinct {
-  def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, context: LogicalPlanningContext): LogicalPlan = {
+
+  def apply(
+    plan: LogicalPlan,
+    distinctQueryProjection: DistinctQueryProjection,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
 
     val solver = PatternExpressionSolver.solverFor(plan, context)
-    val groupingExpressionsMap = distinctQueryProjection.groupingExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val groupingExpressionsMap = distinctQueryProjection.groupingExpressions.map { case (k, v) =>
+      (k, solver.solve(v, Some(k)))
+    }
     val rewrittenPlan = solver.rewrittenPlan()
 
     val inputProvidedOrder = context.planningAttributes.providedOrders(plan.id)
-    val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) = leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
+    val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) =
+      leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
 
     if (orderToLeverage.isEmpty) {
       context.logicalPlanProducer.planDistinct(
         rewrittenPlan,
         newGroupingExpressionsMap,
         distinctQueryProjection.groupingExpressions,
-        context)
+        context
+      )
     } else {
       context.logicalPlanProducer.planOrderedDistinct(
         rewrittenPlan,
         newGroupingExpressionsMap,
         orderToLeverage,
         distinctQueryProjection.groupingExpressions,
-        context)
+        context
+      )
     }
   }
 }

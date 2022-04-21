@@ -19,62 +19,48 @@
  */
 package org.neo4j.adversaries;
 
-import java.util.Optional;
-import java.util.Random;
-
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.exception.ExceptionUtils.rethrow;
 
-@SuppressWarnings( "unchecked" )
-public abstract class AbstractAdversary implements Adversary
-{
+import java.util.Optional;
+import java.util.Random;
+
+@SuppressWarnings("unchecked")
+public abstract class AbstractAdversary implements Adversary {
     protected final Random rng;
     private volatile Throwable adversaryException;
 
-    AbstractAdversary()
-    {
+    AbstractAdversary() {
         rng = new Random();
     }
 
-    public void setSeed( long seed )
-    {
-        rng.setSeed( seed );
+    public void setSeed(long seed) {
+        rng.setSeed(seed);
     }
 
-    protected void throwOneOf( Class<? extends Throwable>... types )
-    {
-        int choice = rng.nextInt( types.length );
+    protected void throwOneOf(Class<? extends Throwable>... types) {
+        int choice = rng.nextInt(types.length);
         Class<? extends Throwable> type = types[choice];
-        try
-        {
+        try {
             adversaryException = type.getDeclaredConstructor().newInstance();
-        }
-        catch ( NoSuchMethodException e )
-        {
-            try
-            {
-                adversaryException = type.getDeclaredConstructor( String.class ).newInstance( "Injected failure" );
+        } catch (NoSuchMethodException e) {
+            try {
+                adversaryException = type.getDeclaredConstructor(String.class).newInstance("Injected failure");
+            } catch (Exception e1) {
+                throw failToInjectError(e1);
             }
-            catch ( Exception e1 )
-            {
-                throw failToInjectError( e1 );
-            }
+        } catch (Exception e) {
+            throw failToInjectError(e);
         }
-        catch ( Exception e )
-        {
-            throw failToInjectError( e );
-        }
-        rethrow( adversaryException );
+        rethrow(adversaryException);
     }
 
-    private static AssertionError failToInjectError( Exception e )
-    {
-        return new AssertionError( new Exception( "Failed to instantiate failure", e ) );
+    private static AssertionError failToInjectError(Exception e) {
+        return new AssertionError(new Exception("Failed to instantiate failure", e));
     }
 
     @Override
-    public Optional<Throwable> getLastAdversaryException()
-    {
-        return ofNullable( adversaryException );
+    public Optional<Throwable> getLastAdversaryException() {
+        return ofNullable(adversaryException);
     }
 }

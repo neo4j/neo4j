@@ -22,7 +22,6 @@ package org.neo4j.dbms.archive;
 import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
 import com.github.luben.zstd.util.Native;
-
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,147 +30,116 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
 
-public enum StandardCompressionFormat implements CompressionFormat
-{
-    GZIP
-            {
-                @Override
-                public OutputStream compress( OutputStream stream ) throws IOException
-                {
-                    return new GZIPOutputStream( stream );
-                }
+public enum StandardCompressionFormat implements CompressionFormat {
+    GZIP {
+        @Override
+        public OutputStream compress(OutputStream stream) throws IOException {
+            return new GZIPOutputStream(stream);
+        }
 
-                @Override
-                public InputStream decompress( InputStream stream ) throws IOException
-                {
-                    return new GZIPInputStream( stream );
-                }
-            },
-    ZSTD
-            {
-                // ZSTD does not check a magic header on initialisation, like GZIP does, so we have to do that ourselves.
-                // We use this header for that purpose.
-                private final byte[] HEADER = new byte[] {'z', 's', 't', 'd'};
+        @Override
+        public InputStream decompress(InputStream stream) throws IOException {
+            return new GZIPInputStream(stream);
+        }
+    },
+    ZSTD {
+        // ZSTD does not check a magic header on initialisation, like GZIP does, so we have to do that ourselves.
+        // We use this header for that purpose.
+        private final byte[] HEADER = new byte[] {'z', 's', 't', 'd'};
 
-                @Override
-                public OutputStream compress( OutputStream stream ) throws IOException
-                {
-                    ZstdOutputStream zstdout = new ZstdOutputStream( stream );
-                    zstdout.setChecksum( true );
-                    if ( Runtime.getRuntime().availableProcessors() > 2 )
-                    {
-                        zstdout.setWorkers( Runtime.getRuntime().availableProcessors() );
-                    }
-                    zstdout.write( HEADER );
-                    return zstdout;
-                }
+        @Override
+        public OutputStream compress(OutputStream stream) throws IOException {
+            ZstdOutputStream zstdout = new ZstdOutputStream(stream);
+            zstdout.setChecksum(true);
+            if (Runtime.getRuntime().availableProcessors() > 2) {
+                zstdout.setWorkers(Runtime.getRuntime().availableProcessors());
+            }
+            zstdout.write(HEADER);
+            return zstdout;
+        }
 
-                @Override
-                public InputStream decompress( InputStream stream ) throws IOException
-                {
-                    ZstdInputStream zstdin = new ZstdInputStream( stream );
-                    byte[] header = new byte[HEADER.length];
-                    if ( zstdin.read( header ) != HEADER.length || !Arrays.equals( header, HEADER ) )
-                    {
-                        throw new IOException( "Not in ZSTD format" );
-                    }
-                    return zstdin;
-                }
-            };
+        @Override
+        public InputStream decompress(InputStream stream) throws IOException {
+            ZstdInputStream zstdin = new ZstdInputStream(stream);
+            byte[] header = new byte[HEADER.length];
+            if (zstdin.read(header) != HEADER.length || !Arrays.equals(header, HEADER)) {
+                throw new IOException("Not in ZSTD format");
+            }
+            return zstdin;
+        }
+    };
 
     /**
      * @return {@code true} if the given {@link InputStream} is <em>directly</em> a compressed input stream of this format. With "directly" meaning that the
      * compressed stream is not wrapped in other streams, like buffered or filtering input streams.
      */
-    public boolean isFormat( InputStream stream )
-    {
-        return (this == ZSTD && stream instanceof ZstdInputStream) || (this == GZIP && stream instanceof GZIPInputStream);
+    public boolean isFormat(InputStream stream) {
+        return (this == ZSTD && stream instanceof ZstdInputStream)
+                || (this == GZIP && stream instanceof GZIPInputStream);
     }
 
-    public boolean isFormat( OutputStream stream )
-    {
-        return (this == ZSTD && stream instanceof ZstdOutputStream) || (this == GZIP && stream instanceof GZIPOutputStream);
+    public boolean isFormat(OutputStream stream) {
+        return (this == ZSTD && stream instanceof ZstdOutputStream)
+                || (this == GZIP && stream instanceof GZIPOutputStream);
     }
 
-    public static OutputStream compress( ThrowingSupplier<OutputStream, IOException> streamSupplier, CompressionFormat format ) throws IOException
-    {
+    public static OutputStream compress(
+            ThrowingSupplier<OutputStream, IOException> streamSupplier, CompressionFormat format) throws IOException {
         OutputStream sink = streamSupplier.get();
-        try
-        {
-            return new BufferedOutputStream( format.compress( sink ) );
-        }
-        catch ( IOException ioe )
-        {
-            IOUtils.closeAllSilently( sink );
+        try {
+            return new BufferedOutputStream(format.compress(sink));
+        } catch (IOException ioe) {
+            IOUtils.closeAllSilently(sink);
             throw ioe;
         }
     }
 
-    public static InputStream decompress( ThrowingSupplier<InputStream, IOException> streamSupplier ) throws IOException
-    {
-        if ( selectCompressionFormat().equals( ZSTD ) )
-        {
-            //ZSTD is available, try it.
-            try
-            {
-                return decompress( streamSupplier, ZSTD );
-            }
-            catch ( IOException zstdIOe )
-            {
-                //It failed, lets try GZIP
-                try
-                {
-                    return decompress( streamSupplier, GZIP );
-                }
-                catch ( IOException gzipIOe )
-                {
-                    throw Exceptions.chain( zstdIOe, gzipIOe );
+    public static InputStream decompress(ThrowingSupplier<InputStream, IOException> streamSupplier) throws IOException {
+        if (selectCompressionFormat().equals(ZSTD)) {
+            // ZSTD is available, try it.
+            try {
+                return decompress(streamSupplier, ZSTD);
+            } catch (IOException zstdIOe) {
+                // It failed, lets try GZIP
+                try {
+                    return decompress(streamSupplier, GZIP);
+                } catch (IOException gzipIOe) {
+                    throw Exceptions.chain(zstdIOe, gzipIOe);
                 }
             }
         }
-        return decompress( streamSupplier, GZIP );
+        return decompress(streamSupplier, GZIP);
     }
 
-    private static InputStream decompress( ThrowingSupplier<InputStream, IOException> streamSupplier, CompressionFormat format ) throws IOException
-    {
+    private static InputStream decompress(
+            ThrowingSupplier<InputStream, IOException> streamSupplier, CompressionFormat format) throws IOException {
         InputStream source = streamSupplier.get();
-        try
-        {
-            return format.decompress( source );
-        }
-        catch ( IOException ioe )
-        {
-            IOUtils.closeAllSilently( source );
+        try {
+            return format.decompress(source);
+        } catch (IOException ioe) {
+            IOUtils.closeAllSilently(source);
             throw ioe;
         }
     }
 
-    public static StandardCompressionFormat selectCompressionFormat()
-    {
-        return selectCompressionFormat( null );
+    public static StandardCompressionFormat selectCompressionFormat() {
+        return selectCompressionFormat(null);
     }
 
-    public static StandardCompressionFormat selectCompressionFormat( PrintStream output )
-    {
-        try
-        {
+    public static StandardCompressionFormat selectCompressionFormat(PrintStream output) {
+        try {
             Native.load(); // Try to load ZSTD
-            if ( Native.isLoaded() )
-            {
+            if (Native.isLoaded()) {
                 return ZSTD;
             }
-        }
-        catch ( Throwable t )
-        {
-            if ( output != null )
-            {
-                output.println( "Failed to load " + ZSTD.name() + ": " + t.getMessage() );
-                output.println( "Fallback to " + GZIP.name() );
+        } catch (Throwable t) {
+            if (output != null) {
+                output.println("Failed to load " + ZSTD.name() + ": " + t.getMessage());
+                output.println("Fallback to " + GZIP.name());
             }
         }
         return GZIP; // fallback

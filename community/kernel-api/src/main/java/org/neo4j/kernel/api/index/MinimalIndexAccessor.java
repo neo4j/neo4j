@@ -24,10 +24,8 @@ import java.io.UncheckedIOException;
 /**
  * Minimal index accessor used for dropping failed indexes and provide index configuration.
  */
-public interface MinimalIndexAccessor extends IndexConfigProvider
-{
-    MinimalIndexAccessor EMPTY = () -> {
-    };
+public interface MinimalIndexAccessor extends IndexConfigProvider {
+    MinimalIndexAccessor EMPTY = () -> {};
 
     /**
      * Deletes this index as well as closes all used external resources.

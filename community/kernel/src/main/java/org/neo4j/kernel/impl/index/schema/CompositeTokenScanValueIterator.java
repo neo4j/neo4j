@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
-
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.collection.PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.ResourceUtils;
@@ -35,8 +33,8 @@ import org.neo4j.graphdb.ResourceUtils;
  * <p>
  * Source iterators must be sorted in ascending order.
  */
-public class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
-{
+public class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIterator
+        implements PrimitiveLongResourceIterator {
     private final PriorityQueue<IdAndSource> sortedIterators = new PriorityQueue<>();
     private final int atLeastNumberOfTokens;
     private final List<PrimitiveLongResourceIterator> toClose;
@@ -48,102 +46,83 @@ public class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIt
      * @param iterators {@link LongIterator iterators} to merge.
      * @param trueForAll if {@code true} using {@code AND} merging, otherwise {@code OR} merging.
      */
-    public CompositeTokenScanValueIterator( List<PrimitiveLongResourceIterator> iterators, boolean trueForAll )
-    {
+    public CompositeTokenScanValueIterator(List<PrimitiveLongResourceIterator> iterators, boolean trueForAll) {
         this.toClose = iterators;
         this.atLeastNumberOfTokens = trueForAll ? iterators.size() : 1;
-        for ( LongIterator iterator : iterators )
-        {
-            if ( iterator.hasNext() )
-            {
-                sortedIterators.add( new IdAndSource( iterator.next(), iterator ) );
+        for (LongIterator iterator : iterators) {
+            if (iterator.hasNext()) {
+                sortedIterators.add(new IdAndSource(iterator.next(), iterator));
             }
         }
     }
 
     @Override
-    protected boolean fetchNext()
-    {
+    protected boolean fetchNext() {
         int numberOfTokens = 0;
         long next = last;
-        while ( next == last || numberOfTokens < atLeastNumberOfTokens )
-        {
+        while (next == last || numberOfTokens < atLeastNumberOfTokens) {
             IdAndSource idAndSource = sortedIterators.poll();
-            if ( idAndSource == null )
-            {
+            if (idAndSource == null) {
                 return false;
             }
 
-            if ( idAndSource.latestReturned == next )
-            {
+            if (idAndSource.latestReturned == next) {
                 numberOfTokens++;
-            }
-            else
-            {
+            } else {
                 next = idAndSource.latestReturned;
                 numberOfTokens = 1;
             }
 
-            if ( idAndSource.source.hasNext() )
-            {
+            if (idAndSource.source.hasNext()) {
                 idAndSource.latestReturned = idAndSource.source.next();
-                sortedIterators.offer( idAndSource );
+                sortedIterators.offer(idAndSource);
             }
         }
         last = next;
-        next( last );
+        next(last);
         return true;
     }
 
     @Override
-    public void close()
-    {
-        ResourceUtils.closeAll( toClose );
+    public void close() {
+        ResourceUtils.closeAll(toClose);
         sortedIterators.clear();
         toClose.clear();
     }
 
-    private static final class IdAndSource implements Comparable<IdAndSource>
-    {
+    private static final class IdAndSource implements Comparable<IdAndSource> {
         private long latestReturned;
         private final LongIterator source;
 
-        private IdAndSource( long latestReturned, LongIterator source )
-        {
+        private IdAndSource(long latestReturned, LongIterator source) {
             this.latestReturned = latestReturned;
             this.source = source;
         }
 
         @Override
-        public int compareTo( IdAndSource o )
-        {
-            int keyComparison = Long.compare( latestReturned, o.latestReturned );
-            if ( keyComparison == 0 )
-            {
-                return Integer.compare( source.hashCode(), o.source.hashCode() );
+        public int compareTo(IdAndSource o) {
+            int keyComparison = Long.compare(latestReturned, o.latestReturned);
+            if (keyComparison == 0) {
+                return Integer.compare(source.hashCode(), o.source.hashCode());
             }
             return keyComparison;
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             IdAndSource that = (IdAndSource) o;
-            return compareTo( that ) == 0;
+            return compareTo(that) == 0;
         }
 
         @Override
-        public int hashCode()
-        {
-            return Objects.hash( latestReturned, source );
+        public int hashCode() {
+            return Objects.hash(latestReturned, source);
         }
     }
 }

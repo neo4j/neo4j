@@ -26,21 +26,20 @@ import org.neo4j.values.AnyValue;
  * in the order they were given. This means you may pass the same callback multiple times without waiting for a
  * reply, and are guaranteed that your callbacks will be called in order.
  */
-public interface BoltResponseHandler
-{
-    //todo method returns true if there are more records to return
-    boolean onPullRecords( BoltResult result, long size ) throws Throwable;
+public interface BoltResponseHandler {
+    // todo method returns true if there are more records to return
+    boolean onPullRecords(BoltResult result, long size) throws Throwable;
 
-    //todo method returns true if there are more records to return
-    boolean onDiscardRecords( BoltResult result, long size ) throws Throwable;
+    // todo method returns true if there are more records to return
+    boolean onDiscardRecords(BoltResult result, long size) throws Throwable;
 
-    void onMetadata( String key, AnyValue value );
+    void onMetadata(String key, AnyValue value);
 
     /** Called when the state machine ignores an operation, because it is waiting for an error to be acknowledged */
     void markIgnored();
 
     /** Called zero or more times if there are failures */
-    void markFailed( Neo4jError error );
+    void markFailed(Neo4jError error);
 
     /** Called when the operation is completed. */
     void onFinish();

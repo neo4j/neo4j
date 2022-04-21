@@ -22,24 +22,20 @@ package org.neo4j.kernel.database;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 
-class DatabaseTransactionLogModule
-{
+class DatabaseTransactionLogModule {
     private final CheckPointer checkPointer;
     private final TransactionAppender appender;
 
-    DatabaseTransactionLogModule( CheckPointer checkPointer, TransactionAppender appender )
-    {
+    DatabaseTransactionLogModule(CheckPointer checkPointer, TransactionAppender appender) {
         this.checkPointer = checkPointer;
         this.appender = appender;
     }
 
-    CheckPointer checkPointer()
-    {
+    CheckPointer checkPointer() {
         return checkPointer;
     }
 
-    TransactionAppender transactionAppender()
-    {
+    TransactionAppender transactionAppender() {
         return appender;
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.shell;
 
 import java.util.List;
-
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
@@ -28,8 +27,7 @@ import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 /**
  * An interface which executes statements
  */
-public interface StatementExecuter
-{
+public interface StatementExecuter {
 
     /**
      * Execute a statement
@@ -38,9 +36,9 @@ public interface StatementExecuter
      * @throws ExitException    if a command to exit was executed
      * @throws CommandException if something went wrong
      */
-    void execute( ParsedStatement statement ) throws ExitException, CommandException;
+    void execute(ParsedStatement statement) throws ExitException, CommandException;
 
-    void execute( List<ParsedStatement> statements ) throws ExitException, CommandException;
+    void execute(List<ParsedStatement> statements) throws ExitException, CommandException;
 
     /**
      * Stops any running statements

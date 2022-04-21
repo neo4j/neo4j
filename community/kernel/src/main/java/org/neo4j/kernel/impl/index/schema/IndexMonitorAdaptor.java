@@ -27,54 +27,56 @@ import org.neo4j.kernel.api.index.IndexProvider;
  * Adapts an {@link IndexProvider.Monitor index monitor} to behave like a {@link GBPTree.Monitor gbptree monitor}
  * by relaying the calls together with index information and also duplicate call to delegate {@link GBPTree.Monitor}.
  */
-class IndexMonitorAdaptor extends GBPTree.Monitor.Delegate
-{
+class IndexMonitorAdaptor extends GBPTree.Monitor.Delegate {
     private final IndexProvider.Monitor indexMonitor;
     private final IndexFiles indexFiles;
     private final IndexDescriptor descriptor;
 
-    IndexMonitorAdaptor( GBPTree.Monitor treeMonitor, IndexProvider.Monitor indexMonitor, IndexFiles indexFiles,
-            IndexDescriptor descriptor )
-    {
-        super( treeMonitor );
+    IndexMonitorAdaptor(
+            GBPTree.Monitor treeMonitor,
+            IndexProvider.Monitor indexMonitor,
+            IndexFiles indexFiles,
+            IndexDescriptor descriptor) {
+        super(treeMonitor);
         this.indexMonitor = indexMonitor;
         this.indexFiles = indexFiles;
         this.descriptor = descriptor;
     }
 
     @Override
-    public void cleanupRegistered()
-    {
-        indexMonitor.recoveryCleanupRegistered( indexFiles.getStoreFile(), descriptor );
+    public void cleanupRegistered() {
+        indexMonitor.recoveryCleanupRegistered(indexFiles.getStoreFile(), descriptor);
         super.cleanupRegistered();
     }
 
     @Override
-    public void cleanupStarted()
-    {
-        indexMonitor.recoveryCleanupStarted( indexFiles.getStoreFile(), descriptor );
+    public void cleanupStarted() {
+        indexMonitor.recoveryCleanupStarted(indexFiles.getStoreFile(), descriptor);
         super.cleanupStarted();
     }
 
     @Override
-    public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
-    {
-        indexMonitor.recoveryCleanupFinished( indexFiles.getStoreFile(), descriptor,
-                numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
-        super.cleanupFinished( numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
+    public void cleanupFinished(
+            long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis) {
+        indexMonitor.recoveryCleanupFinished(
+                indexFiles.getStoreFile(),
+                descriptor,
+                numberOfPagesVisited,
+                numberOfTreeNodes,
+                numberOfCleanedCrashPointers,
+                durationMillis);
+        super.cleanupFinished(numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis);
     }
 
     @Override
-    public void cleanupClosed()
-    {
-        indexMonitor.recoveryCleanupClosed( indexFiles.getStoreFile(), descriptor );
+    public void cleanupClosed() {
+        indexMonitor.recoveryCleanupClosed(indexFiles.getStoreFile(), descriptor);
         super.cleanupClosed();
     }
 
     @Override
-    public void cleanupFailed( Throwable throwable )
-    {
-        indexMonitor.recoveryCleanupFailed( indexFiles.getStoreFile(), descriptor, throwable );
-        super.cleanupFailed( throwable );
+    public void cleanupFailed(Throwable throwable) {
+        indexMonitor.recoveryCleanupFailed(indexFiles.getStoreFile(), descriptor, throwable);
+        super.cleanupFailed(throwable);
     }
 }

@@ -28,8 +28,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * @param <Cursor>
  *         the type of cursor this object initializes.
  */
-public interface Scan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
-{
+public interface Scan<Cursor extends org.neo4j.internal.kernel.api.Cursor> {
     /**
      * Will attempt to reserve a batch to scan.
      * <p>
@@ -64,5 +63,5 @@ public interface Scan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
      * @param accessMode security store access mode
      * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
      */
-    boolean reserveBatch( Cursor cursor, int sizeHint, CursorContext cursorContext, AccessMode accessMode );
+    boolean reserveBatch(Cursor cursor, int sizeHint, CursorContext cursorContext, AccessMode accessMode);
 }

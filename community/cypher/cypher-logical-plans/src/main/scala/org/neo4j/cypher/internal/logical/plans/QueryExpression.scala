@@ -50,7 +50,8 @@ case class CompositeQueryExpression[T](inner: Seq[QueryExpression[T]]) extends Q
 
   def expressions: Seq[T] = inner.flatMap(_.expressions)
 
-  def exactOnly: Boolean = inner.forall(p => p.isInstanceOf[SingleQueryExpression[T]] || p.isInstanceOf[ManyQueryExpression[T]])
+  def exactOnly: Boolean =
+    inner.forall(p => p.isInstanceOf[SingleQueryExpression[T]] || p.isInstanceOf[ManyQueryExpression[T]])
 }
 
 case class ExistenceQueryExpression[T]() extends QueryExpression[T] {

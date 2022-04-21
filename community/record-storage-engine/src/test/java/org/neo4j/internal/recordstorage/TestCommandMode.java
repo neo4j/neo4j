@@ -19,20 +19,18 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.recordstorage.Command.Mode.fromRecordState;
 
-class TestCommandMode
-{
-    @Test
-    void shouldInferCorrectModes()
-    {
-        assertThat( fromRecordState( true, true ) ).isEqualTo( Command.Mode.CREATE );
-        assertThat( fromRecordState( false, true ) ).isEqualTo( Command.Mode.UPDATE );
+import org.junit.jupiter.api.Test;
 
-        assertThat( fromRecordState( false, false ) ).isEqualTo( Command.Mode.DELETE );
-        assertThat( fromRecordState( true, false ) ).isEqualTo( Command.Mode.DELETE );
+class TestCommandMode {
+    @Test
+    void shouldInferCorrectModes() {
+        assertThat(fromRecordState(true, true)).isEqualTo(Command.Mode.CREATE);
+        assertThat(fromRecordState(false, true)).isEqualTo(Command.Mode.UPDATE);
+
+        assertThat(fromRecordState(false, false)).isEqualTo(Command.Mode.DELETE);
+        assertThat(fromRecordState(true, false)).isEqualTo(Command.Mode.DELETE);
     }
 }

@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import static java.util.Collections.emptyList;
+
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -31,71 +32,57 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.emptyList;
+class RelationshipStateImpl extends EntityStateImpl implements RelationshipState {
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(RelationshipStateImpl.class);
 
-class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
-{
-    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RelationshipStateImpl.class );
-
-    static final RelationshipState EMPTY = new RelationshipState()
-    {
+    static final RelationshipState EMPTY = new RelationshipState() {
         @Override
-        public long getId()
-        {
-            throw new UnsupportedOperationException( "id not defined" );
+        public long getId() {
+            throw new UnsupportedOperationException("id not defined");
         }
 
         @Override
-        public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor )
-        {
+        public <EX extends Exception> boolean accept(RelationshipVisitor<EX> visitor) {
             return false;
         }
 
         @Override
-        public <EX extends Exception> boolean accept( RelationshipVisitorWithProperties<EX> visitor ) throws EX
-        {
+        public <EX extends Exception> boolean accept(RelationshipVisitorWithProperties<EX> visitor) throws EX {
             return false;
         }
 
         @Override
-        public Iterable<StorageProperty> addedProperties()
-        {
+        public Iterable<StorageProperty> addedProperties() {
             return emptyList();
         }
 
         @Override
-        public Iterable<StorageProperty> changedProperties()
-        {
+        public Iterable<StorageProperty> changedProperties() {
             return emptyList();
         }
 
         @Override
-        public IntIterable removedProperties()
-        {
+        public IntIterable removedProperties() {
             return IntSets.immutable.empty();
         }
 
         @Override
-        public Iterable<StorageProperty> addedAndChangedProperties()
-        {
+        public Iterable<StorageProperty> addedAndChangedProperties() {
             return emptyList();
         }
 
         @Override
-        public boolean hasPropertyChanges()
-        {
+        public boolean hasPropertyChanges() {
             return false;
         }
 
         @Override
-        public boolean isPropertyChangedOrRemoved( int propertyKey )
-        {
+        public boolean isPropertyChangedOrRemoved(int propertyKey) {
             return false;
         }
 
         @Override
-        public Value propertyValue( int propertyKey )
-        {
+        public Value propertyValue(int propertyKey) {
             return null;
         }
     };
@@ -105,48 +92,51 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
     private final int type;
     private boolean deleted;
 
-    static RelationshipStateImpl createRelationshipStateImpl( long id, int type, long startNode, long endNode, CollectionsFactory collectionsFactory,
-            MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap( SHALLOW_SIZE );
-        return new RelationshipStateImpl( id, type, startNode, endNode, collectionsFactory, memoryTracker );
+    static RelationshipStateImpl createRelationshipStateImpl(
+            long id,
+            int type,
+            long startNode,
+            long endNode,
+            CollectionsFactory collectionsFactory,
+            MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(SHALLOW_SIZE);
+        return new RelationshipStateImpl(id, type, startNode, endNode, collectionsFactory, memoryTracker);
     }
 
-    private RelationshipStateImpl( long id, int type, long startNode, long endNode, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
-    {
-        super( id, collectionsFactory, memoryTracker );
+    private RelationshipStateImpl(
+            long id,
+            int type,
+            long startNode,
+            long endNode,
+            CollectionsFactory collectionsFactory,
+            MemoryTracker memoryTracker) {
+        super(id, collectionsFactory, memoryTracker);
         this.type = type;
         this.startNode = startNode;
         this.endNode = endNode;
     }
 
-    void setDeleted()
-    {
+    void setDeleted() {
         this.deleted = true;
     }
 
-    boolean isDeleted()
-    {
+    boolean isDeleted() {
         return this.deleted;
     }
 
     @Override
-    public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX
-    {
-        if ( type != -1 )
-        {
-            visitor.visit( getId(), type, startNode, endNode );
+    public <EX extends Exception> boolean accept(RelationshipVisitor<EX> visitor) throws EX {
+        if (type != -1) {
+            visitor.visit(getId(), type, startNode, endNode);
             return true;
         }
         return false;
     }
 
     @Override
-    public <EX extends Exception> boolean accept( RelationshipVisitorWithProperties<EX> visitor ) throws EX
-    {
-        if ( type != -1 )
-        {
-            visitor.visit( getId(), type, startNode, endNode, addedProperties() );
+    public <EX extends Exception> boolean accept(RelationshipVisitorWithProperties<EX> visitor) throws EX {
+        if (type != -1) {
+            visitor.visit(getId(), type, startNode, endNode, addedProperties());
             return true;
         }
         return false;

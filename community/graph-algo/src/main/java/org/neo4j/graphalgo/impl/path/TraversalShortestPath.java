@@ -19,15 +19,15 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+import static org.neo4j.graphdb.traversal.SideSelectorPolicies.LEVEL_STOP_DESCENT_ON_RESULT;
+import static org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH;
+
 import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-
-import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.graphdb.traversal.SideSelectorPolicies.LEVEL_STOP_DESCENT_ON_RESULT;
-import static org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH;
 
 /**
  * Implements shortest path algorithm, see {@link ShortestPath}, but using
@@ -36,20 +36,18 @@ import static org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH;
  * It's still experimental and slightly slower than the highly optimized
  * {@link ShortestPath} implementation.
  */
-public class TraversalShortestPath extends TraversalPathFinder
-{
+public class TraversalShortestPath extends TraversalPathFinder {
     private final EvaluationContext context;
     private final PathExpander expander;
     private final int maxDepth;
     private final Integer maxResultCount;
 
-    public TraversalShortestPath( EvaluationContext context, PathExpander expander, int maxDepth )
-    {
-        this( context, expander, maxDepth, null );
+    public TraversalShortestPath(EvaluationContext context, PathExpander expander, int maxDepth) {
+        this(context, expander, maxDepth, null);
     }
 
-    public TraversalShortestPath( EvaluationContext context, PathExpander expander, int maxDepth, Integer maxResultCount )
-    {
+    public TraversalShortestPath(
+            EvaluationContext context, PathExpander expander, int maxDepth, Integer maxResultCount) {
         this.context = context;
         this.expander = expander;
         this.maxDepth = maxDepth;
@@ -57,19 +55,20 @@ public class TraversalShortestPath extends TraversalPathFinder
     }
 
     @Override
-    protected Traverser instantiateTraverser( Node start, Node end )
-    {
+    protected Traverser instantiateTraverser(Node start, Node end) {
         var transaction = context.transaction();
-        TraversalDescription sideBase = transaction.traversalDescription().breadthFirst().uniqueness( NODE_PATH );
-        return transaction.bidirectionalTraversalDescription().mirroredSides( sideBase.expand( expander ) )
-            .sideSelector( LEVEL_STOP_DESCENT_ON_RESULT, maxDepth )
-            .collisionEvaluator( toDepth( maxDepth ) )
-            .traverse( start, end );
+        TraversalDescription sideBase =
+                transaction.traversalDescription().breadthFirst().uniqueness(NODE_PATH);
+        return transaction
+                .bidirectionalTraversalDescription()
+                .mirroredSides(sideBase.expand(expander))
+                .sideSelector(LEVEL_STOP_DESCENT_ON_RESULT, maxDepth)
+                .collisionEvaluator(toDepth(maxDepth))
+                .traverse(start, end);
     }
 
     @Override
-    protected Integer maxResultCount()
-    {
+    protected Integer maxResultCount() {
         return maxResultCount;
     }
 }

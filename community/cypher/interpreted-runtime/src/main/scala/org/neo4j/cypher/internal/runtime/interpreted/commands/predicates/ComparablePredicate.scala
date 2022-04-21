@@ -34,7 +34,7 @@ import org.neo4j.values.Equality
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values.NO_VALUE
 
-abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
+sealed abstract class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
   def comparator: (AnyValue, AnyValue) => Value
 
@@ -42,9 +42,9 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     val l = left(ctx, state)
     val r = right(ctx, state)
     comparator(l, r) match {
-      case IsTrueValue() => Some(true)
+      case IsTrueValue()  => Some(true)
       case IsFalseValue() => Some(false)
-      case IsNoValue() => None
+      case IsNoValue()    => None
     }
   }
 
@@ -56,12 +56,13 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
 
   override def arguments: Seq[Expression] = Seq(left, right)
 
-  def other(e: Expression): Expression = if (e != left) {
-    require(e == right, "This expression is neither LHS nor RHS")
-    left
-  } else {
-    right
-  }
+  def other(e: Expression): Expression =
+    if (e != left) {
+      require(e == right, "This expression is neither LHS nor RHS")
+      left
+    } else {
+      right
+    }
 }
 
 case class Equals(a: Expression, b: Expression) extends Predicate {
@@ -78,8 +79,8 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
     l.ternaryEquals(r) match {
       case Equality.UNDEFINED => None
-      case Equality.FALSE => Some(false)
-      case Equality.TRUE => Some(true)
+      case Equality.FALSE     => Some(false)
+      case Equality.TRUE      => Some(true)
     }
   }
 
@@ -87,7 +88,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
   override def containsIsNull: Boolean = (a, b) match {
     case (Variable(_), Literal(NO_VALUE)) => true
-    case _ => false
+    case _                                => false
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(Equals(a.rewrite(f), b.rewrite(f)))

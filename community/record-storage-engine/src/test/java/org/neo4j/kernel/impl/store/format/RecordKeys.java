@@ -28,8 +28,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public interface RecordKeys
-{
+public interface RecordKeys {
     RecordKey<NodeRecord> node();
 
     RecordKey<RelationshipRecord> relationship();

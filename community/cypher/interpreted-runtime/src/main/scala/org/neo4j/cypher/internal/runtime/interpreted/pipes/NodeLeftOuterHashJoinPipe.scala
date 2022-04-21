@@ -30,18 +30,22 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
-                                     lhs: Pipe,
-                                     rhs: Pipe,
-                                     nullableVariables: Set[String])
-                                    (val id: Id = Id.INVALID_ID)
-  extends NodeOuterHashJoinPipe(nodeVariables, lhs, nullableVariables) {
+case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, rhs: Pipe, nullableVariables: Set[String])(
+  val id: Id = Id.INVALID_ID
+) extends NodeOuterHashJoinPipe(nodeVariables, lhs, nullableVariables) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     if (input.isEmpty)
       return ClosingIterator.empty
 
-    val probeTable = buildProbeTableAndFindNullRows(input, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x), withNulls = true)
+    val probeTable = buildProbeTableAndFindNullRows(
+      input,
+      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x),
+      withNulls = true
+    )
     state.query.resources.trace(probeTable)
     val rhsIterator = rhs.createResults(state)
 

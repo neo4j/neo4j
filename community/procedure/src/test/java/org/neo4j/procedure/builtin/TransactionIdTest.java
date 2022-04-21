@@ -19,70 +19,60 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.helpers.DatabaseNameValidator.MAXIMUM_DATABASE_NAME_LENGTH;
 
-class TransactionIdTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+
+class TransactionIdTest {
     @Test
-    void printsTransactionIds() throws InvalidArgumentsException
-    {
-        assertThat( new TransactionId( "neo4j", 12L ).toString() ).isEqualTo( "neo4j-transaction-12" );
+    void printsTransactionIds() throws InvalidArgumentsException {
+        assertThat(new TransactionId("neo4j", 12L).toString()).isEqualTo("neo4j-transaction-12");
     }
 
     @Test
-    void doesNotConstructNegativeTransactionIds()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> new TransactionId( "neo4j", -15L ) );
+    void doesNotConstructNegativeTransactionIds() {
+        assertThrows(InvalidArgumentsException.class, () -> new TransactionId("neo4j", -15L));
     }
 
     @Test
-    void parsesTransactionIds() throws InvalidArgumentsException
-    {
-        assertThat( TransactionId.parse( "neo4j-transaction-14" ) ).isEqualTo( new TransactionId( "neo4j", 14L ) );
+    void parsesTransactionIds() throws InvalidArgumentsException {
+        assertThat(TransactionId.parse("neo4j-transaction-14")).isEqualTo(new TransactionId("neo4j", 14L));
     }
 
     @Test
-    void doesNotParseNegativeTransactionIds()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> TransactionId.parse( "neo4j-transaction--12" ) );
+    void doesNotParseNegativeTransactionIds() {
+        assertThrows(InvalidArgumentsException.class, () -> TransactionId.parse("neo4j-transaction--12"));
     }
 
     @Test
-    void doesNotParseWrongSeparator()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> TransactionId.parse( "neo4j-transactioo-12" ) );
+    void doesNotParseWrongSeparator() {
+        assertThrows(InvalidArgumentsException.class, () -> TransactionId.parse("neo4j-transactioo-12"));
     }
 
     @Test
-    void doesNotParseRandomText()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> TransactionId.parse( "blarglbarf" ) );
+    void doesNotParseRandomText() {
+        assertThrows(InvalidArgumentsException.class, () -> TransactionId.parse("blarglbarf"));
     }
 
     @Test
-    void doesNotParseTrailingRandomText()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> TransactionId.parse( "neo4j-transaction-12  " ) );
+    void doesNotParseTrailingRandomText() {
+        assertThrows(InvalidArgumentsException.class, () -> TransactionId.parse("neo4j-transaction-12  "));
     }
 
     @Test
-    void doesNotParseEmptyText()
-    {
-        assertThrows( InvalidArgumentsException.class, () -> TransactionId.parse( "" ) );
+    void doesNotParseEmptyText() {
+        assertThrows(InvalidArgumentsException.class, () -> TransactionId.parse(""));
     }
 
     @Test
-    void validateAndNormalizeDatabaseName() throws InvalidArgumentsException
-    {
-        assertThat( TransactionId.parse( "NEO4J-transaction-14" ) ).isEqualTo( new TransactionId( "neo4j", 14L ) );
-        IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
-                TransactionId.parse( "a".repeat( MAXIMUM_DATABASE_NAME_LENGTH + 1 ) + "-transaction-14" ) );
-        assertThat( e.getMessage() ).contains( " must have a length between " );
+    void validateAndNormalizeDatabaseName() throws InvalidArgumentsException {
+        assertThat(TransactionId.parse("NEO4J-transaction-14")).isEqualTo(new TransactionId("neo4j", 14L));
+        IllegalArgumentException e = assertThrows(
+                IllegalArgumentException.class,
+                () -> TransactionId.parse("a".repeat(MAXIMUM_DATABASE_NAME_LENGTH + 1) + "-transaction-14"));
+        assertThat(e.getMessage()).contains(" must have a length between ");
     }
 }

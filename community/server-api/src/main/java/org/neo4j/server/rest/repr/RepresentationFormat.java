@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.repr;
 
 import javax.ws.rs.core.MediaType;
-
 import org.neo4j.annotations.service.Service;
 
 /**
@@ -28,45 +27,38 @@ import org.neo4j.annotations.service.Service;
  * class must have a public no arguments constructor.
  */
 @Service
-public abstract class RepresentationFormat
-{
+public abstract class RepresentationFormat {
     final MediaType mediaType;
 
-    public RepresentationFormat( MediaType mediaType )
-    {
+    public RepresentationFormat(MediaType mediaType) {
         this.mediaType = mediaType;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "%s[%s]", getClass().getSimpleName(), mediaType );
+    public String toString() {
+        return String.format("%s[%s]", getClass().getSimpleName(), mediaType);
     }
 
-    String serializeValue( RepresentationType type, Object value )
-    {
-        return serializeValue( type.valueName, value );
+    String serializeValue(RepresentationType type, Object value) {
+        return serializeValue(type.valueName, value);
     }
 
-    protected abstract String serializeValue( String type, Object value );
+    protected abstract String serializeValue(String type, Object value);
 
-    ListWriter serializeList( RepresentationType type )
-    {
-        if ( type.listName == null )
-        {
-            throw new IllegalStateException( "Invalid list type: " + type );
+    ListWriter serializeList(RepresentationType type) {
+        if (type.listName == null) {
+            throw new IllegalStateException("Invalid list type: " + type);
         }
-        return serializeList( type.listName );
+        return serializeList(type.listName);
     }
 
-    protected abstract ListWriter serializeList( String type );
+    protected abstract ListWriter serializeList(String type);
 
-    MappingWriter serializeMapping( RepresentationType type )
-    {
-        return serializeMapping( type.valueName );
+    MappingWriter serializeMapping(RepresentationType type) {
+        return serializeMapping(type.valueName);
     }
 
-    protected abstract MappingWriter serializeMapping( String type );
+    protected abstract MappingWriter serializeMapping(String type);
 
     /**
      * Will be invoked (when serialization is done) with the result retrieved
@@ -74,7 +66,7 @@ public abstract class RepresentationFormat
      * this method to convert the {@link ListWriter} argument to the
      * implementation class returned by {@link #serializeList(String)}.
      */
-    protected abstract String complete( ListWriter serializer ) ;
+    protected abstract String complete(ListWriter serializer);
 
     /**
      * Will be invoked (when serialization is done) with the result retrieved
@@ -82,9 +74,7 @@ public abstract class RepresentationFormat
      * this method to convert the {@link MappingWriter} argument to the
      * implementation class returned by {@link #serializeMapping(String)}.
      */
-    protected abstract String complete( MappingWriter serializer ) ;
+    protected abstract String complete(MappingWriter serializer);
 
-    public void complete()
-    {
-    }
+    public void complete() {}
 }

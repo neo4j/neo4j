@@ -19,10 +19,16 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -41,23 +47,17 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-class ShortStringPropertyEncodeTest
-{
+class ShortStringPropertyEncodeTest {
     private static final int KEY_ID = 0;
 
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private PageCache pageCache;
 
@@ -65,148 +65,137 @@ class ShortStringPropertyEncodeTest
     private PropertyStore propertyStore;
 
     @BeforeEach
-    void setupStore()
-    {
-        neoStores =
-                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache, fileSystem, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                        writable(), EMPTY_LOG_TAIL ).openNeoStores( true, StoreType.PROPERTY,
-                        StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
+    void setupStore() {
+        neoStores = new StoreFactory(
+                        databaseLayout,
+                        Config.defaults(),
+                        new DefaultIdGeneratorFactory(fileSystem, immediate(), databaseLayout.getDatabaseName()),
+                        pageCache,
+                        fileSystem,
+                        NullLogProvider.getInstance(),
+                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        writable(),
+                        EMPTY_LOG_TAIL)
+                .openNeoStores(true, StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING);
         propertyStore = neoStores.getPropertyStore();
     }
 
     @AfterEach
-    void closeStore()
-    {
+    void closeStore() {
         neoStores.close();
     }
 
     @Test
-    void canEncodeEmptyString()
-    {
-        assertCanEncode( "" );
+    void canEncodeEmptyString() {
+        assertCanEncode("");
     }
 
     @Test
-    void canEncodeReallyLongString()
-    {
-        assertCanEncode( "                    " ); // 20 spaces
-        assertCanEncode( "                " ); // 16 spaces
+    void canEncodeReallyLongString() {
+        assertCanEncode("                    "); // 20 spaces
+        assertCanEncode("                "); // 16 spaces
     }
 
     @Test
-    void canEncodeFifteenSpaces()
-    {
-        assertCanEncode( "               " );
+    void canEncodeFifteenSpaces() {
+        assertCanEncode("               ");
     }
 
     @Test
-    void canEncodeNumericalString()
-    {
-        assertCanEncode( "0123456789+,'.-" );
-        assertCanEncode( " ,'.-0123456789" );
-        assertCanEncode( "+ '.0123456789-" );
-        assertCanEncode( "+, 0123456789.-" );
-        assertCanEncode( "+,0123456789' -" );
-        assertCanEncode( "+0123456789,'. " );
+    void canEncodeNumericalString() {
+        assertCanEncode("0123456789+,'.-");
+        assertCanEncode(" ,'.-0123456789");
+        assertCanEncode("+ '.0123456789-");
+        assertCanEncode("+, 0123456789.-");
+        assertCanEncode("+,0123456789' -");
+        assertCanEncode("+0123456789,'. ");
         // IP(v4) numbers
-        assertCanEncode( "192.168.0.1" );
-        assertCanEncode( "127.0.0.1" );
-        assertCanEncode( "255.255.255.255" );
+        assertCanEncode("192.168.0.1");
+        assertCanEncode("127.0.0.1");
+        assertCanEncode("255.255.255.255");
     }
 
     @Test
-    void canEncodeTooLongStringsWithCharsInDifferentTables()
-    {
-        assertCanEncode( "____________+" );
-        assertCanEncode( "_____+_____" );
-        assertCanEncode( "____+____" );
-        assertCanEncode( "HELLO world" );
-        assertCanEncode( "Hello_World" );
+    void canEncodeTooLongStringsWithCharsInDifferentTables() {
+        assertCanEncode("____________+");
+        assertCanEncode("_____+_____");
+        assertCanEncode("____+____");
+        assertCanEncode("HELLO world");
+        assertCanEncode("Hello_World");
     }
 
     @Test
-    void canEncodeUpToNineEuropeanChars()
-    {
+    void canEncodeUpToNineEuropeanChars() {
         // Shorter than 10 chars
-        assertCanEncode( "fågel" ); // "bird" in Swedish
-        assertCanEncode( "påfågel" ); // "peacock" in Swedish
-        assertCanEncode( "påfågelö" ); // "peacock island" in Swedish
-        assertCanEncode( "påfågelön" ); // "the peacock island" in Swedish
+        assertCanEncode("fågel"); // "bird" in Swedish
+        assertCanEncode("påfågel"); // "peacock" in Swedish
+        assertCanEncode("påfågelö"); // "peacock island" in Swedish
+        assertCanEncode("påfågelön"); // "the peacock island" in Swedish
         // 10 chars
-        assertCanEncode( "påfågelöar" ); // "peacock islands" in Swedish
+        assertCanEncode("påfågelöar"); // "peacock islands" in Swedish
     }
 
     @Test
-    void canEncodeEuropeanCharsWithPunctuation()
-    {
-        assertCanEncode( "qHm7 pp3" );
-        assertCanEncode( "UKKY3t.gk" );
+    void canEncodeEuropeanCharsWithPunctuation() {
+        assertCanEncode("qHm7 pp3");
+        assertCanEncode("UKKY3t.gk");
     }
 
     @Test
-    void canEncodeAlphanumerical()
-    {
-        assertCanEncode( "1234567890" ); // Just a sanity check
-        assertCanEncodeInBothCasings( "HelloWor1d" ); // There is a number there
-        assertCanEncode( "          " ); // Alphanum is the first that can encode 10 spaces
-        assertCanEncode( "_ _ _ _ _ " ); // The only available punctuation
-        assertCanEncode( "H3Lo_ or1D" ); // Mixed case + punctuation
-        assertCanEncode( "q1w2e3r4t+" ); // + is not in the charset
+    void canEncodeAlphanumerical() {
+        assertCanEncode("1234567890"); // Just a sanity check
+        assertCanEncodeInBothCasings("HelloWor1d"); // There is a number there
+        assertCanEncode("          "); // Alphanum is the first that can encode 10 spaces
+        assertCanEncode("_ _ _ _ _ "); // The only available punctuation
+        assertCanEncode("H3Lo_ or1D"); // Mixed case + punctuation
+        assertCanEncode("q1w2e3r4t+"); // + is not in the charset
     }
 
     @Test
-    void canEncodeHighUnicode()
-    {
-        assertCanEncode( "\u02FF" );
-        assertCanEncode( "hello\u02FF" );
+    void canEncodeHighUnicode() {
+        assertCanEncode("\u02FF");
+        assertCanEncode("hello\u02FF");
     }
 
     @Test
-    void canEncodeLatin1SpecialChars()
-    {
-        assertCanEncode( "#$#$#$#" );
-        assertCanEncode( "$hello#" );
+    void canEncodeLatin1SpecialChars() {
+        assertCanEncode("#$#$#$#");
+        assertCanEncode("$hello#");
     }
 
     @Test
-    void canEncodeTooLongLatin1String()
-    {
-        assertCanEncode( "#$#$#$#$" );
+    void canEncodeTooLongLatin1String() {
+        assertCanEncode("#$#$#$#$");
     }
 
     @Test
-    void canEncodeLowercaseAndUppercaseStringsUpTo12Chars()
-    {
-        assertCanEncodeInBothCasings( "hello world" );
-        assertCanEncode( "hello_world" );
-        assertCanEncode( "_hello_world" );
-        assertCanEncode( "hello::world" );
-        assertCanEncode( "hello//world" );
-        assertCanEncode( "hello world" );
-        assertCanEncode( "http://ok" );
-        assertCanEncode( "::::::::" );
-        assertCanEncode( " _.-:/ _.-:/" );
+    void canEncodeLowercaseAndUppercaseStringsUpTo12Chars() {
+        assertCanEncodeInBothCasings("hello world");
+        assertCanEncode("hello_world");
+        assertCanEncode("_hello_world");
+        assertCanEncode("hello::world");
+        assertCanEncode("hello//world");
+        assertCanEncode("hello world");
+        assertCanEncode("http://ok");
+        assertCanEncode("::::::::");
+        assertCanEncode(" _.-:/ _.-:/");
     }
 
-    private void assertCanEncodeInBothCasings( String string )
-    {
-        assertCanEncode( string.toLowerCase() );
-        assertCanEncode( string.toUpperCase() );
+    private void assertCanEncodeInBothCasings(String string) {
+        assertCanEncode(string.toLowerCase());
+        assertCanEncode(string.toUpperCase());
     }
 
-    private void assertCanEncode( String string )
-    {
-        encode( string );
+    private void assertCanEncode(String string) {
+        encode(string);
     }
 
-    private void encode( String string )
-    {
+    private void encode(String string) {
         PropertyBlock block = new PropertyBlock();
-        TextValue expectedValue = Values.stringValue( string );
-        propertyStore.encodeValue( block, KEY_ID, expectedValue, CursorContext.NULL_CONTEXT, INSTANCE );
-        assertEquals( 0, block.getValueRecords().size() );
-        Value readValue = block.getType().value( block, propertyStore, StoreCursors.NULL );
-        assertEquals( expectedValue, readValue );
+        TextValue expectedValue = Values.stringValue(string);
+        propertyStore.encodeValue(block, KEY_ID, expectedValue, CursorContext.NULL_CONTEXT, INSTANCE);
+        assertEquals(0, block.getValueRecords().size());
+        Value readValue = block.getType().value(block, propertyStore, StoreCursors.NULL);
+        assertEquals(expectedValue, readValue);
     }
 }

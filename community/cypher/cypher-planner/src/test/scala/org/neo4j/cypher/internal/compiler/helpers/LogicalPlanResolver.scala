@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import scala.collection.mutable.ArrayBuffer
 
 case class TokenContainer(
-                           labels: Set[String] = Set.empty,
-                           properties: Set[String] = Set.empty,
-                           relTypes: Set[String] = Set.empty,
-                         ) {
+  labels: Set[String] = Set.empty,
+  properties: Set[String] = Set.empty,
+  relTypes: Set[String] = Set.empty
+) {
 
   def addLabel(label: String): TokenContainer = this.copy(labels = labels + label)
   def addRelType(relType: String): TokenContainer = this.copy(relTypes = relTypes + relType)
@@ -44,23 +44,25 @@ case class TokenContainer(
 }
 
 class LogicalPlanResolver(
-                           labels: ArrayBuffer[String] = new ArrayBuffer[String](),
-                           properties: ArrayBuffer[String] = new ArrayBuffer[String](),
-                           relTypes: ArrayBuffer[String] = new ArrayBuffer[String](),
-                           procedures: Set[ProcedureSignature] = Set.empty
-                         )
-  extends SimpleResolver(labels, properties, relTypes, procedures)
-  with ReadTokenContext {
+  labels: ArrayBuffer[String] = new ArrayBuffer[String](),
+  properties: ArrayBuffer[String] = new ArrayBuffer[String](),
+  relTypes: ArrayBuffer[String] = new ArrayBuffer[String](),
+  procedures: Set[ProcedureSignature] = Set.empty
+) extends SimpleResolver(labels, properties, relTypes, procedures)
+    with ReadTokenContext {
 
-  override def getLabelName(id: Int): String = if (id >= labels.size) throw new IllegalStateException(s"Label $id undefined") else labels(id)
+  override def getLabelName(id: Int): String =
+    if (id >= labels.size) throw new IllegalStateException(s"Label $id undefined") else labels(id)
 
   override def getOptLabelId(labelName: String): Option[Int] = Some(getLabelId(labelName))
 
-  override def getPropertyKeyName(id: Int): String = if (id >= properties.size) throw new IllegalStateException(s"Property $id undefined") else properties(id)
+  override def getPropertyKeyName(id: Int): String =
+    if (id >= properties.size) throw new IllegalStateException(s"Property $id undefined") else properties(id)
 
   override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = Some(getPropertyKeyId(propertyKeyName))
 
-  override def getRelTypeName(id: Int): String = if (id >= relTypes.size) throw new IllegalStateException(s"RelType $id undefined") else relTypes(id)
+  override def getRelTypeName(id: Int): String =
+    if (id >= relTypes.size) throw new IllegalStateException(s"RelType $id undefined") else relTypes(id)
 
   override def getOptRelTypeId(relType: String): Option[Int] = Some(getRelTypeId(relType))
 }

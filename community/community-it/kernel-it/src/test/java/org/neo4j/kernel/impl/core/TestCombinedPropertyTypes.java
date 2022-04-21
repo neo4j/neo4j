@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.time.ZoneId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.time.ZoneId;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -33,102 +33,85 @@ import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class TestCombinedPropertyTypes extends AbstractNeo4jTestCase
-{
+class TestCombinedPropertyTypes extends AbstractNeo4jTestCase {
     private Node node1;
 
     @BeforeEach
-    void createInitialNode()
-    {
+    void createInitialNode() {
         node1 = createNode();
     }
 
     @AfterEach
-    void deleteInitialNode()
-    {
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            transaction.getNodeById( node1.getId() ).delete();
+    void deleteInitialNode() {
+        try (Transaction transaction = getGraphDb().beginTx()) {
+            transaction.getNodeById(node1.getId()).delete();
             transaction.commit();
         }
     }
 
     @Test
-    void testDateTypeOrdinalDayWithPrecedingInLinedLong()
-    {
-        testDateTypeWithPrecedingInLinedLong( DateValue.ordinalDate( 4800, 1 ) );
+    void testDateTypeOrdinalDayWithPrecedingInLinedLong() {
+        testDateTypeWithPrecedingInLinedLong(DateValue.ordinalDate(4800, 1));
     }
 
     @Test
-    void testDateTypeOrdinalDayWithPrecedingNotInLinedLong()
-    {
-        testDateTypeWithPrecedingNotInLinedLong( DateValue.ordinalDate( 4800, 1 ) );
+    void testDateTypeOrdinalDayWithPrecedingNotInLinedLong() {
+        testDateTypeWithPrecedingNotInLinedLong(DateValue.ordinalDate(4800, 1));
     }
 
     @Test
-    void testLocalTimeWithPrecedingInLinedLong()
-    {
-        testDateTypeWithPrecedingInLinedLong( LocalTimeValue.parse( "13:45:02" ) );
+    void testLocalTimeWithPrecedingInLinedLong() {
+        testDateTypeWithPrecedingInLinedLong(LocalTimeValue.parse("13:45:02"));
     }
 
     @Test
-    void testLocalTimeWithPrecedingNotInLinedLong()
-    {
-        testDateTypeWithPrecedingNotInLinedLong( LocalTimeValue.parse( "13:45:02" ) );
+    void testLocalTimeWithPrecedingNotInLinedLong() {
+        testDateTypeWithPrecedingNotInLinedLong(LocalTimeValue.parse("13:45:02"));
     }
 
     @Test
-    void testDateTimeWithPrecedingInLinedLong()
-    {
-        testDateTypeWithPrecedingInLinedLong(
-                DateTimeValue.datetime( DateValue.parse( "2018-04-01" ), LocalTimeValue.parse( "01:02:03" ), ZoneId.of( "Europe/Stockholm" ) ) );
+    void testDateTimeWithPrecedingInLinedLong() {
+        testDateTypeWithPrecedingInLinedLong(DateTimeValue.datetime(
+                DateValue.parse("2018-04-01"), LocalTimeValue.parse("01:02:03"), ZoneId.of("Europe/Stockholm")));
     }
 
     @Test
-    void testDateTimeWithPrecedingNotInLinedLong()
-    {
-        testDateTypeWithPrecedingNotInLinedLong(
-                DateTimeValue.datetime( DateValue.parse( "2018-04-01" ), LocalTimeValue.parse( "01:02:03" ), ZoneId.of( "Europe/Stockholm" ) ) );
+    void testDateTimeWithPrecedingNotInLinedLong() {
+        testDateTypeWithPrecedingNotInLinedLong(DateTimeValue.datetime(
+                DateValue.parse("2018-04-01"), LocalTimeValue.parse("01:02:03"), ZoneId.of("Europe/Stockholm")));
     }
 
-    private void testDateTypeWithPrecedingInLinedLong( Value value )
-    {
+    private void testDateTypeWithPrecedingInLinedLong(Value value) {
         String key = "dt";
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            node1 = transaction.getNodeById( node1.getId() );
-            node1.setProperty( "l1", 255 ); // Setting these low bits was triggering a bug in some date types decision on formatting
-            node1.setProperty( key, value );
+        try (Transaction transaction = getGraphDb().beginTx()) {
+            node1 = transaction.getNodeById(node1.getId());
+            node1.setProperty(
+                    "l1", 255); // Setting these low bits was triggering a bug in some date types decision on formatting
+            node1.setProperty(key, value);
             transaction.commit();
         }
 
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
-            assertEquals( value.asObjectCopy(), property );
+        try (Transaction transaction = getGraphDb().beginTx()) {
+            Object property = transaction.getNodeById(node1.getId()).getProperty(key);
+            assertEquals(value.asObjectCopy(), property);
             transaction.commit();
         }
     }
 
-    private void testDateTypeWithPrecedingNotInLinedLong( Value value )
-    {
+    private void testDateTypeWithPrecedingNotInLinedLong(Value value) {
         String key = "dt";
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            node1 = transaction.getNodeById( node1.getId() );
-            node1.setProperty( "l1", Long.MAX_VALUE );
-            node1.setProperty( key, value );
+        try (Transaction transaction = getGraphDb().beginTx()) {
+            node1 = transaction.getNodeById(node1.getId());
+            node1.setProperty("l1", Long.MAX_VALUE);
+            node1.setProperty(key, value);
             transaction.commit();
         }
 
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            node1 = transaction.getNodeById( node1.getId() );
+        try (Transaction transaction = getGraphDb().beginTx()) {
+            node1 = transaction.getNodeById(node1.getId());
 
-            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
-            assertEquals( value.asObjectCopy(), property );
+            Object property = transaction.getNodeById(node1.getId()).getProperty(key);
+            assertEquals(value.asObjectCopy(), property);
             transaction.commit();
         }
     }

@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 
-class ToStringListTest extends FunctionTestBase("toStringList")  {
+class ToStringListTest extends FunctionTestBase("toStringList") {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTList(CTAny))(CTList(CTString))

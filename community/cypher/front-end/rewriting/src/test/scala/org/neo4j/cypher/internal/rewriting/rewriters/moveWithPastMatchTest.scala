@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class moveWithPastMatchTest extends CypherFunSuite with RewriteTest  {
+class moveWithPastMatchTest extends CypherFunSuite with RewriteTest {
 
   val rewriterUnderTest: Rewriter = moveWithPastMatch
 
@@ -57,18 +57,21 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest  {
   }
 
   test("moves single WITH past OPTIONAL MATCH") {
-    assertRewrite("WITH 1 AS foo OPTIONAL MATCH (n) RETURN n",
-    "OPTIONAL MATCH (n) WITH 1 AS foo, n AS n RETURN n")
+    assertRewrite("WITH 1 AS foo OPTIONAL MATCH (n) RETURN n", "OPTIONAL MATCH (n) WITH 1 AS foo, n AS n RETURN n")
   }
 
   test("moves single WITH past MATCH with multiple OPTIONAL MATCHes") {
-    assertRewrite("WITH 1 AS foo MATCH (n) OPTIONAL MATCH (n)--(q) OPTIONAL MATCH (n)--(m) RETURN n",
-      "MATCH (n) OPTIONAL MATCH (n)--(q) OPTIONAL MATCH (n)--(m) WITH 1 AS foo, n AS n, q AS q, m AS m RETURN n")
+    assertRewrite(
+      "WITH 1 AS foo MATCH (n) OPTIONAL MATCH (n)--(q) OPTIONAL MATCH (n)--(m) RETURN n",
+      "MATCH (n) OPTIONAL MATCH (n)--(q) OPTIONAL MATCH (n)--(m) WITH 1 AS foo, n AS n, q AS q, m AS m RETURN n"
+    )
   }
 
   test("moves single WITH past OPTIONAL MATCH, but not after subsequent MATCH") {
-    assertRewrite("WITH 1 AS foo OPTIONAL MATCH (n) WITH n MATCH (m) RETURN n",
-    "OPTIONAL MATCH (n) WITH 1 AS foo, n AS n WITH n MATCH (m) RETURN n")
+    assertRewrite(
+      "WITH 1 AS foo OPTIONAL MATCH (n) WITH n MATCH (m) RETURN n",
+      "OPTIONAL MATCH (n) WITH 1 AS foo, n AS n WITH n MATCH (m) RETURN n"
+    )
   }
 
   test("does not move WITH between update clause and MATCH") {
@@ -78,24 +81,29 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest  {
   test("moves single WITH past MATCH") {
     assertRewrite(
       "WITH 1 AS foo MATCH (a)-[r1]->(b)-[r2*0..1]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WITH 1 AS foo, a AS a, b AS b, r1 AS r1, c AS c, r2 AS r2 RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WITH 1 AS foo, a AS a, b AS b, r1 AS r1, c AS c, r2 AS r2 RETURN *"
+    )
   }
 
   test("moves single WITH past multiple MATCHes") {
-    assertRewrite("WITH 1 AS foo MATCH (n) MATCH (n)--(q) MATCH (n)--(m) RETURN n",
-      "MATCH (n) MATCH (n)--(q) MATCH (n)--(m) WITH 1 AS foo, n AS n, q AS q, m AS m RETURN n")
+    assertRewrite(
+      "WITH 1 AS foo MATCH (n) MATCH (n)--(q) MATCH (n)--(m) RETURN n",
+      "MATCH (n) MATCH (n)--(q) MATCH (n)--(m) WITH 1 AS foo, n AS n, q AS q, m AS m RETURN n"
+    )
   }
 
   test("moves single WITH past MATCH, WHERE") {
     assertRewrite(
       "WITH 1 AS foo MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE a.prop = 2 RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE a.prop = 2 WITH 1 AS foo, a AS a, b AS b, r1 AS r1, c AS c, r2 AS r2 RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE a.prop = 2 WITH 1 AS foo, a AS a, b AS b, r1 AS r1, c AS c, r2 AS r2 RETURN *"
+    )
   }
 
   test("moves two WITHs past MATCH") {
     assertRewrite(
       "WITH 1 AS foo WITH 2 AS bar, foo AS foo MATCH (a) RETURN *",
-      "MATCH (a) WITH 1 AS foo, a AS a WITH 2 AS bar, foo AS foo, a AS a RETURN *")
+      "MATCH (a) WITH 1 AS foo, a AS a WITH 2 AS bar, foo AS foo, a AS a RETURN *"
+    )
   }
 
   test("does not rewrite initial WITH in UNION subquery") {
@@ -110,7 +118,8 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest  {
         |  MATCH (a:B)
         |  RETURN b AS a
         |}
-        |RETURN a AS a""".stripMargin)
+        |RETURN a AS a""".stripMargin
+    )
   }
 
   test("rewrites other WITH in UNION subquery") {
@@ -140,7 +149,8 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest  {
         |  WITH 2 AS bar, a AS a
         |  RETURN b AS a
         |}
-        |RETURN a AS a""".stripMargin)
+        |RETURN a AS a""".stripMargin
+    )
   }
 
   test("does not rewrite initial WITH in single subquery") {
@@ -151,7 +161,8 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest  {
         |  MATCH (a:B)
         |  RETURN b AS a
         |}
-        |RETURN a AS a""".stripMargin)
+        |RETURN a AS a""".stripMargin
+    )
   }
 
   test("rewrites other WITH in single subquery") {
@@ -171,6 +182,7 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest  {
         |  WITH 1 AS foo, a AS a
         |  RETURN b AS a
         |}
-        |RETURN a AS a""".stripMargin)
+        |RETURN a AS a""".stripMargin
+    )
   }
 }

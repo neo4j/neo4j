@@ -102,14 +102,14 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val node1 = newMockedNode(1)
     val node2 = newMockedNode(2)
 
-    val left = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
-    val right = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+    val left = new FakePipe(Seq(Map("n" -> node1), Map("n" -> node2)))
+    val right = new FakePipe(Seq(Map("n" -> node1), Map("n" -> node2)))
 
     // when
     NodeHashJoinPipe(Set("n"), left, right)().createResults(queryState).toList
 
     // then
-    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size(1)
+    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size (1)
   }
 
   test("close should close table") {
@@ -120,15 +120,15 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val node1 = newMockedNode(1)
     val node2 = newMockedNode(2)
 
-    val left = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
-    val right = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+    val left = new FakePipe(Seq(Map("n" -> node1), Map("n" -> node2)))
+    val right = new FakePipe(Seq(Map("n" -> node1), Map("n" -> node2)))
 
     // when
     val result = NodeHashJoinPipe(Set("n"), left, right)().createResults(queryState)
     result.close()
 
     // then
-    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size(1)
+    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size (1)
   }
 
   private def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)
@@ -141,4 +141,3 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
   }
 
 }
-

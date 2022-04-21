@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.joining;
+import static org.neo4j.internal.helpers.collection.Iterables.stream;
 
 import java.util.Arrays;
 import java.util.Map;
-
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -36,12 +38,7 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaUserDescription;
 
-import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.joining;
-import static org.neo4j.internal.helpers.collection.Iterables.stream;
-
-public class IndexDefinitionImpl implements IndexDefinition
-{
+public class IndexDefinitionImpl implements IndexDefinition {
     private final InternalSchemaActions actions;
     private final IndexDescriptor indexReference;
     private final String description; // This allows toString() to work after transaction has been closed.
@@ -50,12 +47,16 @@ public class IndexDefinitionImpl implements IndexDefinition
     private final String[] propertyKeys;
     private final boolean constraintIndex;
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor ref, Label[] labels, String[] propertyKeys, boolean constraintIndex )
-    {
+    public IndexDefinitionImpl(
+            InternalSchemaActions actions,
+            IndexDescriptor ref,
+            Label[] labels,
+            String[] propertyKeys,
+            boolean constraintIndex) {
         actions.assertInOpenTransaction();
         this.actions = actions;
         this.indexReference = ref;
-        this.description = actions.getUserDescription( ref );
+        this.description = actions.getUserDescription(ref);
         this.labels = labels;
         this.relTypes = null;
         this.propertyKeys = propertyKeys;
@@ -63,49 +64,47 @@ public class IndexDefinitionImpl implements IndexDefinition
     }
 
     public IndexDefinitionImpl(
-            InternalSchemaActions actions, IndexDescriptor ref, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
-    {
+            InternalSchemaActions actions,
+            IndexDescriptor ref,
+            RelationshipType[] relTypes,
+            String[] propertyKeys,
+            boolean constraintIndex) {
         actions.assertInOpenTransaction();
         this.actions = actions;
         this.indexReference = ref;
-        this.description = actions.getUserDescription( ref );
+        this.description = actions.getUserDescription(ref);
         this.labels = null;
         this.relTypes = relTypes;
         this.propertyKeys = propertyKeys;
         this.constraintIndex = constraintIndex;
     }
 
-    public IndexDescriptor getIndexReference()
-    {
+    public IndexDescriptor getIndexReference() {
         return indexReference;
     }
 
     @Override
-    public Iterable<Label> getLabels()
-    {
+    public Iterable<Label> getLabels() {
         actions.assertInOpenTransaction();
         assertIsNodeIndex();
-        return Arrays.asList( labels );
+        return Arrays.asList(labels);
     }
 
     @Override
-    public Iterable<RelationshipType> getRelationshipTypes()
-    {
+    public Iterable<RelationshipType> getRelationshipTypes() {
         actions.assertInOpenTransaction();
         assertIsRelationshipIndex();
-        return Arrays.asList( relTypes );
+        return Arrays.asList(relTypes);
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
-    {
+    public Iterable<String> getPropertyKeys() {
         actions.assertInOpenTransaction();
-        return asList( propertyKeys );
+        return asList(propertyKeys);
     }
 
     @Override
-    public IndexType getIndexType()
-    {
+    public IndexType getIndexType() {
         return indexReference.getIndexType().toPublicApi();
     }
 
@@ -116,8 +115,7 @@ public class IndexDefinitionImpl implements IndexDefinition
      *
      * @return The array of property keys.
      */
-    String[] getPropertyKeysArrayShared()
-    {
+    String[] getPropertyKeysArrayShared() {
         actions.assertInOpenTransaction();
         return propertyKeys;
     }
@@ -129,8 +127,7 @@ public class IndexDefinitionImpl implements IndexDefinition
      *
      * @return The label array, which may be null.
      */
-    Label[] getLabelArrayShared()
-    {
+    Label[] getLabelArrayShared() {
         return labels;
     }
 
@@ -141,194 +138,158 @@ public class IndexDefinitionImpl implements IndexDefinition
      *
      * @return The relationship type array, which may be null.
      */
-    RelationshipType[] getRelationshipTypesArrayShared()
-    {
+    RelationshipType[] getRelationshipTypesArrayShared() {
         return relTypes;
     }
 
     @Override
-    public void drop()
-    {
-        try
-        {
-            actions.dropIndexDefinitions( this );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            if ( this.isConstraintIndex() )
-            {
-                throw new IllegalStateException( "Constraint indexes cannot be dropped directly, instead drop the owning uniqueness constraint.", e );
+    public void drop() {
+        try {
+            actions.dropIndexDefinitions(this);
+        } catch (ConstraintViolationException e) {
+            if (this.isConstraintIndex()) {
+                throw new IllegalStateException(
+                        "Constraint indexes cannot be dropped directly, instead drop the owning uniqueness constraint.",
+                        e);
             }
             throw e;
         }
     }
 
     @Override
-    public boolean isConstraintIndex()
-    {
+    public boolean isConstraintIndex() {
         actions.assertInOpenTransaction();
         return constraintIndex;
     }
 
     @Override
-    public boolean isNodeIndex()
-    {
+    public boolean isNodeIndex() {
         actions.assertInOpenTransaction();
         return internalIsNodeIndex();
     }
 
-    private boolean internalIsNodeIndex()
-    {
+    private boolean internalIsNodeIndex() {
         return labels != null;
     }
 
     @Override
-    public boolean isRelationshipIndex()
-    {
+    public boolean isRelationshipIndex() {
         actions.assertInOpenTransaction();
         return relTypes != null;
     }
 
     @Override
-    public boolean isMultiTokenIndex()
-    {
+    public boolean isMultiTokenIndex() {
         actions.assertInOpenTransaction();
         return internalIsNodeIndex() ? labels.length > 1 : relTypes.length > 1;
     }
 
     @Override
-    public boolean isCompositeIndex()
-    {
+    public boolean isCompositeIndex() {
         actions.assertInOpenTransaction();
         return propertyKeys.length > 1;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         IndexDescriptor descriptor = indexReference == null ? IndexDescriptor.NO_INDEX : indexReference;
         return descriptor.getName();
     }
 
     @Override
-    public Map<IndexSetting,Object> getIndexConfiguration()
-    {
+    public Map<IndexSetting, Object> getIndexConfiguration() {
         IndexConfig indexConfig = indexReference.getIndexConfig();
-        return IndexSettingUtil.toIndexSettingObjectMapFromIndexConfig( indexConfig );
+        return IndexSettingUtil.toIndexSettingObjectMapFromIndexConfig(indexConfig);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         HashFunction hf = HashFunction.incrementalXXH64();
-        long hash = hf.initialise( 31 );
-        hash = hf.updateWithArray( hash, labels, label -> label.name().hashCode() );
-        hash = hf.updateWithArray( hash, relTypes, relType -> relType.name().hashCode() );
-        hash = hf.updateWithArray( hash, propertyKeys, String::hashCode );
-        return hf.toInt( hash );
+        long hash = hf.initialise(31);
+        hash = hf.updateWithArray(hash, labels, label -> label.name().hashCode());
+        hash = hf.updateWithArray(hash, relTypes, relType -> relType.name().hashCode());
+        hash = hf.updateWithArray(hash, propertyKeys, String::hashCode);
+        return hf.toInt(hash);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
-        if ( obj == null )
-        {
+        if (obj == null) {
             return false;
         }
-        if ( getClass() != obj.getClass() )
-        {
+        if (getClass() != obj.getClass()) {
             return false;
         }
         IndexDefinitionImpl other = (IndexDefinitionImpl) obj;
-        if ( internalIsNodeIndex() )
-        {
-            if ( other.labels == null )
-            {
+        if (internalIsNodeIndex()) {
+            if (other.labels == null) {
                 return false;
             }
-            if ( labels.length != other.labels.length )
-            {
+            if (labels.length != other.labels.length) {
                 return false;
             }
-            for ( int i = 0; i < labels.length; i++ )
-            {
-                if ( !labels[i].name().equals( other.labels[i].name() ) )
-                {
+            for (int i = 0; i < labels.length; i++) {
+                if (!labels[i].name().equals(other.labels[i].name())) {
                     return false;
                 }
             }
         }
-        if ( relTypes != null )
-        {
-            if ( other.relTypes == null )
-            {
+        if (relTypes != null) {
+            if (other.relTypes == null) {
                 return false;
             }
-            if ( relTypes.length != other.relTypes.length )
-            {
+            if (relTypes.length != other.relTypes.length) {
                 return false;
             }
-            for ( int i = 0; i < relTypes.length; i++ )
-            {
-                if ( !relTypes[i].name().equals( other.relTypes[i].name() ) )
-                {
+            for (int i = 0; i < relTypes.length; i++) {
+                if (!relTypes[i].name().equals(other.relTypes[i].name())) {
                     return false;
                 }
             }
         }
-        return Arrays.equals( propertyKeys, other.propertyKeys );
+        return Arrays.equals(propertyKeys, other.propertyKeys);
     }
 
     @Override
-    public String toString()
-    {
-        return "IndexDefinition[" +
-               (internalIsNodeIndex() ? getSchemaForLabels() : getSchemaForRelType()) + "]" +
-               (description == null ? "" : " (" + description + ")");
+    public String toString() {
+        return "IndexDefinition[" + (internalIsNodeIndex() ? getSchemaForLabels() : getSchemaForRelType()) + "]"
+                + (description == null ? "" : " (" + description + ")");
     }
 
-    private String getSchemaForLabels()
-    {
+    private String getSchemaForLabels() {
         var entityTokenType = labels.length > 1 ? "labels" : "label";
-        var entityTokens = ArrayUtils.isNotEmpty( labels )
-                           ? Arrays.stream( labels ).map( Label::name ).collect( joining( "," ) )
-                           : SchemaUserDescription.TOKEN_LABEL;
-        var onPropertyKeys = ArrayUtils.isNotEmpty( propertyKeys ) ? " on:" + String.join( ",", propertyKeys ) : "";
+        var entityTokens = ArrayUtils.isNotEmpty(labels)
+                ? Arrays.stream(labels).map(Label::name).collect(joining(","))
+                : SchemaUserDescription.TOKEN_LABEL;
+        var onPropertyKeys = ArrayUtils.isNotEmpty(propertyKeys) ? " on:" + String.join(",", propertyKeys) : "";
         return entityTokenType + ":" + entityTokens + onPropertyKeys;
     }
 
-    private String getSchemaForRelType()
-    {
+    private String getSchemaForRelType() {
         var entityTokenType = relTypes.length > 1 ? "relationship types" : "relationship type";
-        var entityTokens = ArrayUtils.isNotEmpty( relTypes )
-                           ? Arrays.stream( relTypes ).map( RelationshipType::name ).collect( joining( "," ) )
-                           : SchemaUserDescription.TOKEN_REL_TYPE;
-        var onPropertyKeys = ArrayUtils.isNotEmpty( propertyKeys ) ? " on:" + String.join( ",", propertyKeys ) : "";
+        var entityTokens = ArrayUtils.isNotEmpty(relTypes)
+                ? Arrays.stream(relTypes).map(RelationshipType::name).collect(joining(","))
+                : SchemaUserDescription.TOKEN_REL_TYPE;
+        var onPropertyKeys = ArrayUtils.isNotEmpty(propertyKeys) ? " on:" + String.join(",", propertyKeys) : "";
         return entityTokenType + ":" + entityTokens + onPropertyKeys;
     }
 
-    static String labelNameList( Iterable<Label> labels, String prefix, String postfix )
-    {
-        return stream( labels ).map( Label::name ).collect( joining( ", ", prefix, postfix ) );
+    static String labelNameList(Iterable<Label> labels, String prefix, String postfix) {
+        return stream(labels).map(Label::name).collect(joining(", ", prefix, postfix));
     }
 
-    private void assertIsNodeIndex()
-    {
-        if ( !isNodeIndex() )
-        {
-            throw new IllegalStateException( "This is not a node index." );
+    private void assertIsNodeIndex() {
+        if (!isNodeIndex()) {
+            throw new IllegalStateException("This is not a node index.");
         }
     }
 
-    private void assertIsRelationshipIndex()
-    {
-        if ( !isRelationshipIndex() )
-        {
-            throw new IllegalStateException( "This is not a relationship index." );
+    private void assertIsRelationshipIndex() {
+        if (!isRelationshipIndex()) {
+            throw new IllegalStateException("This is not a relationship index.");
         }
     }
 }

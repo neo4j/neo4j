@@ -21,7 +21,6 @@ package org.neo4j.kernel.internal;
 
 import java.nio.file.Path;
 import java.util.function.Predicate;
-
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
@@ -33,38 +32,32 @@ import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
  *
  * The basic idea is to include everything except known lucene files (or directories known to include lucene files).
  */
-public class NativeIndexFileFilter implements Predicate<Path>
-{
+public class NativeIndexFileFilter implements Predicate<Path> {
     private final Path indexRoot;
 
-    public NativeIndexFileFilter( Path storeDir )
-    {
-        indexRoot = IndexDirectoryStructure.baseSchemaIndexFolder( storeDir ).toAbsolutePath();
+    public NativeIndexFileFilter(Path storeDir) {
+        indexRoot = IndexDirectoryStructure.baseSchemaIndexFolder(storeDir).toAbsolutePath();
     }
 
     @Override
-    public boolean test( Path path )
-    {
-        if ( !path.toAbsolutePath().startsWith( indexRoot ) )
-        {
+    public boolean test(Path path) {
+        if (!path.toAbsolutePath().startsWith(indexRoot)) {
             // This file isn't even under the schema/index root directory
             return false;
         }
 
-        Path schemaPath = indexRoot.relativize( path );
+        Path schemaPath = indexRoot.relativize(path);
         int nameCount = schemaPath.getNameCount();
 
-        if ( nameCount == 0 )
-        {
+        if (nameCount == 0) {
             return false;
         }
 
         // - schema/index/text-1.0
         // - schema/index/fulltext-1.0
-        String schemaBaseName = schemaPath.getName( 0 ).toString();
-        boolean isLuceneBackedTextIndex =
-                schemaBaseName.equals( TextIndexProvider.DESCRIPTOR.name() ) ||
-                schemaBaseName.equals( FulltextIndexProviderFactory.DESCRIPTOR.name() );
+        String schemaBaseName = schemaPath.getName(0).toString();
+        boolean isLuceneBackedTextIndex = schemaBaseName.equals(TextIndexProvider.DESCRIPTOR.name())
+                || schemaBaseName.equals(FulltextIndexProviderFactory.DESCRIPTOR.name());
 
         return !isLuceneBackedTextIndex;
     }

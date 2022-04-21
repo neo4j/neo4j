@@ -20,15 +20,13 @@
 package org.neo4j.storageengine.api;
 
 import java.io.IOException;
-
 import org.neo4j.io.fs.ReadableChannel;
 
 /**
  * Reads {@link StorageCommand commands} from a {@link ReadableChannel channel}.
  * Instances must handle concurrent threads calling it with potentially different channels.
  */
-public interface CommandReader
-{
+public interface CommandReader {
     // Type of command = 0, means the first byte of the command record was only written but second
     // (saying what type) did not get written but the file still got expanded
     byte NONE = (byte) 0;
@@ -40,5 +38,5 @@ public interface CommandReader
      * @return {@link StorageCommand} or {@code null} if end reached.
      * @throws IOException if channel throws exception.
      */
-    StorageCommand read( ReadableChannel channel ) throws IOException;
+    StorageCommand read(ReadableChannel channel) throws IOException;
 }

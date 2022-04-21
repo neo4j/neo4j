@@ -31,15 +31,16 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * provided constraints. Produce one row per traversed relationships, and add the
  * relationship and end node as values on the produced rows.
  */
-case class Expand(override val source: LogicalPlan,
-                  from: String,
-                  dir: SemanticDirection,
-                  types: Seq[RelTypeName],
-                  to: String,
-                  relName: String,
-                  mode: ExpansionMode = ExpandAll)
-                 (implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen) {
+case class Expand(
+  override val source: LogicalPlan,
+  from: String,
+  dir: SemanticDirection,
+  types: Seq[RelTypeName],
+  to: String,
+  relName: String,
+  mode: ExpansionMode = ExpandAll
+)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
@@ -49,30 +50,35 @@ case class Expand(override val source: LogicalPlan,
  * row is produced instead populated by the argument, and the 'relName' and 'to' variables
  * are set to NO_VALUE.
  */
-case class OptionalExpand(override val source: LogicalPlan,
-                          from: String,
-                          dir: SemanticDirection,
-                          types: Seq[RelTypeName],
-                          to: String,
-                          relName: String,
-                          mode: ExpansionMode = ExpandAll,
-                          predicate: Option[Expression] = None)
-                         (implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen) {
+case class OptionalExpand(
+  override val source: LogicalPlan,
+  from: String,
+  dir: SemanticDirection,
+  types: Seq[RelTypeName],
+  to: String,
+  relName: String,
+  mode: ExpansionMode = ExpandAll,
+  predicate: Option[Expression] = None
+)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
 
-abstract class AbstractVarExpand(val from: String,
-                                 val types: Seq[RelTypeName],
-                                 val to: String,
-                                 val nodePredicate: Option[VariablePredicate],
-                                 val relationshipPredicate: Option[VariablePredicate],
-                                 idGen: IdGen) extends LogicalUnaryPlan(idGen) {
+abstract class AbstractVarExpand(
+  val from: String,
+  val types: Seq[RelTypeName],
+  val to: String,
+  val nodePredicate: Option[VariablePredicate],
+  val relationshipPredicate: Option[VariablePredicate],
+  idGen: IdGen
+) extends LogicalUnaryPlan(idGen) {
 
-  def withNewPredicates(newNodePredicate: Option[VariablePredicate],
-                        newRelationshipPredicate: Option[VariablePredicate])(idGen: IdGen): AbstractVarExpand
+  def withNewPredicates(
+    newNodePredicate: Option[VariablePredicate],
+    newRelationshipPredicate: Option[VariablePredicate]
+  )(idGen: IdGen): AbstractVarExpand
 }
 
 /**
@@ -83,23 +89,26 @@ abstract class AbstractVarExpand(val from: String,
  *
  * The relationships and end node of the corresponding path are added to the produced row.
  */
-case class VarExpand(override val source: LogicalPlan,
-                     override val from: String,
-                     dir: SemanticDirection,
-                     projectedDir: SemanticDirection,
-                     override val types: Seq[RelTypeName],
-                     override val to: String,
-                     relName: String,
-                     length: VarPatternLength,
-                     mode: ExpansionMode = ExpandAll,
-                     override val nodePredicate: Option[VariablePredicate] = None,
-                     override val relationshipPredicate: Option[VariablePredicate] = None)
-                    (implicit idGen: IdGen) extends AbstractVarExpand(from, types, to, nodePredicate, relationshipPredicate, idGen) {
+case class VarExpand(
+  override val source: LogicalPlan,
+  override val from: String,
+  dir: SemanticDirection,
+  projectedDir: SemanticDirection,
+  override val types: Seq[RelTypeName],
+  override val to: String,
+  relName: String,
+  length: VarPatternLength,
+  mode: ExpansionMode = ExpandAll,
+  override val nodePredicate: Option[VariablePredicate] = None,
+  override val relationshipPredicate: Option[VariablePredicate] = None
+)(implicit idGen: IdGen) extends AbstractVarExpand(from, types, to, nodePredicate, relationshipPredicate, idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 
-  override def withNewPredicates(newNodePredicate: Option[VariablePredicate],
-                                 newRelationshipPredicate: Option[VariablePredicate])(idGen: IdGen): VarExpand =
+  override def withNewPredicates(
+    newNodePredicate: Option[VariablePredicate],
+    newRelationshipPredicate: Option[VariablePredicate]
+  )(idGen: IdGen): VarExpand =
     copy(nodePredicate = newNodePredicate, relationshipPredicate = newRelationshipPredicate)(idGen)
 
 }
@@ -112,21 +121,25 @@ case class VarExpand(override val source: LogicalPlan,
  *
  * Only the end node is added to produced rows.
  */
-case class PruningVarExpand(override val source: LogicalPlan,
-                            override val from: String,
-                            dir: SemanticDirection,
-                            override val types: Seq[RelTypeName],
-                            override val to: String,
-                            minLength: Int,
-                            maxLength: Int,
-                            override val nodePredicate: Option[VariablePredicate] = None,
-                            override val relationshipPredicate: Option[VariablePredicate] = None)
-                           (implicit idGen: IdGen)
-  extends AbstractVarExpand(from, types, to, nodePredicate, relationshipPredicate, idGen) {
+case class PruningVarExpand(
+  override val source: LogicalPlan,
+  override val from: String,
+  dir: SemanticDirection,
+  override val types: Seq[RelTypeName],
+  override val to: String,
+  minLength: Int,
+  maxLength: Int,
+  override val nodePredicate: Option[VariablePredicate] = None,
+  override val relationshipPredicate: Option[VariablePredicate] = None
+)(implicit idGen: IdGen)
+    extends AbstractVarExpand(from, types, to, nodePredicate, relationshipPredicate, idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + to
-  override def withNewPredicates(newNodePredicate: Option[VariablePredicate],
-                                 newRelationshipPredicate: Option[VariablePredicate])(idGen: IdGen): PruningVarExpand =
+
+  override def withNewPredicates(
+    newNodePredicate: Option[VariablePredicate],
+    newRelationshipPredicate: Option[VariablePredicate]
+  )(idGen: IdGen): PruningVarExpand =
     copy(nodePredicate = newNodePredicate, relationshipPredicate = newRelationshipPredicate)(idGen)
 }
 
@@ -138,22 +151,26 @@ case class PruningVarExpand(override val source: LogicalPlan,
  *
  * Only the end node is added to produced rows.
  */
-case class BFSPruningVarExpand(override val source: LogicalPlan,
-                               override val from: String,
-                               dir: SemanticDirection,
-                               override val types: Seq[RelTypeName],
-                               override val to: String,
-                               includeStartNode: Boolean,
-                               maxLength: Int,
-                               override val nodePredicate: Option[VariablePredicate] = None,
-                               override val relationshipPredicate: Option[VariablePredicate] = None)
-                              (implicit idGen: IdGen)
-  extends AbstractVarExpand(from, types, to, nodePredicate, relationshipPredicate, idGen) {
+case class BFSPruningVarExpand(
+  override val source: LogicalPlan,
+  override val from: String,
+  dir: SemanticDirection,
+  override val types: Seq[RelTypeName],
+  override val to: String,
+  includeStartNode: Boolean,
+  maxLength: Int,
+  override val nodePredicate: Option[VariablePredicate] = None,
+  override val relationshipPredicate: Option[VariablePredicate] = None
+)(implicit idGen: IdGen)
+    extends AbstractVarExpand(from, types, to, nodePredicate, relationshipPredicate, idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + to
-  override def withNewPredicates(newNodePredicate: Option[VariablePredicate],
-                                 newRelationshipPredicate: Option[VariablePredicate])(idGen: IdGen): BFSPruningVarExpand =
+
+  override def withNewPredicates(
+    newNodePredicate: Option[VariablePredicate],
+    newRelationshipPredicate: Option[VariablePredicate]
+  )(idGen: IdGen): BFSPruningVarExpand =
     copy(nodePredicate = newNodePredicate, relationshipPredicate = newRelationshipPredicate)(idGen)
 
 }

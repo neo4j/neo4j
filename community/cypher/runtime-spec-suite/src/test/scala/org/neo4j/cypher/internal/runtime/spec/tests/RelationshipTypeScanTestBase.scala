@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should support directed relationship scan") {
     // given
@@ -51,7 +51,9 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("r", "x", "y").withRows(relationships.map(r => Array(r, r.getStartNode, r.getEndNode)))
+    runtimeResult should beColumns("r", "x", "y").withRows(relationships.map(r =>
+      Array(r, r.getStartNode, r.getEndNode)
+    ))
   }
 
   test("should handle directed relationship scan for non-existing type") {
@@ -111,7 +113,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {r1 <- relationships; r2 <- relationships; r3 <- relationships} yield Array(r1, r2, r3)
+    val expected = for { r1 <- relationships; r2 <- relationships; r3 <- relationships } yield Array(r1, r2, r3)
     runtimeResult should beColumns("r1", "r2", "r3").withRows(expected)
   }
 
@@ -149,7 +151,9 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("r", "x", "y").withRows(relationships.flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode))))
+    runtimeResult should beColumns("r", "x", "y").withRows(relationships.flatMap(r =>
+      Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode))
+    ))
   }
 
   test("should handle undirected relationship scan for non-existent type") {
@@ -208,7 +212,9 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {r1 <- relationships; r2 <- relationships; r3 <- relationships} yield Seq.fill(8)(Array(r1, r2, r3))
+    val expected = for {
+      r1 <- relationships; r2 <- relationships; r3 <- relationships
+    } yield Seq.fill(8)(Array(r1, r2, r3))
     runtimeResult should beColumns("r1", "r2", "r3").withRows(expected.flatten)
   }
 
@@ -230,7 +236,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("b", "r").withRows(expected)
   }
 
-  //TODO: These tests should live in ProfileRowsTestBase but lives here instead because they rely on typescans being enabled
+  // TODO: These tests should live in ProfileRowsTestBase but lives here instead because they rely on typescans being enabled
   test("should profile rows with directed relationship type scan") {
     // given
     val nodesPerLabel = 20
@@ -284,7 +290,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(3).rows() shouldBe 2 * nodesPerLabel * nodesPerLabel // relationship type scan
   }
 
-  //TODO: These tests should live in ProfileRowsTestBase but lives here instead because they rely on typescans being enabled
+  // TODO: These tests should live in ProfileRowsTestBase but lives here instead because they rely on typescans being enabled
   test("should profile dbHits of directed relationship type scan") {
     // given
     given { circleGraph(sizeHint) }
@@ -299,10 +305,12 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    //TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
+    // TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
     //      is this a bug?
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should
-      (be (sizeHint) or be (sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/) or be (2 * sizeHint + 1 + 0/*costOfRelationshipTypeLookup*/))
+      (be(sizeHint) or be(sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/ ) or be(
+        2 * sizeHint + 1 + 0 /*costOfRelationshipTypeLookup*/
+      ))
   }
 
   test("should profile dbHits of undirected relationship type scan") {
@@ -319,12 +327,13 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    //TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
+    // TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
     //      is this a bug?
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should
-      (be (sizeHint) or be (sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/) or be (2 * sizeHint + 1 + 0/*costOfRelationshipTypeLookup*/))
+      (be(sizeHint) or be(sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/ ) or be(
+        2 * sizeHint + 1 + 0 /*costOfRelationshipTypeLookup*/
+      ))
   }
-
 
   test("directed relationship scan should use ascending index order when provided") {
     // given
@@ -346,7 +355,9 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       inOrder(
         relationships
           .map(r => Array(r, r.getStartNode, r.getEndNode))
-          .sortBy(_.head.getId)))
+          .sortBy(_.head.getId)
+      )
+    )
   }
 
   test("directed relationship scan should use descending index order when provided") {
@@ -369,7 +380,9 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       inOrder(
         relationships
           .map(r => Array(r, r.getStartNode, r.getEndNode))
-          .sortBy(_.head.getId * -1)))
+          .sortBy(_.head.getId * -1)
+      )
+    )
   }
 
   test("undirected relationship scan should use ascending index order when provided") {
@@ -392,7 +405,9 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       inOrder(
         relationships
           .flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
-          .sortBy(_.head.getId)))
+          .sortBy(_.head.getId)
+      )
+    )
   }
 
   test("undirected relationship scan should use descending index order when provided") {
@@ -415,7 +430,9 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       inOrder(
         relationships
           .flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
-          .sortBy(_.head.getId * -1)))
+          .sortBy(_.head.getId * -1)
+      )
+    )
   }
 
   test("should handle undirected and continuation") {

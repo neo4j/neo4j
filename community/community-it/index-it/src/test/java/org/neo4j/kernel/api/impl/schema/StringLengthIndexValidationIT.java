@@ -19,18 +19,22 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -49,17 +53,9 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.test.TestLabels.LABEL_ONE;
-
-@DbmsExtension( configurationCallback = "configure" )
-@ExtendWith( RandomExtension.class )
-public abstract class StringLengthIndexValidationIT
-{
+@DbmsExtension(configurationCallback = "configure")
+@ExtendWith(RandomExtension.class)
+public abstract class StringLengthIndexValidationIT {
     private static final String propKey = "largeString";
 
     private final AtomicBoolean trapPopulation = new AtomicBoolean();
@@ -68,117 +64,109 @@ public abstract class StringLengthIndexValidationIT
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private RandomSupport random;
 
-    protected abstract int getSingleKeySizeLimit( int payloadSize );
+    protected abstract int getSingleKeySizeLimit(int payloadSize);
 
     // Each char in string need to fit in one byte
-    protected abstract String getString( RandomSupport random, int keySize );
+    protected abstract String getString(RandomSupport random, int keySize);
 
     protected abstract IndexType getIndexType();
 
     protected abstract String getIndexProviderString();
 
-    protected abstract String expectedPopulationFailureCauseMessage( long indexId, long entityId );
+    protected abstract String expectedPopulationFailureCauseMessage(long indexId, long entityId);
 
     @BeforeEach
-    void setUp()
-    {
-        singleKeySizeLimit = getSingleKeySizeLimit( pageCache.payloadSize() );
+    void setUp() {
+        singleKeySizeLimit = getSingleKeySizeLimit(pageCache.payloadSize());
     }
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
+    void configure(TestDatabaseManagementServiceBuilder builder) {
         Monitors monitors = new Monitors();
-        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter()
-        {
+        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter() {
             @Override
-            public void indexPopulationScanComplete()
-            {
-                if ( trapPopulation.get() )
-                {
+            public void indexPopulationScanComplete() {
+                if (trapPopulation.get()) {
                     populationScanFinished.reached();
                 }
             }
         };
-        monitors.addMonitorListener( trappingMonitor );
-        builder.setMonitors( monitors );
+        monitors.addMonitorListener(trappingMonitor);
+        builder.setMonitors(monitors);
     }
 
     @Test
-    void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit()
-    {
+    void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit() {
         createAndAwaitIndex();
-        String propValue = getString( random, singleKeySizeLimit );
+        String propValue = getString(random, singleKeySizeLimit);
         long expectedNodeId;
 
         // Write
-        expectedNodeId = createNode( propValue );
+        expectedNodeId = createNode(propValue);
 
         // Read
-        assertReadNode( propValue, expectedNodeId );
+        assertReadNode(propValue, expectedNodeId);
     }
 
     @Test
-    void shouldSuccessfullyPopulateIndexWithinIndexKeySizeLimit()
-    {
-        String propValue = getString( random, singleKeySizeLimit );
+    void shouldSuccessfullyPopulateIndexWithinIndexKeySizeLimit() {
+        String propValue = getString(random, singleKeySizeLimit);
         long expectedNodeId;
 
         // Write
-        expectedNodeId = createNode( propValue );
+        expectedNodeId = createNode(propValue);
 
         // Populate
         createAndAwaitIndex();
 
         // Read
-        assertReadNode( propValue, expectedNodeId );
+        assertReadNode(propValue, expectedNodeId);
     }
 
     @Test
-    void txMustFailIfExceedingIndexKeySizeLimit()
-    {
+    void txMustFailIfExceedingIndexKeySizeLimit() {
         long indexId = createAndAwaitIndex();
         long nodeId;
 
         // Write
-        try ( Transaction tx = db.beginTx() )
-        {
-            String propValue = getString( random, singleKeySizeLimit + 1 );
-            Node node = tx.createNode( LABEL_ONE );
+        try (Transaction tx = db.beginTx()) {
+            String propValue = getString(random, singleKeySizeLimit + 1);
+            Node node = tx.createNode(LABEL_ONE);
             nodeId = node.getId();
 
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> node.setProperty( propKey, propValue ) );
-            assertThat( e.getMessage() ).contains( String.format(
-                    "Property value is too large to index, please see index documentation for limitations. " +
-                    "Index: Index( id=%d, name='coolName', type='GENERAL %s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' ), entity id: %d",
-                    indexId, getIndexType(), getIndexProviderString(), nodeId ) );
+            IllegalArgumentException e =
+                    assertThrows(IllegalArgumentException.class, () -> node.setProperty(propKey, propValue));
+            assertThat(e.getMessage())
+                    .contains(String.format(
+                            "Property value is too large to index, please see index documentation for limitations. "
+                                    + "Index: Index( id=%d, name='coolName', type='GENERAL %s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' ), entity id: %d",
+                            indexId, getIndexType(), getIndexProviderString(), nodeId));
         }
     }
 
     @Test
-    void indexPopulationMustFailIfExceedingIndexKeySizeLimit()
-    {
+    void indexPopulationMustFailIfExceedingIndexKeySizeLimit() {
         // Write
-        String propValue = getString( random, singleKeySizeLimit + 1 );
-        long nodeId = createNode( propValue );
+        String propValue = getString(random, singleKeySizeLimit + 1);
+        long nodeId = createNode(propValue);
 
         // Create index should be fine
         long indexId = createIndex();
-        assertIndexFailToComeOnline( indexId, nodeId );
-        assertIndexInFailedState( indexId, nodeId );
+        assertIndexFailToComeOnline(indexId, nodeId);
+        assertIndexInFailedState(indexId, nodeId);
     }
 
     @Test
-    public void externalUpdatesMustNotFailIndexPopulationIfWithinIndexKeySizeLimit() throws InterruptedException
-    {
-        trapPopulation.set( true );
-        try ( Transaction tx = db.beginTx() )
-        {
+    public void externalUpdatesMustNotFailIndexPopulationIfWithinIndexKeySizeLimit() throws InterruptedException {
+        trapPopulation.set(true);
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
@@ -190,28 +178,25 @@ public abstract class StringLengthIndexValidationIT
         populationScanFinished.await();
 
         // External update to index while population has not yet finished
-        String propValue = getString( random, singleKeySizeLimit );
-        long nodeId = createNode( propValue );
+        String propValue = getString(random, singleKeySizeLimit);
+        long nodeId = createNode(propValue);
 
         // Continue index population
         populationScanFinished.release();
 
         // Waiting for it to come online should succeed
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
 
-        assertReadNode( propValue, nodeId );
+        assertReadNode(propValue, nodeId);
     }
 
     @Test
-    public void externalUpdatesMustFailIndexPopulationIfExceedingIndexKeySizeLimit() throws InterruptedException
-    {
-        trapPopulation.set( true );
-        try ( Transaction tx = db.beginTx() )
-        {
+    public void externalUpdatesMustFailIndexPopulationIfExceedingIndexKeySizeLimit() throws InterruptedException {
+        trapPopulation.set(true);
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
@@ -223,137 +208,125 @@ public abstract class StringLengthIndexValidationIT
         populationScanFinished.await();
 
         // External update to index while population has not yet finished
-        String propValue = getString( random, singleKeySizeLimit + 1 );
-        long nodeId = createNode( propValue );
+        String propValue = getString(random, singleKeySizeLimit + 1);
+        long nodeId = createNode(propValue);
 
         // Continue index population
         populationScanFinished.release();
 
-        assertIndexFailToComeOnline( indexId, nodeId );
-        assertIndexInFailedState( indexId, nodeId );
+        assertIndexFailToComeOnline(indexId, nodeId);
+        assertIndexInFailedState(indexId, nodeId);
     }
 
-    public void assertIndexFailToComeOnline( long indexId, long entityId )
-    {
+    public void assertIndexFailToComeOnline(long indexId, long entityId) {
         // Waiting for it to come online should fail
-        IllegalStateException e = assertThrows( IllegalStateException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().awaitIndexesOnline( 2, MINUTES );
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> {
+            try (Transaction tx = db.beginTx()) {
+                tx.schema().awaitIndexesOnline(2, MINUTES);
                 tx.commit();
             }
-        } );
+        });
 
-        assertThat( e.getMessage() ).contains(
-                String.format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
-                               "(Index( id=%d, name='coolName', type='GENERAL %s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) " +
-                               "entered a FAILED state.",
-                        indexId, getIndexType(), getIndexProviderString() ),
-                expectedPopulationFailureCauseMessage( indexId, entityId ) );
+        assertThat(e.getMessage())
+                .contains(
+                        String.format(
+                                "Index IndexDefinition[label:LABEL_ONE on:largeString] "
+                                        + "(Index( id=%d, name='coolName', type='GENERAL %s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) "
+                                        + "entered a FAILED state.",
+                                indexId, getIndexType(), getIndexProviderString()),
+                        expectedPopulationFailureCauseMessage(indexId, entityId));
     }
 
-    public void assertIndexInFailedState( long indexId, long entityId )
-    {
+    public void assertIndexInFailedState(long indexId, long entityId) {
         // Index should be in failed state
-        try ( Transaction tx = db.beginTx() )
-        {
-            Iterator<IndexDefinition> iterator = tx.schema().getIndexes( LABEL_ONE ).iterator();
-            assertTrue( iterator.hasNext() );
+        try (Transaction tx = db.beginTx()) {
+            Iterator<IndexDefinition> iterator =
+                    tx.schema().getIndexes(LABEL_ONE).iterator();
+            assertTrue(iterator.hasNext());
             IndexDefinition next = iterator.next();
-            assertEquals( Schema.IndexState.FAILED, tx.schema().getIndexState( next ), "state is FAILED" );
-            assertThat( tx.schema().getIndexFailure( next ) ).contains( expectedPopulationFailureCauseMessage( indexId, entityId ) );
+            assertEquals(Schema.IndexState.FAILED, tx.schema().getIndexState(next), "state is FAILED");
+            assertThat(tx.schema().getIndexFailure(next))
+                    .contains(expectedPopulationFailureCauseMessage(indexId, entityId));
             tx.commit();
         }
     }
 
     @Test
-    void shouldHandleSizesCloseToTheLimit()
-    {
+    void shouldHandleSizesCloseToTheLimit() {
         // given
         createAndAwaitIndex();
 
         // when
-        Map<String,Long> strings = new HashMap<>();
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < 1_000; i++ )
-            {
+        Map<String, Long> strings = new HashMap<>();
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < 1_000; i++) {
                 String string;
-                do
-                {
-                    string = getString( random, random.nextInt( singleKeySizeLimit / 2, singleKeySizeLimit ) );
-                }
-                while ( strings.containsKey( string ) );
+                do {
+                    string = getString(random, random.nextInt(singleKeySizeLimit / 2, singleKeySizeLimit));
+                } while (strings.containsKey(string));
 
-                Node node = tx.createNode( LABEL_ONE );
-                node.setProperty( propKey, string );
-                strings.put( string, node.getId() );
+                Node node = tx.createNode(LABEL_ONE);
+                node.setProperty(propKey, string);
+                strings.put(string, node.getId());
             }
             tx.commit();
         }
 
         // then
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( String string : strings.keySet() )
-            {
-                Node node = tx.findNode( LABEL_ONE, propKey, string );
-                assertEquals( strings.get( string ).longValue(), node.getId() );
+        try (Transaction tx = db.beginTx()) {
+            for (String string : strings.keySet()) {
+                Node node = tx.findNode(LABEL_ONE, propKey, string);
+                assertEquals(strings.get(string).longValue(), node.getId());
             }
             tx.commit();
         }
     }
 
-    private long createAndAwaitIndex()
-    {
+    private long createAndAwaitIndex() {
         long indexId;
         indexId = createIndex();
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, MINUTES);
             tx.commit();
         }
         return indexId;
     }
 
-    private long createIndex()
-    {
+    private long createIndex() {
         long indexId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            var index = tx.schema().indexFor( LABEL_ONE ).on( propKey ).withIndexType( getIndexType() ).withName( "coolName" ).create();
-            indexId = getIndexIdFrom( index );
+        try (Transaction tx = db.beginTx()) {
+            var index = tx.schema()
+                    .indexFor(LABEL_ONE)
+                    .on(propKey)
+                    .withIndexType(getIndexType())
+                    .withName("coolName")
+                    .create();
+            indexId = getIndexIdFrom(index);
             tx.commit();
         }
         return indexId;
     }
 
-    private static long getIndexIdFrom( IndexDefinition index )
-    {
+    private static long getIndexIdFrom(IndexDefinition index) {
         return ((IndexDefinitionImpl) index).getIndexReference().getId();
     }
 
-    private long createNode( String propValue )
-    {
+    private long createNode(String propValue) {
         long expectedNodeId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode( LABEL_ONE );
-            node.setProperty( propKey, propValue );
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.createNode(LABEL_ONE);
+            node.setProperty(propKey, propValue);
             expectedNodeId = node.getId();
             tx.commit();
         }
         return expectedNodeId;
     }
 
-    private void assertReadNode( String propValue, long expectedNodeId )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.findNode( LABEL_ONE, propKey, propValue );
-            Assertions.assertNotNull( node );
-            assertEquals( expectedNodeId, node.getId(), "node id" );
+    private void assertReadNode(String propValue, long expectedNodeId) {
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.findNode(LABEL_ONE, propKey, propValue);
+            Assertions.assertNotNull(node);
+            assertEquals(expectedNodeId, node.getId(), "node id");
             tx.commit();
         }
     }

@@ -144,7 +144,8 @@ class ProfilingTracerTest extends CypherFunSuite {
     val tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)
 
-    1 to 100 foreach { _ => {
+    1 to 100 foreach { _ =>
+      {
         val pin = cursorTracer.beginPin(false, 1, swapper)
         pin.hit()
         pin.close()
@@ -164,13 +165,14 @@ class ProfilingTracerTest extends CypherFunSuite {
     val tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)
 
-    1 to 17 foreach { _ => {
-      val pin = cursorTracer.beginPin(false, 1, swapper)
-      val pageFault = pin.beginPageFault(1, swapper)
-      pageFault.close()
-      pin.close()
-      cursorTracer.unpin(1, swapper)
-    }
+    1 to 17 foreach { _ =>
+      {
+        val pin = cursorTracer.beginPin(false, 1, swapper)
+        val pageFault = pin.beginPageFault(1, swapper)
+        pageFault.close()
+        pin.close()
+        cursorTracer.unpin(1, swapper)
+      }
     }
 
     event.close()

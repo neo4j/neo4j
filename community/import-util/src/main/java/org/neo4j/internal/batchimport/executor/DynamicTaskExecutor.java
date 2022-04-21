@@ -19,90 +19,84 @@
  */
 package org.neo4j.internal.batchimport.executor;
 
+import static java.lang.Integer.max;
+import static java.lang.Integer.min;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import org.neo4j.function.Suppliers;
-
-import static java.lang.Integer.max;
-import static java.lang.Integer.min;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Implementation of {@link TaskExecutor} with a maximum queue size and where each processor is a dedicated
  * {@link Thread} pulling queued tasks and executing them.
  */
-public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
-{
+public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL> {
     private final BlockingQueue<Task<LOCAL>> queue;
     private final ParkStrategy parkStrategy;
     private final String processorThreadNamePrefix;
-    @SuppressWarnings( "unchecked" )
-    private volatile Processor[] processors = (Processor[]) Array.newInstance( Processor.class, 0 );
+
+    @SuppressWarnings("unchecked")
+    private volatile Processor[] processors = (Processor[]) Array.newInstance(Processor.class, 0);
+
     private volatile boolean shutDown;
     private final AtomicReference<Throwable> panic = new AtomicReference<>();
     private final Supplier<LOCAL> initialLocalState;
     private final int maxProcessorCount;
     private final ProcessorScheduler scheduler;
 
-    public DynamicTaskExecutor( int initialProcessorCount, int maxProcessorCount, int maxQueueSize,
-            ParkStrategy parkStrategy, String processorThreadNamePrefix, Supplier<LOCAL> initialLocalState, ProcessorScheduler scheduler )
-    {
+    public DynamicTaskExecutor(
+            int initialProcessorCount,
+            int maxProcessorCount,
+            int maxQueueSize,
+            ParkStrategy parkStrategy,
+            String processorThreadNamePrefix,
+            Supplier<LOCAL> initialLocalState,
+            ProcessorScheduler scheduler) {
         this.maxProcessorCount = maxProcessorCount == 0 ? Integer.MAX_VALUE : maxProcessorCount;
         this.scheduler = scheduler;
 
-        assert this.maxProcessorCount >= initialProcessorCount :
-                "Unexpected initial processor count " + initialProcessorCount + " for max " + maxProcessorCount;
+        assert this.maxProcessorCount >= initialProcessorCount
+                : "Unexpected initial processor count " + initialProcessorCount + " for max " + maxProcessorCount;
 
         this.parkStrategy = parkStrategy;
         this.processorThreadNamePrefix = processorThreadNamePrefix;
         this.initialLocalState = initialLocalState;
-        this.queue = new ArrayBlockingQueue<>( maxQueueSize );
-        processors( initialProcessorCount );
+        this.queue = new ArrayBlockingQueue<>(maxQueueSize);
+        processors(initialProcessorCount);
     }
 
     @Override
-    public int processors( int delta )
-    {
-        if ( shutDown || delta == 0 )
-        {
+    public int processors(int delta) {
+        if (shutDown || delta == 0) {
             return processors.length;
         }
 
-        synchronized ( this )
-        {
-            if ( shutDown )
-            {
+        synchronized (this) {
+            if (shutDown) {
                 return processors.length;
             }
 
             int requestedNumber = processors.length + delta;
-            if ( delta > 0 )
-            {
-                requestedNumber = min( requestedNumber, maxProcessorCount );
-                if ( requestedNumber > processors.length )
-                {
-                    Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
-                    for ( int i = processors.length; i < requestedNumber; i++ )
-                    {
+            if (delta > 0) {
+                requestedNumber = min(requestedNumber, maxProcessorCount);
+                if (requestedNumber > processors.length) {
+                    Processor[] newProcessors = Arrays.copyOf(processors, requestedNumber);
+                    for (int i = processors.length; i < requestedNumber; i++) {
                         newProcessors[i] = new Processor();
-                        scheduler.schedule( newProcessors[i], processorThreadNamePrefix + "-" + i );
+                        scheduler.schedule(newProcessors[i], processorThreadNamePrefix + "-" + i);
                     }
                     this.processors = newProcessors;
                 }
-            }
-            else
-            {
-                requestedNumber = max( 1, requestedNumber );
-                if ( requestedNumber < processors.length )
-                {
-                    Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
-                    for ( int i = newProcessors.length; i < processors.length; i++ )
-                    {
+            } else {
+                requestedNumber = max(1, requestedNumber);
+                if (requestedNumber < processors.length) {
+                    Processor[] newProcessors = Arrays.copyOf(processors, requestedNumber);
+                    for (int i = newProcessors.length; i < processors.length; i++) {
                         processors[i].processorShutDown = true;
                     }
                     this.processors = newProcessors;
@@ -113,123 +107,93 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     }
 
     @Override
-    public void submit( Task<LOCAL> task )
-    {
+    public void submit(Task<LOCAL> task) {
         assertHealthy();
-        try
-        {
-            while ( !queue.offer( task, 10, MILLISECONDS ) )
-            {   // Then just stay here and try
+        try {
+            while (!queue.offer(task, 10, MILLISECONDS)) { // Then just stay here and try
                 assertHealthy();
             }
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }
 
     @Override
-    public void assertHealthy()
-    {
+    public void assertHealthy() {
         Throwable panic = this.panic.get();
-        if ( panic != null )
-        {
-            throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
+        if (panic != null) {
+            throw new TaskExecutionPanicException("Executor has been shut down in panic", panic);
         }
     }
 
     @Override
-    public void receivePanic( Throwable cause )
-    {
-        panic.compareAndSet( null, cause );
+    public void receivePanic(Throwable cause) {
+        panic.compareAndSet(null, cause);
     }
 
     @Override
-    public synchronized void close()
-    {
-        if ( shutDown )
-        {
+    public synchronized void close() {
+        if (shutDown) {
             return;
         }
 
-        while ( !queue.isEmpty() && panic.get() == null /*all bets are off in the event of panic*/ )
-        {
+        while (!queue.isEmpty() && panic.get() == null /*all bets are off in the event of panic*/) {
             parkAWhile();
         }
         this.shutDown = true;
-        while ( anyAlive() && panic.get() == null /*all bets are off in the event of panic*/ )
-        {
+        while (anyAlive() && panic.get() == null /*all bets are off in the event of panic*/) {
             parkAWhile();
         }
     }
 
-    private boolean anyAlive()
-    {
-        for ( Processor processor : processors )
-        {
-            if ( !processor.ended )
-            {
+    private boolean anyAlive() {
+        for (Processor processor : processors) {
+            if (!processor.ended) {
                 return true;
             }
         }
         return false;
     }
 
-    private void parkAWhile()
-    {
-        parkStrategy.park( Thread.currentThread() );
+    private void parkAWhile() {
+        parkStrategy.park(Thread.currentThread());
     }
 
-    public static <T> Supplier<T> noLocalState()
-    {
-        return Suppliers.singleton( null );
+    public static <T> Supplier<T> noLocalState() {
+        return Suppliers.singleton(null);
     }
 
-    private class Processor implements Runnable
-    {
+    private class Processor implements Runnable {
         // In addition to the global shutDown flag in the executor each processor has a local flag
         // so that an individual processor can be shut down, for example when reducing number of processors
         private volatile boolean processorShutDown;
         private volatile boolean ended;
 
         @Override
-        public void run()
-        {
-            try
-            {
+        public void run() {
+            try {
                 // Initialized here since it's the thread itself that needs to call it
                 final LOCAL threadLocalState = initialLocalState.get();
-                while ( !shutDown && !processorShutDown )
-                {
+                while (!shutDown && !processorShutDown) {
                     Task<LOCAL> task;
-                    try
-                    {
-                        task = queue.poll( 10, MILLISECONDS );
-                    }
-                    catch ( InterruptedException e )
-                    {
+                    try {
+                        task = queue.poll(10, MILLISECONDS);
+                    } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         break;
                     }
 
-                    if ( task != null )
-                    {
-                        try
-                        {
-                            task.run( threadLocalState );
-                        }
-                        catch ( Throwable e )
-                        {
-                            receivePanic( e );
+                    if (task != null) {
+                        try {
+                            task.run(threadLocalState);
+                        } catch (Throwable e) {
+                            receivePanic(e);
                             close();
-                            throw new RuntimeException( e );
+                            throw new RuntimeException(e);
                         }
                     }
                 }
-            }
-            finally
-            {
+            } finally {
                 ended = true;
             }
         }

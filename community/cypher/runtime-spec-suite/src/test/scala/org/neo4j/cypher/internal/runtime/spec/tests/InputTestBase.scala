@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class InputTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should produce input") {
     // given
@@ -46,7 +46,8 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
     val resultInput = inputValues(
       Array(11, 12, 13),
       Array(21, 22, 23),
-      Array(31, 32, 33))
+      Array(31, 32, 33)
+    )
       .and(
         Array("11", "12", "13"),
         nodes.map(n => tx.getNodeById(n.getId)).toArray
@@ -60,10 +61,10 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
 
   test("should retain input value order") {
     // when
-    val columns = (0 until 100).map(i => "c"+i)
+    val columns = (0 until 100).map(i => "c" + i)
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults(columns:_*)
+      .produceResults(columns: _*)
       .input(variables = columns)
       .build()
 
@@ -71,7 +72,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns(columns:_*).withSingleRow(columns:_*)
+    runtimeResult should beColumns(columns: _*).withSingleRow(columns: _*)
   }
 
   test("should return no rows on no input") {
@@ -103,7 +104,14 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("n1", "n2", "r1", "r2", "v1", "v2").withSingleRow(nodes(0), nodes(1), rels(0), rels(1), "hi", "ho")
+    runtimeResult should beColumns("n1", "n2", "r1", "r2", "v1", "v2").withSingleRow(
+      nodes(0),
+      nodes(1),
+      rels(0),
+      rels(1),
+      "hi",
+      "ho"
+    )
   }
 
   test("should work under non-fused limit") {
@@ -119,7 +127,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     runtimeResult should beColumns("y").withRows(rowCount(1))

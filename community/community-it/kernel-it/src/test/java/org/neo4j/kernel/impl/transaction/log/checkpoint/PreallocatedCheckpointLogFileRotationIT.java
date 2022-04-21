@@ -19,87 +19,74 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.TransactionId;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
-
-@EnabledOnOs( OS.LINUX )
-class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationIT
-{
+@EnabledOnOs(OS.LINUX)
+class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationIT {
     @Override
-    protected boolean preallocateLogs()
-    {
+    protected boolean preallocateLogs() {
         return true;
     }
 
     @Override
-    protected long expectedNewFileSize()
-    {
+    protected long expectedNewFileSize() {
         return ROTATION_THRESHOLD;
     }
 
     @Test
-    void writeCheckpointsIntoPreallocatedFile() throws IOException
-    {
+    void writeCheckpointsIntoPreallocatedFile() throws IOException {
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
-        LogPosition logPosition = new LogPosition( 1000, 12345 );
-        var transactionId = new TransactionId( 100, 101, 102 );
+        LogPosition logPosition = new LogPosition(1000, 12345);
+        var transactionId = new TransactionId(100, 101, 102);
         var reason = "checkpoints in preallocated file";
-        for ( int i = 0; i < 3; i++ )
-        {
-            checkpointAppender.checkPoint( NULL, transactionId, logPosition, Instant.now(), reason );
+        for (int i = 0; i < 3; i++) {
+            checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
-        assertThat( matchedFiles ).hasSize( 1 );
+        assertThat(matchedFiles).hasSize(1);
     }
 
     @Test
-    void writeCheckpointsIntoSeveralPreallocatedFiles() throws IOException
-    {
+    void writeCheckpointsIntoSeveralPreallocatedFiles() throws IOException {
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
-        LogPosition logPosition = new LogPosition( 1000, 12345 );
-        var transactionId = new TransactionId( 100, 101, 102 );
+        LogPosition logPosition = new LogPosition(1000, 12345);
+        var transactionId = new TransactionId(100, 101, 102);
         var reason = "checkpoint in preallocated file";
-        for ( int i = 0; i < 32; i++ )
-        {
-            checkpointAppender.checkPoint( NULL, transactionId, logPosition, Instant.now(), reason );
+        for (int i = 0; i < 32; i++) {
+            checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
         }
 
-        assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 7 ).allMatch( this::sizeEqualsToPreallocatedFile );
+        assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(7).allMatch(this::sizeEqualsToPreallocatedFile);
 
-        checkpointAppender.checkPoint( NULL, transactionId, logPosition, Instant.now(), reason );
-        assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 7 ).allMatch( this::sizeEqualsToPreallocatedFile );
+        checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
+        assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(7).allMatch(this::sizeEqualsToPreallocatedFile);
 
-        checkpointAppender.checkPoint( NULL, transactionId, logPosition, Instant.now(), reason );
-        assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 7 ).allMatch( this::sizeEqualsToPreallocatedFile );
+        checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
+        assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(7).allMatch(this::sizeEqualsToPreallocatedFile);
 
-        checkpointAppender.checkPoint( NULL, transactionId, logPosition, Instant.now(), reason );
-        assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 8 ).allMatch( this::sizeEqualsToPreallocatedFile );
+        checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
+        assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(8).allMatch(this::sizeEqualsToPreallocatedFile);
     }
 
-    private boolean sizeEqualsToPreallocatedFile( Path path )
-    {
-        try
-        {
-            return Files.size( path ) == ROTATION_THRESHOLD;
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    private boolean sizeEqualsToPreallocatedFile(Path path) {
+        try {
+            return Files.size(path) == ROTATION_THRESHOLD;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

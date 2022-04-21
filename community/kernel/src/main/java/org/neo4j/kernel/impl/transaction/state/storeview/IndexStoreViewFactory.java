@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -32,10 +31,9 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class IndexStoreViewFactory
-{
+public class IndexStoreViewFactory {
     private final FullScanStoreView fullScanStoreView;
-    private final Function<CursorContext,StoreCursors> cursorFactory;
+    private final Function<CursorContext, StoreCursors> cursorFactory;
     private final Locks locks;
     private final LockService lockService;
     private final Config config;
@@ -44,13 +42,12 @@ public class IndexStoreViewFactory
 
     public IndexStoreViewFactory(
             Config config,
-            Function<CursorContext,StoreCursors> cursorFactory,
+            Function<CursorContext, StoreCursors> cursorFactory,
             Supplier<StorageReader> storageReader,
             Locks locks,
             FullScanStoreView fullScanStoreView,
             LockService lockService,
-            InternalLogProvider logProvider )
-    {
+            InternalLogProvider logProvider) {
         this.cursorFactory = cursorFactory;
         this.locks = locks;
         this.lockService = lockService;
@@ -60,8 +57,8 @@ public class IndexStoreViewFactory
         this.fullScanStoreView = fullScanStoreView;
     }
 
-    public IndexStoreView createTokenIndexStoreView( IndexProxyProvider indexProxies )
-    {
-        return new DynamicIndexStoreView( fullScanStoreView, locks, lockService, config, indexProxies, storageReader, cursorFactory, logProvider );
+    public IndexStoreView createTokenIndexStoreView(IndexProxyProvider indexProxies) {
+        return new DynamicIndexStoreView(
+                fullScanStoreView, locks, lockService, config, indexProxies, storageReader, cursorFactory, logProvider);
     }
 }

@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * For each source row, produce it if all predicates are true.
  */
-case class Selection(predicate: Ands,
-                     override val source: LogicalPlan
-                    )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen)  {
+case class Selection(predicate: Ands, override val source: LogicalPlan)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
   assert(predicate.exprs.nonEmpty, "A selection plan should never be created without predicates")
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
@@ -39,16 +38,18 @@ case class Selection(predicate: Ands,
 }
 
 object Selection {
-  def apply(predicates: Seq[Expression], source: LogicalPlan)(implicit idGen: IdGen): Selection =  {
+
+  def apply(predicates: Seq[Expression], source: LogicalPlan)(implicit idGen: IdGen): Selection = {
     assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
     Selection(Ands(predicates)(predicates.head.position), source)
   }
 }
 
 object SelectionMatcher {
+
   def unapply(arg: Selection): Option[(Seq[Expression], LogicalPlan)] = {
     Some(
       (arg.predicate.exprs.toSeq, arg.source)
-      )
+    )
   }
 }

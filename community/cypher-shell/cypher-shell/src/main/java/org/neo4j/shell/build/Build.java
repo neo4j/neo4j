@@ -22,14 +22,12 @@ package org.neo4j.shell.build;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-
 import org.neo4j.shell.log.Logger;
 
 /**
  * This class provides access to build time variables
  */
-public class Build
-{
+public class Build {
     private static final Logger log = Logger.create();
     private static Properties props;
 
@@ -38,26 +36,18 @@ public class Build
      *
      * @return build properties
      */
-    private static Properties getProperties()
-    {
-        if ( props == null )
-        {
+    private static Properties getProperties() {
+        if (props == null) {
             props = new Properties();
-            try ( InputStream stream = Build.class.getClassLoader().getResourceAsStream( "build.properties" ) )
-            {
-                if ( stream == null )
-                {
-                    throw new IllegalStateException( "Cannot read build.properties" );
+            try (InputStream stream = Build.class.getClassLoader().getResourceAsStream("build.properties")) {
+                if (stream == null) {
+                    throw new IllegalStateException("Cannot read build.properties");
+                } else {
+                    props.load(stream);
                 }
-                else
-                {
-                    props.load( stream );
-                }
-            }
-            catch ( IOException e )
-            {
-                log.error( e );
-                System.err.println( "Could not read build properties: " + e.getMessage() );
+            } catch (IOException e) {
+                log.error(e);
+                System.err.println("Could not read build properties: " + e.getMessage());
             }
         }
 
@@ -67,16 +57,14 @@ public class Build
     /**
      * @return the revision of the source code, or "dev" if no properties file could be read.
      */
-    public static String version()
-    {
-        return getProperties().getProperty( "version", "dev" );
+    public static String version() {
+        return getProperties().getProperty("version", "dev");
     }
 
     /**
      * @return the revision of the Neo4j Driver, or "dev" if no properties file could be read.
      */
-    public static String driverVersion()
-    {
-        return getProperties().getProperty( "driverVersion", "dev" );
+    public static String driverVersion() {
+        return getProperties().getProperty("driverVersion", "dev");
     }
 }

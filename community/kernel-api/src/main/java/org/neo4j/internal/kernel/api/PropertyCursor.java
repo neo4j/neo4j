@@ -25,8 +25,7 @@ import org.neo4j.values.storable.ValueGroup;
 /**
  * Cursor for scanning the properties of a node or relationship.
  */
-public interface PropertyCursor extends Cursor
-{
+public interface PropertyCursor extends Cursor {
     int propertyKey();
 
     ValueGroup propertyType();

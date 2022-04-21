@@ -21,11 +21,9 @@ package org.neo4j.logging.log4j;
 
 import org.apache.logging.log4j.core.config.DefaultConfiguration;
 
-class Neo4jConfiguration extends DefaultConfiguration
-{
+class Neo4jConfiguration extends DefaultConfiguration {
     @Override
-    protected void setToDefault()
-    {
+    protected void setToDefault() {
         // no defaults
     }
 }

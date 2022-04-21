@@ -19,15 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Map;
-
-import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -46,192 +37,186 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 
-class ListConverterTest
-{
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+
+class ListConverterTest {
     @Test
-    void shouldHandleNullString()
-    {
+    void shouldHandleNullString() {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
         String listString = "null";
 
         // When
-        DefaultParameterValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply(listString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntList( null, NTString ) );
+        assertThat(converted).isEqualTo(ntList(null, NTString));
     }
 
     @Test
-    void shouldHandleEmptyList()
-    {
+    void shouldHandleEmptyList() {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
         String listString = "[]";
 
         // When
-        DefaultParameterValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply(listString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntList( emptyList(), NTString ) );
+        assertThat(converted).isEqualTo(ntList(emptyList(), NTString));
     }
 
     @Test
-    void shouldHandleEmptyListWithSpaces()
-    {
+    void shouldHandleEmptyListWithSpaces() {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
         String listString = " [  ]   ";
 
         // When
-        DefaultParameterValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply(listString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntList( emptyList(), NTString ) );
+        assertThat(converted).isEqualTo(ntList(emptyList(), NTString));
     }
 
     @Test
-    void shouldHandleSingleQuotedValue()
-    {
+    void shouldHandleSingleQuotedValue() {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
         String listString = "['foo', 'bar']";
 
         // When
-        DefaultParameterValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply(listString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntList( asList( "foo", "bar" ), NTString ) );
+        assertThat(converted).isEqualTo(ntList(asList("foo", "bar"), NTString));
     }
 
     @Test
-    void shouldHandleDoubleQuotedValue()
-    {
+    void shouldHandleDoubleQuotedValue() {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
         String listString = "[\"foo\", \"bar\"]";
 
         // When
-        DefaultParameterValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply(listString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntList( asList( "foo", "bar" ), NTString ) );
+        assertThat(converted).isEqualTo(ntList(asList("foo", "bar"), NTString));
     }
 
     @Test
-    void shouldHandleIntegerValue()
-    {
+    void shouldHandleIntegerValue() {
         // Given
-        ListConverter converter = new ListConverter( Long.class, NTInteger, expressionEvaluator() );
+        ListConverter converter = new ListConverter(Long.class, NTInteger, expressionEvaluator());
         String listString = "[1337, 42]";
 
         // When
-        DefaultParameterValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply(listString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntList( asList( 1337L, 42L ), NTInteger ) );
+        assertThat(converted).isEqualTo(ntList(asList(1337L, 42L), NTInteger));
     }
 
     @Test
-    void shouldHandleFloatValue()
-    {
+    void shouldHandleFloatValue() {
         // Given
-        ListConverter converter = new ListConverter( Double.class, NTFloat, expressionEvaluator() );
+        ListConverter converter = new ListConverter(Double.class, NTFloat, expressionEvaluator());
         String listSting = "[2.718281828, 3.14]";
 
         // When
-        DefaultParameterValue converted = converter.apply( listSting );
+        DefaultParameterValue converted = converter.apply(listSting);
 
         // Then
-        assertThat( converted ).isEqualTo( ntList( asList( 2.718281828, 3.14 ), NTFloat ) );
+        assertThat(converted).isEqualTo(ntList(asList(2.718281828, 3.14), NTFloat));
     }
 
     @Test
-    void shouldHandleNullValue()
-    {
+    void shouldHandleNullValue() {
         // Given
-        ListConverter converter = new ListConverter( Double.class, NTFloat, expressionEvaluator() );
+        ListConverter converter = new ListConverter(Double.class, NTFloat, expressionEvaluator());
         String listString = "[null]";
 
         // When
-        DefaultParameterValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply(listString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntList( singletonList( null ), NTFloat ) );
+        assertThat(converted).isEqualTo(ntList(singletonList(null), NTFloat));
     }
 
     @Test
-    void shouldHandleBooleanValues()
-    {
+    void shouldHandleBooleanValues() {
         // Given
-        ListConverter converter = new ListConverter( Boolean.class, NTBoolean, expressionEvaluator() );
+        ListConverter converter = new ListConverter(Boolean.class, NTBoolean, expressionEvaluator());
         String mapString = "[false, true]";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
-        assertThat( converted ).isEqualTo( ntList( asList( false, true ), NTBoolean ) );
+        assertThat(converted).isEqualTo(ntList(asList(false, true), NTBoolean));
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Test
-    void shouldHandleNestedLists()
-    {
+    void shouldHandleNestedLists() {
         // Given
-        ParameterizedType type = mock( ParameterizedType.class );
-        when( type.getActualTypeArguments() ).thenReturn( new Type[]{Object.class} );
-        ListConverter converter = new ListConverter( type, NTList( NTAny ), expressionEvaluator() );
+        ParameterizedType type = mock(ParameterizedType.class);
+        when(type.getActualTypeArguments()).thenReturn(new Type[] {Object.class});
+        ListConverter converter = new ListConverter(type, NTList(NTAny), expressionEvaluator());
         String mapString = "[42, [42, 1337]]";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
         List<Object> list = (List<Object>) converted.value();
-        assertThat( list.get( 0 ) ).isEqualTo( 42L );
-        assertThat( list.get( 1 ) ).isEqualTo( asList( 42L, 1337L ) );
+        assertThat(list.get(0)).isEqualTo(42L);
+        assertThat(list.get(1)).isEqualTo(asList(42L, 1337L));
     }
 
     @Test
-    void shouldFailOnInvalidMixedTypes()
-    {
+    void shouldFailOnInvalidMixedTypes() {
         // Given
-        ListConverter converter = new ListConverter( Long.class, NTInteger, expressionEvaluator() );
+        ListConverter converter = new ListConverter(Long.class, NTInteger, expressionEvaluator());
         String listString = "[1337, 'forty-two']";
 
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> converter.apply( listString ) );
-        assertThat( exception.getMessage() ).isEqualTo( "Expects a list of Long but got a list of String" );
+        IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class, () -> converter.apply(listString));
+        assertThat(exception.getMessage()).isEqualTo("Expects a list of Long but got a list of String");
     }
 
     @Test
-    void shouldPassOnValidMixedTypes()
-    {
+    void shouldPassOnValidMixedTypes() {
         // Given
-        ListConverter converter = new ListConverter( Object.class, NTAny, expressionEvaluator() );
+        ListConverter converter = new ListConverter(Object.class, NTAny, expressionEvaluator());
         String listString = "[1337, 'forty-two']";
 
         // When
-        DefaultParameterValue value = converter.apply( listString );
+        DefaultParameterValue value = converter.apply(listString);
 
         // Then
-        assertThat( value ).isEqualTo( ntList( asList( 1337L, "forty-two" ), NTAny ) );
+        assertThat(value).isEqualTo(ntList(asList(1337L, "forty-two"), NTAny));
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Test
-    void shouldHandleListsOfMaps()
-    {
+    void shouldHandleListsOfMaps() {
         // Given
-        ListConverter converter = new ListConverter( Map.class, NTMap, expressionEvaluator() );
+        ListConverter converter = new ListConverter(Map.class, NTMap, expressionEvaluator());
         String mapString = "[{k1: 42}, {k1: 1337}]";
 
         // When
-        DefaultParameterValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply(mapString);
 
         // Then
         List<Object> list = (List<Object>) converted.value();
-        assertThat( list.get( 0 ) ).isEqualTo( map( "k1", 42L ) );
-        assertThat( list.get( 1 ) ).isEqualTo( map( "k1", 1337L ) );
+        assertThat(list.get(0)).isEqualTo(map("k1", 42L));
+        assertThat(list.get(1)).isEqualTo(map("k1", 1337L));
     }
 }

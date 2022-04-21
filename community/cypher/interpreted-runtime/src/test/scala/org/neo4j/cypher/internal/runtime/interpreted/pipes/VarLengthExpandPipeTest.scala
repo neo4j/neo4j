@@ -36,13 +36,14 @@ import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.virtual.RelationshipValue
 
 class VarLengthExpandPipeTest extends CypherFunSuite {
+
   private trait WasClosed {
     def wasClosed: Boolean
   }
 
   private def relationshipIterator: ClosingLongIterator with RelationshipIterator with WasClosed =
     new ClosingLongIterator with RelationshipIterator with WasClosed {
-      private val inner = PrimitiveLongHelper.relationshipIteratorFrom((1,1,1,1), (2,2,2,2), (3,3,3,3))
+      private val inner = PrimitiveLongHelper.relationshipIteratorFrom((1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3))
       private var _wasClosed = false
 
       override def close(): Unit = _wasClosed = true
@@ -53,8 +54,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
       override def next(): Long = inner.next()
 
-      override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
-                                                             visitor: RelationshipVisitor[EXCEPTION]): Boolean = inner.relationshipVisit(relationshipId, visitor)
+      override def relationshipVisit[EXCEPTION <: Exception](
+        relationshipId: Long,
+        visitor: RelationshipVisitor[EXCEPTION]
+      ): Boolean = inner.relationshipVisit(relationshipId, visitor)
 
       override def startNodeId(): Long = inner.startNodeId()
 
@@ -77,13 +80,17 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     Mockito.when(nodeCursor.next()).thenReturn(true, false)
     Mockito.when(state.query.nodeCursor()).thenReturn(nodeCursor)
     val rels = relationshipIterator
-    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(rels)
+    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(
+      rels
+    )
 
     Mockito.when(state.query.relationshipById(any[Long], any[Long], any[Long], any[Int])).thenAnswer(
-      (invocation: InvocationOnMock) => relationshipValue(invocation.getArgument[Long](0)))
+      (invocation: InvocationOnMock) => relationshipValue(invocation.getArgument[Long](0))
+    )
 
-    val input = FakePipe(Seq(Map("a"->newMockedNode(10))))
-    val pipe = VarLengthExpandPipe(input,
+    val input = FakePipe(Seq(Map("a" -> newMockedNode(10))))
+    val pipe = VarLengthExpandPipe(
+      input,
       "a",
       "r",
       "b",
@@ -92,7 +99,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       new EagerTypes(Array(0)),
       1,
       Some(2),
-      nodeInScope = false)()
+      nodeInScope = false
+    )()
     // exhaust
     pipe.createResults(state).toList
     input.wasClosed shouldBe true
@@ -107,13 +115,17 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     Mockito.when(nodeCursor.next()).thenReturn(true, false)
     Mockito.when(state.query.nodeCursor()).thenReturn(nodeCursor)
     val rels = relationshipIterator
-    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(rels)
+    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(
+      rels
+    )
 
     Mockito.when(state.query.relationshipById(any[Long], any[Long], any[Long], any[Int])).thenAnswer(
-      (invocation: InvocationOnMock) => relationshipValue(invocation.getArgument[Long](0)))
+      (invocation: InvocationOnMock) => relationshipValue(invocation.getArgument[Long](0))
+    )
 
-    val input = FakePipe(Seq(Map("a"->newMockedNode(10))))
-    val pipe = VarLengthExpandPipe(input,
+    val input = FakePipe(Seq(Map("a" -> newMockedNode(10))))
+    val pipe = VarLengthExpandPipe(
+      input,
       "a",
       "r",
       "b",
@@ -122,7 +134,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       new EagerTypes(Array(0)),
       1,
       Some(2),
-      nodeInScope = false)()
+      nodeInScope = false
+    )()
     val result = pipe.createResults(state)
     result.hasNext shouldBe true // Need to initialize to get cursor registered
     result.close()

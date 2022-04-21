@@ -19,10 +19,11 @@
  */
 package org.neo4j.importer;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
+import static java.util.Collections.emptySet;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -31,7 +32,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
@@ -44,102 +48,97 @@ import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.util.Collections.emptySet;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @Neo4jLayoutExtension
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-class CsvImporterTest
-{
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+class CsvImporterTest {
     @Inject
     private TestDirectory testDir;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private SuppressOutput suppressOutput;
 
     @Test
-    void writesReportToSpecifiedReportFile() throws Exception
-    {
+    void writesReportToSpecifiedReportFile() throws Exception {
 
-        Path logDir = testDir.directory( "logs" );
-        Path reportLocation = testDir.file( "the_report" );
+        Path logDir = testDir.directory("logs");
+        Path reportLocation = testDir.file("the_report");
 
-        Path inputFile = testDir.file( "foobar.csv" );
-        List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
-        Files.write( inputFile, lines, Charset.defaultCharset() );
+        Path inputFile = testDir.file("foobar.csv");
+        List<String> lines = Collections.singletonList("foo\\tbar\\tbaz");
+        Files.write(inputFile, lines, Charset.defaultCharset());
 
-        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, logDir.toAbsolutePath() );
+        Config config = Config.defaults(GraphDatabaseSettings.logs_directory, logDir.toAbsolutePath());
 
         CsvImporter csvImporter = CsvImporter.builder()
-            .withDatabaseLayout( databaseLayout.getNeo4jLayout().databaseLayout( "foodb" ) )
-            .withDatabaseConfig( config )
-            .withReportFile( reportLocation.toAbsolutePath() )
-            .withCsvConfig( Configuration.TABS )
-            .withFileSystem( testDir.getFileSystem() )
-            .addNodeFiles( emptySet(), new Path[]{inputFile.toAbsolutePath()} )
-            .build();
+                .withDatabaseLayout(databaseLayout.getNeo4jLayout().databaseLayout("foodb"))
+                .withDatabaseConfig(config)
+                .withReportFile(reportLocation.toAbsolutePath())
+                .withCsvConfig(Configuration.TABS)
+                .withFileSystem(testDir.getFileSystem())
+                .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
+                .build();
 
         csvImporter.doImport();
 
-        assertTrue( Files.exists( reportLocation ) );
-        assertThat( Files.readString( logDir.resolve( "debug.log" ) ) ).contains( "[foodb] Import starting" );
+        assertTrue(Files.exists(reportLocation));
+        assertThat(Files.readString(logDir.resolve("debug.log"))).contains("[foodb] Import starting");
     }
 
     @Test
-    void complainsOnNonEmptyDirectoryUnlessForced() throws Exception
-    {
-        //Given
-        Path file = databaseLayout.getTransactionLogsDirectory().resolve( TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
-        List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
-        Files.write( file, lines, Charset.defaultCharset() );
-        Path reportLocation = testDir.file( "the_report" );
+    void complainsOnNonEmptyDirectoryUnlessForced() throws Exception {
+        // Given
+        Path file = databaseLayout.getTransactionLogsDirectory().resolve(TransactionLogFilesHelper.DEFAULT_NAME + ".0");
+        List<String> lines = Collections.singletonList("foo\\tbar\\tbaz");
+        Files.write(file, lines, Charset.defaultCharset());
+        Path reportLocation = testDir.file("the_report");
 
         CsvImporter.Builder csvImporterBuilder = CsvImporter.builder()
-                                                            .withDatabaseConfig( Config.defaults( GraphDatabaseSettings.neo4j_home, testDir.homePath() ) )
-                                                            .withDatabaseLayout( databaseLayout )
-                                                            .withCsvConfig( Configuration.TABS )
-                                                            .withFileSystem( testDir.getFileSystem() )
-                                                            .withReportFile( reportLocation.toAbsolutePath() );
+                .withDatabaseConfig(Config.defaults(GraphDatabaseSettings.neo4j_home, testDir.homePath()))
+                .withDatabaseLayout(databaseLayout)
+                .withCsvConfig(Configuration.TABS)
+                .withFileSystem(testDir.getFileSystem())
+                .withReportFile(reportLocation.toAbsolutePath());
 
-        //Then
-        assertThatThrownBy( () -> csvImporterBuilder.build().doImport() ).hasCauseInstanceOf( DirectoryNotEmptyException.class );
-        assertThat( suppressOutput.getErrorVoice().containsMessage( "Database already exist. Re-run with `--force`" ) ).isTrue();
-        assertThatCode( () -> csvImporterBuilder.withForce( true ).build().doImport() ).doesNotThrowAnyException();
+        // Then
+        assertThatThrownBy(() -> csvImporterBuilder.build().doImport())
+                .hasCauseInstanceOf(DirectoryNotEmptyException.class);
+        assertThat(suppressOutput.getErrorVoice().containsMessage("Database already exist. Re-run with `--force`"))
+                .isTrue();
+        assertThatCode(() -> csvImporterBuilder.withForce(true).build().doImport())
+                .doesNotThrowAnyException();
     }
 
     @Test
-    void tracePageCacheAccessOnCsvImport() throws IOException
-    {
-        Path logDir = testDir.directory( "logs" );
-        Path reportLocation = testDir.file( "the_report" );
-        Path inputFile = testDir.file( "foobar.csv" );
+    void tracePageCacheAccessOnCsvImport() throws IOException {
+        Path logDir = testDir.directory("logs");
+        Path reportLocation = testDir.file("the_report");
+        Path inputFile = testDir.file("foobar.csv");
 
-        List<String> lines = List.of( "foo;bar;baz" );
-        Files.write( inputFile, lines, Charset.defaultCharset() );
+        List<String> lines = List.of("foo;bar;baz");
+        Files.write(inputFile, lines, Charset.defaultCharset());
 
-        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, logDir.toAbsolutePath() );
+        Config config = Config.defaults(GraphDatabaseSettings.logs_directory, logDir.toAbsolutePath());
 
         var cacheTracer = new DefaultPageCacheTracer();
         CsvImporter csvImporter = CsvImporter.builder()
-                .withDatabaseLayout( databaseLayout )
-                .withDatabaseConfig( config )
-                .withReportFile( reportLocation.toAbsolutePath() )
-                .withFileSystem( testDir.getFileSystem() )
-                .withPageCacheTracer( cacheTracer )
-                .addNodeFiles( emptySet(), new Path[]{inputFile.toAbsolutePath()} )
+                .withDatabaseLayout(databaseLayout)
+                .withDatabaseConfig(config)
+                .withReportFile(reportLocation.toAbsolutePath())
+                .withFileSystem(testDir.getFileSystem())
+                .withPageCacheTracer(cacheTracer)
+                .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
                 .build();
 
         csvImporter.doImport();
 
         long pins = cacheTracer.pins();
-        assertThat( pins ).isGreaterThan( 0 );
-        assertThat( cacheTracer.unpins() ).isEqualTo( pins );
-        assertThat( cacheTracer.hits() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
-        assertThat( cacheTracer.faults() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
+        assertThat(pins).isGreaterThan(0);
+        assertThat(cacheTracer.unpins()).isEqualTo(pins);
+        assertThat(cacheTracer.hits()).isGreaterThan(0).isLessThanOrEqualTo(pins);
+        assertThat(cacheTracer.faults()).isGreaterThan(0).isLessThanOrEqualTo(pins);
     }
 }

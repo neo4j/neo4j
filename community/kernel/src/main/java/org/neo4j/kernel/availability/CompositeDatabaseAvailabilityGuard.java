@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.availability;
 
+import static java.util.stream.Collectors.joining;
+
 import java.time.Clock;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.util.VisibleForTesting;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  * Composite availability guard that makes decision about its availability based on multiple underlying database specific availability guards.
@@ -37,75 +36,62 @@ import static java.util.stream.Collectors.joining;
  *
  * @see AvailabilityGuard
  */
-public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard
-{
+public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard {
     private final Clock clock;
     private final Config config;
     private final CopyOnWriteArraySet<DatabaseAvailabilityGuard> guards = new CopyOnWriteArraySet<>();
     private volatile boolean started = true;
 
-    public CompositeDatabaseAvailabilityGuard( Clock clock, Config config )
-    {
+    public CompositeDatabaseAvailabilityGuard(Clock clock, Config config) {
         this.clock = clock;
         this.config = config;
     }
 
-    void addDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )
-    {
-        guards.add( guard );
+    void addDatabaseAvailabilityGuard(DatabaseAvailabilityGuard guard) {
+        guards.add(guard);
     }
 
-    void removeDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )
-    {
-        guards.remove( guard );
-    }
-
-    @Override
-    public void require( AvailabilityRequirement requirement )
-    {
-        guards.forEach( guard -> guard.require( requirement ) );
+    void removeDatabaseAvailabilityGuard(DatabaseAvailabilityGuard guard) {
+        guards.remove(guard);
     }
 
     @Override
-    public void fulfill( AvailabilityRequirement requirement )
-    {
-        guards.forEach( guard -> guard.fulfill( requirement ) );
+    public void require(AvailabilityRequirement requirement) {
+        guards.forEach(guard -> guard.require(requirement));
     }
 
     @Override
-    public void stop()
-    {
+    public void fulfill(AvailabilityRequirement requirement) {
+        guards.forEach(guard -> guard.fulfill(requirement));
+    }
+
+    @Override
+    public void stop() {
         started = false;
         // Propagate iops limit removal for all io controllers that monitor this property
-        config.set( GraphDatabaseSettings.check_point_iops_limit, -1 );
+        config.set(GraphDatabaseSettings.check_point_iops_limit, -1);
     }
 
     @Override
-    public boolean isAvailable()
-    {
-        return guards.stream().allMatch( DatabaseAvailabilityGuard::isAvailable ) && started;
+    public boolean isAvailable() {
+        return guards.stream().allMatch(DatabaseAvailabilityGuard::isAvailable) && started;
     }
 
     @Override
-    public boolean isShutdown()
-    {
+    public boolean isShutdown() {
         return !started;
     }
 
     @Override
-    public boolean isAvailable( long millis )
-    {
+    public boolean isAvailable(long millis) {
         long totalWait = 0;
-        for ( DatabaseAvailabilityGuard guard : guards )
-        {
+        for (DatabaseAvailabilityGuard guard : guards) {
             long startMillis = clock.millis();
-            if ( !guard.isAvailable( Math.max( 0, millis - totalWait ) ) )
-            {
+            if (!guard.isAvailable(Math.max(0, millis - totalWait))) {
                 return false;
             }
             totalWait += clock.millis() - startMillis;
-            if ( totalWait > millis )
-            {
+            if (totalWait > millis) {
                 return false;
             }
         }
@@ -113,51 +99,42 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     }
 
     @Override
-    public void await( long millis ) throws UnavailableException
-    {
+    public void await(long millis) throws UnavailableException {
         long totalWait = 0;
-        for ( DatabaseAvailabilityGuard guard : guards )
-        {
+        for (DatabaseAvailabilityGuard guard : guards) {
             long startMillis = clock.millis();
-            guard.await( Math.max( 0, millis - totalWait ) );
+            guard.await(Math.max(0, millis - totalWait));
             totalWait += clock.millis() - startMillis;
-            if ( totalWait > millis )
-            {
-                throw new UnavailableException( getUnavailableMessage() );
+            if (totalWait > millis) {
+                throw new UnavailableException(getUnavailableMessage());
             }
         }
-        if ( !started )
-        {
-            throw new UnavailableException( getUnavailableMessage() );
+        if (!started) {
+            throw new UnavailableException(getUnavailableMessage());
         }
     }
 
     @Override
-    public void addListener( AvailabilityListener listener )
-    {
-        throw new UnsupportedOperationException( "Composite guard does not support this operation." );
+    public void addListener(AvailabilityListener listener) {
+        throw new UnsupportedOperationException("Composite guard does not support this operation.");
     }
 
     @Override
-    public void removeListener( AvailabilityListener listener )
-    {
-        throw new UnsupportedOperationException( "Composite guard does not support this operation." );
+    public void removeListener(AvailabilityListener listener) {
+        throw new UnsupportedOperationException("Composite guard does not support this operation.");
     }
 
     @Override
-    public String describe()
-    {
-        return guards.stream().map( DatabaseAvailabilityGuard::describe ).collect( joining( ", " ) );
+    public String describe() {
+        return guards.stream().map(DatabaseAvailabilityGuard::describe).collect(joining(", "));
     }
 
     @VisibleForTesting
-    public Set<DatabaseAvailabilityGuard> getGuards()
-    {
-        return Collections.unmodifiableSet( guards );
+    public Set<DatabaseAvailabilityGuard> getGuards() {
+        return Collections.unmodifiableSet(guards);
     }
 
-    private String getUnavailableMessage()
-    {
+    private String getUnavailableMessage() {
         return "Database is not available: " + describe();
     }
 }

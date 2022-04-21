@@ -59,8 +59,12 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     values.foreach {
       case (searchTerm, resultIterable) =>
         val indexQueries = propertyKeys.zip(searchTerm).map(t => PropertyIndexQuery.exact(t._1.nameId.id, t._2))
-        when(query.nodeIndexSeek(any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
-        when(query.nodeLockingUniqueIndexSeek(any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
+        when(query.nodeIndexSeek(any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(
+          resultIterable
+        ))
+        when(query.nodeLockingUniqueIndexSeek(any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(
+          resultIterable
+        ))
     }
 
     query
@@ -72,8 +76,12 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     when(query.nodeLockingUniqueIndexSeek(any(), any())).thenReturn(PredefinedCursor())
     values.foreach {
       case (searchTerm, resultIterable) =>
-        when(query.nodeIndexSeekByContains(any(), any(), any(), ArgumentMatchers.eq(stringValue(searchTerm)))).thenReturn(PredefinedCursor(resultIterable))
-        when(query.nodeIndexSeekByEndsWith(any(), any(), any(), ArgumentMatchers.eq(stringValue(searchTerm)))).thenReturn(PredefinedCursor(resultIterable))
+        when(
+          query.nodeIndexSeekByContains(any(), any(), any(), ArgumentMatchers.eq(stringValue(searchTerm)))
+        ).thenReturn(PredefinedCursor(resultIterable))
+        when(
+          query.nodeIndexSeekByEndsWith(any(), any(), any(), ArgumentMatchers.eq(stringValue(searchTerm)))
+        ).thenReturn(PredefinedCursor(resultIterable))
     }
 
     query
@@ -100,7 +108,8 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     query
   }
 
-  case class PredefinedCursor[T](nodeValueHits: Iterable[NodeValueHit] = Nil) extends DefaultCloseListenable with NodeValueIndexCursor {
+  case class PredefinedCursor[T](nodeValueHits: Iterable[NodeValueHit] = Nil) extends DefaultCloseListenable
+      with NodeValueIndexCursor {
 
     private val iter = nodeValueHits.iterator
     private var current: NodeValueHit = _

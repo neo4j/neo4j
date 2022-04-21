@@ -25,10 +25,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * Exception thrown when stopped {@link Locks.Client} used to acquire locks.
  */
-public class LockClientStoppedException extends TransactionTerminatedException
-{
-    public LockClientStoppedException( Locks.Client client )
-    {
-        super( Status.Transaction.LockClientStopped, String.valueOf( client ) );
+public class LockClientStoppedException extends TransactionTerminatedException {
+    public LockClientStoppedException(Locks.Client client) {
+        super(Status.Transaction.LockClientStopped, String.valueOf(client));
     }
 }

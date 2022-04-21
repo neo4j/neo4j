@@ -21,10 +21,8 @@ package org.neo4j.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
 
-public class PropertyKeyNotFoundException extends KernelException
-{
-    public PropertyKeyNotFoundException( String propertyKey, Exception cause )
-    {
-        super( Status.Schema.PropertyKeyAccessFailed, cause, "Property key '" + propertyKey + "' not found" );
+public class PropertyKeyNotFoundException extends KernelException {
+    public PropertyKeyNotFoundException(String propertyKey, Exception cause) {
+        super(Status.Schema.PropertyKeyAccessFailed, cause, "Property key '" + propertyKey + "' not found");
     }
 }

@@ -19,45 +19,39 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Function;
-
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
-public class SchemaAndIndexingFileIndexListing
-{
-    private static final Function<Path,StoreFileMetadata> toStoreFileMetadata = path -> new StoreFileMetadata( path, 1 );
+public class SchemaAndIndexingFileIndexListing {
+    private static final Function<Path, StoreFileMetadata> toStoreFileMetadata = path -> new StoreFileMetadata(path, 1);
 
     private final IndexingService indexingService;
 
-    SchemaAndIndexingFileIndexListing( IndexingService indexingService )
-    {
+    SchemaAndIndexingFileIndexListing(IndexingService indexingService) {
         this.indexingService = indexingService;
     }
 
-    public LongSet getIndexIds()
-    {
+    public LongSet getIndexIds() {
         return indexingService.getIndexIds();
     }
 
-    Resource gatherSchemaIndexFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
-    {
+    Resource gatherSchemaIndexFiles(Collection<StoreFileMetadata> targetFiles) throws IOException {
         ResourceIterator<Path> snapshot = indexingService.snapshotIndexFiles();
-        getSnapshotFilesMetadata( snapshot, targetFiles );
+        getSnapshotFilesMetadata(snapshot, targetFiles);
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
     }
 
-    private static void getSnapshotFilesMetadata( ResourceIterator<Path> snapshot, Collection<StoreFileMetadata> targetFiles )
-    {
-        snapshot.stream().map( toStoreFileMetadata ).forEach( targetFiles::add );
+    private static void getSnapshotFilesMetadata(
+            ResourceIterator<Path> snapshot, Collection<StoreFileMetadata> targetFiles) {
+        snapshot.stream().map(toStoreFileMetadata).forEach(targetFiles::add);
     }
 }

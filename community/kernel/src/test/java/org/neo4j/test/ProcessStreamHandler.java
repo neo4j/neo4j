@@ -19,12 +19,11 @@
  */
 package org.neo4j.test;
 
-import java.io.PrintStream;
-
-import org.neo4j.test.StreamConsumer.StreamExceptionHandler;
-
 import static org.neo4j.test.StreamConsumer.IGNORE_FAILURES;
 import static org.neo4j.test.StreamConsumer.PRINT_FAILURES;
+
+import java.io.PrintStream;
+import org.neo4j.test.StreamConsumer.StreamExceptionHandler;
 
 /**
  * Having trouble with your {@link Process}'s output and error streams?
@@ -34,8 +33,7 @@ import static org.neo4j.test.StreamConsumer.PRINT_FAILURES;
  * the consumer threads and once you are {@code ProcessStreamHandler#done()}
  * just say so.
  */
-public class ProcessStreamHandler
-{
+public class ProcessStreamHandler {
     private final Thread out;
     private final Thread err;
     private final Process process;
@@ -49,29 +47,31 @@ public class ProcessStreamHandler
      *
      * @param process The process whose output to consume.
      */
-    public ProcessStreamHandler( Process process, boolean quiet )
-    {
-        this( process, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES );
+    public ProcessStreamHandler(Process process, boolean quiet) {
+        this(process, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES);
     }
 
-    public ProcessStreamHandler( Process process, boolean quiet, String prefix, StreamExceptionHandler failureHandler )
-    {
-        this( process, quiet, prefix, failureHandler, System.out, System.err );
+    public ProcessStreamHandler(Process process, boolean quiet, String prefix, StreamExceptionHandler failureHandler) {
+        this(process, quiet, prefix, failureHandler, System.out, System.err);
     }
 
-    public ProcessStreamHandler( Process process, boolean quiet, String prefix, StreamExceptionHandler failureHandler, PrintStream out, PrintStream err )
-    {
+    public ProcessStreamHandler(
+            Process process,
+            boolean quiet,
+            String prefix,
+            StreamExceptionHandler failureHandler,
+            PrintStream out,
+            PrintStream err) {
         this.process = process;
 
-        this.out = new Thread( new StreamConsumer( process.getInputStream(), out, quiet, prefix, failureHandler ) );
-        this.err = new Thread( new StreamConsumer( process.getErrorStream(), err, quiet, prefix, failureHandler ) );
+        this.out = new Thread(new StreamConsumer(process.getInputStream(), out, quiet, prefix, failureHandler));
+        this.err = new Thread(new StreamConsumer(process.getErrorStream(), err, quiet, prefix, failureHandler));
     }
 
     /**
      * Starts the consumer threads. Calls {@link Thread#start()}.
      */
-    public void launch()
-    {
+    public void launch() {
         out.start();
         err.start();
     }
@@ -80,53 +80,38 @@ public class ProcessStreamHandler
      * Joins with the consumer Threads. Calls {@link Thread#join()} on the two
      * consumers.
      */
-    public void done()
-    {
-        if ( process.isAlive() )
-        {
+    public void done() {
+        if (process.isAlive()) {
             process.destroyForcibly();
         }
-        try
-        {
+        try {
             out.join();
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.interrupted();
             e.printStackTrace();
         }
-        try
-        {
+        try {
             err.join();
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.interrupted();
             e.printStackTrace();
         }
     }
 
-    public void cancel()
-    {
+    public void cancel() {
         out.interrupt();
 
         err.interrupt();
     }
 
-    public int waitForResult()
-    {
+    public int waitForResult() {
         launch();
-        try
-        {
+        try {
             return process.waitFor();
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.interrupted();
             return 0;
-        }
-        finally
-        {
+        } finally {
             done();
         }
     }

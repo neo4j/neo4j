@@ -24,89 +24,64 @@ import org.neo4j.function.ThrowingAction;
 /**
  * Adapter for Lifecycle interface. Subclass and override methods as needed
  */
-public class LifecycleAdapter implements Lifecycle
-{
+public class LifecycleAdapter implements Lifecycle {
     @Override
-    public void init() throws Exception
-    {
-    }
+    public void init() throws Exception {}
 
     @Override
-    public void start() throws Exception
-    {
-    }
+    public void start() throws Exception {}
 
     @Override
-    public void stop() throws Exception
-    {
-    }
+    public void stop() throws Exception {}
 
     @Override
-    public void shutdown() throws Exception
-    {
-    }
+    public void shutdown() throws Exception {}
 
-    public static Lifecycle simpleLife( ThrowingAction onStart, ThrowingAction onStop )
-    {
-        return new LifecycleAdapter()
-        {
+    public static Lifecycle simpleLife(ThrowingAction onStart, ThrowingAction onStop) {
+        return new LifecycleAdapter() {
             @Override
-            public void start() throws Exception
-            {
+            public void start() throws Exception {
                 onStart.apply();
             }
 
             @Override
-            public void stop() throws Exception
-            {
+            public void stop() throws Exception {
                 onStop.apply();
             }
         };
     }
 
-    public static Lifecycle onInit( ThrowingAction action )
-    {
-        return new LifecycleAdapter()
-        {
+    public static Lifecycle onInit(ThrowingAction action) {
+        return new LifecycleAdapter() {
             @Override
-            public void init() throws Exception
-            {
+            public void init() throws Exception {
                 action.apply();
             }
         };
     }
 
-    public static Lifecycle onStart( ThrowingAction action )
-    {
-        return new LifecycleAdapter()
-        {
+    public static Lifecycle onStart(ThrowingAction action) {
+        return new LifecycleAdapter() {
             @Override
-            public void start() throws Exception
-            {
+            public void start() throws Exception {
                 action.apply();
             }
         };
     }
 
-    public static Lifecycle onStop( ThrowingAction action )
-    {
-        return new LifecycleAdapter()
-        {
+    public static Lifecycle onStop(ThrowingAction action) {
+        return new LifecycleAdapter() {
             @Override
-            public void stop() throws Exception
-            {
+            public void stop() throws Exception {
                 action.apply();
             }
         };
     }
 
-    public static Lifecycle onShutdown( ThrowingAction action )
-    {
-        return new LifecycleAdapter()
-        {
+    public static Lifecycle onShutdown(ThrowingAction action) {
+        return new LifecycleAdapter() {
             @Override
-            public void shutdown() throws Exception
-            {
+            public void shutdown() throws Exception {
                 action.apply();
             }
         };

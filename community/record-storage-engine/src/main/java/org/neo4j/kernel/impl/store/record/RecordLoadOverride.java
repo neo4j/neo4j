@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-public interface RecordLoadOverride
-{
+public interface RecordLoadOverride {
     RecordLoadOverride NONE = def -> def;
     RecordLoadOverride FORCE = def -> RecordLoad.FORCE;
     RecordLoadOverride NORMAL = def -> RecordLoad.NORMAL;
     RecordLoadOverride CHECK = def -> RecordLoad.CHECK;
     RecordLoadOverride ALWAYS = def -> RecordLoad.ALWAYS;
 
-    RecordLoad orElse( RecordLoad defaultRecordLoad );
+    RecordLoad orElse(RecordLoad defaultRecordLoad);
 
-    static RecordLoadOverride none()
-    {
+    static RecordLoadOverride none() {
         return NONE;
     }
 }

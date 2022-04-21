@@ -48,8 +48,8 @@ trait UpdateGraph {
     foreachPatterns.exists(_.innerUpdates.allQGsWithLeafInfo.map(_.queryGraph).exists(_.containsMergeRecursive))
 
   def containsPropertyReadsInUpdates: Boolean = mutatingPatterns.folder.treeExists {
-    case _:Property => true
-    case _:ContainerIndex => true
+    case _: Property       => true
+    case _: ContainerIndex => true
   }
 
   /*
@@ -61,7 +61,7 @@ trait UpdateGraph {
 
   def hasCreatePatterns: Boolean = mutatingPatterns.exists {
     case _: CreatePattern => true
-    case _ => false
+    case _                => false
   }
 
   def mergeNodePatterns: Seq[MergeNodePattern] = mutatingPatterns.collect {
@@ -70,7 +70,7 @@ trait UpdateGraph {
 
   def hasMergeNodePatterns: Boolean = mutatingPatterns.exists {
     case _: MergeNodePattern => true
-    case _ => false
+    case _                   => false
   }
 
   def mergeRelationshipPatterns: Seq[MergeRelationshipPattern] = mutatingPatterns.collect {
@@ -79,7 +79,7 @@ trait UpdateGraph {
 
   def hasMergeRelationshipPatterns: Boolean = mutatingPatterns.exists {
     case _: MergeRelationshipPattern => true
-    case _ => false
+    case _                           => false
   }
 
   def foreachPatterns: Seq[ForeachPattern] = mutatingPatterns.collect {
@@ -88,7 +88,7 @@ trait UpdateGraph {
 
   def hasForeachPatterns: Boolean = mutatingPatterns.exists {
     case _: ForeachPattern => true
-    case _ => false
+    case _                 => false
   }
 
   /*
@@ -106,23 +106,23 @@ trait UpdateGraph {
    */
   lazy val createLabels: Set[LabelName] =
     createPatterns.flatMap(_.nodes.flatMap(_.labels)).toSet ++
-    mergeNodePatterns.flatMap(_.createNode.labels) ++
-    mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(_.labels))
+      mergeNodePatterns.flatMap(_.createNode.labels) ++
+      mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(_.labels))
 
   /*
    * Finds all node properties being created with CREATE ({prop...})
    */
   lazy val createNodeProperties: CreatesPropertyKeys =
-    CreatesPropertyKeys(createPatterns.flatMap(_.nodes.flatMap(_.properties)):_*) +
-    CreatesPropertyKeys(mergeNodePatterns.flatMap(_.createNode.properties):_*) +
-    CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(c => c.properties)):_*)
+    CreatesPropertyKeys(createPatterns.flatMap(_.nodes.flatMap(_.properties)): _*) +
+      CreatesPropertyKeys(mergeNodePatterns.flatMap(_.createNode.properties): _*) +
+      CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(c => c.properties)): _*)
 
   /*
    * Finds all rel properties being created with CREATE
    */
   lazy val createRelProperties: CreatesPropertyKeys =
-    CreatesPropertyKeys(createPatterns.flatMap(_.relationships.flatMap(_.properties)):_*) +
-    CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createRelationships.flatMap(c => c.properties)):_*)
+    CreatesPropertyKeys(createPatterns.flatMap(_.relationships.flatMap(_.properties)): _*) +
+      CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createRelationships.flatMap(c => c.properties)): _*)
 
   /*
    * finds all label names being removed on given node, REMOVE a:L
@@ -136,7 +136,7 @@ trait UpdateGraph {
    */
   lazy val createRelTypes: Set[RelTypeName] =
     (createPatterns.flatMap(_.relationships.map(_.relType)) ++
-     mergeRelationshipPatterns.flatMap(_.createRelationships.map(_.relType))).toSet
+      mergeRelationshipPatterns.flatMap(_.createRelationships.map(_.relType))).toSet
 
   /*
    * Does this UpdateGraph update nodes?
@@ -144,12 +144,12 @@ trait UpdateGraph {
   // NOTE: Put foreachPatterns first to shortcut unnecessary recursion
   lazy val updatesNodes: Boolean =
     hasForeachPatterns ||
-    createPatterns.exists(_.nodes.nonEmpty) ||
-    hasRemoveLabelPatterns ||
-    hasMergeNodePatterns ||
-    hasMergeRelationshipPatterns ||
-    hasSetLabelPatterns ||
-    hasSetNodePropertyPatterns
+      createPatterns.exists(_.nodes.nonEmpty) ||
+      hasRemoveLabelPatterns ||
+      hasMergeNodePatterns ||
+      hasMergeRelationshipPatterns ||
+      hasSetLabelPatterns ||
+      hasSetNodePropertyPatterns
 
   // TODO: We can be more precise and recursively check for overlaps inside nested foreach instead, e.g.
   //  (foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(ug => ug.overlaps(qg) /* Read-Write */ ||
@@ -158,9 +158,9 @@ trait UpdateGraph {
   def foreachOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
     val qg = qgWithInfo.queryGraph
     qgWithInfo.hasUnstableLeaves &&
-      this != qg && // Foreach does not overlap itself
-      (this.hasForeachPatterns && qg.containsReads || // Conservatively always assume overlap for now
-        qg.hasForeachPatterns && qg.containsMergeRecursive && this.containsUpdates)
+    this != qg && // Foreach does not overlap itself
+    (this.hasForeachPatterns && qg.containsReads || // Conservatively always assume overlap for now
+      qg.hasForeachPatterns && qg.containsMergeRecursive && this.containsUpdates)
   }
 
   /*
@@ -172,7 +172,8 @@ trait UpdateGraph {
       Seq.empty
     } else {
       // A MERGE is always on its own in a QG. That's why we pick either the read graph of a MERGE or the qg itself.
-      val readQg = qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
+      val readQg =
+        qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
 
       lazy val unknownReasons = nodeOverlap(readQg) ||
         createRelationshipOverlap(readQg) ||
@@ -183,10 +184,10 @@ trait UpdateGraph {
       val checkers = Seq(
         deleteOverlap(_),
         removeLabelOverlap(_),
-        setLabelOverlap(_),
+        setLabelOverlap(_)
       )
 
-      val reasons = checkers.map(c => c(readQg)).collect{case Some(reason) => reason}
+      val reasons = checkers.map(c => c(readQg)).collect { case Some(reason) => reason }
 
       if (reasons.nonEmpty) {
         reasons
@@ -202,7 +203,7 @@ trait UpdateGraph {
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
    */
   def overlapsHorizon(horizon: QueryHorizon)(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
-    if(!containsUpdates || !horizon.couldContainRead)
+    if (!containsUpdates || !horizon.couldContainRead)
       Seq.empty
     else {
       horizon.allQueryGraphs.flatMap(overlaps)
@@ -213,7 +214,8 @@ trait UpdateGraph {
     if (!containsUpdates) {
       None
     } else {
-      val readQg = qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
+      val readQg =
+        qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
 
       val overlap = deleteOverlap(readQg)
 
@@ -228,10 +230,10 @@ trait UpdateGraph {
   }
 
   def createsNodes: Boolean = mutatingPatterns.exists {
-    case c: CreatePattern if c.nodes.nonEmpty => true
-    case _: MergeNodePattern => true
+    case c: CreatePattern if c.nodes.nonEmpty                => true
+    case _: MergeNodePattern                                 => true
     case MergeRelationshipPattern(nodesToCreate, _, _, _, _) => nodesToCreate.nonEmpty
-    case _ => false
+    case _                                                   => false
   }
 
   /*
@@ -251,28 +253,28 @@ trait UpdateGraph {
       val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.name)
 
       val noLabelOrPropOverlap = currentNode match {
-        case _:UnstableIdentifier => labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes
-        case _:StableIdentifier => false
+        case _: UnstableIdentifier => labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes
+        case _: StableIdentifier   => false
       }
 
-      noLabelOrPropOverlap || //MATCH () CREATE/MERGE (...)?
-          (!currentNode.isStable &&
-            labelsOnCurrentNode.nonEmpty &&
-            (labelsOnCurrentNode subsetOf labelsToCreate)) || //MATCH (:A:B) CREATE (:A:B:C)?
-          (!currentNode.isStable &&
-            labelsOnCurrentNode.isEmpty &&
-            propertiesOnCurrentNode.exists(propertiesToCreate.overlaps)) || //MATCH ({prop:42}) CREATE ({prop:...})
-          //MATCH (n:A), (m:B) REMOVE n:B
-          //MATCH (n:A), (m:A) REMOVE m:A
-          (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
+      noLabelOrPropOverlap || // MATCH () CREATE/MERGE (...)?
+      (!currentNode.isStable &&
+        labelsOnCurrentNode.nonEmpty &&
+        (labelsOnCurrentNode subsetOf labelsToCreate)) || // MATCH (:A:B) CREATE (:A:B:C)?
+      (!currentNode.isStable &&
+        labelsOnCurrentNode.isEmpty &&
+        propertiesOnCurrentNode.exists(propertiesToCreate.overlaps)) || // MATCH ({prop:42}) CREATE ({prop:...})
+      // MATCH (n:A), (m:B) REMOVE n:B
+      // MATCH (n:A), (m:A) REMOVE m:A
+      (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
     }
   }
 
-  //if we do match delete and merge we always need to be eager
+  // if we do match delete and merge we always need to be eager
   def deleteOverlapWithMergeIn(other: UpdateGraph): Boolean =
     hasDeleteExpressions && (other.hasMergeNodePatterns || other.hasMergeRelationshipPatterns)
-    // NOTE: As long as we have the conservative eagerness rule for FOREACH we do not need this recursive check
-    // || other.foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(deleteOverlapWithMergeIn)))
+  // NOTE: As long as we have the conservative eagerness rule for FOREACH we do not need this recursive check
+  // || other.foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(deleteOverlapWithMergeIn)))
 
   /*
    * Checks for overlap between rels being read in the query graph
@@ -292,7 +294,7 @@ trait UpdateGraph {
   }
 
   def createRelationshipOverlapHorizon(allRelPatternsRead: Set[RelationshipPattern]): Boolean = {
-    //CREATE () MATCH ()-->()
+    // CREATE () MATCH ()-->()
     (allRelPatternsWrittenNonEmpty && allRelPatternsRead.nonEmpty) && allRelPatternsRead.exists(r => {
       r.properties match {
         case Some(MapExpression(items)) =>
@@ -319,10 +321,9 @@ trait UpdateGraph {
     }
     // CREATE ()-[]->() MATCH ()-[]-()?
     readRelTypes.isEmpty && readRelProperties.isEmpty ||
-      // CREATE ()-[:T {prop:...}]->() MATCH ()-[:T {prop:{}]-()?
-      (typesOverlap(readRelTypes, createRelTypes) && propsOverlap(readRelProperties, createRelProperties))
+    // CREATE ()-[:T {prop:...}]->() MATCH ()-[:T {prop:{}]-()?
+    (typesOverlap(readRelTypes, createRelTypes) && propsOverlap(readRelProperties, createRelProperties))
   }
-
 
   lazy val labelsToSet: Set[LabelName] = {
     @tailrec
@@ -350,7 +351,8 @@ trait UpdateGraph {
    * Checks for overlap between labels being read in query graph
    * and labels being updated with SET and MERGE here
    */
-  def setLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Option[EagernessReason.Reason] = {
+  def setLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
+  semanticTable: SemanticTable): Option[EagernessReason.Reason] = {
     // For SET label, we even have to look at the arguments for which we don't know if they are a node or not, so we consider HasLabelsOrTypes predicates.
     def overlapWithKnownLabels = qgWithInfo.patternNodesAndArguments(semanticTable)
       .flatMap(p => qgWithInfo.allKnownUnstableNodeLabelsFor(p).intersect(labelsToSet))
@@ -373,13 +375,13 @@ trait UpdateGraph {
   def setPropertyOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     val hasDynamicProperties = qgWithInfo.folder.treeExists {
       case ContainerIndex(_, _: Literal) => false
-      case _: ContainerIndex => true
+      case _: ContainerIndex             => true
     }
 
     val readPropKeys = getReadPropKeys(qgWithInfo)
 
     setNodePropertyOverlap(readPropKeys.nodePropertyKeys, hasDynamicProperties) ||
-      setRelPropertyOverlap(readPropKeys.relPropertyKeys, hasDynamicProperties)
+    setRelPropertyOverlap(readPropKeys.relPropertyKeys, hasDynamicProperties)
   }
 
   private case class ReadPropKeys(nodePropertyKeys: Set[PropertyKeyName], relPropertyKeys: Set[PropertyKeyName])
@@ -390,13 +392,13 @@ trait UpdateGraph {
       if (this != qgWithInfo.queryGraph) {
         val readProps = qgWithInfo.queryGraph.mutatingPatterns.folder.findAllByClass[Property]
         val (readNodeProps, readRelOrOtherProps) = readProps.partition(p => semanticTable.isNodeNoFail(p.map))
-        val (readRelProps, readOtherProps) = readRelOrOtherProps.partition(p => semanticTable.isRelationshipNoFail(p.map))
+        val (readRelProps, readOtherProps) =
+          readRelOrOtherProps.partition(p => semanticTable.isRelationshipNoFail(p.map))
 
         (readNodeProps.map(_.propertyKey), readRelProps.map(_.propertyKey), readOtherProps.map(_.propertyKey))
       } else {
         (Set.empty, Set.empty, Set.empty)
       }
-
 
     ReadPropKeys(
       qgWithInfo.allKnownUnstableNodeProperties(semanticTable) ++ readNodePropKeys ++ readOtherPropKeys,
@@ -410,7 +412,9 @@ trait UpdateGraph {
    */
   def deleteOverlap(qgWithInfo: QgWithLeafInfo): Option[EagernessReason.Reason] = {
     // TODO:H FIXME qg.argumentIds here is not correct, but there is a unit test that depends on it
-    val identifiersToRead = qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.name) ++ qgWithInfo.queryGraph.argumentIds
+    val identifiersToRead = qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(
+      _.name
+    ) ++ qgWithInfo.queryGraph.argumentIds
     val overlaps = (identifiersToRead intersect identifiersToDelete).toSeq
     if (overlaps.nonEmpty) {
       Some(EagernessReason.DeleteOverlap(overlaps))
@@ -419,7 +423,8 @@ trait UpdateGraph {
     }
   }
 
-  def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Option[EagernessReason.Reason] = {
+  def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
+  semanticTable: SemanticTable): Option[EagernessReason.Reason] = {
     lazy val otherLabelsRead = qgWithInfo.allKnownUnstableNodeLabels(semanticTable)
     lazy val overlapWithLabelsFunction = qgWithInfo.folder.treeExists {
       case f: FunctionInvocation => f.function == Labels
@@ -427,9 +432,9 @@ trait UpdateGraph {
 
     val overlappingLabels: Seq[LabelName] = removeLabelPatterns.collect {
       case RemoveLabelPattern(_, labelsToRemove) if overlapWithLabelsFunction => labelsToRemove
-      case RemoveLabelPattern(_, labelsToRemove) =>
-        //does any other identifier match on the labels I am deleting?
-        //MATCH (a:BAR)..(b) REMOVE b:BAR
+      case RemoveLabelPattern(_, labelsToRemove)                              =>
+        // does any other identifier match on the labels I am deleting?
+        // MATCH (a:BAR)..(b) REMOVE b:BAR
         labelsToRemove.filter(l => {
           otherLabelsRead(l)
         })
@@ -443,29 +448,32 @@ trait UpdateGraph {
   }
 
   /*
-  * Checks for overlap between what node props are read in query graph
-  * and what is updated with SET here (properties added by create/merge directly is handled elsewhere)
-  */
+   * Checks for overlap between what node props are read in query graph
+   * and what is updated with SET here (properties added by create/merge directly is handled elsewhere)
+   */
   private def setNodePropertyOverlap(propertiesToRead: Set[PropertyKeyName], hasDynamicProperties: Boolean): Boolean = {
 
     @tailrec
     def toNodePropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
 
       def extractPropertyKey(patterns: Seq[SetMutatingPattern]): CreatesPropertyKeys = patterns.collect {
-        case SetNodePropertyPattern(_, key, _) => CreatesKnownPropertyKeys(key)
-        case SetNodePropertiesPattern(_, items) => CreatesKnownPropertyKeys(items.map(_._1).toSet)
+        case SetNodePropertyPattern(_, key, _)                 => CreatesKnownPropertyKeys(key)
+        case SetNodePropertiesPattern(_, items)                => CreatesKnownPropertyKeys(items.map(_._1).toSet)
         case SetNodePropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
-        case SetPropertiesPattern(_, items) => CreatesPropertyKeys(items.map(_._2):_*)
-        case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+        case SetPropertiesPattern(_, items)                    => CreatesPropertyKeys(items.map(_._2): _*)
+        case SetPropertiesFromMapPattern(_, expression, _)     => CreatesPropertyKeys(expression)
       }.foldLeft[CreatesPropertyKeys](CreatesNoPropertyKeys)(_ + _)
 
       if (patterns.isEmpty) acc
       else patterns.head match {
-        case SetNodePropertiesFromMapPattern(_, expression, _)  => CreatesPropertyKeys(expression)
-        case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
-        case SetNodePropertyPattern(_, key, _)  => toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
-        case SetNodePropertiesPattern(_, items)  => toNodePropertyPattern(patterns.tail, acc + CreatesPropertyKeys(items.map(_._2):_*))
-        case SetPropertiesPattern(_, items)  => toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
+        case SetNodePropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+        case SetPropertiesFromMapPattern(_, expression, _)     => CreatesPropertyKeys(expression)
+        case SetNodePropertyPattern(_, key, _) =>
+          toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
+        case SetNodePropertiesPattern(_, items) =>
+          toNodePropertyPattern(patterns.tail, acc + CreatesPropertyKeys(items.map(_._2): _*))
+        case SetPropertiesPattern(_, items) =>
+          toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
         case MergeNodePattern(_, _, onCreate, onMatch) =>
           toNodePropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
         case MergeRelationshipPattern(_, _, _, onCreate, onMatch) =>
@@ -477,7 +485,7 @@ trait UpdateGraph {
     val propertiesToSet: CreatesPropertyKeys = toNodePropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
 
     (hasDynamicProperties && propertiesToSet.overlapsWithDynamicPropertyRead) ||
-      propertiesToRead.exists(propertiesToSet.overlaps)
+    propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
   /*
@@ -489,23 +497,23 @@ trait UpdateGraph {
     def toRelPropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
 
       def extractPropertyKey(patterns: Seq[SetMutatingPattern]): CreatesPropertyKeys = patterns.collect {
-        case SetRelationshipPropertyPattern(_, key, _) => CreatesKnownPropertyKeys(key)
+        case SetRelationshipPropertyPattern(_, key, _)  => CreatesKnownPropertyKeys(key)
         case SetRelationshipPropertiesPattern(_, items) => CreatesKnownPropertyKeys(items.map(_._1).toSet)
         case SetRelationshipPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
-        case SetPropertiesPattern(_, items) => CreatesPropertyKeys(items.map(_._2):_*)
-        case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+        case SetPropertiesPattern(_, items)                            => CreatesPropertyKeys(items.map(_._2): _*)
+        case SetPropertiesFromMapPattern(_, expression, _)             => CreatesPropertyKeys(expression)
       }.foldLeft[CreatesPropertyKeys](CreatesNoPropertyKeys)(_ + _)
 
       if (patterns.isEmpty) acc
       else patterns.head match {
         case SetRelationshipPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
-        case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+        case SetPropertiesFromMapPattern(_, expression, _)             => CreatesPropertyKeys(expression)
         case SetRelationshipPropertyPattern(_, key, _) =>
           toRelPropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
         case SetRelationshipPropertiesPattern(_, items) =>
           toRelPropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
         case SetPropertiesPattern(_, items) =>
-          toRelPropertyPattern(patterns.tail, acc + CreatesPropertyKeys(items.map(_._2):_*))
+          toRelPropertyPattern(patterns.tail, acc + CreatesPropertyKeys(items.map(_._2): _*))
         case MergeNodePattern(_, _, onCreate, onMatch) =>
           toRelPropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
         case MergeRelationshipPattern(_, _, _, onCreate, onMatch) =>
@@ -517,7 +525,7 @@ trait UpdateGraph {
     val propertiesToSet = toRelPropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
 
     (hasDynamicProperties && propertiesToSet.overlapsWithDynamicPropertyRead) ||
-      propertiesToRead.exists(propertiesToSet.overlaps)
+    propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
   private def deleteExpressions = mutatingPatterns.collect {
@@ -526,7 +534,7 @@ trait UpdateGraph {
 
   private def hasDeleteExpressions = mutatingPatterns.exists {
     case _: DeleteExpression => true
-    case _ => false
+    case _                   => false
   }
 
   private def removeLabelPatterns = mutatingPatterns.collect {
@@ -535,18 +543,18 @@ trait UpdateGraph {
 
   private def hasRemoveLabelPatterns = mutatingPatterns.exists {
     case _: RemoveLabelPattern => true
-    case _ => false
+    case _                     => false
   }
 
   private def hasSetLabelPatterns = mutatingPatterns.exists {
     case _: SetLabelPattern => true
-    case _ => false
+    case _                  => false
   }
 
   private def hasSetNodePropertyPatterns = mutatingPatterns.exists {
-    case _: SetNodePropertyPattern => true
+    case _: SetNodePropertyPattern          => true
     case _: SetNodePropertiesFromMapPattern => true
-    case _ => false
+    case _                                  => false
   }
 
   def mergeQueryGraph: Option[QueryGraph] = mutatingPatterns.collectFirst {

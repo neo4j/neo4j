@@ -19,89 +19,77 @@
  */
 package org.neo4j.server.web;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.servlet.ServletContainer;
+import static org.glassfish.jersey.server.ServerProperties.WADL_FEATURE_DISABLE;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.http.error.MediaTypeExceptionMapper;
 import org.neo4j.server.http.error.Neo4jHttpExceptionMapper;
 import org.neo4j.server.modules.ServerModule;
-
-import static org.glassfish.jersey.server.ServerProperties.WADL_FEATURE_DISABLE;
 
 /**
  * Different {@link ServerModule}s can register services at the same mount point.
  * So this class will collect all packages/classes per mount point and create the {@link ServletHolder}
  * when all modules have registered services, see {@link #create(ComponentsBinder, boolean)}.
  */
-public class JaxRsServletHolderFactory
-{
+public class JaxRsServletHolderFactory {
     private final Set<String> packages = new HashSet<>();
     private final Set<Class<?>> classes = new HashSet<>();
     private final List<Injectable<?>> injectables = new ArrayList<>();
 
-    public JaxRsServletHolderFactory()
-    {
+    public JaxRsServletHolderFactory() {
         // add classes common to all mount points
-        classes.add( Neo4jHttpExceptionMapper.class );
-        classes.add( MediaTypeExceptionMapper.class );
-        classes.add( JacksonJsonProvider.class );
+        classes.add(Neo4jHttpExceptionMapper.class);
+        classes.add(MediaTypeExceptionMapper.class);
+        classes.add(JacksonJsonProvider.class);
     }
 
-    public void addPackages( List<String> packages, Collection<Injectable<?>> injectableProviders )
-    {
-        this.packages.addAll( packages );
-        if ( injectableProviders != null )
-        {
-            this.injectables.addAll( injectableProviders );
+    public void addPackages(List<String> packages, Collection<Injectable<?>> injectableProviders) {
+        this.packages.addAll(packages);
+        if (injectableProviders != null) {
+            this.injectables.addAll(injectableProviders);
         }
     }
 
-    public void addClasses( List<Class<?>> classes, Collection<Injectable<?>> injectableProviders )
-    {
-        this.classes.addAll( classes );
-        if ( injectableProviders != null )
-        {
-            this.injectables.addAll( injectableProviders );
+    public void addClasses(List<Class<?>> classes, Collection<Injectable<?>> injectableProviders) {
+        this.classes.addAll(classes);
+        if (injectableProviders != null) {
+            this.injectables.addAll(injectableProviders);
         }
     }
 
-    public void removePackages( List<String> packages )
-    {
-        this.packages.removeAll( packages );
+    public void removePackages(List<String> packages) {
+        this.packages.removeAll(packages);
     }
 
-    public void removeClasses( List<Class<?>> classes )
-    {
-        this.classes.removeAll( classes );
+    public void removeClasses(List<Class<?>> classes) {
+        this.classes.removeAll(classes);
     }
 
-    public ServletHolder create( ComponentsBinder binder, boolean wadlEnabled )
-    {
-        for ( Injectable<?> injectable : injectables )
-        {
+    public ServletHolder create(ComponentsBinder binder, boolean wadlEnabled) {
+        for (Injectable<?> injectable : injectables) {
             Supplier<?> getValue = injectable::getValue;
             Class<?> type = injectable.getType();
-            binder.addLazyBinding( getValue, type );
+            binder.addLazyBinding(getValue, type);
         }
 
         ResourceConfig resourceConfig = new ResourceConfig()
-                .register( binder )
-                .register( XForwardFilter.class )
-                .packages( packages.toArray( new String[0] ) )
-                .registerClasses( classes )
-                .property( WADL_FEATURE_DISABLE, String.valueOf( !wadlEnabled ) );
+                .register(binder)
+                .register(XForwardFilter.class)
+                .packages(packages.toArray(new String[0]))
+                .registerClasses(classes)
+                .property(WADL_FEATURE_DISABLE, String.valueOf(!wadlEnabled));
 
-        ServletContainer container = new ServletContainer( resourceConfig );
-        return new ServletHolder( container );
+        ServletContainer container = new ServletContainer(resourceConfig);
+        return new ServletHolder(container);
     }
 }

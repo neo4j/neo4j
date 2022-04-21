@@ -19,52 +19,46 @@
  */
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
+import static java.lang.System.currentTimeMillis;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static java.lang.System.currentTimeMillis;
-import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-
-class TransactionRepresentationFactory
-{
+class TransactionRepresentationFactory {
     private final CommandGenerator commandGenerator = new CommandGenerator();
 
-    TransactionToApply nextTransaction( long txId )
-    {
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( createRandomCommands() );
-        representation.setHeader( new byte[0], currentTimeMillis(), txId, currentTimeMillis(), 42, ANONYMOUS );
-        return new TransactionToApply( representation, NULL_CONTEXT, StoreCursors.NULL );
+    TransactionToApply nextTransaction(long txId) {
+        PhysicalTransactionRepresentation representation =
+                new PhysicalTransactionRepresentation(createRandomCommands());
+        representation.setHeader(new byte[0], currentTimeMillis(), txId, currentTimeMillis(), 42, ANONYMOUS);
+        return new TransactionToApply(representation, NULL_CONTEXT, StoreCursors.NULL);
     }
 
-    private List<StorageCommand> createRandomCommands()
-    {
-        int commandNum = ThreadLocalRandom.current().nextInt( 1, 17 );
-        List<StorageCommand> commands = new ArrayList<>( commandNum );
-        for ( int i = 0; i < commandNum; i++ )
-        {
-            commands.add( commandGenerator.nextCommand() );
+    private List<StorageCommand> createRandomCommands() {
+        int commandNum = ThreadLocalRandom.current().nextInt(1, 17);
+        List<StorageCommand> commands = new ArrayList<>(commandNum);
+        for (int i = 0; i < commandNum; i++) {
+            commands.add(commandGenerator.nextCommand());
         }
         return commands;
     }
 
-    private static class CommandGenerator
-    {
+    private static class CommandGenerator {
         private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
-        StorageCommand nextCommand()
-        {
-            int length = random.nextInt( 100 + 1 );
+        StorageCommand nextCommand() {
+            int length = random.nextInt(100 + 1);
             byte[] bytes = new byte[length];
-            random.nextBytes( bytes );
-            return new TestCommand( bytes );
+            random.nextBytes(bytes);
+            return new TestCommand(bytes);
         }
     }
 }

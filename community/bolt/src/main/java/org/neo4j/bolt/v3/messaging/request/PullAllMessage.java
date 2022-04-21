@@ -21,25 +21,20 @@ package org.neo4j.bolt.v3.messaging.request;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 
-public class PullAllMessage implements RequestMessage
-{
+public class PullAllMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x3F;
 
     public static final PullAllMessage INSTANCE = new PullAllMessage();
 
-    private PullAllMessage()
-    {
-    }
+    private PullAllMessage() {}
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return false;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "PULL_ALL";
     }
 }

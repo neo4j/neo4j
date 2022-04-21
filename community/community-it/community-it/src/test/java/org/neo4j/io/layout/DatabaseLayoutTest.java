@@ -19,90 +19,79 @@
  */
 package org.neo4j.io.layout;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 @Neo4jLayoutExtension
-class DatabaseLayoutTest
-{
+class DatabaseLayoutTest {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private Neo4jLayout neo4jLayout;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
     @Test
-    void databaseLayoutForAbsoluteFile()
-    {
-        Path databaseDir = testDirectory.directory( "neo4j" );
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDir );
-        assertEquals( databaseLayout.databaseDirectory(), databaseDir );
+    void databaseLayoutForAbsoluteFile() {
+        Path databaseDir = testDirectory.directory("neo4j");
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(databaseDir);
+        assertEquals(databaseLayout.databaseDirectory(), databaseDir);
     }
 
     @Test
-    void databaseLayoutResolvesLinks() throws IOException
-    {
+    void databaseLayoutResolvesLinks() throws IOException {
         Path basePath = testDirectory.homePath();
         Path databaseDir = databaseLayout.databaseDirectory();
-        Path linkPath = basePath.resolve( "link" );
+        Path linkPath = basePath.resolve("link");
         Path symbolicLink = null;
-        try
-        {
-            symbolicLink = Files.createSymbolicLink( linkPath, databaseDir );
-        }
-        catch ( FileSystemException e )
-        {
-            if ( e.getMessage().contains( "privilege" ) )
-            {
-                assumeTrue( false, "Permission issues creating symbolic links in this environment: " + e );
+        try {
+            symbolicLink = Files.createSymbolicLink(linkPath, databaseDir);
+        } catch (FileSystemException e) {
+            if (e.getMessage().contains("privilege")) {
+                assumeTrue(false, "Permission issues creating symbolic links in this environment: " + e);
             }
         }
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( symbolicLink );
-        assertEquals( databaseLayout.databaseDirectory(), databaseDir );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(symbolicLink);
+        assertEquals(databaseLayout.databaseDirectory(), databaseDir);
     }
 
     @Test
-    void databaseLayoutUseCanonicalRepresentation()
-    {
-        Path dbDir = testDirectory.directory( "notCanonical" );
-        Path notCanonicalPath = dbDir.resolve( "../anotherdatabase" ) ;
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( notCanonicalPath );
-        assertEquals( testDirectory.directory( "anotherdatabase" ), databaseLayout.databaseDirectory() );
+    void databaseLayoutUseCanonicalRepresentation() {
+        Path dbDir = testDirectory.directory("notCanonical");
+        Path notCanonicalPath = dbDir.resolve("../anotherdatabase");
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(notCanonicalPath);
+        assertEquals(testDirectory.directory("anotherdatabase"), databaseLayout.databaseDirectory());
     }
 
     @Test
-    void databaseLayoutForName()
-    {
+    void databaseLayoutForName() {
         String databaseName = "testdatabase";
         Neo4jLayout storeLayout = neo4jLayout;
-        DatabaseLayout testDatabase = storeLayout.databaseLayout( databaseName );
-        assertEquals( storeLayout.databasesDirectory().resolve( databaseName ), testDatabase.databaseDirectory() );
+        DatabaseLayout testDatabase = storeLayout.databaseLayout(databaseName);
+        assertEquals(storeLayout.databasesDirectory().resolve(databaseName), testDatabase.databaseDirectory());
     }
 
     @Test
-    void databaseLayoutForFolderAndName()
-    {
+    void databaseLayoutForFolderAndName() {
         String database = "database";
-        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( database );
-        assertEquals( database, databaseLayout.databaseDirectory().getFileName().toString() );
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout(database);
+        assertEquals(database, databaseLayout.databaseDirectory().getFileName().toString());
     }
 
     @Test
-    void databaseLayoutProvideCorrectDatabaseName()
-    {
-        assertEquals( "neo4j", databaseLayout.getDatabaseName() );
-        assertEquals( "testdb", neo4jLayout.databaseLayout( "testdb" ).getDatabaseName() );
+    void databaseLayoutProvideCorrectDatabaseName() {
+        assertEquals("neo4j", databaseLayout.getDatabaseName());
+        assertEquals("testdb", neo4jLayout.databaseLayout("testdb").getDatabaseName());
     }
 }

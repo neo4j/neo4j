@@ -23,7 +23,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
@@ -43,50 +42,52 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public class TransactionStateMachineV3SPI extends AbstractTransactionStateMachineSPI
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionStateMachineV3SPI.class );
+public class TransactionStateMachineV3SPI extends AbstractTransactionStateMachineSPI {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionStateMachineV3SPI.class);
 
-    public TransactionStateMachineV3SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
-                                         StatementProcessorReleaseManager resourceReleaseManager, String transactionId )
-    {
-        super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId );
+    public TransactionStateMachineV3SPI(
+            BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI,
+            BoltChannel boltChannel,
+            SystemNanoClock clock,
+            StatementProcessorReleaseManager resourceReleaseManager,
+            String transactionId) {
+        super(boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId);
     }
 
     @Override
-    public BoltTransaction beginTransaction( KernelTransaction.Type transactionType, LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout,
-                                             AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext )
-    {
-        checkBookmarks( bookmarks );
-        return super.beginTransaction( transactionType, loginContext, bookmarks, txTimeout, accessMode, txMetadata, routingContext );
+    public BoltTransaction beginTransaction(
+            KernelTransaction.Type transactionType,
+            LoginContext loginContext,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            RoutingContext routingContext) {
+        checkBookmarks(bookmarks);
+        return super.beginTransaction(
+                transactionType, loginContext, bookmarks, txTimeout, accessMode, txMetadata, routingContext);
     }
 
     @Override
-    protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
-    {
-        return new BoltResultHandleV3( statement, params, boltQueryExecutor );
+    protected BoltResultHandle newBoltResultHandle(
+            String statement, MapValue params, BoltQueryExecutor boltQueryExecutor) {
+        return new BoltResultHandleV3(statement, params, boltQueryExecutor);
     }
 
-    private static void checkBookmarks( List<Bookmark> bookmarks )
-    {
-        if ( !bookmarks.isEmpty() && bookmarks.size() != 1 )
-        {
-            throw new IllegalArgumentException( "Expected zero or one bookmark. Received: " + bookmarks );
+    private static void checkBookmarks(List<Bookmark> bookmarks) {
+        if (!bookmarks.isEmpty() && bookmarks.size() != 1) {
+            throw new IllegalArgumentException("Expected zero or one bookmark. Received: " + bookmarks);
         }
     }
 
-    private class BoltResultHandleV3 extends AbstractBoltResultHandle
-    {
-        BoltResultHandleV3( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
-        {
-            super( statement, params, boltQueryExecutor );
+    private class BoltResultHandleV3 extends AbstractBoltResultHandle {
+        BoltResultHandleV3(String statement, MapValue params, BoltQueryExecutor boltQueryExecutor) {
+            super(statement, params, boltQueryExecutor);
         }
 
         @Override
-        protected BoltResult newBoltResult( QueryExecution result,
-                BoltAdapterSubscriber subscriber, Clock clock )
-        {
-            return new CypherAdapterStreamV3( result, subscriber, clock );
+        protected BoltResult newBoltResult(QueryExecution result, BoltAdapterSubscriber subscriber, Clock clock) {
+            return new CypherAdapterStreamV3(result, subscriber, clock);
         }
     }
 }

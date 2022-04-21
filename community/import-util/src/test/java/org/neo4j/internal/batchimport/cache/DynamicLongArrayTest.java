@@ -19,40 +19,37 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class DynamicLongArrayTest
-{
+import org.junit.jupiter.api.Test;
+
+class DynamicLongArrayTest {
     @Test
-    void shouldWorkOnSingleChunk()
-    {
+    void shouldWorkOnSingleChunk() {
         // GIVEN
         long defaultValue = 0;
-        LongArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, defaultValue, INSTANCE );
-        array.set( 4, 5 );
+        LongArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray(10, defaultValue, INSTANCE);
+        array.set(4, 5);
 
         // WHEN
-        assertEquals( 5L, array.get( 4 ) );
-        assertEquals( defaultValue, array.get( 12 ) );
-        array.set( 7, 1324 );
-        assertEquals( 1324L, array.get( 7 ) );
+        assertEquals(5L, array.get(4));
+        assertEquals(defaultValue, array.get(12));
+        array.set(7, 1324);
+        assertEquals(1324L, array.get(7));
     }
 
     @Test
-    void shouldChunksAsNeeded()
-    {
+    void shouldChunksAsNeeded() {
         // GIVEN
-        LongArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, 0, INSTANCE );
+        LongArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray(10, 0, INSTANCE);
 
         // WHEN
         long index = 243;
         long value = 5485748;
-        array.set( index, value );
+        array.set(index, value);
 
         // THEN
-        assertEquals( value, array.get( index ) );
+        assertEquals(value, array.get(index));
     }
 }

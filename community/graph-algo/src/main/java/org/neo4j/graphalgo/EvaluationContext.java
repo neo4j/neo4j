@@ -24,8 +24,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
 @PublicApi
-public interface EvaluationContext
-{
+public interface EvaluationContext {
     Transaction transaction();
 
     GraphDatabaseService databaseService();

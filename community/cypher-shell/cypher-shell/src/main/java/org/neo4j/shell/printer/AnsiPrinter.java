@@ -19,11 +19,13 @@
  */
 package org.neo4j.shell.printer;
 
-import org.fusesource.jansi.Ansi;
-import org.fusesource.jansi.AnsiConsole;
+import static org.fusesource.jansi.internal.CLibrary.STDERR_FILENO;
+import static org.fusesource.jansi.internal.CLibrary.STDOUT_FILENO;
+import static org.fusesource.jansi.internal.CLibrary.isatty;
 
 import java.io.PrintStream;
-
+import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.AnsiConsole;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -31,55 +33,40 @@ import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.AnsiFormattedException;
 import org.neo4j.shell.log.Logger;
 
-import static org.fusesource.jansi.internal.CLibrary.STDERR_FILENO;
-import static org.fusesource.jansi.internal.CLibrary.STDOUT_FILENO;
-import static org.fusesource.jansi.internal.CLibrary.isatty;
-
 /**
  * A basic logger which prints Ansi formatted text to STDOUT and STDERR
  */
-public class AnsiPrinter implements Printer
-{
+public class AnsiPrinter implements Printer {
     private static final Logger log = Logger.create();
     private final PrintStream out;
     private final PrintStream err;
     private Format format;
 
-    public AnsiPrinter()
-    {
-        this( Format.VERBOSE, System.out, System.err );
+    public AnsiPrinter() {
+        this(Format.VERBOSE, System.out, System.err);
     }
 
-    public AnsiPrinter( Format format, PrintStream out, PrintStream err )
-    {
+    public AnsiPrinter(Format format, PrintStream out, PrintStream err) {
         this.format = format;
         this.out = out;
         this.err = err;
 
-        try
-        {
-            if ( isOutputInteractive() )
-            {
-                Ansi.setEnabled( true );
+        try {
+            if (isOutputInteractive()) {
+                Ansi.setEnabled(true);
                 AnsiConsole.systemInstall();
+            } else {
+                Ansi.setEnabled(false);
             }
-            else
-            {
-                Ansi.setEnabled( false );
-            }
-        }
-        catch ( Throwable t )
-        {
-            log.warn( "Not running on a distro with standard c library, disabling Ansi", t );
-            Ansi.setEnabled( false );
+        } catch (Throwable t) {
+            log.warn("Not running on a distro with standard c library, disabling Ansi", t);
+            Ansi.setEnabled(false);
         }
     }
 
-    private static Throwable getRootCause( final Throwable th )
-    {
+    private static Throwable getRootCause(final Throwable th) {
         Throwable cause = th;
-        while ( cause.getCause() != null )
-        {
+        while (cause.getCause() != null) {
             cause = cause.getCause();
         }
         return cause;
@@ -90,86 +77,69 @@ public class AnsiPrinter implements Printer
      * @throws UnsatisfiedLinkError maybe if standard c library can't be found
      * @throws NoClassDefFoundError maybe if standard c library can't be found
      */
-    private static boolean isOutputInteractive()
-    {
-        return 1 == isatty( STDOUT_FILENO ) && 1 == isatty( STDERR_FILENO );
+    private static boolean isOutputInteractive() {
+        return 1 == isatty(STDOUT_FILENO) && 1 == isatty(STDERR_FILENO);
     }
 
     @Override
-    public Format getFormat()
-    {
+    public Format getFormat() {
         return format;
     }
 
     @Override
-    public void setFormat( Format format )
-    {
+    public void setFormat(Format format) {
         this.format = format;
     }
 
     @Override
-    public void printError( Throwable throwable )
-    {
-        printError( getFormattedMessage( throwable ) );
+    public void printError(Throwable throwable) {
+        printError(getFormattedMessage(throwable));
     }
 
     @Override
-    public void printError( String s )
-    {
-        err.println( Ansi.ansi().render( s ).toString() );
+    public void printError(String s) {
+        err.println(Ansi.ansi().render(s).toString());
     }
 
     @Override
-    public void printOut( final String msg )
-    {
-        out.println( Ansi.ansi().render( msg ).toString() );
+    public void printOut(final String msg) {
+        out.println(Ansi.ansi().render(msg).toString());
     }
 
     /**
      * Formatting for Bolt exceptions.
      */
-    public String getFormattedMessage( final Throwable e )
-    {
+    public String getFormattedMessage(final Throwable e) {
         AnsiFormattedText msg = AnsiFormattedText.s().colorRed();
 
-        if ( e instanceof AnsiFormattedException )
-        {
-            msg = msg.append( ((AnsiFormattedException) e).getFormattedMessage() );
-        }
-        else if ( e instanceof ClientException &&
-                  e.getMessage() != null && e.getMessage().contains( "Missing username" ) )
-        {
+        if (e instanceof AnsiFormattedException) {
+            msg = msg.append(((AnsiFormattedException) e).getFormattedMessage());
+        } else if (e instanceof ClientException
+                && e.getMessage() != null
+                && e.getMessage().contains("Missing username")) {
             // Username and password was not specified
-            msg = msg.append( e.getMessage() )
-                     .append( "\nPlease specify --username, and optionally --password, as argument(s)" )
-                     .append( "\nor as environment variable(s), NEO4J_USERNAME, and NEO4J_PASSWORD respectively." )
-                     .append( "\nSee --help for more info." );
-        }
-        else
-        {
+            msg = msg.append(e.getMessage())
+                    .append("\nPlease specify --username, and optionally --password, as argument(s)")
+                    .append("\nor as environment variable(s), NEO4J_USERNAME, and NEO4J_PASSWORD respectively.")
+                    .append("\nSee --help for more info.");
+        } else {
             Throwable cause = e;
 
             // Get the suppressed root cause of ServiceUnavailableExceptions
-            if ( e instanceof ServiceUnavailableException )
-            {
+            if (e instanceof ServiceUnavailableException) {
                 Throwable[] suppressed = e.getSuppressed();
-                for ( Throwable s : suppressed )
-                {
-                    if ( s instanceof DiscoveryException )
-                    {
-                        cause = getRootCause( s );
+                for (Throwable s : suppressed) {
+                    if (s instanceof DiscoveryException) {
+                        cause = getRootCause(s);
                         break;
                     }
                 }
             }
 
-            if ( cause.getMessage() != null )
-            {
-                msg = msg.append( cause.getMessage() );
-            }
-            else
-            {
-                msg = msg.append( cause.getClass().getSimpleName() );
+            if (cause.getMessage() != null) {
+                msg = msg.append(cause.getMessage());
+            } else {
+                msg = msg.append(cause.getClass().getSimpleName());
             }
         }
 

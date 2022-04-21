@@ -19,42 +19,38 @@
  */
 package org.neo4j.capabilities;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.logging.InternalLog;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 
-class CapabilityProviderDependenciesTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
+import org.neo4j.logging.InternalLog;
+
+class CapabilityProviderDependenciesTest {
 
     @Test
-    void shouldRegisterAndGet()
-    {
+    void shouldRegisterAndGet() {
         var deps = new CapabilityProviderDependencies();
-        var log = mock( InternalLog.class );
+        var log = mock(InternalLog.class);
 
-        deps.register( InternalLog.class, () -> log );
-        assertThat( deps.get( InternalLog.class ) ).isSameAs( log );
+        deps.register(InternalLog.class, () -> log);
+        assertThat(deps.get(InternalLog.class)).isSameAs(log);
     }
 
     @Test
-    void shouldNotRegisterTwice()
-    {
+    void shouldNotRegisterTwice() {
         var deps = new CapabilityProviderDependencies();
-        var log = mock( InternalLog.class );
+        var log = mock(InternalLog.class);
 
-        assertThatCode( () -> deps.register( InternalLog.class, () -> log ) ).doesNotThrowAnyException();
-        assertThatCode( () -> deps.register( InternalLog.class, () -> log ) ).isInstanceOf( UnsupportedOperationException.class );
+        assertThatCode(() -> deps.register(InternalLog.class, () -> log)).doesNotThrowAnyException();
+        assertThatCode(() -> deps.register(InternalLog.class, () -> log))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
-    void shouldThrowIfNotRegistered()
-    {
+    void shouldThrowIfNotRegistered() {
         var deps = new CapabilityProviderDependencies();
-        assertThatCode( () -> deps.get( InternalLog.class ) ).isInstanceOf( UnsatisfiedDependencyException.class );
+        assertThatCode(() -> deps.get(InternalLog.class)).isInstanceOf(UnsatisfiedDependencyException.class);
     }
 }

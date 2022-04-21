@@ -37,7 +37,7 @@ case object useTop extends Rewriter {
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case o @ Limit(Sort(src, sortDescriptions), limit) =>
       Top(src, sortDescriptions, limit)(SameId(o.id))
-    //NOTE: it is only safe to rewrite ExhaustiveLimit + Sort not ExhaustiveLimit + PartialSort
+    // NOTE: it is only safe to rewrite ExhaustiveLimit + Sort not ExhaustiveLimit + PartialSort
     //      since we can't guarantee that src will be exhausted in that case
     case o @ ExhaustiveLimit(Sort(src, sortDescriptions), limit) =>
       Top(src, sortDescriptions, limit)(SameId(o.id))

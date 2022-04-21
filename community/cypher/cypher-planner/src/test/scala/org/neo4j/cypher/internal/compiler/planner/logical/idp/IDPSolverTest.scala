@@ -68,7 +68,7 @@ class IDPSolverTest extends CypherFunSuite {
       generator = stringAppendingSolverStepWithCapitalization(Capitalization(true)),
       candidateProjector = {
         case str if str.startsWith("a") => "use a long string here to make 'aBCD' win"
-        case x => x
+        case x                          => x
       },
       projectingSelector = firstLongest,
       maxTableSize = 128,
@@ -168,7 +168,7 @@ class IDPSolverTest extends CypherFunSuite {
     solver(seed, todo, context)
 
     // Offset by one due to the bit representing sorted
-    todo.indices.flatMap(i => registry.lookup(i+1)) should equal(todo)
+    todo.indices.flatMap(i => registry.lookup(i + 1)) should equal(todo)
   }
 
   test("Compacts table at size limit") {
@@ -251,10 +251,11 @@ class IDPSolverTest extends CypherFunSuite {
       stopWatchFactory = () => Stopwatch.start()
     )
 
-    val seed: Seq[((Set[Char], Boolean), String)] = ('a'.toInt to 'm'.toInt).foldLeft(Seq.empty[((Set[Char], Boolean), String)]) { (acc, i) =>
-      val c = i.toChar
-      acc :+ ((Set(c), false) -> c.toString)
-    }
+    val seed: Seq[((Set[Char], Boolean), String)] =
+      ('a'.toInt to 'm'.toInt).foldLeft(Seq.empty[((Set[Char], Boolean), String)]) { (acc, i) =>
+        val c = i.toChar
+        acc :+ ((Set(c), false) -> c.toString)
+      }
     val result = seed.foldLeft(Seq.empty[Char]) { (acc, t) =>
       acc ++ t._1._1
     }
@@ -276,14 +277,27 @@ class IDPSolverTest extends CypherFunSuite {
    * That means upper case wins over lower case.
    */
   private object firstLongest extends ProjectingSelector[String] {
-    override def applyWithResolvedPerPlan[X](projector: X => String, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = {
+
+    override def applyWithResolvedPerPlan[X](
+      projector: X => String,
+      input: Iterable[X],
+      resolved: => String,
+      resolvedPerPlan: LogicalPlan => String,
+      heuristic: SelectorHeuristic
+    ): Option[X] = {
       val elements = input.toList.sortBy(x => projector(x))
       if (elements.nonEmpty) Some(elements.maxBy(x => projector(x).length)) else None
     }
   }
 
   private case class stringAppendingSolverStep() extends IDPSolverStep[Char, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String], context: Unit): Iterator[String] = {
+
+    override def apply(
+      registry: IdRegistry[Char],
+      goal: Goal,
+      table: IDPCache[String],
+      context: Unit
+    ): Iterator[String] = {
       val goalSize = goal.size
       for {
         leftGoal <- goal.subGoals if leftGoal.size <= goalSize
@@ -297,7 +311,7 @@ class IDPSolverTest extends CypherFunSuite {
     def isSorted(chars: String): Boolean =
       (chars.length <= 1) || 0.to(chars.length - 2).forall(i =>
         chars.charAt(i).toInt + 1 == chars.charAt(i + 1).toInt
-        || chars.toLowerCase.charAt(i).toInt + 1 == chars.toLowerCase.charAt(i + 1).toInt
+          || chars.toLowerCase.charAt(i).toInt + 1 == chars.toLowerCase.charAt(i + 1).toInt
       )
   }
 
@@ -309,8 +323,15 @@ class IDPSolverTest extends CypherFunSuite {
     def normalize(string: String): String = if (upper) string.toUpperCase else string.toLowerCase
   }
 
-  private case class stringAppendingSolverStepWithCapitalization(capitalization: Capitalization) extends IDPSolverStep[Char, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String], context: Unit): Iterator[String] = {
+  private case class stringAppendingSolverStepWithCapitalization(capitalization: Capitalization)
+      extends IDPSolverStep[Char, String, Unit] {
+
+    override def apply(
+      registry: IdRegistry[Char],
+      goal: Goal,
+      table: IDPCache[String],
+      context: Unit
+    ): Iterator[String] = {
       stringAppendingSolverStep()(registry, goal, table, context).flatMap { candidate =>
         if (capitalization == null)
           Seq(candidate)

@@ -19,11 +19,16 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
-import org.neo4j.bolt.transaction.TransactionNotFoundException;
+import static org.neo4j.bolt.v3.runtime.ReadyState.FIELDS_KEY;
+import static org.neo4j.bolt.v3.runtime.ReadyState.FIRST_RECORD_AVAILABLE_KEY;
+import static org.neo4j.util.Preconditions.checkState;
+import static org.neo4j.values.storable.Values.stringArray;
+
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
@@ -31,86 +36,73 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.bolt.v3.runtime.ReadyState.FIELDS_KEY;
-import static org.neo4j.bolt.v3.runtime.ReadyState.FIRST_RECORD_AVAILABLE_KEY;
-import static org.neo4j.util.Preconditions.checkState;
-import static org.neo4j.values.storable.Values.stringArray;
-
-public class TransactionReadyState extends FailSafeBoltStateMachineState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionReadyState.class );
+public class TransactionReadyState extends FailSafeBoltStateMachineState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionReadyState.class);
 
     private BoltStateMachineState streamingState;
     private BoltStateMachineState readyState;
 
     @Override
-    public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Exception
-    {
+    public BoltStateMachineState processUnsafe(RequestMessage message, StateMachineContext context) throws Exception {
         context.connectionState().ensureNoPendingTerminationNotice();
 
-        if ( message instanceof RunMessage )
-        {
-            return processRunMessage( (RunMessage) message, context );
+        if (message instanceof RunMessage) {
+            return processRunMessage((RunMessage) message, context);
         }
-        if ( message instanceof CommitMessage )
-        {
-            return processCommitMessage( context );
+        if (message instanceof CommitMessage) {
+            return processCommitMessage(context);
         }
-        if ( message instanceof RollbackMessage )
-        {
-            return processRollbackMessage( context );
+        if (message instanceof RollbackMessage) {
+            return processRollbackMessage(context);
         }
         return null;
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "TX_READY";
     }
 
-    public void setTransactionStreamingState( BoltStateMachineState streamingState )
-    {
+    public void setTransactionStreamingState(BoltStateMachineState streamingState) {
         this.streamingState = streamingState;
     }
 
-    public void setReadyState( BoltStateMachineState readyState )
-    {
+    public void setReadyState(BoltStateMachineState readyState) {
         this.readyState = readyState;
     }
 
-    private BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws KernelException, TransactionNotFoundException
-    {
+    private BoltStateMachineState processRunMessage(RunMessage message, StateMachineContext context)
+            throws KernelException, TransactionNotFoundException {
         long start = context.clock().millis();
         var metadata = context.getTransactionManager()
-                               .runQuery( context.connectionState().getCurrentTransactionId(), message.statement(), message.params() );
+                .runQuery(context.connectionState().getCurrentTransactionId(), message.statement(), message.params());
         long end = context.clock().millis();
 
-        context.connectionState().onMetadata( FIELDS_KEY, stringArray( metadata.fieldNames() ) );
-        context.connectionState().onMetadata( FIRST_RECORD_AVAILABLE_KEY, Values.longValue( end - start ) );
+        context.connectionState().onMetadata(FIELDS_KEY, stringArray(metadata.fieldNames()));
+        context.connectionState().onMetadata(FIRST_RECORD_AVAILABLE_KEY, Values.longValue(end - start));
         return streamingState;
     }
 
-    private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
-    {
-        Bookmark bookmark = context.getTransactionManager().commit( context.connectionState().getCurrentTransactionId() );
+    private BoltStateMachineState processCommitMessage(StateMachineContext context)
+            throws KernelException, TransactionNotFoundException {
+        Bookmark bookmark =
+                context.getTransactionManager().commit(context.connectionState().getCurrentTransactionId());
         context.connectionState().clearCurrentTransactionId();
-        bookmark.attachTo( context.connectionState() );
+        bookmark.attachTo(context.connectionState());
         return readyState;
     }
 
-    private BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws TransactionNotFoundException
-    {
-        context.getTransactionManager().rollback( context.connectionState().getCurrentTransactionId() );
+    private BoltStateMachineState processRollbackMessage(StateMachineContext context)
+            throws TransactionNotFoundException {
+        context.getTransactionManager().rollback(context.connectionState().getCurrentTransactionId());
         context.connectionState().clearCurrentTransactionId();
         return readyState;
     }
 
     @Override
-    protected void assertInitialized()
-    {
-        checkState( streamingState != null, "Streaming state not set" );
-        checkState( readyState != null, "Ready state not set" );
+    protected void assertInitialized() {
+        checkState(streamingState != null, "Streaming state not set");
+        checkState(readyState != null, "Ready state not set");
         super.assertInitialized();
     }
 }

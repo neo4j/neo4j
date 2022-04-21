@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.Comparator
-
 import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.DelegatingClosingIterator
@@ -28,14 +26,19 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
+import java.util.Comparator
+
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-case class SortPipe(source: Pipe, comparator: Comparator[ReadableRow])
-                   (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class SortPipe(source: Pipe, comparator: Comparator[ReadableRow])(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    val scopedMemoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
+    val scopedMemoryTracker =
+      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     var arrayList: HeapTrackingArrayList[CypherRow] = HeapTrackingArrayList.newArrayList(256, scopedMemoryTracker)
     while (input.hasNext) {
       val row = input.next()

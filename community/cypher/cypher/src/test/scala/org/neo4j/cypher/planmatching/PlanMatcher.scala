@@ -50,6 +50,7 @@ import scala.util.matching.Regex
  * An immutable matcher for plan descriptions. The methods allow to obtain a new PlanMatcher and adding or overriding an assertion of this PlanMatcher.
  */
 trait PlanMatcher extends Matcher[InternalPlanDescription] {
+
   /**
    * @return a PlanDescription that looks like what this Matcher is trying to match.
    */
@@ -110,26 +111,30 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
     containingArgumentRegex(s".*cache\\[$varName\\.$propName].*".r)
   }
 
-  def containingArgumentForNodeIndexPlan(varName: String,
-                                         labelName: String,
-                                         properties: Seq[String],
-                                         unique: Boolean = false,
-                                         indexType: IndexType = IndexType.RANGE,
-                                         caches: Boolean = false): PlanMatcher = {
+  def containingArgumentForNodeIndexPlan(
+    varName: String,
+    labelName: String,
+    properties: Seq[String],
+    unique: Boolean = false,
+    indexType: IndexType = IndexType.RANGE,
+    caches: Boolean = false
+  ): PlanMatcher = {
     val i = if (unique) "UNIQUE" else s"${indexType.name()} INDEX"
     val p = properties.mkString(", ")
     val c = if (caches) properties.map(p => s", cache\\[$varName\\.$p]").mkString else ""
     containingArgumentRegex(s"$i $varName:$labelName\\($p\\).*$c".r)
   }
 
-  def containingArgumentForRelIndexPlan(varName: String,
-                                        start: String,
-                                        typeName: String,
-                                        end: String,
-                                        properties: Seq[String],
-                                        directed: Boolean,
-                                        indexType: IndexType = IndexType.RANGE,
-                                        caches: Boolean = false): PlanMatcher = {
+  def containingArgumentForRelIndexPlan(
+    varName: String,
+    start: String,
+    typeName: String,
+    end: String,
+    properties: Seq[String],
+    directed: Boolean,
+    indexType: IndexType = IndexType.RANGE,
+    caches: Boolean = false
+  ): PlanMatcher = {
     val i = s"${indexType.name()} INDEX"
     val p = properties.mkString(", ")
     val c = if (caches) properties.map(p => s", cache\\[$varName\\.$p]").mkString else ""
@@ -187,9 +192,11 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
 
   override def withRowsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withRowsBetween(min, max))
 
-  override def withEstimatedRows(estimatedRows: Long): PlanMatcher = copy(inner = inner.withEstimatedRows(estimatedRows))
+  override def withEstimatedRows(estimatedRows: Long): PlanMatcher =
+    copy(inner = inner.withEstimatedRows(estimatedRows))
 
-  override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withEstimatedRowsBetween(min, max))
+  override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher =
+    copy(inner = inner.withEstimatedRowsBetween(min, max))
 
   override def withTime(): PlanMatcher = copy(inner = inner.withTime())
 
@@ -207,15 +214,19 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
 
   override def withPageCacheMisses(): PlanMatcher = copy(inner = inner.withPageCacheMisses())
 
-  override def withExactVariables(variables: String*): PlanMatcher = copy(inner = inner.withExactVariables(variables: _*))
+  override def withExactVariables(variables: String*): PlanMatcher =
+    copy(inner = inner.withExactVariables(variables: _*))
 
-  override def containingVariables(variables: String*): PlanMatcher = copy(inner = inner.containingVariables(variables: _*))
+  override def containingVariables(variables: String*): PlanMatcher =
+    copy(inner = inner.containingVariables(variables: _*))
 
-  override def containingVariablesRegex(variables: Regex*): PlanMatcher = copy(inner = inner.containingVariablesRegex(variables: _*))
+  override def containingVariablesRegex(variables: Regex*): PlanMatcher =
+    copy(inner = inner.containingVariablesRegex(variables: _*))
 
   override def containingArgument(argument: String*): PlanMatcher = copy(inner = inner.containingArgument(argument: _*))
 
-  override def containingArgumentRegex(argument: Regex*): PlanMatcher = copy(inner = inner.containingArgumentRegex(argument: _*))
+  override def containingArgumentRegex(argument: Regex*): PlanMatcher =
+    copy(inner = inner.containingArgumentRegex(argument: _*))
 
   override def withOrder(providedOrder: ProvidedOrder): PlanMatcher = copy(inner = inner.withOrder(providedOrder))
 
@@ -235,21 +246,31 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
  */
 case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean = false) extends PlanMatcher {
 
-  def allResults(plan: InternalPlanDescription): Seq[MatchResult] = inner(plan) +: plan.children.toIndexedSeq.flatMap(allResults)
+  def allResults(plan: InternalPlanDescription): Seq[MatchResult] =
+    inner(plan) +: plan.children.toIndexedSeq.flatMap(allResults)
 
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val matchResults = allResults(plan)
     val count = matchResults.count(_.matches)
     MatchResult(
       matches = if (atLeast) count >= expectedCount else count == expectedCount,
-      rawFailureMessage = s"Expected to find $toPlanDescription\n ${if (atLeast) "at least " else ""}$expectedCount times but found it $count times. Got $plan",
-      rawNegatedFailureMessage = s"Did not expect to find $toPlanDescription\n ${if (atLeast) s"more than ${expectedCount - 1}" else s"exactly $expectedCount"} times but found it $count times. Got $plan"
+      rawFailureMessage = s"Expected to find $toPlanDescription\n ${if (atLeast) "at least "
+      else ""}$expectedCount times but found it $count times. Got $plan",
+      rawNegatedFailureMessage =
+        s"Did not expect to find $toPlanDescription\n ${if (atLeast) s"more than ${expectedCount - 1}"
+        else s"exactly $expectedCount"} times but found it $count times. Got $plan"
     )
   }
 
   override def toPlanDescription: InternalPlanDescription = {
     val innerDesc = inner.toPlanDescription
-    PlanDescriptionImpl(Id(0), s"* (${if (atLeast) "at least " else ""}$expectedCount times)", SingleChild(innerDesc), Seq.empty, Set.empty)
+    PlanDescriptionImpl(
+      Id(0),
+      s"* (${if (atLeast) "at least " else ""}$expectedCount times)",
+      SingleChild(innerDesc),
+      Seq.empty,
+      Set.empty
+    )
   }
 
   override def withName(name: String): PlanMatcher = copy(inner = inner.withName(name))
@@ -260,9 +281,11 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
 
   override def withRowsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withRowsBetween(min, max))
 
-  override def withEstimatedRows(estimatedRows: Long): PlanMatcher = copy(inner = inner.withEstimatedRows(estimatedRows))
+  override def withEstimatedRows(estimatedRows: Long): PlanMatcher =
+    copy(inner = inner.withEstimatedRows(estimatedRows))
 
-  override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withEstimatedRowsBetween(min, max))
+  override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher =
+    copy(inner = inner.withEstimatedRowsBetween(min, max))
 
   override def withTime(): PlanMatcher = copy(inner = inner.withTime())
 
@@ -280,15 +303,19 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
 
   override def withPageCacheMisses(): PlanMatcher = copy(inner = inner.withPageCacheMisses())
 
-  override def withExactVariables(variables: String*): PlanMatcher = copy(inner = inner.withExactVariables(variables: _*))
+  override def withExactVariables(variables: String*): PlanMatcher =
+    copy(inner = inner.withExactVariables(variables: _*))
 
-  override def containingVariables(variables: String*): PlanMatcher = copy(inner = inner.containingVariables(variables: _*))
+  override def containingVariables(variables: String*): PlanMatcher =
+    copy(inner = inner.containingVariables(variables: _*))
 
-  override def containingVariablesRegex(variables: Regex*): PlanMatcher = copy(inner = inner.containingVariablesRegex(variables: _*))
+  override def containingVariablesRegex(variables: Regex*): PlanMatcher =
+    copy(inner = inner.containingVariablesRegex(variables: _*))
 
   override def containingArgument(argument: String*): PlanMatcher = copy(inner = inner.containingArgument(argument: _*))
 
-  override def containingArgumentRegex(argument: Regex*): PlanMatcher = copy(inner = inner.containingArgumentRegex(argument: _*))
+  override def containingArgumentRegex(argument: Regex*): PlanMatcher =
+    copy(inner = inner.containingArgumentRegex(argument: _*))
 
   override def withOrder(providedOrder: ProvidedOrder): PlanMatcher = copy(inner = inner.withOrder(providedOrder))
 
@@ -296,43 +323,44 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
 
   override def withRHS(rhs: PlanMatcher): PlanMatcher = copy(inner = inner.withRHS(rhs))
 
-  override def withChildren(a: PlanMatcher,
-                            b: PlanMatcher): PlanMatcher = copy(inner = inner.withChildren(a, b))
+  override def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher = copy(inner = inner.withChildren(a, b))
 }
 
 /**
  * Tries to match exactly against the root plan of a given InternalPlanDescription.
  */
-case class ExactPlan(name: Option[PlanNameMatcher] = None,
-                     estimatedRows: Option[EstimatedRowsMatcher] = None,
-                     rows: Option[ActualRowsMatcher] = None,
-                     time: Option[TimeMatcher] = None,
-                     memory: Option[MemoryMatcher] = None,
-                     globalMemory: Option[GlobalMemoryMatcher] = None,
-                     dbHits: Option[DBHitsMatcher] = None,
-                     pageCacheHits: Option[PageCacheHitsMatcher] = None,
-                     pageCacheMisses: Option[PageCacheMissesMatcher] = None,
-                     order: Option[OrderArgumentMatcher] = None,
-                     variables: Option[VariablesMatcher] = None,
-                     other: Option[StringArgumentsMatcher] = None,
-                     lhs: Option[PlanMatcher] = None,
-                     rhs: Option[PlanMatcher] = None,
-                     children: Option[(PlanMatcher, PlanMatcher)] = None,
-                     skipCachingPlans: Boolean = false) extends PlanMatcher {
+case class ExactPlan(
+  name: Option[PlanNameMatcher] = None,
+  estimatedRows: Option[EstimatedRowsMatcher] = None,
+  rows: Option[ActualRowsMatcher] = None,
+  time: Option[TimeMatcher] = None,
+  memory: Option[MemoryMatcher] = None,
+  globalMemory: Option[GlobalMemoryMatcher] = None,
+  dbHits: Option[DBHitsMatcher] = None,
+  pageCacheHits: Option[PageCacheHitsMatcher] = None,
+  pageCacheMisses: Option[PageCacheMissesMatcher] = None,
+  order: Option[OrderArgumentMatcher] = None,
+  variables: Option[VariablesMatcher] = None,
+  other: Option[StringArgumentsMatcher] = None,
+  lhs: Option[PlanMatcher] = None,
+  rhs: Option[PlanMatcher] = None,
+  children: Option[(PlanMatcher, PlanMatcher)] = None,
+  skipCachingPlans: Boolean = false
+) extends PlanMatcher {
 
   override def apply(plan: InternalPlanDescription): MatchResult = {
-    val nameResult = name.map(_ (plan))
-    val estimatedRowsResult = estimatedRows.map(_ (plan))
-    val rowsResult = rows.map(_ (plan))
-    val dbHitsResult = dbHits.map(_ (plan))
-    val pageCacheHitsResult = pageCacheHits.map(_ (plan))
-    val pageCacheMissesResult = pageCacheMisses.map(_ (plan))
-    val timeResult = time.map(_ (plan))
-    val memoryResult = memory.map(_ (plan))
-    val globalMemoryResult = globalMemory.map(_ (plan))
-    val orderResult = order.map(_ (plan))
-    val variablesResult = variables.map(_ (plan))
-    val otherResult = other.map(_ (plan))
+    val nameResult = name.map(_(plan))
+    val estimatedRowsResult = estimatedRows.map(_(plan))
+    val rowsResult = rows.map(_(plan))
+    val dbHitsResult = dbHits.map(_(plan))
+    val pageCacheHitsResult = pageCacheHits.map(_(plan))
+    val pageCacheMissesResult = pageCacheMisses.map(_(plan))
+    val timeResult = time.map(_(plan))
+    val memoryResult = memory.map(_(plan))
+    val globalMemoryResult = globalMemory.map(_(plan))
+    val orderResult = order.map(_(plan))
+    val variablesResult = variables.map(_(plan))
+    val otherResult = other.map(_(plan))
 
     val maybeLhsPlan = {
       val maybeLhsChildPlan = plan.children.toIndexedSeq.headOption
@@ -345,24 +373,26 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     }
     val maybeRhsPlan = plan.children match {
       case TwoChildren(_, rhsPlan) => Some(rhsPlan)
-      case _ => None
+      case _                       => None
     }
 
     val lhsResult = lhs.map { matcher =>
       maybeLhsPlan match {
         case None => MatchResult(
-          matches = false,
-          rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have a LHS.",
-          rawNegatedFailureMessage = "")
+            matches = false,
+            rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have a LHS.",
+            rawNegatedFailureMessage = ""
+          )
         case Some(lhsPlan) => matcher(lhsPlan)
       }
     }
     val rhsResult = rhs.map { matcher =>
       maybeRhsPlan match {
         case None => MatchResult(
-          matches = false,
-          rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have a RHS.",
-          rawNegatedFailureMessage = "")
+            matches = false,
+            rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have a RHS.",
+            rawNegatedFailureMessage = ""
+          )
         case Some(rhsPlan) => matcher(rhsPlan)
       }
     }
@@ -381,8 +411,10 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
             } else {
               MatchResult(
                 matches = false,
-                rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have the expected children.",
-                rawNegatedFailureMessage = "")
+                rawFailureMessage =
+                  s"Expected $toPlanDescription\n but ${plan.name} does not have the expected children.",
+                rawNegatedFailureMessage = ""
+              )
             }
           }
 
@@ -390,11 +422,13 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
           MatchResult(
             matches = false,
             rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have two children.",
-            rawNegatedFailureMessage = "")
+            rawNegatedFailureMessage = ""
+          )
       }
     }
 
-    val allResults = Seq(nameResult,
+    val allResults = Seq(
+      nameResult,
       estimatedRowsResult,
       rowsResult,
       dbHitsResult,
@@ -408,7 +442,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
       otherResult,
       lhsResult,
       rhsResult,
-      childrenResult).flatten
+      childrenResult
+    ).flatten
 
     val firstMatch = allResults.collectFirst {
       case mr if mr.matches => mr
@@ -445,60 +480,130 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
       .getOrElse(Seq.empty)
 
     val children = (lhsDesc, rhsDesc) match {
-      case (None, None) => NoChildren
-      case (Some(l), None) => SingleChild(l)
+      case (None, None)       => NoChildren
+      case (Some(l), None)    => SingleChild(l)
       case (Some(l), Some(r)) => TwoChildren(l, r)
-      case (None, Some(r)) => TwoChildren(PlanDescriptionImpl(Id(0), "???", NoChildren, Seq.empty, Set.empty), r)
+      case (None, Some(r))    => TwoChildren(PlanDescriptionImpl(Id(0), "???", NoChildren, Seq.empty, Set.empty), r)
     }
 
-    PlanDescriptionImpl(Id(0), nameDesc, children, otherArgs ++ rowArg ++ estRowArg ++ dbHitsArg ++ pageCacheHitsArg ++ pageCacheMissesArg ++ orderArg ++ timeArg ++ memoryArg ++ globalMemoryArg, variablesDesc)
+    PlanDescriptionImpl(
+      Id(0),
+      nameDesc,
+      children,
+      otherArgs ++ rowArg ++ estRowArg ++ dbHitsArg ++ pageCacheHitsArg ++ pageCacheMissesArg ++ orderArg ++ timeArg ++ memoryArg ++ globalMemoryArg,
+      variablesDesc
+    )
   }
 
-  override def withName(name: String): PlanMatcher = this.name.fold(copy(name = Some(PlanExactNameMatcher(name))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on name"))
+  override def withName(name: String): PlanMatcher = this.name.fold(copy(name = Some(PlanExactNameMatcher(name))))(_ =>
+    throw new IllegalArgumentException("cannot have more than one assertion on name")
+  )
 
-  override def withName(name: Regex): PlanMatcher = this.name.fold(copy(name = Some(PlanRegexNameMatcher(name))))(_ => throw new IllegalArgumentException("cannot have more than one> assertion on name"))
+  override def withName(name: Regex): PlanMatcher = this.name.fold(copy(name = Some(PlanRegexNameMatcher(name))))(_ =>
+    throw new IllegalArgumentException("cannot have more than one> assertion on name")
+  )
 
-  override def withRows(rows: Long): PlanMatcher = this.rows.fold(copy(rows = Some(new ExactArgumentMatcher(rows) with ActualRowsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on rows"))
+  override def withRows(rows: Long): PlanMatcher =
+    this.rows.fold(copy(rows = Some(new ExactArgumentMatcher(rows) with ActualRowsMatcher)))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on rows")
+    )
 
-  override def withRowsBetween(min: Long, max: Long): PlanMatcher = this.rows.fold(copy(rows = Some(new RangeArgumentMatcher(min, max) with ActualRowsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on rows"))
+  override def withRowsBetween(min: Long, max: Long): PlanMatcher =
+    this.rows.fold(copy(rows = Some(new RangeArgumentMatcher(min, max) with ActualRowsMatcher)))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on rows")
+    )
 
-  override def withEstimatedRows(estimatedRows: Long): PlanMatcher = this.estimatedRows.fold(copy(estimatedRows = Some(new ExactArgumentMatcher(estimatedRows) with EstimatedRowsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on estimatedRows"))
+  override def withEstimatedRows(estimatedRows: Long): PlanMatcher = this.estimatedRows.fold(copy(estimatedRows =
+    Some(new ExactArgumentMatcher(estimatedRows) with EstimatedRowsMatcher)))(_ =>
+    throw new IllegalArgumentException("cannot have more than one assertion on estimatedRows")
+  )
 
-  override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = this.estimatedRows.fold(copy(estimatedRows = Some(new RangeArgumentMatcher(min, max) with EstimatedRowsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on estimatedRows"))
+  override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher =
+    this.estimatedRows.fold(copy(estimatedRows = Some(new RangeArgumentMatcher(min, max) with EstimatedRowsMatcher)))(
+      _ => throw new IllegalArgumentException("cannot have more than one assertion on estimatedRows")
+    )
 
-  override def withTime(): PlanMatcher = this.time.fold(copy(time = Some(new RangeArgumentMatcher(1, Long.MaxValue) with TimeMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on time"))
+  override def withTime(): PlanMatcher =
+    this.time.fold(copy(time = Some(new RangeArgumentMatcher(1, Long.MaxValue) with TimeMatcher)))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on time")
+    )
 
-  override def withMemory(): PlanMatcher = this.memory.fold(copy(memory = Some(new RangeArgumentMatcher(1, Long.MaxValue) with MemoryMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on memory"))
+  override def withMemory(): PlanMatcher =
+    this.memory.fold(copy(memory = Some(new RangeArgumentMatcher(1, Long.MaxValue) with MemoryMatcher)))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on memory")
+    )
 
-  override def withGlobalMemory(): PlanMatcher = this.globalMemory.fold(copy(globalMemory = Some(new RangeArgumentMatcher(1, Long.MaxValue) with GlobalMemoryMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on global memory"))
+  override def withGlobalMemory(): PlanMatcher = this.globalMemory.fold(copy(globalMemory =
+    Some(new RangeArgumentMatcher(1, Long.MaxValue) with GlobalMemoryMatcher)))(_ =>
+    throw new IllegalArgumentException("cannot have more than one assertion on global memory")
+  )
 
-  override def withDBHits(hits: Long): PlanMatcher = this.dbHits.fold(copy(dbHits = Some(new ExactArgumentMatcher(hits) with DBHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on dbHits"))
+  override def withDBHits(hits: Long): PlanMatcher =
+    this.dbHits.fold(copy(dbHits = Some(new ExactArgumentMatcher(hits) with DBHitsMatcher)))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on dbHits")
+    )
 
-  override def withDBHits(): PlanMatcher = this.dbHits.fold(copy(dbHits = Some(new RangeArgumentMatcher(1, Long.MaxValue) with DBHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on dbHits"))
+  override def withDBHits(): PlanMatcher =
+    this.dbHits.fold(copy(dbHits = Some(new RangeArgumentMatcher(1, Long.MaxValue) with DBHitsMatcher)))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on dbHits")
+    )
 
-  override def withDBHitsBetween(min: Long, max: Long): PlanMatcher = this.dbHits.fold(copy(dbHits = Some(new RangeArgumentMatcher(min, max) with DBHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on dbHits"))
+  override def withDBHitsBetween(min: Long, max: Long): PlanMatcher =
+    this.dbHits.fold(copy(dbHits = Some(new RangeArgumentMatcher(min, max) with DBHitsMatcher)))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on dbHits")
+    )
 
-  override def withPageCacheHits(): PlanMatcher = this.pageCacheHits.fold(copy(pageCacheHits = Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on page cache hits"))
+  override def withPageCacheHits(): PlanMatcher = this.pageCacheHits.fold(copy(pageCacheHits =
+    Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheHitsMatcher)))(_ =>
+    throw new IllegalArgumentException("cannot have more than one assertion on page cache hits")
+  )
 
-  override def withPageCacheMisses(): PlanMatcher = this.pageCacheMisses.fold(copy(pageCacheMisses = Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheMissesMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on page cache misses"))
+  override def withPageCacheMisses(): PlanMatcher = this.pageCacheMisses.fold(copy(pageCacheMisses =
+    Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheMissesMatcher)))(_ =>
+    throw new IllegalArgumentException("cannot have more than one assertion on page cache misses")
+  )
 
-  override def withExactVariables(variables: String*): PlanMatcher = this.variables.fold(copy(variables = Some(ExactVariablesMatcher(variables.toSet))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on variables"))
+  override def withExactVariables(variables: String*): PlanMatcher =
+    this.variables.fold(copy(variables = Some(ExactVariablesMatcher(variables.toSet))))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on variables")
+    )
 
-  override def containingVariables(variables: String*): PlanMatcher = this.variables.fold(copy(variables = Some(ContainsVariablesMatcher(variables.toSet))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on variables"))
+  override def containingVariables(variables: String*): PlanMatcher =
+    this.variables.fold(copy(variables = Some(ContainsVariablesMatcher(variables.toSet))))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on variables")
+    )
 
-  override def containingVariablesRegex(variables: Regex*): PlanMatcher = this.variables.fold(copy(variables = Some(ContainsRegexVariablesMatcher(variables.toSet))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on variables"))
+  override def containingVariablesRegex(variables: Regex*): PlanMatcher =
+    this.variables.fold(copy(variables = Some(ContainsRegexVariablesMatcher(variables.toSet))))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on variables")
+    )
 
-  override def containingArgument(argument: String*): PlanMatcher = this.other.fold(copy(other = Some(ContainsExactStringArgumentsMatcher(argument.toSet))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on other"))
+  override def containingArgument(argument: String*): PlanMatcher =
+    this.other.fold(copy(other = Some(ContainsExactStringArgumentsMatcher(argument.toSet))))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on other")
+    )
 
-  override def containingArgumentRegex(argument: Regex*): PlanMatcher = this.other.fold(copy(other = Some(ContainsRegexStringArgumentsMatcher(argument.toSet))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on other"))
+  override def containingArgumentRegex(argument: Regex*): PlanMatcher =
+    this.other.fold(copy(other = Some(ContainsRegexStringArgumentsMatcher(argument.toSet))))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on other")
+    )
 
-  override def withOrder(providedOrder: ProvidedOrder): PlanMatcher = this.order.fold(copy(order = Some(OrderArgumentMatcher(providedOrder))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on order"))
+  override def withOrder(providedOrder: ProvidedOrder): PlanMatcher =
+    this.order.fold(copy(order = Some(OrderArgumentMatcher(providedOrder))))(_ =>
+      throw new IllegalArgumentException("cannot have more than one assertion on order")
+    )
 
-  override def withLHS(lhs: PlanMatcher): PlanMatcher = this.lhs.fold(copy(lhs = Some(lhs)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on lhs"))
+  override def withLHS(lhs: PlanMatcher): PlanMatcher = this.lhs.fold(copy(lhs = Some(lhs)))(_ =>
+    throw new IllegalArgumentException("cannot have more than one assertion on lhs")
+  )
 
-  override def withRHS(rhs: PlanMatcher): PlanMatcher = this.rhs.fold(copy(rhs = Some(rhs)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on rhs"))
+  override def withRHS(rhs: PlanMatcher): PlanMatcher = this.rhs.fold(copy(rhs = Some(rhs)))(_ =>
+    throw new IllegalArgumentException("cannot have more than one assertion on rhs")
+  )
 
-  override def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher = this.rhs.fold(copy(children = Some((a, b))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on children"))
+  override def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher = this.rhs.fold(copy(children = Some((a, b))))(
+    _ => throw new IllegalArgumentException("cannot have more than one assertion on children")
+  )
 }
 
 /**

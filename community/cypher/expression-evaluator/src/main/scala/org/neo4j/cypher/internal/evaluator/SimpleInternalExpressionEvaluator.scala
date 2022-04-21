@@ -59,7 +59,8 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
   }
 
   def errorContext[T](expr: String)(block: => T): T =
-    try block catch {
+    try block
+    catch {
       case e: Exception =>
         throw new EvaluationException(s"Failed to evaluate expression $expr", e)
     }
@@ -84,7 +85,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
       expressionVariables = new Array(nExpressionSlots),
       subscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
       queryMemoryTracker = null,
-      memoryTrackerForOperatorProvider = null,
+      memoryTrackerForOperatorProvider = null
     )
 
   private def withSlottedParams(input: Expression, params: MapValue): (Expression, Array[AnyValue]) = {
@@ -102,7 +103,9 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 }
 
 object SimpleInternalExpressionEvaluator {
-  private val CONVERTERS = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+
+  private val CONVERTERS =
+    new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
 
   object ExpressionParser {
 

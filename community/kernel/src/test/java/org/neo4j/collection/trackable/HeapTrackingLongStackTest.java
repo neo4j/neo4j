@@ -19,78 +19,69 @@
  */
 package org.neo4j.collection.trackable;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-@ExtendWith( RandomExtension.class )
-class HeapTrackingLongStackTest
-{
+@ExtendWith(RandomExtension.class)
+class HeapTrackingLongStackTest {
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
     private HeapTrackingLongStack aStack;
     private long[] longArray;
+
     @Inject
     private RandomSupport random;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         longArray = new long[100];
-        for ( int i = 0; i < longArray.length; i++ )
-        {
+        for (int i = 0; i < longArray.length; i++) {
             longArray[i] = i;
         }
-        aStack = HeapTrackingCollections.newLongStack( memoryTracker );
-        for ( long l : longArray )
-        {
-            aStack.push( l );
+        aStack = HeapTrackingCollections.newLongStack(memoryTracker);
+        for (long l : longArray) {
+            aStack.push(l);
         }
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         longArray = null;
         aStack.close();
-        assertEquals( 0, memoryTracker.estimatedHeapMemory(), "Leaking memory" );
+        assertEquals(0, memoryTracker.estimatedHeapMemory(), "Leaking memory");
     }
 
     @Test
-    void pop()
-    {
-        assertEquals( 100, aStack.size(), "Returned incorrect size for existing list" );
+    void pop() {
+        assertEquals(100, aStack.size(), "Returned incorrect size for existing list");
         int i = 99;
-        while ( aStack.notEmpty() )
-        {
-            assertEquals( i--, aStack.pop() );
+        while (aStack.notEmpty()) {
+            assertEquals(i--, aStack.pop());
         }
-        assertEquals( -1, i );
-        assertEquals( 0, aStack.size(), "Returned incorrect size for modified list" );
+        assertEquals(-1, i);
+        assertEquals(0, aStack.size(), "Returned incorrect size for modified list");
     }
 
     @Test
-    void peek()
-    {
-        assertEquals( 100, aStack.size(), "Returned incorrect size for existing list" );
-        assertEquals( 99, aStack.peek() );
-        assertEquals( 100, aStack.size(), "Returned incorrect size for existing list" );
+    void peek() {
+        assertEquals(100, aStack.size(), "Returned incorrect size for existing list");
+        assertEquals(99, aStack.peek());
+        assertEquals(100, aStack.size(), "Returned incorrect size for existing list");
     }
 
     @Test
-    void push()
-    {
-        assertEquals( 100, aStack.size(), "Returned incorrect size for existing list" );
-        aStack.push( 42 );
-        assertEquals( 42, aStack.peek() );
-        assertEquals( 101, aStack.size(), "Returned incorrect size for modified list" );
+    void push() {
+        assertEquals(100, aStack.size(), "Returned incorrect size for existing list");
+        aStack.push(42);
+        assertEquals(42, aStack.peek());
+        assertEquals(101, aStack.size(), "Returned incorrect size for modified list");
     }
 }

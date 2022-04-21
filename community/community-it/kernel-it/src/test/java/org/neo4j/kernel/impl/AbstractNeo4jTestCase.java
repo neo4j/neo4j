@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.parallel.ResourceLock;
-
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,87 +44,70 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
-
-@ResourceLock( SHARED_RESOURCE )
-public abstract class AbstractNeo4jTestCase
-{
+@ResourceLock(SHARED_RESOURCE)
+public abstract class AbstractNeo4jTestCase {
     private static DatabaseManagementService managementService;
     private static GraphDatabaseAPI graphDb;
 
     @BeforeAll
-    static void beforeAll()
-    {
+    static void beforeAll() {
         startDb();
     }
 
     @AfterAll
-    static void afterAll()
-    {
+    static void afterAll() {
         stopDb();
     }
 
-    protected static void startDb()
-    {
+    protected static void startDb() {
         managementService = new TestDatabaseManagementServiceBuilder()
-                .setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME )
-                .impermanent().build();
-        graphDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+                .setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME)
+                .impermanent()
+                .build();
+        graphDb = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    protected static void stopDb()
-    {
+    protected static void stopDb() {
         managementService.shutdown();
     }
 
-    public static GraphDatabaseService getGraphDb()
-    {
+    public static GraphDatabaseService getGraphDb() {
         return graphDb;
     }
 
-    public static DatabaseManagementService getManagementService()
-    {
+    public static DatabaseManagementService getManagementService() {
         return managementService;
     }
 
-    protected static GraphDatabaseAPI getGraphDbAPI()
-    {
+    protected static GraphDatabaseAPI getGraphDbAPI() {
         return graphDb;
     }
 
-    protected static Node createNode()
-    {
+    protected static Node createNode() {
         Node node;
-        try ( Transaction transaction = graphDb.beginTx() )
-        {
+        try (Transaction transaction = graphDb.beginTx()) {
             node = transaction.createNode();
             transaction.commit();
         }
         return node;
     }
 
-    protected static IdGenerator getIdGenerator( IdType idType )
-    {
-        return graphDb.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( idType );
+    protected static IdGenerator getIdGenerator(IdType idType) {
+        return graphDb.getDependencyResolver()
+                .resolveDependency(IdGeneratorFactory.class)
+                .get(idType);
     }
 
-    protected static long propertyRecordsInUse()
-    {
-        return numberOfRecordsInUse( propertyStore() );
+    protected static long propertyRecordsInUse() {
+        return numberOfRecordsInUse(propertyStore());
     }
 
-    private static <RECORD extends AbstractBaseRecord> int numberOfRecordsInUse( RecordStore<RECORD> store )
-    {
+    private static <RECORD extends AbstractBaseRecord> int numberOfRecordsInUse(RecordStore<RECORD> store) {
         int inUse = 0;
-        try ( var cursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
-        {
-            for ( long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++ )
-            {
-                RECORD record = store.getRecordByCursor( id, store.newRecord(), RecordLoad.FORCE, cursor );
-                if ( record.inUse() )
-                {
+        try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
+            for (long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++) {
+                RECORD record = store.getRecordByCursor(id, store.newRecord(), RecordLoad.FORCE, cursor);
+                if (record.inUse()) {
                     inUse++;
                 }
             }
@@ -129,15 +115,11 @@ public abstract class AbstractNeo4jTestCase
         return inUse;
     }
 
-    protected static <RECORD extends AbstractBaseRecord> long lastUsedRecordId( RecordStore<RECORD> store )
-    {
-        try ( var cursor = store.openPageCursorForReading( store.getHighId(), NULL_CONTEXT ) )
-        {
-            for ( long id = store.getHighId(); id > store.getNumberOfReservedLowIds(); id-- )
-            {
-                RECORD record = store.getRecordByCursor( id, store.newRecord(), RecordLoad.FORCE, cursor );
-                if ( record.inUse() )
-                {
+    protected static <RECORD extends AbstractBaseRecord> long lastUsedRecordId(RecordStore<RECORD> store) {
+        try (var cursor = store.openPageCursorForReading(store.getHighId(), NULL_CONTEXT)) {
+            for (long id = store.getHighId(); id > store.getNumberOfReservedLowIds(); id--) {
+                RECORD record = store.getRecordByCursor(id, store.newRecord(), RecordLoad.FORCE, cursor);
+                if (record.inUse()) {
                     return id;
                 }
             }
@@ -145,25 +127,23 @@ public abstract class AbstractNeo4jTestCase
         return 0;
     }
 
-    protected static long dynamicStringRecordsInUse()
-    {
-        return numberOfRecordsInUse( propertyStore().getStringStore() );
+    protected static long dynamicStringRecordsInUse() {
+        return numberOfRecordsInUse(propertyStore().getStringStore());
     }
 
-    protected static long dynamicArrayRecordsInUse()
-    {
-        return numberOfRecordsInUse( propertyStore().getArrayStore() );
+    protected static long dynamicArrayRecordsInUse() {
+        return numberOfRecordsInUse(propertyStore().getArrayStore());
     }
 
-    protected static StoreCursors createStoreCursors()
-    {
-        var storageEngine = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        return storageEngine.createStorageCursors( NULL_CONTEXT );
+    protected static StoreCursors createStoreCursors() {
+        var storageEngine = graphDb.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
+        return storageEngine.createStorageCursors(NULL_CONTEXT);
     }
 
-    protected static PropertyStore propertyStore()
-    {
-        return graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores().getPropertyStore();
+    protected static PropertyStore propertyStore() {
+        return graphDb.getDependencyResolver()
+                .resolveDependency(RecordStorageEngine.class)
+                .testAccessNeoStores()
+                .getPropertyStore();
     }
 }

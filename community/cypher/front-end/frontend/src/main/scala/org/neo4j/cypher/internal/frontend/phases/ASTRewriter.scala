@@ -54,39 +54,45 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object ASTRewriter {
 
-  private val AccumulatedSteps(orderedSteps, _) = StepSequencer(ListStepAccumulator[StepSequencer.Step with ASTRewriterFactory]()).orderSteps(Set(
-    combineSetProperty,
-    expandStar,
-    normalizeHasLabelsAndHasType,
-    desugarMapProjection,
-    moveWithPastMatch,
-    normalizeComparisons,
-    foldConstants,
-    mergeDuplicateBooleanOperators(),
-    normalizeExistsPatternExpressions,
-    nameAllPatternElements,
-    normalizeMatchPredicates,
-    normalizePatternComprehensionPredicates,
-    normalizeNotEquals,
-    normalizeArgumentOrder,
-    normalizeSargablePredicates,
-    AddUniquenessPredicates,
-    simplifyIterablePredicates,
-    replaceLiteralDynamicPropertyLookups,
-    inlineNamedPathsInPatternComprehensions,
-    parameterValueTypeReplacement,
-    rewriteOrderById,
-    LabelExpressionPredicateNormalizer,
-  ), initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo))
+  private val AccumulatedSteps(orderedSteps, _) =
+    StepSequencer(ListStepAccumulator[StepSequencer.Step with ASTRewriterFactory]()).orderSteps(
+      Set(
+        combineSetProperty,
+        expandStar,
+        normalizeHasLabelsAndHasType,
+        desugarMapProjection,
+        moveWithPastMatch,
+        normalizeComparisons,
+        foldConstants,
+        mergeDuplicateBooleanOperators(),
+        normalizeExistsPatternExpressions,
+        nameAllPatternElements,
+        normalizeMatchPredicates,
+        normalizePatternComprehensionPredicates,
+        normalizeNotEquals,
+        normalizeArgumentOrder,
+        normalizeSargablePredicates,
+        AddUniquenessPredicates,
+        simplifyIterablePredicates,
+        replaceLiteralDynamicPropertyLookups,
+        inlineNamedPathsInPatternComprehensions,
+        parameterValueTypeReplacement,
+        rewriteOrderById,
+        LabelExpressionPredicateNormalizer
+      ),
+      initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo)
+    )
 
-  def rewrite(statement: Statement,
-              semanticState: SemanticState,
-              parameterTypeMapping: Map[String, CypherType],
-              cypherExceptionFactory: CypherExceptionFactory,
-              anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-             ): Statement = {
+  def rewrite(
+    statement: Statement,
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Statement = {
     val rewriters = orderedSteps.map { step =>
-      val rewriter = step.getRewriter(semanticState, parameterTypeMapping, cypherExceptionFactory, anonymousVariableNameGenerator)
+      val rewriter =
+        step.getRewriter(semanticState, parameterTypeMapping, cypherExceptionFactory, anonymousVariableNameGenerator)
       RewriterStep.validatingRewriter(rewriter, step)
     }
 

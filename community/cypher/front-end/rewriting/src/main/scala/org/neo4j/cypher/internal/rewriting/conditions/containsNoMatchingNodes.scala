@@ -26,6 +26,6 @@ case class containsNoMatchingNodes(matcher: PartialFunction[ASTNode, String]) ex
     that.folder.fold(Seq.empty[(String, InputPosition)]) {
       case node: ASTNode if matcher.isDefinedAt(node) =>
         acc => acc :+ ((matcher(node), node.position))
-    }.map{ case (name, position) => s"Expected none but found $name at position $position" }
+    }.map { case (name, position) => s"Expected none but found $name at position $position" }
   }
 }

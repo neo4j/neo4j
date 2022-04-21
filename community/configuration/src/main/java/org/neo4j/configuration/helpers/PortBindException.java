@@ -26,38 +26,30 @@ import java.net.BindException;
  * Whenever possible, catch and rethrow bind exceptions as this, to make it possible to
  * sort out which address it is that is in use.
  */
-public class PortBindException extends BindException
-{
-    public PortBindException( SocketAddress address, Throwable original )
-    {
-        this( address, null, original );
+public class PortBindException extends BindException {
+    public PortBindException(SocketAddress address, Throwable original) {
+        this(address, null, original);
     }
 
-    public PortBindException( java.net.SocketAddress address, Throwable original )
-    {
-        super( "An error occurred while trying to bind to the socket " + address );
-        initCause( original );
+    public PortBindException(java.net.SocketAddress address, Throwable original) {
+        super("An error occurred while trying to bind to the socket " + address);
+        initCause(original);
     }
 
-    public PortBindException( SocketAddress address1, SocketAddress address2, Throwable original )
-    {
-        super( createMessage( address1, address2 ) );
-        setStackTrace( original.getStackTrace() );
+    public PortBindException(SocketAddress address1, SocketAddress address2, Throwable original) {
+        super(createMessage(address1, address2));
+        setStackTrace(original.getStackTrace());
     }
 
-    private static String createMessage( SocketAddress address1, SocketAddress address2 )
-    {
-        if ( address1 == null && address2 == null )
-        {
+    private static String createMessage(SocketAddress address1, SocketAddress address2) {
+        if (address1 == null && address2 == null) {
             return "Address is already in use, cannot bind to it.";
-        }
-        else if ( address1 != null && address2 != null )
-        {
-            return String.format( "At least one of the addresses %s or %s is already in use, cannot bind to it.", address1, address2 );
-        }
-        else
-        {
-            return String.format( "Address %s is already in use, cannot bind to it.", address1 != null ? address1 : address2 );
+        } else if (address1 != null && address2 != null) {
+            return String.format(
+                    "At least one of the addresses %s or %s is already in use, cannot bind to it.", address1, address2);
+        } else {
+            return String.format(
+                    "Address %s is already in use, cannot bind to it.", address1 != null ? address1 : address2);
         }
     }
 }

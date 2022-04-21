@@ -34,7 +34,14 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
 
   override def apply(context: LogicalPlanningContext): CandidateSelector =
     new CandidateSelector {
-      override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = {
+
+      override def applyWithResolvedPerPlan[X](
+        projector: X => LogicalPlan,
+        input: Iterable[X],
+        resolved: => String,
+        resolvedPerPlan: LogicalPlan => String,
+        heuristic: SelectorHeuristic
+      ): Option[X] = {
 
         val inputOrdering = new Ordering[X] {
           override def compare(x: X, y: X): Int = {
@@ -44,16 +51,36 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
           }
         }
 
-        context.costComparisonListener.report(projector, input, inputOrdering, context, resolved, resolvedPerPlan, heuristic)
+        context.costComparisonListener.report(
+          projector,
+          input,
+          inputOrdering,
+          context,
+          resolved,
+          resolvedPerPlan,
+          heuristic
+        )
 
         if (input.isEmpty) None else Some(input.min(inputOrdering))
       }
     }
 
-  private def score[X](projector: X => LogicalPlan, input: X, heuristic: SelectorHeuristic, context: LogicalPlanningContext) = {
+  private def score[X](
+    projector: X => LogicalPlan,
+    input: X,
+    heuristic: SelectorHeuristic,
+    context: LogicalPlanningContext
+  ) = {
     val costs = context.cost
     val plan = projector(input)
-    val cost = costs.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, CostModelMonitor.DEFAULT).gummyBears
+    val cost = costs.costFor(
+      plan,
+      context.input,
+      context.semanticTable,
+      context.planningAttributes.cardinalities,
+      context.planningAttributes.providedOrders,
+      CostModelMonitor.DEFAULT
+    ).gummyBears
     val hints = context.planningAttributes.solveds.get(plan.id).numHints
     val tieBreaker = heuristic.tieBreaker(plan)
     (-hints, cost, -tieBreaker)

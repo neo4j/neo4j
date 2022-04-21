@@ -36,14 +36,14 @@ class InternalPlanDescriptionTest extends CypherFunSuite {
 
   private val ID = Id.INVALID_ID
 
-
   test("arguments are read as expected") {
     val arguments = Seq(
       DbHits(1),
       PageCacheHits(2),
       PageCacheMisses(3),
       Time(4),
-      Rows(5))
+      Rows(5)
+    )
     val plan = PlanDescriptionImpl(ID, "plan", NoChildren, arguments, Set())
     plan.hasProfilerStatistics should equal(true)
     plan.getProfilerStatistics.getDbHits should equal(1)
@@ -88,7 +88,7 @@ class InternalPlanDescriptionTest extends CypherFunSuite {
     val C1 = PlanDescriptionImpl(ID, "C1", NoChildren, Seq.empty, Set())
     val B2 = PlanDescriptionImpl(ID, "B2", TwoChildren(C3, C4), Seq.empty, Set())
     val B1 = PlanDescriptionImpl(ID, "B1", TwoChildren(C1, C2), Seq.empty, Set())
-    val A  = PlanDescriptionImpl(ID, "A" , TwoChildren(B1, B2), Seq.empty, Set())
+    val A = PlanDescriptionImpl(ID, "A", TwoChildren(B1, B2), Seq.empty, Set())
 
     A.flatten should equal(Seq(A, B1, C1, C2, B2, C3, C4))
   }
@@ -102,25 +102,25 @@ class InternalPlanDescriptionTest extends CypherFunSuite {
       .addArgument(Runtime("PIPELINED"))
       .addArgument(BatchSize(128))
 
-
     normalizeNewLines(planDescription.toString) should equal(
       normalizeNewLines(s"""Compiler $version
-       |
-       |Planner COST
-       |
-       |Runtime PIPELINED
-       |
-       |Runtime version $version
-       |
-       |Batch size 128
-       |
-       |+----------+
-       || Operator |
-       |+----------+
-       || +Leaf    |
-       |+----------+
-       |
-       |Total database accesses: ?
-       |""".stripMargin))
+                           |
+                           |Planner COST
+                           |
+                           |Runtime PIPELINED
+                           |
+                           |Runtime version $version
+                           |
+                           |Batch size 128
+                           |
+                           |+----------+
+                           || Operator |
+                           |+----------+
+                           || +Leaf    |
+                           |+----------+
+                           |
+                           |Total database accesses: ?
+                           |""".stripMargin)
+    )
   }
 }

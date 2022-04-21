@@ -23,7 +23,6 @@ import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.util.Preconditions;
 
@@ -33,64 +32,53 @@ import org.neo4j.util.Preconditions;
  * IndexingService is expected to either make a copy before making any changes or update this
  * while being single threaded.
  */
-public final class IndexMap
-{
+public final class IndexMap {
     private final MutableLongObjectMap<IndexProxy> indexesById;
 
-    public IndexMap()
-    {
-        this( new LongObjectHashMap<>() );
+    public IndexMap() {
+        this(new LongObjectHashMap<>());
     }
 
-    IndexMap( MutableLongObjectMap<IndexProxy> indexesById )
-    {
+    IndexMap(MutableLongObjectMap<IndexProxy> indexesById) {
         this.indexesById = indexesById;
     }
 
-    IndexMap( IndexMap other )
-    {
-        this( LongObjectHashMap.newMap( other.indexesById ) );
+    IndexMap(IndexMap other) {
+        this(LongObjectHashMap.newMap(other.indexesById));
     }
 
-    public IndexProxy getIndexProxy( IndexDescriptor index )
-    {
-        return indexesById.get( index.getId() );
+    public IndexProxy getIndexProxy(IndexDescriptor index) {
+        return indexesById.get(index.getId());
     }
 
-    public IndexProxy getIndexProxy( long indexId )
-    {
-        return indexesById.get( indexId );
+    public IndexProxy getIndexProxy(long indexId) {
+        return indexesById.get(indexId);
     }
 
-    public void putIndexProxy( IndexProxy indexProxy )
-    {
+    public void putIndexProxy(IndexProxy indexProxy) {
         IndexDescriptor index = indexProxy.getDescriptor();
-        Preconditions.checkState( !indexesById.contains( index.getId() ), "Trying to overwrite index %d in IndexMap", index.getId() );
-        indexesById.put( index.getId(), indexProxy );
+        Preconditions.checkState(
+                !indexesById.contains(index.getId()), "Trying to overwrite index %d in IndexMap", index.getId());
+        indexesById.put(index.getId(), indexProxy);
     }
 
-    IndexProxy removeIndexProxy( long indexId )
-    {
-        return indexesById.remove( indexId );
+    IndexProxy removeIndexProxy(long indexId) {
+        return indexesById.remove(indexId);
     }
 
-    void forEachIndexProxy( LongObjectProcedure<IndexProxy> consumer )
-    {
-        indexesById.forEachKeyValue( consumer );
+    void forEachIndexProxy(LongObjectProcedure<IndexProxy> consumer) {
+        indexesById.forEachKeyValue(consumer);
     }
 
-    Iterable<IndexProxy> getAllIndexProxies()
-    {
+    Iterable<IndexProxy> getAllIndexProxies() {
         return indexesById.values();
     }
 
-    public LongIterator indexIds()
-    {
+    public LongIterator indexIds() {
         return indexesById.keySet().longIterator();
     }
 
-    public int size()
-    {
+    public int size() {
         return indexesById.size();
     }
 }

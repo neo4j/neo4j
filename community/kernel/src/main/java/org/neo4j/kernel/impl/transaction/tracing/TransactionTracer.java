@@ -28,54 +28,45 @@ import org.neo4j.kernel.impl.transaction.stats.TransactionLogCounters;
  * during commit. Implementers should take great care to make their implementations as fast as possible. Note that
  * tracers are not allowed to throw exceptions.
  */
-public interface TransactionTracer extends TransactionLogCounters
-{
+public interface TransactionTracer extends TransactionLogCounters {
     /**
      * A TransactionTracer implementation that does nothing, other than return the NULL variants of the companion
      * interfaces.
      */
-    TransactionTracer NULL = new TransactionTracer()
-    {
+    TransactionTracer NULL = new TransactionTracer() {
 
         @Override
-        public TransactionEvent beginTransaction( CursorContext cursorContext )
-        {
+        public TransactionEvent beginTransaction(CursorContext cursorContext) {
             return TransactionEvent.NULL;
         }
 
         @Override
-        public long appendedBytes()
-        {
+        public long appendedBytes() {
             return 0;
         }
 
         @Override
-        public long numberOfLogRotations()
-        {
+        public long numberOfLogRotations() {
             return 0;
         }
 
         @Override
-        public long logRotationAccumulatedTotalTimeMillis()
-        {
+        public long logRotationAccumulatedTotalTimeMillis() {
             return 0;
         }
 
         @Override
-        public long lastLogRotationTimeMillis()
-        {
+        public long lastLogRotationTimeMillis() {
             return 0;
         }
 
         @Override
-        public long numberOfFlushes()
-        {
+        public long numberOfFlushes() {
             return 0;
         }
 
         @Override
-        public long lastTransactionLogAppendBatch()
-        {
+        public long lastTransactionLogAppendBatch() {
             return 0;
         }
     };
@@ -85,5 +76,5 @@ public interface TransactionTracer extends TransactionLogCounters
      * @return An event that represents the transaction.
      * @param cursorContext page cursor context that used by transaction
      */
-    TransactionEvent beginTransaction( CursorContext cursorContext );
+    TransactionEvent beginTransaction(CursorContext cursorContext);
 }

@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
@@ -41,14 +43,9 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ActorsExtension
 @TestDirectoryExtension
-public abstract class LockCompatibilityTestSupport
-{
+public abstract class LockCompatibilityTestSupport {
     @Inject
     public Actor threadA;
 
@@ -70,30 +67,27 @@ public abstract class LockCompatibilityTestSupport
 
     private final Map<Locks.Client, Actor> clientToThreadMap = new HashMap<>();
 
-    public LockCompatibilityTestSupport( LockingCompatibilityTestSuite suite )
-    {
+    public LockCompatibilityTestSupport(LockingCompatibilityTestSuite suite) {
         this.suite = suite;
     }
 
     @BeforeEach
-    public void before()
-    {
-        locks = suite.createLockManager( Config.defaults(), Clocks.nanoClock() );
+    public void before() {
+        locks = suite.createLockManager(Config.defaults(), Clocks.nanoClock());
         clientA = locks.newClient();
         clientB = locks.newClient();
         clientC = locks.newClient();
-        clientA.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
-        clientB.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, Config.defaults() );
-        clientC.initialize( NoLeaseClient.INSTANCE, 3, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        clientA.initialize(NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults());
+        clientB.initialize(NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, Config.defaults());
+        clientC.initialize(NoLeaseClient.INSTANCE, 3, EmptyMemoryTracker.INSTANCE, Config.defaults());
 
-        clientToThreadMap.put( clientA, threadA );
-        clientToThreadMap.put( clientB, threadB );
-        clientToThreadMap.put( clientC, threadC );
+        clientToThreadMap.put(clientA, threadA);
+        clientToThreadMap.put(clientB, threadB);
+        clientToThreadMap.put(clientC, threadC);
     }
 
     @AfterEach
-    public void after()
-    {
+    public void after() {
         clientA.close();
         clientB.close();
         clientC.close();
@@ -103,106 +97,77 @@ public abstract class LockCompatibilityTestSupport
 
     // Utilities
 
-    public abstract static class LockCommand implements Runnable
-    {
+    public abstract static class LockCommand implements Runnable {
         private final Actor thread;
         private final Locks.Client client;
 
-        LockCommand( Actor thread, Locks.Client client )
-        {
+        LockCommand(Actor thread, Locks.Client client) {
             this.thread = thread;
             this.client = client;
         }
 
-        public Future<Void> call()
-        {
-            return thread.submit( this );
+        public Future<Void> call() {
+            return thread.submit(this);
         }
 
-        Future<Void> callAndAssertWaiting()
-        {
+        Future<Void> callAndAssertWaiting() {
             Future<Void> otherThreadLock = call();
-            try
-            {
+            try {
                 thread.untilWaiting();
+            } catch (InterruptedException e) {
+                throw new IllegalStateException(e);
             }
-            catch ( InterruptedException e )
-            {
-                throw new IllegalStateException( e );
-            }
-            assertFalse( otherThreadLock.isDone(), "Should not have acquired lock." );
+            assertFalse(otherThreadLock.isDone(), "Should not have acquired lock.");
             return otherThreadLock;
         }
 
         @Override
-        public void run()
-        {
-            doWork( client );
+        public void run() {
+            doWork(client);
         }
 
-        abstract void doWork( Locks.Client client ) throws AcquireLockTimeoutException;
+        abstract void doWork(Locks.Client client) throws AcquireLockTimeoutException;
 
-        public Locks.Client client()
-        {
+        public Locks.Client client() {
             return client;
         }
     }
 
     protected LockCommand acquireExclusive(
-            final Locks.Client client,
-            final LockTracer tracer,
-            final ResourceType resourceType,
-            final long key )
-    {
-        return new LockCommand( clientToThreadMap.get( client ), client )
-        {
+            final Locks.Client client, final LockTracer tracer, final ResourceType resourceType, final long key) {
+        return new LockCommand(clientToThreadMap.get(client), client) {
             @Override
-            public void doWork( Locks.Client client ) throws AcquireLockTimeoutException
-            {
-                client.acquireExclusive( tracer, resourceType, key );
+            public void doWork(Locks.Client client) throws AcquireLockTimeoutException {
+                client.acquireExclusive(tracer, resourceType, key);
             }
         };
     }
 
     protected LockCommand acquireShared(
-            Locks.Client client,
-            final LockTracer tracer,
-            final ResourceType resourceType,
-            final long key )
-    {
-        return new LockCommand( clientToThreadMap.get( client ), client )
-        {
+            Locks.Client client, final LockTracer tracer, final ResourceType resourceType, final long key) {
+        return new LockCommand(clientToThreadMap.get(client), client) {
             @Override
-            public void doWork( Locks.Client client ) throws AcquireLockTimeoutException
-            {
-                client.acquireShared( tracer, resourceType, key );
+            public void doWork(Locks.Client client) throws AcquireLockTimeoutException {
+                client.acquireShared(tracer, resourceType, key);
             }
         };
     }
 
-    protected LockCommand release(
-            final Locks.Client client,
-            final ResourceType resourceType,
-            final long key )
-    {
-        return new LockCommand( clientToThreadMap.get( client ), client )
-        {
+    protected LockCommand release(final Locks.Client client, final ResourceType resourceType, final long key) {
+        return new LockCommand(clientToThreadMap.get(client), client) {
             @Override
-            public void doWork( Locks.Client client )
-            {
-                client.releaseExclusive( resourceType, key );
+            public void doWork(Locks.Client client) {
+                client.releaseExclusive(resourceType, key);
             }
         };
     }
 
-    static void assertNotWaiting( Future<Void> lock )
-    {
-        assertDoesNotThrow( () -> lock.get( 5, TimeUnit.SECONDS ), "Waiting for lock timed out!" );
+    static void assertNotWaiting(Future<Void> lock) {
+        assertDoesNotThrow(() -> lock.get(5, TimeUnit.SECONDS), "Waiting for lock timed out!");
     }
 
-    void assertWaiting( Locks.Client client, Future<Void> lock )
-    {
-        assertThrows( TimeoutException.class, () -> lock.get( 10, TimeUnit.MILLISECONDS ) );
-        assertDoesNotThrow( () -> clientToThreadMap.get( client ).untilWaiting() );
+    void assertWaiting(Locks.Client client, Future<Void> lock) {
+        assertThrows(TimeoutException.class, () -> lock.get(10, TimeUnit.MILLISECONDS));
+        assertDoesNotThrow(() -> clientToThreadMap.get(client).untilWaiting());
     }
 }

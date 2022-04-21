@@ -73,8 +73,7 @@ import org.neo4j.annotations.api.PublicApi;
  * refer to them this way. Instead, use application generated ids.
  */
 @PublicApi
-public interface Relationship extends Entity
-{
+public interface Relationship extends Entity {
     // Node accessors
     /**
      * Returns the start node of this relationship. For a definition of how
@@ -117,7 +116,7 @@ public interface Relationship extends Entity
      * @throws RuntimeException if the given node is neither the start nor end
      *             node of this relationship
      */
-    Node getOtherNode( Node node );
+    Node getOtherNode(Node node);
 
     /**
      * Returns the two nodes that are attached to this relationship. The first
@@ -154,7 +153,7 @@ public interface Relationship extends Entity
      *         <code>type</code>, <code>false</code> otherwise or if
      *         <code>null</code>
      */
-    boolean isType( RelationshipType type );
+    boolean isType(RelationshipType type);
 
     /**
      * Returns the id of the start node of this relationship. For a definition of how
@@ -166,8 +165,7 @@ public interface Relationship extends Entity
      *
      * @return the id of the start node of this relationship.
      */
-    default long getStartNodeId()
-    {
+    default long getStartNodeId() {
         return getStartNode().getId();
     }
 
@@ -181,8 +179,7 @@ public interface Relationship extends Entity
      *
      * @return the id of the end node of this relationship.
      */
-    default long getEndNodeId()
-    {
+    default long getEndNodeId() {
         return getEndNode().getId();
     }
 
@@ -201,18 +198,14 @@ public interface Relationship extends Entity
      * @throws RuntimeException if the given node id is not the id of either the start or end
      *             node of this relationship.
      */
-    default long getOtherNodeId( long id )
-    {
+    default long getOtherNodeId(long id) {
         long start = getStartNodeId();
         long end = getEndNodeId();
-        if ( id == start )
-        {
+        if (id == start) {
             return end;
-        }
-        else if ( id == end )
-        {
+        } else if (id == end) {
             return start;
         }
-        throw new NotFoundException( "Node[" + id + "] not connected to this relationship[" + getId() + "]" );
+        throw new NotFoundException("Node[" + id + "] not connected to this relationship[" + getId() + "]");
     }
 }

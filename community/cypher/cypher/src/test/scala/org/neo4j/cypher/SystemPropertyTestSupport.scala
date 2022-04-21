@@ -27,10 +27,10 @@ trait SystemPropertyTestSupport {
   def withSystemProperties[T](properties: (String, String)*)(f: => T) = {
     val backup = Map.newBuilder[String, String]
     try {
-      properties.foreach( backup += setSystemProperty(_) )
+      properties.foreach(backup += setSystemProperty(_))
       f
     } finally {
-      backup.result().foreach( setSystemProperty )
+      backup.result().foreach(setSystemProperty)
     }
   }
 

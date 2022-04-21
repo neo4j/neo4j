@@ -29,7 +29,10 @@ import org.neo4j.cypher.internal.util.attribution.Id
  */
 case class ProberPipe(source: Pipe, probe: Prober.Probe)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     input.map { row =>
       probe.onRow(row)
       row

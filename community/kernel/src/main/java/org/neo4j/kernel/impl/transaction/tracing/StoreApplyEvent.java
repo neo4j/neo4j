@@ -23,11 +23,8 @@ package org.neo4j.kernel.impl.transaction.tracing;
  * Represents the process of applying transaction changes to the stores. Because we apply transactions in parallel,
  * the individual stores and indexes are not further specified.
  */
-public interface StoreApplyEvent extends AutoCloseable
-{
-    StoreApplyEvent NULL = () ->
-    {
-    };
+public interface StoreApplyEvent extends AutoCloseable {
+    StoreApplyEvent NULL = () -> {};
 
     /**
      * Marks the completion of the store application.

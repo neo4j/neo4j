@@ -19,17 +19,14 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
-import org.neo4j.test.RandomSupport;
-
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
-public class GBPTreeReadWriteFixedSizeTest extends GBPTreeReadWriteTestBase<MutableLong,MutableLong>
-{
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.neo4j.test.RandomSupport;
+
+public class GBPTreeReadWriteFixedSizeTest extends GBPTreeReadWriteTestBase<MutableLong, MutableLong> {
     @Override
-    TestLayout<MutableLong,MutableLong> getLayout( RandomSupport random, int pageSize )
-    {
+    TestLayout<MutableLong, MutableLong> getLayout(RandomSupport random, int pageSize) {
         return longLayout().build();
     }
 }

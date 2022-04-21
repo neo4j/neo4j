@@ -19,15 +19,6 @@
  */
 package org.neo4j.internal.helpers;
 
-import org.junit.jupiter.api.Test;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Calendar;
-import java.util.TimeZone;
-
 import static java.time.ZoneOffset.UTC;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -40,118 +31,125 @@ import static org.neo4j.internal.helpers.Format.TIME_FORMAT;
 import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.internal.helpers.Format.duration;
 
-class FormatTest
-{
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Calendar;
+import java.util.TimeZone;
+import org.junit.jupiter.api.Test;
+
+class FormatTest {
     @Test
-    void shouldDisplayPlainCount()
-    {
+    void shouldDisplayPlainCount() {
         // when
-        String format = Format.count( 10 );
+        String format = Format.count(10);
 
         // then
-        assertTrue( format.startsWith( "10" ) );
+        assertTrue(format.startsWith("10"));
     }
 
     @Test
-    void shouldDisplayThousandCount()
-    {
+    void shouldDisplayThousandCount() {
         // when
-        String format = Format.count( 2_000 );
+        String format = Format.count(2_000);
 
         // then
-        assertTrue( format.startsWith( "2" ) );
-        assertTrue( format.endsWith( "k" ) );
+        assertTrue(format.startsWith("2"));
+        assertTrue(format.endsWith("k"));
     }
 
     @Test
-    void shouldDisplayMillionCount()
-    {
+    void shouldDisplayMillionCount() {
         // when
-        String format = Format.count( 2_000_000 );
+        String format = Format.count(2_000_000);
 
         // then
-        assertTrue( format.startsWith( "2" ) );
-        assertTrue( format.endsWith( "M" ) );
+        assertTrue(format.startsWith("2"));
+        assertTrue(format.endsWith("M"));
     }
 
     @Test
-    void shouldDisplayBillionCount()
-    {
+    void shouldDisplayBillionCount() {
         // when
-        String format = Format.count( 2_000_000_000 );
+        String format = Format.count(2_000_000_000);
 
         // then
-        assertTrue( format.startsWith( "2" ) );
-        assertTrue( format.endsWith( "G" ) );
+        assertTrue(format.startsWith("2"));
+        assertTrue(format.endsWith("G"));
     }
 
     @Test
-    void shouldDisplayTrillionCount()
-    {
+    void shouldDisplayTrillionCount() {
         // when
-        String format = Format.count( 4_000_000_000_000L );
+        String format = Format.count(4_000_000_000_000L);
 
         // then
-        assertTrue( format.startsWith( "4" ) );
-        assertTrue( format.endsWith( "T" ) );
+        assertTrue(format.startsWith("4"));
+        assertTrue(format.endsWith("T"));
     }
 
     @Test
-    void displayDuration()
-    {
-        assertThat( duration( MINUTES.toMillis( 1 ) + SECONDS.toMillis( 2 ) ) ).isEqualTo( "1m 2s" );
-        assertThat( duration( 42 ) ).isEqualTo( "42ms" );
-        assertThat( duration( 0 ) ).isEqualTo( "0ms" );
+    void displayDuration() {
+        assertThat(duration(MINUTES.toMillis(1) + SECONDS.toMillis(2))).isEqualTo("1m 2s");
+        assertThat(duration(42)).isEqualTo("42ms");
+        assertThat(duration(0)).isEqualTo("0ms");
     }
 
     @Test
-    void displayDate() throws ParseException
-    {
+    void displayDate() throws ParseException {
         long timeWithDate = System.currentTimeMillis();
-        String dateAsString = date( timeWithDate );
-        assertEquals( timeWithDate, new SimpleDateFormat( DATE_FORMAT ).parse( dateAsString ).getTime() );
-        assertEquals( "2017-04-05 00:00:00.000+0000", date( LocalDate.of( 2017, 4, 5 ).atStartOfDay( UTC ).toInstant() ) );
+        String dateAsString = date(timeWithDate);
+        assertEquals(
+                timeWithDate,
+                new SimpleDateFormat(DATE_FORMAT).parse(dateAsString).getTime());
+        assertEquals(
+                "2017-04-05 00:00:00.000+0000",
+                date(LocalDate.of(2017, 4, 5).atStartOfDay(UTC).toInstant()));
     }
 
     @Test
-    void displayTime() throws ParseException
-    {
+    void displayTime() throws ParseException {
         long timeWithDate = System.currentTimeMillis();
-        String timeAsString = Format.time( timeWithDate );
-        assertEquals( timeWithDate, translateToDate( timeWithDate, new SimpleDateFormat( TIME_FORMAT ).parse( timeAsString ).getTime(),
-                TimeZone.getTimeZone( DEFAULT_TIME_ZONE ) ) );
-        assertEquals( "2017-04-05 06:07:08.000+0000", date( LocalDateTime.of( 2017, 4, 5, 6, 7, 8, 9 ).toInstant( UTC ) ) );
+        String timeAsString = Format.time(timeWithDate);
+        assertEquals(
+                timeWithDate,
+                translateToDate(
+                        timeWithDate,
+                        new SimpleDateFormat(TIME_FORMAT).parse(timeAsString).getTime(),
+                        TimeZone.getTimeZone(DEFAULT_TIME_ZONE)));
+        assertEquals(
+                "2017-04-05 06:07:08.000+0000",
+                date(LocalDateTime.of(2017, 4, 5, 6, 7, 8, 9).toInstant(UTC)));
     }
 
     @Test
-    void numberToStringWithGroups()
-    {
+    void numberToStringWithGroups() {
         // given
         long number1 = 123_456_789;
         long number2 = 10_000;
 
         // when
-        String number1AsString = Format.numberToStringWithGroups( number1, ',' );
-        String number2AsString = Format.numberToStringWithGroups( number2, '.' );
+        String number1AsString = Format.numberToStringWithGroups(number1, ',');
+        String number2AsString = Format.numberToStringWithGroups(number2, '.');
 
         // then
-        assertThat( number1AsString ).isEqualTo( "123,456,789" );
-        assertThat( number2AsString ).isEqualTo( "10.000" );
+        assertThat(number1AsString).isEqualTo("123,456,789");
+        assertThat(number2AsString).isEqualTo("10.000");
     }
 
-    private static long translateToDate( long timeWithDate, long time, TimeZone timeIsGivenInThisTimeZone )
-    {
-        Calendar calendar = Calendar.getInstance( timeIsGivenInThisTimeZone );
-        calendar.setTimeInMillis( timeWithDate );
+    private static long translateToDate(long timeWithDate, long time, TimeZone timeIsGivenInThisTimeZone) {
+        Calendar calendar = Calendar.getInstance(timeIsGivenInThisTimeZone);
+        calendar.setTimeInMillis(timeWithDate);
 
         Calendar timeCalendar = Calendar.getInstance();
-        timeCalendar.setTimeInMillis( time );
-        timeCalendar.setTimeZone( timeIsGivenInThisTimeZone );
-        timeCalendar.set( Calendar.YEAR, calendar.get( Calendar.YEAR ) );
-        timeCalendar.set( Calendar.MONTH, calendar.get( Calendar.MONTH ) );
-        boolean crossedDayBoundary = !DEFAULT_TIME_ZONE.equals( timeIsGivenInThisTimeZone.toZoneId() ) &&
-                timeCalendar.get( Calendar.HOUR_OF_DAY ) < calendar.get( Calendar.HOUR_OF_DAY );
-        timeCalendar.set( Calendar.DAY_OF_MONTH, calendar.get( Calendar.DAY_OF_MONTH ) + (crossedDayBoundary ? 1 : 0) );
+        timeCalendar.setTimeInMillis(time);
+        timeCalendar.setTimeZone(timeIsGivenInThisTimeZone);
+        timeCalendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+        timeCalendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+        boolean crossedDayBoundary = !DEFAULT_TIME_ZONE.equals(timeIsGivenInThisTimeZone.toZoneId())
+                && timeCalendar.get(Calendar.HOUR_OF_DAY) < calendar.get(Calendar.HOUR_OF_DAY);
+        timeCalendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + (crossedDayBoundary ? 1 : 0));
         return timeCalendar.getTimeInMillis();
     }
 }

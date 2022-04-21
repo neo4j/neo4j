@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -39,8 +38,7 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LegacyStoreId;
 
-public class TransactionLogFilesContext
-{
+public class TransactionLogFilesContext {
     private final AtomicLong rotationThreshold;
     private final AtomicBoolean tryPreallocateTransactionLogs;
     private final CommandReaderFactory commandReaderFactory;
@@ -64,15 +62,29 @@ public class TransactionLogFilesContext
     private final LogTailMetadata externalTailInfo;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
 
-    public TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, CommandReaderFactory commandReaderFactory,
-            LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier,
+    public TransactionLogFilesContext(
+            AtomicLong rotationThreshold,
+            AtomicBoolean tryPreallocateTransactionLogs,
+            CommandReaderFactory commandReaderFactory,
+            LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier,
+            LongSupplier committingTransactionIdSupplier,
             LastClosedPositionProvider lastClosedPositionProvider,
-            LogVersionRepositoryProvider logVersionRepositoryProvider, FileSystemAbstraction fileSystem, InternalLogProvider logProvider,
-            DatabaseTracers databaseTracers, Supplier<LegacyStoreId> storeId, NativeAccess nativeAccess,
-            MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
-            KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config, LogTailMetadata externalTailInfo,
-            DbmsRuntimeRepository dbmsRuntimeRepository )
-    {
+            LogVersionRepositoryProvider logVersionRepositoryProvider,
+            FileSystemAbstraction fileSystem,
+            InternalLogProvider logProvider,
+            DatabaseTracers databaseTracers,
+            Supplier<LegacyStoreId> storeId,
+            NativeAccess nativeAccess,
+            MemoryTracker memoryTracker,
+            Monitors monitors,
+            boolean failOnCorruptedLogFiles,
+            DatabaseHealth databaseHealth,
+            KernelVersionRepository kernelVersionRepository,
+            Clock clock,
+            String databaseName,
+            Config config,
+            LogTailMetadata externalTailInfo,
+            DbmsRuntimeRepository dbmsRuntimeRepository) {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.commandReaderFactory = commandReaderFactory;
@@ -97,113 +109,91 @@ public class TransactionLogFilesContext
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
     }
 
-    AtomicLong getRotationThreshold()
-    {
+    AtomicLong getRotationThreshold() {
         return rotationThreshold;
     }
 
-    public CommandReaderFactory getCommandReaderFactory()
-    {
+    public CommandReaderFactory getCommandReaderFactory() {
         return commandReaderFactory;
     }
 
-    public LogVersionRepositoryProvider getLogVersionRepositoryProvider()
-    {
+    public LogVersionRepositoryProvider getLogVersionRepositoryProvider() {
         return logVersionRepositoryProvider;
     }
 
-    public LastCommittedTransactionIdProvider getLastCommittedTransactionIdProvider()
-    {
+    public LastCommittedTransactionIdProvider getLastCommittedTransactionIdProvider() {
         return lastCommittedTransactionIdSupplier;
     }
 
-    public long committingTransactionId()
-    {
+    public long committingTransactionId() {
         return committingTransactionIdSupplier.getAsLong();
     }
 
-    LastClosedPositionProvider getLastClosedTransactionPositionProvider()
-    {
+    LastClosedPositionProvider getLastClosedTransactionPositionProvider() {
         return lastClosedPositionProvider;
     }
 
-    public FileSystemAbstraction getFileSystem()
-    {
+    public FileSystemAbstraction getFileSystem() {
         return fileSystem;
     }
 
-    public InternalLogProvider getLogProvider()
-    {
+    public InternalLogProvider getLogProvider() {
         return logProvider;
     }
 
-    AtomicBoolean getTryPreallocateTransactionLogs()
-    {
+    AtomicBoolean getTryPreallocateTransactionLogs() {
         return tryPreallocateTransactionLogs;
     }
 
-    public NativeAccess getNativeAccess()
-    {
+    public NativeAccess getNativeAccess() {
         return nativeAccess;
     }
 
-    public DatabaseTracers getDatabaseTracers()
-    {
+    public DatabaseTracers getDatabaseTracers() {
         return databaseTracers;
     }
 
-    public LegacyStoreId getStoreId()
-    {
+    public LegacyStoreId getStoreId() {
         return storeId.get();
     }
 
-    public MemoryTracker getMemoryTracker()
-    {
+    public MemoryTracker getMemoryTracker() {
         return memoryTracker;
     }
 
-    public Monitors getMonitors()
-    {
+    public Monitors getMonitors() {
         return monitors;
     }
 
-    public boolean isFailOnCorruptedLogFiles()
-    {
+    public boolean isFailOnCorruptedLogFiles() {
         return failOnCorruptedLogFiles;
     }
 
-    public DatabaseHealth getDatabaseHealth()
-    {
+    public DatabaseHealth getDatabaseHealth() {
         return databaseHealth;
     }
 
-    public KernelVersionRepository getKernelVersionProvider()
-    {
+    public KernelVersionRepository getKernelVersionProvider() {
         return kernelVersionRepository;
     }
 
-    public Clock getClock()
-    {
+    public Clock getClock() {
         return clock;
     }
 
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return databaseName;
     }
 
-    public Config getConfig()
-    {
+    public Config getConfig() {
         return config;
     }
 
-    public LogTailMetadata getExternalTailInfo()
-    {
+    public LogTailMetadata getExternalTailInfo() {
         return externalTailInfo;
     }
 
-    public DbmsRuntimeRepository getDbmsRuntimeRepository()
-    {
+    public DbmsRuntimeRepository getDbmsRuntimeRepository() {
         return dbmsRuntimeRepository;
     }
 }

@@ -26,12 +26,10 @@ import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.util.AttributeKey;
-import org.apache.commons.lang3.time.DurationFormatUtils;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.util.function.Supplier;
-
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
@@ -40,11 +38,12 @@ import org.neo4j.memory.MemoryTracker;
  * property. Buffer sizes based on which the channel will change its isWritable property
  * and whether to apply this throttle are configurable through GraphDatabaseSettings.
  */
-public class TransportWriteThrottle implements TransportThrottle
-{
-    static final AttributeKey<ThrottleLock> LOCK_KEY = AttributeKey.valueOf( "BOLT.WRITE_THROTTLE.LOCK" );
-    static final AttributeKey<Boolean> MAX_DURATION_EXCEEDED_KEY = AttributeKey.valueOf( "BOLT.WRITE_THROTTLE.MAX_DURATION_EXCEEDED" );
-    public static final long WRITE_BUFFER_WATER_MARK_SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( WriteBufferWaterMark.class );
+public class TransportWriteThrottle implements TransportThrottle {
+    static final AttributeKey<ThrottleLock> LOCK_KEY = AttributeKey.valueOf("BOLT.WRITE_THROTTLE.LOCK");
+    static final AttributeKey<Boolean> MAX_DURATION_EXCEEDED_KEY =
+            AttributeKey.valueOf("BOLT.WRITE_THROTTLE.MAX_DURATION_EXCEEDED");
+    public static final long WRITE_BUFFER_WATER_MARK_SHALLOW_SIZE =
+            HeapEstimator.shallowSizeOfInstance(WriteBufferWaterMark.class);
     private final int lowWaterMark;
     private final int highWaterMark;
     private final Clock clock;
@@ -52,13 +51,16 @@ public class TransportWriteThrottle implements TransportThrottle
     private final Supplier<ThrottleLock> lockSupplier;
     private final ChannelInboundHandler listener;
 
-    public TransportWriteThrottle( int lowWaterMark, int highWaterMark, Clock clock, Duration maxLockDuration )
-    {
-        this( lowWaterMark, highWaterMark, clock, maxLockDuration, DefaultThrottleLock::new );
+    public TransportWriteThrottle(int lowWaterMark, int highWaterMark, Clock clock, Duration maxLockDuration) {
+        this(lowWaterMark, highWaterMark, clock, maxLockDuration, DefaultThrottleLock::new);
     }
 
-    public TransportWriteThrottle( int lowWaterMark, int highWaterMark, Clock clock, Duration maxLockDuration, Supplier<ThrottleLock> lockSupplier )
-    {
+    public TransportWriteThrottle(
+            int lowWaterMark,
+            int highWaterMark,
+            Clock clock,
+            Duration maxLockDuration,
+            Supplier<ThrottleLock> lockSupplier) {
         this.lowWaterMark = lowWaterMark;
         this.highWaterMark = highWaterMark;
         this.clock = clock;
@@ -68,97 +70,78 @@ public class TransportWriteThrottle implements TransportThrottle
     }
 
     @Override
-    public void install( Channel channel, MemoryTracker memoryTracker )
-    {
+    public void install(Channel channel, MemoryTracker memoryTracker) {
         ThrottleLock lock = lockSupplier.get();
-        memoryTracker.allocateHeap( HeapEstimator.sizeOf( lock ) + WRITE_BUFFER_WATER_MARK_SHALLOW_SIZE );
+        memoryTracker.allocateHeap(HeapEstimator.sizeOf(lock) + WRITE_BUFFER_WATER_MARK_SHALLOW_SIZE);
 
-        channel.attr( LOCK_KEY ).set( lock );
-        channel.config().setWriteBufferWaterMark( new WriteBufferWaterMark( lowWaterMark, highWaterMark ) );
-        channel.pipeline().addLast( listener );
+        channel.attr(LOCK_KEY).set(lock);
+        channel.config().setWriteBufferWaterMark(new WriteBufferWaterMark(lowWaterMark, highWaterMark));
+        channel.pipeline().addLast(listener);
     }
 
     @Override
-    public void acquire( Channel channel ) throws TransportThrottleException
-    {
+    public void acquire(Channel channel) throws TransportThrottleException {
         // if this channel's max lock duration is already exceeded, we'll allow the protocol to
         // (at least) try to communicate the error to the client before aborting the connection
-        if ( !isDurationAlreadyExceeded( channel ) )
-        {
-            ThrottleLock lock = channel.attr( LOCK_KEY ).get();
+        if (!isDurationAlreadyExceeded(channel)) {
+            ThrottleLock lock = channel.attr(LOCK_KEY).get();
 
             long startTimeMillis = 0;
-            while ( channel.isOpen() && !channel.isWritable() )
-            {
-                if ( maxLockDuration > 0 )
-                {
+            while (channel.isOpen() && !channel.isWritable()) {
+                if (maxLockDuration > 0) {
                     long currentTimeMillis = clock.millis();
-                    if ( startTimeMillis == 0 )
-                    {
+                    if (startTimeMillis == 0) {
                         startTimeMillis = currentTimeMillis;
-                    }
-                    else
-                    {
-                        if ( currentTimeMillis - startTimeMillis > maxLockDuration )
-                        {
-                            setDurationExceeded( channel );
+                    } else {
+                        if (currentTimeMillis - startTimeMillis > maxLockDuration) {
+                            setDurationExceeded(channel);
 
-                            throw new TransportThrottleException( String.format(
+                            throw new TransportThrottleException(String.format(
                                     "Bolt connection [%s] will be closed because the client did not consume outgoing buffers for %s which is not expected.",
-                                    channel.remoteAddress(), DurationFormatUtils.formatDurationHMS( maxLockDuration ) ) );
+                                    channel.remoteAddress(), DurationFormatUtils.formatDurationHMS(maxLockDuration)));
                         }
                     }
                 }
 
-                try
-                {
-                    lock.lock( channel, 1000 );
-                }
-                catch ( InterruptedException ex )
-                {
+                try {
+                    lock.lock(channel, 1000);
+                } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
-                    throw new RuntimeException( ex );
+                    throw new RuntimeException(ex);
                 }
             }
         }
     }
 
     @Override
-    public void release( Channel channel )
-    {
-        if ( channel.isWritable() )
-        {
-            ThrottleLock lock = channel.attr( LOCK_KEY ).get();
+    public void release(Channel channel) {
+        if (channel.isWritable()) {
+            ThrottleLock lock = channel.attr(LOCK_KEY).get();
 
-            lock.unlock( channel );
+            lock.unlock(channel);
         }
     }
 
     @Override
-    public void uninstall( Channel channel )
-    {
-        channel.attr( LOCK_KEY ).set( null );
+    public void uninstall(Channel channel) {
+        channel.attr(LOCK_KEY).set(null);
     }
 
-    private static boolean isDurationAlreadyExceeded( Channel channel )
-    {
-        Boolean marker = channel.attr( MAX_DURATION_EXCEEDED_KEY ).get();
+    private static boolean isDurationAlreadyExceeded(Channel channel) {
+        Boolean marker = channel.attr(MAX_DURATION_EXCEEDED_KEY).get();
         return marker != null && marker;
     }
 
-    private static void setDurationExceeded( Channel channel )
-    {
-        channel.attr( MAX_DURATION_EXCEEDED_KEY ).set( Boolean.TRUE );
+    private static void setDurationExceeded(Channel channel) {
+        channel.attr(MAX_DURATION_EXCEEDED_KEY).set(Boolean.TRUE);
     }
 
     @ChannelHandler.Sharable
-    private class ChannelStatusListener extends ChannelInboundHandlerAdapter
-    {
+    private class ChannelStatusListener extends ChannelInboundHandlerAdapter {
 
         @Override
-        public void channelWritabilityChanged( ChannelHandlerContext ctx )
-        {
-            release( ctx.channel() );
+        public void channelWritabilityChanged(ChannelHandlerContext ctx) {
+            release(ctx.channel());
         }
     }
 }

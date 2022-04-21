@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.parallel;
 
 import java.io.Closeable;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -52,272 +51,274 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
-public class ThreadExecutionContextRead implements Read, Closeable
-{
+public class ThreadExecutionContextRead implements Read, Closeable {
     private final ThreadExecutionContext context;
     private final Read read;
     private final StorageReader reader;
     private final ReadSupport readSupport;
     private final DefaultPooledCursors pooledCursors;
 
-    ThreadExecutionContextRead( ThreadExecutionContext context, Read read, StorageReader reader, StoreCursors storeCursors, Config config )
-    {
+    ThreadExecutionContextRead(
+            ThreadExecutionContext context, Read read, StorageReader reader, StoreCursors storeCursors, Config config) {
         this.context = context;
         this.read = read;
         this.reader = reader;
-        this.pooledCursors = new DefaultPooledCursors( reader, storeCursors, config );
-        this.readSupport = new ReadSupport( reader, pooledCursors, this );
+        this.pooledCursors = new DefaultPooledCursors(reader, storeCursors, config);
+        this.readSupport = new ReadSupport(reader, pooledCursors, this);
     }
 
     @Override
-    public IndexReadSession indexReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        return read.indexReadSession( index );
+    public IndexReadSession indexReadSession(IndexDescriptor index) throws IndexNotFoundKernelException {
+        return read.indexReadSession(index);
     }
 
     @Override
-    public TokenReadSession tokenReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        return read.tokenReadSession( index );
+    public TokenReadSession tokenReadSession(IndexDescriptor index) throws IndexNotFoundKernelException {
+        return read.tokenReadSession(index);
     }
 
     @Override
-    public void nodeIndexSeek( QueryContext queryContext, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints,
-            PropertyIndexQuery... query ) throws KernelException
-    {
-        read.nodeIndexSeek( queryContext, index, cursor, constraints, query );
+    public void nodeIndexSeek(
+            QueryContext queryContext,
+            IndexReadSession index,
+            NodeValueIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query)
+            throws KernelException {
+        read.nodeIndexSeek(queryContext, index, cursor, constraints, query);
     }
 
     @Override
-    public void relationshipIndexSeek( QueryContext queryContext, IndexReadSession index, RelationshipValueIndexCursor cursor,
-            IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws KernelException
-    {
-        read.relationshipIndexSeek( queryContext, index, cursor, constraints, query );
+    public void relationshipIndexSeek(
+            QueryContext queryContext,
+            IndexReadSession index,
+            RelationshipValueIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query)
+            throws KernelException {
+        read.relationshipIndexSeek(queryContext, index, cursor, constraints, query);
     }
 
     @Override
-    public void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException
-    {
-        read.nodeIndexScan( index, cursor, constraints );
+    public void nodeIndexScan(IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints)
+            throws KernelException {
+        read.nodeIndexScan(index, cursor, constraints);
     }
 
     @Override
-    public void relationshipIndexScan( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints )
-            throws KernelException
-    {
-        read.relationshipIndexScan( index, cursor, constraints );
+    public void relationshipIndexScan(
+            IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints)
+            throws KernelException {
+        read.relationshipIndexScan(index, cursor, constraints);
     }
 
     @Override
-    public Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
-    {
-        return read.nodeLabelScan( label );
+    public Scan<NodeLabelIndexCursor> nodeLabelScan(int label) {
+        return read.nodeLabelScan(label);
     }
 
     @Override
-    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext,
-            TokenPredicate query ) throws KernelException
-    {
-        return read.nodeLabelScan( session, desiredNumberOfPartitions, cursorContext, query );
+    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
+            TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
+            throws KernelException {
+        return read.nodeLabelScan(session, desiredNumberOfPartitions, cursorContext, query);
     }
 
     @Override
-    public void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
-            CursorContext cursorContext ) throws KernelException
-    {
-        read.nodeLabelScan( session, cursor, constraints, query, cursorContext );
+    public void nodeLabelScan(
+            TokenReadSession session,
+            NodeLabelIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            CursorContext cursorContext)
+            throws KernelException {
+        read.nodeLabelScan(session, cursor, constraints, query, cursorContext);
     }
 
     @Override
-    public void allNodesScan( NodeCursor cursor )
-    {
-        read.allNodesScan( cursor );
+    public void allNodesScan(NodeCursor cursor) {
+        read.allNodesScan(cursor);
     }
 
     @Override
-    public Scan<NodeCursor> allNodesScan()
-    {
+    public Scan<NodeCursor> allNodesScan() {
         return read.allNodesScan();
     }
 
     @Override
-    public void singleNode( long reference, NodeCursor cursor )
-    {
-        read.singleNode( reference, cursor );
+    public void singleNode(long reference, NodeCursor cursor) {
+        read.singleNode(reference, cursor);
     }
 
     @Override
-    public boolean nodeExists( long reference )
-    {
-        return readSupport.nodeExistsWithoutTxState( reference, context.accessMode(), context.storeCursors(), context.cursorContext() );
+    public boolean nodeExists(long reference) {
+        return readSupport.nodeExistsWithoutTxState(
+                reference, context.accessMode(), context.storeCursors(), context.cursorContext());
     }
 
     @Override
-    public long countsForNode( int labelId )
-    {
-        return read.countsForNodeWithoutTxState( labelId );
+    public long countsForNode(int labelId) {
+        return read.countsForNodeWithoutTxState(labelId);
     }
 
     @Override
-    public long countsForNodeWithoutTxState( int labelId )
-    {
-        return read.countsForNodeWithoutTxState( labelId );
+    public long countsForNodeWithoutTxState(int labelId) {
+        return read.countsForNodeWithoutTxState(labelId);
     }
 
     @Override
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
-    {
-        return read.countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
+    public long countsForRelationship(int startLabelId, int typeId, int endLabelId) {
+        return read.countsForRelationshipWithoutTxState(startLabelId, typeId, endLabelId);
     }
 
     @Override
-    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
-    {
-        return read.countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
+    public long countsForRelationshipWithoutTxState(int startLabelId, int typeId, int endLabelId) {
+        return read.countsForRelationshipWithoutTxState(startLabelId, typeId, endLabelId);
     }
 
     @Override
-    public long nodesGetCount()
-    {
+    public long nodesGetCount() {
         return read.nodesGetCount();
     }
 
     @Override
-    public long relationshipsGetCount()
-    {
+    public long relationshipsGetCount() {
         return read.relationshipsGetCount();
     }
 
     @Override
-    public void singleRelationship( long reference, RelationshipScanCursor cursor )
-    {
-        read.singleRelationship( reference, cursor );
+    public void singleRelationship(long reference, RelationshipScanCursor cursor) {
+        read.singleRelationship(reference, cursor);
     }
 
     @Override
-    public void allRelationshipsScan( RelationshipScanCursor cursor )
-    {
-        read.allRelationshipsScan( cursor );
+    public void allRelationshipsScan(RelationshipScanCursor cursor) {
+        read.allRelationshipsScan(cursor);
     }
 
     @Override
-    public Scan<RelationshipScanCursor> allRelationshipsScan()
-    {
+    public Scan<RelationshipScanCursor> allRelationshipsScan() {
         return read.allRelationshipsScan();
     }
 
     @Override
-    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, int desiredNumberOfPartitions,
-            CursorContext cursorContext, TokenPredicate query ) throws KernelException
-    {
-        return read.relationshipTypeScan( session, desiredNumberOfPartitions, cursorContext, query );
+    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
+            TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
+            throws KernelException {
+        return read.relationshipTypeScan(session, desiredNumberOfPartitions, cursorContext, query);
     }
 
     @Override
-    public void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints,
-            TokenPredicate query, CursorContext cursorContext ) throws KernelException
-    {
-        read.relationshipTypeScan( session, cursor, constraints, query, cursorContext );
+    public void relationshipTypeScan(
+            TokenReadSession session,
+            RelationshipTypeIndexCursor cursor,
+            IndexQueryConstraints constraints,
+            TokenPredicate query,
+            CursorContext cursorContext)
+            throws KernelException {
+        read.relationshipTypeScan(session, cursor, constraints, query, cursorContext);
     }
 
     @Override
-    public PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext,
-            PropertyIndexQuery... query ) throws KernelException
-    {
-        return read.nodeIndexSeek( index, desiredNumberOfPartitions, queryContext, query );
+    public PartitionedScan<NodeValueIndexCursor> nodeIndexSeek(
+            IndexReadSession index,
+            int desiredNumberOfPartitions,
+            QueryContext queryContext,
+            PropertyIndexQuery... query)
+            throws KernelException {
+        return read.nodeIndexSeek(index, desiredNumberOfPartitions, queryContext, query);
     }
 
     @Override
-    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
-            QueryContext queryContext, PropertyIndexQuery... query ) throws KernelException
-    {
-        return read.relationshipIndexSeek( index, desiredNumberOfPartitions, queryContext, query );
+    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexSeek(
+            IndexReadSession index,
+            int desiredNumberOfPartitions,
+            QueryContext queryContext,
+            PropertyIndexQuery... query)
+            throws KernelException {
+        return read.relationshipIndexSeek(index, desiredNumberOfPartitions, queryContext, query);
     }
 
     @Override
-    public long lockingNodeUniqueIndexSeek( IndexDescriptor index, NodeValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates )
-            throws KernelException
-    {
-        return read.lockingNodeUniqueIndexSeek( index, cursor, predicates );
+    public long lockingNodeUniqueIndexSeek(
+            IndexDescriptor index, NodeValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates)
+            throws KernelException {
+        return read.lockingNodeUniqueIndexSeek(index, cursor, predicates);
     }
 
     @Override
-    public PartitionedScan<NodeValueIndexCursor> nodeIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
-            throws KernelException
-    {
-        return read.nodeIndexScan( index, desiredNumberOfPartitions, queryContext );
+    public PartitionedScan<NodeValueIndexCursor> nodeIndexScan(
+            IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext) throws KernelException {
+        return read.nodeIndexScan(index, desiredNumberOfPartitions, queryContext);
     }
 
     @Override
-    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions,
-            QueryContext queryContext ) throws KernelException
-    {
-        return read.relationshipIndexScan( index, desiredNumberOfPartitions, queryContext );
+    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan(
+            IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext) throws KernelException {
+        return read.relationshipIndexScan(index, desiredNumberOfPartitions, queryContext);
     }
 
     @Override
-    public void singleRelationship( long reference, long sourceNodeReference, int type, long targetNodeReference, RelationshipScanCursor cursor )
-    {
-        read.singleRelationship( reference, sourceNodeReference, type, targetNodeReference, cursor );
+    public void singleRelationship(
+            long reference,
+            long sourceNodeReference,
+            int type,
+            long targetNodeReference,
+            RelationshipScanCursor cursor) {
+        read.singleRelationship(reference, sourceNodeReference, type, targetNodeReference, cursor);
     }
 
     @Override
-    public boolean relationshipExists( long reference )
-    {
-        return readSupport.relationshipExistsWithoutTx( reference, context.accessMode(), context.storeCursors(), context.cursorContext() );
+    public boolean relationshipExists(long reference) {
+        return readSupport.relationshipExistsWithoutTx(
+                reference, context.accessMode(), context.storeCursors(), context.cursorContext());
     }
 
     @Override
-    public void relationships( long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor )
-    {
-        read.relationships( nodeReference, reference, selection, cursor );
+    public void relationships(
+            long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor) {
+        read.relationships(nodeReference, reference, selection, cursor);
     }
 
     @Override
-    public void nodeProperties( long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor )
-    {
-        read.nodeProperties( nodeReference, reference, selection, cursor );
+    public void nodeProperties(
+            long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor) {
+        read.nodeProperties(nodeReference, reference, selection, cursor);
     }
 
     @Override
-    public void relationshipProperties( long relationshipReference, Reference reference, PropertySelection selection, PropertyCursor cursor )
-    {
-        read.relationshipProperties( relationshipReference, reference, selection, cursor );
+    public void relationshipProperties(
+            long relationshipReference, Reference reference, PropertySelection selection, PropertyCursor cursor) {
+        read.relationshipProperties(relationshipReference, reference, selection, cursor);
     }
 
     @Override
-    public boolean nodeDeletedInTransaction( long node )
-    {
+    public boolean nodeDeletedInTransaction(long node) {
         return false;
     }
 
     @Override
-    public boolean relationshipDeletedInTransaction( long relationship )
-    {
+    public boolean relationshipDeletedInTransaction(long relationship) {
         return false;
     }
 
     @Override
-    public Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId )
-    {
+    public Value nodePropertyChangeInTransactionOrNull(long node, int propertyKeyId) {
         return null;
     }
 
     @Override
-    public Value relationshipPropertyChangeInTransactionOrNull( long relationship, int propertyKeyId )
-    {
+    public Value relationshipPropertyChangeInTransactionOrNull(long relationship, int propertyKeyId) {
         return null;
     }
 
     @Override
-    public boolean transactionStateHasChanges()
-    {
+    public boolean transactionStateHasChanges() {
         return false;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         pooledCursors.assertClosed();
         pooledCursors.release();
         reader.close();

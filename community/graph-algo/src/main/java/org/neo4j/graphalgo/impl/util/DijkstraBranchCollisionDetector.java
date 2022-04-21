@@ -19,10 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import org.apache.commons.lang3.mutable.MutableDouble;
-
 import java.util.function.Predicate;
-
+import org.apache.commons.lang3.mutable.MutableDouble;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
@@ -30,26 +28,26 @@ import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.internal.helpers.MathUtil;
 
-public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDetector
-{
+public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDetector {
     private final CostEvaluator<Double> costEvaluator;
     private final MutableDouble shortestSoFar;
     private final double epsilon;
 
-    public DijkstraBranchCollisionDetector( Evaluator evaluator, CostEvaluator<Double> costEvaluator,
-            MutableDouble shortestSoFar, double epsilon, Predicate<Path> pathPredicate )
-    {
-        super( evaluator, pathPredicate );
+    public DijkstraBranchCollisionDetector(
+            Evaluator evaluator,
+            CostEvaluator<Double> costEvaluator,
+            MutableDouble shortestSoFar,
+            double epsilon,
+            Predicate<Path> pathPredicate) {
+        super(evaluator, pathPredicate);
         this.costEvaluator = costEvaluator;
         this.shortestSoFar = shortestSoFar;
         this.epsilon = epsilon;
     }
 
     @Override
-    protected boolean includePath( Path path, TraversalBranch startBranch, TraversalBranch endBranch )
-    {
-        if ( !super.includePath( path, startBranch, endBranch ) )
-        {
+    protected boolean includePath(Path path, TraversalBranch startBranch, TraversalBranch endBranch) {
+        if (!super.includePath(path, startBranch, endBranch)) {
             return false;
         }
 
@@ -81,13 +79,11 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
         a path is missed.
         */
 
-        double cost = new WeightedPathImpl( costEvaluator, path ).weight();
+        double cost = new WeightedPathImpl(costEvaluator, path).weight();
 
-        if ( cost < shortestSoFar.doubleValue() )
-        {
-            shortestSoFar.setValue( cost );
+        if (cost < shortestSoFar.doubleValue()) {
+            shortestSoFar.setValue(cost);
         }
-        return MathUtil.compare( cost, shortestSoFar.doubleValue(), epsilon ) <= 0;
-
+        return MathUtil.compare(cost, shortestSoFar.doubleValue(), epsilon) <= 0;
     }
 }

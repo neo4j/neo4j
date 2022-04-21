@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
-case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], default: Option[Expression]) extends Expression {
+case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], default: Option[Expression])
+    extends Expression {
 
   require(alternatives.nonEmpty)
 

@@ -30,7 +30,7 @@ class NestedPipeExistsExpressionTest extends CypherFunSuite {
 
   test("Should not pull. Should close pipe results.") {
     // given
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->11)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11)))
     val npee = NestedPipeExistsExpression(input, Array(), Id(0))
     // when
     npee.apply(CypherRow.from("x" -> Values.intValue(42)), QueryStateHelper.empty)

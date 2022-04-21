@@ -19,6 +19,8 @@
  */
 package org.neo4j.logging.log4j;
 
+import static org.apache.logging.log4j.util.StringBuilders.escapeJson;
+
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.Node;
@@ -31,118 +33,100 @@ import org.apache.logging.log4j.core.pattern.ThrowablePatternConverter;
 import org.apache.logging.log4j.message.Message;
 import org.apache.logging.log4j.util.StringBuilderFormattable;
 
-import static org.apache.logging.log4j.util.StringBuilders.escapeJson;
-
-@Plugin( name = "Neo4jJsonLogLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true )
-public class Neo4jJsonLogLayout extends Neo4jLogLayout
-{
+@Plugin(name = "Neo4jJsonLogLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true)
+public class Neo4jJsonLogLayout extends Neo4jLogLayout {
     private final DatePatternConverter datePatternConverter;
     private final ThrowablePatternConverter throwablePatternConverter;
     private final NameAbbreviator abbreviator;
     private final boolean includeCategory;
 
-    protected Neo4jJsonLogLayout( String datePattern, String timeZone, boolean includeCategory, Neo4jConfiguration config )
-    {
-        super( "", config );
+    protected Neo4jJsonLogLayout(
+            String datePattern, String timeZone, boolean includeCategory, Neo4jConfiguration config) {
+        super("", config);
         this.includeCategory = includeCategory;
-        datePatternConverter = DatePatternConverter.newInstance( new String[]{datePattern, timeZone} );
-        throwablePatternConverter = ThrowablePatternConverter.newInstance( config, null );
-        abbreviator = NameAbbreviator.getAbbreviator( "1." );
+        datePatternConverter = DatePatternConverter.newInstance(new String[] {datePattern, timeZone});
+        throwablePatternConverter = ThrowablePatternConverter.newInstance(config, null);
+        abbreviator = NameAbbreviator.getAbbreviator("1.");
     }
 
     @PluginFactory
     public static Neo4jJsonLogLayout createLayout(
-            @PluginAttribute( "datePattern" ) String datePattern,
-            @PluginAttribute( "timeZone" ) String timeZone,
-            @PluginAttribute( value = "includeCategory", defaultBoolean = true ) boolean includeCategory )
-    {
-        return new Neo4jJsonLogLayout( datePattern, timeZone, includeCategory, new Neo4jConfiguration() );
+            @PluginAttribute("datePattern") String datePattern,
+            @PluginAttribute("timeZone") String timeZone,
+            @PluginAttribute(value = "includeCategory", defaultBoolean = true) boolean includeCategory) {
+        return new Neo4jJsonLogLayout(datePattern, timeZone, includeCategory, new Neo4jConfiguration());
     }
 
     @Override
-    public String toSerializable( LogEvent event )
-    {
-        StringBuilder buffer = new StringBuilder( 128 );
-        buffer.append( "{\"time\":\"" );
-        datePatternConverter.format( event, buffer );
-        buffer.append( "\",\"level\":\"" );
-        buffer.append( event.getLevel().toString() );
-        buffer.append( '"' );
-        if ( includeCategory )
-        {
-            buffer.append( ",\"category\":\"" );
-            abbreviator.abbreviate( event.getLoggerName(), buffer );
-            buffer.append( '"' );
+    public String toSerializable(LogEvent event) {
+        StringBuilder buffer = new StringBuilder(128);
+        buffer.append("{\"time\":\"");
+        datePatternConverter.format(event, buffer);
+        buffer.append("\",\"level\":\"");
+        buffer.append(event.getLevel().toString());
+        buffer.append('"');
+        if (includeCategory) {
+            buffer.append(",\"category\":\"");
+            abbreviator.abbreviate(event.getLoggerName(), buffer);
+            buffer.append('"');
         }
 
         Message message = event.getMessage();
-        if ( message instanceof StructureAwareMessage msg )
+        if (message instanceof StructureAwareMessage msg) {
+            msg.asStructure(new JsonFieldConsumer(buffer));
+        } else // Normal message
         {
-            msg.asStructure( new JsonFieldConsumer( buffer ) );
-        }
-        else  // Normal message
-        {
-            buffer.append( ",\"message\":\"" );
+            buffer.append(",\"message\":\"");
             final int start = buffer.length();
-            if ( message instanceof StringBuilderFormattable msg )
-            {
-                msg.formatTo( buffer ); // Garbage-free optimized message
+            if (message instanceof StringBuilderFormattable msg) {
+                msg.formatTo(buffer); // Garbage-free optimized message
+            } else {
+                buffer.append(message.getFormattedMessage());
             }
-            else
-            {
-                buffer.append( message.getFormattedMessage() );
-            }
-            escapeJson( buffer, start );
-            buffer.append( '"' );
+            escapeJson(buffer, start);
+            buffer.append('"');
         }
 
-        if ( event.getThrown() != null )
-        {
-            buffer.append( ",\"stacktrace\":\"" );
+        if (event.getThrown() != null) {
+            buffer.append(",\"stacktrace\":\"");
             int start = buffer.length();
-            throwablePatternConverter.format( event, buffer );
-            escapeJson( buffer, start );
-            buffer.append( '"' );
+            throwablePatternConverter.format(event, buffer);
+            escapeJson(buffer, start);
+            buffer.append('"');
         }
-        buffer.append( '}' ).append( System.lineSeparator() );
+        buffer.append('}').append(System.lineSeparator());
         return buffer.toString();
     }
 
-    private static class JsonFieldConsumer implements StructureAwareMessage.FieldConsumer
-    {
+    private static class JsonFieldConsumer implements StructureAwareMessage.FieldConsumer {
         private final StringBuilder buffer;
 
-        private JsonFieldConsumer( StringBuilder buffer )
-        {
+        private JsonFieldConsumer(StringBuilder buffer) {
             this.buffer = buffer;
         }
 
         @Override
-        public void add( String field, String value )
-        {
-            addField( buffer, field );
-            formatString( buffer, value );
+        public void add(String field, String value) {
+            addField(buffer, field);
+            formatString(buffer, value);
         }
 
         @Override
-        public void add( String field, long value )
-        {
-            addField( buffer, field );
-            buffer.append( value );
+        public void add(String field, long value) {
+            addField(buffer, field);
+            buffer.append(value);
         }
 
-        private static void addField( StringBuilder buffer, String field )
-        {
-            buffer.append( ",\"" ).append( field ).append( "\":" );
+        private static void addField(StringBuilder buffer, String field) {
+            buffer.append(",\"").append(field).append("\":");
         }
 
-        private static void formatString( StringBuilder buffer, Object value )
-        {
-            buffer.append( '"' );
+        private static void formatString(StringBuilder buffer, Object value) {
+            buffer.append('"');
             int startIndex = buffer.length();
-            buffer.append( value );
-            escapeJson( buffer, startIndex );
-            buffer.append( '"' );
+            buffer.append(value);
+            escapeJson(buffer, startIndex);
+            buffer.append('"');
         }
     }
 }

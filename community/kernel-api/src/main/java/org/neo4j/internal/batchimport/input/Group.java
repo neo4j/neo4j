@@ -22,8 +22,7 @@ package org.neo4j.internal.batchimport.input;
 /**
  * Group of input ids. Used primarily in mapping otherwise equal ids into different groups.
  */
-public interface Group
-{
+public interface Group {
     /**
      * @return id of this group, used for identifying this group.
      */
@@ -40,38 +39,32 @@ public interface Group
     @Override
     String toString();
 
-    class Adapter implements Group
-    {
+    class Adapter implements Group {
         private final int id;
         private final String name;
 
-        public Adapter( int id, String name )
-        {
+        public Adapter(int id, String name) {
             this.id = id;
             this.name = name;
         }
 
         @Override
-        public int id()
-        {
+        public int id() {
             return id;
         }
 
         @Override
-        public String name()
-        {
+        public String name() {
             return name;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "(" + name + "," + id + ")";
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             final int prime = 31;
             int result = 1;
             result = prime * result + id;
@@ -79,11 +72,10 @@ public interface Group
         }
 
         @Override
-        public boolean equals( Object obj )
-        {
-            return obj instanceof Group && ((Group)obj).id() == id;
+        public boolean equals(Object obj) {
+            return obj instanceof Group && ((Group) obj).id() == id;
         }
     }
 
-    Group GLOBAL = new Adapter( 0, "global id space" );
+    Group GLOBAL = new Adapter(0, "global id space");
 }

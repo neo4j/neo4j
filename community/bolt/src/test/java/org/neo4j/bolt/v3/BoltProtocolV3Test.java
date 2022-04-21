@@ -19,8 +19,13 @@
  */
 package org.neo4j.bolt.v3;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.ChunkedOutput;
@@ -37,100 +42,93 @@ import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
-
-class BoltProtocolV3Test
-{
+class BoltProtocolV3Test {
     @Test
-    void shouldCreatePackForBoltV3() throws Throwable
-    {
-        BoltProtocolV3 protocolV3 =
-                createProtocolV3();
+    void shouldCreatePackForBoltV3() throws Throwable {
+        BoltProtocolV3 protocolV3 = createProtocolV3();
 
-        assertThat( protocolV3.createPack( mock( MemoryTracker.class ) ) ).isInstanceOf( Neo4jPackV2.class );
+        assertThat(protocolV3.createPack(mock(MemoryTracker.class))).isInstanceOf(Neo4jPackV2.class);
     }
 
     @Test
-    void shouldAllocateMemoryForPackForBoltV3()
-    {
-        var protocol =
-                createProtocolV3();
-        var memoryTracker = mock( MemoryTracker.class );
-
-        protocol.createPack( memoryTracker );
-
-        verify( memoryTracker ).allocateHeap( Neo4jPackV2.SHALLOW_SIZE );
-        verifyNoMoreInteractions( memoryTracker );
-    }
-
-    @Test
-    void shouldVersionReturnBoltV3() throws Throwable
-    {
-        BoltProtocolV3 protocolV3 =
-                createProtocolV3();
-
-        assertThat( protocolV3.version() ).isEqualTo( new BoltProtocolVersion( 3, 0 ) );
-    }
-
-    @Test
-    void shouldCreateMessageReaderForBoltV3() throws Throwable
-    {
-        BoltProtocolV3 protocolV3 =
-                createProtocolV3();
-
-        assertThat(
-                protocolV3.createMessageReader( mock( BoltConnection.class ), mock( BoltResponseMessageWriter.class ),
-                                                mock( BookmarksParser.class ), NullLogService.getInstance(), mock( ChannelProtector.class ),
-                                                mock( MemoryTracker.class ) ) )
-                .isInstanceOf( BoltRequestMessageReaderV3.class );
-    }
-
-    @Test
-    void shouldAllocateMemoryForMessageReaderForBoltV3()
-    {
+    void shouldAllocateMemoryForPackForBoltV3() {
         var protocol = createProtocolV3();
-        var memoryTracker = mock( MemoryTracker.class );
+        var memoryTracker = mock(MemoryTracker.class);
 
-        protocol.createMessageReader( mock( BoltConnection.class ), mock( BoltResponseMessageWriter.class ),
-                                      mock( BookmarksParser.class ), NullLogService.getInstance(), mock( ChannelProtector.class ), memoryTracker );
+        protocol.createPack(memoryTracker);
 
-        verify( memoryTracker ).allocateHeap( BoltRequestMessageReaderV3.SHALLOW_SIZE );
-        verifyNoMoreInteractions( memoryTracker );
+        verify(memoryTracker).allocateHeap(Neo4jPackV2.SHALLOW_SIZE);
+        verifyNoMoreInteractions(memoryTracker);
     }
 
     @Test
-    void shouldCreateMessageWriterForBoltV3() throws Throwable
-    {
-        BoltProtocolV3 protocolV3 =
-                createProtocolV3();
+    void shouldVersionReturnBoltV3() throws Throwable {
+        BoltProtocolV3 protocolV3 = createProtocolV3();
 
-        assertThat(
-                protocolV3.createMessageWriter( mock( Neo4jPack.class ), NullLogService.getInstance(), mock( MemoryTracker.class ) ) )
-                .isInstanceOf( BoltResponseMessageWriterV3.class );
+        assertThat(protocolV3.version()).isEqualTo(new BoltProtocolVersion(3, 0));
     }
 
     @Test
-    void shouldAllocateMemoryForMessageWriterForBoltV3()
-    {
+    void shouldCreateMessageReaderForBoltV3() throws Throwable {
+        BoltProtocolV3 protocolV3 = createProtocolV3();
+
+        assertThat(protocolV3.createMessageReader(
+                        mock(BoltConnection.class),
+                        mock(BoltResponseMessageWriter.class),
+                        mock(BookmarksParser.class),
+                        NullLogService.getInstance(),
+                        mock(ChannelProtector.class),
+                        mock(MemoryTracker.class)))
+                .isInstanceOf(BoltRequestMessageReaderV3.class);
+    }
+
+    @Test
+    void shouldAllocateMemoryForMessageReaderForBoltV3() {
         var protocol = createProtocolV3();
-        var memoryTracker = mock( MemoryTracker.class );
+        var memoryTracker = mock(MemoryTracker.class);
 
-        protocol.createMessageWriter( mock( Neo4jPack.class ), NullLogService.getInstance(), memoryTracker );
+        protocol.createMessageReader(
+                mock(BoltConnection.class),
+                mock(BoltResponseMessageWriter.class),
+                mock(BookmarksParser.class),
+                NullLogService.getInstance(),
+                mock(ChannelProtector.class),
+                memoryTracker);
 
-        verify( memoryTracker ).allocateHeap( ChunkedOutput.SHALLOW_SIZE );
-        verify( memoryTracker ).allocateHeap( BoltResponseMessageWriterV3.SHALLOW_SIZE );
-        verifyNoMoreInteractions( memoryTracker );
+        verify(memoryTracker).allocateHeap(BoltRequestMessageReaderV3.SHALLOW_SIZE);
+        verifyNoMoreInteractions(memoryTracker);
     }
 
-    private static BoltProtocolV3 createProtocolV3()
-    {
-        return new BoltProtocolV3( newTestBoltChannel(), ( ch, st, mw ) -> mock( BoltConnection.class ),
-                                   mock( BoltStateMachineFactory.class ), Config.defaults(),
-                                   NullLogService.getInstance(), mock( TransportThrottleGroup.class ), mock( ChannelProtector.class ),
-                                   mock( MemoryTracker.class ) );
+    @Test
+    void shouldCreateMessageWriterForBoltV3() throws Throwable {
+        BoltProtocolV3 protocolV3 = createProtocolV3();
+
+        assertThat(protocolV3.createMessageWriter(
+                        mock(Neo4jPack.class), NullLogService.getInstance(), mock(MemoryTracker.class)))
+                .isInstanceOf(BoltResponseMessageWriterV3.class);
+    }
+
+    @Test
+    void shouldAllocateMemoryForMessageWriterForBoltV3() {
+        var protocol = createProtocolV3();
+        var memoryTracker = mock(MemoryTracker.class);
+
+        protocol.createMessageWriter(mock(Neo4jPack.class), NullLogService.getInstance(), memoryTracker);
+
+        verify(memoryTracker).allocateHeap(ChunkedOutput.SHALLOW_SIZE);
+        verify(memoryTracker).allocateHeap(BoltResponseMessageWriterV3.SHALLOW_SIZE);
+        verifyNoMoreInteractions(memoryTracker);
+    }
+
+    private static BoltProtocolV3 createProtocolV3() {
+        return new BoltProtocolV3(
+                newTestBoltChannel(),
+                (ch, st, mw) -> mock(BoltConnection.class),
+                mock(BoltStateMachineFactory.class),
+                Config.defaults(),
+                NullLogService.getInstance(),
+                mock(TransportThrottleGroup.class),
+                mock(ChannelProtector.class),
+                mock(MemoryTracker.class));
     }
 }

@@ -25,27 +25,22 @@ import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
-public final class MessageMetadataParser
-{
+public final class MessageMetadataParser {
     private static final String IMPERSONATION_USER_KEY = "imp_user";
 
-    private MessageMetadataParser()
-    {
-    }
+    private MessageMetadataParser() {}
 
-    public static String parseImpersonatedUser( MapValue value ) throws BoltIOException
-    {
-        var anyValue = value.get( IMPERSONATION_USER_KEY );
-        if ( anyValue == Values.NO_VALUE )
-        {
+    public static String parseImpersonatedUser(MapValue value) throws BoltIOException {
+        var anyValue = value.get(IMPERSONATION_USER_KEY);
+        if (anyValue == Values.NO_VALUE) {
             return null;
         }
 
-        if ( anyValue instanceof StringValue )
-        {
+        if (anyValue instanceof StringValue) {
             return ((StringValue) anyValue).stringValue();
         }
 
-        throw new BoltIOException( Status.Request.Invalid, "Expecting impersonated user value to be a String value, but got: " + anyValue );
+        throw new BoltIOException(
+                Status.Request.Invalid, "Expecting impersonated user value to be a String value, but got: " + anyValue);
     }
 }

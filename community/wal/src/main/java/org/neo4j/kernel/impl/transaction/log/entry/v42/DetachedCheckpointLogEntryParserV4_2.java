@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry.v42;
 
-import java.io.IOException;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.io.IOException;
 import org.neo4j.io.fs.ReadableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -31,32 +32,32 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LegacyStoreId;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-public class DetachedCheckpointLogEntryParserV4_2 extends LogEntryParser
-{
+public class DetachedCheckpointLogEntryParserV4_2 extends LogEntryParser {
     public static final int MAX_DESCRIPTION_LENGTH = 120;
 
-    public DetachedCheckpointLogEntryParserV4_2()
-    {
-        super( LogEntryTypeCodes.DETACHED_CHECK_POINT );
+    public DetachedCheckpointLogEntryParserV4_2() {
+        super(LogEntryTypeCodes.DETACHED_CHECK_POINT);
     }
 
     @Override
-    public LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
-            throws IOException
-    {
+    public LogEntry parse(
+            KernelVersion version,
+            ReadableChecksumChannel channel,
+            LogPositionMarker marker,
+            CommandReaderFactory commandReaderFactory)
+            throws IOException {
         long logVersion = channel.getLong();
         long byteOffset = channel.getLong();
         long checkpointTimeMillis = channel.getLong();
-        LegacyStoreId storeId = new LegacyStoreId( channel.getLong(), channel.getLong(), channel.getLong() );
+        LegacyStoreId storeId = new LegacyStoreId(channel.getLong(), channel.getLong(), channel.getLong());
         channel.getLong(); // legacy upgrade time
         channel.getLong(); // legacy upgrade tx id
         short reasonBytesLength = channel.getShort();
         byte[] bytes = new byte[MAX_DESCRIPTION_LENGTH];
-        channel.get( bytes, MAX_DESCRIPTION_LENGTH );
-        String reason = new String( bytes, 0, reasonBytesLength, UTF_8 );
+        channel.get(bytes, MAX_DESCRIPTION_LENGTH);
+        String reason = new String(bytes, 0, reasonBytesLength, UTF_8);
         channel.endChecksumAndValidate();
-        return new LogEntryDetachedCheckpointV4_2( version, new LogPosition( logVersion, byteOffset ), checkpointTimeMillis, storeId, reason );
+        return new LogEntryDetachedCheckpointV4_2(
+                version, new LogPosition(logVersion, byteOffset), checkpointTimeMillis, storeId, reason);
     }
 }

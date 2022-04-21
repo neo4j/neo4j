@@ -25,23 +25,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A {@link ThreadLocal} which additionally assigns a zero-based id to each thread-local value created in
  * {@link #initialValue(int)}.
  */
-public abstract class IdAssigningThreadLocal<T> extends ThreadLocal<T>
-{
+public abstract class IdAssigningThreadLocal<T> extends ThreadLocal<T> {
     private final AtomicInteger id = new AtomicInteger();
 
     @Override
-    protected final T initialValue()
-    {
-        return initialValue( id.getAndIncrement() );
+    protected final T initialValue() {
+        return initialValue(id.getAndIncrement());
     }
 
-    protected abstract T initialValue( int id );
+    protected abstract T initialValue(int id);
 
     /**
      * Resets the id counter so that the next call to {@link #initialValue(int)} will get {@code 0}.
      */
-    public void resetId()
-    {
-        id.set( 0 );
+    public void resetId() {
+        id.set(0);
     }
 }

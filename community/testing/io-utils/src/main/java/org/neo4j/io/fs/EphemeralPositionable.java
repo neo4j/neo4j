@@ -19,9 +19,8 @@
  */
 package org.neo4j.io.fs;
 
-interface EphemeralPositionable
-{
+interface EphemeralPositionable {
     long pos();
 
-    void pos( long position );
+    void pos(long position);
 }

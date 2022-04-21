@@ -28,18 +28,16 @@ import org.neo4j.kernel.api.exceptions.Status;
  * if the streams are using the same transaction. Due to the concurrent nature, there might be a race between the primary exception and secondary exceptions.
  * The user should be always presented with the primary exception.
  */
-public class FabricSecondaryException extends FabricException
-{
+public class FabricSecondaryException extends FabricException {
     private final FabricException primaryException;
 
-    public FabricSecondaryException( Status statusCode, String message, Throwable cause, FabricException primaryException )
-    {
-        super( statusCode, message, cause );
+    public FabricSecondaryException(
+            Status statusCode, String message, Throwable cause, FabricException primaryException) {
+        super(statusCode, message, cause);
         this.primaryException = primaryException;
     }
 
-    public FabricException getPrimaryException()
-    {
+    public FabricException getPrimaryException() {
         return primaryException;
     }
 }

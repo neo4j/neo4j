@@ -21,19 +21,15 @@ package org.neo4j.tooling.procedure.messages;
 
 import javax.annotation.processing.Messager;
 
-public class MessagePrinter
-{
+public class MessagePrinter {
 
     private final Messager messager;
 
-    public MessagePrinter( Messager messager )
-    {
+    public MessagePrinter(Messager messager) {
         this.messager = messager;
     }
 
-    public void print( CompilationMessage message )
-    {
-        messager.printMessage( message.getCategory(), message.getContents(), message.getElement(),
-                message.getMirror() );
+    public void print(CompilationMessage message) {
+        messager.printMessage(message.getCategory(), message.getContents(), message.getElement(), message.getMirror());
     }
 }

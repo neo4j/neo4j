@@ -19,18 +19,16 @@
  */
 package org.neo4j.common;
 
+import static org.neo4j.common.DependencyResolver.SelectionStrategy.SINGLE;
+
 import java.util.Iterator;
 import java.util.function.Supplier;
-
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
-
-import static org.neo4j.common.DependencyResolver.SelectionStrategy.SINGLE;
 
 /**
  * Find a dependency given a type.
  */
-public interface DependencyResolver
-{
+public interface DependencyResolver {
     /**
      * Tries to resolve a dependency that matches a given class. {@link SelectionStrategy#SINGLE Single} selection strategy is used to select dependencies
      * among available candidates.
@@ -42,7 +40,7 @@ public interface DependencyResolver
      * @throws IllegalArgumentException if no matching dependency was found.
      * @throws UnsatisfiedDependencyException if no matching dependency was found.
      */
-    <T> T resolveDependency( Class<T> type );
+    <T> T resolveDependency(Class<T> type);
 
     /**
      * Tries to resolve a dependency that matches a given class. All candidates are fed to the
@@ -56,7 +54,7 @@ public interface DependencyResolver
      * @throws IllegalArgumentException if no matching dependency was found.
      * @throws UnsatisfiedDependencyException if no matching dependency was found.
      */
-    <T> T resolveDependency( Class<T> type, SelectionStrategy selector );
+    <T> T resolveDependency(Class<T> type, SelectionStrategy selector);
 
     /**
      * Tries to resolve a dependencies that matches a given class.
@@ -65,27 +63,25 @@ public interface DependencyResolver
      * @param <T> the type that the returned instance must implement
      * @return the iterables with resolved dependencies for the given type.
      */
-    default <T> Iterable<T> resolveTypeDependencies( Class<T> type )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+    default <T> Iterable<T> resolveTypeDependencies(Class<T> type) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
-    <T> Supplier<T> provideDependency( Class<T> type, SelectionStrategy selector );
+    <T> Supplier<T> provideDependency(Class<T> type, SelectionStrategy selector);
 
-    <T> Supplier<T> provideDependency( Class<T> type );
+    <T> Supplier<T> provideDependency(Class<T> type);
 
     /**
      * Check if dependency resolver contains dependencies of provided type
      * @param type dependency type to lookup
      * @return true if dependency resolver contains dependency of requested type, false otherwise
      */
-    boolean containsDependency( Class<?> type );
+    boolean containsDependency(Class<?> type);
 
     /**
      * Responsible for making the choice between available candidates.
      */
-    interface SelectionStrategy
-    {
+    interface SelectionStrategy {
         /**
          * Given a set of candidates, select an appropriate one. Even if there are candidates this
          * method may throw {@link IllegalArgumentException} if there was no suitable candidate.
@@ -97,30 +93,24 @@ public interface DependencyResolver
          * @return a suitable candidate among all available.
          * @throws IllegalArgumentException if no suitable candidate was found.
          */
-        <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException;
+        <T> T select(Class<T> type, Iterable<? extends T> candidates) throws IllegalArgumentException;
 
         /**
          * Returns the one and only dependency, or throws.
          */
-        SelectionStrategy SINGLE = new SelectionStrategy()
-        {
+        SelectionStrategy SINGLE = new SelectionStrategy() {
             @Override
-            public <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException
-            {
+            public <T> T select(Class<T> type, Iterable<? extends T> candidates) throws IllegalArgumentException {
                 Iterator<? extends T> iterator = candidates.iterator();
-                if ( !iterator.hasNext() )
-                {
-                    throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );
+                if (!iterator.hasNext()) {
+                    throw new IllegalArgumentException("Could not resolve dependency of type:" + type.getName());
                 }
 
                 T only = iterator.next();
 
-                if ( iterator.hasNext() )
-                {
-                    throw new IllegalArgumentException( "Multiple dependencies of type:" + type.getName() );
-                }
-                else
-                {
+                if (iterator.hasNext()) {
+                    throw new IllegalArgumentException("Multiple dependencies of type:" + type.getName());
+                } else {
                     return only;
                 }
             }
@@ -131,24 +121,20 @@ public interface DependencyResolver
      * Adapter for {@link DependencyResolver} which will select the first available candidate by default
      * for {@link #resolveDependency(Class)}.
      */
-    abstract class Adapter implements DependencyResolver
-    {
+    abstract class Adapter implements DependencyResolver {
         @Override
-        public <T> T resolveDependency( Class<T> type )
-        {
-            return resolveDependency( type, SINGLE );
+        public <T> T resolveDependency(Class<T> type) {
+            return resolveDependency(type, SINGLE);
         }
 
         @Override
-        public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector )
-        {
-            return () -> resolveDependency( type, selector );
+        public <T> Supplier<T> provideDependency(final Class<T> type, final SelectionStrategy selector) {
+            return () -> resolveDependency(type, selector);
         }
 
         @Override
-        public <T> Supplier<T> provideDependency( final Class<T> type )
-        {
-            return () -> resolveDependency( type );
+        public <T> Supplier<T> provideDependency(final Class<T> type) {
+            return () -> resolveDependency(type);
         }
     }
 }

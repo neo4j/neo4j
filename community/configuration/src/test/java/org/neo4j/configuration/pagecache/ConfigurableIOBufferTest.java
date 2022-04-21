@@ -19,12 +19,6 @@
  */
 package org.neo4j.configuration.pagecache;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,120 +26,110 @@ import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buff
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class ConfigurableIOBufferTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.ScopedMemoryTracker;
+
+class ConfigurableIOBufferTest {
     @Test
-    void ioBufferEnabledByDefault()
-    {
+    void ioBufferEnabledByDefault() {
         var config = Config.defaults();
-        try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, INSTANCE ) )
-        {
-            assertTrue( ioBuffer.isEnabled() );
+        try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, INSTANCE)) {
+            assertTrue(ioBuffer.isEnabled());
         }
     }
 
     @Test
-    void allocatedBufferShouldHavePageAlignedAddress()
-    {
+    void allocatedBufferShouldHavePageAlignedAddress() {
         var config = Config.defaults();
-        try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, INSTANCE ) )
-        {
-            assertThat( ioBuffer.getAddress() % PAGE_SIZE ).isZero();
+        try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, INSTANCE)) {
+            assertThat(ioBuffer.getAddress() % PAGE_SIZE).isZero();
         }
     }
 
     @Test
-    void bufferPoolMemoryRegisteredInMemoryPool()
-    {
+    void bufferPoolMemoryRegisteredInMemoryPool() {
         var config = Config.defaults();
-        var memoryTracker = new ScopedMemoryTracker( INSTANCE );
-        try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker ) )
-        {
-            assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() + PAGE_SIZE );
+        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker)) {
+            assertThat(memoryTracker.usedNativeMemory())
+                    .isEqualTo(PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() + PAGE_SIZE);
         }
-        assertThat( memoryTracker.usedNativeMemory() ).isZero();
+        assertThat(memoryTracker.usedNativeMemory()).isZero();
     }
 
     @Test
-    void canTryToCloseBufferSeveralTimes()
-    {
+    void canTryToCloseBufferSeveralTimes() {
         var config = Config.defaults();
-        var memoryTracker = new ScopedMemoryTracker( INSTANCE );
-        ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker );
-        assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() + PAGE_SIZE );
+        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker);
+        assertThat(memoryTracker.usedNativeMemory())
+                .isEqualTo(PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() + PAGE_SIZE);
 
         ioBuffer.close();
-        assertThat( memoryTracker.usedNativeMemory() ).isZero();
+        assertThat(memoryTracker.usedNativeMemory()).isZero();
 
         ioBuffer.close();
-        assertThat( memoryTracker.usedNativeMemory() ).isZero();
+        assertThat(memoryTracker.usedNativeMemory()).isZero();
 
         ioBuffer.close();
-        assertThat( memoryTracker.usedNativeMemory() ).isZero();
+        assertThat(memoryTracker.usedNativeMemory()).isZero();
     }
 
     @Test
-    void bufferSizeCanBeConfigured()
-    {
+    void bufferSizeCanBeConfigured() {
         int customPageSize = 2;
-        var config = Config.defaults( pagecache_flush_buffer_size_in_pages, customPageSize );
-        var memoryTracker = new ScopedMemoryTracker( INSTANCE );
-        try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker ) )
-        {
-            assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * customPageSize + PAGE_SIZE );
+        var config = Config.defaults(pagecache_flush_buffer_size_in_pages, customPageSize);
+        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker)) {
+            assertThat(memoryTracker.usedNativeMemory()).isEqualTo(PAGE_SIZE * customPageSize + PAGE_SIZE);
         }
     }
 
     @Test
-    void bufferCapacityLimit()
-    {
+    void bufferCapacityLimit() {
         int customPageSize = 5;
-        var config = Config.defaults( pagecache_flush_buffer_size_in_pages, customPageSize );
-        var memoryTracker = new ScopedMemoryTracker( INSTANCE );
-        try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker ) )
-        {
-            assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * customPageSize + PAGE_SIZE );
+        var config = Config.defaults(pagecache_flush_buffer_size_in_pages, customPageSize);
+        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker)) {
+            assertThat(memoryTracker.usedNativeMemory()).isEqualTo(PAGE_SIZE * customPageSize + PAGE_SIZE);
 
-            assertTrue( ioBuffer.hasMoreCapacity( 0, 1 ) );
-            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE, PAGE_SIZE ) );
-            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE * 2, PAGE_SIZE ) );
-            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE * 3, PAGE_SIZE ) );
-            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE * 4, PAGE_SIZE ) );
+            assertTrue(ioBuffer.hasMoreCapacity(0, 1));
+            assertTrue(ioBuffer.hasMoreCapacity(PAGE_SIZE, PAGE_SIZE));
+            assertTrue(ioBuffer.hasMoreCapacity(PAGE_SIZE * 2, PAGE_SIZE));
+            assertTrue(ioBuffer.hasMoreCapacity(PAGE_SIZE * 3, PAGE_SIZE));
+            assertTrue(ioBuffer.hasMoreCapacity(PAGE_SIZE * 4, PAGE_SIZE));
 
-            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 4, PAGE_SIZE + 1 ) );
-            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 5, PAGE_SIZE ) );
-            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 6, PAGE_SIZE ) );
-            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 7, PAGE_SIZE ) );
-            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 8, PAGE_SIZE ) );
+            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 4, PAGE_SIZE + 1));
+            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 5, PAGE_SIZE));
+            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 6, PAGE_SIZE));
+            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 7, PAGE_SIZE));
+            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 8, PAGE_SIZE));
         }
     }
 
     @Test
-    void allocationFailureMakesBufferDisabled()
-    {
+    void allocationFailureMakesBufferDisabled() {
         int customPageSize = 5;
-        var config = Config.defaults( pagecache_flush_buffer_size_in_pages, customPageSize );
+        var config = Config.defaults(pagecache_flush_buffer_size_in_pages, customPageSize);
         var memoryTracker = new PoisonedMemoryTracker();
-        try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker ) )
-        {
-            assertTrue( memoryTracker.isExceptionThrown() );
-            assertFalse( ioBuffer.isEnabled() );
+        try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker)) {
+            assertTrue(memoryTracker.isExceptionThrown());
+            assertFalse(ioBuffer.isEnabled());
         }
     }
 
-    private static class PoisonedMemoryTracker extends LocalMemoryTracker
-    {
+    private static class PoisonedMemoryTracker extends LocalMemoryTracker {
         private boolean exceptionThrown;
 
         @Override
-        public void allocateNative( long bytes )
-        {
+        public void allocateNative(long bytes) {
             exceptionThrown = true;
-            throw new RuntimeException( "Poison" );
+            throw new RuntimeException("Poison");
         }
 
-        public boolean isExceptionThrown()
-        {
+        public boolean isExceptionThrown() {
             return exceptionThrown;
         }
     }

@@ -25,8 +25,7 @@ package org.neo4j.index.internal.gbptree;
  * to finally perform a leaf operation. They have a veto where returning {@code false} will let {@link InternalTreeLogic} unwind the traversal back up
  * to the root, go into {@link #flipToPessimisticMode() pessimistic} mode and traverse down again, with the pessimistic mode.
  */
-interface TreeWriterCoordination
-{
+interface TreeWriterCoordination {
     /**
      * @return whether it's required that traversal starts from the root or not for each operation.
      */
@@ -42,7 +41,7 @@ interface TreeWriterCoordination
      * @param treeNodeId the tree node id which the traversal will go to.
      * @param childPos the child position in the parent which held this child pointer
      */
-    void beforeTraversingToChild( long treeNodeId, int childPos );
+    void beforeTraversingToChild(long treeNodeId, int childPos);
 
     /**
      * Called after having traversed to a child node, the one which was specified in the most recent call to {@link #beforeTraversingToChild(long, int)}.
@@ -51,33 +50,33 @@ interface TreeWriterCoordination
      * @param isStable whether this node is in stable generation. If it's not in stable generation then a change to it will need to create a successor.
      * @return {@code true} if operation is permitted, otherwise {@code false}.
      */
-    boolean arrivedAtChild( boolean isInternal, int availableSpace, boolean isStable, int keyCount );
+    boolean arrivedAtChild(boolean isInternal, int availableSpace, boolean isStable, int keyCount);
 
     /**
      * Called before splitting the leaf.
      * @param bubbleEntrySize size in bytes of the key which will be bubbled up to the parent.
      * @return {@code true} if operation is permitted, otherwise {@code false}.
      */
-    boolean beforeSplittingLeaf( int bubbleEntrySize );
+    boolean beforeSplittingLeaf(int bubbleEntrySize);
 
     /**
      * Called before removing entry from leaf.
      * @param sizeOfLeafEntryToRemove total size of the entry to remove.
      * @return {@code true} if operation is permitted, otherwise {@code false}.
      */
-    boolean beforeRemovalFromLeaf( int sizeOfLeafEntryToRemove );
+    boolean beforeRemovalFromLeaf(int sizeOfLeafEntryToRemove);
 
     /**
      * Called before a split of an internal node.
      * @param treeNodeId internal tree node id to split.
      */
-    void beforeSplitInternal( long treeNodeId );
+    void beforeSplitInternal(long treeNodeId);
 
     /**
      * Called before under-flowing a leaf.
      * @param treeNodeId tree node id to underflow, i.e. rebalance or merge with siblings.
      */
-    void beforeUnderflowInLeaf( long treeNodeId );
+    void beforeUnderflowInLeaf(long treeNodeId);
 
     /**
      * Ends the previously {@link #initialize() initialized} traversal,
@@ -93,60 +92,43 @@ interface TreeWriterCoordination
     /**
      * Does nothing and has no requirement of starting from the root every time.
      */
-    TreeWriterCoordination NO_COORDINATION = new TreeWriterCoordination()
-    {
+    TreeWriterCoordination NO_COORDINATION = new TreeWriterCoordination() {
         @Override
-        public boolean mustStartFromRoot()
-        {
+        public boolean mustStartFromRoot() {
             return false;
         }
 
         @Override
-        public void initialize()
-        {
-        }
+        public void initialize() {}
 
         @Override
-        public boolean beforeSplittingLeaf( int bubbleEntrySize )
-        {
+        public boolean beforeSplittingLeaf(int bubbleEntrySize) {
             return true;
         }
 
         @Override
-        public boolean arrivedAtChild( boolean isInternal, int availableSpace, boolean isStable, int keyCount )
-        {
+        public boolean arrivedAtChild(boolean isInternal, int availableSpace, boolean isStable, int keyCount) {
             return true;
         }
 
         @Override
-        public void beforeTraversingToChild( long treeNodeId, int childPos )
-        {
-        }
+        public void beforeTraversingToChild(long treeNodeId, int childPos) {}
 
         @Override
-        public boolean beforeRemovalFromLeaf( int sizeOfLeafEntryToRemove )
-        {
+        public boolean beforeRemovalFromLeaf(int sizeOfLeafEntryToRemove) {
             return true;
         }
 
         @Override
-        public void beforeSplitInternal( long treeNodeId )
-        {
-        }
+        public void beforeSplitInternal(long treeNodeId) {}
 
         @Override
-        public void beforeUnderflowInLeaf( long treeNodeId )
-        {
-        }
+        public void beforeUnderflowInLeaf(long treeNodeId) {}
 
         @Override
-        public void reset()
-        {
-        }
+        public void reset() {}
 
         @Override
-        public void flipToPessimisticMode()
-        {
-        }
+        public void flipToPessimisticMode() {}
     };
 }

@@ -21,8 +21,7 @@ package org.neo4j.storageengine.api;
 
 import java.util.Optional;
 
-public interface StoreIdProvider
-{
+public interface StoreIdProvider {
     LegacyStoreId getStoreId();
 
     Optional<ExternalStoreId> getExternalStoreId();

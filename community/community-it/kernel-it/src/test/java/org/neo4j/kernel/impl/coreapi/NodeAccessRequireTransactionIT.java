@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.RelationshipType.withName;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -30,171 +34,143 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.graphdb.Direction.BOTH;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.RelationshipType.withName;
-
 @DbmsExtension
-public class NodeAccessRequireTransactionIT
-{
+public class NodeAccessRequireTransactionIT {
     @Inject
     private GraphDatabaseAPI databaseAPI;
+
     private InternalTransaction transaction;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         transaction = (InternalTransaction) databaseAPI.beginTx();
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( transaction != null )
-        {
+    void tearDown() {
+        if (transaction != null) {
             transaction.close();
         }
     }
 
     @Test
-    void deleteNodeRequireTransaction()
-    {
+    void deleteNodeRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, node::delete );
+        assertThrows(NotInTransactionException.class, node::delete);
     }
 
     @Test
-    void relationshipsAccessRequireTransaction()
-    {
+    void relationshipsAccessRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, node::getRelationships );
+        assertThrows(NotInTransactionException.class, node::getRelationships);
     }
 
     @Test
-    void hasRelationshipCheckRequireTransaction()
-    {
+    void hasRelationshipCheckRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, node::hasRelationship );
+        assertThrows(NotInTransactionException.class, node::hasRelationship);
     }
 
     @Test
-    void hasRelationshipByTypeCheckRequireTransaction()
-    {
+    void hasRelationshipByTypeCheckRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.hasRelationship( withName( "any" ) ) );
+        assertThrows(NotInTransactionException.class, () -> node.hasRelationship(withName("any")));
     }
 
     @Test
-    void hasRelationshipByTypeAndDirectionRequireTransaction()
-    {
+    void hasRelationshipByTypeAndDirectionRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.hasRelationship( OUTGOING, withName( "any" ) ));
+        assertThrows(NotInTransactionException.class, () -> node.hasRelationship(OUTGOING, withName("any")));
     }
 
     @Test
-    void relationshipsByTypeRequireTransaction()
-    {
+    void relationshipsByTypeRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.getRelationships( withName( "any" ) ));
+        assertThrows(NotInTransactionException.class, () -> node.getRelationships(withName("any")));
     }
 
     @Test
-    void relationshipsByTypeAndDirectionRequireTransaction()
-    {
+    void relationshipsByTypeAndDirectionRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.getRelationships( OUTGOING, withName( "any" ) ));
+        assertThrows(NotInTransactionException.class, () -> node.getRelationships(OUTGOING, withName("any")));
     }
 
     @Test
-    void relationshipsByDirectionAccessRequireTransaction()
-    {
+    void relationshipsByDirectionAccessRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.getRelationships( BOTH ) );
+        assertThrows(NotInTransactionException.class, () -> node.getRelationships(BOTH));
     }
 
     @Test
-    void singleRelationshipRequireTransaction()
-    {
+    void singleRelationshipRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.getSingleRelationship( withName( "any" ), BOTH ) );
+        assertThrows(NotInTransactionException.class, () -> node.getSingleRelationship(withName("any"), BOTH));
     }
 
     @Test
-    void createRelationshipRequireTransaction()
-    {
+    void createRelationshipRequireTransaction() {
         var node = detachedNode();
-        try ( var tx = databaseAPI.beginTx() )
-        {
-            assertThrows( NotInTransactionException.class, () -> node.createRelationshipTo( tx.createNode(), withName( "any" ) ) );
+        try (var tx = databaseAPI.beginTx()) {
+            assertThrows(
+                    NotInTransactionException.class, () -> node.createRelationshipTo(tx.createNode(), withName("any")));
         }
     }
 
     @Test
-    void degreeByRelTypeRequiresTransaction()
-    {
+    void degreeByRelTypeRequiresTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.getDegree( withName( "any" ) ) );
+        assertThrows(NotInTransactionException.class, () -> node.getDegree(withName("any")));
     }
 
     @Test
-    void degreeByDirectionRequiresTransaction()
-    {
+    void degreeByDirectionRequiresTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.getDegree( OUTGOING ) );
+        assertThrows(NotInTransactionException.class, () -> node.getDegree(OUTGOING));
     }
 
     @Test
-    void degreeByDirectionAndRelTypeRequiresTransaction()
-    {
+    void degreeByDirectionAndRelTypeRequiresTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.getDegree( withName( "any" ), OUTGOING ) );
+        assertThrows(NotInTransactionException.class, () -> node.getDegree(withName("any"), OUTGOING));
     }
 
     @Test
-    void degreeRequiresTransaction()
-    {
+    void degreeRequiresTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, node::getDegree );
+        assertThrows(NotInTransactionException.class, node::getDegree);
     }
 
     @Test
-    void labelAddRequiresTransaction()
-    {
+    void labelAddRequiresTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.addLabel( Label.label( "any" ) ) );
+        assertThrows(NotInTransactionException.class, () -> node.addLabel(Label.label("any")));
     }
 
     @Test
-    void labelRemoveRequiresTransaction()
-    {
+    void labelRemoveRequiresTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.removeLabel( Label.label( "any" ) ) );
+        assertThrows(NotInTransactionException.class, () -> node.removeLabel(Label.label("any")));
     }
 
     @Test
-    void labelCheckRequireTransaction()
-    {
+    void labelCheckRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, () -> node.hasLabel( Label.label( "any" ) ) );
+        assertThrows(NotInTransactionException.class, () -> node.hasLabel(Label.label("any")));
     }
 
     @Test
-    void labelsAccessRequireTransaction()
-    {
+    void labelsAccessRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, node::getLabels );
+        assertThrows(NotInTransactionException.class, node::getLabels);
     }
 
     @Test
-    void relTypesAccessRequireTransaction()
-    {
+    void relTypesAccessRequireTransaction() {
         var node = detachedNode();
-        assertThrows( NotInTransactionException.class, node::getRelationshipTypes );
+        assertThrows(NotInTransactionException.class, node::getRelationshipTypes);
     }
 
-    private Node detachedNode()
-    {
+    private Node detachedNode() {
         var node = transaction.createNode();
         transaction.close();
         return node;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold.or;
+
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -26,32 +28,28 @@ import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold.or;
-
 /**
  * The {@code periodic} check point threshold policy uses the {@link GraphDatabaseSettings#check_point_interval_time}
  * and {@link GraphDatabaseSettings#check_point_interval_tx} to decide when check points processes should be started.
  */
 @ServiceProvider
-public class PeriodicThresholdPolicy implements CheckPointThresholdPolicy
-{
+public class PeriodicThresholdPolicy implements CheckPointThresholdPolicy {
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "periodic";
     }
 
     @Override
     public CheckPointThreshold createThreshold(
-            Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider )
-    {
-        int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
+            Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider) {
+        int txThreshold = config.get(GraphDatabaseSettings.check_point_interval_tx);
         final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
-                new CountCommittedTransactionThreshold( txThreshold );
+                new CountCommittedTransactionThreshold(txThreshold);
 
-        long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time ).toMillis();
-        TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( timeMillisThreshold, clock );
+        long timeMillisThreshold =
+                config.get(GraphDatabaseSettings.check_point_interval_time).toMillis();
+        TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold(timeMillisThreshold, clock);
 
-        return or( countCommittedTransactionThreshold, timeCheckPointThreshold );
+        return or(countCommittedTransactionThreshold, timeCheckPointThreshold);
     }
 }

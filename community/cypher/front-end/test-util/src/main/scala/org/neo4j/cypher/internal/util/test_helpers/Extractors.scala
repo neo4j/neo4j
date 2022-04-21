@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util.test_helpers
 
 object Extractors {
+
   object SetExtractor {
     def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
   }

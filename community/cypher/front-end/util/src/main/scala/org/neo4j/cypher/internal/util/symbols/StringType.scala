@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object StringType {
+
   val instance = new StringType() {
     val parentType = CTAny
     override val toString = "String"

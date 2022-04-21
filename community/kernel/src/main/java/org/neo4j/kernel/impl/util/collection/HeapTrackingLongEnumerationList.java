@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.function.BiConsumer;
-
-import org.neo4j.internal.kernel.api.DefaultCloseListenable;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.Preconditions;
-
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.function.BiConsumer;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Preconditions;
 
 /**
  * A heap-tracking list that also provides a limited ordered map-interface where the keys are
@@ -62,9 +61,8 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
  *
  * @param <V> value type
  */
-public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongEnumerationList.class );
+public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingLongEnumerationList.class);
     public static final int DEFAULT_CHUNK_SIZE = 1024; // Must be a power of 2
 
     private final int chunkSize;
@@ -81,25 +79,22 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     private long lastKey; // NOTE: This is the last added key in the entire list _plus_ 1, i.e. the next key to be added
     private long lastKeyInFirstChunk; // NOTE: This is the last added key in the first chunk _plus_ 1
 
-    public static <V> HeapTrackingLongEnumerationList<V> create( MemoryTracker memoryTracker )
-    {
-        return create( memoryTracker, DEFAULT_CHUNK_SIZE );
+    public static <V> HeapTrackingLongEnumerationList<V> create(MemoryTracker memoryTracker) {
+        return create(memoryTracker, DEFAULT_CHUNK_SIZE);
     }
 
-    public static <V> HeapTrackingLongEnumerationList<V> create( MemoryTracker memoryTracker, int chunkSize )
-    {
-        Preconditions.requirePowerOfTwo( chunkSize );
+    public static <V> HeapTrackingLongEnumerationList<V> create(MemoryTracker memoryTracker, int chunkSize) {
+        Preconditions.requirePowerOfTwo(chunkSize);
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
-        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
-        return new HeapTrackingLongEnumerationList<>( scopedMemoryTracker, chunkSize );
+        scopedMemoryTracker.allocateHeap(SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
+        return new HeapTrackingLongEnumerationList<>(scopedMemoryTracker, chunkSize);
     }
 
-    private HeapTrackingLongEnumerationList( MemoryTracker scopedMemoryTracker, int chunkSize )
-    {
+    private HeapTrackingLongEnumerationList(MemoryTracker scopedMemoryTracker, int chunkSize) {
         this.chunkSize = chunkSize;
-        this.chunkShiftAmount = Integer.numberOfTrailingZeros( chunkSize );
+        this.chunkShiftAmount = Integer.numberOfTrailingZeros(chunkSize);
         this.scopedMemoryTracker = scopedMemoryTracker;
-        firstChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
+        firstChunk = new Chunk<>(scopedMemoryTracker, chunkSize);
         lastChunk = firstChunk;
     }
 
@@ -108,14 +103,12 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      *
      * @return the value at `key` index in the enumeration
      */
-    @SuppressWarnings( "unchecked" )
-    public V get( long key )
-    {
-        if ( key < firstKey || key >= lastKey )
-        {
+    @SuppressWarnings("unchecked")
+    public V get(long key) {
+        if (key < firstKey || key >= lastKey) {
             return null;
         }
-        Chunk<V> chunk = findChunk( key );
+        Chunk<V> chunk = findChunk(key);
         int indexInChunk = ((int) key) & (chunkSize - 1);
         return (V) chunk.values[indexInChunk];
     }
@@ -125,15 +118,11 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      *
      * @return the value of the first added key in the enumeration that has not been removed, or null if no keys exist
      */
-    @SuppressWarnings( "unchecked" )
-    public V getFirst()
-    {
-        if ( firstKey < lastKey )
-        {
+    @SuppressWarnings("unchecked")
+    public V getFirst() {
+        if (firstKey < lastKey) {
             return (V) firstChunk.values[((int) firstKey) & (chunkSize - 1)];
-        }
-        else
-        {
+        } else {
             return null;
         }
     }
@@ -150,26 +139,22 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      * @param value the value to be inserted
      * @return the old value at the index or null
      */
-    @SuppressWarnings( "unchecked" )
-    public V put( long key, V value )
-    {
-        if ( key < firstKey )
-        {
-            throw new IndexOutOfBoundsException( String.format( "Cannot put key %s before first key %s", key, firstKey ) );
+    @SuppressWarnings("unchecked")
+    public V put(long key, V value) {
+        if (key < firstKey) {
+            throw new IndexOutOfBoundsException(String.format("Cannot put key %s before first key %s", key, firstKey));
         }
-        if ( key >= lastKey )
-        {
+        if (key >= lastKey) {
             // Use add() for padding
             // If the difference is huge we may want to implement an optimized way of adding entire new chunks
-            while ( lastKey < key )
-            {
-                add( null );
+            while (lastKey < key) {
+                add(null);
             }
-            add( value );
+            add(value);
             return null;
         }
         // Replace value
-        Chunk<V> chunk = findChunk( key );
+        Chunk<V> chunk = findChunk(key);
         int indexInChunk = ((int) key) & (chunkSize - 1);
         V oldValue = (V) chunk.values[indexInChunk];
         chunk.values[indexInChunk] = value;
@@ -184,40 +169,33 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      *
      * @param value the value to be inserted
      */
-    public void add( V value )
-    {
-        if ( firstChunk == lastChunk )
-        {
-            addToSingleChunk( value );
-        }
-        else
-        {
-            addToTailChunk( value );
+    public void add(V value) {
+        if (firstChunk == lastChunk) {
+            addToSingleChunk(value);
+        } else {
+            addToTailChunk(value);
         }
     }
 
     // When we have only a single chunk, we pack it like a ring-buffer
-    private void addToSingleChunk( V value )
-    {
+    private void addToSingleChunk(V value) {
         int chunkMask = chunkSize - 1;
         int firstIndexInChunk = ((int) firstKey) & chunkMask;
         int lastIndexInChunk = ((int) lastKey) & chunkMask;
         boolean addedNewChunk = false;
 
-        if ( lastIndexInChunk == firstIndexInChunk )
-        {
-            if ( !isEmpty() )
-            {
+        if (lastIndexInChunk == firstIndexInChunk) {
+            if (!isEmpty()) {
                 // The chunk is full. We need to allocate a new chunk
-                Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
+                Chunk<V> newChunk = new Chunk<>(scopedMemoryTracker, chunkSize);
                 secondLastChunk = lastChunk;
                 lastChunk.next = newChunk;
                 lastChunk = newChunk;
                 addedNewChunk = true;
-            }
-            else
-            {
-                if ( value == null ) // Special case if null is added as the first key, the list should still be considered empty
+            } else {
+                if (value
+                        == null) // Special case if null is added as the first key, the list should still be considered
+                // empty
                 {
                     firstKey++;
                 }
@@ -227,21 +205,18 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         // Set the value
         lastChunk.values[lastIndexInChunk] = value;
         lastKey++;
-        if ( !addedNewChunk )
-        {
+        if (!addedNewChunk) {
             lastKeyInFirstChunk = lastKey;
         }
     }
 
-    private void addToTailChunk( V value )
-    {
+    private void addToTailChunk(V value) {
         int indexInChunk = ((int) lastKey) & (chunkSize - 1);
 
         // The last chunk may be full
-        if ( indexInChunk == 0 )
-        {
+        if (indexInChunk == 0) {
             // We need to allocate a new chunk
-            Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
+            Chunk<V> newChunk = new Chunk<>(scopedMemoryTracker, chunkSize);
             secondLastChunk = lastChunk;
             lastChunk.next = newChunk;
             lastChunk = newChunk;
@@ -260,25 +235,19 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      * @param key The enumeration
      * @return the value that was removed, or null if it was not found or has already been removed.
      */
-    public V remove( long key )
-    {
-        if ( key < firstKey || key >= lastKey )
-        {
+    public V remove(long key) {
+        if (key < firstKey || key >= lastKey) {
             return null;
         }
-        if ( firstChunk == lastChunk )
-        {
-            return removeInSingleChunk( key );
-        }
-        else
-        {
-            return removeInMultipleChunks( key );
+        if (firstChunk == lastChunk) {
+            return removeInSingleChunk(key);
+        } else {
+            return removeInMultipleChunks(key);
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    private V removeInSingleChunk( long key )
-    {
+    @SuppressWarnings("unchecked")
+    private V removeInSingleChunk(long key) {
         Chunk<V> chunk = firstChunk;
         int chunkMask = chunkSize - 1;
         int firstIndexInChunk = ((int) firstKey) & chunkMask;
@@ -288,8 +257,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         chunk.values[removeIndexInChunk] = null;
 
         // Update first in single chunk
-        while ( firstKey < lastKey && firstChunk.values[firstIndexInChunk] == null )
-        {
+        while (firstKey < lastKey && firstChunk.values[firstIndexInChunk] == null) {
             firstKey++;
             firstIndexInChunk = ((int) firstKey) & chunkMask;
         }
@@ -297,10 +265,9 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         return removedValue;
     }
 
-    @SuppressWarnings( "unchecked" )
-    private V removeInMultipleChunks( long key )
-    {
-        Chunk<V> chunk = findChunk( key );
+    @SuppressWarnings("unchecked")
+    private V removeInMultipleChunks(long key) {
+        Chunk<V> chunk = findChunk(key);
 
         int chunkMask = chunkSize - 1;
         int indexInChunk = ((int) key) & chunkMask;
@@ -308,19 +275,16 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         chunk.values[indexInChunk] = null;
 
         // If we removed the first key we need to move the references to the first element
-        if ( key == firstKey )
-        {
-            updateFirstOfMultipleChunks( chunk, chunkMask );
+        if (key == firstKey) {
+            updateFirstOfMultipleChunks(chunk, chunkMask);
         }
 
         return removedValue;
     }
 
-    private Chunk<V> findChunk( long key )
-    {
+    private Chunk<V> findChunk(long key) {
         // Check if the key is within the first chunk
-        if ( key < lastKeyInFirstChunk )
-        {
+        if (key < lastKeyInFirstChunk) {
             return firstChunk;
         }
 
@@ -328,29 +292,25 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         long lastChunkNumber = (lastKey - 1) >>> chunkShiftAmount;
 
         // Check if the key is within the last chunk
-        if ( keyChunkNumber == lastChunkNumber )
-        {
+        if (keyChunkNumber == lastChunkNumber) {
             return lastChunk;
         }
         // Or the second to last chunk
-        else if ( keyChunkNumber == lastChunkNumber - 1 )
-        {
+        else if (keyChunkNumber == lastChunkNumber - 1) {
             return secondLastChunk;
-        }
-        else
-        {
+        } else {
             // Otherwise traverse from the second chunk
             Chunk<V> chunk = firstChunk.next;
 
-            // We need to align the key offset since tail chunk boundaries are always fixed in the enumeration key space:
+            // We need to align the key offset since tail chunk boundaries are always fixed in the enumeration key
+            // space:
             //   [0..chunkSize-1][chunkSize..2*chunkSize-1]...
             long offset = key - lastKeyInFirstChunk;
             long alignment = lastKeyInFirstChunk & (chunkSize - 1);
             long index = offset + alignment;
 
             long nChunkHops = index >>> chunkShiftAmount;
-            for ( int i = 0; i < nChunkHops; i++ )
-            {
+            for (int i = 0; i < nChunkHops; i++) {
                 chunk = chunk.next;
             }
             return chunk;
@@ -365,48 +325,37 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      *
      * if we remove index 2 we get [null, null, null, null, 3] -> then firstKey = 4
      */
-    private void updateFirstOfMultipleChunks( Chunk<V> chunk, int chunkMask )
-    {
+    private void updateFirstOfMultipleChunks(Chunk<V> chunk, int chunkMask) {
         int firstIndexInChunk = ((int) firstKey) & chunkMask;
-        while ( firstKey < lastKey && chunk.values[firstIndexInChunk] == null )
-        {
+        while (firstKey < lastKey && chunk.values[firstIndexInChunk] == null) {
             firstKey++;
             boolean moveToNextChunk;
 
-            if ( chunk == firstChunk )
-            {
+            if (chunk == firstChunk) {
                 firstIndexInChunk = (firstIndexInChunk + 1) & chunkMask;
                 moveToNextChunk = firstKey >= lastKeyInFirstChunk;
-            }
-            else
-            {
+            } else {
                 firstIndexInChunk++;
                 moveToNextChunk = firstIndexInChunk >= chunkSize;
             }
-            if ( moveToNextChunk && chunk != lastChunk )
-            {
+            if (moveToNextChunk && chunk != lastChunk) {
                 firstIndexInChunk = ((int) firstKey) & chunkMask;
-                chunk.close( scopedMemoryTracker );
+                chunk.close(scopedMemoryTracker);
                 chunk = chunk.next;
             }
         }
 
-        if ( chunk != firstChunk )
-        {
+        if (chunk != firstChunk) {
             // Update references to the new first chunk
-            if ( secondLastChunk == firstChunk )
-            {
+            if (secondLastChunk == firstChunk) {
                 secondLastChunk = null;
             }
             firstChunk = chunk;
 
             // Update lastKeyInFirstChunk
-            if ( chunk == lastChunk )
-            {
+            if (chunk == lastChunk) {
                 lastKeyInFirstChunk = lastKey;
-            }
-            else
-            {
+            } else {
                 // Middle chunks are always aligned so that lastKeyInFirstChunk should be at the chunk boundary
                 lastKeyInFirstChunk = (firstKey & ~chunkMask) + chunkSize;
             }
@@ -416,29 +365,25 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     /*
      * Do we have any values
      */
-    private boolean isEmpty()
-    {
+    private boolean isEmpty() {
         return firstKey == lastKey;
     }
 
     /**
      * Apply the function for each key-value pair in the list, but skipping over null values.
      */
-    @SuppressWarnings( "unchecked" )
-    public void foreach( BiConsumer<Long,V> fun )
-    {
+    @SuppressWarnings("unchecked")
+    public void foreach(BiConsumer<Long, V> fun) {
         Chunk<V> chunk = firstChunk;
         long key = firstKey;
         int chunkMask = chunkSize - 1;
         int index = ((int) key) & chunkMask;
 
         // Iterate over the first chunk
-        while ( key < lastKeyInFirstChunk )
-        {
+        while (key < lastKeyInFirstChunk) {
             V value = (V) chunk.values[index];
-            if ( value != null )
-            {
-                fun.accept( key, value );
+            if (value != null) {
+                fun.accept(key, value);
             }
             index = (index + 1) & chunkMask;
             key++;
@@ -448,17 +393,14 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         chunk = chunk.next;
 
         // Iterate over remaining chunks
-        while ( key < lastKey )
-        {
-            if ( index >= chunkSize )
-            {
+        while (key < lastKey) {
+            if (index >= chunkSize) {
                 chunk = chunk.next;
                 index = 0;
             }
             V value = (V) chunk.values[index];
-            if ( value != null )
-            {
-                fun.accept( key, value );
+            if (value != null) {
+                fun.accept(key, value);
             }
             index++;
             key++;
@@ -469,34 +411,29 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      * Remove each key starting from the first key until we reach the given key or the end of the list,
      * and apply the given function to each removed value, skipping over null values.
      */
-    @SuppressWarnings( "unchecked" )
-    public void removeUntil( long untilKey, BiConsumer<Long,V> fun )
-    {
-        long until = Math.min( untilKey, lastKey );
-        while ( firstKey < until )
-        {
+    @SuppressWarnings("unchecked")
+    public void removeUntil(long untilKey, BiConsumer<Long, V> fun) {
+        long until = Math.min(untilKey, lastKey);
+        while (firstKey < until) {
             long key = firstKey;
-            V value = remove( key );
-            fun.accept( key, value );
+            V value = remove(key);
+            fun.accept(key, value);
         }
     }
 
     /**
      * @return The last added key or -1 if no keys exist (i.e. if nothing was ever added to the list)
      */
-    public long lastKey()
-    {
+    public long lastKey() {
         return lastKey - 1;
     }
 
-    public MemoryTracker scopedMemoryTracker()
-    {
+    public MemoryTracker scopedMemoryTracker() {
         return scopedMemoryTracker;
     }
 
     @Override
-    public void closeInternal()
-    {
+    public void closeInternal() {
         firstChunk = null;
         lastChunk = null;
         secondLastChunk = null;
@@ -504,8 +441,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return firstChunk == null;
     }
 
@@ -513,27 +449,19 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      * Iterator of all non-null values in the list
      * Warning: not safe to modify during iteration.
      */
-    public Iterator<V> valuesIterator()
-    {
-        if ( isEmpty() )
-        {
+    public Iterator<V> valuesIterator() {
+        if (isEmpty()) {
             return java.util.Collections.emptyIterator();
-        }
-        else
-        {
-            if ( firstChunk == lastChunk )
-            {
+        } else {
+            if (firstChunk == lastChunk) {
                 return new SingleChunkValuesIterator();
-            }
-            else
-            {
+            } else {
                 return new ValuesIterator();
             }
         }
     }
 
-    private class SingleChunkValuesIterator implements Iterator<V>
-    {
+    private class SingleChunkValuesIterator implements Iterator<V> {
         private Chunk<V> chunk;
         private long key;
 
@@ -543,18 +471,15 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             int index = ((int) key) & (chunkSize - 1);
             return key < lastKeyInFirstChunk && chunk.values[index] != null;
         }
 
         @Override
-        @SuppressWarnings( "unchecked" )
-        public V next()
-        {
-            if ( !this.hasNext() )
-            {
+        @SuppressWarnings("unchecked")
+        public V next() {
+            if (!this.hasNext()) {
                 throw new NoSuchElementException();
             }
 
@@ -564,19 +489,16 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
             Object value = chunk.values[index];
 
             // Advance next entry
-            do
-            {
+            do {
                 key++;
                 index = (index + 1) & chunkMask;
-            }
-            while ( key < lastKeyInFirstChunk && chunk.values[index] == null );
+            } while (key < lastKeyInFirstChunk && chunk.values[index] == null);
 
             return (V) value;
         }
     }
 
-    private class ValuesIterator implements Iterator<V>
-    {
+    private class ValuesIterator implements Iterator<V> {
         private Chunk<V> chunk;
         private int index;
         private long key;
@@ -588,49 +510,39 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return chunk != null && chunk.values[index] != null;
         }
 
         @Override
-        @SuppressWarnings( "unchecked" )
-        public V next()
-        {
-            if ( !this.hasNext() )
-            {
+        @SuppressWarnings("unchecked")
+        public V next() {
+            if (!this.hasNext()) {
                 throw new NoSuchElementException();
             }
 
             Object value = chunk.values[index];
 
             // Advance next entry
-            if ( chunk == firstChunk )
-            {
+            if (chunk == firstChunk) {
                 findNextInFirstChunk();
-            }
-            else
-            {
+            } else {
                 findNextInTailChunks();
             }
 
             return (V) value;
         }
 
-        private void findNextInFirstChunk()
-        {
+        private void findNextInFirstChunk() {
 
             boolean hasRemainingElements;
-            do
-            {
+            do {
                 key++;
                 index = (index + 1) & (chunkSize - 1);
                 hasRemainingElements = key < lastKeyInFirstChunk;
-            }
-            while ( hasRemainingElements && chunk.values[index] == null );
+            } while (hasRemainingElements && chunk.values[index] == null);
 
-            if ( hasRemainingElements )
-            {
+            if (hasRemainingElements) {
                 // We still have elements in the first chunk (chunk.values[index] != null)
                 return;
             }
@@ -638,44 +550,36 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
             // Move to the next chunk
             chunk = chunk.next;
 
-            if ( chunk != null && chunk.values[index] == null && key < lastKey )
-            {
+            if (chunk != null && chunk.values[index] == null && key < lastKey) {
                 findNextInTailChunks();
             }
         }
 
-        private void findNextInTailChunks()
-        {
-            do
-            {
+        private void findNextInTailChunks() {
+            do {
                 key++;
                 index++;
-                if ( index >= chunkSize )
-                {
+                if (index >= chunkSize) {
                     index = 0;
                     chunk = chunk.next;
                 }
-            }
-            while ( chunk != null && chunk.values[index] == null && key < lastKey );
+            } while (chunk != null && chunk.values[index] == null && key < lastKey);
         }
     }
 
-    private static class Chunk<V>
-    {
-        private static final long SHALLOW_SIZE = shallowSizeOfInstance( Chunk.class );
+    private static class Chunk<V> {
+        private static final long SHALLOW_SIZE = shallowSizeOfInstance(Chunk.class);
 
         private final Object[] values;
         private Chunk<V> next;
 
-        Chunk( MemoryTracker memoryTracker, int chunkSize )
-        {
-            memoryTracker.allocateHeap( SHALLOW_SIZE + shallowSizeOfObjectArray( chunkSize ) );
+        Chunk(MemoryTracker memoryTracker, int chunkSize) {
+            memoryTracker.allocateHeap(SHALLOW_SIZE + shallowSizeOfObjectArray(chunkSize));
             values = new Object[chunkSize];
         }
 
-        void close( MemoryTracker memoryTracker )
-        {
-            memoryTracker.releaseHeap( SHALLOW_SIZE + shallowSizeOfObjectArray( values.length ) );
+        void close(MemoryTracker memoryTracker) {
+            memoryTracker.releaseHeap(SHALLOW_SIZE + shallowSizeOfObjectArray(values.length));
         }
     }
 }

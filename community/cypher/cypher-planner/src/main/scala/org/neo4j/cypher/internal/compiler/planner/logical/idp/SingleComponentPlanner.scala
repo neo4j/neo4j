@@ -46,18 +46,27 @@ import org.neo4j.time.Stopwatch
  *
  * written by Donald Kossmann and Konrad Stocker
  */
-case class SingleComponentPlanner(solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig,
-                                  leafPlanFinder: LeafPlanFinder = leafPlanOptions)
-                                 (monitor: IDPQueryGraphSolverMonitor) extends SingleComponentPlannerTrait {
-  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrderConfig: InterestingOrderConfig): BestPlans = {
+case class SingleComponentPlanner(
+  solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig,
+  leafPlanFinder: LeafPlanFinder = leafPlanOptions
+)(monitor: IDPQueryGraphSolverMonitor) extends SingleComponentPlannerTrait {
+
+  override def planComponent(
+    qg: QueryGraph,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit,
+    interestingOrderConfig: InterestingOrderConfig
+  ): BestPlans = {
     val bestPlansPerAvailableSymbol = leafPlanFinder(context.config, qg, interestingOrderConfig, context)
 
     val bestPlans =
       if (qg.patternRelationships.nonEmpty) {
-        val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans => bestPlans.bestResultFulfillingReq.toSeq :+ bestPlans.bestResult).toSet
+        val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans =>
+          bestPlans.bestResultFulfillingReq.toSeq :+ bestPlans.bestResult
+        ).toSet
 
         val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrderConfig)
-        val generators = solverConfig.solvers(qg).map(_ (qg))
+        val generators = solverConfig.solvers(qg).map(_(qg))
         val generator = IDPQueryGraphSolver.composeSolverSteps(qg, interestingOrderConfig, kit, context, generators)
 
         val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
@@ -97,7 +106,9 @@ case class SingleComponentPlanner(solverConfig: SingleComponentIDPSolverConfig =
       }
 
     if (IDPQueryGraphSolver.VERBOSE) {
-      println(s"Result (picked best plan):\n\tPlan #${bestPlans.bestResult.debugId}\n\t${bestPlans.bestResult.toString}")
+      println(
+        s"Result (picked best plan):\n\tPlan #${bestPlans.bestResult.debugId}\n\t${bestPlans.bestResult.toString}"
+      )
       bestPlans.bestResultFulfillingReq.foreach { bSP =>
         println(s"Result (picked best sorted plan):\n\tPlan #${bSP.debugId}\n\t${bSP.toString}")
       }
@@ -109,51 +120,67 @@ case class SingleComponentPlanner(solverConfig: SingleComponentIDPSolverConfig =
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
     (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols -- qg.argumentIds).isEmpty
 
-  private def initTable(qg: QueryGraph,
-                        kit: QueryPlannerKit,
-                        leaves: Set[LogicalPlan],
-                        context: LogicalPlanningContext,
-                        interestingOrderConfig: InterestingOrderConfig): Seed[PatternRelationship, LogicalPlan] = {
+  private def initTable(
+    qg: QueryGraph,
+    kit: QueryPlannerKit,
+    leaves: Set[LogicalPlan],
+    context: LogicalPlanningContext,
+    interestingOrderConfig: InterestingOrderConfig
+  ): Seed[PatternRelationship, LogicalPlan] = {
     for (pattern <- qg.patternRelationships)
       yield {
         val plans = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
         // From _all_ plans (even if they are sorted), put the best into the seed
         // with `false`. We don't want to compare just the ones that are unsorted
         // in isolation, because it could be that the best overall plan is sorted.
-        val best = kit.pickBest(plans, s"best overall plan for $pattern").map(p => ((Set(pattern), /* ordered = */false), p))
+        val best =
+          kit.pickBest(plans, s"best overall plan for $pattern").map(p => ((Set(pattern), /* ordered = */ false), p))
 
         val result: Iterable[((Set[PatternRelationship], Boolean), LogicalPlan)] =
           if (interestingOrderConfig.orderToSolve.isEmpty) {
             best
           } else {
-            val ordered = plans.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
+            val ordered =
+              plans.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
             // Also add the best sorted plan into the seed with `true`.
-            val bestWithSort = kit.pickBest(ordered, s"best sorted plan for $pattern").map(p => ((Set(pattern), /* ordered = */true), p))
+            val bestWithSort = kit.pickBest(ordered, s"best sorted plan for $pattern").map(p =>
+              ((Set(pattern), /* ordered = */ true), p)
+            )
             best ++ bestWithSort
           }
 
         if (result.isEmpty)
-          throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen.")
+          throw new InternalException(
+            "Found no access plan for a pattern relationship in a connected component. This must not happen."
+          )
 
         result
       }
-    }.flatten
+  }.flatten
 }
 
 trait SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrderConfig: InterestingOrderConfig): BestPlans
+
+  def planComponent(
+    qg: QueryGraph,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit,
+    interestingOrderConfig: InterestingOrderConfig
+  ): BestPlans
   def solverConfig: SingleComponentIDPSolverConfig
 }
 
-
 object SingleComponentPlanner {
+
   def DEFAULT_SOLVERS: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
     Seq(joinSolverStep(_), expandSolverStep(_))
 
-  def planSinglePattern(qg: QueryGraph,
-                        pattern: PatternRelationship,
-                        leaves: Set[LogicalPlan],
-                        context: LogicalPlanningContext): Iterable[LogicalPlan] = {
+  def planSinglePattern(
+    qg: QueryGraph,
+    pattern: PatternRelationship,
+    leaves: Set[LogicalPlan],
+    context: LogicalPlanningContext
+  ): Iterable[LogicalPlan] = {
     val solveds = context.planningAttributes.solveds
     leaves.flatMap {
       case plan if solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.patternRelationships.contains(pattern) =>
@@ -171,24 +198,47 @@ object SingleComponentPlanner {
 
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
-        val maybeStartPlan = leaves.find(leaf => solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[Argument])
-        val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
-          // We are not allowed to plan CP or joins with identical LHS and RHS
+        val maybeStartPlan = leaves.find(leaf =>
+          solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[
+            Argument
+          ]
+        )
+        val maybeEndPlan = leaves.find(leaf =>
+          solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument]
+        )
+        // We are not allowed to plan CP or joins with identical LHS and RHS
           .filter(!maybeStartPlan.contains(_))
         val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, context)
-        val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan, context)
+        val joins = planSinglePatternJoins(
+          qg,
+          leftExpand,
+          rightExpand,
+          startJoinNodes,
+          endJoinNodes,
+          maybeStartPlan,
+          maybeEndPlan,
+          context
+        )
         leftExpand ++ rightExpand ++ cartesianProduct ++ joins
     }
   }
 
-  def planSinglePatternCartesian(qg: QueryGraph,
-                                 pattern: PatternRelationship,
-                                 start: String,
-                                 maybeStartPlan: Option[LogicalPlan],
-                                 maybeEndPlan: Option[LogicalPlan],
-                                 context: LogicalPlanningContext): Option[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
+  def planSinglePatternCartesian(
+    qg: QueryGraph,
+    pattern: PatternRelationship,
+    start: String,
+    maybeStartPlan: Option[LogicalPlan],
+    maybeEndPlan: Option[LogicalPlan],
+    context: LogicalPlanningContext
+  ): Option[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
     case (Some(startPlan), Some(endPlan)) =>
-      planSinglePatternSide(qg, pattern, context.logicalPlanProducer.planCartesianProduct(startPlan, endPlan, context), start, context)
+      planSinglePatternSide(
+        qg,
+        pattern,
+        context.logicalPlanProducer.planCartesianProduct(startPlan, endPlan, context),
+        start,
+        context
+      )
     case _ => None
   }
 
@@ -196,21 +246,31 @@ object SingleComponentPlanner {
   If there are hints and the query graph is small, joins have to be constructed as an alternative here, otherwise the hints might not be able to be fulfilled.
   Creating joins if the query graph is larger will lead to too many joins.
    */
-  def planSinglePatternJoins(qg: QueryGraph,
-                             leftExpand: Option[LogicalPlan],
-                             rightExpand: Option[LogicalPlan],
-                             startJoinNodes: Set[String],
-                             endJoinNodes: Set[String],
-                             maybeStartPlan: Option[LogicalPlan],
-                             maybeEndPlan: Option[LogicalPlan],
-                             context: LogicalPlanningContext): Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
+  def planSinglePatternJoins(
+    qg: QueryGraph,
+    leftExpand: Option[LogicalPlan],
+    rightExpand: Option[LogicalPlan],
+    startJoinNodes: Set[String],
+    endJoinNodes: Set[String],
+    maybeStartPlan: Option[LogicalPlan],
+    maybeEndPlan: Option[LogicalPlan],
+    context: LogicalPlanningContext
+  ): Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
     case (Some(startPlan), Some(endPlan)) if qg.hints.nonEmpty && qg.size == 1 =>
       val startJoinHints = qg.joinHints.filter(_.coveredBy(startJoinNodes))
       val endJoinHints = qg.joinHints.filter(_.coveredBy(endJoinNodes))
-      val join1a = leftExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, expand, endPlan, endJoinHints, context))
-      val join1b = leftExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, endPlan, expand, endJoinHints, context))
-      val join2a = rightExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, startPlan, expand, startJoinHints, context))
-      val join2b = rightExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, expand, startPlan, startJoinHints, context))
+      val join1a = leftExpand.map(expand =>
+        context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, expand, endPlan, endJoinHints, context)
+      )
+      val join1b = leftExpand.map(expand =>
+        context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, endPlan, expand, endJoinHints, context)
+      )
+      val join2a = rightExpand.map(expand =>
+        context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, startPlan, expand, startJoinHints, context)
+      )
+      val join2b = rightExpand.map(expand =>
+        context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, expand, startPlan, startJoinHints, context)
+      )
       join1a ++ join1b ++ join2a ++ join2b
     case _ => None
   }

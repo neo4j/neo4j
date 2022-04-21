@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.Ref
 
 case object noReferenceEqualityAmongVariables extends ValidatingCondition {
+
   def apply(that: Any): Seq[String] = {
     val ids = collectNodesOfType[Variable]().apply(that).map(Ref[Variable])
     ids.groupBy(x => x).collect {

@@ -21,7 +21,6 @@ package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
@@ -30,62 +29,53 @@ import org.neo4j.io.fs.watcher.resource.WatchedResource;
  * File watcher that will perform watching activities using specific file watcher in case if
  * requested resource will match to provided {@link SelectiveFileWatcher#specialPath}.
  */
-public class SelectiveFileWatcher implements FileWatcher
-{
+public class SelectiveFileWatcher implements FileWatcher {
     private final Path specialPath;
     private final FileWatcher defaultFileWatcher;
     private final FileWatcher specificFileWatcher;
 
-    SelectiveFileWatcher( Path specialPath, FileWatcher defaultFileWatcher, FileWatcher specificFileWatcher )
-    {
+    SelectiveFileWatcher(Path specialPath, FileWatcher defaultFileWatcher, FileWatcher specificFileWatcher) {
         this.specialPath = specialPath;
         this.defaultFileWatcher = defaultFileWatcher;
         this.specificFileWatcher = specificFileWatcher;
     }
 
     @Override
-    public WatchedResource watch( Path path ) throws IOException
-    {
-        return chooseFileWatcher( path ).watch( path );
+    public WatchedResource watch(Path path) throws IOException {
+        return chooseFileWatcher(path).watch(path);
     }
 
     @Override
-    public void addFileWatchEventListener( FileWatchEventListener listener )
-    {
-        defaultFileWatcher.addFileWatchEventListener( listener );
-        specificFileWatcher.addFileWatchEventListener( listener );
+    public void addFileWatchEventListener(FileWatchEventListener listener) {
+        defaultFileWatcher.addFileWatchEventListener(listener);
+        specificFileWatcher.addFileWatchEventListener(listener);
     }
 
     @Override
-    public void removeFileWatchEventListener( FileWatchEventListener listener )
-    {
-        defaultFileWatcher.removeFileWatchEventListener( listener );
-        specificFileWatcher.removeFileWatchEventListener( listener );
+    public void removeFileWatchEventListener(FileWatchEventListener listener) {
+        defaultFileWatcher.removeFileWatchEventListener(listener);
+        specificFileWatcher.removeFileWatchEventListener(listener);
     }
 
     @Override
-    public void stopWatching()
-    {
+    public void stopWatching() {
         defaultFileWatcher.stopWatching();
         specificFileWatcher.stopWatching();
     }
 
     @Override
-    public void startWatching() throws InterruptedException
-    {
+    public void startWatching() throws InterruptedException {
         defaultFileWatcher.startWatching();
         specificFileWatcher.startWatching();
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         defaultFileWatcher.close();
         specificFileWatcher.close();
     }
 
-    private FileWatcher chooseFileWatcher( Path path )
-    {
-        return path.equals( specialPath ) ? specificFileWatcher : defaultFileWatcher;
+    private FileWatcher chooseFileWatcher(Path path) {
+        return path.equals(specialPath) ? specificFileWatcher : defaultFileWatcher;
     }
 }

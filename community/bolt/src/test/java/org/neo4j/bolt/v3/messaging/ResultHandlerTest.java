@@ -19,11 +19,15 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
+import static org.neo4j.values.storable.Values.values;
 
 import java.io.IOException;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.messaging.BoltResponseMessageRecorder;
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -34,81 +38,65 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
-import static org.neo4j.values.storable.Values.values;
-
-class ResultHandlerTest
-{
+class ResultHandlerTest {
     @Test
-    void shouldPullTheResult() throws Throwable
-    {
+    void shouldPullTheResult() throws Throwable {
         BoltResponseMessageRecorder messageWriter = new BoltResponseMessageRecorder();
-        ResultHandler handler = new ResultHandler( messageWriter, mock( BoltConnection.class ), NullLog.getInstance() );
+        ResultHandler handler = new ResultHandler(messageWriter, mock(BoltConnection.class), NullLog.getInstance());
 
-        Value[] record1 = values( "a", "b", "c" );
-        Value[] record2 = values( "1", "2", "3" );
-        BoltResult result = new TestBoltResult( record1, record2 );
+        Value[] record1 = values("a", "b", "c");
+        Value[] record2 = values("1", "2", "3");
+        BoltResult result = new TestBoltResult(record1, record2);
 
-        handler.onPullRecords( result, STREAM_LIMIT_UNLIMITED );
+        handler.onPullRecords(result, STREAM_LIMIT_UNLIMITED);
         handler.onFinish();
 
         List<ResponseMessage> messages = messageWriter.asList();
-        assertThat( messages.size() ).isEqualTo( 3 );
-        assertThat( messages.get( 0 ) ).isEqualTo( new RecordMessage( record1 ) );
-        assertThat( messages.get( 1 ) ).isEqualTo( new RecordMessage( record2 ) );
-        assertThat( messages.get( 2 ) ).isInstanceOf( SuccessMessage.class );
+        assertThat(messages.size()).isEqualTo(3);
+        assertThat(messages.get(0)).isEqualTo(new RecordMessage(record1));
+        assertThat(messages.get(1)).isEqualTo(new RecordMessage(record2));
+        assertThat(messages.get(2)).isInstanceOf(SuccessMessage.class);
     }
 
     @Test
-    void shouldDiscardTheResult() throws Throwable
-    {
+    void shouldDiscardTheResult() throws Throwable {
         BoltResponseMessageRecorder messageWriter = new BoltResponseMessageRecorder();
-        ResultHandler handler = new ResultHandler( messageWriter, mock( BoltConnection.class ), NullLog.getInstance() );
+        ResultHandler handler = new ResultHandler(messageWriter, mock(BoltConnection.class), NullLog.getInstance());
 
-        Value[] record1 = values( "a", "b", "c" );
-        Value[] record2 = values( "1", "2", "3" );
-        BoltResult result = new TestBoltResult( record1, record2 );
+        Value[] record1 = values("a", "b", "c");
+        Value[] record2 = values("1", "2", "3");
+        BoltResult result = new TestBoltResult(record1, record2);
 
-        handler.onDiscardRecords( result, STREAM_LIMIT_UNLIMITED );
+        handler.onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
         handler.onFinish();
 
         List<ResponseMessage> messages = messageWriter.asList();
-        assertThat( messages.size() ).isEqualTo( 1 );
-        assertThat( messages.get( 0 ) ).isInstanceOf( SuccessMessage.class );
+        assertThat(messages.size()).isEqualTo(1);
+        assertThat(messages.get(0)).isInstanceOf(SuccessMessage.class);
     }
 
-    private static class TestBoltResult implements BoltResult
-    {
+    private static class TestBoltResult implements BoltResult {
         private final List<AnyValue[]> records;
 
-        private TestBoltResult( AnyValue[]... records )
-        {
-            this.records = asList( records );
+        private TestBoltResult(AnyValue[]... records) {
+            this.records = asList(records);
         }
 
         @Override
-        public String[] fieldNames()
-        {
+        public String[] fieldNames() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean handleRecords( RecordConsumer recordConsumer, long size ) throws IOException
-        {
-            if ( records.isEmpty() )
-            {
+        public boolean handleRecords(RecordConsumer recordConsumer, long size) throws IOException {
+            if (records.isEmpty()) {
                 return false;
             }
 
-            for ( AnyValue[] record : records )
-            {
-                recordConsumer.beginRecord( record.length );
-                for ( AnyValue anyValue : record )
-                {
-                    recordConsumer.consumeField( anyValue );
+            for (AnyValue[] record : records) {
+                recordConsumer.beginRecord(record.length);
+                for (AnyValue anyValue : record) {
+                    recordConsumer.consumeField(anyValue);
                 }
                 recordConsumer.endRecord();
             }
@@ -116,19 +104,15 @@ class ResultHandlerTest
         }
 
         @Override
-        public boolean discardRecords( DiscardingRecordConsumer recordConsumer, long size )
-        {
+        public boolean discardRecords(DiscardingRecordConsumer recordConsumer, long size) {
             return false;
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "TestBoltResult{" + "records=" + records + '}';
         }
     }

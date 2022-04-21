@@ -21,31 +21,26 @@
 package org.neo4j.graphdb.schema;
 
 import org.junit.jupiter.api.BeforeEach;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
 @ImpermanentDbmsExtension
-class UpdateDeletedRelationshipTokenIndexIT extends UpdateDeletedRelationshipIndexBase
-{
+class UpdateDeletedRelationshipTokenIndexIT extends UpdateDeletedRelationshipIndexBase {
 
     @BeforeEach
-    void before()
-    {
-        try ( var tx = db.beginTx() )
-        {
-            tx.schema().getIndexes().forEach( IndexDefinition::drop );
+    void before() {
+        try (var tx = db.beginTx()) {
+            tx.schema().getIndexes().forEach(IndexDefinition::drop);
             tx.commit();
         }
     }
 
     @Override
-    protected IndexDefinition indexCreate()
-    {
+    protected IndexDefinition indexCreate() {
         IndexDefinition indexDefinition;
-        try ( Transaction tx = db.beginTx() )
-        {
-            indexDefinition = tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).create();
+        try (Transaction tx = db.beginTx()) {
+            indexDefinition =
+                    tx.schema().indexFor(AnyTokens.ANY_RELATIONSHIP_TYPES).create();
             tx.commit();
         }
         return indexDefinition;

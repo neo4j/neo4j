@@ -19,10 +19,6 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.csv.reader.Source.Chunk;
-
 import static java.util.Arrays.copyOfRange;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,50 +26,47 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.csv.reader.HeaderSkipper.NO_SKIP;
 
-class ClosestNewLineChunkerTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.csv.reader.Source.Chunk;
+
+class ClosestNewLineChunkerTest {
     @Test
-    void shouldBackUpChunkToClosestNewline() throws Exception
-    {
+    void shouldBackUpChunkToClosestNewline() throws Exception {
         // GIVEN
-        CharReadable reader = Readables.wrap( "1234567\n8901234\n5678901234" );
+        CharReadable reader = Readables.wrap("1234567\n8901234\n5678901234");
         // (next chunks):                                   ^            ^
         // (actual chunks):                             ^        ^
-        try ( ClosestNewLineChunker source = new ClosestNewLineChunker( reader, 12, NO_SKIP ) )
-        {
+        try (ClosestNewLineChunker source = new ClosestNewLineChunker(reader, 12, NO_SKIP)) {
             // WHEN
             Chunk chunk = source.newChunk();
-            assertTrue( source.nextChunk( chunk ) );
-            assertArrayEquals( "1234567\n".toCharArray(), charactersOf( chunk ) );
-            assertTrue( source.nextChunk( chunk ) );
-            assertArrayEquals( "8901234\n".toCharArray(), charactersOf( chunk ) );
-            assertTrue( source.nextChunk( chunk ) );
-            assertArrayEquals( "5678901234".toCharArray(), charactersOf( chunk ) );
+            assertTrue(source.nextChunk(chunk));
+            assertArrayEquals("1234567\n".toCharArray(), charactersOf(chunk));
+            assertTrue(source.nextChunk(chunk));
+            assertArrayEquals("8901234\n".toCharArray(), charactersOf(chunk));
+            assertTrue(source.nextChunk(chunk));
+            assertArrayEquals("5678901234".toCharArray(), charactersOf(chunk));
 
             // THEN
-            assertFalse( source.nextChunk( chunk ) );
+            assertFalse(source.nextChunk(chunk));
         }
     }
 
     @Test
-    void shouldFailIfNoNewlineInChunk() throws Exception
-    {
+    void shouldFailIfNoNewlineInChunk() throws Exception {
         // GIVEN
-        CharReadable reader = Readables.wrap( "1234567\n89012345678901234" );
+        CharReadable reader = Readables.wrap("1234567\n89012345678901234");
         // (next chunks):                                   ^
         // (actual chunks):                             ^
-        try ( ClosestNewLineChunker source = new ClosestNewLineChunker( reader, 12, NO_SKIP ) )
-        {
+        try (ClosestNewLineChunker source = new ClosestNewLineChunker(reader, 12, NO_SKIP)) {
             // WHEN
             Chunk chunk = source.newChunk();
-            assertTrue( source.nextChunk( chunk ) );
-            assertArrayEquals( "1234567\n".toCharArray(), charactersOf( chunk ) );
-            assertThrows( IllegalStateException.class, () -> assertFalse( source.nextChunk( chunk ) ) );
+            assertTrue(source.nextChunk(chunk));
+            assertArrayEquals("1234567\n".toCharArray(), charactersOf(chunk));
+            assertThrows(IllegalStateException.class, () -> assertFalse(source.nextChunk(chunk)));
         }
     }
 
-    private static char[] charactersOf( Chunk chunk )
-    {
-        return copyOfRange( chunk.data(), chunk.startPosition(), chunk.startPosition() + chunk.length() );
+    private static char[] charactersOf(Chunk chunk) {
+        return copyOfRange(chunk.data(), chunk.startPosition(), chunk.startPosition() + chunk.length());
     }
 }

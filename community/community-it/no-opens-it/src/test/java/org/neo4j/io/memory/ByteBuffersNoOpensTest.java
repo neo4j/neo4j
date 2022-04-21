@@ -19,55 +19,43 @@
  */
 package org.neo4j.io.memory;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.memory.LocalMemoryTracker;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 
-class ByteBuffersNoOpensTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.memory.LocalMemoryTracker;
+
+class ByteBuffersNoOpensTest {
     @Test
-    void trackMemoryAllocationsForNativeByteBuffers()
-    {
-        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0, null );
-        var byteBuffer = allocateDirect( 30, memoryTracker );
-        try
-        {
-            assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-            assertEquals( 30, memoryTracker.usedNativeMemory() );
-        }
-        finally
-        {
-            releaseBuffer( byteBuffer, memoryTracker );
+    void trackMemoryAllocationsForNativeByteBuffers() {
+        var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 100, 0, null);
+        var byteBuffer = allocateDirect(30, memoryTracker);
+        try {
+            assertEquals(0, memoryTracker.estimatedHeapMemory());
+            assertEquals(30, memoryTracker.usedNativeMemory());
+        } finally {
+            releaseBuffer(byteBuffer, memoryTracker);
         }
 
-        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-        assertEquals( 0, memoryTracker.usedNativeMemory() );
+        assertEquals(0, memoryTracker.estimatedHeapMemory());
+        assertEquals(0, memoryTracker.usedNativeMemory());
     }
 
     @Test
-    void trackMemoryAllocationsForHeapByteBuffers()
-    {
-        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0, null );
-        var byteBuffer = allocate( 30, memoryTracker );
-        try
-        {
-            assertEquals( 30, memoryTracker.estimatedHeapMemory() );
-            assertEquals( 0, memoryTracker.usedNativeMemory() );
-        }
-        finally
-        {
-            releaseBuffer( byteBuffer, memoryTracker );
+    void trackMemoryAllocationsForHeapByteBuffers() {
+        var memoryTracker = new LocalMemoryTracker(NO_TRACKING, 100, 0, null);
+        var byteBuffer = allocate(30, memoryTracker);
+        try {
+            assertEquals(30, memoryTracker.estimatedHeapMemory());
+            assertEquals(0, memoryTracker.usedNativeMemory());
+        } finally {
+            releaseBuffer(byteBuffer, memoryTracker);
         }
 
-        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-        assertEquals( 0, memoryTracker.usedNativeMemory() );
+        assertEquals(0, memoryTracker.estimatedHeapMemory());
+        assertEquals(0, memoryTracker.usedNativeMemory());
     }
 }
-

@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.ResourceLock;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Read;
@@ -39,8 +40,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
-
 /**
  * KernelAPIReadTestBase is the basis of read tests targeting the Kernel API.
  *
@@ -52,12 +51,11 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
  *
  * @param <ReadSupport> The test support for the current test.
  */
-@SuppressWarnings( "WeakerAccess" )
+@SuppressWarnings("WeakerAccess")
 @TestDirectoryExtension
-@TestInstance( TestInstance.Lifecycle.PER_CLASS )
-@ResourceLock( SHARED_RESOURCE )
-public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport>
-{
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ResourceLock(SHARED_RESOURCE)
+public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport> {
     protected static KernelAPIReadTestSupport testSupport;
     protected KernelTransaction tx;
     protected Read read;
@@ -79,7 +77,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
      *
      * @param graphDb a graph API which should be used to build the test graph
      */
-    public abstract void createTestGraph( GraphDatabaseService graphDb );
+    public abstract void createTestGraph(GraphDatabaseService graphDb);
 
     /**
      * Setup privileges in the system graph which all test in the class will be using. The graph is only built once,
@@ -87,60 +85,51 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
      *
      * @param graphDb a graph API which should be used to build the system test graph
      */
-    public void createSystemGraph( GraphDatabaseService graphDb )
-    {
-    }
+    public void createSystemGraph(GraphDatabaseService graphDb) {}
 
     @BeforeAll
-    public void setupGraph()
-    {
+    public void setupGraph() {
         testSupport = newTestSupport();
-        testSupport.setup( testDirectory.homePath(), this::createTestGraph, this::createSystemGraph );
+        testSupport.setup(testDirectory.homePath(), this::createTestGraph, this::createSystemGraph);
     }
 
     @BeforeEach
-    public void disableAuth() throws KernelException
-    {
-        changeUser( LoginContext.AUTH_DISABLED );
+    public void disableAuth() throws KernelException {
+        changeUser(LoginContext.AUTH_DISABLED);
     }
 
     @AfterEach
-    public void closeTransaction() throws Exception
-    {
+    public void closeTransaction() throws Exception {
         tx.commit();
         cursors.assertAllClosedAndReset();
     }
 
     @AfterAll
-    public static void tearDown()
-    {
+    public static void tearDown() {
         testSupport.tearDown();
     }
 
-    protected void changeUser( LoginContext loginContext ) throws KernelException
-    {
+    protected void changeUser(LoginContext loginContext) throws KernelException {
         Kernel kernel = testSupport.kernelToTest();
-        tx = beginTransaction( kernel, loginContext );
+        tx = beginTransaction(kernel, loginContext);
         token = tx.token();
         read = tx.dataRead();
         schemaRead = tx.schemaRead();
-        cursors = new ManagedTestCursors( tx.cursors() );
+        cursors = new ManagedTestCursors(tx.cursors());
     }
 
-    protected static KernelTransaction beginTransaction() throws TransactionFailureException
-    {
+    protected static KernelTransaction beginTransaction() throws TransactionFailureException {
         Kernel kernel = testSupport.kernelToTest();
-        return beginTransaction( kernel, LoginContext.AUTH_DISABLED );
+        return beginTransaction(kernel, LoginContext.AUTH_DISABLED);
     }
 
-    protected static KernelTransaction beginTransaction( LoginContext loginContext ) throws TransactionFailureException
-    {
+    protected static KernelTransaction beginTransaction(LoginContext loginContext) throws TransactionFailureException {
         Kernel kernel = testSupport.kernelToTest();
-        return beginTransaction( kernel, loginContext );
+        return beginTransaction(kernel, loginContext);
     }
 
-    private static KernelTransaction beginTransaction( Kernel kernel, LoginContext loginContext ) throws TransactionFailureException
-    {
-        return kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );
+    private static KernelTransaction beginTransaction(Kernel kernel, LoginContext loginContext)
+            throws TransactionFailureException {
+        return kernel.beginTransaction(KernelTransaction.Type.IMPLICIT, loginContext);
     }
 }

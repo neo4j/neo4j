@@ -43,11 +43,12 @@ object JavaccRule {
 
   def fromParser[T](runParser: Parser => T): JavaccRule[T] = fromQueryAndParser(identity, runParser)
 
-  def fromQueryAndParser[T](transformQuery: String => String, runParser: Parser => T): JavaccRule[T] = { queryText: String =>
-    val p = cypherJavaccParserFactory(transformQuery(queryText))
-    val res = runParser(p)
-    p.EndOfFile()
-    res
+  def fromQueryAndParser[T](transformQuery: String => String, runParser: Parser => T): JavaccRule[T] = {
+    queryText: String =>
+      val p = cypherJavaccParserFactory(transformQuery(queryText))
+      val res = runParser(p)
+      p.EndOfFile()
+      res
   }
 
   def CallClause: JavaccRule[Clause] = fromParser(_.CallClause())
@@ -86,7 +87,7 @@ object JavaccRule {
 
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 
-  //noinspection TypeAnnotation
+  // noinspection TypeAnnotation
   val cypherJavaccParserFactory = ParserFactory { queryText: String =>
     val charStream = new CypherCharStream(queryText)
     val astFactory = new Neo4jASTFactory(queryText, new AnonymousVariableNameGenerator())

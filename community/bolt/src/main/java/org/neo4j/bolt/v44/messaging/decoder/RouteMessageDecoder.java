@@ -19,10 +19,11 @@
  */
 package org.neo4j.bolt.v44.messaging.decoder;
 
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.packstream.Neo4jPack;
@@ -33,54 +34,50 @@ import org.neo4j.bolt.v44.messaging.request.RouteMessage;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
-public class RouteMessageDecoder implements RequestMessageDecoder
-{
+public class RouteMessageDecoder implements RequestMessageDecoder {
     public static final String DB_KEY = "db";
 
     private final BoltResponseHandler responseHandler;
     private final BookmarksParser bookmarksParser;
 
-    public RouteMessageDecoder( BoltResponseHandler responseHandler, BookmarksParser bookmarksParser )
-    {
+    public RouteMessageDecoder(BoltResponseHandler responseHandler, BookmarksParser bookmarksParser) {
         this.responseHandler = responseHandler;
         this.bookmarksParser = bookmarksParser;
     }
 
     @Override
-    public int signature()
-    {
+    public int signature() {
         return RouteMessage.SIGNATURE;
     }
 
     @Override
-    public BoltResponseHandler responseHandler()
-    {
+    public BoltResponseHandler responseHandler() {
         return this.responseHandler;
     }
 
     @Override
-    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
+    public RequestMessage decode(Neo4jPack.Unpacker unpacker) throws IOException {
         var routingContext = unpacker.unpackMap();
-        var bookmarkList = bookmarksParser.parseBookmarks( unpacker.unpack() );
+        var bookmarkList = bookmarksParser.parseBookmarks(unpacker.unpack());
 
         var meta = unpacker.unpackMap();
 
-        var databaseName = Optional.of( meta.get( DB_KEY ) )
-                                   .filter( any -> any != NO_VALUE && any instanceof TextValue )
-                                   .map( any -> ((TextValue) any).stringValue() )
-                                   .orElse( null );
+        var databaseName = Optional.of(meta.get(DB_KEY))
+                .filter(any -> any != NO_VALUE && any instanceof TextValue)
+                .map(any -> ((TextValue) any).stringValue())
+                .orElse(null);
 
-        var impersonatedUser = MessageMetadataParser.parseImpersonatedUser( meta );
+        var impersonatedUser = MessageMetadataParser.parseImpersonatedUser(meta);
 
-        return this.newRouteMessage( routingContext, bookmarkList, meta, databaseName, impersonatedUser );
+        return this.newRouteMessage(routingContext, bookmarkList, meta, databaseName, impersonatedUser);
     }
 
-    protected RequestMessage newRouteMessage( MapValue routingContext, List<Bookmark> bookmarkList, MapValue meta, String databaseName,
-                                              String impersonatedUser )
-    {
-        return new RouteMessage( routingContext, bookmarkList, databaseName, impersonatedUser );
+    protected RequestMessage newRouteMessage(
+            MapValue routingContext,
+            List<Bookmark> bookmarkList,
+            MapValue meta,
+            String databaseName,
+            String impersonatedUser) {
+        return new RouteMessage(routingContext, bookmarkList, databaseName, impersonatedUser);
     }
 }

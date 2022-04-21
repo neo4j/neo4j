@@ -19,10 +19,11 @@
  */
 package org.neo4j.internal.collector;
 
+import static java.lang.String.format;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -37,11 +38,8 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.values.ValueMapper;
 
-import static java.lang.String.format;
-
-@SuppressWarnings( "WeakerAccess" )
-public class DataCollectorProcedures
-{
+@SuppressWarnings("WeakerAccess")
+public class DataCollectorProcedures {
     @Context
     public DataCollector dataCollector;
 
@@ -56,130 +54,128 @@ public class DataCollectorProcedures
 
     @Admin
     @SystemProcedure
-    @Description( "Retrieve statistical data about the current database. Valid sections are '" +
-                  Sections.GRAPH_COUNTS + "', '" + Sections.TOKENS + "', '" + Sections.QUERIES + "', '" + Sections.META + "'" )
-    @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
-    public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section,
-                                            @Name( value = "config", defaultValue = "{}" ) Map<String, Object> config )
-            throws InvalidArgumentsException, IndexNotFoundKernelException, TransactionFailureException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Retrieve statistical data about the current database. Valid sections are '" + Sections.GRAPH_COUNTS
+            + "', '" + Sections.TOKENS + "', '" + Sections.QUERIES + "', '" + Sections.META + "'")
+    @Procedure(name = "db.stats.retrieve", mode = Mode.READ)
+    public Stream<RetrieveResult> retrieve(
+            @Name(value = "section") String section,
+            @Name(value = "config", defaultValue = "{}") Map<String, Object> config)
+            throws InvalidArgumentsException, IndexNotFoundKernelException, TransactionFailureException {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
         String upperSection = section.toUpperCase();
-        return switch ( upperSection )
-                {
-                    case Sections.GRAPH_COUNTS -> GraphCountsSection.retrieve( dataCollector.getKernel(), Anonymizer.PLAIN_TEXT );
-                    case Sections.TOKENS -> TokensSection.retrieve( dataCollector.getKernel() );
-                    case Sections.META -> MetaSection.retrieve( null, dataCollector.getKernel(), dataCollector.getQueryCollector().numSilentQueryDrops() );
-                    case Sections.QUERIES ->
-                            QueriesSection.retrieve( dataCollector.getQueryCollector().getData(), new PlainText( (ValueMapper.JavaMapper) valueMapper ),
-                                    RetrieveConfig.of( config ).maxInvocations );
-                    default -> throw Sections.unknownSectionException( section );
-                };
+        return switch (upperSection) {
+            case Sections.GRAPH_COUNTS -> GraphCountsSection.retrieve(dataCollector.getKernel(), Anonymizer.PLAIN_TEXT);
+            case Sections.TOKENS -> TokensSection.retrieve(dataCollector.getKernel());
+            case Sections.META -> MetaSection.retrieve(
+                    null,
+                    dataCollector.getKernel(),
+                    dataCollector.getQueryCollector().numSilentQueryDrops());
+            case Sections.QUERIES -> QueriesSection.retrieve(
+                    dataCollector.getQueryCollector().getData(),
+                    new PlainText((ValueMapper.JavaMapper) valueMapper),
+                    RetrieveConfig.of(config).maxInvocations);
+            default -> throw Sections.unknownSectionException(section);
+        };
     }
 
     @Admin
     @SystemProcedure
-    @Description( "Retrieve all available statistical data about the current database, in an anonymized form." )
-    @Procedure( name = "db.stats.retrieveAllAnonymized", mode = Mode.READ )
-    public Stream<RetrieveResult> retrieveAllAnonymized( @Name( value = "graphToken" ) String graphToken,
-                                                         @Name( value = "config", defaultValue = "{}" ) Map<String, Object> config )
-            throws IndexNotFoundKernelException, TransactionFailureException, InvalidArgumentsException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Retrieve all available statistical data about the current database, in an anonymized form.")
+    @Procedure(name = "db.stats.retrieveAllAnonymized", mode = Mode.READ)
+    public Stream<RetrieveResult> retrieveAllAnonymized(
+            @Name(value = "graphToken") String graphToken,
+            @Name(value = "config", defaultValue = "{}") Map<String, Object> config)
+            throws IndexNotFoundKernelException, TransactionFailureException, InvalidArgumentsException {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
-        if ( graphToken == null || graphToken.equals( "" ) )
-        {
-            throw new InvalidArgumentsException( "Graph token must be a non-empty string" );
+        if (graphToken == null || graphToken.equals("")) {
+            throw new InvalidArgumentsException("Graph token must be a non-empty string");
         }
 
-        return Stream.of( MetaSection.retrieve( graphToken, dataCollector.getKernel(), dataCollector.getQueryCollector().numSilentQueryDrops() ),
-                          GraphCountsSection.retrieve( dataCollector.getKernel(), Anonymizer.IDS ),
-                          QueriesSection.retrieve( dataCollector.getQueryCollector().getData(),
-                                                   new IdAnonymizer( transaction.tokenRead() ),
-                                                   RetrieveConfig.of( config ).maxInvocations )
-            ).flatMap( x -> x );
+        return Stream.of(
+                        MetaSection.retrieve(
+                                graphToken,
+                                dataCollector.getKernel(),
+                                dataCollector.getQueryCollector().numSilentQueryDrops()),
+                        GraphCountsSection.retrieve(dataCollector.getKernel(), Anonymizer.IDS),
+                        QueriesSection.retrieve(
+                                dataCollector.getQueryCollector().getData(),
+                                new IdAnonymizer(transaction.tokenRead()),
+                                RetrieveConfig.of(config).maxInvocations))
+                .flatMap(x -> x);
     }
 
     @Admin
     @SystemProcedure
-    @Description( "Retrieve the status of all available collector daemons, for this database." )
-    @Procedure( name = "db.stats.status", mode = Mode.READ )
-    public Stream<StatusResult> status()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Retrieve the status of all available collector daemons, for this database.")
+    @Procedure(name = "db.stats.status", mode = Mode.READ)
+    public Stream<StatusResult> status() {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
         CollectorStateMachine.Status status = dataCollector.getQueryCollector().status();
-        return Stream.of( new StatusResult( Sections.QUERIES, status.message(), Collections.emptyMap() ) );
+        return Stream.of(new StatusResult(Sections.QUERIES, status.message(), Collections.emptyMap()));
     }
 
     @Admin
     @SystemProcedure
-    @Description( "Start data collection of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
-    @Procedure( name = "db.stats.collect", mode = Mode.READ )
-    public Stream<ActionResult> collect( @Name( value = "section" ) String section,
-                                         @Name( value = "config", defaultValue = "{}" ) Map<String, Object> config ) throws InvalidArgumentsException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Start data collection of a given data section. Valid sections are '" + Sections.QUERIES + "'")
+    @Procedure(name = "db.stats.collect", mode = Mode.READ)
+    public Stream<ActionResult> collect(
+            @Name(value = "section") String section,
+            @Name(value = "config", defaultValue = "{}") Map<String, Object> config)
+            throws InvalidArgumentsException {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
-        CollectorStateMachine.Result result = collectorStateMachine( section ).collect( config );
-        return Stream.of( new ActionResult( section, result.success(), result.message() ) );
+        CollectorStateMachine.Result result = collectorStateMachine(section).collect(config);
+        return Stream.of(new ActionResult(section, result.success(), result.message()));
     }
 
     @Admin
     @SystemProcedure
-    @Description( "Stop data collection of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
-    @Procedure( name = "db.stats.stop", mode = Mode.READ )
-    public Stream<ActionResult> stop( @Name( value = "section" ) String section ) throws InvalidArgumentsException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Stop data collection of a given data section. Valid sections are '" + Sections.QUERIES + "'")
+    @Procedure(name = "db.stats.stop", mode = Mode.READ)
+    public Stream<ActionResult> stop(@Name(value = "section") String section) throws InvalidArgumentsException {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
-        CollectorStateMachine.Result result = collectorStateMachine( section ).stop( Long.MAX_VALUE );
-        return Stream.of( new ActionResult( section, result.success(), result.message() ) );
+        CollectorStateMachine.Result result = collectorStateMachine(section).stop(Long.MAX_VALUE);
+        return Stream.of(new ActionResult(section, result.success(), result.message()));
     }
 
     @Admin
     @SystemProcedure
-    @Description( "Clear collected data of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
-    @Procedure( name = "db.stats.clear", mode = Mode.READ )
-    public Stream<ActionResult> clear( @Name( value = "section" ) String section ) throws InvalidArgumentsException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
+    @Description("Clear collected data of a given data section. Valid sections are '" + Sections.QUERIES + "'")
+    @Procedure(name = "db.stats.clear", mode = Mode.READ)
+    public Stream<ActionResult> clear(@Name(value = "section") String section) throws InvalidArgumentsException {
+        if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
 
-        CollectorStateMachine.Result result = collectorStateMachine( section ).clear();
-        return Stream.of( new ActionResult( section, result.success(), result.message() ) );
+        CollectorStateMachine.Result result = collectorStateMachine(section).clear();
+        return Stream.of(new ActionResult(section, result.success(), result.message()));
     }
 
-    private QueryCollector collectorStateMachine( String section ) throws InvalidArgumentsException
-    {
-        switch ( section )
-        {
-        case Sections.TOKENS:
-        case Sections.GRAPH_COUNTS:
-            throw new InvalidArgumentsException(
-                    format( "Section '%s' does not have to be explicitly collected, it can always be directly retrieved.", section ) );
-        case Sections.QUERIES:
-            return dataCollector.getQueryCollector();
-        default:
-            throw Sections.unknownSectionException( section );
+    private QueryCollector collectorStateMachine(String section) throws InvalidArgumentsException {
+        switch (section) {
+            case Sections.TOKENS:
+            case Sections.GRAPH_COUNTS:
+                throw new InvalidArgumentsException(format(
+                        "Section '%s' does not have to be explicitly collected, it can always be directly retrieved.",
+                        section));
+            case Sections.QUERIES:
+                return dataCollector.getQueryCollector();
+            default:
+                throw Sections.unknownSectionException(section);
         }
     }
 }

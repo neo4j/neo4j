@@ -20,15 +20,13 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.neo4j.util.VisibleForTesting;
 
 /**
  * Simplistic latch service which uses a {@link ConcurrentHashMap} to keep active latches.
  */
-public class TreeNodeLatchService
-{
-    private final ConcurrentHashMap<Long,LongSpinLatch> latches = new ConcurrentHashMap<>();
+public class TreeNodeLatchService {
+    private final ConcurrentHashMap<Long, LongSpinLatch> latches = new ConcurrentHashMap<>();
 
     /**
      * Acquires a read latch for the {@code treeNodeId} and returns a {@link LongSpinLatch} instance which can further manipulate
@@ -36,13 +34,10 @@ public class TreeNodeLatchService
      * @param treeNodeId tree node id to acquire read latch for.
      * @return the latch for the tree node id.
      */
-    LongSpinLatch acquireRead( long treeNodeId )
-    {
-        while ( true )
-        {
-            LongSpinLatch latch = latches.computeIfAbsent( treeNodeId, id -> new LongSpinLatch( id, latches::remove ) );
-            if ( latch.acquireRead() > 0 )
-            {
+    LongSpinLatch acquireRead(long treeNodeId) {
+        while (true) {
+            LongSpinLatch latch = latches.computeIfAbsent(treeNodeId, id -> new LongSpinLatch(id, latches::remove));
+            if (latch.acquireRead() > 0) {
                 return latch;
             }
         }
@@ -54,21 +49,17 @@ public class TreeNodeLatchService
      * @param treeNodeId tree node id to acquire write latch for.
      * @return the latch for the tree node id.
      */
-    LongSpinLatch acquireWrite( long treeNodeId )
-    {
-        while ( true )
-        {
-            LongSpinLatch latch = latches.computeIfAbsent( treeNodeId, id -> new LongSpinLatch( id, latches::remove ) );
-            if ( latch.acquireWrite() )
-            {
+    LongSpinLatch acquireWrite(long treeNodeId) {
+        while (true) {
+            LongSpinLatch latch = latches.computeIfAbsent(treeNodeId, id -> new LongSpinLatch(id, latches::remove));
+            if (latch.acquireWrite()) {
                 return latch;
             }
         }
     }
 
     @VisibleForTesting
-    int size()
-    {
+    int size() {
         return latches.size();
     }
 }

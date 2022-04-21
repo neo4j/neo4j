@@ -19,8 +19,9 @@
  */
 package org.neo4j.values;
 
-import java.util.Arrays;
+import static java.lang.String.format;
 
+import java.util.Arrays;
 import org.neo4j.values.storable.BufferValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -30,13 +31,9 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-import static java.lang.String.format;
+public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueWriter<RuntimeException> {
 
-public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueWriter<RuntimeException>
-{
-
-    enum SpecialKind
-    {
+    enum SpecialKind {
         WriteNode,
         WriteNodeReference,
         EndNode,
@@ -54,163 +51,137 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         EndList,
     }
 
-    public static class Special
-    {
+    public static class Special {
         final SpecialKind kind;
         final String key;
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( o == null || getClass() != o.getClass() )
-            {
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
 
             Special special = (Special) o;
-            return kind == special.kind && key.equals( special.key );
+            return kind == special.kind && key.equals(special.key);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return 31 * kind.hashCode() + key.hashCode();
         }
 
-        Special( SpecialKind kind, int key )
-        {
+        Special(SpecialKind kind, int key) {
             this.kind = kind;
-            this.key = Integer.toString( key );
+            this.key = Integer.toString(key);
         }
 
         @Override
-        public String toString()
-        {
-            return format( "Special(%s)", key );
+        public String toString() {
+            return format("Special(%s)", key);
         }
     }
 
     @Override
-    public EntityMode entityMode()
-    {
+    public EntityMode entityMode() {
         return EntityMode.FULL;
     }
 
     @Override
-    public void writeNodeReference( long nodeId )
-    {
-        buffer.add( Specials.writeNodeReference( nodeId ) );
+    public void writeNodeReference(long nodeId) {
+        buffer.add(Specials.writeNodeReference(nodeId));
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray labels, MapValue properties, boolean ignored ) throws RuntimeException
-    {
-        buffer.add( Specials.writeNode( nodeId, labels, properties ) );
+    public void writeNode(long nodeId, TextArray labels, MapValue properties, boolean ignored) throws RuntimeException {
+        buffer.add(Specials.writeNode(nodeId, labels, properties));
     }
 
     @Override
-    public void writeRelationshipReference( long relId )
-    {
-        buffer.add( Specials.writeRelationshipReference( relId ) );
+    public void writeRelationshipReference(long relId) {
+        buffer.add(Specials.writeRelationshipReference(relId));
     }
 
     @Override
-    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored )
-            throws RuntimeException
-    {
-        buffer.add( Specials.writeRelationship( relId, startNodeId, endNodeId, type, properties ) );
+    public void writeRelationship(
+            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored)
+            throws RuntimeException {
+        buffer.add(Specials.writeRelationship(relId, startNodeId, endNodeId, type, properties));
     }
 
     @Override
-    public void beginMap( int size )
-    {
-        buffer.add( Specials.beginMap( size ) );
+    public void beginMap(int size) {
+        buffer.add(Specials.beginMap(size));
     }
 
     @Override
-    public void endMap()
-    {
-        buffer.add( Specials.endMap() );
+    public void endMap() {
+        buffer.add(Specials.endMap());
     }
 
     @Override
-    public void beginList( int size )
-    {
-        buffer.add( Specials.beginList( size ) );
+    public void beginList(int size) {
+        buffer.add(Specials.beginList(size));
     }
 
     @Override
-    public void endList()
-    {
-        buffer.add( Specials.endList() );
+    public void endList() {
+        buffer.add(Specials.endList());
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws RuntimeException
-    {
-        buffer.add( Specials.writePath( nodes, relationships ) );
+    public void writePath(NodeValue[] nodes, RelationshipValue[] relationships) throws RuntimeException {
+        buffer.add(Specials.writePath(nodes, relationships));
     }
 
     @Override
-    public void writePathReference( long[] nodes, long[] relationships ) throws RuntimeException
-    {
-        buffer.add( Specials.writePathReference( nodes, relationships ) );
+    public void writePathReference(long[] nodes, long[] relationships) throws RuntimeException {
+        buffer.add(Specials.writePathReference(nodes, relationships));
     }
 
-    public static class Specials
-    {
+    public static class Specials {
 
-        public static Special writeNode( long nodeId, TextArray labels, MapValue properties )
-        {
-            return new Special( SpecialKind.WriteNode, Arrays.hashCode( new Object[]{nodeId, properties} ) +
-                                                       31 * labels.hashCode() );
+        public static Special writeNode(long nodeId, TextArray labels, MapValue properties) {
+            return new Special(
+                    SpecialKind.WriteNode, Arrays.hashCode(new Object[] {nodeId, properties}) + 31 * labels.hashCode());
         }
 
-        public static Special writeRelationship( long edgeId, long startNodeId, long endNodeId, TextValue type,
-                MapValue properties )
-        {
-            return new Special( SpecialKind.WriteRelationship,
-                    Arrays.hashCode( new Object[]{edgeId, startNodeId, endNodeId, type, properties} ) );
+        public static Special writeRelationship(
+                long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties) {
+            return new Special(
+                    SpecialKind.WriteRelationship,
+                    Arrays.hashCode(new Object[] {edgeId, startNodeId, endNodeId, type, properties}));
         }
 
-        public static Special writePath( VirtualNodeValue[] nodes, VirtualRelationshipValue[] edges )
-        {
-            return new Special( SpecialKind.WritePath, Arrays.hashCode( nodes ) + 31 * Arrays.hashCode( edges ) );
+        public static Special writePath(VirtualNodeValue[] nodes, VirtualRelationshipValue[] edges) {
+            return new Special(SpecialKind.WritePath, Arrays.hashCode(nodes) + 31 * Arrays.hashCode(edges));
         }
 
-        public static Special writePathReference( long[] nodes, long[] edges )
-        {
-            return new Special( SpecialKind.WritePathReference, Arrays.hashCode( nodes ) + 31 * Arrays.hashCode( edges ) );
+        public static Special writePathReference(long[] nodes, long[] edges) {
+            return new Special(SpecialKind.WritePathReference, Arrays.hashCode(nodes) + 31 * Arrays.hashCode(edges));
         }
 
-        public static Special writeNodeReference( long nodeId )
-        {
-            return new Special( SpecialKind.WriteNodeReference, (int) nodeId );
+        public static Special writeNodeReference(long nodeId) {
+            return new Special(SpecialKind.WriteNodeReference, (int) nodeId);
         }
 
-        public static Special writeRelationshipReference( long edgeId )
-        {
-            return new Special( SpecialKind.WriteRelationshipReference, (int) edgeId );
+        public static Special writeRelationshipReference(long edgeId) {
+            return new Special(SpecialKind.WriteRelationshipReference, (int) edgeId);
         }
 
-        public static Special beginMap( int size )
-        {
-            return new Special( SpecialKind.BeginMap, size );
+        public static Special beginMap(int size) {
+            return new Special(SpecialKind.BeginMap, size);
         }
 
-        public static Special endMap()
-        {
-            return new Special( SpecialKind.EndMap, 0 );
+        public static Special endMap() {
+            return new Special(SpecialKind.EndMap, 0);
         }
 
-        public static Special beginList( int size )
-        {
-            return new Special( SpecialKind.BeginList, size );
+        public static Special beginList(int size) {
+            return new Special(SpecialKind.BeginList, size);
         }
 
-        public static Special endList()
-        {
-            return new Special( SpecialKind.EndList, 0 );
+        public static Special endList() {
+            return new Special(SpecialKind.EndList, 0);
         }
     }
 }

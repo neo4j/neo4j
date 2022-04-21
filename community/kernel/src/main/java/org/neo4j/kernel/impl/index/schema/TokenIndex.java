@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Consumer;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -43,10 +43,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.util.Preconditions;
 
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-
-public class TokenIndex implements ConsistencyCheckable
-{
+public class TokenIndex implements ConsistencyCheckable {
     /**
      * Written in header to indicate native token index is clean
      *
@@ -54,6 +51,7 @@ public class TokenIndex implements ConsistencyCheckable
      * to be able to handle the switch from old scan stores without rebuilding.
      */
     private static final byte CLEAN = (byte) 0x00;
+
     static final byte ONLINE = CLEAN;
 
     /**
@@ -63,6 +61,7 @@ public class TokenIndex implements ConsistencyCheckable
      * to be able to handle the switch from old scan stores without rebuilding.
      */
     private static final byte NEEDS_REBUILDING = (byte) 0x01;
+
     static final byte POPULATING = NEEDS_REBUILDING;
 
     /**
@@ -113,7 +112,7 @@ public class TokenIndex implements ConsistencyCheckable
     /**
      * The actual index which backs this token index.
      */
-    GBPTree<TokenScanKey,TokenScanValue> index;
+    GBPTree<TokenScanKey, TokenScanValue> index;
 
     /**
      * The single instance of {@link TokenIndexUpdater} used for updates.
@@ -135,9 +134,11 @@ public class TokenIndex implements ConsistencyCheckable
      */
     private final IndexDescriptor monitoringDescriptor;
 
-    public TokenIndex( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor,
-                       ImmutableSet<OpenOption> openOptions )
-    {
+    public TokenIndex(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexDescriptor descriptor,
+            ImmutableSet<OpenOption> openOptions) {
         this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
         this.monitors = databaseIndexContext.monitors;
         this.monitorTag = databaseIndexContext.monitorTag;
@@ -151,58 +152,59 @@ public class TokenIndex implements ConsistencyCheckable
         this.openOptions = openOptions;
     }
 
-    void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
-    {
+    void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter) {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
-        index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER, headerWriter,
-                recoveryCleanupWorkCollector, readOnlyChecker, openOptions, databaseName, tokenStoreName, contextFactory );
+        index = new GBPTree<>(
+                pageCache,
+                indexFiles.getStoreFile(),
+                new TokenScanLayout(),
+                monitor,
+                NO_HEADER_READER,
+                headerWriter,
+                recoveryCleanupWorkCollector,
+                readOnlyChecker,
+                openOptions,
+                databaseName,
+                tokenStoreName,
+                contextFactory);
     }
 
-    void instantiateUpdater()
-    {
-        singleUpdater = new TokenIndexUpdater( 1_000 );
+    void instantiateUpdater() {
+        singleUpdater = new TokenIndexUpdater(1_000);
     }
 
-    private GBPTree.Monitor treeMonitor()
-    {
-        GBPTree.Monitor treeMonitor = monitors.newMonitor( GBPTree.Monitor.class, monitorTag );
-        IndexProvider.Monitor indexMonitor = monitors.newMonitor( IndexProvider.Monitor.class, monitorTag );
-        return new IndexMonitorAdaptor( treeMonitor, indexMonitor, indexFiles, monitoringDescriptor );
+    private GBPTree.Monitor treeMonitor() {
+        GBPTree.Monitor treeMonitor = monitors.newMonitor(GBPTree.Monitor.class, monitorTag);
+        IndexProvider.Monitor indexMonitor = monitors.newMonitor(IndexProvider.Monitor.class, monitorTag);
+        return new IndexMonitorAdaptor(treeMonitor, indexMonitor, indexFiles, monitoringDescriptor);
     }
 
-    private void ensureDirectoryExist()
-    {
+    private void ensureDirectoryExist() {
         indexFiles.ensureDirectoryExist();
     }
 
-    void closeResources()
-    {
-        IOUtils.closeAllUnchecked( index );
+    void closeResources() {
+        IOUtils.closeAllUnchecked(index);
         index = null;
     }
 
-    void assertTreeOpen()
-    {
-        Preconditions.checkState( index != null, "Index tree has been closed or was never instantiated." );
+    void assertTreeOpen() {
+        Preconditions.checkState(index != null, "Index tree has been closed or was never instantiated.");
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-    {
+    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
         //noinspection unchecked
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorContext );
+        return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<TokenScanKey> visitor, CursorContext cursorContext )
-    {
-        try
-        {
-            return index.consistencyCheck( visitor, cursorContext );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    private boolean consistencyCheck(
+            GBPTreeConsistencyCheckVisitor<TokenScanKey> visitor, CursorContext cursorContext) {
+        try {
+            return index.consistencyCheck(visitor, cursorContext);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

@@ -32,8 +32,12 @@ case object Reduce extends Function {
       names = Vector("accumulator", "variable"),
       argumentTypes = Vector(CTAny, CTList(CTAny)),
       outputType = CTAny,
-      description = "Runs an expression against individual elements of a list, storing the result of the expression in an accumulator.",
+      description =
+        "Runs an expression against individual elements of a list, storing the result of the expression in an accumulator.",
       category = Category.LIST,
-      overrideDefaultAsString = Some(name + "(accumulator :: VARIABLE = initial :: ANY?, variable :: VARIABLE IN list :: LIST OF ANY? | expression :: ANY) :: (ANY?)"))
+      overrideDefaultAsString = Some(
+        name + "(accumulator :: VARIABLE = initial :: ANY?, variable :: VARIABLE IN list :: LIST OF ANY? | expression :: ANY) :: (ANY?)"
+      )
+    )
   )
 }

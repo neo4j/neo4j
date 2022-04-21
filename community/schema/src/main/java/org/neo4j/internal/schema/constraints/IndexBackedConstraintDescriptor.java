@@ -22,8 +22,7 @@ package org.neo4j.internal.schema.constraints;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexType;
 
-public interface IndexBackedConstraintDescriptor extends ConstraintDescriptor
-{
+public interface IndexBackedConstraintDescriptor extends ConstraintDescriptor {
     /**
      * @return {@code true} if this constraint has a backing index, and calling {@link #ownedIndexId()} will not throw.
      */

@@ -21,8 +21,7 @@ package org.neo4j.function;
 
 import java.util.function.Consumer;
 
-public class Consumers
-{
+public class Consumers {
 
     /**
      * A consumer that ignores it's supplied value
@@ -30,10 +29,8 @@ public class Consumers
      * @param <T> the type of the valued supplied to the consumer
      * @return a consumer that ignores it's supplied value.
      */
-    public static <T> Consumer<T> ignoreValue()
-    {
-        return t ->
-        {
+    public static <T> Consumer<T> ignoreValue() {
+        return t -> {
             // no-op
         };
     }

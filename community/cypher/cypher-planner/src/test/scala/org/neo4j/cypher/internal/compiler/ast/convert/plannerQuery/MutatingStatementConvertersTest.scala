@@ -105,10 +105,11 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     query.queryGraph.mutatingPatterns should equal(Seq(
       CreatePattern(
         nodes("a", "b"),
-        relationship("r", "a", "X", "b"))
+        relationship("r", "a", "X", "b")
+      )
     ))
 
-    query.queryGraph.containsReads should be (false)
+    query.queryGraph.containsReads should be(false)
   }
 
   test("Read write and read again") {
@@ -147,13 +148,25 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     query.queryGraph shouldBe 'isEmpty
     val second = query.tail.get
     second.queryGraph.mutatingPatterns should equal(
-      Seq(ForeachPattern("i",
+      Seq(ForeachPattern(
+        "i",
         listOfInt(1),
-        RegularSinglePlannerQuery(QueryGraph(Set.empty, Set.empty, Set("i"),
-          Selections(Set.empty), Vector.empty, Set.empty, Set.empty,
-          IndexedSeq(CreatePattern(nodes("a"), Nil))),
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            Set.empty,
+            Set.empty,
+            Set("i"),
+            Selections(Set.empty),
+            Vector.empty,
+            Set.empty,
+            Set.empty,
+            IndexedSeq(CreatePattern(nodes("a"), Nil))
+          ),
           InterestingOrder.empty,
-          PassthroughAllHorizon(), None)))
+          PassthroughAllHorizon(),
+          None
+        )
+      ))
     )
   }
 
@@ -168,9 +181,13 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         queryGraph = QueryGraph(
           argumentIds = Set("n"),
           mutatingPatterns = IndexedSeq(
-            CreatePattern(nodes("m"), Seq.empty))),
+            CreatePattern(nodes("m"), Seq.empty)
+          )
+        ),
         horizon = RegularQueryProjection(
-          projections = Map("m" -> varFor("m"))))
+          projections = Map("m" -> varFor("m"))
+        )
+      )
     )
   }
 
@@ -185,7 +202,10 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         queryGraph = QueryGraph(
           argumentIds = Set("n"),
           mutatingPatterns = IndexedSeq(
-            CreatePattern(nodes("m"), Seq.empty))))
+            CreatePattern(nodes("m"), Seq.empty)
+          )
+        )
+      )
     )
   }
 
@@ -193,7 +213,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     names.map(name => CreateNode(name, Seq.empty, None))
   }
 
-  private def relationship(name: String, startNode: String, relType:String, endNode: String) = {
+  private def relationship(name: String, startNode: String, relType: String, endNode: String) = {
     List(CreateRelationship(name, startNode, RelTypeName(relType)(pos), endNode, OUTGOING, None))
   }
 }

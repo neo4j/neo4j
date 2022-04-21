@@ -22,29 +22,20 @@ package org.neo4j.storageengine.api.cursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public class StoreCursorsAdapter implements StoreCursors
-{
+public class StoreCursorsAdapter implements StoreCursors {
     @Override
-    public void reset( CursorContext cursorContext )
-    {
-
-    }
+    public void reset(CursorContext cursorContext) {}
 
     @Override
-    public PageCursor readCursor( CursorType type )
-    {
+    public PageCursor readCursor(CursorType type) {
         return null;
     }
 
     @Override
-    public PageCursor writeCursor( CursorType type )
-    {
+    public PageCursor writeCursor(CursorType type) {
         return null;
     }
 
     @Override
-    public void close()
-    {
-
-    }
+    public void close() {}
 }

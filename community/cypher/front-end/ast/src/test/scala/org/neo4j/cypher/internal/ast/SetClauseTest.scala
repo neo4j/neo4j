@@ -34,7 +34,6 @@ class SetClauseTest extends SemanticFunSuite {
     val setItem = SetPropertyItem(property, DummyExpression(CTAny))(DummyPosition(42))
     val setClause = SetClause(Seq(setItem))(DummyPosition(6))
 
-
     val result = setClause.semanticCheck(SemanticState.clean)
 
     result.errors should have size 1

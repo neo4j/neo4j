@@ -19,15 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.test.RandomSupport;
-
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 
-public class GBPTreeConcurrencyDynamicSizeIT extends GBPTreeConcurrencyITBase<RawBytes,RawBytes>
-{
+import org.neo4j.test.RandomSupport;
+
+public class GBPTreeConcurrencyDynamicSizeIT extends GBPTreeConcurrencyITBase<RawBytes, RawBytes> {
     @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout( RandomSupport random, int payloadSize )
-    {
-        return new SimpleByteArrayLayout( keyValueSizeCapFromPageSize( payloadSize ) / 2, random.intBetween( 0, 10 ) );
+    protected TestLayout<RawBytes, RawBytes> getLayout(RandomSupport random, int payloadSize) {
+        return new SimpleByteArrayLayout(keyValueSizeCapFromPageSize(payloadSize) / 2, random.intBetween(0, 10));
     }
 }

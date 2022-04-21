@@ -21,120 +21,94 @@ package org.neo4j.io.pagecache.tracing;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.PageSwapper;
 
-public class DummyPageSwapper implements PageSwapper
-{
+public class DummyPageSwapper implements PageSwapper {
     protected final String filename;
     protected final int filePageSize;
     protected final PageFileSwapperTracer tracer;
 
-    public DummyPageSwapper( String filename, int filePageSize )
-    {
-        this( filename, filePageSize, PageFileSwapperTracer.NULL );
+    public DummyPageSwapper(String filename, int filePageSize) {
+        this(filename, filePageSize, PageFileSwapperTracer.NULL);
     }
 
-    public DummyPageSwapper( String filename, int filePageSize, PageFileSwapperTracer tracer )
-    {
+    public DummyPageSwapper(String filename, int filePageSize, PageFileSwapperTracer tracer) {
         this.filename = filename;
         this.filePageSize = filePageSize;
         this.tracer = tracer;
     }
 
     @Override
-    public long read( long filePageId, long bufferAddress ) throws IOException
-    {
+    public long read(long filePageId, long bufferAddress) throws IOException {
         return filePageSize;
     }
 
     @Override
-    public long read( long filePageId, long bufferAddress, int bufferLength ) throws IOException
-    {
+    public long read(long filePageId, long bufferAddress, int bufferLength) throws IOException {
         return bufferLength;
     }
 
     @Override
-    public long write( long filePageId, long bufferAddress ) throws IOException
-    {
+    public long write(long filePageId, long bufferAddress) throws IOException {
         return filePageSize;
     }
 
     @Override
-    public long write( long filePageId, long bufferAddress, int bufferLength )
-    {
+    public long write(long filePageId, long bufferAddress, int bufferLength) {
         return bufferAddress;
     }
 
     @Override
-    public void evicted( long filePageId )
-    {
+    public void evicted(long filePageId) {}
+
+    @Override
+    public Path path() {
+        return Path.of(filename);
     }
 
     @Override
-    public Path path()
-    {
-        return Path.of( filename );
-    }
+    public void close() {}
 
     @Override
-    public void close()
-    {
-    }
+    public void force() {}
 
     @Override
-    public void force()
-    {
-    }
-
-    @Override
-    public long getLastPageId()
-    {
+    public long getLastPageId() {
         return 0;
     }
 
     @Override
-    public void truncate()
-    {
-    }
+    public void truncate() {}
 
     @Override
-    public boolean canAllocate()
-    {
+    public boolean canAllocate() {
         return false;
     }
 
     @Override
-    public void allocate( long newFileSize )
-    {
-    }
+    public void allocate(long newFileSize) {}
 
     @Override
-    public int swapperId()
-    {
+    public int swapperId() {
         return 42;
     }
 
     @Override
-    public PageFileSwapperTracer fileSwapperTracer()
-    {
+    public PageFileSwapperTracer fileSwapperTracer() {
         return tracer;
     }
 
     @Override
-    public void closeAndDelete()
-    {
-    }
+    public void closeAndDelete() {}
 
     @Override
-    public long read( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length )
-    {
+    public long read(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length) {
         return 0;
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages )
-    {
+    public long write(
+            long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages) {
         return 0;
     }
 }

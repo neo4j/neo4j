@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.operations;
 
-import org.eclipse.collections.api.list.primitive.MutableLongList;
-import org.eclipse.collections.impl.factory.primitive.LongLists;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.virtual.VirtualValues.pathReference;
 
 import java.util.function.Consumer;
-
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.util.CalledFromGeneratedCode;
@@ -33,26 +34,21 @@ import org.neo4j.values.virtual.RelationshipVisitor;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.virtual.VirtualValues.pathReference;
-
 /**
  * Builder for building paths from generated code, used when the length of the path is not known at compile time.
  * <p>
  * NOTE: this class is designed to be easy-to-use from generated code rather than from code typed by more or less
  * anthropic beings, so refactor with some care.
  */
-@SuppressWarnings( {"unused", "WeakerAccess"} )
-public class PathValueBuilder implements Consumer<RelationshipVisitor>
-{
+@SuppressWarnings({"unused", "WeakerAccess"})
+public class PathValueBuilder implements Consumer<RelationshipVisitor> {
     private final MutableLongList nodes = LongLists.mutable.empty();
     private final MutableLongList rels = LongLists.mutable.empty();
     private final DbAccess dbAccess;
     private final RelationshipScanCursor cursor;
     private boolean seenNoValue;
 
-    public PathValueBuilder( DbAccess dbAccess, RelationshipScanCursor cursor )
-    {
+    public PathValueBuilder(DbAccess dbAccess, RelationshipScanCursor cursor) {
         this.dbAccess = dbAccess;
         this.cursor = cursor;
     }
@@ -62,10 +58,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      *
      * @return a PathValue or NO_VALUE if any NO_VALUES has been encountered
      */
-    public AnyValue build()
-    {
-        return seenNoValue ? NO_VALUE
-                           : pathReference( nodes.toArray(), rels.toArray() );
+    public AnyValue build() {
+        return seenNoValue ? NO_VALUE : pathReference(nodes.toArray(), rels.toArray());
     }
 
     /**
@@ -74,27 +68,22 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param value the node to add
      */
     @CalledFromGeneratedCode
-    public void addNode( AnyValue value )
-    {
-        if ( notNoValue( value ) )
-        {
-            addNode( (VirtualNodeValue) value );
+    public void addNode(AnyValue value) {
+        if (notNoValue(value)) {
+            addNode((VirtualNodeValue) value);
         }
     }
 
     @CalledFromGeneratedCode
-    public void addRelationship( AnyValue value )
-    {
-        if ( notNoValue( value ) )
-        {
-            addRelationship( (VirtualRelationshipValue) value );
+    public void addRelationship(AnyValue value) {
+        if (notNoValue(value)) {
+            addRelationship((VirtualRelationshipValue) value);
         }
     }
 
     @CalledFromGeneratedCode
-    public void addRelationship( VirtualRelationshipValue value )
-    {
-        rels.add( value.id() );
+    public void addRelationship(VirtualRelationshipValue value) {
+        rels.add(value.id());
     }
 
     /**
@@ -103,9 +92,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param nodeValue the node to add
      */
     @CalledFromGeneratedCode
-    public void addNode( VirtualNodeValue nodeValue )
-    {
-        nodes.add( nodeValue.id() );
+    public void addNode(VirtualNodeValue nodeValue) {
+        nodes.add(nodeValue.id());
     }
 
     /**
@@ -114,11 +102,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param value the incoming relationship to add
      */
     @CalledFromGeneratedCode
-    public void addIncoming( AnyValue value )
-    {
-        if ( notNoValue( value ) )
-        {
-            addIncoming( (VirtualRelationshipValue) value );
+    public void addIncoming(AnyValue value) {
+        if (notNoValue(value)) {
+            addIncoming((VirtualRelationshipValue) value);
         }
     }
 
@@ -128,10 +114,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param relationship the incoming relationship to add
      */
     @CalledFromGeneratedCode
-    public void addIncoming( VirtualRelationshipValue relationship )
-    {
-        nodes.add( relationship.startNodeId( this ) );
-        rels.add( relationship.id() );
+    public void addIncoming(VirtualRelationshipValue relationship) {
+        nodes.add(relationship.startNodeId(this));
+        rels.add(relationship.id());
     }
 
     /**
@@ -140,11 +125,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param value the outgoing relationship to add
      */
     @CalledFromGeneratedCode
-    public void addOutgoing( AnyValue value )
-    {
-        if ( notNoValue( value ) )
-        {
-            addOutgoing( (VirtualRelationshipValue) value );
+    public void addOutgoing(AnyValue value) {
+        if (notNoValue(value)) {
+            addOutgoing((VirtualRelationshipValue) value);
         }
     }
 
@@ -154,16 +137,14 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param relationship the outgoing relationship to add
      */
     @CalledFromGeneratedCode
-    public void addOutgoing( VirtualRelationshipValue relationship )
-    {
-        nodes.add( relationship.endNodeId( this ) );
-        rels.add( relationship.id() );
+    public void addOutgoing(VirtualRelationshipValue relationship) {
+        nodes.add(relationship.endNodeId(this));
+        rels.add(relationship.id());
     }
 
-    private void add( long relationship, long nextNode )
-    {
-        rels.add( relationship );
-        nodes.add( nextNode );
+    private void add(long relationship, long nextNode) {
+        rels.add(relationship);
+        nodes.add(nextNode);
     }
 
     /**
@@ -172,11 +153,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param value the undirected relationship to add
      */
     @CalledFromGeneratedCode
-    public void addUndirected( AnyValue value )
-    {
-        if ( notNoValue( value ) )
-        {
-            addUndirected( (VirtualRelationshipValue) value );
+    public void addUndirected(AnyValue value) {
+        if (notNoValue(value)) {
+            addUndirected((VirtualRelationshipValue) value);
         }
     }
 
@@ -186,21 +165,15 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param relationship the undirected relationship to add
      */
     @CalledFromGeneratedCode
-    public void addUndirected( VirtualRelationshipValue relationship )
-    {
-        long previous = nodes.get( nodes.size() - 1 );
-        long start = relationship.startNodeId( this );
-        long end = relationship.endNodeId( this );
-        if ( previous == start )
-        {
-            add( relationship.id(), end );
-        }
-        else if ( previous == end )
-        {
-            add( relationship.id(), start );
-        }
-        else
-        {
+    public void addUndirected(VirtualRelationshipValue relationship) {
+        long previous = nodes.get(nodes.size() - 1);
+        long start = relationship.startNodeId(this);
+        long end = relationship.endNodeId(this);
+        if (previous == start) {
+            add(relationship.id(), end);
+        } else if (previous == end) {
+            add(relationship.id(), start);
+        } else {
             throw new IllegalArgumentException();
         }
     }
@@ -212,11 +185,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
-    public void addMultipleIncoming( AnyValue value, AnyValue target )
-    {
-        if ( notNoValue( value ) && notNoValue( target ) )
-        {
-            addMultipleIncoming( (ListValue) value, (VirtualNodeValue) target );
+    public void addMultipleIncoming(AnyValue value, AnyValue target) {
+        if (notNoValue(value) && notNoValue(target)) {
+            addMultipleIncoming((ListValue) value, (VirtualNodeValue) target);
         }
     }
 
@@ -227,29 +198,24 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
-    public void addMultipleIncoming( ListValue relationships, VirtualNodeValue target )
-    {
-        if ( relationships.isEmpty() )
-        {
-            //nothing to do here
+    public void addMultipleIncoming(ListValue relationships, VirtualNodeValue target) {
+        if (relationships.isEmpty()) {
+            // nothing to do here
             return;
         }
         int i;
-        for ( i = 0; i < relationships.size() - 1; i++ )
-        {
-            AnyValue value = relationships.value( i );
-            if ( notNoValue( value ) )
-            {
+        for (i = 0; i < relationships.size() - 1; i++) {
+            AnyValue value = relationships.value(i);
+            if (notNoValue(value)) {
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                nodes.add( relationship.startNodeId( this ) );
-                rels.add( relationship.id() );
+                nodes.add(relationship.startNodeId(this));
+                rels.add(relationship.id());
             }
         }
-        AnyValue last = relationships.value( i );
-        if ( notNoValue( last ) )
-        {
-            nodes.add( target.id() );
-            rels.add( ((VirtualRelationshipValue) last).id() );
+        AnyValue last = relationships.value(i);
+        if (notNoValue(last)) {
+            nodes.add(target.id());
+            rels.add(((VirtualRelationshipValue) last).id());
         }
     }
 
@@ -259,11 +225,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param value the incoming relationships to add
      */
     @CalledFromGeneratedCode
-    public void addMultipleIncoming( AnyValue value )
-    {
-        if ( notNoValue( value ) )
-        {
-            addMultipleIncoming( (ListValue) value );
+    public void addMultipleIncoming(AnyValue value) {
+        if (notNoValue(value)) {
+            addMultipleIncoming((ListValue) value);
         }
     }
 
@@ -273,15 +237,12 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param relationships the incoming relationships to add
      */
     @CalledFromGeneratedCode
-    public void addMultipleIncoming( ListValue relationships )
-    {
-        for ( AnyValue value : relationships )
-        {
-            if ( notNoValue( value ) )
-            {
+    public void addMultipleIncoming(ListValue relationships) {
+        for (AnyValue value : relationships) {
+            if (notNoValue(value)) {
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                nodes.add( relationship.startNodeId( this ) );
-                rels.add( relationship.id() );
+                nodes.add(relationship.startNodeId(this));
+                rels.add(relationship.id());
             }
         }
     }
@@ -293,11 +254,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
-    public void addMultipleOutgoing( AnyValue value, AnyValue target )
-    {
-        if ( notNoValue( value ) && notNoValue( target ) )
-        {
-            addMultipleOutgoing( (ListValue) value, (VirtualNodeValue) target );
+    public void addMultipleOutgoing(AnyValue value, AnyValue target) {
+        if (notNoValue(value) && notNoValue(target)) {
+            addMultipleOutgoing((ListValue) value, (VirtualNodeValue) target);
         }
     }
 
@@ -308,29 +267,24 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
-    public void addMultipleOutgoing( ListValue relationships, VirtualNodeValue target )
-    {
-        if ( relationships.isEmpty() )
-        {
-            //nothing to do here
+    public void addMultipleOutgoing(ListValue relationships, VirtualNodeValue target) {
+        if (relationships.isEmpty()) {
+            // nothing to do here
             return;
         }
         int i;
-        for ( i = 0; i < relationships.size() - 1; i++ )
-        {
-            AnyValue value = relationships.value( i );
-            if ( notNoValue( value ) )
-            {
+        for (i = 0; i < relationships.size() - 1; i++) {
+            AnyValue value = relationships.value(i);
+            if (notNoValue(value)) {
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                nodes.add( relationship.endNodeId( this ) );
-                rels.add( relationship.id() );
+                nodes.add(relationship.endNodeId(this));
+                rels.add(relationship.id());
             }
         }
-        AnyValue last = relationships.value( i );
-        if ( notNoValue( last ) )
-        {
-            rels.add( ((VirtualRelationshipValue) last).id() );
-            nodes.add( target.id() );
+        AnyValue last = relationships.value(i);
+        if (notNoValue(last)) {
+            rels.add(((VirtualRelationshipValue) last).id());
+            nodes.add(target.id());
         }
     }
 
@@ -340,11 +294,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param value the outgoing relationships to add
      */
     @CalledFromGeneratedCode
-    public void addMultipleOutgoing( AnyValue value )
-    {
-        if ( notNoValue( value ) )
-        {
-            addMultipleOutgoing( (ListValue) value );
+    public void addMultipleOutgoing(AnyValue value) {
+        if (notNoValue(value)) {
+            addMultipleOutgoing((ListValue) value);
         }
     }
 
@@ -354,16 +306,13 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param relationships the outgoing relationships to add
      */
     @CalledFromGeneratedCode
-    public void addMultipleOutgoing( ListValue relationships )
-    {
-        for ( AnyValue value : relationships )
-        {
-            if ( notNoValue( value ) )
-            {
+    public void addMultipleOutgoing(ListValue relationships) {
+        for (AnyValue value : relationships) {
+            if (notNoValue(value)) {
 
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                nodes.add( relationship.endNodeId( this ) );
-                rels.add( relationship.id() );
+                nodes.add(relationship.endNodeId(this));
+                rels.add(relationship.id());
             }
         }
     }
@@ -375,11 +324,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
-    public void addMultipleUndirected( AnyValue value, AnyValue target )
-    {
-        if ( notNoValue( value ) && notNoValue( target ) )
-        {
-            addMultipleUndirected( (ListValue) value, (VirtualNodeValue) target );
+    public void addMultipleUndirected(AnyValue value, AnyValue target) {
+        if (notNoValue(value) && notNoValue(target)) {
+            addMultipleUndirected((ListValue) value, (VirtualNodeValue) target);
         }
     }
 
@@ -390,45 +337,35 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
-    public void addMultipleUndirected( ListValue relationships, VirtualNodeValue target )
-    {
-        if ( relationships.isEmpty() )
-        {
-            //nothing to add
+    public void addMultipleUndirected(ListValue relationships, VirtualNodeValue target) {
+        if (relationships.isEmpty()) {
+            // nothing to add
             return;
         }
-        long previous = nodes.get( nodes.size() - 1 );
+        long previous = nodes.get(nodes.size() - 1);
         VirtualRelationshipValue first = (VirtualRelationshipValue) relationships.head();
-        boolean correctDirection = first.startNodeId( this ) == previous || first.endNodeId(this) == previous;
+        boolean correctDirection = first.startNodeId(this) == previous || first.endNodeId(this) == previous;
 
         int i;
-        if ( correctDirection )
-        {
-            for ( i = 0; i < relationships.size() - 1; i++ )
-            {
-                AnyValue value = relationships.value( i );
-                if ( notNoValue( value ) )
-                {
-                    addUndirected( (VirtualRelationshipValue) value );
+        if (correctDirection) {
+            for (i = 0; i < relationships.size() - 1; i++) {
+                AnyValue value = relationships.value(i);
+                if (notNoValue(value)) {
+                    addUndirected((VirtualRelationshipValue) value);
+                }
+            }
+        } else {
+            for (i = relationships.size() - 1; i > 0; i--) {
+                AnyValue value = relationships.value(i);
+                if (notNoValue(value)) {
+                    addUndirected((VirtualRelationshipValue) relationships.value(i));
                 }
             }
         }
-        else
-        {
-            for ( i = relationships.size() - 1; i > 0; i-- )
-            {
-                AnyValue value = relationships.value( i );
-                if ( notNoValue( value ) )
-                {
-                    addUndirected( (VirtualRelationshipValue) relationships.value( i ) );
-                }
-            }
-        }
-        AnyValue last = relationships.value( i );
-        if ( notNoValue( last ) )
-        {
-            rels.add( ((VirtualRelationshipValue) last).id() );
-            nodes.add( target.id() );
+        AnyValue last = relationships.value(i);
+        if (notNoValue(last)) {
+            rels.add(((VirtualRelationshipValue) last).id());
+            nodes.add(target.id());
         }
     }
 
@@ -438,11 +375,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param value the undirected relationships to add
      */
     @CalledFromGeneratedCode
-    public void addMultipleUndirected( AnyValue value )
-    {
-        if ( notNoValue( value ) )
-        {
-            addMultipleUndirected( (ListValue) value );
+    public void addMultipleUndirected(AnyValue value) {
+        if (notNoValue(value)) {
+            addMultipleUndirected((ListValue) value);
         }
     }
 
@@ -452,54 +387,42 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor>
      * @param relationships the undirected relationships to add
      */
     @CalledFromGeneratedCode
-    public void addMultipleUndirected( ListValue relationships )
-    {
-        if ( relationships.isEmpty() )
-        {
-            //nothing to add
+    public void addMultipleUndirected(ListValue relationships) {
+        if (relationships.isEmpty()) {
+            // nothing to add
             return;
         }
-        long previous = nodes.get( nodes.size() - 1 );
+        long previous = nodes.get(nodes.size() - 1);
         VirtualRelationshipValue first = (VirtualRelationshipValue) relationships.head();
 
-        boolean correctDirection = first.startNodeId( this ) == previous || previous == first.endNodeId(this);
+        boolean correctDirection = first.startNodeId(this) == previous || previous == first.endNodeId(this);
 
-        if ( correctDirection )
-        {
-            for ( AnyValue value : relationships )
-            {
-                if ( notNoValue( value ) )
-                {
-                    addUndirected( (VirtualRelationshipValue) value );
+        if (correctDirection) {
+            for (AnyValue value : relationships) {
+                if (notNoValue(value)) {
+                    addUndirected((VirtualRelationshipValue) value);
                 }
             }
-        }
-        else
-        {
+        } else {
             ListValue reversed = relationships.reverse();
-            for ( AnyValue rel : reversed )
-            {
-                if ( notNoValue( rel ) )
-                {
-                    addUndirected( (VirtualRelationshipValue) rel );
+            for (AnyValue rel : reversed) {
+                if (notNoValue(rel)) {
+                    addUndirected((VirtualRelationshipValue) rel);
                 }
             }
         }
     }
 
     @Override
-    public void accept( RelationshipVisitor relationshipVisitor )
-    {
-        dbAccess.singleRelationship( relationshipVisitor.id(), cursor );
-        //This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
+    public void accept(RelationshipVisitor relationshipVisitor) {
+        dbAccess.singleRelationship(relationshipVisitor.id(), cursor);
+        // This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
         cursor.next();
-        relationshipVisitor.visit( cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.type() );
+        relationshipVisitor.visit(cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.type());
     }
 
-    private boolean notNoValue( AnyValue value )
-    {
-        if ( !seenNoValue && value == NO_VALUE )
-        {
+    private boolean notNoValue(AnyValue value) {
+        if (!seenNoValue && value == NO_VALUE) {
             seenNoValue = true;
         }
         return !seenNoValue;

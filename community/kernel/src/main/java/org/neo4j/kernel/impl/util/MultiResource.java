@@ -21,29 +21,22 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.IOException;
 import java.util.Collection;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.IOUtils;
 
-public final class MultiResource implements Resource
-{
+public final class MultiResource implements Resource {
     private final Collection<? extends Resource> resources;
 
-    public MultiResource( Collection<? extends Resource> resources )
-    {
+    public MultiResource(Collection<? extends Resource> resources) {
         this.resources = resources;
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
-            IOUtils.closeAll( resources );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+    public void close() {
+        try {
+            IOUtils.closeAll(resources);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

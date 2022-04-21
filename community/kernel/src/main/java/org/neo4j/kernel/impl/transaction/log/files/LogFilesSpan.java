@@ -21,25 +21,21 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.neo4j.kernel.lifecycle.Lifespan;
 
-public class LogFilesSpan implements AutoCloseable
-{
+public class LogFilesSpan implements AutoCloseable {
     private final Lifespan lifespan;
     private final LogFiles logFiles;
 
-    public LogFilesSpan( Lifespan lifespan, LogFiles logFiles )
-    {
+    public LogFilesSpan(Lifespan lifespan, LogFiles logFiles) {
         this.lifespan = lifespan;
         this.logFiles = logFiles;
     }
 
-    public LogFiles getLogFiles()
-    {
+    public LogFiles getLogFiles() {
         return logFiles;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         lifespan.close();
     }
 }

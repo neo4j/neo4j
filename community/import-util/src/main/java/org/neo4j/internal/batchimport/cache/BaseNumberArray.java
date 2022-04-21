@@ -22,8 +22,7 @@ package org.neo4j.internal.batchimport.cache;
 /**
  * Contains basic functionality of fixed size number arrays.
  */
-abstract class BaseNumberArray<N extends NumberArray<N>> implements NumberArray<N>
-{
+abstract class BaseNumberArray<N extends NumberArray<N>> implements NumberArray<N> {
     protected final int itemSize;
     protected final long base;
 
@@ -31,17 +30,15 @@ abstract class BaseNumberArray<N extends NumberArray<N>> implements NumberArray<
      * @param itemSize byte size of each item in this array.
      * @param base base index to rebase all indexes in accessor methods off of. See {@link #at(long)}.
      */
-    protected BaseNumberArray( int itemSize, long base )
-    {
+    protected BaseNumberArray(int itemSize, long base) {
         this.itemSize = itemSize;
         this.base = base;
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Override
-    public N at( long index )
-    {
-        return (N)this;
+    public N at(long index) {
+        return (N) this;
     }
 
     /**
@@ -49,8 +46,7 @@ abstract class BaseNumberArray<N extends NumberArray<N>> implements NumberArray<
      * @param index external index.
      * @return index into internal data structure.
      */
-    protected long rebase( long index )
-    {
+    protected long rebase(long index) {
         return index - base;
     }
 }

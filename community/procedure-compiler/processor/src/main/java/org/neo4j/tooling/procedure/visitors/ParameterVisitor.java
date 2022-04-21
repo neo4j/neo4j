@@ -26,53 +26,52 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.util.SimpleElementVisitor8;
-
 import org.neo4j.procedure.Name;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.ParameterMissingAnnotationError;
 import org.neo4j.tooling.procedure.messages.ParameterTypeError;
 
-class ParameterVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
-{
+class ParameterVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>, Void> {
 
-    private final TypeVisitor<Boolean,Void> parameterTypeVisitor;
+    private final TypeVisitor<Boolean, Void> parameterTypeVisitor;
 
-    ParameterVisitor( TypeVisitor<Boolean,Void> parameterTypeVisitor )
-    {
+    ParameterVisitor(TypeVisitor<Boolean, Void> parameterTypeVisitor) {
         this.parameterTypeVisitor = parameterTypeVisitor;
     }
 
     @Override
-    public Stream<CompilationMessage> visitVariable( VariableElement parameter, Void ignored )
-    {
-        Name annotation = parameter.getAnnotation( Name.class );
-        if ( annotation == null )
-        {
-            return Stream.of( new ParameterMissingAnnotationError( parameter,
-                    annotationMirror( parameter.getAnnotationMirrors() ), "@%s usage error: missing on parameter <%s>",
-                    Name.class.getName(), nameOf( parameter ) ) );
+    public Stream<CompilationMessage> visitVariable(VariableElement parameter, Void ignored) {
+        Name annotation = parameter.getAnnotation(Name.class);
+        if (annotation == null) {
+            return Stream.of(new ParameterMissingAnnotationError(
+                    parameter,
+                    annotationMirror(parameter.getAnnotationMirrors()),
+                    "@%s usage error: missing on parameter <%s>",
+                    Name.class.getName(),
+                    nameOf(parameter)));
         }
 
-        if ( !parameterTypeVisitor.visit( parameter.asType() ) )
-        {
+        if (!parameterTypeVisitor.visit(parameter.asType())) {
             Element method = parameter.getEnclosingElement();
-            return Stream.of( new ParameterTypeError( parameter,
+            return Stream.of(new ParameterTypeError(
+                    parameter,
                     "Unsupported parameter type <%s> of " + "procedure|function" + " %s#%s",
-                    parameter.asType().toString(), method.getEnclosingElement().getSimpleName(),
-                    method.getSimpleName() ) );
+                    parameter.asType().toString(),
+                    method.getEnclosingElement().getSimpleName(),
+                    method.getSimpleName()));
         }
         return Stream.empty();
     }
 
-    private AnnotationMirror annotationMirror( List<? extends AnnotationMirror> mirrors )
-    {
-        AnnotationTypeVisitor nameVisitor = new AnnotationTypeVisitor( Name.class );
-        return mirrors.stream().filter( mirror -> nameVisitor.visit( mirror.getAnnotationType().asElement() ) )
-                .findFirst().orElse( null );
+    private AnnotationMirror annotationMirror(List<? extends AnnotationMirror> mirrors) {
+        AnnotationTypeVisitor nameVisitor = new AnnotationTypeVisitor(Name.class);
+        return mirrors.stream()
+                .filter(mirror -> nameVisitor.visit(mirror.getAnnotationType().asElement()))
+                .findFirst()
+                .orElse(null);
     }
 
-    private String nameOf( VariableElement parameter )
-    {
+    private String nameOf(VariableElement parameter) {
         return parameter.getSimpleName().toString();
     }
 }

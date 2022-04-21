@@ -22,8 +22,7 @@ package org.neo4j.values.storable;
 /**
  * Differentiates between integral numbers, floating point numbers, and values that are not numbers.
  */
-public enum NumberType
-{
+public enum NumberType {
     NO_NUMBER,
     INTEGRAL,
     FLOATING_POINT

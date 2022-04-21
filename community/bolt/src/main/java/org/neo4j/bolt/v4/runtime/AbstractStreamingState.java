@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
@@ -29,51 +31,51 @@ import org.neo4j.bolt.v4.messaging.DiscardResultConsumer;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.PullResultConsumer;
 
-import static org.neo4j.util.Preconditions.checkState;
-
 /**
  * When STREAMING, a result is available as a stream of records.
  * These must be PULLed or DISCARDed before any further statements
  * can be executed.
  */
-public abstract class AbstractStreamingState extends FailSafeBoltStateMachineState
-{
+public abstract class AbstractStreamingState extends FailSafeBoltStateMachineState {
     protected BoltStateMachineState readyState;
 
     @Override
-    protected BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
-    {
+    protected BoltStateMachineState processUnsafe(RequestMessage message, StateMachineContext context)
+            throws Throwable {
         context.connectionState().ensureNoPendingTerminationNotice();
 
-        if ( message instanceof PullMessage pullMessage )
-        {
-            return processStreamPullResultMessage( pullMessage.statementId(), new PullResultConsumer( context, pullMessage.n() ), context, pullMessage.n() );
+        if (message instanceof PullMessage pullMessage) {
+            return processStreamPullResultMessage(
+                    pullMessage.statementId(),
+                    new PullResultConsumer(context, pullMessage.n()),
+                    context,
+                    pullMessage.n());
         }
-        if ( message instanceof DiscardMessage discardMessage )
-        {
-            return processStreamDiscardResultMessage( discardMessage.statementId(), new DiscardResultConsumer( context, discardMessage.n() ),
-                                                      context, discardMessage.n() );
+        if (message instanceof DiscardMessage discardMessage) {
+            return processStreamDiscardResultMessage(
+                    discardMessage.statementId(),
+                    new DiscardResultConsumer(context, discardMessage.n()),
+                    context,
+                    discardMessage.n());
         }
         return null;
     }
 
-    public void setReadyState( BoltStateMachineState readyState )
-    {
+    public void setReadyState(BoltStateMachineState readyState) {
         this.readyState = readyState;
     }
 
-    protected abstract BoltStateMachineState processStreamPullResultMessage( int statementId, ResultConsumer resultConsumer,
-                                                                             StateMachineContext context, long numberToPull )
+    protected abstract BoltStateMachineState processStreamPullResultMessage(
+            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long numberToPull)
             throws Throwable;
 
-    protected abstract BoltStateMachineState processStreamDiscardResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context,
-                                                                                long noToDiscard )
+    protected abstract BoltStateMachineState processStreamDiscardResultMessage(
+            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToDiscard)
             throws Throwable;
 
     @Override
-    protected void assertInitialized()
-    {
-        checkState( readyState != null, "Ready state not set" );
+    protected void assertInitialized() {
+        checkState(readyState != null, "Ready state not set");
         super.assertInitialized();
     }
 }

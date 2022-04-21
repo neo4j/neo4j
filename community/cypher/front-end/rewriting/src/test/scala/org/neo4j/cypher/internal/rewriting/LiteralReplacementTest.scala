@@ -30,10 +30,14 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LiteralReplacementTest extends CypherFunSuite  {
+class LiteralReplacementTest extends CypherFunSuite {
 
   test("should extract starts with patterns") {
-    assertRewrite("RETURN x STARTS WITH 'Pattern' as X", "RETURN x STARTS WITH $`  AUTOSTRING0` as X", Map("  AUTOSTRING0" -> "Pattern"))
+    assertRewrite(
+      "RETURN x STARTS WITH 'Pattern' as X",
+      "RETURN x STARTS WITH $`  AUTOSTRING0` as X",
+      Map("  AUTOSTRING0" -> "Pattern")
+    )
   }
 
   test("should not extract literal dynamic property lookups") {
@@ -58,7 +62,11 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite("MATCH ({a:1.1})", "MATCH ({a:$`  AUTODOUBLE0`})", Map("  AUTODOUBLE0" -> 1.1))
     assertRewrite("MATCH ({a:'apa'})", "MATCH ({a:$`  AUTOSTRING0`})", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("MATCH ({a:\"apa\"})", "MATCH ({a:$`  AUTOSTRING0`})", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("MATCH (n) WHERE ID(n) IN [1, 2, 3]", "MATCH (n) WHERE ID(n) IN $`  AUTOLIST0`", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
+    assertRewrite(
+      "MATCH (n) WHERE ID(n) IN [1, 2, 3]",
+      "MATCH (n) WHERE ID(n) IN $`  AUTOLIST0`",
+      Map("  AUTOLIST0" -> Seq(1, 2, 3))
+    )
   }
 
   test("should not extract boolean literals in match clause") {
@@ -78,7 +86,12 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(
       "create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'})",
       "create (a {a:$`  AUTOINT0`, b:$`  AUTOSTRING1`, c:$`  AUTOINT2`, d:$`  AUTOSTRING3`})",
-      Map("  AUTOINT0"->0,"  AUTOSTRING1"->"name 0","  AUTOINT2"->10000000,"  AUTOSTRING3"->"a very long string 0")
+      Map(
+        "  AUTOINT0" -> 0,
+        "  AUTOSTRING1" -> "name 0",
+        "  AUTOINT2" -> 10000000,
+        "  AUTOSTRING3" -> "a very long string 0"
+      )
     )
   }
 
@@ -95,8 +108,14 @@ class LiteralReplacementTest extends CypherFunSuite  {
       s"create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (b {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (a)-[:KNOWS {since: 0}]->(b)",
       s"create (a {a:$$`  AUTOINT0`, b:$$`  AUTOSTRING1`, c:$$`  AUTOINT2`, d:$$`  AUTOSTRING3`}) create (b {a:$$`  AUTOINT4`, b:$$`  AUTOSTRING5`, c:$$`  AUTOINT6`, d:$$`  AUTOSTRING7`}) create (a)-[:KNOWS {since: $$`  AUTOINT8`}]->(b)",
       Map(
-        "  AUTOINT0" -> 0, "  AUTOSTRING1" -> "name 0", "  AUTOINT2" -> 10000000, "  AUTOSTRING3" -> "a very long string 0",
-        "  AUTOINT4" -> 0, "  AUTOSTRING5" -> "name 0", "  AUTOINT6" -> 10000000, "  AUTOSTRING7" -> "a very long string 0",
+        "  AUTOINT0" -> 0,
+        "  AUTOSTRING1" -> "name 0",
+        "  AUTOINT2" -> 10000000,
+        "  AUTOSTRING3" -> "a very long string 0",
+        "  AUTOINT4" -> 0,
+        "  AUTOSTRING5" -> "name 0",
+        "  AUTOINT6" -> 10000000,
+        "  AUTOSTRING7" -> "a very long string 0",
         "  AUTOINT8" -> 0
       )
     )
@@ -135,7 +154,12 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(query, query, Map.empty)
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any], extractLiterals: LiteralExtractionStrategy = IfNoParameter): Unit = {
+  private def assertRewrite(
+    originalQuery: String,
+    expectedQuery: String,
+    replacements: Map[String, Any],
+    extractLiterals: LiteralExtractionStrategy = IfNoParameter
+  ): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val nameGenerator = new AnonymousVariableNameGenerator
     val original = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)
@@ -149,6 +173,6 @@ class LiteralReplacementTest extends CypherFunSuite  {
   }
 
   private def removeAutoExtracted() = bottomUp(Rewriter.lift {
-    case p@AutoExtractedParameter(name, _, _, _)  => ExplicitParameter(name, CTAny)(p.position)
+    case p @ AutoExtractedParameter(name, _, _, _) => ExplicitParameter(name, CTAny)(p.position)
   })
 }

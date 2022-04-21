@@ -19,42 +19,35 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.function.Supplier;
-
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-class SimpleIdProvider implements IdProvider
-{
-    private final Queue<Pair<Long,Long>> releasedIds = new LinkedList<>();
+class SimpleIdProvider implements IdProvider {
+    private final Queue<Pair<Long, Long>> releasedIds = new LinkedList<>();
     private final Supplier<PageCursor> cursorSupplier;
     private long lastId;
 
-    SimpleIdProvider( Supplier<PageCursor> cursorSupplier )
-    {
+    SimpleIdProvider(Supplier<PageCursor> cursorSupplier) {
         this.cursorSupplier = cursorSupplier;
         reset();
     }
 
     @Override
-    public long acquireNewId( long stableGeneration, long unstableGeneration, CursorContext cursorContext )
-    {
-        if ( !releasedIds.isEmpty() )
-        {
-            Pair<Long,Long> free = releasedIds.peek();
-            if ( free.getLeft() <= stableGeneration )
-            {
+    public long acquireNewId(long stableGeneration, long unstableGeneration, CursorContext cursorContext) {
+        if (!releasedIds.isEmpty()) {
+            Pair<Long, Long> free = releasedIds.peek();
+            if (free.getLeft() <= stableGeneration) {
                 releasedIds.poll();
                 Long pageId = free.getRight();
-                zapPage( pageId );
+                zapPage(pageId);
                 return pageId;
             }
         }
@@ -63,52 +56,42 @@ class SimpleIdProvider implements IdProvider
     }
 
     @Override
-    public void releaseId( long stableGeneration, long unstableGeneration, long id, CursorContext cursorContext )
-    {
-        releasedIds.add( Pair.of( unstableGeneration, id ) );
+    public void releaseId(long stableGeneration, long unstableGeneration, long id, CursorContext cursorContext) {
+        releasedIds.add(Pair.of(unstableGeneration, id));
     }
 
-    LongIterator unacquiredIds()
-    {
+    LongIterator unacquiredIds() {
         final MutableLongSet unacquiredIds = new LongHashSet();
-        releasedIds.forEach( pair -> unacquiredIds.add( pair.getValue() ) );
+        releasedIds.forEach(pair -> unacquiredIds.add(pair.getValue()));
         return unacquiredIds.longIterator();
     }
 
     @Override
-    public void visitFreelist( IdProviderVisitor visitor, CursorContext cursorContext )
-    {
+    public void visitFreelist(IdProviderVisitor visitor, CursorContext cursorContext) {
         int pos = 0;
-        visitor.beginFreelistPage( 0 );
-        for ( Pair<Long,Long> releasedId : releasedIds )
-        {
-            visitor.freelistEntry( releasedId.getRight(), releasedId.getLeft(), pos++ );
+        visitor.beginFreelistPage(0);
+        for (Pair<Long, Long> releasedId : releasedIds) {
+            visitor.freelistEntry(releasedId.getRight(), releasedId.getLeft(), pos++);
         }
-        visitor.endFreelistPage( 0 );
+        visitor.endFreelistPage(0);
     }
 
     @Override
-    public long lastId()
-    {
+    public long lastId() {
         return lastId;
     }
 
-    void reset()
-    {
+    void reset() {
         releasedIds.clear();
         lastId = IdSpace.MIN_TREE_NODE_ID - 1;
     }
 
-    private void zapPage( Long pageId )
-    {
-        try ( PageCursor cursor = cursorSupplier.get() )
-        {
-            cursor.next( pageId );
+    private void zapPage(Long pageId) {
+        try (PageCursor cursor = cursorSupplier.get()) {
+            cursor.next(pageId);
             cursor.zapPage();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Could not go to page " + pageId );
+        } catch (IOException e) {
+            throw new RuntimeException("Could not go to page " + pageId);
         }
     }
 }

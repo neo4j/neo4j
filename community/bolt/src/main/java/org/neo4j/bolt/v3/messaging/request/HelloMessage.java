@@ -19,70 +19,58 @@
  */
 package org.neo4j.bolt.v3.messaging.request;
 
-import java.util.Map;
-import java.util.Objects;
-
-import org.neo4j.bolt.messaging.RequestMessage;
-
 import static java.util.Objects.requireNonNull;
 
-public class HelloMessage implements RequestMessage
-{
+import java.util.Map;
+import java.util.Objects;
+import org.neo4j.bolt.messaging.RequestMessage;
+
+public class HelloMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x01;
     private static final String USER_AGENT = "user_agent";
-    private final Map<String,Object> meta;
+    private final Map<String, Object> meta;
 
-    public HelloMessage( Map<String,Object> meta )
-    {
-        this.meta = requireNonNull( meta );
+    public HelloMessage(Map<String, Object> meta) {
+        this.meta = requireNonNull(meta);
     }
 
-    public String userAgent()
-    {
-        return requireNonNull( (String) meta.get( USER_AGENT ) );
+    public String userAgent() {
+        return requireNonNull((String) meta.get(USER_AGENT));
     }
 
-    public Map<String,Object> authToken()
-    {
+    public Map<String, Object> authToken() {
         // for now, we just delegate to meta.
         return meta();
     }
 
-    public Map<String,Object> meta()
-    {
+    public Map<String, Object> meta() {
         return meta;
     }
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return false;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         HelloMessage that = (HelloMessage) o;
-        return Objects.equals( meta, that.meta );
+        return Objects.equals(meta, that.meta);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( meta );
+    public int hashCode() {
+        return Objects.hash(meta);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "HELLO " + meta;
     }
 }

@@ -21,24 +21,20 @@ package org.neo4j.bolt.runtime.statemachine.impl;
 
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 
-public class AutoCommitStatementMetadata implements StatementMetadata
-{
+public class AutoCommitStatementMetadata implements StatementMetadata {
     private final String[] fieldNames;
 
-    public AutoCommitStatementMetadata( String[] fieldNames )
-    {
+    public AutoCommitStatementMetadata(String[] fieldNames) {
         this.fieldNames = fieldNames;
     }
 
     @Override
-    public String[] fieldNames()
-    {
+    public String[] fieldNames() {
         return fieldNames;
     }
 
     @Override
-    public int queryId()
-    {
+    public int queryId() {
         return ABSENT_QUERY_ID;
     }
 }

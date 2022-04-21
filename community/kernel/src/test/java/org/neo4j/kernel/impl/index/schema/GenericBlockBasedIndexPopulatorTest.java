@@ -19,23 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import java.io.IOException;
-import java.util.Collection;
-
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.memory.ByteBufferFactory;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.test.Race;
-import org.neo4j.values.storable.Value;
-
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,87 +30,89 @@ import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStri
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
 
-abstract class GenericBlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>> extends BlockBasedIndexPopulatorTest<KEY>
-{
-    @ValueSource( booleans = {true, false} )
+import java.io.IOException;
+import java.util.Collection;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.Race;
+import org.neo4j.values.storable.Value;
+
+abstract class GenericBlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>>
+        extends BlockBasedIndexPopulatorTest<KEY> {
+    @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void shouldAcceptUpdatedMaxSizeValue( boolean updateBeforeScanCompleted ) throws Throwable
-    {
+    void shouldAcceptUpdatedMaxSizeValue(boolean updateBeforeScanCompleted) throws Throwable {
         // given
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
-        try
-        {
+        ByteBufferFactory bufferFactory =
+                new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR, bufferFactory, INSTANCE);
+        try {
             int size = populator.tree.keyValueSizeCap();
-            Layout<KEY,NullValue> layout = layout();
-            Value value = generateStringValueResultingInIndexEntrySize( layout, size );
-            IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value );
-            Race.ThrowingRunnable updateAction = () ->
-            {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
-                {
-                    updater.process( update );
+            Layout<KEY, NullValue> layout = layout();
+            Value value = generateStringValueResultingInIndexEntrySize(layout, size);
+            IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add(0, INDEX_DESCRIPTOR, value);
+            Race.ThrowingRunnable updateAction = () -> {
+                try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+                    updater.process(update);
                 }
             };
-            if ( updateBeforeScanCompleted )
-            {
+            if (updateBeforeScanCompleted) {
                 updateAction.run();
-                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
-            }
-            else
-            {
-                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+                populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+            } else {
+                populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
                 updateAction.run();
             }
 
             // when
-            try ( Seeker<KEY,NullValue> seek = seek( populator.tree, layout ) )
-            {
+            try (Seeker<KEY, NullValue> seek = seek(populator.tree, layout)) {
                 // then
-                assertTrue( seek.next() );
-                assertEquals( value, seek.key().asValues()[0] );
-                assertFalse( seek.next() );
+                assertTrue(seek.next());
+                assertEquals(value, seek.key().asValues()[0]);
+                assertFalse(seek.next());
             }
-        }
-        finally
-        {
-            populator.close( true, NULL_CONTEXT );
+        } finally {
+            populator.close(true, NULL_CONTEXT);
         }
     }
 
     @Test
-    void shouldAcceptBatchAddedMaxSizeValue() throws IndexEntryConflictException, IOException
-    {
+    void shouldAcceptBatchAddedMaxSizeValue() throws IndexEntryConflictException, IOException {
         // given
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
-        try
-        {
+        ByteBufferFactory bufferFactory =
+                new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE);
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator(NO_MONITOR, bufferFactory, INSTANCE);
+        try {
             int size = populator.tree.keyValueSizeCap();
-            Layout<KEY,NullValue> layout = layout();
-            Value value = generateStringValueResultingInIndexEntrySize( layout, size );
-            Collection<? extends IndexEntryUpdate<?>> data = singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value ) );
-            populator.add( data, NULL_CONTEXT );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+            Layout<KEY, NullValue> layout = layout();
+            Value value = generateStringValueResultingInIndexEntrySize(layout, size);
+            Collection<? extends IndexEntryUpdate<?>> data =
+                    singletonList(IndexEntryUpdate.add(0, INDEX_DESCRIPTOR, value));
+            populator.add(data, NULL_CONTEXT);
+            populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
 
             // when
-            try ( Seeker<KEY,NullValue> seek = seek( populator.tree, layout ) )
-            {
+            try (Seeker<KEY, NullValue> seek = seek(populator.tree, layout)) {
                 // then
-                assertTrue( seek.next() );
-                assertEquals( value, seek.key().asValues()[0] );
-                assertFalse( seek.next() );
+                assertTrue(seek.next());
+                assertEquals(value, seek.key().asValues()[0]);
+                assertFalse(seek.next());
             }
-        }
-        finally
-        {
-            populator.close( true, NULL_CONTEXT );
+        } finally {
+            populator.close(true, NULL_CONTEXT);
         }
     }
 
     @Override
-    protected Value supportedValue( int i )
-    {
-        return stringValue( "Value" + i );
+    protected Value supportedValue(int i) {
+        return stringValue("Value" + i);
     }
 }

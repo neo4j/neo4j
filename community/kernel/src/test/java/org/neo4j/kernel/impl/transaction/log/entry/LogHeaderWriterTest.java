@@ -19,25 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
-import org.neo4j.storageengine.api.LegacyStoreId;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogFormatVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogVersion;
@@ -48,14 +29,32 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.storageengine.api.LegacyStoreId;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 @TestDirectoryExtension
-@ExtendWith( RandomExtension.class )
-class LogHeaderWriterTest
-{
+@ExtendWith(RandomExtension.class)
+class LogHeaderWriterTest {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private RandomSupport random;
 
@@ -65,74 +64,70 @@ class LogHeaderWriterTest
     private LogHeader logHeader;
 
     @BeforeEach
-    void setUp()
-    {
-        expectedLogVersion = random.nextLong( 0, LOG_VERSION_MASK );
-        expectedTxId = random.nextLong( 0, Long.MAX_VALUE );
-        expectedStoreId = new LegacyStoreId( random.nextLong(), random.nextLong(), random.nextLong() );
-        logHeader = new LogHeader( expectedLogVersion, expectedTxId, expectedStoreId );
+    void setUp() {
+        expectedLogVersion = random.nextLong(0, LOG_VERSION_MASK);
+        expectedTxId = random.nextLong(0, Long.MAX_VALUE);
+        expectedStoreId = new LegacyStoreId(random.nextLong(), random.nextLong(), random.nextLong());
+        logHeader = new LogHeader(expectedLogVersion, expectedTxId, expectedStoreId);
     }
 
     @Test
-    void shouldWriteALogHeaderInTheGivenChannel() throws IOException
-    {
+    void shouldWriteALogHeaderInTheGivenChannel() throws IOException {
         // given
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         // when
-        writeLogHeader( channel, logHeader );
+        writeLogHeader(channel, logHeader);
 
         // then
         long encodedLogVersions = channel.getLong();
-        assertEquals( encodeLogVersion( expectedLogVersion, CURRENT_LOG_FORMAT_VERSION ), encodedLogVersions );
+        assertEquals(encodeLogVersion(expectedLogVersion, CURRENT_LOG_FORMAT_VERSION), encodedLogVersions);
 
-        byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
-        assertEquals( CURRENT_LOG_FORMAT_VERSION, logFormatVersion );
+        byte logFormatVersion = decodeLogFormatVersion(encodedLogVersions);
+        assertEquals(CURRENT_LOG_FORMAT_VERSION, logFormatVersion);
 
-        long logVersion = decodeLogVersion( encodedLogVersions );
-        assertEquals( expectedLogVersion, logVersion );
+        long logVersion = decodeLogVersion(encodedLogVersions);
+        assertEquals(expectedLogVersion, logVersion);
 
         long txId = channel.getLong();
-        assertEquals( expectedTxId, txId );
+        assertEquals(expectedTxId, txId);
 
-        LegacyStoreId storeId = new LegacyStoreId( channel.getLong(), channel.getLong(), channel.getLong() );
-        assertEquals( expectedStoreId, storeId );
+        LegacyStoreId storeId = new LegacyStoreId(channel.getLong(), channel.getLong(), channel.getLong());
+        assertEquals(expectedStoreId, storeId);
     }
 
     @Test
-    void shouldWriteALogHeaderInAStoreChannel() throws IOException
-    {
+    void shouldWriteALogHeaderInAStoreChannel() throws IOException {
         // given
-        final Path file = testDirectory.file( "WriteLogHeader" );
-        final StoreChannel channel = fileSystem.write( file );
+        final Path file = testDirectory.file("WriteLogHeader");
+        final StoreChannel channel = fileSystem.write(file);
 
         // when
-        writeLogHeader( channel, logHeader, INSTANCE );
+        writeLogHeader(channel, logHeader, INSTANCE);
 
         channel.close();
 
         // then
         final byte[] array = new byte[CURRENT_FORMAT_LOG_HEADER_SIZE];
-        try ( InputStream stream = fileSystem.openAsInputStream( file ) )
-        {
-            int read = stream.read( array );
-            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, read );
+        try (InputStream stream = fileSystem.openAsInputStream(file)) {
+            int read = stream.read(array);
+            assertEquals(CURRENT_FORMAT_LOG_HEADER_SIZE, read);
         }
-        final ByteBuffer result = ByteBuffer.wrap( array );
+        final ByteBuffer result = ByteBuffer.wrap(array);
 
         long encodedLogVersions = result.getLong();
-        assertEquals( encodeLogVersion( expectedLogVersion, CURRENT_LOG_FORMAT_VERSION ), encodedLogVersions );
+        assertEquals(encodeLogVersion(expectedLogVersion, CURRENT_LOG_FORMAT_VERSION), encodedLogVersions);
 
-        byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
-        assertEquals( CURRENT_LOG_FORMAT_VERSION, logFormatVersion );
+        byte logFormatVersion = decodeLogFormatVersion(encodedLogVersions);
+        assertEquals(CURRENT_LOG_FORMAT_VERSION, logFormatVersion);
 
-        long logVersion = decodeLogVersion( encodedLogVersions );
-        assertEquals( expectedLogVersion, logVersion );
+        long logVersion = decodeLogVersion(encodedLogVersions);
+        assertEquals(expectedLogVersion, logVersion);
 
         long txId = result.getLong();
-        assertEquals( expectedTxId, txId );
+        assertEquals(expectedTxId, txId);
 
-        LegacyStoreId storeId = new LegacyStoreId( result.getLong(), result.getLong(), result.getLong() );
-        assertEquals( expectedStoreId, storeId );
+        LegacyStoreId storeId = new LegacyStoreId(result.getLong(), result.getLong(), result.getLong());
+        assertEquals(expectedStoreId, storeId);
     }
 }

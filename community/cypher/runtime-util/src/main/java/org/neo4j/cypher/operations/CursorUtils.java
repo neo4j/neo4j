@@ -19,6 +19,14 @@
  */
 package org.neo4j.cypher.operations;
 
+import static java.lang.String.format;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.EntityNotFoundException;
@@ -44,25 +52,15 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-import static java.lang.String.format;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
 /**
  * Utilities for working with cursors from within generated code
  */
-@SuppressWarnings( {"Duplicates"} )
-public final class CursorUtils
-{
+@SuppressWarnings({"Duplicates"})
+public final class CursorUtils {
     /**
      * Do not instantiate this class
      */
-    private CursorUtils()
-    {
+    private CursorUtils() {
         throw new UnsupportedOperationException();
     }
 
@@ -78,15 +76,10 @@ public final class CursorUtils
      * @throws EntityNotFoundException If the node was deleted in transaction.
      */
     public static Value nodeGetProperty(
-            Read read,
-            NodeCursor nodeCursor,
-            long node,
-            PropertyCursor propertyCursor,
-            int prop
-    ) throws EntityNotFoundException
-    {
+            Read read, NodeCursor nodeCursor, long node, PropertyCursor propertyCursor, int prop)
+            throws EntityNotFoundException {
         assert node >= NO_SUCH_NODE;
-        return nodeGetProperty( read, nodeCursor, node, propertyCursor, prop, true );
+        return nodeGetProperty(read, nodeCursor, node, propertyCursor, prop, true);
     }
 
     /**
@@ -107,32 +100,26 @@ public final class CursorUtils
             long node,
             PropertyCursor propertyCursor,
             int prop,
-            boolean throwOnDeleted
-    ) throws EntityNotFoundException
-    {
+            boolean throwOnDeleted)
+            throws EntityNotFoundException {
         assert node >= NO_SUCH_NODE;
 
-        if ( node == NO_SUCH_NODE )
-        {
+        if (node == NO_SUCH_NODE) {
             return NO_VALUE;
         }
-        if ( prop == NO_SUCH_PROPERTY_KEY )
-        {
+        if (prop == NO_SUCH_PROPERTY_KEY) {
             return NO_VALUE;
         }
-        read.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            if ( throwOnDeleted && read.nodeDeletedInTransaction( node ) )
-            {
-                throw new EntityNotFoundException( String.format("Node with id %d has been deleted in this transaction", node ) );
-            }
-            else
-            {
+        read.singleNode(node, nodeCursor);
+        if (!nodeCursor.next()) {
+            if (throwOnDeleted && read.nodeDeletedInTransaction(node)) {
+                throw new EntityNotFoundException(
+                        String.format("Node with id %d has been deleted in this transaction", node));
+            } else {
                 return NO_VALUE;
             }
         }
-        return nodeGetProperty( nodeCursor, propertyCursor, prop );
+        return nodeGetProperty(nodeCursor, propertyCursor, prop);
     }
 
     /**
@@ -143,16 +130,11 @@ public final class CursorUtils
      * @param prop The property key id
      * @return The value of the property, otherwise {@link Values#NO_VALUE} if not found.
      */
-    public static Value nodeGetProperty(
-            NodeCursor nodeCursor,
-            PropertyCursor propertyCursor,
-            int prop )
-    {
-        if ( prop == NO_SUCH_PROPERTY_KEY )
-        {
+    public static Value nodeGetProperty(NodeCursor nodeCursor, PropertyCursor propertyCursor, int prop) {
+        if (prop == NO_SUCH_PROPERTY_KEY) {
             return NO_VALUE;
         }
-        nodeCursor.properties( propertyCursor, PropertySelection.selection( prop ) );
+        nodeCursor.properties(propertyCursor, PropertySelection.selection(prop));
         return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
@@ -167,23 +149,16 @@ public final class CursorUtils
      * @return <code>true</code> if node has property otherwise <code>false</code>
      */
     public static boolean nodeHasProperty(
-            Read read,
-            NodeCursor nodeCursor,
-            long node,
-            PropertyCursor propertyCursor,
-            int prop
-    ) throws EntityNotFoundException
-    {
-        if ( prop == NO_SUCH_PROPERTY_KEY )
-        {
+            Read read, NodeCursor nodeCursor, long node, PropertyCursor propertyCursor, int prop)
+            throws EntityNotFoundException {
+        if (prop == NO_SUCH_PROPERTY_KEY) {
             return false;
         }
-        read.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-           return false;
+        read.singleNode(node, nodeCursor);
+        if (!nodeCursor.next()) {
+            return false;
         }
-        return nodeHasProperty( nodeCursor, propertyCursor, prop );
+        return nodeHasProperty(nodeCursor, propertyCursor, prop);
     }
 
     /**
@@ -194,17 +169,11 @@ public final class CursorUtils
      * @param prop The id of the property to find
      * @return {@code true} if node has property otherwise {@code false}.
      */
-    public static boolean nodeHasProperty(
-            NodeCursor nodeCursor,
-            PropertyCursor propertyCursor,
-            int prop
-    )
-    {
-        if ( prop == NO_SUCH_PROPERTY_KEY )
-        {
+    public static boolean nodeHasProperty(NodeCursor nodeCursor, PropertyCursor propertyCursor, int prop) {
+        if (prop == NO_SUCH_PROPERTY_KEY) {
             return false;
         }
-        nodeCursor.properties( propertyCursor, PropertySelection.onlyKeysSelection( prop ) );
+        nodeCursor.properties(propertyCursor, PropertySelection.onlyKeysSelection(prop));
         return propertyCursor.next();
     }
 
@@ -217,46 +186,38 @@ public final class CursorUtils
      * @param label The id of the label
      * @return {@code true} if the node has the label, otherwise {@code false}
      */
-    public static boolean nodeHasLabel( Read read, NodeCursor nodeCursor, long node, int label )
-    {
-        if ( label == NO_SUCH_LABEL )
-        {
+    public static boolean nodeHasLabel(Read read, NodeCursor nodeCursor, long node, int label) {
+        if (label == NO_SUCH_LABEL) {
             return false;
         }
-        read.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
+        read.singleNode(node, nodeCursor);
+        if (!nodeCursor.next()) {
             return false;
         }
 
-        return nodeCursor.hasLabel( label );
+        return nodeCursor.hasLabel(label);
     }
 
     /**
      * Returns true if any of the specified labels are set on the node with id `node`.
      */
-    public static boolean nodeHasAnyLabel( Read read, NodeCursor nodeCursor, long node, int[] labels )
-    {
-        read.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
+    public static boolean nodeHasAnyLabel(Read read, NodeCursor nodeCursor, long node, int[] labels) {
+        read.singleNode(node, nodeCursor);
+        if (!nodeCursor.next()) {
             return false;
         }
 
-        return nodeHasAnyLabel( nodeCursor, labels );
+        return nodeHasAnyLabel(nodeCursor, labels);
     }
 
     /**
      * Returns true if any of the specified labels are set on the node that `cursor` is pointing at.
      */
-    public static boolean nodeHasAnyLabel( NodeCursor cursor, int[] labels )
-    {
+    public static boolean nodeHasAnyLabel(NodeCursor cursor, int[] labels) {
         var nodeLabels = cursor.labels();
 
-        for ( int label : labels )
-        {
-            if ( nodeLabels.contains( label ) )
-            {
+        for (int label : labels) {
+            if (nodeLabels.contains(label)) {
                 return true;
             }
         }
@@ -272,35 +233,36 @@ public final class CursorUtils
      * @param type The id of the type
      * @return {@code true} if the relationship has the type, otherwise {@code false}
      */
-    public static boolean relationshipHasType( Read read, RelationshipScanCursor relationshipCursor, long relationship, int type )
-    {
-        if ( type == NO_SUCH_RELATIONSHIP_TYPE )
-        {
+    public static boolean relationshipHasType(
+            Read read, RelationshipScanCursor relationshipCursor, long relationship, int type) {
+        if (type == NO_SUCH_RELATIONSHIP_TYPE) {
             return false;
         }
-        read.singleRelationship( relationship, relationshipCursor );
-        if ( !relationshipCursor.next() )
-        {
+        read.singleRelationship(relationship, relationshipCursor);
+        if (!relationshipCursor.next()) {
             return false;
         }
 
         return relationshipCursor.type() == type;
     }
 
-    public static RelationshipTraversalCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
-            long nodeId, Direction direction, int[] types, CursorContext cursorContext )
-    {
-        read.singleNode( nodeId, node );
-        if ( !node.next() )
-        {
-            return Cursors.emptyTraversalCursor( read );
+    public static RelationshipTraversalCursor nodeGetRelationships(
+            Read read,
+            CursorFactory cursors,
+            NodeCursor node,
+            long nodeId,
+            Direction direction,
+            int[] types,
+            CursorContext cursorContext) {
+        read.singleNode(nodeId, node);
+        if (!node.next()) {
+            return Cursors.emptyTraversalCursor(read);
         }
-        return switch ( direction )
-                {
-                    case OUTGOING -> RelationshipSelections.outgoingCursor( cursors, node, types, cursorContext );
-                    case INCOMING -> RelationshipSelections.incomingCursor( cursors, node, types, cursorContext );
-                    case BOTH -> RelationshipSelections.allCursor( cursors, node, types, cursorContext );
-                };
+        return switch (direction) {
+            case OUTGOING -> RelationshipSelections.outgoingCursor(cursors, node, types, cursorContext);
+            case INCOMING -> RelationshipSelections.incomingCursor(cursors, node, types, cursorContext);
+            case BOTH -> RelationshipSelections.allCursor(cursors, node, types, cursorContext);
+        };
     }
 
     /**
@@ -319,10 +281,9 @@ public final class CursorUtils
             RelationshipScanCursor relationshipCursor,
             long relationship,
             PropertyCursor propertyCursor,
-            int prop
-    ) throws EntityNotFoundException
-    {
-        return relationshipGetProperty( read, relationshipCursor, relationship, propertyCursor, prop, true );
+            int prop)
+            throws EntityNotFoundException {
+        return relationshipGetProperty(read, relationshipCursor, relationship, propertyCursor, prop, true);
     }
 
     /**
@@ -343,33 +304,26 @@ public final class CursorUtils
             long relationship,
             PropertyCursor propertyCursor,
             int prop,
-            boolean throwOnDeleted
-    ) throws EntityNotFoundException
-    {
+            boolean throwOnDeleted)
+            throws EntityNotFoundException {
         assert relationship >= NO_SUCH_RELATIONSHIP;
 
-        if ( relationship == NO_SUCH_RELATIONSHIP )
-        {
+        if (relationship == NO_SUCH_RELATIONSHIP) {
             return NO_VALUE;
         }
-        if ( prop == NO_SUCH_PROPERTY_KEY )
-        {
+        if (prop == NO_SUCH_PROPERTY_KEY) {
             return NO_VALUE;
         }
-        read.singleRelationship( relationship, relationshipCursor );
-        if ( !relationshipCursor.next() )
-        {
-            if ( throwOnDeleted && read.relationshipDeletedInTransaction( relationship ) )
-            {
+        read.singleRelationship(relationship, relationshipCursor);
+        if (!relationshipCursor.next()) {
+            if (throwOnDeleted && read.relationshipDeletedInTransaction(relationship)) {
                 throw new EntityNotFoundException(
-                        String.format( "Relationship with id %d has been deleted in this transaction", relationship ) );
-            }
-            else
-            {
+                        String.format("Relationship with id %d has been deleted in this transaction", relationship));
+            } else {
                 return NO_VALUE;
             }
         }
-        relationshipCursor.properties( propertyCursor, PropertySelection.selection( prop ) );
+        relationshipCursor.properties(propertyCursor, PropertySelection.selection(prop));
         return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
@@ -381,13 +335,12 @@ public final class CursorUtils
      * @param prop property key id
      * @return the value of the property, otherwise {@link Values#NO_VALUE} if not found.
      */
-    public static Value relationshipGetProperty( RelationshipDataAccessor relationshipCursor, PropertyCursor propertyCursor, int prop )
-    {
-        if ( prop == NO_SUCH_PROPERTY_KEY )
-        {
+    public static Value relationshipGetProperty(
+            RelationshipDataAccessor relationshipCursor, PropertyCursor propertyCursor, int prop) {
+        if (prop == NO_SUCH_PROPERTY_KEY) {
             return NO_VALUE;
         }
-        relationshipCursor.properties( propertyCursor, PropertySelection.selection( prop ) );
+        relationshipCursor.properties(propertyCursor, PropertySelection.selection(prop));
         return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
@@ -406,19 +359,16 @@ public final class CursorUtils
             RelationshipScanCursor relationshipCursor,
             long relationship,
             PropertyCursor propertyCursor,
-            int prop
-    ) throws EntityNotFoundException
-    {
-        if ( prop == NO_SUCH_PROPERTY_KEY )
-        {
+            int prop)
+            throws EntityNotFoundException {
+        if (prop == NO_SUCH_PROPERTY_KEY) {
             return false;
         }
-        read.singleRelationship( relationship, relationshipCursor );
-        if ( !relationshipCursor.next() )
-        {
+        read.singleRelationship(relationship, relationshipCursor);
+        if (!relationshipCursor.next()) {
             return false;
         }
-        relationshipCursor.properties( propertyCursor, PropertySelection.onlyKeysSelection( prop ) );
+        relationshipCursor.properties(propertyCursor, PropertySelection.onlyKeysSelection(prop));
         return propertyCursor.next();
     }
 
@@ -431,72 +381,53 @@ public final class CursorUtils
      * @return {@code true} if relationship has property otherwise {@code false}.
      */
     public static boolean relationshipHasProperty(
-            RelationshipDataAccessor relationshipCursor,
-            PropertyCursor propertyCursor,
-            int prop
-    )
-    {
-        if ( prop == NO_SUCH_PROPERTY_KEY )
-        {
+            RelationshipDataAccessor relationshipCursor, PropertyCursor propertyCursor, int prop) {
+        if (prop == NO_SUCH_PROPERTY_KEY) {
             return false;
         }
-        relationshipCursor.properties( propertyCursor, PropertySelection.onlyKeysSelection( prop ) );
+        relationshipCursor.properties(propertyCursor, PropertySelection.onlyKeysSelection(prop));
         return propertyCursor.next();
     }
 
-    public static RelationshipTraversalCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
-            long nodeId, Direction direction, CursorContext cursorContext )
-    {
-        return nodeGetRelationships( read, cursors, node, nodeId, direction, null, cursorContext );
+    public static RelationshipTraversalCursor nodeGetRelationships(
+            Read read,
+            CursorFactory cursors,
+            NodeCursor node,
+            long nodeId,
+            Direction direction,
+            CursorContext cursorContext) {
+        return nodeGetRelationships(read, cursors, node, nodeId, direction, null, cursorContext);
     }
 
-    public static AnyValue propertyGet( String key,
+    public static AnyValue propertyGet(
+            String key,
             AnyValue container,
             Read read,
             DbAccess dbAccess,
             NodeCursor nodeCursor,
             RelationshipScanCursor relationshipScanCursor,
-            PropertyCursor propertyCursor )
-    {
+            PropertyCursor propertyCursor) {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( container instanceof VirtualNodeValue )
-        {
+        if (container instanceof VirtualNodeValue) {
             return nodeGetProperty(
-                    read,
-                    nodeCursor,
-                    ((VirtualNodeValue) container).id(),
-                    propertyCursor,
-                    dbAccess.propertyKey( key ) );
-        }
-        else if ( container instanceof VirtualRelationshipValue )
-        {
+                    read, nodeCursor, ((VirtualNodeValue) container).id(), propertyCursor, dbAccess.propertyKey(key));
+        } else if (container instanceof VirtualRelationshipValue) {
             return relationshipGetProperty(
                     read,
                     relationshipScanCursor,
                     ((VirtualRelationshipValue) container).id(),
                     propertyCursor,
-                    dbAccess.propertyKey( key ) );
-        }
-        else if ( container instanceof MapValue )
-        {
-            return ((MapValue) container).get( key );
-        }
-        else if ( container instanceof TemporalValue<?,?> )
-        {
-            return ((TemporalValue) container).get( key );
-        }
-        else if ( container instanceof DurationValue )
-        {
-            return ((DurationValue) container).get( key );
-        }
-        else if ( container instanceof PointValue )
-        {
-            return ((PointValue) container).get( key );
-        }
-        else
-        {
-            throw new CypherTypeException( format( "Type mismatch: expected a map but was %s", container ),
-                    null );
+                    dbAccess.propertyKey(key));
+        } else if (container instanceof MapValue) {
+            return ((MapValue) container).get(key);
+        } else if (container instanceof TemporalValue<?, ?>) {
+            return ((TemporalValue) container).get(key);
+        } else if (container instanceof DurationValue) {
+            return ((DurationValue) container).get(key);
+        } else if (container instanceof PointValue) {
+            return ((PointValue) container).get(key);
+        } else {
+            throw new CypherTypeException(format("Type mismatch: expected a map but was %s", container), null);
         }
     }
 }

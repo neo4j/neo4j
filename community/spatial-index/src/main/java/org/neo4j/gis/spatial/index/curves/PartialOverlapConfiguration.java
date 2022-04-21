@@ -19,21 +19,18 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-public class PartialOverlapConfiguration extends StandardConfiguration
-{
+public class PartialOverlapConfiguration extends StandardConfiguration {
     private static final double TOP_THRESHOLD = 0.99;
     private static final double BOTTOM_THRESHOLD = 0.5;
     private double topThreshold;
     private double bottomThreshold;
 
-    PartialOverlapConfiguration()
-    {
-        this( StandardConfiguration.DEFAULT_EXTRA_LEVELS, TOP_THRESHOLD, BOTTOM_THRESHOLD );
+    PartialOverlapConfiguration() {
+        this(StandardConfiguration.DEFAULT_EXTRA_LEVELS, TOP_THRESHOLD, BOTTOM_THRESHOLD);
     }
 
-    public PartialOverlapConfiguration( int extraLevels, double topThreshold, double bottomThreshold )
-    {
-        super( extraLevels );
+    public PartialOverlapConfiguration(int extraLevels, double topThreshold, double bottomThreshold) {
+        super(extraLevels);
         this.topThreshold = topThreshold;
         this.bottomThreshold = bottomThreshold;
     }
@@ -46,16 +43,14 @@ public class PartialOverlapConfiguration extends StandardConfiguration
      * {@inheritDoc}
      */
     @Override
-    public boolean stopAtThisDepth( double overlap, int depth, int maxDepth )
-    {
+    public boolean stopAtThisDepth(double overlap, int depth, int maxDepth) {
         double slope = (bottomThreshold - topThreshold) / maxDepth;
         double threshold = slope * depth + topThreshold;
         return overlap >= threshold || depth >= maxDepth;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + "(" + extraLevels + "," + topThreshold + "," + bottomThreshold + ")";
     }
 }

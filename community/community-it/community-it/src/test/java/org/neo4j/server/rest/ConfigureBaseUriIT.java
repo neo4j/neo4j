@@ -19,15 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-
-import org.neo4j.server.helpers.FunctionalTestHelper;
-
 import static java.lang.Integer.parseInt;
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.ofByteArray;
@@ -35,135 +26,133 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
-{
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.helpers.FunctionalTestHelper;
+
+public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase {
     private static FunctionalTestHelper functionalTestHelper;
     private static HttpClient httpClient;
 
     @BeforeAll
-    public static void setupServer()
-    {
-        functionalTestHelper = new FunctionalTestHelper( container() );
+    public static void setupServer() {
+        functionalTestHelper = new FunctionalTestHelper(container());
         httpClient = newHttpClient();
     }
 
     @Test
-    public void shouldForwardHttpAndHost() throws Exception
-    {
-        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+    public void shouldForwardHttpAndHost() throws Exception {
+        var request = HttpRequest.newBuilder(functionalTestHelper.baseUri())
                 .GET()
-                .header( "Accept", "application/json" )
-                .header( "X-Forwarded-Host", "foobar.com" )
-                .header( "X-Forwarded-Proto", "http" )
+                .header("Accept", "application/json")
+                .header("X-Forwarded-Host", "foobar.com")
+                .header("X-Forwarded-Proto", "http")
                 .build();
 
-        var response = httpClient.send( request, ofByteArray() );
+        var response = httpClient.send(request, ofByteArray());
 
-        verifyContentLength( response );
+        verifyContentLength(response);
 
-        var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString ).contains( "http://foobar.com" );
-        assertThat( responseBodyString ).doesNotContain( "http://localhost" );
+        var responseBodyString = new String(response.body());
+        assertThat(responseBodyString).contains("http://foobar.com");
+        assertThat(responseBodyString).doesNotContain("http://localhost");
     }
 
     @Test
-    public void shouldForwardHttpsAndHost() throws Exception
-    {
-        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+    public void shouldForwardHttpsAndHost() throws Exception {
+        var request = HttpRequest.newBuilder(functionalTestHelper.baseUri())
                 .GET()
-                .header( "Accept", "application/json" )
-                .header( "X-Forwarded-Host", "foobar.com" )
-                .header( "X-Forwarded-Proto", "https" )
+                .header("Accept", "application/json")
+                .header("X-Forwarded-Host", "foobar.com")
+                .header("X-Forwarded-Proto", "https")
                 .build();
 
-        var response = httpClient.send( request, ofByteArray() );
+        var response = httpClient.send(request, ofByteArray());
 
-        verifyContentLength( response );
+        verifyContentLength(response);
 
-        var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString ).contains( "https://foobar.com" );
-        assertThat( responseBodyString ).doesNotContain( "https://localhost" );
+        var responseBodyString = new String(response.body());
+        assertThat(responseBodyString).contains("https://foobar.com");
+        assertThat(responseBodyString).doesNotContain("https://localhost");
     }
 
     @Test
-    public void shouldForwardHttpAndHostOnDifferentPort() throws Exception
-    {
-        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+    public void shouldForwardHttpAndHostOnDifferentPort() throws Exception {
+        var request = HttpRequest.newBuilder(functionalTestHelper.baseUri())
                 .GET()
-                .header( "Accept", "application/json" )
-                .header( "X-Forwarded-Host", "foobar.com:9999" )
-                .header( "X-Forwarded-Proto", "http" )
+                .header("Accept", "application/json")
+                .header("X-Forwarded-Host", "foobar.com:9999")
+                .header("X-Forwarded-Proto", "http")
                 .build();
 
-        var response = httpClient.send( request, ofByteArray() );
+        var response = httpClient.send(request, ofByteArray());
 
-        verifyContentLength( response );
+        verifyContentLength(response);
 
-        var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString ).contains( "http://foobar.com:9999" );
-        assertThat( responseBodyString ).doesNotContain( "http://localhost" );
+        var responseBodyString = new String(response.body());
+        assertThat(responseBodyString).contains("http://foobar.com:9999");
+        assertThat(responseBodyString).doesNotContain("http://localhost");
     }
 
     @Test
-    public void shouldForwardHttpAndFirstHost() throws Exception
-    {
-        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+    public void shouldForwardHttpAndFirstHost() throws Exception {
+        var request = HttpRequest.newBuilder(functionalTestHelper.baseUri())
                 .GET()
-                .header( "Accept", "application/json" )
-                .header( "X-Forwarded-Host", "foobar.com, bazbar.com" )
-                .header( "X-Forwarded-Proto", "http" )
+                .header("Accept", "application/json")
+                .header("X-Forwarded-Host", "foobar.com, bazbar.com")
+                .header("X-Forwarded-Proto", "http")
                 .build();
 
-        var response = httpClient.send( request, ofByteArray() );
+        var response = httpClient.send(request, ofByteArray());
 
-        verifyContentLength( response );
+        verifyContentLength(response);
 
-        var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString ).contains( "http://foobar.com" );
-        assertThat( responseBodyString ).doesNotContain( "http://localhost" );
+        var responseBodyString = new String(response.body());
+        assertThat(responseBodyString).contains("http://foobar.com");
+        assertThat(responseBodyString).doesNotContain("http://localhost");
     }
 
     @Test
-    public void shouldForwardHttpsAndHostOnDifferentPort() throws Exception
-    {
-        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+    public void shouldForwardHttpsAndHostOnDifferentPort() throws Exception {
+        var request = HttpRequest.newBuilder(functionalTestHelper.baseUri())
                 .GET()
-                .header( "Accept", "application/json" )
-                .header( "X-Forwarded-Host", "foobar.com:9999" )
-                .header( "X-Forwarded-Proto", "https" )
+                .header("Accept", "application/json")
+                .header("X-Forwarded-Host", "foobar.com:9999")
+                .header("X-Forwarded-Proto", "https")
                 .build();
 
-        var response = httpClient.send( request, ofByteArray() );
+        var response = httpClient.send(request, ofByteArray());
 
-        verifyContentLength( response );
+        verifyContentLength(response);
 
-        var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString ).contains( "https://foobar.com:9999" );
-        assertThat( responseBodyString ).doesNotContain( "https://localhost" );
+        var responseBodyString = new String(response.body());
+        assertThat(responseBodyString).contains("https://foobar.com:9999");
+        assertThat(responseBodyString).doesNotContain("https://localhost");
     }
 
     @Test
-    public void shouldUseRequestUriWhenNoXForwardHeadersPresent() throws Exception
-    {
-        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+    public void shouldUseRequestUriWhenNoXForwardHeadersPresent() throws Exception {
+        var request = HttpRequest.newBuilder(functionalTestHelper.baseUri())
                 .GET()
-                .header( "Accept", "application/json" )
+                .header("Accept", "application/json")
                 .build();
 
-        var response = httpClient.send( request, ofByteArray() );
+        var response = httpClient.send(request, ofByteArray());
 
-        verifyContentLength( response );
+        verifyContentLength(response);
 
-        var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString ).contains( "http://localhost" );
-        assertThat( responseBodyString ).doesNotContain( "https://foobar.com" );
-        assertThat( responseBodyString ).doesNotContain( ":0" );
+        var responseBodyString = new String(response.body());
+        assertThat(responseBodyString).contains("http://localhost");
+        assertThat(responseBodyString).doesNotContain("https://foobar.com");
+        assertThat(responseBodyString).doesNotContain(":0");
     }
 
-    private static void verifyContentLength( HttpResponse<byte[]> response )
-    {
-        var contentLengthValue = response.headers().firstValue( "CONTENT-LENGTH" );
-        assertTrue( contentLengthValue.isPresent() );
-        assertEquals( parseInt( contentLengthValue.get() ), response.body().length );
+    private static void verifyContentLength(HttpResponse<byte[]> response) {
+        var contentLengthValue = response.headers().firstValue("CONTENT-LENGTH");
+        assertTrue(contentLengthValue.isPresent());
+        assertEquals(parseInt(contentLengthValue.get()), response.body().length);
     }
 }

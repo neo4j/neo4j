@@ -17,10 +17,14 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object StorableType {
+
   /**
    * The type of a property stored in a Node or Relationship
    */
-  val storableType: TypeSpec = CTBoolean | CTNumber.covariant | CTPoint | CTString | CTDuration | CTDate | CTTime | CTLocalTime | CTLocalDateTime | CTDateTime |
-    CTList(CTBoolean) | CTList(CTNumber) | CTList(CTInteger) | CTList(CTFloat) |  CTList(CTPoint) | CTList(CTString) | CTList(CTDuration) | CTList(CTDate) |
-    CTList(CTTime) | CTList(CTLocalTime) | CTList(CTLocalDateTime) | CTList(CTDateTime)
+  val storableType: TypeSpec =
+    CTBoolean | CTNumber.covariant | CTPoint | CTString | CTDuration | CTDate | CTTime | CTLocalTime | CTLocalDateTime | CTDateTime |
+      CTList(CTBoolean) | CTList(CTNumber) | CTList(CTInteger) | CTList(CTFloat) | CTList(CTPoint) | CTList(
+        CTString
+      ) | CTList(CTDuration) | CTList(CTDate) |
+      CTList(CTTime) | CTList(CTLocalTime) | CTList(CTLocalDateTime) | CTList(CTDateTime)
 }

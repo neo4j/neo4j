@@ -22,7 +22,6 @@ package org.neo4j.test;
 import org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-public interface TestNeo4jDatabaseManagementServiceBuilder extends Neo4jDatabaseManagementServiceBuilder
-{
-    TestNeo4jDatabaseManagementServiceBuilder setFileSystem( FileSystemAbstraction fileSystem );
+public interface TestNeo4jDatabaseManagementServiceBuilder extends Neo4jDatabaseManagementServiceBuilder {
+    TestNeo4jDatabaseManagementServiceBuilder setFileSystem(FileSystemAbstraction fileSystem);
 }

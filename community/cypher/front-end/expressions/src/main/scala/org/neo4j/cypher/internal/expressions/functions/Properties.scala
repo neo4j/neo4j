@@ -26,7 +26,19 @@ case object Properties extends Function {
 
   override val signatures = Vector(
     TypeSignature(this, CTNode, CTMap, "Returns a map containing all the properties of a node.", Category.SCALAR),
-    TypeSignature(this, CTRelationship, CTMap, description = "Returns a map containing all the properties of a relationship.", Category.SCALAR),
-    TypeSignature(this, CTMap, CTMap, description = "Returns a map containing all the properties of a map.", Category.SCALAR)
+    TypeSignature(
+      this,
+      CTRelationship,
+      CTMap,
+      description = "Returns a map containing all the properties of a relationship.",
+      Category.SCALAR
+    ),
+    TypeSignature(
+      this,
+      CTMap,
+      CTMap,
+      description = "Returns a map containing all the properties of a map.",
+      Category.SCALAR
+    )
   )
 }

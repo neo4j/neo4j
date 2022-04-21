@@ -21,7 +21,6 @@ package org.neo4j.dbms.api;
 
 import java.nio.file.Path;
 import java.util.Map;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.DatabaseEventListener;
@@ -31,53 +30,45 @@ import org.neo4j.logging.LogProvider;
  * Creates a {@link DatabaseManagementService} with Community Edition features.
  */
 @PublicApi
-public final class DatabaseManagementServiceBuilder implements Neo4jDatabaseManagementServiceBuilder
-{
+public final class DatabaseManagementServiceBuilder implements Neo4jDatabaseManagementServiceBuilder {
     private final Neo4jDatabaseManagementServiceBuilder implementation;
 
-    public DatabaseManagementServiceBuilder( Path homeDirectory )
-    {
-        implementation = new DatabaseManagementServiceBuilderImplementation( homeDirectory, extension -> true  );
+    public DatabaseManagementServiceBuilder(Path homeDirectory) {
+        implementation = new DatabaseManagementServiceBuilderImplementation(homeDirectory, extension -> true);
     }
 
     @Override
-    public DatabaseManagementService build()
-    {
+    public DatabaseManagementService build() {
         return implementation.build();
     }
 
     @Override
-    public DatabaseManagementServiceBuilder addDatabaseListener( DatabaseEventListener databaseEventListener )
-    {
-        implementation.addDatabaseListener( databaseEventListener );
+    public DatabaseManagementServiceBuilder addDatabaseListener(DatabaseEventListener databaseEventListener) {
+        implementation.addDatabaseListener(databaseEventListener);
         return this;
     }
 
     @Override
-    public DatabaseManagementServiceBuilder setUserLogProvider( LogProvider userLogProvider )
-    {
-        implementation.setUserLogProvider( userLogProvider );
+    public DatabaseManagementServiceBuilder setUserLogProvider(LogProvider userLogProvider) {
+        implementation.setUserLogProvider(userLogProvider);
         return this;
     }
 
     @Override
-    public <T> DatabaseManagementServiceBuilder setConfig( Setting<T> setting, T value )
-    {
-        implementation.setConfig( setting, value );
+    public <T> DatabaseManagementServiceBuilder setConfig(Setting<T> setting, T value) {
+        implementation.setConfig(setting, value);
         return this;
     }
 
     @Override
-    public DatabaseManagementServiceBuilder setConfig( Map<Setting<?>, Object> config )
-    {
-        implementation.setConfig( config );
+    public DatabaseManagementServiceBuilder setConfig(Map<Setting<?>, Object> config) {
+        implementation.setConfig(config);
         return this;
     }
 
     @Override
-    public DatabaseManagementServiceBuilder loadPropertiesFromFile( Path path )
-    {
-        implementation.loadPropertiesFromFile( path );
+    public DatabaseManagementServiceBuilder loadPropertiesFromFile(Path path) {
+        implementation.loadPropertiesFromFile(path);
         return this;
     }
 }

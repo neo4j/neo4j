@@ -49,7 +49,8 @@ import org.neo4j.cypher.internal.util.StepSequencer
  * Using cost estimates, plan the query to a logical plan.
  */
 case object QueryPlanner
-  extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
+    extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
 
   override def phase = LOGICAL_PLANNING
 
@@ -64,11 +65,13 @@ case object QueryPlanner
 
     from.copy(
       maybeLogicalPlan = Some(logicalPlan),
-      maybeSemanticTable = Some(logicalPlanningContext.semanticTable))
+      maybeSemanticTable = Some(logicalPlanningContext.semanticTable)
+    )
   }
 
   def getLogicalPlanningContext(from: LogicalPlanState, context: PlannerContext): LogicalPlanningContext = {
-    val printCostComparisons = context.debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
+    val printCostComparisons =
+      context.debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 
     val costComparisonListener =
       if (printCostComparisons)
@@ -77,7 +80,8 @@ case object QueryPlanner
         devNullListener
 
     val planningAttributes = from.planningAttributes
-    val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen)
+    val logicalPlanProducer =
+      LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen)
     LogicalPlanningContext(
       planContext = context.planContext,
       logicalPlanProducer = logicalPlanProducer,
@@ -100,25 +104,36 @@ case object QueryPlanner
       cancellationChecker = context.cancellationChecker,
       planningTextIndexesEnabled = context.config.planningTextIndexesEnabled,
       planningRangeIndexesEnabled = context.config.planningRangeIndexesEnabled,
-      planningPointIndexesEnabled = context.config.planningPointIndexesEnabled,
+      planningPointIndexesEnabled = context.config.planningPointIndexesEnabled
     )
   }
 
-  private def getMetricsFrom(context: PlannerContext) = if (context.debugOptions.inverseCostEnabled) {
-    context.metrics.copy(cost = (v1: LogicalPlan, v2: QueryGraphSolverInput, v3: SemanticTable, v4: Cardinalities, v5: ProvidedOrders, monitor) => -context.metrics.cost.costFor(v1, v2, v3, v4, v5, monitor))
-  } else {
-    context.metrics
-  }
+  private def getMetricsFrom(context: PlannerContext) =
+    if (context.debugOptions.inverseCostEnabled) {
+      context.metrics.copy(cost =
+        (
+          v1: LogicalPlan,
+          v2: QueryGraphSolverInput,
+          v3: SemanticTable,
+          v4: Cardinalities,
+          v5: ProvidedOrders,
+          monitor
+        ) => -context.metrics.cost.costFor(v1, v2, v3, v4, v5, monitor)
+      )
+    } else {
+      context.metrics
+    }
 
   def plan(query: PlannerQuery, context: LogicalPlanningContext, produceResultColumns: Seq[String]): LogicalPlan = {
     val plan = plannerQueryPartPlanner.plan(query.query, context)
 
     val lastInterestingOrder = query.query match {
       case spq: SinglePlannerQuery => Some(spq.last.interestingOrder)
-      case _ => None
+      case _                       => None
     }
 
-    val planWithProduceResults = context.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder, context)
+    val planWithProduceResults =
+      context.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder, context)
     VerifyBestPlan(plan = planWithProduceResults, expected = query.query, context = context)
     planWithProduceResults
   }
@@ -139,9 +154,13 @@ case object QueryPlanner
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getTransformer(pushdownPropertyReads: Boolean, semanticFeatures: Seq[SemanticFeature]): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = this
 
 }
+
 /**
  * Combines multiple PlannerQuery plans together with Union
  */
@@ -156,29 +175,34 @@ case object plannerQueryPartPlanner {
    * @param distinctifyUnions if `true`, a distinct will be inserted for distinct UNIONs.
    * @return the plan
    */
-  def plan(plannerQueryPart: PlannerQueryPart, context: LogicalPlanningContext, distinctifyUnions: Boolean = true): LogicalPlan =
+  def plan(
+    plannerQueryPart: PlannerQueryPart,
+    context: LogicalPlanningContext,
+    distinctifyUnions: Boolean = true
+  ): LogicalPlan =
     plannerQueryPart match {
-      case pq:SinglePlannerQuery =>
+      case pq: SinglePlannerQuery =>
         planSingleQuery.plan(pq, context)
       case UnionQuery(part, query, distinct, unionMappings) =>
         val projectionsForPart = unionMappings.map(um => um.unionVariable.name -> um.variableInPart).toMap
         val projectionsForQuery = unionMappings.map(um => um.unionVariable.name -> um.variableInQuery).toMap
 
         val partPlan = plan(part, context, distinctifyUnions = false) // Only one distinct at the top level
-        val partPlanWithProjection = context.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, context)
+        val partPlanWithProjection =
+          context.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, context)
 
         val queryPlan = planSingleQuery.plan(query, context)
-        val queryPlanWithProjection = context.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, None, context)
+        val queryPlanWithProjection =
+          context.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, None, context)
 
-        val unionPlan = context.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, context)
+        val unionPlan =
+          context.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, context)
         if (distinct && distinctifyUnions)
           context.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
         else
           unionPlan
     }
 }
-
-
 
 trait SingleQueryPlanner {
   def plan(in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan

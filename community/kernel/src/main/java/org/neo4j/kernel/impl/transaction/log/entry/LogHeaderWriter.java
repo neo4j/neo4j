@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.IOException;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
+import java.io.IOException;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.LegacyStoreId;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 /**
  * Write the transaction log file header.
@@ -41,49 +40,43 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
  *  reserved       24 bytes
  * </pre>
  */
-public class LogHeaderWriter
-{
+public class LogHeaderWriter {
     private static final long LOG_VERSION_BITS = 56;
     static final long LOG_VERSION_MASK = (1L << LOG_VERSION_BITS) - 1;
 
-    private LogHeaderWriter()
-    {
-    }
+    private LogHeaderWriter() {}
 
-    public static void writeLogHeader( FlushableChannel channel, LogHeader logHeader ) throws IOException
-    {
-        channel.putLong( encodeLogVersion( logHeader.getLogVersion(), logHeader.getLogFormatVersion() ) );
-        channel.putLong( logHeader.getLastCommittedTxId() );
+    public static void writeLogHeader(FlushableChannel channel, LogHeader logHeader) throws IOException {
+        channel.putLong(encodeLogVersion(logHeader.getLogVersion(), logHeader.getLogFormatVersion()));
+        channel.putLong(logHeader.getLastCommittedTxId());
         LegacyStoreId storeId = logHeader.getStoreId();
-        channel.putLong( storeId.getCreationTime() );
-        channel.putLong( storeId.getRandomId() );
-        channel.putLong( storeId.getStoreVersion() );
-        channel.putLong( 0 /* reserved */ );
-        channel.putLong( 0 /* reserved */ );
-        channel.putLong( 0 /* reserved */ );
+        channel.putLong(storeId.getCreationTime());
+        channel.putLong(storeId.getRandomId());
+        channel.putLong(storeId.getStoreVersion());
+        channel.putLong(0 /* reserved */);
+        channel.putLong(0 /* reserved */);
+        channel.putLong(0 /* reserved */);
     }
 
-    public static void writeLogHeader( StoreChannel channel, LogHeader logHeader, MemoryTracker memoryTracker ) throws IOException
-    {
-        try ( var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, memoryTracker ) )
-        {
+    public static void writeLogHeader(StoreChannel channel, LogHeader logHeader, MemoryTracker memoryTracker)
+            throws IOException {
+        try (var scopedBuffer = new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, memoryTracker)) {
             var buffer = scopedBuffer.getBuffer();
-            buffer.putLong( encodeLogVersion( logHeader.getLogVersion(), logHeader.getLogFormatVersion() ) );
-            buffer.putLong( logHeader.getLastCommittedTxId() );
+            buffer.putLong(encodeLogVersion(logHeader.getLogVersion(), logHeader.getLogFormatVersion()));
+            buffer.putLong(logHeader.getLastCommittedTxId());
             LegacyStoreId storeId = logHeader.getStoreId();
-            buffer.putLong( storeId.getCreationTime() );
-            buffer.putLong( storeId.getRandomId() );
-            buffer.putLong( storeId.getStoreVersion() );
-            buffer.putLong( 0 /* reserved */ );
-            buffer.putLong( 0 /* reserved */ );
-            buffer.putLong( 0 /* reserved */ );
+            buffer.putLong(storeId.getCreationTime());
+            buffer.putLong(storeId.getRandomId());
+            buffer.putLong(storeId.getStoreVersion());
+            buffer.putLong(0 /* reserved */);
+            buffer.putLong(0 /* reserved */);
+            buffer.putLong(0 /* reserved */);
             buffer.flip();
-            channel.writeAll( buffer );
+            channel.writeAll(buffer);
         }
     }
 
-    public static long encodeLogVersion( long logVersion, long formatVersion )
-    {
+    public static long encodeLogVersion(long logVersion, long formatVersion) {
         return (logVersion & LOG_VERSION_MASK) | (formatVersion << LOG_VERSION_BITS);
     }
 }

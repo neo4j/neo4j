@@ -24,27 +24,20 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 
-public class FunctionWithParameters
-{
+public class FunctionWithParameters {
 
     @UserAggregationFunction
-    public MyAggregation aggregateAllTheThings( String shouldNotHaveAnyParam )
-    {
+    public MyAggregation aggregateAllTheThings(String shouldNotHaveAnyParam) {
         return new MyAggregation();
     }
 
-    public static class MyAggregation
-    {
+    public static class MyAggregation {
 
         @UserAggregationUpdate
-        public void update( @Name( "foo" ) long island )
-        {
-
-        }
+        public void update(@Name("foo") long island) {}
 
         @UserAggregationResult
-        public boolean sarahConnor()
-        {
+        public boolean sarahConnor() {
             return false;
         }
     }

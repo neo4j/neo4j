@@ -20,9 +20,8 @@
 package org.neo4j.index.internal.gbptree;
 
 @FunctionalInterface
-interface GBPTreeGenerationTarget
-{
+interface GBPTreeGenerationTarget {
     GBPTreeGenerationTarget NO_GENERATION_TARGET = generation -> {};
 
-    void accept( long generation );
+    void accept(long generation);
 }

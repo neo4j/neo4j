@@ -19,61 +19,52 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.common.EntityType;
-
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
-public class IndexConfig
-{
+import org.neo4j.common.EntityType;
+
+public class IndexConfig {
     public static final IndexConfig DEFAULT = new IndexConfig();
     private boolean createLabelIndex;
     private boolean createRelationTypeIndex;
     private String labelIndexName = EMPTY;
     private String relationshipIndexName = EMPTY;
 
-    public IndexConfig withLabelIndex()
-    {
+    public IndexConfig withLabelIndex() {
         this.createLabelIndex = true;
         return this;
     }
 
-    public IndexConfig withRelationshipTypeIndex()
-    {
+    public IndexConfig withRelationshipTypeIndex() {
         this.createRelationTypeIndex = true;
         return this;
     }
 
-    public IndexConfig withLabelIndex( String name )
-    {
+    public IndexConfig withLabelIndex(String name) {
         this.createLabelIndex = true;
         this.labelIndexName = name;
         return this;
     }
 
-    public IndexConfig withRelationshipTypeIndex( String name )
-    {
+    public IndexConfig withRelationshipTypeIndex(String name) {
         this.createRelationTypeIndex = true;
         this.relationshipIndexName = name;
         return this;
     }
 
-    public boolean createLabelIndex()
-    {
+    public boolean createLabelIndex() {
         return createLabelIndex;
     }
 
-    public boolean createRelationshipIndex()
-    {
+    public boolean createRelationshipIndex() {
         return createRelationTypeIndex;
     }
 
-    public String indexName( EntityType entityType )
-    {
+    public String indexName(EntityType entityType) {
         return entityType == EntityType.NODE ? labelIndexName : relationshipIndexName;
     }
 
-    public static IndexConfig create()
-    {
+    public static IndexConfig create() {
         return new IndexConfig();
     }
 }

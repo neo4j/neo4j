@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
+
 import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,7 +35,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -50,8 +51,6 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
-import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
-
 /**
  * Base class for converting AnyValue to normal java objects.
  * <p>
@@ -61,384 +60,317 @@ import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
  *
  * @param <E> the exception thrown on error.
  */
-public abstract class BaseToObjectValueWriter<E extends Exception> implements AnyValueWriter<E>
-{
+public abstract class BaseToObjectValueWriter<E extends Exception> implements AnyValueWriter<E> {
     private final Deque<Writer> stack = new ArrayDeque<>();
 
-    public BaseToObjectValueWriter()
-    {
-        stack.push( new ObjectWriter() );
+    public BaseToObjectValueWriter() {
+        stack.push(new ObjectWriter());
     }
 
-    protected abstract Node newNodeEntityById( long id );
+    protected abstract Node newNodeEntityById(long id);
 
-    protected abstract Relationship newRelationshipEntityById( long id );
+    protected abstract Relationship newRelationshipEntityById(long id);
 
-    protected abstract Point newPoint( CoordinateReferenceSystem crs, double[] coordinate );
+    protected abstract Point newPoint(CoordinateReferenceSystem crs, double[] coordinate);
 
-    public Object value()
-    {
+    public Object value() {
         assert stack.size() == 1;
         return stack.getLast().value();
     }
 
-    private void writeValue( Object value )
-    {
+    private void writeValue(Object value) {
         assert !stack.isEmpty();
         Writer head = stack.peek();
-        head.write( value );
+        head.write(value);
     }
 
     @Override
-    public EntityMode entityMode()
-    {
+    public EntityMode entityMode() {
         return EntityMode.FULL;
     }
 
     @Override
-    public void writeNodeReference( long nodeId )
-    {
-        throw new UnsupportedOperationException( "Cannot write a raw node reference" );
+    public void writeNodeReference(long nodeId) {
+        throw new UnsupportedOperationException("Cannot write a raw node reference");
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray ignore, MapValue properties, boolean ignored )
-    {
-        if ( nodeId >= 0 )
-        {
-            writeValue( newNodeEntityById( nodeId ) );
+    public void writeNode(long nodeId, TextArray ignore, MapValue properties, boolean ignored) {
+        if (nodeId >= 0) {
+            writeValue(newNodeEntityById(nodeId));
         }
     }
 
     @Override
-    public void writeVirtualNodeHack( Object node )
-    {
-        writeValue( node );
+    public void writeVirtualNodeHack(Object node) {
+        writeValue(node);
     }
 
     @Override
-    public void writeRelationshipReference( long relId )
-    {
-        throw new UnsupportedOperationException( "Cannot write a raw relationship reference" );
+    public void writeRelationshipReference(long relId) {
+        throw new UnsupportedOperationException("Cannot write a raw relationship reference");
     }
 
     @Override
-    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored )
-    {
-        if ( relId >= 0 )
-        {
-            writeValue( newRelationshipEntityById( relId ) );
+    public void writeRelationship(
+            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored) {
+        if (relId >= 0) {
+            writeValue(newRelationshipEntityById(relId));
         }
     }
 
     @Override
-    public void writeVirtualRelationshipHack( Object relationship )
-    {
-        writeValue( relationship );
+    public void writeVirtualRelationshipHack(Object relationship) {
+        writeValue(relationship);
     }
 
     @Override
-    public void beginMap( int size )
-    {
-        stack.push( new MapWriter( size ) );
+    public void beginMap(int size) {
+        stack.push(new MapWriter(size));
     }
 
     @Override
-    public void endMap()
-    {
+    public void endMap() {
         assert !stack.isEmpty();
-        writeValue( stack.pop().value() );
+        writeValue(stack.pop().value());
     }
 
     @Override
-    public void beginList( int size )
-    {
-        stack.push( new ListWriter( size ) );
+    public void beginList(int size) {
+        stack.push(new ListWriter(size));
     }
 
     @Override
-    public void endList()
-    {
+    public void endList() {
         assert !stack.isEmpty();
-        writeValue( stack.pop().value() );
+        writeValue(stack.pop().value());
     }
 
     @Override
-    public void writePathReference( long[] nodes, long[] relationships ) throws E
-    {
+    public void writePathReference(long[] nodes, long[] relationships) throws E {
         assert nodes != null;
         assert nodes.length > 0;
         assert relationships != null;
         assert nodes.length == relationships.length + 1;
 
         Node[] nodeProxies = new Node[nodes.length];
-        for ( int i = 0; i < nodes.length; i++ )
-        {
-            nodeProxies[i] = newNodeEntityById( nodes[i] );
+        for (int i = 0; i < nodes.length; i++) {
+            nodeProxies[i] = newNodeEntityById(nodes[i]);
         }
         Relationship[] relProxies = new Relationship[relationships.length];
-        for ( int i = 0; i < relationships.length; i++ )
-        {
-            relProxies[i] = newRelationshipEntityById( relationships[i] );
+        for (int i = 0; i < relationships.length; i++) {
+            relProxies[i] = newRelationshipEntityById(relationships[i]);
         }
-        writeValue( new PathProxy( nodeProxies, relProxies ) );
+        writeValue(new PathProxy(nodeProxies, relProxies));
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships )
-    {
+    public void writePath(NodeValue[] nodes, RelationshipValue[] relationships) {
         assert nodes != null;
         assert nodes.length > 0;
         assert relationships != null;
         assert nodes.length == relationships.length + 1;
 
         Node[] nodeProxies = new Node[nodes.length];
-        for ( int i = 0; i < nodes.length; i++ )
-        {
-            nodeProxies[i] = newNodeEntityById( nodes[i].id() );
+        for (int i = 0; i < nodes.length; i++) {
+            nodeProxies[i] = newNodeEntityById(nodes[i].id());
         }
         Relationship[] relProxies = new Relationship[relationships.length];
-        for ( int i = 0; i < relationships.length; i++ )
-        {
-            relProxies[i] = newRelationshipEntityById( relationships[i].id() );
+        for (int i = 0; i < relationships.length; i++) {
+            relProxies[i] = newRelationshipEntityById(relationships[i].id());
         }
-        writeValue( new PathProxy( nodeProxies, relProxies ) );
+        writeValue(new PathProxy(nodeProxies, relProxies));
     }
 
     @Override
-    public final void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
-    {
-        writeValue( newPoint( crs, coordinate ) );
+    public final void writePoint(CoordinateReferenceSystem crs, double[] coordinate) {
+        writeValue(newPoint(crs, coordinate));
     }
 
     @Override
-    public void writeNull()
-    {
-        writeValue( null );
+    public void writeNull() {
+        writeValue(null);
     }
 
     @Override
-    public void writeBoolean( boolean value )
-    {
-        writeValue( value );
+    public void writeBoolean(boolean value) {
+        writeValue(value);
     }
 
     @Override
-    public void writeInteger( byte value )
-    {
-        writeValue( value );
+    public void writeInteger(byte value) {
+        writeValue(value);
     }
 
     @Override
-    public void writeInteger( short value )
-    {
-        writeValue( value );
+    public void writeInteger(short value) {
+        writeValue(value);
     }
 
     @Override
-    public void writeInteger( int value )
-    {
-        writeValue( value );
+    public void writeInteger(int value) {
+        writeValue(value);
     }
 
     @Override
-    public void writeInteger( long value )
-    {
-        writeValue( value );
+    public void writeInteger(long value) {
+        writeValue(value);
     }
 
     @Override
-    public void writeFloatingPoint( float value )
-    {
-        writeValue( value );
+    public void writeFloatingPoint(float value) {
+        writeValue(value);
     }
 
     @Override
-    public void writeFloatingPoint( double value )
-    {
-        writeValue( value );
+    public void writeFloatingPoint(double value) {
+        writeValue(value);
     }
 
     @Override
-    public void writeString( String value )
-    {
-        writeValue( value );
+    public void writeString(String value) {
+        writeValue(value);
     }
 
     @Override
-    public void writeString( char value )
-    {
-        writeValue( value );
+    public void writeString(char value) {
+        writeValue(value);
     }
 
     @Override
-    public void beginArray( int size, ArrayType arrayType )
-    {
-        stack.push( new ArrayWriter( size, arrayType ) );
+    public void beginArray(int size, ArrayType arrayType) {
+        stack.push(new ArrayWriter(size, arrayType));
     }
 
     @Override
-    public void endArray()
-    {
+    public void endArray() {
         assert !stack.isEmpty();
-        writeValue( stack.pop().value() );
+        writeValue(stack.pop().value());
     }
 
     @Override
-    public void writeByteArray( byte[] value )
-    {
-        writeValue( value );
+    public void writeByteArray(byte[] value) {
+        writeValue(value);
     }
 
     @Override
-    public void writeDuration( long months, long days, long seconds, int nanos )
-    {
-        writeValue( DurationValue.duration( months, days, seconds, nanos ) );
+    public void writeDuration(long months, long days, long seconds, int nanos) {
+        writeValue(DurationValue.duration(months, days, seconds, nanos));
     }
 
     @Override
-    public void writeDate( LocalDate localDate )
-    {
-        writeValue( localDate );
+    public void writeDate(LocalDate localDate) {
+        writeValue(localDate);
     }
 
     @Override
-    public void writeLocalTime( LocalTime localTime )
-    {
-        writeValue( localTime );
+    public void writeLocalTime(LocalTime localTime) {
+        writeValue(localTime);
     }
 
     @Override
-    public void writeTime( OffsetTime offsetTime )
-    {
-        writeValue( offsetTime );
+    public void writeTime(OffsetTime offsetTime) {
+        writeValue(offsetTime);
     }
 
     @Override
-    public void writeLocalDateTime( LocalDateTime localDateTime )
-    {
-        writeValue( localDateTime );
+    public void writeLocalDateTime(LocalDateTime localDateTime) {
+        writeValue(localDateTime);
     }
 
     @Override
-    public void writeDateTime( ZonedDateTime zonedDateTime )
-    {
-        writeValue( zonedDateTime );
+    public void writeDateTime(ZonedDateTime zonedDateTime) {
+        writeValue(zonedDateTime);
     }
 
-    private static class PathProxy implements Path
-    {
+    private static class PathProxy implements Path {
         private final Node[] nodes;
         private final Relationship[] relationships;
 
-        private PathProxy( Node[] nodes, Relationship[] relationships )
-        {
+        private PathProxy(Node[] nodes, Relationship[] relationships) {
             this.nodes = nodes;
             this.relationships = relationships;
         }
 
         @Override
-        public Node startNode()
-        {
+        public Node startNode() {
             return nodes[0];
         }
 
         @Override
-        public Node endNode()
-        {
+        public Node endNode() {
             return nodes[nodes.length - 1];
         }
 
         @Override
-        public Relationship lastRelationship()
-        {
+        public Relationship lastRelationship() {
             return relationships[relationships.length - 1];
         }
 
         @Override
-        public Iterable<Relationship> relationships()
-        {
-            return Arrays.asList( relationships );
+        public Iterable<Relationship> relationships() {
+            return Arrays.asList(relationships);
         }
 
         @Override
-        public Iterable<Relationship> reverseRelationships()
-        {
-            return () -> new ReverseArrayIterator<>( relationships );
+        public Iterable<Relationship> reverseRelationships() {
+            return () -> new ReverseArrayIterator<>(relationships);
         }
 
         @Override
-        public Iterable<Node> nodes()
-        {
-            return Arrays.asList( nodes );
+        public Iterable<Node> nodes() {
+            return Arrays.asList(nodes);
         }
 
         @Override
-        public Iterable<Node> reverseNodes()
-        {
-            return () -> new ReverseArrayIterator<>( nodes );
+        public Iterable<Node> reverseNodes() {
+            return () -> new ReverseArrayIterator<>(nodes);
         }
 
         @Override
-        public int length()
-        {
+        public int length() {
             return relationships.length;
         }
 
         @Override
-        public int hashCode()
-        {
-            if ( relationships.length == 0 )
-            {
+        public int hashCode() {
+            if (relationships.length == 0) {
                 return startNode().hashCode();
-            }
-            else
-            {
-                return Arrays.hashCode( relationships );
+            } else {
+                return Arrays.hashCode(relationships);
             }
         }
 
         @Override
-        public boolean equals( Object obj )
-        {
-            if ( this == obj )
-            {
+        public boolean equals(Object obj) {
+            if (this == obj) {
                 return true;
-            }
-            else if ( obj instanceof Path other )
-            {
-                return startNode().equals( other.startNode() ) &&
-                       iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
-            }
-            else
-            {
+            } else if (obj instanceof Path other) {
+                return startNode().equals(other.startNode())
+                        && iteratorsEqual(
+                                this.relationships().iterator(),
+                                other.relationships().iterator());
+            } else {
                 return false;
             }
         }
 
         @Override
-        public Iterator<Entity> iterator()
-        {
-            return new Iterator<>()
-            {
+        public Iterator<Entity> iterator() {
+            return new Iterator<>() {
                 Iterator<? extends Entity> current = nodes().iterator();
                 Iterator<? extends Entity> next = relationships().iterator();
 
                 @Override
-                public boolean hasNext()
-                {
+                public boolean hasNext() {
                     return current.hasNext();
                 }
 
                 @Override
-                public Entity next()
-                {
-                    try
-                    {
+                public Entity next() {
+                    try {
                         return current.next();
-                    }
-                    finally
-                    {
+                    } finally {
                         Iterator<? extends Entity> temp = current;
                         current = next;
                         next = temp;
@@ -446,148 +378,127 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
                 }
 
                 @Override
-                public void remove()
-                {
+                public void remove() {
                     next.remove();
                 }
             };
         }
 
         @Override
-        public String toString()
-        {
-            return Paths.defaultPathToStringWithNotInTransactionFallback( this );
+        public String toString() {
+            return Paths.defaultPathToStringWithNotInTransactionFallback(this);
         }
     }
-    private interface Writer
-    {
-        void write( Object value );
+
+    private interface Writer {
+        void write(Object value);
 
         Object value();
     }
 
-    private static class ObjectWriter implements Writer
-    {
+    private static class ObjectWriter implements Writer {
         private Object value;
 
         @Override
-        public void write( Object value )
-        {
+        public void write(Object value) {
             this.value = value;
         }
 
         @Override
-        public Object value()
-        {
+        public Object value() {
             return value;
         }
     }
 
-    private static class MapWriter implements Writer
-    {
+    private static class MapWriter implements Writer {
         private String key;
         private boolean isKey = true;
-        private final Map<String,Object> map;
+        private final Map<String, Object> map;
 
-        MapWriter( int size )
-        {
-            this.map = new HashMap<>( size );
+        MapWriter(int size) {
+            this.map = new HashMap<>(size);
         }
 
         @Override
-        public void write( Object value )
-        {
-            if ( isKey )
-            {
+        public void write(Object value) {
+            if (isKey) {
                 key = (String) value;
                 isKey = false;
-            }
-            else
-            {
-                map.put( key, value );
+            } else {
+                map.put(key, value);
                 isKey = true;
             }
         }
 
         @Override
-        public Object value()
-        {
+        public Object value() {
             return map;
         }
     }
 
-    private static class ArrayWriter implements Writer
-    {
+    private static class ArrayWriter implements Writer {
         protected final Object array;
         private int index;
 
-        ArrayWriter( int size, ArrayType arrayType )
-        {
-            switch ( arrayType )
-            {
-            case SHORT:
-                this.array = Array.newInstance( short.class, size );
-                break;
-            case INT:
-                this.array = Array.newInstance( int.class, size );
-                break;
-            case BYTE:
-                this.array = Array.newInstance( byte.class, size );
-                break;
-            case LONG:
-                this.array = Array.newInstance( long.class, size );
-                break;
-            case FLOAT:
-                this.array = Array.newInstance( float.class, size );
-                break;
-            case DOUBLE:
-                this.array = Array.newInstance( double.class, size );
-                break;
-            case BOOLEAN:
-                this.array = Array.newInstance( boolean.class, size );
-                break;
-            case STRING:
-                this.array = Array.newInstance( String.class, size );
-                break;
-            case CHAR:
-                this.array = Array.newInstance( char.class, size );
-                break;
-            default:
-                this.array = new Object[size];
+        ArrayWriter(int size, ArrayType arrayType) {
+            switch (arrayType) {
+                case SHORT:
+                    this.array = Array.newInstance(short.class, size);
+                    break;
+                case INT:
+                    this.array = Array.newInstance(int.class, size);
+                    break;
+                case BYTE:
+                    this.array = Array.newInstance(byte.class, size);
+                    break;
+                case LONG:
+                    this.array = Array.newInstance(long.class, size);
+                    break;
+                case FLOAT:
+                    this.array = Array.newInstance(float.class, size);
+                    break;
+                case DOUBLE:
+                    this.array = Array.newInstance(double.class, size);
+                    break;
+                case BOOLEAN:
+                    this.array = Array.newInstance(boolean.class, size);
+                    break;
+                case STRING:
+                    this.array = Array.newInstance(String.class, size);
+                    break;
+                case CHAR:
+                    this.array = Array.newInstance(char.class, size);
+                    break;
+                default:
+                    this.array = new Object[size];
             }
         }
 
         @Override
-        public void write( Object value )
-        {
-            Array.set( array, index++, value );
+        public void write(Object value) {
+            Array.set(array, index++, value);
         }
 
         @Override
-        public Object value()
-        {
+        public Object value() {
             return array;
         }
     }
 
-    private static class ListWriter implements Writer
-    {
+    private static class ListWriter implements Writer {
         private final List<Object> list;
 
-        ListWriter( int size )
-        {
-            this.list = new ArrayList<>( size );
+        ListWriter(int size) {
+            this.list = new ArrayList<>(size);
         }
 
         @Override
-        public void write( Object value )
-        {
-            list.add( value );
+        public void write(Object value) {
+            list.add(value);
         }
 
         @Override
-        public Object value()
-        {
+        public Object value() {
             return list;
         }
     }

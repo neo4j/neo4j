@@ -34,12 +34,14 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("should rewrite Selection(false, source) to Limit(source, 0)") {
     val source: LogicalPlan = FakePlan(Set.empty)
     val selection = Selection(Seq(falseLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(
-      Limit( source, SignedDecimalIntegerLiteral("0")(InputPosition.NONE)))
+      Limit(source, SignedDecimalIntegerLiteral("0")(InputPosition.NONE))
+    )
   }
 
   test("should rewrite Selection(false, Create) to ExhaustiveLimit(Create, 0)") {
@@ -47,7 +49,8 @@ class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupp
     val selection = Selection(Seq(falseLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(
-      ExhaustiveLimit(source, SignedDecimalIntegerLiteral("0")(InputPosition.NONE)))
+      ExhaustiveLimit(source, SignedDecimalIntegerLiteral("0")(InputPosition.NONE))
+    )
   }
 
   test("should rewrite Selection(true, source) to source") {

@@ -31,13 +31,15 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 
 object sensitiveLiteralReplacement {
 
-  private val sensitiveliteralMatcher: PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
+  private val sensitiveliteralMatcher
+    : PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
     case l: SensitiveStringLiteral =>
       acc =>
         if (acc.contains(l)) {
           SkipChildren(acc)
         } else {
-          val parameter = new AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l)(l.position) with SensitiveAutoParameter
+          val parameter =
+            new AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l)(l.position) with SensitiveAutoParameter
           SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
   }

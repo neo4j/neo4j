@@ -26,27 +26,23 @@ import java.io.InputStream;
  * Implements an {@link InputStream} that keeps track of the progress. This assumes that the total size is available
  * before reading starts.
  */
-class ProgressAwareInputStream extends InputStream
-{
+class ProgressAwareInputStream extends InputStream {
     private final OnProgressListener listener;
     private final InputStream wrappedInputStream;
     private final long size;
     private long totalRead;
     private int lastReportedPercent;
 
-    ProgressAwareInputStream( InputStream wrappedInputStream, long size, OnProgressListener listener )
-    {
+    ProgressAwareInputStream(InputStream wrappedInputStream, long size, OnProgressListener listener) {
         this.wrappedInputStream = wrappedInputStream;
         this.size = size;
         this.listener = listener;
     }
 
     @Override
-    public int read() throws IOException
-    {
+    public int read() throws IOException {
         int data = wrappedInputStream.read();
-        if ( data >= 0 )
-        {
+        if (data >= 0) {
             totalRead += 1;
             recalculatePercent();
         }
@@ -54,11 +50,9 @@ class ProgressAwareInputStream extends InputStream
     }
 
     @Override
-    public int read( byte[] b ) throws IOException
-    {
-        int n = wrappedInputStream.read( b );
-        if ( n > 0 )
-        {
+    public int read(byte[] b) throws IOException {
+        int n = wrappedInputStream.read(b);
+        if (n > 0) {
             totalRead += n;
             recalculatePercent();
         }
@@ -66,76 +60,63 @@ class ProgressAwareInputStream extends InputStream
     }
 
     @Override
-    public int read( byte[] b, int offset, int length ) throws IOException
-    {
-        int n = wrappedInputStream.read( b, offset, length );
-        if ( n > 0 )
-        {
+    public int read(byte[] b, int offset, int length) throws IOException {
+        int n = wrappedInputStream.read(b, offset, length);
+        if (n > 0) {
             totalRead += n;
             recalculatePercent();
         }
         return n;
     }
 
-    private void recalculatePercent()
-    {
+    private void recalculatePercent() {
         int percent = size > 0 ? (int) (totalRead * 100 / size) : -1;
-        if ( percent > 100 )
-        {
+        if (percent > 100) {
             percent = 100;
         }
-        if ( percent < 0 )
-        {
+        if (percent < 0) {
             percent = 0;
         }
-        if ( percent > lastReportedPercent )
-        {
+        if (percent > lastReportedPercent) {
             lastReportedPercent = percent;
-            listener.onProgress( percent );
+            listener.onProgress(percent);
         }
     }
 
     @Override
-    public long skip( long n ) throws IOException
-    {
-        return wrappedInputStream.skip( n );
+    public long skip(long n) throws IOException {
+        return wrappedInputStream.skip(n);
     }
 
     @Override
-    public int available() throws IOException
-    {
+    public int available() throws IOException {
         return wrappedInputStream.available();
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         wrappedInputStream.close();
     }
 
     @Override
-    public synchronized void mark( int readLimit )
-    {
-        wrappedInputStream.mark( readLimit );
+    public synchronized void mark(int readLimit) {
+        wrappedInputStream.mark(readLimit);
     }
 
     @Override
-    public synchronized void reset() throws IOException
-    {
+    public synchronized void reset() throws IOException {
         wrappedInputStream.reset();
     }
 
     @Override
-    public boolean markSupported()
-    {
+    public boolean markSupported() {
         return wrappedInputStream.markSupported();
     }
 
     /**
      * Interface for classes that want to monitor this input stream
      */
-    public interface OnProgressListener
-    {
-        void onProgress( int percentage );
+    public interface OnProgressListener {
+        void onProgress(int percentage);
     }
 }

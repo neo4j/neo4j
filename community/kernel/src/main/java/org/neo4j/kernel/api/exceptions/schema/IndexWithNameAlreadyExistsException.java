@@ -21,12 +21,10 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class IndexWithNameAlreadyExistsException extends SchemaRuleWithNameAlreadyExistsException
-{
+public class IndexWithNameAlreadyExistsException extends SchemaRuleWithNameAlreadyExistsException {
     private static final String INDEX_NAME_FORMAT = "There already exists an index called '%s'.";
 
-    public IndexWithNameAlreadyExistsException( String schemaName )
-    {
-        super( Status.Schema.IndexWithNameAlreadyExists, String.format( INDEX_NAME_FORMAT, schemaName ) );
+    public IndexWithNameAlreadyExistsException(String schemaName) {
+        super(Status.Schema.IndexWithNameAlreadyExists, String.format(INDEX_NAME_FORMAT, schemaName));
     }
 }

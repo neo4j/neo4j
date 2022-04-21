@@ -20,80 +20,63 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.util.Objects;
-
 import org.neo4j.internal.helpers.collection.LfuCache;
 
-public class TransactionMetadataCache
-{
+public class TransactionMetadataCache {
     private static final int DEFAULT_TRANSACTION_CACHE_SIZE = 10_000;
-    private final LfuCache<Long,TransactionMetadata> txIdMetadataCache;
+    private final LfuCache<Long, TransactionMetadata> txIdMetadataCache;
 
-    public TransactionMetadataCache()
-    {
-        this.txIdMetadataCache = new LfuCache<>( "Tx start position cache", DEFAULT_TRANSACTION_CACHE_SIZE );
+    public TransactionMetadataCache() {
+        this.txIdMetadataCache = new LfuCache<>("Tx start position cache", DEFAULT_TRANSACTION_CACHE_SIZE);
     }
 
-    public void clear()
-    {
+    public void clear() {
         txIdMetadataCache.clear();
     }
 
-    public TransactionMetadata getTransactionMetadata( long txId )
-    {
-        return txIdMetadataCache.get( txId );
+    public TransactionMetadata getTransactionMetadata(long txId) {
+        return txIdMetadataCache.get(txId);
     }
 
-    public void cacheTransactionMetadata( long txId, LogPosition position )
-    {
-        if ( position.getByteOffset() == -1 )
-        {
-            throw new RuntimeException( "StartEntry.position is " + position );
+    public void cacheTransactionMetadata(long txId, LogPosition position) {
+        if (position.getByteOffset() == -1) {
+            throw new RuntimeException("StartEntry.position is " + position);
         }
 
-        TransactionMetadata result = new TransactionMetadata( position );
-        txIdMetadataCache.put( txId, result );
+        TransactionMetadata result = new TransactionMetadata(position);
+        txIdMetadataCache.put(txId, result);
     }
 
-    public static class TransactionMetadata
-    {
+    public static class TransactionMetadata {
         private final LogPosition startPosition;
 
-        public TransactionMetadata( LogPosition startPosition )
-        {
+        public TransactionMetadata(LogPosition startPosition) {
             this.startPosition = startPosition;
         }
 
-        public LogPosition getStartPosition()
-        {
+        public LogPosition getStartPosition() {
             return startPosition;
         }
 
         @Override
-        public String toString()
-        {
-            return "TransactionMetadata{" +
-                   ", startPosition=" + startPosition +
-                   '}';
+        public String toString() {
+            return "TransactionMetadata{" + ", startPosition=" + startPosition + '}';
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             TransactionMetadata that = (TransactionMetadata) o;
-            return Objects.equals( startPosition, that.startPosition );
+            return Objects.equals(startPosition, that.startPosition);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return startPosition.hashCode();
         }
     }

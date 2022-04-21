@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.mockito.Mockito;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
-
+import org.mockito.Mockito;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
@@ -41,37 +43,38 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.monitoring.Monitors;
 
-import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-
-class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderCompatibilityTestSuite
-{
+class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderCompatibilityTestSuite {
     @Override
-    IndexPrototype indexPrototype()
-    {
-        return IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
+    IndexPrototype indexPrototype() {
+        return IndexPrototype.forSchema(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE));
     }
 
     @Override
-    IndexType indexType()
-    {
+    IndexType indexType() {
         return IndexType.LOOKUP;
     }
 
     @Override
-    IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
-    {
+    IndexProvider createIndexProvider(PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config) {
         Monitors monitors = new Monitors();
         String monitorTag = "";
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( graphDbDir );
-        var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
-        DatabaseIdRepository databaseIdRepository = mock( DatabaseIdRepository.class );
-        Mockito.when( databaseIdRepository.getByName( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( defaultDatabaseId ) );
-        var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, databaseIdRepository ) );
-        var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
-        return TokenIndexProviderFactory.create( pageCache, graphDbDir, fs, monitors, monitorTag, readOnlyChecker, recoveryCleanupWorkCollector,
-                databaseLayout, NULL_CONTEXT_FACTORY );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(graphDbDir);
+        var defaultDatabaseId = DatabaseIdFactory.from(
+                DEFAULT_DATABASE_NAME, UUID.randomUUID()); // UUID required, but ignored by config lookup
+        DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
+        Mockito.when(databaseIdRepository.getByName(DEFAULT_DATABASE_NAME)).thenReturn(Optional.of(defaultDatabaseId));
+        var readOnlyDatabases = new ReadOnlyDatabases(new ConfigBasedLookupFactory(config, databaseIdRepository));
+        var readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
+        return TokenIndexProviderFactory.create(
+                pageCache,
+                graphDbDir,
+                fs,
+                monitors,
+                monitorTag,
+                readOnlyChecker,
+                recoveryCleanupWorkCollector,
+                databaseLayout,
+                NULL_CONTEXT_FACTORY);
     }
 }

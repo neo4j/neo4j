@@ -29,8 +29,8 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
     IndexedInclusiveLongRange(0L, 0L, 1L) should equal(IndexedSeq(0L))
   }
 
-  test("step length 1"){
-    val range= IndexedInclusiveLongRange(0L, 11L, 1L)
+  test("step length 1") {
+    val range = IndexedInclusiveLongRange(0L, 11L, 1L)
 
     range should equal(IndexedSeq(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L))
     range should have length 12
@@ -40,8 +40,8 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
     }
   }
 
-  test("step length 3"){
-    val range= IndexedInclusiveLongRange(3L, 14L, 3L)
+  test("step length 3") {
+    val range = IndexedInclusiveLongRange(3L, 14L, 3L)
 
     range should equal(IndexedSeq(3L, 6L, 9L, 12L))
     range should have length 4
@@ -51,8 +51,8 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
     range(3) should equal(12L)
   }
 
-  test("negative step"){
-    val range= IndexedInclusiveLongRange(14L, 3L, -3L)
+  test("negative step") {
+    val range = IndexedInclusiveLongRange(14L, 3L, -3L)
 
     range should equal(IndexedSeq(14L, 11L, 8L, 5L))
     range should have length 4
@@ -64,12 +64,13 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
 
   test("stress test") {
     val random = new Random
-    for (_ <- 1 to 100;
-         a = random.nextInt(Int.MaxValue);
-         b = random.nextInt(Int.MaxValue);
-         c = random.nextInt(Int.MaxValue)
-         ) {
-      val input = Array(a,b,c).sorted
+    for (
+      _ <- 1 to 100;
+      a = random.nextInt(Int.MaxValue);
+      b = random.nextInt(Int.MaxValue);
+      c = random.nextInt(Int.MaxValue)
+    ) {
+      val input = Array(a, b, c).sorted
       val step = input(0)
       val start = input(1)
       val end = input(2)
@@ -81,7 +82,7 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
   test("should fail if using a too big range as indexed seq") {
     val range = IndexedInclusiveLongRange(0, Int.MaxValue + 1L, 1L)
 
-    an [OutOfMemoryError] shouldBe thrownBy(range(2))
+    an[OutOfMemoryError] shouldBe thrownBy(range(2))
   }
 
   test("should handle big ranges as long as you only iterate") {
@@ -89,7 +90,7 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
 
     var i = 0L
     val it = range.iterator
-    while(it.hasNext && i < 1000L) {
+    while (it.hasNext && i < 1000L) {
       it.next() should equal(i)
       i += 1L
     }

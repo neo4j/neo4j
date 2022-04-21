@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static java.lang.String.format;
+import static org.neo4j.internal.helpers.Format.date;
+import static org.neo4j.internal.helpers.Format.duration;
+
 import java.nio.file.Path;
 import java.time.Instant;
-
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
@@ -30,131 +33,124 @@ import org.neo4j.kernel.recovery.RecoveryPredicate;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.InternalLog;
 
-import static java.lang.String.format;
-import static org.neo4j.internal.helpers.Format.date;
-import static org.neo4j.internal.helpers.Format.duration;
-
-public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInformationProvider.Monitor, LogRotationMonitor
-{
+public class LoggingLogFileMonitor
+        implements RecoveryMonitor, RecoveryStartInformationProvider.Monitor, LogRotationMonitor {
     private long firstTransactionRecovered = -1;
     private long lastTransactionRecovered;
     private final InternalLog log;
 
-    public LoggingLogFileMonitor( InternalLog log )
-    {
+    public LoggingLogFileMonitor(InternalLog log) {
         this.log = log;
     }
 
     @Override
-    public void recoveryRequired( LogPosition startPosition )
-    {
-        log.info( "Recovery required from position " + startPosition );
+    public void recoveryRequired(LogPosition startPosition) {
+        log.info("Recovery required from position " + startPosition);
     }
 
     @Override
-    public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
-    {
-        if ( numberOfRecoveredTransactions != 0 )
-        {
-            log.info( format( "Recovery completed. %d transactions, first:%d, last:%d recovered, time spent: %s", numberOfRecoveredTransactions,
-                    firstTransactionRecovered, lastTransactionRecovered, duration( recoveryTimeInMilliseconds ) ) );
+    public void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
+        if (numberOfRecoveredTransactions != 0) {
+            log.info(format(
+                    "Recovery completed. %d transactions, first:%d, last:%d recovered, time spent: %s",
+                    numberOfRecoveredTransactions,
+                    firstTransactionRecovered,
+                    lastTransactionRecovered,
+                    duration(recoveryTimeInMilliseconds)));
+        } else {
+            log.info("No recovery required");
         }
-        else
-        {
-            log.info( "No recovery required" );
-        }
     }
 
     @Override
-    public void failToRecoverTransactionsAfterCommit( Throwable t, LogEntryCommit commitEntry, LogPosition recoveryToPosition )
-    {
-        log.warn( format( "Fail to recover all transactions. Last recoverable transaction id:%d, committed " +
-                        "at:%d. Any later transaction after %s are unreadable and will be truncated.",
-                commitEntry.getTxId(), commitEntry.getTimeWritten(), recoveryToPosition ), t );
+    public void failToRecoverTransactionsAfterCommit(
+            Throwable t, LogEntryCommit commitEntry, LogPosition recoveryToPosition) {
+        log.warn(
+                format(
+                        "Fail to recover all transactions. Last recoverable transaction id:%d, committed "
+                                + "at:%d. Any later transaction after %s are unreadable and will be truncated.",
+                        commitEntry.getTxId(), commitEntry.getTimeWritten(), recoveryToPosition),
+                t);
     }
 
     @Override
-    public void partialRecovery( RecoveryPredicate recoveryPredicate, CommittedTransactionRepresentation lastTransaction )
-    {
-        log.info( "Partial database recovery based on provided criteria: " + recoveryPredicate.describe() + ". Last replayed transaction: " +
-                describeTransaction( lastTransaction ) + "." );
+    public void partialRecovery(
+            RecoveryPredicate recoveryPredicate, CommittedTransactionRepresentation lastTransaction) {
+        log.info("Partial database recovery based on provided criteria: " + recoveryPredicate.describe()
+                + ". Last replayed transaction: " + describeTransaction(lastTransaction) + ".");
     }
 
     @Override
-    public void failToRecoverTransactionsAfterPosition( Throwable t, LogPosition recoveryFromPosition )
-    {
-        log.warn( format( "Fail to recover all transactions. Any later transactions after position %s are " +
-                "unreadable and will be truncated.", recoveryFromPosition ), t );
+    public void failToRecoverTransactionsAfterPosition(Throwable t, LogPosition recoveryFromPosition) {
+        log.warn(
+                format(
+                        "Fail to recover all transactions. Any later transactions after position %s are "
+                                + "unreadable and will be truncated.",
+                        recoveryFromPosition),
+                t);
     }
 
     @Override
-    public void failToExtractInitialFileHeader( Exception e )
-    {
-        log.warn( "Fail to read initial transaction log file header.", e );
+    public void failToExtractInitialFileHeader(Exception e) {
+        log.warn("Fail to read initial transaction log file header.", e);
     }
 
     @Override
-    public void transactionRecovered( long txId )
-    {
-        if ( firstTransactionRecovered == -1 )
-        {
+    public void transactionRecovered(long txId) {
+        if (firstTransactionRecovered == -1) {
             firstTransactionRecovered = txId;
         }
         lastTransactionRecovered = txId;
     }
 
     @Override
-    public void noCommitsAfterLastCheckPoint( LogPosition logPosition )
-    {
-        log.info( format( "No commits found after last check point (which is at %s)",
-                logPosition != null ? logPosition.toString() : "<no log position given>" ) );
+    public void noCommitsAfterLastCheckPoint(LogPosition logPosition) {
+        log.info(format(
+                "No commits found after last check point (which is at %s)",
+                logPosition != null ? logPosition.toString() : "<no log position given>"));
     }
 
     @Override
-    public void commitsAfterLastCheckPoint( LogPosition logPosition, long firstTxIdAfterLastCheckPoint )
-    {
-        log.info( format(
+    public void commitsAfterLastCheckPoint(LogPosition logPosition, long firstTxIdAfterLastCheckPoint) {
+        log.info(format(
                 "Commits found after last check point (which is at %s). First txId after last checkpoint: %d ",
-                logPosition, firstTxIdAfterLastCheckPoint ) );
+                logPosition, firstTxIdAfterLastCheckPoint));
     }
 
     @Override
-    public void noCheckPointFound()
-    {
-        log.info( "No check point found in transaction log" );
+    public void noCheckPointFound() {
+        log.info("No check point found in transaction log");
     }
 
     @Override
-    public void started( Path logFile, long logVersion )
-    {
-        log.info( "Starting transaction log [%s] at version=%d", logFile, logVersion );
+    public void started(Path logFile, long logVersion) {
+        log.info("Starting transaction log [%s] at version=%d", logFile, logVersion);
     }
 
     @Override
-    public void startRotation( long currentLogVersion )
-    {
-    }
+    public void startRotation(long currentLogVersion) {}
 
     @Override
-    public void finishLogRotation( Path logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation )
-    {
-        StringBuilder sb = new StringBuilder( "Rotated to transaction log [" );
-        sb.append( logFile ).append( "] version=" ).append( logVersion ).append( ", last transaction in previous log=" );
-        sb.append( lastTransactionId ).append( ", rotation took " ).append( rotationMillis ).append( " millis" );
-        if ( millisSinceLastRotation > 0 )
-        {
-            sb.append( ", started after " ).append( millisSinceLastRotation ).append( " millis" );
+    public void finishLogRotation(
+            Path logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation) {
+        StringBuilder sb = new StringBuilder("Rotated to transaction log [");
+        sb.append(logFile).append("] version=").append(logVersion).append(", last transaction in previous log=");
+        sb.append(lastTransactionId)
+                .append(", rotation took ")
+                .append(rotationMillis)
+                .append(" millis");
+        if (millisSinceLastRotation > 0) {
+            sb.append(", started after ").append(millisSinceLastRotation).append(" millis");
         }
-        log.info( sb.append( '.' ).toString() );
+        log.info(sb.append('.').toString());
     }
 
-    private static String describeTransaction( CommittedTransactionRepresentation lastTransaction )
-    {
-        if ( lastTransaction == null )
-        {
+    private static String describeTransaction(CommittedTransactionRepresentation lastTransaction) {
+        if (lastTransaction == null) {
             return "Not found.";
         }
         LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
-        return "transaction id: " + commitEntry.getTxId() + ", time " + date( Instant.ofEpochMilli( commitEntry.getTimeWritten() ) );
+        return "transaction id: " + commitEntry.getTxId() + ", time "
+                + date(Instant.ofEpochMilli(commitEntry.getTimeWritten()));
     }
 }

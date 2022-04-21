@@ -39,10 +39,8 @@ import java.util.stream.Stream;
 /**
  * Utility to create {@link Map}s.
  */
-public final class MapUtil
-{
-    private MapUtil()
-    {
+public final class MapUtil {
+    private MapUtil() {
         // Utility class
     }
     /**
@@ -53,9 +51,8 @@ public final class MapUtil
      * @param <V> type of values
      * @return a Map with the entries supplied by {@code objects}.
      */
-    public static <K, V> Map<K, V> genericMap( Object... objects )
-    {
-        return genericMap( new HashMap<>(), objects );
+    public static <K, V> Map<K, V> genericMap(Object... objects) {
+        return genericMap(new HashMap<>(), objects);
     }
 
     /**
@@ -67,13 +64,11 @@ public final class MapUtil
      * @param <V> type of values
      * @return a Map with the entries supplied by {@code objects}.
      */
-    @SuppressWarnings( "unchecked" )
-    public static <K, V> Map<K,V> genericMap( Map<K,V> targetMap, Object... objects )
-    {
+    @SuppressWarnings("unchecked")
+    public static <K, V> Map<K, V> genericMap(Map<K, V> targetMap, Object... objects) {
         int i = 0;
-        while ( i < objects.length )
-        {
-            targetMap.put( (K) objects[i++], (V) objects[i++] );
+        while (i < objects.length) {
+            targetMap.put((K) objects[i++], (V) objects[i++]);
         }
         return targetMap;
     }
@@ -85,9 +80,8 @@ public final class MapUtil
      * @param strings alternating key and value.
      * @return a Map with the entries supplied by {@code strings}.
      */
-    public static Map<String, String> stringMap( String... strings )
-    {
-        return genericMap( (Object[]) strings );
+    public static Map<String, String> stringMap(String... strings) {
+        return genericMap((Object[]) strings);
     }
 
     /**
@@ -98,10 +92,8 @@ public final class MapUtil
      * @param strings alternating key and value.
      * @return a Map with the entries supplied by {@code strings}.
      */
-    public static Map<String, String> stringMap( Map<String, String> targetMap,
-            String... strings )
-    {
-        return genericMap( targetMap, (Object[]) strings );
+    public static Map<String, String> stringMap(Map<String, String> targetMap, String... strings) {
+        return genericMap(targetMap, (Object[]) strings);
     }
 
     /**
@@ -111,9 +103,8 @@ public final class MapUtil
      * @param objects alternating key and value.
      * @return a Map with the entries supplied by {@code objects}.
      */
-    public static Map<String, Object> map( Object... objects )
-    {
-        return genericMap( objects );
+    public static Map<String, Object> map(Object... objects) {
+        return genericMap(objects);
     }
 
     /**
@@ -124,10 +115,8 @@ public final class MapUtil
      * @param objects alternating key and value.
      * @return a Map with the entries supplied by {@code objects}.
      */
-    public static Map<String, Object> map( Map<String, Object> targetMap,
-            Object... objects )
-    {
-        return genericMap( targetMap, objects );
+    public static Map<String, Object> map(Map<String, Object> targetMap, Object... objects) {
+        return genericMap(targetMap, objects);
     }
 
     /**
@@ -139,16 +128,14 @@ public final class MapUtil
      * @return the read data as a {@link Map}.
      * @throws IOException if the {@code stream} throws {@link IOException}.
      */
-    public static Map<String,String> load( InputStream stream ) throws IOException
-    {
+    public static Map<String, String> load(InputStream stream) throws IOException {
         Properties props = new Properties();
-        props.load( stream );
+        props.load(stream);
 
-        Map<String,String> result = new HashMap<>();
-        for ( Map.Entry<Object,Object> entry : props.entrySet() )
-        {
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<Object, Object> entry : props.entrySet()) {
             // Properties does not trim whitespace from the right side of values
-            result.put( (String) entry.getKey(), ( (String) entry.getValue() ).trim() );
+            result.put((String) entry.getKey(), ((String) entry.getValue()).trim());
         }
 
         return result;
@@ -161,11 +148,9 @@ public final class MapUtil
      * @param file the file to store the properties in.
      * @throws IOException IO error.
      */
-    public static void store( Map<String, String> config, Path file ) throws IOException
-    {
-        try ( OutputStream stream = new BufferedOutputStream( Files.newOutputStream( file ) ) )
-        {
-            store( config, stream );
+    public static void store(Map<String, String> config, Path file) throws IOException {
+        try (OutputStream stream = new BufferedOutputStream(Files.newOutputStream(file))) {
+            store(config, stream);
         }
     }
 
@@ -176,14 +161,12 @@ public final class MapUtil
      * @param stream the {@link OutputStream} to store the properties in.
      * @throws IOException IO error.
      */
-    public static void store( Map<String, String> config, OutputStream stream ) throws IOException
-    {
+    public static void store(Map<String, String> config, OutputStream stream) throws IOException {
         Properties properties = new Properties();
-        for ( Map.Entry<String, String> property : config.entrySet() )
-        {
-            properties.setProperty( property.getKey(), property.getValue() );
+        for (Map.Entry<String, String> property : config.entrySet()) {
+            properties.setProperty(property.getKey(), property.getValue());
         }
-        properties.store( stream, null );
+        properties.store(stream, null);
     }
 
     /**
@@ -194,30 +177,25 @@ public final class MapUtil
      * @param writer the {@link Writer} to store the properties in.
      * @throws IOException IO error.
      */
-    public static void store( Map<String, String> config, Writer writer ) throws IOException
-    {
+    public static void store(Map<String, String> config, Writer writer) throws IOException {
         Properties properties = new Properties();
-        properties.putAll( config );
-        properties.store( writer, null );
+        properties.putAll(config);
+        properties.store(writer, null);
     }
 
-    public static <K, V> MapBuilder<K, V> entry( K key, V value )
-    {
-        return new MapBuilder<K, V>().entry( key, value );
+    public static <K, V> MapBuilder<K, V> entry(K key, V value) {
+        return new MapBuilder<K, V>().entry(key, value);
     }
 
-    public static class MapBuilder<K, V>
-    {
+    public static class MapBuilder<K, V> {
         private final Map<K, V> map = new HashMap<>();
 
-        public MapBuilder<K, V> entry( K key, V value )
-        {
-            map.put( key, value );
+        public MapBuilder<K, V> entry(K key, V value) {
+            map.put(key, value);
             return this;
         }
 
-        public Map<K, V> create()
-        {
+        public Map<K, V> create() {
             return map;
         }
     }
@@ -232,10 +210,9 @@ public final class MapUtil
      * @param <V> type of the values in the input map.
      * @param <T> type of the keys in the new baking data.
      */
-    public static <K, V, T> void trimToList( Map<K,V> map, List<T> newBackingData, Function<T,K> keyExtractor )
-    {
-        Set<K> retainedKeys = newBackingData.stream().map( keyExtractor ).collect( Collectors.toSet() );
-        trimToList( map, retainedKeys );
+    public static <K, V, T> void trimToList(Map<K, V> map, List<T> newBackingData, Function<T, K> keyExtractor) {
+        Set<K> retainedKeys = newBackingData.stream().map(keyExtractor).collect(Collectors.toSet());
+        trimToList(map, retainedKeys);
     }
 
     /**
@@ -248,11 +225,10 @@ public final class MapUtil
      * @param <V> type of the values in the input map.
      * @param <T> type of the keys in the new backing data.
      */
-    public static <K, V, T> void trimToFlattenedList( Map<K,V> map, List<T> newBackingData,
-            Function<T,Stream<K>> keyExtractor )
-    {
-        Set<K> retainedKeys = newBackingData.stream().flatMap( keyExtractor ).collect( Collectors.toSet() );
-        trimToList( map, retainedKeys );
+    public static <K, V, T> void trimToFlattenedList(
+            Map<K, V> map, List<T> newBackingData, Function<T, Stream<K>> keyExtractor) {
+        Set<K> retainedKeys = newBackingData.stream().flatMap(keyExtractor).collect(Collectors.toSet());
+        trimToList(map, retainedKeys);
     }
 
     /**
@@ -262,10 +238,9 @@ public final class MapUtil
      * @param <K> type of the key.
      * @param <V> type of the values.
      */
-    public static <K, V> void trimToList( Map<K,V> map, Set<K> retainedKeys )
-    {
-        Set<K> keysToRemove = new HashSet<>( map.keySet() );
-        keysToRemove.removeAll( retainedKeys );
-        keysToRemove.forEach( map::remove );
+    public static <K, V> void trimToList(Map<K, V> map, Set<K> retainedKeys) {
+        Set<K> keysToRemove = new HashSet<>(map.keySet());
+        keysToRemove.removeAll(retainedKeys);
+        keysToRemove.forEach(map::remove);
     }
 }

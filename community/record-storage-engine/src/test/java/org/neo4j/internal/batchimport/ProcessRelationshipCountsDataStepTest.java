@@ -19,8 +19,17 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.ByteUnit.tebiBytes;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
@@ -32,81 +41,73 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.io.ByteUnit.tebiBytes;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-class ProcessRelationshipCountsDataStepTest
-{
+class ProcessRelationshipCountsDataStepTest {
     @Test
-    void shouldLetProcessorsBeZeroIfEnoughMemory()
-    {
+    void shouldLetProcessorsBeZeroIfEnoughMemory() {
         // given
-        ProcessRelationshipCountsDataStep step = instantiateStep( 10, 10, 10_000, 4, mebiBytes( 10 ) );
+        ProcessRelationshipCountsDataStep step = instantiateStep(10, 10, 10_000, 4, mebiBytes(10));
 
         // then
-        assertEquals( 0, step.maxProcessors() );
+        assertEquals(0, step.maxProcessors());
     }
 
     @Test
-    void shouldNotOverflowWhenTooMuchMemoryAvailable()
-    {
+    void shouldNotOverflowWhenTooMuchMemoryAvailable() {
         // given
-        ProcessRelationshipCountsDataStep step = instantiateStep( 1, 1, 10_000, 64, tebiBytes( 10 ) );
+        ProcessRelationshipCountsDataStep step = instantiateStep(1, 1, 10_000, 64, tebiBytes(10));
 
         // then
-        assertEquals( 0, step.maxProcessors() );
+        assertEquals(0, step.maxProcessors());
     }
 
     @Test
-    void shouldLimitProcessorsIfScarceMemory()
-    {
+    void shouldLimitProcessorsIfScarceMemory() {
         // given labels/types amounting to ~360k, 2MiB max mem and 1MiB in use by node-label cache
-        ProcessRelationshipCountsDataStep step = instantiateStep( 100, 220, mebiBytes( 1 ), 4, mebiBytes( 2 ) );
+        ProcessRelationshipCountsDataStep step = instantiateStep(100, 220, mebiBytes(1), 4, mebiBytes(2));
 
         // then
-        assertEquals( 2, step.maxProcessors() );
+        assertEquals(2, step.maxProcessors());
     }
 
     @Test
-    void shouldAtLeastHaveOneProcessorEvenIfLowMemory()
-    {
+    void shouldAtLeastHaveOneProcessorEvenIfLowMemory() {
         // given labels/types amounting to ~1.6MiB, 2MiB max mem and 1MiB in use by node-label cache
-        ProcessRelationshipCountsDataStep step = instantiateStep( 1_000, 1_000, mebiBytes( 1 ), 4, mebiBytes( 2 ) );
+        ProcessRelationshipCountsDataStep step = instantiateStep(1_000, 1_000, mebiBytes(1), 4, mebiBytes(2));
 
         // then
-        assertEquals( 1, step.maxProcessors() );
+        assertEquals(1, step.maxProcessors());
     }
 
-    private static ProcessRelationshipCountsDataStep instantiateStep( int highLabelId, int highRelationshipTypeId, long labelCacheSize, int maxProcessors,
-            long maxMemory )
-    {
+    private static ProcessRelationshipCountsDataStep instantiateStep(
+            int highLabelId, int highRelationshipTypeId, long labelCacheSize, int maxProcessors, long maxMemory) {
         StageControl control = new SimpleStageControl();
-        NodeLabelsCache cache = nodeLabelsCache( labelCacheSize );
-        Configuration config = mock( Configuration.class );
-        when( config.maxNumberOfProcessors() ).thenReturn( maxProcessors );
-        when( config.maxMemoryUsage() ).thenReturn( maxMemory );
-        return new ProcessRelationshipCountsDataStep( control, cache, config, highLabelId, highRelationshipTypeId, mock( CountsAccessor.Updater.class ),
-                                                      NumberArrayFactories.OFF_HEAP, ProgressReporter.SILENT,
-                                                      new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                                                      any -> StoreCursors.NULL, INSTANCE );
+        NodeLabelsCache cache = nodeLabelsCache(labelCacheSize);
+        Configuration config = mock(Configuration.class);
+        when(config.maxNumberOfProcessors()).thenReturn(maxProcessors);
+        when(config.maxMemoryUsage()).thenReturn(maxMemory);
+        return new ProcessRelationshipCountsDataStep(
+                control,
+                cache,
+                config,
+                highLabelId,
+                highRelationshipTypeId,
+                mock(CountsAccessor.Updater.class),
+                NumberArrayFactories.OFF_HEAP,
+                ProgressReporter.SILENT,
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                any -> StoreCursors.NULL,
+                INSTANCE);
     }
 
-    private static NodeLabelsCache nodeLabelsCache( long sizeInBytes )
-    {
-        NodeLabelsCache cache = mock( NodeLabelsCache.class );
-        doAnswer( invocation ->
-        {
-            MemoryStatsVisitor visitor = invocation.getArgument( 0 );
-            visitor.offHeapUsage( sizeInBytes );
-            return null;
-        } ).when( cache ).acceptMemoryStatsVisitor( any() );
+    private static NodeLabelsCache nodeLabelsCache(long sizeInBytes) {
+        NodeLabelsCache cache = mock(NodeLabelsCache.class);
+        doAnswer(invocation -> {
+                    MemoryStatsVisitor visitor = invocation.getArgument(0);
+                    visitor.offHeapUsage(sizeInBytes);
+                    return null;
+                })
+                .when(cache)
+                .acceptMemoryStatsVisitor(any());
         return cache;
     }
 }

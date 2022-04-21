@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
+
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.Arrays;
-
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.id.BatchingIdSequence;
 import org.neo4j.internal.id.IdSequence;
@@ -41,12 +42,8 @@ import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
-
-@ExtendWith( RandomExtension.class )
-public abstract class AbstractRecordCloningTest
-{
+@ExtendWith(RandomExtension.class)
+public abstract class AbstractRecordCloningTest {
     @Inject
     private RandomSupport random;
 
@@ -84,12 +81,12 @@ public abstract class AbstractRecordCloningTest
     protected abstract int propertyBits();
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         RecordFormats formats = formats();
-        RecordGenerators generators = new LimitedRecordGenerators( random.randomValues(), entityBits(), propertyBits(), 40, 16, -1, formats );
+        RecordGenerators generators =
+                new LimitedRecordGenerators(random.randomValues(), entityBits(), propertyBits(), 40, 16, -1, formats);
         keys = FullyCoveringRecordKeys.INSTANCE;
-        idSequence = new BatchingIdSequence( 1 );
+        idSequence = new BatchingIdSequence(1);
         nodes = generators.node();
         dynamics = generators.dynamic();
         labelTokens = generators.labelToken();
@@ -108,191 +105,177 @@ public abstract class AbstractRecordCloningTest
         relationshipGroupFormat = formats.relationshipGroup();
         relationshipTypeTokenFormat = formats.relationshipTypeToken();
 
-        dynamicRecordSize = dynamicFormat.getRecordSize( new IntStoreHeader( GraphDatabaseSettings.DEFAULT_BLOCK_SIZE ) );
-        labelTokenRecordSize = labelTokenFormat.getRecordSize( NO_STORE_HEADER );
-        nodeRecordSize = nodeFormat.getRecordSize( NO_STORE_HEADER );
-        propertyRecordSize = propertyFormat.getRecordSize( NO_STORE_HEADER );
-        propertyKeyTokenRecordSize = propertyKeyTokenFormat.getRecordSize( NO_STORE_HEADER );
-        relationshipRecordSize = relationshipFormat.getRecordSize( NO_STORE_HEADER );
-        relationshipGroupRecordSize = relationshipGroupFormat.getRecordSize( new IntStoreHeader( 50 ) );
-        relationshipTypeTokenRecordSize = relationshipTypeTokenFormat.getRecordSize( NO_STORE_HEADER );
+        dynamicRecordSize = dynamicFormat.getRecordSize(new IntStoreHeader(GraphDatabaseSettings.DEFAULT_BLOCK_SIZE));
+        labelTokenRecordSize = labelTokenFormat.getRecordSize(NO_STORE_HEADER);
+        nodeRecordSize = nodeFormat.getRecordSize(NO_STORE_HEADER);
+        propertyRecordSize = propertyFormat.getRecordSize(NO_STORE_HEADER);
+        propertyKeyTokenRecordSize = propertyKeyTokenFormat.getRecordSize(NO_STORE_HEADER);
+        relationshipRecordSize = relationshipFormat.getRecordSize(NO_STORE_HEADER);
+        relationshipGroupRecordSize = relationshipGroupFormat.getRecordSize(new IntStoreHeader(50));
+        relationshipTypeTokenRecordSize = relationshipTypeTokenFormat.getRecordSize(NO_STORE_HEADER);
     }
 
-    @RepeatedTest( 1000 )
-    void plainDynamicClone()
-    {
+    @RepeatedTest(1000)
+    void plainDynamicClone() {
         DynamicRecord dynamicRecord = getDynamicRecord();
-        keys.dynamic().assertRecordsEquals( dynamicRecord, dynamicRecord.copy() );
+        keys.dynamic().assertRecordsEquals(dynamicRecord, dynamicRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void preparedDynamicClone()
-    {
+    @RepeatedTest(1000)
+    void preparedDynamicClone() {
         DynamicRecord dynamicRecord = getDynamicRecord();
-        dynamicFormat.prepare( dynamicRecord, dynamicRecordSize, idSequence, NULL_CONTEXT );
-        keys.dynamic().assertRecordsEquals( dynamicRecord, dynamicRecord.copy() );
+        dynamicFormat.prepare(dynamicRecord, dynamicRecordSize, idSequence, NULL_CONTEXT);
+        keys.dynamic().assertRecordsEquals(dynamicRecord, dynamicRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void plainLabelTokenClone()
-    {
+    @RepeatedTest(1000)
+    void plainLabelTokenClone() {
         LabelTokenRecord labelTokenRecord = getLabelTokenRecord();
-        keys.labelToken().assertRecordsEquals( labelTokenRecord, labelTokenRecord.copy() );
+        keys.labelToken().assertRecordsEquals(labelTokenRecord, labelTokenRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void preparedLabelTokenClone()
-    {
+    @RepeatedTest(1000)
+    void preparedLabelTokenClone() {
         LabelTokenRecord labelTokenRecord = getLabelTokenRecord();
-        labelTokenFormat.prepare( labelTokenRecord, labelTokenRecordSize, idSequence, NULL_CONTEXT );
-        keys.labelToken().assertRecordsEquals( labelTokenRecord, labelTokenRecord.copy() );
+        labelTokenFormat.prepare(labelTokenRecord, labelTokenRecordSize, idSequence, NULL_CONTEXT);
+        keys.labelToken().assertRecordsEquals(labelTokenRecord, labelTokenRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void plainNodeClone()
-    {
+    @RepeatedTest(1000)
+    void plainNodeClone() {
         NodeRecord nodeRecord = getNodeRecord();
-        keys.node().assertRecordsEquals( nodeRecord, nodeRecord.copy() );
+        keys.node().assertRecordsEquals(nodeRecord, nodeRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void preparedNodeClone()
-    {
+    @RepeatedTest(1000)
+    void preparedNodeClone() {
         NodeRecord nodeRecord = getNodeRecord();
-        nodeFormat.prepare( nodeRecord, nodeRecordSize, idSequence, NULL_CONTEXT );
-        keys.node().assertRecordsEquals( nodeRecord, nodeRecord.copy() );
+        nodeFormat.prepare(nodeRecord, nodeRecordSize, idSequence, NULL_CONTEXT);
+        keys.node().assertRecordsEquals(nodeRecord, nodeRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void plainNodeWithDynamicLabelsClone()
-    {
+    @RepeatedTest(1000)
+    void plainNodeWithDynamicLabelsClone() {
         NodeRecord nodeRecord = getNodeRecord();
-        nodeRecord.setLabelField( 12, Arrays.asList( getDynamicRecord(), getDynamicRecord() ) );
-        keys.node().assertRecordsEquals( nodeRecord, nodeRecord.copy() );
+        nodeRecord.setLabelField(12, Arrays.asList(getDynamicRecord(), getDynamicRecord()));
+        keys.node().assertRecordsEquals(nodeRecord, nodeRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void preparedNodeWithDynamicLabelsClone()
-    {
+    @RepeatedTest(1000)
+    void preparedNodeWithDynamicLabelsClone() {
         NodeRecord nodeRecord = getNodeRecord();
-        nodeRecord.setLabelField( 12, Arrays.asList( getDynamicRecord(), getDynamicRecord() ) );
-        nodeFormat.prepare( nodeRecord, nodeRecordSize, idSequence, NULL_CONTEXT );
-        keys.node().assertRecordsEquals( nodeRecord, nodeRecord.copy() );
+        nodeRecord.setLabelField(12, Arrays.asList(getDynamicRecord(), getDynamicRecord()));
+        nodeFormat.prepare(nodeRecord, nodeRecordSize, idSequence, NULL_CONTEXT);
+        keys.node().assertRecordsEquals(nodeRecord, nodeRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void plainPropertyClone()
-    {
+    @RepeatedTest(1000)
+    void plainPropertyClone() {
         PropertyRecord propertyRecord = getPropertyRecord();
-        keys.property().assertRecordsEquals( propertyRecord, propertyRecord.copy() );
+        keys.property().assertRecordsEquals(propertyRecord, propertyRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void preparedPropertyClone()
-    {
+    @RepeatedTest(1000)
+    void preparedPropertyClone() {
         PropertyRecord propertyRecord = getPropertyRecord();
-        propertyFormat.prepare( propertyRecord, propertyRecordSize, idSequence, NULL_CONTEXT );
-        keys.property().assertRecordsEquals( propertyRecord, propertyRecord.copy() );
+        propertyFormat.prepare(propertyRecord, propertyRecordSize, idSequence, NULL_CONTEXT);
+        keys.property().assertRecordsEquals(propertyRecord, propertyRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void plainPropertyKeyTokenClone()
-    {
+    @RepeatedTest(1000)
+    void plainPropertyKeyTokenClone() {
         PropertyKeyTokenRecord propertyKeyTokenRecord = getPropertyKeyTokenRecord();
-        keys.propertyKeyToken().assertRecordsEquals( propertyKeyTokenRecord, propertyKeyTokenRecord.copy() );
+        keys.propertyKeyToken().assertRecordsEquals(propertyKeyTokenRecord, propertyKeyTokenRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void preparedPropertyKeyTokenClone()
-    {
+    @RepeatedTest(1000)
+    void preparedPropertyKeyTokenClone() {
         PropertyKeyTokenRecord propertyKeyTokenRecord = getPropertyKeyTokenRecord();
-        propertyKeyTokenFormat.prepare( propertyKeyTokenRecord, propertyKeyTokenRecordSize, idSequence, NULL_CONTEXT );
-        keys.propertyKeyToken().assertRecordsEquals( propertyKeyTokenRecord, propertyKeyTokenRecord.copy() );
+        propertyKeyTokenFormat.prepare(propertyKeyTokenRecord, propertyKeyTokenRecordSize, idSequence, NULL_CONTEXT);
+        keys.propertyKeyToken().assertRecordsEquals(propertyKeyTokenRecord, propertyKeyTokenRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void plainRelationshipClone()
-    {
+    @RepeatedTest(1000)
+    void plainRelationshipClone() {
         RelationshipRecord relationshipRecord = getRelationshipRecord();
-        keys.relationship().assertRecordsEquals( relationshipRecord, relationshipRecord.copy() );
+        keys.relationship().assertRecordsEquals(relationshipRecord, relationshipRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void preparedRelationshipClone()
-    {
+    @RepeatedTest(1000)
+    void preparedRelationshipClone() {
         RelationshipRecord relationshipRecord = getRelationshipRecord();
-        relationshipFormat.prepare( relationshipRecord, relationshipRecordSize, idSequence, NULL_CONTEXT );
-        keys.relationship().assertRecordsEquals( relationshipRecord, relationshipRecord.copy() );
+        relationshipFormat.prepare(relationshipRecord, relationshipRecordSize, idSequence, NULL_CONTEXT);
+        keys.relationship().assertRecordsEquals(relationshipRecord, relationshipRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void plainRelationshipGroupClone()
-    {
+    @RepeatedTest(1000)
+    void plainRelationshipGroupClone() {
         RelationshipGroupRecord relationshipGroupRecord = getRelationshipGroupRecord();
-        keys.relationshipGroup().assertRecordsEquals( relationshipGroupRecord, relationshipGroupRecord.copy() );
+        keys.relationshipGroup().assertRecordsEquals(relationshipGroupRecord, relationshipGroupRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void preparedRelationshipGroupClone()
-    {
+    @RepeatedTest(1000)
+    void preparedRelationshipGroupClone() {
         RelationshipGroupRecord relationshipGroupRecord = getRelationshipGroupRecord();
-        relationshipGroupFormat.prepare( relationshipGroupRecord, relationshipGroupRecordSize, idSequence, NULL_CONTEXT );
-        keys.relationshipGroup().assertRecordsEquals( relationshipGroupRecord, relationshipGroupRecord.copy() );
+        relationshipGroupFormat.prepare(relationshipGroupRecord, relationshipGroupRecordSize, idSequence, NULL_CONTEXT);
+        keys.relationshipGroup().assertRecordsEquals(relationshipGroupRecord, relationshipGroupRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void plainRelationshipTypeTokenClone()
-    {
+    @RepeatedTest(1000)
+    void plainRelationshipTypeTokenClone() {
         RelationshipTypeTokenRecord relationshipTypeTokenRecord = getRelationshipTypeTokenRecord();
-        keys.relationshipTypeToken().assertRecordsEquals( relationshipTypeTokenRecord, relationshipTypeTokenRecord.copy() );
+        keys.relationshipTypeToken()
+                .assertRecordsEquals(relationshipTypeTokenRecord, relationshipTypeTokenRecord.copy());
     }
 
-    @RepeatedTest( 1000 )
-    void preparedRelationshipTypeTokenClone()
-    {
+    @RepeatedTest(1000)
+    void preparedRelationshipTypeTokenClone() {
         RelationshipTypeTokenRecord relationshipTypeTokenRecord = getRelationshipTypeTokenRecord();
-        relationshipTypeTokenFormat.prepare( relationshipTypeTokenRecord, relationshipTypeTokenRecordSize, idSequence, NULL_CONTEXT );
-        keys.relationshipTypeToken().assertRecordsEquals( relationshipTypeTokenRecord, relationshipTypeTokenRecord.copy() );
+        relationshipTypeTokenFormat.prepare(
+                relationshipTypeTokenRecord, relationshipTypeTokenRecordSize, idSequence, NULL_CONTEXT);
+        keys.relationshipTypeToken()
+                .assertRecordsEquals(relationshipTypeTokenRecord, relationshipTypeTokenRecord.copy());
     }
 
-    private DynamicRecord getDynamicRecord()
-    {
-        return dynamics.get( dynamicRecordSize, dynamicFormat, random.nextLong( 1, dynamicFormat.getMaxId() ) );
+    private DynamicRecord getDynamicRecord() {
+        return dynamics.get(dynamicRecordSize, dynamicFormat, random.nextLong(1, dynamicFormat.getMaxId()));
     }
 
-    private LabelTokenRecord getLabelTokenRecord()
-    {
-        return labelTokens.get( labelTokenRecordSize, labelTokenFormat, random.nextLong( 1, labelTokenFormat.getMaxId() ) );
+    private LabelTokenRecord getLabelTokenRecord() {
+        return labelTokens.get(labelTokenRecordSize, labelTokenFormat, random.nextLong(1, labelTokenFormat.getMaxId()));
     }
 
-    private NodeRecord getNodeRecord()
-    {
-        return nodes.get( nodeRecordSize, nodeFormat, random.nextLong( 1, nodeFormat.getMaxId() ) );
+    private NodeRecord getNodeRecord() {
+        return nodes.get(nodeRecordSize, nodeFormat, random.nextLong(1, nodeFormat.getMaxId()));
     }
 
-    private PropertyRecord getPropertyRecord()
-    {
-        return properties.get( propertyRecordSize, propertyFormat, random.nextLong( 1, propertyFormat.getMaxId() ) );
+    private PropertyRecord getPropertyRecord() {
+        return properties.get(propertyRecordSize, propertyFormat, random.nextLong(1, propertyFormat.getMaxId()));
     }
 
-    private PropertyKeyTokenRecord getPropertyKeyTokenRecord()
-    {
-        return propertyKeyTokens.get( propertyKeyTokenRecordSize, propertyKeyTokenFormat, random.nextLong( 1, propertyKeyTokenFormat.getMaxId() ) );
+    private PropertyKeyTokenRecord getPropertyKeyTokenRecord() {
+        return propertyKeyTokens.get(
+                propertyKeyTokenRecordSize,
+                propertyKeyTokenFormat,
+                random.nextLong(1, propertyKeyTokenFormat.getMaxId()));
     }
 
-    private RelationshipRecord getRelationshipRecord()
-    {
-        return relationships.get( relationshipRecordSize, relationshipFormat, random.nextLong( 1, relationshipFormat.getMaxId() ) );
+    private RelationshipRecord getRelationshipRecord() {
+        return relationships.get(
+                relationshipRecordSize, relationshipFormat, random.nextLong(1, relationshipFormat.getMaxId()));
     }
 
-    private RelationshipGroupRecord getRelationshipGroupRecord()
-    {
-        return relationshipGroups.get( relationshipGroupRecordSize, relationshipGroupFormat, random.nextLong( 1, relationshipGroupFormat.getMaxId() ) );
+    private RelationshipGroupRecord getRelationshipGroupRecord() {
+        return relationshipGroups.get(
+                relationshipGroupRecordSize,
+                relationshipGroupFormat,
+                random.nextLong(1, relationshipGroupFormat.getMaxId()));
     }
 
-    private RelationshipTypeTokenRecord getRelationshipTypeTokenRecord()
-    {
-        return relationshipTypeTokens.get( relationshipTypeTokenRecordSize, relationshipTypeTokenFormat,
-                random.nextLong( 1, relationshipTypeTokenFormat.getMaxId() ) );
+    private RelationshipTypeTokenRecord getRelationshipTypeTokenRecord() {
+        return relationshipTypeTokens.get(
+                relationshipTypeTokenRecordSize,
+                relationshipTypeTokenFormat,
+                random.nextLong(1, relationshipTypeTokenFormat.getMaxId()));
     }
 }

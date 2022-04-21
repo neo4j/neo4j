@@ -23,16 +23,18 @@ import org.neo4j.cypher.internal.util.InputPosition
 /**
  * @param entity expression to evaluate to the entity we want to check
  */
-case class LabelExpressionPredicate(entity: Expression, labelExpression: LabelExpression)(val position: InputPosition) extends BooleanExpression
+case class LabelExpressionPredicate(entity: Expression, labelExpression: LabelExpression)(val position: InputPosition)
+    extends BooleanExpression
 
 trait LabelExpression extends Expression {
+
   /**
    * Whether this label expression was permitted in Cypher before the introduction of GPM label expressions.
    */
   def isNonGpm: Boolean = this match {
     case conj: ColonConjunction => conj.lhs.isNonGpm && conj.rhs.isNonGpm
-    case _: Label => true
-    case _ => false
+    case _: Label               => true
+    case _                      => false
   }
 
   def flatten: Seq[LabelName]
@@ -46,23 +48,31 @@ trait BinaryLabelExpression extends LabelExpression {
 }
 
 object LabelExpression {
-  case class Conjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition) extends BinaryLabelExpression
+
+  case class Conjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition)
+      extends BinaryLabelExpression
+
   /**
    * This represents a conjunction that does not use the ampersand '&' as specified by GPM but rather the colon ':'
    * as specified by Cypher previously:
    * `n:A:B` instead of `n:A&B`
    */
-  case class ColonConjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition) extends BinaryLabelExpression
-  case class Disjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition) extends BinaryLabelExpression
+  case class ColonConjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition)
+      extends BinaryLabelExpression
+
+  case class Disjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition)
+      extends BinaryLabelExpression
+
   case class Negation(e: LabelExpression)(val position: InputPosition) extends LabelExpression {
     override def flatten: Seq[LabelName] = e.flatten
   }
+
   case class Wildcard()(val position: InputPosition) extends LabelExpression {
     override def flatten: Seq[LabelName] = Seq.empty
   }
+
   // the type `LabelName` is necessary for resolveTokens
   case class Label(label: LabelName)(val position: InputPosition) extends LabelExpression {
     override def flatten: Seq[LabelName] = Seq(label)
   }
 }
-

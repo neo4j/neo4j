@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import java.util
 import org.neo4j.cypher.internal.result.Error
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -32,14 +31,18 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.memory.HeapHighWaterMarkTracker
 
+import java.util
+
 /**
  * Results, as produced by a system command.
  */
-case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
-                                      execution: SystemCommandExecutionResult,
-                                      subscriber: SystemCommandQuerySubscriber,
-                                      securityContext: SecurityContext,
-                                      kernelTransaction: KernelTransaction) extends RuntimeResult {
+case class SystemCommandRuntimeResult(
+  ctx: SystemUpdateCountingQueryContext,
+  execution: SystemCommandExecutionResult,
+  subscriber: SystemCommandQuerySubscriber,
+  securityContext: SecurityContext,
+  kernelTransaction: KernelTransaction
+) extends RuntimeResult {
 
   override val fieldNames: Array[String] = execution.fieldNames()
   private var state = ConsumptionState.NOT_STARTED
@@ -83,16 +86,17 @@ class SystemCommandExecutionResult(val inner: InternalExecutionResult) {
   def fieldNames(): Array[String] = inner.fieldNames()
 }
 
-class ColumnMappingSystemCommandExecutionResult(context: QueryContext,
-                                                inner: InternalExecutionResult,
-                                                ignore: Seq[String] = Seq.empty,
-                                                valueExtractor: (String, util.Map[String, AnyRef]) => AnyRef = (k, r) => r.get(k))
-  extends SystemCommandExecutionResult(inner) {
+class ColumnMappingSystemCommandExecutionResult(
+  context: QueryContext,
+  inner: InternalExecutionResult,
+  ignore: Seq[String] = Seq.empty,
+  valueExtractor: (String, util.Map[String, AnyRef]) => AnyRef = (k, r) => r.get(k)
+) extends SystemCommandExecutionResult(inner) {
 
   self =>
 
   private val innerFields = inner.fieldNames()
-  //private val ignoreIndexes = innerFields.zipWithIndex.filter(v => ignore.contains(v._1)).map(_._2)
+  // private val ignoreIndexes = innerFields.zipWithIndex.filter(v => ignore.contains(v._1)).map(_._2)
   override val fieldNames: Array[String] = innerFields.filter(!ignore.contains(_))
 }
 
@@ -109,7 +113,8 @@ case class SystemCommandProfile(rows: Long, dbHits: Long) extends QueryProfile w
   override def maxAllocatedMemory(): Long = OperatorProfile.NO_DATA
 
   override def hashCode: Int = util.Arrays.hashCode(
-    Array(this.time(), this.dbHits, this.rows, this.pageCacheHits(), this.pageCacheMisses(), this.maxAllocatedMemory()))
+    Array(this.time(), this.dbHits, this.rows, this.pageCacheHits(), this.pageCacheMisses(), this.maxAllocatedMemory())
+  )
 
   override def equals(o: Any): Boolean = o match {
     case that: OperatorProfile =>
@@ -122,5 +127,6 @@ case class SystemCommandProfile(rows: Long, dbHits: Long) extends QueryProfile w
     case _ => false
   }
 
-  override def toString: String = s"Operator Profile { time: ${this.time()}, dbHits: ${this.dbHits}, rows: ${this.rows}, page cache hits: ${this.pageCacheHits()}, page cache misses: ${this.pageCacheMisses()}, max allocated: ${this.maxAllocatedMemory()} }"
+  override def toString: String =
+    s"Operator Profile { time: ${this.time()}, dbHits: ${this.dbHits}, rows: ${this.rows}, page cache hits: ${this.pageCacheHits()}, page cache misses: ${this.pageCacheMisses()}, max allocated: ${this.maxAllocatedMemory()} }"
 }

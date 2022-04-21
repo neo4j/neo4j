@@ -31,58 +31,50 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.AsciiString;
-
 import java.util.Date;
-
 import org.neo4j.server.config.AuthConfigProvider;
 
 /**
  * Handler that responds with discovery configuration with a non-websocket upgrade request. Otherwise,
  * it passes the request to the next handler and removes itself.
  */
-public class DiscoveryResponseHandler extends ChannelInboundHandlerAdapter
-{
+public class DiscoveryResponseHandler extends ChannelInboundHandlerAdapter {
     private final AuthConfigProvider authConfigProvider;
 
-    public DiscoveryResponseHandler( AuthConfigProvider authConfigProvider )
-    {
+    public DiscoveryResponseHandler(AuthConfigProvider authConfigProvider) {
         this.authConfigProvider = authConfigProvider;
     }
 
     @Override
-    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
-    {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         FullHttpMessage httpMessage = (FullHttpMessage) msg;
-        if ( !isWebsocketUpgrade( httpMessage.headers() ) )
-        {
-            var discoveryResponse =
-                    new DefaultFullHttpResponse( httpMessage.protocolVersion(), HttpResponseStatus.OK,
-                                                 Unpooled.copiedBuffer( authConfigProvider.getRepresentationAsBytes() ) );
-            addHeaders( discoveryResponse );
-            ctx.writeAndFlush( discoveryResponse )
-               .addListener( ChannelFutureListener.CLOSE );
-        }
-        else
-        {
-            ctx.pipeline().remove( this );
-            ctx.fireChannelRead( msg );
+        if (!isWebsocketUpgrade(httpMessage.headers())) {
+            var discoveryResponse = new DefaultFullHttpResponse(
+                    httpMessage.protocolVersion(),
+                    HttpResponseStatus.OK,
+                    Unpooled.copiedBuffer(authConfigProvider.getRepresentationAsBytes()));
+            addHeaders(discoveryResponse);
+            ctx.writeAndFlush(discoveryResponse).addListener(ChannelFutureListener.CLOSE);
+        } else {
+            ctx.pipeline().remove(this);
+            ctx.fireChannelRead(msg);
         }
     }
 
-    private void addHeaders( FullHttpMessage discoveryResponse )
-    {
-        discoveryResponse.headers().add( HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON );
-        discoveryResponse.headers().add( HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, AsciiString.cached( "*" ) );
-        discoveryResponse.headers().add( HttpHeaderNames.VARY, AsciiString.cached( "Accept" ) );
-        discoveryResponse.headers().add( HttpHeaderNames.CONTENT_LENGTH, discoveryResponse.content().readableBytes() );
-        discoveryResponse.headers().add( HttpHeaderNames.DATE, new Date() );
-        HttpUtil.setContentLength( discoveryResponse, discoveryResponse.content().readableBytes() );
+    private void addHeaders(FullHttpMessage discoveryResponse) {
+        discoveryResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
+        discoveryResponse.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, AsciiString.cached("*"));
+        discoveryResponse.headers().add(HttpHeaderNames.VARY, AsciiString.cached("Accept"));
+        discoveryResponse
+                .headers()
+                .add(HttpHeaderNames.CONTENT_LENGTH, discoveryResponse.content().readableBytes());
+        discoveryResponse.headers().add(HttpHeaderNames.DATE, new Date());
+        HttpUtil.setContentLength(discoveryResponse, discoveryResponse.content().readableBytes());
     }
 
-    private static boolean isWebsocketUpgrade( HttpHeaders headers )
-    {
-        return headers.contains( HttpHeaderNames.UPGRADE ) &&
-               headers.containsValue( HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE, true ) &&
-               headers.contains( HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET, true );
+    private static boolean isWebsocketUpgrade(HttpHeaders headers) {
+        return headers.contains(HttpHeaderNames.UPGRADE)
+                && headers.containsValue(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE, true)
+                && headers.contains(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET, true);
     }
 }

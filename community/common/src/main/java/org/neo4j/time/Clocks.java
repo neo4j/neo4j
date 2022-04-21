@@ -30,12 +30,10 @@ import java.util.concurrent.TimeUnit;
  * This class consists of {@code static} utility methods for operating
  * on clocks. These utilities include factory methods for different type of clocks.
  */
-public final class Clocks
-{
+public final class Clocks {
     private static final Clock SYSTEM_CLOCK = Clock.systemUTC();
 
-    private Clocks()
-    {
+    private Clocks() {
         // non-instantiable
     }
 
@@ -43,8 +41,7 @@ public final class Clocks
      * Returns system clock.
      * @return system clock
      */
-    public static Clock systemClock()
-    {
+    public static Clock systemClock() {
         return SYSTEM_CLOCK;
     }
 
@@ -52,8 +49,7 @@ public final class Clocks
      * Returns clock that allow to get current nanos.
      * @return clock with nano time support
      */
-    public static SystemNanoClock nanoClock()
-    {
+    public static SystemNanoClock nanoClock() {
         return SystemNanoClock.INSTANCE;
     }
 
@@ -61,8 +57,7 @@ public final class Clocks
      * Return new fake clock instance.
      * @return fake clock
      */
-    public static FakeClock fakeClock()
-    {
+    public static FakeClock fakeClock() {
         return new FakeClock();
     }
 
@@ -72,15 +67,13 @@ public final class Clocks
      * @param unit initialTime fake clock time unit
      * @return fake clock
      */
-    public static FakeClock fakeClock( long initialTime, TimeUnit unit )
-    {
-        return new FakeClock( initialTime, unit );
+    public static FakeClock fakeClock(long initialTime, TimeUnit unit) {
+        return new FakeClock(initialTime, unit);
     }
 
-    public static FakeClock fakeClock( TemporalAccessor initialTime )
-    {
-        return new FakeClock( initialTime.getLong( ChronoField.INSTANT_SECONDS ), TimeUnit.SECONDS )
-                .forward( initialTime.getLong( ChronoField.NANO_OF_SECOND ), TimeUnit.NANOSECONDS );
+    public static FakeClock fakeClock(TemporalAccessor initialTime) {
+        return new FakeClock(initialTime.getLong(ChronoField.INSTANT_SECONDS), TimeUnit.SECONDS)
+                .forward(initialTime.getLong(ChronoField.NANO_OF_SECOND), TimeUnit.NANOSECONDS);
     }
 
     /**
@@ -89,8 +82,7 @@ public final class Clocks
      * @param tickDuration amount of time of each tick
      * @return access tick clock
      */
-    public static TickOnAccessClock tickOnAccessClock( Instant initialInstant, Duration tickDuration )
-    {
-        return new TickOnAccessClock( initialInstant, tickDuration );
+    public static TickOnAccessClock tickOnAccessClock(Instant initialInstant, Duration tickDuration) {
+        return new TickOnAccessClock(initialInstant, tickDuration);
     }
 }

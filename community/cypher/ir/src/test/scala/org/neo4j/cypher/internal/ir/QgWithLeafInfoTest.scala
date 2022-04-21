@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.ir
+
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -167,7 +168,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
     val qg = QueryGraph(
       patternNodes = Set("a", "b"),
-      patternRelationships = Set(r, r2),
+      patternRelationships = Set(r, r2)
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(rIdent))
 
@@ -249,7 +250,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
-      patternRelationships = Set(r),
+      patternRelationships = Set(r)
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(StableIdentifier("b", isIdStable = false)))
 
@@ -267,21 +268,32 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(StableIdentifier("b", isIdStable = false)))
 
-    qgWithLeafInfo.allPossibleUnstableRelTypesFor(rIdent) should equal(Set(relTypeName("R"), relTypeName("R2"), relTypeName("R3")))
+    qgWithLeafInfo.allPossibleUnstableRelTypesFor(rIdent) should equal(Set(
+      relTypeName("R"),
+      relTypeName("R2"),
+      relTypeName("R3")
+    ))
   }
 
-  test("allPossibleUnstableRelTypesFor should include all rel types from HasLabelsOrTypes selections for unstable identifier") {
+  test(
+    "allPossibleUnstableRelTypesFor should include all rel types from HasLabelsOrTypes selections for unstable identifier"
+  ) {
     val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
     val rIdent = UnstableIdentifier("r")
 
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
-      selections = Selections.from(Seq(hasTypes("r", "R"), or(hasLabelsOrTypes("r", "R2"), hasLabelsOrTypes("r", "R3"))))
+      selections =
+        Selections.from(Seq(hasTypes("r", "R"), or(hasLabelsOrTypes("r", "R2"), hasLabelsOrTypes("r", "R3"))))
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(StableIdentifier("b", isIdStable = false)))
 
-    qgWithLeafInfo.allPossibleUnstableRelTypesFor(rIdent) should equal(Set(relTypeName("R"), relTypeName("R2"), relTypeName("R3")))
+    qgWithLeafInfo.allPossibleUnstableRelTypesFor(rIdent) should equal(Set(
+      relTypeName("R"),
+      relTypeName("R2"),
+      relTypeName("R3")
+    ))
   }
 
   test("allPossibleUnstableRelTypesFor should include all types from optional matches") {
@@ -439,11 +451,18 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("allKnownUnstableRelProperties includes pattern comprehension property key names") {
     val a = StableIdentifier("a", isIdStable = false)
-    val pComp = PatternComprehension(None, RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), None, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)), None)(pos),
-      RelationshipPattern(None, Seq.empty, None, None, None, BOTH)(pos),
-      NodePattern(None, None, None, None)(pos)
-    )(pos))(pos), None, literalInt(5))(pos, Set.empty, "", "")
+    val pComp = PatternComprehension(
+      None,
+      RelationshipsPattern(RelationshipChain(
+        NodePattern(Some(varFor("a")), None, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)), None)(
+          pos
+        ),
+        RelationshipPattern(None, Seq.empty, None, None, None, BOTH)(pos),
+        NodePattern(None, None, None, None)(pos)
+      )(pos))(pos),
+      None,
+      literalInt(5)
+    )(pos, Set.empty, "", "")
 
     val qg = QueryGraph(
       patternNodes = Set("a"),

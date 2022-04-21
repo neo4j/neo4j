@@ -19,90 +19,73 @@
  */
 package org.neo4j.procedure.builtin;
 
-import java.util.Objects;
-
-import org.neo4j.configuration.helpers.DatabaseNameValidator;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-
 import static java.util.Objects.requireNonNull;
 
-public class TransactionId
-{
+import java.util.Objects;
+import org.neo4j.configuration.helpers.DatabaseNameValidator;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
+
+public class TransactionId {
     private static final String SEPARATOR = "-transaction-";
     private static final String EXPECTED_FORMAT_MSG = "(expected format: <databasename>" + SEPARATOR + "<id>)";
     private final NormalizedDatabaseName database;
     private final long internalId;
 
-    public TransactionId( String database, long internalId ) throws InvalidArgumentsException
-    {
-        this.database = new NormalizedDatabaseName( requireNonNull( database ) );
-        if ( internalId < 0 )
-        {
-            throw new InvalidArgumentsException( "Negative ids are not supported " + EXPECTED_FORMAT_MSG );
+    public TransactionId(String database, long internalId) throws InvalidArgumentsException {
+        this.database = new NormalizedDatabaseName(requireNonNull(database));
+        if (internalId < 0) {
+            throw new InvalidArgumentsException("Negative ids are not supported " + EXPECTED_FORMAT_MSG);
         }
         this.internalId = internalId;
     }
 
-    static TransactionId parse( String queryIdText ) throws InvalidArgumentsException
-    {
-        try
-        {
-            int i = queryIdText.lastIndexOf( SEPARATOR );
-            if ( i != -1 )
-            {
-                var database = normalizeAndValidateDatabaseName( queryIdText.substring( 0, i ) );
-                if ( database.name().length() > 0 )
-                {
-                    String qid = queryIdText.substring( i + SEPARATOR.length() );
-                    var internalId = Long.parseLong( qid );
-                    return new TransactionId( database.name(), internalId );
+    static TransactionId parse(String queryIdText) throws InvalidArgumentsException {
+        try {
+            int i = queryIdText.lastIndexOf(SEPARATOR);
+            if (i != -1) {
+                var database = normalizeAndValidateDatabaseName(queryIdText.substring(0, i));
+                if (database.name().length() > 0) {
+                    String qid = queryIdText.substring(i + SEPARATOR.length());
+                    var internalId = Long.parseLong(qid);
+                    return new TransactionId(database.name(), internalId);
                 }
             }
+        } catch (NumberFormatException e) {
+            throw new InvalidArgumentsException("Could not parse id " + EXPECTED_FORMAT_MSG, e);
         }
-        catch ( NumberFormatException e )
-        {
-            throw new InvalidArgumentsException( "Could not parse id " + EXPECTED_FORMAT_MSG, e );
-        }
-        throw new InvalidArgumentsException( "Could not parse id " + EXPECTED_FORMAT_MSG );
+        throw new InvalidArgumentsException("Could not parse id " + EXPECTED_FORMAT_MSG);
     }
 
-    NormalizedDatabaseName database()
-    {
+    NormalizedDatabaseName database() {
         return database;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         TransactionId other = (TransactionId) o;
-        return internalId == other.internalId && database.equals( other.database );
+        return internalId == other.internalId && database.equals(other.database);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( database, internalId );
+    public int hashCode() {
+        return Objects.hash(database, internalId);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return database.name() + SEPARATOR + internalId;
     }
 
-    private static NormalizedDatabaseName normalizeAndValidateDatabaseName( String databaseName )
-    {
-        NormalizedDatabaseName normalizedDatabaseName = new NormalizedDatabaseName( databaseName );
-        DatabaseNameValidator.validateInternalDatabaseName( normalizedDatabaseName );
+    private static NormalizedDatabaseName normalizeAndValidateDatabaseName(String databaseName) {
+        NormalizedDatabaseName normalizedDatabaseName = new NormalizedDatabaseName(databaseName);
+        DatabaseNameValidator.validateInternalDatabaseName(normalizedDatabaseName);
         return normalizedDatabaseName;
     }
 }

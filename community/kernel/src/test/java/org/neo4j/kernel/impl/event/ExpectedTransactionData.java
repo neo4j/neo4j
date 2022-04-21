@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
+import static org.neo4j.values.storable.Values.of;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -32,30 +37,24 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
-import static org.neo4j.values.storable.Values.of;
-
-class ExpectedTransactionData
-{
+class ExpectedTransactionData {
     final Set<Node> expectedCreatedNodes = new HashSet<>();
     final Set<Relationship> expectedCreatedRelationships = new HashSet<>();
     final Set<Node> expectedDeletedNodes = new HashSet<>();
     final Set<Relationship> expectedDeletedRelationships = new HashSet<>();
     private final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedAssignedNodeProperties =
-            new AutoCreatingHashMap<>( nested( AutoCreatingHashMap.dontCreate() ) );
-    private final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedAssignedRelationshipProperties =
-            new AutoCreatingHashMap<>( nested( AutoCreatingHashMap.dontCreate() ) );
+            new AutoCreatingHashMap<>(nested(AutoCreatingHashMap.dontCreate()));
+    private final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>>
+            expectedAssignedRelationshipProperties =
+                    new AutoCreatingHashMap<>(nested(AutoCreatingHashMap.dontCreate()));
     private final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedRemovedNodeProperties =
-            new AutoCreatingHashMap<>( nested( AutoCreatingHashMap.dontCreate() ) );
-    private final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedRemovedRelationshipProperties =
-            new AutoCreatingHashMap<>( nested( AutoCreatingHashMap.dontCreate() ) );
+            new AutoCreatingHashMap<>(nested(AutoCreatingHashMap.dontCreate()));
+    private final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>>
+            expectedRemovedRelationshipProperties = new AutoCreatingHashMap<>(nested(AutoCreatingHashMap.dontCreate()));
     private final Map<Node, Set<String>> expectedAssignedLabels =
-            new AutoCreatingHashMap<>( AutoCreatingHashMap.valuesOfTypeHashSet() );
+            new AutoCreatingHashMap<>(AutoCreatingHashMap.valuesOfTypeHashSet());
     private final Map<Node, Set<String>> expectedRemovedLabels =
-            new AutoCreatingHashMap<>( AutoCreatingHashMap.valuesOfTypeHashSet() );
+            new AutoCreatingHashMap<>(AutoCreatingHashMap.valuesOfTypeHashSet());
     private final boolean ignoreAdditionalData;
 
     /**
@@ -67,18 +66,15 @@ class ExpectedTransactionData
      * before deleting that node. It's possible, it's just that it will require some tedious state keeping
      * on the behalf of the test.
      */
-    ExpectedTransactionData( boolean ignoreAdditionalData )
-    {
+    ExpectedTransactionData(boolean ignoreAdditionalData) {
         this.ignoreAdditionalData = ignoreAdditionalData;
     }
 
-    ExpectedTransactionData()
-    {
-        this( false );
+    ExpectedTransactionData() {
+        this(false);
     }
 
-    void clear()
-    {
+    void clear() {
         expectedAssignedNodeProperties.clear();
         expectedAssignedRelationshipProperties.clear();
         expectedCreatedNodes.clear();
@@ -91,133 +87,108 @@ class ExpectedTransactionData
         expectedRemovedLabels.clear();
     }
 
-    void createdNode( Node node )
-    {
-        expectedCreatedNodes.add( node );
+    void createdNode(Node node) {
+        expectedCreatedNodes.add(node);
     }
 
-    void deletedNode( Node node )
-    {
-        if ( !expectedCreatedNodes.remove( node ) )
-        {
-            expectedDeletedNodes.add( node );
+    void deletedNode(Node node) {
+        if (!expectedCreatedNodes.remove(node)) {
+            expectedDeletedNodes.add(node);
         }
-        expectedAssignedNodeProperties.remove( node );
-        expectedAssignedLabels.remove( node );
-        expectedRemovedNodeProperties.remove( node );
-        expectedRemovedLabels.remove( node );
+        expectedAssignedNodeProperties.remove(node);
+        expectedAssignedLabels.remove(node);
+        expectedRemovedNodeProperties.remove(node);
+        expectedRemovedLabels.remove(node);
     }
 
-    void createdRelationship( Relationship relationship )
-    {
-        expectedCreatedRelationships.add( relationship );
+    void createdRelationship(Relationship relationship) {
+        expectedCreatedRelationships.add(relationship);
     }
 
-    void deletedRelationship( Relationship relationship )
-    {
-        if ( !expectedCreatedRelationships.remove( relationship ) )
-        {
-            expectedDeletedRelationships.add( relationship );
+    void deletedRelationship(Relationship relationship) {
+        if (!expectedCreatedRelationships.remove(relationship)) {
+            expectedDeletedRelationships.add(relationship);
         }
-        expectedAssignedRelationshipProperties.remove( relationship );
-        expectedRemovedRelationshipProperties.remove( relationship );
+        expectedAssignedRelationshipProperties.remove(relationship);
+        expectedRemovedRelationshipProperties.remove(relationship);
     }
 
-    void assignedProperty( Node node, String key, Object value, Object valueBeforeTx )
-    {
-        valueBeforeTx = removeProperty( expectedRemovedNodeProperties, node, key, valueBeforeTx );
-        if ( isDifferent( value, valueBeforeTx ) )
-        {
-            Map<String,PropertyEntryImpl<Node>> map = expectedAssignedNodeProperties.get( node );
-            PropertyEntryImpl<Node> prev = map.get( key );
-            map.put( key, property( node, key, value, prev != null ? prev.previouslyCommittedValue() : valueBeforeTx ) );
+    void assignedProperty(Node node, String key, Object value, Object valueBeforeTx) {
+        valueBeforeTx = removeProperty(expectedRemovedNodeProperties, node, key, valueBeforeTx);
+        if (isDifferent(value, valueBeforeTx)) {
+            Map<String, PropertyEntryImpl<Node>> map = expectedAssignedNodeProperties.get(node);
+            PropertyEntryImpl<Node> prev = map.get(key);
+            map.put(key, property(node, key, value, prev != null ? prev.previouslyCommittedValue() : valueBeforeTx));
         }
     }
 
-    void assignedProperty( Relationship rel, String key, Object value, Object valueBeforeTx )
-    {
-        valueBeforeTx = removeProperty( expectedRemovedRelationshipProperties, rel, key, valueBeforeTx );
-        if ( isDifferent( value, valueBeforeTx ) )
-        {
-            Map<String,PropertyEntryImpl<Relationship>> map = expectedAssignedRelationshipProperties.get( rel );
-            PropertyEntryImpl<Relationship> prev = map.get( key );
-            map.put( key, property( rel, key, value, prev != null ? prev.previouslyCommittedValue() : valueBeforeTx ) );
+    void assignedProperty(Relationship rel, String key, Object value, Object valueBeforeTx) {
+        valueBeforeTx = removeProperty(expectedRemovedRelationshipProperties, rel, key, valueBeforeTx);
+        if (isDifferent(value, valueBeforeTx)) {
+            Map<String, PropertyEntryImpl<Relationship>> map = expectedAssignedRelationshipProperties.get(rel);
+            PropertyEntryImpl<Relationship> prev = map.get(key);
+            map.put(key, property(rel, key, value, prev != null ? prev.previouslyCommittedValue() : valueBeforeTx));
         }
     }
 
-    void assignedLabel( Node node, Label label )
-    {
-        if ( removeLabel( expectedRemovedLabels, node, label ) )
-        {
-            expectedAssignedLabels.get( node ).add( label.name() );
+    void assignedLabel(Node node, Label label) {
+        if (removeLabel(expectedRemovedLabels, node, label)) {
+            expectedAssignedLabels.get(node).add(label.name());
         }
     }
 
-    void removedLabel( Node node, Label label )
-    {
-        if ( removeLabel( expectedAssignedLabels, node, label ) )
-        {
-            expectedRemovedLabels.get( node ).add( label.name() );
+    void removedLabel(Node node, Label label) {
+        if (removeLabel(expectedAssignedLabels, node, label)) {
+            expectedRemovedLabels.get(node).add(label.name());
         }
     }
 
     /**
      * @return {@code true} if this property should be expected to come as removed property in the event
      */
-    private static boolean removeLabel( Map<Node,Set<String>> map, Node node, Label label )
-    {
-        if ( map.containsKey( node ) )
-        {
-            Set<String> set = map.get( node );
-            if ( !set.remove( label.name() ) )
-            {
+    private static boolean removeLabel(Map<Node, Set<String>> map, Node node, Label label) {
+        if (map.containsKey(node)) {
+            Set<String> set = map.get(node);
+            if (!set.remove(label.name())) {
                 return true;
             }
-            if ( set.isEmpty() )
-            {
-                map.remove( node );
+            if (set.isEmpty()) {
+                map.remove(node);
             }
         }
         return false;
     }
 
-    void removedProperty( Node node, String key, Object valueBeforeTx )
-    {
-        if ( (valueBeforeTx = removeProperty( expectedAssignedNodeProperties, node, key, valueBeforeTx )) != null )
-        {
-            expectedRemovedNodeProperties.get( node ).put( key, property( node, key, null, valueBeforeTx ) );
+    void removedProperty(Node node, String key, Object valueBeforeTx) {
+        if ((valueBeforeTx = removeProperty(expectedAssignedNodeProperties, node, key, valueBeforeTx)) != null) {
+            expectedRemovedNodeProperties.get(node).put(key, property(node, key, null, valueBeforeTx));
         }
     }
 
-    void removedProperty( Relationship rel, String key, Object valueBeforeTx )
-    {
-        if ( (valueBeforeTx = removeProperty( expectedAssignedRelationshipProperties, rel, key, valueBeforeTx )) != null )
-        {
-            expectedRemovedRelationshipProperties.get( rel ).put( key, property( rel, key, null, valueBeforeTx ) );
+    void removedProperty(Relationship rel, String key, Object valueBeforeTx) {
+        if ((valueBeforeTx = removeProperty(expectedAssignedRelationshipProperties, rel, key, valueBeforeTx)) != null) {
+            expectedRemovedRelationshipProperties.get(rel).put(key, property(rel, key, null, valueBeforeTx));
         }
     }
 
     /**
      * @return {@code non-null} if this property should be expected to come as removed property in the event
      */
-    private static <E> Object removeProperty( Map<E,Map<String,PropertyEntryImpl<E>>> map,
-            E entity, String key, Object valueBeforeTx )
-    {
-        if ( map.containsKey( entity ) )
-        {
-            Map<String,PropertyEntryImpl<E>> inner = map.get( entity );
-            PropertyEntryImpl<E> entry = inner.remove( key );
-            if ( entry == null )
-            {   // this means that we've been called to remove an existing property
+    private static <E> Object removeProperty(
+            Map<E, Map<String, PropertyEntryImpl<E>>> map, E entity, String key, Object valueBeforeTx) {
+        if (map.containsKey(entity)) {
+            Map<String, PropertyEntryImpl<E>> inner = map.get(entity);
+            PropertyEntryImpl<E> entry = inner.remove(key);
+            if (entry == null) { // this means that we've been called to remove an existing property
                 return valueBeforeTx;
             }
 
-            if ( inner.isEmpty() )
-            {
-                map.remove( entity );
+            if (inner.isEmpty()) {
+                map.remove(entity);
             }
-            if ( entry.previouslyCommittedValue() != null )
-            {   // this means that we're removing a previously changed property, i.e. there's a value to remove
+            if (entry.previouslyCommittedValue()
+                    != null) { // this means that we're removing a previously changed property, i.e. there's a value to
+                // remove
                 return entry.previouslyCommittedValue();
             }
             return null;
@@ -225,192 +196,169 @@ class ExpectedTransactionData
         return valueBeforeTx;
     }
 
-    private static <E> PropertyEntryImpl<E> property( E entity, String key, Object value,
-            Object valueBeforeTx )
-    {
-        return new PropertyEntryImpl<>( entity, key, value, valueBeforeTx );
+    private static <E> PropertyEntryImpl<E> property(E entity, String key, Object value, Object valueBeforeTx) {
+        return new PropertyEntryImpl<>(entity, key, value, valueBeforeTx);
     }
 
-    void compareTo( TransactionData data )
-    {
-        Set<Node> expectedCreatedNodes = new HashSet<>( this.expectedCreatedNodes );
-        Set<Relationship> expectedCreatedRelationships = new HashSet<>( this.expectedCreatedRelationships );
-        Set<Node> expectedDeletedNodes = new HashSet<>( this.expectedDeletedNodes );
-        Set<Relationship> expectedDeletedRelationships = new HashSet<>( this.expectedDeletedRelationships );
+    void compareTo(TransactionData data) {
+        Set<Node> expectedCreatedNodes = new HashSet<>(this.expectedCreatedNodes);
+        Set<Relationship> expectedCreatedRelationships = new HashSet<>(this.expectedCreatedRelationships);
+        Set<Node> expectedDeletedNodes = new HashSet<>(this.expectedDeletedNodes);
+        Set<Relationship> expectedDeletedRelationships = new HashSet<>(this.expectedDeletedRelationships);
         Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedAssignedNodeProperties =
-                clone( this.expectedAssignedNodeProperties );
+                clone(this.expectedAssignedNodeProperties);
         Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedAssignedRelationshipProperties =
-                clone( this.expectedAssignedRelationshipProperties );
+                clone(this.expectedAssignedRelationshipProperties);
         Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedRemovedNodeProperties =
-                clone( this.expectedRemovedNodeProperties );
+                clone(this.expectedRemovedNodeProperties);
         Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedRemovedRelationshipProperties =
-                clone( this.expectedRemovedRelationshipProperties );
-        Map<Node,Set<String>> expectedAssignedLabels = cloneLabelData( this.expectedAssignedLabels );
-        Map<Node,Set<String>> expectedRemovedLabels = cloneLabelData( this.expectedRemovedLabels );
+                clone(this.expectedRemovedRelationshipProperties);
+        Map<Node, Set<String>> expectedAssignedLabels = cloneLabelData(this.expectedAssignedLabels);
+        Map<Node, Set<String>> expectedRemovedLabels = cloneLabelData(this.expectedRemovedLabels);
 
-        for ( Node node : data.createdNodes() )
-        {
-            assertTrue( expectedCreatedNodes.remove( node ) );
-            assertFalse( data.isDeleted( node ) );
+        for (Node node : data.createdNodes()) {
+            assertTrue(expectedCreatedNodes.remove(node));
+            assertFalse(data.isDeleted(node));
         }
-        assertTrue( expectedCreatedNodes.isEmpty(),
-                "Expected some created nodes that weren't seen: " + expectedCreatedNodes );
+        assertTrue(
+                expectedCreatedNodes.isEmpty(),
+                "Expected some created nodes that weren't seen: " + expectedCreatedNodes);
 
-        for ( Relationship rel : data.createdRelationships() )
-        {
-            assertTrue( expectedCreatedRelationships.remove( rel ) );
-            assertFalse( data.isDeleted( rel ) );
+        for (Relationship rel : data.createdRelationships()) {
+            assertTrue(expectedCreatedRelationships.remove(rel));
+            assertFalse(data.isDeleted(rel));
         }
-        assertTrue( expectedCreatedRelationships.isEmpty(),
-                "Expected created relationships not encountered " + expectedCreatedRelationships );
+        assertTrue(
+                expectedCreatedRelationships.isEmpty(),
+                "Expected created relationships not encountered " + expectedCreatedRelationships);
 
-        for ( Node node : data.deletedNodes() )
-        {
-            assertTrue( expectedDeletedNodes.remove( node ), "Unexpected deleted node " + node );
-            assertTrue( data.isDeleted( node ) );
+        for (Node node : data.deletedNodes()) {
+            assertTrue(expectedDeletedNodes.remove(node), "Unexpected deleted node " + node);
+            assertTrue(data.isDeleted(node));
         }
-        assertTrue( expectedDeletedNodes.isEmpty(), "Expected deleted nodes: " + expectedDeletedNodes );
+        assertTrue(expectedDeletedNodes.isEmpty(), "Expected deleted nodes: " + expectedDeletedNodes);
 
-        for ( Relationship rel : data.deletedRelationships() )
-        {
-            assertTrue( expectedDeletedRelationships.remove( rel ) );
-            assertTrue( data.isDeleted( rel ) );
+        for (Relationship rel : data.deletedRelationships()) {
+            assertTrue(expectedDeletedRelationships.remove(rel));
+            assertTrue(data.isDeleted(rel));
         }
-        assertTrue( expectedDeletedRelationships.isEmpty(),
-                "Expected deleted relationships not encountered " + expectedDeletedRelationships );
+        assertTrue(
+                expectedDeletedRelationships.isEmpty(),
+                "Expected deleted relationships not encountered " + expectedDeletedRelationships);
 
-        for ( PropertyEntry<Node> entry : data.assignedNodeProperties() )
-        {
-            checkAssigned( expectedAssignedNodeProperties, entry );
-            assertFalse( data.isDeleted( entry.entity() ) );
+        for (PropertyEntry<Node> entry : data.assignedNodeProperties()) {
+            checkAssigned(expectedAssignedNodeProperties, entry);
+            assertFalse(data.isDeleted(entry.entity()));
         }
-        assertTrue( expectedAssignedNodeProperties.isEmpty(),
-                "Expected assigned node properties not encountered " + expectedAssignedNodeProperties );
+        assertTrue(
+                expectedAssignedNodeProperties.isEmpty(),
+                "Expected assigned node properties not encountered " + expectedAssignedNodeProperties);
 
-        for ( PropertyEntry<Relationship> entry : data.assignedRelationshipProperties() )
-        {
-            checkAssigned( expectedAssignedRelationshipProperties, entry );
-            assertFalse( data.isDeleted( entry.entity() ) );
+        for (PropertyEntry<Relationship> entry : data.assignedRelationshipProperties()) {
+            checkAssigned(expectedAssignedRelationshipProperties, entry);
+            assertFalse(data.isDeleted(entry.entity()));
         }
-        assertTrue( expectedAssignedRelationshipProperties.isEmpty(),
-                "Expected assigned relationship properties not encountered " + expectedAssignedRelationshipProperties );
+        assertTrue(
+                expectedAssignedRelationshipProperties.isEmpty(),
+                "Expected assigned relationship properties not encountered " + expectedAssignedRelationshipProperties);
 
-        for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
-        {
-            checkRemoved( expectedRemovedNodeProperties, entry );
+        for (PropertyEntry<Node> entry : data.removedNodeProperties()) {
+            checkRemoved(expectedRemovedNodeProperties, entry);
         }
-        assertTrue( expectedRemovedNodeProperties.isEmpty(),
-                "Expected removed node properties not encountered " + expectedRemovedNodeProperties );
+        assertTrue(
+                expectedRemovedNodeProperties.isEmpty(),
+                "Expected removed node properties not encountered " + expectedRemovedNodeProperties);
 
-        for ( PropertyEntry<Relationship> entry : data.removedRelationshipProperties() )
-        {
-            checkRemoved( expectedRemovedRelationshipProperties, entry );
+        for (PropertyEntry<Relationship> entry : data.removedRelationshipProperties()) {
+            checkRemoved(expectedRemovedRelationshipProperties, entry);
         }
-        assertTrue( expectedRemovedRelationshipProperties.isEmpty(),
-                "Expected removed relationship properties not encountered " + expectedRemovedRelationshipProperties );
+        assertTrue(
+                expectedRemovedRelationshipProperties.isEmpty(),
+                "Expected removed relationship properties not encountered " + expectedRemovedRelationshipProperties);
 
-        for ( LabelEntry entry : data.assignedLabels() )
-        {
-            check( expectedAssignedLabels, entry );
+        for (LabelEntry entry : data.assignedLabels()) {
+            check(expectedAssignedLabels, entry);
         }
-        assertTrue( expectedAssignedLabels.isEmpty(),
-                "Expected assigned labels not encountered " + expectedAssignedLabels );
+        assertTrue(
+                expectedAssignedLabels.isEmpty(), "Expected assigned labels not encountered " + expectedAssignedLabels);
 
-        for ( LabelEntry entry : data.removedLabels() )
-        {
-            check( expectedRemovedLabels, entry );
+        for (LabelEntry entry : data.removedLabels()) {
+            check(expectedRemovedLabels, entry);
         }
-        assertTrue( expectedRemovedLabels.isEmpty(),
-                "Expected removed labels not encountered " + expectedRemovedLabels );
+        assertTrue(expectedRemovedLabels.isEmpty(), "Expected removed labels not encountered " + expectedRemovedLabels);
     }
 
-    private static Map<Node,Set<String>> cloneLabelData( Map<Node,Set<String>> map )
-    {
-        Map<Node,Set<String>> clone = new HashMap<>();
-        for ( Map.Entry<Node,Set<String>> entry : map.entrySet() )
-        {
-            clone.put( entry.getKey(), new HashSet<>( entry.getValue() ) );
+    private static Map<Node, Set<String>> cloneLabelData(Map<Node, Set<String>> map) {
+        Map<Node, Set<String>> clone = new HashMap<>();
+        for (Map.Entry<Node, Set<String>> entry : map.entrySet()) {
+            clone.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
         return clone;
     }
 
-    private void check( Map<Node,Set<String>> expected, LabelEntry entry )
-    {
+    private void check(Map<Node, Set<String>> expected, LabelEntry entry) {
         Node node = entry.node();
         String labelName = entry.label().name();
-        boolean hasEntity = expected.containsKey( node );
-        if ( !hasEntity && ignoreAdditionalData )
-        {
+        boolean hasEntity = expected.containsKey(node);
+        if (!hasEntity && ignoreAdditionalData) {
             return;
         }
-        assertTrue( hasEntity, "Unexpected node " + node );
-        Set<String> labels = expected.get( node );
-        boolean hasLabel = labels.remove( labelName );
-        if ( !hasLabel && ignoreAdditionalData )
-        {
+        assertTrue(hasEntity, "Unexpected node " + node);
+        Set<String> labels = expected.get(node);
+        boolean hasLabel = labels.remove(labelName);
+        if (!hasLabel && ignoreAdditionalData) {
             return;
         }
-        assertTrue( hasLabel, "Unexpected label " + labelName + " for " + node );
-        if ( labels.isEmpty() )
-        {
-            expected.remove( node );
+        assertTrue(hasLabel, "Unexpected label " + labelName + " for " + node);
+        if (labels.isEmpty()) {
+            expected.remove(node);
         }
     }
 
     private static <KEY> Map<KEY, Map<String, PropertyEntryImpl<KEY>>> clone(
-            Map<KEY,Map<String,PropertyEntryImpl<KEY>>> map )
-    {
+            Map<KEY, Map<String, PropertyEntryImpl<KEY>>> map) {
         Map<KEY, Map<String, PropertyEntryImpl<KEY>>> result = new HashMap<>();
-        for ( Map.Entry<KEY,Map<String,PropertyEntryImpl<KEY>>> entry : map.entrySet() )
-        {
-            result.put( entry.getKey(), new HashMap<>( entry.getValue() ) );
+        for (Map.Entry<KEY, Map<String, PropertyEntryImpl<KEY>>> entry : map.entrySet()) {
+            result.put(entry.getKey(), new HashMap<>(entry.getValue()));
         }
         return result;
     }
 
-    private <T> void checkAssigned( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
-    {
-        PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry( map, entry );
-        if ( expected != null )
-        {   // To handle the ignore flag (read above)
-            expected.compareToAssigned( entry );
+    private <T> void checkAssigned(Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry) {
+        PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry(map, entry);
+        if (expected != null) { // To handle the ignore flag (read above)
+            expected.compareToAssigned(entry);
         }
     }
 
-    private <T> void checkRemoved( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
-    {
-        PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry( map, entry );
-        if ( expected != null )
-        {   // To handle the ignore flag (read above)
-            expected.compareToRemoved( entry );
+    private <T> void checkRemoved(Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry) {
+        PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry(map, entry);
+        if (expected != null) { // To handle the ignore flag (read above)
+            expected.compareToRemoved(entry);
         }
     }
 
-    private <T> PropertyEntryImpl<T> fetchExpectedPropertyEntry( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
-    {
+    private <T> PropertyEntryImpl<T> fetchExpectedPropertyEntry(
+            Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry) {
         T entity = entry.entity();
-        boolean hasEntity = map.containsKey( entity );
-        if ( ignoreAdditionalData && !hasEntity )
-        {
+        boolean hasEntity = map.containsKey(entity);
+        if (ignoreAdditionalData && !hasEntity) {
             return null;
         }
-        assertTrue( hasEntity, "Unexpected entity " + entry );
-        Map<String, PropertyEntryImpl<T>> innerMap = map.get( entity );
-        PropertyEntryImpl<T> expectedEntry = innerMap.remove( entry.key() );
-        if ( expectedEntry == null && ignoreAdditionalData )
-        {
+        assertTrue(hasEntity, "Unexpected entity " + entry);
+        Map<String, PropertyEntryImpl<T>> innerMap = map.get(entity);
+        PropertyEntryImpl<T> expectedEntry = innerMap.remove(entry.key());
+        if (expectedEntry == null && ignoreAdditionalData) {
             return null;
         }
-        assertNotNull( expectedEntry, "Unexpected property entry " + entry );
-        if ( innerMap.isEmpty() )
-        {
-            map.remove( entity );
+        assertNotNull(expectedEntry, "Unexpected property entry " + entry);
+        if (innerMap.isEmpty()) {
+            map.remove(entity);
         }
         return expectedEntry;
     }
 
-    private static boolean isDifferent( Object value, Object valueBeforeTx )
-    {
-        return !of( value ).equalTo( of( valueBeforeTx ) );
+    private static boolean isDifferent(Object value, Object valueBeforeTx) {
+        return !of(value).equalTo(of(valueBeforeTx));
     }
 }

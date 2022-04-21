@@ -32,7 +32,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport with AstConstructionTestSupport {
+class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport
+    with AstConstructionTestSupport {
   private val precision = 0.00001
   private val leafCardinality = 10
 
@@ -427,7 +428,9 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val initial = new LogicalPlanBuilder(false)
       .limit(100).withCardinality(100)
       .foreachApply("n", "[1,2,3]").withCardinality(200)
-      .|.expand("(n)-->(m)").withCardinality(10) // This plan is not realistic, but necessary to differentiate the code from other ApplyPlans
+      .|.expand("(n)-->(m)").withCardinality(
+        10
+      ) // This plan is not realistic, but necessary to differentiate the code from other ApplyPlans
       .|.setProperty("n", "prop", "5").withCardinality(1)
       .|.argument("n").withCardinality(1)
       .allNodeScan("n").withCardinality(200)
@@ -522,8 +525,16 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     (plan, cardinalities).should(haveSamePlanAndEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
-  private def rewrite(pb: LogicalPlanBuilder, executionModel: ExecutionModel = ExecutionModel.default): (LogicalPlan, EffectiveCardinalities) = {
-    val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(executionModel, pb.cardinalities, pb.effectiveCardinalities, pb.providedOrders))
+  private def rewrite(
+    pb: LogicalPlanBuilder,
+    executionModel: ExecutionModel = ExecutionModel.default
+  ): (LogicalPlan, EffectiveCardinalities) = {
+    val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(
+      executionModel,
+      pb.cardinalities,
+      pb.effectiveCardinalities,
+      pb.providedOrders
+    ))
     (plan, pb.effectiveCardinalities)
   }
 }

@@ -19,49 +19,45 @@
  */
 package org.neo4j.test.extension;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
+import java.io.IOException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.TestInstance;
-
-import java.io.IOException;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-@TestInstance( TestInstance.Lifecycle.PER_CLASS )
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @EphemeralTestDirectoryExtension
-class ClassLevelTestDirectoryExtensionTestSupport
-{
+class ClassLevelTestDirectoryExtensionTestSupport {
     @Inject
     FileSystemAbstraction fs;
+
     @Inject
     TestDirectory testDirectory;
+
     private StoreChannel channel;
 
     @BeforeAll
-    void setUp() throws IOException
-    {
-        channel = fs.write( testDirectory.createFile( "f" ) );
+    void setUp() throws IOException {
+        channel = fs.write(testDirectory.createFile("f"));
     }
 
     @AfterAll
-    void tearDown() throws IOException
-    {
+    void tearDown() throws IOException {
         channel.close();
     }
 
-    @RepeatedTest( 10 )
-    void writeToChannelManyTimes() throws IOException
-    {
+    @RepeatedTest(10)
+    void writeToChannelManyTimes() throws IOException {
         // This will fail if the test directory is not initialised,
         // or if the file is deleted by the clearing of the test directory,
         // in between the runs.
-        channel.writeAll( ByteBuffers.allocate( 1, INSTANCE ) );
+        channel.writeAll(ByteBuffers.allocate(1, INSTANCE));
     }
 }

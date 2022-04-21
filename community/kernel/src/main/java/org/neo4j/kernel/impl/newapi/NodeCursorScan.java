@@ -20,22 +20,26 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.AllNodeScan;
 
-final class NodeCursorScan extends BaseCursorScan<NodeCursor,AllNodeScan>
-{
-    NodeCursorScan( AllNodeScan allNodeScan, Read read )
-    {
-        super( allNodeScan, read, () -> read.txState().addedAndRemovedNodes().getAdded().toArray() );
+final class NodeCursorScan extends BaseCursorScan<NodeCursor, AllNodeScan> {
+    NodeCursorScan(AllNodeScan allNodeScan, Read read) {
+        super(
+                allNodeScan,
+                read,
+                () -> read.txState().addedAndRemovedNodes().getAdded().toArray());
     }
 
     @Override
-    boolean scanStore( NodeCursor cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext, AccessMode accessMode )
-    {
-        return ((DefaultNodeCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges, accessMode );
+    boolean scanStore(
+            NodeCursor cursor,
+            int sizeHint,
+            LongIterator addedItems,
+            CursorContext cursorContext,
+            AccessMode accessMode) {
+        return ((DefaultNodeCursor) cursor).scanBatch(read, storageScan, sizeHint, addedItems, hasChanges, accessMode);
     }
 }

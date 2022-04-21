@@ -37,7 +37,12 @@ import org.neo4j.cypher.internal.util.InternalNotification
 
 object DynamicPropertyNotifier {
 
-  def process(variables: Set[Variable], notification: Set[String] => InternalNotification, qg: QueryGraph, context: LogicalPlanningContext) = {
+  def process(
+    variables: Set[Variable],
+    notification: Set[String] => InternalNotification,
+    qg: QueryGraph,
+    context: LogicalPlanningContext
+  ) = {
 
     val indexedLabelOrRelTypes = variables.flatMap { variable =>
       val labels = qg.selections.labelsOnNode(variable.name)
@@ -65,10 +70,14 @@ object DynamicPropertyNotifier {
     maybeRelTypeId.fold(false)(context.planContext.indexExistsForRelType(_))
   }
 
-  def findNonSolvableIdentifiers(predicates: Seq[Expression], expectedType: EntityType, context: LogicalPlanningContext): Set[Variable] = {
+  def findNonSolvableIdentifiers(
+    predicates: Seq[Expression],
+    expectedType: EntityType,
+    context: LogicalPlanningContext
+  ): Set[Variable] = {
     val isExpectedEntity = expectedType match {
-      case NODE_TYPE => (variable: Variable) => context.semanticTable.isNode (variable)
-      case RELATIONSHIP_TYPE => (variable: Variable) => context.semanticTable.isRelationship (variable)
+      case NODE_TYPE         => (variable: Variable) => context.semanticTable.isNode(variable)
+      case RELATIONSHIP_TYPE => (variable: Variable) => context.semanticTable.isRelationship(variable)
     }
 
     predicates.flatMap {
@@ -90,8 +99,13 @@ object DynamicPropertyNotifier {
     }.toSet
   }
 
-
-  def issueNotifications(result: Set[LogicalPlan], notification: Set[String] => InternalNotification, qg: QueryGraph, expectedType: EntityType, context: LogicalPlanningContext): Unit = {
+  def issueNotifications(
+    result: Set[LogicalPlan],
+    notification: Set[String] => InternalNotification,
+    qg: QueryGraph,
+    expectedType: EntityType,
+    context: LogicalPlanningContext
+  ): Unit = {
     if (result.isEmpty) {
       val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, expectedType, context)
       process(nonSolvable, notification, qg, context)

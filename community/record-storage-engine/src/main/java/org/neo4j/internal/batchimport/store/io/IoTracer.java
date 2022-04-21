@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport.store.io;
 /**
  * Able to retrieve stats about I/O.
  */
-public interface IoTracer
-{
+public interface IoTracer {
     long countBytesWritten();
 }

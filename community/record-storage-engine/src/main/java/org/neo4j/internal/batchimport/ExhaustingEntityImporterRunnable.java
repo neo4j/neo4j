@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.staging.StageControl;
 
@@ -29,16 +28,14 @@ import org.neo4j.internal.batchimport.staging.StageControl;
  * Allocates its own {@link InputChunk} and loops, getting input data, importing input data into store
  * until no more chunks are available.
  */
-class ExhaustingEntityImporterRunnable implements Runnable
-{
+class ExhaustingEntityImporterRunnable implements Runnable {
     private final InputIterator data;
     private final EntityImporter visitor;
     private final LongAdder roughEntityCountProgress;
     private final StageControl control;
 
-    ExhaustingEntityImporterRunnable( StageControl control,
-            InputIterator data, EntityImporter visitor, LongAdder roughEntityCountProgress )
-    {
+    ExhaustingEntityImporterRunnable(
+            StageControl control, InputIterator data, EntityImporter visitor, LongAdder roughEntityCountProgress) {
         this.control = control;
         this.data = data;
         this.visitor = visitor;
@@ -46,33 +43,23 @@ class ExhaustingEntityImporterRunnable implements Runnable
     }
 
     @Override
-    public void run()
-    {
-        try ( InputChunk chunk = data.newChunk() )
-        {
-            while ( data.next( chunk ) )
-            {
+    public void run() {
+        try (InputChunk chunk = data.newChunk()) {
+            while (data.next(chunk)) {
                 control.assertHealthy();
                 int count = 0;
-                while ( chunk.next( visitor ) )
-                {
+                while (chunk.next(visitor)) {
                     count++;
                 }
-                roughEntityCountProgress.add( count );
+                roughEntityCountProgress.add(count);
             }
-        }
-        catch ( IOException e )
-        {
-            control.panic( e );
-            throw new RuntimeException( e );
-        }
-        catch ( Throwable e )
-        {
-            control.panic( e );
+        } catch (IOException e) {
+            control.panic(e);
+            throw new RuntimeException(e);
+        } catch (Throwable e) {
+            control.panic(e);
             throw e;
-        }
-        finally
-        {
+        } finally {
             visitor.close();
         }
     }

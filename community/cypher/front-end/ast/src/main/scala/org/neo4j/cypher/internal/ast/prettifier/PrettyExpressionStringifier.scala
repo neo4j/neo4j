@@ -38,10 +38,12 @@ import org.neo4j.cypher.internal.util.topDown
  * Generates pretty strings from expressions.
  */
 private class PrettyExpressionStringifier(inner: ExpressionStringifier) extends ExpressionStringifier {
+
   private val simplify = topDown {
     lift {
       case string: String => removeLineBreaks(removeGeneratedNamesAndParams(string))
-      case pattern: PatternExpression => eraseGeneratedNamesOnTree(pattern) // In patterns it's safe to erase auto generated names
+      case pattern: PatternExpression =>
+        eraseGeneratedNamesOnTree(pattern) // In patterns it's safe to erase auto generated names
     }
   }
 
@@ -68,9 +70,11 @@ private class PrettyExpressionStringifier(inner: ExpressionStringifier) extends 
 
     override def apply(nodePattern: NodePattern): String = innerPatterns.apply(nodePattern.endoRewrite(simplifyPattern))
 
-    override def apply(relationshipChain: RelationshipChain): String = innerPatterns.apply(relationshipChain.endoRewrite(simplifyPattern))
+    override def apply(relationshipChain: RelationshipChain): String =
+      innerPatterns.apply(relationshipChain.endoRewrite(simplifyPattern))
 
-    override def apply(relationship: RelationshipPattern): String = innerPatterns.apply(relationship.endoRewrite(simplifyPattern))
+    override def apply(relationship: RelationshipPattern): String =
+      innerPatterns.apply(relationship.endoRewrite(simplifyPattern))
   }
 
   override def pathSteps: PathStepStringifier = new PathStepStringifier {

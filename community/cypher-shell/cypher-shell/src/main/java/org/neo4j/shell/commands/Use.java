@@ -19,47 +19,40 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.List;
+import static org.neo4j.shell.commands.CommandHelper.stripEnclosingBackTicks;
 
+import java.util.List;
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 
-import static org.neo4j.shell.commands.CommandHelper.stripEnclosingBackTicks;
-
 /**
  * This command starts a transaction.
  */
-public class Use implements Command
-{
+public class Use implements Command {
     private final DatabaseManager databaseManager;
 
-    public Use( final DatabaseManager databaseManager )
-    {
+    public Use(final DatabaseManager databaseManager) {
         this.databaseManager = databaseManager;
     }
 
     @Override
-    public void execute( final List<String> args ) throws ExitException, CommandException
-    {
-        requireArgumentCount( args, 0, 1 );
-        String databaseName = args.size() == 0 ? DatabaseManager.ABSENT_DB_NAME : args.get( 0 );
-        databaseManager.setActiveDatabase( stripEnclosingBackTicks( databaseName ) );
+    public void execute(final List<String> args) throws ExitException, CommandException {
+        requireArgumentCount(args, 0, 1);
+        String databaseName = args.size() == 0 ? DatabaseManager.ABSENT_DB_NAME : args.get(0);
+        databaseManager.setActiveDatabase(stripEnclosingBackTicks(databaseName));
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
+        public Metadata metadata() {
             var help = "Set the active database that transactions are executed on";
-            return new Metadata( ":use", "Set the active database", "database", help, List.of() );
+            return new Metadata(":use", "Set the active database", "database", help, List.of());
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
-            return new Use( args.cypherShell() );
+        public Command executor(Arguments args) {
+            return new Use(args.cypherShell());
         }
     }
 }

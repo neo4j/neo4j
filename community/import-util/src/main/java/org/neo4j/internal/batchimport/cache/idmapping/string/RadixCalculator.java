@@ -24,8 +24,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 /**
  * Calculates the radix of {@link Long} values.
  */
-public abstract class RadixCalculator
-{
+public abstract class RadixCalculator {
     /**
      * A radix representing a "null" value, i.e. a value which is not used.
      */
@@ -36,18 +35,15 @@ public abstract class RadixCalculator
     protected static final int LENGTH_MASK = (int) (LENGTH_BITS >>> (64 - RADIX_BITS));
     protected static final int HASHCODE_MASK = (int) (0x00FFFF00_00000000L >>> (64 - RADIX_BITS));
 
-    public abstract int radixOf( long value );
+    public abstract int radixOf(long value);
 
     /**
      * Radix optimized for strings encoded into long by {@link StringEncoder}.
      */
-    public static class String extends RadixCalculator
-    {
+    public static class String extends RadixCalculator {
         @Override
-        public int radixOf( long value )
-        {
-            if ( value == EncodingIdMapper.GAP_VALUE )
-            {
+        public int radixOf(long value) {
+            if (value == EncodingIdMapper.GAP_VALUE) {
                 return NULL_RADIX;
             }
 
@@ -60,20 +56,16 @@ public abstract class RadixCalculator
     /**
      * Radix optimized for strings encoded into long by {@link LongEncoder}.
      */
-    public static class Long extends RadixCalculator
-    {
+    public static class Long extends RadixCalculator {
         private final MutableInt radixShift;
 
-        public Long( MutableInt radixShift )
-        {
+        public Long(MutableInt radixShift) {
             this.radixShift = radixShift;
         }
 
         @Override
-        public int radixOf( long value )
-        {
-            if ( value == EncodingIdMapper.GAP_VALUE )
-            {
+        public int radixOf(long value) {
+            if (value == EncodingIdMapper.GAP_VALUE) {
                 return NULL_RADIX;
             }
 

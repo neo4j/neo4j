@@ -19,24 +19,20 @@
  */
 package org.neo4j.io.fs;
 
-class EphemeralLocalPosition implements EphemeralPositionable
-{
+class EphemeralLocalPosition implements EphemeralPositionable {
     private long position;
 
-    EphemeralLocalPosition( long position )
-    {
+    EphemeralLocalPosition(long position) {
         this.position = position;
     }
 
     @Override
-    public long pos()
-    {
+    public long pos() {
         return position;
     }
 
     @Override
-    public void pos( long position )
-    {
+    public void pos(long position) {
         this.position = position;
     }
 }

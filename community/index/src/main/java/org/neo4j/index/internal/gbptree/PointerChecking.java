@@ -24,23 +24,19 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * Methods for ensuring a read {@link GenerationSafePointer GSP pointer} is valid.
  */
-class PointerChecking
-{
+class PointerChecking {
     static final String WRITER_TRAVERSE_OLD_STATE_MESSAGE =
-                    "Writer traversed to a tree node that has a valid successor, " +
-                    "This is most likely due to failure to checkpoint the tree before shutdown and/or tree state " +
-                    "being out of date.";
+            "Writer traversed to a tree node that has a valid successor, "
+                    + "This is most likely due to failure to checkpoint the tree before shutdown and/or tree state "
+                    + "being out of date.";
 
-    private PointerChecking()
-    {
-    }
+    private PointerChecking() {}
 
     /**
      * Used by tests only that don't care about exception message so much.
      */
-    static void checkPointer( long result, boolean allowNoNode )
-    {
-        checkPointer( result, allowNoNode, -1, "unknown", 0, 1 );
+    static void checkPointer(long result, boolean allowNoNode) {
+        checkPointer(result, allowNoNode, -1, "unknown", 0, 1);
     }
 
     /**
@@ -60,32 +56,41 @@ class PointerChecking
      * exception message if needed.
      * @param offset offset in node from which result was read.
      */
-    static void checkPointer( long result, boolean allowNoNode, long nodeId, String pointerType, long stableGeneration, long unstableGeneration,
-            PageCursor cursor, int offset )
-    {
-        GenerationSafePointerPair.assertSuccess( result, nodeId, pointerType, stableGeneration, unstableGeneration, cursor, offset );
-        assertIdSpace( allowNoNode, result );
+    static void checkPointer(
+            long result,
+            boolean allowNoNode,
+            long nodeId,
+            String pointerType,
+            long stableGeneration,
+            long unstableGeneration,
+            PageCursor cursor,
+            int offset) {
+        GenerationSafePointerPair.assertSuccess(
+                result, nodeId, pointerType, stableGeneration, unstableGeneration, cursor, offset);
+        assertIdSpace(allowNoNode, result);
     }
 
     /**
      * See {@link #checkPointer(long, boolean, long, String, long, long, PageCursor, int)} but without cursor and offset.
      */
-    static void checkPointer( long result, boolean allowNoNode, long nodeId, String pointerType, long stableGeneration, long unstableGeneration )
-    {
-        GenerationSafePointerPair.assertSuccess( result, nodeId, pointerType, stableGeneration, unstableGeneration );
-        assertIdSpace( allowNoNode, result );
+    static void checkPointer(
+            long result,
+            boolean allowNoNode,
+            long nodeId,
+            String pointerType,
+            long stableGeneration,
+            long unstableGeneration) {
+        GenerationSafePointerPair.assertSuccess(result, nodeId, pointerType, stableGeneration, unstableGeneration);
+        assertIdSpace(allowNoNode, result);
     }
 
-    private static void assertIdSpace( boolean allowNoNode, long result )
-    {
-        if ( allowNoNode && !TreeNode.isNode( result ) )
-        {
+    private static void assertIdSpace(boolean allowNoNode, long result) {
+        if (allowNoNode && !TreeNode.isNode(result)) {
             return;
         }
-        if ( result < IdSpace.MIN_TREE_NODE_ID )
-        {
-            throw new TreeInconsistencyException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
-                    IdSpace.MIN_TREE_NODE_ID );
+        if (result < IdSpace.MIN_TREE_NODE_ID) {
+            throw new TreeInconsistencyException(
+                    "Pointer to id " + result + " not allowed. Minimum node id allowed is " + IdSpace.MIN_TREE_NODE_ID);
         }
     }
 
@@ -96,12 +101,10 @@ class PointerChecking
      * @param stableGeneration Current stable generation of tree.
      * @param unstableGeneration Current unstable generation of tree.
      */
-    static boolean assertNoSuccessor( PageCursor cursor, long stableGeneration, long unstableGeneration )
-    {
-        long successor = TreeNode.successor( cursor, stableGeneration, unstableGeneration );
-        if ( TreeNode.isNode( successor ) )
-        {
-            throw new TreeInconsistencyException( WRITER_TRAVERSE_OLD_STATE_MESSAGE );
+    static boolean assertNoSuccessor(PageCursor cursor, long stableGeneration, long unstableGeneration) {
+        long successor = TreeNode.successor(cursor, stableGeneration, unstableGeneration);
+        if (TreeNode.isNode(successor)) {
+            throw new TreeInconsistencyException(WRITER_TRAVERSE_OLD_STATE_MESSAGE);
         }
         return true;
     }

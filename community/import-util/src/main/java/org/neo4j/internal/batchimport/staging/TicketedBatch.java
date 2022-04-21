@@ -19,14 +19,12 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-class TicketedBatch
-{
+class TicketedBatch {
     final long ticket;
     final Object batch;
     TicketedBatch next;
 
-    TicketedBatch( long ticket, Object batch )
-    {
+    TicketedBatch(long ticket, Object batch) {
         this.ticket = ticket;
         this.batch = batch;
     }

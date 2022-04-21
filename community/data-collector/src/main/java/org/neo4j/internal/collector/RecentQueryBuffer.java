@@ -20,7 +20,6 @@
 package org.neo4j.internal.collector;
 
 import java.util.function.Consumer;
-
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -29,70 +28,62 @@ import org.neo4j.util.Preconditions;
 /**
  * Bounded buffer containing meta data about the most recent query invocations across the dbms.
  */
-public class RecentQueryBuffer
-{
+public class RecentQueryBuffer {
     private final RingRecentBuffer<TruncatedQuerySnapshot> queries;
     private final MemoryTracker memoryTracker;
 
-    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RecentQueryBuffer.class ) +
-                                             HeapEstimator.shallowSizeOfInstance( Consumer.class );
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(RecentQueryBuffer.class)
+            + HeapEstimator.shallowSizeOfInstance(Consumer.class);
     private final int bufferSize;
 
-    public RecentQueryBuffer( int maxRecentQueryCount, MemoryTracker memoryTracker )
-    {
+    public RecentQueryBuffer(int maxRecentQueryCount, MemoryTracker memoryTracker) {
         this.memoryTracker = memoryTracker;
         // Round down to the nearest power of 2
-        bufferSize = Integer.highestOneBit( maxRecentQueryCount );
-        queries = new RingRecentBuffer<>( bufferSize, discarded -> memoryTracker.releaseHeap( discarded.estimatedHeap ) );
-        if ( bufferSize > 0 )
-        {
-            memoryTracker.allocateHeap( queries.estimatedHeapUsage() + SHALLOW_SIZE );
+        bufferSize = Integer.highestOneBit(maxRecentQueryCount);
+        queries = new RingRecentBuffer<>(bufferSize, discarded -> memoryTracker.releaseHeap(discarded.estimatedHeap));
+        if (bufferSize > 0) {
+            memoryTracker.allocateHeap(queries.estimatedHeapUsage() + SHALLOW_SIZE);
         }
     }
 
-    public long numSilentQueryDrops()
-    {
+    public long numSilentQueryDrops() {
         return queries.numSilentQueryDrops();
     }
 
     /**
      * Produce a new query into the buffer.
      */
-    public void produce( TruncatedQuerySnapshot query )
-    {
-        Preconditions.checkArgument( query.databaseId != null,
-                                     "Only queries targeting a specific database are expected in the recent query buffer." );
-        if ( bufferSize == 0 )
-        {
+    public void produce(TruncatedQuerySnapshot query) {
+        Preconditions.checkArgument(
+                query.databaseId != null,
+                "Only queries targeting a specific database are expected in the recent query buffer.");
+        if (bufferSize == 0) {
             return;
         }
-        memoryTracker.allocateHeap( query.estimatedHeap );
-        queries.produce( query );
+        memoryTracker.allocateHeap(query.estimatedHeap);
+        queries.produce(query);
     }
 
     /**
      * Clear all query meta data for the given database from this buffer.
      */
-    public void clear( NamedDatabaseId databaseId )
-    {
-        Preconditions.checkArgument( databaseId != null,
-                                     "Only queries targeting a specific database are expected in the recent query buffer, " +
-                                     "clearing non-database queries will have no effect.");
+    public void clear(NamedDatabaseId databaseId) {
+        Preconditions.checkArgument(
+                databaseId != null,
+                "Only queries targeting a specific database are expected in the recent query buffer, "
+                        + "clearing non-database queries will have no effect.");
 
-        queries.clearIf( q -> databaseId.equals( q.databaseId ) );
+        queries.clearIf(q -> databaseId.equals(q.databaseId));
     }
 
     /**
      * Apply the consumer on each query in this buffer which targeted the given database.
      */
-    public void foreach( NamedDatabaseId databaseId, Consumer<TruncatedQuerySnapshot> consumer )
-    {
-        queries.foreach( q ->
-                         {
-                             if ( q.databaseId.equals( databaseId ) )
-                             {
-                                 consumer.accept( q );
-                             }
-                         } );
+    public void foreach(NamedDatabaseId databaseId, Consumer<TruncatedQuerySnapshot> consumer) {
+        queries.foreach(q -> {
+            if (q.databaseId.equals(databaseId)) {
+                consumer.accept(q);
+            }
+        });
     }
 }

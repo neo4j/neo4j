@@ -26,31 +26,25 @@ import org.neo4j.kernel.api.exceptions.Status;
  * A {@link DatabaseManagementService} tried to drop a database with an alias.
  */
 @PublicApi
-public class DatabaseAliasExistsException extends DatabaseManagementException
-{
-    public DatabaseAliasExistsException()
-    {
+public class DatabaseAliasExistsException extends DatabaseManagementException {
+    public DatabaseAliasExistsException() {
         super();
     }
 
-    public DatabaseAliasExistsException( String message )
-    {
-        super( message );
+    public DatabaseAliasExistsException(String message) {
+        super(message);
     }
 
-    public DatabaseAliasExistsException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public DatabaseAliasExistsException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public DatabaseAliasExistsException( Throwable cause )
-    {
-        super( cause );
+    public DatabaseAliasExistsException(Throwable cause) {
+        super(cause);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Database.ExistingAliasFound;
     }
 }

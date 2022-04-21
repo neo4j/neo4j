@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 
 class OrsTest extends SemanticFunSuite {
+
   test("should semantic check all expressions in ors") {
     val dummyExpr1 = DummyExpression(CTBoolean, DummyPosition(1))
     val dummyExpr2 = DummyExpression(CTBoolean, DummyPosition(2))
@@ -30,6 +31,6 @@ class OrsTest extends SemanticFunSuite {
     val result = SemanticExpressionCheck.simple(ors)(SemanticState.clean)
 
     result.errors shouldBe empty
-    result.state.typeTable.keySet.map(_.node) should contain allOf(dummyExpr1, dummyExpr2, dummyExpr3, ors)
+    result.state.typeTable.keySet.map(_.node) should contain allOf (dummyExpr1, dummyExpr2, dummyExpr3, ors)
   }
 }

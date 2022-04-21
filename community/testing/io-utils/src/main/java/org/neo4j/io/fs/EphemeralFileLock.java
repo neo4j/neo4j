@@ -19,27 +19,22 @@
  */
 package org.neo4j.io.fs;
 
-class EphemeralFileLock extends java.nio.channels.FileLock
-{
+class EphemeralFileLock extends java.nio.channels.FileLock {
     private final EphemeralFileData file;
 
-    EphemeralFileLock( EphemeralFileChannel channel, EphemeralFileData file )
-    {
-        super( channel, 0, Long.MAX_VALUE, false );
+    EphemeralFileLock(EphemeralFileChannel channel, EphemeralFileData file) {
+        super(channel, 0, Long.MAX_VALUE, false);
         this.file = file;
     }
 
     @Override
-    public boolean isValid()
-    {
+    public boolean isValid() {
         return file != null;
     }
 
     @Override
-    public void release()
-    {
-        if ( file != null )
-        {
+    public void release() {
+        if (file != null) {
             file.releaseLock();
         }
     }

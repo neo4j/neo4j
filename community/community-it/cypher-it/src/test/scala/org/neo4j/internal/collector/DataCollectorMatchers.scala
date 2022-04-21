@@ -45,7 +45,7 @@ object DataCollectorMatchers {
 
   private val preParser = new PreParser(
     CypherConfiguration.fromConfig(Config.defaults()),
-    new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 0),
+    new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 0)
   )
 
   /**
@@ -70,7 +70,8 @@ object DataCollectorMatchers {
       MatchResult(
         matches = lowerBound && upperBound,
         rawFailureMessage = failMsg,
-        rawNegatedFailureMessage = s"Expected $left not to occur between $before and $after.")
+        rawNegatedFailureMessage = s"Expected $left not to occur between $before and $after."
+      )
     }
   }
 
@@ -149,7 +150,7 @@ object DataCollectorMatchers {
               errors +=
                 (expectedValue match {
                   case _: Matcher[AnyRef] => s"No value matching ${contained.left}"
-                  case _ => s"Expected value '$expectedValue' in list, but wasn't there"
+                  case _                  => s"Expected value '$expectedValue' in list, but wasn't there"
                 })
             }
           }
@@ -160,7 +161,7 @@ object DataCollectorMatchers {
         matches = errors.isEmpty,
         rawFailureMessage = s"Encountered following mismatches in $left:\n{0}",
         rawNegatedFailureMessage = s"All matchers matched on $left",
-        args = IndexedSeq(errors.mkString("\n")),
+        args = IndexedSeq(errors.mkString("\n"))
       )
     }
 
@@ -181,7 +182,6 @@ object DataCollectorMatchers {
       val errors = new ArrayBuffer[String]
       left match {
         case values: Seq[AnyRef] =>
-
           for (i <- expected.indices) {
             val expectedValue = expected(i)
 
@@ -208,7 +208,7 @@ object DataCollectorMatchers {
       }
       MatchResult(
         matches = errors.isEmpty,
-        rawFailureMessage = "Encountered a bunch of errors: " + errors.map("  "+_).mkString("\n", "\n", "\n"),
+        rawFailureMessage = "Encountered a bunch of errors: " + errors.map("  " + _).mkString("\n", "\n", "\n"),
         rawNegatedFailureMessage = "BAH"
       )
     }
@@ -223,7 +223,7 @@ object DataCollectorMatchers {
       case values: Seq[AnyRef] =>
         val matcher: Matcher[AnyRef] = expected match {
           case m: Matcher[AnyRef] => m
-          case expectedValue => equal(expectedValue)
+          case expectedValue      => equal(expectedValue)
         }
         matchedElement = values.find(matcher(_).matches)
         if (matchedElement.isEmpty) {
@@ -250,7 +250,7 @@ object DataCollectorMatchers {
         matches = result.isRight,
         rawFailureMessage = s"Encountered following mismatches in $left:\n{0}",
         rawNegatedFailureMessage = s"the following element in $left was found, which matches:\n{1}",
-        args = IndexedSeq(result.left.getOrElse(""), result.getOrElse("")),
+        args = IndexedSeq(result.left.getOrElse(""), result.getOrElse(""))
       )
     }
 
@@ -260,7 +260,7 @@ object DataCollectorMatchers {
   /**
    * Matches instances of the specified type.
    */
-  def ofType[T : Manifest]: OfTypeMatcher[T] =
+  def ofType[T: Manifest]: OfTypeMatcher[T] =
     OfTypeMatcher[T](manifest.runtimeClass.asInstanceOf[Class[T]])
 
   case class OfTypeMatcher[T](clazz: Class[T]) extends Matcher[AnyRef] {
@@ -269,7 +269,8 @@ object DataCollectorMatchers {
       MatchResult(
         matches = left.isInstanceOf[T],
         rawFailureMessage = s"'$left' is not an instance of '${clazz.getSimpleName}'",
-        rawNegatedFailureMessage = "")
+        rawNegatedFailureMessage = ""
+      )
 
     override def toString(): String = s"of type(${clazz.getSimpleName})"
   }
@@ -283,18 +284,28 @@ object DataCollectorMatchers {
 
     val parser: JavaCCParser.type = JavaCCParser
     private val preParsedQuery: PreParsedQuery = preParser.preParseQuery(expected, profile = false)
-    private val expectedAst = parser.parse(preParsedQuery.statement, Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.options.offset)), new AnonymousVariableNameGenerator)
+
+    private val expectedAst = parser.parse(
+      preParsedQuery.statement,
+      Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.options.offset)),
+      new AnonymousVariableNameGenerator
+    )
 
     override def apply(left: AnyRef): MatchResult =
       MatchResult(
         matches = left match {
           case text: String =>
             val preParsedQuery1 = preParser.preParseQuery(text)
-            parser.parse(preParsedQuery1.statement, Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset)), new AnonymousVariableNameGenerator) == expectedAst
+            parser.parse(
+              preParsedQuery1.statement,
+              Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset)),
+              new AnonymousVariableNameGenerator
+            ) == expectedAst
           case _ => false
         },
         rawFailureMessage = s"'$left' is not the same Cypher as '$expected'",
-        rawNegatedFailureMessage = s"'$left' is unexpectedly the same Cypher as '$expected'")
+        rawNegatedFailureMessage = s"'$left' is unexpectedly the same Cypher as '$expected'"
+      )
 
     override def toString(): String = s"cypher string `$expected`"
   }
@@ -306,7 +317,7 @@ object DataCollectorMatchers {
     @tailrec
     def inner(res: Map[String, AnyRef], keys: List[String]): AnyRef =
       keys match {
-        case Nil => res
+        case Nil        => res
         case key :: Nil => res(key)
         case key :: rest =>
           res(key) match {
@@ -319,6 +330,7 @@ object DataCollectorMatchers {
   }
 
   case class WrappedArray[T](array: Array[T]) {
+
     override def equals(obj: Any): Boolean = {
       obj match {
         case seq: Seq[_] =>
@@ -341,7 +353,7 @@ object DataCollectorMatchers {
       case _ =>
         b match {
           case brr: Array[_] => WrappedArray(brr) == a
-          case _ => a == b
+          case _             => a == b
         }
     }
   }

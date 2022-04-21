@@ -19,6 +19,10 @@
  */
 package org.neo4j.dbms.archive;
 
+import static java.nio.file.Files.exists;
+import static java.nio.file.Files.isRegularFile;
+import static java.nio.file.Files.isWritable;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,41 +31,29 @@ import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
-import static java.nio.file.Files.exists;
-import static java.nio.file.Files.isRegularFile;
-import static java.nio.file.Files.isWritable;
+public class Utils {
+    private Utils() {}
 
-public class Utils
-{
-    private Utils()
-    {
-    }
-
-    public static void checkWritableDirectory( Path directory ) throws FileSystemException
-    {
-        if ( !exists( directory ) )
-        {
-            throw new NoSuchFileException( directory.toString() );
+    public static void checkWritableDirectory(Path directory) throws FileSystemException {
+        if (!exists(directory)) {
+            throw new NoSuchFileException(directory.toString());
         }
-        if ( isRegularFile( directory ) )
-        {
-            throw new FileSystemException( directory + ": Not a directory" );
+        if (isRegularFile(directory)) {
+            throw new FileSystemException(directory + ": Not a directory");
         }
-        if ( !isWritable( directory ) )
-        {
-            throw new AccessDeniedException( directory.toString() );
+        if (!isWritable(directory)) {
+            throw new AccessDeniedException(directory.toString());
         }
     }
 
-    public static void copy( InputStream in, OutputStream out, ArchiveProgressPrinter progressPrinter ) throws IOException
-    {
+    public static void copy(InputStream in, OutputStream out, ArchiveProgressPrinter progressPrinter)
+            throws IOException {
         progressPrinter.beginFile();
         final byte[] buffer = new byte[8192];
         int n;
-        while ( -1 != (n = in.read( buffer )) )
-        {
-            out.write( buffer, 0, n );
-            progressPrinter.addBytes( n );
+        while (-1 != (n = in.read(buffer))) {
+            out.write(buffer, 0, n);
+            progressPrinter.addBytes(n);
         }
         progressPrinter.endFile();
     }

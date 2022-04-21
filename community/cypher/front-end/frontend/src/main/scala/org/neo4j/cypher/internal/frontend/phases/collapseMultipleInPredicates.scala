@@ -41,12 +41,13 @@ case object InPredicatesCollapsed extends StepSequencer.Condition
  * MATCH (n) WHERE n.prop IN [1,2,3] OR n.prop IN [4,5,6] RETURN n.prop
  * -> MATCH (n) WHERE n.prop IN [1,2,3,4,5,6]
  */
-case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
   case class InValue(lhs: Expression, expr: Expression)
 
   override def instance(from: BaseState, context: BaseContext): Rewriter = bottomUp(
     rewriter = Rewriter.lift {
-      case predicate@Ors(booleanExpressions) =>
+      case predicate @ Ors(booleanExpressions) =>
         val (expressionsToRewrite: Seq[Expression], nonRewritable: Seq[Expression]) = booleanExpressions.partition {
           case In(_, _: ListLiteral) => true
           case _                     => false
@@ -71,7 +72,7 @@ case object collapseMultipleInPredicates extends StatementRewriter with StepSequ
           case head :: Nil if !reorderedInExpressions.isEmpty =>
             // we only have one element from reorderedInExpressions
             head
-          case l                                              => Ors(l)(predicate.position)
+          case l => Ors(l)(predicate.position)
         }
     },
     cancellation = context.cancellationChecker
@@ -83,6 +84,8 @@ case object collapseMultipleInPredicates extends StatementRewriter with StepSequ
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[BaseContext, BaseState, BaseState] = this
 }

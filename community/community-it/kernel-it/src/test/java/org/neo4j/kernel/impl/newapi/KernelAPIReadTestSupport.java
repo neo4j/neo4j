@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.Kernel;
 
@@ -30,8 +29,7 @@ import org.neo4j.kernel.api.Kernel;
  * This interface defines the functionality that's needed to run Kernel API Read tests (tests that extends
  * KernelAPIReadTestBase) on a Kernel.
  */
-public interface KernelAPIReadTestSupport
-{
+public interface KernelAPIReadTestSupport {
     /**
      * Setup the test. Called once. Starts a Kernel in the provided store directory, and populates the graph using
      * the provided create method.
@@ -41,7 +39,7 @@ public interface KernelAPIReadTestSupport
      * @param systemCreate Method which populates the system database.
      * @throws IOException If database creation failed due to IO problems.
      */
-    void setup( Path storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> systemCreate );
+    void setup(Path storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> systemCreate);
 
     /**
      * The Kernel to test. Called before every test.

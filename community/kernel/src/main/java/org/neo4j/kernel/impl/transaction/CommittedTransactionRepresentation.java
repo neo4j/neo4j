@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -34,74 +33,62 @@ import org.neo4j.storageengine.api.StorageCommand;
  * itself, a Start and Commit entry. This is the thing that {@link LogicalTransactionStore} returns when
  * asked for a transaction via a cursor.
  */
-public class CommittedTransactionRepresentation
-{
+public class CommittedTransactionRepresentation {
     private final LogEntryStart startEntry;
     private final TransactionRepresentation transactionRepresentation;
     private final LogEntryCommit commitEntry;
 
-    public CommittedTransactionRepresentation( LogEntryStart startEntry, TransactionRepresentation transactionRepresentation, LogEntryCommit commitEntry )
-    {
+    public CommittedTransactionRepresentation(
+            LogEntryStart startEntry, TransactionRepresentation transactionRepresentation, LogEntryCommit commitEntry) {
         this.startEntry = startEntry;
         this.transactionRepresentation = transactionRepresentation;
         this.commitEntry = commitEntry;
     }
 
-    public void accept( Visitor<StorageCommand, IOException> visitor ) throws IOException
-    {
-        transactionRepresentation.accept( visitor );
+    public void accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
+        transactionRepresentation.accept(visitor);
     }
 
-    public LogEntryStart getStartEntry()
-    {
+    public LogEntryStart getStartEntry() {
         return startEntry;
     }
 
-    public TransactionRepresentation getTransactionRepresentation()
-    {
+    public TransactionRepresentation getTransactionRepresentation() {
         return transactionRepresentation;
     }
 
-    public LogEntryCommit getCommitEntry()
-    {
+    public LogEntryCommit getCommitEntry() {
         return commitEntry;
     }
 
-    public int getChecksum()
-    {
+    public int getChecksum() {
         return getCommitEntry().getChecksum();
     }
 
     @Override
-    public String toString()
-    {
-        return "CommittedTransactionRepresentation{" +
-                "startEntry=" + startEntry +
-                ", transactionRepresentation=" + transactionRepresentation +
-                ", commitEntry=" + commitEntry +
-                '}';
+    public String toString() {
+        return "CommittedTransactionRepresentation{" + "startEntry="
+                + startEntry + ", transactionRepresentation="
+                + transactionRepresentation + ", commitEntry="
+                + commitEntry + '}';
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         CommittedTransactionRepresentation that = (CommittedTransactionRepresentation) o;
-        return Objects.equals( startEntry, that.startEntry ) &&
-                Objects.equals( transactionRepresentation, that.transactionRepresentation ) &&
-                Objects.equals( commitEntry, that.commitEntry );
+        return Objects.equals(startEntry, that.startEntry)
+                && Objects.equals(transactionRepresentation, that.transactionRepresentation)
+                && Objects.equals(commitEntry, that.commitEntry);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( startEntry, transactionRepresentation, commitEntry );
+    public int hashCode() {
+        return Objects.hash(startEntry, transactionRepresentation, commitEntry);
     }
 }

@@ -21,99 +21,78 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 
-public class StubPagedFile implements PagedFile
-{
+public class StubPagedFile implements PagedFile {
     private final int pageSize;
     public final int exposedPageSize;
     public long lastPageId = 1;
 
-    public StubPagedFile( int pageSize )
-    {
+    public StubPagedFile(int pageSize) {
         this.pageSize = pageSize;
         this.exposedPageSize = pageSize;
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
-    {
-        StubPageCursor cursor = new StubPageCursor( pageId, pageSize );
-        prepareCursor( cursor );
+    public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
+        StubPageCursor cursor = new StubPageCursor(pageId, pageSize);
+        prepareCursor(cursor);
         return cursor;
     }
 
-    protected void prepareCursor( StubPageCursor cursor )
-    {
-    }
+    protected void prepareCursor(StubPageCursor cursor) {}
 
     @Override
-    public int pageSize()
-    {
+    public int pageSize() {
         return exposedPageSize;
     }
 
     @Override
-    public int payloadSize()
-    {
+    public int payloadSize() {
         return pageSize - PageCache.RESERVED_BYTES;
     }
 
     @Override
-    public long fileSize()
-    {
-        if ( lastPageId < 0 )
-        {
+    public long fileSize() {
+        if (lastPageId < 0) {
             return 0L;
         }
         return (lastPageId + 1) * pageSize();
     }
 
     @Override
-    public Path path()
-    {
-        return Path.of( "stub" );
+    public Path path() {
+        return Path.of("stub");
     }
 
     @Override
-    public void flushAndForce()
-    {
-    }
+    public void flushAndForce() {}
 
     @Override
-    public long getLastPageId()
-    {
+    public long getLastPageId() {
         return lastPageId;
     }
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 
     @Override
-    public void setDeleteOnClose( boolean deleteOnClose )
-    {
-    }
+    public void setDeleteOnClose(boolean deleteOnClose) {}
 
     @Override
-    public boolean isDeleteOnClose()
-    {
+    public boolean isDeleteOnClose() {
         return false;
     }
 
     @Override
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return "stub";
     }
 
     @Override
-    public PageFileCounters pageFileCounters()
-    {
+    public PageFileCounters pageFileCounters() {
         return PageFileSwapperTracer.NULL;
     }
 }

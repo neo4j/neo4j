@@ -19,15 +19,15 @@
  */
 package org.neo4j.internal.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
 import static java.lang.String.format;
 
-public class TokenCapacityExceededKernelException extends SchemaKernelException
-{
-    public TokenCapacityExceededKernelException( Throwable cause, String tokenType )
-    {
-        super( Status.Schema.TokenLimitReached,
-                format( "The maximum number of %ss available has been reached, no more can be created.", tokenType ), cause );
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class TokenCapacityExceededKernelException extends SchemaKernelException {
+    public TokenCapacityExceededKernelException(Throwable cause, String tokenType) {
+        super(
+                Status.Schema.TokenLimitReached,
+                format("The maximum number of %ss available has been reached, no more can be created.", tokenType),
+                cause);
     }
 }

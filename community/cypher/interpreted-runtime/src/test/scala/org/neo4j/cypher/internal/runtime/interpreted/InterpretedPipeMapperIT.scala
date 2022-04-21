@@ -76,24 +76,33 @@ import org.neo4j.values.storable.Values.intValue
 import scala.collection.mutable
 
 class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSupport {
-  private implicit val idGen: SequentialIdGen = new SequentialIdGen()
+  implicit private val idGen: SequentialIdGen = new SequentialIdGen()
 
   private val planContext: PlanContext = mock[PlanContext]
-  private val semanticTable = new SemanticTable(resolvedRelTypeNames =
-    mutable.Map("existing1" -> RelTypeId(1),
-      "existing2" -> RelTypeId(2),
-      "existing3" -> RelTypeId(3)))
 
-  private val converters = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+  private val semanticTable = new SemanticTable(resolvedRelTypeNames =
+    mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))
+
+  private val converters =
+    new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+
   private val pipeMapper =
-    InterpretedPipeMapper(readOnly = true, converters, planContext, mock[QueryIndexRegistrator], new AnonymousVariableNameGenerator())(semanticTable)
+    InterpretedPipeMapper(
+      readOnly = true,
+      converters,
+      planContext,
+      mock[QueryIndexRegistrator],
+      new AnonymousVariableNameGenerator()
+    )(semanticTable)
 
   private def build(logicalPlan: LogicalPlan): Pipe =
     PipeTreeBuilder(pipeMapper).build(logicalPlan)
 
   test("projection only query") {
     val logicalPlan = Projection(
-      Argument(), Map("42" -> literalInt(42)))
+      Argument(),
+      Map("42" -> literalInt(42))
+    )
     val pipe = build(logicalPlan)
 
     pipe should equal(ProjectionPipe(ArgumentPipe()(), Map("42" -> commands.expressions.Literal(intValue(42)))))
@@ -126,7 +135,10 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astCollection), Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(NodeByIdSeekPipe("n", ManySeekArgs(converters.toCommandExpression(logicalPlan.id, astCollection)))())
+    pipe should equal(NodeByIdSeekPipe(
+      "n",
+      ManySeekArgs(converters.toCommandExpression(logicalPlan.id, astCollection))
+    )())
   }
 
   test("simple relationship by id seek query") {
@@ -136,7 +148,12 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astLiteral), fromNode, toNode, Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(DirectedRelationshipByIdSeekPipe("r", SingleSeekArg(commands.expressions.Literal(intValue(42))), toNode, fromNode)())
+    pipe should equal(DirectedRelationshipByIdSeekPipe(
+      "r",
+      SingleSeekArg(commands.expressions.Literal(intValue(42))),
+      toNode,
+      fromNode
+    )())
   }
 
   test("simple relationship by id seek query with multiple values") {
@@ -147,7 +164,12 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(DirectedRelationshipByIdSeekPipe("r", ManySeekArgs(converters.toCommandExpression(logicalPlan.id, astCollection)), toNode, fromNode)())
+    pipe should equal(DirectedRelationshipByIdSeekPipe(
+      "r",
+      ManySeekArgs(converters.toCommandExpression(logicalPlan.id, astCollection)),
+      toNode,
+      fromNode
+    )())
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
@@ -158,7 +180,12 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = UndirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(UndirectedRelationshipByIdSeekPipe("r", ManySeekArgs(converters.toCommandExpression(logicalPlan.id, astCollection)), toNode, fromNode)())
+    pipe should equal(UndirectedRelationshipByIdSeekPipe(
+      "r",
+      ManySeekArgs(converters.toCommandExpression(logicalPlan.id, astCollection)),
+      toNode,
+      fromNode
+    )())
   }
 
   test("simple cartesian product") {
@@ -174,24 +201,43 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")(idGen)
     val pipe = build(logicalPlan)
 
-    pipe should equal(ExpandAllPipe(AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, RelationshipTypes.empty)())
+    pipe should equal(ExpandAllPipe(
+      AllNodesScanPipe("a")(),
+      "a",
+      "r1",
+      "b",
+      SemanticDirection.INCOMING,
+      RelationshipTypes.empty
+    )())
   }
 
   test("simple expand into existing variable MATCH a-[r]->a ") {
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(idGen)
+    val logicalPlan =
+      Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(idGen)
     val pipe = build(logicalPlan)
 
-    val inner: Pipe = ExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, RelationshipTypes.empty)()
+    val inner: Pipe =
+      ExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, RelationshipTypes.empty)()
 
     pipe should equal(inner)
   }
 
   test("optional expand into existing variable MATCH a OPTIONAL MATCH a-[r]->a ") {
-    val logicalPlan = OptionalExpand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(idGen)
+    val logicalPlan =
+      OptionalExpand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(idGen)
     val pipe = build(logicalPlan)
 
     pipe should equal(
-      OptionalExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, RelationshipTypes.empty, None)())
+      OptionalExpandIntoPipe(
+        AllNodesScanPipe("a")(),
+        "a",
+        "r",
+        "a",
+        SemanticDirection.INCOMING,
+        RelationshipTypes.empty,
+        None
+      )()
+    )
   }
 
   test("simple hash join") {
@@ -226,7 +272,14 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     pipe should equal(
       DistinctPipe(
         AllNodesScanPipe("n")(),
-        Array(DistinctPipe.GroupingCol("n.prop", commands.expressions.Property(commands.expressions.Variable("n"),
-          Resolved("prop", token, TokenType.PropertyKey)))))())
+        Array(DistinctPipe.GroupingCol(
+          "n.prop",
+          commands.expressions.Property(
+            commands.expressions.Variable("n"),
+            Resolved("prop", token, TokenType.PropertyKey)
+          )
+        ))
+      )()
+    )
   }
 }

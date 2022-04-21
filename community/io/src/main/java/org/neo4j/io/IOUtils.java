@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
-
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.function.ThrowingPredicate;
@@ -38,11 +37,8 @@ import org.neo4j.function.ThrowingPredicate;
 /**
  * IO helper methods.
  */
-public final class IOUtils
-{
-    private IOUtils()
-    {
-    }
+public final class IOUtils {
+    private IOUtils() {}
 
     /**
      * Closes given {@link Collection collection} of {@link AutoCloseable closeables}.
@@ -52,9 +48,8 @@ public final class IOUtils
      * @throws IOException if an exception was thrown by one of the close methods.
      * @see #closeAll(AutoCloseable[])
      */
-    public static <T extends AutoCloseable> void closeAll( Collection<T> closeables ) throws IOException
-    {
-        close( IOException::new, closeables );
+    public static <T extends AutoCloseable> void closeAll(Collection<T> closeables) throws IOException {
+        close(IOException::new, closeables);
     }
 
     /**
@@ -64,15 +59,11 @@ public final class IOUtils
      * @param <T> the type of closeable.
      * @throws UncheckedIOException if any exception is thrown from any of the {@code closeables}.
      */
-    public static <T extends AutoCloseable> void closeAllUnchecked( Collection<T> closeables )
-    {
-        try
-        {
-            closeAll( closeables );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public static <T extends AutoCloseable> void closeAllUnchecked(Collection<T> closeables) {
+        try {
+            closeAll(closeables);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -84,9 +75,8 @@ public final class IOUtils
      * @throws UncheckedIOException if any exception is thrown from any of the {@code closeables}.
      */
     @SafeVarargs
-    public static <T extends AutoCloseable> void closeAllUnchecked( T... closeables )
-    {
-        closeAllUnchecked( Arrays.asList( closeables ) );
+    public static <T extends AutoCloseable> void closeAllUnchecked(T... closeables) {
+        closeAllUnchecked(Arrays.asList(closeables));
     }
 
     /**
@@ -96,9 +86,8 @@ public final class IOUtils
      * @param <T> the type of closeable
      * @see #closeAll(AutoCloseable[])
      */
-    public static <T extends AutoCloseable> void closeAllSilently( Collection<T> closeables )
-    {
-        close( ( msg, cause ) -> null, closeables );
+    public static <T extends AutoCloseable> void closeAllSilently(Collection<T> closeables) {
+        close((msg, cause) -> null, closeables);
     }
 
     /**
@@ -112,9 +101,8 @@ public final class IOUtils
      * @throws IOException if an exception was thrown by one of the close methods.
      */
     @SafeVarargs
-    public static <T extends AutoCloseable> void closeAll( T... closeables ) throws IOException
-    {
-        close( IOException::new, closeables );
+    public static <T extends AutoCloseable> void closeAll(T... closeables) throws IOException {
+        close(IOException::new, closeables);
     }
 
     /**
@@ -124,9 +112,8 @@ public final class IOUtils
      * @param <T> the type of closeable
      */
     @SafeVarargs
-    public static <T extends AutoCloseable> void closeAllSilently( T... closeables )
-    {
-        close( ( msg, cause ) -> null, closeables );
+    public static <T extends AutoCloseable> void closeAllSilently(T... closeables) {
+        close((msg, cause) -> null, closeables);
     }
 
     /**
@@ -135,17 +122,12 @@ public final class IOUtils
      *
      * @param closeable instance to close, if it's not {@code null}.
      */
-    public static void closeUnchecked( Closeable closeable )
-    {
-        if ( closeable != null )
-        {
-            try
-            {
+    public static void closeUnchecked(Closeable closeable) {
+        if (closeable != null) {
+            try {
                 closeable.close();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }
@@ -162,32 +144,23 @@ public final class IOUtils
      * @param <E> the type of the parent exception.
      * @throws E when any {@link AutoCloseable#close()} throws exception
      */
-    public static <T extends AutoCloseable, E extends Throwable> void close( BiFunction<String,Throwable,E> constructor, Collection<T> closeables ) throws E
-    {
+    public static <T extends AutoCloseable, E extends Throwable> void close(
+            BiFunction<String, Throwable, E> constructor, Collection<T> closeables) throws E {
         E closeThrowable = null;
-        for ( T closeable : closeables )
-        {
-            try
-            {
-                if ( closeable != null )
-                {
+        for (T closeable : closeables) {
+            try {
+                if (closeable != null) {
                     closeable.close();
                 }
-            }
-            catch ( Exception e )
-            {
-                if ( closeThrowable == null )
-                {
-                    closeThrowable = constructor.apply( "Exception closing multiple resources.", e );
-                }
-                else
-                {
-                    closeThrowable.addSuppressed( e );
+            } catch (Exception e) {
+                if (closeThrowable == null) {
+                    closeThrowable = constructor.apply("Exception closing multiple resources.", e);
+                } else {
+                    closeThrowable.addSuppressed(e);
                 }
             }
         }
-        if ( closeThrowable != null )
-        {
+        if (closeThrowable != null) {
             throw closeThrowable;
         }
     }
@@ -205,9 +178,9 @@ public final class IOUtils
      * @throws E when any {@link AutoCloseable#close()} throws exception
      */
     @SafeVarargs
-    public static <T extends AutoCloseable, E extends Throwable> void close( BiFunction<String,Throwable,E> constructor, T... closeables ) throws E
-    {
-        close( constructor, Arrays.asList( closeables ) );
+    public static <T extends AutoCloseable, E extends Throwable> void close(
+            BiFunction<String, Throwable, E> constructor, T... closeables) throws E {
+        close(constructor, Arrays.asList(closeables));
     }
 
     /**
@@ -223,118 +196,81 @@ public final class IOUtils
      * @param <T> the type of closeable
      * @throws IOException if an exception was thrown by one of the close methods.
      */
-    public static <T extends AutoCloseable> void closeFirst( T[] closeables, int count ) throws IOException
-    {
+    public static <T extends AutoCloseable> void closeFirst(T[] closeables, int count) throws IOException {
         IOException closeThrowable = null;
-        for ( int i = 0; i < count; i++ )
-        {
-            try
-            {
+        for (int i = 0; i < count; i++) {
+            try {
                 T closeable = closeables[i];
-                if ( closeable != null )
-                {
+                if (closeable != null) {
                     closeable.close();
                 }
-            }
-            catch ( Exception e )
-            {
-                if ( closeThrowable == null )
-                {
-                    closeThrowable = new IOException( "Exception closing multiple resources.", e );
-                }
-                else
-                {
-                    closeThrowable.addSuppressed( e );
+            } catch (Exception e) {
+                if (closeThrowable == null) {
+                    closeThrowable = new IOException("Exception closing multiple resources.", e);
+                } else {
+                    closeThrowable.addSuppressed(e);
                 }
             }
         }
-        if ( closeThrowable != null )
-        {
+        if (closeThrowable != null) {
             throw closeThrowable;
         }
     }
 
-    public static <T> Predicate<T> uncheckedPredicate( ThrowingPredicate<T, IOException> predicate )
-    {
-        return ( T t ) ->
-        {
-            try
-            {
-                return predicate.test( t );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+    public static <T> Predicate<T> uncheckedPredicate(ThrowingPredicate<T, IOException> predicate) {
+        return (T t) -> {
+            try {
+                return predicate.test(t);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         };
     }
 
-    public static <T> Consumer<T> uncheckedConsumer( ThrowingConsumer<T, IOException> consumer )
-    {
-        return ( T t ) ->
-        {
-            try
-            {
-                consumer.accept( t );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+    public static <T> Consumer<T> uncheckedConsumer(ThrowingConsumer<T, IOException> consumer) {
+        return (T t) -> {
+            try {
+                consumer.accept(t);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         };
     }
 
-    public interface ThrowingLongConsumer<E extends Throwable>
-    {
-        void accept( long l ) throws E;
+    public interface ThrowingLongConsumer<E extends Throwable> {
+        void accept(long l) throws E;
     }
 
-    public static LongConsumer uncheckedLongConsumer( ThrowingLongConsumer<IOException> consumer )
-    {
-        return ( long l ) ->
-        {
-            try
-            {
-                consumer.accept( l );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+    public static LongConsumer uncheckedLongConsumer(ThrowingLongConsumer<IOException> consumer) {
+        return (long l) -> {
+            try {
+                consumer.accept(l);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         };
     }
 
-    public interface ThrowingLongSupplier<E extends Exception>
-    {
+    public interface ThrowingLongSupplier<E extends Exception> {
         long get() throws E;
     }
 
-    public static LongSupplier uncheckedLongSupplier( ThrowingLongSupplier<IOException> consumer )
-    {
-        return () ->
-        {
-            try
-            {
+    public static LongSupplier uncheckedLongSupplier(ThrowingLongSupplier<IOException> consumer) {
+        return () -> {
+            try {
                 return consumer.get();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         };
     }
 
-    public static <T,R> Function<T, R> uncheckedFunction( ThrowingFunction<T, R, IOException> consumer )
-    {
-        return ( T t ) ->
-        {
-            try
-            {
-                return consumer.apply( t );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
+    public static <T, R> Function<T, R> uncheckedFunction(ThrowingFunction<T, R, IOException> consumer) {
+        return (T t) -> {
+            try {
+                return consumer.apply(t);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         };
     }

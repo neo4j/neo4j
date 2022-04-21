@@ -22,11 +22,9 @@ package org.neo4j.io.pagecache.harness;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCacheFixture;
 
-public class MuninnPageCacheHarnessTest extends PageCacheHarnessTest<MuninnPageCache>
-{
+public class MuninnPageCacheHarnessTest extends PageCacheHarnessTest<MuninnPageCache> {
     @Override
-    protected Fixture<MuninnPageCache> createFixture()
-    {
+    protected Fixture<MuninnPageCache> createFixture() {
         return new MuninnPageCacheFixture();
     }
 }

@@ -28,47 +28,52 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.HeapTrackingOrderedAppendMap
 
 class OrderedAggregationPipeTest extends CypherFunSuite {
+
   test("close should close table") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val input = new FakePipe(Seq(Map("a"->10, "b" -> 20),Map("a"->10, "b" -> 21), Map("a"->11, "b" -> 23)))
-    val pipe = OrderedAggregationPipe(input,
+    val input = new FakePipe(Seq(Map("a" -> 10, "b" -> 20), Map("a" -> 10, "b" -> 21), Map("a" -> 11, "b" -> 23)))
+    val pipe = OrderedAggregationPipe(
+      input,
       OrderedGroupingAggTable.Factory(
-        {case (row, _) => row.getByName("a")},
+        { case (row, _) => row.getByName("a") },
         Array(DistinctPipe.GroupingCol("a", Variable("a"))),
-        {case (row, _) => row.getByName("b")},
+        { case (row, _) => row.getByName("b") },
         Array(DistinctPipe.GroupingCol("b", Variable("b"))),
         Array(AggregationPipe.AggregatingCol("c", CountStar()))
-      ))()
+      )
+    )()
 
     val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     result.next() // initialize table
     result.close()
     input.wasClosed shouldBe true
-    monitor.closedResources.collect { case t: HeapTrackingOrderedAppendMap[_, _] => t } should have size(1)
+    monitor.closedResources.collect { case t: HeapTrackingOrderedAppendMap[_, _] => t } should have size (1)
   }
 
   test("iterating should close tables") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val input = new FakePipe(Seq(
-      Map("a"->10, "b" -> 20),
-      Map("a"->10, "b" -> 20),
-      Map("a"->11, "b" -> 21),
-      Map("a"->11, "b" -> 21),
-      Map("a"->12, "b" -> 22),
-      Map("a"->12, "b" -> 22)
+      Map("a" -> 10, "b" -> 20),
+      Map("a" -> 10, "b" -> 20),
+      Map("a" -> 11, "b" -> 21),
+      Map("a" -> 11, "b" -> 21),
+      Map("a" -> 12, "b" -> 22),
+      Map("a" -> 12, "b" -> 22)
     ))
-    val pipe = OrderedAggregationPipe(input,
+    val pipe = OrderedAggregationPipe(
+      input,
       OrderedGroupingAggTable.Factory(
-        {case (row, _) => row.getByName("a")},
+        { case (row, _) => row.getByName("a") },
         Array(DistinctPipe.GroupingCol("a", Variable("a"))),
-        {case (row, _) => row.getByName("b")},
+        { case (row, _) => row.getByName("b") },
         Array(DistinctPipe.GroupingCol("b", Variable("b"))),
         Array(AggregationPipe.AggregatingCol("c", CountStar()))
-      ))()
+      )
+    )()
 
-    val result =  pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
+    val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     monitor.closedResources.collect { case t: HeapTrackingOrderedAppendMap[_, _] => t } should have size 0
     result.next() // a=10, b=20
     monitor.closedResources.collect { case t: HeapTrackingOrderedAppendMap[_, _] => t } should have size 0

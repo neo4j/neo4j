@@ -23,8 +23,11 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 trait ASTRewriterFactory {
-  def getRewriter(semanticState: SemanticState,
-                  parameterTypeMapping: Map[String, CypherType],
-                  cypherExceptionFactory: CypherExceptionFactory,
-                  anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter
+
+  def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter
 }

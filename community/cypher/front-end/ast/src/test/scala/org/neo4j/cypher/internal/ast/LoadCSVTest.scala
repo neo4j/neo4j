@@ -55,15 +55,20 @@ class LoadCSVTest extends CypherFunSuite {
 
   test("should accept one-character wide field terminators") {
     val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
-    val loadCSV = LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("\t")(DummyPosition(0))))(DummyPosition(6))
+    val loadCSV =
+      LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("\t")(DummyPosition(0))))(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     assert(result.errors === Vector.empty)
   }
 
   test("should reject more-than-one-character wide field terminators") {
     val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
-    val loadCSV = LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("  ")(DummyPosition(0))))(DummyPosition(6))
+    val loadCSV =
+      LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("  ")(DummyPosition(0))))(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
-    assert(result.errors === Vector(SemanticError("CSV field terminator can only be one character wide", DummyPosition(0))))
+    assert(result.errors === Vector(SemanticError(
+      "CSV field terminator can only be one character wide",
+      DummyPosition(0)
+    )))
   }
 }

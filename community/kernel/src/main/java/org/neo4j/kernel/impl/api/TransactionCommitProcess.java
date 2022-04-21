@@ -33,8 +33,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
  * A simple implementation of this would be to append to a log and then apply the commands of the representation
  * to storage that generated them. Another could instead serialize the transactions over the network to another machine.
  */
-public interface TransactionCommitProcess
-{
+public interface TransactionCommitProcess {
     /**
      * Commit a batch of transactions. After this method returns the batch of transaction should be committed
      * durably and be recoverable in the event of failure after this point.
@@ -45,6 +44,6 @@ public interface TransactionCommitProcess
      * @return transaction id of the last committed transaction in this batch.
      * @throws TransactionFailureException If the commit process fails.
      */
-    long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
+    long commit(TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
             throws TransactionFailureException;
 }

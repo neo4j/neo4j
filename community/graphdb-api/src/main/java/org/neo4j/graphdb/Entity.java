@@ -20,7 +20,6 @@
 package org.neo4j.graphdb;
 
 import java.util.Map;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -74,8 +73,7 @@ import org.neo4j.annotations.api.PublicApi;
  * <code>setProperty()</code> methods.
  **/
 @PublicApi
-public interface Entity
-{
+public interface Entity {
     /**
      * Returns the unique id of this entity. Id's are reused over time so they are only guaranteed to be unique
      * during a specific transaction: if the entity is deleted, it is
@@ -84,7 +82,7 @@ public interface Entity
      * @return The id of this Entity.
      * @deprecated in favor of {@link #getElementId()}.
      */
-    @Deprecated( since = "5.0", forRemoval = true )
+    @Deprecated(since = "5.0", forRemoval = true)
     long getId();
 
     /**
@@ -105,7 +103,7 @@ public interface Entity
      * @return <code>true</code> if this property container has a property
      *         accessible through the given key, <code>false</code> otherwise
      */
-    boolean hasProperty( String key );
+    boolean hasProperty(String key);
 
     /**
      * Returns the property value associated with the given key. The value is of
@@ -126,7 +124,7 @@ public interface Entity
      * @throws NotFoundException if there's no property associated with
      *             <code>key</code>
      */
-    Object getProperty( String key );
+    Object getProperty(String key);
 
     /**
      * Returns the property value associated with the given key, or a default
@@ -141,7 +139,7 @@ public interface Entity
      *            property value was associated with the given key
      * @return the property value associated with the given key
      */
-    Object getProperty( String key, Object defaultValue );
+    Object getProperty(String key, Object defaultValue);
 
     /**
      * Sets the property value for the given key to <code>value</code>. The
@@ -158,7 +156,7 @@ public interface Entity
      * @throws IllegalArgumentException if <code>value</code> is of an
      *             unsupported type (including <code>null</code>)
      */
-    void setProperty( String key, Object value );
+    void setProperty(String key, Object value);
 
     /**
      * Removes the property associated with the given key and returns the old
@@ -168,7 +166,7 @@ public interface Entity
      * @param key the property key
      * @return the property value that used to be associated with the given key
      */
-    Object removeProperty( String key );
+    Object removeProperty(String key);
 
     /**
      * Returns all existing property keys, or an empty iterable if this property
@@ -187,7 +185,7 @@ public interface Entity
      * @return specified properties on this property container
      * @throws NullPointerException if the array of keys or any key is null
      */
-    Map<String, Object> getProperties( String... keys );
+    Map<String, Object> getProperties(String... keys);
 
     /**
      * Returns all existing properties.

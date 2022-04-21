@@ -48,29 +48,37 @@ import org.neo4j.values.virtual.VirtualValues
  * It is used to implement the WAIT clause on admin commands, e.g. CREATE DATABASE foo WAIT
  */
 case class WaitReconciliationExecutionPlan(
-    name: String,
-    normalExecutionEngine: ExecutionEngine,
-    systemParams: MapValue,
-    queryHandler: QueryHandler,
-    databaseNameParamKey: String,
-    timeoutInSeconds: Long,
-    source: ExecutionPlan,
-    parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
+  name: String,
+  normalExecutionEngine: ExecutionEngine,
+  systemParams: MapValue,
+  queryHandler: QueryHandler,
+  databaseNameParamKey: String,
+  timeoutInSeconds: Long,
+  source: ExecutionPlan,
+  parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p
 ) extends AdministrationChainedExecutionPlan(Some(source)) {
 
-  override def onSkip(ctx: SystemUpdateCountingQueryContext,
-                      subscriber: QuerySubscriber): RuntimeResult = {
-    SingleRowRuntimeResult(Array("address","state", "message", "success"),
-      Array(Values.stringValue(""), Values.stringValue("CaughtUp"), Values.stringValue("No operation needed"), Values.booleanValue(true)),
-      subscriber)
+  override def onSkip(ctx: SystemUpdateCountingQueryContext, subscriber: QuerySubscriber): RuntimeResult = {
+    SingleRowRuntimeResult(
+      Array("address", "state", "message", "success"),
+      Array(
+        Values.stringValue(""),
+        Values.stringValue("CaughtUp"),
+        Values.stringValue("No operation needed"),
+        Values.booleanValue(true)
+      ),
+      subscriber
+    )
   }
 
-  override def runSpecific(ctx: SystemUpdateCountingQueryContext,
-                           executionMode: ExecutionMode,
-                           params: MapValue,
-                           prePopulateResults: Boolean,
-                           ignore: InputDataStream,
-                           subscriber: QuerySubscriber): RuntimeResult = {
+  override def runSpecific(
+    ctx: SystemUpdateCountingQueryContext,
+    executionMode: ExecutionMode,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    ignore: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult = {
 
     val query =
       s"""CALL dbms.admin.wait($$`__internal_transactionId`, $$`__internal_databaseUuid`, $$`$databaseNameParamKey`, $timeoutInSeconds)
@@ -79,7 +87,8 @@ case class WaitReconciliationExecutionPlan(
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
-      val updatedParams = parameterConverter(tc.transaction(), safeMergeParameters(systemParams, params, ctx.contextVars))
+      val updatedParams =
+        parameterConverter(tc.transaction(), safeMergeParameters(systemParams, params, ctx.contextVars))
       // We can't wait for a transaction from the same transaction so commit the existing transaction
       // and start a new one like PERIODIC COMMIT does
       val oldTxId = tc.commitAndRestartTx()
@@ -89,14 +98,28 @@ case class WaitReconciliationExecutionPlan(
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
       // Need to wait for the old transaction
-      val txParams =  VirtualValues.map(Array("__internal_transactionId"), Array(Values.longValue(oldTxId)))
+      val txParams = VirtualValues.map(Array("__internal_transactionId"), Array(Values.longValue(oldTxId)))
       val paramsWithTxId = updatedParams.updatedWith(txParams)
 
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, params)
-      val execution = normalExecutionEngine.executeSubquery(query, paramsWithTxId, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubquery(
+        query,
+        paramsWithTxId,
+        tc,
+        isOutermostQuery = false,
+        executionMode == ProfileMode,
+        prePopulateResults,
+        systemSubscriber
+      ).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
-      SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullAccess, tc.kernelTransaction())
+      SystemCommandRuntimeResult(
+        ctx,
+        new SystemCommandExecutionResult(execution),
+        systemSubscriber,
+        fullAccess,
+        tc.kernelTransaction()
+      )
     } finally {
       if (revertAccessModeChange != null) revertAccessModeChange.close()
     }
@@ -109,7 +132,8 @@ case class WaitReconciliationExecutionPlan(
   override def notifications: Set[InternalNotification] = Set.empty
 }
 
-case class SingleRowRuntimeResult(cols: Array[String], row: Array[Value], subscriber: QuerySubscriber) extends RuntimeResult {
+case class SingleRowRuntimeResult(cols: Array[String], row: Array[Value], subscriber: QuerySubscriber)
+    extends RuntimeResult {
   import org.neo4j.cypher.internal.runtime.QueryStatistics
 
   private var cs = ConsumptionState.NOT_STARTED
@@ -121,9 +145,10 @@ case class SingleRowRuntimeResult(cols: Array[String], row: Array[Value], subscr
   override def consumptionState: RuntimeResult.ConsumptionState = cs
   override def close(): Unit = {}
   override def queryProfile(): QueryProfile = QueryProfile.NONE
+
   override def request(numberOfRecords: Long): Unit = if (numberOfRecords > 0 && cs != ConsumptionState.EXHAUSTED) {
     subscriber.onRecord()
-    row.zipWithIndex.foreach{ case (v, i) => subscriber.onField(i,v) }
+    row.zipWithIndex.foreach { case (v, i) => subscriber.onField(i, v) }
     subscriber.onRecordCompleted()
     subscriber.onResultCompleted(queryStatistics())
     cs = ConsumptionState.EXHAUSTED

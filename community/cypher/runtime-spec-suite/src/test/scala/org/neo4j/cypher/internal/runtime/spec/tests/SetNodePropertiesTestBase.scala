@@ -34,10 +34,10 @@ import org.neo4j.lock.ResourceTypes.LABEL
 import org.neo4j.lock.ResourceTypes.NODE
 
 abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should set node properties") {
     // given a single node
@@ -87,7 +87,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
   test("should remove and set node properties") {
     // given a single node
     given {
-      nodePropertyGraph(1, { case i: Int => Map("p1" -> i)})
+      nodePropertyGraph(1, { case i: Int => Map("p1" -> i) })
     }
 
     // when
@@ -287,7 +287,9 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, input)
     consume(runtimeResult)
-    runtimeResult should beColumns("p1", "p2").withRows(Seq(Array(3, 3), Array(null, null))).withStatistics(propertiesSet = 2)
+    runtimeResult should beColumns("p1", "p2").withRows(Seq(Array(3, 3), Array(null, null))).withStatistics(
+      propertiesSet = 2
+    )
   }
 
   test("should set node properties from expression that requires null check") {
@@ -314,7 +316,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
   test("should count node properties updates even if values are not changed") {
     // given single node
     val n = given {
-      nodePropertyGraph(1, { case i => Map("p1" -> 100, "p2" -> 100)})
+      nodePropertyGraph(1, { case i => Map("p1" -> 100, "p2" -> 100) })
     }
 
     // when
@@ -348,12 +350,14 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    runtimeResult should beColumns("p1", "p2").withSingleRow(1, 1).withStatistics(propertiesSet = 2).withLockedNodes(Set(n.getId))
+    runtimeResult should beColumns("p1", "p2").withSingleRow(1, 1).withStatistics(propertiesSet = 2).withLockedNodes(
+      Set(n.getId)
+    )
   }
 
   test("should set node properties between two loops with continuation") {
     val nodes = given {
-      nodePropertyGraph(sizeHint, {case _ => Map("p1" -> 0, "p2" -> 0)})
+      nodePropertyGraph(sizeHint, { case _ => Map("p1" -> 0, "p2" -> 0) })
     }
 
     // when
@@ -379,15 +383,15 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
     val nodes = given {
       uniqueIndex("L", "p1", "p2")
 
-      //p1 = 0, p2 = 0
-      //p1 = 1, p2 = 0
-      nodePropertyGraph(2, {case i => Map("p1" -> i, "p2" -> 0)}, "L")
+      // p1 = 0, p2 = 0
+      // p1 = 1, p2 = 0
+      nodePropertyGraph(2, { case i => Map("p1" -> i, "p2" -> 0) }, "L")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      //this could temporarily make the property pair non-unique
+      // this could temporarily make the property pair non-unique
       .setNodeProperties("n", ("p1", "1"), ("p2", "3"))
       .filter("n.p1 = 0", "n.p2 = 0")
       .allNodeScan("n")
@@ -405,7 +409,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
     // given a single node
     given {
       uniqueIndex("L", "prop")
-      nodePropertyGraph(1, {case _ => Map("prop" -> 1)}, "L")
+      nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }
 
     // when
@@ -429,7 +433,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
     // given a single node
     given {
       uniqueIndex("L", "prop")
-      nodePropertyGraph(1, {case _ => Map("prop" -> 1)}, "L")
+      nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }
 
     // when

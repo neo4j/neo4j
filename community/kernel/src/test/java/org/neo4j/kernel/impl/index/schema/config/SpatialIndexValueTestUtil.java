@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -26,21 +28,17 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class SpatialIndexValueTestUtil
-{
-    public static Pair<PointValue,PointValue> pointsWithSameValueOnSpaceFillingCurve( Config config )
-    {
-        ConfiguredSpaceFillingCurveSettingsCache configuredCache = new ConfiguredSpaceFillingCurveSettingsCache( config );
-        SpaceFillingCurveSettings spaceFillingCurveSettings = configuredCache.forCRS( CoordinateReferenceSystem.WGS_84 );
+public class SpatialIndexValueTestUtil {
+    public static Pair<PointValue, PointValue> pointsWithSameValueOnSpaceFillingCurve(Config config) {
+        ConfiguredSpaceFillingCurveSettingsCache configuredCache = new ConfiguredSpaceFillingCurveSettingsCache(config);
+        SpaceFillingCurveSettings spaceFillingCurveSettings = configuredCache.forCRS(CoordinateReferenceSystem.WGS_84);
         SpaceFillingCurve curve = spaceFillingCurveSettings.curve();
         double[] origin = {0.0, 0.0};
-        Long spaceFillingCurveMapForOrigin = curve.derivedValueFor( origin );
-        double[] centerPointForOriginTile = curve.centerPointFor( spaceFillingCurveMapForOrigin );
-        PointValue originValue = Values.pointValue( CoordinateReferenceSystem.WGS_84, origin );
-        PointValue centerPointValue = Values.pointValue( CoordinateReferenceSystem.WGS_84, centerPointForOriginTile );
-        assertThat( origin ).as( "need non equal points for this test" ).isNotEqualTo( centerPointValue );
-        return Pair.of( originValue, centerPointValue );
+        Long spaceFillingCurveMapForOrigin = curve.derivedValueFor(origin);
+        double[] centerPointForOriginTile = curve.centerPointFor(spaceFillingCurveMapForOrigin);
+        PointValue originValue = Values.pointValue(CoordinateReferenceSystem.WGS_84, origin);
+        PointValue centerPointValue = Values.pointValue(CoordinateReferenceSystem.WGS_84, centerPointForOriginTile);
+        assertThat(origin).as("need non equal points for this test").isNotEqualTo(centerPointValue);
+        return Pair.of(originValue, centerPointValue);
     }
 }

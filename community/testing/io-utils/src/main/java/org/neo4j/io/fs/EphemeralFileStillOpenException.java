@@ -19,19 +19,16 @@
  */
 package org.neo4j.io.fs;
 
-@SuppressWarnings( "serial" )
-class EphemeralFileStillOpenException extends Exception
-{
+@SuppressWarnings("serial")
+class EphemeralFileStillOpenException extends Exception {
     private final String filename;
 
-    EphemeralFileStillOpenException( String filename )
-    {
-        super( "File still open: [" + filename + "]" );
+    EphemeralFileStillOpenException(String filename) {
+        super("File still open: [" + filename + "]");
         this.filename = filename;
     }
 
-    public String getFilename()
-    {
+    public String getFilename() {
         return filename;
     }
 }

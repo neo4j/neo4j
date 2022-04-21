@@ -19,8 +19,13 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
+import static org.neo4j.io.IOUtils.uncheckedConsumer;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -28,7 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -61,268 +67,232 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
-import static org.neo4j.io.IOUtils.uncheckedConsumer;
-
 @DbmsExtension
-@ExtendWith( RandomExtension.class )
-class RelationshipTypeIndexIT
-{
-    private static final RelationshipType REL_TYPE = RelationshipType.withName( "REL_TYPE" );
-    private static final RelationshipType OTHER_REL_TYPE = RelationshipType.withName( "OTHER_REL_TYPE" );
+@ExtendWith(RandomExtension.class)
+class RelationshipTypeIndexIT {
+    private static final RelationshipType REL_TYPE = RelationshipType.withName("REL_TYPE");
+    private static final RelationshipType OTHER_REL_TYPE = RelationshipType.withName("OTHER_REL_TYPE");
     private static final String PROPERTY = "prop";
     private static final String PROPERTY_VALUE = "value";
+
     @Inject
     GraphDatabaseService db;
+
     @Inject
     DbmsController dbmsController;
+
     @Inject
     FileSystemAbstraction fs;
+
     @Inject
     DatabaseLayout databaseLayout;
+
     @Inject
     RandomSupport random;
 
     @Test
-    void shouldSeeAddedRelationship() throws IndexNotFoundKernelException
-    {
+    void shouldSeeAddedRelationship() throws IndexNotFoundKernelException {
         List<Long> expectedIds = new ArrayList<>();
-        createRelationshipInTx( expectedIds );
+        createRelationshipInTx(expectedIds);
 
-        assertContainIds( expectedIds );
+        assertContainIds(expectedIds);
     }
 
     @Test
-    void shouldNotSeeRemovedRelationship() throws IndexNotFoundKernelException
-    {
+    void shouldNotSeeRemovedRelationship() throws IndexNotFoundKernelException {
         List<Long> expectedIds = new ArrayList<>();
         long nodeId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode( TestLabels.LABEL_ONE );
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.createNode(TestLabels.LABEL_ONE);
             nodeId = node.getId();
-            Relationship relationship1 = node.createRelationshipTo( tx.createNode(), REL_TYPE );
-            Relationship relationship2 = createRelationship( tx );
-            expectedIds.add( relationship1.getId() );
-            expectedIds.add( relationship2.getId() );
+            Relationship relationship1 = node.createRelationshipTo(tx.createNode(), REL_TYPE);
+            Relationship relationship2 = createRelationship(tx);
+            expectedIds.add(relationship1.getId());
+            expectedIds.add(relationship2.getId());
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.getNodeById( nodeId );
-            Iterables.forEach( node.getRelationships(), rel ->
-            {
-                expectedIds.remove( rel.getId() );
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.getNodeById(nodeId);
+            Iterables.forEach(node.getRelationships(), rel -> {
+                expectedIds.remove(rel.getId());
                 rel.delete();
-            } );
+            });
             tx.commit();
         }
 
-        assertContainIds( expectedIds );
+        assertContainIds(expectedIds);
     }
 
     @Test
-    void shouldRebuildIfMissingDuringStartup() throws IndexNotFoundKernelException, IOException
-    {
+    void shouldRebuildIfMissingDuringStartup() throws IndexNotFoundKernelException, IOException {
         List<Long> expectedIds = new ArrayList<>();
-        createRelationshipInTx( expectedIds );
+        createRelationshipInTx(expectedIds);
 
         ResourceIterator<Path> files = getRelationshipTypeIndexFiles();
-        dbmsController.restartDbms( builder ->
-        {
-            files.forEachRemaining( uncheckedConsumer( file -> fs.deleteFile( file ) ) );
+        dbmsController.restartDbms(builder -> {
+            files.forEachRemaining(uncheckedConsumer(file -> fs.deleteFile(file)));
             return builder;
         });
         awaitIndexesOnline();
 
-        assertContainIds( expectedIds );
+        assertContainIds(expectedIds);
     }
 
     @Test
-    void shouldPopulateIndex() throws KernelException
-    {
+    void shouldPopulateIndex() throws KernelException {
         int numberOfRelationships = 10;
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < numberOfRelationships; i++ )
-            {
-                createRelationship( tx );
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < numberOfRelationships; i++) {
+                createRelationship(tx);
             }
             tx.commit();
         }
 
         String indexName = createFulltextRelationshipIndex();
 
-        assertEquals( numberOfRelationships, countRelationshipsInFulltextIndex( indexName ) );
+        assertEquals(numberOfRelationships, countRelationshipsInFulltextIndex(indexName));
     }
 
     @Test
-    void shouldBeRecovered() throws IndexNotFoundKernelException
-    {
+    void shouldBeRecovered() throws IndexNotFoundKernelException {
         List<Long> expectedIds = new ArrayList<>();
-        createRelationshipInTx( expectedIds );
+        createRelationshipInTx(expectedIds);
 
-        dbmsController.restartDbms( builder ->
-        {
+        dbmsController.restartDbms(builder -> {
             removeLastCheckpointRecordFromLastLogFile();
             return builder;
-        } );
+        });
         awaitIndexesOnline();
 
-        assertContainIds( expectedIds );
+        assertContainIds(expectedIds);
     }
 
     @Test
-    void shouldRecoverIndex() throws KernelException
-    {
+    void shouldRecoverIndex() throws KernelException {
         int numberOfRelationships = 10;
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < numberOfRelationships; i++ )
-            {
-                createRelationship( tx );
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < numberOfRelationships; i++) {
+                createRelationship(tx);
             }
             tx.commit();
         }
 
         String indexName = createFulltextRelationshipIndex();
 
-        dbmsController.restartDbms( builder ->
-        {
+        dbmsController.restartDbms(builder -> {
             removeLastCheckpointRecordFromLastLogFile();
             return builder;
-        } );
+        });
         awaitIndexesOnline();
 
-        assertEquals( numberOfRelationships, countRelationshipsInFulltextIndex( indexName ) );
+        assertEquals(numberOfRelationships, countRelationshipsInFulltextIndex(indexName));
     }
 
     @Test
-    void shouldCorrectlyValidateRelationshipPropertyExistenceConstraint()
-    {
+    void shouldCorrectlyValidateRelationshipPropertyExistenceConstraint() {
         // A single random relationship that violates constraint
         // together with a set of relevant and irrelevant relationships.
-        try ( Transaction tx = db.beginTx() )
-        {
-            int invalidRelationship = random.nextInt( 100 );
-            for ( int i = 0; i < 100; i++ )
-            {
-                if ( i == invalidRelationship )
-                {
+        try (Transaction tx = db.beginTx()) {
+            int invalidRelationship = random.nextInt(100);
+            for (int i = 0; i < 100; i++) {
+                if (i == invalidRelationship) {
                     // This relationship doesn't have the demanded property
-                    tx.createNode().createRelationshipTo( tx.createNode(), REL_TYPE );
-                }
-                else
-                {
-                    createRelationship( tx );
-                    createRelationship( tx, OTHER_REL_TYPE );
+                    tx.createNode().createRelationshipTo(tx.createNode(), REL_TYPE);
+                } else {
+                    createRelationship(tx);
+                    createRelationship(tx, OTHER_REL_TYPE);
                 }
             }
             tx.commit();
         }
 
-        assertThrows( ConstraintViolationException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().constraintFor( REL_TYPE ).assertPropertyExists( PROPERTY ).create();
+        assertThrows(ConstraintViolationException.class, () -> {
+            try (Transaction tx = db.beginTx()) {
+                tx.schema()
+                        .constraintFor(REL_TYPE)
+                        .assertPropertyExists(PROPERTY)
+                        .create();
                 tx.commit();
             }
-        } );
+        });
     }
 
-    private ResourceIterator<Path> getRelationshipTypeIndexFiles() throws IndexNotFoundKernelException, IOException
-    {
+    private ResourceIterator<Path> getRelationshipTypeIndexFiles() throws IndexNotFoundKernelException, IOException {
         return getIndexProxy().snapshotFiles();
     }
 
-    private static Relationship createRelationship( Transaction tx )
-    {
-        return createRelationship( tx, REL_TYPE );
+    private static Relationship createRelationship(Transaction tx) {
+        return createRelationship(tx, REL_TYPE);
     }
 
-    private static Relationship createRelationship( Transaction tx, RelationshipType type )
-    {
-        Relationship relationship = tx.createNode().createRelationshipTo( tx.createNode(), type );
-        relationship.setProperty( PROPERTY, PROPERTY_VALUE );
+    private static Relationship createRelationship(Transaction tx, RelationshipType type) {
+        Relationship relationship = tx.createNode().createRelationshipTo(tx.createNode(), type);
+        relationship.setProperty(PROPERTY, PROPERTY_VALUE);
         return relationship;
     }
 
-    private void createRelationshipInTx( List<Long> expectedIds )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Relationship relationship = createRelationship( tx );
-            expectedIds.add( relationship.getId() );
+    private void createRelationshipInTx(List<Long> expectedIds) {
+        try (Transaction tx = db.beginTx()) {
+            Relationship relationship = createRelationship(tx);
+            expectedIds.add(relationship.getId());
             tx.commit();
         }
     }
 
-    IndexDescriptor findTokenIndex()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( IndexDefinition indexDef : tx.schema().getIndexes() )
-            {
+    IndexDescriptor findTokenIndex() {
+        try (Transaction tx = db.beginTx()) {
+            for (IndexDefinition indexDef : tx.schema().getIndexes()) {
                 IndexDescriptor index = ((IndexDefinitionImpl) indexDef).getIndexReference();
-                if ( index.schema().isAnyTokenSchemaDescriptor() && index.schema().entityType() == EntityType.RELATIONSHIP &&
-                     index.getIndexType() == org.neo4j.internal.schema.IndexType.LOOKUP )
-                {
+                if (index.schema().isAnyTokenSchemaDescriptor()
+                        && index.schema().entityType() == EntityType.RELATIONSHIP
+                        && index.getIndexType() == org.neo4j.internal.schema.IndexType.LOOKUP) {
                     return index;
                 }
             }
         }
-        fail( "Didn't find expected token index" );
+        fail("Didn't find expected token index");
         return null;
     }
 
-    private IndexProxy getIndexProxy() throws IndexNotFoundKernelException
-    {
-        IndexingService indexingService = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( IndexingService.class );
-        return indexingService.getIndexProxy( findTokenIndex() );
+    private IndexProxy getIndexProxy() throws IndexNotFoundKernelException {
+        IndexingService indexingService =
+                ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(IndexingService.class);
+        return indexingService.getIndexProxy(findTokenIndex());
     }
 
-    private void assertContainIds( List<Long> expectedIds ) throws IndexNotFoundKernelException
-    {
+    private void assertContainIds(List<Long> expectedIds) throws IndexNotFoundKernelException {
         int relationshipTypeId = getRelationshipTypeId();
 
         IndexProxy indexProxy = getIndexProxy();
         List<Long> actualIds = new ArrayList<>();
-        try ( TokenIndexReader reader = indexProxy.newTokenReader() )
-        {
+        try (TokenIndexReader reader = indexProxy.newTokenReader()) {
             SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-            reader.query( tokenClient, unconstrained(), new TokenPredicate( relationshipTypeId ), CursorContext.NULL_CONTEXT );
-            while ( tokenClient.next() )
-            {
-                actualIds.add( tokenClient.reference );
+            reader.query(
+                    tokenClient, unconstrained(), new TokenPredicate(relationshipTypeId), CursorContext.NULL_CONTEXT);
+            while (tokenClient.next()) {
+                actualIds.add(tokenClient.reference);
             }
         }
 
-        expectedIds.sort( Long::compareTo );
-        actualIds.sort( Long::compareTo );
-        assertThat( actualIds ).as( "contains expected relationships" ).isEqualTo( expectedIds );
+        expectedIds.sort(Long::compareTo);
+        actualIds.sort(Long::compareTo);
+        assertThat(actualIds).as("contains expected relationships").isEqualTo(expectedIds);
     }
 
-    private int countRelationshipsInFulltextIndex( String indexName ) throws KernelException
-    {
+    private int countRelationshipsInFulltextIndex(String indexName) throws KernelException {
         int relationshipsInIndex;
-        try ( Transaction transaction = db.beginTx() )
-        {
-            KernelTransaction ktx = ((InternalTransaction)transaction).kernelTransaction();
-            IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
-            IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
+        try (Transaction transaction = db.beginTx()) {
+            KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
+            IndexDescriptor index = ktx.schemaRead().indexGetForName(indexName);
+            IndexReadSession indexReadSession = ktx.dataRead().indexReadSession(index);
             relationshipsInIndex = 0;
-            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
-            {
-                ktx.dataRead().relationshipIndexSeek( ktx.queryContext(), indexReadSession, cursor, unconstrained(), fulltextSearch( "*" ) );
-                while ( cursor.next() )
-                {
+            try (RelationshipValueIndexCursor cursor =
+                    ktx.cursors().allocateRelationshipValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
+                ktx.dataRead()
+                        .relationshipIndexSeek(
+                                ktx.queryContext(), indexReadSession, cursor, unconstrained(), fulltextSearch("*"));
+                while (cursor.next()) {
                     relationshipsInIndex++;
                 }
             }
@@ -330,62 +300,58 @@ class RelationshipTypeIndexIT
         return relationshipsInIndex;
     }
 
-    private String createFulltextRelationshipIndex()
-    {
+    private String createFulltextRelationshipIndex() {
         String indexName;
-        try ( Transaction transaction = db.beginTx() )
-        {
-            indexName = transaction.schema().indexFor( REL_TYPE ).on( PROPERTY ).withIndexType( IndexType.FULLTEXT ).create().getName();
+        try (Transaction transaction = db.beginTx()) {
+            indexName = transaction
+                    .schema()
+                    .indexFor(REL_TYPE)
+                    .on(PROPERTY)
+                    .withIndexType(IndexType.FULLTEXT)
+                    .create()
+                    .getName();
             transaction.commit();
         }
         awaitIndexesOnline();
         return indexName;
     }
 
-    private void awaitIndexesOnline()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+    private void awaitIndexesOnline() {
+        try (Transaction transaction = db.beginTx()) {
+            transaction.schema().awaitIndexesOnline(10, TimeUnit.MINUTES);
             transaction.commit();
         }
     }
 
-    private int getRelationshipTypeId()
-    {
+    private int getRelationshipTypeId() {
         int relationshipTypeId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            relationshipTypeId = ((InternalTransaction) tx).kernelTransaction().tokenRead().relationshipType( REL_TYPE.name() );
+        try (Transaction tx = db.beginTx()) {
+            relationshipTypeId =
+                    ((InternalTransaction) tx).kernelTransaction().tokenRead().relationshipType(REL_TYPE.name());
             tx.commit();
         }
         return relationshipTypeId;
     }
 
-    private void removeLastCheckpointRecordFromLastLogFile()
-    {
-        try
-        {
+    private void removeLastCheckpointRecordFromLastLogFile() {
+        try {
             LogFiles logFiles = buildLogFiles();
-            Optional<CheckpointInfo> latestCheckpoint = logFiles.getCheckpointFile().findLatestCheckpoint();
-            if ( latestCheckpoint.isPresent() )
-            {
-                try ( StoreChannel storeChannel = fs.write( logFiles.getCheckpointFile().getCurrentFile() ) )
-                {
-                    storeChannel.truncate( latestCheckpoint.get().getCheckpointEntryPosition().getByteOffset() );
+            Optional<CheckpointInfo> latestCheckpoint =
+                    logFiles.getCheckpointFile().findLatestCheckpoint();
+            if (latestCheckpoint.isPresent()) {
+                try (StoreChannel storeChannel =
+                        fs.write(logFiles.getCheckpointFile().getCurrentFile())) {
+                    storeChannel.truncate(
+                            latestCheckpoint.get().getCheckpointEntryPosition().getByteOffset());
                 }
             }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private LogFiles buildLogFiles() throws IOException
-    {
-        return LogFilesBuilder
-                .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
+    private LogFiles buildLogFiles() throws IOException {
+        return LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
                 .build();
     }
 }

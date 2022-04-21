@@ -43,6 +43,7 @@ import org.neo4j.values.virtual.MapValue
 
 import java.lang
 import java.time.Clock
+
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
@@ -50,14 +51,16 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
  * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
  * operation. Please make sure this will be constructed only once and properly reused.
  */
-class ExecutionEngine(val queryService: GraphDatabaseQueryService,
-                      val kernelMonitors: Monitors,
-                      val tracer: CompilationTracer,
-                      val config: CypherConfiguration,
-                      val compilerLibrary: CompilerLibrary,
-                      val queryCaches: CypherQueryCaches,
-                      val logProvider: InternalLogProvider,
-                      val clock: Clock = Clock.systemUTC() ) {
+class ExecutionEngine(
+  val queryService: GraphDatabaseQueryService,
+  val kernelMonitors: Monitors,
+  val tracer: CompilationTracer,
+  val config: CypherConfiguration,
+  val compilerLibrary: CompilerLibrary,
+  val queryCaches: CypherQueryCaches,
+  val logProvider: InternalLogProvider,
+  val clock: Clock = Clock.systemUTC()
+) {
 
   require(queryService != null, "Can't work with a null graph database")
 
@@ -87,12 +90,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
    * @param subscriber the subscriber where results will be streamed
    * @return a `QueryExecution` that controls the demand to the subscriber
    */
-  def execute(query: String,
-              params: MapValue,
-              context: TransactionalContext,
-              profile: Boolean,
-              prePopulate: Boolean,
-              subscriber: QuerySubscriber): QueryExecution = {
+  def execute(
+    query: String,
+    params: MapValue,
+    context: TransactionalContext,
+    profile: Boolean,
+    prePopulate: Boolean,
+    subscriber: QuerySubscriber
+  ): QueryExecution = {
     defaultQueryExecutionMonitor.startProcessing(context.executingQuery())
     executeSubquery(query, params, context, isOutermostQuery = true, profile, prePopulate, subscriber)
   }
@@ -108,17 +113,29 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
    * @param subscriber  the subscriber where results will be streamed
    * @return a `QueryExecution` that controls the demand to the subscriber
    */
-  def execute(query: FullyParsedQuery,
-              params: MapValue,
-              context: TransactionalContext,
-              prePopulate: Boolean,
-              input: InputDataStream,
-              queryMonitor: QueryExecutionMonitor,
-              subscriber: QuerySubscriber): QueryExecution = {
+  def execute(
+    query: FullyParsedQuery,
+    params: MapValue,
+    context: TransactionalContext,
+    prePopulate: Boolean,
+    input: InputDataStream,
+    queryMonitor: QueryExecutionMonitor,
+    subscriber: QuerySubscriber
+  ): QueryExecution = {
     queryMonitor.startProcessing(context.executingQuery())
     val queryTracer = tracer.compileQuery(query.description)
     closing(context, queryTracer) {
-      doExecute(query, params, context, isOutermostQuery = true, prePopulate, input, queryMonitor, queryTracer, subscriber)
+      doExecute(
+        query,
+        params,
+        context,
+        isOutermostQuery = true,
+        prePopulate,
+        input,
+        queryMonitor,
+        queryTracer,
+        subscriber
+      )
     }
   }
 
@@ -136,46 +153,62 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
    * @param subscriber the subscriber where results will be streamed
    * @return a `QueryExecution` that controls the demand to the subscriber
    */
-  def executeSubquery(query: String,
-                      params: MapValue,
-                      context: TransactionalContext,
-                      isOutermostQuery: Boolean,
-                      profile: Boolean,
-                      prePopulate: Boolean,
-                      subscriber: QuerySubscriber): QueryExecution = {
+  def executeSubquery(
+    query: String,
+    params: MapValue,
+    context: TransactionalContext,
+    isOutermostQuery: Boolean,
+    profile: Boolean,
+    prePopulate: Boolean,
+    subscriber: QuerySubscriber
+  ): QueryExecution = {
     val queryTracer = tracer.compileQuery(query)
     closing(context, queryTracer) {
       val couldContainSensitiveFields = isOutermostQuery && compilerLibrary.supportsAdministrativeCommands()
       val preParsedQuery = preParser.preParseQuery(query, profile, couldContainSensitiveFields)
-      doExecute(preParsedQuery, params, context, isOutermostQuery, prePopulate, NoInput, defaultQueryExecutionMonitor, queryTracer, subscriber)
+      doExecute(
+        preParsedQuery,
+        params,
+        context,
+        isOutermostQuery,
+        prePopulate,
+        NoInput,
+        defaultQueryExecutionMonitor,
+        queryTracer,
+        subscriber
+      )
     }
   }
 
   private def closing[T](context: TransactionalContext, traceEvent: QueryCompilationEvent)(code: => T): T =
-    try code catch {
+    try code
+    catch {
       case t: Throwable =>
         context.rollback()
         throw t
     } finally traceEvent.close()
 
-  private def doExecute(query: InputQuery,
-                        params: MapValue,
-                        context: TransactionalContext,
-                        isOutermostQuery: Boolean,
-                        prePopulate: Boolean,
-                        input: InputDataStream,
-                        queryMonitor: QueryExecutionMonitor,
-                        tracer: QueryCompilationEvent,
-                        subscriber: QuerySubscriber): QueryExecution = {
+  private def doExecute(
+    query: InputQuery,
+    params: MapValue,
+    context: TransactionalContext,
+    isOutermostQuery: Boolean,
+    prePopulate: Boolean,
+    input: InputDataStream,
+    queryMonitor: QueryExecutionMonitor,
+    tracer: QueryCompilationEvent,
+    subscriber: QuerySubscriber
+  ): QueryExecution = {
 
-    val executableQuery = try {
-      getOrCompile(context, query, tracer, params)
-    } catch {
-      case up: Throwable =>
-        if (isOutermostQuery)
-          queryMonitor.endFailure(context.executingQuery(), up.getMessage)
-        throw up
-    }
+    val executableQuery =
+      try {
+        getOrCompile(context, query, tracer, params)
+      } catch {
+        case up: Throwable =>
+          if (isOutermostQuery)
+            queryMonitor.endFailure(context.executingQuery(), up.getMessage)
+          throw up
+      }
     if (query.options.queryOptions.executionMode.name != "explain") {
       checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
     }
@@ -183,27 +216,41 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
     if (isOutermostQuery) {
       context.executingQuery().onObfuscatorReady(executableQuery.queryObfuscator)
-      context.executingQuery().onCompilationCompleted(executableQuery.compilerInfo, executableQuery.planDescriptionSupplier())
+      context.executingQuery().onCompilationCompleted(
+        executableQuery.compilerInfo,
+        executableQuery.planDescriptionSupplier()
+      )
     }
 
-    executableQuery.execute(context, isOutermostQuery, query.options, combinedParams, prePopulate, input, queryMonitor, subscriber)
+    executableQuery.execute(
+      context,
+      isOutermostQuery,
+      query.options,
+      combinedParams,
+      prePopulate,
+      input,
+      queryMonitor,
+      subscriber
+    )
   }
 
   /*
    * Return the CompilerWithExpressionCodeGenOption to be used.
    */
-  private def compilerWithExpressionCodeGenOption(inputQuery: InputQuery,
-                                                  tracer: QueryCompilationEvent,
-                                                  transactionalContext: TransactionalContext,
-                                                  params: MapValue): CompilerWithExpressionCodeGenOption[ExecutableQuery] = {
-    val compiledExpressionCompiler = () => masterCompiler.compile(inputQuery.withRecompilationLimitReached,
-      tracer, transactionalContext, params)
+  private def compilerWithExpressionCodeGenOption(
+    inputQuery: InputQuery,
+    tracer: QueryCompilationEvent,
+    transactionalContext: TransactionalContext,
+    params: MapValue
+  ): CompilerWithExpressionCodeGenOption[ExecutableQuery] = {
+    val compiledExpressionCompiler =
+      () => masterCompiler.compile(inputQuery.withRecompilationLimitReached, tracer, transactionalContext, params)
     val interpretedExpressionCompiler = () => masterCompiler.compile(inputQuery, tracer, transactionalContext, params)
 
     new CompilerWithExpressionCodeGenOption[ExecutableQuery] {
       override def compile(): ExecutableQuery = {
         if (inputQuery.options.compileWhenHot && config.recompilationLimit == 0) {
-          //We have recompilationLimit == 0, go to compiled directly
+          // We have recompilationLimit == 0, go to compiled directly
           compiledExpressionCompiler()
         } else {
           interpretedExpressionCompiler()
@@ -213,22 +260,25 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       override def compileWithExpressionCodeGen(): ExecutableQuery = compiledExpressionCompiler()
 
       override def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[ExecutableQuery] = {
-        //check if we need to do jit compiling of queries and if hot enough
-        if (inputQuery.options.compileWhenHot && config.recompilationLimit > 0 && hitCount >= config.recompilationLimit) {
+        // check if we need to do jit compiling of queries and if hot enough
+        if (
+          inputQuery.options.compileWhenHot && config.recompilationLimit > 0 && hitCount >= config.recompilationLimit
+        ) {
           Some(compiledExpressionCompiler())
         } else {
-          //In the other case we have no recompilation step
+          // In the other case we have no recompilation step
           None
         }
       }
     }
   }
 
-  private def getOrCompile(context: TransactionalContext,
-                           initialInputQuery: InputQuery,
-                           tracer: QueryCompilationEvent,
-                           params: MapValue,
-                          ): ExecutableQuery = {
+  private def getOrCompile(
+    context: TransactionalContext,
+    initialInputQuery: InputQuery,
+    tracer: QueryCompilationEvent,
+    params: MapValue
+  ): ExecutableQuery = {
 
     // create transaction and query context
     val tc = context.getOrBeginNewIfClosed()
@@ -252,11 +302,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           inputQuery = inputQuery.withReplanOption(CypherReplanOption.force)
         }
         val compiler = compilerWithExpressionCodeGenOption(inputQuery, tracer, tc, params)
-        val executableQuery = queryCache.computeIfAbsentOrStale(cacheKey,
+        val executableQuery = queryCache.computeIfAbsentOrStale(
+          cacheKey,
           tc,
           compiler,
           inputQuery.options.queryOptions.replan,
-          context.executingQuery().id())
+          context.executingQuery().id()
+        )
 
         val lockedEntities = schemaHelper.lockEntities(schemaToken, executableQuery, tc)
 
@@ -279,8 +331,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     List(masterCompiler.clearCaches(), queryCache.clear(), preParser.clearCache()).max
 
   def getCypherFunctions: java.util.List[FunctionInformation] = {
-    val informations: Seq[FunctionInformation] = org.neo4j.cypher.internal.expressions.functions.Function.functionInfo.map(FunctionWithInformation)
-    val predicateInformations: Seq[FunctionInformation] = org.neo4j.cypher.internal.expressions.IterablePredicateExpression.functionInfo.map(FunctionWithInformation)
+    val informations: Seq[FunctionInformation] =
+      org.neo4j.cypher.internal.expressions.functions.Function.functionInfo.map(FunctionWithInformation)
+    val predicateInformations: Seq[FunctionInformation] =
+      org.neo4j.cypher.internal.expressions.IterablePredicateExpression.functionInfo.map(FunctionWithInformation)
     (informations ++ predicateInformations).asJava
   }
 
@@ -292,7 +346,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     while (i < queryParams.length) {
       val key = queryParams(i)
       if (!(givenParams.containsKey(key) || extractedParams.containsKey(key))) {
-        val missingKeys = queryParams.filter(key => !(givenParams.containsKey(key) || extractedParams.containsKey(key))).distinct
+        val missingKeys =
+          queryParams.filter(key => !(givenParams.containsKey(key) || extractedParams.containsKey(key))).distinct
         throw new ParameterNotFoundException("Expected parameter(s): " + missingKeys.mkString(", "))
       }
       i += 1
@@ -314,10 +369,11 @@ case class FunctionWithInformation(f: FunctionTypeSignature) extends FunctionInf
 
   override def returnType: String = f.outputType.toNeoTypeString
 
-  override def inputSignature: java.util.List[java.util.Map[String, String]] = f.names.zip(f.argumentTypes ++ f.optionalTypes).map { case (name, cType) =>
-    val typeString = cType.toNeoTypeString
-    Map("name" -> name, "type" -> typeString, "description" -> s"$name :: $typeString").asJava
-  }.asJava
+  override def inputSignature: java.util.List[java.util.Map[String, String]] =
+    f.names.zip(f.argumentTypes ++ f.optionalTypes).map { case (name, cType) =>
+      val typeString = cType.toNeoTypeString
+      Map("name" -> name, "type" -> typeString, "description" -> s"$name :: $typeString").asJava
+    }.asJava
 }
 
 object ExecutionEngine {

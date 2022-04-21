@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.apache.commons.lang3.mutable.MutableInt;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -36,26 +36,26 @@ import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever transaction is committed.
  */
-public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
-        implements RecordAccess<RECORD,ADDITIONAL>
-{
+public class DirectRecordAccess<RECORD extends AbstractBaseRecord, ADDITIONAL>
+        implements RecordAccess<RECORD, ADDITIONAL> {
     private final RecordStore<RECORD> store;
     private final Loader<RECORD, ADDITIONAL> loader;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
     private final CursorType cursorType;
-    private final Map<Long,DirectRecordProxy> batch = new HashMap<>();
+    private final Map<Long, DirectRecordProxy> batch = new HashMap<>();
 
     private final MutableInt changeCounter = new MutableInt();
 
-    public DirectRecordAccess( RecordStore<RECORD> store, Loader<RECORD,ADDITIONAL> loader, CursorContext cursorContext,
-            CursorType cursorType, StoreCursors storeCursors )
-    {
+    public DirectRecordAccess(
+            RecordStore<RECORD> store,
+            Loader<RECORD, ADDITIONAL> loader,
+            CursorContext cursorContext,
+            CursorType cursorType,
+            StoreCursors storeCursors) {
         this.store = store;
         this.loader = loader;
         this.cursorContext = cursorContext;
@@ -64,60 +64,56 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load )
-    {
-        DirectRecordProxy loaded = batch.get( key );
-        if ( loaded != null )
-        {
+    public RecordProxy<RECORD, ADDITIONAL> getOrLoad(long key, ADDITIONAL additionalData, RecordLoad load) {
+        DirectRecordProxy loaded = batch.get(key);
+        if (loaded != null) {
             return loaded;
         }
-        return proxy( key, loader.load( key, additionalData, load, INSTANCE ), additionalData, false, cursorContext );
+        return proxy(key, loader.load(key, additionalData, load, INSTANCE), additionalData, false, cursorContext);
     }
 
-    private RecordProxy<RECORD, ADDITIONAL> putInBatch( long key, DirectRecordProxy proxy )
-    {
-        DirectRecordProxy previous = batch.put( key, proxy );
+    private RecordProxy<RECORD, ADDITIONAL> putInBatch(long key, DirectRecordProxy proxy) {
+        DirectRecordProxy previous = batch.put(key, proxy);
         assert previous == null;
         return proxy;
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, CursorContext cursorContext )
-    {
-        return proxy( key, loader.newUnused( key, additionalData, INSTANCE ), additionalData, true, cursorContext );
+    public RecordProxy<RECORD, ADDITIONAL> create(long key, ADDITIONAL additionalData, CursorContext cursorContext) {
+        return proxy(key, loader.newUnused(key, additionalData, INSTANCE), additionalData, true, cursorContext);
     }
 
     @Override
-    public RecordProxy<RECORD,ADDITIONAL> getIfLoaded( long key )
-    {
-        return batch.get( key );
+    public RecordProxy<RECORD, ADDITIONAL> getIfLoaded(long key) {
+        return batch.get(key);
     }
 
     @Override
-    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "Not supported" );
+    public RecordProxy<RECORD, ADDITIONAL> setRecord(
+            long key, RECORD record, ADDITIONAL additionalData, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
-    public int changeSize()
-    {
+    public int changeSize() {
         return changeCounter.intValue();
     }
 
     @Override
-    public Collection<DirectRecordProxy> changes()
-    {
+    public Collection<DirectRecordProxy> changes() {
         return batch.values();
     }
 
-    private DirectRecordProxy proxy( final long key, final RECORD record, final ADDITIONAL additionalData, boolean created, CursorContext cursorContext )
-    {
-        return new DirectRecordProxy( key, record, additionalData, created, cursorContext );
+    private DirectRecordProxy proxy(
+            final long key,
+            final RECORD record,
+            final ADDITIONAL additionalData,
+            boolean created,
+            CursorContext cursorContext) {
+        return new DirectRecordProxy(key, record, additionalData, created, cursorContext);
     }
 
-    private class DirectRecordProxy implements RecordProxy<RECORD,ADDITIONAL>
-    {
+    private class DirectRecordProxy implements RecordProxy<RECORD, ADDITIONAL> {
         private final long key;
         private final RECORD record;
         private final ADDITIONAL additionalData;
@@ -126,128 +122,107 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         private final boolean created;
         private RECORD before;
 
-        DirectRecordProxy( long key, RECORD record, ADDITIONAL additionalData, boolean created, CursorContext cursorContext )
-        {
+        DirectRecordProxy(
+                long key, RECORD record, ADDITIONAL additionalData, boolean created, CursorContext cursorContext) {
             this.key = key;
             this.record = record;
             this.additionalData = additionalData;
             this.cursorContext = cursorContext;
-            if ( created )
-            {
+            if (created) {
                 prepareChange();
             }
             this.created = created;
         }
 
         @Override
-        public long getKey()
-        {
+        public long getKey() {
             return key;
         }
 
         @Override
-        public RECORD forChangingLinkage()
-        {
+        public RECORD forChangingLinkage() {
             prepareChange();
             return record;
         }
 
-        private void prepareChange()
-        {
-            if ( !changed )
-            {
+        private void prepareChange() {
+            if (!changed) {
                 changed = true;
-                putInBatch( key, this );
+                putInBatch(key, this);
                 changeCounter.increment();
             }
         }
 
         @Override
-        public RECORD forChangingData()
-        {
-            loader.ensureHeavy( record, storeCursors );
+        public RECORD forChangingData() {
+            loader.ensureHeavy(record, storeCursors);
             prepareChange();
             return record;
         }
 
         @Override
-        public RECORD forReadingLinkage()
-        {
+        public RECORD forReadingLinkage() {
             return record;
         }
 
         @Override
-        public RECORD forReadingData()
-        {
-            loader.ensureHeavy( record, storeCursors );
+        public RECORD forReadingData() {
+            loader.ensureHeavy(record, storeCursors);
             return record;
         }
 
         @Override
-        public ADDITIONAL getAdditionalData()
-        {
+        public ADDITIONAL getAdditionalData() {
             return additionalData;
         }
 
         @Override
-        public RECORD getBefore()
-        {
+        public RECORD getBefore() {
             ensureHasBeforeRecordImage();
             return before;
         }
 
-        private void ensureHasBeforeRecordImage()
-        {
-            if ( before == null )
-            {
-                this.before = loader.copy( record, INSTANCE );
+        private void ensureHasBeforeRecordImage() {
+            if (before == null) {
+                this.before = loader.copy(record, INSTANCE);
             }
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return record.toString();
         }
 
-        public void store( PageCursor pageCursor )
-        {
-            if ( changed )
-            {
-                store.updateRecord( record, IdUpdateListener.IGNORE, pageCursor, cursorContext, storeCursors );
+        public void store(PageCursor pageCursor) {
+            if (changed) {
+                store.updateRecord(record, IdUpdateListener.IGNORE, pageCursor, cursorContext, storeCursors);
             }
         }
 
         @Override
-        public boolean isChanged()
-        {
+        public boolean isChanged() {
             return changed;
         }
 
         @Override
-        public boolean isCreated()
-        {
+        public boolean isCreated() {
             return created;
         }
     }
 
-    public void commit()
-    {
-        if ( changeCounter.intValue() == 0 )
-        {
+    public void commit() {
+        if (changeCounter.intValue() == 0) {
             return;
         }
 
-        List<DirectRecordProxy> directRecordProxies = new ArrayList<>( batch.values() );
-        directRecordProxies.sort( ( o1, o2 ) -> Long.compare( -o1.getKey(), o2.getKey() ) );
-        try ( var cursor = storeCursors.writeCursor( cursorType ) )
-        {
-            for ( DirectRecordProxy proxy : directRecordProxies )
-            {
-                proxy.store( cursor );
+        List<DirectRecordProxy> directRecordProxies = new ArrayList<>(batch.values());
+        directRecordProxies.sort((o1, o2) -> Long.compare(-o1.getKey(), o2.getKey()));
+        try (var cursor = storeCursors.writeCursor(cursorType)) {
+            for (DirectRecordProxy proxy : directRecordProxies) {
+                proxy.store(cursor);
             }
         }
-        changeCounter.setValue( 0 );
+        changeCounter.setValue(0);
         batch.clear();
     }
 }

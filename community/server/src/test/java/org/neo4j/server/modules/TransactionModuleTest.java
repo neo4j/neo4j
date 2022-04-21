@@ -19,40 +19,36 @@
  */
 package org.neo4j.server.modules;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.net.URI;
-import java.util.List;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.web.WebServer;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class TransactionModuleTest
-{
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void shouldRegisterASingleUri()
-    {
-        // Given
-        WebServer webServer = mock( WebServer.class );
+import java.net.URI;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.neo4j.configuration.Config;
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.web.WebServer;
 
-        Config config = Config.defaults( ServerSettings.db_api_path, URI.create( "/db/data" ) );
+public class TransactionModuleTest {
+    @SuppressWarnings("unchecked")
+    @Test
+    public void shouldRegisterASingleUri() {
+        // Given
+        WebServer webServer = mock(WebServer.class);
+
+        Config config = Config.defaults(ServerSettings.db_api_path, URI.create("/db/data"));
 
         // When
-        TransactionModule module = new TransactionModule( webServer, config, null );
+        TransactionModule module = new TransactionModule(webServer, config, null);
         module.start();
 
         // Then
-        ArgumentCaptor<List<Class<?>>> captor = ArgumentCaptor.forClass( List.class );
-        verify( webServer ).addJAXRSClasses( captor.capture(), anyString(), any() );
-        assertThat( captor.getValue() ).isNotEmpty();
+        ArgumentCaptor<List<Class<?>>> captor = ArgumentCaptor.forClass(List.class);
+        verify(webServer).addJAXRSClasses(captor.capture(), anyString(), any());
+        assertThat(captor.getValue()).isNotEmpty();
     }
 }

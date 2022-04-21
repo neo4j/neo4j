@@ -19,8 +19,6 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,45 +31,43 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.concat;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-class ConcatListTest
-{
+import org.junit.jupiter.api.Test;
+
+class ConcatListTest {
     @Test
-    void shouldHandleZeroListConcatenation()
-    {
+    void shouldHandleZeroListConcatenation() {
         // Given
         ListValue inner = EMPTY_LIST;
 
         // When
-        ListValue concat = concat( inner );
+        ListValue concat = concat(inner);
 
         // Then
-        assertTrue( concat.isEmpty() );
+        assertTrue(concat.isEmpty());
     }
 
     @Test
-    void shouldKeepRepresentationWithEmptyListConcatenation()
-    {
+    void shouldKeepRepresentationWithEmptyListConcatenation() {
         // Given
-        ListValue list = list( stringValue( "foo" ) );
+        ListValue list = list(stringValue("foo"));
         ListValue emptyList = EMPTY_LIST;
 
         // When
-        ListValue concat = concat( list, emptyList );
-        ListValue concatReverse = concat( emptyList, list );
+        ListValue concat = concat(list, emptyList);
+        ListValue concatReverse = concat(emptyList, list);
 
         // Then
-        assertEquals( concat.itemValueRepresentation(), concatReverse.itemValueRepresentation() );
-        assertEquals( concat.itemValueRepresentation(), list.itemValueRepresentation() );
+        assertEquals(concat.itemValueRepresentation(), concatReverse.itemValueRepresentation());
+        assertEquals(concat.itemValueRepresentation(), list.itemValueRepresentation());
     }
 
     @Test
-    void shouldHandleSingleListConcatenation()
-    {
+    void shouldHandleSingleListConcatenation() {
         // Given
-        ListValue inner = list( stringValue( "foo" ), longValue( 42 ), booleanValue( true ) );
+        ListValue inner = list(stringValue("foo"), longValue(42), booleanValue(true));
 
         // When
-        ListValue concat = concat( inner );
+        ListValue concat = concat(inner);
 
         // Then
         assertEquals(inner, concat);
@@ -80,20 +76,23 @@ class ConcatListTest
     }
 
     @Test
-    void shouldHandleMultipleListConcatenation()
-    {
+    void shouldHandleMultipleListConcatenation() {
         // Given
-        ListValue inner1 = list( stringValue( "foo" ), longValue( 42 ), booleanValue( true ) );
-        ListValue inner2 = list( list(stringValue("bar"), intValue(42)) );
-        ListValue inner3 = list( map("foo", 1337L, "bar", 42 ), stringValue("baz") );
+        ListValue inner1 = list(stringValue("foo"), longValue(42), booleanValue(true));
+        ListValue inner2 = list(list(stringValue("bar"), intValue(42)));
+        ListValue inner3 = list(map("foo", 1337L, "bar", 42), stringValue("baz"));
 
         // When
-        ListValue concat = concat( inner1, inner2, inner3 );
+        ListValue concat = concat(inner1, inner2, inner3);
 
         // Then
-        ListValue expected = list( stringValue( "foo" ), longValue( 42 ), booleanValue( true ),
-                list( stringValue( "bar" ), intValue( 42 ) ),
-                map( "foo", 1337L, "bar", 42 ), stringValue( "baz" ) );
+        ListValue expected = list(
+                stringValue("foo"),
+                longValue(42),
+                booleanValue(true),
+                list(stringValue("bar"), intValue(42)),
+                map("foo", 1337L, "bar", 42),
+                stringValue("baz"));
         assertEquals(expected, concat);
         assertEquals(expected.hashCode(), concat.hashCode());
         assertArrayEquals(expected.asArray(), concat.asArray());

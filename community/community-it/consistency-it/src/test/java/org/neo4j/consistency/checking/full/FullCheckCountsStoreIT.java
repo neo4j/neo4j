@@ -19,7 +19,13 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.jupiter.api.Test;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.io.fs.FileUtils.writeAll;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,7 +33,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -38,89 +44,81 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.io.fs.FileUtils.writeAll;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @DbmsExtension
-public class FullCheckCountsStoreIT
-{
+public class FullCheckCountsStoreIT {
     @Inject
     private DatabaseManagementService dbms;
+
     @Inject
     private GraphDatabaseAPI db;
 
     @Test
-    void shouldReportMissingCountsStore() throws Exception
-    {
-        shouldReportBadCountsStore( path ->
-        {
-            Files.delete( path );
-            return true;
-        }, RecordDatabaseLayout::countStore,
-                "Counts store is missing, broken or of an older format" );
+    void shouldReportMissingCountsStore() throws Exception {
+        shouldReportBadCountsStore(
+                path -> {
+                    Files.delete(path);
+                    return true;
+                },
+                RecordDatabaseLayout::countStore,
+                "Counts store is missing, broken or of an older format");
     }
 
     @Test
-    void shouldReportBrokenCountsStore() throws Exception
-    {
-        shouldReportBadCountsStore( FullCheckCountsStoreIT::corruptFileIfExists, RecordDatabaseLayout::countStore,
-                "Counts store is missing, broken or of an older format" );
+    void shouldReportBrokenCountsStore() throws Exception {
+        shouldReportBadCountsStore(
+                FullCheckCountsStoreIT::corruptFileIfExists,
+                RecordDatabaseLayout::countStore,
+                "Counts store is missing, broken or of an older format");
     }
 
     @Test
-    void shouldReportMissingGroupDegreesStore() throws Exception
-    {
-        shouldReportBadCountsStore( path ->
-        {
-            Files.delete( path );
-            return true;
-        }, RecordDatabaseLayout::relationshipGroupDegreesStore,
-                "Relationship group degrees store is missing, broken or of an older format" );
+    void shouldReportMissingGroupDegreesStore() throws Exception {
+        shouldReportBadCountsStore(
+                path -> {
+                    Files.delete(path);
+                    return true;
+                },
+                RecordDatabaseLayout::relationshipGroupDegreesStore,
+                "Relationship group degrees store is missing, broken or of an older format");
     }
 
     @Test
-    void shouldReportBrokenGroupDegreesStore() throws Exception
-    {
-        shouldReportBadCountsStore( FullCheckCountsStoreIT::corruptFileIfExists, RecordDatabaseLayout::relationshipGroupDegreesStore,
-                                    "Relationship group degrees store is missing, broken or of an older format" );
+    void shouldReportBrokenGroupDegreesStore() throws Exception {
+        shouldReportBadCountsStore(
+                FullCheckCountsStoreIT::corruptFileIfExists,
+                RecordDatabaseLayout::relationshipGroupDegreesStore,
+                "Relationship group degrees store is missing, broken or of an older format");
     }
 
-    private void shouldReportBadCountsStore( ThrowingFunction<Path,Boolean,IOException> fileAction, Function<RecordDatabaseLayout,Path> store,
-            String errorMessage ) throws Exception
-    {
+    private void shouldReportBadCountsStore(
+            ThrowingFunction<Path, Boolean, IOException> fileAction,
+            Function<RecordDatabaseLayout, Path> store,
+            String errorMessage)
+            throws Exception {
         // given
         RecordDatabaseLayout databaseLayout = (RecordDatabaseLayout) db.databaseLayout();
         dbms.shutdown();
-        boolean corrupted = fileAction.apply( store.apply( databaseLayout ));
-        assertTrue( corrupted );
+        boolean corrupted = fileAction.apply(store.apply(databaseLayout));
+        assertTrue(corrupted);
 
         // when
-        ConsistencyCheckService.Result result = new ConsistencyCheckService( databaseLayout )
-                .with( defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() ) )
+        ConsistencyCheckService.Result result = new ConsistencyCheckService(databaseLayout)
+                .with(defaults(GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory()))
                 .runFullConsistencyCheck();
 
         // then
-        assertThat( result.summary().getGenericErrors() ).contains( errorMessage );
+        assertThat(result.summary().getGenericErrors()).contains(errorMessage);
     }
 
-    private static boolean corruptFileIfExists( Path file ) throws IOException
-    {
-        if ( Files.exists( file ) )
-        {
-            try ( FileChannel channel = FileChannel.open( file, READ, WRITE ) )
-            {
-                ByteBuffer buffer = ByteBuffers.allocate( 30, INSTANCE );
-                while ( buffer.hasRemaining() )
-                {
-                    buffer.put( (byte) 9 );
+    private static boolean corruptFileIfExists(Path file) throws IOException {
+        if (Files.exists(file)) {
+            try (FileChannel channel = FileChannel.open(file, READ, WRITE)) {
+                ByteBuffer buffer = ByteBuffers.allocate(30, INSTANCE);
+                while (buffer.hasRemaining()) {
+                    buffer.put((byte) 9);
                 }
                 buffer.flip();
-                writeAll( channel, buffer );
+                writeAll(channel, buffer);
             }
             return true;
         }

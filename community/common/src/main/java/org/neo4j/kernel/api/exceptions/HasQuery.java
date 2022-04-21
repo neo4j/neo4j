@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-public interface HasQuery
-{
+public interface HasQuery {
     Long query();
 
-    void setQuery( Long queryId );
+    void setQuery(Long queryId);
 }

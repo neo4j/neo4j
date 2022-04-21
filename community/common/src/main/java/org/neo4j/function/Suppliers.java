@@ -19,21 +19,18 @@
  */
 package org.neo4j.function;
 
+import static java.lang.System.nanoTime;
+
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static java.lang.System.nanoTime;
-
 /**
  * Constructors for basic {@link Supplier} types
  */
-public final class Suppliers
-{
-    private Suppliers()
-    {
-    }
+public final class Suppliers {
+    private Suppliers() {}
 
     /**
      * Creates a {@link Supplier} that returns a single object
@@ -42,8 +39,7 @@ public final class Suppliers
      * @param <T> The object type
      * @return A {@link Supplier} returning the specified object instance
      */
-    public static <T> Supplier<T> singleton( final T instance )
-    {
+    public static <T> Supplier<T> singleton(final T instance) {
         return () -> instance;
     }
 
@@ -54,24 +50,18 @@ public final class Suppliers
      * @param <T> The object type
      * @return A {@link Supplier} returning the specified object instance
      */
-    public static <T> Lazy<T> lazySingleton( final Supplier<T> supplier )
-    {
-        return new Lazy<>()
-        {
+    public static <T> Lazy<T> lazySingleton(final Supplier<T> supplier) {
+        return new Lazy<>() {
             volatile T instance;
 
             @Override
-            public T get()
-            {
-                if ( isInitialised() )
-                {
+            public T get() {
+                if (isInitialised()) {
                     return instance;
                 }
 
-                synchronized ( this )
-                {
-                    if ( instance == null )
-                    {
+                synchronized (this) {
+                    if (instance == null) {
                         instance = supplier.get();
                     }
                 }
@@ -79,20 +69,17 @@ public final class Suppliers
             }
 
             @Override
-            public T getIfPresent()
-            {
+            public T getIfPresent() {
                 return instance;
             }
 
             @Override
-            public boolean isInitialised()
-            {
+            public boolean isInitialised() {
                 return instance != null;
             }
 
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return isInitialised() ? get().toString() : "null";
             }
         };
@@ -109,27 +96,21 @@ public final class Suppliers
      * @param <T> The result object type
      * @return A {@link Supplier} of objects
      */
-    public static <T, V> Supplier<T> adapted( final Supplier<V> supplier, final Function<V,T> adaptor )
-    {
-        return new Supplier<>()
-        {
+    public static <T, V> Supplier<T> adapted(final Supplier<V> supplier, final Function<V, T> adaptor) {
+        return new Supplier<>() {
             volatile V lastValue;
             T instance;
 
             @Override
-            public T get()
-            {
+            public T get() {
                 V value = supplier.get();
-                if ( value == lastValue )
-                {
+                if (value == lastValue) {
                     return instance;
                 }
 
-                T adaptedValue = adaptor.apply( value );
-                synchronized ( this )
-                {
-                    if ( value != lastValue )
-                    {
+                T adaptedValue = adaptor.apply(value);
+                synchronized (this) {
+                    if (value != lastValue) {
                         instance = adaptedValue;
                         lastValue = value;
                     }
@@ -139,54 +120,46 @@ public final class Suppliers
         };
     }
 
-    public static <T, E extends Exception> ThrowingCapturingSupplier<T,E> compose(
-            final ThrowingSupplier<T,? extends E> input,
-            final ThrowingPredicate<T,? extends E> predicate )
-    {
-        return new ThrowingCapturingSupplier<>( input, predicate );
+    public static <T, E extends Exception> ThrowingCapturingSupplier<T, E> compose(
+            final ThrowingSupplier<T, ? extends E> input, final ThrowingPredicate<T, ? extends E> predicate) {
+        return new ThrowingCapturingSupplier<>(input, predicate);
     }
 
-    public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
-    {
-        final long endTimeInNanos = nanoTime() + unit.toNanos( duration );
+    public static BooleanSupplier untilTimeExpired(long duration, TimeUnit unit) {
+        final long endTimeInNanos = nanoTime() + unit.toNanos(duration);
         return () -> nanoTime() <= endTimeInNanos;
     }
 
-    static class ThrowingCapturingSupplier<T, E extends Exception> implements ThrowingSupplier<Boolean,E>
-    {
-        private final ThrowingSupplier<T,? extends E> input;
-        private final ThrowingPredicate<T,? extends E> predicate;
+    static class ThrowingCapturingSupplier<T, E extends Exception> implements ThrowingSupplier<Boolean, E> {
+        private final ThrowingSupplier<T, ? extends E> input;
+        private final ThrowingPredicate<T, ? extends E> predicate;
 
         private T current;
 
-        ThrowingCapturingSupplier( ThrowingSupplier<T,? extends E> input, ThrowingPredicate<T,? extends E> predicate )
-        {
+        ThrowingCapturingSupplier(ThrowingSupplier<T, ? extends E> input, ThrowingPredicate<T, ? extends E> predicate) {
             this.input = input;
             this.predicate = predicate;
         }
 
-        T lastInput()
-        {
+        T lastInput() {
             return current;
         }
 
         @Override
-        public Boolean get() throws E
-        {
+        public Boolean get() throws E {
             current = input.get();
-            return predicate.test( current );
+            return predicate.test(current);
         }
 
         @Override
-        public String toString()
-        {
-            return String.format( "%s on %s", predicate, input );
+        public String toString() {
+            return String.format("%s on %s", predicate, input);
         }
     }
 
-    public interface Lazy<T> extends Supplier<T>
-    {
+    public interface Lazy<T> extends Supplier<T> {
         T getIfPresent();
+
         boolean isInitialised();
     }
 }

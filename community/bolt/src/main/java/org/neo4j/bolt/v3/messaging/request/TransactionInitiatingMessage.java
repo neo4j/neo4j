@@ -23,27 +23,28 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 
-public abstract class TransactionInitiatingMessage implements RequestMessage
-{
+public abstract class TransactionInitiatingMessage implements RequestMessage {
     private final MapValue meta;
     private final List<Bookmark> bookmarks;
     private final Duration txTimeout;
     private final AccessMode accessMode;
-    private final Map<String,Object> txMetadata;
+    private final Map<String, Object> txMetadata;
 
-    TransactionInitiatingMessage()
-    {
-        this( MapValue.EMPTY, List.of(), null, AccessMode.WRITE, Map.of() );
+    TransactionInitiatingMessage() {
+        this(MapValue.EMPTY, List.of(), null, AccessMode.WRITE, Map.of());
     }
 
-    TransactionInitiatingMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
-    {
+    TransactionInitiatingMessage(
+            MapValue meta,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata) {
         this.meta = meta;
         this.bookmarks = bookmarks;
         this.txTimeout = txTimeout;
@@ -51,55 +52,45 @@ public abstract class TransactionInitiatingMessage implements RequestMessage
         this.txMetadata = txMetadata;
     }
 
-    public List<Bookmark> bookmarks()
-    {
+    public List<Bookmark> bookmarks() {
         return bookmarks;
     }
 
-    public Duration transactionTimeout()
-    {
+    public Duration transactionTimeout() {
         return txTimeout;
     }
 
-    public AccessMode getAccessMode()
-    {
+    public AccessMode getAccessMode() {
         return accessMode;
     }
 
-    public Map<String,Object> transactionMetadata()
-    {
+    public Map<String, Object> transactionMetadata() {
         return txMetadata;
     }
 
-    public MapValue meta()
-    {
+    public MapValue meta() {
         return meta;
     }
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return false;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         TransactionInitiatingMessage that = (TransactionInitiatingMessage) o;
-        return Objects.equals( meta, that.meta );
+        return Objects.equals(meta, that.meta);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( meta );
+    public int hashCode() {
+        return Objects.hash(meta);
     }
 }

@@ -24,12 +24,10 @@ import java.util.BitSet;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
-public abstract class AbstractResourceIterable<T> implements ResourceIterable<T>
-{
+public abstract class AbstractResourceIterable<T> implements ResourceIterable<T> {
     // start with 2 as most cases will only generate a single iterator but gives a little leeway to save on expansions
     private TrackingResourceIterator<?>[] trackedIterators = new TrackingResourceIterator<?>[2];
 
@@ -40,27 +38,21 @@ public abstract class AbstractResourceIterable<T> implements ResourceIterable<T>
     protected abstract ResourceIterator<T> newIterator();
 
     @Override
-    public final ResourceIterator<T> iterator()
-    {
-        if ( closed )
-        {
-            throw new ResourceIteratorCloseFailedException( ResourceIterable.class.getSimpleName() + " has already been closed" );
+    public final ResourceIterator<T> iterator() {
+        if (closed) {
+            throw new ResourceIteratorCloseFailedException(
+                    ResourceIterable.class.getSimpleName() + " has already been closed");
         }
 
-        return new TrackingResourceIterator<>( Objects.requireNonNull( newIterator() ), this::register, this::unregister );
+        return new TrackingResourceIterator<>(Objects.requireNonNull(newIterator()), this::register, this::unregister);
     }
 
     @Override
-    public final void close()
-    {
-        if ( !closed )
-        {
-            try
-            {
+    public final void close() {
+        if (!closed) {
+            try {
                 internalClose();
-            }
-            finally
-            {
+            } finally {
                 closed = true;
                 onClosed();
             }
@@ -70,60 +62,45 @@ public abstract class AbstractResourceIterable<T> implements ResourceIterable<T>
     /**
      * Callback method that allows subclasses to perform their own specific closing logic
      */
-    protected void onClosed()
-    {
-    }
+    protected void onClosed() {}
 
-    private void register( TrackingResourceIterator<?> iterator )
-    {
-        if ( trackedIteratorsInUse.cardinality() == trackedIterators.length )
-        {
-            trackedIterators = Arrays.copyOf( trackedIterators, trackedIterators.length << 1 );
+    private void register(TrackingResourceIterator<?> iterator) {
+        if (trackedIteratorsInUse.cardinality() == trackedIterators.length) {
+            trackedIterators = Arrays.copyOf(trackedIterators, trackedIterators.length << 1);
         }
 
-        final var freeIndex = trackedIteratorsInUse.nextClearBit( 0 );
+        final var freeIndex = trackedIteratorsInUse.nextClearBit(0);
         trackedIterators[freeIndex] = iterator;
-        trackedIteratorsInUse.set( freeIndex );
+        trackedIteratorsInUse.set(freeIndex);
     }
 
-    private void unregister( TrackingResourceIterator<?> iterator )
-    {
-        final var lastSetBit = trackedIteratorsInUse.previousSetBit( trackedIterators.length );
-        for ( int i = 0; i <= lastSetBit; i++ )
-        {
-            if ( trackedIterators[i] == iterator )
-            {
+    private void unregister(TrackingResourceIterator<?> iterator) {
+        final var lastSetBit = trackedIteratorsInUse.previousSetBit(trackedIterators.length);
+        for (int i = 0; i <= lastSetBit; i++) {
+            if (trackedIterators[i] == iterator) {
                 trackedIterators[i] = null;
-                trackedIteratorsInUse.clear( i );
+                trackedIteratorsInUse.clear(i);
                 break;
             }
         }
     }
 
-    private void internalClose()
-    {
+    private void internalClose() {
         ResourceIteratorCloseFailedException closeThrowable = null;
-        final var lastSetBit = trackedIteratorsInUse.previousSetBit( trackedIterators.length );
-        for ( int i = 0; i <= lastSetBit; i++ )
-        {
-            if ( trackedIterators[i] == null )
-            {
+        final var lastSetBit = trackedIteratorsInUse.previousSetBit(trackedIterators.length);
+        for (int i = 0; i <= lastSetBit; i++) {
+            if (trackedIterators[i] == null) {
                 continue;
             }
 
-            try
-            {
+            try {
                 trackedIterators[i].internalClose();
-            }
-            catch ( Exception e )
-            {
-                if ( closeThrowable == null )
-                {
-                    closeThrowable = new ResourceIteratorCloseFailedException( "Exception closing a resource iterator.", e );
-                }
-                else
-                {
-                    closeThrowable.addSuppressed( e );
+            } catch (Exception e) {
+                if (closeThrowable == null) {
+                    closeThrowable =
+                            new ResourceIteratorCloseFailedException("Exception closing a resource iterator.", e);
+                } else {
+                    closeThrowable.addSuppressed(e);
                 }
             }
         }
@@ -131,71 +108,61 @@ public abstract class AbstractResourceIterable<T> implements ResourceIterable<T>
         trackedIterators = null;
         trackedIteratorsInUse = null;
 
-        if ( closeThrowable != null )
-        {
+        if (closeThrowable != null) {
             throw closeThrowable;
         }
     }
 
-    private static final class TrackingResourceIterator<T> implements ResourceIterator<T>
-    {
+    private static final class TrackingResourceIterator<T> implements ResourceIterator<T> {
         private final ResourceIterator<T> delegate;
         private final Consumer<TrackingResourceIterator<?>> registerCallback;
         private final Consumer<TrackingResourceIterator<?>> unregisterCallback;
 
         private boolean closed;
 
-        private TrackingResourceIterator( ResourceIterator<T> delegate, Consumer<TrackingResourceIterator<?>> registerCallback,
-                                          Consumer<TrackingResourceIterator<?>> unregisterCallback )
-        {
+        private TrackingResourceIterator(
+                ResourceIterator<T> delegate,
+                Consumer<TrackingResourceIterator<?>> registerCallback,
+                Consumer<TrackingResourceIterator<?>> unregisterCallback) {
             this.delegate = delegate;
             this.registerCallback = registerCallback;
             this.unregisterCallback = unregisterCallback;
 
-            registerCallback.accept( this );
+            registerCallback.accept(this);
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             boolean hasNext = delegate.hasNext();
-            if ( !hasNext )
-            {
+            if (!hasNext) {
                 close();
             }
             return hasNext;
         }
 
         @Override
-        public T next()
-        {
+        public T next() {
             return delegate.next();
         }
 
         @Override
-        public <R> ResourceIterator<R> map( Function<T,R> map )
-        {
-            return new TrackingResourceIterator<>( ResourceIterator.super.map( map ), registerCallback, unregisterCallback );
+        public <R> ResourceIterator<R> map(Function<T, R> map) {
+            return new TrackingResourceIterator<>(
+                    ResourceIterator.super.map(map), registerCallback, unregisterCallback);
         }
 
         @Override
-        public void close()
-        {
-            if ( !closed )
-            {
+        public void close() {
+            if (!closed) {
                 internalClose();
-                unregisterCallback.accept( this );
+                unregisterCallback.accept(this);
             }
         }
 
-        private void internalClose()
-        {
-            try
-            {
+        private void internalClose() {
+            try {
                 delegate.close();
-            }
-            finally
-            {
+            } finally {
                 closed = true;
             }
         }

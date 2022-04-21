@@ -21,9 +21,8 @@ package org.neo4j.fabric.executor;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
 
-public interface FabricDatabaseAccess
-{
-    FabricDatabaseAccess NO_RESTRICTION = ( originalContext, databaseName ) -> originalContext;
+public interface FabricDatabaseAccess {
+    FabricDatabaseAccess NO_RESTRICTION = (originalContext, databaseName) -> originalContext;
 
-    LoginContext maybeRestrictLoginContext( LoginContext originalContext, String databaseName );
+    LoginContext maybeRestrictLoginContext(LoginContext originalContext, String databaseName);
 }

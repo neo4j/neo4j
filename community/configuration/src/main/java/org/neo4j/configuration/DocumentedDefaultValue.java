@@ -27,9 +27,8 @@ import java.lang.annotation.Target;
 /**
  * Used to override the default value which is printed in the documentation.
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( {ElementType.TYPE, ElementType.FIELD} )
-public @interface DocumentedDefaultValue
-{
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.FIELD})
+public @interface DocumentedDefaultValue {
     String value();
 }

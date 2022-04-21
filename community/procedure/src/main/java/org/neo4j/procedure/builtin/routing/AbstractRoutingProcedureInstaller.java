@@ -20,21 +20,18 @@
 package org.neo4j.procedure.builtin.routing;
 
 import java.util.List;
-
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 
-public abstract class AbstractRoutingProcedureInstaller
-{
-    public static final List<String> DEFAULT_NAMESPACE = List.of( "dbms", "routing" );
-    private static final List<String> LEGACY_NAMESPACE = List.of( "dbms", "cluster", "routing" );
+public abstract class AbstractRoutingProcedureInstaller {
+    public static final List<String> DEFAULT_NAMESPACE = List.of("dbms", "routing");
+    private static final List<String> LEGACY_NAMESPACE = List.of("dbms", "cluster", "routing");
 
-    public final void install( GlobalProcedures globalProcedures ) throws ProcedureException
-    {
+    public final void install(GlobalProcedures globalProcedures) throws ProcedureException {
         // make procedure available as with both `dbms.routing` and old `dbms.cluster.routing` namespaces
-        globalProcedures.register( createProcedure( DEFAULT_NAMESPACE ) );
-        globalProcedures.register( createProcedure( LEGACY_NAMESPACE ) );
+        globalProcedures.register(createProcedure(DEFAULT_NAMESPACE));
+        globalProcedures.register(createProcedure(LEGACY_NAMESPACE));
     }
 
-    public abstract GetRoutingTableProcedure createProcedure( List<String> namespace );
+    public abstract GetRoutingTableProcedure createProcedure(List<String> namespace);
 }

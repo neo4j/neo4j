@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.recovery.facade;
 
-import java.io.IOException;
+import static org.neo4j.kernel.recovery.facade.RecoveryFacadeMonitor.EMPTY_MONITOR;
 
+import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -31,10 +32,7 @@ import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.kernel.recovery.facade.RecoveryFacadeMonitor.EMPTY_MONITOR;
-
-public class DatabaseRecoveryFacade implements RecoveryFacade
-{
+public class DatabaseRecoveryFacade implements RecoveryFacade {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final DatabaseTracers tracers;
@@ -42,9 +40,13 @@ public class DatabaseRecoveryFacade implements RecoveryFacade
     private final MemoryTracker memoryTracker;
     private final InternalLogProvider logProvider;
 
-    public DatabaseRecoveryFacade( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, MemoryTracker memoryTracker,
-            InternalLogProvider logProvider )
-    {
+    public DatabaseRecoveryFacade(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            DatabaseTracers tracers,
+            Config config,
+            MemoryTracker memoryTracker,
+            InternalLogProvider logProvider) {
         this.fs = fs;
         this.pageCache = pageCache;
         this.tracers = tracers;
@@ -54,24 +56,24 @@ public class DatabaseRecoveryFacade implements RecoveryFacade
     }
 
     @Override
-    public void performRecovery( DatabaseLayout databaseLayout ) throws IOException
-    {
-        performRecovery( databaseLayout, EMPTY_MONITOR );
+    public void performRecovery(DatabaseLayout databaseLayout) throws IOException {
+        performRecovery(databaseLayout, EMPTY_MONITOR);
     }
 
     @Override
-    public void performRecovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException
-    {
-        performRecovery( databaseLayout, RecoveryCriteria.ALL, monitor );
+    public void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor) throws IOException {
+        performRecovery(databaseLayout, RecoveryCriteria.ALL, monitor);
     }
 
     @Override
-    public void performRecovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException
-    {
+    public void performRecovery(
+            DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
+            throws IOException {
         monitor.recoveryStarted();
-        Recovery.performRecovery( Recovery.context( fs, pageCache, tracers, config, databaseLayout, memoryTracker, IOController.DISABLED )
-                                          .log( logProvider )
-                                          .recoveryPredicate( recoveryCriteria.toPredicate() ) );
+        Recovery.performRecovery(
+                Recovery.context(fs, pageCache, tracers, config, databaseLayout, memoryTracker, IOController.DISABLED)
+                        .log(logProvider)
+                        .recoveryPredicate(recoveryCriteria.toPredicate()));
         monitor.recoveryCompleted();
     }
 }

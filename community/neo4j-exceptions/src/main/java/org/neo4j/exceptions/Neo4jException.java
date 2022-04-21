@@ -21,15 +21,12 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public abstract class Neo4jException extends RuntimeException implements Status.HasStatus
-{
-    public Neo4jException( String message, Throwable cause )
-    {
-        super( message, cause );
+public abstract class Neo4jException extends RuntimeException implements Status.HasStatus {
+    public Neo4jException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public Neo4jException( String message )
-    {
-        this( message, null );
+    public Neo4jException(String message) {
+        this(message, null);
     }
 }

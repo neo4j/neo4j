@@ -24,104 +24,94 @@ import org.neo4j.io.pagecache.PageSwapper;
 /**
  * Begin a mass-flushing of pages.
  */
-public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent
-{
+public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent {
     /**
      * A MajorFlushEvent that only returns the FlushEventOpportunity.NULL.
      */
-    MajorFlushEvent NULL = new MajorFlushEvent()
-    {
+    MajorFlushEvent NULL = new MajorFlushEvent() {
 
         @Override
-        public FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush,
-                int mergedPages )
-        {
+        public FlushEvent beginFlush(
+                long[] pageRefs,
+                PageSwapper swapper,
+                PageReferenceTranslator pageReferenceTranslator,
+                int pagesToFlush,
+                int mergedPages) {
             return FlushEvent.NULL;
         }
 
         @Override
-        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
-        {
+        public FlushEvent beginFlush(
+                long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator) {
             return FlushEvent.NULL;
         }
 
         @Override
-        public void startFlush( int[][] translationTable )
-        {
-
-        }
+        public void startFlush(int[][] translationTable) {}
 
         @Override
-        public ChunkEvent startChunk( int[] chunk )
-        {
+        public ChunkEvent startChunk(int[] chunk) {
             return ChunkEvent.NULL;
         }
 
         @Override
-        public void throttle( long millis )
-        {
-
-        }
+        public void throttle(long millis) {}
 
         @Override
-        public void reportIO( int completedIOs )
-        {
-
-        }
+        public void reportIO(int completedIOs) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     };
 
     /**
      * Begin flushing the given pages.
      */
-    FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush, int mergedPages );
+    FlushEvent beginFlush(
+            long[] pageRefs,
+            PageSwapper swapper,
+            PageReferenceTranslator pageReferenceTranslator,
+            int pagesToFlush,
+            int mergedPages);
 
     /**
      * Begin flushing the given single page.
      */
-    FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator );
+    FlushEvent beginFlush(long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator);
 
     /**
      * Start flushing of given translation table
      * @param translationTable table we flush
      */
-    void startFlush( int[][] translationTable );
+    void startFlush(int[][] translationTable);
 
     /**
      * Start flushing of given chunk
      * @param chunk chunk we start flushing
      */
-    ChunkEvent startChunk( int[] chunk );
+    ChunkEvent startChunk(int[] chunk);
 
     /**
      * Throttle this flush event
      * @param millis millis to throttle this flush event
      */
-    void throttle( long millis );
+    void throttle(long millis);
 
     /**
      * Report number of completed io operations by this flush event
      * @param completedIOs number of completed io operations
      */
-    void reportIO( int completedIOs );
+    void reportIO(int completedIOs);
 
     /**
      * Event generated during translation table chunk flushing from memory to backing file
      */
-    class ChunkEvent
-    {
+    class ChunkEvent {
         public static final ChunkEvent NULL = new ChunkEvent();
 
-        protected ChunkEvent()
-        {
-        }
+        protected ChunkEvent() {}
 
-        public void chunkFlushed( long notModifiedPages, long flushPerChunk, long buffersPerChunk, long mergesPerChunk )
-        {
-        }
+        public void chunkFlushed(
+                long notModifiedPages, long flushPerChunk, long buffersPerChunk, long mergesPerChunk) {}
     }
 }

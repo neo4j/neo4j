@@ -19,71 +19,61 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-
-@SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-public class HeapTrackingValuesMap extends HeapTrackingLongObjectHashMap<Value>
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingValuesMap.class );
+@SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+public class HeapTrackingValuesMap extends HeapTrackingLongObjectHashMap<Value> {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingValuesMap.class);
     private long valuesHeapSize;
 
-    static HeapTrackingValuesMap createValuesMap( MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap( SHALLOW_SIZE + arraysHeapSize( DEFAULT_INITIAL_CAPACITY ) );
-        return new HeapTrackingValuesMap( memoryTracker, DEFAULT_INITIAL_CAPACITY );
+    static HeapTrackingValuesMap createValuesMap(MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(SHALLOW_SIZE + arraysHeapSize(DEFAULT_INITIAL_CAPACITY));
+        return new HeapTrackingValuesMap(memoryTracker, DEFAULT_INITIAL_CAPACITY);
     }
 
-    private HeapTrackingValuesMap( MemoryTracker memoryTracker, int trackedCapacity )
-    {
-        super( memoryTracker, trackedCapacity );
+    private HeapTrackingValuesMap(MemoryTracker memoryTracker, int trackedCapacity) {
+        super(memoryTracker, trackedCapacity);
     }
 
     @Override
-    public Value put( long key, Value value )
-    {
-        allocate( value );
-        Value old = super.put( key, value );
-        if ( old != null )
-        {
-            release( old );
+    public Value put(long key, Value value) {
+        allocate(value);
+        Value old = super.put(key, value);
+        if (old != null) {
+            release(old);
         }
         return old;
     }
 
     @Override
-    public Value remove( long key )
-    {
-        Value remove = super.remove( key );
-        if ( remove != null )
-        {
-            release( remove );
+    public Value remove(long key) {
+        Value remove = super.remove(key);
+        if (remove != null) {
+            release(remove);
         }
         return remove;
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         super.clear();
-        memoryTracker.releaseHeap( valuesHeapSize );
+        memoryTracker.releaseHeap(valuesHeapSize);
         valuesHeapSize = 0;
     }
 
-    private void allocate( Value value )
-    {
+    private void allocate(Value value) {
         long valueHeapSize = value.estimatedHeapUsage();
         valuesHeapSize += valueHeapSize;
-        memoryTracker.allocateHeap( valueHeapSize );
+        memoryTracker.allocateHeap(valueHeapSize);
     }
 
-    private void release( Value old )
-    {
+    private void release(Value old) {
         long oldHeapSize = old.estimatedHeapUsage();
         valuesHeapSize -= oldHeapSize;
-        memoryTracker.releaseHeap( oldHeapSize );
+        memoryTracker.releaseHeap(oldHeapSize);
     }
 }

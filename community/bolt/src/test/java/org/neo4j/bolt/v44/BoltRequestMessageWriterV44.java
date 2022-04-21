@@ -19,63 +19,53 @@
  */
 package org.neo4j.bolt.v44;
 
+import static org.neo4j.kernel.impl.util.ValueUtils.asListValue;
+import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.stream.Collectors;
-
 import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v43.BoltRequestMessageWriterV43;
 import org.neo4j.bolt.v44.messaging.request.RouteMessage;
 
-import static org.neo4j.kernel.impl.util.ValueUtils.asListValue;
-import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
+public class BoltRequestMessageWriterV44 extends BoltRequestMessageWriterV43 {
 
-public class BoltRequestMessageWriterV44 extends BoltRequestMessageWriterV43
-{
-
-    public BoltRequestMessageWriterV44( Neo4jPack.Packer packer )
-    {
-        super( packer );
+    public BoltRequestMessageWriterV44(Neo4jPack.Packer packer) {
+        super(packer);
     }
 
     @Override
-    public BoltRequestMessageWriter write( RequestMessage message ) throws IOException
-    {
-        if ( message instanceof RouteMessage )
-        {
-            this.writeRouteMessage( (RouteMessage) message );
+    public BoltRequestMessageWriter write(RequestMessage message) throws IOException {
+        if (message instanceof RouteMessage) {
+            this.writeRouteMessage((RouteMessage) message);
             return this;
         }
 
-        return super.write( message );
+        return super.write(message);
     }
 
-    private void writeRouteMessage( RouteMessage message )
-    {
-        try
-        {
-            packer.packStructHeader( 0, RouteMessage.SIGNATURE );
-            packer.pack( message.getRequestContext() );
-            packer.pack( asListValue( message.getBookmarks().stream().map( Object::toString ).collect( Collectors.toList() ) ) );
+    private void writeRouteMessage(RouteMessage message) {
+        try {
+            packer.packStructHeader(0, RouteMessage.SIGNATURE);
+            packer.pack(message.getRequestContext());
+            packer.pack(asListValue(
+                    message.getBookmarks().stream().map(Object::toString).collect(Collectors.toList())));
 
-            var extra = new HashMap<String,Object>();
-            if ( message.getDatabaseName() != null )
-            {
-                extra.put( "db", message.getDatabaseName() );
+            var extra = new HashMap<String, Object>();
+            if (message.getDatabaseName() != null) {
+                extra.put("db", message.getDatabaseName());
             }
-            if ( message.impersonatedUser() != null )
-            {
-                extra.put( "imp_user", message.impersonatedUser() );
+            if (message.impersonatedUser() != null) {
+                extra.put("imp_user", message.impersonatedUser());
             }
 
-            packer.pack( asMapValue( extra ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+            packer.pack(asMapValue(extra));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

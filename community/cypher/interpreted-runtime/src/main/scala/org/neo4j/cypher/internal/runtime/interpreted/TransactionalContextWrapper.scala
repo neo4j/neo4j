@@ -67,7 +67,8 @@ abstract class TransactionalContextWrapper extends QueryTransactionalContext {
   def cancellationChecker: CancellationChecker
 }
 
-class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, threadSafeCursors: CursorFactory = null) extends TransactionalContextWrapper {
+class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, threadSafeCursors: CursorFactory = null)
+    extends TransactionalContextWrapper {
 
   override def kernelTransaction: KernelTransaction = tc.kernelTransaction()
 
@@ -81,7 +82,8 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def kernelQueryContext: QueryContext = tc.kernelTransaction.queryContext
 
-  override def cursors: CursorFactory = if (threadSafeCursors == null) tc.kernelTransaction.cursors() else threadSafeCursors
+  override def cursors: CursorFactory =
+    if (threadSafeCursors == null) tc.kernelTransaction.cursors() else threadSafeCursors
 
   override def cursorContext: CursorContext = tc.kernelTransaction.cursorContext
 
@@ -107,13 +109,15 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def securityContext: SecurityContext = tc.kernelTransaction.securityContext
 
-  override def securityAuthorizationHandler: SecurityAuthorizationHandler = tc.kernelTransaction.securityAuthorizationHandler()
+  override def securityAuthorizationHandler: SecurityAuthorizationHandler =
+    tc.kernelTransaction.securityAuthorizationHandler()
 
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
   override def close(): Unit = tc.close()
 
-  override def kernelStatisticProvider: KernelStatisticProvider = ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
+  override def kernelStatisticProvider: KernelStatisticProvider =
+    ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 
   override def dbmsInfo: DbmsInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DbmsInfo])
 
@@ -130,7 +134,9 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def contextWithNewTransaction: TransactionalContextWrapper = {
     if (threadSafeCursors != null) {
-      throw new UnsupportedOperationException("Cypher transactions are not designed to work with parallel runtime, yet.")
+      throw new UnsupportedOperationException(
+        "Cypher transactions are not designed to work with parallel runtime, yet."
+      )
     }
     val newTC = tc.contextWithNewTransaction()
     TransactionalContextWrapper(newTC, threadSafeCursors)
@@ -153,6 +159,7 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 }
 
 object TransactionalContextWrapper {
+
   def apply(tc: TransactionalContext, threadSafeCursors: CursorFactory = null): TransactionalContextWrapper = {
     new SingleThreadedTransactionalContextWrapper(tc, threadSafeCursors)
   }

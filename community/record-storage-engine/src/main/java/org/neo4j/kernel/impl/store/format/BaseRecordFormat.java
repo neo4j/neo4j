@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store.format;
 
 import java.util.Objects;
 import java.util.function.Function;
-
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCursor;
@@ -39,24 +38,22 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
  *
  * @param <RECORD> type of record.
  */
-public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
-{
+public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD> {
     public static final int IN_USE_BIT = 0b0000_0001;
-    public static final Function<StoreHeader,Integer> INT_STORE_HEADER_READER =
+    public static final Function<StoreHeader, Integer> INT_STORE_HEADER_READER =
             header -> ((IntStoreHeader) header).value();
 
-    public static Function<StoreHeader,Integer> fixedRecordSize( int recordSize )
-    {
+    public static Function<StoreHeader, Integer> fixedRecordSize(int recordSize) {
         return header -> recordSize;
     }
 
-    private final Function<StoreHeader,Integer> recordSize;
+    private final Function<StoreHeader, Integer> recordSize;
     private final int recordHeaderSize;
     private final long maxId;
     private final boolean pageAligned;
 
-    protected BaseRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize, int idBits, boolean pageAligned )
-    {
+    protected BaseRecordFormat(
+            Function<StoreHeader, Integer> recordSize, int recordHeaderSize, int idBits, boolean pageAligned) {
         this.recordSize = recordSize;
         this.recordHeaderSize = recordHeaderSize;
         this.maxId = (1L << idBits) - 1;
@@ -64,42 +61,38 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     }
 
     @Override
-    public int getRecordSize( StoreHeader header )
-    {
-        return recordSize.apply( header );
+    public int getRecordSize(StoreHeader header) {
+        return recordSize.apply(header);
     }
 
     @Override
-    public int getRecordHeaderSize()
-    {
+    public int getRecordHeaderSize() {
         return recordHeaderSize;
     }
 
     @Override
-    public long getNextRecordReference( RECORD record )
-    {
+    public long getNextRecordReference(RECORD record) {
         return Record.NULL_REFERENCE.intValue();
     }
 
-    public static long longFromIntAndMod( long base, long modifier )
-    {
-        return modifier == 0 && IdValidator.isReservedId( base ) ? -1 : base | modifier;
+    public static long longFromIntAndMod(long base, long modifier) {
+        return modifier == 0 && IdValidator.isReservedId(base) ? -1 : base | modifier;
     }
 
     @Override
-    public void prepare( RECORD record, int recordSize, IdSequence idSequence, CursorContext cursorContext )
-    {   // Do nothing by default
+    public void prepare(
+            RECORD record,
+            int recordSize,
+            IdSequence idSequence,
+            CursorContext cursorContext) { // Do nothing by default
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         BaseRecordFormat<?> that = (BaseRecordFormat<?>) o;
@@ -107,20 +100,17 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( recordHeaderSize, pageAligned );
+    public int hashCode() {
+        return Objects.hash(recordHeaderSize, pageAligned);
     }
 
     @Override
-    public int getFilePageSize( int pageSize, int recordSize )
-    {
-        return pageAligned ? pageSize : Math.min( pageSize, pageSize - pageSize % recordSize );
+    public int getFilePageSize(int pageSize, int recordSize) {
+        return pageAligned ? pageSize : Math.min(pageSize, pageSize - pageSize % recordSize);
     }
 
     @Override
-    public final long getMaxId()
-    {
+    public final long getMaxId() {
         return maxId;
     }
 }

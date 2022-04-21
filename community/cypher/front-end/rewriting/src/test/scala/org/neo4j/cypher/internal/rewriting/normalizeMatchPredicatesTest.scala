@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-
 class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
 
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
@@ -40,15 +39,24 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
   def rewriter(semanticState: SemanticState): Rewriter = inSequence(
     LabelExpressionPredicateNormalizer,
     normalizeHasLabelsAndHasType(semanticState),
-    normalizeMatchPredicates.getRewriter(semanticState, Map.empty, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator),
+    normalizeMatchPredicates.getRewriter(
+      semanticState,
+      Map.empty,
+      OpenCypherExceptionFactory(None),
+      new AnonymousVariableNameGenerator
+    )
   )
 
   def rewriterWithoutNormalizeMatchPredicates(semanticState: SemanticState): Rewriter = inSequence(
     LabelExpressionPredicateNormalizer,
-    normalizeHasLabelsAndHasType(semanticState),
+    normalizeHasLabelsAndHasType(semanticState)
   )
 
-  def parseForRewriting(queryText: String): Statement = JavaCCParser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+  def parseForRewriting(queryText: String): Statement = JavaCCParser.parse(
+    queryText.replace("\r\n", "\n"),
+    OpenCypherExceptionFactory(None),
+    new AnonymousVariableNameGenerator
+  )
 
   private def assertRewrite(expectedQuery: String): Unit = {
     def rewrite(query: String, rewriter: SemanticState => Rewriter): Statement = {
@@ -57,9 +65,12 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
     }
 
     val result = rewrite(testName, rewriter)
-    //For the test sake we need to rewrite away HasLabelsOrTypes to HasLabels also on the expected
+    // For the test sake we need to rewrite away HasLabelsOrTypes to HasLabels also on the expected
     val expectedResult = rewrite(expectedQuery, rewriterWithoutNormalizeMatchPredicates)
-    assert(result === expectedResult, s"\n$testName\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
+    assert(
+      result === expectedResult,
+      s"\n$testName\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}"
+    )
   }
 
   test("MATCH (n {foo: 'bar'}) RETURN n") {
@@ -99,7 +110,9 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
   }
 
   test("MATCH (n {foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() WHERE n.baz = true OR r.baz = false RETURN n") {
-    assertRewrite("MATCH (n)-[r:Foo]->() WHERE n.foo = 'bar' AND n.bar = 4 AND r.foo = 1 AND r.bar = 'baz' AND (n.baz = true OR r.baz = false) RETURN n")
+    assertRewrite(
+      "MATCH (n)-[r:Foo]->() WHERE n.foo = 'bar' AND n.bar = 4 AND r.foo = 1 AND r.bar = 'baz' AND (n.baz = true OR r.baz = false) RETURN n"
+    )
   }
 
   test("MATCH ({foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() RETURN r") {
@@ -127,7 +140,9 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
   }
 
   test("MATCH (a:A {foo:'v1', bar:'v2'})-[r:R {baz: 'v1'}]->(b:B {foo:'v2', baz:'v2'}) RETURN *") {
-    assertRewrite("MATCH (a)-[r:R]->(b) WHERE a.foo = 'v1' AND a.bar = 'v2' AND a:A AND r.baz = 'v1' AND b.foo = 'v2' AND b.baz = 'v2' AND b:B RETURN *")
+    assertRewrite(
+      "MATCH (a)-[r:R]->(b) WHERE a.foo = 'v1' AND a.bar = 'v2' AND a:A AND r.baz = 'v1' AND b.foo = 'v2' AND b.baz = 'v2' AND b:B RETURN *"
+    )
   }
 
   test("MATCH (n)-[r* {prop: 42}]->(b) RETURN n") {
@@ -135,15 +150,21 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
   }
 
   test("MATCH (n)-[r* {prop: 42, p: 'aaa'}]->(b) RETURN n") {
-    assertRewrite("MATCH (n)-[r*]->(b) WHERE ALL(`  UNNAMED0` in r where `  UNNAMED0`.prop = 42 AND `  UNNAMED0`.p = 'aaa') RETURN n")
+    assertRewrite(
+      "MATCH (n)-[r*]->(b) WHERE ALL(`  UNNAMED0` in r where `  UNNAMED0`.prop = 42 AND `  UNNAMED0`.p = 'aaa') RETURN n"
+    )
   }
 
   test("MATCH (a:Artist)-[r:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *") {
-    assertRewrite("MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  UNNAMED0` in r where `  UNNAMED0`.year = 1988) AND b:Artist  RETURN *")
+    assertRewrite(
+      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  UNNAMED0` in r where `  UNNAMED0`.year = 1988) AND b:Artist  RETURN *"
+    )
   }
 
   test("MATCH (a:Artist)-[r:WORKED_WITH* { year: $foo }]->(b:Artist) RETURN *") {
-    assertRewrite("MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  UNNAMED0` in r where `  UNNAMED0`.year = $foo)  AND b:Artist RETURN *")
+    assertRewrite(
+      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  UNNAMED0` in r where `  UNNAMED0`.year = $foo)  AND b:Artist RETURN *"
+    )
   }
 
   test("MATCH (n WHERE n.prop > 123) RETURN n") {
@@ -154,8 +175,12 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
     assertRewrite("MATCH (n)-->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') RETURN n")
   }
 
-  test("MATCH (n WHERE n.prop > 123)-->(m WHERE m.prop < 42 AND m.otherProp = 'hello') WHERE n.prop <> m.prop RETURN n") {
-    assertRewrite("MATCH (n)-->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') AND n.prop <> m.prop RETURN n")
+  test(
+    "MATCH (n WHERE n.prop > 123)-->(m WHERE m.prop < 42 AND m.otherProp = 'hello') WHERE n.prop <> m.prop RETURN n"
+  ) {
+    assertRewrite(
+      "MATCH (n)-->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') AND n.prop <> m.prop RETURN n"
+    )
   }
 
   test("MATCH (n)-[r WHERE r.prop > 123]->() RETURN r") {
@@ -164,7 +189,8 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
 
   test("MATCH (n)-[r WHERE r.prop > 123]->()-[s WHERE s.otherProp = \"ok\"]-() RETURN r") {
     assertRewrite(
-      "MATCH (n)-[r]->()-[s]-() WHERE r.prop > 123 AND s.otherProp = \"ok\" RETURN r")
+      "MATCH (n)-[r]->()-[s]-() WHERE r.prop > 123 AND s.otherProp = \"ok\" RETURN r"
+    )
   }
 
   test("MATCH (n:A&B) RETURN n") {

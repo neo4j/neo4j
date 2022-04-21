@@ -23,15 +23,12 @@ import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ScopedBuffer;
 
-class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel
-{
-    PhysicalFlushableLogChannel( StoreChannel channel, ScopedBuffer scopedBuffer )
-    {
-        super( channel, scopedBuffer );
+class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel {
+    PhysicalFlushableLogChannel(StoreChannel channel, ScopedBuffer scopedBuffer) {
+        super(channel, scopedBuffer);
     }
 
-    void setChannel( StoreChannel channel )
-    {
+    void setChannel(StoreChannel channel) {
         this.channel = channel;
     }
 }

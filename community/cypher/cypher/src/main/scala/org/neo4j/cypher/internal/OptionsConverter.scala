@@ -60,6 +60,7 @@ import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Collections
+
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 trait OptionsConverter[T] {
@@ -67,14 +68,15 @@ trait OptionsConverter[T] {
   val evaluator: ExpressionEvaluator = Evaluator.expressionEvaluator()
 
   def evaluate(expression: Expression, params: MapValue): AnyValue = {
-      evaluator.evaluate(expression, params)
+    evaluator.evaluate(expression, params)
   }
 
   def convert(options: Options, params: MapValue): Option[T] = options match {
     case NoOptions => None
     case OptionsMap(map) => Some(convert(VirtualValues.map(
-      map.keys.map(_.toLowerCase).toArray,
-      map.view.mapValues(evaluate(_, params)).values.toArray)))
+        map.keys.map(_.toLowerCase).toArray,
+        map.view.mapValues(evaluate(_, params)).values.toArray
+      )))
     case OptionsParam(parameter) =>
       val opsMap = params.get(parameter.name)
       opsMap match {
@@ -101,68 +103,89 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   val STORE_FORMAT = "storeFormat"
   val VISIBLE_PERMITTED_OPTIONS = s"'$EXISTING_DATA', '$EXISTING_SEED_INSTANCE', '$STORE_FORMAT'"
 
-  //existing Data values
+  // existing Data values
   val USE_EXISTING_DATA = "use"
 
   override def convert(map: MapValue): CreateDatabaseOptions = {
 
-      map.foldLeft(CreateDatabaseOptions(None, None, None, None, None, None)) { case (ops, (key, value)) =>
-      //existingData
+    map.foldLeft(CreateDatabaseOptions(None, None, None, None, None, None)) { case (ops, (key, value)) =>
+      // existingData
       if (key.equalsIgnoreCase(EXISTING_DATA)) {
         value match {
-          case existingDataVal: TextValue if USE_EXISTING_DATA.equalsIgnoreCase(existingDataVal.stringValue()) => ops.copy(existingData = Some(USE_EXISTING_DATA))
+          case existingDataVal: TextValue if USE_EXISTING_DATA.equalsIgnoreCase(existingDataVal.stringValue()) =>
+            ops.copy(existingData = Some(USE_EXISTING_DATA))
           case value: TextValue =>
-            throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_DATA '${value.stringValue()}'. Expected '$USE_EXISTING_DATA'.")
+            throw new InvalidArgumentsException(
+              s"Could not create database with specified $EXISTING_DATA '${value.stringValue()}'. Expected '$USE_EXISTING_DATA'."
+            )
           case value: AnyValue =>
-            throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_DATA '$value'. Expected '$USE_EXISTING_DATA'.")
+            throw new InvalidArgumentsException(
+              s"Could not create database with specified $EXISTING_DATA '$value'. Expected '$USE_EXISTING_DATA'."
+            )
         }
 
-        //existingDataSeedInstance
+        // existingDataSeedInstance
       } else if (key.equalsIgnoreCase(EXISTING_SEED_INSTANCE)) {
         value match {
           case seed: TextValue => ops.copy(databaseSeed = Some(seed.stringValue()))
           case _ =>
-            throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected instance uuid string.")
+            throw new InvalidArgumentsException(
+              s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected instance uuid string."
+            )
         }
-        //numberOfPrimaries
+        // numberOfPrimaries
       } else if (key.equalsIgnoreCase(NUM_PRIMARIES)) {
         value match {
-          case number: IntegralValue if number.longValue() >= 1 => ops.copy(primaries = Some(number.longValue().intValue()))
+          case number: IntegralValue if number.longValue() >= 1 =>
+            ops.copy(primaries = Some(number.longValue().intValue()))
           case _ =>
-            throw new InvalidArgumentsException(s"Could not create database with specified $NUM_PRIMARIES '$value'. Expected positive integer number of primaries.")
+            throw new InvalidArgumentsException(
+              s"Could not create database with specified $NUM_PRIMARIES '$value'. Expected positive integer number of primaries."
+            )
         }
-        //numberOfSecondaries
+        // numberOfSecondaries
       } else if (key.equalsIgnoreCase(NUM_SECONDARIES)) {
         value match {
-          case number: IntegralValue if number.longValue() >= 0 => ops.copy(secondaries = Some(number.longValue().intValue()))
+          case number: IntegralValue if number.longValue() >= 0 =>
+            ops.copy(secondaries = Some(number.longValue().intValue()))
           case _ =>
-            throw new InvalidArgumentsException(s"Could not create database with specified $NUM_SECONDARIES '$value'. Expected non-negative integer number of secondaries.")
+            throw new InvalidArgumentsException(
+              s"Could not create database with specified $NUM_SECONDARIES '$value'. Expected non-negative integer number of secondaries."
+            )
         }
-        //storageEngine
+        // storageEngine
       } else if (key.equalsIgnoreCase(STORAGE_ENGINE)) {
         value match {
           case storageEngine: TextValue => ops.copy(storageEngine = Some(storageEngine.stringValue()))
           case _ =>
-            throw new InvalidArgumentsException(s"Could not create database with specified $STORAGE_ENGINE '$value', String expected.")
+            throw new InvalidArgumentsException(
+              s"Could not create database with specified $STORAGE_ENGINE '$value', String expected."
+            )
         }
-        //storeFormat
+        // storeFormat
       } else if (key.equalsIgnoreCase(STORE_FORMAT)) {
         value match {
           case storeFormat: TextValue =>
             try {
               // Convert to DatabaseRecordFormat to see that it is a valid value but let's store it as a string to open up for when formats for the next storage engine are also added.
-              ops.copy(storeFormatNewDb = Some(GraphDatabaseSettings.DatabaseRecordFormat.valueOf(storeFormat.stringValue()).name()))
-            }
-            catch {
+              ops.copy(storeFormatNewDb =
+                Some(GraphDatabaseSettings.DatabaseRecordFormat.valueOf(storeFormat.stringValue()).name()))
+            } catch {
               case _: Exception =>
-                throw new InvalidArgumentsException(s"Could not create database with specified $STORE_FORMAT '${storeFormat.stringValue()}'. Unknown format, supported formats are "
-                  + GraphDatabaseSettings.DatabaseRecordFormat.values().mkString("('", "', '", "')"))
+                throw new InvalidArgumentsException(
+                  s"Could not create database with specified $STORE_FORMAT '${storeFormat.stringValue()}'. Unknown format, supported formats are "
+                    + GraphDatabaseSettings.DatabaseRecordFormat.values().mkString("('", "', '", "')")
+                )
             }
           case _ =>
-            throw new InvalidArgumentsException(s"Could not create database with specified $STORE_FORMAT '$value', String expected.")
+            throw new InvalidArgumentsException(
+              s"Could not create database with specified $STORE_FORMAT '$value', String expected."
+            )
         }
       } else {
-        throw new InvalidArgumentsException(s"Could not create database with unrecognised option: '$key'. Expected $VISIBLE_PERMITTED_OPTIONS.")
+        throw new InvalidArgumentsException(
+          s"Could not create database with unrecognised option: '$key'. Expected $VISIBLE_PERMITTED_OPTIONS."
+        )
       }
     }
   }
@@ -171,15 +194,19 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
 }
 
 trait IndexOptionsConverter[T] extends OptionsConverter[T] {
+
   def getOptionsParts(options: MapValue, schemaType: String): (Option[AnyValue], IndexConfig) = {
 
-    if (options.exists{ case (k,_) => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")}) {
-      throw new InvalidArgumentsException(s"Failed to create $schemaType: Invalid option provided, valid options are `indexProvider` and `indexConfig`.")
+    if (options.exists { case (k, _) => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig") }) {
+      throw new InvalidArgumentsException(
+        s"Failed to create $schemaType: Invalid option provided, valid options are `indexProvider` and `indexConfig`."
+      )
     }
     val maybeIndexProvider = options.getOption("indexprovider")
     val maybeConfig = options.getOption("indexconfig")
 
-    val configMap: java.util.Map[String, Object] = maybeConfig.map(assertValidAndTransformConfig(_, schemaType)).getOrElse(Collections.emptyMap())
+    val configMap: java.util.Map[String, Object] =
+      maybeConfig.map(assertValidAndTransformConfig(_, schemaType)).getOrElse(Collections.emptyMap())
     val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
 
     (maybeIndexProvider, indexConfig)
@@ -189,68 +216,90 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
 
   // Keep to throw nicer error on old providers
   protected def checkForBtreeProvider(indexProviderString: String, schemaType: String): Unit =
-    if (indexProviderString.equalsIgnoreCase("native-btree-1.0") ||
-      indexProviderString.equalsIgnoreCase("lucene+native-3.0"))
+    if (
+      indexProviderString.equalsIgnoreCase("native-btree-1.0") ||
+      indexProviderString.equalsIgnoreCase("lucene+native-3.0")
+    )
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index provider '$indexProviderString'.
-           |Invalid index type b-tree, use range, point or text index instead.""".stripMargin)
+           |Invalid index type b-tree, use range, point or text index instead.""".stripMargin
+      )
 
   protected def checkForRangeProvider(indexProviderString: String, schemaType: String): Unit =
     if (indexProviderString.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name()))
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index provider '$indexProviderString'.
-           |To create range index, please use 'CREATE RANGE INDEX ...'.""".stripMargin)
+           |To create range index, please use 'CREATE RANGE INDEX ...'.""".stripMargin
+      )
 
   protected def checkForFulltextProvider(indexProviderString: String, schemaType: String): Unit =
     if (indexProviderString.equalsIgnoreCase(FulltextIndexProviderFactory.DESCRIPTOR.name()))
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index provider '$indexProviderString'.
-           |To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'.""".stripMargin)
+           |To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'.""".stripMargin
+      )
 
   protected def checkForTokenLookupProvider(indexProviderString: String, schemaType: String): Unit =
     if (indexProviderString.equalsIgnoreCase(TokenIndexProvider.DESCRIPTOR.name()))
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index provider '$indexProviderString'.
-           |To create token lookup index, please use 'CREATE LOOKUP INDEX ...'.""".stripMargin)
+           |To create token lookup index, please use 'CREATE LOOKUP INDEX ...'.""".stripMargin
+      )
 
   protected def checkForTextProvider(indexProviderString: String, schemaType: String): Unit =
     if (indexProviderString.equalsIgnoreCase(TextIndexProviderFactory.DESCRIPTOR.name()))
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index provider '$indexProviderString'.
-           |To create text index, please use 'CREATE TEXT INDEX ...'.""".stripMargin)
+           |To create text index, please use 'CREATE TEXT INDEX ...'.""".stripMargin
+      )
 
   protected def checkForPointProvider(indexProviderString: String, schemaType: String): Unit =
     if (indexProviderString.equalsIgnoreCase(PointIndexProvider.DESCRIPTOR.name()))
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index provider '$indexProviderString'.
-           |To create point index, please use 'CREATE POINT INDEX ...'.""".stripMargin)
+           |To create point index, please use 'CREATE POINT INDEX ...'.""".stripMargin
+      )
 
   protected def checkForPointConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
-    if (itemsMap.exists { case (p: String, _) =>
-      p.equalsIgnoreCase(SPATIAL_CARTESIAN_MIN.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_CARTESIAN_MAX.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MIN.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MAX.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_WGS84_MIN.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_WGS84_MAX.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_WGS84_3D_MIN.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_WGS84_3D_MAX.getSettingName)
-    }) {
+    if (
+      itemsMap.exists { case (p: String, _) =>
+        p.equalsIgnoreCase(SPATIAL_CARTESIAN_MIN.getSettingName) ||
+          p.equalsIgnoreCase(SPATIAL_CARTESIAN_MAX.getSettingName) ||
+          p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MIN.getSettingName) ||
+          p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MAX.getSettingName) ||
+          p.equalsIgnoreCase(SPATIAL_WGS84_MIN.getSettingName) ||
+          p.equalsIgnoreCase(SPATIAL_WGS84_MAX.getSettingName) ||
+          p.equalsIgnoreCase(SPATIAL_WGS84_3D_MIN.getSettingName) ||
+          p.equalsIgnoreCase(SPATIAL_WGS84_3D_MAX.getSettingName)
+      }
+    ) {
       itemsMap.writeTo(pp)
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index config '${pp.value()}', contains spatial config settings options.
-           |To create point index, please use 'CREATE POINT INDEX ...'.""".stripMargin)
+           |To create point index, please use 'CREATE POINT INDEX ...'.""".stripMargin
+      )
     }
 
   protected def checkForFulltextConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
-    if (itemsMap.exists { case (p, _) => p.equalsIgnoreCase(FULLTEXT_ANALYZER.getSettingName) || p.equalsIgnoreCase(FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName) }) {
+    if (
+      itemsMap.exists { case (p, _) =>
+        p.equalsIgnoreCase(FULLTEXT_ANALYZER.getSettingName) || p.equalsIgnoreCase(
+          FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName
+        )
+      }
+    ) {
       itemsMap.writeTo(pp)
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index config '${pp.value()}', contains fulltext config options.
-           |To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'.""".stripMargin)
+           |To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'.""".stripMargin
+      )
     }
 
-  protected def assertEmptyConfig(config: AnyValue, schemaType: String, indexType: String): java.util.Map[String, Object] = {
+  protected def assertEmptyConfig(
+    config: AnyValue,
+    schemaType: String,
+    indexType: String
+  ): java.util.Map[String, Object] = {
     // no available config settings, throw nice error when existing config settings for other index types
     val pp = new PrettyPrinter()
     config match {
@@ -258,27 +307,35 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
         checkForFulltextConfigValues(pp, itemsMap, schemaType)
         checkForPointConfigValues(pp, itemsMap, schemaType)
 
-        if(!itemsMap.isEmpty){
+        if (!itemsMap.isEmpty) {
           itemsMap.writeTo(pp)
           throw new InvalidArgumentsException(
-            s"""Could not create $schemaType with specified index config '${pp.value()}': $indexType indexes have no valid config values.""".stripMargin)
+            s"""Could not create $schemaType with specified index config '${pp.value()}': $indexType indexes have no valid config values.""".stripMargin
+          )
         }
 
         Collections.emptyMap()
       case unknown =>
         unknown.writeTo(pp)
-        throw new InvalidArgumentsException(s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map.")
+        throw new InvalidArgumentsException(
+          s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map."
+        )
     }
   }
 
-  protected def assertValidAndTransformConfigForPointSettings(config: AnyValue, schemaType: String): java.util.Map[String, Object] = {
+  protected def assertValidAndTransformConfigForPointSettings(
+    config: AnyValue,
+    schemaType: String
+  ): java.util.Map[String, Object] = {
     // current keys: spatial.* (cartesian.|cartesian-3d.|wgs-84.|wgs-84-3d.) + (min|max)
     // current values: Double[]
 
     def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
       val pp = new PrettyPrinter()
       suppliedValue.writeTo(pp)
-      new InvalidArgumentsException(s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map from String to Double[].")
+      new InvalidArgumentsException(
+        s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map from String to Double[]."
+      )
     }
 
     config match {
@@ -290,7 +347,7 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
           case (p: String, e: ListValue) =>
             val configValue: Array[Double] = e.iterator().asScala.map {
               case d: DoubleValue => d.doubleValue()
-              case _ => throw exceptionWrongType(itemsMap)
+              case _              => throw exceptionWrongType(itemsMap)
             }.toArray
             hm.put(p, configValue)
           case _ => throw exceptionWrongType(itemsMap)
@@ -302,22 +359,27 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
   }
 }
 
-case class PropertyExistenceConstraintOptionsConverter(entity: String) extends IndexOptionsConverter[CreateWithNoOptions] {
+case class PropertyExistenceConstraintOptionsConverter(entity: String)
+    extends IndexOptionsConverter[CreateWithNoOptions] {
   // Property existence constraints are not index-backed and do not have any valid options, but allows for an empty options map
 
   override def convert(options: MapValue): CreateWithNoOptions = {
     if (!options.isEmpty)
-      throw new InvalidArgumentsException(s"Could not create $entity property existence constraint: property existence constraints have no valid options values.")
+      throw new InvalidArgumentsException(
+        s"Could not create $entity property existence constraint: property existence constraints have no valid options values."
+      )
     CreateWithNoOptions()
   }
 
   // No options available, this method doesn't get called
-  override def assertValidAndTransformConfig(config: AnyValue, entity: String): java.util.Map[String, Object] = Collections.emptyMap()
+  override def assertValidAndTransformConfig(config: AnyValue, entity: String): java.util.Map[String, Object] =
+    Collections.emptyMap()
 
   override def operation: String = s"create $entity property existence constraint"
 }
 
-case class IndexBackedConstraintsOptionsConverter(schemaType: String) extends IndexOptionsConverter[CreateIndexWithStringProviderOptions] {
+case class IndexBackedConstraintsOptionsConverter(schemaType: String)
+    extends IndexOptionsConverter[CreateIndexWithStringProviderOptions] {
 
   override def convert(options: MapValue): CreateIndexWithStringProviderOptions = {
     val (maybeIndexProvider, indexConfig) = getOptionsParts(options, schemaType)
@@ -335,12 +397,16 @@ case class IndexBackedConstraintsOptionsConverter(schemaType: String) extends In
       checkForPointProvider(indexProviderString, schemaType)
 
       if (!indexProviderString.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name()))
-        throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderString'.")
+        throw new InvalidArgumentsException(
+          s"Could not create $schemaType with specified index provider '$indexProviderString'."
+        )
 
       indexProviderString
 
     case _ =>
-      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value.")
+      throw new InvalidArgumentsException(
+        s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value."
+      )
   }
 
   // RANGE indexes has no available config settings
@@ -350,7 +416,8 @@ case class IndexBackedConstraintsOptionsConverter(schemaType: String) extends In
   override def operation: String = s"create $schemaType"
 }
 
-case class CreateRangeIndexOptionsConverter(schemaType: String) extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
+case class CreateRangeIndexOptionsConverter(schemaType: String)
+    extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
 
   override def convert(options: MapValue): CreateIndexProviderOnlyOptions = {
     val (maybeIndexProvider, _) = getOptionsParts(options, schemaType)
@@ -368,12 +435,16 @@ case class CreateRangeIndexOptionsConverter(schemaType: String) extends IndexOpt
       checkForPointProvider(indexProviderString, schemaType)
 
       if (!indexProviderString.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name()))
-        throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderString'.")
+        throw new InvalidArgumentsException(
+          s"Could not create $schemaType with specified index provider '$indexProviderString'."
+        )
 
       RangeIndexProvider.DESCRIPTOR
 
     case _ =>
-      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value.")
+      throw new InvalidArgumentsException(
+        s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value."
+      )
   }
 
   // RANGE indexes has no available config settings
@@ -386,7 +457,7 @@ case class CreateRangeIndexOptionsConverter(schemaType: String) extends IndexOpt
 case object CreateLookupIndexOptionsConverter extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
   private val schemaType = "token lookup index"
 
-  override def convert(options: MapValue): CreateIndexProviderOnlyOptions =  {
+  override def convert(options: MapValue): CreateIndexProviderOnlyOptions = {
     val (maybeIndexProvider, _) = getOptionsParts(options, schemaType)
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
     CreateIndexProviderOnlyOptions(indexProvider)
@@ -402,12 +473,16 @@ case object CreateLookupIndexOptionsConverter extends IndexOptionsConverter[Crea
       checkForPointProvider(indexProviderString, schemaType)
 
       if (!indexProviderString.equalsIgnoreCase(TokenIndexProvider.DESCRIPTOR.name()))
-        throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderString'.")
+        throw new InvalidArgumentsException(
+          s"Could not create $schemaType with specified index provider '$indexProviderString'."
+        )
 
       TokenIndexProvider.DESCRIPTOR
 
     case _ =>
-      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value.")
+      throw new InvalidArgumentsException(
+        s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value."
+      )
   }
 
   // LOOKUP indexes has no available config settings
@@ -417,10 +492,11 @@ case object CreateLookupIndexOptionsConverter extends IndexOptionsConverter[Crea
   override def operation: String = s"create $schemaType"
 }
 
-case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[CreateIndexWithProviderDescriptorOptions] {
+case object CreateFulltextIndexOptionsConverter
+    extends IndexOptionsConverter[CreateIndexWithProviderDescriptorOptions] {
   private val schemaType = "fulltext index"
 
-  override def convert(options: MapValue): CreateIndexWithProviderDescriptorOptions =  {
+  override def convert(options: MapValue): CreateIndexWithProviderDescriptorOptions = {
     val (maybeIndexProvider, indexConfig) = getOptionsParts(options, schemaType)
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
     CreateIndexWithProviderDescriptorOptions(indexProvider, indexConfig)
@@ -436,12 +512,16 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
       checkForPointProvider(indexProviderString, schemaType)
 
       if (!indexProviderString.equalsIgnoreCase(FulltextIndexProviderFactory.DESCRIPTOR.name()))
-        throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderString'.")
+        throw new InvalidArgumentsException(
+          s"Could not create $schemaType with specified index provider '$indexProviderString'."
+        )
 
       FulltextIndexProviderFactory.DESCRIPTOR
 
     case _ =>
-      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value.")
+      throw new InvalidArgumentsException(
+        s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value."
+      )
   }
 
   // FULLTEXT indexes have two config settings:
@@ -452,7 +532,9 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
     def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
       val pp = new PrettyPrinter()
       suppliedValue.writeTo(pp)
-      new InvalidArgumentsException(s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map from String to Strings and Booleans.")
+      new InvalidArgumentsException(
+        s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map from String to Strings and Booleans."
+      )
     }
 
     config match {
@@ -461,7 +543,7 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
 
         val hm = new java.util.HashMap[String, Object]()
         itemsMap.foreach {
-          case (p: String, e: TextValue)  =>
+          case (p: String, e: TextValue) =>
             hm.put(p, e.stringValue())
           case (p: String, e: BooleanValue) =>
             hm.put(p, java.lang.Boolean.valueOf(e.booleanValue()))
@@ -479,7 +561,7 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
 case object CreateTextIndexOptionsConverter extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
   private val schemaType = "text index"
 
-  override def convert(options: MapValue): CreateIndexProviderOnlyOptions =  {
+  override def convert(options: MapValue): CreateIndexProviderOnlyOptions = {
     val (maybeIndexProvider, _) = getOptionsParts(options, schemaType)
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
     CreateIndexProviderOnlyOptions(indexProvider)
@@ -495,12 +577,16 @@ case object CreateTextIndexOptionsConverter extends IndexOptionsConverter[Create
       checkForPointProvider(indexProviderString, schemaType)
 
       if (!indexProviderString.equalsIgnoreCase(TextIndexProviderFactory.DESCRIPTOR.name()))
-        throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderString'.")
+        throw new InvalidArgumentsException(
+          s"Could not create $schemaType with specified index provider '$indexProviderString'."
+        )
 
       TextIndexProviderFactory.DESCRIPTOR
 
     case _ =>
-      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value.")
+      throw new InvalidArgumentsException(
+        s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value."
+      )
   }
 
   // TEXT indexes has no available config settings
@@ -529,12 +615,16 @@ case object CreatePointIndexOptionsConverter extends IndexOptionsConverter[Creat
       checkForTextProvider(indexProviderString, schemaType)
 
       if (!indexProviderString.equalsIgnoreCase(PointIndexProvider.DESCRIPTOR.name()))
-        throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderString'.")
+        throw new InvalidArgumentsException(
+          s"Could not create $schemaType with specified index provider '$indexProviderString'."
+        )
 
       PointIndexProvider.DESCRIPTOR
 
     case _ =>
-      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value.")
+      throw new InvalidArgumentsException(
+        s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value."
+      )
   }
 
   // POINT indexes has point config settings
@@ -548,9 +638,15 @@ case class CreateWithNoOptions()
 case class CreateIndexProviderOnlyOptions(provider: Option[IndexProviderDescriptor])
 case class CreateIndexWithStringProviderOptions(provider: Option[String], config: IndexConfig)
 case class CreateIndexWithProviderDescriptorOptions(provider: Option[IndexProviderDescriptor], config: IndexConfig)
-case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String],
-                                 primaries: Option[Integer], secondaries: Option[Integer], storageEngine: Option[String],
-                                 storeFormatNewDb: Option[String])
+
+case class CreateDatabaseOptions(
+  existingData: Option[String],
+  databaseSeed: Option[String],
+  primaries: Option[Integer],
+  secondaries: Option[Integer],
+  storageEngine: Option[String],
+  storeFormatNewDb: Option[String]
+)
 
 object MapValueOps {
 
@@ -558,12 +654,12 @@ object MapValueOps {
 
     def getOption(key: String): Option[AnyValue] = mv.get(key) match {
       case _: NoValue => None
-      case value => Some(value)
+      case value      => Some(value)
     }
 
     override def +[V1 >: AnyValue](kv: (String, V1)): Map[String, V1] = {
       val mvb = new MapValueBuilder()
-      mv.foreach((k,v) => mvb.add(k, v))
+      mv.foreach((k, v) => mvb.add(k, v))
       mvb.add(kv._1, kv._2.asInstanceOf[AnyValue])
       mvb.build()
     }
@@ -584,7 +680,7 @@ object MapValueOps {
 
     override def removed(key: String): Map[String, AnyValue] = {
       val mvb = new MapValueBuilder()
-      mv.foreach((k,v) => if (!k.equals(key)) mvb.add(k,v))
+      mv.foreach((k, v) => if (!k.equals(key)) mvb.add(k, v))
       mvb.build()
     }
 

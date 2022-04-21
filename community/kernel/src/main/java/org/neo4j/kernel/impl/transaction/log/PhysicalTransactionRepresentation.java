@@ -19,21 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
-import static java.lang.String.format;
-
-public class PhysicalTransactionRepresentation implements TransactionRepresentation
-{
+public class PhysicalTransactionRepresentation implements TransactionRepresentation {
     private final List<StorageCommand> commands;
     private byte[] additionalHeader;
     private long timeStarted;
@@ -47,25 +45,33 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
      */
     private int leaseId;
 
-    public PhysicalTransactionRepresentation( List<StorageCommand> commands )
-    {
+    public PhysicalTransactionRepresentation(List<StorageCommand> commands) {
         this.commands = commands;
     }
 
-    public PhysicalTransactionRepresentation( List<StorageCommand> commands, byte[] additionalHeader, long timeStarted, long latestCommittedTxWhenStarted,
-            long timeCommitted, int leaseId, AuthSubject subject )
-    {
-        this( commands );
-        setHeader( additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, leaseId, subject );
+    public PhysicalTransactionRepresentation(
+            List<StorageCommand> commands,
+            byte[] additionalHeader,
+            long timeStarted,
+            long latestCommittedTxWhenStarted,
+            long timeCommitted,
+            int leaseId,
+            AuthSubject subject) {
+        this(commands);
+        setHeader(additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, leaseId, subject);
     }
 
-    public void setAdditionalHeader( byte[] additionalHeader )
-    {
+    public void setAdditionalHeader(byte[] additionalHeader) {
         this.additionalHeader = additionalHeader;
     }
 
-    public void setHeader( byte[] additionalHeader, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted, int leaseId, AuthSubject subject )
-    {
+    public void setHeader(
+            byte[] additionalHeader,
+            long timeStarted,
+            long latestCommittedTxWhenStarted,
+            long timeCommitted,
+            int leaseId,
+            AuthSubject subject) {
         this.additionalHeader = additionalHeader;
         this.timeStarted = timeStarted;
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
@@ -75,12 +81,9 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public boolean accept( Visitor<StorageCommand,IOException> visitor ) throws IOException
-    {
-        for ( StorageCommand command : commands )
-        {
-            if ( visitor.visit( command ) )
-            {
+    public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
+        for (StorageCommand command : commands) {
+            if (visitor.visit(command)) {
                 return true;
             }
         }
@@ -88,108 +91,97 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public byte[] additionalHeader()
-    {
+    public byte[] additionalHeader() {
         return additionalHeader;
     }
 
     @Override
-    public long getTimeStarted()
-    {
+    public long getTimeStarted() {
         return timeStarted;
     }
 
     @Override
-    public long getLatestCommittedTxWhenStarted()
-    {
+    public long getLatestCommittedTxWhenStarted() {
         return latestCommittedTxWhenStarted;
     }
 
     @Override
-    public long getTimeCommitted()
-    {
+    public long getTimeCommitted() {
         return timeCommitted;
     }
 
     @Override
-    public int getLeaseId()
-    {
+    public int getLeaseId() {
         return leaseId;
     }
 
     @Override
-    public AuthSubject getAuthSubject()
-    {
+    public AuthSubject getAuthSubject() {
         return subject;
     }
 
     @Override
-    public KernelVersion version()
-    {
-        return commands.isEmpty() ? null : commands.get( 0 ).version();
+    public KernelVersion version() {
+        return commands.isEmpty() ? null : commands.get(0).version();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         PhysicalTransactionRepresentation that = (PhysicalTransactionRepresentation) o;
         return latestCommittedTxWhenStarted == that.latestCommittedTxWhenStarted
-               && timeStarted == that.timeStarted
-               && Arrays.equals( additionalHeader, that.additionalHeader )
-               && commands.equals( that.commands );
+                && timeStarted == that.timeStarted
+                && Arrays.equals(additionalHeader, that.additionalHeader)
+                && commands.equals(that.commands);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = commands.hashCode();
-        result = 31 * result + (additionalHeader != null ? Arrays.hashCode( additionalHeader ) : 0);
+        result = 31 * result + (additionalHeader != null ? Arrays.hashCode(additionalHeader) : 0);
         result = 31 * result + (int) (timeStarted ^ (timeStarted >>> 32));
         result = 31 * result + (int) (latestCommittedTxWhenStarted ^ (latestCommittedTxWhenStarted >>> 32));
         return result;
     }
 
     @Override
-    public String toString()
-    {
-        return toString( false );
+    public String toString() {
+        return toString(false);
     }
 
-    public String toString( boolean includeCommands )
-    {
-        String basic = format( "%s[timeStarted:%d, latestCommittedTxWhenStarted:%d, timeCommitted:%d, lease:%d, additionalHeader:%s, commands.length:%d",
-                getClass().getSimpleName(), timeStarted, latestCommittedTxWhenStarted, timeCommitted, leaseId, Arrays.toString( additionalHeader ),
-                commands.size() );
-        if ( !includeCommands )
-        {
+    public String toString(boolean includeCommands) {
+        String basic = format(
+                "%s[timeStarted:%d, latestCommittedTxWhenStarted:%d, timeCommitted:%d, lease:%d, additionalHeader:%s, commands.length:%d",
+                getClass().getSimpleName(),
+                timeStarted,
+                latestCommittedTxWhenStarted,
+                timeCommitted,
+                leaseId,
+                Arrays.toString(additionalHeader),
+                commands.size());
+        if (!includeCommands) {
             return basic;
         }
 
-        StringBuilder builder = new StringBuilder( basic );
-        for ( StorageCommand command : commands )
-        {
-            builder.append( format( "%n%s", command.toString() ) );
+        StringBuilder builder = new StringBuilder(basic);
+        for (StorageCommand command : commands) {
+            builder.append(format("%n%s", command.toString()));
         }
         return builder.toString();
     }
 
     @Override
-    public Iterator<StorageCommand> iterator()
-    {
+    public Iterator<StorageCommand> iterator() {
         return commands.iterator();
     }
 
-    public int commandCount()
-    {
+    public int commandCount() {
         return commands.size();
     }
 }

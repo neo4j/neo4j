@@ -40,6 +40,7 @@ import org.neo4j.exceptions.InternalException
  * Find calls to deprecated procedures and generate warnings for them.
  */
 case object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
+
   override def visit(value: BaseState, context: BaseContext): Unit = {
     val warnings = findDeprecations(value.statement())
 
@@ -48,9 +49,9 @@ case object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseS
 
   private def findDeprecations(statement: Statement): Set[InternalNotification] =
     statement.folder.treeFold(Set.empty[InternalNotification]) {
-      case f@ResolvedCall(ProcedureSignature(name, _, _, Some(deprecatedBy), _, _, _, _, _, _, _), _, _, _, _, _) =>
+      case f @ ResolvedCall(ProcedureSignature(name, _, _, Some(deprecatedBy), _, _, _, _, _, _, _), _, _, _, _, _) =>
         seq => SkipChildren(seq + DeprecatedProcedureNotification(f.position, name.toString, deprecatedBy))
-      case _:UnresolvedCall =>
+      case _: UnresolvedCall =>
         throw new InternalException("Expected procedures to have been resolved already")
     }
 
@@ -62,6 +63,7 @@ case object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseS
  * Find calls to procedures with warnings.
  */
 case object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
+
   override def visit(value: BaseState, context: BaseContext): Unit = {
     val warnings = findWarnings(value.statement())
 
@@ -70,17 +72,19 @@ case object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
 
   private def findWarnings(statement: Statement): Set[InternalNotification] =
     statement.folder.treeFold(Set.empty[InternalNotification]) {
-      case f@ResolvedCall(ProcedureSignature(name, _, _, _, _, _, Some(warning), _, _, _, _), _, _, _, _, _) =>
+      case f @ ResolvedCall(ProcedureSignature(name, _, _, _, _, _, Some(warning), _, _, _, _), _, _, _, _, _) =>
         seq => SkipChildren(seq + ProcedureWarningNotification(f.position, name.toString, warning))
       case ResolvedCall(ProcedureSignature(name, _, Some(output), None, _, _, _, _, _, _, _), _, results, _, _, _)
-        if output.exists(_.deprecated) => set => SkipChildren(set ++ usedDeprecatedFields(name.toString, results, output))
-      case _:UnresolvedCall =>
+        if output.exists(_.deprecated) =>
+        set => SkipChildren(set ++ usedDeprecatedFields(name.toString, results, output))
+      case _: UnresolvedCall =>
         throw new InternalException("Expected procedures to have been resolved already")
     }
 
   private def usedDeprecatedFields(procedure: String, used: Seq[ProcedureResultItem], available: Seq[FieldSignature]) =
-    used.filter(r => available.exists(o => o.name == r.outputName && o.deprecated)).
-      map(r => DeprecatedFieldNotification(r.position, procedure, r.outputName))
+    used.filter(r => available.exists(o => o.name == r.outputName && o.deprecated)).map(r =>
+      DeprecatedFieldNotification(r.position, procedure, r.outputName)
+    )
 
   override def phase = DEPRECATION_WARNINGS
 

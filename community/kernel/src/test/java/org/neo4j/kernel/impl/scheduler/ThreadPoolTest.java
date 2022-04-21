@@ -19,46 +19,46 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.ExecutionException;
-
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.time.Clocks;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class ThreadPoolTest
-{
+class ThreadPoolTest {
     private ThreadPool threadPool;
 
     @BeforeEach
-    void setup()
-    {
-        threadPool = new ThreadPool( Group.TESTING, new ThreadGroup( "TestPool" ), new ThreadPool.ThreadPoolParameters(), Clocks.nanoClock(),
-                new FailedJobRunsStore( 10 ), () -> 9999 );
+    void setup() {
+        threadPool = new ThreadPool(
+                Group.TESTING,
+                new ThreadGroup("TestPool"),
+                new ThreadPool.ThreadPoolParameters(),
+                Clocks.nanoClock(),
+                new FailedJobRunsStore(10),
+                () -> 9999);
     }
 
     @AfterEach
-    public void teardown()
-    {
-        if ( threadPool != null )
-        {
+    public void teardown() {
+        if (threadPool != null) {
             threadPool.shutDown();
         }
     }
 
     @Test
-    void poolDoesNotLeakFastJobs() throws ExecutionException, InterruptedException
-    {
+    void poolDoesNotLeakFastJobs() throws ExecutionException, InterruptedException {
         // When
-        var fastJob = threadPool.submit( new JobMonitoringParams( null, null, null ), () -> { /* do nothing */ } );
+        var fastJob = threadPool.submit(new JobMonitoringParams(null, null, null), () -> {
+            /* do nothing */
+        });
         fastJob.waitTermination();
 
         // Then
-        assertEquals( 0, threadPool.activeJobCount(), "Active job count should be 0 when job is terminated" );
+        assertEquals(0, threadPool.activeJobCount(), "Active job count should be 0 when job is terminated");
     }
 }

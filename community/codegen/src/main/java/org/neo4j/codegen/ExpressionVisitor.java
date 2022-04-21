@@ -19,76 +19,74 @@
  */
 package org.neo4j.codegen;
 
-public interface ExpressionVisitor
-{
-    void invoke( Expression target, MethodReference method, Expression[] arguments );
+public interface ExpressionVisitor {
+    void invoke(Expression target, MethodReference method, Expression[] arguments);
 
-    void invoke( MethodReference method, Expression[] arguments );
+    void invoke(MethodReference method, Expression[] arguments);
 
-    void load( LocalVariable variable );
+    void load(LocalVariable variable);
 
-    void arrayLoad( Expression array, Expression index );
+    void arrayLoad(Expression array, Expression index);
 
-    void arraySet( Expression array, Expression index, Expression value );
+    void arraySet(Expression array, Expression index, Expression value);
 
-    void arrayLength( Expression array );
+    void arrayLength(Expression array);
 
-    void getField( Expression target, FieldReference field );
+    void getField(Expression target, FieldReference field);
 
-    void constant( Object value );
+    void constant(Object value);
 
-    void getStatic( FieldReference field );
+    void getStatic(FieldReference field);
 
-    void loadThis( String sourceName );
+    void loadThis(String sourceName);
 
-    void newInstance( TypeReference type );
+    void newInstance(TypeReference type);
 
-    void not( Expression expression );
+    void not(Expression expression);
 
-    void ternary( Expression test, Expression onTrue, Expression onFalse );
+    void ternary(Expression test, Expression onTrue, Expression onFalse);
 
-    void equal( Expression lhs, Expression rhs );
+    void equal(Expression lhs, Expression rhs);
 
-    void notEqual( Expression lhs, Expression rhs );
+    void notEqual(Expression lhs, Expression rhs);
 
-    void isNull( Expression expression );
+    void isNull(Expression expression);
 
-    void notNull( Expression expression );
+    void notNull(Expression expression);
 
-    void or( Expression... expressions );
+    void or(Expression... expressions);
 
-    void and( Expression... expressions );
+    void and(Expression... expressions);
 
-    void add( Expression lhs, Expression rhs );
+    void add(Expression lhs, Expression rhs);
 
-    void gt( Expression lhs, Expression rhs );
+    void gt(Expression lhs, Expression rhs);
 
-    void gte( Expression lhs, Expression rhs );
+    void gte(Expression lhs, Expression rhs);
 
-    void lt( Expression lhs, Expression rhs );
+    void lt(Expression lhs, Expression rhs);
 
-    void lte( Expression lhs, Expression rhs );
+    void lte(Expression lhs, Expression rhs);
 
-    void subtract( Expression lhs, Expression rhs );
+    void subtract(Expression lhs, Expression rhs);
 
-    void multiply( Expression lhs, Expression rhs );
+    void multiply(Expression lhs, Expression rhs);
 
-    void cast( TypeReference type, Expression expression );
+    void cast(TypeReference type, Expression expression);
 
-    void instanceOf( TypeReference type, Expression expression );
+    void instanceOf(TypeReference type, Expression expression);
 
-    void newInitializedArray( TypeReference type, Expression... constants );
+    void newInitializedArray(TypeReference type, Expression... constants);
 
-    void newArray( TypeReference type, int size );
+    void newArray(TypeReference type, int size);
 
-    void newArray( TypeReference type, Expression size );
+    void newArray(TypeReference type, Expression size);
 
-    void longToDouble( Expression expression );
+    void longToDouble(Expression expression);
 
-    void pop( Expression expression );
+    void pop(Expression expression);
 
-    void box( Expression expression );
+    void box(Expression expression);
 
-    void unbox( Expression expression );
-
+    void unbox(Expression expression);
 }

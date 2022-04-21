@@ -23,44 +23,37 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.server.startup.EntryPoint;
 
 @ServiceProvider
-public class CommunityEntryPoint implements EntryPoint
-{
+public class CommunityEntryPoint implements EntryPoint {
     private static Bootstrapper bootstrapper;
 
-    public static void main( String[] args )
-    {
-        int status = NeoBootstrapper.start( new CommunityBootstrapper(), args );
-        if ( status != 0 )
-        {
-            System.exit( status );
+    public static void main(String[] args) {
+        int status = NeoBootstrapper.start(new CommunityBootstrapper(), args);
+        if (status != 0) {
+            System.exit(status);
         }
     }
 
     /**
      * Used by the windows service wrapper
      */
-    @SuppressWarnings( "unused" )
-    public static void start( String[] args )
-    {
-        bootstrapper = new BlockingBootstrapper( new CommunityBootstrapper() );
-        System.exit( NeoBootstrapper.start( bootstrapper, args ) );
+    @SuppressWarnings("unused")
+    public static void start(String[] args) {
+        bootstrapper = new BlockingBootstrapper(new CommunityBootstrapper());
+        System.exit(NeoBootstrapper.start(bootstrapper, args));
     }
 
     /**
      * Used by the windows service wrapper
      */
-    @SuppressWarnings( "unused" )
-    public static void stop( @SuppressWarnings( "UnusedParameters" ) String[] args )
-    {
-        if ( bootstrapper != null )
-        {
+    @SuppressWarnings("unused")
+    public static void stop(@SuppressWarnings("UnusedParameters") String[] args) {
+        if (bootstrapper != null) {
             bootstrapper.stop();
         }
     }
 
     @Override
-    public Priority getPriority()
-    {
+    public Priority getPriority() {
         return Priority.LOW;
     }
 }

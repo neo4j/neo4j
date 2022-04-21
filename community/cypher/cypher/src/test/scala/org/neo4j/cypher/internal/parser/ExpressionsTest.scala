@@ -47,7 +47,8 @@ class ExpressionsTest extends JavaccParserTestBase[internal.expressions.Expressi
       """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
-         END""") shouldGive
+         END"""
+    ) shouldGive
       commands.expressions.SimpleCase(literal(1), Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))), None)
 
     parsing(
@@ -55,8 +56,13 @@ class ExpressionsTest extends JavaccParserTestBase[internal.expressions.Expressi
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
                   ELSE 'DEFAULT'
-         END""") shouldGive
-      commands.expressions.SimpleCase(literal(1), Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))), Some(literal("DEFAULT")))
+         END"""
+    ) shouldGive
+      commands.expressions.SimpleCase(
+        literal(1),
+        Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))),
+        Some(literal("DEFAULT"))
+      )
   }
 
   test("generic_cases") {
@@ -70,7 +76,8 @@ class ExpressionsTest extends JavaccParserTestBase[internal.expressions.Expressi
       """CASE
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
-         END""") shouldGive
+         END"""
+    ) shouldGive
       commands.expressions.GenericCase(IndexedSeq(alt1, alt2), None)
 
     parsing(
@@ -78,7 +85,8 @@ class ExpressionsTest extends JavaccParserTestBase[internal.expressions.Expressi
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
-         END""") shouldGive
+         END"""
+    ) shouldGive
       commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(literal("OTHER")))
   }
 
@@ -89,7 +97,11 @@ class ExpressionsTest extends JavaccParserTestBase[internal.expressions.Expressi
       commands.expressions.ListSlice(collection, Some(literal(1)), Some(literal(2)))
 
     parsing("[1,2,3,4][1..2][2..3]") shouldGive
-      commands.expressions.ListSlice(commands.expressions.ListSlice(collection, Some(literal(1)), Some(literal(2))), Some(literal(2)), Some(literal(3)))
+      commands.expressions.ListSlice(
+        commands.expressions.ListSlice(collection, Some(literal(1)), Some(literal(2))),
+        Some(literal(2)),
+        Some(literal(3))
+      )
 
     parsing("collection[1..2]") shouldGive
       commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(literal(1)), Some(literal(2)))
@@ -98,10 +110,19 @@ class ExpressionsTest extends JavaccParserTestBase[internal.expressions.Expressi
       commands.expressions.ContainerIndex(collection, literal(2))
 
     parsing("[[1,2]][0][6]") shouldGive
-      commands.expressions.ContainerIndex(commands.expressions.ContainerIndex(commands.expressions.ListLiteral(commands.expressions.ListLiteral(literal(1), literal(2))), literal(0)), literal(6))
+      commands.expressions.ContainerIndex(
+        commands.expressions.ContainerIndex(
+          commands.expressions.ListLiteral(commands.expressions.ListLiteral(literal(1), literal(2))),
+          literal(0)
+        ),
+        literal(6)
+      )
 
     parsing("collection[1..2][0]") shouldGive
-      commands.expressions.ContainerIndex(commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(literal(1)), Some(literal(2))), literal(0))
+      commands.expressions.ContainerIndex(
+        commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(literal(1)), Some(literal(2))),
+        literal(0)
+      )
 
     parsing("collection[..-2]") shouldGive
       commands.expressions.ListSlice(commands.expressions.Variable("collection"), None, Some(literal(-2)))
@@ -123,16 +144,30 @@ class ExpressionsTest extends JavaccParserTestBase[internal.expressions.Expressi
 
   test("better_map_support") {
     parsing("map.key1.key2.key3") shouldGive
-      commands.expressions.Property(commands.expressions.Property(commands.expressions.Property(commands.expressions.Variable("map"), PropertyKey("key1")), PropertyKey("key2")), PropertyKey("key3"))
+      commands.expressions.Property(
+        commands.expressions.Property(
+          commands.expressions.Property(commands.expressions.Variable("map"), PropertyKey("key1")),
+          PropertyKey("key2")
+        ),
+        PropertyKey("key3")
+      )
 
     parsing("({ key: 'value' }).key") shouldGive
       commands.expressions.Property(commands.expressions.LiteralMap(Map("key" -> literal("value"))), PropertyKey("key"))
 
     parsing("({ inner1: { inner2: 'Value' } }).key") shouldGive
-      commands.expressions.Property(commands.expressions.LiteralMap(Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> literal("Value"))))), PropertyKey("key"))
+      commands.expressions.Property(
+        commands.expressions.LiteralMap(
+          Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> literal("Value"))))
+        ),
+        PropertyKey("key")
+      )
 
   }
 
-  private val converters = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
-  def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
+  private val converters =
+    new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+
+  def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =
+    converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

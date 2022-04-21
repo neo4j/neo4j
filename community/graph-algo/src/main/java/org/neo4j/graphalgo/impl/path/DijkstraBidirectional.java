@@ -19,8 +19,10 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import org.apache.commons.lang3.mutable.MutableDouble;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.internal.helpers.collection.Iterators.firstOrNull;
 
+import org.apache.commons.lang3.mutable.MutableDouble;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.PathFinder;
@@ -47,9 +49,6 @@ import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.internal.helpers.collection.Iterators.firstOrNull;
-
 /**
  * Find (one or all) simple shortest path(s) between two nodes.
  * Shortest referring to least cost evaluated by provided {@link CostEvaluator}.
@@ -59,8 +58,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.firstOrNull;
  * but in the reverse direction ( {@link org.neo4j.graphdb.Direction#reverse()} ) from the
  * end node. This doesn't affect {@link org.neo4j.graphdb.Direction#BOTH}.
  */
-public class DijkstraBidirectional implements PathFinder<WeightedPath>
-{
+public class DijkstraBidirectional implements PathFinder<WeightedPath> {
     private final EvaluationContext context;
     private final PathExpander<Double> expander;
     private final InitialBranchState<Double> stateFactory;
@@ -76,8 +74,11 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
      *                          relationship
      * @param epsilon           The tolerance level to be used when comparing floating point numbers.
      */
-    public DijkstraBidirectional( EvaluationContext context, PathExpander<Double> expander, CostEvaluator<Double> costEvaluator, double epsilon )
-    {
+    public DijkstraBidirectional(
+            EvaluationContext context,
+            PathExpander<Double> expander,
+            CostEvaluator<Double> costEvaluator,
+            double epsilon) {
         this.context = context;
         this.expander = expander;
         this.costEvaluator = costEvaluator;
@@ -86,56 +87,53 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     }
 
     @Override
-    public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
-    {
-        final Traverser traverser = traverser( start, end, PathInterestFactory.allShortest( epsilon ) );
-        return () -> new TopFetchingWeightedPathIterator( traverser.iterator(), costEvaluator, epsilon );
+    public Iterable<WeightedPath> findAllPaths(Node start, final Node end) {
+        final Traverser traverser = traverser(start, end, PathInterestFactory.allShortest(epsilon));
+        return () -> new TopFetchingWeightedPathIterator(traverser.iterator(), costEvaluator, epsilon);
     }
 
-    private Traverser traverser( Node start, final Node end, PathInterest<Double> interest )
-    {
-        final MutableDouble shortestSoFar = new MutableDouble( Double.MAX_VALUE );
-        final MutableDouble startSideShortest = new MutableDouble( 0 );
-        final MutableDouble endSideShortest = new MutableDouble( 0 );
-        PathExpander<Double> dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
-                startSideShortest, endSideShortest, epsilon );
+    private Traverser traverser(Node start, final Node end, PathInterest<Double> interest) {
+        final MutableDouble shortestSoFar = new MutableDouble(Double.MAX_VALUE);
+        final MutableDouble startSideShortest = new MutableDouble(0);
+        final MutableDouble endSideShortest = new MutableDouble(0);
+        PathExpander<Double> dijkstraExpander = new DijkstraBidirectionalPathExpander(
+                expander, shortestSoFar, true, startSideShortest, endSideShortest, epsilon);
 
         var transaction = context.transaction();
-        TraversalDescription side = transaction.traversalDescription().expand( dijkstraExpander, stateFactory )
-                .order( new DijkstraSelectorFactory( interest, costEvaluator ) )
-                .evaluator( new DijkstraBidirectionalEvaluator( costEvaluator ) )
-                .uniqueness( Uniqueness.NODE_PATH );
+        TraversalDescription side = transaction
+                .traversalDescription()
+                .expand(dijkstraExpander, stateFactory)
+                .order(new DijkstraSelectorFactory(interest, costEvaluator))
+                .evaluator(new DijkstraBidirectionalEvaluator(costEvaluator))
+                .uniqueness(Uniqueness.NODE_PATH);
 
         TraversalDescription startSide = side;
         TraversalDescription endSide = side.reverse();
 
-        BidirectionalTraversalDescription traversal = transaction.bidirectionalTraversalDescription()
-                .startSide( startSide )
-                .endSide( endSide )
-                .collisionEvaluator( Evaluators.all() )
-                .collisionPolicy( ( evaluator, pathPredicate ) ->
-                        new DijkstraBranchCollisionDetector( evaluator, costEvaluator, shortestSoFar, epsilon,
-                                pathPredicate ) );
+        BidirectionalTraversalDescription traversal = transaction
+                .bidirectionalTraversalDescription()
+                .startSide(startSide)
+                .endSide(endSide)
+                .collisionEvaluator(Evaluators.all())
+                .collisionPolicy((evaluator, pathPredicate) -> new DijkstraBranchCollisionDetector(
+                        evaluator, costEvaluator, shortestSoFar, epsilon, pathPredicate));
 
-        lastTraverser = traversal.traverse( start, end );
+        lastTraverser = traversal.traverse(start, end);
         return lastTraverser;
     }
 
     @Override
-    public WeightedPath findSinglePath( Node start, Node end )
-    {
-        return firstOrNull( new TopFetchingWeightedPathIterator(
-                traverser( start, end, PathInterestFactory.single( epsilon ) ).iterator(), costEvaluator, epsilon ) );
+    public WeightedPath findSinglePath(Node start, Node end) {
+        return firstOrNull(new TopFetchingWeightedPathIterator(
+                traverser(start, end, PathInterestFactory.single(epsilon)).iterator(), costEvaluator, epsilon));
     }
 
     @Override
-    public TraversalMetadata metadata()
-    {
+    public TraversalMetadata metadata() {
         return lastTraverser.metadata();
     }
 
-    private static class DijkstraBidirectionalPathExpander implements PathExpander<Double>
-    {
+    private static class DijkstraBidirectionalPathExpander implements PathExpander<Double> {
         private final PathExpander<Double> source;
         private final MutableDouble shortestSoFar;
         private final MutableDouble otherSideShortest;
@@ -143,10 +141,13 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         private final MutableDouble thisSideShortest;
         private final boolean stopAfterLowestCost;
 
-        DijkstraBidirectionalPathExpander( PathExpander<Double> source, MutableDouble shortestSoFar,
-                boolean stopAfterLowestCost, MutableDouble thisSideShortest, MutableDouble otherSideShortest,
-                double epsilon )
-        {
+        DijkstraBidirectionalPathExpander(
+                PathExpander<Double> source,
+                MutableDouble shortestSoFar,
+                boolean stopAfterLowestCost,
+                MutableDouble thisSideShortest,
+                MutableDouble otherSideShortest,
+                double epsilon) {
             this.source = source;
             this.shortestSoFar = shortestSoFar;
             this.stopAfterLowestCost = stopAfterLowestCost;
@@ -156,42 +157,36 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         }
 
         @Override
-        public Iterable<Relationship> expand( Path path, BranchState<Double> state )
-        {
+        public Iterable<Relationship> expand(Path path, BranchState<Double> state) {
             double thisState = state.getState();
-            thisSideShortest.setValue( thisState );
-            if ( MathUtil.compare( thisState + otherSideShortest.doubleValue(), shortestSoFar.doubleValue(), epsilon ) > 0 && stopAfterLowestCost )
-            {
+            thisSideShortest.setValue(thisState);
+            if (MathUtil.compare(thisState + otherSideShortest.doubleValue(), shortestSoFar.doubleValue(), epsilon) > 0
+                    && stopAfterLowestCost) {
                 return Iterables.emptyResourceIterable();
             }
-            return source.expand( path, state );
+            return source.expand(path, state);
         }
 
         @Override
-        public PathExpander<Double> reverse()
-        {
-            return new DijkstraBidirectionalPathExpander( source.reverse(), shortestSoFar, stopAfterLowestCost,
-                    otherSideShortest, thisSideShortest, epsilon );
+        public PathExpander<Double> reverse() {
+            return new DijkstraBidirectionalPathExpander(
+                    source.reverse(), shortestSoFar, stopAfterLowestCost, otherSideShortest, thisSideShortest, epsilon);
         }
     }
 
-    private static class DijkstraBidirectionalEvaluator extends PathEvaluator.Adapter<Double>
-    {
+    private static class DijkstraBidirectionalEvaluator extends PathEvaluator.Adapter<Double> {
         private final CostEvaluator<Double> costEvaluator;
 
-        DijkstraBidirectionalEvaluator( CostEvaluator<Double> costEvaluator )
-        {
+        DijkstraBidirectionalEvaluator(CostEvaluator<Double> costEvaluator) {
             this.costEvaluator = costEvaluator;
         }
 
         @Override
-        public Evaluation evaluate( Path path, BranchState<Double> state )
-        {
+        public Evaluation evaluate(Path path, BranchState<Double> state) {
             double nextState = state.getState();
-            if ( path.length() > 0 )
-            {
-                nextState += costEvaluator.getCost( path.lastRelationship(), OUTGOING );
-                state.setState( nextState );
+            if (path.length() > 0) {
+                nextState += costEvaluator.getCost(path.lastRelationship(), OUTGOING);
+                state.setState(nextState);
             }
             return Evaluation.EXCLUDE_AND_CONTINUE;
         }

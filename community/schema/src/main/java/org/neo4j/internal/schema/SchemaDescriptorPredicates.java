@@ -19,71 +19,57 @@
  */
 package org.neo4j.internal.schema;
 
-import java.util.function.Predicate;
-import java.util.stream.LongStream;
-
-import org.neo4j.common.EntityType;
-
 import static org.apache.commons.lang3.ArrayUtils.contains;
 
-public class SchemaDescriptorPredicates
-{
-    private SchemaDescriptorPredicates()
-    {
-    }
+import java.util.function.Predicate;
+import java.util.stream.LongStream;
+import org.neo4j.common.EntityType;
 
-    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasLabel( int labelId )
-    {
-        return supplier ->
-        {
+public class SchemaDescriptorPredicates {
+    private SchemaDescriptorPredicates() {}
+
+    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasLabel(int labelId) {
+        return supplier -> {
             SchemaDescriptor schema = supplier.schema();
-            return schema.entityType() == EntityType.NODE && contains( schema.getEntityTokenIds(), labelId );
+            return schema.entityType() == EntityType.NODE && contains(schema.getEntityTokenIds(), labelId);
         };
     }
 
-    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasEntityToken( long[] entityTokens, EntityType entityType )
-    {
-        return supplier ->
-        {
+    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasEntityToken(
+            long[] entityTokens, EntityType entityType) {
+        return supplier -> {
             SchemaDescriptor schema = supplier.schema();
-            return schema.entityType() == entityType && LongStream.of( entityTokens )
-                    .anyMatch( entityToken -> contains( schema.getEntityTokenIds(), (int) entityToken ) );
+            return schema.entityType() == entityType
+                    && LongStream.of(entityTokens)
+                            .anyMatch(entityToken -> contains(schema.getEntityTokenIds(), (int) entityToken));
         };
     }
 
-    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasRelType( int relTypeId )
-    {
-        return supplier ->
-        {
+    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasRelType(int relTypeId) {
+        return supplier -> {
             SchemaDescriptor schema = supplier.schema();
-            return schema.entityType() == EntityType.RELATIONSHIP && contains( schema.getEntityTokenIds(), relTypeId );
+            return schema.entityType() == EntityType.RELATIONSHIP && contains(schema.getEntityTokenIds(), relTypeId);
         };
     }
 
-    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasProperty( int propertyId )
-    {
-        return supplier -> hasProperty( supplier, propertyId );
+    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasProperty(int propertyId) {
+        return supplier -> hasProperty(supplier, propertyId);
     }
 
-    public static boolean hasLabel( SchemaDescriptorSupplier supplier, int labelId )
-    {
+    public static boolean hasLabel(SchemaDescriptorSupplier supplier, int labelId) {
         SchemaDescriptor schema = supplier.schema();
-        return schema.entityType() == EntityType.NODE && contains( schema.getEntityTokenIds(), labelId );
+        return schema.entityType() == EntityType.NODE && contains(schema.getEntityTokenIds(), labelId);
     }
 
-    public static boolean hasRelType( SchemaDescriptorSupplier supplier, int relTypeId )
-    {
+    public static boolean hasRelType(SchemaDescriptorSupplier supplier, int relTypeId) {
         SchemaDescriptor schema = supplier.schema();
-        return schema.entityType() == EntityType.RELATIONSHIP && contains( schema.getEntityTokenIds(), relTypeId );
+        return schema.entityType() == EntityType.RELATIONSHIP && contains(schema.getEntityTokenIds(), relTypeId);
     }
 
-    public static boolean hasProperty( SchemaDescriptorSupplier supplier, int propertyId )
-    {
+    public static boolean hasProperty(SchemaDescriptorSupplier supplier, int propertyId) {
         int[] schemaProperties = supplier.schema().getPropertyIds();
-        for ( int schemaProp : schemaProperties )
-        {
-            if ( schemaProp == propertyId )
-            {
+        for (int schemaProp : schemaProperties) {
+            if (schemaProp == propertyId) {
                 return true;
             }
         }

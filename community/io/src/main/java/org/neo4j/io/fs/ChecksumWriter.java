@@ -24,8 +24,7 @@ import java.util.function.Supplier;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
 
-public interface ChecksumWriter
-{
+public interface ChecksumWriter {
     /**
      * Even though the {@link Checksum#getValue()} returns a long, this is currently casted down to an integer.
      */

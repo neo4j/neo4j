@@ -19,26 +19,22 @@
  */
 package org.neo4j.dbms.systemgraph.versions;
 
-import org.neo4j.graphdb.Transaction;
-
 import static org.neo4j.dbms.systemgraph.CommunityTopologyGraphVersion.COMMUNITY_TOPOLOGY_UNKNOWN_VERSION;
 
-public class NoCommunityTopologyComponentVersion extends KnownCommunityTopologyComponentVersion
-{
-    public NoCommunityTopologyComponentVersion()
-    {
-        super( COMMUNITY_TOPOLOGY_UNKNOWN_VERSION );
+import org.neo4j.graphdb.Transaction;
+
+public class NoCommunityTopologyComponentVersion extends KnownCommunityTopologyComponentVersion {
+    public NoCommunityTopologyComponentVersion() {
+        super(COMMUNITY_TOPOLOGY_UNKNOWN_VERSION);
     }
 
     @Override
-    public void initializeTopologyGraph( Transaction tx )
-    {
+    public void initializeTopologyGraph(Transaction tx) {
         throw unsupported();
     }
 
     @Override
-    public void upgradeTopologyGraph( Transaction tx, int fromVersion ) throws Exception
-    {
+    public void upgradeTopologyGraph(Transaction tx, int fromVersion) throws Exception {
         throw unsupported();
     }
 }

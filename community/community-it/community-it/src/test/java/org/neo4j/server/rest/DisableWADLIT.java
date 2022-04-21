@@ -19,30 +19,25 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import java.net.http.HttpRequest;
-
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DisableWADLIT extends AbstractRestFunctionalTestBase
-{
+import java.net.URI;
+import java.net.http.HttpRequest;
+import org.junit.jupiter.api.Test;
+
+public class DisableWADLIT extends AbstractRestFunctionalTestBase {
     @Test
-    public void should404OnAnyUriEndingInWADL() throws Exception
-    {
-        var nodeUri = new URI( container().getBaseUri() + "db/data/application.wadl" );
+    public void should404OnAnyUriEndingInWADL() throws Exception {
+        var nodeUri = new URI(container().getBaseUri() + "db/data/application.wadl");
 
-        var request = HttpRequest.newBuilder( nodeUri )
-                .GET()
-                .header( "Accept", "*/*" )
-                .build();
+        var request =
+                HttpRequest.newBuilder(nodeUri).GET().header("Accept", "*/*").build();
 
-        var response = newHttpClient().send( request, discarding() );
+        var response = newHttpClient().send(request, discarding());
 
-        assertEquals( NOT_FOUND_404, response.statusCode() );
+        assertEquals(NOT_FOUND_404, response.statusCode());
     }
 }

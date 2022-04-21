@@ -19,20 +19,21 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class CaseExpression(
-                           expression: Option[Expression],
-                           alternatives: IndexedSeq[(Expression, Expression)],
-                           default: Option[Expression]
-                         )(val position: InputPosition) extends Expression {
+  expression: Option[Expression],
+  alternatives: IndexedSeq[(Expression, Expression)],
+  default: Option[Expression]
+)(val position: InputPosition) extends Expression {
 
   lazy val possibleExpressions: IndexedSeq[Expression] = alternatives.map(_._2) ++ default
 
 }
 
 object CaseExpression {
+
   def apply(
-             expression: Option[Expression],
-             alternatives: List[(Expression, Expression)],
-             default: Option[Expression]
-           )(position: InputPosition):CaseExpression =
+    expression: Option[Expression],
+    alternatives: List[(Expression, Expression)],
+    default: Option[Expression]
+  )(position: InputPosition): CaseExpression =
     CaseExpression(expression, alternatives.toIndexedSeq, default)(position)
 }

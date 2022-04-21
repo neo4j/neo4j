@@ -19,21 +19,18 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.Test;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
-import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-
-class TestMultipleStartNodes extends TraversalTestBase
-{
+class TestMultipleStartNodes extends TraversalTestBase {
     @Test
-    void myFriendsAsWellAsYourFriends()
-    {
+    void myFriendsAsWellAsYourFriends() {
         /*
          * Hey, this looks like a futuristic gun or something
          *
@@ -44,25 +41,35 @@ class TestMultipleStartNodes extends TraversalTestBase
          *         (f4)    (f3)
          */
 
-        createGraph( "you KNOW me", "you KNOW f1", "you KNOW f4", "me KNOW f1",
-                "me KNOW f4", "me KNOW f2", "me KNOW f3", "f1 KNOW f5", "f2 KNOW f6",
-                "you KNOW f7", "f7 KNOW f8" );
+        createGraph(
+                "you KNOW me",
+                "you KNOW f1",
+                "you KNOW f4",
+                "me KNOW f1",
+                "me KNOW f4",
+                "me KNOW f2",
+                "me KNOW f3",
+                "f1 KNOW f5",
+                "f2 KNOW f6",
+                "you KNOW f7",
+                "f7 KNOW f8");
 
-        try ( Transaction tx = beginTx() )
-        {
-            RelationshipType knowRelType = withName( "KNOW" );
-            Node you = getNodeWithName( tx, "you" );
-            Node me = getNodeWithName( tx, "me" );
+        try (Transaction tx = beginTx()) {
+            RelationshipType knowRelType = withName("KNOW");
+            Node you = getNodeWithName(tx, "you");
+            Node me = getNodeWithName(tx, "me");
 
             String[] levelOneFriends = {"f1", "f2", "f3", "f4", "f7"};
-            TraversalDescription levelOneTraversal = tx.traversalDescription().relationships( knowRelType ).evaluator( atDepth( 1 ) );
-            expectNodes( levelOneTraversal.depthFirst().traverse( you, me ), levelOneFriends );
-            expectNodes( levelOneTraversal.breadthFirst().traverse( you, me ), levelOneFriends );
+            TraversalDescription levelOneTraversal =
+                    tx.traversalDescription().relationships(knowRelType).evaluator(atDepth(1));
+            expectNodes(levelOneTraversal.depthFirst().traverse(you, me), levelOneFriends);
+            expectNodes(levelOneTraversal.breadthFirst().traverse(you, me), levelOneFriends);
 
             String[] levelTwoFriends = {"f5", "f6", "f8"};
-            TraversalDescription levelTwoTraversal = tx.traversalDescription().relationships( knowRelType ).evaluator( atDepth( 2 ) );
-            expectNodes( levelTwoTraversal.depthFirst().traverse( you, me ), levelTwoFriends );
-            expectNodes( levelTwoTraversal.breadthFirst().traverse( you, me ), levelTwoFriends );
+            TraversalDescription levelTwoTraversal =
+                    tx.traversalDescription().relationships(knowRelType).evaluator(atDepth(2));
+            expectNodes(levelTwoTraversal.depthFirst().traverse(you, me), levelTwoFriends);
+            expectNodes(levelTwoTraversal.breadthFirst().traverse(you, me), levelTwoFriends);
         }
     }
 }

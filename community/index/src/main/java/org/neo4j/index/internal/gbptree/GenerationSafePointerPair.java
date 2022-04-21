@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.io.pagecache.PageCursor;
-
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.EMPTY_GENERATION;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
@@ -28,6 +26,8 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointer.checksumOf;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readChecksum;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readGeneration;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readPointer;
+
+import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Two {@link GenerationSafePointer} forming the basis for a B+tree becoming generate-aware.
@@ -83,48 +83,46 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readPointer
  *    └───────────────────────────────────────────────── 0:{@link #FLAG_SLOT_A}/1:{@link #FLAG_SLOT_B}
  * </pre>
  */
-class GenerationSafePointerPair
-{
+class GenerationSafePointerPair {
     static final int SIZE = GenerationSafePointer.SIZE * 2;
     static final String GENERATION_COMPARISON_NAME_B_BIG = "A < B";
     static final String GENERATION_COMPARISON_NAME_A_BIG = "A > B";
     static final String GENERATION_COMPARISON_NAME_EQUAL = "A == B";
 
     // Pointer states
-    static final byte STABLE = 0;     // any previous generation made safe by a checkpoint
-    static final byte UNSTABLE = 1;   // current generation, generation under evolution until next checkpoint
-    static final byte CRASH = 2;      // pointer written as unstable and didn't make it to checkpoint before crashing
-    static final byte BROKEN = 3;     // mismatching checksum
-    static final byte EMPTY = 4;      // generation and pointer all zeros
+    static final byte STABLE = 0; // any previous generation made safe by a checkpoint
+    static final byte UNSTABLE = 1; // current generation, generation under evolution until next checkpoint
+    static final byte CRASH = 2; // pointer written as unstable and didn't make it to checkpoint before crashing
+    static final byte BROKEN = 3; // mismatching checksum
+    static final byte EMPTY = 4; // generation and pointer all zeros
 
     // Flags and failure information
-    static final long FLAG_SUCCESS     = 0x00000000_00000000L;
-    static final long FLAG_FAIL        = 0x80000000_00000000L;
-    static final long FLAG_READ        = 0x00000000_00000000L;
-    static final long FLAG_WRITE       = 0x40000000_00000000L;
+    static final long FLAG_SUCCESS = 0x00000000_00000000L;
+    static final long FLAG_FAIL = 0x80000000_00000000L;
+    static final long FLAG_READ = 0x00000000_00000000L;
+    static final long FLAG_WRITE = 0x40000000_00000000L;
     static final long FLAG_GENERATION_EQUAL = 0x00000000_00000000L;
     static final long FLAG_GENERATION_A_BIG = 0x08000000_00000000L;
     static final long FLAG_GENERATION_B_BIG = 0x10000000_00000000L;
-    static final long FLAG_SLOT_A      = 0x00000000_00000000L;
-    static final long FLAG_SLOT_B      = 0x20000000_00000000L;
-    static final int  SHIFT_STATE_A    = 56;
-    static final int  SHIFT_STATE_B    = 53;
+    static final long FLAG_SLOT_A = 0x00000000_00000000L;
+    static final long FLAG_SLOT_B = 0x20000000_00000000L;
+    static final int SHIFT_STATE_A = 56;
+    static final int SHIFT_STATE_B = 53;
 
     // Aggregations
     static final long SUCCESS_WRITE_TO_B = FLAG_SUCCESS | FLAG_WRITE | FLAG_SLOT_B;
     static final long SUCCESS_WRITE_TO_A = FLAG_SUCCESS | FLAG_WRITE | FLAG_SLOT_A;
 
     // Masks
-    static final long SUCCESS_MASK         = FLAG_SUCCESS | FLAG_FAIL;
-    static final long READ_OR_WRITE_MASK   = FLAG_READ | FLAG_WRITE;
-    static final long SLOT_MASK            = FLAG_SLOT_A | FLAG_SLOT_B;
-    static final long STATE_MASK           = 0x7; // After shift
-    static final long GENERATION_COMPARISON_MASK = FLAG_GENERATION_EQUAL | FLAG_GENERATION_A_BIG | FLAG_GENERATION_B_BIG;
-    static final long POINTER_MASK         = 0x0000FFFF_FFFFFFFFL;
+    static final long SUCCESS_MASK = FLAG_SUCCESS | FLAG_FAIL;
+    static final long READ_OR_WRITE_MASK = FLAG_READ | FLAG_WRITE;
+    static final long SLOT_MASK = FLAG_SLOT_A | FLAG_SLOT_B;
+    static final long STATE_MASK = 0x7; // After shift
+    static final long GENERATION_COMPARISON_MASK =
+            FLAG_GENERATION_EQUAL | FLAG_GENERATION_A_BIG | FLAG_GENERATION_B_BIG;
+    static final long POINTER_MASK = 0x0000FFFF_FFFFFFFFL;
 
-    private GenerationSafePointerPair()
-    {
-    }
+    private GenerationSafePointerPair() {}
 
     /**
      * Reads a GSPP, returning the read pointer or a failure. Check success/failure using {@link #isSuccess(long)}
@@ -136,68 +134,62 @@ class GenerationSafePointerPair
      * @param generationTarget target to write the generation of the selected pointer.
      * @return most recent readable pointer, or failure. Check result using {@link #isSuccess(long)}.
      */
-    public static long read( PageCursor cursor, long stableGeneration, long unstableGeneration, GBPTreeGenerationTarget generationTarget )
-    {
+    public static long read(
+            PageCursor cursor,
+            long stableGeneration,
+            long unstableGeneration,
+            GBPTreeGenerationTarget generationTarget) {
         // Try A
-        long generationA = readGeneration( cursor );
-        long pointerA = readPointer( cursor );
-        short readChecksumA = readChecksum( cursor );
-        short checksumA = checksumOf( generationA, pointerA );
+        long generationA = readGeneration(cursor);
+        long pointerA = readPointer(cursor);
+        short readChecksumA = readChecksum(cursor);
+        short checksumA = checksumOf(generationA, pointerA);
         boolean correctChecksumA = readChecksumA == checksumA;
 
         // Try B
-        long generationB = readGeneration( cursor );
-        long pointerB = readPointer( cursor );
-        short readChecksumB = readChecksum( cursor );
-        short checksumB = checksumOf( generationB, pointerB );
+        long generationB = readGeneration(cursor);
+        long pointerB = readPointer(cursor);
+        short readChecksumB = readChecksum(cursor);
+        short checksumB = checksumOf(generationB, pointerB);
         boolean correctChecksumB = readChecksumB == checksumB;
 
-        byte pointerStateA = pointerState( stableGeneration, unstableGeneration, generationA, pointerA, correctChecksumA );
-        byte pointerStateB = pointerState( stableGeneration, unstableGeneration, generationB, pointerB, correctChecksumB );
+        byte pointerStateA =
+                pointerState(stableGeneration, unstableGeneration, generationA, pointerA, correctChecksumA);
+        byte pointerStateB =
+                pointerState(stableGeneration, unstableGeneration, generationB, pointerB, correctChecksumB);
 
-        if ( pointerStateA == UNSTABLE )
-        {
-            if ( pointerStateB == STABLE || pointerStateB == EMPTY )
-            {
-                return buildSuccessfulReadResult( FLAG_SLOT_A, generationA, pointerA, generationTarget );
+        if (pointerStateA == UNSTABLE) {
+            if (pointerStateB == STABLE || pointerStateB == EMPTY) {
+                return buildSuccessfulReadResult(FLAG_SLOT_A, generationA, pointerA, generationTarget);
             }
-        }
-        else if ( pointerStateB == UNSTABLE )
-        {
-            if ( pointerStateA == STABLE || pointerStateA == EMPTY )
-            {
-                return buildSuccessfulReadResult( FLAG_SLOT_B, generationB, pointerB, generationTarget );
+        } else if (pointerStateB == UNSTABLE) {
+            if (pointerStateA == STABLE || pointerStateA == EMPTY) {
+                return buildSuccessfulReadResult(FLAG_SLOT_B, generationB, pointerB, generationTarget);
             }
-        }
-        else if ( pointerStateA == STABLE && pointerStateB == STABLE )
-        {
+        } else if (pointerStateA == STABLE && pointerStateB == STABLE) {
             // compare generation
-            if ( generationA > generationB )
-            {
-                return buildSuccessfulReadResult( FLAG_SLOT_A, generationA, pointerA, generationTarget );
+            if (generationA > generationB) {
+                return buildSuccessfulReadResult(FLAG_SLOT_A, generationA, pointerA, generationTarget);
+            } else if (generationB > generationA) {
+                return buildSuccessfulReadResult(FLAG_SLOT_B, generationB, pointerB, generationTarget);
             }
-            else if ( generationB > generationA )
-            {
-                return buildSuccessfulReadResult( FLAG_SLOT_B, generationB, pointerB, generationTarget );
-            }
-        }
-        else if ( pointerStateA == STABLE )
-        {
-            return buildSuccessfulReadResult( FLAG_SLOT_A, generationA, pointerA, generationTarget );
-        }
-        else if ( pointerStateB == STABLE )
-        {
-            return buildSuccessfulReadResult( FLAG_SLOT_B, generationB, pointerB, generationTarget );
+        } else if (pointerStateA == STABLE) {
+            return buildSuccessfulReadResult(FLAG_SLOT_A, generationA, pointerA, generationTarget);
+        } else if (pointerStateB == STABLE) {
+            return buildSuccessfulReadResult(FLAG_SLOT_B, generationB, pointerB, generationTarget);
         }
 
-        generationTarget.accept( EMPTY_GENERATION );
-        return FLAG_FAIL | FLAG_READ | generationState( generationA, generationB ) |
-               ((long) pointerStateA) << SHIFT_STATE_A | ((long) pointerStateB) << SHIFT_STATE_B;
+        generationTarget.accept(EMPTY_GENERATION);
+        return FLAG_FAIL
+                | FLAG_READ
+                | generationState(generationA, generationB)
+                | ((long) pointerStateA) << SHIFT_STATE_A
+                | ((long) pointerStateB) << SHIFT_STATE_B;
     }
 
-    private static long buildSuccessfulReadResult( long slot, long generation, long pointer, GBPTreeGenerationTarget generationTarget )
-    {
-        generationTarget.accept( generation );
+    private static long buildSuccessfulReadResult(
+            long slot, long generation, long pointer, GBPTreeGenerationTarget generationTarget) {
+        generationTarget.accept(generation);
         return FLAG_SUCCESS | FLAG_READ | slot | pointer;
     }
 
@@ -212,100 +204,85 @@ class GenerationSafePointerPair
      * @param unstableGeneration unstable index generation, which will be the generation to write in the slot.
      * @return {@code true} on success, otherwise {@code false} on failure.
      */
-    public static long write( PageCursor cursor, long pointer, long stableGeneration, long unstableGeneration )
-    {
+    public static long write(PageCursor cursor, long pointer, long stableGeneration, long unstableGeneration) {
         // Later there will be a selection which "slot" of GSP out of the two to write into.
         int offset = cursor.getOffset();
-        pointer = pointer( pointer );
+        pointer = pointer(pointer);
 
         // Try A
-        long generationA = readGeneration( cursor );
-        long pointerA = readPointer( cursor );
-        short readChecksumA = readChecksum( cursor );
-        short checksumA = checksumOf( generationA, pointerA );
+        long generationA = readGeneration(cursor);
+        long pointerA = readPointer(cursor);
+        short readChecksumA = readChecksum(cursor);
+        short checksumA = checksumOf(generationA, pointerA);
         boolean correctChecksumA = readChecksumA == checksumA;
 
         // Try B
-        long generationB = readGeneration( cursor );
-        long pointerB = readPointer( cursor );
-        short readChecksumB = readChecksum( cursor );
-        short checksumB = checksumOf( generationB, pointerB );
+        long generationB = readGeneration(cursor);
+        long pointerB = readPointer(cursor);
+        short readChecksumB = readChecksum(cursor);
+        short checksumB = checksumOf(generationB, pointerB);
         boolean correctChecksumB = readChecksumB == checksumB;
 
-        byte pointerStateA = pointerState( stableGeneration, unstableGeneration, generationA, pointerA, correctChecksumA );
-        byte pointerStateB = pointerState( stableGeneration, unstableGeneration, generationB, pointerB, correctChecksumB );
+        byte pointerStateA =
+                pointerState(stableGeneration, unstableGeneration, generationA, pointerA, correctChecksumA);
+        byte pointerStateB =
+                pointerState(stableGeneration, unstableGeneration, generationB, pointerB, correctChecksumB);
 
-        long writeResult = writeResult( pointerStateA, pointerStateB, generationA, generationB );
+        long writeResult = writeResult(pointerStateA, pointerStateB, generationA, generationB);
 
-        if ( isSuccess( writeResult ) )
-        {
-            boolean writeToA = ( writeResult & SLOT_MASK) == FLAG_SLOT_A;
+        if (isSuccess(writeResult)) {
+            boolean writeToA = (writeResult & SLOT_MASK) == FLAG_SLOT_A;
             int writeOffset = writeToA ? offset : offset + GenerationSafePointer.SIZE;
-            cursor.setOffset( writeOffset );
-            GenerationSafePointer.write( cursor, unstableGeneration, pointer );
+            cursor.setOffset(writeOffset);
+            GenerationSafePointer.write(cursor, unstableGeneration, pointer);
         }
         return writeResult;
     }
 
-    private static long writeResult( byte pointerStateA, byte pointerStateB, long generationA, long generationB )
-    {
-        if ( pointerStateA == STABLE )
-        {
-            if ( pointerStateB == STABLE )
-            {
-                if ( generationA > generationB )
-                {
+    private static long writeResult(byte pointerStateA, byte pointerStateB, long generationA, long generationB) {
+        if (pointerStateA == STABLE) {
+            if (pointerStateB == STABLE) {
+                if (generationA > generationB) {
                     // Write to slot B
                     return SUCCESS_WRITE_TO_B;
-                }
-                else if ( generationB > generationA )
-                {
+                } else if (generationB > generationA) {
                     // Write to slot A
                     return SUCCESS_WRITE_TO_A;
                 }
-            }
-            else
-            {
+            } else {
                 // Write to slot B
                 return SUCCESS_WRITE_TO_B;
             }
-        }
-        else if ( pointerStateB == STABLE )
-        {
+        } else if (pointerStateB == STABLE) {
             // write to slot A
             return SUCCESS_WRITE_TO_A;
-        }
-        else if ( pointerStateA == UNSTABLE )
-        {
-            if ( pointerStateB == EMPTY )
-            {
+        } else if (pointerStateA == UNSTABLE) {
+            if (pointerStateB == EMPTY) {
                 // write to slot A
                 return SUCCESS_WRITE_TO_A;
             }
-        }
-        else if ( pointerStateB == UNSTABLE )
-        {
-            if ( pointerStateA == EMPTY )
-            {
+        } else if (pointerStateB == UNSTABLE) {
+            if (pointerStateA == EMPTY) {
                 // write to slot B
                 return SUCCESS_WRITE_TO_B;
             }
-        }
-        else if ( pointerStateA == EMPTY && pointerStateB == EMPTY )
-        {
+        } else if (pointerStateA == EMPTY && pointerStateB == EMPTY) {
             // write to slot A
             return SUCCESS_WRITE_TO_A;
         }
 
         // Encode error
-        return FLAG_FAIL | FLAG_WRITE | generationState( generationA, generationB ) |
-               ((long) pointerStateA) << SHIFT_STATE_A | ((long) pointerStateB) << SHIFT_STATE_B;
+        return FLAG_FAIL
+                | FLAG_WRITE
+                | generationState(generationA, generationB)
+                | ((long) pointerStateA) << SHIFT_STATE_A
+                | ((long) pointerStateB) << SHIFT_STATE_B;
     }
 
-    private static long generationState( long generationA, long generationB )
-    {
-        return generationA > generationB ? FLAG_GENERATION_A_BIG : generationB > generationA ? FLAG_GENERATION_B_BIG
-                                                                                             : FLAG_GENERATION_EQUAL;
+    private static long generationState(long generationA, long generationB) {
+        return generationA > generationB
+                ? FLAG_GENERATION_A_BIG
+                : generationB > generationA ? FLAG_GENERATION_B_BIG : FLAG_GENERATION_EQUAL;
     }
 
     /**
@@ -325,27 +302,21 @@ class GenerationSafePointerPair
      * @param checksumIsCorrect whether or not GSP checksum matches checksum of {@code generation} and {@code pointer}.
      * @return one of the available pointer states.
      */
-    static byte pointerState( long stableGeneration, long unstableGeneration,
-            long generation, long pointer, boolean checksumIsCorrect )
-    {
-        if ( GenerationSafePointer.isEmpty( generation, pointer ) )
-        {
+    static byte pointerState(
+            long stableGeneration, long unstableGeneration, long generation, long pointer, boolean checksumIsCorrect) {
+        if (GenerationSafePointer.isEmpty(generation, pointer)) {
             return EMPTY;
         }
-        if ( !checksumIsCorrect )
-        {
+        if (!checksumIsCorrect) {
             return BROKEN;
         }
-        if ( generation < MIN_GENERATION )
-        {
+        if (generation < MIN_GENERATION) {
             return BROKEN;
         }
-        if ( generation <= stableGeneration )
-        {
+        if (generation <= stableGeneration) {
             return STABLE;
         }
-        if ( generation == unstableGeneration )
-        {
+        if (generation == unstableGeneration) {
             return UNSTABLE;
         }
         return CRASH;
@@ -358,8 +329,7 @@ class GenerationSafePointerPair
      * @param result result from {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)} or {@link #write(PageCursor, long, long, long)}.
      * @return {@code true} if successful read/write, otherwise {@code false}.
      */
-    static boolean isSuccess( long result )
-    {
+    static boolean isSuccess(long result) {
         return (result & SUCCESS_MASK) == FLAG_SUCCESS;
     }
 
@@ -368,8 +338,7 @@ class GenerationSafePointerPair
      * pointer as well as header information about the pointer.
      * @return the pointer-part of {@code readResult}.
      */
-    static long pointer( long readResult )
-    {
+    static long pointer(long readResult) {
         return readResult & POINTER_MASK;
     }
 
@@ -395,32 +364,54 @@ class GenerationSafePointerPair
      * @param offset The exact offset from which the gspp was read.
      * @return a human-friendly description of the failure.
      */
-    static String failureDescription( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration,
-            String gspStringA, String gspStringB, int offset )
-    {
-        return failureDescription( result, nodeId, pointerType, stableGeneration, unstableGeneration, gspStringA, gspStringB, Integer.toString( offset) );
+    static String failureDescription(
+            long result,
+            long nodeId,
+            String pointerType,
+            long stableGeneration,
+            long unstableGeneration,
+            String gspStringA,
+            String gspStringB,
+            int offset) {
+        return failureDescription(
+                result,
+                nodeId,
+                pointerType,
+                stableGeneration,
+                unstableGeneration,
+                gspStringA,
+                gspStringB,
+                Integer.toString(offset));
     }
 
     /**
      * Useful for when reading with read cursor.
      * See {@link #failureDescription(long, long, String, long, long, String, String, int)}
      */
-    static String failureDescription( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration )
-    {
-        return failureDescription( result, nodeId, pointerType, stableGeneration, unstableGeneration, "", "", "UNKNOWN" );
+    static String failureDescription(
+            long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration) {
+        return failureDescription(result, nodeId, pointerType, stableGeneration, unstableGeneration, "", "", "UNKNOWN");
     }
 
-    private static String failureDescription( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration, String gspStringA,
-            String gspStringB, String offsetString )
-    {
-        return "GSPP " + (isRead( result ) ? "READ" : "WRITE") + " failure" +
-                format( "%n  Pointer[type=%s, offset=%s, nodeId=%d]", pointerType, offsetString, nodeId ) +
-                format( "%n  Pointer state A: %s %s",
-                        pointerStateName( pointerStateFromResult( result, SHIFT_STATE_A ) ), gspStringA ) +
-                format( "%n  Pointer state B: %s %s",
-                        pointerStateName( pointerStateFromResult( result, SHIFT_STATE_B ) ), gspStringB ) +
-                format( "%n  stableGeneration=%d, unstableGeneration=%d", stableGeneration, unstableGeneration ) +
-                format( "%n  Generations: " + generationComparisonFromResult( result ) );
+    private static String failureDescription(
+            long result,
+            long nodeId,
+            String pointerType,
+            long stableGeneration,
+            long unstableGeneration,
+            String gspStringA,
+            String gspStringB,
+            String offsetString) {
+        return "GSPP " + (isRead(result) ? "READ" : "WRITE") + " failure"
+                + format("%n  Pointer[type=%s, offset=%s, nodeId=%d]", pointerType, offsetString, nodeId)
+                + format(
+                        "%n  Pointer state A: %s %s",
+                        pointerStateName(pointerStateFromResult(result, SHIFT_STATE_A)), gspStringA)
+                + format(
+                        "%n  Pointer state B: %s %s",
+                        pointerStateName(pointerStateFromResult(result, SHIFT_STATE_B)), gspStringB)
+                + format("%n  stableGeneration=%d, unstableGeneration=%d", stableGeneration, unstableGeneration)
+                + format("%n  Generations: " + generationComparisonFromResult(result));
     }
 
     /**
@@ -438,31 +429,37 @@ class GenerationSafePointerPair
      * @param offset The exact offset from which the gspp was read.
      * @return {@code true} if {@link #isSuccess(long) successful}, for interoperability with {@code assert}.
      */
-    static boolean assertSuccess( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration, PageCursor cursor, int offset )
-    {
-        if ( !isSuccess( result ) )
-        {
-            cursor.setOffset( offset );
+    static boolean assertSuccess(
+            long result,
+            long nodeId,
+            String pointerType,
+            long stableGeneration,
+            long unstableGeneration,
+            PageCursor cursor,
+            int offset) {
+        if (!isSuccess(result)) {
+            cursor.setOffset(offset);
 
             // Try A
-            long generationA = readGeneration( cursor );
-            long pointerA = readPointer( cursor );
-            short readChecksumA = readChecksum( cursor );
-            short checksumA = checksumOf( generationA, pointerA );
+            long generationA = readGeneration(cursor);
+            long pointerA = readPointer(cursor);
+            short readChecksumA = readChecksum(cursor);
+            short checksumA = checksumOf(generationA, pointerA);
             boolean correctChecksumA = readChecksumA == checksumA;
 
             // Try B
-            long generationB = readGeneration( cursor );
-            long pointerB = readPointer( cursor );
-            short readChecksumB = readChecksum( cursor );
-            short checksumB = checksumOf( generationB, pointerB );
+            long generationB = readGeneration(cursor);
+            long pointerB = readPointer(cursor);
+            short readChecksumB = readChecksum(cursor);
+            short checksumB = checksumOf(generationB, pointerB);
             boolean correctChecksumB = readChecksumB == checksumB;
 
-            String gspStringA = GenerationSafePointer.toString( generationA, pointerA, readChecksumA, correctChecksumA );
-            String gspStringB = GenerationSafePointer.toString( generationB, pointerB, readChecksumB, correctChecksumB );
+            String gspStringA = GenerationSafePointer.toString(generationA, pointerA, readChecksumA, correctChecksumA);
+            String gspStringB = GenerationSafePointer.toString(generationB, pointerB, readChecksumB, correctChecksumB);
 
-            String failureMessage = failureDescription( result, nodeId, pointerType, stableGeneration, unstableGeneration, gspStringA, gspStringB, offset );
-            throw new TreeInconsistencyException( failureMessage );
+            String failureMessage = failureDescription(
+                    result, nodeId, pointerType, stableGeneration, unstableGeneration, gspStringA, gspStringB, offset);
+            throw new TreeInconsistencyException(failureMessage);
         }
         return true;
     }
@@ -470,32 +467,24 @@ class GenerationSafePointerPair
     /**
      * See {@link #assertSuccess(long, long, String, long, long, PageCursor, int)}
      */
-    static boolean assertSuccess( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration )
-    {
-        if ( !isSuccess( result ) )
-        {
-            throw new TreeInconsistencyException( failureDescription( result, nodeId, pointerType, stableGeneration, unstableGeneration ) );
+    static boolean assertSuccess(
+            long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration) {
+        if (!isSuccess(result)) {
+            throw new TreeInconsistencyException(
+                    failureDescription(result, nodeId, pointerType, stableGeneration, unstableGeneration));
         }
         return true;
     }
 
-    private static String generationComparisonFromResult( long result )
-    {
+    private static String generationComparisonFromResult(long result) {
         long bits = result & GENERATION_COMPARISON_MASK;
-        if ( bits == FLAG_GENERATION_EQUAL )
-        {
+        if (bits == FLAG_GENERATION_EQUAL) {
             return GENERATION_COMPARISON_NAME_EQUAL;
-        }
-        else if ( bits == FLAG_GENERATION_A_BIG )
-        {
+        } else if (bits == FLAG_GENERATION_A_BIG) {
             return GENERATION_COMPARISON_NAME_A_BIG;
-        }
-        else if ( bits == FLAG_GENERATION_B_BIG )
-        {
+        } else if (bits == FLAG_GENERATION_B_BIG) {
             return GENERATION_COMPARISON_NAME_B_BIG;
-        }
-        else
-        {
+        } else {
             return "Unknown[" + bits + "]";
         }
     }
@@ -506,31 +495,32 @@ class GenerationSafePointerPair
      * @param pointerState pointer state to get name for.
      * @return name of {@code pointerState}.
      */
-    static String pointerStateName( byte pointerState )
-    {
-        switch ( pointerState )
-        {
-        case STABLE: return "STABLE";
-        case UNSTABLE: return "UNSTABLE";
-        case CRASH: return "CRASH";
-        case BROKEN: return "BROKEN";
-        case EMPTY: return "EMPTY";
-        default: return "Unknown[" + pointerState + "]";
+    static String pointerStateName(byte pointerState) {
+        switch (pointerState) {
+            case STABLE:
+                return "STABLE";
+            case UNSTABLE:
+                return "UNSTABLE";
+            case CRASH:
+                return "CRASH";
+            case BROKEN:
+                return "BROKEN";
+            case EMPTY:
+                return "EMPTY";
+            default:
+                return "Unknown[" + pointerState + "]";
         }
     }
 
-    static byte pointerStateFromResult( long result, int shift )
-    {
+    static byte pointerStateFromResult(long result, int shift) {
         return (byte) ((result >>> shift) & STATE_MASK);
     }
 
-    static boolean isRead( long result )
-    {
+    static boolean isRead(long result) {
         return (result & READ_OR_WRITE_MASK) == FLAG_READ;
     }
 
-    static boolean resultIsFromSlotA( long result )
-    {
+    static boolean resultIsFromSlotA(long result) {
         return (result & SLOT_MASK) == FLAG_SLOT_A;
     }
 }

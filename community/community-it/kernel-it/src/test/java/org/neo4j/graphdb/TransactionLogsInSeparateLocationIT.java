@@ -19,11 +19,16 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,66 +43,58 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-
 @TestDirectoryExtension
-class TransactionLogsInSeparateLocationIT
-{
+class TransactionLogsInSeparateLocationIT {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private FileSystemAbstraction fileSystem;
 
     @Test
-    void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException
-    {
-        Path txDirectory = testDirectory.directory( "transaction-logs" );
+    void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException {
+        Path txDirectory = testDirectory.directory("transaction-logs");
         Config config = Config.newBuilder()
-                .set( neo4j_home, testDirectory.homePath() )
-                .set( transaction_logs_root_path, txDirectory.toAbsolutePath() )
+                .set(neo4j_home, testDirectory.homePath())
+                .set(transaction_logs_root_path, txDirectory.toAbsolutePath())
                 .build();
-        DatabaseLayout layout = DatabaseLayout.of( config );
-        StorageEngineFactory storageEngineFactory = performTransactions( txDirectory.toAbsolutePath(), layout.databaseDirectory() );
-        verifyTransactionLogs( layout.getTransactionLogsDirectory(), layout.databaseDirectory(), storageEngineFactory );
+        DatabaseLayout layout = DatabaseLayout.of(config);
+        StorageEngineFactory storageEngineFactory =
+                performTransactions(txDirectory.toAbsolutePath(), layout.databaseDirectory());
+        verifyTransactionLogs(layout.getTransactionLogsDirectory(), layout.databaseDirectory(), storageEngineFactory);
     }
 
-    private static StorageEngineFactory performTransactions( Path txPath, Path storeDir )
-    {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( storeDir )
-                        .setConfig( transaction_logs_root_path, txPath )
-                        .build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        for ( int i = 0; i < 10; i++ )
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
+    private static StorageEngineFactory performTransactions(Path txPath, Path storeDir) {
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir)
+                .setConfig(transaction_logs_root_path, txPath)
+                .build();
+        GraphDatabaseService database = managementService.database(DEFAULT_DATABASE_NAME);
+        for (int i = 0; i < 10; i++) {
+            try (Transaction transaction = database.beginTx()) {
                 Node node = transaction.createNode();
-                node.setProperty( "a", "b" );
-                node.setProperty( "c", "d" );
+                node.setProperty("a", "b");
+                node.setProperty("c", "d");
                 transaction.commit();
             }
         }
-        StorageEngineFactory storageEngineFactory = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( StorageEngineFactory.class );
+        StorageEngineFactory storageEngineFactory =
+                ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(StorageEngineFactory.class);
         managementService.shutdown();
         return storageEngineFactory;
     }
 
-    private void verifyTransactionLogs( Path txDirectory, Path storeDir, StorageEngineFactory storageEngineFactory ) throws IOException
-    {
-        LogFiles storeDirLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fileSystem ).build();
-        assertFalse( storeDirLogs.getLogFile().versionExists( 0 ) );
+    private void verifyTransactionLogs(Path txDirectory, Path storeDir, StorageEngineFactory storageEngineFactory)
+            throws IOException {
+        LogFiles storeDirLogs =
+                LogFilesBuilder.logFilesBasedOnlyBuilder(storeDir, fileSystem).build();
+        assertFalse(storeDirLogs.getLogFile().versionExists(0));
 
-        LogFiles txDirectoryLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( txDirectory, fileSystem ).build();
-        assertTrue( txDirectoryLogs.getLogFile().versionExists( 0 ) );
-        try ( PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel = txDirectoryLogs.getLogFile().openForVersion( 0 ) )
-        {
-            assertThat( physicalLogVersionedStoreChannel.size() ).isGreaterThan( 0L );
+        LogFiles txDirectoryLogs = LogFilesBuilder.logFilesBasedOnlyBuilder(txDirectory, fileSystem)
+                .build();
+        assertTrue(txDirectoryLogs.getLogFile().versionExists(0));
+        try (PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel =
+                txDirectoryLogs.getLogFile().openForVersion(0)) {
+            assertThat(physicalLogVersionedStoreChannel.size()).isGreaterThan(0L);
         }
     }
 }

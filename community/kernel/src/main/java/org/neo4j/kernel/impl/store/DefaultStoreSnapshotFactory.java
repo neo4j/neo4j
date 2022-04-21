@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
@@ -34,36 +33,38 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreResource;
 import org.neo4j.storageengine.api.StoreSnapshot;
 
-public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
-{
+public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
     private final Database database;
     private final FileSystemAbstraction fs;
     private final InternalLog log;
 
-    public DefaultStoreSnapshotFactory( Database database, FileSystemAbstraction fs )
-    {
+    public DefaultStoreSnapshotFactory(Database database, FileSystemAbstraction fs) {
         this.database = database;
         this.fs = fs;
-        this.log = database.getInternalLogProvider().getLog( getClass() );
+        this.log = database.getInternalLogProvider().getLog(getClass());
     }
 
     @Override
-    public Optional<StoreSnapshot> createStoreSnapshot() throws IOException
-    {
-        if ( !database.getDatabaseAvailabilityGuard().isAvailable() )
-        {
-            log.warn("Unable to prepare a store snapshot because database '" + database.getNamedDatabaseId().name() + "' is unavailable");
+    public Optional<StoreSnapshot> createStoreSnapshot() throws IOException {
+        if (!database.getDatabaseAvailabilityGuard().isAvailable()) {
+            log.warn("Unable to prepare a store snapshot because database '"
+                    + database.getNamedDatabaseId().name() + "' is unavailable");
             return Optional.empty();
         }
 
-        var unrecoverableFiles = unrecoverableFiles( database );
-        var recoverableFiles = recoverableFiles( database );
+        var unrecoverableFiles = unrecoverableFiles(database);
+        var recoverableFiles = recoverableFiles(database);
 
-        var checkPointer = database.getDependencyResolver().resolveDependency( CheckPointer.class );
-        var checkpointMutex = tryCheckpointAndAcquireMutex( checkPointer );
+        var checkPointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
+        var checkpointMutex = tryCheckpointAndAcquireMutex(checkPointer);
         var lastCommittedTransactionId = checkPointer.lastCheckPointedTransactionId();
-        var snapshot = new StoreSnapshot( unrecoverableFiles, recoverableFiles, lastCommittedTransactionId, database.getStoreId(), checkpointMutex );
-        return Optional.of( snapshot );
+        var snapshot = new StoreSnapshot(
+                unrecoverableFiles,
+                recoverableFiles,
+                lastCommittedTransactionId,
+                database.getStoreId(),
+                checkpointMutex);
+        return Optional.of(snapshot);
     }
 
     /**
@@ -73,17 +74,19 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
      * We intentionally return an *un-closed* {@code Stream<StoreResource>}, which is then closed
      * as part of the wrapping StoreSnapshot when a caller is finished with it.
      */
-    private Stream<StoreResource> unrecoverableFiles( Database database ) throws IOException
-    {
+    private Stream<StoreResource> unrecoverableFiles(Database database) throws IOException {
         var databaseDirectory = database.getDatabaseLayout().databaseDirectory();
-        return database.getStoreFileListing().builder().excludeAll()
-                       .includeAtomicStorageFiles()
-                       .includeAdditionalProviders()
-                       .includeSchemaIndexStoreFiles()
-                       .includeIdFiles()
-                       .build()
-                       .stream()
-                       .map( metadata -> toStoreResource( databaseDirectory, metadata ) );
+        return database
+                .getStoreFileListing()
+                .builder()
+                .excludeAll()
+                .includeAtomicStorageFiles()
+                .includeAdditionalProviders()
+                .includeSchemaIndexStoreFiles()
+                .includeIdFiles()
+                .build()
+                .stream()
+                .map(metadata -> toStoreResource(databaseDirectory, metadata));
     }
 
     /**
@@ -93,12 +96,13 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
      * {@link StoreSnapshot}. Instead, a {@code Path[]} is returned, so that subsequent requests may fetch each
      * store file, regardless of what state they may be in.
      */
-    private Path[] recoverableFiles( Database database ) throws IOException
-    {
-        try ( var recoverableFiles = database.getStoreFileListing().builder()
-                                             .excludeAll().includeReplayableStorageFiles().build() )
-        {
-            return recoverableFiles.stream().map( StoreFileMetadata::path ).toArray( Path[]::new );
+    private Path[] recoverableFiles(Database database) throws IOException {
+        try (var recoverableFiles = database.getStoreFileListing()
+                .builder()
+                .excludeAll()
+                .includeReplayableStorageFiles()
+                .build()) {
+            return recoverableFiles.stream().map(StoreFileMetadata::path).toArray(Path[]::new);
         }
     }
 
@@ -106,15 +110,14 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
      * Before we return a store snapshot we perform a checkpoint and acquire a mutex to prevent other checkpoints from
      * occurring until we have streamed all the *unrecoverable* files.
      */
-    private Resource tryCheckpointAndAcquireMutex( CheckPointer checkPointer ) throws IOException
-    {
-        return database.getStoreCopyCheckPointMutex().storeCopy( () -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) ) );
+    private Resource tryCheckpointAndAcquireMutex(CheckPointer checkPointer) throws IOException {
+        return database.getStoreCopyCheckPointMutex()
+                .storeCopy(() -> checkPointer.tryCheckPoint(new SimpleTriggerInfo("Store copy")));
     }
 
-    private StoreResource toStoreResource( Path databaseDirectory, StoreFileMetadata storeFileMetadata )
-    {
+    private StoreResource toStoreResource(Path databaseDirectory, StoreFileMetadata storeFileMetadata) {
         var file = storeFileMetadata.path();
-        var relativePath = databaseDirectory.relativize( file ).toString();
-        return new StoreResource( file, relativePath, storeFileMetadata.recordSize(), fs );
+        var relativePath = databaseDirectory.relativize(file).toString();
+        return new StoreResource(file, relativePath, storeFileMetadata.recordSize(), fs);
     }
 }

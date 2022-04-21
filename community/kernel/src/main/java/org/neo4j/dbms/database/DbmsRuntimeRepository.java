@@ -19,44 +19,38 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-
-public abstract class DbmsRuntimeRepository
-{
+public abstract class DbmsRuntimeRepository {
     private final DatabaseManager<?> databaseManager;
     final DbmsRuntimeSystemGraphComponent component;
 
     private volatile DbmsRuntimeVersion currentVersion;
 
-    protected DbmsRuntimeRepository( DatabaseManager<?> databaseManager, DbmsRuntimeSystemGraphComponent component )
-    {
+    protected DbmsRuntimeRepository(DatabaseManager<?> databaseManager, DbmsRuntimeSystemGraphComponent component) {
         this.databaseManager = databaseManager;
         this.component = component;
     }
 
-    protected void fetchStateFromSystemDatabase()
-    {
+    protected void fetchStateFromSystemDatabase() {
         var systemDatabase = getSystemDb();
-        currentVersion = component.fetchStateFromSystemDatabase( systemDatabase );
+        currentVersion = component.fetchStateFromSystemDatabase(systemDatabase);
     }
 
-    protected GraphDatabaseService getSystemDb()
-    {
-        return databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
-                () -> new RuntimeException( "Failed to get System Database" ) ).databaseFacade();
+    protected GraphDatabaseService getSystemDb() {
+        return databaseManager
+                .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                .orElseThrow(() -> new RuntimeException("Failed to get System Database"))
+                .databaseFacade();
     }
 
-    public DbmsRuntimeVersion getVersion()
-    {
-        if ( currentVersion == null )
-        {
-            synchronized ( this )
-            {
-                if ( currentVersion == null )
-                {
+    public DbmsRuntimeVersion getVersion() {
+        if (currentVersion == null) {
+            synchronized (this) {
+                if (currentVersion == null) {
                     fetchStateFromSystemDatabase();
                 }
             }
@@ -69,8 +63,7 @@ public abstract class DbmsRuntimeRepository
      * This must be used only by children and tests!!!
      */
     @VisibleForTesting
-    public void setVersion( DbmsRuntimeVersion newVersion )
-    {
+    public void setVersion(DbmsRuntimeVersion newVersion) {
         currentVersion = newVersion;
     }
 }

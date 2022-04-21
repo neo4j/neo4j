@@ -54,7 +54,11 @@ object StatementConverters {
   /**
    * Convert an AST SingleQuery into an IR SinglePlannerQuery
    */
-  def toPlannerQuery(q: SingleQuery, semanticTable: SemanticTable, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): SinglePlannerQuery = {
+  def toPlannerQuery(
+    q: SingleQuery,
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): SinglePlannerQuery = {
     val importedVariables: Set[String] = q.importWith.map((wth: With) =>
       wth.returnItems.items.map(_.name).toSet
     ).getOrElse(Set.empty)
@@ -66,11 +70,16 @@ object StatementConverters {
   /**
    * Add all given clauses to a PlannerQueryBuilder and return the updated builder.
    */
-  def addClausesToPlannerQueryBuilder(clauses: Seq[Clause], builder: PlannerQueryBuilder, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
+  def addClausesToPlannerQueryBuilder(
+    clauses: Seq[Clause],
+    builder: PlannerQueryBuilder,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): PlannerQueryBuilder = {
     val flattenedClauses = flattenCreates(clauses)
     val slidingClauses = (flattenedClauses :+ null).sliding(2)
     slidingClauses.foldLeft(builder) {
-      case (acc, Seq(clause, nextClause)) if nextClause != null => addToLogicalPlanInput(acc, clause, Some(nextClause), anonymousVariableNameGenerator)
+      case (acc, Seq(clause, nextClause)) if nextClause != null =>
+        addToLogicalPlanInput(acc, clause, Some(nextClause), anonymousVariableNameGenerator)
       case (acc, Seq(clause, _*)) => addToLogicalPlanInput(acc, clause, None, anonymousVariableNameGenerator)
     }
   }
@@ -83,7 +92,6 @@ object StatementConverters {
     classOf[UnionDistinct]
   )
 
-
   private def findBlacklistedNodes(queryPart: QueryPart): Seq[ASTNode] = {
     queryPart.folder.treeFold(Seq.empty[ASTNode]) {
       case node: ASTNode if NODE_BLACKLIST.contains(node.getClass) =>
@@ -91,12 +99,20 @@ object StatementConverters {
     }
   }
 
-  def toPlannerQuery(query: Query, semanticTable: SemanticTable, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQuery = {
+  def toPlannerQuery(
+    query: Query,
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): PlannerQuery = {
     val plannerQueryPart = toPlannerQueryPart(query.part, semanticTable, anonymousVariableNameGenerator)
     PlannerQuery(plannerQueryPart)
   }
 
-  def toPlannerQueryPart(queryPart: QueryPart, semanticTable: SemanticTable, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryPart = {
+  def toPlannerQueryPart(
+    queryPart: QueryPart,
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): PlannerQueryPart = {
     val nodes = findBlacklistedNodes(queryPart)
     require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
 
@@ -109,7 +125,7 @@ object StatementConverters {
         val query: SinglePlannerQuery = toPlannerQuery(unionQuery.query, semanticTable, anonymousVariableNameGenerator)
 
         val distinct = unionQuery match {
-          case _: ProjectingUnionAll => false
+          case _: ProjectingUnionAll      => false
           case _: ProjectingUnionDistinct => true
         }
 

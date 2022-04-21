@@ -19,12 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CheckIndex;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
+import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,7 +30,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -49,8 +49,6 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.kernel.api.index.IndexReader;
 
-import static java.util.stream.Collectors.toList;
-
 /**
  * Abstract implementation of a partitioned index.
  * Such index may consist of one or multiple separate Lucene indexes that are represented as independent
@@ -60,11 +58,10 @@ import static java.util.stream.Collectors.toList;
  * @see WritableAbstractDatabaseIndex
  * @see ReadOnlyAbstractDatabaseIndex
  */
-public abstract class AbstractLuceneIndex<READER extends IndexReader>
-{
+public abstract class AbstractLuceneIndex<READER extends IndexReader> {
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
-    private static final Set<Map.Entry<String,String>> ONLINE_COMMIT_USER_DATA = Set.of( Map.entry( KEY_STATUS, ONLINE ) );
+    private static final Set<Map.Entry<String, String>> ONLINE_COMMIT_USER_DATA = Set.of(Map.entry(KEY_STATUS, ONLINE));
     protected final PartitionedIndexStorage indexStorage;
     protected final IndexDescriptor descriptor;
     private final IndexPartitionFactory partitionFactory;
@@ -76,8 +73,11 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
 
     private volatile boolean open;
 
-    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor, Config config )
-    {
+    public AbstractLuceneIndex(
+            PartitionedIndexStorage indexStorage,
+            IndexPartitionFactory partitionFactory,
+            IndexDescriptor descriptor,
+            Config config) {
         this.indexStorage = indexStorage;
         this.partitionFactory = partitionFactory;
         this.descriptor = descriptor;
@@ -93,10 +93,9 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      *
      * @throws IOException
      */
-    public void create() throws IOException
-    {
+    public void create() throws IOException {
         ensureNotOpen();
-        indexStorage.prepareFolder( indexStorage.getIndexFolder() );
+        indexStorage.prepareFolder(indexStorage.getIndexFolder());
         indexStorage.reserveIndexFailureStorage();
         createNewPartitionFolder();
     }
@@ -106,20 +105,18 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      *
      * @throws IOException
      */
-    public void open() throws IOException
-    {
-        Set<Map.Entry<Path,Directory>> indexDirectories = indexStorage.openIndexDirectories().entrySet();
-        List<AbstractIndexPartition> list = new ArrayList<>( indexDirectories.size() );
-        for ( Map.Entry<Path,Directory> entry : indexDirectories )
-        {
-            list.add( partitionFactory.createPartition( entry.getKey(), entry.getValue() ) );
+    public void open() throws IOException {
+        Set<Map.Entry<Path, Directory>> indexDirectories =
+                indexStorage.openIndexDirectories().entrySet();
+        List<AbstractIndexPartition> list = new ArrayList<>(indexDirectories.size());
+        for (Map.Entry<Path, Directory> entry : indexDirectories) {
+            list.add(partitionFactory.createPartition(entry.getKey(), entry.getValue()));
         }
-        partitions.addAll( list );
+        partitions.addAll(list);
         open = true;
     }
 
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return open;
     }
 
@@ -129,17 +126,13 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      * @return true if index exist in all partitions, false when index is empty or does not exist
      * @throws IOException
      */
-    public boolean exists() throws IOException
-    {
+    public boolean exists() throws IOException {
         List<Path> folders = indexStorage.listFolders();
-        if ( folders.isEmpty() )
-        {
+        if (folders.isEmpty()) {
             return false;
         }
-        for ( Path folder : folders )
-        {
-            if ( !luceneDirectoryExists( folder ) )
-            {
+        for (Path folder : folders) {
+            if (!luceneDirectoryExists(folder)) {
                 return false;
             }
         }
@@ -153,78 +146,59 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      *
      * @return true if lucene confirm that index is in valid clean state or index is already open.
      */
-    public boolean isValid()
-    {
-        if ( open )
-        {
+    public boolean isValid() {
+        if (open) {
             return true;
         }
         Collection<Directory> directories = null;
-        try
-        {
+        try {
             directories = indexStorage.openIndexDirectories().values();
-            for ( Directory directory : directories )
-            {
+            for (Directory directory : directories) {
                 // it is ok for index directory to be empty
                 // this can happen if it is opened and closed without any writes in between
-                if ( ArrayUtils.isNotEmpty( directory.listAll() ) )
-                {
-                    try ( CheckIndex checker = new CheckIndex( directory ) )
-                    {
+                if (ArrayUtils.isNotEmpty(directory.listAll())) {
+                    try (CheckIndex checker = new CheckIndex(directory)) {
                         CheckIndex.Status status = checker.checkIndex();
-                        if ( !status.clean )
-                        {
+                        if (!status.clean) {
                             return false;
                         }
                     }
                 }
             }
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             return false;
-        }
-        finally
-        {
-            if ( directories != null )
-            {
-                IOUtils.closeAllSilently( directories );
+        } finally {
+            if (directories != null) {
+                IOUtils.closeAllSilently(directories);
             }
         }
         return true;
     }
 
-    public LuceneIndexWriter getIndexWriter( WritableAbstractDatabaseIndex writableAbstractDatabaseIndex )
-    {
+    public LuceneIndexWriter getIndexWriter(WritableAbstractDatabaseIndex writableAbstractDatabaseIndex) {
         ensureOpen();
-        return new PartitionedIndexWriter( writableAbstractDatabaseIndex, config );
+        return new PartitionedIndexWriter(writableAbstractDatabaseIndex, config);
     }
 
-    public READER getIndexReader() throws IOException
-    {
+    public READER getIndexReader() throws IOException {
         ensureOpen();
         List<AbstractIndexPartition> partitions = getPartitions();
-        return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
+        return hasSinglePartition(partitions) ? createSimpleReader(partitions) : createPartitionedReader(partitions);
     }
 
-    public IndexDescriptor getDescriptor()
-    {
+    public IndexDescriptor getDescriptor() {
         return descriptor;
     }
 
     /**
      * Close index and deletes all it's partitions.
      */
-    public void drop()
-    {
-        try
-        {
+    public void drop() {
+        try {
             close();
-            indexStorage.cleanupFolder( indexStorage.getIndexFolder() );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+            indexStorage.cleanupFolder(indexStorage.getIndexFolder());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -234,24 +208,20 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      * @param merge also merge all segments together. This should be done before reading term frequencies.
      * @throws IOException on Lucene I/O error.
      */
-    public void flush( boolean merge ) throws IOException
-    {
+    public void flush(boolean merge) throws IOException {
         List<AbstractIndexPartition> partitions = getPartitions();
-        for ( AbstractIndexPartition partition : partitions )
-        {
+        for (AbstractIndexPartition partition : partitions) {
             IndexWriter writer = partition.getIndexWriter();
             writer.commit();
-            if ( merge )
-            {
-                writer.forceMerge( 1 );
+            if (merge) {
+                writer.forceMerge(1);
             }
         }
     }
 
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         open = false;
-        IOUtils.closeAll( partitions );
+        IOUtils.closeAll(partitions);
         partitions.clear();
     }
 
@@ -260,27 +230,22 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      *
      * @return LuceneAllDocumentsReader over all documents
      */
-    public LuceneAllDocumentsReader allDocumentsReader()
-    {
+    public LuceneAllDocumentsReader allDocumentsReader() {
         ensureOpen();
-        List<SearcherReference> searchers = new ArrayList<>( partitions.size() );
-        try
-        {
-            for ( AbstractIndexPartition partition : partitions )
-            {
-                searchers.add( partition.acquireSearcher() );
+        List<SearcherReference> searchers = new ArrayList<>(partitions.size());
+        try {
+            for (AbstractIndexPartition partition : partitions) {
+                searchers.add(partition.acquireSearcher());
             }
 
             List<LucenePartitionAllDocumentsReader> partitionReaders = searchers.stream()
-                    .map( LucenePartitionAllDocumentsReader::new )
-                    .collect( toList() );
+                    .map(LucenePartitionAllDocumentsReader::new)
+                    .collect(toList());
 
-            return new LuceneAllDocumentsReader( partitionReaders );
-        }
-        catch ( IOException e )
-        {
-            IOUtils.closeAllSilently( searchers );
-            throw new UncheckedIOException( e );
+            return new LuceneAllDocumentsReader(partitionReaders);
+        } catch (IOException e) {
+            IOUtils.closeAllSilently(searchers);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -291,31 +256,22 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      * @throws IOException
      * @see WritableIndexSnapshotFileIterator
      */
-    public ResourceIterator<Path> snapshot() throws IOException
-    {
+    public ResourceIterator<Path> snapshot() throws IOException {
         ensureOpen();
         List<ResourceIterator<Path>> snapshotIterators = null;
-        try
-        {
+        try {
             List<AbstractIndexPartition> partitions = getPartitions();
-            snapshotIterators = new ArrayList<>( partitions.size() );
-            for ( AbstractIndexPartition partition : partitions )
-            {
-                snapshotIterators.add( partition.snapshot() );
+            snapshotIterators = new ArrayList<>(partitions.size());
+            for (AbstractIndexPartition partition : partitions) {
+                snapshotIterators.add(partition.snapshot());
             }
-            return Iterators.concatResourceIterators( snapshotIterators.iterator() );
-        }
-        catch ( Exception e )
-        {
-            if ( snapshotIterators != null )
-            {
-                try
-                {
-                    IOUtils.closeAll( snapshotIterators );
-                }
-                catch ( IOException ex )
-                {
-                    e.addSuppressed( ex );
+            return Iterators.concatResourceIterators(snapshotIterators.iterator());
+        } catch (Exception e) {
+            if (snapshotIterators != null) {
+                try {
+                    IOUtils.closeAll(snapshotIterators);
+                } catch (IOException ex) {
+                    e.addSuppressed(ex);
                 }
             }
             throw e;
@@ -327,44 +283,33 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      *
      * @throws IOException
      */
-    public void maybeRefreshBlocking() throws IOException
-    {
-        try
-        {
-            getPartitions().parallelStream().forEach( AbstractLuceneIndex::maybeRefreshPartition );
-        }
-        catch ( UncheckedIOException e )
-        {
+    public void maybeRefreshBlocking() throws IOException {
+        try {
+            getPartitions().parallelStream().forEach(AbstractLuceneIndex::maybeRefreshPartition);
+        } catch (UncheckedIOException e) {
             throw e.getCause();
         }
     }
 
-    private static void maybeRefreshPartition( AbstractIndexPartition partition )
-    {
-        try
-        {
+    private static void maybeRefreshPartition(AbstractIndexPartition partition) {
+        try {
             partition.maybeRefreshBlocking();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    public List<AbstractIndexPartition> getPartitions()
-    {
+    public List<AbstractIndexPartition> getPartitions() {
         ensureOpen();
         return partitions;
     }
 
-    public static boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
-    {
+    public static boolean hasSinglePartition(List<AbstractIndexPartition> partitions) {
         return partitions.size() == 1;
     }
 
-    public static AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
-    {
-        return partitions.get( 0 );
+    public static AbstractIndexPartition getFirstPartition(List<AbstractIndexPartition> partitions) {
+        return partitions.get(0);
     }
 
     /**
@@ -373,63 +318,51 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      * @return newly created partition
      * @throws IOException
      */
-    AbstractIndexPartition addNewPartition() throws IOException
-    {
+    AbstractIndexPartition addNewPartition() throws IOException {
         ensureOpen();
         Path partitionFolder = createNewPartitionFolder();
-        Directory directory = indexStorage.openDirectory( partitionFolder );
-        AbstractIndexPartition indexPartition = partitionFactory.createPartition( partitionFolder, directory );
-        partitions.add( indexPartition );
+        Directory directory = indexStorage.openDirectory(partitionFolder);
+        AbstractIndexPartition indexPartition = partitionFactory.createPartition(partitionFolder, directory);
+        partitions.add(indexPartition);
         return indexPartition;
     }
 
-    protected void ensureOpen()
-    {
-        if ( !open )
-        {
-            throw new IllegalStateException( "Please open lucene index before working with it." );
+    protected void ensureOpen() {
+        if (!open) {
+            throw new IllegalStateException("Please open lucene index before working with it.");
         }
     }
 
-    protected void ensureNotOpen()
-    {
-        if ( open )
-        {
-            throw new IllegalStateException( "Lucene index should not be open to be able to perform required " +
-                                             "operation." );
+    protected void ensureNotOpen() {
+        if (open) {
+            throw new IllegalStateException(
+                    "Lucene index should not be open to be able to perform required " + "operation.");
         }
     }
 
-    protected static List<SearcherReference> acquireSearchers( List<AbstractIndexPartition> partitions ) throws IOException
-    {
-        List<SearcherReference> searchers = new ArrayList<>( partitions.size() );
-        try
-        {
-            for ( AbstractIndexPartition partition : partitions )
-            {
-                searchers.add( partition.acquireSearcher() );
+    protected static List<SearcherReference> acquireSearchers(List<AbstractIndexPartition> partitions)
+            throws IOException {
+        List<SearcherReference> searchers = new ArrayList<>(partitions.size());
+        try {
+            for (AbstractIndexPartition partition : partitions) {
+                searchers.add(partition.acquireSearcher());
             }
             return searchers;
-        }
-        catch ( IOException e )
-        {
-            IOUtils.closeAllSilently( searchers );
+        } catch (IOException e) {
+            IOUtils.closeAllSilently(searchers);
             throw e;
         }
     }
 
-    private boolean luceneDirectoryExists( Path folder ) throws IOException
-    {
-        try ( Directory directory = indexStorage.openDirectory( folder ) )
-        {
-            return DirectoryReader.indexExists( directory );
+    private boolean luceneDirectoryExists(Path folder) throws IOException {
+        try (Directory directory = indexStorage.openDirectory(folder)) {
+            return DirectoryReader.indexExists(directory);
         }
     }
 
-    private Path createNewPartitionFolder() throws IOException
-    {
-        Path partitionFolder = indexStorage.getPartitionFolder( partitions.size() + 1 );
-        indexStorage.prepareFolder( partitionFolder );
+    private Path createNewPartitionFolder() throws IOException {
+        Path partitionFolder = indexStorage.getPartitionFolder(partitions.size() + 1);
+        indexStorage.prepareFolder(partitionFolder);
         return partitionFolder;
     }
 
@@ -439,15 +372,13 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      * @return <code>true</code> if index is online, <code>false</code> otherwise
      * @throws IOException
      */
-    public boolean isOnline() throws IOException
-    {
+    public boolean isOnline() throws IOException {
         ensureOpen();
-        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
+        AbstractIndexPartition partition = getFirstPartition(getPartitions());
         Directory directory = partition.getDirectory();
-        try ( DirectoryReader reader = DirectoryReader.open( directory ) )
-        {
-            Map<String,String> userData = reader.getIndexCommit().getUserData();
-            return ONLINE.equals( userData.get( KEY_STATUS ) );
+        try (DirectoryReader reader = DirectoryReader.open(directory)) {
+            Map<String, String> userData = reader.getIndexCommit().getUserData();
+            return ONLINE.equals(userData.get(KEY_STATUS));
         }
     }
 
@@ -456,13 +387,12 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      *
      * @throws IOException
      */
-    public void markAsOnline() throws IOException
-    {
+    public void markAsOnline() throws IOException {
         ensureOpen();
-        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
+        AbstractIndexPartition partition = getFirstPartition(getPartitions());
         IndexWriter indexWriter = partition.getIndexWriter();
-        indexWriter.setLiveCommitData( ONLINE_COMMIT_USER_DATA );
-        flush( false );
+        indexWriter.setLiveCommitData(ONLINE_COMMIT_USER_DATA);
+        flush(false);
     }
 
     /**
@@ -471,12 +401,11 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      * @param failure the failure message.
      * @throws IOException
      */
-    public void markAsFailed( String failure ) throws IOException
-    {
-        indexStorage.storeIndexFailure( failure );
+    public void markAsFailed(String failure) throws IOException {
+        indexStorage.storeIndexFailure(failure);
     }
 
-    protected abstract READER createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException;
+    protected abstract READER createSimpleReader(List<AbstractIndexPartition> partitions) throws IOException;
 
-    protected abstract READER createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException;
+    protected abstract READER createPartitionedReader(List<AbstractIndexPartition> partitions) throws IOException;
 }

@@ -19,122 +19,111 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class TemporalTypeIT extends AbstractRestFunctionalTestBase
-{
+public class TemporalTypeIT extends AbstractRestFunctionalTestBase {
     @Test
-    public void shouldWorkWithDateTime() throws Exception
-    {
-        HTTP.Response response = runQuery( "RETURN datetime({year: 1, month:10, day:2, timezone:\\\"+01:00\\\"})" );
+    public void shouldWorkWithDateTime() throws Exception {
+        HTTP.Response response = runQuery("RETURN datetime({year: 1, month:10, day:2, timezone:\\\"+01:00\\\"})");
 
-        assertEquals( 200, response.status() );
-        assertNoErrors( response );
-        JsonNode data = getSingleData( response );
-        assertTemporalEquals( data, "0001-10-02T00:00+01:00", "datetime" );
+        assertEquals(200, response.status());
+        assertNoErrors(response);
+        JsonNode data = getSingleData(response);
+        assertTemporalEquals(data, "0001-10-02T00:00+01:00", "datetime");
     }
 
     @Test
-    public void shouldWorkWithTime() throws Exception
-    {
-        HTTP.Response response = runQuery( "RETURN time({hour: 23, minute: 19, second: 55, timezone:\\\"-07:00\\\"})" );
+    public void shouldWorkWithTime() throws Exception {
+        HTTP.Response response = runQuery("RETURN time({hour: 23, minute: 19, second: 55, timezone:\\\"-07:00\\\"})");
 
-        assertEquals( 200, response.status() );
-        assertNoErrors( response );
-        JsonNode data = getSingleData( response );
-        assertTemporalEquals( data, "23:19:55-07:00", "time" );
+        assertEquals(200, response.status());
+        assertNoErrors(response);
+        JsonNode data = getSingleData(response);
+        assertTemporalEquals(data, "23:19:55-07:00", "time");
     }
 
     @Test
-    public void shouldWorkWithLocalDateTime() throws Exception
-    {
-        HTTP.Response response = runQuery( "RETURN localdatetime({year: 1984, month: 10, day: 21, hour: 12, minute: 34})" );
+    public void shouldWorkWithLocalDateTime() throws Exception {
+        HTTP.Response response =
+                runQuery("RETURN localdatetime({year: 1984, month: 10, day: 21, hour: 12, minute: 34})");
 
-        assertEquals( 200, response.status() );
-        assertNoErrors( response );
-        JsonNode data = getSingleData( response );
-        assertTemporalEquals( data, "1984-10-21T12:34", "localdatetime" );
+        assertEquals(200, response.status());
+        assertNoErrors(response);
+        JsonNode data = getSingleData(response);
+        assertTemporalEquals(data, "1984-10-21T12:34", "localdatetime");
     }
 
     @Test
-    public void shouldWorkWithDate() throws Exception
-    {
-        HTTP.Response response = runQuery( "RETURN date({year: 1984, month: 10, day: 11})" );
+    public void shouldWorkWithDate() throws Exception {
+        HTTP.Response response = runQuery("RETURN date({year: 1984, month: 10, day: 11})");
 
-        assertEquals( 200, response.status() );
-        assertNoErrors( response );
-        JsonNode data = getSingleData( response );
-        assertTemporalEquals( data, "1984-10-11", "date" );
+        assertEquals(200, response.status());
+        assertNoErrors(response);
+        JsonNode data = getSingleData(response);
+        assertTemporalEquals(data, "1984-10-11", "date");
     }
 
     @Test
-    public void shouldWorkWithLocalTime() throws Exception
-    {
-        HTTP.Response response = runQuery( "RETURN localtime({hour:12, minute:31, second:14, nanosecond: 645876123})" );
+    public void shouldWorkWithLocalTime() throws Exception {
+        HTTP.Response response = runQuery("RETURN localtime({hour:12, minute:31, second:14, nanosecond: 645876123})");
 
-        assertEquals( 200, response.status() );
-        assertNoErrors( response );
-        JsonNode data = getSingleData( response );
-        assertTemporalEquals( data, "12:31:14.645876123", "localtime" );
+        assertEquals(200, response.status());
+        assertNoErrors(response);
+        JsonNode data = getSingleData(response);
+        assertTemporalEquals(data, "12:31:14.645876123", "localtime");
     }
 
     @Test
-    public void shouldWorkWithDuration() throws Exception
-    {
-        HTTP.Response response = runQuery( "RETURN duration({weeks:2, days:3})" );
+    public void shouldWorkWithDuration() throws Exception {
+        HTTP.Response response = runQuery("RETURN duration({weeks:2, days:3})");
 
-        assertEquals( 200, response.status() );
-        assertNoErrors( response );
-        JsonNode data = getSingleData( response );
-        assertTemporalEquals( data, "P17D", "duration" );
+        assertEquals(200, response.status());
+        assertNoErrors(response);
+        JsonNode data = getSingleData(response);
+        assertTemporalEquals(data, "P17D", "duration");
     }
 
     @Test
-    public void shouldOnlyGetNodeTypeInMetaAsNodeProperties() throws Exception
-    {
+    public void shouldOnlyGetNodeTypeInMetaAsNodeProperties() throws Exception {
         HTTP.Response response = runQuery(
-                "CREATE (account {name: \\\"zhen\\\", creationTime: localdatetime({year: 1984, month: 10, day: 21, hour: 12, minute: 34})}) RETURN account" );
+                "CREATE (account {name: \\\"zhen\\\", creationTime: localdatetime({year: 1984, month: 10, day: 21, hour: 12, minute: 34})}) RETURN account");
 
-        assertEquals( 200, response.status() );
-        assertNoErrors( response );
-        JsonNode data = getSingleData( response );
+        assertEquals(200, response.status());
+        assertNoErrors(response);
+        JsonNode data = getSingleData(response);
 
-        JsonNode row = getSingle( data, "row" );
-        assertThat( row.get( "creationTime" ).asText() ).isEqualTo( "1984-10-21T12:34" );
-        assertThat( row.get( "name" ).asText() ).isEqualTo( "zhen" );
+        JsonNode row = getSingle(data, "row");
+        assertThat(row.get("creationTime").asText()).isEqualTo("1984-10-21T12:34");
+        assertThat(row.get("name").asText()).isEqualTo("zhen");
 
-        JsonNode meta = getSingle( data, "meta" );
-        assertThat( meta.get( "type" ).asText() ).isEqualTo( "node" );
+        JsonNode meta = getSingle(data, "meta");
+        assertThat(meta.get("type").asText()).isEqualTo("node");
     }
 
-    private static void assertTemporalEquals( JsonNode data, String value, String type )
-    {
-        JsonNode row = getSingle( data, "row" );
-        assertThat( row.asText() ).isEqualTo( value );
+    private static void assertTemporalEquals(JsonNode data, String value, String type) {
+        JsonNode row = getSingle(data, "row");
+        assertThat(row.asText()).isEqualTo(value);
 
-        JsonNode meta = getSingle( data, "meta" );
-        assertEquals( type, meta.get( "type" ).asText() );
+        JsonNode meta = getSingle(data, "meta");
+        assertEquals(type, meta.get("type").asText());
     }
 
-    private static JsonNode getSingleData( HTTP.Response response ) throws JsonParseException
-    {
-        JsonNode data = response.get( "results" ).get( 0 ).get( "data" );
-        assertEquals( 1, data.size() );
-        return data.get( 0 );
+    private static JsonNode getSingleData(HTTP.Response response) throws JsonParseException {
+        JsonNode data = response.get("results").get(0).get("data");
+        assertEquals(1, data.size());
+        return data.get(0);
     }
 
-    private static JsonNode getSingle( JsonNode node, String key )
-    {
-        JsonNode data = node.get( key );
-        assertEquals( 1, data.size() );
-        return data.get( 0 );
+    private static JsonNode getSingle(JsonNode node, String key) {
+        JsonNode data = node.get(key);
+        assertEquals(1, data.size());
+        return data.get(0);
     }
 }

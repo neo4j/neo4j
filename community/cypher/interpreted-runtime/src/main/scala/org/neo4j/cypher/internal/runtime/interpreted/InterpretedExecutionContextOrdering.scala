@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.util.Comparator
-
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValues
 
+import java.util.Comparator
+
 case class InterpretedExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ReadableRow] {
+
   override def compare(a: ReadableRow, b: ReadableRow): Int = {
     val column = order.id
     val aVal = a.getByName(column)
@@ -35,9 +36,10 @@ case class InterpretedExecutionContextOrdering(order: ColumnOrder) extends scala
 }
 
 object InterpretedExecutionContextOrdering {
+
   def asComparator(orderBy: Seq[ColumnOrder]): Comparator[ReadableRow] =
     orderBy.map(InterpretedExecutionContextOrdering.apply)
-    .reduceLeft[Comparator[ReadableRow]]((a, b) => a.thenComparing(b))
+      .reduceLeft[Comparator[ReadableRow]]((a, b) => a.thenComparing(b))
 }
 
 sealed trait ColumnOrder {

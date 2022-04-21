@@ -19,9 +19,24 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,7 +46,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
@@ -74,141 +91,137 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Values;
 
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @Neo4jLayoutExtension
-class IndexRecoveryIT
-{
+class IndexRecoveryIT {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     private GraphDatabaseAPI db;
-    private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
+    private final IndexProvider mockedIndexProvider = mock(IndexProvider.class);
     private final ExtensionFactory<?> mockedIndexProviderFactory =
-            singleInstanceIndexProviderFactory( PROVIDER_DESCRIPTOR.getKey(), mockedIndexProvider );
+            singleInstanceIndexProviderFactory(PROVIDER_DESCRIPTOR.getKey(), mockedIndexProvider);
     private final String key = "number_of_bananas_owned";
-    private final Label myLabel = label( "MyLabel" );
+    private final Label myLabel = label("MyLabel");
     private final Monitors monitors = new Monitors();
     private DatabaseManagementService managementService;
     private ExecutorService executor;
     private final Object lock = new Object();
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         executor = newSingleThreadExecutor();
-        when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any(), any() ) )
-                .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
-        when( mockedIndexProvider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
+        when(mockedIndexProvider.getProviderDescriptor()).thenReturn(PROVIDER_DESCRIPTOR);
+        when(mockedIndexProvider.storeMigrationParticipant(
+                        any(FileSystemAbstraction.class), any(PageCache.class), any(), any()))
+                .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
+        when(mockedIndexProvider.completeConfiguration(any(IndexDescriptor.class)))
+                .then(inv -> inv.getArgument(0));
     }
 
     @AfterEach
-    void after()
-    {
+    void after() {
         executor.shutdown();
-        if ( db != null )
-        {
+        if (db != null) {
             managementService.shutdown();
         }
     }
 
     @Test
-    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated() throws Exception
-    {
+    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated() throws Exception {
         // Given
         startDb();
 
-        Semaphore populationSemaphore = new Semaphore( 0 );
+        Semaphore populationSemaphore = new Semaphore(0);
         Future<Void> killFuture;
-        try
-        {
-            when( mockedIndexProvider
-                    .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ), any() ) )
-                    .thenReturn( indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
+        try {
+            when(mockedIndexProvider.getPopulator(
+                            any(IndexDescriptor.class),
+                            any(IndexSamplingConfig.class),
+                            any(),
+                            any(),
+                            any(TokenNameLookup.class),
+                            any()))
+                    .thenReturn(indexPopulatorWithControlledCompletionTiming(populationSemaphore));
             createSomeData();
             createIndex();
 
             // And Given
             killFuture = killDbInSeparateThread();
             int iterations = 0;
-            do
-            {
+            do {
                 rotateLogsAndCheckPoint();
-                Thread.sleep( 10 );
-            } while ( iterations++ < 100 && !killFuture.isDone() );
-        }
-        finally
-        {
+                Thread.sleep(10);
+            } while (iterations++ < 100 && !killFuture.isDone());
+        } finally {
             populationSemaphore.release();
         }
 
         killFuture.get();
 
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ), any() ) )
-                .thenReturn( InternalIndexState.POPULATING );
-        Semaphore recoverySemaphore = new Semaphore( 0 );
-        try
-        {
-            when( mockedIndexProvider
-                    .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ), any() ) )
-                    .thenReturn( indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
-            boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), databaseLayout, defaults(), INSTANCE );
-            monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
+        when(mockedIndexProvider.getInitialState(any(IndexDescriptor.class), any(CursorContext.class), any()))
+                .thenReturn(InternalIndexState.POPULATING);
+        Semaphore recoverySemaphore = new Semaphore(0);
+        try {
+            when(mockedIndexProvider.getPopulator(
+                            any(IndexDescriptor.class),
+                            any(IndexSamplingConfig.class),
+                            any(),
+                            any(),
+                            any(TokenNameLookup.class),
+                            any()))
+                    .thenReturn(indexPopulatorWithControlledCompletionTiming(recoverySemaphore));
+            boolean recoveryRequired =
+                    Recovery.isRecoveryRequired(testDirectory.getFileSystem(), databaseLayout, defaults(), INSTANCE);
+            monitors.addMonitorListener(new MyRecoveryMonitor(recoverySemaphore));
             // When
             startDb();
 
-            try ( Transaction transaction = db.beginTx() )
-            {
-                assertThat( transaction.schema().getIndexes( myLabel ) ).hasSize( 1 );
-                assertThat( transaction.schema().getIndexes( myLabel ) )
-                        .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.POPULATING );
+            try (Transaction transaction = db.beginTx()) {
+                assertThat(transaction.schema().getIndexes(myLabel)).hasSize(1);
+                assertThat(transaction.schema().getIndexes(myLabel))
+                        .extracting(i -> transaction.schema().getIndexState(i))
+                        .containsOnly(Schema.IndexState.POPULATING);
             }
             // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
             // we will not gonna need to get index populators during recovery index service start
-            verify( mockedIndexProvider, times( recoveryRequired ? 3 : 2 ) ).getPopulator( any( IndexDescriptor.class ),
-                                                                                           any( IndexSamplingConfig.class ), any(), any(),
-                                                                                           any( TokenNameLookup.class ),
-                                                                                           any() );
-            verify( mockedIndexProvider, never() )
-                    .getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ), any() );
-        }
-        finally
-        {
+            verify(mockedIndexProvider, times(recoveryRequired ? 3 : 2))
+                    .getPopulator(
+                            any(IndexDescriptor.class),
+                            any(IndexSamplingConfig.class),
+                            any(),
+                            any(),
+                            any(TokenNameLookup.class),
+                            any());
+            verify(mockedIndexProvider, never())
+                    .getOnlineAccessor(
+                            any(IndexDescriptor.class),
+                            any(IndexSamplingConfig.class),
+                            any(TokenNameLookup.class),
+                            any());
+        } finally {
             recoverySemaphore.release();
         }
     }
 
     @Test
-    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex() throws IOException, ExecutionException, InterruptedException, KernelException
-    {
+    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex()
+            throws IOException, ExecutionException, InterruptedException, KernelException {
         // Given
-        Semaphore populationSemaphore = new Semaphore( 1 );
-        try
-        {
+        Semaphore populationSemaphore = new Semaphore(1);
+        try {
             startDb();
 
-            when( mockedIndexProvider
-                    .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ), any() ) )
-                    .thenReturn( indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
+            when(mockedIndexProvider.getPopulator(
+                            any(IndexDescriptor.class),
+                            any(IndexSamplingConfig.class),
+                            any(),
+                            any(),
+                            any(TokenNameLookup.class),
+                            any()))
+                    .thenReturn(indexPopulatorWithControlledCompletionTiming(populationSemaphore));
             createSomeData();
             createIndex();
 
@@ -216,309 +229,313 @@ class IndexRecoveryIT
             Future<Void> killFuture = killDbInSeparateThread();
             populationSemaphore.release();
             killFuture.get();
-        }
-        finally
-        {
+        } finally {
             populationSemaphore.release();
         }
 
         // When
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ), any() ) )
-                .thenReturn( InternalIndexState.POPULATING );
-        populationSemaphore = new Semaphore( 1 );
-        try
-        {
-            when( mockedIndexProvider
-                    .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ), any() ) )
-                    .thenReturn( indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
+        when(mockedIndexProvider.getInitialState(any(IndexDescriptor.class), any(CursorContext.class), any()))
+                .thenReturn(InternalIndexState.POPULATING);
+        populationSemaphore = new Semaphore(1);
+        try {
+            when(mockedIndexProvider.getPopulator(
+                            any(IndexDescriptor.class),
+                            any(IndexSamplingConfig.class),
+                            any(),
+                            any(),
+                            any(TokenNameLookup.class),
+                            any()))
+                    .thenReturn(indexPopulatorWithControlledCompletionTiming(populationSemaphore));
             startDb();
 
-            try ( Transaction transaction = db.beginTx() )
-            {
-                assertThat( transaction.schema().getIndexes( myLabel ) ).hasSize( 1 );
-                assertThat( transaction.schema().getIndexes( myLabel ) )
-                        .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.POPULATING );
+            try (Transaction transaction = db.beginTx()) {
+                assertThat(transaction.schema().getIndexes(myLabel)).hasSize(1);
+                assertThat(transaction.schema().getIndexes(myLabel))
+                        .extracting(i -> transaction.schema().getIndexState(i))
+                        .containsOnly(Schema.IndexState.POPULATING);
             }
-            verify( mockedIndexProvider, times( 3 ) ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ),
-                                                                    any(), any(), any( TokenNameLookup.class ), any() );
-            verify( mockedIndexProvider, never() )
-                    .getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ), any() );
-        }
-        finally
-        {
+            verify(mockedIndexProvider, times(3))
+                    .getPopulator(
+                            any(IndexDescriptor.class),
+                            any(IndexSamplingConfig.class),
+                            any(),
+                            any(),
+                            any(TokenNameLookup.class),
+                            any());
+            verify(mockedIndexProvider, never())
+                    .getOnlineAccessor(
+                            any(IndexDescriptor.class),
+                            any(IndexSamplingConfig.class),
+                            any(TokenNameLookup.class),
+                            any());
+        } finally {
             populationSemaphore.release();
         }
     }
 
     @Test
-    void shouldBeAbleToRecoverAndUpdateOnlineIndex() throws Exception
-    {
+    void shouldBeAbleToRecoverAndUpdateOnlineIndex() throws Exception {
         // Given
         startDb();
 
-        IndexPopulator populator = mock( IndexPopulator.class );
-        when( mockedIndexProvider
-                .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ), any() ) )
-                .thenReturn( populator );
-        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
-        IndexAccessor mockedAccessor = mock( IndexAccessor.class );
-        when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) )
-                .thenReturn( SwallowingIndexUpdater.INSTANCE );
-        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ), any() ) )
-                .thenReturn( mockedAccessor );
+        IndexPopulator populator = mock(IndexPopulator.class);
+        when(mockedIndexProvider.getPopulator(
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(),
+                        any(),
+                        any(TokenNameLookup.class),
+                        any()))
+                .thenReturn(populator);
+        when(populator.sample(any(CursorContext.class))).thenReturn(new IndexSample());
+        IndexAccessor mockedAccessor = mock(IndexAccessor.class);
+        when(mockedAccessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
+                .thenReturn(SwallowingIndexUpdater.INSTANCE);
+        when(mockedIndexProvider.getOnlineAccessor(
+                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                .thenReturn(mockedAccessor);
         createIndexAndAwaitPopulation();
         // rotate logs
         rotateLogsAndCheckPoint();
         // make updates
-        Set<IndexEntryUpdate<?>> expectedUpdates = createSomeBananas( myLabel );
+        Set<IndexEntryUpdate<?>> expectedUpdates = createSomeBananas(myLabel);
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ), any() ) ).thenReturn( ONLINE );
+        when(mockedIndexProvider.getInitialState(any(IndexDescriptor.class), any(CursorContext.class), any()))
+                .thenReturn(ONLINE);
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ), any() ) )
-                .thenReturn( writer );
+        when(mockedIndexProvider.getOnlineAccessor(
+                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                .thenReturn(writer);
 
         // When
         startDb();
 
         // Then
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertThat( transaction.schema().getIndexes( myLabel ) ).hasSize( 1 );
-            assertThat( transaction.schema().getIndexes( myLabel ) )
-                    .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.ONLINE );
+        try (Transaction transaction = db.beginTx()) {
+            assertThat(transaction.schema().getIndexes(myLabel)).hasSize(1);
+            assertThat(transaction.schema().getIndexes(myLabel))
+                    .extracting(i -> transaction.schema().getIndexState(i))
+                    .containsOnly(Schema.IndexState.ONLINE);
         }
-        verify( mockedIndexProvider )
-                .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ), any() );
+        verify(mockedIndexProvider)
+                .getPopulator(
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(),
+                        any(),
+                        any(TokenNameLookup.class),
+                        any());
         int onlineAccessorInvocationCount = 3; // once when we create the index, and once when we restart the db
-        verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
-                .getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ), any() );
-        assertEquals( expectedUpdates, writer.batchedUpdates );
+        verify(mockedIndexProvider, times(onlineAccessorInvocationCount))
+                .getOnlineAccessor(
+                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any());
+        assertEquals(expectedUpdates, writer.batchedUpdates);
     }
 
     @Test
-    void shouldKeepFailedIndexesAsFailedAfterRestart() throws Exception
-    {
+    void shouldKeepFailedIndexesAsFailedAfterRestart() throws Exception {
         // Given
-        IndexPopulator indexPopulator = mock( IndexPopulator.class );
-        when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ),
-                                                any() ) )
-                .thenReturn( indexPopulator );
-        IndexAccessor indexAccessor = mock( IndexAccessor.class );
-        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ), any() ) )
-                .thenReturn( indexAccessor );
+        IndexPopulator indexPopulator = mock(IndexPopulator.class);
+        when(mockedIndexProvider.getPopulator(
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(),
+                        any(),
+                        any(TokenNameLookup.class),
+                        any()))
+                .thenReturn(indexPopulator);
+        IndexAccessor indexAccessor = mock(IndexAccessor.class);
+        when(mockedIndexProvider.getOnlineAccessor(
+                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                .thenReturn(indexAccessor);
         startDb();
         createIndex();
         rotateLogsAndCheckPoint();
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ), any() ) ).thenReturn( InternalIndexState.FAILED );
+        when(mockedIndexProvider.getInitialState(any(IndexDescriptor.class), any(CursorContext.class), any()))
+                .thenReturn(InternalIndexState.FAILED);
 
         // When
         startDb();
 
         // Then
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertThat( transaction.schema().getIndexes( myLabel ) ).hasSize( 1 );
-            assertThat( transaction.schema().getIndexes( myLabel ) )
-                    .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.FAILED );
+        try (Transaction transaction = db.beginTx()) {
+            assertThat(transaction.schema().getIndexes(myLabel)).hasSize(1);
+            assertThat(transaction.schema().getIndexes(myLabel))
+                    .extracting(i -> transaction.schema().getIndexState(i))
+                    .containsOnly(Schema.IndexState.FAILED);
         }
-        verify( mockedIndexProvider )
-                .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ), any() );
-        verify( mockedIndexProvider ).getMinimalIndexAccessor( any( IndexDescriptor.class ) );
+        verify(mockedIndexProvider)
+                .getPopulator(
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(),
+                        any(),
+                        any(TokenNameLookup.class),
+                        any());
+        verify(mockedIndexProvider).getMinimalIndexAccessor(any(IndexDescriptor.class));
     }
 
-    private void startDb()
-    {
-        if ( db != null )
-        {
+    private void startDb() {
+        if (db != null) {
             managementService.shutdown();
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setFileSystem( testDirectory.getFileSystem() )
-                .addExtension( mockedIndexProviderFactory )
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setFileSystem(testDirectory.getFileSystem())
+                .addExtension(mockedIndexProviderFactory)
                 .noOpSystemGraphInitializer()
-                .setMonitors( monitors )
+                .setMonitors(monitors)
                 .build();
 
-        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void killDb()
-    {
-        if ( db != null )
-        {
-            Path snapshotDir = testDirectory.directory( "snapshot" );
-            synchronized ( lock )
-            {
-                snapshotFs( snapshotDir );
+    private void killDb() {
+        if (db != null) {
+            Path snapshotDir = testDirectory.directory("snapshot");
+            synchronized (lock) {
+                snapshotFs(snapshotDir);
             }
             managementService.shutdown();
-            restoreSnapshot( snapshotDir );
+            restoreSnapshot(snapshotDir);
         }
     }
 
-    private void snapshotFs( Path snapshotDir )
-    {
-        try
-        {
+    private void snapshotFs(Path snapshotDir) {
+        try {
             DatabaseLayout layout = databaseLayout;
-            FileUtils.copyDirectory( layout.databaseDirectory(), snapshotDir.resolve( "data" ) );
-            FileUtils.copyDirectory( layout.getTransactionLogsDirectory(), snapshotDir.resolve( "transactions" ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+            FileUtils.copyDirectory(layout.databaseDirectory(), snapshotDir.resolve("data"));
+            FileUtils.copyDirectory(layout.getTransactionLogsDirectory(), snapshotDir.resolve("transactions"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private void restoreSnapshot( Path snapshotDir )
-    {
-        try
-        {
+    private void restoreSnapshot(Path snapshotDir) {
+        try {
             DatabaseLayout layout = databaseLayout;
-            FileUtils.deleteDirectory( layout.databaseDirectory() );
-            FileUtils.deleteDirectory( layout.getTransactionLogsDirectory() );
-            FileUtils.copyDirectory( snapshotDir.resolve( "data" ), layout.databaseDirectory() );
-            FileUtils.copyDirectory( snapshotDir.resolve( "transactions" ), layout.getTransactionLogsDirectory() );
-            FileUtils.deleteDirectory( snapshotDir );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+            FileUtils.deleteDirectory(layout.databaseDirectory());
+            FileUtils.deleteDirectory(layout.getTransactionLogsDirectory());
+            FileUtils.copyDirectory(snapshotDir.resolve("data"), layout.databaseDirectory());
+            FileUtils.copyDirectory(snapshotDir.resolve("transactions"), layout.getTransactionLogsDirectory());
+            FileUtils.deleteDirectory(snapshotDir);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private Future<Void> killDbInSeparateThread()
-    {
-        return executor.submit( () ->
-        {
+    private Future<Void> killDbInSeparateThread() {
+        return executor.submit(() -> {
             killDb();
             return null;
-        } );
+        });
     }
 
-    private void rotateLogsAndCheckPoint() throws IOException
-    {
-        synchronized ( lock )
-        {
-            db.getDependencyResolver().resolveDependency( LogFiles.class ).getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
-            db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+    private void rotateLogsAndCheckPoint() throws IOException {
+        synchronized (lock) {
+            db.getDependencyResolver()
+                    .resolveDependency(LogFiles.class)
+                    .getLogFile()
+                    .getLogRotation()
+                    .rotateLogFile(LogAppendEvent.NULL);
+            db.getDependencyResolver()
+                    .resolveDependency(CheckPointer.class)
+                    .forceCheckPoint(new SimpleTriggerInfo("test"));
         }
     }
 
-    private void createIndexAndAwaitPopulation() throws KernelException
-    {
+    private void createIndexAndAwaitPopulation() throws KernelException {
         IndexDescriptor index = createIndex();
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( index.getName(), 1, MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexOnline(index.getName(), 1, MINUTES);
             tx.commit();
         }
     }
 
-    private IndexDescriptor createIndex() throws KernelException
-    {
-        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
-        {
-            IndexDescriptor index = IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, PROVIDER_DESCRIPTOR, myLabel, key );
+    private IndexDescriptor createIndex() throws KernelException {
+        try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
+            IndexDescriptor index =
+                    IndexingTestUtil.createNodePropIndexWithSpecifiedProvider(tx, PROVIDER_DESCRIPTOR, myLabel, key);
             tx.commit();
             return index;
         }
     }
 
-    private Set<IndexEntryUpdate<?>> createSomeBananas( Label label )
-    {
+    private Set<IndexEntryUpdate<?>> createSomeBananas(Label label) {
         Set<IndexEntryUpdate<?>> updates = new HashSet<>();
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
 
-            int labelId = ktx.tokenRead().nodeLabel( label.name() );
-            int propertyKeyId = ktx.tokenRead().propertyKey( key );
-            var schemaDescriptor = SchemaDescriptors.forLabel( labelId, propertyKeyId );
-            for ( int number : new int[]{4, 10} )
-            {
-                Node node = tx.createNode( label );
-                node.setProperty( key, number );
-                updates.add( IndexEntryUpdate.add( node.getId(), () -> schemaDescriptor, Values.of( number ) ) );
+            int labelId = ktx.tokenRead().nodeLabel(label.name());
+            int propertyKeyId = ktx.tokenRead().propertyKey(key);
+            var schemaDescriptor = SchemaDescriptors.forLabel(labelId, propertyKeyId);
+            for (int number : new int[] {4, 10}) {
+                Node node = tx.createNode(label);
+                node.setProperty(key, number);
+                updates.add(IndexEntryUpdate.add(node.getId(), () -> schemaDescriptor, Values.of(number)));
             }
             tx.commit();
             return updates;
         }
     }
 
-    public static class GatheringIndexWriter extends IndexAccessor.Adapter
-    {
+    public static class GatheringIndexWriter extends IndexAccessor.Adapter {
         private final Set<IndexEntryUpdate<?>> regularUpdates = new HashSet<>();
         private final Set<IndexEntryUpdate<?>> batchedUpdates = new HashSet<>();
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-        {
-            return new CollectingIndexUpdater( updates ->
-            {
-                switch ( mode )
-                {
+        public IndexUpdater newUpdater(final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+            return new CollectingIndexUpdater(updates -> {
+                switch (mode) {
                     case ONLINE:
-                        regularUpdates.addAll( updates );
+                        regularUpdates.addAll(updates);
                         break;
 
                     case RECOVERY:
-                        batchedUpdates.addAll( updates );
+                        batchedUpdates.addAll(updates);
                         break;
 
                     default:
                         throw new UnsupportedOperationException();
                 }
-            } );
+            });
         }
     }
 
-    private static IndexPopulator indexPopulatorWithControlledCompletionTiming( Semaphore semaphore )
-    {
-        return new IndexPopulator.Adapter()
-        {
+    private static IndexPopulator indexPopulatorWithControlledCompletionTiming(Semaphore semaphore) {
+        return new IndexPopulator.Adapter() {
             @Override
-            public void create()
-            {
-                try
-                {
+            public void create() {
+                try {
                     semaphore.acquire();
-                }
-                catch ( InterruptedException e )
-                {
+                } catch (InterruptedException e) {
                     // fall through and return early
                 }
-                throw new RuntimeException( "this is expected" );
+                throw new RuntimeException("this is expected");
             }
         };
     }
 
-    private static class MyRecoveryMonitor implements RecoveryMonitor
-    {
+    private static class MyRecoveryMonitor implements RecoveryMonitor {
         private final Semaphore recoverySemaphore;
 
-        MyRecoveryMonitor( Semaphore recoverySemaphore )
-        {
+        MyRecoveryMonitor(Semaphore recoverySemaphore) {
             this.recoverySemaphore = recoverySemaphore;
         }
 
         @Override
-        public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
-        {
+        public void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
             recoverySemaphore.release();
         }
     }
 
-    private void createSomeData()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
+    private void createSomeData() {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }

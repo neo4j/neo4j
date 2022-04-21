@@ -30,38 +30,34 @@ import org.neo4j.storageengine.api.StorageReader;
  * Essentially a convenience for store+record+cursor. The reason why a {@link StorageReader} isn't quite enough is that they typically
  * don't handle reading of inconsistent data.
  */
-class RecordReader<RECORD extends AbstractBaseRecord> implements AutoCloseable
-{
-    private final CommonAbstractStore<RECORD,?> store;
+class RecordReader<RECORD extends AbstractBaseRecord> implements AutoCloseable {
+    private final CommonAbstractStore<RECORD, ?> store;
     private final RECORD record;
     private final PageCursor cursor;
 
-    RecordReader( CommonAbstractStore<RECORD,?> store, boolean prefetch, CursorContext cursorContext )
-    {
+    RecordReader(CommonAbstractStore<RECORD, ?> store, boolean prefetch, CursorContext cursorContext) {
         this.store = store;
         this.record = store.newRecord();
-        this.cursor = prefetch ? store.openPageCursorForReadingWithPrefetching( 0, cursorContext ) : store.openPageCursorForReading( 0, cursorContext );
+        this.cursor = prefetch
+                ? store.openPageCursorForReadingWithPrefetching(0, cursorContext)
+                : store.openPageCursorForReading(0, cursorContext);
     }
 
-    RECORD read( long id )
-    {
-        store.getRecordByCursor( id, record, RecordLoad.FORCE, cursor );
+    RECORD read(long id) {
+        store.getRecordByCursor(id, record, RecordLoad.FORCE, cursor);
         return record;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         cursor.close();
     }
 
-    RECORD record()
-    {
+    RECORD record() {
         return record;
     }
 
-    <STORE> STORE store()
-    {
+    <STORE> STORE store() {
         return (STORE) store;
     }
 }

@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
-
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
-
-public final class FulltextIndexProceduresUtil
-{
+public final class FulltextIndexProceduresUtil {
     public static final String SHOW_FULLTEXT_INDEXES = "SHOW FULLTEXT INDEXES";
     public static final String LIST_AVAILABLE_ANALYZERS = "CALL db.index.fulltext.listAvailableAnalyzers()";
     public static final String DB_AWAIT_INDEX = "CALL db.awaitIndex(\"%s\")";
@@ -38,52 +36,46 @@ public final class FulltextIndexProceduresUtil
     public static final String QUERY_RELS = "CALL db.index.fulltext.queryRelationships(\"%s\", \"%s\")";
     public static final String AWAIT_REFRESH = "CALL db.index.fulltext.awaitEventuallyConsistentIndexRefresh()";
     public static final String FULLTEXT_CREATE = "CREATE FULLTEXT INDEX `%s` FOR %s ON EACH %s";
-    public static final String FULLTEXT_CREATE_WITH_CONFIG = "CREATE FULLTEXT INDEX `%s` FOR %s ON EACH %s OPTIONS {indexConfig: %s}";
+    public static final String FULLTEXT_CREATE_WITH_CONFIG =
+            "CREATE FULLTEXT INDEX `%s` FOR %s ON EACH %s OPTIONS {indexConfig: %s}";
 
-    private FulltextIndexProceduresUtil()
-    {
-    }
+    private FulltextIndexProceduresUtil() {}
 
-    public static String asNodeLabelStr( String... args )
-    {
-        if ( args.length == 0 )
-        {
+    public static String asNodeLabelStr(String... args) {
+        if (args.length == 0) {
             return "(e)";
         }
-        return Arrays.stream( args ).collect( Collectors.joining( "|", "(e:", ")" ) );
+        return Arrays.stream(args).collect(Collectors.joining("|", "(e:", ")"));
     }
 
-    public static String asRelationshipTypeStr( String... args )
-    {
-        if ( args.length == 0 )
-        {
+    public static String asRelationshipTypeStr(String... args) {
+        if (args.length == 0) {
             return "()-[e]-()";
         }
-        return Arrays.stream( args ).collect( Collectors.joining( "|", "()-[e:", "]-()" ) );
+        return Arrays.stream(args).collect(Collectors.joining("|", "()-[e:", "]-()"));
     }
 
-    public static String asPropertiesStrList( String... args )
-    {
-        if ( args.length == 0 )
-        {
+    public static String asPropertiesStrList(String... args) {
+        if (args.length == 0) {
             return "[]";
         }
-        return Arrays.stream( args ).collect( Collectors.joining( ", e.", "[e.", "]" ) );
+        return Arrays.stream(args).collect(Collectors.joining(", e.", "[e.", "]"));
     }
 
-    public static Map<String,Value> asConfigMap( String analyzer, boolean eventuallyConsistent )
-    {
-        return Map.of( ANALYZER, Values.stringValue( analyzer ), FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
+    public static Map<String, Value> asConfigMap(String analyzer, boolean eventuallyConsistent) {
+        return Map.of(
+                ANALYZER,
+                Values.stringValue(analyzer),
+                FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT,
+                Values.booleanValue(eventuallyConsistent));
     }
 
-    public static String asConfigMapString( String analyzer, boolean eventuallyConsistent )
-    {
-        StringJoiner joiner = new StringJoiner( ", ", "{", "}" );
+    public static String asConfigMapString(String analyzer, boolean eventuallyConsistent) {
+        StringJoiner joiner = new StringJoiner(", ", "{", "}");
 
-        joiner.add( "`" + ANALYZER + "`: \"" + analyzer + "\"" );
-        joiner.add( "`" + FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT + "`: " + eventuallyConsistent );
+        joiner.add("`" + ANALYZER + "`: \"" + analyzer + "\"");
+        joiner.add("`" + FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT + "`: " + eventuallyConsistent);
 
         return joiner.toString();
     }
 }
-

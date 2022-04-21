@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
-
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -29,22 +28,20 @@ import org.neo4j.io.pagecache.context.CursorContext;
 /**
  * Defines interfaces and common implementations of header reader/writer for {@link GBPTree}.
  */
-public class Header
-{
+public class Header {
     /**
      * The total overhead of other things written into the page that the additional header is written into.
      * Therefore the max size of an additional header cannot exceed page size minus this overhead.
      */
-    public static final int OVERHEAD =
-            TreeState.SIZE +   // size of the tree state
-            Integer.BYTES;     // size of the field storing the length of the additional header data
+    public static final int OVERHEAD = TreeState.SIZE
+            + // size of the tree state
+            Integer.BYTES; // size of the field storing the length of the additional header data
 
     /**
      * Writes a header into a {@link GBPTree} state page during
      * {@link GBPTree#checkpoint(IOController, CursorContext)}.
      */
-    public interface Writer
-    {
+    public interface Writer {
         /**
          * Writes header data into {@code to} with previous valid header data found in {@code from} of {@code length}
          * bytes in size.
@@ -52,31 +49,26 @@ public class Header
          * @param length size in bytes of the previous header data.
          * @param to {@link PageCursor} to write new header into.
          */
-        void write( PageCursor from, int length, PageCursor to );
+        void write(PageCursor from, int length, PageCursor to);
     }
 
-    private Header()
-    {
-    }
+    private Header() {}
 
-    static final Writer CARRY_OVER_PREVIOUS_HEADER = ( from, length, to ) ->
-    {
+    static final Writer CARRY_OVER_PREVIOUS_HEADER = (from, length, to) -> {
         int toOffset = to.getOffset();
-        from.copyTo( from.getOffset(), to, toOffset, length );
-        to.setOffset( toOffset + length );
+        from.copyTo(from.getOffset(), to, toOffset, length);
+        to.setOffset(toOffset + length);
     };
 
-    static Writer replace( Consumer<PageCursor> writer )
-    {
+    static Writer replace(Consumer<PageCursor> writer) {
         // Discard the previous state, just write the new
-        return ( from, length, to ) -> writer.accept( to );
+        return (from, length, to) -> writer.accept(to);
     }
 
     /**
      * Reads a header from a {@link GBPTree} state page during opening it.
      */
-    public interface Reader
-    {
+    public interface Reader {
         /**
          * Called when it's time to read header data from the most up to date and valid state page.
          * The data that can be accessed from the {@code headerBytes} buffer have been consistently
@@ -84,24 +76,21 @@ public class Header
          *
          * @param headerBytes {@link ByteBuffer} containing the header data.
          */
-        void read( ByteBuffer headerBytes );
+        void read(ByteBuffer headerBytes);
     }
 
     /**
      * Simple utility header reader to simply know whether or not the tree file was created or not in the constructor.
      */
-    public static class TreeCreationChecker implements Header.Reader
-    {
+    public static class TreeCreationChecker implements Header.Reader {
         private boolean wasCreated = true;
 
         @Override
-        public void read( ByteBuffer headerBytes )
-        {
+        public void read(ByteBuffer headerBytes) {
             wasCreated = false;
         }
 
-        public boolean wasCreated()
-        {
+        public boolean wasCreated() {
             return wasCreated;
         }
     }

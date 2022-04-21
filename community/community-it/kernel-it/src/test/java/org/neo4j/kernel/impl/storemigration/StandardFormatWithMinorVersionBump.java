@@ -25,49 +25,41 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
 
 @ServiceProvider
-public class StandardFormatWithMinorVersionBump extends StandardV5_0 implements RecordFormats.Factory
-{
+public class StandardFormatWithMinorVersionBump extends StandardV5_0 implements RecordFormats.Factory {
     public static final String NAME = "Standard-Format-With-Minor-Version-Bump";
     public static final String VERSION_STRING = "TSF1.2";
 
-    public StandardFormatWithMinorVersionBump()
-    {
+    public StandardFormatWithMinorVersionBump() {
         super();
     }
 
     @Override
-    public int minorVersion()
-    {
+    public int minorVersion() {
         return Standard.LATEST_RECORD_FORMATS.minorVersion() + 1;
     }
 
     @Override
-    public String storeVersion()
-    {
+    public String storeVersion() {
         return VERSION_STRING;
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return NAME;
     }
 
     @Override
-    public boolean formatUnderDevelopment()
-    {
+    public boolean formatUnderDevelopment() {
         return true;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return NAME;
     }
 
     @Override
-    public RecordFormats newInstance()
-    {
+    public RecordFormats newInstance() {
         return new StandardFormatWithMinorVersionBump();
     }
 }

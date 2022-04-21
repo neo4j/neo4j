@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.internal.id.indexed.LoggingIndexedIdGeneratorMonitor.defaultIdMonitor;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -40,10 +40,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
-import static org.neo4j.internal.id.indexed.LoggingIndexedIdGeneratorMonitor.defaultIdMonitor;
-
-public class DefaultIdGeneratorFactory implements IdGeneratorFactory
-{
+public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     private final Map<IdType, IndexedIdGenerator> generators = new HashMap<>();
     protected final FileSystemAbstraction fs;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
@@ -56,9 +53,9 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
      * @param fs {@link FileSystemAbstraction} to back the id generators.
      * @param recoveryCleanupWorkCollector {@link RecoveryCleanupWorkCollector} for cleanup on starting the id generators.
      */
-    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, String databaseName )
-    {
-        this( fs, recoveryCleanupWorkCollector, false, databaseName );
+    public DefaultIdGeneratorFactory(
+            FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, String databaseName) {
+        this(fs, recoveryCleanupWorkCollector, false, databaseName);
     }
 
     /**
@@ -69,9 +66,11 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
      * Functionally this makes no difference, it only affects performance (and memory usage which is the main driver for forcing low activity).
      * @param databaseName name of the database this id generator belongs to
      */
-    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean allowLargeIdCaches,
-            String databaseName )
-    {
+    public DefaultIdGeneratorFactory(
+            FileSystemAbstraction fs,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            boolean allowLargeIdCaches,
+            String databaseName) {
         this.fs = fs;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.allowLargeIdCaches = allowLargeIdCaches;
@@ -79,70 +78,127 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
-    {
-        IndexedIdGenerator generator =
-                instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnlyChecker, config, contextFactory,
-                        databaseName, openOptions,
-                        slotDistribution );
-        generators.put( idType, generator );
+    public IdGenerator open(
+            PageCache pageCache,
+            Path filename,
+            IdType idType,
+            LongSupplier highIdScanner,
+            long maxId,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution)
+            throws IOException {
+        IndexedIdGenerator generator = instantiate(
+                fs,
+                pageCache,
+                recoveryCleanupWorkCollector,
+                filename,
+                highIdScanner,
+                maxId,
+                idType,
+                readOnlyChecker,
+                config,
+                contextFactory,
+                databaseName,
+                openOptions,
+                slotDistribution);
+        generators.put(idType, generator);
         return generator;
     }
 
-    protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            CursorContextFactory contextFactory, String databaseName, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
-    {
+    protected IndexedIdGenerator instantiate(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            Path fileName,
+            LongSupplier highIdSupplier,
+            long maxValue,
+            IdType idType,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            String databaseName,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution) {
         // highId not used when opening an IndexedIdGenerator
-        return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, highIdSupplier, maxValue, readOnlyChecker,
-                config, databaseName, contextFactory, defaultIdMonitor( fs, fileName, config ), openOptions, slotDistribution );
+        return new IndexedIdGenerator(
+                pageCache,
+                fileName,
+                recoveryCleanupWorkCollector,
+                idType,
+                allowLargeIdCaches,
+                highIdSupplier,
+                maxValue,
+                readOnlyChecker,
+                config,
+                databaseName,
+                contextFactory,
+                defaultIdMonitor(fs, fileName, config),
+                openOptions,
+                slotDistribution);
     }
 
     @Override
-    public IdGenerator get( IdType idType )
-    {
-        return generators.get( idType );
+    public IdGenerator get(IdType idType) {
+        return generators.get(idType);
     }
 
     @Override
-    public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
-            IdSlotDistribution slotDistribution ) throws IOException
-    {
+    public IdGenerator create(
+            PageCache pageCache,
+            Path fileName,
+            IdType idType,
+            long highId,
+            boolean throwIfFileExists,
+            long maxId,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution)
+            throws IOException {
         // For the potential scenario where there's no store (of course this is where this method will be called),
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
-        if ( fs.fileExists( fileName ) )
-        {
-            fs.deleteFile( fileName );
+        if (fs.fileExists(fileName)) {
+            fs.deleteFile(fileName);
         }
 
-        IndexedIdGenerator generator =
-                new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnlyChecker,
-                        config, databaseName, contextFactory, defaultIdMonitor( fs, fileName, config ), openOptions, slotDistribution );
-        try ( var cursorContext = contextFactory.create( "idGeneratorCreation" ) )
-        {
-            generator.checkpoint( cursorContext );
+        IndexedIdGenerator generator = new IndexedIdGenerator(
+                pageCache,
+                fileName,
+                recoveryCleanupWorkCollector,
+                idType,
+                allowLargeIdCaches,
+                () -> highId,
+                maxId,
+                readOnlyChecker,
+                config,
+                databaseName,
+                contextFactory,
+                defaultIdMonitor(fs, fileName, config),
+                openOptions,
+                slotDistribution);
+        try (var cursorContext = contextFactory.create("idGeneratorCreation")) {
+            generator.checkpoint(cursorContext);
         }
-        generators.put( idType, generator );
+        generators.put(idType, generator);
         return generator;
     }
 
     @Override
-    public void visit( Consumer<IdGenerator> visitor )
-    {
-        generators.values().forEach( visitor );
+    public void visit(Consumer<IdGenerator> visitor) {
+        generators.values().forEach(visitor);
     }
 
     @Override
-    public void clearCache( CursorContext cursorContext )
-    {
-        generators.values().forEach( generator -> generator.clearCache( cursorContext ) );
+    public void clearCache(CursorContext cursorContext) {
+        generators.values().forEach(generator -> generator.clearCache(cursorContext));
     }
 
     @Override
-    public Collection<Path> listIdFiles()
-    {
-        return generators.values().stream().map( IndexedIdGenerator::path ).collect( Collectors.toList() );
+    public Collection<Path> listIdFiles() {
+        return generators.values().stream().map(IndexedIdGenerator::path).collect(Collectors.toList());
     }
 }

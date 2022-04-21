@@ -114,7 +114,9 @@ class SemanticStateTest extends CypherFunSuite {
       case Right(_) => fail("Expected an error")
       case Left(error) =>
         error.position should equal(DummyPosition(9))
-        error.msg should equal("Type mismatch: foo defined with conflicting type Node (expected Integer or Relationship)")
+        error.msg should equal(
+          "Type mismatch: foo defined with conflicting type Node (expected Integer or Relationship)"
+        )
     }
   }
 
@@ -154,7 +156,10 @@ class SemanticStateTest extends CypherFunSuite {
         next <- SemanticState.clean.declareVariable(Variable("foo")(DummyPosition(0)), CTNode)
         next <- next.declareVariable(Variable("bar")(DummyPosition(0)), CTNode)
       } yield next
-    state.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(Variable("foo")(DummyPosition(0)), Variable("bar")(DummyPosition(0))))
+    state.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(
+      Variable("foo")(DummyPosition(0)),
+      Variable("bar")(DummyPosition(0))
+    ))
   }
 
   test("should list all symbols from local scope but not from child scopes") {
@@ -177,8 +182,14 @@ class SemanticStateTest extends CypherFunSuite {
         child = sibling2.newSiblingScope
         child2 <- child.declareVariable(Variable("baz")(DummyPosition(0)), CTNode)
       } yield (child2, sibling2)
-    state1.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(Variable("foo")(DummyPosition(0)), Variable("baz")(DummyPosition(0))))
-    state2.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(Variable("foo")(DummyPosition(0)), Variable("bar")(DummyPosition(0))))
+    state1.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(
+      Variable("foo")(DummyPosition(0)),
+      Variable("baz")(DummyPosition(0))
+    ))
+    state2.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(
+      Variable("foo")(DummyPosition(0)),
+      Variable("bar")(DummyPosition(0))
+    ))
   }
 
   test("should override symbol in parent") {
@@ -224,7 +235,8 @@ class SemanticStateTest extends CypherFunSuite {
 
   test("should gracefully update a variable") {
     val s1 = SemanticState.clean.declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-    val s2: SemanticState = s1.newChildScope.declareVariable(Variable("foo")(DummyPosition(0)), CTRelationship).right.get
+    val s2: SemanticState =
+      s1.newChildScope.declareVariable(Variable("foo")(DummyPosition(0)), CTRelationship).right.get
     s1.symbolTypes("foo") should equal(CTNode.invariant)
     s2.symbolTypes("foo") should equal(CTRelationship.invariant)
   }
@@ -251,7 +263,6 @@ class SemanticStateTest extends CypherFunSuite {
         .declareVariable(foo1, CTNode).right.get
         .declareVariable(bar, CTNode).right.get
         .declareVariable(baz, CTNode).right.get
-
 
     actual.scopeTree should equal(expected.scopeTree)
   }
@@ -281,11 +292,11 @@ class SemanticStateTest extends CypherFunSuite {
         .declareVariable(bar, CTNode).right.get
         .declareVariable(baz, CTNode).right.get
 
-
     actual.scopeTree should equal(expected.scopeTree)
   }
 
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {
+
     def chain(next: SemanticState => Either[SemanticError, SemanticState]): Either[SemanticError, SemanticState] = {
       either match {
         case Left(_)      => either

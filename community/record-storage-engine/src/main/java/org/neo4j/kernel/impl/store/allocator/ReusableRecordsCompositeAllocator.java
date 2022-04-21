@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.allocator;
 
-
 import java.util.Collection;
 import java.util.Iterator;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -31,33 +29,31 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
  * Composite allocator that allows to use available records first and then switch to provided record allocator to
  * allocate more records if required.
  */
-public class ReusableRecordsCompositeAllocator implements DynamicRecordAllocator
-{
+public class ReusableRecordsCompositeAllocator implements DynamicRecordAllocator {
     private final ReusableRecordsAllocator reusableRecordsAllocator;
     private final DynamicRecordAllocator recordAllocator;
 
-    public ReusableRecordsCompositeAllocator( Collection<DynamicRecord> records,
-            DynamicRecordAllocator recordAllocator )
-    {
-        this( records.iterator(), recordAllocator );
+    public ReusableRecordsCompositeAllocator(
+            Collection<DynamicRecord> records, DynamicRecordAllocator recordAllocator) {
+        this(records.iterator(), recordAllocator);
     }
 
-    public ReusableRecordsCompositeAllocator( Iterator<DynamicRecord> recordsIterator,
-            DynamicRecordAllocator recordAllocator )
-    {
-        this.reusableRecordsAllocator = new ReusableRecordsAllocator( recordAllocator.getRecordDataSize(), recordsIterator );
+    public ReusableRecordsCompositeAllocator(
+            Iterator<DynamicRecord> recordsIterator, DynamicRecordAllocator recordAllocator) {
+        this.reusableRecordsAllocator =
+                new ReusableRecordsAllocator(recordAllocator.getRecordDataSize(), recordsIterator);
         this.recordAllocator = recordAllocator;
     }
 
     @Override
-    public int getRecordDataSize()
-    {
+    public int getRecordDataSize() {
         return recordAllocator.getRecordDataSize();
     }
 
     @Override
-    public DynamicRecord nextRecord( CursorContext cursorContext )
-    {
-        return reusableRecordsAllocator.hasNext() ? reusableRecordsAllocator.nextRecord( cursorContext ) : recordAllocator.nextRecord( cursorContext );
+    public DynamicRecord nextRecord(CursorContext cursorContext) {
+        return reusableRecordsAllocator.hasNext()
+                ? reusableRecordsAllocator.nextRecord(cursorContext)
+                : recordAllocator.nextRecord(cursorContext);
     }
 }

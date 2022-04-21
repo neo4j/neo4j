@@ -19,14 +19,6 @@
  */
 package org.neo4j.bolt.v3.messaging.encoder;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.v3.messaging.response.FailureMessage;
-import org.neo4j.bolt.v3.messaging.response.FatalFailureMessage;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.InternalLog;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -35,40 +27,44 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-class FailureMessageEncoderTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.v3.messaging.response.FailureMessage;
+import org.neo4j.bolt.v3.messaging.response.FatalFailureMessage;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.InternalLog;
+
+class FailureMessageEncoderTest {
     @Test
-    void shouldEncodeFailureMessage() throws Throwable
-    {
+    void shouldEncodeFailureMessage() throws Throwable {
         // Given
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        InternalLog log = mock( InternalLog.class );
-        FailureMessageEncoder encoder = new FailureMessageEncoder( log );
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
+        InternalLog log = mock(InternalLog.class);
+        FailureMessageEncoder encoder = new FailureMessageEncoder(log);
 
         // When
-        encoder.encode( packer, new FailureMessage( Status.General.UnknownError, "I am an error message" ) );
+        encoder.encode(packer, new FailureMessage(Status.General.UnknownError, "I am an error message"));
 
         // Then
-        verify( log, never() ).debug( anyString(), any( FailureMessage.class ) );
+        verify(log, never()).debug(anyString(), any(FailureMessage.class));
 
-        verify( packer ).packStructHeader( anyInt(), eq( FailureMessage.SIGNATURE ) );
-        verify( packer ).packMapHeader( 2 );
-        verify( packer ).pack( "code" );
-        verify( packer ).pack( "message" );
+        verify(packer).packStructHeader(anyInt(), eq(FailureMessage.SIGNATURE));
+        verify(packer).packMapHeader(2);
+        verify(packer).pack("code");
+        verify(packer).pack("message");
     }
 
     @Test
-    void shouldLogErrorIfIsFatalError() throws Throwable
-    {
-        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        InternalLog log = mock( InternalLog.class );
-        FailureMessageEncoder encoder = new FailureMessageEncoder( log );
+    void shouldLogErrorIfIsFatalError() throws Throwable {
+        Neo4jPack.Packer packer = mock(Neo4jPack.Packer.class);
+        InternalLog log = mock(InternalLog.class);
+        FailureMessageEncoder encoder = new FailureMessageEncoder(log);
 
         // When
-        FatalFailureMessage message = new FatalFailureMessage( Status.General.UnknownError, "I am an error message" );
-        encoder.encode( packer, message );
+        FatalFailureMessage message = new FatalFailureMessage(Status.General.UnknownError, "I am an error message");
+        encoder.encode(packer, message);
 
         // Then
-        verify( log ).debug( "Encoding a fatal failure message to send. Message: %s", message );
+        verify(log).debug("Encoding a fatal failure message to send. Message: %s", message);
     }
 }

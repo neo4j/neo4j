@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -36,62 +40,54 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
-
-@ExtendWith( RandomExtension.class )
-class FilteringNativeHitIndexProgressorTest
-{
+@ExtendWith(RandomExtension.class)
+class FilteringNativeHitIndexProgressorTest {
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldFilterResults()
-    {
+    void shouldFilterResults() {
         // given
         List<String> keys = new ArrayList<>();
-        for ( int i = 0; i < 100; i++ )
-        {
+        for (int i = 0; i < 100; i++) {
             // duplicates are fine
-            keys.add( random.nextString() );
+            keys.add(random.nextString());
         }
 
-        Seeker<RangeKey,NullValue> cursor = new ResultCursor( keys.iterator() );
-        NodeValueIterator valueClient = new NodeValueIterator()
-        {
+        Seeker<RangeKey, NullValue> cursor = new ResultCursor(keys.iterator());
+        NodeValueIterator valueClient = new NodeValueIterator() {
             @Override
-            public boolean needsValues()
-            {
+            public boolean needsValues() {
                 return true;
             }
         };
-        PropertyIndexQuery[] predicates = new PropertyIndexQuery[]{mock( PropertyIndexQuery.class )};
-        Predicate<String> filter = string -> string.contains( "a" );
-        when( predicates[0].acceptsValue( any( Value.class ) ) ).then( invocation -> filter.test( ((TextValue) invocation.getArgument( 0 )).stringValue() ) );
-        try ( FilteringNativeHitIndexProgressor<RangeKey> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
-                predicates ) )
-        {
-            valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, AccessMode.Static.READ, false, unorderedValues(), predicates );
+        PropertyIndexQuery[] predicates = new PropertyIndexQuery[] {mock(PropertyIndexQuery.class)};
+        Predicate<String> filter = string -> string.contains("a");
+        when(predicates[0].acceptsValue(any(Value.class)))
+                .then(invocation -> filter.test(((TextValue) invocation.getArgument(0)).stringValue()));
+        try (FilteringNativeHitIndexProgressor<RangeKey> progressor =
+                new FilteringNativeHitIndexProgressor<>(cursor, valueClient, predicates)) {
+            valueClient.initialize(
+                    TestIndexDescriptorFactory.forLabel(0, 0),
+                    progressor,
+                    AccessMode.Static.READ,
+                    false,
+                    unorderedValues(),
+                    predicates);
             List<Long> result = new ArrayList<>();
 
             // when
-            while ( valueClient.hasNext() )
-            {
-                result.add( valueClient.next() );
+            while (valueClient.hasNext()) {
+                result.add(valueClient.next());
             }
 
             // then
-            for ( int i = 0; i < keys.size(); i++ )
-            {
-                if ( filter.test( keys.get( i ) ) )
-                {
-                    assertTrue( result.remove( (long) i ) );
+            for (int i = 0; i < keys.size(); i++) {
+                if (filter.test(keys.get(i))) {
+                    assertTrue(result.remove((long) i));
                 }
             }
-            assertTrue( result.isEmpty() );
+            assertTrue(result.isEmpty());
         }
     }
 }

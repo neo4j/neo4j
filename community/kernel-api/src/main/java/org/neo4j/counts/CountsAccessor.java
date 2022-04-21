@@ -24,14 +24,13 @@ import org.neo4j.io.pagecache.context.CursorContext;
 /**
  * Interface for reading counts. Basically the read-parts of a {@link CountsStore}.
  */
-public interface CountsAccessor extends CountsVisitor.Visitable
-{
+public interface CountsAccessor extends CountsVisitor.Visitable {
     /**
      * @param labelId node label token id to get count for.
      * @param cursorContext underlying page cursor context
      * @return the count for the label token id, i.e. number of nodes with that label.
      */
-    long nodeCount( int labelId, CursorContext cursorContext );
+    long nodeCount(int labelId, CursorContext cursorContext);
 
     /**
      * @param startLabelId node label token id of start node.
@@ -40,19 +39,18 @@ public interface CountsAccessor extends CountsVisitor.Visitable
      * @param cursorContext underlying page cursor context
      * @return the count for the start/end node label and relationship type combination.
      */
-    long relationshipCount( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext );
+    long relationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext);
 
     /**
      * Updater of counts. Matches {@link CountsAccessor} and has the writing equivalence of those methods.
      */
-    interface Updater extends AutoCloseable
-    {
+    interface Updater extends AutoCloseable {
         /**
          * Increments (or decrements if delta is negative) the count for the node label token id.
          * @param labelId node label token id.
          * @param delta delta (positive or negative) to apply for the label.
          */
-        void incrementNodeCount( long labelId, long delta );
+        void incrementNodeCount(long labelId, long delta);
 
         /**
          * Increments (or decrements if delta is negative) the count for the combination of the start/end labels and relationship type.
@@ -61,7 +59,7 @@ public interface CountsAccessor extends CountsVisitor.Visitable
          * @param endLabelId node label token id of end node of relationship.
          * @param delta delta (positive or negative) to apply for the label.
          */
-        void incrementRelationshipCount( long startLabelId, int typeId, long endLabelId, long delta );
+        void incrementRelationshipCount(long startLabelId, int typeId, long endLabelId, long delta);
 
         /**
          * Closes this updater and ensures that counts are applied as well as no more deltas can be applied after closed.
@@ -70,21 +68,17 @@ public interface CountsAccessor extends CountsVisitor.Visitable
         void close();
     }
 
-    CountsAccessor.Updater NO_OP_UPDATER = new CountsAccessor.Updater()
-    {
+    CountsAccessor.Updater NO_OP_UPDATER = new CountsAccessor.Updater() {
         @Override
-        public void incrementNodeCount( long labelId, long delta )
-        {   // no-op
+        public void incrementNodeCount(long labelId, long delta) { // no-op
         }
 
         @Override
-        public void incrementRelationshipCount( long startLabelId, int typeId, long endLabelId, long delta )
-        {   // no-op
+        public void incrementRelationshipCount(long startLabelId, int typeId, long endLabelId, long delta) { // no-op
         }
 
         @Override
-        public void close()
-        {   // no-op
+        public void close() { // no-op
         }
     };
 }

@@ -33,8 +33,8 @@ import org.neo4j.values.storable.Values
  *
  * @param labels list of labels, of different pattern nodes
  */
-case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLabel]])
-                                      (val id: Id = Id.INVALID_ID) extends Pipe {
+case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLabel]])(val id: Id = Id.INVALID_ID)
+    extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     var count = 1L
@@ -42,12 +42,12 @@ case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLa
     while (it.hasNext) {
       it.next() match {
         case Some(lazyLabel) =>
-            val idOfLabel = lazyLabel.getId(state.query)
-            if (idOfLabel == LazyLabel.UNKNOWN) {
-              count = 0
-            } else {
-              count = count * state.query.nodeCountByCountStore(idOfLabel)
-            }
+          val idOfLabel = lazyLabel.getId(state.query)
+          if (idOfLabel == LazyLabel.UNKNOWN) {
+            count = 0
+          } else {
+            count = count * state.query.nodeCountByCountStore(idOfLabel)
+          }
         case _ =>
           count *= state.query.nodeCountByCountStore(NameId.WILDCARD)
       }

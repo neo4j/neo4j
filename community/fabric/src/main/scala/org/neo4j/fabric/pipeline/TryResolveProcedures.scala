@@ -63,8 +63,13 @@ case class TryResolveProcedures(signatures: ProcedureSignatureResolver) extends 
             val copy2 = Variable(item.variable.name)(item.variable.position)
             AliasedReturnItem(copy1, copy2)(resolved.position, isAutoAliased = true)
           }
-          val projection = Return(distinct = false, ReturnItems(includeExisting = false, aliases)(resolved.position),
-            None, None, None)(resolved.position)
+          val projection = Return(
+            distinct = false,
+            ReturnItems(includeExisting = false, aliases)(resolved.position),
+            None,
+            None,
+            None
+          )(resolved.position)
           q.copy(part = part.copy(clauses = Seq(expanded, projection))(part.position))(q.position)
       }
 

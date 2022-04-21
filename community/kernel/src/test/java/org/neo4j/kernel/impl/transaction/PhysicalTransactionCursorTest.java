@@ -19,11 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
@@ -35,86 +43,68 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
-import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
-
-class PhysicalTransactionCursorTest
-{
-    private final ReadableLogChannel channel = mock( ReadableLogChannel.class, RETURNS_MOCKS );
-    private final LogEntryReader entryReader = mock( LogEntryReader.class );
+class PhysicalTransactionCursorTest {
+    private final ReadableLogChannel channel = mock(ReadableLogChannel.class, RETURNS_MOCKS);
+    private final LogEntryReader entryReader = mock(LogEntryReader.class);
 
     private static final LogEntry NULL_ENTRY = null;
-    private static final LogEntryStart A_START_ENTRY = new LogEntryStart( 0L, 0L, 0, null, LogPosition.UNSPECIFIED );
-    private static final LogEntryCommit A_COMMIT_ENTRY = new LogEntryCommit( 42, 0, BASE_TX_CHECKSUM );
-    private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand( new TestCommand() );
+    private static final LogEntryStart A_START_ENTRY = new LogEntryStart(0L, 0L, 0, null, LogPosition.UNSPECIFIED);
+    private static final LogEntryCommit A_COMMIT_ENTRY = new LogEntryCommit(42, 0, BASE_TX_CHECKSUM);
+    private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand(new TestCommand());
     private PhysicalTransactionCursor cursor;
 
     @BeforeEach
-    void setup() throws IOException
-    {
-        cursor = new PhysicalTransactionCursor( channel, entryReader );
+    void setup() throws IOException {
+        cursor = new PhysicalTransactionCursor(channel, entryReader);
     }
 
     @Test
-    void shouldCloseTheUnderlyingChannel() throws IOException
-    {
+    void shouldCloseTheUnderlyingChannel() throws IOException {
         // when
         cursor.close();
 
         // then
-        verify( channel ).close();
+        verify(channel).close();
     }
 
     @Test
-    void shouldReturnFalseWhenThereAreNoEntries() throws IOException
-    {
+    void shouldReturnFalseWhenThereAreNoEntries() throws IOException {
         // given
-        when( entryReader.readLogEntry( channel ) ).thenReturn( NULL_ENTRY );
+        when(entryReader.readLogEntry(channel)).thenReturn(NULL_ENTRY);
 
         // when
         final boolean result = cursor.next();
 
         // then
-        assertFalse( result );
-        assertNull( cursor.get() );
+        assertFalse(result);
+        assertNull(cursor.get());
     }
 
     @Test
-    void shouldReturnFalseWhenThereIsAStartEntryButNoCommitEntries() throws IOException
-    {
+    void shouldReturnFalseWhenThereIsAStartEntryButNoCommitEntries() throws IOException {
         // given
-        when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, NULL_ENTRY );
+        when(entryReader.readLogEntry(channel)).thenReturn(A_START_ENTRY, NULL_ENTRY);
 
         // when
         final boolean result = cursor.next();
 
         // then
-        assertFalse( result );
-        assertNull( cursor.get() );
+        assertFalse(result);
+        assertNull(cursor.get());
     }
 
     @Test
-    void shouldCallTheVisitorWithTheFoundTransaction() throws IOException
-    {
+    void shouldCallTheVisitorWithTheFoundTransaction() throws IOException {
         // given
-        when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, A_COMMAND_ENTRY, A_COMMIT_ENTRY );
+        when(entryReader.readLogEntry(channel)).thenReturn(A_START_ENTRY, A_COMMAND_ENTRY, A_COMMIT_ENTRY);
 
         // when
         cursor.next();
 
         // then
         PhysicalTransactionRepresentation txRepresentation =
-                new PhysicalTransactionRepresentation( singletonList( A_COMMAND_ENTRY.getCommand() ) );
+                new PhysicalTransactionRepresentation(singletonList(A_COMMAND_ENTRY.getCommand()));
         assertEquals(
-                new CommittedTransactionRepresentation( A_START_ENTRY, txRepresentation, A_COMMIT_ENTRY ),
-                cursor.get()
-        );
+                new CommittedTransactionRepresentation(A_START_ENTRY, txRepresentation, A_COMMIT_ENTRY), cursor.get());
     }
 }

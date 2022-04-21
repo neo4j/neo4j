@@ -24,34 +24,28 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * Represents the state of a transaction from the view of the {@link TransactionManager}.
  */
-public class TransactionStatus
-{
+public class TransactionStatus {
     private final Value value;
     private Status error;
 
-    public TransactionStatus( Value transactionStatus )
-    {
+    public TransactionStatus(Value transactionStatus) {
         this.value = transactionStatus;
     }
 
-    public TransactionStatus( Value transactionStatus, Status error )
-    {
+    public TransactionStatus(Value transactionStatus, Status error) {
         this.value = transactionStatus;
         this.error = error;
     }
 
-    public Value value()
-    {
+    public Value value() {
         return value;
     }
 
-    public Status error()
-    {
+    public Status error() {
         return error;
     }
 
-    public enum Value
-    {
+    public enum Value {
         /**
          * The transaction is either closed or does not exist.
          */

@@ -22,6 +22,4 @@ package org.neo4j.util;
 /**
  * This annotation signals that an interface is only used for marking types, and that the interface should <em>not</em> define any methods.
  */
-public @interface MarkerInterface
-{
-}
+public @interface MarkerInterface {}

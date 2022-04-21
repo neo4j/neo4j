@@ -50,12 +50,14 @@ case class PlainText(valueMapper: ValueMapper.JavaMapper) extends QueryAnonymize
 }
 
 object IdAnonymizer {
+
   private val preParser = new PreParser(
     CypherConfiguration.fromConfig(Config.defaults()),
     new LFUCache[String, PreParsedQuery](
       cacheFactory = new ExecutorBasedCaffeineCacheFactory((_: Runnable).run()),
-      size = 0),
+      size = 0
     )
+  )
 }
 
 case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
@@ -65,7 +67,11 @@ case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
 
   override def queryText(queryText: String): String = {
     val preParsedQuery = IdAnonymizer.preParser.preParseQuery(queryText)
-    val originalAst = parser.parse(preParsedQuery.statement, Neo4jCypherExceptionFactory(queryText, Some(preParsedQuery.options.offset)), new AnonymousVariableNameGenerator)
+    val originalAst = parser.parse(
+      preParsedQuery.statement,
+      Neo4jCypherExceptionFactory(queryText, Some(preParsedQuery.options.offset)),
+      new AnonymousVariableNameGenerator
+    )
     val anonymizer = anonymizeQuery(new IdAnonymizerState(tokens, prettifier))
     val rewrittenAst = anonymizer(originalAst).asInstanceOf[Statement]
     preParsedQuery.rawPreparserOptions ++ prettifier.asString(rewrittenAst)
@@ -76,7 +82,8 @@ case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
   }
 }
 
-class IdAnonymizerState(tokens: TokenRead, prettifier: Prettifier) extends org.neo4j.cypher.internal.rewriting.rewriters.Anonymizer {
+class IdAnonymizerState(tokens: TokenRead, prettifier: Prettifier)
+    extends org.neo4j.cypher.internal.rewriting.rewriters.Anonymizer {
 
   private val variables = mutable.Map[String, String]()
   private val parameters = mutable.Map[String, String]()
@@ -108,7 +115,7 @@ class IdAnonymizerState(tokens: TokenRead, prettifier: Prettifier) extends org.n
 
   private def tokenName(prefix: String, name: String, id: Int): String =
     id match {
-      case -1 => unknownTokens.getOrElseUpdate(name, "UNKNOWN"+unknownTokens.size)
-      case x => prefix + x
+      case -1 => unknownTokens.getOrElseUpdate(name, "UNKNOWN" + unknownTokens.size)
+      case x  => prefix + x
     }
 }

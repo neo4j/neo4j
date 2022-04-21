@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.security;
 
 import java.util.Map;
-
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -31,8 +30,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 /**
  * An AuthManager is used to do basic authentication and user management.
  */
-public abstract class AuthManager extends LifecycleAdapter
-{
+public abstract class AuthManager extends LifecycleAdapter {
     public static final String INITIAL_USER_NAME = "neo4j";
     public static final String INITIAL_PASSWORD = "neo4j";
 
@@ -46,33 +44,29 @@ public abstract class AuthManager extends LifecycleAdapter
      * @return An AuthSubject representing the newly logged-in user
      * @throws InvalidAuthTokenException if the authentication token is malformed
      */
-    public abstract LoginContext login( Map<String,Object> authToken, ClientConnectionInfo connectionInfo ) throws InvalidAuthTokenException;
+    public abstract LoginContext login(Map<String, Object> authToken, ClientConnectionInfo connectionInfo)
+            throws InvalidAuthTokenException;
 
-    public abstract LoginContext impersonate( LoginContext originalAuth, String userToImpersonate );
+    public abstract LoginContext impersonate(LoginContext originalAuth, String userToImpersonate);
 
-    public abstract void log( String message, SecurityContext securityContext );
+    public abstract void log(String message, SecurityContext securityContext);
 
     /**
      * Implementation that does no authentication.
      */
-    public static final AuthManager NO_AUTH = new AuthManager()
-    {
+    public static final AuthManager NO_AUTH = new AuthManager() {
         @Override
-        public LoginContext login( Map<String,Object> authToken, ClientConnectionInfo connectionInfo )
-        {
-            AuthToken.clearCredentials( authToken );
-            return LoginContext.fullAccess( connectionInfo );
+        public LoginContext login(Map<String, Object> authToken, ClientConnectionInfo connectionInfo) {
+            AuthToken.clearCredentials(authToken);
+            return LoginContext.fullAccess(connectionInfo);
         }
 
         @Override
-        public LoginContext impersonate( LoginContext originalAuth, String userToImpersonate )
-        {
-            throw new InvalidArgumentException( "Impersonation is not supported with auth disabled." );
+        public LoginContext impersonate(LoginContext originalAuth, String userToImpersonate) {
+            throw new InvalidArgumentException("Impersonation is not supported with auth disabled.");
         }
 
         @Override
-        public void log( String message, SecurityContext securityContext )
-        {
-        }
+        public void log(String message, SecurityContext securityContext) {}
     };
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.http.cypher;
 
+import static java.lang.String.format;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.util.HashSet;
@@ -27,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
-
 import org.neo4j.function.Predicates;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -35,17 +36,17 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.util.VisibleForTesting;
 
-import static java.lang.String.format;
-
-public class TransactionHandleRegistry implements TransactionRegistry
-{
+public class TransactionHandleRegistry implements TransactionRegistry {
     @VisibleForTesting
-    public static final long ACTIVE_TRANSACTION_SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ActiveTransaction.class );
-    @VisibleForTesting
-    public static final long SUSPENDED_TRANSACTION_SHALLOW_SIZE = HeapEstimator.shallowSizeOf( SuspendedTransaction.class );
+    public static final long ACTIVE_TRANSACTION_SHALLOW_SIZE =
+            HeapEstimator.shallowSizeOfInstance(ActiveTransaction.class);
 
-    private final AtomicLong idGenerator = new AtomicLong( 0L );
-    private final ConcurrentHashMap<Long,TransactionMarker> registry = new ConcurrentHashMap<>( 64 );
+    @VisibleForTesting
+    public static final long SUSPENDED_TRANSACTION_SHALLOW_SIZE =
+            HeapEstimator.shallowSizeOf(SuspendedTransaction.class);
+
+    private final AtomicLong idGenerator = new AtomicLong(0L);
+    private final ConcurrentHashMap<Long, TransactionMarker> registry = new ConcurrentHashMap<>(64);
 
     private final Clock clock;
 
@@ -54,16 +55,15 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private final MemoryPool memoryPool;
 
-    public TransactionHandleRegistry( Clock clock, Duration transactionTimeout, InternalLogProvider logProvider, MemoryPool memoryPool )
-    {
+    public TransactionHandleRegistry(
+            Clock clock, Duration transactionTimeout, InternalLogProvider logProvider, MemoryPool memoryPool) {
         this.clock = clock;
         this.transactionTimeout = transactionTimeout;
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
         this.memoryPool = memoryPool;
     }
 
-    private abstract static class TransactionMarker
-    {
+    private abstract static class TransactionMarker {
         abstract ActiveTransaction getActiveTransaction();
 
         abstract SuspendedTransaction getSuspendedTransaction() throws InvalidConcurrentTransactionAccess;
@@ -71,262 +71,207 @@ public class TransactionHandleRegistry implements TransactionRegistry
         abstract boolean isSuspended();
     }
 
-    private static class ActiveTransaction extends TransactionMarker
-    {
+    private static class ActiveTransaction extends TransactionMarker {
         final TransactionTerminationHandle terminationHandle;
 
-        private ActiveTransaction( TransactionTerminationHandle terminationHandle )
-        {
+        private ActiveTransaction(TransactionTerminationHandle terminationHandle) {
             this.terminationHandle = terminationHandle;
         }
 
-        TransactionTerminationHandle getTerminationHandle()
-        {
+        TransactionTerminationHandle getTerminationHandle() {
             return terminationHandle;
         }
 
         @Override
-        ActiveTransaction getActiveTransaction()
-        {
+        ActiveTransaction getActiveTransaction() {
             return this;
         }
 
         @Override
-        SuspendedTransaction getSuspendedTransaction() throws InvalidConcurrentTransactionAccess
-        {
+        SuspendedTransaction getSuspendedTransaction() throws InvalidConcurrentTransactionAccess {
             throw new InvalidConcurrentTransactionAccess();
         }
 
         @Override
-        boolean isSuspended()
-        {
+        boolean isSuspended() {
             return false;
         }
     }
 
-    private class SuspendedTransaction extends TransactionMarker
-    {
+    private class SuspendedTransaction extends TransactionMarker {
         final ActiveTransaction activeMarker;
         final TransactionHandle transactionHandle;
         final long lastActiveTimestamp;
 
-        private SuspendedTransaction( ActiveTransaction activeMarker, TransactionHandle transactionHandle )
-        {
+        private SuspendedTransaction(ActiveTransaction activeMarker, TransactionHandle transactionHandle) {
             this.activeMarker = activeMarker;
             this.transactionHandle = transactionHandle;
             this.lastActiveTimestamp = clock.millis();
         }
 
         @Override
-        ActiveTransaction getActiveTransaction()
-        {
+        ActiveTransaction getActiveTransaction() {
             return activeMarker;
         }
 
         @Override
-        SuspendedTransaction getSuspendedTransaction()
-        {
+        SuspendedTransaction getSuspendedTransaction() {
             return this;
         }
 
         @Override
-        boolean isSuspended()
-        {
+        boolean isSuspended() {
             return true;
         }
 
-        long getLastActiveTimestamp()
-        {
+        long getLastActiveTimestamp() {
             return lastActiveTimestamp;
         }
     }
 
     @Override
-    public long begin( TransactionHandle handle )
-    {
-        memoryPool.reserveHeap( ACTIVE_TRANSACTION_SHALLOW_SIZE );
+    public long begin(TransactionHandle handle) {
+        memoryPool.reserveHeap(ACTIVE_TRANSACTION_SHALLOW_SIZE);
 
         long id = idGenerator.incrementAndGet();
-        if ( null == registry.putIfAbsent( id, new ActiveTransaction( handle ) ) )
-        {
+        if (null == registry.putIfAbsent(id, new ActiveTransaction(handle))) {
             return id;
-        }
-        else
-        {
-            memoryPool.releaseHeap( ACTIVE_TRANSACTION_SHALLOW_SIZE );
-            throw new IllegalStateException( "Attempt to begin transaction for id that was already registered" );
+        } else {
+            memoryPool.releaseHeap(ACTIVE_TRANSACTION_SHALLOW_SIZE);
+            throw new IllegalStateException("Attempt to begin transaction for id that was already registered");
         }
     }
 
     @Override
-    public long release( long id, TransactionHandle transactionHandle )
-    {
-        TransactionMarker marker = registry.get( id );
+    public long release(long id, TransactionHandle transactionHandle) {
+        TransactionMarker marker = registry.get(id);
 
-        if ( null == marker )
-        {
-            throw new IllegalStateException( "Trying to suspend unregistered transaction" );
+        if (null == marker) {
+            throw new IllegalStateException("Trying to suspend unregistered transaction");
         }
 
-        if ( marker.isSuspended() )
-        {
-            throw new IllegalStateException( "Trying to suspend transaction that was already suspended" );
+        if (marker.isSuspended()) {
+            throw new IllegalStateException("Trying to suspend transaction that was already suspended");
         }
 
-        memoryPool.reserveHeap( SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        memoryPool.reserveHeap(SUSPENDED_TRANSACTION_SHALLOW_SIZE);
 
-        SuspendedTransaction suspendedTx = new SuspendedTransaction( marker.getActiveTransaction(), transactionHandle );
-        if ( !registry.replace( id, marker, suspendedTx ) )
-        {
-            memoryPool.releaseHeap( SUSPENDED_TRANSACTION_SHALLOW_SIZE );
-            throw new IllegalStateException( "Trying to suspend transaction that has been concurrently suspended" );
+        SuspendedTransaction suspendedTx = new SuspendedTransaction(marker.getActiveTransaction(), transactionHandle);
+        if (!registry.replace(id, marker, suspendedTx)) {
+            memoryPool.releaseHeap(SUSPENDED_TRANSACTION_SHALLOW_SIZE);
+            throw new IllegalStateException("Trying to suspend transaction that has been concurrently suspended");
         }
 
-        return computeNewExpiryTime( suspendedTx.getLastActiveTimestamp() );
+        return computeNewExpiryTime(suspendedTx.getLastActiveTimestamp());
     }
 
-    private long computeNewExpiryTime( long lastActiveTimestamp )
-    {
-        return  lastActiveTimestamp + transactionTimeout.toMillis();
+    private long computeNewExpiryTime(long lastActiveTimestamp) {
+        return lastActiveTimestamp + transactionTimeout.toMillis();
     }
 
     @Override
-    public TransactionHandle acquire( long id ) throws TransactionLifecycleException
-    {
-        TransactionMarker marker = registry.get( id );
+    public TransactionHandle acquire(long id) throws TransactionLifecycleException {
+        TransactionMarker marker = registry.get(id);
 
-        if ( null == marker )
-        {
+        if (null == marker) {
             throw new InvalidTransactionId();
         }
 
         SuspendedTransaction transaction = marker.getSuspendedTransaction();
-        if ( registry.replace( id, marker, marker.getActiveTransaction() ) )
-        {
-            memoryPool.releaseHeap( SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        if (registry.replace(id, marker, marker.getActiveTransaction())) {
+            memoryPool.releaseHeap(SUSPENDED_TRANSACTION_SHALLOW_SIZE);
             return transaction.transactionHandle;
-        }
-        else
-        {
+        } else {
             throw new InvalidConcurrentTransactionAccess();
         }
     }
 
     @Override
-    public void forget( long id )
-    {
-        TransactionMarker marker = registry.get( id );
+    public void forget(long id) {
+        TransactionMarker marker = registry.get(id);
 
-        if ( null == marker )
-        {
-            throw new IllegalStateException( "Could not finish unregistered transaction" );
+        if (null == marker) {
+            throw new IllegalStateException("Could not finish unregistered transaction");
         }
 
-        if ( marker.isSuspended() )
-        {
-            throw new IllegalStateException( "Cannot finish suspended registered transaction" );
+        if (marker.isSuspended()) {
+            throw new IllegalStateException("Cannot finish suspended registered transaction");
         }
 
-        if ( !registry.remove( id, marker ) )
-        {
+        if (!registry.remove(id, marker)) {
             throw new IllegalStateException(
-                    "Trying to finish transaction that has been concurrently finished or suspended" );
+                    "Trying to finish transaction that has been concurrently finished or suspended");
         }
 
-        memoryPool.releaseHeap( ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        memoryPool.releaseHeap(ACTIVE_TRANSACTION_SHALLOW_SIZE);
     }
 
     @Override
-    public TransactionHandle terminate( long id ) throws TransactionLifecycleException
-    {
-        TransactionMarker marker = registry.get( id );
-        if ( null == marker )
-        {
+    public TransactionHandle terminate(long id) throws TransactionLifecycleException {
+        TransactionMarker marker = registry.get(id);
+        if (null == marker) {
             throw new InvalidTransactionId();
         }
 
-        memoryPool.releaseHeap( ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        memoryPool.releaseHeap(ACTIVE_TRANSACTION_SHALLOW_SIZE);
 
         TransactionTerminationHandle handle = marker.getActiveTransaction().getTerminationHandle();
         handle.terminate();
 
-        try
-        {
+        try {
             SuspendedTransaction transaction = marker.getSuspendedTransaction();
-            if ( registry.replace( id, marker, marker.getActiveTransaction() ) )
-            {
-                memoryPool.releaseHeap( SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+            if (registry.replace(id, marker, marker.getActiveTransaction())) {
+                memoryPool.releaseHeap(SUSPENDED_TRANSACTION_SHALLOW_SIZE);
                 return transaction.transactionHandle;
             }
-        }
-        catch ( InvalidConcurrentTransactionAccess exception )
-        {
+        } catch (InvalidConcurrentTransactionAccess exception) {
             // We could not acquire the transaction. Let the other request clean up.
         }
         return null;
     }
 
     @Override
-    public void rollbackAllSuspendedTransactions()
-    {
-        rollbackSuspended( Predicates.alwaysTrue() );
+    public void rollbackAllSuspendedTransactions() {
+        rollbackSuspended(Predicates.alwaysTrue());
     }
 
-    public void rollbackSuspendedTransactionsIdleSince( final long oldestLastActiveTime )
-    {
-        rollbackSuspended( item ->
-        {
-            try
-            {
+    public void rollbackSuspendedTransactionsIdleSince(final long oldestLastActiveTime) {
+        rollbackSuspended(item -> {
+            try {
                 SuspendedTransaction transaction = item.getSuspendedTransaction();
                 return transaction.lastActiveTimestamp < oldestLastActiveTime;
+            } catch (InvalidConcurrentTransactionAccess concurrentTransactionAccessError) {
+                throw new RuntimeException(concurrentTransactionAccessError);
             }
-            catch ( InvalidConcurrentTransactionAccess concurrentTransactionAccessError )
-            {
-                throw new RuntimeException( concurrentTransactionAccessError );
-            }
-        } );
+        });
     }
 
-    private void rollbackSuspended( Predicate<TransactionMarker> predicate )
-    {
+    private void rollbackSuspended(Predicate<TransactionMarker> predicate) {
         Set<Long> candidateTransactionIdsToRollback = new HashSet<>();
 
-        for ( Map.Entry<Long, TransactionMarker> entry : registry.entrySet() )
-        {
+        for (Map.Entry<Long, TransactionMarker> entry : registry.entrySet()) {
             TransactionMarker marker = entry.getValue();
-            if ( marker.isSuspended() && predicate.test( marker ) )
-            {
-                candidateTransactionIdsToRollback.add( entry.getKey() );
+            if (marker.isSuspended() && predicate.test(marker)) {
+                candidateTransactionIdsToRollback.add(entry.getKey());
             }
         }
 
-        for ( long id : candidateTransactionIdsToRollback )
-        {
+        for (long id : candidateTransactionIdsToRollback) {
             TransactionHandle handle;
-            try
-            {
-                handle = acquire( id );
-            }
-            catch ( TransactionLifecycleException invalidTransactionId )
-            {
+            try {
+                handle = acquire(id);
+            } catch (TransactionLifecycleException invalidTransactionId) {
                 // Allow this - someone snatched the transaction from under our feet,
                 continue;
             }
-            try
-            {
+            try {
                 handle.forceRollback();
-                log.info(
-                        format( "Transaction with id %d has been automatically rolled back due to transaction timeout.",
-                                id ) );
-            }
-            catch ( Throwable e )
-            {
-                log.error( format( "Transaction with id %d failed to roll back.", id ), e );
-            }
-            finally
-            {
-                forget( id );
+                log.info(format(
+                        "Transaction with id %d has been automatically rolled back due to transaction timeout.", id));
+            } catch (Throwable e) {
+                log.error(format("Transaction with id %d failed to roll back.", id), e);
+            } finally {
+                forget(id);
             }
         }
     }

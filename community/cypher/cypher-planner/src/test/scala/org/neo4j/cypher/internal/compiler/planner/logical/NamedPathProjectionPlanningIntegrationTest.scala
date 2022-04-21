@@ -30,7 +30,8 @@ import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   private def plannerConfig(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBuilder()
@@ -43,9 +44,10 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
   // p = (a:X)-[r]->(b)
   private val pathExpr: PathExpression =
     PathExpression(
-      NodePathStep(varFor("a"),
-        SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")),
-          NilPathStep()(pos))(pos))(pos)
+      NodePathStep(
+        varFor("a"),
+        SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep()(pos))(pos)
+      )(pos)
     )(pos)
 
   test("should build plans containing outgoing path projections") {
@@ -64,10 +66,10 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     plan shouldEqual cfg.subPlanBuilder()
       .filterExpression(
         equals(
-          function("head",
-            function("nodes", pathExpr)),
+          function("head", function("nodes", pathExpr)),
           varFor("a")
-      ))
+        )
+      )
       .expandAll("(a)-[r]->(b)")
       .nodeByLabelScan("a", "X")
       .build()
@@ -75,15 +77,18 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
 
   test("should build plans containing multiple path projections and path selections") {
     val cfg = plannerConfig()
-    val plan = cfg.plan("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").stripProduceResults
+    val plan =
+      cfg.plan("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .filterExpression(
         equals(
           function("head", function("nodes", pathExpr)),
-          varFor("a")),
+          varFor("a")
+        ),
         greaterThan(
           function("length", pathExpr),
-          literalInt(10))
+          literalInt(10)
+        )
       )
       .expandAll("(a)-[r]->(b)")
       .nodeByLabelScan("a", "X", IndexOrderNone)

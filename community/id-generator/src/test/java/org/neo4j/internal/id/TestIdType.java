@@ -19,14 +19,12 @@
  */
 package org.neo4j.internal.id;
 
-public enum TestIdType implements IdType
-{
+public enum TestIdType implements IdType {
     TEST,
     TEST_2;
 
     @Override
-    public boolean highActivity()
-    {
+    public boolean highActivity() {
         return false;
     }
 }

@@ -20,27 +20,22 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.graphdb.schema.ConstraintCreator;
 
 public class MandatoryTransactionsForConstraintCreatorTest
-    extends AbstractMandatoryTransactionsTest<ConstraintCreator>
-{
+        extends AbstractMandatoryTransactionsTest<ConstraintCreator> {
     @Test
-    void shouldRequireTransactionsWhenCallingMethodsConstraintCreators()
-    {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ConstraintCreatorFacadeMethods.values() );
+    void shouldRequireTransactionsWhenCallingMethodsConstraintCreators() {
+        assertFacadeMethodsThrowNotInTransaction(obtainEntity(), ConstraintCreatorFacadeMethods.values());
     }
 
     @Test
-    void shouldTerminateWhenCallingMethodsConstraintCreators()
-    {
-        assertFacadeMethodsThrowAfterTerminate( ConstraintCreatorFacadeMethods.values() );
+    void shouldTerminateWhenCallingMethodsConstraintCreators() {
+        assertFacadeMethodsThrowAfterTerminate(ConstraintCreatorFacadeMethods.values());
     }
 
     @Override
-    protected ConstraintCreator obtainEntityInTransaction( Transaction transaction )
-    {
-        return transaction.schema().constraintFor( Label.label( "Label" ) );
+    protected ConstraintCreator obtainEntityInTransaction(Transaction transaction) {
+        return transaction.schema().constraintFor(Label.label("Label"));
     }
 }

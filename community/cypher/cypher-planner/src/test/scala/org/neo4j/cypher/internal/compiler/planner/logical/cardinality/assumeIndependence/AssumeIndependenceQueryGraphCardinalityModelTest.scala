@@ -39,7 +39,8 @@ import scala.annotation.nowarn
 import scala.math.cbrt
 import scala.math.sqrt
 
-abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with ABCDECardinalityData with TestName {
+abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with ABCDECardinalityData
+    with TestName {
 
   test("MATCH (n)") {
     expectCardinality(N)
@@ -202,9 +203,12 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
   }
 
   test("MATCH (d:D) WHERE d.foo = 0 AND d.bar = 1 WITH max(d.baz) AS maxBaz") {
-    expectPlanCardinality({
-      case _:NodeIndexSeek => true
-    }, D * DfooBarBazExists * cbrt(DfooBarBazUnique) * cbrt(DfooBarBazUnique))
+    expectPlanCardinality(
+      {
+        case _: NodeIndexSeek => true
+      },
+      D * DfooBarBazExists * cbrt(DfooBarBazUnique) * cbrt(DfooBarBazUnique)
+    )
   }
 
   test("MATCH (c:C) WHERE c.prop = 0") {
@@ -263,7 +267,7 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
   }
 
   test("MATCH (a:A)-[:T1|T2]->(:B)") {
-    val maxRelCount = N  * Asel * N * Bsel
+    val maxRelCount = N * Asel * N * Bsel
     val relMult = A_T1_B / maxRelCount + A_T2_B / maxRelCount
     expectCardinality(maxRelCount * relMult)
   }
@@ -290,7 +294,7 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
       A_T1_C / maxRelCount * Bsel * Dsel,
       A_T1_D / maxRelCount * Bsel * Csel,
       B_T1_C / maxRelCount * Asel * Dsel,
-      B_T1_D / maxRelCount * Asel * Csel,
+      B_T1_D / maxRelCount * Asel * Csel
     ).min
     expectCardinality(maxRelCount * relMult)
   }
@@ -301,13 +305,13 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
       A_T1_C / maxRelCount * Bsel * Dsel,
       A_T1_D / maxRelCount * Bsel * Csel,
       B_T1_C / maxRelCount * Asel * Dsel,
-      B_T1_D / maxRelCount * Asel * Csel,
+      B_T1_D / maxRelCount * Asel * Csel
     ).min
     val relMultT2 = Seq(
       A_T2_C / maxRelCount * Bsel * Dsel,
       A_T2_D / maxRelCount * Bsel * Csel,
       B_T2_C / maxRelCount * Asel * Dsel,
-      B_T2_D / maxRelCount * Asel * Csel,
+      B_T2_D / maxRelCount * Asel * Csel
     ).min
     val relMult = relMultT1 + relMultT2
     expectCardinality(maxRelCount * relMult)
@@ -378,11 +382,15 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
   }
 
   test("MATCH ()-[t1: T1]->()-[t2:T2]->() WHERE t1.prop = 2 AND t2.prop = 3") {
-    expectCardinality(N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * T1prop * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(
+      N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * T1prop * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
+    )
   }
 
   test("MATCH ()-[t1:T1]->()-[t2:T2*2..2]->() WHERE t1.prop = 2") {
-    expectCardinality(N * N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * ANY_T2_ANY_sel * uniquenessSelectivityForNRels(2).factor * T1prop)
+    expectCardinality(N * N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * ANY_T2_ANY_sel * uniquenessSelectivityForNRels(
+      2
+    ).factor * T1prop)
   }
 
   test("MATCH ()-[t:T1]->() WHERE t.prop STARTS WITH 'prefix'") {
@@ -468,7 +476,9 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
     expectCardinality(ANY_T2_ANY * N * T2propFooExists * T2propFooUnique)
   }
 
-  test("MATCH ()-[t: T2]->() WITH * CALL { WITH t MATCH ()-[t]->() WHERE t.prop = 17 AND t.foo = 42 RETURN 42 as ft }") {
+  test(
+    "MATCH ()-[t: T2]->() WITH * CALL { WITH t MATCH ()-[t]->() WHERE t.prop = 17 AND t.foo = 42 RETURN 42 as ft }"
+  ) {
     expectCardinality(ANY_T2_ANY * T2propFooExists * T2propFooUnique)
   }
 
@@ -572,7 +582,9 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
   }
 
   test("MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(c:C)") {
-    expectCardinality(N * N * N * Asel * A_T1_B_sel * Bsel * B_T1_C_sel * Csel * uniquenessSelectivityForNRels(2).factor)
+    expectCardinality(
+      N * N * N * Asel * A_T1_B_sel * Bsel * B_T1_C_sel * Csel * uniquenessSelectivityForNRels(2).factor
+    )
   }
 
   test("MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(a)") {
@@ -585,28 +597,39 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
 
   test("MATCH (:A)-[r1:T1]->(:A)-[r2:T1]->(:B)-[r3:T1]->(:B)-[r4:T2]->(c:C)") {
     // r4 has a different relType so it does not need to be checked for rel-uniqueness against the other rels
-    expectCardinality(A * A * B * B * C * A_T1_A_sel * A_T1_B_sel * B_T1_B_sel * B_T2_C_sel * uniquenessSelectivityForNRels(3).factor)
+    expectCardinality(
+      A * A * B * B * C * A_T1_A_sel * A_T1_B_sel * B_T1_B_sel * B_T2_C_sel * uniquenessSelectivityForNRels(3).factor
+    )
   }
 
   test("MATCH (a:A) CALL { WITH a MATCH (b:B) RETURN b }") {
     expectCardinality(A * B)
-    expectPlanCardinality({
-      case NodeByLabelScan("b", _, _, _) => true
-    }, A * B)
+    expectPlanCardinality(
+      {
+        case NodeByLabelScan("b", _, _, _) => true
+      },
+      A * B
+    )
   }
 
   test("MATCH (a:A) CALL { MATCH (b:B) RETURN b }") {
     expectCardinality(A * B)
-    expectPlanCardinality({
-      case NodeByLabelScan("b", _, _, _) => true
-    }, A * B)
+    expectPlanCardinality(
+      {
+        case NodeByLabelScan("b", _, _, _) => true
+      },
+      A * B
+    )
   }
 
   test("MATCH (a:A) CALL { MATCH (b:B) RETURN b } MATCH (c:C)") {
     expectCardinality(A * B * C)
-    expectPlanCardinality({
-      case NodeByLabelScan("c", _, _, _) => true
-    }, A * B * C)
+    expectPlanCardinality(
+      {
+        case NodeByLabelScan("c", _, _, _) => true
+      },
+      A * B * C
+    )
   }
 
   test("MATCH (a:A) CALL { WITH a MATCH (a)-[:T1]->(b:B) RETURN b }") {
@@ -623,52 +646,82 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
 
   test("MATCH (a:A) CALL { WITH a MATCH (b:B) RETURN b AS x UNION ALL WITH a MATCH (c:C) RETURN c AS x}") {
     expectCardinality(A * (B + C))
-    expectPlanCardinality({
-      case NodeByLabelScan("b", _, _, _) => true
-    }, A * B)
-    expectPlanCardinality({
-      case NodeByLabelScan("c", _, _, _) => true
-    }, A * C)
+    expectPlanCardinality(
+      {
+        case NodeByLabelScan("b", _, _, _) => true
+      },
+      A * B
+    )
+    expectPlanCardinality(
+      {
+        case NodeByLabelScan("c", _, _, _) => true
+      },
+      A * C
+    )
   }
 
   test("MATCH (a:A) CALL { MATCH (b:B) RETURN b AS x UNION ALL MATCH (c:C) RETURN c AS x}") {
     expectCardinality(A * (B + C))
-    expectPlanCardinality({
-      case NodeByLabelScan("b", _, _, _) => true
-    }, A * B)
-    expectPlanCardinality({
-      case NodeByLabelScan("c", _, _, _) => true
-    }, A * C)
+    expectPlanCardinality(
+      {
+        case NodeByLabelScan("b", _, _, _) => true
+      },
+      A * B
+    )
+    expectPlanCardinality(
+      {
+        case NodeByLabelScan("c", _, _, _) => true
+      },
+      A * C
+    )
   }
 
   test("MATCH (a:A) CALL { WITH a UNWIND [1, 2] AS x WITH toFloat(x) AS f, x AS x RETURN x }") {
     expectCardinality(A * 2)
-    expectPlanCardinality({
-      case Projection(_, MapKeys("f")) => true
-    }, A * 2)
-    expectPlanCardinality({
-      case UnwindCollection(_, "x", _) => true
-    }, A * 2)
-    expectPlanCardinality({
-      case Argument(_) => true
-    }, A)
+    expectPlanCardinality(
+      {
+        case Projection(_, MapKeys("f")) => true
+      },
+      A * 2
+    )
+    expectPlanCardinality(
+      {
+        case UnwindCollection(_, "x", _) => true
+      },
+      A * 2
+    )
+    expectPlanCardinality(
+      {
+        case Argument(_) => true
+      },
+      A
+    )
   }
 
   test("MATCH (a:A) CALL { WITH a MATCH (a)-[:T1]->(b:B) RETURN count(*) AS c }") {
     expectCardinality(A)
-    expectPlanCardinality({
-      case Aggregation(_, _, _) => true
-    }, A)
+    expectPlanCardinality(
+      {
+        case Aggregation(_, _, _) => true
+      },
+      A
+    )
   }
 
   test("MATCH (a:A) CALL { CREATE (b:Label) WITH b CALL { RETURN 5 AS literal } RETURN * }") {
     expectCardinality(A)
-    expectPlanCardinality({
-      case Create(_, _, _) => true
-    }, A)
-    expectPlanCardinality({
-      case Projection(_, _) => true
-    }, A)
+    expectPlanCardinality(
+      {
+        case Create(_, _, _) => true
+      },
+      A
+    )
+    expectPlanCardinality(
+      {
+        case Projection(_, _) => true
+      },
+      A
+    )
   }
 
   test("CALL { MATCH (b:B) CREATE (n:N) }") {
@@ -688,12 +741,14 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
   }
 
   private val varLength0_0 = N * Asel * Bsel
+
   test("varlength 0..0 should be equal to non-varlength") {
     queryShouldHaveCardinality("MATCH (:A:B)", varLength0_0)
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*0..0]->(b:B)", varLength0_0)
   }
 
   private val varLength1_1 = A_T1_B
+
   test("varlength 1..1 should be equal to non-varlength") {
     queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->(:B)", varLength1_1)
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..1]->(b:B)", varLength1_1)
@@ -704,6 +759,7 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
   }
 
   private val varLength2_2 = A * N * B * A_T1_ANY_sel * ANY_T1_B_sel * uniquenessSelectivityForNRels(2).factor
+
   test("varlength 2..2 should be equal to non-varlength") {
     queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->()-[r2:T1]->(:B)", varLength2_2)
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*2..2]->(b:B)", varLength2_2)
@@ -717,7 +773,9 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*0..2]->(b:B)", varLength0_0 + varLength1_1 + varLength2_2)
   }
 
-  private val varLength3_3 = A * N * N * B * A_T1_ANY_sel * ANY_T1_ANY_sel * ANY_T1_B_sel * uniquenessSelectivityForNRels(3).factor
+  private val varLength3_3 =
+    A * N * N * B * A_T1_ANY_sel * ANY_T1_ANY_sel * ANY_T1_B_sel * uniquenessSelectivityForNRels(3).factor
+
   test("varlength 3..3 should be equal to non-varlength") {
     // The result includes all (:A)-[:T1]->()-[:T1]->()-[:T1]->(:B)
     queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->()-[r2:T1]->()-[r3:T1]->(:B)", varLength3_3)
@@ -749,7 +807,9 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
     // But the label and rel type information from the first match is currently not propagated to the 2nd match.
     // This also means that the planner cannot prove that r != r2 and therefore applies a filter with the
     // selectivity for 2 unique relationships.
-    expectCardinality(N * N * N * Asel * A_T1_B_sel * Bsel * ANY_T2_C_sel * Csel * uniquenessSelectivityForNRels(2).factor)
+    expectCardinality(
+      N * N * N * Asel * A_T1_B_sel * Bsel * ANY_T2_C_sel * Csel * uniquenessSelectivityForNRels(2).factor
+    )
   }
 
   private def expectCardinality(expected: Double): Unit =

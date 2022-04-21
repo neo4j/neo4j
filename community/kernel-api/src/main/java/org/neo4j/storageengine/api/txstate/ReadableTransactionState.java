@@ -19,12 +19,10 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.UnmodifiableMap;
-
 import java.util.Iterator;
 import java.util.NavigableMap;
-
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.UnmodifiableMap;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -36,9 +34,8 @@ import org.neo4j.values.storable.ValueTuple;
  * This interface contains the methods for reading transaction state from the transaction state.
  * The implementation of these methods should be free of any side effects (such as initialising lazy state).
  */
-public interface ReadableTransactionState
-{
-    void accept( TxStateVisitor visitor ) throws KernelException;
+public interface ReadableTransactionState {
+    void accept(TxStateVisitor visitor) throws KernelException;
 
     boolean hasChanges();
 
@@ -49,7 +46,7 @@ public interface ReadableTransactionState
      *
      * @param label The label that has changed.
      */
-    LongDiffSets nodesWithLabelChanged( long label );
+    LongDiffSets nodesWithLabelChanged(long label);
 
     /**
      * Returns nodes that have been added and removed in this tx.
@@ -62,7 +59,7 @@ public interface ReadableTransactionState
      *
      * @param type The relationship type that has changed.
      */
-    LongDiffSets relationshipsWithTypeChanged( int type );
+    LongDiffSets relationshipsWithTypeChanged(int type);
 
     /**
      * Returns rels that have been added and removed in this tx.
@@ -79,30 +76,30 @@ public interface ReadableTransactionState
      */
     Iterable<RelationshipState> modifiedRelationships();
 
-    boolean relationshipIsAddedInThisTx( long relationshipId );
+    boolean relationshipIsAddedInThisTx(long relationshipId);
 
-    boolean relationshipIsDeletedInThisTx( long relationshipId );
+    boolean relationshipIsDeletedInThisTx(long relationshipId);
 
-    LongDiffSets nodeStateLabelDiffSets( long nodeId );
+    LongDiffSets nodeStateLabelDiffSets(long nodeId);
 
-    boolean nodeIsAddedInThisTx( long nodeId );
+    boolean nodeIsAddedInThisTx(long nodeId);
 
-    boolean nodeIsDeletedInThisTx( long nodeId );
+    boolean nodeIsDeletedInThisTx(long nodeId);
 
     /**
      * @return {@code true} if the relationship was visited in this state, i.e. if it was created
      * by this current transaction, otherwise {@code false} where the relationship might need to be
      * visited from the store.
      */
-    <EX extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EX> visitor ) throws EX;
+    <EX extends Exception> boolean relationshipVisit(long relId, RelationshipVisitor<EX> visitor) throws EX;
 
     // SCHEMA RELATED
 
-    DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
+    DiffSets<IndexDescriptor> indexDiffSetsByLabel(int labelId);
 
-    DiffSets<IndexDescriptor> indexDiffSetsByRelationshipType( int relationshipType );
+    DiffSets<IndexDescriptor> indexDiffSetsByRelationshipType(int relationshipType);
 
-    DiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema );
+    DiffSets<IndexDescriptor> indexDiffSetsBySchema(SchemaDescriptor schema);
 
     DiffSets<IndexDescriptor> indexChanges();
 
@@ -110,11 +107,11 @@ public interface ReadableTransactionState
 
     DiffSets<ConstraintDescriptor> constraintsChanges();
 
-    DiffSets<ConstraintDescriptor> constraintsChangesForLabel( int labelId );
+    DiffSets<ConstraintDescriptor> constraintsChangesForLabel(int labelId);
 
-    DiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor );
+    DiffSets<ConstraintDescriptor> constraintsChangesForSchema(SchemaDescriptor descriptor);
 
-    DiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId );
+    DiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType(int relTypeId);
 
     // INDEX UPDATES
 
@@ -122,7 +119,7 @@ public interface ReadableTransactionState
      * A readonly view of all index updates for the provided schema. Returns {@code null}, if the index
      * updates for this schema have not been initialized.
      */
-    UnmodifiableMap<ValueTuple,? extends LongDiffSets> getIndexUpdates( SchemaDescriptor schema );
+    UnmodifiableMap<ValueTuple, ? extends LongDiffSets> getIndexUpdates(SchemaDescriptor schema);
 
     /**
      * A readonly view of all index updates for the provided schema, in sorted order. The returned
@@ -131,15 +128,15 @@ public interface ReadableTransactionState
      * Ensure sorted index updates for a given index. This is needed for range query support and
      * ay involve converting the existing hash map first.
      */
-    NavigableMap<ValueTuple,? extends LongDiffSets> getSortedIndexUpdates( SchemaDescriptor descriptor );
+    NavigableMap<ValueTuple, ? extends LongDiffSets> getSortedIndexUpdates(SchemaDescriptor descriptor);
 
     // OTHER
 
-    NodeState getNodeState( long id );
+    NodeState getNodeState(long id);
 
-    RelationshipState getRelationshipState( long id );
+    RelationshipState getRelationshipState(long id);
 
-    MutableLongSet augmentLabels( MutableLongSet labels, NodeState nodeState );
+    MutableLongSet augmentLabels(MutableLongSet labels, NodeState nodeState);
 
     /**
      * The revision of the data changes in this transaction. This number is opaque, except that it is zero if there have been no data changes in this

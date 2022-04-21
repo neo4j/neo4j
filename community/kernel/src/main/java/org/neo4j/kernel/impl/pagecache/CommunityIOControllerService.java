@@ -25,17 +25,14 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.time.SystemNanoClock;
 
 @ServiceProvider
-public class CommunityIOControllerService implements IOControllerService
-{
+public class CommunityIOControllerService implements IOControllerService {
     @Override
-    public IOController createIOController( Config config, SystemNanoClock clock )
-    {
+    public IOController createIOController(Config config, SystemNanoClock clock) {
         return IOController.DISABLED;
     }
 
     @Override
-    public int getPriority()
-    {
+    public int getPriority() {
         return 1000;
     }
 }

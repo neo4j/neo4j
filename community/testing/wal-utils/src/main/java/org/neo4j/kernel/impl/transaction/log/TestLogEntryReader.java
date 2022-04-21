@@ -23,14 +23,10 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
-public final class TestLogEntryReader
-{
-    private TestLogEntryReader()
-    {
-    }
+public final class TestLogEntryReader {
+    private TestLogEntryReader() {}
 
-    public static LogEntryReader logEntryReader()
-    {
-        return new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
+    public static LogEntryReader logEntryReader() {
+        return new VersionAwareLogEntryReader(new TestCommandReaderFactory());
     }
 }

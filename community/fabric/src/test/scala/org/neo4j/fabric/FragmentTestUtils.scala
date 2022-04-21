@@ -64,11 +64,18 @@ trait FragmentTestUtils {
     Init(use, argumentColumns, importColumns)
 
   implicit class FragBuilder(input: Chain) {
-    def apply(fragmentInheritUse: Use => Fragment,
-              inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters] = None,
-              pos: InputPosition = InputPosition.NONE): Apply = Apply(input, fragmentInheritUse(input.use), inTransactionsParameters)(pos)
-    def leaf(clauses: Seq[ast.Clause], outputColumns: Seq[String], pos: InputPosition = InputPosition.NONE): Leaf = Leaf(input, clauses, outputColumns)(pos)
-    def exec(query: Query, outputColumns: Seq[String]): Exec = Exec(input, query, dummyLocalQuery, dummyRemoteQuery, false, outputColumns)
+
+    def apply(
+      fragmentInheritUse: Use => Fragment,
+      inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters] = None,
+      pos: InputPosition = InputPosition.NONE
+    ): Apply = Apply(input, fragmentInheritUse(input.use), inTransactionsParameters)(pos)
+
+    def leaf(clauses: Seq[ast.Clause], outputColumns: Seq[String], pos: InputPosition = InputPosition.NONE): Leaf =
+      Leaf(input, clauses, outputColumns)(pos)
+
+    def exec(query: Query, outputColumns: Seq[String]): Exec =
+      Exec(input, query, dummyLocalQuery, dummyRemoteQuery, false, outputColumns)
   }
 
   val dummyLocalQuery: BaseState = DummyState
@@ -76,6 +83,7 @@ trait FragmentTestUtils {
 
   case object DummyState extends BaseState {
     override val queryText: String = ""
+
     override val plannerName: PlannerName = new PlannerName {
       def name: String = ""
       def toTextOutput: String = ""
@@ -99,8 +107,12 @@ trait FragmentTestUtils {
   }
 
   implicit class FragBuilderInit(input: Fragment.Init) {
-    def union(lhs: Fragment, rhs: Chain, pos: InputPosition = InputPosition.NONE): Union = Union(input, true, lhs, rhs)(pos)
-    def unionAll(lhs: Fragment, rhs: Chain, pos: InputPosition = InputPosition.NONE): Union = Union(input, false, lhs, rhs)(pos)
+
+    def union(lhs: Fragment, rhs: Chain, pos: InputPosition = InputPosition.NONE): Union =
+      Union(input, true, lhs, rhs)(pos)
+
+    def unionAll(lhs: Fragment, rhs: Chain, pos: InputPosition = InputPosition.NONE): Union =
+      Union(input, false, lhs, rhs)(pos)
   }
 
   object ct {
@@ -140,6 +152,7 @@ trait FragmentTestUtils {
     frontend.preParsing.preParse(query)
 
   implicit class FragmentOps[F <: Fragment](fragment: F) {
+
     def withoutLocalAndRemote: F =
       fragment
         .rewritten
@@ -149,6 +162,7 @@ trait FragmentTestUtils {
   }
 
   implicit class Caster[A](a: A) {
+
     def as[T](implicit ct: ClassTag[T]): T = {
       assert(ct.runtimeClass.isInstance(a), s"expected: ${ct.runtimeClass.getName}, was: ${a.getClass.getName}")
       a.asInstanceOf[T]

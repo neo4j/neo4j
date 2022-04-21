@@ -28,17 +28,14 @@ import org.neo4j.shell.state.BoltStateHandler;
  * This class initializes a {@link CypherShell} with a fake {@link org.neo4j.shell.state.BoltStateHandler} which allows for faked sessions and faked results to
  * test some basic shell functionality without requiring a full integration test.
  */
-public class OfflineTestShell extends CypherShell
-{
+public class OfflineTestShell extends CypherShell {
 
-    public OfflineTestShell( Printer printer, BoltStateHandler boltStateHandler, PrettyPrinter prettyPrinter )
-    {
-        super( printer, boltStateHandler, prettyPrinter, ParameterService.create( boltStateHandler ) );
+    public OfflineTestShell(Printer printer, BoltStateHandler boltStateHandler, PrettyPrinter prettyPrinter) {
+        super(printer, boltStateHandler, prettyPrinter, ParameterService.create(boltStateHandler));
     }
 
     @Override
-    protected void addRuntimeHookToResetShell()
-    {
-        //Do Nothing
+    protected void addRuntimeHookToResetShell() {
+        // Do Nothing
     }
 }

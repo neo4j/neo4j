@@ -24,133 +24,96 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 
-public class UserAggregationFunctionsExamples
-{
-    @UserAggregationFunction( name = "in_root_namespace" )
-    public StringAggregator functionWithName()
-    {
+public class UserAggregationFunctionsExamples {
+    @UserAggregationFunction(name = "in_root_namespace")
+    public StringAggregator functionWithName() {
         return new StringAggregator();
     }
 
-    @UserAggregationFunction( value = "in_root_namespace_again" )
-    public StringAggregator functionWithValue()
-    {
+    @UserAggregationFunction(value = "in_root_namespace_again")
+    public StringAggregator functionWithValue() {
         return new StringAggregator();
     }
 
-    @UserAggregationFunction( name = "not.in.root.namespace" )
-    public StringAggregator ok()
-    {
+    @UserAggregationFunction(name = "not.in.root.namespace")
+    public StringAggregator ok() {
         return new StringAggregator();
     }
 
-    @UserAggregationFunction( name = "com.acme.foobar" )
-    public void wrongReturnType()
-    {
+    @UserAggregationFunction(name = "com.acme.foobar")
+    public void wrongReturnType() {}
 
-    }
-
-    @UserAggregationFunction( name = "com.acme.foobar" )
-    public StringAggregator shouldNotHaveParameters( @Name( "hello" ) String hello )
-    {
+    @UserAggregationFunction(name = "com.acme.foobar")
+    public StringAggregator shouldNotHaveParameters(@Name("hello") String hello) {
         return new StringAggregator();
     }
 
-    @UserAggregationFunction( name = "com.acme.foobar" )
-    public StringAggregatorWithWrongUpdateParameterType updateWithWrongParameterType()
-    {
+    @UserAggregationFunction(name = "com.acme.foobar")
+    public StringAggregatorWithWrongUpdateParameterType updateWithWrongParameterType() {
         return new StringAggregatorWithWrongUpdateParameterType();
     }
 
-    @UserAggregationFunction( name = "com.acme.foobar" )
-    public StringAggregatorWithMissingAnnotationOnParameterType missingParameterAnnotation()
-    {
+    @UserAggregationFunction(name = "com.acme.foobar")
+    public StringAggregatorWithMissingAnnotationOnParameterType missingParameterAnnotation() {
         return new StringAggregatorWithMissingAnnotationOnParameterType();
     }
 
-    @UserAggregationFunction( name = "com.acme.foobar" )
-    public StringAggregatorWithWrongResultReturnType resultWithWrongReturnType()
-    {
+    @UserAggregationFunction(name = "com.acme.foobar")
+    public StringAggregatorWithWrongResultReturnType resultWithWrongReturnType() {
         return new StringAggregatorWithWrongResultReturnType();
     }
 
-    @UserAggregationFunction( name = "com.acme.foobar" )
-    public StringAggregatorWithResultMethodWithParameters resultWithParams()
-    {
+    @UserAggregationFunction(name = "com.acme.foobar")
+    public StringAggregatorWithResultMethodWithParameters resultWithParams() {
         return new StringAggregatorWithResultMethodWithParameters();
     }
 
-    public static class StringAggregator
-    {
+    public static class StringAggregator {
         @UserAggregationUpdate
-        public void doSomething( @Name( "foo" ) String foo )
-        {
-
-        }
+        public void doSomething(@Name("foo") String foo) {}
 
         @UserAggregationResult
-        public long result()
-        {
+        public long result() {
             return 42L;
         }
     }
 
-    public static class StringAggregatorWithWrongUpdateParameterType
-    {
+    public static class StringAggregatorWithWrongUpdateParameterType {
         @UserAggregationUpdate
-        public void doSomething( @Name( "foo" ) Thread foo )
-        {
-
-        }
+        public void doSomething(@Name("foo") Thread foo) {}
 
         @UserAggregationResult
-        public long result()
-        {
+        public long result() {
             return 42L;
         }
     }
 
-    public static class StringAggregatorWithMissingAnnotationOnParameterType
-    {
+    public static class StringAggregatorWithMissingAnnotationOnParameterType {
         @UserAggregationUpdate
-        public void doSomething( long foo )
-        {
-
-        }
+        public void doSomething(long foo) {}
 
         @UserAggregationResult
-        public long result()
-        {
+        public long result() {
             return 42L;
         }
     }
 
-    public static class StringAggregatorWithWrongResultReturnType
-    {
+    public static class StringAggregatorWithWrongResultReturnType {
         @UserAggregationUpdate
-        public void doSomething( @Name( "foo" ) long foo )
-        {
-
-        }
+        public void doSomething(@Name("foo") long foo) {}
 
         @UserAggregationResult
-        public Thread result()
-        {
+        public Thread result() {
             return new Thread();
         }
     }
 
-    public static class StringAggregatorWithResultMethodWithParameters
-    {
+    public static class StringAggregatorWithResultMethodWithParameters {
         @UserAggregationUpdate
-        public void doSomething( @Name( "foo" ) long foo )
-        {
-
-        }
+        public void doSomething(@Name("foo") long foo) {}
 
         @UserAggregationResult
-        public long result( String shouldNotHaveAnyParam )
-        {
+        public long result(String shouldNotHaveAnyParam) {
             return 42L;
         }
     }

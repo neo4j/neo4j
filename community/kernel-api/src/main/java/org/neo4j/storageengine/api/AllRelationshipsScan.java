@@ -22,7 +22,4 @@ package org.neo4j.storageengine.api;
 /**
  * Marker interface for maintaining state for batched all-relationship scans
  */
-public interface AllRelationshipsScan extends Scan
-{
-
-}
+public interface AllRelationshipsScan extends Scan {}

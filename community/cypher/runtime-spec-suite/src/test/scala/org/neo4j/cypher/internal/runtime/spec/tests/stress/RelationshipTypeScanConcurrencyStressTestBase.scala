@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.ConcurrencyStressTestBase.SIZE_HINT
 
 abstract class RelationshipTypeScanConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
-                                                                                         edition: Edition[CONTEXT],
-                                                                                         runtime: CypherRuntime[CONTEXT],
-                                                                                       ) extends ConcurrencyStressTestBase[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends ConcurrencyStressTestBase[CONTEXT](edition, runtime) {
 
   test("should not return relationships with null end nodes from directed relationship") {
     executeWithConcurrentDeletes(directed = true)

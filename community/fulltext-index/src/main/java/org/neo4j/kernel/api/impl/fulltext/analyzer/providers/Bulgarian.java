@@ -21,27 +21,22 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.bg.BulgarianAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Bulgarian extends AnalyzerProvider
-{
-    public Bulgarian()
-    {
-        super( "bulgarian" );
+public class Bulgarian extends AnalyzerProvider {
+    public Bulgarian() {
+        super("bulgarian");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new BulgarianAnalyzer();
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return "Bulgarian analyzer with light stemming, as specified by \"Searching Strategies for the Bulgarian Language\", and stop word filtering.";
     }
 }

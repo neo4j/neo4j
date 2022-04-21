@@ -23,346 +23,275 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-class ReadableChannelPageCursor extends PageCursor
-{
+class ReadableChannelPageCursor extends PageCursor {
     private final ReadableChannel channel;
     private CursorException cursorException;
 
-    ReadableChannelPageCursor( ReadableChannel channel )
-    {
+    ReadableChannelPageCursor(ReadableChannel channel) {
         this.channel = channel;
     }
 
     @Override
-    public byte getByte()
-    {
-        try
-        {
+    public byte getByte() {
+        try {
             return channel.get();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public byte getByte( int offset )
-    {
+    public byte getByte(int offset) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putByte( byte value )
-    {
+    public void putByte(byte value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putByte( int offset, byte value )
-    {
+    public void putByte(int offset, byte value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long getLong()
-    {
-        try
-        {
+    public long getLong() {
+        try {
             return channel.getLong();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public long getLong( int offset )
-    {
+    public long getLong(int offset) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putLong( long value )
-    {
+    public void putLong(long value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putLong( int offset, long value )
-    {
+    public void putLong(int offset, long value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getInt()
-    {
-        try
-        {
+    public int getInt() {
+        try {
             return channel.getInt();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public int getInt( int offset )
-    {
+    public int getInt(int offset) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putInt( int value )
-    {
+    public void putInt(int value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putInt( int offset, int value )
-    {
+    public void putInt(int offset, int value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void getBytes( byte[] data )
-    {
-        getBytes( data, 0, data.length );
+    public void getBytes(byte[] data) {
+        getBytes(data, 0, data.length);
     }
 
     @Override
-    public void getBytes( byte[] data, int arrayOffset, int length )
-    {
-        if ( arrayOffset != 0 )
-        {
+    public void getBytes(byte[] data, int arrayOffset, int length) {
+        if (arrayOffset != 0) {
             throw new UnsupportedOperationException();
         }
 
-        try
-        {
-            channel.get( data, length );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        try {
+            channel.get(data, length);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void putBytes( byte[] data )
-    {
+    public void putBytes(byte[] data) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putBytes( byte[] data, int arrayOffset, int length )
-    {
+    public void putBytes(byte[] data, int arrayOffset, int length) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putBytes( int bytes, byte value )
-    {
+    public void putBytes(int bytes, byte value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public short getShort()
-    {
-        try
-        {
+    public short getShort() {
+        try {
             return channel.getShort();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public short getShort( int offset )
-    {
+    public short getShort(int offset) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putShort( short value )
-    {
+    public void putShort(short value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putShort( int offset, short value )
-    {
+    public void putShort(int offset, short value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setOffset( int offset )
-    {
+    public void setOffset(int offset) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getOffset()
-    {
+    public int getOffset() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void mark()
-    {
+    public void mark() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setOffsetToMark()
-    {
+    public void setOffsetToMark() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long getCurrentPageId()
-    {
+    public long getCurrentPageId() {
         return 0;
     }
 
     @Override
-    public Path getCurrentFile()
-    {
+    public Path getCurrentFile() {
         return null;
     }
 
     @Override
-    public PagedFile getPagedFile()
-    {
+    public PagedFile getPagedFile() {
         return null;
     }
 
     @Override
-    public Path getRawCurrentFile()
-    {
+    public Path getRawCurrentFile() {
         return null;
     }
 
     @Override
-    public void rewind()
-    {
+    public void rewind() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean next() throws IOException
-    {
+    public boolean next() throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
-    {
+    public boolean next(long pageId) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
+    public void close() {
+        try {
             channel.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public boolean shouldRetry()
-    {
+    public boolean shouldRetry() {
         return false;
     }
 
     @Override
-    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
-    {
+    public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
-    {
+    public int copyTo(int sourceOffset, ByteBuffer targetBuffer) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void shiftBytes( int sourceOffset, int length, int shift )
-    {
+    public void shiftBytes(int sourceOffset, int length, int shift) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean checkAndClearBoundsFlag()
-    {
+    public boolean checkAndClearBoundsFlag() {
         return false;
     }
 
     @Override
-    public void checkAndClearCursorException() throws CursorException
-    {
-        if ( cursorException != null )
-        {
-            try
-            {
+    public void checkAndClearCursorException() throws CursorException {
+        if (cursorException != null) {
+            try {
                 throw cursorException;
-            }
-            finally
-            {
+            } finally {
                 clearCursorException();
             }
         }
     }
 
     @Override
-    public void raiseOutOfBounds()
-    {
+    public void raiseOutOfBounds() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setCursorException( String message )
-    {
-        this.cursorException = new CursorException( message );
+    public void setCursorException(String message) {
+        this.cursorException = new CursorException(message);
     }
 
     @Override
-    public void clearCursorException()
-    {
+    public void clearCursorException() {
         cursorException = null;
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
-    {
+    public PageCursor openLinkedCursor(long pageId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void zapPage()
-    {
+    public void zapPage() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean isWriteLocked()
-    {
+    public boolean isWriteLocked() {
         return false;
     }
 }

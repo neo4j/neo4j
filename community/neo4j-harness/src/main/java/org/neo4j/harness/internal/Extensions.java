@@ -21,20 +21,16 @@ package org.neo4j.harness.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
-public class Extensions
-{
+public class Extensions {
     private List<ThirdPartyJaxRsPackage> extensions = new ArrayList<>();
 
-    public List<ThirdPartyJaxRsPackage> toList()
-    {
+    public List<ThirdPartyJaxRsPackage> toList() {
         return extensions;
     }
 
-    public void add( String mountPath, String packageName )
-    {
-        extensions.add( new ThirdPartyJaxRsPackage( packageName, mountPath ) );
+    public void add(String mountPath, String packageName) {
+        extensions.add(new ThirdPartyJaxRsPackage(packageName, mountPath));
     }
 }

@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index.partition;
 
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.store.Directory;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.store.Directory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 
@@ -35,13 +33,11 @@ import org.neo4j.kernel.api.impl.index.SearcherReference;
  * Contains and manages lifecycle of the corresponding {@link Directory}, {@link IndexWriter writer} and
  * {@link SearcherManager}.
  */
-public abstract class AbstractIndexPartition implements Closeable
-{
+public abstract class AbstractIndexPartition implements Closeable {
     protected final Directory directory;
     protected final Path partitionFolder;
 
-    public AbstractIndexPartition( Path partitionFolder, Directory directory )
-    {
+    public AbstractIndexPartition(Path partitionFolder, Directory directory) {
         this.partitionFolder = partitionFolder;
         this.directory = directory;
     }
@@ -50,8 +46,7 @@ public abstract class AbstractIndexPartition implements Closeable
      * Retrieve index partition directory
      * @return partition directory
      */
-    public Directory getDirectory()
-    {
+    public Directory getDirectory() {
         return directory;
     }
 
@@ -85,5 +80,4 @@ public abstract class AbstractIndexPartition implements Closeable
      * @throws IOException if any IO operation fails.
      */
     public abstract ResourceIterator<Path> snapshot() throws IOException;
-
 }

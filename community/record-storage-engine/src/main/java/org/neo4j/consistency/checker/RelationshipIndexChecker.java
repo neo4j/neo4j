@@ -27,70 +27,64 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class RelationshipIndexChecker extends IndexChecker<RelationshipRecord>
-{
-    public RelationshipIndexChecker( CheckerContext context )
-    {
-        super( context, EntityType.RELATIONSHIP, "Relationship" );
+public class RelationshipIndexChecker extends IndexChecker<RelationshipRecord> {
+    public RelationshipIndexChecker(CheckerContext context) {
+        super(context, EntityType.RELATIONSHIP, "Relationship");
     }
 
     @Override
-    public boolean isNodeBasedCheck()
-    {
+    public boolean isNodeBasedCheck() {
         return false;
     }
 
     @Override
-    CommonAbstractStore<RelationshipRecord,?> store()
-    {
+    CommonAbstractStore<RelationshipRecord, ?> store() {
         return context.neoStores.getRelationshipStore();
     }
 
     @Override
-    long highId()
-    {
+    long highId() {
         return context.highRelationshipId;
     }
 
     @Override
-    RelationshipRecord getEntity( StoreCursors storeCursors, long entityId )
-    {
-        return context.recordLoader.relationship( entityId, storeCursors );
+    RelationshipRecord getEntity(StoreCursors storeCursors, long entityId) {
+        return context.recordLoader.relationship(entityId, storeCursors);
     }
 
     @Override
-    long[] getEntityTokens( CheckerContext context, StoreCursors storeCursors, RelationshipRecord record, RecordReader<DynamicRecord> additionalReader )
-    {
-        return new long[]{ record.getType() };
+    long[] getEntityTokens(
+            CheckerContext context,
+            StoreCursors storeCursors,
+            RelationshipRecord record,
+            RecordReader<DynamicRecord> additionalReader) {
+        return new long[] {record.getType()};
     }
 
     @Override
-    RecordReader<DynamicRecord> additionalEntityTokenReader( CursorContext cursorContext )
-    {
+    RecordReader<DynamicRecord> additionalEntityTokenReader(CursorContext cursorContext) {
         return null;
     }
 
     @Override
-    void reportEntityNotInUse( ConsistencyReport.IndexConsistencyReport report, RelationshipRecord record )
-    {
-        report.relationshipNotInUse( record );
+    void reportEntityNotInUse(ConsistencyReport.IndexConsistencyReport report, RelationshipRecord record) {
+        report.relationshipNotInUse(record);
     }
 
     @Override
-    void reportIndexedIncorrectValues( ConsistencyReport.IndexConsistencyReport report, RelationshipRecord record, Object[] propertyValues )
-    {
-        report.relationshipIndexedWithWrongValues( record, propertyValues );
+    void reportIndexedIncorrectValues(
+            ConsistencyReport.IndexConsistencyReport report, RelationshipRecord record, Object[] propertyValues) {
+        report.relationshipIndexedWithWrongValues(record, propertyValues);
     }
 
     @Override
-    void reportIndexedWhenShouldNot( ConsistencyReport.IndexConsistencyReport report, RelationshipRecord record )
-    {
-        report.relationshipIndexedWhenShouldNot( record );
+    void reportIndexedWhenShouldNot(ConsistencyReport.IndexConsistencyReport report, RelationshipRecord record) {
+        report.relationshipIndexedWhenShouldNot(record);
     }
 
     @Override
-    ConsistencyReport.PrimitiveConsistencyReport getReport( RelationshipRecord cursor, ConsistencyReport.Reporter reporter )
-    {
-        return reporter.forRelationship( cursor );
+    ConsistencyReport.PrimitiveConsistencyReport getReport(
+            RelationshipRecord cursor, ConsistencyReport.Reporter reporter) {
+        return reporter.forRelationship(cursor);
     }
 }

@@ -19,65 +19,53 @@
  */
 package org.neo4j.fabric.executor;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
-class ExceptionsTest
-{
+class ExceptionsTest {
     @Test
-    void testCompositeExceptionWithSomePrimaryErrors()
-    {
-        var primary1 = new FabricException( Status.General.UnknownError, "msg-1" );
-        var primary2 = new FabricException( Status.General.UnknownError, "msg-2" );
-        var secondary = new FabricSecondaryException( Status.General.UnknownError,
+    void testCompositeExceptionWithSomePrimaryErrors() {
+        var primary1 = new FabricException(Status.General.UnknownError, "msg-1");
+        var primary2 = new FabricException(Status.General.UnknownError, "msg-2");
+        var secondary = new FabricSecondaryException(
+                Status.General.UnknownError,
                 "msg-3",
-                new IllegalStateException( "msg-4" ),
-                new FabricException( Status.General.UnknownError, "msg-5" )
-        );
+                new IllegalStateException("msg-4"),
+                new FabricException(Status.General.UnknownError, "msg-5"));
 
-        var reactorException = reactor.core.Exceptions.multiple( primary1, primary2, secondary );
-        var transformedException = Exceptions.transform( Status.General.UnknownError, reactorException );
-        assertThat( unpackExceptionMessages( transformedException ) ).contains( "msg-1", "msg-2" );
+        var reactorException = reactor.core.Exceptions.multiple(primary1, primary2, secondary);
+        var transformedException = Exceptions.transform(Status.General.UnknownError, reactorException);
+        assertThat(unpackExceptionMessages(transformedException)).contains("msg-1", "msg-2");
     }
 
     @Test
-    void testCompositeExceptionWithOnlySecondaryErrors()
-    {
-        var sharedPrimary = new FabricException( Status.General.UnknownError, "msg-1" );
+    void testCompositeExceptionWithOnlySecondaryErrors() {
+        var sharedPrimary = new FabricException(Status.General.UnknownError, "msg-1");
 
-        var secondary1 = new FabricSecondaryException( Status.General.UnknownError,
-                "msg-2",
-                new IllegalStateException( "msg-3" ),
-                sharedPrimary
-        );
-        var secondary2 = new FabricSecondaryException( Status.General.UnknownError,
+        var secondary1 = new FabricSecondaryException(
+                Status.General.UnknownError, "msg-2", new IllegalStateException("msg-3"), sharedPrimary);
+        var secondary2 = new FabricSecondaryException(
+                Status.General.UnknownError,
                 "msg-4",
-                new IllegalStateException( "msg-5" ),
-                new FabricException( Status.General.UnknownError, "msg-6" )
-        );
-        var secondary3 = new FabricSecondaryException( Status.General.UnknownError,
-                "msg-7",
-                new IllegalStateException( "msg-8" ),
-                sharedPrimary
-        );
+                new IllegalStateException("msg-5"),
+                new FabricException(Status.General.UnknownError, "msg-6"));
+        var secondary3 = new FabricSecondaryException(
+                Status.General.UnknownError, "msg-7", new IllegalStateException("msg-8"), sharedPrimary);
 
-        var reactorException = reactor.core.Exceptions.multiple( secondary1, secondary2, secondary3 );
-        var transformedException = Exceptions.transform( Status.General.UnknownError, reactorException );
-        assertThat( unpackExceptionMessages( transformedException ) ).contains( "msg-1", "msg-6" );
+        var reactorException = reactor.core.Exceptions.multiple(secondary1, secondary2, secondary3);
+        var transformedException = Exceptions.transform(Status.General.UnknownError, reactorException);
+        assertThat(unpackExceptionMessages(transformedException)).contains("msg-1", "msg-6");
     }
 
-    private static List<String> unpackExceptionMessages( Exception exception )
-    {
+    private static List<String> unpackExceptionMessages(Exception exception) {
         List<String> messages = new ArrayList<>();
-        messages.add( exception.getMessage() );
-        Arrays.stream( exception.getSuppressed() ).map( Throwable::getMessage ).forEach( messages::add );
+        messages.add(exception.getMessage());
+        Arrays.stream(exception.getSuppressed()).map(Throwable::getMessage).forEach(messages::add);
         return messages;
     }
 }

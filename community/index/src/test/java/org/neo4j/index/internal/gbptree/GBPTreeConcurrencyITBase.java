@@ -19,10 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static java.lang.Math.max;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,7 +49,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -56,14 +62,6 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-
-import static java.lang.Math.max;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.test.utils.PageCacheConfig.config;
 
 /**
  * From a range of keys two disjunct sets are generated, "toAdd" and "toRemove".
@@ -79,158 +77,142 @@ import static org.neo4j.test.utils.PageCacheConfig.config;
  * toAdd and toRemove, prepare the GB+Tree with entries and serve readers and writer with information
  * about what they should do next.
  */
-
 @EphemeralTestDirectoryExtension
-@ExtendWith( RandomExtension.class )
-public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
-{
+@ExtendWith(RandomExtension.class)
+public abstract class GBPTreeConcurrencyITBase<KEY, VALUE> {
     @Inject
     private FileSystemAbstraction fileSystem;
+
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private RandomSupport random;
+
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
 
-    private TestLayout<KEY,VALUE> layout;
-    private GBPTree<KEY,VALUE> index;
+    private TestLayout<KEY, VALUE> layout;
+    private GBPTree<KEY, VALUE> index;
     private PageCache pageCache;
     private final ExecutorService threadPool =
-            Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+            Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-    private GBPTree<KEY,VALUE> createIndex()
-    {
+    private GBPTree<KEY, VALUE> createIndex() {
         int pageSize = 512;
-        pageCache = PageCacheSupportExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
-        layout = getLayout( random, pageCache.payloadSize() );
-        return this.index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
+        pageCache = PageCacheSupportExtension.getPageCache(
+                fileSystem, config().withPageSize(pageSize).withAccessChecks(true));
+        layout = getLayout(random, pageCache.payloadSize());
+        return this.index = new GBPTreeBuilder<>(pageCache, testDirectory.file("index"), layout).build();
     }
 
-    protected abstract TestLayout<KEY,VALUE> getLayout( RandomSupport random, int payloadSize );
+    protected abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int payloadSize);
 
     @AfterEach
-    void consistencyCheckAndClose() throws IOException
-    {
+    void consistencyCheckAndClose() throws IOException {
         threadPool.shutdownNow();
-        index.consistencyCheck( NULL_CONTEXT );
+        index.consistencyCheck(NULL_CONTEXT);
         index.close();
         pageCache.close();
     }
 
     @Test
-    void shouldReadForwardCorrectlyWithConcurrentInsert() throws Throwable
-    {
-        TestCoordinator testCoordinator = new TestCoordinator( random.random(), true, 1 );
-        shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    void shouldReadForwardCorrectlyWithConcurrentInsert() throws Throwable {
+        TestCoordinator testCoordinator = new TestCoordinator(random.random(), true, 1);
+        shouldReadCorrectlyWithConcurrentUpdates(testCoordinator);
     }
 
     @Test
-    void shouldPartitionedReadForwardCorrectlyWithConcurrentInsert() throws Throwable
-    {
-        TestCoordinator testCoordinator = new TestCoordinator( random.random(), true, 1, true );
-        shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    void shouldPartitionedReadForwardCorrectlyWithConcurrentInsert() throws Throwable {
+        TestCoordinator testCoordinator = new TestCoordinator(random.random(), true, 1, true);
+        shouldReadCorrectlyWithConcurrentUpdates(testCoordinator);
     }
 
     @Test
-    void shouldReadBackwardCorrectlyWithConcurrentInsert() throws Throwable
-    {
-        TestCoordinator testCoordinator = new TestCoordinator( random.random(), false, 1 );
-        shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    void shouldReadBackwardCorrectlyWithConcurrentInsert() throws Throwable {
+        TestCoordinator testCoordinator = new TestCoordinator(random.random(), false, 1);
+        shouldReadCorrectlyWithConcurrentUpdates(testCoordinator);
     }
 
     @Test
-    void shouldReadForwardCorrectlyWithConcurrentRemove() throws Throwable
-    {
-        TestCoordinator testCoordinator = new TestCoordinator( random.random(), true, 0 );
-        shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    void shouldReadForwardCorrectlyWithConcurrentRemove() throws Throwable {
+        TestCoordinator testCoordinator = new TestCoordinator(random.random(), true, 0);
+        shouldReadCorrectlyWithConcurrentUpdates(testCoordinator);
     }
 
     @Test
-    void shouldPartitionedReadForwardCorrectlyWithConcurrentRemove() throws Throwable
-    {
-        TestCoordinator testCoordinator = new TestCoordinator( random.random(), true, 0, true );
-        shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    void shouldPartitionedReadForwardCorrectlyWithConcurrentRemove() throws Throwable {
+        TestCoordinator testCoordinator = new TestCoordinator(random.random(), true, 0, true);
+        shouldReadCorrectlyWithConcurrentUpdates(testCoordinator);
     }
 
     @Test
-    void shouldReadBackwardCorrectlyWithConcurrentRemove() throws Throwable
-    {
-        TestCoordinator testCoordinator = new TestCoordinator( random.random(), false, 0 );
-        shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    void shouldReadBackwardCorrectlyWithConcurrentRemove() throws Throwable {
+        TestCoordinator testCoordinator = new TestCoordinator(random.random(), false, 0);
+        shouldReadCorrectlyWithConcurrentUpdates(testCoordinator);
     }
 
     @Test
-    void shouldReadForwardCorrectlyWithConcurrentUpdates() throws Throwable
-    {
-        TestCoordinator testCoordinator = new TestCoordinator( random.random(), true, 0.5 );
-        shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    void shouldReadForwardCorrectlyWithConcurrentUpdates() throws Throwable {
+        TestCoordinator testCoordinator = new TestCoordinator(random.random(), true, 0.5);
+        shouldReadCorrectlyWithConcurrentUpdates(testCoordinator);
     }
 
     @Test
-    void shouldPartitionedReadForwardCorrectlyWithConcurrentUpdates() throws Throwable
-    {
-        TestCoordinator testCoordinator = new TestCoordinator( random.random(), true, 0.5, true );
-        shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    void shouldPartitionedReadForwardCorrectlyWithConcurrentUpdates() throws Throwable {
+        TestCoordinator testCoordinator = new TestCoordinator(random.random(), true, 0.5, true);
+        shouldReadCorrectlyWithConcurrentUpdates(testCoordinator);
     }
 
     @Test
-    void shouldReadBackwardCorrectlyWithConcurrentUpdates() throws Throwable
-    {
-        TestCoordinator testCoordinator = new TestCoordinator( random.random(), false, 0.5 );
-        shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    void shouldReadBackwardCorrectlyWithConcurrentUpdates() throws Throwable {
+        TestCoordinator testCoordinator = new TestCoordinator(random.random(), false, 0.5);
+        shouldReadCorrectlyWithConcurrentUpdates(testCoordinator);
     }
 
-    private void shouldReadCorrectlyWithConcurrentUpdates( TestCoordinator testCoordinator ) throws Throwable
-    {
+    private void shouldReadCorrectlyWithConcurrentUpdates(TestCoordinator testCoordinator) throws Throwable {
         // Readers config
-        int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
+        int readers = max(1, Runtime.getRuntime().availableProcessors() - 1);
 
         // Thread communication
-        CountDownLatch readerReadySignal = new CountDownLatch( readers );
-        CountDownLatch readerStartSignal = new CountDownLatch( 1 );
+        CountDownLatch readerReadySignal = new CountDownLatch(readers);
+        CountDownLatch readerStartSignal = new CountDownLatch(1);
         AtomicBoolean endSignal = testCoordinator.endSignal();
         AtomicBoolean failHalt = new AtomicBoolean(); // Readers signal to writer that there is a failure
         AtomicReference<Throwable> readerError = new AtomicReference<>();
 
         // GIVEN
         index = createIndex();
-        testCoordinator.prepare( index );
+        testCoordinator.prepare(index);
 
         // WHEN starting the readers
-        RunnableReader readerTask = new RunnableReader( testCoordinator, readerReadySignal, readerStartSignal,
-                endSignal, failHalt, readerError );
-        for ( int i = 0; i < readers; i++ )
-        {
-            threadPool.submit( readerTask );
+        RunnableReader readerTask = new RunnableReader(
+                testCoordinator, readerReadySignal, readerStartSignal, endSignal, failHalt, readerError);
+        for (int i = 0; i < readers; i++) {
+            threadPool.submit(readerTask);
         }
 
         // and starting the checkpointer
-        threadPool.submit( checkpointThread( endSignal, readerError, failHalt ) );
+        threadPool.submit(checkpointThread(endSignal, readerError, failHalt));
 
         // and starting the writer
-        try
-        {
-            write( testCoordinator, readerReadySignal, readerStartSignal, endSignal, failHalt );
-        }
-        finally
-        {
+        try {
+            write(testCoordinator, readerReadySignal, readerStartSignal, endSignal, failHalt);
+        } finally {
             // THEN no reader should have failed by the time we have finished all the scheduled updates.
             // A successful read means that all results were ordered and we saw all inserted values and
             // none of the removed values at the point of making the seek call.
-            endSignal.set( true );
+            endSignal.set(true);
             threadPool.shutdown();
-            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
-            if ( readerError.get() != null )
-            {
+            threadPool.awaitTermination(10, TimeUnit.SECONDS);
+            if (readerError.get() != null) {
                 //noinspection ThrowFromFinallyBlock
                 throw readerError.get();
             }
         }
     }
 
-    private class TestCoordinator implements Supplier<ReaderInstruction>
-    {
+    private class TestCoordinator implements Supplier<ReaderInstruction> {
         private final Random random;
 
         // Range
@@ -255,267 +237,225 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         Queue<Long> toAdd = new LinkedList<>();
         List<UpdateOperation> updatesForNextIteration = new ArrayList<>();
 
-        TestCoordinator( Random random, boolean forwardsSeek, double writePercentage )
-        {
-            this( random, forwardsSeek, writePercentage, false );
+        TestCoordinator(Random random, boolean forwardsSeek, double writePercentage) {
+            this(random, forwardsSeek, writePercentage, false);
         }
 
-        TestCoordinator( Random random, boolean forwardsSeek, double writePercentage, boolean partitionedSeek )
-        {
+        TestCoordinator(Random random, boolean forwardsSeek, double writePercentage, boolean partitionedSeek) {
             this.partitionedSeek = partitionedSeek;
             this.endSignal = new AtomicBoolean();
             this.random = random;
             this.forwardsSeek = forwardsSeek;
             this.writePercentage = writePercentage;
-            this.writeBatchSize = random.nextInt( 990 ) + 10; // 10-999
+            this.writeBatchSize = random.nextInt(990) + 10; // 10-999
             currentReaderInstruction = new AtomicReference<>();
             Comparator<Long> comparator = forwardsSeek ? Comparator.naturalOrder() : Comparator.reverseOrder();
-            readersShouldSee = new TreeSet<>( comparator );
+            readersShouldSee = new TreeSet<>(comparator);
         }
 
-        List<Long> shuffleToNewList( List<Long> sourceList, Random random )
-        {
-            List<Long> shuffledList = new ArrayList<>( sourceList );
-            Collections.shuffle( shuffledList, random );
+        List<Long> shuffleToNewList(List<Long> sourceList, Random random) {
+            List<Long> shuffledList = new ArrayList<>(sourceList);
+            Collections.shuffle(shuffledList, random);
             return shuffledList;
         }
 
-        void prepare( GBPTree<KEY,VALUE> index ) throws IOException
-        {
-            prepareIndex( index, readersShouldSee, toRemove, toAdd, random );
+        void prepare(GBPTree<KEY, VALUE> index) throws IOException {
+            prepareIndex(index, readersShouldSee, toRemove, toAdd, random);
             iterationFinished();
         }
 
-        void prepareIndex( GBPTree<KEY,VALUE> index, Set<Long> dataInIndex,
-                Queue<Long> toRemove, Queue<Long> toAdd, Random random ) throws IOException
-        {
-            List<Long> fullRange = LongStream.range( minRange, maxRange ).boxed().collect( Collectors.toList() );
-            List<Long> rangeOutOfOrder = shuffleToNewList( fullRange, random );
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
-            {
-                for ( Long key : rangeOutOfOrder )
-                {
+        void prepareIndex(
+                GBPTree<KEY, VALUE> index,
+                Set<Long> dataInIndex,
+                Queue<Long> toRemove,
+                Queue<Long> toAdd,
+                Random random)
+                throws IOException {
+            List<Long> fullRange = LongStream.range(minRange, maxRange).boxed().collect(Collectors.toList());
+            List<Long> rangeOutOfOrder = shuffleToNewList(fullRange, random);
+            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
+                for (Long key : rangeOutOfOrder) {
                     boolean addForRemoval = random.nextDouble() > writePercentage;
-                    if ( addForRemoval )
-                    {
-                        writer.put( key( key ),value( key ) );
-                        dataInIndex.add( key );
-                        toRemove.add( key );
-                    }
-                    else
-                    {
-                        toAdd.add( key );
+                    if (addForRemoval) {
+                        writer.put(key(key), value(key));
+                        dataInIndex.add(key);
+                        toRemove.add(key);
+                    } else {
+                        toAdd.add(key);
                     }
                 }
             }
         }
 
-        void iterationFinished()
-        {
+        void iterationFinished() {
             // Create new set to not modify set that readers use concurrently
-            readersShouldSee = new TreeSet<>( readersShouldSee );
-            updateRecentlyInsertedData( readersShouldSee, updatesForNextIteration );
+            readersShouldSee = new TreeSet<>(readersShouldSee);
+            updateRecentlyInsertedData(readersShouldSee, updatesForNextIteration);
             updatesForNextIteration = generateUpdatesForNextIteration();
-            updateWithSoonToBeRemovedData( readersShouldSee, updatesForNextIteration );
-            currentReaderInstruction.set( newReaderInstruction( minRange, maxRange, readersShouldSee ) );
+            updateWithSoonToBeRemovedData(readersShouldSee, updatesForNextIteration);
+            currentReaderInstruction.set(newReaderInstruction(minRange, maxRange, readersShouldSee));
         }
 
-        void updateRecentlyInsertedData( Set<Long> readersShouldSee, List<UpdateOperation> updateBatch )
-        {
-            updateBatch.stream().filter( UpdateOperation::isInsert ).forEach( uo -> uo.applyToSet( readersShouldSee ) );
+        void updateRecentlyInsertedData(Set<Long> readersShouldSee, List<UpdateOperation> updateBatch) {
+            updateBatch.stream().filter(UpdateOperation::isInsert).forEach(uo -> uo.applyToSet(readersShouldSee));
         }
 
-        void updateWithSoonToBeRemovedData( Set<Long> readersShouldSee, List<UpdateOperation> updateBatch )
-        {
-            updateBatch.stream().filter( uo -> !uo.isInsert() ).forEach( uo -> uo.applyToSet( readersShouldSee ) );
+        void updateWithSoonToBeRemovedData(Set<Long> readersShouldSee, List<UpdateOperation> updateBatch) {
+            updateBatch.stream().filter(uo -> !uo.isInsert()).forEach(uo -> uo.applyToSet(readersShouldSee));
         }
 
-        private ReaderInstruction newReaderInstruction( long minRange, long maxRange,
-                Set<Long> readersShouldSee )
-        {
-            return forwardsSeek ?
-                   new ReaderInstruction( minRange, maxRange, readersShouldSee, partitionedSeek ) :
-                   new ReaderInstruction( maxRange - 1, minRange, readersShouldSee, partitionedSeek );
+        private ReaderInstruction newReaderInstruction(long minRange, long maxRange, Set<Long> readersShouldSee) {
+            return forwardsSeek
+                    ? new ReaderInstruction(minRange, maxRange, readersShouldSee, partitionedSeek)
+                    : new ReaderInstruction(maxRange - 1, minRange, readersShouldSee, partitionedSeek);
         }
 
-        private List<UpdateOperation> generateUpdatesForNextIteration()
-        {
+        private List<UpdateOperation> generateUpdatesForNextIteration() {
             List<UpdateOperation> updateOperations = new ArrayList<>();
-            if ( toAdd.isEmpty() && toRemove.isEmpty() )
-            {
-                endSignal.set( true );
+            if (toAdd.isEmpty() && toRemove.isEmpty()) {
+                endSignal.set(true);
                 return updateOperations;
             }
 
             int operationsInIteration = readersShouldSee.size() < 1000 ? 100 : readersShouldSee.size() / 10;
             int count = 0;
-            while ( count < operationsInIteration && (!toAdd.isEmpty() || !toRemove.isEmpty()) )
-            {
+            while (count < operationsInIteration && (!toAdd.isEmpty() || !toRemove.isEmpty())) {
                 UpdateOperation operation;
-                if ( toAdd.isEmpty() )
-                {
-                    operation = new RemoveOperation( toRemove.poll() );
-                }
-                else if ( toRemove.isEmpty() )
-                {
-                    operation = new PutOperation( toAdd.poll() );
-                }
-                else
-                {
+                if (toAdd.isEmpty()) {
+                    operation = new RemoveOperation(toRemove.poll());
+                } else if (toRemove.isEmpty()) {
+                    operation = new PutOperation(toAdd.poll());
+                } else {
                     boolean remove = random.nextDouble() > writePercentage;
-                    if ( remove )
-                    {
-                        operation = new RemoveOperation( toRemove.poll() );
-                    }
-                    else
-                    {
-                        operation = new PutOperation( toAdd.poll() );
+                    if (remove) {
+                        operation = new RemoveOperation(toRemove.poll());
+                    } else {
+                        operation = new PutOperation(toAdd.poll());
                     }
                 }
-                updateOperations.add( operation );
+                updateOperations.add(operation);
                 count++;
             }
             return updateOperations;
         }
 
-        Iterable<UpdateOperation> nextToWrite()
-        {
+        Iterable<UpdateOperation> nextToWrite() {
             return updatesForNextIteration;
         }
 
         @Override
-        public ReaderInstruction get()
-        {
+        public ReaderInstruction get() {
             return currentReaderInstruction.get();
         }
 
-        AtomicBoolean endSignal()
-        {
+        AtomicBoolean endSignal() {
             return endSignal;
         }
 
-        int writeBatchSize()
-        {
+        int writeBatchSize() {
             return writeBatchSize;
         }
 
-        boolean isReallyExpected( long nextToSee )
-        {
-            return readersShouldSee.contains( nextToSee );
+        boolean isReallyExpected(long nextToSee) {
+            return readersShouldSee.contains(nextToSee);
         }
     }
 
-    private abstract class UpdateOperation
-    {
+    private abstract class UpdateOperation {
         final long key;
 
-        UpdateOperation( long key )
-        {
+        UpdateOperation(long key) {
             this.key = key;
         }
 
-        abstract void apply( Writer<KEY,VALUE> writer ) throws IOException;
+        abstract void apply(Writer<KEY, VALUE> writer) throws IOException;
 
-        abstract void applyToSet( Set<Long> set );
+        abstract void applyToSet(Set<Long> set);
 
         abstract boolean isInsert();
     }
 
-    private class PutOperation extends UpdateOperation
-    {
-        PutOperation( long key )
-        {
-            super( key );
+    private class PutOperation extends UpdateOperation {
+        PutOperation(long key) {
+            super(key);
         }
 
         @Override
-        void apply( Writer<KEY,VALUE> writer )
-        {
-            writer.put( key( key ), value( key ) );
+        void apply(Writer<KEY, VALUE> writer) {
+            writer.put(key(key), value(key));
         }
 
         @Override
-        void applyToSet( Set<Long> set )
-        {
-            set.add( key );
+        void applyToSet(Set<Long> set) {
+            set.add(key);
         }
 
         @Override
-        boolean isInsert()
-        {
+        boolean isInsert() {
             return true;
         }
     }
 
-    private class RemoveOperation extends UpdateOperation
-    {
-        RemoveOperation( long key )
-        {
-            super( key );
+    private class RemoveOperation extends UpdateOperation {
+        RemoveOperation(long key) {
+            super(key);
         }
 
         @Override
-        void apply( Writer<KEY,VALUE> writer )
-        {
-            writer.remove( key( key ) );
+        void apply(Writer<KEY, VALUE> writer) {
+            writer.remove(key(key));
         }
 
         @Override
-        void applyToSet( Set<Long> set )
-        {
-            set.remove( key );
+        void applyToSet(Set<Long> set) {
+            set.remove(key);
         }
 
         @Override
-        boolean isInsert()
-        {
+        boolean isInsert() {
             return false;
         }
     }
 
-    private void write( TestCoordinator testCoordinator, CountDownLatch readerReadySignal,
+    private void write(
+            TestCoordinator testCoordinator,
+            CountDownLatch readerReadySignal,
             CountDownLatch readerStartSignal,
-            AtomicBoolean endSignal, AtomicBoolean failHalt ) throws InterruptedException, IOException
-    {
-        assertTrue( readerReadySignal.await( 60, SECONDS ) ); // Ready, set...
+            AtomicBoolean endSignal,
+            AtomicBoolean failHalt)
+            throws InterruptedException, IOException {
+        assertTrue(readerReadySignal.await(60, SECONDS)); // Ready, set...
         readerStartSignal.countDown(); // GO!
 
-        while ( !failHalt.get() && !endSignal.get() )
-        {
-            writeOneIteration( testCoordinator, failHalt );
+        while (!failHalt.get() && !endSignal.get()) {
+            writeOneIteration(testCoordinator, failHalt);
             testCoordinator.iterationFinished();
         }
     }
 
-    private void writeOneIteration( TestCoordinator testCoordinator,
-            AtomicBoolean failHalt ) throws IOException, InterruptedException
-    {
+    private void writeOneIteration(TestCoordinator testCoordinator, AtomicBoolean failHalt)
+            throws IOException, InterruptedException {
         int batchSize = testCoordinator.writeBatchSize();
         Iterable<UpdateOperation> toWrite = testCoordinator.nextToWrite();
         Iterator<UpdateOperation> toWriteIterator = toWrite.iterator();
-        while ( toWriteIterator.hasNext() )
-        {
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
-            {
+        while (toWriteIterator.hasNext()) {
+            try (Writer<KEY, VALUE> writer = index.writer(NULL_CONTEXT)) {
                 int inBatch = 0;
-                while ( toWriteIterator.hasNext() && inBatch < batchSize )
-                {
+                while (toWriteIterator.hasNext() && inBatch < batchSize) {
                     UpdateOperation operation = toWriteIterator.next();
-                    operation.apply( writer );
-                    if ( failHalt.get() )
-                    {
+                    operation.apply(writer);
+                    if (failHalt.get()) {
                         break;
                     }
                     inBatch++;
                 }
             }
             // Sleep to allow checkpointer to step in
-            MILLISECONDS.sleep( 1 );
+            MILLISECONDS.sleep(1);
         }
     }
 
-    private class RunnableReader implements Runnable
-    {
+    private class RunnableReader implements Runnable {
         private final CountDownLatch readerReadySignal;
         private final CountDownLatch readerStartSignal;
         private final AtomicBoolean endSignal;
@@ -524,10 +464,13 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         private final TestCoordinator testCoordinator;
         private final boolean useReusableSeeker;
 
-        RunnableReader( TestCoordinator testCoordinator, CountDownLatch readerReadySignal,
-                CountDownLatch readerStartSignal, AtomicBoolean endSignal,
-                AtomicBoolean failHalt, AtomicReference<Throwable> readerError )
-        {
+        RunnableReader(
+                TestCoordinator testCoordinator,
+                CountDownLatch readerReadySignal,
+                CountDownLatch readerStartSignal,
+                AtomicBoolean endSignal,
+                AtomicBoolean failHalt,
+                AtomicReference<Throwable> readerError) {
             this.readerReadySignal = readerReadySignal;
             this.readerStartSignal = readerStartSignal;
             this.endSignal = endSignal;
@@ -538,195 +481,150 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         }
 
         @Override
-        public void run()
-        {
-            try ( Seeker<KEY,VALUE> reusableSeeker = useReusableSeeker ? index.allocateSeeker( NULL_CONTEXT ) : null )
-            {
+        public void run() {
+            try (Seeker<KEY, VALUE> reusableSeeker = useReusableSeeker ? index.allocateSeeker(NULL_CONTEXT) : null) {
                 readerReadySignal.countDown(); // Ready, set...
                 readerStartSignal.await(); // GO!
 
-                while ( !endSignal.get() && !failHalt.get() )
-                {
-                    doRead( reusableSeeker );
+                while (!endSignal.get() && !failHalt.get()) {
+                    doRead(reusableSeeker);
                 }
-            }
-            catch ( Throwable e )
-            {
-                readerError.set( e );
-                failHalt.set( true );
+            } catch (Throwable e) {
+                readerError.set(e);
+                failHalt.set(true);
             }
         }
 
-        private void doRead( Seeker<KEY,VALUE> reusableSeeker ) throws IOException
-        {
+        private void doRead(Seeker<KEY, VALUE> reusableSeeker) throws IOException {
             ReaderInstruction readerInstruction = testCoordinator.get();
             Iterator<Long> expectToSee = readerInstruction.expectToSee().iterator();
             long start = readerInstruction.start();
             long end = readerInstruction.end();
             boolean forward = start <= end;
-            Seeker<KEY,VALUE> cursor = null;
-            try
-            {
-                cursor = readerInstruction.seek( index, reusableSeeker );
-                if ( expectToSee.hasNext() )
-                {
+            Seeker<KEY, VALUE> cursor = null;
+            try {
+                cursor = readerInstruction.seek(index, reusableSeeker);
+                if (expectToSee.hasNext()) {
                     long nextToSee = expectToSee.next();
-                    while ( cursor.next() )
-                    {
+                    while (cursor.next()) {
                         // Actual
-                        long lastSeenKey = keySeed( cursor.key() );
-                        long lastSeenValue = valueSeed( cursor.value() );
+                        long lastSeenKey = keySeed(cursor.key());
+                        long lastSeenValue = valueSeed(cursor.value());
 
-                        if ( lastSeenKey != lastSeenValue )
-                        {
-                            fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
-                                    lastSeenKey, lastSeenValue ) );
+                        if (lastSeenKey != lastSeenValue) {
+                            fail(String.format(
+                                    "Read mismatching key value pair, key=%d, value=%d%n", lastSeenKey, lastSeenValue));
                         }
 
-                        while ( (forward && lastSeenKey > nextToSee) ||
-                                (!forward && lastSeenKey < nextToSee) )
-                        {
-                            if ( testCoordinator.isReallyExpected( nextToSee ) )
-                            {
-                                fail( String.format( "Expected to see %d but went straight to %d. ",
-                                        nextToSee, lastSeenKey ) );
+                        while ((forward && lastSeenKey > nextToSee) || (!forward && lastSeenKey < nextToSee)) {
+                            if (testCoordinator.isReallyExpected(nextToSee)) {
+                                fail(String.format(
+                                        "Expected to see %d but went straight to %d. ", nextToSee, lastSeenKey));
                             }
-                            if ( expectToSee.hasNext() )
-                            {
+                            if (expectToSee.hasNext()) {
                                 nextToSee = expectToSee.next();
-                            }
-                            else
-                            {
+                            } else {
                                 break;
                             }
                         }
-                        if ( nextToSee == lastSeenKey )
-                        {
-                            if ( expectToSee.hasNext() )
-                            {
+                        if (nextToSee == lastSeenKey) {
+                            if (expectToSee.hasNext()) {
                                 nextToSee = expectToSee.next();
-                            }
-                            else
-                            {
+                            } else {
                                 break;
                             }
                         }
                     }
                 }
-            }
-            finally
-            {
+            } finally {
                 // If we're using a reusable seeker then don't close it now (we'll reuse it for next seek),
                 // instead it will be closed when this thread is done
-                IOUtils.closeAll( useReusableSeeker ? null : cursor );
+                IOUtils.closeAll(useReusableSeeker ? null : cursor);
             }
         }
     }
 
-    private Runnable checkpointThread( AtomicBoolean endSignal, AtomicReference<Throwable> readerError,
-            AtomicBoolean failHalt )
-    {
-        return () ->
-        {
-            while ( !endSignal.get() )
-            {
-                try
-                {
-                    index.checkpoint( NULL_CONTEXT );
+    private Runnable checkpointThread(
+            AtomicBoolean endSignal, AtomicReference<Throwable> readerError, AtomicBoolean failHalt) {
+        return () -> {
+            while (!endSignal.get()) {
+                try {
+                    index.checkpoint(NULL_CONTEXT);
                     // Sleep a little in between checkpoints
-                    MILLISECONDS.sleep( 20L );
-                }
-                catch ( Throwable e )
-                {
-                    readerError.set( e );
-                    failHalt.set( true );
+                    MILLISECONDS.sleep(20L);
+                } catch (Throwable e) {
+                    readerError.set(e);
+                    failHalt.set(true);
                 }
             }
         };
     }
 
-    private class ReaderInstruction
-    {
+    private class ReaderInstruction {
         private final long startRange;
         private final long endRange;
         private final Set<Long> expectToSee;
         private final boolean partitionedSeek;
 
-        ReaderInstruction( long startRange, long endRange, Set<Long> expectToSee, boolean partitionedSeek )
-        {
+        ReaderInstruction(long startRange, long endRange, Set<Long> expectToSee, boolean partitionedSeek) {
             this.startRange = startRange;
             this.endRange = endRange;
             this.expectToSee = expectToSee;
             this.partitionedSeek = partitionedSeek;
         }
 
-        long start()
-        {
+        long start() {
             return startRange;
         }
 
-        long end()
-        {
+        long end() {
             return endRange;
         }
 
-        Set<Long> expectToSee()
-        {
+        Set<Long> expectToSee() {
             return expectToSee;
         }
 
-        Seeker<KEY,VALUE> seek( GBPTree<KEY,VALUE> tree, Seeker<KEY,VALUE> reusableSeeker ) throws IOException
-        {
-            KEY from = key( start() );
-            KEY to = key( end() );
-            if ( partitionedSeek )
-            {
-                List<KEY> partitionEdges = tree.partitionedSeek( from, to, 10, NULL_CONTEXT );
-                List<Seeker<KEY,VALUE>> partitions = new ArrayList<>( partitionEdges.size() - 1 );
-                for ( int i = 0; i < partitionEdges.size() - 1; i++ )
-                {
-                    partitions.add( tree.seek( partitionEdges.get( i ), partitionEdges.get( i + 1 ), NULL_CONTEXT ) );
+        Seeker<KEY, VALUE> seek(GBPTree<KEY, VALUE> tree, Seeker<KEY, VALUE> reusableSeeker) throws IOException {
+            KEY from = key(start());
+            KEY to = key(end());
+            if (partitionedSeek) {
+                List<KEY> partitionEdges = tree.partitionedSeek(from, to, 10, NULL_CONTEXT);
+                List<Seeker<KEY, VALUE>> partitions = new ArrayList<>(partitionEdges.size() - 1);
+                for (int i = 0; i < partitionEdges.size() - 1; i++) {
+                    partitions.add(tree.seek(partitionEdges.get(i), partitionEdges.get(i + 1), NULL_CONTEXT));
                 }
-                return new PartitionBridgingSeeker<>( partitions );
+                return new PartitionBridgingSeeker<>(partitions);
             }
 
-            if ( reusableSeeker != null )
-            {
-                return tree.seek( reusableSeeker, from, to );
+            if (reusableSeeker != null) {
+                return tree.seek(reusableSeeker, from, to);
             }
-            return tree.seek( from, to, NULL_CONTEXT );
+            return tree.seek(from, to, NULL_CONTEXT);
         }
     }
 
-    private static class PartitionBridgingSeeker<KEY, VALUE> implements Seeker<KEY,VALUE>
-    {
-        private final Collection<Seeker<KEY,VALUE>> partitionsToClose;
-        private final Iterator<Seeker<KEY,VALUE>> partitions;
-        private Seeker<KEY,VALUE> current;
+    private static class PartitionBridgingSeeker<KEY, VALUE> implements Seeker<KEY, VALUE> {
+        private final Collection<Seeker<KEY, VALUE>> partitionsToClose;
+        private final Iterator<Seeker<KEY, VALUE>> partitions;
+        private Seeker<KEY, VALUE> current;
 
-        PartitionBridgingSeeker( Collection<Seeker<KEY,VALUE>> partitions )
-        {
+        PartitionBridgingSeeker(Collection<Seeker<KEY, VALUE>> partitions) {
             this.partitionsToClose = partitions;
             this.partitions = partitions.iterator();
             current = this.partitions.next();
         }
 
         @Override
-        public boolean next() throws IOException
-        {
-            while ( true )
-            {
-                if ( current.next() )
-                {
+        public boolean next() throws IOException {
+            while (true) {
+                if (current.next()) {
                     return true;
                 }
-                if ( partitions.hasNext() )
-                {
+                if (partitions.hasNext()) {
                     current.close();
                     current = partitions.next();
-                }
-                else
-                {
+                } else {
                     break;
                 }
             }
@@ -734,41 +632,34 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         }
 
         @Override
-        public KEY key()
-        {
+        public KEY key() {
             return current.key();
         }
 
         @Override
-        public VALUE value()
-        {
+        public VALUE value() {
             return current.value();
         }
 
         @Override
-        public void close() throws IOException
-        {
-            IOUtils.closeAll( partitionsToClose );
+        public void close() throws IOException {
+            IOUtils.closeAll(partitionsToClose);
         }
     }
 
-    private KEY key( long seed )
-    {
-        return layout.key( seed );
+    private KEY key(long seed) {
+        return layout.key(seed);
     }
 
-    private VALUE value( long seed )
-    {
-        return layout.value( seed );
+    private VALUE value(long seed) {
+        return layout.value(seed);
     }
 
-    private long keySeed( KEY key )
-    {
-        return layout.keySeed( key );
+    private long keySeed(KEY key) {
+        return layout.keySeed(key);
     }
 
-    private long valueSeed( VALUE value )
-    {
-        return layout.valueSeed( value );
+    private long valueSeed(VALUE value) {
+        return layout.valueSeed(value);
     }
 }

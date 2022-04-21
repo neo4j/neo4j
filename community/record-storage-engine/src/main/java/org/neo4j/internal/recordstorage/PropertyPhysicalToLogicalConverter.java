@@ -21,16 +21,15 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Arrays;
 import java.util.Comparator;
-
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
-public class PropertyPhysicalToLogicalConverter
-{
-    private static final Comparator<PropertyBlock> BLOCK_COMPARATOR = Comparator.comparingInt( PropertyBlock::getKeyIndexId );
+public class PropertyPhysicalToLogicalConverter {
+    private static final Comparator<PropertyBlock> BLOCK_COMPARATOR =
+            Comparator.comparingInt(PropertyBlock::getKeyIndexId);
 
     private final PropertyStore propertyStore;
     private final StoreCursors storeCursors;
@@ -39,8 +38,7 @@ public class PropertyPhysicalToLogicalConverter
     private PropertyBlock[] afterBlocks = new PropertyBlock[8];
     private int afterBlocksCursor;
 
-    public PropertyPhysicalToLogicalConverter( PropertyStore propertyStore, StoreCursors storeCursors )
-    {
+    public PropertyPhysicalToLogicalConverter(PropertyStore propertyStore, StoreCursors storeCursors) {
         this.propertyStore = propertyStore;
         this.storeCursors = storeCursors;
     }
@@ -48,115 +46,90 @@ public class PropertyPhysicalToLogicalConverter
     /**
      * Converts physical changes to PropertyRecords for a entity into logical updates
      */
-    public void convertPropertyRecord( EntityCommandGrouper<?>.Cursor changes, EntityUpdates.Builder properties )
-    {
-        mapBlocks( changes );
+    public void convertPropertyRecord(EntityCommandGrouper<?>.Cursor changes, EntityUpdates.Builder properties) {
+        mapBlocks(changes);
 
         int bc = 0;
         int ac = 0;
-        while ( bc < beforeBlocksCursor || ac < afterBlocksCursor )
-        {
+        while (bc < beforeBlocksCursor || ac < afterBlocksCursor) {
             PropertyBlock beforeBlock = null;
             PropertyBlock afterBlock = null;
 
             int beforeKey = Integer.MAX_VALUE;
             int afterKey = Integer.MAX_VALUE;
             int key;
-            if ( bc < beforeBlocksCursor )
-            {
+            if (bc < beforeBlocksCursor) {
                 beforeBlock = beforeBlocks[bc];
                 beforeKey = beforeBlock.getKeyIndexId();
             }
-            if ( ac < afterBlocksCursor )
-            {
+            if (ac < afterBlocksCursor) {
                 afterBlock = afterBlocks[ac];
                 afterKey = afterBlock.getKeyIndexId();
             }
 
-            if ( beforeKey < afterKey )
-            {
+            if (beforeKey < afterKey) {
                 afterBlock = null;
                 key = beforeKey;
                 bc++;
-            }
-            else if ( beforeKey > afterKey )
-            {
+            } else if (beforeKey > afterKey) {
                 beforeBlock = null;
                 key = afterKey;
                 ac++;
-            }
-            else
-            {
+            } else {
                 // They are the same
                 key = afterKey;
                 bc++;
                 ac++;
             }
 
-            if ( beforeBlock != null && afterBlock != null )
-            {
+            if (beforeBlock != null && afterBlock != null) {
                 // CHANGE
-                if ( !beforeBlock.hasSameContentsAs( afterBlock ) )
-                {
-                    Value beforeVal = valueOf( beforeBlock );
-                    Value afterVal = valueOf( afterBlock );
-                    properties.changed( key, beforeVal, afterVal );
+                if (!beforeBlock.hasSameContentsAs(afterBlock)) {
+                    Value beforeVal = valueOf(beforeBlock);
+                    Value afterVal = valueOf(afterBlock);
+                    properties.changed(key, beforeVal, afterVal);
                 }
-            }
-            else
-            {
+            } else {
                 // ADD/REMOVE
-                if ( afterBlock != null )
-                {
-                    properties.added( key, valueOf( afterBlock ) );
-                }
-                else
-                {
-                    properties.removed( key, valueOf( beforeBlock ) );
+                if (afterBlock != null) {
+                    properties.added(key, valueOf(afterBlock));
+                } else {
+                    properties.removed(key, valueOf(beforeBlock));
                 }
             }
         }
     }
 
-    private void mapBlocks( EntityCommandGrouper<?>.Cursor changes )
-    {
+    private void mapBlocks(EntityCommandGrouper<?>.Cursor changes) {
         beforeBlocksCursor = 0;
         afterBlocksCursor = 0;
-        while ( true )
-        {
+        while (true) {
             Command.PropertyCommand change = changes.nextProperty();
-            if ( change == null )
-            {
+            if (change == null) {
                 break;
             }
 
-            for ( PropertyBlock block : change.getBefore() )
-            {
-                if ( beforeBlocksCursor == beforeBlocks.length )
-                {
-                    beforeBlocks = Arrays.copyOf( beforeBlocks, beforeBlocksCursor * 2 );
+            for (PropertyBlock block : change.getBefore()) {
+                if (beforeBlocksCursor == beforeBlocks.length) {
+                    beforeBlocks = Arrays.copyOf(beforeBlocks, beforeBlocksCursor * 2);
                 }
                 beforeBlocks[beforeBlocksCursor++] = block;
             }
-            for ( PropertyBlock block : change.getAfter() )
-            {
-                if ( afterBlocksCursor == afterBlocks.length )
-                {
-                    afterBlocks = Arrays.copyOf( afterBlocks, afterBlocksCursor * 2 );
+            for (PropertyBlock block : change.getAfter()) {
+                if (afterBlocksCursor == afterBlocks.length) {
+                    afterBlocks = Arrays.copyOf(afterBlocks, afterBlocksCursor * 2);
                 }
                 afterBlocks[afterBlocksCursor++] = block;
             }
         }
-        Arrays.sort( beforeBlocks, 0, beforeBlocksCursor, BLOCK_COMPARATOR );
-        Arrays.sort( afterBlocks, 0, afterBlocksCursor, BLOCK_COMPARATOR );
+        Arrays.sort(beforeBlocks, 0, beforeBlocksCursor, BLOCK_COMPARATOR);
+        Arrays.sort(afterBlocks, 0, afterBlocksCursor, BLOCK_COMPARATOR);
     }
 
-    private Value valueOf( PropertyBlock block )
-    {
-        if ( block == null )
-        {
+    private Value valueOf(PropertyBlock block) {
+        if (block == null) {
             return null;
         }
-        return block.getType().value( block, propertyStore, storeCursors );
+        return block.getType().value(block, propertyStore, storeCursors);
     }
 }

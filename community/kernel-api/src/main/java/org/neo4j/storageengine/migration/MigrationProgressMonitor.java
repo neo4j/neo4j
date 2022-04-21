@@ -21,13 +21,12 @@ package org.neo4j.storageengine.migration;
 
 import org.neo4j.common.ProgressReporter;
 
-public interface MigrationProgressMonitor
-{
+public interface MigrationProgressMonitor {
     /**
      * Signals that the migration process has started.
      * @param numStages The number of migration stages is the migration process that we are monitoring.
      */
-    void started( int numStages );
+    void started(int numStages);
 
     /**
      * Signals that migration goes into section with given {@code name}.
@@ -35,7 +34,7 @@ public interface MigrationProgressMonitor
      * @param name descriptive name of the section to migration.
      * @return {@link ProgressReporter} which should be notified about progress in the given section.
      */
-    ProgressReporter startSection( String name );
+    ProgressReporter startSection(String name);
 
     /**
      * The migration process has completed successfully.
@@ -52,35 +51,27 @@ public interface MigrationProgressMonitor
      */
     void completeTransactionLogsMigration();
 
-    MigrationProgressMonitor SILENT = new MigrationProgressMonitor()
-    {
+    MigrationProgressMonitor SILENT = new MigrationProgressMonitor() {
         @Override
-        public void started( int numStages )
-        {
+        public void started(int numStages) {
             // empty
         }
 
         @Override
-        public ProgressReporter startSection( String name )
-        {
+        public ProgressReporter startSection(String name) {
             return ProgressReporter.SILENT;
         }
 
         @Override
-        public void completed()
-        {
-
-        }
+        public void completed() {}
 
         @Override
-        public void startTransactionLogsMigration()
-        {
+        public void startTransactionLogsMigration() {
             // empty
         }
 
         @Override
-        public void completeTransactionLogsMigration()
-        {
+        public void completeTransactionLogsMigration() {
             // empty
         }
     };

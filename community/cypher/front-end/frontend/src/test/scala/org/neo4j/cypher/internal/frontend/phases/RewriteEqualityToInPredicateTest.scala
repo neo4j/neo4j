@@ -27,78 +27,91 @@ class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingT
   test("MATCH (a) WHERE id(a) = 42 (no dependencies on the RHS)") {
     assertRewritten(
       "MATCH (a) WHERE id(a) = 42 RETURN a",
-      "MATCH (a) WHERE id(a) IN [42] RETURN a")
+      "MATCH (a) WHERE id(a) IN [42] RETURN a"
+    )
   }
 
   test("MATCH (a) WHERE a.prop = 42 (no dependencies on the RHS)") {
     assertRewritten(
       "MATCH (a) WHERE a.prop = 42 RETURN a",
-      "MATCH (a) WHERE a.prop IN [42] RETURN a")
+      "MATCH (a) WHERE a.prop IN [42] RETURN a"
+    )
   }
 
   test("MATCH (a) WHERE id(a) = rand() (no dependencies on the RHS)") {
     assertRewritten(
       "MATCH (a) WHERE id(a) = rand() RETURN a",
-      "MATCH (a) WHERE id(a) IN [rand()] RETURN a")
+      "MATCH (a) WHERE id(a) IN [rand()] RETURN a"
+    )
   }
 
   test("MATCH (a) WHERE a.prop = rand() (no dependencies on the RHS)") {
     assertRewritten(
       "MATCH (a) WHERE a.prop = rand() RETURN a",
-      "MATCH (a) WHERE a.prop IN [rand()] RETURN a")
+      "MATCH (a) WHERE a.prop IN [rand()] RETURN a"
+    )
   }
 
   test("WITH x as 42 MATCH (a) WHERE id(a) = x (no dependencies on the RHS)") {
     assertRewritten(
       "WITH 42 as x MATCH (a) WHERE id(a) = x RETURN a",
-      "WITH 42 as x MATCH (a) WHERE id(a) IN [x] RETURN a")
+      "WITH 42 as x MATCH (a) WHERE id(a) IN [x] RETURN a"
+    )
   }
 
   test("WITH x as 42 MATCH (a) WHERE a.prop = x (no dependencies on the RHS)") {
     assertRewritten(
       "WITH 42 as x MATCH (a) WHERE a.prop = x RETURN a",
-      "WITH 42 as x MATCH (a) WHERE a.prop IN [x] RETURN a")
+      "WITH 42 as x MATCH (a) WHERE a.prop IN [x] RETURN a"
+    )
   }
 
   test("should not rewrite a comparison between two properties") {
     assertNotRewritten(
-      "MATCH (a), (b) WHERE a.prop = b.prop RETURN a")
+      "MATCH (a), (b) WHERE a.prop = b.prop RETURN a"
+    )
   }
 
   test("MATCH (a)-[r]->() WHERE type(r) = 'TYPE' (no dependencies on the RHS)") {
     assertRewritten(
       "MATCH (a)-[r]->() WHERE type(r) = 'TYPE' RETURN r",
-      "MATCH (a)-[r]->() WHERE type(r) IN ['TYPE'] RETURN r")
+      "MATCH (a)-[r]->() WHERE type(r) IN ['TYPE'] RETURN r"
+    )
   }
 
   test("MATCH (a)-[r]->() WHERE type(r) = rand() (no dependencies on the RHS)") {
     assertRewritten(
       "MATCH (a)-[r]->() WHERE type(r) = rand() RETURN r",
-      "MATCH (a)-[r]->() WHERE type(r) IN [rand()] RETURN r")
+      "MATCH (a)-[r]->() WHERE type(r) IN [rand()] RETURN r"
+    )
   }
 
   test("WITH 'TYPE' as x MATCH (a)-[r]->() WHERE type(r) = x (no dependencies on the RHS)") {
     assertRewritten(
       "WITH 'TYPE' as x MATCH (a)-[r]->() WHERE type(r) = x RETURN r",
-      "WITH 'TYPE' as x MATCH (a)-[r]->() WHERE type(r) IN [x] RETURN r")
+      "WITH 'TYPE' as x MATCH (a)-[r]->() WHERE type(r) IN [x] RETURN r"
+    )
   }
 
   test("MATCH (a) WHERE labels(a) = ['Label'] (no dependencies on the RHS)") {
     assertRewritten(
       "MATCH (a) WHERE labels(a) = ['Label'] RETURN a",
-      "MATCH (a) WHERE labels(a) IN [['Label']] RETURN a")
+      "MATCH (a) WHERE labels(a) IN [['Label']] RETURN a"
+    )
   }
 
   test("MATCH (a) WHERE labels(a) = rand() (no dependencies on the RHS)") {
     assertRewritten(
       "MATCH (a) WHERE labels(a) = [rand()] RETURN a",
-      "MATCH (a) WHERE labels(a) IN [[rand()]] RETURN a")
+      "MATCH (a) WHERE labels(a) IN [[rand()]] RETURN a"
+    )
   }
 
   test("WITH 'Label' as x MATCH (a) WHERE labels(a) = x (no dependencies on the RHS)") {
     assertRewritten(
       "WITH 'Label' as x MATCH (a) WHERE labels(a) = [x] RETURN a",
-      "WITH 'Label' as x MATCH (a) WHERE labels(a) IN [[x]] RETURN a")
+      "WITH 'Label' as x MATCH (a) WHERE labels(a) IN [[x]] RETURN a"
+    )
   }
 
   test("MATCH (a) WHERE rand() = 42 (no dependencies on the RHS)") {

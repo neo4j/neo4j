@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingImpl;
@@ -37,14 +38,11 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-public class CheckPointThresholdTestSupport
-{
+public class CheckPointThresholdTestSupport {
     public static final long ARBITRARY_LOG_VERSION = 5;
     public static final long ARBITRARY_LOG_OFFSET = 128;
-    public static final LogPosition ARBITRARY_LOG_POSITION = new LogPosition( ARBITRARY_LOG_VERSION, ARBITRARY_LOG_OFFSET );
+    public static final LogPosition ARBITRARY_LOG_POSITION =
+            new LogPosition(ARBITRARY_LOG_VERSION, ARBITRARY_LOG_OFFSET);
 
     protected Config config;
     protected FakeClock clock;
@@ -57,48 +55,44 @@ public class CheckPointThresholdTestSupport
     protected Consumer<String> triggered;
 
     @BeforeEach
-    public void setUp()
-    {
+    public void setUp() {
         config = Config.defaults();
         clock = Clocks.fakeClock();
         logPruning = LogPruning.NO_PRUNING;
         logProvider = NullLogProvider.getInstance();
-        intervalTx = config.get( GraphDatabaseSettings.check_point_interval_tx );
-        intervalTime = config.get( GraphDatabaseSettings.check_point_interval_time );
+        intervalTx = config.get(GraphDatabaseSettings.check_point_interval_tx);
+        intervalTime = config.get(GraphDatabaseSettings.check_point_interval_time);
         triggerConsumer = new LinkedBlockingQueue<>();
         triggered = triggerConsumer::offer;
-        notTriggered = s -> Assertions.fail( "Should not have triggered: " + s );
+        notTriggered = s -> Assertions.fail("Should not have triggered: " + s);
     }
 
-    protected void withPolicy( String policy )
-    {
-        config.set( GraphDatabaseSettings.check_point_policy,
-                ((SettingImpl<GraphDatabaseSettings.CheckpointPolicy>) GraphDatabaseSettings.check_point_policy).parse( policy ) );
+    protected void withPolicy(String policy) {
+        config.set(
+                GraphDatabaseSettings.check_point_policy,
+                ((SettingImpl<GraphDatabaseSettings.CheckpointPolicy>) GraphDatabaseSettings.check_point_policy)
+                        .parse(policy));
     }
 
-    protected void withIntervalTime( String time )
-    {
-        config.set( GraphDatabaseSettings.check_point_interval_time ,
-                ((SettingImpl<Duration>) GraphDatabaseSettings.check_point_interval_time).parse( time ) );
+    protected void withIntervalTime(String time) {
+        config.set(
+                GraphDatabaseSettings.check_point_interval_time,
+                ((SettingImpl<Duration>) GraphDatabaseSettings.check_point_interval_time).parse(time));
     }
 
-    protected void withIntervalTx( int count )
-    {
-        config.set( GraphDatabaseSettings.check_point_interval_tx, count );
+    protected void withIntervalTx(int count) {
+        config.set(GraphDatabaseSettings.check_point_interval_tx, count);
     }
 
-    protected CheckPointThreshold createThreshold()
-    {
-        return CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
+    protected CheckPointThreshold createThreshold() {
+        return CheckPointThreshold.createThreshold(config, clock, logPruning, logProvider);
     }
 
-    protected void verifyTriggered( String... reason )
-    {
-        assertThat( triggerConsumer.poll() ).contains( reason );
+    protected void verifyTriggered(String... reason) {
+        assertThat(triggerConsumer.poll()).contains(reason);
     }
 
-    protected void verifyNoMoreTriggers()
-    {
-        assertTrue( triggerConsumer.isEmpty() );
+    protected void verifyNoMoreTriggers() {
+        assertTrue(triggerConsumer.isEmpty());
     }
 }

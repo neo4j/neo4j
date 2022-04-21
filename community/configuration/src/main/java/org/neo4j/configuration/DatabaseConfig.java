@@ -19,185 +19,159 @@
  */
 package org.neo4j.configuration;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.select_specific_record_format;
+import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.InternalLog;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.select_specific_record_format;
-import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
-
-public class DatabaseConfig extends Config implements Lifecycle
-{
-    private final Map<Setting<?>,Object> databaseSpecificSettings;
+public class DatabaseConfig extends Config implements Lifecycle {
+    private final Map<Setting<?>, Object> databaseSpecificSettings;
     private final Config globalConfig;
     private final Map<Setting<?>, Object> overriddenSettings;
-    private Map<Setting<Object>,Collection<SettingChangeListener<Object>>> registeredListeners = new ConcurrentHashMap<>();
+    private Map<Setting<Object>, Collection<SettingChangeListener<Object>>> registeredListeners =
+            new ConcurrentHashMap<>();
 
-    public DatabaseConfig( Map<Setting<?>,Object> databaseSpecificSettings, Config globalConfig, NamedDatabaseId namedDatabaseId )
-    {
+    public DatabaseConfig(
+            Map<Setting<?>, Object> databaseSpecificSettings, Config globalConfig, NamedDatabaseId namedDatabaseId) {
         this.databaseSpecificSettings = databaseSpecificSettings;
         this.globalConfig = globalConfig;
-        overriddenSettings = !namedDatabaseId.isSystemDatabase() ? null : Map.of(
-                record_format, "", //Latest version of the format family it is currently on. Needs to work in rolling upgrade.
-                select_specific_record_format, ""
-        );
+        overriddenSettings = !namedDatabaseId.isSystemDatabase()
+                ? null
+                : Map.of(
+                        record_format,
+                                "", // Latest version of the format family it is currently on. Needs to work in rolling
+                        // upgrade.
+                        select_specific_record_format, "");
     }
 
     @Override
-    public <T> T get( Setting<T> setting )
-    {
-        if ( overriddenSettings != null )
-        {
-            Object o = overriddenSettings.get( setting );
-            if ( o != null )
-            {
+    public <T> T get(Setting<T> setting) {
+        if (overriddenSettings != null) {
+            Object o = overriddenSettings.get(setting);
+            if (o != null) {
                 //noinspection unchecked
                 return (T) o;
             }
         }
-        Object dbSpecific = databaseSpecificSettings.get( setting );
-        if ( dbSpecific != null )
-        {
+        Object dbSpecific = databaseSpecificSettings.get(setting);
+        if (dbSpecific != null) {
             return (T) dbSpecific;
         }
-        return globalConfig.get( setting );
+        return globalConfig.get(setting);
     }
 
     @Override
-    public <T> void addListener( Setting<T> setting, SettingChangeListener<T> listener )
-    {
-        registeredListeners.computeIfAbsent( (SettingImpl<Object>) setting, v -> new ConcurrentLinkedQueue<>() ).add(
-                (SettingChangeListener<Object>) listener );
-        globalConfig.addListener( setting, listener );
+    public <T> void addListener(Setting<T> setting, SettingChangeListener<T> listener) {
+        registeredListeners
+                .computeIfAbsent((SettingImpl<Object>) setting, v -> new ConcurrentLinkedQueue<>())
+                .add((SettingChangeListener<Object>) listener);
+        globalConfig.addListener(setting, listener);
     }
 
     @Override
-    public <T> void removeListener( Setting<T> setting, SettingChangeListener<T> listener )
-    {
-        Collection<SettingChangeListener<Object>> listeners = registeredListeners.get( setting );
-        if ( listeners != null )
-        {
-            listeners.remove( listener );
+    public <T> void removeListener(Setting<T> setting, SettingChangeListener<T> listener) {
+        Collection<SettingChangeListener<Object>> listeners = registeredListeners.get(setting);
+        if (listeners != null) {
+            listeners.remove(listener);
         }
-        globalConfig.removeListener( setting, listener );
+        globalConfig.removeListener(setting, listener);
     }
 
     @Override
-    public void setLogger( InternalLog internalLog )
-    {
-        globalConfig.setLogger( internalLog );
+    public void setLogger(InternalLog internalLog) {
+        globalConfig.setLogger(internalLog);
     }
 
     @Override
-    public <T extends GroupSetting> Map<String,T> getGroups( Class<T> group )
-    {
-        return globalConfig.getGroups( group );
+    public <T extends GroupSetting> Map<String, T> getGroups(Class<T> group) {
+        return globalConfig.getGroups(group);
     }
 
     @Override
-    public <T extends GroupSetting, U extends T> Map<Class<U>,Map<String,U>> getGroupsFromInheritance( Class<T> parentClass )
-    {
-        return globalConfig.getGroupsFromInheritance( parentClass );
+    public <T extends GroupSetting, U extends T> Map<Class<U>, Map<String, U>> getGroupsFromInheritance(
+            Class<T> parentClass) {
+        return globalConfig.getGroupsFromInheritance(parentClass);
     }
 
     @Override
-    public <T> SettingObserver<T> getObserver( Setting<T> setting )
-    {
-        return globalConfig.getObserver( setting );
+    public <T> SettingObserver<T> getObserver(Setting<T> setting) {
+        return globalConfig.getObserver(setting);
     }
 
     @Override
-    public <T> void setDynamic( Setting<T> setting, T value, String scope )
-    {
-        globalConfig.setDynamic( setting, value, scope );
+    public <T> void setDynamic(Setting<T> setting, T value, String scope) {
+        globalConfig.setDynamic(setting, value, scope);
     }
 
     @Override
-    public <T> void set( Setting<T> setting, T value )
-    {
-        globalConfig.set( setting, value );
+    public <T> void set(Setting<T> setting, T value) {
+        globalConfig.set(setting, value);
     }
 
     @Override
-    public <T> void setIfNotSet( Setting<T> setting, T value )
-    {
-        globalConfig.setIfNotSet( setting, value );
+    public <T> void setIfNotSet(Setting<T> setting, T value) {
+        globalConfig.setIfNotSet(setting, value);
     }
 
     @Override
-    public boolean isExplicitlySet( Setting<?> setting )
-    {
-        return globalConfig.isExplicitlySet( setting );
+    public boolean isExplicitlySet(Setting<?> setting) {
+        return globalConfig.isExplicitlySet(setting);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return globalConfig.toString();
     }
 
     @Override
-    public Map<Setting<Object>,Object> getValues()
-    {
+    public Map<Setting<Object>, Object> getValues() {
         return globalConfig.getValues();
     }
 
     @Override
-    public Map<String,Setting<Object>> getDeclaredSettings()
-    {
+    public Map<String, Setting<Object>> getDeclaredSettings() {
         return globalConfig.getDeclaredSettings();
     }
 
     @Override
-    public String toString( boolean includeNullValues )
-    {
-        return globalConfig.toString( includeNullValues );
+    public String toString(boolean includeNullValues) {
+        return globalConfig.toString(includeNullValues);
     }
 
     @Override
-    public Setting<Object> getSetting( String name )
-    {
-        return globalConfig.getSetting( name );
+    public Setting<Object> getSetting(String name) {
+        return globalConfig.getSetting(name);
     }
 
     @Override
-    public void init()
-    {
-    }
+    public void init() {}
 
     @Override
-    public void start()
-    {
-    }
+    public void start() {}
 
     @Override
-    public void stop() throws Exception
-    {
-    }
+    public void stop() throws Exception {}
 
     @Override
-    public void shutdown()
-    {
-        for ( var settingListeners : registeredListeners.entrySet() )
-        {
+    public void shutdown() {
+        for (var settingListeners : registeredListeners.entrySet()) {
             Setting<Object> setting = settingListeners.getKey();
             Collection<SettingChangeListener<Object>> listeners = settingListeners.getValue();
-            for ( SettingChangeListener<Object> listener : listeners )
-            {
-                globalConfig.removeListener( setting, listener );
+            for (SettingChangeListener<Object> listener : listeners) {
+                globalConfig.removeListener(setting, listener);
             }
         }
         registeredListeners = new ConcurrentHashMap<>();
     }
 
-    Config getGlobalConfig()
-    {
+    Config getGlobalConfig() {
         return globalConfig;
     }
 }

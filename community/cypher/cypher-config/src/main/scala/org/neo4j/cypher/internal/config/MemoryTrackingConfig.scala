@@ -52,11 +52,14 @@ class ConfigMemoryTrackingController(config: Config) extends MemoryTrackingContr
       _memoryTracking
     }
 
-  config.addListener(GraphDatabaseSettings.track_query_allocation,
+  config.addListener(
+    GraphDatabaseSettings.track_query_allocation,
     new SettingChangeListener[java.lang.Boolean] {
+
       override def accept(before: java.lang.Boolean, after: java.lang.Boolean): Unit =
         _memoryTracking = getMemoryTracking(after)
-    })
+    }
+  )
 
   private def getMemoryTracking(trackQueryAllocation: Boolean): MemoryTracking =
     if (trackQueryAllocation) MEMORY_TRACKING

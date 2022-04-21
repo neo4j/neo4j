@@ -20,27 +20,23 @@
 package org.neo4j.tooling.procedure.procedures.invalid.bad_return_type;
 
 import java.util.stream.Stream;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
-public class BadReturnTypeUserFunction
-{
+public class BadReturnTypeUserFunction {
 
     @Context
     public GraphDatabaseService db;
 
     @UserFunction
-    public Stream<Long> wrongReturnTypeFunction( @Name( "foo" ) String parameter )
-    {
+    public Stream<Long> wrongReturnTypeFunction(@Name("foo") String parameter) {
         return Stream.empty();
     }
 
     @UserFunction
-    public Long niceFunction( @Name( "foo" ) String parameter )
-    {
+    public Long niceFunction(@Name("foo") String parameter) {
         return 3L;
     }
 }

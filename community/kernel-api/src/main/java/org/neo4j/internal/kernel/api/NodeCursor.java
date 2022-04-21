@@ -25,11 +25,9 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 /**
  * Cursor for scanning nodes.
  */
-public interface NodeCursor extends EntityCursor
-{
+public interface NodeCursor extends EntityCursor {
     @Override
-    default long reference()
-    {
+    default long reference() {
         return nodeReference();
     }
 
@@ -39,13 +37,14 @@ public interface NodeCursor extends EntityCursor
 
     TokenSet labelsIgnoringTxStateSetRemove();
 
-    boolean hasLabel( int label );
+    boolean hasLabel(int label);
 
-    void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection );
+    void relationships(RelationshipTraversalCursor relationships, RelationshipSelection selection);
 
     boolean supportsFastRelationshipsTo();
 
-    void relationshipsTo( RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference );
+    void relationshipsTo(
+            RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference);
 
     long relationshipsReference();
 
@@ -63,7 +62,7 @@ public interface NodeCursor extends EntityCursor
      * @param selection which types/directions to get degrees for.
      * @return a {@link Degrees} instance with the selected degree information.
      */
-    Degrees degrees( RelationshipSelection selection );
+    Degrees degrees(RelationshipSelection selection);
 
     /**
      * Returns a single total degree for types and directions provided by the {@link RelationshipSelection}.
@@ -71,7 +70,7 @@ public interface NodeCursor extends EntityCursor
      * @param selection which types/directions to get degrees for.
      * @return the total degree of all selected relationship types and direction.
      */
-    int degree( RelationshipSelection selection );
+    int degree(RelationshipSelection selection);
 
     /**
      * Returns a min(degree(selection), maxDegree).
@@ -83,5 +82,5 @@ public interface NodeCursor extends EntityCursor
      * @param selection which types/directions to get degrees for.
      * @return min(degree(selection), maxDegree).
      */
-    int degreeWithMax( int maxDegree, RelationshipSelection selection );
+    int degreeWithMax(int maxDegree, RelationshipSelection selection);
 }

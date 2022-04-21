@@ -26,11 +26,13 @@ import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.Iterator.empty
 
-case class LimitPipe(source: Pipe, exp: Expression)
-                    (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class LimitPipe(source: Pipe, exp: Expression)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val limit = SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(exp, state, "LIMIT")
 
     if (limit == 0 || input.isEmpty) return ClosingIterator.empty
@@ -46,8 +48,7 @@ case class LimitPipe(source: Pipe, exp: Expression)
         if (remaining > 0L) {
           remaining -= 1L
           input.next()
-        }
-        else empty.next()
+        } else empty.next()
     }
   }
 }

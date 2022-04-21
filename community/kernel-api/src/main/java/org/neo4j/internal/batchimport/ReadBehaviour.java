@@ -19,86 +19,71 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.token.TokenHolders;
-
 import static java.lang.String.format;
 
-public interface ReadBehaviour
-{
-    ReadBehaviour INCLUSIVE_STRICT = new ReadBehaviour()
-    {
+import org.neo4j.token.TokenHolders;
+
+public interface ReadBehaviour {
+    ReadBehaviour INCLUSIVE_STRICT = new ReadBehaviour() {
         @Override
-        public boolean shouldIncludeNode( String[] labels )
-        {
+        public boolean shouldIncludeNode(String[] labels) {
             return true;
         }
 
         @Override
-        public boolean shouldIncludeRelationship( String relationshipType )
-        {
+        public boolean shouldIncludeRelationship(String relationshipType) {
             return true;
         }
 
         @Override
-        public String[] filterLabels( String[] labels )
-        {
+        public String[] filterLabels(String[] labels) {
             return labels;
         }
 
         @Override
-        public boolean shouldIncludeNodeProperty( String propertyKey, String[] labels )
-        {
+        public boolean shouldIncludeNodeProperty(String propertyKey, String[] labels) {
             return true;
         }
 
         @Override
-        public boolean shouldIncludeRelationshipProperty( String propertyKey, String relationshipType )
-        {
+        public boolean shouldIncludeRelationshipProperty(String propertyKey, String relationshipType) {
             return true;
         }
 
         @Override
-        public void unused()
-        {
+        public void unused() {}
+
+        @Override
+        public void removed() {}
+
+        @Override
+        public void error(String format, Object... parameters) {
+            throw new RuntimeException(format(format, parameters));
         }
 
         @Override
-        public void removed()
-        {
-        }
-
-        @Override
-        public void error( String format, Object... parameters )
-        {
-            throw new RuntimeException( format( format, parameters ) );
-        }
-
-        @Override
-        public void error( Throwable e, String format, Object... parameters )
-        {
-            if ( e instanceof RuntimeException )
-            {
+        public void error(Throwable e, String format, Object... parameters) {
+            if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             }
-            throw new RuntimeException( format( format, parameters ), e );
+            throw new RuntimeException(format(format, parameters), e);
         }
 
         @Override
-        public TokenHolders decorateTokenHolders( TokenHolders actual )
-        {
+        public TokenHolders decorateTokenHolders(TokenHolders actual) {
             return actual;
         }
     };
 
-    boolean shouldIncludeNode( String[] labels );
+    boolean shouldIncludeNode(String[] labels);
 
-    boolean shouldIncludeRelationship( String relationshipType );
+    boolean shouldIncludeRelationship(String relationshipType);
 
-    String[] filterLabels( String[] labels );
+    String[] filterLabels(String[] labels);
 
-    boolean shouldIncludeNodeProperty( String propertyKey, String[] labels );
+    boolean shouldIncludeNodeProperty(String propertyKey, String[] labels);
 
-    boolean shouldIncludeRelationshipProperty( String propertyKey, String relationshipType );
+    boolean shouldIncludeRelationshipProperty(String propertyKey, String relationshipType);
 
     // statistics
 
@@ -106,9 +91,9 @@ public interface ReadBehaviour
 
     void removed();
 
-    void error( String format, Object... parameters );
+    void error(String format, Object... parameters);
 
-    void error( Throwable e, String format, Object... parameters );
+    void error(Throwable e, String format, Object... parameters);
 
-    TokenHolders decorateTokenHolders( TokenHolders actual );
+    TokenHolders decorateTokenHolders(TokenHolders actual);
 }

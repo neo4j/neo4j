@@ -29,15 +29,17 @@ object CastSupport {
   def castOrFail[A](value: Any)(implicit ev: ClassTag[A]): A = value match {
     case v: A => v
     case _ => throw new CypherTypeException(
-      s"Expected $value to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")
+        s"Expected $value to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}"
+      )
   }
 
   def castOrFail[A <: AnyValue](value: AnyValue)(implicit ev: ClassTag[A]): A = value match {
     case v: A => v
-    case _ => throw typeError[A](value)
+    case _    => throw typeError[A](value)
   }
 
   def typeError[A <: AnyValue](value: AnyValue)(implicit ev: ClassTag[A]): CypherTypeException =
     throw new CypherTypeException(
-      s"Expected $value to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")
+      s"Expected $value to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}"
+    )
 }

@@ -19,39 +19,36 @@
  */
 package org.neo4j.resources;
 
-import com.sun.management.ThreadMXBean;
-
 import static org.neo4j.util.Preconditions.checkArgument;
 import static org.neo4j.util.Preconditions.checkState;
 
-final class SunManagementHeapAllocation extends HeapAllocation
-{
+import com.sun.management.ThreadMXBean;
+
+final class SunManagementHeapAllocation extends HeapAllocation {
     /**
      * Invoked from {@code HeapAllocation#load(java.lang.management.ThreadMXBean)} through reflection.
      */
-    @SuppressWarnings( "unused" )
-    static HeapAllocation load( java.lang.management.ThreadMXBean bean )
-    {
-        checkArgument( bean instanceof ThreadMXBean, "The ThreadMXBean must be an instance of '" + ThreadMXBean.class.getName() + "'." );
+    @SuppressWarnings("unused")
+    static HeapAllocation load(java.lang.management.ThreadMXBean bean) {
+        checkArgument(
+                bean instanceof ThreadMXBean,
+                "The ThreadMXBean must be an instance of '" + ThreadMXBean.class.getName() + "'.");
         ThreadMXBean threadMXBean = (ThreadMXBean) bean;
-        checkState( threadMXBean.isThreadAllocatedMemorySupported(), "Thread allocations not supported." );
-        return new SunManagementHeapAllocation( threadMXBean );
+        checkState(threadMXBean.isThreadAllocatedMemorySupported(), "Thread allocations not supported.");
+        return new SunManagementHeapAllocation(threadMXBean);
     }
 
     private final ThreadMXBean threadMXBean;
 
-    private SunManagementHeapAllocation( ThreadMXBean threadMXBean )
-    {
+    private SunManagementHeapAllocation(ThreadMXBean threadMXBean) {
         this.threadMXBean = threadMXBean;
-        if ( !threadMXBean.isThreadAllocatedMemoryEnabled() )
-        {
-            threadMXBean.setThreadAllocatedMemoryEnabled( true );
+        if (!threadMXBean.isThreadAllocatedMemoryEnabled()) {
+            threadMXBean.setThreadAllocatedMemoryEnabled(true);
         }
     }
 
     @Override
-    public long allocatedBytes( long threadId )
-    {
-        return threadMXBean.getThreadAllocatedBytes( threadId );
+    public long allocatedBytes(long threadId) {
+        return threadMXBean.getThreadAllocatedBytes(threadId);
     }
 }

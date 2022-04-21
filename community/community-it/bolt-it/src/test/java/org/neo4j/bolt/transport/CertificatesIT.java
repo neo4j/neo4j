@@ -19,11 +19,9 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,7 +31,11 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Set;
-
+import org.bouncycastle.operator.OperatorCreationException;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -44,14 +46,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
-
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-public class CertificatesIT
-{
+public class CertificatesIT {
     private static Path keyFile;
     private static Path certFile;
     private static SelfSignedCertificateFactory certFactory;
@@ -61,65 +58,55 @@ public class CertificatesIT
     private Neo4jWithSocket server;
 
     @BeforeEach
-    public void setup( TestInfo testInfo ) throws IOException
-    {
-        server.setConfigure( settings ->
-        {
-            SslPolicyConfig policy = SslPolicyConfig.forScope( BOLT );
-            settings.put( policy.enabled, true );
-            settings.put( policy.public_certificate, certFile.toAbsolutePath() );
-            settings.put( policy.private_key, keyFile.toAbsolutePath() );
-            settings.put( BoltConnector.enabled, true );
-            settings.put( BoltConnector.encryption_level, OPTIONAL );
-            settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
-        } );
+    public void setup(TestInfo testInfo) throws IOException {
+        server.setConfigure(settings -> {
+            SslPolicyConfig policy = SslPolicyConfig.forScope(BOLT);
+            settings.put(policy.enabled, true);
+            settings.put(policy.public_certificate, certFile.toAbsolutePath());
+            settings.put(policy.private_key, keyFile.toAbsolutePath());
+            settings.put(BoltConnector.enabled, true);
+            settings.put(BoltConnector.encryption_level, OPTIONAL);
+            settings.put(BoltConnector.listen_address, new SocketAddress("localhost", 0));
+        });
 
-        server.init( testInfo );
+        server.init(testInfo);
     }
 
     @Test
-    public void shouldUseConfiguredCertificate() throws Exception
-    {
+    public void shouldUseConfiguredCertificate() throws Exception {
         // GIVEN
         SecureSocketConnection connection = new SecureSocketConnection();
-        try
-        {
+        try {
             // WHEN
-            connection.connect( server.lookupConnector( BoltConnector.NAME ) )
-                    .send( util.defaultAcceptedVersions() );
+            connection.connect(server.lookupConnector(BoltConnector.NAME)).send(util.defaultAcceptedVersions());
 
             // THEN
             Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
-            assertThat( certificatesSeen ).containsExactly( loadCertificateFromDisk() );
-        }
-        finally
-        {
+            assertThat(certificatesSeen).containsExactly(loadCertificateFromDisk());
+        } finally {
             connection.disconnect();
         }
     }
 
-    private static X509Certificate loadCertificateFromDisk() throws CertificateException, IOException
-    {
-        Certificate[] certificates = PkiUtils.loadCertificates( certFile );
-        assertThat( certificates.length ).isEqualTo( 1 );
+    private static X509Certificate loadCertificateFromDisk() throws CertificateException, IOException {
+        Certificate[] certificates = PkiUtils.loadCertificates(certFile);
+        assertThat(certificates.length).isEqualTo(1);
 
         return (X509Certificate) certificates[0];
     }
 
     @BeforeAll
-    public static void setup() throws IOException, GeneralSecurityException, OperatorCreationException
-    {
+    public static void setup() throws IOException, GeneralSecurityException, OperatorCreationException {
         certFactory = new SelfSignedCertificateFactory();
-        keyFile = Files.createTempFile( "key", "pem" );
-        certFile = Files.createTempFile( "key", "pem" );
+        keyFile = Files.createTempFile("key", "pem");
+        certFile = Files.createTempFile("key", "pem");
 
         // make sure files are not there
-        Files.delete( keyFile );
-        Files.delete( certFile );
+        Files.delete(keyFile);
+        Files.delete(certFile);
 
-        certFactory.createSelfSignedCertificate( certFile, keyFile, "my.domain" );
+        certFactory.createSelfSignedCertificate(certFile, keyFile, "my.domain");
 
         util = new TransportTestUtil();
     }
-
 }

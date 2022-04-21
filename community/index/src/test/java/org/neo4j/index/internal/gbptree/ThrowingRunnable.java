@@ -19,21 +19,15 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-interface ThrowingRunnable
-{
+interface ThrowingRunnable {
     void run() throws Throwable;
 
-    static Runnable throwing( ThrowingRunnable callable )
-    {
-        return () ->
-        {
-            try
-            {
+    static Runnable throwing(ThrowingRunnable callable) {
+        return () -> {
+            try {
                 callable.run();
-            }
-            catch ( Throwable e )
-            {
-                throw new RuntimeException( e );
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
             }
         };
     }

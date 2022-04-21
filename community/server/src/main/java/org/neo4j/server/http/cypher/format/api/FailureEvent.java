@@ -30,31 +30,26 @@ import org.neo4j.kernel.api.exceptions.Status;
  * Typically, only up to one failure event should appear in the event stream. The only case when two failure events can appear in the stream is
  * when a rollback caused by the failure also fails. The second failure message carried the reason for the rollback failure in this case.
  */
-public class FailureEvent implements OutputEvent
-{
+public class FailureEvent implements OutputEvent {
 
     private final Status status;
     private final String message;
 
-    public FailureEvent( Status status, String message )
-    {
+    public FailureEvent(Status status, String message) {
         this.status = status;
         this.message = message;
     }
 
     @Override
-    public Type getType()
-    {
+    public Type getType() {
         return Type.FAILURE;
     }
 
-    public Status getStatus()
-    {
+    public Status getStatus() {
         return status;
     }
 
-    public String getMessage()
-    {
+    public String getMessage() {
         return message;
     }
 }

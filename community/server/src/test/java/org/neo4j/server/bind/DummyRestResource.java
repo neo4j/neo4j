@@ -19,23 +19,21 @@
  */
 package org.neo4j.server.bind;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-@Path( "/" )
-public class DummyRestResource
-{
+@Path("/")
+public class DummyRestResource {
     @Context
     private DummyComponent component;
 
     @GET
-    public Response getComponent()
-    {
-        assertNotNull( component );
-        return Response.ok( component.value() ).build();
+    public Response getComponent() {
+        assertNotNull(component);
+        return Response.ok(component.value()).build();
     }
 }

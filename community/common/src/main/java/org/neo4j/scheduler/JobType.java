@@ -19,8 +19,7 @@
  */
 package org.neo4j.scheduler;
 
-public enum  JobType
-{
+public enum JobType {
     IMMEDIATE,
     DELAYED,
     PERIODIC

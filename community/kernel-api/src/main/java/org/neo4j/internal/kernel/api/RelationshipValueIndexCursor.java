@@ -19,12 +19,12 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.values.storable.Value;
-
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+
+import org.neo4j.values.storable.Value;
 
 /**
  * Cursor for scanning the property values of relationships in a schema index.
@@ -32,7 +32,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  * Usage pattern:
  * <pre><code>
  *     int nbrOfProps = cursor.numberOfProperties();
-
+ *
  *     Value[] values = new Value[nbrOfProps];
  *     while ( cursor.next() )
  *     {
@@ -52,97 +52,73 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  *     }
  * </code></pre>
  */
-public interface RelationshipValueIndexCursor extends RelationshipIndexCursor, ValueIndexCursor
-{
-    class Empty extends DoNothingCloseListenable implements RelationshipValueIndexCursor
-    {
+public interface RelationshipValueIndexCursor extends RelationshipIndexCursor, ValueIndexCursor {
+    class Empty extends DoNothingCloseListenable implements RelationshipValueIndexCursor {
         @Override
-        public void relationship( RelationshipScanCursor cursor )
-        {
-        }
+        public void relationship(RelationshipScanCursor cursor) {}
 
         @Override
-        public void sourceNode( NodeCursor cursor )
-        {
-        }
+        public void sourceNode(NodeCursor cursor) {}
 
         @Override
-        public void targetNode( NodeCursor cursor )
-        {
-        }
+        public void targetNode(NodeCursor cursor) {}
 
         @Override
-        public int type()
-        {
+        public int type() {
             return NO_SUCH_RELATIONSHIP_TYPE;
         }
 
         @Override
-        public long sourceNodeReference()
-        {
+        public long sourceNodeReference() {
             return NO_SUCH_NODE;
         }
 
         @Override
-        public long targetNodeReference()
-        {
+        public long targetNodeReference() {
             return NO_SUCH_NODE;
         }
 
         @Override
-        public long relationshipReference()
-        {
+        public long relationshipReference() {
             return NO_SUCH_RELATIONSHIP;
         }
 
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return false;
         }
 
         @Override
-        public void setTracer( KernelReadTracer tracer )
-        {
-        }
+        public void setTracer(KernelReadTracer tracer) {}
 
         @Override
-        public void removeTracer()
-        {
-        }
+        public void removeTracer() {}
 
         @Override
-        public void closeInternal()
-        {
-        }
+        public void closeInternal() {}
 
         @Override
-        public boolean isClosed()
-        {
+        public boolean isClosed() {
             return false;
         }
 
         @Override
-        public float score()
-        {
+        public float score() {
             return Float.NaN;
         }
 
         @Override
-        public int numberOfProperties()
-        {
+        public int numberOfProperties() {
             return 0;
         }
 
         @Override
-        public boolean hasValue()
-        {
+        public boolean hasValue() {
             return false;
         }
 
         @Override
-        public Value propertyValue( int offset )
-        {
+        public Value propertyValue(int offset) {
             return NO_VALUE;
         }
     }

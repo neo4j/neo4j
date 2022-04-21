@@ -30,10 +30,10 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
-                                                                      edition: Edition[CONTEXT],
-                                                                      runtime: CypherRuntime[CONTEXT],
-                                                                      sizeHint: Int
-                                                                    ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should work on distinct input with no projection, one column, sorted") {
     // given
@@ -72,7 +72,8 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   test("should work on input with no projection, one primitive column, sorted") {
     // given
     val nodes = given { nodeGraph(10) }
-    val input = inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 10))).sortBy(_.head.asInstanceOf[Node].getId): _*)
+    val input =
+      inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 10))).sortBy(_.head.asInstanceOf[Node].getId): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -106,12 +107,13 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on input with projection, two columns, one sorted") {
     // given
-    val input = inputValues((0 until sizeHint).map(i => Array[Any](i % 5, 100 + (i % 10))).sortBy(_.head.asInstanceOf[Int]): _*)
+    val input =
+      inputValues((0 until sizeHint).map(i => Array[Any](i % 5, 100 + (i % 10))).sortBy(_.head.asInstanceOf[Int]): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq("x"),"x AS x1", "1 + y AS y1")
+      .orderedDistinct(Seq("x"), "x AS x1", "1 + y AS y1")
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -124,12 +126,14 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on input with projection, two columns, both sorted") {
     // given
-    val input = inputValues((0 until sizeHint).map(i => Array[Any](i % 5, 100 + (i % 10))).sortBy(a => (a(0).asInstanceOf[Int], a(1).asInstanceOf[Int])): _*)
+    val input = inputValues((0 until sizeHint).map(i => Array[Any](i % 5, 100 + (i % 10))).sortBy(a =>
+      (a(0).asInstanceOf[Int], a(1).asInstanceOf[Int])
+    ): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq("x","y"),"x AS x1", "y AS y1")
+      .orderedDistinct(Seq("x", "y"), "x AS x1", "y AS y1")
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -143,12 +147,14 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   test("should work on input with projection, two primitive columns, one sorted") {
     // given
     val nodes = given { nodeGraph(110) }
-    val input = inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)))).sortBy(_.head.asInstanceOf[Node].getId): _*)
+    val input = inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)))).sortBy(
+      _.head.asInstanceOf[Node].getId
+    ): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq("x"),"x AS x1", "y AS y1")
+      .orderedDistinct(Seq("x"), "x AS x1", "y AS y1")
       .input(nodes = Seq("x", "y"), nullable = false)
       .build()
 
@@ -162,12 +168,14 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   test("should work on input with projection, two primitive columns, both sorted") {
     // given
     val nodes = given { nodeGraph(110) }
-    val input = inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)))).sortBy(a => (a(0).asInstanceOf[Node].getId, a(1).asInstanceOf[Node].getId)): _*)
+    val input = inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)))).sortBy(a =>
+      (a(0).asInstanceOf[Node].getId, a(1).asInstanceOf[Node].getId)
+    ): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq("x","y"),"x AS x1", "y AS y1")
+      .orderedDistinct(Seq("x", "y"), "x AS x1", "y AS y1")
       .input(nodes = Seq("x", "y"), nullable = false)
       .build()
 
@@ -181,13 +189,14 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   test("should work on input with projection, three columns, one sorted") {
     // given
     val nodes = given { nodeGraph(110) }
-    val input = inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)), nodes(i % 20))).sortBy(_.head.asInstanceOf[Node].getId): _*)
-
+    val input = inputValues((0 until sizeHint).map(i =>
+      Array[Any](nodes(i % 5), nodes(100 + (i % 10)), nodes(i % 20))
+    ).sortBy(_.head.asInstanceOf[Node].getId): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1", "z1")
-      .orderedDistinct(Seq("x"),"x AS x1", "y AS y1", "z AS z1")
+      .orderedDistinct(Seq("x"), "x AS x1", "y AS y1", "z AS z1")
       .input(nodes = Seq("x", "y", "z"), nullable = false)
       .build()
 
@@ -201,20 +210,22 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   test("should work on input with projection, four columns, two sorted") {
     // given
     val nodes = given { nodeGraph(110) }
-    val input = inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)), nodes(i % 20), nodes(i % 4))).sortBy(a => (a(0).asInstanceOf[Node].getId, a(3).asInstanceOf[Node].getId)): _*)
-
+    val input = inputValues((0 until sizeHint).map(i =>
+      Array[Any](nodes(i % 5), nodes(100 + (i % 10)), nodes(i % 20), nodes(i % 4))
+    ).sortBy(a => (a(0).asInstanceOf[Node].getId, a(3).asInstanceOf[Node].getId)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1", "z1", "w1")
-      .orderedDistinct(Seq("x", "w"),"x AS x1", "y AS y1", "z AS z1", "w AS w1")
+      .orderedDistinct(Seq("x", "w"), "x AS x1", "y AS y1", "z AS z1", "w AS w1")
       .input(nodes = Seq("x", "y", "z", "w"), nullable = false)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val s: Iterable[Array[_]] = (0 until 20).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)), nodes(i % 20), nodes(i % 4)))
+    val s: Iterable[Array[_]] =
+      (0 until 20).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)), nodes(i % 20), nodes(i % 4)))
     runtimeResult should beColumns("x1", "y1", "z1", "w1").withRows(s)
   }
 
@@ -225,7 +236,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1", "y1")
-      .orderedDistinct(Seq("x","y"),"x AS x1", "y AS y1")
+      .orderedDistinct(Seq("x", "y"), "x AS x1", "y AS y1")
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -236,7 +247,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should keep input order") {
-    //NOTE: parallel input doesn't preserve order
+    // NOTE: parallel input doesn't preserve order
     assume(!isParallel)
     // given
     // (x is always 0, y is a sawtooth pattern)
@@ -246,7 +257,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .orderedDistinct(Seq("x"),"x AS x", "y AS y")
+      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -260,9 +271,13 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   test("should work on cached property") {
     given {
       nodeIndex("A", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "A")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "A"
+      )
     }
 
     // when
@@ -293,7 +308,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expectedRows = for {
@@ -318,7 +333,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expectedRows = for {
@@ -343,7 +358,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
 
     // then
     val expectedRows = for {

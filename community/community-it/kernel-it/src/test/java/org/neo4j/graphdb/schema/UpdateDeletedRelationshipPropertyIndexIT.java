@@ -24,15 +24,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
 @ImpermanentDbmsExtension
-class UpdateDeletedRelationshipPropertyIndexIT extends UpdateDeletedRelationshipIndexBase
-{
+class UpdateDeletedRelationshipPropertyIndexIT extends UpdateDeletedRelationshipIndexBase {
     @Override
-    protected IndexDefinition indexCreate()
-    {
+    protected IndexDefinition indexCreate() {
         IndexDefinition indexDefinition;
-        try ( Transaction tx = db.beginTx() )
-        {
-            indexDefinition = tx.schema().indexFor( TYPE_ONE ).on( KEY ).create();
+        try (Transaction tx = db.beginTx()) {
+            indexDefinition = tx.schema().indexFor(TYPE_ONE).on(KEY).create();
             tx.commit();
         }
         return indexDefinition;

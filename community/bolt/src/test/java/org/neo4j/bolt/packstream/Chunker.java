@@ -19,16 +19,6 @@
  */
 package org.neo4j.bolt.packstream;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.Channel;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.io.memory.ByteBuffers;
-
 import static java.lang.Math.toIntExact;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -38,43 +28,45 @@ import static org.neo4j.bolt.packstream.ChunkedOutput.CHUNK_HEADER_SIZE;
 import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.Channel;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.io.memory.ByteBuffers;
+
 /** Helper to chunk up serialized data for testing */
-public class Chunker
-{
-    private Chunker()
-    {
-    }
+public class Chunker {
+    private Chunker() {}
 
-    public static byte[] chunk( int maxChunkSize, byte[][] messages ) throws IOException
-    {
-        final ByteBuffer outputBuffer = ByteBuffers.allocate( toIntExact( KibiByte.toBytes( 8 ) ), INSTANCE );
+    public static byte[] chunk(int maxChunkSize, byte[][] messages) throws IOException {
+        final ByteBuffer outputBuffer = ByteBuffers.allocate(toIntExact(KibiByte.toBytes(8)), INSTANCE);
 
-        Channel ch = mock( Channel.class );
-        when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ch.writeAndFlush( any(), isNull() ) ).then( inv ->
-        {
-            ByteBuf buf = inv.getArgument( 0 );
-            outputBuffer.limit( outputBuffer.position() + buf.readableBytes() );
-            buf.readBytes( outputBuffer );
+        Channel ch = mock(Channel.class);
+        when(ch.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+        when(ch.writeAndFlush(any(), isNull())).then(inv -> {
+            ByteBuf buf = inv.getArgument(0);
+            outputBuffer.limit(outputBuffer.position() + buf.readableBytes());
+            buf.readBytes(outputBuffer);
             buf.release();
             return null;
-        } );
+        });
 
         int maxBufferSize = maxChunkSize + CHUNK_HEADER_SIZE;
-        ChunkedOutput out = new ChunkedOutput( ch, maxBufferSize, maxBufferSize, TransportThrottleGroup.NO_THROTTLE );
+        ChunkedOutput out = new ChunkedOutput(ch, maxBufferSize, maxBufferSize, TransportThrottleGroup.NO_THROTTLE);
 
-        for ( byte[] message : messages )
-        {
+        for (byte[] message : messages) {
             out.beginMessage();
-            out.writeBytes( message, 0, message.length );
+            out.writeBytes(message, 0, message.length);
             out.messageSucceeded();
         }
         out.flush();
         out.close();
 
         byte[] bytes = new byte[outputBuffer.limit()];
-        outputBuffer.position( 0 );
-        outputBuffer.get( bytes );
+        outputBuffer.position(0);
+        outputBuffer.get(bytes);
         return bytes;
     }
 }

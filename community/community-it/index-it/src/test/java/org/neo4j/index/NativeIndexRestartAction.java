@@ -19,36 +19,37 @@
  */
 package org.neo4j.index;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.IOException;
 import java.nio.file.OpenOption;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
-abstract class NativeIndexRestartAction
-{
+abstract class NativeIndexRestartAction {
     final IndexProviderDescriptor providerDescriptor;
 
-    NativeIndexRestartAction( IndexProviderDescriptor providerDescriptor )
-    {
+    NativeIndexRestartAction(IndexProviderDescriptor providerDescriptor) {
         this.providerDescriptor = providerDescriptor;
     }
 
-    public void run( FileSystemAbstraction fs, DatabaseLayout databaseLayout, ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        IndexDirectoryStructure indexDirectoryStructure = nativeIndexDirectoryStructure( databaseLayout, providerDescriptor );
-        runOnDirectoryStructure( fs, indexDirectoryStructure, openOptions );
+    public void run(FileSystemAbstraction fs, DatabaseLayout databaseLayout, ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        IndexDirectoryStructure indexDirectoryStructure =
+                nativeIndexDirectoryStructure(databaseLayout, providerDescriptor);
+        runOnDirectoryStructure(fs, indexDirectoryStructure, openOptions);
     }
 
-    protected abstract void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure,
-                                                     ImmutableSet<OpenOption> openOptions ) throws IOException;
+    protected abstract void runOnDirectoryStructure(
+            FileSystemAbstraction fs,
+            IndexDirectoryStructure indexDirectoryStructure,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException;
 
-    static IndexDirectoryStructure nativeIndexDirectoryStructure( DatabaseLayout databaseLayout, IndexProviderDescriptor providerDescriptor )
-    {
-        return IndexDirectoryStructure.directoriesByProvider( databaseLayout.databaseDirectory() ).forProvider( providerDescriptor );
+    static IndexDirectoryStructure nativeIndexDirectoryStructure(
+            DatabaseLayout databaseLayout, IndexProviderDescriptor providerDescriptor) {
+        return IndexDirectoryStructure.directoriesByProvider(databaseLayout.databaseDirectory())
+                .forProvider(providerDescriptor);
     }
 }

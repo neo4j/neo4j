@@ -30,9 +30,8 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.LabelId
 
-case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
-                                               nonIndexedLabelWarningThreshold: Long
-                                              ) extends NotificationChecker {
+case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonIndexedLabelWarningThreshold: Long)
+    extends NotificationChecker {
 
   private val threshold = Cardinality(nonIndexedLabelWarningThreshold)
 
@@ -47,7 +46,7 @@ case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
     val resultState = plan.folder.reverseTreeFold[SearchState](NoneFound) {
       case _: LoadCSV => {
         case LargeLabelFound => TraverseChildren(LargeLabelWithLoadCsvFound)
-        case e => SkipChildren(e)
+        case e               => SkipChildren(e)
       }
       case NodeByLabelScan(_, label, _, _) if cardinality(label.name) > threshold =>
         _ => TraverseChildren(LargeLabelFound)
@@ -55,7 +54,7 @@ case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
 
     resultState match {
       case LargeLabelWithLoadCsvFound => Seq(LargeLabelWithLoadCsvNotification)
-      case _ => Seq.empty
+      case _                          => Seq.empty
     }
   }
 

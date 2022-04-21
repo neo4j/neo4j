@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public interface AuthSubject
-{
+public interface AuthSubject {
     // TODO: Refine this API into something more polished
     AuthenticationResult getAuthenticationResult();
 
@@ -28,7 +27,7 @@ public interface AuthSubject
      * @param username a username
      * @return true if the provided username is the same as the executing username of this subject
      */
-    boolean hasUsername( String username );
+    boolean hasUsername(String username);
 
     /**
      * Get the name of the user associated with the current transaction.
@@ -41,57 +40,47 @@ public interface AuthSubject
      * Get the name of the authenticated user
      * @return the username
      */
-    default String authenticatedUser()
-    {
+    default String authenticatedUser() {
         return executingUser();
     }
 
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
-    AuthSubject ANONYMOUS = new AuthSubject()
-    {
+    AuthSubject ANONYMOUS = new AuthSubject() {
 
         @Override
-        public AuthenticationResult getAuthenticationResult()
-        {
+        public AuthenticationResult getAuthenticationResult() {
             return AuthenticationResult.FAILURE;
         }
 
         @Override
-        public boolean hasUsername( String username )
-        {
+        public boolean hasUsername(String username) {
             return false;
         }
 
         @Override
-        public String executingUser()
-        {
+        public String executingUser() {
             return ""; // Should never clash with a valid username
         }
-
     };
 
     /**
      * Implementation to use when authentication is disabled. Allows everything.
      */
-    AuthSubject AUTH_DISABLED = new AuthSubject()
-    {
+    AuthSubject AUTH_DISABLED = new AuthSubject() {
         @Override
-        public String executingUser()
-        {
+        public String executingUser() {
             return ""; // Should never clash with a valid username
         }
 
         @Override
-        public AuthenticationResult getAuthenticationResult()
-        {
+        public AuthenticationResult getAuthenticationResult() {
             return AuthenticationResult.SUCCESS;
         }
 
         @Override
-        public boolean hasUsername( String username )
-        {
+        public boolean hasUsername(String username) {
             return false;
         }
     };

@@ -22,24 +22,21 @@ package org.neo4j.kernel.impl.newapi.index;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 
-public class RelationshipValueIndexCursorRange10Test extends EntityValueIndexCursorTestBase<RelationshipValueIndexCursor>
-{
+public class RelationshipValueIndexCursorRange10Test
+        extends EntityValueIndexCursorTestBase<RelationshipValueIndexCursor> {
 
     @Override
-    protected IndexParams getIndexParams()
-    {
+    protected IndexParams getIndexParams() {
         return new Range10IndexParams();
     }
 
     @Override
-    protected EntityParams<RelationshipValueIndexCursor> getEntityParams()
-    {
+    protected EntityParams<RelationshipValueIndexCursor> getEntityParams() {
         return new RelationshipParams();
     }
 
     @Override
-    protected IndexType getIndexType()
-    {
+    protected IndexType getIndexType() {
         return IndexType.RANGE;
     }
 }

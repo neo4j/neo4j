@@ -19,88 +19,82 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.lang.String.format;
-
-class IndexKeyStorage<KEY extends NativeIndexKey<KEY>> extends SimpleEntryStorage<KEY,IndexKeyStorage.KeyEntryCursor<KEY>>
-{
+class IndexKeyStorage<KEY extends NativeIndexKey<KEY>>
+        extends SimpleEntryStorage<KEY, IndexKeyStorage.KeyEntryCursor<KEY>> {
     private static final byte KEY_TYPE = 1;
-    private final Layout<KEY,?> layout;
+    private final Layout<KEY, ?> layout;
 
-    IndexKeyStorage( FileSystemAbstraction fs, Path file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,?> layout,
-            MemoryTracker memoryTracker )
-    {
-        super( fs, file, byteBufferFactory, blockSize, memoryTracker );
+    IndexKeyStorage(
+            FileSystemAbstraction fs,
+            Path file,
+            ByteBufferFactory.Allocator byteBufferFactory,
+            int blockSize,
+            Layout<KEY, ?> layout,
+            MemoryTracker memoryTracker) {
+        super(fs, file, byteBufferFactory, blockSize, memoryTracker);
         this.layout = layout;
     }
 
     @Override
-    void add( KEY key, PageCursor pageCursor ) throws IOException
-    {
-        int entrySize = TYPE_SIZE + BlockEntry.keySize( layout, key );
-        prepareWrite( entrySize );
-        pageCursor.putByte( KEY_TYPE );
-        BlockEntry.write( pageCursor, layout, key );
+    void add(KEY key, PageCursor pageCursor) throws IOException {
+        int entrySize = TYPE_SIZE + BlockEntry.keySize(layout, key);
+        prepareWrite(entrySize);
+        pageCursor.putByte(KEY_TYPE);
+        BlockEntry.write(pageCursor, layout, key);
     }
 
     @Override
-    KeyEntryCursor<KEY> reader( PageCursor pageCursor )
-    {
-        return new KeyEntryCursor<>( pageCursor, layout );
+    KeyEntryCursor<KEY> reader(PageCursor pageCursor) {
+        return new KeyEntryCursor<>(pageCursor, layout);
     }
 
-    static class KeyEntryCursor<KEY> implements BlockEntryCursor<KEY,Void>
-    {
+    static class KeyEntryCursor<KEY> implements BlockEntryCursor<KEY, Void> {
         private final PageCursor pageCursor;
-        private final Layout<KEY,?> layout;
+        private final Layout<KEY, ?> layout;
         private final KEY key;
 
-        KeyEntryCursor( PageCursor pageCursor, Layout<KEY,?> layout )
-        {
+        KeyEntryCursor(PageCursor pageCursor, Layout<KEY, ?> layout) {
             this.pageCursor = pageCursor;
             this.layout = layout;
             this.key = layout.newKey();
         }
 
         @Override
-        public boolean next() throws IOException
-        {
+        public boolean next() throws IOException {
             byte type = pageCursor.getByte();
-            if ( type == STOP_TYPE )
-            {
+            if (type == STOP_TYPE) {
                 return false;
             }
-            if ( type != KEY_TYPE )
-            {
-                throw new RuntimeException( format( "Unexpected entry type. Expected %d or %d, but was %d.", STOP_TYPE, KEY_TYPE, type ) );
+            if (type != KEY_TYPE) {
+                throw new RuntimeException(
+                        format("Unexpected entry type. Expected %d or %d, but was %d.", STOP_TYPE, KEY_TYPE, type));
             }
-            BlockEntry.read( pageCursor, layout, key );
+            BlockEntry.read(pageCursor, layout, key);
             return true;
         }
 
         @Override
-        public KEY key()
-        {
+        public KEY key() {
             return key;
         }
 
         @Override
-        public Void value()
-        {
+        public Void value() {
             return null;
         }
 
         @Override
-        public void close() throws IOException
-        {
+        public void close() throws IOException {
             pageCursor.close();
         }
     }

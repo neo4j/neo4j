@@ -21,25 +21,20 @@ package org.neo4j.bolt.v3.messaging.request;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 
-public class DiscardAllMessage implements RequestMessage
-{
+public class DiscardAllMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x2F;
 
     public static final DiscardAllMessage INSTANCE = new DiscardAllMessage();
 
-    private DiscardAllMessage()
-    {
-    }
+    private DiscardAllMessage() {}
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return false;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "DISCARD_ALL";
     }
 }

@@ -19,18 +19,15 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-final class GBPPointerType
-{
+final class GBPPointerType {
     static final String RIGHT_SIBLING = "RIGHT_SIBLING";
     static final String LEFT_SIBLING = "LEFT_SIBLING";
     static final String SUCCESSOR = "SUCCESSOR";
     private static final String CHILD = "CHILD_";
 
-    private GBPPointerType()
-    {}
+    private GBPPointerType() {}
 
-    static String child( int childPos )
-    {
+    static String child(int childPos) {
         return CHILD + childPos;
     }
 }

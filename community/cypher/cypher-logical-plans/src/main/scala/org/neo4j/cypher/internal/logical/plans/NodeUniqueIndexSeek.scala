@@ -31,20 +31,22 @@ import org.neo4j.graphdb.schema.IndexType
  * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
  * node is guaranteed.
  */
-case class NodeUniqueIndexSeek(idName: String,
-                               override val label: LabelToken,
-                               properties: Seq[IndexedProperty],
-                               valueExpr: QueryExpression[Expression],
-                               argumentIds: Set[String],
-                               indexOrder: IndexOrder,
-                               override val indexType: IndexType)
-                              (implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) {
+case class NodeUniqueIndexSeek(
+  idName: String,
+  override val label: LabelToken,
+  properties: Seq[IndexedProperty],
+  valueExpr: QueryExpression[Expression],
+  argumentIds: Set[String],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType
+)(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName
 
   override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeUniqueIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeUniqueIndexSeek =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeUniqueIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))

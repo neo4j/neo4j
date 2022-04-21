@@ -19,13 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.function.LongSupplier;
-
-import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.internal.batchimport.input.Input;
-
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,92 +27,100 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
-class HeapSizeSanityCheckerTest
-{
-    private final LongSupplier freeMemorySupplier = mock( LongSupplier.class );
-    private final LongSupplier actualHeapSizeSupplier = mock( LongSupplier.class );
-    private final Monitor monitor = mock( Monitor.class );
-    private final HeapSizeSanityChecker checker = new HeapSizeSanityChecker( monitor, freeMemorySupplier, actualHeapSizeSupplier );
-    private final LongSupplier baseMemorySupplier = mock( LongSupplier.class );
-    private final MemoryStatsVisitor.Visitable baseMemory = visitor -> visitor.offHeapUsage( baseMemorySupplier.getAsLong() );
-    private final LongSupplier memoryUser1Supplier = mock( LongSupplier.class );
-    private final MemoryStatsVisitor.Visitable memoryUser1 = visitor -> visitor.offHeapUsage( memoryUser1Supplier.getAsLong() );
-    private final LongSupplier memoryUser2Supplier = mock( LongSupplier.class );
-    private final MemoryStatsVisitor.Visitable memoryUser2 = visitor -> visitor.offHeapUsage( memoryUser2Supplier.getAsLong() );
+import java.util.function.LongSupplier;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.internal.batchimport.input.Input;
+
+class HeapSizeSanityCheckerTest {
+    private final LongSupplier freeMemorySupplier = mock(LongSupplier.class);
+    private final LongSupplier actualHeapSizeSupplier = mock(LongSupplier.class);
+    private final Monitor monitor = mock(Monitor.class);
+    private final HeapSizeSanityChecker checker =
+            new HeapSizeSanityChecker(monitor, freeMemorySupplier, actualHeapSizeSupplier);
+    private final LongSupplier baseMemorySupplier = mock(LongSupplier.class);
+    private final MemoryStatsVisitor.Visitable baseMemory =
+            visitor -> visitor.offHeapUsage(baseMemorySupplier.getAsLong());
+    private final LongSupplier memoryUser1Supplier = mock(LongSupplier.class);
+    private final MemoryStatsVisitor.Visitable memoryUser1 =
+            visitor -> visitor.offHeapUsage(memoryUser1Supplier.getAsLong());
+    private final LongSupplier memoryUser2Supplier = mock(LongSupplier.class);
+    private final MemoryStatsVisitor.Visitable memoryUser2 =
+            visitor -> visitor.offHeapUsage(memoryUser2Supplier.getAsLong());
 
     @Test
-    void shouldReportInsufficientAvailableMemory()
-    {
+    void shouldReportInsufficientAvailableMemory() {
         // given
-        when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 2 ) );
-        when( actualHeapSizeSupplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( baseMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( memoryUser1Supplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( memoryUser2Supplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        Input.Estimates estimates = Input.knownEstimates( 1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes( 50 ), gibiBytes( 100 ), 0 );
+        when(freeMemorySupplier.getAsLong()).thenReturn(gibiBytes(2));
+        when(actualHeapSizeSupplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(baseMemorySupplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(memoryUser1Supplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(memoryUser2Supplier.getAsLong()).thenReturn(gibiBytes(1));
+        Input.Estimates estimates = Input.knownEstimates(
+                1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes(50), gibiBytes(100), 0);
 
         // when
-        checker.sanityCheck( estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2 );
+        checker.sanityCheck(estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2);
 
         // then
-        verify( monitor ).insufficientAvailableMemory( anyLong(), anyLong(), anyLong() );
-        verifyNoMoreInteractions( monitor );
+        verify(monitor).insufficientAvailableMemory(anyLong(), anyLong(), anyLong());
+        verifyNoMoreInteractions(monitor);
     }
 
     @Test
-    void shouldReportInsufficientHeapSize()
-    {
+    void shouldReportInsufficientHeapSize() {
         // given
-        when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 20 ) );
-        when( actualHeapSizeSupplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( baseMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( memoryUser1Supplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( memoryUser2Supplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        Input.Estimates estimates = Input.knownEstimates( 1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes( 50 ), gibiBytes( 100 ), 0 );
+        when(freeMemorySupplier.getAsLong()).thenReturn(gibiBytes(20));
+        when(actualHeapSizeSupplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(baseMemorySupplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(memoryUser1Supplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(memoryUser2Supplier.getAsLong()).thenReturn(gibiBytes(1));
+        Input.Estimates estimates = Input.knownEstimates(
+                1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes(50), gibiBytes(100), 0);
 
         // when
-        checker.sanityCheck( estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2 );
+        checker.sanityCheck(estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2);
 
         // then
-        verify( monitor ).insufficientHeapSize( anyLong(), anyLong() );
-        verifyNoMoreInteractions( monitor );
+        verify(monitor).insufficientHeapSize(anyLong(), anyLong());
+        verifyNoMoreInteractions(monitor);
     }
 
     @Test
-    void shouldReportAbundantHeapSize()
-    {
+    void shouldReportAbundantHeapSize() {
         // given
-        when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 2 ) );
-        when( actualHeapSizeSupplier.getAsLong() ).thenReturn( gibiBytes( 20 ) );
-        when( baseMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( memoryUser1Supplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( memoryUser2Supplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        Input.Estimates estimates = Input.knownEstimates( 1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes( 50 ), gibiBytes( 100 ), 0 );
+        when(freeMemorySupplier.getAsLong()).thenReturn(gibiBytes(2));
+        when(actualHeapSizeSupplier.getAsLong()).thenReturn(gibiBytes(20));
+        when(baseMemorySupplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(memoryUser1Supplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(memoryUser2Supplier.getAsLong()).thenReturn(gibiBytes(1));
+        Input.Estimates estimates = Input.knownEstimates(
+                1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes(50), gibiBytes(100), 0);
 
         // when
-        checker.sanityCheck( estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2 );
+        checker.sanityCheck(estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2);
 
         // then
-        verify( monitor ).abundantHeapSize( anyLong(), anyLong() );
-        verifyNoMoreInteractions( monitor );
+        verify(monitor).abundantHeapSize(anyLong(), anyLong());
+        verifyNoMoreInteractions(monitor);
     }
 
     @Test
-    void shouldReportNothingOnGoodSetup()
-    {
+    void shouldReportNothingOnGoodSetup() {
         // given
-        when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 10 ) );
-        when( baseMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( memoryUser1Supplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
-        when( memoryUser2Supplier.getAsLong() ).thenReturn( gibiBytes( 1 ) );
+        when(freeMemorySupplier.getAsLong()).thenReturn(gibiBytes(10));
+        when(baseMemorySupplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(memoryUser1Supplier.getAsLong()).thenReturn(gibiBytes(1));
+        when(memoryUser2Supplier.getAsLong()).thenReturn(gibiBytes(1));
 
-        when( actualHeapSizeSupplier.getAsLong() ).thenReturn( gibiBytes( 2 ) );
-        Input.Estimates estimates = Input.knownEstimates( 1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes( 50 ), gibiBytes( 100 ), 0 );
+        when(actualHeapSizeSupplier.getAsLong()).thenReturn(gibiBytes(2));
+        Input.Estimates estimates = Input.knownEstimates(
+                1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes(50), gibiBytes(100), 0);
 
         // when
-        checker.sanityCheck( estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2 );
+        checker.sanityCheck(estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2);
 
         // then
-        verifyNoMoreInteractions( monitor );
+        verifyNoMoreInteractions(monitor);
     }
 }

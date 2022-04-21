@@ -41,53 +41,151 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
-public class StaticIndexProviderMapFactory
-{
+public class StaticIndexProviderMapFactory {
 
-    public static StaticIndexProviderMap create( LifeSupport life, Config databaseConfig, PageCache pageCache,
-                                                 FileSystemAbstraction fs, LogService logService, Monitors monitors,
-                                                 DatabaseReadOnlyChecker readOnlyChecker, DbmsInfo dbmsInfo,
-                                                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                                 DatabaseLayout databaseLayout, TokenHolders tokenHolders, JobScheduler scheduler,
-                                                 CursorContextFactory contextFactory )
-    {
-        return create( life, databaseConfig, pageCache, fs, logService, monitors, readOnlyChecker, dbmsInfo, recoveryCleanupWorkCollector,
-                       databaseLayout, tokenHolders, scheduler, contextFactory, new Dependencies() );
+    public static StaticIndexProviderMap create(
+            LifeSupport life,
+            Config databaseConfig,
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            LogService logService,
+            Monitors monitors,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            DbmsInfo dbmsInfo,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseLayout databaseLayout,
+            TokenHolders tokenHolders,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory) {
+        return create(
+                life,
+                databaseConfig,
+                pageCache,
+                fs,
+                logService,
+                monitors,
+                readOnlyChecker,
+                dbmsInfo,
+                recoveryCleanupWorkCollector,
+                databaseLayout,
+                tokenHolders,
+                scheduler,
+                contextFactory,
+                new Dependencies());
     }
 
     public static StaticIndexProviderMap create(
-            LifeSupport life, Config databaseConfig, PageCache pageCache,
-            FileSystemAbstraction fs, LogService logService, Monitors monitors,
-            DatabaseReadOnlyChecker readOnlyChecker, DbmsInfo dbmsInfo,
+            LifeSupport life,
+            Config databaseConfig,
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            LogService logService,
+            Monitors monitors,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            DbmsInfo dbmsInfo,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseLayout databaseLayout, TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory,
-            DependencyResolver dependencies )
-    {
-        var tokenIndexProvider = life.add( new TokenIndexProviderFactory().create(
-                pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
+            DatabaseLayout databaseLayout,
+            TokenHolders tokenHolders,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory,
+            DependencyResolver dependencies) {
+        var tokenIndexProvider = life.add(new TokenIndexProviderFactory()
+                .create(
+                        pageCache,
+                        fs,
+                        logService,
+                        monitors,
+                        databaseConfig,
+                        readOnlyChecker,
+                        dbmsInfo,
+                        recoveryCleanupWorkCollector,
+                        databaseLayout,
+                        tokenHolders,
+                        scheduler,
+                        contextFactory));
 
-        var nativeIndexProvider = life.add( new GenericNativeIndexProviderFactory().create(
-                pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
+        var nativeIndexProvider = life.add(new GenericNativeIndexProviderFactory()
+                .create(
+                        pageCache,
+                        fs,
+                        logService,
+                        monitors,
+                        databaseConfig,
+                        readOnlyChecker,
+                        dbmsInfo,
+                        recoveryCleanupWorkCollector,
+                        databaseLayout,
+                        tokenHolders,
+                        scheduler,
+                        contextFactory));
 
-        var textIndexProvider = life.add( new TextIndexProviderFactory().create(
-                pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
+        var textIndexProvider = life.add(new TextIndexProviderFactory()
+                .create(
+                        pageCache,
+                        fs,
+                        logService,
+                        monitors,
+                        databaseConfig,
+                        readOnlyChecker,
+                        dbmsInfo,
+                        recoveryCleanupWorkCollector,
+                        databaseLayout,
+                        tokenHolders,
+                        scheduler,
+                        contextFactory));
 
-        var fulltextIndexProvider = life.add( new FulltextIndexProviderFactory().create(
-                pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
+        var fulltextIndexProvider = life.add(new FulltextIndexProviderFactory()
+                .create(
+                        pageCache,
+                        fs,
+                        logService,
+                        monitors,
+                        databaseConfig,
+                        readOnlyChecker,
+                        dbmsInfo,
+                        recoveryCleanupWorkCollector,
+                        databaseLayout,
+                        tokenHolders,
+                        scheduler,
+                        contextFactory));
 
-        var rangeIndexProvider = life.add( new RangeIndexProviderFactory().create(
-                pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
+        var rangeIndexProvider = life.add(new RangeIndexProviderFactory()
+                .create(
+                        pageCache,
+                        fs,
+                        logService,
+                        monitors,
+                        databaseConfig,
+                        readOnlyChecker,
+                        dbmsInfo,
+                        recoveryCleanupWorkCollector,
+                        databaseLayout,
+                        tokenHolders,
+                        scheduler,
+                        contextFactory));
 
-        var pointIndexProvider = life.add( new PointIndexProviderFactory().create(
-                pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
+        var pointIndexProvider = life.add(new PointIndexProviderFactory()
+                .create(
+                        pageCache,
+                        fs,
+                        logService,
+                        monitors,
+                        databaseConfig,
+                        readOnlyChecker,
+                        dbmsInfo,
+                        recoveryCleanupWorkCollector,
+                        databaseLayout,
+                        tokenHolders,
+                        scheduler,
+                        contextFactory));
 
-        return new StaticIndexProviderMap( tokenIndexProvider, nativeIndexProvider, textIndexProvider, fulltextIndexProvider,
-                                           rangeIndexProvider, pointIndexProvider, dependencies );
+        return new StaticIndexProviderMap(
+                tokenIndexProvider,
+                nativeIndexProvider,
+                textIndexProvider,
+                fulltextIndexProvider,
+                rangeIndexProvider,
+                pointIndexProvider,
+                dependencies);
     }
 }

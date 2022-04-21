@@ -19,20 +19,18 @@
  */
 package org.neo4j.dbms.archive;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.ByteUnit;
 
-import static java.util.Objects.requireNonNull;
-
-class ArchiveProgressPrinter
-{
+class ArchiveProgressPrinter {
     private final AtomicBoolean printUpdate;
     private final OutputProgressPrinter progressPrinter;
     private long currentBytes;
@@ -41,86 +39,70 @@ class ArchiveProgressPrinter
     long maxBytes;
     long maxFiles;
 
-    ArchiveProgressPrinter( OutputProgressPrinter progressPrinter )
-    {
-        requireNonNull( progressPrinter );
+    ArchiveProgressPrinter(OutputProgressPrinter progressPrinter) {
+        requireNonNull(progressPrinter);
         this.progressPrinter = progressPrinter;
         this.printUpdate = new AtomicBoolean();
     }
 
-    Resource startPrinting()
-    {
+    Resource startPrinting() {
         ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
-        ScheduledFuture<?> timerFuture = timer.scheduleAtFixedRate( this::printOnNextUpdate, 0, 100, TimeUnit.MILLISECONDS );
-        return () ->
-        {
-            timerFuture.cancel( false );
+        ScheduledFuture<?> timerFuture =
+                timer.scheduleAtFixedRate(this::printOnNextUpdate, 0, 100, TimeUnit.MILLISECONDS);
+        return () -> {
+            timerFuture.cancel(false);
             timer.shutdown();
-            try
-            {
-                timer.awaitTermination( 10, TimeUnit.SECONDS );
-            }
-            catch ( InterruptedException ignore )
-            {
+            try {
+                timer.awaitTermination(10, TimeUnit.SECONDS);
+            } catch (InterruptedException ignore) {
             }
             done();
             printProgress();
         };
     }
 
-    void printOnNextUpdate()
-    {
-        printUpdate.set( true );
+    void printOnNextUpdate() {
+        printUpdate.set(true);
     }
 
-    void reset()
-    {
+    void reset() {
         maxBytes = 0;
         maxFiles = 0;
         currentBytes = 0;
         currentFiles = 0;
     }
 
-    void beginFile()
-    {
+    void beginFile() {
         currentFiles++;
     }
 
-    void addBytes( long n )
-    {
+    void addBytes(long n) {
         currentBytes += n;
-        if ( printUpdate.get() )
-        {
+        if (printUpdate.get()) {
             printProgress();
-            printUpdate.set( false );
+            printUpdate.set(false);
         }
     }
 
-    void endFile()
-    {
+    void endFile() {
         printProgress();
     }
 
-    void done()
-    {
+    void done() {
         done = true;
     }
 
-    void printProgress()
-    {
-        if ( done )
-        {
-            progressPrinter.print( "Done: " + currentFiles + " files, " + ByteUnit.bytesToString( currentBytes ) + " processed." );
+    void printProgress() {
+        if (done) {
+            progressPrinter.print(
+                    "Done: " + currentFiles + " files, " + ByteUnit.bytesToString(currentBytes) + " processed.");
             progressPrinter.complete();
-        }
-        else if ( maxFiles > 0 && maxBytes > 0 )
-        {
+        } else if (maxFiles > 0 && maxBytes > 0) {
             double progress = (currentBytes / (double) maxBytes) * 100;
-            progressPrinter.print( "Files: " + currentFiles + '/' + maxFiles + ", data: " + String.format( "%4.1f%%", progress ) );
-        }
-        else
-        {
-            progressPrinter.print( "Files: " + currentFiles + "/?" + ", data: ??.?%" );
+            progressPrinter.print(
+                    "Files: " + currentFiles + '/' + maxFiles + ", data: " + String.format("%4.1f%%", progress));
+        } else {
+            progressPrinter.print("Files: " + currentFiles + "/?" + ", data: ??.?%");
         }
     }
 }

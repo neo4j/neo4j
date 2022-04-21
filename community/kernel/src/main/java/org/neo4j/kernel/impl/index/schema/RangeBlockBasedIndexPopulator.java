@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.nio.file.OpenOption;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -30,39 +28,67 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.memory.MemoryTracker;
 
-class RangeBlockBasedIndexPopulator extends BlockBasedIndexPopulator<RangeKey>
-{
+class RangeBlockBasedIndexPopulator extends BlockBasedIndexPopulator<RangeKey> {
     private final TokenNameLookup tokenNameLookup;
 
-    RangeBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<RangeKey> layout,
-                                   IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config,
-                                   MemoryTracker memoryTracker,
-                                   TokenNameLookup tokenNameLookup, ImmutableSet<OpenOption> openOptions )
-    {
-        this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, tokenNameLookup,
-              BlockStorage.Monitor.NO_MONITOR, openOptions );
+    RangeBlockBasedIndexPopulator(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexLayout<RangeKey> layout,
+            IndexDescriptor descriptor,
+            boolean archiveFailedIndex,
+            ByteBufferFactory bufferFactory,
+            Config config,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        this(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                descriptor,
+                archiveFailedIndex,
+                bufferFactory,
+                config,
+                memoryTracker,
+                tokenNameLookup,
+                BlockStorage.Monitor.NO_MONITOR,
+                openOptions);
     }
 
-    RangeBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<RangeKey> layout,
-                                   IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config,
-                                   MemoryTracker memoryTracker,
-                                   TokenNameLookup tokenNameLookup, BlockStorage.Monitor blockStorageMonitor,
-                                   ImmutableSet<OpenOption> openOptions )
-    {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor,
-               openOptions );
+    RangeBlockBasedIndexPopulator(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexLayout<RangeKey> layout,
+            IndexDescriptor descriptor,
+            boolean archiveFailedIndex,
+            ByteBufferFactory bufferFactory,
+            Config config,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            BlockStorage.Monitor blockStorageMonitor,
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                descriptor,
+                archiveFailedIndex,
+                bufferFactory,
+                config,
+                memoryTracker,
+                blockStorageMonitor,
+                openOptions);
         this.tokenNameLookup = tokenNameLookup;
     }
 
     @Override
-    NativeIndexReader<RangeKey> newReader()
-    {
-        return new RangeIndexReader( tree, layout, descriptor );
+    NativeIndexReader<RangeKey> newReader() {
+        return new RangeIndexReader(tree, layout, descriptor);
     }
 
     @Override
-    protected IndexValueValidator instantiateValueValidator()
-    {
-        return new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
+    protected IndexValueValidator instantiateValueValidator() {
+        return new GenericIndexKeyValidator(tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup);
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+
 import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
@@ -26,35 +28,31 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 
-import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-
-public class AllPaths extends TraversalPathFinder
-{
+public class AllPaths extends TraversalPathFinder {
     private final PathExpander expander;
     private final EvaluationContext context;
     private final int maxDepth;
 
-    public AllPaths( EvaluationContext context, int maxDepth, PathExpander expander )
-    {
+    public AllPaths(EvaluationContext context, int maxDepth, PathExpander expander) {
         this.context = context;
         this.maxDepth = maxDepth;
         this.expander = expander;
     }
 
-    protected Uniqueness uniqueness()
-    {
+    protected Uniqueness uniqueness() {
         return Uniqueness.RELATIONSHIP_PATH;
     }
 
     @Override
-    protected Traverser instantiateTraverser( Node start, Node end )
-    {
+    protected Traverser instantiateTraverser(Node start, Node end) {
         // Bidirectional traversal
         var transaction = context.transaction();
-        TraversalDescription base = transaction.traversalDescription().depthFirst().uniqueness( uniqueness() );
-        return transaction.bidirectionalTraversalDescription()
-                .startSide( base.expand( expander ).evaluator( toDepth( maxDepth / 2 ) ) )
-                .endSide( base.expand( expander.reverse() ).evaluator( toDepth( maxDepth - maxDepth / 2 ) ) )
-                .traverse( start, end );
+        TraversalDescription base =
+                transaction.traversalDescription().depthFirst().uniqueness(uniqueness());
+        return transaction
+                .bidirectionalTraversalDescription()
+                .startSide(base.expand(expander).evaluator(toDepth(maxDepth / 2)))
+                .endSide(base.expand(expander.reverse()).evaluator(toDepth(maxDepth - maxDepth / 2)))
+                .traverse(start, end);
     }
 }

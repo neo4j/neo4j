@@ -21,19 +21,15 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public interface MonotonicCounter
-{
+public interface MonotonicCounter {
     long incrementAndGet();
 
-    static MonotonicCounter newAtomicMonotonicCounter()
-    {
-        return new MonotonicCounter()
-        {
-            private final AtomicLong value = new AtomicLong( 0L );
+    static MonotonicCounter newAtomicMonotonicCounter() {
+        return new MonotonicCounter() {
+            private final AtomicLong value = new AtomicLong(0L);
 
             @Override
-            public long incrementAndGet()
-            {
+            public long incrementAndGet() {
                 return value.incrementAndGet();
             }
         };

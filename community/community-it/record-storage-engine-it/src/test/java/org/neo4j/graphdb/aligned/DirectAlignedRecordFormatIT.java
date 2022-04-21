@@ -21,19 +21,16 @@ package org.neo4j.graphdb.aligned;
 
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 
-@EnabledOnOs( OS.LINUX )
-public class DirectAlignedRecordFormatIT extends AlignedRecordFormatIT
-{
+@EnabledOnOs(OS.LINUX)
+public class DirectAlignedRecordFormatIT extends AlignedRecordFormatIT {
     @ExtensionCallback
     @Override
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        super.configure( builder );
-        builder.setConfig( GraphDatabaseSettings.pagecache_direct_io, true );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        super.configure(builder);
+        builder.setConfig(GraphDatabaseSettings.pagecache_direct_io, true);
     }
 }

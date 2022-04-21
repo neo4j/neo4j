@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -103,16 +101,14 @@ import org.neo4j.time.SystemNanoClock;
  * locks that are being waited upon - no deadlock.
  * <p/>
  */
-public class ForsetiLockManager implements Locks
-{
+public class ForsetiLockManager implements Locks {
     /** This is Forsetis internal lock API, which it uses to do deadlock detection. */
-    interface Lock
-    {
+    interface Lock {
         /**
          * For each client currently holding this lock, copy their wait list into the given bitset.
          * This is how information on who is waiting for whom is propagated.
          */
-        void copyHolderWaitListsInto( Set<ForsetiClient> waitList );
+        void copyHolderWaitListsInto(Set<ForsetiClient> waitList);
 
         /**
          * Check if anyone holding this lock is currently waiting for the specified client. This
@@ -123,7 +119,7 @@ public class ForsetiLockManager implements Locks
          * @param client the client that is waiting to grab this lock
          * @return the client we've deadlocked with, or {@code null} if there is not currently a deadlock
          */
-        ForsetiClient detectDeadlock( ForsetiClient client );
+        ForsetiClient detectDeadlock(ForsetiClient client);
 
         /**
          * For introspection and error messages, this gives a (somewhat) human-readable description of who is waiting
@@ -140,9 +136,9 @@ public class ForsetiLockManager implements Locks
          * returns, immediately rendering the result outdated.
          * @param owners The set into which to collect the current owners of this lock.
          */
-        void collectOwners( Set<ForsetiClient> owners );
+        void collectOwners(Set<ForsetiClient> owners);
 
-        boolean isOwnedBy( ForsetiClient client );
+        boolean isOwnedBy(ForsetiClient client);
 
         LockType type();
 
@@ -155,7 +151,7 @@ public class ForsetiLockManager implements Locks
     }
 
     /** Pointers to lock maps, one array per resource type. */
-    private final ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps;
+    private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
 
     /** Reverse lookup resource types by id, used for introspection */
     private final ResourceType[] resourceTypes;
@@ -167,69 +163,59 @@ public class ForsetiLockManager implements Locks
     private final boolean verboseDeadlocks;
     private volatile boolean closed;
 
-    @SuppressWarnings( "unchecked" )
-    public ForsetiLockManager( Config config, SystemNanoClock clock, ResourceType... resourceTypes )
-    {
-        int maxResourceId = findMaxResourceId( resourceTypes );
+    @SuppressWarnings("unchecked")
+    public ForsetiLockManager(Config config, SystemNanoClock clock, ResourceType... resourceTypes) {
+        int maxResourceId = findMaxResourceId(resourceTypes);
         this.lockMaps = new ConcurrentMap[maxResourceId];
         this.resourceTypes = new ResourceType[maxResourceId];
 
-        for ( ResourceType type : resourceTypes )
-        {
-            this.lockMaps[type.typeId()] = new ConcurrentHashMap<>( 16, 0.6f, 512 );
+        for (ResourceType type : resourceTypes) {
+            this.lockMaps[type.typeId()] = new ConcurrentHashMap<>(16, 0.6f, 512);
             this.resourceTypes[type.typeId()] = type;
         }
         this.clock = clock;
-        this.verboseDeadlocks = config.get( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks );
+        this.verboseDeadlocks = config.get(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks);
     }
 
     /**
      * Create a new client to use to grab and release locks.
      */
     @Override
-    public Client newClient()
-    {
-        if ( closed )
-        {
-            throw new IllegalStateException( this + " already closed" );
+    public Client newClient() {
+        if (closed) {
+            throw new IllegalStateException(this + " already closed");
         }
 
-        return new ForsetiClient( lockMaps, clock, verboseDeadlocks, clientIds.incrementAndGet() );
+        return new ForsetiClient(lockMaps, clock, verboseDeadlocks, clientIds.incrementAndGet());
     }
 
     @Override
-    public void accept( Visitor out )
-    {
-        for ( int i = 0; i < lockMaps.length; i++ )
-        {
-            if ( lockMaps[i] != null )
-            {
+    public void accept(Visitor out) {
+        for (int i = 0; i < lockMaps.length; i++) {
+            if (lockMaps[i] != null) {
                 var resourceType = resourceTypes[i];
-                for ( Map.Entry<Long,Lock> entry : lockMaps[i].entrySet() )
-                {
+                for (Map.Entry<Long, Lock> entry : lockMaps[i].entrySet()) {
                     var lock = entry.getValue();
                     var description = lock.describeWaitList();
                     var transactionIds = lock.transactionIds();
-                    int lockIdentityHashCode = System.identityHashCode( lock );
-                    transactionIds.forEach( txId -> out.visit( lock.type(), resourceType, txId, entry.getKey(), description, 0, lockIdentityHashCode ) );
+                    int lockIdentityHashCode = System.identityHashCode(lock);
+                    transactionIds.forEach(txId -> out.visit(
+                            lock.type(), resourceType, txId, entry.getKey(), description, 0, lockIdentityHashCode));
                 }
             }
         }
     }
 
-    private static int findMaxResourceId( ResourceType[] resourceTypes )
-    {
+    private static int findMaxResourceId(ResourceType[] resourceTypes) {
         int max = 0;
-        for ( ResourceType resourceType : resourceTypes )
-        {
-            max = Math.max( resourceType.typeId(), max );
+        for (ResourceType resourceType : resourceTypes) {
+            max = Math.max(resourceType.typeId(), max);
         }
         return max + 1;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         this.closed = true;
     }
 }

@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-public enum UpdateMode
-{
+public enum UpdateMode {
     ADDED,
     CHANGED,
     REMOVED;

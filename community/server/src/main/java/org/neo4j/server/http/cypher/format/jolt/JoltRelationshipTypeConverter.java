@@ -20,14 +20,11 @@
 package org.neo4j.server.http.cypher.format.jolt;
 
 import com.fasterxml.jackson.databind.util.StdConverter;
-
 import org.neo4j.graphdb.RelationshipType;
 
-final class JoltRelationshipTypeConverter extends StdConverter<RelationshipType,String>
-{
+final class JoltRelationshipTypeConverter extends StdConverter<RelationshipType, String> {
     @Override
-    public String convert( RelationshipType value )
-    {
+    public String convert(RelationshipType value) {
         return value.name();
     }
 }

@@ -21,11 +21,10 @@ package org.neo4j.cli;
 
 import java.util.concurrent.Callable;
 
-public interface Command extends Callable<Integer>
-{
-    //NOTE! The order of declaration here is the order they get listed in the CLI. Please keep it grouped by area of usage.
-    enum CommandType
-    {
+public interface Command extends Callable<Integer> {
+    // NOTE! The order of declaration here is the order they get listed in the CLI. Please keep it grouped by area of
+    // usage.
+    enum CommandType {
         CHECK_CONSISTENCY,
         DIAGNOSTICS_REPORT,
         STORE_INFO,
@@ -47,6 +46,6 @@ public interface Command extends Callable<Integer>
         GET_SERVER_ID,
         PUSH_TO_CLOUD,
         AGGREGATE_NEXT,
-        TEST //Used by test commands. Don't use this for any real command
+        TEST // Used by test commands. Don't use this for any real command
     }
 }

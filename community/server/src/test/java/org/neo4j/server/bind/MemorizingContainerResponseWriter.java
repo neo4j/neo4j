@@ -19,63 +19,51 @@
  */
 package org.neo4j.server.bind;
 
+import static javax.ws.rs.core.Response.Status;
+import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
+
+import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
 
-import java.io.OutputStream;
-import java.util.concurrent.TimeUnit;
-
-import static javax.ws.rs.core.Response.Status;
-import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
-
-public class MemorizingContainerResponseWriter implements ContainerResponseWriter
-{
+public class MemorizingContainerResponseWriter implements ContainerResponseWriter {
     private Status status;
     private Object entity;
 
     @Override
-    public OutputStream writeResponseStatusAndHeaders( long contentLength, ContainerResponse responseContext ) throws ContainerException
-    {
-        status = Status.fromStatusCode( responseContext.getStatus() );
+    public OutputStream writeResponseStatusAndHeaders(long contentLength, ContainerResponse responseContext)
+            throws ContainerException {
+        status = Status.fromStatusCode(responseContext.getStatus());
         entity = responseContext.getEntity();
         return NULL_OUTPUT_STREAM;
     }
 
     @Override
-    public boolean suspend( long timeOut, TimeUnit timeUnit, TimeoutHandler timeoutHandler )
-    {
+    public boolean suspend(long timeOut, TimeUnit timeUnit, TimeoutHandler timeoutHandler) {
         return false;
     }
 
     @Override
-    public void setSuspendTimeout( long timeOut, TimeUnit timeUnit ) throws IllegalStateException
-    {
-    }
+    public void setSuspendTimeout(long timeOut, TimeUnit timeUnit) throws IllegalStateException {}
 
     @Override
-    public void commit()
-    {
-    }
+    public void commit() {}
 
     @Override
-    public void failure( Throwable error )
-    {
-    }
+    public void failure(Throwable error) {}
 
     @Override
-    public boolean enableResponseBuffering()
-    {
+    public boolean enableResponseBuffering() {
         return false;
     }
 
-    public Status getStatus()
-    {
+    public Status getStatus() {
         return status;
     }
 
-    public Object getEntity()
-    {
+    public Object getEntity() {
         return entity;
     }
 }

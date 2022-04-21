@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.Function;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.io.IOUtils.closeAll;
 
+import java.util.function.Function;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
@@ -30,42 +32,45 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.io.IOUtils.closeAll;
-
-public class RelationshipTypeIndexWriterStep extends IndexWriterStep<RelationshipRecord[]>
-{
+public class RelationshipTypeIndexWriterStep extends IndexWriterStep<RelationshipRecord[]> {
     private static final String RELATIONSHIP_INDEX_WRITE_STEP_TAG = "relationshipIndexWriteStep";
     private final CursorContext cursorContext;
     private final IndexImporter importer;
 
-    public RelationshipTypeIndexWriterStep( StageControl control, Configuration config, BatchingNeoStores neoStores, IndexImporterFactory indexImporterFactory,
-            MemoryTracker memoryTracker, CursorContextFactory contextFactory,
-            Function<CursorContext,StoreCursors> storeCursorsCreator )
-    {
-        super( control, "RELATIONSHIP TYPE INDEX", config, 1, contextFactory );
-        this.cursorContext = contextFactory.create( RELATIONSHIP_INDEX_WRITE_STEP_TAG );
-        this.importer = indexImporter( config.indexConfig(), indexImporterFactory, neoStores, RELATIONSHIP, memoryTracker, contextFactory,
-                storeCursorsCreator );
+    public RelationshipTypeIndexWriterStep(
+            StageControl control,
+            Configuration config,
+            BatchingNeoStores neoStores,
+            IndexImporterFactory indexImporterFactory,
+            MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory,
+            Function<CursorContext, StoreCursors> storeCursorsCreator) {
+        super(control, "RELATIONSHIP TYPE INDEX", config, 1, contextFactory);
+        this.cursorContext = contextFactory.create(RELATIONSHIP_INDEX_WRITE_STEP_TAG);
+        this.importer = indexImporter(
+                config.indexConfig(),
+                indexImporterFactory,
+                neoStores,
+                RELATIONSHIP,
+                memoryTracker,
+                contextFactory,
+                storeCursorsCreator);
     }
 
     @Override
-    protected void process( RelationshipRecord[] batch, BatchSender sender, CursorContext cursorTracer ) throws Throwable
-    {
-        for ( RelationshipRecord relationship : batch )
-        {
-            if ( relationship.inUse() )
-            {
-                importer.add( relationship.getId(), new long[]{relationship.getType()} );
+    protected void process(RelationshipRecord[] batch, BatchSender sender, CursorContext cursorTracer)
+            throws Throwable {
+        for (RelationshipRecord relationship : batch) {
+            if (relationship.inUse()) {
+                importer.add(relationship.getId(), new long[] {relationship.getType()});
             }
         }
-        sender.send( batch );
+        sender.send(batch);
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         super.close();
-        closeAll( importer, cursorContext );
+        closeAll(importer, cursorContext);
     }
 }

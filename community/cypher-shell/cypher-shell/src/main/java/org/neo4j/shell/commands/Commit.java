@@ -20,7 +20,6 @@
 package org.neo4j.shell.commands;
 
 import java.util.List;
-
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
@@ -28,35 +27,29 @@ import org.neo4j.shell.exception.ExitException;
 /**
  * This command marks a transaction as successful and closes it.
  */
-public class Commit implements Command
-{
+public class Commit implements Command {
     private final TransactionHandler transactionHandler;
 
-    public Commit( final TransactionHandler transactionHandler )
-    {
+    public Commit(final TransactionHandler transactionHandler) {
         this.transactionHandler = transactionHandler;
     }
 
     @Override
-    public void execute( final List<String> args ) throws ExitException, CommandException
-    {
-        requireArgumentCount( args, 0 );
+    public void execute(final List<String> args) throws ExitException, CommandException {
+        requireArgumentCount(args, 0);
         transactionHandler.commitTransaction();
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
+        public Metadata metadata() {
             var help = "Commit and close the currently open transaction";
-            return new Metadata( ":commit", "Commit the currently open transaction", "", help, List.of() );
+            return new Metadata(":commit", "Commit the currently open transaction", "", help, List.of());
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
-            return new Commit( args.cypherShell() );
+        public Command executor(Arguments args) {
+            return new Commit(args.cypherShell());
         }
     }
 }

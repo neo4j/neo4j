@@ -25,7 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.graphalgo.CostAccumulator;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Direction;
@@ -42,8 +41,7 @@ import org.neo4j.graphdb.Relationship;
  * @param <CostType>
  *            The datatype the edge weights are represented by.
  */
-public class FloydWarshall<CostType>
-{
+public class FloydWarshall<CostType> {
     protected CostType startCost; // starting cost for all nodes
     protected CostType infinitelyBad; // starting value for calculation
     protected Direction relationDirection;
@@ -54,7 +52,7 @@ public class FloydWarshall<CostType>
     protected Set<Relationship> relationshipSet;
     CostType[][] costMatrix;
     Integer[][] predecessors;
-    Map<Node,Integer> nodeIndexes; // node ->index
+    Map<Node, Integer> nodeIndexes; // node ->index
     Node[] IndexedNodes; // index -> node
     protected boolean doneCalculation;
 
@@ -78,12 +76,15 @@ public class FloydWarshall<CostType>
      * @param relationshipSet
      *            The set of relationships that should be processed.
      */
-    public FloydWarshall( CostType startCost, CostType infinitelyBad,
-        Direction relationDirection, CostEvaluator<CostType> costEvaluator,
-        CostAccumulator<CostType> costAccumulator,
-        Comparator<CostType> costComparator, Set<Node> nodeSet,
-        Set<Relationship> relationshipSet )
-    {
+    public FloydWarshall(
+            CostType startCost,
+            CostType infinitelyBad,
+            Direction relationDirection,
+            CostEvaluator<CostType> costEvaluator,
+            CostAccumulator<CostType> costAccumulator,
+            Comparator<CostType> costComparator,
+            Set<Node> nodeSet,
+            Set<Relationship> relationshipSet) {
         super();
         this.startCost = startCost;
         this.infinitelyBad = infinitelyBad;
@@ -98,8 +99,7 @@ public class FloydWarshall<CostType>
     /**
      * This resets the calculation if we for some reason would like to redo it.
      */
-    public void reset()
-    {
+    public void reset() {
         doneCalculation = false;
     }
 
@@ -107,12 +107,10 @@ public class FloydWarshall<CostType>
      * Internal calculate method that will do the calculation. This can however
      * be called externally to manually trigger the calculation.
      */
-    @SuppressWarnings( "unchecked" )
-    public void calculate()
-    {
+    @SuppressWarnings("unchecked")
+    public void calculate() {
         // Don't do it more than once
-        if ( doneCalculation )
-        {
+        if (doneCalculation) {
             return;
         }
         doneCalculation = true;
@@ -122,57 +120,42 @@ public class FloydWarshall<CostType>
         predecessors = new Integer[n][n];
         IndexedNodes = new Node[n];
         nodeIndexes = new HashMap<>();
-        for ( int i = 0; i < n; ++i )
-        {
-            for ( int j = 0; j < n; ++j )
-            {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
                 costMatrix[i][j] = infinitelyBad;
             }
             costMatrix[i][i] = startCost;
         }
         int nodeIndex = 0;
-        for ( Node node : nodeSet )
-        {
-            nodeIndexes.put( node, nodeIndex );
+        for (Node node : nodeSet) {
+            nodeIndexes.put(node, nodeIndex);
             IndexedNodes[nodeIndex] = node;
             ++nodeIndex;
         }
         // Put the relationships in there
-        for ( Relationship relationship : relationshipSet )
-        {
-            Integer i1 = nodeIndexes.get( relationship.getStartNode() );
-            Integer i2 = nodeIndexes.get( relationship.getEndNode() );
-            if ( i1 == null || i2 == null )
-            {
+        for (Relationship relationship : relationshipSet) {
+            Integer i1 = nodeIndexes.get(relationship.getStartNode());
+            Integer i2 = nodeIndexes.get(relationship.getEndNode());
+            if (i1 == null || i2 == null) {
                 // TODO: what to do here? pretend nothing happened? cast
                 // exception?
                 continue;
             }
-            if ( relationDirection.equals( Direction.BOTH )
-                || relationDirection.equals( Direction.OUTGOING ) )
-            {
-                costMatrix[i1][i2] = costEvaluator.getCost( relationship, Direction.OUTGOING );
+            if (relationDirection.equals(Direction.BOTH) || relationDirection.equals(Direction.OUTGOING)) {
+                costMatrix[i1][i2] = costEvaluator.getCost(relationship, Direction.OUTGOING);
                 predecessors[i1][i2] = i1;
             }
-            if ( relationDirection.equals( Direction.BOTH )
-                || relationDirection.equals( Direction.INCOMING ) )
-            {
-                costMatrix[i2][i1] = costEvaluator.getCost( relationship,
-                        Direction.INCOMING );
+            if (relationDirection.equals(Direction.BOTH) || relationDirection.equals(Direction.INCOMING)) {
+                costMatrix[i2][i1] = costEvaluator.getCost(relationship, Direction.INCOMING);
                 predecessors[i2][i1] = i2;
             }
         }
         // Do it!
-        for ( int v = 0; v < n; ++v )
-        {
-            for ( int i = 0; i < n; ++i )
-            {
-                for ( int j = 0; j < n; ++j )
-                {
-                    CostType alternative = costAccumulator.addCosts(
-                        costMatrix[i][v], costMatrix[v][j] );
-                    if ( costComparator.compare( costMatrix[i][j], alternative ) > 0 )
-                    {
+        for (int v = 0; v < n; ++v) {
+            for (int i = 0; i < n; ++i) {
+                for (int j = 0; j < n; ++j) {
+                    CostType alternative = costAccumulator.addCosts(costMatrix[i][v], costMatrix[v][j]);
+                    if (costComparator.compare(costMatrix[i][j], alternative) > 0) {
                         costMatrix[i][j] = alternative;
                         predecessors[i][j] = predecessors[v][j];
                     }
@@ -190,10 +173,9 @@ public class FloydWarshall<CostType>
      *            The end node.
      * @return The cost for the shortest path.
      */
-    public CostType getCost( Node node1, Node node2 )
-    {
+    public CostType getCost(Node node1, Node node2) {
         calculate();
-        return costMatrix[nodeIndexes.get( node1 )][nodeIndexes.get( node2 )];
+        return costMatrix[nodeIndexes.get(node1)][nodeIndexes.get(node2)];
     }
 
     /**
@@ -204,20 +186,18 @@ public class FloydWarshall<CostType>
      *            The end node.
      * @return The shortest path as a list of nodes.
      */
-    public List<Node> getPath( Node startNode, Node targetNode )
-    {
+    public List<Node> getPath(Node startNode, Node targetNode) {
         calculate();
         LinkedList<Node> path = new LinkedList<>();
-        int index = nodeIndexes.get( targetNode );
-        int startIndex = nodeIndexes.get( startNode );
+        int index = nodeIndexes.get(targetNode);
+        int startIndex = nodeIndexes.get(startNode);
         Node n = targetNode;
-        while ( !n.equals( startNode ) )
-        {
-            path.addFirst( n );
+        while (!n.equals(startNode)) {
+            path.addFirst(n);
             index = predecessors[startIndex][index];
             n = IndexedNodes[index];
         }
-        path.addFirst( n );
+        path.addFirst(n);
         return path;
     }
 }

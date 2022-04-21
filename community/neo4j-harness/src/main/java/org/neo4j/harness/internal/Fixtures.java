@@ -26,78 +26,62 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
 /**
  * Manages user-defined cypher fixtures that can be exercised against the server.
  */
-public class Fixtures
-{
+public class Fixtures {
     private final List<String> fixtureStatements = new ArrayList<>();
     private final List<Function<GraphDatabaseService, Void>> fixtureFunctions = new ArrayList<>();
 
     private static final String cypherSuffix = "cyp";
 
-    private final DirectoryStream.Filter<Path> cypherFileOrDirectoryFilter = file ->
-    {
-        if ( Files.isDirectory( file ) )
-        {
+    private final DirectoryStream.Filter<Path> cypherFileOrDirectoryFilter = file -> {
+        if (Files.isDirectory(file)) {
             return true;
         }
-        String[] split = file.getFileName().toString().split( "\\." );
+        String[] split = file.getFileName().toString().split("\\.");
         String suffix = split[split.length - 1];
-        return suffix.equals( cypherSuffix );
+        return suffix.equals(cypherSuffix);
     };
 
-    public void add( Path fixturePath )
-    {
-        try
-        {
-            if ( Files.isDirectory( fixturePath ) )
-            {
-                try ( DirectoryStream<Path> paths = Files.newDirectoryStream( fixturePath, cypherFileOrDirectoryFilter ) )
-                {
-                    paths.forEach( this::add );
+    public void add(Path fixturePath) {
+        try {
+            if (Files.isDirectory(fixturePath)) {
+                try (DirectoryStream<Path> paths = Files.newDirectoryStream(fixturePath, cypherFileOrDirectoryFilter)) {
+                    paths.forEach(this::add);
                 }
                 return;
             }
-            add( Files.readString( fixturePath ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to read fixture file '" + fixturePath.toAbsolutePath() + "': " + e.getMessage(), e );
-        }
-    }
-
-    public void add( String statement )
-    {
-        if ( !statement.isBlank() )
-        {
-            fixtureStatements.add( statement );
+            add(Files.readString(fixturePath));
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Unable to read fixture file '" + fixturePath.toAbsolutePath() + "': " + e.getMessage(), e);
         }
     }
 
-    public void add( Function<GraphDatabaseService,Void> fixtureFunction )
-    {
-        fixtureFunctions.add( fixtureFunction );
+    public void add(String statement) {
+        if (!statement.isBlank()) {
+            fixtureStatements.add(statement);
+        }
     }
 
-    void applyTo( InProcessNeo4j controls )
-    {
+    public void add(Function<GraphDatabaseService, Void> fixtureFunction) {
+        fixtureFunctions.add(fixtureFunction);
+    }
+
+    void applyTo(InProcessNeo4j controls) {
         GraphDatabaseService db = controls.defaultDatabaseService();
-        for ( String fixtureStatement : fixtureStatements )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( fixtureStatement );
+        for (String fixtureStatement : fixtureStatements) {
+            try (Transaction tx = db.beginTx()) {
+                tx.execute(fixtureStatement);
                 tx.commit();
             }
         }
-        for ( Function<GraphDatabaseService,Void> fixtureFunction : fixtureFunctions )
-        {
-            fixtureFunction.apply( db );
+        for (Function<GraphDatabaseService, Void> fixtureFunction : fixtureFunctions) {
+            fixtureFunction.apply(db);
         }
     }
 }

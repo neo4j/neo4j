@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v44;
 
 import java.time.Clock;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.routing.ProcedureRoutingTableGetter;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
@@ -40,51 +39,55 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * BoltStateMachineV44 holds all the state transitions for the Bolt 4.4
  */
-public class BoltStateMachineV44 extends AbstractBoltStateMachine
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineV44.class );
+public class BoltStateMachineV44 extends AbstractBoltStateMachine {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BoltStateMachineV44.class);
 
-    public BoltStateMachineV44( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock,
-                                DefaultDatabaseResolver defaultDatabaseResolver, MapValue connectionHints, MemoryTracker memoryTracker,
-                                TransactionManager transactionManager )
-    {
-        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker, transactionManager );
+    public BoltStateMachineV44(
+            BoltStateMachineSPI boltSPI,
+            BoltChannel boltChannel,
+            Clock clock,
+            DefaultDatabaseResolver defaultDatabaseResolver,
+            MapValue connectionHints,
+            MemoryTracker memoryTracker,
+            TransactionManager transactionManager) {
+        super(boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker, transactionManager);
     }
 
     @Override
-    protected States buildStates( MapValue connectionHints, MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap(
-                ConnectedState.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE
-                + AutoCommitState.SHALLOW_SIZE + InTransactionState.SHALLOW_SIZE
-                + FailedState.SHALLOW_SIZE + InterruptedState.SHALLOW_SIZE );
+    protected States buildStates(MapValue connectionHints, MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(ConnectedState.SHALLOW_SIZE
+                + ReadyState.SHALLOW_SIZE
+                + AutoCommitState.SHALLOW_SIZE
+                + InTransactionState.SHALLOW_SIZE
+                + FailedState.SHALLOW_SIZE
+                + InterruptedState.SHALLOW_SIZE);
 
-        var connected = new ConnectedState( connectionHints ); //v4.1
+        var connected = new ConnectedState(connectionHints); // v4.1
         var autoCommitState = new AutoCommitState(); // v4
         var inTransaction = new InTransactionState(); // v4.4
         var failed = new FailedState(); // v4
-        var ready = new ReadyState( new ProcedureRoutingTableGetter() ); // v4.4
+        var ready = new ReadyState(new ProcedureRoutingTableGetter()); // v4.4
         var interrupted = new InterruptedState(); // v3
 
-        connected.setReadyState( ready );
+        connected.setReadyState(ready);
 
-        ready.setTransactionReadyState( inTransaction );
-        ready.setStreamingState( autoCommitState );
-        ready.setFailedState( failed );
-        ready.setInterruptedState( interrupted );
+        ready.setTransactionReadyState(inTransaction);
+        ready.setStreamingState(autoCommitState);
+        ready.setFailedState(failed);
+        ready.setInterruptedState(interrupted);
 
-        autoCommitState.setReadyState( ready );
-        autoCommitState.setFailedState( failed );
-        autoCommitState.setInterruptedState( interrupted );
+        autoCommitState.setReadyState(ready);
+        autoCommitState.setFailedState(failed);
+        autoCommitState.setInterruptedState(interrupted);
 
-        inTransaction.setReadyState( ready );
-        inTransaction.setFailedState( failed );
-        inTransaction.setInterruptedState( interrupted );
+        inTransaction.setReadyState(ready);
+        inTransaction.setFailedState(failed);
+        inTransaction.setInterruptedState(interrupted);
 
-        failed.setInterruptedState( interrupted );
+        failed.setInterruptedState(interrupted);
 
-        interrupted.setReadyState( ready );
+        interrupted.setReadyState(ready);
 
-        return new States( connected, failed );
+        return new States(connected, failed);
     }
 }

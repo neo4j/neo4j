@@ -31,12 +31,20 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
-case class UndirectedRelationshipTypeScan(idName: String, leftNode: String, relType: RelTypeName, rightNode: String, argumentIds: Set[String], indexOrder: IndexOrder)(implicit idGen: IdGen)
-  extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan {
+case class UndirectedRelationshipTypeScan(
+  idName: String,
+  leftNode: String,
+  relType: RelTypeName,
+  rightNode: String,
+  argumentIds: Set[String],
+  indexOrder: IndexOrder
+)(implicit idGen: IdGen)
+    extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipTypeScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipTypeScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }

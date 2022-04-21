@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import java.time.temporal.ChronoUnit
-
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -32,6 +30,8 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
+import java.time.temporal.ChronoUnit
+
 /**
  * AVG computation is calculated using cumulative moving average approach:
  * https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
@@ -39,8 +39,8 @@ import org.neo4j.values.utils.ValueMath.overflowSafeAdd
  * TODO consider combining it with https://en.wikipedia.org/wiki/Kahan_summation_algorithm
  */
 class AvgFunction(val value: Expression)
-  extends AggregationFunction
-  with NumericOrDurationAggregationExpression {
+    extends AggregationFunction
+    with NumericOrDurationAggregationExpression {
 
   def name = "AVG"
 
@@ -67,7 +67,8 @@ class AvgFunction(val value: Expression)
   }
 
   def applyValueDirectly(vl: AnyValue): Unit = {
-    actOnNumberOrDuration(vl,
+    actOnNumberOrDuration(
+      vl,
       number => {
         count += 1
         val diff = number.minus(sumNumber)

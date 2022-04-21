@@ -21,28 +21,24 @@ package org.neo4j.tooling.procedure.messages;
 
 import javax.lang.model.element.Element;
 
-public class ExtensionMissingPublicNoArgConstructor implements CompilationMessage
-{
+public class ExtensionMissingPublicNoArgConstructor implements CompilationMessage {
 
     private final Element element;
     private final String errorMessage;
 
-    public ExtensionMissingPublicNoArgConstructor( Element element, String message, Object... args )
-    {
+    public ExtensionMissingPublicNoArgConstructor(Element element, String message, Object... args) {
 
         this.element = element;
-        this.errorMessage = String.format( message, args );
+        this.errorMessage = String.format(message, args);
     }
 
     @Override
-    public Element getElement()
-    {
+    public Element getElement() {
         return element;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return errorMessage;
     }
 }

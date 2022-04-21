@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.IntFunction;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -40,136 +42,114 @@ import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
-
-public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
-{
+public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
     private final EntityType entityType;
 
-    public TokenIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor,
-                               RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                               ImmutableSet<OpenOption> openOptions )
-    {
-        super( databaseIndexContext, indexFiles, descriptor, openOptions );
+    public TokenIndexAccessor(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexDescriptor descriptor,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            ImmutableSet<OpenOption> openOptions) {
+        super(databaseIndexContext, indexFiles, descriptor, openOptions);
 
         entityType = descriptor.schema().entityType();
-        instantiateTree( recoveryCleanupWorkCollector, new NativeIndexHeaderWriter( ONLINE ) );
+        instantiateTree(recoveryCleanupWorkCollector, new NativeIndexHeaderWriter(ONLINE));
         instantiateUpdater();
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
+    public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
         assertTreeOpen();
-        try
-        {
-            if ( parallel )
-            {
-                TokenIndexUpdater parallelUpdater = new TokenIndexUpdater( 1_000 );
-                return parallelUpdater.initialize( index.parallelWriter( cursorContext ) );
+        try {
+            if (parallel) {
+                TokenIndexUpdater parallelUpdater = new TokenIndexUpdater(1_000);
+                return parallelUpdater.initialize(index.parallelWriter(cursorContext));
+            } else {
+                return singleUpdater.initialize(index.writer(cursorContext));
             }
-            else
-            {
-                return singleUpdater.initialize( index.writer( cursorContext ) );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void force( CursorContext cursorContext )
-    {
-        index.checkpoint( cursorContext );
+    public void force(CursorContext cursorContext) {
+        index.checkpoint(cursorContext);
     }
 
     @Override
-    public void refresh()
-    {
+    public void refresh() {
         // not required in this implementation
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         closeResources();
     }
 
     @Override
-    public ValueIndexReader newValueReader()
-    {
-        throw new UnsupportedOperationException( "Not applicable for token indexes " );
+    public ValueIndexReader newValueReader() {
+        throw new UnsupportedOperationException("Not applicable for token indexes ");
     }
 
     @Override
-    public TokenIndexReader newTokenReader()
-    {
+    public TokenIndexReader newTokenReader() {
         assertTreeOpen();
-        return new DefaultTokenIndexReader( index );
+        return new DefaultTokenIndexReader(index);
     }
 
     @Override
-    public BoundedIterable<EntityTokenRange> newAllEntriesTokenReader( long fromEntityId, long toEntityId, CursorContext cursorContext )
-    {
-        IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider = tokenId ->
-        {
-            try
-            {
+    public BoundedIterable<EntityTokenRange> newAllEntriesTokenReader(
+            long fromEntityId, long toEntityId, CursorContext cursorContext) {
+        IntFunction<Seeker<TokenScanKey, TokenScanValue>> seekProvider = tokenId -> {
+            try {
                 return index.seek(
-                        new TokenScanKey().set( tokenId, fromEntityId / RANGE_SIZE ),
-                        new TokenScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), cursorContext );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
+                        new TokenScanKey().set(tokenId, fromEntityId / RANGE_SIZE),
+                        new TokenScanKey().set(tokenId, (toEntityId - 1) / RANGE_SIZE + 1),
+                        cursorContext);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         };
 
         int highestTokenId = -1;
-        try ( Seeker<TokenScanKey,TokenScanValue> cursor = index.seek(
-                new TokenScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
-                new TokenScanKey().set( 0, -1 ), cursorContext ) )
-        {
-            if ( cursor.next() )
-            {
+        try (Seeker<TokenScanKey, TokenScanValue> cursor = index.seek(
+                new TokenScanKey().set(Integer.MAX_VALUE, Long.MAX_VALUE),
+                new TokenScanKey().set(0, -1),
+                cursorContext)) {
+            if (cursor.next()) {
                 highestTokenId = cursor.key().tokenId;
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return new NativeAllEntriesTokenScanReader( seekProvider, highestTokenId, entityType );
+        return new NativeAllEntriesTokenScanReader(seekProvider, highestTokenId, entityType);
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
-    {
-        //This is just used for consistency checker and token indexes are not consistency checked the same way (not yet anyway).
-        throw new UnsupportedOperationException( "Not applicable for token indexes" );
+    public BoundedIterable<Long> newAllEntriesValueReader(
+            long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
+        // This is just used for consistency checker and token indexes are not consistency checked the same way (not yet
+        // anyway).
+        throw new UnsupportedOperationException("Not applicable for token indexes");
     }
 
     @Override
-    public ResourceIterator<Path> snapshotFiles()
-    {
-        return asResourceIterator( iterator( indexFiles.getStoreFile() ) );
+    public ResourceIterator<Path> snapshotFiles() {
+        return asResourceIterator(iterator(indexFiles.getStoreFile()));
     }
 
     @Override
-    public long estimateNumberOfEntries( CursorContext cursorContext )
-    {
-        //This is just used for consistency checker and token indexes are not consistency checked the same way (not yet anyway).
-        throw new UnsupportedOperationException( "Not applicable for token indexes" );
+    public long estimateNumberOfEntries(CursorContext cursorContext) {
+        // This is just used for consistency checker and token indexes are not consistency checked the same way (not yet
+        // anyway).
+        throw new UnsupportedOperationException("Not applicable for token indexes");
     }
 
     @Override
-    public void drop()
-    {
-        index.setDeleteOnClose( true );
+    public void drop() {
+        index.setDeleteOnClose(true);
         closeResources();
         indexFiles.clear();
     }

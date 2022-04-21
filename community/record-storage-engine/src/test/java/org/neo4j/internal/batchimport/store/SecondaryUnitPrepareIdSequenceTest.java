@@ -19,64 +19,57 @@
  */
 package org.neo4j.internal.batchimport.store;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.id.IdSequence;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
-class SecondaryUnitPrepareIdSequenceTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.id.IdSequence;
+
+class SecondaryUnitPrepareIdSequenceTest {
     @Test
-    void shouldReturnIdImmediatelyAfterRecordId()
-    {
+    void shouldReturnIdImmediatelyAfterRecordId() {
         // given
         PrepareIdSequence idSequence = new SecondaryUnitPrepareIdSequence();
-        IdSequence actual = mock( IdSequence.class );
+        IdSequence actual = mock(IdSequence.class);
 
         // when
         long recordId = 10;
-        IdSequence prepared = idSequence.apply( actual ).apply( recordId );
-        long nextRecordId = prepared.nextId( NULL_CONTEXT );
+        IdSequence prepared = idSequence.apply(actual).apply(recordId);
+        long nextRecordId = prepared.nextId(NULL_CONTEXT);
 
         // then
-        assertEquals( 10 + 1, nextRecordId );
-        verifyNoMoreInteractions( actual );
+        assertEquals(10 + 1, nextRecordId);
+        verifyNoMoreInteractions(actual);
     }
 
     @Test
-    void shouldReturnIdImmediatelyAfterRecordIdOnlyOnce()
-    {
+    void shouldReturnIdImmediatelyAfterRecordIdOnlyOnce() {
         // given
         PrepareIdSequence idSequence = new SecondaryUnitPrepareIdSequence();
-        IdSequence actual = mock( IdSequence.class );
+        IdSequence actual = mock(IdSequence.class);
 
         // when
         long recordId = 10;
-        IdSequence prepared = idSequence.apply( actual ).apply( recordId );
-        long nextRecordId = prepared.nextId( NULL_CONTEXT );
-        assertEquals( 10 + 1, nextRecordId );
-        verifyNoMoreInteractions( actual );
-        try
-        {
-            prepared.nextId( NULL_CONTEXT );
-            fail( "Should've failed" );
-        }
-        catch ( IllegalStateException e )
-        {   // good
+        IdSequence prepared = idSequence.apply(actual).apply(recordId);
+        long nextRecordId = prepared.nextId(NULL_CONTEXT);
+        assertEquals(10 + 1, nextRecordId);
+        verifyNoMoreInteractions(actual);
+        try {
+            prepared.nextId(NULL_CONTEXT);
+            fail("Should've failed");
+        } catch (IllegalStateException e) { // good
         }
 
         // and when
         recordId = 20;
-        prepared = idSequence.apply( actual ).apply( recordId );
-        nextRecordId = prepared.nextId( NULL_CONTEXT );
+        prepared = idSequence.apply(actual).apply(recordId);
+        nextRecordId = prepared.nextId(NULL_CONTEXT);
 
         // then
-        assertEquals( 20 + 1, nextRecordId );
-        verifyNoMoreInteractions( actual );
+        assertEquals(20 + 1, nextRecordId);
+        verifyNoMoreInteractions(actual);
     }
 }

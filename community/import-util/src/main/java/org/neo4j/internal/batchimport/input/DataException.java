@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-public class DataException extends InputException
-{
-    public DataException( String message )
-    {
-        super( message );
+public class DataException extends InputException {
+    public DataException(String message) {
+        super(message);
     }
 }

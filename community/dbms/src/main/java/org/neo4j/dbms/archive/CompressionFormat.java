@@ -23,9 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public interface CompressionFormat
-{
-    OutputStream compress( OutputStream stream ) throws IOException;
+public interface CompressionFormat {
+    OutputStream compress(OutputStream stream) throws IOException;
 
-    InputStream decompress( InputStream stream ) throws IOException;
+    InputStream decompress(InputStream stream) throws IOException;
 }

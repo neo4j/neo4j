@@ -49,24 +49,29 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    val string = if (context.debugOptions.queryGraphEnabled)
-      from.query.toString
-    else if (context.debugOptions.astEnabled)
-      from.statement().toString
-    else if (context.debugOptions.semanticStateEnabled)
-      from.semantics().toString
-    else if (context.debugOptions.logicalPlanEnabled)
-      from.logicalPlan.toString
-    else if (context.debugOptions.logicalPlanBuilderEnabled)
-      LogicalPlanToPlanBuilderString(from.logicalPlan)
-    else
-      """Output options are: queryGraph, ast, semanticstate, logicalplan, logicalplanbuilder"""
+    val string =
+      if (context.debugOptions.queryGraphEnabled)
+        from.query.toString
+      else if (context.debugOptions.astEnabled)
+        from.statement().toString
+      else if (context.debugOptions.semanticStateEnabled)
+        from.semantics().toString
+      else if (context.debugOptions.logicalPlanEnabled)
+        from.logicalPlan.toString
+      else if (context.debugOptions.logicalPlanBuilderEnabled)
+        LogicalPlanToPlanBuilderString(from.logicalPlan)
+      else
+        """Output options are: queryGraph, ast, semanticstate, logicalplan, logicalplanbuilder"""
 
     // We need to do this, otherwise the produced graph statistics won't work for creating an executable plan
     context.planContext.statistics.nodesAllCardinality()
 
     val (plan, newStatement, newReturnColumnts) = stringToLogicalPlan(string)
-    from.copy(maybeLogicalPlan = Some(plan), maybeStatement = Some(newStatement), maybeReturnColumns = Some(newReturnColumnts))
+    from.copy(
+      maybeLogicalPlan = Some(plan),
+      maybeStatement = Some(newStatement),
+      maybeReturnColumns = Some(newReturnColumnts)
+    )
   }
 
   private def stringToLogicalPlan(string: String): (LogicalPlan, Statement, Seq[String]) = {
@@ -79,7 +84,14 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
 
     val variable = Variable("col")(pos)
     val returnItem = AliasedReturnItem(variable, variable)(pos, isAutoAliased = true)
-    val returnClause = Return(distinct = false, ReturnItems(includeExisting = false, Seq(returnItem))(pos), None, None, None, Set.empty)(pos)
+    val returnClause = Return(
+      distinct = false,
+      ReturnItems(includeExisting = false, Seq(returnItem))(pos),
+      None,
+      None,
+      None,
+      Set.empty
+    )(pos)
     val newStatement = Query(SingleQuery(Seq(returnClause))(pos))(pos)
     val newReturnColumns = Seq("col")
 

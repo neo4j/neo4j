@@ -19,70 +19,62 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
+import static java.lang.Integer.min;
+import static java.lang.Long.max;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.string.UTF8;
 
-import static java.lang.Integer.min;
-import static java.lang.Long.max;
-import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
-
 /**
  * Stores {@link String strings} in a {@link ByteArray} provided by {@link NumberArrayFactory}. Each string can have different
  * length, where maximum string length is 2^16 - 1.
  */
-public class StringCollisionValues implements CollisionValues
-{
+public class StringCollisionValues implements CollisionValues {
     private final long chunkSize;
     private final ByteArray cache;
     private long offset;
     private ByteArray current;
 
-    public StringCollisionValues( NumberArrayFactory factory, long length, MemoryTracker memoryTracker )
-    {
+    public StringCollisionValues(NumberArrayFactory factory, long length, MemoryTracker memoryTracker) {
         // Let's have length (also chunk size) be divisible by PAGE_SIZE, such that our calculations below
         // works for all NumberArray implementations.
         int remainder = (int) (length % PAGE_SIZE);
-        if ( remainder != 0 )
-        {
+        if (remainder != 0) {
             length += PAGE_SIZE - remainder;
         }
 
-        chunkSize = max( length, PAGE_SIZE );
-        cache = factory.newDynamicByteArray( chunkSize, new byte[1], memoryTracker );
-        current = cache.at( 0 );
+        chunkSize = max(length, PAGE_SIZE);
+        cache = factory.newDynamicByteArray(chunkSize, new byte[1], memoryTracker);
+        current = cache.at(0);
     }
 
     @Override
-    public long add( Object id )
-    {
+    public long add(Object id) {
         String string = (String) id;
-        byte[] bytes = UTF8.encode( string );
+        byte[] bytes = UTF8.encode(string);
         int length = bytes.length;
-        if ( length > 0xFFFF )
-        {
-            throw new IllegalArgumentException( string );
+        if (length > 0xFFFF) {
+            throw new IllegalArgumentException(string);
         }
 
         long startOffset = offset;
-        cache.setByte( offset++, 0, (byte) length );
-        cache.setByte( offset++, 0, (byte) (length >>> Byte.SIZE) );
-        current = cache.at( offset );
-        for ( int i = 0; i < length; )
-        {
+        cache.setByte(offset++, 0, (byte) length);
+        cache.setByte(offset++, 0, (byte) (length >>> Byte.SIZE));
+        current = cache.at(offset);
+        for (int i = 0; i < length; ) {
             int bytesLeftToWrite = length - i;
             int bytesLeftInChunk = (int) (chunkSize - offset % chunkSize);
-            int bytesToWriteInThisChunk = min( bytesLeftToWrite, bytesLeftInChunk );
-            for ( int j = 0; j < bytesToWriteInThisChunk; j++ )
-            {
-                current.setByte( offset++, 0, bytes[i++] );
+            int bytesToWriteInThisChunk = min(bytesLeftToWrite, bytesLeftInChunk);
+            for (int j = 0; j < bytesToWriteInThisChunk; j++) {
+                current.setByte(offset++, 0, bytes[i++]);
             }
 
-            if ( length > i )
-            {
-                current = cache.at( offset );
+            if (length > i) {
+                current = cache.at(offset);
             }
         }
 
@@ -90,39 +82,33 @@ public class StringCollisionValues implements CollisionValues
     }
 
     @Override
-    public Object get( long offset )
-    {
-        int length = cache.getByte( offset++, 0 ) & 0xFF;
-        length |= (cache.getByte( offset++, 0 ) & 0xFF) << Byte.SIZE;
-        ByteArray array = cache.at( offset );
+    public Object get(long offset) {
+        int length = cache.getByte(offset++, 0) & 0xFF;
+        length |= (cache.getByte(offset++, 0) & 0xFF) << Byte.SIZE;
+        ByteArray array = cache.at(offset);
         byte[] bytes = new byte[length];
-        for ( int i = 0; i < length; )
-        {
+        for (int i = 0; i < length; ) {
             int bytesLeftToRead = length - i;
             int bytesLeftInChunk = (int) (chunkSize - offset % chunkSize);
-            int bytesToReadInThisChunk = min( bytesLeftToRead, bytesLeftInChunk );
-            for ( int j = 0; j < bytesToReadInThisChunk; j++ )
-            {
-                bytes[i++] = array.getByte( offset++, 0 );
+            int bytesToReadInThisChunk = min(bytesLeftToRead, bytesLeftInChunk);
+            for (int j = 0; j < bytesToReadInThisChunk; j++) {
+                bytes[i++] = array.getByte(offset++, 0);
             }
 
-            if ( length > i )
-            {
-                array = cache.at( offset );
+            if (length > i) {
+                array = cache.at(offset);
             }
         }
-        return UTF8.decode( bytes );
+        return UTF8.decode(bytes);
     }
 
     @Override
-    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-    {
-        cache.acceptMemoryStatsVisitor( visitor );
+    public void acceptMemoryStatsVisitor(MemoryStatsVisitor visitor) {
+        cache.acceptMemoryStatsVisitor(visitor);
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         cache.close();
     }
 }

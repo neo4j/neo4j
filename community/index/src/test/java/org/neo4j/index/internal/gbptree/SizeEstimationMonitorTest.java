@@ -19,49 +19,46 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-class SizeEstimationMonitorTest
-{
+import org.junit.jupiter.api.Test;
+
+class SizeEstimationMonitorTest {
     @Test
-    void shouldReportInconsistentIfTreeDepthsAreDifferent()
-    {
+    void shouldReportInconsistentIfTreeDepthsAreDifferent() {
         // given
         SizeEstimationMonitor monitor = new SizeEstimationMonitor();
 
         // when
-        monitor.internalNode( 0, 10 );
-        monitor.internalNode( 1, 15 );
-        monitor.leafNode( 2, 5 );
+        monitor.internalNode(0, 10);
+        monitor.internalNode(1, 15);
+        monitor.leafNode(2, 5);
 
-        monitor.internalNode( 0, 9 );
-        monitor.leafNode( 1, 7 );
+        monitor.internalNode(0, 9);
+        monitor.leafNode(1, 7);
 
         // then
-        assertFalse( monitor.isConsistent() );
+        assertFalse(monitor.isConsistent());
     }
 
     @Test
-    void shouldCalculateEstimate()
-    {
+    void shouldCalculateEstimate() {
         // given
         SizeEstimationMonitor monitor = new SizeEstimationMonitor();
 
         // when
         // first sample
-        monitor.internalNode( 0, 5 ); // which means a root with 5 keys (and 6 children pointers)
-        monitor.internalNode( 1, 8 ); // which means an internal node at depth 1 with 8 keys and (9 children pointers)
-        monitor.leafNode( 2, 10 );
+        monitor.internalNode(0, 5); // which means a root with 5 keys (and 6 children pointers)
+        monitor.internalNode(1, 8); // which means an internal node at depth 1 with 8 keys and (9 children pointers)
+        monitor.leafNode(2, 10);
         // second sample
-        monitor.internalNode( 0, 5 );
-        monitor.internalNode( 1, 10 ); // which means an internal node at depth 1 with 10 keys and (11 children pointers)
-        monitor.leafNode( 2, 20 );
+        monitor.internalNode(0, 5);
+        monitor.internalNode(1, 10); // which means an internal node at depth 1 with 10 keys and (11 children pointers)
+        monitor.leafNode(2, 20);
 
         // then
         double expectedEstimate = 6D * 10 * 15;
-        assertEquals( (long) expectedEstimate, monitor.estimateNumberOfKeys() );
+        assertEquals((long) expectedEstimate, monitor.estimateNumberOfKeys());
     }
 }

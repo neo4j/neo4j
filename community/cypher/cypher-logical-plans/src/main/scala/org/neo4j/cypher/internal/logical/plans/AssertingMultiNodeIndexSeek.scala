@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
  * node is guaranteed per seek.
  */
-case class AssertingMultiNodeIndexSeek(node: String, nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])
-                                      (implicit idGen: IdGen) extends MultiNodeIndexLeafPlan(idGen) {
+case class AssertingMultiNodeIndexSeek(node: String, nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implicit idGen: IdGen)
+    extends MultiNodeIndexLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] =
     nodeIndexSeeks.flatMap(_.availableSymbols).toSet
@@ -47,7 +47,9 @@ case class AssertingMultiNodeIndexSeek(node: String, nodeIndexSeeks: Seq[NodeInd
     nodeIndexSeeks.flatMap(_.properties)
 
   override def withoutArgumentIds(argsToExclude: Set[String]): MultiNodeIndexLeafPlan =
-    copy(nodeIndexSeeks = nodeIndexSeeks.map(_.withoutArgumentIds(argsToExclude).asInstanceOf[NodeIndexSeekLeafPlan]))(SameId(this.id))
+    copy(nodeIndexSeeks = nodeIndexSeeks.map(_.withoutArgumentIds(argsToExclude).asInstanceOf[NodeIndexSeekLeafPlan]))(
+      SameId(this.id)
+    )
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): MultiNodeIndexLeafPlan =
     AssertingMultiNodeIndexSeek(node, nodeIndexSeeks.map(_.withMappedProperties(f)))(SameId(this.id))

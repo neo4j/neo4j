@@ -64,10 +64,18 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
     val outState = compress(inState)
     allPlans(outState.logicalPlan).foreach { p =>
       val originalPlan = originalPlans.find(_ == p).get // Plans are equal even if they have different IDs
-      inState.planningAttributes.solveds.getOption(originalPlan.id).foreach(outState.planningAttributes.solveds(p.id) should equal(_))
-      inState.planningAttributes.cardinalities.getOption(originalPlan.id).foreach(outState.planningAttributes.cardinalities(p.id) should equal(_))
-      inState.planningAttributes.providedOrders.getOption(originalPlan.id).foreach(outState.planningAttributes.providedOrders(p.id) should equal(_))
-      inState.planningAttributes.leveragedOrders.getOption(originalPlan.id).foreach(outState.planningAttributes.leveragedOrders(p.id) should equal(_))
+      inState.planningAttributes.solveds.getOption(originalPlan.id).foreach(
+        outState.planningAttributes.solveds(p.id) should equal(_)
+      )
+      inState.planningAttributes.cardinalities.getOption(originalPlan.id).foreach(
+        outState.planningAttributes.cardinalities(p.id) should equal(_)
+      )
+      inState.planningAttributes.providedOrders.getOption(originalPlan.id).foreach(
+        outState.planningAttributes.providedOrders(p.id) should equal(_)
+      )
+      inState.planningAttributes.leveragedOrders.getOption(originalPlan.id).foreach(
+        outState.planningAttributes.leveragedOrders(p.id) should equal(_)
+      )
     }
   }
 
@@ -87,10 +95,12 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
     val state = LogicalPlanState(InitialState("", None, IDPPlannerName, new AnonymousVariableNameGenerator))
       .withMaybeLogicalPlan(Some(plan))
     allPlans(plan).foreach { p =>
-
       // Some plans do not get solved assigned during planning. That must still work with CompressIDs.
       if (p.id.x != GapIdGen.start + GapIdGen.inc) {
-        state.planningAttributes.solveds.set(p.id, RegularSinglePlannerQuery(QueryGraph(patternNodes = Set(s"n${p.id.x}"))))
+        state.planningAttributes.solveds.set(
+          p.id,
+          RegularSinglePlannerQuery(QueryGraph(patternNodes = Set(s"n${p.id.x}")))
+        )
       }
       state.planningAttributes.cardinalities.set(p.id, Cardinality(p.id.x + 1))
       state.planningAttributes.providedOrders.set(p.id, ProvidedOrder.asc(varFor(s"v${p.id.x}")))
@@ -110,6 +120,7 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
 }
 
 object CompressPlanIDsTest {
+
   class GapIdGen extends IdGen {
     private var i: Int = GapIdGen.start
 
@@ -119,6 +130,7 @@ object CompressPlanIDsTest {
       id
     }
   }
+
   object GapIdGen {
     val start = 10
     val inc = 5

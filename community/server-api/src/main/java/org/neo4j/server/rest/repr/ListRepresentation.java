@@ -24,187 +24,146 @@ import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-public class ListRepresentation extends Representation
-{
+public class ListRepresentation extends Representation {
     protected final Iterable<? extends Representation> content;
 
-    public ListRepresentation( final String type, final Iterable<? extends Representation> content )
-    {
-        super( type );
+    public ListRepresentation(final String type, final Iterable<? extends Representation> content) {
+        super(type);
         this.content = content;
     }
 
-    public ListRepresentation( RepresentationType type,
-            final Iterable<? extends Representation> content )
-    {
-        super( type );
+    public ListRepresentation(RepresentationType type, final Iterable<? extends Representation> content) {
+        super(type);
         this.content = content;
     }
 
     @Override
-    String serialize( RepresentationFormat format, URI baseUri )
-    {
-        ListWriter writer = format.serializeList( type );
-        serialize( new ListSerializer( writer, baseUri ) );
+    String serialize(RepresentationFormat format, URI baseUri) {
+        ListWriter writer = format.serializeList(type);
+        serialize(new ListSerializer(writer, baseUri));
         writer.done();
-        return format.complete( writer );
+        return format.complete(writer);
     }
 
-    void serialize( ListSerializer serializer )
-    {
+    void serialize(ListSerializer serializer) {
         Iterator<? extends Representation> contentIterator = content.iterator();
 
-        try
-        {
-            while ( contentIterator.hasNext() )
-            {
+        try {
+            while (contentIterator.hasNext()) {
                 Representation repr = contentIterator.next();
-                repr.addTo( serializer );
+                repr.addTo(serializer);
             }
-        }
-        finally
-        {
+        } finally {
             // Make sure we exhaust this iterator in case it has an internal close mechanism
-            while ( contentIterator.hasNext() )
-            {
+            while (contentIterator.hasNext()) {
                 contentIterator.next();
             }
         }
     }
 
     @Override
-    void addTo( ListSerializer serializer )
-    {
-        serializer.addList( this );
+    void addTo(ListSerializer serializer) {
+        serializer.addList(this);
     }
 
     @Override
-    void putTo( MappingSerializer serializer, String key )
-    {
-        serializer.putList( key, this );
+    void putTo(MappingSerializer serializer, String key) {
+        serializer.putList(key, this);
     }
 
-    public static ListRepresentation strings( String... values )
-    {
-        return string( Arrays.asList( values ) );
+    public static ListRepresentation strings(String... values) {
+        return string(Arrays.asList(values));
     }
 
-    public static ListRepresentation string( Iterable<String> values )
-    {
-        return new ListRepresentation( RepresentationType.STRING, new IterableWrapper<>( values )
-        {
+    public static ListRepresentation string(Iterable<String> values) {
+        return new ListRepresentation(RepresentationType.STRING, new IterableWrapper<>(values) {
             @Override
-            protected Representation underlyingObjectToObject( String value )
-            {
-                return ValueRepresentation.string( value );
+            protected Representation underlyingObjectToObject(String value) {
+                return ValueRepresentation.string(value);
             }
-        } );
+        });
     }
 
-    public static ListRepresentation points( Point... values )
-    {
-        return point( Arrays.asList( values ) );
+    public static ListRepresentation points(Point... values) {
+        return point(Arrays.asList(values));
     }
 
-    public static ListRepresentation point( Iterable<Point> values )
-    {
-        return new ListRepresentation( RepresentationType.POINT, new IterableWrapper<>( values )
-        {
+    public static ListRepresentation point(Iterable<Point> values) {
+        return new ListRepresentation(RepresentationType.POINT, new IterableWrapper<>(values) {
             @Override
-            protected Representation underlyingObjectToObject( Point value )
-            {
-                return ValueRepresentation.point( value );
+            protected Representation underlyingObjectToObject(Point value) {
+                return ValueRepresentation.point(value);
             }
-        } );
+        });
     }
 
-    public static ListRepresentation temporals( Temporal... values )
-    {
-        return temporal( Arrays.asList( values ) );
+    public static ListRepresentation temporals(Temporal... values) {
+        return temporal(Arrays.asList(values));
     }
 
-    public static ListRepresentation temporal( Iterable<Temporal> values )
-    {
-        return new ListRepresentation( RepresentationType.TEMPORAL, new IterableWrapper<>( values )
-        {
+    public static ListRepresentation temporal(Iterable<Temporal> values) {
+        return new ListRepresentation(RepresentationType.TEMPORAL, new IterableWrapper<>(values) {
             @Override
-            protected Representation underlyingObjectToObject( Temporal value )
-            {
-                return ValueRepresentation.temporal( value );
+            protected Representation underlyingObjectToObject(Temporal value) {
+                return ValueRepresentation.temporal(value);
             }
-        } );
+        });
     }
 
-    public static ListRepresentation temporalAmounts( TemporalAmount... values )
-    {
-        return temporalAmount( Arrays.asList( values ) );
+    public static ListRepresentation temporalAmounts(TemporalAmount... values) {
+        return temporalAmount(Arrays.asList(values));
     }
 
-    public static ListRepresentation temporalAmount( Iterable<TemporalAmount> values )
-    {
-        return new ListRepresentation( RepresentationType.TEMPORAL_AMOUNT, new IterableWrapper<>( values )
-        {
+    public static ListRepresentation temporalAmount(Iterable<TemporalAmount> values) {
+        return new ListRepresentation(RepresentationType.TEMPORAL_AMOUNT, new IterableWrapper<>(values) {
             @Override
-            protected Representation underlyingObjectToObject( TemporalAmount value )
-            {
-                return ValueRepresentation.temporalAmount( value );
+            protected Representation underlyingObjectToObject(TemporalAmount value) {
+                return ValueRepresentation.temporalAmount(value);
             }
-        } );
+        });
     }
 
-    public static ListRepresentation relationshipTypes( Iterable<RelationshipType> types )
-    {
-        return new ListRepresentation( RepresentationType.RELATIONSHIP_TYPE,
-                                       new IterableWrapper<>( types )
-                                       {
-                                           @Override
-                                           protected Representation underlyingObjectToObject( RelationshipType value )
-                                           {
-                                               return ValueRepresentation.relationshipType( value );
-                                           }
-                                       } );
-    }
-
-    public static ListRepresentation numbers( final long... values )
-    {
-        return new ListRepresentation( RepresentationType.LONG, (Iterable<ValueRepresentation>) () -> new PrefetchingIterator<>()
-        {
-            int pos;
-
+    public static ListRepresentation relationshipTypes(Iterable<RelationshipType> types) {
+        return new ListRepresentation(RepresentationType.RELATIONSHIP_TYPE, new IterableWrapper<>(types) {
             @Override
-            protected ValueRepresentation fetchNextOrNull()
-            {
-                if ( pos >= values.length )
-                {
-                    return null;
-                }
-                return ValueRepresentation.number( values[pos++] );
+            protected Representation underlyingObjectToObject(RelationshipType value) {
+                return ValueRepresentation.relationshipType(value);
             }
-        } );
+        });
     }
 
-    public static ListRepresentation numbers( final double[] values )
-    {
-        return new ListRepresentation( RepresentationType.DOUBLE,
-                (Iterable<ValueRepresentation>) () -> new PrefetchingIterator<>()
-                {
+    public static ListRepresentation numbers(final long... values) {
+        return new ListRepresentation(
+                RepresentationType.LONG, (Iterable<ValueRepresentation>) () -> new PrefetchingIterator<>() {
                     int pos;
 
                     @Override
-                    protected ValueRepresentation fetchNextOrNull()
-                    {
-                        if ( pos >= values.length )
-                        {
+                    protected ValueRepresentation fetchNextOrNull() {
+                        if (pos >= values.length) {
                             return null;
                         }
-                        return ValueRepresentation.number( values[pos++] );
+                        return ValueRepresentation.number(values[pos++]);
                     }
-                } );
+                });
+    }
+
+    public static ListRepresentation numbers(final double[] values) {
+        return new ListRepresentation(
+                RepresentationType.DOUBLE, (Iterable<ValueRepresentation>) () -> new PrefetchingIterator<>() {
+                    int pos;
+
+                    @Override
+                    protected ValueRepresentation fetchNextOrNull() {
+                        if (pos >= values.length) {
+                            return null;
+                        }
+                        return ValueRepresentation.number(values[pos++]);
+                    }
+                });
     }
 }

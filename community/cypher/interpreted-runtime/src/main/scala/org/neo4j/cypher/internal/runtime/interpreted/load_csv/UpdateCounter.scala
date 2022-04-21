@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
 class UpdateCounter {
+
   def offsetForHeaders(): Unit = {
     if (uncommittedRows != 0)
       throw new IllegalStateException("Header offset must be accounted for at the beginning")

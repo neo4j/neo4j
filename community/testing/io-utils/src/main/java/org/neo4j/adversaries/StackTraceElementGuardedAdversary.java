@@ -23,52 +23,43 @@ import java.lang.StackWalker.StackFrame;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-public class StackTraceElementGuardedAdversary implements Adversary
-{
+public class StackTraceElementGuardedAdversary implements Adversary {
     private final Adversary delegate;
     private final Predicate<StackFrame> check;
     private volatile boolean enabled;
 
-    StackTraceElementGuardedAdversary( Adversary delegate, Predicate<StackFrame> check )
-    {
+    StackTraceElementGuardedAdversary(Adversary delegate, Predicate<StackFrame> check) {
         this.delegate = delegate;
         this.check = check;
         enabled = true;
     }
 
     @Override
-    public void injectFailure( Class<? extends Throwable>... failureTypes )
-    {
-        if ( enabled && calledFromVictimStackTraceElement() )
-        {
-            delegate.injectFailure( failureTypes );
+    public void injectFailure(Class<? extends Throwable>... failureTypes) {
+        if (enabled && calledFromVictimStackTraceElement()) {
+            delegate.injectFailure(failureTypes);
         }
     }
 
     @Override
-    public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
-    {
-        return enabled && calledFromVictimStackTraceElement() && delegate.injectFailureOrMischief( failureTypes );
+    public boolean injectFailureOrMischief(Class<? extends Throwable>... failureTypes) {
+        return enabled && calledFromVictimStackTraceElement() && delegate.injectFailureOrMischief(failureTypes);
     }
 
     @Override
-    public Optional<Throwable> getLastAdversaryException()
-    {
+    public Optional<Throwable> getLastAdversaryException() {
         return delegate.getLastAdversaryException();
     }
 
-    private boolean calledFromVictimStackTraceElement()
-    {
-        return StackWalker.getInstance().walk( s -> s.filter( check ).findAny() ).isPresent();
+    private boolean calledFromVictimStackTraceElement() {
+        return StackWalker.getInstance().walk(s -> s.filter(check).findAny()).isPresent();
     }
 
-    public void disable()
-    {
+    public void disable() {
         enabled = false;
     }
 
-    public void enable()
-    {
+    public void enable() {
         enabled = true;
     }
 }

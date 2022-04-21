@@ -19,48 +19,47 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
-import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobMonitoringParams;
-import org.neo4j.scheduler.JobScheduler;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-class KernelTransactionMonitorSchedulerTest
-{
-    private final JobScheduler scheduler = mock( JobScheduler.class );
-    private final KernelTransactionMonitor transactionTimeoutMonitor = mock( KernelTransactionMonitor.class );
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
+import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.JobScheduler;
+
+class KernelTransactionMonitorSchedulerTest {
+    private final JobScheduler scheduler = mock(JobScheduler.class);
+    private final KernelTransactionMonitor transactionTimeoutMonitor = mock(KernelTransactionMonitor.class);
 
     @Test
-    void scheduleRecurringMonitorJobIfConfigured()
-    {
+    void scheduleRecurringMonitorJobIfConfigured() {
         TransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler(1);
         transactionMonitorScheduler.start();
 
-        verify( scheduler ).scheduleRecurring( eq( Group.TRANSACTION_TIMEOUT_MONITOR ), any( JobMonitoringParams.class ), eq( transactionTimeoutMonitor ),
-                eq( 1L ), eq( TimeUnit.MILLISECONDS ) );
+        verify(scheduler)
+                .scheduleRecurring(
+                        eq(Group.TRANSACTION_TIMEOUT_MONITOR),
+                        any(JobMonitoringParams.class),
+                        eq(transactionTimeoutMonitor),
+                        eq(1L),
+                        eq(TimeUnit.MILLISECONDS));
     }
 
     @Test
-    void doNotScheduleMonitorJobIfDisabled()
-    {
-        TransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler( 0 );
+    void doNotScheduleMonitorJobIfDisabled() {
+        TransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler(0);
         transactionMonitorScheduler.start();
 
-        verifyNoInteractions( scheduler);
+        verifyNoInteractions(scheduler);
     }
 
-    private TransactionMonitorScheduler createMonitorScheduler( long checkInterval )
-    {
-        return new TransactionMonitorScheduler( transactionTimeoutMonitor, scheduler, checkInterval, "test database" );
+    private TransactionMonitorScheduler createMonitorScheduler(long checkInterval) {
+        return new TransactionMonitorScheduler(transactionTimeoutMonitor, scheduler, checkInterval, "test database");
     }
 }

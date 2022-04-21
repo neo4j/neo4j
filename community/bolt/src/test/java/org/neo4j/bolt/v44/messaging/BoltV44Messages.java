@@ -20,15 +20,12 @@
 package org.neo4j.bolt.v44.messaging;
 
 import java.util.List;
-
 import org.neo4j.bolt.v44.messaging.request.RouteMessage;
 import org.neo4j.values.virtual.MapValueBuilder;
 
-public class BoltV44Messages
-{
+public class BoltV44Messages {
 
-    public static RouteMessage route( String impersonatedUser )
-    {
-        return new RouteMessage( new MapValueBuilder().build(), List.of(), null, impersonatedUser );
+    public static RouteMessage route(String impersonatedUser) {
+        return new RouteMessage(new MapValueBuilder().build(), List.of(), null, impersonatedUser);
     }
 }

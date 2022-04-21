@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.graphalgo.CostAccumulator;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Direction;
@@ -43,37 +42,43 @@ import org.neo4j.graphdb.RelationshipType;
  * @param <CostType>
  *            The datatype the edge weights are represented by.
  */
-public class SingleSourceShortestPathDijkstra<CostType> extends
-    Dijkstra<CostType> implements SingleSourceShortestPath<CostType>
-{
+public class SingleSourceShortestPathDijkstra<CostType> extends Dijkstra<CostType>
+        implements SingleSourceShortestPath<CostType> {
     DijkstraIterator dijkstraIterator;
 
     /**
      * @see Dijkstra
      */
-    public SingleSourceShortestPathDijkstra( CostType startCost,
-        Node startNode, CostEvaluator<CostType> costEvaluator,
-        CostAccumulator<CostType> costAccumulator,
-        Comparator<CostType> costComparator, Direction relationDirection,
-        RelationshipType... costRelationTypes )
-    {
-        super( startCost, startNode, null, costEvaluator, costAccumulator,
-            costComparator, relationDirection, costRelationTypes );
+    public SingleSourceShortestPathDijkstra(
+            CostType startCost,
+            Node startNode,
+            CostEvaluator<CostType> costEvaluator,
+            CostAccumulator<CostType> costAccumulator,
+            Comparator<CostType> costComparator,
+            Direction relationDirection,
+            RelationshipType... costRelationTypes) {
+        super(
+                startCost,
+                startNode,
+                null,
+                costEvaluator,
+                costAccumulator,
+                costComparator,
+                relationDirection,
+                costRelationTypes);
         reset();
     }
 
-    protected Map<Node,CostType> distances = new HashMap<>();
+    protected Map<Node, CostType> distances = new HashMap<>();
 
     @Override
-    public void reset()
-    {
+    public void reset() {
         super.reset();
         distances = new HashMap<>();
-        Map<Node,CostType> seen1 = new HashMap<>();
-        Map<Node,CostType> seen2 = new HashMap<>();
-        Map<Node,CostType> dists2 = new HashMap<>();
-        dijkstraIterator = new DijkstraIterator( startNode, predecessors1, seen1,
-            seen2, distances, dists2, false );
+        Map<Node, CostType> seen1 = new HashMap<>();
+        Map<Node, CostType> seen2 = new HashMap<>();
+        Map<Node, CostType> dists2 = new HashMap<>();
+        dijkstraIterator = new DijkstraIterator(startNode, predecessors1, seen1, seen2, distances, dists2, false);
     }
 
     /**
@@ -81,31 +86,27 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
      * paths. It sets the flag and then calls calculate.
      * @return
      */
-    public boolean calculateMultiple( Node targetNode )
-    {
-        if ( !calculateAllShortestPaths )
-        {
+    public boolean calculateMultiple(Node targetNode) {
+        if (!calculateAllShortestPaths) {
             reset();
             calculateAllShortestPaths = true;
         }
-        return calculate( targetNode );
+        return calculate(targetNode);
     }
 
     @Override
-    public boolean calculate()
-    {
-        return calculate( null );
+    public boolean calculate() {
+        return calculate(null);
     }
 
     /**
      * Internal calculate method that will run the calculation until either the
      * limit is reached or a result has been generated for a given node.
      */
-    public boolean calculate( Node targetNode )
-    {
-        while ( (targetNode == null || !distances.containsKey( targetNode ))
-            && dijkstraIterator.hasNext() && !limitReached() )
-        {
+    public boolean calculate(Node targetNode) {
+        while ((targetNode == null || !distances.containsKey(targetNode))
+                && dijkstraIterator.hasNext()
+                && !limitReached()) {
             dijkstraIterator.next();
         }
         return true;
@@ -113,8 +114,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
 
     // We dont need to reset the calculation, so we just override this.
     @Override
-    public void setEndNode( Node endNode )
-    {
+    public void setEndNode(Node endNode) {
         this.endNode = endNode;
     }
 
@@ -122,168 +122,134 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
      * @see Dijkstra
      */
     @Override
-    public CostType getCost( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public CostType getCost(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        return distances.get( targetNode );
+        calculate(targetNode);
+        return distances.get(targetNode);
     }
 
     @Override
-    public List<List<Entity>> getPaths( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<List<Entity>> getPaths(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculateMultiple( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculateMultiple(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return new LinkedList<>( Util.constructAllPathsToNode( targetNode, predecessors1, true, false ) );
+        return new LinkedList<>(Util.constructAllPathsToNode(targetNode, predecessors1, true, false));
     }
 
     @Override
-    public List<List<Node>> getPathsAsNodes( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<List<Node>> getPathsAsNodes(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculateMultiple( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculateMultiple(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return new LinkedList<>( Util.constructAllPathsToNodeAsNodes( targetNode, predecessors1, true, false ) );
+        return new LinkedList<>(Util.constructAllPathsToNodeAsNodes(targetNode, predecessors1, true, false));
     }
 
     @Override
-    public List<List<Relationship>> getPathsAsRelationships( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<List<Relationship>> getPathsAsRelationships(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculateMultiple( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculateMultiple(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return new LinkedList<>( Util.constructAllPathsToNodeAsRelationships( targetNode, predecessors1, false ) );
+        return new LinkedList<>(Util.constructAllPathsToNodeAsRelationships(targetNode, predecessors1, false));
     }
 
     @Override
-    public List<Entity> getPath( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<Entity> getPath(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculate(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return Util.constructSinglePathToNode( targetNode, predecessors1, true,
-            false );
+        return Util.constructSinglePathToNode(targetNode, predecessors1, true, false);
     }
 
     @Override
-    public List<Node> getPathAsNodes( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<Node> getPathAsNodes(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculate(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return Util.constructSinglePathToNodeAsNodes( targetNode,
-            predecessors1, true, false );
+        return Util.constructSinglePathToNodeAsNodes(targetNode, predecessors1, true, false);
     }
 
     @Override
-    public List<Relationship> getPathAsRelationships( Node targetNode )
-    {
-        if ( targetNode == null )
-        {
-            throw new RuntimeException( "No end node defined" );
+    public List<Relationship> getPathAsRelationships(Node targetNode) {
+        if (targetNode == null) {
+            throw new RuntimeException("No end node defined");
         }
-        calculate( targetNode );
-        if ( !distances.containsKey( targetNode ) )
-        {
+        calculate(targetNode);
+        if (!distances.containsKey(targetNode)) {
             return null;
         }
-        return Util.constructSinglePathToNodeAsRelationships( targetNode,
-            predecessors1, false );
+        return Util.constructSinglePathToNodeAsRelationships(targetNode, predecessors1, false);
     }
 
     // Override all the result-getters
     @Override
-    public CostType getCost()
-    {
-        return getCost( endNode );
+    public CostType getCost() {
+        return getCost(endNode);
     }
 
     @Override
-    public List<Entity> getPath()
-    {
-        return getPath( endNode );
+    public List<Entity> getPath() {
+        return getPath(endNode);
     }
 
     @Override
-    public List<Node> getPathAsNodes()
-    {
-        return getPathAsNodes( endNode );
+    public List<Node> getPathAsNodes() {
+        return getPathAsNodes(endNode);
     }
 
     @Override
-    public List<Relationship> getPathAsRelationships()
-    {
-        return getPathAsRelationships( endNode );
+    public List<Relationship> getPathAsRelationships() {
+        return getPathAsRelationships(endNode);
     }
 
     @Override
-    public List<List<Entity>> getPaths()
-    {
-        return getPaths( endNode );
+    public List<List<Entity>> getPaths() {
+        return getPaths(endNode);
     }
 
     @Override
-    public List<List<Node>> getPathsAsNodes()
-    {
-        return getPathsAsNodes( endNode );
+    public List<List<Node>> getPathsAsNodes() {
+        return getPathsAsNodes(endNode);
     }
 
     @Override
-    public List<List<Relationship>> getPathsAsRelationships()
-    {
-        return getPathsAsRelationships( endNode );
+    public List<List<Relationship>> getPathsAsRelationships() {
+        return getPathsAsRelationships(endNode);
     }
 
     /**
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<Node> getPredecessorNodes( Node node )
-    {
+    public List<Node> getPredecessorNodes(Node node) {
         List<Node> result = new LinkedList<>();
-        List<Relationship> predecessorRelationShips = predecessors1.get( node );
-        if ( predecessorRelationShips == null
-            || predecessorRelationShips.isEmpty() )
-        {
+        List<Relationship> predecessorRelationShips = predecessors1.get(node);
+        if (predecessorRelationShips == null || predecessorRelationShips.isEmpty()) {
             return null;
         }
-        for ( Relationship relationship : predecessorRelationShips )
-        {
-            result.add( relationship.getOtherNode( node ) );
+        for (Relationship relationship : predecessorRelationShips) {
+            result.add(relationship.getOtherNode(node));
         }
         return result;
     }
@@ -292,8 +258,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
      * @see SingleSourceShortestPath
      */
     @Override
-    public Map<Node,List<Relationship>> getPredecessors()
-    {
+    public Map<Node, List<Relationship>> getPredecessors() {
         calculateMultiple();
         return predecessors1;
     }
@@ -302,8 +267,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
      * @see SingleSourceShortestPath
      */
     @Override
-    public Direction getDirection()
-    {
+    public Direction getDirection() {
         return relationDirection;
     }
 
@@ -311,8 +275,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
      * @see SingleSourceShortestPath
      */
     @Override
-    public RelationshipType[] getRelationshipTypes()
-    {
+    public RelationshipType[] getRelationshipTypes() {
         return costRelationTypes;
     }
 }

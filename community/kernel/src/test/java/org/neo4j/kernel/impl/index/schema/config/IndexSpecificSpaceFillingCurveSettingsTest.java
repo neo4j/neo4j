@@ -19,54 +19,55 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
-class IndexSpecificSpaceFillingCurveSettingsTest
-{
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+
+class IndexSpecificSpaceFillingCurveSettingsTest {
     private static final Config config = Config.defaults();
-    private final ConfiguredSpaceFillingCurveSettingsCache globalSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
+    private final ConfiguredSpaceFillingCurveSettingsCache globalSettings =
+            new ConfiguredSpaceFillingCurveSettingsCache(config);
 
     @Test
-    void shouldHaveInitialIndexSpecificSetting()
-    {
+    void shouldHaveInitialIndexSpecificSetting() {
         // given
-        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();
-        initialSettings.put( WGS_84, globalSettings.forCRS( WGS_84 ) );
-        initialSettings.put( CARTESIAN, globalSettings.forCRS( CARTESIAN ) );
-        IndexSpecificSpaceFillingCurveSettings indexSettings = new IndexSpecificSpaceFillingCurveSettings( initialSettings );
+        Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> initialSettings = new HashMap<>();
+        initialSettings.put(WGS_84, globalSettings.forCRS(WGS_84));
+        initialSettings.put(CARTESIAN, globalSettings.forCRS(CARTESIAN));
+        IndexSpecificSpaceFillingCurveSettings indexSettings =
+                new IndexSpecificSpaceFillingCurveSettings(initialSettings);
 
         // when
         ToMapSettingVisitor visitor = new ToMapSettingVisitor();
-        indexSettings.visitIndexSpecificSettings( visitor );
+        indexSettings.visitIndexSpecificSettings(visitor);
 
         // then
-        assertEquals( initialSettings, visitor.map );
+        assertEquals(initialSettings, visitor.map);
     }
 
     @Test
-    void shouldThrowIfAskedForNonExistingIndexSetting()
-    {
+    void shouldThrowIfAskedForNonExistingIndexSetting() {
         // given
-        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();
-        initialSettings.put( WGS_84, globalSettings.forCRS( WGS_84 ) );
-        initialSettings.put( CARTESIAN, globalSettings.forCRS( CARTESIAN ) );
-        IndexSpecificSpaceFillingCurveSettings indexSettings = new IndexSpecificSpaceFillingCurveSettings( initialSettings );
+        Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> initialSettings = new HashMap<>();
+        initialSettings.put(WGS_84, globalSettings.forCRS(WGS_84));
+        initialSettings.put(CARTESIAN, globalSettings.forCRS(CARTESIAN));
+        IndexSpecificSpaceFillingCurveSettings indexSettings =
+                new IndexSpecificSpaceFillingCurveSettings(initialSettings);
 
         // when
-        IllegalStateException exception = assertThrows( IllegalStateException.class, () -> indexSettings.forCrs( CARTESIAN_3D ) );
-        Assertions.assertTrue( exception.getMessage().contains( "Index does not have any settings for coordinate reference system cartesian-3d" ) );
+        IllegalStateException exception =
+                assertThrows(IllegalStateException.class, () -> indexSettings.forCrs(CARTESIAN_3D));
+        Assertions.assertTrue(exception
+                .getMessage()
+                .contains("Index does not have any settings for coordinate reference system cartesian-3d"));
     }
 }

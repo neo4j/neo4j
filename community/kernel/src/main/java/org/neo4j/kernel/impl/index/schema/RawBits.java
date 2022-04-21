@@ -26,8 +26,7 @@ import org.neo4j.values.storable.Values;
 /**
  * Useful to compare values stored as raw bits and value type without having to box them as {@link NumberValue number values}.
  */
-class RawBits
-{
+class RawBits {
     static final byte BYTE = 0;
     static final byte SHORT = 1;
     static final byte INT = 2;
@@ -43,25 +42,23 @@ class RawBits
      * @param type Type of value
      * @return {@link NumberValue} with type and value given by provided raw bits and type.
      */
-    static NumberValue asNumberValue( long rawBits, byte type )
-    {
-        switch ( type )
-        {
-        case BYTE:
-            return Values.byteValue( (byte) rawBits );
-        case SHORT:
-            return Values.shortValue( (short) rawBits );
-        case INT:
-            return Values.intValue( (int) rawBits );
-        case LONG:
-            return Values.longValue( rawBits );
-        case FLOAT:
-            return Values.floatValue( Float.intBitsToFloat( (int) rawBits ) );
-        case DOUBLE:
-            return Values.doubleValue( Double.longBitsToDouble( rawBits ) );
-        default:
-            // If type is not recognized, interpret as long.
-            return Values.longValue( rawBits );
+    static NumberValue asNumberValue(long rawBits, byte type) {
+        switch (type) {
+            case BYTE:
+                return Values.byteValue((byte) rawBits);
+            case SHORT:
+                return Values.shortValue((short) rawBits);
+            case INT:
+                return Values.intValue((int) rawBits);
+            case LONG:
+                return Values.longValue(rawBits);
+            case FLOAT:
+                return Values.floatValue(Float.intBitsToFloat((int) rawBits));
+            case DOUBLE:
+                return Values.doubleValue(Double.longBitsToDouble(rawBits));
+            default:
+                // If type is not recognized, interpret as long.
+                return Values.longValue(rawBits);
         }
     }
 
@@ -76,72 +73,45 @@ class RawBits
      * @return An int less that 0 if lhs value is numerically less than rhs value. An int equal to 0 if lhs and rhs value are
      * numerically equal (independent of type) and an int greater than 0 if lhs value is greater than rhs value.
      */
-    static int compare( long lhsRawBits, byte lhsType, long rhsRawBits, byte rhsType )
-    {
+    static int compare(long lhsRawBits, byte lhsType, long rhsRawBits, byte rhsType) {
         // case integral - integral
-        if ( lhsType == BYTE ||
-                lhsType == SHORT ||
-                lhsType == INT ||
-                lhsType == LONG )
-        {
-            return compareLongAgainstRawType( lhsRawBits, rhsRawBits, rhsType );
-        }
-        else if ( lhsType == FLOAT )
-        {
-            double lhsFloat = Float.intBitsToFloat( (int) lhsRawBits );
-            return compareDoubleAgainstRawType( lhsFloat, rhsRawBits, rhsType );
-        }
-        else if ( lhsType == DOUBLE )
-        {
-            double lhsDouble = Double.longBitsToDouble( lhsRawBits );
-            return compareDoubleAgainstRawType( lhsDouble, rhsRawBits, rhsType );
+        if (lhsType == BYTE || lhsType == SHORT || lhsType == INT || lhsType == LONG) {
+            return compareLongAgainstRawType(lhsRawBits, rhsRawBits, rhsType);
+        } else if (lhsType == FLOAT) {
+            double lhsFloat = Float.intBitsToFloat((int) lhsRawBits);
+            return compareDoubleAgainstRawType(lhsFloat, rhsRawBits, rhsType);
+        } else if (lhsType == DOUBLE) {
+            double lhsDouble = Double.longBitsToDouble(lhsRawBits);
+            return compareDoubleAgainstRawType(lhsDouble, rhsRawBits, rhsType);
         }
         // We can not throw here because we will visit this method inside a pageCursor.shouldRetry() block.
         // Just return a comparison that at least will be commutative.
-        return Long.compare( lhsRawBits, rhsRawBits );
+        return Long.compare(lhsRawBits, rhsRawBits);
     }
 
-    private static int compareLongAgainstRawType( long lhs, long rhsRawBits, byte rhsType )
-    {
-        if ( rhsType == BYTE ||
-                rhsType == SHORT ||
-                rhsType == INT ||
-                rhsType == LONG )
-        {
-            return Long.compare( lhs, rhsRawBits );
-        }
-        else if ( rhsType == FLOAT )
-        {
-            return NumberValues.compareLongAgainstDouble( lhs, Float.intBitsToFloat( (int) rhsRawBits ) );
-        }
-        else if ( rhsType == DOUBLE )
-        {
-            return NumberValues.compareLongAgainstDouble( lhs, Double.longBitsToDouble( rhsRawBits ) );
+    private static int compareLongAgainstRawType(long lhs, long rhsRawBits, byte rhsType) {
+        if (rhsType == BYTE || rhsType == SHORT || rhsType == INT || rhsType == LONG) {
+            return Long.compare(lhs, rhsRawBits);
+        } else if (rhsType == FLOAT) {
+            return NumberValues.compareLongAgainstDouble(lhs, Float.intBitsToFloat((int) rhsRawBits));
+        } else if (rhsType == DOUBLE) {
+            return NumberValues.compareLongAgainstDouble(lhs, Double.longBitsToDouble(rhsRawBits));
         }
         // We can not throw here because we will visit this method inside a pageCursor.shouldRetry() block.
         // Just return a comparison that at least will be commutative.
-        return Long.compare( lhs, rhsRawBits );
+        return Long.compare(lhs, rhsRawBits);
     }
 
-    private static int compareDoubleAgainstRawType( double lhsDouble, long rhsRawBits, byte rhsType )
-    {
-        if ( rhsType == BYTE ||
-                rhsType == SHORT ||
-                rhsType == INT ||
-                rhsType == LONG )
-        {
-            return NumberValues.compareDoubleAgainstLong( lhsDouble, rhsRawBits );
-        }
-        else if ( rhsType == FLOAT )
-        {
-            return Double.compare( lhsDouble, Float.intBitsToFloat( (int) rhsRawBits ) );
-        }
-        else if ( rhsType == DOUBLE )
-        {
-            return Double.compare( lhsDouble, Double.longBitsToDouble( rhsRawBits ) );
+    private static int compareDoubleAgainstRawType(double lhsDouble, long rhsRawBits, byte rhsType) {
+        if (rhsType == BYTE || rhsType == SHORT || rhsType == INT || rhsType == LONG) {
+            return NumberValues.compareDoubleAgainstLong(lhsDouble, rhsRawBits);
+        } else if (rhsType == FLOAT) {
+            return Double.compare(lhsDouble, Float.intBitsToFloat((int) rhsRawBits));
+        } else if (rhsType == DOUBLE) {
+            return Double.compare(lhsDouble, Double.longBitsToDouble(rhsRawBits));
         }
         // We can not throw here because we will visit this method inside a pageCursor.shouldRetry() block.
         // Just return a comparison that at least will be commutative.
-        return Long.compare( Double.doubleToLongBits( lhsDouble ), rhsRawBits );
+        return Long.compare(Double.doubleToLongBits(lhsDouble), rhsRawBits);
     }
 }

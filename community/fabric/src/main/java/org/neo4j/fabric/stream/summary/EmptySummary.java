@@ -19,32 +19,27 @@
  */
 package org.neo4j.fabric.stream.summary;
 
+import static org.neo4j.graphdb.QueryStatistics.EMPTY;
+
 import java.util.Collection;
 import java.util.Collections;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 
-import static org.neo4j.graphdb.QueryStatistics.EMPTY;
-
-public class EmptySummary implements Summary
-{
+public class EmptySummary implements Summary {
     @Override
-    public ExecutionPlanDescription executionPlanDescription()
-    {
+    public ExecutionPlanDescription executionPlanDescription() {
         return new EmptyExecutionPlanDescription();
     }
 
     @Override
-    public Collection<Notification> getNotifications()
-    {
+    public Collection<Notification> getNotifications() {
         return Collections.emptyList();
     }
 
     @Override
-    public QueryStatistics getQueryStatistics()
-    {
+    public QueryStatistics getQueryStatistics() {
         return EMPTY;
     }
 }

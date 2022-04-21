@@ -25,7 +25,19 @@ case object Reverse extends Function {
   def name = "reverse"
 
   override val signatures = Vector(
-    TypeSignature(this, CTString, CTString, "Returns a string in which the order of all characters in the original string have been reversed.", Category.STRING),
-    TypeSignature(this, CTList(CTAny), CTList(CTAny), "Returns a list in which the order of all elements in the original list have been reversed.", Category.LIST)
+    TypeSignature(
+      this,
+      CTString,
+      CTString,
+      "Returns a string in which the order of all characters in the original string have been reversed.",
+      Category.STRING
+    ),
+    TypeSignature(
+      this,
+      CTList(CTAny),
+      CTList(CTAny),
+      "Returns a list in which the order of all elements in the original list have been reversed.",
+      Category.LIST
+    )
   )
 }

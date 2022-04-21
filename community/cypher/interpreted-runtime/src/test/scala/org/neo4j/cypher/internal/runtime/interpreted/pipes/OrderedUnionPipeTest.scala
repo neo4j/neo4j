@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class OrderedUnionPipeTest extends CypherFunSuite {
+
   test("Close should close RHS and LHS.") {
     val lhs = FakePipe(Seq(Map("a" -> 10), Map("a" -> 11), Map("a" -> 25)))
     val rhs = FakePipe(Seq(Map("a" -> 20), Map("a" -> 21), Map("a" -> 26)))

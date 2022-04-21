@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Pred
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
-class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   test("Should build plans containing expand for single relationship pattern") {
     val cfg = plannerBuilder()
@@ -121,7 +122,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       .addNodeIndex("Person", Seq("name"), existsSelectivity = 1.0, uniqueSelectivity = 0.1)
       .build()
 
-    val plan = cfg.plan("MATCH (a:A)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r").stripProduceResults
+    val plan = cfg.plan(
+      "MATCH (a:A)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r"
+    ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .filter("a:A")
       .expandAll("(b)<-[r]-(a)")

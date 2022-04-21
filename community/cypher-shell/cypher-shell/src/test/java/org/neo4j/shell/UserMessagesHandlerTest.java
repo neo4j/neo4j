@@ -19,57 +19,51 @@
  */
 package org.neo4j.shell;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class UserMessagesHandlerTest
-{
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class UserMessagesHandlerTest {
     private Connector connector;
 
     @BeforeEach
-    void setup()
-    {
-        connector = mock( Connector.class );
-        when( connector.username() ).thenReturn( "bob" );
-        when( connector.getProtocolVersion() ).thenReturn( "3.0" );
-        when( connector.driverUrl() ).thenReturn( "bolt://some.place.com:99" );
+    void setup() {
+        connector = mock(Connector.class);
+        when(connector.username()).thenReturn("bob");
+        when(connector.getProtocolVersion()).thenReturn("3.0");
+        when(connector.driverUrl()).thenReturn("bolt://some.place.com:99");
     }
 
     @Test
-    void welcomeMessageTest()
-    {
-        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connector );
-        assertEquals( """
+    void welcomeMessageTest() {
+        UserMessagesHandler userMessagesHandler = new UserMessagesHandler(connector);
+        assertEquals(
+                """
                               Connected to Neo4j using Bolt protocol version 3.0 at @|BOLD bolt://some.place.com:99|@ as user @|BOLD bob|@.
                               Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
                               Note that Cypher queries must end with a @|BOLD semicolon.|@""",
-                      userMessagesHandler.getWelcomeMessage() );
+                userMessagesHandler.getWelcomeMessage());
     }
 
     @Test
-    void welcomeWithImpersonation()
-    {
-        when( connector.impersonatedUser() ).thenReturn( Optional.of( "impersonated_user" ) );
-        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connector );
+    void welcomeWithImpersonation() {
+        when(connector.impersonatedUser()).thenReturn(Optional.of("impersonated_user"));
+        UserMessagesHandler userMessagesHandler = new UserMessagesHandler(connector);
         assertThat(
                 userMessagesHandler.getWelcomeMessage(),
-                startsWith( "Connected to Neo4j using Bolt protocol version 3.0 at @|BOLD bolt://some.place.com:99|@ " +
-                            "as user @|BOLD bob|@@|YELLOW  impersonating |@@|BOLD impersonated_user|@." )
-        );
+                startsWith("Connected to Neo4j using Bolt protocol version 3.0 at @|BOLD bolt://some.place.com:99|@ "
+                        + "as user @|BOLD bob|@@|YELLOW  impersonating |@@|BOLD impersonated_user|@."));
     }
 
     @Test
-    void exitMessageTest()
-    {
-        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connector );
-        assertEquals( "\nBye!", UserMessagesHandler.getExitMessage() );
+    void exitMessageTest() {
+        UserMessagesHandler userMessagesHandler = new UserMessagesHandler(connector);
+        assertEquals("\nBye!", UserMessagesHandler.getExitMessage());
     }
 }

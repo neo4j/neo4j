@@ -19,43 +19,33 @@
  */
 package org.neo4j.kernel.impl.api.transaction.trace;
 
-import java.util.concurrent.ThreadLocalRandom;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 
-public class TraceProviderFactory
-{
-    private TraceProviderFactory()
-    {
-    }
+import java.util.concurrent.ThreadLocalRandom;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 
-    public static TraceProvider getTraceProvider( Config config )
-    {
-        GraphDatabaseSettings.TransactionTracingLevel tracingLevel = config.get( transaction_tracing_level );
-        switch ( tracingLevel )
-        {
-        case DISABLED:
-            return () -> TransactionInitializationTrace.NONE;
-        case ALL:
-            return TransactionInitializationTrace::new;
-        case SAMPLE:
-            return () ->
-            {
-                if ( ThreadLocalRandom.current().nextInt( 1, 101 ) <= config.get( transaction_sampling_percentage ) )
-                {
-                    return new TransactionInitializationTrace();
-                }
-                else
-                {
-                    return TransactionInitializationTrace.NONE;
-                }
-            };
-        default:
-            throw new IllegalStateException( "Unsupported trace mode: " + tracingLevel );
+public class TraceProviderFactory {
+    private TraceProviderFactory() {}
+
+    public static TraceProvider getTraceProvider(Config config) {
+        GraphDatabaseSettings.TransactionTracingLevel tracingLevel = config.get(transaction_tracing_level);
+        switch (tracingLevel) {
+            case DISABLED:
+                return () -> TransactionInitializationTrace.NONE;
+            case ALL:
+                return TransactionInitializationTrace::new;
+            case SAMPLE:
+                return () -> {
+                    if (ThreadLocalRandom.current().nextInt(1, 101) <= config.get(transaction_sampling_percentage)) {
+                        return new TransactionInitializationTrace();
+                    } else {
+                        return TransactionInitializationTrace.NONE;
+                    }
+                };
+            default:
+                throw new IllegalStateException("Unsupported trace mode: " + tracingLevel);
         }
     }
 }

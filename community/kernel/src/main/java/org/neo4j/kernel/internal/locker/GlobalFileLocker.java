@@ -24,7 +24,6 @@ import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
@@ -43,29 +42,23 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  *
  * Class guarantee visibility of locked files over multiple thread but do not guarantee atomicity of operations.
  */
-class GlobalFileLocker extends Locker
-{
+class GlobalFileLocker extends Locker {
     private static final Set<Path> lockedFiles = ConcurrentHashMap.newKeySet();
 
-    GlobalFileLocker( FileSystemAbstraction fileSystemAbstraction, Path lockFile )
-    {
-        super( fileSystemAbstraction, lockFile );
+    GlobalFileLocker(FileSystemAbstraction fileSystemAbstraction, Path lockFile) {
+        super(fileSystemAbstraction, lockFile);
     }
 
     @Override
-    public void checkLock()
-    {
+    public void checkLock() {
         super.checkLock();
-        lockedFiles.add( lockFile() );
+        lockedFiles.add(lockFile());
     }
 
     @Override
-    protected boolean haveLockAlready()
-    {
-        if ( lockedFiles.contains( lockFile() ) )
-        {
-            if ( lockFileLock != null )
-            {
+    protected boolean haveLockAlready() {
+        if (lockedFiles.contains(lockFile())) {
+            if (lockFileLock != null) {
                 return true;
             }
             throw unableToObtainLockException();
@@ -74,9 +67,8 @@ class GlobalFileLocker extends Locker
     }
 
     @Override
-    protected void releaseLock() throws IOException
-    {
-        lockedFiles.remove( lockFile() );
+    protected void releaseLock() throws IOException {
+        lockedFiles.remove(lockFile());
         super.releaseLock();
     }
 }

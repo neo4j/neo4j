@@ -21,7 +21,6 @@ package org.neo4j.dbms;
 
 import java.util.Map;
 import java.util.Optional;
-
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
@@ -30,8 +29,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
  * Also provides the ability to check whether a database is in a failed state.
  * A failed database has usually failed to undergo some state transition (i.e. START -> STOP)
  */
-public interface DatabaseStateService
-{
+public interface DatabaseStateService {
 
     /**
      * Return a snapshot of states for all known databases.
@@ -40,7 +38,7 @@ public interface DatabaseStateService
      *
      * @return map of named database Ids to operator states
      */
-    Map<NamedDatabaseId,DatabaseState> stateOfAllDatabases();
+    Map<NamedDatabaseId, DatabaseState> stateOfAllDatabases();
 
     /**
      * Note that if a database with the given name does not exist, the state
@@ -49,7 +47,7 @@ public interface DatabaseStateService
      * @param namedDatabaseId the database whose state to return
      * @return state of database with name
      */
-    DatabaseState stateOfDatabase( NamedDatabaseId namedDatabaseId );
+    DatabaseState stateOfDatabase(NamedDatabaseId namedDatabaseId);
 
     /**
      * Note that if a database with the given name does not exist, {@code Optional.empty()}
@@ -58,6 +56,5 @@ public interface DatabaseStateService
      * @param namedDatabaseId the database to check for failure
      * @return the cause of the database failure, if there is one.
      */
-    Optional<Throwable> causeOfFailure( NamedDatabaseId namedDatabaseId );
-
+    Optional<Throwable> causeOfFailure(NamedDatabaseId namedDatabaseId);
 }

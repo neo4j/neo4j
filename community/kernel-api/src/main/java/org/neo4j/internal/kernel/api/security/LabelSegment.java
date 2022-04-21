@@ -19,63 +19,50 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public class LabelSegment implements Segment
-{
+public class LabelSegment implements Segment {
     private final String label;
 
-    public LabelSegment( String label )
-    {
+    public LabelSegment(String label) {
         this.label = label;
     }
 
-    public String getLabel()
-    {
+    public String getLabel() {
         return label;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return label.hashCode();
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
 
-        if ( obj instanceof LabelSegment other )
-        {
-            if ( this.label == null )
-            {
+        if (obj instanceof LabelSegment other) {
+            if (this.label == null) {
                 return other.label == null;
-            }
-            else
-            {
-                return this.label.equals( other.getLabel() );
+            } else {
+                return this.label.equals(other.getLabel());
             }
         }
         return false;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "NODE %s", label == null ? "*" : label );
+    public String toString() {
+        return String.format("NODE %s", label == null ? "*" : label);
     }
 
     @Override
-    public boolean satisfies( Segment segment )
-    {
-        if ( segment instanceof LabelSegment other )
-        {
-            return label == null || label.equals( other.label );
+    public boolean satisfies(Segment segment) {
+        if (segment instanceof LabelSegment other) {
+            return label == null || label.equals(other.label);
         }
         return false;
     }
 
-    public static final LabelSegment ALL = new LabelSegment( null );
+    public static final LabelSegment ALL = new LabelSegment(null);
 }

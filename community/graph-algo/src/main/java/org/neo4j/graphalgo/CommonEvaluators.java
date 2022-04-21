@@ -28,26 +28,21 @@ import org.neo4j.graphalgo.impl.util.IntegerEvaluator;
  * Factory for common evaluators used by some graph algos, f.ex
  * {@link CostEvaluator} and {@link EstimateEvaluator}.
  */
-public abstract class CommonEvaluators
-{
-    public static CostEvaluator<Double> doubleCostEvaluator( String relationshipCostPropertyKey )
-    {
-        return new DoubleEvaluator( relationshipCostPropertyKey );
+public abstract class CommonEvaluators {
+    public static CostEvaluator<Double> doubleCostEvaluator(String relationshipCostPropertyKey) {
+        return new DoubleEvaluator(relationshipCostPropertyKey);
     }
 
-    public static CostEvaluator<Double> doubleCostEvaluator( String relationshipCostPropertyKey, double defaultCost )
-    {
-        return new DoubleEvaluatorWithDefault( relationshipCostPropertyKey, defaultCost );
+    public static CostEvaluator<Double> doubleCostEvaluator(String relationshipCostPropertyKey, double defaultCost) {
+        return new DoubleEvaluatorWithDefault(relationshipCostPropertyKey, defaultCost);
     }
 
-    public static CostEvaluator<Integer> intCostEvaluator( String relationshipCostPropertyKey )
-    {
-        return new IntegerEvaluator( relationshipCostPropertyKey );
+    public static CostEvaluator<Integer> intCostEvaluator(String relationshipCostPropertyKey) {
+        return new IntegerEvaluator(relationshipCostPropertyKey);
     }
 
     public static EstimateEvaluator<Double> geoEstimateEvaluator(
-            String latitudePropertyKey, String longitudePropertyKey )
-    {
-        return new GeoEstimateEvaluator( latitudePropertyKey, longitudePropertyKey );
+            String latitudePropertyKey, String longitudePropertyKey) {
+        return new GeoEstimateEvaluator(latitudePropertyKey, longitudePropertyKey);
     }
 }

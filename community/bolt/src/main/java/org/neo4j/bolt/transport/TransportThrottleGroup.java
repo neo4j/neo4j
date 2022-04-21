@@ -20,9 +20,7 @@
 package org.neo4j.bolt.transport;
 
 import io.netty.channel.Channel;
-
 import java.time.Clock;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.memory.MemoryTracker;
@@ -33,75 +31,56 @@ import org.neo4j.memory.MemoryTracker;
  * of throttles (number of active channels, reads, etc.) they should be added and registered
  * through this class.
  */
-public class TransportThrottleGroup
-{
+public class TransportThrottleGroup {
     public static final TransportThrottleGroup NO_THROTTLE = new TransportThrottleGroup();
 
     private final TransportThrottle writeThrottle;
 
-    private TransportThrottleGroup()
-    {
+    private TransportThrottleGroup() {
         this.writeThrottle = NoOpTransportThrottle.INSTANCE;
     }
 
-    public TransportThrottleGroup( Config config, Clock clock )
-    {
-        this.writeThrottle = createWriteThrottle( config, clock );
+    public TransportThrottleGroup(Config config, Clock clock) {
+        this.writeThrottle = createWriteThrottle(config, clock);
     }
 
-    public TransportThrottle writeThrottle()
-    {
+    public TransportThrottle writeThrottle() {
         return writeThrottle;
     }
 
-    public void install( Channel channel, MemoryTracker memoryTracker )
-    {
-        writeThrottle.install( channel, memoryTracker );
+    public void install(Channel channel, MemoryTracker memoryTracker) {
+        writeThrottle.install(channel, memoryTracker);
     }
 
-    public void uninstall( Channel channel )
-    {
-        writeThrottle.uninstall( channel );
+    public void uninstall(Channel channel) {
+        writeThrottle.uninstall(channel);
     }
 
-    private static TransportThrottle createWriteThrottle( Config config, Clock clock )
-    {
-        if ( config.get( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle) )
-        {
-            return new TransportWriteThrottle( config.get( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_low_water_mark ),
-                    config.get( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_high_water_mark ), clock,
-                    config.get( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_max_duration ) );
+    private static TransportThrottle createWriteThrottle(Config config, Clock clock) {
+        if (config.get(GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle)) {
+            return new TransportWriteThrottle(
+                    config.get(GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
+                    config.get(GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_high_water_mark),
+                    clock,
+                    config.get(GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_max_duration));
         }
 
         return NoOpTransportThrottle.INSTANCE;
     }
 
-    private static class NoOpTransportThrottle implements TransportThrottle
-    {
+    private static class NoOpTransportThrottle implements TransportThrottle {
         private static final TransportThrottle INSTANCE = new NoOpTransportThrottle();
 
         @Override
-        public void install( Channel channel, MemoryTracker memoryTracker )
-        {
-
-        }
+        public void install(Channel channel, MemoryTracker memoryTracker) {}
 
         @Override
-        public void acquire( Channel channel )
-        {
-
-        }
+        public void acquire(Channel channel) {}
 
         @Override
-        public void release( Channel channel )
-        {
-
-        }
+        public void release(Channel channel) {}
 
         @Override
-        public void uninstall( Channel channel )
-        {
-
-        }
+        public void uninstall(Channel channel) {}
     }
 }

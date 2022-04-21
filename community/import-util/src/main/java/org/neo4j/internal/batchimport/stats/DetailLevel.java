@@ -22,8 +22,7 @@ package org.neo4j.internal.batchimport.stats;
 /**
  * The higher the ordinal, the more detail.
  */
-public enum DetailLevel
-{
+public enum DetailLevel {
     NO,
     IMPORTANT,
     BASIC

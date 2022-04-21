@@ -19,29 +19,6 @@
  */
 package org.neo4j.shell.test;
 
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.Main;
-import org.neo4j.shell.ShellRunner;
-import org.neo4j.shell.cli.CliArgs;
-import org.neo4j.shell.cli.Format;
-import org.neo4j.shell.parameter.ParameterService;
-import org.neo4j.shell.printer.AnsiPrinter;
-
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -56,102 +33,111 @@ import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.cli.CliArgHelper.parseAndThrow;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 
-public class AssertableMain
-{
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
+import org.neo4j.shell.CypherShell;
+import org.neo4j.shell.Main;
+import org.neo4j.shell.ShellRunner;
+import org.neo4j.shell.cli.CliArgs;
+import org.neo4j.shell.cli.Format;
+import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.printer.AnsiPrinter;
+
+public class AssertableMain {
     private final int exitCode;
     private final ByteArrayOutputStream out;
     private final ByteArrayOutputStream err;
     private final CypherShell shell;
 
-    public AssertableMain( int exitCode, ByteArrayOutputStream out, ByteArrayOutputStream err, CypherShell shell )
-    {
+    public AssertableMain(int exitCode, ByteArrayOutputStream out, ByteArrayOutputStream err, CypherShell shell) {
         this.exitCode = exitCode;
         this.out = out;
         this.err = err;
         this.shell = shell;
     }
 
-    private Supplier<String> failureSupplier( String description )
-    {
-        return () -> description + "\nError output:\n" + this.err.toString() + "\n" + "Output:\n" + this.out.toString() + "\n";
+    private Supplier<String> failureSupplier(String description) {
+        return () -> description + "\nError output:\n" + this.err.toString() + "\n" + "Output:\n" + this.out.toString()
+                + "\n";
     }
 
-    public AssertableMain assertOutputLines( String... expected )
-    {
-        return assertThatOutput( Matchers.equalTo( stream( expected ).map( l -> l + "\n" ).collect( joining() ) ) );
+    public AssertableMain assertOutputLines(String... expected) {
+        return assertThatOutput(
+                Matchers.equalTo(stream(expected).map(l -> l + "\n").collect(joining())));
     }
 
     @SafeVarargs
-    public final AssertableMain assertThatOutput( Matcher<String>... matchers )
-    {
-        var output = out.toString( UTF_8 ).replace( "\r\n", "\n" );
-        stream( matchers ).forEach( matcher -> assertThat( output, matcher ) );
+    public final AssertableMain assertThatOutput(Matcher<String>... matchers) {
+        var output = out.toString(UTF_8).replace("\r\n", "\n");
+        stream(matchers).forEach(matcher -> assertThat(output, matcher));
         return this;
     }
 
-    public AssertableMain assertSuccess( boolean isErrorOutputEmpty )
-    {
-        assertEquals( EXIT_SUCCESS, exitCode, failureSupplier( "Unexpected exit code" ) );
-        if ( isErrorOutputEmpty )
-        {
-            assertEquals( "", err.toString( UTF_8 ), "Error output expected to be empty" );
+    public AssertableMain assertSuccess(boolean isErrorOutputEmpty) {
+        assertEquals(EXIT_SUCCESS, exitCode, failureSupplier("Unexpected exit code"));
+        if (isErrorOutputEmpty) {
+            assertEquals("", err.toString(UTF_8), "Error output expected to be empty");
         }
         return this;
     }
 
-    public AssertableMain assertSuccessAndConnected( boolean isErrorOutputEmpty )
-    {
-        assertTrue( shell.isConnected(), "Shell is not connected" );
-        return assertSuccess( isErrorOutputEmpty );
+    public AssertableMain assertSuccessAndConnected(boolean isErrorOutputEmpty) {
+        assertTrue(shell.isConnected(), "Shell is not connected");
+        return assertSuccess(isErrorOutputEmpty);
     }
 
-    public AssertableMain assertSuccessAndDisconnected( boolean isErrorOutputEmpty )
-    {
-        assertFalse( shell.isConnected(), "Shell is connected" );
-        return assertSuccess( isErrorOutputEmpty );
+    public AssertableMain assertSuccessAndDisconnected(boolean isErrorOutputEmpty) {
+        assertFalse(shell.isConnected(), "Shell is connected");
+        return assertSuccess(isErrorOutputEmpty);
     }
 
-    public AssertableMain assertSuccessAndConnected()
-    {
-        return assertSuccessAndConnected( true );
+    public AssertableMain assertSuccessAndConnected() {
+        return assertSuccessAndConnected(true);
     }
 
-    public AssertableMain assertSuccessAndDisconnected()
-    {
-        return assertSuccessAndDisconnected( true );
+    public AssertableMain assertSuccessAndDisconnected() {
+        return assertSuccessAndDisconnected(true);
     }
 
-    public AssertableMain assertSuccess()
-    {
-        return assertSuccess( true );
+    public AssertableMain assertSuccess() {
+        return assertSuccess(true);
     }
 
     @SafeVarargs
-    public final AssertableMain assertThatErrorOutput( Matcher<String>... matchers )
-    {
-        var errorOutput = err.toString( UTF_8 );
-        stream( matchers ).forEach( matcher -> assertThat( errorOutput, matcher ) );
+    public final AssertableMain assertThatErrorOutput(Matcher<String>... matchers) {
+        var errorOutput = err.toString(UTF_8);
+        stream(matchers).forEach(matcher -> assertThat(errorOutput, matcher));
         return this;
     }
 
-    public AssertableMain assertFailure( String... expectedErrorOutput )
-    {
-        assertEquals( EXIT_FAILURE, exitCode, failureSupplier( "Unexpected exit code" ) );
-        if ( expectedErrorOutput.length > 0 )
-        {
-            assertEquals( stream( expectedErrorOutput ).map( l -> l + lineSeparator() ).collect( joining() ), err.toString( UTF_8 ), "Unexpected error ouput" );
+    public AssertableMain assertFailure(String... expectedErrorOutput) {
+        assertEquals(EXIT_FAILURE, exitCode, failureSupplier("Unexpected exit code"));
+        if (expectedErrorOutput.length > 0) {
+            assertEquals(
+                    stream(expectedErrorOutput).map(l -> l + lineSeparator()).collect(joining()),
+                    err.toString(UTF_8),
+                    "Unexpected error ouput");
         }
         return this;
     }
 
-    public ByteArrayOutputStream getOutput()
-    {
+    public ByteArrayOutputStream getOutput() {
         return out;
     }
 
-    public static class AssertableMainBuilder
-    {
-        public ByteArrayInputStream in = new ByteArrayInputStream( new byte[0] );
+    public static class AssertableMainBuilder {
+        public ByteArrayInputStream in = new ByteArrayInputStream(new byte[0]);
         public List<String> args = new ArrayList<>();
         public Boolean isOutputInteractive;
         public CypherShell shell;
@@ -161,77 +147,73 @@ public class AssertableMain
         public File historyFile;
         public ParameterService parameters;
 
-        public AssertableMainBuilder shell( CypherShell shell )
-        {
+        public AssertableMainBuilder shell(CypherShell shell) {
             this.shell = shell;
             return this;
         }
 
-        public AssertableMainBuilder runnerFactory( ShellRunner.Factory factory )
-        {
+        public AssertableMainBuilder runnerFactory(ShellRunner.Factory factory) {
             this.runnerFactory = factory;
             return this;
         }
 
-        public AssertableMainBuilder args( String whiteSpaceSeparatedArgs )
-        {
-            this.args = stream( whiteSpaceSeparatedArgs.split( "\\s+" ) ).collect( Collectors.toList() );
+        public AssertableMainBuilder args(String whiteSpaceSeparatedArgs) {
+            this.args = stream(whiteSpaceSeparatedArgs.split("\\s+")).collect(Collectors.toList());
             return this;
         }
 
-        public AssertableMainBuilder addArgs( String... args )
-        {
-            this.args.addAll( asList( args ) );
+        public AssertableMainBuilder addArgs(String... args) {
+            this.args.addAll(asList(args));
             return this;
         }
 
-        public AssertableMainBuilder outputInteractive( boolean isOutputInteractive )
-        {
+        public AssertableMainBuilder outputInteractive(boolean isOutputInteractive) {
             this.isOutputInteractive = isOutputInteractive;
             return this;
         }
 
-        public AssertableMainBuilder userInputLines( String... input )
-        {
-            this.in = new ByteArrayInputStream( ( stream( input ).map( l -> l + "\n" ).collect( joining() ) ).getBytes() );
+        public AssertableMainBuilder userInputLines(String... input) {
+            this.in = new ByteArrayInputStream((stream(input).map(l -> l + "\n").collect(joining())).getBytes());
             return this;
         }
 
-        public AssertableMainBuilder userInput( String input )
-        {
-            this.in = new ByteArrayInputStream( input.getBytes() );
+        public AssertableMainBuilder userInput(String input) {
+            this.in = new ByteArrayInputStream(input.getBytes());
             return this;
         }
 
-        public AssertableMainBuilder historyFile( File file )
-        {
+        public AssertableMainBuilder historyFile(File file) {
             this.historyFile = file;
             return this;
         }
 
-        public AssertableMainBuilder parameters( ParameterService parameters )
-        {
+        public AssertableMainBuilder parameters(ParameterService parameters) {
             this.parameters = parameters;
             return this;
         }
 
-        public AssertableMain run() throws ArgumentParserException, IOException
-        {
-            var outPrintStream = new PrintStream( out );
-            var errPrintStream = new PrintStream( err );
+        public AssertableMain run() throws ArgumentParserException, IOException {
+            var outPrintStream = new PrintStream(out);
+            var errPrintStream = new PrintStream(err);
             var args = parseArgs();
-            var logger = new AnsiPrinter( Format.VERBOSE, outPrintStream, errPrintStream );
-            var terminal = terminalBuilder().dumb().streams( in, outPrintStream ).interactive( !args.getNonInteractive() ).logger( logger ).build();
-            var main = new Main( args, logger, shell, parameters, isOutputInteractive, runnerFactory, terminal );
+            var logger = new AnsiPrinter(Format.VERBOSE, outPrintStream, errPrintStream);
+            var terminal = terminalBuilder()
+                    .dumb()
+                    .streams(in, outPrintStream)
+                    .interactive(!args.getNonInteractive())
+                    .logger(logger)
+                    .build();
+            var main = new Main(args, logger, shell, parameters, isOutputInteractive, runnerFactory, terminal);
             var exitCode = main.startShell();
-            return new AssertableMain( exitCode, out, err, shell );
+            return new AssertableMain(exitCode, out, err, shell);
         }
 
-        protected CliArgs parseArgs() throws ArgumentParserException, IOException
-        {
-            var parsedArgs = parseAndThrow( args.toArray( String[]::new ) );
-            var history = historyFile != null ? historyFile : Files.createTempFile( "temp-history", null ).toFile();
-            parsedArgs.setHistoryFile( history );
+        protected CliArgs parseArgs() throws ArgumentParserException, IOException {
+            var parsedArgs = parseAndThrow(args.toArray(String[]::new));
+            var history = historyFile != null
+                    ? historyFile
+                    : Files.createTempFile("temp-history", null).toFile();
+            parsedArgs.setHistoryFile(history);
             return parsedArgs;
         }
     }

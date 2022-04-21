@@ -19,10 +19,14 @@
  */
 package org.neo4j.shell.commands;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.StringLinePrinter;
@@ -32,35 +36,26 @@ import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.state.BoltStateHandler;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-
-class CypherShellFailureIntegrationTest extends CypherShellIntegrationTest
-{
+class CypherShellFailureIntegrationTest extends CypherShellIntegrationTest {
     private final StringLinePrinter linePrinter = new StringLinePrinter();
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         linePrinter.clear();
-        var printer = new PrettyPrinter( new PrettyConfig( Format.VERBOSE, true, 1000 ) );
-        var boltHandler = new BoltStateHandler( true );
-        var parameters = mock( ParameterService.class );
-        shell = new CypherShell( linePrinter, boltHandler, printer, parameters );
+        var printer = new PrettyPrinter(new PrettyConfig(Format.VERBOSE, true, 1000));
+        var boltHandler = new BoltStateHandler(true);
+        var parameters = mock(ParameterService.class);
+        shell = new CypherShell(linePrinter, boltHandler, printer, parameters);
     }
 
     @AfterEach
-    void cleanUp()
-    {
+    void cleanUp() {
         shell.disconnect();
     }
 
     @Test
-    void cypherWithNoPasswordShouldReturnValidError()
-    {
-        AuthenticationException exception = assertThrows( AuthenticationException.class, () -> connect( "" ) );
-        assertThat( exception.getMessage(), containsString( "The client is unauthorized due to authentication failure." ) );
+    void cypherWithNoPasswordShouldReturnValidError() {
+        AuthenticationException exception = assertThrows(AuthenticationException.class, () -> connect(""));
+        assertThat(exception.getMessage(), containsString("The client is unauthorized due to authentication failure."));
     }
 }

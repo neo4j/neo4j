@@ -24,8 +24,7 @@ import org.neo4j.kernel.impl.query.QueryExecution;
 /**
  * A representation of a query execution result.
  */
-public interface BoltQueryExecution
-{
+public interface BoltQueryExecution {
     QueryExecution getQueryExecution();
 
     /**

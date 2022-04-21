@@ -19,45 +19,38 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.neo4j.internal.batchimport.Configuration;
-
 import static java.lang.System.nanoTime;
 
-public abstract class PullingProducerStep<T extends ProcessContext> extends ProducerStep
-{
+import org.neo4j.internal.batchimport.Configuration;
 
-    public PullingProducerStep( StageControl control, Configuration config )
-    {
-        super( control, config );
+public abstract class PullingProducerStep<T extends ProcessContext> extends ProducerStep {
+
+    public PullingProducerStep(StageControl control, Configuration config) {
+        super(control, config);
     }
 
     /**
      * Forms batches out of some sort of data stream and sends these batches downstream.
      */
     @Override
-    protected void process()
-    {
+    protected void process() {
         Object batch;
-        try ( T batchContext = processContext() )
-        {
-            while ( true )
-            {
+        try (T batchContext = processContext()) {
+            while (true) {
                 long startTime = nanoTime();
-                batch = nextBatchOrNull( doneBatches.get(), batchSize, batchContext );
-                if ( batch == null )
-                {
+                batch = nextBatchOrNull(doneBatches.get(), batchSize, batchContext);
+                if (batch == null) {
                     break;
                 }
 
-                totalProcessingTime.add( nanoTime() - startTime );
-                sendDownstream( batch );
+                totalProcessingTime.add(nanoTime() - startTime);
+                sendDownstream(batch);
                 assertHealthy();
             }
         }
     }
 
-    protected T processContext()
-    {
+    protected T processContext() {
         return (T) ProcessContext.EMPTY_CONTEXT;
     }
 
@@ -67,5 +60,5 @@ public abstract class PullingProducerStep<T extends ProcessContext> extends Prod
      * @param processContext process context with potentially processing specific resources
      * @return the batch object to send downstream, or null if the data stream came to an end.
      */
-    protected abstract Object nextBatchOrNull( long ticket, int batchSize, T processContext );
+    protected abstract Object nextBatchOrNull(long ticket, int batchSize, T processContext);
 }

@@ -19,13 +19,14 @@
  */
 package org.neo4j.server.http.cypher.entity;
 
+import static org.neo4j.server.http.cypher.entity.HttpProfilerStatistics.fromMapValue;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
@@ -33,21 +34,20 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.server.http.cypher.entity.HttpProfilerStatistics.fromMapValue;
-
-public class HttpExecutionPlanDescription implements ExecutionPlanDescription
-{
+public class HttpExecutionPlanDescription implements ExecutionPlanDescription {
     private final String name;
     private final List<ExecutionPlanDescription> children;
-    private final Map<String,Object> arguments;
+    private final Map<String, Object> arguments;
     private final Set<String> identifiers;
     private final ProfilerStatistics profilerStatistics;
-    private static final DefaultValueMapper valueMapper = new DefaultValueMapper( null );
+    private static final DefaultValueMapper valueMapper = new DefaultValueMapper(null);
 
-    public HttpExecutionPlanDescription( String name, List<ExecutionPlanDescription> children,
-                                         Map<String,Object> arguments, Set<String> identifiers,
-                                         ProfilerStatistics profilerStatistics )
-    {
+    public HttpExecutionPlanDescription(
+            String name,
+            List<ExecutionPlanDescription> children,
+            Map<String, Object> arguments,
+            Set<String> identifiers,
+            ProfilerStatistics profilerStatistics) {
         this.name = name;
         this.children = children;
         this.arguments = arguments;
@@ -55,115 +55,95 @@ public class HttpExecutionPlanDescription implements ExecutionPlanDescription
         this.profilerStatistics = profilerStatistics;
     }
 
-    public static ExecutionPlanDescription fromAnyValue( AnyValue anyValue )
-    {
-        if ( anyValue == null )
-        {
+    public static ExecutionPlanDescription fromAnyValue(AnyValue anyValue) {
+        if (anyValue == null) {
             return EMPTY;
-        }
-        else
-        {
+        } else {
             MapValue mapValue = (MapValue) anyValue;
-            ProfilerStatistics profilerStatistics = fromMapValue( mapValue );
+            ProfilerStatistics profilerStatistics = fromMapValue(mapValue);
 
-            return new HttpExecutionPlanDescription( ((TextValue) mapValue.get( "operatorType" )).stringValue(),
-                                                     extractChildren( (ListValue) mapValue.get( "children" ) ),
-                                                     extractArguments( (MapValue) mapValue.get( "args" ) ),
-                                                     extractIdentifiers( (ListValue) mapValue.get( "identifiers" ) ),
-                                                     profilerStatistics
-            );
+            return new HttpExecutionPlanDescription(
+                    ((TextValue) mapValue.get("operatorType")).stringValue(),
+                    extractChildren((ListValue) mapValue.get("children")),
+                    extractArguments((MapValue) mapValue.get("args")),
+                    extractIdentifiers((ListValue) mapValue.get("identifiers")),
+                    profilerStatistics);
         }
     }
 
-    private static List<ExecutionPlanDescription> extractChildren( ListValue listValue )
-    {
+    private static List<ExecutionPlanDescription> extractChildren(ListValue listValue) {
         var children = new ArrayList<ExecutionPlanDescription>();
-        listValue.forEach( v -> children.add( fromAnyValue( v ) ) );
+        listValue.forEach(v -> children.add(fromAnyValue(v)));
         return children;
     }
 
-    private static Set<String> extractIdentifiers( ListValue identifiers )
-    {
-        List<String> identifierList = (List<String>) identifiers.map( valueMapper );
-        return new HashSet<>( identifierList );
+    private static Set<String> extractIdentifiers(ListValue identifiers) {
+        List<String> identifierList = (List<String>) identifiers.map(valueMapper);
+        return new HashSet<>(identifierList);
     }
 
-    private static Map<String,Object> extractArguments( MapValue argumentsMapValue )
-    {
-        return (Map<String,Object>) argumentsMapValue.map( valueMapper );
+    private static Map<String, Object> extractArguments(MapValue argumentsMapValue) {
+        return (Map<String, Object>) argumentsMapValue.map(valueMapper);
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     @Override
-    public List<ExecutionPlanDescription> getChildren()
-    {
+    public List<ExecutionPlanDescription> getChildren() {
         return children;
     }
 
     @Override
-    public Map<String,Object> getArguments()
-    {
+    public Map<String, Object> getArguments() {
         return arguments;
     }
 
     @Override
-    public Set<String> getIdentifiers()
-    {
+    public Set<String> getIdentifiers() {
         return identifiers;
     }
 
     @Override
-    public boolean hasProfilerStatistics()
-    {
+    public boolean hasProfilerStatistics() {
         return profilerStatistics == null;
     }
 
     @Override
-    public ProfilerStatistics getProfilerStatistics()
-    {
+    public ProfilerStatistics getProfilerStatistics() {
         return profilerStatistics;
     }
 
-    public static ExecutionPlanDescription EMPTY = new ExecutionPlanDescription()
-    {
+    public static ExecutionPlanDescription EMPTY = new ExecutionPlanDescription() {
         @Override
-        public String getName()
-        {
+        public String getName() {
             return "";
         }
 
         @Override
-        public List<ExecutionPlanDescription> getChildren()
-        {
+        public List<ExecutionPlanDescription> getChildren() {
             return Collections.emptyList();
         }
 
         @Override
-        public Map<String,Object> getArguments()
-        {
+        public Map<String, Object> getArguments() {
             return Collections.emptyMap();
         }
 
         @Override
-        public Set<String> getIdentifiers()
-        {
+        public Set<String> getIdentifiers() {
             return Collections.emptySet();
         }
 
         @Override
-        public boolean hasProfilerStatistics()
-        {
+        public boolean hasProfilerStatistics() {
             return false;
         }
 
         @Override
-        public ProfilerStatistics getProfilerStatistics()
-        {
+        public ProfilerStatistics getProfilerStatistics() {
             return null;
         }
     };

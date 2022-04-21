@@ -19,62 +19,62 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-
-import org.neo4j.internal.schema.IndexProviderDescriptor;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
-class IndexDirectoryStructureTest
-{
-    private final IndexProviderDescriptor provider = new IndexProviderDescriptor( "test", "0.5" );
-    private final Path databaseStoreDir = Path.of( "db" ).toAbsolutePath();
-    private final Path baseIndexDirectory = baseSchemaIndexFolder( databaseStoreDir );
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+
+class IndexDirectoryStructureTest {
+    private final IndexProviderDescriptor provider = new IndexProviderDescriptor("test", "0.5");
+    private final Path databaseStoreDir = Path.of("db").toAbsolutePath();
+    private final Path baseIndexDirectory = baseSchemaIndexFolder(databaseStoreDir);
     private final long indexId = 15;
 
     @Test
-    void shouldSeeCorrectDirectoriesForProvider()
-    {
-        assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( provider ),
-                baseIndexDirectory.resolve( provider.getKey() + "-" + provider.getVersion() ),
-                baseIndexDirectory.resolve( provider.getKey() + "-" +  provider.getVersion() ).resolve( String.valueOf( indexId ) ) );
+    void shouldSeeCorrectDirectoriesForProvider() {
+        assertCorrectDirectories(
+                directoriesByProvider(databaseStoreDir).forProvider(provider),
+                baseIndexDirectory.resolve(provider.getKey() + "-" + provider.getVersion()),
+                baseIndexDirectory
+                        .resolve(provider.getKey() + "-" + provider.getVersion())
+                        .resolve(String.valueOf(indexId)));
     }
 
     @Test
-    void shouldSeeCorrectDirectoriesForSubProvider()
-    {
-        IndexDirectoryStructure parentStructure = directoriesByProvider( databaseStoreDir ).forProvider( provider );
-        IndexProviderDescriptor subProvider = new IndexProviderDescriptor( "sub", "0.3" );
-        assertCorrectDirectories( directoriesBySubProvider( parentStructure ).forProvider( subProvider ),
-                baseIndexDirectory.resolve( provider.getKey() + "-" + provider.getVersion() ),
-                baseIndexDirectory.resolve( provider.getKey() + "-" + provider.getVersion() )
-                        .resolve( String.valueOf( indexId ) )
-                        .resolve( subProvider.getKey() + "-" + subProvider.getVersion() ) );
+    void shouldSeeCorrectDirectoriesForSubProvider() {
+        IndexDirectoryStructure parentStructure =
+                directoriesByProvider(databaseStoreDir).forProvider(provider);
+        IndexProviderDescriptor subProvider = new IndexProviderDescriptor("sub", "0.3");
+        assertCorrectDirectories(
+                directoriesBySubProvider(parentStructure).forProvider(subProvider),
+                baseIndexDirectory.resolve(provider.getKey() + "-" + provider.getVersion()),
+                baseIndexDirectory
+                        .resolve(provider.getKey() + "-" + provider.getVersion())
+                        .resolve(String.valueOf(indexId))
+                        .resolve(subProvider.getKey() + "-" + subProvider.getVersion()));
     }
 
     @Test
-    void shouldHandleWeirdCharactersInProviderKey()
-    {
-        IndexProviderDescriptor providerWithWeirdName = new IndexProviderDescriptor( "some+thing", "1.0" );
-        assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( providerWithWeirdName ),
-                baseIndexDirectory.resolve( "some_thing-1.0" ),
-                baseIndexDirectory.resolve( "some_thing-1.0" ).resolve( String.valueOf( indexId ) ) );
+    void shouldHandleWeirdCharactersInProviderKey() {
+        IndexProviderDescriptor providerWithWeirdName = new IndexProviderDescriptor("some+thing", "1.0");
+        assertCorrectDirectories(
+                directoriesByProvider(databaseStoreDir).forProvider(providerWithWeirdName),
+                baseIndexDirectory.resolve("some_thing-1.0"),
+                baseIndexDirectory.resolve("some_thing-1.0").resolve(String.valueOf(indexId)));
     }
 
-    private void assertCorrectDirectories( IndexDirectoryStructure directoryStructure,
-            Path expectedRootDirectory, Path expectedIndexDirectory )
-    {
+    private void assertCorrectDirectories(
+            IndexDirectoryStructure directoryStructure, Path expectedRootDirectory, Path expectedIndexDirectory) {
         // when
         Path rootDirectory = directoryStructure.rootDirectory();
-        Path indexDirectory = directoryStructure.directoryForIndex( indexId );
+        Path indexDirectory = directoryStructure.directoryForIndex(indexId);
 
         // then
-        assertEquals( expectedRootDirectory, rootDirectory );
-        assertEquals( expectedIndexDirectory, indexDirectory );
+        assertEquals(expectedRootDirectory, rootDirectory);
+        assertEquals(expectedIndexDirectory, indexDirectory);
     }
 }

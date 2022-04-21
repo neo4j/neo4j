@@ -26,16 +26,14 @@ import org.neo4j.kernel.impl.query.QuerySubscription;
 /**
  * A query subscription that streams from a materialized result.
  */
-public abstract class EagerQuerySubscription implements QuerySubscription
-{
+public abstract class EagerQuerySubscription implements QuerySubscription {
     private long requestedRecords;
     private int servedRecords;
     protected final QuerySubscriber subscriber;
     protected boolean cancelled;
     protected Throwable error;
 
-    protected EagerQuerySubscription( QuerySubscriber subscriber )
-    {
+    protected EagerQuerySubscription(QuerySubscriber subscriber) {
         this.subscriber = subscriber;
     }
 
@@ -45,7 +43,7 @@ public abstract class EagerQuerySubscription implements QuerySubscription
      * @param servedRecords the number of previously served records
      * @throws Exception if the subscriber throws an Exception
      */
-    protected abstract void streamRecordToSubscriber( int servedRecords ) throws Exception;
+    protected abstract void streamRecordToSubscriber(int servedRecords) throws Exception;
 
     /**
      * @return the statistics of the query execution.
@@ -63,63 +61,47 @@ public abstract class EagerQuerySubscription implements QuerySubscription
     protected abstract void materializeIfNecessary() throws Exception;
 
     @Override
-    public void request( long numberOfRecords ) throws Exception
-    {
-        requestedRecords = checkForOverflow( requestedRecords + numberOfRecords );
+    public void request(long numberOfRecords) throws Exception {
+        requestedRecords = checkForOverflow(requestedRecords + numberOfRecords);
         materializeIfNecessary();
         streamToSubscriber();
     }
 
     @Override
-    public void cancel()
-    {
+    public void cancel() {
         cancelled = true;
     }
 
     @Override
-    public boolean await() throws Exception
-    {
+    public boolean await() throws Exception {
         boolean hasMore = servedRecords < resultSize();
-        if ( !hasMore )
-        {
-            if ( error != null )
-            {
-                subscriber.onError( error );
-            }
-            else
-            {
-                subscriber.onResultCompleted( queryStatistics() );
+        if (!hasMore) {
+            if (error != null) {
+                subscriber.onError(error);
+            } else {
+                subscriber.onResultCompleted(queryStatistics());
             }
         }
         return hasMore && !cancelled;
     }
 
-    private void streamToSubscriber()
-    {
-        try
-        {
-            for ( ; servedRecords < requestedRecords && servedRecords < resultSize(); servedRecords++ )
-            {
+    private void streamToSubscriber() {
+        try {
+            for (; servedRecords < requestedRecords && servedRecords < resultSize(); servedRecords++) {
                 subscriber.onRecord();
-                streamRecordToSubscriber( servedRecords );
+                streamRecordToSubscriber(servedRecords);
                 subscriber.onRecordCompleted();
             }
-        }
-        catch ( Throwable t )
-        {
+        } catch (Throwable t) {
             error = t;
             servedRecords = resultSize();
         }
     }
 
-    private static long checkForOverflow( long value )
-    {
-        if ( value < 0 )
-        {
+    private static long checkForOverflow(long value) {
+        if (value < 0) {
             return Long.MAX_VALUE;
-        }
-        else
-        {
+        } else {
             return value;
         }
     }

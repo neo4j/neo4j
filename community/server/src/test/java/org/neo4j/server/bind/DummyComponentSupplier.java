@@ -19,22 +19,20 @@
  */
 package org.neo4j.server.bind;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.util.function.Supplier;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-public class DummyComponentSupplier implements Supplier<DummyComponent>
-{
+public class DummyComponentSupplier implements Supplier<DummyComponent> {
     @Context
     private UriInfo uriInfo;
 
     @Override
-    public DummyComponent get()
-    {
+    public DummyComponent get() {
         // verify that container can inject into this class
-        assertNotNull( uriInfo );
+        assertNotNull(uriInfo);
 
         return new DummyComponent();
     }

@@ -16,10 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.helpers
 
-import scala.reflect.ClassTag
 import scala.Iterable
+import scala.reflect.ClassTag
 
 object SeqCombiner {
+
   /**
    * Combines each element in the inner Seq's with one element of every other inner Seq.
    *
@@ -67,7 +68,7 @@ object SeqCombiner {
   def combine[A: ClassTag](xs: Array[Array[A]]): Array[Array[A]] = {
     val ncols = xs.length
 
-    //figure out nrows by multiplying all lengths
+    // figure out nrows by multiplying all lengths
     var nrows = 1
     var col = 0
     while (col < ncols) {
@@ -75,13 +76,13 @@ object SeqCombiner {
       col += 1
     }
 
-    //array to return
+    // array to return
     val array = Array.ofDim[A](nrows, ncols)
 
-    //keep track of index per column, note that indices will be set to zero
+    // keep track of index per column, note that indices will be set to zero
     val indices = new Array[Int](ncols)
 
-    //start with the innermost column,
+    // start with the innermost column,
     col = ncols - 1
     var row = 0
     while (row < nrows) {
@@ -93,12 +94,12 @@ object SeqCombiner {
         i += 1
       }
 
-      //increase all index from col to last column
+      // increase all index from col to last column
       var j = ncols - 1
       while (j >= 0 && j < ncols) {
         val x = xs(j)
         indices(j) += 1
-        //check if we exhausted column
+        // check if we exhausted column
         if (indices(j) >= x.length) {
           indices(j) = 0
           if (j == col) {
@@ -106,7 +107,7 @@ object SeqCombiner {
           }
           j -= 1
         } else {
-          //instead of break
+          // instead of break
           j = -1
         }
       }

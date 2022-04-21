@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -36,8 +34,7 @@ import org.neo4j.logging.InternalLogProvider;
 /**
  * Dynamic store that stores strings.
  */
-public class DynamicStringStore extends AbstractDynamicStore
-{
+public class DynamicStringStore extends AbstractDynamicStore {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "StringPropertyStore";
 
@@ -54,9 +51,21 @@ public class DynamicStringStore extends AbstractDynamicStore
             String storeVersion,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion, readOnlyChecker, databaseName, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                configuration,
+                idType,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                TYPE_DESCRIPTOR,
+                dataSizeFromConfiguration,
+                recordFormat,
+                storeVersion,
+                readOnlyChecker,
+                databaseName,
+                openOptions);
     }
 }

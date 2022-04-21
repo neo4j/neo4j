@@ -28,9 +28,10 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
-abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                       runtime: CypherRuntime[CONTEXT]
-                                                                      ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should handle RHS with R/W dependencies - with AllNodesScan on RHS") {
     // given
@@ -203,7 +204,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
-  test("should handle RHS with R/W dependencies on top of join - with aggregation on top of Apply and AllNodesScan on RHS") {
+  test(
+    "should handle RHS with R/W dependencies on top of join - with aggregation on top of Apply and AllNodesScan on RHS"
+  ) {
     // given
     val sizeHint = 16
     val inputVals = (0 until sizeHint).toArray
@@ -235,7 +238,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
-  test("should handle RHS with R/W dependencies on top of join - with aggregation on top of Apply and Argument on RHS") {
+  test(
+    "should handle RHS with R/W dependencies on top of join - with aggregation on top of Apply and Argument on RHS"
+  ) {
     // given
     val sizeHint = 16
 
@@ -334,7 +339,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
-  test("should handle RHS with R/W dependencies on top of union - with aggregation on top of Apply and AllNodesScan on RHS") {
+  test(
+    "should handle RHS with R/W dependencies on top of union - with aggregation on top of Apply and AllNodesScan on RHS"
+  ) {
     // given
     val sizeHint = 4
     val initialNodeCount = 1
@@ -377,7 +384,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
-  test("should handle RHS with R/W dependencies on top of union - with aggregation on top of Apply and Argument on RHS") {
+  test(
+    "should handle RHS with R/W dependencies on top of union - with aggregation on top of Apply and Argument on RHS"
+  ) {
     // given
     val sizeHint = 4
 
@@ -476,7 +485,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
-  test("should handle RHS with R/W dependencies on top of cartesian product - with aggregation on top of Apply and AllNodesScan on RHS") {
+  test(
+    "should handle RHS with R/W dependencies on top of cartesian product - with aggregation on top of Apply and AllNodesScan on RHS"
+  ) {
     // given
     val sizeHint = 4
     val initialNodeCount = 1
@@ -519,7 +530,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
-  test("should handle RHS with R/W dependencies on top of cartesian product - with aggregation on top of Apply and Argument on RHS") {
+  test(
+    "should handle RHS with R/W dependencies on top of cartesian product - with aggregation on top of Apply and Argument on RHS"
+  ) {
     // given
     val sizeHint = 4
 
@@ -624,7 +637,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
-  test("should handle RHS with R/W dependencies on top of nested unions - with aggregation on top of Apply and AllNodesScan on RHS") {
+  test(
+    "should handle RHS with R/W dependencies on top of nested unions - with aggregation on top of Apply and AllNodesScan on RHS"
+  ) {
     // given
     val sizeHint = 4
     val initialNodeCount = 1
@@ -670,7 +685,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
-  test("should handle RHS with R/W dependencies on top of nested unions - with aggregation on top of Apply and Argument on RHS") {
+  test(
+    "should handle RHS with R/W dependencies on top of nested unions - with aggregation on top of Apply and Argument on RHS"
+  ) {
     // given
     val sizeHint = 4
 
@@ -785,7 +802,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.create(createNodeWithProperties("anon_0", Seq("Label"), "{id: x}"))
       .|.|.argument("x")
       .|.argument("x")
-      .unwind(s"range(0, ${sizeHint-1}) AS x")
+      .unwind(s"range(0, ${sizeHint - 1}) AS x")
       .argument()
       .build(readOnly = false)
 
@@ -817,7 +834,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.argument("n")
       .allNodeScan("n")
       .build(readOnly = false)
-
 
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)

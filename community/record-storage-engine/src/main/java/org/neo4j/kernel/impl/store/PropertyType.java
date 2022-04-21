@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import java.util.Arrays;
-
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -30,201 +29,154 @@ import org.neo4j.values.storable.Values;
 /**
  * Defines valid property types.
  */
-public enum PropertyType
-{
-    BOOL( 1 )
-    {
+public enum PropertyType {
+    BOOL(1) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return Values.booleanValue( getValue( block.getSingleValueLong() ) );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return Values.booleanValue(getValue(block.getSingleValueLong()));
         }
 
-        private boolean getValue( long propBlock )
-        {
-            return ( propBlock & 0x1 ) == 1;
+        private boolean getValue(long propBlock) {
+            return (propBlock & 0x1) == 1;
         }
     },
-    BYTE( 2 )
-    {
+    BYTE(2) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return Values.byteValue( block.getSingleValueByte() );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return Values.byteValue(block.getSingleValueByte());
         }
     },
-    SHORT( 3 )
-    {
+    SHORT(3) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return Values.shortValue( block.getSingleValueShort() );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return Values.shortValue(block.getSingleValueShort());
         }
     },
-    CHAR( 4 )
-    {
+    CHAR(4) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return Values.charValue( (char) block.getSingleValueShort() );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return Values.charValue((char) block.getSingleValueShort());
         }
     },
-    INT( 5 )
-    {
+    INT(5) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return Values.intValue( block.getSingleValueInt() );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return Values.intValue(block.getSingleValueInt());
         }
     },
-    LONG( 6 )
-    {
+    LONG(6) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
             long firstBlock = block.getSingleValueBlock();
-            long value = valueIsInlined( firstBlock ) ? (block.getSingleValueLong() >>> 1) : block.getValueBlocks()[1];
-            return Values.longValue( value );
+            long value = valueIsInlined(firstBlock) ? (block.getSingleValueLong() >>> 1) : block.getValueBlocks()[1];
+            return Values.longValue(value);
         }
 
-        private boolean valueIsInlined( long firstBlock )
-        {
+        private boolean valueIsInlined(long firstBlock) {
             // [][][][][   i,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
             return (firstBlock & 0x10000000L) > 0;
         }
 
         @Override
-        public int calculateNumberOfBlocksUsed( long firstBlock )
-        {
-            return valueIsInlined( firstBlock ) ? 1 : 2;
+        public int calculateNumberOfBlocksUsed(long firstBlock) {
+            return valueIsInlined(firstBlock) ? 1 : 2;
         }
     },
-    FLOAT( 7 )
-    {
+    FLOAT(7) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return Values.floatValue( Float.intBitsToFloat( block.getSingleValueInt() ) );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return Values.floatValue(Float.intBitsToFloat(block.getSingleValueInt()));
         }
     },
-    DOUBLE( 8 )
-    {
+    DOUBLE(8) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return Values.doubleValue( Double.longBitsToDouble( block.getValueBlocks()[1] ) );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return Values.doubleValue(Double.longBitsToDouble(block.getValueBlocks()[1]));
         }
 
         @Override
-        public int calculateNumberOfBlocksUsed( long firstBlock )
-        {
+        public int calculateNumberOfBlocksUsed(long firstBlock) {
             return 2;
         }
     },
-    STRING( 9 )
-    {
+    STRING(9) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors storeCursors )
-        {
-            return store.getTextValueFor( block, storeCursors );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors storeCursors) {
+            return store.getTextValueFor(block, storeCursors);
         }
 
         @Override
-        public byte[] readDynamicRecordHeader( byte[] recordBytes )
-        {
+        public byte[] readDynamicRecordHeader(byte[] recordBytes) {
             return EMPTY_BYTE_ARRAY;
         }
     },
-    ARRAY( 10 )
-    {
+    ARRAY(10) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return store.getArrayFor( block, cursors );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return store.getArrayFor(block, cursors);
         }
 
         @Override
-        public byte[] readDynamicRecordHeader( byte[] recordBytes )
-        {
+        public byte[] readDynamicRecordHeader(byte[] recordBytes) {
             byte itemType = recordBytes[0];
-            if ( itemType == STRING.byteValue() )
-            {
-                return headOf( recordBytes, DynamicArrayStore.STRING_HEADER_SIZE );
+            if (itemType == STRING.byteValue()) {
+                return headOf(recordBytes, DynamicArrayStore.STRING_HEADER_SIZE);
+            } else if (itemType <= DOUBLE.byteValue()) {
+                return headOf(recordBytes, DynamicArrayStore.NUMBER_HEADER_SIZE);
+            } else if (itemType == GEOMETRY.byteValue()) {
+                return headOf(recordBytes, DynamicArrayStore.GEOMETRY_HEADER_SIZE);
+            } else if (itemType == TEMPORAL.byteValue()) {
+                return headOf(recordBytes, DynamicArrayStore.TEMPORAL_HEADER_SIZE);
             }
-            else if ( itemType <= DOUBLE.byteValue() )
-            {
-                return headOf( recordBytes, DynamicArrayStore.NUMBER_HEADER_SIZE );
-            }
-            else if ( itemType == GEOMETRY.byteValue() )
-            {
-                return headOf( recordBytes, DynamicArrayStore.GEOMETRY_HEADER_SIZE );
-            }
-            else if ( itemType == TEMPORAL.byteValue() )
-            {
-                return headOf( recordBytes, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
-            }
-            throw new IllegalArgumentException( "Unknown array type " + itemType );
+            throw new IllegalArgumentException("Unknown array type " + itemType);
         }
 
-        private byte[] headOf( byte[] bytes, int length )
-        {
-            return Arrays.copyOf( bytes, length );
+        private byte[] headOf(byte[] bytes, int length) {
+            return Arrays.copyOf(bytes, length);
         }
     },
-    SHORT_STRING( 11 )
-    {
+    SHORT_STRING(11) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return LongerShortString.decode( block );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return LongerShortString.decode(block);
         }
 
         @Override
-        public int calculateNumberOfBlocksUsed( long firstBlock )
-        {
-            return LongerShortString.calculateNumberOfBlocksUsed( firstBlock );
+        public int calculateNumberOfBlocksUsed(long firstBlock) {
+            return LongerShortString.calculateNumberOfBlocksUsed(firstBlock);
         }
     },
-    SHORT_ARRAY( 12 )
-    {
+    SHORT_ARRAY(12) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return ShortArray.decode( block );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return ShortArray.decode(block);
         }
 
         @Override
-        public int calculateNumberOfBlocksUsed( long firstBlock )
-        {
-            return ShortArray.calculateNumberOfBlocksUsed( firstBlock );
+        public int calculateNumberOfBlocksUsed(long firstBlock) {
+            return ShortArray.calculateNumberOfBlocksUsed(firstBlock);
         }
     },
-    GEOMETRY( 13 )
-    {
+    GEOMETRY(13) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return GeometryType.decode( block );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return GeometryType.decode(block);
         }
 
         @Override
-        public int calculateNumberOfBlocksUsed( long firstBlock )
-        {
-            return GeometryType.calculateNumberOfBlocksUsed( firstBlock );
+        public int calculateNumberOfBlocksUsed(long firstBlock) {
+            return GeometryType.calculateNumberOfBlocksUsed(firstBlock);
         }
     },
-    TEMPORAL( 14 )
-    {
+    TEMPORAL(14) {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
-        {
-            return TemporalType.decode( block );
+        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+            return TemporalType.decode(block);
         }
 
         @Override
-        public int calculateNumberOfBlocksUsed( long firstBlock )
-        {
-            return TemporalType.calculateNumberOfBlocksUsed( firstBlock );
+        public int calculateNumberOfBlocksUsed(long firstBlock) {
+            return TemporalType.calculateNumberOfBlocksUsed(firstBlock);
         }
     };
 
@@ -236,8 +188,7 @@ public enum PropertyType
 
     private final int type;
 
-    PropertyType( int type )
-    {
+    PropertyType(int type) {
         this.type = type;
     }
 
@@ -246,8 +197,7 @@ public enum PropertyType
      *
      * @return The int value for this property type
      */
-    public int intValue()
-    {
+    public int intValue() {
         return type;
     }
 
@@ -258,87 +208,77 @@ public enum PropertyType
      *
      * @return The byte value for this property type
      */
-    public byte byteValue()
-    {
+    public byte byteValue() {
         return (byte) type;
     }
 
-    public abstract Value value( PropertyBlock block, PropertyStore store, StoreCursors storeCursors );
+    public abstract Value value(PropertyBlock block, PropertyStore store, StoreCursors storeCursors);
 
-    public static PropertyType getPropertyTypeOrNull( long propBlock )
-    {
+    public static PropertyType getPropertyTypeOrNull(long propBlock) {
         // [][][][][    ,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
-        int type = typeIdentifier( propBlock );
-        switch ( type )
-        {
-        case 1:
-            return BOOL;
-        case 2:
-            return BYTE;
-        case 3:
-            return SHORT;
-        case 4:
-            return CHAR;
-        case 5:
-            return INT;
-        case 6:
-            return LONG;
-        case 7:
-            return FLOAT;
-        case 8:
-            return DOUBLE;
-        case 9:
-            return STRING;
-        case 10:
-            return ARRAY;
-        case 11:
-            return SHORT_STRING;
-        case 12:
-            return SHORT_ARRAY;
-        case 13:
-            return GEOMETRY;
-        case 14:
-            return TEMPORAL;
-        default:
-            return null;
+        int type = typeIdentifier(propBlock);
+        switch (type) {
+            case 1:
+                return BOOL;
+            case 2:
+                return BYTE;
+            case 3:
+                return SHORT;
+            case 4:
+                return CHAR;
+            case 5:
+                return INT;
+            case 6:
+                return LONG;
+            case 7:
+                return FLOAT;
+            case 8:
+                return DOUBLE;
+            case 9:
+                return STRING;
+            case 10:
+                return ARRAY;
+            case 11:
+                return SHORT_STRING;
+            case 12:
+                return SHORT_ARRAY;
+            case 13:
+                return GEOMETRY;
+            case 14:
+                return TEMPORAL;
+            default:
+                return null;
         }
     }
 
-    private static int typeIdentifier( long propBlock )
-    {
+    private static int typeIdentifier(long propBlock) {
         return (int) ((propBlock & 0x000000000F000000L) >> 24);
     }
 
-    public static PropertyType getPropertyTypeOrThrow( long propBlock )
-    {
-        PropertyType type = getPropertyTypeOrNull( propBlock );
-        if ( type == null )
-        {
-            throw new InvalidRecordException( "Unknown property type: " + typeIdentifier( propBlock ) +
-                    " (from property block " + Long.toHexString( propBlock ) + ")." );
+    public static PropertyType getPropertyTypeOrThrow(long propBlock) {
+        PropertyType type = getPropertyTypeOrNull(propBlock);
+        if (type == null) {
+            throw new InvalidRecordException("Unknown property type: " + typeIdentifier(propBlock)
+                    + " (from property block " + Long.toHexString(propBlock) + ").");
         }
         return type;
     }
 
     // TODO In wait of a better place
-    public static int getPayloadSize()
-    {
+    public static int getPayloadSize() {
         return PAYLOAD_SIZE;
     }
 
     // TODO In wait of a better place
-    public static int getPayloadSizeLongs()
-    {
+    public static int getPayloadSizeLongs() {
         return PAYLOAD_SIZE >>> 3;
     }
 
-    public int calculateNumberOfBlocksUsed( long firstBlock )
-    {
+    public int calculateNumberOfBlocksUsed(long firstBlock) {
         return 1;
     }
 
-    public byte[] readDynamicRecordHeader( byte[] recordBytes )
-    {
+    public byte[] readDynamicRecordHeader(byte[] recordBytes) {
         throw new UnsupportedOperationException();
     }
 }

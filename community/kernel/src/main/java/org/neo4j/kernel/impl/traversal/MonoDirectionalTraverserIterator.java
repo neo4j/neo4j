@@ -32,40 +32,38 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.graphdb.traversal.UniquenessFilter;
 
-class MonoDirectionalTraverserIterator extends AbstractTraverserIterator
-{
+class MonoDirectionalTraverserIterator extends AbstractTraverserIterator {
     private final BranchSelector selector;
     private final PathEvaluator evaluator;
     private final UniquenessFilter uniqueness;
 
-    MonoDirectionalTraverserIterator( UniquenessFilter uniqueness, PathExpander expander,
-                                      BranchOrderingPolicy order, PathEvaluator evaluator, Iterable<Node> startNodes,
-                                      InitialBranchState initialState, UniquenessFactory uniquenessFactory )
-    {
+    MonoDirectionalTraverserIterator(
+            UniquenessFilter uniqueness,
+            PathExpander expander,
+            BranchOrderingPolicy order,
+            PathEvaluator evaluator,
+            Iterable<Node> startNodes,
+            InitialBranchState initialState,
+            UniquenessFactory uniquenessFactory) {
         this.uniqueness = uniqueness;
         this.evaluator = evaluator;
-        this.selector = order.create( new AsOneStartBranch( this, startNodes, initialState, uniquenessFactory ), expander );
+        this.selector = order.create(new AsOneStartBranch(this, startNodes, initialState, uniquenessFactory), expander);
     }
 
     @Override
-    public Evaluation evaluate( TraversalBranch branch, BranchState state )
-    {
-        return evaluator.evaluate( branch, state );
+    public Evaluation evaluate(TraversalBranch branch, BranchState state) {
+        return evaluator.evaluate(branch, state);
     }
 
     @Override
-    protected Path fetchNextOrNull()
-    {
+    protected Path fetchNextOrNull() {
         TraversalBranch result;
-        while ( true )
-        {
-            result = selector.next( this );
-            if ( result == null )
-            {
+        while (true) {
+            result = selector.next(this);
+            if (result == null) {
                 return null;
             }
-            if ( result.includes() )
-            {
+            if (result.includes()) {
                 numberOfPathsReturned++;
                 return result;
             }
@@ -73,14 +71,12 @@ class MonoDirectionalTraverserIterator extends AbstractTraverserIterator
     }
 
     @Override
-    public boolean isUniqueFirst( TraversalBranch branch )
-    {
-        return uniqueness.checkFirst( branch );
+    public boolean isUniqueFirst(TraversalBranch branch) {
+        return uniqueness.checkFirst(branch);
     }
 
     @Override
-    public boolean isUnique( TraversalBranch branch )
-    {
-        return uniqueness.check( branch );
+    public boolean isUnique(TraversalBranch branch) {
+        return uniqueness.check(branch);
     }
 }

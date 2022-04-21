@@ -27,8 +27,7 @@ import static org.neo4j.storageengine.api.CommandVersion.BEFORE;
  * Depending on how transaction state have been built, additional work may need to be performed during
  * application of it.
  */
-public enum TransactionApplicationMode
-{
+public enum TransactionApplicationMode {
     /**
      * Transaction that is created in the "normal" way and has changed transaction state, which goes
      * to commit and produces commands from that. Such a transaction is able to alter cache since it has
@@ -37,9 +36,8 @@ public enum TransactionApplicationMode
     INTERNAL(
             false, // id tracking not needed since that is done in the transaction before commit
             false, // cache invalidation not needed since cache can be updated
-            true,  // include all stores
-            AFTER
-            ),
+            true, // include all stores
+            AFTER),
 
     /**
      * Transaction that comes from an external source and consists only of commands, i.e. it may not
@@ -47,11 +45,10 @@ public enum TransactionApplicationMode
      * transaction does.
      */
     EXTERNAL(
-            true,  // id tracking needed since that hasn't been done prior to receiving this external transaction
-            true,  // cache invalidation needed since not enough information available to update cache
-            true,  // include all stores
-            AFTER
-            ),
+            true, // id tracking needed since that hasn't been done prior to receiving this external transaction
+            true, // cache invalidation needed since not enough information available to update cache
+            true, // include all stores
+            AFTER),
 
     /**
      * Transaction that is recovered, where commands are read, much like {@link #EXTERNAL}, but should
@@ -59,11 +56,11 @@ public enum TransactionApplicationMode
      * a recovered transaction may have already been applied previously to the store.
      */
     RECOVERY(
-            true,  // id tracking not needed because id generators will be rebuilt after recovery anyway
-            true,  // we need cache invalidation during forward recovery, because we need our token holders to be updated with token create commands
-            true,  // include all stores
-            AFTER
-            ),
+            true, // id tracking not needed because id generators will be rebuilt after recovery anyway
+            true, // we need cache invalidation during forward recovery, because we need our token holders to be updated
+            // with token create commands
+            true, // include all stores
+            AFTER),
 
     /**
      * Transaction that is recovered during a phase of reverse recovery in order to rewind neo store back
@@ -75,16 +72,18 @@ public enum TransactionApplicationMode
             false, // id tracking not needed because this is for the initial reverse recovery
             false, // cache invalidation not needed because this is for the initial reverse recovery
             false, // only apply to neo store
-            BEFORE
-            );
+            BEFORE);
 
     private final boolean needsHighIdTracking;
     private final boolean needsCacheInvalidation;
     private final boolean indexesAndCounts;
     private final CommandVersion version;
 
-    TransactionApplicationMode( boolean needsHighIdTracking, boolean needsCacheInvalidation, boolean indexesAndCounts, CommandVersion version )
-    {
+    TransactionApplicationMode(
+            boolean needsHighIdTracking,
+            boolean needsCacheInvalidation,
+            boolean indexesAndCounts,
+            CommandVersion version) {
         this.needsHighIdTracking = needsHighIdTracking;
         this.needsCacheInvalidation = needsCacheInvalidation;
         this.indexesAndCounts = indexesAndCounts;
@@ -94,32 +93,28 @@ public enum TransactionApplicationMode
     /**
      * @return whether or not applying a transaction need to track and update high ids of underlying stores.
      */
-    public boolean needsHighIdTracking()
-    {
+    public boolean needsHighIdTracking() {
         return needsHighIdTracking;
     }
 
     /**
      * @return whether or not applying a transaction need to do additional work of invalidating affected caches.
      */
-    public boolean needsCacheInvalidationOnUpdates()
-    {
+    public boolean needsCacheInvalidationOnUpdates() {
         return needsCacheInvalidation;
     }
 
     /**
      * @return whether or not to include auxiliary stores, such as indexing, counts and statistics.
      */
-    public boolean needsAuxiliaryStores()
-    {
+    public boolean needsAuxiliaryStores() {
         return indexesAndCounts;
     }
 
     /**
      * @return which version of commands to apply, where some commands have before/after versions.
      */
-    public CommandVersion version()
-    {
+    public CommandVersion version() {
         return version;
     }
 }

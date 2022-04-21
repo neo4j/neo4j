@@ -19,98 +19,82 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestKernelReadTracer implements KernelReadTracer
-{
-    static final TraceEvent ON_ALL_NODES_SCAN = new TraceEvent( TraceEventKind.AllNodesScan );
+public class TestKernelReadTracer implements KernelReadTracer {
+    static final TraceEvent ON_ALL_NODES_SCAN = new TraceEvent(TraceEventKind.AllNodesScan);
 
     private final List<TraceEvent> traceEvents;
 
-    TestKernelReadTracer()
-    {
+    TestKernelReadTracer() {
         traceEvents = new ArrayList<>();
     }
 
     @Override
-    public void onNode( long nodeReference )
-    {
-        traceEvents.add( nodeEvent( nodeReference ) );
+    public void onNode(long nodeReference) {
+        traceEvents.add(nodeEvent(nodeReference));
     }
 
     @Override
-    public void onAllNodesScan()
-    {
-        traceEvents.add( ON_ALL_NODES_SCAN );
+    public void onAllNodesScan() {
+        traceEvents.add(ON_ALL_NODES_SCAN);
     }
 
     @Override
-    public void onLabelScan( int label )
-    {
-        traceEvents.add( labelScanEvent( label ) );
+    public void onLabelScan(int label) {
+        traceEvents.add(labelScanEvent(label));
     }
 
     @Override
-    public void onRelationshipTypeScan( int type )
-    {
-        traceEvents.add( relationshipTypeScanEvent( type ) );
+    public void onRelationshipTypeScan(int type) {
+        traceEvents.add(relationshipTypeScanEvent(type));
     }
 
     @Override
-    public void onIndexSeek()
-    {
-        traceEvents.add( indexSeekEvent() );
+    public void onIndexSeek() {
+        traceEvents.add(indexSeekEvent());
     }
 
     @Override
-    public void onRelationship( long relationshipReference )
-    {
-        traceEvents.add( relationshipEvent( relationshipReference ) );
+    public void onRelationship(long relationshipReference) {
+        traceEvents.add(relationshipEvent(relationshipReference));
     }
 
     @Override
-    public void onProperty( int propertyKey )
-    {
-        traceEvents.add( propertyEvent( propertyKey ) );
+    public void onProperty(int propertyKey) {
+        traceEvents.add(propertyEvent(propertyKey));
     }
 
     @Override
-    public void onHasLabel( int label )
-    {
-        traceEvents.add( hasLabelEvent( label ) );
+    public void onHasLabel(int label) {
+        traceEvents.add(hasLabelEvent(label));
     }
 
     @Override
-    public void dbHit()
-    {
+    public void dbHit() {
         throw new UnsupportedOperationException();
     }
 
-    void assertEvents( TraceEvent... expected )
-    {
-        assertEvents( Arrays.asList( expected ) );
+    void assertEvents(TraceEvent... expected) {
+        assertEvents(Arrays.asList(expected));
     }
 
-    void assertEvents( List<TraceEvent> expected )
-    {
-        assertThat( traceEvents ).isEqualTo( expected );
+    void assertEvents(List<TraceEvent> expected) {
+        assertThat(traceEvents).isEqualTo(expected);
         clear();
     }
 
-    void clear()
-    {
+    void clear() {
         traceEvents.clear();
     }
 
-    enum TraceEventKind
-    {
+    enum TraceEventKind {
         Node,
         AllNodesScan,
         LabelScan,
@@ -121,83 +105,67 @@ public class TestKernelReadTracer implements KernelReadTracer
         HasLabel
     }
 
-    static class TraceEvent
-    {
+    static class TraceEvent {
         final TraceEventKind kind;
         final long hash;
 
-        TraceEvent( TraceEventKind kind )
-        {
-            this( kind, 1 );
+        TraceEvent(TraceEventKind kind) {
+            this(kind, 1);
         }
 
-        TraceEvent( TraceEventKind kind, long hash )
-        {
+        TraceEvent(TraceEventKind kind, long hash) {
             this.kind = kind;
             this.hash = hash;
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             TraceEvent that = (TraceEvent) o;
-            return hash == that.hash &&
-                    kind == that.kind;
+            return hash == that.hash && kind == that.kind;
         }
 
         @Override
-        public int hashCode()
-        {
-            return Objects.hash( kind, hash );
+        public int hashCode() {
+            return Objects.hash(kind, hash);
         }
 
         @Override
-        public String toString()
-        {
-            return String.format( "%s[%d]", kind, hash );
+        public String toString() {
+            return String.format("%s[%d]", kind, hash);
         }
     }
 
-    static TraceEvent nodeEvent( long nodeReference )
-    {
-        return new TraceEvent( TraceEventKind.Node, nodeReference );
+    static TraceEvent nodeEvent(long nodeReference) {
+        return new TraceEvent(TraceEventKind.Node, nodeReference);
     }
 
-    static TraceEvent labelScanEvent( int label )
-    {
-        return new TraceEvent( TraceEventKind.LabelScan, label );
+    static TraceEvent labelScanEvent(int label) {
+        return new TraceEvent(TraceEventKind.LabelScan, label);
     }
 
-    static TraceEvent relationshipTypeScanEvent( int type )
-    {
-        return new TraceEvent( TraceEventKind.RelationshipTypeScan, type );
+    static TraceEvent relationshipTypeScanEvent(int type) {
+        return new TraceEvent(TraceEventKind.RelationshipTypeScan, type);
     }
 
-    static TraceEvent indexSeekEvent()
-    {
-        return new TraceEvent( TraceEventKind.IndexSeek, 1 );
+    static TraceEvent indexSeekEvent() {
+        return new TraceEvent(TraceEventKind.IndexSeek, 1);
     }
 
-    static TraceEvent relationshipEvent( long relationshipReference )
-    {
-        return new TraceEvent( TraceEventKind.Relationship, relationshipReference );
+    static TraceEvent relationshipEvent(long relationshipReference) {
+        return new TraceEvent(TraceEventKind.Relationship, relationshipReference);
     }
 
-    static TraceEvent propertyEvent( int propertyKey )
-    {
-        return new TraceEvent( TraceEventKind.Property, propertyKey );
+    static TraceEvent propertyEvent(int propertyKey) {
+        return new TraceEvent(TraceEventKind.Property, propertyKey);
     }
 
-    static TraceEvent hasLabelEvent( int label )
-    {
-        return new TraceEvent( TraceEventKind.HasLabel, label );
+    static TraceEvent hasLabelEvent(int label) {
+        return new TraceEvent(TraceEventKind.HasLabel, label);
     }
 }

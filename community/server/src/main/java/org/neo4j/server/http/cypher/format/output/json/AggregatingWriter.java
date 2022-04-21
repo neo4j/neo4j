@@ -20,27 +20,20 @@
 package org.neo4j.server.http.cypher.format.output.json;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-
 import java.io.IOException;
-
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 
-class AggregatingWriter implements ResultDataContentWriter
-{
+class AggregatingWriter implements ResultDataContentWriter {
     private final ResultDataContentWriter[] writers;
 
-    AggregatingWriter( ResultDataContentWriter[] writers )
-    {
+    AggregatingWriter(ResultDataContentWriter[] writers) {
         this.writers = writers;
     }
 
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent )
-            throws IOException
-    {
-        for ( ResultDataContentWriter writer : writers )
-        {
-            writer.write( out, recordEvent );
+    public void write(JsonGenerator out, RecordEvent recordEvent) throws IOException {
+        for (ResultDataContentWriter writer : writers) {
+            writer.write(out, recordEvent);
         }
     }
 }

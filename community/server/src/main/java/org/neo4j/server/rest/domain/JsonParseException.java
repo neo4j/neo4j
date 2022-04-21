@@ -21,22 +21,18 @@ package org.neo4j.server.rest.domain;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-@SuppressWarnings( "serial" )
-public class JsonParseException extends Exception implements Status.HasStatus
-{
-    public JsonParseException( String message, Throwable cause )
-    {
-        super( message, cause );
+@SuppressWarnings("serial")
+public class JsonParseException extends Exception implements Status.HasStatus {
+    public JsonParseException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public JsonParseException( Throwable cause )
-    {
-        super( cause );
+    public JsonParseException(Throwable cause) {
+        super(cause);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Request.InvalidFormat;
     }
 }

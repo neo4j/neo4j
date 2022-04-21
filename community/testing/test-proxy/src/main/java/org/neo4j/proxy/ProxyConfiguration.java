@@ -20,24 +20,20 @@
 package org.neo4j.proxy;
 
 import java.net.InetSocketAddress;
-
 import org.neo4j.test.ports.PortAuthority;
 
-public record ProxyConfiguration(InetSocketAddress listenAddress, InetSocketAddress advertisedAddress)
-{
-    public static ProxyConfiguration buildProxyConfig()
-    {
-        return new ProxyConfiguration( new InetSocketAddress( "localhost", PortAuthority.allocatePort() ),
-                                       new InetSocketAddress( "localhost", PortAuthority.allocatePort() ) );
+public record ProxyConfiguration(InetSocketAddress listenAddress, InetSocketAddress advertisedAddress) {
+    public static ProxyConfiguration buildProxyConfig() {
+        return new ProxyConfiguration(
+                new InetSocketAddress("localhost", PortAuthority.allocatePort()),
+                new InetSocketAddress("localhost", PortAuthority.allocatePort()));
     }
 
-    public String advertisedAddressToStr()
-    {
+    public String advertisedAddressToStr() {
         return advertisedAddress.getHostName() + ":" + advertisedAddress.getPort();
     }
 
-    public String listenAddressToStr()
-    {
+    public String listenAddressToStr() {
         return listenAddress.getHostName() + ":" + listenAddress.getPort();
     }
 }

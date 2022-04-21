@@ -19,54 +19,48 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v3.messaging.request.PullAllMessage;
-import org.neo4j.bolt.messaging.ResultConsumer;
-
-import static org.neo4j.util.Preconditions.checkState;
 
 /**
  * When STREAMING, a result is available as a stream of records.
  * These must be PULLed or DISCARDed before any further statements
  * can be executed.
  */
-public abstract class AbstractStreamingState extends FailSafeBoltStateMachineState
-{
+public abstract class AbstractStreamingState extends FailSafeBoltStateMachineState {
     protected BoltStateMachineState readyState;
 
     @Override
-    public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
-    {
+    public BoltStateMachineState processUnsafe(RequestMessage message, StateMachineContext context) throws Throwable {
         context.connectionState().ensureNoPendingTerminationNotice();
 
-        if ( message instanceof PullAllMessage )
-        {
-            ResultConsumer resultConsumer = new ResultConsumerAdaptor( context, true );
-            return processStreamResultMessage( resultConsumer, context );
-        }
-        else if ( message instanceof DiscardAllMessage )
-        {
-            ResultConsumer resultConsumer = new ResultConsumerAdaptor( context, false );
-            return processStreamResultMessage( resultConsumer, context );
+        if (message instanceof PullAllMessage) {
+            ResultConsumer resultConsumer = new ResultConsumerAdaptor(context, true);
+            return processStreamResultMessage(resultConsumer, context);
+        } else if (message instanceof DiscardAllMessage) {
+            ResultConsumer resultConsumer = new ResultConsumerAdaptor(context, false);
+            return processStreamResultMessage(resultConsumer, context);
         }
 
         return null;
     }
 
-    public void setReadyState( BoltStateMachineState readyState )
-    {
+    public void setReadyState(BoltStateMachineState readyState) {
         this.readyState = readyState;
     }
 
-    protected abstract BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable;
+    protected abstract BoltStateMachineState processStreamResultMessage(
+            ResultConsumer resultConsumer, StateMachineContext context) throws Throwable;
 
     @Override
-    protected void assertInitialized()
-    {
-        checkState( readyState != null, "Ready state not set" );
+    protected void assertInitialized() {
+        checkState(readyState != null, "Ready state not set");
         super.assertInitialized();
     }
 }

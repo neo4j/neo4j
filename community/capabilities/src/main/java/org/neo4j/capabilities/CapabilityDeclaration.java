@@ -20,7 +20,6 @@
 package org.neo4j.capabilities;
 
 import java.util.ServiceLoader;
-
 import org.neo4j.annotations.service.Service;
 
 /**
@@ -30,6 +29,4 @@ import org.neo4j.annotations.service.Service;
  * All capabilities must be declared as public static final.
  */
 @Service
-public interface CapabilityDeclaration
-{
-}
+public interface CapabilityDeclaration {}

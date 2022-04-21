@@ -19,18 +19,16 @@
  */
 package org.neo4j.test.utils;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import static java.lang.Boolean.TRUE;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-
-import static java.lang.Boolean.TRUE;
 
 /**
  * Class to alter behavior and configuration of {@link PageCache} instances opened in this rule.
  */
-public final class PageCacheConfig
-{
+public final class PageCacheConfig {
     Boolean inconsistentReads;
     Integer pageSize;
     AtomicBoolean nextReadIsInconsistent;
@@ -41,14 +39,11 @@ public final class PageCacheConfig
     /**
      * @return new {@link PageCacheConfig} instance.
      */
-    public static PageCacheConfig config()
-    {
+    public static PageCacheConfig config() {
         return new PageCacheConfig();
     }
 
-    private PageCacheConfig()
-    {
-    }
+    private PageCacheConfig() {}
 
     /**
      * Sets whether or not to decorate PageCache where the read page cursors will randomly produce inconsistent
@@ -58,8 +53,7 @@ public final class PageCacheConfig
      * randomly inconsistent reads.
      * @return this instance.
      */
-    public PageCacheConfig withInconsistentReads( boolean inconsistentReads )
-    {
+    public PageCacheConfig withInconsistentReads(boolean inconsistentReads) {
         this.inconsistentReads = inconsistentReads;
         return this;
     }
@@ -73,8 +67,7 @@ public final class PageCacheConfig
      * @param nextReadIsInconsistent an {@link AtomicBoolean} for controlling when inconsistent reads happen.
      * @return this instance.
      */
-    public PageCacheConfig withInconsistentReads( AtomicBoolean nextReadIsInconsistent )
-    {
+    public PageCacheConfig withInconsistentReads(AtomicBoolean nextReadIsInconsistent) {
         this.nextReadIsInconsistent = nextReadIsInconsistent;
         this.inconsistentReads = TRUE;
         return this;
@@ -86,8 +79,7 @@ public final class PageCacheConfig
      * @param pageSize page size to use instead of hinted page size.
      * @return this instance.
      */
-    public PageCacheConfig withPageSize( int pageSize )
-    {
+    public PageCacheConfig withPageSize(int pageSize) {
         this.pageSize = pageSize;
         return this;
     }
@@ -98,8 +90,7 @@ public final class PageCacheConfig
      * @param tracer {@link PageCacheTracer} to use.
      * @return this instance.
      */
-    public PageCacheConfig withTracer( PageCacheTracer tracer )
-    {
+    public PageCacheConfig withTracer(PageCacheTracer tracer) {
         this.tracer = tracer;
         return this;
     }
@@ -111,8 +102,7 @@ public final class PageCacheConfig
      * @param accessChecks whether or not to add access checking to the opened PageCache.
      * @return this instance.
      */
-    public PageCacheConfig withAccessChecks( boolean accessChecks )
-    {
+    public PageCacheConfig withAccessChecks(boolean accessChecks) {
         this.accessChecks = accessChecks;
         return this;
     }
@@ -123,8 +113,7 @@ public final class PageCacheConfig
      * @param memory memory setting to use for this page cache.
      * @return this instance.
      */
-    public PageCacheConfig withMemory( String memory )
-    {
+    public PageCacheConfig withMemory(String memory) {
         this.memory = memory;
         return this;
     }

@@ -29,8 +29,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.TerminationGuard;
 
-public class RestrictedContextTypes
-{
+public class RestrictedContextTypes {
 
     // BELOW ARE TYPES ALLOWED FOR ANY PROCEDURE|FUNCTION
 

@@ -21,25 +21,21 @@ package org.neo4j.internal.batchimport;
 
 import java.util.Random;
 import java.util.function.LongFunction;
-
 import org.neo4j.values.storable.RandomValues;
 
 /**
  * Utility for generating deterministically randomized data, even though chunks may be reordered
  * during actual import.
  */
-public class RandomsStates implements LongFunction<RandomValues>
-{
+public class RandomsStates implements LongFunction<RandomValues> {
     private final long initialSeed;
 
-    public RandomsStates( long initialSeed )
-    {
+    public RandomsStates(long initialSeed) {
         this.initialSeed = initialSeed;
     }
 
     @Override
-    public RandomValues apply( long batch )
-    {
-        return RandomValues.create( new Random( initialSeed + batch ) );
+    public RandomValues apply(long batch) {
+        return RandomValues.create(new Random(initialSeed + batch));
     }
 }

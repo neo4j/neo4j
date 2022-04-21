@@ -37,8 +37,7 @@ import org.neo4j.graphdb.Relationship;
  *            {@link Node} or {@link Relationship}.
  */
 @PublicApi
-public interface PropertyEntry<T>
-{
+public interface PropertyEntry<T> {
     /**
      * Get the entity that this property was modified on. The entity is either a
      * {@link Node} or a {@link Relationship}, depending on the generic type of

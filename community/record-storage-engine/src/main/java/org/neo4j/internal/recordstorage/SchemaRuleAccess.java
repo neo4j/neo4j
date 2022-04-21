@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.Iterator;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -37,25 +36,24 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.token.TokenHolders;
 
-public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.SchemaStorage
-{
+public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.SchemaStorage {
     /**
      * @param versionRepository Used to know whether or not to inject a rule for NLI (that was formerly labelscanstore).
      *                          Use metadatastore as versionRepository if you are not absolutely sure that the injected
      *                          rule is never needed.
      */
-    static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders, KernelVersionRepository versionRepository )
-    {
-        return new SchemaStorage( store, tokenHolders, versionRepository );
+    static SchemaRuleAccess getSchemaRuleAccess(
+            SchemaStore store, TokenHolders tokenHolders, KernelVersionRepository versionRepository) {
+        return new SchemaStorage(store, tokenHolders, versionRepository);
     }
 
-    long newRuleId( CursorContext cursorContext );
+    long newRuleId(CursorContext cursorContext);
 
-    SchemaRule loadSingleSchemaRule( long ruleId, StoreCursors storeCursors ) throws MalformedSchemaRuleException;
+    SchemaRule loadSingleSchemaRule(long ruleId, StoreCursors storeCursors) throws MalformedSchemaRuleException;
 
-    Iterator<IndexDescriptor> indexesGetAll( StoreCursors storeCursors );
+    Iterator<IndexDescriptor> indexesGetAll(StoreCursors storeCursors);
 
-    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( StoreCursors storeCursors );
+    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed(StoreCursors storeCursors);
 
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
@@ -63,7 +61,7 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * @return an array of all the matching index rules. Empty array if none found.
      * @param index the target {@link IndexDescriptor}
      */
-    IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index, StoreCursors storeCursors );
+    IndexDescriptor[] indexGetForSchema(SchemaDescriptorSupplier index, StoreCursors storeCursors);
 
     /**
      * Find the IndexRule that has the given user supplied name.
@@ -71,7 +69,7 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * @param indexName the user supplied index name to look for.
      * @return the matching IndexRule, or null if no matching index rule was found.
      */
-    IndexDescriptor indexGetForName( String indexName, StoreCursors storeCursors );
+    IndexDescriptor indexGetForName(String indexName, StoreCursors storeCursors);
 
     /**
      * Get the constraint rule that matches the given ConstraintDescriptor
@@ -80,10 +78,10 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * @throws SchemaRuleNotFoundException if no ConstraintDescriptor matches the given descriptor
      * @throws DuplicateSchemaRuleException if two or more ConstraintDescriptors match the given descriptor
      */
-    ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor, StoreCursors storeCursors )
+    ConstraintDescriptor constraintsGetSingle(ConstraintDescriptor descriptor, StoreCursors storeCursors)
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
-    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed( StoreCursors storeCursors );
+    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed(StoreCursors storeCursors);
 
     SchemaRecordChangeTranslator getSchemaRecordChangeTranslator();
 
@@ -91,13 +89,23 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * Write the given schema rule at the location given by its persistent id, overwriting any data that might be at that location already.
      * This is a non-transactional operation that is used during schema store migration.
      */
-    void writeSchemaRule( SchemaRule rule, IdUpdateListener idUpdateListener, CursorContext cursorContext,
-                          MemoryTracker memoryTracker, StoreCursors storeCursors ) throws KernelException;
+    void writeSchemaRule(
+            SchemaRule rule,
+            IdUpdateListener idUpdateListener,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker,
+            StoreCursors storeCursors)
+            throws KernelException;
 
     /**
      * Delete the schema rule with given id.
      * This is a non-transactional operation that is used during schema store migration.
      */
-    void deleteSchemaRule( long id, IdUpdateListener idUpdateListener, CursorContext cursorContext, MemoryTracker memoryTracker,
-                           StoreCursors storeCursors ) throws KernelException;
+    void deleteSchemaRule(
+            long id,
+            IdUpdateListener idUpdateListener,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker,
+            StoreCursors storeCursors)
+            throws KernelException;
 }

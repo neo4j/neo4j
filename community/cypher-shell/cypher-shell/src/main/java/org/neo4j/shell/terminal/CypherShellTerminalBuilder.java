@@ -19,18 +19,16 @@
  */
 package org.neo4j.shell.terminal;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
-
 import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
@@ -42,8 +40,7 @@ import org.neo4j.util.VisibleForTesting;
 /**
  * Builder for CypherShellTerminals
  */
-public class CypherShellTerminalBuilder
-{
+public class CypherShellTerminalBuilder {
     private static final Logger log = Logger.create();
     private Printer printer;
     private OutputStream out;
@@ -53,28 +50,24 @@ public class CypherShellTerminalBuilder
     private ParameterService parameters;
 
     /** if enabled is true, this is an interactive terminal that supports user input */
-    public CypherShellTerminalBuilder interactive( boolean isInteractive )
-    {
+    public CypherShellTerminalBuilder interactive(boolean isInteractive) {
         this.isInteractive = isInteractive;
         return this;
     }
 
-    public CypherShellTerminalBuilder logger( Printer printer )
-    {
+    public CypherShellTerminalBuilder logger(Printer printer) {
         this.printer = printer;
         return this;
     }
 
-    public CypherShellTerminalBuilder parameters( ParameterService parameters )
-    {
+    public CypherShellTerminalBuilder parameters(ParameterService parameters) {
         this.parameters = parameters;
         return this;
     }
 
     /** Set explicit streams, for testing purposes */
     @VisibleForTesting
-    public CypherShellTerminalBuilder streams( InputStream in, OutputStream out )
-    {
+    public CypherShellTerminalBuilder streams(InputStream in, OutputStream out) {
         this.in = in;
         this.out = out;
         return this;
@@ -82,74 +75,65 @@ public class CypherShellTerminalBuilder
 
     /** Create a dumb terminal, for testing purposes */
     @VisibleForTesting
-    public CypherShellTerminalBuilder dumb()
-    {
+    public CypherShellTerminalBuilder dumb() {
         this.dumb = true;
         return this;
     }
 
-    public CypherShellTerminal build()
-    {
+    public CypherShellTerminal build() {
         assert printer != null;
 
-        try
-        {
+        try {
             return isInteractive ? buildJlineBasedTerminal() : nonInteractiveTerminal();
-        }
-        catch ( IOException e )
-        {
-            log.warn( "Fallback to non-interactive mode", e );
-            if ( isInteractive )
-            {
-                printer.printError( "Failed to create interactive terminal, fallback to non-interactive mode" );
+        } catch (IOException e) {
+            log.warn("Fallback to non-interactive mode", e);
+            if (isInteractive) {
+                printer.printError("Failed to create interactive terminal, fallback to non-interactive mode");
             }
             return nonInteractiveTerminal();
         }
     }
 
-    private CypherShellTerminal nonInteractiveTerminal()
-    {
-        return new WriteOnlyCypherShellTerminal( out != null ? new PrintStream( out ) : System.out );
+    private CypherShellTerminal nonInteractiveTerminal() {
+        return new WriteOnlyCypherShellTerminal(out != null ? new PrintStream(out) : System.out);
     }
 
-    public CypherShellTerminal buildJlineBasedTerminal() throws IOException
-    {
+    public CypherShellTerminal buildJlineBasedTerminal() throws IOException {
         var jLineTerminal = TerminalBuilder.builder();
 
-        jLineTerminal.nativeSignals( true );
+        jLineTerminal.nativeSignals(true);
 
-        if ( in != null )
-        {
-            jLineTerminal.streams( in, out );
+        if (in != null) {
+            jLineTerminal.streams(in, out);
         }
 
-        if ( dumb )
-        {
+        if (dumb) {
             var attributes = new Attributes();
-            attributes.setLocalFlag( Attributes.LocalFlag.ECHO, false );
-            jLineTerminal.jna( false ).jansi( false ); // Certain environments (osx) can't handle jna/jansi mode when running tests in maven
-            jLineTerminal.dumb( true ).type( Terminal.TYPE_DUMB ).attributes( attributes );
+            attributes.setLocalFlag(Attributes.LocalFlag.ECHO, false);
+            jLineTerminal
+                    .jna(false)
+                    .jansi(false); // Certain environments (osx) can't handle jna/jansi mode when running tests in maven
+            jLineTerminal.dumb(true).type(Terminal.TYPE_DUMB).attributes(attributes);
         }
 
         var cypherLangService = CypherLanguageService.get();
 
         var reader = LineReaderBuilder.builder()
-            .terminal( jLineTerminal.build() )
-            .parser( new StatementJlineParser( new ShellStatementParser(), cypherLangService ) )
-            .completer( new JlineCompleter( new CommandFactoryHelper(), cypherLangService, parameters ) )
-            .history( new DefaultHistory() ) // The default history is in-memory until we set history file variable
-            .expander( new JlineTerminal.EmptyExpander() )
-            .option( LineReader.Option.DISABLE_EVENT_EXPANSION, true ) // Disable '!' history expansion
-            .option( LineReader.Option.DISABLE_HIGHLIGHTER, true )
-            .option( LineReader.Option.CASE_INSENSITIVE, true )
-            .appName( "Cypher Shell" )
-            .build();
+                .terminal(jLineTerminal.build())
+                .parser(new StatementJlineParser(new ShellStatementParser(), cypherLangService))
+                .completer(new JlineCompleter(new CommandFactoryHelper(), cypherLangService, parameters))
+                .history(new DefaultHistory()) // The default history is in-memory until we set history file variable
+                .expander(new JlineTerminal.EmptyExpander())
+                .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true) // Disable '!' history expansion
+                .option(LineReader.Option.DISABLE_HIGHLIGHTER, true)
+                .option(LineReader.Option.CASE_INSENSITIVE, true)
+                .appName("Cypher Shell")
+                .build();
 
-        return new JlineTerminal( reader, isInteractive, printer );
+        return new JlineTerminal(reader, isInteractive, printer);
     }
 
-    public static CypherShellTerminalBuilder terminalBuilder()
-    {
+    public static CypherShellTerminalBuilder terminalBuilder() {
         return new CypherShellTerminalBuilder();
     }
 }

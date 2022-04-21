@@ -28,8 +28,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * any number of {@link Lifecycle#start()} and {@link Lifecycle#stop()} calls in between the
  * {@link Lifecycle#init()} and {@link Lifecycle#shutdown()}.
  */
-public enum ExtensionType
-{
+public enum ExtensionType {
     GLOBAL,
     DATABASE
 }

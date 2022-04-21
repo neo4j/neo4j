@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -44,8 +42,7 @@ import org.neo4j.values.storable.Value;
 /**
  * Used for initial population of an index.
  */
-public interface IndexPopulator extends MinimalIndexAccessor
-{
+public interface IndexPopulator extends MinimalIndexAccessor {
     IndexPopulator EMPTY = new Adapter();
 
     /**
@@ -69,7 +66,8 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * to violate that constraint.
      * @throws UncheckedIOException on I/O error.
      */
-    void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException;
+    void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext)
+            throws IndexEntryConflictException;
 
     /**
      * Return an updater for applying a set of changes to this index, generally this will be a set of changes from a
@@ -96,7 +94,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * @return an {@link IndexUpdater} which will funnel changes that happen concurrently with index population
      * into the population and incorporating them as part of the index population.
      */
-    IndexUpdater newPopulatingUpdater( CursorContext cursorContext );
+    IndexUpdater newPopulatingUpdater(CursorContext cursorContext);
 
     /**
      * Close this populator and releases any resources related to it.
@@ -114,7 +112,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * </ul>
      * @param cursorContext underlying page cache events tracer
      */
-    void close( boolean populationCompletedSuccessfully, CursorContext cursorContext );
+    void close(boolean populationCompletedSuccessfully, CursorContext cursorContext);
 
     /**
      * Called when a population failed. The failure string should be stored for future retrieval by
@@ -124,19 +122,19 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * @param failure the description of the failure.
      * @throws UncheckedIOException if marking failed.
      */
-    void markAsFailed( String failure );
+    void markAsFailed(String failure);
 
     /**
      * Add the given {@link IndexEntryUpdate update} to the sampler for this index.
      *
      * @param update update to include in sample
      */
-    void includeSample( IndexEntryUpdate<?> update );
+    void includeSample(IndexEntryUpdate<?> update);
 
     /**
      * @return {@link IndexSample} from samples collected by {@link #includeSample(IndexEntryUpdate)} calls.
      */
-    IndexSample sample( CursorContext cursorContext );
+    IndexSample sample(CursorContext cursorContext);
 
     /**
      * Returns actual population progress, given the progress of the scan. This is for when a populator needs to do
@@ -144,24 +142,22 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * @param scanProgress progress of the scan.
      * @return progress of the population of this index as a whole.
      */
-    default PopulationProgress progress( PopulationProgress scanProgress )
-    {
+    default PopulationProgress progress(PopulationProgress scanProgress) {
         return scanProgress;
     }
 
-    default void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, CursorContext cursorContext )
-            throws IndexEntryConflictException
-    {   // no-op by default
+    default void scanCompleted(
+            PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, CursorContext cursorContext)
+            throws IndexEntryConflictException { // no-op by default
     }
 
     /**
      * A scheduler for delegating index population related jobs to other threads.
      */
     @FunctionalInterface
-    interface PopulationWorkScheduler
-    {
+    interface PopulationWorkScheduler {
 
-        <T> JobHandle<T> schedule( JobDescriptionSupplier descriptionSupplier, Callable<T> job );
+        <T> JobHandle<T> schedule(JobDescriptionSupplier descriptionSupplier, Callable<T> job);
     }
 
     /**
@@ -173,135 +169,107 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * include that information in the created description.
      */
     @FunctionalInterface
-    interface JobDescriptionSupplier
-    {
+    interface JobDescriptionSupplier {
 
-        String getJobDescription( String indexName );
+        String getJobDescription(String indexName);
     }
 
-    class Adapter implements IndexPopulator
-    {
+    class Adapter implements IndexPopulator {
         @Override
-        public void create()
-        {
-        }
+        public void create() {}
 
         @Override
-        public void drop()
-        {
-        }
+        public void drop() {}
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
-        {
-        }
+        public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {}
 
         @Override
-        public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
-        {
+        public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
             return SwallowingIndexUpdater.INSTANCE;
         }
 
         @Override
-        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext )
-        {
-        }
+        public void scanCompleted(
+                PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext) {}
 
         @Override
-        public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
-        {
-        }
+        public void close(boolean populationCompletedSuccessfully, CursorContext cursorContext) {}
 
         @Override
-        public void markAsFailed( String failure )
-        {
-        }
+        public void markAsFailed(String failure) {}
 
         @Override
-        public void includeSample( IndexEntryUpdate<?> update )
-        {
-        }
+        public void includeSample(IndexEntryUpdate<?> update) {}
 
         @Override
-        public IndexSample sample( CursorContext cursorContext )
-        {
+        public IndexSample sample(CursorContext cursorContext) {
             return new IndexSample();
         }
     }
 
-    class Delegating implements IndexPopulator
-    {
+    class Delegating implements IndexPopulator {
         private final IndexPopulator delegate;
 
-        public Delegating( IndexPopulator delegate )
-        {
+        public Delegating(IndexPopulator delegate) {
             this.delegate = delegate;
         }
 
         @Override
-        public void create() throws IOException
-        {
+        public void create() throws IOException {
             delegate.create();
         }
 
         @Override
-        public void drop()
-        {
+        public void drop() {
             delegate.drop();
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException
-        {
-            delegate.add( updates, cursorContext );
+        public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext)
+                throws IndexEntryConflictException {
+            delegate.add(updates, cursorContext);
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
-        {
-            return delegate.newPopulatingUpdater( cursorContext );
+        public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
+            return delegate.newPopulatingUpdater(cursorContext);
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
-        {
-            delegate.close( populationCompletedSuccessfully, cursorContext );
+        public void close(boolean populationCompletedSuccessfully, CursorContext cursorContext) {
+            delegate.close(populationCompletedSuccessfully, cursorContext);
         }
 
         @Override
-        public void markAsFailed( String failure )
-        {
-            delegate.markAsFailed( failure );
+        public void markAsFailed(String failure) {
+            delegate.markAsFailed(failure);
         }
 
         @Override
-        public void includeSample( IndexEntryUpdate<?> update )
-        {
-            delegate.includeSample( update );
+        public void includeSample(IndexEntryUpdate<?> update) {
+            delegate.includeSample(update);
         }
 
         @Override
-        public IndexSample sample( CursorContext cursorContext )
-        {
-            return delegate.sample( cursorContext );
+        public IndexSample sample(CursorContext cursorContext) {
+            return delegate.sample(cursorContext);
         }
 
         @Override
-        public PopulationProgress progress( PopulationProgress scanProgress )
-        {
-            return delegate.progress( scanProgress );
+        public PopulationProgress progress(PopulationProgress scanProgress) {
+            return delegate.progress(scanProgress);
         }
 
         @Override
-        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext )
-                throws IndexEntryConflictException
-        {
-            delegate.scanCompleted( phaseTracker, jobScheduler, cursorContext );
+        public void scanCompleted(
+                PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext)
+                throws IndexEntryConflictException {
+            delegate.scanCompleted(phaseTracker, jobScheduler, cursorContext);
         }
 
         @Override
-        public Map<String,Value> indexConfig()
-        {
+        public Map<String, Value> indexConfig() {
             return delegate.indexConfig();
         }
     }

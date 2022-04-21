@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -26,77 +28,65 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-
-public class PathWrappingPathValue extends PathValue
-{
-    static final long SHALLOW_SIZE = shallowSizeOfInstance( PathWrappingPathValue.class );
+public class PathWrappingPathValue extends PathValue {
+    static final long SHALLOW_SIZE = shallowSizeOfInstance(PathWrappingPathValue.class);
 
     private final Path path;
 
-    PathWrappingPathValue( Path path )
-    {
+    PathWrappingPathValue(Path path) {
         this.path = path;
     }
 
     @Override
-    public NodeValue startNode()
-    {
-        return (NodeValue) ValueUtils.wrapNodeEntity( path.startNode() );
+    public NodeValue startNode() {
+        return (NodeValue) ValueUtils.wrapNodeEntity(path.startNode());
     }
 
     @Override
-    public NodeValue endNode()
-    {
-        return (NodeValue) ValueUtils.wrapNodeEntity( path.endNode() );
+    public NodeValue endNode() {
+        return (NodeValue) ValueUtils.wrapNodeEntity(path.endNode());
     }
 
     @Override
-    public RelationshipValue lastRelationship()
-    {
-        return (RelationshipValue) ValueUtils.wrapRelationshipEntity( path.lastRelationship() );
+    public RelationshipValue lastRelationship() {
+        return (RelationshipValue) ValueUtils.wrapRelationshipEntity(path.lastRelationship());
     }
 
     @Override
-    public NodeValue[] nodes()
-    {
+    public NodeValue[] nodes() {
         int length = path.length() + 1;
         NodeValue[] values = new NodeValue[length];
         int i = 0;
-        for ( Node node : path.nodes() )
-        {
-            values[i++] = (NodeValue) ValueUtils.wrapNodeEntity( node );
+        for (Node node : path.nodes()) {
+            values[i++] = (NodeValue) ValueUtils.wrapNodeEntity(node);
         }
         return values;
     }
 
     @Override
-    public RelationshipValue[] relationships()
-    {
+    public RelationshipValue[] relationships() {
         int length = path.length();
         RelationshipValue[] values = new RelationshipValue[length];
         int i = 0;
-        for ( Relationship relationship : path.relationships() )
-        {
-            values[i++] = (RelationshipValue) ValueUtils.wrapRelationshipEntity( relationship );
+        for (Relationship relationship : path.relationships()) {
+            values[i++] = (RelationshipValue) ValueUtils.wrapRelationshipEntity(relationship);
         }
         return values;
     }
 
-    public Path path()
-    {
+    public Path path() {
         return path;
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         int length = path.length();
 
         // There are many different implementations of Path, so here we are left guessing.
-        // We calculate some size for each node and relationship, but that will not include any potentially cached properties, labels, etc.
+        // We calculate some size for each node and relationship, but that will not include any potentially cached
+        // properties, labels, etc.
         return SHALLOW_SIZE
-               + length * RelationshipEntityWrappingValue.SHALLOW_SIZE
-               + (length + 1) * NodeEntityWrappingNodeValue.SHALLOW_SIZE;
+                + length * RelationshipEntityWrappingValue.SHALLOW_SIZE
+                + (length + 1) * NodeEntityWrappingNodeValue.SHALLOW_SIZE;
     }
 }

@@ -34,15 +34,17 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
     ("REVOKE", "FROM", revokeGraphPrivilege: noResourcePrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, func: noResourcePrivilegeFunc) =>
-
       Seq(
         ("CREATE", CreateElementAction),
         ("DELETE", DeleteElementAction)
       ).foreach {
         case (createOrDelete, action) =>
-
           test(s"$verb $createOrDelete ON GRAPH foo $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+              List(ast.ElementsAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $createOrDelete ON GRAPH foo ELEMENTS A $preposition role") {
@@ -54,25 +56,45 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
           }
 
           test(s"$verb $createOrDelete ON GRAPH foo RELATIONSHIPS * $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+              List(ast.RelationshipAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           // Home graph
 
           test(s"$verb $createOrDelete ON HOME GRAPH $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+              List(ast.ElementsAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $createOrDelete ON HOME GRAPH $preposition role1, role2") {
-            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole1, literalRole2)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+              List(ast.ElementsAllQualifier()(_)),
+              Seq(literalRole1, literalRole2)
+            ))
           }
 
           test(s"$verb $createOrDelete ON HOME GRAPH $preposition $$role1, role2") {
-            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(paramRole1, literalRole2)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+              List(ast.ElementsAllQualifier()(_)),
+              Seq(paramRole1, literalRole2)
+            ))
           }
 
           test(s"$verb $createOrDelete ON HOME GRAPH RELATIONSHIPS * $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+              List(ast.RelationshipAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           // Both Home and * should not parse
@@ -83,19 +105,35 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
           // Default graph
 
           test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+              List(ast.ElementsAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition role1, role2") {
-            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole1, literalRole2)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+              List(ast.ElementsAllQualifier()(_)),
+              Seq(literalRole1, literalRole2)
+            ))
           }
 
           test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition $$role1, role2") {
-            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(paramRole1, literalRole2)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+              List(ast.ElementsAllQualifier()(_)),
+              Seq(paramRole1, literalRole2)
+            ))
           }
 
           test(s"$verb $createOrDelete ON DEFAULT GRAPH RELATIONSHIPS * $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
+            yields(func(
+              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+              List(ast.RelationshipAllQualifier()(_)),
+              Seq(literalRole)
+            ))
           }
 
           // Both Default and * should not parse
@@ -105,8 +143,10 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
           test(s"$verb $createOrDelete ON DATABASE blah $preposition role") {
             val offset = verb.length + createOrDelete.length + 5
-            assertFailsWithMessage(testName,
-              s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
+            )
           }
       }
   }

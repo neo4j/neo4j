@@ -19,14 +19,16 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.MapUtil;
@@ -35,103 +37,89 @@ import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
-
-class ExecutionPlanConverterTest
-{
+class ExecutionPlanConverterTest {
 
     @Test
-    void fullProfileStatisticConversion()
-    {
-        MapValue convertedMap = ExecutionPlanConverter.convert(
-                new TestExecutionPlanDescription( "description", getFullProfilerStatistics(), getIdentifiers(),
-                                                  getArguments() ) );
-        assertEquals( convertedMap.get( "operatorType" ), stringValue( "description" ) );
-        assertEquals( convertedMap.get( "args" ), ValueUtils.asMapValue( getArguments() ) );
-        assertEquals( convertedMap.get( "identifiers" ), ValueUtils.asListValue( getIdentifiers() ) );
-        assertEquals( convertedMap.get( "children" ), VirtualValues.EMPTY_LIST );
-        assertEquals( convertedMap.get( "rows" ), longValue( 1L ) );
-        assertEquals( convertedMap.get( "dbHits" ), longValue( 2L ) );
-        assertEquals( convertedMap.get( "pageCacheHits" ), longValue( 3L ) );
-        assertEquals( convertedMap.get( "pageCacheMisses" ), longValue( 2L ) );
-        assertEquals( convertedMap.get( "time" ), longValue( 5L ) );
-        assertEquals( ((DoubleValue) convertedMap.get( "pageCacheHitRatio" )).doubleValue(), 3.0 / 5, 0.0001 );
-        assertEquals( convertedMap.size(), 10 );
+    void fullProfileStatisticConversion() {
+        MapValue convertedMap = ExecutionPlanConverter.convert(new TestExecutionPlanDescription(
+                "description", getFullProfilerStatistics(), getIdentifiers(), getArguments()));
+        assertEquals(convertedMap.get("operatorType"), stringValue("description"));
+        assertEquals(convertedMap.get("args"), ValueUtils.asMapValue(getArguments()));
+        assertEquals(convertedMap.get("identifiers"), ValueUtils.asListValue(getIdentifiers()));
+        assertEquals(convertedMap.get("children"), VirtualValues.EMPTY_LIST);
+        assertEquals(convertedMap.get("rows"), longValue(1L));
+        assertEquals(convertedMap.get("dbHits"), longValue(2L));
+        assertEquals(convertedMap.get("pageCacheHits"), longValue(3L));
+        assertEquals(convertedMap.get("pageCacheMisses"), longValue(2L));
+        assertEquals(convertedMap.get("time"), longValue(5L));
+        assertEquals(((DoubleValue) convertedMap.get("pageCacheHitRatio")).doubleValue(), 3.0 / 5, 0.0001);
+        assertEquals(convertedMap.size(), 10);
     }
 
     @Test
-    void partialProfileStatisticConversion()
-    {
-        MapValue convertedMap = ExecutionPlanConverter.convert(
-                new TestExecutionPlanDescription( "description", getPartialProfilerStatistics(), getIdentifiers(),
-                                                  getArguments() ) );
-        assertEquals( convertedMap.get( "operatorType" ), stringValue( "description" ) );
-        assertEquals( convertedMap.get( "args" ), ValueUtils.asMapValue( getArguments() ) );
-        assertEquals( convertedMap.get( "identifiers" ), ValueUtils.asListValue( getIdentifiers() ) );
-        assertEquals( convertedMap.get( "children" ), VirtualValues.EMPTY_LIST );
-        assertEquals( convertedMap.get( "rows" ), longValue( 1L ) );
-        assertEquals( convertedMap.get( "pageCacheHits" ), longValue( 3L ) );
-        assertEquals( convertedMap.get( "pageCacheMisses" ), longValue( 2L ) );
-        assertEquals( ((DoubleValue) convertedMap.get( "pageCacheHitRatio" )).doubleValue(), 3.0 / 5, 0.0001 );
-        assertEquals( convertedMap.size(), 8 );
+    void partialProfileStatisticConversion() {
+        MapValue convertedMap = ExecutionPlanConverter.convert(new TestExecutionPlanDescription(
+                "description", getPartialProfilerStatistics(), getIdentifiers(), getArguments()));
+        assertEquals(convertedMap.get("operatorType"), stringValue("description"));
+        assertEquals(convertedMap.get("args"), ValueUtils.asMapValue(getArguments()));
+        assertEquals(convertedMap.get("identifiers"), ValueUtils.asListValue(getIdentifiers()));
+        assertEquals(convertedMap.get("children"), VirtualValues.EMPTY_LIST);
+        assertEquals(convertedMap.get("rows"), longValue(1L));
+        assertEquals(convertedMap.get("pageCacheHits"), longValue(3L));
+        assertEquals(convertedMap.get("pageCacheMisses"), longValue(2L));
+        assertEquals(((DoubleValue) convertedMap.get("pageCacheHitRatio")).doubleValue(), 3.0 / 5, 0.0001);
+        assertEquals(convertedMap.size(), 8);
     }
 
     @Test
-    void noStatisticConversion()
-    {
+    void noStatisticConversion() {
         MapValue convertedMap = ExecutionPlanConverter.convert(
-                new TestExecutionPlanDescription( "description", null, getIdentifiers(),
-                                                  getArguments() ) );
-        assertEquals( convertedMap.get( "operatorType" ), stringValue( "description" ) );
-        assertEquals( convertedMap.get( "args" ), ValueUtils.asMapValue( getArguments() ) );
-        assertEquals( convertedMap.get( "identifiers" ), ValueUtils.asListValue( getIdentifiers() ) );
-        assertEquals( convertedMap.get( "children" ), VirtualValues.EMPTY_LIST );
-        assertEquals( convertedMap.size(), 4 );
+                new TestExecutionPlanDescription("description", null, getIdentifiers(), getArguments()));
+        assertEquals(convertedMap.get("operatorType"), stringValue("description"));
+        assertEquals(convertedMap.get("args"), ValueUtils.asMapValue(getArguments()));
+        assertEquals(convertedMap.get("identifiers"), ValueUtils.asListValue(getIdentifiers()));
+        assertEquals(convertedMap.get("children"), VirtualValues.EMPTY_LIST);
+        assertEquals(convertedMap.size(), 4);
     }
 
-    private static Map<String,Object> getArguments()
-    {
-        return MapUtil.map( "argKey", "argValue" );
+    private static Map<String, Object> getArguments() {
+        return MapUtil.map("argKey", "argValue");
     }
 
-    private static Set<String> getIdentifiers()
-    {
-        return Iterators.asSet( "identifier1", "identifier2" );
+    private static Set<String> getIdentifiers() {
+        return Iterators.asSet("identifier1", "identifier2");
     }
 
-    private static TestProfilerStatistics getFullProfilerStatistics()
-    {
-        EnumMap<ProfilerArguments,Long> arguments = new EnumMap<>( ProfilerArguments.class );
-        arguments.put( ProfilerArguments.ROWS, 1L );
-        arguments.put( ProfilerArguments.DBHITS, 2L );
-        arguments.put( ProfilerArguments.PAGE_CACHE_HITS, 3L );
-        arguments.put( ProfilerArguments.PAGE_CACHE_MISSES, 2L );
-        arguments.put( ProfilerArguments.TIME, 5L );
-        return new TestProfilerStatistics( arguments );
+    private static TestProfilerStatistics getFullProfilerStatistics() {
+        EnumMap<ProfilerArguments, Long> arguments = new EnumMap<>(ProfilerArguments.class);
+        arguments.put(ProfilerArguments.ROWS, 1L);
+        arguments.put(ProfilerArguments.DBHITS, 2L);
+        arguments.put(ProfilerArguments.PAGE_CACHE_HITS, 3L);
+        arguments.put(ProfilerArguments.PAGE_CACHE_MISSES, 2L);
+        arguments.put(ProfilerArguments.TIME, 5L);
+        return new TestProfilerStatistics(arguments);
     }
 
-    private static TestProfilerStatistics getPartialProfilerStatistics()
-    {
-        EnumMap<ProfilerArguments,Long> arguments = new EnumMap<>( ProfilerArguments.class );
-        arguments.put( ProfilerArguments.ROWS, 1L );
-        arguments.put( ProfilerArguments.PAGE_CACHE_HITS, 3L );
-        arguments.put( ProfilerArguments.PAGE_CACHE_MISSES, 2L );
-        return new TestProfilerStatistics( arguments );
+    private static TestProfilerStatistics getPartialProfilerStatistics() {
+        EnumMap<ProfilerArguments, Long> arguments = new EnumMap<>(ProfilerArguments.class);
+        arguments.put(ProfilerArguments.ROWS, 1L);
+        arguments.put(ProfilerArguments.PAGE_CACHE_HITS, 3L);
+        arguments.put(ProfilerArguments.PAGE_CACHE_MISSES, 2L);
+        return new TestProfilerStatistics(arguments);
     }
 
-    private static class TestExecutionPlanDescription implements ExecutionPlanDescription
-    {
+    private static class TestExecutionPlanDescription implements ExecutionPlanDescription {
 
         private final String name;
         private final ProfilerStatistics profilerStatistics;
         private final Set<String> identifiers;
-        private final Map<String,Object> arguments;
+        private final Map<String, Object> arguments;
 
-        TestExecutionPlanDescription( String name, ProfilerStatistics profilerStatistics, Set<String> identifiers,
-                                      Map<String,Object> arguments )
-        {
+        TestExecutionPlanDescription(
+                String name,
+                ProfilerStatistics profilerStatistics,
+                Set<String> identifiers,
+                Map<String, Object> arguments) {
             this.name = name;
             this.profilerStatistics = profilerStatistics;
             this.identifiers = identifiers;
@@ -139,44 +127,37 @@ class ExecutionPlanConverterTest
         }
 
         @Override
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @Override
-        public List<ExecutionPlanDescription> getChildren()
-        {
+        public List<ExecutionPlanDescription> getChildren() {
             return Collections.emptyList();
         }
 
         @Override
-        public Map<String,Object> getArguments()
-        {
+        public Map<String, Object> getArguments() {
             return arguments;
         }
 
         @Override
-        public Set<String> getIdentifiers()
-        {
+        public Set<String> getIdentifiers() {
             return identifiers;
         }
 
         @Override
-        public boolean hasProfilerStatistics()
-        {
+        public boolean hasProfilerStatistics() {
             return profilerStatistics != null;
         }
 
         @Override
-        public ProfilerStatistics getProfilerStatistics()
-        {
+        public ProfilerStatistics getProfilerStatistics() {
             return profilerStatistics;
         }
     }
 
-    private enum ProfilerArguments
-    {
+    private enum ProfilerArguments {
         ROWS,
         DBHITS,
         PAGE_CACHE_HITS,
@@ -184,69 +165,58 @@ class ExecutionPlanConverterTest
         TIME
     }
 
-    private static class TestProfilerStatistics implements ExecutionPlanDescription.ProfilerStatistics
-    {
+    private static class TestProfilerStatistics implements ExecutionPlanDescription.ProfilerStatistics {
 
-        private final Map<ProfilerArguments,Long> arguments;
+        private final Map<ProfilerArguments, Long> arguments;
 
-        private TestProfilerStatistics( Map<ProfilerArguments,Long> arguments )
-        {
+        private TestProfilerStatistics(Map<ProfilerArguments, Long> arguments) {
             this.arguments = arguments;
         }
 
         @Override
-        public boolean hasRows()
-        {
-            return arguments.containsKey( ProfilerArguments.ROWS );
+        public boolean hasRows() {
+            return arguments.containsKey(ProfilerArguments.ROWS);
         }
 
         @Override
-        public boolean hasDbHits()
-        {
-            return arguments.containsKey( ProfilerArguments.DBHITS );
+        public boolean hasDbHits() {
+            return arguments.containsKey(ProfilerArguments.DBHITS);
         }
 
         @Override
-        public boolean hasPageCacheStats()
-        {
-            return arguments.containsKey( ProfilerArguments.PAGE_CACHE_HITS )
-                   && arguments.containsKey( ProfilerArguments.PAGE_CACHE_MISSES );
+        public boolean hasPageCacheStats() {
+            return arguments.containsKey(ProfilerArguments.PAGE_CACHE_HITS)
+                    && arguments.containsKey(ProfilerArguments.PAGE_CACHE_MISSES);
         }
 
         @Override
-        public boolean hasTime()
-        {
-            return arguments.containsKey( ProfilerArguments.TIME );
+        public boolean hasTime() {
+            return arguments.containsKey(ProfilerArguments.TIME);
         }
 
         @Override
-        public long getRows()
-        {
-            return arguments.get( ProfilerArguments.ROWS );
+        public long getRows() {
+            return arguments.get(ProfilerArguments.ROWS);
         }
 
         @Override
-        public long getDbHits()
-        {
-            return arguments.get( ProfilerArguments.DBHITS );
+        public long getDbHits() {
+            return arguments.get(ProfilerArguments.DBHITS);
         }
 
         @Override
-        public long getPageCacheHits()
-        {
-            return arguments.get( ProfilerArguments.PAGE_CACHE_HITS );
+        public long getPageCacheHits() {
+            return arguments.get(ProfilerArguments.PAGE_CACHE_HITS);
         }
 
         @Override
-        public long getPageCacheMisses()
-        {
-            return arguments.get( ProfilerArguments.PAGE_CACHE_MISSES );
+        public long getPageCacheMisses() {
+            return arguments.get(ProfilerArguments.PAGE_CACHE_MISSES);
         }
 
         @Override
-        public long getTime()
-        {
-            return arguments.get( ProfilerArguments.TIME );
+        public long getTime() {
+            return arguments.get(ProfilerArguments.TIME);
         }
     }
 }

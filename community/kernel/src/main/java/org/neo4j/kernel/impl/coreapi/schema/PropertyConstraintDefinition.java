@@ -19,25 +19,22 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import static java.util.Objects.requireNonNull;
+
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-import static java.util.Objects.requireNonNull;
-
-public abstract class PropertyConstraintDefinition implements ConstraintDefinition
-{
+public abstract class PropertyConstraintDefinition implements ConstraintDefinition {
     protected final InternalSchemaActions actions;
     protected ConstraintDescriptor constraint;
 
-    PropertyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint )
-    {
-        this.actions = requireNonNull( actions );
-        this.constraint = requireNonNull( constraint );
+    PropertyConstraintDefinition(InternalSchemaActions actions, ConstraintDescriptor constraint) {
+        this.actions = requireNonNull(actions);
+        this.constraint = requireNonNull(constraint);
     }
 
-    public ConstraintDescriptor getConstraintReference()
-    {
+    public ConstraintDescriptor getConstraintReference() {
         return constraint;
     }
 
@@ -45,27 +42,24 @@ public abstract class PropertyConstraintDefinition implements ConstraintDefiniti
     public abstract Iterable<String> getPropertyKeys();
 
     @Override
-    public boolean isConstraintType( ConstraintType type )
-    {
+    public boolean isConstraintType(ConstraintType type) {
         assertInUnterminatedTransaction();
-        return getConstraintType().equals( type );
+        return getConstraintType().equals(type);
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return constraint.getName();
     }
 
     @Override
-    public void drop()
-    {
+    public void drop() {
         assertInUnterminatedTransaction();
-        actions.dropConstraint( constraint );
+        actions.dropConstraint(constraint);
     }
 
     @Override
-    public abstract boolean equals( Object o );
+    public abstract boolean equals(Object o);
 
     @Override
     public abstract int hashCode();
@@ -76,8 +70,7 @@ public abstract class PropertyConstraintDefinition implements ConstraintDefiniti
     @Override
     public abstract String toString();
 
-    protected void assertInUnterminatedTransaction()
-    {
+    protected void assertInUnterminatedTransaction() {
         actions.assertInOpenTransaction();
     }
 }

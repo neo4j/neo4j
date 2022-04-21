@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.analyzer;
 
+import static org.apache.lucene.analysis.en.EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
+
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-
-import static org.apache.lucene.analysis.en.EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
 
 /**
  * Analyzer that uses ASCIIFoldingFilter to remove accents (diacritics).
@@ -144,76 +144,69 @@ import static org.apache.lucene.analysis.en.EnglishAnalyzer.ENGLISH_STOP_WORDS_S
  *
  * Implementation inspired by org.apache.lucene.analysis.standard.StandardAnalyzer
  */
-public final class StandardFoldingAnalyzer extends StopwordAnalyzerBase
-{
+public final class StandardFoldingAnalyzer extends StopwordAnalyzerBase {
     /** Default maximum allowed token length */
     public static final int DEFAULT_MAX_TOKEN_LENGTH = 255;
     /**
      * All non ascii letters handled by {@link LowerCaseFilter}.
      */
     public static final String NON_ASCII_LETTERS =
-            "ÀÁÂÃÄÅĀĂĄƏǍǞǠǺȀȂȦȺᴀḀẠẢẤẦẨẪẬẮẰẲẴẶⒶＡàáâãäåāăąǎǟǡǻȁȃȧɐəɚᶏᶕạảạảấầẩẫậắằẳẵặ" +
-            "ₐₔⓐⱥⱯａꜲÆǢǼᴁꜴꜶꜸꜺꜼ⒜ꜳæǣǽᴂꜵꜷꜹꜻꜽƁƂɃʙᴃḂḄḆⒷＢƀƃɓᵬᶀḃḅḇⓑｂ⒝ÇĆ" +
-            "ĈĊČƇȻʗᴄḈⒸＣçćĉċčƈȼɕḉↄⓒꜾꜿｃ⒞ÐĎĐƉƊƋᴅᴆḊḌḎḐḒⒹꝹＤðďđƌȡɖɗᵭᶁᶑḋḍḏḑḓⓓ" +
-            "ꝺｄǄǱǅǲ⒟ȸǆǳʣʥÈÉÊËĒĔĖĘĚƎƐȄȆȨɆᴇḔḖḘḚḜẸẺẼẾỀỂỄỆⒺⱻＥèéêëēĕėęěǝȅȇȩɇɘɛ" +
-            "ɜɝɞʚᴈᶒᶓᶔḕḗḙḛḝẹẻẽếềểễệₑⓔⱸｅ⒠ƑḞⒻꜰꝻꟻＦƒᵮᶂḟẛⓕꝼｆ⒡ﬀﬃﬄﬁﬂĜĞĠĢƓǤǥǦǧ" +
-            "ǴɢʛḠⒼꝽꝾＧĝğġģǵɠɡᵷᵹᶃḡⓖꝿｇ⒢ĤĦȞʜḢḤḦḨḪⒽⱧⱵＨĥħȟɥɦʮʯḣḥḧḩḫẖⓗⱨⱶｈǶ⒣" +
-            "ƕÌÍÎÏĨĪĬĮİƖƗǏȈȊɪᵻḬḮỈỊⒾꟾＩìíîïĩīĭįıǐȉȋɨᴉᵢᵼᶖḭḯỉịⁱⓘｉĲ⒤ĳĴɈᴊⒿＪĵǰ" +
-            "ȷɉɟʄʝⓙⱼｊ⒥ĶƘǨᴋḰḲḴⓀⱩꝀꝂꝄＫķƙǩʞᶄḱḳḵⓚⱪꝁꝃꝅｋ⒦ĹĻĽĿŁȽʟᴌḶḸḺḼⓁⱠⱢꝆꝈꞀＬ" +
-            "ĺļľŀłƚȴɫɬɭᶅḷḹḻḽⓛⱡꝇꝉꞁｌǇỺǈ⒧ǉỻʪʫƜᴍḾṀṂⓂⱮꟽꟿＭɯɰɱᵯᶆḿṁṃⓜｍ⒨ÑŃŅŇŊƝǸ" +
-            "ȠɴᴎṄṆṈṊⓃＮñńņňŉŋƞǹȵɲɳᵰᶇṅṇṉṋⁿⓝｎǊǋ⒩ǌÒÓÔÕÖØŌŎŐƆƟƠǑǪǬǾȌȎȪȬȮȰᴏᴐṌṎ" +
-            "ṐṒỌỎỐỒỔỖỘỚỜỞỠỢⓄꝊꝌＯòóôõöøōŏőơǒǫǭǿȍȏȫȭȯȱɔɵᴖᴗᶗṍṏṑṓọỏốồổỗộớờởỡợₒ" +
-            "ⓞⱺꝋꝍｏŒɶꝎȢᴕ⒪œᴔꝏȣƤᴘṔṖⓅⱣꝐꝒꝔＰƥᵱᵽᶈṕṗⓟꝑꝓꝕꟼｐ⒫ɊⓆꝖꝘＱĸɋʠⓠꝗꝙ" +
-            "ｑ⒬ȹŔŖŘȒȒɌʀʁᴙᴚṘṚṜṞⓇⱤꝚꞂＲŕŗřȑȓɍɼɽɾɿᵣᵲᵳᶉṙṛṝṟⓡꝛꞃｒ⒭ŚŜŞŠȘṠṢṤṦṨⓈꜱ" +
-            "ꞅＳśŝşšſșȿʂᵴᶊṡṣṥṧṩẜẝⓢꞄｓẞ⒮ßﬆŢŤŦƬƮȚȾᴛṪṬṮṰⓉꞆＴţťŧƫƭțȶʇʈᵵṫṭṯṱẗⓣⱦ" +
-            "ｔÞꝦꜨ⒯ʨþᵺꝧʦꜩÙÚÛÜŨŪŬŮŰŲƯǓǕǗǙǛȔȖɄᴜᵾṲṴṶṸṺỤỦỨỪỬỮỰⓊＵùúûüũūŭůűųưǔ" +
-            "ǖǘǚǜȕȗʉᵤᶙṳṵṷṹṻụủứừửữựⓤｕ⒰ᵫƲɅᴠṼṾỼⓋꝞꝨＶʋʌᵥᶌṽṿⓥⱱⱴꝟｖꝠ⒱ꝡŴǷᴡẀẂẄẆ" +
-            "ẈⓌⱲＷŵƿʍẁẃẅẇẉẘⓦⱳｗ⒲ẊẌⓍＸᶍẋẍₓⓧｘ⒳ÝŶŸƳȲɎʏẎỲỴỶỸỾⓎＹýÿŷƴȳɏʎẏẙỳ" +
-            "ỵỷỹỿⓨｙ⒴ŹŻŽƵȜȤᴢẐẒẔⓏⱫꝢＺźżžƶȝȥɀʐʑᵶᶎẑẓẕⓩⱬꝣｚ⒵";
+            "ÀÁÂÃÄÅĀĂĄƏǍǞǠǺȀȂȦȺᴀḀẠẢẤẦẨẪẬẮẰẲẴẶⒶＡàáâãäåāăąǎǟǡǻȁȃȧɐəɚᶏᶕạảạảấầẩẫậắằẳẵặ"
+                    + "ₐₔⓐⱥⱯａꜲÆǢǼᴁꜴꜶꜸꜺꜼ⒜ꜳæǣǽᴂꜵꜷꜹꜻꜽƁƂɃʙᴃḂḄḆⒷＢƀƃɓᵬᶀḃḅḇⓑｂ⒝ÇĆ"
+                    + "ĈĊČƇȻʗᴄḈⒸＣçćĉċčƈȼɕḉↄⓒꜾꜿｃ⒞ÐĎĐƉƊƋᴅᴆḊḌḎḐḒⒹꝹＤðďđƌȡɖɗᵭᶁᶑḋḍḏḑḓⓓ"
+                    + "ꝺｄǄǱǅǲ⒟ȸǆǳʣʥÈÉÊËĒĔĖĘĚƎƐȄȆȨɆᴇḔḖḘḚḜẸẺẼẾỀỂỄỆⒺⱻＥèéêëēĕėęěǝȅȇȩɇɘɛ"
+                    + "ɜɝɞʚᴈᶒᶓᶔḕḗḙḛḝẹẻẽếềểễệₑⓔⱸｅ⒠ƑḞⒻꜰꝻꟻＦƒᵮᶂḟẛⓕꝼｆ⒡ﬀﬃﬄﬁﬂĜĞĠĢƓǤǥǦǧ"
+                    + "ǴɢʛḠⒼꝽꝾＧĝğġģǵɠɡᵷᵹᶃḡⓖꝿｇ⒢ĤĦȞʜḢḤḦḨḪⒽⱧⱵＨĥħȟɥɦʮʯḣḥḧḩḫẖⓗⱨⱶｈǶ⒣"
+                    + "ƕÌÍÎÏĨĪĬĮİƖƗǏȈȊɪᵻḬḮỈỊⒾꟾＩìíîïĩīĭįıǐȉȋɨᴉᵢᵼᶖḭḯỉịⁱⓘｉĲ⒤ĳĴɈᴊⒿＪĵǰ"
+                    + "ȷɉɟʄʝⓙⱼｊ⒥ĶƘǨᴋḰḲḴⓀⱩꝀꝂꝄＫķƙǩʞᶄḱḳḵⓚⱪꝁꝃꝅｋ⒦ĹĻĽĿŁȽʟᴌḶḸḺḼⓁⱠⱢꝆꝈꞀＬ"
+                    + "ĺļľŀłƚȴɫɬɭᶅḷḹḻḽⓛⱡꝇꝉꞁｌǇỺǈ⒧ǉỻʪʫƜᴍḾṀṂⓂⱮꟽꟿＭɯɰɱᵯᶆḿṁṃⓜｍ⒨ÑŃŅŇŊƝǸ"
+                    + "ȠɴᴎṄṆṈṊⓃＮñńņňŉŋƞǹȵɲɳᵰᶇṅṇṉṋⁿⓝｎǊǋ⒩ǌÒÓÔÕÖØŌŎŐƆƟƠǑǪǬǾȌȎȪȬȮȰᴏᴐṌṎ"
+                    + "ṐṒỌỎỐỒỔỖỘỚỜỞỠỢⓄꝊꝌＯòóôõöøōŏőơǒǫǭǿȍȏȫȭȯȱɔɵᴖᴗᶗṍṏṑṓọỏốồổỗộớờởỡợₒ"
+                    + "ⓞⱺꝋꝍｏŒɶꝎȢᴕ⒪œᴔꝏȣƤᴘṔṖⓅⱣꝐꝒꝔＰƥᵱᵽᶈṕṗⓟꝑꝓꝕꟼｐ⒫ɊⓆꝖꝘＱĸɋʠⓠꝗꝙ"
+                    + "ｑ⒬ȹŔŖŘȒȒɌʀʁᴙᴚṘṚṜṞⓇⱤꝚꞂＲŕŗřȑȓɍɼɽɾɿᵣᵲᵳᶉṙṛṝṟⓡꝛꞃｒ⒭ŚŜŞŠȘṠṢṤṦṨⓈꜱ"
+                    + "ꞅＳśŝşšſșȿʂᵴᶊṡṣṥṧṩẜẝⓢꞄｓẞ⒮ßﬆŢŤŦƬƮȚȾᴛṪṬṮṰⓉꞆＴţťŧƫƭțȶʇʈᵵṫṭṯṱẗⓣⱦ"
+                    + "ｔÞꝦꜨ⒯ʨþᵺꝧʦꜩÙÚÛÜŨŪŬŮŰŲƯǓǕǗǙǛȔȖɄᴜᵾṲṴṶṸṺỤỦỨỪỬỮỰⓊＵùúûüũūŭůűųưǔ"
+                    + "ǖǘǚǜȕȗʉᵤᶙṳṵṷṹṻụủứừửữựⓤｕ⒰ᵫƲɅᴠṼṾỼⓋꝞꝨＶʋʌᵥᶌṽṿⓥⱱⱴꝟｖꝠ⒱ꝡŴǷᴡẀẂẄẆ"
+                    + "ẈⓌⱲＷŵƿʍẁẃẅẇẉẘⓦⱳｗ⒲ẊẌⓍＸᶍẋẍₓⓧｘ⒳ÝŶŸƳȲɎʏẎỲỴỶỸỾⓎＹýÿŷƴȳɏʎẏẙỳ"
+                    + "ỵỷỹỿⓨｙ⒴ŹŻŽƵȜȤᴢẐẒẔⓏⱫꝢＺźżžƶȝȥɀʐʑᵶᶎẑẓẕⓩⱬꝣｚ⒵";
     /**
      * All non ascii numbers handled by {@link LowerCaseFilter}.
      * This analyzer has undefined behaviour for those numbers but they are
      * kept around for reference.
      */
-    public static final String NON_ASCII_NUMBERS = "⁰₀⓪⓿０¹₁①⓵❶➀➊１" +
-            "⒈⑴²₂②⓶❷➁➋２⒉⑵³₃③⓷❸➂➌３⒊⑶⁴₄④⓸❹➃➍４⒋⑷⁵₅⑤⓹❺➄➎５⒌⑸⁶₆" +
-            "⑥⓺❻➅➏６⒍⑹⁷₇⑦⓻❼➆➐７⒎⑺⁸₈⑧⓼❽➇➑８⒏⑻⁹₉⑨⓽❾➈➒９⒐⑼⑩⓾❿➉➓" +
-            "⒑⑽⑪⓫⒒⑾⑫⓬⒓⑿⑬⓭⒔⒀⑭⓮⒕⒁⑮⓯⒖⒂⑯⓰⒗⒃⑰⓱⒘⒄⑱⓲⒙⒅⑲⓳⒚" +
-            "⒆⑳⓴⒛⒇";
+    public static final String NON_ASCII_NUMBERS = "⁰₀⓪⓿０¹₁①⓵❶➀➊１" + "⒈⑴²₂②⓶❷➁➋２⒉⑵³₃③⓷❸➂➌３⒊⑶⁴₄④⓸❹➃➍４⒋⑷⁵₅⑤⓹❺➄➎５⒌⑸⁶₆"
+            + "⑥⓺❻➅➏６⒍⑹⁷₇⑦⓻❼➆➐７⒎⑺⁸₈⑧⓼❽➇➑８⒏⑻⁹₉⑨⓽❾➈➒９⒐⑼⑩⓾❿➉➓"
+            + "⒑⑽⑪⓫⒒⑾⑫⓬⒓⑿⑬⓭⒔⒀⑭⓮⒕⒁⑮⓯⒖⒂⑯⓰⒗⒃⑰⓱⒘⒄⑱⓲⒙⒅⑲⓳⒚"
+            + "⒆⑳⓴⒛⒇";
     /**
      * All non ascii symbols handled by {@link LowerCaseFilter}
      * This analyzer has undefined behaviour for those symbols but they are
      * kept around for reference.
      */
-    public static final String NON_ASCII_SYMBOLS = "«»“”„″‶❝❞❮❯＂‘’‚" +
-            "‛′‵‹›❛❜＇‐‑‒–—⁻₋－⁅❲［⁆❳］⁽₍❨❪（⸨⁾₎❩❫）⸩❬❰＜❭❱＞❴｛❵｝⁺₊＋⁼₌＝！‼⁉＃" +
-            "＄⁒％＆⁎＊，．⁄／：⁏；？⁇⁈＠＼‸＾＿⁓～";
+    public static final String NON_ASCII_SYMBOLS =
+            "«»“”„″‶❝❞❮❯＂‘’‚" + "‛′‵‹›❛❜＇‐‑‒–—⁻₋－⁅❲［⁆❳］⁽₍❨❪（⸨⁾₎❩❫）⸩❬❰＜❭❱＞❴｛❵｝⁺₊＋⁼₌＝！‼⁉＃" + "＄⁒％＆⁎＊，．⁄／：⁏；？⁇⁈＠＼‸＾＿⁓～";
 
-    public StandardFoldingAnalyzer()
-    {
-        super( ENGLISH_STOP_WORDS_SET );
+    public StandardFoldingAnalyzer() {
+        super(ENGLISH_STOP_WORDS_SET);
     }
 
     @Override
-    protected TokenStreamComponents createComponents( String fieldName )
-    {
+    protected TokenStreamComponents createComponents(String fieldName) {
         StandardTokenizer src = new StandardTokenizer();
-        src.setMaxTokenLength( DEFAULT_MAX_TOKEN_LENGTH );
-        TokenStream tok = new ASCIIFoldingFilter( src );
-        tok = new LowerCaseFilter( tok );
-        tok = new StopFilter( tok, stopwords );
-        return new TokenStreamComponents( src, tok );
+        src.setMaxTokenLength(DEFAULT_MAX_TOKEN_LENGTH);
+        TokenStream tok = new ASCIIFoldingFilter(src);
+        tok = new LowerCaseFilter(tok);
+        tok = new StopFilter(tok, stopwords);
+        return new TokenStreamComponents(src, tok);
     }
 
     @Override
-    protected TokenStream normalize( String fieldName, TokenStream in )
-    {
-        return new LowerCaseFilter( in );
+    protected TokenStream normalize(String fieldName, TokenStream in) {
+        return new LowerCaseFilter(in);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName();
     }
 }

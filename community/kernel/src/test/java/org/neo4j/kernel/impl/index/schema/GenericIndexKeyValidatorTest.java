@@ -19,19 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.Arrays;
-
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.values.storable.Value;
-
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,95 +32,97 @@ import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
+import java.util.Arrays;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.values.storable.Value;
 
-@ExtendWith( RandomExtension.class )
-class GenericIndexKeyValidatorTest
-{
-    private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 1 ) ).withName( "test" ).materialise( 1 );
+@ExtendWith(RandomExtension.class)
+class GenericIndexKeyValidatorTest {
+    private final IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 1))
+            .withName("test")
+            .materialise(1);
 
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldNotBotherSerializingToRealBytesIfFarFromThreshold()
-    {
+    void shouldNotBotherSerializingToRealBytesIfFarFromThreshold() {
         // given
-        RangeLayout layout = mock( RangeLayout.class );
-        doThrow( RuntimeException.class ).when( layout ).newKey();
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, descriptor, layout, SIMPLE_NAME_LOOKUP );
+        RangeLayout layout = mock(RangeLayout.class);
+        doThrow(RuntimeException.class).when(layout).newKey();
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator(120, descriptor, layout, SIMPLE_NAME_LOOKUP);
 
         // when
-        validator.validate( 42, intValue( 10 ), epochDate( 100 ), stringValue( "abc" ) );
+        validator.validate(42, intValue(10), epochDate(100), stringValue("abc"));
 
         // then no exception should have been thrown
     }
 
     @Test
-    void shouldInvolveSerializingToRealBytesIfMayCrossThreshold()
-    {
+    void shouldInvolveSerializingToRealBytesIfMayCrossThreshold() {
         // given
-        RangeLayout layout = mock( RangeLayout.class );
-        when( layout.newKey() ).thenReturn( new CompositeRangeKey( 3 ) );
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, descriptor, layout, SIMPLE_NAME_LOOKUP );
+        RangeLayout layout = mock(RangeLayout.class);
+        when(layout.newKey()).thenReturn(new CompositeRangeKey(3));
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator(48, descriptor, layout, SIMPLE_NAME_LOOKUP);
 
         // when
-        var e = assertThrows( IllegalArgumentException.class,
-                () -> validator.validate( 42, intValue( 10 ), epochDate( 100 ), stringValue( "abcdefghijklmnopqrstuvw" ) ) );
-        assertThat( e.getMessage() ).contains( "abcdefghijklmnopqrstuvw" );
-        verify( layout ).newKey();
+        var e = assertThrows(
+                IllegalArgumentException.class,
+                () -> validator.validate(42, intValue(10), epochDate(100), stringValue("abcdefghijklmnopqrstuvw")));
+        assertThat(e.getMessage()).contains("abcdefghijklmnopqrstuvw");
+        verify(layout).newKey();
     }
 
     @Test
-    void shouldReportCorrectValidationErrorsOnRandomlyGeneratedValues()
-    {
+    void shouldReportCorrectValidationErrorsOnRandomlyGeneratedValues() {
         // given
-        int slots = random.nextInt( 1, 6 );
-        int maxLength = random.nextInt( 15, 30 ) * slots;
-        RangeLayout layout = new RangeLayout( slots );
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, descriptor, layout, SIMPLE_NAME_LOOKUP );
+        int slots = random.nextInt(1, 6);
+        int maxLength = random.nextInt(15, 30) * slots;
+        RangeLayout layout = new RangeLayout(slots);
+        GenericIndexKeyValidator validator =
+                new GenericIndexKeyValidator(maxLength, descriptor, layout, SIMPLE_NAME_LOOKUP);
         RangeKey key = layout.newKey();
 
-        for ( int i = 0; i < 100; i++ )
-        {
+        for (int i = 0; i < 100; i++) {
             // when
-            Value[] tuple = generateValueTuple( slots );
+            Value[] tuple = generateValueTuple(slots);
             boolean isOk;
-            try
-            {
-                validator.validate( 42, tuple );
+            try {
+                validator.validate(42, tuple);
                 isOk = true;
-            }
-            catch ( IllegalArgumentException e )
-            {
+            } catch (IllegalArgumentException e) {
                 isOk = false;
             }
-            int actualSize = actualSize( tuple, key );
+            int actualSize = actualSize(tuple, key);
             boolean manualIsOk = actualSize <= maxLength;
 
             // then
-            if ( manualIsOk != isOk )
-            {
-                fail( format( "Validator not validating %s correctly. Manual validation on actual key resulted in %b whereas validator said %b",
-                        Arrays.toString( tuple ), manualIsOk, isOk ) );
+            if (manualIsOk != isOk) {
+                fail(format(
+                        "Validator not validating %s correctly. Manual validation on actual key resulted in %b whereas validator said %b",
+                        Arrays.toString(tuple), manualIsOk, isOk));
             }
         }
     }
 
-    private static int actualSize( Value[] tuple, RangeKey key )
-    {
-        key.initialize( 0 );
-        for ( int i = 0; i < tuple.length; i++ )
-        {
-            key.initFromValue( i, tuple[i], NativeIndexKey.Inclusion.NEUTRAL );
+    private static int actualSize(Value[] tuple, RangeKey key) {
+        key.initialize(0);
+        for (int i = 0; i < tuple.length; i++) {
+            key.initFromValue(i, tuple[i], NativeIndexKey.Inclusion.NEUTRAL);
         }
         return key.size();
     }
 
-    private Value[] generateValueTuple( int slots )
-    {
+    private Value[] generateValueTuple(int slots) {
         Value[] tuple = new Value[slots];
-        for ( int j = 0; j < slots; j++ )
-        {
+        for (int j = 0; j < slots; j++) {
             tuple[j] = random.nextValue();
         }
         return tuple;

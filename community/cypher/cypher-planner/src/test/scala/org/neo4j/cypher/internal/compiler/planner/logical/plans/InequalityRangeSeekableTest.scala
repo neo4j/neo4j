@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTestSupport {
+
   test("Constructs RangeLessThan") {
     valueRangeSeekable(
       propLessThan("n", "prop", 1)
@@ -71,32 +72,32 @@ class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTes
       propGreaterThan("n", "prop", 1)
     ).range should equal(RangeBetween(
       RangeGreaterThan(NonEmptyList(exclusive(1))),
-      RangeLessThan(NonEmptyList(exclusive(1))))
-    )
+      RangeLessThan(NonEmptyList(exclusive(1)))
+    ))
 
     valueRangeSeekable(
       propGreaterThan("n", "prop", 1),
       propLessThan("n", "prop", 1)
     ).range should equal(RangeBetween(
       RangeGreaterThan(NonEmptyList(exclusive(1))),
-      RangeLessThan(NonEmptyList(exclusive(1))))
-    )
+      RangeLessThan(NonEmptyList(exclusive(1)))
+    ))
 
     valueRangeSeekable(
       lessThanOrEqual(prop("n", "prop"), literalInt(1)),
       greaterThanOrEqual(prop("n", "prop"), literalInt(1))
     ).range should equal(RangeBetween(
       RangeGreaterThan(NonEmptyList(inclusive(1))),
-      RangeLessThan(NonEmptyList(inclusive(1))))
-    )
+      RangeLessThan(NonEmptyList(inclusive(1)))
+    ))
 
     valueRangeSeekable(
       greaterThanOrEqual(prop("n", "prop"), literalInt(1)),
       lessThanOrEqual(prop("n", "prop"), literalInt(1))
     ).range should equal(RangeBetween(
       RangeGreaterThan(NonEmptyList(inclusive(1))),
-      RangeLessThan(NonEmptyList(inclusive(1))))
-    )
+      RangeLessThan(NonEmptyList(inclusive(1)))
+    ))
   }
 
   private def inclusive(v: Int): Bound[Expression] = InclusiveBound(literalInt(v))

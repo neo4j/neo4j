@@ -41,17 +41,30 @@ object PlanningAttributes {
   class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder]
   class LeveragedOrders extends PartialAttribute[LogicalPlan, Boolean](false)
 
-  def newAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new EffectiveCardinalities, new ProvidedOrders, new LeveragedOrders)
+  def newAttributes: PlanningAttributes = PlanningAttributes(
+    new Solveds,
+    new Cardinalities,
+    new EffectiveCardinalities,
+    new ProvidedOrders,
+    new LeveragedOrders
+  )
 }
 
-case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, effectiveCardinalities: EffectiveCardinalities, providedOrders: ProvidedOrders, leveragedOrders: LeveragedOrders) {
+case class PlanningAttributes(
+  solveds: Solveds,
+  cardinalities: Cardinalities,
+  effectiveCardinalities: EffectiveCardinalities,
+  providedOrders: ProvidedOrders,
+  leveragedOrders: LeveragedOrders
+) {
   private val attributes = productIterator.asInstanceOf[Iterator[Attribute[LogicalPlan, _]]].toSeq
 
   def asAttributes(idGen: IdGen): Attributes[LogicalPlan] = Attributes[LogicalPlan](idGen, attributes: _*)
 
   // Let's not override the copy method of case classes
-  def createCopy() : PlanningAttributes =
-    PlanningAttributes(solveds.clone[Solveds],
+  def createCopy(): PlanningAttributes =
+    PlanningAttributes(
+      solveds.clone[Solveds],
       cardinalities.clone[Cardinalities],
       effectiveCardinalities.clone[EffectiveCardinalities],
       providedOrders.clone[ProvidedOrders],
@@ -68,4 +81,9 @@ case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, ef
   }
 }
 
-case class PlanningAttributesCacheKey(cardinalities: Cardinalities, effectiveCardinalities: EffectiveCardinalities, providedOrders: ProvidedOrders, leveragedOrders: LeveragedOrders)
+case class PlanningAttributesCacheKey(
+  cardinalities: Cardinalities,
+  effectiveCardinalities: EffectiveCardinalities,
+  providedOrders: ProvidedOrders,
+  leveragedOrders: LeveragedOrders
+)

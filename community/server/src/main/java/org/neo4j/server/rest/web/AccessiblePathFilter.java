@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.web;
 
+import static java.util.stream.Collectors.toUnmodifiableList;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -27,46 +29,35 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.ws.rs.core.Response;
-
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-import static java.util.stream.Collectors.toUnmodifiableList;
-
-public class AccessiblePathFilter extends AbstractFilter
-{
+public class AccessiblePathFilter extends AbstractFilter {
     private final List<Pattern> blacklist;
     private final InternalLog log;
 
-    public AccessiblePathFilter( InternalLogProvider logProvider, List<String> blacklist )
-    {
-        this.blacklist = blacklist.stream().map( Pattern::compile ).collect( toUnmodifiableList() );
-        this.log = logProvider.getLog( getClass() );
+    public AccessiblePathFilter(InternalLogProvider logProvider, List<String> blacklist) {
+        this.blacklist = blacklist.stream().map(Pattern::compile).collect(toUnmodifiableList());
+        this.log = logProvider.getLog(getClass());
     }
 
     @Override
-    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain ) throws IOException, ServletException
-    {
-        var request = validateRequestType( servletRequest );
-        var response = validateResponseType( servletResponse );
-        var path = request.getContextPath() + ( request.getPathInfo() == null ? "" : request.getPathInfo() );
-        if ( blacklisted( path ) )
-        {
-            log.debug( "HTTP client '%s' trying to access a disabled server path: '%s'.", request.getRemoteAddr(), path );
-            response.setStatus( Response.Status.FORBIDDEN.getStatusCode() );
-        }
-        else
-        {
-            chain.doFilter( servletRequest, servletResponse );
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)
+            throws IOException, ServletException {
+        var request = validateRequestType(servletRequest);
+        var response = validateResponseType(servletResponse);
+        var path = request.getContextPath() + (request.getPathInfo() == null ? "" : request.getPathInfo());
+        if (blacklisted(path)) {
+            log.debug("HTTP client '%s' trying to access a disabled server path: '%s'.", request.getRemoteAddr(), path);
+            response.setStatus(Response.Status.FORBIDDEN.getStatusCode());
+        } else {
+            chain.doFilter(servletRequest, servletResponse);
         }
     }
 
-    private boolean blacklisted( String path )
-    {
-        for ( Pattern pattern : blacklist )
-        {
-            if ( pattern.matcher( path ).matches() )
-            {
+    private boolean blacklisted(String path) {
+        for (Pattern pattern : blacklist) {
+            if (pattern.matcher(path).matches()) {
                 return true;
             }
         }

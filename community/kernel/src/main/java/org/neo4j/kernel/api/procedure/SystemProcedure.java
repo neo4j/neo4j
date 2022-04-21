@@ -27,10 +27,9 @@ import java.lang.annotation.Target;
 /**
  * Annotate a procedure with this to signal that it is allowed to run this procedure against the system database.
  */
-@Target( ElementType.METHOD )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface SystemProcedure
-{
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface SystemProcedure {
     /**
      * Credentials are always checked, but may pass if the password is expired, if this flag is set to true.
      *

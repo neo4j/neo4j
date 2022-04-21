@@ -19,12 +19,12 @@
  */
 package org.neo4j.adversaries;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.lang.StackWalker.StackFrame;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toSet;
 
 /**
  * An adversary that delegates failure injection only when invoked through certain call sites.
@@ -32,12 +32,10 @@ import static java.util.stream.Collectors.toSet;
  * and if there's a match with the specified victims then failure will be delegated to the actual
  * {@link Adversary} underneath.
  */
-public class ClassGuardedAdversary extends StackTraceElementGuardedAdversary
-{
+public class ClassGuardedAdversary extends StackTraceElementGuardedAdversary {
 
-    public ClassGuardedAdversary( Adversary delegate, Class<?>... victimClassSet )
-    {
-        super( delegate, new ClassFramePredicate( victimClassSet ) );
+    public ClassGuardedAdversary(Adversary delegate, Class<?>... victimClassSet) {
+        super(delegate, new ClassFramePredicate(victimClassSet));
     }
 
     /**
@@ -47,24 +45,20 @@ public class ClassGuardedAdversary extends StackTraceElementGuardedAdversary
      * @param predicate arbitrary {@link Predicate} for {@link StackTraceElement} in the executing
      * thread and if any of the elements in the current stack trace matches then failure is injected.
      */
-    public ClassGuardedAdversary( Adversary delegate, Predicate<StackFrame> predicate )
-    {
-        super( delegate, predicate );
+    public ClassGuardedAdversary(Adversary delegate, Predicate<StackFrame> predicate) {
+        super(delegate, predicate);
     }
 
-    private static class ClassFramePredicate implements Predicate<StackFrame>
-    {
+    private static class ClassFramePredicate implements Predicate<StackFrame> {
         private final Set<String> victimClasses;
 
-        ClassFramePredicate( Class<?>... victimClassSet )
-        {
-            this.victimClasses = Stream.of( victimClassSet ).map( Class::getName ).collect( toSet() );
+        ClassFramePredicate(Class<?>... victimClassSet) {
+            this.victimClasses = Stream.of(victimClassSet).map(Class::getName).collect(toSet());
         }
 
         @Override
-        public boolean test( StackFrame stackFrame )
-        {
-            return victimClasses.contains( stackFrame.getClassName() );
+        public boolean test(StackFrame stackFrame) {
+            return victimClasses.contains(stackFrame.getClassName());
         }
     }
 }

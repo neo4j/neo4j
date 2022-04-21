@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
+class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("single row returns itself as the leafs") {
     val argument = Argument(Set("a"))
@@ -65,16 +65,16 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
     p1 should equal(p1)
     p1 should equal(p2)
-    p1 should not equal(p3)
+    p1 should not equal (p3)
     p2 should equal(p1)
     p2 should equal(p2)
-    p2 should not equal(p3)
-    p3 should not equal(p1)
-    p3 should not equal(p2)
+    p2 should not equal (p3)
+    p3 should not equal (p1)
+    p3 should not equal (p2)
     p3 should equal(p3)
 
     p4 should equal(p5)
-    p4 should not equal(p6)
+    p4 should not equal (p6)
   }
 
   test("leftmostLeaf should return left most leaf") {

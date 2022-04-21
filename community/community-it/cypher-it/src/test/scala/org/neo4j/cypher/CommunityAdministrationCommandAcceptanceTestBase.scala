@@ -23,7 +23,8 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.exceptions.DatabaseAdministrationException
 
-abstract class CommunityAdministrationCommandAcceptanceTestBase extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
+abstract class CommunityAdministrationCommandAcceptanceTestBase extends ExecutionEngineFunSuite
+    with GraphDatabaseTestSupport {
 
   override protected def initTest(): Unit = {
     super.initTest()

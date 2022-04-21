@@ -20,20 +20,15 @@
 package org.neo4j.bolt.v3.messaging.encoder;
 
 import java.io.IOException;
-
-import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.messaging.ResponseMessageEncoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v3.messaging.response.IgnoredMessage;
 
-public class IgnoredMessageEncoder implements ResponseMessageEncoder<IgnoredMessage>
-{
-    public IgnoredMessageEncoder()
-    {
-    }
+public class IgnoredMessageEncoder implements ResponseMessageEncoder<IgnoredMessage> {
+    public IgnoredMessageEncoder() {}
 
     @Override
-    public void encode( Neo4jPack.Packer packer, IgnoredMessage message ) throws IOException
-    {
-        packer.packStructHeader( 0, message.signature() );
+    public void encode(Neo4jPack.Packer packer, IgnoredMessage message) throws IOException {
+        packer.packStructHeader(0, message.signature());
     }
 }

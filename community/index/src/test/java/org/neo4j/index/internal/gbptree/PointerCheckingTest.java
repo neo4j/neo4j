@@ -19,130 +19,120 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.io.pagecache.ByteArrayPageCursor;
-import org.neo4j.io.pagecache.PageCursor;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.GBPTreeGenerationTarget.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.write;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
 
-class PointerCheckingTest
-{
-    private final PageCursor cursor = ByteArrayPageCursor.wrap( GenerationSafePointerPair.SIZE );
+import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
+import org.neo4j.io.pagecache.PageCursor;
+
+class PointerCheckingTest {
+    private final PageCursor cursor = ByteArrayPageCursor.wrap(GenerationSafePointerPair.SIZE);
     private final long firstGeneration = 1;
     private final long secondGeneration = 2;
     private final long thirdGeneration = 3;
 
     @Test
-    void checkChildShouldThrowOnNoNode()
-    {
-        assertThrows(TreeInconsistencyException.class, () -> PointerChecking.checkPointer( TreeNode.NO_NODE_FLAG, false ) );
+    void checkChildShouldThrowOnNoNode() {
+        assertThrows(
+                TreeInconsistencyException.class, () -> PointerChecking.checkPointer(TreeNode.NO_NODE_FLAG, false));
     }
 
     @Test
-    void checkChildShouldThrowOnReadFailure()
-    {
-        long result = GenerationSafePointerPair.read( cursor, 0, 1, NO_GENERATION_TARGET );
+    void checkChildShouldThrowOnReadFailure() {
+        long result = GenerationSafePointerPair.read(cursor, 0, 1, NO_GENERATION_TARGET);
 
-        assertThrows( TreeInconsistencyException.class, () -> PointerChecking.checkPointer( result, false ) );
+        assertThrows(TreeInconsistencyException.class, () -> PointerChecking.checkPointer(result, false));
     }
 
     @Test
-    void checkChildShouldThrowOnWriteFailure()
-    {
+    void checkChildShouldThrowOnWriteFailure() {
         // GIVEN
-        write( cursor, 123, 0, firstGeneration );
+        write(cursor, 123, 0, firstGeneration);
         cursor.rewind();
-        write( cursor, 456, firstGeneration, secondGeneration );
+        write(cursor, 456, firstGeneration, secondGeneration);
         cursor.rewind();
 
         // WHEN
         // This write will see first and second written pointers and think they belong to CRASHed generation
-        long result = write( cursor, 789, 0, thirdGeneration );
-        assertThrows( TreeInconsistencyException.class, () -> PointerChecking.checkPointer( result, false ) );
+        long result = write(cursor, 789, 0, thirdGeneration);
+        assertThrows(TreeInconsistencyException.class, () -> PointerChecking.checkPointer(result, false));
     }
 
     @Test
-    void checkChildShouldPassOnReadSuccess()
-    {
+    void checkChildShouldPassOnReadSuccess() {
         // GIVEN
-        PointerChecking.checkPointer( write( cursor, 123, 0, firstGeneration ), false );
+        PointerChecking.checkPointer(write(cursor, 123, 0, firstGeneration), false);
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, 0, firstGeneration, NO_GENERATION_TARGET );
+        long result = read(cursor, 0, firstGeneration, NO_GENERATION_TARGET);
 
         // THEN
-        PointerChecking.checkPointer( result, false );
+        PointerChecking.checkPointer(result, false);
     }
 
     @Test
-    void checkChildShouldPassOnWriteSuccess()
-    {
+    void checkChildShouldPassOnWriteSuccess() {
         // WHEN
-        long result = write( cursor, 123, 0, firstGeneration );
+        long result = write(cursor, 123, 0, firstGeneration);
 
         // THEN
-        PointerChecking.checkPointer( result, false );
+        PointerChecking.checkPointer(result, false);
     }
 
     @Test
-    void checkSiblingShouldPassOnReadSuccessForNoNodePointer()
-    {
+    void checkSiblingShouldPassOnReadSuccessForNoNodePointer() {
         // GIVEN
-        write( cursor, TreeNode.NO_NODE_FLAG, firstGeneration, secondGeneration );
+        write(cursor, TreeNode.NO_NODE_FLAG, firstGeneration, secondGeneration);
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET );
+        long result = read(cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET);
 
         // THEN
-        PointerChecking.checkPointer( result, true );
+        PointerChecking.checkPointer(result, true);
     }
 
     @Test
-    void checkSiblingShouldPassOnReadSuccessForNodePointer()
-    {
+    void checkSiblingShouldPassOnReadSuccessForNodePointer() {
         // GIVEN
         long pointer = 101;
-        write( cursor, pointer, firstGeneration, secondGeneration );
+        write(cursor, pointer, firstGeneration, secondGeneration);
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET );
+        long result = read(cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET);
 
         // THEN
-        PointerChecking.checkPointer( result, true );
+        PointerChecking.checkPointer(result, true);
     }
 
     @Test
-    void checkSiblingShouldThrowOnReadFailure()
-    {
-        long result = read( cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET );
+    void checkSiblingShouldThrowOnReadFailure() {
+        long result = read(cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET);
 
-        assertThrows( TreeInconsistencyException.class, () -> PointerChecking.checkPointer( result, true ) );
+        assertThrows(TreeInconsistencyException.class, () -> PointerChecking.checkPointer(result, true));
     }
 
     @Test
-    void checkSiblingShouldThrowOnReadIllegalPointer()
-    {
+    void checkSiblingShouldThrowOnReadIllegalPointer() {
         // GIVEN
         long generation = IdSpace.STATE_PAGE_A;
         long pointer = this.secondGeneration;
 
         // Can not use GenerationSafePointer.write because it will fail on pointer assertion.
-        cursor.putInt( (int) pointer );
-        put6BLong( cursor, generation );
-        cursor.putShort( GenerationSafePointer.checksumOf( generation, pointer ) );
+        cursor.putInt((int) pointer);
+        put6BLong(cursor, generation);
+        cursor.putShort(GenerationSafePointer.checksumOf(generation, pointer));
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, pointer, NO_GENERATION_TARGET );
+        long result = read(cursor, firstGeneration, pointer, NO_GENERATION_TARGET);
 
-        assertThrows(TreeInconsistencyException.class, () -> PointerChecking.checkPointer( result, true ) );
+        assertThrows(TreeInconsistencyException.class, () -> PointerChecking.checkPointer(result, true));
     }
 }

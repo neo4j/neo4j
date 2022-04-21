@@ -21,26 +21,22 @@ package org.neo4j.logging.internal;
 
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public class DatabaseLogService extends AbstractLogService
-{
+public class DatabaseLogService extends AbstractLogService {
     private final DatabaseLogProvider userLogProvider;
     private final DatabaseLogProvider internalLogProvider;
 
-    public DatabaseLogService( NamedDatabaseId namedDatabaseId, LogService delegate )
-    {
-        this.userLogProvider = new DatabaseLogProvider( namedDatabaseId, delegate.getUserLogProvider() );
-        this.internalLogProvider = new DatabaseLogProvider( namedDatabaseId, delegate.getInternalLogProvider() );
+    public DatabaseLogService(NamedDatabaseId namedDatabaseId, LogService delegate) {
+        this.userLogProvider = new DatabaseLogProvider(namedDatabaseId, delegate.getUserLogProvider());
+        this.internalLogProvider = new DatabaseLogProvider(namedDatabaseId, delegate.getInternalLogProvider());
     }
 
     @Override
-    public DatabaseLogProvider getUserLogProvider()
-    {
+    public DatabaseLogProvider getUserLogProvider() {
         return userLogProvider;
     }
 
     @Override
-    public DatabaseLogProvider getInternalLogProvider()
-    {
+    public DatabaseLogProvider getInternalLogProvider() {
         return internalLogProvider;
     }
 }

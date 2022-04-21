@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Input;
@@ -47,8 +46,7 @@ import org.neo4j.storageengine.api.LogFilesInitializer;
  * Goes through multiple stages where each stage has one or more steps executing in parallel, passing
  * batches between these steps through each stage, i.e. passing batches downstream.
  */
-public class ParallelBatchImporter implements BatchImporter
-{
+public class ParallelBatchImporter implements BatchImporter {
     private static final String BATCH_IMPORTER_CHECKPOINT = "Batch importer checkpoint.";
     private final RecordDatabaseLayout databaseLayout;
     private final FileSystemAbstraction fileSystem;
@@ -67,13 +65,24 @@ public class ParallelBatchImporter implements BatchImporter
     private final MemoryTracker memoryTracker;
     private final CursorContextFactory contextFactory;
 
-    public ParallelBatchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
-            PageCacheTracer pageCacheTracer, Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds, LogTailMetadata logTailMetadata, Config dbConfig, Monitor monitor,
-            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
-            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
-    {
-        this.databaseLayout = RecordDatabaseLayout.convert( databaseLayout );
+    public ParallelBatchImporter(
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fileSystem,
+            PageCacheTracer pageCacheTracer,
+            Configuration config,
+            LogService logService,
+            ExecutionMonitor executionMonitor,
+            AdditionalInitialIds additionalInitialIds,
+            LogTailMetadata logTailMetadata,
+            Config dbConfig,
+            Monitor monitor,
+            JobScheduler jobScheduler,
+            Collector badCollector,
+            LogFilesInitializer logFilesInitializer,
+            IndexImporterFactory indexImporterFactory,
+            MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory) {
+        this.databaseLayout = RecordDatabaseLayout.convert(databaseLayout);
         this.fileSystem = fileSystem;
         this.pageCacheTracer = pageCacheTracer;
         this.config = config;
@@ -92,23 +101,41 @@ public class ParallelBatchImporter implements BatchImporter
     }
 
     @Override
-    public void doImport( Input input ) throws IOException
-    {
-        try ( BatchingNeoStores store = ImportLogic.instantiateNeoStores( fileSystem, databaseLayout, pageCacheTracer,
-                      config, logService, additionalInitialIds, logTailMetadata, dbConfig, jobScheduler, memoryTracker, contextFactory );
-              ImportLogic logic = new ImportLogic(
-                      databaseLayout, store, config, dbConfig, logService, executionMonitor, badCollector,
-                      monitor, contextFactory, indexImporterFactory, memoryTracker ) )
-        {
+    public void doImport(Input input) throws IOException {
+        try (BatchingNeoStores store = ImportLogic.instantiateNeoStores(
+                        fileSystem,
+                        databaseLayout,
+                        pageCacheTracer,
+                        config,
+                        logService,
+                        additionalInitialIds,
+                        logTailMetadata,
+                        dbConfig,
+                        jobScheduler,
+                        memoryTracker,
+                        contextFactory);
+                ImportLogic logic = new ImportLogic(
+                        databaseLayout,
+                        store,
+                        config,
+                        dbConfig,
+                        logService,
+                        executionMonitor,
+                        badCollector,
+                        monitor,
+                        contextFactory,
+                        indexImporterFactory,
+                        memoryTracker)) {
             store.createNew();
-            logic.initialize( input );
+            logic.initialize(input);
             logic.importNodes();
             logic.prepareIdMapper();
             logic.importRelationships();
             logic.calculateNodeDegrees();
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
-            logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT );
+            logFilesInitializer.initializeLogFiles(
+                    databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT);
             logic.buildCountsStore();
             logic.success();
         }

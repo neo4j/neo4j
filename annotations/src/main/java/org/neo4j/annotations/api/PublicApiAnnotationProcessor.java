@@ -19,6 +19,23 @@
  */
 package org.neo4j.annotations.api;
 
+import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
+import static javax.tools.Diagnostic.Kind.ERROR;
+import static javax.tools.Diagnostic.Kind.NOTE;
+import static javax.tools.Diagnostic.Kind.WARNING;
+import static javax.tools.StandardLocation.CLASS_OUTPUT;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
+import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
+import static org.neo4j.annotations.AnnotationConstants.WINDOWS_NEW_LINE;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -51,28 +68,10 @@ import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
 import javax.tools.FileObject;
 
-import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
-import static javax.tools.Diagnostic.Kind.ERROR;
-import static javax.tools.Diagnostic.Kind.NOTE;
-import static javax.tools.Diagnostic.Kind.WARNING;
-import static javax.tools.StandardLocation.CLASS_OUTPUT;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
-import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
-import static org.neo4j.annotations.AnnotationConstants.WINDOWS_NEW_LINE;
-
 /**
  * Generates public API signatures from all the classes marked with {@link PublicApi}. It performs some sanity checking so that all exposed types are visible.
  */
-public class PublicApiAnnotationProcessor extends AbstractProcessor
-{
+public class PublicApiAnnotationProcessor extends AbstractProcessor {
     /**
      * This should be enabled from the build system
      */
@@ -92,182 +91,151 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
     private boolean inDeprecatedScope;
     private Types typeUtils;
 
-    @SuppressWarnings( "unused" )
-    public PublicApiAnnotationProcessor()
-    {
-        this( false );
+    @SuppressWarnings("unused")
+    public PublicApiAnnotationProcessor() {
+        this(false);
     }
 
     /**
      * Used from tests since the in-memory filesystem there does not support all of the needed operations.
      * Welcome to the world of impossible-to-test annotation processors!
      */
-    PublicApiAnnotationProcessor( boolean forTest )
-    {
-        this( forTest, DEFAULT_NEW_LINE );
+    PublicApiAnnotationProcessor(boolean forTest) {
+        this(forTest, DEFAULT_NEW_LINE);
     }
 
     /**
      * Used from tests since the in-memory filesystem there does not support all of the needed operations.
      * Welcome to the world of impossible-to-test annotation processors!
      */
-    PublicApiAnnotationProcessor( boolean forTest, String newLine )
-    {
+    PublicApiAnnotationProcessor(boolean forTest, String newLine) {
         this.testExecution = forTest;
         this.newLine = newLine;
     }
 
     @Override
-    public synchronized void init( ProcessingEnvironment processingEnv )
-    {
-        super.init( processingEnv );
+    public synchronized void init(ProcessingEnvironment processingEnv) {
+        super.init(processingEnv);
         typeUtils = processingEnv.getTypeUtils();
     }
 
     @Override
-    public Set<String> getSupportedAnnotationTypes()
-    {
-        return Set.of( PublicApi.class.getName() );
+    public Set<String> getSupportedAnnotationTypes() {
+        return Set.of(PublicApi.class.getName());
     }
 
     @Override
-    public SourceVersion getSupportedSourceVersion()
-    {
+    public SourceVersion getSupportedSourceVersion() {
         return SourceVersion.latestSupported();
     }
 
     @Override
-    public boolean process( Set<? extends TypeElement> annotations, RoundEnvironment roundEnv )
-    {
-        try
-        {
-            if ( roundEnv.processingOver() )
-            {
-                if ( !roundEnv.errorRaised() )
-                {
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        try {
+            if (roundEnv.processingOver()) {
+                if (!roundEnv.errorRaised()) {
                     generateSignature();
                 }
+            } else {
+                process(roundEnv);
             }
-            else
-            {
-                process( roundEnv );
-            }
-        }
-        catch ( Exception e )
-        {
-            error( "Public API annotation processor failed: " + getStackTrace( e ) );
+        } catch (Exception e) {
+            error("Public API annotation processor failed: " + getStackTrace(e));
         }
         return false;
     }
 
-    private void generateSignature() throws IOException
-    {
+    private void generateSignature() throws IOException {
         // only verify on request
-        if ( !Boolean.getBoolean( VERIFY_TOGGLE ) )
-        {
+        if (!Boolean.getBoolean(VERIFY_TOGGLE)) {
             return;
         }
 
-        if ( !publicElements.isEmpty() )
-        {
+        if (!publicElements.isEmpty()) {
             StringBuilder sb = new StringBuilder();
-            for ( final String element : publicElements )
-            {
-                sb.append( element ).append( newLine );
+            for (final String element : publicElements) {
+                sb.append(element).append(newLine);
             }
             String newSignature = sb.toString();
 
             // Write new signature
-            final FileObject file = processingEnv.getFiler().createResource( CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION );
-            try ( BufferedWriter writer = new BufferedWriter( file.openWriter() ) )
-            {
-                writer.write( newSignature );
+            final FileObject file =
+                    processingEnv.getFiler().createResource(CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION);
+            try (BufferedWriter writer = new BufferedWriter(file.openWriter())) {
+                writer.write(newSignature);
             }
 
-            if ( !testExecution )
-            {
+            if (!testExecution) {
                 // Verify files
-                Path path = Path.of( file.toUri() );
-                Path metaPath = getAndAssertParent( path, "META-INF" );
-                Path classesPath = getAndAssertParent( metaPath, "classes" );
-                Path targetPath = getAndAssertParent( classesPath, "target" );
-                Path mavenModulePath = requireNonNull( targetPath.getParent() );
-                Path oldSignaturePath = mavenModulePath.resolve( "PublicApi.txt" );
+                Path path = Path.of(file.toUri());
+                Path metaPath = getAndAssertParent(path, "META-INF");
+                Path classesPath = getAndAssertParent(metaPath, "classes");
+                Path targetPath = getAndAssertParent(classesPath, "target");
+                Path mavenModulePath = requireNonNull(targetPath.getParent());
+                Path oldSignaturePath = mavenModulePath.resolve("PublicApi.txt");
 
-                if ( Boolean.getBoolean( "overwrite" ) )
-                {
-                    info( "Overwriting " + oldSignaturePath );
-                    Files.writeString( oldSignaturePath, newSignature, UTF_8, WRITE, CREATE, TRUNCATE_EXISTING );
+                if (Boolean.getBoolean("overwrite")) {
+                    info("Overwriting " + oldSignaturePath);
+                    Files.writeString(oldSignaturePath, newSignature, UTF_8, WRITE, CREATE, TRUNCATE_EXISTING);
                 }
 
-                if ( !Files.exists( oldSignaturePath ) )
-                {
-                    error( format( "Missing file %s, use `-Doverwrite` to create it.", oldSignaturePath ) );
+                if (!Files.exists(oldSignaturePath)) {
+                    error(format("Missing file %s, use `-Doverwrite` to create it.", oldSignaturePath));
                     return;
                 }
 
-                String oldSignature = Files.readString( oldSignaturePath, UTF_8 );
-                if ( !oldSignature.equals( newSignature ) )
-                {
-                    oldSignature = oldSignature.replace( WINDOWS_NEW_LINE, DEFAULT_NEW_LINE );
-                    newSignature = newSignature.replace( WINDOWS_NEW_LINE, DEFAULT_NEW_LINE );
-                    if ( !oldSignature.equals( newSignature ) )
-                    {
-                        StringBuilder diff = diff( oldSignaturePath );
-                        error( format( "Public API signature mismatch. The generated signature, %s, does not match the old signature in %s.%n" +
-                                "Specify `-Doverwrite` to maven to replace it. Changed public elements, compared to the committed PublicApi.txt:%n%s%n",
-                                path, oldSignaturePath, diff ) );
+                String oldSignature = Files.readString(oldSignaturePath, UTF_8);
+                if (!oldSignature.equals(newSignature)) {
+                    oldSignature = oldSignature.replace(WINDOWS_NEW_LINE, DEFAULT_NEW_LINE);
+                    newSignature = newSignature.replace(WINDOWS_NEW_LINE, DEFAULT_NEW_LINE);
+                    if (!oldSignature.equals(newSignature)) {
+                        StringBuilder diff = diff(oldSignaturePath);
+                        error(format(
+                                "Public API signature mismatch. The generated signature, %s, does not match the old signature in %s.%n"
+                                        + "Specify `-Doverwrite` to maven to replace it. Changed public elements, compared to the committed PublicApi.txt:%n%s%n",
+                                path, oldSignaturePath, diff));
                     }
-                }
-                else
-                {
-                    info( "Public API signature matches. " + oldSignaturePath );
+                } else {
+                    info("Public API signature matches. " + oldSignaturePath);
                 }
             }
         }
     }
 
-    private StringBuilder diff( Path oldSignaturePath ) throws IOException
-    {
+    private StringBuilder diff(Path oldSignaturePath) throws IOException {
         Set<String> oldLines = new HashSet<>();
-        try ( Stream<String> lines = Files.lines( oldSignaturePath, UTF_8 ) )
-        {
-            lines.forEach( oldLines::add );
+        try (Stream<String> lines = Files.lines(oldSignaturePath, UTF_8)) {
+            lines.forEach(oldLines::add);
         }
         StringBuilder diff = new StringBuilder();
-        diffSide( diff, oldLines, publicElements, '-' );
-        diffSide( diff, publicElements, oldLines, '+' );
+        diffSide(diff, oldLines, publicElements, '-');
+        diffSide(diff, publicElements, oldLines, '+');
         return diff;
     }
 
-    private static void diffSide( StringBuilder diff, Set<String> left, Set<String> right, char diffSign )
-    {
-        for ( String oldPublicElement : left )
-        {
-            if ( !right.contains( oldPublicElement ) )
-            {
-                diff.append( diffSign ).append( oldPublicElement ).append( format( "%n" ) );
+    private static void diffSide(StringBuilder diff, Set<String> left, Set<String> right, char diffSign) {
+        for (String oldPublicElement : left) {
+            if (!right.contains(oldPublicElement)) {
+                diff.append(diffSign).append(oldPublicElement).append(format("%n"));
             }
         }
     }
 
-    private static Path getAndAssertParent( Path path, String name )
-    {
+    private static Path getAndAssertParent(Path path, String name) {
         Path parent = path.getParent();
-        if ( !parent.getFileName().toString().equals( name ) )
-        {
-            throw new IllegalStateException( path.toAbsolutePath() + " parent is not " + name );
+        if (!parent.getFileName().toString().equals(name)) {
+            throw new IllegalStateException(path.toAbsolutePath() + " parent is not " + name);
         }
         return parent;
     }
 
-    private void process( RoundEnvironment roundEnv )
-    {
-        final Set<TypeElement> elements = roundEnv.getElementsAnnotatedWith( PublicApi.class ).stream().map( TypeElement.class::cast ).collect( toSet() );
-        for ( TypeElement publicClass : elements )
-        {
-            pushScope( publicClass.getQualifiedName().toString() );
-            processType( publicClass );
+    private void process(RoundEnvironment roundEnv) {
+        final Set<TypeElement> elements = roundEnv.getElementsAnnotatedWith(PublicApi.class).stream()
+                .map(TypeElement.class::cast)
+                .collect(toSet());
+        for (TypeElement publicClass : elements) {
+            pushScope(publicClass.getQualifiedName().toString());
+            processType(publicClass);
             popScope();
         }
     }
@@ -275,52 +243,47 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
     /**
      * Processing type elements. Class, interface, enum.
      */
-    private void processType( TypeElement typeElement )
-    {
+    private void processType(TypeElement typeElement) {
         // Dummy check for public modifier
-        if ( !typeElement.getModifiers().contains( Modifier.PUBLIC ) )
-        {
-            error( "Class marked as public is not actually public", typeElement );
+        if (!typeElement.getModifiers().contains(Modifier.PUBLIC)) {
+            error("Class marked as public is not actually public", typeElement);
         }
 
         // Add self to public API
         StringBuilder sb = new StringBuilder();
-        addTypeName( sb, typeElement );
-        addModifiers( sb, typeElement );
-        addKindIdentifier( sb, typeElement );
-        addSuperClass( sb, typeElement );
-        addInterfaces( sb, typeElement );
+        addTypeName(sb, typeElement);
+        addModifiers(sb, typeElement);
+        addKindIdentifier(sb, typeElement);
+        addSuperClass(sb, typeElement);
+        addInterfaces(sb, typeElement);
 
-        publicElements.add( sb.toString() );
+        publicElements.add(sb.toString());
 
         // Traverse visible child elements
-        for ( Element element : typeElement.getEnclosedElements() )
-        {
+        for (Element element : typeElement.getEnclosedElements()) {
             Set<Modifier> modifiers = element.getModifiers();
-            if ( modifiers.contains( Modifier.PUBLIC ) || modifiers.contains( Modifier.PROTECTED ) )
-            {
+            if (modifiers.contains(Modifier.PUBLIC) || modifiers.contains(Modifier.PROTECTED)) {
                 ElementKind kind = element.getKind();
-                switch ( kind )
-                {
-                case ENUM:
-                case INTERFACE:
-                case CLASS:
-                    pushScope( "." + element.getSimpleName() );
-                    processType( (TypeElement) element );
-                    break;
-                case RECORD_COMPONENT:
-                case ENUM_CONSTANT:
-                case FIELD:
-                    pushScope( "#" + element );
-                    processField( (VariableElement) element );
-                    break;
-                case CONSTRUCTOR:
-                case METHOD:
-                    pushScope( "::" + element );
-                    processMethod( (ExecutableElement) element );
-                    break;
-                default:
-                    error( "Unhandled ElementKind: " + kind );
+                switch (kind) {
+                    case ENUM:
+                    case INTERFACE:
+                    case CLASS:
+                        pushScope("." + element.getSimpleName());
+                        processType((TypeElement) element);
+                        break;
+                    case RECORD_COMPONENT:
+                    case ENUM_CONSTANT:
+                    case FIELD:
+                        pushScope("#" + element);
+                        processField((VariableElement) element);
+                        break;
+                    case CONSTRUCTOR:
+                    case METHOD:
+                        pushScope("::" + element);
+                        processMethod((ExecutableElement) element);
+                        break;
+                    default:
+                        error("Unhandled ElementKind: " + kind);
                 }
                 popScope();
             }
@@ -330,34 +293,31 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
     /**
      * Process variables. Fields, enum constants.
      */
-    private void processField( VariableElement variableElement )
-    {
+    private void processField(VariableElement variableElement) {
         StringBuilder sb = new StringBuilder();
-        addFieldName( sb, variableElement );
-        addReturn( sb, variableElement.asType() );
-        addModifiers( sb, variableElement );
-        addConstantValue( sb, variableElement );
-        publicElements.add( sb.toString() );
+        addFieldName(sb, variableElement);
+        addReturn(sb, variableElement.asType());
+        addModifiers(sb, variableElement);
+        addConstantValue(sb, variableElement);
+        publicElements.add(sb.toString());
     }
 
     /**
      * Process executables. Constructors, methods.
      */
-    private void processMethod( ExecutableElement element )
-    {
-        if ( element.getAnnotation( Deprecated.class ) != null )
-        {
+    private void processMethod(ExecutableElement element) {
+        if (element.getAnnotation(Deprecated.class) != null) {
             inDeprecatedScope = true;
         }
 
         StringBuilder sb = new StringBuilder();
-        addMethodName( sb, element );
-        addParameters( sb, element );
-        addReturn( sb, element.getReturnType() );
-        addModifiers( sb, element );
-        addExceptions( sb, element );
+        addMethodName(sb, element);
+        addParameters(sb, element);
+        addReturn(sb, element.getReturnType());
+        addModifiers(sb, element);
+        addExceptions(sb, element);
 
-        publicElements.add( sb.toString() );
+        publicElements.add(sb.toString());
 
         inDeprecatedScope = false;
     }
@@ -365,12 +325,10 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
     /**
      * Add implemented interfaces, e.g. {@code " implements Serializable, Comparable"}, or nothing if no interfaces are present.
      */
-    private void addInterfaces( StringBuilder sb, TypeElement typeElement )
-    {
+    private void addInterfaces(StringBuilder sb, TypeElement typeElement) {
         List<? extends TypeMirror> interfaces = typeElement.getInterfaces();
-        if ( !interfaces.isEmpty() )
-        {
-            sb.append( interfaces.stream().map( this::encodeType ).collect( joining( ", ", " implements ", "" ) ) );
+        if (!interfaces.isEmpty()) {
+            sb.append(interfaces.stream().map(this::encodeType).collect(joining(", ", " implements ", "")));
         }
     }
 
@@ -378,182 +336,148 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
      * Add extended declaration, e.g. {@code " extends MyParent}. Note that even if {@code extends} is a keyword for interfaces, interfaces does not actually
      * have a super class.
      */
-    private void addSuperClass( StringBuilder sb, TypeElement typeElement )
-    {
-        if ( typeElement.getKind() != ElementKind.INTERFACE && typeElement.getKind() != ElementKind.ANNOTATION_TYPE )
-        {
-            sb.append( " extends " );
-            sb.append( encodeType( typeElement.getSuperclass() ) );
+    private void addSuperClass(StringBuilder sb, TypeElement typeElement) {
+        if (typeElement.getKind() != ElementKind.INTERFACE && typeElement.getKind() != ElementKind.ANNOTATION_TYPE) {
+            sb.append(" extends ");
+            sb.append(encodeType(typeElement.getSuperclass()));
         }
     }
 
-    private void addKindIdentifier( StringBuilder sb, TypeElement typeElement )
-    {
+    private void addKindIdentifier(StringBuilder sb, TypeElement typeElement) {
         ElementKind kind = typeElement.getKind();
-        switch ( kind )
-        {
-        case CLASS:
-            sb.append( " class" );
-            break;
-        case INTERFACE:
-            sb.append( " interface" );
-            break;
-        case ENUM:
-            sb.append( " enum" );
-            break;
-        case ANNOTATION_TYPE:
-            sb.append( " annotation" );
-            break ;
-        case RECORD:
-            sb.append( " record" );
-            break;
-        default:
-            error( "Unhandled ElementKind: " + kind );
+        switch (kind) {
+            case CLASS:
+                sb.append(" class");
+                break;
+            case INTERFACE:
+                sb.append(" interface");
+                break;
+            case ENUM:
+                sb.append(" enum");
+                break;
+            case ANNOTATION_TYPE:
+                sb.append(" annotation");
+                break;
+            case RECORD:
+                sb.append(" record");
+                break;
+            default:
+                error("Unhandled ElementKind: " + kind);
         }
     }
 
-    private void addTypeName( StringBuilder sb, TypeElement typeElement )
-    {
-        sb.append( typeElement.getQualifiedName() );
-        addTypeParameter( sb, typeElement.getTypeParameters() );
+    private void addTypeName(StringBuilder sb, TypeElement typeElement) {
+        sb.append(typeElement.getQualifiedName());
+        addTypeParameter(sb, typeElement.getTypeParameters());
     }
 
     /**
      * Takes a list of parameters and append it to the string builder, e.g. {@code "<K,V extends Object>"}
      */
-    private void addTypeParameter( StringBuilder sb, Collection<? extends TypeParameterElement> typeParameters )
-    {
-        if ( !typeParameters.isEmpty() )
-        {
-            sb.append( typeParameters.stream().map( this::getGetBounds ).collect( joining( ", ", "<", ">" ) ) );
+    private void addTypeParameter(StringBuilder sb, Collection<? extends TypeParameterElement> typeParameters) {
+        if (!typeParameters.isEmpty()) {
+            sb.append(typeParameters.stream().map(this::getGetBounds).collect(joining(", ", "<", ">")));
         }
     }
 
-    private String getGetBounds( TypeParameterElement typeParameter )
-    {
-        List<String> bounds = typeParameter.getBounds().stream()
-                .map( this::encodeType )
-                .collect( toList() );
-        if ( bounds.isEmpty() )
-        {
+    private String getGetBounds(TypeParameterElement typeParameter) {
+        List<String> bounds =
+                typeParameter.getBounds().stream().map(this::encodeType).collect(toList());
+        if (bounds.isEmpty()) {
             return typeParameter.toString();
         }
-        return typeParameter + " extends " + String.join( " & ", bounds );
+        return typeParameter + " extends " + String.join(" & ", bounds);
     }
 
-    private void addFieldName( StringBuilder sb, VariableElement variableElement )
-    {
-        sb.append( encodeType( variableElement.getEnclosingElement().asType() ) );
-        sb.append( "::" );
-        sb.append( variableElement.getSimpleName() );
+    private void addFieldName(StringBuilder sb, VariableElement variableElement) {
+        sb.append(encodeType(variableElement.getEnclosingElement().asType()));
+        sb.append("::");
+        sb.append(variableElement.getSimpleName());
     }
 
-    private void addParameters( StringBuilder sb, ExecutableElement element )
-    {
-        sb.append( '(' );
+    private void addParameters(StringBuilder sb, ExecutableElement element) {
+        sb.append('(');
         List<? extends VariableElement> parameters = element.getParameters();
-        for ( int i = 0; i < parameters.size(); i++ )
-        {
-            VariableElement parameter = parameters.get( i );
-            sb.append( encodeType( parameter.asType() ) );
-            if ( i != parameters.size() - 1 )
+        for (int i = 0; i < parameters.size(); i++) {
+            VariableElement parameter = parameters.get(i);
+            sb.append(encodeType(parameter.asType()));
+            if (i != parameters.size() - 1) {
+                sb.append(", ");
+            } else // last
             {
-                sb.append( ", " );
-            }
-            else // last
-            {
-                if ( element.isVarArgs() )
-                {
-                    if ( parameter.asType().getKind() == TypeKind.ARRAY )
-                    {
-                        sb.setLength( sb.length() - 2 ); // Strip "[]"
+                if (element.isVarArgs()) {
+                    if (parameter.asType().getKind() == TypeKind.ARRAY) {
+                        sb.setLength(sb.length() - 2); // Strip "[]"
                     }
-                    sb.append( "..." );
+                    sb.append("...");
                 }
             }
         }
-        sb.append( ')' );
+        sb.append(')');
     }
 
-    private void addReturn( StringBuilder sb, TypeMirror type )
-    {
-        sb.append( ' ' );
-        sb.append( encodeType( type ) );
+    private void addReturn(StringBuilder sb, TypeMirror type) {
+        sb.append(' ');
+        sb.append(encodeType(type));
     }
 
-    private void addMethodName( StringBuilder sb, ExecutableElement element )
-    {
-        sb.append( encodeType( element.getEnclosingElement().asType() ) );
-        sb.append( "::" );
-        addTypeParameter( sb, element.getTypeParameters() );
+    private void addMethodName(StringBuilder sb, ExecutableElement element) {
+        sb.append(encodeType(element.getEnclosingElement().asType()));
+        sb.append("::");
+        addTypeParameter(sb, element.getTypeParameters());
 
-        if ( element.getKind() == ElementKind.CONSTRUCTOR )
-        {
-            sb.append( element.getEnclosingElement().getSimpleName() );
-        }
-        else
-        {
-            sb.append( element.getSimpleName() );
+        if (element.getKind() == ElementKind.CONSTRUCTOR) {
+            sb.append(element.getEnclosingElement().getSimpleName());
+        } else {
+            sb.append(element.getSimpleName());
         }
     }
 
-    private static void addModifiers( StringBuilder sb, Element element )
-    {
-        for ( Modifier modifier : element.getModifiers() )
-        {
-            sb.append( ' ' );
-            sb.append( modifier );
+    private static void addModifiers(StringBuilder sb, Element element) {
+        for (Modifier modifier : element.getModifiers()) {
+            sb.append(' ');
+            sb.append(modifier);
         }
     }
 
-    private void addExceptions( StringBuilder sb, ExecutableElement element )
-    {
+    private void addExceptions(StringBuilder sb, ExecutableElement element) {
         List<? extends TypeMirror> exceptions = element.getThrownTypes();
-        if ( !exceptions.isEmpty() )
-        {
-            sb.append( exceptions.stream().map( this::encodeType ).collect( joining( ", ", " throws ", "" ) ) );
+        if (!exceptions.isEmpty()) {
+            sb.append(exceptions.stream().map(this::encodeType).collect(joining(", ", " throws ", "")));
         }
     }
 
-    private static void addConstantValue( StringBuilder sb, VariableElement variableElement )
-    {
+    private static void addConstantValue(StringBuilder sb, VariableElement variableElement) {
         Object constantValue = variableElement.getConstantValue();
-        if ( constantValue != null )
-        {
-            sb.append( " = " );
-            sb.append( constantValue );
+        if (constantValue != null) {
+            sb.append(" = ");
+            sb.append(constantValue);
         }
     }
 
-    private String encodeType( TypeMirror type )
-    {
+    private String encodeType(TypeMirror type) {
         TypeKind kind = type.getKind();
-        if ( kind.isPrimitive() )
-        {
-            return kind.toString().toLowerCase( Locale.ROOT );
+        if (kind.isPrimitive()) {
+            return kind.toString().toLowerCase(Locale.ROOT);
         }
-        if ( kind == TypeKind.ARRAY )
-        {
+        if (kind == TypeKind.ARRAY) {
             ArrayType arrayType = (ArrayType) type;
-            return encodeType( arrayType.getComponentType() ) + "[]";
+            return encodeType(arrayType.getComponentType()) + "[]";
         }
-        if ( kind == TypeKind.TYPEVAR )
-        {
+        if (kind == TypeKind.TYPEVAR) {
             TypeVariable typeVariable = (TypeVariable) type;
             return "#" + typeVariable;
         }
-        if ( kind == TypeKind.DECLARED )
-        {
+        if (kind == TypeKind.DECLARED) {
             DeclaredType referenceType = (DeclaredType) type;
-            validatePublicVisibility( referenceType );
+            validatePublicVisibility(referenceType);
             return referenceType.toString();
         }
-        if ( kind == TypeKind.VOID )
-        {
+        if (kind == TypeKind.VOID) {
             return "void";
         }
 
-        error( "Unhandled type: " + kind );
+        error("Unhandled type: " + kind);
         return "ERROR";
     }
 
@@ -561,124 +485,102 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
      * Verify that the classes in the API is visible and annotated with {@link PublicApi}. The exception to this is when a method is marked as deprecated or
      * part of the java library.
      */
-    private void validatePublicVisibility( DeclaredType declaredType )
-    {
+    private void validatePublicVisibility(DeclaredType declaredType) {
         String declaredTypeName = declaredType.toString();
-        if ( !validatedDeclaredTypes.add( declaredTypeName ) )
-        {
+        if (!validatedDeclaredTypes.add(declaredTypeName)) {
             return; // already validated
         }
 
-        TypeElement element = (TypeElement) typeUtils.asElement( declaredType );
-        if ( !element.getModifiers().contains( Modifier.PUBLIC ) )
-        {
-            error( "Element that is exposed through the API is not visible", element );
+        TypeElement element = (TypeElement) typeUtils.asElement(declaredType);
+        if (!element.getModifiers().contains(Modifier.PUBLIC)) {
+            error("Element that is exposed through the API is not visible", element);
         }
 
         // Traverse type arguments, including bounds
-        for ( TypeMirror typeArgument : declaredType.getTypeArguments() )
-        {
-            if ( typeArgument.getKind() == TypeKind.WILDCARD )
-            {
-                validateWildcard( (WildcardType) typeArgument );
+        for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
+            if (typeArgument.getKind() == TypeKind.WILDCARD) {
+                validateWildcard((WildcardType) typeArgument);
             }
-            if ( typeArgument.getKind() == TypeKind.DECLARED )
-            {
-                validatePublicVisibility( (DeclaredType) typeArgument );
+            if (typeArgument.getKind() == TypeKind.DECLARED) {
+                validatePublicVisibility((DeclaredType) typeArgument);
             }
         }
 
         // We only care about our own classes
-        if ( !declaredTypeName.startsWith( "org.neo4j." ) &&
-                !declaredTypeName.startsWith( "com.neo4j." ) )
-        {
+        if (!declaredTypeName.startsWith("org.neo4j.") && !declaredTypeName.startsWith("com.neo4j.")) {
             return;
         }
 
-        if ( element.getNestingKind().isNested() )
-        {
+        if (element.getNestingKind().isNested()) {
             TypeElement parent;
-            do
-            {
+            do {
                 parent = (TypeElement) element.getEnclosingElement();
-            }
-            while ( parent.getNestingKind().isNested() );
+            } while (parent.getNestingKind().isNested());
 
-            assertAnnotated( element, parent, element.getQualifiedName() + "'s parent, " + parent.getQualifiedName() + "," );
-        }
-        else
-        {
+            assertAnnotated(
+                    element, parent, element.getQualifiedName() + "'s parent, " + parent.getQualifiedName() + ",");
+        } else {
             // Top-level type must be annotated directly
-            assertAnnotated( element, element, element.getQualifiedName() + " exposed through the API" );
+            assertAnnotated(element, element, element.getQualifiedName() + " exposed through the API");
         }
     }
 
-    private void validateWildcard( WildcardType wildcardType )
-    {
-        filterWildcard( wildcardType.getExtendsBound() );
-        filterWildcard( wildcardType.getSuperBound() );
+    private void validateWildcard(WildcardType wildcardType) {
+        filterWildcard(wildcardType.getExtendsBound());
+        filterWildcard(wildcardType.getSuperBound());
     }
 
-    private void filterWildcard( TypeMirror extendsBound )
-    {
-        if ( extendsBound != null )
-        {
+    private void filterWildcard(TypeMirror extendsBound) {
+        if (extendsBound != null) {
             TypeKind kind = extendsBound.getKind();
-            if ( kind == TypeKind.DECLARED )
-            {
-                validatePublicVisibility( (DeclaredType) extendsBound );
+            if (kind == TypeKind.DECLARED) {
+                validatePublicVisibility((DeclaredType) extendsBound);
             }
-            if ( kind == TypeKind.WILDCARD )
-            {
-                validateWildcard( (WildcardType) extendsBound );
+            if (kind == TypeKind.WILDCARD) {
+                validateWildcard((WildcardType) extendsBound);
             }
         }
     }
 
-    private void assertAnnotated( TypeElement element, TypeElement parent, String msg )
-    {
-        if ( parent.getAnnotation( PublicApi.class ) == null )
-        {
-            if ( inDeprecatedScope )
-            {
-                processingEnv.getMessager().printMessage( WARNING,
-                        "Non-public element, " + element + ", is exposed through the API via a deprecated method", element );
-            }
-            else
-            {
-                error( msg + " is not marked with @" + PublicApi.class.getSimpleName(), element );
+    private void assertAnnotated(TypeElement element, TypeElement parent, String msg) {
+        if (parent.getAnnotation(PublicApi.class) == null) {
+            if (inDeprecatedScope) {
+                processingEnv
+                        .getMessager()
+                        .printMessage(
+                                WARNING,
+                                "Non-public element, " + element
+                                        + ", is exposed through the API via a deprecated method",
+                                element);
+            } else {
+                error(msg + " is not marked with @" + PublicApi.class.getSimpleName(), element);
             }
         }
     }
 
-    private void pushScope( String e )
-    {
-        scope.add( e );
+    private void pushScope(String e) {
+        scope.add(e);
     }
 
-    private void popScope()
-    {
-        scope.remove( scope.size() - 1 );
+    private void popScope() {
+        scope.remove(scope.size() - 1);
     }
 
-    private void info( String msg )
-    {
-        processingEnv.getMessager().printMessage( NOTE, msg );
+    private void info(String msg) {
+        processingEnv.getMessager().printMessage(NOTE, msg);
     }
 
-    private void error( String msg )
-    {
-        processingEnv.getMessager().printMessage( ERROR, msg );
+    private void error(String msg) {
+        processingEnv.getMessager().printMessage(ERROR, msg);
     }
 
-    private void error( String msg, Element element )
-    {
+    private void error(String msg, Element element) {
         StringBuilder sb = new StringBuilder();
-        sb.append( "Error processing " );
-        scope.forEach( sb::append );
-        sb.append( ':' );
-        sb.append( System.lineSeparator() );
-        sb.append( msg );
-        processingEnv.getMessager().printMessage( ERROR, sb.toString(), element );
+        sb.append("Error processing ");
+        scope.forEach(sb::append);
+        sb.append(':');
+        sb.append(System.lineSeparator());
+        sb.append(msg);
+        processingEnv.getMessager().printMessage(ERROR, sb.toString(), element);
     }
 }

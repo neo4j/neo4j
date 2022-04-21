@@ -19,38 +19,33 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.messaging.RequestMessageDecoder;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v3.runtime.bookmarking.BookmarksParserV3;
-import org.neo4j.bolt.v3.messaging.request.RunMessage;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoderTest.assertOriginalMessageEqualsToDecoded;
 
-class RunMessageDecoderTest
-{
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final RequestMessageDecoder decoder = new RunMessageDecoder( responseHandler, BookmarksParserV3.INSTANCE );
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.v3.messaging.request.RunMessage;
+import org.neo4j.bolt.v3.runtime.bookmarking.BookmarksParserV3;
+
+class RunMessageDecoderTest {
+    private final BoltResponseHandler responseHandler = mock(BoltResponseHandler.class);
+    private final RequestMessageDecoder decoder = new RunMessageDecoder(responseHandler, BookmarksParserV3.INSTANCE);
 
     @Test
-    void shouldReturnCorrectSignature()
-    {
-        assertEquals( RunMessage.SIGNATURE, decoder.signature() );
+    void shouldReturnCorrectSignature() {
+        assertEquals(RunMessage.SIGNATURE, decoder.signature());
     }
 
     @Test
-    void shouldReturnConnectResponseHandler()
-    {
-        assertEquals( responseHandler, decoder.responseHandler() );
+    void shouldReturnConnectResponseHandler() {
+        assertEquals(responseHandler, decoder.responseHandler());
     }
 
     @Test
-    void shouldDecodeBeginMessage() throws Exception
-    {
-        RunMessage originalMessage = new RunMessage( "A new V3 run messsage" );
-        assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
+    void shouldDecodeBeginMessage() throws Exception {
+        RunMessage originalMessage = new RunMessage("A new V3 run messsage");
+        assertOriginalMessageEqualsToDecoded(originalMessage, decoder);
     }
 }

@@ -26,14 +26,13 @@ import org.neo4j.values.storable.Value;
  * A collection of values that associates a special {@code long} reference to each added value.
  * Instances must be closed with {@link #close()} to release underlying resources.
  */
-public interface ValuesContainer extends Resource
-{
+public interface ValuesContainer extends Resource {
     /**
      * @param value value to add
      * @return a reference associated with the value, that can be passed to {@link #get(long)} and {@link #remove(long)}
      * @throws IllegalStateException if container is closed
      */
-    long add( Value value );
+    long add(Value value);
 
     /**
      * @param ref a reference obtained from {@link #add(Value)}
@@ -41,7 +40,7 @@ public interface ValuesContainer extends Resource
      * @throws IllegalStateException if container is closed
      * @throws IllegalArgumentException if reference is invalid or associated value was removed
      */
-    Value get( long ref );
+    Value get(long ref);
 
     /**
      * @param ref a reference obtained from {@link #add(Value)}
@@ -49,5 +48,5 @@ public interface ValuesContainer extends Resource
      * @throws IllegalStateException if container is closed
      * @throws IllegalArgumentException if reference is invalid or associated value was removed
      */
-    Value remove( long ref );
+    Value remove(long ref);
 }

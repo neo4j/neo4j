@@ -21,60 +21,49 @@ package org.neo4j.kernel.database;
 
 import java.util.Objects;
 import java.util.UUID;
-
 import org.neo4j.util.Id;
 
-public class DatabaseId
-{
-    public static final DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( new UUID( 0, 1 ) );
+public class DatabaseId {
+    public static final DatabaseId SYSTEM_DATABASE_ID = new DatabaseId(new UUID(0, 1));
 
     private final Id id;
 
-    DatabaseId( UUID uuid )
-    {
-        Objects.requireNonNull( uuid, "Database UUID should be not null." );
-        id = new Id( uuid );
+    DatabaseId(UUID uuid) {
+        Objects.requireNonNull(uuid, "Database UUID should be not null.");
+        id = new Id(uuid);
     }
 
-    public UUID uuid()
-    {
+    public UUID uuid() {
         return id.uuid();
     }
 
-    Id id()
-    {
+    Id id() {
         return id;
     }
 
-    public boolean isSystemDatabase()
-    {
-        return SYSTEM_DATABASE_ID.equals( this );
+    public boolean isSystemDatabase() {
+        return SYSTEM_DATABASE_ID.equals(this);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         DatabaseId that = (DatabaseId) o;
-        return Objects.equals( id, that.id );
+        return Objects.equals(id, that.id);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( id );
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "DatabaseId{" + id + '}';
     }
 }

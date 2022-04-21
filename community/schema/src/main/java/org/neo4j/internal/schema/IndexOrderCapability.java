@@ -22,22 +22,20 @@ package org.neo4j.internal.schema;
 /**
  * Describe the capability of an index to return the property values for a given query in order.
  */
-public enum IndexOrderCapability
-{
-    BOTH_FULLY_SORTED( true, true, true ),
-    BOTH_PARTIALLY_SORTED( true, true, false ),
-    ASC_FULLY_SORTED( true, false, true ),
-    ASC_PARTIALLY_SORTED( true, false, false ),
-    DESC_FULLY_SORTED( false, true, true ),
-    DESC_PARTIALLY_SORTED( false, true, false ),
-    NONE( false, false, false );
+public enum IndexOrderCapability {
+    BOTH_FULLY_SORTED(true, true, true),
+    BOTH_PARTIALLY_SORTED(true, true, false),
+    ASC_FULLY_SORTED(true, false, true),
+    ASC_PARTIALLY_SORTED(true, false, false),
+    DESC_FULLY_SORTED(false, true, true),
+    DESC_PARTIALLY_SORTED(false, true, false),
+    NONE(false, false, false);
 
     private final boolean asc;
     private final boolean desc;
     private final boolean fullySorted;
 
-    IndexOrderCapability( boolean asc, boolean desc, boolean fullySorted )
-    {
+    IndexOrderCapability(boolean asc, boolean desc, boolean fullySorted) {
         this.asc = asc;
         this.desc = desc;
         this.fullySorted = fullySorted;
@@ -46,16 +44,14 @@ public enum IndexOrderCapability
     /**
      * Does the index support returning results in ascending order?
      */
-    public boolean supportsAsc()
-    {
+    public boolean supportsAsc() {
         return this.asc;
     }
 
     /**
      * Does the index support returning results in descending order?
      */
-    public boolean supportsDesc()
-    {
+    public boolean supportsDesc() {
         return this.desc;
     }
 
@@ -63,8 +59,7 @@ public enum IndexOrderCapability
      * @return if {@code true}, all elements returned from the index will be in the correct order,
      * if {@code false}, all elements except geometries returned from the index will be in the correct order.
      */
-    public boolean isFullySorted()
-    {
+    public boolean isFullySorted() {
         return this.fullySorted;
     }
 }

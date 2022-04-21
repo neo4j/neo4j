@@ -19,10 +19,8 @@
  */
 package org.neo4j.bolt.testing.client;
 
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 import java.io.IOException;
 import java.net.URI;
@@ -31,17 +29,16 @@ import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.neo4j.common.HexPrinter;
 import org.neo4j.internal.helpers.HostnamePort;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-
-public class WebSocketConnection implements TransportConnection, WebSocketListener
-{
+public class WebSocketConnection implements TransportConnection, WebSocketListener {
     private final Supplier<WebSocketClient> clientSupplier;
-    private final Function<HostnamePort,URI> uriGenerator;
+    private final Function<HostnamePort, URI> uriGenerator;
 
     private final byte[] POISON_PILL = "poison".getBytes();
 
@@ -57,39 +54,32 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
     // Index into the current receive buffer
     private int currentReceiveIndex;
 
-    public WebSocketConnection()
-    {
-        this( WebSocketClient::new, address -> URI.create( "ws://" + address.getHost() + ":" + address.getPort() ) );
+    public WebSocketConnection() {
+        this(WebSocketClient::new, address -> URI.create("ws://" + address.getHost() + ":" + address.getPort()));
     }
 
-    public WebSocketConnection( Supplier<WebSocketClient> clientSupplier, Function<HostnamePort,URI> uriGenerator )
-    {
+    public WebSocketConnection(Supplier<WebSocketClient> clientSupplier, Function<HostnamePort, URI> uriGenerator) {
         this.clientSupplier = clientSupplier;
         this.uriGenerator = uriGenerator;
     }
 
-    WebSocketConnection( WebSocketClient client )
-    {
-        this( null, null );
+    WebSocketConnection(WebSocketClient client) {
+        this(null, null);
         this.client = client;
     }
 
     @Override
-    public TransportConnection connect( HostnamePort address ) throws Exception
-    {
-        URI target = uriGenerator.apply( address );
+    public TransportConnection connect(HostnamePort address) throws Exception {
+        URI target = uriGenerator.apply(address);
 
         client = clientSupplier.get();
         client.start();
 
         Session session;
-        try
-        {
-            session = client.connect( this, target ).get( 5, MINUTES );
-        }
-        catch ( Exception e )
-        {
-            throw new IOException( "Failed to connect to the server within 5 minutes", e );
+        try {
+            session = client.connect(this, target).get(5, MINUTES);
+        } catch (Exception e) {
+            throw new IOException("Failed to connect to the server within 5 minutes", e);
         }
 
         server = session.getRemote();
@@ -97,25 +87,21 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
     }
 
     @Override
-    public TransportConnection send( byte[] rawBytes ) throws IOException
-    {
+    public TransportConnection send(byte[] rawBytes) throws IOException {
         // The WS client *mutates* the buffer we give it, so we need to copy it here to allow the caller to retain
         // ownership
-        ByteBuffer wrap = ByteBuffer.wrap( Arrays.copyOf( rawBytes, rawBytes.length ) );
-        server.sendBytes( wrap );
+        ByteBuffer wrap = ByteBuffer.wrap(Arrays.copyOf(rawBytes, rawBytes.length));
+        server.sendBytes(wrap);
         return this;
     }
 
     @Override
-    public byte[] recv( int length ) throws IOException, InterruptedException
-    {
+    public byte[] recv(int length) throws IOException, InterruptedException {
         int remaining = length;
         byte[] target = new byte[remaining];
-        while ( remaining > 0 )
-        {
-            waitForReceivedData( length, remaining, target );
-            for ( int i = 0; i < Math.min( remaining, currentReceiveBuffer.length - currentReceiveIndex ); i++ )
-            {
+        while (remaining > 0) {
+            waitForReceivedData(length, remaining, target);
+            for (int i = 0; i < Math.min(remaining, currentReceiveBuffer.length - currentReceiveIndex); i++) {
                 target[length - remaining] = currentReceiveBuffer[currentReceiveIndex++];
                 remaining--;
             }
@@ -123,70 +109,53 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
         return target;
     }
 
-    private void waitForReceivedData( int length, int remaining, byte[] target )
-            throws InterruptedException, IOException
-    {
+    private void waitForReceivedData(int length, int remaining, byte[] target)
+            throws InterruptedException, IOException {
         long start = System.currentTimeMillis();
-        while ( currentReceiveBuffer == null || currentReceiveIndex >= currentReceiveBuffer.length )
-        {
+        while (currentReceiveBuffer == null || currentReceiveIndex >= currentReceiveBuffer.length) {
             currentReceiveIndex = 0;
-            currentReceiveBuffer = received.poll( 10, MILLISECONDS );
+            currentReceiveBuffer = received.poll(10, MILLISECONDS);
 
-            if ( (currentReceiveBuffer == null && (client.isStopped() || client.isStopping())) ||
-                    currentReceiveBuffer == POISON_PILL )
-            {
+            if ((currentReceiveBuffer == null && (client.isStopped() || client.isStopping()))
+                    || currentReceiveBuffer == POISON_PILL) {
                 // no data received
-                throw new IOException( "Connection closed while waiting for data from the server." );
+                throw new IOException("Connection closed while waiting for data from the server.");
             }
-            if ( System.currentTimeMillis() - start > 60_000 )
-            {
-                throw new IOException( "Waited 60 seconds for " + remaining + " bytes, " +
-                                       "" + (length - remaining) + " was received: " +
-                                       HexPrinter.hex( ByteBuffer.wrap( target ), 0, length - remaining ) );
+            if (System.currentTimeMillis() - start > 60_000) {
+                throw new IOException("Waited 60 seconds for " + remaining + " bytes, " + ""
+                        + (length - remaining) + " was received: "
+                        + HexPrinter.hex(ByteBuffer.wrap(target), 0, length - remaining));
             }
         }
     }
 
     @Override
-    public void disconnect() throws IOException
-    {
-        if ( client != null )
-        {
-            try
-            {
+    public void disconnect() throws IOException {
+        if (client != null) {
+            try {
                 client.stop();
-            }
-            catch ( Exception e )
-            {
-                throw new IOException( e );
+            } catch (Exception e) {
+                throw new IOException(e);
             }
         }
     }
 
     @Override
-    public void onWebSocketBinary( byte[] bytes, int i, int i2 )
-    {
-        received.add( bytes );
+    public void onWebSocketBinary(byte[] bytes, int i, int i2) {
+        received.add(bytes);
     }
 
     @Override
-    public void onWebSocketClose( int i, String s )
-    {
-        received.add( POISON_PILL );
+    public void onWebSocketClose(int i, String s) {
+        received.add(POISON_PILL);
     }
 
     @Override
-    public void onWebSocketConnect( Session session )
-    {
-    }
+    public void onWebSocketConnect(Session session) {}
 
     @Override
-    public void onWebSocketError( Throwable throwable )
-    {
-    }
+    public void onWebSocketError(Throwable throwable) {}
 
     @Override
-    public void onWebSocketText( String s )
-    {
-    }
+    public void onWebSocketText(String s) {}
 }

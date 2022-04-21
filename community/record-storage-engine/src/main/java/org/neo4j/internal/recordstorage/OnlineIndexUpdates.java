@@ -19,10 +19,13 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.internal.recordstorage.Command.Mode.CREATE;
+import static org.neo4j.internal.recordstorage.Command.Mode.DELETE;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
@@ -32,7 +35,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.memory.MemoryTracker;
@@ -45,11 +47,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.internal.recordstorage.Command.Mode.CREATE;
-import static org.neo4j.internal.recordstorage.Command.Mode.DELETE;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-
 /**
  * Derives logical index updates from physical records, provided by {@link NodeCommand node commands},
  * {@link RelationshipCommand relationship commands} and {@link PropertyCommand property commands}. For some
@@ -60,8 +57,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * One instance can be {@link IndexUpdates#feed(EntityCommandGrouper.Cursor,EntityCommandGrouper.Cursor, long) fed} data about
  * multiple transactions, to be {@link #iterator() accessed} later.
  */
-public class OnlineIndexUpdates implements IndexUpdates
-{
+public class OnlineIndexUpdates implements IndexUpdates {
     private final NodeStore nodeStore;
     private final SchemaCache schemaCache;
     private final PropertyPhysicalToLogicalConverter converter;
@@ -73,9 +69,14 @@ public class OnlineIndexUpdates implements IndexUpdates
     private StorageNodeCursor nodeCursor;
     private StorageRelationshipScanCursor relationshipCursor;
 
-    public OnlineIndexUpdates( NodeStore nodeStore, SchemaCache schemaCache, PropertyPhysicalToLogicalConverter converter, StorageReader reader,
-            CursorContext cursorContext, MemoryTracker memoryTracker, StoreCursors storeCursors )
-    {
+    public OnlineIndexUpdates(
+            NodeStore nodeStore,
+            SchemaCache schemaCache,
+            PropertyPhysicalToLogicalConverter converter,
+            StorageReader reader,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker,
+            StoreCursors storeCursors) {
         this.nodeStore = nodeStore;
         this.schemaCache = schemaCache;
         this.converter = converter;
@@ -86,72 +87,77 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public Iterator<IndexEntryUpdate<IndexDescriptor>> iterator()
-    {
+    public Iterator<IndexEntryUpdate<IndexDescriptor>> iterator() {
         return updates.iterator();
     }
 
     @Override
-    public void feed( EntityCommandGrouper<NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands, long txId )
-    {
-        while ( nodeCommands.nextEntity() )
-        {
-            gatherUpdatesFor( nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands, txId );
+    public void feed(
+            EntityCommandGrouper<NodeCommand>.Cursor nodeCommands,
+            EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands,
+            long txId) {
+        while (nodeCommands.nextEntity()) {
+            gatherUpdatesFor(nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands, txId);
         }
-        while ( relationshipCommands.nextEntity() )
-        {
-            gatherUpdatesFor( relationshipCommands.currentEntityId(), relationshipCommands.currentEntityCommand(), relationshipCommands, txId );
+        while (relationshipCommands.nextEntity()) {
+            gatherUpdatesFor(
+                    relationshipCommands.currentEntityId(),
+                    relationshipCommands.currentEntityCommand(),
+                    relationshipCommands,
+                    txId);
         }
     }
 
     @Override
-    public boolean hasUpdates()
-    {
+    public boolean hasUpdates() {
         return !updates.isEmpty();
     }
 
-    private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, EntityCommandGrouper<NodeCommand>.Cursor propertyCommands, long txId )
-    {
-        EntityUpdates nodeUpdates = gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
-        eagerlyGatherValueIndexUpdates( nodeUpdates, EntityType.NODE );
-        eagerlyGatherTokenIndexUpdates( nodeUpdates, EntityType.NODE, txId );
+    private void gatherUpdatesFor(
+            long nodeId,
+            NodeCommand nodeCommand,
+            EntityCommandGrouper<NodeCommand>.Cursor propertyCommands,
+            long txId) {
+        EntityUpdates nodeUpdates = gatherUpdatesFromCommandsForNode(nodeId, nodeCommand, propertyCommands);
+        eagerlyGatherValueIndexUpdates(nodeUpdates, EntityType.NODE);
+        eagerlyGatherTokenIndexUpdates(nodeUpdates, EntityType.NODE, txId);
     }
 
-    private void gatherUpdatesFor( long relationshipId, RelationshipCommand relationshipCommand,
-            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands, long txId )
-    {
-        EntityUpdates relationshipUpdates = gatherUpdatesFromCommandsForRelationship( relationshipId, relationshipCommand, propertyCommands );
-        eagerlyGatherValueIndexUpdates( relationshipUpdates, EntityType.RELATIONSHIP );
-        eagerlyGatherTokenIndexUpdates( relationshipUpdates, EntityType.RELATIONSHIP, txId );
+    private void gatherUpdatesFor(
+            long relationshipId,
+            RelationshipCommand relationshipCommand,
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands,
+            long txId) {
+        EntityUpdates relationshipUpdates =
+                gatherUpdatesFromCommandsForRelationship(relationshipId, relationshipCommand, propertyCommands);
+        eagerlyGatherValueIndexUpdates(relationshipUpdates, EntityType.RELATIONSHIP);
+        eagerlyGatherTokenIndexUpdates(relationshipUpdates, EntityType.RELATIONSHIP, txId);
     }
 
-    private void eagerlyGatherValueIndexUpdates( EntityUpdates entityUpdates, EntityType entityType )
-    {
+    private void eagerlyGatherValueIndexUpdates(EntityUpdates entityUpdates, EntityType entityType) {
         Iterable<IndexDescriptor> relatedIndexes = schemaCache.getValueIndexesRelatedTo(
                 entityUpdates.entityTokensChanged(),
                 entityUpdates.entityTokensUnchanged(),
                 entityUpdates.propertiesChanged(),
                 entityUpdates.isPropertyListComplete(),
-                entityType );
+                entityType);
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        entityUpdates.valueUpdatesForIndexKeys( relatedIndexes, reader, entityType, cursorContext, storeCursors, memoryTracker ).forEach( updates::add );
+        entityUpdates
+                .valueUpdatesForIndexKeys(
+                        relatedIndexes, reader, entityType, cursorContext, storeCursors, memoryTracker)
+                .forEach(updates::add);
     }
 
-    private EntityUpdates gatherUpdatesFromCommandsForNode( long nodeId,
-            NodeCommand nodeChanges,
-            EntityCommandGrouper<NodeCommand>.Cursor propertyCommandsForNode )
-    {
+    private EntityUpdates gatherUpdatesFromCommandsForNode(
+            long nodeId, NodeCommand nodeChanges, EntityCommandGrouper<NodeCommand>.Cursor propertyCommandsForNode) {
         long[] nodeLabelsBefore;
         long[] nodeLabelsAfter;
-        if ( nodeChanges != null )
-        {
+        if (nodeChanges != null) {
             // Special case since the node may not be heavy, i.e. further loading may be required
-            nodeLabelsBefore = NodeLabelsField.getNoEnsureHeavy( nodeChanges.getBefore(), nodeStore, storeCursors );
-            nodeLabelsAfter = NodeLabelsField.getNoEnsureHeavy( nodeChanges.getAfter(), nodeStore, storeCursors );
-        }
-        else
-        {
+            nodeLabelsBefore = NodeLabelsField.getNoEnsureHeavy(nodeChanges.getBefore(), nodeStore, storeCursors);
+            nodeLabelsAfter = NodeLabelsField.getNoEnsureHeavy(nodeChanges.getAfter(), nodeStore, storeCursors);
+        } else {
             /* If the node doesn't exist here then we've most likely encountered this scenario:
              * - TX1: Node N exists and has property record P
              * - rotate log
@@ -167,110 +173,96 @@ public class OnlineIndexUpdates implements IndexUpdates
              * if this happens and we're in recovery mode that the node in question will be deleted
              * in an upcoming transaction, so just skip this update.
              */
-            StorageNodeCursor nodeCursor = loadNode( nodeId );
+            StorageNodeCursor nodeCursor = loadNode(nodeId);
             nodeLabelsBefore = nodeLabelsAfter = nodeCursor.labels();
         }
 
         // First get possible Label changes
-        boolean complete = providesCompleteListOfProperties( nodeChanges );
-        EntityUpdates.Builder nodePropertyUpdates =
-                EntityUpdates.forEntity( nodeId, complete ).withTokensBefore( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
+        boolean complete = providesCompleteListOfProperties(nodeChanges);
+        EntityUpdates.Builder nodePropertyUpdates = EntityUpdates.forEntity(nodeId, complete)
+                .withTokensBefore(nodeLabelsBefore)
+                .withTokensAfter(nodeLabelsAfter);
 
         // Then look for property changes
-        converter.convertPropertyRecord( propertyCommandsForNode, nodePropertyUpdates );
+        converter.convertPropertyRecord(propertyCommandsForNode, nodePropertyUpdates);
         return nodePropertyUpdates.build();
     }
 
-    private void eagerlyGatherTokenIndexUpdates( EntityUpdates entityUpdates, EntityType entityType, long txId  )
-    {
-        IndexDescriptor relatedToken = schemaCache.indexForSchemaAndType( SchemaDescriptors.forAnyEntityTokens( entityType ), IndexType.LOOKUP );
-        entityUpdates.tokenUpdateForIndexKey( relatedToken, txId ).ifPresent( updates::add );
+    private void eagerlyGatherTokenIndexUpdates(EntityUpdates entityUpdates, EntityType entityType, long txId) {
+        IndexDescriptor relatedToken =
+                schemaCache.indexForSchemaAndType(SchemaDescriptors.forAnyEntityTokens(entityType), IndexType.LOOKUP);
+        entityUpdates.tokenUpdateForIndexKey(relatedToken, txId).ifPresent(updates::add);
     }
 
-    private static boolean providesCompleteListOfProperties( Command entityCommand )
-    {
+    private static boolean providesCompleteListOfProperties(Command entityCommand) {
         return entityCommand != null && (entityCommand.getMode() == CREATE || entityCommand.getMode() == DELETE);
     }
 
-    private EntityUpdates gatherUpdatesFromCommandsForRelationship( long relationshipId, RelationshipCommand relationshipCommand,
-            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands )
-    {
+    private EntityUpdates gatherUpdatesFromCommandsForRelationship(
+            long relationshipId,
+            RelationshipCommand relationshipCommand,
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands) {
         long reltypeBefore;
         long reltypeAfter;
-        if ( relationshipCommand != null )
-        {
+        if (relationshipCommand != null) {
             reltypeBefore = relationshipCommand.getBefore().getType();
             reltypeAfter = relationshipCommand.getAfter().getType();
-        }
-        else
-        {
-            reltypeAfter = loadRelationship( relationshipId ).type();
+        } else {
+            reltypeAfter = loadRelationship(relationshipId).type();
             reltypeBefore = reltypeAfter;
         }
-        boolean complete = providesCompleteListOfProperties( relationshipCommand );
-        var relationshipPropertyUpdates = EntityUpdates.forEntity( relationshipId, complete );
-        if ( reltypeBefore != TokenConstants.NO_TOKEN )
-        {
-            relationshipPropertyUpdates.withTokensBefore( reltypeBefore );
+        boolean complete = providesCompleteListOfProperties(relationshipCommand);
+        var relationshipPropertyUpdates = EntityUpdates.forEntity(relationshipId, complete);
+        if (reltypeBefore != TokenConstants.NO_TOKEN) {
+            relationshipPropertyUpdates.withTokensBefore(reltypeBefore);
         }
-        if ( reltypeAfter != TokenConstants.NO_TOKEN )
-        {
-            relationshipPropertyUpdates.withTokensAfter( reltypeAfter );
+        if (reltypeAfter != TokenConstants.NO_TOKEN) {
+            relationshipPropertyUpdates.withTokensAfter(reltypeAfter);
         }
 
-        converter.convertPropertyRecord( propertyCommands, relationshipPropertyUpdates );
+        converter.convertPropertyRecord(propertyCommands, relationshipPropertyUpdates);
         return relationshipPropertyUpdates.build();
     }
 
-    private StorageNodeCursor loadNode( long nodeId )
-    {
-        if ( nodeCursor == null )
-        {
-            nodeCursor = reader.allocateNodeCursor( cursorContext, storeCursors );
+    private StorageNodeCursor loadNode(long nodeId) {
+        if (nodeCursor == null) {
+            nodeCursor = reader.allocateNodeCursor(cursorContext, storeCursors);
         }
-        nodeCursor.single( nodeId );
-        if ( !nodeCursor.next() )
-        {
-            throw new IllegalStateException( "Node[" + nodeId + "] doesn't exist" );
+        nodeCursor.single(nodeId);
+        if (!nodeCursor.next()) {
+            throw new IllegalStateException("Node[" + nodeId + "] doesn't exist");
         }
         return nodeCursor;
     }
 
-    private StorageRelationshipScanCursor loadRelationship( long relationshipId )
-    {
-        if ( relationshipCursor == null )
-        {
-            relationshipCursor = reader.allocateRelationshipScanCursor( cursorContext, storeCursors );
+    private StorageRelationshipScanCursor loadRelationship(long relationshipId) {
+        if (relationshipCursor == null) {
+            relationshipCursor = reader.allocateRelationshipScanCursor(cursorContext, storeCursors);
         }
-        relationshipCursor.single( relationshipId );
-        if ( !relationshipCursor.next() )
-        {
-            throw new IllegalStateException( "Relationship[" + relationshipId + "] doesn't exist" );
+        relationshipCursor.single(relationshipId);
+        if (!relationshipCursor.next()) {
+            throw new IllegalStateException("Relationship[" + relationshipId + "] doesn't exist");
         }
         return relationshipCursor;
     }
 
     @Override
-    public void close()
-    {
-        closeAllUnchecked( nodeCursor, relationshipCursor, reader );
+    public void close() {
+        closeAllUnchecked(nodeCursor, relationshipCursor, reader);
     }
 
     @Override
-    public void reset()
-    {
+    public void reset() {
         updates.clear();
     }
 
     @VisibleForTesting
-    protected Collection<IndexEntryUpdate<IndexDescriptor>> getUpdates()
-    {
+    protected Collection<IndexEntryUpdate<IndexDescriptor>> getUpdates() {
         return updates;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "OnlineIndexUpdates[" + updates + "]";
     }
 }

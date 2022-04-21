@@ -20,15 +20,17 @@
 package org.neo4j.cypher.testing.impl.embedded
 
 import org.neo4j.cypher.testing.api.ParameterConverter
+
 import scala.IterableOnce
 
 object EmbeddedParameterConverter extends ParameterConverter {
+
   def convertParameterValue(value: Any): AnyRef = value match {
-    case null                            => null
-    case map: Map[_, _]                  => convertParameters(map.asInstanceOf[Map[String, Any]])
-    case array: Array[AnyRef]            => array.map(convertParameterValue)
-    case iterable: Iterable[_]           => iterable.map(convertParameterValue).toArray
+    case null                         => null
+    case map: Map[_, _]               => convertParameters(map.asInstanceOf[Map[String, Any]])
+    case array: Array[AnyRef]         => array.map(convertParameterValue)
+    case iterable: Iterable[_]        => iterable.map(convertParameterValue).toArray
     case traversable: IterableOnce[_] => traversable.map(convertParameterValue).toArray
-    case x                               => x.asInstanceOf[AnyRef]
+    case x                            => x.asInstanceOf[AnyRef]
   }
 }

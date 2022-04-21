@@ -19,8 +19,12 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import java.nio.file.Path;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
+import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
+import java.nio.file.Path;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -31,11 +35,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
-import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
  * A stress test for page cache(s).
@@ -54,8 +53,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
  * Invariant: the sum of counters is always equal to the checksum. For a blank file, this is trivially true:
  * sum(0, 0, 0, ...) = 0. Any record mutation is a counter increment and checksum increment.
  */
-public class PageCacheStressTest
-{
+public class PageCacheStressTest {
     private final int numberOfPages;
     private final int numberOfThreads;
 
@@ -67,8 +65,7 @@ public class PageCacheStressTest
 
     private final Path workingDirectory;
 
-    private PageCacheStressTest( Builder builder )
-    {
+    private PageCacheStressTest(Builder builder) {
         this.numberOfPages = builder.numberOfPages;
         this.numberOfThreads = builder.numberOfThreads;
 
@@ -81,23 +78,23 @@ public class PageCacheStressTest
         this.workingDirectory = builder.workingDirectory;
     }
 
-    public void run() throws Exception
-    {
-        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-              JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
-        {
-            PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer, EmptyMemoryTracker.INSTANCE );
-            try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, jobScheduler, config( numberOfCachePages )
-                    .pageCacheTracer( tracer ).reservedPageBytes( reservedPageBytes ) ) )
-            {
-                PageCacheStresser pageCacheStresser = new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
-                pageCacheStresser.stress( pageCacheUnderTest, tracer, condition );
+    public void run() throws Exception {
+        try (FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+                JobScheduler jobScheduler = new ThreadPoolJobScheduler()) {
+            PageSwapperFactory swapperFactory =
+                    new SingleFilePageSwapperFactory(fs, tracer, EmptyMemoryTracker.INSTANCE);
+            try (PageCache pageCacheUnderTest = new MuninnPageCache(
+                    swapperFactory,
+                    jobScheduler,
+                    config(numberOfCachePages).pageCacheTracer(tracer).reservedPageBytes(reservedPageBytes))) {
+                PageCacheStresser pageCacheStresser =
+                        new PageCacheStresser(numberOfPages, numberOfThreads, workingDirectory);
+                pageCacheStresser.stress(pageCacheUnderTest, tracer, condition);
             }
         }
     }
 
-    public static class Builder
-    {
+    public static class Builder {
         int numberOfPages = 10000;
         int numberOfThreads = 7;
 
@@ -109,52 +106,44 @@ public class PageCacheStressTest
 
         Path workingDirectory;
 
-        public PageCacheStressTest build()
-        {
-            assertThat( numberOfPages )
-                    .describedAs( "the cache should cover only a fraction of the mapped file" )
-                    .isGreaterThanOrEqualTo( 10 * numberOfCachePages );
-            return new PageCacheStressTest( this );
+        public PageCacheStressTest build() {
+            assertThat(numberOfPages)
+                    .describedAs("the cache should cover only a fraction of the mapped file")
+                    .isGreaterThanOrEqualTo(10 * numberOfCachePages);
+            return new PageCacheStressTest(this);
         }
 
-        public Builder with( PageCacheTracer tracer )
-        {
+        public Builder with(PageCacheTracer tracer) {
             this.tracer = tracer;
             return this;
         }
 
-        public Builder with( Condition condition )
-        {
+        public Builder with(Condition condition) {
             this.condition = condition;
             return this;
         }
 
-        public Builder withNumberOfPages( int value )
-        {
+        public Builder withNumberOfPages(int value) {
             this.numberOfPages = value;
             return this;
         }
 
-        public Builder withNumberOfThreads( int numberOfThreads )
-        {
+        public Builder withNumberOfThreads(int numberOfThreads) {
             this.numberOfThreads = numberOfThreads;
             return this;
         }
 
-        public Builder withReservedPageBytes( int reservedPageBytes )
-        {
+        public Builder withReservedPageBytes(int reservedPageBytes) {
             this.reservedPageBytes = reservedPageBytes;
             return this;
         }
 
-        public Builder withNumberOfCachePages( int numberOfCachePages )
-        {
+        public Builder withNumberOfCachePages(int numberOfCachePages) {
             this.numberOfCachePages = numberOfCachePages;
             return this;
         }
 
-        public Builder withWorkingDirectory( Path workingDirectory )
-        {
+        public Builder withWorkingDirectory(Path workingDirectory) {
             this.workingDirectory = workingDirectory;
             return this;
         }

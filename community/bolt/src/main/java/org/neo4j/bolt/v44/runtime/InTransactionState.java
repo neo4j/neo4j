@@ -24,32 +24,25 @@ import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.exceptions.KernelException;
 
-public class InTransactionState extends org.neo4j.bolt.v4.runtime.InTransactionState
-{
+public class InTransactionState extends org.neo4j.bolt.v4.runtime.InTransactionState {
 
     @Override
-    protected BoltStateMachineState processCommitMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
-    {
-        try
-        {
-            return super.processCommitMessage( context );
-        }
-        finally
-        {
-            context.impersonateUser( null );
+    protected BoltStateMachineState processCommitMessage(StateMachineContext context)
+            throws KernelException, TransactionNotFoundException {
+        try {
+            return super.processCommitMessage(context);
+        } finally {
+            context.impersonateUser(null);
         }
     }
 
     @Override
-    protected BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
-    {
-        try
-        {
-            return super.processRollbackMessage( context );
-        }
-        finally
-        {
-            context.impersonateUser( null );
+    protected BoltStateMachineState processRollbackMessage(StateMachineContext context)
+            throws KernelException, TransactionNotFoundException {
+        try {
+            return super.processRollbackMessage(context);
+        } finally {
+            context.impersonateUser(null);
         }
     }
 }

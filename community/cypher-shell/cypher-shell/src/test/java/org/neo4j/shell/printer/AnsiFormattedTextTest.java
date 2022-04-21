@@ -19,92 +19,78 @@
  */
 package org.neo4j.shell.printer;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class AnsiFormattedTextTest
-{
+import org.junit.jupiter.api.Test;
+
+class AnsiFormattedTextTest {
 
     @Test
-    void simpleString()
-    {
-        AnsiFormattedText st = AnsiFormattedText.from( "hello" );
-        assertEquals( "hello", st.plainString() );
-        assertEquals( "hello", st.formattedString() );
+    void simpleString() {
+        AnsiFormattedText st = AnsiFormattedText.from("hello");
+        assertEquals("hello", st.plainString());
+        assertEquals("hello", st.formattedString());
     }
 
     @Test
-    void noStyleShouldBePlain()
-    {
+    void noStyleShouldBePlain() {
+        AnsiFormattedText st = AnsiFormattedText.s().colorDefault().boldOff().append("yo");
+
+        assertEquals("yo", st.plainString());
+        assertEquals("yo", st.formattedString());
+    }
+
+    @Test
+    void withFormatting() {
+        AnsiFormattedText st =
+                AnsiFormattedText.s().colorRed().bold("hello").colorDefault().append(" world");
+
+        assertEquals("hello world", st.plainString());
+        assertEquals("@|RED,BOLD hello|@ world", st.formattedString());
+    }
+
+    @Test
+    void nestedFormattingWorks() {
         AnsiFormattedText st = AnsiFormattedText.s()
-                                                .colorDefault()
-                                                .boldOff()
-                                                .append( "yo" );
+                .colorDefault()
+                .bold()
+                .append("hello")
+                .boldOff()
+                .append(" world");
+        st = AnsiFormattedText.s().colorRed().append(st);
 
-        assertEquals( "yo", st.plainString() );
-        assertEquals( "yo", st.formattedString() );
+        assertEquals("hello world", st.plainString());
+        assertEquals("@|RED,BOLD hello|@@|RED  world|@", st.formattedString());
     }
 
     @Test
-    void withFormatting()
-    {
-        AnsiFormattedText st = AnsiFormattedText.s()
-                                                .colorRed()
-                                                .bold( "hello" )
-                                                .colorDefault()
-                                                .append( " world" );
+    void outerAttributeTakesColorPrecedence() {
+        AnsiFormattedText st = AnsiFormattedText.s().colorRed().append("inner");
 
-        assertEquals( "hello world", st.plainString() );
-        assertEquals( "@|RED,BOLD hello|@ world", st.formattedString() );
+        assertEquals("@|RED inner|@", st.formattedString());
+
+        st = AnsiFormattedText.s().colorDefault().append(st);
+
+        assertEquals("inner", st.formattedString());
     }
 
     @Test
-    void nestedFormattingWorks()
-    {
-        AnsiFormattedText st = AnsiFormattedText.s()
-                                                .colorDefault()
-                                                .bold()
-                                                .append( "hello" )
-                                                .boldOff()
-                                                .append( " world" );
-        st = AnsiFormattedText.s().colorRed().append( st );
+    void outerAttributeTakesBoldPrecedence() {
+        AnsiFormattedText st = AnsiFormattedText.s().colorRed().bold().append("inner");
 
-        assertEquals( "hello world", st.plainString() );
-        assertEquals( "@|RED,BOLD hello|@@|RED  world|@", st.formattedString() );
+        assertEquals("@|RED,BOLD inner|@", st.formattedString());
+
+        st = AnsiFormattedText.s().boldOff().append(st);
+
+        assertEquals("@|RED inner|@", st.formattedString());
     }
 
     @Test
-    void outerAttributeTakesColorPrecedence()
-    {
-        AnsiFormattedText st = AnsiFormattedText.s().colorRed().append( "inner" );
+    void shouldAppend() {
+        AnsiFormattedText st = AnsiFormattedText.from("hello");
 
-        assertEquals( "@|RED inner|@", st.formattedString() );
+        st = st.append(" world");
 
-        st = AnsiFormattedText.s().colorDefault().append( st );
-
-        assertEquals( "inner", st.formattedString() );
-    }
-
-    @Test
-    void outerAttributeTakesBoldPrecedence()
-    {
-        AnsiFormattedText st = AnsiFormattedText.s().colorRed().bold().append( "inner" );
-
-        assertEquals( "@|RED,BOLD inner|@", st.formattedString() );
-
-        st = AnsiFormattedText.s().boldOff().append( st );
-
-        assertEquals( "@|RED inner|@", st.formattedString() );
-    }
-
-    @Test
-    void shouldAppend()
-    {
-        AnsiFormattedText st = AnsiFormattedText.from( "hello" );
-
-        st = st.append( " world" );
-
-        assertEquals( "hello world", st.plainString() );
+        assertEquals("hello world", st.plainString());
     }
 }

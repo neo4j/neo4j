@@ -19,26 +19,23 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static org.neo4j.cli.Command.CommandType.LOAD;
+
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.Command.CommandType;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.archive.Loader;
 
-import static org.neo4j.cli.Command.CommandType.LOAD;
-
 @ServiceProvider
-public class LoadCommandProvider implements CommandProvider<LoadCommand>
-{
+public class LoadCommandProvider implements CommandProvider<LoadCommand> {
     @Override
-    public LoadCommand createCommand( ExecutionContext ctx )
-    {
-        return new LoadCommand( ctx, new Loader( ctx.err() ) );
+    public LoadCommand createCommand(ExecutionContext ctx) {
+        return new LoadCommand(ctx, new Loader(ctx.err()));
     }
 
     @Override
-    public CommandType commandType()
-    {
+    public CommandType commandType() {
         return LOAD;
     }
 }

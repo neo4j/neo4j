@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -34,8 +32,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.InternalLogProvider;
 
-public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGroupRecord,IntStoreHeader>
-{
+public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGroupRecord, IntStoreHeader> {
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
 
     public RelationshipGroupStore(
@@ -48,10 +45,21 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, config, RecordIdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormats.relationshipGroup(), new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ),
-                recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                config,
+                RecordIdType.RELATIONSHIP_GROUP,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                TYPE_DESCRIPTOR,
+                recordFormats.relationshipGroup(),
+                new IntStoreHeaderFormat(config.get(GraphDatabaseSettings.dense_node_threshold)),
+                recordFormats.storeVersion(),
+                readOnlyChecker,
+                databaseName,
+                openOptions);
     }
 }

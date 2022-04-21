@@ -21,48 +21,40 @@ package org.neo4j.values.storable;
 
 import java.util.Random;
 
-public class RandomGenerator implements Generator
-{
+public class RandomGenerator implements Generator {
     private final Random random;
 
-    RandomGenerator( Random random )
-    {
+    RandomGenerator(Random random) {
         this.random = random;
     }
 
     @Override
-    public long nextLong()
-    {
+    public long nextLong() {
         return random.nextLong();
     }
 
     @Override
-    public boolean nextBoolean()
-    {
+    public boolean nextBoolean() {
         return random.nextBoolean();
     }
 
     @Override
-    public int nextInt()
-    {
+    public int nextInt() {
         return random.nextInt();
     }
 
     @Override
-    public int nextInt( int bound )
-    {
-        return random.nextInt( bound );
+    public int nextInt(int bound) {
+        return random.nextInt(bound);
     }
 
     @Override
-    public float nextFloat()
-    {
+    public float nextFloat() {
         return random.nextFloat();
     }
 
     @Override
-    public double nextDouble()
-    {
+    public double nextDouble() {
         return random.nextDouble();
     }
 }

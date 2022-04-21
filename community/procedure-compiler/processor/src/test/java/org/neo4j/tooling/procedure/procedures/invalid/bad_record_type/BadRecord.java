@@ -19,15 +19,13 @@
  */
 package org.neo4j.tooling.procedure.procedures.invalid.bad_record_type;
 
-public class BadRecord
-{
+public class BadRecord {
 
     private static final long DEFAULT_AGE = 42L;
     private final String label; /* nonstatic fields should be public */
     private final long age;
 
-    public BadRecord( String label, long age )
-    {
+    public BadRecord(String label, long age) {
         this.label = label;
         this.age = age < 0 ? DEFAULT_AGE : age;
     }

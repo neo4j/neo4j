@@ -29,28 +29,39 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 object RewritableTest {
   trait Exp extends Product with Rewritable
+
   case class Val(int: Int) extends Exp {
+
     def dup(children: Seq[AnyRef]): this.type =
       Val(children.head.asInstanceOf[Int]).asInstanceOf[this.type]
   }
+
   case class Add(lhs: Exp, rhs: Exp) extends Exp {
+
     def dup(children: Seq[AnyRef]): this.type =
       Add(children.head.asInstanceOf[Exp], children(1).asInstanceOf[Exp]).asInstanceOf[this.type]
   }
+
   case class Sum(args: Seq[Exp]) extends Exp {
+
     def dup(children: Seq[AnyRef]): this.type =
       Sum(children.head.asInstanceOf[Seq[Exp]]).asInstanceOf[this.type]
   }
+
   case class Pos(latlng: (Exp, Exp)) extends Exp {
+
     def dup(children: Seq[AnyRef]): this.type =
       Pos(children.head.asInstanceOf[(Exp, Exp)]).asInstanceOf[this.type]
   }
+
   case class Options(args: Seq[(Exp, Exp)]) extends Exp {
+
     def dup(children: Seq[AnyRef]): this.type =
       Options(children.head.asInstanceOf[Seq[(Exp, Exp)]]).asInstanceOf[this.type]
   }
 
   case class ExpList(args: List[Exp]) extends Exp {
+
     def dup(children: Seq[AnyRef]): this.type =
       ExpList(children.head.asInstanceOf[List[Exp]]).asInstanceOf[this.type]
   }
@@ -58,9 +69,9 @@ object RewritableTest {
 
 class RewritableTest extends CypherFunSuite {
 
-  //---------
+  // ---------
   // topDown
-  //---------
+  // ---------
   test("topDown should be identical when no rule matches") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
@@ -135,9 +146,9 @@ class RewritableTest extends CypherFunSuite {
     assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
   }
 
-  //-------------------
+  // -------------------
   // topDownWithParent
-  //-------------------
+  // -------------------
   test("topDownWithParent should let rules see parent as additional context") {
     val v1 = Val(1)
     val v2 = Val(2)
@@ -145,11 +156,13 @@ class RewritableTest extends CypherFunSuite {
     val parent = Add(v2, v3)
     val grandParent = Add(v1, parent)
 
-    val parentOf: Map[Exp, Option[Exp]] = Map(v1 -> Some(grandParent),
-                                              v2 -> Some(parent),
-                                              v3 -> Some(parent),
-                                              parent -> Some(grandParent),
-                                              grandParent -> None)
+    val parentOf: Map[Exp, Option[Exp]] = Map(
+      v1 -> Some(grandParent),
+      v2 -> Some(parent),
+      v3 -> Some(parent),
+      parent -> Some(grandParent),
+      grandParent -> None
+    )
 
     val result = grandParent.rewrite(topDownWithParent(RewriterWithParent.lift {
       case (x: Exp, parent) =>
@@ -234,28 +247,39 @@ class RewritableTest extends CypherFunSuite {
     assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
   }
 
-  //--------------------------------
+  // --------------------------------
   // bottomUp, bottomUpWithRecorder
-  //--------------------------------
-  List("bottomUp" -> ((ast: Rewritable, rewritePf: PartialFunction[AnyRef, AnyRef]) => ast.rewrite(bottomUp(Rewriter.lift(rewritePf)))),
-       "bottomUpWithRecorder" -> ((ast: Rewritable, rewritePf: PartialFunction[AnyRef, AnyRef]) => ast.rewrite(bottomUpWithRecorder(Rewriter.lift(rewritePf))))
-       ) foreach { case (name, bottomUpVariant) =>
+  // --------------------------------
+  List(
+    "bottomUp" -> ((ast: Rewritable, rewritePf: PartialFunction[AnyRef, AnyRef]) =>
+      ast.rewrite(bottomUp(Rewriter.lift(rewritePf)))
+    ),
+    "bottomUpWithRecorder" -> ((ast: Rewritable, rewritePf: PartialFunction[AnyRef, AnyRef]) =>
+      ast.rewrite(bottomUpWithRecorder(Rewriter.lift(rewritePf)))
+    )
+  ) foreach { case (name, bottomUpVariant) =>
     test(s"$name should be identical when no rule matches") {
       val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-      val result = bottomUpVariant(ast, {
-        case None => ???
-      })
+      val result = bottomUpVariant(
+        ast,
+        {
+          case None => ???
+        }
+      )
 
       assert(result === ast)
     }
 
     test(s"$name should be identical when using identity") {
-      val ast= Add(Val(1), Add(Val(2), Val(3)))
+      val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-      val result = bottomUpVariant(ast, {
-        case a => a
-      })
+      val result = bottomUpVariant(
+        ast,
+        {
+          case a => a
+        }
+      )
 
       assert(result === ast)
     }
@@ -263,9 +287,12 @@ class RewritableTest extends CypherFunSuite {
     test(s"$name should match and replace primitives") {
       val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-      val result = bottomUpVariant(ast, {
-        case _: java.lang.Integer => 99: java.lang.Integer
-      })
+      val result = bottomUpVariant(
+        ast,
+        {
+          case _: java.lang.Integer => 99: java.lang.Integer
+        }
+      )
 
       assert(result === Add(Val(99), Add(Val(99), Val(99))))
     }
@@ -273,10 +300,13 @@ class RewritableTest extends CypherFunSuite {
     test(s"$name should match and replace trees") {
       val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-      val result = bottomUpVariant(ast, {
-        case Add(Val(x), Val(y)) =>
-          Val(x + y)
-      })
+      val result = bottomUpVariant(
+        ast,
+        {
+          case Add(Val(x), Val(y)) =>
+            Val(x + y)
+        }
+      )
 
       assert(result === Val(6))
     }
@@ -284,12 +314,15 @@ class RewritableTest extends CypherFunSuite {
     test(s"$name should match and replace primitives and trees") {
       val ast = Add(Val(8), Add(Val(2), Val(3)))
 
-      val result = bottomUpVariant(ast, {
-        case Val(_) =>
-          Val(1)
-        case Add(Val(x), Val(y)) =>
-          Val(x + y)
-      })
+      val result = bottomUpVariant(
+        ast,
+        {
+          case Val(_) =>
+            Val(1)
+          case Add(Val(x), Val(y)) =>
+            Val(x + y)
+        }
+      )
 
       assert(result === Val(3))
     }
@@ -297,9 +330,12 @@ class RewritableTest extends CypherFunSuite {
     test(s"$name should duplicate terms with pair parameters") {
       val ast = Add(Val(1), Pos((Val(2), Val(3))))
 
-      val result = bottomUpVariant(ast, {
-        case Val(_) => Val(99)
-      })
+      val result = bottomUpVariant(
+        ast,
+        {
+          case Val(_) => Val(99)
+        }
+      )
 
       assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
     }
@@ -307,9 +343,12 @@ class RewritableTest extends CypherFunSuite {
     test(s"$name should duplicate terms with sequence of pairs") {
       val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
 
-      val result = bottomUpVariant(ast, {
-        case Val(_) => Val(99)
-      })
+      val result = bottomUpVariant(
+        ast,
+        {
+          case Val(_) => Val(99)
+        }
+      )
 
       assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
     }
@@ -317,9 +356,12 @@ class RewritableTest extends CypherFunSuite {
     test(s"$name should duplicate terms with list of pairs") {
       val ast = Add(Val(1), ExpList(List(Val(2), Val(3))))
 
-      val result = bottomUpVariant(ast, {
-        case Val(_) => Val(99)
-      })
+      val result = bottomUpVariant(
+        ast,
+        {
+          case Val(_) => Val(99)
+        }
+      )
 
       assert(result === Add(Val(99), ExpList(List(Val(99), Val(99)))))
     }
@@ -343,7 +385,6 @@ class RewritableTest extends CypherFunSuite {
 
     rewritten should be theSameInstanceAs thing
   }
-
 
   class TestCancellationChecker extends CancellationChecker {
     var cancelNext = false

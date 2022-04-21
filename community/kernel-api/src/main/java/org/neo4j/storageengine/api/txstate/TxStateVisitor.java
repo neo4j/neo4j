@@ -19,11 +19,9 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import java.util.function.Function;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
-
-import java.util.function.Function;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -33,215 +31,191 @@ import org.neo4j.storageengine.api.StorageProperty;
 /**
  * A visitor for visiting the changes that have been made in a transaction.
  */
-public interface TxStateVisitor extends AutoCloseable
-{
-    void visitCreatedNode( long id );
+public interface TxStateVisitor extends AutoCloseable {
+    void visitCreatedNode(long id);
 
-    void visitDeletedNode( long id );
+    void visitDeletedNode(long id);
 
-    void visitRelationshipModifications( RelationshipModifications modifications ) throws ConstraintValidationException;
+    void visitRelationshipModifications(RelationshipModifications modifications) throws ConstraintValidationException;
 
-    void visitNodePropertyChanges( long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed,
-            IntIterable removed ) throws ConstraintValidationException;
+    void visitNodePropertyChanges(
+            long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed, IntIterable removed)
+            throws ConstraintValidationException;
 
     /**
      * Only called for property changes on existing relationships. For created relationships the relationship properties will be trickle in
      * via {@link #visitRelationshipModifications(RelationshipModifications)}.
      */
-    void visitRelPropertyChanges( long id, int type, long startNode, long endNode, Iterable<StorageProperty> added, Iterable<StorageProperty> changed,
-            IntIterable removed ) throws ConstraintValidationException;
+    void visitRelPropertyChanges(
+            long id,
+            int type,
+            long startNode,
+            long endNode,
+            Iterable<StorageProperty> added,
+            Iterable<StorageProperty> changed,
+            IntIterable removed)
+            throws ConstraintValidationException;
 
-    void visitNodeLabelChanges( long id, LongSet added, LongSet removed ) throws ConstraintValidationException;
+    void visitNodeLabelChanges(long id, LongSet added, LongSet removed) throws ConstraintValidationException;
 
-    void visitAddedIndex( IndexDescriptor element ) throws KernelException;
+    void visitAddedIndex(IndexDescriptor element) throws KernelException;
 
-    void visitRemovedIndex( IndexDescriptor element );
+    void visitRemovedIndex(IndexDescriptor element);
 
-    void visitAddedConstraint( ConstraintDescriptor element ) throws KernelException;
+    void visitAddedConstraint(ConstraintDescriptor element) throws KernelException;
 
-    void visitRemovedConstraint( ConstraintDescriptor element );
+    void visitRemovedConstraint(ConstraintDescriptor element);
 
-    void visitCreatedLabelToken( long id, String name, boolean internal );
+    void visitCreatedLabelToken(long id, String name, boolean internal);
 
-    void visitCreatedPropertyKeyToken( long id, String name, boolean internal );
+    void visitCreatedPropertyKeyToken(long id, String name, boolean internal);
 
-    void visitCreatedRelationshipTypeToken( long id, String name, boolean internal );
+    void visitCreatedRelationshipTypeToken(long id, String name, boolean internal);
 
     @Override
     void close() throws KernelException;
 
-    class Adapter implements TxStateVisitor
-    {
+    class Adapter implements TxStateVisitor {
         @Override
-        public void visitCreatedNode( long id )
-        {
-        }
+        public void visitCreatedNode(long id) {}
 
         @Override
-        public void visitDeletedNode( long id )
-        {
-        }
+        public void visitDeletedNode(long id) {}
 
         @Override
-        public void visitRelationshipModifications( RelationshipModifications modifications )
-        {
-        }
+        public void visitRelationshipModifications(RelationshipModifications modifications) {}
 
         @Override
-        public void visitNodePropertyChanges( long id, Iterable<StorageProperty> added,
-                Iterable<StorageProperty> changed, IntIterable removed )
-        {
-        }
+        public void visitNodePropertyChanges(
+                long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed, IntIterable removed) {}
 
         @Override
-        public void visitRelPropertyChanges( long id, int type, long startNode, long endNode, Iterable<StorageProperty> added,
-                Iterable<StorageProperty> changed, IntIterable removed )
-        {
-        }
+        public void visitRelPropertyChanges(
+                long id,
+                int type,
+                long startNode,
+                long endNode,
+                Iterable<StorageProperty> added,
+                Iterable<StorageProperty> changed,
+                IntIterable removed) {}
 
         @Override
-        public void visitNodeLabelChanges( long id, LongSet added, LongSet removed )
-        {
-        }
+        public void visitNodeLabelChanges(long id, LongSet added, LongSet removed) {}
 
         @Override
-        public void visitAddedIndex( IndexDescriptor index ) throws KernelException
-        {
-        }
+        public void visitAddedIndex(IndexDescriptor index) throws KernelException {}
 
         @Override
-        public void visitRemovedIndex( IndexDescriptor index )
-        {
-        }
+        public void visitRemovedIndex(IndexDescriptor index) {}
 
         @Override
-        public void visitAddedConstraint( ConstraintDescriptor element ) throws KernelException
-        {
-        }
+        public void visitAddedConstraint(ConstraintDescriptor element) throws KernelException {}
 
         @Override
-        public void visitRemovedConstraint( ConstraintDescriptor element )
-        {
-        }
+        public void visitRemovedConstraint(ConstraintDescriptor element) {}
 
         @Override
-        public void visitCreatedLabelToken( long id, String name, boolean internal )
-        {
-        }
+        public void visitCreatedLabelToken(long id, String name, boolean internal) {}
 
         @Override
-        public void visitCreatedPropertyKeyToken( long id, String name, boolean internal )
-        {
-        }
+        public void visitCreatedPropertyKeyToken(long id, String name, boolean internal) {}
 
         @Override
-        public void visitCreatedRelationshipTypeToken( long id, String name, boolean internal )
-        {
-        }
+        public void visitCreatedRelationshipTypeToken(long id, String name, boolean internal) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     }
 
     TxStateVisitor EMPTY = new Adapter();
 
-    class Delegator implements TxStateVisitor
-    {
+    class Delegator implements TxStateVisitor {
         private final TxStateVisitor actual;
 
-        public Delegator( TxStateVisitor actual )
-        {
+        public Delegator(TxStateVisitor actual) {
             assert actual != null;
             this.actual = actual;
         }
 
         @Override
-        public void visitCreatedNode( long id )
-        {
-            actual.visitCreatedNode( id );
+        public void visitCreatedNode(long id) {
+            actual.visitCreatedNode(id);
         }
 
         @Override
-        public void visitDeletedNode( long id )
-        {
-            actual.visitDeletedNode( id );
+        public void visitDeletedNode(long id) {
+            actual.visitDeletedNode(id);
         }
 
         @Override
-        public void visitRelationshipModifications( RelationshipModifications modifications ) throws ConstraintValidationException
-        {
-            actual.visitRelationshipModifications( modifications );
+        public void visitRelationshipModifications(RelationshipModifications modifications)
+                throws ConstraintValidationException {
+            actual.visitRelationshipModifications(modifications);
         }
 
         @Override
-        public void visitNodePropertyChanges( long id, Iterable<StorageProperty> added,
-                Iterable<StorageProperty> changed, IntIterable removed ) throws ConstraintValidationException
-        {
-            actual.visitNodePropertyChanges( id, added, changed, removed );
+        public void visitNodePropertyChanges(
+                long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed, IntIterable removed)
+                throws ConstraintValidationException {
+            actual.visitNodePropertyChanges(id, added, changed, removed);
         }
 
         @Override
-        public void visitRelPropertyChanges( long id, int type, long startNode, long endNode, Iterable<StorageProperty> added,
-                Iterable<StorageProperty> changed, IntIterable removed )
-                        throws ConstraintValidationException
-        {
-            actual.visitRelPropertyChanges( id, type, startNode, endNode, added, changed, removed );
+        public void visitRelPropertyChanges(
+                long id,
+                int type,
+                long startNode,
+                long endNode,
+                Iterable<StorageProperty> added,
+                Iterable<StorageProperty> changed,
+                IntIterable removed)
+                throws ConstraintValidationException {
+            actual.visitRelPropertyChanges(id, type, startNode, endNode, added, changed, removed);
         }
 
         @Override
-        public void visitNodeLabelChanges( long id, LongSet added, LongSet removed )
-                throws ConstraintValidationException
-        {
-            actual.visitNodeLabelChanges( id, added, removed );
+        public void visitNodeLabelChanges(long id, LongSet added, LongSet removed)
+                throws ConstraintValidationException {
+            actual.visitNodeLabelChanges(id, added, removed);
         }
 
         @Override
-        public void visitAddedIndex( IndexDescriptor index ) throws KernelException
-        {
-            actual.visitAddedIndex( index );
+        public void visitAddedIndex(IndexDescriptor index) throws KernelException {
+            actual.visitAddedIndex(index);
         }
 
         @Override
-        public void visitRemovedIndex( IndexDescriptor index )
-        {
-            actual.visitRemovedIndex( index );
+        public void visitRemovedIndex(IndexDescriptor index) {
+            actual.visitRemovedIndex(index);
         }
 
         @Override
-        public void visitAddedConstraint( ConstraintDescriptor constraint ) throws KernelException
-        {
-            actual.visitAddedConstraint( constraint );
+        public void visitAddedConstraint(ConstraintDescriptor constraint) throws KernelException {
+            actual.visitAddedConstraint(constraint);
         }
 
         @Override
-        public void visitRemovedConstraint( ConstraintDescriptor constraint )
-        {
-            actual.visitRemovedConstraint( constraint );
+        public void visitRemovedConstraint(ConstraintDescriptor constraint) {
+            actual.visitRemovedConstraint(constraint);
         }
 
         @Override
-        public void visitCreatedLabelToken( long id, String name, boolean internal )
-        {
-            actual.visitCreatedLabelToken( id, name, internal );
+        public void visitCreatedLabelToken(long id, String name, boolean internal) {
+            actual.visitCreatedLabelToken(id, name, internal);
         }
 
         @Override
-        public void visitCreatedPropertyKeyToken( long id, String name, boolean internal )
-        {
-            actual.visitCreatedPropertyKeyToken( id, name, internal );
+        public void visitCreatedPropertyKeyToken(long id, String name, boolean internal) {
+            actual.visitCreatedPropertyKeyToken(id, name, internal);
         }
 
         @Override
-        public void visitCreatedRelationshipTypeToken( long id, String name, boolean internal )
-        {
-            actual.visitCreatedRelationshipTypeToken( id, name, internal );
+        public void visitCreatedRelationshipTypeToken(long id, String name, boolean internal) {
+            actual.visitCreatedRelationshipTypeToken(id, name, internal);
         }
 
         @Override
-        public void close() throws KernelException
-        {
+        public void close() throws KernelException {
             actual.close();
         }
     }
@@ -249,9 +223,7 @@ public interface TxStateVisitor extends AutoCloseable
     /**
      * Interface for allowing decoration of a TxStateVisitor with one or more other visitor(s).
      */
-    interface Decorator extends Function<TxStateVisitor,TxStateVisitor>
-    {
-    }
+    interface Decorator extends Function<TxStateVisitor, TxStateVisitor> {}
 
     Decorator NO_DECORATION = txStateVisitor -> txStateVisitor;
 }

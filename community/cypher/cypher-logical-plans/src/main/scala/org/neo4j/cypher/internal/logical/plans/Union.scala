@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Produce first the 'left' rows, and then the 'right' rows. This operator does not guarantee row uniqueness.
  */
-case class Union(override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen)  {
+case class Union(override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen)
+    extends LogicalBinaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)

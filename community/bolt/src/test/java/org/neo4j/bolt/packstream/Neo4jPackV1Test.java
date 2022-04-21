@@ -19,30 +19,6 @@
  */
 package org.neo4j.bolt.packstream;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.internal.helpers.collection.MapUtil;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TextArray;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.UTF8StringValue;
-import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.VirtualValues;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,296 +35,291 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
-public class Neo4jPackV1Test
-{
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.runtime.Neo4jError;
+import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.UTF8StringValue;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.VirtualValues;
+
+public class Neo4jPackV1Test {
     private final Neo4jPackV1 neo4jPack = new Neo4jPackV1();
 
-    private byte[] packed( AnyValue object ) throws IOException
-    {
+    private byte[] packed(AnyValue object) throws IOException {
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.pack( object );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.pack(object);
         return output.bytes();
     }
 
-    private AnyValue unpacked( byte[] bytes ) throws IOException
-    {
-        PackedInputArray input = new PackedInputArray( bytes );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+    private AnyValue unpacked(byte[] bytes) throws IOException {
+        PackedInputArray input = new PackedInputArray(bytes);
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
         return unpacker.unpack();
     }
 
     @Test
-    void shouldBeAbleToPackAndUnpackList() throws IOException
-    {
+    void shouldBeAbleToPackAndUnpackList() throws IOException {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.packListHeader( ALICE.labels().length() );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.packListHeader(ALICE.labels().length());
         List<String> expected = new ArrayList<>();
         TextArray labels = ALICE.labels();
-        for ( int i = 0; i < labels.length(); i++ )
-        {
-            String labelName = labels.stringValue( i );
-            packer.pack( labelName );
-            expected.add( labelName );
+        for (int i = 0; i < labels.length(); i++) {
+            String labelName = labels.stringValue(i);
+            packer.pack(labelName);
+            expected.add(labelName);
         }
-        AnyValue unpacked = unpacked( output.bytes() );
+        AnyValue unpacked = unpacked(output.bytes());
 
         // Then
-        assertThat( unpacked ).isInstanceOf( ListValue.class );
+        assertThat(unpacked).isInstanceOf(ListValue.class);
         ListValue unpackedList = (ListValue) unpacked;
-        assertThat( unpackedList ).isEqualTo( ValueUtils.asListValue( expected ) );
+        assertThat(unpackedList).isEqualTo(ValueUtils.asListValue(expected));
     }
 
     @Test
-    void shouldBeAbleToPackAndUnpackMap() throws IOException
-    {
+    void shouldBeAbleToPackAndUnpackMap() throws IOException {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.packMapHeader( ALICE.properties().size() );
-        ALICE.properties().foreach( ( s, value ) ->
-        {
-            try
-            {
-                packer.pack( s );
-                packer.pack( value );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.packMapHeader(ALICE.properties().size());
+        ALICE.properties().foreach((s, value) -> {
+            try {
+                packer.pack(s);
+                packer.pack(value);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        } );
-        AnyValue unpacked = unpacked( output.bytes() );
+        });
+        AnyValue unpacked = unpacked(output.bytes());
 
         // Then
-        assertThat( unpacked ).isInstanceOf( MapValue.class );
+        assertThat(unpacked).isInstanceOf(MapValue.class);
         MapValue unpackedMap = (MapValue) unpacked;
-        assertThat( unpackedMap ).isEqualTo( ALICE.properties() );
+        assertThat(unpackedMap).isEqualTo(ALICE.properties());
     }
 
     @Test
-    void shouldFailWhenTryingToPackAndUnpackMapContainingNullKeys() throws IOException
-    {
+    void shouldFailWhenTryingToPackAndUnpackMapContainingNullKeys() throws IOException {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
 
-        Map<String,AnyValue> map = new HashMap<>();
-        map.put( null, longValue( 42L ) );
-        map.put( "foo", longValue( 1337L ) );
-        packer.packMapHeader( map.size() );
-        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
-        {
-            packer.pack( entry.getKey() );
-            packer.pack( entry.getValue() );
+        Map<String, AnyValue> map = new HashMap<>();
+        map.put(null, longValue(42L));
+        map.put("foo", longValue(1337L));
+        packer.packMapHeader(map.size());
+        for (Map.Entry<String, AnyValue> entry : map.entrySet()) {
+            packer.pack(entry.getKey());
+            packer.pack(entry.getValue());
         }
 
         // When
-        try
-        {
-            PackedInputArray input = new PackedInputArray( output.bytes() );
-            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        try {
+            PackedInputArray input = new PackedInputArray(output.bytes());
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
             unpacker.unpack();
 
-            fail( "exception expected" );
-        }
-        catch ( BoltIOException ex )
-        {
-            assertEquals( Neo4jError.from( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." ),
-                    Neo4jError.from( ex ) );
+            fail("exception expected");
+        } catch (BoltIOException ex) {
+            assertEquals(
+                    Neo4jError.from(
+                            Status.Request.Invalid,
+                            "Value `null` is not supported as key in maps, must be a non-nullable string."),
+                    Neo4jError.from(ex));
         }
     }
 
     @Test
-    void shouldThrowOnUnpackingMapWithDuplicateKeys() throws IOException
-    {
+    void shouldThrowOnUnpackingMapWithDuplicateKeys() throws IOException {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.packMapHeader( 2 );
-        packer.pack( "key" );
-        packer.pack( intValue( 1 ) );
-        packer.pack( "key" );
-        packer.pack( intValue( 2 ) );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.packMapHeader(2);
+        packer.pack("key");
+        packer.pack(intValue(1));
+        packer.pack("key");
+        packer.pack(intValue(2));
 
         // When
-        try
-        {
-            PackedInputArray input = new PackedInputArray( output.bytes() );
-            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        try {
+            PackedInputArray input = new PackedInputArray(output.bytes());
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
             unpacker.unpack();
 
-            fail( "exception expected" );
-        }
-        catch ( BoltIOException ex )
-        {
-            assertEquals( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `key`." ), Neo4jError.from( ex ) );
+            fail("exception expected");
+        } catch (BoltIOException ex) {
+            assertEquals(Neo4jError.from(Status.Request.Invalid, "Duplicate map key `key`."), Neo4jError.from(ex));
         }
     }
 
     @Test
-    void shouldThrowOnUnpackingMapWithUnsupportedKeyType() throws IOException
-    {
+    void shouldThrowOnUnpackingMapWithUnsupportedKeyType() throws IOException {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.packMapHeader( 2 );
-        packer.pack( ValueUtils.of( 1L ) );
-        packer.pack( intValue( 1 ) );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.packMapHeader(2);
+        packer.pack(ValueUtils.of(1L));
+        packer.pack(intValue(1));
 
         // When
-        try
-        {
-            PackedInputArray input = new PackedInputArray( output.bytes() );
-            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        try {
+            PackedInputArray input = new PackedInputArray(output.bytes());
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
             unpacker.unpack();
 
-            fail( "exception expected" );
-        }
-        catch ( BoltIOException ex )
-        {
-            assertEquals( Neo4jError.from( Status.Request.InvalidFormat, "Bad key type: INTEGER" ), Neo4jError.from( ex ) );
+            fail("exception expected");
+        } catch (BoltIOException ex) {
+            assertEquals(Neo4jError.from(Status.Request.InvalidFormat, "Bad key type: INTEGER"), Neo4jError.from(ex));
         }
     }
 
     @Test
-    void shouldThrowOnUnpackingMapWithOversizeDeclaredSize() throws IOException
-    {
+    void shouldThrowOnUnpackingMapWithOversizeDeclaredSize() throws IOException {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.packMapHeader( Integer.MAX_VALUE );
-        packer.pack( "key" );
-        packer.pack( intValue( 1 ) );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.packMapHeader(Integer.MAX_VALUE);
+        packer.pack("key");
+        packer.pack(intValue(1));
 
         // When
-        try
-        {
-            PackedInputArray input = new PackedInputArray( output.bytes() );
-            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        try {
+            PackedInputArray input = new PackedInputArray(output.bytes());
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
             unpacker.unpack();
 
-            fail( "exception expected" );
-        }
-        catch ( BoltIOException ex )
-        {
-            assertEquals( Neo4jError.from( Status.Request.Invalid, "Collection size exceeds message capacity." ), Neo4jError.from( ex ) );
+            fail("exception expected");
+        } catch (BoltIOException ex) {
+            assertEquals(
+                    Neo4jError.from(Status.Request.Invalid, "Collection size exceeds message capacity."),
+                    Neo4jError.from(ex));
         }
     }
 
     @Test
-    void shouldThrowOnUnpackingListWithOversizeDeclaredSize() throws IOException
-    {
+    void shouldThrowOnUnpackingListWithOversizeDeclaredSize() throws IOException {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.packListHeader( Integer.MAX_VALUE );
-        packer.pack( intValue( 1 ) );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.packListHeader(Integer.MAX_VALUE);
+        packer.pack(intValue(1));
 
         // When
-        try
-        {
-            PackedInputArray input = new PackedInputArray( output.bytes() );
-            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+        try {
+            PackedInputArray input = new PackedInputArray(output.bytes());
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker(input);
             unpacker.unpack();
 
-            fail( "exception expected" );
+            fail("exception expected");
+        } catch (BoltIOException ex) {
+            assertEquals(
+                    Neo4jError.from(Status.Request.Invalid, "Collection size exceeds message capacity."),
+                    Neo4jError.from(ex));
         }
-        catch ( BoltIOException ex )
-        {
-            assertEquals( Neo4jError.from( Status.Request.Invalid, "Collection size exceeds message capacity." ), Neo4jError.from( ex ) );
-        }
     }
 
     @Test
-    void shouldNotBeAbleToUnpackNode()
-    {
-        var ex = assertThrows( BoltIOException.class, () -> unpacked( packed( ALICE ) ) );
-        assertEquals( Neo4jError.from( TypeError, "Node values cannot be unpacked with this version of bolt." ), Neo4jError.from( ex ) );
+    void shouldNotBeAbleToUnpackNode() {
+        var ex = assertThrows(BoltIOException.class, () -> unpacked(packed(ALICE)));
+        assertEquals(
+                Neo4jError.from(TypeError, "Node values cannot be unpacked with this version of bolt."),
+                Neo4jError.from(ex));
     }
 
     @Test
-    void shouldNotBeAbleToUnpackRelationship()
-    {
-        var ex = assertThrows( BoltIOException.class, () -> unpacked( packed( ALICE_KNOWS_BOB ) ) );
-        assertEquals( Neo4jError.from( TypeError, "Relationship values cannot be unpacked with this version of bolt." ),
-                    Neo4jError.from( ex ) );
+    void shouldNotBeAbleToUnpackRelationship() {
+        var ex = assertThrows(BoltIOException.class, () -> unpacked(packed(ALICE_KNOWS_BOB)));
+        assertEquals(
+                Neo4jError.from(TypeError, "Relationship values cannot be unpacked with this version of bolt."),
+                Neo4jError.from(ex));
     }
 
     @Test
-    void shouldNotBeAbleToUnpackUnboundRelationship() throws IOException
-    {
+    void shouldNotBeAbleToUnpackUnboundRelationship() throws IOException {
         // Given
         PackedOutputArray out = new PackedOutputArray();
-        Neo4jPackV1.Packer packer = neo4jPack.newPacker( out );
+        Neo4jPackV1.Packer packer = neo4jPack.newPacker(out);
 
-        packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
-        packer.pack( ValueUtils.of( 1L ) );
-        packer.pack( ValueUtils.of( "RELATES_TO" ) );
-        packer.pack( ValueUtils.asMapValue( MapUtil.map( "a", 1L, "b", "x" ) ) );
+        packer.packStructHeader(3, UNBOUND_RELATIONSHIP);
+        packer.pack(ValueUtils.of(1L));
+        packer.pack(ValueUtils.of("RELATES_TO"));
+        packer.pack(ValueUtils.asMapValue(MapUtil.map("a", 1L, "b", "x")));
 
-        var ex = assertThrows( BoltIOException.class, () -> unpacked( out.bytes() ) );
-        assertEquals( Neo4jError.from( TypeError, "Relationship values cannot be unpacked with this version of bolt." ),
-                    Neo4jError.from( ex ) );
+        var ex = assertThrows(BoltIOException.class, () -> unpacked(out.bytes()));
+        assertEquals(
+                Neo4jError.from(TypeError, "Relationship values cannot be unpacked with this version of bolt."),
+                Neo4jError.from(ex));
     }
 
     @Test
-    void shouldNotBeAbleToUnpackPaths()
-    {
-        for ( PathValue path : ALL_PATHS )
-        {
-            var ex = assertThrows( BoltIOException.class, () -> unpacked( packed( path ) ) );
-            assertEquals( Neo4jError.from( TypeError, "Path values cannot be unpacked with this version of bolt." ),
-                        Neo4jError.from( ex ) );
+    void shouldNotBeAbleToUnpackPaths() {
+        for (PathValue path : ALL_PATHS) {
+            var ex = assertThrows(BoltIOException.class, () -> unpacked(packed(path)));
+            assertEquals(
+                    Neo4jError.from(TypeError, "Path values cannot be unpacked with this version of bolt."),
+                    Neo4jError.from(ex));
         }
     }
 
     @Test
-    void shouldTreatSingleCharAsSingleCharacterString() throws IOException
-    {
+    void shouldTreatSingleCharAsSingleCharacterString() throws IOException {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.pack( charValue( 'C' ) );
-        AnyValue unpacked = unpacked( output.bytes() );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.pack(charValue('C'));
+        AnyValue unpacked = unpacked(output.bytes());
 
         // Then
-        assertThat( unpacked ).isInstanceOf( TextValue.class );
-        assertThat( unpacked ).isEqualTo( stringValue( "C" ) );
+        assertThat(unpacked).isInstanceOf(TextValue.class);
+        assertThat(unpacked).isEqualTo(stringValue("C"));
     }
 
     @Test
-    void shouldTreatCharArrayAsListOfStrings() throws IOException
-    {
+    void shouldTreatCharArrayAsListOfStrings() throws IOException {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.pack( charArray( new char[]{'W', 'H', 'Y'} ) );
-        Object unpacked = unpacked( output.bytes() );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.pack(charArray(new char[] {'W', 'H', 'Y'}));
+        Object unpacked = unpacked(output.bytes());
 
         // Then
-        assertThat( unpacked ).isInstanceOf( ListValue.class );
-        assertThat( unpacked ).isEqualTo( VirtualValues.list( stringValue( "W" ), stringValue( "H" ), stringValue( "Y" ) ) );
+        assertThat(unpacked).isInstanceOf(ListValue.class);
+        assertThat(unpacked).isEqualTo(VirtualValues.list(stringValue("W"), stringValue("H"), stringValue("Y")));
     }
 
     @Test
-    void shouldPackUtf8() throws IOException
-    {
+    void shouldPackUtf8() throws IOException {
         // Given
         String value = "\uD83D\uDE31";
-        byte[] bytes = value.getBytes( StandardCharsets.UTF_8 );
-        TextValue textValue = utf8Value( bytes, 0, bytes.length );
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        TextValue textValue = utf8Value(bytes, 0, bytes.length);
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.pack( textValue );
+        Neo4jPack.Packer packer = neo4jPack.newPacker(output);
+        packer.pack(textValue);
 
         // When
-        AnyValue unpacked = unpacked( output.bytes() );
-        assertThat( unpacked ).isInstanceOf( UTF8StringValue.class );
+        AnyValue unpacked = unpacked(output.bytes());
+        assertThat(unpacked).isInstanceOf(UTF8StringValue.class);
 
         // Then
-        assertThat( unpacked ).isEqualTo( textValue );
+        assertThat(unpacked).isEqualTo(textValue);
     }
 }

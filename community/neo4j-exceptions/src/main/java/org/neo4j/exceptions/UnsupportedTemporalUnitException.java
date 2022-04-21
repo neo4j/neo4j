@@ -25,15 +25,12 @@ package org.neo4j.exceptions;
  * assign a month to a {@code TimeValue}, trying to truncate a {@code DateValue} to minutes and
  * trying to get the timezone of a {@code LocalDateTimeValue}.
  */
-public class UnsupportedTemporalUnitException extends CypherTypeException
-{
-    public UnsupportedTemporalUnitException( String errorMsg )
-    {
-        super( errorMsg );
+public class UnsupportedTemporalUnitException extends CypherTypeException {
+    public UnsupportedTemporalUnitException(String errorMsg) {
+        super(errorMsg);
     }
 
-    public UnsupportedTemporalUnitException( String errorMsg, Throwable cause )
-    {
-        super( errorMsg, cause );
+    public UnsupportedTemporalUnitException(String errorMsg, Throwable cause) {
+        super(errorMsg, cause);
     }
 }

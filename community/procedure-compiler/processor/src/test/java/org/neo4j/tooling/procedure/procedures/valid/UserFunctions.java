@@ -21,110 +21,91 @@ package org.neo4j.tooling.procedure.procedures.valid;
 
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
-public class UserFunctions
-{
+public class UserFunctions {
 
     @UserFunction
-    public String simpleInput00()
-    {
+    public String simpleInput00() {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput01( @Name( "foo" ) String input )
-    {
+    public String simpleInput01(@Name("foo") String input) {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput02( @Name( "foo" ) long input )
-    {
+    public String simpleInput02(@Name("foo") long input) {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput03( @Name( "foo" ) Long input )
-    {
+    public String simpleInput03(@Name("foo") Long input) {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput04( @Name( "foo" ) Number input )
-    {
+    public String simpleInput04(@Name("foo") Number input) {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput05( @Name( "foo" ) Boolean input )
-    {
+    public String simpleInput05(@Name("foo") Boolean input) {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput06( @Name( "foo" ) boolean input )
-    {
+    public String simpleInput06(@Name("foo") boolean input) {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput07( @Name( "foo" ) Object input )
-    {
+    public String simpleInput07(@Name("foo") Object input) {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput08( @Name( "foo" ) Node input )
-    {
+    public String simpleInput08(@Name("foo") Node input) {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput09( @Name( "foo" ) Path input )
-    {
+    public String simpleInput09(@Name("foo") Path input) {
         return "42";
     }
 
     @UserFunction
-    public String simpleInput10( @Name( "foo" ) Relationship input )
-    {
+    public String simpleInput10(@Name("foo") Relationship input) {
         return "42";
     }
 
     @UserFunction
-    public String genericInput01( @Name( "foo" ) List<String> input )
-    {
+    public String genericInput01(@Name("foo") List<String> input) {
         return "42";
     }
 
     @UserFunction
-    public String genericInput02( @Name( "foo" ) List<List<Node>> input )
-    {
+    public String genericInput02(@Name("foo") List<List<Node>> input) {
         return "42";
     }
 
     @UserFunction
-    public String genericInput03( @Name( "foo" ) Map<String,List<Node>> input )
-    {
+    public String genericInput03(@Name("foo") Map<String, List<Node>> input) {
         return "42";
     }
 
     @UserFunction
-    public String genericInput04( @Name( "foo" ) Map<String,Object> input )
-    {
+    public String genericInput04(@Name("foo") Map<String, Object> input) {
         return "42";
     }
 
     @UserFunction
-    public String genericInput05( @Name( "foo" ) Map<String,List<List<Map<String,Map<String,List<Path>>>>>> input )
-    {
+    public String genericInput05(@Name("foo") Map<String, List<List<Map<String, Map<String, List<Path>>>>>> input) {
         return "42";
     }
-
 }

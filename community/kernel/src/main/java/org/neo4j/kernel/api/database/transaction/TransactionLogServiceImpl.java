@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.api.database.transaction;
 
-import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
+import static org.neo4j.util.Preconditions.checkState;
+import static org.neo4j.util.Preconditions.requirePositive;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.OptionalLong;
 import java.util.concurrent.locks.Lock;
-
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -39,11 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 
-import static org.neo4j.util.Preconditions.checkState;
-import static org.neo4j.util.Preconditions.requirePositive;
-
-public class TransactionLogServiceImpl implements TransactionLogService
-{
+public class TransactionLogServiceImpl implements TransactionLogService {
     private final LogFiles logFiles;
     private final LogicalTransactionStore transactionStore;
     private final MetadataProvider metadataProvider;
@@ -52,9 +49,12 @@ public class TransactionLogServiceImpl implements TransactionLogService
     private final LogFile logFile;
     private final DatabaseAvailabilityGuard availabilityGuard;
 
-    public TransactionLogServiceImpl( MetadataProvider metadataProvider, LogFiles logFiles, LogicalTransactionStore transactionStore, Lock pruneLock,
-            DatabaseAvailabilityGuard availabilityGuard )
-    {
+    public TransactionLogServiceImpl(
+            MetadataProvider metadataProvider,
+            LogFiles logFiles,
+            LogicalTransactionStore transactionStore,
+            Lock pruneLock,
+            DatabaseAvailabilityGuard availabilityGuard) {
         this.metadataProvider = metadataProvider;
         this.logFiles = logFiles;
         this.transactionStore = transactionStore;
@@ -64,140 +64,122 @@ public class TransactionLogServiceImpl implements TransactionLogService
     }
 
     @Override
-    public TransactionLogChannels logFilesChannels( long startingTxId ) throws IOException
-    {
-        requirePositive( startingTxId );
-        LogPosition minimalLogPosition = getLogPosition( startingTxId );
-        // prevent pruning while we build log channels to avoid cases when we will actually prevent pruning to remove files (on some file systems and OSs),
+    public TransactionLogChannels logFilesChannels(long startingTxId) throws IOException {
+        requirePositive(startingTxId);
+        LogPosition minimalLogPosition = getLogPosition(startingTxId);
+        // prevent pruning while we build log channels to avoid cases when we will actually prevent pruning to remove
+        // files (on some file systems and OSs),
         // or unexpected exceptions while traversing files
         pruneLock.lock();
-        try
-        {
+        try {
             long minimalVersion = minimalLogPosition.getLogVersion();
             var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-            var channels = collectChannels( startingTxId, minimalLogPosition, minimalVersion, lastClosedTransaction );
-            return new TransactionLogChannels( channels );
-        }
-        finally
-        {
+            var channels = collectChannels(startingTxId, minimalLogPosition, minimalVersion, lastClosedTransaction);
+            return new TransactionLogChannels(channels);
+        } finally {
             pruneLock.unlock();
         }
     }
 
     @Override
-    public LogPosition append( ByteBuffer byteBuffer, OptionalLong transactionId ) throws IOException
-    {
-        checkState( !availabilityGuard.isAvailable(), "Database should not be available." );
-        return logFile.append( byteBuffer, transactionId );
+    public LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId) throws IOException {
+        checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
+        return logFile.append(byteBuffer, transactionId);
     }
 
     @Override
-    public void restore( LogPosition position ) throws IOException
-    {
-        checkState( !availabilityGuard.isAvailable(), "Database should not be available." );
-        logFile.truncate( position );
+    public void restore(LogPosition position) throws IOException {
+        checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
+        logFile.truncate(position);
     }
 
-    private ArrayList<LogChannel> collectChannels( long startingTxId, LogPosition minimalLogPosition, long minimalVersion,
-                                                   ClosedTransactionMetadata lastClosedTransaction ) throws IOException
-    {
+    private ArrayList<LogChannel> collectChannels(
+            long startingTxId,
+            LogPosition minimalLogPosition,
+            long minimalVersion,
+            ClosedTransactionMetadata lastClosedTransaction)
+            throws IOException {
         var highestLogPosition = lastClosedTransaction.logPosition();
         var highestTxId = lastClosedTransaction.transactionId();
         var highestLogVersion = highestLogPosition.getLogVersion();
         int exposedChannels = (int) ((highestLogVersion - minimalVersion) + 1);
-        var channels = new ArrayList<LogChannel>( exposedChannels );
-        var internalChannels = LongObjectMaps.mutable.<StoreChannel>ofInitialCapacity( exposedChannels );
-        for ( long version = minimalVersion; version <= highestLogVersion; version++ )
-        {
-            var startPositionTxId = logFileTransactionId( startingTxId, minimalVersion, version );
-            var readOnlyStoreChannel = new ReadOnlyStoreChannel( logFile, version );
-            if ( version == minimalVersion )
-            {
-                readOnlyStoreChannel.position( minimalLogPosition.getByteOffset() );
+        var channels = new ArrayList<LogChannel>(exposedChannels);
+        var internalChannels = LongObjectMaps.mutable.<StoreChannel>ofInitialCapacity(exposedChannels);
+        for (long version = minimalVersion; version <= highestLogVersion; version++) {
+            var startPositionTxId = logFileTransactionId(startingTxId, minimalVersion, version);
+            var readOnlyStoreChannel = new ReadOnlyStoreChannel(logFile, version);
+            if (version == minimalVersion) {
+                readOnlyStoreChannel.position(minimalLogPosition.getByteOffset());
             }
-            internalChannels.put( version, readOnlyStoreChannel );
-            var endOffset = version < highestLogVersion ? readOnlyStoreChannel.size() : highestLogPosition.getByteOffset();
-            var lastTxId = version < highestLogVersion ? getHeaderLastCommittedTx( version + 1 ) : highestTxId;
-            channels.add( new LogChannel( startPositionTxId, readOnlyStoreChannel, endOffset, lastTxId ) );
+            internalChannels.put(version, readOnlyStoreChannel);
+            var endOffset =
+                    version < highestLogVersion ? readOnlyStoreChannel.size() : highestLogPosition.getByteOffset();
+            var lastTxId = version < highestLogVersion ? getHeaderLastCommittedTx(version + 1) : highestTxId;
+            channels.add(new LogChannel(startPositionTxId, readOnlyStoreChannel, endOffset, lastTxId));
         }
-        logFile.registerExternalReaders( internalChannels );
+        logFile.registerExternalReaders(internalChannels);
         return channels;
     }
 
-    private long logFileTransactionId( long startingTxId, long minimalVersion, long version ) throws IOException
-    {
-        return version == minimalVersion ? startingTxId : getHeaderLastCommittedTx( version ) + 1;
+    private long logFileTransactionId(long startingTxId, long minimalVersion, long version) throws IOException {
+        return version == minimalVersion ? startingTxId : getHeaderLastCommittedTx(version) + 1;
     }
 
-    private long getHeaderLastCommittedTx( long version ) throws IOException
-    {
-        return logFile.extractHeader( version ).getLastCommittedTxId();
+    private long getHeaderLastCommittedTx(long version) throws IOException {
+        return logFile.extractHeader(version).getLastCommittedTxId();
     }
 
-    private LogPosition getLogPosition( long startingTxId ) throws IOException
-    {
-        try ( TransactionCursor transactionCursor = transactionStore.getTransactions( startingTxId ) )
-        {
+    private LogPosition getLogPosition(long startingTxId) throws IOException {
+        try (TransactionCursor transactionCursor = transactionStore.getTransactions(startingTxId)) {
             return transactionCursor.position();
-        }
-        catch ( NoSuchTransactionException e )
-        {
-            throw new IllegalArgumentException( "Transaction id " + startingTxId + " not found in transaction logs.", e );
+        } catch (NoSuchTransactionException e) {
+            throw new IllegalArgumentException("Transaction id " + startingTxId + " not found in transaction logs.", e);
         }
     }
 
-    private static class ReadOnlyStoreChannel extends DelegatingStoreChannel<StoreChannel>
-    {
+    private static class ReadOnlyStoreChannel extends DelegatingStoreChannel<StoreChannel> {
         private final LogFile logFile;
         private final long version;
 
-        ReadOnlyStoreChannel( LogFile logFile, long version ) throws IOException
-        {
-            super( logFile.openForVersion( version ) );
+        ReadOnlyStoreChannel(LogFile logFile, long version) throws IOException {
+            super(logFile.openForVersion(version));
             this.logFile = logFile;
             this.version = version;
         }
 
         @Override
-        public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
-        {
-            throw new UnsupportedOperationException( "Read only channel does not support any write operations." );
+        public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
+            throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public int write( ByteBuffer src ) throws IOException
-        {
-            throw new UnsupportedOperationException( "Read only channel does not support any write operations." );
+        public int write(ByteBuffer src) throws IOException {
+            throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public void writeAll( ByteBuffer src ) throws IOException
-        {
-            throw new UnsupportedOperationException( "Read only channel does not support any write operations." );
+        public void writeAll(ByteBuffer src) throws IOException {
+            throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public void writeAll( ByteBuffer src, long position ) throws IOException
-        {
-            throw new UnsupportedOperationException( "Read only channel does not support any write operations." );
+        public void writeAll(ByteBuffer src, long position) throws IOException {
+            throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public StoreChannel truncate( long size ) throws IOException
-        {
-            throw new UnsupportedOperationException( "Read only channel does not support any write operations." );
+        public StoreChannel truncate(long size) throws IOException {
+            throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public long write( ByteBuffer[] srcs ) throws IOException
-        {
-            throw new UnsupportedOperationException( "Read only channel does not support any write operations." );
+        public long write(ByteBuffer[] srcs) throws IOException {
+            throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public void close() throws IOException
-        {
-            logFile.unregisterExternalReader( version, this );
+        public void close() throws IOException {
+            logFile.unregisterExternalReader(version, this);
             super.close();
         }
     }

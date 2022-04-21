@@ -19,21 +19,19 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static java.lang.String.format;
+import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static java.lang.String.format;
-import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
-
-class PageAwareByteArrayCursor extends PageCursor
-{
+class PageAwareByteArrayCursor extends PageCursor {
     private final int payloadSize;
     private final List<byte[]> pages;
 
@@ -44,331 +42,278 @@ class PageAwareByteArrayCursor extends PageCursor
     private boolean shouldRetry;
     private int closeCount;
 
-    PageAwareByteArrayCursor( int payloadSize )
-    {
-        this( payloadSize, 0 );
+    PageAwareByteArrayCursor(int payloadSize) {
+        this(payloadSize, 0);
     }
 
-    private PageAwareByteArrayCursor( int payloadSize, long nextPageId )
-    {
-        this( new ArrayList<>(), payloadSize, nextPageId );
+    private PageAwareByteArrayCursor(int payloadSize, long nextPageId) {
+        this(new ArrayList<>(), payloadSize, nextPageId);
     }
 
-    private PageAwareByteArrayCursor( List<byte[]> pages, int payloadSize, long nextPageId )
-    {
+    private PageAwareByteArrayCursor(List<byte[]> pages, int payloadSize, long nextPageId) {
         this.pages = pages;
         this.payloadSize = payloadSize;
         this.nextPageId = nextPageId;
         initialize();
     }
 
-    private void initialize()
-    {
+    private void initialize() {
         currentPageId = UNBOUND_PAGE_ID;
         current = null;
     }
 
-    PageAwareByteArrayCursor duplicate()
-    {
-        return new PageAwareByteArrayCursor( pages, payloadSize, currentPageId );
+    PageAwareByteArrayCursor duplicate() {
+        return new PageAwareByteArrayCursor(pages, payloadSize, currentPageId);
     }
 
-    PageAwareByteArrayCursor duplicate( long nextPageId )
-    {
-        return new PageAwareByteArrayCursor( pages, payloadSize, nextPageId );
+    PageAwareByteArrayCursor duplicate(long nextPageId) {
+        return new PageAwareByteArrayCursor(pages, payloadSize, nextPageId);
     }
 
-    void forceRetry()
-    {
+    void forceRetry() {
         shouldRetry = true;
     }
 
     @Override
-    public long getCurrentPageId()
-    {
+    public long getCurrentPageId() {
         return currentPageId;
     }
 
     @Override
-    public boolean next()
-    {
+    public boolean next() {
         currentPageId = nextPageId;
         nextPageId++;
         assertPages();
 
-        byte[] page = page( currentPageId );
-        current = wrap( page, 0, page.length, currentPageId );
+        byte[] page = page(currentPageId);
+        current = wrap(page, 0, page.length, currentPageId);
         return true;
     }
 
     @Override
-    public boolean next( long pageId )
-    {
+    public boolean next(long pageId) {
         currentPageId = pageId;
         assertPages();
 
-        byte[] page = page( currentPageId );
-        current = wrap( page, 0, page.length );
+        byte[] page = page(currentPageId);
+        current = wrap(page, 0, page.length);
         return true;
     }
 
     @Override
-    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
-    {
-        if ( sourceOffset < 0 || targetOffset < 0 || lengthInBytes < 0 )
-        {
-            throw new IllegalArgumentException( format( "sourceOffset=%d, targetOffset=%d, lengthInBytes=%d, currentPageId=%d",
-                    sourceOffset, targetOffset, lengthInBytes, currentPageId ) );
+    public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
+        if (sourceOffset < 0 || targetOffset < 0 || lengthInBytes < 0) {
+            throw new IllegalArgumentException(format(
+                    "sourceOffset=%d, targetOffset=%d, lengthInBytes=%d, currentPageId=%d",
+                    sourceOffset, targetOffset, lengthInBytes, currentPageId));
         }
-        int bytesToCopy = Math.min( lengthInBytes,
-                Math.min( current.getPagedFile().payloadSize() - sourceOffset,
-                        targetCursor.getPagedFile().payloadSize() - targetOffset ) );
+        int bytesToCopy = Math.min(
+                lengthInBytes,
+                Math.min(
+                        current.getPagedFile().payloadSize() - sourceOffset,
+                        targetCursor.getPagedFile().payloadSize() - targetOffset));
 
-        for ( int i = 0; i < bytesToCopy; i++ )
-        {
-            targetCursor.putByte( targetOffset + i, getByte( sourceOffset + i ) );
-        }
-        return bytesToCopy;
-    }
-
-    @Override
-    public int copyTo( int sourceOffset, ByteBuffer buf )
-    {
-        int bytesToCopy = Math.min( buf.limit() - buf.position(), payloadSize - sourceOffset );
-        for ( int i = 0; i < bytesToCopy; i++ )
-        {
-            byte b = getByte( sourceOffset + i );
-            buf.put( b );
+        for (int i = 0; i < bytesToCopy; i++) {
+            targetCursor.putByte(targetOffset + i, getByte(sourceOffset + i));
         }
         return bytesToCopy;
     }
 
     @Override
-    public void shiftBytes( int sourceOffset, int length, int shift )
-    {
-        current.shiftBytes( sourceOffset, length, shift );
+    public int copyTo(int sourceOffset, ByteBuffer buf) {
+        int bytesToCopy = Math.min(buf.limit() - buf.position(), payloadSize - sourceOffset);
+        for (int i = 0; i < bytesToCopy; i++) {
+            byte b = getByte(sourceOffset + i);
+            buf.put(b);
+        }
+        return bytesToCopy;
     }
 
-    private void assertPages()
-    {
-        if ( currentPageId >= pages.size() )
-        {
-            synchronized ( pages )
-            {
-                for ( int i = pages.size(); i <= currentPageId; i++ )
-                {
-                    pages.add( new byte[payloadSize] );
+    @Override
+    public void shiftBytes(int sourceOffset, int length, int shift) {
+        current.shiftBytes(sourceOffset, length, shift);
+    }
+
+    private void assertPages() {
+        if (currentPageId >= pages.size()) {
+            synchronized (pages) {
+                for (int i = pages.size(); i <= currentPageId; i++) {
+                    pages.add(new byte[payloadSize]);
                 }
             }
         }
     }
 
-    private byte[] page( long pageId )
-    {
-        return pages.get( (int) pageId );
+    private byte[] page(long pageId) {
+        return pages.get((int) pageId);
     }
 
     /* DELEGATE METHODS */
 
     @Override
-    public Path getCurrentFile()
-    {
+    public Path getCurrentFile() {
         return current.getCurrentFile();
     }
 
     @Override
-    public PagedFile getPagedFile()
-    {
+    public PagedFile getPagedFile() {
         return current.getPagedFile();
     }
 
     @Override
-    public Path getRawCurrentFile()
-    {
+    public Path getRawCurrentFile() {
         return current.getRawCurrentFile();
     }
 
     @Override
-    public byte getByte()
-    {
+    public byte getByte() {
         return current.getByte();
     }
 
     @Override
-    public byte getByte( int offset )
-    {
-        return current.getByte( offset );
+    public byte getByte(int offset) {
+        return current.getByte(offset);
     }
 
     @Override
-    public void putByte( byte value )
-    {
-        current.putByte( value );
+    public void putByte(byte value) {
+        current.putByte(value);
     }
 
     @Override
-    public void putByte( int offset, byte value )
-    {
-        current.putByte( offset, value );
+    public void putByte(int offset, byte value) {
+        current.putByte(offset, value);
     }
 
     @Override
-    public long getLong()
-    {
+    public long getLong() {
         return current.getLong();
     }
 
     @Override
-    public long getLong( int offset )
-    {
-        return current.getLong( offset );
+    public long getLong(int offset) {
+        return current.getLong(offset);
     }
 
     @Override
-    public void putLong( long value )
-    {
-        current.putLong( value );
+    public void putLong(long value) {
+        current.putLong(value);
     }
 
     @Override
-    public void putLong( int offset, long value )
-    {
-        current.putLong( offset, value );
+    public void putLong(int offset, long value) {
+        current.putLong(offset, value);
     }
 
     @Override
-    public int getInt()
-    {
+    public int getInt() {
         return current.getInt();
     }
 
     @Override
-    public int getInt( int offset )
-    {
-        return current.getInt( offset );
+    public int getInt(int offset) {
+        return current.getInt(offset);
     }
 
     @Override
-    public void putInt( int value )
-    {
-        current.putInt( value );
+    public void putInt(int value) {
+        current.putInt(value);
     }
 
     @Override
-    public void putInt( int offset, int value )
-    {
-        current.putInt( offset, value );
+    public void putInt(int offset, int value) {
+        current.putInt(offset, value);
     }
 
     @Override
-    public void getBytes( byte[] data )
-    {
-        current.getBytes( data );
+    public void getBytes(byte[] data) {
+        current.getBytes(data);
     }
 
     @Override
-    public void getBytes( byte[] data, int arrayOffset, int length )
-    {
-        current.getBytes( data, arrayOffset, length );
+    public void getBytes(byte[] data, int arrayOffset, int length) {
+        current.getBytes(data, arrayOffset, length);
     }
 
     @Override
-    public void putBytes( byte[] data )
-    {
-        current.putBytes( data );
+    public void putBytes(byte[] data) {
+        current.putBytes(data);
     }
 
     @Override
-    public void putBytes( byte[] data, int arrayOffset, int length )
-    {
-        current.putBytes( data, arrayOffset, length );
+    public void putBytes(byte[] data, int arrayOffset, int length) {
+        current.putBytes(data, arrayOffset, length);
     }
 
     @Override
-    public void putBytes( int bytes, byte value )
-    {
-        current.putBytes( bytes, value );
+    public void putBytes(int bytes, byte value) {
+        current.putBytes(bytes, value);
     }
 
     @Override
-    public short getShort()
-    {
+    public short getShort() {
         return current.getShort();
     }
 
     @Override
-    public short getShort( int offset )
-    {
-        return current.getShort( offset );
+    public short getShort(int offset) {
+        return current.getShort(offset);
     }
 
     @Override
-    public void putShort( short value )
-    {
-        current.putShort( value );
+    public void putShort(short value) {
+        current.putShort(value);
     }
 
     @Override
-    public void putShort( int offset, short value )
-    {
-        current.putShort( offset, value );
+    public void putShort(int offset, short value) {
+        current.putShort(offset, value);
     }
 
     @Override
-    public void setOffset( int offset )
-    {
-        current.setOffset( offset );
+    public void setOffset(int offset) {
+        current.setOffset(offset);
     }
 
     @Override
-    public int getOffset()
-    {
+    public int getOffset() {
         return current.getOffset();
     }
 
     @Override
-    public void mark()
-    {
+    public void mark() {
         current.mark();
     }
 
     @Override
-    public void setOffsetToMark()
-    {
+    public void setOffsetToMark() {
         current.setOffsetToMark();
     }
 
     @Override
-    public void rewind()
-    {
+    public void rewind() {
         current.rewind();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         closeCount++;
-        if ( linkedCursor != null )
-        {
+        if (linkedCursor != null) {
             linkedCursor.close();
         }
-        if ( current != null )
-        {
+        if (current != null) {
             // e.g. if it never got pinned
             current.close();
         }
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
-    {
-        if ( shouldRetry )
-        {
+    public boolean shouldRetry() throws IOException {
+        if (shouldRetry) {
             shouldRetry = false;
 
             // To reset shouldRetry for linked cursor as well
-            if ( linkedCursor != null )
-            {
+            if (linkedCursor != null) {
                 linkedCursor.shouldRetry();
             }
             return true;
@@ -377,11 +322,9 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public boolean checkAndClearBoundsFlag()
-    {
+    public boolean checkAndClearBoundsFlag() {
         boolean result = false;
-        if ( linkedCursor != null )
-        {
+        if (linkedCursor != null) {
             result = linkedCursor.checkAndClearBoundsFlag();
         }
         result |= current.checkAndClearBoundsFlag();
@@ -389,35 +332,29 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public void checkAndClearCursorException() throws CursorException
-    {
+    public void checkAndClearCursorException() throws CursorException {
         current.checkAndClearCursorException();
     }
 
     @Override
-    public void raiseOutOfBounds()
-    {
+    public void raiseOutOfBounds() {
         current.raiseOutOfBounds();
     }
 
     @Override
-    public void setCursorException( String message )
-    {
-        current.setCursorException( message );
+    public void setCursorException(String message) {
+        current.setCursorException(message);
     }
 
     @Override
-    public void clearCursorException()
-    {
+    public void clearCursorException() {
         current.clearCursorException();
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
-    {
-        PageCursor toReturn = new PageAwareByteArrayCursor( pages, payloadSize, pageId );
-        if ( linkedCursor != null )
-        {
+    public PageCursor openLinkedCursor(long pageId) {
+        PageCursor toReturn = new PageAwareByteArrayCursor(pages, payloadSize, pageId);
+        if (linkedCursor != null) {
             linkedCursor.close();
         }
         linkedCursor = toReturn;
@@ -425,19 +362,16 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public void zapPage()
-    {
+    public void zapPage() {
         current.zapPage();
     }
 
     @Override
-    public boolean isWriteLocked()
-    {
+    public boolean isWriteLocked() {
         return current == null || current.isWriteLocked();
     }
 
-    public int getCloseCount()
-    {
+    public int getCloseCount() {
         return closeCount;
     }
 }

@@ -21,47 +21,38 @@ package org.neo4j.fabric.stream;
 
 import org.neo4j.values.AnyValue;
 
-public abstract class Record
-{
-    public abstract AnyValue getValue( int offset );
+public abstract class Record {
+    public abstract AnyValue getValue(int offset);
 
     public abstract int size();
 
     @Override
-    public final int hashCode()
-    {
+    public final int hashCode() {
         int hashCode = 1;
 
-        for ( var i = 0; i < size(); i++ )
-        {
-            hashCode = 31 * hashCode + getValue( i ).hashCode();
+        for (var i = 0; i < size(); i++) {
+            hashCode = 31 * hashCode + getValue(i).hashCode();
         }
 
         return hashCode;
     }
 
     @Override
-    public final boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public final boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
 
-        if ( !(o instanceof Record that) )
-        {
+        if (!(o instanceof Record that)) {
             return false;
         }
 
-        if ( this.size() != that.size() )
-        {
+        if (this.size() != that.size()) {
             return false;
         }
 
-        for ( var i = 0; i < size(); i++ )
-        {
-            if ( !this.getValue( i ).equals( that.getValue( i ) ) )
-            {
+        for (var i = 0; i < size(); i++) {
+            if (!this.getValue(i).equals(that.getValue(i))) {
                 return false;
             }
         }

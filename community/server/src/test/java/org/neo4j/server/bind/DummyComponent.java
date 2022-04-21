@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.bind;
 
-public class DummyComponent
-{
+public class DummyComponent {
     static final String VALUE = "42";
 
-    public String value()
-    {
+    public String value() {
         return VALUE;
     }
 }

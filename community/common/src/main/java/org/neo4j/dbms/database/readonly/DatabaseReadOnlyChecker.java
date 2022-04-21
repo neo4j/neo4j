@@ -22,15 +22,12 @@ package org.neo4j.dbms.database.readonly;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public interface DatabaseReadOnlyChecker
-{
-    static DatabaseReadOnlyChecker writable()
-    {
+public interface DatabaseReadOnlyChecker {
+    static DatabaseReadOnlyChecker writable() {
         return WritableDatabaseReadOnlyChecker.INSTANCE;
     }
 
-    static DatabaseReadOnlyChecker readOnly()
-    {
+    static DatabaseReadOnlyChecker readOnly() {
         return ReadOnlyDatabaseReadOnlyChecker.INSTANCE;
     }
 
@@ -44,15 +41,13 @@ public interface DatabaseReadOnlyChecker
      */
     void check();
 
-    class Default implements DatabaseReadOnlyChecker
-    {
+    class Default implements DatabaseReadOnlyChecker {
         private volatile long lastUpdated;
         private volatile boolean readOnly;
         private final ReadOnlyDatabases dbmsChecker;
         private final NamedDatabaseId namedDatabaseId;
 
-        Default( ReadOnlyDatabases readOnlyDatabases, NamedDatabaseId namedDatabaseId )
-        {
+        Default(ReadOnlyDatabases readOnlyDatabases, NamedDatabaseId namedDatabaseId) {
             this.lastUpdated = -1;
             this.readOnly = false;
             this.dbmsChecker = readOnlyDatabases;
@@ -66,65 +61,50 @@ public interface DatabaseReadOnlyChecker
          *  In other words, the race is benign.
          */
         @Override
-        public boolean isReadOnly()
-        {
+        public boolean isReadOnly() {
             var globalUpdate = dbmsChecker.updateId();
-            if ( lastUpdated != globalUpdate )
-            {
-                readOnly = dbmsChecker.isReadOnly( namedDatabaseId);
+            if (lastUpdated != globalUpdate) {
+                readOnly = dbmsChecker.isReadOnly(namedDatabaseId);
                 lastUpdated = globalUpdate;
             }
             return readOnly;
         }
 
         @Override
-        public void check()
-        {
-            if ( isReadOnly() )
-            {
-                throw new RuntimeException( new WriteOnReadOnlyAccessDbException( namedDatabaseId.name() ) );
+        public void check() {
+            if (isReadOnly()) {
+                throw new RuntimeException(new WriteOnReadOnlyAccessDbException(namedDatabaseId.name()));
             }
         }
     }
 
-    class WritableDatabaseReadOnlyChecker implements DatabaseReadOnlyChecker
-    {
+    class WritableDatabaseReadOnlyChecker implements DatabaseReadOnlyChecker {
         static final WritableDatabaseReadOnlyChecker INSTANCE = new WritableDatabaseReadOnlyChecker();
 
-        private WritableDatabaseReadOnlyChecker()
-        {
-        }
+        private WritableDatabaseReadOnlyChecker() {}
 
         @Override
-        public boolean isReadOnly()
-        {
+        public boolean isReadOnly() {
             return false;
         }
 
         @Override
-        public void check()
-        {
-        }
+        public void check() {}
     }
 
-    class ReadOnlyDatabaseReadOnlyChecker implements DatabaseReadOnlyChecker
-    {
+    class ReadOnlyDatabaseReadOnlyChecker implements DatabaseReadOnlyChecker {
         static final ReadOnlyDatabaseReadOnlyChecker INSTANCE = new ReadOnlyDatabaseReadOnlyChecker();
 
-        private ReadOnlyDatabaseReadOnlyChecker()
-        {
-        }
+        private ReadOnlyDatabaseReadOnlyChecker() {}
 
         @Override
-        public boolean isReadOnly()
-        {
+        public boolean isReadOnly() {
             return true;
         }
 
         @Override
-        public void check()
-        {
-            throw new RuntimeException( new WriteOnReadOnlyAccessDbException() );
+        public void check() {
+            throw new RuntimeException(new WriteOnReadOnlyAccessDbException());
         }
     }
 }

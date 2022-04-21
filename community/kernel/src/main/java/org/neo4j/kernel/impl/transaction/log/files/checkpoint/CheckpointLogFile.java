@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
+import static java.util.Collections.emptyList;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
+import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory.ofLogEntry;
+import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.checkpointLogRotation;
+import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.ClosedByInterruptException;
@@ -26,7 +34,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -49,16 +56,7 @@ import org.neo4j.kernel.recovery.LogTailScannerMonitor;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
-import static java.util.Collections.emptyList;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
-import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory.ofLogEntry;
-import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.checkpointLogRotation;
-import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
-
-public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFile
-{
+public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFile {
     private final DetachedCheckpointAppender checkpointAppender;
     private final DetachedLogTailScanner logTailScanner;
     private final TransactionLogFilesHelper fileHelper;
@@ -70,88 +68,75 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     private final LogTailScannerMonitor monitor;
     private LogVersionRepository logVersionRepository;
 
-    public CheckpointLogFile( LogFiles logFiles, TransactionLogFilesContext context )
-    {
+    public CheckpointLogFile(LogFiles logFiles, TransactionLogFilesContext context) {
         this.context = context;
         this.logFiles = logFiles;
-        this.rotationsSize = context.getConfig().get( checkpoint_logical_log_rotation_threshold );
-        this.fileHelper = new TransactionLogFilesHelper( context.getFileSystem(), logFiles.logFilesDirectory(), CHECKPOINT_FILE_PREFIX );
-        this.channelAllocator = new CheckpointLogChannelAllocator( context, fileHelper );
-        this.monitor = context.getMonitors().newMonitor( LogTailScannerMonitor.class );
-        this.logTailScanner = new DetachedLogTailScanner( logFiles, context, this, monitor );
-        this.log = context.getLogProvider().getLog( getClass() );
-        var rotationMonitor = context.getMonitors().newMonitor( LogRotationMonitor.class );
-        var checkpointRotation = checkpointLogRotation( this, logFiles.getLogFile(), context.getClock(),
-                context.getDatabaseHealth(), rotationMonitor );
-        this.checkpointAppender = new DetachedCheckpointAppender( logFiles, channelAllocator, context, this, checkpointRotation, logTailScanner );
+        this.rotationsSize = context.getConfig().get(checkpoint_logical_log_rotation_threshold);
+        this.fileHelper = new TransactionLogFilesHelper(
+                context.getFileSystem(), logFiles.logFilesDirectory(), CHECKPOINT_FILE_PREFIX);
+        this.channelAllocator = new CheckpointLogChannelAllocator(context, fileHelper);
+        this.monitor = context.getMonitors().newMonitor(LogTailScannerMonitor.class);
+        this.logTailScanner = new DetachedLogTailScanner(logFiles, context, this, monitor);
+        this.log = context.getLogProvider().getLog(getClass());
+        var rotationMonitor = context.getMonitors().newMonitor(LogRotationMonitor.class);
+        var checkpointRotation = checkpointLogRotation(
+                this, logFiles.getLogFile(), context.getClock(), context.getDatabaseHealth(), rotationMonitor);
+        this.checkpointAppender = new DetachedCheckpointAppender(
+                logFiles, channelAllocator, context, this, checkpointRotation, logTailScanner);
     }
 
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         checkpointAppender.start();
-        logVersionRepository = context.getLogVersionRepositoryProvider().logVersionRepository( logFiles );
+        logVersionRepository = context.getLogVersionRepositoryProvider().logVersionRepository(logFiles);
     }
 
     @Override
-    public void shutdown() throws Exception
-    {
+    public void shutdown() throws Exception {
         checkpointAppender.shutdown();
     }
 
     @Override
-    public Optional<CheckpointInfo> findLatestCheckpoint() throws IOException
-    {
-        return findLatestCheckpoint( log );
+    public Optional<CheckpointInfo> findLatestCheckpoint() throws IOException {
+        return findLatestCheckpoint(log);
     }
 
     @Override
-    public Optional<CheckpointInfo> findLatestCheckpoint( InternalLog log ) throws IOException
-    {
+    public Optional<CheckpointInfo> findLatestCheckpoint(InternalLog log) throws IOException {
         var versionVisitor = new RangeLogVersionVisitor();
-        fileHelper.accept( versionVisitor );
+        fileHelper.accept(versionVisitor);
         long highestVersion = versionVisitor.getHighestVersion();
-        if ( highestVersion < 0 )
-        {
+        if (highestVersion < 0) {
             return Optional.empty();
         }
 
         long lowestVersion = versionVisitor.getLowestVersion();
         long currentVersion = highestVersion;
 
-        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, true );
-        while ( currentVersion >= lowestVersion )
-        {
+        var checkpointReader = new VersionAwareLogEntryReader(NO_COMMANDS, true);
+        while (currentVersion >= lowestVersion) {
             CheckpointEntryInfo checkpointEntry = null;
-            try ( var channel = channelAllocator.openLogChannel( currentVersion );
-                    var reader = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, context.getMemoryTracker() );
-                    var logEntryCursor = new LogEntryCursor( checkpointReader, reader ) )
-            {
-                log.info( "Scanning log file with version %d for checkpoint entries", currentVersion );
-                try
-                {
+            try (var channel = channelAllocator.openLogChannel(currentVersion);
+                    var reader = new ReadAheadLogChannel(channel, NO_MORE_CHANNELS, context.getMemoryTracker());
+                    var logEntryCursor = new LogEntryCursor(checkpointReader, reader)) {
+                log.info("Scanning log file with version %d for checkpoint entries", currentVersion);
+                try {
                     var lastCheckpointLocation = reader.getCurrentPosition();
-                    while ( logEntryCursor.next() )
-                    {
+                    while (logEntryCursor.next()) {
                         var checkpoint = logEntryCursor.get();
-                        checkpointEntry = new CheckpointEntryInfo( checkpoint, lastCheckpointLocation, reader.getCurrentPosition() );
+                        checkpointEntry = new CheckpointEntryInfo(
+                                checkpoint, lastCheckpointLocation, reader.getCurrentPosition());
                         lastCheckpointLocation = reader.getCurrentPosition();
                     }
-                    if ( checkpointEntry != null )
-                    {
-                        return Optional.of( createCheckpointInfo( checkpointEntry, reader ) );
+                    if (checkpointEntry != null) {
+                        return Optional.of(createCheckpointInfo(checkpointEntry, reader));
                     }
-                }
-                catch ( Error | ClosedByInterruptException e )
-                {
+                } catch (Error | ClosedByInterruptException e) {
                     throw e;
-                }
-                catch ( Throwable t )
-                {
-                    monitor.corruptedCheckpointFile( currentVersion, t );
-                    if ( checkpointEntry != null )
-                    {
-                        return Optional.of( createCheckpointInfo( checkpointEntry, reader ) );
+                } catch (Throwable t) {
+                    monitor.corruptedCheckpointFile(currentVersion, t);
+                    if (checkpointEntry != null) {
+                        return Optional.of(createCheckpointInfo(checkpointEntry, reader));
                     }
                 }
                 currentVersion--;
@@ -160,43 +145,49 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         return Optional.empty();
     }
 
-    private CheckpointInfo createCheckpointInfo( CheckpointEntryInfo checkpointEntry, ReadAheadLogChannel reader ) throws IOException
-    {
-        return ofLogEntry( checkpointEntry.checkpoint, checkpointEntry.checkpointEntryPosition, checkpointEntry.channelPositionAfterCheckpoint,
-                reader.getCurrentPosition(), context, logFiles.getLogFile() );
+    private CheckpointInfo createCheckpointInfo(CheckpointEntryInfo checkpointEntry, ReadAheadLogChannel reader)
+            throws IOException {
+        return ofLogEntry(
+                checkpointEntry.checkpoint,
+                checkpointEntry.checkpointEntryPosition,
+                checkpointEntry.channelPositionAfterCheckpoint,
+                reader.getCurrentPosition(),
+                context,
+                logFiles.getLogFile());
     }
 
     @Override
-    public List<CheckpointInfo> reachableCheckpoints() throws IOException
-    {
+    public List<CheckpointInfo> reachableCheckpoints() throws IOException {
         var versionVisitor = new RangeLogVersionVisitor();
-        fileHelper.accept( versionVisitor );
+        fileHelper.accept(versionVisitor);
         long highestVersion = versionVisitor.getHighestVersion();
-        if ( highestVersion < 0 )
-        {
+        if (highestVersion < 0) {
             return emptyList();
         }
 
         long currentVersion = versionVisitor.getLowestVersion();
 
-        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, true );
+        var checkpointReader = new VersionAwareLogEntryReader(NO_COMMANDS, true);
         var checkpoints = new ArrayList<CheckpointInfo>();
-        while ( currentVersion <= highestVersion )
-        {
-            try ( var channel = channelAllocator.openLogChannel( currentVersion );
-                    var reader = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, context.getMemoryTracker() );
-                    var logEntryCursor = new LogEntryCursor( checkpointReader, reader ) )
-            {
-                log.info( "Scanning log file with version %d for checkpoint entries", currentVersion );
+        while (currentVersion <= highestVersion) {
+            try (var channel = channelAllocator.openLogChannel(currentVersion);
+                    var reader = new ReadAheadLogChannel(channel, NO_MORE_CHANNELS, context.getMemoryTracker());
+                    var logEntryCursor = new LogEntryCursor(checkpointReader, reader)) {
+                log.info("Scanning log file with version %d for checkpoint entries", currentVersion);
                 LogEntry checkpoint;
                 var lastCheckpointLocation = reader.getCurrentPosition();
                 var lastLocation = lastCheckpointLocation;
-                while ( logEntryCursor.next() )
-                {
+                while (logEntryCursor.next()) {
                     lastCheckpointLocation = lastLocation;
                     checkpoint = logEntryCursor.get();
                     lastLocation = reader.getCurrentPosition();
-                    checkpoints.add( ofLogEntry( checkpoint, lastCheckpointLocation, lastLocation, lastLocation, context, logFiles.getLogFile() ) );
+                    checkpoints.add(ofLogEntry(
+                            checkpoint,
+                            lastCheckpointLocation,
+                            lastLocation,
+                            lastLocation,
+                            context,
+                            logFiles.getLogFile()));
                 }
                 currentVersion++;
             }
@@ -205,107 +196,87 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     }
 
     @Override
-    public List<CheckpointInfo> getReachableDetachedCheckpoints() throws IOException
-    {
+    public List<CheckpointInfo> getReachableDetachedCheckpoints() throws IOException {
         return reachableCheckpoints();
     }
 
     @Override
-    public CheckpointAppender getCheckpointAppender()
-    {
+    public CheckpointAppender getCheckpointAppender() {
         return checkpointAppender;
     }
 
     @Override
-    public LogTailMetadata getTailMetadata()
-    {
+    public LogTailMetadata getTailMetadata() {
         return logTailScanner.getTailMetadata();
     }
 
     @Override
-    public Path getCurrentFile() throws IOException
-    {
-        return fileHelper.getLogFileForVersion( getCurrentDetachedLogVersion() );
+    public Path getCurrentFile() throws IOException {
+        return fileHelper.getLogFileForVersion(getCurrentDetachedLogVersion());
     }
 
     @Override
-    public Path getDetachedCheckpointFileForVersion( long logVersion )
-    {
-        return fileHelper.getLogFileForVersion( logVersion );
+    public Path getDetachedCheckpointFileForVersion(long logVersion) {
+        return fileHelper.getLogFileForVersion(logVersion);
     }
 
     @Override
-    public Path[] getDetachedCheckpointFiles() throws IOException
-    {
+    public Path[] getDetachedCheckpointFiles() throws IOException {
         return fileHelper.getMatchedFiles();
     }
 
     @Override
-    public long getCurrentDetachedLogVersion() throws IOException
-    {
-        if ( logVersionRepository != null )
-        {
+    public long getCurrentDetachedLogVersion() throws IOException {
+        if (logVersionRepository != null) {
             return logVersionRepository.getCheckpointLogVersion();
         }
         var versionVisitor = new RangeLogVersionVisitor();
-        fileHelper.accept( versionVisitor );
+        fileHelper.accept(versionVisitor);
         return versionVisitor.getHighestVersion();
     }
 
     @Override
-    public long getDetachedCheckpointLogFileVersion( Path checkpointLogFile )
-    {
-        return TransactionLogFilesHelper.getLogVersion( checkpointLogFile );
+    public long getDetachedCheckpointLogFileVersion(Path checkpointLogFile) {
+        return TransactionLogFilesHelper.getLogVersion(checkpointLogFile);
     }
 
     @Override
-    public boolean rotationNeeded()
-    {
+    public boolean rotationNeeded() {
         long position = checkpointAppender.getCurrentPosition();
         return position >= rotationsSize;
     }
 
     @Override
-    public synchronized Path rotate() throws IOException
-    {
+    public synchronized Path rotate() throws IOException {
         return checkpointAppender.rotate();
     }
 
     @Override
-    public long getLowestLogVersion()
-    {
-        return visitLogFiles( new RangeLogVersionVisitor() ).getLowestVersion();
+    public long getLowestLogVersion() {
+        return visitLogFiles(new RangeLogVersionVisitor()).getLowestVersion();
     }
 
     @Override
-    public PhysicalLogVersionedStoreChannel openForVersion( long checkpointLogVersion ) throws IOException
-    {
-        return channelAllocator.openLogChannel( checkpointLogVersion );
+    public PhysicalLogVersionedStoreChannel openForVersion(long checkpointLogVersion) throws IOException {
+        return channelAllocator.openLogChannel(checkpointLogVersion);
     }
 
     @Override
-    public long getHighestLogVersion()
-    {
-        return visitLogFiles( new RangeLogVersionVisitor() ).getHighestVersion();
+    public long getHighestLogVersion() {
+        return visitLogFiles(new RangeLogVersionVisitor()).getHighestVersion();
     }
 
-    private <V extends LogVersionVisitor> V visitLogFiles( V visitor )
-    {
-        try
-        {
-            for ( Path file : fileHelper.getMatchedFiles() )
-            {
-                visitor.visit( file, TransactionLogFilesHelper.getLogVersion( file ) );
+    private <V extends LogVersionVisitor> V visitLogFiles(V visitor) {
+        try {
+            for (Path file : fileHelper.getMatchedFiles()) {
+                visitor.visit(file, TransactionLogFilesHelper.getLogVersion(file));
             }
             return visitor;
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private record CheckpointEntryInfo(LogEntry checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint)
-    {
-    }
+    private record CheckpointEntryInfo(
+            LogEntry checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint) {}
 }

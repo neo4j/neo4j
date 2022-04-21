@@ -27,10 +27,10 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
 trait SideEffectingInputStream[CONTEXT <: RuntimeContext] {
-    self: RuntimeTestSuite[CONTEXT] =>
+  self: RuntimeTestSuite[CONTEXT] =>
 
   abstract class OnIntervalInputDataStream(inner: InputDataStream, sideEffectInterval: Long)
-    extends OnNextInputDataStream(inner) {
+      extends OnNextInputDataStream(inner) {
 
     private val countdown = new CountDown(sideEffectInterval, sideEffectInterval)
 
@@ -40,22 +40,24 @@ trait SideEffectingInputStream[CONTEXT <: RuntimeContext] {
   }
 
   abstract class OnNextInputDataStream(inner: InputDataStream)
-    extends InputDataStream {
+      extends InputDataStream {
 
     protected var offset = 0L
 
     override def nextInputBatch(): InputCursor = {
       Option(inner.nextInputBatch())
-        .map(cursor => new InputCursor {
-          override def next(): Boolean = {
-            val next = cursor.next()
-            if (next) onNext(offset)
-            offset += 1
-            next
+        .map(cursor =>
+          new InputCursor {
+            override def next(): Boolean = {
+              val next = cursor.next()
+              if (next) onNext(offset)
+              offset += 1
+              next
+            }
+            override def value(offset: Int): AnyValue = cursor.value(offset)
+            override def close(): Unit = cursor.close()
           }
-          override def value(offset: Int): AnyValue = cursor.value(offset)
-          override def close(): Unit = cursor.close()
-        })
+        )
         .orNull
     }
 
@@ -63,7 +65,7 @@ trait SideEffectingInputStream[CONTEXT <: RuntimeContext] {
   }
 
   abstract class OnIntervalQuerySubscriber(inner: QuerySubscriber, sideEffectInterval: Long)
-    extends OnNextQuerySubscriber(inner) {
+      extends OnNextQuerySubscriber(inner) {
 
     private val countdown = new CountDown(1L, sideEffectInterval)
 
@@ -73,11 +75,12 @@ trait SideEffectingInputStream[CONTEXT <: RuntimeContext] {
   }
 
   abstract class OnNextQuerySubscriber(inner: QuerySubscriber)
-    extends QuerySubscriber {
+      extends QuerySubscriber {
 
     var offset = 0L
 
     override def onResult(numberOfFields: Int): Unit = inner.onResult(numberOfFields)
+
     override def onRecord(): Unit = {
       // triggering here rather than in onRecordCompleted to avoid letting clean-up happen
       onNext(offset)
@@ -94,6 +97,7 @@ trait SideEffectingInputStream[CONTEXT <: RuntimeContext] {
 
   class CountDown(initial: Long, interval: Long) {
     private var countdown = initial
+
     def tick(): Boolean = {
       countdown -= 1
       if (countdown == 0) {

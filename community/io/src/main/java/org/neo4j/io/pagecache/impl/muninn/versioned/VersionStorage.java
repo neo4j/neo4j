@@ -20,9 +20,8 @@
 package org.neo4j.io.pagecache.impl.muninn.versioned;
 
 @FunctionalInterface
-public interface VersionStorage
-{
+public interface VersionStorage {
     VersionStorage EMPTY_STORAGE = sourcePage -> 0;
 
-    long copyPage( long sourcePage );
+    long copyPage(long sourcePage);
 }

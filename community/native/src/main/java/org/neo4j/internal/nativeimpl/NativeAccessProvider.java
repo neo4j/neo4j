@@ -19,44 +19,34 @@
  */
 package org.neo4j.internal.nativeimpl;
 
-import com.sun.jna.Platform;
-
 import static java.lang.Boolean.getBoolean;
 
-public class NativeAccessProvider
-{
-    private static final boolean DISABLE_NATIVE_ACCESS = getBoolean( NativeAccessProvider.class.getName() + ".disableNativeAccess" );
+import com.sun.jna.Platform;
+
+public class NativeAccessProvider {
+    private static final boolean DISABLE_NATIVE_ACCESS =
+            getBoolean(NativeAccessProvider.class.getName() + ".disableNativeAccess");
     private static final AccessHolder HOLDER = new AccessHolder();
 
-    private NativeAccessProvider()
-    {
+    private NativeAccessProvider() {
         // no public constructors
     }
 
-    public static NativeAccess getNativeAccess()
-    {
+    public static NativeAccess getNativeAccess() {
         return HOLDER.nativeAccess;
     }
 
-    private static class AccessHolder
-    {
+    private static class AccessHolder {
         private final NativeAccess nativeAccess;
 
-        AccessHolder()
-        {
-            if ( DISABLE_NATIVE_ACCESS || !Platform.isLinux() )
-            {
+        AccessHolder() {
+            if (DISABLE_NATIVE_ACCESS || !Platform.isLinux()) {
                 nativeAccess = new AbsentNativeAccess();
-            }
-            else
-            {
+            } else {
                 LinuxNativeAccess linuxNativeAccess = new LinuxNativeAccess();
-                if ( linuxNativeAccess.isAvailable() )
-                {
+                if (linuxNativeAccess.isAvailable()) {
                     nativeAccess = linuxNativeAccess;
-                }
-                else
-                {
+                } else {
                     nativeAccess = new AbsentNativeAccess();
                 }
             }

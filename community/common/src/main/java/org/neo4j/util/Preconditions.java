@@ -19,19 +19,17 @@
  */
 package org.neo4j.util;
 
-import java.util.Arrays;
-
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
+
+import java.util.Arrays;
 
 /**
  * A set of static convenience methods for checking ctor/method parameters or state.
  */
-public final class Preconditions
-{
-    private Preconditions()
-    {
-        throw new AssertionError( "no instances" );
+public final class Preconditions {
+    private Preconditions() {
+        throw new AssertionError("no instances");
     }
 
     /**
@@ -41,11 +39,9 @@ public final class Preconditions
      * @return {@code value} if it's greater than or equal to {@code 1}
      * @throws IllegalArgumentException if {@code value} is less than 1
      */
-    public static long requirePositive( long value )
-    {
-        if ( value < 1 )
-        {
-            throw new IllegalArgumentException( "Expected positive long value, got " + value );
+    public static long requirePositive(long value) {
+        if (value < 1) {
+            throw new IllegalArgumentException("Expected positive long value, got " + value);
         }
         return value;
     }
@@ -57,11 +53,9 @@ public final class Preconditions
      * @return {@code value} if it's smaller than or equal to {@code -1}
      * @throws IllegalArgumentException if {@code value} is greater than -1
      */
-    public static long requireNegative( long value )
-    {
-        if ( value > -1 )
-        {
-            throw new IllegalArgumentException( "Expected negative long value, got " + value );
+    public static long requireNegative(long value) {
+        if (value > -1) {
+            throw new IllegalArgumentException("Expected negative long value, got " + value);
         }
         return value;
     }
@@ -73,11 +67,9 @@ public final class Preconditions
      * @return {@code value} if it's a power of 2
      * @throws IllegalArgumentException if {@code value} is not power of 2
      */
-    public static long requirePowerOfTwo( long value )
-    {
-        if ( !isPowerOfTwo( value ) )
-        {
-            throw new IllegalArgumentException( "Expected long value to be a non zero power of 2, got " + value );
+    public static long requirePowerOfTwo(long value) {
+        if (!isPowerOfTwo(value)) {
+            throw new IllegalArgumentException("Expected long value to be a non zero power of 2, got " + value);
         }
         return value;
     }
@@ -89,11 +81,9 @@ public final class Preconditions
      * @return {@code value} if it's greater than or equal to {@code 1}
      * @throws IllegalArgumentException if {@code value} is less than 1
      */
-    public static int requirePositive( int value )
-    {
-        if ( value < 1 )
-        {
-            throw new IllegalArgumentException( "Expected positive int value, got " + value );
+    public static int requirePositive(int value) {
+        if (value < 1) {
+            throw new IllegalArgumentException("Expected positive int value, got " + value);
         }
         return value;
     }
@@ -105,11 +95,9 @@ public final class Preconditions
      * @return {@code value} if it's smaller than or equal to {@code -1}
      * @throws IllegalArgumentException if {@code value} is greater than -1
      */
-    public static int requireNegative( int value )
-    {
-        if ( value > -1 )
-        {
-            throw new IllegalArgumentException( "Expected negative int value, got " + value );
+    public static int requireNegative(int value) {
+        if (value > -1) {
+            throw new IllegalArgumentException("Expected negative int value, got " + value);
         }
         return value;
     }
@@ -121,11 +109,9 @@ public final class Preconditions
      * @return {@code value} if it's greater than or equal to {@code 0}
      * @throws IllegalArgumentException if {@code value} is less than 0
      */
-    public static long requireNonNegative( long value )
-    {
-        if ( value < 0 )
-        {
-            throw new IllegalArgumentException( "Expected non-negative long value, got " + value );
+    public static long requireNonNegative(long value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Expected non-negative long value, got " + value);
         }
         return value;
     }
@@ -137,11 +123,9 @@ public final class Preconditions
      * @return {@code value} if it's greater than or equal to {@code 0}
      * @throws IllegalArgumentException if {@code value} is less than 0
      */
-    public static int requireNonNegative( int value )
-    {
-        if ( value < 0 )
-        {
-            throw new IllegalArgumentException( "Expected non-negative int value, got " + value );
+    public static int requireNonNegative(int value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Expected non-negative int value, got " + value);
         }
         return value;
     }
@@ -153,11 +137,9 @@ public final class Preconditions
      * @return {@code value} if it's equal to {@code 0}.
      * @throws IllegalArgumentException if {@code value} is not 0
      */
-    public static int requireExactlyZero( int value )
-    {
-        if ( value != 0 )
-        {
-            throw new IllegalArgumentException( "Expected int value equal to 0, got " + value );
+    public static int requireExactlyZero(int value) {
+        if (value != 0) {
+            throw new IllegalArgumentException("Expected int value equal to 0, got " + value);
         }
         return value;
     }
@@ -167,11 +149,9 @@ public final class Preconditions
      * @param array array to check
      * @param <T> type of elements in the array
      */
-    public static <T> void requireNonEmpty( T[] array )
-    {
-        if ( array == null || array.length == 0 )
-        {
-            throw new IllegalArgumentException( "Expected non empty array, got " + Arrays.toString( array ) );
+    public static <T> void requireNonEmpty(T[] array) {
+        if (array == null || array.length == 0) {
+            throw new IllegalArgumentException("Expected non empty array, got " + Arrays.toString(array));
         }
     }
 
@@ -180,13 +160,11 @@ public final class Preconditions
      * @param array array to check
      * @param <T> type of elements in the array
      */
-    public static <T> void requireNoNullElements( T[] array )
-    {
-        for ( T element : array )
-        {
-            if ( element == null )
-            {
-                throw new IllegalArgumentException( "Expected array without null elements, got " + Arrays.toString( array ) );
+    public static <T> void requireNoNullElements(T[] array) {
+        for (T element : array) {
+            if (element == null) {
+                throw new IllegalArgumentException(
+                        "Expected array without null elements, got " + Arrays.toString(array));
             }
         }
     }
@@ -198,11 +176,9 @@ public final class Preconditions
      * @param message error message for the exception
      * @throws IllegalStateException if {@code expression} is {@code false}
      */
-    public static void checkState( boolean expression, String message )
-    {
-        if ( !expression )
-        {
-            throw new IllegalStateException( message );
+    public static void checkState(boolean expression, String message) {
+        if (!expression) {
+            throw new IllegalStateException(message);
         }
     }
 
@@ -214,11 +190,9 @@ public final class Preconditions
      * @param args arguments referenced by the error message format
      * @throws IllegalStateException if {@code expression} is {@code false}
      */
-    public static void checkState( boolean expression, String message, Object... args )
-    {
-        if ( !expression )
-        {
-            throw new IllegalStateException( args.length > 0 ? format( message, args ) : message );
+    public static void checkState(boolean expression, String message, Object... args) {
+        if (!expression) {
+            throw new IllegalStateException(args.length > 0 ? format(message, args) : message);
         }
     }
 
@@ -229,11 +203,9 @@ public final class Preconditions
      * @param message error message
      * @throws IllegalArgumentException if {@code expression} is {@code false}
      */
-    public static void checkArgument( boolean expression, String message )
-    {
-        if ( !expression )
-        {
-            throw new IllegalArgumentException( message );
+    public static void checkArgument(boolean expression, String message) {
+        if (!expression) {
+            throw new IllegalArgumentException(message);
         }
     }
 
@@ -245,30 +217,25 @@ public final class Preconditions
      * @param args arguments referenced by the error message format
      * @throws IllegalArgumentException if {@code expression} is {@code false}
      */
-    public static void checkArgument( boolean expression, String message, Object... args )
-    {
-        if ( !expression )
-        {
-            throw new IllegalArgumentException( args.length > 0 ? format( message, args ) : message );
+    public static void checkArgument(boolean expression, String message, Object... args) {
+        if (!expression) {
+            throw new IllegalArgumentException(args.length > 0 ? format(message, args) : message);
         }
     }
 
-    public static void requireBetween( int value, int lowInclusive, int highExclusive )
-    {
-        if ( value < lowInclusive || value >= highExclusive )
-        {
-            throw new IllegalArgumentException( String.format( "Expected int value between %d (inclusive) and %d (exclusive), got %d.",
-                    lowInclusive, highExclusive, value ) );
+    public static void requireBetween(int value, int lowInclusive, int highExclusive) {
+        if (value < lowInclusive || value >= highExclusive) {
+            throw new IllegalArgumentException(String.format(
+                    "Expected int value between %d (inclusive) and %d (exclusive), got %d.",
+                    lowInclusive, highExclusive, value));
         }
     }
 
-    public static void requireNoLongAddOverflow( long a, long b, String message )
-    {
+    public static void requireNoLongAddOverflow(long a, long b, String message) {
         long result = a + b;
         // Same Hackers Delight algorithm as is used in Math.addExact.
-        if ( ( ( a ^ result ) & ( b ^ result ) ) < 0 )
-        {
-            throw new IllegalArgumentException( String.format( message, a, b ) );
+        if (((a ^ result) & (b ^ result)) < 0) {
+            throw new IllegalArgumentException(String.format(message, a, b));
         }
     }
 }

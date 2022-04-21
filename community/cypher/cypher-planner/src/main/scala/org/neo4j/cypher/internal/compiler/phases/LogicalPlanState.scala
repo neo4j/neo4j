@@ -40,21 +40,23 @@ the compiler pipe line, finally ending up containing a logical plan.
 Normally, it is created with only the first three params as given, and the rest is built up while passing through
 the pipe line
  */
-case class LogicalPlanState(queryText: String,
-                            startPosition: Option[InputPosition],
-                            plannerName: PlannerName,
-                            planningAttributes: PlanningAttributes,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-                            maybeStatement: Option[Statement] = None,
-                            maybeSemantics: Option[SemanticState] = None,
-                            maybeExtractedParams: Option[Map[String, Any]] = None,
-                            maybeSemanticTable: Option[SemanticTable] = None,
-                            maybeQuery: Option[PlannerQuery] = None,
-                            maybeLogicalPlan: Option[LogicalPlan] = None,
-                            accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
-                            hasLoadCSV: Boolean = false,
-                            maybeReturnColumns: Option[Seq[String]] = None,
-                            maybeObfuscationMetadata: Option[ObfuscationMetadata] = None) extends BaseState {
+case class LogicalPlanState(
+  queryText: String,
+  startPosition: Option[InputPosition],
+  plannerName: PlannerName,
+  planningAttributes: PlanningAttributes,
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  maybeStatement: Option[Statement] = None,
+  maybeSemantics: Option[SemanticState] = None,
+  maybeExtractedParams: Option[Map[String, Any]] = None,
+  maybeSemanticTable: Option[SemanticTable] = None,
+  maybeQuery: Option[PlannerQuery] = None,
+  maybeLogicalPlan: Option[LogicalPlan] = None,
+  accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
+  hasLoadCSV: Boolean = false,
+  maybeReturnColumns: Option[Seq[String]] = None,
+  maybeObfuscationMetadata: Option[ObfuscationMetadata] = None
+) extends BaseState {
 
   def query: PlannerQuery = maybeQuery getOrElse fail("The planner query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
@@ -70,7 +72,8 @@ case class LogicalPlanState(queryText: String,
       semanticTable(),
       logicalPlan,
       hasLoadCSV,
-      returnColumns())
+      returnColumns()
+    )
   }
 
   override def withStatement(s: Statement): LogicalPlanState = copy(maybeStatement = Some(s))
@@ -78,39 +81,47 @@ case class LogicalPlanState(queryText: String,
   override def withSemanticTable(s: SemanticTable): LogicalPlanState = copy(maybeSemanticTable = Some(s))
   override def withSemanticState(s: SemanticState): LogicalPlanState = copy(maybeSemantics = Some(s))
   override def withParams(p: Map[String, Any]): LogicalPlanState = copy(maybeExtractedParams = Some(p))
-  override def withObfuscationMetadata(o: ObfuscationMetadata): LogicalPlanState = copy(maybeObfuscationMetadata = Some(o))
+
+  override def withObfuscationMetadata(o: ObfuscationMetadata): LogicalPlanState =
+    copy(maybeObfuscationMetadata = Some(o))
 
   def withMaybeLogicalPlan(p: Option[LogicalPlan]): LogicalPlanState = copy(maybeLogicalPlan = p)
   def withMaybeQuery(q: Option[PlannerQuery]): LogicalPlanState = copy(maybeQuery = q)
-  def withNewPlanningAttributes(attributes: PlanningAttributes): LogicalPlanState = copy(planningAttributes = attributes)
+
+  def withNewPlanningAttributes(attributes: PlanningAttributes): LogicalPlanState =
+    copy(planningAttributes = attributes)
 }
 
 object LogicalPlanState {
+
   def apply(state: BaseState): LogicalPlanState =
-    LogicalPlanState(queryText = state.queryText,
-                     startPosition = state.startPosition,
-                     plannerName = state.plannerName,
-                     planningAttributes = PlanningAttributes.newAttributes,
-                     maybeStatement = state.maybeStatement,
-                     maybeSemantics = state.maybeSemantics,
-                     maybeExtractedParams = state.maybeExtractedParams,
-                     maybeSemanticTable = state.maybeSemanticTable,
-                     accumulatedConditions = state.accumulatedConditions,
-                     maybeReturnColumns =  state.maybeReturnColumns,
-                     maybeObfuscationMetadata = state.maybeObfuscationMetadata,
-                     anonymousVariableNameGenerator = state.anonymousVariableNameGenerator)
+    LogicalPlanState(
+      queryText = state.queryText,
+      startPosition = state.startPosition,
+      plannerName = state.plannerName,
+      planningAttributes = PlanningAttributes.newAttributes,
+      maybeStatement = state.maybeStatement,
+      maybeSemantics = state.maybeSemantics,
+      maybeExtractedParams = state.maybeExtractedParams,
+      maybeSemanticTable = state.maybeSemanticTable,
+      accumulatedConditions = state.accumulatedConditions,
+      maybeReturnColumns = state.maybeReturnColumns,
+      maybeObfuscationMetadata = state.maybeObfuscationMetadata,
+      anonymousVariableNameGenerator = state.anonymousVariableNameGenerator
+    )
 }
 
 /**
  * A subset of the data stored in LogicalPlanState.
  */
-case class CachableLogicalPlanState(queryText: String,
-                                    plannerName: PlannerName,
-                                    planningAttributes: PlanningAttributes,
-                                    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-                                    statement: Statement,
-                                    semanticTable: SemanticTable,
-                                    logicalPlan: LogicalPlan,
-                                    hasLoadCSV: Boolean = false,
-                                    returnColumns: Seq[String])
-
+case class CachableLogicalPlanState(
+  queryText: String,
+  plannerName: PlannerName,
+  planningAttributes: PlanningAttributes,
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  statement: Statement,
+  semanticTable: SemanticTable,
+  logicalPlan: LogicalPlan,
+  hasLoadCSV: Boolean = false,
+  returnColumns: Seq[String]
+)

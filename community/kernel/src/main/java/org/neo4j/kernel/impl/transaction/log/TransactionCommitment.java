@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-class TransactionCommitment implements Commitment
-{
+class TransactionCommitment implements Commitment {
     private final long transactionId;
     private final int transactionChecksum;
     private final long transactionCommitTimestamp;
@@ -30,9 +29,12 @@ class TransactionCommitment implements Commitment
     private final TransactionIdStore transactionIdStore;
     private boolean markedAsCommitted;
 
-    TransactionCommitment( long transactionId, int transactionChecksum, long transactionCommitTimestamp, LogPosition logPosition,
-            TransactionIdStore transactionIdStore )
-    {
+    TransactionCommitment(
+            long transactionId,
+            int transactionChecksum,
+            long transactionCommitTimestamp,
+            LogPosition logPosition,
+            TransactionIdStore transactionIdStore) {
         this.transactionId = transactionId;
         this.transactionChecksum = transactionChecksum;
         this.transactionCommitTimestamp = transactionCommitTimestamp;
@@ -40,33 +42,32 @@ class TransactionCommitment implements Commitment
         this.transactionIdStore = transactionIdStore;
     }
 
-    public LogPosition logPosition()
-    {
+    public LogPosition logPosition() {
         return logPosition;
     }
 
     @Override
-    public void publishAsCommitted()
-    {
+    public void publishAsCommitted() {
         markedAsCommitted = true;
-        transactionIdStore.transactionCommitted( transactionId, transactionChecksum, transactionCommitTimestamp );
+        transactionIdStore.transactionCommitted(transactionId, transactionChecksum, transactionCommitTimestamp);
     }
 
     @Override
-    public void publishAsClosed()
-    {
-        transactionIdStore.transactionClosed( transactionId, logPosition.getLogVersion(), logPosition.getByteOffset(), transactionChecksum,
-                transactionCommitTimestamp );
+    public void publishAsClosed() {
+        transactionIdStore.transactionClosed(
+                transactionId,
+                logPosition.getLogVersion(),
+                logPosition.getByteOffset(),
+                transactionChecksum,
+                transactionCommitTimestamp);
     }
 
     @Override
-    public boolean markedAsCommitted()
-    {
+    public boolean markedAsCommitted() {
         return markedAsCommitted;
     }
 
-    public int getTransactionChecksum()
-    {
+    public int getTransactionChecksum() {
         return transactionChecksum;
     }
 }

@@ -20,20 +20,18 @@
 package org.neo4j.io.pagecache.context;
 
 import java.util.function.LongSupplier;
-
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
  * Supplier to create {@link VersionContext} used during version data read and write operations
  */
-public interface VersionContextSupplier
-{
+public interface VersionContextSupplier {
     /**
      * Initialise current supplier with provider of last closed transaction ids
      * for future version context to be able to get version ids
      * @param lastClosedTransactionIdSupplier closed transaction id supplier.
      */
-    void init( LongSupplier lastClosedTransactionIdSupplier );
+    void init(LongSupplier lastClosedTransactionIdSupplier);
 
     /**
      * Provide version context
@@ -42,8 +40,7 @@ public interface VersionContextSupplier
     VersionContext createVersionContext();
 
     @FunctionalInterface
-    interface Factory
-    {
-        VersionContextSupplier create( NamedDatabaseId databaseId );
+    interface Factory {
+        VersionContextSupplier create(NamedDatabaseId databaseId);
     }
 }

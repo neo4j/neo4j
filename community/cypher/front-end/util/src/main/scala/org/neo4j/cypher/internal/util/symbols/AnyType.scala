@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object AnyType {
+
   val instance = new AnyType() {
     val parentType = this
     override val isAbstract = true

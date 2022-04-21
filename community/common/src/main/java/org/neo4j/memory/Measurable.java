@@ -19,8 +19,7 @@
  */
 package org.neo4j.memory;
 
-public interface Measurable
-{
+public interface Measurable {
     /**
      * Gives an estimation of the heap usage in bytes for the given value.
      *

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.monitoring.tracing;
 
 import java.time.Clock;
-
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -39,8 +38,7 @@ import org.neo4j.time.SystemNanoClock;
  * {@link GraphDatabaseInternalSettings#tracer} setting.
  */
 @Service
-public interface TracerFactory extends NamedService
-{
+public interface TracerFactory extends NamedService {
     /**
      * Create a new PageCacheTracer instance.
      *
@@ -51,7 +49,8 @@ public interface TracerFactory extends NamedService
      * @param config configuration
      * @return The created instance.
      */
-    PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, InternalLog log, Config config );
+    PageCacheTracer createPageCacheTracer(
+            Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, InternalLog log, Config config);
 
     /**
      * Create a new DatabaseTracer instance.
@@ -59,7 +58,7 @@ public interface TracerFactory extends NamedService
      * @param clock system clock
      * @return The created instance.
      */
-    DatabaseTracer createDatabaseTracer( Clock clock );
+    DatabaseTracer createDatabaseTracer(Clock clock);
 
     /**
      * Create a new LockTracer instance.
@@ -67,8 +66,7 @@ public interface TracerFactory extends NamedService
      * @param clock system clock
      * @return The created instance.
      */
-    default LockTracer createLockTracer( Clock clock )
-    {
+    default LockTracer createLockTracer(Clock clock) {
         return LockTracer.NONE;
     }
 }

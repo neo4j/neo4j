@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +31,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -56,411 +60,359 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
-import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.Barrier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
-
-class ParallelRecoveryVisitorTest
-{
-    private final CursorContextFactory contextFactory = new CursorContextFactory( NULL, EmptyVersionContextSupplier.EMPTY );
+class ParallelRecoveryVisitorTest {
+    private final CursorContextFactory contextFactory =
+            new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
 
     @Test
-    void shouldApplyUnrelatedInParallel() throws Exception
-    {
+    void shouldApplyUnrelatedInParallel() throws Exception {
         // given
         Barrier.Control barrier = new Barrier.Control();
-        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine()
-        {
+        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception
-            {
-                long txId = idOf( batch );
-                if ( txId == 2 )
-                {
+            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+                long txId = idOf(batch);
+                if (txId == 2) {
                     barrier.reached();
-                }
-                else if ( txId == 3 )
-                {
+                } else if (txId == 3) {
                     barrier.awaitUninterruptibly();
                 }
-                super.apply( batch, mode );
-                if ( txId == 3 )
-                {
+                super.apply(batch, mode);
+                if (txId == 3) {
                     barrier.release();
                 }
             }
         };
 
         // when
-        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 ) )
-        {
-            visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
-            visitor.visit( tx( 3, commandsRelatedToNode( 999 ) ) );
+        try (ParallelRecoveryVisitor visitor =
+                new ParallelRecoveryVisitor(storageEngine, RECOVERY, contextFactory, "test", 2)) {
+            visitor.visit(tx(2, commandsRelatedToNode(99)));
+            visitor.visit(tx(3, commandsRelatedToNode(999)));
         }
 
         // then
-        assertThat( storageEngine.lockOrder() ).isEqualTo( new long[]{2, 3} );
-        assertThat( storageEngine.applyOrder() ).isEqualTo( new long[]{3, 2} );
+        assertThat(storageEngine.lockOrder()).isEqualTo(new long[] {2, 3});
+        assertThat(storageEngine.applyOrder()).isEqualTo(new long[] {3, 2});
     }
 
     @Test
-    void shouldApplyRelatedToSameNodeInSequence() throws Exception
-    {
+    void shouldApplyRelatedToSameNodeInSequence() throws Exception {
         // given
-        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine()
-        {
+        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception
-            {
-                if ( idOf( batch ) == 2 )
-                {
+            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+                if (idOf(batch) == 2) {
                     // Just make it very likely that, if the locking wouldn't work as expected, then the test will fail,
                     // but the test will not be flaky if the visitor works as expected.
-                    Thread.sleep( 50 );
+                    Thread.sleep(50);
                 }
-                super.apply( batch, mode );
+                super.apply(batch, mode);
             }
         };
 
         // when
-        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 ) )
-        {
-            visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
-            visitor.visit( tx( 3, commandsRelatedToNode( 99 ) ) );
+        try (ParallelRecoveryVisitor visitor =
+                new ParallelRecoveryVisitor(storageEngine, RECOVERY, contextFactory, "test", 2)) {
+            visitor.visit(tx(2, commandsRelatedToNode(99)));
+            visitor.visit(tx(3, commandsRelatedToNode(99)));
         }
 
         // then
-        assertThat( storageEngine.lockOrder() ).isEqualTo( new long[]{2, 3} );
-        assertThat( storageEngine.applyOrder() ).isEqualTo( new long[]{2, 3} );
+        assertThat(storageEngine.lockOrder()).isEqualTo(new long[] {2, 3});
+        assertThat(storageEngine.applyOrder()).isEqualTo(new long[] {2, 3});
     }
 
     @Test
-    void shouldApplyUnrelatedInParallelToRelatedInSequence() throws Exception
-    {
+    void shouldApplyUnrelatedInParallelToRelatedInSequence() throws Exception {
         // given
         Barrier.Control barrier = new Barrier.Control();
-        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine()
-        {
+        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode )
-            {
-                if ( idOf( commands ) == 5 )
-                {
+            public void lockRecoveryCommands(
+                    CommandStream commands,
+                    LockService lockService,
+                    LockGroup lockGroup,
+                    TransactionApplicationMode mode) {
+                if (idOf(commands) == 5) {
                     barrier.release();
                 }
-                super.lockRecoveryCommands( commands, lockService, lockGroup, RECOVERY );
+                super.lockRecoveryCommands(commands, lockService, lockGroup, RECOVERY);
             }
 
             @Override
-            public void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception
-            {
-                long txId = idOf( batch );
-                if ( txId > 2 )
-                {
+            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+                long txId = idOf(batch);
+                if (txId > 2) {
                     barrier.awaitUninterruptibly();
                 }
-                super.apply( batch, mode );
-                if ( txId == 2 )
-                {
+                super.apply(batch, mode);
+                if (txId == 2) {
                     barrier.reached();
                 }
             }
         };
 
         // when
-        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 ) )
-        {
-            visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
-            visitor.visit( tx( 3, commandsRelatedToNode( 999 ) ) );
-            visitor.visit( tx( 4, commandsRelatedToNode( 9999 ) ) );
-            visitor.visit( tx( 5, commandsRelatedToNode( 99 ) ) );
+        try (ParallelRecoveryVisitor visitor =
+                new ParallelRecoveryVisitor(storageEngine, RECOVERY, contextFactory, "test", 2)) {
+            visitor.visit(tx(2, commandsRelatedToNode(99)));
+            visitor.visit(tx(3, commandsRelatedToNode(999)));
+            visitor.visit(tx(4, commandsRelatedToNode(9999)));
+            visitor.visit(tx(5, commandsRelatedToNode(99)));
         }
 
         // then
-        assertThat( storageEngine.lockOrder() ).isEqualTo( new long[]{2, 3, 4, 5} );
+        assertThat(storageEngine.lockOrder()).isEqualTo(new long[] {2, 3, 4, 5});
         long[] applyOrder = storageEngine.applyOrder();
-        assertThat( applyOrder[0] ).isEqualTo( 2 );
-        assertThat( applyOrder[applyOrder.length - 1] ).isEqualTo( 5 );
+        assertThat(applyOrder[0]).isEqualTo(2);
+        assertThat(applyOrder[applyOrder.length - 1]).isEqualTo(5);
     }
 
     @Test
-    void shouldPropagateApplyFailureOnVisit()
-    {
+    void shouldPropagateApplyFailureOnVisit() {
         // given
         String failure = "Deliberate failure applying transaction";
-        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine()
-        {
+        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception
-            {
-                super.apply( batch, mode );
-                throw new Exception( failure );
+            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+                super.apply(batch, mode);
+                throw new Exception(failure);
             }
         };
 
         // when
-        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 ) )
-        {
-            assertThatThrownBy( () ->
-            {
-                for ( long txId = 2; txId < 100; txId++ )
-                {
-                    visitor.visit( tx( txId, commandsRelatedToNode( 99 ) ) );
-                    Thread.sleep( 50 );
-                }
-            } ).getCause().hasMessageContaining( failure );
-        }
-        catch ( Exception e )
-        {
+        try (ParallelRecoveryVisitor visitor =
+                new ParallelRecoveryVisitor(storageEngine, RECOVERY, contextFactory, "test", 2)) {
+            assertThatThrownBy(() -> {
+                        for (long txId = 2; txId < 100; txId++) {
+                            visitor.visit(tx(txId, commandsRelatedToNode(99)));
+                            Thread.sleep(50);
+                        }
+                    })
+                    .getCause()
+                    .hasMessageContaining(failure);
+        } catch (Exception e) {
             // The failure will also be thrown on close, but ignore that in this test
         }
     }
 
     @Test
-    void shouldPropagateApplyFailureOnClose() throws Exception
-    {
+    void shouldPropagateApplyFailureOnClose() throws Exception {
         // given
         String failure = "Deliberate failure applying transaction";
-        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine()
-        {
+        RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception
-            {
-                super.apply( batch, mode );
-                throw new Exception( failure );
+            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+                super.apply(batch, mode);
+                throw new Exception(failure);
             }
         };
 
         // when
-        ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 );
-        visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
-        assertThatThrownBy( visitor::close ).getCause().hasMessageContaining( failure );
+        ParallelRecoveryVisitor visitor =
+                new ParallelRecoveryVisitor(storageEngine, RECOVERY, contextFactory, "test", 2);
+        visitor.visit(tx(2, commandsRelatedToNode(99)));
+        assertThatThrownBy(visitor::close).getCause().hasMessageContaining(failure);
     }
 
-    private CommittedTransactionRepresentation tx( long txId, List<StorageCommand> commands )
-    {
-        commands.forEach( cmd -> ((RecoveryTestBaseCommand) cmd).txId = txId );
-        LogEntryStart startEntry = new LogEntryStart( 0, 0, 0, new byte[0], UNSPECIFIED );
-        TransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands );
-        LogEntryCommit commitEntry = new LogEntryCommit( txId, 0, 0 );
-        return new CommittedTransactionRepresentation( startEntry, txRepresentation, commitEntry );
+    private CommittedTransactionRepresentation tx(long txId, List<StorageCommand> commands) {
+        commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).txId = txId);
+        LogEntryStart startEntry = new LogEntryStart(0, 0, 0, new byte[0], UNSPECIFIED);
+        TransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation(commands);
+        LogEntryCommit commitEntry = new LogEntryCommit(txId, 0, 0);
+        return new CommittedTransactionRepresentation(startEntry, txRepresentation, commitEntry);
     }
 
-    private List<StorageCommand> commandsRelatedToNode( long nodeId )
-    {
+    private List<StorageCommand> commandsRelatedToNode(long nodeId) {
         List<StorageCommand> commands = new ArrayList<>();
-        commands.add( new CommandRelatedToNode( nodeId ) );
+        commands.add(new CommandRelatedToNode(nodeId));
         return commands;
     }
 
-    private static long idOf( CommandStream commands )
-    {
+    private static long idOf(CommandStream commands) {
         return ((RecoveryTestBaseCommand) commands.iterator().next()).txId;
     }
 
-    private abstract static class RecoveryTestBaseCommand implements StorageCommand
-    {
+    private abstract static class RecoveryTestBaseCommand implements StorageCommand {
         // Tag the commands with txId too to simplify test code and assertions
         long txId;
 
         @Override
-        public void serialize( WritableChannel channel ) throws IOException
-        {
+        public void serialize(WritableChannel channel) throws IOException {
             // not needed
         }
 
         @Override
-        public KernelVersion version()
-        {
+        public KernelVersion version() {
             return KernelVersion.LATEST;
         }
 
-        abstract void lock( LockService lockService, LockGroup lockGroup );
+        abstract void lock(LockService lockService, LockGroup lockGroup);
     }
 
-    private static class CommandRelatedToNode extends RecoveryTestBaseCommand
-    {
+    private static class CommandRelatedToNode extends RecoveryTestBaseCommand {
         final long nodeId;
 
-        CommandRelatedToNode( long nodeId )
-        {
+        CommandRelatedToNode(long nodeId) {
             this.nodeId = nodeId;
         }
 
         @Override
-        void lock( LockService lockService, LockGroup lockGroup )
-        {
-            lockGroup.add( lockService.acquireNodeLock( nodeId, LockType.EXCLUSIVE ) );
+        void lock(LockService lockService, LockGroup lockGroup) {
+            lockGroup.add(lockService.acquireNodeLock(nodeId, LockType.EXCLUSIVE));
         }
     }
 
-    private static class RecoveryControllableStorageEngine extends LifecycleAdapter implements StorageEngine
-    {
+    private static class RecoveryControllableStorageEngine extends LifecycleAdapter implements StorageEngine {
         private final long[] lockOrder = new long[100];
         private final long[] applyOrder = new long[100];
         private final AtomicInteger lockOrderCursor = new AtomicInteger();
         private final AtomicInteger applyOrderCursor = new AtomicInteger();
 
         @Override
-        public void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode )
-        {
-            commands.forEach( cmd -> ((RecoveryTestBaseCommand) cmd).lock( lockService, lockGroup ) );
-            lockOrder[lockOrderCursor.getAndIncrement()] = idOf( commands );
+        public void lockRecoveryCommands(
+                CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode) {
+            commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).lock(lockService, lockGroup));
+            lockOrder[lockOrderCursor.getAndIncrement()] = idOf(commands);
         }
 
         @Override
-        public void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception
-        {
-            applyOrder[applyOrderCursor.getAndIncrement()] = idOf( batch );
+        public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+            applyOrder[applyOrderCursor.getAndIncrement()] = idOf(batch);
         }
 
-        long[] lockOrder()
-        {
-            return Arrays.copyOf( lockOrder, lockOrderCursor.get() );
+        long[] lockOrder() {
+            return Arrays.copyOf(lockOrder, lockOrderCursor.get());
         }
 
-        long[] applyOrder()
-        {
-            return Arrays.copyOf( applyOrder, applyOrderCursor.get() );
+        long[] applyOrder() {
+            return Arrays.copyOf(applyOrder, applyOrderCursor.get());
         }
 
         // vvv these methods are not used by the recovery visitor vvv
 
         @Override
-        public CommandCreationContext newCommandCreationContext( MemoryTracker memoryTracker )
-        {
+        public CommandCreationContext newCommandCreationContext(MemoryTracker memoryTracker) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public StoreCursors createStorageCursors( CursorContext initialContext )
-        {
+        public StoreCursors createStorageCursors(CursorContext initialContext) {
             return StoreCursors.NULL;
         }
 
         @Override
-        public StorageLocks createStorageLocks( ResourceLocker locker )
-        {
+        public StorageLocks createStorageLocks(ResourceLocker locker) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void addIndexUpdateListener( IndexUpdateListener indexUpdateListener )
-        {
+        public void addIndexUpdateListener(IndexUpdateListener indexUpdateListener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void createCommands( Collection<StorageCommand> target, ReadableTransactionState state, StorageReader storageReader,
-                CommandCreationContext creationContext, ResourceLocker locks, LockTracer lockTracer, long lastTransactionIdWhenStarted,
-                TxStateVisitor.Decorator additionalTxStateVisitor, CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
-                throws KernelException
-        {
+        public void createCommands(
+                Collection<StorageCommand> target,
+                ReadableTransactionState state,
+                StorageReader storageReader,
+                CommandCreationContext creationContext,
+                ResourceLocker locks,
+                LockTracer lockTracer,
+                long lastTransactionIdWhenStarted,
+                TxStateVisitor.Decorator additionalTxStateVisitor,
+                CursorContext cursorContext,
+                StoreCursors storeCursors,
+                MemoryTracker memoryTracker)
+                throws KernelException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo,
-                InjectedNLIUpgradeCallback injectedNLIUpgradeCallback )
-        {
+        public List<StorageCommand> createUpgradeCommands(
+                KernelVersion versionToUpgradeTo, InjectedNLIUpgradeCallback injectedNLIUpgradeCallback) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void flushAndForce( CursorContext cursorTracer ) throws IOException
-        {
+        public void flushAndForce(CursorContext cursorTracer) throws IOException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void dumpDiagnostics( InternalLog errorLog, DiagnosticsLogger diagnosticsLog )
-        {
+        public void dumpDiagnostics(InternalLog errorLog, DiagnosticsLogger diagnosticsLog) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void listStorageFiles( Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable )
-        {
+        public void listStorageFiles(Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public LegacyStoreId getStoreId()
-        {
+        public LegacyStoreId getStoreId() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Lifecycle schemaAndTokensLifecycle()
-        {
+        public Lifecycle schemaAndTokensLifecycle() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public MetadataProvider metadataProvider()
-        {
+        public MetadataProvider metadataProvider() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public CountsAccessor countsAccessor()
-        {
+        public CountsAccessor countsAccessor() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public StorageReader newReader()
-        {
+        public StorageReader newReader() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public StoreEntityCounters storeEntityCounters()
-        {
+        public StoreEntityCounters storeEntityCounters() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void shutdown()
-        {
-        }
+        public void shutdown() {}
 
         @Override
-        public byte[] encodeNodeId( long nodeId )
-        {
+        public byte[] encodeNodeId(long nodeId) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public byte[] encodeRelationshipId( long relationshipId )
-        {
+        public byte[] encodeRelationshipId(long relationshipId) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long decodeNodeId( byte[] from, int offset )
-        {
+        public long decodeNodeId(byte[] from, int offset) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long decodeRelationshipId( byte[] from, int offset )
-        {
+        public long decodeRelationshipId(byte[] from, int offset) {
             throw new UnsupportedOperationException();
         }
     }

@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-public enum RecoveryState
-{
+public enum RecoveryState {
     /**
      * Storage files are all there and looks OK.
      */

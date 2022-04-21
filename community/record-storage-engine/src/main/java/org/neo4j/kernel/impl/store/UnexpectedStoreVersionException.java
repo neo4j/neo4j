@@ -21,17 +21,14 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.exceptions.StoreFailureException;
 
-public class UnexpectedStoreVersionException extends StoreFailureException
-{
+public class UnexpectedStoreVersionException extends StoreFailureException {
     private static final String MESSAGE = "Unable to open store with version '%s', expected store version '%s'.";
 
-    public UnexpectedStoreVersionException( String actualStoreVersion, String expectedStoreVersion )
-    {
-        super( String.format( MESSAGE, actualStoreVersion, expectedStoreVersion ) );
+    public UnexpectedStoreVersionException(String actualStoreVersion, String expectedStoreVersion) {
+        super(String.format(MESSAGE, actualStoreVersion, expectedStoreVersion));
     }
 
-    public UnexpectedStoreVersionException( String msg, Throwable originalError )
-    {
-        super( msg, originalError );
+    public UnexpectedStoreVersionException(String msg, Throwable originalError) {
+        super(msg, originalError);
     }
 }

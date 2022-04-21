@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 @FunctionalInterface
-public interface PropertyValueLookup
-{
-    Object lookupProperty( long nodeId );
+public interface PropertyValueLookup {
+    Object lookupProperty(long nodeId);
 }

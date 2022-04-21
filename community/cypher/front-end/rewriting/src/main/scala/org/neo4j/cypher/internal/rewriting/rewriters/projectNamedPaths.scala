@@ -64,21 +64,28 @@ import scala.annotation.tailrec
 
 case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
-  case class Projectibles(paths: Map[Variable, PathExpression] = Map.empty,
-                          protectedVariables: Set[Ref[LogicalVariable]] = Set.empty,
-                          variableRewrites: Map[Ref[LogicalVariable], PathExpression] = Map.empty,
-                          insertedWiths: Map[SingleQuery, With] = Map.empty) {
+  case class Projectibles(
+    paths: Map[Variable, PathExpression] = Map.empty,
+    protectedVariables: Set[Ref[LogicalVariable]] = Set.empty,
+    variableRewrites: Map[Ref[LogicalVariable], PathExpression] = Map.empty,
+    insertedWiths: Map[SingleQuery, With] = Map.empty
+  ) {
 
     self =>
 
     def withoutNamedPaths: Projectibles = copy(paths = Map.empty)
-    def withProtectedVariable(ident: Ref[LogicalVariable]): Projectibles = copy(protectedVariables = protectedVariables + ident)
+
+    def withProtectedVariable(ident: Ref[LogicalVariable]): Projectibles =
+      copy(protectedVariables = protectedVariables + ident)
     def withNamedPath(entry: (Variable, PathExpression)): Projectibles = copy(paths = paths + entry)
+
     def withRewrittenVariable(entry: (Ref[LogicalVariable], PathExpression)): Projectibles = {
       val (ref, pathExpr) = entry
       copy(variableRewrites = variableRewrites + (ref -> pathExpr.endoRewrite(copyVariables)))
     }
-    def withInsertedWith(query: SingleQuery, wizz: With): Projectibles = copy(insertedWiths = insertedWiths + (query -> wizz))
+
+    def withInsertedWith(query: SingleQuery, wizz: With): Projectibles =
+      copy(insertedWiths = insertedWiths + (query -> wizz))
 
     def withVariableRewritesForExpression(expr: Expression): Projectibles =
       expr.folder.treeFold(self) {
@@ -86,7 +93,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
           acc =>
             acc.paths.get(ident) match {
               case Some(pathExpr) => TraverseChildren(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
-              case None => TraverseChildren(acc)
+              case None           => TraverseChildren(acc)
             }
       }
   }
@@ -104,7 +111,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
       case ident: Variable if !protectedVariables(Ref(ident)) =>
         variableRewrites.getOrElse(Ref(ident), ident)
 
-      case namedPart@NamedPatternPart(_, _: ShortestPaths) =>
+      case namedPart @ NamedPatternPart(_, _: ShortestPaths) =>
         namedPart
 
       case NamedPatternPart(_, part) =>
@@ -131,7 +138,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
         // Collect rewritten variables that refer to path variables
         acc.paths.get(ident) match {
           case Some(pathExpr) => TraverseChildren(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
-          case None => TraverseChildren(acc)
+          case None           => TraverseChildren(acc)
         }
 
     case projection: ProjectionClause =>
@@ -148,36 +155,44 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
         // Collect importing WITH clauses to insert into subqueries.
         // Importing with clauses cannot contain PathExpressions, so we need to add an extra WITH clause before those with all the variables from the path.
         val newAcc = subquery.part.folder.treeFold(acc) {
-          case query:SingleQuery => innerAcc =>
-            val allReturnItems: Seq[ReturnItem] = query.importWith.collect {
-              case With(_, ReturnItems(_, items, _), _, _, _, _) => items
-            }.getOrElse(Seq[ReturnItem]())
+          case query: SingleQuery => innerAcc =>
+              val allReturnItems: Seq[ReturnItem] = query.importWith.collect {
+                case With(_, ReturnItems(_, items, _), _, _, _, _) => items
+              }.getOrElse(Seq[ReturnItem]())
 
-            val (pathReturnItems, nonPathReturnItems) = allReturnItems.partition {
-                  // We can assume all return items are aliased at this point
-              case AliasedReturnItem(v: Variable, _) if acc.paths.keySet.contains(v) => true
-              case _ => false
-            }
+              val (pathReturnItems, nonPathReturnItems) = allReturnItems.partition {
+                // We can assume all return items are aliased at this point
+                case AliasedReturnItem(v: Variable, _) if acc.paths.keySet.contains(v) => true
+                case _                                                                 => false
+              }
 
-            val returnItemsWithVariablesFromPaths: Seq[AliasedReturnItem] =
+              val returnItemsWithVariablesFromPaths: Seq[AliasedReturnItem] =
                 acc.paths.collect {
-                  case (variable, pathExpression) if pathReturnItems.exists(_.expression == variable) => pathExpression.step.dependencies
+                  case (variable, pathExpression) if pathReturnItems.exists(_.expression == variable) =>
+                    pathExpression.step.dependencies
                 }.flatten.map(v => ast.AliasedReturnItem(v, v)(InputPosition.NONE, isAutoAliased = true)).toSeq
 
-            val newImportingWith: Option[With] = {
-              if (returnItemsWithVariablesFromPaths.isEmpty) {
-                None
-              } else {
-                val returnItems: Seq[ReturnItem] = (returnItemsWithVariablesFromPaths ++ nonPathReturnItems).distinct
-                Some(With(distinct = false, ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE), None, None, None, None)(InputPosition.NONE))
+              val newImportingWith: Option[With] = {
+                if (returnItemsWithVariablesFromPaths.isEmpty) {
+                  None
+                } else {
+                  val returnItems: Seq[ReturnItem] = (returnItemsWithVariablesFromPaths ++ nonPathReturnItems).distinct
+                  Some(With(
+                    distinct = false,
+                    ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE),
+                    None,
+                    None,
+                    None,
+                    None
+                  )(InputPosition.NONE))
+                }
               }
-            }
-            val newAcc = newImportingWith.map(w => innerAcc.withInsertedWith(query, w)).getOrElse(innerAcc)
-            SkipChildren(newAcc)
+              val newAcc = newImportingWith.map(w => innerAcc.withInsertedWith(query, w)).getOrElse(innerAcc)
+              SkipChildren(newAcc)
         }
         TraverseChildren(newAcc)
 
-    case _:SingleQuery =>
+    case _: SingleQuery =>
       acc =>
         // When coming out of a query (either inside a UNION or inside a Subquery), we need to restore the paths that were available before.
         // WITH clauses inside of the query might have removed the paths.
@@ -203,18 +218,25 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
   def patternPartPathExpression(element: PatternElement): PathStep = flip(element, NilPathStep()(element.position))
 
   @tailrec
-  private def flip(element: PatternElement, step: PathStep): PathStep  = {
+  private def flip(element: PatternElement, step: PathStep): PathStep = {
     element match {
-      case np@NodePattern(node, _, _, _) =>
+      case np @ NodePattern(node, _, _, _) =>
         NodePathStep(node.get.copyId, step)(np.position)
 
-      case rc@RelationshipChain(leftSide, RelationshipPattern(rel, _, length, _, _, direction, _), to) => length match {
-        case None =>
-          flip(leftSide, SingleRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step)(rc.position))
+      case rc @ RelationshipChain(leftSide, RelationshipPattern(rel, _, length, _, _, direction, _), to) =>
+        length match {
+          case None =>
+            flip(
+              leftSide,
+              SingleRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step)(rc.position)
+            )
 
-        case Some(_) =>
-          flip(leftSide, MultiRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step)(rc.position))
-      }
+          case Some(_) =>
+            flip(
+              leftSide,
+              MultiRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step)(rc.position)
+            )
+        }
     }
   }
 
@@ -230,8 +252,10 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 
-  override def getRewriter(semanticState: SemanticState,
-                           parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = instance
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, CypherType],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
 }

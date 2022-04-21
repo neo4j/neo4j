@@ -19,7 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,247 +35,211 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.MonitoredJobExecutor;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class GroupingRecoveryCleanupWorkCollectorTest
-{
+class GroupingRecoveryCleanupWorkCollectorTest {
     private static final Group GROUP = Group.INDEX_CLEANUP;
     private static final Group WORK_GROUP = Group.INDEX_CLEANUP_WORK;
-    private final SingleGroupJobScheduler jobScheduler = new SingleGroupJobScheduler( GROUP, WORK_GROUP );
-    private final GroupingRecoveryCleanupWorkCollector collector = new GroupingRecoveryCleanupWorkCollector( jobScheduler, GROUP, WORK_GROUP, "test db" );
+    private final SingleGroupJobScheduler jobScheduler = new SingleGroupJobScheduler(GROUP, WORK_GROUP);
+    private final GroupingRecoveryCleanupWorkCollector collector =
+            new GroupingRecoveryCleanupWorkCollector(jobScheduler, GROUP, WORK_GROUP, "test db");
 
     @Test
-    void shouldNotAcceptJobsAfterStart()
-    {
+    void shouldNotAcceptJobsAfterStart() {
         // given
         collector.init();
         collector.start();
 
         // when/then
-        assertThrows( IllegalStateException.class, () -> collector.add( new DummyJob( "A", new ArrayList<>() ) ) );
+        assertThrows(IllegalStateException.class, () -> collector.add(new DummyJob("A", new ArrayList<>())));
     }
 
     @Test
-    void shouldRunAllJobsBeforeOrDuringShutdown() throws Exception
-    {
+    void shouldRunAllJobsBeforeOrDuringShutdown() throws Exception {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
-        List<DummyJob> expectedJobs = someJobs( allRuns );
+        List<DummyJob> expectedJobs = someJobs(allRuns);
         collector.init();
 
         // when
-        addAll( expectedJobs );
+        addAll(expectedJobs);
         collector.start();
         collector.shutdown();
 
         // then
-        assertEquals( allRuns, expectedJobs );
+        assertEquals(allRuns, expectedJobs);
     }
 
     @Test
-    void mustThrowIfStartedMultipleTimes() throws ExecutionException, InterruptedException
-    {
+    void mustThrowIfStartedMultipleTimes() throws ExecutionException, InterruptedException {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
-        List<DummyJob> someJobs = someJobs( allRuns );
-        addAll( someJobs );
+        List<DummyJob> someJobs = someJobs(allRuns);
+        addAll(someJobs);
         collector.start();
 
         // when
         collector.shutdown();
-        assertThrows( IllegalStateException.class, collector::start );
+        assertThrows(IllegalStateException.class, collector::start);
 
         // then
         collector.shutdown();
     }
 
     @Test
-    void mustCloseOldJobsOnShutdown() throws ExecutionException, InterruptedException
-    {
+    void mustCloseOldJobsOnShutdown() throws ExecutionException, InterruptedException {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
-        List<DummyJob> someJobs = someJobs( allRuns );
+        List<DummyJob> someJobs = someJobs(allRuns);
 
         // when
         collector.init();
-        addAll( someJobs );
+        addAll(someJobs);
         collector.shutdown();
 
         // then
-        for ( DummyJob job : someJobs )
-        {
-            assertTrue( job.isClosed(), "Expected all jobs to be closed" );
+        for (DummyJob job : someJobs) {
+            assertTrue(job.isClosed(), "Expected all jobs to be closed");
         }
     }
 
     @Test
-    void shouldExecuteAllTheJobsWhenSeparateJobFails() throws Exception
-    {
+    void shouldExecuteAllTheJobsWhenSeparateJobFails() throws Exception {
         List<DummyJob> allRuns = new ArrayList<>();
 
-        DummyJob firstJob = new DummyJob( "first", allRuns );
-        DummyJob thirdJob = new DummyJob( "third", allRuns );
-        DummyJob fourthJob = new DummyJob( "fourth", allRuns );
-        List<DummyJob> expectedJobs = Arrays.asList( firstJob, thirdJob, fourthJob );
+        DummyJob firstJob = new DummyJob("first", allRuns);
+        DummyJob thirdJob = new DummyJob("third", allRuns);
+        DummyJob fourthJob = new DummyJob("fourth", allRuns);
+        List<DummyJob> expectedJobs = Arrays.asList(firstJob, thirdJob, fourthJob);
         collector.init();
 
-        collector.add( firstJob );
-        collector.add( new EvilJob() );
-        collector.add( thirdJob );
-        collector.add( fourthJob );
+        collector.add(firstJob);
+        collector.add(new EvilJob());
+        collector.add(thirdJob);
+        collector.add(fourthJob);
 
         collector.start();
         collector.shutdown();
 
-        assertSame( expectedJobs, allRuns );
+        assertSame(expectedJobs, allRuns);
     }
 
     @Test
-    void throwOnAddingJobsAfterStart()
-    {
+    void throwOnAddingJobsAfterStart() {
         collector.init();
         collector.start();
 
-        assertThrows( IllegalStateException.class, () -> collector.add( new DummyJob( "first", new ArrayList<>() ) ) );
+        assertThrows(IllegalStateException.class, () -> collector.add(new DummyJob("first", new ArrayList<>())));
     }
 
-    private void addAll( Collection<DummyJob> jobs )
-    {
-        jobs.forEach( collector::add );
+    private void addAll(Collection<DummyJob> jobs) {
+        jobs.forEach(collector::add);
     }
 
-    private static void assertSame( List<DummyJob> someJobs, List<DummyJob> actual )
-    {
-        assertTrue( actual.containsAll( someJobs ) );
-        assertTrue( someJobs.containsAll( actual ) );
+    private static void assertSame(List<DummyJob> someJobs, List<DummyJob> actual) {
+        assertTrue(actual.containsAll(someJobs));
+        assertTrue(someJobs.containsAll(actual));
     }
 
-    private static List<DummyJob> someJobs( List<DummyJob> allRuns )
-    {
-        return new ArrayList<>( Arrays.asList(
-                new DummyJob( "A", allRuns ),
-                new DummyJob( "B", allRuns ),
-                new DummyJob( "C", allRuns )
-        ) );
+    private static List<DummyJob> someJobs(List<DummyJob> allRuns) {
+        return new ArrayList<>(
+                Arrays.asList(new DummyJob("A", allRuns), new DummyJob("B", allRuns), new DummyJob("C", allRuns)));
     }
 
-    private static class SingleGroupJobScheduler extends JobSchedulerAdapter
-    {
+    private static class SingleGroupJobScheduler extends JobSchedulerAdapter {
         private final ExecutorService executorService = Executors.newSingleThreadExecutor();
         private final Group mainGroup;
         private final Group workGroup;
         private MonitoredJobExecutor createdExecutor;
 
-        SingleGroupJobScheduler( Group mainGroup, Group workGroup )
-        {
+        SingleGroupJobScheduler(Group mainGroup, Group workGroup) {
             this.mainGroup = mainGroup;
             this.workGroup = workGroup;
         }
 
         @Override
-        public MonitoredJobExecutor monitoredJobExecutor( Group group )
-        {
-            assertGroup( group, workGroup );
-            createdExecutor = ( monitoringParams, job ) -> executorService.submit( job );
+        public MonitoredJobExecutor monitoredJobExecutor(Group group) {
+            assertGroup(group, workGroup);
+            createdExecutor = (monitoringParams, job) -> executorService.submit(job);
             return createdExecutor;
         }
 
         @Override
-        public JobHandle<?> schedule( Group group, JobMonitoringParams jobMonitoringParams, Runnable job )
-        {
-            assertGroup( group, mainGroup );
-            Future<?> future = executorService.submit( job );
-            return new JobHandle<>()
-            {
+        public JobHandle<?> schedule(Group group, JobMonitoringParams jobMonitoringParams, Runnable job) {
+            assertGroup(group, mainGroup);
+            Future<?> future = executorService.submit(job);
+            return new JobHandle<>() {
                 @Override
-                public void cancel()
-                {
-                    future.cancel( false );
+                public void cancel() {
+                    future.cancel(false);
                 }
 
                 @Override
-                public void waitTermination() throws InterruptedException, ExecutionException, CancellationException
-                {
+                public void waitTermination() throws InterruptedException, ExecutionException, CancellationException {
                     future.get();
                 }
 
                 @Override
-                public void waitTermination( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
-                {
-                    future.get( timeout, unit );
+                public void waitTermination(long timeout, TimeUnit unit)
+                        throws InterruptedException, ExecutionException, TimeoutException {
+                    future.get(timeout, unit);
                 }
 
                 @Override
-                public Object get() throws ExecutionException, InterruptedException
-                {
+                public Object get() throws ExecutionException, InterruptedException {
                     return future.get();
                 }
             };
         }
 
-        private static void assertGroup( Group group, Group expectedGroup )
-        {
-            assertThat( group ).as( "use only target group" ).isSameAs( expectedGroup );
+        private static void assertGroup(Group group, Group expectedGroup) {
+            assertThat(group).as("use only target group").isSameAs(expectedGroup);
         }
 
         @Override
-        public void shutdown()
-        {
+        public void shutdown() {
             executorService.shutdown();
         }
     }
 
-    private static class EvilJob extends CleanupJob.Adaptor
-    {
+    private static class EvilJob extends CleanupJob.Adaptor {
         @Override
-        public void run( Executor executor )
-        {
-            throw new RuntimeException( "Resilient to run attempts" );
+        public void run(Executor executor) {
+            throw new RuntimeException("Resilient to run attempts");
         }
     }
 
-    private static class DummyJob extends CleanupJob.Adaptor
-    {
+    private static class DummyJob extends CleanupJob.Adaptor {
         private final String name;
         private final List<DummyJob> allRuns;
         private boolean closed;
 
-        DummyJob( String name, List<DummyJob> allRuns )
-        {
+        DummyJob(String name, List<DummyJob> allRuns) {
             this.name = name;
             this.allRuns = allRuns;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return name;
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             closed = true;
         }
 
         @Override
-        public void run( Executor executor )
-        {
-            allRuns.add( this );
+        public void run(Executor executor) {
+            allRuns.add(this);
         }
 
-        public boolean isClosed()
-        {
+        public boolean isClosed() {
             return closed;
         }
     }

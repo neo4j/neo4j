@@ -26,8 +26,7 @@ import org.neo4j.graphdb.Path;
  * A {@link Path} that has an associated weight.
  */
 @PublicApi
-public interface WeightedPath extends Path
-{
+public interface WeightedPath extends Path {
     /**
      * Returns the weight of the path.
      *

@@ -19,43 +19,36 @@
  */
 package org.neo4j.server.startup;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.List;
-
 import org.neo4j.annotations.service.Service;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.service.Services;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * BootloaderExtension can provide additional JVM options and arguments for Neo4j instance.
  * If jvmOptions include memory options -Xms and -Xmx they will override values from config, but not override value from HEAP_SIZE env variable.
  */
 @Service
-public interface BootloaderExtension
-{
+public interface BootloaderExtension {
 
-    record BootloaderArguments(List<String> jvmOptions, List<String> additionalArguments)
-    {
-        public BootloaderArguments
-        {
-            requireNonNull( jvmOptions, "jvmOptions must not be null" );
-            requireNonNull( additionalArguments, "additionalArguments must not be null" );
+    record BootloaderArguments(List<String> jvmOptions, List<String> additionalArguments) {
+        public BootloaderArguments {
+            requireNonNull(jvmOptions, "jvmOptions must not be null");
+            requireNonNull(additionalArguments, "additionalArguments must not be null");
         }
     }
 
-    BootloaderArguments EMPTY_ARGUMENTS = new BootloaderArguments( List.of(), List.of() );
+    BootloaderArguments EMPTY_ARGUMENTS = new BootloaderArguments(List.of(), List.of());
 
-    record ExtensionContext(Configuration config, PrintStream out, PrintStream err)
-    {
-    }
+    record ExtensionContext(Configuration config, PrintStream out, PrintStream err) {}
 
-    BootloaderArguments getBootloaderArguments( ExtensionContext context );
+    BootloaderArguments getBootloaderArguments(ExtensionContext context);
 
-    static Collection<BootloaderExtension> serviceLoadExtensions()
-    {
-        return Services.loadAll( BootloaderExtension.class );
+    static Collection<BootloaderExtension> serviceLoadExtensions() {
+        return Services.loadAll(BootloaderExtension.class);
     }
 }

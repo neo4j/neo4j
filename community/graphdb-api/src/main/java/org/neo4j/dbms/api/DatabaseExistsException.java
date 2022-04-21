@@ -26,31 +26,25 @@ import org.neo4j.kernel.api.exceptions.Status;
  * A {@link DatabaseManagementService} tried to create a new database, but a database with that name already exists.
  */
 @PublicApi
-public class DatabaseExistsException extends DatabaseManagementException
-{
-    public DatabaseExistsException()
-    {
+public class DatabaseExistsException extends DatabaseManagementException {
+    public DatabaseExistsException() {
         super();
     }
 
-    public DatabaseExistsException( String message )
-    {
-        super( message );
+    public DatabaseExistsException(String message) {
+        super(message);
     }
 
-    public DatabaseExistsException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public DatabaseExistsException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public DatabaseExistsException( Throwable cause )
-    {
-        super( cause );
+    public DatabaseExistsException(Throwable cause) {
+        super(cause);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Database.ExistingDatabaseFound;
     }
 }

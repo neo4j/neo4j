@@ -49,11 +49,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * }}}
  */
 
-case class TransactionApply(override val left: LogicalPlan,
-                            override val right: LogicalPlan,
-                            batchSize: Expression,
-                           )(implicit idGen: IdGen)
-  extends LogicalBinaryPlan(idGen) with ApplyPlan {
+case class TransactionApply(override val left: LogicalPlan, override val right: LogicalPlan, batchSize: Expression)(
+  implicit idGen: IdGen
+) extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(right = newRHS)(idGen)

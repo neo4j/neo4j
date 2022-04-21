@@ -19,41 +19,36 @@
  */
 package org.neo4j.logging.internal;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.logging.InternalLog;
-import org.neo4j.logging.NullLog;
-
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class PrefixedLogTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.NullLog;
+
+class PrefixedLogTest {
     private final String prefix = "prefix";
 
     @Test
-    void shouldContainPrefix()
-    {
-        var mockedLog = mock( InternalLog.class );
-        var prefixedLog = new PrefixedLog( prefix, mockedLog );
+    void shouldContainPrefix() {
+        var mockedLog = mock(InternalLog.class);
+        var prefixedLog = new PrefixedLog(prefix, mockedLog);
 
         var message = "message";
-        prefixedLog.info( message );
+        prefixedLog.info(message);
 
-        verify( mockedLog ).info( format( "[%s] %s", prefix, message ) );
+        verify(mockedLog).info(format("[%s] %s", prefix, message));
     }
 
     @Test
-    void shouldThrowIfNullPrefix()
-    {
-        assertThrows( NullPointerException.class, () -> new PrefixedLog( null, NullLog.getInstance() ) );
+    void shouldThrowIfNullPrefix() {
+        assertThrows(NullPointerException.class, () -> new PrefixedLog(null, NullLog.getInstance()));
     }
 
     @Test
-    void shouldThrowIfNullLog()
-    {
-        assertThrows( NullPointerException.class, () -> new PrefixedLog( prefix, null ) );
+    void shouldThrowIfNullLog() {
+        assertThrows(NullPointerException.class, () -> new PrefixedLog(prefix, null));
     }
 }

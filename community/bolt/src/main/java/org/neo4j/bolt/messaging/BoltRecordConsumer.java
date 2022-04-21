@@ -20,7 +20,6 @@
 package org.neo4j.bolt.messaging;
 
 import java.io.IOException;
-
 import org.neo4j.values.AnyValue;
 
 /**
@@ -35,19 +34,18 @@ import org.neo4j.values.AnyValue;
  *     endRecord();
  * </pre>
  */
-public interface BoltRecordConsumer
-{
+public interface BoltRecordConsumer {
     /**
      * Called once before the each received record.
      * @param numberOfFields The number of fields in the record
      */
-    void beginRecord( int numberOfFields ) throws IOException;
+    void beginRecord(int numberOfFields) throws IOException;
 
     /**
      * Called once for each field of the record, in order of increasing offsets.
      * @param value the value of this field
      */
-    void consumeField( AnyValue value ) throws IOException;
+    void consumeField(AnyValue value) throws IOException;
 
     /**
      * Called once at the end of each received record.

@@ -27,10 +27,8 @@ import org.neo4j.io.pagecache.CursorException;
  *
  * This is useful because it allows us to clearly see how much we can trust the stack traces for decoding errors.
  */
-final class CursorExceptionWithPreciseStackTrace extends CursorException
-{
-    CursorExceptionWithPreciseStackTrace( String message )
-    {
-        super( message );
+final class CursorExceptionWithPreciseStackTrace extends CursorException {
+    CursorExceptionWithPreciseStackTrace(String message) {
+        super(message);
     }
 }

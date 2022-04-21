@@ -19,79 +19,72 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import static org.neo4j.lock.ResourceTypes.NODE;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-
 import org.neo4j.lock.LockTracer;
 import org.neo4j.test.OtherThreadExecutor;
 
-import static org.neo4j.lock.ResourceTypes.NODE;
-
-public class LockWorker extends OtherThreadExecutor
-{
+public class LockWorker extends OtherThreadExecutor {
     private final LockWorkerState state;
 
-    public LockWorker( String name, Locks locks )
-    {
-        super( name );
-        state = new LockWorkerState( locks );
+    public LockWorker(String name, Locks locks) {
+        super(name);
+        state = new LockWorkerState(locks);
     }
 
-    private Future<Void> perform( Callable<Void> acquireLockCommand, boolean wait ) throws Exception
-    {
-        Future<Void> future = executeDontWait( acquireLockCommand );
-        if ( wait )
-        {
-            awaitFuture( future );
-        }
-        else
-        {
+    private Future<Void> perform(Callable<Void> acquireLockCommand, boolean wait) throws Exception {
+        Future<Void> future = executeDontWait(acquireLockCommand);
+        if (wait) {
+            awaitFuture(future);
+        } else {
             waitUntilWaiting();
         }
         return future;
     }
 
-    public Future<Void> getReadLock( final long resource, final boolean wait ) throws Exception
-    {
-        return perform( () ->
-        {
-            state.doing( "+R " + resource + ", wait:" + wait );
-            state.client.acquireShared( LockTracer.NONE, NODE, resource );
-            state.done();
-            return null;
-        }, wait );
+    public Future<Void> getReadLock(final long resource, final boolean wait) throws Exception {
+        return perform(
+                () -> {
+                    state.doing("+R " + resource + ", wait:" + wait);
+                    state.client.acquireShared(LockTracer.NONE, NODE, resource);
+                    state.done();
+                    return null;
+                },
+                wait);
     }
 
-    public Future<Void> getWriteLock( final long resource, final boolean wait ) throws Exception
-    {
-        return perform( () ->
-        {
-            state.doing( "+W " + resource + ", wait:" + wait );
-            state.client.acquireExclusive( LockTracer.NONE, NODE, resource );
-            state.done();
-            return null;
-        }, wait );
+    public Future<Void> getWriteLock(final long resource, final boolean wait) throws Exception {
+        return perform(
+                () -> {
+                    state.doing("+W " + resource + ", wait:" + wait);
+                    state.client.acquireExclusive(LockTracer.NONE, NODE, resource);
+                    state.done();
+                    return null;
+                },
+                wait);
     }
 
-    public void releaseReadLock( final long resource ) throws Exception
-    {
-        perform( () ->
-        {
-            state.doing( "-R " + resource );
-            state.client.releaseShared( NODE, resource );
-            state.done();
-            return null;
-        }, true );
+    public void releaseReadLock(final long resource) throws Exception {
+        perform(
+                () -> {
+                    state.doing("-R " + resource);
+                    state.client.releaseShared(NODE, resource);
+                    state.done();
+                    return null;
+                },
+                true);
     }
 
-    public void releaseWriteLock( final long resource ) throws Exception
-    {
-        perform( () ->
-        {
-            state.doing( "-W " + resource );
-            state.client.releaseExclusive( NODE, resource );
-            state.done();
-            return null;
-        }, true );
+    public void releaseWriteLock(final long resource) throws Exception {
+        perform(
+                () -> {
+                    state.doing("-W " + resource);
+                    state.client.releaseExclusive(NODE, resource);
+                    state.done();
+                    return null;
+                },
+                true);
     }
 }

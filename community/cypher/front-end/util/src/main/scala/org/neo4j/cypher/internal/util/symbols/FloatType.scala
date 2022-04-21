@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util.symbols
 
 object FloatType {
+
   val instance = new FloatType() {
     val parentType = CTNumber
     override val toString = "Float"

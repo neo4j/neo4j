@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
+import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Transaction;
@@ -32,86 +33,69 @@ import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
-class TransactionMonitorTest
-{
-    private static Stream<Arguments> parameters()
-    {
+class TransactionMonitorTest {
+    private static Stream<Arguments> parameters() {
         return Stream.of(
-            arguments( "read", (ThrowingConsumer<Transaction, Exception>) db ->
-            {
-            }, false ),
-            arguments( "write", (ThrowingConsumer<Transaction, Exception>) Transaction::createNode, true )
-        );
+                arguments("read", (ThrowingConsumer<Transaction, Exception>) db -> {}, false),
+                arguments("write", (ThrowingConsumer<Transaction, Exception>) Transaction::createNode, true));
     }
 
-    @ParameterizedTest( name = "{0}" )
-    @MethodSource( "parameters" )
-    void shouldCountCommittedTransactions( String name, ThrowingConsumer<Transaction, Exception> txConsumer, boolean isWriteTx ) throws Exception
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            TransactionCounters counts = db.getDependencyResolver().resolveDependency( TransactionCounters.class );
-            TransactionCountersChecker checker = new TransactionCountersChecker( counts );
-            try ( Transaction tx = db.beginTx() )
-            {
-                txConsumer.accept( tx );
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parameters")
+    void shouldCountCommittedTransactions(
+            String name, ThrowingConsumer<Transaction, Exception> txConsumer, boolean isWriteTx) throws Exception {
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder().impermanent().build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
+            TransactionCounters counts = db.getDependencyResolver().resolveDependency(TransactionCounters.class);
+            TransactionCountersChecker checker = new TransactionCountersChecker(counts);
+            try (Transaction tx = db.beginTx()) {
+                txConsumer.accept(tx);
                 tx.commit();
             }
-            checker.verifyCommitted( isWriteTx, counts );
-        }
-        finally
-        {
+            checker.verifyCommitted(isWriteTx, counts);
+        } finally {
             managementService.shutdown();
         }
     }
 
-    @ParameterizedTest( name = "{0}" )
-    @MethodSource( "parameters" )
-    void shouldCountRolledBackTransactions( String name, ThrowingConsumer<Transaction, Exception> txConsumer, boolean isWriteTx ) throws Exception
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            TransactionCounters counts = db.getDependencyResolver().resolveDependency( TransactionCounters.class );
-            TransactionCountersChecker checker = new TransactionCountersChecker( counts );
-            try ( Transaction tx = db.beginTx() )
-            {
-                txConsumer.accept( tx );
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parameters")
+    void shouldCountRolledBackTransactions(
+            String name, ThrowingConsumer<Transaction, Exception> txConsumer, boolean isWriteTx) throws Exception {
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder().impermanent().build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
+            TransactionCounters counts = db.getDependencyResolver().resolveDependency(TransactionCounters.class);
+            TransactionCountersChecker checker = new TransactionCountersChecker(counts);
+            try (Transaction tx = db.beginTx()) {
+                txConsumer.accept(tx);
                 tx.rollback();
             }
-            checker.verifyRolledBacked( isWriteTx, counts );
-        }
-        finally
-        {
+            checker.verifyRolledBacked(isWriteTx, counts);
+        } finally {
             managementService.shutdown();
         }
     }
 
-    @ParameterizedTest( name = "{0}" )
-    @MethodSource( "parameters" )
-    void shouldCountTerminatedTransactions( String name, ThrowingConsumer<Transaction, Exception> txConsumer, boolean isWriteTx ) throws Exception
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            TransactionCounters counts = db.getDependencyResolver().resolveDependency( TransactionCounters.class );
-            TransactionCountersChecker checker = new TransactionCountersChecker( counts );
-            try ( Transaction tx = db.beginTx() )
-            {
-                txConsumer.accept( tx );
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parameters")
+    void shouldCountTerminatedTransactions(
+            String name, ThrowingConsumer<Transaction, Exception> txConsumer, boolean isWriteTx) throws Exception {
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder().impermanent().build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
+            TransactionCounters counts = db.getDependencyResolver().resolveDependency(TransactionCounters.class);
+            TransactionCountersChecker checker = new TransactionCountersChecker(counts);
+            try (Transaction tx = db.beginTx()) {
+                txConsumer.accept(tx);
                 tx.terminate();
             }
-            checker.verifyTerminated( isWriteTx, counts );
-        }
-        finally
-        {
+            checker.verifyTerminated(isWriteTx, counts);
+        } finally {
             managementService.shutdown();
         }
     }

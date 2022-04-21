@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain
 
 class ExpandIntoPipeTest extends CypherFunSuite {
+
   test("exhaust should close cursor and cache") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
@@ -43,14 +44,14 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     Mockito.when(state.query.traversalCursor()).thenReturn(relCursor)
     Mockito.when(state.query.nodeCursor()).thenReturn(nodeCursor)
 
-    val input = new FakePipe(Seq(Map("a"->newMockedNode(10), "b"->newMockedNode(20))))
+    val input = new FakePipe(Seq(Map("a" -> newMockedNode(10), "b" -> newMockedNode(20))))
     val pipe = ExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, new EagerTypes(Array(0)))()
     // exhaust
     pipe.createResults(state).toList
     input.wasClosed shouldBe true
     // Our RelationshipTraversalCursor is wrapped in an ExpandIntoSelectionCursor. Thus not asserting on same instance.
-    monitor.closedResources.collect { case r:RelationshipTraversalCursor => r } should have size(1)
-    monitor.closedResources.collect { case r:CachingExpandInto => r } should have size(1)
+    monitor.closedResources.collect { case r: RelationshipTraversalCursor => r } should have size (1)
+    monitor.closedResources.collect { case r: CachingExpandInto => r } should have size (1)
   }
 
   test("close should close cursor and cache") {
@@ -63,16 +64,15 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     Mockito.when(state.query.traversalCursor()).thenReturn(relCursor)
     Mockito.when(state.query.nodeCursor()).thenReturn(nodeCursor)
 
-
-    val input = new FakePipe(Seq(Map("a"->newMockedNode(10), "b"->newMockedNode(20))))
+    val input = new FakePipe(Seq(Map("a" -> newMockedNode(10), "b" -> newMockedNode(20))))
     val pipe = ExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, new EagerTypes(Array(0)))()
     val result = pipe.createResults(state)
     result.hasNext shouldBe true // Need to initialize to get cursor registered
     result.close()
     input.wasClosed shouldBe true
     // Our RelationshipTraversalCursor is wrapped in an ExpandIntoSelectionCursor. Thus not asserting on same instance.
-    monitor.closedResources.collect { case r:RelationshipTraversalCursor => r } should have size(1)
-    monitor.closedResources.collect { case r:CachingExpandInto => r } should have size(1)
+    monitor.closedResources.collect { case r: RelationshipTraversalCursor => r } should have size (1)
+    monitor.closedResources.collect { case r: CachingExpandInto => r } should have size (1)
   }
 
   private def newMockedNode(id: Int): Node = {

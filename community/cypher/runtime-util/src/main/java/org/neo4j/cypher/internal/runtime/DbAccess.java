@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime;
 
 import java.util.Optional;
-
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -35,101 +34,90 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * Used to expose db access to expressions
  */
-public interface DbAccess extends EntityById
-{
-    Value nodeProperty( long node,
-            int property,
-            NodeCursor nodeCursor,
-            PropertyCursor propertyCursor,
-            boolean throwOnDeleted );
+public interface DbAccess extends EntityById {
+    Value nodeProperty(
+            long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor, boolean throwOnDeleted);
 
-    int[] nodePropertyIds( long node,
-            NodeCursor nodeCursor,
-            PropertyCursor propertyCursor );
+    int[] nodePropertyIds(long node, NodeCursor nodeCursor, PropertyCursor propertyCursor);
 
-    int propertyKey( String name );
+    int propertyKey(String name);
 
-    String propertyKeyName( int type );
+    String propertyKeyName(int type);
 
-    int nodeLabel( String name );
+    int nodeLabel(String name);
 
-    String nodeLabelName( int type );
+    String nodeLabelName(int type);
 
-    int relationshipType( String name );
+    int relationshipType(String name);
 
-    String relationshipTypeName( int type );
+    String relationshipTypeName(int type);
 
-    boolean nodeHasProperty( long node,
-            int property,
-            NodeCursor nodeCursor,
-            PropertyCursor propertyCursor );
+    boolean nodeHasProperty(long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor);
 
-    Value relationshipProperty( long node,
+    Value relationshipProperty(
+            long node,
             int property,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor,
-            boolean throwOnDeleted );
+            boolean throwOnDeleted);
 
-    int[] relationshipPropertyIds( long node,
-            RelationshipScanCursor relationshipScanCursor,
-            PropertyCursor propertyCursor );
+    int[] relationshipPropertyIds(
+            long node, RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor);
 
-    boolean relationshipHasProperty( long node,
-            int property,
-            RelationshipScanCursor relationshipScanCursor,
-            PropertyCursor propertyCursor );
+    boolean relationshipHasProperty(
+            long node, int property, RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor);
 
-    int nodeGetOutgoingDegreeWithMax( int maxDegree, long node, NodeCursor nodeCursor );
+    int nodeGetOutgoingDegreeWithMax(int maxDegree, long node, NodeCursor nodeCursor);
 
-    int nodeGetOutgoingDegreeWithMax( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
+    int nodeGetOutgoingDegreeWithMax(int maxDegree, long node, int relationship, NodeCursor nodeCursor);
 
-    int nodeGetIncomingDegreeWithMax( int maxDegree, long node, NodeCursor nodeCursor );
+    int nodeGetIncomingDegreeWithMax(int maxDegree, long node, NodeCursor nodeCursor);
 
-    int nodeGetIncomingDegreeWithMax( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
+    int nodeGetIncomingDegreeWithMax(int maxDegree, long node, int relationship, NodeCursor nodeCursor);
 
-    int nodeGetTotalDegreeWithMax( int maxDegree, long node, NodeCursor nodeCursor );
+    int nodeGetTotalDegreeWithMax(int maxDegree, long node, NodeCursor nodeCursor);
 
-    int nodeGetTotalDegreeWithMax( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
+    int nodeGetTotalDegreeWithMax(int maxDegree, long node, int relationship, NodeCursor nodeCursor);
 
-    int nodeGetOutgoingDegree( long node, NodeCursor nodeCursor );
+    int nodeGetOutgoingDegree(long node, NodeCursor nodeCursor);
 
-    int nodeGetOutgoingDegree( long node, int relationship, NodeCursor nodeCursor );
+    int nodeGetOutgoingDegree(long node, int relationship, NodeCursor nodeCursor);
 
-    int nodeGetIncomingDegree( long node, NodeCursor nodeCursor );
+    int nodeGetIncomingDegree(long node, NodeCursor nodeCursor);
 
-    int nodeGetIncomingDegree( long node, int relationship, NodeCursor nodeCursor );
+    int nodeGetIncomingDegree(long node, int relationship, NodeCursor nodeCursor);
 
-    int nodeGetTotalDegree( long node, NodeCursor nodeCursor );
+    int nodeGetTotalDegree(long node, NodeCursor nodeCursor);
 
-    int nodeGetTotalDegree( long node, int relationship, NodeCursor nodeCursor );
+    int nodeGetTotalDegree(long node, int relationship, NodeCursor nodeCursor);
 
-    void singleNode( long id, NodeCursor cursor );
+    void singleNode(long id, NodeCursor cursor);
 
-    void singleRelationship( long id, RelationshipScanCursor cursor );
+    void singleRelationship(long id, RelationshipScanCursor cursor);
 
-    ListValue getLabelsForNode( long id, NodeCursor nodeCursor );
+    ListValue getLabelsForNode(long id, NodeCursor nodeCursor);
 
-    TextValue getTypeForRelationship( long id, RelationshipScanCursor relationshipCursor );
+    TextValue getTypeForRelationship(long id, RelationshipScanCursor relationshipCursor);
 
-    boolean isLabelSetOnNode( int label, long id, NodeCursor nodeCursor );
+    boolean isLabelSetOnNode(int label, long id, NodeCursor nodeCursor);
 
-    boolean isAnyLabelSetOnNode( int[] labels, long id, NodeCursor nodeCursor );
+    boolean isAnyLabelSetOnNode(int[] labels, long id, NodeCursor nodeCursor);
 
-    boolean isTypeSetOnRelationship( int typ, long id, RelationshipScanCursor relationshipCursor );
+    boolean isTypeSetOnRelationship(int typ, long id, RelationshipScanCursor relationshipCursor);
 
-    String getPropertyKeyName( int token );
+    String getPropertyKeyName(int token);
 
-    MapValue nodeAsMap( long id, NodeCursor nodeCursor, PropertyCursor propertyCursor );
+    MapValue nodeAsMap(long id, NodeCursor nodeCursor, PropertyCursor propertyCursor);
 
-    MapValue relationshipAsMap( long id, RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor );
+    MapValue relationshipAsMap(long id, RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor);
 
-    Value getTxStateNodePropertyOrNull( long nodeId, int propertyKey );
+    Value getTxStateNodePropertyOrNull(long nodeId, int propertyKey);
 
-    Value getTxStateRelationshipPropertyOrNull( long relId, int propertyKey );
+    Value getTxStateRelationshipPropertyOrNull(long relId, int propertyKey);
 
-    AnyValue callFunction( int id, AnyValue[] args );
+    AnyValue callFunction(int id, AnyValue[] args);
 
-    AnyValue callBuiltInFunction( int id, AnyValue[] args );
+    AnyValue callBuiltInFunction(int id, AnyValue[] args);
 
     /**
      * @return `Optional.empty` if TxState has no changes.
@@ -137,7 +125,7 @@ public interface DbAccess extends EntityById
      *         `Optional.of(false)` if the property or the entity were deleted in TxState.
      */
     @CalledFromGeneratedCode
-    Optional<Boolean> hasTxStatePropertyForCachedNodeProperty( long nodeId, int propertyKeyId );
+    Optional<Boolean> hasTxStatePropertyForCachedNodeProperty(long nodeId, int propertyKeyId);
 
     /**
      * @return `Optional.empty` if TxState has no changes.
@@ -145,7 +133,7 @@ public interface DbAccess extends EntityById
      *         `Optional.of(false)` if the property or the entity were deleted in TxState.
      */
     @CalledFromGeneratedCode
-    Optional<Boolean> hasTxStatePropertyForCachedRelationshipProperty( long relId, int propertyKeyId );
+    Optional<Boolean> hasTxStatePropertyForCachedRelationshipProperty(long relId, int propertyKeyId);
 
     /**
      * Get the node count from the count store
@@ -153,7 +141,7 @@ public interface DbAccess extends EntityById
      * @param labelId the label of the nodes to count or -1 for wildcard count
      * @return the number of nodes with the given label in the database
      */
-    long nodeCountByCountStore( int labelId );
+    long nodeCountByCountStore(int labelId);
 
     /**
      * Get the node count from the count store
@@ -163,7 +151,7 @@ public interface DbAccess extends EntityById
      * @param endLabelId the label of the end node or -1 for wildcard count
      * @return the number of relationships with the given start label, type and end label in the database
      */
-    long relationshipCountByCountStore( int startLabelId, int typeId, int endLabelId );
+    long relationshipCountByCountStore(int startLabelId, int typeId, int endLabelId);
 
     ElementIdMapper elementIdMapper();
 }

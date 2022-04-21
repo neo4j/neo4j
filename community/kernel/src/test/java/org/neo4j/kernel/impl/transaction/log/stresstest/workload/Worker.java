@@ -20,40 +20,34 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import java.util.function.BooleanSupplier;
-
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-class Worker implements Runnable
-{
+class Worker implements Runnable {
     private final TransactionAppender transactionAppender;
     private final TransactionRepresentationFactory factory;
     private final BooleanSupplier condition;
 
-    Worker( TransactionAppender transactionAppender,
-            TransactionRepresentationFactory factory, BooleanSupplier condition )
-    {
+    Worker(
+            TransactionAppender transactionAppender,
+            TransactionRepresentationFactory factory,
+            BooleanSupplier condition) {
         this.transactionAppender = transactionAppender;
         this.factory = factory;
         this.condition = condition;
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         long latestTxId = TransactionIdStore.BASE_TX_ID;
-        while ( condition.getAsBoolean() )
-        {
-            TransactionToApply transaction = factory.nextTransaction( latestTxId );
-            try
-            {
-                latestTxId = transactionAppender.append( transaction, LogAppendEvent.NULL );
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
+        while (condition.getAsBoolean()) {
+            TransactionToApply transaction = factory.nextTransaction(latestTxId);
+            try {
+                latestTxId = transactionAppender.append(transaction, LogAppendEvent.NULL);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }

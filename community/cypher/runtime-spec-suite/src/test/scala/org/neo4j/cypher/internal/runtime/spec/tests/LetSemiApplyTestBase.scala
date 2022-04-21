@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class LetSemiApplyTestBase[CONTEXT <: RuntimeContext](
-                                                                edition: Edition[CONTEXT],
-                                                                runtime: CypherRuntime[CONTEXT],
-                                                                sizeHint: Int
-                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should only write let = true for the one that matches") {
     val inputRows = for {
@@ -49,7 +49,10 @@ abstract class LetSemiApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
 
     // then
-    runtimeResult should beColumns("x", "let").withRows((0 until sizeHint).map(i => if (i < 3) Array(i, true) else Array(i, false)))
+    runtimeResult should beColumns("x", "let").withRows((0 until sizeHint).map(i =>
+      if (i < 3) Array(i, true)
+      else Array(i, false)
+    ))
   }
 
   test("should write let = true for everything if rhs is nonEmpty") {
@@ -189,9 +192,13 @@ abstract class LetSemiApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate with grouping on top of let semi apply") {
     // given
     given {
-      nodePropertyGraph(sizeHint, {
-        case i if i % 2 == 0 => Map("prop" -> i)
-      }, "A")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i if i % 2 == 0 => Map("prop" -> i)
+        },
+        "A"
+      )
     }
 
     // when

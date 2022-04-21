@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -38,9 +41,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
-import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
-
 /**
  * This is the Neo4j Kernel, an implementation of the Kernel API which is an internal component used by Cypher and the
  * Core API (the API under org.neo4j.graphdb).
@@ -54,8 +54,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
  * Please refer to the {@link KernelTransaction} javadoc for details.
  *
  */
-public class KernelImpl extends LifecycleAdapter implements Kernel
-{
+public class KernelImpl extends LifecycleAdapter implements Kernel {
     private final KernelTransactions transactions;
     private final Health health;
     private final TransactionMonitor transactionMonitor;
@@ -65,92 +64,91 @@ public class KernelImpl extends LifecycleAdapter implements Kernel
     private final DefaultThreadSafeCursors cursors;
     private volatile boolean isRunning;
 
-    public KernelImpl( KernelTransactions transactionFactory, Health health,
-                       TransactionMonitor transactionMonitor,
-                       GlobalProcedures globalProcedures, Config config, StorageEngine storageEngine,
-                       TransactionExecutionMonitor transactionExecutionMonitor )
-    {
+    public KernelImpl(
+            KernelTransactions transactionFactory,
+            Health health,
+            TransactionMonitor transactionMonitor,
+            GlobalProcedures globalProcedures,
+            Config config,
+            StorageEngine storageEngine,
+            TransactionExecutionMonitor transactionExecutionMonitor) {
         this.transactions = transactionFactory;
         this.health = health;
         this.transactionMonitor = transactionMonitor;
         this.globalProcedures = globalProcedures;
         this.config = config;
-        this.cursors = new DefaultThreadSafeCursors( storageEngine.newReader(), config, storageEngine::createStorageCursors );
+        this.cursors =
+                new DefaultThreadSafeCursors(storageEngine.newReader(), config, storageEngine::createStorageCursors);
         this.transactionExecutionMonitor = transactionExecutionMonitor;
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext ) throws TransactionFailureException
-    {
-        return beginTransaction( type, loginContext, EMBEDDED_CONNECTION );
+    public KernelTransaction beginTransaction(KernelTransaction.Type type, LoginContext loginContext)
+            throws TransactionFailureException {
+        return beginTransaction(type, loginContext, EMBEDDED_CONNECTION);
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo )
-            throws TransactionFailureException
-    {
-        if ( !isRunning )
-        {
-            throw new IllegalStateException( "Kernel is not running, so it is not possible to use it" );
+    public KernelTransaction beginTransaction(
+            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo)
+            throws TransactionFailureException {
+        if (!isRunning) {
+            throw new IllegalStateException("Kernel is not running, so it is not possible to use it");
         }
-        return beginTransaction( type, loginContext, connectionInfo, config.get( transaction_timeout ).toMillis() );
+        return beginTransaction(
+                type,
+                loginContext,
+                connectionInfo,
+                config.get(transaction_timeout).toMillis());
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout )
-            throws TransactionFailureException
-    {
-        health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance( type, loginContext, connectionInfo, timeout );
+    public KernelTransaction beginTransaction(
+            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout)
+            throws TransactionFailureException {
+        health.assertHealthy(TransactionFailureException.class);
+        KernelTransaction transaction = transactions.newInstance(type, loginContext, connectionInfo, timeout);
         transactionMonitor.transactionStarted();
-        transactionExecutionMonitor.start( transaction );
+        transactionExecutionMonitor.start(transaction);
         return transaction;
     }
 
     @Override
-    public void registerProcedure( CallableProcedure procedure ) throws ProcedureException
-    {
-        globalProcedures.register( procedure );
+    public void registerProcedure(CallableProcedure procedure) throws ProcedureException {
+        globalProcedures.register(procedure);
     }
 
     @Override
-    public void registerUserFunction( CallableUserFunction function ) throws ProcedureException
-    {
-        globalProcedures.register( function );
+    public void registerUserFunction(CallableUserFunction function) throws ProcedureException {
+        globalProcedures.register(function);
     }
 
     @Override
-    public void registerUserAggregationFunction( CallableUserAggregationFunction function ) throws ProcedureException
-    {
-        globalProcedures.register( function );
+    public void registerUserAggregationFunction(CallableUserAggregationFunction function) throws ProcedureException {
+        globalProcedures.register(function);
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         isRunning = true;
     }
 
     @Override
-    public void stop()
-    {
-        if ( !isRunning )
-        {
-            throw new IllegalStateException( "Kernel is not running, so it is not possible to stop it" );
+    public void stop() {
+        if (!isRunning) {
+            throw new IllegalStateException("Kernel is not running, so it is not possible to stop it");
         }
 
         isRunning = false;
     }
 
     @Override
-    public CursorFactory cursors()
-    {
+    public CursorFactory cursors() {
         return cursors;
     }
 
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         cursors.close();
     }
 }

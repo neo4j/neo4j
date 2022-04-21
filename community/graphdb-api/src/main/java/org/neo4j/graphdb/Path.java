@@ -20,7 +20,6 @@
 package org.neo4j.graphdb;
 
 import java.util.Iterator;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -33,8 +32,7 @@ import org.neo4j.annotations.api.PublicApi;
  * node in such a traversal is reached via {@link Path#endNode()}.
  */
 @PublicApi
-public interface Path extends Iterable<Entity>
-{
+public interface Path extends Iterable<Entity> {
     /**
      * Returns the start node of this path. It's also the first node returned
      * from the {@link #nodes()} iterable.

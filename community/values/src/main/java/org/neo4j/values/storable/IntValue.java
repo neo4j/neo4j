@@ -19,96 +19,81 @@
  */
 package org.neo4j.values.storable;
 
-import org.neo4j.values.ValueMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public final class IntValue extends IntegralValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( IntValue.class );
+import org.neo4j.values.ValueMapper;
+
+public final class IntValue extends IntegralValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(IntValue.class);
 
     private final int value;
 
-    IntValue( int value )
-    {
+    IntValue(int value) {
         this.value = value;
     }
 
-    public int value()
-    {
+    public int value() {
         return value;
     }
 
     @Override
-    public long longValue()
-    {
+    public long longValue() {
         return value;
     }
 
     @Override
-    public int intValue()
-    {
+    public int intValue() {
         return value;
     }
 
     @Override
-    public short shortValue()
-    {
-        throw new IllegalStateException( "A 32 bit integer doesn't fit in a 16 bit value" );
+    public short shortValue() {
+        throw new IllegalStateException("A 32 bit integer doesn't fit in a 16 bit value");
     }
 
     @Override
-    public byte byteValue()
-    {
-        throw new IllegalStateException( "A 32 bit integer doesn't fit in a 8 bit value" );
+    public byte byteValue() {
+        throw new IllegalStateException("A 32 bit integer doesn't fit in a 8 bit value");
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeInteger( value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeInteger(value);
     }
 
     @Override
-    public Integer asObjectCopy()
-    {
+    public Integer asObjectCopy() {
         return value;
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return Integer.toString( value );
+    public String prettyPrint() {
+        return Integer.toString(value);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "Int(%d)", value );
+    public String toString() {
+        return format("Int(%d)", value);
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapInt( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapInt(this);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Integer";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return SHALLOW_SIZE;
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.INT32;
     }
 }

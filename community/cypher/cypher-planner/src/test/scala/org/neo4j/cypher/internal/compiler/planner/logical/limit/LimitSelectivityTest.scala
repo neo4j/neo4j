@@ -67,7 +67,8 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }.withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(patternNodes = Set("n")),
-        horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))))
+        horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
+      )
 
       // WHEN
       val result = LimitSelectivity.forLastPart(query, context, Selectivity.ONE)
@@ -102,7 +103,8 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }.withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(patternNodes = Set("n")),
-        horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))))
+        horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
+      )
       val p = Selectivity(0.5)
 
       // WHEN
@@ -151,7 +153,8 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }.withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(patternNodes = Set("n")),
-        horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))))
+        horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
+      )
 
       // WHEN
       val result = LimitSelectivity.forAllParts(query, context)
@@ -243,7 +246,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // THEN
       result shouldBe List(
         Selectivity(highLimit / (nodes.toDouble * nodes.toDouble)),
-        Selectivity(highLimit / (lowLimit.toDouble * nodes.toDouble)),
+        Selectivity(highLimit / (lowLimit.toDouble * nodes.toDouble))
       )
     }
   }
@@ -274,7 +277,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // THEN
       result shouldBe List(
         Selectivity(lowLimit / nodes.toDouble),
-        Selectivity.ONE,
+        Selectivity.ONE
       )
     }
   }
@@ -298,10 +301,12 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
             horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(firstLimit)))),
             tail = Some(RegularSinglePlannerQuery(
               queryGraph = QueryGraph(argumentIds = Set("n")),
-              horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(secondLimit)))),
+              horizon =
+                RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(secondLimit)))),
               tail = Some(RegularSinglePlannerQuery(
                 queryGraph = QueryGraph(argumentIds = Set("n")),
-                horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(thirdLimit))))
+                horizon =
+                  RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(thirdLimit))))
               ))
             ))
           )
@@ -381,7 +386,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // THEN
       result shouldBe List(
         Selectivity.ONE,
-        Selectivity.ONE,
+        Selectivity.ONE
       )
     }
   }
@@ -393,7 +398,8 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val ns = Namespace(List("my", "proc"))(pos)
     val name = ProcedureName("foo")(pos)
     val qualifiedName = QualifiedName(ns.parts, name.name)
-    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess, id = 42, eager = true)
+    val signature =
+      ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess, id = 42, eager = true)
 
     val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
 
@@ -418,7 +424,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // THEN
       result shouldBe List(
         Selectivity.ONE,
-        Selectivity(limit / (nodes * nodes * PlannerDefaults.DEFAULT_MULTIPLIER.coefficient)),
+        Selectivity(limit / (nodes * nodes * PlannerDefaults.DEFAULT_MULTIPLIER.coefficient))
       )
     }
   }
@@ -453,7 +459,8 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      val expectedSelectivity = Selectivity(limit / (nodes.toDouble * nodes.toDouble * PlannerDefaults.DEFAULT_MULTIPLIER.coefficient))
+      val expectedSelectivity =
+        Selectivity(limit / (nodes.toDouble * nodes.toDouble * PlannerDefaults.DEFAULT_MULTIPLIER.coefficient))
       result shouldBe List(expectedSelectivity, expectedSelectivity)
     }
   }
@@ -474,7 +481,8 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
         tail = Some(RegularSinglePlannerQuery(
           queryGraph = QueryGraph(
             argumentIds = Set("n", "m"),
-            mutatingPatterns = IndexedSeq(SetNodePropertyPattern("n", PropertyKeyName("foo")(pos), literalInt(1))))
+            mutatingPatterns = IndexedSeq(SetNodePropertyPattern("n", PropertyKeyName("foo")(pos), literalInt(1)))
+          )
         ))
       )
 
@@ -484,7 +492,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // THEN
       result shouldBe List(
         Selectivity(limit / (nodes.toDouble * nodes.toDouble)),
-        Selectivity.ONE,
+        Selectivity.ONE
       )
     }
   }

@@ -25,47 +25,40 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 
-class BridgingCacheAccess implements CacheAccessBackDoor
-{
+class BridgingCacheAccess implements CacheAccessBackDoor {
     private final SchemaCache schemaCache;
     private final SchemaState schemaState;
     private final TokenHolders tokenHolders;
 
-    BridgingCacheAccess( SchemaCache schemaCache, SchemaState schemaState, TokenHolders tokenHolders )
-    {
+    BridgingCacheAccess(SchemaCache schemaCache, SchemaState schemaState, TokenHolders tokenHolders) {
         this.schemaCache = schemaCache;
         this.schemaState = schemaState;
         this.tokenHolders = tokenHolders;
     }
 
     @Override
-    public void addSchemaRule( SchemaRule rule )
-    {
-        schemaCache.addSchemaRule( rule );
+    public void addSchemaRule(SchemaRule rule) {
+        schemaCache.addSchemaRule(rule);
     }
 
     @Override
-    public void removeSchemaRuleFromCache( long id )
-    {
-        schemaCache.removeSchemaRule( id );
+    public void removeSchemaRuleFromCache(long id) {
+        schemaCache.removeSchemaRule(id);
         schemaState.clear();
     }
 
     @Override
-    public void addRelationshipTypeToken( NamedToken type )
-    {
-        tokenHolders.relationshipTypeTokens().addToken( type );
+    public void addRelationshipTypeToken(NamedToken type) {
+        tokenHolders.relationshipTypeTokens().addToken(type);
     }
 
     @Override
-    public void addLabelToken( NamedToken label )
-    {
-        tokenHolders.labelTokens().addToken( label );
+    public void addLabelToken(NamedToken label) {
+        tokenHolders.labelTokens().addToken(label);
     }
 
     @Override
-    public void addPropertyKeyToken( NamedToken propertyKey )
-    {
-        tokenHolders.propertyKeyTokens().addToken( propertyKey );
+    public void addPropertyKeyToken(NamedToken propertyKey) {
+        tokenHolders.propertyKeyTokens().addToken(propertyKey);
     }
 }

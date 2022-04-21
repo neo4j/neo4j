@@ -20,20 +20,17 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.function.UnaryOperator;
-
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
-public class IndexMapReference implements IndexMapSnapshotProvider
-{
+public class IndexMapReference implements IndexMapSnapshotProvider {
     private volatile IndexMap indexMap = new IndexMap();
 
     @Override
-    public IndexMap indexMapSnapshot()
-    {
-        return new IndexMap( indexMap );
+    public IndexMap indexMapSnapshot() {
+        return new IndexMap(indexMap);
     }
 
     /**
@@ -46,49 +43,41 @@ public class IndexMapReference implements IndexMapSnapshotProvider
      *
      * @param modifier the function modifying the snapshot.
      */
-    public synchronized void modify( UnaryOperator<IndexMap> modifier )
-    {
+    public synchronized void modify(UnaryOperator<IndexMap> modifier) {
         IndexMap snapshot = indexMapSnapshot();
-        indexMap = modifier.apply( snapshot );
+        indexMap = modifier.apply(snapshot);
     }
 
-    public IndexProxy getIndexProxy( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        IndexProxy proxy = indexMap.getIndexProxy( index );
-        if ( proxy == null )
-        {
-            throw new IndexNotFoundKernelException( "No index for index " + index + " exists." );
+    public IndexProxy getIndexProxy(IndexDescriptor index) throws IndexNotFoundKernelException {
+        IndexProxy proxy = indexMap.getIndexProxy(index);
+        if (proxy == null) {
+            throw new IndexNotFoundKernelException("No index for index " + index + " exists.");
         }
         return proxy;
     }
 
-    public IndexProxy getIndexProxy( long indexId ) throws IndexNotFoundKernelException
-    {
-        IndexProxy proxy = indexMap.getIndexProxy( indexId );
-        if ( proxy == null )
-        {
-            throw new IndexNotFoundKernelException( "No index for index id " + indexId + " exists." );
+    public IndexProxy getIndexProxy(long indexId) throws IndexNotFoundKernelException {
+        IndexProxy proxy = indexMap.getIndexProxy(indexId);
+        if (proxy == null) {
+            throw new IndexNotFoundKernelException("No index for index id " + indexId + " exists.");
         }
         return proxy;
     }
 
-    Iterable<IndexProxy> getAllIndexProxies()
-    {
+    Iterable<IndexProxy> getAllIndexProxies() {
         return indexMap.getAllIndexProxies();
     }
 
-    IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode, boolean parallel )
-    {
-        return new IndexUpdaterMap( indexMap, mode, parallel );
+    IndexUpdaterMap createIndexUpdaterMap(IndexUpdateMode mode, boolean parallel) {
+        return new IndexUpdaterMap(indexMap, mode, parallel);
     }
 
-    public void validateBeforeCommit( IndexDescriptor index, Value[] tuple, long entityId )
-    {
-        IndexProxy proxy = indexMap.getIndexProxy( index );
-        if ( proxy != null )
-        {
-            // Do this null-check since from the outside there's a best-effort matching going on between updates and actual indexes backing those.
-            proxy.validateBeforeCommit( tuple, entityId );
+    public void validateBeforeCommit(IndexDescriptor index, Value[] tuple, long entityId) {
+        IndexProxy proxy = indexMap.getIndexProxy(index);
+        if (proxy != null) {
+            // Do this null-check since from the outside there's a best-effort matching going on between updates and
+            // actual indexes backing those.
+            proxy.validateBeforeCommit(tuple, entityId);
         }
     }
 }

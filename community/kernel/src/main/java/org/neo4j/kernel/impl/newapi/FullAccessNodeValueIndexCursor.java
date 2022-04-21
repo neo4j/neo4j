@@ -21,22 +21,18 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.memory.MemoryTracker;
 
-class FullAccessNodeValueIndexCursor extends DefaultNodeValueIndexCursor
-{
-    FullAccessNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool, MemoryTracker memoryTracker )
-    {
-        super( pool, null, memoryTracker );
+class FullAccessNodeValueIndexCursor extends DefaultNodeValueIndexCursor {
+    FullAccessNodeValueIndexCursor(CursorPool<DefaultNodeValueIndexCursor> pool, MemoryTracker memoryTracker) {
+        super(pool, null, memoryTracker);
     }
 
     @Override
-    final boolean allowed( long reference )
-    {
+    final boolean allowed(long reference) {
         return true;
     }
 
     @Override
-    final boolean allowsAll()
-    {
+    final boolean allowsAll() {
         return true;
     }
 }

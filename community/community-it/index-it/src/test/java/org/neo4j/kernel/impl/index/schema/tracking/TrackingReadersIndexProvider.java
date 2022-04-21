@@ -19,31 +19,31 @@
  */
 package org.neo4j.kernel.impl.index.schema.tracking;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.IOException;
 import java.nio.file.OpenOption;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
-public class TrackingReadersIndexProvider extends IndexProvider.Delegating
-{
+public class TrackingReadersIndexProvider extends IndexProvider.Delegating {
     private final IndexProvider indexProvider;
 
-    TrackingReadersIndexProvider( IndexProvider copySource )
-    {
-        super( copySource );
+    TrackingReadersIndexProvider(IndexProvider copySource) {
+        super(copySource);
         this.indexProvider = copySource;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                            ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        return new TrackingReadersIndexAccessor( indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, openOptions ) );
+    public IndexAccessor getOnlineAccessor(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        return new TrackingReadersIndexAccessor(
+                indexProvider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions));
     }
 }

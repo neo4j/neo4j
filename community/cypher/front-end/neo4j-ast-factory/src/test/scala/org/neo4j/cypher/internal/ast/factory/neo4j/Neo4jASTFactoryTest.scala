@@ -33,22 +33,33 @@ class Neo4jASTFactoryTest extends CypherFunSuite {
   }
 
   test("relationShipPatternNotAllowed") {
-    ASTExceptionFactory.relationshipPattternNotAllowed(ConstraintType.UNIQUE) shouldBe "'IS UNIQUE' does not allow relationship patterns"
+    ASTExceptionFactory.relationshipPattternNotAllowed(
+      ConstraintType.UNIQUE
+    ) shouldBe "'IS UNIQUE' does not allow relationship patterns"
   }
 
   test("onlySinglePropertyAllowed") {
-    ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS) shouldBe "'EXISTS' does not allow multiple properties"
+    ASTExceptionFactory.onlySinglePropertyAllowed(
+      ConstraintType.NODE_EXISTS
+    ) shouldBe "'EXISTS' does not allow multiple properties"
   }
 
   test("invalidShowFilterType") {
-    ASTExceptionFactory.invalidShowFilterType("indexes", ShowCommandFilterTypes.INVALID) shouldBe "Filter type INVALID is not defined for show indexes command."
+    ASTExceptionFactory.invalidShowFilterType(
+      "indexes",
+      ShowCommandFilterTypes.INVALID
+    ) shouldBe "Filter type INVALID is not defined for show indexes command."
   }
 
   test("invalidCreateIndexType") {
-    ASTExceptionFactory.invalidCreateIndexType(CreateIndexTypes.INVALID) shouldBe "Index type INVALID is not defined for create index command."
+    ASTExceptionFactory.invalidCreateIndexType(
+      CreateIndexTypes.INVALID
+    ) shouldBe "Index type INVALID is not defined for create index command."
   }
 
   test("invalidBTREEHintIndexType") {
-    ASTExceptionFactory.invalidHintIndexType(HintIndexType.BTREE) shouldBe "Index type BTREE is no longer supported for USING index hint. Use TEXT, RANGE or POINT instead."
+    ASTExceptionFactory.invalidHintIndexType(
+      HintIndexType.BTREE
+    ) shouldBe "Index type BTREE is no longer supported for USING index hint. Use TEXT, RANGE or POINT instead."
   }
 }

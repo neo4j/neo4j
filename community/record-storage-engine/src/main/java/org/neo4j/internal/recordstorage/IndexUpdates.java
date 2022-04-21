@@ -25,16 +25,17 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 /**
  * Set of updates ({@link IndexEntryUpdate}) to apply to indexes.
  */
-public interface IndexUpdates extends Iterable<IndexEntryUpdate<IndexDescriptor>>, AutoCloseable
-{
+public interface IndexUpdates extends Iterable<IndexEntryUpdate<IndexDescriptor>>, AutoCloseable {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.
      * @param nodeCommands node data
      * @param relationshipCommands relationship data
      * @param txId ID of the transaction the updates come from.
      */
-    void feed( EntityCommandGrouper<Command.NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipCommands,
-            long txId );
+    void feed(
+            EntityCommandGrouper<Command.NodeCommand>.Cursor nodeCommands,
+            EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipCommands,
+            long txId);
 
     boolean hasUpdates();
 

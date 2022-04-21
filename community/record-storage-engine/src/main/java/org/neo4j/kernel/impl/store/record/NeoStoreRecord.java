@@ -19,49 +19,37 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-public class NeoStoreRecord extends PrimitiveRecord
-{
-    public NeoStoreRecord()
-    {
-        super( -1 );
-        setInUse( true );
+public class NeoStoreRecord extends PrimitiveRecord {
+    public NeoStoreRecord() {
+        super(-1);
+        setInUse(true);
     }
 
-    public NeoStoreRecord( NeoStoreRecord other )
-    {
-        super( other );
+    public NeoStoreRecord(NeoStoreRecord other) {
+        super(other);
     }
 
     @Override
-    public NeoStoreRecord initialize( boolean inUse, long nextProp )
-    {
-        super.initialize( inUse, nextProp );
+    public NeoStoreRecord initialize(boolean inUse, long nextProp) {
+        super.initialize(inUse, nextProp);
         return this;
     }
 
     @Override
-    public void clear()
-    {
-        initialize( false, -1 );
+    public void clear() {
+        initialize(false, -1);
     }
 
     @Override
-    public String toString()
-    {
-        return getClass().getSimpleName() + "[" +
-                "used=" + inUse() +
-                ",prop=" + getNextProp() +
-                "]";
+    public String toString() {
+        return getClass().getSimpleName() + "[" + "used=" + inUse() + ",prop=" + getNextProp() + "]";
     }
 
     @Override
-    public void setIdTo( PropertyRecord property )
-    {
-    }
+    public void setIdTo(PropertyRecord property) {}
 
     @Override
-    public NeoStoreRecord copy()
-    {
-        return new NeoStoreRecord( this );
+    public NeoStoreRecord copy() {
+        return new NeoStoreRecord(this);
     }
 }

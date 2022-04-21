@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.Iterator;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -31,48 +32,39 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-class CircularGraphTest extends TraversalTestBase
-{
+class CircularGraphTest extends TraversalTestBase {
     @BeforeEach
-    void createTheGraph()
-    {
-        createGraph( "1 TO 2", "2 TO 3", "3 TO 1" );
+    void createTheGraph() {
+        createGraph("1 TO 2", "2 TO 3", "3 TO 1");
     }
 
     @Test
-    void testCircularBug()
-    {
+    void testCircularBug() {
         final long timestamp = 3;
-        try ( Transaction tx = beginTx() )
-        {
-            getNodeWithName( tx, "2" ).setProperty( "timestamp", 1L );
-            getNodeWithName( tx, "3" ).setProperty( "timestamp", 2L );
+        try (Transaction tx = beginTx()) {
+            getNodeWithName(tx, "2").setProperty("timestamp", 1L);
+            getNodeWithName(tx, "3").setProperty("timestamp", 2L);
             tx.commit();
         }
 
-        try ( Transaction tx2 = beginTx() )
-        {
-            final RelationshipType type = RelationshipType.withName( "TO" );
+        try (Transaction tx2 = beginTx()) {
+            final RelationshipType type = RelationshipType.withName("TO");
             Iterator<Node> nodes = tx2.traversalDescription()
                     .depthFirst()
-                    .relationships( type, Direction.OUTGOING )
-                    .evaluator( path ->
-                    {
+                    .relationships(type, Direction.OUTGOING)
+                    .evaluator(path -> {
                         Relationship rel = path.lastRelationship();
-                        boolean relIsOfType = rel != null && rel.isType( type );
-                        boolean prune =
-                                relIsOfType && (Long) path.endNode().getProperty( "timestamp" ) >= timestamp;
-                        return Evaluation.of( relIsOfType, !prune );
-                    } )
-                    .traverse( tx2.getNodeById( node( "1" ).getId() ) )
-                    .nodes().iterator();
+                        boolean relIsOfType = rel != null && rel.isType(type);
+                        boolean prune = relIsOfType && (Long) path.endNode().getProperty("timestamp") >= timestamp;
+                        return Evaluation.of(relIsOfType, !prune);
+                    })
+                    .traverse(tx2.getNodeById(node("1").getId()))
+                    .nodes()
+                    .iterator();
 
-            assertEquals( "2", nodes.next().getProperty( "name" ) );
-            assertEquals( "3", nodes.next().getProperty( "name" ) );
-            assertFalse( nodes.hasNext() );
+            assertEquals("2", nodes.next().getProperty("name"));
+            assertEquals("3", nodes.next().getProperty("name"));
+            assertFalse(nodes.hasNext());
         }
     }
 }

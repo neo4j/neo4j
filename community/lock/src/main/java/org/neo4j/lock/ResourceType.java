@@ -20,8 +20,7 @@
 package org.neo4j.lock;
 
 /** Locks are split by resource types. It is up to the implementation to define the contract for these. */
-public interface ResourceType
-{
+public interface ResourceType {
     /** Must be unique among all existing resource types, should preferably be a sequence starting at 0. */
     int typeId();
 

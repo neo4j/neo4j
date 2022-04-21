@@ -19,114 +19,97 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.Arrays;
+import static java.lang.String.format;
 
+import java.util.Arrays;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Value;
 
-import static java.lang.String.format;
-
-public class ValueIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> extends IndexEntryUpdate<INDEX_KEY>
-{
+public class ValueIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> extends IndexEntryUpdate<INDEX_KEY> {
     private final Value[] before;
     private final Value[] values;
 
-    ValueIndexEntryUpdate( long entityId, INDEX_KEY index_key, UpdateMode updateMode, Value[] values )
-    {
-        this( entityId, index_key, updateMode, null, values );
+    ValueIndexEntryUpdate(long entityId, INDEX_KEY index_key, UpdateMode updateMode, Value[] values) {
+        this(entityId, index_key, updateMode, null, values);
     }
 
-    ValueIndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Value[] before, Value[] values )
-    {
-        super( entityId, indexKey, updateMode );
-        validateValuesLength( indexKey, before, values );
+    ValueIndexEntryUpdate(long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Value[] before, Value[] values) {
+        super(entityId, indexKey, updateMode);
+        validateValuesLength(indexKey, before, values);
 
         this.before = before;
         this.values = values;
     }
 
-    public Value[] values()
-    {
+    public Value[] values() {
         return values;
     }
 
-    public Value[] beforeValues()
-    {
-        if ( before == null )
-        {
-            throw new UnsupportedOperationException( "beforeValues is only valid for `UpdateMode.CHANGED" );
+    public Value[] beforeValues() {
+        if (before == null) {
+            throw new UnsupportedOperationException("beforeValues is only valid for `UpdateMode.CHANGED");
         }
         return before;
     }
 
     @Override
-    public long roughSizeOfUpdate()
-    {
-        return heapSizeOf( values ) + (updateMode() == UpdateMode.CHANGED ? heapSizeOf( before ) : 0);
+    public long roughSizeOfUpdate() {
+        return heapSizeOf(values) + (updateMode() == UpdateMode.CHANGED ? heapSizeOf(before) : 0);
     }
 
     @Override
-    protected boolean valueEquals( IndexEntryUpdate<?> o )
-    {
-        if ( !(o instanceof ValueIndexEntryUpdate<?> that) )
-        {
+    protected boolean valueEquals(IndexEntryUpdate<?> o) {
+        if (!(o instanceof ValueIndexEntryUpdate<?> that)) {
             return false;
         }
-        if ( !Arrays.equals( before, that.before ) )
-        {
+        if (!Arrays.equals(before, that.before)) {
             return false;
         }
-        return Arrays.equals( values, that.values );
+        return Arrays.equals(values, that.values);
     }
 
     @Override
-    protected int valueHash()
-    {
-        int result = Arrays.hashCode( before );
-        result = 31 * result + Arrays.hashCode( values );
+    protected int valueHash() {
+        int result = Arrays.hashCode(before);
+        result = 31 * result + Arrays.hashCode(values);
         return result;
     }
 
     @Override
-    protected String valueToString()
-    {
-        return String.format( "beforeValues=%s, values=%s", Arrays.toString( before ), Arrays.toString( values ) );
+    protected String valueToString() {
+        return String.format("beforeValues=%s, values=%s", Arrays.toString(before), Arrays.toString(values));
     }
 
     @Override
-    public String toString()
-    {
-        return "ValueIndexEntryUpdate{" + "entity=" + getEntityId() + ", before=" + Arrays.toString( before ) + ", values=" + Arrays.toString( values ) + '}';
+    public String toString() {
+        return "ValueIndexEntryUpdate{" + "entity=" + getEntityId() + ", before=" + Arrays.toString(before)
+                + ", values=" + Arrays.toString(values) + '}';
     }
 
-    private static void validateValuesLength( SchemaDescriptorSupplier indexKey, Value[] before, Value[] values )
-    {
+    private static void validateValuesLength(SchemaDescriptorSupplier indexKey, Value[] before, Value[] values) {
         // we do not support partial index entries
-        assert indexKey.schema().getPropertyIds().length == values.length :
-                format( "ValueIndexEntryUpdate values must be of same length as index compositeness. " +
-                        "Index on %s, but got values %s", indexKey.schema().toString(), Arrays.toString( values ) );
+        assert indexKey.schema().getPropertyIds().length == values.length
+                : format(
+                        "ValueIndexEntryUpdate values must be of same length as index compositeness. "
+                                + "Index on %s, but got values %s",
+                        indexKey.schema().toString(), Arrays.toString(values));
         assert before == null || before.length == values.length;
     }
 
-    private static long heapSizeOf( Value[] values )
-    {
+    private static long heapSizeOf(Value[] values) {
         long size = 0;
-        if ( values != null )
-        {
-            for ( Value value : values )
-            {
-                if ( value != null )
-                {
-                    size += heapSizeOf( value );
+        if (values != null) {
+            for (Value value : values) {
+                if (value != null) {
+                    size += heapSizeOf(value);
                 }
             }
         }
         return size;
     }
 
-    private static long heapSizeOf( Value value )
-    {
-        return HeapEstimator.sizeOf( value.asObject() );
+    private static long heapSizeOf(Value value) {
+        return HeapEstimator.sizeOf(value.asObject());
     }
 }

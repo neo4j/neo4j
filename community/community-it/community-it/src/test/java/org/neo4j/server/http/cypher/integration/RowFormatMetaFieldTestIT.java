@@ -19,17 +19,6 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.server.HTTP;
-import org.neo4j.test.server.HTTP.Response;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
@@ -38,96 +27,91 @@ import static org.neo4j.server.http.cypher.integration.TransactionConditions.row
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.rowContainsMetaRelsAtIndex;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
-{
-    private final HTTP.Builder http = HTTP.withBaseUri( container().getBaseUri() );
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.test.server.HTTP;
+import org.neo4j.test.server.HTTP.Response;
+
+public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase {
+    private final HTTP.Builder http = HTTP.withBaseUri(container().getBaseUri());
 
     private String commitResource;
 
     @BeforeEach
-    public void setUp()
-    {
+    public void setUp() {
         // begin
-        Response begin = http.POST( txUri() );
+        Response begin = http.POST(txUri());
 
-        assertThat( begin.status() ).isEqualTo( 201 );
-        assertHasTxLocation( begin );
-        try
-        {
-            commitResource = begin.stringFromContent( "commit" );
+        assertThat(begin.status()).isEqualTo(201);
+        assertHasTxLocation(begin);
+        try {
+            commitResource = begin.stringFromContent("commit");
+        } catch (JsonParseException e) {
+            fail("Exception caught when setting up test: " + e.getMessage());
         }
-        catch ( JsonParseException e )
-        {
-            fail( "Exception caught when setting up test: " + e.getMessage() );
-        }
-        assertThat( commitResource ).isEqualTo( begin.location() + "/commit" );
+        assertThat(commitResource).isEqualTo(begin.location() + "/commit");
     }
 
     @AfterEach
-    public void tearDown()
-    {
+    public void tearDown() {
         // empty the database
-        executeTransactionally( "MATCH (n) DETACH DELETE n" );
+        executeTransactionally("MATCH (n) DETACH DELETE n");
     }
 
     @Test
-    public void metaFieldShouldGetCorrectIndex()
-    {
+    public void metaFieldShouldGetCorrectIndex() {
         // given
-        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally("CREATE (:Start)-[:R]->(:End)");
 
         // execute and commit
-        Response commit = http.POST( commitResource,
-                queryAsJsonRow( "MATCH (s:Start)-[r:R]->(e:End) RETURN s, r, 1, e" ) );
+        Response commit = http.POST(commitResource, queryAsJsonRow("MATCH (s:Start)-[r:R]->(e:End) RETURN s, r, 1, e"));
 
-        assertThat( commit ).satisfies( containsNoErrors() );
-        assertThat( commit ).satisfies( rowContainsMetaNodesAtIndex( 0, 3 ) );
-        assertThat( commit ).satisfies( rowContainsMetaRelsAtIndex( 1 ) );
-        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat(commit).satisfies(containsNoErrors());
+        assertThat(commit).satisfies(rowContainsMetaNodesAtIndex(0, 3));
+        assertThat(commit).satisfies(rowContainsMetaRelsAtIndex(1));
+        assertThat(commit.status()).isEqualTo(200);
     }
 
     @Test
-    public void metaFieldShouldGivePathInfoInList()
-    {
+    public void metaFieldShouldGivePathInfoInList() {
         // given
-        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally("CREATE (:Start)-[:R]->(:End)");
 
         // execute and commit
-        Response commit = http.POST( commitResource,
-                queryAsJsonRow( "MATCH p=(s)-[r:R]->(e) RETURN p" ) );
+        Response commit = http.POST(commitResource, queryAsJsonRow("MATCH p=(s)-[r:R]->(e) RETURN p"));
 
-        assertThat( commit ).satisfies( containsNoErrors() );
-        assertThat( commit ).satisfies( rowContainsAMetaListAtIndex( 0 ) );
-        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat(commit).satisfies(containsNoErrors());
+        assertThat(commit).satisfies(rowContainsAMetaListAtIndex(0));
+        assertThat(commit.status()).isEqualTo(200);
     }
 
     @Test
-    public void metaFieldShouldPutPathListAtCorrectIndex()
-    {
+    public void metaFieldShouldPutPathListAtCorrectIndex() {
         // given
-        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally("CREATE (:Start)-[:R]->(:End)");
 
         // execute and commit
-        Response commit = http.POST( commitResource,
-                queryAsJsonRow( "MATCH p=(s)-[r:R]->(e) RETURN 10, p" ) );
+        Response commit = http.POST(commitResource, queryAsJsonRow("MATCH p=(s)-[r:R]->(e) RETURN 10, p"));
 
-        assertThat( commit ).satisfies( containsNoErrors() );
-        assertThat( commit ).satisfies( rowContainsAMetaListAtIndex( 1 ) );
-        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat(commit).satisfies(containsNoErrors());
+        assertThat(commit).satisfies(rowContainsAMetaListAtIndex(1));
+        assertThat(commit.status()).isEqualTo(200);
     }
 
-    private void executeTransactionally( String query )
-    {
+    private void executeTransactionally(String query) {
         GraphDatabaseService database = graphdb();
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.execute( query );
+        try (Transaction transaction = database.beginTx()) {
+            transaction.execute(query);
             transaction.commit();
         }
     }
 
-    private static HTTP.RawPayload queryAsJsonRow( String query )
-    {
-        return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'row' ] } ] }" );
+    private static HTTP.RawPayload queryAsJsonRow(String query) {
+        return quotedJson("{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'row' ] } ] }");
     }
 }

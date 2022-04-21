@@ -38,6 +38,7 @@ import scala.annotation.tailrec
  * This information can be used in planning.
  */
 sealed trait ExecutionModel {
+
   /**
    * @param maxCardinality the maximum cardinality when combining plans to a Cartesian Product with the returned ordering.
    * @return an Ordering for plans to combine them with Cartesian Products.
@@ -71,7 +72,9 @@ object ExecutionModel {
 
   case object Volcano extends ExecutionModel {
     override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = VolcanoCartesianOrdering
-    override def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize = VolcanoBatchSize
+
+    override def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize =
+      VolcanoBatchSize
     override def providedOrderPreserving: Boolean = true
     override def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = false
   }
@@ -79,6 +82,7 @@ object ExecutionModel {
   case class BatchedSingleThreaded(smallBatchSize: Int, bigBatchSize: Int) extends Batched {
     override def providedOrderPreserving: Boolean = true
   }
+
   case class BatchedParallel(smallBatchSize: Int, bigBatchSize: Int) extends Batched {
     override def providedOrderPreserving: Boolean = false
   }
@@ -98,11 +102,17 @@ object ExecutionModel {
     /**
      * Select the batch size for executing a logical plan.
      */
-    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: EffectiveCardinalities, explicitBatchSize: Option[Long]): Int = {
+    def selectBatchSize(
+      logicalPlan: LogicalPlan,
+      cardinalities: EffectiveCardinalities,
+      explicitBatchSize: Option[Long]
+    ): Int = {
       explicitBatchSize match {
         case Some(explicitSize) =>
           val fittedBatchSize = fitBatchSize(explicitSize)
-          fittedBatchSize.getOrElse(throw new CantCompileQueryException(s"The periodic commit batch size $explicitSize is not supported"))
+          fittedBatchSize.getOrElse(
+            throw new CantCompileQueryException(s"The periodic commit batch size $explicitSize is not supported")
+          )
 
         case None =>
           val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
@@ -156,8 +166,8 @@ object ExecutionModel {
       def fit(n: Long, fac: Long = 2): Option[Int] = {
         fac + fac > n match {
           case false if n % fac == 0 && p(n / fac) => Some((n / fac).toInt)
-          case false                 => fit(n, fac + 1)
-          case true                  => None
+          case false                               => fit(n, fac + 1)
+          case true                                => None
         }
       }
       fit(n)
@@ -167,7 +177,8 @@ object ExecutionModel {
       if (maxCardinality.toLong > bigBatchSize) bigBatchSize else smallBatchSize
     }
 
-    override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = new BatchedCartesianOrdering(selectBatchSize(maxCardinality.amount))
+    override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering =
+      new BatchedCartesianOrdering(selectBatchSize(maxCardinality.amount))
 
     override def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = plan match {
       case _: Union =>
@@ -178,6 +189,7 @@ object ExecutionModel {
   }
 
   object Batched {
+
     val default: Batched = BatchedSingleThreaded(
       GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small.defaultValue(),
       GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.defaultValue()
@@ -197,6 +209,5 @@ object ExecutionModel {
   case class BatchedBatchSize(size: Cardinality) extends SelectedBatchSize {
     def numBatchesFor(cardinality: Cardinality): Cardinality = (cardinality * size.inverse).ceil
   }
-
 
 }

@@ -19,72 +19,66 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
+
 import java.util.Arrays;
 import java.util.StringJoiner;
-
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
-
-// <Boolean> as generic raw type is mostly for show, this class overrides default object:y behaviour to create primitive boolean[] array
-class BooleanArrayType extends AbstractArrayType<Boolean>
-{
+// <Boolean> as generic raw type is mostly for show, this class overrides default object:y behaviour to create primitive
+// boolean[] array
+class BooleanArrayType extends AbstractArrayType<Boolean> {
     // Affected key state:
     // long0Array
 
-    BooleanArrayType( byte typeId )
-    {
-        super( ValueGroup.BOOLEAN_ARRAY, typeId, ( o1, o2, i ) -> BooleanType.compare(
-                        o1.long0Array[i],
-                        o2.long0Array[i] ),
+    BooleanArrayType(byte typeId) {
+        super(
+                ValueGroup.BOOLEAN_ARRAY,
+                typeId,
+                (o1, o2, i) -> BooleanType.compare(o1.long0Array[i], o2.long0Array[i]),
                 null,
-                ( c, k, i ) -> BooleanType.put( c, k.long0Array[i] ),
-                BooleanType::read, null, ValueWriter.ArrayType.BOOLEAN );
+                (c, k, i) -> BooleanType.put(c, k.long0Array[i]),
+                BooleanType::read,
+                null,
+                ValueWriter.ArrayType.BOOLEAN);
     }
 
     @Override
-    int valueSize( GenericKey<?> state )
-    {
-        return arrayKeySize( state, Types.SIZE_BOOLEAN );
+    int valueSize(GenericKey<?> state) {
+        return arrayKeySize(state, Types.SIZE_BOOLEAN);
     }
 
     @Override
-    void copyValue( GenericKey<?> to, GenericKey<?> from, int length )
-    {
-        initializeArray( to, length, null );
-        System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
+    void copyValue(GenericKey<?> to, GenericKey<?> from, int length) {
+        initializeArray(to, length, null);
+        System.arraycopy(from.long0Array, 0, to.long0Array, 0, length);
     }
 
     @Override
-    void initializeArray( GenericKey<?> key, int length, ValueWriter.ArrayType arrayType )
-    {
-        key.long0Array = ensureBigEnough( key.long0Array, length );
+    void initializeArray(GenericKey<?> key, int length, ValueWriter.ArrayType arrayType) {
+        key.long0Array = ensureBigEnough(key.long0Array, length);
     }
 
     @Override
-    Value asValue( GenericKey<?> state )
-    {
+    Value asValue(GenericKey<?> state) {
         boolean[] array = new boolean[state.arrayLength];
-        for ( int i = 0; i < state.arrayLength; i++ )
-        {
-            array[i] = BooleanType.asValueRaw( state.long0Array[i] );
+        for (int i = 0; i < state.arrayLength; i++) {
+            array[i] = BooleanType.asValueRaw(state.long0Array[i]);
         }
-        return Values.of( array );
+        return Values.of(array);
     }
 
-    static void write( GenericKey<?> state, int offset, boolean value )
-    {
+    static void write(GenericKey<?> state, int offset, boolean value) {
         state.long0Array[offset] = value ? TRUE : FALSE;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
-    {
-        joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
-        super.addTypeSpecificDetails( joiner, state );
+    protected void addTypeSpecificDetails(StringJoiner joiner, GenericKey<?> state) {
+        joiner.add("long0Array=" + Arrays.toString(state.long0Array));
+        super.addTypeSpecificDetails(joiner, state);
     }
 }

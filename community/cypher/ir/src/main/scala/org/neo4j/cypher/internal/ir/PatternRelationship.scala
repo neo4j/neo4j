@@ -22,8 +22,13 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 
-final case class PatternRelationship(name: String, nodes: (String, String), dir: SemanticDirection,
-                                     types: Seq[RelTypeName], length: PatternLength) {
+final case class PatternRelationship(
+  name: String,
+  nodes: (String, String),
+  dir: SemanticDirection,
+  types: Seq[RelTypeName],
+  length: PatternLength
+) {
 
   def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
@@ -33,7 +38,9 @@ final case class PatternRelationship(name: String, nodes: (String, String), dir:
     } else if (node == right) {
       left
     } else {
-      throw new IllegalArgumentException(s"Did not provide either side as an argument to otherSide. Rel: $this, argument: $node")
+      throw new IllegalArgumentException(
+        s"Did not provide either side as an argument to otherSide. Rel: $this, argument: $node"
+      )
     }
 
   def coveredIds: Set[String] = Set(name, left, right)
@@ -44,21 +51,22 @@ final case class PatternRelationship(name: String, nodes: (String, String), dir:
 
   def inOrder = dir match {
     case SemanticDirection.INCOMING => (right, left)
-    case _ => (left, right)
+    case _                          => (left, right)
   }
 
   override def toString: String = {
     val lArrow = if (dir == SemanticDirection.INCOMING) "<" else ""
     val rArrow = if (dir == SemanticDirection.OUTGOING) ">" else ""
-    val typesStr = if (types.isEmpty) {
-      ""
-    } else {
-      types.map(_.name).mkString(":", "|", "")
-    }
+    val typesStr =
+      if (types.isEmpty) {
+        ""
+      } else {
+        types.map(_.name).mkString(":", "|", "")
+      }
     val lengthStr = length match {
-      case SimplePatternLength => ""
-      case VarPatternLength(1, None) => "*"
-      case VarPatternLength(x, None) => s"*$x.."
+      case SimplePatternLength              => ""
+      case VarPatternLength(1, None)        => "*"
+      case VarPatternLength(x, None)        => s"*$x.."
       case VarPatternLength(min, Some(max)) => s"*$min..$max"
     }
     s"(${nodes._1})$lArrow-[$name$typesStr$lengthStr]-$rArrow(${nodes._2})"

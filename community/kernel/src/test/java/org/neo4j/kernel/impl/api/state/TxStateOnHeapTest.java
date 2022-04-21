@@ -22,24 +22,18 @@ package org.neo4j.kernel.impl.api.state;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 
-class TxStateOnHeapTest extends TxStateTest
-{
-    TxStateOnHeapTest()
-    {
-        super( new CollectionsFactorySupplier()
-               {
-                   @Override
-                   public CollectionsFactory create()
-                   {
-                       return CollectionsFactorySupplier.ON_HEAP.create();
-                   }
+class TxStateOnHeapTest extends TxStateTest {
+    TxStateOnHeapTest() {
+        super(new CollectionsFactorySupplier() {
+            @Override
+            public CollectionsFactory create() {
+                return CollectionsFactorySupplier.ON_HEAP.create();
+            }
 
-                   @Override
-                   public String toString()
-                   {
-                       return "On heap";
-                   }
-               }
-        );
+            @Override
+            public String toString() {
+                return "On heap";
+            }
+        });
     }
 }

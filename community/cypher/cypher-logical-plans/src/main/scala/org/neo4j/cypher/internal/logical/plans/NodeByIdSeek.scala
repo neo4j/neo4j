@@ -26,11 +26,13 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * For each nodeId in 'nodeIds', fetch the corresponding node. Produce one row with the contents of argument and
  * the node (assigned to 'idName').
  */
-case class NodeByIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[String])(implicit idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
+case class NodeByIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[String])(implicit idGen: IdGen)
+    extends NodeLogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName
 
   override def usedVariables: Set[String] = nodeIds.expr.dependencies.map(_.name)
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeByIdSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeByIdSeek =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }

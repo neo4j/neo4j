@@ -19,47 +19,46 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.InternalLog;
-
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-class ConfigDiagnosticsTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.InternalLog;
+
+class ConfigDiagnosticsTest {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private final InternalLog log = logProvider.getLog( ConfigDiagnostics.class );
+    private final InternalLog log = logProvider.getLog(ConfigDiagnostics.class);
 
     @Test
-    void dumpConfigValues()
-    {
+    void dumpConfigValues() {
         Config config = Config.newBuilder()
-                .set( default_database, "testDb" )
-                .set( max_concurrent_transactions, 400 )
+                .set(default_database, "testDb")
+                .set(max_concurrent_transactions, 400)
                 .build();
 
-        ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
-        configDiagnostics.dump( log::info );
+        ConfigDiagnostics configDiagnostics = new ConfigDiagnostics(config);
+        configDiagnostics.dump(log::info);
 
-        assertThat( logProvider ).containsMessages( "DBMS provided settings:",
-                                                     max_concurrent_transactions.name() + "=400",
-                                                     default_database.name() + "=testDb" )
-                                 .doesNotContainMessage( "No provided DBMS settings." );
+        assertThat(logProvider)
+                .containsMessages(
+                        "DBMS provided settings:",
+                        max_concurrent_transactions.name() + "=400",
+                        default_database.name() + "=testDb")
+                .doesNotContainMessage("No provided DBMS settings.");
     }
 
     @Test
-    void dumpDefaultConfig()
-    {
+    void dumpDefaultConfig() {
         Config config = Config.defaults();
 
-        ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
-        configDiagnostics.dump( log::info );
+        ConfigDiagnostics configDiagnostics = new ConfigDiagnostics(config);
+        configDiagnostics.dump(log::info);
 
-        assertThat( logProvider ).containsMessages( "No provided DBMS settings." )
-                                 .doesNotContainMessage( "DBMS provided settings" );
+        assertThat(logProvider)
+                .containsMessages("No provided DBMS settings.")
+                .doesNotContainMessage("DBMS provided settings");
     }
 }

@@ -19,34 +19,29 @@
  */
 package org.neo4j.harness.internal;
 
-import org.apache.commons.lang3.SystemUtils;
+import static org.neo4j.kernel.impl.factory.DbmsInfo.COMMUNITY;
 
 import java.nio.file.Path;
-
+import org.apache.commons.lang3.SystemUtils;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 
-import static org.neo4j.kernel.impl.factory.DbmsInfo.COMMUNITY;
-
-public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder
-{
-    public InProcessNeo4jBuilder()
-    {
-        this( SystemUtils.getJavaIoTmpDir().toPath() );
+public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder {
+    public InProcessNeo4jBuilder() {
+        this(SystemUtils.getJavaIoTmpDir().toPath());
     }
 
-    public InProcessNeo4jBuilder( Path workingDir )
-    {
-        withWorkingDir( workingDir );
+    public InProcessNeo4jBuilder(Path workingDir) {
+        withWorkingDir(workingDir);
     }
 
     @Override
-    protected DatabaseManagementService createNeo( Config config, ExternalDependencies dependencies )
-    {
-        DatabaseManagementServiceFactory facadeFactory = new DatabaseManagementServiceFactory( COMMUNITY, CommunityEditionModule::new );
-        return facadeFactory.build( config, dependencies );
+    protected DatabaseManagementService createNeo(Config config, ExternalDependencies dependencies) {
+        DatabaseManagementServiceFactory facadeFactory =
+                new DatabaseManagementServiceFactory(COMMUNITY, CommunityEditionModule::new);
+        return facadeFactory.build(config, dependencies);
     }
 }

@@ -19,23 +19,21 @@
  */
 package org.neo4j.logging;
 
-
 /**
  * Used to obtain a {@link InternalLog} for a specified context
  */
-public interface InternalLogProvider extends LogProvider
-{
+public interface InternalLogProvider extends LogProvider {
     /**
      * @param loggingClass the context for the returned {@link InternalLog}
      * @return a {@link InternalLog} that logs messages with the {@code loggingClass} as the context
      */
     @Override
-    InternalLog getLog( Class<?> loggingClass );
+    InternalLog getLog(Class<?> loggingClass);
 
     /**
      * @param name the context for the returned {@link InternalLog}
      * @return a {@link InternalLog} that logs messages with the specified name as the context
      */
     @Override
-    InternalLog getLog( String name );
+    InternalLog getLog(String name);
 }

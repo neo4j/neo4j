@@ -22,9 +22,8 @@ package org.neo4j.server;
 import java.nio.file.Path;
 import java.util.Map;
 
-public interface Bootstrapper
-{
-    int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands );
+public interface Bootstrapper {
+    int start(Path homeDir, Path configFile, Map<String, String> configOverrides, boolean expandCommands);
 
     int stop();
 }

@@ -19,8 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.jupiter.api.Test;
+import static java.util.stream.StreamSupport.stream;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
@@ -40,74 +46,75 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.stream.StreamSupport.stream;
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @DbmsExtension
-class LabelScanNodeViewTracingIT
-{
+class LabelScanNodeViewTracingIT {
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private StorageEngine storageEngine;
+
     @Inject
     private LockService lockService;
+
     @Inject
     private JobScheduler jobScheduler;
+
     @Inject
     private IndexingService indexingService;
 
     @Test
-    void tracePageCacheAccess() throws Exception
-    {
+    void tracePageCacheAccess() throws Exception {
         int nodeCount = 1000;
-        var label = Label.label( "marker" );
-        try ( var tx = database.beginTx() )
-        {
-            for ( int i = 0; i < nodeCount; i++ )
-            {
-                var node = tx.createNode( label );
-                node.setProperty( "a", randomAscii( 10 ) );
+        var label = Label.label("marker");
+        try (var tx = database.beginTx()) {
+            for (int i = 0; i < nodeCount; i++) {
+                var node = tx.createNode(label);
+                node.setProperty("a", randomAscii(10));
             }
             tx.commit();
         }
 
-        var labelId = getLabelId( label );
+        var labelId = getLabelId(label);
 
         var cacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
-        IndexProxy indexProxy = indexingService.getIndexProxy( findTokenIndex() );
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        IndexProxy indexProxy = indexingService.getIndexProxy(findTokenIndex());
 
-        var scan = new LabelIndexedNodeStoreScan( Config.defaults(), storageEngine.newReader(), storageEngine::createStorageCursors, lockService,
-                indexProxy.newTokenReader(), new TestTokenScanConsumer(), null, new int[]{labelId}, any -> false, false, jobScheduler, contextFactory,
-                INSTANCE );
-        scan.run( StoreScan.NO_EXTERNAL_UPDATES );
+        var scan = new LabelIndexedNodeStoreScan(
+                Config.defaults(),
+                storageEngine.newReader(),
+                storageEngine::createStorageCursors,
+                lockService,
+                indexProxy.newTokenReader(),
+                new TestTokenScanConsumer(),
+                null,
+                new int[] {labelId},
+                any -> false,
+                false,
+                jobScheduler,
+                contextFactory,
+                INSTANCE);
+        scan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
-        assertThat( cacheTracer.pins() ).isEqualTo( 102 );
-        assertThat( cacheTracer.unpins() ).isEqualTo( 102 );
-        assertThat( cacheTracer.hits() ).isEqualTo( 102 );
+        assertThat(cacheTracer.pins()).isEqualTo(102);
+        assertThat(cacheTracer.unpins()).isEqualTo(102);
+        assertThat(cacheTracer.hits()).isEqualTo(102);
     }
 
-    private int getLabelId( Label label )
-    {
-        try ( var tx = database.beginTx() )
-        {
-            return ((InternalTransaction)tx).kernelTransaction().tokenRead().nodeLabel( label.name() );
+    private int getLabelId(Label label) {
+        try (var tx = database.beginTx()) {
+            return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel(label.name());
         }
     }
 
-    private IndexDescriptor findTokenIndex()
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
-            var nodeIndex = stream( tx.schema().getIndexes().spliterator(), false )
-                    .map( indexDef -> ((IndexDefinitionImpl) indexDef).getIndexReference() )
-                    .filter( index -> index.isTokenIndex() && index.schema().entityType() == EntityType.NODE ).findFirst();
-            assertTrue( nodeIndex.isPresent() );
+    private IndexDescriptor findTokenIndex() {
+        try (Transaction tx = database.beginTx()) {
+            var nodeIndex = stream(tx.schema().getIndexes().spliterator(), false)
+                    .map(indexDef -> ((IndexDefinitionImpl) indexDef).getIndexReference())
+                    .filter(index -> index.isTokenIndex() && index.schema().entityType() == EntityType.NODE)
+                    .findFirst();
+            assertTrue(nodeIndex.isPresent());
             return nodeIndex.get();
         }
     }

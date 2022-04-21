@@ -20,18 +20,15 @@
 package org.neo4j.bolt.transport.pipeline;
 
 import io.netty.channel.Channel;
-
 import java.time.Duration;
-
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
 /**
  * Protect the channel from unauthenticated users by limiting the resources that they can access to.
  */
-public class UnauthenticatedChannelProtector implements ChannelProtector
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( UnauthenticatedChannelProtector.class );
+public class UnauthenticatedChannelProtector implements ChannelProtector {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(UnauthenticatedChannelProtector.class);
 
     private final Channel channel;
     private final long maxMessageSize;
@@ -39,64 +36,60 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
 
     private AuthenticationTimeoutHandler timeoutHandler;
 
-    public UnauthenticatedChannelProtector( Channel ch, Duration channelTimeout, long maxMessageSize, MemoryTracker memoryTracker )
-    {
+    public UnauthenticatedChannelProtector(
+            Channel ch, Duration channelTimeout, long maxMessageSize, MemoryTracker memoryTracker) {
         this.channel = ch;
         this.maxMessageSize = maxMessageSize;
         this.memoryTracker = memoryTracker;
 
-        memoryTracker.allocateHeap( AuthenticationTimeoutHandler.SHALLOW_SIZE );
-        this.timeoutHandler = new AuthenticationTimeoutHandler( channelTimeout );
+        memoryTracker.allocateHeap(AuthenticationTimeoutHandler.SHALLOW_SIZE);
+        this.timeoutHandler = new AuthenticationTimeoutHandler(channelTimeout);
     }
 
     @Override
-    public void afterChannelCreated()
-    {
+    public void afterChannelCreated() {
         // Adds auth timeout handlers.
         // The timer is counting down after installation.
-        this.channel.pipeline().addLast( timeoutHandler );
+        this.channel.pipeline().addLast(timeoutHandler);
     }
 
     @Override
-    public void beforeBoltProtocolInstalled()
-    {
-        memoryTracker.allocateHeap( BytesAccumulator.SHALLOW_SIZE );
+    public void beforeBoltProtocolInstalled() {
+        memoryTracker.allocateHeap(BytesAccumulator.SHALLOW_SIZE);
 
         // Adds limits on how many bytes are allowed.
-        this.channel.pipeline().addLast( new BytesAccumulator( maxMessageSize ) );
+        this.channel.pipeline().addLast(new BytesAccumulator(maxMessageSize));
     }
 
     @Override
-    public void afterRequestReceived()
-    {
+    public void afterRequestReceived() {
         // There is a race here between the bolt thread removing the handler
         // and netty receiving and request. Here we create a local var to
         // prevent a NPE.
         var localTimeoutHandler = timeoutHandler;
-        if ( localTimeoutHandler != null )
-        {
-            localTimeoutHandler.setRequestReceived( true );
+        if (localTimeoutHandler != null) {
+            localTimeoutHandler.setRequestReceived(true);
         }
     }
 
     @Override
-    public void disable()
-    {
-        // Netty ensures that channel pipelines are cleared when a channel becomes inactive, causing further interactions with the pipeline to fail.
-        // Cleanup of the remaining resources managed by this implementation has already been performed by the time of this call (via the channel inactivity
+    public void disable() {
+        // Netty ensures that channel pipelines are cleared when a channel becomes inactive, causing further
+        // interactions with the pipeline to fail.
+        // Cleanup of the remaining resources managed by this implementation has already been performed by the time of
+        // this call (via the channel inactivity
         // listeners registered during channel initialization).
-        if ( !this.channel.isActive() )
-        {
+        if (!this.channel.isActive()) {
             return;
         }
 
         // Removes auth timeout handlers.
-        this.channel.pipeline().remove( AuthenticationTimeoutHandler.class );
+        this.channel.pipeline().remove(AuthenticationTimeoutHandler.class);
         timeoutHandler = null;
 
         // Remove byte limits
-        this.channel.pipeline().remove( BytesAccumulator.class );
+        this.channel.pipeline().remove(BytesAccumulator.class);
 
-        memoryTracker.releaseHeap( AuthenticationTimeoutHandler.SHALLOW_SIZE + BytesAccumulator.SHALLOW_SIZE );
+        memoryTracker.releaseHeap(AuthenticationTimeoutHandler.SHALLOW_SIZE + BytesAccumulator.SHALLOW_SIZE);
     }
 }

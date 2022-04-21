@@ -29,8 +29,7 @@ import java.util.function.Consumer;
  * and allows to set a target value that when reached, either a heap dump will be taken,
  * or a callback fired, or both.
  */
-public class HeapDumpingMemoryTracker implements MemoryTracker
-{
+public class HeapDumpingMemoryTracker implements MemoryTracker {
     private final MemoryTracker delegate;
     private final HeapDumper heapDumper;
     private long targetHighWaterMark;
@@ -40,14 +39,12 @@ public class HeapDumpingMemoryTracker implements MemoryTracker
     private Consumer<HeapDumpingMemoryTracker> onTargetReached;
     private long lastAllocatedBytes;
 
-    public HeapDumpingMemoryTracker( MemoryTracker delegate )
-    {
+    public HeapDumpingMemoryTracker(MemoryTracker delegate) {
         this.delegate = delegate;
         this.heapDumper = new HeapDumper();
     }
 
-    public void setHeapDumpAtHighWaterMark( long targetHighWaterMark, String heapDumpFileName )
-    {
+    public void setHeapDumpAtHighWaterMark(long targetHighWaterMark, String heapDumpFileName) {
         this.targetHighWaterMark = targetHighWaterMark;
         this.heapDumpFileName = heapDumpFileName;
         this.overwriteExisting = true;
@@ -55,9 +52,12 @@ public class HeapDumpingMemoryTracker implements MemoryTracker
         this.onTargetReached = null;
     }
 
-    public void setHeapDumpAtHighWaterMark( long targetHighWaterMark, String heapDumpFileName, boolean overwriteExisting, boolean liveObjectsOnly,
-            Consumer<HeapDumpingMemoryTracker> onTargetReached )
-    {
+    public void setHeapDumpAtHighWaterMark(
+            long targetHighWaterMark,
+            String heapDumpFileName,
+            boolean overwriteExisting,
+            boolean liveObjectsOnly,
+            Consumer<HeapDumpingMemoryTracker> onTargetReached) {
         this.targetHighWaterMark = targetHighWaterMark;
         this.heapDumpFileName = heapDumpFileName;
         this.overwriteExisting = overwriteExisting;
@@ -65,8 +65,8 @@ public class HeapDumpingMemoryTracker implements MemoryTracker
         this.onTargetReached = onTargetReached;
     }
 
-    public void setCallbackAtHighWaterMark( long targetHighWaterMark, Consumer<HeapDumpingMemoryTracker> onTargetReached )
-    {
+    public void setCallbackAtHighWaterMark(
+            long targetHighWaterMark, Consumer<HeapDumpingMemoryTracker> onTargetReached) {
         this.targetHighWaterMark = targetHighWaterMark;
         this.heapDumpFileName = null; // No heap dump will be done
         this.overwriteExisting = false;
@@ -75,104 +75,84 @@ public class HeapDumpingMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public long usedNativeMemory()
-    {
+    public long usedNativeMemory() {
         return delegate.usedNativeMemory();
     }
 
     @Override
-    public long estimatedHeapMemory()
-    {
+    public long estimatedHeapMemory() {
         return delegate.estimatedHeapMemory();
     }
 
     @Override
-    public void allocateNative( long bytes )
-    {
-        delegate.allocateNative( bytes );
+    public void allocateNative(long bytes) {
+        delegate.allocateNative(bytes);
     }
 
     @Override
-    public void releaseNative( long bytes )
-    {
-        delegate.releaseNative( bytes );
+    public void releaseNative(long bytes) {
+        delegate.releaseNative(bytes);
     }
 
     @Override
-    public void allocateHeap( long bytes )
-    {
-        delegate.allocateHeap( bytes );
-        checkIfTargetHighWaterMarkReached( bytes );
+    public void allocateHeap(long bytes) {
+        delegate.allocateHeap(bytes);
+        checkIfTargetHighWaterMarkReached(bytes);
     }
 
     @Override
-    public void releaseHeap( long bytes )
-    {
-        delegate.releaseHeap( bytes );
+    public void releaseHeap(long bytes) {
+        delegate.releaseHeap(bytes);
     }
 
     @Override
-    public long heapHighWaterMark()
-    {
+    public long heapHighWaterMark() {
         return delegate.heapHighWaterMark();
     }
 
     @Override
-    public void reset()
-    {
+    public void reset() {
         delegate.reset();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         delegate.close();
     }
 
     @Override
-    public MemoryTracker getScopedMemoryTracker()
-    {
-        return new ScopedMemoryTracker( this );
+    public MemoryTracker getScopedMemoryTracker() {
+        return new ScopedMemoryTracker(this);
     }
 
-    public long lastAllocatedBytes()
-    {
+    public long lastAllocatedBytes() {
         return lastAllocatedBytes;
     }
 
-    private void checkIfTargetHighWaterMarkReached( long bytes )
-    {
+    private void checkIfTargetHighWaterMarkReached(long bytes) {
         var currentHighWaterMark = delegate.heapHighWaterMark();
-        if ( targetHighWaterMark > 0 && currentHighWaterMark >= targetHighWaterMark )
-        {
+        if (targetHighWaterMark > 0 && currentHighWaterMark >= targetHighWaterMark) {
             lastAllocatedBytes = bytes;
             doHeapDump();
-            if ( onTargetReached != null )
-            {
-                onTargetReached.accept( this );
+            if (onTargetReached != null) {
+                onTargetReached.accept(this);
             }
             targetHighWaterMark = 0; // Do not dump again until a new target is set
         }
     }
 
-    private void doHeapDump()
-    {
-        if ( heapDumpFileName == null )
-        {
+    private void doHeapDump() {
+        if (heapDumpFileName == null) {
             return;
         }
 
-        if ( overwriteExisting && Files.exists( Path.of( heapDumpFileName ) ) )
-        {
-            try
-            {
-                Files.delete( Path.of( heapDumpFileName ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
+        if (overwriteExisting && Files.exists(Path.of(heapDumpFileName))) {
+            try {
+                Files.delete(Path.of(heapDumpFileName));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
-        heapDumper.createHeapDump( heapDumpFileName, liveObjectsOnly );
+        heapDumper.createHeapDump(heapDumpFileName, liveObjectsOnly);
     }
 }

@@ -19,6 +19,10 @@
  */
 package org.neo4j.bolt.runtime;
 
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.utf8Value;
+
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.ListValue;
@@ -26,57 +30,42 @@ import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.utf8Value;
-
 /** Takes execution plans and converts them to the subset of types used in the Neo4j type system */
-class ExecutionPlanConverter
-{
-    private ExecutionPlanConverter()
-    {
-    }
+class ExecutionPlanConverter {
+    private ExecutionPlanConverter() {}
 
-    public static MapValue convert( ExecutionPlanDescription plan )
-    {
+    public static MapValue convert(ExecutionPlanDescription plan) {
         boolean hasProfilerStatistics = plan.hasProfilerStatistics();
         int size = hasProfilerStatistics ? 10 : 4;
-        MapValueBuilder out = new MapValueBuilder( size );
-        out.add( "operatorType", utf8Value( plan.getName() ) );
-        out.add( "args", ValueUtils.asMapValue( plan.getArguments() ) );
-        out.add( "identifiers", ValueUtils.asListValue( plan.getIdentifiers() ) );
-        out.add( "children", children( plan ) );
-        if ( hasProfilerStatistics )
-        {
+        MapValueBuilder out = new MapValueBuilder(size);
+        out.add("operatorType", utf8Value(plan.getName()));
+        out.add("args", ValueUtils.asMapValue(plan.getArguments()));
+        out.add("identifiers", ValueUtils.asListValue(plan.getIdentifiers()));
+        out.add("children", children(plan));
+        if (hasProfilerStatistics) {
             ExecutionPlanDescription.ProfilerStatistics profile = plan.getProfilerStatistics();
-            if ( profile.hasDbHits() )
-            {
-                out.add( "dbHits", longValue( profile.getDbHits() ) );
+            if (profile.hasDbHits()) {
+                out.add("dbHits", longValue(profile.getDbHits()));
             }
-            if ( profile.hasPageCacheStats() )
-            {
-                out.add( "pageCacheHits", longValue( profile.getPageCacheHits() ) );
-                out.add( "pageCacheMisses", longValue( profile.getPageCacheMisses() ) );
-                out.add( "pageCacheHitRatio", doubleValue( profile.getPageCacheHitRatio() ) );
+            if (profile.hasPageCacheStats()) {
+                out.add("pageCacheHits", longValue(profile.getPageCacheHits()));
+                out.add("pageCacheMisses", longValue(profile.getPageCacheMisses()));
+                out.add("pageCacheHitRatio", doubleValue(profile.getPageCacheHitRatio()));
             }
-            if ( profile.hasRows() )
-            {
-                out.add( "rows", longValue( profile.getRows() ) );
+            if (profile.hasRows()) {
+                out.add("rows", longValue(profile.getRows()));
             }
-            if ( profile.hasTime() )
-            {
-                out.add( "time", longValue( profile.getTime() ) );
+            if (profile.hasTime()) {
+                out.add("time", longValue(profile.getTime()));
             }
         }
         return out.build();
     }
 
-    private static ListValue children( ExecutionPlanDescription plan )
-    {
+    private static ListValue children(ExecutionPlanDescription plan) {
         ListValueBuilder builder = ListValueBuilder.newListBuilder();
-        for ( ExecutionPlanDescription child : plan.getChildren() )
-        {
-            builder.add( convert( child ) );
+        for (ExecutionPlanDescription child : plan.getChildren()) {
+            builder.add(convert(child));
         }
         return builder.build();
     }

@@ -40,18 +40,18 @@ import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.OverlappingDeletedLabels
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
-  private implicit val semanticTable: SemanticTable = SemanticTable()
+  implicit private val semanticTable: SemanticTable = SemanticTable()
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()
@@ -61,7 +61,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("overlap when reading all labels and creating a specific label") {
-    //MATCH (a) CREATE (:L)
+    // MATCH (a) CREATE (:L)
     val qg = QueryGraph(patternNodes = Set("a"))
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
@@ -69,10 +69,11 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("no overlap when reading all labels and not setting any label") {
-    //... WITH a, labels(a) as myLabels SET a.prop=[]
+    // ... WITH a, labels(a) as myLabels SET a.prop=[]
     val qg = QueryGraph(
       argumentIds = Set("a"),
-      selections = Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
+      selections =
+        Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(setProperty("a", "prop", "[]")))
 
@@ -80,10 +81,11 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("overlap when reading all labels and removing a label") {
-    //... WITH a, labels(a) as myLabels REMOVE a:Label
+    // ... WITH a, labels(a) as myLabels REMOVE a:Label
     val qg = QueryGraph(
       argumentIds = Set("a"),
-      selections = Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
+      selections =
+        Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(removeLabel("a", "Label")))
 
@@ -91,7 +93,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("overlap when reading and creating the same label") {
-    //MATCH (a:L) CREATE (b:L)
+    // MATCH (a:L) CREATE (b:L)
     val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
@@ -100,8 +102,9 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("no overlap when reading and creating different labels") {
-    //MATCH (a:L1:L2) CREATE (b:L3)
-    val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
+    // MATCH (a:L1:L2) CREATE (b:L3)
+    val selections =
+      Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L3")))
 
@@ -109,9 +112,9 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("no overlap when properties don't overlap and no label on read GQ, but a label on write QG") {
-    //MATCH (a {foo: 42}) CREATE (a:L)
-    val selections = Selections.from(In(Variable("a")(pos),
-      Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    // MATCH (a {foo: 42}) CREATE (a:L)
+    val selections =
+      Selections.from(In(Variable("a")(pos), Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
@@ -119,10 +122,11 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("overlap when properties don't overlap but labels explicitly do") {
-    //MATCH (a:L {foo: 42}) CREATE (a:L) assuming `a` is unstable
+    // MATCH (a:L {foo: 42}) CREATE (a:L) assuming `a` is unstable
     val selections = Selections.from(Seq(
-      In(Variable("a")(pos),Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
-      HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)))
+      In(Variable("a")(pos), Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
+      HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)
+    ))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
@@ -130,62 +134,93 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("overlap when reading all rel types and creating a specific type") {
-    //MATCH (a)-[r]->(b)  CREATE (a)-[r2:T]->(b)
+    // MATCH (a)-[r]->(b)  CREATE (a)-[r2:T]->(b)
     val qg = QueryGraph(patternRelationships =
-      Set(PatternRelationship("r", ("a", "b"),
-        SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)))
+      Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+    )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T", "b")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
   }
 
   test("no overlap when reading and writing different rel types") {
-    //MATCH (a)-[r:T1]->(b)  CREATE (a)-[r2:T]->(b)
+    // MATCH (a)-[r:T1]->(b)  CREATE (a)-[r2:T]->(b)
     val qg = QueryGraph(patternRelationships =
-      Set(PatternRelationship("r", ("a", "b"),
-        SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
+      Set(PatternRelationship(
+        "r",
+        ("a", "b"),
+        SemanticDirection.OUTGOING,
+        Seq(RelTypeName("T1")(pos)),
+        SimplePatternLength
+      ))
+    )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T2", "b")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq.empty
   }
 
   test("overlap when reading and writing same rel types") {
-    //MATCH (a)-[r:T1]->(b)  CREATE (a)-[r2:T1]->(b)
+    // MATCH (a)-[r:T1]->(b)  CREATE (a)-[r2:T1]->(b)
     val qg = QueryGraph(patternRelationships =
-      Set(PatternRelationship("r", ("a", "b"),
-        SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
+      Set(PatternRelationship(
+        "r",
+        ("a", "b"),
+        SemanticDirection.OUTGOING,
+        Seq(RelTypeName("T1")(pos)),
+        SimplePatternLength
+      ))
+    )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T1", "b")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
   }
 
   test("no overlap when reading and writing same rel types but matching on rel property") {
-    //MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
-    val selections = Selections.from(In(Variable("a")(pos),
-      Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
-    val qg = QueryGraph(patternRelationships =
-      Set(PatternRelationship("r", ("a", "b"),
-        SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),
-      selections = selections)
+    // MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
+    val selections =
+      Selections.from(In(Variable("a")(pos), Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    val qg = QueryGraph(
+      patternRelationships =
+        Set(PatternRelationship(
+          "r",
+          ("a", "b"),
+          SemanticDirection.OUTGOING,
+          Seq(RelTypeName("T1")(pos)),
+          SimplePatternLength
+        )),
+      selections = selections
+    )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T1", "b")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq.empty
   }
 
   test("overlap when reading and writing same property and rel type") {
-    //MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
-    val selections = Selections.from(In(Variable("a")(pos),
-      Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
-    val qg = QueryGraph(patternRelationships =
-      Set(PatternRelationship("r", ("a", "b"),
-        SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),
-      selections = selections)
+    // MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
+    val selections =
+      Selections.from(In(Variable("a")(pos), Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    val qg = QueryGraph(
+      patternRelationships =
+        Set(PatternRelationship(
+          "r",
+          ("a", "b"),
+          SemanticDirection.OUTGOING,
+          Seq(RelTypeName("T1")(pos)),
+          SimplePatternLength
+        )),
+      selections = selections
+    )
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         CreatePattern(
           Nil,
           List(
-            CreateRelationship("r2", "a", RelTypeName("T1")(pos), "b", SemanticDirection.OUTGOING,
+            CreateRelationship(
+              "r2",
+              "a",
+              RelTypeName("T1")(pos),
+              "b",
+              SemanticDirection.OUTGOING,
               Some(
                 MapExpression(Seq(
                   (PropertyKeyName("foo")(pos), SignedDecimalIntegerLiteral("42")(pos))
@@ -194,31 +229,40 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
             )
           )
         )
-      ))
+      )
+    )
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
   }
 
   test("overlap when reading, deleting and merging") {
-    //MATCH (a:L1:L2) DELETE a CREATE (b:L3)
-    val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
+    // MATCH (a:L1:L2) DELETE a CREATE (b:L3)
+    val selections =
+      Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
-      DeleteExpression(Variable("a")(pos), forced = false),
-      MergeNodePattern(
-        CreateNode("b", Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
-        QueryGraph.empty, Seq.empty, Seq.empty)
-    ))
+    val ug = QueryGraph(mutatingPatterns =
+      IndexedSeq(
+        DeleteExpression(Variable("a")(pos), forced = false),
+        MergeNodePattern(
+          CreateNode("b", Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
+          QueryGraph.empty,
+          Seq.empty,
+          Seq.empty
+        )
+      )
+    )
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.DeleteOverlap(Seq("a")))
   }
 
   test("overlap when reading and deleting with collections") {
-    //... WITH collect(a) as col DELETE col[0]
+    // ... WITH collect(a) as col DELETE col[0]
     val qg = QueryGraph(argumentIds = Set("col"))
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
-      DeleteExpression(Variable("col")(pos), forced = false)
-    ))
+    val ug = QueryGraph(mutatingPatterns =
+      IndexedSeq(
+        DeleteExpression(Variable("col")(pos), forced = false)
+      )
+    )
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.DeleteOverlap(Seq("col")))
   }
@@ -230,11 +274,16 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       in(prop("a", "prop"), listOfInt(42))
     ))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
-      MergeNodePattern(
-        CreateNode("b", Seq(labelName("Label")), Some(mapOfInt("prop" -> 123))),
-        QueryGraph.empty, Seq.empty, Seq.empty)
-    ))
+    val ug = QueryGraph(mutatingPatterns =
+      IndexedSeq(
+        MergeNodePattern(
+          CreateNode("b", Seq(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+          QueryGraph.empty,
+          Seq.empty,
+          Seq.empty
+        )
+      )
+    )
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
   }
@@ -245,11 +294,16 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       in(prop("a", "prop"), listOfInt(42))
     ))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
-      MergeNodePattern(
-        CreateNode("b", Seq(labelName("Label")), Some(mapOfInt("prop" -> 123))),
-        QueryGraph.empty, Seq.empty, Seq.empty)
-    ))
+    val ug = QueryGraph(mutatingPatterns =
+      IndexedSeq(
+        MergeNodePattern(
+          CreateNode("b", Seq(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+          QueryGraph.empty,
+          Seq.empty,
+          Seq.empty
+        )
+      )
+    )
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
   }
@@ -261,11 +315,16 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       in(prop("a", "prop"), listOfInt(42))
     ))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
-      MergeNodePattern(
-        CreateNode("b", Seq(labelName("OtherLabel")), Some(mapOfInt("prop" -> 123))),
-        QueryGraph.empty, Seq.empty, Seq.empty)
-    ))
+    val ug = QueryGraph(mutatingPatterns =
+      IndexedSeq(
+        MergeNodePattern(
+          CreateNode("b", Seq(labelName("OtherLabel")), Some(mapOfInt("prop" -> 123))),
+          QueryGraph.empty,
+          Seq.empty,
+          Seq.empty
+        )
+      )
+    )
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
   }

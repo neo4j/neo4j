@@ -30,6 +30,7 @@ final case class SemanticError(msg: String, position: InputPosition) extends Sem
 
 sealed trait UnsupportedOpenCypher extends SemanticErrorDef
 
-final case class FeatureError(msg: String, feature: SemanticFeature, position: InputPosition) extends UnsupportedOpenCypher {
+final case class FeatureError(msg: String, feature: SemanticFeature, position: InputPosition)
+    extends UnsupportedOpenCypher {
   override def withMsg(message: String): FeatureError = copy(msg = message)
 }

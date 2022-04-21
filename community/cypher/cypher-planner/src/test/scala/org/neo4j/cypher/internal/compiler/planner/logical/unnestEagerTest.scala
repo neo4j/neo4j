@@ -55,7 +55,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest delete expression from rhs of apply") {
@@ -73,7 +73,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest delete node from rhs of apply") {
@@ -91,7 +91,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest delete path from rhs of apply") {
@@ -109,7 +109,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest delete relationship from rhs of apply") {
@@ -127,7 +127,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest detach delete expression from rhs of apply") {
@@ -145,7 +145,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest detach delete node from rhs of apply") {
@@ -163,7 +163,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest detach delete path from rhs of apply") {
@@ -181,7 +181,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest set node property from rhs of apply") {
@@ -199,7 +199,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest set rel property from rhs of apply") {
@@ -217,7 +217,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest set generic property from rhs of apply") {
@@ -235,7 +235,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest set node property from map from rhs of apply") {
@@ -253,7 +253,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest set relationship property from map from rhs of apply") {
@@ -271,7 +271,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest set generic property from map from rhs of apply") {
@@ -289,7 +289,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest set labels from rhs of apply") {
@@ -316,7 +316,7 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   test("should unnest Eager from rhs of apply") {
@@ -334,18 +334,31 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .apply().withCardinality(20).withProvidedOrder(po_n)
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
-      )
+    )
   }
 
   implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
+
     def shouldRewriteToPlanWithAttributes(expectedBuilder: LogicalPlanBuilder): Assertion = {
-      val resultPlan = rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.providedOrders,inputBuilder.idGen)
-      (resultPlan, inputBuilder.cardinalities) should haveSamePlanAndCardinalitiesAs((expectedBuilder.build(), expectedBuilder.cardinalities))
-      (resultPlan, inputBuilder.providedOrders) should haveSamePlanAndProvidedOrdersAs((expectedBuilder.build(), expectedBuilder.providedOrders))
+      val resultPlan =
+        rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.providedOrders, inputBuilder.idGen)
+      (resultPlan, inputBuilder.cardinalities) should haveSamePlanAndCardinalitiesAs((
+        expectedBuilder.build(),
+        expectedBuilder.cardinalities
+      ))
+      (resultPlan, inputBuilder.providedOrders) should haveSamePlanAndProvidedOrdersAs((
+        expectedBuilder.build(),
+        expectedBuilder.providedOrders
+      ))
     }
   }
 
-  private def rewrite(p: LogicalPlan, cardinalities: Cardinalities, providedOrders: ProvidedOrders, idGen: IdGen): LogicalPlan = {
+  private def rewrite(
+    p: LogicalPlan,
+    cardinalities: Cardinalities,
+    providedOrders: ProvidedOrders,
+    idGen: IdGen
+  ): LogicalPlan = {
     val unnest = unnestEager(
       new StubSolveds,
       cardinalities,

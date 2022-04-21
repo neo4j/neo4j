@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
-public interface LogRotateEvents
-{
+public interface LogRotateEvents {
     /**
      * Begin a log rotation as part of this appending to the transaction log.
      */

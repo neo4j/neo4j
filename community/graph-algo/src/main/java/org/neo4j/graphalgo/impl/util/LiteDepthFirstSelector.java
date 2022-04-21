@@ -21,7 +21,6 @@ package org.neo4j.graphalgo.impl.util;
 
 import java.util.LinkedList;
 import java.util.Queue;
-
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
@@ -32,44 +31,35 @@ import org.neo4j.graphdb.traversal.TraversalContext;
  * which has many relationships. It delays traversing those super nodes until
  * after all non-super nodes have been traversed.
  */
-public class LiteDepthFirstSelector implements BranchSelector
-{
+public class LiteDepthFirstSelector implements BranchSelector {
     private final Queue<TraversalBranch> superNodes = new LinkedList<>();
     private TraversalBranch current;
     private final int threshold;
     private final PathExpander expander;
 
-    public LiteDepthFirstSelector( TraversalBranch startSource, int startThreshold, PathExpander expander )
-    {
+    public LiteDepthFirstSelector(TraversalBranch startSource, int startThreshold, PathExpander expander) {
         this.current = startSource;
         this.threshold = startThreshold;
         this.expander = expander;
     }
 
     @Override
-    public TraversalBranch next( TraversalContext metadata )
-    {
+    public TraversalBranch next(TraversalContext metadata) {
         TraversalBranch result = null;
-        while ( result == null )
-        {
-            if ( current == null )
-            {
+        while (result == null) {
+            if (current == null) {
                 current = superNodes.poll();
-                if ( current == null )
-                {
+                if (current == null) {
                     return null;
                 }
-            }
-            else if ( current.expanded() > 0 && current.expanded() % threshold == 0 )
-            {
-                superNodes.add( current );
+            } else if (current.expanded() > 0 && current.expanded() % threshold == 0) {
+                superNodes.add(current);
                 current = current.parent();
                 continue;
             }
 
-            TraversalBranch next = current.next( expander, metadata );
-            if ( next == null )
-            {
+            TraversalBranch next = current.next(expander, metadata);
+            if (next == null) {
                 current = current.parent();
                 continue;
             }

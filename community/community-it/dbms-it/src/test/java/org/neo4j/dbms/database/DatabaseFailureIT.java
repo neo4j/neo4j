@@ -19,12 +19,19 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.NoOpSystemGraphInitializer.noOpSystemGraphInitializer;
+
+import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileUtils;
@@ -36,71 +43,61 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-import static org.neo4j.kernel.database.NoOpSystemGraphInitializer.noOpSystemGraphInitializer;
-
 @Neo4jLayoutExtension
-class DatabaseFailureIT
-{
+class DatabaseFailureIT {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private DatabaseLayout databaseLayout;
+
     @Inject
     private Neo4jLayout neo4jLayout;
+
     private GraphDatabaseAPI database;
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         database = startDatabase();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         managementService.shutdown();
     }
 
     @Test
-    void startWhenDefaultDatabaseFailedToStart() throws IOException
-    {
+    void startWhenDefaultDatabaseFailedToStart() throws IOException {
         managementService.shutdown();
-        FileUtils.deleteDirectory( databaseLayout.getTransactionLogsDirectory() );
+        FileUtils.deleteDirectory(databaseLayout.getTransactionLogsDirectory());
 
         database = startDatabase();
-        DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-        assertTrue( databaseStateService.causeOfFailure( database.databaseId() ).isPresent() );
-        assertFalse( databaseStateService.causeOfFailure( NAMED_SYSTEM_DATABASE_ID ).isPresent() );
+        DatabaseStateService databaseStateService =
+                database.getDependencyResolver().resolveDependency(DatabaseStateService.class);
+        assertTrue(databaseStateService.causeOfFailure(database.databaseId()).isPresent());
+        assertFalse(
+                databaseStateService.causeOfFailure(NAMED_SYSTEM_DATABASE_ID).isPresent());
     }
 
     @Test
-    void failToStartWhenSystemDatabaseFailedToStart() throws IOException
-    {
+    void failToStartWhenSystemDatabaseFailedToStart() throws IOException {
         managementService.shutdown();
-        FileUtils.deleteDirectory( neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
+        FileUtils.deleteDirectory(
+                neo4jLayout.databaseLayout(SYSTEM_DATABASE_NAME).getTransactionLogsDirectory());
 
-        Exception startException = assertThrows( Exception.class, this::startDatabase );
-        assertThat( startException ).hasCauseInstanceOf( UnableToStartDatabaseException.class );
+        Exception startException = assertThrows(Exception.class, this::startDatabase);
+        assertThat(startException).hasCauseInstanceOf(UnableToStartDatabaseException.class);
     }
 
-    private GraphDatabaseAPI startDatabase()
-    {
+    private GraphDatabaseAPI startDatabase() {
         startDatabaseServer();
-        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        return (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void startDatabaseServer()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setExternalDependencies( noOpSystemGraphInitializer() )
+    private void startDatabaseServer() {
+        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setExternalDependencies(noOpSystemGraphInitializer())
                 .build();
     }
 }

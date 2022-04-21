@@ -28,10 +28,12 @@ import scala.collection.mutable.ArrayBuffer
  */
 object FormatOutput {
 
-  def format(writer: FormatOutputWriter,
-             columns: Array[String],
-             result: ArrayBuffer[Array[String]],
-             queryStatistics: QueryStatistics): Unit = {
+  def format(
+    writer: FormatOutputWriter,
+    columns: Array[String],
+    result: ArrayBuffer[Array[String]],
+    queryStatistics: QueryStatistics
+  ): Unit = {
 
     def makeSize(str: String, wantedSize: Int): String = {
       val actualSize = str.length()
@@ -99,6 +101,5 @@ object FormatOutput {
       }
     }
   }
-
 
 }

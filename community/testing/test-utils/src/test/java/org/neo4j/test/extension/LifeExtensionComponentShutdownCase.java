@@ -21,28 +21,23 @@ package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-@ExtendWith( LifeExtension.class )
-class LifeExtensionComponentShutdownCase
-{
+@ExtendWith(LifeExtension.class)
+class LifeExtensionComponentShutdownCase {
     @Inject
     private LifeSupport innerLife;
 
     @Test
-    void shutdownLifeAfterTest()
-    {
-        innerLife.add( new ShutdownFailComponent() );
+    void shutdownLifeAfterTest() {
+        innerLife.add(new ShutdownFailComponent());
     }
 
-    private static class ShutdownFailComponent extends LifecycleAdapter
-    {
+    private static class ShutdownFailComponent extends LifecycleAdapter {
         @Override
-        public void shutdown()
-        {
-            throw new RuntimeException( "Shutdown exception." );
+        public void shutdown() {
+            throw new RuntimeException("Shutdown exception.");
         }
     }
 }

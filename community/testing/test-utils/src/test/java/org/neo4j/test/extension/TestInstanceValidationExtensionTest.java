@@ -19,11 +19,6 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtensionConfigurationException;
-import org.junit.platform.testkit.engine.EngineTestKit;
-import org.junit.platform.testkit.engine.Events;
-
 import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 import static org.junit.platform.testkit.engine.EventConditions.event;
@@ -31,17 +26,26 @@ import static org.junit.platform.testkit.engine.EventConditions.finishedWithFail
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
-class TestInstanceValidationExtensionTest
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionConfigurationException;
+import org.junit.platform.testkit.engine.EngineTestKit;
+import org.junit.platform.testkit.engine.Events;
+
+class TestInstanceValidationExtensionTest {
     @Test
-    void nonInjectedFieldVerified()
-    {
-        Events testEvents = EngineTestKit.engine( ENGINE_ID )
-                .selectors( selectClass( InjectionIncorrectUsage.class ) ).execute()
+    void nonInjectedFieldVerified() {
+        Events testEvents = EngineTestKit.engine(ENGINE_ID)
+                .selectors(selectClass(InjectionIncorrectUsage.class))
+                .execute()
                 .testEvents();
 
-        testEvents.assertThatEvents().haveExactly( 1,
-                event( finishedWithFailure( instanceOf( ExtensionConfigurationException.class ),
-                        message( message -> message.contains( "Field lifeSupport that is marked for injection" ) ) ) ) );
+        testEvents
+                .assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(finishedWithFailure(
+                                instanceOf(ExtensionConfigurationException.class),
+                                message(message ->
+                                        message.contains("Field lifeSupport that is marked for injection")))));
     }
 }

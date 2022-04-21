@@ -20,26 +20,22 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.Comparator;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Methods for (binary-)searching keys in a tree node.
  */
-class KeySearch
-{
-    private static final int POSITION_MASK   = 0x3FFFFFFF;
-    private static final int HIT_FLAG        = 0x80000000;
-    private static final int NO_HIT_FLAG     = 0x00000000;
-    private static final int HIT_MASK        = HIT_FLAG | NO_HIT_FLAG;
-    private static final int SUCCESS_FLAG    = 0x00000000;
+class KeySearch {
+    private static final int POSITION_MASK = 0x3FFFFFFF;
+    private static final int HIT_FLAG = 0x80000000;
+    private static final int NO_HIT_FLAG = 0x00000000;
+    private static final int HIT_MASK = HIT_FLAG | NO_HIT_FLAG;
+    private static final int SUCCESS_FLAG = 0x00000000;
     private static final int NO_SUCCESS_FLAG = 0x40000000;
-    private static final int SUCCESS_MASK    = SUCCESS_FLAG | NO_SUCCESS_FLAG;
+    private static final int SUCCESS_MASK = SUCCESS_FLAG | NO_SUCCESS_FLAG;
 
-    private KeySearch()
-    {
-    }
+    private KeySearch() {}
 
     /**
      * Search for left most pos such that keyAtPos obeys key <= keyAtPos.
@@ -65,12 +61,16 @@ class KeySearch
      * To extract position from the returned search result, then use {@link #positionOf(int)}.
      * To extract whether or not the exact key was found, then use {@link #isHit(int)}.
      */
-    static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, TreeNode.Type type, KEY key,
-            KEY readKey, int keyCount, CursorContext cursorContext )
-    {
-        if ( keyCount == 0 )
-        {
-            return searchResult( 0, false );
+    static <KEY, VALUE> int search(
+            PageCursor cursor,
+            TreeNode<KEY, VALUE> bTreeNode,
+            TreeNode.Type type,
+            KEY key,
+            KEY readKey,
+            int keyCount,
+            CursorContext cursorContext) {
+        if (keyCount == 0) {
+            return searchResult(0, false);
         }
 
         int lower = 0;
@@ -83,51 +83,41 @@ class KeySearch
         int comparison;
 
         // key greater than greatest key in node
-        if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher, type, cursorContext ) ) > 0 )
-        {
+        if (comparator.compare(key, bTreeNode.keyAt(cursor, readKey, higher, type, cursorContext)) > 0) {
             pos = keyCount;
         }
         // key smaller than or equal to smallest key in node
-        else if ( (comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower, type, cursorContext ) )) <= 0 )
-        {
-            if ( comparison == 0 )
-            {
+        else if ((comparison = comparator.compare(key, bTreeNode.keyAt(cursor, readKey, lower, type, cursorContext)))
+                <= 0) {
+            if (comparison == 0) {
                 hit = true;
             }
             pos = 0;
-        }
-        else
-        {
+        } else {
             // Start binary search
             // If key <= keyAtPos -> move higher to pos
             // If key > keyAtPos -> move lower to pos+1
             // Terminate when lower == higher
-            while ( lower < higher )
-            {
+            while (lower < higher) {
                 pos = (lower + higher) / 2;
-                comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, type, cursorContext ) );
-                if ( comparison <= 0 )
-                {
+                comparison = comparator.compare(key, bTreeNode.keyAt(cursor, readKey, pos, type, cursorContext));
+                if (comparison <= 0) {
                     higher = pos;
-                }
-                else
-                {
+                } else {
                     lower = pos + 1;
                 }
             }
-            if ( lower != higher )
-            {
+            if (lower != higher) {
                 return NO_SUCCESS_FLAG;
             }
             pos = lower;
 
-            hit = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, type, cursorContext ) ) == 0;
+            hit = comparator.compare(key, bTreeNode.keyAt(cursor, readKey, pos, type, cursorContext)) == 0;
         }
-        return searchResult( pos, hit );
+        return searchResult(pos, hit);
     }
 
-    private static int searchResult( int pos, boolean hit )
-    {
+    private static int searchResult(int pos, boolean hit) {
         return (pos & POSITION_MASK) | (hit ? HIT_FLAG : NO_HIT_FLAG);
     }
 
@@ -139,8 +129,7 @@ class KeySearch
      * @param searchResult search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, CursorContext)}.
      * @return position of the search result.
      */
-    static int positionOf( int searchResult )
-    {
+    static int positionOf(int searchResult) {
         return searchResult & POSITION_MASK;
     }
 
@@ -154,11 +143,9 @@ class KeySearch
      *   in which case we want to follow the pointer to the right. This is of course because everything
      *   larger than _or equal_ to key belongs to right subtree.
      */
-    static int childPositionOf( int searchResult )
-    {
-        int pos = positionOf( searchResult );
-        if ( isHit( searchResult ) )
-        {
+    static int childPositionOf(int searchResult) {
+        int pos = positionOf(searchResult);
+        if (isHit(searchResult)) {
             return pos + 1;
         }
         return pos;
@@ -171,21 +158,17 @@ class KeySearch
      * @param searchResult search result form {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, CursorContext)}.
      * @return whether or not the searched key was found.
      */
-    static boolean isHit( int searchResult )
-    {
+    static boolean isHit(int searchResult) {
         return (searchResult & HIT_MASK) == HIT_FLAG;
     }
 
-    static boolean isSuccess( int searchResult )
-    {
+    static boolean isSuccess(int searchResult) {
         return (searchResult & SUCCESS_MASK) == SUCCESS_FLAG;
     }
 
-    static void assertSuccess( int searchResult )
-    {
-        if ( !isSuccess( searchResult ) )
-        {
-            throw new TreeInconsistencyException( "Search terminated in unexpected way" );
+    static void assertSuccess(int searchResult) {
+        if (!isSuccess(searchResult)) {
+            throw new TreeInconsistencyException("Search terminated in unexpected way");
         }
     }
 }

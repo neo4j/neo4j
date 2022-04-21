@@ -19,52 +19,44 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import java.util.Optional;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 
+import java.util.Optional;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
-
-public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedureValidator
-{
-    public LocalRoutingTableProcedureValidator( DatabaseManager<?> databaseManager )
-    {
-        super( databaseManager );
+public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedureValidator {
+    public LocalRoutingTableProcedureValidator(DatabaseManager<?> databaseManager) {
+        super(databaseManager);
     }
 
     @Override
-    public void isValidForServerSideRouting( NamedDatabaseId namedDatabaseId ) throws ProcedureException
-    {
-        assertDatabaseIsOperational( namedDatabaseId );
+    public void isValidForServerSideRouting(NamedDatabaseId namedDatabaseId) throws ProcedureException {
+        assertDatabaseIsOperational(namedDatabaseId);
     }
 
     @Override
-    public void isValidForClientSideRouting( NamedDatabaseId namedDatabaseId ) throws ProcedureException
-    {
-        assertDatabaseIsOperational( namedDatabaseId );
+    public void isValidForClientSideRouting(NamedDatabaseId namedDatabaseId) throws ProcedureException {
+        assertDatabaseIsOperational(namedDatabaseId);
     }
 
-    private void assertDatabaseIsOperational( NamedDatabaseId namedDatabaseId ) throws ProcedureException
-    {
-        Optional<Database> database = getDatabase( namedDatabaseId );
-        if ( database.isEmpty() )
-        {
-            throw RoutingTableProcedureHelpers.databaseNotFoundException( namedDatabaseId.name() );
+    private void assertDatabaseIsOperational(NamedDatabaseId namedDatabaseId) throws ProcedureException {
+        Optional<Database> database = getDatabase(namedDatabaseId);
+        if (database.isEmpty()) {
+            throw RoutingTableProcedureHelpers.databaseNotFoundException(namedDatabaseId.name());
         }
-        if ( !database.get().getDatabaseAvailabilityGuard().isAvailable() )
-        {
-            throw new ProcedureException( DatabaseUnavailable,
-                                          "Unable to get a routing table for database '" + namedDatabaseId.name() +
-                                          "' because this database is unavailable" );
+        if (!database.get().getDatabaseAvailabilityGuard().isAvailable()) {
+            throw new ProcedureException(
+                    DatabaseUnavailable,
+                    "Unable to get a routing table for database '" + namedDatabaseId.name()
+                            + "' because this database is unavailable");
         }
     }
 
-    Optional<Database> getDatabase( NamedDatabaseId databaseId )
-    {
-        return databaseManager.getDatabaseContext( databaseId ).map( DatabaseContext::database );
+    Optional<Database> getDatabase(NamedDatabaseId databaseId) {
+        return databaseManager.getDatabaseContext(databaseId).map(DatabaseContext::database);
     }
 }

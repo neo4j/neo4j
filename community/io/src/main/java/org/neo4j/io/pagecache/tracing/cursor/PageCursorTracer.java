@@ -19,12 +19,11 @@
  */
 package org.neo4j.io.pagecache.tracing.cursor;
 
-import java.io.Closeable;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
+import java.io.Closeable;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PinEvent;
-
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 /**
  * Event tracer for page cursors.
@@ -33,135 +32,108 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
  * Since events of each particular page cursor are part of whole page cache events, each particular page cursor
  * tracer will eventually report them to global page cache counters/tracers.
  */
-public interface PageCursorTracer extends PageCursorCounters, Closeable
-{
-    PageCursorTracer NULL = new PageCursorTracer()
-    {
+public interface PageCursorTracer extends PageCursorCounters, Closeable {
+    PageCursorTracer NULL = new PageCursorTracer() {
         @Override
-        public long faults()
-        {
+        public long faults() {
             return 0;
         }
 
         @Override
-        public long failedFaults()
-        {
+        public long failedFaults() {
             return 0;
         }
 
         @Override
-        public long noFaults()
-        {
+        public long noFaults() {
             return 0;
         }
 
         @Override
-        public long pins()
-        {
+        public long pins() {
             return 0;
         }
 
         @Override
-        public long unpins()
-        {
+        public long unpins() {
             return 0;
         }
 
         @Override
-        public long hits()
-        {
+        public long hits() {
             return 0;
         }
 
         @Override
-        public long bytesRead()
-        {
+        public long bytesRead() {
             return 0;
         }
 
         @Override
-        public long evictions()
-        {
+        public long evictions() {
             return 0;
         }
 
         @Override
-        public long evictionExceptions()
-        {
+        public long evictionExceptions() {
             return 0;
         }
 
         @Override
-        public long bytesWritten()
-        {
+        public long bytesWritten() {
             return 0;
         }
 
         @Override
-        public long flushes()
-        {
+        public long flushes() {
             return 0;
         }
 
         @Override
-        public long merges()
-        {
+        public long merges() {
             return 0;
         }
 
         @Override
-        public double hitRatio()
-        {
+        public double hitRatio() {
             return 0d;
         }
 
         @Override
-        public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-        {
+        public PinEvent beginPin(boolean writeLock, long filePageId, PageSwapper swapper) {
             return PinEvent.NULL;
         }
 
         @Override
-        public void unpin( long filePageId, PageSwapper swapperTracer )
-        {
-        }
+        public void unpin(long filePageId, PageSwapper swapperTracer) {}
 
         @Override
-        public void reportEvents()
-        {
-        }
+        public void reportEvents() {}
 
         @Override
-        public String getTag()
-        {
+        public String getTag() {
             return EMPTY;
         }
 
         @Override
-        public void openCursor()
-        {
-        }
+        public void openCursor() {}
 
         @Override
-        public void closeCursor()
-        {
-        }
+        public void closeCursor() {}
 
         @Override
-        public void merge( CursorStatisticSnapshot statisticSnapshot )
-        {
-        }
+        public void merge(CursorStatisticSnapshot statisticSnapshot) {}
     };
 
     /**
      * Pin the page
      */
-    PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
+    PinEvent beginPin(boolean writeLock, long filePageId, PageSwapper swapper);
 
     /**
      * Unpin the page
      */
-    void unpin( long filePageId, PageSwapper swapper );
+    void unpin(long filePageId, PageSwapper swapper);
 
     /**
      * Report to global page cache tracer events observed by current page cursor tracer.
@@ -176,8 +148,7 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
     String getTag();
 
     @Override
-    default void close()
-    {
+    default void close() {
         reportEvents();
     }
 
@@ -195,5 +166,5 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
      * Merge values collected by another tracer into current.
      * @param statisticSnapshot externally collected statistic data
      */
-    void merge( CursorStatisticSnapshot statisticSnapshot );
+    void merge(CursorStatisticSnapshot statisticSnapshot);
 }

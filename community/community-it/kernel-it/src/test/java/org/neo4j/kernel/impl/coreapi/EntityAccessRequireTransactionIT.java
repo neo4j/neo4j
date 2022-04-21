@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.function.Function;
-import java.util.stream.Stream;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.impl.core.NodeEntity;
@@ -35,118 +36,98 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @DbmsExtension
-public class EntityAccessRequireTransactionIT
-{
+public class EntityAccessRequireTransactionIT {
     @Inject
     private GraphDatabaseAPI databaseAPI;
+
     private InternalTransaction transaction;
 
-    static Stream<EntityFactory<? extends Entity>> entities()
-    {
-        return Stream.of( tx -> new NodeEntity( tx, 1 ), tx -> new RelationshipEntity( tx, 1 ) );
+    static Stream<EntityFactory<? extends Entity>> entities() {
+        return Stream.of(tx -> new NodeEntity(tx, 1), tx -> new RelationshipEntity(tx, 1));
     }
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         transaction = (InternalTransaction) databaseAPI.beginTx();
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( transaction != null )
-        {
+    void tearDown() {
+        if (transaction != null) {
             transaction.close();
         }
     }
 
     @ParameterizedTest
-    @MethodSource( "entities" )
-    void entityIdAccessWithoutTransaction( EntityFactory<Entity> entityFactory )
-    {
-        var entity = getDetachedEntity( entityFactory );
-        assertDoesNotThrow( entity::getId );
+    @MethodSource("entities")
+    void entityIdAccessWithoutTransaction(EntityFactory<Entity> entityFactory) {
+        var entity = getDetachedEntity(entityFactory);
+        assertDoesNotThrow(entity::getId);
     }
 
     @ParameterizedTest
-    @MethodSource( "entities" )
-    void requireTransactionToAccessAllProperties( EntityFactory<Entity> entityFactory )
-    {
-        var entity = getDetachedEntity( entityFactory );
-        assertThrows( NotInTransactionException.class, entity::getAllProperties );
+    @MethodSource("entities")
+    void requireTransactionToAccessAllProperties(EntityFactory<Entity> entityFactory) {
+        var entity = getDetachedEntity(entityFactory);
+        assertThrows(NotInTransactionException.class, entity::getAllProperties);
     }
 
     @ParameterizedTest
-    @MethodSource( "entities" )
-    void requireTransactionToAccessCheckPropertyExistence( EntityFactory<Entity> entityFactory )
-    {
-        var entity = getDetachedEntity( entityFactory );
-        assertThrows( NotInTransactionException.class, () -> entity.hasProperty( "any" ) );
+    @MethodSource("entities")
+    void requireTransactionToAccessCheckPropertyExistence(EntityFactory<Entity> entityFactory) {
+        var entity = getDetachedEntity(entityFactory);
+        assertThrows(NotInTransactionException.class, () -> entity.hasProperty("any"));
     }
 
     @ParameterizedTest
-    @MethodSource( "entities" )
-    void requireTransactionToAccessGetProperty( EntityFactory<Entity> entityFactory )
-    {
-        var entity = getDetachedEntity( entityFactory );
-        assertThrows( NotInTransactionException.class, () -> entity.getProperty( "any" ) );
+    @MethodSource("entities")
+    void requireTransactionToAccessGetProperty(EntityFactory<Entity> entityFactory) {
+        var entity = getDetachedEntity(entityFactory);
+        assertThrows(NotInTransactionException.class, () -> entity.getProperty("any"));
     }
 
     @ParameterizedTest
-    @MethodSource( "entities" )
-    void requireTransactionToAccessGetPropertyWithDefaultValue( EntityFactory<Entity> entityFactory )
-    {
-        var entity = getDetachedEntity( entityFactory );
-        assertThrows( NotInTransactionException.class, () -> entity.getProperty( "any", "foo" ) );
+    @MethodSource("entities")
+    void requireTransactionToAccessGetPropertyWithDefaultValue(EntityFactory<Entity> entityFactory) {
+        var entity = getDetachedEntity(entityFactory);
+        assertThrows(NotInTransactionException.class, () -> entity.getProperty("any", "foo"));
     }
 
     @ParameterizedTest
-    @MethodSource( "entities" )
-    void requireTransactionToAccessSetProperty( EntityFactory<Entity> entityFactory )
-    {
-        var entity = getDetachedEntity( entityFactory );
-        assertThrows( NotInTransactionException.class, () -> entity.setProperty( "any", "bar" ) );
+    @MethodSource("entities")
+    void requireTransactionToAccessSetProperty(EntityFactory<Entity> entityFactory) {
+        var entity = getDetachedEntity(entityFactory);
+        assertThrows(NotInTransactionException.class, () -> entity.setProperty("any", "bar"));
     }
 
     @ParameterizedTest
-    @MethodSource( "entities" )
-    void requireTransactionToAccessRemoveProperty( EntityFactory<Entity> entityFactory )
-    {
-        var entity = getDetachedEntity( entityFactory );
-        assertThrows( NotInTransactionException.class, () -> entity.removeProperty( "any" ) );
+    @MethodSource("entities")
+    void requireTransactionToAccessRemoveProperty(EntityFactory<Entity> entityFactory) {
+        var entity = getDetachedEntity(entityFactory);
+        assertThrows(NotInTransactionException.class, () -> entity.removeProperty("any"));
     }
 
     @ParameterizedTest
-    @MethodSource( "entities" )
-    void requireTransactionToAccessAllPropertyKeys( EntityFactory<Entity> entityFactory )
-    {
-        var entity = getDetachedEntity( entityFactory );
-        assertThrows( NotInTransactionException.class, entity::getPropertyKeys );
+    @MethodSource("entities")
+    void requireTransactionToAccessAllPropertyKeys(EntityFactory<Entity> entityFactory) {
+        var entity = getDetachedEntity(entityFactory);
+        assertThrows(NotInTransactionException.class, entity::getPropertyKeys);
     }
 
     @ParameterizedTest
-    @MethodSource( "entities" )
-    void requireTransactionToAccessMultipleProperties( EntityFactory<Entity> entityFactory )
-    {
-        var entity = getDetachedEntity( entityFactory );
-        assertThrows( NotInTransactionException.class, () -> entity.getProperties( "a", "b", "c" ) );
+    @MethodSource("entities")
+    void requireTransactionToAccessMultipleProperties(EntityFactory<Entity> entityFactory) {
+        var entity = getDetachedEntity(entityFactory);
+        assertThrows(NotInTransactionException.class, () -> entity.getProperties("a", "b", "c"));
     }
 
-    private Entity getDetachedEntity( EntityFactory<Entity> entityFactory )
-    {
-        var entity = entityFactory.apply( transaction );
+    private Entity getDetachedEntity(EntityFactory<Entity> entityFactory) {
+        var entity = entityFactory.apply(transaction);
         transaction.close();
         return entity;
     }
 
     @FunctionalInterface
-    private interface EntityFactory<T> extends Function<InternalTransaction,Entity>
-    {
-
-    }
+    private interface EntityFactory<T> extends Function<InternalTransaction, Entity> {}
 }

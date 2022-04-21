@@ -27,76 +27,63 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.io.pagecache.PagedFile;
 
-class Plan
-{
+class Plan {
     private final Action[] plan;
-    private final Map<Path,PagedFile> fileMap;
+    private final Map<Path, PagedFile> fileMap;
     private final List<Path> mappedFiles;
     private final Set<Path> filesTouched;
     private final long[] executedByThread;
     private final AtomicInteger actionCounter;
     private final CountDownLatch startLatch;
 
-    Plan( Action[] plan, Map<Path,PagedFile> fileMap, List<Path> mappedFiles, Set<Path> filesTouched )
-    {
+    Plan(Action[] plan, Map<Path, PagedFile> fileMap, List<Path> mappedFiles, Set<Path> filesTouched) {
         this.plan = plan;
         this.fileMap = fileMap;
         this.mappedFiles = mappedFiles;
         this.filesTouched = filesTouched;
         executedByThread = new long[plan.length];
-        Arrays.fill( executedByThread, -1 );
+        Arrays.fill(executedByThread, -1);
         actionCounter = new AtomicInteger();
-        startLatch = new CountDownLatch( 1 );
+        startLatch = new CountDownLatch(1);
     }
 
-    public void start()
-    {
+    public void start() {
         startLatch.countDown();
     }
 
-    public Action next() throws InterruptedException
-    {
+    public Action next() throws InterruptedException {
         startLatch.await();
         int index = actionCounter.getAndIncrement();
-        if ( index < plan.length )
-        {
+        if (index < plan.length) {
             executedByThread[index] = Thread.currentThread().getId();
             return plan[index];
         }
         return null;
     }
 
-    public void close()
-    {
-        for ( Path mappedFile : mappedFiles )
-        {
-            PagedFile pagedFile = fileMap.get( mappedFile );
-            if ( pagedFile != null )
-            {
+    public void close() {
+        for (Path mappedFile : mappedFiles) {
+            PagedFile pagedFile = fileMap.get(mappedFile);
+            if (pagedFile != null) {
                 pagedFile.close();
             }
         }
     }
 
-    public void print( PrintStream out )
-    {
-        out.println( "Plan: [thread; action]" );
-        for ( int i = 0; i < plan.length; i++ )
-        {
+    public void print(PrintStream out) {
+        out.println("Plan: [thread; action]");
+        for (int i = 0; i < plan.length; i++) {
             long threadId = executedByThread[i];
-            out.printf( "  % 3d : %s%n", threadId, plan[i] );
-            if ( threadId == -1 )
-            {
+            out.printf("  % 3d : %s%n", threadId, plan[i]);
+            if (threadId == -1) {
                 break;
             }
         }
     }
 
-    public Set<Path> getFilesTouched()
-    {
+    public Set<Path> getFilesTouched() {
         return filesTouched;
     }
 }

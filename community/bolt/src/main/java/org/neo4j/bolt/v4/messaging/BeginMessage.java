@@ -19,35 +19,35 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-
-public class BeginMessage extends org.neo4j.bolt.v3.messaging.request.BeginMessage
-{
+public class BeginMessage extends org.neo4j.bolt.v3.messaging.request.BeginMessage {
     private final String databaseName;
 
-    public BeginMessage()
-    {
+    public BeginMessage() {
         super();
         this.databaseName = ABSENT_DB_NAME;
     }
 
-    public BeginMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
-            AccessMode accessMode, Map<String,Object> txMetadata, String databaseName )
-    {
-        super( meta, bookmarks, txTimeout, accessMode, txMetadata );
+    public BeginMessage(
+            MapValue meta,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            String databaseName) {
+        super(meta, bookmarks, txTimeout, accessMode, txMetadata);
         this.databaseName = databaseName;
     }
 
-    public String databaseName()
-    {
+    public String databaseName() {
         return this.databaseName;
     }
 }

@@ -27,16 +27,13 @@ import java.util.concurrent.atomic.AtomicLong;
  * As part of checkpoint a new instance is created and the old (now immutable) instance accessible to read from while those counts are written to
  * the backing tree.
  */
-class MapCountsChanges extends CountsChanges
-{
-    MapCountsChanges()
-    {
-        super( new ConcurrentHashMap<>() );
+class MapCountsChanges extends CountsChanges {
+    MapCountsChanges() {
+        super(new ConcurrentHashMap<>());
     }
 
     @Override
-    protected CountsChanges fork()
-    {
+    protected CountsChanges fork() {
         return new MapCountsChanges();
     }
 }

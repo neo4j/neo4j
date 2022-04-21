@@ -25,6 +25,7 @@ class CollectFunctionTest extends FunctionTestBase("collect") with AggregationFu
   test("should fail if no arguments") {
     testInvalidApplication()("Insufficient parameters for function 'collect'")
   }
+
   // Not actually checking the type signature to not break backwards compatibility
   test("should fail too many arguments") {
     testInvalidApplication(CTFloat, CTFloat)("Too many parameters for function 'collect'")

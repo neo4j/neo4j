@@ -35,16 +35,24 @@ object PathStepStringifier {
 private class DefaultPathStepStringifier(expr: ExpressionStringifier) extends PathStepStringifier {
 
   def apply(pathStep: PathStep): String = pathStep match {
-    case SingleRelationshipPathStep(rel, direction, toNode, next) => relationshipPathStep(rel, direction, toNode, next, isMultiRel = false)
+    case SingleRelationshipPathStep(rel, direction, toNode, next) =>
+      relationshipPathStep(rel, direction, toNode, next, isMultiRel = false)
 
     case NodePathStep(node, next) => s"(${expr(node)})${apply(next)}"
 
-    case MultiRelationshipPathStep(rel, direction, toNode, next) => relationshipPathStep(rel, direction, toNode, next, isMultiRel = true)
+    case MultiRelationshipPathStep(rel, direction, toNode, next) =>
+      relationshipPathStep(rel, direction, toNode, next, isMultiRel = true)
 
     case NilPathStep() => ""
   }
 
-  private def relationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep, isMultiRel: Boolean) = {
+  private def relationshipPathStep(
+    rel: LogicalVariable,
+    direction: SemanticDirection,
+    toNode: Option[LogicalVariable],
+    next: PathStep,
+    isMultiRel: Boolean
+  ) = {
     val lArrow = if (direction == SemanticDirection.INCOMING) "<" else ""
     val rArrow = if (direction == SemanticDirection.OUTGOING) ">" else ""
     val stringifiedToNode = toNode.map(expr(_)).getOrElse("")

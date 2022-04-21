@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Function;
-
 import org.neo4j.common.Validator;
 
 /**
@@ -64,59 +63,49 @@ import org.neo4j.common.Validator;
  *
  * where {@code Metadata} would be the metadata of {@code my-value}.
  */
-public class Args
-{
+public class Args {
     private static final char OPTION_METADATA_DELIMITER = ':';
 
-    public static class ArgsParser
-    {
+    public static class ArgsParser {
         private final String[] flags;
 
-        private ArgsParser( String... flags )
-        {
-            this.flags = Objects.requireNonNull( flags );
+        private ArgsParser(String... flags) {
+            this.flags = Objects.requireNonNull(flags);
         }
 
-        public Args parse( String... arguments )
-        {
-            return new Args( flags, arguments );
+        public Args parse(String... arguments) {
+            return new Args(flags, arguments);
         }
     }
 
-    public static class Option<T>
-    {
+    public static class Option<T> {
         private final T value;
         private final String metadata;
 
-        private Option( T value, String metadata )
-        {
+        private Option(T value, String metadata) {
             this.value = value;
             this.metadata = metadata;
         }
 
-        public T value()
-        {
+        public T value() {
             return value;
         }
 
-        public String metadata()
-        {
+        public String metadata() {
             return metadata;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "Option[" + value + (metadata != null ? ", " + metadata : "") + "]";
         }
     }
 
-    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = from ->
-    {
-        int metadataStartIndex = from.indexOf( OPTION_METADATA_DELIMITER );
+    private static final Function<String, Option<String>> DEFAULT_OPTION_PARSER = from -> {
+        int metadataStartIndex = from.indexOf(OPTION_METADATA_DELIMITER);
         return metadataStartIndex == -1
-                ? new Option<>( from, null )
-                : new Option<>( from.substring( 0, metadataStartIndex ), from.substring( metadataStartIndex + 1 ) );
+                ? new Option<>(from, null)
+                : new Option<>(from.substring(0, metadataStartIndex), from.substring(metadataStartIndex + 1));
     };
 
     private final String[] args;
@@ -124,23 +113,20 @@ public class Args
     private final Map<String, List<Option<String>>> map = new HashMap<>();
     private final List<String> orphans = new ArrayList<>();
 
-    public static ArgsParser withFlags( String... flags )
-    {
-        return new ArgsParser( flags );
+    public static ArgsParser withFlags(String... flags) {
+        return new ArgsParser(flags);
     }
 
-    public static Args parse( String... args )
-    {
-        return withFlags().parse( args );
+    public static Args parse(String... args) {
+        return withFlags().parse(args);
     }
 
     /**
      * Suitable for main( String[] args )
      * @param args the arguments to parse.
      */
-    private Args( String[] flags, String[] args )
-    {
-        this( DEFAULT_OPTION_PARSER, flags, args );
+    private Args(String[] flags, String[] args) {
+        this(DEFAULT_OPTION_PARSER, flags, args);
     }
 
     /**
@@ -149,68 +135,55 @@ public class Args
      * has no value after it. This list of flags is used for distinguishing between the two.
      * @param args the arguments to parse.
      */
-    private Args( Function<String,Option<String>> optionParser, String[] flags, String[] args )
-    {
+    private Args(Function<String, Option<String>> optionParser, String[] flags, String[] args) {
         this.flags = flags;
         this.args = args;
-        parseArgs( optionParser, args );
+        parseArgs(optionParser, args);
     }
 
-    public Args( Map<String, String> source )
-    {
-        this( DEFAULT_OPTION_PARSER, source );
+    public Args(Map<String, String> source) {
+        this(DEFAULT_OPTION_PARSER, source);
     }
 
-    public Args( Function<String,Option<String>> optionParser, Map<String, String> source )
-    {
+    public Args(Function<String, Option<String>> optionParser, Map<String, String> source) {
         this.flags = new String[] {};
         this.args = null;
-        for ( Entry<String,String> entry : source.entrySet() )
-        {
-            put( optionParser, entry.getKey(), entry.getValue() );
+        for (Entry<String, String> entry : source.entrySet()) {
+            put(optionParser, entry.getKey(), entry.getValue());
         }
     }
 
-    public String[] source()
-    {
+    public String[] source() {
         return this.args;
     }
 
-    public Map<String, String> asMap()
-    {
-        Map<String,String> result = new HashMap<>();
-        for ( Map.Entry<String,List<Option<String>>> entry : map.entrySet() )
-        {
+    public Map<String, String> asMap() {
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, List<Option<String>>> entry : map.entrySet()) {
             final List<Option<String>> values = entry.getValue();
-            Option<String> value = values.isEmpty() ? null : values.get( 0 );
-            result.put( entry.getKey(), value != null ? value.value() : null );
+            Option<String> value = values.isEmpty() ? null : values.get(0);
+            result.put(entry.getKey(), value != null ? value.value() : null);
         }
         return result;
     }
 
-    public boolean has( String  key )
-    {
-        return this.map.containsKey( key );
+    public boolean has(String key) {
+        return this.map.containsKey(key);
     }
 
-    public boolean hasNonNull( String key )
-    {
-        List<Option<String>> values = this.map.get( key );
+    public boolean hasNonNull(String key) {
+        List<Option<String>> values = this.map.get(key);
         return values != null && !values.isEmpty();
     }
 
-    private String getSingleOptionOrNull( String key )
-    {
-        List<Option<String>> values = this.map.get( key );
-        if ( values == null || values.isEmpty() )
-        {
+    private String getSingleOptionOrNull(String key) {
+        List<Option<String>> values = this.map.get(key);
+        if (values == null || values.isEmpty()) {
             return null;
+        } else if (values.size() > 1) {
+            throw new IllegalArgumentException("There are multiple values for '" + key + "'");
         }
-        else if ( values.size() > 1 )
-        {
-            throw new IllegalArgumentException( "There are multiple values for '" + key + "'" );
-        }
-        return values.get( 0 ).value();
+        return values.get(0).value();
     }
 
     /**
@@ -218,36 +191,30 @@ public class Args
      * @param key name of the option, without any `-` or `--` prefix, eg. "o".
      * @return the string value of the option, or null if the user has not specified it
      */
-    public String get( String key )
-    {
-        return getSingleOptionOrNull( key );
+    public String get(String key) {
+        return getSingleOptionOrNull(key);
     }
 
-    public String get( String key, String defaultValue )
-    {
-        String value = getSingleOptionOrNull( key );
+    public String get(String key, String defaultValue) {
+        String value = getSingleOptionOrNull(key);
         return value != null ? value : defaultValue;
     }
 
-    public String get( String key, String defaultValueIfNotFound, String defaultValueIfNoValue )
-    {
-        String value = getSingleOptionOrNull( key );
-        if ( value != null )
-        {
+    public String get(String key, String defaultValueIfNotFound, String defaultValueIfNoValue) {
+        String value = getSingleOptionOrNull(key);
+        if (value != null) {
             return value;
         }
-        return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
+        return this.map.containsKey(key) ? defaultValueIfNoValue : defaultValueIfNotFound;
     }
 
-    public Number getNumber( String key, Number defaultValue )
-    {
-        String value = getSingleOptionOrNull( key );
-        return value != null ? Double.valueOf( value ) : defaultValue;
+    public Number getNumber(String key, Number defaultValue) {
+        String value = getSingleOptionOrNull(key);
+        return value != null ? Double.valueOf(value) : defaultValue;
     }
 
-    public long getDuration( String key, long defaultValueInMillis )
-    {
-        String value = getSingleOptionOrNull( key );
+    public long getDuration(String key, long defaultValueInMillis) {
+        String value = getSingleOptionOrNull(key);
         return value != null ? TimeUtil.parseTimeMillis.apply(value) : defaultValueInMillis;
     }
 
@@ -263,9 +230,8 @@ public class Args
      * @param key argument key.
      * @return {@code true} if argument was specified w/o value, or w/ value {@code true}, otherwise {@code false}.
      */
-    public boolean getBoolean( String key )
-    {
-        return getBoolean( key, false );
+    public boolean getBoolean(String key) {
+        return getBoolean(key, false);
     }
 
     /**
@@ -276,9 +242,8 @@ public class Args
      * @param defaultValueIfNotSpecified used if argument not specified.
      * @return argument boolean value depending on what was specified, see above.
      */
-    public Boolean getBoolean( String key, Boolean defaultValueIfNotSpecified )
-    {
-        return getBoolean( key, defaultValueIfNotSpecified, Boolean.TRUE );
+    public Boolean getBoolean(String key, Boolean defaultValueIfNotSpecified) {
+        return getBoolean(key, defaultValueIfNotSpecified, Boolean.TRUE);
     }
 
     /**
@@ -297,33 +262,27 @@ public class Args
      * @param defaultValueIfSpecifiedButNoValue used if argument specified w/o value.
      * @return argument boolean value depending on what was specified, see above.
      */
-    public Boolean getBoolean( String key, Boolean defaultValueIfNotSpecified,
-            Boolean defaultValueIfSpecifiedButNoValue )
-    {
-        String value = getSingleOptionOrNull( key );
-        if ( value != null )
-        {
-            return Boolean.valueOf( value );
+    public Boolean getBoolean(
+            String key, Boolean defaultValueIfNotSpecified, Boolean defaultValueIfSpecifiedButNoValue) {
+        String value = getSingleOptionOrNull(key);
+        if (value != null) {
+            return Boolean.valueOf(value);
         }
-        return this.map.containsKey( key ) ? defaultValueIfSpecifiedButNoValue : defaultValueIfNotSpecified;
+        return this.map.containsKey(key) ? defaultValueIfSpecifiedButNoValue : defaultValueIfNotSpecified;
     }
 
-    public <T extends Enum<T>> T getEnum( Class<T> enumClass, String key, T defaultValue )
-    {
-        String raw = getSingleOptionOrNull( key );
-        if ( raw == null )
-        {
+    public <T extends Enum<T>> T getEnum(Class<T> enumClass, String key, T defaultValue) {
+        String raw = getSingleOptionOrNull(key);
+        if (raw == null) {
             return defaultValue;
         }
 
-        for ( T candidate : enumClass.getEnumConstants() )
-        {
-            if ( candidate.name().equals( raw ) )
-            {
+        for (T candidate : enumClass.getEnumConstants()) {
+            if (candidate.name().equals(raw)) {
                 return candidate;
             }
         }
-        throw new IllegalArgumentException( "No enum instance '" + raw + "' in " + enumClass.getName() );
+        throw new IllegalArgumentException("No enum instance '" + raw + "' in " + enumClass.getName());
     }
 
     /**
@@ -335,165 +294,129 @@ public class Args
      *
      * @return list of orphan arguments
      */
-    public List<String> orphans()
-    {
-        return new ArrayList<>( this.orphans );
+    public List<String> orphans() {
+        return new ArrayList<>(this.orphans);
     }
 
     /**
      * @see #orphans()
      * @return list of orphan arguments.
      */
-    public String[] orphansAsArray()
-    {
-        return orphans.toArray( new String[0] );
+    public String[] orphansAsArray() {
+        return orphans.toArray(new String[0]);
     }
 
-    public String[] asArgs()
-    {
-        List<String> list = new ArrayList<>( orphans.size() );
-        for ( String orphan : orphans )
-        {
-            String quote = orphan.contains( " " ) ? " " : "";
-            list.add( quote + orphan + quote );
+    public String[] asArgs() {
+        List<String> list = new ArrayList<>(orphans.size());
+        for (String orphan : orphans) {
+            String quote = orphan.contains(" ") ? " " : "";
+            list.add(quote + orphan + quote);
         }
-        for ( Map.Entry<String,List<Option<String>>> entry : map.entrySet() )
-        {
-            for ( Option<String> option : entry.getValue() )
-            {
+        for (Map.Entry<String, List<Option<String>>> entry : map.entrySet()) {
+            for (Option<String> option : entry.getValue()) {
                 String key = option.metadata != null
                         ? entry.getKey() + OPTION_METADATA_DELIMITER + option.metadata()
                         : entry.getKey();
                 String value = option.value();
-                String quote = key.contains( " " ) || (value != null && value.contains( " " )) ? " " : "";
-                list.add( quote + (key.length() > 1 ? "--" : "-") + key + (value != null ? "=" + value + quote : "") );
+                String quote = key.contains(" ") || (value != null && value.contains(" ")) ? " " : "";
+                list.add(quote + (key.length() > 1 ? "--" : "-") + key + (value != null ? "=" + value + quote : ""));
             }
         }
-        return list.toArray( new String[0] );
+        return list.toArray(new String[0]);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder builder = new StringBuilder();
-        for ( String arg : asArgs() )
-        {
-            builder.append( builder.length() > 0 ? " " : "" ).append( arg );
+        for (String arg : asArgs()) {
+            builder.append(builder.length() > 0 ? " " : "").append(arg);
         }
         return builder.toString();
     }
 
-    private static boolean isOption( String arg )
-    {
-        return arg.startsWith( "-" ) && arg.length() > 1;
+    private static boolean isOption(String arg) {
+        return arg.startsWith("-") && arg.length() > 1;
     }
 
-    private boolean isFlag( String arg )
-    {
-        return ArrayUtil.contains( flags, arg );
+    private boolean isFlag(String arg) {
+        return ArrayUtil.contains(flags, arg);
     }
 
-    private static boolean isBoolean( String value )
-    {
-        return "true".equalsIgnoreCase( value ) || "false".equalsIgnoreCase( value );
+    private static boolean isBoolean(String value) {
+        return "true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value);
     }
 
-    private static String stripOption( String arg )
-    {
-        while ( !arg.isEmpty() && arg.charAt( 0 ) == '-' )
-        {
-            arg = arg.substring( 1 );
+    private static String stripOption(String arg) {
+        while (!arg.isEmpty() && arg.charAt(0) == '-') {
+            arg = arg.substring(1);
         }
         return arg;
     }
 
-    private void parseArgs( Function<String,Option<String>> optionParser, String[] args )
-    {
-        for ( int i = 0; i < args.length; i++ )
-        {
-            String arg = args[ i ];
-            if ( isOption( arg ) )
-            {
-                arg = stripOption( arg );
-                int equalIndex = arg.indexOf( '=' );
-                if ( equalIndex != -1 )
-                {
-                    String key = arg.substring( 0, equalIndex );
-                    String value = arg.substring( equalIndex + 1 );
-                    if ( !value.isEmpty() )
-                    {
-                        put( optionParser, key, value );
+    private void parseArgs(Function<String, Option<String>> optionParser, String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if (isOption(arg)) {
+                arg = stripOption(arg);
+                int equalIndex = arg.indexOf('=');
+                if (equalIndex != -1) {
+                    String key = arg.substring(0, equalIndex);
+                    String value = arg.substring(equalIndex + 1);
+                    if (!value.isEmpty()) {
+                        put(optionParser, key, value);
                     }
-                }
-                else if ( isFlag( arg ) )
-                {
+                } else if (isFlag(arg)) {
                     int nextIndex = i + 1;
                     String value = nextIndex < args.length ? args[nextIndex] : null;
-                    if ( isBoolean( value ) )
-                    {
+                    if (isBoolean(value)) {
                         i = nextIndex;
-                        put( optionParser, arg, Boolean.valueOf( value ).toString() );
+                        put(optionParser, arg, Boolean.valueOf(value).toString());
+                    } else {
+                        put(optionParser, arg, null);
                     }
-                    else
-                    {
-                        put( optionParser, arg, null );
-                    }
-                }
-                else
-                {
+                } else {
                     int nextIndex = i + 1;
-                    String value = nextIndex < args.length ?
-                        args[ nextIndex ] : null;
-                    value = ( value == null || isOption( value ) ) ? null : value;
-                    if ( value != null )
-                    {
+                    String value = nextIndex < args.length ? args[nextIndex] : null;
+                    value = (value == null || isOption(value)) ? null : value;
+                    if (value != null) {
                         i = nextIndex;
                     }
-                    put( optionParser, arg, value );
+                    put(optionParser, arg, value);
                 }
-            }
-            else
-            {
-                orphans.add( arg );
+            } else {
+                orphans.add(arg);
             }
         }
     }
 
-    private void put( Function<String,Option<String>> optionParser, String key, String value )
-    {
-        Option<String> option = optionParser.apply( key );
-        List<Option<String>> values = map.computeIfAbsent( option.value(), k -> new ArrayList<>() );
-        values.add( new Option<>( value, option.metadata() ) );
+    private void put(Function<String, Option<String>> optionParser, String key, String value) {
+        Option<String> option = optionParser.apply(key);
+        List<Option<String>> values = map.computeIfAbsent(option.value(), k -> new ArrayList<>());
+        values.add(new Option<>(value, option.metadata()));
     }
 
-    public static String jarUsage( Class<?> main, String... params )
-    {
-        StringBuilder usage = new StringBuilder( "USAGE: java [-cp ...] " );
+    public static String jarUsage(Class<?> main, String... params) {
+        StringBuilder usage = new StringBuilder("USAGE: java [-cp ...] ");
         String jar = main.getProtectionDomain().getCodeSource().getLocation().getPath();
-        usage.append( "-jar " ).append( jar );
-        usage.append( ' ' ).append( main.getCanonicalName() );
-        for ( String param : params )
-        {
-            usage.append( ' ' ).append( param );
+        usage.append("-jar ").append(jar);
+        usage.append(' ').append(main.getCanonicalName());
+        for (String param : params) {
+            usage.append(' ').append(param);
         }
         return usage.toString();
     }
 
     @SafeVarargs
-    public final <T> T interpretOption( String key, Function<String,T> defaultValue,
-            Function<String,T> converter, Validator<T>... validators )
-    {
+    public final <T> T interpretOption(
+            String key, Function<String, T> defaultValue, Function<String, T> converter, Validator<T>... validators) {
         T value;
-        if ( !has( key ) )
-        {
-            value = defaultValue.apply( key );
+        if (!has(key)) {
+            value = defaultValue.apply(key);
+        } else {
+            String stringValue = get(key);
+            value = converter.apply(stringValue);
         }
-        else
-        {
-            String stringValue = get( key );
-            value = converter.apply( stringValue );
-        }
-        return validated( value, validators );
+        return validated(value, validators);
     }
 
     /**
@@ -509,14 +432,12 @@ public class Args
      * @return The option values
      */
     @SafeVarargs
-    public final <T> Collection<T> interpretOptions( String key, Function<String,T> defaultValue,
-            Function<String,T> converter, Validator<T>... validators )
-    {
-        Collection<Option<T>> options = interpretOptionsWithMetadata( key, defaultValue, converter, validators );
-        Collection<T> values = new ArrayList<>( options.size() );
-        for ( Option<T> option : options )
-        {
-            values.add( option.value() );
+    public final <T> Collection<T> interpretOptions(
+            String key, Function<String, T> defaultValue, Function<String, T> converter, Validator<T>... validators) {
+        Collection<Option<T>> options = interpretOptionsWithMetadata(key, defaultValue, converter, validators);
+        Collection<T> values = new ArrayList<>(options.size());
+        for (Option<T> option : options) {
+            values.add(option.value());
         }
         return values;
     }
@@ -536,56 +457,43 @@ public class Args
      * @return The option values
      */
     @SafeVarargs
-    public final <T> Collection<Option<T>> interpretOptionsWithMetadata( String key, Function<String,T> defaultValue,
-            Function<String,T> converter, Validator<T>... validators )
-    {
+    public final <T> Collection<Option<T>> interpretOptionsWithMetadata(
+            String key, Function<String, T> defaultValue, Function<String, T> converter, Validator<T>... validators) {
         Collection<Option<T>> values = new ArrayList<>();
-        if ( !hasNonNull( key ) )
-        {
-            T defaultItem = defaultValue.apply( key );
-            if ( defaultItem != null )
-            {
-                values.add( new Option<>( validated( defaultItem, validators ), null ) );
+        if (!hasNonNull(key)) {
+            T defaultItem = defaultValue.apply(key);
+            if (defaultItem != null) {
+                values.add(new Option<>(validated(defaultItem, validators), null));
             }
-        }
-        else
-        {
-            for ( Option<String> option : map.get( key ) )
-            {
+        } else {
+            for (Option<String> option : map.get(key)) {
                 String stringValue = option.value();
-                values.add( new Option<>( validated( converter.apply( stringValue ), validators ), option.metadata() ) );
+                values.add(new Option<>(validated(converter.apply(stringValue), validators), option.metadata()));
             }
         }
         return values;
     }
 
     @SafeVarargs
-    public final <T> T interpretOrphan( int index, Function<String,T> defaultValue,
-            Function<String,T> converter, Validator<T>... validators )
-    {
+    public final <T> T interpretOrphan(
+            int index, Function<String, T> defaultValue, Function<String, T> converter, Validator<T>... validators) {
         assert index >= 0;
 
         T value;
-        if ( index >= orphans.size() )
-        {
-            value = defaultValue.apply( "argument at index " + index );
+        if (index >= orphans.size()) {
+            value = defaultValue.apply("argument at index " + index);
+        } else {
+            String stringValue = orphans.get(index);
+            value = converter.apply(stringValue);
         }
-        else
-        {
-            String stringValue = orphans.get( index );
-            value = converter.apply( stringValue );
-        }
-        return validated( value, validators );
+        return validated(value, validators);
     }
 
     @SafeVarargs
-    private static <T> T validated( T value, Validator<T>... validators )
-    {
-        if ( value != null )
-        {
-            for ( Validator<T> validator : validators )
-            {
-                validator.validate( value );
+    private static <T> T validated(T value, Validator<T>... validators) {
+        if (value != null) {
+            for (Validator<T> validator : validators) {
+                validator.validate(value);
             }
         }
         return value;

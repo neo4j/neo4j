@@ -19,25 +19,21 @@
  */
 package org.neo4j.cypher.internal;
 
-@SuppressWarnings( "AssertWithSideEffects" )
-public class Assertion
-{
+@SuppressWarnings("AssertWithSideEffects")
+public class Assertion {
     private static final boolean ASSERTION_ENABLED;
 
-    static
-    {
+    static {
         boolean ae = false;
         assert ae = true;
         ASSERTION_ENABLED = ae;
     }
 
-    public static boolean assertionsEnabled()
-    {
+    public static boolean assertionsEnabled() {
         return ASSERTION_ENABLED;
     }
 
-    private Assertion()
-    {
-        throw new AssertionError( "No instances" );
+    private Assertion() {
+        throw new AssertionError("No instances");
     }
 }

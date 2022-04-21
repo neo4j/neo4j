@@ -20,28 +20,26 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
-
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
-public interface StorageSchemaReader
-{
+public interface StorageSchemaReader {
 
     /**
      * Get the index with the given name.
      * @param name name of index to find.
      * @return {@link IndexDescriptor} associated with the given {@code name}.
      */
-    IndexDescriptor indexGetForName( String name );
+    IndexDescriptor indexGetForName(String name);
 
     /**
      * Get the constraint with the given name.
      * @param name name of the constraint to find.
      * @return {@link ConstraintDescriptor} associated with the given {@code name}.
      */
-    ConstraintDescriptor constraintGetForName( String name );
+    ConstraintDescriptor constraintGetForName(String name);
 
     /**
      * Looks for a stored index by given {@code descriptor}
@@ -49,7 +47,7 @@ public interface StorageSchemaReader
      * @param descriptor a description of the index.
      * @return iterator of matching {@link IndexDescriptor}s.
      */
-    Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor );
+    Iterator<IndexDescriptor> indexGetForSchema(SchemaDescriptor descriptor);
 
     /**
      * Looks for a stored index by given {@code descriptor} and @{code type}
@@ -58,19 +56,19 @@ public interface StorageSchemaReader
      * @param type an index type
      * @return matching {@link IndexDescriptor} or null.
      */
-    IndexDescriptor indexGetForSchemaAndType( SchemaDescriptor descriptor, IndexType type );
+    IndexDescriptor indexGetForSchemaAndType(SchemaDescriptor descriptor, IndexType type);
 
     /**
      * @param labelId label to list indexes for.
      * @return {@link IndexDescriptor} associated with the given {@code labelId}.
      */
-    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel(int labelId);
 
     /**
      * @param relationshipType relationship type to list indexes for.
      * @return {@link IndexDescriptor} associated with the given {@code relationshipType}.
      */
-    Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType );
+    Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType);
 
     /**
      * @return all {@link IndexDescriptor} in storage.
@@ -81,13 +79,13 @@ public interface StorageSchemaReader
      * @param labelId label token id.
      * @return node property constraints associated with the label token id.
      */
-    Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
+    Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId);
 
     /**
      * @param typeId relationship type token id .
      * @return relationship property constraints associated with the relationship type token id.
      */
-    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
+    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId);
 
     /**
      * @return all stored property constraints.

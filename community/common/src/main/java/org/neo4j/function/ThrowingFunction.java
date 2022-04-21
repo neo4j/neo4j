@@ -26,8 +26,7 @@ package org.neo4j.function;
  * @param <R> the type of the result of the function
  * @param <E> the type of exception that may be thrown from the function
  */
-public interface ThrowingFunction<T, R, E extends Exception>
-{
+public interface ThrowingFunction<T, R, E extends Exception> {
     /**
      * Apply a value to this function
      *
@@ -35,5 +34,5 @@ public interface ThrowingFunction<T, R, E extends Exception>
      * @return the function result
      * @throws E an exception if the function fails
      */
-    R apply( T t ) throws E;
+    R apply(T t) throws E;
 }

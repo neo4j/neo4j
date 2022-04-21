@@ -19,21 +19,18 @@
  */
 package org.neo4j.shell.build;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class BuildTest
-{
+import org.junit.jupiter.api.Test;
+
+class BuildTest {
     @Test
-    void versionIsNumeric()
-    {
-        assertTrue( Build.version().matches( "\\d+\\.\\d+\\.\\d+.*" ) );
+    void versionIsNumeric() {
+        assertTrue(Build.version().matches("\\d+\\.\\d+\\.\\d+.*"));
     }
 
     @Test
-    void neo4jDriverVersionIsNumeric()
-    {
-        assertTrue( Build.driverVersion().matches( "\\d+\\.\\d+\\.\\d+.*" ) );
+    void neo4jDriverVersionIsNumeric() {
+        assertTrue(Build.driverVersion().matches("\\d+\\.\\d+\\.\\d+.*"));
     }
 }

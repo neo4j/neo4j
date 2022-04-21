@@ -19,24 +19,17 @@
  */
 package org.neo4j.shell.cli;
 
-public enum Encryption
-{
+public enum Encryption {
     TRUE,
     FALSE,
     DEFAULT;
 
-    public static Encryption parse( String format )
-    {
-        if ( format.equalsIgnoreCase( TRUE.name() ) )
-        {
+    public static Encryption parse(String format) {
+        if (format.equalsIgnoreCase(TRUE.name())) {
             return TRUE;
-        }
-        else if ( format.equalsIgnoreCase( FALSE.name() ) )
-        {
+        } else if (format.equalsIgnoreCase(FALSE.name())) {
             return FALSE;
-        }
-        else
-        {
+        } else {
             return DEFAULT;
         }
     }

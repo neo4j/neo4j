@@ -26,14 +26,14 @@ import org.neo4j.values.virtual.MapValue
 
 object createParameterArray {
 
-  def apply(params: MapValue,
-                     parameterMapping: ParameterMapping): Array[AnyValue] = {
+  def apply(params: MapValue, parameterMapping: ParameterMapping): Array[AnyValue] = {
     val parameterArray = new Array[AnyValue](parameterMapping.size)
     parameterMapping.foreach {
       case (key, OffsetAndDefault(offset, default)) =>
         val value = params.get(key)
         if ((value eq NO_VALUE) && !params.containsKey(key)) {
-          parameterArray(offset) = default.getOrElse(throw new ParameterNotFoundException("Expected a parameter named " + key))
+          parameterArray(offset) =
+            default.getOrElse(throw new ParameterNotFoundException("Expected a parameter named " + key))
         } else {
           parameterArray(offset) = value
         }

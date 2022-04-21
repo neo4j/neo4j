@@ -19,10 +19,11 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.ResponseMessage;
@@ -45,157 +46,129 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.AnyValue;
 
-import static java.lang.String.format;
-
 /**
  * Writer for Bolt request messages to be sent to a {@link Neo4jPack.Packer}.
  */
-public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltResponseMessageWriterV3.class );
+public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BoltResponseMessageWriterV3.class);
     private static final int MAX_LOG_COMPONENT_LENGTH = 4096;
 
     private final PackOutput output;
     private final Neo4jPack.Packer packer;
     private final InternalLog log;
-    private final Map<Byte,ResponseMessageEncoder<ResponseMessage>> encoders;
+    private final Map<Byte, ResponseMessageEncoder<ResponseMessage>> encoders;
     private RecordMessageEncoder recordMessageEncoder = new RecordMessageEncoder();
 
-    public BoltResponseMessageWriterV3( PackProvider packerProvider, PackOutput output, LogService logService )
-    {
+    public BoltResponseMessageWriterV3(PackProvider packerProvider, PackOutput output, LogService logService) {
         this.output = output;
-        this.packer = packerProvider.newPacker( output );
-        this.log = logService.getInternalLog( getClass() );
+        this.packer = packerProvider.newPacker(output);
+        this.log = logService.getInternalLog(getClass());
         this.encoders = registerEncoders();
     }
 
-    private Map<Byte,ResponseMessageEncoder<ResponseMessage>> registerEncoders()
-    {
-        Map<Byte,ResponseMessageEncoder<?>> encoders = new HashMap<>();
-        encoders.put( SuccessMessage.SIGNATURE, new SuccessMessageEncoder() );
-        encoders.put( RecordMessage.SIGNATURE, recordMessageEncoder );
-        encoders.put( IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder() );
-        encoders.put( FailureMessage.SIGNATURE, new FailureMessageEncoder( log ) );
-        return (Map)encoders;
+    private Map<Byte, ResponseMessageEncoder<ResponseMessage>> registerEncoders() {
+        Map<Byte, ResponseMessageEncoder<?>> encoders = new HashMap<>();
+        encoders.put(SuccessMessage.SIGNATURE, new SuccessMessageEncoder());
+        encoders.put(RecordMessage.SIGNATURE, recordMessageEncoder);
+        encoders.put(IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder());
+        encoders.put(FailureMessage.SIGNATURE, new FailureMessageEncoder(log));
+        return (Map) encoders;
     }
 
     @Override
-    public void write( ResponseMessage message ) throws IOException
-    {
-        packCompleteMessageOrFail( message );
-        if ( message instanceof FatalFailureMessage )
-        {
+    public void write(ResponseMessage message) throws IOException {
+        packCompleteMessageOrFail(message);
+        if (message instanceof FatalFailureMessage) {
             flush();
         }
     }
 
     @Override
-    public void flush() throws IOException
-    {
+    public void flush() throws IOException {
         output.flush();
     }
 
-    public PackOutput output()
-    {
+    public PackOutput output() {
         return this.output;
     }
 
-    public InternalLog log()
-    {
+    public InternalLog log() {
         return this.log;
     }
 
-    private void packCompleteMessageOrFail( ResponseMessage message ) throws IOException
-    {
+    private void packCompleteMessageOrFail(ResponseMessage message) throws IOException {
         boolean packingFailed = true;
         output.beginMessage();
-        try
-        {
-            ResponseMessageEncoder<ResponseMessage> encoder = encoders.get( message.signature() );
-            if ( encoder == null )
-            {
-                throw new BoltIOException( Status.Request.InvalidFormat,
-                        format( "Message %s is not supported in this protocol version.", message ) );
+        try {
+            ResponseMessageEncoder<ResponseMessage> encoder = encoders.get(message.signature());
+            if (encoder == null) {
+                throw new BoltIOException(
+                        Status.Request.InvalidFormat,
+                        format("Message %s is not supported in this protocol version.", message));
             }
-            encoder.encode( packer, message );
+            encoder.encode(packer, message);
             packingFailed = false;
             output.messageSucceeded();
-        }
-        catch ( Throwable error )
-        {
-            if ( packingFailed )
-            {
+        } catch (Throwable error) {
+            if (packingFailed) {
                 // packing failed, there might be some half-written data in the output buffer right now
                 // notify output about the failure so that it cleans up the buffer
                 output.messageFailed();
-                log.error( "Failed to write full %s message because: %s", message, error.getMessage() );
+                log.error("Failed to write full %s message because: %s", message, error.getMessage());
             }
             throw error;
         }
     }
 
     @Override
-    public void beginRecord( int numberOfFields ) throws IOException
-    {
+    public void beginRecord(int numberOfFields) throws IOException {
         output.beginMessage();
-        try
-        {
-            recordMessageEncoder.beginRecord( packer, numberOfFields );
-        }
-        catch ( Throwable error )
-        {
+        try {
+            recordMessageEncoder.beginRecord(packer, numberOfFields);
+        } catch (Throwable error) {
             // packing failed, there might be some half-written data in the output buffer right now
             // notify output about the failure so that it cleans up the buffer
             output.messageFailed();
-            log.error( "Failed to write new record because: %s", error.getMessage() );
+            log.error("Failed to write new record because: %s", error.getMessage());
             throw error;
         }
     }
 
     @Override
-    public void consumeField( AnyValue value ) throws IOException
-    {
-        try
-        {
-            recordMessageEncoder.onField( packer, value );
-        }
-        catch ( Throwable error )
-        {
-            log.error( "Failed to write value %s because: %s", formatValue( value ), error.getMessage() );
+    public void consumeField(AnyValue value) throws IOException {
+        try {
+            recordMessageEncoder.onField(packer, value);
+        } catch (Throwable error) {
+            log.error("Failed to write value %s because: %s", formatValue(value), error.getMessage());
             onError();
             throw error;
         }
     }
 
-    private String formatValue( AnyValue value )
-    {
+    private String formatValue(AnyValue value) {
         var encoded = value.toString();
 
-        if ( encoded.length() < MAX_LOG_COMPONENT_LENGTH )
-        {
+        if (encoded.length() < MAX_LOG_COMPONENT_LENGTH) {
             return encoded;
         }
 
-        return encoded.substring( 0, MAX_LOG_COMPONENT_LENGTH ) + "...";
+        return encoded.substring(0, MAX_LOG_COMPONENT_LENGTH) + "...";
     }
 
     @Override
-    public void endRecord() throws IOException
-    {
+    public void endRecord() throws IOException {
         output.messageSucceeded();
     }
 
     @Override
-    public void onError()
-    {
+    public void onError() {
         // packing failed, there might be some half-written data in the output buffer right now
         // notify output about the failure so that it cleans up the buffer
         output.messageReset();
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         output.close();
     }
 }

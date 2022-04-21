@@ -19,32 +19,28 @@
  */
 package org.neo4j.kernel.database;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
-
 import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class GlobalAvailabilityGuardControllerTest
-{
-    private final CompositeDatabaseAvailabilityGuard guard = mock( CompositeDatabaseAvailabilityGuard.class );
-    private final GlobalAvailabilityGuardController guardController = new GlobalAvailabilityGuardController( guard );
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
+
+class GlobalAvailabilityGuardControllerTest {
+    private final CompositeDatabaseAvailabilityGuard guard = mock(CompositeDatabaseAvailabilityGuard.class);
+    private final GlobalAvailabilityGuardController guardController = new GlobalAvailabilityGuardController(guard);
 
     @Test
-    void doNotAbortOnRunning()
-    {
-        when( guard.isShutdown() ).thenReturn( false );
-        assertFalse( guardController.shouldAbort( new NamedDatabaseId( "any", randomUUID() ) ) );
+    void doNotAbortOnRunning() {
+        when(guard.isShutdown()).thenReturn(false);
+        assertFalse(guardController.shouldAbort(new NamedDatabaseId("any", randomUUID())));
     }
 
     @Test
-    void abortOnShutdown()
-    {
-        when( guard.isShutdown() ).thenReturn( true );
-        assertTrue( guardController.shouldAbort( new NamedDatabaseId( "any", randomUUID() ) ) );
+    void abortOnShutdown() {
+        when(guard.isShutdown()).thenReturn(true);
+        assertTrue(guardController.shouldAbort(new NamedDatabaseId("any", randomUUID())));
     }
 }

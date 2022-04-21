@@ -19,11 +19,16 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.test.server.HTTP.POST;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import java.util.Arrays;
 import java.util.Map;
-
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,120 +40,98 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.SharedWebContainerTestBase;
 
-import static java.lang.String.format;
-import static java.util.stream.Collectors.joining;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.test.server.HTTP.POST;
-import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
-
-public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase implements GraphHolder
-{
+public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase implements GraphHolder {
     @RegisterExtension
-    TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this ) );
+    TestData<Map<String, Node>> data = TestData.producedThrough(GraphDescription.createGraphFor(this));
 
     @RegisterExtension
-    protected TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
+    protected TestData<RESTRequestGenerator> gen = TestData.producedThrough(RESTRequestGenerator.PRODUCER);
 
     @Override
-    public GraphDatabaseService graphdb()
-    {
+    public GraphDatabaseService graphdb() {
         return container().getDefaultDatabase();
     }
 
-    public <T> T resolveDependency( Class<T> cls )
-    {
-        return ((GraphDatabaseAPI)graphdb()).getDependencyResolver().resolveDependency( cls );
+    public <T> T resolveDependency(Class<T> cls) {
+        return ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency(cls);
     }
 
-    private static String defaultDatabaseUri()
-    {
-        return databaseUri( "neo4j" );
+    private static String defaultDatabaseUri() {
+        return databaseUri("neo4j");
     }
 
-    private static String databaseUri( String databaseName )
-    {
-        return databaseUri( getLocalHttpPort(), databaseName );
+    private static String databaseUri(String databaseName) {
+        return databaseUri(getLocalHttpPort(), databaseName);
     }
 
-    private static String databaseUri( int port, String databaseName )
-    {
-        return String.format( "http://localhost:%s/db/%s/", port, databaseName );
+    private static String databaseUri(int port, String databaseName) {
+        return String.format("http://localhost:%s/db/%s/", port, databaseName);
     }
 
-    protected static String dbUri()
-    {
+    protected static String dbUri() {
         return "http://localhost:" + getLocalHttpPort() + "/db/";
     }
 
-    protected static String txUri()
-    {
+    protected static String txUri() {
         return defaultDatabaseUri() + "tx";
     }
 
-    protected static String txUri( String databaseName )
-    {
-        return databaseUri( databaseName ) + "tx";
+    protected static String txUri(String databaseName) {
+        return databaseUri(databaseName) + "tx";
     }
 
-    protected static String txCommitUri()
-    {
+    protected static String txCommitUri() {
         return defaultDatabaseUri() + "tx/commit";
     }
 
-    public static String txCommitUri( String databaseName )
-    {
-        return databaseUri( databaseName ) + "tx/commit";
+    public static String txCommitUri(String databaseName) {
+        return databaseUri(databaseName) + "tx/commit";
     }
 
-    public static String txCommitUri( String databaseName, int port )
-    {
-        return databaseUri( port, databaseName ) + "tx/commit";
+    public static String txCommitUri(String databaseName, int port) {
+        return databaseUri(port, databaseName) + "tx/commit";
     }
 
-    protected static String txUri( long txId )
-    {
+    protected static String txUri(long txId) {
         return defaultDatabaseUri() + "tx/" + txId;
     }
 
-    protected static long extractTxId( HTTP.Response response )
-    {
-        int lastSlash = response.location().lastIndexOf( '/' );
-        String txIdString = response.location().substring( lastSlash + 1 );
-        return Long.parseLong( txIdString );
+    protected static long extractTxId(HTTP.Response response) {
+        int lastSlash = response.location().lastIndexOf('/');
+        String txIdString = response.location().substring(lastSlash + 1);
+        return Long.parseLong(txIdString);
     }
 
-    protected static int getLocalHttpPort()
-    {
+    protected static int getLocalHttpPort() {
         GraphDatabaseAPI database = container().getDefaultDatabase();
-        ConnectorPortRegister connectorPortRegister = database.getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
-        return connectorPortRegister.getLocalAddress( "http" ).getPort();
+        ConnectorPortRegister connectorPortRegister =
+                database.getDependencyResolver().resolveDependency(ConnectorPortRegister.class);
+        return connectorPortRegister.getLocalAddress("http").getPort();
     }
 
-    protected static HTTP.Response runQuery( String query, String... contentTypes )
-    {
+    protected static HTTP.Response runQuery(String query, String... contentTypes) {
         String resultDataContents = "";
-        if ( contentTypes.length > 0 )
-        {
-            resultDataContents = ", 'resultDataContents': [" + Arrays.stream( contentTypes )
-                    .map( unquoted -> format( "'%s'", unquoted ) ).collect( joining( "," ) ) + "]";
+        if (contentTypes.length > 0) {
+            resultDataContents = ", 'resultDataContents': ["
+                    + Arrays.stream(contentTypes)
+                            .map(unquoted -> format("'%s'", unquoted))
+                            .collect(joining(",")) + "]";
         }
-        return POST( txCommitUri(), quotedJson( format( "{'statements': [{'statement': '%s'%s}]}", query, resultDataContents) ) );
+        return POST(
+                txCommitUri(),
+                quotedJson(format("{'statements': [{'statement': '%s'%s}]}", query, resultDataContents)));
     }
 
-    protected static void assertNoErrors( HTTP.Response response ) throws JsonParseException
-    {
-        assertEquals( "[]", response.get( "errors" ).toString() );
-        assertEquals( 0, response.get( "errors" ).size() );
+    protected static void assertNoErrors(HTTP.Response response) throws JsonParseException {
+        assertEquals("[]", response.get("errors").toString());
+        assertEquals(0, response.get("errors").size());
     }
 
-    protected static void assertHasTxLocation( HTTP.Response begin )
-    {
-        assertThat( begin.location() ).matches( txUri() + "/\\d+" );
+    protected static void assertHasTxLocation(HTTP.Response begin) {
+        assertThat(begin.location()).matches(txUri() + "/\\d+");
     }
 
-    protected static void assertHasTxLocation( HTTP.Response begin, String txUri )
-    {
-        assertThat( begin.location() ).matches( format( "http://localhost:\\d+/%s/\\d+", txUri ) );
+    protected static void assertHasTxLocation(HTTP.Response begin, String txUri) {
+        assertThat(begin.location()).matches(format("http://localhost:\\d+/%s/\\d+", txUri));
     }
 }

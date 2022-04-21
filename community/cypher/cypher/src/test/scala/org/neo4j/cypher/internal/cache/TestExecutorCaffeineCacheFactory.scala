@@ -19,5 +19,4 @@
  */
 package org.neo4j.cypher.internal.cache
 
-object TestExecutorCaffeineCacheFactory extends ExecutorBasedCaffeineCacheFactory((_:Runnable).run()) {
-}
+object TestExecutorCaffeineCacheFactory extends ExecutorBasedCaffeineCacheFactory((_: Runnable).run()) {}

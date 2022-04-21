@@ -33,10 +33,10 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("subqueryForeach should forward the table from the LHS") {
     val query = new LogicalQueryBuilder(this)
@@ -55,13 +55,12 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     // then
     val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size
-         .shouldBe(sizeHint)
+      .shouldBe(sizeHint)
 
     runtimeResult
       .should(beColumns("x")
         .withRows(singleColumn(Range.inclusive(1, sizeHint)))
-        .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint)
-      )
+        .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint))
   }
 
   test("subqueryForeach with empty LHS should do nothing") {
@@ -82,7 +81,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     // then
     val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size
-         .shouldBe(0)
+      .shouldBe(0)
 
     runtimeResult
       .should(beColumns().withNoRows())
@@ -108,18 +107,16 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
       // then
       val nodes = allNodes.asScala.toList
       nodes.map(_.getProperty("prop").asInstanceOf[Long]).toSet
-           .shouldEqual(Range.inclusive(1, sizeHint).toSet)
+        .shouldEqual(Range.inclusive(1, sizeHint).toSet)
 
       runtimeResult
         .should(beColumns("x")
           .withRows(singleColumn(Range.inclusive(1, sizeHint)))
-          .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint, propertiesSet = sizeHint)
-        )
+          .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint, propertiesSet = sizeHint))
     } finally {
       allNodes.close()
     }
   }
-
 
   test("subqueryForeach should handle nested subqueryForeach") {
     // UNWIND range(1, $sizeHint) AS x
@@ -162,7 +159,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     ns.size
       .shouldEqual(sizeHint)
     ns.map(_.getProperty("x").asInstanceOf[Long]).toSet
-         .shouldEqual(Range.inclusive(1, sizeHint).toSet)
+      .shouldEqual(Range.inclusive(1, sizeHint).toSet)
 
     val ms = tx.findNodes(Label.label("M")).asScala.toList
     ms.size
@@ -175,8 +172,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult
       .should(beColumns("x")
         .withRows(singleColumn(Range.inclusive(1, sizeHint)))
-        .withStatistics(nodesCreated = sizeHint * 3, labelsAdded = sizeHint * 3, propertiesSet = sizeHint * 5)
-      )
+        .withStatistics(nodesCreated = sizeHint * 3, labelsAdded = sizeHint * 3, propertiesSet = sizeHint * 5))
   }
 
   test("subqueryForeach should handle nested apply") {
@@ -233,8 +229,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult
       .should(beColumns("x")
         .withRows(singleColumn(Range.inclusive(1, sizeHint)))
-        .withStatistics(nodesCreated = sizeHint * 3, labelsAdded = sizeHint * 3, propertiesSet = sizeHint * 5)
-      )
+        .withStatistics(nodesCreated = sizeHint * 3, labelsAdded = sizeHint * 3, propertiesSet = sizeHint * 5))
   }
 
   test("subqueryForeach should handle being nested under apply") {
@@ -291,8 +286,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult
       .should(beColumns("x")
         .withRows(singleColumn(Range.inclusive(1, sizeHint).flatMap(x => Seq(x, x))))
-        .withStatistics(nodesCreated = sizeHint * 3, labelsAdded = sizeHint * 3, propertiesSet = sizeHint * 6)
-      )
+        .withStatistics(nodesCreated = sizeHint * 3, labelsAdded = sizeHint * 3, propertiesSet = sizeHint * 6))
   }
 
   test("subqueryForeach under exhaustive limit should execute side-effects") {
@@ -313,12 +307,11 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     // then
     val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size
-         .shouldBe(sizeHint)
+      .shouldBe(sizeHint)
 
     runtimeResult
       .should(beColumns("x")
         .withNoRows()
-        .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint)
-      )
+        .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint))
   }
 }

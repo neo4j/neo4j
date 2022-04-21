@@ -28,8 +28,7 @@ import org.neo4j.graphdb.traversal.BranchState;
  * from it to traverse further.
  */
 @PublicApi
-public interface PathExpander<STATE>
-{
+public interface PathExpander<STATE> {
     /**
      * Returns relationships for a {@link Path}, most commonly from the
      * {@link Path#endNode()}.
@@ -42,7 +41,7 @@ public interface PathExpander<STATE>
      * of this path will see the state of the parent.
      * @return the relationships to return for the {@code path}.
      */
-    Iterable<Relationship> expand( Path path, BranchState<STATE> state );
+    Iterable<Relationship> expand(Path path, BranchState<STATE> state);
 
     /**
      * Returns a new instance with the exact expansion logic, but reversed.

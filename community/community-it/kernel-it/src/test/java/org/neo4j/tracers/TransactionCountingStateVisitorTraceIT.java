@@ -19,11 +19,13 @@
  */
 package org.neo4j.tracers;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -40,97 +42,85 @@ import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
-
 @DbmsExtension
-public class TransactionCountingStateVisitorTraceIT
-{
+public class TransactionCountingStateVisitorTraceIT {
     @Inject
     private GraphDatabaseAPI database;
-    private static final Label marker = Label.label( "marker" );
-    private static final Label label = Label.label( "label" );
+
+    private static final Label marker = Label.label("marker");
+    private static final Label label = Label.label("label");
     private long sourceNodeId;
     private long relationshipId;
 
     @BeforeEach
-    void setUp()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            var source = transaction.createNode( marker, label );
+    void setUp() {
+        try (Transaction transaction = database.beginTx()) {
+            var source = transaction.createNode(marker, label);
             sourceNodeId = source.getId();
             var destination = transaction.createNode();
-            var relationship = source.createRelationshipTo( destination, withName( "any" ) );
+            var relationship = source.createRelationshipTo(destination, withName("any"));
             relationshipId = relationship.getId();
             transaction.commit();
         }
     }
 
     @Test
-    void traceDeletedRelationshipPageCacheAccess() throws KernelException
-    {
-        traceStateWithChanges( tx -> tx.getRelationshipById( relationshipId ).delete(), 2 );
+    void traceDeletedRelationshipPageCacheAccess() throws KernelException {
+        traceStateWithChanges(tx -> tx.getRelationshipById(relationshipId).delete(), 2);
     }
 
     @Test
-    void traceNodeLabelChangesPageCacheAccess() throws KernelException
-    {
-        traceStateWithChanges( tx -> tx.getNodeById( sourceNodeId ).removeLabel( marker ) );
+    void traceNodeLabelChangesPageCacheAccess() throws KernelException {
+        traceStateWithChanges(tx -> tx.getNodeById(sourceNodeId).removeLabel(marker));
     }
 
     @Test
-    void traceDeletedNodePageCacheAccess() throws KernelException
-    {
-        traceStateWithChanges( tx -> tx.getNodeById( sourceNodeId ).delete() );
+    void traceDeletedNodePageCacheAccess() throws KernelException {
+        traceStateWithChanges(tx -> tx.getNodeById(sourceNodeId).delete());
     }
 
-    private void traceStateWithChanges( Consumer<Transaction> transactionalOperation ) throws KernelException
-    {
-        traceStateWithChanges( transactionalOperation, 2 );
+    private void traceStateWithChanges(Consumer<Transaction> transactionalOperation) throws KernelException {
+        traceStateWithChanges(transactionalOperation, 2);
     }
 
-    private void traceStateWithChanges( Consumer<Transaction> transactionalOperation, int traceCount ) throws KernelException
-    {
-        try ( var transaction = database.beginTx() )
-        {
+    private void traceStateWithChanges(Consumer<Transaction> transactionalOperation, int traceCount)
+            throws KernelException {
+        try (var transaction = database.beginTx()) {
             var internalTransaction = (InternalTransaction) transaction;
-            KernelTransactionImplementation kernelTransaction = (KernelTransactionImplementation) internalTransaction.kernelTransaction();
+            KernelTransactionImplementation kernelTransaction =
+                    (KernelTransactionImplementation) internalTransaction.kernelTransaction();
             var cursorContext = kernelTransaction.cursorContext();
 
-            transactionalOperation.accept( transaction );
+            transactionalOperation.accept(transaction);
 
-            ((DefaultPageCursorTracer) cursorContext.getCursorTracer()).setIgnoreCounterCheck( true );
+            ((DefaultPageCursorTracer) cursorContext.getCursorTracer()).setIgnoreCounterCheck(true);
             cursorContext.getCursorTracer().reportEvents();
-            assertZeroCursor( cursorContext );
+            assertZeroCursor(cursorContext);
             var transactionState = kernelTransaction.txState();
             var counts = new CountsDelta();
 
-            try ( StorageReader storageReader = kernelTransaction.newStorageReader();
-                    var stateVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, transactionState, counts, cursorContext, StoreCursors.NULL ) )
-            {
-                transactionState.accept( stateVisitor );
+            try (StorageReader storageReader = kernelTransaction.newStorageReader();
+                    var stateVisitor = new TransactionCountingStateVisitor(
+                            EMPTY, storageReader, transactionState, counts, cursorContext, StoreCursors.NULL)) {
+                transactionState.accept(stateVisitor);
             }
 
-            assertCursorTracer( cursorContext, traceCount );
+            assertCursorTracer(cursorContext, traceCount);
         }
     }
 
-    private static void assertCursorTracer( CursorContext cursorContext, int count )
-    {
+    private static void assertCursorTracer(CursorContext cursorContext, int count) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isEqualTo( count );
-        assertThat( cursorTracer.hits() ).isEqualTo( count );
-        assertThat( cursorTracer.unpins() ).isEqualTo( count );
+        assertThat(cursorTracer.pins()).isEqualTo(count);
+        assertThat(cursorTracer.hits()).isEqualTo(count);
+        assertThat(cursorTracer.unpins()).isEqualTo(count);
     }
 
-    private static void assertZeroCursor( CursorContext cursorContext )
-    {
+    private static void assertZeroCursor(CursorContext cursorContext) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.hits() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
-        assertThat( cursorTracer.faults() ).isZero();
+        assertThat(cursorTracer.pins()).isZero();
+        assertThat(cursorTracer.hits()).isZero();
+        assertThat(cursorTracer.unpins()).isZero();
+        assertThat(cursorTracer.faults()).isZero();
     }
 }

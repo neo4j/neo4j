@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.evaluator;
 
-class EvaluationRuntimeException extends RuntimeException
-{
-    EvaluationRuntimeException( String message )
-    {
-        super( message );
+class EvaluationRuntimeException extends RuntimeException {
+    EvaluationRuntimeException(String message) {
+        super(message);
     }
 }

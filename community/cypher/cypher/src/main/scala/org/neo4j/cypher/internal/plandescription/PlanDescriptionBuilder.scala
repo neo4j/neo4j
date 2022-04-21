@@ -37,15 +37,18 @@ import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
 
 object PlanDescriptionBuilder {
-  def apply(logicalPlan: LogicalPlan,
-            plannerName: PlannerName,
-            cypherVersion: CypherVersion,
-            readOnly: Boolean,
-            effectiveCardinalities: EffectiveCardinalities,
-            withRawCardinalities: Boolean,
-            providedOrders: ProvidedOrders,
-            executionPlan: ExecutionPlan,
-            renderPlanDescription: Boolean): PlanDescriptionBuilder = {
+
+  def apply(
+    logicalPlan: LogicalPlan,
+    plannerName: PlannerName,
+    cypherVersion: CypherVersion,
+    readOnly: Boolean,
+    effectiveCardinalities: EffectiveCardinalities,
+    withRawCardinalities: Boolean,
+    providedOrders: ProvidedOrders,
+    executionPlan: ExecutionPlan,
+    renderPlanDescription: Boolean
+  ): PlanDescriptionBuilder = {
     // NOTE: We should not keep a reference to the ExecutionPlan in the PlanDescriptionBuilder since it can end up in long-lived caches, e.g. RecentQueryBuffer
     val batchSize = executionPlan.batchSize
     val runtimeName = executionPlan.runtimeName
@@ -53,44 +56,59 @@ object PlanDescriptionBuilder {
     val runtimeOperatorMetadata = executionPlan.operatorMetadata
     val internalPlanDescriptionRewriter = executionPlan.internalPlanDescriptionRewriter
 
-    new PlanDescriptionBuilder(logicalPlan: LogicalPlan,
-                               plannerName: PlannerName,
-                               cypherVersion: CypherVersion,
-                               readOnly: Boolean,
-                               effectiveCardinalities: EffectiveCardinalities,
-                               withRawCardinalities: Boolean,
-                               providedOrders: ProvidedOrders,
-                               runtimeName,
-                               runtimeMetadata,
-                               runtimeOperatorMetadata,
-                               internalPlanDescriptionRewriter,
-                               batchSize,
-                               renderPlanDescription)
+    new PlanDescriptionBuilder(
+      logicalPlan: LogicalPlan,
+      plannerName: PlannerName,
+      cypherVersion: CypherVersion,
+      readOnly: Boolean,
+      effectiveCardinalities: EffectiveCardinalities,
+      withRawCardinalities: Boolean,
+      providedOrders: ProvidedOrders,
+      runtimeName,
+      runtimeMetadata,
+      runtimeOperatorMetadata,
+      internalPlanDescriptionRewriter,
+      batchSize,
+      renderPlanDescription
+    )
   }
 }
 
-class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
-                             plannerName: PlannerName,
-                             cypherVersion: CypherVersion,
-                             readOnly: Boolean,
-                             effectiveCardinalities: EffectiveCardinalities,
-                             withRawCardinalities: Boolean,
-                             providedOrders: ProvidedOrders,
-                             runtimeName: RuntimeName,
-                             runtimeMetadata: Seq[Argument],
-                             runtimeOperatorMetadata: Id => Seq[Argument],
-                             internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter],
-                             batchSize: Option[Int],
-                             includeStringRepresentation: Boolean) {
+class PlanDescriptionBuilder(
+  logicalPlan: LogicalPlan,
+  plannerName: PlannerName,
+  cypherVersion: CypherVersion,
+  readOnly: Boolean,
+  effectiveCardinalities: EffectiveCardinalities,
+  withRawCardinalities: Boolean,
+  providedOrders: ProvidedOrders,
+  runtimeName: RuntimeName,
+  runtimeMetadata: Seq[Argument],
+  runtimeOperatorMetadata: Id => Seq[Argument],
+  internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter],
+  batchSize: Option[Int],
+  includeStringRepresentation: Boolean
+) {
 
   def explain(): InternalPlanDescription = {
     val description =
       LogicalPlan2PlanDescription
-        .create(logicalPlan, plannerName, cypherVersion, readOnly, effectiveCardinalities, withRawCardinalities, providedOrders, runtimeOperatorMetadata)
+        .create(
+          logicalPlan,
+          plannerName,
+          cypherVersion,
+          readOnly,
+          effectiveCardinalities,
+          withRawCardinalities,
+          providedOrders,
+          runtimeOperatorMetadata
+        )
         .addArgument(Runtime(runtimeName.toTextOutput))
         .addArgument(RuntimeImpl(runtimeName.name))
 
-    val withMetaData = (runtimeMetadata ++ batchSize.map(BatchSize)).foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
+    val withMetaData = (runtimeMetadata ++ batchSize.map(BatchSize)).foldLeft(description)((plan, metadata) =>
+      plan.addArgument(metadata)
+    )
 
     if (includeStringRepresentation) {
       withMetaData.addArgument(StringRepresentation(withMetaData.toString))
@@ -119,7 +137,7 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
 
     val rewritten = internalPlanDescriptionRewriter match {
       case Some(rewriter) => rewriter.rewrite(planDescription)
-      case None => planDescription
+      case None           => planDescription
     }
     if (includeStringRepresentation) {
       rewritten.addArgument(StringRepresentation(rewritten.toString))
@@ -130,8 +148,7 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
 
   case class BuildPlanDescription(plan: InternalPlanDescription) {
 
-    def addArgument[T](argument: T => Argument,
-                       value: T): BuildPlanDescription =
+    def addArgument[T](argument: T => Argument, value: T): BuildPlanDescription =
       if (value == OperatorProfile.NO_DATA) {
         this
       } else {

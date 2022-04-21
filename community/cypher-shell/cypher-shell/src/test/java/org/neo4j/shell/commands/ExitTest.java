@@ -19,31 +19,26 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.ExitException;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ExitTest
-{
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.exception.ExitException;
+
+class ExitTest {
     private final Exit cmd = new Exit();
 
     @Test
-    void shouldNotAcceptArgs()
-    {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob" ) ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+    void shouldNotAcceptArgs() {
+        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob")));
+        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
     }
 
     @Test
-    void shouldExitShell()
-    {
-        assertThrows( ExitException.class, () -> cmd.execute( List.of() ) );
+    void shouldExitShell() {
+        assertThrows(ExitException.class, () -> cmd.execute(List.of()));
     }
 }

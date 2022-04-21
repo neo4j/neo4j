@@ -28,17 +28,14 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * need to extend {@link Lifecycle} since service should be restartable in clustering setup
  * (for example during store branching)
  */
-public interface FileSystemWatcherService extends Lifecycle
-{
+public interface FileSystemWatcherService extends Lifecycle {
     FileSystemWatcherService EMPTY_WATCHER = new EmptyWatcherService();
 
     FileWatcher getFileWatcher();
 
-    class EmptyWatcherService extends LifecycleAdapter implements FileSystemWatcherService
-    {
+    class EmptyWatcherService extends LifecycleAdapter implements FileSystemWatcherService {
         @Override
-        public FileWatcher getFileWatcher()
-        {
+        public FileWatcher getFileWatcher() {
             return FileWatcher.SILENT_WATCHER;
         }
     }

@@ -19,7 +19,22 @@
  */
 package org.neo4j.io.fs;
 
-import org.apache.commons.lang3.SystemUtils;
+import static java.lang.String.format;
+import static java.nio.file.FileVisitResult.CONTINUE;
+import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
+import static java.nio.file.Files.createDirectory;
+import static java.nio.file.Files.exists;
+import static java.nio.file.Files.isDirectory;
+import static java.nio.file.Files.notExists;
+import static java.nio.file.Files.walkFileTree;
+import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.util.Preconditions.checkArgument;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,23 +64,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.lang.String.format;
-import static java.nio.file.FileVisitResult.CONTINUE;
-import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
-import static java.nio.file.Files.createDirectory;
-import static java.nio.file.Files.exists;
-import static java.nio.file.Files.isDirectory;
-import static java.nio.file.Files.notExists;
-import static java.nio.file.Files.walkFileTree;
-import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.Collections.singleton;
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.function.Predicates.alwaysTrue;
-import static org.neo4j.util.Preconditions.checkArgument;
+import org.apache.commons.lang3.SystemUtils;
 
 /**
  * Set of utility methods to work with {@link Path} using the {@link DefaultFileSystemAbstraction default file system}.
@@ -74,12 +73,10 @@ import static org.neo4j.util.Preconditions.checkArgument;
  *
  * @see FileSystemUtils
  */
-public final class FileUtils
-{
+public final class FileUtils {
     private static final int NUMBER_OF_RETRIES = 5;
 
-    private FileUtils()
-    {
+    private FileUtils() {
         throw new AssertionError();
     }
 
@@ -89,15 +86,11 @@ public final class FileUtils
      * @param path a file or a directory
      * @throws IOException if an I/O error occurs.
      */
-    public static void delete( Path path ) throws IOException
-    {
-        if ( Files.isDirectory( path ) )
-        {
-            deleteDirectory( path );
-        }
-        else
-        {
-            deleteFile( path );
+    public static void delete(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            deleteDirectory(path);
+        } else {
+            deleteFile(path);
         }
     }
 
@@ -106,9 +99,8 @@ public final class FileUtils
      * @param path directory to delete.
      * @throws IOException if an I/O error occurs.
      */
-    public static void deleteDirectory( Path path ) throws IOException
-    {
-        deleteDirectory( path, alwaysTrue() );
+    public static void deleteDirectory(Path path) throws IOException {
+        deleteDirectory(path, alwaysTrue());
     }
 
     /**
@@ -117,17 +109,14 @@ public final class FileUtils
      * @param removeFilePredicate filter for files to remove.
      * @throws IOException if an I/O error occurs.
      */
-    public static void deleteDirectory( Path path, Predicate<Path> removeFilePredicate ) throws IOException
-    {
-        if ( notExists( path ) )
-        {
+    public static void deleteDirectory(Path path, Predicate<Path> removeFilePredicate) throws IOException {
+        if (notExists(path)) {
             return;
         }
-        if ( !isDirectory( path ) )
-        {
-            throw new NotDirectoryException( path.toString() );
+        if (!isDirectory(path)) {
+            throw new NotDirectoryException(path.toString());
         }
-        windowsSafeIOOperation( () -> walkFileTree( path, new DeletingFileVisitor( removeFilePredicate ) ) );
+        windowsSafeIOOperation(() -> walkFileTree(path, new DeletingFileVisitor(removeFilePredicate)));
     }
 
     /**
@@ -135,32 +124,26 @@ public final class FileUtils
      * @param file to delete.
      * @throws IOException if an I/O error occurs.
      */
-    public static void deleteFile( Path file ) throws IOException
-    {
-        if ( notExists( file ) )
-        {
+    public static void deleteFile(Path file) throws IOException {
+        if (notExists(file)) {
             return;
         }
-        if ( isDirectory( file ) && !isDirectoryEmpty( file ) )
-        {
-            throw new DirectoryNotEmptyException( file.toString() );
+        if (isDirectory(file) && !isDirectoryEmpty(file)) {
+            throw new DirectoryNotEmptyException(file.toString());
         }
-        windowsSafeIOOperation( () -> Files.delete( file ) );
+        windowsSafeIOOperation(() -> Files.delete(file));
     }
 
-    public static long blockSize( Path file ) throws IOException
-    {
-        requireNonNull( file );
+    public static long blockSize(Path file) throws IOException {
+        requireNonNull(file);
         var path = file;
-        while ( path != null && !exists( path ) )
-        {
+        while (path != null && !exists(path)) {
             path = path.getParent();
         }
-        if ( path == null )
-        {
-            throw new IOException( "Fail to determine block size for file: " + file );
+        if (path == null) {
+            throw new IOException("Fail to determine block size for file: " + file);
         }
-        return Files.getFileStore( path ).getBlockSize();
+        return Files.getFileStore(path).getBlockSize();
     }
 
     /**
@@ -172,33 +155,24 @@ public final class FileUtils
      * @param target Target directory to move to.
      * @throws IOException if an IO error occurs.
      */
-    public static void moveFile( Path toMove, Path target ) throws IOException
-    {
-        if ( notExists( toMove ) )
-        {
-            throw new NoSuchFileException( toMove.toString() );
+    public static void moveFile(Path toMove, Path target) throws IOException {
+        if (notExists(toMove)) {
+            throw new NoSuchFileException(toMove.toString());
         }
-        if ( exists( target ) )
-        {
-            throw new FileAlreadyExistsException( target.toString() );
+        if (exists(target)) {
+            throw new FileAlreadyExistsException(target.toString());
         }
 
-        try
-        {
-            Files.move( toMove, target );
-        }
-        catch ( IOException e )
-        {
-            if ( isDirectory( toMove ) )
-            {
-                Files.createDirectories( target );
-                copyDirectory( toMove, target );
-                deleteDirectory( toMove );
-            }
-            else
-            {
-                copyFile( toMove, target );
-                deleteFile( toMove );
+        try {
+            Files.move(toMove, target);
+        } catch (IOException e) {
+            if (isDirectory(toMove)) {
+                Files.createDirectories(target);
+                copyDirectory(toMove, target);
+                deleteDirectory(toMove);
+            } else {
+                copyFile(toMove, target);
+                deleteFile(toMove);
             }
         }
     }
@@ -213,19 +187,16 @@ public final class FileUtils
      * @return the new file, null iff the move was unsuccessful
      * @throws IOException if an IO error occurs.
      */
-    public static Path moveFileToDirectory( Path toMove, Path targetDirectory ) throws IOException
-    {
-        if ( notExists( targetDirectory ) )
-        {
-            Files.createDirectories( targetDirectory );
+    public static Path moveFileToDirectory(Path toMove, Path targetDirectory) throws IOException {
+        if (notExists(targetDirectory)) {
+            Files.createDirectories(targetDirectory);
         }
-        if ( !isDirectory( targetDirectory ) )
-        {
-            throw new NotDirectoryException( targetDirectory.toString() );
+        if (!isDirectory(targetDirectory)) {
+            throw new NotDirectoryException(targetDirectory.toString());
         }
 
-        Path target = targetDirectory.resolve( toMove.getFileName() );
-        moveFile( toMove, target );
+        Path target = targetDirectory.resolve(toMove.getFileName());
+        moveFile(toMove, target);
         return target;
     }
 
@@ -237,119 +208,94 @@ public final class FileUtils
      * @param targetDirectory the destination directory
      * @throws IOException if an IO error occurs.
      */
-    public static void copyFileToDirectory( Path file, Path targetDirectory ) throws IOException
-    {
-        if ( notExists( targetDirectory ) )
-        {
-            Files.createDirectories( targetDirectory );
+    public static void copyFileToDirectory(Path file, Path targetDirectory) throws IOException {
+        if (notExists(targetDirectory)) {
+            Files.createDirectories(targetDirectory);
         }
-        if ( !isDirectory( targetDirectory ) )
-        {
-            throw new NotDirectoryException( targetDirectory.toString() );
+        if (!isDirectory(targetDirectory)) {
+            throw new NotDirectoryException(targetDirectory.toString());
         }
 
-        Path target = targetDirectory.resolve( file.getFileName() );
-        copyFile( file, target );
+        Path target = targetDirectory.resolve(file.getFileName());
+        copyFile(file, target);
     }
 
-    public static void truncateFile( Path file, long position ) throws IOException
-    {
-        try ( FileChannel channel = FileChannel.open( file, READ, WRITE ) )
-        {
-            windowsSafeIOOperation( () -> channel.truncate( position ) );
+    public static void truncateFile(Path file, long position) throws IOException {
+        try (FileChannel channel = FileChannel.open(file, READ, WRITE)) {
+            windowsSafeIOOperation(() -> channel.truncate(position));
         }
     }
 
     /*
      * See http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4715154.
      */
-    private static void waitAndThenTriggerGC()
-    {
-        try
-        {
-            Thread.sleep( 500 );
-        }
-        catch ( InterruptedException ignored )
-        {
+    private static void waitAndThenTriggerGC() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ignored) {
         } // ok
         System.gc();
     }
 
-    public static String fixSeparatorsInPath( String path )
-    {
-        String fileSeparator = System.getProperty( "file.separator" );
-        if ( "\\".equals( fileSeparator ) )
-        {
-            path = path.replace( '/', '\\' );
-        }
-        else if ( "/".equals( fileSeparator ) )
-        {
-            path = path.replace( '\\', '/' );
+    public static String fixSeparatorsInPath(String path) {
+        String fileSeparator = System.getProperty("file.separator");
+        if ("\\".equals(fileSeparator)) {
+            path = path.replace('/', '\\');
+        } else if ("/".equals(fileSeparator)) {
+            path = path.replace('\\', '/');
         }
         return path;
     }
 
-    public static void copyFile( Path srcFile, Path dstFile ) throws IOException
-    {
-        copyFile( srcFile, dstFile, StandardCopyOption.REPLACE_EXISTING );
+    public static void copyFile(Path srcFile, Path dstFile) throws IOException {
+        copyFile(srcFile, dstFile, StandardCopyOption.REPLACE_EXISTING);
     }
 
-    public static void copyFile( Path srcFile, Path dstFile, CopyOption... copyOptions ) throws IOException
-    {
-        Files.createDirectories( dstFile.getParent() );
-        Files.copy( srcFile, dstFile, copyOptions );
+    public static void copyFile(Path srcFile, Path dstFile, CopyOption... copyOptions) throws IOException {
+        Files.createDirectories(dstFile.getParent());
+        Files.copy(srcFile, dstFile, copyOptions);
     }
 
-    public static void copyDirectory( Path from, Path to ) throws IOException
-    {
-        copyDirectory( from, to, alwaysTrue() );
+    public static void copyDirectory(Path from, Path to) throws IOException {
+        copyDirectory(from, to, alwaysTrue());
     }
 
-    public static void copyDirectory( Path from, Path to, Predicate<Path> filter ) throws IOException
-    {
-        requireNonNull( from );
-        requireNonNull( to );
-        checkArgument( from.isAbsolute(), "From directory must be absolute" );
-        checkArgument( to.isAbsolute(), "To directory must be absolute" );
-        checkArgument( isDirectory( from ), "From is not a directory" );
-        checkArgument( !from.normalize().equals( to.normalize() ), "From and to directories are the same" );
+    public static void copyDirectory(Path from, Path to, Predicate<Path> filter) throws IOException {
+        requireNonNull(from);
+        requireNonNull(to);
+        checkArgument(from.isAbsolute(), "From directory must be absolute");
+        checkArgument(to.isAbsolute(), "To directory must be absolute");
+        checkArgument(isDirectory(from), "From is not a directory");
+        checkArgument(!from.normalize().equals(to.normalize()), "From and to directories are the same");
 
-        if ( notExists( to.getParent() ) )
-        {
-            Files.createDirectories( to.getParent() );
+        if (notExists(to.getParent())) {
+            Files.createDirectories(to.getParent());
         }
-        walkFileTree( from, new CopyingFileVisitor( from, to, filter, REPLACE_EXISTING, COPY_ATTRIBUTES ) );
+        walkFileTree(from, new CopyingFileVisitor(from, to, filter, REPLACE_EXISTING, COPY_ATTRIBUTES));
     }
 
-    public static void writeToFile( Path target, String text, boolean append ) throws IOException
-    {
-        if ( notExists( target ) )
-        {
-            Files.createDirectories( target.getParent() );
-            Files.createFile( target );
+    public static void writeToFile(Path target, String text, boolean append) throws IOException {
+        if (notExists(target)) {
+            Files.createDirectories(target.getParent());
+            Files.createFile(target);
         }
 
-        try ( Writer out = Files.newBufferedWriter( target, StandardCharsets.UTF_8, StandardOpenOption.APPEND ) )
-        {
-            out.write( text );
+        try (Writer out = Files.newBufferedWriter(target, StandardCharsets.UTF_8, StandardOpenOption.APPEND)) {
+            out.write(text);
         }
     }
 
-    public static PrintWriter newFilePrintWriter( Path file, Charset charset ) throws IOException
-    {
-        return new PrintWriter( Files.newBufferedWriter( file, charset, StandardOpenOption.APPEND ) );
+    public static PrintWriter newFilePrintWriter(Path file, Charset charset) throws IOException {
+        return new PrintWriter(Files.newBufferedWriter(file, charset, StandardOpenOption.APPEND));
     }
 
-    public static Path path( String root, String... path )
-    {
-        return path( Path.of( root ), path );
+    public static Path path(String root, String... path) {
+        return path(Path.of(root), path);
     }
 
-    public static Path path( Path root, String... path )
-    {
-        for ( String part : path )
-        {
-            root = root.resolve( part );
+    public static Path path(Path root, String... path) {
+        for (String part : path) {
+            root = root.resolve(part);
         }
         return root;
     }
@@ -367,15 +313,13 @@ public final class FileUtils
      * @param fileToMove Path denoting current location for fileToMove
      * @return {@link Path} denoting new abstract path for file after move.
      */
-    public static Path pathToFileAfterMove( Path fromDir, Path toDir, Path fileToMove )
-    {
+    public static Path pathToFileAfterMove(Path fromDir, Path toDir, Path fileToMove) {
         // File to move must be true sub path to from dir
-        if ( !fileToMove.startsWith( fromDir ) || fileToMove.equals( fromDir ) )
-        {
-            throw new IllegalArgumentException( "File " + fileToMove + " is not a sub path to dir " + fromDir );
+        if (!fileToMove.startsWith(fromDir) || fileToMove.equals(fromDir)) {
+            throw new IllegalArgumentException("File " + fileToMove + " is not a sub path to dir " + fromDir);
         }
 
-        return toDir.resolve( fromDir.relativize( fileToMove ) );
+        return toDir.resolve(fromDir.relativize(fileToMove));
     }
 
     /**
@@ -386,36 +330,28 @@ public final class FileUtils
      * specific exception. {@link IOException} might be thrown instead.
      * @throws IOException If the given directory could not be opened for some reason.
      */
-    public static long countFilesInDirectoryPath( Path dir ) throws IOException
-    {
-        try ( Stream<Path> listing = Files.list( dir ) )
-        {
+    public static long countFilesInDirectoryPath(Path dir) throws IOException {
+        try (Stream<Path> listing = Files.list(dir)) {
             return listing.count();
         }
     }
 
-    public interface Operation
-    {
+    public interface Operation {
         void perform() throws IOException;
     }
 
-    public static void windowsSafeIOOperation( Operation operation ) throws IOException
-    {
+    public static void windowsSafeIOOperation(Operation operation) throws IOException {
         IOException storedIoe = null;
-        for ( int i = 0; i < NUMBER_OF_RETRIES; i++ )
-        {
-            try
-            {
+        for (int i = 0; i < NUMBER_OF_RETRIES; i++) {
+            try {
                 operation.perform();
                 return;
-            }
-            catch ( IOException e )
-            {
+            } catch (IOException e) {
                 storedIoe = e;
                 waitAndThenTriggerGC();
             }
         }
-        throw requireNonNull( storedIoe );
+        throw requireNonNull(storedIoe);
     }
 
     /**
@@ -427,41 +363,31 @@ public final class FileUtils
      * @param file - file to resolve canonical representation
      * @return canonical file representation.
      */
-    public static Path getCanonicalFile( Path file )
-    {
-        try
-        {
-            return exists( file ) ? file.toRealPath().normalize() : file.normalize();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public static Path getCanonicalFile(Path file) {
+        try {
+            return exists(file) ? file.toRealPath().normalize() : file.normalize();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    public static void writeAll( FileChannel channel, ByteBuffer src, long position ) throws IOException
-    {
+    public static void writeAll(FileChannel channel, ByteBuffer src, long position) throws IOException {
         long filePosition = position;
         long expectedEndPosition = filePosition + src.limit() - src.position();
         int bytesWritten;
-        while ( (filePosition += bytesWritten = channel.write( src, filePosition )) < expectedEndPosition )
-        {
-            if ( bytesWritten <= 0 )
-            {
-                throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
+        while ((filePosition += bytesWritten = channel.write(src, filePosition)) < expectedEndPosition) {
+            if (bytesWritten <= 0) {
+                throw new IOException("Unable to write to disk, reported bytes written was " + bytesWritten);
             }
         }
     }
 
-    public static void writeAll( FileChannel channel, ByteBuffer src ) throws IOException
-    {
+    public static void writeAll(FileChannel channel, ByteBuffer src) throws IOException {
         long bytesToWrite = src.limit() - src.position();
         int bytesWritten;
-        while ( (bytesToWrite -= bytesWritten = channel.write( src )) > 0 )
-        {
-            if ( bytesWritten <= 0 )
-            {
-                throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
+        while ((bytesToWrite -= bytesWritten = channel.write(src)) > 0) {
+            if (bytesWritten <= 0) {
+                throw new IOException("Unable to write to disk, reported bytes written was " + bytesWritten);
             }
         }
     }
@@ -472,48 +398,38 @@ public final class FileUtils
      * @return name of file store or "Unknown file store type: " + exception message,
      *         in case if exception occur during file store type retrieval.
      */
-    public static String getFileStoreType( Path path )
-    {
-        try
-        {
-            return Files.getFileStore( path ).type();
-        }
-        catch ( IOException e )
-        {
+    public static String getFileStoreType(Path path) {
+        try {
+            return Files.getFileStore(path).type();
+        } catch (IOException e) {
             return "Unknown file store type: " + e.getMessage();
         }
     }
 
-    public static void tryForceDirectory( Path directory ) throws IOException
-    {
-        if ( notExists( directory ) )
-        {
-            throw new NoSuchFileException( format( "The directory %s does not exist!", directory.toAbsolutePath() ) );
-        }
-        else if ( !isDirectory( directory ) )
-        {
-            throw new NotDirectoryException( format( "The path %s must refer to a directory!", directory.toAbsolutePath() ) );
+    public static void tryForceDirectory(Path directory) throws IOException {
+        if (notExists(directory)) {
+            throw new NoSuchFileException(format("The directory %s does not exist!", directory.toAbsolutePath()));
+        } else if (!isDirectory(directory)) {
+            throw new NotDirectoryException(
+                    format("The path %s must refer to a directory!", directory.toAbsolutePath()));
         }
 
-        if ( SystemUtils.IS_OS_WINDOWS )
-        {
-            // Windows doesn't allow us to open a FileChannel against a directory for reading, so we can't attempt to "fsync" there
+        if (SystemUtils.IS_OS_WINDOWS) {
+            // Windows doesn't allow us to open a FileChannel against a directory for reading, so we can't attempt to
+            // "fsync" there
             return;
         }
 
         // Attempts to fsync the directory, guaranting e.g. file creation/deletion/rename events are durable
         // See http://mail.openjdk.java.net/pipermail/nio-dev/2015-May/003140.html
         // See also https://github.com/apache/lucene-solr/commit/7bea628bf3961a10581833935e4c1b61ad708c5c
-        try ( FileChannel directoryChannel = FileChannel.open( directory, singleton( READ ) ) )
-        {
-            directoryChannel.force( true );
+        try (FileChannel directoryChannel = FileChannel.open(directory, singleton(READ))) {
+            directoryChannel.force(true);
         }
     }
 
-    public static boolean isDirectoryEmpty( Path directory ) throws IOException
-    {
-        try ( DirectoryStream<Path> dirStream = Files.newDirectoryStream( directory ) )
-        {
+    public static boolean isDirectoryEmpty(Path directory) throws IOException {
+        try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory)) {
             return !dirStream.iterator().hasNext();
         }
     }
@@ -525,91 +441,68 @@ public final class FileUtils
      * @return an array of paths. The array will be empty if the directory is empty. Returns {@code null} if the directory does not denote an actual
      * directory, or if an I/O error occurs.
      */
-    public static Path[] listPaths( Path dir )
-    {
-        try
-        {
-            try ( Stream<Path> list = Files.list( dir ) )
-            {
-                return list.toArray( Path[]::new );
+    public static Path[] listPaths(Path dir) {
+        try {
+            try (Stream<Path> list = Files.list(dir)) {
+                return list.toArray(Path[]::new);
             }
-        }
-        catch ( IOException ignored )
-        {
+        } catch (IOException ignored) {
             return null; // Preserve behaviour of File.listFiles()
         }
     }
 
-    private static class DeletingFileVisitor extends SimpleFileVisitor<Path>
-    {
+    private static class DeletingFileVisitor extends SimpleFileVisitor<Path> {
         private final Predicate<Path> removeFilePredicate;
         private int skippedFiles;
 
-        DeletingFileVisitor( Predicate<Path> removeFilePredicate )
-        {
+        DeletingFileVisitor(Predicate<Path> removeFilePredicate) {
             this.removeFilePredicate = removeFilePredicate;
         }
 
         @Override
-        public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
-        {
-            if ( removeFilePredicate.test( file ) )
-            {
-                Files.delete( file );
-            }
-            else
-            {
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            if (removeFilePredicate.test(file)) {
+                Files.delete(file);
+            } else {
                 skippedFiles++;
             }
             return FileVisitResult.CONTINUE;
         }
 
         @Override
-        public FileVisitResult postVisitDirectory( Path dir, IOException e ) throws IOException
-        {
-            if ( e != null )
-            {
+        public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+            if (e != null) {
                 throw e;
             }
-            try
-            {
-                if ( skippedFiles == 0 || isDirectoryEmpty( dir ) )
-                {
-                    Files.delete( dir );
+            try {
+                if (skippedFiles == 0 || isDirectoryEmpty(dir)) {
+                    Files.delete(dir);
                 }
                 return FileVisitResult.CONTINUE;
-            }
-            catch ( DirectoryNotEmptyException notEmpty )
-            {
-                String reason = notEmptyReason( dir, notEmpty );
-                throw new IOException( notEmpty.getMessage() + ": " + reason, notEmpty );
+            } catch (DirectoryNotEmptyException notEmpty) {
+                String reason = notEmptyReason(dir, notEmpty);
+                throw new IOException(notEmpty.getMessage() + ": " + reason, notEmpty);
             }
         }
 
-        private static String notEmptyReason( Path dir, DirectoryNotEmptyException notEmpty )
-        {
-            try ( Stream<Path> list = Files.list( dir ) )
-            {
-                return list.map( p -> String.valueOf( p.getFileName() ) ).collect( Collectors.joining( "', '", "'", "'." ) );
-            }
-            catch ( Exception e )
-            {
-                notEmpty.addSuppressed( e );
+        private static String notEmptyReason(Path dir, DirectoryNotEmptyException notEmpty) {
+            try (Stream<Path> list = Files.list(dir)) {
+                return list.map(p -> String.valueOf(p.getFileName())).collect(Collectors.joining("', '", "'", "'."));
+            } catch (Exception e) {
+                notEmpty.addSuppressed(e);
                 return "(could not list directory: " + e.getMessage() + ")";
             }
         }
     }
 
-    private static class CopyingFileVisitor extends SimpleFileVisitor<Path>
-    {
+    private static class CopyingFileVisitor extends SimpleFileVisitor<Path> {
         private final Path from;
         private final Path to;
         private final Predicate<Path> filter;
         private final CopyOption[] copyOption;
         private final Set<Path> copiedPathsInDestination = new HashSet<>();
 
-        CopyingFileVisitor( Path from, Path to, Predicate<Path> filter, CopyOption... copyOption )
-        {
+        CopyingFileVisitor(Path from, Path to, Predicate<Path> filter, CopyOption... copyOption) {
             this.from = from.normalize();
             this.to = to.normalize();
             this.filter = filter;
@@ -617,52 +510,42 @@ public final class FileUtils
         }
 
         @Override
-        public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException
-        {
-            if ( !from.equals( dir ) && !filter.test( dir ) )
-            {
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            if (!from.equals(dir) && !filter.test(dir)) {
                 return SKIP_SUBTREE;
             }
 
-            if ( copiedPathsInDestination.contains( dir ) )
-            {
+            if (copiedPathsInDestination.contains(dir)) {
                 return SKIP_SUBTREE;
             }
 
-            Path target = to.resolve( from.relativize( dir ) );
-            if ( !exists( target ) )
-            {
-                createDirectory( target );
-                if ( isInDestination( target ) )
-                {
-                    copiedPathsInDestination.add( target );
+            Path target = to.resolve(from.relativize(dir));
+            if (!exists(target)) {
+                createDirectory(target);
+                if (isInDestination(target)) {
+                    copiedPathsInDestination.add(target);
                 }
             }
             return CONTINUE;
         }
 
         @Override
-        public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
-        {
-            if ( !filter.test( file ) )
-            {
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            if (!filter.test(file)) {
                 return CONTINUE;
             }
-            if ( !copiedPathsInDestination.contains( file ) )
-            {
-                Path target = to.resolve( from.relativize( file ) );
-                Files.copy( file, target, copyOption );
-                if ( isInDestination( target ) )
-                {
-                    copiedPathsInDestination.add( target );
+            if (!copiedPathsInDestination.contains(file)) {
+                Path target = to.resolve(from.relativize(file));
+                Files.copy(file, target, copyOption);
+                if (isInDestination(target)) {
+                    copiedPathsInDestination.add(target);
                 }
             }
             return CONTINUE;
         }
 
-        private boolean isInDestination( Path path )
-        {
-            return path.startsWith( to );
+        private boolean isInDestination(Path path) {
+            return path.startsWith(to);
         }
     }
 }

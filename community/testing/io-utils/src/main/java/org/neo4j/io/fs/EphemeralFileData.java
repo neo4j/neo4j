@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.fs;
 
+import static java.lang.Math.min;
+
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -26,14 +28,10 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.ByteUnit;
 
-import static java.lang.Math.min;
-
-class EphemeralFileData
-{
+class EphemeralFileData {
     private final Path file;
     private final Clock clock;
     private final Collection<WeakReference<EphemeralFileChannel>> channels = new ArrayList<>();
@@ -42,13 +40,11 @@ class EphemeralFileData
     private long lastModified;
     private int locked; // Guarded by lock on 'channels'
 
-    EphemeralFileData( Path file, Clock clock )
-    {
-        this( file, new EphemeralDynamicByteBuffer(), clock );
+    EphemeralFileData(Path file, Clock clock) {
+        this(file, new EphemeralDynamicByteBuffer(), clock);
     }
 
-    private EphemeralFileData( Path file, EphemeralDynamicByteBuffer data, Clock clock )
-    {
+    private EphemeralFileData(Path file, EphemeralDynamicByteBuffer data, Clock clock) {
         this.file = file;
         this.fileAsBuffer = data;
         this.forcedBuffer = data.copy();
@@ -56,43 +52,38 @@ class EphemeralFileData
         this.lastModified = clock.millis();
     }
 
-    synchronized int read( EphemeralPositionable fc, ByteBuffer dst )
-    {
+    synchronized int read(EphemeralPositionable fc, ByteBuffer dst) {
         int wanted = dst.limit() - dst.position();
         long size = fileAsBuffer.getSize();
-        long available = min( wanted, size - fc.pos() );
-        if ( available <= 0 )
-        {
+        long available = min(wanted, size - fc.pos());
+        if (available <= 0) {
             return -1; // EOF
         }
         long pending = available;
         // Read up until our internal size
-        byte[] scratchPad = new byte[(int) ByteUnit.kibiBytes( 1 )];
-        while ( pending > 0 )
-        {
-            int howMuchToReadThisTime = Math.toIntExact( min( pending, scratchPad.length ) );
+        byte[] scratchPad = new byte[(int) ByteUnit.kibiBytes(1)];
+        while (pending > 0) {
+            int howMuchToReadThisTime = Math.toIntExact(min(pending, scratchPad.length));
             long pos = fc.pos();
-            fileAsBuffer.get( pos, scratchPad, 0, howMuchToReadThisTime );
-            fc.pos( pos + howMuchToReadThisTime );
-            dst.put( scratchPad, 0, howMuchToReadThisTime );
+            fileAsBuffer.get(pos, scratchPad, 0, howMuchToReadThisTime);
+            fc.pos(pos + howMuchToReadThisTime);
+            dst.put(scratchPad, 0, howMuchToReadThisTime);
             pending -= howMuchToReadThisTime;
         }
-        return Math.toIntExact( available ); // return how much data was read
+        return Math.toIntExact(available); // return how much data was read
     }
 
-    synchronized int write( EphemeralPositionable fc, ByteBuffer src )
-    {
+    synchronized int write(EphemeralPositionable fc, ByteBuffer src) {
         int wanted = src.limit() - src.position();
         int pending = wanted;
-        byte[] scratchPad = new byte[(int) ByteUnit.kibiBytes( 1 )];
+        byte[] scratchPad = new byte[(int) ByteUnit.kibiBytes(1)];
 
-        while ( pending > 0 )
-        {
-            int howMuchToWriteThisTime = min( pending, scratchPad.length );
-            src.get( scratchPad, 0, howMuchToWriteThisTime );
+        while (pending > 0) {
+            int howMuchToWriteThisTime = min(pending, scratchPad.length);
+            src.get(scratchPad, 0, howMuchToWriteThisTime);
             long pos = fc.pos();
-            fileAsBuffer.put( pos, scratchPad, 0, howMuchToWriteThisTime );
-            fc.pos( pos + howMuchToWriteThisTime );
+            fileAsBuffer.put(pos, scratchPad, 0, howMuchToWriteThisTime);
+            fc.pos(pos + howMuchToWriteThisTime);
             pending -= howMuchToWriteThisTime;
         }
 
@@ -100,71 +91,55 @@ class EphemeralFileData
         return wanted;
     }
 
-    synchronized EphemeralFileData copy()
-    {
-        return new EphemeralFileData( file, fileAsBuffer.copy(), clock );
+    synchronized EphemeralFileData copy() {
+        return new EphemeralFileData(file, fileAsBuffer.copy(), clock);
     }
 
-    synchronized void free()
-    {
+    synchronized void free() {
         fileAsBuffer.free();
     }
 
-    void open( EphemeralFileChannel channel )
-    {
-        synchronized ( channels )
-        {
-            channels.add( new WeakReference<>( channel ) );
+    void open(EphemeralFileChannel channel) {
+        synchronized (channels) {
+            channels.add(new WeakReference<>(channel));
         }
     }
 
-    synchronized void force()
-    {
+    synchronized void force() {
         forcedBuffer = fileAsBuffer.copy();
     }
 
-    synchronized void crash()
-    {
+    synchronized void crash() {
         fileAsBuffer = forcedBuffer.copy();
     }
 
-    void close( EphemeralFileChannel channel )
-    {
-        synchronized ( channels )
-        {
+    void close(EphemeralFileChannel channel) {
+        synchronized (channels) {
             locked = 0; // Regular file systems seems to release all file locks when closed...
             Iterator<WeakReference<EphemeralFileChannel>> iterator = channels.iterator();
-            while ( iterator.hasNext() )
-            {
+            while (iterator.hasNext()) {
                 WeakReference<EphemeralFileChannel> reference = iterator.next();
                 EphemeralFileChannel openChannel = reference.get();
-                if ( openChannel == null || openChannel == channel )
-                {
+                if (openChannel == null || openChannel == channel) {
                     iterator.remove();
                 }
             }
         }
     }
 
-    Iterator<EphemeralFileChannel> getOpenChannels()
-    {
+    Iterator<EphemeralFileChannel> getOpenChannels() {
         ArrayList<WeakReference<EphemeralFileChannel>> snapshot;
-        synchronized ( channels )
-        {
-            snapshot = new ArrayList<>( channels );
+        synchronized (channels) {
+            snapshot = new ArrayList<>(channels);
         }
         final Iterator<WeakReference<EphemeralFileChannel>> refs = snapshot.iterator();
 
-        return new PrefetchingIterator<>()
-        {
+        return new PrefetchingIterator<>() {
             @Override
-            protected EphemeralFileChannel fetchNextOrNull()
-            {
-                while ( refs.hasNext() )
-                {
+            protected EphemeralFileChannel fetchNextOrNull() {
+                while (refs.hasNext()) {
                     EphemeralFileChannel channel = refs.next().get();
-                    if ( channel != null )
-                    {
+                    if (channel != null) {
                         return channel;
                     }
                     refs.remove();
@@ -173,29 +148,23 @@ class EphemeralFileData
             }
 
             @Override
-            public void remove()
-            {
+            public void remove() {
                 refs.remove();
             }
         };
     }
 
-    synchronized long size()
-    {
+    synchronized long size() {
         return fileAsBuffer.getSize();
     }
 
-    synchronized void truncate( long newSize )
-    {
-        this.fileAsBuffer.truncate( newSize );
+    synchronized void truncate(long newSize) {
+        this.fileAsBuffer.truncate(newSize);
     }
 
-    boolean takeLock()
-    {
-        synchronized ( channels )
-        {
-            if ( locked != 0 )
-            {
+    boolean takeLock() {
+        synchronized (channels) {
+            if (locked != 0) {
                 return false;
             }
             locked++;
@@ -203,25 +172,20 @@ class EphemeralFileData
         }
     }
 
-    void releaseLock()
-    {
-        synchronized ( channels )
-        {
-            if ( locked != 0 )
-            {
+    void releaseLock() {
+        synchronized (channels) {
+            if (locked != 0) {
                 locked--;
             }
         }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "EphemeralFileData[size: " + fileAsBuffer.getSize() + "]";
     }
 
-    synchronized long getLastModified()
-    {
+    synchronized long getLastModified() {
         return lastModified;
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util.concurrent.ThreadLocalRandom
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -33,10 +32,13 @@ import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.virtual.VirtualNodeValue
 
-abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                        runtime: CypherRuntime[CONTEXT],
-                                                        sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+import java.util.concurrent.ThreadLocalRandom
+
+abstract class LimitTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("limit 0") {
     // when
@@ -252,7 +254,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     // then
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = for{
+    val expected = for {
       x <- aNodes
       y <- bNodes.sortBy(_.getId).take(10)
     } yield Array[Any](x, y)
@@ -356,23 +358,23 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
     // then
     runtimeResult should beColumns("x", "y").withRows(matching {
-      case rows:Seq[_] if rows.forall {
-        case Array(x, y) =>
-          val xid = x.asInstanceOf[VirtualNodeValue].id()
-          val connections = nodeConnections(xid)
-          connections should not be empty
-          withClue(s"x id: $xid --") {
-            val yid = y match {
-              case node: VirtualNodeValue => node.id()
-              case _ => y shouldBe a[VirtualNodeValue]
+      case rows: Seq[_] if rows.forall {
+          case Array(x, y) =>
+            val xid = x.asInstanceOf[VirtualNodeValue].id()
+            val connections = nodeConnections(xid)
+            connections should not be empty
+            withClue(s"x id: $xid --") {
+              val yid = y match {
+                case node: VirtualNodeValue => node.id()
+                case _                      => y shouldBe a[VirtualNodeValue]
+              }
+              connections.values.flatten.exists(_.getId == yid)
             }
-            connections.values.flatten.exists(_.getId == yid)
-          }
 
-      } && { // Assertion on the whole result
-        val xs = rows.map(_.asInstanceOf[Array[_]](0))
-        xs.distinct.size == xs.size // Check that there is at most one row per x
-      } =>
+        } && { // Assertion on the whole result
+          val xs = rows.map(_.asInstanceOf[Array[_]](0))
+          xs.distinct.size == xs.size // Check that there is at most one row per x
+        } =>
     })
   }
 
@@ -522,8 +524,10 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support expand(into) + limit under apply") {
     val nodes = given {
       val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
-      for {a <- aNodes
-           b <- bNodes} {
+      for {
+        a <- aNodes
+        b <- bNodes
+      } {
         a.createRelationshipTo(b, withName("R"))
       }
       aNodes
@@ -551,8 +555,10 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support optional expand(into) + limit under apply") {
     val nodes = given {
       val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
-      for {a <- aNodes
-           b <- bNodes} {
+      for {
+        a <- aNodes
+        b <- bNodes
+      } {
         a.createRelationshipTo(b, withName("R"))
       }
       aNodes
@@ -643,7 +649,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   }
 
   test("should support single-nodeByIdSeek + limit under apply") {
-    //TODO flaky because of interaction with kernel transaction
+    // TODO flaky because of interaction with kernel transaction
     assume(!(isParallel && runOnlySafeScenarios))
     val nodes = given {
       nodeGraph(sizeHint, "A")
@@ -666,7 +672,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   }
 
   test("should support multi-nodeByIdSeek + limit under apply") {
-    //TODO flaky because of interaction with kernel transaction
+    // TODO flaky because of interaction with kernel transaction
     assume(!(isParallel && runOnlySafeScenarios))
     val nodes = given {
       nodeGraph(sizeHint, "A")
@@ -778,9 +784,13 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support nodeIndexScan + limit under apply") {
     val nodes = given {
       nodeIndex("A", "prop")
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      }, "A")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        },
+        "A"
+      )
     }
     val limit = 3
 
@@ -803,9 +813,13 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support nodeIndexSeek + limit under apply") {
     val nodes = given {
       nodeIndex("A", "prop")
-      nodePropertyGraph(sizeHint, {
-        case _ => Map("prop" -> 42)
-      }, "A")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ => Map("prop" -> 42)
+        },
+        "A"
+      )
     }
     val limit = 3
 
@@ -828,9 +842,13 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support multi-nodeIndexSeek + limit under apply") {
     val nodes = given {
       nodeIndex("A", "prop")
-      nodePropertyGraph(sizeHint, {
-        case _ => Map("prop" -> 42)
-      }, "A")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ => Map("prop" -> 42)
+        },
+        "A"
+      )
     }
     val limit = 3
 
@@ -853,9 +871,13 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support composite-nodeIndexSeek + limit under apply") {
     val nodes = given {
       nodeIndex("A", "prop1", "prop2")
-      nodePropertyGraph(sizeHint, {
-        case _ => Map("prop1" -> 42, "prop2" -> 1337)
-      }, "A")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case _ => Map("prop1" -> 42, "prop2" -> 1337)
+        },
+        "A"
+      )
     }
     val limit = 3
 
@@ -1045,7 +1067,9 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("a1").withRows(singleColumn(expected))
   }
 
-  test("should support limit under apply, with multiple input-rows per argument with random connections, produce result not fused") {
+  test(
+    "should support limit under apply, with multiple input-rows per argument with random connections, produce result not fused"
+  ) {
     val nodeConnections = given {
       val nodes = nodeGraph(10, "A")
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
@@ -1154,7 +1178,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("n").withRows(nodes.map(Array[Any](_)))
   }
 
-
   test("should support reduce -> limit 0 on the RHS of apply") {
     val nodesPerLabel = 100
     given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
@@ -1215,8 +1238,10 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
   test("should support optional expand(into) + limit 0 under apply") {
     given {
       val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
-      for {a <- aNodes
-           b <- bNodes} {
+      for {
+        a <- aNodes
+        b <- bNodes
+      } {
         a.createRelationshipTo(b, withName("R"))
       }
     }

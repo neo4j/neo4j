@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v44.runtime;
 
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.routing.RoutingTableGetter;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
@@ -31,82 +33,69 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-
-public class ReadyState extends org.neo4j.bolt.v43.runtime.ReadyState
-{
-    public ReadyState( RoutingTableGetter routingTableGetter )
-    {
-        super( routingTableGetter );
+public class ReadyState extends org.neo4j.bolt.v43.runtime.ReadyState {
+    public ReadyState(RoutingTableGetter routingTableGetter) {
+        super(routingTableGetter);
     }
 
     @Override
-    public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Exception
-    {
-        if ( message instanceof RouteMessage || message instanceof RunMessage || message instanceof BeginMessage )
-        {
-            return super.processUnsafe( message, context );
+    public BoltStateMachineState processUnsafe(RequestMessage message, StateMachineContext context) throws Exception {
+        if (message instanceof RouteMessage || message instanceof RunMessage || message instanceof BeginMessage) {
+            return super.processUnsafe(message, context);
         }
 
         return null;
     }
 
     @Override
-    protected BoltStateMachineState processRouteMessage( org.neo4j.bolt.v43.messaging.request.RouteMessage message, StateMachineContext context )
-            throws Exception
-    {
+    protected BoltStateMachineState processRouteMessage(
+            org.neo4j.bolt.v43.messaging.request.RouteMessage message, StateMachineContext context) throws Exception {
         var routeMessage = (RouteMessage) message;
-        context.impersonateUser( this.authenticateImpersonation( context, routeMessage.impersonatedUser() ) );
+        context.impersonateUser(this.authenticateImpersonation(context, routeMessage.impersonatedUser()));
 
-        try
-        {
-            return super.processRouteMessage( message, context );
-        }
-        finally
-        {
-            context.impersonateUser( null );
+        try {
+            return super.processRouteMessage(message, context);
+        } finally {
+            context.impersonateUser(null);
         }
     }
 
     @Override
-    protected void onRoutingTableReceived( StateMachineContext context, org.neo4j.bolt.v43.messaging.request.RouteMessage message, MapValue routingTable )
-    {
+    protected void onRoutingTableReceived(
+            StateMachineContext context,
+            org.neo4j.bolt.v43.messaging.request.RouteMessage message,
+            MapValue routingTable) {
         var databaseName = message.getDatabaseName();
-        if ( databaseName == null || ABSENT_DB_NAME.equals( message.getDatabaseName() ) )
-        {
+        if (databaseName == null || ABSENT_DB_NAME.equals(message.getDatabaseName())) {
             databaseName = context.getDefaultDatabase();
         }
 
-        super.onRoutingTableReceived( context, message, routingTable
-                .updatedWith( "db", Values.stringValue( databaseName ) ) );
+        super.onRoutingTableReceived(
+                context, message, routingTable.updatedWith("db", Values.stringValue(databaseName)));
     }
 
     @Override
-    protected BoltStateMachineState processRunMessage( org.neo4j.bolt.v3.messaging.request.RunMessage message, StateMachineContext context ) throws Exception
-    {
+    protected BoltStateMachineState processRunMessage(
+            org.neo4j.bolt.v3.messaging.request.RunMessage message, StateMachineContext context) throws Exception {
         var runMessage = (RunMessage) message;
 
-        context.impersonateUser( this.authenticateImpersonation( context, runMessage.impersonatedUser() ) );
+        context.impersonateUser(this.authenticateImpersonation(context, runMessage.impersonatedUser()));
 
-        try
-        {
-            return super.processRunMessage( message, context );
-        }
-        finally
-        {
-            context.impersonateUser( null );
+        try {
+            return super.processRunMessage(message, context);
+        } finally {
+            context.impersonateUser(null);
         }
     }
 
     @Override
-    protected BoltStateMachineState processBeginMessage( org.neo4j.bolt.v3.messaging.request.BeginMessage message, StateMachineContext context )
-            throws Exception
-    {
+    protected BoltStateMachineState processBeginMessage(
+            org.neo4j.bolt.v3.messaging.request.BeginMessage message, StateMachineContext context) throws Exception {
         var beginMessage = (BeginMessage) message;
 
-        context.impersonateUser( this.authenticateImpersonation( context, beginMessage.impersonatedUser() ) );
+        context.impersonateUser(this.authenticateImpersonation(context, beginMessage.impersonatedUser()));
 
-        return super.processBeginMessage( message, context );
+        return super.processBeginMessage(message, context);
     }
 
     /**
@@ -116,11 +105,10 @@ public class ReadyState extends org.neo4j.bolt.v43.runtime.ReadyState
      * @param username the desired target user.
      * @return a substitute login context.
      */
-    private LoginContext authenticateImpersonation( StateMachineContext context, String username ) throws AuthenticationException
-    {
-        if ( username != null )
-        {
-            return context.boltSpi().impersonate( context.getLoginContext(), username );
+    private LoginContext authenticateImpersonation(StateMachineContext context, String username)
+            throws AuthenticationException {
+        if (username != null) {
+            return context.boltSpi().impersonate(context.getLoginContext(), username);
         }
 
         return null;

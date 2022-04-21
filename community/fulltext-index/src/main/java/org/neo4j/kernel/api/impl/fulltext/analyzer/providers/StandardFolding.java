@@ -20,32 +20,27 @@
 package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.kernel.api.impl.fulltext.analyzer.StandardFoldingAnalyzer;
 
 @ServiceProvider
-public class StandardFolding extends AnalyzerProvider
-{
+public class StandardFolding extends AnalyzerProvider {
     public static final String STANDARD_FOLDING_ANALYZER_NAME = "standard-folding";
 
-    public StandardFolding()
-    {
-        super( STANDARD_FOLDING_ANALYZER_NAME );
+    public StandardFolding() {
+        super(STANDARD_FOLDING_ANALYZER_NAME);
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new StandardFoldingAnalyzer();
     }
 
     @Override
-    public String description()
-    {
-        return "Analyzer that uses ASCIIFoldingFilter to remove accents (diacritics). Otherwise behaves as standard " +
-                "english analyzer. Note! This Analyser may have unexpected behaviour, such as tokenizing, " +
-                "for all non ASCII numbers and symbols.";
+    public String description() {
+        return "Analyzer that uses ASCIIFoldingFilter to remove accents (diacritics). Otherwise behaves as standard "
+                + "english analyzer. Note! This Analyser may have unexpected behaviour, such as tokenizing, "
+                + "for all non ASCII numbers and symbols.";
     }
 }

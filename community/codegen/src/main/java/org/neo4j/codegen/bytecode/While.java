@@ -19,46 +19,39 @@
  */
 package org.neo4j.codegen.bytecode;
 
+import static org.objectweb.asm.Opcodes.GOTO;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
-import static org.objectweb.asm.Opcodes.GOTO;
-
-public class While implements Block
-{
+public class While implements Block {
     private final MethodVisitor methodVisitor;
     private final Label repeat;
     private final Label done;
     private final String labelName;
 
-    public While( MethodVisitor methodVisitor, Label repeat, Label done, String labelName )
-    {
+    public While(MethodVisitor methodVisitor, Label repeat, Label done, String labelName) {
         this.methodVisitor = methodVisitor;
         this.repeat = repeat;
         this.done = done;
         this.labelName = labelName;
     }
 
-    public void continueBlock()
-    {
-        methodVisitor.visitJumpInsn( GOTO, repeat );
+    public void continueBlock() {
+        methodVisitor.visitJumpInsn(GOTO, repeat);
     }
 
-    public boolean breakBlock( String labelName )
-    {
-        if ( labelName.equals( this.labelName ) )
-        {
-            methodVisitor.visitJumpInsn( GOTO, done );
+    public boolean breakBlock(String labelName) {
+        if (labelName.equals(this.labelName)) {
+            methodVisitor.visitJumpInsn(GOTO, done);
             return true;
         }
         return false;
     }
 
     @Override
-    public void endBlock()
-    {
-        methodVisitor.visitJumpInsn( GOTO, repeat );
-        methodVisitor.visitLabel( done );
+    public void endBlock() {
+        methodVisitor.visitJumpInsn(GOTO, repeat);
+        methodVisitor.visitLabel(done);
     }
 }

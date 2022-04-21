@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class LogPositionMarkerTest
-{
+class LogPositionMarkerTest {
     @Test
-    void shouldReturnUnspecifiedIfNothingHasBeenMarked()
-    {
+    void shouldReturnUnspecifiedIfNothingHasBeenMarked() {
         // given
         final LogPositionMarker marker = new LogPositionMarker();
 
@@ -42,27 +39,25 @@ class LogPositionMarkerTest
     }
 
     @Test
-    void shouldReturnTheMarkedPosition()
-    {
+    void shouldReturnTheMarkedPosition() {
         // given
         final LogPositionMarker marker = new LogPositionMarker();
 
         // when
-        marker.mark( 1, 2 );
+        marker.mark(1, 2);
         final LogPosition logPosition = marker.newPosition();
 
         // given
-        assertEquals(new LogPosition( 1, 2 ), logPosition);
+        assertEquals(new LogPosition(1, 2), logPosition);
     }
 
     @Test
-    void shouldReturnUnspecifiedWhenAskedTo()
-    {
+    void shouldReturnUnspecifiedWhenAskedTo() {
         // given
         final LogPositionMarker marker = new LogPositionMarker();
 
         // when
-        marker.mark( 1, 2 );
+        marker.mark(1, 2);
         marker.unspecified();
         final LogPosition logPosition = marker.newPosition();
 

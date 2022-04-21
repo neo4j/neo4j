@@ -44,7 +44,8 @@ case object PlanIDsAreCompressed extends StepSequencer.Condition
  * This is helpful for physical planning attributes that do not have to create so large arrays.
  * It also reduces the size of what we need to put into the query cache.
  */
-case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
 
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
@@ -86,7 +87,7 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // Traverses the logical plan
-    CompilationContains[LogicalPlan],
+    CompilationContains[LogicalPlan]
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
@@ -95,6 +96,8 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = this
 }

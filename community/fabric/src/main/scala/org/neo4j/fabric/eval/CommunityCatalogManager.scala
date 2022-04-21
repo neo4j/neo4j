@@ -30,7 +30,8 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners
 
-class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: GlobalTransactionEventListeners) extends CatalogManager {
+class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: GlobalTransactionEventListeners)
+    extends CatalogManager {
 
   private val invalidationLock = new Object()
   @volatile private var cachedCatalog: Catalog = _
@@ -39,13 +40,16 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
   registerCatalogInvalidateListeners()
 
   override def registerCatalogInvalidateListeners(): Unit = {
-    txListeners.registerTransactionEventListener( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.name(), new TransactionEventListenerAdapter[AnyRef] {
-      override def afterCommit(data: TransactionData, state: AnyRef, databaseService: GraphDatabaseService): Unit =
-        invalidateCatalog()
-    })
+    txListeners.registerTransactionEventListener(
+      NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.name(),
+      new TransactionEventListenerAdapter[AnyRef] {
+        override def afterCommit(data: TransactionData, state: AnyRef, databaseService: GraphDatabaseService): Unit =
+          invalidateCatalog()
+      }
+    )
   }
 
-  override final def currentCatalog(): Catalog = {
+  final override def currentCatalog(): Catalog = {
     val existingCatalog = cachedCatalog
     if (existingCatalog != null) {
       return existingCatalog
@@ -77,11 +81,11 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
       cachedCatalog = null
     }
   }
-  
+
   protected def createCatalog(): Catalog = {
     val internals = getInternals()
     val maxId = internals.map(_.id).reduceOption(_ max _).getOrElse(-1L)
-    val aliases = getAliases(maxId+1)
+    val aliases = getAliases(maxId + 1)
     Catalog.create(internals, Seq.empty, aliases.toSeq, None)
   }
 
@@ -99,11 +103,16 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
 
   private def indicesFrom(firstId: Long) = LazyList.iterate(firstId)(_ + 1)
 
-  override def locationOf(sessionDatabase: NamedDatabaseId, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
+  override def locationOf(
+    sessionDatabase: NamedDatabaseId,
+    graph: Catalog.Graph,
+    requireWritable: Boolean,
+    canRoute: Boolean
+  ): Location = graph match {
     case Catalog.InternalGraph(id, uuid, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
     case Catalog.GraphAlias(id, uuid, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
-    case _ => throw new IllegalArgumentException( s"Unexpected graph type $graph" )
+    case _ => throw new IllegalArgumentException(s"Unexpected graph type $graph")
   }
 }

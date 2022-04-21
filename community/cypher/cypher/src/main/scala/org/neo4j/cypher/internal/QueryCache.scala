@@ -41,6 +41,7 @@ import scala.jdk.CollectionConverters.MapHasAsScala
  * Default implementations do nothing.
  */
 trait CacheTracer[QUERY_KEY] {
+
   /**
    * The item was found in the cache and was not stale.
    */
@@ -66,7 +67,8 @@ trait CacheTracer[QUERY_KEY] {
    * @param secondsSincePlan how long the last replan was ago
    * @param maybeReason maybe a reason clarifying why the item was stale.
    */
-  def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit = ()
+  def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
+    ()
 
   /**
    * The query cache was flushed.
@@ -83,6 +85,7 @@ trait QueryCacheTracer[InnerKey] extends CacheTracer[CacheKey[InnerKey]]
  * A compiler with expression code generation capabilities.
  */
 trait CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY] {
+
   /**
    * Compile a query, avoiding any expression code generation.
    * If the settings enforce a certain expression engine,
@@ -107,7 +110,6 @@ trait CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY] {
   def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[EXECUTABLE_QUERY]
 }
 
-
 sealed trait Staleness
 case object NotStale extends Staleness
 case class Stale(secondsSincePlan: Int, maybeReason: Option[String]) extends Staleness
@@ -117,8 +119,7 @@ case class Stale(secondsSincePlan: Int, maybeReason: Option[String]) extends Sta
  * and should be evicted from the cache.
  */
 trait PlanStalenessCaller[EXECUTABLE_QUERY] {
-  def staleness(transactionalContext: TransactionalContext,
-                cachedExecutableQuery: EXECUTABLE_QUERY): Staleness
+  def staleness(transactionalContext: TransactionalContext, cachedExecutableQuery: EXECUTABLE_QUERY): Staleness
 }
 
 /**
@@ -132,21 +133,21 @@ trait PlanStalenessCaller[EXECUTABLE_QUERY] {
  * @param stalenessCaller Decided whether CachedExecutionPlans are stale
  * @param tracer Traces cache activity
  */
-class QueryCache[QUERY_KEY <: AnyRef,
-                 EXECUTABLE_QUERY <: CacheabilityInfo](
-                                                       val cacheFactory: CaffeineCacheFactory,
-                                                       val maximumSize: Int,
-                                                       val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
-                                                       val tracer: CacheTracer[QUERY_KEY]) {
+class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
+  val cacheFactory: CaffeineCacheFactory,
+  val maximumSize: Int,
+  val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
+  val tracer: CacheTracer[QUERY_KEY]
+) {
 
   private val inner: Cache[QUERY_KEY, CachedValue] = cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize)
 
   def estimatedSize(): Long = inner.estimatedSize()
 
   /*
-    * The cached value wraps the value and maintains a count of how many times it has been fetched from the cache
-    * and whether or not it has been recompiled with expression code generation.
-    */
+   * The cached value wraps the value and maintains a count of how many times it has been fetched from the cache
+   * and whether or not it has been recompiled with expression code generation.
+   */
   private class CachedValue(val value: EXECUTABLE_QUERY, val recompiledWithExpressionCodeGen: Boolean) {
 
     @volatile private var _numberOfHits = 0
@@ -184,25 +185,27 @@ class QueryCache[QUERY_KEY <: AnyRef,
    * @param metaData String which will be passed to the CacheTracer
    * @return A CacheLookup with an CachedExecutionPlan
    */
-  def computeIfAbsentOrStale(queryKey: QUERY_KEY,
-                             tc: TransactionalContext,
-                             compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
-                             replanStrategy: CypherReplanOption,
-                             metaData: String = ""
-                            ): EXECUTABLE_QUERY = {
+  def computeIfAbsentOrStale(
+    queryKey: QUERY_KEY,
+    tc: TransactionalContext,
+    compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
+    replanStrategy: CypherReplanOption,
+    metaData: String = ""
+  ): EXECUTABLE_QUERY = {
     if (maximumSize == 0) {
       val result = compiler.compile()
       tracer.queryCompile(queryKey, metaData)
       result
     } else {
       inner.getIfPresent(queryKey) match {
-        case NOT_PRESENT => if (replanStrategy == CypherReplanOption.force)
+        case NOT_PRESENT =>
+          if (replanStrategy == CypherReplanOption.force)
             compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData)
           else
             compileAndCache(queryKey, compiler, metaData)
 
         case cachedValue =>
-          //mark as seen from cache
+          // mark as seen from cache
           cachedValue.markHit()
 
           replanStrategy match {
@@ -213,14 +216,15 @@ class QueryCache[QUERY_KEY <: AnyRef,
             case CypherReplanOption.default =>
               stalenessCaller.staleness(tc, cachedValue.value) match {
                 case NotStale =>
-                  if(invalidNotificationExisting(cachedValue, tc)) {
+                  if (invalidNotificationExisting(cachedValue, tc)) {
                     compileAndCache(queryKey, compiler, metaData, hitCache = true)
                   } else {
                     recompileOrGet(cachedValue, compiler, queryKey, metaData)
                   }
                 case Stale(secondsSincePlan, maybeReason) =>
                   tracer.queryCacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
-                  if (cachedValue.recompiledWithExpressionCodeGen) compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData)
+                  if (cachedValue.recompiledWithExpressionCodeGen)
+                    compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData)
                   else compileAndCache(queryKey, compiler, metaData)
               }
           }
@@ -257,42 +261,51 @@ class QueryCache[QUERY_KEY <: AnyRef,
   /**
    * Recompile a query with expression code generation if needed. Otherwise return the cached value.
    */
-  private def recompileOrGet(cachedValue: CachedValue,
-                     compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
-                     queryKey: QUERY_KEY,
-                     metaData: String
-                    ): EXECUTABLE_QUERY = {
+  private def recompileOrGet(
+    cachedValue: CachedValue,
+    compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
+    queryKey: QUERY_KEY,
+    metaData: String
+  ): EXECUTABLE_QUERY = {
     tracer.queryCacheHit(queryKey, metaData)
-    val newCachedValue = if (!cachedValue.recompiledWithExpressionCodeGen ) {
-      compiler.maybeCompileWithExpressionCodeGen(cachedValue.numberOfHits) match {
-        case Some(recompiledQuery) =>
-          tracer.queryCompileWithExpressionCodeGen(queryKey, metaData)
-          val recompiled = new CachedValue(recompiledQuery, recompiledWithExpressionCodeGen = true)
-          inner.put(queryKey, recompiled)
-          recompiled
-        case None => cachedValue
-      }
-    } else cachedValue
+    val newCachedValue =
+      if (!cachedValue.recompiledWithExpressionCodeGen) {
+        compiler.maybeCompileWithExpressionCodeGen(cachedValue.numberOfHits) match {
+          case Some(recompiledQuery) =>
+            tracer.queryCompileWithExpressionCodeGen(queryKey, metaData)
+            val recompiled = new CachedValue(recompiledQuery, recompiledWithExpressionCodeGen = true)
+            inner.put(queryKey, recompiled)
+            recompiled
+          case None => cachedValue
+        }
+      } else cachedValue
 
     newCachedValue.value
   }
 
-  private def compileAndCache(queryKey: QUERY_KEY,
-                              compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
-                              metaData: String,
-                              hitCache: Boolean = false
-                             ): EXECUTABLE_QUERY = {
+  private def compileAndCache(
+    queryKey: QUERY_KEY,
+    compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
+    metaData: String,
+    hitCache: Boolean = false
+  ): EXECUTABLE_QUERY = {
     val result = compileOrCompileWithExpressionCodeGenAndCache(queryKey, () => compiler.compile(), metaData, hitCache)
     tracer.queryCompile(queryKey, metaData)
     result
   }
 
-  private def compileWithExpressionCodeGenAndCache(queryKey: QUERY_KEY,
-                                                   compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
-                                                   metaData: String,
-                                                   hitCache: Boolean = false
-                                                  ): EXECUTABLE_QUERY = {
-    val result = compileOrCompileWithExpressionCodeGenAndCache(queryKey, () => compiler.compileWithExpressionCodeGen(), metaData, hitCache)
+  private def compileWithExpressionCodeGenAndCache(
+    queryKey: QUERY_KEY,
+    compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
+    metaData: String,
+    hitCache: Boolean = false
+  ): EXECUTABLE_QUERY = {
+    val result = compileOrCompileWithExpressionCodeGenAndCache(
+      queryKey,
+      () => compiler.compileWithExpressionCodeGen(),
+      metaData,
+      hitCache
+    )
     tracer.queryCompileWithExpressionCodeGen(queryKey, metaData)
     result
   }
@@ -305,11 +318,12 @@ class QueryCache[QUERY_KEY <: AnyRef,
    * take a long time. The only exception is if hitCache is true, which should only happen
    * when we are forced to recompile due to previously present warnings not being valid anymore
    */
-  private def compileOrCompileWithExpressionCodeGenAndCache(queryKey: QUERY_KEY,
-                                                            compile: () => EXECUTABLE_QUERY,
-                                                            metaData: String,
-                                                            hitCache: Boolean
-                                                           ): EXECUTABLE_QUERY = {
+  private def compileOrCompileWithExpressionCodeGenAndCache(
+    queryKey: QUERY_KEY,
+    compile: () => EXECUTABLE_QUERY,
+    metaData: String,
+    hitCache: Boolean
+  ): EXECUTABLE_QUERY = {
     val newExecutableQuery = compile()
     if (newExecutableQuery.shouldBeCached) {
       val cachedValue = new CachedValue(newExecutableQuery, recompiledWithExpressionCodeGen = false)
@@ -323,18 +337,12 @@ class QueryCache[QUERY_KEY <: AnyRef,
     }
   }
 
-  private def hit(queryKey: QUERY_KEY,
-                  executableQuery: CachedValue,
-                  metaData: String
-                 ): EXECUTABLE_QUERY = {
+  private def hit(queryKey: QUERY_KEY, executableQuery: CachedValue, metaData: String): EXECUTABLE_QUERY = {
     tracer.queryCacheHit(queryKey, metaData)
     executableQuery.value
   }
 
-  private def miss(queryKey: QUERY_KEY,
-                   newExecutableQuery: EXECUTABLE_QUERY,
-                   metaData: String
-                  ): EXECUTABLE_QUERY = {
+  private def miss(queryKey: QUERY_KEY, newExecutableQuery: EXECUTABLE_QUERY, metaData: String): EXECUTABLE_QUERY = {
     tracer.queryCacheMiss(queryKey, metaData)
     newExecutableQuery
   }
@@ -355,9 +363,11 @@ class QueryCache[QUERY_KEY <: AnyRef,
 
 object QueryCache {
 
-  final case class CacheKey[QUERY_REP](queryRep: QUERY_REP,
-                                       parameterTypeMap: ParameterTypeMap,
-                                       txStateHasChanges: Boolean)
+  final case class CacheKey[QUERY_REP](
+    queryRep: QUERY_REP,
+    parameterTypeMap: ParameterTypeMap,
+    txStateHasChanges: Boolean
+  )
 
   val NOT_PRESENT: ExecutableQuery = null
 
@@ -367,7 +377,10 @@ object QueryCache {
     * This class receives a hashCode which is precomputed by [[extractParameterTypeMap()]], because it
     * is much faster to pre-compute the hash than to call `resultMap.hashCode()`.
     */
-  class ParameterTypeMap private[QueryCache](private val resultMap: java.util.Map[String, CypherType], _hashCode: Int) {
+  class ParameterTypeMap private[QueryCache] (
+    private val resultMap: java.util.Map[String, CypherType],
+    _hashCode: Int
+  ) {
     override def hashCode(): Int = _hashCode
 
     override def equals(obj: Any): Boolean = {
@@ -402,13 +415,11 @@ object QueryCache {
   def extractParameterTypeMap(mapValue: MapValue): ParameterTypeMap = {
     val resultMap = new java.util.HashMap[String, CypherType]
     var hashCode = 0
-    mapValue.foreach(
-      (key, value) => {
-        val valueType = ParameterValueTypeHelper.deriveCypherType(value)
-        resultMap.put(key, valueType)
-        hashCode = hashCode ^ (key.hashCode + 31 * valueType.hashCode())
-      }
-    )
+    mapValue.foreach((key, value) => {
+      val valueType = ParameterValueTypeHelper.deriveCypherType(value)
+      resultMap.put(key, valueType)
+      hashCode = hashCode ^ (key.hashCode + 31 * valueType.hashCode())
+    })
     new ParameterTypeMap(resultMap, hashCode)
   }
 }

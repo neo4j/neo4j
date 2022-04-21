@@ -29,46 +29,33 @@ import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public final class Unzip
-{
-    private Unzip()
-    {
-    }
+public final class Unzip {
+    private Unzip() {}
 
-    public static Path unzip( Class<?> testClass, String resource, Path targetDirectory ) throws IOException
-    {
-        InputStream source = testClass.getResourceAsStream( resource );
-        if ( source == null )
-        {
-            throw new NoSuchFileException( "Could not find resource '" + resource + "' to unzip" );
+    public static Path unzip(Class<?> testClass, String resource, Path targetDirectory) throws IOException {
+        InputStream source = testClass.getResourceAsStream(resource);
+        if (source == null) {
+            throw new NoSuchFileException("Could not find resource '" + resource + "' to unzip");
         }
 
-        try ( ZipInputStream zipStream = new ZipInputStream( source ) )
-        {
+        try (ZipInputStream zipStream = new ZipInputStream(source)) {
             ZipEntry entry;
             byte[] scratch = new byte[8096];
-            while ( (entry = zipStream.getNextEntry()) != null )
-            {
-                if ( entry.isDirectory() )
-                {
-                    Files.createDirectories( targetDirectory.resolve( entry.getName() ) );
-                }
-                else
-                {
-                    try ( OutputStream file = new BufferedOutputStream( Files.newOutputStream( targetDirectory.resolve( entry.getName() ) ) ) )
-                    {
+            while ((entry = zipStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    Files.createDirectories(targetDirectory.resolve(entry.getName()));
+                } else {
+                    try (OutputStream file =
+                            new BufferedOutputStream(Files.newOutputStream(targetDirectory.resolve(entry.getName())))) {
                         int read;
-                        while ( ( read = zipStream.read( scratch ) ) != -1 )
-                        {
-                            file.write( scratch, 0, read );
+                        while ((read = zipStream.read(scratch)) != -1) {
+                            file.write(scratch, 0, read);
                         }
                     }
                 }
                 zipStream.closeEntry();
             }
-        }
-        finally
-        {
+        } finally {
             source.close();
         }
         return targetDirectory;

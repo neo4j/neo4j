@@ -47,15 +47,16 @@ object FabricPlan {
   val PROFILE: ExecutionType = Profile
 
   object DebugOptions {
+
     def from(debugOptions: CypherDebugOptions): DebugOptions = DebugOptions(
       logPlan = debugOptions.fabricLogPlanEnabled,
-      logRecords = debugOptions.fabricLogRecordsEnabled,
+      logRecords = debugOptions.fabricLogRecordsEnabled
     )
   }
 
   case class DebugOptions(
     logPlan: Boolean,
-    logRecords: Boolean,
+    logRecords: Boolean
   )
 }
 
@@ -65,14 +66,13 @@ object FabricQuery {
 
   final case class LocalQuery(
     query: FullyParsedQuery,
-    queryType: QueryType,
+    queryType: QueryType
   ) extends FabricQuery
 
   final case class RemoteQuery(
     query: String,
     queryType: QueryType,
-    extractedLiterals: Map[String, Any],
+    extractedLiterals: Map[String, Any]
   ) extends FabricQuery
-
 
 }

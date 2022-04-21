@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -26,13 +28,10 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.util.Preconditions;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * A merger of {@link BlockEntry} in a streaming fashion. It takes as input one or more {@link BlockEntryCursor}, merges them
@@ -41,14 +40,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  *
  * For convenience instances are themselves valid as input into another {@link BlockEntryStreamMerger}.
  */
-class BlockEntryStreamMerger<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>, Callable<Void>
-{
+class BlockEntryStreamMerger<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE>, Callable<Void> {
     static final int QUEUE_SIZE = 10;
 
-    private final List<BlockEntryCursor<KEY,VALUE>> input;
-    private final Layout<KEY,VALUE> layout;
+    private final List<BlockEntryCursor<KEY, VALUE>> input;
+    private final Layout<KEY, VALUE> layout;
     private final BlockStorage.Cancellation cancellation;
-    private final ArrayBlockingQueue<BlockEntryCursor<KEY,VALUE>> mergedOutput;
+    private final ArrayBlockingQueue<BlockEntryCursor<KEY, VALUE>> mergedOutput;
     private final int batchSize;
     private final Comparator<KEY> samplingComparator;
     private KEY prevKey;
@@ -56,44 +54,41 @@ class BlockEntryStreamMerger<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>, 
     private long uniqueValues;
     private volatile boolean halted;
     // This cursor will be used by the single thread reading from this merged stream
-    private BlockEntryCursor<KEY,VALUE> currentOutput;
+    private BlockEntryCursor<KEY, VALUE> currentOutput;
 
-    BlockEntryStreamMerger( List<BlockEntryCursor<KEY,VALUE>> input, Layout<KEY,VALUE> layout, Comparator<KEY> samplingComparator,
-            BlockStorage.Cancellation cancellation, int batchSize, int queueSize )
-    {
+    BlockEntryStreamMerger(
+            List<BlockEntryCursor<KEY, VALUE>> input,
+            Layout<KEY, VALUE> layout,
+            Comparator<KEY> samplingComparator,
+            BlockStorage.Cancellation cancellation,
+            int batchSize,
+            int queueSize) {
         this.input = input;
         this.layout = layout;
         this.cancellation = cancellation;
         this.batchSize = batchSize;
-        this.mergedOutput = new ArrayBlockingQueue<>( queueSize );
+        this.mergedOutput = new ArrayBlockingQueue<>(queueSize);
         this.samplingComparator = samplingComparator;
     }
 
     @Override
-    public Void call() throws IOException
-    {
-        try
-        {
-            MergingBlockEntryReader<KEY,VALUE> mergingReader = new MergingBlockEntryReader<>( layout );
-            input.forEach( mergingReader::addSource );
-            List<BlockEntry<KEY,VALUE>> merged = new ArrayList<>( batchSize );
-            while ( alive() && mergingReader.next() )
-            {
-                merged.add( new BlockEntry<>( mergingReader.key(), mergingReader.value() ) );
-                if ( merged.size() == batchSize )
-                {
-                    offer( merged );
-                    merged = new ArrayList<>( batchSize );
+    public Void call() throws IOException {
+        try {
+            MergingBlockEntryReader<KEY, VALUE> mergingReader = new MergingBlockEntryReader<>(layout);
+            input.forEach(mergingReader::addSource);
+            List<BlockEntry<KEY, VALUE>> merged = new ArrayList<>(batchSize);
+            while (alive() && mergingReader.next()) {
+                merged.add(new BlockEntry<>(mergingReader.key(), mergingReader.value()));
+                if (merged.size() == batchSize) {
+                    offer(merged);
+                    merged = new ArrayList<>(batchSize);
                 }
             }
-            if ( !merged.isEmpty() )
-            {
-                offer( merged );
+            if (!merged.isEmpty()) {
+                offer(merged);
             }
             return null;
-        }
-        finally
-        {
+        } finally {
             halted = true;
         }
     }
@@ -104,77 +99,59 @@ class BlockEntryStreamMerger<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>, 
      * if the end of the stream has been reached.
      */
     @Override
-    public boolean next() throws IOException
-    {
-        do
-        {
-            if ( currentOutput != null && currentOutput.next() )
-            {
+    public boolean next() throws IOException {
+        do {
+            if (currentOutput != null && currentOutput.next()) {
                 return true;
             }
             currentOutput = nextOutputBatchOrNull();
-        }
-        while ( currentOutput != null );
+        } while (currentOutput != null);
         return false;
     }
 
     @Override
-    public KEY key()
-    {
+    public KEY key() {
         return currentOutput.key();
     }
 
     @Override
-    public VALUE value()
-    {
+    public VALUE value() {
         return currentOutput.value();
     }
 
     @Override
-    public void close() throws IOException
-    {
-        IOUtils.closeAll( input );
+    public void close() throws IOException {
+        IOUtils.closeAll(input);
     }
 
-    private boolean alive()
-    {
+    private boolean alive() {
         return !halted && !cancellation.cancelled();
     }
 
-    private void offer( List<BlockEntry<KEY,VALUE>> entries )
-    {
-        if ( samplingComparator != null )
-        {
-            includeInSample( entries );
+    private void offer(List<BlockEntry<KEY, VALUE>> entries) {
+        if (samplingComparator != null) {
+            includeInSample(entries);
         }
 
-        ListBasedBlockEntryCursor<KEY,VALUE> batch = new ListBasedBlockEntryCursor<>( entries );
-        try
-        {
-            while ( alive() && !mergedOutput.offer( batch, 10, MILLISECONDS ) )
-            {   // Then just stay here and try
+        ListBasedBlockEntryCursor<KEY, VALUE> batch = new ListBasedBlockEntryCursor<>(entries);
+        try {
+            while (alive() && !mergedOutput.offer(batch, 10, MILLISECONDS)) { // Then just stay here and try
                 Thread.onSpinWait();
             }
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             halted = true;
         }
     }
 
-    void halt()
-    {
+    void halt() {
         halted = true;
     }
 
-    private void includeInSample( List<BlockEntry<KEY,VALUE>> entries )
-    {
-        for ( BlockEntry<KEY,VALUE> entry : entries )
-        {
+    private void includeInSample(List<BlockEntry<KEY, VALUE>> entries) {
+        for (BlockEntry<KEY, VALUE> entry : entries) {
             KEY key = entry.key();
-            if ( prevKey == null || samplingComparator.compare( key, prevKey ) != 0 )
-            {
+            if (prevKey == null || samplingComparator.compare(key, prevKey) != 0) {
                 prevKey = key;
                 uniqueValues++;
             }
@@ -182,29 +159,22 @@ class BlockEntryStreamMerger<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>, 
         }
     }
 
-    IndexSample buildIndexSample()
-    {
-        Preconditions.checkState( samplingComparator != null, "I haven't been sampling at all" );
-        return new IndexSample( sampledValues, uniqueValues, sampledValues );
+    IndexSample buildIndexSample() {
+        Preconditions.checkState(samplingComparator != null, "I haven't been sampling at all");
+        return new IndexSample(sampledValues, uniqueValues, sampledValues);
     }
 
-    private BlockEntryCursor<KEY,VALUE> nextOutputBatchOrNull()
-    {
+    private BlockEntryCursor<KEY, VALUE> nextOutputBatchOrNull() {
         // Keep polling the output if:
         // - output isn't empty
         // - output is empty but this merger is still going
-        while ( alive() || !mergedOutput.isEmpty() )
-        {
-            try
-            {
-                BlockEntryCursor<KEY,VALUE> result = mergedOutput.poll( 10, TimeUnit.MILLISECONDS );
-                if ( result != null )
-                {
+        while (alive() || !mergedOutput.isEmpty()) {
+            try {
+                BlockEntryCursor<KEY, VALUE> result = mergedOutput.poll(10, TimeUnit.MILLISECONDS);
+                if (result != null) {
                     return result;
                 }
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }

@@ -22,8 +22,7 @@ package org.neo4j.internal.kernel.api;
 /**
  * Defines the state of a given index.
  */
-public enum InternalIndexState
-{
+public enum InternalIndexState {
     /**
      * Denotes that an index is in the process of being created.
      */

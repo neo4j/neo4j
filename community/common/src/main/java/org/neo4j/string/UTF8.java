@@ -24,25 +24,20 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * Utilities for working with UTF8 encoding and decoding.
  */
-public final class UTF8
-{
-    public static byte[] encode( String string )
-    {
-        return string.getBytes( UTF_8 );
+public final class UTF8 {
+    public static byte[] encode(String string) {
+        return string.getBytes(UTF_8);
     }
 
-    public static String decode( byte[] bytes )
-    {
-        return new String( bytes, UTF_8 );
+    public static String decode(byte[] bytes) {
+        return new String(bytes, UTF_8);
     }
 
-    public static String decode( byte[] bytes, int offset, int length )
-    {
-        return new String( bytes, offset, length, UTF_8 );
+    public static String decode(byte[] bytes, int offset, int length) {
+        return new String(bytes, offset, length, UTF_8);
     }
 
-    private UTF8()
-    {
-        throw new AssertionError( "no instance" );
+    private UTF8() {
+        throw new AssertionError("no instance");
     }
 }

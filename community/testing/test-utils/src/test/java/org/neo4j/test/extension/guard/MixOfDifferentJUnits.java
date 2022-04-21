@@ -19,21 +19,18 @@
  */
 package org.neo4j.test.extension.guard;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class MixOfDifferentJUnits
-{
+import org.junit.jupiter.api.Test;
+
+class MixOfDifferentJUnits {
     @Test
-    void somethingNew()
-    {
-        assertEquals( 0L, 0L );
+    void somethingNew() {
+        assertEquals(0L, 0L);
     }
 
     @org.junit.Test
-    void somethingOld()
-    {
-        assertEquals( 0L, 0L );
+    void somethingOld() {
+        assertEquals(0L, 0L);
     }
 }

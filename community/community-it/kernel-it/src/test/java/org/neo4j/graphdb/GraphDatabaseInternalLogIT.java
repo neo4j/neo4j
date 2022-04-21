@@ -19,13 +19,15 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -35,65 +37,61 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @TestDirectoryExtension
-class GraphDatabaseInternalLogIT
-{
+class GraphDatabaseInternalLogIT {
     private static final String INTERNAL_LOG_FILE = "debug.log";
+
     @Inject
     private TestDirectory testDir;
 
     @Test
-    void shouldWriteToInternalDiagnosticsLog() throws Exception
-    {
+    void shouldWriteToInternalDiagnosticsLog() throws Exception {
         // Given
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homePath() )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).toAbsolutePath() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(testDir.homePath())
+                .setConfig(
+                        GraphDatabaseSettings.logs_directory,
+                        testDir.directory("logs").toAbsolutePath())
                 .build();
 
-        var databaseId = ((GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME )).databaseId();
+        var databaseId = ((GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME)).databaseId();
         managementService.shutdown();
-        Path internalLog = testDir.directory( "logs" ).resolve( INTERNAL_LOG_FILE );
+        Path internalLog = testDir.directory("logs").resolve(INTERNAL_LOG_FILE);
 
         // Then
-        assertThat( Files.isRegularFile( internalLog ) ).isEqualTo( true );
-        assertThat( Files.size( internalLog ) ).isGreaterThan( 0L );
+        assertThat(Files.isRegularFile(internalLog)).isEqualTo(true);
+        assertThat(Files.size(internalLog)).isGreaterThan(0L);
 
-        assertEquals( 1, countOccurrences( internalLog, databaseId + " is ready." ) );
-        assertEquals( 2, countOccurrences( internalLog, databaseId + " is unavailable." ) );
+        assertEquals(1, countOccurrences(internalLog, databaseId + " is ready."));
+        assertEquals(2, countOccurrences(internalLog, databaseId + " is unavailable."));
     }
 
     @Test
-    void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
-    {
+    void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception {
         // Given
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homePath() )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toAbsolutePath() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(testDir.homePath())
+                .setConfig(
+                        GraphDatabaseSettings.logs_directory,
+                        testDir.directory("logs").toAbsolutePath())
                 .build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
 
         // When
-        LogService logService = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( LogService.class );
-        logService.getInternalLog( getClass() ).debug( "A debug entry" );
+        LogService logService = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(LogService.class);
+        logService.getInternalLog(getClass()).debug("A debug entry");
 
         managementService.shutdown();
-        Path internalLog = testDir.directory( "logs" ).resolve( INTERNAL_LOG_FILE );
+        Path internalLog = testDir.directory("logs").resolve(INTERNAL_LOG_FILE);
 
         // Then
-        assertThat( Files.isRegularFile( internalLog ) ).isEqualTo( true );
-        assertThat( Files.size( internalLog ) ).isGreaterThan( 0L );
+        assertThat(Files.isRegularFile(internalLog)).isEqualTo(true);
+        assertThat(Files.size(internalLog)).isGreaterThan(0L);
 
-        assertEquals( 0, countOccurrences( internalLog, "A debug entry" ) );
+        assertEquals(0, countOccurrences(internalLog, "A debug entry"));
     }
 
-    private static long countOccurrences( Path file, String substring ) throws IOException
-    {
-        try ( Stream<String> lines = Files.lines( file ) )
-        {
-            return lines.filter( line -> line.contains( substring ) ).count();
+    private static long countOccurrences(Path file, String substring) throws IOException {
+        try (Stream<String> lines = Files.lines(file)) {
+            return lines.filter(line -> line.contains(substring)).count();
         }
     }
 }

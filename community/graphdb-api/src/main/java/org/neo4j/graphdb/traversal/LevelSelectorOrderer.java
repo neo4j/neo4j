@@ -20,105 +20,87 @@
 package org.neo4j.graphdb.traversal;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.impl.traversal.AbstractSelectorOrderer;
 
-public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorOrderer.Entry>
-{
+public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorOrderer.Entry> {
     private final boolean stopDescentOnResult;
     private final TotalDepth totalDepth = new TotalDepth();
     private final int maxDepth;
 
-    public LevelSelectorOrderer( BranchSelector startSelector, BranchSelector endSelector,
-            boolean stopDescentOnResult, int maxDepth )
-    {
-        super( startSelector, endSelector );
+    public LevelSelectorOrderer(
+            BranchSelector startSelector, BranchSelector endSelector, boolean stopDescentOnResult, int maxDepth) {
+        super(startSelector, endSelector);
         this.stopDescentOnResult = stopDescentOnResult;
         this.maxDepth = maxDepth;
     }
 
     @Override
-    protected Entry initialState()
-    {
+    protected Entry initialState() {
         return new Entry();
     }
 
     @Override
-    public TraversalBranch next( TraversalContext metadata )
-    {
-        TraversalBranch branch = nextBranchFromCurrentSelector( metadata, false );
+    public TraversalBranch next(TraversalContext metadata) {
+        TraversalBranch branch = nextBranchFromCurrentSelector(metadata, false);
         Entry state = getStateForCurrentSelector();
         AtomicInteger previousDepth = state.depth;
-        if ( branch != null && branch.length() == previousDepth.get() )
-        {   // Same depth as previous branch returned from this side.
+        if (branch != null
+                && branch.length() == previousDepth.get()) { // Same depth as previous branch returned from this side.
             return branch;
         }
 
-        if ( branch != null )
-        {
-            totalDepth.set( currentSide(), branch.length() );
+        if (branch != null) {
+            totalDepth.set(currentSide(), branch.length());
         }
-        if ( (stopDescentOnResult && (metadata.getNumberOfPathsReturned() > 0)) ||
-                (totalDepth.get() > (maxDepth + 1)) )
-        {
+        if ((stopDescentOnResult && (metadata.getNumberOfPathsReturned() > 0)) || (totalDepth.get() > (maxDepth + 1))) {
             nextSelector();
             return null;
         }
 
-        if ( branch != null )
-        {
-            previousDepth.set( branch.length() );
+        if (branch != null) {
+            previousDepth.set(branch.length());
             state.branch = branch;
         }
         BranchSelector otherSelector = nextSelector();
         Entry otherState = getStateForCurrentSelector();
         TraversalBranch otherBranch = otherState.branch;
-        if ( otherBranch != null )
-        {
+        if (otherBranch != null) {
             otherState.branch = null;
             return otherBranch;
         }
 
-        otherBranch = otherSelector.next( metadata );
-        if ( otherBranch != null )
-        {
+        otherBranch = otherSelector.next(metadata);
+        if (otherBranch != null) {
             return otherBranch;
-        }
-        else
-        {
+        } else {
             return branch;
         }
     }
 
-    static class Entry
-    {
+    static class Entry {
         private final AtomicInteger depth = new AtomicInteger();
         private TraversalBranch branch;
     }
 
-    private static class TotalDepth
-    {
+    private static class TotalDepth {
         private int out;
         private int in;
 
-        void set( Direction side, int depth )
-        {
-            switch ( side )
-            {
-            case OUTGOING:
-                out = depth;
-                break;
-            case INCOMING:
-                in = depth;
-                break;
-            default:
-                break;
+        void set(Direction side, int depth) {
+            switch (side) {
+                case OUTGOING:
+                    out = depth;
+                    break;
+                case INCOMING:
+                    in = depth;
+                    break;
+                default:
+                    break;
             }
         }
 
-        int get()
-        {
+        int get() {
             return out + in;
         }
     }

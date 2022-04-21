@@ -19,18 +19,15 @@
  */
 package org.neo4j.csv.reader;
 
-import java.io.FileReader;
-
 import static org.neo4j.csv.reader.ThreadAheadReadable.threadAhead;
+
+import java.io.FileReader;
 
 /**
  * Factory for common {@link CharSeeker} implementations.
  */
-public final class CharSeekers
-{
-    private CharSeekers()
-    {
-    }
+public final class CharSeekers {
+    private CharSeekers() {}
 
     /**
      * Instantiates a {@link BufferedCharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
@@ -42,15 +39,13 @@ public final class CharSeekers
      * time for the {@link BufferedCharSeeker} to read more data.
      * @return a {@link CharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      */
-    public static CharSeeker charSeeker( CharReadable reader, Configuration config, boolean readAhead )
-    {
-        if ( readAhead )
-        {   // Thread that always has one buffer read ahead
-            reader = threadAhead( reader, config.bufferSize() );
+    public static CharSeeker charSeeker(CharReadable reader, Configuration config, boolean readAhead) {
+        if (readAhead) { // Thread that always has one buffer read ahead
+            reader = threadAhead(reader, config.bufferSize());
         }
 
         // Give the reader to the char seeker
-        return new BufferedCharSeeker( new AutoReadingSource( reader, config.bufferSize() ), config );
+        return new BufferedCharSeeker(new AutoReadingSource(reader, config.bufferSize()), config);
     }
 
     /**
@@ -64,13 +59,12 @@ public final class CharSeekers
      * @param quotationCharacter character to interpret quotation character.
      * @return a {@link CharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      */
-    public static CharSeeker charSeeker( CharReadable reader, final int bufferSize, boolean readAhead,
-            final char quotationCharacter )
-    {
+    public static CharSeeker charSeeker(
+            CharReadable reader, final int bufferSize, boolean readAhead, final char quotationCharacter) {
         final var config = Configuration.newBuilder()
-                .withQuotationCharacter( quotationCharacter )
-                .withBufferSize( bufferSize )
+                .withQuotationCharacter(quotationCharacter)
+                .withBufferSize(bufferSize)
                 .build();
-        return charSeeker( reader, config, readAhead );
+        return charSeeker(reader, config, readAhead);
     }
 }

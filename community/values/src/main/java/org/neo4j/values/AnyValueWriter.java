@@ -29,10 +29,8 @@ import org.neo4j.values.virtual.RelationshipValue;
 /**
  * Writer of any values.
  */
-public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
-{
-    enum EntityMode
-    {
+public interface AnyValueWriter<E extends Exception> extends ValueWriter<E> {
+    enum EntityMode {
         REFERENCE,
         FULL
     }
@@ -52,33 +50,33 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
      */
     EntityMode entityMode();
 
-    void writeNodeReference( long nodeId ) throws E;
+    void writeNodeReference(long nodeId) throws E;
 
-    void writeNode( long nodeId, TextArray labels, MapValue properties, boolean isDeleted ) throws E;
+    void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) throws E;
 
-    void writeRelationshipReference( long relId ) throws E;
+    void writeRelationshipReference(long relId) throws E;
 
-    void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted ) throws E;
+    void writeRelationship(
+            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted)
+            throws E;
 
-    void beginMap( int size ) throws E;
+    void beginMap(int size) throws E;
 
     void endMap() throws E;
 
-    void beginList( int size ) throws E;
+    void beginList(int size) throws E;
 
     void endList() throws E;
 
-    void writePathReference( long[] nodes, long[] relationships ) throws E;
+    void writePathReference(long[] nodes, long[] relationships) throws E;
 
-    void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws E;
+    void writePath(NodeValue[] nodes, RelationshipValue[] relationships) throws E;
 
-    default void writeVirtualNodeHack( Object node )
-    {
+    default void writeVirtualNodeHack(Object node) {
         // do nothing, this is an ugly hack.
     }
 
-    default void writeVirtualRelationshipHack( Object relationship )
-    {
+    default void writeVirtualRelationshipHack(Object relationship) {
         // do nothing, this is an ugly hack.
     }
 }

@@ -28,18 +28,18 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 
-public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.kernel.api.Cursor> implements PartitionedScan<Cursor>
-{
+public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.kernel.api.Cursor>
+        implements PartitionedScan<Cursor> {
     private final Read read;
     private final PartitionedValueSeek valueSeek;
     private final PropertyIndexQuery[] query;
     private final IndexDescriptor descriptor;
 
-    PartitionedValueIndexCursorSeek( Read read, IndexDescriptor descriptor, PartitionedValueSeek valueSeek, PropertyIndexQuery... query )
-    {
-        if ( read.hasTxStateWithChanges() )
-        {
-            throw new IllegalStateException( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
+    PartitionedValueIndexCursorSeek(
+            Read read, IndexDescriptor descriptor, PartitionedValueSeek valueSeek, PropertyIndexQuery... query) {
+        if (read.hasTxStateWithChanges()) {
+            throw new IllegalStateException(
+                    "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
         }
         this.read = read;
         this.descriptor = descriptor;
@@ -48,22 +48,20 @@ public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.k
     }
 
     @Override
-    public int getNumberOfPartitions()
-    {
+    public int getNumberOfPartitions() {
         return valueSeek.getNumberOfPartitions();
     }
 
     @Override
-    public boolean reservePartition( Cursor cursor, CursorContext cursorContext, AccessMode accessMode )
-    {
+    public boolean reservePartition(Cursor cursor, CursorContext cursorContext, AccessMode accessMode) {
         final var indexCursor = (DefaultEntityValueIndexCursor<?>) cursor;
-        indexCursor.setRead( read );
-        final var indexProgressor = valueSeek.reservePartition( indexCursor, cursorContext );
-        if ( indexProgressor == IndexProgressor.EMPTY )
-        {
+        indexCursor.setRead(read);
+        final var indexProgressor = valueSeek.reservePartition(indexCursor, cursorContext);
+        if (indexProgressor == IndexProgressor.EMPTY) {
             return false;
         }
-        indexCursor.initialize( descriptor, indexProgressor, accessMode, false, IndexQueryConstraints.unorderedValues(), query );
+        indexCursor.initialize(
+                descriptor, indexProgressor, accessMode, false, IndexQueryConstraints.unorderedValues(), query);
         return true;
     }
 }

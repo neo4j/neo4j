@@ -31,94 +31,90 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.FunctionInRootNamespaceError;
 import org.neo4j.tooling.procedure.messages.ReturnTypeError;
 import org.neo4j.tooling.procedure.validators.AllowedTypesValidator;
 
-public class FunctionVisitor<T extends Annotation>
-{
+public class FunctionVisitor<T extends Annotation> {
 
-    private final ElementVisitor<Stream<CompilationMessage>,Void> parameterVisitor;
+    private final ElementVisitor<Stream<CompilationMessage>, Void> parameterVisitor;
     private final Elements elements;
-    private final ElementVisitor<Stream<CompilationMessage>,Void> classVisitor;
-    private final Function<T,Optional<String>> customNameExtractor;
+    private final ElementVisitor<Stream<CompilationMessage>, Void> classVisitor;
+    private final Function<T, Optional<String>> customNameExtractor;
     private final Class<T> annotationType;
     private final AllowedTypesValidator allowedTypesValidator;
 
-    public FunctionVisitor( Class<T> annotationType, Types types, Elements elements, TypeMirrorUtils typeMirrorUtils,
-            Function<T,Optional<String>> customNameExtractor, boolean ignoresWarnings )
-    {
+    public FunctionVisitor(
+            Class<T> annotationType,
+            Types types,
+            Elements elements,
+            TypeMirrorUtils typeMirrorUtils,
+            Function<T, Optional<String>> customNameExtractor,
+            boolean ignoresWarnings) {
         this.customNameExtractor = customNameExtractor;
         this.annotationType = annotationType;
-        this.classVisitor = new ExtensionClassVisitor( types, elements, ignoresWarnings );
-        this.parameterVisitor = new ParameterVisitor( new ParameterTypeVisitor( types, typeMirrorUtils ) );
+        this.classVisitor = new ExtensionClassVisitor(types, elements, ignoresWarnings);
+        this.parameterVisitor = new ParameterVisitor(new ParameterTypeVisitor(types, typeMirrorUtils));
         this.elements = elements;
-        this.allowedTypesValidator = new AllowedTypesValidator( typeMirrorUtils, types );
+        this.allowedTypesValidator = new AllowedTypesValidator(typeMirrorUtils, types);
     }
 
-    public Stream<CompilationMessage> validateEnclosingClass( ExecutableElement method )
-    {
-        return classVisitor.visit( method.getEnclosingElement() );
+    public Stream<CompilationMessage> validateEnclosingClass(ExecutableElement method) {
+        return classVisitor.visit(method.getEnclosingElement());
     }
 
-    public Stream<CompilationMessage> validateParameters( List<? extends VariableElement> parameters )
-    {
-        return parameters.stream().flatMap( parameterVisitor::visit );
+    public Stream<CompilationMessage> validateParameters(List<? extends VariableElement> parameters) {
+        return parameters.stream().flatMap(parameterVisitor::visit);
     }
 
-    public Stream<CompilationMessage> validateName( ExecutableElement method )
-    {
-        Optional<String> customName = customNameExtractor.apply( method.getAnnotation( annotationType ) );
-        if ( customName.isPresent() )
-        {
-            if ( isInRootNamespace( customName.get() ) )
-            {
-                return Stream.of( rootNamespaceError( method, customName.get() ) );
+    public Stream<CompilationMessage> validateName(ExecutableElement method) {
+        Optional<String> customName = customNameExtractor.apply(method.getAnnotation(annotationType));
+        if (customName.isPresent()) {
+            if (isInRootNamespace(customName.get())) {
+                return Stream.of(rootNamespaceError(method, customName.get()));
             }
             return Stream.empty();
         }
 
-        PackageElement namespace = elements.getPackageOf( method );
-        if ( namespace == null )
-        {
-            return Stream.of( rootNamespaceError( method ) );
+        PackageElement namespace = elements.getPackageOf(method);
+        if (namespace == null) {
+            return Stream.of(rootNamespaceError(method));
         }
         return Stream.empty();
     }
 
-    public Stream<CompilationMessage> validateReturnType( ExecutableElement method )
-    {
+    public Stream<CompilationMessage> validateReturnType(ExecutableElement method) {
         TypeMirror returnType = method.getReturnType();
-        if ( !allowedTypesValidator.test( returnType ) )
-        {
-            return Stream.of( new ReturnTypeError( method,
-                    "Unsupported return type <%s> of function defined in <%s#%s>.", returnType,
-                    method.getEnclosingElement(), method.getSimpleName() ) );
+        if (!allowedTypesValidator.test(returnType)) {
+            return Stream.of(new ReturnTypeError(
+                    method,
+                    "Unsupported return type <%s> of function defined in <%s#%s>.",
+                    returnType,
+                    method.getEnclosingElement(),
+                    method.getSimpleName()));
         }
         return Stream.empty();
     }
 
-    private boolean isInRootNamespace( String name )
-    {
-        return !name.contains( "." ) || name.split( "\\." )[0].isEmpty();
+    private boolean isInRootNamespace(String name) {
+        return !name.contains(".") || name.split("\\.")[0].isEmpty();
     }
 
-    private FunctionInRootNamespaceError rootNamespaceError( ExecutableElement method, String name )
-    {
-        return new FunctionInRootNamespaceError( method,
+    private FunctionInRootNamespaceError rootNamespaceError(ExecutableElement method, String name) {
+        return new FunctionInRootNamespaceError(
+                method,
                 "Function <%s> cannot be defined in the root namespace. Valid name example: com.acme.my_function",
-                name );
+                name);
     }
 
-    private FunctionInRootNamespaceError rootNamespaceError( ExecutableElement method )
-    {
-        return new FunctionInRootNamespaceError( method,
-                "Function defined in <%s#%s> cannot be defined in the root namespace. " +
-                        "Valid name example: com.acme.my_function", method.getEnclosingElement().getSimpleName(),
-                method.getSimpleName() );
+    private FunctionInRootNamespaceError rootNamespaceError(ExecutableElement method) {
+        return new FunctionInRootNamespaceError(
+                method,
+                "Function defined in <%s#%s> cannot be defined in the root namespace. "
+                        + "Valid name example: com.acme.my_function",
+                method.getEnclosingElement().getSimpleName(),
+                method.getSimpleName());
     }
-
 }

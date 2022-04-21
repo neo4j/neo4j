@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class DefaultPooledCursorsTest extends DefaultPooledCursorsTestBase<ReadTestSupport>
-{
+public class DefaultPooledCursorsTest extends DefaultPooledCursorsTestBase<ReadTestSupport> {
     @Override
-    public ReadTestSupport newTestSupport()
-    {
+    public ReadTestSupport newTestSupport() {
         return new ReadTestSupport();
     }
 }

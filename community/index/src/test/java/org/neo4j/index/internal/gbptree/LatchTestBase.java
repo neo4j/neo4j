@@ -19,48 +19,39 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import static org.neo4j.function.Predicates.alwaysTrue;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongConsumer;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.test.OtherThreadExecutor;
 
-import static org.neo4j.function.Predicates.alwaysTrue;
-
-abstract class LatchTestBase
-{
+abstract class LatchTestBase {
     OtherThreadExecutor t2;
 
     @BeforeEach
-    void startT2()
-    {
-        t2 = new OtherThreadExecutor( TreeNodeLatchService.class.getName() );
+    void startT2() {
+        t2 = new OtherThreadExecutor(TreeNodeLatchService.class.getName());
     }
 
     @AfterEach
-    void stopT2()
-    {
+    void stopT2() {
         t2.close();
     }
 
-    Future<Void> beginAndAwaitLatchAcquisition( Runnable lockFunction ) throws TimeoutException
-    {
+    Future<Void> beginAndAwaitLatchAcquisition(Runnable lockFunction) throws TimeoutException {
         // Let t2 do a lock acquisition which is expected to block
-        Future<Void> readAcquisition = t2.executeDontWait( () ->
-        {
+        Future<Void> readAcquisition = t2.executeDontWait(() -> {
             lockFunction.run();
             return null;
-        } );
+        });
 
         // Make sure it's blocking
-        for ( int consecutiveHits = 0; consecutiveHits < 10; consecutiveHits++ )
-        {
-            if ( !t2.waitUntil( alwaysTrue() ).isAt( LongSpinLatch.class, "spinTransform" ) )
-            {
+        for (int consecutiveHits = 0; consecutiveHits < 10; consecutiveHits++) {
+            if (!t2.waitUntil(alwaysTrue()).isAt(LongSpinLatch.class, "spinTransform")) {
                 consecutiveHits = 0;
             }
         }
@@ -69,14 +60,12 @@ abstract class LatchTestBase
         return readAcquisition;
     }
 
-    static class LongCapture implements LongConsumer
-    {
+    static class LongCapture implements LongConsumer {
         final AtomicInteger count = new AtomicInteger();
         volatile long captured;
 
         @Override
-        public void accept( long value )
-        {
+        public void accept(long value) {
             this.captured = value;
             this.count.incrementAndGet();
         }

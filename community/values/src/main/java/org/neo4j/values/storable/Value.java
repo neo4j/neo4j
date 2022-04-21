@@ -19,6 +19,9 @@
  */
 package org.neo4j.values.storable;
 
+import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -26,7 +29,6 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.hashing.HashFunction;
@@ -36,185 +38,149 @@ import org.neo4j.values.Comparison;
 import org.neo4j.values.Equality;
 import org.neo4j.values.SequenceValue;
 
-import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
-public abstract class Value extends AnyValue
-{
-    private static final Pattern MAP_PATTERN = Pattern.compile( "\\{(.*)}" );
+public abstract class Value extends AnyValue {
+    private static final Pattern MAP_PATTERN = Pattern.compile("\\{(.*)}");
 
     private static final Pattern KEY_VALUE_PATTERN =
-            Pattern.compile( "(?:\\A|,)\\s*+(?<k>[a-z_A-Z]\\w*+)\\s*:\\s*(?<v>[^\\s,]+)" );
+            Pattern.compile("(?:\\A|,)\\s*+(?<k>[a-z_A-Z]\\w*+)\\s*:\\s*(?<v>[^\\s,]+)");
 
-    static final Pattern QUOTES_PATTERN = Pattern.compile( "^[\"']|[\"']$" );
+    static final Pattern QUOTES_PATTERN = Pattern.compile("^[\"']|[\"']$");
 
     @Override
-    public boolean equalTo( Object other )
-    {
-        return other instanceof Value && equals( (Value) other );
+    public boolean equalTo(Object other) {
+        return other instanceof Value && equals((Value) other);
     }
 
-    public abstract boolean equals( Value other );
+    public abstract boolean equals(Value other);
 
-    public boolean equals( byte[] x )
-    {
+    public boolean equals(byte[] x) {
         return false;
     }
 
-    public boolean equals( short[] x )
-    {
+    public boolean equals(short[] x) {
         return false;
     }
 
-    public boolean equals( int[] x )
-    {
+    public boolean equals(int[] x) {
         return false;
     }
 
-    public boolean equals( long[] x )
-    {
+    public boolean equals(long[] x) {
         return false;
     }
 
-    public boolean equals( float[] x )
-    {
+    public boolean equals(float[] x) {
         return false;
     }
 
-    public boolean equals( double[] x )
-    {
+    public boolean equals(double[] x) {
         return false;
     }
 
-    public boolean equals( boolean x )
-    {
+    public boolean equals(boolean x) {
         return false;
     }
 
-    public boolean equals( boolean[] x )
-    {
+    public boolean equals(boolean[] x) {
         return false;
     }
 
-    public boolean equals( long x )
-    {
+    public boolean equals(long x) {
         return false;
     }
 
-    public boolean equals( double x )
-    {
+    public boolean equals(double x) {
         return false;
     }
 
-    public boolean equals( char x )
-    {
+    public boolean equals(char x) {
         return false;
     }
 
-    public boolean equals( String x )
-    {
+    public boolean equals(String x) {
         return false;
     }
 
-    public boolean equals( char[] x )
-    {
+    public boolean equals(char[] x) {
         return false;
     }
 
-    public boolean equals( String[] x )
-    {
+    public boolean equals(String[] x) {
         return false;
     }
 
-    public boolean equals( Geometry[] x )
-    {
+    public boolean equals(Geometry[] x) {
         return false;
     }
 
-    public boolean equals( ZonedDateTime[] x )
-    {
+    public boolean equals(ZonedDateTime[] x) {
         return false;
     }
 
-    public boolean equals( LocalDate[] x )
-    {
+    public boolean equals(LocalDate[] x) {
         return false;
     }
 
-    public boolean equals( DurationValue[] x )
-    {
+    public boolean equals(DurationValue[] x) {
         return false;
     }
 
-    public boolean equals( LocalDateTime[] x )
-    {
+    public boolean equals(LocalDateTime[] x) {
         return false;
     }
 
-    public boolean equals( LocalTime[] x )
-    {
+    public boolean equals(LocalTime[] x) {
         return false;
     }
 
-    public boolean equals( OffsetTime[] x )
-    {
+    public boolean equals(OffsetTime[] x) {
         return false;
     }
 
     @Override
-    public Equality ternaryEquals( AnyValue other )
-    {
+    public Equality ternaryEquals(AnyValue other) {
         assert other != null : "null values are not supported, use NoValue.NO_VALUE instead";
-        if ( other == NO_VALUE )
-        {
+        if (other == NO_VALUE) {
             return Equality.UNDEFINED;
         }
-        if ( other.isSequenceValue() && this.isSequenceValue() )
-        {
-            return ((SequenceValue) this).ternaryEquality( (SequenceValue) other );
+        if (other.isSequenceValue() && this.isSequenceValue()) {
+            return ((SequenceValue) this).ternaryEquality((SequenceValue) other);
         }
-        if ( hasNaNOperand( this, other ) )
-        {
+        if (hasNaNOperand(this, other)) {
             return Equality.FALSE;
         }
-        if ( other instanceof Value otherValue && otherValue.valueGroup() == valueGroup() )
-        {
-            if ( this.ternaryUndefined() || otherValue.ternaryUndefined() )
-            {
+        if (other instanceof Value otherValue && otherValue.valueGroup() == valueGroup()) {
+            if (this.ternaryUndefined() || otherValue.ternaryUndefined()) {
                 return Equality.UNDEFINED;
             }
-            return equals( otherValue ) ? Equality.TRUE : Equality.FALSE;
+            return equals(otherValue) ? Equality.TRUE : Equality.FALSE;
         }
         return Equality.FALSE;
     }
 
-    protected abstract int unsafeCompareTo( Value other );
+    protected abstract int unsafeCompareTo(Value other);
 
     /**
      * Should return {@code Comparison.UNDEFINED} for values that cannot be compared
      * under Comparability semantics.
      */
-    Comparison unsafeTernaryCompareTo( Value other )
-    {
-        if ( ternaryUndefined() || other.ternaryUndefined() )
-        {
+    Comparison unsafeTernaryCompareTo(Value other) {
+        if (ternaryUndefined() || other.ternaryUndefined()) {
             return Comparison.UNDEFINED;
         }
-        return Comparison.from( unsafeCompareTo( other ) );
+        return Comparison.from(unsafeCompareTo(other));
     }
 
-    boolean ternaryUndefined()
-    {
+    boolean ternaryUndefined() {
         return false;
     }
 
     @Override
-    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-    {
-        writeTo( (ValueWriter<E>)writer );
+    public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {
+        writeTo((ValueWriter<E>) writer);
     }
 
-    public abstract <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E;
+    public abstract <E extends Exception> void writeTo(ValueWriter<E> writer) throws E;
 
     /**
      * Return this value as a regular java boxed primitive, String or primitive array. This method performs defensive
@@ -230,8 +196,7 @@ public abstract class Value extends AnyValue
      *
      * @return the object version of the current value
      */
-    public Object asObject()
-    {
+    public Object asObject() {
         return asObjectCopy();
     }
 
@@ -243,8 +208,7 @@ public abstract class Value extends AnyValue
     @Override
     public abstract ValueRepresentation valueRepresentation();
 
-    public final ValueGroup valueGroup()
-    {
+    public final ValueGroup valueGroup() {
         return valueRepresentation().valueGroup();
     }
 
@@ -258,53 +222,43 @@ public abstract class Value extends AnyValue
      * @param value {@link Value} to compare type against.
      * @return {@code true} if the given {@code value} is of the same value type as this value.
      */
-    public boolean isSameValueTypeAs( Value value )
-    {
+    public boolean isSameValueTypeAs(Value value) {
         return getClass() == value.getClass();
     }
 
-    public final long hashCode64()
-    {
+    public final long hashCode64() {
         HashFunction xxh64 = HashFunction.incrementalXXH64();
         long seed = 1; // Arbitrary seed, but it must always be the same or hash values will change.
-        return xxh64.finalise( updateHash( xxh64, xxh64.initialise( seed ) ) );
+        return xxh64.finalise(updateHash(xxh64, xxh64.initialise(seed)));
     }
 
-    public abstract long updateHash( HashFunction hashFunction, long hash );
+    public abstract long updateHash(HashFunction hashFunction, long hash);
 
-    static void parseHeaderInformation( CharSequence text, String type, CSVHeaderInformation info )
-    {
-        Matcher mapMatcher = MAP_PATTERN.matcher( text );
-        String errorMessage = format( "Failed to parse %s value: '%s'", type, text );
-        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
-        {
-            throw new InvalidArgumentException( errorMessage );
+    static void parseHeaderInformation(CharSequence text, String type, CSVHeaderInformation info) {
+        Matcher mapMatcher = MAP_PATTERN.matcher(text);
+        String errorMessage = format("Failed to parse %s value: '%s'", type, text);
+        if (!(mapMatcher.find() && mapMatcher.groupCount() == 1)) {
+            throw new InvalidArgumentException(errorMessage);
         }
 
-        String mapContents = mapMatcher.group( 1 );
-        if ( mapContents.isEmpty() )
-        {
-            throw new InvalidArgumentException( errorMessage );
+        String mapContents = mapMatcher.group(1);
+        if (mapContents.isEmpty()) {
+            throw new InvalidArgumentException(errorMessage);
         }
 
-        Matcher matcher = KEY_VALUE_PATTERN.matcher( mapContents );
-        if ( !(matcher.find()) )
-        {
-            throw new InvalidArgumentException( errorMessage );
+        Matcher matcher = KEY_VALUE_PATTERN.matcher(mapContents);
+        if (!(matcher.find())) {
+            throw new InvalidArgumentException(errorMessage);
         }
 
-        do
-        {
-            String key = matcher.group( "k" );
-            if ( key != null )
-            {
-                String value = matcher.group( "v" );
-                if ( value != null )
-                {
-                    info.assign( key, value );
+        do {
+            String key = matcher.group("k");
+            if (key != null) {
+                String value = matcher.group("v");
+                if (value != null) {
+                    info.assign(key, value);
                 }
             }
-        }
-        while ( matcher.find() );
+        } while (matcher.find());
     }
 }

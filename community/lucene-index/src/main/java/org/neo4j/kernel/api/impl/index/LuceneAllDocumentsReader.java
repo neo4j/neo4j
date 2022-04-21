@@ -19,45 +19,41 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Document;
+import static java.lang.Integer.max;
+import static java.lang.Math.toIntExact;
+import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
+import org.apache.lucene.document.Document;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
 
-import static java.lang.Integer.max;
-import static java.lang.Math.toIntExact;
-import static java.util.stream.Collectors.toList;
-
-public class LuceneAllDocumentsReader implements BoundedIterable<Document>
-{
+public class LuceneAllDocumentsReader implements BoundedIterable<Document> {
     private final List<LucenePartitionAllDocumentsReader> partitionReaders;
 
-    public LuceneAllDocumentsReader( List<LucenePartitionAllDocumentsReader> partitionReaders )
-    {
+    public LuceneAllDocumentsReader(List<LucenePartitionAllDocumentsReader> partitionReaders) {
         this.partitionReaders = partitionReaders;
     }
 
     @Override
-    public long maxCount()
-    {
-        return partitionReaders.stream().mapToLong( LucenePartitionAllDocumentsReader::maxCount ).sum();
+    public long maxCount() {
+        return partitionReaders.stream()
+                .mapToLong(LucenePartitionAllDocumentsReader::maxCount)
+                .sum();
     }
 
     @Override
-    public Iterator<Document> iterator()
-    {
+    public Iterator<Document> iterator() {
         Iterator<Iterator<Document>> iterators = partitionReaders.stream()
-                .map( LucenePartitionAllDocumentsReader::iterator )
-                .collect( toList() )
+                .map(LucenePartitionAllDocumentsReader::iterator)
+                .collect(toList())
                 .iterator();
 
-        return Iterators.concat( iterators );
+        return Iterators.concat(iterators);
     }
 
     /**
@@ -66,27 +62,25 @@ public class LuceneAllDocumentsReader implements BoundedIterable<Document>
      * @param numPartitions number of desired partitions to return.
      * @return a list of document iterators, each reading its own document ID range.
      */
-    public List<Iterator<Document>> partition( int numPartitions )
-    {
-        int partitionsPerIndexPartition = max( 1, numPartitions / partitionReaders.size() );
+    public List<Iterator<Document>> partition(int numPartitions) {
+        int partitionsPerIndexPartition = max(1, numPartitions / partitionReaders.size());
         List<Iterator<Document>> result = new ArrayList<>();
-        for ( LucenePartitionAllDocumentsReader partitionReader : partitionReaders )
-        {
-            int indexPartitionMaxCount = toIntExact( partitionReader.maxCount() );
+        for (LucenePartitionAllDocumentsReader partitionReader : partitionReaders) {
+            int indexPartitionMaxCount = toIntExact(partitionReader.maxCount());
             int roughCountPerIndexPartition = indexPartitionMaxCount / partitionsPerIndexPartition;
-            for ( int i = 0; i < partitionsPerIndexPartition; i++ )
-            {
+            for (int i = 0; i < partitionsPerIndexPartition; i++) {
                 int from = i * roughCountPerIndexPartition;
-                int to = i == partitionsPerIndexPartition - 1 ? indexPartitionMaxCount : from + roughCountPerIndexPartition;
-                result.add( partitionReader.iterator( from, to ) );
+                int to = i == partitionsPerIndexPartition - 1
+                        ? indexPartitionMaxCount
+                        : from + roughCountPerIndexPartition;
+                result.add(partitionReader.iterator(from, to));
             }
         }
         return result;
     }
 
     @Override
-    public void close() throws IOException
-    {
-        IOUtils.closeAll( partitionReaders );
+    public void close() throws IOException {
+        IOUtils.closeAll(partitionReaders);
     }
 }

@@ -19,32 +19,27 @@
  */
 package org.neo4j.kernel.api.exception;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.HashSet;
-import java.util.Set;
-
-import org.neo4j.kernel.api.exceptions.Status;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-class StatusTest
-{
+import java.util.HashSet;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.exceptions.Status;
+
+class StatusTest {
     @Test
-    void eachStatusCodeHasAUniqueCode()
-    {
+    void eachStatusCodeHasAUniqueCode() {
         // given
         Set<Object> codes = new HashSet<>();
 
         // when
-        for ( Status status : Status.Code.all() )
-        {
-            codes.add( status.code().serialize() );
+        for (Status status : Status.Code.all()) {
+            codes.add(status.code().serialize());
         }
 
         // then
-        assertNotEquals( 0, codes.size() );
-        assertEquals( Status.Code.all().size(), codes.size() );
+        assertNotEquals(0, codes.size());
+        assertEquals(Status.Code.all().size(), codes.size());
     }
 }

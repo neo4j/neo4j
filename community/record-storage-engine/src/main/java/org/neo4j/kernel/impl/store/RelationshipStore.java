@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -33,13 +33,10 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.InternalLogProvider;
 
-import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
-
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,NoStoreHeader>
-{
+public class RelationshipStore extends CommonAbstractStore<RelationshipRecord, NoStoreHeader> {
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     public RelationshipStore(
@@ -52,10 +49,21 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,No
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, configuration, RecordIdType.RELATIONSHIP, idGeneratorFactory,
-                pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.relationship(), NO_STORE_HEADER_FORMAT,
-                recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                configuration,
+                RecordIdType.RELATIONSHIP,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                TYPE_DESCRIPTOR,
+                recordFormats.relationship(),
+                NO_STORE_HEADER_FORMAT,
+                recordFormats.storeVersion(),
+                readOnlyChecker,
+                databaseName,
+                openOptions);
     }
 }

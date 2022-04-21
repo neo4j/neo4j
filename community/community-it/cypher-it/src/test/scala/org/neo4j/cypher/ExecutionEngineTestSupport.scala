@@ -49,6 +49,7 @@ import org.neo4j.logging.NullLogProvider
 
 import java.util
 import java.util.concurrent.TimeUnit
+
 import scala.annotation.tailrec
 import scala.collection.Map
 import scala.concurrent.Await
@@ -72,11 +73,12 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineH
     eengine = null
   }
 
-  override def executeScalar[T](q: String, params: (String, Any)*): T = try {
-    super.executeScalar[T](q, params: _*)
-  } catch {
-    case e: ScalarFailureException => fail(e.getMessage)
-  }
+  override def executeScalar[T](q: String, params: (String, Any)*): T =
+    try {
+      super.executeScalar[T](q, params: _*)
+    } catch {
+      case e: ScalarFailureException => fail(e.getMessage)
+    }
 
   protected def timeOutIn(length: Int, timeUnit: TimeUnit)(f: => Unit): Unit = {
     val future = Future {
@@ -88,6 +90,7 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineH
 }
 
 object ExecutionEngineHelper {
+
   def createEngine(db: GraphDatabaseService, logProvider: InternalLogProvider): ExecutionEngine = {
     val service = new GraphDatabaseCypherService(db)
     createEngine(service, logProvider)
@@ -98,9 +101,14 @@ object ExecutionEngineHelper {
     createEngine(service, NullLogProvider.getInstance())
   }
 
-  def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: InternalLogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
+  def createEngine(
+    graphDatabaseCypherService: GraphDatabaseQueryService,
+    logProvider: InternalLogProvider = NullLogProvider.getInstance()
+  ): ExecutionEngine = {
     val resolver = graphDatabaseCypherService.getDependencyResolver
-    resolver.resolveDependency(classOf[QueryExecutionEngine]).asInstanceOf[org.neo4j.cypher.internal.javacompat.ExecutionEngine].getCypherExecutionEngine
+    resolver.resolveDependency(classOf[QueryExecutionEngine]).asInstanceOf[
+      org.neo4j.cypher.internal.javacompat.ExecutionEngine
+    ].getCypherExecutionEngine
   }
 
   def asJavaMapDeep(map: Map[String, Any]): java.util.Map[String, AnyRef] = {
@@ -109,11 +117,11 @@ object ExecutionEngineHelper {
 
   def asJavaValueDeep(any: Any): AnyRef =
     any match {
-      case map: Map[_, _] => asJavaMapDeep(map.asInstanceOf[Map[String, Any]])
-      case array: Array[Any] => array.map(asJavaValueDeep)
-      case iterable: Iterable[_] => iterable.map(asJavaValueDeep).asJava
+      case map: Map[_, _]                => asJavaMapDeep(map.asInstanceOf[Map[String, Any]])
+      case array: Array[Any]             => array.map(asJavaValueDeep)
+      case iterable: Iterable[_]         => iterable.map(asJavaValueDeep).asJava
       case iterableOnce: IterableOnce[_] => iterableOnce.map(asJavaValueDeep).toList.asJava
-      case x => x.asInstanceOf[AnyRef]
+      case x                             => x.asInstanceOf[AnyRef]
     }
 
   private def scalar[T](input: List[Map[String, Any]]): T = input match {
@@ -169,14 +177,18 @@ trait ExecutionEngineHelper {
     val subscriber = new RecordingQuerySubscriber
     val context = graph.transactionalContext(tx, query = q -> params.toMap)
     val tbqc = new TransactionBoundQueryContext(TransactionalContextWrapper(context), new ResourceManager)
-    RewindableExecutionResult(eengine.execute(q,
-      ValueUtils.asParameterMapValue(asJavaMapDeep(params)),
-      context,
-      profile = false,
-      prePopulate = false,
-      subscriber),
+    RewindableExecutionResult(
+      eengine.execute(
+        q,
+        ValueUtils.asParameterMapValue(asJavaMapDeep(params)),
+        context,
+        profile = false,
+        prePopulate = false,
+        subscriber
+      ),
       tbqc,
-      subscriber)
+      subscriber
+    )
   }
 
   def execute(fpq: FullyParsedQuery, params: Map[String, Any], input: InputDataStream): RewindableExecutionResult = {
@@ -201,7 +213,7 @@ trait ExecutionEngineHelper {
   }
 
   def executeOfficial(tx: InternalTransaction, q: String, params: (String, Any)*): Result =
-   tx.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]])
+    tx.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]])
 
   def executeScalar[T](q: String, params: (String, Any)*): T = {
     ExecutionEngineHelper.scalar[T](execute(q, params: _*).toList)

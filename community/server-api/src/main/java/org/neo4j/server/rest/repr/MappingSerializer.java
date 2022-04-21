@@ -21,61 +21,48 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 
-public class MappingSerializer extends Serializer
-{
+public class MappingSerializer extends Serializer {
     final MappingWriter writer;
 
-    public MappingSerializer( MappingWriter writer, URI baseUri )
-    {
-        super( baseUri );
+    public MappingSerializer(MappingWriter writer, URI baseUri) {
+        super(baseUri);
         this.writer = writer;
     }
 
-    public void putRelativeUri( String key, String path )
-    {
-        writer.writeValue( RepresentationType.URI, key, relativeUri( path ) );
+    public void putRelativeUri(String key, String path) {
+        writer.writeValue(RepresentationType.URI, key, relativeUri(path));
     }
 
-    public void putRelativeUriTemplate( String key, String template )
-    {
-        writer.writeValue( RepresentationType.TEMPLATE, key, relativeTemplate( template ) );
+    public void putRelativeUriTemplate(String key, String template) {
+        writer.writeValue(RepresentationType.TEMPLATE, key, relativeTemplate(template));
     }
 
-    public void putString( String key, String value )
-    {
-        writer.writeString( key, value );
+    public void putString(String key, String value) {
+        writer.writeString(key, value);
     }
 
-    void putBoolean( String key, boolean value )
-    {
-        writer.writeBoolean( key, value );
+    void putBoolean(String key, boolean value) {
+        writer.writeBoolean(key, value);
     }
 
-    public void putMapping( String key, MappingRepresentation value )
-    {
-        serialize( writer.newMapping( value.type, key ), value );
+    public void putMapping(String key, MappingRepresentation value) {
+        serialize(writer.newMapping(value.type, key), value);
     }
 
-    public void putList( String key, ListRepresentation value )
-    {
-        serialize( writer.newList( value.type, key ), value );
+    public void putList(String key, ListRepresentation value) {
+        serialize(writer.newList(value.type, key), value);
     }
 
-    final void putNumber( String key, Number value )
-    {
-        if ( value instanceof Double || value instanceof Float )
-        {
-            writer.writeFloatingPointNumber( RepresentationType.valueOf( value.getClass() ), key, value.doubleValue() );
-        }
-        else
-        {
-            checkThatItIsBuiltInType( value );
-            writer.writeInteger( RepresentationType.valueOf( value.getClass() ), key, value.longValue() );
+    final void putNumber(String key, Number value) {
+        if (value instanceof Double || value instanceof Float) {
+            writer.writeFloatingPointNumber(RepresentationType.valueOf(value.getClass()), key, value.doubleValue());
+        } else {
+            checkThatItIsBuiltInType(value);
+            writer.writeInteger(RepresentationType.valueOf(value.getClass()), key, value.longValue());
         }
     }
 
-    public MappingWriter getWriter()
-    {
+    public MappingWriter getWriter() {
         return writer;
     }
 }

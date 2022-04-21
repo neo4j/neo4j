@@ -19,76 +19,61 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.extension.ExtensionContext;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.test.OtherThreadExecutor;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-public class OtherThread
-{
+public class OtherThread {
     private String name;
     private long timeout;
     private TimeUnit unit;
     private volatile OtherThreadExecutor executor;
 
-    public OtherThread()
-    {
-        this( null );
+    public OtherThread() {
+        this(null);
     }
 
-    private OtherThread( String name )
-    {
-        set( name, 60, SECONDS );
+    private OtherThread(String name) {
+        set(name, 60, SECONDS);
     }
 
-    public void set( long timeout, TimeUnit unit )
-    {
+    public void set(long timeout, TimeUnit unit) {
         this.timeout = timeout;
         this.unit = unit;
     }
 
-    public void set( String name, long timeout, TimeUnit unit )
-    {
+    public void set(String name, long timeout, TimeUnit unit) {
         this.name = name;
         this.timeout = timeout;
         this.unit = unit;
     }
 
-    public <RESULT> Future<RESULT> execute( Callable<RESULT> cmd )
-    {
-        Future<RESULT> future = executor.executeDontWait( cmd );
-        try
-        {
+    public <RESULT> Future<RESULT> execute(Callable<RESULT> cmd) {
+        Future<RESULT> future = executor.executeDontWait(cmd);
+        try {
             executor.awaitStartExecuting();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( "Interrupted while awaiting start of execution.", e );
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted while awaiting start of execution.", e);
         }
         return future;
     }
 
-    public OtherThreadExecutor get()
-    {
+    public OtherThreadExecutor get() {
         return executor;
     }
 
-    public void interrupt()
-    {
+    public void interrupt() {
         executor.interrupt();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         OtherThreadExecutor otherThread = executor;
-        if ( otherThread == null )
-        {
+        if (otherThread == null) {
             return "OtherThreadRule[state=dead]";
         }
         return otherThread.toString();
@@ -96,35 +81,26 @@ public class OtherThread
 
     // Implementation of life cycles
 
-    public void beforeEach( ExtensionContext context )
-    {
+    public void beforeEach(ExtensionContext context) {
         String displayName = context.getDisplayName();
 
-        String threadName = name != null
-                ? name + '-' + displayName
-                : displayName;
-        init( threadName );
+        String threadName = name != null ? name + '-' + displayName : displayName;
+        init(threadName);
     }
 
-    public void afterEach()
-    {
-        try
-        {
+    public void afterEach() {
+        try {
             executor.close();
-        }
-        finally
-        {
+        } finally {
             executor = null;
         }
     }
 
-    public void init( String threadName )
-    {
-        executor = new OtherThreadExecutor( threadName, timeout, unit );
+    public void init(String threadName) {
+        executor = new OtherThreadExecutor(threadName, timeout, unit);
     }
 
-    public void close()
-    {
+    public void close() {
         executor.close();
     }
 }

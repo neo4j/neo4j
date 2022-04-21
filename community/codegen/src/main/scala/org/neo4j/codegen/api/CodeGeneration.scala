@@ -51,6 +51,7 @@ import org.neo4j.exceptions.CantCompileQueryException
 
 import java.nio.file.Path
 import java.nio.file.Paths
+
 import scala.annotation.nowarn
 import scala.collection.mutable.ArrayBuffer
 import scala.language.existentials
@@ -74,10 +75,12 @@ object CodeGeneration {
   case class SourceCodeGeneration(saver: CodeSaver) extends CodeGenerationMode
 
   object CodeGenerationMode {
+
     def fromDebugOptions(debugOptions: CypherDebugOptions): CodeGenerationMode = {
-      if(debugOptions.generateJavaSourceEnabled) {
+      if (debugOptions.generateJavaSourceEnabled) {
         val saveSourceToFileLocation = Option(System.getProperty(GENERATED_SOURCE_LOCATION_PROPERTY)).map(Paths.get(_))
-        val saver = new CodeSaver(debugOptions.showJavaSourceEnabled, debugOptions.showBytecodeEnabled, saveSourceToFileLocation)
+        val saver =
+          new CodeSaver(debugOptions.showJavaSourceEnabled, debugOptions.showBytecodeEnabled, saveSourceToFileLocation)
         SourceCodeGeneration(saver)
       } else {
         val saver = new CodeSaver(false, debugOptions.showBytecodeEnabled)
@@ -133,7 +136,7 @@ object CodeGeneration {
     val declaredFields = clazz.getDeclaredFields
 
     @nowarn("msg=return statement")
-    def findField(fields: Array[java.lang.reflect.Field], name: String) : java.lang.reflect.Field = {
+    def findField(fields: Array[java.lang.reflect.Field], name: String): java.lang.reflect.Field = {
       for (field <- fields) {
         if (field.getName == name) return field
       }
@@ -157,11 +160,13 @@ object CodeGeneration {
     result
   }
 
-  private def generateConstructor(clazz: codegen.ClassGenerator,
-                                  fields: collection.Seq[Field],
-                                  params: collection.Seq[Parameter],
-                                  initializationCode: codegen.CodeBlock => codegen.Expression,
-                                  parent: Option[TypeReference]): Unit = {
+  private def generateConstructor(
+    clazz: codegen.ClassGenerator,
+    fields: collection.Seq[Field],
+    params: collection.Seq[Parameter],
+    initializationCode: codegen.CodeBlock => codegen.Expression,
+    parent: Option[TypeReference]
+  ): Unit = {
     beginBlock(clazz.generateConstructor(params.map(_.asCodeGen).toSeq: _*)) { block =>
       block.expression(invokeSuper(parent.getOrElse(OBJECT)))
       fields.distinct.foreach {
@@ -179,8 +184,8 @@ object CodeGeneration {
 
   def createGenerator(codeGenerationMode: CodeGenerationMode): CodeGenerator = {
     var (strategy, options) = (codeGenerationMode, DEBUG_PRINT_SOURCE) match {
-      case (SourceCodeGeneration(saver), _) => (SOURCECODE, saver.options)
-      case (ByteCodeGeneration(saver), true) => (SOURCECODE, saver.options)
+      case (SourceCodeGeneration(saver), _)   => (SOURCECODE, saver.options)
+      case (ByteCodeGeneration(saver), true)  => (SOURCECODE, saver.options)
       case (ByteCodeGeneration(saver), false) => (BYTECODE, saver.options)
     }
     if (DEBUG_PRINT_SOURCE) options ::= PRINT_SOURCE
@@ -189,270 +194,309 @@ object CodeGeneration {
     generateCode(classOf[IntermediateRepresentation].getClassLoader, strategy, options: _*)
   }
 
-  private def compileExpression(ir: IntermediateRepresentation, block: codegen.CodeBlock): codegen.Expression = ir match {
-    //Foo.method(p1, p2,...)
-    case InvokeStatic(method, params) =>
-      invoke(method.asReference, params.map(p => compileExpression(p, block)): _*)
+  private def compileExpression(ir: IntermediateRepresentation, block: codegen.CodeBlock): codegen.Expression =
+    ir match {
+      // Foo.method(p1, p2,...)
+      case InvokeStatic(method, params) =>
+        invoke(method.asReference, params.map(p => compileExpression(p, block)): _*)
 
-    //Foo.method(p1, p2,...)
-    case InvokeStaticSideEffect(method, params) =>
-      val invocation = invoke(method.asReference, params.map(p => compileExpression(p, block)): _*)
-      if (method.returnType.isVoid) {
-        block.expression(invocation)
-      } else {
-        block.expression(codegen.Expression.pop(invocation))
-      }
-      codegen.Expression.EMPTY
+      // Foo.method(p1, p2,...)
+      case InvokeStaticSideEffect(method, params) =>
+        val invocation = invoke(method.asReference, params.map(p => compileExpression(p, block)): _*)
+        if (method.returnType.isVoid) {
+          block.expression(invocation)
+        } else {
+          block.expression(codegen.Expression.pop(invocation))
+        }
+        codegen.Expression.EMPTY
 
-    //target.method(p1,p2,...)
-    case Invoke(target, method, params) =>
-      invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
+      // target.method(p1,p2,...)
+      case Invoke(target, method, params) =>
+        invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
 
-    //target.method(p1,p2,...)
-    case InvokeLocal(method, params) =>
-      invoke(block.self(), codegen.MethodReference.methodReference(block.owner(), method.returnType, method.name, method.params: _*),
-        params.map(p => compileExpression(p, block)): _*)
+      // target.method(p1,p2,...)
+      case InvokeLocal(method, params) =>
+        invoke(
+          block.self(),
+          codegen.MethodReference.methodReference(block.owner(), method.returnType, method.name, method.params: _*),
+          params.map(p => compileExpression(p, block)): _*
+        )
 
-    //target.method(p1,p2,...)
-    case InvokeSideEffect(target, method, params) =>
-      val invocation = invoke(compileExpression(target, block), method.asReference,
-                              params.map(p => compileExpression(p, block)): _*)
-      if (method.returnType.isVoid) {
-        block.expression(invocation)
-      } else {
-        block.expression(codegen.Expression.pop(invocation))
-      }
-      codegen.Expression.EMPTY
+      // target.method(p1,p2,...)
+      case InvokeSideEffect(target, method, params) =>
+        val invocation =
+          invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
+        if (method.returnType.isVoid) {
+          block.expression(invocation)
+        } else {
+          block.expression(codegen.Expression.pop(invocation))
+        }
+        codegen.Expression.EMPTY
 
-    //this.method(p1,p2,...)
-    case InvokeLocalSideEffect(method, params) =>
-      val invocation = invoke(block.self(), codegen.MethodReference.methodReference(block.owner(), method.returnType, method.name, method.params: _*),
-        params.map(p => compileExpression(p, block)): _*)
-      if (method.returnType.isVoid) {
-        block.expression(invocation)
-      } else {
-        block.expression(codegen.Expression.pop(invocation))
-      }
-      codegen.Expression.EMPTY
+      // this.method(p1,p2,...)
+      case InvokeLocalSideEffect(method, params) =>
+        val invocation = invoke(
+          block.self(),
+          codegen.MethodReference.methodReference(block.owner(), method.returnType, method.name, method.params: _*),
+          params.map(p => compileExpression(p, block)): _*
+        )
+        if (method.returnType.isVoid) {
+          block.expression(invocation)
+        } else {
+          block.expression(codegen.Expression.pop(invocation))
+        }
+        codegen.Expression.EMPTY
 
-    //loads local variable by name
-    case Load(variable, _) => block.load(variable)
+      // loads local variable by name
+      case Load(variable, _) => block.load(variable)
 
-    //loads field
-    case LoadField(f) =>
-      codegen.Expression.get(block.self(), field(block.owner(), f.typ, f.name))
+      // loads field
+      case LoadField(f) =>
+        codegen.Expression.get(block.self(), field(block.owner(), f.typ, f.name))
 
-    //sets a field
-    case SetField(f, v) =>
-      block.put(block.self(), field(block.owner(), f.typ, f.name), compileExpression(v, block))
-      codegen.Expression.EMPTY
+      // sets a field
+      case SetField(f, v) =>
+        block.put(block.self(), field(block.owner(), f.typ, f.name), compileExpression(v, block))
+        codegen.Expression.EMPTY
 
-     //loads a given constant
-    case Constant(value) => constant(value)
+      // loads a given constant
+      case Constant(value) => constant(value)
 
-    //new ArrayValue[]{p1, p2,...}
-    case ArrayLiteral(typ, values) => newInitializedArray(typ, values.map(v => compileExpression(v, block)): _*)
+      // new ArrayValue[]{p1, p2,...}
+      case ArrayLiteral(typ, values) => newInitializedArray(typ, values.map(v => compileExpression(v, block)): _*)
 
-    // array[offset] = value
-    case ArraySet(array, offset, value) =>
-      block.expression(codegen.Expression.arraySet(compileExpression(array, block), compileExpression(offset, block), compileExpression(value, block)))
-      codegen.Expression.EMPTY
+      // array[offset] = value
+      case ArraySet(array, offset, value) =>
+        block.expression(codegen.Expression.arraySet(
+          compileExpression(array, block),
+          compileExpression(offset, block),
+          compileExpression(value, block)
+        ))
+        codegen.Expression.EMPTY
 
-    //array.length
-    case ArrayLength(array) =>
-     codegen.Expression.arrayLength(compileExpression(array, block))
+      // array.length
+      case ArrayLength(array) =>
+        codegen.Expression.arrayLength(compileExpression(array, block))
 
-    // array[offset]
-    case ArrayLoad(array, offset) => codegen.Expression.arrayLoad(compileExpression(array, block), compileExpression(offset, block))
+      // array[offset]
+      case ArrayLoad(array, offset) =>
+        codegen.Expression.arrayLoad(compileExpression(array, block), compileExpression(offset, block))
 
-    //Foo.BAR
-    case GetStatic(owner, typ, name) => getStatic(staticField(owner.getOrElse(block.classGenerator().handle()), typ, name))
+      // Foo.BAR
+      case GetStatic(owner, typ, name) =>
+        getStatic(staticField(owner.getOrElse(block.classGenerator().handle()), typ, name))
 
-    //condition ? onTrue : onFalse
-    case Ternary(condition, onTrue, onFalse) =>
-      codegen.Expression.ternary(compileExpression(condition, block),
-                         compileExpression(onTrue, block),
-                         compileExpression(onFalse, block))
+      // condition ? onTrue : onFalse
+      case Ternary(condition, onTrue, onFalse) =>
+        codegen.Expression.ternary(
+          compileExpression(condition, block),
+          compileExpression(onTrue, block),
+          compileExpression(onFalse, block)
+        )
 
-    //lhs + rhs
-    case Add(lhs, rhs) =>
-      codegen.Expression.add(compileExpression(lhs, block), compileExpression(rhs, block))
+      // lhs + rhs
+      case Add(lhs, rhs) =>
+        codegen.Expression.add(compileExpression(lhs, block), compileExpression(rhs, block))
 
-    //lhs - rhs
-    case Subtract(lhs, rhs) =>
-      codegen.Expression.subtract(compileExpression(lhs, block), compileExpression(rhs, block))
+      // lhs - rhs
+      case Subtract(lhs, rhs) =>
+        codegen.Expression.subtract(compileExpression(lhs, block), compileExpression(rhs, block))
 
-    //lhs * rhs
-    case Multiply(lhs, rhs) =>
-      codegen.Expression.multiply(compileExpression(lhs, block), compileExpression(rhs, block))
+      // lhs * rhs
+      case Multiply(lhs, rhs) =>
+        codegen.Expression.multiply(compileExpression(lhs, block), compileExpression(rhs, block))
 
-    //lhs < rhs
-    case Lt(lhs, rhs) =>
-      codegen.Expression.lt(compileExpression(lhs, block), compileExpression(rhs, block))
+      // lhs < rhs
+      case Lt(lhs, rhs) =>
+        codegen.Expression.lt(compileExpression(lhs, block), compileExpression(rhs, block))
 
-    //lhs <= rhs
-    case Lte(lhs, rhs) =>
-      codegen.Expression.lte(compileExpression(lhs, block), compileExpression(rhs, block))
+      // lhs <= rhs
+      case Lte(lhs, rhs) =>
+        codegen.Expression.lte(compileExpression(lhs, block), compileExpression(rhs, block))
 
-    //lhs > rhs
-    case Gt(lhs, rhs) =>
-      codegen.Expression.gt(compileExpression(lhs, block), compileExpression(rhs, block))
+      // lhs > rhs
+      case Gt(lhs, rhs) =>
+        codegen.Expression.gt(compileExpression(lhs, block), compileExpression(rhs, block))
 
-    //lhs > rhs
-    case Gte(lhs, rhs) =>
-      codegen.Expression.gte(compileExpression(lhs, block), compileExpression(rhs, block))
+      // lhs > rhs
+      case Gte(lhs, rhs) =>
+        codegen.Expression.gte(compileExpression(lhs, block), compileExpression(rhs, block))
 
-    //lhs == rhs
-    case Eq(lhs, rhs) =>
-      codegen.Expression.equal(compileExpression(lhs, block), compileExpression(rhs, block))
+      // lhs == rhs
+      case Eq(lhs, rhs) =>
+        codegen.Expression.equal(compileExpression(lhs, block), compileExpression(rhs, block))
 
-    //lhs != rhs
-    case NotEq(lhs, rhs) =>
-      codegen.Expression.notEqual(compileExpression(lhs, block), compileExpression(rhs, block))
+      // lhs != rhs
+      case NotEq(lhs, rhs) =>
+        codegen.Expression.notEqual(compileExpression(lhs, block), compileExpression(rhs, block))
 
-    //test == null
-    case IsNull(test) => codegen.Expression.isNull(compileExpression(test, block))
+      // test == null
+      case IsNull(test) => codegen.Expression.isNull(compileExpression(test, block))
 
-    //run multiple ops in a block, the value of the block is the last expression
-    case Block(ops) =>
-      if (ops.isEmpty) codegen.Expression.EMPTY else ops.map(compileExpression(_, block)).last
+      // run multiple ops in a block, the value of the block is the last expression
+      case Block(ops) =>
+        if (ops.isEmpty) codegen.Expression.EMPTY else ops.map(compileExpression(_, block)).last
 
-    //if (test) {onTrue}
-    case Condition(test, onTrue, None) =>
-      beginBlock(block.ifStatement(compileExpression(test, block)))(compileExpression(onTrue, _))
+      // if (test) {onTrue}
+      case Condition(test, onTrue, None) =>
+        beginBlock(block.ifStatement(compileExpression(test, block)))(compileExpression(onTrue, _))
 
-    case Condition(test, onTrue, Some(onFalse)) =>
-      block.ifElseStatement(compileExpression(test, block), (t: codegen.CodeBlock) => compileExpression(onTrue, t),
-                            (f: codegen.CodeBlock) => compileExpression(onFalse, f))
-      codegen.Expression.EMPTY
+      case Condition(test, onTrue, Some(onFalse)) =>
+        block.ifElseStatement(
+          compileExpression(test, block),
+          (t: codegen.CodeBlock) => compileExpression(onTrue, t),
+          (f: codegen.CodeBlock) => compileExpression(onFalse, f)
+        )
+        codegen.Expression.EMPTY
 
-    //typ name;
-    case DeclareLocalVariable(typ, name) =>
-      block.declare(typ, name)
+      // typ name;
+      case DeclareLocalVariable(typ, name) =>
+        block.declare(typ, name)
 
-    //name = value;
-    case AssignToLocalVariable(name, value) =>
-      block.assign(block.local(name), compileExpression(value, block))
-      codegen.Expression.EMPTY
+      // name = value;
+      case AssignToLocalVariable(name, value) =>
+        block.assign(block.local(name), compileExpression(value, block))
+        codegen.Expression.EMPTY
 
-    //try {ops} catch(exception name)(onError)
-    case TryCatch(ops, onError, exception, name) =>
-      block.tryCatch((mainBlock: codegen.CodeBlock) => compileExpression(ops, mainBlock),
-                     (errorBlock: codegen.CodeBlock) => compileExpression(onError, errorBlock),
-                     param(exception, name))
-      codegen.Expression.EMPTY
+      // try {ops} catch(exception name)(onError)
+      case TryCatch(ops, onError, exception, name) =>
+        block.tryCatch(
+          (mainBlock: codegen.CodeBlock) => compileExpression(ops, mainBlock),
+          (errorBlock: codegen.CodeBlock) => compileExpression(onError, errorBlock),
+          param(exception, name)
+        )
+        codegen.Expression.EMPTY
 
-    //throw error
-    case Throw(error) =>
-      block.throwException(compileExpression(error, block))
-      codegen.Expression.EMPTY
+      // throw error
+      case Throw(error) =>
+        block.throwException(compileExpression(error, block))
+        codegen.Expression.EMPTY
 
-    //lhs && rhs
-    case BooleanAnd(Seq(lhs, rhs)) =>
+      // lhs && rhs
+      case BooleanAnd(Seq(lhs, rhs)) =>
         codegen.Expression.and(compileExpression(lhs, block), compileExpression(rhs, block))
-    case BooleanAnd(as) =>
+      case BooleanAnd(as) =>
         codegen.Expression.ands(as.map(a => compileExpression(a, block)).toArray)
 
-    //lhs && rhs
-    case BooleanOr(Seq(lhs, rhs)) =>
+      // lhs && rhs
+      case BooleanOr(Seq(lhs, rhs)) =>
         codegen.Expression.or(compileExpression(lhs, block), compileExpression(rhs, block))
-    case BooleanOr(as) =>
+      case BooleanOr(as) =>
         codegen.Expression.ors(as.map(a => compileExpression(a, block)).toArray)
 
-    //new Foo(args[0], args[1], ...)
-    case NewInstance(constructor, args) =>
-      codegen.Expression.invoke(codegen.Expression.newInstance(constructor.owner), constructor.asReference, args.map(compileExpression(_, block)):_*)
+      // new Foo(args[0], args[1], ...)
+      case NewInstance(constructor, args) =>
+        codegen.Expression.invoke(
+          codegen.Expression.newInstance(constructor.owner),
+          constructor.asReference,
+          args.map(compileExpression(_, block)): _*
+        )
 
-    //new Foo[5]
-    case NewArray(baseType, size) =>
-      codegen.Expression.newArray(baseType, size)
+      // new Foo[5]
+      case NewArray(baseType, size) =>
+        codegen.Expression.newArray(baseType, size)
 
-    //new Foo[size]
-    case NewArrayDynamicSize(baseType, size) =>
-      codegen.Expression.newArray(baseType, compileExpression(size, block))
+      // new Foo[size]
+      case NewArrayDynamicSize(baseType, size) =>
+        codegen.Expression.newArray(baseType, compileExpression(size, block))
 
-    case Returns(value: IntermediateRepresentation) =>
-      block.returns(compileExpression(value, block))
-      codegen.Expression.EMPTY
-
-    //while(test) { body }
-    case Loop(test, body, labelName) =>
-      beginBlock(block.whileLoop(compileExpression(test, block), labelName))(compileExpression(body, _))
-
-    //break label
-    case Break(labelName) =>
-      block.breaks(labelName)
-      codegen.Expression.EMPTY
-
-    // (to) expressions
-    case Cast(to, expression) => codegen.Expression.cast(to, compileExpression(expression, block))
-
-    //  expressions instance of t
-    case InstanceOf(typ, expression) => codegen.Expression.instanceOf(typ, compileExpression(expression, block))
-
-    case Not(test) => codegen.Expression.not(compileExpression(test, block))
-
-    case e@OneTime(inner) =>
-      if (!e.isUsed) {
-        e.use()
-        compileExpression(inner, block)
-      } else {
+      case Returns(value: IntermediateRepresentation) =>
+        block.returns(compileExpression(value, block))
         codegen.Expression.EMPTY
-      }
-    case Noop =>
-      codegen.Expression.EMPTY
 
-    case Box(expression) =>
-      codegen.Expression.box(compileExpression(expression, block))
+      // while(test) { body }
+      case Loop(test, body, labelName) =>
+        beginBlock(block.whileLoop(compileExpression(test, block), labelName))(compileExpression(body, _))
 
-    case Unbox(expression) =>
-      codegen.Expression.unbox(compileExpression(expression, block))
+      // break label
+      case Break(labelName) =>
+        block.breaks(labelName)
+        codegen.Expression.EMPTY
 
-    case Self(_) => block.self()
+      // (to) expressions
+      case Cast(to, expression) => codegen.Expression.cast(to, compileExpression(expression, block))
 
-    case NewInstanceInnerClass(ExtendClass(className, overrides, params, methods, fields), args) =>
-      val parentClass: ClassHandle = block.classGenerator().handle()
-      val generator = parentClass.generator
-      val classHandle = beginBlock(generator.generateClass(overrides, parentClass.packageName(), className)) { clazz: codegen.ClassGenerator =>
+      //  expressions instance of t
+      case InstanceOf(typ, expression) => codegen.Expression.instanceOf(typ, compileExpression(expression, block))
 
-        beginBlock(clazz.generateConstructor(params.map(_.asCodeGen): _*)) { constructor =>
-          constructor.expression(Expression.invokeSuper(overrides, params.map(p => constructor.load(p.name)): _*))
-          fields.distinct.foreach {
-            case InstanceField(typ, name, initializer) =>
-              val reference = clazz.field(typ, name)
-              initializer.map(ir => compileExpression(ir, constructor)).foreach { value =>
-                constructor.put(constructor.self(), reference, value)
+      case Not(test) => codegen.Expression.not(compileExpression(test, block))
+
+      case e @ OneTime(inner) =>
+        if (!e.isUsed) {
+          e.use()
+          compileExpression(inner, block)
+        } else {
+          codegen.Expression.EMPTY
+        }
+      case Noop =>
+        codegen.Expression.EMPTY
+
+      case Box(expression) =>
+        codegen.Expression.box(compileExpression(expression, block))
+
+      case Unbox(expression) =>
+        codegen.Expression.unbox(compileExpression(expression, block))
+
+      case Self(_) => block.self()
+
+      case NewInstanceInnerClass(ExtendClass(className, overrides, params, methods, fields), args) =>
+        val parentClass: ClassHandle = block.classGenerator().handle()
+        val generator = parentClass.generator
+        val classHandle = beginBlock(generator.generateClass(overrides, parentClass.packageName(), className)) {
+          clazz: codegen.ClassGenerator =>
+            beginBlock(clazz.generateConstructor(params.map(_.asCodeGen): _*)) { constructor =>
+              constructor.expression(Expression.invokeSuper(overrides, params.map(p => constructor.load(p.name)): _*))
+              fields.distinct.foreach {
+                case InstanceField(typ, name, initializer) =>
+                  val reference = clazz.field(typ, name)
+                  initializer.map(ir => compileExpression(ir, constructor)).foreach { value =>
+                    constructor.put(constructor.self(), reference, value)
+                  }
+                case StaticField(typ, name, _) =>
+                  val field = clazz.publicStaticField(typ, name)
+                  constructor.putStatic(
+                    field,
+                    Expression.getStatic(FieldReference.staticField(parentClass, field.`type`(), field.name()))
+                  )
               }
-            case StaticField(typ, name, _) =>
-              val field = clazz.publicStaticField(typ, name)
-              constructor.putStatic(field, Expression.getStatic(FieldReference.staticField(parentClass, field.`type`(), field.name())))
+            }
+            // methods
+            methods.foreach { m =>
+              compileMethodDeclaration(clazz, m)
+            }
+            clazz.handle()
+        }
+
+        val constructor =
+          if (args.isEmpty) {
+            codegen.MethodReference.constructorReference(classHandle)
+          } else {
+            codegen.MethodReference.constructorReference(classHandle, params.map(_.typ): _*)
           }
-        }
-        //methods
-        methods.foreach { m =>
-          compileMethodDeclaration(clazz, m)
-        }
-        clazz.handle()
-      }
+        codegen.Expression.invoke(
+          codegen.Expression.newInstance(classHandle),
+          constructor,
+          args.map(compileExpression(_, block)): _*
+        )
 
-      val constructor = if (args.isEmpty) {
-        codegen.MethodReference.constructorReference(classHandle)
-      } else {
-        codegen.MethodReference.constructorReference(classHandle, params.map(_.typ): _*)
-      }
-      codegen.Expression.invoke(codegen.Expression.newInstance(classHandle), constructor, args.map(compileExpression(_, block)):_*)
-
-    case unknownIr =>
-      throw new CodeGenerationNotSupportedException(null, s"Unknown ir `$unknownIr`") {}
-  }
+      case unknownIr =>
+        throw new CodeGenerationNotSupportedException(null, s"Unknown ir `$unknownIr`") {}
+    }
 
   private def compileClassDeclaration(c: ClassDeclaration[_], generator: CodeGenerator): codegen.ClassHandle = {
-    val handle = beginBlock(generator.generateClass(c.extendsClass.getOrElse(codegen.TypeReference.OBJECT), c.packageName, c.className, c.implementsInterfaces.toSeq: _*)) { clazz: codegen.ClassGenerator =>
-      generateConstructor(clazz,
-                          c.fields,
-                          c.constructorParameters,
-                          block => compileExpression(c.initializationCode, block),
-                          c.extendsClass)
+    val handle = beginBlock(generator.generateClass(
+      c.extendsClass.getOrElse(codegen.TypeReference.OBJECT),
+      c.packageName,
+      c.className,
+      c.implementsInterfaces.toSeq: _*
+    )) { clazz: codegen.ClassGenerator =>
+      generateConstructor(
+        clazz,
+        c.fields,
+        c.constructorParameters,
+        block => compileExpression(c.initializationCode, block),
+        c.extendsClass
+      )
       c.methods.foreach { m =>
         compileMethodDeclaration(clazz, m)
       }
@@ -463,14 +507,17 @@ object CodeGeneration {
 
   private def compileMethodDeclaration(clazz: codegen.ClassGenerator, m: MethodDeclaration): Unit = {
 
-    //the jvm doesn't allow methods bigger than 65535 bytes, this would have failed later
-    //before actually loading the code, however it is faster to fail early here.
+    // the jvm doesn't allow methods bigger than 65535 bytes, this would have failed later
+    // before actually loading the code, however it is faster to fail early here.
     if (estimateByteCodeSize(m) > 65535) {
       throw new CantCompileQueryException(s"Method '${m.methodName}' is too big")
     }
 
-    val method = codegen.MethodDeclaration.method(m.returnType, m.methodName,
-                                     m.parameters.map(_.asCodeGen): _*).modifiers(m.modifiers)
+    val method = codegen.MethodDeclaration.method(
+      m.returnType,
+      m.methodName,
+      m.parameters.map(_.asCodeGen): _*
+    ).modifiers(m.modifiers)
     m.parameterizedWith.foreach {
       case (name, bound) => method.parameterizedWith(name, bound)
     }
@@ -482,8 +529,7 @@ object CodeGeneration {
       }
       if (m.returnType == codegen.TypeReference.VOID) {
         block.expression(compileExpression(m.body, block))
-      }
-      else {
+      } else {
         block.returns(compileExpression(m.body, block))
       }
     }

@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
@@ -44,175 +43,147 @@ import org.neo4j.graphdb.traversal.UniquenessFactory;
  * {@link BranchSelector} starts from one {@link TraversalBranch}.
  * This class bridges that gap.
  */
-class AsOneStartBranch implements TraversalBranch
-{
+class AsOneStartBranch implements TraversalBranch {
     private Iterator<TraversalBranch> branches;
     private int expanded;
     private final TraversalContext context;
     private final InitialBranchState initialState;
     private final UniquenessFactory uniqueness;
 
-    AsOneStartBranch( TraversalContext context, Iterable<Node> nodes, InitialBranchState initialState, UniquenessFactory uniqueness )
-    {
+    AsOneStartBranch(
+            TraversalContext context,
+            Iterable<Node> nodes,
+            InitialBranchState initialState,
+            UniquenessFactory uniqueness) {
         this.context = context;
         this.initialState = initialState;
         this.uniqueness = uniqueness;
-        this.branches = toBranches( nodes );
+        this.branches = toBranches(nodes);
     }
 
-    private Iterator<TraversalBranch> toBranches( Iterable<Node> nodes )
-    {
-        if ( uniqueness.eagerStartBranches() )
-        {
+    private Iterator<TraversalBranch> toBranches(Iterable<Node> nodes) {
+        if (uniqueness.eagerStartBranches()) {
             List<TraversalBranch> result = new ArrayList<>();
-            for ( Node node : nodes )
-            {
-                result.add( new StartNodeTraversalBranch( context, this, node, initialState ) );
+            for (Node node : nodes) {
+                result.add(new StartNodeTraversalBranch(context, this, node, initialState));
             }
             return result.iterator();
-        }
-        else
-        {
-            return new TraversalBranchIterator( nodes.iterator() );
+        } else {
+            return new TraversalBranchIterator(nodes.iterator());
         }
     }
 
     @Override
-    public TraversalBranch parent()
-    {
+    public TraversalBranch parent() {
         return null;
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         return -1;
     }
 
     @Override
-    public Node endNode()
-    {
+    public Node endNode() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Relationship lastRelationship()
-    {
+    public Relationship lastRelationship() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public TraversalBranch next( PathExpander expander, TraversalContext metadata )
-    {
-        if ( branches.hasNext() )
-        {
+    public TraversalBranch next(PathExpander expander, TraversalContext metadata) {
+        if (branches.hasNext()) {
             expanded++;
-            return branches.next().next( expander, metadata );
+            return branches.next().next(expander, metadata);
         }
         return null;
     }
 
     @Override
-    public int expanded()
-    {
+    public int expanded() {
         return expanded;
     }
 
     @Override
-    public boolean continues()
-    {
+    public boolean continues() {
         return true;
     }
 
     @Override
-    public boolean includes()
-    {
+    public boolean includes() {
         return false;
     }
 
     @Override
-    public void evaluation( Evaluation eval )
-    {
+    public void evaluation(Evaluation eval) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void initialize( PathExpander expander, TraversalContext metadata )
-    {
-    }
+    public void initialize(PathExpander expander, TraversalContext metadata) {}
 
     @Override
-    public Node startNode()
-    {
+    public Node startNode() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterable<Relationship> relationships()
-    {
+    public Iterable<Relationship> relationships() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterable<Relationship> reverseRelationships()
-    {
+    public Iterable<Relationship> reverseRelationships() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterable<Node> nodes()
-    {
+    public Iterable<Node> nodes() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterable<Node> reverseNodes()
-    {
+    public Iterable<Node> reverseNodes() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterator<Entity> iterator()
-    {
+    public Iterator<Entity> iterator() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void prune()
-    {
+    public void prune() {
         branches = Collections.<TraversalBranch>emptyList().iterator();
     }
 
     @Override
-    public Object state()
-    {
+    public Object state() {
         throw new UnsupportedOperationException();
     }
 
-    private class TraversalBranchIterator implements Iterator<TraversalBranch>
-    {
+    private class TraversalBranchIterator implements Iterator<TraversalBranch> {
         private final Iterator<Node> nodeIterator;
 
-        TraversalBranchIterator( Iterator<Node> nodeIterator )
-        {
+        TraversalBranchIterator(Iterator<Node> nodeIterator) {
             this.nodeIterator = nodeIterator;
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return nodeIterator.hasNext();
         }
 
         @Override
-        public TraversalBranch next()
-        {
-            return new StartNodeTraversalBranch( context, AsOneStartBranch.this, nodeIterator.next(), initialState );
+        public TraversalBranch next() {
+            return new StartNodeTraversalBranch(context, AsOneStartBranch.this, nodeIterator.next(), initialState);
         }
 
         @Override
-        public void remove()
-        {
+        public void remove() {
             nodeIterator.remove();
         }
     }

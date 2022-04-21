@@ -24,7 +24,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 
 @FunctionalInterface
-public interface KernelTransactionFactory
-{
-    KernelTransaction beginKernelTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo );
+public interface KernelTransactionFactory {
+    KernelTransaction beginKernelTransaction(
+            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo);
 }

@@ -19,15 +19,28 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.NamedThreadFactory.daemon;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelGraphDatabaseServiceProvider;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
@@ -51,136 +64,115 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.NamedThreadFactory.daemon;
-import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-
-class DatabaseServiceBookmarkTest
-{
-    private static final NamedDatabaseId DATABASE_ID = from( DEFAULT_DATABASE_NAME, UUID.randomUUID() );
-    private final ExecutorService executor = newSingleThreadExecutor( daemon( getClass() + "-thread" ) );
+class DatabaseServiceBookmarkTest {
+    private static final NamedDatabaseId DATABASE_ID = from(DEFAULT_DATABASE_NAME, UUID.randomUUID());
+    private final ExecutorService executor = newSingleThreadExecutor(daemon(getClass() + "-thread"));
 
     @AfterEach
-    void afterEach() throws Exception
-    {
+    void afterEach() throws Exception {
         executor.shutdownNow();
-        assertTrue( executor.awaitTermination( 20, SECONDS ) );
+        assertTrue(executor.awaitTermination(20, SECONDS));
     }
 
     @Test
-    void throwsWhenTxAwaitDurationExpires()
-    {
+    void throwsWhenTxAwaitDurationExpires() {
         long lastClosedTransactionId = 100;
-        TransactionIdStore txIdStore = fixedTxIdStore( lastClosedTransactionId );
-        var txAwaitDuration = Duration.ofSeconds( 42 );
+        TransactionIdStore txIdStore = fixedTxIdStore(lastClosedTransactionId);
+        var txAwaitDuration = Duration.ofSeconds(42);
         var clock = new FakeClock();
 
-        var guard = new DatabaseAvailabilityGuard( DATABASE_ID,
-                clock,
-                NullLog.getInstance(), 0,
-                mock( CompositeDatabaseAvailabilityGuard.class ) );
-        var databaseAvailabilityGuard = spy( guard );
-        when( databaseAvailabilityGuard.isAvailable() ).then( invocation ->
-        {
+        var guard = new DatabaseAvailabilityGuard(
+                DATABASE_ID, clock, NullLog.getInstance(), 0, mock(CompositeDatabaseAvailabilityGuard.class));
+        var databaseAvailabilityGuard = spy(guard);
+        when(databaseAvailabilityGuard.isAvailable()).then(invocation -> {
             // move clock forward on avery availability check
             // this check is executed on every tx id polling iteration
-            clock.forward( 1, SECONDS );
+            clock.forward(1, SECONDS);
             return true;
-        } );
+        });
 
-        var dbSpi = createDbSpi( txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock );
+        var dbSpi = createDbSpi(txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock);
 
-        var resultFuture = executor.submit( () ->
-        {
-            begin( dbSpi, List.of( new BookmarkWithPrefix( lastClosedTransactionId + 42 ) ) );
+        var resultFuture = executor.submit(() -> {
+            begin(dbSpi, List.of(new BookmarkWithPrefix(lastClosedTransactionId + 42)));
             return null;
-        } );
+        });
 
-        var e = assertThrows( ExecutionException.class, () -> resultFuture.get( 20, SECONDS ) );
-        assertThat( e.getCause() ).isInstanceOf( TransactionIdTrackerException.class );
+        var e = assertThrows(ExecutionException.class, () -> resultFuture.get(20, SECONDS));
+        assertThat(e.getCause()).isInstanceOf(TransactionIdTrackerException.class);
     }
 
     @Test
-    void doesNotWaitWhenTxIdUpToDate() throws Exception
-    {
+    void doesNotWaitWhenTxIdUpToDate() throws Exception {
         long lastClosedTransactionId = 100;
-        TransactionIdStore txIdStore = fixedTxIdStore( lastClosedTransactionId );
+        TransactionIdStore txIdStore = fixedTxIdStore(lastClosedTransactionId);
 
-        var dbSpi = createDbSpi( txIdStore, Duration.ofSeconds( 1 ), Clocks.fakeClock() );
+        var dbSpi = createDbSpi(txIdStore, Duration.ofSeconds(1), Clocks.fakeClock());
 
-        var resultFuture = executor.submit( () ->
-        {
-            begin( dbSpi, List.of( new BookmarkWithPrefix( lastClosedTransactionId - 42 ) ) );
+        var resultFuture = executor.submit(() -> {
+            begin(dbSpi, List.of(new BookmarkWithPrefix(lastClosedTransactionId - 42)));
             return null;
-        } );
+        });
 
-        assertNull( resultFuture.get( 20, SECONDS ) );
+        assertNull(resultFuture.get(20, SECONDS));
     }
 
-    private static BoltGraphDatabaseServiceSPI createDbSpi( TransactionIdStore txIdStore, Duration txAwaitDuration, SystemNanoClock clock )
-            throws Exception
-    {
-        var compositeGuard = mock( CompositeDatabaseAvailabilityGuard.class );
-        var databaseAvailabilityGuard = new DatabaseAvailabilityGuard( DATABASE_ID, clock, NullLog.getInstance(), 0, compositeGuard );
+    private static BoltGraphDatabaseServiceSPI createDbSpi(
+            TransactionIdStore txIdStore, Duration txAwaitDuration, SystemNanoClock clock) throws Exception {
+        var compositeGuard = mock(CompositeDatabaseAvailabilityGuard.class);
+        var databaseAvailabilityGuard =
+                new DatabaseAvailabilityGuard(DATABASE_ID, clock, NullLog.getInstance(), 0, compositeGuard);
         databaseAvailabilityGuard.init();
         databaseAvailabilityGuard.start();
-        return createDbSpi( txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock );
+        return createDbSpi(txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock);
     }
 
-    private static BoltGraphDatabaseServiceSPI createDbSpi( TransactionIdStore txIdStore, Duration txAwaitDuration,
-            DatabaseAvailabilityGuard availabilityGuard, SystemNanoClock clock )
-    {
-        var queryExecutionEngine = mock( QueryExecutionEngine.class );
+    private static BoltGraphDatabaseServiceSPI createDbSpi(
+            TransactionIdStore txIdStore,
+            Duration txAwaitDuration,
+            DatabaseAvailabilityGuard availabilityGuard,
+            SystemNanoClock clock) {
+        var queryExecutionEngine = mock(QueryExecutionEngine.class);
 
-        var db = mock( Database.class );
-        when( db.getNamedDatabaseId() ).thenReturn( DATABASE_ID );
-        when( db.getDatabaseAvailabilityGuard() ).thenReturn( availabilityGuard );
+        var db = mock(Database.class);
+        when(db.getNamedDatabaseId()).thenReturn(DATABASE_ID);
+        when(db.getDatabaseAvailabilityGuard()).thenReturn(availabilityGuard);
 
-        var dependencyResolver = mock( Dependencies.class );
-        when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( queryExecutionEngine );
-        when( dependencyResolver.resolveDependency( DatabaseAvailabilityGuard.class ) ).thenReturn( availabilityGuard );
-        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
-        when( dependencyResolver.resolveDependency( Database.class ) ).thenReturn( db );
+        var dependencyResolver = mock(Dependencies.class);
+        when(dependencyResolver.resolveDependency(QueryExecutionEngine.class)).thenReturn(queryExecutionEngine);
+        when(dependencyResolver.resolveDependency(DatabaseAvailabilityGuard.class))
+                .thenReturn(availabilityGuard);
+        when(dependencyResolver.resolveDependency(TransactionIdStore.class)).thenReturn(txIdStore);
+        when(dependencyResolver.resolveDependency(Database.class)).thenReturn(db);
 
-        when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when(db.getDependencyResolver()).thenReturn(dependencyResolver);
 
-        var facade = mock( GraphDatabaseAPI.class );
-        when( facade.getDependencyResolver() ).thenReturn( dependencyResolver );
+        var facade = mock(GraphDatabaseAPI.class);
+        when(facade.getDependencyResolver()).thenReturn(dependencyResolver);
 
-        var tx = mock( InternalTransaction.class );
-        when( facade.beginTransaction( any(), any(), any() ) ).thenReturn( tx );
+        var tx = mock(InternalTransaction.class);
+        when(facade.beginTransaction(any(), any(), any())).thenReturn(tx);
 
-        var queryService = mock( GraphDatabaseQueryService.class );
-        when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
-        when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
+        var queryService = mock(GraphDatabaseQueryService.class);
+        when(queryService.getDependencyResolver()).thenReturn(dependencyResolver);
+        when(dependencyResolver.resolveDependency(GraphDatabaseQueryService.class))
+                .thenReturn(queryService);
 
-        var managementService = mock( DatabaseManagementService.class );
-        when( managementService.database( DATABASE_ID.name() ) ).thenReturn( facade );
+        var managementService = mock(DatabaseManagementService.class);
+        when(managementService.database(DATABASE_ID.name())).thenReturn(facade);
 
-        var transactionIdTracker = new TransactionIdTracker( managementService, new Monitors(), clock );
-        return new BoltKernelGraphDatabaseServiceProvider( facade, transactionIdTracker, txAwaitDuration, mock( MemoryTracker.class, RETURNS_MOCKS ) );
+        var transactionIdTracker = new TransactionIdTracker(managementService, new Monitors(), clock);
+        return new BoltKernelGraphDatabaseServiceProvider(
+                facade, transactionIdTracker, txAwaitDuration, mock(MemoryTracker.class, RETURNS_MOCKS));
     }
 
-    private static void begin( BoltGraphDatabaseServiceSPI dbSpi, List<Bookmark> bookmarks )
-    {
-        dbSpi.beginTransaction( null, null, null, bookmarks, null, null, null, null );
+    private static void begin(BoltGraphDatabaseServiceSPI dbSpi, List<Bookmark> bookmarks) {
+        dbSpi.beginTransaction(null, null, null, bookmarks, null, null, null, null);
     }
 
-    private static TransactionIdStore fixedTxIdStore( long lastClosedTransactionId )
-    {
-        var txIdStore = mock( TransactionIdStore.class );
-        when( txIdStore.getLastClosedTransactionId() ).thenReturn( lastClosedTransactionId );
+    private static TransactionIdStore fixedTxIdStore(long lastClosedTransactionId) {
+        var txIdStore = mock(TransactionIdStore.class);
+        when(txIdStore.getLastClosedTransactionId()).thenReturn(lastClosedTransactionId);
         return txIdStore;
     }
 }

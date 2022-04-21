@@ -20,36 +20,33 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
-
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 
-class WritableFulltextIndex extends WritableAbstractDatabaseIndex<LuceneFulltextIndex,FulltextIndexReader>
-{
+class WritableFulltextIndex extends WritableAbstractDatabaseIndex<LuceneFulltextIndex, FulltextIndexReader> {
     private final IndexUpdateSink indexUpdateSink;
 
-    WritableFulltextIndex( IndexUpdateSink indexUpdateSink, LuceneFulltextIndex fulltextIndex, DatabaseReadOnlyChecker readOnlyChecker )
-    {
-        super( fulltextIndex, readOnlyChecker );
+    WritableFulltextIndex(
+            IndexUpdateSink indexUpdateSink,
+            LuceneFulltextIndex fulltextIndex,
+            DatabaseReadOnlyChecker readOnlyChecker) {
+        super(fulltextIndex, readOnlyChecker);
         this.indexUpdateSink = indexUpdateSink;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return luceneIndex.toString();
     }
 
     @Override
-    protected void commitLockedFlush() throws IOException
-    {
+    protected void commitLockedFlush() throws IOException {
         indexUpdateSink.awaitUpdateApplication();
         super.commitLockedFlush();
     }
 
     @Override
-    protected void commitLockedClose() throws IOException
-    {
+    protected void commitLockedClose() throws IOException {
         indexUpdateSink.awaitUpdateApplication();
         super.commitLockedClose();
     }

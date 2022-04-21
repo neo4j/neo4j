@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -38,17 +37,19 @@ import org.neo4j.server.web.WebServer;
  * <p>
  * It must be enabled as soon as any other module is enabled.
  */
-public class AuthorizationModule implements ServerModule
-{
+public class AuthorizationModule implements ServerModule {
     private final WebServer webServer;
     private final Config config;
     private final Supplier<AuthManager> authManagerSupplier;
     private final InternalLogProvider logProvider;
     private final List<Pattern> uriWhitelist;
 
-    public AuthorizationModule( WebServer webServer, Supplier<AuthManager> authManager, InternalLogProvider logProvider,
-            Config config, List<Pattern> uriWhitelist )
-    {
+    public AuthorizationModule(
+            WebServer webServer,
+            Supplier<AuthManager> authManager,
+            InternalLogProvider logProvider,
+            Config config,
+            List<Pattern> uriWhitelist) {
         this.webServer = webServer;
         this.config = config;
         this.authManagerSupplier = authManager;
@@ -57,29 +58,22 @@ public class AuthorizationModule implements ServerModule
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         final Filter authorizationFilter;
 
-        if ( config.get( GraphDatabaseSettings.auth_enabled ) )
-        {
-            authorizationFilter = new AuthorizationEnabledFilter( authManagerSupplier, logProvider, uriWhitelist );
-        }
-        else
-        {
+        if (config.get(GraphDatabaseSettings.auth_enabled)) {
+            authorizationFilter = new AuthorizationEnabledFilter(authManagerSupplier, logProvider, uriWhitelist);
+        } else {
             authorizationFilter = createAuthorizationDisabledFilter();
         }
 
-        webServer.addFilter( authorizationFilter, "/*" );
+        webServer.addFilter(authorizationFilter, "/*");
     }
 
     @Override
-    public void stop()
-    {
-    }
+    public void stop() {}
 
-    protected AuthorizationDisabledFilter createAuthorizationDisabledFilter()
-    {
+    protected AuthorizationDisabledFilter createAuthorizationDisabledFilter() {
         return new AuthorizationDisabledFilter();
     }
 }

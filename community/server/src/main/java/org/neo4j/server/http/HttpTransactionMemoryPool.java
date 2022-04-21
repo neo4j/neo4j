@@ -19,17 +19,15 @@
  */
 package org.neo4j.server.http;
 
+import static org.neo4j.memory.MemoryGroup.HTTP_TRANSACTION;
+
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryPools;
 
-import static org.neo4j.memory.MemoryGroup.HTTP_TRANSACTION;
+public class HttpTransactionMemoryPool extends GlobalMemoryGroupTracker {
 
-public class HttpTransactionMemoryPool extends GlobalMemoryGroupTracker
-{
-
-    public HttpTransactionMemoryPool( MemoryPools memoryPools )
-    {
-        super( memoryPools, HTTP_TRANSACTION, 0, false, true, null );
-        memoryPools.registerPool( this );
+    public HttpTransactionMemoryPool(MemoryPools memoryPools) {
+        super(memoryPools, HTTP_TRANSACTION, 0, false, true, null);
+        memoryPools.registerPool(this);
     }
 }

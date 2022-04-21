@@ -19,13 +19,12 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * See {@link DbmsExtension} for documentation.
@@ -33,11 +32,10 @@ import java.lang.annotation.Target;
  * <p>The only difference to {@link DbmsExtension} is that the DBMS will have Bolt connector enabled.
  */
 @Inherited
-@Target( {ElementType.TYPE, ElementType.METHOD} )
-@Retention( RetentionPolicy.RUNTIME )
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
 @Neo4jLayoutExtension
-@ExtendWith( DbmsSupportExtension.class )
-public @interface BoltDbmsExtension
-{
+@ExtendWith(DbmsSupportExtension.class)
+public @interface BoltDbmsExtension {
     String configurationCallback() default "";
 }

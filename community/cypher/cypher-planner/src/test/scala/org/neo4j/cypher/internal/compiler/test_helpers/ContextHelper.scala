@@ -44,23 +44,40 @@ import org.scalatestplus.mockito.MockitoSugar
 import java.time.Clock
 
 object ContextHelper extends MockitoSugar {
-  def create(cypherExceptionFactory: CypherExceptionFactory = Neo4jCypherExceptionFactory("<QUERY>", None),
-             tracer: CompilationPhaseTracer = NO_TRACING,
-             notificationLogger: InternalNotificationLogger = devNullLogger,
-             planContext: PlanContext = new NotImplementedPlanContext,
-             monitors: Monitors = mock[Monitors],
-             metrics: Metrics = mock[Metrics],
-             config: CypherPlannerConfiguration = mock[CypherPlannerConfiguration],
-             queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
-             updateStrategy: UpdateStrategy = mock[UpdateStrategy],
-             debugOptions: CypherDebugOptions = CypherDebugOptions.default,
-             clock: Clock = Clock.systemUTC(),
-             logicalPlanIdGen: IdGen = new SequentialIdGen(),
-             params: MapValue = MapValue.EMPTY,
-             executionModel: ExecutionModel = ExecutionModel.default,
-             cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled,
-            ): PlannerContext = {
-    new PlannerContext(cypherExceptionFactory, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel, cancellationChecker)
+
+  def create(
+    cypherExceptionFactory: CypherExceptionFactory = Neo4jCypherExceptionFactory("<QUERY>", None),
+    tracer: CompilationPhaseTracer = NO_TRACING,
+    notificationLogger: InternalNotificationLogger = devNullLogger,
+    planContext: PlanContext = new NotImplementedPlanContext,
+    monitors: Monitors = mock[Monitors],
+    metrics: Metrics = mock[Metrics],
+    config: CypherPlannerConfiguration = mock[CypherPlannerConfiguration],
+    queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
+    updateStrategy: UpdateStrategy = mock[UpdateStrategy],
+    debugOptions: CypherDebugOptions = CypherDebugOptions.default,
+    clock: Clock = Clock.systemUTC(),
+    logicalPlanIdGen: IdGen = new SequentialIdGen(),
+    params: MapValue = MapValue.EMPTY,
+    executionModel: ExecutionModel = ExecutionModel.default,
+    cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
+  ): PlannerContext = {
+    new PlannerContext(
+      cypherExceptionFactory,
+      tracer,
+      notificationLogger,
+      planContext,
+      monitors,
+      metrics,
+      config,
+      queryGraphSolver,
+      updateStrategy,
+      debugOptions,
+      clock,
+      logicalPlanIdGen,
+      params,
+      executionModel,
+      cancellationChecker
+    )
   }
 }

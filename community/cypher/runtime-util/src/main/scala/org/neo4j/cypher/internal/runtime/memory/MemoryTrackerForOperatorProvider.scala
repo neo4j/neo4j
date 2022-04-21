@@ -48,7 +48,7 @@ object MemoryTrackerForOperatorProvider {
    */
   def memoryAsProfileData(value: Long): Long = value match {
     case HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED => OperatorProfile.NO_DATA
-    case x => x
+    case x                                                => x
   }
 }
 
@@ -69,9 +69,10 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
    * This tracker can be used both for the whole query and a single operator in a query,
    * given the right arguments.
    */
-  class TransactionBoundMemoryTracker(transactionMemoryTracker: MemoryTracker,
-                                      queryGlobalMemoryTracker: HeapMemoryTracker)
-    extends ScopedMemoryTracker(transactionMemoryTracker) {
+  class TransactionBoundMemoryTracker(
+    transactionMemoryTracker: MemoryTracker,
+    queryGlobalMemoryTracker: HeapMemoryTracker
+  ) extends ScopedMemoryTracker(transactionMemoryTracker) {
 
     override def allocateHeap(bytes: Long): Unit = {
       // Forward to transaction memory tracker
@@ -96,11 +97,16 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
  * over potentially multiple transactions.
  *
  */
-class TransactionBoundMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker, queryHeapHighWatermarkTracker: TrackingQueryMemoryTracker)
-  extends TransactionBoundMemoryTracker(transactionMemoryTracker, queryHeapHighWatermarkTracker)
-  with MemoryTrackerForOperatorProvider {
+class TransactionBoundMemoryTrackerForOperatorProvider(
+  transactionMemoryTracker: MemoryTracker,
+  queryHeapHighWatermarkTracker: TrackingQueryMemoryTracker
+) extends TransactionBoundMemoryTracker(transactionMemoryTracker, queryHeapHighWatermarkTracker)
+    with MemoryTrackerForOperatorProvider {
 
   override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = {
-    new TransactionBoundMemoryTracker(transactionMemoryTracker, queryHeapHighWatermarkTracker.memoryTrackerForOperator(operatorId))
+    new TransactionBoundMemoryTracker(
+      transactionMemoryTracker,
+      queryHeapHighWatermarkTracker.memoryTrackerForOperator(operatorId)
+    )
   }
 }

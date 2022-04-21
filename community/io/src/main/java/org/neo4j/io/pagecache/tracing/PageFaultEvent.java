@@ -22,66 +22,52 @@ package org.neo4j.io.pagecache.tracing;
 /**
  * Begin a page fault as part of a pin event.
  */
-public interface PageFaultEvent extends EvictionEventOpportunity, AutoCloseablePageCacheTracerEvent
-{
+public interface PageFaultEvent extends EvictionEventOpportunity, AutoCloseablePageCacheTracerEvent {
     /**
      * A PageFaultEvent that does nothing.
      */
-    PageFaultEvent NULL = new PageFaultEvent()
-    {
+    PageFaultEvent NULL = new PageFaultEvent() {
         @Override
-        public void addBytesRead( long bytes )
-        {
-        }
+        public void addBytesRead(long bytes) {}
 
         @Override
-        public void setException( Throwable throwable )
-        {
-        }
+        public void setException(Throwable throwable) {}
 
         @Override
-        public void freeListSize( int freeListSize )
-        {
-
-        }
+        public void freeListSize(int freeListSize) {}
 
         @Override
-        public EvictionEvent beginEviction( long cachePageId )
-        {
+        public EvictionEvent beginEviction(long cachePageId) {
             return EvictionEvent.NULL;
         }
 
         @Override
-        public void setCachePageId( long cachePageId )
-        {
-        }
+        public void setCachePageId(long cachePageId) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     };
 
     /**
      * Add up a number of bytes that has been read from the backing file into the free page being bound.
      */
-    void addBytesRead( long bytes );
+    void addBytesRead(long bytes);
 
     /**
      * The id of the cache page that is being faulted into.
      */
-    void setCachePageId( long cachePageId );
+    void setCachePageId(long cachePageId);
 
     /**
      * Update free list size as result of fault
      * @param freeListSize new free list size
      */
-    void freeListSize( int freeListSize );
+    void freeListSize(int freeListSize);
 
     /**
      * The page fault did not complete successfully, but instead caused the given Throwable to be thrown.
      */
-    void setException( Throwable throwable );
+    void setException(Throwable throwable);
 
     /**
      * The page fault completed.

@@ -51,11 +51,11 @@ case object SystemCommandRuntimeName extends RuntimeName {
 object RuntimeName {
 
   def apply(name: String): RuntimeName = name.toUpperCase match {
-    case InterpretedRuntimeName.name => InterpretedRuntimeName
-    case SlottedRuntimeName.name => SlottedRuntimeName
-    case PipelinedRuntimeName.name => PipelinedRuntimeName
-    case ParallelRuntimeName.name => ParallelRuntimeName
-    case SchemaRuntimeName.name => SchemaRuntimeName
+    case InterpretedRuntimeName.name   => InterpretedRuntimeName
+    case SlottedRuntimeName.name       => SlottedRuntimeName
+    case PipelinedRuntimeName.name     => PipelinedRuntimeName
+    case ParallelRuntimeName.name      => ParallelRuntimeName
+    case SchemaRuntimeName.name        => SchemaRuntimeName
     case SystemCommandRuntimeName.name => SystemCommandRuntimeName
 
     case n => throw new IllegalArgumentException(s"$n is not a valid runtime")

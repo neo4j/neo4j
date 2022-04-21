@@ -40,6 +40,7 @@ trait NodeHint {
 }
 
 object Hint {
+
   implicit val byVariable: Ordering[Hint] =
     Ordering.by { hint: Hint => hint.variables.head }(Variable.byName)
 }
@@ -52,9 +53,11 @@ sealed trait UsingHint extends Hint
 sealed trait UsingIndexHintSpec {
   def fulfilledByScan: Boolean
 }
+
 case object SeekOnly extends UsingIndexHintSpec {
   override def fulfilledByScan: Boolean = false
 }
+
 case object SeekOrScan extends UsingIndexHintSpec {
   override def fulfilledByScan: Boolean = true
 }
@@ -67,29 +70,41 @@ case object UsingTextIndexType extends UsingIndexHintType
 case object UsingPointIndexType extends UsingIndexHintType
 
 case class UsingIndexHint(
-                           variable: Variable,
-                           labelOrRelType: LabelOrRelTypeName,
-                           properties: Seq[PropertyKeyName],
-                           spec: UsingIndexHintSpec = SeekOrScan,
-                           indexType: UsingIndexHintType = UsingAnyIndexType,
-                         )(val position: InputPosition) extends UsingHint with NodeHint {
+  variable: Variable,
+  labelOrRelType: LabelOrRelTypeName,
+  properties: Seq[PropertyKeyName],
+  spec: UsingIndexHintSpec = SeekOrScan,
+  indexType: UsingIndexHintType = UsingAnyIndexType
+)(val position: InputPosition) extends UsingHint with NodeHint {
   override def variables: NonEmptyList[Variable] = NonEmptyList(variable)
-  override def semanticCheck: SemanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
+
+  override def semanticCheck: SemanticCheck =
+    ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
 }
 
-case class UsingScanHint(variable: Variable, labelOrRelType: LabelOrRelTypeName)(val position: InputPosition) extends UsingHint with NodeHint {
+case class UsingScanHint(variable: Variable, labelOrRelType: LabelOrRelTypeName)(val position: InputPosition)
+    extends UsingHint with NodeHint {
   override def variables: NonEmptyList[Variable] = NonEmptyList(variable)
-  override def semanticCheck: SemanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
+
+  override def semanticCheck: SemanticCheck =
+    ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
 }
 
 object UsingJoinHint {
+
   def apply(elts: Seq[Variable])(pos: InputPosition): UsingJoinHint =
-    UsingJoinHint(elts.toNonEmptyListOption.getOrElse(throw new IllegalStateException("Expected non-empty sequence of variables")))(pos)
+    UsingJoinHint(
+      elts.toNonEmptyListOption.getOrElse(throw new IllegalStateException("Expected non-empty sequence of variables"))
+    )(pos)
 }
 
-case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {
+case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint
+    with NodeHint {
+
   override def semanticCheck: SemanticCheck =
-    variables.map { variable => ensureDefined(variable) chain expectType(CTNode.covariant, variable) }.reduceLeft(_ chain _)
+    variables.map { variable => ensureDefined(variable) chain expectType(CTNode.covariant, variable) }.reduceLeft(
+      _ chain _
+    )
 }
 
 // start items
@@ -110,10 +125,14 @@ sealed trait RelationshipStartItem extends StartItem {
   def semanticCheck: SemanticCheck = declareVariable(variable, CTRelationship)
 }
 
-case class RelationshipByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition) extends RelationshipStartItem
+case class RelationshipByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition)
+    extends RelationshipStartItem
+
+case class RelationshipByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition)
+    extends RelationshipStartItem
 case class AllRelationships(variable: Variable)(val position: InputPosition) extends RelationshipStartItem
 
 // no longer supported non-hint legacy start items
 
-case class NodeByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem
+case class NodeByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition)
+    extends NodeStartItem

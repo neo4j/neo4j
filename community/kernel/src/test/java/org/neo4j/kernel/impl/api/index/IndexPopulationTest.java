@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.function.IntPredicate;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -49,105 +53,98 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.common.Subject.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-class IndexPopulationTest
-{
-    private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
+class IndexPopulationTest {
+    private final IndexStatisticsStore indexStatisticsStore = mock(IndexStatisticsStore.class);
     private final InMemoryTokens tokens = new InMemoryTokens();
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
     @Test
-    void mustFlipToFailedIfFailureToApplyLastBatchWhileFlipping() throws Exception
-    {
+    void mustFlipToFailedIfFailureToApplyLastBatchWhileFlipping() throws Exception {
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();
         IndexStoreView storeView = emptyIndexStoreViewThatProcessUpdates();
         IndexPopulator.Adapter populator = emptyPopulatorWithThrowingUpdater();
-        FailedIndexProxy failedProxy = failedIndexProxy( populator );
+        FailedIndexProxy failedProxy = failedIndexProxy(populator);
         OnlineIndexProxy onlineProxy = onlineIndexProxy();
         FlippableIndexProxy flipper = new FlippableIndexProxy();
-        flipper.setFlipTarget( () -> onlineProxy );
+        flipper.setFlipTarget(() -> onlineProxy);
 
-        try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
-                MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ),
-                        scheduler, tokens, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, Config.defaults() ) )
-        {
-            MultipleIndexPopulator.IndexPopulation indexPopulation = multipleIndexPopulator.addPopulator( populator, dummyIndex(), flipper, t -> failedProxy );
-            multipleIndexPopulator.queueConcurrentUpdate( someUpdate() );
-            multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( StoreScan.NO_EXTERNAL_UPDATES );
+        try (JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
+                MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator(
+                        storeView,
+                        logProvider,
+                        EntityType.NODE,
+                        mock(SchemaState.class),
+                        scheduler,
+                        tokens,
+                        CONTEXT_FACTORY,
+                        INSTANCE,
+                        "",
+                        AUTH_DISABLED,
+                        Config.defaults())) {
+            MultipleIndexPopulator.IndexPopulation indexPopulation =
+                    multipleIndexPopulator.addPopulator(populator, dummyIndex(), flipper, t -> failedProxy);
+            multipleIndexPopulator.queueConcurrentUpdate(someUpdate());
+            multipleIndexPopulator.createStoreScan(CONTEXT_FACTORY).run(StoreScan.NO_EXTERNAL_UPDATES);
 
             // when
-            indexPopulation.flip( CursorContext.NULL_CONTEXT );
+            indexPopulation.flip(CursorContext.NULL_CONTEXT);
 
             // then
-            assertSame( InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy" );
+            assertSame(InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy");
         }
     }
 
-    private OnlineIndexProxy onlineIndexProxy()
-    {
-        return new OnlineIndexProxy( dummyIndex(), IndexAccessor.EMPTY, false );
+    private OnlineIndexProxy onlineIndexProxy() {
+        return new OnlineIndexProxy(dummyIndex(), IndexAccessor.EMPTY, false);
     }
 
-    private FailedIndexProxy failedIndexProxy( MinimalIndexAccessor minimalIndexAccessor )
-    {
-        return new FailedIndexProxy( dummyIndex(), minimalIndexAccessor, IndexPopulationFailure
-                .failure( "failure" ), NullLogProvider.getInstance() );
+    private FailedIndexProxy failedIndexProxy(MinimalIndexAccessor minimalIndexAccessor) {
+        return new FailedIndexProxy(
+                dummyIndex(),
+                minimalIndexAccessor,
+                IndexPopulationFailure.failure("failure"),
+                NullLogProvider.getInstance());
     }
 
-    private static IndexPopulator.Adapter emptyPopulatorWithThrowingUpdater()
-    {
-        return new IndexPopulator.Adapter()
-        {
+    private static IndexPopulator.Adapter emptyPopulatorWithThrowingUpdater() {
+        return new IndexPopulator.Adapter() {
             @Override
-            public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
-            {
-                return new IndexUpdater()
-                {
+            public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
+                return new IndexUpdater() {
                     @Override
-                    public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
-                    {
-                        throw new IndexEntryConflictException( 0, 1, Values.numberValue( 0 ) );
+                    public void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException {
+                        throw new IndexEntryConflictException(0, 1, Values.numberValue(0));
                     }
 
                     @Override
-                    public void close()
-                    {
-                    }
+                    public void close() {}
                 };
             }
         };
     }
 
-    private static IndexStoreView.Adaptor emptyIndexStoreViewThatProcessUpdates()
-    {
-        return new IndexStoreView.Adaptor()
-        {
+    private static IndexStoreView.Adaptor emptyIndexStoreViewThatProcessUpdates() {
+        return new IndexStoreView.Adaptor() {
             @Override
-            public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
-                    TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory,
-                    MemoryTracker memoryTracker )
-            {
-                return new StoreScan()
-                {
+            public StoreScan visitNodes(
+                    int[] labelIds,
+                    IntPredicate propertyKeyIdFilter,
+                    PropertyScanConsumer propertyScanConsumer,
+                    TokenScanConsumer labelScanConsumer,
+                    boolean forceStoreScan,
+                    boolean parallelWrite,
+                    CursorContextFactory contextFactory,
+                    MemoryTracker memoryTracker) {
+                return new StoreScan() {
                     @Override
-                    public void run( ExternalUpdatesCheck externalUpdatesCheck )
-                    {
-                    }
+                    public void run(ExternalUpdatesCheck externalUpdatesCheck) {}
 
                     @Override
-                    public void stop()
-                    {
-                    }
+                    public void stop() {}
 
                     @Override
-                    public PopulationProgress getProgress()
-                    {
+                    public PopulationProgress getProgress() {
                         return null;
                     }
                 };
@@ -155,13 +152,11 @@ class IndexPopulationTest
         };
     }
 
-    private IndexProxyStrategy dummyIndex()
-    {
-        return new ValueIndexProxyStrategy( TestIndexDescriptorFactory.forLabel( 0, 0 ), indexStatisticsStore, tokens );
+    private IndexProxyStrategy dummyIndex() {
+        return new ValueIndexProxyStrategy(TestIndexDescriptorFactory.forLabel(0, 0), indexStatisticsStore, tokens);
     }
 
-    private static ValueIndexEntryUpdate<SchemaDescriptorSupplier> someUpdate()
-    {
-        return IndexEntryUpdate.add( 0, () -> SchemaDescriptors.forLabel( 0, 0 ), Values.numberValue( 0 ) );
+    private static ValueIndexEntryUpdate<SchemaDescriptorSupplier> someUpdate() {
+        return IndexEntryUpdate.add(0, () -> SchemaDescriptors.forLabel(0, 0), Values.numberValue(0));
     }
 }

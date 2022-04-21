@@ -23,66 +23,55 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 
-public class TaggingPlanDescriptionWrapper implements ExecutionPlanDescription
-{
+public class TaggingPlanDescriptionWrapper implements ExecutionPlanDescription {
     private final ExecutionPlanDescription innerPlanDescription;
     private final String graphName;
 
-    public TaggingPlanDescriptionWrapper( ExecutionPlanDescription innerPlanDescription, String graphName )
-    {
+    public TaggingPlanDescriptionWrapper(ExecutionPlanDescription innerPlanDescription, String graphName) {
         this.innerPlanDescription = innerPlanDescription;
         this.graphName = graphName;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return innerPlanDescription.getName() + "@" + graphName;
     }
 
     @Override
-    public List<ExecutionPlanDescription> getChildren()
-    {
+    public List<ExecutionPlanDescription> getChildren() {
         return innerPlanDescription.getChildren().stream()
-                .map( child -> new TaggingPlanDescriptionWrapper( child, graphName ) )
-                .collect( Collectors.toList());
+                .map(child -> new TaggingPlanDescriptionWrapper(child, graphName))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Map<String,Object> getArguments()
-    {
+    public Map<String, Object> getArguments() {
         return innerPlanDescription.getArguments();
     }
 
     @Override
-    public Set<String> getIdentifiers()
-    {
+    public Set<String> getIdentifiers() {
         return innerPlanDescription.getIdentifiers();
     }
 
     @Override
-    public boolean hasProfilerStatistics()
-    {
+    public boolean hasProfilerStatistics() {
         return innerPlanDescription.hasProfilerStatistics();
     }
 
     @Override
-    public ProfilerStatistics getProfilerStatistics()
-    {
+    public ProfilerStatistics getProfilerStatistics() {
         return innerPlanDescription.getProfilerStatistics();
     }
 
-    public ExecutionPlanDescription getInnerPlanDescription()
-    {
+    public ExecutionPlanDescription getInnerPlanDescription() {
         return innerPlanDescription;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return innerPlanDescription.toString();
     }
 }

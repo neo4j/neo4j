@@ -19,11 +19,9 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-public class MuninnPageCacheWithReserveBytesTest extends MuninnPageCacheTest
-{
+public class MuninnPageCacheWithReserveBytesTest extends MuninnPageCacheTest {
     @Override
-    protected Fixture<MuninnPageCache> createFixture()
-    {
-        return super.createFixture().withReservedBytes( Long.BYTES * 3 );
+    protected Fixture<MuninnPageCache> createFixture() {
+        return super.createFixture().withReservedBytes(Long.BYTES * 3);
     }
 }

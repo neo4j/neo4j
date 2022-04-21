@@ -26,31 +26,60 @@ import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class StatsDivergenceCalculatorTest extends CypherFunSuite {
-  private val defaultInitialThreshold = GraphDatabaseSettings.query_statistics_divergence_threshold.defaultValue.toDouble
-  private val defaultTargetThreshold = GraphDatabaseInternalSettings.query_statistics_divergence_target.defaultValue.toDouble
+
+  private val defaultInitialThreshold =
+    GraphDatabaseSettings.query_statistics_divergence_threshold.defaultValue.toDouble
+
+  private val defaultTargetThreshold =
+    GraphDatabaseInternalSettings.query_statistics_divergence_target.defaultValue.toDouble
   private val defaultInitialInterval = GraphDatabaseSettings.cypher_min_replan_interval.defaultValue.toMillis
   private val defaultTargetInterval = GraphDatabaseInternalSettings.cypher_replan_interval_target.defaultValue.toMillis
   private val marginOfError = 0.0001
 
   test("Disabling decay should show no decay") {
-    val divergence = StatsDivergenceCalculator.divergenceNoDecayCalculator(defaultInitialThreshold, defaultInitialInterval)
+    val divergence =
+      StatsDivergenceCalculator.divergenceNoDecayCalculator(defaultInitialThreshold, defaultInitialInterval)
     assertNoDecay(CypherReplanAlgorithm.NONE, divergence, defaultInitialThreshold, defaultInitialInterval)
   }
 
   test("Using algorithm 'none' decay should show no decay") {
-    assertNoDecay(CypherReplanAlgorithm.NONE, defaultInitialThreshold, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
+    assertNoDecay(
+      CypherReplanAlgorithm.NONE,
+      defaultInitialThreshold,
+      defaultTargetThreshold,
+      defaultInitialInterval,
+      defaultTargetInterval
+    )
   }
 
   test("Default values should make sense") {
-    assertDecaysMakeSense(CypherReplanAlgorithm.DEFAULT, defaultInitialThreshold, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
+    assertDecaysMakeSense(
+      CypherReplanAlgorithm.DEFAULT,
+      defaultInitialThreshold,
+      defaultTargetThreshold,
+      defaultInitialInterval,
+      defaultTargetInterval
+    )
   }
 
   test("Default values should make sense with inverse decay") {
-    assertDecaysMakeSense(CypherReplanAlgorithm.INVERSE, defaultInitialThreshold, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
+    assertDecaysMakeSense(
+      CypherReplanAlgorithm.INVERSE,
+      defaultInitialThreshold,
+      defaultTargetThreshold,
+      defaultInitialInterval,
+      defaultTargetInterval
+    )
   }
 
   test("Default values should make sense with exponential decay") {
-    assertDecaysMakeSense(CypherReplanAlgorithm.EXPONENTIAL, defaultInitialThreshold, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
+    assertDecaysMakeSense(
+      CypherReplanAlgorithm.EXPONENTIAL,
+      defaultInitialThreshold,
+      defaultTargetThreshold,
+      defaultInitialInterval,
+      defaultTargetInterval
+    )
   }
 
   test("Equal threshold should disable decay") {
@@ -101,12 +130,29 @@ class StatsDivergenceCalculatorTest extends CypherFunSuite {
     }
   }
 
-  private def assertNoDecay(algorithm: CypherReplanAlgorithm, initialThreshold: Double, targetThreshold: Double, initialInterval: Long, targetInterval: Long): Unit = {
-    val divergence = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, initialThreshold, targetThreshold, initialInterval, targetInterval)
+  private def assertNoDecay(
+    algorithm: CypherReplanAlgorithm,
+    initialThreshold: Double,
+    targetThreshold: Double,
+    initialInterval: Long,
+    targetInterval: Long
+  ): Unit = {
+    val divergence = StatsDivergenceCalculator.divergenceCalculatorFor(
+      algorithm,
+      initialThreshold,
+      targetThreshold,
+      initialInterval,
+      targetInterval
+    )
     assertNoDecay(algorithm, divergence, initialThreshold, initialInterval)
   }
 
-  private def assertNoDecay(algorithm: CypherReplanAlgorithm, divergence: StatsDivergenceCalculator, threshold: Double, interval: Long): Unit = {
+  private def assertNoDecay(
+    algorithm: CypherReplanAlgorithm,
+    divergence: StatsDivergenceCalculator,
+    threshold: Double,
+    interval: Long
+  ): Unit = {
     withClue(s"For decay algorithm '$algorithm': ") {
       divergence.decay(0) should be(threshold)
       divergence.decay(interval / 2) should be(threshold)
@@ -115,12 +161,24 @@ class StatsDivergenceCalculatorTest extends CypherFunSuite {
     }
   }
 
-  private def assertDecaysMakeSense(algorithm: CypherReplanAlgorithm, initialThreshold: Double, targetThreshold: Double, initialInterval: Long, targetInterval: Long): Unit = {
+  private def assertDecaysMakeSense(
+    algorithm: CypherReplanAlgorithm,
+    initialThreshold: Double,
+    targetThreshold: Double,
+    initialInterval: Long,
+    targetInterval: Long
+  ): Unit = {
     withClue("Testing intervals that differ by only 1 is not supported in this test:") {
       targetInterval should be >= initialInterval + 2
     }
     withClue(s"For decay algorithm '$algorithm': ") {
-      val divergence = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, initialThreshold, targetThreshold, initialInterval, targetInterval)
+      val divergence = StatsDivergenceCalculator.divergenceCalculatorFor(
+        algorithm,
+        initialThreshold,
+        targetThreshold,
+        initialInterval,
+        targetInterval
+      )
       divergence.decay(initialInterval) should be(initialThreshold +- marginOfError)
       val decayed = divergence.decay((initialInterval + targetInterval) / 2)
       decayed should be > targetThreshold

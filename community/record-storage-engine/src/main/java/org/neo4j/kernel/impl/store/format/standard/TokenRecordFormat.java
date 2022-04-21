@@ -25,56 +25,45 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 
-public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends BaseOneByteHeaderRecordFormat<RECORD>
-{
-    static final int BASE_RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
+public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends BaseOneByteHeaderRecordFormat<RECORD> {
+    static final int BASE_RECORD_SIZE = 1 /*inUse*/ + 4 /*nameId*/;
 
     private static final byte INTERNAL_FLAG = IN_USE_BIT << 1;
 
-    TokenRecordFormat( int recordSize, int idBits, boolean pageAligned )
-    {
-        super( fixedRecordSize( recordSize ), 0, IN_USE_BIT, idBits, pageAligned );
+    TokenRecordFormat(int recordSize, int idBits, boolean pageAligned) {
+        super(fixedRecordSize(recordSize), 0, IN_USE_BIT, idBits, pageAligned);
     }
 
     @Override
-    public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage )
-    {
+    public void read(RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
         byte headerByte = cursor.getByte();
-        boolean inUse = isInUse( headerByte );
-        record.setInUse( inUse );
-        if ( mode.shouldLoad( inUse ) )
-        {
-            readRecordData( cursor, record, inUse );
-            record.setInternal( has( headerByte, INTERNAL_FLAG ) );
+        boolean inUse = isInUse(headerByte);
+        record.setInUse(inUse);
+        if (mode.shouldLoad(inUse)) {
+            readRecordData(cursor, record, inUse);
+            record.setInternal(has(headerByte, INTERNAL_FLAG));
         }
     }
 
-    protected void readRecordData( PageCursor cursor, RECORD record, boolean inUse )
-    {
-        record.initialize( inUse, cursor.getInt() );
+    protected void readRecordData(PageCursor cursor, RECORD record, boolean inUse) {
+        record.initialize(inUse, cursor.getInt());
     }
 
     @Override
-    public void write( RECORD record, PageCursor cursor, int recordSize, int recordsPerPage )
-    {
-        if ( record.inUse() )
-        {
+    public void write(RECORD record, PageCursor cursor, int recordSize, int recordsPerPage) {
+        if (record.inUse()) {
             byte headerByte = Record.IN_USE.byteValue();
-            if ( record.isInternal() )
-            {
+            if (record.isInternal()) {
                 headerByte += INTERNAL_FLAG;
             }
-            cursor.putByte( headerByte );
-            writeRecordData( record, cursor );
-        }
-        else
-        {
-            cursor.putByte( Record.NOT_IN_USE.byteValue() );
+            cursor.putByte(headerByte);
+            writeRecordData(record, cursor);
+        } else {
+            cursor.putByte(Record.NOT_IN_USE.byteValue());
         }
     }
 
-    protected void writeRecordData( RECORD record, PageCursor cursor )
-    {
-        cursor.putInt( record.getNameId() );
+    protected void writeRecordData(RECORD record, PageCursor cursor) {
+        cursor.putInt(record.getNameId());
     }
 }

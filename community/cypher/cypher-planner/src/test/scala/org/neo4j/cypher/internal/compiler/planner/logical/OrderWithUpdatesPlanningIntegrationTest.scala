@@ -56,214 +56,233 @@ class OrderWithUpdatesIDPPlanningIntegrationTest extends OrderWithUpdatesPlannin
 class OrderWithUpdatesGreedyPlanningIntegrationTest extends OrderWithUpdatesPlanningIntegrationTestBase(false)
 
 class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boolean)
-  extends CypherFunSuite
+    extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport {
 
   override def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
-         .enableConnectComponentsPlanner(useIDPConnectComponents)
+      .enableConnectComponentsPlanner(useIDPConnectComponents)
 
   test("SetProperty should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "UNWIND [n, r] AS x SET x.prop = 1",
-      {case _:SetProperty  => true}
+      { case _: SetProperty => true }
     )
   }
 
   test("SetPropertiesFromMap should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "UNWIND [n, r] AS x SET x = {prop: 1}",
-      {case _:SetPropertiesFromMap  => true}
+      { case _: SetPropertiesFromMap => true }
     )
   }
 
   test("SetNodeProperty should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "SET n.prop = n.foo",
-      {case _:SetNodeProperty => true})
+      { case _: SetNodeProperty => true }
+    )
   }
 
   test("SetNodePropertiesFromMap should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "SET n = {prop: 'something', foo: 'something'}",
-      {case _:SetNodePropertiesFromMap => true})
+      { case _: SetNodePropertiesFromMap => true }
+    )
   }
 
   test("SetRelationshipProperty should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "SET r.prop = 1",
-      {case _:SetRelationshipProperty => true})
+      { case _: SetRelationshipProperty => true }
+    )
   }
 
   test("SetRelationshipPropertiesFromMap should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "SET r = {prop: 1}",
-      {case _:SetRelationshipPropertiesFromMap  => true}
+      { case _: SetRelationshipPropertiesFromMap => true }
     )
   }
 
   test("ProcedureCall of readwrite procedure should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "CALL writer()",
-      {case _:ProcedureCall  => true}
+      { case _: ProcedureCall => true }
     )
   }
 
   test("ProcedureCall of readonly procedure should not eliminate provided order and cause planning Sort") {
     shouldRetainProvidedSortOrder(
       "CALL reader()",
-      {case _:ProcedureCall  => true}
+      { case _: ProcedureCall => true }
     )
   }
 
   test("Create should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "CREATE (x)",
-      {case _:Create => true}
+      { case _: Create => true }
     )
   }
 
   test("Merge node should not eliminate provided order and cause planning Sort") {
     shouldRetainProvidedSortOrder(
       "MERGE (x:N)",
-      {case _:Merge  => true}
+      { case _: Merge => true }
     )
   }
 
   test("Merge relationship should not eliminate provided order and cause planning Sort") {
     shouldRetainProvidedSortOrder(
       "MERGE ()-[x:R]-()",
-      {case _:Merge  => true}
+      { case _: Merge => true }
     )
   }
 
   test("DeleteNode should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "DELETE n",
-      {case _:DeleteNode  => true}
+      { case _: DeleteNode => true }
     )
   }
 
   test("DeleteRelationship should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "DELETE r",
-      {case _:DeleteRelationship  => true}
+      { case _: DeleteRelationship => true }
     )
   }
 
   test("DeletePath should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MATCH p = ()-[]-() DELETE p",
-      {case _:DeletePath  => true}
+      { case _: DeletePath => true }
     )
   }
 
   test("DeleteExpression should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "WITH *, {prop: n} AS m DELETE m.prop",
-      {case _:DeleteExpression  => true}
+      { case _: DeleteExpression => true }
     )
   }
 
   test("Setlabel should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "SET n:X",
-      {case _:SetLabels  => true}
+      { case _: SetLabels => true }
     )
   }
 
   test("RemoveLabel should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "REMOVE n:N:X",
-      {case _:RemoveLabels  => true}
+      { case _: RemoveLabels => true }
     )
   }
 
   test("TailApply containing update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "WITH *, 1 as x MATCH (y) SET n.prop = x",
-      {case _:Apply  => true}
+      { case _: Apply => true }
     )
   }
 
   test("Foreach containing update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "FOREACH (x in [1,2,3] | SET n.prop = x)",
-      {case _:Foreach => true})
+      { case _: Foreach => true }
+    )
   }
 
   test("ForeachApply containing update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "FOREACH (x in [1,2,3] | MERGE (m)-[:R]-(n) ON MATCH SET m:L)",
-      {case _:ForeachApply => true})
+      { case _: ForeachApply => true }
+    )
   }
 
   test("Subquery (uncorrelated) with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "CALL {MATCH (x) SET x.prop = 1 RETURN 'foo' AS foo}",
-      {case _:Apply  => true}
+      { case _: Apply => true }
     )
   }
 
   test("Subquery (correlated) with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "CALL {WITH n, r MATCH (x) SET x.prop = 1 RETURN 'foo' AS foo}",
-      {case _:Apply  => true}
+      { case _: Apply => true }
     )
   }
 
   test("MERGE node + ON MATCH with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE (x) ON MATCH SET x.prop = 1",
-      {case _:Merge  => true}
+      { case _: Merge => true }
     )
   }
 
   test("MERGE node + ON CREATE with update should not eliminate provided order and cause planning Sort") {
     shouldRetainProvidedSortOrder(
       "MERGE (x) ON CREATE SET x.prop = 1",
-      {case _:Merge  => true}
+      { case _: Merge => true }
     )
   }
 
   test("Merge relationship + ON MATCH should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE ()-[x:R]-() ON MATCH set x.prop = 1",
-      {case _:Merge  => true}
+      { case _: Merge => true }
     )
   }
 
   test("Merge relationship + ON CREATE should not eliminate provided order and cause planning Sort") {
     shouldRetainProvidedSortOrder(
       "MERGE ()-[x:R]-() ON CREATE set x.prop = 1",
-      {case _:Merge  => true}
+      { case _: Merge => true }
     )
   }
 
   private def shouldRetainProvidedSortOrder(clause: String, containsTestedPlan: PartialFunction[Any, Boolean]): Unit = {
-    verifyProvidedSortOrder(clause, containsTestedPlan,
-      sortCheck = plan => withClue(s"Should not contain sort: $plan")(
-        plan.folder.treeExists { case _: Sort => true}  shouldBe false
-      )
+    verifyProvidedSortOrder(
+      clause,
+      containsTestedPlan,
+      sortCheck = plan =>
+        withClue(s"Should not contain sort: $plan")(
+          plan.folder.treeExists { case _: Sort => true } shouldBe false
+        )
     )
   }
 
-  private def shouldEliminateProvidedSortOrder(clause: String, containsTestedPlan: PartialFunction[Any, Boolean]): Unit = {
-    verifyProvidedSortOrder(clause, containsTestedPlan,
-      sortCheck = plan => withClue(s"Did not plan sort: $plan")(
-        plan should beLike { case ProduceResult(Sort(_, _), _) =>}
-      )
+  private def shouldEliminateProvidedSortOrder(
+    clause: String,
+    containsTestedPlan: PartialFunction[Any, Boolean]
+  ): Unit = {
+    verifyProvidedSortOrder(
+      clause,
+      containsTestedPlan,
+      sortCheck = plan =>
+        withClue(s"Did not plan sort: $plan")(
+          plan should beLike { case ProduceResult(Sort(_, _), _) => }
+        )
     )
   }
 
-  private def verifyProvidedSortOrder(clause: String, containsTestedPlan: PartialFunction[Any, Boolean], sortCheck: LogicalPlan => Unit): Unit = {
+  private def verifyProvidedSortOrder(
+    clause: String,
+    containsTestedPlan: PartialFunction[Any, Boolean],
+    sortCheck: LogicalPlan => Unit
+  ): Unit = {
     val writer = ProcedureSignature(
-      QualifiedName(Seq(),"writer"),
+      QualifiedName(Seq(), "writer"),
       IndexedSeq(),
       None,
       None,
       ProcedureReadWriteAccess,
-      id = 0)
+      id = 0
+    )
 
     val reader = ProcedureSignature(
       QualifiedName(Seq(), "reader"),
@@ -271,7 +290,8 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
       None,
       None,
       ProcedureReadOnlyAccess,
-      id = 1)
+      id = 1
+    )
 
     val cfg = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -289,7 +309,8 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
       s"""MATCH (n:N)-[r:R]-() WHERE n.prop IS NOT NULL
          |$clause
          |RETURN n
-         |ORDER BY n.prop""".stripMargin)
+         |ORDER BY n.prop""".stripMargin
+    )
 
     withClue(s"Did not contain indexSeek with provided order: $plan")(
       providesOrder(plan) shouldBe true
@@ -303,5 +324,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
   }
 
   private def containsPlan(plan: LogicalPlan, f: PartialFunction[Any, Boolean]) = plan.folder.treeExists(f)
-  private def providesOrder(plan: LogicalPlan) = plan.folder.treeExists{ case NodeIndexScan(_, _, _, _, IndexOrderAscending, _) => true }
+
+  private def providesOrder(plan: LogicalPlan) =
+    plan.folder.treeExists { case NodeIndexScan(_, _, _, _, IndexOrderAscending, _) => true }
 }

@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -33,54 +35,44 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-
-public class ReadTestSupport implements KernelAPIReadTestSupport
-{
-    private final Map<Setting<?>,Object> settings = new HashMap<>();
+public class ReadTestSupport implements KernelAPIReadTestSupport {
+    private final Map<Setting<?>, Object> settings = new HashMap<>();
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
     private Monitors monitors = new Monitors();
 
-    public <T> void addSetting( Setting<T> setting, T value )
-    {
-        settings.put( setting, value );
+    public <T> void addSetting(Setting<T> setting, T value) {
+        settings.put(setting, value);
     }
 
-    public void setMonitors( Monitors monitors )
-    {
+    public void setMonitors(Monitors monitors) {
         this.monitors = monitors;
     }
 
     @Override
-    public void setup( Path storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> sysCreate )
-    {
-        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = newManagementServiceBuilder( storeDir );
-        databaseManagementServiceBuilder.setConfig( settings );
-        databaseManagementServiceBuilder.setMonitors( monitors );
+    public void setup(Path storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> sysCreate) {
+        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = newManagementServiceBuilder(storeDir);
+        databaseManagementServiceBuilder.setConfig(settings);
+        databaseManagementServiceBuilder.setMonitors(monitors);
         managementService = databaseManagementServiceBuilder.build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
-        GraphDatabaseService sysDb = managementService.database( SYSTEM_DATABASE_NAME );
-        create.accept( db );
-        sysCreate.accept( sysDb );
+        db = managementService.database(DEFAULT_DATABASE_NAME);
+        GraphDatabaseService sysDb = managementService.database(SYSTEM_DATABASE_NAME);
+        create.accept(db);
+        sysCreate.accept(sysDb);
     }
 
-    protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( Path storeDir )
-    {
-        return new TestDatabaseManagementServiceBuilder( storeDir ).impermanent();
+    protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder(Path storeDir) {
+        return new TestDatabaseManagementServiceBuilder(storeDir).impermanent();
     }
 
     @Override
-    public Kernel kernelToTest()
-    {
+    public Kernel kernelToTest() {
         DependencyResolver resolver = ((GraphDatabaseAPI) this.db).getDependencyResolver();
-        return resolver.resolveDependency( Kernel.class );
+        return resolver.resolveDependency(Kernel.class);
     }
 
     @Override
-    public void tearDown()
-    {
+    public void tearDown() {
         managementService.shutdown();
         db = null;
     }

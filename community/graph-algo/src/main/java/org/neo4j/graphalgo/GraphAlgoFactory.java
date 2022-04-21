@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo;
 
+import static org.neo4j.internal.helpers.MathUtil.DEFAULT_EPSILON;
+
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphalgo.impl.path.AStar;
 import org.neo4j.graphalgo.impl.path.AllPaths;
@@ -34,16 +36,13 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 
-import static org.neo4j.internal.helpers.MathUtil.DEFAULT_EPSILON;
-
 /**
  * Static factory methods for the recommended implementations of common
  * graph algorithms for Neo4j. The algorithms exposed here are implementations
  * which are tested extensively and also scale on bigger graphs.
  */
 @PublicApi
-public abstract class GraphAlgoFactory
-{
+public abstract class GraphAlgoFactory {
     /**
      * Returns an algorithm which can find all available paths between two
      * nodes. These returned paths can contain loops (i.e. a node can occur
@@ -56,9 +55,8 @@ public abstract class GraphAlgoFactory
      * allowed to have.
      * @return an algorithm which finds all paths between two nodes.
      */
-    public static PathFinder<Path> allPaths( EvaluationContext context, PathExpander expander, int maxDepth )
-    {
-        return new AllPaths( context, maxDepth, expander );
+    public static PathFinder<Path> allPaths(EvaluationContext context, PathExpander expander, int maxDepth) {
+        return new AllPaths(context, maxDepth, expander);
     }
 
     /**
@@ -73,9 +71,8 @@ public abstract class GraphAlgoFactory
      * allowed to have.
      * @return an algorithm which finds simple paths between two nodes.
      */
-    public static PathFinder<Path> allSimplePaths( EvaluationContext context, PathExpander expander, int maxDepth )
-    {
-        return new AllSimplePaths( context, maxDepth, expander );
+    public static PathFinder<Path> allSimplePaths(EvaluationContext context, PathExpander expander, int maxDepth) {
+        return new AllSimplePaths(context, maxDepth, expander);
     }
 
     /**
@@ -92,9 +89,8 @@ public abstract class GraphAlgoFactory
      *            to have. Longer paths than that will not be examined.
      * @return an algorithm which finds shortest paths between two nodes.
      */
-    public static PathFinder<Path> shortestPath( EvaluationContext context, PathExpander expander, int maxDepth )
-    {
-        return new ShortestPath( context, maxDepth, expander );
+    public static PathFinder<Path> shortestPath(EvaluationContext context, PathExpander expander, int maxDepth) {
+        return new ShortestPath(context, maxDepth, expander);
     }
 
     /**
@@ -113,9 +109,9 @@ public abstract class GraphAlgoFactory
      * If this number of found paths are encountered the traversal will stop.
      * @return an algorithm which finds shortest paths between two nodes.
      */
-    public static PathFinder<Path> shortestPath( EvaluationContext context, PathExpander expander, int maxDepth, int maxHitCount )
-    {
-        return new ShortestPath( context, maxDepth, expander, maxHitCount );
+    public static PathFinder<Path> shortestPath(
+            EvaluationContext context, PathExpander expander, int maxDepth, int maxHitCount) {
+        return new ShortestPath(context, maxDepth, expander, maxHitCount);
     }
 
     /**
@@ -130,9 +126,8 @@ public abstract class GraphAlgoFactory
      * paths were found.
      * @return an algorithm which finds paths of a certain length between two nodes.
      */
-    public static PathFinder<Path> pathsWithLength( EvaluationContext context, PathExpander expander, int length )
-    {
-        return new ExactDepthPathFinder( context, expander, length, Integer.MAX_VALUE, false );
+    public static PathFinder<Path> pathsWithLength(EvaluationContext context, PathExpander expander, int length) {
+        return new ExactDepthPathFinder(context, expander, length, Integer.MAX_VALUE, false);
     }
 
     /**
@@ -157,10 +152,12 @@ public abstract class GraphAlgoFactory
      * @return an algorithm which finds the cheapest path between two nodes
      * using the A* algorithm.
      */
-    public static PathFinder<WeightedPath> aStar( EvaluationContext context, PathExpander expander,
-            CostEvaluator<Double> lengthEvaluator, EstimateEvaluator<Double> estimateEvaluator )
-    {
-        return new AStar( context, expander, lengthEvaluator, estimateEvaluator );
+    public static PathFinder<WeightedPath> aStar(
+            EvaluationContext context,
+            PathExpander expander,
+            CostEvaluator<Double> lengthEvaluator,
+            EstimateEvaluator<Double> estimateEvaluator) {
+        return new AStar(context, expander, lengthEvaluator, estimateEvaluator);
     }
 
     /**
@@ -184,9 +181,9 @@ public abstract class GraphAlgoFactory
      * @param costEvaluator evaluator that can return the cost represented by each relationship the algorithm traverses.
      * @return an algorithm which finds the cheapest path between two nodes using the Dijkstra algorithm.
      */
-    public static PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander<Double> expander, CostEvaluator<Double> costEvaluator )
-    {
-        return new DijkstraBidirectional( context, expander, costEvaluator, DEFAULT_EPSILON );
+    public static PathFinder<WeightedPath> dijkstra(
+            EvaluationContext context, PathExpander<Double> expander, CostEvaluator<Double> costEvaluator) {
+        return new DijkstraBidirectional(context, expander, costEvaluator, DEFAULT_EPSILON);
     }
 
     /**
@@ -200,9 +197,9 @@ public abstract class GraphAlgoFactory
      * @param relationshipPropertyRepresentingCost the property to represent cost on each relationship the algorithm traverses.
      * @return an algorithm which finds the cheapest path between two nodes using the Dijkstra algorithm.
      */
-    public static PathFinder<WeightedPath> dijkstra( EvaluationContext context, PathExpander<Double> expander, String relationshipPropertyRepresentingCost )
-    {
-        return dijkstra( context, expander, new DoubleEvaluator( relationshipPropertyRepresentingCost ) );
+    public static PathFinder<WeightedPath> dijkstra(
+            EvaluationContext context, PathExpander<Double> expander, String relationshipPropertyRepresentingCost) {
+        return dijkstra(context, expander, new DoubleEvaluator(relationshipPropertyRepresentingCost));
     }
 
     /**
@@ -219,9 +216,9 @@ public abstract class GraphAlgoFactory
      * @param numberOfWantedPaths number of paths to find.
      * @return an algorithm which finds the cheapest path between two nodes using the Dijkstra algorithm.
      */
-    public static PathFinder<WeightedPath> dijkstra( PathExpander<Double> expander, String relationshipPropertyRepresentingCost, int numberOfWantedPaths )
-    {
-        return dijkstra( expander, new DoubleEvaluator( relationshipPropertyRepresentingCost ), numberOfWantedPaths );
+    public static PathFinder<WeightedPath> dijkstra(
+            PathExpander<Double> expander, String relationshipPropertyRepresentingCost, int numberOfWantedPaths) {
+        return dijkstra(expander, new DoubleEvaluator(relationshipPropertyRepresentingCost), numberOfWantedPaths);
     }
 
     /**
@@ -235,8 +232,12 @@ public abstract class GraphAlgoFactory
      * @param numberOfWantedPaths number of paths to find.
      * @return an algorithm which finds the cheapest path between two nodes using the Dijkstra algorithm.
      */
-    public static PathFinder<WeightedPath> dijkstra( PathExpander<Double> expander, CostEvaluator<Double> costEvaluator, int numberOfWantedPaths )
-    {
-        return new Dijkstra( expander, costEvaluator, DEFAULT_EPSILON, PathInterestFactory.numberOfShortest( DEFAULT_EPSILON, numberOfWantedPaths ) );
+    public static PathFinder<WeightedPath> dijkstra(
+            PathExpander<Double> expander, CostEvaluator<Double> costEvaluator, int numberOfWantedPaths) {
+        return new Dijkstra(
+                expander,
+                costEvaluator,
+                DEFAULT_EPSILON,
+                PathInterestFactory.numberOfShortest(DEFAULT_EPSILON, numberOfWantedPaths));
     }
 }

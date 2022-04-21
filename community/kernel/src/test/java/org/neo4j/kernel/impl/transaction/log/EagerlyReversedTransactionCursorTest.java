@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTransactionCursor;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -31,36 +26,37 @@ import static org.neo4j.internal.helpers.collection.Iterators.array;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.given;
 
-class EagerlyReversedTransactionCursorTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTransactionCursor;
+
+class EagerlyReversedTransactionCursorTest {
     @Test
-    void shouldReverseTransactionsFromSource() throws Exception
-    {
+    void shouldReverseTransactionsFromSource() throws Exception {
         // GIVEN
-        CommittedTransactionRepresentation tx1 = mock( CommittedTransactionRepresentation.class );
-        CommittedTransactionRepresentation tx2 = mock( CommittedTransactionRepresentation.class );
-        CommittedTransactionRepresentation tx3 = mock( CommittedTransactionRepresentation.class );
-        TransactionCursor source = given( tx1, tx2, tx3 );
-        EagerlyReversedTransactionCursor cursor = new EagerlyReversedTransactionCursor( source );
+        CommittedTransactionRepresentation tx1 = mock(CommittedTransactionRepresentation.class);
+        CommittedTransactionRepresentation tx2 = mock(CommittedTransactionRepresentation.class);
+        CommittedTransactionRepresentation tx3 = mock(CommittedTransactionRepresentation.class);
+        TransactionCursor source = given(tx1, tx2, tx3);
+        EagerlyReversedTransactionCursor cursor = new EagerlyReversedTransactionCursor(source);
 
         // WHEN
-        CommittedTransactionRepresentation[] reversed = exhaust( cursor );
+        CommittedTransactionRepresentation[] reversed = exhaust(cursor);
 
         // THEN
-        assertArrayEquals( array( tx3, tx2, tx1 ), reversed );
+        assertArrayEquals(array(tx3, tx2, tx1), reversed);
     }
 
     @Test
-    void shouldHandleEmptySource() throws Exception
-    {
+    void shouldHandleEmptySource() throws Exception {
         // GIVEN
         TransactionCursor source = given();
-        EagerlyReversedTransactionCursor cursor = new EagerlyReversedTransactionCursor( source );
+        EagerlyReversedTransactionCursor cursor = new EagerlyReversedTransactionCursor(source);
 
         // WHEN
-        CommittedTransactionRepresentation[] reversed = exhaust( cursor );
+        CommittedTransactionRepresentation[] reversed = exhaust(cursor);
 
         // THEN
-        assertEquals( 0, reversed.length );
+        assertEquals(0, reversed.length);
     }
 }

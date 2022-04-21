@@ -19,21 +19,18 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.Arrays;
-
-import org.neo4j.token.api.TokenConstants;
-
 import static org.neo4j.token.api.TokenConstants.ANY_PROPERTY_KEY;
+
+import java.util.Arrays;
+import org.neo4j.token.api.TokenConstants;
 
 /**
  * Specifies criteria for which properties to select.
  */
-public abstract class PropertySelection
-{
+public abstract class PropertySelection {
     private final boolean keysOnly;
 
-    protected PropertySelection( boolean keysOnly )
-    {
+    protected PropertySelection(boolean keysOnly) {
         this.keysOnly = keysOnly;
     }
 
@@ -52,27 +49,25 @@ public abstract class PropertySelection
      * @param index the selection index. A selection can have multiple keys.
      * @return the key for the given selection index.
      */
-    public abstract int key( int index );
+    public abstract int key(int index);
 
     /**
      * @param key the key to tests whether or not it fits the criteria of this selection.
      * @return {@code true} if the given {@code key} is part of this selection, otherwise {@code false}.
      */
-    public abstract boolean test( int key );
+    public abstract boolean test(int key);
 
     /**
      * A hint that the creator of this selection isn't interested in the actual values, only the existence of the keys.
      * @return {@code true} if only keys will be extracted where this selection is used, otherwise {@code false} if also values will be extracted.
      */
-    public boolean isKeysOnly()
-    {
+    public boolean isKeysOnly() {
         return keysOnly;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "Property%sSelection", keysOnly ? "Key" : "" );
+    public String toString() {
+        return String.format("Property%sSelection", keysOnly ? "Key" : "");
     }
 
     /**
@@ -81,9 +76,8 @@ public abstract class PropertySelection
      * @param key a single key that should be selected.
      * @return a {@link PropertySelection} instance with the given {@code key} as its criterion.
      */
-    public static PropertySelection selection( int key )
-    {
-        return SingleKey.singleKey( false, key );
+    public static PropertySelection selection(int key) {
+        return SingleKey.singleKey(false, key);
     }
 
     /**
@@ -92,9 +86,8 @@ public abstract class PropertySelection
      * @param keys one or more keys that should be part of the created selection.
      * @return a {@link PropertySelection} instance with the given {@code keys} as its criteria.
      */
-    public static PropertySelection selection( int... keys )
-    {
-        return selection( false, keys );
+    public static PropertySelection selection(int... keys) {
+        return selection(false, keys);
     }
 
     /**
@@ -104,123 +97,101 @@ public abstract class PropertySelection
      * @param keys one or more keys that should be part of the created selection.
      * @return a {@link PropertySelection} instance with the given {@code keys} as its criteria.
      */
-    public static PropertySelection onlyKeysSelection( int... keys )
-    {
-        return selection( true, keys );
+    public static PropertySelection onlyKeysSelection(int... keys) {
+        return selection(true, keys);
     }
 
-    private static PropertySelection selection( boolean keysOnly, int[] keys )
-    {
-        if ( keys == null )
-        {
+    private static PropertySelection selection(boolean keysOnly, int[] keys) {
+        if (keys == null) {
             return keysOnly ? ALL_PROPERTY_KEYS : ALL_PROPERTIES;
         }
-        if ( keys.length == 0 )
-        {
-            throw new IllegalArgumentException( "Can't make a property selection of zero keys" );
+        if (keys.length == 0) {
+            throw new IllegalArgumentException("Can't make a property selection of zero keys");
         }
-        return keys.length == 1 ? SingleKey.singleKey( keysOnly, keys[0] ) : new MultipleKeys( keysOnly, keys );
+        return keys.length == 1 ? SingleKey.singleKey(keysOnly, keys[0]) : new MultipleKeys(keysOnly, keys);
     }
 
-    private static class SingleKey extends PropertySelection
-    {
+    private static class SingleKey extends PropertySelection {
         private static final int LOW_ID_THRESHOLD = 128;
         private static final PropertySelection[] SINGLE_LOW_ID_SELECTIONS = new PropertySelection[LOW_ID_THRESHOLD];
         private static final PropertySelection[] SINGLE_LOW_ID_KEY_SELECTIONS = new PropertySelection[LOW_ID_THRESHOLD];
-        static
-        {
-            for ( int key = 0; key < SINGLE_LOW_ID_SELECTIONS.length; key++ )
-            {
-                SINGLE_LOW_ID_SELECTIONS[key] = new PropertySelection.SingleKey( false, key );
-                SINGLE_LOW_ID_KEY_SELECTIONS[key] = new PropertySelection.SingleKey( true, key );
+
+        static {
+            for (int key = 0; key < SINGLE_LOW_ID_SELECTIONS.length; key++) {
+                SINGLE_LOW_ID_SELECTIONS[key] = new PropertySelection.SingleKey(false, key);
+                SINGLE_LOW_ID_KEY_SELECTIONS[key] = new PropertySelection.SingleKey(true, key);
             }
         }
 
-        private static PropertySelection singleKey( boolean keysOnly, int key )
-        {
-            if ( key < LOW_ID_THRESHOLD && key >= 0 )
-            {
+        private static PropertySelection singleKey(boolean keysOnly, int key) {
+            if (key < LOW_ID_THRESHOLD && key >= 0) {
                 return keysOnly ? SINGLE_LOW_ID_KEY_SELECTIONS[key] : SINGLE_LOW_ID_SELECTIONS[key];
             }
-            return new SingleKey( keysOnly, key );
+            return new SingleKey(keysOnly, key);
         }
 
         private final int key;
 
-        private SingleKey( boolean keysOnly, int key )
-        {
-            super( keysOnly );
+        private SingleKey(boolean keysOnly, int key) {
+            super(keysOnly);
             this.key = key;
         }
 
         @Override
-        public boolean isLimited()
-        {
+        public boolean isLimited() {
             return true;
         }
 
         @Override
-        public int numberOfKeys()
-        {
+        public int numberOfKeys() {
             return 1;
         }
 
         @Override
-        public int key( int index )
-        {
+        public int key(int index) {
             assert index == 0;
             return key;
         }
 
         @Override
-        public boolean test( int key )
-        {
+        public boolean test(int key) {
             return this.key == key;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return super.toString() + "[" + key + "]";
         }
     }
 
-    private static class MultipleKeys extends PropertySelection
-    {
+    private static class MultipleKeys extends PropertySelection {
         private final int[] keys;
 
-        private MultipleKeys( boolean keysOnly, int[] keys )
-        {
-            super( keysOnly );
+        private MultipleKeys(boolean keysOnly, int[] keys) {
+            super(keysOnly);
             this.keys = keys;
         }
 
         @Override
-        public boolean isLimited()
-        {
+        public boolean isLimited() {
             return true;
         }
 
         @Override
-        public int numberOfKeys()
-        {
+        public int numberOfKeys() {
             return keys.length;
         }
 
         @Override
-        public int key( int index )
-        {
+        public int key(int index) {
             assert index >= 0 && index < keys.length;
             return keys[index];
         }
 
         @Override
-        public boolean test( int key )
-        {
-            for ( int k : keys )
-            {
-                if ( k == key )
-                {
+        public boolean test(int key) {
+            for (int k : keys) {
+                if (k == key) {
                     return true;
                 }
             }
@@ -228,46 +199,38 @@ public abstract class PropertySelection
         }
 
         @Override
-        public String toString()
-        {
-            return super.toString() + "[" + Arrays.toString( keys ) + "]";
+        public String toString() {
+            return super.toString() + "[" + Arrays.toString(keys) + "]";
         }
     }
 
-    public static final PropertySelection ALL_PROPERTIES = allProperties( false );
-    public static final PropertySelection ALL_PROPERTY_KEYS = allProperties( true );
+    public static final PropertySelection ALL_PROPERTIES = allProperties(false);
+    public static final PropertySelection ALL_PROPERTY_KEYS = allProperties(true);
 
-    private static PropertySelection allProperties( boolean keysOnly )
-    {
-        return new PropertySelection( keysOnly )
-        {
+    private static PropertySelection allProperties(boolean keysOnly) {
+        return new PropertySelection(keysOnly) {
             @Override
-            public boolean isLimited()
-            {
+            public boolean isLimited() {
                 return false;
             }
 
             @Override
-            public int numberOfKeys()
-            {
+            public int numberOfKeys() {
                 return 1;
             }
 
             @Override
-            public int key( int index )
-            {
+            public int key(int index) {
                 return ANY_PROPERTY_KEY;
             }
 
             @Override
-            public boolean test( int key )
-            {
+            public boolean test(int key) {
                 return true;
             }
 
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return super.toString() + "[*]";
             }
         };

@@ -26,37 +26,36 @@ import org.neo4j.annotations.api.PublicApi;
  * Listeners are invoked on the same thread as event handling itself as result any blocking operation in the listener will block execution of the event.
  */
 @PublicApi
-public interface DatabaseEventListener
-{
+public interface DatabaseEventListener {
     /**
      * This method is invoked after start of a specific database. Database is completely operational on the moment of notification.
      * @param eventContext context of the event, can be used to get metadata.
      */
-    void databaseStart( DatabaseEventContext eventContext );
+    void databaseStart(DatabaseEventContext eventContext);
 
     /**
      * This method is invoked before shutdown process of a specific database. Database is still completely operational on the moment of notification.
      * @param eventContext context of the event, can be used to get metadata.
      */
-    void databaseShutdown( DatabaseEventContext eventContext );
+    void databaseShutdown(DatabaseEventContext eventContext);
 
     /**
      * This method is invoked when the particular database enters a state from which it cannot recover and continue.
      * @param eventContext context of the event, can be used to get metadata.
      */
-    void databasePanic( DatabaseEventContext eventContext );
+    void databasePanic(DatabaseEventContext eventContext);
 
     /**
      * This method is invoked when a new database is created. This is called before {@link #databaseStart(DatabaseEventContext)} and before any database
      * components are available.
      * @param eventContext context of the event, can be used to get metadata.
      */
-    void databaseCreate( DatabaseEventContext eventContext );
+    void databaseCreate(DatabaseEventContext eventContext);
 
     /**
      * This method is invoked after the database is dropped. This is intended to be used when cleaning up database specific files after the database
      * is deleted by the user.
      * @param eventContext context of the event, can be used to get metadata.
      */
-    void databaseDrop( DatabaseEventContext eventContext );
+    void databaseDrop(DatabaseEventContext eventContext);
 }

@@ -24,25 +24,28 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.OrderToLeverageWithAliases
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object aggregation {
+
   /**
    * @param interestingOrderToReportForLimit the interesting order to report when planning a LIMIT for aggregation of this query part
    * @param previousInterestingOrder         the interesting order of the previous query part, if there was a previous part
    */
-  def apply(plan: LogicalPlan,
-            aggregation: AggregatingQueryProjection,
-            interestingOrderToReportForLimit: InterestingOrder,
-            previousInterestingOrder: Option[InterestingOrder],
-            context: LogicalPlanningContext): LogicalPlan = {
+  def apply(
+    plan: LogicalPlan,
+    aggregation: AggregatingQueryProjection,
+    interestingOrderToReportForLimit: InterestingOrder,
+    previousInterestingOrder: Option[InterestingOrder],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
 
     val solver = PatternExpressionSolver.solverFor(plan, context)
-    val groupingExpressionsMap = aggregation.groupingExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
-    val aggregations = aggregation.aggregationExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val groupingExpressionsMap = aggregation.groupingExpressions.map { case (k, v) => (k, solver.solve(v, Some(k))) }
+    val aggregations = aggregation.aggregationExpressions.map { case (k, v) => (k, solver.solve(v, Some(k))) }
     val rewrittenPlan = solver.rewrittenPlan()
 
     val projectionMapForLimit: Map[String, Expression] =
@@ -54,19 +57,19 @@ object aggregation {
         def minFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
             case Some(Asc(providedExpr, _)) => providedExpr == expr
-            case _ => false
+            case _                          => false
           }
         }
         def maxFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
             case Some(Desc(providedExpr, _)) => providedExpr == expr
-            case _ => false
+            case _                           => false
           }
         }
         val shouldPlanLimit = AggregationHelper.checkMinOrMax(value, minFunc, maxFunc, false)
 
         if (shouldPlanLimit)
-        //.head works since min and max always have only one argument
+          // .head works since min and max always have only one argument
           Map(key -> value.arguments.head)
         else
           Map.empty
@@ -91,7 +94,8 @@ object aggregation {
       )
     } else {
       val inputProvidedOrder = context.planningAttributes.providedOrders(plan.id)
-      val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) = leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
+      val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) =
+        leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
 
       if (orderToLeverage.isEmpty) {
         context.logicalPlanProducer.planAggregation(
@@ -101,7 +105,8 @@ object aggregation {
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
           previousInterestingOrder,
-          context)
+          context
+        )
       } else {
         context.logicalPlanProducer.planOrderedAggregation(
           rewrittenPlan,
@@ -110,7 +115,8 @@ object aggregation {
           orderToLeverage,
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
-          context)
+          context
+        )
       }
     }
   }

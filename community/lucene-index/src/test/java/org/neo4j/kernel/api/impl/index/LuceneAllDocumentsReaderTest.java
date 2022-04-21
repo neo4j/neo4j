@@ -19,101 +19,88 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.IndexReader;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
-import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
-import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class LuceneAllDocumentsReaderTest
-{
-    private final PartitionSearcher partitionSearcher1 = createPartitionSearcher( 1, 0, 2 );
-    private final PartitionSearcher partitionSearcher2 = createPartitionSearcher( 2, 1, 2 );
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.IndexReader;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
+import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 
-    LuceneAllDocumentsReaderTest() throws IOException
-    {
-    }
+class LuceneAllDocumentsReaderTest {
+    private final PartitionSearcher partitionSearcher1 = createPartitionSearcher(1, 0, 2);
+    private final PartitionSearcher partitionSearcher2 = createPartitionSearcher(2, 1, 2);
+
+    LuceneAllDocumentsReaderTest() throws IOException {}
 
     @Test
-    void allDocumentsMaxCount()
-    {
+    void allDocumentsMaxCount() {
         LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
-        assertEquals( 3, allDocumentsReader.maxCount());
+        assertEquals(3, allDocumentsReader.maxCount());
     }
 
     @Test
-    void closeCorrespondingSearcherOnClose() throws IOException
-    {
+    void closeCorrespondingSearcherOnClose() throws IOException {
         LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
         allDocumentsReader.close();
 
-        verify( partitionSearcher1 ).close();
-        verify( partitionSearcher2 ).close();
+        verify(partitionSearcher1).close();
+        verify(partitionSearcher2).close();
     }
 
     @Test
-    void readAllDocuments()
-    {
+    void readAllDocuments() {
         LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
-        List<Document> documents = Iterators.asList( allDocumentsReader.iterator() );
+        List<Document> documents = Iterators.asList(allDocumentsReader.iterator());
 
-        assertEquals( 3, documents.size(), "Should have 1 document from first partition and 2 from second one." );
-        assertEquals( "1", documents.get( 0 ).getField( "value" ).stringValue() );
-        assertEquals( "3", documents.get( 1 ).getField( "value" ).stringValue() );
-        assertEquals( "4", documents.get( 2 ).getField( "value" ).stringValue() );
+        assertEquals(3, documents.size(), "Should have 1 document from first partition and 2 from second one.");
+        assertEquals("1", documents.get(0).getField("value").stringValue());
+        assertEquals("3", documents.get(1).getField("value").stringValue());
+        assertEquals("4", documents.get(2).getField("value").stringValue());
     }
 
-    private LuceneAllDocumentsReader createAllDocumentsReader()
-    {
-        return new LuceneAllDocumentsReader( createPartitionReaders() );
+    private LuceneAllDocumentsReader createAllDocumentsReader() {
+        return new LuceneAllDocumentsReader(createPartitionReaders());
     }
 
-    private List<LucenePartitionAllDocumentsReader> createPartitionReaders()
-    {
-        LucenePartitionAllDocumentsReader reader1 = new LucenePartitionAllDocumentsReader( partitionSearcher1 );
-        LucenePartitionAllDocumentsReader reader2 = new LucenePartitionAllDocumentsReader( partitionSearcher2 );
+    private List<LucenePartitionAllDocumentsReader> createPartitionReaders() {
+        LucenePartitionAllDocumentsReader reader1 = new LucenePartitionAllDocumentsReader(partitionSearcher1);
+        LucenePartitionAllDocumentsReader reader2 = new LucenePartitionAllDocumentsReader(partitionSearcher2);
         return Arrays.asList(reader1, reader2);
     }
 
-    private static PartitionSearcher createPartitionSearcher( int maxDoc, int partition, int maxSize )
-            throws IOException
-    {
-        PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
-        Neo4jIndexSearcher indexSearcher = mock( Neo4jIndexSearcher.class );
-        IndexReader indexReader = mock( IndexReader.class );
+    private static PartitionSearcher createPartitionSearcher(int maxDoc, int partition, int maxSize)
+            throws IOException {
+        PartitionSearcher partitionSearcher = mock(PartitionSearcher.class);
+        Neo4jIndexSearcher indexSearcher = mock(Neo4jIndexSearcher.class);
+        IndexReader indexReader = mock(IndexReader.class);
 
-        when( partitionSearcher.getIndexSearcher() ).thenReturn( indexSearcher );
-        when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
-        when( indexReader.maxDoc() ).thenReturn( maxDoc );
+        when(partitionSearcher.getIndexSearcher()).thenReturn(indexSearcher);
+        when(indexSearcher.getIndexReader()).thenReturn(indexReader);
+        when(indexReader.maxDoc()).thenReturn(maxDoc);
 
-        when( indexSearcher.doc( 0 ) ).thenReturn( createDocument( uniqueDocValue( 1, partition, maxSize ) ) );
-        when( indexSearcher.doc( 1 ) ).thenReturn( createDocument( uniqueDocValue( 2, partition, maxSize ) ) );
-        when( indexSearcher.doc( 2 ) ).thenReturn( createDocument( uniqueDocValue( 3, partition, maxSize ) ) );
+        when(indexSearcher.doc(0)).thenReturn(createDocument(uniqueDocValue(1, partition, maxSize)));
+        when(indexSearcher.doc(1)).thenReturn(createDocument(uniqueDocValue(2, partition, maxSize)));
+        when(indexSearcher.doc(2)).thenReturn(createDocument(uniqueDocValue(3, partition, maxSize)));
 
         return partitionSearcher;
     }
 
-    private static String uniqueDocValue( int value, int partition, int maxSize )
-    {
-        return String.valueOf( value + (partition * maxSize) );
+    private static String uniqueDocValue(int value, int partition, int maxSize) {
+        return String.valueOf(value + (partition * maxSize));
     }
 
-    private static Document createDocument( String value )
-    {
+    private static Document createDocument(String value) {
         Document document = new Document();
-        document.add( new StoredField( "value", value ) );
+        document.add(new StoredField("value", value));
         return document;
     }
 }

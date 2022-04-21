@@ -21,7 +21,6 @@ package org.neo4j.snapshot;
 
 import java.io.PrintStream;
 import java.util.function.LongSupplier;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -33,8 +32,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 /**
  * A {@link VersionContext} that can be injected in tests to verify the behavior of {@link SnapshotExecutionEngine}.
  */
-public class TestVersionContext extends TransactionVersionContext
-{
+public class TestVersionContext extends TransactionVersionContext {
     private boolean wrongLastClosedTxId = true;
     private int numIsDirtyCalls;
     private int additionalAttempts;
@@ -43,102 +41,84 @@ public class TestVersionContext extends TransactionVersionContext
     private Exception additionalAttemptsCall;
     private final String databaseName;
 
-    public TestVersionContext( LongSupplier transactionIdSupplier, String databaseName )
-    {
-        super( transactionIdSupplier );
+    public TestVersionContext(LongSupplier transactionIdSupplier, String databaseName) {
+        super(transactionIdSupplier);
         this.databaseName = databaseName;
     }
 
     @Override
-    public long lastClosedTransactionId()
-    {
+    public long lastClosedTransactionId() {
         return wrongLastClosedTxId ? TransactionIdStore.BASE_TX_ID : super.lastClosedTransactionId();
     }
 
     @Override
-    public void markAsDirty()
-    {
+    public void markAsDirty() {
         super.markAsDirty();
-        if ( !stayDirty )
-        {
+        if (!stayDirty) {
             wrongLastClosedTxId = false;
         }
-        lastMarkAsDirtyCall = new Exception( "markAsDirty" );
+        lastMarkAsDirtyCall = new Exception("markAsDirty");
     }
 
     @Override
-    public boolean isDirty()
-    {
+    public boolean isDirty() {
         numIsDirtyCalls++;
         boolean dirty = super.isDirty();
-        if ( dirty )
-        {
+        if (dirty) {
             additionalAttempts++;
-            additionalAttemptsCall = new Exception( "isDirty" );
+            additionalAttemptsCall = new Exception("isDirty");
         }
         return dirty;
     }
 
-    public void printDirtyCalls( PrintStream printStream )
-    {
-        if ( lastMarkAsDirtyCall != null )
-        {
-            lastMarkAsDirtyCall.printStackTrace( printStream );
-        }
-        else
-        {
-            printStream.println( "No last markAsDirty call" );
+    public void printDirtyCalls(PrintStream printStream) {
+        if (lastMarkAsDirtyCall != null) {
+            lastMarkAsDirtyCall.printStackTrace(printStream);
+        } else {
+            printStream.println("No last markAsDirty call");
         }
 
-        if ( additionalAttemptsCall != null )
-        {
-            additionalAttemptsCall.printStackTrace( printStream );
-        }
-        else
-        {
-            printStream.println( "No additionalAttempts call" );
+        if (additionalAttemptsCall != null) {
+            additionalAttemptsCall.printStackTrace(printStream);
+        } else {
+            printStream.println("No additionalAttempts call");
         }
     }
 
-    public int getNumIsDirtyCalls()
-    {
+    public int getNumIsDirtyCalls() {
         return numIsDirtyCalls;
     }
 
-    public int getAdditionalAttempts()
-    {
+    public int getAdditionalAttempts() {
         return additionalAttempts;
     }
 
-    public String getDatabaseName()
-    {
+    public String getDatabaseName() {
         return databaseName;
     }
 
-    public void setWrongLastClosedTxId( boolean wrongLastClosedTxId )
-    {
+    public void setWrongLastClosedTxId(boolean wrongLastClosedTxId) {
         this.wrongLastClosedTxId = wrongLastClosedTxId;
     }
 
-    public void stayDirty( boolean stayDirty )
-    {
+    public void stayDirty(boolean stayDirty) {
         this.stayDirty = stayDirty;
     }
 
-    public static TestVersionContext testCursorContext( LongSupplier idSupplier, String databaseName )
-    {
-        return new TestVersionContext( idSupplier, databaseName );
+    public static TestVersionContext testCursorContext(LongSupplier idSupplier, String databaseName) {
+        return new TestVersionContext(idSupplier, databaseName);
     }
 
-    public static TestVersionContext testCursorContext( DatabaseManagementService managementService, String databaseName )
-    {
-        TransactionIdStore transactionIdStore = getTransactionIdStore( managementService, databaseName );
-        return new TestVersionContext( transactionIdStore::getLastClosedTransactionId, databaseName );
+    public static TestVersionContext testCursorContext(
+            DatabaseManagementService managementService, String databaseName) {
+        TransactionIdStore transactionIdStore = getTransactionIdStore(managementService, databaseName);
+        return new TestVersionContext(transactionIdStore::getLastClosedTransactionId, databaseName);
     }
 
-    private static TransactionIdStore getTransactionIdStore( DatabaseManagementService managementService, String databaseName )
-    {
-        DependencyResolver dependencyResolver = ((GraphDatabaseAPI) managementService.database( databaseName )).getDependencyResolver();
-        return dependencyResolver.resolveDependency( TransactionIdStore.class );
+    private static TransactionIdStore getTransactionIdStore(
+            DatabaseManagementService managementService, String databaseName) {
+        DependencyResolver dependencyResolver =
+                ((GraphDatabaseAPI) managementService.database(databaseName)).getDependencyResolver();
+        return dependencyResolver.resolveDependency(TransactionIdStore.class);
     }
 }

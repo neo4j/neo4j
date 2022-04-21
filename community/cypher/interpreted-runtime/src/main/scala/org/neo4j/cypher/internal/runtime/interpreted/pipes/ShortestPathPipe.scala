@@ -35,22 +35,23 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
  */
-case class ShortestPathPipe(source: Pipe,
-                            shortestPathExpression: ShortestPathExpression)
-                           (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class ShortestPathPipe(source: Pipe, shortestPathExpression: ShortestPathExpression)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
   private val shortestPathCommand = shortestPathExpression.shortestPathPattern
   private def pathName = shortestPathCommand.pathName
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
     input.flatMap(ctx => {
       val result = shortestPathExpression(ctx, state, memoryTracker) match {
-        case in: ListValue => in
+        case in: ListValue             => in
         case v if v eq Values.NO_VALUE => VirtualValues.EMPTY_LIST
-        case path: VirtualPathValue => VirtualValues.list(path)
+        case path: VirtualPathValue    => VirtualValues.list(path)
       }
 
       val iterator = shortestPathCommand.relIterator match {

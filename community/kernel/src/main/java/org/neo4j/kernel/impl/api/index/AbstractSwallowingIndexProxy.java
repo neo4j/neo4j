@@ -27,72 +27,57 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 
-public abstract class AbstractSwallowingIndexProxy implements IndexProxy
-{
+public abstract class AbstractSwallowingIndexProxy implements IndexProxy {
     private final IndexProxyStrategy indexProxyStrategy;
     private final IndexPopulationFailure populationFailure;
 
-    AbstractSwallowingIndexProxy( IndexProxyStrategy indexProxyStrategy, IndexPopulationFailure populationFailure )
-    {
+    AbstractSwallowingIndexProxy(IndexProxyStrategy indexProxyStrategy, IndexPopulationFailure populationFailure) {
         this.indexProxyStrategy = indexProxyStrategy;
         this.populationFailure = populationFailure;
     }
 
     @Override
-    public IndexPopulationFailure getPopulationFailure()
-    {
+    public IndexPopulationFailure getPopulationFailure() {
         return populationFailure;
     }
 
     @Override
-    public PopulationProgress getIndexPopulationProgress()
-    {
+    public PopulationProgress getIndexPopulationProgress() {
         return PopulationProgress.NONE;
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         String message = "Unable to start index, it is in a " + getState().name() + " state.";
-        throw new UnsupportedOperationException( message + ", caused by: " + getPopulationFailure() );
+        throw new UnsupportedOperationException(message + ", caused by: " + getPopulationFailure());
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
+    public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
         return SwallowingIndexUpdater.INSTANCE;
     }
 
     @Override
-    public void force( CursorContext cursorContext )
-    {
-    }
+    public void force(CursorContext cursorContext) {}
 
     @Override
-    public void refresh()
-    {
-    }
+    public void refresh() {}
 
     @Override
-    public IndexDescriptor getDescriptor()
-    {
+    public IndexDescriptor getDescriptor() {
         return indexProxyStrategy.getIndexDescriptor();
     }
 
     @Override
-    public void close( CursorContext cursorContext )
-    {
-    }
+    public void close(CursorContext cursorContext) {}
 
     @Override
-    public ValueIndexReader newValueReader()
-    {
+    public ValueIndexReader newValueReader() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public TokenIndexReader newTokenReader() throws IndexNotFoundKernelException
-    {
+    public TokenIndexReader newTokenReader() throws IndexNotFoundKernelException {
         throw new UnsupportedOperationException();
     }
 }

@@ -19,16 +19,6 @@
  */
 package org.neo4j.dbms.database.readonly;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-
-import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
-import org.neo4j.kernel.database.DatabaseIdFactory;
-import org.neo4j.kernel.database.NamedDatabaseId;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,72 +31,75 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 
-class DatabaseReadOnlyCheckerTest
-{
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
+import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.NamedDatabaseId;
+
+class DatabaseReadOnlyCheckerTest {
     @Test
-    void readOnlyCheckerThrowsExceptionOnCheck()
-    {
-        var e = assertThrows( Exception.class, () -> readOnly().check() );
-        assertThat( e ).hasRootCauseInstanceOf( WriteOnReadOnlyAccessDbException.class );
+    void readOnlyCheckerThrowsExceptionOnCheck() {
+        var e = assertThrows(Exception.class, () -> readOnly().check());
+        assertThat(e).hasRootCauseInstanceOf(WriteOnReadOnlyAccessDbException.class);
     }
 
     @Test
-    void writeOnlyDoesNotThrowExceptionOnCheck()
-    {
-        assertDoesNotThrow( () -> writable().check() );
+    void writeOnlyDoesNotThrowExceptionOnCheck() {
+        assertDoesNotThrow(() -> writable().check());
     }
 
     @Test
-    void databaseCheckersShouldReflectUpdatesToGlobalChecker()
-    {
-        var foo = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
-        var bar = DatabaseIdFactory.from( "bar", UUID.randomUUID() );
+    void databaseCheckersShouldReflectUpdatesToGlobalChecker() {
+        var foo = DatabaseIdFactory.from("foo", UUID.randomUUID());
+        var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var databases = new HashSet<NamedDatabaseId>();
-        databases.add( foo );
-        var globalChecker = new ReadOnlyDatabases( () -> {
-            var snapshot = Set.copyOf( databases );
+        databases.add(foo);
+        var globalChecker = new ReadOnlyDatabases(() -> {
+            var snapshot = Set.copyOf(databases);
             return snapshot::contains;
-        } );
-        var fooChecker = globalChecker.forDatabase( foo );
-        var barChecker = globalChecker.forDatabase( bar );
+        });
+        var fooChecker = globalChecker.forDatabase(foo);
+        var barChecker = globalChecker.forDatabase(bar);
 
-        assertTrue( fooChecker.isReadOnly() );
-        assertFalse( barChecker.isReadOnly() );
+        assertTrue(fooChecker.isReadOnly());
+        assertFalse(barChecker.isReadOnly());
 
-        databases.add( bar );
+        databases.add(bar);
         globalChecker.refresh();
-        assertTrue( barChecker.isReadOnly() );
+        assertTrue(barChecker.isReadOnly());
     }
 
     @Test
-    void databaseCheckerShouldCacheLookupsFromGlobalChecker()
-    {
-        var foo = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
-        var bar = DatabaseIdFactory.from( "bar", UUID.randomUUID() );
+    void databaseCheckerShouldCacheLookupsFromGlobalChecker() {
+        var foo = DatabaseIdFactory.from("foo", UUID.randomUUID());
+        var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var databases = new HashSet<NamedDatabaseId>();
-        databases.add( foo );
-        var globalChecker = spy( new ReadOnlyDatabases( () -> {
-            var snapshot = Set.copyOf( databases );
+        databases.add(foo);
+        var globalChecker = spy(new ReadOnlyDatabases(() -> {
+            var snapshot = Set.copyOf(databases);
             return snapshot::contains;
-        } ) );
-        var fooChecker = globalChecker.forDatabase( foo );
-        var barChecker = globalChecker.forDatabase( bar );
+        }));
+        var fooChecker = globalChecker.forDatabase(foo);
+        var barChecker = globalChecker.forDatabase(bar);
 
         // when
-        assertTrue( fooChecker.isReadOnly() );
-        assertTrue( fooChecker.isReadOnly() );
+        assertTrue(fooChecker.isReadOnly());
+        assertTrue(fooChecker.isReadOnly());
 
         // then
-        verify( globalChecker, atMostOnce() ).isReadOnly( foo );
+        verify(globalChecker, atMostOnce()).isReadOnly(foo);
 
         // when
-        databases.add( bar );
+        databases.add(bar);
         globalChecker.refresh();
 
-        assertTrue( barChecker.isReadOnly() );
-        assertTrue( fooChecker.isReadOnly() );
+        assertTrue(barChecker.isReadOnly());
+        assertTrue(fooChecker.isReadOnly());
 
         // then
-        verify( globalChecker, times( 2 ) ).isReadOnly( foo );
+        verify(globalChecker, times(2)).isReadOnly(foo);
     }
 }

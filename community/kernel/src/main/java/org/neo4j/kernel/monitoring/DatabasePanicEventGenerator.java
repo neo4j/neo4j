@@ -22,20 +22,17 @@ package org.neo4j.kernel.monitoring;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.monitoring.PanicEventGenerator;
 
-public class DatabasePanicEventGenerator implements PanicEventGenerator
-{
+public class DatabasePanicEventGenerator implements PanicEventGenerator {
     private final DatabaseEventListeners databaseEventListeners;
     private final NamedDatabaseId databaseId;
 
-    public DatabasePanicEventGenerator( DatabaseEventListeners databaseEventListeners, NamedDatabaseId databaseId )
-    {
+    public DatabasePanicEventGenerator(DatabaseEventListeners databaseEventListeners, NamedDatabaseId databaseId) {
         this.databaseEventListeners = databaseEventListeners;
         this.databaseId = databaseId;
     }
 
     @Override
-    public void panic( Throwable causeOfPanic )
-    {
-        databaseEventListeners.databasePanic( databaseId, causeOfPanic );
+    public void panic(Throwable causeOfPanic) {
+        databaseEventListeners.databasePanic(databaseId, causeOfPanic);
     }
 }

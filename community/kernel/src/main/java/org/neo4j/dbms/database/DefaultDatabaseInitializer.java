@@ -24,18 +24,15 @@ import org.neo4j.kernel.lifecycle.SafeLifecycle;
 /**
  * Run after {@link SystemGraphInitializer} but before registering extensions
  */
-public class DefaultDatabaseInitializer extends SafeLifecycle
-{
+public class DefaultDatabaseInitializer extends SafeLifecycle {
     private final DatabaseManager<?> databaseManager;
 
-    public DefaultDatabaseInitializer( DatabaseManager<?> databaseManager )
-    {
+    public DefaultDatabaseInitializer(DatabaseManager<?> databaseManager) {
         this.databaseManager = databaseManager;
     }
 
     @Override
-    public void start0() throws Exception
-    {
+    public void start0() throws Exception {
         databaseManager.initialiseDefaultDatabase();
     }
 }

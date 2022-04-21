@@ -19,10 +19,12 @@
  */
 package org.neo4j.security;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 import java.util.Collections;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.InvalidArgumentException;
@@ -38,85 +40,77 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
-
-@DbmsExtension( configurationCallback = "configure" )
-class BasicAuthIT
-{
+@DbmsExtension(configurationCallback = "configure")
+class BasicAuthIT {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private DatabaseManagementService managementService;
+
     @Inject
     private DbmsController dbmsController;
+
     @Inject
     private AuthManager authManager;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseSettings.auth_enabled, false );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.auth_enabled, false);
     }
 
     @Test
-    void shouldCreateUserWithAuthDisabled() throws Exception
-    {
+    void shouldCreateUserWithAuthDisabled() throws Exception {
         // GIVEN
-        var systemDatabase = managementService.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
-        try ( Transaction tx = systemDatabase.beginTx() )
-        {
+        var systemDatabase = managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
+        try (Transaction tx = systemDatabase.beginTx()) {
             // WHEN
-            tx.execute( "CREATE USER foo SET PASSWORD 'bar'" ).close();
+            tx.execute("CREATE USER foo SET PASSWORD 'bar'").close();
             tx.commit();
         }
-        dbmsController.restartDbms( builder -> builder.setConfig( GraphDatabaseSettings.auth_enabled, true ) );
+        dbmsController.restartDbms(builder -> builder.setConfig(GraphDatabaseSettings.auth_enabled, true));
 
         // THEN
-        LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "wrong" ), EMBEDDED_CONNECTION );
-        assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.FAILURE );
-        loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "bar" ), EMBEDDED_CONNECTION );
-        assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
+        LoginContext loginContext = authManager.login(AuthToken.newBasicAuthToken("foo", "wrong"), EMBEDDED_CONNECTION);
+        assertThat(loginContext.subject().getAuthenticationResult()).isEqualTo(AuthenticationResult.FAILURE);
+        loginContext = authManager.login(AuthToken.newBasicAuthToken("foo", "bar"), EMBEDDED_CONNECTION);
+        assertThat(loginContext.subject().getAuthenticationResult())
+                .isEqualTo(AuthenticationResult.PASSWORD_CHANGE_REQUIRED);
     }
 
     @Test
-    void shouldFailImpersonate() throws Exception
-    {
+    void shouldFailImpersonate() throws Exception {
         // GIVEN
-        var systemDatabase = managementService.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
-        try ( Transaction tx = systemDatabase.beginTx() )
-        {
-            tx.execute( "CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED" ).close();
-            tx.execute( "CREATE USER baz SET PASSWORD 'bar'" ).close();
+        var systemDatabase = managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
+        try (Transaction tx = systemDatabase.beginTx()) {
+            tx.execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED").close();
+            tx.execute("CREATE USER baz SET PASSWORD 'bar'").close();
             tx.commit();
         }
-        dbmsController.restartDbms( builder -> builder.setConfig( GraphDatabaseSettings.auth_enabled, true ) );
+        dbmsController.restartDbms(builder -> builder.setConfig(GraphDatabaseSettings.auth_enabled, true));
 
         // WHEN...THEN
-        LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "bar" ), EMBEDDED_CONNECTION );
-        assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.SUCCESS );
-        assertThatThrownBy( () -> authManager.impersonate( loginContext, "baz" ) )
-                .isInstanceOf( InvalidArgumentException.class )
-                .hasMessage( "Impersonation is not supported in community edition." );
+        LoginContext loginContext = authManager.login(AuthToken.newBasicAuthToken("foo", "bar"), EMBEDDED_CONNECTION);
+        assertThat(loginContext.subject().getAuthenticationResult()).isEqualTo(AuthenticationResult.SUCCESS);
+        assertThatThrownBy(() -> authManager.impersonate(loginContext, "baz"))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessage("Impersonation is not supported in community edition.");
     }
 
     @Test
-    void shouldFailImpersonateWithAuthDisabled() throws Exception
-    {
+    void shouldFailImpersonateWithAuthDisabled() throws Exception {
         // GIVEN
-        var systemDatabase = managementService.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
-        try ( Transaction tx = systemDatabase.beginTx() )
-        {
-            tx.execute( "CREATE USER foo SET PASSWORD 'bar'" ).close();
+        var systemDatabase = managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
+        try (Transaction tx = systemDatabase.beginTx()) {
+            tx.execute("CREATE USER foo SET PASSWORD 'bar'").close();
             tx.commit();
         }
 
         // WHEN...THEN
-        LoginContext loginContext = authManager.login( Collections.emptyMap(), EMBEDDED_CONNECTION );
-        assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.SUCCESS );
-        assertThatThrownBy( () -> authManager.impersonate( loginContext, "foo" ) )
-                .isInstanceOf( InvalidArgumentException.class )
-                .hasMessage( "Impersonation is not supported with auth disabled." );
+        LoginContext loginContext = authManager.login(Collections.emptyMap(), EMBEDDED_CONNECTION);
+        assertThat(loginContext.subject().getAuthenticationResult()).isEqualTo(AuthenticationResult.SUCCESS);
+        assertThatThrownBy(() -> authManager.impersonate(loginContext, "foo"))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessage("Impersonation is not supported with auth disabled.");
     }
 }

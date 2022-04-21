@@ -23,7 +23,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
@@ -45,17 +44,19 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public abstract class AbstractTransactionStateMachineSPI implements TransactionStateMachineSPI
-{
+public abstract class AbstractTransactionStateMachineSPI implements TransactionStateMachineSPI {
     private final BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI;
     private final Clock clock;
     private final BoltChannel boltChannel;
     private final StatementProcessorReleaseManager resourceReleaseManager;
     private final String transactionId;
 
-    public AbstractTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
-                                               StatementProcessorReleaseManager resourceReleaseManager, String transactionId )
-    {
+    public AbstractTransactionStateMachineSPI(
+            BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI,
+            BoltChannel boltChannel,
+            SystemNanoClock clock,
+            StatementProcessorReleaseManager resourceReleaseManager,
+            String transactionId) {
         this.boltGraphDatabaseServiceSPI = boltGraphDatabaseServiceSPI;
         this.boltChannel = boltChannel;
         this.clock = clock;
@@ -64,95 +65,92 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     }
 
     @Override
-    public Bookmark newestBookmark( BoltTransaction tx )
-    {
+    public Bookmark newestBookmark(BoltTransaction tx) {
         var bookmarkMetadata = tx.getBookmarkMetadata();
-        return bookmarkMetadata.toBookmark( ( txId, dbId ) -> new BookmarkWithPrefix( txId ) );
+        return bookmarkMetadata.toBookmark((txId, dbId) -> new BookmarkWithPrefix(txId));
     }
 
     @Override
-    public BoltTransaction beginTransaction( KernelTransaction.Type transactionType, LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout,
-                                             AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext )
-    {
-        return boltGraphDatabaseServiceSPI.beginTransaction( transactionType, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata,
-                                                             routingContext );
+    public BoltTransaction beginTransaction(
+            KernelTransaction.Type transactionType,
+            LoginContext loginContext,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            RoutingContext routingContext) {
+        return boltGraphDatabaseServiceSPI.beginTransaction(
+                transactionType,
+                loginContext,
+                boltChannel.info(),
+                bookmarks,
+                txTimeout,
+                accessMode,
+                txMetadata,
+                routingContext);
     }
 
     @Override
-    public BoltResultHandle executeQuery( BoltQueryExecutor boltQueryExecutor, String statement, MapValue params )
-    {
-        return newBoltResultHandle( statement, params, boltQueryExecutor );
+    public BoltResultHandle executeQuery(BoltQueryExecutor boltQueryExecutor, String statement, MapValue params) {
+        return newBoltResultHandle(statement, params, boltQueryExecutor);
     }
 
     @Override
-    public boolean supportsNestedStatementsInTransaction()
-    {
+    public boolean supportsNestedStatementsInTransaction() {
         return false;
     }
 
     @Override
-    public void transactionClosed()
-    {
+    public void transactionClosed() {
         boltGraphDatabaseServiceSPI.freeTransaction();
-        resourceReleaseManager.releaseStatementProcessor( transactionId );
+        resourceReleaseManager.releaseStatementProcessor(transactionId);
     }
 
-    protected abstract BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor );
+    protected abstract BoltResultHandle newBoltResultHandle(
+            String statement, MapValue params, BoltQueryExecutor boltQueryExecutor);
 
-    public abstract class AbstractBoltResultHandle implements BoltResultHandle
-    {
+    public abstract class AbstractBoltResultHandle implements BoltResultHandle {
         private final String statement;
         private final MapValue params;
         private final BoltQueryExecutor boltQueryExecutor;
         private BoltQueryExecution boltQueryExecution;
 
-        public AbstractBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
-        {
+        public AbstractBoltResultHandle(String statement, MapValue params, BoltQueryExecutor boltQueryExecutor) {
             this.statement = statement;
             this.params = params;
             this.boltQueryExecutor = boltQueryExecutor;
         }
 
         @Override
-        public BoltResult start() throws KernelException
-        {
-            try
-            {
+        public BoltResult start() throws KernelException {
+            try {
                 BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
-                boltQueryExecution = boltQueryExecutor.executeQuery( statement, params, true, subscriber );
+                boltQueryExecution = boltQueryExecutor.executeQuery(statement, params, true, subscriber);
                 QueryExecution result = boltQueryExecution.getQueryExecution();
                 subscriber.assertSucceeded();
-                return newBoltResult( result, subscriber, clock );
-            }
-            catch ( KernelException e )
-            {
-                close( false );
-                throw new QueryExecutionKernelException( e );
-            }
-            catch ( Throwable e )
-            {
-                close( false );
+                return newBoltResult(result, subscriber, clock);
+            } catch (KernelException e) {
+                close(false);
+                throw new QueryExecutionKernelException(e);
+            } catch (Throwable e) {
+                close(false);
                 throw e;
             }
         }
 
-        protected abstract BoltResult newBoltResult( QueryExecution result,
-                BoltAdapterSubscriber subscriber, Clock clock );
+        protected abstract BoltResult newBoltResult(
+                QueryExecution result, BoltAdapterSubscriber subscriber, Clock clock);
 
         @Override
-        public void close( boolean success )
-        {
-            if ( boltQueryExecution != null )
-            {
+        public void close(boolean success) {
+            if (boltQueryExecution != null) {
                 boltQueryExecution.close();
             }
         }
 
         @Override
-        public void terminate()
-        {
-            if ( boltQueryExecution != null )
-            {
+        public void terminate() {
+            if (boltQueryExecution != null) {
                 boltQueryExecution.terminate();
             }
         }

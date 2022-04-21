@@ -22,43 +22,43 @@ package org.neo4j.bolt.v44.messaging.request;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 
-public class RunMessage extends org.neo4j.bolt.v4.messaging.RunMessage
-{
+public class RunMessage extends org.neo4j.bolt.v4.messaging.RunMessage {
     private final String impersonatedUser;
 
-    public RunMessage( String statement )
-    {
-        super( statement );
+    public RunMessage(String statement) {
+        super(statement);
         this.impersonatedUser = null;
     }
 
-    public RunMessage( String statement, MapValue params )
-    {
-        super( statement, params );
+    public RunMessage(String statement, MapValue params) {
+        super(statement, params);
         this.impersonatedUser = null;
     }
 
-    public RunMessage( String statement, MapValue params, MapValue meta )
-    {
-        super( statement, params, meta );
+    public RunMessage(String statement, MapValue params, MapValue meta) {
+        super(statement, params, meta);
         this.impersonatedUser = null;
     }
 
-    public RunMessage( String statement, MapValue params, MapValue meta,
-                       List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
-                       Map<String,Object> txMetadata, String databaseName, String impersonatedUser )
-    {
-        super( statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName );
+    public RunMessage(
+            String statement,
+            MapValue params,
+            MapValue meta,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            String databaseName,
+            String impersonatedUser) {
+        super(statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName);
         this.impersonatedUser = impersonatedUser;
     }
 
-    public String impersonatedUser()
-    {
+    public String impersonatedUser() {
         return impersonatedUser;
     }
 }

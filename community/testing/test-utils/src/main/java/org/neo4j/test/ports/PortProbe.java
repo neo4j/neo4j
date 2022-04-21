@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.ports;
 
-public interface PortProbe
-{
-    boolean isOccupied( int port );
+public interface PortProbe {
+    boolean isOccupied(int port);
 }

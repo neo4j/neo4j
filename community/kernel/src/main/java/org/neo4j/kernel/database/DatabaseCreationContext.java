@@ -21,7 +21,6 @@ package org.neo4j.kernel.database;
 
 import java.util.function.Function;
 import java.util.function.LongFunction;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
@@ -64,8 +63,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
-public interface DatabaseCreationContext
-{
+public interface DatabaseCreationContext {
     NamedDatabaseId getNamedDatabaseId();
 
     DatabaseLayout getDatabaseLayout();
@@ -122,7 +120,7 @@ public interface DatabaseCreationContext
 
     Iterable<ExtensionFactory<?>> getExtensionFactories();
 
-    Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory();
+    Function<DatabaseLayout, DatabaseLayoutWatcher> getWatcherServiceFactory();
 
     QueryEngineProvider getEngineProvider();
 
@@ -148,10 +146,16 @@ public interface DatabaseCreationContext
 
     ExternalIdReuseConditionProvider externalIdReuseConditionProvider();
 
-    static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, Neo4jLayout neo4jLayout, PageCache pageCache, Configuration config,
-            NamedDatabaseId namedDatabaseId )
-    {
-        return StorageEngineFactory
-                .selectStorageEngine( fs, neo4jLayout.databaseLayout( namedDatabaseId.name() ), pageCache, namedDatabaseId.isSystemDatabase() ? null : config );
+    static StorageEngineFactory selectStorageEngine(
+            FileSystemAbstraction fs,
+            Neo4jLayout neo4jLayout,
+            PageCache pageCache,
+            Configuration config,
+            NamedDatabaseId namedDatabaseId) {
+        return StorageEngineFactory.selectStorageEngine(
+                fs,
+                neo4jLayout.databaseLayout(namedDatabaseId.name()),
+                pageCache,
+                namedDatabaseId.isSystemDatabase() ? null : config);
     }
 }

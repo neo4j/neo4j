@@ -19,61 +19,49 @@
  */
 package org.neo4j.internal.nativeimpl;
 
-public class AbsentNativeAccess implements NativeAccess
-{
+public class AbsentNativeAccess implements NativeAccess {
     @Override
-    public boolean isAvailable()
-    {
+    public boolean isAvailable() {
         return false;
     }
 
     @Override
-    public NativeCallResult tryEvictFromCache( int fd )
-    {
+    public NativeCallResult tryEvictFromCache(int fd) {
         return NativeCallResult.SUCCESS;
     }
 
     @Override
-    public NativeCallResult tryAdviseSequentialAccess( int fd )
-    {
+    public NativeCallResult tryAdviseSequentialAccess(int fd) {
         return NativeCallResult.SUCCESS;
     }
 
     @Override
-    public NativeCallResult tryAdviseToKeepInCache( int fd )
-    {
+    public NativeCallResult tryAdviseToKeepInCache(int fd) {
         return NativeCallResult.SUCCESS;
     }
 
     @Override
-    public NativeCallResult tryPreallocateSpace( int fd, long bytes )
-    {
+    public NativeCallResult tryPreallocateSpace(int fd, long bytes) {
         return NativeCallResult.SUCCESS;
     }
 
     @Override
-    public ErrorTranslator errorTranslator()
-    {
+    public ErrorTranslator errorTranslator() {
         return MissingErrorTranslator.INSTANCE;
     }
 
     @Override
-    public String describe()
-    {
+    public String describe() {
         return "Native access is not available for current platform.";
     }
 
-    private static class MissingErrorTranslator implements ErrorTranslator
-    {
+    private static class MissingErrorTranslator implements ErrorTranslator {
         static final ErrorTranslator INSTANCE = new MissingErrorTranslator();
 
-        private MissingErrorTranslator()
-        {
-        }
+        private MissingErrorTranslator() {}
 
         @Override
-        public boolean isOutOfDiskSpace( NativeCallResult callResult )
-        {
+        public boolean isOutOfDiskSpace(NativeCallResult callResult) {
             return false;
         }
     }

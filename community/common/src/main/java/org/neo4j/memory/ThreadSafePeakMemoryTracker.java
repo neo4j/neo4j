@@ -26,69 +26,52 @@ import java.util.concurrent.atomic.LongAccumulator;
  * A {@link MemoryTracker} which is thread-safe and will register peak memory usage during its lifetime.
  * Note that thread-safe and accurate is not the same thing, since we don't enforce the memory ordering peak memory is not exact, but a good enough estimate.
  */
-public class ThreadSafePeakMemoryTracker implements MemoryTracker
-{
+public class ThreadSafePeakMemoryTracker implements MemoryTracker {
     private final AtomicLong allocated = new AtomicLong();
-    private final LongAccumulator peak = new LongAccumulator( Long::max, 0 );
+    private final LongAccumulator peak = new LongAccumulator(Long::max, 0);
 
     @Override
-    public void allocateNative( long bytes )
-    {
+    public void allocateNative(long bytes) {
         // Update allocated
-        long total = allocated.addAndGet( bytes );
-        peak.accumulate( total );
+        long total = allocated.addAndGet(bytes);
+        peak.accumulate(total);
     }
 
     @Override
-    public void releaseNative( long bytes )
-    {
-        allocated.addAndGet( -bytes );
+    public void releaseNative(long bytes) {
+        allocated.addAndGet(-bytes);
     }
 
     @Override
-    public void allocateHeap( long bytes )
-    {
-
-    }
+    public void allocateHeap(long bytes) {}
 
     @Override
-    public void releaseHeap( long bytes )
-    {
-
-    }
+    public void releaseHeap(long bytes) {}
 
     @Override
-    public long heapHighWaterMark()
-    {
+    public long heapHighWaterMark() {
         return 0;
     }
 
     @Override
-    public void reset()
-    {
-
-    }
+    public void reset() {}
 
     @Override
-    public MemoryTracker getScopedMemoryTracker()
-    {
+    public MemoryTracker getScopedMemoryTracker() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long usedNativeMemory()
-    {
+    public long usedNativeMemory() {
         return allocated.get();
     }
 
     @Override
-    public long estimatedHeapMemory()
-    {
+    public long estimatedHeapMemory() {
         return 0;
     }
 
-    public long peakMemoryUsage()
-    {
+    public long peakMemoryUsage() {
         return peak.get();
     }
 }

@@ -19,15 +19,14 @@
  */
 package org.neo4j.bolt.txtracking;
 
-public interface ReconciledTransactionTracker
-{
+public interface ReconciledTransactionTracker {
     long NO_RECONCILED_TRANSACTION_ID = -1;
 
     void disable();
 
-    void enable( long reconciledTransactionId );
+    void enable(long reconciledTransactionId);
 
     long getLastReconciledTransactionId();
 
-    void offerReconciledTransactionId( long reconciledTransactionId );
+    void offerReconciledTransactionId(long reconciledTransactionId);
 }

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
 
 import java.util.ArrayList;
 import java.util.Collection;
-
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.api.state.AppendOnlyValuesContainer;
 import org.neo4j.kernel.impl.api.state.ValuesContainer;
@@ -33,53 +33,43 @@ import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
-
-public class OffHeapCollectionsFactory implements CollectionsFactory
-{
+public class OffHeapCollectionsFactory implements CollectionsFactory {
     private final MemoryAllocator allocator;
 
     private final Collection<Resource> resources = new ArrayList<>();
     private ValuesContainer valuesContainer;
 
-    public OffHeapCollectionsFactory( OffHeapBlockAllocator blockAllocator )
-    {
-        this.allocator = new OffHeapMemoryAllocator( blockAllocator );
+    public OffHeapCollectionsFactory(OffHeapBlockAllocator blockAllocator) {
+        this.allocator = new OffHeapMemoryAllocator(blockAllocator);
     }
 
     @Override
-    public MutableLongSet newLongSet( MemoryTracker memoryTracker )
-    {
-        final MutableLinearProbeLongHashSet set = new MutableLinearProbeLongHashSet( allocator, memoryTracker );
-        resources.add( set );
+    public MutableLongSet newLongSet(MemoryTracker memoryTracker) {
+        final MutableLinearProbeLongHashSet set = new MutableLinearProbeLongHashSet(allocator, memoryTracker);
+        resources.add(set);
         return set;
     }
 
     @Override
-    public MutableLongDiffSets newLongDiffSets( MemoryTracker memoryTracker )
-    {
-        return newMutableLongDiffSets( this, memoryTracker );
+    public MutableLongDiffSets newLongDiffSets(MemoryTracker memoryTracker) {
+        return newMutableLongDiffSets(this, memoryTracker);
     }
 
     @Override
-    public MutableLongObjectMap<Value> newValuesMap( MemoryTracker memoryTracker )
-    {
-        if ( valuesContainer == null )
-        {
-            valuesContainer = new AppendOnlyValuesContainer( allocator, memoryTracker );
+    public MutableLongObjectMap<Value> newValuesMap(MemoryTracker memoryTracker) {
+        if (valuesContainer == null) {
+            valuesContainer = new AppendOnlyValuesContainer(allocator, memoryTracker);
         }
-        final LinearProbeLongLongHashMap refs = new LinearProbeLongLongHashMap( allocator, memoryTracker );
-        resources.add( refs );
-        return new ValuesMap( refs, valuesContainer );
+        final LinearProbeLongLongHashMap refs = new LinearProbeLongLongHashMap(allocator, memoryTracker);
+        resources.add(refs);
+        return new ValuesMap(refs, valuesContainer);
     }
 
     @Override
-    public void release()
-    {
-        resources.forEach( Resource::close );
+    public void release() {
+        resources.forEach(Resource::close);
         resources.clear();
-        if ( valuesContainer != null )
-        {
+        if (valuesContainer != null) {
             valuesContainer.close();
             valuesContainer = null;
         }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Document;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -29,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
-
+import org.apache.lucene.document.Document;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -49,15 +47,15 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
-public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReader, INDEX extends DatabaseIndex<READER>> implements IndexAccessor
-{
+public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReader, INDEX extends DatabaseIndex<READER>>
+        implements IndexAccessor {
     protected final LuceneIndexWriter writer;
     protected final INDEX luceneIndex;
     protected final IndexDescriptor descriptor;
     private final IndexUpdateIgnoreStrategy ignoreStrategy;
 
-    protected AbstractLuceneIndexAccessor( INDEX luceneIndex, IndexDescriptor descriptor, IndexUpdateIgnoreStrategy ignoreStrategy )
-    {
+    protected AbstractLuceneIndexAccessor(
+            INDEX luceneIndex, IndexDescriptor descriptor, IndexUpdateIgnoreStrategy ignoreStrategy) {
         this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
         this.luceneIndex = luceneIndex;
         this.descriptor = descriptor;
@@ -65,140 +63,116 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
-        if ( luceneIndex.isReadOnly() )
-        {
-            throw new UnsupportedOperationException( "Can't create index updater while database is in read only mode." );
+    public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+        if (luceneIndex.isReadOnly()) {
+            throw new UnsupportedOperationException("Can't create index updater while database is in read only mode.");
         }
-        return getIndexUpdater( mode );
+        return getIndexUpdater(mode);
     }
 
-    protected abstract IndexUpdater getIndexUpdater( IndexUpdateMode mode );
+    protected abstract IndexUpdater getIndexUpdater(IndexUpdateMode mode);
 
     @Override
-    public void drop()
-    {
-        if ( luceneIndex.isReadOnly() )
-        {
-            throw new UnsupportedOperationException( "Can't drop index while database is in read only mode." );
+    public void drop() {
+        if (luceneIndex.isReadOnly()) {
+            throw new UnsupportedOperationException("Can't drop index while database is in read only mode.");
         }
         luceneIndex.drop();
     }
 
     @Override
-    public void force( CursorContext cursorContext )
-    {
-        try
-        {
+    public void force(CursorContext cursorContext) {
+        try {
             // We never change status of read-only indexes.
-            if ( !luceneIndex.isReadOnly() )
-            {
+            if (!luceneIndex.isReadOnly()) {
                 luceneIndex.markAsOnline();
             }
             luceneIndex.maybeRefreshBlocking();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void refresh()
-    {
-        try
-        {
+    public void refresh() {
+        try {
             luceneIndex.maybeRefreshBlocking();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void close()
-    {
-        try
-        {
+    public void close() {
+        try {
             luceneIndex.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public READER newValueReader()
-    {
-        try
-        {
+    public READER newValueReader() {
+        try {
             return luceneIndex.getIndexReader();
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneIndexReaderAcquisitionException( "Can't acquire index reader", e );
+        } catch (IOException e) {
+            throw new LuceneIndexReaderAcquisitionException("Can't acquire index reader", e);
         }
     }
 
-    public BoundedIterable<Long> newAllEntriesReader( ToLongFunction<Document> entityIdReader, long fromIdInclusive, long toIdExclusive )
-    {
-        return new LuceneAllEntriesIndexAccessorReader( luceneIndex.allDocumentsReader(), entityIdReader, fromIdInclusive, toIdExclusive );
+    public BoundedIterable<Long> newAllEntriesReader(
+            ToLongFunction<Document> entityIdReader, long fromIdInclusive, long toIdExclusive) {
+        return new LuceneAllEntriesIndexAccessorReader(
+                luceneIndex.allDocumentsReader(), entityIdReader, fromIdInclusive, toIdExclusive);
     }
 
-    public IndexEntriesReader[] newAllEntriesValueReader( ToLongFunction<Document> entityIdReader, int numPartitions )
-    {
+    public IndexEntriesReader[] newAllEntriesValueReader(ToLongFunction<Document> entityIdReader, int numPartitions) {
         LuceneAllDocumentsReader allDocumentsReader = luceneIndex.allDocumentsReader();
-        List<Iterator<Document>> partitions = allDocumentsReader.partition( numPartitions );
-        AtomicInteger closeCount = new AtomicInteger( partitions.size() );
-        List<IndexEntriesReader> readers = partitions.stream().map( partitionDocuments -> new PartitionIndexEntriesReader( closeCount, allDocumentsReader,
-                entityIdReader, partitionDocuments ) ).collect( Collectors.toList() );
-        return readers.toArray( IndexEntriesReader[]::new );
+        List<Iterator<Document>> partitions = allDocumentsReader.partition(numPartitions);
+        AtomicInteger closeCount = new AtomicInteger(partitions.size());
+        List<IndexEntriesReader> readers = partitions.stream()
+                .map(partitionDocuments -> new PartitionIndexEntriesReader(
+                        closeCount, allDocumentsReader, entityIdReader, partitionDocuments))
+                .collect(Collectors.toList());
+        return readers.toArray(IndexEntriesReader[]::new);
     }
 
     @Override
-    public ResourceIterator<Path> snapshotFiles()
-    {
-        try
-        {
+    public ResourceIterator<Path> snapshotFiles() {
+        try {
             return luceneIndex.snapshot();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
-    {
-        final LuceneIndexConsistencyCheckVisitor visitor = reporterFactory.getClass( LuceneIndexConsistencyCheckVisitor.class );
+    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+        final LuceneIndexConsistencyCheckVisitor visitor =
+                reporterFactory.getClass(LuceneIndexConsistencyCheckVisitor.class);
         final boolean isConsistent = luceneIndex.isValid();
-        if ( !isConsistent )
-        {
-            visitor.isInconsistent( descriptor );
+        if (!isConsistent) {
+            visitor.isInconsistent(descriptor);
         }
         return isConsistent;
     }
 
     @Override
-    public long estimateNumberOfEntries( CursorContext ignored )
-    {
+    public long estimateNumberOfEntries(CursorContext ignored) {
         return luceneIndex.allDocumentsReader().maxCount();
     }
 
-    private static class PartitionIndexEntriesReader implements IndexEntriesReader
-    {
+    private static class PartitionIndexEntriesReader implements IndexEntriesReader {
         private final AtomicInteger closeCount;
         private final LuceneAllDocumentsReader allDocumentsReader;
         private final ToLongFunction<Document> entityIdReader;
         private final Iterator<Document> partitionDocuments;
 
-        PartitionIndexEntriesReader( AtomicInteger closeCount, LuceneAllDocumentsReader allDocumentsReader, ToLongFunction<Document> entityIdReader,
-                Iterator<Document> partitionDocuments )
-        {
+        PartitionIndexEntriesReader(
+                AtomicInteger closeCount,
+                LuceneAllDocumentsReader allDocumentsReader,
+                ToLongFunction<Document> entityIdReader,
+                Iterator<Document> partitionDocuments) {
             this.closeCount = closeCount;
             this.allDocumentsReader = allDocumentsReader;
             this.entityIdReader = entityIdReader;
@@ -206,125 +180,103 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
         }
 
         @Override
-        public Value[] values()
-        {
+        public Value[] values() {
             return null;
         }
 
         @Override
-        public void close()
-        {
-            // Since all these (sub-range) readers come from the one LuceneAllDocumentsReader it will have to remain open until the last reader is closed
-            if ( closeCount.decrementAndGet() == 0 )
-            {
-                try
-                {
+        public void close() {
+            // Since all these (sub-range) readers come from the one LuceneAllDocumentsReader it will have to remain
+            // open until the last reader is closed
+            if (closeCount.decrementAndGet() == 0) {
+                try {
                     allDocumentsReader.close();
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
             }
         }
 
         @Override
-        public long next()
-        {
-            return entityIdReader.applyAsLong( partitionDocuments.next() );
+        public long next() {
+            return entityIdReader.applyAsLong(partitionDocuments.next());
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return partitionDocuments.hasNext();
         }
     }
 
-    protected abstract class AbstractLuceneIndexUpdater implements IndexUpdater
-    {
+    protected abstract class AbstractLuceneIndexUpdater implements IndexUpdater {
         private final boolean idempotent;
         private final boolean refresh;
 
         private boolean hasChanges;
 
-        protected AbstractLuceneIndexUpdater( boolean idempotent, boolean refresh )
-        {
+        protected AbstractLuceneIndexUpdater(boolean idempotent, boolean refresh) {
             this.idempotent = idempotent;
             this.refresh = refresh;
         }
 
         @Override
-        public void close()
-        {
-            if ( hasChanges && refresh )
-            {
-                try
-                {
+        public void close() {
+            if (hasChanges && refresh) {
+                try {
                     luceneIndex.maybeRefreshBlocking();
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
             }
         }
 
         @Override
-        public void process( IndexEntryUpdate<?> update )
-        {
-            assert update.indexKey().schema().equals( descriptor.schema() );
-            final var valueUpdate = asValueUpdate( update );
+        public void process(IndexEntryUpdate<?> update) {
+            assert update.indexKey().schema().equals(descriptor.schema());
+            final var valueUpdate = asValueUpdate(update);
 
             // ignoreStrategy set update to null; ignore update
-            if ( valueUpdate == null )
-            {
+            if (valueUpdate == null) {
                 return;
             }
 
             final var entityId = valueUpdate.getEntityId();
             final var values = valueUpdate.values();
             final var updateMode = valueUpdate.updateMode();
-            switch ( updateMode )
-            {
-            case ADDED:
-                if ( idempotent )
-                {
-                    addIdempotent( entityId, values );
-                }
-                else
-                {
-                    add( entityId, values );
-                }
-                break;
-            case CHANGED:
-                change( entityId, values );
-                break;
-            case REMOVED:
-                remove( entityId );
-                break;
-            default:
-                throw new IllegalArgumentException( "Unknown update mode " + updateMode );
+            switch (updateMode) {
+                case ADDED:
+                    if (idempotent) {
+                        addIdempotent(entityId, values);
+                    } else {
+                        add(entityId, values);
+                    }
+                    break;
+                case CHANGED:
+                    change(entityId, values);
+                    break;
+                case REMOVED:
+                    remove(entityId);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown update mode " + updateMode);
             }
 
             hasChanges = true;
         }
 
         @Override
-        public <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate( IndexEntryUpdate<INDEX_KEY> update )
-        {
-            final var valueUpdate = IndexUpdater.super.asValueUpdate( update );
-            return !ignoreStrategy.ignore( valueUpdate )
-                   ? ignoreStrategy.toEquivalentUpdate( valueUpdate )
-                   : null;
+        public <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate(
+                IndexEntryUpdate<INDEX_KEY> update) {
+            final var valueUpdate = IndexUpdater.super.asValueUpdate(update);
+            return !ignoreStrategy.ignore(valueUpdate) ? ignoreStrategy.toEquivalentUpdate(valueUpdate) : null;
         }
 
-        protected abstract void addIdempotent( long entityId, Value[] values );
+        protected abstract void addIdempotent(long entityId, Value[] values);
 
-        protected abstract void add( long entityId, Value[] values );
+        protected abstract void add(long entityId, Value[] values);
 
-        protected abstract void change( long entityId, Value[] values );
+        protected abstract void change(long entityId, Value[] values);
 
-        protected abstract void remove( long entityId );
+        protected abstract void remove(long entityId);
     }
 }

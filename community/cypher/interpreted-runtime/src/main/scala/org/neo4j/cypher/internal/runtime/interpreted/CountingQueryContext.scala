@@ -37,7 +37,7 @@ trait CountingQueryContext {
     val statistics = getTrackedStatistics
     inner match {
       case context: CountingQueryContext => statistics + context.getStatistics
-      case _ => statistics
+      case _                             => statistics
     }
   }
 }
@@ -55,6 +55,7 @@ object CountingQueryContext {
   }
 
   object Counter {
+
     def apply(initialValue: Int): Counter = {
       val counter = new Counter
       counter.counter.set(initialValue)

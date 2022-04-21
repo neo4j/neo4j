@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.eclipse.collections.impl.map.mutable.primitive.ByteObjectHashMap;
-
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -61,13 +60,11 @@ import org.neo4j.util.Preconditions;
  *                               └───────────────────────────── {@link KernelVersion}
  * </pre>
  */
-public abstract class LogEntryParserSet
-{
+public abstract class LogEntryParserSet {
     private final KernelVersion introductionVersion;
     private final ByteObjectHashMap<LogEntryParser> parsers = new ByteObjectHashMap<>();
 
-    LogEntryParserSet( KernelVersion version )
-    {
+    LogEntryParserSet(KernelVersion version) {
         this.introductionVersion = version;
     }
 
@@ -76,25 +73,21 @@ public abstract class LogEntryParserSet
      * @param type type code for the log entry to parse.
      * @return parser able to read and parse log entry of this type.
      */
-    public LogEntryParser select( byte type )
-    {
-        LogEntryParser parser = parsers.get( type );
-        if ( parser == null )
-        {
-            throw new IllegalArgumentException( "Unknown entry type " + type + " for version " + introductionVersion );
+    public LogEntryParser select(byte type) {
+        LogEntryParser parser = parsers.get(type);
+        if (parser == null) {
+            throw new IllegalArgumentException("Unknown entry type " + type + " for version " + introductionVersion);
         }
         return parser;
     }
 
-    protected void register( LogEntryParser parser )
-    {
+    protected void register(LogEntryParser parser) {
         byte type = parser.type();
-        Preconditions.checkState( !parsers.containsKey( type ), "Already registered parser for type " + type );
-        parsers.put( type, parser );
+        Preconditions.checkState(!parsers.containsKey(type), "Already registered parser for type " + type);
+        parsers.put(type, parser);
     }
 
-    public KernelVersion getIntroductionVersion()
-    {
+    public KernelVersion getIntroductionVersion() {
         return introductionVersion;
     }
 }

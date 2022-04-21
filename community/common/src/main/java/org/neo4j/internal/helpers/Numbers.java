@@ -21,23 +21,19 @@ package org.neo4j.internal.helpers;
 
 import static org.neo4j.util.Preconditions.requirePositive;
 
-public final class Numbers
-{
+public final class Numbers {
     private static final long MAX_POWER_OF_TWO_LONG = 1L << (Long.SIZE - 2);
     private static final long MAX_POWER_OF_TWO_INTEGER = 1 << (Integer.SIZE - 2);
 
-    private Numbers()
-    {
-    }
+    private Numbers() {}
 
     /**
      * Checks if {@code value} is a power of 2.
      * @param value the value to check
      * @return {@code true} if {@code value} is a power of 2.
      */
-    public static boolean isPowerOfTwo( long value )
-    {
-        requirePositive( value );
+    public static boolean isPowerOfTwo(long value) {
+        requirePositive(value);
         return (value & (value - 1)) == 0;
     }
 
@@ -47,14 +43,13 @@ public final class Numbers
      * @param value user provided value
      * @return smallest power of two that is bigger or equal to provided value
      */
-    public static long ceilingPowerOfTwo( long value )
-    {
-        requirePositive( value );
-        if ( value > MAX_POWER_OF_TWO_LONG )
-        {
-            throw new IllegalArgumentException( "Provided value " + value + " is bigger than the biggest power of two long value." );
+    public static long ceilingPowerOfTwo(long value) {
+        requirePositive(value);
+        if (value > MAX_POWER_OF_TWO_LONG) {
+            throw new IllegalArgumentException(
+                    "Provided value " + value + " is bigger than the biggest power of two long value.");
         }
-        return 1L << -Long.numberOfLeadingZeros( value - 1 );
+        return 1L << -Long.numberOfLeadingZeros(value - 1);
     }
 
     /**
@@ -63,14 +58,13 @@ public final class Numbers
      * @param value user provided value
      * @return smallest power of two that is bigger or equal to provided value
      */
-    public static int ceilingPowerOfTwo( int value )
-    {
-        requirePositive( value );
-        if ( value > MAX_POWER_OF_TWO_INTEGER )
-        {
-            throw new IllegalArgumentException( "Provided value " + value + " is bigger than the biggest power of two long value." );
+    public static int ceilingPowerOfTwo(int value) {
+        requirePositive(value);
+        if (value > MAX_POWER_OF_TWO_INTEGER) {
+            throw new IllegalArgumentException(
+                    "Provided value " + value + " is bigger than the biggest power of two long value.");
         }
-        return 1 << -Integer.numberOfLeadingZeros( value - 1 );
+        return 1 << -Integer.numberOfLeadingZeros(value - 1);
     }
 
     /**
@@ -78,91 +72,72 @@ public final class Numbers
      *
      * @param value a positive long value
      */
-    public static int log2floor( long value )
-    {
-        return (Long.SIZE - 1) - Long.numberOfLeadingZeros( requirePositive( value ) );
+    public static int log2floor(long value) {
+        return (Long.SIZE - 1) - Long.numberOfLeadingZeros(requirePositive(value));
     }
 
-    public static short safeCastIntToUnsignedShort( int value )
-    {
-        if ( (value & ~0xFFFF) != 0 )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, "unsigned short" ) );
+    public static short safeCastIntToUnsignedShort(int value) {
+        if ((value & ~0xFFFF) != 0) {
+            throw new ArithmeticException(getOverflowMessage(value, "unsigned short"));
         }
         return (short) value;
     }
 
-    public static byte safeCastIntToUnsignedByte( int value )
-    {
-        if ( (value & ~0xFF) != 0 )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, "unsigned byte" ) );
+    public static byte safeCastIntToUnsignedByte(int value) {
+        if ((value & ~0xFF) != 0) {
+            throw new ArithmeticException(getOverflowMessage(value, "unsigned byte"));
         }
         return (byte) value;
     }
 
-    public static int safeCastLongToInt( long value )
-    {
-        if ( (int) value != value )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Integer.TYPE ) );
+    public static int safeCastLongToInt(long value) {
+        if ((int) value != value) {
+            throw new ArithmeticException(getOverflowMessage(value, Integer.TYPE));
         }
         return (int) value;
     }
 
-    public static short safeCastLongToShort( long value )
-    {
-        if ( (short) value != value )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Short.TYPE ) );
+    public static short safeCastLongToShort(long value) {
+        if ((short) value != value) {
+            throw new ArithmeticException(getOverflowMessage(value, Short.TYPE));
         }
         return (short) value;
     }
 
-    public static short safeCastIntToShort( int value )
-    {
-        if ( (short) value != value )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Short.TYPE ) );
+    public static short safeCastIntToShort(int value) {
+        if ((short) value != value) {
+            throw new ArithmeticException(getOverflowMessage(value, Short.TYPE));
         }
         return (short) value;
     }
 
-    public static byte safeCastLongToByte( long value )
-    {
-        if ( (byte) value != value )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Byte.TYPE ) );
+    public static byte safeCastLongToByte(long value) {
+        if ((byte) value != value) {
+            throw new ArithmeticException(getOverflowMessage(value, Byte.TYPE));
         }
         return (byte) value;
     }
 
-    public static int safeCheck3ByteInt( int value )
-    {
-        if ( (value & ~0xFFFFFF) != 0 )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, "3-byte int" ) );
+    public static int safeCheck3ByteInt(int value) {
+        if ((value & ~0xFFFFFF) != 0) {
+            throw new ArithmeticException(getOverflowMessage(value, "3-byte int"));
         }
         return value;
     }
 
-    public static int unsignedShortToInt( short value )
-    {
+    public static int unsignedShortToInt(short value) {
         return value & 0xFFFF;
     }
 
-    public static int unsignedByteToInt( byte value )
-    {
+    public static int unsignedByteToInt(byte value) {
         return value & 0xFF;
     }
 
-    private static String getOverflowMessage( long value, Class<?> clazz )
-    {
-        return getOverflowMessage( value, clazz.getName() );
+    private static String getOverflowMessage(long value, Class<?> clazz) {
+        return getOverflowMessage(value, clazz.getName());
     }
 
-    private static String getOverflowMessage( long value, String numericType )
-    {
+    private static String getOverflowMessage(long value, String numericType) {
         return "Value " + value + " is too big to be represented as " + numericType;
     }
 }

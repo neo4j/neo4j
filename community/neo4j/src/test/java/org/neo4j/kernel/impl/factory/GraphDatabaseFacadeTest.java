@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -34,50 +39,41 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-
-class GraphDatabaseFacadeTest
-{
+class GraphDatabaseFacadeTest {
     private GraphDatabaseFacade graphDatabaseFacade;
     private GraphDatabaseQueryService queryService;
     private Kernel kernel;
 
     @BeforeEach
-    void setUp()
-    {
-        queryService = mock( GraphDatabaseQueryService.class );
-        Database database = mock( Database.class, RETURNS_MOCKS );
-        Dependencies resolver = mock( Dependencies.class );
-        kernel = mock( Kernel.class, RETURNS_MOCKS );
-        when( database.getKernel() ).thenReturn( kernel );
-        when( database.getDependencyResolver() ).thenReturn( resolver );
+    void setUp() {
+        queryService = mock(GraphDatabaseQueryService.class);
+        Database database = mock(Database.class, RETURNS_MOCKS);
+        Dependencies resolver = mock(Dependencies.class);
+        kernel = mock(Kernel.class, RETURNS_MOCKS);
+        when(database.getKernel()).thenReturn(kernel);
+        when(database.getDependencyResolver()).thenReturn(resolver);
 
-        when( resolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
+        when(resolver.resolveDependency(GraphDatabaseQueryService.class)).thenReturn(queryService);
         Config config = Config.defaults();
-        when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
+        when(resolver.resolveDependency(Config.class)).thenReturn(config);
 
-        graphDatabaseFacade = new GraphDatabaseFacade( database, config, DbmsInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
+        graphDatabaseFacade =
+                new GraphDatabaseFacade(database, config, DbmsInfo.COMMUNITY, mock(DatabaseAvailabilityGuard.class));
     }
 
     @Test
-    void beginTransactionWithCustomTimeout() throws TransactionFailureException
-    {
-        graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
+    void beginTransactionWithCustomTimeout() throws TransactionFailureException {
+        graphDatabaseFacade.beginTx(10, TimeUnit.MILLISECONDS);
 
-        verify( kernel ).beginTransaction( KernelTransaction.Type.EXPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, 10L );
+        verify(kernel).beginTransaction(KernelTransaction.Type.EXPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, 10L);
     }
 
     @Test
-    void beginTransaction() throws TransactionFailureException
-    {
+    void beginTransaction() throws TransactionFailureException {
         graphDatabaseFacade.beginTx();
 
-        long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
-        verify( kernel ).beginTransaction( KernelTransaction.Type.EXPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout );
+        long timeout =
+                Config.defaults().get(GraphDatabaseSettings.transaction_timeout).toMillis();
+        verify(kernel).beginTransaction(KernelTransaction.Type.EXPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout);
     }
 }

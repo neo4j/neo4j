@@ -19,52 +19,48 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.neo4j.storageengine.api.StoreVersion.versionLongToString;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 
-import static org.neo4j.storageengine.api.StoreVersion.versionLongToString;
-
-public class RecordStoreRollingUpgradeCompatibility implements RollingUpgradeCompatibility
-{
+public class RecordStoreRollingUpgradeCompatibility implements RollingUpgradeCompatibility {
     /**
      * A map between store versions and the versions they are compatible with for rolling upgrade
      */
-    private final Map<String,Set<String>> compatibilityMap = new HashMap<>();
+    private final Map<String, Set<String>> compatibilityMap = new HashMap<>();
 
-    public RecordStoreRollingUpgradeCompatibility( Iterable<RecordFormats> knownFormats )
-    {
-        //Known formats, add compatibilities
-        for ( RecordFormats knownFormat : knownFormats )
-        {
+    public RecordStoreRollingUpgradeCompatibility(Iterable<RecordFormats> knownFormats) {
+        // Known formats, add compatibilities
+        for (RecordFormats knownFormat : knownFormats) {
             Set<String> compatibleVersions = new HashSet<>();
-            for ( RecordFormats recordFormats : knownFormat.compatibleVersionsForRollingUpgrade() )
-            {
-                compatibleVersions.add( recordFormats.storeVersion() );
+            for (RecordFormats recordFormats : knownFormat.compatibleVersionsForRollingUpgrade()) {
+                compatibleVersions.add(recordFormats.storeVersion());
             }
-            compatibilityMap.put( knownFormat.storeVersion(), compatibleVersions );
+            compatibilityMap.put(knownFormat.storeVersion(), compatibleVersions);
         }
 
-        //Known compatibilities. Future versions in newer releases can be added manually here to add knowledge about if that is compatible to our local one
-        //e.g compatibilityMap.put( "SF4.3.0", Set.of( STANDARD_V4_0.versionString() ) );
+        // Known compatibilities. Future versions in newer releases can be added manually here to add knowledge about if
+        // that is compatible to our local one
+        // e.g compatibilityMap.put( "SF4.3.0", Set.of( STANDARD_V4_0.versionString() ) );
     }
 
     @Override
-    public boolean isVersionCompatibleForRollingUpgrade( String format, String otherFormat )
-    {
-        return Objects.equals( format, otherFormat ) ||
-                compatibilityMap.getOrDefault( otherFormat, Collections.emptySet() ).contains( format );
+    public boolean isVersionCompatibleForRollingUpgrade(String format, String otherFormat) {
+        return Objects.equals(format, otherFormat)
+                || compatibilityMap
+                        .getOrDefault(otherFormat, Collections.emptySet())
+                        .contains(format);
     }
 
     @Override
-    public boolean isVersionCompatibleForRollingUpgrade( long format, long otherFormat )
-    {
-        return isVersionCompatibleForRollingUpgrade( versionLongToString( format ), versionLongToString( otherFormat ) );
+    public boolean isVersionCompatibleForRollingUpgrade(long format, long otherFormat) {
+        return isVersionCompatibleForRollingUpgrade(versionLongToString(format), versionLongToString(otherFormat));
     }
 }

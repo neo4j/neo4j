@@ -31,23 +31,23 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  * Takes cached {@link RelationshipGroupRecord relationship groups} and sets real ids and
  * {@link RelationshipGroupRecord#getNext() next pointers}, making them ready for writing to store.
  */
-public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
-{
+public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
     private long nextId = -1;
     private final RecordStore<RelationshipGroupRecord> store;
 
-    public EncodeGroupsStep( StageControl control, Configuration config, RecordStore<RelationshipGroupRecord> store, CursorContextFactory contextFactory )
-    {
-        super( control, "ENCODE", config, 1, contextFactory );
+    public EncodeGroupsStep(
+            StageControl control,
+            Configuration config,
+            RecordStore<RelationshipGroupRecord> store,
+            CursorContextFactory contextFactory) {
+        super(control, "ENCODE", config, 1, contextFactory);
         this.store = store;
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext )
-    {
+    protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext) {
         int groupStartIndex = 0;
-        for ( int i = 0; i < batch.length; i++ )
-        {
+        for (int i = 0; i < batch.length; i++) {
             RelationshipGroupRecord group = batch[i];
 
             // The iterator over the groups will not produce real next pointers, they are instead
@@ -55,21 +55,17 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
             long count = group.getNext();
             boolean lastInChain = count == 0;
 
-            group.setId( nextId == -1 ? nextId = store.nextId( cursorContext ) : nextId );
-            if ( !lastInChain )
-            {
-                group.setNext( nextId = store.nextId( cursorContext ) );
-            }
-            else
-            {
-                group.setNext( nextId = -1 );
+            group.setId(nextId == -1 ? nextId = store.nextId(cursorContext) : nextId);
+            if (!lastInChain) {
+                group.setNext(nextId = store.nextId(cursorContext));
+            } else {
+                group.setNext(nextId = -1);
 
                 // OK so this group is the last in this chain, which means all the groups in this chain
                 // are now fully populated. We can now prepare these groups so that their potential
                 // secondary units ends up very close by.
-                for ( int j = groupStartIndex; j <= i; j++ )
-                {
-                    store.prepareForCommit( batch[j], cursorContext );
+                for (int j = groupStartIndex; j <= i; j++) {
+                    store.prepareForCommit(batch[j], cursorContext);
                 }
 
                 groupStartIndex = i + 1;
@@ -77,6 +73,6 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
         }
         assert groupStartIndex == batch.length;
 
-        sender.send( batch );
+        sender.send(batch);
     }
 }

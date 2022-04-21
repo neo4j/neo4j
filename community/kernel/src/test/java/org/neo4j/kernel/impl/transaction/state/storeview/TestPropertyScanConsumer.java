@@ -19,92 +19,77 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static java.util.Collections.synchronizedList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.synchronizedList;
-
-public class TestPropertyScanConsumer implements PropertyScanConsumer
-{
-    public final List<List<Record>> batches = synchronizedList( new ArrayList<>() );
+public class TestPropertyScanConsumer implements PropertyScanConsumer {
+    public final List<List<Record>> batches = synchronizedList(new ArrayList<>());
 
     @Override
-    public PropertyScanConsumer.Batch newBatch()
-    {
-        return new Batch()
-        {
+    public PropertyScanConsumer.Batch newBatch() {
+        return new Batch() {
             final List<Record> batchEntityUpdates = new ArrayList<>();
 
             @Override
-            public void addRecord( long entityId, long[] tokens, Map<Integer,Value> properties )
-            {
-                batchEntityUpdates.add( new Record( entityId, tokens, properties ) );
+            public void addRecord(long entityId, long[] tokens, Map<Integer, Value> properties) {
+                batchEntityUpdates.add(new Record(entityId, tokens, properties));
             }
 
             @Override
-            public void process()
-            {
-                batches.add( batchEntityUpdates );
+            public void process() {
+                batches.add(batchEntityUpdates);
             }
         };
     }
 
-    public static class Record
-    {
+    public static class Record {
         private final long entityId;
         private final long[] tokens;
-        private final Map<Integer,Value> properties;
+        private final Map<Integer, Value> properties;
 
-        public Record( long entityId, long[] tokens, Map<Integer,Value> properties )
-        {
+        public Record(long entityId, long[] tokens, Map<Integer, Value> properties) {
             this.entityId = entityId;
             this.tokens = tokens;
             this.properties = properties;
         }
 
-        public long getEntityId()
-        {
+        public long getEntityId() {
             return entityId;
         }
 
-        public long[] getTokens()
-        {
+        public long[] getTokens() {
             return tokens;
         }
 
-        public Map<Integer,Value> getProperties()
-        {
+        public Map<Integer, Value> getProperties() {
             return properties;
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             Record record = (Record) o;
-            return entityId == record.entityId &&
-                    Arrays.equals( tokens, record.tokens ) &&
-                    properties.equals( record.properties );
+            return entityId == record.entityId
+                    && Arrays.equals(tokens, record.tokens)
+                    && properties.equals(record.properties);
         }
 
         @Override
-        public int hashCode()
-        {
-            int result = Objects.hash( entityId, properties );
-            result = 31 * result + Arrays.hashCode( tokens );
+        public int hashCode() {
+            int result = Objects.hash(entityId, properties);
+            result = 31 * result + Arrays.hashCode(tokens);
             return result;
         }
     }

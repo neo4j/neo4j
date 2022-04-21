@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.index;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -32,37 +31,30 @@ import org.neo4j.values.storable.Value;
 /**
  * Combine multiple progressor to act like one single logical progressor seen from client's perspective.
  */
-public class BridgingIndexProgressor implements IndexProgressor.EntityValueClient, IndexProgressor
-{
+public class BridgingIndexProgressor implements IndexProgressor.EntityValueClient, IndexProgressor {
     private final EntityValueClient client;
     private final int[] keys;
     // This is a thread-safe queue because it can be used in parallel scenarios.
-    // The overhead of a concurrent queue in this case is negligible since typically there will be two or a very few number
+    // The overhead of a concurrent queue in this case is negligible since typically there will be two or a very few
+    // number
     // of progressors and each progressor has many results each
     private final Queue<IndexProgressor> progressors = new ConcurrentLinkedQueue<>();
     private IndexProgressor current;
 
-    public BridgingIndexProgressor( EntityValueClient client, int[] keys )
-    {
+    public BridgingIndexProgressor(EntityValueClient client, int[] keys) {
         this.client = client;
         this.keys = keys;
     }
 
     @Override
-    public boolean next()
-    {
-        if ( current == null )
-        {
+    public boolean next() {
+        if (current == null) {
             current = progressors.poll();
         }
-        while ( current != null )
-        {
-            if ( current.next() )
-            {
+        while (current != null) {
+            if (current.next()) {
                 return true;
-            }
-            else
-            {
+            } else {
                 current.close();
                 current = progressors.poll();
             }
@@ -71,36 +63,35 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
     }
 
     @Override
-    public boolean needsValues()
-    {
+    public boolean needsValues() {
         return client.needsValues();
     }
 
     @Override
-    public void close()
-    {
-        progressors.forEach( IndexProgressor::close );
+    public void close() {
+        progressors.forEach(IndexProgressor::close);
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
-                            boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... queries )
-    {
-        assertKeysAlign( descriptor.schema().getPropertyIds() );
-        progressors.add( progressor );
+    public void initialize(
+            IndexDescriptor descriptor,
+            IndexProgressor progressor,
+            AccessMode accessMode,
+            boolean indexIncludesTransactionState,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... queries) {
+        assertKeysAlign(descriptor.schema().getPropertyIds());
+        progressors.add(progressor);
     }
 
-    private void assertKeysAlign( int[] keys )
-    {
-        if ( !Arrays.equals( this.keys, keys ) )
-        {
-            throw new UnsupportedOperationException( "Cannot chain multiple progressors with different key set." );
+    private void assertKeysAlign(int[] keys) {
+        if (!Arrays.equals(this.keys, keys)) {
+            throw new UnsupportedOperationException("Cannot chain multiple progressors with different key set.");
         }
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value... values )
-    {
-        return client.acceptEntity( reference, score, values );
+    public boolean acceptEntity(long reference, float score, Value... values) {
+        return client.acceptEntity(reference, score, values);
     }
 }

@@ -19,19 +19,17 @@
  */
 package org.neo4j.kernel.impl.security;
 
-public interface Credential
-{
+public interface Credential {
     String CREDENTIAL_SEPARATOR = ",";
 
-    boolean matchesPassword( byte[] password );
+    boolean matchesPassword(byte[] password);
 
     /**
      * For testing purposes only!
      * Use method that takes byte[]
      */
-    default boolean matchesPassword( String password )
-    {
-        throw new UnsupportedOperationException( "Use `boolean matchesPassword( byte[] password )` instead" );
+    default boolean matchesPassword(String password) {
+        throw new UnsupportedOperationException("Use `boolean matchesPassword( byte[] password )` instead");
     }
 
     String serialize();

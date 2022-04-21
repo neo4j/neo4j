@@ -20,81 +20,64 @@
 package org.neo4j.values.storable;
 
 import java.util.Objects;
-
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-public enum CoordinateReferenceSystem implements CRS
-{
-    CARTESIAN( CRSTable.SR_ORG, 7203, 2, false ),
-    CARTESIAN_3D( CRSTable.SR_ORG, 9157, 3, false ),
-    WGS_84( CRSTable.EPSG, 4326, 2, true ),
-    WGS_84_3D( CRSTable.EPSG, 4979, 3, true );
+public enum CoordinateReferenceSystem implements CRS {
+    CARTESIAN(CRSTable.SR_ORG, 7203, 2, false),
+    CARTESIAN_3D(CRSTable.SR_ORG, 9157, 3, false),
+    WGS_84(CRSTable.EPSG, 4326, 2, true),
+    WGS_84_3D(CRSTable.EPSG, 4979, 3, true);
 
-    public static Iterable<CoordinateReferenceSystem> all()
-    {
-        return Iterables.asIterable( values() );
+    public static Iterable<CoordinateReferenceSystem> all() {
+        return Iterables.asIterable(values());
     }
 
-    public static CoordinateReferenceSystem get( int tableId, int code )
-    {
-        final var table = CRSTable.find( tableId );
-        for ( final var crs : values() )
-        {
-            if ( crs.table == table && crs.code == code )
-            {
+    public static CoordinateReferenceSystem get(int tableId, int code) {
+        final var table = CRSTable.find(tableId);
+        for (final var crs : values()) {
+            if (crs.table == table && crs.code == code) {
                 return crs;
             }
         }
-        throw new InvalidArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
+        throw new InvalidArgumentException("Unknown coordinate reference system: " + tableId + "-" + code);
     }
 
-    public static CoordinateReferenceSystem get( CRS crs )
-    {
-        Objects.requireNonNull( crs );
-        return get( crs.getHref() );
+    public static CoordinateReferenceSystem get(CRS crs) {
+        Objects.requireNonNull(crs);
+        return get(crs.getHref());
     }
 
-    public static CoordinateReferenceSystem byName( String name )
-    {
-        for ( final var crs : values() )
-        {
-            if ( crs.name.equals( name.toLowerCase() ) )
-            {
+    public static CoordinateReferenceSystem byName(String name) {
+        for (final var crs : values()) {
+            if (crs.name.equals(name.toLowerCase())) {
                 return crs;
             }
         }
 
-        throw new InvalidArgumentException( "Unknown coordinate reference system: " + name );
+        throw new InvalidArgumentException("Unknown coordinate reference system: " + name);
     }
 
-    public static CoordinateReferenceSystem get( String href )
-    {
-        for ( final var crs : values() )
-        {
-            if ( crs.href.equals( href ) )
-            {
+    public static CoordinateReferenceSystem get(String href) {
+        for (final var crs : values()) {
+            if (crs.href.equals(href)) {
                 return crs;
             }
         }
-        throw new InvalidArgumentException( "Unknown coordinate reference system: " + href );
+        throw new InvalidArgumentException("Unknown coordinate reference system: " + href);
     }
 
-    public static CoordinateReferenceSystem get( int code )
-    {
-        for ( final var table : CRSTable.values() )
-        {
-            final var href = table.href( code );
-            for ( final var crs : values() )
-            {
-                if ( crs.href.equals( href ) )
-                {
+    public static CoordinateReferenceSystem get(int code) {
+        for (final var table : CRSTable.values()) {
+            final var href = table.href(code);
+            for (final var crs : values()) {
+                if (crs.href.equals(href)) {
                     return crs;
                 }
             }
         }
-        throw new InvalidArgumentException( "Unknown coordinate reference system code: " + code );
+        throw new InvalidArgumentException("Unknown coordinate reference system code: " + code);
     }
 
     private final String name;
@@ -105,70 +88,57 @@ public enum CoordinateReferenceSystem implements CRS
     private final boolean geographic;
     private final CRSCalculator calculator;
 
-    CoordinateReferenceSystem( CRSTable table, int code, int dimension, boolean geographic )
-    {
-        this.name = name().toLowerCase().replace( '_', '-' );
+    CoordinateReferenceSystem(CRSTable table, int code, int dimension, boolean geographic) {
+        this.name = name().toLowerCase().replace('_', '-');
         this.table = table;
         this.code = code;
-        this.href = table.href( code );
+        this.href = table.href(code);
         this.dimension = dimension;
         this.geographic = geographic;
-        if ( geographic )
-        {
-            this.calculator = new CRSCalculator.GeographicCalculator( dimension );
-        }
-        else
-        {
-            this.calculator = new CRSCalculator.CartesianCalculator( dimension );
+        if (geographic) {
+            this.calculator = new CRSCalculator.GeographicCalculator(dimension);
+        } else {
+            this.calculator = new CRSCalculator.CartesianCalculator(dimension);
         }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return name;
     }
 
     @Override
-    public int getCode()
-    {
+    public int getCode() {
         return code;
     }
 
     @Override
-    public String getType()
-    {
+    public String getType() {
         return name;
     }
 
     @Override
-    public String getHref()
-    {
+    public String getHref() {
         return href;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public CRSTable getTable()
-    {
+    public CRSTable getTable() {
         return table;
     }
 
-    public int getDimension()
-    {
+    public int getDimension() {
         return dimension;
     }
 
-    public boolean isGeographic()
-    {
+    public boolean isGeographic() {
         return geographic;
     }
 
-    public CRSCalculator getCalculator()
-    {
+    public CRSCalculator getCalculator() {
         return calculator;
     }
 }

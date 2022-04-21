@@ -46,10 +46,12 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
 
 case class IndexModifier(indexAttributes: IndexAttributes) {
+
   def providesValues(): IndexModifier = {
     indexAttributes.withValues = true
     this
   }
+
   def providesOrder(order: IndexOrderCapability): IndexModifier = {
     indexAttributes.withOrdering = order
     this
@@ -66,48 +68,87 @@ trait FakeIndexAndConstraintManagement {
   var procedureSignatures: Set[ProcedureSignature] = Set.empty
 
   def indexOn(label: String, properties: String*): IndexModifier = {
-    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Range)
+    val indexDef =
+      indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Range)
     IndexModifier(indexes(indexDef))
   }
 
   def pointIndexOn(label: String, properties: String*): IndexModifier = {
-    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Point)
+    val indexDef =
+      indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Point)
     IndexModifier(indexes(indexDef))
   }
 
   def textIndexOn(label: String, properties: String*): IndexModifier = {
-    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Text)
+    val indexDef =
+      indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Text)
     IndexModifier(indexes(indexDef))
   }
 
   def relationshipIndexOn(relationshipType: String, properties: String*): IndexModifier = {
-    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Range)
+    val indexDef = relationshipIndexOn(
+      relationshipType,
+      properties,
+      isUnique = false,
+      withValues = false,
+      IndexOrderCapability.NONE,
+      IndexType.Range
+    )
     IndexModifier(indexes(indexDef))
   }
 
   def relationshipTextIndexOn(relationshipType: String, properties: String*): IndexModifier = {
-    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Text)
+    val indexDef = relationshipIndexOn(
+      relationshipType,
+      properties,
+      isUnique = false,
+      withValues = false,
+      IndexOrderCapability.NONE,
+      IndexType.Text
+    )
     IndexModifier(indexes(indexDef))
   }
 
   def relationshipPointIndexOn(relationshipType: String, properties: String*): IndexModifier = {
-    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Point)
+    val indexDef = relationshipIndexOn(
+      relationshipType,
+      properties,
+      isUnique = false,
+      withValues = false,
+      IndexOrderCapability.NONE,
+      IndexType.Point
+    )
     IndexModifier(indexes(indexDef))
   }
 
   def uniqueIndexOn(label: String, properties: String*): IndexModifier = {
-    val indexDef = indexOn(label, properties, isUnique = true, withValues = false, IndexOrderCapability.NONE, IndexType.Range)
+    val indexDef =
+      indexOn(label, properties, isUnique = true, withValues = false, IndexOrderCapability.NONE, IndexType.Range)
     IndexModifier(indexes(indexDef))
   }
 
-  def indexOn(label: String, properties: Seq[String], isUnique: Boolean, withValues: Boolean, providesOrder: IndexOrderCapability, indexType: IndexType): IndexDef = {
+  def indexOn(
+    label: String,
+    properties: Seq[String],
+    isUnique: Boolean,
+    withValues: Boolean,
+    providesOrder: IndexOrderCapability,
+    indexType: IndexType
+  ): IndexDef = {
     val indexAttributes = new IndexAttributes(isUnique, withValues, providesOrder)
     val indexDef = IndexDef(IndexDefinition.EntityType.Node(label), properties, indexType)
     indexes += indexDef -> indexAttributes
     indexDef
   }
 
-  def relationshipIndexOn(relationshipType: String, properties: Seq[String], isUnique: Boolean, withValues: Boolean, providesOrder: IndexOrderCapability, indexType: IndexType): IndexDef = {
+  def relationshipIndexOn(
+    relationshipType: String,
+    properties: Seq[String],
+    isUnique: Boolean,
+    withValues: Boolean,
+    providesOrder: IndexOrderCapability,
+    indexType: IndexType
+  ): IndexDef = {
     val indexAttributes = new IndexAttributes(isUnique, withValues, providesOrder)
     val indexDef = IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), properties, indexType)
     indexes += indexDef -> indexAttributes
@@ -136,19 +177,22 @@ trait FakeIndexAndConstraintManagement {
 }
 
 class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration)
-  extends LogicalPlanningConfiguration
-  with LogicalPlanningConfigurationAdHocSemanticTable
-  with FakeIndexAndConstraintManagement {
+    extends LogicalPlanningConfiguration
+    with LogicalPlanningConfigurationAdHocSemanticTable
+    with FakeIndexAndConstraintManagement {
 
   self =>
 
   var knownLabels: Set[String] = Set.empty
   var knownRelationships: Set[String] = Set.empty
   var cardinality: PartialFunction[PlannerQueryPart, Cardinality] = PartialFunction.empty
-  var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = PartialFunction.empty
+
+  var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] =
+    PartialFunction.empty
   var labelCardinality: Map[String, Cardinality] = Map.empty
   var statistics: GraphStatistics = _
   var qg: QueryGraph = _
+
   var expressionEvaluator: ExpressionEvaluator = new ExpressionEvaluator {
     override def evaluateExpression(expr: Expression): Option[Any] = ???
 
@@ -177,10 +221,14 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     indexedThenKnown.zipWithIndex.map(_.swap).toMap
   }
 
-  override def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost] = {
+  override def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[
+    (LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor),
+    Cost
+  ] = {
     case (lp, input, semanticTable, cardinalities, providedOrders, monitor) =>
       // Calling this in any case has the benefit of having the monitor passed down to the real cost model
-      val realCost = parent.costModel(executionModel)((lp, input, semanticTable, cardinalities, providedOrders, monitor))
+      val realCost =
+        parent.costModel(executionModel)((lp, input, semanticTable, cardinalities, providedOrders, monitor))
       if (cost.isDefinedAt((lp, input, cardinalities, providedOrders))) {
         cost((lp, input, cardinalities, providedOrders))
       } else {
@@ -188,39 +236,53 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
       }
   }
 
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                                selectivityCalculator: SelectivityCalculator,
-                                evaluator: ExpressionEvaluator): CardinalityModel = {
-    //noinspection ConvertExpressionToSAM
+  override def cardinalityModel(
+    queryGraphCardinalityModel: QueryGraphCardinalityModel,
+    selectivityCalculator: SelectivityCalculator,
+    evaluator: ExpressionEvaluator
+  ): CardinalityModel = {
+    // noinspection ConvertExpressionToSAM
     new CardinalityModel {
-      override def apply(pq: PlannerQueryPart,
-                         input: QueryGraphSolverInput,
-                         semanticTable: SemanticTable,
-                         indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality = {
+      override def apply(
+        pq: PlannerQueryPart,
+        input: QueryGraphSolverInput,
+        semanticTable: SemanticTable,
+        indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+      ): Cardinality = {
         val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
           case (name: String, cardinality: Cardinality) =>
             semanticTable.resolvedLabelNames(name) -> cardinality
         }
         val labelScanCardinality: PartialFunction[PlannerQueryPart, Cardinality] = {
-          case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 &&
-            computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).isDefined =>
+          case RegularSinglePlannerQuery(queryGraph, _, _, _, _)
+            if queryGraph.patternNodes.size == 1 &&
+              computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).isDefined =>
             computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).get
         }
 
         val r: PartialFunction[PlannerQueryPart, Cardinality] = labelScanCardinality.orElse(cardinality)
-        if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(queryGraphCardinalityModel, selectivityCalculator, evaluator)(pq, input, semanticTable, indexPredicateProviderContext)
+        if (r.isDefinedAt(pq)) r.apply(pq)
+        else parent.cardinalityModel(queryGraphCardinalityModel, selectivityCalculator, evaluator)(
+          pq,
+          input,
+          semanticTable,
+          indexPredicateProviderContext
+        )
       }
     }
   }
 
-  private def computeOptionCardinality(queryGraph: QueryGraph,
-                                       semanticTable: SemanticTable,
-                                       labelIdCardinality: Map[LabelId, Cardinality]) = {
+  private def computeOptionCardinality(
+    queryGraph: QueryGraph,
+    semanticTable: SemanticTable,
+    labelIdCardinality: Map[LabelId, Cardinality]
+  ) = {
     val labelMap: Map[String, Set[HasLabels]] = queryGraph.selections.labelPredicates
     val labels = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)
     val results = labels.collect {
-      case label if semanticTable.id(label).isDefined &&
-        labelIdCardinality.contains(semanticTable.id(label).get) =>
+      case label
+        if semanticTable.id(label).isDefined &&
+          labelIdCardinality.contains(semanticTable.id(label).get) =>
         labelIdCardinality(semanticTable.id(label).get)
     }
     results.headOption

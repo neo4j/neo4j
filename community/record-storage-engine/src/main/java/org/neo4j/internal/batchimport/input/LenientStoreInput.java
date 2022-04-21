@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.input;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -39,8 +38,7 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 
-public class LenientStoreInput implements Input
-{
+public class LenientStoreInput implements Input {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
@@ -51,9 +49,12 @@ public class LenientStoreInput implements Input
     private final ReadBehaviour readBehaviour;
     private final Groups groups = new Groups();
 
-    public LenientStoreInput( NeoStores neoStores, TokenHolders tokenHolders, boolean compactNodeIdSpace, CursorContextFactory contextFactory,
-            ReadBehaviour readBehaviour )
-    {
+    public LenientStoreInput(
+            NeoStores neoStores,
+            TokenHolders tokenHolders,
+            boolean compactNodeIdSpace,
+            CursorContextFactory contextFactory,
+            ReadBehaviour readBehaviour) {
         this.propertyStore = neoStores.getPropertyStore();
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
@@ -65,51 +66,53 @@ public class LenientStoreInput implements Input
     }
 
     @Override
-    public InputIterable nodes( Collector badCollector )
-    {
-        return () -> new LenientInputChunkIterator( nodeStore )
-        {
+    public InputIterable nodes(Collector badCollector) {
+        return () -> new LenientInputChunkIterator(nodeStore) {
             @Override
-            public InputChunk newChunk()
-            {
-                return new LenientNodeReader( readBehaviour, nodeStore, propertyStore, tokenHolders, contextFactory,
-                        new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ), compactNodeIdSpace );
+            public InputChunk newChunk() {
+                return new LenientNodeReader(
+                        readBehaviour,
+                        nodeStore,
+                        propertyStore,
+                        tokenHolders,
+                        contextFactory,
+                        new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT),
+                        compactNodeIdSpace);
             }
         };
     }
 
     @Override
-    public InputIterable relationships( Collector badCollector )
-    {
-        return () -> new LenientInputChunkIterator( relationshipStore )
-        {
+    public InputIterable relationships(Collector badCollector) {
+        return () -> new LenientInputChunkIterator(relationshipStore) {
             @Override
-            public InputChunk newChunk()
-            {
-                return new LenientRelationshipReader( readBehaviour, relationshipStore, propertyStore, tokenHolders, contextFactory,
-                        new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) );
+            public InputChunk newChunk() {
+                return new LenientRelationshipReader(
+                        readBehaviour,
+                        relationshipStore,
+                        propertyStore,
+                        tokenHolders,
+                        contextFactory,
+                        new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT));
             }
         };
     }
 
     @Override
-    public IdType idType()
-    {
+    public IdType idType() {
         return IdType.INTEGER;
     }
 
     @Override
-    public ReadableGroups groups()
-    {
+    public ReadableGroups groups() {
         return groups;
     }
 
     @Override
-    public Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator ) throws IOException
-    {
-        long propertyStoreSize = storeSize( propertyStore ) / 2 +
-            storeSize( propertyStore.getStringStore() ) / 2 +
-            storeSize( propertyStore.getArrayStore() ) / 2;
+    public Estimates calculateEstimates(PropertySizeCalculator valueSizeCalculator) throws IOException {
+        long propertyStoreSize = storeSize(propertyStore) / 2
+                + storeSize(propertyStore.getStringStore()) / 2
+                + storeSize(propertyStore.getArrayStore()) / 2;
         return Input.knownEstimates(
                 nodeStore.getNumberOfIdsInUse(),
                 relationshipStore.getNumberOfIdsInUse(),
@@ -117,36 +120,27 @@ public class LenientStoreInput implements Input
                 propertyStore.getNumberOfIdsInUse(),
                 propertyStoreSize / 2,
                 propertyStoreSize / 2,
-                tokenHolders.labelTokens().size() );
+                tokenHolders.labelTokens().size());
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         neoStores.close();
     }
 
-    private static long storeSize( CommonAbstractStore<? extends AbstractBaseRecord,? extends StoreHeader> store )
-    {
-        try
-        {
+    private static long storeSize(CommonAbstractStore<? extends AbstractBaseRecord, ? extends StoreHeader> store) {
+        try {
             return store.getStoreSize();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    static NamedToken getTokenByIdSafe( TokenHolder tokenHolder, int id )
-    {
-        try
-        {
-            return tokenHolder.getTokenById( id );
-        }
-        catch ( TokenNotFoundException e )
-        {
-            throw new RuntimeException( e );
+    static NamedToken getTokenByIdSafe(TokenHolder tokenHolder, int id) {
+        try {
+            return tokenHolder.getTokenById(id);
+        } catch (TokenNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 }

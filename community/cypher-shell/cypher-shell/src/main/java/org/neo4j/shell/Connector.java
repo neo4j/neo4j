@@ -20,14 +20,12 @@
 package org.neo4j.shell;
 
 import java.util.Optional;
-
 import org.neo4j.shell.exception.CommandException;
 
 /**
  * An object with the ability to connect and disconnect.
  */
-public interface Connector
-{
+public interface Connector {
 
     /**
      * @return true if connected, false otherwise
@@ -39,11 +37,11 @@ public interface Connector
      *
      * @throws CommandException if connection failed
      */
-    void connect( ConnectionConfig connectionConfig ) throws CommandException;
+    void connect(ConnectionConfig connectionConfig) throws CommandException;
 
-    void connect( String user, String password, String database ) throws CommandException;
+    void connect(String user, String password, String database) throws CommandException;
 
-    void impersonate( String impersonatedUser ) throws CommandException;
+    void impersonate(String impersonatedUser) throws CommandException;
 
     /**
      * Reconnect to the database, requires an open connection that does not have an open transaction.

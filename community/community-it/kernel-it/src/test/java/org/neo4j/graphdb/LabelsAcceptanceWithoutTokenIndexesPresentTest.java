@@ -24,12 +24,10 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-public class LabelsAcceptanceWithoutTokenIndexesPresentTest extends LabelsAcceptanceTest
-{
+@ImpermanentDbmsExtension(configurationCallback = "configure")
+public class LabelsAcceptanceWithoutTokenIndexesPresentTest extends LabelsAcceptanceTest {
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.skip_default_indexes_on_creation, true );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.skip_default_indexes_on_creation, true);
     }
 }

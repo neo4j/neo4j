@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Map;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -52,15 +52,13 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
-import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration;
-
-public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout>
-{
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "point", "1.0" );
+public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayout> {
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("point", "1.0");
     public static final IndexCapability CAPABILITY = new PointIndexCapability();
 
     // Ignore everything except GEOMETRY values
-    static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = values -> values[0].valueGroup().category() != ValueCategory.GEOMETRY;
+    static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY =
+            values -> values[0].valueGroup().category() != ValueCategory.GEOMETRY;
     /**
      * Cache of all setting for various specific CRS's found in the config at instantiation of this provider.
      * The config is read once and all relevant CRS configs cached here.
@@ -71,166 +69,172 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
      * A space filling curve configuration used when reading spatial index values.
      */
     private final SpaceFillingCurveConfiguration configuration;
+
     private final boolean archiveFailedIndex;
     private final Config config;
 
-    public PointIndexProvider( DatabaseIndexContext databaseIndexContext, IndexDirectoryStructure.Factory directoryStructureFactory,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config )
-    {
-        super( databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector );
-        this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
-        this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
-        this.archiveFailedIndex = config.get( GraphDatabaseInternalSettings.archive_failed_index );
+    public PointIndexProvider(
+            DatabaseIndexContext databaseIndexContext,
+            IndexDirectoryStructure.Factory directoryStructureFactory,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            Config config) {
+        super(databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector);
+        this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache(config);
+        this.configuration = getConfiguredSpaceFillingCurveConfiguration(config);
+        this.archiveFailedIndex = config.get(GraphDatabaseInternalSettings.archive_failed_index);
         this.config = config;
     }
 
     @Override
-    PointLayout layout( IndexDescriptor descriptor, Path storeFile )
-    {
+    PointLayout layout(IndexDescriptor descriptor, Path storeFile) {
         IndexConfig indexConfig = descriptor.getIndexConfig();
-        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = SpatialIndexConfig.extractSpatialConfig( indexConfig );
-        IndexSpecificSpaceFillingCurveSettings spatialSettings = new IndexSpecificSpaceFillingCurveSettings( settings );
-        return new PointLayout( spatialSettings );
+        Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> settings =
+                SpatialIndexConfig.extractSpatialConfig(indexConfig);
+        IndexSpecificSpaceFillingCurveSettings spatialSettings = new IndexSpecificSpaceFillingCurveSettings(settings);
+        return new PointLayout(spatialSettings);
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, PointLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory,
-                                                MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                                ImmutableSet<OpenOption> openOptions )
-    {
-        return new PointBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, layout.getSpaceFillingCurveSettings(), configuration,
-                                                  archiveFailedIndex, bufferFactory, config, memoryTracker, openOptions );
+    protected IndexPopulator newIndexPopulator(
+            IndexFiles indexFiles,
+            PointLayout layout,
+            IndexDescriptor descriptor,
+            ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        return new PointBlockBasedIndexPopulator(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                descriptor,
+                layout.getSpaceFillingCurveSettings(),
+                configuration,
+                archiveFailedIndex,
+                bufferFactory,
+                config,
+                memoryTracker,
+                openOptions);
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, PointLayout layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup,
-                                              ImmutableSet<OpenOption> openOptions )
-    {
-        return new PointIndexAccessor( databaseIndexContext, indexFiles, layout, recoveryCleanupWorkCollector, descriptor,
-                                       layout.getSpaceFillingCurveSettings(), configuration, openOptions );
+    protected IndexAccessor newIndexAccessor(
+            IndexFiles indexFiles,
+            PointLayout layout,
+            IndexDescriptor descriptor,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        return new PointIndexAccessor(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                recoveryCleanupWorkCollector,
+                descriptor,
+                layout.getSpaceFillingCurveSettings(),
+                configuration,
+                openOptions);
     }
 
     @Override
-    public IndexDescriptor completeConfiguration( IndexDescriptor index )
-    {
+    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
         IndexConfig indexConfig = index.getIndexConfig();
-        indexConfig = completeSpatialConfiguration( indexConfig );
-        index = index.withIndexConfig( indexConfig );
-        if ( index.getCapability().equals( IndexCapability.NO_CAPABILITY ) )
-        {
-            index = index.withIndexCapability( CAPABILITY );
+        indexConfig = completeSpatialConfiguration(indexConfig);
+        index = index.withIndexConfig(indexConfig);
+        if (index.getCapability().equals(IndexCapability.NO_CAPABILITY)) {
+            index = index.withIndexCapability(CAPABILITY);
         }
         return index;
     }
 
-    private IndexConfig completeSpatialConfiguration( IndexConfig indexConfig )
-    {
-        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
-        {
-            SpaceFillingCurveSettings spaceFillingCurveSettings = configuredSettings.forCRS( crs );
-            indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
+    private IndexConfig completeSpatialConfiguration(IndexConfig indexConfig) {
+        for (CoordinateReferenceSystem crs : CoordinateReferenceSystem.all()) {
+            SpaceFillingCurveSettings spaceFillingCurveSettings = configuredSettings.forCRS(crs);
+            indexConfig = SpatialIndexConfig.addSpatialConfig(indexConfig, crs, spaceFillingCurveSettings);
         }
         return indexConfig;
     }
 
     @Override
-    public void validatePrototype( IndexPrototype prototype )
-    {
+    public void validatePrototype(IndexPrototype prototype) {
         IndexType indexType = prototype.getIndexType();
-        if ( indexType != IndexType.POINT )
-        {
+        if (indexType != IndexType.POINT) {
             String providerName = getProviderDescriptor().name();
-            throw new IllegalArgumentException( "The '" + providerName + "' index provider does not support " + indexType + " indexes: " + prototype );
+            throw new IllegalArgumentException("The '" + providerName + "' index provider does not support " + indexType
+                    + " indexes: " + prototype);
         }
-        if ( !(prototype.schema().isLabelSchemaDescriptor() || prototype.schema().isRelationshipTypeSchemaDescriptor()) )
-        {
-            throw new IllegalArgumentException(
-                    "The " + prototype.schema() + " index schema is not a point index schema, which it is required to be for the '" +
-                            getProviderDescriptor().name() + "' index provider to be able to create an index." );
+        if (!(prototype.schema().isLabelSchemaDescriptor()
+                || prototype.schema().isRelationshipTypeSchemaDescriptor())) {
+            throw new IllegalArgumentException("The " + prototype.schema()
+                    + " index schema is not a point index schema, which it is required to be for the '"
+                    + getProviderDescriptor().name() + "' index provider to be able to create an index.");
         }
-        if ( !prototype.getIndexProvider().equals( DESCRIPTOR ) )
-        {
-            throw new IllegalArgumentException(
-                    "The '" + getProviderDescriptor().name() + "' index provider does not support " + prototype.getIndexProvider() + " indexes: " + prototype );
+        if (!prototype.getIndexProvider().equals(DESCRIPTOR)) {
+            throw new IllegalArgumentException("The '" + getProviderDescriptor().name()
+                    + "' index provider does not support " + prototype.getIndexProvider() + " indexes: " + prototype);
         }
-        if ( prototype.isUnique() )
-        {
-            throw new IllegalArgumentException(
-                    "The '" + getProviderDescriptor().name() + "' index provider does not support uniqueness indexes: " + prototype );
+        if (prototype.isUnique()) {
+            throw new IllegalArgumentException("The '" + getProviderDescriptor().name()
+                    + "' index provider does not support uniqueness indexes: " + prototype);
         }
 
         IndexConfig indexConfig = prototype.getIndexConfig();
-        indexConfig = completeSpatialConfiguration( indexConfig );
-        try
-        {
-            SpatialIndexConfig.validateSpatialConfig( indexConfig );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IllegalArgumentException( "Invalid spatial index settings.", e );
+        indexConfig = completeSpatialConfiguration(indexConfig);
+        try {
+            SpatialIndexConfig.validateSpatialConfig(indexConfig);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid spatial index settings.", e);
         }
     }
 
     @Override
-    public IndexType getIndexType()
-    {
+    public IndexType getIndexType() {
         return IndexType.POINT;
     }
 
-    private static class PointIndexCapability implements IndexCapability
-    {
+    private static class PointIndexCapability implements IndexCapability {
         @Override
-        public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
-        {
+        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
             return IndexOrderCapability.NONE;
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-        {
+        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
             // The point index has values for all the queries it supports.
             return IndexValueCapability.YES;
         }
 
         @Override
-        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
-        {
-            Preconditions.requireNonEmpty( valueCategories );
-            Preconditions.requireNoNullElements( valueCategories );
+        public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
+            Preconditions.requireNonEmpty(valueCategories);
+            Preconditions.requireNoNullElements(valueCategories);
             return valueCategories.length == 1 && valueCategories[0] == ValueCategory.GEOMETRY;
         }
 
         @Override
-        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
-        {
-            if ( queryType == IndexQueryType.ALL_ENTRIES )
-            {
+        public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
+            if (queryType == IndexQueryType.ALL_ENTRIES) {
                 return true;
             }
 
-            if ( !areValueCategoriesAccepted( valueCategory ) )
-            {
+            if (!areValueCategoriesAccepted(valueCategory)) {
                 return false;
             }
 
-            return switch ( queryType )
-            {
+            return switch (queryType) {
                 case EXACT, BOUNDING_BOX -> true;
                 default -> false;
             };
         }
 
         @Override
-        public double getCostMultiplier( IndexQueryType... queryTypes )
-        {
+        public double getCostMultiplier(IndexQueryType... queryTypes) {
             return 1.0;
         }
 
         @Override
-        public boolean supportPartitionedScan( IndexQuery... queries )
-        {
-            Preconditions.requireNonEmpty( queries );
-            Preconditions.requireNoNullElements( queries );
+        public boolean supportPartitionedScan(IndexQuery... queries) {
+            Preconditions.requireNonEmpty(queries);
+            Preconditions.requireNoNullElements(queries);
             return false;
         }
     }

@@ -34,35 +34,43 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 trait VarLengthPredicate {
-  def filterNode(row: CypherRow, state:QueryState)(node: VirtualNodeValue): Boolean
-  def filterRelationship(row: CypherRow, state:QueryState)(rel: VirtualRelationshipValue): Boolean
+  def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean
+  def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean
   def predicateExpressions: Seq[Predicate]
 }
 
 object VarLengthPredicate {
+
   val NONE: VarLengthPredicate = new VarLengthPredicate {
-    override def filterNode(row: CypherRow, state:QueryState)(node: VirtualNodeValue): Boolean = true
-    override def filterRelationship(row: CypherRow, state:QueryState)(rel: VirtualRelationshipValue): Boolean = true
+    override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean = true
+    override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean = true
     override def predicateExpressions: Seq[Predicate] = Seq.empty
   }
 }
 
-case class VarLengthExpandPipe(source: Pipe,
-                               fromName: String,
-                               relName: String,
-                               toName: String,
-                               dir: SemanticDirection,
-                               projectedDir: SemanticDirection,
-                               types: RelationshipTypes,
-                               min: Int,
-                               max: Option[Int],
-                               nodeInScope: Boolean,
-                               filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
-                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class VarLengthExpandPipe(
+  source: Pipe,
+  fromName: String,
+  relName: String,
+  toName: String,
+  dir: SemanticDirection,
+  projectedDir: SemanticDirection,
+  types: RelationshipTypes,
+  min: Int,
+  max: Option[Int],
+  nodeInScope: Boolean,
+  filteringStep: VarLengthPredicate = VarLengthPredicate.NONE
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  private def varLengthExpand(node: VirtualNodeValue, state: QueryState, maxDepth: Option[Int],
-                              row: CypherRow): ClosingIterator[(VirtualNodeValue, RelationshipContainer)] = {
-    val stack = HeapTrackingCollections.newStack[(VirtualNodeValue, RelationshipContainer)](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+  private def varLengthExpand(
+    node: VirtualNodeValue,
+    state: QueryState,
+    maxDepth: Option[Int],
+    row: CypherRow
+  ): ClosingIterator[(VirtualNodeValue, RelationshipContainer)] = {
+    val stack = HeapTrackingCollections.newStack[(VirtualNodeValue, RelationshipContainer)](
+      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
+    )
     stack.push((node, RelationshipContainer.EMPTY))
 
     new ClosingIterator[(VirtualNodeValue, RelationshipContainer)] {
@@ -73,7 +81,12 @@ case class VarLengthExpandPipe(source: Pipe,
 
           // relationships get immediately exhausted. Therefore we do not need a ClosingIterator here.
           while (relationships.hasNext) {
-            val rel = VirtualValues.relationship(relationships.next(), relationships.startNodeId(), relationships.endNodeId(), relationships.typeId())
+            val rel = VirtualValues.relationship(
+              relationships.next(),
+              relationships.startNodeId(),
+              relationships.endNodeId(),
+              relationships.typeId()
+            )
             if (filteringStep.filterRelationship(row, state)(rel)) {
               val otherNode = VirtualValues.node(relationships.otherNodeId(node.id()))
               if (!rels.contains(rel) && filteringStep.filterNode(row, state)(otherNode)) {
@@ -97,7 +110,10 @@ case class VarLengthExpandPipe(source: Pipe,
     }
   }
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     def expand(row: CypherRow, n: VirtualNodeValue): ClosingIterator[CypherRow] = {
       if (filteringStep.filterNode(row, state)(n)) {
         val paths = varLengthExpand(n, state, max, row)
@@ -111,15 +127,17 @@ case class VarLengthExpandPipe(source: Pipe,
     }
 
     input.flatMap {
-      row => {
-        row.getByName(fromName) match {
-          case node: VirtualNodeValue =>
-            expand(row, node)
+      row =>
+        {
+          row.getByName(fromName) match {
+            case node: VirtualNodeValue =>
+              expand(row, node)
 
-          case IsNoValue() => ClosingIterator.empty
-          case value => throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
+            case IsNoValue() => ClosingIterator.empty
+            case value =>
+              throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
+          }
         }
-      }
     }
   }
 
@@ -132,9 +150,10 @@ case class VarLengthExpandPipe(source: Pipe,
           false
       }
     }
-  }
+}
 
 object VarLengthExpandPipe {
+
   def projectBackwards(dir: SemanticDirection, projectedDir: SemanticDirection): Boolean =
     if (dir == SemanticDirection.BOTH) {
       projectedDir == SemanticDirection.INCOMING

@@ -23,28 +23,24 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.values.AnyValue;
 
-public interface CallableUserFunction
-{
+public interface CallableUserFunction {
     UserFunctionSignature signature();
-    AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException;
 
-    default boolean threadSafe()
-    {
+    AnyValue apply(Context ctx, AnyValue[] input) throws ProcedureException;
+
+    default boolean threadSafe() {
         return false;
     }
 
-    abstract class BasicUserFunction implements CallableUserFunction
-    {
+    abstract class BasicUserFunction implements CallableUserFunction {
         private final UserFunctionSignature signature;
 
-        protected BasicUserFunction( UserFunctionSignature signature )
-        {
+        protected BasicUserFunction(UserFunctionSignature signature) {
             this.signature = signature;
         }
 
         @Override
-        public UserFunctionSignature signature()
-        {
+        public UserFunctionSignature signature() {
             return signature;
         }
     }

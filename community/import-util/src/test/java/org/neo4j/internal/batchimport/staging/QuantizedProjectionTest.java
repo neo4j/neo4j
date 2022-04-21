@@ -19,30 +19,28 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class QuantizedProjectionTest
-{
+import org.junit.jupiter.api.Test;
+
+class QuantizedProjectionTest {
     @Test
-    void shouldProjectSteps()
-    {
+    void shouldProjectSteps() {
         // GIVEN
-        QuantizedProjection projection = new QuantizedProjection( 9, 7 );
+        QuantizedProjection projection = new QuantizedProjection(9, 7);
 
         // WHEN/THEN
-        assertTrue( projection.next( 3 ) );
-        assertEquals( 2, projection.step() );
+        assertTrue(projection.next(3));
+        assertEquals(2, projection.step());
 
-        assertTrue( projection.next( 3 ) );
-        assertEquals( 3, projection.step() );
+        assertTrue(projection.next(3));
+        assertEquals(3, projection.step());
 
-        assertTrue( projection.next( 3 ) );
-        assertEquals( 2, projection.step() );
+        assertTrue(projection.next(3));
+        assertEquals(2, projection.step());
 
-        assertFalse( projection.next( 1 ) );
+        assertFalse(projection.next(1));
     }
 }

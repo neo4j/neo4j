@@ -33,26 +33,28 @@ class LinenumberPipeDecorator(private var inner: PipeDecorator = NullPipeDecorat
 
   override def decorate(planId: Id, state: QueryState): QueryState = inner.decorate(planId, state)
 
-  override def decorate(planId: Id,
-                        state: QueryState,
-                        iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] =
+  override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] =
     throw new UnsupportedOperationException("This method should never be called on LinenumberPipeDecorator")
 
-  override def decorate(planId: Id,
-                        queryState: QueryState,
-                        iter: ClosingIterator[CypherRow],
-                        sourceIter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
+  override def decorate(
+    planId: Id,
+    queryState: QueryState,
+    iter: ClosingIterator[CypherRow],
+    sourceIter: ClosingIterator[CypherRow]
+  ): ClosingIterator[CypherRow] = {
     val previousContextSupplier = sourceIter match {
       case p: LinenumberIterator => () => p.previousRecord
-      case _ => () => None
+      case _                     => () => None
     }
     decorate(planId, queryState, iter, previousContextSupplier)
   }
 
-  override def decorate(planId: Id,
-                        queryState: QueryState,
-                        iter: ClosingIterator[CypherRow],
-                        previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] = {
+  override def decorate(
+    planId: Id,
+    queryState: QueryState,
+    iter: ClosingIterator[CypherRow],
+    previousContextSupplier: () => Option[CypherRow]
+  ): ClosingIterator[CypherRow] = {
     new LinenumberIterator(inner.decorate(planId, queryState, iter), previousContextSupplier)
   }
 
@@ -62,9 +64,8 @@ class LinenumberPipeDecorator(private var inner: PipeDecorator = NullPipeDecorat
     inner.afterCreateResults(planId, state)
   }
 
-  private class LinenumberIterator(inner: ClosingIterator[CypherRow],
-                                   previousContextSupplier: () => Option[CypherRow])
-    extends ClosingIterator[CypherRow] {
+  private class LinenumberIterator(inner: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow])
+      extends ClosingIterator[CypherRow] {
 
     var previousRecord: Option[CypherRow] = None
 
@@ -101,9 +102,12 @@ class LinenumberPipeDecorator(private var inner: PipeDecorator = NullPipeDecorat
       }
     }
 
-    private def addLineNumberInfoToException(e: StatusWrapCypherException, maybeContext: Option[CypherRow]): StatusWrapCypherException =  maybeContext match {
+    private def addLineNumberInfoToException(
+      e: StatusWrapCypherException,
+      maybeContext: Option[CypherRow]
+    ): StatusWrapCypherException = maybeContext match {
       case Some(record: CypherRow) if record.getLinenumber.nonEmpty => e.addExtraInfo(LINE_NUMBER, errorMessage(record))
-      case _ => e
+      case _                                                        => e
     }
 
     private def errorMessage(record: CypherRow): String = {
@@ -111,7 +115,7 @@ class LinenumberPipeDecorator(private var inner: PipeDecorator = NullPipeDecorat
         case Some(ResourceLinenumber(file, line, last)) =>
           s"Failure when processing file '$file' on line $line" +
             (if (last) " (which is the last row in the file)." else ".")
-        case _ => "" //should not get here TODO: throw an exception?
+        case _ => "" // should not get here TODO: throw an exception?
       }
     }
   }

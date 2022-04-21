@@ -19,23 +19,19 @@
  */
 package org.neo4j.internal.helpers;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.configuration.helpers.SocketAddress;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class SocketAddressTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.helpers.SocketAddress;
+
+class SocketAddressTest {
     @Test
-    void shouldNotAllowStartBracket()
-    {
-        assertThrows( IllegalArgumentException.class, () -> new SocketAddress( "[", 2 ) );
+    void shouldNotAllowStartBracket() {
+        assertThrows(IllegalArgumentException.class, () -> new SocketAddress("[", 2));
     }
 
     @Test
-    void shouldNotAllowEndBracket()
-    {
-        assertThrows( IllegalArgumentException.class, () -> new SocketAddress( "]", 3 ) );
+    void shouldNotAllowEndBracket() {
+        assertThrows(IllegalArgumentException.class, () -> new SocketAddress("]", 3));
     }
 }

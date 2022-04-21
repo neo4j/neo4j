@@ -21,17 +21,14 @@ package org.neo4j.kernel.database;
 
 import org.neo4j.memory.MemoryTracker;
 
-public class DatabaseMemoryTrackers
-{
+public class DatabaseMemoryTrackers {
     private final MemoryTracker otherTracker;
 
-    public DatabaseMemoryTrackers( MemoryTracker otherTracker )
-    {
+    public DatabaseMemoryTrackers(MemoryTracker otherTracker) {
         this.otherTracker = otherTracker;
     }
 
-    public MemoryTracker getOtherTracker()
-    {
+    public MemoryTracker getOtherTracker() {
         return otherTracker;
     }
 }

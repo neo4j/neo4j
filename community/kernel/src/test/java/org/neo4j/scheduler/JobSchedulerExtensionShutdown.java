@@ -19,22 +19,19 @@
  */
 package org.neo4j.scheduler;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import org.neo4j.test.extension.Inject;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@ExtendWith( TraceableJobExecutionScheduler.class )
-class JobSchedulerExtensionShutdown
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.test.extension.Inject;
+
+@ExtendWith(TraceableJobExecutionScheduler.class)
+class JobSchedulerExtensionShutdown {
     @Inject
     private JobScheduler jobScheduler;
 
     @Test
-    void someTest()
-    {
-        assertNotNull( jobScheduler );
+    void someTest() {
+        assertNotNull(jobScheduler);
     }
 }

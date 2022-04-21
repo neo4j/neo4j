@@ -54,6 +54,8 @@ class asPrettyStringTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("should handle CoerceToPredicate with container index and a nested plan expression") {
     val nestedPlanExpr = NestedPlanCollectExpression(null, null, "[(a)<-[`anon_2`]-(b) | b.prop4 IN [true]]")(pos)
-    pretty"CoerceToPredicate([(a)<-[`anon_2`]-(b) | b.prop4 IN [true]][4])" shouldBe asPrettyString(CoerceToPredicate(containerIndex(nestedPlanExpr, literal(4))))
+    pretty"CoerceToPredicate([(a)<-[`anon_2`]-(b) | b.prop4 IN [true]][4])" shouldBe asPrettyString(
+      CoerceToPredicate(containerIndex(nestedPlanExpr, literal(4)))
+    )
   }
 }

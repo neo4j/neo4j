@@ -20,7 +20,6 @@
 package org.neo4j.server.http.cypher.entity;
 
 import java.util.ArrayList;
-
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.SeverityLevel;
@@ -30,83 +29,75 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
-public class HttpNotification implements Notification
-{
+public class HttpNotification implements Notification {
     private final String code;
     private final String title;
     private final String description;
     private final SeverityLevel severity;
     private final InputPosition inputPosition;
 
-    private HttpNotification( String code, String title, String description, String severity, InputPosition inputPosition )
-    {
+    private HttpNotification(
+            String code, String title, String description, String severity, InputPosition inputPosition) {
         this.code = code;
         this.title = title;
         this.description = description;
-        this.severity = SeverityLevel.valueOf( severity );
+        this.severity = SeverityLevel.valueOf(severity);
         this.inputPosition = inputPosition;
     }
 
-    public static Iterable<Notification> iterableFromAnyValue( AnyValue anyValue )
-    {
-        if ( anyValue == null )
-        {
+    public static Iterable<Notification> iterableFromAnyValue(AnyValue anyValue) {
+        if (anyValue == null) {
             return new ArrayList<>();
         }
         ArrayList<Notification> notifications = new ArrayList<>();
 
         ListValue listValue = (ListValue) anyValue;
 
-        listValue.forEach( listItem ->
-                           {
-                               MapValue mapValue = (MapValue) listItem;
-                               InputPosition inputPosition = InputPosition.empty;
+        listValue.forEach(listItem -> {
+            MapValue mapValue = (MapValue) listItem;
+            InputPosition inputPosition = InputPosition.empty;
 
-                               if ( mapValue.containsKey( "position" ) )
-                               {
-                                   var positionMap = (MapValue) mapValue.get( "position" );
-                                   inputPosition = new InputPosition( ((IntValue) positionMap.get( "offset" )).value(),
-                                                                      ((IntValue) positionMap.get( "line" )).value(),
-                                                                      ((IntValue) positionMap.get( "column" )).value() );
-                               }
+            if (mapValue.containsKey("position")) {
+                var positionMap = (MapValue) mapValue.get("position");
+                inputPosition = new InputPosition(
+                        ((IntValue) positionMap.get("offset")).value(),
+                        ((IntValue) positionMap.get("line")).value(),
+                        ((IntValue) positionMap.get("column")).value());
+            }
 
-                               notifications.add( new HttpNotification( ((TextValue) mapValue.get( "code" )).stringValue(),
-                                                                        ((TextValue) mapValue.get( "title" )).stringValue(),
-                                                                        ((TextValue) mapValue.get( "description" )).stringValue(),
-                                                                        ((TextValue) mapValue.get( "severity" )).stringValue(),
-                                                                        inputPosition ) );
-                           } );
+            notifications.add(new HttpNotification(
+                    ((TextValue) mapValue.get("code")).stringValue(),
+                    ((TextValue) mapValue.get("title")).stringValue(),
+                    ((TextValue) mapValue.get("description")).stringValue(),
+                    ((TextValue) mapValue.get("severity")).stringValue(),
+                    inputPosition));
+        });
 
         return notifications;
     }
 
     @Override
-    public String getCode()
-    {
+    public String getCode() {
         return code;
     }
 
     @Override
-    public String getTitle()
-    {
+    public String getTitle() {
         return title;
     }
 
     @Override
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
     @Override
-    public SeverityLevel getSeverity()
-    {
+    public SeverityLevel getSeverity() {
         return severity;
     }
 
     @Override
-    public InputPosition getPosition()
-    {
+    public InputPosition getPosition() {
         return inputPosition;
     }
 }

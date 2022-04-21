@@ -28,39 +28,33 @@ import java.time.ZoneOffset;
 /**
  * A {@link java.time.Clock} that ticks every time it is accessed.
  */
-public class TickOnAccessClock extends Clock
-{
+public class TickOnAccessClock extends Clock {
     private Instant currentInstant;
     private final Duration tickDuration;
 
-    TickOnAccessClock( Instant initialTime, Duration tickDuration )
-    {
+    TickOnAccessClock(Instant initialTime, Duration tickDuration) {
         this.currentInstant = initialTime;
         this.tickDuration = tickDuration;
     }
 
     @Override
-    public ZoneId getZone()
-    {
+    public ZoneId getZone() {
         return ZoneOffset.UTC;
     }
 
     @Override
-    public Clock withZone( ZoneId zone )
-    {
+    public Clock withZone(ZoneId zone) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Instant instant()
-    {
+    public Instant instant() {
         Instant instant = currentInstant;
         tick();
         return instant;
     }
 
-    private void tick()
-    {
-        currentInstant = currentInstant.plus( tickDuration );
+    private void tick() {
+        currentInstant = currentInstant.plus(tickDuration);
     }
 }

@@ -26,21 +26,20 @@ package org.neo4j.kernel.availability;
  * Consumers determine if it is ok to call the database using {@link #isAvailable()},
  * or await availability using {@link #isAvailable(long)}.
  */
-public interface AvailabilityGuard
-{
+public interface AvailabilityGuard {
     /**
      * Indicate a requirement that must be fulfilled before the database is considered available.
      *
      * @param requirement the requirement object
      */
-    void require( AvailabilityRequirement requirement );
+    void require(AvailabilityRequirement requirement);
 
     /**
      * Indicate that a requirement has been fulfilled.
      *
      * @param requirement the requirement object
      */
-    void fulfill( AvailabilityRequirement requirement );
+    void fulfill(AvailabilityRequirement requirement);
 
     /**
      * Check if the database is available for transactions to use.
@@ -60,7 +59,7 @@ public interface AvailabilityGuard
      * @param millis to wait for availability
      * @return true if there are no requirements waiting to be fulfilled and the guard has not been shutdown
      */
-    boolean isAvailable( long millis );
+    boolean isAvailable(long millis);
 
     /**
      * Await the database becoming available.
@@ -68,21 +67,21 @@ public interface AvailabilityGuard
      * @param millis to wait for availability
      * @throws UnavailableException thrown when the timeout has been exceeded or the guard has been shutdown
      */
-    void await( long millis ) throws UnavailableException;
+    void await(long millis) throws UnavailableException;
 
     /**
      * Add a listener for changes to availability.
      *
      * @param listener the listener to receive callbacks when availability changes
      */
-    void addListener( AvailabilityListener listener );
+    void addListener(AvailabilityListener listener);
 
     /**
      * Remove a listener for changes to availability.
      *
      * @param listener the listener to remove
      */
-    void removeListener( AvailabilityListener listener );
+    void removeListener(AvailabilityListener listener);
 
     /**
      * @return a textual representation of what components, if any, are blocking

@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -32,100 +36,81 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
-abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCompatabilityTestBase
-{
-    IndexConfigurationCompletionCompatibility( IndexProviderCompatibilityTestSuite testSuite )
-    {
-        super( testSuite, testSuite.indexPrototype() );
+abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCompatabilityTestBase {
+    IndexConfigurationCompletionCompatibility(IndexProviderCompatibilityTestSuite testSuite) {
+        super(testSuite, testSuite.indexPrototype());
     }
 
     @Test
-    void configurationCompletionMustNotOverwriteExistingConfiguration()
-    {
+    void configurationCompletionMustNotOverwriteExistingConfiguration() {
         IndexDescriptor index = descriptor;
-        index = index.withIndexConfig( IndexConfig.with( "Bob", Values.stringValue( "Howard" ) ) );
-        index = indexProvider.completeConfiguration( index );
-        assertEquals( index.getIndexConfig().get( "Bob" ), Values.stringValue( "Howard" ) );
+        index = index.withIndexConfig(IndexConfig.with("Bob", Values.stringValue("Howard")));
+        index = indexProvider.completeConfiguration(index);
+        assertEquals(index.getIndexConfig().get("Bob"), Values.stringValue("Howard"));
     }
 
     @Test
-    void configurationCompletionMustBeIdempotent()
-    {
+    void configurationCompletionMustBeIdempotent() {
         IndexDescriptor index = descriptor;
-        IndexDescriptor onceCompleted = indexProvider.completeConfiguration( index );
-        IndexDescriptor twiceCompleted = indexProvider.completeConfiguration( onceCompleted );
-        assertEquals( onceCompleted.getIndexConfig(), twiceCompleted.getIndexConfig() );
+        IndexDescriptor onceCompleted = indexProvider.completeConfiguration(index);
+        IndexDescriptor twiceCompleted = indexProvider.completeConfiguration(onceCompleted);
+        assertEquals(onceCompleted.getIndexConfig(), twiceCompleted.getIndexConfig());
     }
 
     @Test
-    void mustAssignCapabilitiesToDescriptorsThatHaveNone()
-    {
+    void mustAssignCapabilitiesToDescriptorsThatHaveNone() {
         IndexDescriptor index = descriptor;
-        IndexDescriptor completed = indexProvider.completeConfiguration( index );
-        assertNotEquals( completed.getCapability(), IndexCapability.NO_CAPABILITY );
-        completed = completed.withIndexCapability( IndexCapability.NO_CAPABILITY );
-        completed = indexProvider.completeConfiguration( completed );
-        assertNotEquals( completed.getCapability(), IndexCapability.NO_CAPABILITY );
+        IndexDescriptor completed = indexProvider.completeConfiguration(index);
+        assertNotEquals(completed.getCapability(), IndexCapability.NO_CAPABILITY);
+        completed = completed.withIndexCapability(IndexCapability.NO_CAPABILITY);
+        completed = indexProvider.completeConfiguration(completed);
+        assertNotEquals(completed.getCapability(), IndexCapability.NO_CAPABILITY);
     }
 
     @Test
-    void mustNotOverwriteExistingCapabilities()
-    {
-        IndexCapability capability = new IndexCapability()
-        {
+    void mustNotOverwriteExistingCapabilities() {
+        IndexCapability capability = new IndexCapability() {
             @Override
-            public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
-            {
+            public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
                 return IndexOrderCapability.NONE;
             }
 
             @Override
-            public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-            {
+            public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
                 return IndexValueCapability.NO;
             }
 
             @Override
-            public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
-            {
-                Preconditions.requireNonEmpty( valueCategories );
-                Preconditions.requireNoNullElements( valueCategories );
+            public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
+                Preconditions.requireNonEmpty(valueCategories);
+                Preconditions.requireNoNullElements(valueCategories);
                 return true;
             }
 
             @Override
-            public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
-            {
+            public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
                 return true;
             }
 
             @Override
-            public double getCostMultiplier( IndexQueryType... queryTypes )
-            {
+            public double getCostMultiplier(IndexQueryType... queryTypes) {
                 return 1.0;
             }
 
             @Override
-            public boolean supportPartitionedScan( IndexQuery... queries )
-            {
-                Preconditions.requireNonEmpty( queries );
-                Preconditions.requireNoNullElements( queries );
+            public boolean supportPartitionedScan(IndexQuery... queries) {
+                Preconditions.requireNonEmpty(queries);
+                Preconditions.requireNoNullElements(queries);
                 return false;
             }
         };
-        IndexDescriptor index = descriptor.withIndexCapability( capability );
-        IndexDescriptor completed = indexProvider.completeConfiguration( index );
-        assertSame( capability, completed.getCapability() );
+        IndexDescriptor index = descriptor.withIndexCapability(capability);
+        IndexDescriptor completed = indexProvider.completeConfiguration(index);
+        assertSame(capability, completed.getCapability());
     }
 
     @Test
-    void indexProviderMustReturnCorrectIndexType()
-    {
-        assertThat( indexProvider.getIndexType() ).isEqualTo( testSuite.indexType() );
+    void indexProviderMustReturnCorrectIndexType() {
+        assertThat(indexProvider.getIndexType()).isEqualTo(testSuite.indexType());
     }
 }

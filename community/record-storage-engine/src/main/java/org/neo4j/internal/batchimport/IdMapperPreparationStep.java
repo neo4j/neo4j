@@ -32,51 +32,47 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
  * under running as a normal {@link Step} so that normal execution monitoring can be applied.
  * Useful since preparing an {@link IdMapper} can take a significant amount of time.
  */
-public class IdMapperPreparationStep extends LonelyProcessingStep
-{
+public class IdMapperPreparationStep extends LonelyProcessingStep {
     private final IdMapper idMapper;
     private final PropertyValueLookup allIds;
     private final Collector collector;
 
-    public IdMapperPreparationStep( StageControl control, Configuration config,
-            IdMapper idMapper, PropertyValueLookup allIds, Collector collector,
-            StatsProvider... additionalStatsProviders )
-    {
-        super( control, "" /*named later in the progress listener*/, config, additionalStatsProviders );
+    public IdMapperPreparationStep(
+            StageControl control,
+            Configuration config,
+            IdMapper idMapper,
+            PropertyValueLookup allIds,
+            Collector collector,
+            StatsProvider... additionalStatsProviders) {
+        super(control, "" /*named later in the progress listener*/, config, additionalStatsProviders);
         this.idMapper = idMapper;
         this.allIds = allIds;
         this.collector = collector;
     }
 
     @Override
-    protected void process()
-    {
-        idMapper.prepare( allIds, collector, new ProgressListener.Adapter()
-        {
+    protected void process() {
+        idMapper.prepare(allIds, collector, new ProgressListener.Adapter() {
             @Override
-            public void started( String task )
-            {
-                changeName( task );
+            public void started(String task) {
+                changeName(task);
             }
 
             @Override
-            public void failed( Throwable e )
-            {
-                issuePanic( e );
+            public void failed(Throwable e) {
+                issuePanic(e);
             }
 
             @Override
-            public synchronized void add( long progress )
-            {   // Directly feed into the progress of this step.
+            public synchronized void add(long progress) { // Directly feed into the progress of this step.
                 // Expected to be called by multiple threads, although quite rarely,
                 // so synchronization overhead should be negligible.
-                progress( progress );
+                progress(progress);
             }
 
             @Override
-            public void done()
-            {   // Nothing to do
+            public void done() { // Nothing to do
             }
-        } );
+        });
     }
 }

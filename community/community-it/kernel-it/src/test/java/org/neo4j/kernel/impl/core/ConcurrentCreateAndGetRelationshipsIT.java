@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.Test;
+import static java.lang.Thread.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.cypher.internal.runtime.RelationshipIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,10 +38,6 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
-
-import static java.lang.Thread.sleep;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.graphdb.Direction.OUTGOING;
 
 /**
  * Ensures the absence of an issue where iterating through a {@link RelationshipIterator} would result in
@@ -53,84 +51,84 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
  *
  */
 @ImpermanentDbmsExtension
-class ConcurrentCreateAndGetRelationshipsIT
-{
+class ConcurrentCreateAndGetRelationshipsIT {
     @Inject
     private GraphDatabaseService db;
 
     private static final RelationshipType RELTYPE = MyRelTypes.TEST;
 
     @Test
-    void tryToReproduceTheIssue() throws Exception
-    {
+    void tryToReproduceTheIssue() throws Exception {
         // GIVEN
-        CountDownLatch startSignal = new CountDownLatch( 1 );
+        CountDownLatch startSignal = new CountDownLatch(1);
         AtomicBoolean stopSignal = new AtomicBoolean();
         AtomicReference<Exception> failure = new AtomicReference<>();
-        Node parentNode = createNode( db );
-        Collection<Worker> workers = createWorkers( db, startSignal, stopSignal, failure, parentNode );
+        Node parentNode = createNode(db);
+        Collection<Worker> workers = createWorkers(db, startSignal, stopSignal, failure, parentNode);
 
         // WHEN
         startSignal.countDown();
-        sleep( 500 );
-        stopSignal.set( true );
-        awaitWorkersToEnd( workers );
+        sleep(500);
+        stopSignal.set(true);
+        awaitWorkersToEnd(workers);
 
         // THEN
-        if ( failure.get() != null )
-        {
-            throw new Exception( "A worker failed", failure.get() );
+        if (failure.get() != null) {
+            throw new Exception("A worker failed", failure.get());
         }
     }
 
-    private static void awaitWorkersToEnd( Collection<Worker> workers ) throws InterruptedException
-    {
-        for ( Worker worker : workers )
-        {
+    private static void awaitWorkersToEnd(Collection<Worker> workers) throws InterruptedException {
+        for (Worker worker : workers) {
             worker.join();
         }
     }
 
-    private static Collection<Worker> createWorkers( GraphDatabaseService db, CountDownLatch startSignal,
-            AtomicBoolean stopSignal, AtomicReference<Exception> failure, Node parentNode )
-    {
+    private static Collection<Worker> createWorkers(
+            GraphDatabaseService db,
+            CountDownLatch startSignal,
+            AtomicBoolean stopSignal,
+            AtomicReference<Exception> failure,
+            Node parentNode) {
         Collection<Worker> workers = new ArrayList<>();
-        for ( int i = 0; i < 2; i++ )
-        {
-            workers.add( newWorker( db, startSignal, stopSignal, failure, parentNode ) );
+        for (int i = 0; i < 2; i++) {
+            workers.add(newWorker(db, startSignal, stopSignal, failure, parentNode));
         }
         return workers;
     }
 
-    private static Worker newWorker( GraphDatabaseService db, CountDownLatch startSignal, AtomicBoolean stopSignal,
-            AtomicReference<Exception> failure, Node parentNode )
-    {
-        Worker worker = new Worker( db, startSignal, stopSignal, failure, parentNode );
+    private static Worker newWorker(
+            GraphDatabaseService db,
+            CountDownLatch startSignal,
+            AtomicBoolean stopSignal,
+            AtomicReference<Exception> failure,
+            Node parentNode) {
+        Worker worker = new Worker(db, startSignal, stopSignal, failure, parentNode);
         worker.start();
         return worker;
     }
 
-    private static Node createNode( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
+    private static Node createNode(GraphDatabaseService db) {
+        try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
             tx.commit();
             return node;
         }
     }
 
-    private static class Worker extends Thread
-    {
+    private static class Worker extends Thread {
         private final GraphDatabaseService db;
         private final CountDownLatch startSignal;
         private final AtomicReference<Exception> failure;
         private final Node parentNode;
         private final AtomicBoolean stopSignal;
 
-        Worker( GraphDatabaseService db, CountDownLatch startSignal, AtomicBoolean stopSignal,
-                AtomicReference<Exception> failure, Node parentNode )
-        {
+        Worker(
+                GraphDatabaseService db,
+                CountDownLatch startSignal,
+                AtomicBoolean stopSignal,
+                AtomicReference<Exception> failure,
+                Node parentNode) {
             this.db = db;
             this.startSignal = startSignal;
             this.stopSignal = stopSignal;
@@ -139,36 +137,27 @@ class ConcurrentCreateAndGetRelationshipsIT
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             awaitStartSignal();
-            while ( failure.get() == null && !stopSignal.get() )
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    var node = tx.getNodeById( parentNode.getId() );
+            while (failure.get() == null && !stopSignal.get()) {
+                try (Transaction tx = db.beginTx()) {
+                    var node = tx.getNodeById(parentNode.getId());
                     // ArrayIndexOutOfBoundsException happens here
-                    Iterables.count( node.getRelationships( OUTGOING, RELTYPE ) );
+                    Iterables.count(node.getRelationships(OUTGOING, RELTYPE));
 
-                    node.createRelationshipTo( tx.createNode(), RELTYPE );
+                    node.createRelationshipTo(tx.createNode(), RELTYPE);
                     tx.commit();
-                }
-                catch ( Exception e )
-                {
-                    failure.compareAndSet( null, e );
+                } catch (Exception e) {
+                    failure.compareAndSet(null, e);
                 }
             }
         }
 
-        private void awaitStartSignal()
-        {
-            try
-            {
-                startSignal.await( 10, SECONDS );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
+        private void awaitStartSignal() {
+            try {
+                startSignal.await(10, SECONDS);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
     }

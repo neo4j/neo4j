@@ -49,7 +49,11 @@ trait GraphStatistics {
    *   r has the type `relTypeId`, or any type if `relTypeId` is None
    * }}}
    */
-  def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality
+  def patternStepCardinality(
+    fromLabel: Option[LabelId],
+    relTypeId: Option[RelTypeId],
+    toLabel: Option[LabelId]
+  ): Cardinality
 
   /**
    * Probability of any node in the index to have a given property with a particular value
@@ -67,10 +71,15 @@ trait GraphStatistics {
 }
 
 class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatistics {
+
   override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     delegate.nodesWithLabelCardinality(labelId)
 
-  override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+  override def patternStepCardinality(
+    fromLabel: Option[LabelId],
+    relTypeId: Option[RelTypeId],
+    toLabel: Option[LabelId]
+  ): Cardinality =
     delegate.patternStepCardinality(fromLabel, relTypeId, toLabel)
 
   override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =

@@ -23,7 +23,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.string.HexString;
 import org.neo4j.string.UTF8;
@@ -32,65 +31,61 @@ import org.neo4j.string.UTF8;
  * This class is used for 3.5 community security, InternalFlatFile, SetDefaultAdminCommand and SetInitialPasswordCommand
  * The new security has its own more secure version of Credential
  */
-public class LegacyCredential implements Credential
-{
+public class LegacyCredential implements Credential {
     static final String DIGEST_ALGO = "SHA-256";
     static final int ITERATIONS = 1;
 
-    public static final LegacyCredential INACCESSIBLE = new LegacyCredential( new byte[]{}, new byte[]{} );
+    public static final LegacyCredential INACCESSIBLE = new LegacyCredential(new byte[] {}, new byte[] {});
 
     private static final SecureRandom random = new SecureRandom();
 
     private final byte[] salt;
     private final byte[] passwordHash;
 
-    public static LegacyCredential forPassword( byte[] password )
-    {
+    public static LegacyCredential forPassword(byte[] password) {
         byte[] salt = randomSalt();
-        return new LegacyCredential( salt, hash( salt, password ) );
+        return new LegacyCredential(salt, hash(salt, password));
     }
 
     // For testing purposes only!
-    public static LegacyCredential forPassword( String password )
-    {
-        return forPassword( UTF8.encode( password ) );
+    public static LegacyCredential forPassword(String password) {
+        return forPassword(UTF8.encode(password));
     }
 
-    public LegacyCredential( byte[] salt, byte[] passwordHash )
-    {
+    public LegacyCredential(byte[] salt, byte[] passwordHash) {
         this.salt = salt;
         this.passwordHash = passwordHash;
     }
 
-    public byte[] salt()
-    {
+    public byte[] salt() {
         return salt;
     }
 
-    public byte[] passwordHash()
-    {
+    public byte[] passwordHash() {
         return passwordHash;
     }
 
     @Override
-    public boolean matchesPassword( byte[] password )
-    {
-        return byteEquals( passwordHash, hash( salt, password ) );
+    public boolean matchesPassword(byte[] password) {
+        return byteEquals(passwordHash, hash(salt, password));
     }
 
     // For testing purposes only!
     @Override
-    public boolean matchesPassword( String password )
-    {
-        return byteEquals( passwordHash, hash( salt, UTF8.encode( password ) ) );
+    public boolean matchesPassword(String password) {
+        return byteEquals(passwordHash, hash(salt, UTF8.encode(password)));
     }
 
     @Override
-    public String serialize()
-    {
-        String encodedSalt = HexString.encodeHexString( this.salt() );
-        String encodedPassword = HexString.encodeHexString( this.passwordHash() );
-        return String.join( CREDENTIAL_SEPARATOR, LegacyCredential.DIGEST_ALGO, encodedPassword, encodedSalt, String.valueOf( ITERATIONS ) );
+    public String serialize() {
+        String encodedSalt = HexString.encodeHexString(this.salt());
+        String encodedPassword = HexString.encodeHexString(this.passwordHash());
+        return String.join(
+                CREDENTIAL_SEPARATOR,
+                LegacyCredential.DIGEST_ALGO,
+                encodedPassword,
+                encodedSalt,
+                String.valueOf(ITERATIONS));
     }
 
     /**
@@ -102,14 +97,11 @@ public class LegacyCredential implements Credential
      * @param given password given by the user
      * @return whether the two byte arrays are equal
      */
-    private static boolean byteEquals( byte[] actual, byte[] given )
-    {
-        if ( actual == given )
-        {
+    private static boolean byteEquals(byte[] actual, byte[] given) {
+        if (actual == given) {
             return true;
         }
-        if ( actual == null || given == null )
-        {
+        if (actual == null || given == null) {
             return false;
         }
 
@@ -117,10 +109,8 @@ public class LegacyCredential implements Credential
         int givenLength = given.length;
         boolean result = true;
 
-        for ( int i = 0; i < givenLength; ++i )
-        {
-            if ( actualLength > 0 )
-            {
+        for (int i = 0; i < givenLength; ++i) {
+            if (actualLength > 0) {
                 result &= actual[i % actualLength] == given[i];
             }
         }
@@ -131,58 +121,47 @@ public class LegacyCredential implements Credential
      * <p>Equality to always check for both salt and password hash as a safeguard against timing attack.</p>
      */
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         LegacyCredential that = (LegacyCredential) o;
 
-        boolean saltEquals = byteEquals( this.salt, that.salt );
-        boolean passwordEquals = byteEquals( this.passwordHash, that.passwordHash );
+        boolean saltEquals = byteEquals(this.salt, that.salt);
+        boolean passwordEquals = byteEquals(this.passwordHash, that.passwordHash);
         return saltEquals && passwordEquals;
     }
 
     @Override
-    public int hashCode()
-    {
-        return 31 * Arrays.hashCode( salt ) + Arrays.hashCode( passwordHash );
+    public int hashCode() {
+        return 31 * Arrays.hashCode(salt) + Arrays.hashCode(passwordHash);
     }
 
     @Override
-    public String toString()
-    {
-        return "Credential{" +
-               "salt=0x" + HexString.encodeHexString( salt ) +
-               ", passwordHash=0x" + HexString.encodeHexString( passwordHash ) +
-               '}';
+    public String toString() {
+        return "Credential{" + "salt=0x"
+                + HexString.encodeHexString(salt) + ", passwordHash=0x"
+                + HexString.encodeHexString(passwordHash) + '}';
     }
 
-    private static byte[] hash( byte[] salt, byte[] password )
-    {
-        try
-        {
-            MessageDigest m = MessageDigest.getInstance( DIGEST_ALGO );
-            m.update( salt, 0, salt.length );
-            m.update( password, 0, password.length );
+    private static byte[] hash(byte[] salt, byte[] password) {
+        try {
+            MessageDigest m = MessageDigest.getInstance(DIGEST_ALGO);
+            m.update(salt, 0, salt.length);
+            m.update(password, 0, password.length);
             return m.digest();
-        }
-        catch ( NoSuchAlgorithmException e )
-        {
-            throw new RuntimeException( "Hash algorithm is not available on this platform: " + e.getMessage(), e );
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Hash algorithm is not available on this platform: " + e.getMessage(), e);
         }
     }
 
-    private static byte[] randomSalt()
-    {
+    private static byte[] randomSalt() {
         byte[] salt = new byte[32];
-        random.nextBytes( salt );
+        random.nextBytes(salt);
         return salt;
     }
 }

@@ -19,12 +19,15 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.BoltConditions.succeeded;
+import static org.neo4j.bolt.testing.BoltConditions.wasIgnored;
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
+
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -33,94 +36,82 @@ import org.neo4j.bolt.v3.messaging.BoltV3Messages;
 import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.BoltConditions.succeeded;
-import static org.neo4j.bolt.testing.BoltConditions.wasIgnored;
-import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
-
-class InterruptedStateIT extends BoltStateMachineV3StateTestBase
-{
+class InterruptedStateIT extends BoltStateMachineV3StateTestBase {
     @Test
-    void shouldMoveReadyOnReset_succ() throws Throwable
-    {
+    void shouldMoveReadyOnReset_succ() throws Throwable {
         // Given
         BoltStateMachineV3 machine = getBoltStateMachineInInterruptedState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( ResetMessage.INSTANCE, recorder );
+        machine.process(ResetMessage.INSTANCE, recorder);
 
         // Then
-        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
-        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
+        assertThat(recorder.nextResponse()).satisfies(succeeded());
+        assertThat(machine.state()).isInstanceOf(ReadyState.class);
     }
 
     @Test
-    void shouldStayInInterruptedOnMoreReset() throws Throwable
-    {
+    void shouldStayInInterruptedOnMoreReset() throws Throwable {
         // Given
         BoltStateMachineV3 machine = getBoltStateMachineInInterruptedState();
         machine.interrupt();
         machine.interrupt(); // need two reset to recover
 
         // When & Then
-        machine.process( ResetMessage.INSTANCE, nullResponseHandler() );
-        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
+        machine.process(ResetMessage.INSTANCE, nullResponseHandler());
+        assertThat(machine.state()).isInstanceOf(InterruptedState.class);
 
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( ResetMessage.INSTANCE, recorder );
-        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
-        assertThat( machine.state() ).isInstanceOf( ReadyState.class );
+        machine.process(ResetMessage.INSTANCE, recorder);
+        assertThat(recorder.nextResponse()).satisfies(succeeded());
+        assertThat(machine.state()).isInstanceOf(ReadyState.class);
     }
 
     @Test
-    void shouldStayInInterruptedOnInterruptedSignal() throws Throwable
-    {
+    void shouldStayInInterruptedOnInterruptedSignal() throws Throwable {
         // Given
         BoltStateMachineV3 machine = getBoltStateMachineInInterruptedState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( InterruptSignal.INSTANCE, recorder );
+        machine.process(InterruptSignal.INSTANCE, recorder);
 
         // Then
-        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
-        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
+        assertThat(recorder.nextResponse()).satisfies(succeeded());
+        assertThat(machine.state()).isInstanceOf(InterruptedState.class);
     }
 
     @ParameterizedTest
-    @MethodSource( "illegalV3Messages" )
-    void shouldCloseConnectionOnIllegalV3Messages( RequestMessage message ) throws Throwable
-    {
-        shouldCloseConnectionOnIllegalMessages( message );
+    @MethodSource("illegalV3Messages")
+    void shouldCloseConnectionOnIllegalV3Messages(RequestMessage message) throws Throwable {
+        shouldCloseConnectionOnIllegalMessages(message);
     }
 
-    private void shouldCloseConnectionOnIllegalMessages( RequestMessage message ) throws InterruptedException, BoltConnectionFatality
-    {
+    private void shouldCloseConnectionOnIllegalMessages(RequestMessage message)
+            throws InterruptedException, BoltConnectionFatality {
         // Given
         BoltStateMachineV3 machine = getBoltStateMachineInInterruptedState();
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( message, recorder );
+        machine.process(message, recorder);
 
         // then
-        assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
-        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
+        assertThat(recorder.nextResponse()).satisfies(wasIgnored());
+        assertThat(machine.state()).isInstanceOf(InterruptedState.class);
     }
 
-    private BoltStateMachineV3 getBoltStateMachineInInterruptedState() throws BoltConnectionFatality
-    {
+    private BoltStateMachineV3 getBoltStateMachineInInterruptedState() throws BoltConnectionFatality {
         BoltStateMachineV3 machine = newStateMachine();
-        machine.process( newHelloMessage(), nullResponseHandler() );
-        machine.process( InterruptSignal.INSTANCE, nullResponseHandler() );
-        assertThat( machine.state() ).isInstanceOf( InterruptedState.class );
+        machine.process(newHelloMessage(), nullResponseHandler());
+        machine.process(InterruptSignal.INSTANCE, nullResponseHandler());
+        assertThat(machine.state()).isInstanceOf(InterruptedState.class);
         return machine;
     }
 
-    private static Stream<RequestMessage> illegalV3Messages()
-    {
+    private static Stream<RequestMessage> illegalV3Messages() {
         // All messages except RESET
-        return BoltV3Messages.supported().filter( it -> !it.equals( BoltV3Messages.reset() ) );
+        return BoltV3Messages.supported().filter(it -> !it.equals(BoltV3Messages.reset()));
     }
 }

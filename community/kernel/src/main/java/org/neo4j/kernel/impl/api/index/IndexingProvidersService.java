@@ -27,22 +27,21 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.Value;
 
-public interface IndexingProvidersService extends IndexConfigCompleter
-{
+public interface IndexingProvidersService extends IndexConfigCompleter {
     /**
      * Get the index provider descriptor for the index provider with the given name, or the
      * descriptor of the default index provider, if no name was given.
      *
      * @param providerName name of the wanted index provider
      */
-    IndexProviderDescriptor indexProviderByName( String providerName );
+    IndexProviderDescriptor indexProviderByName(String providerName);
 
     /**
      * Get the index type for the index provider with the given name.
      *
      * @param providerName name of the index provider to get matching index type for
      */
-    IndexType indexTypeByProviderName( String providerName );
+    IndexType indexTypeByProviderName(String providerName);
 
     /**
      * Validate that the given value tuple can be stored in the index associated with the given schema.
@@ -50,13 +49,13 @@ public interface IndexingProvidersService extends IndexConfigCompleter
      * @param tuple value tuple to validate
      * @param entityId the id of the entity being validated
      */
-    void validateBeforeCommit( IndexDescriptor index, Value[] tuple, long entityId );
+    void validateBeforeCommit(IndexDescriptor index, Value[] tuple, long entityId);
 
     /**
      * Validate the given index prototype, or throw an {@link IllegalArgumentException}.
      * @param prototype The prototype to the validated.
      */
-    void validateIndexPrototype( IndexPrototype prototype );
+    void validateIndexPrototype(IndexPrototype prototype);
 
     /**
      * There's always a default {@link IndexProvider}, this method returns it.

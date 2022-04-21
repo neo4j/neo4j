@@ -19,35 +19,30 @@
  */
 package org.neo4j.test.mockito.matcher;
 
-import org.assertj.core.api.AbstractAssert;
-
 import java.util.Objects;
-
+import org.assertj.core.api.AbstractAssert;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 
-public class KernelExceptionUserMessageAssert extends AbstractAssert<KernelExceptionUserMessageAssert, SchemaKernelException>
-{
+public class KernelExceptionUserMessageAssert
+        extends AbstractAssert<KernelExceptionUserMessageAssert, SchemaKernelException> {
     private final TokenNameLookup tokenNameLookup;
 
-    public KernelExceptionUserMessageAssert( SchemaKernelException e, TokenNameLookup tokenNameLookup )
-    {
-        super( e, KernelExceptionUserMessageAssert.class );
+    public KernelExceptionUserMessageAssert(SchemaKernelException e, TokenNameLookup tokenNameLookup) {
+        super(e, KernelExceptionUserMessageAssert.class);
         this.tokenNameLookup = tokenNameLookup;
     }
 
-    public static KernelExceptionUserMessageAssert assertThat( SchemaKernelException e, TokenNameLookup tokenNameLookup )
-    {
-        return new KernelExceptionUserMessageAssert( e, tokenNameLookup );
+    public static KernelExceptionUserMessageAssert assertThat(
+            SchemaKernelException e, TokenNameLookup tokenNameLookup) {
+        return new KernelExceptionUserMessageAssert(e, tokenNameLookup);
     }
 
-    public KernelExceptionUserMessageAssert hasUserMessage( String expectedMessage )
-    {
+    public KernelExceptionUserMessageAssert hasUserMessage(String expectedMessage) {
         isNotNull();
-        final String exceptionMessage = actual.getUserMessage( tokenNameLookup );
-        if ( !Objects.equals( exceptionMessage, expectedMessage ) )
-        {
-            failWithMessage( "Expected user message to be <%s> but was <%s>", expectedMessage, exceptionMessage );
+        final String exceptionMessage = actual.getUserMessage(tokenNameLookup);
+        if (!Objects.equals(exceptionMessage, expectedMessage)) {
+            failWithMessage("Expected user message to be <%s> but was <%s>", expectedMessage, exceptionMessage);
         }
         return this;
     }

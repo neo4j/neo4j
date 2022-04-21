@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.eclipse.collections.api.iterator.MutableLongIterator;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.jupiter.params.provider.Arguments;
+import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asPropertiesStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +38,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
+import org.eclipse.collections.api.iterator.MutableLongIterator;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.params.provider.Arguments;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -59,24 +66,14 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asPropertiesStrList;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
-
-@DbmsExtension( configurationCallback = "configure" )
-class FulltextProceduresTestSupport
-{
+@DbmsExtension(configurationCallback = "configure")
+class FulltextProceduresTestSupport {
     static final String SCORE = "score";
     static final String NODE = "node";
     static final String RELATIONSHIP = "relationship";
     static final String DESCARTES_MEDITATIONES = "/meditationes--rene-descartes--public-domain.txt";
-    static final Label LABEL = Label.label( "Label" );
-    static final RelationshipType REL = RelationshipType.withName( "REL" );
+    static final Label LABEL = Label.label("Label");
+    static final RelationshipType REL = RelationshipType.withName("REL");
     static final String PROP = "prop";
     static final String PROP2 = "prop2";
     static final String EVENTUALLY_CONSISTENT_OPTIONS = "{`fulltext.eventually_consistent`: true}";
@@ -87,6 +84,7 @@ class FulltextProceduresTestSupport
 
     @Inject
     GraphDatabaseAPI db;
+
     @Inject
     DbmsController controller;
 
@@ -94,414 +92,393 @@ class FulltextProceduresTestSupport
     final Barrier.Control populationScanFinished = new Barrier.Control();
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
+    void configure(TestDatabaseManagementServiceBuilder builder) {
         Monitors monitors = new Monitors();
-        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter()
-        {
+        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter() {
             @Override
-            public void indexPopulationScanComplete()
-            {
-                if ( trapPopulation.get() )
-                {
+            public void indexPopulationScanComplete() {
+                if (trapPopulation.get()) {
                     populationScanFinished.reached();
                 }
             }
         };
-        monitors.addMonitorListener( trappingMonitor );
-        builder.setMonitors( monitors );
-        builder.setConfig( GraphDatabaseSettings.store_internal_log_level, Level.DEBUG );
+        monitors.addMonitorListener(trappingMonitor);
+        builder.setMonitors(monitors);
+        builder.setConfig(GraphDatabaseSettings.store_internal_log_level, Level.DEBUG);
     }
 
-    static void assertNoIndexSeeks( Result result )
-    {
-        assertThat( result.stream().count() ).isEqualTo( 1L );
+    static void assertNoIndexSeeks(Result result) {
+        assertThat(result.stream().count()).isEqualTo(1L);
         String planDescription = result.getExecutionPlanDescription().toString();
-        assertThat( planDescription ).contains( "NodeByLabel" );
-        assertThat( planDescription ).doesNotContain( "IndexSeek" );
+        assertThat(planDescription).contains("NodeByLabel");
+        assertThat(planDescription).doesNotContain("IndexSeek");
     }
 
-    void restartDatabase()
-    {
-        controller.restartDbms( db.databaseName() );
+    void restartDatabase() {
+        controller.restartDbms(db.databaseName());
     }
 
-    void awaitIndexesOnline()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+    void awaitIndexesOnline() {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, TimeUnit.HOURS);
             tx.commit();
         }
     }
 
-    static void assertQueryFindsIdsInOrder( GraphDatabaseService db, boolean queryNodes, String index, String query, long... ids )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIdsInOrder( tx, queryNodes, index, query, ids );
+    static void assertQueryFindsIdsInOrder(
+            GraphDatabaseService db, boolean queryNodes, String index, String query, long... ids) {
+        try (Transaction tx = db.beginTx()) {
+            assertQueryFindsIdsInOrder(tx, queryNodes, index, query, ids);
             tx.commit();
         }
     }
 
-    static void assertQueryFindsIdsInOrder( Transaction tx, boolean queryNodes, String index, String query, long... ids )
-    {
+    static void assertQueryFindsIdsInOrder(
+            Transaction tx, boolean queryNodes, String index, String query, long... ids) {
         String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
-        Result result = tx.execute( format( queryCall, index, query ) );
+        Result result = tx.execute(format(queryCall, index, query));
         int num = 0;
         Double score = Double.MAX_VALUE;
-        while ( result.hasNext() )
-        {
+        while (result.hasNext()) {
             Map<String, Object> entry = result.next();
-            Long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
-            Double nextScore = (Double) entry.get( SCORE );
-            assertThat( nextScore ).isLessThanOrEqualTo( score );
+            Long nextId = ((Entity) entry.get(queryNodes ? NODE : RELATIONSHIP)).getId();
+            Double nextScore = (Double) entry.get(SCORE);
+            assertThat(nextScore).isLessThanOrEqualTo(score);
             score = nextScore;
-            if ( num < ids.length )
-            {
-                assertEquals( ids[num], nextId.longValue(), format( "Result returned id %d, expected %d", nextId, ids[num] ) );
-            }
-            else
-            {
-                fail( format( "Result returned id %d, which is beyond the number of ids (%d) that were expected.", nextId, ids.length ) );
+            if (num < ids.length) {
+                assertEquals(
+                        ids[num], nextId.longValue(), format("Result returned id %d, expected %d", nextId, ids[num]));
+            } else {
+                fail(format(
+                        "Result returned id %d, which is beyond the number of ids (%d) that were expected.",
+                        nextId, ids.length));
             }
             num++;
         }
-        assertEquals( ids.length, num, "Number of results differ from expected" );
+        assertEquals(ids.length, num, "Number of results differ from expected");
     }
 
-    static void assertQueryFindsIds( GraphDatabaseService db, boolean queryNodes, String index, String query, LongHashSet ids )
-    {
-        ids = new LongHashSet( ids ); // Create a defensive copy, because we're going to modify this instance.
+    static void assertQueryFindsIds(
+            GraphDatabaseService db, boolean queryNodes, String index, String query, LongHashSet ids) {
+        ids = new LongHashSet(ids); // Create a defensive copy, because we're going to modify this instance.
         String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
         long[] expectedIds = ids.toArray();
         MutableLongSet actualIds = new LongHashSet();
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             LongFunction<Entity> getEntity = queryNodes ? tx::getNodeById : tx::getRelationshipById;
-            Result result = tx.execute( format( queryCall, index, query ) );
+            Result result = tx.execute(format(queryCall, index, query));
             Double score = Double.MAX_VALUE;
-            while ( result.hasNext() )
-            {
+            while (result.hasNext()) {
                 Map<String, Object> entry = result.next();
-                long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
-                Double nextScore = (Double) entry.get( SCORE );
-                assertThat( nextScore ).isLessThanOrEqualTo( score );
+                long nextId = ((Entity) entry.get(queryNodes ? NODE : RELATIONSHIP)).getId();
+                Double nextScore = (Double) entry.get(SCORE);
+                assertThat(nextScore).isLessThanOrEqualTo(score);
                 score = nextScore;
-                actualIds.add( nextId );
-                if ( !ids.remove( nextId ) )
-                {
+                actualIds.add(nextId);
+                if (!ids.remove(nextId)) {
                     String msg = "This id was not expected: " + nextId;
-                    failQuery( getEntity, index, query, ids, expectedIds, actualIds, msg );
+                    failQuery(getEntity, index, query, ids, expectedIds, actualIds, msg);
                 }
             }
-            if ( !ids.isEmpty() )
-            {
+            if (!ids.isEmpty()) {
                 String msg = "Not all expected ids were found: " + ids;
-                failQuery( getEntity, index, query, ids, expectedIds, actualIds, msg );
+                failQuery(getEntity, index, query, ids, expectedIds, actualIds, msg);
             }
             tx.commit();
         }
     }
 
-    static void failQuery( LongFunction<Entity> getEntity, String index, String query, MutableLongSet ids, long[] expectedIds, MutableLongSet actualIds,
-            String msg )
-    {
-        StringBuilder message = new StringBuilder( msg ).append( '\n' );
+    static void failQuery(
+            LongFunction<Entity> getEntity,
+            String index,
+            String query,
+            MutableLongSet ids,
+            long[] expectedIds,
+            MutableLongSet actualIds,
+            String msg) {
+        StringBuilder message = new StringBuilder(msg).append('\n');
         MutableLongIterator itr = ids.longIterator();
-        while ( itr.hasNext() )
-        {
+        while (itr.hasNext()) {
             long id = itr.next();
-            Entity entity = getEntity.apply( id );
-            message.append( '\t' ).append( entity ).append( entity.getAllProperties() ).append( '\n' );
+            Entity entity = getEntity.apply(id);
+            message.append('\t')
+                    .append(entity)
+                    .append(entity.getAllProperties())
+                    .append('\n');
         }
-        message.append( "for query: '" ).append( query ).append( "'\nin index: " ).append( index ).append( '\n' );
-        message.append( "all expected ids: " ).append( Arrays.toString( expectedIds ) ).append( '\n' );
-        message.append( "actual ids: " ).append( actualIds );
+        message.append("for query: '")
+                .append(query)
+                .append("'\nin index: ")
+                .append(index)
+                .append('\n');
+        message.append("all expected ids: ")
+                .append(Arrays.toString(expectedIds))
+                .append('\n');
+        message.append("actual ids: ").append(actualIds);
         itr = actualIds.longIterator();
-        while ( itr.hasNext() )
-        {
+        while (itr.hasNext()) {
             long id = itr.next();
-            Entity entity = getEntity.apply( id );
-            message.append( "\n\t" ).append( entity ).append( entity.getAllProperties() );
+            Entity entity = getEntity.apply(id);
+            message.append("\n\t").append(entity).append(entity.getAllProperties());
         }
-        fail( message.toString() );
+        fail(message.toString());
     }
 
-    static List<Value> generateRandomNonStringValues()
-    {
+    static List<Value> generateRandomNonStringValues() {
         Predicate<Value> nonString = v -> v.valueGroup() != ValueGroup.TEXT && v.valueGroup() != ValueGroup.TEXT_ARRAY;
-        return generateRandomValues( nonString );
+        return generateRandomValues(nonString);
     }
 
-    static List<Value> generateRandomSimpleValues()
-    {
-        EnumSet<ValueGroup> simpleTypes = EnumSet.of(
-                ValueGroup.BOOLEAN, ValueGroup.BOOLEAN_ARRAY, ValueGroup.NUMBER, ValueGroup.NUMBER_ARRAY );
-        return generateRandomValues( v -> simpleTypes.contains( v.valueGroup() ) );
+    static List<Value> generateRandomSimpleValues() {
+        EnumSet<ValueGroup> simpleTypes =
+                EnumSet.of(ValueGroup.BOOLEAN, ValueGroup.BOOLEAN_ARRAY, ValueGroup.NUMBER, ValueGroup.NUMBER_ARRAY);
+        return generateRandomValues(v -> simpleTypes.contains(v.valueGroup()));
     }
 
-    static List<Value> generateRandomValues( Predicate<Value> predicate )
-    {
+    static List<Value> generateRandomValues(Predicate<Value> predicate) {
         int valuesToGenerate = 1000;
         RandomValues generator = RandomValues.create();
-        List<Value> values = new ArrayList<>( valuesToGenerate );
-        for ( int i = 0; i < valuesToGenerate; i++ )
-        {
+        List<Value> values = new ArrayList<>(valuesToGenerate);
+        for (int i = 0; i < valuesToGenerate; i++) {
             Value value;
-            do
-            {
+            do {
                 value = generator.nextValue();
-            }
-            while ( !predicate.test( value ) );
-            values.add( value );
+            } while (!predicate.test(value));
+            values.add(value);
         }
         return values;
     }
 
-    void createIndexAndWait( EntityUtil entityUtil )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            entityUtil.createIndex( tx );
+    void createIndexAndWait(EntityUtil entityUtil) {
+        try (Transaction tx = db.beginTx()) {
+            entityUtil.createIndex(tx);
             tx.commit();
         }
         awaitIndexesOnline();
     }
 
-    void createCompositeIndexAndWait( EntityUtil entityUtil )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            entityUtil.createCompositeIndex( tx );
+    void createCompositeIndexAndWait(EntityUtil entityUtil) {
+        try (Transaction tx = db.beginTx()) {
+            entityUtil.createCompositeIndex(tx);
             tx.commit();
         }
         awaitIndexesOnline();
     }
 
-    static void createSimpleRelationshipIndex( Transaction tx )
-    {
-        tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ) ) ).close();
+    static void createSimpleRelationshipIndex(Transaction tx) {
+        tx.execute(format(
+                        FULLTEXT_CREATE,
+                        DEFAULT_REL_IDX_NAME,
+                        asRelationshipTypeStr(REL.name()),
+                        asPropertiesStrList(PROP)))
+                .close();
     }
 
-    static void createSimpleNodesIndex( Transaction tx )
-    {
-        tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP ) ) ).close();
+    static void createSimpleNodesIndex(Transaction tx) {
+        tx.execute(format(
+                        FULLTEXT_CREATE,
+                        DEFAULT_NODE_IDX_NAME,
+                        asNodeLabelStr(LABEL.name()),
+                        asPropertiesStrList(PROP)))
+                .close();
     }
 
-    interface EntityUtil
-    {
-        void createIndex( Transaction tx );
+    interface EntityUtil {
+        void createIndex(Transaction tx);
 
-        void createCompositeIndex( Transaction tx );
+        void createCompositeIndex(Transaction tx);
 
-        long createEntityWithProperty( Transaction tx, Object propertyValue );
+        long createEntityWithProperty(Transaction tx, Object propertyValue);
 
-        long createEntityWithProperties( Transaction tx, Object propertyValue, Object property2Value );
+        long createEntityWithProperties(Transaction tx, Object propertyValue, Object property2Value);
 
-        long createEntity( Transaction tx );
+        long createEntity(Transaction tx);
 
-        void assertQueryFindsIdsInOrder( Transaction tx, String query, long... ids );
+        void assertQueryFindsIdsInOrder(Transaction tx, String query, long... ids);
 
-        void assertQueryFindsIds( GraphDatabaseAPI db, String query, LongHashSet ids );
+        void assertQueryFindsIds(GraphDatabaseAPI db, String query, LongHashSet ids);
 
-        default void assertQueryFindsIdsInOrder( GraphDatabaseAPI db, String query, long... ids )
-        {
-            try ( var tx = db.beginTx() )
-            {
-                assertQueryFindsIdsInOrder( tx, query, ids );
+        default void assertQueryFindsIdsInOrder(GraphDatabaseAPI db, String query, long... ids) {
+            try (var tx = db.beginTx()) {
+                assertQueryFindsIdsInOrder(tx, query, ids);
                 tx.commit();
             }
         }
 
-        void deleteEntity( Transaction tx, long entityId );
+        void deleteEntity(Transaction tx, long entityId);
 
-        void dropIndex( Transaction tx );
+        void dropIndex(Transaction tx);
 
-        Result queryIndex( Transaction tx, String query );
+        Result queryIndex(Transaction tx, String query);
 
-        ResourceIterator<Entity> queryIndexWithOptions( Transaction tx, String query, String options );
+        ResourceIterator<Entity> queryIndexWithOptions(Transaction tx, String query, String options);
 
-        Entity getEntity( Transaction tx, long id );
+        Entity getEntity(Transaction tx, long id);
     }
 
-    static class NodeUtil implements EntityUtil
-    {
+    static class NodeUtil implements EntityUtil {
         @Override
-        public void createIndex( Transaction tx )
-        {
-            createSimpleNodesIndex( tx );
+        public void createIndex(Transaction tx) {
+            createSimpleNodesIndex(tx);
         }
 
         @Override
-        public void createCompositeIndex( Transaction tx )
-        {
-            tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP, PROP2 ) ) ).close();
+        public void createCompositeIndex(Transaction tx) {
+            tx.execute(format(
+                            FULLTEXT_CREATE,
+                            DEFAULT_NODE_IDX_NAME,
+                            asNodeLabelStr(LABEL.name()),
+                            asPropertiesStrList(PROP, PROP2)))
+                    .close();
         }
 
         @Override
-        public long createEntityWithProperty( Transaction tx, Object propertyValue )
-        {
-            Node node = tx.createNode( LABEL );
-            node.setProperty( PROP, propertyValue );
+        public long createEntityWithProperty(Transaction tx, Object propertyValue) {
+            Node node = tx.createNode(LABEL);
+            node.setProperty(PROP, propertyValue);
             return node.getId();
         }
 
         @Override
-        public long createEntityWithProperties( Transaction tx, Object propertyValue, Object property2Value )
-        {
-            Node node = tx.createNode( LABEL );
-            node.setProperty( PROP, propertyValue );
-            node.setProperty( PROP2, property2Value );
+        public long createEntityWithProperties(Transaction tx, Object propertyValue, Object property2Value) {
+            Node node = tx.createNode(LABEL);
+            node.setProperty(PROP, propertyValue);
+            node.setProperty(PROP2, property2Value);
             return node.getId();
         }
 
         @Override
-        public long createEntity( Transaction tx )
-        {
-            return tx.createNode( LABEL ).getId();
+        public long createEntity(Transaction tx) {
+            return tx.createNode(LABEL).getId();
         }
 
         @Override
-        public void assertQueryFindsIdsInOrder( Transaction tx, String query, long... ids )
-        {
-            FulltextProceduresTestSupport.assertQueryFindsIdsInOrder( tx, true, DEFAULT_NODE_IDX_NAME, query, ids );
+        public void assertQueryFindsIdsInOrder(Transaction tx, String query, long... ids) {
+            FulltextProceduresTestSupport.assertQueryFindsIdsInOrder(tx, true, DEFAULT_NODE_IDX_NAME, query, ids);
         }
 
         @Override
-        public void assertQueryFindsIds( GraphDatabaseAPI db, String query, LongHashSet ids )
-        {
-            FulltextProceduresTestSupport.assertQueryFindsIds( db, true, DEFAULT_NODE_IDX_NAME, query, ids );
+        public void assertQueryFindsIds(GraphDatabaseAPI db, String query, LongHashSet ids) {
+            FulltextProceduresTestSupport.assertQueryFindsIds(db, true, DEFAULT_NODE_IDX_NAME, query, ids);
         }
 
         @Override
-        public void deleteEntity( Transaction tx, long entityId )
-        {
-            tx.getNodeById( entityId ).delete();
+        public void deleteEntity(Transaction tx, long entityId) {
+            tx.getNodeById(entityId).delete();
         }
 
         @Override
-        public void dropIndex( Transaction tx )
-        {
-            tx.execute( format( "DROP INDEX `%s`", DEFAULT_NODE_IDX_NAME ) );
+        public void dropIndex(Transaction tx) {
+            tx.execute(format("DROP INDEX `%s`", DEFAULT_NODE_IDX_NAME));
         }
 
         @Override
-        public Result queryIndex( Transaction tx, String query )
-        {
-            return tx.execute( format( QUERY_NODES, DEFAULT_NODE_IDX_NAME, query ) );
+        public Result queryIndex(Transaction tx, String query) {
+            return tx.execute(format(QUERY_NODES, DEFAULT_NODE_IDX_NAME, query));
         }
 
         @Override
-        public ResourceIterator<Entity> queryIndexWithOptions( Transaction tx, String query, String options )
-        {
-            return tx.execute( format( "CALL db.index.fulltext.queryNodes(\"%s\", \"%s\", %s )", DEFAULT_NODE_IDX_NAME, query, options ) ).columnAs( "node" );
+        public ResourceIterator<Entity> queryIndexWithOptions(Transaction tx, String query, String options) {
+            return tx.execute(format(
+                            "CALL db.index.fulltext.queryNodes(\"%s\", \"%s\", %s )",
+                            DEFAULT_NODE_IDX_NAME, query, options))
+                    .columnAs("node");
         }
 
         @Override
-        public Entity getEntity( Transaction tx, long id )
-        {
-            return tx.getNodeById( id );
+        public Entity getEntity(Transaction tx, long id) {
+            return tx.getNodeById(id);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "For node";
         }
     }
 
-    static Stream<Arguments> entityTypeProvider()
-    {
-        return Stream.of( Arguments.of( new NodeUtil() ), Arguments.of( new RelationshipUtil() ) );
+    static Stream<Arguments> entityTypeProvider() {
+        return Stream.of(Arguments.of(new NodeUtil()), Arguments.of(new RelationshipUtil()));
     }
 
-    static class RelationshipUtil implements EntityUtil
-    {
+    static class RelationshipUtil implements EntityUtil {
         @Override
-        public void createIndex( Transaction tx )
-        {
-            createSimpleRelationshipIndex( tx );
+        public void createIndex(Transaction tx) {
+            createSimpleRelationshipIndex(tx);
         }
 
         @Override
-        public void createCompositeIndex( Transaction tx )
-        {
-            tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP, PROP2 ) ) ).close();
+        public void createCompositeIndex(Transaction tx) {
+            tx.execute(format(
+                            FULLTEXT_CREATE,
+                            DEFAULT_REL_IDX_NAME,
+                            asRelationshipTypeStr(REL.name()),
+                            asPropertiesStrList(PROP, PROP2)))
+                    .close();
         }
 
         @Override
-        public long createEntityWithProperty( Transaction tx, Object propertyValue )
-        {
+        public long createEntityWithProperty(Transaction tx, Object propertyValue) {
             Node node = tx.createNode();
-            Relationship rel = node.createRelationshipTo( node, REL );
-            rel.setProperty( PROP, propertyValue );
+            Relationship rel = node.createRelationshipTo(node, REL);
+            rel.setProperty(PROP, propertyValue);
             return rel.getId();
         }
 
         @Override
-        public long createEntityWithProperties( Transaction tx, Object propertyValue, Object property2Value )
-        {
+        public long createEntityWithProperties(Transaction tx, Object propertyValue, Object property2Value) {
             Node node = tx.createNode();
-            Relationship rel = node.createRelationshipTo( node, REL );
-            rel.setProperty( PROP, propertyValue );
-            rel.setProperty( PROP2, property2Value );
+            Relationship rel = node.createRelationshipTo(node, REL);
+            rel.setProperty(PROP, propertyValue);
+            rel.setProperty(PROP2, property2Value);
             return rel.getId();
         }
 
         @Override
-        public long createEntity( Transaction tx )
-        {
+        public long createEntity(Transaction tx) {
             Node node = tx.createNode();
-            return node.createRelationshipTo( node, REL ).getId();
+            return node.createRelationshipTo(node, REL).getId();
         }
 
         @Override
-        public void assertQueryFindsIdsInOrder( Transaction tx, String query, long... ids )
-        {
-            FulltextProceduresTestSupport.assertQueryFindsIdsInOrder( tx, false, DEFAULT_REL_IDX_NAME, query, ids );
+        public void assertQueryFindsIdsInOrder(Transaction tx, String query, long... ids) {
+            FulltextProceduresTestSupport.assertQueryFindsIdsInOrder(tx, false, DEFAULT_REL_IDX_NAME, query, ids);
         }
 
         @Override
-        public void assertQueryFindsIds( GraphDatabaseAPI db, String query, LongHashSet ids )
-        {
-            FulltextProceduresTestSupport.assertQueryFindsIds( db, false, DEFAULT_REL_IDX_NAME, query, ids );
+        public void assertQueryFindsIds(GraphDatabaseAPI db, String query, LongHashSet ids) {
+            FulltextProceduresTestSupport.assertQueryFindsIds(db, false, DEFAULT_REL_IDX_NAME, query, ids);
         }
 
         @Override
-        public void deleteEntity( Transaction tx, long entityId )
-        {
-            tx.getRelationshipById( entityId ).delete();
+        public void deleteEntity(Transaction tx, long entityId) {
+            tx.getRelationshipById(entityId).delete();
         }
 
         @Override
-        public void dropIndex( Transaction tx )
-        {
-            tx.execute( format( "DROP INDEX `%s`", DEFAULT_REL_IDX_NAME ) );
+        public void dropIndex(Transaction tx) {
+            tx.execute(format("DROP INDEX `%s`", DEFAULT_REL_IDX_NAME));
         }
 
         @Override
-        public Result queryIndex( Transaction tx, String query )
-        {
-            return tx.execute( format( QUERY_RELS, DEFAULT_REL_IDX_NAME, query ) );
+        public Result queryIndex(Transaction tx, String query) {
+            return tx.execute(format(QUERY_RELS, DEFAULT_REL_IDX_NAME, query));
         }
 
         @Override
-        public ResourceIterator<Entity> queryIndexWithOptions( Transaction tx, String query, String options )
-        {
-            return tx.execute( format( "CALL db.index.fulltext.queryRelationships(\"%s\", \"%s\", %s )", DEFAULT_REL_IDX_NAME, query, options ) )
-                     .columnAs( "relationship" );
+        public ResourceIterator<Entity> queryIndexWithOptions(Transaction tx, String query, String options) {
+            return tx.execute(format(
+                            "CALL db.index.fulltext.queryRelationships(\"%s\", \"%s\", %s )",
+                            DEFAULT_REL_IDX_NAME, query, options))
+                    .columnAs("relationship");
         }
 
         @Override
-        public Entity getEntity( Transaction tx, long id )
-        {
-            return tx.getRelationshipById( id );
+        public Entity getEntity(Transaction tx, long id) {
+            return tx.getRelationshipById(id);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "For relationship";
         }
     }

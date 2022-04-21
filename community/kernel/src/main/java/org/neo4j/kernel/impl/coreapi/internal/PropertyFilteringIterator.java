@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.coreapi.internal;
 
 import java.util.Arrays;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -30,9 +29,9 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.impl.newapi.CursorPredicates;
 import org.neo4j.storageengine.api.PropertySelection;
 
-public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR extends Cursor, ENTITY_CURSOR extends Cursor>
-        extends PrefetchingEntityResourceIterator<TOKEN_CURSOR,T>
-{
+public abstract class PropertyFilteringIterator<
+                T extends Entity, TOKEN_CURSOR extends Cursor, ENTITY_CURSOR extends Cursor>
+        extends PrefetchingEntityResourceIterator<TOKEN_CURSOR, T> {
     private final TOKEN_CURSOR entityTokenCursor;
     private final ENTITY_CURSOR entityCursor;
     private final PropertyCursor propertyCursor;
@@ -40,61 +39,57 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
     private final ResourceTracker resourceTracker;
     private final PropertySelection propertySelection;
 
-    protected PropertyFilteringIterator( TOKEN_CURSOR entityTokenCursor,
-                                         ENTITY_CURSOR entityCursor,
-                                         PropertyCursor propertyCursor,
-                                         CursorEntityFactory<TOKEN_CURSOR,T> entityFactory,
-                                         ResourceTracker resourceTracker,
-                                         PropertyIndexQuery[] queries )
-    {
-        super( entityTokenCursor, entityFactory );
+    protected PropertyFilteringIterator(
+            TOKEN_CURSOR entityTokenCursor,
+            ENTITY_CURSOR entityCursor,
+            PropertyCursor propertyCursor,
+            CursorEntityFactory<TOKEN_CURSOR, T> entityFactory,
+            ResourceTracker resourceTracker,
+            PropertyIndexQuery[] queries) {
+        super(entityTokenCursor, entityFactory);
         this.entityTokenCursor = entityTokenCursor;
         this.entityCursor = entityCursor;
         this.propertyCursor = propertyCursor;
         this.queries = queries;
         this.resourceTracker = resourceTracker;
-        resourceTracker.registerCloseableResource( this );
-        this.propertySelection = PropertySelection.selection( Arrays.stream( queries ).mapToInt( PropertyIndexQuery::propertyKeyId ).toArray() );
+        resourceTracker.registerCloseableResource(this);
+        this.propertySelection = PropertySelection.selection(Arrays.stream(queries)
+                .mapToInt(PropertyIndexQuery::propertyKeyId)
+                .toArray());
     }
 
     @Override
-    protected long fetchNext()
-    {
+    protected long fetchNext() {
         boolean hasNext;
-        do
-        {
+        do {
             hasNext = entityTokenCursor.next();
-        }
-        while ( hasNext && !hasPropertiesWithValues() );
+        } while (hasNext && !hasPropertiesWithValues());
 
-        if ( hasNext )
-        {
-            return entityReference( entityTokenCursor );
+        if (hasNext) {
+            return entityReference(entityTokenCursor);
         }
         return NO_ID;
     }
 
     @Override
-    void closeResources()
-    {
-        IOUtils.closeAllSilently( entityTokenCursor, entityCursor, propertyCursor );
-        resourceTracker.unregisterCloseableResource( this );
+    void closeResources() {
+        IOUtils.closeAllSilently(entityTokenCursor, entityCursor, propertyCursor);
+        resourceTracker.unregisterCloseableResource(this);
     }
 
-    private boolean hasPropertiesWithValues()
-    {
-        singleEntity( entityReference( entityTokenCursor ), entityCursor );
-        if ( entityCursor.next() )
-        {
-            properties( entityCursor, propertyCursor, propertySelection );
-            return CursorPredicates.propertiesMatch( propertyCursor, queries );
+    private boolean hasPropertiesWithValues() {
+        singleEntity(entityReference(entityTokenCursor), entityCursor);
+        if (entityCursor.next()) {
+            properties(entityCursor, propertyCursor, propertySelection);
+            return CursorPredicates.propertiesMatch(propertyCursor, queries);
         }
         return false;
     }
 
-    protected abstract long entityReference( TOKEN_CURSOR cursor );
+    protected abstract long entityReference(TOKEN_CURSOR cursor);
 
-    protected abstract void singleEntity( long id, ENTITY_CURSOR cursor );
+    protected abstract void singleEntity(long id, ENTITY_CURSOR cursor);
 
-    protected abstract void properties( ENTITY_CURSOR entityCursor, PropertyCursor propertyCursor, PropertySelection propertySelection );
+    protected abstract void properties(
+            ENTITY_CURSOR entityCursor, PropertyCursor propertyCursor, PropertySelection propertySelection);
 }

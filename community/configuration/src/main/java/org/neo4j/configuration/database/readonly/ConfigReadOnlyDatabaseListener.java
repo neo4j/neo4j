@@ -19,20 +19,18 @@
  */
 package org.neo4j.configuration.database.readonly;
 
-import java.util.Set;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
+import static org.neo4j.configuration.GraphDatabaseSettings.writable_databases;
 
+import java.util.Set;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
-import static org.neo4j.configuration.GraphDatabaseSettings.writable_databases;
-
-public final class ConfigReadOnlyDatabaseListener extends LifecycleAdapter
-{
+public final class ConfigReadOnlyDatabaseListener extends LifecycleAdapter {
     private final ReadOnlyDatabases readOnlyDatabases;
     private final Config config;
 
@@ -40,46 +38,39 @@ public final class ConfigReadOnlyDatabaseListener extends LifecycleAdapter
     private SettingChangeListener<Set<String>> readOnlyDatabasesList;
     private SettingChangeListener<Set<String>> writableDatabasesList;
 
-    public ConfigReadOnlyDatabaseListener( ReadOnlyDatabases readOnlyDatabases, Config config )
-    {
+    public ConfigReadOnlyDatabaseListener(ReadOnlyDatabases readOnlyDatabases, Config config) {
         this.readOnlyDatabases = readOnlyDatabases;
         this.config = config;
     }
 
-    private <T> SettingChangeListener<T> getConfigChangeListener( Setting<T> ignored )
-    {
-        return ( oldValue, newValue ) -> readOnlyDatabases.refresh();
+    private <T> SettingChangeListener<T> getConfigChangeListener(Setting<T> ignored) {
+        return (oldValue, newValue) -> readOnlyDatabases.refresh();
     }
 
-    private <T> SettingChangeListener<T> addConfigListener( Setting<T> setting )
-    {
-        var changeListener = getConfigChangeListener( setting );
-        config.addListener( setting, changeListener );
+    private <T> SettingChangeListener<T> addConfigListener(Setting<T> setting) {
+        var changeListener = getConfigChangeListener(setting);
+        config.addListener(setting, changeListener);
         return changeListener;
     }
 
-    private <T> void removeConfigListener( Setting<T> setting, SettingChangeListener<T> changeListener )
-    {
-        if ( changeListener != null )
-        {
-            config.removeListener( setting, changeListener );
+    private <T> void removeConfigListener(Setting<T> setting, SettingChangeListener<T> changeListener) {
+        if (changeListener != null) {
+            config.removeListener(setting, changeListener);
         }
     }
 
     @Override
-    public void init() throws Exception
-    {
-        readOnlyDatabaseDefault = addConfigListener( read_only_database_default );
-        readOnlyDatabasesList = addConfigListener( read_only_databases );
-        writableDatabasesList = addConfigListener( writable_databases );
+    public void init() throws Exception {
+        readOnlyDatabaseDefault = addConfigListener(read_only_database_default);
+        readOnlyDatabasesList = addConfigListener(read_only_databases);
+        writableDatabasesList = addConfigListener(writable_databases);
         readOnlyDatabases.refresh();
     }
 
     @Override
-    public void shutdown() throws Exception
-    {
-        removeConfigListener( read_only_database_default, readOnlyDatabaseDefault );
-        removeConfigListener( read_only_databases, readOnlyDatabasesList );
-        removeConfigListener( writable_databases, writableDatabasesList );
+    public void shutdown() throws Exception {
+        removeConfigListener(read_only_database_default, readOnlyDatabaseDefault);
+        removeConfigListener(read_only_databases, readOnlyDatabasesList);
+        removeConfigListener(writable_databases, writableDatabasesList);
     }
 }

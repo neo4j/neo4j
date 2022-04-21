@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static org.neo4j.internal.batchimport.staging.StageExecution.DEFAULT_PANIC_MONITOR;
+import static org.neo4j.internal.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
+import static org.neo4j.internal.batchimport.stats.Keys.total_processing_wall_clock_time;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.Configuration;
@@ -45,61 +48,90 @@ import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.batchimport.staging.StageExecution.DEFAULT_PANIC_MONITOR;
-import static org.neo4j.internal.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
-import static org.neo4j.internal.batchimport.stats.Keys.total_processing_wall_clock_time;
-
-public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends Stage
-{
+public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends Stage {
     private final ReadEntityIdsStep feedStep;
     private final GenerateIndexUpdatesStep<CURSOR> generatorStep;
     private WriteUpdatesStep writeStep;
 
-    public StoreScanStage( Config dbConfig, Configuration config, BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier,
+    public StoreScanStage(
+            Config dbConfig,
+            Configuration config,
+            BiFunction<CursorContext, StoreCursors, EntityIdIterator> entityIdIteratorSupplier,
             StoreScan.ExternalUpdatesCheck externalUpdatesCheck,
-            AtomicBoolean continueScanning, StorageReader storageReader, Function<CursorContext,StoreCursors> storeCursorsFactory,
-            int[] entityTokenIdFilter, IntPredicate propertyKeyIdFilter,
-            PropertyScanConsumer propertyScanConsumer, TokenScanConsumer tokenScanConsumer,
-            EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour, LongFunction<Lock> lockFunction, boolean parallelWrite,
-            JobScheduler scheduler, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
-        super( "IndexPopulation store scan", null, config, parallelWrite ? 0 : ORDER_SEND_DOWNSTREAM, runInJobScheduler( scheduler ), DEFAULT_PANIC_MONITOR );
-        int parallelism = dbConfig.get( GraphDatabaseInternalSettings.index_population_workers );
-        long maxBatchByteSize = dbConfig.get( GraphDatabaseInternalSettings.index_population_batch_max_byte_size );
+            AtomicBoolean continueScanning,
+            StorageReader storageReader,
+            Function<CursorContext, StoreCursors> storeCursorsFactory,
+            int[] entityTokenIdFilter,
+            IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer tokenScanConsumer,
+            EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour,
+            LongFunction<Lock> lockFunction,
+            boolean parallelWrite,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        super(
+                "IndexPopulation store scan",
+                null,
+                config,
+                parallelWrite ? 0 : ORDER_SEND_DOWNSTREAM,
+                runInJobScheduler(scheduler),
+                DEFAULT_PANIC_MONITOR);
+        int parallelism = dbConfig.get(GraphDatabaseInternalSettings.index_population_workers);
+        long maxBatchByteSize = dbConfig.get(GraphDatabaseInternalSettings.index_population_batch_max_byte_size);
         // Read from entity iterator --> long[]
-        add( feedStep = new ReadEntityIdsStep( control(), config, entityIdIteratorSupplier, storeCursorsFactory, contextFactory, externalUpdatesCheck,
-                continueScanning ) );
+        add(
+                feedStep = new ReadEntityIdsStep(
+                        control(),
+                        config,
+                        entityIdIteratorSupplier,
+                        storeCursorsFactory,
+                        contextFactory,
+                        externalUpdatesCheck,
+                        continueScanning));
         // Read entities --> List<EntityUpdates>
-        add( generatorStep = new GenerateIndexUpdatesStep<>( control(), config, storageReader, storeCursorsFactory, propertyKeyIdFilter, entityCursorBehaviour,
-                entityTokenIdFilter,
-                propertyScanConsumer, tokenScanConsumer, lockFunction, parallelism, maxBatchByteSize, parallelWrite, contextFactory, memoryTracker ) );
-        if ( !parallelWrite )
-        {
-            // Write the updates with a single thread if we're not allowed to do this in parallel. The updates are still generated in parallel
-            add( writeStep = new WriteUpdatesStep( control(), config, contextFactory ) );
+        add(
+                generatorStep = new GenerateIndexUpdatesStep<>(
+                        control(),
+                        config,
+                        storageReader,
+                        storeCursorsFactory,
+                        propertyKeyIdFilter,
+                        entityCursorBehaviour,
+                        entityTokenIdFilter,
+                        propertyScanConsumer,
+                        tokenScanConsumer,
+                        lockFunction,
+                        parallelism,
+                        maxBatchByteSize,
+                        parallelWrite,
+                        contextFactory,
+                        memoryTracker));
+        if (!parallelWrite) {
+            // Write the updates with a single thread if we're not allowed to do this in parallel. The updates are still
+            // generated in parallel
+            add(writeStep = new WriteUpdatesStep(control(), config, contextFactory));
         }
     }
 
-    private static ProcessorScheduler runInJobScheduler( JobScheduler scheduler )
-    {
-        return ( job, name ) -> scheduler.schedule( Group.INDEX_POPULATION_WORK, job );
+    private static ProcessorScheduler runInJobScheduler(JobScheduler scheduler) {
+        return (job, name) -> scheduler.schedule(Group.INDEX_POPULATION_WORK, job);
     }
 
-    void reportTo( PhaseTracker phaseTracker )
-    {
-        var scanNanos = feedStep.stats().stat( total_processing_wall_clock_time ).asLong() +
-                     generatorStep.stats().stat( total_processing_wall_clock_time ).asLong();
-        phaseTracker.registerTime( PhaseTracker.Phase.SCAN, TimeUnit.NANOSECONDS.toMillis( scanNanos ) );
+    void reportTo(PhaseTracker phaseTracker) {
+        var scanNanos = feedStep.stats().stat(total_processing_wall_clock_time).asLong()
+                + generatorStep.stats().stat(total_processing_wall_clock_time).asLong();
+        phaseTracker.registerTime(PhaseTracker.Phase.SCAN, TimeUnit.NANOSECONDS.toMillis(scanNanos));
 
-        if ( writeStep != null )
-        {
-            var writeNanos = writeStep.stats().stat( total_processing_wall_clock_time ).asLong();
-            phaseTracker.registerTime( PhaseTracker.Phase.WRITE, TimeUnit.NANOSECONDS.toMillis( writeNanos ) );
+        if (writeStep != null) {
+            var writeNanos =
+                    writeStep.stats().stat(total_processing_wall_clock_time).asLong();
+            phaseTracker.registerTime(PhaseTracker.Phase.WRITE, TimeUnit.NANOSECONDS.toMillis(writeNanos));
         }
     }
 
-    long numberOfIteratedEntities()
-    {
+    long numberOfIteratedEntities() {
         return feedStep.position();
     }
 }

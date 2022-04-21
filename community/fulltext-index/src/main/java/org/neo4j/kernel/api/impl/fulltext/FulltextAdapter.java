@@ -20,11 +20,9 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.util.stream.Stream;
-
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
-public interface FulltextAdapter
-{
+public interface FulltextAdapter {
     void awaitRefresh();
 
     Stream<AnalyzerProvider> listAvailableAnalyzers();

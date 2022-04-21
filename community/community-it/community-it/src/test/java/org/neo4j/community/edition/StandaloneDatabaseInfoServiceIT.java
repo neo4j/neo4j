@@ -19,69 +19,64 @@
  */
 package org.neo4j.community.edition;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.util.HashSet;
 import java.util.stream.Collectors;
-
-import org.neo4j.dbms.database.DatabaseInfoService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 @TestDirectoryExtension
-public class StandaloneDatabaseInfoServiceIT
-{
+public class StandaloneDatabaseInfoServiceIT {
     @Inject
     private TestDirectory testDirectory;
 
     private DatabaseManagementService dbms;
 
     @BeforeEach
-    void setUp()
-    {
-        dbms = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
+    void setUp() {
+        dbms = new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build();
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         dbms.shutdown();
     }
 
     @Test
-    void shouldBeAvailableInDependencyResolver()
-    {
-        var dependencyResolver = ((GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME )).getDependencyResolver();
-        assertTrue( dependencyResolver.containsDependency( DatabaseInfoService.class ) );
+    void shouldBeAvailableInDependencyResolver() {
+        var dependencyResolver = ((GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME)).getDependencyResolver();
+        assertTrue(dependencyResolver.containsDependency(DatabaseInfoService.class));
     }
 
     @Test
-    void shouldReturnInfoForAllExistingDatabases()
-    {
+    void shouldReturnInfoForAllExistingDatabases() {
         // given
-        var dependencyResolver = ((GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME )).getDependencyResolver();
-        var databaseInfoService = dependencyResolver.resolveDependency( DatabaseInfoService.class );
+        var dependencyResolver = ((GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME)).getDependencyResolver();
+        var databaseInfoService = dependencyResolver.resolveDependency(DatabaseInfoService.class);
         var nonExistingDatabase = "foo";
         var existingDatabases = dbms.listDatabases();
-        var allDatabases = new HashSet<>( existingDatabases );
-        allDatabases.add( nonExistingDatabase );
+        var allDatabases = new HashSet<>(existingDatabases);
+        allDatabases.add(nonExistingDatabase);
 
         // when
-        var results = databaseInfoService.lookupCachedInfo( allDatabases );
-        var returnedDatabases = results.stream().map( databaseInfo -> databaseInfo.namedDatabaseId().name() ).collect( Collectors.toSet() );
+        var results = databaseInfoService.lookupCachedInfo(allDatabases);
+        var returnedDatabases = results.stream()
+                .map(databaseInfo -> databaseInfo.namedDatabaseId().name())
+                .collect(Collectors.toSet());
 
         // then
-        assertThat( returnedDatabases.size() ).isEqualTo( existingDatabases.size() );
-        assertTrue( returnedDatabases.containsAll( existingDatabases ) );
+        assertThat(returnedDatabases.size()).isEqualTo(existingDatabases.size());
+        assertTrue(returnedDatabases.containsAll(existingDatabases));
     }
 }

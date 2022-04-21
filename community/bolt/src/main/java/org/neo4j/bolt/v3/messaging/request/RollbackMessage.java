@@ -21,26 +21,22 @@ package org.neo4j.bolt.v3.messaging.request;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 
-public class RollbackMessage implements RequestMessage
-{
+public class RollbackMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x13;
 
     public static final RollbackMessage ROLLBACK_MESSAGE = new RollbackMessage();
 
-    private RollbackMessage()
-    {
+    private RollbackMessage() {
         // left empty on purpose
     }
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return false;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "ROLLBACK";
     }
 }

@@ -22,12 +22,10 @@ package org.neo4j.internal.kernel.api.security;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 
-public class CommunitySecurityLog extends AbstractSecurityLog
-{
-    public static final CommunitySecurityLog NULL_LOG = new CommunitySecurityLog( NullLog.getInstance() );
+public class CommunitySecurityLog extends AbstractSecurityLog {
+    public static final CommunitySecurityLog NULL_LOG = new CommunitySecurityLog(NullLog.getInstance());
 
-    public CommunitySecurityLog( InternalLog log )
-    {
-        setLog( log );
+    public CommunitySecurityLog(InternalLog log) {
+        setLog(log);
     }
 }

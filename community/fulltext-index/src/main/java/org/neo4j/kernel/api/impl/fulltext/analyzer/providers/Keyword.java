@@ -21,28 +21,23 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
-public class Keyword extends AnalyzerProvider
-{
-    public Keyword()
-    {
-        super( "keyword" );
+public class Keyword extends AnalyzerProvider {
+    public Keyword() {
+        super("keyword");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
+    public Analyzer createAnalyzer() {
         return new KeywordAnalyzer();
     }
 
     @Override
-    public String description()
-    {
-        return "Keyword analyzer \"tokenizes\" the text as a single term. Useful for zip-codes, ids, etc. " +
-                "Situations where complete and exact matches are desired.";
+    public String description() {
+        return "Keyword analyzer \"tokenizes\" the text as a single term. Useful for zip-codes, ids, etc. "
+                + "Situations where complete and exact matches are desired.";
     }
 }

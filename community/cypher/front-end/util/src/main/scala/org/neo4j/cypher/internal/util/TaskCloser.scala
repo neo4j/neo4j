@@ -28,7 +28,7 @@ class TaskCloser {
    * @param task This task will be called, with true if the query went OK, and a false if an error occurred
    */
   def addTask(task: Boolean => Unit): Unit = {
-    if(closed)
+    if (closed)
       throw new IllegalStateException("Already closed")
     _tasks += task
   }
@@ -46,7 +46,7 @@ class TaskCloser {
           case e: Throwable =>
             foundException match {
               case Some(first) => first.addSuppressed(e)
-              case None => foundException = Some(e)
+              case None        => foundException = Some(e)
             }
         }
       }

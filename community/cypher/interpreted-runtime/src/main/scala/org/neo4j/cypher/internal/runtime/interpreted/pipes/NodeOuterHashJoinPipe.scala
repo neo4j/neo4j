@@ -34,9 +34,8 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import scala.annotation.nowarn
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
-                                     lhs: Pipe,
-                                     nullableVariables: Set[String]) extends PipeWithSource(lhs) {
+abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, nullableVariables: Set[String])
+    extends PipeWithSource(lhs) {
 
   private val myVariables = nodeVariables.toIndexedSeq
   private val nullVariables: Array[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toArray
@@ -48,7 +47,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
     for (idx <- myVariables.indices) {
       key(idx) = context.getByName(myVariables(idx)) match {
         case n: VirtualNodeValue => n.id
-        case _ => return None
+        case _                   => return None
       }
     }
     Some(Values.longArray(key))
@@ -60,7 +59,11 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
     withNulls
   }
 
-  protected def buildProbeTableAndFindNullRows(input: ClosingIterator[CypherRow], memoryTracker: MemoryTracker, withNulls: Boolean): ProbeTable = {
+  protected def buildProbeTableAndFindNullRows(
+    input: ClosingIterator[CypherRow],
+    memoryTracker: MemoryTracker,
+    withNulls: Boolean
+  ): ProbeTable = {
     val probeTable = new ProbeTable(memoryTracker)
 
     for (context <- input) {
@@ -68,7 +71,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
 
       key match {
         case Some(joinKey) => probeTable.addValue(joinKey, context)
-        case None => if(withNulls) probeTable.addNull(context)
+        case None          => if (withNulls) probeTable.addNull(context)
       }
     }
 
@@ -78,8 +81,10 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
 
 //noinspection ReferenceMustBePrefixed
 class ProbeTable(memoryTracker: MemoryTracker) extends DefaultCloseListenable {
+
   private[this] var table: collection.ProbeTable[LongArray, CypherRow] =
     collection.ProbeTable.createProbeTable[LongArray, CypherRow](memoryTracker)
+
   private[this] var rowsWithNullInKey: EagerBuffer[CypherRow] =
     EagerBuffer.createEagerBuffer[CypherRow](memoryTracker, 16, 8192, GROW_NEW_CHUNKS_BY_100_PCT)
 
@@ -93,7 +98,8 @@ class ProbeTable(memoryTracker: MemoryTracker) extends DefaultCloseListenable {
 
   def keySet: java.util.Set[LongArray] = table.keySet
 
-  def nullRows: ClosingIterator[CypherRow] = ClosingIterator(rowsWithNullInKey.autoClosingIterator().asScala).closing(rowsWithNullInKey)
+  def nullRows: ClosingIterator[CypherRow] =
+    ClosingIterator(rowsWithNullInKey.autoClosingIterator().asScala).closing(rowsWithNullInKey)
 
   override def isClosed: Boolean = table == null
 

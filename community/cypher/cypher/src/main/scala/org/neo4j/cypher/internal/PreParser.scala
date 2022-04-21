@@ -54,7 +54,7 @@ import scala.util.matching.Regex
  */
 class PreParser(
   configuration: CypherConfiguration,
-  preParserCache: LFUCache[String, PreParsedQuery],
+  preParserCache: LFUCache[String, PreParsedQuery]
 ) {
 
   /**
@@ -76,12 +76,17 @@ class PreParser(
    * @return the pre-parsed query
    */
   @throws(classOf[SyntaxException])
-  def preParseQuery(queryText: String, profile: Boolean = false, couldContainSensitiveFields: Boolean = false): PreParsedQuery = {
-    val preParsedQuery = if (couldContainSensitiveFields) { // This is potentially any outer query running on the system database
-      actuallyPreParse(queryText)
-    } else {
-      preParserCache.computeIfAbsent(queryText, actuallyPreParse(queryText))
-    }
+  def preParseQuery(
+    queryText: String,
+    profile: Boolean = false,
+    couldContainSensitiveFields: Boolean = false
+  ): PreParsedQuery = {
+    val preParsedQuery =
+      if (couldContainSensitiveFields) { // This is potentially any outer query running on the system database
+        actuallyPreParse(queryText)
+      } else {
+        preParserCache.computeIfAbsent(queryText, actuallyPreParse(queryText))
+      }
     if (profile) {
       preParsedQuery.copy(options = preParsedQuery.options.withExecutionMode(CypherExecutionMode.profile))
     } else {
@@ -92,16 +97,24 @@ class PreParser(
   private def actuallyPreParse(queryText: String): PreParsedQuery = {
     val exceptionFactory = new Neo4jASTExceptionFactory(Neo4jCypherExceptionFactory(queryText, None))
     if (queryText.isEmpty) {
-      throw exceptionFactory.syntaxException(new IllegalStateException(PreParserResult.getEmptyQueryExceptionMsg), 1, 0, 0)
+      throw exceptionFactory.syntaxException(
+        new IllegalStateException(PreParserResult.getEmptyQueryExceptionMsg),
+        1,
+        0,
+        0
+      )
     }
-    val preParserResult = new CypherPreParser(exceptionFactory, new PreParserCharStream(queryText)).
-      parse()
-    val preParsedStatement = PreParsedStatement(queryText.substring(preParserResult.position.offset), preParserResult.options.asScala.toList, preParserResult.position)
+    val preParserResult = new CypherPreParser(exceptionFactory, new PreParserCharStream(queryText)).parse()
+    val preParsedStatement = PreParsedStatement(
+      queryText.substring(preParserResult.position.offset),
+      preParserResult.options.asScala.toList,
+      preParserResult.position
+    )
 
     val options = PreParser.queryOptions(
       preParsedStatement.options,
       preParsedStatement.offset,
-      configuration,
+      configuration
     )
 
     PreParsedQuery(preParsedStatement.statement, queryText, options)
@@ -113,7 +126,8 @@ object PreParser {
   def queryOptions(
     preParsedOptions: List[PreParserOption],
     offset: InputPosition,
-    configuration: CypherConfiguration): QueryOptions = {
+    configuration: CypherConfiguration
+  ): QueryOptions = {
 
     val preParsedOptionsSet = preParsedOptions.map(o => (o.key, o.value)).toSet
 
@@ -121,7 +135,7 @@ object PreParser {
 
     QueryOptions(
       offset,
-      options,
+      options
     )
   }
 }

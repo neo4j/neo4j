@@ -21,56 +21,44 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.storageengine.api.RelationshipVisitor;
 
-public class RelationshipDataExtractor implements RelationshipVisitor<RuntimeException>
-{
+public class RelationshipDataExtractor implements RelationshipVisitor<RuntimeException> {
     private int type;
     private long startNode;
     private long endNode;
     private long relId;
 
     @Override
-    public void visit( long relId, int type, long startNode, long endNode )
-    {
+    public void visit(long relId, int type, long startNode, long endNode) {
         this.relId = relId;
         this.type = type;
         this.startNode = startNode;
         this.endNode = endNode;
     }
 
-    public int type()
-    {
+    public int type() {
         return type;
     }
 
-    public long startNode()
-    {
+    public long startNode() {
         return startNode;
     }
 
-    public long endNode()
-    {
+    public long endNode() {
         return endNode;
     }
 
-    public long otherNode( long node )
-    {
-        if ( node == startNode )
-        {
+    public long otherNode(long node) {
+        if (node == startNode) {
             return endNode;
-        }
-        else if ( node == endNode )
-        {
+        } else if (node == endNode) {
             return startNode;
-        }
-        else
-        {
+        } else {
             throw new IllegalArgumentException(
-                    "Node[" + node + "] is neither start nor end node of relationship[" + relId + "]" );
+                    "Node[" + node + "] is neither start nor end node of relationship[" + relId + "]");
         }
     }
 
-    public long relationship()
-    {
+    public long relationship() {
         return relId;
     }
 }

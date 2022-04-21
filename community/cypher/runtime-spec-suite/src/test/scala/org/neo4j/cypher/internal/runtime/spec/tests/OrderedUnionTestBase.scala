@@ -30,10 +30,10 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 
 abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
-                                                                edition: Edition[CONTEXT],
-                                                                runtime: CypherRuntime[CONTEXT],
-                                                                sizeHint: Int
-                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should union two empty streams") {
     given {
@@ -561,7 +561,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     assume(!isParallel) // TODO: Why does this fail with morsel size 1?
 
     val size = sizeHint / 2
-    val nodes = given { nodeGraph(size)}
+    val nodes = given { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -583,7 +583,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit on LHS") {
     val size = sizeHint / 2
-    val nodes = given { nodeGraph(size)}
+    val nodes = given { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -605,7 +605,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit on top") {
     val size = sizeHint / 2
-    val nodes = given { nodeGraph(size)}
+    val nodes = given { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -778,9 +778,12 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("should union with alias on LHS") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -885,7 +888,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union with reducers") {
-    //flaky
+    // flaky
     assume(!(isParallel && runOnlySafeScenarios))
 
     val size = sizeHint / 3
@@ -925,22 +928,22 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // The PrintingProbes are useful for debugging so they are indeed left here commented out on purpose!
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x").withLeveragedOrder()
-    //.prober(new PrintingProbe("x")("UTOP - UNION", name = "utop-union")())
+      // .prober(new PrintingProbe("x")("UTOP - UNION", name = "utop-union")())
       .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.filter("false")
-    //.|.prober(new PrintingProbe("x")("UTOP - RHS", name = "utop-rhs")())
+      // .|.prober(new PrintingProbe("x")("UTOP - RHS", name = "utop-rhs")())
       .|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.|.filter("false")
-    //.|.|.prober(new PrintingProbe("x")("URIGHT - RHS", name = "uright-rhs")())
+      // .|.|.prober(new PrintingProbe("x")("URIGHT - RHS", name = "uright-rhs")())
       .|.|.allNodeScan("x")
-    //.|.prober(new PrintingProbe("x")("URIGHT - LHS", name = "uright-lhs")())
+      // .|.prober(new PrintingProbe("x")("URIGHT - LHS", name = "uright-lhs")())
       .|.allNodeScan("x")
-    //.prober(new PrintingProbe("x")("UTOP - LHS", name = "utop-lhs")())
+      // .prober(new PrintingProbe("x")("UTOP - LHS", name = "utop-lhs")())
       .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
-    //.|.prober(new PrintingProbe("x")("ULEFT - RHS", name = "uleft-rhs")())
+      // .|.prober(new PrintingProbe("x")("ULEFT - RHS", name = "uleft-rhs")())
       .|.allNodeScan("x")
       .filter("false")
-    //.prober(new PrintingProbe("x")("ULEFT - LHS", name = "uleft-lhs")())
+      // .prober(new PrintingProbe("x")("ULEFT - LHS", name = "uleft-lhs")())
       .allNodeScan("x")
       .build()
 

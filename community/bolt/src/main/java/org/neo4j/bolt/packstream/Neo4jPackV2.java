@@ -19,6 +19,15 @@
  */
 package org.neo4j.bolt.packstream;
 
+import static java.time.ZoneOffset.UTC;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.epochDate;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
+import static org.neo4j.values.storable.Values.pointValue;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,7 +38,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -45,18 +53,8 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.utils.TemporalUtil;
 
-import static java.time.ZoneOffset.UTC;
-import static org.neo4j.values.storable.DateTimeValue.datetime;
-import static org.neo4j.values.storable.DateValue.epochDate;
-import static org.neo4j.values.storable.DurationValue.duration;
-import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
-import static org.neo4j.values.storable.LocalTimeValue.localTime;
-import static org.neo4j.values.storable.TimeValue.time;
-import static org.neo4j.values.storable.Values.pointValue;
-
-public class Neo4jPackV2 extends Neo4jPackV1
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( Neo4jPackV2.class );
+public class Neo4jPackV2 extends Neo4jPackV1 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(Neo4jPackV2.class);
 
     public static final long VERSION = 2;
 
@@ -88,268 +86,234 @@ public class Neo4jPackV2 extends Neo4jPackV1
     public static final int DURATION_SIZE = 4;
 
     @Override
-    public Neo4jPack.Packer newPacker( PackOutput output )
-    {
-        return new PackerV2( output );
+    public Neo4jPack.Packer newPacker(PackOutput output) {
+        return new PackerV2(output);
     }
 
     @Override
-    public Neo4jPack.Unpacker newUnpacker( PackInput input )
-    {
-        return new UnpackerV2( input );
+    public Neo4jPack.Unpacker newUnpacker(PackInput input) {
+        return new UnpackerV2(input);
     }
 
     @Override
-    public long version()
-    {
+    public long version() {
         return VERSION;
     }
 
-    private static class PackerV2 extends Neo4jPackV1.PackerV1
-    {
-        PackerV2( PackOutput output )
-        {
-            super( output );
+    private static class PackerV2 extends Neo4jPackV1.PackerV1 {
+        PackerV2(PackOutput output) {
+            super(output);
         }
 
         @Override
-        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
-        {
-            if ( coordinate.length == 2 )
-            {
-                packStructHeader( POINT_2D_SIZE, POINT_2D );
-                pack( crs.getCode() );
-                pack( coordinate[0] );
-                pack( coordinate[1] );
-            }
-            else if ( coordinate.length == 3 )
-            {
-                packStructHeader( POINT_3D_SIZE, POINT_3D );
-                pack( crs.getCode() );
-                pack( coordinate[0] );
-                pack( coordinate[1] );
-                pack( coordinate[2] );
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Point with 2D or 3D coordinate expected, " +
-                                                    "got crs=" + crs + ", coordinate=" + Arrays.toString( coordinate ) );
+        public void writePoint(CoordinateReferenceSystem crs, double[] coordinate) throws IOException {
+            if (coordinate.length == 2) {
+                packStructHeader(POINT_2D_SIZE, POINT_2D);
+                pack(crs.getCode());
+                pack(coordinate[0]);
+                pack(coordinate[1]);
+            } else if (coordinate.length == 3) {
+                packStructHeader(POINT_3D_SIZE, POINT_3D);
+                pack(crs.getCode());
+                pack(coordinate[0]);
+                pack(coordinate[1]);
+                pack(coordinate[2]);
+            } else {
+                throw new IllegalArgumentException("Point with 2D or 3D coordinate expected, " + "got crs=" + crs
+                        + ", coordinate=" + Arrays.toString(coordinate));
             }
         }
 
         @Override
-        public void writeDuration( long months, long days, long seconds, int nanos ) throws IOException
-        {
-            packStructHeader( DURATION_SIZE, DURATION );
-            pack( months );
-            pack( days );
-            pack( seconds );
-            pack( nanos );
+        public void writeDuration(long months, long days, long seconds, int nanos) throws IOException {
+            packStructHeader(DURATION_SIZE, DURATION);
+            pack(months);
+            pack(days);
+            pack(seconds);
+            pack(nanos);
         }
 
         @Override
-        public void writeDate( LocalDate localDate ) throws IOException
-        {
+        public void writeDate(LocalDate localDate) throws IOException {
             long epochDay = localDate.toEpochDay();
 
-            packStructHeader( DATE_SIZE, DATE );
-            pack( epochDay );
+            packStructHeader(DATE_SIZE, DATE);
+            pack(epochDay);
         }
 
         @Override
-        public void writeLocalTime( LocalTime localTime ) throws IOException
-        {
+        public void writeLocalTime(LocalTime localTime) throws IOException {
             long nanoOfDay = localTime.toNanoOfDay();
 
-            packStructHeader( LOCAL_TIME_SIZE, LOCAL_TIME );
-            pack( nanoOfDay );
+            packStructHeader(LOCAL_TIME_SIZE, LOCAL_TIME);
+            pack(nanoOfDay);
         }
 
         @Override
-        public void writeTime( OffsetTime offsetTime ) throws IOException
-        {
+        public void writeTime(OffsetTime offsetTime) throws IOException {
             long nanosOfDayLocal = offsetTime.toLocalTime().toNanoOfDay();
             int offsetSeconds = offsetTime.getOffset().getTotalSeconds();
 
-            packStructHeader( TIME_SIZE, TIME );
-            pack( nanosOfDayLocal );
-            pack( offsetSeconds );
+            packStructHeader(TIME_SIZE, TIME);
+            pack(nanosOfDayLocal);
+            pack(offsetSeconds);
         }
 
         @Override
-        public void writeLocalDateTime( LocalDateTime localDateTime ) throws IOException
-        {
-            long epochSecond = localDateTime.toEpochSecond( UTC );
+        public void writeLocalDateTime(LocalDateTime localDateTime) throws IOException {
+            long epochSecond = localDateTime.toEpochSecond(UTC);
             int nano = localDateTime.getNano();
 
-            packStructHeader( LOCAL_DATE_TIME_SIZE, LOCAL_DATE_TIME );
-            pack( epochSecond );
-            pack( nano );
+            packStructHeader(LOCAL_DATE_TIME_SIZE, LOCAL_DATE_TIME);
+            pack(epochSecond);
+            pack(nano);
         }
 
         @Override
-        public void writeDateTime( ZonedDateTime zonedDateTime ) throws IOException
-        {
-            long epochSecondLocal = zonedDateTime.toLocalDateTime().toEpochSecond( UTC );
+        public void writeDateTime(ZonedDateTime zonedDateTime) throws IOException {
+            long epochSecondLocal = zonedDateTime.toLocalDateTime().toEpochSecond(UTC);
             int nano = zonedDateTime.getNano();
 
             ZoneId zone = zonedDateTime.getZone();
-            if ( zone instanceof ZoneOffset )
-            {
+            if (zone instanceof ZoneOffset) {
                 int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
 
-                packStructHeader( DATE_TIME_WITH_ZONE_OFFSET_SIZE, DATE_TIME_WITH_ZONE_OFFSET );
-                pack( epochSecondLocal );
-                pack( nano );
-                pack( offsetSeconds );
-            }
-            else
-            {
+                packStructHeader(DATE_TIME_WITH_ZONE_OFFSET_SIZE, DATE_TIME_WITH_ZONE_OFFSET);
+                pack(epochSecondLocal);
+                pack(nano);
+                pack(offsetSeconds);
+            } else {
                 String zoneId = zone.getId();
 
-                packStructHeader( DATE_TIME_WITH_ZONE_NAME_SIZE, DATE_TIME_WITH_ZONE_NAME );
-                pack( epochSecondLocal );
-                pack( nano );
-                pack( zoneId );
+                packStructHeader(DATE_TIME_WITH_ZONE_NAME_SIZE, DATE_TIME_WITH_ZONE_NAME);
+                pack(epochSecondLocal);
+                pack(nano);
+                pack(zoneId);
             }
         }
     }
 
-    private static class UnpackerV2 extends Neo4jPackV1.UnpackerV1
-    {
-        UnpackerV2( PackInput input )
-        {
-            super( input );
+    private static class UnpackerV2 extends Neo4jPackV1.UnpackerV1 {
+        UnpackerV2(PackInput input) {
+            super(input);
         }
 
         @Override
-        protected AnyValue unpackStruct( char signature, long size ) throws IOException
-        {
-            try
-            {
-                switch ( signature )
-                {
-                case POINT_2D:
-                    ensureCorrectStructSize( StructType.POINT_2D, POINT_2D_SIZE, size );
-                    return unpackPoint2D();
-                case POINT_3D:
-                    ensureCorrectStructSize( StructType.POINT_3D, POINT_3D_SIZE, size );
-                    return unpackPoint3D();
-                case DURATION:
-                    ensureCorrectStructSize( StructType.DURATION, DURATION_SIZE, size );
-                    return unpackDuration();
-                case DATE:
-                    ensureCorrectStructSize( StructType.DATE, DATE_SIZE, size );
-                    return unpackDate();
-                case LOCAL_TIME:
-                    ensureCorrectStructSize( StructType.LOCAL_TIME, LOCAL_TIME_SIZE, size );
-                    return unpackLocalTime();
-                case TIME:
-                    ensureCorrectStructSize( StructType.TIME, TIME_SIZE, size );
-                    return unpackTime();
-                case LOCAL_DATE_TIME:
-                    ensureCorrectStructSize( StructType.LOCAL_DATE_TIME, LOCAL_DATE_TIME_SIZE, size );
-                    return unpackLocalDateTime();
-                case DATE_TIME_WITH_ZONE_OFFSET:
-                    ensureCorrectStructSize( StructType.DATE_TIME_WITH_ZONE_OFFSET, DATE_TIME_WITH_ZONE_OFFSET_SIZE, size );
-                    return unpackDateTimeWithZoneOffset();
-                case DATE_TIME_WITH_ZONE_NAME:
-                    ensureCorrectStructSize( StructType.DATE_TIME_WITH_ZONE_NAME, DATE_TIME_WITH_ZONE_NAME_SIZE, size );
-                    return unpackDateTimeWithZoneName();
-                default:
-                    return super.unpackStruct( signature, size );
+        protected AnyValue unpackStruct(char signature, long size) throws IOException {
+            try {
+                switch (signature) {
+                    case POINT_2D:
+                        ensureCorrectStructSize(StructType.POINT_2D, POINT_2D_SIZE, size);
+                        return unpackPoint2D();
+                    case POINT_3D:
+                        ensureCorrectStructSize(StructType.POINT_3D, POINT_3D_SIZE, size);
+                        return unpackPoint3D();
+                    case DURATION:
+                        ensureCorrectStructSize(StructType.DURATION, DURATION_SIZE, size);
+                        return unpackDuration();
+                    case DATE:
+                        ensureCorrectStructSize(StructType.DATE, DATE_SIZE, size);
+                        return unpackDate();
+                    case LOCAL_TIME:
+                        ensureCorrectStructSize(StructType.LOCAL_TIME, LOCAL_TIME_SIZE, size);
+                        return unpackLocalTime();
+                    case TIME:
+                        ensureCorrectStructSize(StructType.TIME, TIME_SIZE, size);
+                        return unpackTime();
+                    case LOCAL_DATE_TIME:
+                        ensureCorrectStructSize(StructType.LOCAL_DATE_TIME, LOCAL_DATE_TIME_SIZE, size);
+                        return unpackLocalDateTime();
+                    case DATE_TIME_WITH_ZONE_OFFSET:
+                        ensureCorrectStructSize(
+                                StructType.DATE_TIME_WITH_ZONE_OFFSET, DATE_TIME_WITH_ZONE_OFFSET_SIZE, size);
+                        return unpackDateTimeWithZoneOffset();
+                    case DATE_TIME_WITH_ZONE_NAME:
+                        ensureCorrectStructSize(
+                                StructType.DATE_TIME_WITH_ZONE_NAME, DATE_TIME_WITH_ZONE_NAME_SIZE, size);
+                        return unpackDateTimeWithZoneName();
+                    default:
+                        return super.unpackStruct(signature, size);
                 }
-            }
-            catch ( PackStream.PackStreamException | BoltIOException ex )
-            {
+            } catch (PackStream.PackStreamException | BoltIOException ex) {
                 throw ex;
-            }
-            catch ( Throwable ex )
-            {
-                StructType type = StructType.valueOf( signature );
-                if ( type != null )
-                {
-                    throw new BoltIOException( Status.Statement.TypeError,
-                            String.format( "Unable to construct %s value: `%s`", type.description(), ex.getMessage() ), ex );
+            } catch (Throwable ex) {
+                StructType type = StructType.valueOf(signature);
+                if (type != null) {
+                    throw new BoltIOException(
+                            Status.Statement.TypeError,
+                            String.format("Unable to construct %s value: `%s`", type.description(), ex.getMessage()),
+                            ex);
                 }
 
                 throw ex;
             }
         }
 
-        private PointValue unpackPoint2D() throws IOException
-        {
+        private PointValue unpackPoint2D() throws IOException {
 
             int crsCode = unpackInteger();
-            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( crsCode );
+            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get(crsCode);
             double[] coordinates = {unpackDouble(), unpackDouble()};
-            return pointValue( crs, coordinates );
+            return pointValue(crs, coordinates);
         }
 
-        private PointValue unpackPoint3D() throws IOException
-        {
+        private PointValue unpackPoint3D() throws IOException {
             int crsCode = unpackInteger();
-            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( crsCode );
+            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get(crsCode);
             double[] coordinates = {unpackDouble(), unpackDouble(), unpackDouble()};
-            return pointValue( crs, coordinates );
+            return pointValue(crs, coordinates);
         }
 
-        private DurationValue unpackDuration() throws IOException
-        {
+        private DurationValue unpackDuration() throws IOException {
             long months = unpackLong();
             long days = unpackLong();
             long seconds = unpackLong();
             long nanos = unpackInteger();
-            return duration( months, days, seconds, nanos );
+            return duration(months, days, seconds, nanos);
         }
 
-        private DateValue unpackDate() throws IOException
-        {
+        private DateValue unpackDate() throws IOException {
             long epochDay = unpackLong();
-            return epochDate( epochDay );
+            return epochDate(epochDay);
         }
 
-        private LocalTimeValue unpackLocalTime() throws IOException
-        {
+        private LocalTimeValue unpackLocalTime() throws IOException {
             long nanoOfDay = unpackLong();
-            return localTime( nanoOfDay );
+            return localTime(nanoOfDay);
         }
 
-        private TimeValue unpackTime() throws IOException
-        {
+        private TimeValue unpackTime() throws IOException {
             long nanosOfDayLocal = unpackLong();
             int offsetSeconds = unpackInteger();
-            return time( TemporalUtil.nanosOfDayToUTC( nanosOfDayLocal, offsetSeconds ), ZoneOffset.ofTotalSeconds( offsetSeconds ) );
+            return time(
+                    TemporalUtil.nanosOfDayToUTC(nanosOfDayLocal, offsetSeconds),
+                    ZoneOffset.ofTotalSeconds(offsetSeconds));
         }
 
-        private LocalDateTimeValue unpackLocalDateTime() throws IOException
-        {
+        private LocalDateTimeValue unpackLocalDateTime() throws IOException {
             long epochSecond = unpackLong();
             long nano = unpackLong();
-            return localDateTime( epochSecond, nano );
+            return localDateTime(epochSecond, nano);
         }
 
-        private DateTimeValue unpackDateTimeWithZoneOffset() throws IOException
-        {
+        private DateTimeValue unpackDateTimeWithZoneOffset() throws IOException {
             long epochSecondLocal = unpackLong();
             long nano = unpackLong();
             int offsetSeconds = unpackInteger();
-            return datetime( newZonedDateTime( epochSecondLocal, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+            return datetime(newZonedDateTime(epochSecondLocal, nano, ZoneOffset.ofTotalSeconds(offsetSeconds)));
         }
 
-        private DateTimeValue unpackDateTimeWithZoneName() throws IOException
-        {
+        private DateTimeValue unpackDateTimeWithZoneName() throws IOException {
             long epochSecondLocal = unpackLong();
             long nano = unpackLong();
             String zoneId = unpackString();
-            return datetime( newZonedDateTime( epochSecondLocal, nano, ZoneId.of( zoneId ) ) );
+            return datetime(newZonedDateTime(epochSecondLocal, nano, ZoneId.of(zoneId)));
         }
 
-        private static ZonedDateTime newZonedDateTime( long epochSecondLocal, long nano, ZoneId zoneId )
-        {
-            Instant instant = Instant.ofEpochSecond( epochSecondLocal, nano );
-            LocalDateTime localDateTime = LocalDateTime.ofInstant( instant, UTC );
-            return ZonedDateTime.of( localDateTime, zoneId );
+        private static ZonedDateTime newZonedDateTime(long epochSecondLocal, long nano, ZoneId zoneId) {
+            Instant instant = Instant.ofEpochSecond(epochSecondLocal, nano);
+            LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, UTC);
+            return ZonedDateTime.of(localDateTime, zoneId);
         }
     }
 }

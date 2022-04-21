@@ -20,29 +20,24 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.test.extension.DbmsExtension;
 
 @DbmsExtension
-public class MandatoryTransactionsForSchemaTest extends AbstractMandatoryTransactionsTest<Schema>
-{
+public class MandatoryTransactionsForSchemaTest extends AbstractMandatoryTransactionsTest<Schema> {
 
     @Test
-    void shouldRequireTransactionsWhenCallingMethodsOnSchema()
-    {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), SchemaFacadeMethods.values() );
+    void shouldRequireTransactionsWhenCallingMethodsOnSchema() {
+        assertFacadeMethodsThrowNotInTransaction(obtainEntity(), SchemaFacadeMethods.values());
     }
 
     @Test
-    void shouldTerminateWhenCallingMethodsOnSchema()
-    {
-        assertFacadeMethodsThrowAfterTerminate( SchemaFacadeMethods.values() );
+    void shouldTerminateWhenCallingMethodsOnSchema() {
+        assertFacadeMethodsThrowAfterTerminate(SchemaFacadeMethods.values());
     }
 
     @Override
-    protected Schema obtainEntityInTransaction( Transaction transaction )
-    {
+    protected Schema obtainEntityInTransaction(Transaction transaction) {
         return transaction.schema();
     }
 }

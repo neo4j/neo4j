@@ -19,40 +19,37 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-class FuturesTest
-{
-    private static final Runnable NOOP = () -> { };
+class FuturesTest {
+    private static final Runnable NOOP = () -> {};
 
     @Test
-    void combinedFutureShouldGetResultsAfterAllComplete() throws Exception
-    {
-        FutureTask<String> task1 = new FutureTask<>( NOOP, "1" );
-        FutureTask<String> task2 = new FutureTask<>( NOOP, "2" );
-        FutureTask<String> task3 = new FutureTask<>( NOOP, "3" );
+    void combinedFutureShouldGetResultsAfterAllComplete() throws Exception {
+        FutureTask<String> task1 = new FutureTask<>(NOOP, "1");
+        FutureTask<String> task2 = new FutureTask<>(NOOP, "2");
+        FutureTask<String> task3 = new FutureTask<>(NOOP, "3");
 
-        Future<List<String>> combined = Futures.combine( task1, task2, task3 );
+        Future<List<String>> combined = Futures.combine(task1, task2, task3);
 
-        assertThrows( TimeoutException.class, () -> combined.get( 10, TimeUnit.MILLISECONDS ) );
+        assertThrows(TimeoutException.class, () -> combined.get(10, TimeUnit.MILLISECONDS));
 
         task3.run();
         task2.run();
 
-        assertThrows( TimeoutException.class, () -> combined.get( 10, TimeUnit.MILLISECONDS ) );
+        assertThrows(TimeoutException.class, () -> combined.get(10, TimeUnit.MILLISECONDS));
 
         task1.run();
 
         List<String> result = combined.get();
-        assertThat( result ).containsExactly( "1", "2", "3" );
+        assertThat(result).containsExactly("1", "2", "3");
     }
 }

@@ -20,24 +20,21 @@
 package org.neo4j.dbms.database;
 
 import java.util.function.Supplier;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 
-public class DefaultSystemGraphInitializer extends SystemGraphInitializer
-{
+public class DefaultSystemGraphInitializer extends SystemGraphInitializer {
     private final Supplier<GraphDatabaseService> systemSupplier;
     private final SystemGraphComponents systemGraphComponents;
 
-    public DefaultSystemGraphInitializer( Supplier<GraphDatabaseService> systemSupplier, SystemGraphComponents systemGraphComponents )
-    {
+    public DefaultSystemGraphInitializer(
+            Supplier<GraphDatabaseService> systemSupplier, SystemGraphComponents systemGraphComponents) {
         this.systemSupplier = systemSupplier;
         this.systemGraphComponents = systemGraphComponents;
     }
 
     @Override
-    protected void initializeSystemGraph()
-    {
+    protected void initializeSystemGraph() {
         // First get a recent handle on the database representing the system graph
-        systemGraphComponents.initializeSystemGraph( systemSupplier.get() );
+        systemGraphComponents.initializeSystemGraph(systemSupplier.get());
     }
 }

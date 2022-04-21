@@ -23,7 +23,6 @@ package org.neo4j.kernel.lifecycle;
  * Listener interface for listening to changes in status of instances managed through LifeSupport,
  * including the LifeSupport instance itself.
  */
-public interface LifecycleListener
-{
-    void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to );
+public interface LifecycleListener {
+    void notifyStatusChanged(Object instance, LifecycleStatus from, LifecycleStatus to);
 }

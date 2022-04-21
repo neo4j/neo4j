@@ -22,21 +22,18 @@ package org.neo4j.io.pagecache.harness;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
-class MuninnPageCacheHarnessWithRealFileSystemIT extends MuninnPageCacheHarnessTest
-{
+class MuninnPageCacheHarnessWithRealFileSystemIT extends MuninnPageCacheHarnessTest {
 
-    MuninnPageCacheHarnessWithRealFileSystemIT()
-    {
+    MuninnPageCacheHarnessWithRealFileSystemIT() {
         SHORT_TIMEOUT_MILLIS = 120_000;
         SEMI_LONG_TIMEOUT_MILLIS = 360_000;
         LONG_TIMEOUT_MILLIS = 1_200_000;
     }
 
     @Override
-    protected Fixture<MuninnPageCache> createFixture()
-    {
+    protected Fixture<MuninnPageCache> createFixture() {
         return super.createFixture()
-                .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
-                .withFileConstructor( directory::file );
+                .withFileSystemAbstraction(DefaultFileSystemAbstraction::new)
+                .withFileConstructor(directory::file);
     }
 }

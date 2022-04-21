@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public class DelegatingIndexProxy extends AbstractDelegatingIndexProxy
-{
+public class DelegatingIndexProxy extends AbstractDelegatingIndexProxy {
     private final IndexProxy delegate;
 
-    public DelegatingIndexProxy( IndexProxy delegate )
-    {
+    public DelegatingIndexProxy(IndexProxy delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public IndexProxy getDelegate()
-    {
+    public IndexProxy getDelegate() {
         return delegate;
     }
 }

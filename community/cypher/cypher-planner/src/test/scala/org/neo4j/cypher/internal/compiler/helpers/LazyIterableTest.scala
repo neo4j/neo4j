@@ -33,10 +33,10 @@ class LazyIterableTest extends CypherFunSuite {
       Seq(start, start + 1, start + 2).iterator
     }
 
-    iterable.toSeq should equal (Seq(10, 11, 12))
+    iterable.toSeq should equal(Seq(10, 11, 12))
 
     start = 20
 
-    iterable.toSeq should equal (Seq(20, 21, 22))
+    iterable.toSeq should equal(Seq(20, 21, 22))
   }
 }

@@ -19,25 +19,20 @@
  */
 package org.neo4j.internal.kernel.api.procs;
 
-
-public class ProcedureHandle
-{
+public class ProcedureHandle {
     private final ProcedureSignature signature;
     private final int id;
 
-    public ProcedureHandle( ProcedureSignature signature, int id )
-    {
+    public ProcedureHandle(ProcedureSignature signature, int id) {
         this.signature = signature;
         this.id = id;
     }
 
-    public ProcedureSignature signature()
-    {
+    public ProcedureSignature signature() {
         return signature;
     }
 
-    public int id()
-    {
+    public int id() {
         return id;
     }
 }

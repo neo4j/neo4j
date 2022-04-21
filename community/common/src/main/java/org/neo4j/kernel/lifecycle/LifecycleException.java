@@ -23,75 +23,67 @@ package org.neo4j.kernel.lifecycle;
  * This exception is thrown by LifeSupport if a lifecycle transition fails. If many exceptions occur
  * they will be chained through the cause exception mechanism.
  */
-public class LifecycleException
-    extends RuntimeException
-{
+public class LifecycleException extends RuntimeException {
 
-    public LifecycleException( Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause )
-    {
-        super( humanReadableMessage( instance, from, to, cause ), cause );
+    public LifecycleException(Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause) {
+        super(humanReadableMessage(instance, from, to, cause), cause);
     }
 
-    public LifecycleException( String message, Throwable cause )
-    {
-        super( message, cause );
+    public LifecycleException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    private static String humanReadableMessage( Object instance, LifecycleStatus from,
-            LifecycleStatus to, Throwable cause )
-    {
-        String instanceStr = String.valueOf( instance );
+    private static String humanReadableMessage(
+            Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause) {
+        String instanceStr = String.valueOf(instance);
         StringBuilder message = new StringBuilder();
-        switch ( to )
-        {
+        switch (to) {
             case STOPPED:
-                if ( from == LifecycleStatus.NONE )
-                {
-                    message.append( "Component '" ).append( instanceStr ).append( "' failed to initialize" );
-                }
-                else if ( from == LifecycleStatus.STARTED )
-                {
-                    message.append( "Component '" ).append( instanceStr ).append( "' failed to stop" );
+                if (from == LifecycleStatus.NONE) {
+                    message.append("Component '").append(instanceStr).append("' failed to initialize");
+                } else if (from == LifecycleStatus.STARTED) {
+                    message.append("Component '").append(instanceStr).append("' failed to stop");
                 }
                 break;
             case STARTED:
-                if ( from == LifecycleStatus.STOPPED )
-                {
-                    message.append( "Component '" ).append( instanceStr )
-                           .append( "' was successfully initialized, but failed to start" );
+                if (from == LifecycleStatus.STOPPED) {
+                    message.append("Component '")
+                            .append(instanceStr)
+                            .append("' was successfully initialized, but failed to start");
                 }
                 break;
             case SHUTDOWN:
-                message.append( "Component '" ).append( instanceStr ).append( "' failed to shut down" );
+                message.append("Component '").append(instanceStr).append("' failed to shut down");
                 break;
             default:
                 break;
         }
-        if ( message.length() == 0 )
-        {
-            message.append( "Component '" ).append( instanceStr ).append( "' failed to transition from " )
-                   .append( from.name().toLowerCase() ).append( " to " ).append( to.name().toLowerCase() );
+        if (message.length() == 0) {
+            message.append("Component '")
+                    .append(instanceStr)
+                    .append("' failed to transition from ")
+                    .append(from.name().toLowerCase())
+                    .append(" to ")
+                    .append(to.name().toLowerCase());
         }
-        message.append( '.' );
-        if ( cause != null )
-        {
-            Throwable root = rootCause( cause );
-            message.append( " Please see the attached cause exception \"" ).append( root.getMessage() ).append( '"' );
-            if ( root.getCause() != null )
-            {
-                message.append( " (root cause cycle detected)" );
+        message.append('.');
+        if (cause != null) {
+            Throwable root = rootCause(cause);
+            message.append(" Please see the attached cause exception \"")
+                    .append(root.getMessage())
+                    .append('"');
+            if (root.getCause() != null) {
+                message.append(" (root cause cycle detected)");
             }
-            message.append( '.' );
+            message.append('.');
         }
 
         return message.toString();
     }
 
-    private static Throwable rootCause( Throwable cause )
-    {
+    private static Throwable rootCause(Throwable cause) {
         int i = 0; // Guard against infinite self-cause exception-loops.
-        while ( cause.getCause() != null && i++ < 100 )
-        {
+        while (cause.getCause() != null && i++ < 100) {
             cause = cause.getCause();
         }
         return cause;

@@ -20,21 +20,16 @@
 package org.neo4j.kernel.api;
 
 import java.nio.file.Path;
-
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class IndexQueryingTest extends AbstractIndexQueryingTest<ReadTestSupport>
-{
+public class IndexQueryingTest extends AbstractIndexQueryingTest<ReadTestSupport> {
     @Override
-    public ReadTestSupport newTestSupport()
-    {
-        return new ReadTestSupport()
-        {
+    public ReadTestSupport newTestSupport() {
+        return new ReadTestSupport() {
             @Override
-            protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( Path storeDir )
-            {
-                return super.newManagementServiceBuilder( storeDir ).useLazyProcedures( false );
+            protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder(Path storeDir) {
+                return super.newManagementServiceBuilder(storeDir).useLazyProcedures(false);
             }
         };
     }

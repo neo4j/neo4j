@@ -27,39 +27,32 @@ import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
 /**
  * An invocation that produces output event stream representing a response to rollback request.
  */
-class RollbackInvocation
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RollbackInvocation.class );
+class RollbackInvocation {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(RollbackInvocation.class);
 
     private final InternalLog log;
     private final TransactionHandle transactionHandle;
 
-    RollbackInvocation( InternalLog log, TransactionHandle transactionHandle )
-    {
+    RollbackInvocation(InternalLog log, TransactionHandle transactionHandle) {
         this.log = log;
         this.transactionHandle = transactionHandle;
     }
 
-    void execute( OutputEventStream outputEventStream )
-    {
+    void execute(OutputEventStream outputEventStream) {
         TransactionNotificationState transactionNotificationState = TransactionNotificationState.NO_TRANSACTION;
-        try
-        {
-            if ( transactionHandle != null )
-            {
+        try {
+            if (transactionHandle != null) {
                 transactionHandle.ensureActiveTransaction();
                 transactionHandle.rollback();
 
                 transactionNotificationState = TransactionNotificationState.ROLLED_BACK;
             }
-        }
-        catch ( Exception e )
-        {
-            log.error( "Failed to roll back transaction.", e );
-            outputEventStream.writeFailure( Status.Transaction.TransactionRollbackFailed, e.getMessage() );
+        } catch (Exception e) {
+            log.error("Failed to roll back transaction.", e);
+            outputEventStream.writeFailure(Status.Transaction.TransactionRollbackFailed, e.getMessage());
             transactionNotificationState = TransactionNotificationState.UNKNOWN;
         }
 
-        outputEventStream.writeTransactionInfo( transactionNotificationState, null, -1);
+        outputEventStream.writeTransactionInfo(transactionNotificationState, null, -1);
     }
 }

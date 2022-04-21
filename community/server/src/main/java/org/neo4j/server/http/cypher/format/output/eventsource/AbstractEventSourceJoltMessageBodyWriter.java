@@ -20,7 +20,6 @@
 package org.neo4j.server.http.cypher.format.output.eventsource;
 
 import com.fasterxml.jackson.core.JsonFactory;
-
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -31,45 +30,47 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
-
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.http.cypher.format.api.OutputEventSource;
 
-public abstract class AbstractEventSourceJoltMessageBodyWriter implements MessageBodyWriter<OutputEventSource>
-{
+public abstract class AbstractEventSourceJoltMessageBodyWriter implements MessageBodyWriter<OutputEventSource> {
 
     @Override
-    public boolean isWriteable( Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType )
-    {
-        return OutputEventSource.class.isAssignableFrom( type );
+    public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+        return OutputEventSource.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeTo( OutputEventSource outputEventSource, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                         MultivaluedMap<String,Object> httpHeaders, OutputStream output ) throws WebApplicationException
-    {
+    public void writeTo(
+            OutputEventSource outputEventSource,
+            Class<?> type,
+            Type genericType,
+            Annotation[] annotations,
+            MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders,
+            OutputStream output)
+            throws WebApplicationException {
         var parameters = outputEventSource.getParameters();
-        var joltStrictModeEnabled = isJoltStrictModeEnabled( httpHeaders );
+        var joltStrictModeEnabled = isJoltStrictModeEnabled(httpHeaders);
 
         var jsonFactory = DefaultJsonFactory.INSTANCE.get();
-        var serializer = this.createSerializer( output, jsonFactory, parameters, joltStrictModeEnabled );
+        var serializer = this.createSerializer(output, jsonFactory, parameters, joltStrictModeEnabled);
 
-        outputEventSource.produceEvents( serializer::handleEvent );
+        outputEventSource.produceEvents(serializer::handleEvent);
     }
 
-    private boolean isJoltStrictModeEnabled( MultivaluedMap<String,Object> httpHeaders )
-    {
-        Predicate<MediaType> isStrictJolt =
-                s -> s.isCompatible( getMediaType() ) && Boolean.parseBoolean( s.getParameters().getOrDefault( "strict", Boolean.FALSE.toString() ) );
+    private boolean isJoltStrictModeEnabled(MultivaluedMap<String, Object> httpHeaders) {
+        Predicate<MediaType> isStrictJolt = s -> s.isCompatible(getMediaType())
+                && Boolean.parseBoolean(s.getParameters().getOrDefault("strict", Boolean.FALSE.toString()));
 
-        return httpHeaders.containsKey( HttpHeaders.CONTENT_TYPE ) &&
-               httpHeaders.get( HttpHeaders.CONTENT_TYPE ).stream()
-                          .map( MediaType.class::cast )
-                          .anyMatch( isStrictJolt );
+        return httpHeaders.containsKey(HttpHeaders.CONTENT_TYPE)
+                && httpHeaders.get(HttpHeaders.CONTENT_TYPE).stream()
+                        .map(MediaType.class::cast)
+                        .anyMatch(isStrictJolt);
     }
 
     protected abstract MediaType getMediaType();
 
     protected abstract EventSourceSerializer createSerializer(
-            OutputStream outputStream, JsonFactory jsonFactory, Map<String,Object> parameters, boolean strict );
+            OutputStream outputStream, JsonFactory jsonFactory, Map<String, Object> parameters, boolean strict);
 }

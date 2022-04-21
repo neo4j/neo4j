@@ -27,6 +27,7 @@ import scala.collection.mutable
 // can be stored efficiently using immutable BitSets
 //
 trait IdRegistry[I] {
+
   /**
    * @return `true` if this Registry contains compacted bits.
    */
@@ -44,7 +45,6 @@ trait IdRegistry[I] {
    */
   def lookup(id: Int): Option[I]
 
-
   /**
    * register all elements and
    * return a bit set with all bits set that
@@ -52,7 +52,6 @@ trait IdRegistry[I] {
    * @return all assigned ids in a bitset
    */
   def registerAll(elements: Iterable[I]): BitSet
-
 
   /**
    * register a fresh id for a compacted bit set of previously returned ids
@@ -134,7 +133,7 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
     def add(i: Int): Unit = {
       compactionMap.get(i) match {
         case Some(compacted) => compacted.foreach(builder += _)
-        case None => builder += i
+        case None            => builder += i
       }
     }
     ids.foreach(add)
@@ -146,5 +145,3 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
 
   override def compacted(): Boolean = compactionMap.nonEmpty
 }
-
-

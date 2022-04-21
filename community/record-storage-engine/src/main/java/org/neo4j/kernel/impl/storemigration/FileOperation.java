@@ -22,17 +22,14 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
  * Different operations on a file, for example copy or move, given a {@link FileSystemAbstraction} and
  * source/destination.
  */
-enum FileOperation
-{
-    COPY
-    {
+enum FileOperation {
+    COPY {
         /**
          * Copies a file from one directory to another.
          *
@@ -43,24 +40,24 @@ enum FileOperation
          * @throws IOException if the file couldn't be copied
          */
         @Override
-        public void perform( FileSystemAbstraction fs, String fileName,
-                Path fromDirectory, boolean skipNonExistentFromFile,
-                Path toDirectory, ExistingTargetStrategy existingTargetStrategy )
-                throws IOException
-        {
-            Path fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
-            if ( fromFile != null )
-            {
-                Path toFile = toFile( fs, toDirectory, fileName, existingTargetStrategy );
-                if ( toFile != null )
-                {
-                    fs.copyFile( fromFile, toFile );
+        public void perform(
+                FileSystemAbstraction fs,
+                String fileName,
+                Path fromDirectory,
+                boolean skipNonExistentFromFile,
+                Path toDirectory,
+                ExistingTargetStrategy existingTargetStrategy)
+                throws IOException {
+            Path fromFile = fromFile(fs, fromDirectory, fileName, skipNonExistentFromFile);
+            if (fromFile != null) {
+                Path toFile = toFile(fs, toDirectory, fileName, existingTargetStrategy);
+                if (toFile != null) {
+                    fs.copyFile(fromFile, toFile);
                 }
             }
         }
     },
-    MOVE
-    {
+    MOVE {
         /**
          * Moves a file from one directory to another, by a rename op.
          *
@@ -71,45 +68,51 @@ enum FileOperation
          * @throws IOException if the file couldn't be moved
          */
         @Override
-        public void perform( FileSystemAbstraction fs, String fileName,
-                Path fromDirectory, boolean skipNonExistentFromFile,
-                Path toDirectory, ExistingTargetStrategy existingTargetStrategy )
-                throws IOException
-        {
-            Path fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
-            if ( fromFile != null )
-            {
-                if ( toFile( fs, toDirectory, fileName, existingTargetStrategy ) != null )
-                {
-                    fs.moveToDirectory( fromFile, toDirectory );
+        public void perform(
+                FileSystemAbstraction fs,
+                String fileName,
+                Path fromDirectory,
+                boolean skipNonExistentFromFile,
+                Path toDirectory,
+                ExistingTargetStrategy existingTargetStrategy)
+                throws IOException {
+            Path fromFile = fromFile(fs, fromDirectory, fileName, skipNonExistentFromFile);
+            if (fromFile != null) {
+                if (toFile(fs, toDirectory, fileName, existingTargetStrategy) != null) {
+                    fs.moveToDirectory(fromFile, toDirectory);
                 }
             }
         }
     },
-    DELETE
-    {
+    DELETE {
         @Override
-        public void perform( FileSystemAbstraction fs, String fileName,
-                Path directory, boolean skipNonExistentFromFile,
-                Path unusedFile, ExistingTargetStrategy unused ) throws IOException
-        {
-            Path file = fromFile( fs, directory, fileName, skipNonExistentFromFile );
-            if ( file != null )
-            {
-                fs.deleteFile( file );
+        public void perform(
+                FileSystemAbstraction fs,
+                String fileName,
+                Path directory,
+                boolean skipNonExistentFromFile,
+                Path unusedFile,
+                ExistingTargetStrategy unused)
+                throws IOException {
+            Path file = fromFile(fs, directory, fileName, skipNonExistentFromFile);
+            if (file != null) {
+                fs.deleteFile(file);
             }
         }
     };
 
-    public abstract void perform( FileSystemAbstraction fs, String fileName,
-            Path fromDirectory, boolean skipNonExistentFromFile,
-            Path toDirectory, ExistingTargetStrategy existingTargetStrategy ) throws IOException;
+    public abstract void perform(
+            FileSystemAbstraction fs,
+            String fileName,
+            Path fromDirectory,
+            boolean skipNonExistentFromFile,
+            Path toDirectory,
+            ExistingTargetStrategy existingTargetStrategy)
+            throws IOException;
 
-    private static Path fromFile( FileSystemAbstraction fs, Path directory, String name, boolean skipNonExistent )
-    {
-        Path fromFile = directory.resolve( name );
-        if ( skipNonExistent && !fs.fileExists( fromFile ) )
-        {
+    private static Path fromFile(FileSystemAbstraction fs, Path directory, String name, boolean skipNonExistent) {
+        Path fromFile = directory.resolve(name);
+        if (skipNonExistent && !fs.fileExists(fromFile)) {
             return null;
         }
         // Return the file even if it doesn't exist here (and we don't allow skipping) so that the actual
@@ -117,23 +120,21 @@ enum FileOperation
         return fromFile;
     }
 
-    private static Path toFile( FileSystemAbstraction fs, Path directory, String name,
-            ExistingTargetStrategy existingTargetStrategy ) throws IOException
-    {
-        Path file = directory.resolve( name );
-        if ( fs.fileExists( file ) )
-        {
-            switch ( existingTargetStrategy )
-            {
-            case FAIL:
-                throw new FileAlreadyExistsException( file.toAbsolutePath().toString() );
-            case OVERWRITE:
-                fs.deleteFile( file );
-                return file;
-            case SKIP:
-                return null;
-            default:
-                throw new IllegalStateException( existingTargetStrategy.name() );
+    private static Path toFile(
+            FileSystemAbstraction fs, Path directory, String name, ExistingTargetStrategy existingTargetStrategy)
+            throws IOException {
+        Path file = directory.resolve(name);
+        if (fs.fileExists(file)) {
+            switch (existingTargetStrategy) {
+                case FAIL:
+                    throw new FileAlreadyExistsException(file.toAbsolutePath().toString());
+                case OVERWRITE:
+                    fs.deleteFile(file);
+                    return file;
+                case SKIP:
+                    return null;
+                default:
+                    throw new IllegalStateException(existingTargetStrategy.name());
             }
         }
         return file;

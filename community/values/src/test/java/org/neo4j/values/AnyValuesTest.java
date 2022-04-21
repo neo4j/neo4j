@@ -19,8 +19,6 @@
  */
 package org.neo4j.values;
 
-import org.junit.jupiter.api.Test;
-
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteValue;
 import static org.neo4j.values.storable.Values.doubleValue;
@@ -31,21 +29,21 @@ import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-class AnyValuesTest
-{
+import org.junit.jupiter.api.Test;
+
+class AnyValuesTest {
 
     @Test
-    void shouldNotEqualVirtualValue()
-    {
-        VirtualValue virtual = new MyVirtualValue( 42 );
+    void shouldNotEqualVirtualValue() {
+        VirtualValue virtual = new MyVirtualValue(42);
 
-        assertNotEqual( booleanValue( false ), virtual );
-        assertNotEqual( byteValue( (byte)0 ), virtual );
-        assertNotEqual( shortValue( (short)0 ), virtual );
-        assertNotEqual( intValue( 0 ), virtual );
-        assertNotEqual( longValue( 0 ), virtual );
-        assertNotEqual( floatValue( 0.0f ), virtual );
-        assertNotEqual( doubleValue( 0.0 ), virtual );
-        assertNotEqual( stringValue( "" ), virtual );
+        assertNotEqual(booleanValue(false), virtual);
+        assertNotEqual(byteValue((byte) 0), virtual);
+        assertNotEqual(shortValue((short) 0), virtual);
+        assertNotEqual(intValue(0), virtual);
+        assertNotEqual(longValue(0), virtual);
+        assertNotEqual(floatValue(0.0f), virtual);
+        assertNotEqual(doubleValue(0.0), virtual);
+        assertNotEqual(stringValue(""), virtual);
     }
 }

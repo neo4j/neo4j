@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -31,29 +30,26 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
  * allow read only operations only on top of it.
  * @param <INDEX> - particular index implementation
  */
-public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends ValueIndexReader>
-        extends AbstractDatabaseIndex<INDEX, READER>
-{
-    public ReadOnlyAbstractDatabaseIndex( INDEX luceneIndex )
-    {
-        super( luceneIndex );
+public abstract class ReadOnlyAbstractDatabaseIndex<
+                INDEX extends AbstractLuceneIndex<READER>, READER extends ValueIndexReader>
+        extends AbstractDatabaseIndex<INDEX, READER> {
+    public ReadOnlyAbstractDatabaseIndex(INDEX luceneIndex) {
+        super(luceneIndex);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void create()
-    {
-        throw new UnsupportedOperationException( "Index creation in read only mode is not supported." );
+    public void create() {
+        throw new UnsupportedOperationException("Index creation in read only mode is not supported.");
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean isReadOnly()
-    {
+    public boolean isReadOnly() {
         return true;
     }
 
@@ -61,17 +57,15 @@ public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLucene
      * {@inheritDoc}
      */
     @Override
-    public void drop()
-    {
-        throw new UnsupportedOperationException( "Index drop is not supported in read only mode." );
+    public void drop() {
+        throw new UnsupportedOperationException("Index drop is not supported in read only mode.");
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void flush()
-    {
+    public void flush() {
         // nothing to flush in read only mode
     }
 
@@ -79,8 +73,7 @@ public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLucene
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         luceneIndex.close();
     }
 
@@ -88,8 +81,7 @@ public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLucene
      * {@inheritDoc}
      */
     @Override
-    public ResourceIterator<Path> snapshot() throws IOException
-    {
+    public ResourceIterator<Path> snapshot() throws IOException {
         return luceneIndex.snapshot();
     }
 
@@ -97,23 +89,20 @@ public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLucene
      * {@inheritDoc}
      */
     @Override
-    public void maybeRefreshBlocking()
-    {
-        //nothing to refresh in read only mode
+    public void maybeRefreshBlocking() {
+        // nothing to refresh in read only mode
     }
 
     @Override
-    public LuceneIndexWriter getIndexWriter()
-    {
-        throw new UnsupportedOperationException( "Can't get index writer for read only lucene index." );
+    public LuceneIndexWriter getIndexWriter() {
+        throw new UnsupportedOperationException("Can't get index writer for read only lucene index.");
     }
 
     /**
      * Unsupported operation in read only index.
      */
     @Override
-    public void markAsOnline()
-    {
-        throw new UnsupportedOperationException( "Can't mark read only index." );
+    public void markAsOnline() {
+        throw new UnsupportedOperationException("Can't mark read only index.");
     }
 }

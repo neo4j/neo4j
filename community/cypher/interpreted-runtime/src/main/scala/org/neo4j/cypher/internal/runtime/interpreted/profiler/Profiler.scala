@@ -57,21 +57,23 @@ import org.neo4j.values.storable.Value
 
 import scala.collection.mutable
 
-class Profiler(dbmsInfo: DbmsInfo,
-               stats: InterpretedProfileInformation) extends PipeDecorator {
+class Profiler(dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) extends PipeDecorator {
   outerProfiler =>
 
   private case class StackEntry(planId: Id, transactionBoundStatisticProvider: KernelStatisticProvider)
 
   private var planIdStack: List[StackEntry] = Nil
-  private val lastObservedStats = mutable.Map[KernelStatisticProvider, PageCacheStats]().withDefaultValue(PageCacheStats(0, 0))
+
+  private val lastObservedStats =
+    mutable.Map[KernelStatisticProvider, PageCacheStats]().withDefaultValue(PageCacheStats(0, 0))
 
   private def startAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, planId: Id): Unit = {
     // The current top of the stack hands over control to the plan with the provided planId.
     // Account any statistic updates that happened until now towards the previousId.
     planIdStack.headOption.foreach {
       case StackEntry(previousId, previousStatisticProvider) =>
-        val currentStatsOfPreviousPlan = PageCacheStats(previousStatisticProvider.getPageCacheHits, previousStatisticProvider.getPageCacheMisses)
+        val currentStatsOfPreviousPlan =
+          PageCacheStats(previousStatisticProvider.getPageCacheHits, previousStatisticProvider.getPageCacheMisses)
         stats.pageCacheMap(previousId) += (currentStatsOfPreviousPlan - lastObservedStats(previousStatisticProvider))
     }
 
@@ -83,8 +85,10 @@ class Profiler(dbmsInfo: DbmsInfo,
 
   private def stopAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, planId: Id): Unit = {
     val head :: rest = planIdStack
-    require(head.planId == planId,
-            s"We messed up accounting the page cache statistics. Expected to pop $planId but popped ${head.planId}. Remaining stack: $planIdStack")
+    require(
+      head.planId == planId,
+      s"We messed up accounting the page cache statistics. Expected to pop $planId but popped ${head.planId}. Remaining stack: $planIdStack"
+    )
 
     val currentStats = PageCacheStats(statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
     stats.pageCacheMap(planId) += (currentStats - lastObservedStats(statisticProvider))
@@ -107,8 +111,12 @@ class Profiler(dbmsInfo: DbmsInfo,
       new ProfilingIterator(
         iter,
         oldCount,
-        if (trackPageCacheStats) () => startAccountingPageCacheStatsFor(transactionalContext.kernelStatisticProvider, planId) else () => (),
-        if (trackPageCacheStats) () => stopAccountingPageCacheStatsFor(transactionalContext.kernelStatisticProvider, planId) else () => (),
+        if (trackPageCacheStats)
+          () => startAccountingPageCacheStatsFor(transactionalContext.kernelStatisticProvider, planId)
+        else () => (),
+        if (trackPageCacheStats)
+          () => stopAccountingPageCacheStatsFor(transactionalContext.kernelStatisticProvider, planId)
+        else () => ()
       )
 
     stats.rowMap(planId) = resultIter
@@ -120,7 +128,7 @@ class Profiler(dbmsInfo: DbmsInfo,
     val counter = stats.dbHitsMap.getOrElseUpdate(planId, Counter())
     val decoratedContext = state.query match {
       case p: ProfilingPipeQueryContext => new ProfilingPipeQueryContext(p.inner, counter)
-      case _ => new ProfilingPipeQueryContext(state.query, counter)
+      case _                            => new ProfilingPipeQueryContext(state.query, counter)
     }
 
     if (trackPageCacheStats) {
@@ -141,15 +149,16 @@ class Profiler(dbmsInfo: DbmsInfo,
 
   override def innerDecorator(outerPlanId: Id): PipeDecorator = new PipeDecorator {
     innerProfiler =>
-
     override def innerDecorator(planId: Id): PipeDecorator = innerProfiler
 
     override def decorate(planId: Id, state: QueryState): QueryState =
       outerProfiler.decorate(outerPlanId, state)
 
-    override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = iter
+    override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] =
+      iter
 
-    override def afterCreateResults(planId: Id, state: QueryState): Unit = outerProfiler.afterCreateResults(outerPlanId, state)
+    override def afterCreateResults(planId: Id, state: QueryState): Unit =
+      outerProfiler.afterCreateResults(outerPlanId, state)
   }
 }
 
@@ -182,7 +191,7 @@ object Counter {
 }
 
 final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
-  extends DelegatingQueryContext(inner) {
+    extends DelegatingQueryContext(inner) {
   self =>
 
   def count: Long = counter.count
@@ -208,15 +217,22 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
 
   override protected def manyDbHits(value: ClosingLongIterator): ClosingLongIterator = {
     counter.increment()
-    PrimitiveLongHelper.mapPrimitive(value, { x =>
-      counter.increment()
-      x
-    })
+    PrimitiveLongHelper.mapPrimitive(
+      value,
+      { x =>
+        counter.increment()
+        x
+      }
+    )
   }
 
   override protected def manyDbHits(inner: RelationshipIterator): RelationshipIterator = new RelationshipIterator {
     counter.increment()
-    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
+
+    override def relationshipVisit[EXCEPTION <: Exception](
+      relationshipId: Long,
+      visitor: RelationshipVisitor[EXCEPTION]
+    ): Boolean =
       inner.relationshipVisit(relationshipId, visitor)
 
     override def next(): Long = {
@@ -233,10 +249,15 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
     override def typeId(): Int = inner.typeId()
   }
 
-  override protected def manyDbHitsCliRi(inner: ClosingLongIterator with RelationshipIterator): ClosingLongIterator with RelationshipIterator =
+  override protected def manyDbHitsCliRi(inner: ClosingLongIterator with RelationshipIterator)
+    : ClosingLongIterator with RelationshipIterator =
     new ClosingLongIterator with RelationshipIterator {
       counter.increment()
-      override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
+
+      override def relationshipVisit[EXCEPTION <: Exception](
+        relationshipId: Long,
+        visitor: RelationshipVisitor[EXCEPTION]
+      ): Boolean =
         inner.relationshipVisit(relationshipId, visitor)
 
       override def next(): Long = {
@@ -274,34 +295,36 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
     relationshipScanCursor
   }
 
-  override protected def manyDbHits(inner: NodeValueIndexCursor): NodeValueIndexCursor =  new ProfilingCursor(inner) with NodeValueIndexCursor {
+  override protected def manyDbHits(inner: NodeValueIndexCursor): NodeValueIndexCursor =
+    new ProfilingCursor(inner) with NodeValueIndexCursor {
 
-    override def numberOfProperties(): Int = inner.numberOfProperties()
+      override def numberOfProperties(): Int = inner.numberOfProperties()
 
-    override def hasValue: Boolean = inner.hasValue
+      override def hasValue: Boolean = inner.hasValue
 
-    override def propertyValue(offset: Int): Value = inner.propertyValue(offset)
+      override def propertyValue(offset: Int): Value = inner.propertyValue(offset)
 
-    override def node(cursor: NodeCursor): Unit = inner.node(cursor)
+      override def node(cursor: NodeCursor): Unit = inner.node(cursor)
 
-    override def nodeReference(): Long = inner.nodeReference()
+      override def nodeReference(): Long = inner.nodeReference()
 
-    override def score(): Float = inner.score()
-  }
+      override def score(): Float = inner.score()
+    }
 
-  override protected def manyDbHits(inner: RelationshipValueIndexCursor): RelationshipValueIndexCursor =  new ProfilingCursor(inner) with RelationshipValueIndexCursor {
-    override def numberOfProperties(): Int = inner.numberOfProperties()
-    override def hasValue: Boolean = inner.hasValue
-    override def propertyValue(offset: Int): Value = inner.propertyValue(offset)
-    override def relationship(cursor: RelationshipScanCursor): Unit = inner.relationship(cursor)
-    override def sourceNode(cursor: NodeCursor): Unit = inner.sourceNode(cursor)
-    override def targetNode(cursor: NodeCursor): Unit = inner.targetNode(cursor)
-    override def `type`(): Int = inner.`type`()
-    override def sourceNodeReference(): Long = inner.sourceNodeReference()
-    override def targetNodeReference(): Long = inner.targetNodeReference()
-    override def relationshipReference(): Long = inner.relationshipReference()
-    override def score(): Float = inner.score()
-  }
+  override protected def manyDbHits(inner: RelationshipValueIndexCursor): RelationshipValueIndexCursor =
+    new ProfilingCursor(inner) with RelationshipValueIndexCursor {
+      override def numberOfProperties(): Int = inner.numberOfProperties()
+      override def hasValue: Boolean = inner.hasValue
+      override def propertyValue(offset: Int): Value = inner.propertyValue(offset)
+      override def relationship(cursor: RelationshipScanCursor): Unit = inner.relationship(cursor)
+      override def sourceNode(cursor: NodeCursor): Unit = inner.sourceNode(cursor)
+      override def targetNode(cursor: NodeCursor): Unit = inner.targetNode(cursor)
+      override def `type`(): Int = inner.`type`()
+      override def sourceNodeReference(): Long = inner.sourceNodeReference()
+      override def targetNodeReference(): Long = inner.targetNodeReference()
+      override def relationshipReference(): Long = inner.relationshipReference()
+      override def score(): Float = inner.score()
+    }
 
   override protected def manyDbHits(inner: RelationshipTraversalCursor): RelationshipTraversalCursor = {
     val tracer = new PipeTracer
@@ -322,6 +345,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
   }
 
   abstract class ProfilingCursor(inner: Cursor) extends DefaultCloseListenable with Cursor {
+
     override def next(): Boolean = {
       counter.increment()
       inner.next()
@@ -352,11 +376,11 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
 
     override def rows(n: Long): Unit = {}
 
-    override def close(): Unit = {
-    }
+    override def close(): Unit = {}
   }
 
-  class ProfilerReadOperations[T, CURSOR](inner: ReadOperations[T, CURSOR]) extends DelegatingReadOperations[T, CURSOR](inner) {
+  class ProfilerReadOperations[T, CURSOR](inner: ReadOperations[T, CURSOR])
+      extends DelegatingReadOperations[T, CURSOR](inner) {
     override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
     override protected def manyDbHits[A](value: ClosingIterator[A]): ClosingIterator[A] = self.manyDbHits(value)
     override protected def manyDbHits[A](value: ClosingLongIterator): ClosingLongIterator = self.manyDbHits(value)
@@ -369,16 +393,22 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
   }
 
   override val nodeReadOps: NodeReadOperations = new ProfilerReadOperations(inner.nodeReadOps) with NodeReadOperations
-  override val relationshipReadOps: RelationshipReadOperations = new ProfilerReadOperations(inner.relationshipReadOps) with RelationshipReadOperations
+
+  override val relationshipReadOps: RelationshipReadOperations =
+    new ProfilerReadOperations(inner.relationshipReadOps) with RelationshipReadOperations
   override val nodeWriteOps: NodeOperations = new ProfilerOperations(inner.nodeWriteOps) with NodeOperations
-  override val relationshipWriteOps: RelationshipOperations = new ProfilerOperations(inner.relationshipWriteOps) with RelationshipOperations
+
+  override val relationshipWriteOps: RelationshipOperations =
+    new ProfilerOperations(inner.relationshipWriteOps) with RelationshipOperations
 }
 
-class ProfilingIterator(inner: ClosingIterator[CypherRow],
-                        startValue: Long,
-                        startAccounting: () => Unit,
-                        stopAccounting: () => Unit) extends ClosingIterator[CypherRow]
-  with Counter {
+class ProfilingIterator(
+  inner: ClosingIterator[CypherRow],
+  startValue: Long,
+  startAccounting: () => Unit,
+  stopAccounting: () => Unit
+) extends ClosingIterator[CypherRow]
+    with Counter {
 
   _count = startValue
 

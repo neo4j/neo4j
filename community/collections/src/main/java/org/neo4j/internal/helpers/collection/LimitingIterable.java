@@ -20,7 +20,6 @@
 package org.neo4j.internal.helpers.collection;
 
 import java.util.Iterator;
-
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
@@ -31,8 +30,7 @@ import org.neo4j.graphdb.ResourceIterator;
  * @param <T> the type of items in this {@link Iterable}.
  * @see LimitingIterator
  */
-public class LimitingIterable<T> implements Iterable<T>
-{
+public class LimitingIterable<T> implements Iterable<T> {
     private final Iterable<T> source;
     private final int limit;
 
@@ -43,15 +41,13 @@ public class LimitingIterable<T> implements Iterable<T>
      * @param source the source of items.
      * @param limit the limit, i.e. the max number of items to return.
      */
-    public LimitingIterable( Iterable<T> source, int limit )
-    {
+    public LimitingIterable(Iterable<T> source, int limit) {
         this.source = source;
         this.limit = limit;
     }
 
     @Override
-    public Iterator<T> iterator()
-    {
-        return new LimitingIterator<>( source.iterator(), limit );
+    public Iterator<T> iterator() {
+        return new LimitingIterator<>(source.iterator(), limit);
     }
 }

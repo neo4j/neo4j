@@ -19,15 +19,24 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import static java.lang.Math.toIntExact;
+import static java.util.Arrays.sort;
+import static org.apache.commons.lang3.math.NumberUtils.max;
+import static org.apache.commons.lang3.math.NumberUtils.min;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
+import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.LongConsumer;
-
+import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
@@ -55,22 +64,10 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 
-import static java.lang.Math.toIntExact;
-import static java.util.Arrays.sort;
-import static org.apache.commons.lang3.math.NumberUtils.max;
-import static org.apache.commons.lang3.math.NumberUtils.min;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
-import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
-import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
-
 /**
  * Checks nodes and their properties, labels and schema and label indexes.
  */
-class NodeChecker implements Checker
-{
+class NodeChecker implements Checker {
     private static final String NODE_INDEXES_CHECKER_TAG = "nodeIndexesChecker";
     private static final String NODE_RANGE_CHECKER_TAG = "nodeRangeChecker";
     private final MutableIntObjectMap<MutableIntSet> mandatoryProperties;
@@ -83,8 +80,7 @@ class NodeChecker implements Checker
     private final NeoStores neoStores;
     private final List<IndexDescriptor> smallIndexes;
 
-    NodeChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties )
-    {
+    NodeChecker(CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties) {
         this.context = context;
         this.reporter = context.reporter;
         this.observedCounts = context.observedCounts;
@@ -92,141 +88,150 @@ class NodeChecker implements Checker
         this.tokenHolders = context.tokenHolders;
         this.neoStores = context.neoStores;
         this.mandatoryProperties = mandatoryProperties;
-        this.nodeProgress = context.roundInsensitiveProgressReporter( this, "Nodes", neoStores.getNodeStore().getHighId() );
-        this.smallIndexes = context.indexSizes.smallIndexes( NODE );
+        this.nodeProgress = context.roundInsensitiveProgressReporter(
+                this, "Nodes", neoStores.getNodeStore().getHighId());
+        this.smallIndexes = context.indexSizes.smallIndexes(NODE);
     }
 
     @Override
-    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
-    {
+    public void check(LongRange nodeIdRange, boolean firstRange, boolean lastRange) throws Exception {
         ParallelExecution execution = context.execution;
-        execution.run( getClass().getSimpleName() + "-checkNodes", execution.partition( nodeIdRange,
-                ( from, to, last ) -> () -> check( from, to, lastRange && last ) ) );
+        execution.run(
+                getClass().getSimpleName() + "-checkNodes",
+                execution.partition(nodeIdRange, (from, to, last) -> () -> check(from, to, lastRange && last)));
 
-        if ( context.consistencyFlags.isCheckIndexes() )
-        {
-            execution.run( getClass().getSimpleName() + "-checkIndexesVsNodes", smallIndexes.stream()
-                    .map( indexDescriptor -> (ParallelExecution.ThrowingRunnable) () -> checkIndexVsNodes( nodeIdRange, indexDescriptor, lastRange ) )
-                    .toArray( ParallelExecution.ThrowingRunnable[]::new ) );
+        if (context.consistencyFlags.isCheckIndexes()) {
+            execution.run(
+                    getClass().getSimpleName() + "-checkIndexesVsNodes",
+                    smallIndexes.stream()
+                            .map(indexDescriptor -> (ParallelExecution.ThrowingRunnable)
+                                    () -> checkIndexVsNodes(nodeIdRange, indexDescriptor, lastRange))
+                            .toArray(ParallelExecution.ThrowingRunnable[]::new));
         }
     }
 
     @Override
-    public boolean shouldBeChecked( ConsistencyFlags flags )
-    {
+    public boolean shouldBeChecked(ConsistencyFlags flags) {
         return flags.isCheckGraph() || flags.isCheckIndexes() && !smallIndexes.isEmpty();
     }
 
-    private BoundedIterable<EntityTokenRange> getLabelIndexReader( long fromNodeId, long toNodeId, boolean last, CursorContext cursorContext )
-    {
-        if ( context.nodeLabelIndex != null )
-        {
-            return context.nodeLabelIndex.newAllEntriesTokenReader( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
-                    cursorContext );
+    private BoundedIterable<EntityTokenRange> getLabelIndexReader(
+            long fromNodeId, long toNodeId, boolean last, CursorContext cursorContext) {
+        if (context.nodeLabelIndex != null) {
+            return context.nodeLabelIndex.newAllEntriesTokenReader(
+                    fromNodeId, last ? Long.MAX_VALUE : toNodeId, cursorContext);
         }
         return BoundedIterable.empty();
     }
 
-    private void check( long fromNodeId, long toNodeId, boolean last ) throws Exception
-    {
+    private void check(long fromNodeId, long toNodeId, boolean last) throws Exception {
         long usedNodes = 0;
-        try ( var cursorContext = context.contextFactory.create( NODE_RANGE_CHECKER_TAG );
-              var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext );
-              RecordReader<NodeRecord> nodeReader = new RecordReader<>( context.neoStores.getNodeStore(), true, cursorContext );
-              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), false, cursorContext );
-              BoundedIterable<EntityTokenRange> labelIndexReader = getLabelIndexReader( fromNodeId, toNodeId, last, cursorContext );
-              SafePropertyChainReader property = new SafePropertyChainReader( context, cursorContext );
-              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorContext,
-                        storeCursors ) )
-        {
+        try (var cursorContext = context.contextFactory.create(NODE_RANGE_CHECKER_TAG);
+                var storeCursors = new CachedStoreCursors(context.neoStores, cursorContext);
+                RecordReader<NodeRecord> nodeReader =
+                        new RecordReader<>(context.neoStores.getNodeStore(), true, cursorContext);
+                RecordReader<DynamicRecord> labelReader = new RecordReader<>(
+                        context.neoStores.getNodeStore().getDynamicLabelStore(), false, cursorContext);
+                BoundedIterable<EntityTokenRange> labelIndexReader =
+                        getLabelIndexReader(fromNodeId, toNodeId, last, cursorContext);
+                SafePropertyChainReader property = new SafePropertyChainReader(context, cursorContext);
+                SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker(
+                        context, mandatoryProperties, smallIndexes, cursorContext, storeCursors)) {
             ProgressListener localProgress = nodeProgress.threadLocalReporter();
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
             CacheAccess.Client client = context.cacheAccess.client();
-            long[] nextRelCacheFields = new long[]{-1, -1, 1/*inUse*/, 0, 0, 1/*note that this needs to be checked*/, 0, 0};
+            long[] nextRelCacheFields =
+                    new long[] {-1, -1, 1 /*inUse*/, 0, 0, 1 /*note that this needs to be checked*/, 0, 0};
             Iterator<EntityTokenRange> nodeLabelRangeIterator = labelIndexReader.iterator();
-            EntityTokenIndexCheckState labelIndexState = new EntityTokenIndexCheckState( null, fromNodeId - 1 );
-            for ( long nodeId = fromNodeId; nodeId < toNodeId && !context.isCancelled(); nodeId++ )
-            {
-                localProgress.add( 1 );
-                NodeRecord nodeRecord = nodeReader.read( nodeId );
-                if ( !nodeRecord.inUse() )
-                {
+            EntityTokenIndexCheckState labelIndexState = new EntityTokenIndexCheckState(null, fromNodeId - 1);
+            for (long nodeId = fromNodeId; nodeId < toNodeId && !context.isCancelled(); nodeId++) {
+                localProgress.add(1);
+                NodeRecord nodeRecord = nodeReader.read(nodeId);
+                if (!nodeRecord.inUse()) {
                     continue;
                 }
 
                 // Cache nextRel
                 long nextRel = nodeRecord.getNextRel();
-                if ( nextRel < NULL_REFERENCE.longValue() )
-                {
-                    reporter.forNode( nodeRecord ).relationshipNotInUse( new RelationshipRecord( nextRel ) );
+                if (nextRel < NULL_REFERENCE.longValue()) {
+                    reporter.forNode(nodeRecord).relationshipNotInUse(new RelationshipRecord(nextRel));
                     nextRel = NULL_REFERENCE.longValue();
                 }
 
                 nextRelCacheFields[CacheSlots.NodeLink.SLOT_RELATIONSHIP_ID] = nextRel;
-                nextRelCacheFields[CacheSlots.NodeLink.SLOT_IS_DENSE] = CacheSlots.longOf( nodeRecord.isDense() );
+                nextRelCacheFields[CacheSlots.NodeLink.SLOT_IS_DENSE] = CacheSlots.longOf(nodeRecord.isDense());
                 usedNodes++;
 
                 // Labels
-                long[] unverifiedLabels =
-                        RecordLoading.safeGetNodeLabels( context, storeCursors, nodeRecord.getId(), nodeRecord.getLabelField(), labelReader );
-                long[] labels = checkNodeLabels( nodeRecord, unverifiedLabels, storeCursors );
+                long[] unverifiedLabels = RecordLoading.safeGetNodeLabels(
+                        context, storeCursors, nodeRecord.getId(), nodeRecord.getLabelField(), labelReader);
+                long[] labels = checkNodeLabels(nodeRecord, unverifiedLabels, storeCursors);
                 // Cache the label field, so that if it contains inlined labels then it's free.
                 // Otherwise cache the dynamic labels in another data structure and point into it.
                 long labelField = nodeRecord.getLabelField();
-                boolean hasInlinedLabels = !NodeLabelsField.fieldPointsToDynamicRecordOfLabels( nodeRecord.getLabelField() );
-                if ( labels == null )
-                {
-                    // There was some inconsistency in the label field or dynamic label chain. Let's continue but w/o labels for this node
+                boolean hasInlinedLabels =
+                        !NodeLabelsField.fieldPointsToDynamicRecordOfLabels(nodeRecord.getLabelField());
+                if (labels == null) {
+                    // There was some inconsistency in the label field or dynamic label chain. Let's continue but w/o
+                    // labels for this node
                     hasInlinedLabels = true;
                     labelField = NO_LABELS_FIELD.longValue();
                 }
                 boolean hasSingleLabel = labels != null && labels.length == 1;
-                nextRelCacheFields[CacheSlots.NodeLink.SLOT_HAS_INLINED_LABELS] = CacheSlots.longOf( hasInlinedLabels );
+                nextRelCacheFields[CacheSlots.NodeLink.SLOT_HAS_INLINED_LABELS] = CacheSlots.longOf(hasInlinedLabels);
                 nextRelCacheFields[CacheSlots.NodeLink.SLOT_LABELS] = hasSingleLabel
-                        // If this node has only a single label then put it straight in there w/o encoding, along w/ SLOT_HAS_SINGLE_LABEL=1
-                        // this makes RelationshipChecker "parse" the cached node labels more efficiently for single-label nodes
+                        // If this node has only a single label then put it straight in there w/o encoding, along w/
+                        // SLOT_HAS_SINGLE_LABEL=1
+                        // this makes RelationshipChecker "parse" the cached node labels more efficiently for
+                        // single-label nodes
                         ? labels[0]
-                        // Otherwise put the encoded label field if inlined, otherwise a ref to the cached dynamic labels
-                        : hasInlinedLabels ? labelField : observedCounts.cacheDynamicNodeLabels( labels );
-                nextRelCacheFields[CacheSlots.NodeLink.SLOT_HAS_SINGLE_LABEL] = CacheSlots.longOf( hasSingleLabel );
+                        // Otherwise put the encoded label field if inlined, otherwise a ref to the cached dynamic
+                        // labels
+                        : hasInlinedLabels ? labelField : observedCounts.cacheDynamicNodeLabels(labels);
+                nextRelCacheFields[CacheSlots.NodeLink.SLOT_HAS_SINGLE_LABEL] = CacheSlots.longOf(hasSingleLabel);
 
                 // Properties
-                lightClear( propertyValues );
-                boolean propertyChainIsOk = property.read( propertyValues, nodeRecord, reporter::forNode, storeCursors );
+                lightClear(propertyValues);
+                boolean propertyChainIsOk = property.read(propertyValues, nodeRecord, reporter::forNode, storeCursors);
 
                 // Label index
-                if ( labelIndexReader.maxCount() != 0 )
-                {
-                    checkNodeVsLabelIndex( nodeRecord, nodeLabelRangeIterator, labelIndexState, nodeId, labels, fromNodeId, storeCursors );
+                if (labelIndexReader.maxCount() != 0) {
+                    checkNodeVsLabelIndex(
+                            nodeRecord,
+                            nodeLabelRangeIterator,
+                            labelIndexState,
+                            nodeId,
+                            labels,
+                            fromNodeId,
+                            storeCursors);
                 }
-                client.putToCache( nodeId, nextRelCacheFields );
+                client.putToCache(nodeId, nextRelCacheFields);
 
                 // Mandatory properties and (some) indexing
-                if ( labels != null && propertyChainIsOk )
-                {
-                    schemaComplianceChecker.checkContainsMandatoryProperties( nodeRecord, labels, propertyValues, reporter::forNode );
-                    // Here only the very small indexes (or indexes that we can't read the values from, like fulltext indexes)
+                if (labels != null && propertyChainIsOk) {
+                    schemaComplianceChecker.checkContainsMandatoryProperties(
+                            nodeRecord, labels, propertyValues, reporter::forNode);
+                    // Here only the very small indexes (or indexes that we can't read the values from, like fulltext
+                    // indexes)
                     // gets checked this way, larger indexes will be checked in IndexChecker
-                    if ( context.consistencyFlags.isCheckIndexes() )
-                    {
-                        schemaComplianceChecker.checkCorrectlyIndexed( nodeRecord, labels, propertyValues, reporter::forNode );
+                    if (context.consistencyFlags.isCheckIndexes()) {
+                        schemaComplianceChecker.checkCorrectlyIndexed(
+                                nodeRecord, labels, propertyValues, reporter::forNode);
                     }
                 }
                 // Large indexes are checked elsewhere, more efficiently than per-entity
             }
-            if ( !context.isCancelled() && labelIndexReader.maxCount() != 0 )
-            {
-                reportRemainingLabelIndexEntries( nodeLabelRangeIterator, labelIndexState, last ? Long.MAX_VALUE : toNodeId, storeCursors );
+            if (!context.isCancelled() && labelIndexReader.maxCount() != 0) {
+                reportRemainingLabelIndexEntries(
+                        nodeLabelRangeIterator, labelIndexState, last ? Long.MAX_VALUE : toNodeId, storeCursors);
             }
             localProgress.done();
         }
-        observedCounts.incrementNodeLabel( ANY_LABEL, usedNodes );
+        observedCounts.incrementNodeLabel(ANY_LABEL, usedNodes);
     }
 
-    private long[] checkNodeLabels( NodeRecord nodeRecord, long[] labels, StoreCursors storeCursors )
-    {
-        if ( labels == null )
-        {
+    private long[] checkNodeLabels(NodeRecord nodeRecord, long[] labels, StoreCursors storeCursors) {
+        if (labels == null) {
             // Because there was something wrong with loading them
             return null;
         }
@@ -234,129 +239,127 @@ class NodeChecker implements Checker
         boolean allGood = true;
         boolean valid = true;
         int prevLabel = -1;
-        for ( int i = 0; i < labels.length; i++ )
-        {
+        for (int i = 0; i < labels.length; i++) {
             long longLabel = labels[i];
-            if ( longLabel > Integer.MAX_VALUE )
-            {
-                reporter.forNode( recordLoader.node( nodeRecord.getId(), storeCursors ) ).illegalLabel();
+            if (longLabel > Integer.MAX_VALUE) {
+                reporter.forNode(recordLoader.node(nodeRecord.getId(), storeCursors))
+                        .illegalLabel();
                 allGood = false;
                 valid = false;
                 break;
-            }
-            else
-            {
-                int label = toIntExact( longLabel );
-                checkValidToken( nodeRecord, label, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(),
-                        ( node, token ) -> reporter.forNode( recordLoader.node( node.getId(), storeCursors ) ).illegalLabel(),
-                        ( node, token ) -> reporter.forNode( recordLoader.node( node.getId(), storeCursors ) ).labelNotInUse( token ), storeCursors );
-                if ( prevLabel != label )
-                {
-                    observedCounts.incrementNodeLabel( label, 1 );
+            } else {
+                int label = toIntExact(longLabel);
+                checkValidToken(
+                        nodeRecord,
+                        label,
+                        tokenHolders.labelTokens(),
+                        neoStores.getLabelTokenStore(),
+                        (node, token) -> reporter.forNode(recordLoader.node(node.getId(), storeCursors))
+                                .illegalLabel(),
+                        (node, token) -> reporter.forNode(recordLoader.node(node.getId(), storeCursors))
+                                .labelNotInUse(token),
+                        storeCursors);
+                if (prevLabel != label) {
+                    observedCounts.incrementNodeLabel(label, 1);
                     prevLabel = label;
                 }
             }
 
-            if ( i > 0 )
-            {
-                if ( labels[i] == labels[i - 1] )
-                {
-                    reporter.forNode( nodeRecord ).labelDuplicate( labels[i] );
+            if (i > 0) {
+                if (labels[i] == labels[i - 1]) {
+                    reporter.forNode(nodeRecord).labelDuplicate(labels[i]);
                     allGood = false;
                     break;
-                }
-                else if ( labels[i] < labels[i - 1] )
-                {
-                    reporter.forNode( nodeRecord ).labelsOutOfOrder( max( labels ), min( labels ) );
+                } else if (labels[i] < labels[i - 1]) {
+                    reporter.forNode(nodeRecord).labelsOutOfOrder(max(labels), min(labels));
                     allGood = false;
                     break;
                 }
             }
         }
 
-        if ( !valid )
-        {
+        if (!valid) {
             return null;
         }
-        return allGood ? labels : sortAndDeduplicate( labels );
+        return allGood ? labels : sortAndDeduplicate(labels);
     }
 
-    private void checkNodeVsLabelIndex( NodeRecord nodeRecord, Iterator<EntityTokenRange> nodeLabelRangeIterator,
-            EntityTokenIndexCheckState labelIndexState, long nodeId, long[] labels, long fromNodeId, StoreCursors storeCursors )
-    {
+    private void checkNodeVsLabelIndex(
+            NodeRecord nodeRecord,
+            Iterator<EntityTokenRange> nodeLabelRangeIterator,
+            EntityTokenIndexCheckState labelIndexState,
+            long nodeId,
+            long[] labels,
+            long fromNodeId,
+            StoreCursors storeCursors) {
         // Detect node-label combinations that exist in the label index, but not in the store
-        while ( labelIndexState.needToMoveRangeForwardToReachEntity( nodeId ) && !context.isCancelled() )
-        {
-            if ( nodeLabelRangeIterator.hasNext() )
-            {
-                if ( labelIndexState.currentRange != null )
-                {
-                    for ( long nodeIdMissingFromStore = labelIndexState.lastCheckedEntityId + 1;
-                          nodeIdMissingFromStore < nodeId & labelIndexState.currentRange.covers( nodeIdMissingFromStore ); nodeIdMissingFromStore++ )
-                    {
-                        if ( labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
-                        {
-                            reporter.forNodeLabelScan( new TokenScanDocument( labelIndexState.currentRange ) ).nodeNotInUse(
-                                    recordLoader.node( nodeIdMissingFromStore, storeCursors ) );
+        while (labelIndexState.needToMoveRangeForwardToReachEntity(nodeId) && !context.isCancelled()) {
+            if (nodeLabelRangeIterator.hasNext()) {
+                if (labelIndexState.currentRange != null) {
+                    for (long nodeIdMissingFromStore = labelIndexState.lastCheckedEntityId + 1;
+                            nodeIdMissingFromStore < nodeId
+                                    & labelIndexState.currentRange.covers(nodeIdMissingFromStore);
+                            nodeIdMissingFromStore++) {
+                        if (labelIndexState.currentRange.tokens(nodeIdMissingFromStore).length > 0) {
+                            reporter.forNodeLabelScan(new TokenScanDocument(labelIndexState.currentRange))
+                                    .nodeNotInUse(recordLoader.node(nodeIdMissingFromStore, storeCursors));
                         }
                     }
                 }
                 labelIndexState.currentRange = nodeLabelRangeIterator.next();
-                labelIndexState.lastCheckedEntityId = max( fromNodeId, labelIndexState.currentRange.entities()[0] ) - 1;
-            }
-            else
-            {
+                labelIndexState.lastCheckedEntityId =
+                        max(fromNodeId, labelIndexState.currentRange.entities()[0]) - 1;
+            } else {
                 break;
             }
         }
 
-        if ( labelIndexState.currentRange != null && labelIndexState.currentRange.covers( nodeId ) )
-        {
-            for ( long nodeIdMissingFromStore = labelIndexState.lastCheckedEntityId + 1; nodeIdMissingFromStore < nodeId; nodeIdMissingFromStore++ )
-            {
-                if ( labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
-                {
-                    reporter.forNodeLabelScan( new TokenScanDocument( labelIndexState.currentRange ) )
-                            .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, storeCursors ) );
+        if (labelIndexState.currentRange != null && labelIndexState.currentRange.covers(nodeId)) {
+            for (long nodeIdMissingFromStore = labelIndexState.lastCheckedEntityId + 1;
+                    nodeIdMissingFromStore < nodeId;
+                    nodeIdMissingFromStore++) {
+                if (labelIndexState.currentRange.tokens(nodeIdMissingFromStore).length > 0) {
+                    reporter.forNodeLabelScan(new TokenScanDocument(labelIndexState.currentRange))
+                            .nodeNotInUse(recordLoader.node(nodeIdMissingFromStore, storeCursors));
                 }
             }
-            long[] labelsInLabelIndex = labelIndexState.currentRange.tokens( nodeId );
-            if ( labels != null )
-            {
-                validateLabelIds( nodeRecord, labels, sortAndDeduplicate( labelsInLabelIndex ) /* TODO remove when fixed */, labelIndexState.currentRange,
-                        storeCursors );
+            long[] labelsInLabelIndex = labelIndexState.currentRange.tokens(nodeId);
+            if (labels != null) {
+                validateLabelIds(
+                        nodeRecord,
+                        labels,
+                        sortAndDeduplicate(labelsInLabelIndex) /* TODO remove when fixed */,
+                        labelIndexState.currentRange,
+                        storeCursors);
             }
             labelIndexState.lastCheckedEntityId = nodeId;
-        }
-        else if ( labels != null )
-        {
-            for ( long label : labels )
-            {
-                reporter.forNodeLabelScan( new TokenScanDocument( null ) )
-                        .nodeLabelNotInIndex( recordLoader.node( nodeId, storeCursors ), label );
+        } else if (labels != null) {
+            for (long label : labels) {
+                reporter.forNodeLabelScan(new TokenScanDocument(null))
+                        .nodeLabelNotInIndex(recordLoader.node(nodeId, storeCursors), label);
             }
         }
     }
 
-    private void reportRemainingLabelIndexEntries( Iterator<EntityTokenRange> nodeLabelRangeIterator, EntityTokenIndexCheckState labelIndexState, long toNodeId,
-            StoreCursors storeCursors )
-    {
-        if ( labelIndexState.currentRange == null && nodeLabelRangeIterator.hasNext() )
-        {
+    private void reportRemainingLabelIndexEntries(
+            Iterator<EntityTokenRange> nodeLabelRangeIterator,
+            EntityTokenIndexCheckState labelIndexState,
+            long toNodeId,
+            StoreCursors storeCursors) {
+        if (labelIndexState.currentRange == null && nodeLabelRangeIterator.hasNext()) {
             // Seems that nobody touched this iterator before, i.e. no nodes in this whole range
             labelIndexState.currentRange = nodeLabelRangeIterator.next();
         }
 
-        while ( labelIndexState.currentRange != null && !context.isCancelled() )
-        {
-            for ( long nodeIdMissingFromStore = labelIndexState.lastCheckedEntityId + 1;
-                  nodeIdMissingFromStore < toNodeId && !labelIndexState.needToMoveRangeForwardToReachEntity( nodeIdMissingFromStore );
-                  nodeIdMissingFromStore++ )
-            {
-                if ( labelIndexState.currentRange.covers( nodeIdMissingFromStore ) && labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
-                {
-                    reporter.forNodeLabelScan( new TokenScanDocument( labelIndexState.currentRange ) )
-                            .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, storeCursors ) );
+        while (labelIndexState.currentRange != null && !context.isCancelled()) {
+            for (long nodeIdMissingFromStore = labelIndexState.lastCheckedEntityId + 1;
+                    nodeIdMissingFromStore < toNodeId
+                            && !labelIndexState.needToMoveRangeForwardToReachEntity(nodeIdMissingFromStore);
+                    nodeIdMissingFromStore++) {
+                if (labelIndexState.currentRange.covers(nodeIdMissingFromStore)
+                        && labelIndexState.currentRange.tokens(nodeIdMissingFromStore).length > 0) {
+                    reporter.forNodeLabelScan(new TokenScanDocument(labelIndexState.currentRange))
+                            .nodeNotInUse(recordLoader.node(nodeIdMissingFromStore, storeCursors));
                 }
                 labelIndexState.lastCheckedEntityId = nodeIdMissingFromStore;
             }
@@ -364,139 +367,129 @@ class NodeChecker implements Checker
         }
     }
 
-    private void validateLabelIds( NodeRecord node, long[] labelsInStore, long[] labelsInIndex, EntityTokenRange entityTokenRange,
-            StoreCursors storeCursors )
-    {
-        compareTwoSortedLongArrays( PropertySchemaType.COMPLETE_ALL_TOKENS, labelsInStore, labelsInIndex,
-                indexLabel -> reporter.forNodeLabelScan( new TokenScanDocument( entityTokenRange ) )
-                        .nodeDoesNotHaveExpectedLabel( recordLoader.node( node.getId(), storeCursors ), indexLabel ),
-                storeLabel -> reporter.forNodeLabelScan( new TokenScanDocument( entityTokenRange ) )
-                        .nodeLabelNotInIndex( recordLoader.node( node.getId(), storeCursors ), storeLabel ) );
+    private void validateLabelIds(
+            NodeRecord node,
+            long[] labelsInStore,
+            long[] labelsInIndex,
+            EntityTokenRange entityTokenRange,
+            StoreCursors storeCursors) {
+        compareTwoSortedLongArrays(
+                PropertySchemaType.COMPLETE_ALL_TOKENS,
+                labelsInStore,
+                labelsInIndex,
+                indexLabel -> reporter.forNodeLabelScan(new TokenScanDocument(entityTokenRange))
+                        .nodeDoesNotHaveExpectedLabel(recordLoader.node(node.getId(), storeCursors), indexLabel),
+                storeLabel -> reporter.forNodeLabelScan(new TokenScanDocument(entityTokenRange))
+                        .nodeLabelNotInIndex(recordLoader.node(node.getId(), storeCursors), storeLabel));
     }
 
-    static void compareTwoSortedLongArrays( PropertySchemaType propertySchemaType, long[] a, long[] b,
-            LongConsumer bHasSomethingThatAIsMissingReport, LongConsumer aHasSomethingThatBIsMissingReport )
-    {
+    static void compareTwoSortedLongArrays(
+            PropertySchemaType propertySchemaType,
+            long[] a,
+            long[] b,
+            LongConsumer bHasSomethingThatAIsMissingReport,
+            LongConsumer aHasSomethingThatBIsMissingReport) {
         // The node must have all of the labels specified by the index.
         int bCursor = 0;
         int aCursor = 0;
         boolean anyFound = false;
-        while ( aCursor < a.length && bCursor < b.length && a[aCursor] != -1 && b[bCursor] != -1 )
-        {
+        while (aCursor < a.length && bCursor < b.length && a[aCursor] != -1 && b[bCursor] != -1) {
             long bValue = b[bCursor];
             long aValue = a[aCursor];
 
-            if ( bValue < aValue )
-            {   // node store has a label which isn't in label scan store
-                if ( propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS )
-                {
-                    bHasSomethingThatAIsMissingReport.accept( bValue );
+            if (bValue < aValue) { // node store has a label which isn't in label scan store
+                if (propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS) {
+                    bHasSomethingThatAIsMissingReport.accept(bValue);
                 }
                 bCursor++;
-            }
-            else if ( bValue > aValue )
-            {   // label scan store has a label which isn't in node store
-                if ( propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS )
-                {
-                    aHasSomethingThatBIsMissingReport.accept( aValue );
+            } else if (bValue > aValue) { // label scan store has a label which isn't in node store
+                if (propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS) {
+                    aHasSomethingThatBIsMissingReport.accept(aValue);
                 }
                 aCursor++;
-            }
-            else
-            {   // both match
+            } else { // both match
                 bCursor++;
                 aCursor++;
                 anyFound = true;
             }
         }
 
-        if ( propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS )
-        {
-            while ( bCursor < b.length && b[bCursor] != -1 )
-            {
-                bHasSomethingThatAIsMissingReport.accept( b[bCursor++] );
+        if (propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS) {
+            while (bCursor < b.length && b[bCursor] != -1) {
+                bHasSomethingThatAIsMissingReport.accept(b[bCursor++]);
             }
-            while ( aCursor < a.length && a[aCursor] != -1 )
-            {
-                aHasSomethingThatBIsMissingReport.accept( a[aCursor++] );
+            while (aCursor < a.length && a[aCursor] != -1) {
+                aHasSomethingThatBIsMissingReport.accept(a[aCursor++]);
             }
-        }
-        else if ( propertySchemaType == PropertySchemaType.PARTIAL_ANY_TOKEN )
-        {
-            if ( !anyFound )
-            {
-                while ( bCursor < b.length )
-                {
-                    bHasSomethingThatAIsMissingReport.accept( b[bCursor++] );
+        } else if (propertySchemaType == PropertySchemaType.PARTIAL_ANY_TOKEN) {
+            if (!anyFound) {
+                while (bCursor < b.length) {
+                    bHasSomethingThatAIsMissingReport.accept(b[bCursor++]);
                 }
             }
         }
     }
 
-    private void checkIndexVsNodes( LongRange range, IndexDescriptor descriptor, boolean lastRange ) throws Exception
-    {
+    private void checkIndexVsNodes(LongRange range, IndexDescriptor descriptor, boolean lastRange) throws Exception {
         CacheAccess.Client client = context.cacheAccess.client();
-        IndexAccessor accessor = context.indexAccessors.accessorFor( descriptor );
+        IndexAccessor accessor = context.indexAccessors.accessorFor(descriptor);
         RelationshipCounter.NodeLabelsLookup nodeLabelsLookup = observedCounts.nodeLabelsLookup();
         SchemaDescriptor schema = descriptor.schema();
         PropertySchemaType propertySchemaType = schema.propertySchemaType();
-        long[] indexEntityTokenIds = toLongArray( schema.getEntityTokenIds() );
-        indexEntityTokenIds = sortAndDeduplicate( indexEntityTokenIds );
-        try ( var cursorContext = context.contextFactory.create( NODE_INDEXES_CHECKER_TAG );
-              var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext );
-              var allEntriesReader = accessor.newAllEntriesValueReader( range.from(), lastRange ? Long.MAX_VALUE : range.to(), cursorContext ) )
-        {
-            for ( long entityId : allEntriesReader )
-            {
-                try
-                {
-                    boolean entityExists = client.getBooleanFromCache( entityId, CacheSlots.NodeLink.SLOT_IN_USE );
-                    if ( !entityExists )
-                    {
-                        reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
-                                .nodeNotInUse( recordLoader.node( entityId, storeCursors ) );
+        long[] indexEntityTokenIds = toLongArray(schema.getEntityTokenIds());
+        indexEntityTokenIds = sortAndDeduplicate(indexEntityTokenIds);
+        try (var cursorContext = context.contextFactory.create(NODE_INDEXES_CHECKER_TAG);
+                var storeCursors = new CachedStoreCursors(context.neoStores, cursorContext);
+                var allEntriesReader = accessor.newAllEntriesValueReader(
+                        range.from(), lastRange ? Long.MAX_VALUE : range.to(), cursorContext)) {
+            for (long entityId : allEntriesReader) {
+                try {
+                    boolean entityExists = client.getBooleanFromCache(entityId, CacheSlots.NodeLink.SLOT_IN_USE);
+                    if (!entityExists) {
+                        reporter.forIndexEntry(new IndexEntry(descriptor, context.tokenNameLookup, entityId))
+                                .nodeNotInUse(recordLoader.node(entityId, storeCursors));
+                    } else {
+                        long[] entityTokenIds = nodeLabelsLookup.nodeLabels(entityId);
+                        compareTwoSortedLongArrays(
+                                propertySchemaType,
+                                entityTokenIds,
+                                indexEntityTokenIds,
+                                indexLabel -> reporter.forIndexEntry(
+                                                new IndexEntry(descriptor, context.tokenNameLookup, entityId))
+                                        .nodeDoesNotHaveExpectedLabel(
+                                                recordLoader.node(entityId, storeCursors), indexLabel),
+                                storeLabel -> {
+                                    /*here we're only interested in what the index has that the store doesn't have*/
+                                });
                     }
-                    else
-                    {
-                        long[] entityTokenIds = nodeLabelsLookup.nodeLabels( entityId );
-                        compareTwoSortedLongArrays( propertySchemaType, entityTokenIds, indexEntityTokenIds,
-                                indexLabel -> reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
-                                        .nodeDoesNotHaveExpectedLabel( recordLoader.node( entityId, storeCursors ), indexLabel ),
-                                storeLabel -> {/*here we're only interested in what the index has that the store doesn't have*/} );
-                    }
-                }
-                catch ( ArrayIndexOutOfBoundsException e )
-                {
+                } catch (ArrayIndexOutOfBoundsException e) {
                     // OK so apparently the index has a node way outside node highId
-                    reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
-                            .nodeNotInUse( recordLoader.node( entityId, storeCursors ) );
+                    reporter.forIndexEntry(new IndexEntry(descriptor, context.tokenNameLookup, entityId))
+                            .nodeNotInUse(recordLoader.node(entityId, storeCursors));
                 }
             }
         }
     }
 
-    private static long[] toLongArray( int[] intArray )
-    {
+    private static long[] toLongArray(int[] intArray) {
         long[] result = new long[intArray.length];
-        for ( int i = 0; i < intArray.length; i++ )
-        {
+        for (int i = 0; i < intArray.length; i++) {
             result[i] = intArray[i];
         }
         return result;
     }
 
     @Override
-    public String toString()
-    {
-        return String.format( "%s[highId:%d,indexesToCheck:%d]", getClass().getSimpleName(), neoStores.getNodeStore().getHighId(), smallIndexes.size() );
+    public String toString() {
+        return String.format(
+                "%s[highId:%d,indexesToCheck:%d]",
+                getClass().getSimpleName(), neoStores.getNodeStore().getHighId(), smallIndexes.size());
     }
 
-    public static long[] sortAndDeduplicate( long[] labels )
-    {
-        if ( ArrayUtils.isNotEmpty( labels ) )
-        {
-            sort( labels );
-            return PrimitiveLongCollections.deduplicate( labels );
+    public static long[] sortAndDeduplicate(long[] labels) {
+        if (ArrayUtils.isNotEmpty(labels)) {
+            sort(labels);
+            return PrimitiveLongCollections.deduplicate(labels);
         }
         return labels;
     }

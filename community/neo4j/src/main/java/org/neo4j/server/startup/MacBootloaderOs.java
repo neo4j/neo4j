@@ -19,10 +19,8 @@
  */
 package org.neo4j.server.startup;
 
-class MacBootloaderOs extends AbstractUnixBootloaderOs
-{
-    MacBootloaderOs( BootloaderContext ctx )
-    {
-        super( ctx );
+class MacBootloaderOs extends AbstractUnixBootloaderOs {
+    MacBootloaderOs(BootloaderContext ctx) {
+        super(ctx);
     }
 }

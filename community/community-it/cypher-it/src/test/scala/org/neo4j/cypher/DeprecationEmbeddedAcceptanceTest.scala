@@ -28,8 +28,11 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 class DeprecationEmbeddedAcceptanceTest extends DeprecationAcceptanceTestBase {
   private val config = Config.newBuilder().build()
-  private val managementService: DatabaseManagementService = new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
+
+  private val managementService: DatabaseManagementService =
+    new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
   private val executorFactory: CypherExecutorFactory = EmbeddedCypherExecutorFactory(managementService, config)
 
-  override protected val dbms: FeatureDatabaseManagementService = FeatureDatabaseManagementService(managementService, executorFactory)
+  override protected val dbms: FeatureDatabaseManagementService =
+    FeatureDatabaseManagementService(managementService, executorFactory)
 }

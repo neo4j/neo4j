@@ -30,18 +30,21 @@ import org.neo4j.graphdb.schema.IndexType
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-
-abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                runtime: CypherRuntime[CONTEXT],
-                                                                sizeHint: Int
-                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should support simple hash join between two identifiers") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -61,9 +64,12 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
   test("should handle additional data when joining on two identifiers") {
     // given
     given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i, "otherProp" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i, "otherProp" -> i)
+        }
+      )
     }
 
     // when
@@ -85,9 +91,12 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
   test("should join on a cached-property") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -102,7 +111,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.map(n => Array(n, n)). take(10)
+    val expected = nodes.map(n => Array(n, n)).take(10)
     runtimeResult should beColumns("a", "b").withRows(expected)
   }
 
@@ -114,9 +123,12 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
       )
     }).reduce(_ ++ _)
     val nodes = given {
-      val nodes = nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      val nodes = nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
       connect(nodes, relTuples)
       nodes
     }
@@ -142,9 +154,12 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should handle cached properties from both lhs and rhs") {
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -168,9 +183,12 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
   test("should join with alias on RHS") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -191,9 +209,12 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
   test("should join with alias on LHS") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when
@@ -215,7 +236,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // given
     given {
       val (nodes, _) = circleGraph(sizeHint)
-      nodes.foreach(n => n.setProperty("prop",  n.getId))
+      nodes.foreach(n => n.setProperty("prop", n.getId))
     }
     val lhsRows = inputValues()
 
@@ -237,9 +258,12 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
   test("should join on empty rhs") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -263,7 +287,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // given
     given {
       val (nodes, _) = circleGraph(sizeHint)
-      nodes.foreach(n => n.setProperty("prop",  n.getId))
+      nodes.foreach(n => n.setProperty("prop", n.getId))
     }
     val lhsRows = inputValues()
 
@@ -287,7 +311,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // given
     val unfilteredNodes = given {
       val (nodes, _) = circleGraph(sizeHint)
-      nodes.foreach(n => n.setProperty("prop",  n.getId))
+      nodes.foreach(n => n.setProperty("prop", n.getId))
       nodes
     }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
@@ -305,10 +329,11 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(node, otherNode)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(node, otherNode)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
@@ -317,7 +342,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // given
     val unfilteredNodes = given {
       val (nodes, _) = circleGraph(sizeHint)
-      nodes.foreach(n => n.setProperty("prop",  n.getId))
+      nodes.foreach(n => n.setProperty("prop", n.getId))
       nodes
     }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
@@ -335,10 +360,11 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    val expectedResultRows = for {node <- nodes if node != null
-                                  rel <- node.getRelationships().asScala
-                                  otherNode = rel.getOtherNode(node)
-                                  } yield Array(otherNode, node)
+    val expectedResultRows = for {
+      node <- nodes if node != null
+      rel <- node.getRelationships().asScala
+      otherNode = rel.getOtherNode(node)
+    } yield Array(otherNode, node)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
@@ -346,7 +372,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
   test("should join nested") {
     val nodes = given {
       val (nodes, _) = circleGraph(sizeHint)
-      nodes.foreach(n => n.setProperty("prop",  n.getId))
+      nodes.foreach(n => n.setProperty("prop", n.getId))
       nodes
     }
 
@@ -373,9 +399,13 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // given
     nodeIndex("A", "row")
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i: Int => Map("row" -> i)
-      }, "A")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("row" -> i)
+        },
+        "A"
+      )
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -397,9 +427,12 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
   test("should support simple hash join with apply on lhs and rhs") {
     // given
     val nodes = given {
-      nodePropertyGraph(sizeHint, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
 
     // when

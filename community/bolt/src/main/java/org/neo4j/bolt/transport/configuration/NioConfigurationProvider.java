@@ -24,33 +24,24 @@ import io.netty.channel.ServerChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
-
 import java.net.SocketAddress;
 import java.util.concurrent.ThreadFactory;
 
-public class NioConfigurationProvider implements ServerConfigurationProvider
-{
+public class NioConfigurationProvider implements ServerConfigurationProvider {
     public static final NioConfigurationProvider INSTANCE = new NioConfigurationProvider();
 
-    private NioConfigurationProvider()
-    {
+    private NioConfigurationProvider() {}
+
+    @Override
+    public EventLoopGroup createEventLoopGroup(ThreadFactory threadFactory) {
+        return new NioEventLoopGroup(0, threadFactory);
     }
 
     @Override
-    public EventLoopGroup createEventLoopGroup( ThreadFactory threadFactory )
-    {
-        return new NioEventLoopGroup( 0, threadFactory );
-    }
-
-    @Override
-    public Class<? extends ServerChannel> getChannelClass( SocketAddress socketAddress )
-    {
-        if ( socketAddress instanceof DomainSocketAddress )
-        {
-            throw new IllegalArgumentException( "Unix Domain Sockets cannot be used with Nio Configuration." );
-        }
-        else
-        {
+    public Class<? extends ServerChannel> getChannelClass(SocketAddress socketAddress) {
+        if (socketAddress instanceof DomainSocketAddress) {
+            throw new IllegalArgumentException("Unix Domain Sockets cannot be used with Nio Configuration.");
+        } else {
             return NioServerSocketChannel.class;
         }
     }

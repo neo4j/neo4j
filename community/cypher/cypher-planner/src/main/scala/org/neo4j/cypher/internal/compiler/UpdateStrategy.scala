@@ -40,10 +40,11 @@ case object defaultUpdateStrategy extends UpdateStrategy {
 object UpdateStrategy {
 
   def apply(name: String): UpdateStrategy = name.toUpperCase match {
-    case eagerUpdateStrategy.name => eagerUpdateStrategy
+    case eagerUpdateStrategy.name   => eagerUpdateStrategy
     case defaultUpdateStrategy.name => defaultUpdateStrategy
 
     case n => throw new IllegalArgumentException(
-      s"$n is not a valid update strategy, valid options are ${defaultUpdateStrategy.name} and ${eagerUpdateStrategy.name}")
+        s"$n is not a valid update strategy, valid options are ${defaultUpdateStrategy.name} and ${eagerUpdateStrategy.name}"
+      )
   }
 }

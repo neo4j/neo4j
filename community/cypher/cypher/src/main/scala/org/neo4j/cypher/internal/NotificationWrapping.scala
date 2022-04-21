@@ -65,95 +65,165 @@ import scala.jdk.CollectionConverters.SetHasAsJava
 
 object NotificationWrapping {
 
-  def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification): NotificationCode#Notification = notification match {
+  def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification)
+    : NotificationCode#Notification = notification match {
     case CartesianProductNotification(pos, variables) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
+      NotificationCode.CARTESIAN_PRODUCT.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.cartesianProduct(variables.asJava)
+      )
     case RuntimeUnsupportedNotification(msg) =>
-      NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Runtime unsupported", msg))
+      NotificationCode.RUNTIME_UNSUPPORTED.notification(
+        graphdb.InputPosition.empty,
+        NotificationDetail.Factory.message("Runtime unsupported", msg)
+      )
     case IndexHintUnfulfillableNotification(variableName, label, propertyKeys, entityType, indexType) =>
       val detail = entityType match {
         case EntityType.NODE => indexType match {
-            case UsingAnyIndexType => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
-            case UsingTextIndexType => NotificationDetail.Factory.nodeTextIndex(variableName, label, propertyKeys: _*)
+            case UsingAnyIndexType   => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
+            case UsingTextIndexType  => NotificationDetail.Factory.nodeTextIndex(variableName, label, propertyKeys: _*)
             case UsingRangeIndexType => NotificationDetail.Factory.nodeRangeIndex(variableName, label, propertyKeys: _*)
             case UsingPointIndexType => NotificationDetail.Factory.nodePointIndex(variableName, label, propertyKeys: _*)
           }
         case EntityType.RELATIONSHIP => indexType match {
-          case UsingAnyIndexType => NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
-          case UsingTextIndexType => NotificationDetail.Factory.relationshipTextIndex(variableName, label, propertyKeys: _*)
-          case UsingRangeIndexType => NotificationDetail.Factory.relationshipRangeIndex(variableName, label, propertyKeys: _*)
-          case UsingPointIndexType => NotificationDetail.Factory.relationshipPointIndex(variableName, label, propertyKeys: _*)
-        }
+            case UsingAnyIndexType =>
+              NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
+            case UsingTextIndexType =>
+              NotificationDetail.Factory.relationshipTextIndex(variableName, label, propertyKeys: _*)
+            case UsingRangeIndexType =>
+              NotificationDetail.Factory.relationshipRangeIndex(variableName, label, propertyKeys: _*)
+            case UsingPointIndexType =>
+              NotificationDetail.Factory.relationshipPointIndex(variableName, label, propertyKeys: _*)
+          }
       }
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, detail)
     case JoinHintUnfulfillableNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(
+        graphdb.InputPosition.empty,
+        NotificationDetail.Factory.joinKey(variables.asJava)
+      )
     case NodeIndexLookupUnfulfillableNotification(labels) =>
-      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.nodeIndexSeekOrScan(labels.asJava))
+      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(
+        graphdb.InputPosition.empty,
+        NotificationDetail.Factory.nodeIndexSeekOrScan(labels.asJava)
+      )
     case RelationshipIndexLookupUnfulfillableNotification(relTypes) =>
-      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.relationshipIndexSeekOrScan(relTypes.asJava))
+      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(
+        graphdb.InputPosition.empty,
+        NotificationDetail.Factory.relationshipIndexSeekOrScan(relTypes.asJava)
+      )
     case EagerLoadCsvNotification =>
       NotificationCode.EAGER_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>
       NotificationCode.LARGE_LABEL_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case MissingLabelNotification(pos, label) =>
-      NotificationCode.MISSING_LABEL.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.label(label))
+      NotificationCode.MISSING_LABEL.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.label(label)
+      )
     case MissingRelTypeNotification(pos, relType) =>
-      NotificationCode.MISSING_REL_TYPE.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.relationshipType(relType))
+      NotificationCode.MISSING_REL_TYPE.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.relationshipType(relType)
+      )
     case MissingPropertyNameNotification(pos, name) =>
-      NotificationCode.MISSING_PROPERTY_NAME.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.propertyName(name))
+      NotificationCode.MISSING_PROPERTY_NAME.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.propertyName(name)
+      )
     case UnboundedShortestPathNotification(pos) =>
       NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
       NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_FUNCTION.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+      NotificationCode.DEPRECATED_FUNCTION.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.deprecatedName(oldName, newName)
+      )
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_PROCEDURE.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+      NotificationCode.DEPRECATED_PROCEDURE.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.deprecatedName(oldName, newName)
+      )
     case DeprecatedFieldNotification(pos, procedure, field) =>
-      NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedField(procedure, field))
+      NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.deprecatedField(procedure, field)
+      )
     case DeprecatedVarLengthBindingNotification(pos, variable) =>
-      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
+      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.bindingVarLengthRelationship(variable)
+      )
     case DeprecatedBtreeIndexSyntax(pos) =>
       NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-   case ProcedureWarningNotification(pos, name, warning) =>
-      NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
+    case ProcedureWarningNotification(pos, name, warning) =>
+      NotificationCode.PROCEDURE_WARNING.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.procedureWarning(name, warning)
+      )
     case ExperimentalFeatureNotification(msg) =>
-      NotificationCode.EXPERIMENTAL_FEATURE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("PARALLEL", msg))
+      NotificationCode.EXPERIMENTAL_FEATURE.notification(
+        graphdb.InputPosition.empty,
+        NotificationDetail.Factory.message("PARALLEL", msg)
+      )
     case SuboptimalIndexForConstainsQueryNotification(variableName, label, propertyKeys, entityType) =>
       val detail = entityType match {
         case EntityType.NODE => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
-        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
+        case EntityType.RELATIONSHIP =>
+          NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
       }
       NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(graphdb.InputPosition.empty, detail)
     case SuboptimalIndexForEndsWithQueryNotification(variableName, label, propertyKeys, entityType) =>
       val detail = entityType match {
         case EntityType.NODE => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
-        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
+        case EntityType.RELATIONSHIP =>
+          NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
       }
       NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(graphdb.InputPosition.empty, detail)
     case MissingParametersNotification(names) =>
-      NotificationCode.MISSING_PARAMETERS_FOR_EXPLAIN.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Explain with missing parameters", names.mkString("Missing parameters: ",", ","")))
+      NotificationCode.MISSING_PARAMETERS_FOR_EXPLAIN.notification(
+        graphdb.InputPosition.empty,
+        NotificationDetail.Factory.message(
+          "Explain with missing parameters",
+          names.mkString("Missing parameters: ", ", ", "")
+        )
+      )
     case CodeGenerationFailedNotification(msg) =>
-      NotificationCode.CODE_GENERATION_FAILED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Error from code generation", msg))
+      NotificationCode.CODE_GENERATION_FAILED.notification(
+        graphdb.InputPosition.empty,
+        NotificationDetail.Factory.message("Error from code generation", msg)
+      )
     case DeprecatedRepeatedRelVarInPatternExpression(pos, relName) =>
-      NotificationCode.REPEATED_REL_IN_PATTERN_EXPRESSION.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.repeatedRel(relName))
+      NotificationCode.REPEATED_REL_IN_PATTERN_EXPRESSION.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.repeatedRel(relName)
+      )
     case DeprecatedOctalLiteralSyntax(pos) =>
       NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedHexLiteralSyntax(pos)                     =>
+    case DeprecatedHexLiteralSyntax(pos) =>
       NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCoercionOfListToBoolean(pos) =>
       NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN.notification(pos.withOffset(offset).asInputPosition)
-    case SubqueryVariableShadowing(pos, varName)             =>
-      NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.shadowingVariable(varName))
+    case SubqueryVariableShadowing(pos, varName) =>
+      NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.shadowingVariable(varName)
+      )
     case DeprecatedAmbiguousGroupingNotification(pos, maybeHint) =>
       maybeHint match {
         case Some(hint) => NotificationCode.DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION
-          .notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.message("Hint", s"Hint: $hint"))
-        case _ => NotificationCode.DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION.notification(pos.withOffset(offset).asInputPosition)      }
+            .notification(
+              pos.withOffset(offset).asInputPosition,
+              NotificationDetail.Factory.message("Hint", s"Hint: $hint")
+            )
+        case _ => NotificationCode.DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION.notification(
+            pos.withOffset(offset).asInputPosition
+          )
+      }
   }
 
-  private implicit class ConvertibleCompilerInputPosition(pos: InputPosition) {
+  implicit private class ConvertibleCompilerInputPosition(pos: InputPosition) {
     def asInputPosition = new graphdb.InputPosition(pos.offset, pos.line, pos.column)
   }
 }

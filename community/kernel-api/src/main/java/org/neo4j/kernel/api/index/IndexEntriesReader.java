@@ -20,11 +20,9 @@
 package org.neo4j.kernel.api.index;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-
 import org.neo4j.values.storable.Value;
 
-public interface IndexEntriesReader extends LongIterator, AutoCloseable
-{
+public interface IndexEntriesReader extends LongIterator, AutoCloseable {
     Value[] values();
 
     @Override

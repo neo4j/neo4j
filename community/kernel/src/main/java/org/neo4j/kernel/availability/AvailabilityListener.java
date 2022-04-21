@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.availability;
 
-public interface AvailabilityListener
-{
+public interface AvailabilityListener {
     void available();
 
     void unavailable();

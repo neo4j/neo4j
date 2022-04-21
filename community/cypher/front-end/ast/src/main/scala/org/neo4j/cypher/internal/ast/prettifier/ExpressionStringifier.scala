@@ -241,7 +241,7 @@ private class DefaultExpressionStringifier(
       case lep: LabelExpressionPredicate =>
         s"${inner(ast)(lep.entity)}:${stringify(lep.labelExpression)}"
 
-      case le:LabelExpression =>
+      case le: LabelExpression =>
         stringifyLabelExpression(le)
 
       case AllIterablePredicate(scope, e) =>
@@ -278,14 +278,13 @@ private class DefaultExpressionStringifier(
       case CaseExpression(expression, alternatives, default) =>
         Seq(
           Seq("CASE"),
-          for {e <- expression.toSeq; i <- Seq(inner(ast)(e))} yield i,
-          for {(e1, e2) <- alternatives; i <- Seq("WHEN", inner(ast)(e1), "THEN", inner(ast)(e2))} yield i,
-          for {e <- default.toSeq; i <- Seq("ELSE", inner(ast)(e))} yield i,
+          for { e <- expression.toSeq; i <- Seq(inner(ast)(e)) } yield i,
+          for { (e1, e2) <- alternatives; i <- Seq("WHEN", inner(ast)(e1), "THEN", inner(ast)(e2)) } yield i,
+          for { e <- default.toSeq; i <- Seq("ELSE", inner(ast)(e)) } yield i,
           Seq("END")
         ).flatten.mkString(" ")
 
       case Ands(expressions) =>
-
         type ChainOp = Expression with ChainableBinaryOperatorExpression
 
         def findChain: Option[List[ChainOp]] = {
@@ -300,7 +299,7 @@ private class DefaultExpressionStringifier(
             val head = apply(chain.head)
             val tail = chain.tail.flatMap(o => List(o.canonicalOperatorSymbol, inner(ast)(o.rhs)))
             (head :: tail).mkString(" ")
-          case None        =>
+          case None =>
             expressions.map(x => inner(ast)(x)).mkString(" AND ")
         }
 
@@ -358,8 +357,8 @@ private class DefaultExpressionStringifier(
 
   private def prettyScope(s: FilterScope, expression: Expression) = {
     Seq(
-      for {i <- Seq(apply(s.variable), "IN", inner(s)(expression))} yield i,
-      for {p <- s.innerPredicate.toSeq; i <- Seq("WHERE", inner(s)(p))} yield i
+      for { i <- Seq(apply(s.variable), "IN", inner(s)(expression)) } yield i,
+      for { p <- s.innerPredicate.toSeq; i <- Seq("WHERE", inner(s)(p)) } yield i
     ).flatten.mkString("(", " ", ")")
   }
 
@@ -369,57 +368,57 @@ private class DefaultExpressionStringifier(
 
   private def binding(in: Expression): Binding = in match {
     case _: Or |
-         _: Ors =>
+      _: Ors =>
       Precedence(12)
 
     case _: Xor =>
       Precedence(11)
 
     case _: And |
-         _: Ands =>
+      _: Ands =>
       Precedence(10)
 
     case _: Not =>
       Precedence(9)
 
     case _: Equals |
-         _: NotEquals |
-         _: InvalidNotEquals |
-         _: GreaterThan |
-         _: GreaterThanOrEqual |
-         _: LessThan |
-         _: LessThanOrEqual =>
+      _: NotEquals |
+      _: InvalidNotEquals |
+      _: GreaterThan |
+      _: GreaterThanOrEqual |
+      _: LessThan |
+      _: LessThanOrEqual =>
       Precedence(8)
 
     case _: Add |
-         _: Subtract =>
+      _: Subtract =>
       Precedence(7)
 
     case _: Multiply |
-         _: Divide |
-         _: Modulo =>
+      _: Divide |
+      _: Modulo =>
       Precedence(6)
 
     case _: Pow =>
       Precedence(5)
 
     case _: UnaryAdd |
-         _: UnarySubtract =>
+      _: UnarySubtract =>
       Precedence(4)
 
     case _: RegexMatch |
-         _: In |
-         _: StartsWith |
-         _: EndsWith |
-         _: Contains |
-         _: IsNull |
-         _: IsNotNull =>
+      _: In |
+      _: StartsWith |
+      _: EndsWith |
+      _: Contains |
+      _: IsNull |
+      _: IsNotNull =>
       Precedence(3)
 
     case _: Property |
-         _: HasLabels |
-         _: ContainerIndex |
-         _: ListSlice =>
+      _: HasLabels |
+      _: ContainerIndex |
+      _: ListSlice =>
       Precedence(2)
 
     case _ =>
@@ -445,8 +444,8 @@ private class DefaultExpressionStringifier(
 
   override def escapePassword(password: Expression): String = password match {
     case _: SensitiveAutoParameter if !sensitiveParamsAsParams => "'******'"
-    case _: SensitiveLiteral => "'******'"
-    case param: Parameter => s"$$${ExpressionStringifier.backtick(param.name)}"
+    case _: SensitiveLiteral                                   => "'******'"
+    case param: Parameter                                      => s"$$${ExpressionStringifier.backtick(param.name)}"
   }
 
   private def stringifyLabelExpression(labelExpression: LabelExpression): String = labelExpression match {
@@ -455,9 +454,9 @@ private class DefaultExpressionStringifier(
   }
 
   private def stringifyLabelExpression3(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Conjunction => s"${stringifyLabelExpression2(le.lhs)}&${stringifyLabelExpression2(le.rhs)}"
+    case le: Conjunction      => s"${stringifyLabelExpression2(le.lhs)}&${stringifyLabelExpression2(le.rhs)}"
     case le: ColonConjunction => s"${stringifyLabelExpression2(le.lhs)}:${stringifyLabelExpression2(le.rhs)}"
-    case le              => s"${stringifyLabelExpression2(le)}"
+    case le                   => s"${stringifyLabelExpression2(le)}"
   }
 
   private def stringifyLabelExpression2(labelExpression: LabelExpression): String = labelExpression match {
@@ -466,9 +465,9 @@ private class DefaultExpressionStringifier(
   }
 
   private def stringifyLabelExpression1(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Label    => apply(le.label)
-    case _: Wildcard  => s"%"
-    case le           => s"(${stringifyLabelExpression(le)})"
+    case le: Label   => apply(le.label)
+    case _: Wildcard => s"%"
+    case le          => s"(${stringifyLabelExpression(le)})"
   }
 }
 
@@ -480,7 +479,13 @@ object ExpressionStringifier {
     alwaysBacktick: Boolean,
     preferSingleQuotes: Boolean,
     sensitiveParamsAsParams: Boolean
-  ): ExpressionStringifier = new DefaultExpressionStringifier(extension, alwaysParens, alwaysBacktick, preferSingleQuotes, sensitiveParamsAsParams)
+  ): ExpressionStringifier = new DefaultExpressionStringifier(
+    extension,
+    alwaysParens,
+    alwaysBacktick,
+    preferSingleQuotes,
+    sensitiveParamsAsParams
+  )
 
   def apply(
     extender: Expression => String = failingExtender,
@@ -488,7 +493,13 @@ object ExpressionStringifier {
     alwaysBacktick: Boolean = false,
     preferSingleQuotes: Boolean = false,
     sensitiveParamsAsParams: Boolean = false
-  ): ExpressionStringifier = new DefaultExpressionStringifier(Extension.simple(extender), alwaysParens, alwaysBacktick, preferSingleQuotes, sensitiveParamsAsParams)
+  ): ExpressionStringifier = new DefaultExpressionStringifier(
+    Extension.simple(extender),
+    alwaysParens,
+    alwaysBacktick,
+    preferSingleQuotes,
+    sensitiveParamsAsParams
+  )
 
   /**
    * Generates pretty strings from expressions.
@@ -502,6 +513,7 @@ object ExpressionStringifier {
   }
 
   object Extension {
+
     def simple(func: Expression => String): Extension = new Extension {
       def apply(ctx: ExpressionStringifier)(expression: Expression): String = func(expression)
     }
@@ -520,7 +532,11 @@ object ExpressionStringifier {
       s"`$escaped`"
     else {
       val isJavaIdentifier =
-        txt.codePoints().limit(1).allMatch(p => (Character.isJavaIdentifierStart(p) && Character.getType(p) != Character.CURRENCY_SYMBOL) || orGlobbedCharacter(p)) &&
+        txt.codePoints().limit(1).allMatch(p =>
+          (Character.isJavaIdentifierStart(p) && Character.getType(
+            p
+          ) != Character.CURRENCY_SYMBOL) || orGlobbedCharacter(p)
+        ) &&
           txt.codePoints().skip(1).allMatch(p => Character.isJavaIdentifierPart(p) || orGlobbedCharacter(p))
       if (!isJavaIdentifier)
         s"`$escaped`"

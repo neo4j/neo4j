@@ -22,7 +22,6 @@ package org.neo4j.common;
 /**
  * Validates a value, throws {@link IllegalArgumentException} for invalid values.
  */
-public interface Validator<T>
-{
-    void validate( T value );
+public interface Validator<T> {
+    void validate(T value);
 }

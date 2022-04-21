@@ -20,17 +20,15 @@
 package org.neo4j.storageengine.migration;
 
 import java.io.Closeable;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.SchemaRule;
 
-public interface SchemaRuleMigrationAccess extends Closeable
-{
+public interface SchemaRuleMigrationAccess extends Closeable {
     Iterable<SchemaRule> getAll();
 
-    void writeSchemaRule( SchemaRule rule ) throws KernelException;
+    void writeSchemaRule(SchemaRule rule) throws KernelException;
 
-    void deleteSchemaRule( long id ) throws KernelException;
+    void deleteSchemaRule(long id) throws KernelException;
 
     long nextId();
 }

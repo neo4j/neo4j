@@ -19,15 +19,12 @@
  */
 package org.neo4j.exceptions;
 
-public class UnsatisfiedDependencyException extends RuntimeException
-{
-    public UnsatisfiedDependencyException( Throwable cause )
-    {
-        super( cause );
+public class UnsatisfiedDependencyException extends RuntimeException {
+    public UnsatisfiedDependencyException(Throwable cause) {
+        super(cause);
     }
 
-    public UnsatisfiedDependencyException( Class<?> type )
-    {
-        super( "No dependency satisfies type " + type );
+    public UnsatisfiedDependencyException(Class<?> type) {
+        super("No dependency satisfies type " + type);
     }
 }

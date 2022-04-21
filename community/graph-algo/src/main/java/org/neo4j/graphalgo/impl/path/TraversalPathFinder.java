@@ -27,37 +27,31 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.LimitingIterable;
 
-public abstract class TraversalPathFinder implements PathFinder<Path>
-{
+public abstract class TraversalPathFinder implements PathFinder<Path> {
     private Traverser lastTraverser;
 
     @Override
-    public Path findSinglePath( Node start, Node end )
-    {
-        return Iterables.firstOrNull( findAllPaths( start, end ) );
+    public Path findSinglePath(Node start, Node end) {
+        return Iterables.firstOrNull(findAllPaths(start, end));
     }
 
-    protected Integer maxResultCount()
-    {
+    protected Integer maxResultCount() {
         return null;
     }
 
     @Override
-    public Iterable<Path> findAllPaths( Node start, Node end )
-    {
-        lastTraverser = instantiateTraverser( start, end );
+    public Iterable<Path> findAllPaths(Node start, Node end) {
+        lastTraverser = instantiateTraverser(start, end);
         Integer maxResultCount = maxResultCount();
-        return maxResultCount != null ? new LimitingIterable<>( lastTraverser, maxResultCount ) : lastTraverser;
+        return maxResultCount != null ? new LimitingIterable<>(lastTraverser, maxResultCount) : lastTraverser;
     }
 
-    protected abstract Traverser instantiateTraverser( Node start, Node end );
+    protected abstract Traverser instantiateTraverser(Node start, Node end);
 
     @Override
-    public TraversalMetadata metadata()
-    {
-        if ( lastTraverser == null )
-        {
-            throw new IllegalStateException( "No traversal has been made" );
+    public TraversalMetadata metadata() {
+        if (lastTraverser == null) {
+            throw new IllegalStateException("No traversal has been made");
         }
         return lastTraverser.metadata();
     }

@@ -23,11 +23,11 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 
-public interface SchemaRecordChangeTranslator
-{
-    void createSchemaRule( TransactionRecordState recordState, SchemaRule rule ) throws KernelException;
+public interface SchemaRecordChangeTranslator {
+    void createSchemaRule(TransactionRecordState recordState, SchemaRule rule) throws KernelException;
 
-    void dropSchemaRule( TransactionRecordState recordState, SchemaRule rule );
+    void dropSchemaRule(TransactionRecordState recordState, SchemaRule rule);
 
-    void setConstraintIndexOwner( TransactionRecordState recordState, IndexDescriptor indexRule, long constraintId ) throws KernelException;
+    void setConstraintIndexOwner(TransactionRecordState recordState, IndexDescriptor indexRule, long constraintId)
+            throws KernelException;
 }

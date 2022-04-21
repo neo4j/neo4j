@@ -28,20 +28,17 @@ import java.util.function.Predicate;
  *
  * @param <T> the type of items in the iteration.
  */
-public class FilteringIterable<T> implements Iterable<T>
-{
+public class FilteringIterable<T> implements Iterable<T> {
     private final Iterable<T> source;
     private final Predicate<T> predicate;
 
-    public FilteringIterable( Iterable<T> source, Predicate<T> predicate )
-    {
+    public FilteringIterable(Iterable<T> source, Predicate<T> predicate) {
         this.source = source;
         this.predicate = predicate;
     }
 
     @Override
-    public Iterator<T> iterator()
-    {
-        return new FilteringIterator<>( source.iterator(), predicate );
+    public Iterator<T> iterator() {
+        return new FilteringIterator<>(source.iterator(), predicate);
     }
 }

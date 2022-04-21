@@ -33,10 +33,10 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
 abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
-                                                            edition: Edition[CONTEXT],
-                                                            runtime: CypherRuntime[CONTEXT],
-                                                            val sizeHint: Int
-                                                          ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should optional expand") {
     // given
@@ -89,7 +89,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = for {
-      x <-nodes
+      x <- nodes
     } yield Array(x, null)
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
@@ -193,7 +193,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
       NodeConnections(x, connections) <- nodeConnections
       z1 <- if (connections.contains("OTHER")) connections("OTHER") else Seq(null)
       z2 <- if (connections.contains("NEXT")) connections("NEXT") else Seq(null)
-    } yield Array(x,  z1, z2)
+    } yield Array(x, z1, z2)
 
     runtimeResult should beColumns("x", "z1", "z2").withRows(expected)
   }
@@ -225,25 +225,25 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y").withRows(matching {
-      case rows:Seq[_] if rows.forall {
-        case Array(x, y) =>
-          val xid = x.asInstanceOf[VirtualNodeValue].id()
-          val connections = nodeConnections(xid)
-          if (connections.isEmpty) {
-            y == Values.NO_VALUE
-          } else {
-            withClue(s"x id: $xid --") {
-              val yid = y match {
-                case node: VirtualNodeValue => node.id()
-                case _ => y shouldBe a[VirtualNodeValue]
+      case rows: Seq[_] if rows.forall {
+          case Array(x, y) =>
+            val xid = x.asInstanceOf[VirtualNodeValue].id()
+            val connections = nodeConnections(xid)
+            if (connections.isEmpty) {
+              y == Values.NO_VALUE
+            } else {
+              withClue(s"x id: $xid --") {
+                val yid = y match {
+                  case node: VirtualNodeValue => node.id()
+                  case _                      => y shouldBe a[VirtualNodeValue]
+                }
+                connections.values.flatten.exists(_.getId == yid)
               }
-              connections.values.flatten.exists(_.getId == yid)
             }
-          }
-      } && {
-        val xs = rows.map(_.asInstanceOf[Array[_]](0))
-        xs.distinct.size == xs.size // Check that there is at most one row per x
-      } =>
+        } && {
+          val xs = rows.map(_.asInstanceOf[Array[_]](0))
+          xs.distinct.size == xs.size // Check that there is at most one row per x
+        } =>
     })
   }
 
@@ -273,7 +273,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
 
-    val  nodeConnections = given {
+    val nodeConnections = given {
       val nodes = nodeGraph(n)
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
     }

@@ -19,8 +19,7 @@
  */
 package org.neo4j.annotations;
 
-public interface AnnotationConstants
-{
+public interface AnnotationConstants {
     String DEFAULT_NEW_LINE = "\n";
     String WINDOWS_NEW_LINE = "\r\n";
 }

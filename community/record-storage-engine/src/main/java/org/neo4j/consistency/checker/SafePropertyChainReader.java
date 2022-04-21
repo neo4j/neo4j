@@ -19,14 +19,20 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import static org.neo4j.consistency.checker.RecordLoading.NO_DYNAMIC_HANDLER;
+import static org.neo4j.consistency.checker.RecordLoading.checkValidInternalToken;
+import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
+import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.safeLoadDynamicRecordChain;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -41,20 +47,11 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.consistency.checker.RecordLoading.NO_DYNAMIC_HANDLER;
-import static org.neo4j.consistency.checker.RecordLoading.checkValidInternalToken;
-import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
-import static org.neo4j.consistency.checker.RecordLoading.safeLoadDynamicRecordChain;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
-
 /**
  * A Property chain reader (and optionally checker) which can read, detect and abort broken property chains where a normal PropertyCursor
  * would have thrown exception on inconsistent chain.
  */
-class SafePropertyChainReader implements AutoCloseable
-{
+class SafePropertyChainReader implements AutoCloseable {
     private final int stringStoreBlockSize;
     private final int arrayStoreBlockSize;
     private final PropertyStore propertyStore;
@@ -69,22 +66,21 @@ class SafePropertyChainReader implements AutoCloseable
     private final NeoStores neoStores;
     private final boolean internalTokens;
 
-    SafePropertyChainReader( CheckerContext context, CursorContext cursorContext )
-    {
-        this( context, cursorContext, false );
+    SafePropertyChainReader(CheckerContext context, CursorContext cursorContext) {
+        this(context, cursorContext, false);
     }
 
-    SafePropertyChainReader( CheckerContext context, CursorContext cursorContext, boolean checkInternalTokens )
-    {
+    SafePropertyChainReader(CheckerContext context, CursorContext cursorContext, boolean checkInternalTokens) {
         this.context = context;
         this.neoStores = context.neoStores;
         this.reporter = context.reporter;
-        this.stringStoreBlockSize = neoStores.getPropertyStore().getStringStore().getRecordDataSize();
+        this.stringStoreBlockSize =
+                neoStores.getPropertyStore().getStringStore().getRecordDataSize();
         this.arrayStoreBlockSize = neoStores.getPropertyStore().getArrayStore().getRecordDataSize();
         this.propertyStore = neoStores.getPropertyStore();
-        this.propertyReader = new RecordReader<>( neoStores.getPropertyStore(), false, cursorContext );
-        this.stringReader = new RecordReader<>( neoStores.getPropertyStore().getStringStore(), false, cursorContext );
-        this.arrayReader = new RecordReader<>( neoStores.getPropertyStore().getArrayStore(), false, cursorContext );
+        this.propertyReader = new RecordReader<>(neoStores.getPropertyStore(), false, cursorContext);
+        this.stringReader = new RecordReader<>(neoStores.getPropertyStore().getStringStore(), false, cursorContext);
+        this.arrayReader = new RecordReader<>(neoStores.getPropertyStore().getArrayStore(), false, cursorContext);
         this.seenRecords = new LongHashSet();
         this.seenDynamicRecordIds = new LongHashSet();
         this.dynamicRecords = new ArrayList<>();
@@ -101,126 +97,136 @@ class SafePropertyChainReader implements AutoCloseable
      * @param <PRIMITIVE> entity type.
      * @return {@code true} if there were no inconsistencies encountered, otherwise {@code false}.
      */
-    <PRIMITIVE extends PrimitiveRecord> boolean read( MutableIntObjectMap<Value> intoValues, PRIMITIVE entity,
-            Function<PRIMITIVE,ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter, StoreCursors storeCursors )
-    {
-        lightClear( seenRecords );
+    <PRIMITIVE extends PrimitiveRecord> boolean read(
+            MutableIntObjectMap<Value> intoValues,
+            PRIMITIVE entity,
+            Function<PRIMITIVE, ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter,
+            StoreCursors storeCursors) {
+        lightClear(seenRecords);
         long propertyRecordId = entity.getNextProp();
         long previousRecordId = NULL_REFERENCE.longValue();
         boolean chainIsOk = true;
-        while ( !NULL_REFERENCE.is( propertyRecordId ) && !context.isCancelled() )
-        {
-            if ( !seenRecords.add( propertyRecordId ) )
-            {
-                primitiveReporter.apply( entity ).propertyChainContainsCircularReference( propertyReader.record() );
+        while (!NULL_REFERENCE.is(propertyRecordId) && !context.isCancelled()) {
+            if (!seenRecords.add(propertyRecordId)) {
+                primitiveReporter.apply(entity).propertyChainContainsCircularReference(propertyReader.record());
                 chainIsOk = false;
                 break;
             }
 
-            PropertyRecord propertyRecord = propertyReader.read( propertyRecordId );
-            if ( !propertyRecord.inUse() )
-            {
-                primitiveReporter.apply( entity ).propertyNotInUse( propertyRecord );
-                reporter.forProperty( context.recordLoader.property( previousRecordId, storeCursors ) ).nextNotInUse( propertyRecord );
+            PropertyRecord propertyRecord = propertyReader.read(propertyRecordId);
+            if (!propertyRecord.inUse()) {
+                primitiveReporter.apply(entity).propertyNotInUse(propertyRecord);
+                reporter.forProperty(context.recordLoader.property(previousRecordId, storeCursors))
+                        .nextNotInUse(propertyRecord);
                 return false;
-            }
-            else
-            {
-                if ( propertyRecord.getPrevProp() != previousRecordId )
-                {
-                    if ( NULL_REFERENCE.is( previousRecordId ) )
-                    {
-                        primitiveReporter.apply( entity ).propertyNotFirstInChain( propertyRecord );
-                    }
-                    else
-                    {
-                        reporter.forProperty( context.recordLoader.property( previousRecordId, storeCursors ) ).nextDoesNotReferenceBack( propertyRecord );
-                        // prevDoesNotReferenceBack is not reported, unnecessary double report (same inconsistency from different directions)
+            } else {
+                if (propertyRecord.getPrevProp() != previousRecordId) {
+                    if (NULL_REFERENCE.is(previousRecordId)) {
+                        primitiveReporter.apply(entity).propertyNotFirstInChain(propertyRecord);
+                    } else {
+                        reporter.forProperty(context.recordLoader.property(previousRecordId, storeCursors))
+                                .nextDoesNotReferenceBack(propertyRecord);
+                        // prevDoesNotReferenceBack is not reported, unnecessary double report (same inconsistency from
+                        // different directions)
                     }
                     chainIsOk = false;
                 }
 
-                for ( PropertyBlock block : propertyRecord )
-                {
+                for (PropertyBlock block : propertyRecord) {
                     int propertyKeyId = block.getKeyIndexId();
-                    if ( internalTokens )
-                    {
-                        if ( !checkValidInternalToken( propertyRecord, propertyKeyId, context.tokenHolders.propertyKeyTokens(),
-                                                       neoStores.getPropertyKeyTokenStore(),
-                                                       ( property, token ) -> reporter.forProperty( property ).invalidPropertyKey( block ),
-                                                       // apparently counts for internal tokens are not collected
-                                                       ( property, token ) -> {}, storeCursors ) )
-                        {
+                    if (internalTokens) {
+                        if (!checkValidInternalToken(
+                                propertyRecord,
+                                propertyKeyId,
+                                context.tokenHolders.propertyKeyTokens(),
+                                neoStores.getPropertyKeyTokenStore(),
+                                (property, token) ->
+                                        reporter.forProperty(property).invalidPropertyKey(block),
+                                // apparently counts for internal tokens are not collected
+                                (property, token) -> {},
+                                storeCursors)) {
                             chainIsOk = false;
                         }
-                    }
-                    else
-                    {
-                        if ( !checkValidToken( propertyRecord, propertyKeyId, context.tokenHolders.propertyKeyTokens(),
-                                               neoStores.getPropertyKeyTokenStore(),
-                                               ( property, token ) -> reporter.forProperty( property ).invalidPropertyKey( block ),
-                                               ( property, token ) -> reporter.forProperty( property ).keyNotInUse( block, token ), storeCursors ) )
-                        {
+                    } else {
+                        if (!checkValidToken(
+                                propertyRecord,
+                                propertyKeyId,
+                                context.tokenHolders.propertyKeyTokens(),
+                                neoStores.getPropertyKeyTokenStore(),
+                                (property, token) ->
+                                        reporter.forProperty(property).invalidPropertyKey(block),
+                                (property, token) ->
+                                        reporter.forProperty(property).keyNotInUse(block, token),
+                                storeCursors)) {
                             chainIsOk = false;
                         }
                     }
                     PropertyType type = block.forceGetType();
                     Value value = Values.NO_VALUE;
-                    if ( type == null )
-                    {
-                        reporter.forProperty( propertyRecord ).invalidPropertyType( block );
-                    }
-                    else
-                    {
-                        try
-                        {
-                            switch ( type )
-                            {
-                            case STRING:
-                                dynamicRecords.clear();
-                                if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( record.copy() ), stringReader, seenDynamicRecordIds,
-                                        block.getSingleValueLong(), stringStoreBlockSize, NO_DYNAMIC_HANDLER,
-                                        ( id, record ) -> reporter.forProperty( propertyRecord ).stringNotInUse( block, record ),
-                                        ( id, record ) -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, stringReader.record() )
-                                                .nextNotInUse( record ),
-                                        ( id, record ) -> reporter.forProperty( propertyRecord ).stringEmpty( block, record ),
-                                        record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).recordNotFullReferencesNext(),
-                                        record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).invalidLength() ) )
-                                {
-                                    value = propertyStore.getTextValueFor( dynamicRecords, storeCursors );
-                                }
-                                break;
-                            case ARRAY:
-                                dynamicRecords.clear();
-                                if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( record.copy() ), arrayReader, seenDynamicRecordIds,
-                                        block.getSingleValueLong(), arrayStoreBlockSize, NO_DYNAMIC_HANDLER,
-                                        ( id, record ) -> reporter.forProperty( propertyRecord ).arrayNotInUse( block, record ),
-                                        ( id, record ) -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, arrayReader.record() )
-                                                .nextNotInUse( record ),
-                                        ( id, record ) -> reporter.forProperty( propertyRecord ).arrayEmpty( block, record ),
-                                        record -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, record ).recordNotFullReferencesNext(),
-                                        record -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, record ).invalidLength() ) )
-                                {
-                                    value = propertyStore.getArrayFor( dynamicRecords, storeCursors );
-                                }
-                                break;
-                            default:
-                                value = type.value( block, null, storeCursors );
-                                break;
+                    if (type == null) {
+                        reporter.forProperty(propertyRecord).invalidPropertyType(block);
+                    } else {
+                        try {
+                            switch (type) {
+                                case STRING:
+                                    dynamicRecords.clear();
+                                    if (safeLoadDynamicRecordChain(
+                                            record -> dynamicRecords.add(record.copy()),
+                                            stringReader,
+                                            seenDynamicRecordIds,
+                                            block.getSingleValueLong(),
+                                            stringStoreBlockSize,
+                                            NO_DYNAMIC_HANDLER,
+                                            (id, record) -> reporter.forProperty(propertyRecord)
+                                                    .stringNotInUse(block, record),
+                                            (id, record) -> reporter.forDynamicBlock(
+                                                            RecordType.STRING_PROPERTY, stringReader.record())
+                                                    .nextNotInUse(record),
+                                            (id, record) -> reporter.forProperty(propertyRecord)
+                                                    .stringEmpty(block, record),
+                                            record -> reporter.forDynamicBlock(RecordType.STRING_PROPERTY, record)
+                                                    .recordNotFullReferencesNext(),
+                                            record -> reporter.forDynamicBlock(RecordType.STRING_PROPERTY, record)
+                                                    .invalidLength())) {
+                                        value = propertyStore.getTextValueFor(dynamicRecords, storeCursors);
+                                    }
+                                    break;
+                                case ARRAY:
+                                    dynamicRecords.clear();
+                                    if (safeLoadDynamicRecordChain(
+                                            record -> dynamicRecords.add(record.copy()),
+                                            arrayReader,
+                                            seenDynamicRecordIds,
+                                            block.getSingleValueLong(),
+                                            arrayStoreBlockSize,
+                                            NO_DYNAMIC_HANDLER,
+                                            (id, record) -> reporter.forProperty(propertyRecord)
+                                                    .arrayNotInUse(block, record),
+                                            (id, record) -> reporter.forDynamicBlock(
+                                                            RecordType.ARRAY_PROPERTY, arrayReader.record())
+                                                    .nextNotInUse(record),
+                                            (id, record) -> reporter.forProperty(propertyRecord)
+                                                    .arrayEmpty(block, record),
+                                            record -> reporter.forDynamicBlock(RecordType.ARRAY_PROPERTY, record)
+                                                    .recordNotFullReferencesNext(),
+                                            record -> reporter.forDynamicBlock(RecordType.ARRAY_PROPERTY, record)
+                                                    .invalidLength())) {
+                                        value = propertyStore.getArrayFor(dynamicRecords, storeCursors);
+                                    }
+                                    break;
+                                default:
+                                    value = type.value(block, null, storeCursors);
+                                    break;
                             }
-                        }
-                        catch ( Exception e )
-                        {
-                            reporter.forProperty( propertyRecord ).invalidPropertyValue( propertyRecord.getId(), block.getKeyIndexId() );
+                        } catch (Exception e) {
+                            reporter.forProperty(propertyRecord)
+                                    .invalidPropertyValue(propertyRecord.getId(), block.getKeyIndexId());
                         }
                     }
-                    if ( value == Values.NO_VALUE )
-                    {
+                    if (value == Values.NO_VALUE) {
                         chainIsOk = false;
-                    }
-                    else if ( propertyKeyId >= 0 && intoValues.put( propertyKeyId, value ) != null )
-                    {
-                        primitiveReporter.apply( entity ).propertyKeyNotUniqueInChain();
+                    } else if (propertyKeyId >= 0 && intoValues.put(propertyKeyId, value) != null) {
+                        primitiveReporter.apply(entity).propertyKeyNotUniqueInChain();
                         chainIsOk = false;
                     }
                 }
@@ -232,8 +238,7 @@ class SafePropertyChainReader implements AutoCloseable
     }
 
     @Override
-    public void close()
-    {
-        closeAllUnchecked( propertyReader, stringReader, arrayReader );
+    public void close() {
+        closeAllUnchecked(propertyReader, stringReader, arrayReader);
     }
 }

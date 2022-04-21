@@ -21,5 +21,9 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 
 trait PreparatoryRewritingRewriterFactory {
-  def getRewriter(cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger): Rewriter
+
+  def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    notificationLogger: InternalNotificationLogger
+  ): Rewriter
 }

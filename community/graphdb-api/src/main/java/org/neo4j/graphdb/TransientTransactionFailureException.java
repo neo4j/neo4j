@@ -27,25 +27,21 @@ import org.neo4j.kernel.api.exceptions.Status;
  * A proper response to a caught exception of this type is to cancel the unit of work that produced this exception and retry the unit of work again, as a
  * whole.
  */
-public class TransientTransactionFailureException extends TransientFailureException
-{
+public class TransientTransactionFailureException extends TransientFailureException {
     private final Status status;
 
-    public TransientTransactionFailureException( Status status, String message )
-    {
-        super( message );
+    public TransientTransactionFailureException(Status status, String message) {
+        super(message);
         this.status = status;
     }
 
-    public TransientTransactionFailureException( Status status, String message, Throwable cause )
-    {
-        super( message, cause );
+    public TransientTransactionFailureException(Status status, String message, Throwable cause) {
+        super(message, cause);
         this.status = status;
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return status;
     }
 }

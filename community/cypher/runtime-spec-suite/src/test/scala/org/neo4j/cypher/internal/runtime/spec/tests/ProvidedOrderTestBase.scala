@@ -38,13 +38,19 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
-                                                                 edition: Edition[CONTEXT],
-                                                                 runtime: CypherRuntime[CONTEXT],
-                                                                 val sizeHint: Int
-                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  trait SeqMutator { def apply[X](in: Seq[X]): Seq[X]}
-  case class ProvidedOrderTest(orderString: String, indexOrder: IndexOrder, providedOrderFactory: String => ProvidedOrder, expectedMutation: SeqMutator)
+  trait SeqMutator { def apply[X](in: Seq[X]): Seq[X] }
+
+  case class ProvidedOrderTest(
+    orderString: String,
+    indexOrder: IndexOrder,
+    providedOrderFactory: String => ProvidedOrder,
+    expectedMutation: SeqMutator
+  )
 }
 
 trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
@@ -56,21 +62,29 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
   for (
     ProvidedOrderTest(orderString, indexOrder, providedOrderFactory, expectedMutation) <- Seq(
-      ProvidedOrderTest("ascending", IndexOrderAscending, parse andThen asc,
+      ProvidedOrderTest(
+        "ascending",
+        IndexOrderAscending,
+        parse andThen asc,
         new SeqMutator {
           override def apply[X](in: Seq[X]): Seq[X] = in
-        }),
-      ProvidedOrderTest("descending", IndexOrderDescending, parse andThen desc,
+        }
+      ),
+      ProvidedOrderTest(
+        "descending",
+        IndexOrderDescending,
+        parse andThen desc,
         new SeqMutator {
           override def apply[X](in: Seq[X]): Seq[X] = in.reverse
-        })
+        }
+      )
     )
   ) {
 
     test(s"expand keeps index provided $orderString order") {
       // given
       val n = sizeHint
-      val relTuples = (for(i <- 0 until n) yield {
+      val relTuples = (for (i <- 0 until n) yield {
         Seq(
           (i, (2 * i) % n, "OTHER"),
           (i, (3 * i) % n, "OTHER"),
@@ -82,13 +96,16 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       }).reduce(_ ++ _)
       val nodes = given {
         nodeIndex("Honey", "prop")
-        val nodes = nodePropertyGraph(n, {
-          case i if i % 10 == 0 => Map("prop" -> i)
-        },"Honey")
+        val nodes = nodePropertyGraph(
+          n,
+          {
+            case i if i % 10 == 0 => Map("prop" -> i)
+          },
+          "Honey"
+        )
         connect(nodes, relTuples)
         nodes
       }
-
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -96,13 +113,19 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("x.prop AS prop")
         .expand("(y)-->(z)") // 6x more rows
         .expand("(x)-->(y)") // 6x more rows
-        .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("x.prop"))
+        .nodeIndexOperator(
+          s"x:Honey(prop > ${sizeHint / 2})",
+          indexOrder = indexOrder,
+          getValue = _ => DoNotGetValue
+        ).withProvidedOrder(providedOrderFactory("x.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
 
       // then
-      val expected = expectedMutation(nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > n / 2}.flatMap(n => Seq.fill(6 * 6)(n)).map(_._2))
+      val expected = expectedMutation(nodes.zipWithIndex.filter { case (_, i) => i % 10 == 0 && i > n / 2 }.flatMap(n =>
+        Seq.fill(6 * 6)(n)
+      ).map(_._2))
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
@@ -114,9 +137,13 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
       given {
         nodeIndex("Honey", "prop")
-        nodePropertyGraph(n, {
-          case i => Map("prop" -> i % modulo)
-        }, "Honey")
+        nodePropertyGraph(
+          n,
+          {
+            case i => Map("prop" -> i % modulo)
+          },
+          "Honey"
+        )
       }
 
       val xValues = 0L until 2L
@@ -131,7 +158,11 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.|.sort(Seq(Descending("zprop")))
         .|.|.projection("z.prop AS zprop")
         .|.|.allNodeScan("z")
-        .|.nodeIndexOperator(s"y:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("y.prop"))
+        .|.nodeIndexOperator(
+          s"y:Honey(prop >= $zGreaterThanFilter)",
+          indexOrder = indexOrder,
+          getValue = _ => DoNotGetValue
+        ).withProvidedOrder(providedOrderFactory("y.prop"))
         .input(variables = Seq("x"))
         .build()
 
@@ -152,16 +183,24 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val n = sizeHint
       given {
         nodeIndex("Honey", "prop")
-        nodePropertyGraph(n, {
-          case i => Map("prop" -> i % 100)
-        }, "Honey")
+        nodePropertyGraph(
+          n,
+          {
+            case i => Map("prop" -> i % 100)
+          },
+          "Honey"
+        )
       }
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("prop", "c").withLeveragedOrder()
         .aggregation(groupingExpressions = Seq("x.prop AS prop"), aggregationExpression = Seq("count(*) AS c"))
-        .nodeIndexOperator("x:Honey(prop >= 0)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("x.prop"))
+        .nodeIndexOperator(
+          "x:Honey(prop >= 0)",
+          indexOrder = indexOrder,
+          getValue = _ => DoNotGetValue
+        ).withProvidedOrder(providedOrderFactory("x.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -178,20 +217,22 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val modulo = 100
       val zGreaterThanFilter = 10
 
-
-      val relTuples = (for(i <- 0 until n) yield {
+      val relTuples = (for (i <- 0 until n) yield {
         Seq.fill(fillFactor)((i, i, "SELF"))
       }).reduce(_ ++ _)
 
       given {
         nodeIndex("Honey", "prop")
-        val nodes = nodePropertyGraph(n, {
-          case i => Map("prop" -> i % modulo)
-        }, "Honey")
+        val nodes = nodePropertyGraph(
+          n,
+          {
+            case i => Map("prop" -> i % modulo)
+          },
+          "Honey"
+        )
         connect(nodes, relTuples)
         nodes
       }
-
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -199,7 +240,11 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("y.prop AS prop")
         .nodeHashJoin("y")
         .|.expand("(z)-->(y)")
-        .|.nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .|.nodeIndexOperator(
+          s"z:Honey(prop >= $zGreaterThanFilter)",
+          indexOrder = indexOrder,
+          getValue = _ => DoNotGetValue
+        ).withProvidedOrder(providedOrderFactory("z.prop"))
         .expand("(x)-->(y)")
         .filter("x.prop % 2 = 0")
         .nodeByLabelScan("x", "Honey", IndexOrderNone)
@@ -217,7 +262,10 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         y <- Seq.fill(fillFactor)(z)
       } yield y
       val expected = for {
-        rhs_y <- rhs.zipWithIndex.filter(_._2 % (n / modulo) == 0).map(_._1) // Only every (n / modulo)th node (even though they have the same property) matches
+        rhs_y <-
+          rhs.zipWithIndex.filter(_._2 % (n / modulo) == 0).map(
+            _._1
+          ) // Only every (n / modulo)th node (even though they have the same property) matches
         lhs_y <- lhs if lhs_y == rhs_y
       } yield lhs_y
 
@@ -231,15 +279,19 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val modulo = 100
       val zGreaterThanFilter = 10
 
-      val relTuples = (for(i <- 0 until n) yield {
+      val relTuples = (for (i <- 0 until n) yield {
         Seq.fill(fillFactor)((i, i, "SELF"))
       }).reduce(_ ++ _)
 
       given {
         nodeIndex("Honey", "prop")
-        val nodes = nodePropertyGraph(n, {
-          case i => Map("prop" -> i % modulo)
-        }, "Honey")
+        val nodes = nodePropertyGraph(
+          n,
+          {
+            case i => Map("prop" -> i % modulo)
+          },
+          "Honey"
+        )
         connect(nodes, relTuples)
         nodes
       }
@@ -252,7 +304,11 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.filter("y.prop % 2 = 0")
         .|.argument("y")
         .expand("(z)-->(y)")
-        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .nodeIndexOperator(
+          s"z:Honey(prop >= $zGreaterThanFilter)",
+          indexOrder = indexOrder,
+          getValue = _ => DoNotGetValue
+        ).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -275,9 +331,13 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
       val nodes = given {
         nodeIndex("Honey", "prop")
-        nodePropertyGraph(n, {
-          case i => Map("prop" -> i % modulo)
-        }, "Honey")
+        nodePropertyGraph(
+          n,
+          {
+            case i => Map("prop" -> i % modulo)
+          },
+          "Honey"
+        )
       }
 
       // when
@@ -287,11 +347,17 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .apply()
         .|.optional("x")
         .|.filter("x.prop % 2 = 0").withProvidedOrder(providedOrderFactory("z.prop"))
-        .|.nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, argumentIds = Set("x")).withProvidedOrder(providedOrderFactory("z.prop"))
+        .|.nodeIndexOperator(
+          s"z:Honey(prop >= $zGTFilter)",
+          indexOrder = indexOrder,
+          getValue = _ => DoNotGetValue,
+          argumentIds = Set("x")
+        ).withProvidedOrder(providedOrderFactory("z.prop"))
         .input(Seq("x"))
         .build()
 
-      val runtimeResult = execute(logicalQuery, runtime, input = inputValues(nodes.take(nInputNodes).map(Array[Any](_)):_*))
+      val runtimeResult =
+        execute(logicalQuery, runtime, input = inputValues(nodes.take(nInputNodes).map(Array[Any](_)): _*))
 
       // then
       val expected = for {
@@ -316,9 +382,13 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val size = (2 * 3 * 4 * 5) + 1
       nodeIndex("Honey", "num")
       val nodes = given {
-        nodePropertyGraph(size, {
-          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
-        }, "Honey")
+        nodePropertyGraph(
+          size,
+          {
+            case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+          },
+          "Honey"
+        )
       }
 
       // when
@@ -328,7 +398,9 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .apply()
         .|.aggregation(Seq.empty, Seq("count(*) AS c"))
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
+          providedOrderFactory("a.num")
+        )
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -343,9 +415,13 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val size = (2 * 3 * 4 * 5) + 1
       nodeIndex("Honey", "num")
       val nodes = given {
-        nodePropertyGraph(size, {
-          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
-        }, "Honey")
+        nodePropertyGraph(
+          size,
+          {
+            case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+          },
+          "Honey"
+        )
       }
 
       // when
@@ -356,7 +432,9 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.sort(Seq(Ascending("name")))
         .|.projection("a.name AS name")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
+          providedOrderFactory("a.num")
+        )
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -374,9 +452,13 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val size = (2 * 3 * 4 * 5) + 1
       nodeIndex("Honey", "num")
       val nodes = given {
-        nodePropertyGraph(size, {
-          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
-        }, "Honey")
+        nodePropertyGraph(
+          size,
+          {
+            case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+          },
+          "Honey"
+        )
       }
 
       // when
@@ -387,7 +469,9 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.top(Seq(Ascending("name")), 1)
         .|.projection("a.name AS name")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
+          providedOrderFactory("a.num")
+        )
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -408,9 +492,13 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val size = (2 * 3 * 4 * 5) + 1
       nodeIndex("Honey", "num")
       val nodes = given {
-        nodePropertyGraph(size, {
-          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
-        }, "Honey")
+        nodePropertyGraph(
+          size,
+          {
+            case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+          },
+          "Honey"
+        )
       }
 
       // when
@@ -422,7 +510,9 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.cartesianProduct()
         .|.|.argument("a")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
+          providedOrderFactory("a.num")
+        )
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -440,9 +530,13 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val size = (2 * 3 * 4 * 5) + 1
       nodeIndex("Honey", "num")
       val nodes = given {
-        nodePropertyGraph(size, {
-          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
-        }, "Honey")
+        nodePropertyGraph(
+          size,
+          {
+            case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+          },
+          "Honey"
+        )
       }
 
       // when
@@ -454,7 +548,9 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.nodeHashJoin("a")
         .|.|.argument("a")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
+          providedOrderFactory("a.num")
+        )
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -472,9 +568,13 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val size = (2 * 3 * 4 * 5) + 1
       nodeIndex("Honey", "num")
       val nodes = given {
-        nodePropertyGraph(size, {
-          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
-        }, "Honey")
+        nodePropertyGraph(
+          size,
+          {
+            case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+          },
+          "Honey"
+        )
       }
 
       // when
@@ -485,7 +585,9 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.optional("a")
         .|.projection("a.name AS name")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
+          providedOrderFactory("a.num")
+        )
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -506,9 +608,13 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
       given {
         nodeIndex("Honey", "prop")
-        nodePropertyGraph(n, {
-          case i => Map("prop" -> i % modulo)
-        }, "Honey")
+        nodePropertyGraph(
+          n,
+          {
+            case i => Map("prop" -> i % modulo)
+          },
+          "Honey"
+        )
       }
 
       val xValues = 0L until 7L
@@ -523,7 +629,11 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.|.sort(Seq(Descending("zprop")))
         .|.|.projection("z.prop AS zprop")
         .|.|.allNodeScan("z")
-        .|.nodeIndexOperator(s"y:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("y.prop"))
+        .|.nodeIndexOperator(
+          s"y:Honey(prop >= $zGreaterThanFilter)",
+          indexOrder = indexOrder,
+          getValue = _ => DoNotGetValue
+        ).withProvidedOrder(providedOrderFactory("y.prop"))
         .input(variables = Seq("x"))
         .build()
 
@@ -550,14 +660,22 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
   for (
     ProvidedOrderTest(orderString, indexOrder, providedOrderFactory, expectedMutation) <- Seq(
-      ProvidedOrderTest("ascending", IndexOrderAscending, parse andThen asc,
+      ProvidedOrderTest(
+        "ascending",
+        IndexOrderAscending,
+        parse andThen asc,
         new SeqMutator {
           override def apply[X](in: Seq[X]): Seq[X] = in
-        }),
-      ProvidedOrderTest("descending", IndexOrderDescending, parse andThen desc,
+        }
+      ),
+      ProvidedOrderTest(
+        "descending",
+        IndexOrderDescending,
+        parse andThen desc,
         new SeqMutator {
           override def apply[X](in: Seq[X]): Seq[X] = in.reverse
-        })
+        }
+      )
     )
   ) {
     test(s"cartesian product keeps LHS index provided $orderString order") {
@@ -569,9 +687,13 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
       given {
         nodeIndex("Honey", "prop")
-        nodePropertyGraph(n, {
-          case i => Map("prop" -> i % modulo)
-        }, "Honey")
+        nodePropertyGraph(
+          n,
+          {
+            case i => Map("prop" -> i % modulo)
+          },
+          "Honey"
+        )
       }
 
       // when
@@ -580,7 +702,11 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("z.prop AS prop").withLeveragedOrder()
         .cartesianProduct().withLeveragedOrder()
         .|.allNodeScan("y")
-        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .nodeIndexOperator(
+          s"z:Honey(prop >= $zGreaterThanFilter)",
+          indexOrder = indexOrder,
+          getValue = _ => DoNotGetValue
+        ).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -602,9 +728,13 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
       given {
         nodeIndex("Honey", "prop")
-        nodePropertyGraph(n, {
-          case i => Map("prop" -> i % modulo)
-        }, "Honey")
+        nodePropertyGraph(
+          n,
+          {
+            case i => Map("prop" -> i % modulo)
+          },
+          "Honey"
+        )
       }
 
       // when
@@ -615,7 +745,11 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.sort(Seq(Descending("yprop")))
         .|.projection("y.prop AS yprop")
         .|.allNodeScan("y")
-        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .nodeIndexOperator(
+          s"z:Honey(prop >= $zGreaterThanFilter)",
+          indexOrder = indexOrder,
+          getValue = _ => DoNotGetValue
+        ).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)

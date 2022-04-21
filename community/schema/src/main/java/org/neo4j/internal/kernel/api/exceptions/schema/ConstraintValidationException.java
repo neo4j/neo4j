@@ -28,8 +28,7 @@ import org.neo4j.kernel.api.exceptions.Status;
  * Constraint verification happens when a new constraint is created, and the database verifies that existing
  * data adheres to the new constraint.
  */
-public abstract class ConstraintValidationException extends KernelException
-{
+public abstract class ConstraintValidationException extends KernelException {
     /**
      * Constraint validation failures can happen during one of two phases of the constraint lifecycle.
      *
@@ -41,45 +40,49 @@ public abstract class ConstraintValidationException extends KernelException
      * constraint to see that the modified state does not violate the constraint. If validation fails the modifying
      * transaction is rolled back.
      */
-    public enum Phase
-    {
-        VERIFICATION( Status.Statement.ConstraintVerificationFailed ),
-        VALIDATION( Status.Schema.ConstraintValidationFailed );
+    public enum Phase {
+        VERIFICATION(Status.Statement.ConstraintVerificationFailed),
+        VALIDATION(Status.Schema.ConstraintValidationFailed);
 
         private final Status status;
 
-        Phase( Status status )
-        {
+        Phase(Status status) {
             this.status = status;
         }
 
-        public Status getStatus()
-        {
+        public Status getStatus() {
             return status;
         }
     }
 
     protected final ConstraintDescriptor constraint;
 
-    protected ConstraintValidationException( ConstraintDescriptor constraint, Phase phase, String subject, TokenNameLookup tokenNameLookup )
-    {
-        super( phase.getStatus(), "%s does not satisfy %s.",
-                subject, constraint.userDescription( tokenNameLookup ) );
+    protected ConstraintValidationException(
+            ConstraintDescriptor constraint, Phase phase, String subject, TokenNameLookup tokenNameLookup) {
+        super(phase.getStatus(), "%s does not satisfy %s.", subject, constraint.userDescription(tokenNameLookup));
         this.constraint = constraint;
     }
 
-    protected ConstraintValidationException( ConstraintDescriptor constraint, Phase phase, String subject, Throwable failure, TokenNameLookup tokenNameLookup )
-    {
-        super( phase.getStatus(), failure, "%s does not satisfy %s: %s",
-                subject, constraint.userDescription( tokenNameLookup ), failure.getMessage() );
+    protected ConstraintValidationException(
+            ConstraintDescriptor constraint,
+            Phase phase,
+            String subject,
+            Throwable failure,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                phase.getStatus(),
+                failure,
+                "%s does not satisfy %s: %s",
+                subject,
+                constraint.userDescription(tokenNameLookup),
+                failure.getMessage());
         this.constraint = constraint;
     }
 
     @Override
-    public abstract String getUserMessage( TokenNameLookup tokenNameLookup );
+    public abstract String getUserMessage(TokenNameLookup tokenNameLookup);
 
-    public ConstraintDescriptor constraint()
-    {
+    public ConstraintDescriptor constraint() {
         return constraint;
     }
 }

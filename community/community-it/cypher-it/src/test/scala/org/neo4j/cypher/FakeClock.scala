@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
-import java.time.Instant
-
 import org.neo4j.time.Clocks
+
+import java.time.Instant
 
 trait FakeClock {
   val clock: org.neo4j.time.FakeClock = Clocks.fakeClock(Instant.now())

@@ -19,9 +19,8 @@
  */
 package org.neo4j.io.marshal;
 
-public interface StateMarshal<STATE> extends ChannelMarshal<STATE>
-{
+public interface StateMarshal<STATE> extends ChannelMarshal<STATE> {
     STATE startState();
 
-    long ordinal( STATE state );
+    long ordinal(STATE state);
 }

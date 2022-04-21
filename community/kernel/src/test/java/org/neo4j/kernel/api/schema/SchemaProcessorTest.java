@@ -19,67 +19,63 @@
  */
 package org.neo4j.kernel.api.schema;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaProcessor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class SchemaProcessorTest
-{
+class SchemaProcessorTest {
     private static final int LABEL_ID = 0;
     private static final int REL_TYPE_ID = 0;
 
     @Test
-    void shouldHandleCorrectDescriptorVersions()
-    {
+    void shouldHandleCorrectDescriptorVersions() {
         List<String> callHistory = new ArrayList<>();
-        SchemaProcessor processor = new SchemaProcessor()
-        {
+        SchemaProcessor processor = new SchemaProcessor() {
             @Override
-            public void processSpecific( LabelSchemaDescriptor schema )
-            {
-                callHistory.add( "LabelSchemaDescriptor" );
+            public void processSpecific(LabelSchemaDescriptor schema) {
+                callHistory.add("LabelSchemaDescriptor");
             }
 
             @Override
-            public void processSpecific( RelationTypeSchemaDescriptor schema )
-            {
-                callHistory.add( "RelationTypeSchemaDescriptor" );
+            public void processSpecific(RelationTypeSchemaDescriptor schema) {
+                callHistory.add("RelationTypeSchemaDescriptor");
             }
 
             @Override
-            public void processSpecific( SchemaDescriptor schemaDescriptor )
-            {
-                callHistory.add( "SchemaDescriptor" );
+            public void processSpecific(SchemaDescriptor schemaDescriptor) {
+                callHistory.add("SchemaDescriptor");
             }
         };
 
-        disguisedLabel().processWith( processor );
-        disguisedLabel().processWith( processor );
-        disguisedRelType().processWith( processor );
-        disguisedLabel().processWith( processor );
-        disguisedRelType().processWith( processor );
-        disguisedRelType().processWith( processor );
+        disguisedLabel().processWith(processor);
+        disguisedLabel().processWith(processor);
+        disguisedRelType().processWith(processor);
+        disguisedLabel().processWith(processor);
+        disguisedRelType().processWith(processor);
+        disguisedRelType().processWith(processor);
 
-        assertThat( callHistory ).containsExactly( "LabelSchemaDescriptor", "LabelSchemaDescriptor", "RelationTypeSchemaDescriptor", "LabelSchemaDescriptor",
-                "RelationTypeSchemaDescriptor", "RelationTypeSchemaDescriptor" );
+        assertThat(callHistory)
+                .containsExactly(
+                        "LabelSchemaDescriptor",
+                        "LabelSchemaDescriptor",
+                        "RelationTypeSchemaDescriptor",
+                        "LabelSchemaDescriptor",
+                        "RelationTypeSchemaDescriptor",
+                        "RelationTypeSchemaDescriptor");
     }
 
-    private static SchemaDescriptor disguisedLabel()
-    {
-        return SchemaDescriptors.forLabel( LABEL_ID, 1 );
+    private static SchemaDescriptor disguisedLabel() {
+        return SchemaDescriptors.forLabel(LABEL_ID, 1);
     }
 
-    private static SchemaDescriptor disguisedRelType()
-    {
-        return SchemaDescriptors.forRelType( REL_TYPE_ID, 1 );
+    private static SchemaDescriptor disguisedRelType() {
+        return SchemaDescriptors.forRelType(REL_TYPE_ID, 1);
     }
 }

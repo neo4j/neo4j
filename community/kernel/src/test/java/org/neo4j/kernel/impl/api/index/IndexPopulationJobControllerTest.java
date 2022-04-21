@@ -19,64 +19,58 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.test.OnDemandJobScheduler;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class IndexPopulationJobControllerTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.test.OnDemandJobScheduler;
+
+class IndexPopulationJobControllerTest {
 
     private final OnDemandJobScheduler executer = new OnDemandJobScheduler();
-    private final IndexPopulationJobController jobController = new IndexPopulationJobController( executer );
+    private final IndexPopulationJobController jobController = new IndexPopulationJobController(executer);
 
     @Test
-    void trackPopulationJobs()
-    {
-        assertThat( jobController.getPopulationJobs() ).isEmpty();
+    void trackPopulationJobs() {
+        assertThat(jobController.getPopulationJobs()).isEmpty();
 
-        IndexPopulationJob populationJob = mock( IndexPopulationJob.class );
-        jobController.startIndexPopulation( populationJob );
-        assertThat( jobController.getPopulationJobs() ).hasSize( 1 );
+        IndexPopulationJob populationJob = mock(IndexPopulationJob.class);
+        jobController.startIndexPopulation(populationJob);
+        assertThat(jobController.getPopulationJobs()).hasSize(1);
 
-        IndexPopulationJob populationJob2 = mock( IndexPopulationJob.class );
-        jobController.startIndexPopulation( populationJob2 );
-        assertThat( jobController.getPopulationJobs() ).hasSize( 2 );
+        IndexPopulationJob populationJob2 = mock(IndexPopulationJob.class);
+        jobController.startIndexPopulation(populationJob2);
+        assertThat(jobController.getPopulationJobs()).hasSize(2);
     }
 
     @Test
-    void stopOngoingPopulationJobs() throws InterruptedException
-    {
+    void stopOngoingPopulationJobs() throws InterruptedException {
         IndexPopulationJob populationJob = getIndexPopulationJob();
         IndexPopulationJob populationJob2 = getIndexPopulationJob();
-        jobController.startIndexPopulation( populationJob );
-        jobController.startIndexPopulation( populationJob2 );
+        jobController.startIndexPopulation(populationJob);
+        jobController.startIndexPopulation(populationJob2);
 
         jobController.stop();
 
-        verify( populationJob ).stop();
-        verify( populationJob2 ).stop();
+        verify(populationJob).stop();
+        verify(populationJob2).stop();
     }
 
     @Test
-    void untrackFinishedPopulations()
-    {
+    void untrackFinishedPopulations() {
         IndexPopulationJob populationJob = getIndexPopulationJob();
-        jobController.startIndexPopulation( populationJob );
+        jobController.startIndexPopulation(populationJob);
 
-        assertThat( jobController.getPopulationJobs() ).hasSize( 1 );
+        assertThat(jobController.getPopulationJobs()).hasSize(1);
 
         executer.runJob();
 
-        assertThat( jobController.getPopulationJobs() ).hasSize( 0 );
-        verify( populationJob ).run();
+        assertThat(jobController.getPopulationJobs()).hasSize(0);
+        verify(populationJob).run();
     }
 
-    private static IndexPopulationJob getIndexPopulationJob()
-    {
-        return mock( IndexPopulationJob.class );
+    private static IndexPopulationJob getIndexPopulationJob() {
+        return mock(IndexPopulationJob.class);
     }
 }

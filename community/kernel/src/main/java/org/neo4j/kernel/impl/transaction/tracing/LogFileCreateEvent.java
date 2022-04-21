@@ -22,12 +22,8 @@ package org.neo4j.kernel.impl.transaction.tracing;
 /**
  * Event for new transaction log file creation
  */
-public interface LogFileCreateEvent extends AutoCloseable
-{
-    LogFileCreateEvent NULL = () ->
-    {
-
-    };
+public interface LogFileCreateEvent extends AutoCloseable {
+    LogFileCreateEvent NULL = () -> {};
 
     @Override
     void close();

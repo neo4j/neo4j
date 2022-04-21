@@ -45,25 +45,31 @@ case object NotificationsForUnresolvedTokensGenerated extends StepSequencer.Cond
 /**
  * Find labels, relationships types and property keys that do not exist in the db and issue warnings.
  */
-case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
 
   override def visit(value: LogicalPlanState, context: BaseContext): Unit = {
-    if(value.query.readOnly) {
+    if (value.query.readOnly) {
       val table = value.semanticTable()
       def isEmptyLabel(label: String) = !table.resolvedLabelNames.contains(label)
       def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
       def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
-      def isNodeOrRelationship(variable: Expression) = table.isNodeNoFail(variable) || table.isRelationshipNoFail(variable)
+      def isNodeOrRelationship(variable: Expression) =
+        table.isNodeNoFail(variable) || table.isRelationshipNoFail(variable)
 
       val notifications = value.statement().folder.treeFold(Seq.empty[InternalNotification]) {
-        case label@LabelName(name) if isEmptyLabel(name) => acc =>
-          TraverseChildren(acc :+ MissingLabelNotification(label.position, name))
+        case label @ LabelName(name) if isEmptyLabel(name) =>
+          acc =>
+            TraverseChildren(acc :+ MissingLabelNotification(label.position, name))
 
-        case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
-          TraverseChildren(acc :+ MissingRelTypeNotification(rel.position, name))
+        case rel @ RelTypeName(name) if isEmptyRelType(name) =>
+          acc =>
+            TraverseChildren(acc :+ MissingRelTypeNotification(rel.position, name))
 
-        case Property(variable, prop@PropertyKeyName(name)) if isNodeOrRelationship(variable) && isEmptyPropertyName(name) => acc =>
-          TraverseChildren(acc :+ MissingPropertyNameNotification(prop.position, name))
+        case Property(variable, prop @ PropertyKeyName(name))
+          if isNodeOrRelationship(variable) && isEmptyPropertyName(name) =>
+          acc =>
+            TraverseChildren(acc :+ MissingPropertyNameNotification(prop.position, name))
       }
 
       notifications foreach context.notificationLogger.log
@@ -81,6 +87,8 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): VisitorPhase[BaseContext, LogicalPlanState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): VisitorPhase[BaseContext, LogicalPlanState] = this
 }

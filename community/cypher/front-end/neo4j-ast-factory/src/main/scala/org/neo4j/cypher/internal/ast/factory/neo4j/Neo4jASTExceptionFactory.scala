@@ -19,22 +19,24 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import java.util
-
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
+
+import java.util
 
 import scala.collection.convert.AsScalaConverters
 
 class Neo4jASTExceptionFactory(inner: CypherExceptionFactory) extends ASTExceptionFactory with AsScalaConverters {
 
-  override def syntaxException(got: String,
-                               expected: util.List[String],
-                               source: Exception,
-                               offset: Int,
-                               line: Int,
-                               column: Int): Exception = {
+  override def syntaxException(
+    got: String,
+    expected: util.List[String],
+    source: Exception,
+    offset: Int,
+    line: Int,
+    column: Int
+  ): Exception = {
     val exp: Seq[String] = asScala(expected).toSeq
 
     val message =

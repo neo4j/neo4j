@@ -19,65 +19,63 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-
-class CypherUpdateMapTest
-{
+class CypherUpdateMapTest {
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setup()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+    void setup() {
+        managementService =
+                new TestDatabaseManagementServiceBuilder().impermanent().build();
+        db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
     @AfterEach
-    void cleanup()
-    {
+    void cleanup() {
         managementService.shutdown();
     }
 
     @Test
-    void updateNodeByMapParameter()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( "CREATE (n:Reference) SET n = $data RETURN n", map( "data", map( "key1", "value1", "key2", 1234 ) ) ).close();
+    void updateNodeByMapParameter() {
+        try (Transaction transaction = db.beginTx()) {
+            transaction
+                    .execute(
+                            "CREATE (n:Reference) SET n = $data RETURN n",
+                            map("data", map("key1", "value1", "key2", 1234)))
+                    .close();
             transaction.commit();
         }
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            var node = transaction.getNodeById( 0 );
-            assertThat( node.getProperty( "key1" ) ).isEqualTo( "value1" );
-            assertThat( node.getProperty( "key2" ) ).isEqualTo( 1234 );
+        try (Transaction transaction = db.beginTx()) {
+            var node = transaction.getNodeById(0);
+            assertThat(node.getProperty("key1")).isEqualTo("value1");
+            assertThat(node.getProperty("key2")).isEqualTo(1234);
         }
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( "MATCH (n:Reference) SET n = $data RETURN n", map( "data", map( "key1", null, "key3", 5678 ) ) ).close();
+        try (Transaction transaction = db.beginTx()) {
+            transaction
+                    .execute("MATCH (n:Reference) SET n = $data RETURN n", map("data", map("key1", null, "key3", 5678)))
+                    .close();
             transaction.commit();
         }
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            var node = transaction.getNodeById( 0 );
-            assertThat( node.hasProperty( "key1" ) ).isFalse();
-            assertThat( node.hasProperty( "key2" ) ).isFalse();
-            assertThat( node.getProperty( "key3" ) ).isEqualTo( 5678 );
+        try (Transaction transaction = db.beginTx()) {
+            var node = transaction.getNodeById(0);
+            assertThat(node.hasProperty("key1")).isFalse();
+            assertThat(node.hasProperty("key2")).isFalse();
+            assertThat(node.getProperty("key3")).isEqualTo(5678);
         }
     }
 }

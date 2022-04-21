@@ -19,16 +19,15 @@
  */
 package org.neo4j.memory;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import static org.neo4j.kernel.api.exceptions.Status.General.MemoryPoolOutOfMemoryError;
 import static org.neo4j.util.Preconditions.requirePositive;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A pool of memory that can be limited. The implementation is thread-safe.
  */
-class MemoryPoolImpl implements MemoryPool
-{
+class MemoryPoolImpl implements MemoryPool {
     private final AtomicLong maxMemory = new AtomicLong();
     private final AtomicLong usedHeapBytes = new AtomicLong();
     private final AtomicLong usedNativeBytes = new AtomicLong();
@@ -39,89 +38,74 @@ class MemoryPoolImpl implements MemoryPool
      * @param limit of the pool, passing 0 will result in an unbounded pool
      * @param strict if true enforce limit by throwing exception
      */
-    MemoryPoolImpl( long limit, boolean strict, String limitSettingName )
-    {
+    MemoryPoolImpl(long limit, boolean strict, String limitSettingName) {
         this.limitSettingName = limitSettingName;
-        this.maxMemory.set( validateSize( limit ) );
+        this.maxMemory.set(validateSize(limit));
         this.strict = strict;
     }
 
     @Override
-    public long usedHeap()
-    {
+    public long usedHeap() {
         return usedHeapBytes.get();
     }
 
     @Override
-    public long usedNative()
-    {
+    public long usedNative() {
         return usedNativeBytes.get();
     }
 
     @Override
-    public long free()
-    {
-        return Math.max( 0, totalSize() - totalUsed() );
+    public long free() {
+        return Math.max(0, totalSize() - totalUsed());
     }
 
     @Override
-    public void releaseHeap( long bytes )
-    {
-        usedHeapBytes.addAndGet( -bytes );
+    public void releaseHeap(long bytes) {
+        usedHeapBytes.addAndGet(-bytes);
     }
 
     @Override
-    public void releaseNative( long bytes )
-    {
-        usedNativeBytes.addAndGet( -bytes );
+    public void releaseNative(long bytes) {
+        usedNativeBytes.addAndGet(-bytes);
     }
 
     @Override
-    public void reserveHeap( long bytes )
-    {
-        reserveMemory( bytes, usedHeapBytes );
+    public void reserveHeap(long bytes) {
+        reserveMemory(bytes, usedHeapBytes);
     }
 
     @Override
-    public void reserveNative( long bytes )
-    {
-        reserveMemory( bytes, usedNativeBytes );
+    public void reserveNative(long bytes) {
+        reserveMemory(bytes, usedNativeBytes);
     }
 
-    private void reserveMemory( long bytes, AtomicLong counter )
-    {
+    private void reserveMemory(long bytes, AtomicLong counter) {
         long max;
         long usedMemoryBefore;
-        do
-        {
+        do {
             max = maxMemory.get();
             usedMemoryBefore = counter.get();
-            if ( strict && totalUsed() + bytes > max )
-            {
-                throw new MemoryLimitExceededException( bytes, max, totalUsed(), MemoryPoolOutOfMemoryError, limitSettingName );
+            if (strict && totalUsed() + bytes > max) {
+                throw new MemoryLimitExceededException(
+                        bytes, max, totalUsed(), MemoryPoolOutOfMemoryError, limitSettingName);
             }
-        }
-        while ( !counter.weakCompareAndSetVolatile( usedMemoryBefore, usedMemoryBefore + bytes ) );
+        } while (!counter.weakCompareAndSetVolatile(usedMemoryBefore, usedMemoryBefore + bytes));
     }
 
     @Override
-    public long totalSize()
-    {
+    public long totalSize() {
         return maxMemory.get();
     }
 
     @Override
-    public void setSize( long size )
-    {
-        maxMemory.set( validateSize( size ) );
+    public void setSize(long size) {
+        maxMemory.set(validateSize(size));
     }
 
-    private static long validateSize( long size )
-    {
-        if ( size == 0 )
-        {
+    private static long validateSize(long size) {
+        if (size == 0) {
             return Long.MAX_VALUE;
         }
-        return requirePositive( size );
+        return requirePositive(size);
     }
 }

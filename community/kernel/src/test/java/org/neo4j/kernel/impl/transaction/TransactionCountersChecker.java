@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class TransactionCountersChecker
-{
+import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
+
+class TransactionCountersChecker {
     private final long numberOfActiveReadTransactions;
     private final long numberOfActiveWriteTransactions;
     private final long numberOfActiveTransactions;
@@ -40,39 +39,39 @@ class TransactionCountersChecker
     private final long numberOfTerminatedTransactions;
     private final long peakConcurrentNumberOfTransactions;
 
-    TransactionCountersChecker( TransactionCounters pre )
-    {
+    TransactionCountersChecker(TransactionCounters pre) {
         // Active
         numberOfActiveReadTransactions = pre.getNumberOfActiveReadTransactions();
         numberOfActiveWriteTransactions = pre.getNumberOfActiveWriteTransactions();
         numberOfActiveTransactions = pre.getNumberOfActiveTransactions();
 
-        assertEquals( numberOfActiveTransactions,
-                numberOfActiveReadTransactions + numberOfActiveWriteTransactions );
+        assertEquals(numberOfActiveTransactions, numberOfActiveReadTransactions + numberOfActiveWriteTransactions);
 
         // Committed
         numberOfCommittedReadTransactions = pre.getNumberOfCommittedReadTransactions();
         numberOfCommittedWriteTransactions = pre.getNumberOfCommittedWriteTransactions();
         numberOfCommittedTransactions = pre.getNumberOfCommittedTransactions();
 
-        assertEquals( numberOfCommittedTransactions,
-                numberOfCommittedReadTransactions + numberOfCommittedWriteTransactions );
+        assertEquals(
+                numberOfCommittedTransactions, numberOfCommittedReadTransactions + numberOfCommittedWriteTransactions);
 
         // RolledBack
         numberOfRolledBackReadTransactions = pre.getNumberOfRolledBackReadTransactions();
         numberOfRolledBackWriteTransactions = pre.getNumberOfRolledBackWriteTransactions();
         numberOfRolledBackTransactions = pre.getNumberOfRolledBackTransactions();
 
-        assertEquals( numberOfRolledBackTransactions,
-                numberOfRolledBackReadTransactions + numberOfRolledBackWriteTransactions );
+        assertEquals(
+                numberOfRolledBackTransactions,
+                numberOfRolledBackReadTransactions + numberOfRolledBackWriteTransactions);
 
         // Terminated
         numberOfTerminatedReadTransactions = pre.getNumberOfTerminatedReadTransactions();
         numberOfTerminatedWriteTransactions = pre.getNumberOfTerminatedWriteTransactions();
         numberOfTerminatedTransactions = pre.getNumberOfTerminatedTransactions();
 
-        assertEquals( numberOfTerminatedTransactions,
-                numberOfTerminatedReadTransactions + numberOfTerminatedWriteTransactions );
+        assertEquals(
+                numberOfTerminatedTransactions,
+                numberOfTerminatedReadTransactions + numberOfTerminatedWriteTransactions);
 
         // started
         numberOfStartedTransactions = pre.getNumberOfStartedTransactions();
@@ -81,92 +80,69 @@ class TransactionCountersChecker
         peakConcurrentNumberOfTransactions = pre.getPeakConcurrentNumberOfTransactions();
     }
 
-    public void verifyCommitted( boolean isWriteTx, TransactionCounters post )
-    {
-        verifyActiveAndStarted( post );
-        verifyCommittedIncreasedBy( post, 1, isWriteTx );
-        verifyRolledBackIncreasedBy( post, 0, isWriteTx );
-        verifyTerminatedIncreasedBy( post, 0, isWriteTx );
+    public void verifyCommitted(boolean isWriteTx, TransactionCounters post) {
+        verifyActiveAndStarted(post);
+        verifyCommittedIncreasedBy(post, 1, isWriteTx);
+        verifyRolledBackIncreasedBy(post, 0, isWriteTx);
+        verifyTerminatedIncreasedBy(post, 0, isWriteTx);
     }
 
-    public void verifyRolledBacked( boolean isWriteTx, TransactionCounters post )
-    {
-        verifyActiveAndStarted( post );
-        verifyCommittedIncreasedBy( post, 0, isWriteTx );
-        verifyRolledBackIncreasedBy( post, 1, isWriteTx );
-        verifyTerminatedIncreasedBy( post, 0, isWriteTx );
+    public void verifyRolledBacked(boolean isWriteTx, TransactionCounters post) {
+        verifyActiveAndStarted(post);
+        verifyCommittedIncreasedBy(post, 0, isWriteTx);
+        verifyRolledBackIncreasedBy(post, 1, isWriteTx);
+        verifyTerminatedIncreasedBy(post, 0, isWriteTx);
     }
 
-    public void verifyTerminated( boolean isWriteTx, TransactionCounters post )
-    {
-        verifyActiveAndStarted( post );
-        verifyCommittedIncreasedBy( post, 0, isWriteTx );
-        verifyRolledBackIncreasedBy( post, 1, isWriteTx );
-        verifyTerminatedIncreasedBy( post, 1, isWriteTx );
+    public void verifyTerminated(boolean isWriteTx, TransactionCounters post) {
+        verifyActiveAndStarted(post);
+        verifyCommittedIncreasedBy(post, 0, isWriteTx);
+        verifyRolledBackIncreasedBy(post, 1, isWriteTx);
+        verifyTerminatedIncreasedBy(post, 1, isWriteTx);
     }
 
-    private void verifyCommittedIncreasedBy( TransactionCounters post, int diff, boolean isWriteTx )
-    {
-        if ( isWriteTx )
-        {
-            assertEquals( numberOfCommittedReadTransactions, post.getNumberOfCommittedReadTransactions() );
-            assertEquals( numberOfCommittedWriteTransactions + diff,
-                    post.getNumberOfCommittedWriteTransactions() );
-        }
-        else
-        {
-            assertEquals( numberOfCommittedReadTransactions + diff,
-                    post.getNumberOfCommittedReadTransactions() );
-            assertEquals( numberOfCommittedWriteTransactions, post.getNumberOfCommittedWriteTransactions() );
+    private void verifyCommittedIncreasedBy(TransactionCounters post, int diff, boolean isWriteTx) {
+        if (isWriteTx) {
+            assertEquals(numberOfCommittedReadTransactions, post.getNumberOfCommittedReadTransactions());
+            assertEquals(numberOfCommittedWriteTransactions + diff, post.getNumberOfCommittedWriteTransactions());
+        } else {
+            assertEquals(numberOfCommittedReadTransactions + diff, post.getNumberOfCommittedReadTransactions());
+            assertEquals(numberOfCommittedWriteTransactions, post.getNumberOfCommittedWriteTransactions());
         }
 
-        assertEquals( numberOfCommittedTransactions + diff, post.getNumberOfCommittedTransactions() );
+        assertEquals(numberOfCommittedTransactions + diff, post.getNumberOfCommittedTransactions());
     }
 
-    private void verifyRolledBackIncreasedBy( TransactionCounters post, int diff, boolean isWriteTx )
-    {
-        if ( isWriteTx )
-        {
-            assertEquals( numberOfRolledBackReadTransactions, post.getNumberOfRolledBackReadTransactions() );
-            assertEquals( numberOfRolledBackWriteTransactions + diff,
-                    post.getNumberOfRolledBackWriteTransactions() );
-        }
-        else
-        {
-            assertEquals( numberOfRolledBackReadTransactions + diff,
-                    post.getNumberOfRolledBackReadTransactions() );
-            assertEquals( numberOfRolledBackWriteTransactions, post.getNumberOfRolledBackWriteTransactions() );
+    private void verifyRolledBackIncreasedBy(TransactionCounters post, int diff, boolean isWriteTx) {
+        if (isWriteTx) {
+            assertEquals(numberOfRolledBackReadTransactions, post.getNumberOfRolledBackReadTransactions());
+            assertEquals(numberOfRolledBackWriteTransactions + diff, post.getNumberOfRolledBackWriteTransactions());
+        } else {
+            assertEquals(numberOfRolledBackReadTransactions + diff, post.getNumberOfRolledBackReadTransactions());
+            assertEquals(numberOfRolledBackWriteTransactions, post.getNumberOfRolledBackWriteTransactions());
         }
 
-        assertEquals( numberOfRolledBackTransactions + diff, post.getNumberOfRolledBackTransactions() );
+        assertEquals(numberOfRolledBackTransactions + diff, post.getNumberOfRolledBackTransactions());
     }
 
-    private void verifyTerminatedIncreasedBy( TransactionCounters post, int diff, boolean isWriteTx )
-    {
-        if ( isWriteTx )
-        {
-            assertEquals( numberOfTerminatedReadTransactions, post.getNumberOfTerminatedReadTransactions() );
-            assertEquals( numberOfTerminatedWriteTransactions + diff,
-                    post.getNumberOfTerminatedWriteTransactions() );
-        }
-        else
-        {
-            assertEquals( numberOfTerminatedReadTransactions + diff,
-                    post.getNumberOfTerminatedReadTransactions() );
-            assertEquals( numberOfTerminatedWriteTransactions, post.getNumberOfTerminatedWriteTransactions() );
+    private void verifyTerminatedIncreasedBy(TransactionCounters post, int diff, boolean isWriteTx) {
+        if (isWriteTx) {
+            assertEquals(numberOfTerminatedReadTransactions, post.getNumberOfTerminatedReadTransactions());
+            assertEquals(numberOfTerminatedWriteTransactions + diff, post.getNumberOfTerminatedWriteTransactions());
+        } else {
+            assertEquals(numberOfTerminatedReadTransactions + diff, post.getNumberOfTerminatedReadTransactions());
+            assertEquals(numberOfTerminatedWriteTransactions, post.getNumberOfTerminatedWriteTransactions());
         }
 
-        assertEquals( numberOfTerminatedTransactions + diff, post.getNumberOfTerminatedTransactions() );
+        assertEquals(numberOfTerminatedTransactions + diff, post.getNumberOfTerminatedTransactions());
     }
 
-    private void verifyActiveAndStarted( TransactionCounters post )
-    {
-        assertEquals( numberOfActiveReadTransactions, post.getNumberOfActiveReadTransactions() );
-        assertEquals( numberOfActiveWriteTransactions, post.getNumberOfActiveWriteTransactions() );
-        assertEquals( numberOfActiveTransactions, post.getNumberOfActiveTransactions() );
+    private void verifyActiveAndStarted(TransactionCounters post) {
+        assertEquals(numberOfActiveReadTransactions, post.getNumberOfActiveReadTransactions());
+        assertEquals(numberOfActiveWriteTransactions, post.getNumberOfActiveWriteTransactions());
+        assertEquals(numberOfActiveTransactions, post.getNumberOfActiveTransactions());
 
-        assertEquals( numberOfStartedTransactions + 1, post.getNumberOfStartedTransactions() );
-        assertEquals( Math.max( 1, peakConcurrentNumberOfTransactions ),
-                post.getPeakConcurrentNumberOfTransactions() );
+        assertEquals(numberOfStartedTransactions + 1, post.getNumberOfStartedTransactions());
+        assertEquals(Math.max(1, peakConcurrentNumberOfTransactions), post.getPeakConcurrentNumberOfTransactions());
     }
 }

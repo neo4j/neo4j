@@ -19,26 +19,24 @@
  */
 package org.neo4j.kernel.api.net;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class NetworkConnectionIdGeneratorTest
-{
+import org.junit.jupiter.api.Test;
+
+class NetworkConnectionIdGeneratorTest {
     @Test
-    void shouldGenerateIds()
-    {
+    void shouldGenerateIds() {
         NetworkConnectionIdGenerator idGenerator = new NetworkConnectionIdGenerator();
 
-        assertEquals( "bolt-0", idGenerator.newConnectionId( "bolt" ) );
-        assertEquals( "bolt-1", idGenerator.newConnectionId( "bolt" ) );
-        assertEquals( "bolt-2", idGenerator.newConnectionId( "bolt" ) );
+        assertEquals("bolt-0", idGenerator.newConnectionId("bolt"));
+        assertEquals("bolt-1", idGenerator.newConnectionId("bolt"));
+        assertEquals("bolt-2", idGenerator.newConnectionId("bolt"));
 
-        assertEquals( "http-3", idGenerator.newConnectionId( "http" ) );
-        assertEquals( "http-4", idGenerator.newConnectionId( "http" ) );
+        assertEquals("http-3", idGenerator.newConnectionId("http"));
+        assertEquals("http-4", idGenerator.newConnectionId("http"));
 
-        assertEquals( "https-5", idGenerator.newConnectionId( "https" ) );
-        assertEquals( "https-6", idGenerator.newConnectionId( "https" ) );
-        assertEquals( "https-7", idGenerator.newConnectionId( "https" ) );
+        assertEquals("https-5", idGenerator.newConnectionId("https"));
+        assertEquals("https-6", idGenerator.newConnectionId("https"));
+        assertEquals("https-7", idGenerator.newConnectionId("https"));
     }
 }

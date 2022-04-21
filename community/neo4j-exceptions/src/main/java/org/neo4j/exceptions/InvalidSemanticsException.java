@@ -21,21 +21,17 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class InvalidSemanticsException extends Neo4jException
-{
-    public InvalidSemanticsException( String message, Throwable cause )
-    {
-        super( message, cause );
+public class InvalidSemanticsException extends Neo4jException {
+    public InvalidSemanticsException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public InvalidSemanticsException( String message )
-    {
-        super( message );
+    public InvalidSemanticsException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.SemanticError;
     }
 }

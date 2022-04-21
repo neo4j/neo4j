@@ -23,7 +23,8 @@ import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.driver.Transaction
 
-case class DriverTransaction(private val driverTransaction: Transaction) extends CypherExecutorTransaction with DriverExceptionConverter {
+case class DriverTransaction(private val driverTransaction: Transaction) extends CypherExecutorTransaction
+    with DriverExceptionConverter {
 
   override def execute(statement: String, parameters: Map[String, Any]): StatementResult = convertExceptions {
     DriverStatementResult(driverTransaction.run(statement, DriverParameterConverter.convertParameters(parameters)))

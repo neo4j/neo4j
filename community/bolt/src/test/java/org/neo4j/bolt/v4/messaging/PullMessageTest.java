@@ -19,15 +19,6 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import java.util.Map;
-
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.values.virtual.MapValue;
-
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,68 +27,70 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 
-class PullMessageTest
-{
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.values.virtual.MapValue;
+
+class PullMessageTest {
     @ParameterizedTest
-    @ValueSource( longs = {-1L, 100L} )
-    void shouldParsePullMetadataCorrectly( long value ) throws Throwable
-    {
+    @ValueSource(longs = {-1L, 100L})
+    void shouldParsePullMetadataCorrectly(long value) throws Throwable {
         // When
-        PullMessage message = new PullMessage( asMapValue( singletonMap( "n", value ) ) );
+        PullMessage message = new PullMessage(asMapValue(singletonMap("n", value)));
 
         // Then
-        assertThat( message.n() ).isEqualTo( value );
+        assertThat(message.n()).isEqualTo(value);
     }
 
     @Test
-    void shouldThrowExceptionIfFailedToParseTransactionMetadataCorrectly() throws Throwable
-    {
+    void shouldThrowExceptionIfFailedToParseTransactionMetadataCorrectly() throws Throwable {
         // Given
-        Map<String,Object> msgMetadata = map( "n", "invalid value type" );
-        MapValue meta = asMapValue( msgMetadata );
+        Map<String, Object> msgMetadata = map("n", "invalid value type");
+        MapValue meta = asMapValue(msgMetadata);
         // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> new PullMessage( meta ) );
-        assertThat( exception.getMessage() ).startsWith( "Expecting PULL size n to be a Long value, but got: String(\"invalid value type\")" );
+        BoltIOException exception = assertThrows(BoltIOException.class, () -> new PullMessage(meta));
+        assertThat(exception.getMessage())
+                .startsWith("Expecting PULL size n to be a Long value, but got: String(\"invalid value type\")");
     }
 
     @ParameterizedTest
-    @ValueSource( longs = {-100L, 0L} )
-    void shouldThrowExceptionIfZero( long value ) throws Throwable
-    {
+    @ValueSource(longs = {-100L, 0L})
+    void shouldThrowExceptionIfZero(long value) throws Throwable {
         // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> new PullMessage( asMapValue( singletonMap( "n", value ) ) ) );
-        assertThat( exception.getMessage() ).startsWith( "Expecting PULL size to be at least 1" );
+        BoltIOException exception =
+                assertThrows(BoltIOException.class, () -> new PullMessage(asMapValue(singletonMap("n", value))));
+        assertThat(exception.getMessage()).startsWith("Expecting PULL size to be at least 1");
     }
 
     @Test
-    void shouldThrowExceptionIfMissingMeta() throws Throwable
-    {
+    void shouldThrowExceptionIfMissingMeta() throws Throwable {
         // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> new PullMessage( MapValue.EMPTY ) );
-        assertThat( exception.getMessage() ).startsWith( "Expecting PULL size n to be a Long value, but got: NO_VALUE" );
+        BoltIOException exception = assertThrows(BoltIOException.class, () -> new PullMessage(MapValue.EMPTY));
+        assertThat(exception.getMessage()).startsWith("Expecting PULL size n to be a Long value, but got: NO_VALUE");
     }
 
     @Test
-    void shouldBeEqual() throws Throwable
-    {
+    void shouldBeEqual() throws Throwable {
         // Given
-        PullMessage message = new PullMessage( asMapValue( singletonMap( "n", 100L ) ) );
+        PullMessage message = new PullMessage(asMapValue(singletonMap("n", 100L)));
 
-        PullMessage messageEqual = new PullMessage( asMapValue( singletonMap( "n", 100L ) ) );
+        PullMessage messageEqual = new PullMessage(asMapValue(singletonMap("n", 100L)));
 
         // When & Then
-        assertEquals( message, messageEqual );
+        assertEquals(message, messageEqual);
     }
 
     @Test
-    void shouldNotBeEqualWithDiscard() throws Throwable
-    {
+    void shouldNotBeEqualWithDiscard() throws Throwable {
         // Given
-        PullMessage pull = new PullMessage( asMapValue( singletonMap( "n", 100L ) ) );
+        PullMessage pull = new PullMessage(asMapValue(singletonMap("n", 100L)));
 
-        DiscardMessage discard = new DiscardMessage( asMapValue( singletonMap( "n", 100L ) ) );
+        DiscardMessage discard = new DiscardMessage(asMapValue(singletonMap("n", 100L)));
 
         // When & Then
-        assertNotEquals( pull, discard );
+        assertNotEquals(pull, discard);
     }
 }

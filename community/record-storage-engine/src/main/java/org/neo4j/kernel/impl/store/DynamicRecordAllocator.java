@@ -22,9 +22,8 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
-public interface DynamicRecordAllocator
-{
+public interface DynamicRecordAllocator {
     int getRecordDataSize();
 
-    DynamicRecord nextRecord( CursorContext cursorContext );
+    DynamicRecord nextRecord(CursorContext cursorContext);
 }

@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import java.util.Random;
-
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 
@@ -29,13 +28,11 @@ import org.neo4j.internal.batchimport.input.Groups;
  * Supplied with number of nodes to divide up and number of groups
  * to divide into, the group sizes are randomized and together they will contain all nodes.
  */
-public class IdGroupDistribution
-{
+public class IdGroupDistribution {
     private final long[] groupCounts;
     private final Groups groups;
 
-    public IdGroupDistribution( long nodeCount, int numberOfGroups, Random random, Groups groups )
-    {
+    public IdGroupDistribution(long nodeCount, int numberOfGroups, Random random, Groups groups) {
         this.groups = groups;
         groupCounts = new long[numberOfGroups];
 
@@ -43,36 +40,31 @@ public class IdGroupDistribution
         long total = 0;
         long partSize = nodeCount / numberOfGroups;
         float debt = 1f;
-        for ( int i = 0; i < numberOfGroups - 1; i++ )
-        {
+        for (int i = 0; i < numberOfGroups - 1; i++) {
             float part = random.nextFloat() * debt;
-            assignGroup( i, (long) (partSize * part) );
+            assignGroup(i, (long) (partSize * part));
             total += groupCounts[i];
             debt = debt + 1.0f - part;
         }
 
         // Assign the rest to the last one
-        assignGroup( numberOfGroups - 1, nodeCount - total );
+        assignGroup(numberOfGroups - 1, nodeCount - total);
     }
 
-    private void assignGroup( int i, long count )
-    {
+    private void assignGroup(int i, long count) {
         groupCounts[i] = count;
-        groups.getOrCreate( "Group" + i );
+        groups.getOrCreate("Group" + i);
     }
 
-    public Group groupOf( long nodeInOrder )
-    {
+    public Group groupOf(long nodeInOrder) {
         long at = 0;
-        for ( int i = 0; i < groupCounts.length; i++ )
-        {
+        for (int i = 0; i < groupCounts.length; i++) {
             at += groupCounts[i];
-            if ( nodeInOrder < at )
-            {
-                return groups.get( 1 + i );
+            if (nodeInOrder < at) {
+                return groups.get(1 + i);
             }
         }
-        throw new IllegalArgumentException( "Strange, couldn't find group for node (import order) " + nodeInOrder +
-                ", counted to " + at + " as total number of " + at );
+        throw new IllegalArgumentException("Strange, couldn't find group for node (import order) " + nodeInOrder
+                + ", counted to " + at + " as total number of " + at);
     }
 }

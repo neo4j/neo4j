@@ -28,6 +28,4 @@ import org.neo4j.graphdb.Resource;
  * then close all resources at statement close.
  *
  */
-public interface Statement extends Resource, ResourceTracker
-{
-}
+public interface Statement extends Resource, ResourceTracker {}

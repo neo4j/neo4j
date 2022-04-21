@@ -29,8 +29,8 @@ class FilteringExpressionTest extends SemanticFunSuite {
     val expression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), pos)
 
     val error = SemanticError("dummy error", pos)
-    val predicate = CustomExpression(
-      (ctx, self) => s => {
+    val predicate = CustomExpression((ctx, self) =>
+      s => {
         s.symbolTypes("x") should equal(CTNode | CTString)
         SemanticCheckResult.error(s, error)
       }

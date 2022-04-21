@@ -20,15 +20,13 @@
 package org.neo4j.bolt.messaging;
 
 import java.io.IOException;
-
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 
-public interface RequestMessageDecoder
-{
+public interface RequestMessageDecoder {
     int signature();
 
     BoltResponseHandler responseHandler();
 
-    RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException;
+    RequestMessage decode(Neo4jPack.Unpacker unpacker) throws IOException;
 }

@@ -37,7 +37,6 @@ abstract class Expression extends AstNode[Expression] {
     case e               => CoercedPredicate(e)
   }
 
-
   // Expressions that do not get anything in their context from this expression.
   def arguments: collection.Seq[Expression]
 
@@ -53,14 +52,14 @@ abstract class Expression extends AstNode[Expression] {
     case _          => getClass.getSimpleName
   }
 
-  val isDeterministic: Boolean = ! exists {
-    case RandFunction() => true
+  val isDeterministic: Boolean = !exists {
+    case RandFunction()       => true
     case RandomUUIDFunction() => true
-    case _              => false
+    case _                    => false
   }
 }
 
-case class CachedExpression(key:String, typ:CypherType) extends Expression {
+case class CachedExpression(key: String, typ: CypherType) extends Expression {
   def apply(row: ReadableRow, state: QueryState): AnyValue = row.getByName(key)
 
   override def rewrite(f: Expression => Expression): Expression = f(this)
@@ -73,6 +72,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
+
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val aVal = left(row, state)
     val bVal = right(row, state)
@@ -83,7 +83,7 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
   protected def applyWithValues(aVal: AnyValue, bVal: AnyValue): AnyValue = {
     (aVal, bVal) match {
       case (x, y) if (x eq Values.NO_VALUE) || (y eq Values.NO_VALUE) => Values.NO_VALUE
-      case (x, y) => calc(x, y)
+      case (x, y)                                                     => calc(x, y)
     }
   }
 

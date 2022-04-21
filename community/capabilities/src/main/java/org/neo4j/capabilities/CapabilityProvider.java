@@ -25,8 +25,7 @@ import org.neo4j.annotations.service.Service;
  * A service interface that individual components can provide in order to inject their own capabilities into the capability registry.
  */
 @Service
-public interface CapabilityProvider
-{
+public interface CapabilityProvider {
 
     /**
      * Returns the namespace into which this provider will register it's capabilities.
@@ -41,5 +40,5 @@ public interface CapabilityProvider
      * @param ctx      the context which can be used to access DBMS components during capability registration.
      * @param registry the capabilities registry instance.
      */
-    void register( CapabilityProviderContext ctx, CapabilitiesRegistry registry );
+    void register(CapabilityProviderContext ctx, CapabilitiesRegistry registry);
 }

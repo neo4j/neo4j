@@ -23,58 +23,45 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import org.neo4j.graphdb.Transaction;
 
-public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion>
-{
+public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion> {
     public final T noComponentVersion;
     private final ArrayList<T> knownComponentVersions = new ArrayList<>();
 
-    public KnownSystemComponentVersions( T noComponentVersion )
-    {
+    public KnownSystemComponentVersions(T noComponentVersion) {
         this.noComponentVersion = noComponentVersion;
     }
 
-    public void add( T version )
-    {
-        knownComponentVersions.add( version );
+    public void add(T version) {
+        knownComponentVersions.add(version);
     }
 
-    public T detectCurrentComponentVersion( Transaction tx )
-    {
-        List<T> sortedVersions = new ArrayList<>( knownComponentVersions );
-        sortedVersions.sort( Comparator.comparingInt( v -> v.version ) );
-        Collections.reverse( sortedVersions );    // Sort from most recent to oldest
-        for ( T version : sortedVersions )
-        {
-            if ( version.detected( tx ) )
-            {
+    public T detectCurrentComponentVersion(Transaction tx) {
+        List<T> sortedVersions = new ArrayList<>(knownComponentVersions);
+        sortedVersions.sort(Comparator.comparingInt(v -> v.version));
+        Collections.reverse(sortedVersions); // Sort from most recent to oldest
+        for (T version : sortedVersions) {
+            if (version.detected(tx)) {
                 return version;
             }
         }
         return noComponentVersion;
     }
 
-    public T latestComponentVersion()
-    {
+    public T latestComponentVersion() {
         T latest = noComponentVersion;
-        for ( T knownComponentVersion : knownComponentVersions )
-        {
-            if ( knownComponentVersion.version > latest.version )
-            {
+        for (T knownComponentVersion : knownComponentVersions) {
+            if (knownComponentVersion.version > latest.version) {
                 latest = knownComponentVersion;
             }
         }
         return latest;
     }
 
-    public T findComponentVersion( ComponentVersion componentVersion )
-    {
-        for ( T knownComponentVersion : knownComponentVersions )
-        {
-            if ( knownComponentVersion.version == componentVersion.getVersion() )
-            {
+    public T findComponentVersion(ComponentVersion componentVersion) {
+        for (T knownComponentVersion : knownComponentVersions) {
+            if (knownComponentVersion.version == componentVersion.getVersion()) {
                 return knownComponentVersion;
             }
         }

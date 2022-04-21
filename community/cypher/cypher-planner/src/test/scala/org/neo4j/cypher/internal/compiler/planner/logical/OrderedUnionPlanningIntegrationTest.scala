@@ -52,11 +52,11 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .nodeByLabelScan("m", "B", IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("m"), "m AS m")
-      .orderedUnion(Seq(Ascending("m")))
-      .|.nodeByLabelScan("m", "B", IndexOrderAscending)
-      .nodeByLabelScan("m", "A", IndexOrderAscending)
-      .build()))
+        .orderedDistinct(Seq("m"), "m AS m")
+        .orderedUnion(Seq(Ascending("m")))
+        .|.nodeByLabelScan("m", "B", IndexOrderAscending)
+        .nodeByLabelScan("m", "A", IndexOrderAscending)
+        .build()))
   }
 
   test("should use ordered union for Label disjunction between 3 labels") {
@@ -73,10 +73,10 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     plan should beLike {
       case OrderedDistinct(
-      _:OrderedUnion,
-      MapKeys("m"),
-      Seq(Variable("m"))
-      ) => ()
+          _: OrderedUnion,
+          MapKeys("m"),
+          Seq(Variable("m"))
+        ) => ()
     }
   }
 
@@ -121,13 +121,13 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .nodeByLabelScan("m", "B", IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-      .filter("o.prop = 0")
-      .expand("(m)-[r]-(o)")
-      .orderedDistinct(Seq("m"), "m AS m")
-      .orderedUnion(Seq(Ascending("m")))
-      .|.nodeByLabelScan("m", "B", IndexOrderAscending)
-      .nodeByLabelScan("m", "A", IndexOrderAscending)
-      .build()))
+        .filter("o.prop = 0")
+        .expand("(m)-[r]-(o)")
+        .orderedDistinct(Seq("m"), "m AS m")
+        .orderedUnion(Seq(Ascending("m")))
+        .|.nodeByLabelScan("m", "B", IndexOrderAscending)
+        .nodeByLabelScan("m", "A", IndexOrderAscending)
+        .build()))
   }
 
   test("should use ordered union for Label disjunction in a WITHs WHERE clause") {
@@ -148,11 +148,11 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .nodeByLabelScan("m", "B", IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("m"), "m AS m")
-      .orderedUnion(Seq(Ascending("m")))
-      .|.nodeByLabelScan("m", "B", IndexOrderAscending)
-      .nodeByLabelScan("m", "A", IndexOrderAscending)
-      .build()))
+        .orderedDistinct(Seq("m"), "m AS m")
+        .orderedUnion(Seq(Ascending("m")))
+        .|.nodeByLabelScan("m", "B", IndexOrderAscending)
+        .nodeByLabelScan("m", "A", IndexOrderAscending)
+        .build()))
   }
 
   test("should use ordered union for Label disjunction in tail") {
@@ -176,14 +176,14 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .allNodeScan("n")
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-      .apply()
-      .|.orderedDistinct(Seq("m"), "n AS n", "m AS m")
-      .|.orderedUnion(Seq(Ascending("m")))
-      .|.|.nodeByLabelScan("m", "B", IndexOrderAscending, "n")
-      .|.nodeByLabelScan("m", "A", IndexOrderAscending, "n")
-      .limit(1)
-      .allNodeScan("n")
-      .build()))
+        .apply()
+        .|.orderedDistinct(Seq("m"), "n AS n", "m AS m")
+        .|.orderedUnion(Seq(Ascending("m")))
+        .|.|.nodeByLabelScan("m", "B", IndexOrderAscending, "n")
+        .|.nodeByLabelScan("m", "A", IndexOrderAscending, "n")
+        .limit(1)
+        .allNodeScan("n")
+        .build()))
   }
 
   test("should use ordered union for Label in OPTIONAL MATCH") {
@@ -205,12 +205,12 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .nodeByLabelScan("m", "B", IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-      .optional()
-      .orderedDistinct(Seq("m"), "m AS m")
-      .orderedUnion(Seq(Ascending("m")))
-      .|.nodeByLabelScan("m", "B", IndexOrderAscending)
-      .nodeByLabelScan("m", "A", IndexOrderAscending)
-      .build()))
+        .optional()
+        .orderedDistinct(Seq("m"), "m AS m")
+        .orderedUnion(Seq(Ascending("m")))
+        .|.nodeByLabelScan("m", "B", IndexOrderAscending)
+        .nodeByLabelScan("m", "A", IndexOrderAscending)
+        .build()))
   }
 
   test("should use ordered union for Label disjunction with DISTINCT") {
@@ -232,12 +232,12 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .nodeByLabelScan("n", "B", IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("n"), "n AS n")
-      .orderedDistinct(Seq("n"), "n AS n")
-      .orderedUnion(Seq(Ascending("n")))
-      .|.nodeByLabelScan("n", "B", IndexOrderAscending)
-      .nodeByLabelScan("n", "A", IndexOrderAscending)
-      .build()))
+        .orderedDistinct(Seq("n"), "n AS n")
+        .orderedDistinct(Seq("n"), "n AS n")
+        .orderedUnion(Seq(Ascending("n")))
+        .|.nodeByLabelScan("n", "B", IndexOrderAscending)
+        .nodeByLabelScan("n", "A", IndexOrderAscending)
+        .build()))
   }
 
   test("should use normal union for predicate disjunction with ORDER BY") {
@@ -260,12 +260,12 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .nodeIndexOperator("p:Person(name < 0)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-      .sort(Seq(Ascending("p.name")))
-      .projection("p.name AS `p.name`")
-      .distinct("p AS p")
-      .union()
-      .|.nodeIndexOperator("p:Person(name < 0)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .nodeIndexOperator("p:Person(name > 5)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .build()))
+        .sort(Seq(Ascending("p.name")))
+        .projection("p.name AS `p.name`")
+        .distinct("p AS p")
+        .union()
+        .|.nodeIndexOperator("p:Person(name < 0)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .nodeIndexOperator("p:Person(name > 5)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .build()))
   }
 }

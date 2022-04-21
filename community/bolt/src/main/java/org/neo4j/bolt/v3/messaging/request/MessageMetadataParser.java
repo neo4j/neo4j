@@ -22,7 +22,6 @@ package org.neo4j.bolt.v3.messaging.request;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.graphdb.Node;
@@ -40,104 +39,82 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * The parsing methods in this class returns null if the specified key is not found in the input message metadata map.
  */
-public final class MessageMetadataParser
-{
+public final class MessageMetadataParser {
     private static final String TX_TIMEOUT_KEY = "tx_timeout";
     private static final String TX_META_DATA_KEY = "tx_metadata";
     private static final String ACCESS_MODE_KEY = "mode";
 
-    private MessageMetadataParser()
-    {
-    }
+    private MessageMetadataParser() {}
 
-    public static Duration parseTransactionTimeout( MapValue meta ) throws BoltIOException
-    {
-        AnyValue anyValue = meta.get( TX_TIMEOUT_KEY );
-        if ( anyValue == Values.NO_VALUE )
-        {
+    public static Duration parseTransactionTimeout(MapValue meta) throws BoltIOException {
+        AnyValue anyValue = meta.get(TX_TIMEOUT_KEY);
+        if (anyValue == Values.NO_VALUE) {
             return null;
-        }
-        else if ( anyValue instanceof LongValue )
-        {
-            return Duration.ofMillis( ((LongValue) anyValue).longValue() );
-        }
-        else
-        {
-            throw new BoltIOException( Status.Request.Invalid, "Expecting transaction timeout value to be a Long value, but got: " + anyValue );
+        } else if (anyValue instanceof LongValue) {
+            return Duration.ofMillis(((LongValue) anyValue).longValue());
+        } else {
+            throw new BoltIOException(
+                    Status.Request.Invalid,
+                    "Expecting transaction timeout value to be a Long value, but got: " + anyValue);
         }
     }
 
-    public static AccessMode parseAccessMode( MapValue meta ) throws BoltIOException
-    {
-        AnyValue anyValue = meta.get( ACCESS_MODE_KEY );
-        if ( anyValue == Values.NO_VALUE )
-        {
+    public static AccessMode parseAccessMode(MapValue meta) throws BoltIOException {
+        AnyValue anyValue = meta.get(ACCESS_MODE_KEY);
+        if (anyValue == Values.NO_VALUE) {
             return AccessMode.WRITE;
-        }
-        else if ( anyValue instanceof StringValue )
-        {
+        } else if (anyValue instanceof StringValue) {
             String value = ((StringValue) anyValue).stringValue();
-            if ( value.equals( "r" ) )
-            {
+            if (value.equals("r")) {
                 return AccessMode.READ;
             }
 
-            if ( value.equals( "w" ) )
-            {
+            if (value.equals("w")) {
                 return AccessMode.WRITE;
             }
 
-            throw new BoltIOException( Status.Request.Invalid, "Expecting access mode value to be 'r' or 'w', but got: " + anyValue );
-        }
-        else
-        {
-            throw new BoltIOException( Status.Request.Invalid, "Expecting access mode value to be a String value, but got: " + anyValue );
+            throw new BoltIOException(
+                    Status.Request.Invalid, "Expecting access mode value to be 'r' or 'w', but got: " + anyValue);
+        } else {
+            throw new BoltIOException(
+                    Status.Request.Invalid, "Expecting access mode value to be a String value, but got: " + anyValue);
         }
     }
 
-    public static Map<String,Object> parseTransactionMetadata( MapValue meta ) throws BoltIOException
-    {
-        AnyValue anyValue = meta.get( TX_META_DATA_KEY );
-        if ( anyValue == Values.NO_VALUE )
-        {
+    public static Map<String, Object> parseTransactionMetadata(MapValue meta) throws BoltIOException {
+        AnyValue anyValue = meta.get(TX_META_DATA_KEY);
+        if (anyValue == Values.NO_VALUE) {
             return null;
-        }
-        else if ( anyValue instanceof MapValue mapValue )
-        {
+        } else if (anyValue instanceof MapValue mapValue) {
             TransactionMetadataWriter writer = new TransactionMetadataWriter();
-            Map<String,Object> txMeta = new HashMap<>( mapValue.size() );
-            mapValue.foreach( ( key, value ) -> txMeta.put( key, writer.valueAsObject( value ) ) );
+            Map<String, Object> txMeta = new HashMap<>(mapValue.size());
+            mapValue.foreach((key, value) -> txMeta.put(key, writer.valueAsObject(value)));
             return txMeta;
-        }
-        else
-        {
-            throw new BoltIOException( Status.Request.Invalid, "Expecting transaction metadata value to be a Map value, but got: " + anyValue );
+        } else {
+            throw new BoltIOException(
+                    Status.Request.Invalid,
+                    "Expecting transaction metadata value to be a Map value, but got: " + anyValue);
         }
     }
 
-    private static class TransactionMetadataWriter extends BaseToObjectValueWriter<RuntimeException>
-    {
+    private static class TransactionMetadataWriter extends BaseToObjectValueWriter<RuntimeException> {
         @Override
-        protected Node newNodeEntityById( long id )
-        {
-            throw new UnsupportedOperationException( "Transaction metadata should not contain nodes" );
+        protected Node newNodeEntityById(long id) {
+            throw new UnsupportedOperationException("Transaction metadata should not contain nodes");
         }
 
         @Override
-        protected Relationship newRelationshipEntityById( long id )
-        {
-            throw new UnsupportedOperationException( "Transaction metadata should not contain relationships" );
+        protected Relationship newRelationshipEntityById(long id) {
+            throw new UnsupportedOperationException("Transaction metadata should not contain relationships");
         }
 
         @Override
-        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
-        {
-            return Values.pointValue( crs, coordinate );
+        protected Point newPoint(CoordinateReferenceSystem crs, double[] coordinate) {
+            return Values.pointValue(crs, coordinate);
         }
 
-        Object valueAsObject( AnyValue value )
-        {
-            value.writeTo( this );
+        Object valueAsObject(AnyValue value) {
+            value.writeTo(this);
             return value();
         }
     }

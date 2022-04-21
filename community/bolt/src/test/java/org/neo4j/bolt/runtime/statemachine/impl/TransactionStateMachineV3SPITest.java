@@ -19,10 +19,17 @@
  */
 package org.neo4j.bolt.runtime.statemachine.impl;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
@@ -36,80 +43,82 @@ import org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-class TransactionStateMachineV3SPITest
-{
+class TransactionStateMachineV3SPITest {
 
     @Test
-    void shouldNotCheckDatabaseIdInBookmark()
-    {
+    void shouldNotCheckDatabaseIdInBookmark() {
         // Given
-        var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var spi = new TestAbstractTransactionStateMachineSPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
-                                                              mock( StatementProcessorReleaseManager.class ), "123" );
+        var dbSpi = mock(BoltGraphDatabaseServiceSPI.class);
+        var spi = new TestAbstractTransactionStateMachineSPI(
+                dbSpi,
+                mock(BoltChannel.class),
+                mock(SystemNanoClock.class),
+                mock(StatementProcessorReleaseManager.class),
+                "123");
 
-        var bookmarks = List.<Bookmark>of( new BookmarkWithPrefix( 42L ) );
+        var bookmarks = List.<Bookmark>of(new BookmarkWithPrefix(42L));
 
         // When
-        spi.beginTransaction( null, null, bookmarks, null, null, null, null);
+        spi.beginTransaction(null, null, bookmarks, null, null, null, null);
 
         // Then
-        verify( dbSpi ).beginTransaction( any(), any(),any(), eq(bookmarks), any(), any(), any(), any());
+        verify(dbSpi).beginTransaction(any(), any(), any(), eq(bookmarks), any(), any(), any(), any());
     }
 
     @Test
-    void shouldReturnBookmarkWithPrefix()
-    {
+    void shouldReturnBookmarkWithPrefix() {
         // Given
-        var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var tx = mock( BoltTransaction.class );
+        var dbSpi = mock(BoltGraphDatabaseServiceSPI.class);
+        var tx = mock(BoltTransaction.class);
 
-        when( tx.getBookmarkMetadata() ).thenReturn( new BookmarkMetadata( 42L ) );
-        var spi = new TestAbstractTransactionStateMachineSPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
-                                                              mock( StatementProcessorReleaseManager.class ), "123" );
+        when(tx.getBookmarkMetadata()).thenReturn(new BookmarkMetadata(42L));
+        var spi = new TestAbstractTransactionStateMachineSPI(
+                dbSpi,
+                mock(BoltChannel.class),
+                mock(SystemNanoClock.class),
+                mock(StatementProcessorReleaseManager.class),
+                "123");
 
         // When
-        var bookmark = spi.newestBookmark( tx );
+        var bookmark = spi.newestBookmark(tx);
 
         // Then
-        verify( tx ).getBookmarkMetadata();
-        assertThat( bookmark ).isInstanceOf( BookmarkWithPrefix.class );
-        assertEquals( 42L, bookmark.txId() );
+        verify(tx).getBookmarkMetadata();
+        assertThat(bookmark).isInstanceOf(BookmarkWithPrefix.class);
+        assertEquals(42L, bookmark.txId());
     }
 
     @Test
-    void shouldFailWhenGivenMultipleBookmarks()
-    {
-        var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var spi = new TestAbstractTransactionStateMachineSPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
-                                                              mock( StatementProcessorReleaseManager.class ), "123" );
+    void shouldFailWhenGivenMultipleBookmarks() {
+        var dbSpi = mock(BoltGraphDatabaseServiceSPI.class);
+        var spi = new TestAbstractTransactionStateMachineSPI(
+                dbSpi,
+                mock(BoltChannel.class),
+                mock(SystemNanoClock.class),
+                mock(StatementProcessorReleaseManager.class),
+                "123");
 
-        var bookmarks = List.<Bookmark>of( new BookmarkWithPrefix( 42L ), new BookmarkWithPrefix( 4242L ) );
+        var bookmarks = List.<Bookmark>of(new BookmarkWithPrefix(42L), new BookmarkWithPrefix(4242L));
 
-        assertThrows( IllegalArgumentException.class, () ->
-                spi.beginTransaction( null, null, bookmarks, null, null, null, null) );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> spi.beginTransaction(null, null, bookmarks, null, null, null, null));
     }
 
-    private static class TestAbstractTransactionStateMachineSPI extends TransactionStateMachineV3SPI
-    {
-        TestAbstractTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
-                                                StatementProcessorReleaseManager resourceReleaseManager, String txId )
-        {
-            super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, txId );
+    private static class TestAbstractTransactionStateMachineSPI extends TransactionStateMachineV3SPI {
+        TestAbstractTransactionStateMachineSPI(
+                BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI,
+                BoltChannel boltChannel,
+                SystemNanoClock clock,
+                StatementProcessorReleaseManager resourceReleaseManager,
+                String txId) {
+            super(boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, txId);
         }
 
         @Override
-        protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
-        {
-            return mock( BoltResultHandle.class );
+        protected BoltResultHandle newBoltResultHandle(
+                String statement, MapValue params, BoltQueryExecutor boltQueryExecutor) {
+            return mock(BoltResultHandle.class);
         }
     }
 }

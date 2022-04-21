@@ -19,38 +19,32 @@
  */
 package org.neo4j.codegen;
 
+import static java.lang.invoke.MethodHandles.Lookup.ClassOption.NESTMATE;
+import static java.lang.invoke.MethodHandles.lookup;
+import static java.lang.invoke.MethodHandles.privateLookupIn;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.lang.invoke.MethodHandles.Lookup.ClassOption.NESTMATE;
-import static java.lang.invoke.MethodHandles.lookup;
-import static java.lang.invoke.MethodHandles.privateLookupIn;
-
 /**
  * ClassLoader which loads new classes that have been compiled in-process.
  */
-class CodeLoader extends ClassLoader
-{
-    private final Map<String/*class name*/,ByteCodes> stagedClasses = new HashMap<>();
+class CodeLoader extends ClassLoader {
+    private final Map<String /*class name*/, ByteCodes> stagedClasses = new HashMap<>();
     private static final MethodHandles.Lookup LOOKUP;
 
-    static
-    {
-        try
-        {
-            LOOKUP = privateLookupIn( CodeLoader.class, lookup() );
-        }
-        catch ( IllegalAccessException e )
-        {
-            throw new ExceptionInInitializerError( e );
+    static {
+        try {
+            LOOKUP = privateLookupIn(CodeLoader.class, lookup());
+        } catch (IllegalAccessException e) {
+            throw new ExceptionInInitializerError(e);
         }
     }
 
-    CodeLoader( ClassLoader parent )
-    {
-        super( parent );
+    CodeLoader(ClassLoader parent) {
+        super(parent);
     }
 
     /**
@@ -59,54 +53,43 @@ class CodeLoader extends ClassLoader
      * @param classes classes to load
      * @param visitor visitor which inspects class bytecodes
      */
-    synchronized void stageForLoading( Iterable<? extends ByteCodes> classes, ByteCodeVisitor visitor )
-    {
-        for ( ByteCodes clazz : classes )
-        {
-            visitor.visitByteCode( clazz.name(), clazz.bytes().duplicate() );
-            stagedClasses.put( clazz.name(), clazz );
+    synchronized void stageForLoading(Iterable<? extends ByteCodes> classes, ByteCodeVisitor visitor) {
+        for (ByteCodes clazz : classes) {
+            visitor.visitByteCode(clazz.name(), clazz.bytes().duplicate());
+            stagedClasses.put(clazz.name(), clazz);
         }
     }
 
     @Override
-    protected synchronized Class<?> findClass( String name ) throws ClassNotFoundException
-    {
-        ByteCodes clazz = stagedClasses.remove( name );
-        if ( clazz == null )
-        {
-            throw new ClassNotFoundException( name );
+    protected synchronized Class<?> findClass(String name) throws ClassNotFoundException {
+        ByteCodes clazz = stagedClasses.remove(name);
+        if (clazz == null) {
+            throw new ClassNotFoundException(name);
         }
-        String packageName = name.substring( 0, name.lastIndexOf( '.' ) );
-        if ( getDefinedPackage( packageName ) == null )
-        {
-            definePackage( packageName, "", "", "", "", "", "", null );
+        String packageName = name.substring(0, name.lastIndexOf('.'));
+        if (getDefinedPackage(packageName) == null) {
+            definePackage(packageName, "", "", "", "", "", "", null);
         }
-        return defineClass( name, clazz.bytes(), null );
+        return defineClass(name, clazz.bytes(), null);
     }
 
-    protected synchronized Class<?> defineHiddenClass( String name ) throws Throwable
-    {
-        ByteCodes clazz = stagedClasses.remove( name );
-        if ( clazz == null )
-        {
-            throw new ClassNotFoundException( name );
+    protected synchronized Class<?> defineHiddenClass(String name) throws Throwable {
+        ByteCodes clazz = stagedClasses.remove(name);
+        if (clazz == null) {
+            throw new ClassNotFoundException(name);
         }
-        return LOOKUP.defineHiddenClass( classBytes( clazz ), true, NESTMATE ).lookupClass();
+        return LOOKUP.defineHiddenClass(classBytes(clazz), true, NESTMATE).lookupClass();
     }
 
-    private static byte[] classBytes( ByteCodes clazz )
-    {
+    private static byte[] classBytes(ByteCodes clazz) {
         ByteBuffer byteBuffer = clazz.bytes();
         byte[] bytes;
-        if ( byteBuffer.hasArray() )
-        {
+        if (byteBuffer.hasArray()) {
             bytes = byteBuffer.array();
-        }
-        else
-        {
-            //buffer not backed by an array, copy data into an array
+        } else {
+            // buffer not backed by an array, copy data into an array
             bytes = new byte[byteBuffer.remaining()];
-            byteBuffer.get( bytes );
+            byteBuffer.get(bytes);
         }
         return bytes;
     }

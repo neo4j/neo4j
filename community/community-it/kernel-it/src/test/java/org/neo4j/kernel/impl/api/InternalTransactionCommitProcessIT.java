@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.cache.idmapping.string.Workers;
@@ -40,51 +42,41 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-class InternalTransactionCommitProcessIT
-{
+@ImpermanentDbmsExtension(configurationCallback = "configure")
+class InternalTransactionCommitProcessIT {
     private static final int TOTAL_ACTIVE_THREADS = 6;
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private GBPTreeCountsStore countsStore;
+
     @Inject
     private CheckPointer checkPointer;
+
     @Inject
     private TransactionIdStore transactionIdStore;
 
     @ExtensionCallback
-    static void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseSettings.check_point_interval_time, Duration.ofMillis( 10 ) );
+    static void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.check_point_interval_time, Duration.ofMillis(10));
     }
 
     @Test
-    @Timeout( value = 5, unit = TimeUnit.MINUTES )
-    void commitDuringContinuousCheckpointing() throws Exception
-    {
+    @Timeout(value = 5, unit = TimeUnit.MINUTES)
+    void commitDuringContinuousCheckpointing() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
-        Workers<Runnable> workers = new Workers<>( getClass().getSimpleName() );
-        try
-        {
-            for ( int i = 0; i < TOTAL_ACTIVE_THREADS; i++ )
-            {
-                workers.start( new Runnable()
-                {
+        Workers<Runnable> workers = new Workers<>(getClass().getSimpleName());
+        try {
+            for (int i = 0; i < TOTAL_ACTIVE_THREADS; i++) {
+                workers.start(new Runnable() {
                     private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
                     @Override
-                    public void run()
-                    {
-                        while ( !done.get() )
-                        {
-                            try ( Transaction tx = db.beginTx() )
-                            {
+                    public void run() {
+                        while (!done.get()) {
+                            try (Transaction tx = db.beginTx()) {
                                 tx.createNode();
                                 tx.commit();
                             }
@@ -92,33 +84,34 @@ class InternalTransactionCommitProcessIT
                         }
                     }
 
-                    private void randomSleep()
-                    {
-                        try
-                        {
-                            Thread.sleep( random.nextInt( 50 ) );
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            throw new RuntimeException( e );
+                    private void randomSleep() {
+                        try {
+                            Thread.sleep(random.nextInt(50));
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
                         }
                     }
-                } );
+                });
             }
 
-            Thread.sleep( SECONDS.toMillis( 2 ) );
-        }
-        finally
-        {
-            done.set( true );
+            Thread.sleep(SECONDS.toMillis(2));
+        } finally {
+            done.set(true);
         }
         workers.awaitAndThrowOnError();
 
-        assertThat( countsStore.txId() ).as( "Count store should be rotated once at least" ).isGreaterThan( 0L );
+        assertThat(countsStore.txId())
+                .as("Count store should be rotated once at least")
+                .isGreaterThan(0L);
 
-        long lastRotationTx = checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
-        assertEquals( transactionIdStore.getLastClosedTransactionId(), lastRotationTx,
-                "NeoStore last closed transaction id should be equal last count store rotation transaction id." );
-        assertEquals( transactionIdStore.getLastClosedTransactionId(), countsStore.txId(), "Last closed transaction should be last rotated tx in count store" );
+        long lastRotationTx = checkPointer.forceCheckPoint(new SimpleTriggerInfo("test"));
+        assertEquals(
+                transactionIdStore.getLastClosedTransactionId(),
+                lastRotationTx,
+                "NeoStore last closed transaction id should be equal last count store rotation transaction id.");
+        assertEquals(
+                transactionIdStore.getLastClosedTransactionId(),
+                countsStore.txId(),
+                "Last closed transaction should be last rotated tx in count store");
     }
 }

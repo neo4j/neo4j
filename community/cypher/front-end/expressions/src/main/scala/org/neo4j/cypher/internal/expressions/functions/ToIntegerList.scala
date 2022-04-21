@@ -25,8 +25,12 @@ case object ToIntegerList extends Function {
   override def name = "toIntegerList"
 
   override val signatures = Vector(
-    TypeSignature(this, CTList(CTAny), CTList(CTInteger),
+    TypeSignature(
+      this,
+      CTList(CTAny),
+      CTList(CTInteger),
       "Converts a list of values to a list of integer values. If any values are not convertible to integer they will be null in the list returned.",
-      Category.LIST)
+      Category.LIST
+    )
   )
 }

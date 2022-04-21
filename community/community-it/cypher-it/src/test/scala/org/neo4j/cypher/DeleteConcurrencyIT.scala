@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher
 
-import java.io.PrintWriter
-import java.io.StringWriter
-
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.KernelException
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
+
+import java.io.PrintWriter
+import java.io.StringWriter
 
 class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
@@ -35,9 +35,12 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
     val threadNum = 2
     val threads: List[MyThread] = (0 until threadNum).map { ignored =>
-      new MyThread(1, () => {
-        executeWithRetry(s"MATCH (root) WHERE ID(root) = 0 DELETE root").toList
-      })
+      new MyThread(
+        1,
+        () => {
+          executeWithRetry(s"MATCH (root) WHERE ID(root) = 0 DELETE root").toList
+        }
+      )
     }.toList
 
     threads.foreach(_.start())
@@ -57,9 +60,12 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
     val threadNum = 2
     val threads: List[MyThread] = (0 until threadNum).map { ignored =>
-      new MyThread(1, () => {
-        executeWithRetry(s"MATCH ()-[r:FRIEND]->() WHERE ID(r) = 0 DELETE r").toList
-      })
+      new MyThread(
+        1,
+        () => {
+          executeWithRetry(s"MATCH ()-[r:FRIEND]->() WHERE ID(r) = 0 DELETE r").toList
+        }
+      )
     }.toList
 
     threads.foreach(_.start())
@@ -78,13 +84,19 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     execute("CREATE (p1:person) CREATE (p2:person) CREATE (p1)<-[:T]-(p2)")
     val concurrency = 30
     val threads: List[MyThread] = (0 until concurrency).map { ignored =>
-      new MyThread(1, () => {
-        executeWithRetry(s"MATCH ()-[r]->() WITH r DELETE r").toList
-      })
+      new MyThread(
+        1,
+        () => {
+          executeWithRetry(s"MATCH ()-[r]->() WITH r DELETE r").toList
+        }
+      )
     }.toList ++ (0 until concurrency).map { ignored =>
-      new MyThread(1, () => {
-        executeWithRetry(s"MATCH (p1), (p2) WHERE id(p1) < id(p2) CREATE (p2)-[:T]->(p1)").toList
-      })
+      new MyThread(
+        1,
+        () => {
+          executeWithRetry(s"MATCH (p1), (p2) WHERE id(p1) < id(p2) CREATE (p2)-[:T]->(p1)").toList
+        }
+      )
     }.toList
 
     threads.foreach(_.start())
@@ -101,16 +113,20 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
   test("should not fail when trying to detach delete a node from 2 different transactions") {
     val nodes = 10
-    val ids = (0 until nodes).map(ignored => execute("CREATE (n:person) RETURN ID(n) as id").columnAs[Long]("id").next()).toList
+    val ids =
+      (0 until nodes).map(ignored => execute("CREATE (n:person) RETURN ID(n) as id").columnAs[Long]("id").next()).toList
 
     ids.foreach { id =>
       execute(s"MATCH (a) WHERE ID(a) = $id MERGE (b:person_name {val:'Bob Smith'}) CREATE (a)-[r:name]->(b)").toList
     }
 
     val threads: List[MyThread] = ids.map { id =>
-      new MyThread(1, () => {
-        executeWithRetry(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
-      })
+      new MyThread(
+        1,
+        () => {
+          executeWithRetry(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
+        }
+      )
     }
 
     threads.foreach(_.start())
@@ -131,8 +147,9 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
     val ids =
       (0 until NUM_NODES)
-        .map(ignored => execute("CREATE (n:Person) RETURN ID(n) as id")
-          .columnAs[Long]("id").next()
+        .map(ignored =>
+          execute("CREATE (n:Person) RETURN ID(n) as id")
+            .columnAs[Long]("id").next()
         ).toList
     new scala.util.Random(41).shuffle(ids)
 
@@ -143,15 +160,22 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     val threads: List[MyThread] = {
       val detachThreads =
         ids.map { id =>
-          new MyThread(NUM_EXECUTIONS, () => {
-            executeWithRetry(s"MATCH (root)-[:NAMED]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
-          })
+          new MyThread(
+            NUM_EXECUTIONS,
+            () => {
+              executeWithRetry(s"MATCH (root)-[:NAMED]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
+            }
+          )
         }
       val createThreads =
         ids.map { id =>
-          new MyThread(NUM_EXECUTIONS, () => {
-            executeWithRetry(s"MATCH (root), (b:Name) WHERE ID(root) = $id CREATE (root)-[:NAMED]->(b)").toList
-          }, ignoreRollbackAndNodeNotFound)
+          new MyThread(
+            NUM_EXECUTIONS,
+            () => {
+              executeWithRetry(s"MATCH (root), (b:Name) WHERE ID(root) = $id CREATE (root)-[:NAMED]->(b)").toList
+            },
+            ignoreRollbackAndNodeNotFound
+          )
         }
       new scala.util.Random(41).shuffle(detachThreads ++ createThreads)
     }
@@ -169,17 +193,17 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
   }
 
   val ignoreRollbackAndNodeNotFound: Throwable => Boolean = {
-      // let's ignore the commit failures if they are caused by the above exceptions
-      case ex: TransactionFailureException =>
-        ex.getCause match {
-          case kex: KernelException if kex.status() == Status.Transaction.TransactionMarkedAsFailed => true
-          case _ => false
-        }
-      case ex: CypherExecutionException =>
-        ex.status == Status.Statement.EntityNotFound
-      case ex: NotFoundException => true
-      case _ => false
-    }
+    // let's ignore the commit failures if they are caused by the above exceptions
+    case ex: TransactionFailureException =>
+      ex.getCause match {
+        case kex: KernelException if kex.status() == Status.Transaction.TransactionMarkedAsFailed => true
+        case _                                                                                    => false
+      }
+    case ex: CypherExecutionException =>
+      ex.status == Status.Statement.EntityNotFound
+    case ex: NotFoundException => true
+    case _                     => false
+  }
 
   private def prettyPrintErrors(errors: Seq[Throwable]): String = {
     val stringWriter = new StringWriter()
@@ -188,13 +212,14 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     stringWriter.toString
   }
 
-  private class MyThread(numExecutions:Int, f: () => Unit, ignoreException: (Throwable) => Boolean = _ => false) extends Thread {
+  private class MyThread(numExecutions: Int, f: () => Unit, ignoreException: (Throwable) => Boolean = _ => false)
+      extends Thread {
     private var ex: Throwable = _
 
     def exception: Throwable = ex
 
     override def run(): Unit = {
-      for ( i <- 0 until numExecutions ) {
+      for (i <- 0 until numExecutions) {
         try {
           f()
         } catch {

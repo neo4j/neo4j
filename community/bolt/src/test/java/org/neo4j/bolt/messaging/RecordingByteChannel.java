@@ -19,70 +19,61 @@
  */
 package org.neo4j.bolt.messaging;
 
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
-
 import static java.lang.Math.toIntExact;
 import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-public class RecordingByteChannel implements WritableByteChannel, ReadableByteChannel
-{
-    private final ByteBuffer buffer = allocate( toIntExact( KibiByte.toBytes( 64 ) ), INSTANCE );
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
+
+public class RecordingByteChannel implements WritableByteChannel, ReadableByteChannel {
+    private final ByteBuffer buffer = allocate(toIntExact(KibiByte.toBytes(64)), INSTANCE);
     private int writePosition;
     private int readPosition;
     private boolean eof;
 
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return true;
     }
 
     @Override
-    public void close()
-    {
-
-    }
+    public void close() {}
 
     @Override
-    public int write( ByteBuffer src )
-    {
-        buffer.position( writePosition );
+    public int write(ByteBuffer src) {
+        buffer.position(writePosition);
         int originalPosition = writePosition;
 
-        buffer.put( src );
+        buffer.put(src);
 
         writePosition = buffer.position();
         return writePosition - originalPosition;
     }
 
     @Override
-    public int read( ByteBuffer dst )
-    {
-        if ( readPosition == writePosition )
-        {
+    public int read(ByteBuffer dst) {
+        if (readPosition == writePosition) {
             return eof ? -1 : 0;
         }
-        buffer.position( readPosition );
+        buffer.position(readPosition);
         int originalPosition = readPosition;
         int originalLimit = buffer.limit();
 
-        buffer.limit( Math.min( buffer.position() + (dst.limit() - dst.position()), writePosition ) );
-        dst.put( buffer );
+        buffer.limit(Math.min(buffer.position() + (dst.limit() - dst.position()), writePosition));
+        dst.put(buffer);
 
         readPosition = buffer.position();
-        buffer.limit( originalLimit );
+        buffer.limit(originalLimit);
         return readPosition - originalPosition;
     }
 
-    public byte[] getBytes()
-    {
+    public byte[] getBytes() {
         byte[] bytes = new byte[buffer.position()];
-        buffer.position( 0 );
-        buffer.get( bytes );
+        buffer.position(0);
+        buffer.get(bytes);
         return bytes;
     }
 
@@ -90,8 +81,7 @@ public class RecordingByteChannel implements WritableByteChannel, ReadableByteCh
      * Mark this buffer as ended. Once whatever is currently unread in it is consumed,
      * it will start yielding -1 responses.
      */
-    public void eof()
-    {
+    public void eof() {
         eof = true;
     }
 }

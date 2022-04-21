@@ -20,16 +20,16 @@
 package org.neo4j.kernel.recovery.facade;
 
 import java.io.IOException;
-
 import org.neo4j.io.layout.DatabaseLayout;
 
-public interface RecoveryFacade
-{
+public interface RecoveryFacade {
     RecoveryFacade EMPTY = EmptyRecoveryFacade.INSTANCE;
 
-    void performRecovery( DatabaseLayout databaseLayout ) throws IOException;
+    void performRecovery(DatabaseLayout databaseLayout) throws IOException;
 
-    void performRecovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException;
+    void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor) throws IOException;
 
-    void performRecovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException;
+    void performRecovery(
+            DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
+            throws IOException;
 }

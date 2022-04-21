@@ -21,21 +21,16 @@ package org.neo4j.kernel.impl.index.schema.config;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-class ToMapSettingVisitor implements IndexSpecificSpaceFillingCurveSettings.SettingVisitor
-{
-    final Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> map = new HashMap<>();
+class ToMapSettingVisitor implements IndexSpecificSpaceFillingCurveSettings.SettingVisitor {
+    final Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> map = new HashMap<>();
 
     @Override
-    public void count( int count )
-    {
-    }
+    public void count(int count) {}
 
     @Override
-    public void visit( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
-    {
-        map.put( crs, settings );
+    public void visit(CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings) {
+        map.put(crs, settings);
     }
 }

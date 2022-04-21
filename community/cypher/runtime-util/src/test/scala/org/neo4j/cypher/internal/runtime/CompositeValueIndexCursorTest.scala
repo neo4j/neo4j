@@ -37,97 +37,100 @@ import scala.util.Random
 class CompositeValueIndexCursorTest extends CypherFunSuite {
 
   test("should create unordered cursor") {
-    //given
+    // given
     val cursor = unordered(
       Array(
         cursorFor(10, 11, 12),
         cursorFor(5),
-        cursorFor(11, 15),
-      ))
+        cursorFor(11, 15)
+      )
+    )
 
-    //when
+    // when
     val list = asList(cursor)
 
-    //then
+    // then
     list should equal(List(10, 11, 12, 5, 11, 15))
   }
 
   test("randomized unordered cursor") {
-    //given
+    // given
     val (cursors, totalSize) = randomCursors()
     val cursor = unordered(cursors)
 
-    //when
+    // when
     val list = asList(cursor)
 
-    //then
+    // then
     list should have size totalSize
   }
 
   test("should create ascending cursor") {
-    //given
+    // given
     val cursor = ascending(
       Array(
         cursorFor(10, 11, 12),
         cursorFor(5),
-        cursorFor(11, 15),
-      ))
+        cursorFor(11, 15)
+      )
+    )
 
-    //when
+    // when
     val list = asList(cursor)
 
-    //then
+    // then
     list should equal(List(5, 10, 11, 11, 12, 15))
   }
 
   test("randomized ascending cursor") {
-    //given
+    // given
     val (cursors, totalSize) = randomCursors(IndexOrderAscending)
     val cursor = ascending(cursors)
 
-    //when
+    // when
     val list = asList(cursor)
 
-    //then
+    // then
     list should have size totalSize
     list shouldBe sorted
   }
 
   test("should create descending cursor") {
-    //given
+    // given
     val cursor = descending(
       Array(
         cursorFor(12, 11, 10),
         cursorFor(5),
-        cursorFor(15, 11),
-      ))
+        cursorFor(15, 11)
+      )
+    )
 
-    //when
+    // when
     val list = asList(cursor)
 
-    //then
+    // then
     list should equal(List(15, 12, 11, 11, 10, 5))
   }
 
   test("randomized descending cursor") {
-    //given
+    // given
     val (cursors, totalSize) = randomCursors(IndexOrderDescending)
     val cursor = descending(cursors)
 
-    //when
+    // when
     val list = asList(cursor)
 
-    //then
+    // then
     list should have size totalSize
     list.reverse shouldBe sorted
   }
 
   private def cursorFor(values: Int*): NodeValueIndexCursor = {
     val stub = new StubNodeValueIndexCursor()
-      values.zipWithIndex.foreach {
-        case (v, i) => stub.withNode(i, Values.intValue(v))
-      }
-     stub
+    values.zipWithIndex.foreach {
+      case (v, i) => stub.withNode(i, Values.intValue(v))
+    }
+    stub
   }
 
   private def asList(cursor: NodeValueIndexCursor): List[Int] = {
@@ -144,11 +147,11 @@ class CompositeValueIndexCursorTest extends CypherFunSuite {
     var totalSize = 0
     while (i < randomArray.length) {
       val randomInts = indexOrder match {
-        case IndexOrderNone => Seq.fill(Random.nextInt(100))(Random.nextInt)
-        case IndexOrderAscending => Seq.fill(Random.nextInt(100))(Random.nextInt).sorted
+        case IndexOrderNone       => Seq.fill(Random.nextInt(100))(Random.nextInt)
+        case IndexOrderAscending  => Seq.fill(Random.nextInt(100))(Random.nextInt).sorted
         case IndexOrderDescending => Seq.fill(Random.nextInt(100))(Random.nextInt).sorted(Ordering.Int.reverse)
       }
-      randomArray(i) = cursorFor(randomInts.toSeq:_*)
+      randomArray(i) = cursorFor(randomInts.toSeq: _*)
       totalSize += randomInts.size
       i += 1
     }

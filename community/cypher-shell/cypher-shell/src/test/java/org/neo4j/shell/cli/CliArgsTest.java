@@ -19,122 +19,109 @@
  */
 package org.neo4j.shell.cli;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import org.neo4j.shell.parameter.ParameterService;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CliArgsTest
-{
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.neo4j.shell.parameter.ParameterService;
+
+class CliArgsTest {
     private final CliArgs cliArgs = new CliArgs();
 
     @Test
-    void setHost()
-    {
-        cliArgs.setHost( "foo", "bar" );
-        assertEquals( "foo", cliArgs.getHost() );
+    void setHost() {
+        cliArgs.setHost("foo", "bar");
+        assertEquals("foo", cliArgs.getHost());
 
-        cliArgs.setHost( null, "bar" );
-        assertEquals( "bar", cliArgs.getHost() );
+        cliArgs.setHost(null, "bar");
+        assertEquals("bar", cliArgs.getHost());
     }
 
     @Test
-    void setPort()
-    {
-        cliArgs.setPort( 999 );
-        assertEquals( 999, cliArgs.getPort() );
+    void setPort() {
+        cliArgs.setPort(999);
+        assertEquals(999, cliArgs.getPort());
     }
 
     @Test
-    void setUsername()
-    {
-        cliArgs.setUsername( "foo", "bar" );
-        assertEquals( "foo", cliArgs.getUsername() );
+    void setUsername() {
+        cliArgs.setUsername("foo", "bar");
+        assertEquals("foo", cliArgs.getUsername());
 
-        cliArgs.setUsername( null, "bar" );
-        assertEquals( "bar", cliArgs.getUsername() );
+        cliArgs.setUsername(null, "bar");
+        assertEquals("bar", cliArgs.getUsername());
     }
 
     @Test
-    void setPassword()
-    {
-        cliArgs.setPassword( "foo", "bar" );
-        assertEquals( "foo", cliArgs.getPassword() );
+    void setPassword() {
+        cliArgs.setPassword("foo", "bar");
+        assertEquals("foo", cliArgs.getPassword());
 
-        cliArgs.setPassword( null, "bar" );
-        assertEquals( "bar", cliArgs.getPassword() );
+        cliArgs.setPassword(null, "bar");
+        assertEquals("bar", cliArgs.getPassword());
     }
 
     @Test
-    void setFailBehavior()
-    {
+    void setFailBehavior() {
         // default
-        assertEquals( FailBehavior.FAIL_FAST, cliArgs.getFailBehavior() );
+        assertEquals(FailBehavior.FAIL_FAST, cliArgs.getFailBehavior());
 
-        cliArgs.setFailBehavior( FailBehavior.FAIL_AT_END );
-        assertEquals( FailBehavior.FAIL_AT_END, cliArgs.getFailBehavior() );
+        cliArgs.setFailBehavior(FailBehavior.FAIL_AT_END);
+        assertEquals(FailBehavior.FAIL_AT_END, cliArgs.getFailBehavior());
     }
 
     @Test
-    void getNumSampleRows()
-    {
-        assertEquals( 1000, CliArgs.DEFAULT_NUM_SAMPLE_ROWS );
-        assertEquals( CliArgs.DEFAULT_NUM_SAMPLE_ROWS, cliArgs.getNumSampleRows() );
+    void getNumSampleRows() {
+        assertEquals(1000, CliArgs.DEFAULT_NUM_SAMPLE_ROWS);
+        assertEquals(CliArgs.DEFAULT_NUM_SAMPLE_ROWS, cliArgs.getNumSampleRows());
 
-        cliArgs.setNumSampleRows( null );
-        assertEquals( CliArgs.DEFAULT_NUM_SAMPLE_ROWS, cliArgs.getNumSampleRows() );
+        cliArgs.setNumSampleRows(null);
+        assertEquals(CliArgs.DEFAULT_NUM_SAMPLE_ROWS, cliArgs.getNumSampleRows());
 
-        cliArgs.setNumSampleRows( 0 );
-        assertEquals( CliArgs.DEFAULT_NUM_SAMPLE_ROWS, cliArgs.getNumSampleRows() );
+        cliArgs.setNumSampleRows(0);
+        assertEquals(CliArgs.DEFAULT_NUM_SAMPLE_ROWS, cliArgs.getNumSampleRows());
 
-        cliArgs.setNumSampleRows( 120 );
-        assertEquals( 120, cliArgs.getNumSampleRows() );
+        cliArgs.setNumSampleRows(120);
+        assertEquals(120, cliArgs.getNumSampleRows());
     }
 
     @Test
-    void setFormat()
-    {
+    void setFormat() {
         // default
-        assertEquals( Format.AUTO, cliArgs.getFormat() );
+        assertEquals(Format.AUTO, cliArgs.getFormat());
 
-        cliArgs.setFormat( Format.PLAIN );
-        assertEquals( Format.PLAIN, cliArgs.getFormat() );
+        cliArgs.setFormat(Format.PLAIN);
+        assertEquals(Format.PLAIN, cliArgs.getFormat());
 
-        cliArgs.setFormat( Format.VERBOSE );
-        assertEquals( Format.VERBOSE, cliArgs.getFormat() );
+        cliArgs.setFormat(Format.VERBOSE);
+        assertEquals(Format.VERBOSE, cliArgs.getFormat());
     }
 
     @Test
-    void setCypher()
-    {
+    void setCypher() {
         // default
-        assertFalse( cliArgs.getCypher().isPresent() );
+        assertFalse(cliArgs.getCypher().isPresent());
 
-        cliArgs.setCypher( "foo" );
-        assertTrue( cliArgs.getCypher().isPresent() );
-        assertEquals( "foo", cliArgs.getCypher().get() );
+        cliArgs.setCypher("foo");
+        assertTrue(cliArgs.getCypher().isPresent());
+        assertEquals("foo", cliArgs.getCypher().get());
 
-        cliArgs.setCypher( null );
-        assertFalse( cliArgs.getCypher().isPresent() );
+        cliArgs.setCypher(null);
+        assertFalse(cliArgs.getCypher().isPresent());
     }
 
     @Test
-    void getParameters()
-    {
-        var list = List.of( new ParameterService.RawParameter( "bla", "bla" ) );
-        cliArgs.setParameters( list );
-        assertEquals( list, cliArgs.getParameters() );
+    void getParameters() {
+        var list = List.of(new ParameterService.RawParameter("bla", "bla"));
+        cliArgs.setParameters(list);
+        assertEquals(list, cliArgs.getParameters());
     }
 
     @Test
-    void setInputFile()
-    {
-        cliArgs.setInputFilename( "foo" );
-        assertEquals( "foo", cliArgs.getInputFilename() );
+    void setInputFile() {
+        cliArgs.setInputFilename("foo");
+        assertEquals("foo", cliArgs.getInputFilename());
     }
 }

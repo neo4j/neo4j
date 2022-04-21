@@ -19,22 +19,6 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.stats.Keys;
-import org.neo4j.internal.batchimport.stats.StepStats;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,29 +30,40 @@ import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.io.IOUtils.closeAllSilently;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
-class ForkedProcessorStepTest
-{
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.stats.Keys;
+import org.neo4j.internal.batchimport.stats.StepStats;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+
+class ForkedProcessorStepTest {
     private static final int TIMEOUT_MINUTES = 2;
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
     @Test
-    void shouldProcessAllSingleThreaded() throws Exception
-    {
+    void shouldProcessAllSingleThreaded() throws Exception {
         // GIVEN
-        StageControl control = mock( StageControl.class );
+        StageControl control = mock(StageControl.class);
         int maxProcessors = 10;
 
         int batches = 10;
-        BatchProcessor step = new BatchProcessor( control, maxProcessors );
+        BatchProcessor step = new BatchProcessor(control, maxProcessors);
         TrackingStep downstream = new TrackingStep();
-        step.setDownstream( downstream );
-        int processors = step.processors( maxProcessors - step.processors( 0 ) );
+        step.setDownstream(downstream);
+        int processors = step.processors(maxProcessors - step.processors(0));
 
         // WHEN
-        step.start( 0 );
-        for ( int i = 1; i <= batches; i++ )
-        {
-            step.receive( i, new Batch( processors ) );
+        step.start(0);
+        for (int i = 1; i <= batches; i++) {
+            step.receive(i, new Batch(processors));
         }
         step.endOfUpstream();
         step.awaitCompleted();
@@ -76,113 +71,102 @@ class ForkedProcessorStepTest
         step.close();
 
         // THEN
-        assertEquals( batches, downstream.received.get() );
+        assertEquals(batches, downstream.received.get());
     }
 
     @Test
-    @Timeout( value = TIMEOUT_MINUTES, unit = MINUTES )
-    void shouldProcessAllBatchesOnSingleCoreSystems() throws Exception
-    {
+    @Timeout(value = TIMEOUT_MINUTES, unit = MINUTES)
+    void shouldProcessAllBatchesOnSingleCoreSystems() throws Exception {
         // GIVEN
-        StageControl control = mock( StageControl.class );
+        StageControl control = mock(StageControl.class);
         int processors = 1;
 
         int batches = 10;
-        BatchProcessor step = new BatchProcessor( control, processors );
+        BatchProcessor step = new BatchProcessor(control, processors);
         TrackingStep downstream = new TrackingStep();
-        step.setDownstream( downstream );
+        step.setDownstream(downstream);
 
         // WHEN
-        step.start( 0 );
-        for ( int i = 1; i <= batches; i++ )
-        {
-            step.receive( i, new Batch( processors ) );
+        step.start(0);
+        for (int i = 1; i <= batches; i++) {
+            step.receive(i, new Batch(processors));
         }
         step.endOfUpstream();
         step.awaitCompleted();
         step.close();
 
         // THEN
-        assertEquals( batches, downstream.received.get() );
+        assertEquals(batches, downstream.received.get());
     }
 
     @Test
-    void mustNotDetachProcessorsFromBatchChains() throws Exception
-    {
+    void mustNotDetachProcessorsFromBatchChains() throws Exception {
         // GIVEN
-        StageControl control = mock( StageControl.class );
+        StageControl control = mock(StageControl.class);
         int processors = 1;
 
         int batches = 10;
-        BatchProcessor step = new BatchProcessor( control, processors );
+        BatchProcessor step = new BatchProcessor(control, processors);
         TrackingStep downstream = new TrackingStep();
-        step.setDownstream( downstream );
-        int delta = processors - step.processors( 0 );
-        step.processors( delta );
+        step.setDownstream(downstream);
+        int delta = processors - step.processors(0);
+        step.processors(delta);
 
         // WHEN
-        step.start( 0 );
-        for ( int i = 1; i <= batches; i++ )
-        {
-            step.receive( i, new Batch( processors ) );
+        step.start(0);
+        for (int i = 1; i <= batches; i++) {
+            step.receive(i, new Batch(processors));
         }
         step.endOfUpstream();
         step.awaitCompleted();
         step.close();
 
         // THEN
-        assertEquals( batches, downstream.received.get() );
+        assertEquals(batches, downstream.received.get());
     }
 
     @Test
-    void shouldProcessAllMultiThreadedAndWithChangingProcessorCount() throws Exception
-    {
+    void shouldProcessAllMultiThreadedAndWithChangingProcessorCount() throws Exception {
         // GIVEN
-        StageControl control = mock( StageControl.class );
+        StageControl control = mock(StageControl.class);
         int availableProcessors = Runtime.getRuntime().availableProcessors();
-        BatchProcessor step = new BatchProcessor( control, availableProcessors );
+        BatchProcessor step = new BatchProcessor(control, availableProcessors);
         TrackingStep downstream = new TrackingStep();
-        step.setDownstream( downstream );
+        step.setDownstream(downstream);
 
         // WHEN
-        step.start( 0 );
+        step.start(0);
         AtomicLong nextTicket = new AtomicLong();
         Thread[] submitters = new Thread[3];
         AtomicBoolean end = new AtomicBoolean();
-        for ( int i = 0; i < submitters.length; i++ )
-        {
-            submitters[i] = new Thread( () -> {
+        for (int i = 0; i < submitters.length; i++) {
+            submitters[i] = new Thread(() -> {
                 ThreadLocalRandom random = ThreadLocalRandom.current();
-                while ( !end.get() )
-                {
+                while (!end.get()) {
                     // synchronized block simulating that batches are received in order,
                     // which is enforced in real environment of a stage.
-                    synchronized ( nextTicket )
-                    {
+                    synchronized (nextTicket) {
                         // The processor count is changed here in this block simply because otherwise
                         // it's very hard to know how many processors we expect to see have processed
                         // a particular batch.
-                        if ( random.nextFloat() < 0.1 )
-                        {
-                            step.processors( random.nextInt( -2, 4 ) );
+                        if (random.nextFloat() < 0.1) {
+                            step.processors(random.nextInt(-2, 4));
                         }
 
                         long ticket = nextTicket.incrementAndGet();
-                        Batch batch = new Batch( step.processors( 0 ) );
-                        step.receive( ticket, batch );
+                        Batch batch = new Batch(step.processors(0));
+                        step.receive(ticket, batch);
                     }
                 }
-            } );
+            });
             submitters[i].start();
         }
 
-        while ( downstream.received.get() < 200 )
-        {
-            Thread.sleep( 10 );
+        while (downstream.received.get() < 200) {
+            Thread.sleep(10);
         }
-        end.set( true );
-        for ( Thread submitter : submitters )
-        {
+        end.set(true);
+        for (Thread submitter : submitters) {
             submitter.join();
         }
         step.endOfUpstream();
@@ -190,55 +174,50 @@ class ForkedProcessorStepTest
     }
 
     @Test
-    void shouldKeepForkedOrderIntactWhenChangingProcessorCount() throws Exception
-    {
+    void shouldKeepForkedOrderIntactWhenChangingProcessorCount() throws Exception {
         int length = 100;
-        AtomicIntegerArray reference = new AtomicIntegerArray( length );
+        AtomicIntegerArray reference = new AtomicIntegerArray(length);
 
         // GIVEN
         StageControl control = new SimpleStageControl();
         int availableProcessors = Runtime.getRuntime().availableProcessors();
-        ForkedProcessorStep<int[]> step = new ForkedProcessorStep<>( control, "Processor", config( availableProcessors ) )
-        {
+        ForkedProcessorStep<int[]> step = new ForkedProcessorStep<>(control, "Processor", config(availableProcessors)) {
             @Override
-            protected void forkedProcess( int id, int processors, int[] batch ) throws InterruptedException
-            {
+            protected void forkedProcess(int id, int processors, int[] batch) throws InterruptedException {
                 int ticket = batch[0];
-                Thread.sleep( ThreadLocalRandom.current().nextInt( 10 ) );
-                for ( int i = 1; i < batch.length; i++ )
-                {
-                    if ( batch[i] % processors == id )
-                    {
-                        boolean compareAndSet = reference.compareAndSet( batch[i], ticket, ticket + 1 );
-                        assertTrue( compareAndSet, "I am " + id + ". Was expecting " + ticket + " for " + batch[i] + " but was " + reference.get( batch[i] ) );
+                Thread.sleep(ThreadLocalRandom.current().nextInt(10));
+                for (int i = 1; i < batch.length; i++) {
+                    if (batch[i] % processors == id) {
+                        boolean compareAndSet = reference.compareAndSet(batch[i], ticket, ticket + 1);
+                        assertTrue(
+                                compareAndSet,
+                                "I am " + id + ". Was expecting " + ticket + " for " + batch[i] + " but was "
+                                        + reference.get(batch[i]));
                     }
                 }
             }
         };
-        DeadEndStep downstream = new DeadEndStep( control, CONTEXT_FACTORY );
-        step.setDownstream( downstream );
+        DeadEndStep downstream = new DeadEndStep(control, CONTEXT_FACTORY);
+        step.setDownstream(downstream);
 
         // WHEN
-        step.start( 0 );
-        downstream.start( 0 );
+        step.start(0);
+        downstream.start(0);
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int ticket = 0; ticket < 200; ticket++ )
-        {
+        for (int ticket = 0; ticket < 200; ticket++) {
             // The processor count is changed here in this block simply because otherwise
             // it's very hard to know how many processors we expect to see have processed
             // a particular batch.
-            if ( random.nextFloat() < 0.1 )
-            {
-                step.processors( random.nextInt( -2, 4 ) );
+            if (random.nextFloat() < 0.1) {
+                step.processors(random.nextInt(-2, 4));
             }
 
             int[] batch = new int[length];
             batch[0] = ticket;
-            for ( int j = 1; j < batch.length; j++ )
-            {
+            for (int j = 1; j < batch.length; j++) {
                 batch[j] = j - 1;
             }
-            step.receive( ticket, batch );
+            step.receive(ticket, batch);
         }
         step.endOfUpstream();
         step.awaitCompleted();
@@ -247,239 +226,191 @@ class ForkedProcessorStepTest
     }
 
     @Test
-    void shouldPanicOnFailure() throws Exception
-    {
+    void shouldPanicOnFailure() throws Exception {
         // GIVEN
         SimpleStageControl control = new SimpleStageControl();
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         Exception testPanic = new RuntimeException();
-        ForkedProcessorStep<Void> step = new ForkedProcessorStep<>( control, "Processor",
-            config( availableProcessors ) )
-        {
+        ForkedProcessorStep<Void> step = new ForkedProcessorStep<>(control, "Processor", config(availableProcessors)) {
             @Override
-            protected void forkedProcess( int id, int processors, Void batch ) throws Throwable
-            {
+            protected void forkedProcess(int id, int processors, Void batch) throws Throwable {
                 throw testPanic;
             }
         };
 
         // WHEN
-        control.steps( step );
-        step.start( 0 );
-        step.receive( 1, null );
+        control.steps(step);
+        step.start(0);
+        step.receive(1, null);
 
         // THEN
         step.awaitCompleted();
-        try
-        {
+        try {
             control.assertHealthy();
-        }
-        catch ( Exception e )
-        {
-            assertSame( testPanic, e );
+        } catch (Exception e) {
+            assertSame(testPanic, e);
         }
     }
 
     @Test
-    @Timeout( value = TIMEOUT_MINUTES, unit = MINUTES )
-    void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered() throws Exception
-    {
-        shouldBeAbleToProgressUnderStressfulProcessorChanges( Step.ORDER_SEND_DOWNSTREAM );
+    @Timeout(value = TIMEOUT_MINUTES, unit = MINUTES)
+    void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered() throws Exception {
+        shouldBeAbleToProgressUnderStressfulProcessorChanges(Step.ORDER_SEND_DOWNSTREAM);
     }
 
     @Test
-    @Timeout( value = TIMEOUT_MINUTES, unit = MINUTES )
-    void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered() throws Exception
-    {
-        shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 );
+    @Timeout(value = TIMEOUT_MINUTES, unit = MINUTES)
+    void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered() throws Exception {
+        shouldBeAbleToProgressUnderStressfulProcessorChanges(0);
     }
 
-    private static void shouldBeAbleToProgressUnderStressfulProcessorChanges( int orderingGuarantees ) throws Exception
-    {
+    private static void shouldBeAbleToProgressUnderStressfulProcessorChanges(int orderingGuarantees) throws Exception {
         // given
         int batches = 100;
         int processors = Runtime.getRuntime().availableProcessors() * 10;
-        Configuration config = new Configuration.Overridden( Configuration.DEFAULT )
-        {
+        Configuration config = new Configuration.Overridden(Configuration.DEFAULT) {
             @Override
-            public int maxNumberOfProcessors()
-            {
+            public int maxNumberOfProcessors() {
                 return processors;
             }
         };
-        Stage stage = new StressStage( config, orderingGuarantees, batches );
+        Stage stage = new StressStage(config, orderingGuarantees, batches);
         StageExecution execution = stage.execute();
-        List<Step<?>> steps = asList( execution.steps() );
-        steps.get( 1 ).processors( processors / 3 );
+        List<Step<?>> steps = asList(execution.steps());
+        steps.get(1).processors(processors / 3);
 
         // when
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        while ( execution.stillExecuting() )
-        {
-            steps.get( 2 ).processors( random.nextInt( -2, 5 ) );
-            Thread.sleep( 1 );
+        while (execution.stillExecuting()) {
+            steps.get(2).processors(random.nextInt(-2, 5));
+            Thread.sleep(1);
         }
         execution.assertHealthy();
 
         // then
-        assertEquals( batches, steps.get( steps.size() - 1 ).stats().stat( Keys.done_batches ).asLong() );
+        assertEquals(
+                batches,
+                steps.get(steps.size() - 1).stats().stat(Keys.done_batches).asLong());
 
-        closeAllSilently( steps );
+        closeAllSilently(steps);
     }
 
-    private static class StressStage extends Stage
-    {
-        StressStage( Configuration config, int orderingGuarantees, int batches )
-        {
-            super( "Stress", null, config, orderingGuarantees );
+    private static class StressStage extends Stage {
+        StressStage(Configuration config, int orderingGuarantees, int batches) {
+            super("Stress", null, config, orderingGuarantees);
 
-            add( new PullingProducerStep<>( control(), config )
-            {
+            add(new PullingProducerStep<>(control(), config) {
                 @Override
-                protected long position()
-                {
+                protected long position() {
                     return 0;
                 }
 
                 @Override
-                protected Object nextBatchOrNull( long ticket, int batchSize, ProcessContext processContext )
-                {
+                protected Object nextBatchOrNull(long ticket, int batchSize, ProcessContext processContext) {
                     return ticket < batches ? ticket : null;
                 }
-            } );
-            add( new ProcessorStep<Long>( control(), "Yeah", config, 3, CONTEXT_FACTORY )
-            {
+            });
+            add(new ProcessorStep<Long>(control(), "Yeah", config, 3, CONTEXT_FACTORY) {
                 @Override
-                protected void process( Long batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
-                {
-                    Thread.sleep( 1 );
-                    sender.send( batch );
+                protected void process(Long batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
+                    Thread.sleep(1);
+                    sender.send(batch);
                 }
-            } );
-            add( new ForkedProcessorStep<Long>( control(), "Subject", config )
-            {
+            });
+            add(new ForkedProcessorStep<Long>(control(), "Subject", config) {
                 @Override
-                protected void forkedProcess( int id, int processors, Long batch ) throws Throwable
-                {
-                    Thread.sleep( 1 );
+                protected void forkedProcess(int id, int processors, Long batch) throws Throwable {
+                    Thread.sleep(1);
                 }
-            } );
-            add( new DeadEndStep( control(), CONTEXT_FACTORY ) );
+            });
+            add(new DeadEndStep(control(), CONTEXT_FACTORY));
         }
     }
 
-    private static class BatchProcessor extends ForkedProcessorStep<Batch>
-    {
-        BatchProcessor( StageControl control, int processors )
-        {
-            super( control, "PROCESSOR", config( processors ) );
+    private static class BatchProcessor extends ForkedProcessorStep<Batch> {
+        BatchProcessor(StageControl control, int processors) {
+            super(control, "PROCESSOR", config(processors));
         }
 
         @Override
-        protected void forkedProcess( int id, int processors, Batch batch )
-        {
-            batch.processedBy( id );
+        protected void forkedProcess(int id, int processors, Batch batch) {
+            batch.processedBy(id);
         }
     }
 
-    private static Configuration config( int processors )
-    {
-        return new Configuration()
-        {
+    private static Configuration config(int processors) {
+        return new Configuration() {
             @Override
-            public int maxNumberOfProcessors()
-            {
+            public int maxNumberOfProcessors() {
                 return processors;
             }
         };
     }
 
-    private static class Batch
-    {
+    private static class Batch {
         private final boolean[] processed;
 
-        Batch( int processors )
-        {
+        Batch(int processors) {
             this.processed = new boolean[processors];
         }
 
-        void processedBy( int id )
-        {
-            assertFalse( processed[id] );
+        void processedBy(int id) {
+            assertFalse(processed[id]);
             processed[id] = true;
         }
     }
 
-    private static class TrackingStep implements Step<Batch>
-    {
+    private static class TrackingStep implements Step<Batch> {
         private final AtomicLong received = new AtomicLong();
 
         @Override
-        public void receivePanic( Throwable cause )
-        {
-        }
+        public void receivePanic(Throwable cause) {}
 
         @Override
-        public void start( int orderingGuarantees )
-        {
-        }
+        public void start(int orderingGuarantees) {}
 
         @Override
-        public String name()
-        {
+        public String name() {
             return "END";
         }
 
         @Override
-        public long receive( long ticket, Batch batch )
-        {
+        public long receive(long ticket, Batch batch) {
             int count = 0;
-            for ( int i = 0; i < batch.processed.length; i++ )
-            {
-                if ( batch.processed[i] )
-                {
+            for (int i = 0; i < batch.processed.length; i++) {
+                if (batch.processed[i]) {
                     count++;
                 }
             }
-            assertEquals( batch.processed.length, count );
-            if ( !received.compareAndSet( ticket - 1, ticket ) )
-            {
-                fail( "Hmm " + ticket + " " + received.get() );
+            assertEquals(batch.processed.length, count);
+            if (!received.compareAndSet(ticket - 1, ticket)) {
+                fail("Hmm " + ticket + " " + received.get());
             }
             return 0;
         }
 
         @Override
-        public StepStats stats()
-        {
+        public StepStats stats() {
             return null;
         }
 
         @Override
-        public void endOfUpstream()
-        {
-        }
+        public void endOfUpstream() {}
 
         @Override
-        public boolean isCompleted()
-        {
+        public boolean isCompleted() {
             return false;
         }
 
         @Override
-        public void awaitCompleted()
-        {
+        public void awaitCompleted() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void setDownstream( Step<?> downstreamStep )
-        {
-        }
+        public void setDownstream(Step<?> downstreamStep) {}
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     }
 }

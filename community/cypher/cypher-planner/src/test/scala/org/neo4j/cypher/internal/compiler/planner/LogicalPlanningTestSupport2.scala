@@ -108,10 +108,14 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   val configurationThatForcesCompacting: CypherPlannerConfiguration = {
     val builder = Config.newBuilder()
-    //NOTE: 10 is the minimum allowed value
+    // NOTE: 10 is the minimum allowed value
     builder.set(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold, Long.box(10L))
     val dbConfig = builder.build()
-    CypherPlannerConfiguration.fromCypherConfiguration(CypherConfiguration.fromConfig(dbConfig), dbConfig, planSystemCommands = false)
+    CypherPlannerConfiguration.fromCypherConfiguration(
+      CypherConfiguration.fromConfig(dbConfig),
+      dbConfig,
+      planSystemCommands = false
+    )
   }
 
   sealed trait QueryGraphSolverSetup {
@@ -119,6 +123,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver
     def useIdpConnectComponents: Boolean
   }
+
   case object QueryGraphSolverWithIDPConnectComponents extends QueryGraphSolverSetup {
     val useIdpConnectComponents: Boolean = true
 
@@ -131,6 +136,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
       new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner)(solverMonitor)
     }
   }
+
   case object QueryGraphSolverWithGreedyConnectComponents extends QueryGraphSolverSetup {
     val useIdpConnectComponents: Boolean = false
 
@@ -144,9 +150,9 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     }
   }
 
-
   final case object NameDeduplication extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
     override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
+
     override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
       from
         .withMaybeQuery(from.maybeQuery.map(removeGeneratedNamesAndParamsOnTree))
@@ -161,12 +167,14 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     ParsingConfig(
       literalExtractionStrategy = Never,
       parameterTypeMapping = Map.empty,
-      semanticFeatures = cypherCompilerConfig.enabledSemanticFeatures)
+      semanticFeatures = cypherCompilerConfig.enabledSemanticFeatures
+    )
 
-  def pipeLine(parsingConfig: ParsingConfig,
-               pushdownPropertyReads: Boolean = pushdownPropertyReads,
-               deduplicateNames: Boolean = deduplicateNames,
-              ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+  def pipeLine(
+    parsingConfig: ParsingConfig,
+    pushdownPropertyReads: Boolean = pushdownPropertyReads,
+    deduplicateNames: Boolean = deduplicateNames
+  ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
     val p1 = parsing(parsingConfig) andThen
       prepareForCaching andThen
@@ -179,7 +187,8 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   }
 }
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport with UsingMatcher {
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport
+    with LogicalPlanConstructionTestSupport with UsingMatcher {
   self: CypherFunSuite =>
 
   val parser = JavaCCParser
@@ -190,9 +199,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   val realConfig: RealLogicalPlanningConfiguration = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
-  def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
+  def createInitState(queryString: String): BaseState =
+    InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
 
-  def pipeLine(deduplicateNames: Boolean = deduplicateNames): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+  def pipeLine(deduplicateNames: Boolean = deduplicateNames)
+    : Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     val parsingConfig = LogicalPlanningTestSupport2.defaultParsingConfig(cypherCompilerConfig)
     LogicalPlanningTestSupport2.pipeLine(parsingConfig, pushdownPropertyReads, deduplicateNames)
   }
@@ -201,39 +212,53 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     lazy val semanticTable: SemanticTable = config.updateSemanticTableWithTokens(SemanticTable())
 
     def metricsFactory: MetricsFactory = new MetricsFactory {
+
       override def newCostModel(executionModel: ExecutionModel): CostModel =
-        (plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders, monitor: CostModelMonitor) =>
+        (
+          plan: LogicalPlan,
+          input: QueryGraphSolverInput,
+          semanticTable: SemanticTable,
+          cardinalities: Cardinalities,
+          providedOrders: ProvidedOrders,
+          monitor: CostModelMonitor
+        ) =>
           config.costModel(executionModel)((plan, input, semanticTable, cardinalities, providedOrders, monitor))
 
-      override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                                           selectivityCalculator: SelectivityCalculator,
-                                           evaluator: ExpressionEvaluator): CardinalityModel = {
+      override def newCardinalityEstimator(
+        queryGraphCardinalityModel: QueryGraphCardinalityModel,
+        selectivityCalculator: SelectivityCalculator,
+        evaluator: ExpressionEvaluator
+      ): CardinalityModel = {
         config.cardinalityModel(queryGraphCardinalityModel, selectivityCalculator, evaluator)
       }
 
-      override def newQueryGraphCardinalityModel(planContext: PlanContext,
-                                                 selectivityCalculator: SelectivityCalculator): QueryGraphCardinalityModel =
+      override def newQueryGraphCardinalityModel(
+        planContext: PlanContext,
+        selectivityCalculator: SelectivityCalculator
+      ): QueryGraphCardinalityModel =
         QueryGraphCardinalityModel.default(planContext, selectivityCalculator)
     }
 
     def table = Map.empty[PatternExpression, QueryGraph]
 
     def planContext: NotImplementedPlanContext = new NotImplementedPlanContext {
+
       private def indexesForLabel(label: String, indexType: IndexType): Iterator[IndexDescriptor] =
         config.indexes.collect {
-          case (indexDef@IndexDef(IndexDefinition.EntityType.Node(`label`), _, `indexType`), _) =>
+          case (indexDef @ IndexDef(IndexDefinition.EntityType.Node(`label`), _, `indexType`), _) =>
             newIndexDescriptor(indexDef, config.indexes(indexDef))
         }.toIterator
 
       private def indexesForRelType(relType: String, indexType: IndexType): Iterator[IndexDescriptor] =
         config.indexes.collect {
-          case (indexDef@IndexDef(IndexDefinition.EntityType.Relationship(`relType`), _, `indexType`), _) =>
+          case (indexDef @ IndexDef(IndexDefinition.EntityType.Relationship(`relType`), _, `indexType`), _) =>
             newIndexDescriptor(indexDef, config.indexes(indexDef))
         }.toIterator
 
       override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(
         config.graphStatistics,
-        new MutableGraphStatisticsSnapshot())
+        new MutableGraphStatisticsSnapshot()
+      )
 
       override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         config.labelsById.get(labelId).toIterator.flatMap(label => indexesForLabel(label, IndexType.Range))
@@ -270,9 +295,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         val orderCapability: OrderCapability = _ => indexAttributes.withOrdering
         val entityType = indexDef.entityType match {
           case IndexDefinition.EntityType.Node(label) => IndexDescriptor.EntityType.Node(
-            semanticTable.resolvedLabelNames(label))
+              semanticTable.resolvedLabelNames(label)
+            )
           case IndexDefinition.EntityType.Relationship(relType) => IndexDescriptor.EntityType.Relationship(
-            semanticTable.resolvedRelTypeNames(relType))
+              semanticTable.resolvedRelTypeNames(relType)
+            )
         }
         IndexDescriptor(
           indexDef.indexType,
@@ -309,7 +336,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         val labelName = config.labelsById(labelId)
         config.indexes.keys.exists {
           case IndexDef(IndexDefinition.EntityType.Node(`labelName`), _, _) => true
-          case _ => false
+          case _                                                            => false
         }
       }
 
@@ -317,7 +344,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         val relTypeName = config.relTypesById(relTypeId)
         config.indexes.keys.exists {
           case IndexDef(IndexDefinition.EntityType.Relationship(`relTypeName`), _, _) => true
-          case _ => false
+          case _                                                                      => false
         }
       }
 
@@ -333,19 +360,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def txStateHasChanges(): Boolean = false
     }
 
-    def getLogicalPlanFor(queryString: String,
-                          cypherConfig: CypherPlannerConfiguration = cypherCompilerConfig,
-                          queryGraphSolver: QueryGraphSolver = queryGraphSolver,
-                          stripProduceResults: Boolean = true,
-                          deduplicateNames: Boolean = deduplicateNames,
-                          debugOptions: CypherDebugOptions = CypherDebugOptions.default
-                         ): (LogicalPlan, SemanticTable, PlanningAttributes) = {
+    def getLogicalPlanFor(
+      queryString: String,
+      cypherConfig: CypherPlannerConfiguration = cypherCompilerConfig,
+      queryGraphSolver: QueryGraphSolver = queryGraphSolver,
+      stripProduceResults: Boolean = true,
+      deduplicateNames: Boolean = deduplicateNames,
+      debugOptions: CypherDebugOptions = CypherDebugOptions.default
+    ): (LogicalPlan, SemanticTable, PlanningAttributes) = {
       val context = getContext(queryString, cypherConfig, queryGraphSolver, debugOptions)
       val state = createInitState(queryString)
       val output = pipeLine(deduplicateNames).transform(state, context)
       val logicalPlan = output.logicalPlan match {
         case p: ProduceResult if stripProduceResults => p.source
-        case p => p
+        case p                                       => p
       }
       (logicalPlan, output.semanticTable(), output.planningAttributes)
     }
@@ -357,28 +385,30 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val output = pipeLine(deduplicateNames).transform(initialState, context)
       val logicalPlan = output.logicalPlan match {
         case p: ProduceResult => p.source
-        case p => p
+        case p                => p
       }
       (logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
     private def getContext(
-                            queryString: String,
-                            cypherConfig: CypherPlannerConfiguration = cypherCompilerConfig,
-                            queryGraphSolver: QueryGraphSolver = queryGraphSolver,
-                            debugOptions: CypherDebugOptions = CypherDebugOptions.default,
-                          ):PlannerContext = {
+      queryString: String,
+      cypherConfig: CypherPlannerConfiguration = cypherCompilerConfig,
+      queryGraphSolver: QueryGraphSolver = queryGraphSolver,
+      debugOptions: CypherDebugOptions = CypherDebugOptions.default
+    ): PlannerContext = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
 
-      val metrics = metricsFactory.newMetrics(planContext,
+      val metrics = metricsFactory.newMetrics(
+        planContext,
         mock[ExpressionEvaluator],
         config.executionModel,
         cypherConfig.planningTextIndexesEnabled,
         cypherConfig.planningRangeIndexesEnabled,
-        cypherConfig.planningPointIndexesEnabled,
+        cypherConfig.planningPointIndexesEnabled
       )
 
-      ContextHelper.create(planContext = planContext,
+      ContextHelper.create(
+        planContext = planContext,
         cypherExceptionFactory = exceptionFactory,
         queryGraphSolver = queryGraphSolver,
         metrics = metrics,
@@ -390,8 +420,14 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel,
-        planningTextIndexesEnabled = false, planningRangeIndexesEnabled = false, planningPointIndexesEnabled = false)
+      val metrics = metricsFactory.newMetrics(
+        planContext,
+        mock[ExpressionEvaluator],
+        config.executionModel,
+        planningTextIndexesEnabled = false,
+        planningRangeIndexesEnabled = false,
+        planningPointIndexesEnabled = false
+      )
       val planningAttributes = PlanningAttributes.newAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
@@ -408,15 +444,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         executionModel = config.executionModel,
         debugOptions = CypherDebugOptions.default,
         anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
-        cancellationChecker = CancellationChecker.NeverCancelled,
+        cancellationChecker = CancellationChecker.NeverCancelled
       )
       f(config, ctx)
     }
 
-
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel,
-        planningTextIndexesEnabled = false, planningRangeIndexesEnabled = false, planningPointIndexesEnabled = false)
+      val metrics = metricsFactory.newMetrics(
+        planContext,
+        mock[ExpressionEvaluator],
+        config.executionModel,
+        planningTextIndexesEnabled = false,
+        planningRangeIndexesEnabled = false,
+        planningPointIndexesEnabled = false
+      )
       val planningAttributes = newStubbedPlanningAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
@@ -433,7 +474,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         executionModel = config.executionModel,
         debugOptions = CypherDebugOptions.default,
         anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
-        cancellationChecker = CancellationChecker.NeverCancelled,
+        cancellationChecker = CancellationChecker.NeverCancelled
       )
       f(config, ctx)
     }
@@ -459,18 +500,19 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     res
   }
 
-  def planFor(queryString: String,
-              config:CypherPlannerConfiguration = cypherCompilerConfig,
-              queryGraphSolver: QueryGraphSolver = queryGraphSolver,
-              stripProduceResults: Boolean = true,
-              deduplicateNames: Boolean = deduplicateNames
-             ): (LogicalPlan, SemanticTable, PlanningAttributes) =
+  def planFor(
+    queryString: String,
+    config: CypherPlannerConfiguration = cypherCompilerConfig,
+    queryGraphSolver: QueryGraphSolver = queryGraphSolver,
+    stripProduceResults: Boolean = true,
+    deduplicateNames: Boolean = deduplicateNames
+  ): (LogicalPlan, SemanticTable, PlanningAttributes) =
     new given().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults, deduplicateNames)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
   class givenPlanWithMinimumCardinalityEnabled
-    extends StubbedLogicalPlanningConfiguration(RealLogicalPlanningConfiguration(cypherCompilerConfig))
+      extends StubbedLogicalPlanningConfiguration(RealLogicalPlanningConfiguration(cypherCompilerConfig))
 
   implicit def propertyKeyId(label: String)(implicit semanticTable: SemanticTable): PropertyKeyId =
     semanticTable.resolvedPropertyKeyNames(label)

@@ -31,8 +31,8 @@ object connectedComponents {
   type ComponentPart = Set[LogicalVariable]
   type ConnectedComponent = Set[ComponentPart]
 
-  //enable using the companion objects of the type aliases,
-  //e.g. `ComponentPart(Variable("a"), Variable("b"),...)`
+  // enable using the companion objects of the type aliases,
+  // e.g. `ComponentPart(Variable("a"), Variable("b"),...)`
   val ComponentPart = Set
   val ConnectedComponent = Set
 
@@ -47,7 +47,10 @@ object connectedComponents {
   def apply(parts: IndexedSeq[ComponentPart]): IndexedSeq[ConnectedComponent] = {
 
     @tailrec
-    def loop(remaining: IndexedSeq[ComponentPart], connectedComponents: IndexedSeq[ConnectedComponent]): IndexedSeq[ConnectedComponent] = {
+    def loop(
+      remaining: IndexedSeq[ComponentPart],
+      connectedComponents: IndexedSeq[ConnectedComponent]
+    ): IndexedSeq[ConnectedComponent] = {
       if (remaining.isEmpty) connectedComponents
       else {
         val part = remaining.head

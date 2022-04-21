@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
-                                                             edition: Edition[CONTEXT],
-                                                             runtime: CypherRuntime[CONTEXT],
-                                                             sizeHint: Int
-                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for STARTS WITH with indexes directed seek") {
     given {
@@ -39,7 +39,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _) => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -63,7 +63,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _) => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -81,21 +81,24 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     runtimeResult should beColumns("text").withRows(singleColumn(expected))
   }
 
-
   test("should handle null input directed") {
     given {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _) => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH ???)]->(y)", paramExpr = Some(nullLiteral), indexType = IndexType.TEXT)
+      .relationshipIndexOperator(
+        "(x)-[r:R(text STARTS WITH ???)]->(y)",
+        paramExpr = Some(nullLiteral),
+        indexType = IndexType.TEXT
+      )
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -110,14 +113,18 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _) => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH ???)]-(y)", paramExpr = Some(nullLiteral), indexType = IndexType.TEXT)
+      .relationshipIndexOperator(
+        "(x)-[r:R(text STARTS WITH ???)]-(y)",
+        paramExpr = Some(nullLiteral),
+        indexType = IndexType.TEXT
+      )
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -126,14 +133,13 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     runtimeResult should beColumns("text").withNoRows()
   }
 
-
   test("should handle non-text input directed") {
     given {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _) => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -143,7 +149,6 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
       .projection("r.text AS text")
       .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 1337)]->(y)", indexType = IndexType.TEXT)
       .build()
-
 
     // then
     execute(logicalQuery, runtime) should beColumns("text").withNoRows()
@@ -155,7 +160,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
-        case (r, _) => r.setProperty("text", "case")
+        case (r, _)               => r.setProperty("text", "case")
       }
     }
 
@@ -165,7 +170,6 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
       .projection("r.text AS text")
       .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 1337)]-(y)", indexType = IndexType.TEXT)
       .build()
-
 
     // then
     execute(logicalQuery, runtime) should beColumns("text").withNoRows()
@@ -192,7 +196,8 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = relationships.zipWithIndex.collect{ case (r, i) if i.toString.startsWith("1") => Array(r, i.toString)}
+    val expected =
+      relationships.zipWithIndex.collect { case (r, i) if i.toString.startsWith("1") => Array(r, i.toString) }
     runtimeResult should beColumns("r", "text").withRows(expected)
   }
 

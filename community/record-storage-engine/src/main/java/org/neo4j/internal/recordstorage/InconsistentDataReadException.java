@@ -21,8 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import static java.lang.String.format;
 
-public class InconsistentDataReadException extends RuntimeException
-{
+public class InconsistentDataReadException extends RuntimeException {
     /**
      * A threshold used when reading chains of records. There's a chance that a chain contains a cycle, at which point
      * it's impossible to get to the end of the chain normally. If no cycle detection is in place then reading it
@@ -35,13 +34,11 @@ public class InconsistentDataReadException extends RuntimeException
      */
     public static final int CYCLE_DETECTION_THRESHOLD = 100_000;
 
-    public InconsistentDataReadException( String format, Object... parameters )
-    {
-        super( format( format, parameters ) );
+    public InconsistentDataReadException(String format, Object... parameters) {
+        super(format(format, parameters));
     }
 
-    public InconsistentDataReadException( Throwable cause, String format, Object... parameters )
-    {
-        super( format( format, parameters ), cause );
+    public InconsistentDataReadException(Throwable cause, String format, Object... parameters) {
+        super(format(format, parameters), cause);
     }
 }

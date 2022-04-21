@@ -19,29 +19,22 @@
  */
 package org.neo4j.codegen.bytecode;
 
-class Configuration
-{
+class Configuration {
     private ByteCodeChecker bytecodeChecker;
 
-    public Configuration withFlag( ByteCode flag )
-    {
+    public Configuration withFlag(ByteCode flag) {
         return this;
     }
 
-    public void withBytecodeChecker( ByteCodeChecker checker )
-    {
-        if ( bytecodeChecker == null )
-        {
+    public void withBytecodeChecker(ByteCodeChecker checker) {
+        if (bytecodeChecker == null) {
             bytecodeChecker = checker;
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "multiple bytecode checkers" );
+        } else {
+            throw new UnsupportedOperationException("multiple bytecode checkers");
         }
     }
 
-    ByteCodeChecker bytecodeChecker()
-    {
+    ByteCodeChecker bytecodeChecker() {
         return bytecodeChecker;
     }
 }

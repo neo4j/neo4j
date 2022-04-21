@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
-import org.eclipse.collections.api.map.ImmutableMap;
-import org.eclipse.collections.impl.factory.Maps;
-
 import java.util.HashMap;
 import java.util.Map;
-
+import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.impl.factory.Maps;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -33,28 +31,26 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  * Hold all spatial settings and use it to provide {@link SpaceFillingCurve} for this generic index.
  * The settings are determined at index creation time and does not change.
  */
-public class IndexSpecificSpaceFillingCurveSettings
-{
+public class IndexSpecificSpaceFillingCurveSettings {
     /**
      * Map of settings that are specific to this index.
      */
-    private final ImmutableMap<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache;
+    private final ImmutableMap<CoordinateReferenceSystem, SpaceFillingCurveSettings> specificIndexConfigCache;
 
-    public IndexSpecificSpaceFillingCurveSettings( Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache )
-    {
-        this.specificIndexConfigCache = Maps.immutable.withAll( specificIndexConfigCache );
+    public IndexSpecificSpaceFillingCurveSettings(
+            Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> specificIndexConfigCache) {
+        this.specificIndexConfigCache = Maps.immutable.withAll(specificIndexConfigCache);
     }
 
-    public static IndexSpecificSpaceFillingCurveSettings fromConfig( Config config )
-    {
-        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache = new HashMap<>();
-        ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
-        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
-        {
-            specificIndexConfigCache.put( crs, configuredSettings.forCRS( crs ) );
+    public static IndexSpecificSpaceFillingCurveSettings fromConfig(Config config) {
+        Map<CoordinateReferenceSystem, SpaceFillingCurveSettings> specificIndexConfigCache = new HashMap<>();
+        ConfiguredSpaceFillingCurveSettingsCache configuredSettings =
+                new ConfiguredSpaceFillingCurveSettingsCache(config);
+        for (CoordinateReferenceSystem crs : CoordinateReferenceSystem.all()) {
+            specificIndexConfigCache.put(crs, configuredSettings.forCRS(crs));
         }
 
-        return new IndexSpecificSpaceFillingCurveSettings( specificIndexConfigCache );
+        return new IndexSpecificSpaceFillingCurveSettings(specificIndexConfigCache);
     }
 
     /**
@@ -64,39 +60,33 @@ public class IndexSpecificSpaceFillingCurveSettings
      * @param crsCodePoint code of the {@link CoordinateReferenceSystem}.
      * @return the {@link SpaceFillingCurve} for the given coordinate reference system.
      */
-    public SpaceFillingCurve forCrs( int crsTableId, int crsCodePoint )
-    {
-        CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( crsTableId, crsCodePoint );
-        return forCrs( crs );
+    public SpaceFillingCurve forCrs(int crsTableId, int crsCodePoint) {
+        CoordinateReferenceSystem crs = CoordinateReferenceSystem.get(crsTableId, crsCodePoint);
+        return forCrs(crs);
     }
 
-    public SpaceFillingCurve forCrs( CoordinateReferenceSystem crs )
-    {
+    public SpaceFillingCurve forCrs(CoordinateReferenceSystem crs) {
         // Index-specific
-        SpaceFillingCurveSettings specificSetting = specificIndexConfigCache.get( crs );
-        if ( specificSetting != null )
-        {
+        SpaceFillingCurveSettings specificSetting = specificIndexConfigCache.get(crs);
+        if (specificSetting != null) {
             return specificSetting.curve();
         }
-        throw new IllegalStateException( "Index does not have any settings for coordinate reference system " + crs );
+        throw new IllegalStateException("Index does not have any settings for coordinate reference system " + crs);
     }
 
     /**
      * To make it possible to extract index configuration from index at runtime.
      */
-    public void visitIndexSpecificSettings( SettingVisitor visitor )
-    {
-        visitor.count( specificIndexConfigCache.size() );
-        for ( var keyValuePair : specificIndexConfigCache.keyValuesView() )
-        {
-            visitor.visit( keyValuePair.getOne(), keyValuePair.getTwo() );
+    public void visitIndexSpecificSettings(SettingVisitor visitor) {
+        visitor.count(specificIndexConfigCache.size());
+        for (var keyValuePair : specificIndexConfigCache.keyValuesView()) {
+            visitor.visit(keyValuePair.getOne(), keyValuePair.getTwo());
         }
     }
 
-    public interface SettingVisitor
-    {
-        void count( int count );
+    public interface SettingVisitor {
+        void count(int count);
 
-        void visit( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings );
+        void visit(CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings);
     }
 }

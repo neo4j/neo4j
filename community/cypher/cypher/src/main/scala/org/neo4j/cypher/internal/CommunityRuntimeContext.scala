@@ -32,27 +32,31 @@ import java.time.Clock
 /**
  * The regular community runtime context.
  */
-case class CommunityRuntimeContext(tokenContext: ReadTokenContext,
-                                   schemaRead: SchemaRead,
-                                   log: InternalLog,
-                                   config: CypherRuntimeConfiguration,
-                                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-                                  ) extends RuntimeContext {
+case class CommunityRuntimeContext(
+  tokenContext: ReadTokenContext,
+  schemaRead: SchemaRead,
+  log: InternalLog,
+  config: CypherRuntimeConfiguration,
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+) extends RuntimeContext {
 
   override def compileExpressions: Boolean = false
 }
 
-case class CommunityRuntimeContextManager(log: InternalLog, config: CypherRuntimeConfiguration) extends RuntimeContextManager[CommunityRuntimeContext] {
-  override def create(tokenContext: ReadTokenContext,
-                      schemaRead: SchemaRead,
-                      clock: Clock,
-                      debugOptions: CypherDebugOptions,
-                      ignore: Boolean,
-                      ignore2: Boolean,
-                      ignore3: CypherOperatorEngineOption,
-                      ignore4: CypherInterpretedPipesFallbackOption,
-                      anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-                     ): CommunityRuntimeContext =
+case class CommunityRuntimeContextManager(log: InternalLog, config: CypherRuntimeConfiguration)
+    extends RuntimeContextManager[CommunityRuntimeContext] {
+
+  override def create(
+    tokenContext: ReadTokenContext,
+    schemaRead: SchemaRead,
+    clock: Clock,
+    debugOptions: CypherDebugOptions,
+    ignore: Boolean,
+    ignore2: Boolean,
+    ignore3: CypherOperatorEngineOption,
+    ignore4: CypherInterpretedPipesFallbackOption,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): CommunityRuntimeContext =
     CommunityRuntimeContext(tokenContext, schemaRead, log, config, anonymousVariableNameGenerator)
 
   // As we rely completely on transaction bound resources in community,

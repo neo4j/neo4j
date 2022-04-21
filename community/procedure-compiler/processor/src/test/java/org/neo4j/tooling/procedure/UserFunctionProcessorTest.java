@@ -19,23 +19,20 @@
  */
 package org.neo4j.tooling.procedure;
 
-import com.google.testing.compile.CompilationRule;
-import com.google.testing.compile.CompileTester.UnsuccessfulCompilationClause;
-import org.junit.Rule;
-import org.junit.Test;
-
-import javax.annotation.processing.Processor;
-import javax.tools.JavaFileObject;
-
-import org.neo4j.tooling.procedure.testutils.JavaFileObjectUtils;
-
 import static com.google.common.truth.Truth.assert_;
 import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 import static java.util.Arrays.asList;
 
-public class UserFunctionProcessorTest extends ExtensionTestBase
-{
+import com.google.testing.compile.CompilationRule;
+import com.google.testing.compile.CompileTester.UnsuccessfulCompilationClause;
+import javax.annotation.processing.Processor;
+import javax.tools.JavaFileObject;
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.tooling.procedure.testutils.JavaFileObjectUtils;
+
+public class UserFunctionProcessorTest extends ExtensionTestBase {
 
     @Rule
     public CompilationRule compilation = new CompilationRule();
@@ -43,100 +40,131 @@ public class UserFunctionProcessorTest extends ExtensionTestBase
     private Processor processor = new UserFunctionProcessor();
 
     @Test
-    public void fails_if_parameters_are_not_properly_annotated()
-    {
+    public void fails_if_parameters_are_not_properly_annotated() {
         JavaFileObject function =
-                JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/missing_name/MissingNameUserFunction.java" );
+                JavaFileObjectUtils.INSTANCE.procedureSource("invalid/missing_name/MissingNameUserFunction.java");
 
-        UnsuccessfulCompilationClause compilation =
-                assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
-                        .withErrorCount( 2 );
+        UnsuccessfulCompilationClause compilation = assert_()
+                .about(javaSource())
+                .that(function)
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(2);
 
-        compilation.withErrorContaining( "@org.neo4j.procedure.Name usage error: missing on parameter <parameter>" )
-                .in( function ).onLine( 28 );
+        compilation
+                .withErrorContaining("@org.neo4j.procedure.Name usage error: missing on parameter <parameter>")
+                .in(function)
+                .onLine(28);
 
-        compilation.withErrorContaining( "@org.neo4j.procedure.Name usage error: missing on parameter <otherParam>" )
-                .in( function ).onLine( 28 );
+        compilation
+                .withErrorContaining("@org.neo4j.procedure.Name usage error: missing on parameter <otherParam>")
+                .in(function)
+                .onLine(28);
     }
 
     @Test
-    public void fails_if_return_type_is_incorrect()
-    {
-        JavaFileObject function = JavaFileObjectUtils.INSTANCE
-                .procedureSource( "invalid/bad_return_type/BadReturnTypeUserFunction.java" );
+    public void fails_if_return_type_is_incorrect() {
+        JavaFileObject function =
+                JavaFileObjectUtils.INSTANCE.procedureSource("invalid/bad_return_type/BadReturnTypeUserFunction.java");
 
-        assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile().withErrorCount( 1 )
+        assert_()
+                .about(javaSource())
+                .that(function)
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(1)
                 .withErrorContaining(
-                        "Unsupported return type <java.util.stream.Stream<java.lang.Long>> of function defined in " +
-                "<org.neo4j.tooling.procedure.procedures.invalid.bad_return_type.BadReturnTypeUserFunction#wrongReturnTypeFunction>" )
-                .in( function ).onLine( 36 );
+                        "Unsupported return type <java.util.stream.Stream<java.lang.Long>> of function defined in "
+                                + "<org.neo4j.tooling.procedure.procedures.invalid.bad_return_type.BadReturnTypeUserFunction#wrongReturnTypeFunction>")
+                .in(function)
+                .onLine(36);
     }
 
     @Test
-    public void fails_if_function_primitive_input_type_is_not_supported()
-    {
-        JavaFileObject function = JavaFileObjectUtils.INSTANCE
-                .procedureSource( "invalid/bad_proc_input_type/BadPrimitiveInputUserFunction.java" );
+    public void fails_if_function_primitive_input_type_is_not_supported() {
+        JavaFileObject function = JavaFileObjectUtils.INSTANCE.procedureSource(
+                "invalid/bad_proc_input_type/BadPrimitiveInputUserFunction.java");
 
-        assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile().withErrorCount( 1 )
+        assert_()
+                .about(javaSource())
+                .that(function)
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(1)
                 .withErrorContaining(
-                        "Unsupported parameter type <short> of procedure|function BadPrimitiveInputUserFunction#doSomething" )
-                .in( function ).onLine( 32 );
+                        "Unsupported parameter type <short> of procedure|function BadPrimitiveInputUserFunction#doSomething")
+                .in(function)
+                .onLine(32);
     }
 
     @Test
-    public void fails_if_function_generic_input_type_is_not_supported()
-    {
-        JavaFileObject function = JavaFileObjectUtils.INSTANCE
-                .procedureSource( "invalid/bad_proc_input_type/BadGenericInputUserFunction.java" );
+    public void fails_if_function_generic_input_type_is_not_supported() {
+        JavaFileObject function = JavaFileObjectUtils.INSTANCE.procedureSource(
+                "invalid/bad_proc_input_type/BadGenericInputUserFunction.java");
 
-        UnsuccessfulCompilationClause compilation =
-                assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
-                        .withErrorCount( 4 );
+        UnsuccessfulCompilationClause compilation = assert_()
+                .about(javaSource())
+                .that(function)
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(4);
 
-        compilation.withErrorContaining( "Unsupported parameter type " +
-                "<java.util.List<java.util.List<java.util.Map<java.lang.String,java.lang.Thread>>>>" +
-                " of procedure|function BadGenericInputUserFunction#doSomething" ).in( function ).onLine( 36 );
+        compilation
+                .withErrorContaining("Unsupported parameter type "
+                        + "<java.util.List<java.util.List<java.util.Map<java.lang.String,java.lang.Thread>>>>"
+                        + " of procedure|function BadGenericInputUserFunction#doSomething")
+                .in(function)
+                .onLine(36);
 
-        compilation.withErrorContaining( "Unsupported parameter type " +
-                "<java.util.Map<java.lang.String,java.util.List<java.util.concurrent.ExecutorService>>>" +
-                " of procedure|function BadGenericInputUserFunction#doSomething2" ).in( function ).onLine( 42 );
+        compilation
+                .withErrorContaining("Unsupported parameter type "
+                        + "<java.util.Map<java.lang.String,java.util.List<java.util.concurrent.ExecutorService>>>"
+                        + " of procedure|function BadGenericInputUserFunction#doSomething2")
+                .in(function)
+                .onLine(42);
 
-        compilation.withErrorContaining(
-                "Unsupported parameter type <java.util.Map> of procedure|function BadGenericInputUserFunction#doSomething3" )
-                .in( function ).onLine( 48 );
+        compilation
+                .withErrorContaining(
+                        "Unsupported parameter type <java.util.Map> of procedure|function BadGenericInputUserFunction#doSomething3")
+                .in(function)
+                .onLine(48);
 
-        compilation.withErrorContaining(
-                "Unsupported parameter type <java.lang.String[]> of procedure|function BadGenericInputUserFunction#doSomething4" )
-                   .in( function ).onLine( 54 );
+        compilation
+                .withErrorContaining(
+                        "Unsupported parameter type <java.lang.String[]> of procedure|function BadGenericInputUserFunction#doSomething4")
+                .in(function)
+                .onLine(54);
     }
 
     @Test
-    public void fails_if_duplicate_functions_are_declared()
-    {
+    public void fails_if_duplicate_functions_are_declared() {
         JavaFileObject firstDuplicate =
-                JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/duplicated/UserFunction1.java" );
+                JavaFileObjectUtils.INSTANCE.procedureSource("invalid/duplicated/UserFunction1.java");
         JavaFileObject secondDuplicate =
-                JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/duplicated/UserFunction2.java" );
+                JavaFileObjectUtils.INSTANCE.procedureSource("invalid/duplicated/UserFunction2.java");
 
-        assert_().about( javaSources() ).that( asList( firstDuplicate, secondDuplicate ) ).processedWith( processor() )
-                .failsToCompile().withErrorCount( 2 ).withErrorContaining(
-                "Procedure|function name <org.neo4j.tooling.procedure.procedures.invalid.duplicated.foobar> is " +
-                        "already defined 2 times. It should be defined only once!" );
+        assert_()
+                .about(javaSources())
+                .that(asList(firstDuplicate, secondDuplicate))
+                .processedWith(processor())
+                .failsToCompile()
+                .withErrorCount(2)
+                .withErrorContaining(
+                        "Procedure|function name <org.neo4j.tooling.procedure.procedures.invalid.duplicated.foobar> is "
+                                + "already defined 2 times. It should be defined only once!");
     }
 
     @Test
-    public void succeeds_to_process_valid_stored_procedures()
-    {
-        assert_().about( javaSource() )
-                .that( JavaFileObjectUtils.INSTANCE.procedureSource( "valid/UserFunctions.java" ) )
-                .processedWith( processor() ).compilesWithoutError();
-
+    public void succeeds_to_process_valid_stored_procedures() {
+        assert_()
+                .about(javaSource())
+                .that(JavaFileObjectUtils.INSTANCE.procedureSource("valid/UserFunctions.java"))
+                .processedWith(processor())
+                .compilesWithoutError();
     }
 
     @Override
-    Processor processor()
-    {
+    Processor processor() {
         return processor;
     }
 }

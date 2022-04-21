@@ -19,6 +19,21 @@
  */
 package org.neo4j.graphdb.facade;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
+
+import java.nio.file.Files;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -26,13 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.nio.file.Files;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
@@ -54,177 +62,169 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
-
 @TestDirectoryExtension
-class DatabaseManagementServiceFactoryIT
-{
+class DatabaseManagementServiceFactoryIT {
     @Inject
     private TestDirectory testDirectory;
 
     private DatabaseManagementService managementService;
 
     @Nested
-    class ManagementServiceIT
-    {
+    class ManagementServiceIT {
         @BeforeEach
-        void setUp()
-        {
+        void setUp() {
             managementService = getDatabaseManagementService();
         }
 
         @AfterEach
-        void tearDown()
-        {
-            if ( managementService != null )
-            {
+        void tearDown() {
+            if (managementService != null) {
                 managementService.shutdown();
             }
         }
 
         @Test
-        void reportCorrectDatabaseNames()
-        {
-            GraphDatabaseService system = managementService.database( SYSTEM_DATABASE_NAME );
-            GraphDatabaseService neo4j = managementService.database( DEFAULT_DATABASE_NAME );
-            assertEquals( SYSTEM_DATABASE_NAME, system.databaseName() );
-            assertEquals( DEFAULT_DATABASE_NAME, neo4j.databaseName() );
+        void reportCorrectDatabaseNames() {
+            GraphDatabaseService system = managementService.database(SYSTEM_DATABASE_NAME);
+            GraphDatabaseService neo4j = managementService.database(DEFAULT_DATABASE_NAME);
+            assertEquals(SYSTEM_DATABASE_NAME, system.databaseName());
+            assertEquals(DEFAULT_DATABASE_NAME, neo4j.databaseName());
         }
 
         @Test
-        void haveTwoDatabasesByDefault()
-        {
-            assertEquals( 2, managementService.listDatabases().size() );
+        void haveTwoDatabasesByDefault() {
+            assertEquals(2, managementService.listDatabases().size());
         }
 
         @Test
-        void failToCreateNonDefaultDatabase()
-        {
-            assertThrows( DatabaseManagementException.class, () -> managementService.createDatabase( "newDb" ) );
+        void failToCreateNonDefaultDatabase() {
+            assertThrows(DatabaseManagementException.class, () -> managementService.createDatabase("newDb"));
         }
 
         @Test
-        void failToDropDatabase()
-        {
-            for ( String databaseName : managementService.listDatabases() )
-            {
-                assertThrows( DatabaseManagementException.class, () -> managementService.dropDatabase( databaseName ) );
+        void failToDropDatabase() {
+            for (String databaseName : managementService.listDatabases()) {
+                assertThrows(DatabaseManagementException.class, () -> managementService.dropDatabase(databaseName));
             }
         }
 
         @Test
-        void failToStartStopSystemDatabase()
-        {
-            assertThrows( DatabaseManagementException.class, () -> managementService.shutdownDatabase( SYSTEM_DATABASE_NAME ) );
-            assertThrows( DatabaseManagementException.class, () -> managementService.startDatabase( SYSTEM_DATABASE_NAME ) );
+        void failToStartStopSystemDatabase() {
+            assertThrows(
+                    DatabaseManagementException.class, () -> managementService.shutdownDatabase(SYSTEM_DATABASE_NAME));
+            assertThrows(
+                    DatabaseManagementException.class, () -> managementService.startDatabase(SYSTEM_DATABASE_NAME));
         }
 
         @Test
-        void shutdownShouldShutdownAllDatabases()
-        {
-            ShutdownListenerDatabaseEventListener shutdownListenerDatabaseEventListener = new ShutdownListenerDatabaseEventListener();
-            managementService.registerDatabaseEventListener( shutdownListenerDatabaseEventListener );
+        void shutdownShouldShutdownAllDatabases() {
+            ShutdownListenerDatabaseEventListener shutdownListenerDatabaseEventListener =
+                    new ShutdownListenerDatabaseEventListener();
+            managementService.registerDatabaseEventListener(shutdownListenerDatabaseEventListener);
             managementService.shutdown();
             managementService = null;
 
-            assertEquals( 2, shutdownListenerDatabaseEventListener.getShutdownInvocations() );
+            assertEquals(2, shutdownListenerDatabaseEventListener.getShutdownInvocations());
         }
 
-        private DatabaseManagementService getDatabaseManagementService()
-        {
+        private DatabaseManagementService getDatabaseManagementService() {
             DatabaseManagementServiceFactory databaseManagementServiceFactory =
-                    new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, CommunityEditionModule::new );
+                    new DatabaseManagementServiceFactory(DbmsInfo.COMMUNITY, CommunityEditionModule::new);
             Config cfg = Config.newBuilder()
-                               .set( neo4j_home, testDirectory.absolutePath() )
-                               .set( preallocate_logical_logs, false )
-                               .build();
-            return databaseManagementServiceFactory.build( cfg, GraphDatabaseDependencies.newDependencies() );
+                    .set(neo4j_home, testDirectory.absolutePath())
+                    .set(preallocate_logical_logs, false)
+                    .build();
+            return databaseManagementServiceFactory.build(cfg, GraphDatabaseDependencies.newDependencies());
         }
     }
 
-    private static Stream<Arguments> serverSettings()
-    {
+    private static Stream<Arguments> serverSettings() {
         return Stream.of(
-                arguments( Map.of(), DisabledNeoWebServer.class, null, null ),
-                arguments( Map.of( HttpConnector.enabled, true, HttpConnector.listen_address, new SocketAddress( "localhost", 0 ) ),
-                           CommunityNeoWebServer.class, null, null ),
-                arguments( Map.of(
-                        HttpConnector.enabled, true,
-                        HttpConnector.listen_address, new SocketAddress( "localhost", 0 ),
-                        ServerSettings.http_enabled_modules, Set.of()
-                           ),
-                           DisabledNeoWebServer.class, null, null ),
-                arguments( Map.of( HttpsConnector.enabled, true, HttpsConnector.listen_address, new SocketAddress( "localhost", 0 ) ),
-                           null,
-                           LifecycleException.class, "HTTPS set to enabled, but no SSL policy provided" )
-        );
+                arguments(Map.of(), DisabledNeoWebServer.class, null, null),
+                arguments(
+                        Map.of(
+                                HttpConnector.enabled,
+                                true,
+                                HttpConnector.listen_address,
+                                new SocketAddress("localhost", 0)),
+                        CommunityNeoWebServer.class,
+                        null,
+                        null),
+                arguments(
+                        Map.of(
+                                HttpConnector.enabled,
+                                true,
+                                HttpConnector.listen_address,
+                                new SocketAddress("localhost", 0),
+                                ServerSettings.http_enabled_modules,
+                                Set.of()),
+                        DisabledNeoWebServer.class,
+                        null,
+                        null),
+                arguments(
+                        Map.of(
+                                HttpsConnector.enabled,
+                                true,
+                                HttpsConnector.listen_address,
+                                new SocketAddress("localhost", 0)),
+                        null,
+                        LifecycleException.class,
+                        "HTTPS set to enabled, but no SSL policy provided"));
     }
 
     @Nested
-    class ConfigurationIT
-    {
+    class ConfigurationIT {
         @ParameterizedTest
-        @MethodSource( "org.neo4j.graphdb.facade.DatabaseManagementServiceFactoryIT#serverSettings" )
-        void shouldEnableWebServerIfConfiguredAndNecessary( Map<Setting<?>,Object> settings, Class<?> expectedServerClass,
-                                                            Class<? extends Exception> expectedException, String execptedMessage )
-        {
+        @MethodSource("org.neo4j.graphdb.facade.DatabaseManagementServiceFactoryIT#serverSettings")
+        void shouldEnableWebServerIfConfiguredAndNecessary(
+                Map<Setting<?>, Object> settings,
+                Class<?> expectedServerClass,
+                Class<? extends Exception> expectedException,
+                String execptedMessage) {
 
-            assertTrue( Files.isDirectory( testDirectory.directory( "certificates", "certificates", "https" ) ) );
+            assertTrue(Files.isDirectory(testDirectory.directory("certificates", "certificates", "https")));
             Config cfg = Config.newBuilder()
-                               .set( neo4j_home, testDirectory.homePath().toAbsolutePath() )
-                               .set( preallocate_logical_logs, false )
-                               .set( settings )
-                               .build();
+                    .set(neo4j_home, testDirectory.homePath().toAbsolutePath())
+                    .set(preallocate_logical_logs, false)
+                    .set(settings)
+                    .build();
             DatabaseManagementServiceFactory databaseManagementServiceFactory =
-                    new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, CommunityEditionModule::new );
+                    new DatabaseManagementServiceFactory(DbmsInfo.COMMUNITY, CommunityEditionModule::new);
             DatabaseManagementService dbms = null;
-            try
-            {
-                if ( expectedException != null )
-                {
-                    // When HTTPs is enabled, server startup fails due to missing SSL policy. This is fine for this test.
-                    var cause = assertThrows( RuntimeException.class,
-                                              () -> databaseManagementServiceFactory.build( cfg, GraphDatabaseDependencies.newDependencies() ) ).getCause();
-                    assertTrue( expectedException.isInstance( cause ) );
-                    assertTrue( cause.getMessage().contains( execptedMessage ) );
+            try {
+                if (expectedException != null) {
+                    // When HTTPs is enabled, server startup fails due to missing SSL policy. This is fine for this
+                    // test.
+                    var cause = assertThrows(
+                                    RuntimeException.class,
+                                    () -> databaseManagementServiceFactory.build(
+                                            cfg, GraphDatabaseDependencies.newDependencies()))
+                            .getCause();
+                    assertTrue(expectedException.isInstance(cause));
+                    assertTrue(cause.getMessage().contains(execptedMessage));
+                } else {
+                    dbms = databaseManagementServiceFactory.build(cfg, GraphDatabaseDependencies.newDependencies());
+                    var dependencyResolver =
+                            ((GraphDatabaseAPI) dbms.database(SYSTEM_DATABASE_NAME)).getDependencyResolver();
+                    assertDoesNotThrow(() -> dependencyResolver.resolveDependency(expectedServerClass));
                 }
-                else
-                {
-                    dbms = databaseManagementServiceFactory.build( cfg, GraphDatabaseDependencies.newDependencies() );
-                    var dependencyResolver = ((GraphDatabaseAPI) dbms.database( SYSTEM_DATABASE_NAME )).getDependencyResolver();
-                    assertDoesNotThrow( () -> dependencyResolver.resolveDependency( expectedServerClass ) );
-                }
-            }
-            finally
-            {
-                if ( dbms != null )
-                {
+            } finally {
+                if (dbms != null) {
                     dbms.shutdown();
                 }
             }
         }
     }
 
-    private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter
-    {
+    private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter {
         private final AtomicLong shutdownInvocations = new AtomicLong();
 
         @Override
-        public void databaseShutdown( DatabaseEventContext eventContext )
-        {
+        public void databaseShutdown(DatabaseEventContext eventContext) {
             shutdownInvocations.incrementAndGet();
         }
 
-        long getShutdownInvocations()
-        {
+        long getShutdownInvocations() {
             return shutdownInvocations.get();
         }
     }

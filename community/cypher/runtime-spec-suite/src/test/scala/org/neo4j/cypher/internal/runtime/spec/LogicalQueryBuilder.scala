@@ -36,19 +36,21 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 /**
  * Test help utility for hand-writing logical queries.
  */
-class LogicalQueryBuilder(tokenResolver: Resolver,
-                          hasLoadCsv: Boolean = false,
-                          override val idGen: IdGen = new SequentialIdGen(),
-                          wholePlan: Boolean = true)
-  extends AbstractLogicalPlanBuilder[LogicalQuery, LogicalQueryBuilder](tokenResolver, wholePlan) {
+class LogicalQueryBuilder(
+  tokenResolver: Resolver,
+  hasLoadCsv: Boolean = false,
+  override val idGen: IdGen = new SequentialIdGen(),
+  wholePlan: Boolean = true
+) extends AbstractLogicalPlanBuilder[LogicalQuery, LogicalQueryBuilder](tokenResolver, wholePlan) {
 
   private val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
     override val defaultValue: ProvidedOrder = ProvidedOrder.empty
   }
 
-  private val effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities with Default[LogicalPlan, EffectiveCardinality] {
-    override val defaultValue: EffectiveCardinality = EffectiveCardinality(Cardinality.SINGLE.amount)
-  }
+  private val effectiveCardinalities: EffectiveCardinalities =
+    new EffectiveCardinalities with Default[LogicalPlan, EffectiveCardinality] {
+      override val defaultValue: EffectiveCardinality = EffectiveCardinality(Cardinality.SINGLE.amount)
+    }
 
   private val leveragedOrders: LeveragedOrders = new LeveragedOrders
 
@@ -69,16 +71,18 @@ class LogicalQueryBuilder(tokenResolver: Resolver,
 
   def build(readOnly: Boolean = true): LogicalQuery = {
     val logicalPlan = buildLogicalPlan()
-    LogicalQuery(logicalPlan,
-                 "<<queryText>>",
-                 readOnly,
-                 resultColumns,
-                 semanticTable,
-                 effectiveCardinalities,
-                 providedOrders,
-                 leveragedOrders,
-                 hasLoadCsv,
-                 idGen,
-                 doProfile = false)
+    LogicalQuery(
+      logicalPlan,
+      "<<queryText>>",
+      readOnly,
+      resultColumns,
+      semanticTable,
+      effectiveCardinalities,
+      providedOrders,
+      leveragedOrders,
+      hasLoadCsv,
+      idGen,
+      doProfile = false
+    )
   }
 }

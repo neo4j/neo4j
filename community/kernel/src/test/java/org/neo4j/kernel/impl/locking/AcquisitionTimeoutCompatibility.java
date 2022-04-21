@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
@@ -37,114 +39,97 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupport
-{
+abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupport {
     private FakeClock clock;
     private Locks lockManager;
     private Locks.Client client;
     private Locks.Client client2;
 
-    AcquisitionTimeoutCompatibility( LockingCompatibilityTestSuite suite )
-    {
-        super( suite );
+    AcquisitionTimeoutCompatibility(LockingCompatibilityTestSuite suite) {
+        super(suite);
     }
 
     @BeforeEach
-    void setUp()
-    {
-        Config customConfig = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, Duration.ofMillis( 100 ) );
+    void setUp() {
+        Config customConfig = Config.defaults(GraphDatabaseSettings.lock_acquisition_timeout, Duration.ofMillis(100));
         clock = Clocks.fakeClock(100000, TimeUnit.MINUTES);
-        lockManager = suite.createLockManager( customConfig, clock );
+        lockManager = suite.createLockManager(customConfig, clock);
         client = lockManager.newClient();
         client2 = lockManager.newClient();
-        client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, customConfig );
-        client2.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, customConfig );
+        client.initialize(NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, customConfig);
+        client2.initialize(NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, customConfig);
     }
 
     @AfterEach
-    void tearDown()
-    {
+    void tearDown() {
         client2.close();
         client.close();
         lockManager.close();
     }
 
     @Test
-    void terminateSharedLockAcquisition() throws InterruptedException
-    {
-        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
-        Future<Boolean> sharedLockAcquisition = threadB.submit( () ->
-        {
-            client2.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
+    void terminateSharedLockAcquisition() throws InterruptedException {
+        client.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
+        Future<Boolean> sharedLockAcquisition = threadB.submit(() -> {
+            client2.acquireShared(LockTracer.NONE, ResourceTypes.NODE, 1);
             return true;
-        } );
+        });
 
         threadB.untilWaiting();
 
-        clock.forward( 101, TimeUnit.MILLISECONDS );
+        clock.forward(101, TimeUnit.MILLISECONDS);
 
-        verifyAcquisitionFailure( sharedLockAcquisition );
+        verifyAcquisitionFailure(sharedLockAcquisition);
     }
 
     @Test
-    void terminateExclusiveLockAcquisitionForExclusivelyLockedResource() throws InterruptedException
-    {
-        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
-        Future<Boolean> exclusiveLockAcquisition = threadB.submit( () ->
-        {
-            client2.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
+    void terminateExclusiveLockAcquisitionForExclusivelyLockedResource() throws InterruptedException {
+        client.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
+        Future<Boolean> exclusiveLockAcquisition = threadB.submit(() -> {
+            client2.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
             return true;
-        } );
+        });
 
         threadB.untilWaiting();
 
-        clock.forward( 101, TimeUnit.MILLISECONDS );
+        clock.forward(101, TimeUnit.MILLISECONDS);
 
-        verifyAcquisitionFailure( exclusiveLockAcquisition );
+        verifyAcquisitionFailure(exclusiveLockAcquisition);
     }
 
     @Test
-    void terminateExclusiveLockAcquisitionForSharedLockedResource() throws InterruptedException
-    {
-        client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
-        Future<Boolean> exclusiveLockAcquisition = threadB.submit( () ->
-        {
-            client2.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
+    void terminateExclusiveLockAcquisitionForSharedLockedResource() throws InterruptedException {
+        client.acquireShared(LockTracer.NONE, ResourceTypes.NODE, 1);
+        Future<Boolean> exclusiveLockAcquisition = threadB.submit(() -> {
+            client2.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
             return true;
-        } );
+        });
 
         threadB.untilWaiting();
 
-        clock.forward( 101, TimeUnit.MILLISECONDS );
+        clock.forward(101, TimeUnit.MILLISECONDS);
 
-        verifyAcquisitionFailure( exclusiveLockAcquisition );
+        verifyAcquisitionFailure(exclusiveLockAcquisition);
     }
 
     @Test
-    void terminateExclusiveLockAcquisitionForSharedLockedResourceWithSharedLockHeld() throws InterruptedException
-    {
-        client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
-        client2.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
-        Future<Boolean> exclusiveLockAcquisition = threadB.submit( () ->
-        {
-            client2.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
+    void terminateExclusiveLockAcquisitionForSharedLockedResourceWithSharedLockHeld() throws InterruptedException {
+        client.acquireShared(LockTracer.NONE, ResourceTypes.NODE, 1);
+        client2.acquireShared(LockTracer.NONE, ResourceTypes.NODE, 1);
+        Future<Boolean> exclusiveLockAcquisition = threadB.submit(() -> {
+            client2.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
             return true;
-        } );
+        });
 
         threadB.untilWaiting();
 
-        clock.forward( 101, TimeUnit.MILLISECONDS );
+        clock.forward(101, TimeUnit.MILLISECONDS);
 
-        verifyAcquisitionFailure( exclusiveLockAcquisition );
+        verifyAcquisitionFailure(exclusiveLockAcquisition);
     }
 
-    private static void verifyAcquisitionFailure( Future<Boolean> lockAcquisition )
-    {
-        ExecutionException exception = assertThrows( ExecutionException.class, lockAcquisition::get );
-        assertThat( getRootCause( exception ) ).isInstanceOf( LockAcquisitionTimeoutException.class );
+    private static void verifyAcquisitionFailure(Future<Boolean> lockAcquisition) {
+        ExecutionException exception = assertThrows(ExecutionException.class, lockAcquisition::get);
+        assertThat(getRootCause(exception)).isInstanceOf(LockAcquisitionTimeoutException.class);
     }
 }

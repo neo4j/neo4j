@@ -28,20 +28,22 @@ import org.neo4j.graphdb.schema.IndexType
 /**
  * For every node with the given label and property values, produces rows with that node.
  */
-case class NodeIndexSeek(idName: String,
-                         override val label: LabelToken,
-                         properties: Seq[IndexedProperty],
-                         valueExpr: QueryExpression[Expression],
-                         argumentIds: Set[String],
-                         indexOrder: IndexOrder,
-                         override val indexType: IndexType)
-                        (implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) {
+case class NodeIndexSeek(
+  idName: String,
+  override val label: LabelToken,
+  properties: Seq[IndexedProperty],
+  valueExpr: QueryExpression[Expression],
+  argumentIds: Set[String],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType
+)(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName
 
   override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexSeek =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))

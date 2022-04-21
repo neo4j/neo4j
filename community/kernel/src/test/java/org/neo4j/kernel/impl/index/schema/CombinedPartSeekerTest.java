@@ -19,91 +19,81 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
-
-@ExtendWith( RandomExtension.class )
-class CombinedPartSeekerTest
-{
-    private static final Comparator<Pair<MutableLong,MutableLong>> HIT_COMPARATOR = Comparator.comparing( Pair::getKey );
+@ExtendWith(RandomExtension.class)
+class CombinedPartSeekerTest {
+    private static final Comparator<Pair<MutableLong, MutableLong>> HIT_COMPARATOR = Comparator.comparing(Pair::getKey);
 
     @Inject
     RandomSupport random;
 
     @Test
-    void shouldCombineAllParts() throws IOException
-    {
+    void shouldCombineAllParts() throws IOException {
         // given
-        SimpleLongLayout layout = longLayout().withFixedSize( true ).build();
-        List<Seeker<MutableLong,MutableLong>> parts = new ArrayList<>();
-        int partCount = random.nextInt( 1, 20 );
-        List<Pair<MutableLong,MutableLong>> expectedAllData = new ArrayList<>();
-        int maxKey = random.nextInt( 100, 10_000 );
-        for ( int i = 0; i < partCount; i++ )
-        {
-            int dataSize = random.nextInt( 0, 100 );
-            List<Pair<MutableLong,MutableLong>> partData = new ArrayList<>( dataSize );
-            for ( int j = 0; j < dataSize; j++ )
-            {
-                long key = random.nextLong( maxKey );
-                partData.add( Pair.of( new MutableLong( key ), new MutableLong( key * 2 ) ) );
+        SimpleLongLayout layout = longLayout().withFixedSize(true).build();
+        List<Seeker<MutableLong, MutableLong>> parts = new ArrayList<>();
+        int partCount = random.nextInt(1, 20);
+        List<Pair<MutableLong, MutableLong>> expectedAllData = new ArrayList<>();
+        int maxKey = random.nextInt(100, 10_000);
+        for (int i = 0; i < partCount; i++) {
+            int dataSize = random.nextInt(0, 100);
+            List<Pair<MutableLong, MutableLong>> partData = new ArrayList<>(dataSize);
+            for (int j = 0; j < dataSize; j++) {
+                long key = random.nextLong(maxKey);
+                partData.add(Pair.of(new MutableLong(key), new MutableLong(key * 2)));
             }
-            partData.sort( HIT_COMPARATOR );
-            parts.add( new SimpleSeeker( partData ) );
-            expectedAllData.addAll( partData );
+            partData.sort(HIT_COMPARATOR);
+            parts.add(new SimpleSeeker(partData));
+            expectedAllData.addAll(partData);
         }
-        expectedAllData.sort( HIT_COMPARATOR );
+        expectedAllData.sort(HIT_COMPARATOR);
 
         // when
-        CombinedPartSeeker<MutableLong,MutableLong> combinedSeeker = new CombinedPartSeeker<>( layout, parts );
+        CombinedPartSeeker<MutableLong, MutableLong> combinedSeeker = new CombinedPartSeeker<>(layout, parts);
 
         // then
-        for ( Pair<MutableLong,MutableLong> expectedHit : expectedAllData )
-        {
-            assertTrue( combinedSeeker.next() );
+        for (Pair<MutableLong, MutableLong> expectedHit : expectedAllData) {
+            assertTrue(combinedSeeker.next());
 
-            assertEquals( expectedHit.getKey().longValue(), combinedSeeker.key().longValue() );
-            assertEquals( expectedHit.getValue().longValue(), combinedSeeker.value().longValue() );
+            assertEquals(expectedHit.getKey().longValue(), combinedSeeker.key().longValue());
+            assertEquals(
+                    expectedHit.getValue().longValue(), combinedSeeker.value().longValue());
         }
-        assertFalse( combinedSeeker.next() );
+        assertFalse(combinedSeeker.next());
         // And just ensure it will return false again after that
-        assertFalse( combinedSeeker.next() );
+        assertFalse(combinedSeeker.next());
     }
 
-    private static class SimpleSeeker implements Seeker<MutableLong,MutableLong>
-    {
-        private final Iterator<Pair<MutableLong,MutableLong>> data;
-        private Pair<MutableLong,MutableLong> current;
+    private static class SimpleSeeker implements Seeker<MutableLong, MutableLong> {
+        private final Iterator<Pair<MutableLong, MutableLong>> data;
+        private Pair<MutableLong, MutableLong> current;
 
-        private SimpleSeeker( Iterable<Pair<MutableLong,MutableLong>> data )
-        {
+        private SimpleSeeker(Iterable<Pair<MutableLong, MutableLong>> data) {
             this.data = data.iterator();
         }
 
         @Override
-        public boolean next()
-        {
-            if ( data.hasNext() )
-            {
+        public boolean next() {
+            if (data.hasNext()) {
                 current = data.next();
                 return true;
             }
@@ -111,20 +101,17 @@ class CombinedPartSeekerTest
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             // Nothing to close
         }
 
         @Override
-        public MutableLong key()
-        {
+        public MutableLong key() {
             return current.getKey();
         }
 
         @Override
-        public MutableLong value()
-        {
+        public MutableLong value() {
             return current.getValue();
         }
     }

@@ -19,30 +19,25 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public class UserSegment implements Segment
-{
+public class UserSegment implements Segment {
     private final String username;
 
-    public UserSegment( String username )
-    {
+    public UserSegment(String username) {
         this.username = username;
     }
 
     @Override
-    public boolean satisfies( Segment segment )
-    {
-        if ( segment instanceof UserSegment other )
-        {
-            return username == null || username.equals( other.username );
+    public boolean satisfies(Segment segment) {
+        if (segment instanceof UserSegment other) {
+            return username == null || username.equals(other.username);
         }
         return false;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return username == null ? "*" : username;
     }
 
-    public static final UserSegment ALL = new UserSegment( null );
+    public static final UserSegment ALL = new UserSegment(null);
 }

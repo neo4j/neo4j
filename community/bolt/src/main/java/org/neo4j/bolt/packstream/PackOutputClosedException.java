@@ -21,18 +21,15 @@ package org.neo4j.bolt.packstream;
 
 import java.io.IOException;
 
-public class PackOutputClosedException extends IOException
-{
+public class PackOutputClosedException extends IOException {
     private final String clientAddress;
 
-    public PackOutputClosedException( String message, String clientAddress )
-    {
-        super( message );
+    public PackOutputClosedException(String message, String clientAddress) {
+        super(message);
         this.clientAddress = clientAddress;
     }
 
-    public String clientAddress()
-    {
+    public String clientAddress() {
         return clientAddress;
     }
 }

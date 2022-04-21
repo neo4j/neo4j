@@ -19,19 +19,18 @@
  */
 package org.neo4j.io.fs.watcher;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * File system fileWatcher that will remember all the files that it was asked to watch
@@ -40,8 +39,7 @@ import static java.util.Objects.requireNonNull;
  *
  * Described pattern allows to perform repeatable startWatching/stopWatching cycle for pre-configured set of files provided by {@link DatabaseLayout}.
  */
-public class DatabaseLayoutWatcher extends LifecycleAdapter
-{
+public class DatabaseLayoutWatcher extends LifecycleAdapter {
     private final FileWatcher fileWatcher;
     private final DatabaseLayout databaseLayout;
     private final FileWatchEventListenerFactory listenerFactory;
@@ -49,77 +47,63 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
     private final Set<WatchedResource> watchedResources = ConcurrentHashMap.newKeySet();
     private FileWatchEventListener eventListener;
 
-    public DatabaseLayoutWatcher( FileWatcher fileWatcher, DatabaseLayout databaseLayout, FileWatchEventListenerFactory listenerFactory )
-    {
-        requireNonNull( fileWatcher );
-        requireNonNull( databaseLayout );
-        requireNonNull( listenerFactory );
+    public DatabaseLayoutWatcher(
+            FileWatcher fileWatcher, DatabaseLayout databaseLayout, FileWatchEventListenerFactory listenerFactory) {
+        requireNonNull(fileWatcher);
+        requireNonNull(databaseLayout);
+        requireNonNull(listenerFactory);
         this.fileWatcher = fileWatcher;
         this.databaseLayout = databaseLayout;
         this.listenerFactory = listenerFactory;
     }
 
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         watchDirectories();
-        eventListener = listenerFactory.createListener( watchedResources );
-        fileWatcher.addFileWatchEventListener( eventListener );
+        eventListener = listenerFactory.createListener(watchedResources);
+        fileWatcher.addFileWatchEventListener(eventListener);
     }
 
     @Override
-    public void stop() throws Exception
-    {
+    public void stop() throws Exception {
         stopWatching();
-        fileWatcher.removeFileWatchEventListener( eventListener );
+        fileWatcher.removeFileWatchEventListener(eventListener);
     }
 
-    private void watchDirectories()
-    {
+    private void watchDirectories() {
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
-        watch( databaseLayout.databaseDirectory() );
-        watch( databaseLayout.getTransactionLogsDirectory() );
-        watch( layout.databasesDirectory() );
-        watch( layout.transactionLogsRootDirectory() );
-        watch( layout.homeDirectory() );
+        watch(databaseLayout.databaseDirectory());
+        watch(databaseLayout.getTransactionLogsDirectory());
+        watch(layout.databasesDirectory());
+        watch(layout.transactionLogsRootDirectory());
+        watch(layout.homeDirectory());
         startWatching();
     }
 
-    private void watch( Path file )
-    {
-        filesToWatch.add( file );
+    private void watch(Path file) {
+        filesToWatch.add(file);
     }
 
-    private void stopWatching()
-    {
-        try
-        {
-            IOUtils.closeAll( watchedResources );
+    private void stopWatching() {
+        try {
+            IOUtils.closeAll(watchedResources);
             watchedResources.clear();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private void startWatching()
-    {
-        for ( Path fileToWatch : filesToWatch )
-        {
-            watchFile( fileToWatch );
+    private void startWatching() {
+        for (Path fileToWatch : filesToWatch) {
+            watchFile(fileToWatch);
         }
     }
 
-    private void watchFile( Path fileToWatch )
-    {
-        try
-        {
-            watchedResources.add( fileWatcher.watch( fileToWatch ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    private void watchFile(Path fileToWatch) {
+        try {
+            watchedResources.add(fileWatcher.watch(fileToWatch));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

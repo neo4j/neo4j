@@ -20,29 +20,23 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Map;
-
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
-class SpatialConfigVisitor implements IndexSpecificSpaceFillingCurveSettings.SettingVisitor
-{
-    private final Map<String,Value> map;
+class SpatialConfigVisitor implements IndexSpecificSpaceFillingCurveSettings.SettingVisitor {
+    private final Map<String, Value> map;
 
-    SpatialConfigVisitor( Map<String,Value> map )
-    {
+    SpatialConfigVisitor(Map<String, Value> map) {
         this.map = map;
     }
 
     @Override
-    public void count( int count )
-    {
-    }
+    public void count(int count) {}
 
     @Override
-    public void visit( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
-    {
-        SpatialIndexConfig.addSpatialConfig( map, crs, settings );
+    public void visit(CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings) {
+        SpatialIndexConfig.addSpatialConfig(map, crs, settings);
     }
 }

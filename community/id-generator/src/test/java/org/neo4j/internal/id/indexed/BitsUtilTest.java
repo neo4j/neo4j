@@ -19,96 +19,85 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import org.neo4j.test.RandomSupport;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith( RandomExtension.class )
-class BitsUtilTest
-{
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+
+@ExtendWith(RandomExtension.class)
+class BitsUtilTest {
     @Inject
     private RandomSupport random;
 
     @Test
-    void shouldSetBitsInSingleLong()
-    {
+    void shouldSetBitsInSingleLong() {
         // when
-        long bits = BitsUtil.bitsInSingleLong( 3, 20 );
+        long bits = BitsUtil.bitsInSingleLong(3, 20);
 
         // then
-        assertBits( bits, 3, 20 );
+        assertBits(bits, 3, 20);
     }
 
     @Test
-    void shouldSetBitsCrossingMultipleLongs()
-    {
+    void shouldSetBitsCrossingMultipleLongs() {
         // given
         long[] bits = new long[2];
 
         // when
-        BitsUtil.setBits( bits, 60, 8, 0 );
+        BitsUtil.setBits(bits, 60, 8, 0);
 
         // then
-        assertBits( bits, 60, 8, 0 );
+        assertBits(bits, 60, 8, 0);
     }
 
     @Test
-    void shouldSetBitsUpToTheLastBitInMultipleLongs()
-    {
+    void shouldSetBitsUpToTheLastBitInMultipleLongs() {
         // given
         long[] bits = new long[2];
 
         // when
-        BitsUtil.setBits( bits, 94, 34, 0 );
+        BitsUtil.setBits(bits, 94, 34, 0);
 
         // then
-        assertBits( bits, 94, 34, 0 );
+        assertBits(bits, 94, 34, 0);
     }
 
-    @RepeatedTest( 100 )
-    void shouldSetRandomBits()
-    {
+    @RepeatedTest(100)
+    void shouldSetRandomBits() {
         // given
         long[] bits = new long[2];
-        int start = random.nextInt( 128 );
-        int slots = random.nextInt( 128 - start ) + 1;
+        int start = random.nextInt(128);
+        int slots = random.nextInt(128 - start) + 1;
 
         // when
-        BitsUtil.setBits( bits, start, slots, 0 );
+        BitsUtil.setBits(bits, start, slots, 0);
 
         // then
-        assertBits( bits, start, slots, 0 );
+        assertBits(bits, start, slots, 0);
     }
 
-    private static void assertBits( long bits, int start, int slots )
-    {
-        for ( int i = 0; i < Long.SIZE; i++ )
-        {
+    private static void assertBits(long bits, int start, int slots) {
+        for (int i = 0; i < Long.SIZE; i++) {
             long mask = 1L << i;
             long expected = i >= start && i < start + slots ? mask : 0;
-            assertEquals( expected, bits & mask );
+            assertEquals(expected, bits & mask);
         }
     }
 
-    private static void assertBits( long[] bits, int start, int slots, int startArrayIndex )
-    {
-        for ( int i = startArrayIndex; slots > 0; i++ )
-        {
-            if ( start < Long.SIZE )
-            {
-                int slotsInThisLong = min( slots, Long.SIZE - start );
-                assertBits( bits[i], start, slotsInThisLong );
+    private static void assertBits(long[] bits, int start, int slots, int startArrayIndex) {
+        for (int i = startArrayIndex; slots > 0; i++) {
+            if (start < Long.SIZE) {
+                int slotsInThisLong = min(slots, Long.SIZE - start);
+                assertBits(bits[i], start, slotsInThisLong);
                 slots -= slotsInThisLong;
             }
-            start = max( 0, start - Long.SIZE );
+            start = max(0, start - Long.SIZE);
         }
     }
 }

@@ -20,18 +20,15 @@
 package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-class InjectionIncorrectUsage
-{
+class InjectionIncorrectUsage {
     @Inject
     private LifeSupport lifeSupport;
 
     @Test
-    void anything()
-    {
-        lifeSupport.add( new LifecycleAdapter() );
+    void anything() {
+        lifeSupport.add(new LifecycleAdapter());
     }
 }

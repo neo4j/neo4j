@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.compress;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,20 +37,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-import static java.util.stream.Collectors.toList;
-
-public class ZipUtils
-{
+public class ZipUtils {
     /**
      * Like {@link #zip(FileSystemAbstraction, Path, Path, boolean)}, with includeSourceFolder=false.
      */
-    public static void zip( FileSystemAbstraction fileSystem, Path sourceToCompress, Path destinationZip ) throws IOException
-    {
-        zip( fileSystem, sourceToCompress, destinationZip, false );
+    public static void zip(FileSystemAbstraction fileSystem, Path sourceToCompress, Path destinationZip)
+            throws IOException {
+        zip(fileSystem, sourceToCompress, destinationZip, false);
     }
 
     /**
@@ -62,39 +60,39 @@ public class ZipUtils
      *                                             This is only meaningful sourceToCompress is a directory.
      * @throws IOException when underlying file system access produce IOException
      */
-    public static void zip( FileSystemAbstraction fileSystem, Path sourceToCompress, Path destinationZip, boolean includeSourceDirectoryInRelativePath )
-            throws IOException
-    {
-        if ( !fileSystem.fileExists( sourceToCompress ) )
-        {
+    public static void zip(
+            FileSystemAbstraction fileSystem,
+            Path sourceToCompress,
+            Path destinationZip,
+            boolean includeSourceDirectoryInRelativePath)
+            throws IOException {
+        if (!fileSystem.fileExists(sourceToCompress)) {
             return;
         }
-        if ( isEmptyDirectory( fileSystem, sourceToCompress ) )
-        {
+        if (isEmptyDirectory(fileSystem, sourceToCompress)) {
             return;
         }
-        Map<String,String> env = Map.of( "create", "true" );
-        URI archiveAbsoluteURI = URI.create( "jar:file:" + destinationZip.toUri().getRawPath() );
+        Map<String, String> env = Map.of("create", "true");
+        URI archiveAbsoluteURI = URI.create("jar:file:" + destinationZip.toUri().getRawPath());
 
         Path baseForRelativePath = sourceToCompress;
-        if ( includeSourceDirectoryInRelativePath )
-        {
+        if (includeSourceDirectoryInRelativePath) {
             baseForRelativePath = sourceToCompress.getParent();
         }
 
-        try ( FileSystem zipFs = FileSystems.newFileSystem( archiveAbsoluteURI, env ) )
-        {
-            List<FileHandle> fileHandles = fileSystem.streamFilesRecursive( sourceToCompress ).collect( toList() );
-            for ( FileHandle fileHandle : fileHandles )
-            {
+        try (FileSystem zipFs = FileSystems.newFileSystem(archiveAbsoluteURI, env)) {
+            List<FileHandle> fileHandles =
+                    fileSystem.streamFilesRecursive(sourceToCompress).collect(toList());
+            for (FileHandle fileHandle : fileHandles) {
                 Path sourcePath = fileHandle.getPath();
-                Path zipFsPath = fileSystem.isDirectory( sourceToCompress ) ? zipFs.getPath( baseForRelativePath.relativize( sourcePath ).toString() )
-                                                                            : zipFs.getPath( sourcePath.getFileName().toString() );
-                if ( zipFsPath.getParent() != null )
-                {
-                    Files.createDirectories( zipFsPath.getParent() );
+                Path zipFsPath = fileSystem.isDirectory(sourceToCompress)
+                        ? zipFs.getPath(
+                                baseForRelativePath.relativize(sourcePath).toString())
+                        : zipFs.getPath(sourcePath.getFileName().toString());
+                if (zipFsPath.getParent() != null) {
+                    Files.createDirectories(zipFsPath.getParent());
                 }
-                Files.copy( sourcePath, zipFsPath );
+                Files.copy(sourcePath, zipFsPath);
             }
         }
     }
@@ -109,27 +107,23 @@ public class ZipUtils
      * @param targetFile Target file to which content will be unzipped, must align with content of zip file.
      * @throws IOException if something goes wrong.
      */
-    public static void unzipResource( Class<?> klass, String zipName, Path targetFile ) throws IOException
-    {
-        URL resource = klass.getResource( zipName );
-        if ( resource == null )
-        {
-            throw new NoSuchFileException( zipName );
+    public static void unzipResource(Class<?> klass, String zipName, Path targetFile) throws IOException {
+        URL resource = klass.getResource(zipName);
+        if (resource == null) {
+            throw new NoSuchFileException(zipName);
         }
         String sourceZip = resource.getFile();
-        try ( ZipFile zipFile = new ZipFile( sourceZip ) )
-        {
+        try (ZipFile zipFile = new ZipFile(sourceZip)) {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            if ( !entries.hasMoreElements() )
-            {
-                throw new IllegalStateException( "Zip file '" + sourceZip + "' does not contain any elements." );
+            if (!entries.hasMoreElements()) {
+                throw new IllegalStateException("Zip file '" + sourceZip + "' does not contain any elements.");
             }
             ZipEntry entry = entries.nextElement();
-            if ( !targetFile.getFileName().toString().equals( entry.getName() ) )
-            {
-                throw new IllegalStateException( "Zip file '" + sourceZip + "' does not contain target file '" + targetFile.getFileName() + "'." );
+            if (!targetFile.getFileName().toString().equals(entry.getName())) {
+                throw new IllegalStateException("Zip file '" + sourceZip + "' does not contain target file '"
+                        + targetFile.getFileName() + "'.");
             }
-            Files.copy( zipFile.getInputStream( entry ), targetFile );
+            Files.copy(zipFile.getInputStream(entry), targetFile);
         }
     }
 
@@ -140,36 +134,29 @@ public class ZipUtils
      * @param targetDirectory {@link Path} defining directory where zip should be extracted.
      * @throws IOException if something goes wrong.
      */
-    public static void unzip( String sourceZip, Path targetDirectory ) throws IOException
-    {
-        try ( ZipFile zipFile = new ZipFile( sourceZip ) )
-        {
+    public static void unzip(String sourceZip, Path targetDirectory) throws IOException {
+        try (ZipFile zipFile = new ZipFile(sourceZip)) {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            while ( entries.hasMoreElements() )
-            {
+            while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
-                if ( entry.isDirectory() )
-                {
-                    Files.createDirectories( targetDirectory.resolve( entry.getName() ) );
-                }
-                else
-                {
-                    try ( OutputStream file = new BufferedOutputStream( Files.newOutputStream( targetDirectory.resolve( entry.getName() ) ) );
-                          InputStream is = zipFile.getInputStream( entry ) )
-                    {
+                if (entry.isDirectory()) {
+                    Files.createDirectories(targetDirectory.resolve(entry.getName()));
+                } else {
+                    try (OutputStream file = new BufferedOutputStream(
+                                    Files.newOutputStream(targetDirectory.resolve(entry.getName())));
+                            InputStream is = zipFile.getInputStream(entry)) {
                         int read;
-                        is.transferTo( file );
+                        is.transferTo(file);
                     }
                 }
             }
         }
     }
 
-    private static boolean isEmptyDirectory( FileSystemAbstraction fileSystem, Path sourceToCompress ) throws IOException
-    {
-        if ( fileSystem.isDirectory( sourceToCompress ) )
-        {
-            Path[] files = fileSystem.listFiles( sourceToCompress );
+    private static boolean isEmptyDirectory(FileSystemAbstraction fileSystem, Path sourceToCompress)
+            throws IOException {
+        if (fileSystem.isDirectory(sourceToCompress)) {
+            Path[] files = fileSystem.listFiles(sourceToCompress);
             return files.length == 0;
         }
         return false;

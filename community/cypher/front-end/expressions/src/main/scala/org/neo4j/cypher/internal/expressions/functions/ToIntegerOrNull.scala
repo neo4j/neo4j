@@ -24,6 +24,12 @@ case object ToIntegerOrNull extends Function {
   override def name = "toIntegerOrNull"
 
   override val signatures = Vector(
-    TypeSignature(this, CTAny, CTInteger, "Converts a value to an integer value, or null if the value cannot be converted.", Category.SCALAR)
+    TypeSignature(
+      this,
+      CTAny,
+      CTInteger,
+      "Converts a value to an integer value, or null if the value cannot be converted.",
+      Category.SCALAR
+    )
   )
 }

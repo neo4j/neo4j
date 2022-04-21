@@ -19,127 +19,120 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
-class DefaultNonUniqueIndexSamplerTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
+
+class DefaultNonUniqueIndexSamplerTest {
     private final String value = "aaa";
 
     @Test
-    void shouldSampleNothing()
-    {
+    void shouldSampleNothing() {
         // given
-        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
 
         // when
         // nothing has been sampled
 
         // then
-        assertSampledValues( sampler, 0, 0, 0 );
+        assertSampledValues(sampler, 0, 0, 0);
     }
 
     @Test
-    void shouldSampleASingleValue()
-    {
+    void shouldSampleASingleValue() {
         // given
-        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
 
         // when
-        sampler.include( value, 2 );
+        sampler.include(value, 2);
 
         // then
-        assertSampledValues( sampler, 2, 1, 2 );
+        assertSampledValues(sampler, 2, 1, 2);
     }
 
     @Test
-    void shouldSampleDuplicateValues()
-    {
+    void shouldSampleDuplicateValues() {
         // given
-        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
 
         // when
-        sampler.include( value, 5 );
-        sampler.include( value, 4 );
-        sampler.include( "bbb", 3 );
+        sampler.include(value, 5);
+        sampler.include(value, 4);
+        sampler.include("bbb", 3);
 
         // then
-        assertSampledValues( sampler, 12, 2, 12 );
+        assertSampledValues(sampler, 12, 2, 12);
     }
 
     @Test
-    void shouldDivideTheSamplingInStepsNotBiggerThanBatchSize()
-    {
+    void shouldDivideTheSamplingInStepsNotBiggerThanBatchSize() {
         // given
-        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 1 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(1);
 
         // when
-        sampler.include( value, 5 );
-        sampler.include( value, 4 );
-        sampler.include( "bbb", 3 );
+        sampler.include(value, 5);
+        sampler.include(value, 4);
+        sampler.include("bbb", 3);
 
         // then
-        int expectedSampledSize = /* index size */ 12  / /* steps */ 3;
-        assertSampledValues( sampler, 12, 1, expectedSampledSize );
+        int expectedSampledSize = /* index size */ 12 / /* steps */ 3;
+        assertSampledValues(sampler, 12, 1, expectedSampledSize);
     }
 
     @Test
-    void shouldExcludeValuesFromTheCurrentSampling1()
-    {
+    void shouldExcludeValuesFromTheCurrentSampling1() {
         // given
-        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
-        sampler.include( value, 5 );
-        sampler.include( value, 4 );
-        sampler.include( "bbb", 3 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
+        sampler.include(value, 5);
+        sampler.include(value, 4);
+        sampler.include("bbb", 3);
 
         // when
-        sampler.exclude( value, 3 );
+        sampler.exclude(value, 3);
 
         // then
-        assertSampledValues( sampler, 9, 2, 9 );
+        assertSampledValues(sampler, 9, 2, 9);
     }
 
     @Test
-    void shouldExcludeValuesFromTheCurrentSampling2()
-    {
+    void shouldExcludeValuesFromTheCurrentSampling2() {
         // given
-        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
-        sampler.include( value, 1 );
-        sampler.include( value, 4 );
-        sampler.include( "bbb", 1 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
+        sampler.include(value, 1);
+        sampler.include(value, 4);
+        sampler.include("bbb", 1);
 
         // when
-        sampler.exclude( value, 4 );
+        sampler.exclude(value, 4);
 
         // then
-        assertSampledValues( sampler, 2, 2, 2 );
+        assertSampledValues(sampler, 2, 2, 2);
     }
 
     @Test
-    void shouldDoNothingWhenExcludingAValueInAnEmptySample()
-    {
+    void shouldDoNothingWhenExcludingAValueInAnEmptySample() {
         // given
-        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
 
         // when
-        sampler.exclude( value, 1 );
-        sampler.include( value, 1 );
+        sampler.exclude(value, 1);
+        sampler.include(value, 1);
 
         // then
-        assertSampledValues( sampler, 1, 1, 1 );
+        assertSampledValues(sampler, 1, 1, 1);
     }
 
-    private static void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues,
-            long expectedSampledSize )
-    {
-        IndexSample sample = sampler.sample( NULL_CONTEXT );
-        assertEquals( expectedIndexSize, sample.indexSize() );
-        assertEquals( expectedUniqueValues, sample.uniqueValues() );
-        assertEquals( expectedSampledSize, sample.sampleSize() );
+    private static void assertSampledValues(
+            NonUniqueIndexSampler sampler,
+            long expectedIndexSize,
+            long expectedUniqueValues,
+            long expectedSampledSize) {
+        IndexSample sample = sampler.sample(NULL_CONTEXT);
+        assertEquals(expectedIndexSize, sample.indexSize());
+        assertEquals(expectedUniqueValues, sample.uniqueValues());
+        assertEquals(expectedSampledSize, sample.sampleSize());
     }
 }

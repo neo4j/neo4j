@@ -19,13 +19,12 @@
  */
 package org.neo4j.shell.commands;
 
+import static java.lang.String.format;
+
+import java.util.List;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-
-import java.util.List;
-
-import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
@@ -33,113 +32,93 @@ import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
-import static java.lang.String.format;
-
 /**
  * Connects to a database
  */
-public class Connect implements Command
-{
+public class Connect implements Command {
     private final CypherShell shell;
     private final CypherShellTerminal terminal;
     private final ArgumentParser argumentParser;
 
-    public Connect( CypherShell shell, CypherShellTerminal terminal )
-    {
+    public Connect(CypherShell shell, CypherShellTerminal terminal) {
         this.shell = shell;
         this.terminal = terminal;
         this.argumentParser = setupParser();
     }
 
     @Override
-    public void execute( final List<String> args ) throws ExitException, CommandException
-    {
-        if ( shell.isConnected() )
-        {
-            throw new CommandException( "Already connected" );
+    public void execute(final List<String> args) throws ExitException, CommandException {
+        if (shell.isConnected()) {
+            throw new CommandException("Already connected");
         }
 
-        connect( args );
+        connect(args);
     }
 
-    private void connect( List<String> stringArgs ) throws CommandException
-    {
-        requireArgumentCount( stringArgs, 0, 6 );
-        try
-        {
-            var args = argumentParser.parseArgs( stringArgs.toArray( new String[0] ) );
-            var user = args.getString( "username" );
-            var password = args.getString( "password" );
+    private void connect(List<String> stringArgs) throws CommandException {
+        requireArgumentCount(stringArgs, 0, 6);
+        try {
+            var args = argumentParser.parseArgs(stringArgs.toArray(new String[0]));
+            var user = args.getString("username");
+            var password = args.getString("password");
 
-            if ( user == null && password != null )
+            if (user == null && password != null) {
+                throw new CommandException(
+                        "You cannot provide password only, please provide a username using '-u USERNAME'");
+            } else if (user == null) // We know password is null because of the previous if statement
             {
-                throw new CommandException( "You cannot provide password only, please provide a username using '-u USERNAME'" );
-            }
-            else if ( user == null ) // We know password is null because of the previous if statement
-            {
-                user = promptForNonEmptyText( "username", null );
-                password = promptForText( "password", '*' );
-            }
-            else if ( password == null )
-            {
-                password = promptForText( "password", '*' );
+                user = promptForNonEmptyText("username", null);
+                password = promptForText("password", '*');
+            } else if (password == null) {
+                password = promptForText("password", '*');
             }
 
-            shell.connect( user, password, args.getString( "database" ) );
-        }
-        catch ( ArgumentParserException e )
-        {
-            throw new CommandException( format( "Invalid input string: '%s', usage: ':connect %s'", String.join( " ", stringArgs ), metadata().usage() ) );
+            shell.connect(user, password, args.getString("database"));
+        } catch (ArgumentParserException e) {
+            throw new CommandException(format(
+                    "Invalid input string: '%s', usage: ':connect %s'",
+                    String.join(" ", stringArgs), metadata().usage()));
         }
     }
 
-    private ArgumentParser setupParser()
-    {
-        var parser = ArgumentParsers.newFor( metadata().name() ).build();
-        parser.addArgument( "-d", "--database" ).setDefault( "" );
-        parser.addArgument( "-u", "--username" );
-        parser.addArgument( "-p", "--password" );
+    private ArgumentParser setupParser() {
+        var parser = ArgumentParsers.newFor(metadata().name()).build();
+        parser.addArgument("-d", "--database").setDefault("");
+        parser.addArgument("-u", "--username");
+        parser.addArgument("-p", "--password");
         return parser;
     }
 
-    private String promptForNonEmptyText( String prompt, Character mask ) throws CommandException
-    {
-        String text = promptForText( prompt, mask );
-        if ( !text.isEmpty() )
-        {
+    private String promptForNonEmptyText(String prompt, Character mask) throws CommandException {
+        String text = promptForText(prompt, mask);
+        if (!text.isEmpty()) {
             return text;
         }
-        terminal.write().println( prompt + " cannot be empty" );
+        terminal.write().println(prompt + " cannot be empty");
         terminal.write().println();
-        return promptForNonEmptyText( prompt, mask );
+        return promptForNonEmptyText(prompt, mask);
     }
 
-    private String promptForText( String prompt, Character mask ) throws CommandException
-    {
-        try
-        {
-            return terminal.read().simplePrompt( prompt + ": ", mask );
-        }
-        catch ( NoMoreInputException | UserInterruptException e )
-        {
-            throw new CommandException( "No text could be read, exiting..." );
+    private String promptForText(String prompt, Character mask) throws CommandException {
+        try {
+            return terminal.read().simplePrompt(prompt + ": ", mask);
+        } catch (NoMoreInputException | UserInterruptException e) {
+            throw new CommandException("No text could be read, exiting...");
         }
     }
 
-    public static class Factory implements Command.Factory
-    {
+    public static class Factory implements Command.Factory {
         @Override
-        public Metadata metadata()
-        {
-            var usage = "[-u USERNAME, --username USERNAME], [-p PASSWORD, --password PASSWORD], [-d DATABASE, --database DATABASE]";
-            var help = format( ":connect %s, connects to a database", usage );
-            return new Metadata( ":connect", "Connects to a database", usage, help, List.of() );
+        public Metadata metadata() {
+            var usage =
+                    "[-u USERNAME, --username USERNAME], [-p PASSWORD, --password PASSWORD], [-d DATABASE, --database DATABASE]";
+            var help = format(":connect %s, connects to a database", usage);
+            return new Metadata(":connect", "Connects to a database", usage, help, List.of());
         }
 
         @Override
-        public Command executor( Arguments args )
-        {
-            return new Connect( args.cypherShell(), args.terminal() );
+        public Command executor(Arguments args) {
+            return new Connect(args.cypherShell(), args.terminal());
         }
     }
 }

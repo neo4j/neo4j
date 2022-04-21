@@ -19,32 +19,27 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
+import static org.apache.lucene.analysis.en.EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 
-import static org.apache.lucene.analysis.en.EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
-
 @ServiceProvider
-public class Standard extends AnalyzerProvider
-{
-    public Standard()
-    {
-        super( "standard" );
+public class Standard extends AnalyzerProvider {
+    public Standard() {
+        super("standard");
     }
 
     @Override
-    public Analyzer createAnalyzer()
-    {
-        return new StandardAnalyzer( ENGLISH_STOP_WORDS_SET );
+    public Analyzer createAnalyzer() {
+        return new StandardAnalyzer(ENGLISH_STOP_WORDS_SET);
     }
 
     @Override
-    public String description()
-    {
-        return "The standard analyzer. Tokenizes on non-letter and filters out English stop words and punctuation. " +
-                "Does no stemming, but takes care to keep likely product names, URLs and email addresses as single terms.";
+    public String description() {
+        return "The standard analyzer. Tokenizes on non-letter and filters out English stop words and punctuation. "
+                + "Does no stemming, but takes care to keep likely product names, URLs and email addresses as single terms.";
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.ssl;
 
+import java.util.List;
+import java.util.UUID;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -27,10 +29,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import java.util.List;
-import java.util.UUID;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -38,72 +36,66 @@ import org.neo4j.server.web.HttpConnectorFactory;
 import org.neo4j.server.web.JettyThreadCalculator;
 import org.neo4j.ssl.SslPolicy;
 
-public class SslSocketConnectorFactory extends HttpConnectorFactory
-{
+public class SslSocketConnectorFactory extends HttpConnectorFactory {
     private static final String NAME = "https";
 
     private final Customizer requestCustomizer;
 
-    public SslSocketConnectorFactory( NetworkConnectionTracker connectionTracker, Config config, ByteBufferPool byteBufferPool )
-    {
-        super( NAME, connectionTracker, config, byteBufferPool );
-        requestCustomizer = new HttpsRequestCustomizer( config );
+    public SslSocketConnectorFactory(
+            NetworkConnectionTracker connectionTracker, Config config, ByteBufferPool byteBufferPool) {
+        super(NAME, connectionTracker, config, byteBufferPool);
+        requestCustomizer = new HttpsRequestCustomizer(config);
     }
 
     @Override
-    protected HttpConfiguration createHttpConfig()
-    {
+    protected HttpConfiguration createHttpConfig() {
         HttpConfiguration httpConfig = super.createHttpConfig();
-        httpConfig.addCustomizer( requestCustomizer );
+        httpConfig.addCustomizer(requestCustomizer);
         return httpConfig;
     }
 
-    public ServerConnector createConnector( Server server, SslPolicy sslPolicy, SocketAddress address,
-            JettyThreadCalculator jettyThreadCalculator )
-    {
-        SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( sslPolicy );
-        return createConnector( server, address, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
+    public ServerConnector createConnector(
+            Server server, SslPolicy sslPolicy, SocketAddress address, JettyThreadCalculator jettyThreadCalculator) {
+        SslConnectionFactory sslConnectionFactory = createSslConnectionFactory(sslPolicy);
+        return createConnector(
+                server, address, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory());
     }
 
-    private static SslConnectionFactory createSslConnectionFactory( SslPolicy sslPolicy )
-    {
+    private static SslConnectionFactory createSslConnectionFactory(SslPolicy sslPolicy) {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
 
         String password = UUID.randomUUID().toString();
-        sslContextFactory.setKeyStore( sslPolicy.getKeyStore( password.toCharArray(), password.toCharArray() ) );
-        sslContextFactory.setKeyStorePassword( password );
-        sslContextFactory.setKeyManagerPassword( password );
+        sslContextFactory.setKeyStore(sslPolicy.getKeyStore(password.toCharArray(), password.toCharArray()));
+        sslContextFactory.setKeyStorePassword(password);
+        sslContextFactory.setKeyManagerPassword(password);
 
         List<String> ciphers = sslPolicy.getCipherSuites();
-        if ( ciphers != null )
-        {
-            sslContextFactory.setIncludeCipherSuites( ciphers.toArray( new String[0] ) );
+        if (ciphers != null) {
+            sslContextFactory.setIncludeCipherSuites(ciphers.toArray(new String[0]));
             sslContextFactory.setExcludeCipherSuites();
         }
 
         String[] protocols = sslPolicy.getTlsVersions();
-        if ( protocols != null )
-        {
-            sslContextFactory.setIncludeProtocols( protocols );
+        if (protocols != null) {
+            sslContextFactory.setIncludeProtocols(protocols);
             sslContextFactory.setExcludeProtocols();
         }
 
-        switch ( sslPolicy.getClientAuth() )
-        {
-        case REQUIRE:
-            sslContextFactory.setNeedClientAuth( true );
-            break;
-        case OPTIONAL:
-            sslContextFactory.setWantClientAuth( true );
-            break;
-        case NONE:
-            sslContextFactory.setWantClientAuth( false );
-            sslContextFactory.setNeedClientAuth( false );
-            break;
-        default:
-            throw new IllegalArgumentException( "Not supported: " + sslPolicy.getClientAuth() );
+        switch (sslPolicy.getClientAuth()) {
+            case REQUIRE:
+                sslContextFactory.setNeedClientAuth(true);
+                break;
+            case OPTIONAL:
+                sslContextFactory.setWantClientAuth(true);
+                break;
+            case NONE:
+                sslContextFactory.setWantClientAuth(false);
+                sslContextFactory.setNeedClientAuth(false);
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported: " + sslPolicy.getClientAuth());
         }
 
-        return new SslConnectionFactory( sslContextFactory, HttpVersion.HTTP_1_1.asString() );
+        return new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
     }
 }

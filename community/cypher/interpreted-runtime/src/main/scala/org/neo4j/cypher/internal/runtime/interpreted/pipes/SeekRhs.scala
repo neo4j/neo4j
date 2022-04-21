@@ -28,10 +28,11 @@ import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 
 object Seek {
+
   def unapply(v: Any) = v match {
     case Equals(lhs, rhs) => Some(lhs -> SingleSeekRhs(rhs))
-    case In(lhs, rhs) => Some(lhs -> MultiSeekRhs(rhs))
-    case _ => None
+    case In(lhs, rhs)     => Some(lhs -> MultiSeekRhs(rhs))
+    case _                => None
   }
 }
 
@@ -54,14 +55,15 @@ case class SingleSeekRhs(expr: Expression) extends SeekRhs {
 }
 
 case class MultiSeekRhs(expr: Expression) extends SeekRhs {
+
   val sizeHint = expr match {
     case coll: ListLiteral => Some(coll.expressions.size)
-    case _                => None
+    case _                 => None
   }
 
   override def map(f: Expression => Expression) = expr match {
     case coll: ListLiteral => copy(expr = coll.map(f))
-    case _ => copy(expr = f(expr))
+    case _                 => copy(expr = f(expr))
   }
 
   def asQueryExpression: ManyQueryExpression[Expression] =

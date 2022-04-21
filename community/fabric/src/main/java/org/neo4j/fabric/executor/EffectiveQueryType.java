@@ -24,70 +24,52 @@ import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.planning.QueryType;
 import org.neo4j.graphdb.QueryExecutionType;
 
-public class EffectiveQueryType
-{
-    public static QueryExecutionType.QueryType effectiveQueryType( AccessMode requested, QueryType queryType )
-    {
-        if ( queryType == QueryType.READ() )
-        {
+public class EffectiveQueryType {
+    public static QueryExecutionType.QueryType effectiveQueryType(AccessMode requested, QueryType queryType) {
+        if (queryType == QueryType.READ()) {
             return QueryExecutionType.QueryType.READ_ONLY;
         }
-        if ( queryType == QueryType.READ_PLUS_UNRESOLVED() )
-        {
-            switch ( requested )
-            {
-            case READ:
-                return QueryExecutionType.QueryType.READ_ONLY;
-            case WRITE:
-                return QueryExecutionType.QueryType.READ_WRITE;
-            default:
-                throw new IllegalArgumentException( "Unexpected access mode: " + requested );
+        if (queryType == QueryType.READ_PLUS_UNRESOLVED()) {
+            switch (requested) {
+                case READ:
+                    return QueryExecutionType.QueryType.READ_ONLY;
+                case WRITE:
+                    return QueryExecutionType.QueryType.READ_WRITE;
+                default:
+                    throw new IllegalArgumentException("Unexpected access mode: " + requested);
             }
         }
-        if ( queryType == QueryType.WRITE() )
-        {
+        if (queryType == QueryType.WRITE()) {
             return QueryExecutionType.QueryType.READ_WRITE;
         }
 
-        throw new IllegalArgumentException( "Unexpected query type: " + queryType );
+        throw new IllegalArgumentException("Unexpected query type: " + queryType);
     }
 
-    public static AccessMode effectiveAccessMode( AccessMode requested, QueryType queryType )
-    {
-        if ( queryType == QueryType.READ() )
-        {
+    public static AccessMode effectiveAccessMode(AccessMode requested, QueryType queryType) {
+        if (queryType == QueryType.READ()) {
             return AccessMode.READ;
         }
-        if ( queryType == QueryType.READ_PLUS_UNRESOLVED() )
-        {
+        if (queryType == QueryType.READ_PLUS_UNRESOLVED()) {
             return requested;
         }
-        if ( queryType == QueryType.WRITE() )
-        {
+        if (queryType == QueryType.WRITE()) {
             return AccessMode.WRITE;
         }
 
-        throw new IllegalArgumentException( "Unexpected query type: " + queryType );
+        throw new IllegalArgumentException("Unexpected query type: " + queryType);
     }
 
-    public static QueryExecutionType queryExecutionType( FabricPlan plan, AccessMode accessMode )
-    {
-        QueryExecutionType.QueryType effectiveQueryType = effectiveQueryType( accessMode, plan.queryType() );
-        if ( plan.executionType() == FabricPlan.EXECUTE() )
-        {
-            return QueryExecutionType.query( effectiveQueryType );
-        }
-        else if ( plan.executionType() == FabricPlan.EXPLAIN() )
-        {
-            return QueryExecutionType.explained( effectiveQueryType );
-        }
-        else if ( plan.executionType() == FabricPlan.PROFILE() )
-        {
-            return QueryExecutionType.profiled( effectiveQueryType );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unexpected execution type: " + plan.executionType() );
+    public static QueryExecutionType queryExecutionType(FabricPlan plan, AccessMode accessMode) {
+        QueryExecutionType.QueryType effectiveQueryType = effectiveQueryType(accessMode, plan.queryType());
+        if (plan.executionType() == FabricPlan.EXECUTE()) {
+            return QueryExecutionType.query(effectiveQueryType);
+        } else if (plan.executionType() == FabricPlan.EXPLAIN()) {
+            return QueryExecutionType.explained(effectiveQueryType);
+        } else if (plan.executionType() == FabricPlan.PROFILE()) {
+            return QueryExecutionType.profiled(effectiveQueryType);
+        } else {
+            throw new IllegalArgumentException("Unexpected execution type: " + plan.executionType());
         }
     }
 }

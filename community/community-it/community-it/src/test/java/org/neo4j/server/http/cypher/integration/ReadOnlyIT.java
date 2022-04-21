@@ -19,74 +19,66 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.server.helpers.TestWebContainer;
-import org.neo4j.test.server.ExclusiveWebContainerTestBase;
-import org.neo4j.test.server.HTTP;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.server.helpers.WebContainerHelper.cleanTheDatabase;
 import static org.neo4j.server.helpers.WebContainerHelper.createReadOnlyContainer;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-class ReadOnlyIT extends ExclusiveWebContainerTestBase
-{
+import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.helpers.TestWebContainer;
+import org.neo4j.test.server.ExclusiveWebContainerTestBase;
+import org.neo4j.test.server.HTTP;
+
+class ReadOnlyIT extends ExclusiveWebContainerTestBase {
     private TestWebContainer readOnlyContainer;
     private HTTP.Builder http;
 
     @BeforeEach
-    void setup() throws Exception
-    {
-        cleanTheDatabase( readOnlyContainer );
-        readOnlyContainer = createReadOnlyContainer( testDirectory.homePath() );
-        http = HTTP.withBaseUri( readOnlyContainer.getBaseUri() );
+    void setup() throws Exception {
+        cleanTheDatabase(readOnlyContainer);
+        readOnlyContainer = createReadOnlyContainer(testDirectory.homePath());
+        http = HTTP.withBaseUri(readOnlyContainer.getBaseUri());
     }
 
     @AfterEach
-    void teardown()
-    {
-        if ( readOnlyContainer != null )
-        {
+    void teardown() {
+        if (readOnlyContainer != null) {
             readOnlyContainer.shutdown();
         }
     }
 
     @Test
-    void shouldReturnReadOnlyStatusWhenCreatingNodes() throws Exception
-    {
+    void shouldReturnReadOnlyStatusWhenCreatingNodes() throws Exception {
         // Given
-        HTTP.Response response = http.POST( txEndpoint(),
-                quotedJson( "{ 'statements': [ { 'statement': 'CREATE (node)' } ] }" ) );
+        HTTP.Response response =
+                http.POST(txEndpoint(), quotedJson("{ 'statements': [ { 'statement': 'CREATE (node)' } ] }"));
 
         // Then
-        JsonNode error = response.get( "errors" ).get( 0 );
-        String code = error.get( "code" ).asText();
-        String message = error.get( "message" ).asText();
+        JsonNode error = response.get("errors").get(0);
+        String code = error.get("code").asText();
+        String message = error.get("message").asText();
 
-        assertEquals( "Neo.ClientError.General.WriteOnReadOnlyAccessDatabase", code );
-        assertThat( message ).contains( "The database is in read-only mode on this Neo4j instance" );
+        assertEquals("Neo.ClientError.General.WriteOnReadOnlyAccessDatabase", code);
+        assertThat(message).contains("The database is in read-only mode on this Neo4j instance");
     }
 
     @Test
-    void shouldReturnReadOnlyStatusWhenCreatingNodesWhichTransitivelyCreateTokens() throws Exception
-    {
+    void shouldReturnReadOnlyStatusWhenCreatingNodesWhichTransitivelyCreateTokens() throws Exception {
         // Given
         // When
-        HTTP.Response response = http.POST( txEndpoint(),
-                quotedJson( "{ 'statements': [ { 'statement': 'CREATE (node:Node)' } ] }" ) );
+        HTTP.Response response =
+                http.POST(txEndpoint(), quotedJson("{ 'statements': [ { 'statement': 'CREATE (node:Node)' } ] }"));
 
         // Then
-        JsonNode error = response.get( "errors" ).get( 0 );
-        String code = error.get( "code" ).asText();
-        String message = error.get( "message" ).asText();
+        JsonNode error = response.get("errors").get(0);
+        String code = error.get("code").asText();
+        String message = error.get("message").asText();
 
-        assertEquals( "Neo.ClientError.General.WriteOnReadOnlyAccessDatabase", code );
-        assertThat( message ).contains( "The database is in read-only mode on this Neo4j instance" );
+        assertEquals("Neo.ClientError.General.WriteOnReadOnlyAccessDatabase", code);
+        assertThat(message).contains("The database is in read-only mode on this Neo4j instance");
     }
-
 }

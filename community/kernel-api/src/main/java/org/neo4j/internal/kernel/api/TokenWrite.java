@@ -23,8 +23,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 
-public interface TokenWrite
-{
+public interface TokenWrite {
     /**
      * Returns a label id for a label name. If the label doesn't exist prior to
      * this call it gets created.
@@ -34,7 +33,7 @@ public interface TokenWrite
      * @throws IllegalTokenNameException if any token name is illegal.
      * @throws TokenCapacityExceededKernelException if too many labels would be created by this call, compared to the token id space available.
      */
-    int labelGetOrCreateForName( String labelName ) throws KernelException;
+    int labelGetOrCreateForName(String labelName) throws KernelException;
 
     /**
      * Get or create the label token ids for each of the given {@code labelNames}, and store them at the corresponding
@@ -47,7 +46,7 @@ public interface TokenWrite
      * @throws IllegalTokenNameException if any token name is illegal.
      * @throws TokenCapacityExceededKernelException if too many labels would be created by this call, compared to the token id space available.
      */
-    void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws KernelException;
+    void labelGetOrCreateForNames(String[] labelNames, int[] labelIds) throws KernelException;
 
     /**
      * Creates a label with the given name.
@@ -58,7 +57,7 @@ public interface TokenWrite
      * @throws IllegalTokenNameException if token name is illegal.
      * @throws TokenCapacityExceededKernelException if too many labels would be created by this call, compared to the token id space available.
      */
-    int labelCreateForName( String labelName, boolean internal ) throws KernelException;
+    int labelCreateForName(String labelName, boolean internal) throws KernelException;
 
     /**
      * Creates a property token with the given name.
@@ -69,7 +68,7 @@ public interface TokenWrite
      * @throws IllegalTokenNameException if token name is illegal.
      * @throws TokenCapacityExceededKernelException if too many property keys would be created by this call, compared to the token id space available.
      */
-    int propertyKeyCreateForName( String propertyKeyName, boolean internal ) throws KernelException;
+    int propertyKeyCreateForName(String propertyKeyName, boolean internal) throws KernelException;
 
     /**
      * Creates a relationship type with the given name.
@@ -79,7 +78,7 @@ public interface TokenWrite
      * @throws IllegalTokenNameException if token name is illegal.
      * @throws TokenCapacityExceededKernelException if too many relationship types would be created by this call, compared to the token id space available.
      */
-    int relationshipTypeCreateForName( String relationshipTypeName, boolean internal ) throws KernelException;
+    int relationshipTypeCreateForName(String relationshipTypeName, boolean internal) throws KernelException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
@@ -89,7 +88,7 @@ public interface TokenWrite
      * @throws IllegalTokenNameException if token name is illegal.
      * @throws TokenCapacityExceededKernelException if too many property keys would be created by this call, compared to the token id space available.
      */
-    int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException;
+    int propertyKeyGetOrCreateForName(String propertyKeyName) throws KernelException;
 
     /**
      * Get or create the property token ids for each of the given {@code propertyKeys}, and store them at the
@@ -102,7 +101,7 @@ public interface TokenWrite
      * @throws IllegalTokenNameException if any token name is illegal.
      * @throws TokenCapacityExceededKernelException if too many property keys would be created by this call, compared to the token id space available.
      */
-    void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids ) throws KernelException;
+    void propertyKeyGetOrCreateForNames(String[] propertyKeys, int[] ids) throws KernelException;
 
     /**
      * Returns the id associated with the relationship type or creates a new one.
@@ -111,7 +110,7 @@ public interface TokenWrite
      * @throws IllegalTokenNameException if token name is illegal.
      * @throws TokenCapacityExceededKernelException if too many relationship types would be created by this call, compared to the token id space available.
      */
-    int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException;
+    int relationshipTypeGetOrCreateForName(String relationshipTypeName) throws KernelException;
 
     /**
      * Get or create the relationship type token ids for each of the given {@code relationshipTypes}, and store them at
@@ -124,7 +123,7 @@ public interface TokenWrite
      * @throws IllegalTokenNameException if any token name is illegal.
      * @throws TokenCapacityExceededKernelException if too many relationship types would be created by this call, compared to the token id space available.
      */
-    void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids ) throws KernelException;
+    void relationshipTypeGetOrCreateForNames(String[] relationshipTypes, int[] ids) throws KernelException;
 
     /**
      * Checks that the provided token name is a valid one.
@@ -132,11 +131,9 @@ public interface TokenWrite
      * @return the token name, for convenience.
      * @throws IllegalTokenNameException if the token name is not valid.
      */
-    static String checkValidTokenName( String name ) throws IllegalTokenNameException
-    {
-        if ( name == null || name.isEmpty() || name.contains( "\0" ) )
-        {
-            throw new IllegalTokenNameException( name );
+    static String checkValidTokenName(String name) throws IllegalTokenNameException {
+        if (name == null || name.isEmpty() || name.contains("\0")) {
+            throw new IllegalTokenNameException(name);
         }
         return name;
     }

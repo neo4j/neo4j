@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel.UNKNOWN
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.virtual.VirtualValues
 
-case class NodeByLabelScanPipe(ident: String, label: LazyLabel, indexOrder: IndexOrder)
-                              (val id: Id = Id.INVALID_ID) extends Pipe {
+case class NodeByLabelScanPipe(ident: String, label: LazyLabel, indexOrder: IndexOrder)(val id: Id = Id.INVALID_ID)
+    extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
 

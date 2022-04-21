@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport.staging;
 import java.lang.reflect.Array;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -34,49 +33,41 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}.
  */
-public class RecordDataAssembler<RECORD extends AbstractBaseRecord>
-{
+public class RecordDataAssembler<RECORD extends AbstractBaseRecord> {
     private final Supplier<RECORD> factory;
     private final Class<RECORD> klass;
     private final Predicate<RECORD> filter;
     private final RecordLoad loadMode;
 
-    public RecordDataAssembler( Supplier<RECORD> factory, boolean forScan )
-    {
-        this( factory, Predicates.alwaysTrue(), forScan );
+    public RecordDataAssembler(Supplier<RECORD> factory, boolean forScan) {
+        this(factory, Predicates.alwaysTrue(), forScan);
     }
 
-    @SuppressWarnings( "unchecked" )
-    public RecordDataAssembler( Supplier<RECORD> factory, Predicate<RECORD> filter, boolean forScan )
-    {
+    @SuppressWarnings("unchecked")
+    public RecordDataAssembler(Supplier<RECORD> factory, Predicate<RECORD> filter, boolean forScan) {
         this.factory = factory;
         this.filter = filter;
         this.klass = (Class<RECORD>) factory.get().getClass();
         this.loadMode = forScan ? RecordLoad.LENIENT_CHECK : RecordLoad.CHECK;
     }
 
-    @SuppressWarnings( "unchecked" )
-    public RECORD[] newBatchObject( int batchSize )
-    {
-        Object array = Array.newInstance( klass, batchSize );
-        for ( int i = 0; i < batchSize; i++ )
-        {
-            Array.set( array, i, factory.get() );
+    @SuppressWarnings("unchecked")
+    public RECORD[] newBatchObject(int batchSize) {
+        Object array = Array.newInstance(klass, batchSize);
+        for (int i = 0; i < batchSize; i++) {
+            Array.set(array, i, factory.get());
         }
         return (RECORD[]) array;
     }
 
-    public boolean append( RecordStore<RECORD> store, PageCursor cursor, RECORD[] array, long id, int index )
-    {
+    public boolean append(RecordStore<RECORD> store, PageCursor cursor, RECORD[] array, long id, int index) {
         RECORD record = array[index];
-        store.getRecordByCursor( id, record, loadMode, cursor );
-        return record.inUse() && filter.test( record );
+        store.getRecordByCursor(id, record, loadMode, cursor);
+        return record.inUse() && filter.test(record);
     }
 
-    public RECORD[] cutOffAt( RECORD[] array, int length )
-    {
-        for ( int i = length; i < array.length; i++ )
-        {
+    public RECORD[] cutOffAt(RECORD[] array, int length) {
+        for (int i = length; i < array.length; i++) {
             array[i].clear();
         }
         return array;

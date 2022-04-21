@@ -20,44 +20,31 @@
 package org.neo4j.io.fs.watcher;
 
 import java.nio.file.Path;
-
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
 /**
  * Silent file watcher implementation that do not perform any monitoring and can't observe any directories status or
  * content update.
  */
-public class SilentFileWatcher implements FileWatcher
-{
+public class SilentFileWatcher implements FileWatcher {
 
     @Override
-    public WatchedResource watch( Path path )
-    {
+    public WatchedResource watch(Path path) {
         return WatchedResource.EMPTY;
     }
 
     @Override
-    public void addFileWatchEventListener( FileWatchEventListener listener )
-    {
-    }
+    public void addFileWatchEventListener(FileWatchEventListener listener) {}
 
     @Override
-    public void removeFileWatchEventListener( FileWatchEventListener listener )
-    {
-    }
+    public void removeFileWatchEventListener(FileWatchEventListener listener) {}
 
     @Override
-    public void stopWatching()
-    {
-    }
+    public void stopWatching() {}
 
     @Override
-    public void startWatching()
-    {
-    }
+    public void startWatching() {}
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 }

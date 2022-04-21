@@ -22,42 +22,34 @@ package org.neo4j.internal.helpers.collection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-
 import org.neo4j.graphdb.ResourceIterator;
 
-public class CombiningResourceIterator<T> extends CombiningIterator<T> implements ResourceIterator<T>
-{
+public class CombiningResourceIterator<T> extends CombiningIterator<T> implements ResourceIterator<T> {
     private final Iterator<ResourceIterator<T>> iterators;
     private final Collection<ResourceIterator<T>> seenIterators = new ArrayList<>();
 
-    CombiningResourceIterator( Iterator<ResourceIterator<T>> iterators )
-    {
-        super( iterators );
+    CombiningResourceIterator(Iterator<ResourceIterator<T>> iterators) {
+        super(iterators);
         this.iterators = iterators;
     }
 
     @Override
-    protected Iterator<T> nextIteratorOrNull()
-    {
-        if ( iterators.hasNext() )
-        {
+    protected Iterator<T> nextIteratorOrNull() {
+        if (iterators.hasNext()) {
             ResourceIterator<T> currentIterator = iterators.next();
-            seenIterators.add( currentIterator );
+            seenIterators.add(currentIterator);
             return currentIterator;
         }
         return null;
     }
 
     @Override
-    public void close()
-    {
-        for ( ResourceIterator<T> seenIterator : seenIterators )
-        {
+    public void close() {
+        for (ResourceIterator<T> seenIterator : seenIterators) {
             seenIterator.close();
         }
 
-        while ( iterators.hasNext() )
-        {
+        while (iterators.hasNext()) {
             iterators.next().close();
         }
     }

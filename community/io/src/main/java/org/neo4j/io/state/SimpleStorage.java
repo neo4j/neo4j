@@ -27,15 +27,13 @@ import java.io.IOException;
  *
  * @param <T> Type of state
  */
-public interface SimpleStorage<T> extends StateStorage<T>
-{
+public interface SimpleStorage<T> extends StateStorage<T> {
     T readState() throws IOException;
 
     void removeState() throws IOException;
 
     @Override
-    default T getInitialState()
-    {
+    default T getInitialState() {
         return null;
     }
 }

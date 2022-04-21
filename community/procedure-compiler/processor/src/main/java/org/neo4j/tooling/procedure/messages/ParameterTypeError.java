@@ -21,27 +21,23 @@ package org.neo4j.tooling.procedure.messages;
 
 import javax.lang.model.element.Element;
 
-public class ParameterTypeError implements CompilationMessage
-{
+public class ParameterTypeError implements CompilationMessage {
 
     private final Element element;
     private final String errorMessage;
 
-    public ParameterTypeError( Element element, String errorMessage, Object... args )
-    {
+    public ParameterTypeError(Element element, String errorMessage, Object... args) {
         this.element = element;
-        this.errorMessage = String.format( errorMessage, args );
+        this.errorMessage = String.format(errorMessage, args);
     }
 
     @Override
-    public Element getElement()
-    {
+    public Element getElement() {
         return element;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return errorMessage;
     }
 }

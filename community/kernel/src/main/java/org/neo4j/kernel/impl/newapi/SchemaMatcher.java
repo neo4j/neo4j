@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
@@ -29,11 +28,9 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 /**
  * This class holds functionality to match {@link SchemaDescriptor} to entities.
  */
-public class SchemaMatcher
-{
-    private SchemaMatcher()
-    {
-        throw new AssertionError( "no instance" );
+public class SchemaMatcher {
+    private SchemaMatcher() {
+        throw new AssertionError("no instance");
     }
 
     /**
@@ -56,36 +53,29 @@ public class SchemaMatcher
             Iterator<SUPPLIER> schemaSuppliers,
             int specialPropertyId,
             int[] existingPropertyIds,
-            ThrowingConsumer<SUPPLIER,EXCEPTION> callback
-    ) throws EXCEPTION
-    {
-        while ( schemaSuppliers.hasNext() )
-        {
+            ThrowingConsumer<SUPPLIER, EXCEPTION> callback)
+            throws EXCEPTION {
+        while (schemaSuppliers.hasNext()) {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
             SchemaDescriptor schema = schemaSupplier.schema();
 
-            if ( entityHasSchemaProperties( existingPropertyIds, schema.getPropertyIds(), specialPropertyId ) )
-            {
-                callback.accept( schemaSupplier );
+            if (entityHasSchemaProperties(existingPropertyIds, schema.getPropertyIds(), specialPropertyId)) {
+                callback.accept(schemaSupplier);
             }
         }
     }
 
     private static boolean entityHasSchemaProperties(
-            int[] existingPropertyIds, int[] indexPropertyIds, int changedPropertyId )
-    {
-        for ( int indexPropertyId : indexPropertyIds )
-        {
-            if ( indexPropertyId != changedPropertyId && !contains( existingPropertyIds, indexPropertyId ) )
-            {
+            int[] existingPropertyIds, int[] indexPropertyIds, int changedPropertyId) {
+        for (int indexPropertyId : indexPropertyIds) {
+            if (indexPropertyId != changedPropertyId && !contains(existingPropertyIds, indexPropertyId)) {
                 return false;
             }
         }
         return true;
     }
 
-    private static boolean contains( int[] existingPropertyIds, int indexPropertyId )
-    {
-        return Arrays.binarySearch( existingPropertyIds, indexPropertyId ) >= 0;
+    private static boolean contains(int[] existingPropertyIds, int indexPropertyId) {
+        return Arrays.binarySearch(existingPropertyIds, indexPropertyId) >= 0;
     }
 }

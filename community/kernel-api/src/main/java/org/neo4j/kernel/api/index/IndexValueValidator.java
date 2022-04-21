@@ -19,30 +19,26 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Arrays;
+import static java.lang.String.format;
 
+import java.util.Arrays;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
-import static java.lang.String.format;
+public interface IndexValueValidator {
+    void validate(long entityId, Value... values);
 
-public interface IndexValueValidator
-{
-    void validate( long entityId, Value... values );
+    IndexValueValidator NO_VALIDATION = (entityId, values) -> {};
 
-    IndexValueValidator NO_VALIDATION = ( entityId, values ) -> {};
-
-    static void throwSizeViolationException( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, long entityId, int size,
-            Value... values )
-    {
-        String valueString = Arrays.toString( values );
-        if ( valueString.length() > 100 )
-        {
-            valueString = valueString.substring( 0, 100 ) + "...";
+    static void throwSizeViolationException(
+            IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, long entityId, int size, Value... values) {
+        String valueString = Arrays.toString(values);
+        if (valueString.length() > 100) {
+            valueString = valueString.substring(0, 100) + "...";
         }
-        throw new IllegalArgumentException( format(
+        throw new IllegalArgumentException(format(
                 "Property value is too large to index, please see index documentation for limitations. Index: %s, entity id: %d, property size: %d, value: %s.",
-                descriptor.userDescription( tokenNameLookup ), entityId, size, valueString ) );
+                descriptor.userDescription(tokenNameLookup), entityId, size, valueString));
     }
 }

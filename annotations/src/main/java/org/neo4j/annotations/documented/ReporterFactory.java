@@ -25,18 +25,15 @@ import java.lang.reflect.Proxy;
 /**
  * Creates proxy instances that dispatch calls to provided {@link InvocationHandler}.
  */
-public class ReporterFactory
-{
+public class ReporterFactory {
     private final InvocationHandler handler;
 
-    public ReporterFactory( InvocationHandler handler )
-    {
+    public ReporterFactory(InvocationHandler handler) {
         this.handler = handler;
     }
 
-    public <T> T getClass( Class<T> cls )
-    {
+    public <T> T getClass(Class<T> cls) {
         ClassLoader classLoader = cls.getClassLoader();
-        return (T) Proxy.newProxyInstance( classLoader, new Class<?>[]{cls}, handler );
+        return (T) Proxy.newProxyInstance(classLoader, new Class<?>[] {cls}, handler);
     }
 }

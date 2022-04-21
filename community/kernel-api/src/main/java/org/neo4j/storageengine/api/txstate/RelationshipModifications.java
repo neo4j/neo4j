@@ -19,15 +19,13 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import java.util.Collections;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
-
-import java.util.Collections;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
@@ -54,75 +52,58 @@ import org.neo4j.util.Preconditions;
  * } );
  * </pre>
  */
-public interface RelationshipModifications
-{
-    RelationshipBatch EMPTY_BATCH = new RelationshipBatch()
-    {
+public interface RelationshipModifications {
+    RelationshipBatch EMPTY_BATCH = new RelationshipBatch() {
         @Override
-        public int size()
-        {
+        public int size() {
             return 0;
         }
 
         @Override
-        public void forEach( RelationshipVisitorWithProperties relationship )
-        {
-        }
+        public void forEach(RelationshipVisitorWithProperties relationship) {}
     };
 
-    static IdDataDecorator noAdditionalDataDecorator()
-    {
-        return new IdDataDecorator()
-        {
+    static IdDataDecorator noAdditionalDataDecorator() {
+        return new IdDataDecorator() {
             @Override
-            public <E extends Exception> void accept( long id, RelationshipVisitorWithProperties<E> visitor ) throws E
-            {
-                visitor.visit( id, -1, -1, -1, Collections.emptyList() );
+            public <E extends Exception> void accept(long id, RelationshipVisitorWithProperties<E> visitor) throws E {
+                visitor.visit(id, -1, -1, -1, Collections.emptyList());
             }
         };
     }
 
-    static RelationshipBatch idsAsBatch( LongSet ids )
-    {
-        return idsAsBatch( ids, noAdditionalDataDecorator() );
+    static RelationshipBatch idsAsBatch(LongSet ids) {
+        return idsAsBatch(ids, noAdditionalDataDecorator());
     }
 
-    static RelationshipBatch idsAsBatch( LongSet ids, IdDataDecorator idDataDecorator )
-    {
-        return new RelationshipBatch()
-        {
+    static RelationshipBatch idsAsBatch(LongSet ids, IdDataDecorator idDataDecorator) {
+        return new RelationshipBatch() {
             @Override
-            public int size()
-            {
+            public int size() {
                 return ids.size();
             }
 
             @Override
-            public boolean isEmpty()
-            {
+            public boolean isEmpty() {
                 return ids.isEmpty();
             }
 
             @Override
-            public boolean contains( long id )
-            {
-                return ids.contains( id );
+            public boolean contains(long id) {
+                return ids.contains(id);
             }
 
             @Override
-            public long first()
-            {
+            public long first() {
                 return ids.longIterator().next();
             }
 
             @Override
-            public <E extends Exception> void forEach( RelationshipVisitorWithProperties<E> relationship ) throws E
-            {
+            public <E extends Exception> void forEach(RelationshipVisitorWithProperties<E> relationship) throws E {
                 LongIterator iterator = ids.longIterator();
-                while ( iterator.hasNext() )
-                {
+                while (iterator.hasNext()) {
                     long id = iterator.next();
-                    idDataDecorator.accept( id, relationship );
+                    idDataDecorator.accept(id, relationship);
                 }
             }
         };
@@ -132,7 +113,7 @@ public interface RelationshipModifications
      * Visits all relationships, split by node.
      * @param visitor to receive the relationship data.
      */
-    void forEachSplit( IdsVisitor visitor );
+    void forEachSplit(IdsVisitor visitor);
 
     /**
      * @return all created relationships.
@@ -144,23 +125,16 @@ public interface RelationshipModifications
      */
     RelationshipBatch deletions();
 
-    interface IdsVisitor extends Consumer<NodeRelationshipIds>
-    {
-    }
+    interface IdsVisitor extends Consumer<NodeRelationshipIds> {}
 
-    interface TypeIdsVisitor extends Consumer<NodeRelationshipTypeIds>
-    {
-    }
+    interface TypeIdsVisitor extends Consumer<NodeRelationshipTypeIds> {}
 
-    interface InterruptibleTypeIdsVisitor extends Predicate<NodeRelationshipTypeIds>
-    {
-    }
+    interface InterruptibleTypeIdsVisitor extends Predicate<NodeRelationshipTypeIds> {}
 
     /**
      * Relationship IDs and data for a node.
      */
-    interface NodeRelationshipIds
-    {
+    interface NodeRelationshipIds {
         /**
          * @return ID of the node these relationships are for.
          */
@@ -174,7 +148,7 @@ public interface RelationshipModifications
         /**
          * @return whether or not there are created relationships of the given type for this node.
          */
-        boolean hasCreations( int type );
+        boolean hasCreations(int type);
 
         /**
          * @return whether or not there are deleted relationships for this node.
@@ -195,43 +169,38 @@ public interface RelationshipModifications
          * Visits all created relationships for this node, split by type.
          * @param visitor to receive the relationship data.
          */
-        default void forEachCreationSplit( TypeIdsVisitor visitor )
-        {
-            forEachCreationSplitInterruptible( byType ->
-            {
-                visitor.accept( byType );
+        default void forEachCreationSplit(TypeIdsVisitor visitor) {
+            forEachCreationSplitInterruptible(byType -> {
+                visitor.accept(byType);
                 return false;
-            } );
+            });
         }
 
         /**
          * Can be interrupted earlier if the provided visitor decides to, instead of forcing it to be exhausted.
          * @see #forEachCreationSplit(TypeIdsVisitor)
          */
-        void forEachCreationSplitInterruptible( InterruptibleTypeIdsVisitor visitor );
+        void forEachCreationSplitInterruptible(InterruptibleTypeIdsVisitor visitor);
 
         /**
          * Visits all deleted relationships for this node, split by type.
          * @param visitor to receive the relationship data.
          */
-        default void forEachDeletionSplit( TypeIdsVisitor visitor )
-        {
-            forEachDeletionSplitInterruptible( byType ->
-            {
-                visitor.accept( byType );
+        default void forEachDeletionSplit(TypeIdsVisitor visitor) {
+            forEachDeletionSplitInterruptible(byType -> {
+                visitor.accept(byType);
                 return false;
-            } );
+            });
         }
 
         /**
          * Can be interrupted earlier if the provided visitor decides to, instead of forcing it to be exhausted.
          * @see #forEachCreationSplit(TypeIdsVisitor)
          */
-        void forEachDeletionSplitInterruptible( InterruptibleTypeIdsVisitor visitor );
+        void forEachDeletionSplitInterruptible(InterruptibleTypeIdsVisitor visitor);
     }
 
-    interface NodeRelationshipTypeIds
-    {
+    interface NodeRelationshipTypeIds {
         /**
          * @return the relationship type for the relationships provided by this instance.
          */
@@ -240,18 +209,16 @@ public interface RelationshipModifications
         /**
          * @return the relationships of the given direction.
          */
-        default RelationshipBatch ids( RelationshipDirection direction )
-        {
-            switch ( direction )
-            {
-            case OUTGOING:
-                return out();
-            case INCOMING:
-                return in();
-            case LOOP:
-                return loop();
-            default:
-                throw new IllegalArgumentException( direction.name() );
+        default RelationshipBatch ids(RelationshipDirection direction) {
+            switch (direction) {
+                case OUTGOING:
+                    return out();
+                case INCOMING:
+                    return in();
+                case LOOP:
+                    return loop();
+                default:
+                    throw new IllegalArgumentException(direction.name());
             }
         }
 
@@ -286,8 +253,7 @@ public interface RelationshipModifications
         RelationshipBatch loop();
     }
 
-    interface RelationshipBatch
-    {
+    interface RelationshipBatch {
         /**
          * @return number of relationships in this batch.
          */
@@ -299,16 +265,16 @@ public interface RelationshipModifications
          * @param <E> type of exception visitor can throw.
          * @throws E on visitor error.
          */
-        <E extends Exception> void forEach( RelationshipVisitorWithProperties<E> relationship ) throws E;
+        <E extends Exception> void forEach(RelationshipVisitorWithProperties<E> relationship) throws E;
 
-        // The default implementations below are inefficient, but are implemented like this for simplicity of test versions of this interface,
+        // The default implementations below are inefficient, but are implemented like this for simplicity of test
+        // versions of this interface,
         // any implementor that is in production code will implement properly
 
         /**
          * @return whether or not this batch is empty.
          */
-        default boolean isEmpty()
-        {
+        default boolean isEmpty() {
             return size() == 0;
         }
 
@@ -316,20 +282,16 @@ public interface RelationshipModifications
          * @param id relationship id the check.
          * @return whether or not this batch contains the given relationship id.
          */
-        default boolean contains( long id )
-        {
-            if ( isEmpty() )
-            {
+        default boolean contains(long id) {
+            if (isEmpty()) {
                 return false;
             }
             MutableBoolean contains = new MutableBoolean();
-            forEach( ( relationshipId, typeId, startNodeId, endNodeId, addedProperties ) ->
-            {
-                if ( relationshipId == id )
-                {
+            forEach((relationshipId, typeId, startNodeId, endNodeId, addedProperties) -> {
+                if (relationshipId == id) {
                     contains.setTrue();
                 }
-            } );
+            });
             return contains.booleanValue();
         }
 
@@ -337,17 +299,14 @@ public interface RelationshipModifications
          * @return the first relationship ID in this batch.
          * @throws IllegalStateException if this batch is empty.
          */
-        default long first()
-        {
-            Preconditions.checkState( !isEmpty(), "No ids" );
-            MutableLong first = new MutableLong( -1 );
-            forEach( ( relationshipId, typeId, startNodeId, endNodeId, addedProperties ) ->
-            {
-                if ( first.longValue() == -1 )
-                {
-                    first.setValue( relationshipId );
+        default long first() {
+            Preconditions.checkState(!isEmpty(), "No ids");
+            MutableLong first = new MutableLong(-1);
+            forEach((relationshipId, typeId, startNodeId, endNodeId, addedProperties) -> {
+                if (first.longValue() == -1) {
+                    first.setValue(relationshipId);
                 }
-            } );
+            });
             return first.longValue();
         }
     }
@@ -356,8 +315,7 @@ public interface RelationshipModifications
      * A way to carry tx state information lookup about relationships into places that needs it. In a way it's a very specific sub-interface of a bigger
      * transaction state interface which isn't really available in this component.
      */
-    interface IdDataDecorator
-    {
+    interface IdDataDecorator {
         /**
          * Allows visitor to get more data about the relationship of the given id.
          * @param id the relationship id.
@@ -365,6 +323,6 @@ public interface RelationshipModifications
          * @param <E> type of exception visitor can throw.
          * @throws E on visitor error.
          */
-        <E extends Exception> void accept( long id, RelationshipVisitorWithProperties<E> visitor ) throws E;
+        <E extends Exception> void accept(long id, RelationshipVisitorWithProperties<E> visitor) throws E;
     }
 }

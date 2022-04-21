@@ -19,13 +19,12 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-
-import java.util.Set;
-
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.requirePositive;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import java.util.Set;
 
 /**
  * Thread safe implementation of cache.
@@ -33,8 +32,7 @@ import static org.neo4j.util.Preconditions.requirePositive;
  * The cache has a <CODE>maxSize</CODE> set and when the number of cached
  * elements exceeds that limit the least frequently used element will be removed.
  */
-public class LfuCache<K, E>
-{
+public class LfuCache<K, E> {
     private final String name;
     private final int maxSize;
     private final Cache<K, E> cache;
@@ -46,15 +44,16 @@ public class LfuCache<K, E>
      * @param name    name of cache
      * @param maxSize maximum size of this cache
      */
-    public LfuCache( String name, int maxSize )
-    {
-        this.name = requireNonNull( name );
-        this.maxSize = requirePositive( maxSize );
-        this.cache = Caffeine.newBuilder().executor( Runnable::run ).maximumSize( maxSize ).build();
+    public LfuCache(String name, int maxSize) {
+        this.name = requireNonNull(name);
+        this.maxSize = requirePositive(maxSize);
+        this.cache = Caffeine.newBuilder()
+                .executor(Runnable::run)
+                .maximumSize(maxSize)
+                .build();
     }
 
-    public String getName()
-    {
+    public String getName() {
         return this.name;
     }
 
@@ -63,36 +62,30 @@ public class LfuCache<K, E>
      *
      * @return maximum size
      */
-    public int maxSize()
-    {
+    public int maxSize() {
         return maxSize;
     }
 
-    public void put( K key, E element )
-    {
-        requireNonNull( key );
-        requireNonNull( element );
-        cache.put( key, element );
+    public void put(K key, E element) {
+        requireNonNull(key);
+        requireNonNull(element);
+        cache.put(key, element);
     }
 
-    public E get( K key )
-    {
-        requireNonNull( key );
-        return cache.getIfPresent( key );
+    public E get(K key) {
+        requireNonNull(key);
+        return cache.getIfPresent(key);
     }
 
-    public void clear()
-    {
+    public void clear() {
         cache.invalidateAll();
     }
 
-    public int size()
-    {
+    public int size() {
         return cache.asMap().size();
     }
 
-    public Set<K> keySet()
-    {
+    public Set<K> keySet() {
         return cache.asMap().keySet();
     }
 }

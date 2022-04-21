@@ -24,15 +24,13 @@ package org.neo4j.storageengine.api;
  *
  * @param <EXCEPTION> exception thrown from the {@link #visit(long, int, long, long)} method.
  */
-public interface RelationshipVisitor<EXCEPTION extends Exception>
-{
+public interface RelationshipVisitor<EXCEPTION extends Exception> {
     /**
      * Objects which can accept these {@link RelationshipVisitor visitors} should implement this interface.
      */
-    interface Home
-    {
-        <EXCEPTION extends Exception> boolean relationshipVisit( long relId,
-                RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
+    interface Home {
+        <EXCEPTION extends Exception> boolean relationshipVisit(long relId, RelationshipVisitor<EXCEPTION> visitor)
+                throws EXCEPTION;
     }
 
     /**
@@ -43,5 +41,5 @@ public interface RelationshipVisitor<EXCEPTION extends Exception>
      * @param startNodeId id of start node of the relationship.
      * @param endNodeId id of the end node of the relationship.
      */
-    void visit( long relationshipId, int typeId, long startNodeId, long endNodeId ) throws EXCEPTION;
+    void visit(long relationshipId, int typeId, long startNodeId, long endNodeId) throws EXCEPTION;
 }

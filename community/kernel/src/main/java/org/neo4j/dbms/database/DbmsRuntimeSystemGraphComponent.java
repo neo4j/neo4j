@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -27,46 +29,40 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 
-import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
-
-public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<DbmsRuntimeVersion>
-{
-    public static final Label OLD_COMPONENT_LABEL = Label.label( "DbmsRuntime" );
+public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<DbmsRuntimeVersion> {
+    public static final Label OLD_COMPONENT_LABEL = Label.label("DbmsRuntime");
     public static final String OLD_PROPERTY_NAME = "version";
 
-    public DbmsRuntimeSystemGraphComponent( Config config )
-    {
-        super( DBMS_RUNTIME_COMPONENT, DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, config, DbmsRuntimeVersion::fromVersionNumber );
+    public DbmsRuntimeSystemGraphComponent(Config config) {
+        super(
+                DBMS_RUNTIME_COMPONENT,
+                DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION,
+                config,
+                DbmsRuntimeVersion::fromVersionNumber);
     }
 
     @Override
-    DbmsRuntimeVersion getFallbackVersion()
-    {
+    DbmsRuntimeVersion getFallbackVersion() {
         return DbmsRuntimeVersion.V5_0;
     }
 
     @Override
-    public Integer getVersion( Transaction tx, String componentName )
-    {
+    public Integer getVersion(Transaction tx, String componentName) {
         Integer result = null;
-        try ( ResourceIterator<Node> nodes = tx.findNodes( OLD_COMPONENT_LABEL ) )
-        {
-            if ( nodes.hasNext() )
-            {
+        try (ResourceIterator<Node> nodes = tx.findNodes(OLD_COMPONENT_LABEL)) {
+            if (nodes.hasNext()) {
                 Node versionNode = nodes.next();
-                result = (Integer) versionNode.getProperty( OLD_PROPERTY_NAME, null );
+                result = (Integer) versionNode.getProperty(OLD_PROPERTY_NAME, null);
             }
         }
-        return result != null ? result : SystemGraphComponent.getVersionNumber( tx, componentName );
+        return result != null ? result : SystemGraphComponent.getVersionNumber(tx, componentName);
     }
 
     @Override
-    public void upgradeToCurrent( GraphDatabaseService systemDb ) throws Exception
-    {
-        SystemGraphComponent.executeWithFullAccess( systemDb, tx ->
-        {
-            Iterators.forEachRemaining( tx.findNodes( OLD_COMPONENT_LABEL ), Node::delete );
-            setToLatestVersion( tx );
-        } );
+    public void upgradeToCurrent(GraphDatabaseService systemDb) throws Exception {
+        SystemGraphComponent.executeWithFullAccess(systemDb, tx -> {
+            Iterators.forEachRemaining(tx.findNodes(OLD_COMPONENT_LABEL), Node::delete);
+            setToLatestVersion(tx);
+        });
     }
 }

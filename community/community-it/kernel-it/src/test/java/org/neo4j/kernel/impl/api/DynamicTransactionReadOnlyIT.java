@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.emptySet;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Set;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
@@ -30,56 +32,42 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.Collections.emptySet;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @DbmsExtension
-class DynamicTransactionReadOnlyIT
-{
+class DynamicTransactionReadOnlyIT {
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private Config config;
 
     @Test
-    void byDefaultDatabaseIsWritable()
-    {
-        assertDoesNotThrow( () ->
-        {
-            try ( var tx = database.beginTx() )
-            {
+    void byDefaultDatabaseIsWritable() {
+        assertDoesNotThrow(() -> {
+            try (var tx = database.beginTx()) {
                 tx.createNode();
                 tx.commit();
             }
-        } );
+        });
     }
 
     @Test
-    void reactToDatabaseReadOnlyMode()
-    {
-        config.set( GraphDatabaseSettings.read_only_databases, Set.of( database.databaseName() ) );
-        try
-        {
-            try ( var tx = database.beginTx() )
-            {
-                assertThrows( WriteOperationsNotAllowedException.class, tx::createNode );
+    void reactToDatabaseReadOnlyMode() {
+        config.set(GraphDatabaseSettings.read_only_databases, Set.of(database.databaseName()));
+        try {
+            try (var tx = database.beginTx()) {
+                assertThrows(WriteOperationsNotAllowedException.class, tx::createNode);
             }
 
-            config.set( GraphDatabaseSettings.read_only_databases, emptySet() );
+            config.set(GraphDatabaseSettings.read_only_databases, emptySet());
 
-            assertDoesNotThrow( () ->
-            {
-                try ( var tx = database.beginTx() )
-                {
+            assertDoesNotThrow(() -> {
+                try (var tx = database.beginTx()) {
                     tx.createNode();
                     tx.commit();
                 }
-            } );
-        }
-        finally
-        {
-            config.set( GraphDatabaseSettings.read_only_databases, emptySet() );
+            });
+        } finally {
+            config.set(GraphDatabaseSettings.read_only_databases, emptySet());
         }
     }
 }

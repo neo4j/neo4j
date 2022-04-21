@@ -29,7 +29,8 @@ import org.neo4j.cypher.internal.util.StepSequencer
 /**
  * Expands `WITH *` or `RETURN *` by enumerating all columns instead of the `*`.
  */
-case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
 
   def phase: CompilationPhaseTracer.CompilationPhase = AST_REWRITE
 
@@ -48,6 +49,8 @@ case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, Base
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): Transformer[_ <: BaseContext, _ <: BaseState, BaseState] = this
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[_ <: BaseContext, _ <: BaseState, BaseState] = this
 }

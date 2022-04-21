@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-public interface StorageEntityScanCursor<S extends Scan> extends StorageEntityCursor
-{
+public interface StorageEntityScanCursor<S extends Scan> extends StorageEntityCursor {
     /**
      * Initializes this cursor so that it will scan over all existing entities. Each call to {@link #next()} will
      * advance the cursor so that the next entity is read.
@@ -38,11 +37,11 @@ public interface StorageEntityScanCursor<S extends Scan> extends StorageEntityCu
      * @param sizeHint the batch will try to read this number of entities.
      * @return <code>true</code> if there are entities to be found, otherwise <code>false</code>
      */
-    boolean scanBatch( S scan, int sizeHint );
+    boolean scanBatch(S scan, int sizeHint);
 
     /**
      * Initializes this cursor so that the next call to {@link #next()} will place this cursor at that entity.
      * @param reference entity to place this cursor at the next call to {@link #next()}.
      */
-    void single( long reference );
+    void single(long reference);
 }

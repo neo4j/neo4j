@@ -19,13 +19,12 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.concurrent.BinaryLatch;
-
-import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * The LatchMap is used by the {@link MuninnPagedFile} to coordinate concurrent page faults, and ensure that no two
@@ -33,54 +32,47 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
  * LatchMap will ensure that only one thread actually does the faulting, and that any other interested threads will
  * wait for the faulting thread to complete the fault before they proceed.
  */
-final class LatchMap
-{
-    static final class Latch extends BinaryLatch
-    {
+final class LatchMap {
+    static final class Latch extends BinaryLatch {
         private final LatchMap latchMap;
         private final int index;
 
-        Latch( LatchMap latchMap, int index )
-        {
+        Latch(LatchMap latchMap, int index) {
             this.latchMap = latchMap;
             this.index = index;
         }
 
         @Override
-        public void release()
-        {
-            latchMap.releaseLatch( index );
+        public void release() {
+            latchMap.releaseLatch(index);
             super.release();
         }
     }
 
     static final int DEFAULT_FAULT_LOCK_STRIPING = 128;
-    static final int faultLockStriping = FeatureToggles.getInteger( LatchMap.class, "faultLockStriping", DEFAULT_FAULT_LOCK_STRIPING );
+    static final int faultLockStriping =
+            FeatureToggles.getInteger(LatchMap.class, "faultLockStriping", DEFAULT_FAULT_LOCK_STRIPING);
 
     private final Latch[] latches;
-    private static final VarHandle LATCHES_ARRAY = MethodHandles.arrayElementVarHandle( Latch[].class );
+    private static final VarHandle LATCHES_ARRAY = MethodHandles.arrayElementVarHandle(Latch[].class);
     private final long faultLockMask;
 
-    LatchMap( int size )
-    {
-        requirePowerOfTwo( size );
+    LatchMap(int size) {
+        requirePowerOfTwo(size);
         latches = new Latch[size];
         faultLockMask = size - 1;
     }
 
-    private void releaseLatch( int index )
-    {
-        LATCHES_ARRAY.setVolatile( latches, index, (BinaryLatch) null );
+    private void releaseLatch(int index) {
+        LATCHES_ARRAY.setVolatile(latches, index, (BinaryLatch) null);
     }
 
-    private boolean tryInsertLatch( int index, Latch latch )
-    {
-        return LATCHES_ARRAY.compareAndSet( latches, index, (Latch) null, latch );
+    private boolean tryInsertLatch(int index, Latch latch) {
+        return LATCHES_ARRAY.compareAndSet(latches, index, (Latch) null, latch);
     }
 
-    private Latch getLatch( int index )
-    {
-        return (Latch) LATCHES_ARRAY.getVolatile( latches, index );
+    private Latch getLatch(int index) {
+        return (Latch) LATCHES_ARRAY.getVolatile(latches, index);
     }
 
     /**
@@ -92,25 +84,21 @@ final class LatchMap
      * released. Releasing the latch will unblock all threads that are waiting upon it, and the latch will be
      * atomically uninstalled.
      */
-    Latch takeOrAwaitLatch( long identifier )
-    {
-        int index = index( identifier );
-        Latch latch = getLatch( index );
-        while ( latch == null )
-        {
-            latch = new Latch( this, index );
-            if ( tryInsertLatch( index, latch ) )
-            {
+    Latch takeOrAwaitLatch(long identifier) {
+        int index = index(identifier);
+        Latch latch = getLatch(index);
+        while (latch == null) {
+            latch = new Latch(this, index);
+            if (tryInsertLatch(index, latch)) {
                 return latch;
             }
-            latch = getLatch( index );
+            latch = getLatch(index);
         }
         latch.await();
         return null;
     }
 
-    private int index( long identifier )
-    {
+    private int index(long identifier) {
         return (int) (identifier & faultLockMask);
     }
 }

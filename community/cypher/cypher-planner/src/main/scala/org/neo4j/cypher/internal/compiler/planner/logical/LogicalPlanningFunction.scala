@@ -26,7 +26,13 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait PlanSelector {
-  def apply(plan: LogicalPlan, queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): LogicalPlan
+
+  def apply(
+    plan: LogicalPlan,
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): LogicalPlan
 }
 
 trait PlanTransformer {
@@ -36,17 +42,25 @@ trait PlanTransformer {
 trait CandidateSelector extends ProjectingSelector[LogicalPlan]
 
 trait LeafPlanner {
-  def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan]
+
+  def apply(
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Set[LogicalPlan]
 }
 
 /**
  * Finds the best sorted and unsorted plan for every unique set of available symbols.
  */
 trait LeafPlanFinder {
-  def apply(config: QueryPlannerConfiguration,
-            queryGraph: QueryGraph,
-            interestingOrderConfig: InterestingOrderConfig,
-            context: LogicalPlanningContext): Iterable[BestPlans]
+
+  def apply(
+    config: QueryPlannerConfiguration,
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Iterable[BestPlans]
 }
 
 sealed trait LeafPlanRestrictions {
@@ -54,6 +68,7 @@ sealed trait LeafPlanRestrictions {
 }
 
 object LeafPlanRestrictions {
+
   case object NoRestrictions extends LeafPlanRestrictions {
     override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String] = Set.empty
   }

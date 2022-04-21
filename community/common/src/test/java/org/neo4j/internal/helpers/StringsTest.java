@@ -19,58 +19,53 @@
  */
 package org.neo4j.internal.helpers;
 
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.Strings.prettyPrint;
 
-class StringsTest
-{
+import java.net.URI;
+import org.junit.jupiter.api.Test;
+
+class StringsTest {
     @Test
-    void testPrettyPrint()
-    {
-        assertEquals( "null", prettyPrint( null ) );
-        assertEquals( "42", prettyPrint( 42 ) );
-        assertEquals( "42", prettyPrint( "42" ) );
-        assertEquals( "[1, 2, 3, 4]", prettyPrint( new int[]{1, 2, 3, 4} ) );
-        assertEquals( "[false, true, true, false]", prettyPrint( new boolean[]{false, true, true, false} ) );
-        assertEquals( "[a, b, z]", prettyPrint( new char[]{'a', 'b', 'z'} ) );
-        assertEquals( "[ab, cd, zx]", prettyPrint( new String[]{"ab", "cd", "zx"} ) );
+    void testPrettyPrint() {
+        assertEquals("null", prettyPrint(null));
+        assertEquals("42", prettyPrint(42));
+        assertEquals("42", prettyPrint("42"));
+        assertEquals("[1, 2, 3, 4]", prettyPrint(new int[] {1, 2, 3, 4}));
+        assertEquals("[false, true, true, false]", prettyPrint(new boolean[] {false, true, true, false}));
+        assertEquals("[a, b, z]", prettyPrint(new char[] {'a', 'b', 'z'}));
+        assertEquals("[ab, cd, zx]", prettyPrint(new String[] {"ab", "cd", "zx"}));
         assertEquals(
-                "[Cat, [http://neo4j.com, http://neo4j.org], Dog, [1, 2, 3], [[[Wolf]]]]",
-                prettyPrint( new Object[]{
-                        "Cat",
-                        new URI[]{URI.create( "http://neo4j.com" ), URI.create( "http://neo4j.org" )},
-                        "Dog",
-                        new int[]{1, 2, 3},
-                        new Object[]{new Object[]{new Object[]{"Wolf"}}}} ) );
+                "[Cat, [http://neo4j.com, http://neo4j.org], Dog, [1, 2, 3], [[[Wolf]]]]", prettyPrint(new Object[] {
+                    "Cat",
+                    new URI[] {URI.create("http://neo4j.com"), URI.create("http://neo4j.org")},
+                    "Dog",
+                    new int[] {1, 2, 3},
+                    new Object[] {new Object[] {new Object[] {"Wolf"}}}
+                }));
 
         Object[] recursiveArray = {10.12345, null, "String"};
         recursiveArray[1] = recursiveArray;
-        assertEquals( "[10.12345, [...], String]", prettyPrint( recursiveArray ) );
+        assertEquals("[10.12345, [...], String]", prettyPrint(recursiveArray));
     }
 
     @Test
-    void testEscape()
-    {
-        assertEquals( "abc", Strings.escape( "abc" ) );
-        assertEquals( "Abc", Strings.escape( "Abc" ) );
-        assertEquals( "a\\\"bc", Strings.escape( "a\"bc" ) );
-        assertEquals( "a\\\'bc", Strings.escape( "a\'bc" ) );
-        assertEquals( "a\\\\bc", Strings.escape( "a\\bc" ) );
-        assertEquals( "a\\nbc", Strings.escape( "a\nbc" ) );
-        assertEquals( "a\\tbc", Strings.escape( "a\tbc" ) );
-        assertEquals( "a\\rbc", Strings.escape( "a\rbc" ) );
-        assertEquals( "a\\bbc", Strings.escape( "a\bbc" ) );
-        assertEquals( "a\\fbc", Strings.escape( "a\fbc" ) );
+    void testEscape() {
+        assertEquals("abc", Strings.escape("abc"));
+        assertEquals("Abc", Strings.escape("Abc"));
+        assertEquals("a\\\"bc", Strings.escape("a\"bc"));
+        assertEquals("a\\\'bc", Strings.escape("a\'bc"));
+        assertEquals("a\\\\bc", Strings.escape("a\\bc"));
+        assertEquals("a\\nbc", Strings.escape("a\nbc"));
+        assertEquals("a\\tbc", Strings.escape("a\tbc"));
+        assertEquals("a\\rbc", Strings.escape("a\rbc"));
+        assertEquals("a\\bbc", Strings.escape("a\bbc"));
+        assertEquals("a\\fbc", Strings.escape("a\fbc"));
     }
 
     @Test
-    void testJoiningLines()
-    {
-        assertEquals( "a" + System.lineSeparator() + "b" + System.lineSeparator() + "c",
-                Strings.joinAsLines( "a", "b", "c" ) );
+    void testJoiningLines() {
+        assertEquals(
+                "a" + System.lineSeparator() + "b" + System.lineSeparator() + "c", Strings.joinAsLines("a", "b", "c"));
     }
 }

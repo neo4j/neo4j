@@ -25,15 +25,13 @@ import java.io.IOException;
 /**
  * Source of data chunks to read.
  */
-public interface Source extends Closeable
-{
-    Chunk nextChunk( int seekStartPos ) throws IOException;
+public interface Source extends Closeable {
+    Chunk nextChunk(int seekStartPos) throws IOException;
 
     /**
      * One chunk of data to read.
      */
-    interface Chunk
-    {
+    interface Chunk {
         /**
          * @return character data to read
          */
@@ -67,57 +65,46 @@ public interface Source extends Closeable
         int backPosition();
     }
 
-    class Empty extends SourceTraceability.Empty implements Chunk
-    {
+    class Empty extends SourceTraceability.Empty implements Chunk {
         @Override
-        public int startPosition()
-        {
+        public int startPosition() {
             return 0;
         }
 
         @Override
-        public int maxFieldSize()
-        {
+        public int maxFieldSize() {
             return 0;
         }
 
         @Override
-        public int length()
-        {
+        public int length() {
             return 0;
         }
 
         @Override
-        public char[] data()
-        {
+        public char[] data() {
             return null;
         }
 
         @Override
-        public int backPosition()
-        {
+        public int backPosition() {
             return 0;
         }
     }
 
     Chunk EMPTY_CHUNK = new Empty();
 
-    static Source singleChunk( Chunk chunk )
-    {
-        return new Source()
-        {
+    static Source singleChunk(Chunk chunk) {
+        return new Source() {
             private boolean returned;
 
             @Override
-            public void close()
-            {   // Nothing to close
+            public void close() { // Nothing to close
             }
 
             @Override
-            public Chunk nextChunk( int seekStartPos )
-            {
-                if ( !returned )
-                {
+            public Chunk nextChunk(int seekStartPos) {
+                if (!returned) {
                     returned = true;
                     return chunk;
                 }

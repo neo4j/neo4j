@@ -19,50 +19,43 @@
  */
 package org.neo4j.io.pagecache.impl.muninn.versioned;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.mem.MemoryAllocator;
 
-public class InMemoryVersionStorage implements VersionStorage
-{
-    private static final long CURSOR_OFFSET = UnsafeUtil.getFieldOffset( InMemoryVersionStorage.class, "cursor" );
-    static final long MAX_VERSIONED_STORAGE = ByteUnit.mebiBytes( 100 );
+public class InMemoryVersionStorage implements VersionStorage {
+    private static final long CURSOR_OFFSET = UnsafeUtil.getFieldOffset(InMemoryVersionStorage.class, "cursor");
+    static final long MAX_VERSIONED_STORAGE = ByteUnit.mebiBytes(100);
     private final long baseAddress;
     private final int pageSize;
-    @SuppressWarnings( "FieldMayBeFinal" )
+
+    @SuppressWarnings("FieldMayBeFinal")
     private volatile long cursor;
 
-    public InMemoryVersionStorage( MemoryAllocator memoryAllocator, int pageSize )
-    {
-        this.baseAddress = memoryAllocator.allocateAligned( MAX_VERSIONED_STORAGE, Long.BYTES );
+    public InMemoryVersionStorage(MemoryAllocator memoryAllocator, int pageSize) {
+        this.baseAddress = memoryAllocator.allocateAligned(MAX_VERSIONED_STORAGE, Long.BYTES);
         this.pageSize = pageSize;
         this.cursor = baseAddress;
     }
 
     @Override
-    public long copyPage( long sourcePage )
-    {
+    public long copyPage(long sourcePage) {
         long destination = cursor;
         long newCursor = destination + pageSize;
-        while ( !UnsafeUtil.compareAndSwapLong( this, CURSOR_OFFSET, destination, newCursor ) )
-        {
+        while (!UnsafeUtil.compareAndSwapLong(this, CURSOR_OFFSET, destination, newCursor)) {
             destination = cursor;
             newCursor = destination + pageSize;
         }
         long totalRequestedMemory = newCursor - baseAddress;
-        if ( totalRequestedMemory > MAX_VERSIONED_STORAGE )
-        {
-            throw new OutOfMemoryError(
-                    "Out of version storage memory. Max available memory: " + MAX_VERSIONED_STORAGE + ". Totally requested memory: " + totalRequestedMemory );
+        if (totalRequestedMemory > MAX_VERSIONED_STORAGE) {
+            throw new OutOfMemoryError("Out of version storage memory. Max available memory: " + MAX_VERSIONED_STORAGE
+                    + ". Totally requested memory: " + totalRequestedMemory);
         }
-        UnsafeUtil.copyMemory( sourcePage, destination, pageSize );
+        UnsafeUtil.copyMemory(sourcePage, destination, pageSize);
         return destination;
     }
 
-    long getAllocatedBytes()
-    {
+    long getAllocatedBytes() {
         return cursor - baseAddress;
     }
 }

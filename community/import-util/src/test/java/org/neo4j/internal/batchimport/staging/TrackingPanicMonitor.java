@@ -20,26 +20,21 @@
 package org.neo4j.internal.batchimport.staging;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.internal.batchimport.staging.StageExecution.PanicMonitor;
 
-class TrackingPanicMonitor implements PanicMonitor
-{
+class TrackingPanicMonitor implements PanicMonitor {
     private final AtomicReference<Throwable> panic = new AtomicReference<>();
 
     @Override
-    public void receivedPanic( Throwable cause )
-    {
-        panic.set( cause );
+    public void receivedPanic(Throwable cause) {
+        panic.set(cause);
     }
 
-    boolean hasReceivedPanic()
-    {
+    boolean hasReceivedPanic() {
         return panic.get() != null;
     }
 
-    Throwable getReceivedPanic()
-    {
+    Throwable getReceivedPanic() {
         return panic.get();
     }
 }

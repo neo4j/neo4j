@@ -19,38 +19,33 @@
  */
 package org.neo4j.dbms.archive;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.ZSTD;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.selectCompressionFormat;
 import static org.neo4j.test.proc.ProcessUtil.start;
 
-class CompressionFormatTest
-{
+import org.junit.jupiter.api.Test;
+
+class CompressionFormatTest {
     @Test
-    void shouldSelectZstdAsDefault()
-    {
-        assertEquals( ZSTD, selectCompressionFormat() );
+    void shouldSelectZstdAsDefault() {
+        assertEquals(ZSTD, selectCompressionFormat());
     }
 
     @Test
-    void shouldFallbackToGzipWhenZstdFails() throws Exception
-    {
+    void shouldFallbackToGzipWhenZstdFails() throws Exception {
         // this test runs in a separate process to avoid problems with any parallel execution and shared static states
         int expectedExitCode = 66;
-        var process =
-                start( CompressionFormatTest.class.getName(), Integer.toString( expectedExitCode ) );
-        assertEquals( expectedExitCode, process.waitFor() ); // using exitcode to verify execution of correct function
+        var process = start(CompressionFormatTest.class.getName(), Integer.toString(expectedExitCode));
+        assertEquals(expectedExitCode, process.waitFor()); // using exitcode to verify execution of correct function
     }
 
-    public static void main( String[] args )
-    {
-        int exitCode = Integer.parseInt( args[0] );
-        System.setProperty( "os.arch", "foo" ); // sabotage ZSTD loading
+    public static void main(String[] args) {
+        int exitCode = Integer.parseInt(args[0]);
+        System.setProperty("os.arch", "foo"); // sabotage ZSTD loading
         StandardCompressionFormat format = selectCompressionFormat();
-        assertEquals( GZIP, format, String.format( "Should fallback to %s when %s fails", GZIP.name(), ZSTD.name() ) );
-        System.exit( exitCode );
+        assertEquals(GZIP, format, String.format("Should fallback to %s when %s fails", GZIP.name(), ZSTD.name()));
+        System.exit(exitCode);
     }
 }

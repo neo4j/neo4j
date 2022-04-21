@@ -40,11 +40,12 @@ class GroupingAggTableTest extends CypherFunSuite {
     val resourceManager = new ResourceManager(monitor)
     val table = new GroupingAggTable(
       Array(DistinctPipe.GroupingCol("a", Variable("a"))),
-      { case (row, _) => row.getByName("a")},
+      { case (row, _) => row.getByName("a") },
       Array(AggregationPipe.AggregatingCol("c", CountStar())),
       QueryStateHelper.emptyWithResourceManager(resourceManager),
       CommunityCypherRowFactory(),
-      Id(0))
+      Id(0)
+    )
     table.clear()
 
     table.processRow(CypherRow.from("a" -> Values.intValue(1)))

@@ -22,28 +22,28 @@ package org.neo4j.bolt.v3.messaging.request;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 
-public class BeginMessage extends TransactionInitiatingMessage
-{
+public class BeginMessage extends TransactionInitiatingMessage {
     public static final byte SIGNATURE = 0x11;
 
-    public BeginMessage()
-    {
+    public BeginMessage() {
         super();
     }
 
-    public BeginMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
-    {
-        super( meta, bookmarks, txTimeout, accessMode, txMetadata );
+    public BeginMessage(
+            MapValue meta,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata) {
+        super(meta, bookmarks, txTimeout, accessMode, txMetadata);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "BEGIN " + meta();
     }
 }

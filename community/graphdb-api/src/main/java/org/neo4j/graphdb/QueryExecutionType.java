@@ -19,9 +19,9 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.annotations.api.PublicApi;
-
 import static java.util.Objects.requireNonNull;
+
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Signifies how a query is executed, as well as what side effects and results could be expected from the query.
@@ -50,13 +50,11 @@ import static java.util.Objects.requireNonNull;
  * if/when the query is executed normally (or under {@code PROFILE}).
  */
 @PublicApi
-public final class QueryExecutionType
-{
+public final class QueryExecutionType {
     /**
      * Signifies what type of query an {@link QueryExecutionType} executes.
      */
-    public enum QueryType
-    {
+    public enum QueryType {
         /** A read-only query, that does not change any data, but only produces a result. */
         READ_ONLY,
         /** A read/write query, that creates or updates data, and also produces a result. */
@@ -68,17 +66,17 @@ public final class QueryExecutionType
          * result.
          */
         SCHEMA_WRITE,
-         /** A database management query */
-        DBMS,;
+        /** A database management query */
+        DBMS,
+        ;
         private final QueryExecutionType query;
         private final QueryExecutionType profiled;
         private final QueryExecutionType explained;
 
-        QueryType()
-        {
-            this.query = new QueryExecutionType( Execution.QUERY, this );
-            this.profiled = new QueryExecutionType( Execution.PROFILE, this );
-            this.explained = new QueryExecutionType( Execution.EXPLAIN, this );
+        QueryType() {
+            this.query = new QueryExecutionType(Execution.QUERY, this);
+            this.profiled = new QueryExecutionType(Execution.PROFILE, this);
+            this.explained = new QueryExecutionType(Execution.EXPLAIN, this);
         }
     }
 
@@ -88,9 +86,8 @@ public final class QueryExecutionType
      * @param type the type of query executed.
      * @return The instance that signifies normal execution of the supplied {@link QueryType}.
      */
-    public static QueryExecutionType query( QueryType type )
-    {
-        return requireNonNull( type, "QueryType" ).query;
+    public static QueryExecutionType query(QueryType type) {
+        return requireNonNull(type, "QueryType").query;
     }
 
     /**
@@ -99,9 +96,8 @@ public final class QueryExecutionType
      * @param type the type of query executed.
      * @return The instance that signifies profiled execution of the supplied {@link QueryType}.
      */
-    public static QueryExecutionType profiled( QueryType type )
-    {
-        return requireNonNull( type, "QueryType" ).profiled;
+    public static QueryExecutionType profiled(QueryType type) {
+        return requireNonNull(type, "QueryType").profiled;
     }
 
     /**
@@ -110,9 +106,8 @@ public final class QueryExecutionType
      * @param type the type of query executed.
      * @return The instance that signifies explaining the plan of the supplied {@link QueryType}.
      */
-    public static QueryExecutionType explained( QueryType type )
-    {
-        return requireNonNull( type, "QueryType" ).explained;
+    public static QueryExecutionType explained(QueryType type) {
+        return requireNonNull(type, "QueryType").explained;
     }
 
     /**
@@ -120,8 +115,7 @@ public final class QueryExecutionType
      *
      * @return the type of query this execution refers to.
      */
-    public QueryType queryType()
-    {
+    public QueryType queryType() {
         return type;
     }
 
@@ -134,8 +128,7 @@ public final class QueryExecutionType
      *
      * @return {@code true} if the results from this execution would contain profiling information.
      */
-    public boolean isProfiled()
-    {
+    public boolean isProfiled() {
         return execution == Execution.PROFILE;
     }
 
@@ -148,8 +141,7 @@ public final class QueryExecutionType
      *
      * @return {@code true} if a description of the plan should be presented to the user.
      */
-    public boolean requestedExecutionPlanDescription()
-    {
+    public boolean requestedExecutionPlanDescription() {
         return execution != Execution.QUERY;
     }
 
@@ -159,8 +151,7 @@ public final class QueryExecutionType
      *
      * @return {@code true} if the query was executed using the {@code EXPLAIN} directive.
      */
-    public boolean isExplained()
-    {
+    public boolean isExplained() {
         return execution == Execution.EXPLAIN;
     }
 
@@ -171,8 +162,7 @@ public final class QueryExecutionType
      *
      * @return {@code true} if the execution would yield rows in the result set.
      */
-    public boolean canContainResults()
-    {
+    public boolean canContainResults() {
         return (type == QueryType.READ_ONLY || type == QueryType.READ_WRITE) && execution != Execution.EXPLAIN;
     }
 
@@ -184,8 +174,7 @@ public final class QueryExecutionType
      *
      * @return {@code true} if the execution could perform changes to data.
      */
-    public boolean canUpdateData()
-    {
+    public boolean canUpdateData() {
         return (type == QueryType.READ_WRITE || type == QueryType.WRITE) && execution != Execution.EXPLAIN;
     }
 
@@ -194,41 +183,35 @@ public final class QueryExecutionType
      *
      * @return {@code true} if the execution updates the schema.
      */
-    public boolean canUpdateSchema()
-    {
+    public boolean canUpdateSchema() {
         return type == QueryType.SCHEMA_WRITE && execution != Execution.EXPLAIN;
     }
 
     private final Execution execution;
     private final QueryType type;
 
-    private QueryExecutionType( Execution execution, QueryType type )
-    {
+    private QueryExecutionType(Execution execution, QueryType type) {
         this.execution = execution;
         this.type = type;
     }
 
     @Override
-    public String toString()
-    {
-        return execution.toString( type );
+    public String toString() {
+        return execution.toString(type);
     }
 
-    private enum Execution
-    {
-        QUERY
-                {
-                    @Override
-                    String toString( QueryType type )
-                    {
-                        return type.name();
-                    }
-                },
+    private enum Execution {
+        QUERY {
+            @Override
+            String toString(QueryType type) {
+                return type.name();
+            }
+        },
         PROFILE,
-        EXPLAIN,;
+        EXPLAIN,
+        ;
 
-        String toString( QueryType type )
-        {
+        String toString(QueryType type) {
             return name() + ":" + type.name();
         }
     }

@@ -19,48 +19,44 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class MapUtilTest
-{
+class MapUtilTest {
     @Test
-    void loadSpacedValue() throws Exception
-    {
+    void loadSpacedValue() throws Exception {
         // expecting
-        Map<String,String> expected = new HashMap<>();
-        expected.put( "key", "value" );
+        Map<String, String> expected = new HashMap<>();
+        expected.put("key", "value");
 
         // given
-        InputStream inputStream = new ByteArrayInputStream( "   key   =   value   ".getBytes() );
+        InputStream inputStream = new ByteArrayInputStream("   key   =   value   ".getBytes());
 
         // when
-        Map<String,String> result = MapUtil.load( inputStream );
+        Map<String, String> result = MapUtil.load(inputStream);
 
         // then
-        assertEquals( expected, result );
+        assertEquals(expected, result);
     }
 
     @Test
-    void loadNothing() throws Exception
-    {
+    void loadNothing() throws Exception {
         // expecting
-        Map<String,String> expected = new HashMap<>();
-        expected.put( "key", "" );
+        Map<String, String> expected = new HashMap<>();
+        expected.put("key", "");
 
         // given
-        InputStream inputStream = new ByteArrayInputStream( "   key   =      ".getBytes() );
+        InputStream inputStream = new ByteArrayInputStream("   key   =      ".getBytes());
 
         // when
-        Map<String,String> result = MapUtil.load( inputStream );
+        Map<String, String> result = MapUtil.load(inputStream);
 
         // then
-        assertEquals( expected, result );
+        assertEquals(expected, result);
     }
 }

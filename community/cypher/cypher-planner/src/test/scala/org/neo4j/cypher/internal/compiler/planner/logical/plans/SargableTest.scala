@@ -98,7 +98,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
 
     assertDoesNotMatch(equals(id(nodeA), expr2)) {
-      case AsIdSeekable(_) => (/* oh noes */)
+      case AsIdSeekable(_) => (/* oh noes */ )
     }
   }
 
@@ -106,7 +106,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     assertDoesNotMatch(equals(function("rand", nodeA), expr2)) {
-      case AsIdSeekable(_) => (/* oh noes */)
+      case AsIdSeekable(_) => (/* oh noes */ )
     }
   }
 
@@ -182,7 +182,10 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(table.getActualTypeFor(min)).thenReturn(CTInteger.invariant)
     when(table.getActualTypeFor(max)).thenReturn(CTFloat.invariant)
     val AsValueRangeSeekable(seekable) = AndedPropertyInequalities(
-      nodeA, leftExpr, NonEmptyList(greaterThan(leftExpr, min), lessThanOrEqual(leftExpr, max)))
+      nodeA,
+      leftExpr,
+      NonEmptyList(greaterThan(leftExpr, min), lessThanOrEqual(leftExpr, max))
+    )
 
     seekable.propertyValueType(table) should be(CTNumber)
   }
@@ -191,7 +194,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
 
     assertDoesNotMatch(in(prop("a", "id"), expr2)) {
-      case AsPropertySeekable(_) => (/* oh noes */)
+      case AsPropertySeekable(_) => (/* oh noes */ )
     }
   }
 

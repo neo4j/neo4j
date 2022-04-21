@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 @FunctionalInterface
-public interface InjectedNLIUpgradeCallback
-{
-    void apply( long newNLIId );
+public interface InjectedNLIUpgradeCallback {
+    void apply(long newNLIId);
 }

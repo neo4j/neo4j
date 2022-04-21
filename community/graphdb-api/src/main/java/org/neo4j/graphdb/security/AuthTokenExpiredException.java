@@ -21,24 +21,20 @@ package org.neo4j.graphdb.security;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class AuthTokenExpiredException extends RuntimeException implements Status.HasStatus
-{
+public class AuthTokenExpiredException extends RuntimeException implements Status.HasStatus {
     private static final Status statusCode = Status.Security.TokenExpired;
 
-    public AuthTokenExpiredException( String msg )
-    {
-        super( msg );
+    public AuthTokenExpiredException(String msg) {
+        super(msg);
     }
 
-    public AuthTokenExpiredException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    public AuthTokenExpiredException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
-    public Status status()
-    {
+    public Status status() {
         return statusCode;
     }
 }

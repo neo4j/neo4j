@@ -19,7 +19,6 @@
  */
 package org.neo4j.memory;
 
-public interface LimitedMemoryTracker extends MemoryTracker
-{
-    void setLimit( long localBytesLimit );
+public interface LimitedMemoryTracker extends MemoryTracker {
+    void setLimit(long localBytesLimit);
 }

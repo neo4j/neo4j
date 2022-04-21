@@ -42,22 +42,38 @@ import org.neo4j.token.TokenHolders;
 /**
  * Utility for loading {@link IndexProvider} instances from {@link DatabaseExtensions}.
  */
-public class SchemaIndexExtensionLoader
-{
+public class SchemaIndexExtensionLoader {
 
-    @SuppressWarnings( "unchecked" )
-    public static DatabaseExtensions instantiateExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
-                                                            LogService logService, PageCache pageCache, JobScheduler jobScheduler,
-                                                            RecoveryCleanupWorkCollector recoveryCollector, DbmsInfo dbmsInfo,
-                                                            Monitors monitors, TokenHolders tokenHolders,
-                                                            PageCacheTracer pageCacheTracer, DatabaseReadOnlyChecker readOnlyChecker )
-    {
+    @SuppressWarnings("unchecked")
+    public static DatabaseExtensions instantiateExtensions(
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fileSystem,
+            Config config,
+            LogService logService,
+            PageCache pageCache,
+            JobScheduler jobScheduler,
+            RecoveryCleanupWorkCollector recoveryCollector,
+            DbmsInfo dbmsInfo,
+            Monitors monitors,
+            TokenHolders tokenHolders,
+            PageCacheTracer pageCacheTracer,
+            DatabaseReadOnlyChecker readOnlyChecker) {
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders, pageCacheTracer,
-                databaseLayout, readOnlyChecker );
-        @SuppressWarnings( "rawtypes" )
-        Iterable extensions = Services.loadAll( ExtensionFactory.class );
-        DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );
-        return new DatabaseExtensions( extensionContext, extensions, deps, ExtensionFailureStrategies.ignore() );
+        deps.satisfyDependencies(
+                fileSystem,
+                config,
+                logService,
+                pageCache,
+                recoveryCollector,
+                monitors,
+                jobScheduler,
+                tokenHolders,
+                pageCacheTracer,
+                databaseLayout,
+                readOnlyChecker);
+        @SuppressWarnings("rawtypes")
+        Iterable extensions = Services.loadAll(ExtensionFactory.class);
+        DatabaseExtensionContext extensionContext = new DatabaseExtensionContext(databaseLayout, dbmsInfo, deps);
+        return new DatabaseExtensions(extensionContext, extensions, deps, ExtensionFailureStrategies.ignore());
     }
 }

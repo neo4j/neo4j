@@ -19,18 +19,17 @@
  */
 package org.neo4j.storageengine.migration;
 
-public interface RollingUpgradeCompatibility
-{
+public interface RollingUpgradeCompatibility {
     /**
      * Check if formats are compatible for using in rolling upgrade
      * @param format The format to compare with (older)
      * @param otherFormat The format to compare against (newer)
      * @return true if they are compatible, false otherwise
      */
-    boolean isVersionCompatibleForRollingUpgrade( String format, String otherFormat );
+    boolean isVersionCompatibleForRollingUpgrade(String format, String otherFormat);
 
     /**
      * See {@link #isVersionCompatibleForRollingUpgrade(String, String)}
      */
-    boolean isVersionCompatibleForRollingUpgrade( long format, long otherFormat );
+    boolean isVersionCompatibleForRollingUpgrade(long format, long otherFormat);
 }

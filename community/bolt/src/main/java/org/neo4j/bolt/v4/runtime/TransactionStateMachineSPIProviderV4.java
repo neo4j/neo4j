@@ -19,8 +19,9 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import java.util.Objects;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
+import java.util.Objects;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
@@ -31,30 +32,30 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionStatementSPIProvider {
+    public static final long SHALLOW_SIZE =
+            HeapEstimator.shallowSizeOfInstance(TransactionStateMachineSPIProviderV4.class);
 
-public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionStatementSPIProvider
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionStateMachineSPIProviderV4.class );
-
-    public TransactionStateMachineSPIProviderV4( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-                                                 BoltChannel boltChannel, SystemNanoClock clock, MemoryTracker memoryTracker )
-    {
-        super( boltGraphDatabaseManagementServiceSPI, boltChannel, clock, memoryTracker );
+    public TransactionStateMachineSPIProviderV4(
+            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
+            BoltChannel boltChannel,
+            SystemNanoClock clock,
+            MemoryTracker memoryTracker) {
+        super(boltGraphDatabaseManagementServiceSPI, boltChannel, clock, memoryTracker);
     }
 
     @Override
-    protected String selectDatabaseName( String databaseName )
-    {
-        return Objects.equals( databaseName, ABSENT_DB_NAME ) ? boltChannel.defaultDatabase() : databaseName;
+    protected String selectDatabaseName(String databaseName) {
+        return Objects.equals(databaseName, ABSENT_DB_NAME) ? boltChannel.defaultDatabase() : databaseName;
     }
 
     @Override
-    protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
-                                                                        StatementProcessorReleaseManager resourceReleaseManager,
-                                                                        String transactionId )
-    {
-        memoryTracker.allocateHeap( TransactionStateMachineV4SPI.SHALLOW_SIZE );
-        return new TransactionStateMachineV4SPI( activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId );
+    protected TransactionStateMachineSPI newTransactionStateMachineSPI(
+            BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
+            StatementProcessorReleaseManager resourceReleaseManager,
+            String transactionId) {
+        memoryTracker.allocateHeap(TransactionStateMachineV4SPI.SHALLOW_SIZE);
+        return new TransactionStateMachineV4SPI(
+                activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId);
     }
 }

@@ -27,8 +27,7 @@ import org.neo4j.annotations.api.PublicApi;
  * @param <T> The type of the values associated with this setting.
  */
 @PublicApi
-public interface Setting<T>
-{
+public interface Setting<T> {
     /**
      * The full (unique) name, identifying a specific setting.
      *

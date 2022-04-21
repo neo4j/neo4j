@@ -23,13 +23,16 @@ import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.messages.MessageUtil
 
 object MessageUtilProvider extends ErrorMessageProvider {
-  override def createMissingPropertyLabelHintError(operatorDescription: String,
-                                                   hintStringification: String,
-                                                   missingThingDescription: String,
-                                                   foundThingsDescription: String,
-                                                   entityDescription: String,
-                                                   entityName: String,
-                                                   additionalInfo: String): String =
+
+  override def createMissingPropertyLabelHintError(
+    operatorDescription: String,
+    hintStringification: String,
+    missingThingDescription: String,
+    foundThingsDescription: String,
+    entityDescription: String,
+    entityName: String,
+    additionalInfo: String
+  ): String =
     MessageUtil.createMissingPropertyLabelHintError(
       operatorDescription,
       hintStringification,

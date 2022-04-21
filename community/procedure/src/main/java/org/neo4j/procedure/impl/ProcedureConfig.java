@@ -19,68 +19,61 @@
  */
 package org.neo4j.procedure.impl;
 
+import static java.time.ZoneOffset.UTC;
+
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 
-import static java.time.ZoneOffset.UTC;
-
-public class ProcedureConfig
-{
+public class ProcedureConfig {
     private final List<Pattern> accessPatterns;
     private final List<Pattern> whiteList;
     private final ZoneId defaultTemporalTimeZone;
 
-    private ProcedureConfig()
-    {
+    private ProcedureConfig() {
         this.accessPatterns = Collections.emptyList();
-        this.whiteList = Collections.singletonList( compilePattern( "*" ) );
+        this.whiteList = Collections.singletonList(compilePattern("*"));
         this.defaultTemporalTimeZone = UTC;
     }
 
-    public ProcedureConfig( Config config )
-    {
-        this.accessPatterns = parseMatchers( config.get( GraphDatabaseSettings.procedure_unrestricted ), ProcedureConfig::compilePattern );
-        this.whiteList = parseMatchers( config.get( GraphDatabaseSettings.procedure_allowlist ), ProcedureConfig::compilePattern );
-        this.defaultTemporalTimeZone = config.get( GraphDatabaseSettings.db_temporal_timezone );
+    public ProcedureConfig(Config config) {
+        this.accessPatterns = parseMatchers(
+                config.get(GraphDatabaseSettings.procedure_unrestricted), ProcedureConfig::compilePattern);
+        this.whiteList =
+                parseMatchers(config.get(GraphDatabaseSettings.procedure_allowlist), ProcedureConfig::compilePattern);
+        this.defaultTemporalTimeZone = config.get(GraphDatabaseSettings.db_temporal_timezone);
     }
 
-    private <T> List<T> parseMatchers( List<String> fullAccessProcedures, Function<String,T>
-            matchFunc )
-    {
-        if ( fullAccessProcedures == null || fullAccessProcedures.isEmpty() )
-        {
+    private <T> List<T> parseMatchers(List<String> fullAccessProcedures, Function<String, T> matchFunc) {
+        if (fullAccessProcedures == null || fullAccessProcedures.isEmpty()) {
             return Collections.emptyList();
         }
-        return fullAccessProcedures.stream().map( matchFunc ).collect( Collectors.toList() );
+        return fullAccessProcedures.stream().map(matchFunc).collect(Collectors.toList());
     }
 
-    public boolean fullAccessFor( String procedureName )
-    {
-        return accessPatterns.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
+    public boolean fullAccessFor(String procedureName) {
+        return accessPatterns.stream()
+                .anyMatch(pattern -> pattern.matcher(procedureName).matches());
     }
 
-    public boolean isWhitelisted( String procedureName )
-    {
-        return whiteList.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
+    public boolean isWhitelisted(String procedureName) {
+        return whiteList.stream()
+                .anyMatch(pattern -> pattern.matcher(procedureName).matches());
     }
 
-    private static Pattern compilePattern( String procedure )
-    {
-        procedure = procedure.trim().replaceAll( "([\\[\\]\\\\?()^${}+|.])", "\\\\$1" );
-        return Pattern.compile( procedure.replaceAll( "\\*", ".*" ) );
+    private static Pattern compilePattern(String procedure) {
+        procedure = procedure.trim().replaceAll("([\\[\\]\\\\?()^${}+|.])", "\\\\$1");
+        return Pattern.compile(procedure.replaceAll("\\*", ".*"));
     }
 
     static final ProcedureConfig DEFAULT = new ProcedureConfig();
 
-    public ZoneId getDefaultTemporalTimeZone()
-    {
+    public ZoneId getDefaultTemporalTimeZone() {
         return defaultTemporalTimeZone;
     }
 }

@@ -19,6 +19,24 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import static java.lang.Long.parseLong;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.LongStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -31,13 +49,6 @@ import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.LongStream;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -57,24 +68,11 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.lang.Long.parseLong;
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @TestDirectoryExtension
-class LuceneSchemaIndexPopulatorTest
-{
+class LuceneSchemaIndexPopulatorTest {
     @Inject
     private DefaultFileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDir;
 
@@ -87,252 +85,212 @@ class LuceneSchemaIndexPopulatorTest
     private IndexDescriptor index;
 
     @BeforeEach
-    void before() throws IOException
-    {
+    void before() throws IOException {
         directory = new ByteBuffersDirectory();
-        DirectoryFactory directoryFactory = new DirectoryFactory.Single(
-                new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new TextIndexProvider( fs, directoryFactory, directoriesByProvider( testDir.directory( "folder" ) ),
-                new Monitors(), Config.defaults(), writable() );
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        index = IndexPrototype.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withName( "index" ).materialise( 0 );
-        indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_TOKEN_LOOKUP, Sets.immutable.empty() );
+        DirectoryFactory directoryFactory =
+                new DirectoryFactory.Single(new DirectoryFactory.UncloseableDirectory(directory));
+        provider = new TextIndexProvider(
+                fs,
+                directoryFactory,
+                directoriesByProvider(testDir.directory("folder")),
+                new Monitors(),
+                Config.defaults(),
+                writable());
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig(Config.defaults());
+        index = IndexPrototype.forSchema(forLabel(42, propertyKeyId), provider.getProviderDescriptor())
+                .withName("index")
+                .materialise(0);
+        indexPopulator = provider.getPopulator(
+                index, samplingConfig, heapBufferFactory(1024), INSTANCE, SIMPLE_TOKEN_LOOKUP, Sets.immutable.empty());
         indexPopulator.create();
     }
 
     @AfterEach
-    void after() throws Exception
-    {
-        if ( reader != null )
-        {
+    void after() throws Exception {
+        if (reader != null) {
             reader.close();
         }
         directory.close();
     }
 
     @Test
-    void addingValuesShouldPersistThem() throws Exception
-    {
+    void addingValuesShouldPersistThem() throws Exception {
         // WHEN
-        addUpdate( indexPopulator, 1, "First" );
-        addUpdate( indexPopulator, 2, "Second" );
-        addUpdate( indexPopulator, 3, "(byte) 1" );
-        addUpdate( indexPopulator, 4, "(short) 2" );
-        addUpdate( indexPopulator, 5, "3" );
-        addUpdate( indexPopulator, 6, "4L" );
-        addUpdate( indexPopulator, 7, "5F" );
-        addUpdate( indexPopulator, 8, "6D" );
+        addUpdate(indexPopulator, 1, "First");
+        addUpdate(indexPopulator, 2, "Second");
+        addUpdate(indexPopulator, 3, "(byte) 1");
+        addUpdate(indexPopulator, 4, "(short) 2");
+        addUpdate(indexPopulator, 5, "3");
+        addUpdate(indexPopulator, 6, "4L");
+        addUpdate(indexPopulator, 7, "5F");
+        addUpdate(indexPopulator, 8, "6D");
 
         // THEN
         assertIndexedValues(
-                hit( "First", 1 ),
-                hit( "Second", 2 ),
-                hit( "(byte) 1", 3 ),
-                hit( "(short) 2", 4 ),
-                hit( "3", 5 ),
-                hit( "4L", 6 ),
-                hit( "5F", 7 ),
-                hit( "6D", 8 ) );
+                hit("First", 1),
+                hit("Second", 2),
+                hit("(byte) 1", 3),
+                hit("(short) 2", 4),
+                hit("3", 5),
+                hit("4L", 6),
+                hit("5F", 7),
+                hit("6D", 8));
     }
 
     @Test
-    void shouldIgnoreAddingUnsupportedValueTypes() throws Exception
-    {
+    void shouldIgnoreAddingUnsupportedValueTypes() throws Exception {
         // given  populating an empty index
-        final var ids = LongStream.range( 0L, 10L ).toArray();
+        final var ids = LongStream.range(0L, 10L).toArray();
 
         // when   updates of unsupported value types (longs in this case) are processed
-        final var updates = Arrays.stream( ids ).mapToObj( id -> add( id, id ) ).toList();
-        indexPopulator.add( updates, NULL_CONTEXT );
+        final var updates = Arrays.stream(ids).mapToObj(id -> add(id, id)).toList();
+        indexPopulator.add(updates, NULL_CONTEXT);
 
         // then   should not be indexed
-        final var hits = Arrays.stream( ids ).mapToObj( Hit::new ).toArray( Hit[]::new );
-        assertIndexedValues( hits );
+        final var hits = Arrays.stream(ids).mapToObj(Hit::new).toArray(Hit[]::new);
+        assertIndexedValues(hits);
     }
 
     @Test
-    void multipleEqualValues() throws Exception
-    {
+    void multipleEqualValues() throws Exception {
         // WHEN
-        addUpdate( indexPopulator, 1, "value" );
-        addUpdate( indexPopulator, 2, "value" );
-        addUpdate( indexPopulator, 3, "value" );
+        addUpdate(indexPopulator, 1, "value");
+        addUpdate(indexPopulator, 2, "value");
+        addUpdate(indexPopulator, 3, "value");
 
         // THEN
-        assertIndexedValues(
-                hit( "value", 1L, 2L, 3L ) );
+        assertIndexedValues(hit("value", 1L, 2L, 3L));
     }
 
     @Test
-    void multipleEqualValuesWithUpdateThatRemovesOne() throws Exception
-    {
+    void multipleEqualValuesWithUpdateThatRemovesOne() throws Exception {
         // WHEN
-        addUpdate( indexPopulator, 1, "value" );
-        addUpdate( indexPopulator, 2, "value" );
-        addUpdate( indexPopulator, 3, "value" );
-        updatePopulator( indexPopulator, singletonList( remove( 2, "value" ) ) );
+        addUpdate(indexPopulator, 1, "value");
+        addUpdate(indexPopulator, 2, "value");
+        addUpdate(indexPopulator, 3, "value");
+        updatePopulator(indexPopulator, singletonList(remove(2, "value")));
 
         // THEN
-        assertIndexedValues(
-                hit( "value", 1L, 3L ) );
+        assertIndexedValues(hit("value", 1L, 3L));
     }
 
     @Test
-    void changeUpdatesInterleavedWithAdds() throws Exception
-    {
+    void changeUpdatesInterleavedWithAdds() throws Exception {
         // WHEN
-        addUpdate( indexPopulator, 1, "1" );
-        addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, singletonList( change( 1, "1", "1a" ) ) );
-        addUpdate( indexPopulator, 3, "3" );
+        addUpdate(indexPopulator, 1, "1");
+        addUpdate(indexPopulator, 2, "2");
+        updatePopulator(indexPopulator, singletonList(change(1, "1", "1a")));
+        addUpdate(indexPopulator, 3, "3");
 
         // THEN
-        assertIndexedValues(
-                no( "1" ),
-                hit( "1a", 1 ),
-                hit( "2", 2 ),
-                hit( "3", 3 ) );
+        assertIndexedValues(no("1"), hit("1a", 1), hit("2", 2), hit("3", 3));
     }
 
     @Test
-    void addUpdatesInterleavedWithAdds() throws Exception
-    {
+    void addUpdatesInterleavedWithAdds() throws Exception {
         // WHEN
-        addUpdate( indexPopulator, 1, "1" );
-        addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( remove( 1, "1" ), add( 1, "1a" ) ) );
-        addUpdate( indexPopulator, 3, "3" );
+        addUpdate(indexPopulator, 1, "1");
+        addUpdate(indexPopulator, 2, "2");
+        updatePopulator(indexPopulator, asList(remove(1, "1"), add(1, "1a")));
+        addUpdate(indexPopulator, 3, "3");
 
         // THEN
-        assertIndexedValues(
-                hit( "1a", 1 ),
-                hit( "2", 2 ),
-                hit( "3", 3 ),
-                no( "1" ) );
+        assertIndexedValues(hit("1a", 1), hit("2", 2), hit("3", 3), no("1"));
     }
 
     @Test
-    void removeUpdatesInterleavedWithAdds() throws Exception
-    {
+    void removeUpdatesInterleavedWithAdds() throws Exception {
         // WHEN
-        addUpdate( indexPopulator, 1, "1" );
-        addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, singletonList( remove( 2, "2" ) ) );
-        addUpdate( indexPopulator, 3, "3" );
+        addUpdate(indexPopulator, 1, "1");
+        addUpdate(indexPopulator, 2, "2");
+        updatePopulator(indexPopulator, singletonList(remove(2, "2")));
+        addUpdate(indexPopulator, 3, "3");
 
         // THEN
-        assertIndexedValues(
-                hit( "1", 1 ),
-                no( "2" ),
-                hit( "3", 3 ) );
+        assertIndexedValues(hit("1", 1), no("2"), hit("3", 3));
     }
 
     @Test
-    void multipleInterleaves() throws Exception
-    {
+    void multipleInterleaves() throws Exception {
         // WHEN
-        addUpdate( indexPopulator, 1, "1" );
-        addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ) );
-        addUpdate( indexPopulator, 3, "3" );
-        addUpdate( indexPopulator, 4, "4" );
-        updatePopulator( indexPopulator, asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ) );
+        addUpdate(indexPopulator, 1, "1");
+        addUpdate(indexPopulator, 2, "2");
+        updatePopulator(indexPopulator, asList(change(1, "1", "1a"), change(2, "2", "2a")));
+        addUpdate(indexPopulator, 3, "3");
+        addUpdate(indexPopulator, 4, "4");
+        updatePopulator(indexPopulator, asList(change(1, "1a", "1b"), change(4, "4", "4a")));
 
         // THEN
-        assertIndexedValues(
-                no( "1" ),
-                no( "1a" ),
-                hit( "1b", 1 ),
-                no( "2" ),
-                hit( "2a", 2 ),
-                hit( "3", 3 ),
-                no( "4" ),
-                hit( "4a", 4 ) );
+        assertIndexedValues(no("1"), no("1a"), hit("1b", 1), no("2"), hit("2a", 2), hit("3", 3), no("4"), hit("4a", 4));
     }
 
-    private static Hit hit( Object value, Long... nodeIds )
-    {
-        return new Hit( value, nodeIds );
+    private static Hit hit(Object value, Long... nodeIds) {
+        return new Hit(value, nodeIds);
     }
 
-    private static Hit hit( Object value, long nodeId )
-    {
-        return new Hit( value, nodeId );
+    private static Hit hit(Object value, long nodeId) {
+        return new Hit(value, nodeId);
     }
 
-    private static Hit no( Object value )
-    {
-        return new Hit( value );
+    private static Hit no(Object value) {
+        return new Hit(value);
     }
 
-    private static class Hit
-    {
+    private static class Hit {
         private final Value value;
         private final Long[] nodeIds;
 
-        Hit( Object value, Long... nodeIds )
-        {
-            this.value = Values.of( value );
+        Hit(Object value, Long... nodeIds) {
+            this.value = Values.of(value);
             this.nodeIds = nodeIds;
         }
     }
 
-    private IndexEntryUpdate<?> add( long nodeId, Object value )
-    {
-        return IndexQueryHelper.add( nodeId, index, value );
+    private IndexEntryUpdate<?> add(long nodeId, Object value) {
+        return IndexQueryHelper.add(nodeId, index, value);
     }
 
-    private IndexEntryUpdate<?> change( long nodeId, Object valueBefore, Object valueAfter )
-    {
-        return IndexQueryHelper.change( nodeId, index, valueBefore, valueAfter );
+    private IndexEntryUpdate<?> change(long nodeId, Object valueBefore, Object valueAfter) {
+        return IndexQueryHelper.change(nodeId, index, valueBefore, valueAfter);
     }
 
-    private IndexEntryUpdate<?> remove( long nodeId, Object removedValue )
-    {
-        return IndexQueryHelper.remove( nodeId, index, removedValue );
+    private IndexEntryUpdate<?> remove(long nodeId, Object removedValue) {
+        return IndexQueryHelper.remove(nodeId, index, removedValue);
     }
 
-    private void assertIndexedValues( Hit... expectedHits ) throws IOException
-    {
+    private void assertIndexedValues(Hit... expectedHits) throws IOException {
         switchToVerification();
 
-        for ( Hit hit : expectedHits )
-        {
-            TopDocs hits = searcher.search( LuceneDocumentStructure.newSeekQuery( hit.value ), 10 );
-            assertEquals( TotalHits.Relation.EQUAL_TO, hits.totalHits.relation );
-            assertEquals( hit.nodeIds.length, hits.totalHits.value, "Unexpected number of index results from " + hit.value );
+        for (Hit hit : expectedHits) {
+            TopDocs hits = searcher.search(LuceneDocumentStructure.newSeekQuery(hit.value), 10);
+            assertEquals(TotalHits.Relation.EQUAL_TO, hits.totalHits.relation);
+            assertEquals(
+                    hit.nodeIds.length, hits.totalHits.value, "Unexpected number of index results from " + hit.value);
             Set<Long> foundNodeIds = new HashSet<>();
-            for ( int i = 0; i < hits.totalHits.value; i++ )
-            {
-                Document document = searcher.doc( hits.scoreDocs[i].doc );
-                foundNodeIds.add( parseLong( document.get( "id" ) ) );
+            for (int i = 0; i < hits.totalHits.value; i++) {
+                Document document = searcher.doc(hits.scoreDocs[i].doc);
+                foundNodeIds.add(parseLong(document.get("id")));
             }
-            assertEquals( asSet( hit.nodeIds ), foundNodeIds );
+            assertEquals(asSet(hit.nodeIds), foundNodeIds);
         }
     }
 
-    private void switchToVerification() throws IOException
-    {
-        indexPopulator.close( true, NULL_CONTEXT );
-        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( index, NULL_CONTEXT, Sets.immutable.empty() ) );
-        reader = DirectoryReader.open( directory );
-        searcher = new IndexSearcher( reader );
+    private void switchToVerification() throws IOException {
+        indexPopulator.close(true, NULL_CONTEXT);
+        assertEquals(InternalIndexState.ONLINE, provider.getInitialState(index, NULL_CONTEXT, Sets.immutable.empty()));
+        reader = DirectoryReader.open(directory);
+        searcher = new IndexSearcher(reader);
     }
 
-    private void addUpdate( IndexPopulator populator, long nodeId, Object value ) throws IndexEntryConflictException
-    {
-        populator.add( singletonList( IndexQueryHelper.add( nodeId, index, value ) ), NULL_CONTEXT );
+    private void addUpdate(IndexPopulator populator, long nodeId, Object value) throws IndexEntryConflictException {
+        populator.add(singletonList(IndexQueryHelper.add(nodeId, index, value)), NULL_CONTEXT);
     }
 
-    private static void updatePopulator(
-            IndexPopulator populator,
-            Iterable<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
-    {
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
-        {
-            for ( IndexEntryUpdate<?> update :  updates )
-            {
-                updater.process( update );
+    private static void updatePopulator(IndexPopulator populator, Iterable<IndexEntryUpdate<?>> updates)
+            throws IndexEntryConflictException {
+        try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+            for (IndexEntryUpdate<?> update : updates) {
+                updater.process(update);
             }
         }
     }

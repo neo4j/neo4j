@@ -19,10 +19,14 @@
  */
 package org.neo4j.test;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Predicate;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
@@ -38,87 +42,76 @@ import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
  */
-public final class LogTestUtils
-{
-    private LogTestUtils()
-    {
+public final class LogTestUtils {
+    private LogTestUtils() {}
+
+    public interface LogHook<RECORD> extends Predicate<RECORD> {
+        void file(Path file);
+
+        void done(Path file);
     }
 
-    public interface LogHook<RECORD> extends Predicate<RECORD>
-    {
-        void file( Path file );
-
-        void done( Path file );
-    }
-
-    public abstract static class LogHookAdapter<RECORD> implements LogHook<RECORD>
-    {
+    public abstract static class LogHookAdapter<RECORD> implements LogHook<RECORD> {
         @Override
-        public void file( Path file )
-        {   // Do nothing
+        public void file(Path file) { // Do nothing
         }
 
         @Override
-        public void done( Path file )
-        {   // Do nothing
+        public void done(Path file) { // Do nothing
         }
     }
 
-    public static class CountingLogHook<RECORD> extends LogHookAdapter<RECORD>
-    {
+    public static class CountingLogHook<RECORD> extends LogHookAdapter<RECORD> {
         private int count;
 
         @Override
-        public boolean test( RECORD item )
-        {
+        public boolean test(RECORD item) {
             count++;
             return true;
         }
 
-        public int getCount()
-        {
+        public int getCount() {
             return count;
         }
     }
 
-    public static Path[] filterNeostoreLogicalLog( LogFiles logFiles, FileSystemAbstraction fileSystem,
-            LogHook<LogEntry> filter ) throws IOException
-    {
+    public static Path[] filterNeostoreLogicalLog(
+            LogFiles logFiles, FileSystemAbstraction fileSystem, LogHook<LogEntry> filter) throws IOException {
         Path[] files = logFiles.logFiles();
-        for ( Path file : files )
-        {
-            filterTransactionLogFile( fileSystem, file, filter, EMPTY_ACCESSOR );
+        for (Path file : files) {
+            filterTransactionLogFile(fileSystem, file, filter, EMPTY_ACCESSOR);
         }
 
         return files;
     }
 
-    private static void filterTransactionLogFile( FileSystemAbstraction fileSystem, Path file, final LogHook<LogEntry> filter,
-            ChannelNativeAccessor channelNativeAccessor ) throws IOException
-    {
-        filter.file( file );
-        try ( StoreChannel in = fileSystem.read( file ) )
-        {
-            LogHeader logHeader = readLogHeader( ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE ), in, true, file );
+    private static void filterTransactionLogFile(
+            FileSystemAbstraction fileSystem,
+            Path file,
+            final LogHook<LogEntry> filter,
+            ChannelNativeAccessor channelNativeAccessor)
+            throws IOException {
+        filter.file(file);
+        try (StoreChannel in = fileSystem.read(file)) {
+            LogHeader logHeader =
+                    readLogHeader(ByteBuffers.allocate(CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE), in, true, file);
             assert logHeader != null : "Looks like we tried to read a log header of an empty pre-allocated file.";
-            PhysicalLogVersionedStoreChannel inChannel =
-                    new PhysicalLogVersionedStoreChannel( in, logHeader.getLogVersion(), logHeader.getLogFormatVersion(), file, channelNativeAccessor,
-                            DatabaseTracer.NULL );
-            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, INSTANCE );
-            LogEntryReader entryReader = new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
+            PhysicalLogVersionedStoreChannel inChannel = new PhysicalLogVersionedStoreChannel(
+                    in,
+                    logHeader.getLogVersion(),
+                    logHeader.getLogFormatVersion(),
+                    file,
+                    channelNativeAccessor,
+                    DatabaseTracer.NULL);
+            ReadableLogChannel inBuffer = new ReadAheadLogChannel(inChannel, INSTANCE);
+            LogEntryReader entryReader = new VersionAwareLogEntryReader(new TestCommandReaderFactory());
 
             LogEntry entry;
-            while ( (entry = entryReader.readLogEntry( inBuffer )) != null )
-            {
-                filter.test( entry );
+            while ((entry = entryReader.readLogEntry(inBuffer)) != null) {
+                filter.test(entry);
             }
         }
     }

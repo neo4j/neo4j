@@ -59,7 +59,7 @@ object ListType {
 
   def unapply(x: CypherType): Option[CypherType] = x match {
     case x: ListType => Some(x.innerType)
-    case _ => None
+    case _           => None
   }
 }
 

@@ -24,7 +24,8 @@ import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.http.HttpTransaction.statementPayload
 import org.neo4j.test.server.HTTP
 
-case class HttpTransaction(txHttp: HTTP.Builder, commitHttp: HTTP.Builder) extends CypherExecutorTransaction with HttpExceptionConverter {
+case class HttpTransaction(txHttp: HTTP.Builder, commitHttp: HTTP.Builder) extends CypherExecutorTransaction
+    with HttpExceptionConverter {
 
   override def execute(statement: String, parameters: Map[String, Any]): StatementResult = convertExceptions {
     require(parameters.isEmpty, "Statement parameters isn't implemented yet")
@@ -49,7 +50,7 @@ object HttpTransaction {
     val resp = dbHttp.POST("tx")
     HttpTransaction(
       dbHttp.withBaseUri(resp.location()),
-      dbHttp.withBaseUri(resp.stringFromContent("commit")),
+      dbHttp.withBaseUri(resp.stringFromContent("commit"))
     )
   }
 
@@ -66,4 +67,3 @@ object HttpTransaction {
   private def statementPayload(statement: String): HTTP.RawPayload =
     HTTP.RawPayload.rawPayload(statementJsonString(statement))
 }
-

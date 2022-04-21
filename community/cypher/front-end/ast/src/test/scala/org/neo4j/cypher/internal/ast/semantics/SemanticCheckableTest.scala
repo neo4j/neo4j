@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.expressions.Variable
 
 class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling {
 
@@ -192,7 +192,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
   test("shouldScopeState") {
     val func1 =
-      (s:SemanticState) => {
+      (s: SemanticState) => {
         val variable = Variable("name")(DummyPosition(0))
         s.declareVariable(variable, CTNode)
       }

@@ -19,21 +19,18 @@
  */
 package org.neo4j.storageengine.api;
 
-public class LongReference implements Reference
-{
+public class LongReference implements Reference {
     public static final long NULL = -1;
 
     public final long id;
 
-    public LongReference( long id )
-    {
+    public LongReference(long id) {
         this.id = id;
     }
 
-    public static Reference longReference( long id )
-    {
-        return id == NULL ? NULL_REFERENCE : new LongReference( id );
+    public static Reference longReference(long id) {
+        return id == NULL ? NULL_REFERENCE : new LongReference(id);
     }
 
-    public static Reference NULL_REFERENCE = new LongReference( NULL );
+    public static Reference NULL_REFERENCE = new LongReference(NULL);
 }

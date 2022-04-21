@@ -25,51 +25,42 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.util.VisibleForTesting;
 
 @VisibleForTesting
-public abstract class TraceableCursor<CURSOR> extends DefaultCloseListenable implements Cursor
-{
+public abstract class TraceableCursor<CURSOR> extends DefaultCloseListenable implements Cursor {
     private final CursorPool<CURSOR> pool;
     protected KernelReadTracer tracer;
     private boolean returnedToPool;
 
-    TraceableCursor( CursorPool<CURSOR> pool )
-    {
+    TraceableCursor(CursorPool<CURSOR> pool) {
         this.pool = pool;
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
+    public void setTracer(KernelReadTracer tracer) {
         this.tracer = tracer;
     }
 
     @Override
-    public void removeTracer()
-    {
+    public void removeTracer() {
         this.tracer = null;
     }
 
-    void acquire()
-    {
-        if ( !returnedToPool )
-        {
-            throw new IllegalStateException( this + " hasn't been returned to pool yet" );
+    void acquire() {
+        if (!returnedToPool) {
+            throw new IllegalStateException(this + " hasn't been returned to pool yet");
         }
         returnedToPool = false;
     }
 
     @Override
-    public void closeInternal()
-    {
-        if ( !returnedToPool )
-        {
-            pool.accept( (CURSOR) this );
+    public void closeInternal() {
+        if (!returnedToPool) {
+            pool.accept((CURSOR) this);
             returnedToPool = true;
         }
     }
 
     @VisibleForTesting
-    public boolean returnedToPool()
-    {
+    public boolean returnedToPool() {
         return returnedToPool;
     }
 }

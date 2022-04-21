@@ -19,39 +19,34 @@
  */
 package org.neo4j.internal.batchimport.executor;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Strategy for waiting a while, given a certain {@link Thread}.
  */
-public interface ParkStrategy
-{
-    void park( Thread thread );
+public interface ParkStrategy {
+    void park(Thread thread);
 
-    void unpark( Thread thread );
+    void unpark(Thread thread);
 
-    class Park implements ParkStrategy
-    {
+    class Park implements ParkStrategy {
         private final long nanos;
 
-        public Park( long time, TimeUnit unit )
-        {
-            this.nanos = NANOSECONDS.convert( time, unit );
+        public Park(long time, TimeUnit unit) {
+            this.nanos = NANOSECONDS.convert(time, unit);
         }
 
         @Override
-        public void park( Thread thread )
-        {
-            LockSupport.parkNanos( nanos );
+        public void park(Thread thread) {
+            LockSupport.parkNanos(nanos);
         }
 
         @Override
-        public void unpark( Thread thread )
-        {
-            LockSupport.unpark( thread );
+        public void unpark(Thread thread) {
+            LockSupport.unpark(thread);
         }
     }
 }

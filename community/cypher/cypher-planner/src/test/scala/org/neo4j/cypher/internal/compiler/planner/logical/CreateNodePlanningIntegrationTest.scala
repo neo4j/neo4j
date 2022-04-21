@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   test("should plan single create") {
     val cfg = plannerBuilder().setAllNodesCardinality(0).build()
@@ -44,7 +45,8 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       .create(
         CreateNode("a", Seq.empty, None),
         CreateNode("b", Seq.empty, None),
-        CreateNode("c", Seq.empty, None))
+        CreateNode("c", Seq.empty, None)
+      )
       .argument()
       .build()
   }
@@ -57,7 +59,8 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       .create(
         CreateNode("a", Seq.empty, None),
         CreateNode("b", Seq.empty, None),
-        CreateNode("c", Seq.empty, None))
+        CreateNode("c", Seq.empty, None)
+      )
       .argument()
       .build()
   }

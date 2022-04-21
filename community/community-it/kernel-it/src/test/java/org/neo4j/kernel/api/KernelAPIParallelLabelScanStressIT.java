@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.api;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
+import static org.neo4j.test.Race.throwing;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -31,95 +35,84 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
-import static org.neo4j.test.Race.throwing;
 
 @DbmsExtension
-@ExtendWith( RandomExtension.class )
-class KernelAPIParallelLabelScanStressIT
-{
+@ExtendWith(RandomExtension.class)
+class KernelAPIParallelLabelScanStressIT {
     private static final int N_THREADS = 10;
     private static final int N_NODES = 10_000;
 
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private RandomSupport random;
+
     @Inject
     private Kernel kernel;
 
     @Test
-    void shouldDoParallelLabelScans() throws Throwable
-    {
+    void shouldDoParallelLabelScans() throws Throwable {
         int[] labels = new int[3];
 
         // Create nodes with labels
-        try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
-            labels[0] = createLabeledNodes( tx, N_NODES, "LABEL1" );
-            labels[1] = createLabeledNodes( tx, N_NODES, "LABEL2" );
-            labels[2] = createLabeledNodes( tx, N_NODES, "LABEL3" );
+        try (KernelTransaction tx = kernel.beginTransaction(EXPLICIT, LoginContext.AUTH_DISABLED)) {
+            labels[0] = createLabeledNodes(tx, N_NODES, "LABEL1");
+            labels[1] = createLabeledNodes(tx, N_NODES, "LABEL2");
+            labels[2] = createLabeledNodes(tx, N_NODES, "LABEL3");
             tx.commit();
         }
 
         IndexDescriptor nodeLabelIndex;
-        try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
-            nodeLabelIndex = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) ).next();
+        try (KernelTransaction tx = kernel.beginTransaction(EXPLICIT, LoginContext.AUTH_DISABLED)) {
+            nodeLabelIndex = tx.schemaRead()
+                    .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                    .next();
             tx.commit();
         }
 
-        KernelAPIParallelStress.parallelStressInTx( kernel,
+        KernelAPIParallelStress.parallelStressInTx(
+                kernel,
                 N_THREADS,
-                tx ->  {
+                tx -> {
                     var executionContext = tx.createExecutionContext();
-                    var cursor = tx.cursors().allocateNodeLabelIndexCursor( executionContext.cursorContext() );
-                    return new WorkerContext<>( cursor, executionContext, tx );
+                    var cursor = tx.cursors().allocateNodeLabelIndexCursor(executionContext.cursorContext());
+                    return new WorkerContext<>(cursor, executionContext, tx);
                 },
-                ( read, workerContext ) -> labelScan( read,
-                        workerContext, nodeLabelIndex, labels[random.nextInt( labels.length )] ) );
+                (read, workerContext) ->
+                        labelScan(read, workerContext, nodeLabelIndex, labels[random.nextInt(labels.length)]));
     }
 
-    private static int createLabeledNodes( KernelTransaction tx, int nNodes, String labelName ) throws KernelException
-    {
-        int label = tx.tokenWrite().labelGetOrCreateForName( labelName );
-        for ( int i = 0; i < nNodes; i++ )
-        {
+    private static int createLabeledNodes(KernelTransaction tx, int nNodes, String labelName) throws KernelException {
+        int label = tx.tokenWrite().labelGetOrCreateForName(labelName);
+        for (int i = 0; i < nNodes; i++) {
             long n = tx.dataWrite().nodeCreate();
-            tx.dataWrite().nodeAddLabel( n, label );
+            tx.dataWrite().nodeAddLabel(n, label);
         }
         return label;
     }
 
-    private static Runnable labelScan( Read read, WorkerContext<NodeLabelIndexCursor> workerContext, IndexDescriptor index, int label )
-    {
-        return throwing( () ->
-        {
-            try
-            {
-                var tokenReadSession = read.tokenReadSession( index );
+    private static Runnable labelScan(
+            Read read, WorkerContext<NodeLabelIndexCursor> workerContext, IndexDescriptor index, int label) {
+        return throwing(() -> {
+            try {
+                var tokenReadSession = read.tokenReadSession(index);
                 var cursor = workerContext.getCursor();
                 var cursorContext = workerContext.getContext().cursorContext();
-                read.nodeLabelScan( tokenReadSession, cursor, unconstrained(), new TokenPredicate( label ), cursorContext );
+                read.nodeLabelScan(tokenReadSession, cursor, unconstrained(), new TokenPredicate(label), cursorContext);
 
                 int n = 0;
-                while ( cursor.next() )
-                {
+                while (cursor.next()) {
                     n++;
                 }
-                assertEquals( N_NODES, n, "correct number of nodes" );
-            }
-            finally
-            {
+                assertEquals(N_NODES, n, "correct number of nodes");
+            } finally {
                 workerContext.complete();
             }
-        } );
+        });
     }
 }

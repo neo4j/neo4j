@@ -19,10 +19,11 @@
  */
 package org.neo4j.bolt.transport.pipeline;
 
+import static io.netty.buffer.ByteBufUtil.hexDump;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.packstream.ByteBufInput;
 import org.neo4j.bolt.packstream.Neo4jPack;
@@ -31,49 +32,38 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 
-import static io.netty.buffer.ByteBufUtil.hexDump;
-
-public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( MessageDecoder.class );
+public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(MessageDecoder.class);
 
     private final ByteBufInput input;
     private final Neo4jPack.Unpacker unpacker;
     private final BoltRequestMessageReader reader;
     private final InternalLog log;
 
-    public MessageDecoder( UnpackerProvider unpackProvider, BoltRequestMessageReader reader, LogService logService )
-    {
+    public MessageDecoder(UnpackerProvider unpackProvider, BoltRequestMessageReader reader, LogService logService) {
         this.input = new ByteBufInput();
-        this.unpacker = unpackProvider.newUnpacker( input );
+        this.unpacker = unpackProvider.newUnpacker(input);
         this.reader = reader;
-        this.log = logService.getInternalLog( getClass() );
+        this.log = logService.getInternalLog(getClass());
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf ) throws Exception
-    {
-        input.start( byteBuf );
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf) throws Exception {
+        input.start(byteBuf);
         byteBuf.markReaderIndex();
-        try
-        {
-            reader.read( unpacker );
-        }
-        catch ( Throwable error )
-        {
-            logMessageOnError( byteBuf );
+        try {
+            reader.read(unpacker);
+        } catch (Throwable error) {
+            logMessageOnError(byteBuf);
             throw error;
-        }
-        finally
-        {
+        } finally {
             input.stop();
         }
     }
 
-    private void logMessageOnError( ByteBuf byteBuf )
-    {
+    private void logMessageOnError(ByteBuf byteBuf) {
         // move reader index back to the beginning of the message in order to log its full content
         byteBuf.resetReaderIndex();
-        log.error( "Failed to read an inbound message:\n" + hexDump( byteBuf ) + '\n' );
+        log.error("Failed to read an inbound message:\n" + hexDump(byteBuf) + '\n');
     }
 }

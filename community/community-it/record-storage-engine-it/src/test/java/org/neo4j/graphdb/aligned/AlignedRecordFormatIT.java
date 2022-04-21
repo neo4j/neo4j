@@ -19,9 +19,17 @@
  */
 package org.neo4j.graphdb.aligned;
 
+import static java.util.concurrent.TimeUnit.HOURS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
+import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.storageengine.api.StoreVersion.versionLongToString;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
@@ -33,132 +41,108 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.concurrent.TimeUnit.HOURS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.internal.helpers.collection.Iterators.count;
-import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.storageengine.api.StoreVersion.versionLongToString;
-
-@DbmsExtension( configurationCallback = "configure" )
-public class AlignedRecordFormatIT
-{
+@DbmsExtension(configurationCallback = "configure")
+public class AlignedRecordFormatIT {
     @Inject
     private GraphDatabaseAPI database;
+
     @Inject
     private StoreIdProvider storeIdProvider;
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
-        builder.setConfig( GraphDatabaseSettings.record_format_created_db, GraphDatabaseSettings.DatabaseRecordFormat.aligned );
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME);
+        builder.setConfig(
+                GraphDatabaseSettings.record_format_created_db, GraphDatabaseSettings.DatabaseRecordFormat.aligned);
     }
 
     @Test
-    void databaseCanBeStartedWithAlignedFormat()
-    {
-        assertEquals( PageAligned.LATEST_RECORD_FORMATS.storeVersion(), versionLongToString( storeIdProvider.getStoreId().getStoreVersion() ) );
+    void databaseCanBeStartedWithAlignedFormat() {
+        assertEquals(
+                PageAligned.LATEST_RECORD_FORMATS.storeVersion(),
+                versionLongToString(storeIdProvider.getStoreId().getStoreVersion()));
     }
 
     @Test
-    void nodeAndRelationshipTransaction()
-    {
-        try ( var transaction = database.beginTx() )
-        {
-            var source = transaction.createNode( label( "marker" ) );
+    void nodeAndRelationshipTransaction() {
+        try (var transaction = database.beginTx()) {
+            var source = transaction.createNode(label("marker"));
             var target = transaction.createNode();
-            source.createRelationshipTo( target, withName( "link" ) );
+            source.createRelationshipTo(target, withName("link"));
             transaction.commit();
         }
 
-        try ( var transaction = database.beginTx() )
-        {
-            assertEquals( 2, count( transaction.getAllNodes() ) );
-            assertEquals( 1, count( transaction.getAllRelationships() ) );
-            assertEquals( 1, count( transaction.getAllLabels() ) );
-            assertEquals( 1, count( transaction.getAllRelationshipTypes() ) );
+        try (var transaction = database.beginTx()) {
+            assertEquals(2, count(transaction.getAllNodes()));
+            assertEquals(1, count(transaction.getAllRelationships()));
+            assertEquals(1, count(transaction.getAllLabels()));
+            assertEquals(1, count(transaction.getAllRelationshipTypes()));
         }
     }
 
     @Test
-    void nodesWithIndexedProperties()
-    {
-        var indexLabel = label( "indexMarker" );
+    void nodesWithIndexedProperties() {
+        var indexLabel = label("indexMarker");
         var propertyName = "property";
         var value = "value";
         var nodesCount = 100;
-        try ( var transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < nodesCount; i++ )
-            {
-                var node = transaction.createNode( indexLabel );
-                node.setProperty( propertyName, value );
+        try (var transaction = database.beginTx()) {
+            for (int i = 0; i < nodesCount; i++) {
+                var node = transaction.createNode(indexLabel);
+                node.setProperty(propertyName, value);
             }
             transaction.commit();
         }
 
-        try ( var tx = database.beginTx() )
-        {
-            tx.schema().indexFor( indexLabel ).on( propertyName ).create();
+        try (var tx = database.beginTx()) {
+            tx.schema().indexFor(indexLabel).on(propertyName).create();
             tx.commit();
         }
 
-        try ( var tx = database.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, HOURS );
+        try (var tx = database.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, HOURS);
         }
 
-        try ( var transaction = database.beginTx() )
-        {
-            assertEquals( nodesCount, count( transaction.findNodes( indexLabel, propertyName, value ) ) );
+        try (var transaction = database.beginTx()) {
+            assertEquals(nodesCount, count(transaction.findNodes(indexLabel, propertyName, value)));
         }
     }
 
     @Test
-    void nodesWithBigStringProperties()
-    {
-        var label = label( "marker" );
+    void nodesWithBigStringProperties() {
+        var label = label("marker");
         var propertyName = "property";
         var nodesCount = 10;
-        try ( var transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < nodesCount; i++ )
-            {
-                var node = transaction.createNode( label );
-                node.setProperty( propertyName, RandomStringUtils.randomAlphabetic( (int) mebiBytes( 1 ) ) );
+        try (var transaction = database.beginTx()) {
+            for (int i = 0; i < nodesCount; i++) {
+                var node = transaction.createNode(label);
+                node.setProperty(propertyName, RandomStringUtils.randomAlphabetic((int) mebiBytes(1)));
             }
             transaction.commit();
         }
 
-        try ( var transaction = database.beginTx() )
-        {
-            assertEquals( nodesCount, count( transaction.findNodes( label ) ) );
+        try (var transaction = database.beginTx()) {
+            assertEquals(nodesCount, count(transaction.findNodes(label)));
         }
     }
 
     @Test
-    void nodesWithBigArrayProperties()
-    {
-        var label = label( "marker" );
+    void nodesWithBigArrayProperties() {
+        var label = label("marker");
         var propertyName = "property";
         var nodesCount = 10;
-        try ( var transaction = database.beginTx() )
-        {
-            for ( int i = 0; i < nodesCount; i++ )
-            {
-                var node = transaction.createNode( label );
-                node.setProperty( propertyName, RandomStringUtils.randomAlphabetic( (int) mebiBytes( 1 ) ).toCharArray() );
+        try (var transaction = database.beginTx()) {
+            for (int i = 0; i < nodesCount; i++) {
+                var node = transaction.createNode(label);
+                node.setProperty(
+                        propertyName,
+                        RandomStringUtils.randomAlphabetic((int) mebiBytes(1)).toCharArray());
             }
             transaction.commit();
         }
 
-        try ( var transaction = database.beginTx() )
-        {
-            assertEquals( nodesCount, count( transaction.findNodes( label ) ) );
+        try (var transaction = database.beginTx()) {
+            assertEquals(nodesCount, count(transaction.findNodes(label)));
         }
     }
-
 }

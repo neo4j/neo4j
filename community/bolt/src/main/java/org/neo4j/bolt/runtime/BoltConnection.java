@@ -20,12 +20,10 @@
 package org.neo4j.bolt.runtime;
 
 import io.netty.channel.Channel;
-
 import java.net.SocketAddress;
 import java.util.concurrent.RejectedExecutionException;
 
-public interface BoltConnection
-{
+public interface BoltConnection {
 
     /**
      * Returns a unique, not changing over time string that can safely be used to identify this connection.
@@ -79,7 +77,7 @@ public interface BoltConnection
      *
      * @param job the job to be added
      */
-    void enqueue( Job job );
+    void enqueue(Job job);
 
     /**
      * Executes a batch of queued jobs, which is executed in an another thread (which is part of a thread pool)
@@ -95,7 +93,7 @@ public interface BoltConnection
      *
      * @param t the exception occurred during scheduling
      */
-    void handleSchedulingError( Throwable t );
+    void handleSchedulingError(Throwable t);
 
     /**
      * Interrupt and (possibly) stop the current running job, but continue processing next jobs
@@ -110,7 +108,7 @@ public interface BoltConnection
     /**
      * Perform a keep alive check
      */
-    @Deprecated( forRemoval = true )
+    @Deprecated(forRemoval = true)
     void keepAlive();
 
     /**

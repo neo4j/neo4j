@@ -19,22 +19,6 @@
  */
 package org.neo4j.server.http.cypher.format.input.json;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.JsonMappingException;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import org.neo4j.server.http.cypher.format.api.ConnectionException;
-import org.neo4j.server.http.cypher.format.api.InputFormatException;
-import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
-
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
 import static com.fasterxml.jackson.core.JsonToken.END_OBJECT;
 import static com.fasterxml.jackson.core.JsonToken.FIELD_NAME;
@@ -44,166 +28,151 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
-class StatementDeserializer
-{
-    private static final Map<String,Object> NO_PARAMETERS = unmodifiableMap( map() );
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.neo4j.server.http.cypher.format.api.ConnectionException;
+import org.neo4j.server.http.cypher.format.api.InputFormatException;
+import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
+
+class StatementDeserializer {
+    private static final Map<String, Object> NO_PARAMETERS = unmodifiableMap(map());
 
     private final JsonParser parser;
     private State state;
 
-    private enum State
-    {
+    private enum State {
         BEFORE_OUTER_ARRAY,
         IN_BODY,
         FINISHED
     }
 
-    StatementDeserializer( JsonFactory jsonFactory, InputStream input )
-    {
-        try
-        {
-            this.parser = jsonFactory.createParser( input );
+    StatementDeserializer(JsonFactory jsonFactory, InputStream input) {
+        try {
+            this.parser = jsonFactory.createParser(input);
             this.state = State.BEFORE_OUTER_ARRAY;
-        }
-        catch ( IOException e )
-        {
-            throw new IllegalStateException( "Failed to create a JSON parser", e );
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to create a JSON parser", e);
         }
     }
 
-    InputStatement read()
-    {
+    InputStatement read() {
 
-        switch ( state )
-        {
-        case BEFORE_OUTER_ARRAY:
-            if ( !beginsWithCorrectTokens() )
-            {
+        switch (state) {
+            case BEFORE_OUTER_ARRAY:
+                if (!beginsWithCorrectTokens()) {
+                    return null;
+                }
+                state = State.IN_BODY;
+            case IN_BODY:
+                String statement = null;
+                Map<String, Object> parameters = null;
+                List<Object> resultsDataContents = null;
+                boolean includeStats = false;
+                JsonToken tok;
+
+                try {
+
+                    while ((tok = parser.nextToken()) != null && tok != END_OBJECT) {
+                        if (tok == END_ARRAY) {
+                            // No more statements
+                            state = State.FINISHED;
+                            return null;
+                        }
+
+                        parser.nextValue();
+                        String currentName = parser.getCurrentName();
+                        switch (currentName) {
+                            case "statement":
+                                statement = parser.readValueAs(String.class);
+                                break;
+                            case "parameters":
+                                parameters = readMap();
+                                break;
+                            case "resultDataContents":
+                                resultsDataContents = readArray();
+                                break;
+                            case "includeStats":
+                                includeStats = parser.getBooleanValue();
+                                break;
+                            default:
+                                discardValue();
+                        }
+                    }
+
+                    if (statement == null) {
+                        throw new InputFormatException("No statement provided.");
+                    }
+                    return new InputStatement(
+                            statement,
+                            parameters == null ? NO_PARAMETERS : parameters,
+                            includeStats,
+                            ResultDataContent.fromNames(resultsDataContents));
+                } catch (JsonParseException e) {
+                    throw new InputFormatException("Could not parse the incoming JSON", e);
+                } catch (JsonMappingException e) {
+                    throw new InputFormatException("Could not map the incoming JSON", e);
+                } catch (IOException e) {
+                    throw new ConnectionException("An error encountered while reading the inbound entity", e);
+                }
+            case FINISHED:
                 return null;
-            }
-            state = State.IN_BODY;
-        case IN_BODY:
-            String statement = null;
-            Map<String,Object> parameters = null;
-            List<Object> resultsDataContents = null;
-            boolean includeStats = false;
-            JsonToken tok;
 
-            try
-            {
-
-                while ( (tok = parser.nextToken()) != null && tok != END_OBJECT )
-                {
-                    if ( tok == END_ARRAY )
-                    {
-                        // No more statements
-                        state = State.FINISHED;
-                        return null;
-                    }
-
-                    parser.nextValue();
-                    String currentName = parser.getCurrentName();
-                    switch ( currentName )
-                    {
-                    case "statement":
-                        statement = parser.readValueAs( String.class );
-                        break;
-                    case "parameters":
-                        parameters = readMap();
-                        break;
-                    case "resultDataContents":
-                        resultsDataContents = readArray();
-                        break;
-                    case "includeStats":
-                        includeStats = parser.getBooleanValue();
-                        break;
-                    default:
-                        discardValue();
-                    }
-                }
-
-                if ( statement == null )
-                {
-                    throw new InputFormatException( "No statement provided." );
-                }
-                return new InputStatement( statement, parameters == null ? NO_PARAMETERS : parameters, includeStats,
-                        ResultDataContent.fromNames( resultsDataContents ) );
-            }
-            catch ( JsonParseException e )
-            {
-                throw new InputFormatException( "Could not parse the incoming JSON", e );
-            }
-            catch ( JsonMappingException e )
-            {
-                throw new InputFormatException( "Could not map the incoming JSON", e );
-            }
-            catch ( IOException e )
-            {
-                throw new ConnectionException( "An error encountered while reading the inbound entity", e );
-            }
-        case FINISHED:
-            return null;
-
-        default:
-            break;
+            default:
+                break;
         }
         return null;
     }
 
-    private void discardValue() throws IOException
-    {
+    private void discardValue() throws IOException {
         // This could be done without building up an object
-        parser.readValueAs( Object.class );
+        parser.readValueAs(Object.class);
     }
 
-    @SuppressWarnings( "unchecked" )
-    private Map<String,Object> readMap() throws IOException
-    {
-        return parser.readValueAs( Map.class );
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> readMap() throws IOException {
+        return parser.readValueAs(Map.class);
     }
 
-    @SuppressWarnings( "unchecked" )
-    private List<Object> readArray() throws IOException
-    {
-        return parser.readValueAs( List.class );
+    @SuppressWarnings("unchecked")
+    private List<Object> readArray() throws IOException {
+        return parser.readValueAs(List.class);
     }
 
-    private boolean beginsWithCorrectTokens()
-    {
-        List<JsonToken> expectedTokens = asList( START_OBJECT, FIELD_NAME, START_ARRAY );
+    private boolean beginsWithCorrectTokens() {
+        List<JsonToken> expectedTokens = asList(START_OBJECT, FIELD_NAME, START_ARRAY);
         String expectedField = "statements";
 
         List<JsonToken> foundTokens = new ArrayList<>();
 
-        try
-        {
-            for ( int i = 0; i < expectedTokens.size(); i++ )
-            {
+        try {
+            for (int i = 0; i < expectedTokens.size(); i++) {
                 JsonToken token = parser.nextToken();
-                if ( i == 0 && token == null )
-                {
+                if (i == 0 && token == null) {
                     return false;
                 }
-                if ( token == FIELD_NAME && !expectedField.equals( parser.getText() ) )
-                {
-                    throw new InputFormatException(
-                            String.format( "Unable to deserialize request. " + "Expected first field to be '%s', but was '%s'.", expectedField,
-                                    parser.getText() ) );
+                if (token == FIELD_NAME && !expectedField.equals(parser.getText())) {
+                    throw new InputFormatException(String.format(
+                            "Unable to deserialize request. " + "Expected first field to be '%s', but was '%s'.",
+                            expectedField, parser.getText()));
                 }
-                foundTokens.add( token );
+                foundTokens.add(token);
             }
-            if ( !expectedTokens.equals( foundTokens ) )
-            {
-                throw new InputFormatException( String.format( "Unable to deserialize request. " + "Expected %s, found %s.", expectedTokens, foundTokens ) );
+            if (!expectedTokens.equals(foundTokens)) {
+                throw new InputFormatException(String.format(
+                        "Unable to deserialize request. " + "Expected %s, found %s.", expectedTokens, foundTokens));
             }
-        }
-        catch ( JsonParseException e )
-        {
-            throw new InputFormatException( "Could not parse the incoming JSON", e );
-        }
-        catch ( IOException e )
-        {
-            throw new ConnectionException( "An error encountered while reading the inbound entity", e );
+        } catch (JsonParseException e) {
+            throw new InputFormatException("Could not parse the incoming JSON", e);
+        } catch (IOException e) {
+            throw new ConnectionException("An error encountered while reading the inbound entity", e);
         }
         return true;
     }

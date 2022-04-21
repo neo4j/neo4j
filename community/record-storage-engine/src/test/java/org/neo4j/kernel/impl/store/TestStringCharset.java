@@ -21,99 +21,77 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Random;
 
-public enum TestStringCharset
-{
-    UNIFORM_ASCII
-            {
-                @Override
-                String randomString( int maxLen, Random random )
-                {
-                    char[] chars = new char[random.nextInt( maxLen + 1 )];
-                    for ( int i = 0; i < chars.length; i++ )
-                    {
-                        chars[i] = (char) (0x20 + random.nextInt( 94 ));
-                    }
-                    return new String( chars );
+public enum TestStringCharset {
+    UNIFORM_ASCII {
+        @Override
+        String randomString(int maxLen, Random random) {
+            char[] chars = new char[random.nextInt(maxLen + 1)];
+            for (int i = 0; i < chars.length; i++) {
+                chars[i] = (char) (0x20 + random.nextInt(94));
+            }
+            return new String(chars);
+        }
+    },
+    SYMBOLS {
+        @Override
+        String randomString(int maxLen, Random random) {
+            char[] chars = new char[random.nextInt(maxLen + 1)];
+            for (int i = 0; i < chars.length; i++) {
+                chars[i] = SYMBOL_CHARS[random.nextInt(SYMBOL_CHARS.length)];
+            }
+            return new String(chars);
+        }
+    },
+    UNIFORM_LATIN {
+        @Override
+        String randomString(int maxLen, Random random) {
+            char[] chars = new char[random.nextInt(maxLen + 1)];
+            for (int i = 0; i < chars.length; i++) {
+                chars[i] = (char) (0x20 + random.nextInt(0xC0));
+                if (chars[i] > 0x7f) {
+                    chars[i] += 0x20;
                 }
-            },
-    SYMBOLS
-            {
-                @Override
-                String randomString( int maxLen, Random random )
-                {
-                    char[] chars = new char[random.nextInt( maxLen + 1 )];
-                    for ( int i = 0; i < chars.length; i++ )
-                    {
-                        chars[i] = SYMBOL_CHARS[random.nextInt( SYMBOL_CHARS.length )];
-                    }
-                    return new String( chars );
-                }
-            },
-    UNIFORM_LATIN
-            {
-                @Override
-                String randomString( int maxLen, Random random )
-                {
-                    char[] chars = new char[random.nextInt( maxLen + 1 )];
-                    for ( int i = 0; i < chars.length; i++ )
-                    {
-                        chars[i] = (char) (0x20 + random.nextInt( 0xC0 ));
-                        if ( chars[i] > 0x7f )
-                        {
-                            chars[i] += 0x20;
-                        }
-                    }
-                    return new String( chars );
-                }
-            },
-    LONG
-            {
-                @Override
-                String randomString( int maxLen, Random random )
-                {
-                    return Long.toString( random.nextLong() % ((long) Math.pow( 10, maxLen )) );
-                }
-            },
-    INT
-            {
-                @Override
-                String randomString( int maxLen, Random random )
-                {
-                    return Long.toString( random.nextInt() );
-                }
-            },
-    UNICODE
-            {
-                @Override
-                String randomString( int maxLen, Random random )
-                {
-                    char[] chars = new char[random.nextInt( maxLen + 1 )];
-                    for ( int i = 0; i < chars.length; i++ )
-                    {
-                        chars[i] = (char) (1 + random.nextInt( 0xD7FE ));
-                    }
-                    return new String( chars );
-                }
-            };
+            }
+            return new String(chars);
+        }
+    },
+    LONG {
+        @Override
+        String randomString(int maxLen, Random random) {
+            return Long.toString(random.nextLong() % ((long) Math.pow(10, maxLen)));
+        }
+    },
+    INT {
+        @Override
+        String randomString(int maxLen, Random random) {
+            return Long.toString(random.nextInt());
+        }
+    },
+    UNICODE {
+        @Override
+        String randomString(int maxLen, Random random) {
+            char[] chars = new char[random.nextInt(maxLen + 1)];
+            for (int i = 0; i < chars.length; i++) {
+                chars[i] = (char) (1 + random.nextInt(0xD7FE));
+            }
+            return new String(chars);
+        }
+    };
     static final char[] SYMBOL_CHARS = new char[26 + 26 + 10 + 1];
 
-    static
-    {
+    static {
         SYMBOL_CHARS[0] = '_';
         int i = 1;
-        for ( char c = '0'; c <= '9'; c++ )
-        {
+        for (char c = '0'; c <= '9'; c++) {
             SYMBOL_CHARS[i++] = c;
         }
-        for ( char c = 'A'; c <= 'Z'; c++ )
-        {
+        for (char c = 'A'; c <= 'Z'; c++) {
             SYMBOL_CHARS[i++] = c;
         }
-        for ( char c = 'a'; c <= 'z'; c++ )
-        {
+        for (char c = 'a'; c <= 'z'; c++) {
             SYMBOL_CHARS[i++] = c;
         }
     }
 
-    abstract String randomString( int maxLen, Random random );
+    abstract String randomString(int maxLen, Random random);
 }

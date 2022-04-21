@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
 
 import java.util.concurrent.TimeUnit
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 
@@ -61,15 +62,15 @@ trait GraphIcing {
     // Create uniqueness constraint
 
     def createUniqueConstraint(label: String, property: String): ConstraintDefinition = {
-      val constraint = withTx( tx =>  {
+      val constraint = withTx(tx => {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
-      } )
+      })
       awaitIndexesOnline()
       constraint
     }
 
     def createUniqueConstraint(label: String, properties: String*): ConstraintDefinition = {
-      withTx( tx => {
+      withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
       })
       awaitIndexesOnline()
@@ -77,17 +78,17 @@ trait GraphIcing {
     }
 
     def createUniqueConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
-      val constraint = withTx( tx =>  {
+      val constraint = withTx(tx => {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).withName(name).create()
-      } )
+      })
       awaitIndexesOnline()
       constraint
     }
 
     def createUniqueConstraintWithName(name: String, label: String, properties: String*): ConstraintDefinition = {
-      withTx( tx =>  {
+      withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
-      } )
+      })
       awaitIndexesOnline()
       getNodeConstraint(label, properties)
     }
@@ -95,14 +96,14 @@ trait GraphIcing {
     // Create node existence constraint
 
     def createNodeExistenceConstraint(label: String, property: String): ConstraintDefinition = {
-      withTx( tx => {
+      withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.$property) IS NOT NULL")
       })
       getNodeConstraint(label, Seq(property))
     }
 
     def createNodeExistenceConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
-      withTx( tx => {
+      withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.$property) IS NOT NULL")
       })
       getNodeConstraint(label, Seq(property))
@@ -110,25 +111,34 @@ trait GraphIcing {
 
     // Create relationship existence constraint
 
-    def createRelationshipExistenceConstraint(relType: String, property: String, direction: Direction = Direction.BOTH): ConstraintDefinition = {
+    def createRelationshipExistenceConstraint(
+      relType: String,
+      property: String,
+      direction: Direction = Direction.BOTH
+    ): ConstraintDefinition = {
       val relSyntax = direction match {
         case Direction.OUTGOING => s"()-[r:$relType]->()"
         case Direction.INCOMING => s"()<-[r:$relType]-()"
-        case _ => s"()-[r:$relType]-()"
+        case _                  => s"()-[r:$relType]-()"
       }
-      withTx( tx => {
+      withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT FOR $relSyntax REQUIRE (r.$property) IS NOT NULL")
       })
       getRelationshipConstraint(relType, property)
     }
 
-    def createRelationshipExistenceConstraintWithName(name: String, relType: String, property: String, direction: Direction = Direction.BOTH): ConstraintDefinition = {
+    def createRelationshipExistenceConstraintWithName(
+      name: String,
+      relType: String,
+      property: String,
+      direction: Direction = Direction.BOTH
+    ): ConstraintDefinition = {
       val relSyntax = direction match {
         case Direction.OUTGOING => s"()-[r:$relType]->()"
         case Direction.INCOMING => s"()<-[r:$relType]-()"
-        case _ => s"()-[r:$relType]-()"
+        case _                  => s"()-[r:$relType]-()"
       }
-      withTx( tx => {
+      withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR $relSyntax REQUIRE (r.$property) IS NOT NULL")
       })
       getRelationshipConstraint(relType, property)
@@ -137,7 +147,7 @@ trait GraphIcing {
     // Create node key constraint
 
     def createNodeKeyConstraint(label: String, properties: String*): ConstraintDefinition = {
-      withTx( tx => {
+      withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
       })
       awaitIndexesOnline()
@@ -145,7 +155,7 @@ trait GraphIcing {
     }
 
     def createNodeKeyConstraintWithName(name: String, label: String, properties: String*): ConstraintDefinition = {
-      withTx( tx => {
+      withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
       })
       awaitIndexesOnline()
@@ -158,7 +168,12 @@ trait GraphIcing {
       createNodeIndex(None, label, properties, indexType)
     }
 
-    def createNodeIndexWithName(indexType: IndexType, name: String, label: String, properties: String*): IndexDefinition = {
+    def createNodeIndexWithName(
+      indexType: IndexType,
+      name: String,
+      label: String,
+      properties: String*
+    ): IndexDefinition = {
       createNodeIndex(Some(name), label, properties, indexType)
     }
 
@@ -166,7 +181,12 @@ trait GraphIcing {
       createRelationshipIndex(None, relType, properties, indexType)
     }
 
-    def createRelationshipIndexWithName(indexType: IndexType, name: String, relType: String, properties: String*): IndexDefinition = {
+    def createRelationshipIndexWithName(
+      indexType: IndexType,
+      name: String,
+      relType: String,
+      properties: String*
+    ): IndexDefinition = {
       createRelationshipIndex(Some(name), relType, properties, indexType)
     }
 
@@ -226,18 +246,53 @@ trait GraphIcing {
 
     // Create label/prop index help methods
 
-    private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE, options: Map[String, String] = Map.empty): IndexDefinition = {
-      createIndex(maybeName, s"(e:$label)", properties, indexType, () => getNodeIndex(label, properties, indexType), options)
+    private def createNodeIndex(
+      maybeName: Option[String],
+      label: String,
+      properties: Seq[String],
+      indexType: IndexType = IndexType.RANGE,
+      options: Map[String, String] = Map.empty
+    ): IndexDefinition = {
+      createIndex(
+        maybeName,
+        s"(e:$label)",
+        properties,
+        indexType,
+        () => getNodeIndex(label, properties, indexType),
+        options
+      )
     }
 
-    private def createRelationshipIndex(maybeName: Option[String], relType: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE, options: Map[String, String] = Map.empty): IndexDefinition = {
-      createIndex(maybeName, s"()-[e:$relType]-()", properties, indexType, () => getRelIndex(relType, properties, indexType), options)
+    private def createRelationshipIndex(
+      maybeName: Option[String],
+      relType: String,
+      properties: Seq[String],
+      indexType: IndexType = IndexType.RANGE,
+      options: Map[String, String] = Map.empty
+    ): IndexDefinition = {
+      createIndex(
+        maybeName,
+        s"()-[e:$relType]-()",
+        properties,
+        indexType,
+        () => getRelIndex(relType, properties, indexType),
+        options
+      )
     }
 
-    private def createIndex(maybeName: Option[String], pattern: String, properties: Seq[String], indexType: IndexType, getIndex: () => IndexDefinition, options: Map[String, String]): IndexDefinition = {
+    private def createIndex(
+      maybeName: Option[String],
+      pattern: String,
+      properties: Seq[String],
+      indexType: IndexType,
+      getIndex: () => IndexDefinition,
+      options: Map[String, String]
+    ): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
-      withTx( tx => {
-        tx.execute(s"CREATE $indexType INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})${optionsString(options)}")
+      withTx(tx => {
+        tx.execute(
+          s"CREATE $indexType INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})${optionsString(options)}"
+        )
       })
       awaitIndexesOnline()
       getIndex()
@@ -256,20 +311,45 @@ trait GraphIcing {
 
     // Create fulltext index
 
-    def createNodeFulltextIndex(labels:List[String], properties: List[String], maybeName: Option[String] = None): IndexDefinition = {
+    def createNodeFulltextIndex(
+      labels: List[String],
+      properties: List[String],
+      maybeName: Option[String] = None
+    ): IndexDefinition = {
       val pattern = s"(e:${labels.map(l => s"`$l`").mkString("|")})"
-      createFulltextIndex(pattern, properties, () => getFulltextIndex(labels, properties, isNodeIndex = true), maybeName)
+      createFulltextIndex(
+        pattern,
+        properties,
+        () => getFulltextIndex(labels, properties, isNodeIndex = true),
+        maybeName
+      )
     }
 
-    def createRelationshipFulltextIndex(relTypes: List[String], properties: List[String], maybeName: Option[String] = None): IndexDefinition = {
+    def createRelationshipFulltextIndex(
+      relTypes: List[String],
+      properties: List[String],
+      maybeName: Option[String] = None
+    ): IndexDefinition = {
       val pattern = s"()-[e:${relTypes.map(r => s"`$r`").mkString("|")}]-()"
-      createFulltextIndex(pattern, properties, () => getFulltextIndex(relTypes, properties, isNodeIndex = false), maybeName)
+      createFulltextIndex(
+        pattern,
+        properties,
+        () => getFulltextIndex(relTypes, properties, isNodeIndex = false),
+        maybeName
+      )
     }
 
-    private def createFulltextIndex(pattern: String, properties: Seq[String], getIndex: () => IndexDefinition, maybeName: Option[String]): IndexDefinition = {
+    private def createFulltextIndex(
+      pattern: String,
+      properties: Seq[String],
+      getIndex: () => IndexDefinition,
+      maybeName: Option[String]
+    ): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
-      withTx( tx => {
-        tx.execute(s"CREATE FULLTEXT INDEX$nameString FOR $pattern ON EACH [${properties.map(p => s"e.`$p`").mkString(",")}]")
+      withTx(tx => {
+        tx.execute(
+          s"CREATE FULLTEXT INDEX$nameString FOR $pattern ON EACH [${properties.map(p => s"e.`$p`").mkString(",")}]"
+        )
       })
       awaitIndexesOnline()
       getIndex()
@@ -280,7 +360,7 @@ trait GraphIcing {
     def createLookupIndex(isNodeIndex: Boolean, maybeName: Option[String] = None): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
       val (pattern, function) = if (isNodeIndex) ("(n)", "labels(n)") else ("()-[r]-()", "type(r)")
-      withTx( tx => {
+      withTx(tx => {
         tx.execute(s"CREATE LOOKUP INDEX$nameString FOR $pattern ON EACH $function")
       })
       awaitIndexesOnline()
@@ -288,15 +368,17 @@ trait GraphIcing {
     }
 
     def dropLookupIndex(isNodeIndex: Boolean): Unit = withTx(tx => {
-      tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex).foreach(idx => idx.drop())
+      tx.schema().getIndexes().asScala.find(id =>
+        id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex
+      ).foreach(idx => idx.drop())
     })
 
     // Wait for indexes
 
     def awaitIndexesOnline(): Unit = {
-      withTx( tx =>  {
+      withTx(tx => {
         tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      } )
+      })
     }
 
     // Find index
@@ -313,101 +395,131 @@ trait GraphIcing {
     def getFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): IndexDefinition =
       getMaybeFulltextIndex(entities, props, isNodeIndex).get
 
-    def getMaybeNodeIndex(label: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE): Option[IndexDefinition] = withTx(tx =>  {
+    def getMaybeNodeIndex(
+      label: String,
+      properties: Seq[String],
+      indexType: IndexType = IndexType.RANGE
+    ): Option[IndexDefinition] = withTx(tx => {
       tx.schema().getIndexes(Label.label(label)).asScala
-        .find(index => index.getIndexType.equals(indexType) && index.getPropertyKeys.asScala.toList == properties.toList)
-    } )
-
-    def getMaybeRelIndex(relType: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE): Option[IndexDefinition] = withTx(tx =>  {
-      tx.schema().getIndexes(RelationshipType.withName(relType)).asScala
-        .find(index => index.getIndexType.equals(indexType) && index.getPropertyKeys.asScala.toList == properties.toList)
-    } )
-
-    def getMaybeLookupIndex(isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {
-      tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex)
+        .find(index =>
+          index.getIndexType.equals(indexType) && index.getPropertyKeys.asScala.toList == properties.toList
+        )
     })
 
-    def getMaybeFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {
+    def getMaybeRelIndex(
+      relType: String,
+      properties: Seq[String],
+      indexType: IndexType = IndexType.RANGE
+    ): Option[IndexDefinition] = withTx(tx => {
+      tx.schema().getIndexes(RelationshipType.withName(relType)).asScala
+        .find(index =>
+          index.getIndexType.equals(indexType) && index.getPropertyKeys.asScala.toList == properties.toList
+        )
+    })
+
+    def getMaybeLookupIndex(isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {
       tx.schema().getIndexes().asScala.find(id =>
-        id.getIndexType.equals(IndexType.FULLTEXT) &&
-        id.isNodeIndex == isNodeIndex &&
-        getEntities(id).equals(entities) &&
-        id.getPropertyKeys.asScala.toList.equals(props)
+        id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex
       )
     })
 
-    def getIndexSchemaByName(name: String): (String, Seq[String]) = withTx(tx =>  {
+    def getMaybeFulltextIndex(
+      entities: List[String],
+      props: List[String],
+      isNodeIndex: Boolean
+    ): Option[IndexDefinition] = withTx(tx => {
+      tx.schema().getIndexes().asScala.find(id =>
+        id.getIndexType.equals(IndexType.FULLTEXT) &&
+          id.isNodeIndex == isNodeIndex &&
+          getEntities(id).equals(entities) &&
+          id.getPropertyKeys.asScala.toList.equals(props)
+      )
+    })
+
+    def getIndexSchemaByName(name: String): (String, Seq[String]) = withTx(tx => {
       val index = tx.schema().getIndexByName(name)
-      val labelOrRelType = if (index.isNodeIndex) Iterables.single(index.getLabels).name() else Iterables.single(index.getRelationshipTypes).name()
+      val labelOrRelType =
+        if (index.isNodeIndex) Iterables.single(index.getLabels).name()
+        else Iterables.single(index.getRelationshipTypes).name()
       val properties = index.getPropertyKeys.asScala.toList
       (labelOrRelType, properties)
-    } )
+    })
 
-    def getLookupIndexByName(name: String): (IndexType, Boolean) = withTx(tx =>  {
+    def getLookupIndexByName(name: String): (IndexType, Boolean) = withTx(tx => {
       val index = tx.schema().getIndexByName(name)
       (index.getIndexType, index.isNodeIndex)
-    } )
+    })
 
-    def getFulltextIndexSchemaByName(name: String): (List[String], List[String], Boolean) = withTx(tx =>  {
+    def getFulltextIndexSchemaByName(name: String): (List[String], List[String], Boolean) = withTx(tx => {
       val index = tx.schema().getIndexByName(name)
       val labelOrRelTypes = getEntities(index)
       val properties = index.getPropertyKeys.asScala.toList
       (labelOrRelTypes, properties, index.isNodeIndex)
-    } )
+    })
 
     // returns the list of labels/types for the given index
     private def getEntities(index: IndexDefinition): List[String] =
-      if (index.isNodeIndex) index.getLabels.asScala.toList.map(_.name) else index.getRelationshipTypes.asScala.toList.map(_.name)
+      if (index.isNodeIndex) index.getLabels.asScala.toList.map(_.name)
+      else index.getRelationshipTypes.asScala.toList.map(_.name)
 
     def getIndexConfig(name: String): Map[IndexSetting, AnyRef] = {
-      withTx( tx =>  {
+      withTx(tx => {
         val index = tx.schema().getIndexByName(name)
         index.getIndexConfiguration.asScala.toMap
-      } )
+      })
     }
 
     def getIndexProvider(name: String): IndexProviderDescriptor = {
-      withTx( tx =>  {
-        val index: IndexDefinitionImpl = tx.schema().getIndexByName(name).asInstanceOf[IndexDefinitionImpl] // only implementation of interface
+      withTx(tx => {
+        val index: IndexDefinitionImpl =
+          tx.schema().getIndexByName(name).asInstanceOf[IndexDefinitionImpl] // only implementation of interface
         index.getIndexReference.getIndexProvider
-      } )
+      })
     }
 
     // Find constraint
 
     def getNodeConstraint(label: String, properties: Seq[String]): ConstraintDefinition = {
-      withTx( tx =>  {
-        tx.schema().getConstraints(Label.label(label)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == properties.toList).get
-      } )
+      withTx(tx => {
+        tx.schema().getConstraints(Label.label(label)).asScala.find(constraint =>
+          constraint.getPropertyKeys.asScala.toList == properties.toList
+        ).get
+      })
     }
 
     def getMaybeNodeConstraint(label: String, properties: Seq[String]): Option[ConstraintDefinition] = {
-      withTx( tx =>  {
-        tx.schema().getConstraints(Label.label(label)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == properties.toList)
-      } )
+      withTx(tx => {
+        tx.schema().getConstraints(Label.label(label)).asScala.find(constraint =>
+          constraint.getPropertyKeys.asScala.toList == properties.toList
+        )
+      })
     }
 
     def getRelationshipConstraint(relType: String, property: String): ConstraintDefinition = {
-      withTx( tx =>  {
-        tx.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == List(property)).get
-      } )
+      withTx(tx => {
+        tx.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint =>
+          constraint.getPropertyKeys.asScala.toList == List(property)
+        ).get
+      })
     }
 
     def getMaybeRelationshipConstraint(relType: String, property: String): Option[ConstraintDefinition] = {
-      withTx( tx =>  {
-        tx.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == List(property))
-      } )
+      withTx(tx => {
+        tx.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint =>
+          constraint.getPropertyKeys.asScala.toList == List(property)
+        )
+      })
     }
 
-    def getConstraintSchemaByName(name: String): (String, Seq[String])  = withTx( tx =>  {
+    def getConstraintSchemaByName(name: String): (String, Seq[String]) = withTx(tx => {
       val constraint = tx.schema().getConstraintByName(name)
       val properties = constraint.getPropertyKeys.asScala.toList
       val labelOrRelType = constraint.getConstraintType match {
         case ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE => constraint.getRelationshipType.name()
-        case _ => constraint.getLabel.name()
+        case _                                              => constraint.getLabel.name()
       }
       (labelOrRelType, properties)
-    } )
+    })
 
     // Transaction methods
 
@@ -416,7 +528,11 @@ trait GraphIcing {
 
     def inTx[T](f: => T): T = inTx(_ => f, Type.IMPLICIT)
 
-    private def createTransactionalContext(tx: InternalTransaction, queryText: String, params: Map[String, Any]): TransactionalContext = {
+    private def createTransactionalContext(
+      tx: InternalTransaction,
+      queryText: String,
+      params: Map[String, Any]
+    ): TransactionalContext = {
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService)
       contextFactory.newContext(tx, queryText, ValueUtils.asParameterMapValue(asJavaMapDeep(params)))
     }
@@ -452,13 +568,22 @@ trait GraphIcing {
       }
     }
 
-    def txCounts: TxCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledBackTransactions, txMonitor.getNumberOfActiveTransactions)
+    def txCounts: TxCounts = TxCounts(
+      txMonitor.getNumberOfCommittedTransactions,
+      txMonitor.getNumberOfRolledBackTransactions,
+      txMonitor.getNumberOfActiveTransactions
+    )
 
-    private def txMonitor: DatabaseTransactionStats = graphService.getDependencyResolver.resolveDependency(classOf[DatabaseTransactionStats])
+    private def txMonitor: DatabaseTransactionStats =
+      graphService.getDependencyResolver.resolveDependency(classOf[DatabaseTransactionStats])
   }
 }
 
 final case class TxCounts(commits: Long = 0, rollbacks: Long = 0, active: Long = 0) {
-  def +(other: TxCounts): TxCounts = TxCounts(commits + other.commits, rollbacks + other.rollbacks, active + other.active)
-  def -(other: TxCounts): TxCounts = TxCounts(commits - other.commits, rollbacks - other.rollbacks, active - other.active)
+
+  def +(other: TxCounts): TxCounts =
+    TxCounts(commits + other.commits, rollbacks + other.rollbacks, active + other.active)
+
+  def -(other: TxCounts): TxCounts =
+    TxCounts(commits - other.commits, rollbacks - other.rollbacks, active - other.active)
 }

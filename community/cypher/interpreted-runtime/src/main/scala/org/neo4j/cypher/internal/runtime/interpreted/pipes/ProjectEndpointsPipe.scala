@@ -30,17 +30,24 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
-case class ProjectEndpointsPipe(source: Pipe, relName: String,
-                                start: String, startInScope: Boolean,
-                                end: String, endInScope: Boolean,
-                                relTypes: RelationshipTypes,
-                                directed: Boolean,
-                                simpleLength: Boolean)
-                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source)
-  with ListSupport  {
+case class ProjectEndpointsPipe(
+  source: Pipe,
+  relName: String,
+  start: String,
+  startInScope: Boolean,
+  end: String,
+  endInScope: Boolean,
+  relTypes: RelationshipTypes,
+  directed: Boolean,
+  simpleLength: Boolean
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source)
+    with ListSupport {
   type Projector = CypherRow => ClosingIterator[CypherRow]
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] =
     input.flatMap(projector(state))
 
   private def projector(state: QueryState): Projector =
@@ -82,13 +89,11 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     }
   }
 
-  private def findSimpleLengthRelEndpoints(context: CypherRow,
-                                           state: QueryState
-                                          ): Option[StartAndEnd] = {
+  private def findSimpleLengthRelEndpoints(context: CypherRow, state: QueryState): Option[StartAndEnd] = {
 
     val relValue = context.getByName(relName) match {
       case relValue: VirtualRelationshipValue => relValue
-      case _ => return None
+      case _                                  => return None
     }
     val qtx = state.query
     val internalCursor = state.cursors.relationshipScanCursor
@@ -104,9 +109,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     } else None
   }
 
-  private def findVarLengthRelEndpoints(context: CypherRow,
-                                        state: QueryState
-                                       ): Option[(StartAndEnd, ListValue)] = {
+  private def findVarLengthRelEndpoints(context: CypherRow, state: QueryState): Option[(StartAndEnd, ListValue)] = {
     val rels = makeTraversable(context.getByName(relName))
     if (rels.nonEmpty && allHasAllowedType(rels, state)) {
       val internalCursor = state.cursors.relationshipScanCursor
@@ -136,14 +139,14 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   private def allHasAllowedType(rels: ListValue, state: QueryState): Boolean = {
     val iterator = rels.iterator()
     val qtx = state.query
-    while(iterator.hasNext) {
+    while (iterator.hasNext) {
       val next: VirtualRelationshipValue = iterator.next() match {
         case relValue: VirtualRelationshipValue => relValue
-        case _ =>  return false
+        case _                                  => return false
       }
       val internalCursor = state.cursors.relationshipScanCursor
       state.query.singleRelationship(next.id(), internalCursor)
-      if (internalCursor.next() && (!isAllowedType(internalCursor.`type`(), qtx)))  {
+      if (internalCursor.next() && (!isAllowedType(internalCursor.`type`(), qtx))) {
         return false
       }
     }
@@ -155,12 +158,21 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     types == null || types.contains(rel)
   }
 
-  private def pickStartAndEnd(startNode: VirtualNodeValue, endNode: VirtualNodeValue,
-                              context: CypherRow): Option[StartAndEnd] = {
+  private def pickStartAndEnd(
+    startNode: VirtualNodeValue,
+    endNode: VirtualNodeValue,
+    context: CypherRow
+  ): Option[StartAndEnd] = {
     if (!startInScope && !endInScope) Some(NotInScope(startNode, endNode))
-    else if ((!startInScope || context.getByName(start) == startNode) && (!endInScope || context.getByName(end) == endNode))
+    else if (
+      (!startInScope || context.getByName(start) == startNode) && (!endInScope || context.getByName(end) == endNode)
+    )
       Some(InScope(startNode, endNode))
-    else if (!directed && (!startInScope || context.getByName(start) == endNode ) && (!endInScope || context.getByName(end) == startNode))
+    else if (
+      !directed && (!startInScope || context.getByName(start) == endNode) && (!endInScope || context.getByName(
+        end
+      ) == startNode)
+    )
       Some(InScopeReversed(startNode, endNode))
     else None
   }

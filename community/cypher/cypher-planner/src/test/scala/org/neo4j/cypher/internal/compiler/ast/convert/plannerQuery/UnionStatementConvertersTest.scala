@@ -29,7 +29,7 @@ class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTe
 
   test("RETURN 1 as x UNION RETURN 2 as x") {
     val query = buildPlannerQuery("RETURN 1 as x UNION RETURN 2 as x")
-    query.query should be (a[UnionQuery])
+    query.query should be(a[UnionQuery])
     val unionQuery = query.query.asInstanceOf[UnionQuery]
     unionQuery.distinct should equal(true)
 
@@ -45,7 +45,7 @@ class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTe
 
   test("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x") {
     val query = buildPlannerQuery("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x")
-    query.query should be (a[UnionQuery])
+    query.query should be(a[UnionQuery])
     val unionQuery = query.query.asInstanceOf[UnionQuery]
     unionQuery.distinct should equal(false)
 

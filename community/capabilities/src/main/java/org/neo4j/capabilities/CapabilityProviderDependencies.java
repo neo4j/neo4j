@@ -22,34 +22,27 @@ package org.neo4j.capabilities;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
-final class CapabilityProviderDependencies
-{
-    private final Map<Class<?>,Supplier<?>> dependencies;
+final class CapabilityProviderDependencies {
+    private final Map<Class<?>, Supplier<?>> dependencies;
 
-    CapabilityProviderDependencies()
-    {
+    CapabilityProviderDependencies() {
         this.dependencies = new HashMap<>();
     }
 
-    <T> void register( Class<T> cls, Supplier<T> supplier )
-    {
-        var old = dependencies.putIfAbsent( cls, supplier );
-        if ( old != null )
-        {
-            throw new UnsupportedOperationException( String.format( "'%s' is already registered.", cls.getName() ) );
+    <T> void register(Class<T> cls, Supplier<T> supplier) {
+        var old = dependencies.putIfAbsent(cls, supplier);
+        if (old != null) {
+            throw new UnsupportedOperationException(String.format("'%s' is already registered.", cls.getName()));
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    <T> T get( Class<T> cls )
-    {
-        var supplier = this.dependencies.get( cls );
-        if ( supplier == null )
-        {
-            throw new UnsatisfiedDependencyException( cls );
+    @SuppressWarnings("unchecked")
+    <T> T get(Class<T> cls) {
+        var supplier = this.dependencies.get(cls);
+        if (supplier == null) {
+            throw new UnsatisfiedDependencyException(cls);
         }
 
         return (T) supplier.get();

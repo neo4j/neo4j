@@ -23,21 +23,18 @@ import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
-public class DoubleEvaluatorWithDefault implements CostEvaluator<Double>
-{
+public class DoubleEvaluatorWithDefault implements CostEvaluator<Double> {
     private String costPropertyName;
     private final double defaultCost;
 
-    public DoubleEvaluatorWithDefault( String costPropertyName, double defaultCost )
-    {
+    public DoubleEvaluatorWithDefault(String costPropertyName, double defaultCost) {
         super();
         this.costPropertyName = costPropertyName;
         this.defaultCost = defaultCost;
     }
 
     @Override
-    public Double getCost( Relationship relationship, Direction direction )
-    {
-        return ( (Number) relationship.getProperty( costPropertyName, defaultCost ) ).doubleValue();
+    public Double getCost(Relationship relationship, Direction direction) {
+        return ((Number) relationship.getProperty(costPropertyName, defaultCost)).doubleValue();
     }
 }

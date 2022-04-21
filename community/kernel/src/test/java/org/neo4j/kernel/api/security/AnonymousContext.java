@@ -19,58 +19,49 @@
  */
 package org.neo4j.kernel.api.security;
 
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
+
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 
-import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
-
 /** Controls the capabilities of a KernelTransaction. */
-public class AnonymousContext extends LoginContext
-{
+public class AnonymousContext extends LoginContext {
     private final AccessMode accessMode;
 
-    private AnonymousContext( AccessMode accessMode )
-    {
-        super( AuthSubject.ANONYMOUS, EMBEDDED_CONNECTION );
+    private AnonymousContext(AccessMode accessMode) {
+        super(AuthSubject.ANONYMOUS, EMBEDDED_CONNECTION);
         this.accessMode = accessMode;
     }
 
-    public static AnonymousContext access()
-    {
-        return new AnonymousContext( AccessMode.Static.ACCESS );
+    public static AnonymousContext access() {
+        return new AnonymousContext(AccessMode.Static.ACCESS);
     }
 
-    public static AnonymousContext read()
-    {
-        return new AnonymousContext( AccessMode.Static.READ );
+    public static AnonymousContext read() {
+        return new AnonymousContext(AccessMode.Static.READ);
     }
 
-    public static AnonymousContext write()
-    {
-        return new AnonymousContext( AccessMode.Static.WRITE );
+    public static AnonymousContext write() {
+        return new AnonymousContext(AccessMode.Static.WRITE);
     }
 
-    public static AnonymousContext writeToken()
-    {
-        return new AnonymousContext( AccessMode.Static.TOKEN_WRITE );
+    public static AnonymousContext writeToken() {
+        return new AnonymousContext(AccessMode.Static.TOKEN_WRITE);
     }
 
-    public static AnonymousContext writeOnly()
-    {
-        return new AnonymousContext( AccessMode.Static.WRITE_ONLY );
+    public static AnonymousContext writeOnly() {
+        return new AnonymousContext(AccessMode.Static.WRITE_ONLY);
     }
 
-    public static AnonymousContext full()
-    {
-        return new AnonymousContext( AccessMode.Static.FULL );
+    public static AnonymousContext full() {
+        return new AnonymousContext(AccessMode.Static.FULL);
     }
 
     @Override
-    public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
-    {
-        return new SecurityContext( subject(), accessMode, connectionInfo(), dbName );
+    public SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog) {
+        return new SecurityContext(subject(), accessMode, connectionInfo(), dbName);
     }
 }

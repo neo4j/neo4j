@@ -22,8 +22,7 @@ package org.neo4j.configuration.ssl;
 import org.neo4j.annotations.api.PublicApi;
 
 @PublicApi
-public enum ClientAuth
-{
+public enum ClientAuth {
     NONE,
     OPTIONAL,
     REQUIRE

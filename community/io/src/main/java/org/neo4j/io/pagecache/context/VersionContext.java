@@ -42,8 +42,7 @@ package org.neo4j.io.pagecache.context;
  * By default non context will be initialised with last closed transaction id which is equal to {@link Long#MAX_VALUE}
  * and transaction id that is equal to minimal possible transaction id: 1.
  */
-public interface VersionContext
-{
+public interface VersionContext {
     /**
      * Initialise read context with the latest closed transaction id as it current version.
      */
@@ -53,7 +52,7 @@ public interface VersionContext
      * Initialise write context with committingTxId as modification version.
      * @param committingTxId currently committing transaction id
      */
-    void initWrite( long committingTxId );
+    void initWrite(long committingTxId);
 
     /**
      * Context currently committing transaction id
@@ -77,5 +76,4 @@ public interface VersionContext
      * @return true if context is dirty, false otherwise
      */
     boolean isDirty();
-
 }

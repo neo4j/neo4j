@@ -19,64 +19,56 @@
  */
 package org.neo4j.shell.prettyprint;
 
+import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.INFO;
+import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.RESULT;
+import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.STATISTICS;
+
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.shell.state.BoltResult;
 
-import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.INFO;
-import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.RESULT;
-import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.STATISTICS;
-
-public class SimpleOutputFormatter implements OutputFormatter
-{
+public class SimpleOutputFormatter implements OutputFormatter {
 
     @Override
-    public int formatAndCount( BoltResult result, LinePrinter output )
-    {
+    public int formatAndCount(BoltResult result, LinePrinter output) {
         Iterator<Record> records = result.iterate();
         int numberOfRows = 0;
-        if ( records.hasNext() )
-        {
+        if (records.hasNext()) {
             Record firstRow = records.next();
-            output.printOut( String.join( COMMA_SEPARATOR, firstRow.keys() ) );
-            output.printOut( formatRecord( firstRow ) );
+            output.printOut(String.join(COMMA_SEPARATOR, firstRow.keys()));
+            output.printOut(formatRecord(firstRow));
             numberOfRows++;
-            while ( records.hasNext() )
-            {
-                output.printOut( formatRecord( records.next() ) );
+            while (records.hasNext()) {
+                output.printOut(formatRecord(records.next()));
                 numberOfRows++;
             }
         }
         return numberOfRows;
     }
 
-    private String formatRecord( final Record record )
-    {
-        return record.values().stream().map( this::formatValue ).collect( Collectors.joining( COMMA_SEPARATOR ) );
+    private String formatRecord(final Record record) {
+        return record.values().stream().map(this::formatValue).collect(Collectors.joining(COMMA_SEPARATOR));
     }
 
     @Override
-    public String formatInfo( ResultSummary summary )
-    {
-        if ( !summary.hasPlan() )
-        {
+    public String formatInfo(ResultSummary summary) {
+        if (!summary.hasPlan()) {
             return "";
         }
-        Map<String, Value> info = OutputFormatter.info( summary );
+        Map<String, Value> info = OutputFormatter.info(summary);
         return info.entrySet().stream()
-                   .map( e -> String.format( "%s: %s", e.getKey(), e.getValue() ) ).collect( Collectors.joining( NEWLINE ) );
+                .map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+                .collect(Collectors.joining(NEWLINE));
     }
 
     @Override
-    public Set<Capabilities> capabilities()
-    {
-        return EnumSet.of( INFO, STATISTICS, RESULT );
+    public Set<Capabilities> capabilities() {
+        return EnumSet.of(INFO, STATISTICS, RESULT);
     }
 }

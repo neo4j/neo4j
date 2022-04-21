@@ -32,8 +32,7 @@ import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.ValueMapper;
 
-public interface TransactionalContext
-{
+public interface TransactionalContext {
     ValueMapper<Object> valueMapper();
 
     ExecutingQuery executingQuery();
@@ -110,7 +109,7 @@ public interface TransactionalContext
 
     StatisticProvider kernelStatisticProvider();
 
-    KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context );
+    KernelTransaction.Revertable restrictCurrentTransaction(SecurityContext context);
 
     ResourceTracker resourceTracker();
 

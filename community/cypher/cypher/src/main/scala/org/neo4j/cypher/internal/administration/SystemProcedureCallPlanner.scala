@@ -35,32 +35,41 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 
-case class SystemProcedureCallPlanner(normalExecutionEngine: ExecutionEngine, securityAuthorizationHandler: SecurityAuthorizationHandler) {
+case class SystemProcedureCallPlanner(
+  normalExecutionEngine: ExecutionEngine,
+  securityAuthorizationHandler: SecurityAuthorizationHandler
+) {
 
-  def planSystemProcedureCall(call: ResolvedCall, returns: Option[Return], checkCredentialsExpired: Boolean): ExecutionPlan = {
+  def planSystemProcedureCall(
+    call: ResolvedCall,
+    returns: Option[Return],
+    checkCredentialsExpired: Boolean
+  ): ExecutionPlan = {
     val queryString = returns match {
-      case Some(rs@Return(_, ReturnItems(_, items, _), _, _, _, _)) if items.nonEmpty => QueryRenderer.render(Seq(call, rs))
+      case Some(rs @ Return(_, ReturnItems(_, items, _), _, _, _, _)) if items.nonEmpty =>
+        QueryRenderer.render(Seq(call, rs))
       case _ => QueryRenderer.render(Seq(call))
     }
 
     def addParameterDefaults(params: MapValue): MapValue = {
       val builder = call.folder.treeFold(new MapValueBuilder()) {
         case ImplicitProcedureArgument(name, _, defaultValue) => acc =>
-          acc.add(name, ValueUtils.of(defaultValue))
-          TraverseChildren(acc)
+            acc.add(name, ValueUtils.of(defaultValue))
+            TraverseChildren(acc)
       }
       val defaults = builder.build()
       defaults.updatedWith(params)
     }
 
-    SystemCommandExecutionPlan("SystemProcedure",
+    SystemCommandExecutionPlan(
+      "SystemProcedure",
       normalExecutionEngine,
       securityAuthorizationHandler,
       queryString,
       MapValue.EMPTY,
       checkCredentialsExpired = checkCredentialsExpired,
       parameterConverter = (_, params) => addParameterDefaults(params),
-      modeConverter = s => s.withMode(new OverriddenAccessMode(s.mode(), AccessMode.Static.READ)),
+      modeConverter = s => s.withMode(new OverriddenAccessMode(s.mode(), AccessMode.Static.READ))
     )
   }
 

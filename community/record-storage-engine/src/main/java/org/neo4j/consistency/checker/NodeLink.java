@@ -24,93 +24,77 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 /**
  * Means of parameterizing selection of {@link RelationshipRecord} pointers.
  */
-public enum NodeLink
-{
-    SOURCE
-    {
+public enum NodeLink {
+    SOURCE {
         @Override
-        public void setPrevRel( RelationshipRecord record, long other )
-        {
-            record.setFirstPrevRel( other );
+        public void setPrevRel(RelationshipRecord record, long other) {
+            record.setFirstPrevRel(other);
         }
 
         @Override
-        public void setNextRel( RelationshipRecord record, long other )
-        {
-            record.setFirstNextRel( other );
+        public void setNextRel(RelationshipRecord record, long other) {
+            record.setFirstNextRel(other);
         }
 
         @Override
-        public long getPrevRel( RelationshipRecord relationship )
-        {
+        public long getPrevRel(RelationshipRecord relationship) {
             return relationship.getFirstPrevRel();
         }
 
         @Override
-        public long getNextRel( RelationshipRecord relationship )
-        {
+        public long getNextRel(RelationshipRecord relationship) {
             return relationship.getFirstNextRel();
         }
 
         @Override
-        public void setNode( RelationshipRecord relationship, long nodeId )
-        {
-            relationship.setFirstNode( nodeId );
+        public void setNode(RelationshipRecord relationship, long nodeId) {
+            relationship.setFirstNode(nodeId);
         }
     },
-    TARGET
-    {
+    TARGET {
         @Override
-        public void setPrevRel( RelationshipRecord record, long other )
-        {
-            record.setSecondPrevRel( other );
+        public void setPrevRel(RelationshipRecord record, long other) {
+            record.setSecondPrevRel(other);
         }
 
         @Override
-        public void setNextRel( RelationshipRecord record, long other )
-        {
-            record.setSecondNextRel( other );
+        public void setNextRel(RelationshipRecord record, long other) {
+            record.setSecondNextRel(other);
         }
 
         @Override
-        public long getPrevRel( RelationshipRecord relationship )
-        {
+        public long getPrevRel(RelationshipRecord relationship) {
             return relationship.getSecondPrevRel();
         }
 
         @Override
-        public long getNextRel( RelationshipRecord relationship )
-        {
+        public long getNextRel(RelationshipRecord relationship) {
             return relationship.getSecondNextRel();
         }
 
         @Override
-        public void setNode( RelationshipRecord relationship, long nodeId )
-        {
-            relationship.setSecondNode( nodeId );
+        public void setNode(RelationshipRecord relationship, long nodeId) {
+            relationship.setSecondNode(nodeId);
         }
     };
 
-    public static NodeLink select( RelationshipRecord record, long node )
-    {
-        if ( record.getFirstNode() == node )
-        {
+    public static NodeLink select(RelationshipRecord record, long node) {
+        if (record.getFirstNode() == node) {
             return SOURCE;
         }
-        if ( record.getSecondNode() == node )
-        {
+        if (record.getSecondNode() == node) {
             return TARGET;
         }
         return null;
     }
 
-    public abstract void setPrevRel( RelationshipRecord record, long other );
+    public abstract void setPrevRel(RelationshipRecord record, long other);
 
-    public abstract void setNextRel( RelationshipRecord record, long other );
+    public abstract void setNextRel(RelationshipRecord record, long other);
 
-    public abstract long getPrevRel( RelationshipRecord relationship );
+    public abstract long getPrevRel(RelationshipRecord relationship);
 
-    public abstract long getNextRel( RelationshipRecord relationship );
+    public abstract long getNextRel(RelationshipRecord relationship);
 
-    public abstract void setNode( RelationshipRecord relationship, long nodeId );
+    public abstract void setNode(RelationshipRecord relationship, long nodeId);
 }

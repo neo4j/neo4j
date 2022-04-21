@@ -22,7 +22,4 @@ package org.neo4j.internal.kernel.api;
 /**
  * Token creation and lookup.
  */
-public interface Token extends TokenWrite, TokenRead
-{
-
-}
+public interface Token extends TokenWrite, TokenRead {}

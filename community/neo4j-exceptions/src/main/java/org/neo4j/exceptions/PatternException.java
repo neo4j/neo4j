@@ -21,16 +21,13 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class PatternException extends Neo4jException
-{
-    public PatternException( String message )
-    {
-        super( message );
+public class PatternException extends Neo4jException {
+    public PatternException(String message) {
+        super(message);
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Statement.SemanticError;
     }
 }

@@ -27,14 +27,23 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 
 class TestGraphStatistics extends GraphStatistics {
+
   override def nodesAllCardinality(): Cardinality =
     fail()
+
   override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     fail()
-  override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+
+  override def patternStepCardinality(
+    fromLabel: Option[LabelId],
+    relTypeId: Option[RelTypeId],
+    toLabel: Option[LabelId]
+  ): Cardinality =
     fail()
+
   override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
     fail()
+
   override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
     fail()
 

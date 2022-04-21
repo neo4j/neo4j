@@ -23,14 +23,11 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.neo4j.procedure.Procedure;
 
 /**
  * Used to mark sensitive (e.g. passwords) {@link Procedure} input parameters.
  */
-@Target( ElementType.PARAMETER )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface Sensitive
-{
-}
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Sensitive {}

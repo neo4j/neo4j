@@ -18,51 +18,44 @@ package org.neo4j.pushtocloud;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
 import org.neo4j.internal.helpers.progress.ProgressListener;
 
-class ProgressTrackingOutputStream extends OutputStream
-{
+class ProgressTrackingOutputStream extends OutputStream {
     private final OutputStream actual;
     private final Progress progress;
 
-    ProgressTrackingOutputStream( OutputStream actual, Progress progress )
-    {
+    ProgressTrackingOutputStream(OutputStream actual, Progress progress) {
         this.actual = actual;
         this.progress = progress;
     }
 
     @Override
-    public void write( byte[] b, int off, int len ) throws IOException
-    {
-        actual.write( b, off, len );
-        progress.add( len );
+    public void write(byte[] b, int off, int len) throws IOException {
+        actual.write(b, off, len);
+        progress.add(len);
     }
 
     @Override
-    public void flush() throws IOException
-    {
+    public void flush() throws IOException {
         actual.flush();
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         actual.close();
     }
 
     @Override
-    public void write( int b ) throws IOException
-    {
-        actual.write( b );
-        progress.add( 1 );
+    public void write(int b) throws IOException {
+        actual.write(b);
+        progress.add(1);
     }
 
-    static class Progress
-    {
+    static class Progress {
         private final ProgressListener uploadProgress;
         // Why have this as a separate field here? Because we will track local progress while streaming the file,
-        // i.e. how much we send. But if the upload gets aborted we may take a small step backwards after asking about resume position
+        // i.e. how much we send. But if the upload gets aborted we may take a small step backwards after asking about
+        // resume position
         // and so to play nice with our progress listener (e.g. hard to remove printed dots from the terminal)
         // we won't report until we're caught up with it.
         private long highestReportedProgress;
@@ -76,40 +69,33 @@ class ProgressTrackingOutputStream extends OutputStream
          * where the upload will continue from. This is separate from temporary failure where the upload will be retried after some back-off.
          * That logic will instead make use of {@link #rewindTo(long)}.
          */
-        Progress( ProgressListener progressListener, long position )
-        {
+        Progress(ProgressListener progressListener, long position) {
             uploadProgress = progressListener;
-            if ( position > 0 )
-            {
-                uploadProgress.add( position );
+            if (position > 0) {
+                uploadProgress.add(position);
             }
         }
 
-        void add( int increment )
-        {
+        void add(int increment) {
             progress += increment;
-            if ( progress > highestReportedProgress )
-            {
-                uploadProgress.add( progress - highestReportedProgress );
+            if (progress > highestReportedProgress) {
+                uploadProgress.add(progress - highestReportedProgress);
                 highestReportedProgress = progress;
             }
         }
 
-        void rewindTo( long absoluteProgress )
-        {
+        void rewindTo(long absoluteProgress) {
             // May be lower than what we're at, but that's fine
             progress = absoluteProgress;
             // highestReportedProgress will be kept as it is so that we know when we're caught up to it once more
         }
 
-        void done()
-        {
+        void done() {
             done = true;
             uploadProgress.done();
         }
 
-        boolean isDone()
-        {
+        boolean isDone() {
             return done;
         }
     }

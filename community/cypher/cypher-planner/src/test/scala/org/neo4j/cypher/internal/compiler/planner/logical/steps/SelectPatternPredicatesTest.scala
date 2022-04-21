@@ -71,14 +71,14 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
   // MATCH (a) WHERE (a)-->()
   private val relChain = RelationshipChain(
-    NodePattern(Some(varFor("a")), None, None, None)_,
+    NodePattern(Some(varFor("a")), None, None, None) _,
     RelationshipPattern(Some(varFor("  UNNAMED1")), types, None, None, None, dir) _,
-    NodePattern(Some(varFor(nodeName)), None, None, None)_
-  )_
+    NodePattern(Some(varFor(nodeName)), None, None, None) _
+  ) _
 
-  private val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain)_)(Set(varFor("a")), "", ""))_
+  private val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain) _)(Set(varFor("a")), "", "")) _
 
-  private val pattern: Pattern = Pattern(Seq(EveryPath(relChain)))_
+  private val pattern: Pattern = Pattern(Seq(EveryPath(relChain))) _
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given
@@ -150,7 +150,7 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
   test("should introduce semi apply for pattern predicate in EXISTS where node variable comes from outer scope") {
     // Given
-    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a")_))
+    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a") _))
     val predicate = Predicate(Set("a"), exists)
     val selections = Selections(Set(predicate))
 
@@ -173,7 +173,7 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
   test("should introduce anti semi apply for negated pattern predicate in EXISTS") {
     // Given
-    val notExists = not(ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a")_)))
+    val notExists = not(ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a") _)))
     val predicate = Predicate(Set("a"), notExists)
     val selections = Selections(Set(predicate))
 
@@ -193,7 +193,6 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     // Then
     result should equal(Seq(SelectionCandidate(AntiSemiApply(aPlan, inner), Set(notExists))))
   }
-
 
   test("should introduce select or semi apply for unsolved pattern predicates in disjunction with expressions") {
     // Given
@@ -220,10 +219,10 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     result should equal(Seq(SelectionCandidate(SelectOrSemiApply(aPlan, inner, equalsExp), Set(orsExp))))
   }
 
-    test("should introduce select or semi apply for unsolved exists predicates in disjunction with expressions") {
+  test("should introduce select or semi apply for unsolved exists predicates in disjunction with expressions") {
     // Given
     val equalsExp = equals(prop("a", "prop"), literalString("42"))
-    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a")_))
+    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a") _))
     val orsExp = ors(exists, equalsExp)
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
@@ -246,7 +245,9 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     result should equal(Seq(SelectionCandidate(SelectOrSemiApply(aPlan, inner, equalsExp), Set(orsExp))))
   }
 
-  test("should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression") {
+  test(
+    "should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression"
+  ) {
     // Given
     val equalsExp = equals(prop("a", "prop"), literalString("42"))
     val orsExp = ors(not(patternExp), equalsExp)
@@ -270,10 +271,12 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     result should equal(Seq(SelectionCandidate(SelectOrAntiSemiApply(aPlan, inner, equalsExp), Set(orsExp))))
   }
 
-  test("should introduce select or anti semi apply for unsolved negated exists predicates in disjunction with an expression") {
+  test(
+    "should introduce select or anti semi apply for unsolved negated exists predicates in disjunction with an expression"
+  ) {
     // Given
     val equalsExp = equals(prop("a", "prop"), literalString("42"))
-    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a")_))
+    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a") _))
     val orsExp = ors(not(exists), equalsExp)
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
@@ -298,10 +301,10 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
   test("should introduce let semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None) _,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
-    )_)_)(Set(varFor("a")), "", ""))_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None) _
+    ) _) _)(Set(varFor("a")), "", "")) _
 
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -325,17 +328,20 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED0"), inner2, varFor("  UNNAMED0")), Set(orsExp)))
+      Seq(SelectionCandidate(
+        SelectOrSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED0"), inner2, varFor("  UNNAMED0")),
+        Set(orsExp)
+      ))
     )
   }
 
   test("should introduce let semi apply and select or anti semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None) _,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
-    )_)_)(Set(varFor("a")), "", ""))_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None) _
+    ) _) _)(Set(varFor("a")), "", "")) _
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
     val orsExp = ors(patternExp, not(patternExp2))
@@ -358,17 +364,20 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED0"), inner2, varFor("  UNNAMED0")), Set(orsExp)))
+      Seq(SelectionCandidate(
+        SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED0"), inner2, varFor("  UNNAMED0")),
+        Set(orsExp)
+      ))
     )
   }
 
   test("should introduce let anti semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None) _,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
-    )_)_)(Set(varFor("a")), "", ""))_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None) _
+    ) _) _)(Set(varFor("a")), "", "")) _
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
     val orsExp = ors(not(patternExp), patternExp2)
@@ -391,19 +400,24 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, "  UNNAMED0"), inner2, varFor("  UNNAMED0")), Set(orsExp)))
+      Seq(SelectionCandidate(
+        SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, "  UNNAMED0"), inner2, varFor("  UNNAMED0")),
+        Set(orsExp)
+      ))
     )
   }
 
-  test("should introduce let select or semi apply and select or anti semi apply for multiple pattern predicates in or") {
+  test(
+    "should introduce let select or semi apply and select or anti semi apply for multiple pattern predicates in or"
+  ) {
     // Given
     val equalsExp = equals(prop("a", "prop"), literalString("42"))
 
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None) _,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
-    )_)_)(Set(varFor("a")), "", ""))_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None) _
+    ) _) _)(Set(varFor("a")), "", "")) _
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
     val orsExp = ors(equalsExp, patternExp, not(patternExp2))
@@ -426,21 +440,28 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrAntiSemiApply(
-        LetSelectOrSemiApply(aPlan, inner, "  UNNAMED0", equalsExp), inner2, varFor("  UNNAMED0")
-      ), Set(orsExp)))
+      Seq(SelectionCandidate(
+        SelectOrAntiSemiApply(
+          LetSelectOrSemiApply(aPlan, inner, "  UNNAMED0", equalsExp),
+          inner2,
+          varFor("  UNNAMED0")
+        ),
+        Set(orsExp)
+      ))
     )
   }
 
-  test("should introduce let anti select or semi apply and select or semi apply for multiple pattern predicates in or") {
+  test(
+    "should introduce let anti select or semi apply and select or semi apply for multiple pattern predicates in or"
+  ) {
     // Given
     val equalsExp = equals(prop("a", "prop"), literalString("42"))
 
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None) _,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
-    )_)_)(Set(varFor("a")), "", ""))_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None) _
+    ) _) _)(Set(varFor("a")), "", "")) _
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
     val orsExp = ors(equalsExp, not(patternExp), patternExp2)
@@ -463,15 +484,20 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(
-        LetSelectOrAntiSemiApply(aPlan, inner, "  UNNAMED0", equalsExp), inner2, varFor("  UNNAMED0")
-      ), Set(orsExp)))
+      Seq(SelectionCandidate(
+        SelectOrSemiApply(
+          LetSelectOrAntiSemiApply(aPlan, inner, "  UNNAMED0", equalsExp),
+          inner2,
+          varFor("  UNNAMED0")
+        ),
+        Set(orsExp)
+      ))
     )
   }
 
   test("should introduce select or semi apply for exists predicates and other pattern predicate in or") {
     // Given
-    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a")_))
+    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a") _))
     val orsExp = ors(exists, patternExp)
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
@@ -491,13 +517,16 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED2"), inner, varFor("  UNNAMED2")), Set(orsExp)))
+      Seq(SelectionCandidate(
+        SelectOrSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED2"), inner, varFor("  UNNAMED2")),
+        Set(orsExp)
+      ))
     )
   }
 
   test("should introduce anti select or semi apply for exists predicates and other pattern predicate in or") {
     // Given
-    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a")_))
+    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a") _))
     val orsExp = ors(not(exists), patternExp)
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
@@ -517,9 +546,14 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(
-        LetAntiSemiApply(aPlan, inner, "  UNNAMED2"), inner, varFor("  UNNAMED2")
-      ), Set(orsExp)))
+      Seq(SelectionCandidate(
+        SelectOrSemiApply(
+          LetAntiSemiApply(aPlan, inner, "  UNNAMED2"),
+          inner,
+          varFor("  UNNAMED2")
+        ),
+        Set(orsExp)
+      ))
     )
   }
 }

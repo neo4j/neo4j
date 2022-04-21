@@ -19,116 +19,104 @@
  */
 package org.neo4j.kernel.api;
 
+import static java.lang.String.format;
+
 import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.UUID;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.values.ElementIdMapper;
 
-import static java.lang.String.format;
-
 /**
  * Produces element IDs which includes version, entity type, database ID and the internal storage entity ID.
  * The data is encoded into a {@code }byte[]} and converted into a String using base64.
  */
-public class DefaultElementIdMapperV1 implements ElementIdMapper
-{
+public class DefaultElementIdMapperV1 implements ElementIdMapper {
     private static final byte ELEMENT_ID_FORMAT_VERSION = 1;
 
     private final StorageEngine storageEngine;
     private final UUID databaseId;
 
-    public DefaultElementIdMapperV1( StorageEngine storageEngine, NamedDatabaseId databaseId )
-    {
+    public DefaultElementIdMapperV1(StorageEngine storageEngine, NamedDatabaseId databaseId) {
         this.storageEngine = storageEngine;
         this.databaseId = databaseId.databaseId().uuid();
     }
 
     @Override
-    public String nodeElementId( long nodeId )
-    {
-        return buildElementId( EntityType.NODE, ELEMENT_ID_FORMAT_VERSION, storageEngine.encodeNodeId( nodeId ) );
+    public String nodeElementId(long nodeId) {
+        return buildElementId(EntityType.NODE, ELEMENT_ID_FORMAT_VERSION, storageEngine.encodeNodeId(nodeId));
     }
 
     @Override
-    public long nodeId( String id )
-    {
-        ByteBuffer decoded = decodeElementId( id, EntityType.NODE );
-        return storageEngine.decodeNodeId( decoded.array(), decoded.position() );
+    public long nodeId(String id) {
+        ByteBuffer decoded = decodeElementId(id, EntityType.NODE);
+        return storageEngine.decodeNodeId(decoded.array(), decoded.position());
     }
 
     @Override
-    public String relationshipElementId( long relationshipId )
-    {
-        return buildElementId( EntityType.RELATIONSHIP, ELEMENT_ID_FORMAT_VERSION, storageEngine.encodeRelationshipId( relationshipId ) );
+    public String relationshipElementId(long relationshipId) {
+        return buildElementId(
+                EntityType.RELATIONSHIP, ELEMENT_ID_FORMAT_VERSION, storageEngine.encodeRelationshipId(relationshipId));
     }
 
     @Override
-    public long relationshipId( String id )
-    {
-        ByteBuffer decoded = decodeElementId( id, EntityType.RELATIONSHIP );
-        return storageEngine.decodeRelationshipId( decoded.array(), 1 + Long.BYTES * 2 );
+    public long relationshipId(String id) {
+        ByteBuffer decoded = decodeElementId(id, EntityType.RELATIONSHIP);
+        return storageEngine.decodeRelationshipId(decoded.array(), 1 + Long.BYTES * 2);
     }
 
     /**
      * Builds an element ID. This can probably be optimized, but the format is somewhat sensible in that it contains a header w/ format version,
      * database UUID and the storage-specific element ID.
      */
-    private String buildElementId( EntityType entityType, byte elementIdFormatVersion, byte[] storageId )
-    {
-        ByteBuffer buffer = ByteBuffer.allocate( 1 + Long.BYTES * 2 + storageId.length );
-        buffer.put( buildElementIdByteArrayHeader( entityType, elementIdFormatVersion ) );
-        buffer.putLong( databaseId.getLeastSignificantBits() );
-        buffer.putLong( databaseId.getMostSignificantBits() );
-        buffer.put( storageId );
-        return Base64.getEncoder().encodeToString( buffer.array() );
+    private String buildElementId(EntityType entityType, byte elementIdFormatVersion, byte[] storageId) {
+        ByteBuffer buffer = ByteBuffer.allocate(1 + Long.BYTES * 2 + storageId.length);
+        buffer.put(buildElementIdByteArrayHeader(entityType, elementIdFormatVersion));
+        buffer.putLong(databaseId.getLeastSignificantBits());
+        buffer.putLong(databaseId.getMostSignificantBits());
+        buffer.put(storageId);
+        return Base64.getEncoder().encodeToString(buffer.array());
     }
 
-    private ByteBuffer decodeElementId( String id, EntityType entityType )
-    {
-        byte[] decodedBytes = Base64.getDecoder().decode( id );
-        ByteBuffer decoded = ByteBuffer.wrap( decodedBytes );
-        verifyHeader( id, decoded, entityType );
-        verifyDatabaseId( decoded );
+    private ByteBuffer decodeElementId(String id, EntityType entityType) {
+        byte[] decodedBytes = Base64.getDecoder().decode(id);
+        ByteBuffer decoded = ByteBuffer.wrap(decodedBytes);
+        verifyHeader(id, decoded, entityType);
+        verifyDatabaseId(decoded);
         return decoded;
     }
 
-    private void verifyHeader( String id, ByteBuffer decoded, EntityType entityType )
-    {
+    private void verifyHeader(String id, ByteBuffer decoded, EntityType entityType) {
         byte header = decoded.get();
         byte version = (byte) (header >>> 2);
-        if ( version != ELEMENT_ID_FORMAT_VERSION )
-        {
-            throw new IllegalArgumentException( format( "Element ID %s has an unexpected version %d", id, version ) );
+        if (version != ELEMENT_ID_FORMAT_VERSION) {
+            throw new IllegalArgumentException(format("Element ID %s has an unexpected version %d", id, version));
         }
-        verifyEntityType( id, header, entityType );
+        verifyEntityType(id, header, entityType);
     }
 
-    private void verifyDatabaseId( ByteBuffer decoded )
-    {
+    private void verifyDatabaseId(ByteBuffer decoded) {
         long uuidLsb = decoded.getLong();
         long uuidMsb = decoded.getLong();
-        if ( databaseId.getLeastSignificantBits() != uuidLsb || databaseId.getMostSignificantBits() != uuidMsb )
-        {
-            throw new IllegalArgumentException( "Element ID %s is for another database" );
+        if (databaseId.getLeastSignificantBits() != uuidLsb || databaseId.getMostSignificantBits() != uuidMsb) {
+            throw new IllegalArgumentException("Element ID %s is for another database");
         }
     }
 
-    private void verifyEntityType( String id, byte header, EntityType expected )
-    {
+    private void verifyEntityType(String id, byte header, EntityType expected) {
         byte entityTypeId = (byte) (header & 0x3);
-        EntityType entityType = switch ( entityTypeId )
-                {
+        EntityType entityType =
+                switch (entityTypeId) {
                     case 0 -> EntityType.NODE;
                     case 1 -> EntityType.RELATIONSHIP;
-                    default -> throw new IllegalArgumentException( format( "Element ID %s has unknown entity type ID %s", id, entityTypeId ) );
+                    default -> throw new IllegalArgumentException(
+                            format("Element ID %s has unknown entity type ID %s", id, entityTypeId));
                 };
-        if ( entityType != expected )
-        {
-            throw new IllegalArgumentException( format( "Element ID %s has unexpected entity type %s, was expecting %s", id, entityType, expected ) );
+        if (entityType != expected) {
+            throw new IllegalArgumentException(
+                    format("Element ID %s has unexpected entity type %s, was expecting %s", id, entityType, expected));
         }
     }
 
@@ -136,8 +124,7 @@ public class DefaultElementIdMapperV1 implements ElementIdMapper
      * A simple header in the element ID containing entity type and version of the element ID (should we ever change it).
      * The format of this version header must remain the same tho.
      */
-    private byte buildElementIdByteArrayHeader( EntityType entityType, byte version )
-    {
+    private byte buildElementIdByteArrayHeader(EntityType entityType, byte version) {
         byte header = 0;
         header |= entityType == EntityType.NODE ? 0 : 1;
         header |= version << 2;

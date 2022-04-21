@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
+
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
@@ -37,25 +38,40 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
-
-public class RelationshipLinkforwardStage extends Stage
-{
+public class RelationshipLinkforwardStage extends Stage {
     public static final String NAME = "Relationship --> Relationship";
 
-    public RelationshipLinkforwardStage( String topic, Configuration config, BatchingNeoStores stores,
-            NodeRelationshipCache cache, Predicate<RelationshipRecord> readFilter,
-            Function<CursorContext,StoreCursors> storeCursorsCreator,
-            Predicate<RelationshipRecord> denseChangeFilter, int nodeTypes, CursorContextFactory contextFactory,
-            StatsProvider... additionalStatsProvider )
-    {
-        super( NAME, topic, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
+    public RelationshipLinkforwardStage(
+            String topic,
+            Configuration config,
+            BatchingNeoStores stores,
+            NodeRelationshipCache cache,
+            Predicate<RelationshipRecord> readFilter,
+            Function<CursorContext, StoreCursors> storeCursorsCreator,
+            Predicate<RelationshipRecord> denseChangeFilter,
+            int nodeTypes,
+            CursorContextFactory contextFactory,
+            StatsProvider... additionalStatsProvider) {
+        super(NAME, topic, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES);
         RelationshipStore store = stores.getRelationshipStore();
-        add( new BatchFeedStep( control(), config, RecordIdIterator.forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, true, store, new RecordDataAssembler<>( store::newRecord, readFilter, true ),
-                contextFactory ) );
-        add( new RelationshipLinkforwardStep( control(), config, cache, denseChangeFilter, nodeTypes, additionalStatsProvider ) );
-        add( new UpdateRecordsStep<>( control(), config, store, PrepareIdSequence.of( stores.usesDoubleRelationshipRecordUnits() ), contextFactory,
-                storeCursorsCreator, RELATIONSHIP_CURSOR ) );
+        add(new BatchFeedStep(
+                control(), config, RecordIdIterator.forwards(0, store.getHighId(), config), store.getRecordSize()));
+        add(new ReadRecordsStep<>(
+                control(),
+                config,
+                true,
+                store,
+                new RecordDataAssembler<>(store::newRecord, readFilter, true),
+                contextFactory));
+        add(new RelationshipLinkforwardStep(
+                control(), config, cache, denseChangeFilter, nodeTypes, additionalStatsProvider));
+        add(new UpdateRecordsStep<>(
+                control(),
+                config,
+                store,
+                PrepareIdSequence.of(stores.usesDoubleRelationshipRecordUnits()),
+                contextFactory,
+                storeCursorsCreator,
+                RELATIONSHIP_CURSOR));
     }
 }

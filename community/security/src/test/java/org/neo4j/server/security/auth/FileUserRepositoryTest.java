@@ -19,8 +19,13 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.CopyOption;
@@ -29,7 +34,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -43,19 +49,11 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
 @EphemeralTestDirectoryExtension
-class FileUserRepositoryTest
-{
+class FileUserRepositoryTest {
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory testDirectory;
 
@@ -63,196 +61,200 @@ class FileUserRepositoryTest
     private Path authFile;
 
     @BeforeEach
-    void setUp()
-    {
-        authFile = testDirectory.directory( "dbms" ).resolve( "auth" );
+    void setUp() {
+        authFile = testDirectory.directory("dbms").resolve("auth");
     }
 
     @Test
-    void shouldStoreAndRetrieveUsersByName() throws Exception
-    {
+    void shouldStoreAndRetrieveUsersByName() throws Exception {
         // Given
-        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
-        users.create( user );
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
+                .withRequiredPasswordChange(true)
+                .build();
+        users.create(user);
 
         // When
-        User result = users.getUserByName( user.name() );
+        User result = users.getUserByName(user.name());
 
         // Then
-        assertThat( result ).isEqualTo( user );
+        assertThat(result).isEqualTo(user);
     }
 
     @Test
-    void shouldPersistUserWithoutId() throws Throwable
-    {
+    void shouldPersistUserWithoutId() throws Throwable {
         // Given
-        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
-        users.create( user );
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
+                .withRequiredPasswordChange(true)
+                .build();
+        users.create(user);
 
-        users = new FileUserRepository( fs, authFile, logProvider );
+        users = new FileUserRepository(fs, authFile, logProvider);
         users.start();
 
         // When
-        User resultByName = users.getUserByName( user.name() );
+        User resultByName = users.getUserByName(user.name());
 
         // Then
-        assertThat( resultByName ).isEqualTo( user );
+        assertThat(resultByName).isEqualTo(user);
     }
 
     @Test
-    void shouldNotPersistIdForUserWithValidId() throws Throwable
-    {
+    void shouldNotPersistIdForUserWithValidId() throws Throwable {
         // Given
-        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withId( "id" ).withRequiredPasswordChange( true ).build();
-        users.create( user );
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
+                .withId("id")
+                .withRequiredPasswordChange(true)
+                .build();
+        users.create(user);
 
-        users = new FileUserRepository( fs, authFile, logProvider );
+        users = new FileUserRepository(fs, authFile, logProvider);
         users.start();
 
         // When
-        User resultByName = users.getUserByName( user.name() );
+        User resultByName = users.getUserByName(user.name());
 
         // Then
-        User userWithoutId = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
-        assertThat( resultByName ).isEqualTo( userWithoutId );
+        User userWithoutId = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
+                .withRequiredPasswordChange(true)
+                .build();
+        assertThat(resultByName).isEqualTo(userWithoutId);
     }
 
     @Test
-    void shouldNotAllowComplexNames() throws Exception
-    {
+    void shouldNotAllowComplexNames() throws Exception {
         // Given
-        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
 
         // When
-        users.assertValidUsername( "neo4j" );
-        users.assertValidUsername( "johnosbourne" );
-        users.assertValidUsername( "john_osbourne" );
+        users.assertValidUsername("neo4j");
+        users.assertValidUsername("johnosbourne");
+        users.assertValidUsername("john_osbourne");
 
-        assertThatThrownBy( () -> users.assertValidUsername( null ) ).isInstanceOf( InvalidArgumentsException.class )
-                .hasMessage( "The provided username is empty." );
-        assertThatThrownBy( () -> users.assertValidUsername( "" ) ).isInstanceOf( InvalidArgumentsException.class )
-                .hasMessage( "The provided username is empty." );
-        assertThatThrownBy( () -> users.assertValidUsername( "," ) ).isInstanceOf( InvalidArgumentsException.class)
-                .hasMessage( "Username ',' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
-        assertThatThrownBy( () -> users.assertValidUsername( "with space" ) ).isInstanceOf( InvalidArgumentsException.class )
-                .hasMessage( "Username 'with space' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
-        assertThatThrownBy( () -> users.assertValidUsername( "with:colon" ) ).isInstanceOf( InvalidArgumentsException.class )
-                .hasMessage( "Username 'with:colon' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
-        assertThatThrownBy( () -> users.assertValidUsername( "withå" ) ).isInstanceOf( InvalidArgumentsException.class )
-                .hasMessage( "Username 'withå' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
+        assertThatThrownBy(() -> users.assertValidUsername(null))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessage("The provided username is empty.");
+        assertThatThrownBy(() -> users.assertValidUsername(""))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessage("The provided username is empty.");
+        assertThatThrownBy(() -> users.assertValidUsername(","))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessage(
+                        "Username ',' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces.");
+        assertThatThrownBy(() -> users.assertValidUsername("with space"))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessage(
+                        "Username 'with space' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces.");
+        assertThatThrownBy(() -> users.assertValidUsername("with:colon"))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessage(
+                        "Username 'with:colon' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces.");
+        assertThatThrownBy(() -> users.assertValidUsername("withå"))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessage(
+                        "Username 'withå' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces.");
     }
 
     @Test
-    void shouldRecoverIfCrashedDuringMove() throws Throwable
-    {
+    void shouldRecoverIfCrashedDuringMove() throws Throwable {
         // Given
-        final IOException exception = new IOException( "simulated IO Exception on create" );
-        FileSystemAbstraction crashingFileSystem =
-            new DelegatingFileSystemAbstraction( fs )
-            {
-                @Override
-                public void renameFile( Path oldLocation, Path newLocation, CopyOption... copyOptions ) throws IOException
-                {
-                    if ( authFile.getFileName().equals( newLocation.getFileName() ) )
-                    {
-                        throw exception;
-                    }
-                    super.renameFile( oldLocation, newLocation, copyOptions );
+        final IOException exception = new IOException("simulated IO Exception on create");
+        FileSystemAbstraction crashingFileSystem = new DelegatingFileSystemAbstraction(fs) {
+            @Override
+            public void renameFile(Path oldLocation, Path newLocation, CopyOption... copyOptions) throws IOException {
+                if (authFile.getFileName().equals(newLocation.getFileName())) {
+                    throw exception;
                 }
-            };
+                super.renameFile(oldLocation, newLocation, copyOptions);
+            }
+        };
 
-        FileUserRepository users = new FileUserRepository( crashingFileSystem, authFile, logProvider );
+        FileUserRepository users = new FileUserRepository(crashingFileSystem, authFile, logProvider);
         users.start();
-        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
+        User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
+                .withRequiredPasswordChange(true)
+                .build();
 
         // When
-        var e = assertThrows( IOException.class, () -> users.create( user ) );
-        assertSame( exception, e );
+        var e = assertThrows(IOException.class, () -> users.create(user));
+        assertSame(exception, e);
 
         // Then
-        assertFalse( crashingFileSystem.fileExists( authFile ) );
-        assertThat( crashingFileSystem.listFiles( authFile.getParent() ).length ).isEqualTo( 0 );
+        assertFalse(crashingFileSystem.fileExists(authFile));
+        assertThat(crashingFileSystem.listFiles(authFile.getParent()).length).isEqualTo(0);
     }
 
     @Test
-    void shouldFailOnReadingInvalidEntries() throws Throwable
-    {
+    void shouldFailOnReadingInvalidEntries() throws Throwable {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        fs.mkdir( authFile.getParent() );
+        fs.mkdir(authFile.getParent());
         // First line is correctly formatted, second line has an extra field
-        FileRepositorySerializer.writeToFile( fs, authFile, UTF8.encode(
-                "admin:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" +
-                "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256," +
-                        "A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" ) );
+        FileRepositorySerializer.writeToFile(
+                fs,
+                authFile,
+                UTF8.encode(
+                        "admin:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n"
+                                + "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256,"
+                                + "A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n"));
 
         // When
-        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
 
-        var e = assertThrows( IllegalStateException.class, users::start );
-        assertThat( e.getMessage() ).startsWith( "Failed to read authentication file: " );
+        var e = assertThrows(IllegalStateException.class, users::start);
+        assertThat(e.getMessage()).startsWith("Failed to read authentication file: ");
 
-        assertThat( users.numberOfUsers() ).isEqualTo( 0 );
-        assertThat( logProvider ).forClass( FileUserRepository.class ).forLevel( ERROR )
+        assertThat(users.numberOfUsers()).isEqualTo(0);
+        assertThat(logProvider)
+                .forClass(FileUserRepository.class)
+                .forLevel(ERROR)
                 .containsMessageWithArguments(
-                        "Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(),
-                        "wrong number of line fields, expected 3, got 4 [line 2]" );
+                        "Failed to read authentication file \"%s\" (%s)",
+                        authFile.toAbsolutePath(), "wrong number of line fields, expected 3, got 4 [line 2]");
     }
 
     @Test
-    void shouldProvideUserByUsernameEvenIfMidSetUsers() throws Throwable
-    {
+    void shouldProvideUserByUsernameEvenIfMidSetUsers() throws Throwable {
         // Given
-        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        users.create( new User.Builder( "oskar", LegacyCredential.forPassword( "hidden" ) ).build() );
-        DoubleLatch latch = new DoubleLatch( 2 );
+        FileUserRepository users = new FileUserRepository(fs, authFile, logProvider);
+        users.create(new User.Builder("oskar", LegacyCredential.forPassword("hidden")).build());
+        DoubleLatch latch = new DoubleLatch(2);
 
         // When
         var executor = Executors.newSingleThreadExecutor();
-        try
-        {
-            Future<?> setUsers = executor.submit( () ->
-            {
-                try
-                {
-                    users.setUsers( new HangingListSnapshot( latch, 10L, Collections.emptyList() ) );
+        try {
+            Future<?> setUsers = executor.submit(() -> {
+                try {
+                    users.setUsers(new HangingListSnapshot(latch, 10L, Collections.emptyList()));
+                } catch (InvalidArgumentsException e) {
+                    throw new RuntimeException(e);
                 }
-                catch ( InvalidArgumentsException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            } );
+            });
 
             latch.startAndWaitForAllToStart();
 
             // Then
-            assertNotNull( users.getUserByName( "oskar" ) );
+            assertNotNull(users.getUserByName("oskar"));
 
             latch.finish();
             setUsers.get();
-        }
-        finally
-        {
+        } finally {
             executor.shutdown();
         }
     }
 
-    static class HangingListSnapshot extends ListSnapshot<User>
-    {
+    static class HangingListSnapshot extends ListSnapshot<User> {
         private final DoubleLatch latch;
 
-        HangingListSnapshot( DoubleLatch latch, long timestamp, List<User> values )
-        {
-            super( timestamp, values );
+        HangingListSnapshot(DoubleLatch latch, long timestamp, List<User> values) {
+            super(timestamp, values);
             this.latch = latch;
         }
 
         @Override
-        public long timestamp()
-        {
+        public long timestamp() {
             latch.start();
             latch.finishAndWaitForAllToFinish();
             return super.timestamp();

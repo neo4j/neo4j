@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.List;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -29,51 +28,42 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.kernel.impl.newapi.TokenIndexScanPartitionedScanTestSuite.TokenScanQuery;
 
 public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Cursor>
-        implements PartitionedScanTestSuite.TestSuite<TokenScanQuery,TokenReadSession,CURSER>
-{
+        implements PartitionedScanTestSuite.TestSuite<TokenScanQuery, TokenReadSession, CURSER> {
     abstract static class WithoutData<CURSER extends Cursor>
-            extends PartitionedScanTestSuite.WithoutData<TokenScanQuery,TokenReadSession,CURSER>
-    {
-        WithoutData( TokenIndexScanPartitionedScanTestSuite<CURSER> testSuite )
-        {
-            super( testSuite );
+            extends PartitionedScanTestSuite.WithoutData<TokenScanQuery, TokenReadSession, CURSER> {
+        WithoutData(TokenIndexScanPartitionedScanTestSuite<CURSER> testSuite) {
+            super(testSuite);
         }
 
-        Queries<TokenScanQuery> emptyQueries( EntityType entityType, List<Integer> tokenIds )
-        {
-            final var tokenIndexName = getTokenIndexName( entityType );
+        Queries<TokenScanQuery> emptyQueries(EntityType entityType, List<Integer> tokenIds) {
+            final var tokenIndexName = getTokenIndexName(entityType);
             final var empty = tokenIds.stream()
-                                      .map( TokenPredicate::new )
-                                      .map( pred -> new TokenScanQuery( tokenIndexName, pred ) )
-                                      .collect( EntityIdsMatchingQuery.collector() );
-            return new Queries<>( empty );
+                    .map(TokenPredicate::new)
+                    .map(pred -> new TokenScanQuery(tokenIndexName, pred))
+                    .collect(EntityIdsMatchingQuery.collector());
+            return new Queries<>(empty);
         }
     }
 
     abstract static class WithData<CURSER extends Cursor>
-            extends PartitionedScanTestSuite.WithData<TokenScanQuery,TokenReadSession,CURSER>
-    {
-        WithData( TokenIndexScanPartitionedScanTestSuite<CURSER> testSuite )
-        {
-            super( testSuite );
+            extends PartitionedScanTestSuite.WithData<TokenScanQuery, TokenReadSession, CURSER> {
+        WithData(TokenIndexScanPartitionedScanTestSuite<CURSER> testSuite) {
+            super(testSuite);
         }
 
-        abstract Queries<TokenScanQuery> createData( int numberOfEntities, List<Integer> tokenIds );
+        abstract Queries<TokenScanQuery> createData(int numberOfEntities, List<Integer> tokenIds);
     }
 
-    protected record TokenScanQuery(String indexName, TokenPredicate predicate)
-            implements Query<TokenPredicate>
-    {
+    protected record TokenScanQuery(String indexName, TokenPredicate predicate) implements Query<TokenPredicate> {
         @Override
-        public TokenPredicate get()
-        {
+        public TokenPredicate get() {
             return predicate;
         }
 
         @Override
-        public String toString()
-        {
-            return String.format( "%s[index='%s', pred='%s']", getClass().getSimpleName(), indexName, predicate.tokenId() );
+        public String toString() {
+            return String.format(
+                    "%s[index='%s', pred='%s']", getClass().getSimpleName(), indexName, predicate.tokenId());
         }
     }
 }

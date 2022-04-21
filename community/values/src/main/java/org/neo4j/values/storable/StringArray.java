@@ -19,12 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.Arrays;
-
-import org.neo4j.hashing.HashFunction;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
@@ -32,148 +26,134 @@ import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 import static org.neo4j.values.storable.NoValue.NO_VALUE;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
-public class StringArray extends TextArray
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( StringArray.class );
+import java.util.Arrays;
+import org.neo4j.hashing.HashFunction;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
+public class StringArray extends TextArray {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(StringArray.class);
 
     private final String[] value;
 
-    StringArray( String[] value )
-    {
+    StringArray(String[] value) {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         return value.length;
     }
 
     @Override
-    public String stringValue( int offset )
-    {
+    public String stringValue(int offset) {
         return value[offset];
     }
 
     @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+    public boolean equals(Value other) {
+        return other.equals(value);
     }
 
     @Override
-    public boolean equals( char[] x )
-    {
-        return PrimitiveArrayValues.equals( x, value );
+    public boolean equals(char[] x) {
+        return PrimitiveArrayValues.equals(x, value);
     }
 
     @Override
-    public boolean equals( String[] x )
-    {
-        return Arrays.equals( value, x );
+    public boolean equals(String[] x) {
+        return Arrays.equals(value, x);
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
+    protected int computeHashToMemoize() {
         int result = 1;
-        for ( String element : value )
-        {
-            result = HASH_CONSTANT * result + (element == null ? NO_VALUE.hashCode() : Values.stringValue( element ).hashCode());
+        for (String element : value) {
+            result = HASH_CONSTANT * result
+                    + (element == null
+                            ? NO_VALUE.hashCode()
+                            : Values.stringValue(element).hashCode());
         }
         return result;
     }
 
     @Override
-    public long updateHash( HashFunction hashFunction, long hash )
-    {
-        hash = hashFunction.update( hash, value.length );
-        for ( String s : value )
-        {
-            hash = StringWrappingStringValue.updateHash( hashFunction, hash, s );
+    public long updateHash(HashFunction hashFunction, long hash) {
+        hash = hashFunction.update(hash, value.length);
+        for (String s : value) {
+            hash = StringWrappingStringValue.updateHash(hashFunction, hash, s);
         }
         return hash;
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        PrimitiveArrayWriting.writeTo( writer, value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        PrimitiveArrayWriting.writeTo(writer, value);
     }
 
     @Override
-    public String[] asObjectCopy()
-    {
-        return Arrays.copyOf( value, value.length );
+    public String[] asObjectCopy() {
+        return Arrays.copyOf(value, value.length);
     }
 
     @Override
     @Deprecated
-    public String[] asObject()
-    {
+    public String[] asObject() {
         return value;
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return Arrays.toString( value );
+    public String prettyPrint() {
+        return Arrays.toString(value);
     }
 
     @Override
-    public AnyValue value( int offset )
-    {
-        return Values.stringOrNoValue( stringValue( offset ) );
+    public AnyValue value(int offset) {
+        return Values.stringOrNoValue(stringValue(offset));
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapStringArray( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapStringArray(this);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s%s", getTypeName(), Arrays.toString( value ) );
+    public String toString() {
+        return format("%s%s", getTypeName(), Arrays.toString(value));
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "StringArray";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         int length = value.length;
-        return SHALLOW_SIZE + (length == 0 ? 0 : sizeOfObjectArray( sizeOf( value[0] ), length ) ); // Use first element as probe
+        return SHALLOW_SIZE
+                + (length == 0 ? 0 : sizeOfObjectArray(sizeOf(value[0]), length)); // Use first element as probe
     }
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
+    public boolean hasCompatibleType(AnyValue value) {
         return value instanceof TextValue;
     }
 
     @Override
-    public ArrayValue copyWithAppended( AnyValue added )
-    {
-        assert hasCompatibleType( added ) : "Incompatible types";
-        String[] newArray = Arrays.copyOf( value, value.length + 1 );
+    public ArrayValue copyWithAppended(AnyValue added) {
+        assert hasCompatibleType(added) : "Incompatible types";
+        String[] newArray = Arrays.copyOf(value, value.length + 1);
         newArray[value.length] = ((TextValue) added).stringValue();
-        return new StringArray( newArray );
+        return new StringArray(newArray);
     }
 
     @Override
-    public ArrayValue copyWithPrepended( AnyValue prepended )
-    {
-        assert hasCompatibleType( prepended ) : "Incompatible types";
+    public ArrayValue copyWithPrepended(AnyValue prepended) {
+        assert hasCompatibleType(prepended) : "Incompatible types";
         String[] newArray = new String[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
+        System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((TextValue) prepended).stringValue();
-        return new StringArray( newArray );
+        return new StringArray(newArray);
     }
 }

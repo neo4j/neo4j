@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 
@@ -67,8 +66,7 @@ import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
  * </ul>
  * You can alternatively use the {@link #next(long)} method, to navigate the pages you need in an arbitrary order.
  */
-public abstract class PageCursor implements AutoCloseable
-{
+public abstract class PageCursor implements AutoCloseable {
     public static final long UNBOUND_PAGE_ID = -1;
     public static final int UNBOUND_PAYLOAD_SIZE = -1;
     public static final int UNBOUND_PAGE_SIZE = -1;
@@ -82,18 +80,18 @@ public abstract class PageCursor implements AutoCloseable
      * Get the signed byte at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract byte getByte( int offset );
+    public abstract byte getByte(int offset);
 
     /**
      * Set the signed byte at the current offset into the page, and then increment the offset by one.
      */
-    public abstract void putByte( byte value );
+    public abstract void putByte(byte value);
 
     /**
      * Set the signed byte at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract void putByte( int offset, byte value );
+    public abstract void putByte(int offset, byte value);
 
     /**
      * Get the signed long at the current page offset, and then increment the offset by one.
@@ -104,18 +102,18 @@ public abstract class PageCursor implements AutoCloseable
      * Get the signed long at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract long getLong( int offset );
+    public abstract long getLong(int offset);
 
     /**
      * Set the signed long at the current offset into the page, and then increment the offset by one.
      */
-    public abstract void putLong( long value );
+    public abstract void putLong(long value);
 
     /**
      * Set the signed long at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract void putLong( int offset, long value );
+    public abstract void putLong(int offset, long value);
 
     /**
      * Get the signed int at the current page offset, and then increment the offset by one.
@@ -126,47 +124,47 @@ public abstract class PageCursor implements AutoCloseable
      * Get the signed int at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract int getInt( int offset );
+    public abstract int getInt(int offset);
 
     /**
      * Set the signed int at the current offset into the page, and then increment the offset by one.
      */
-    public abstract void putInt( int value );
+    public abstract void putInt(int value);
 
     /**
      * Set the signed int at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract void putInt( int offset, int value );
+    public abstract void putInt(int offset, int value);
 
     /**
      * Fill the given array with bytes from the page, beginning at the current offset into the page,
      * and then increment the current offset by the length of the array.
      */
-    public abstract void getBytes( byte[] data );
+    public abstract void getBytes(byte[] data);
 
     /**
      * Read the given length of bytes from the page into the given array, starting from the current offset into the
      * page, and writing from the given array offset, and then increment the current offset by the length argument.
      */
-    public abstract void getBytes( byte[] data, int arrayOffset, int length );
+    public abstract void getBytes(byte[] data, int arrayOffset, int length);
 
     /**
      * Write out all the bytes of the given array into the page, beginning at the current offset into the page,
      * and then increment the current offset by the length of the array.
      */
-    public abstract void putBytes( byte[] data );
+    public abstract void putBytes(byte[] data);
 
     /**
      * Write out the given length of bytes from the given offset into the the given array of bytes, into the page,
      * beginning at the current offset into the page, and then increment the current offset by the length argument.
      */
-    public abstract void putBytes( byte[] data, int arrayOffset, int length );
+    public abstract void putBytes(byte[] data, int arrayOffset, int length);
 
     /**
      * Set the given number of bytes to the given value, beginning at current offset into the page.
      */
-    public abstract void putBytes( int bytes, byte value );
+    public abstract void putBytes(int bytes, byte value);
 
     /**
      * Get the signed short at the current page offset, and then increment the offset by one.
@@ -177,24 +175,24 @@ public abstract class PageCursor implements AutoCloseable
      * Get the signed short at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract short getShort( int offset );
+    public abstract short getShort(int offset);
 
     /**
      * Set the signed short at the current offset into the page, and then increment the offset by one.
      */
-    public abstract void putShort( short value );
+    public abstract void putShort(short value);
 
     /**
      * Set the signed short at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract void putShort( int offset, short value );
+    public abstract void putShort(int offset, short value);
 
     /**
      * Set the current offset into the page, for interacting with the page through the read and write methods that do
      * not take a specific offset as an argument.
      */
-    public abstract void setOffset( int offset );
+    public abstract void setOffset(int offset);
 
     /**
      * Get the current offset into the page, which is the location on the page where the next interaction would take
@@ -277,7 +275,7 @@ public abstract class PageCursor implements AutoCloseable
      * from data validation errors until after {@link #shouldRetry()} has told
      * you that your read was consistent.
      */
-    public abstract boolean next( long pageId ) throws IOException;
+    public abstract boolean next(long pageId) throws IOException;
 
     /**
      * Relinquishes all resources associated with this cursor, including the
@@ -324,7 +322,7 @@ public abstract class PageCursor implements AutoCloseable
      * @param lengthInBytes The number of bytes to copy.
      * @return The number of bytes actually copied.
      */
-    public abstract int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes );
+    public abstract int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes);
 
     /**
      * Copy bytes from the specified offset in this page, into the given buffer, until either the limit of the buffer
@@ -334,7 +332,7 @@ public abstract class PageCursor implements AutoCloseable
      * @param targetBuffer The buffer the data will be copied to.
      * @return The number of bytes actually copied.
      */
-    public abstract int copyTo( int sourceOffset, ByteBuffer targetBuffer );
+    public abstract int copyTo(int sourceOffset, ByteBuffer targetBuffer);
 
     /**
      * Shift the specified number of bytes starting from given offset the specified number of bytes to the left or
@@ -349,7 +347,7 @@ public abstract class PageCursor implements AutoCloseable
      * @param length The number of bytes to move.
      * @param shift How many steps, in terms of number of bytes, to shift. Can be both positive and negative.
      */
-    public abstract void shiftBytes( int sourceOffset, int length, int shift );
+    public abstract void shiftBytes(int sourceOffset, int length, int shift);
 
     /**
      * Discern whether an out-of-bounds access has occurred since the last call to {@link #next()} or
@@ -383,7 +381,7 @@ public abstract class PageCursor implements AutoCloseable
      * @param message The message of the {@link CursorException} that {@link #checkAndClearCursorException()} will
      * throw.
      */
-    public abstract void setCursorException( String message );
+    public abstract void setCursorException(String message);
 
     /**
      * Unconditionally clear any error condition that has been set on this or any linked cursor, without throwing an
@@ -403,7 +401,7 @@ public abstract class PageCursor implements AutoCloseable
      * @param pageId The page id that the linked cursor will be placed at after its first call to {@link #next()}.
      * @return A cursor that is linked with this cursor.
      */
-    public abstract PageCursor openLinkedCursor( long pageId ) throws IOException;
+    public abstract PageCursor openLinkedCursor(long pageId) throws IOException;
 
     /**
      * Sets all bytes in this page to zero, as if this page was newly allocated at the end of the file.

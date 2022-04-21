@@ -28,19 +28,18 @@ import org.neo4j.values.storable.Values.longValue
 
 class ModuloTest extends CypherFunSuite {
 
-
   test("should handle large integers") {
     // Given
     val modulo = Modulo(expressionMock, expressionMock)
 
-    modulo.calc(16000000000000001L, 16000) should equal (longValue(1L))
+    modulo.calc(16000000000000001L, 16000) should equal(longValue(1L))
   }
 
   test("should handle large integers and floating point values") {
     // Given
     val modulo = Modulo(expressionMock, expressionMock)
 
-    modulo.calc(16000000000000001L, 16000d) should equal (doubleValue(0.0))
+    modulo.calc(16000000000000001L, 16000d) should equal(doubleValue(0.0))
   }
 
   def expressionMock: Expression = {

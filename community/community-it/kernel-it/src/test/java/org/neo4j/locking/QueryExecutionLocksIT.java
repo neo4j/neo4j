@@ -19,8 +19,12 @@
  */
 package org.neo4j.locking;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.Test;
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +34,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
+import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -93,293 +98,288 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.ValueMapper;
 
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-
 @ImpermanentDbmsExtension
-class QueryExecutionLocksIT
-{
+class QueryExecutionLocksIT {
     @Inject
     private GraphDatabaseAPI db;
+
     @Inject
     private GraphDatabaseQueryService queryService;
+
     @Inject
     private QueryExecutionEngine executionEngine;
 
     @Test
-    void noLocksTakenForQueryWithoutAnyIndexesUsage() throws Exception
-    {
+    void noLocksTakenForQueryWithoutAnyIndexesUsage() throws Exception {
         String query = "MATCH (n) return count(n)";
-        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
-        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).isEmpty();
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks(query);
+        assertThat(lockOperationRecords)
+                .as("Observed list of lock operations is: " + lockOperationRecords)
+                .isEmpty();
     }
 
     @Test
-    void takeLabelLockForQueryWithIndexUsages() throws Exception
-    {
+    void takeLabelLockForQueryWithIndexUsages() throws Exception {
         String labelName = "Human";
-        Label human = Label.label( labelName );
+        Label human = Label.label(labelName);
         String propertyKey = "name";
-        createIndex( human, propertyKey );
+        createIndex(human, propertyKey);
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Node node = transaction.createNode( human );
-            node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
+        try (Transaction transaction = db.beginTx()) {
+            Node node = transaction.createNode(human);
+            node.setProperty(propertyKey, RandomStringUtils.randomAscii(10));
             transaction.commit();
         }
 
         String query = "MATCH (n:" + labelName + ") where n." + propertyKey + " = \"Fry\" RETURN n ";
 
-        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
-        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks(query);
+        assertThat(lockOperationRecords)
+                .as("Observed list of lock operations is: " + lockOperationRecords)
+                .hasSize(1);
 
-        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
-        assertTrue( operationRecord.acquisition );
-        assertFalse( operationRecord.exclusive );
-        assertEquals( ResourceTypes.LABEL, operationRecord.resourceType );
+        LockOperationRecord operationRecord = lockOperationRecords.get(0);
+        assertTrue(operationRecord.acquisition);
+        assertFalse(operationRecord.exclusive);
+        assertEquals(ResourceTypes.LABEL, operationRecord.resourceType);
     }
 
     @Test
-    void takeRelationshipTypeLockForQueryWithIndexUsages() throws Exception
-    {
-        RelationshipType relType = RelationshipType.withName( "REL" );
+    void takeRelationshipTypeLockForQueryWithIndexUsages() throws Exception {
+        RelationshipType relType = RelationshipType.withName("REL");
         String propertyKey = "name";
-        createRelationshipIndex( relType, propertyKey );
+        createRelationshipIndex(relType, propertyKey);
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Node node1 = transaction.createNode(  );
-            Node node2 = transaction.createNode(  );
-            node1.createRelationshipTo( node2, relType ).setProperty( propertyKey, "v" );
+        try (Transaction transaction = db.beginTx()) {
+            Node node1 = transaction.createNode();
+            Node node2 = transaction.createNode();
+            node1.createRelationshipTo(node2, relType).setProperty(propertyKey, "v");
             transaction.commit();
         }
 
         String query = "MATCH ()-[r:" + relType.name() + "]-() where r." + propertyKey + " = \"v\" RETURN r ";
 
-        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
-        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks(query);
+        assertThat(lockOperationRecords)
+                .as("Observed list of lock operations is: " + lockOperationRecords)
+                .hasSize(1);
 
-        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
-        assertTrue( operationRecord.acquisition );
-        assertFalse( operationRecord.exclusive );
-        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
+        LockOperationRecord operationRecord = lockOperationRecords.get(0);
+        assertTrue(operationRecord.acquisition);
+        assertFalse(operationRecord.exclusive);
+        assertEquals(ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType);
     }
 
     @Test
-    void takeRelationshipTypeLockForQueryWithContainsScanIndexUsages() throws Exception
-    {
-        RelationshipType relType = RelationshipType.withName( "REL" );
+    void takeRelationshipTypeLockForQueryWithContainsScanIndexUsages() throws Exception {
+        RelationshipType relType = RelationshipType.withName("REL");
         String propertyKey = "name";
-        createRelationshipIndexWithType( relType, propertyKey, IndexType.TEXT );
+        createRelationshipIndexWithType(relType, propertyKey, IndexType.TEXT);
         Relationship rel;
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Node node1 = transaction.createNode(  );
-            Node node2 = transaction.createNode(  );
-            rel = node1.createRelationshipTo( node2, relType );
-            rel.setProperty( propertyKey, "v" );
+        try (Transaction transaction = db.beginTx()) {
+            Node node1 = transaction.createNode();
+            Node node2 = transaction.createNode();
+            rel = node1.createRelationshipTo(node2, relType);
+            rel.setProperty(propertyKey, "v");
             transaction.commit();
         }
         String query = "MATCH ()-[r:REL]->() WHERE r.name CONTAINS 'v' RETURN r.prop";
 
-        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
-        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks(query);
+        assertThat(lockOperationRecords)
+                .as("Observed list of lock operations is: " + lockOperationRecords)
+                .hasSize(1);
 
-        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
-        assertTrue( operationRecord.acquisition );
-        assertFalse( operationRecord.exclusive );
-        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
+        LockOperationRecord operationRecord = lockOperationRecords.get(0);
+        assertTrue(operationRecord.acquisition);
+        assertFalse(operationRecord.exclusive);
+        assertEquals(ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType);
     }
 
     @Test
-    void takeRelationshipTypeLockForQueryWithEndsWithScanIndexUsages() throws Exception
-    {
-        RelationshipType relType = RelationshipType.withName( "REL" );
+    void takeRelationshipTypeLockForQueryWithEndsWithScanIndexUsages() throws Exception {
+        RelationshipType relType = RelationshipType.withName("REL");
         String propertyKey = "name";
-        createRelationshipIndexWithType( relType, propertyKey, IndexType.TEXT );
+        createRelationshipIndexWithType(relType, propertyKey, IndexType.TEXT);
         Relationship rel;
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Node node1 = transaction.createNode(  );
-            Node node2 = transaction.createNode(  );
-            rel = node1.createRelationshipTo( node2, relType );
-            rel.setProperty( propertyKey, "v" );
+        try (Transaction transaction = db.beginTx()) {
+            Node node1 = transaction.createNode();
+            Node node2 = transaction.createNode();
+            rel = node1.createRelationshipTo(node2, relType);
+            rel.setProperty(propertyKey, "v");
             transaction.commit();
         }
         String query = "MATCH ()-[r:REL]->() WHERE r.name ENDS WITH 'v' RETURN r.prop";
 
-        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
-        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks(query);
+        assertThat(lockOperationRecords)
+                .as("Observed list of lock operations is: " + lockOperationRecords)
+                .hasSize(1);
 
-        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
-        assertTrue( operationRecord.acquisition );
-        assertFalse( operationRecord.exclusive );
-        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
+        LockOperationRecord operationRecord = lockOperationRecords.get(0);
+        assertTrue(operationRecord.acquisition);
+        assertFalse(operationRecord.exclusive);
+        assertEquals(ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType);
     }
 
     @Test
-    void takeRelationshipTypeLockForQueryWithSeekIndexUsages() throws Exception
-    {
-        RelationshipType relType = RelationshipType.withName( "REL" );
+    void takeRelationshipTypeLockForQueryWithSeekIndexUsages() throws Exception {
+        RelationshipType relType = RelationshipType.withName("REL");
         String propertyKey = "name";
-        createRelationshipIndex( relType, propertyKey );
+        createRelationshipIndex(relType, propertyKey);
         Relationship rel;
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Node node1 = transaction.createNode(  );
-            Node node2 = transaction.createNode(  );
-            rel = node1.createRelationshipTo( node2, relType );
-            rel.setProperty( propertyKey, "v" );
+        try (Transaction transaction = db.beginTx()) {
+            Node node1 = transaction.createNode();
+            Node node2 = transaction.createNode();
+            rel = node1.createRelationshipTo(node2, relType);
+            rel.setProperty(propertyKey, "v");
             transaction.commit();
         }
         String query = "MATCH ()-[r:REL]->() WHERE r.name = 'v' RETURN r.prop";
 
-        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
-        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks(query);
+        assertThat(lockOperationRecords)
+                .as("Observed list of lock operations is: " + lockOperationRecords)
+                .hasSize(1);
 
-        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
-        assertTrue( operationRecord.acquisition );
-        assertFalse( operationRecord.exclusive );
-        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
+        LockOperationRecord operationRecord = lockOperationRecords.get(0);
+        assertTrue(operationRecord.acquisition);
+        assertFalse(operationRecord.exclusive);
+        assertEquals(ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType);
     }
 
     @Test
-    void reTakeLabelLockForQueryWithIndexUsagesWhenSchemaStateWasUpdatedDuringLockOperations() throws Exception
-    {
+    void reTakeLabelLockForQueryWithIndexUsagesWhenSchemaStateWasUpdatedDuringLockOperations() throws Exception {
         String labelName = "Robot";
-        Label robot = Label.label( labelName );
+        Label robot = Label.label(labelName);
         String propertyKey = "name";
-        createIndex( robot, propertyKey );
+        createIndex(robot, propertyKey);
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Node node = transaction.createNode( robot );
-            node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
+        try (Transaction transaction = db.beginTx()) {
+            Node node = transaction.createNode(robot);
+            node.setProperty(propertyKey, RandomStringUtils.randomAscii(10));
             transaction.commit();
         }
 
         String query = "MATCH (n:" + labelName + ") where n." + propertyKey + " = \"Bender\" RETURN n ";
 
         LockOperationListener lockOperationListener = new OnceSchemaFlushListener();
-        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query, lockOperationListener );
-        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 3 );
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks(query, lockOperationListener);
+        assertThat(lockOperationRecords)
+                .as("Observed list of lock operations is: " + lockOperationRecords)
+                .hasSize(3);
 
-        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
-        assertTrue( operationRecord.acquisition );
-        assertFalse( operationRecord.exclusive );
-        assertEquals( ResourceTypes.LABEL, operationRecord.resourceType );
+        LockOperationRecord operationRecord = lockOperationRecords.get(0);
+        assertTrue(operationRecord.acquisition);
+        assertFalse(operationRecord.exclusive);
+        assertEquals(ResourceTypes.LABEL, operationRecord.resourceType);
 
-        LockOperationRecord operationRecord1 = lockOperationRecords.get( 1 );
-        assertFalse( operationRecord1.acquisition );
-        assertFalse( operationRecord1.exclusive );
-        assertEquals( ResourceTypes.LABEL, operationRecord1.resourceType );
+        LockOperationRecord operationRecord1 = lockOperationRecords.get(1);
+        assertFalse(operationRecord1.acquisition);
+        assertFalse(operationRecord1.exclusive);
+        assertEquals(ResourceTypes.LABEL, operationRecord1.resourceType);
 
-        LockOperationRecord operationRecord2 = lockOperationRecords.get( 2 );
-        assertTrue( operationRecord2.acquisition );
-        assertFalse( operationRecord2.exclusive );
-        assertEquals( ResourceTypes.LABEL, operationRecord2.resourceType );
+        LockOperationRecord operationRecord2 = lockOperationRecords.get(2);
+        assertTrue(operationRecord2.acquisition);
+        assertFalse(operationRecord2.exclusive);
+        assertEquals(ResourceTypes.LABEL, operationRecord2.resourceType);
     }
 
     @Test
-    void labelScanWithLookupIndex() throws Exception
-    {
+    void labelScanWithLookupIndex() throws Exception {
         String labelName = "Robot";
-        Label robot = Label.label( labelName );
+        Label robot = Label.label(labelName);
         String propertyKey = "name";
 
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Node node = transaction.createNode( robot );
-            node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
+        try (Transaction transaction = db.beginTx()) {
+            Node node = transaction.createNode(robot);
+            node.setProperty(propertyKey, RandomStringUtils.randomAscii(10));
             transaction.commit();
         }
 
         String query = "MATCH (n:" + labelName + ") RETURN n ";
 
         LockOperationListener lockOperationListener = new OnceSchemaFlushListener();
-        List<LookupLockOperationRecord> lookupLockOperationRecords = traceLookupQueryLocks( query, lockOperationListener );
-        assertThat( lookupLockOperationRecords ).as( "Observed list of lookup lock operations is: " + lookupLockOperationRecords ).hasSize( 3 );
+        List<LookupLockOperationRecord> lookupLockOperationRecords =
+                traceLookupQueryLocks(query, lockOperationListener);
+        assertThat(lookupLockOperationRecords)
+                .as("Observed list of lookup lock operations is: " + lookupLockOperationRecords)
+                .hasSize(3);
 
-        LookupLockOperationRecord operationRecord = lookupLockOperationRecords.get( 0 );
-        assertTrue( operationRecord.acquisition );
-        assertFalse( operationRecord.exclusive );
-        assertEquals( EntityType.NODE, operationRecord.entityType );
+        LookupLockOperationRecord operationRecord = lookupLockOperationRecords.get(0);
+        assertTrue(operationRecord.acquisition);
+        assertFalse(operationRecord.exclusive);
+        assertEquals(EntityType.NODE, operationRecord.entityType);
 
-        LookupLockOperationRecord operationRecord1 = lookupLockOperationRecords.get( 1 );
-        assertFalse( operationRecord1.acquisition );
-        assertFalse( operationRecord1.exclusive );
-        assertEquals( EntityType.NODE, operationRecord1.entityType );
+        LookupLockOperationRecord operationRecord1 = lookupLockOperationRecords.get(1);
+        assertFalse(operationRecord1.acquisition);
+        assertFalse(operationRecord1.exclusive);
+        assertEquals(EntityType.NODE, operationRecord1.entityType);
 
-        LookupLockOperationRecord operationRecord2 = lookupLockOperationRecords.get( 2 );
-        assertTrue( operationRecord2.acquisition );
-        assertFalse( operationRecord2.exclusive );
-        assertEquals( EntityType.NODE, operationRecord2.entityType );
+        LookupLockOperationRecord operationRecord2 = lookupLockOperationRecords.get(2);
+        assertTrue(operationRecord2.acquisition);
+        assertFalse(operationRecord2.exclusive);
+        assertEquals(EntityType.NODE, operationRecord2.entityType);
     }
 
-    private void createIndex( Label label, String propertyKey )
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.schema().indexFor( label ).on( propertyKey ).create();
+    private void createIndex(Label label, String propertyKey) {
+        try (Transaction transaction = db.beginTx()) {
+            transaction.schema().indexFor(label).on(propertyKey).create();
             transaction.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
         }
     }
 
-    private void createRelationshipIndex( RelationshipType relType, String propertyKey )
-    {
-        createRelationshipIndexWithType( relType, propertyKey, IndexType.RANGE );
+    private void createRelationshipIndex(RelationshipType relType, String propertyKey) {
+        createRelationshipIndexWithType(relType, propertyKey, IndexType.RANGE);
     }
 
-    private void createRelationshipIndexWithType( RelationshipType relType, String propertyKey, IndexType indexType )
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.schema().indexFor( relType ).on( propertyKey ).withIndexType( indexType ).create();
+    private void createRelationshipIndexWithType(RelationshipType relType, String propertyKey, IndexType indexType) {
+        try (Transaction transaction = db.beginTx()) {
+            transaction
+                    .schema()
+                    .indexFor(relType)
+                    .on(propertyKey)
+                    .withIndexType(indexType)
+                    .create();
             transaction.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
         }
     }
 
-    private List<LockOperationRecord> traceQueryLocks( String query, LockOperationListener... listeners ) throws QueryExecutionKernelException
-    {
-        try ( InternalTransaction tx = queryService.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
-            TransactionalContextWrapper context = new TransactionalContextWrapper( createTransactionContext( queryService, tx, query ), listeners );
-            executionEngine.executeQuery( query, EMPTY_MAP, context, false );
-            return new ArrayList<>( context.recordingLocks.getLockOperationRecords() );
+    private List<LockOperationRecord> traceQueryLocks(String query, LockOperationListener... listeners)
+            throws QueryExecutionKernelException {
+        try (InternalTransaction tx =
+                queryService.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
+            TransactionalContextWrapper context =
+                    new TransactionalContextWrapper(createTransactionContext(queryService, tx, query), listeners);
+            executionEngine.executeQuery(query, EMPTY_MAP, context, false);
+            return new ArrayList<>(context.recordingLocks.getLockOperationRecords());
         }
     }
 
-    private List<LookupLockOperationRecord> traceLookupQueryLocks( String query, LockOperationListener... listeners ) throws QueryExecutionKernelException
-    {
-        try ( InternalTransaction tx = queryService.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
-        {
-            TransactionalContextWrapper context = new TransactionalContextWrapper( createTransactionContext( queryService, tx, query ), listeners );
-            executionEngine.executeQuery( query, EMPTY_MAP, context, false );
-            return new ArrayList<>( context.recordingLocks.getLookupLockOperationRecords() );
+    private List<LookupLockOperationRecord> traceLookupQueryLocks(String query, LockOperationListener... listeners)
+            throws QueryExecutionKernelException {
+        try (InternalTransaction tx =
+                queryService.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
+            TransactionalContextWrapper context =
+                    new TransactionalContextWrapper(createTransactionContext(queryService, tx, query), listeners);
+            executionEngine.executeQuery(query, EMPTY_MAP, context, false);
+            return new ArrayList<>(context.recordingLocks.getLookupLockOperationRecords());
         }
     }
 
-    private static TransactionalContext createTransactionContext( GraphDatabaseQueryService graph, InternalTransaction tx, String query )
-    {
-        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( graph );
-        return contextFactory.newContext( tx, query, EMPTY_MAP );
+    private static TransactionalContext createTransactionContext(
+            GraphDatabaseQueryService graph, InternalTransaction tx, String query) {
+        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create(graph);
+        return contextFactory.newContext(tx, query, EMPTY_MAP);
     }
 
-    private static class TransactionalContextWrapper implements TransactionalContext
-    {
+    private static class TransactionalContextWrapper implements TransactionalContext {
 
         private final TransactionalContext delegate;
         private final List<LockOperationRecord> recordedLocks;
@@ -387,17 +387,15 @@ class QueryExecutionLocksIT
         private final LockOperationListener[] listeners;
         private RecordingLocks recordingLocks;
 
-        private TransactionalContextWrapper( TransactionalContext delegate,
-                                             LockOperationListener... listeners )
-        {
-            this( delegate, new ArrayList<>(), new ArrayList<>(), listeners );
+        private TransactionalContextWrapper(TransactionalContext delegate, LockOperationListener... listeners) {
+            this(delegate, new ArrayList<>(), new ArrayList<>(), listeners);
         }
 
-        private TransactionalContextWrapper( TransactionalContext delegate,
-                                             List<LockOperationRecord> recordedLocks,
-                                             List<LookupLockOperationRecord> recordedLookupLocks,
-                                             LockOperationListener... listeners )
-        {
+        private TransactionalContextWrapper(
+                TransactionalContext delegate,
+                List<LockOperationRecord> recordedLocks,
+                List<LookupLockOperationRecord> recordedLookupLocks,
+                LockOperationListener... listeners) {
             this.delegate = delegate;
             this.recordedLocks = recordedLocks;
             this.listeners = listeners;
@@ -405,156 +403,128 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public ValueMapper<Object> valueMapper()
-        {
+        public ValueMapper<Object> valueMapper() {
             return delegate.valueMapper();
         }
 
         @Override
-        public ExecutingQuery executingQuery()
-        {
+        public ExecutingQuery executingQuery() {
             return delegate.executingQuery();
         }
 
         @Override
-        public KernelTransaction kernelTransaction()
-        {
-            if ( recordingLocks == null )
-            {
-                recordingLocks = new RecordingLocks( delegate.transaction(), asList( listeners ), recordedLocks, recordedLookupLocks );
+        public KernelTransaction kernelTransaction() {
+            if (recordingLocks == null) {
+                recordingLocks = new RecordingLocks(
+                        delegate.transaction(), asList(listeners), recordedLocks, recordedLookupLocks);
             }
-            return new DelegatingTransaction( delegate.kernelTransaction(), recordingLocks );
+            return new DelegatingTransaction(delegate.kernelTransaction(), recordingLocks);
         }
 
         @Override
-        public InternalTransaction transaction()
-        {
+        public InternalTransaction transaction() {
             return delegate.transaction();
         }
 
         @Override
-        public boolean isTopLevelTx()
-        {
+        public boolean isTopLevelTx() {
             return delegate.isTopLevelTx();
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             delegate.close();
         }
 
         @Override
-        public void rollback()
-        {
+        public void rollback() {
             delegate.rollback();
         }
 
         @Override
-        public void terminate()
-        {
+        public void terminate() {
             delegate.terminate();
         }
 
         @Override
-        public long commitAndRestartTx()
-        {
+        public long commitAndRestartTx() {
             return delegate.commitAndRestartTx();
         }
 
         @Override
-        public TransactionalContext getOrBeginNewIfClosed()
-        {
-            if ( isOpen() )
-            {
+        public TransactionalContext getOrBeginNewIfClosed() {
+            if (isOpen()) {
                 return this;
-            }
-            else
-            {
-                return new TransactionalContextWrapper( delegate.getOrBeginNewIfClosed(), recordedLocks, recordedLookupLocks, listeners );
+            } else {
+                return new TransactionalContextWrapper(
+                        delegate.getOrBeginNewIfClosed(), recordedLocks, recordedLookupLocks, listeners);
             }
         }
 
         @Override
-        public boolean isOpen()
-        {
+        public boolean isOpen() {
             return delegate.isOpen();
         }
 
         @Override
-        public GraphDatabaseQueryService graph()
-        {
+        public GraphDatabaseQueryService graph() {
             return delegate.graph();
         }
 
         @Override
-        public NamedDatabaseId databaseId()
-        {
+        public NamedDatabaseId databaseId() {
             return delegate.databaseId();
         }
 
         @Override
-        public Statement statement()
-        {
+        public Statement statement() {
             return delegate.statement();
         }
 
         @Override
-        public SecurityContext securityContext()
-        {
+        public SecurityContext securityContext() {
             return delegate.securityContext();
         }
 
         @Override
-        public StatisticProvider kernelStatisticProvider()
-        {
+        public StatisticProvider kernelStatisticProvider() {
             return delegate.kernelStatisticProvider();
         }
 
         @Override
-        public KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context )
-        {
-            return delegate.restrictCurrentTransaction( context );
+        public KernelTransaction.Revertable restrictCurrentTransaction(SecurityContext context) {
+            return delegate.restrictCurrentTransaction(context);
         }
 
         @Override
-        public ResourceTracker resourceTracker()
-        {
+        public ResourceTracker resourceTracker() {
             return delegate.resourceTracker();
         }
 
         @Override
-        public TransactionalContext contextWithNewTransaction()
-        {
+        public TransactionalContext contextWithNewTransaction() {
             return new TransactionalContextWrapper(
-                    delegate.contextWithNewTransaction(),
-                    recordedLocks,
-                    recordedLookupLocks,
-                    listeners
-            );
+                    delegate.contextWithNewTransaction(), recordedLocks, recordedLookupLocks, listeners);
         }
 
         @Override
-        public ElementIdMapper elementIdMapper()
-        {
+        public ElementIdMapper elementIdMapper() {
             return delegate.elementIdMapper();
         }
     }
 
-    private static class RecordingLocks implements Locks
-    {
+    private static class RecordingLocks implements Locks {
         private final Locks delegate;
         private final List<LockOperationListener> listeners;
         private final List<LockOperationRecord> lockOperationRecords;
         private final List<LookupLockOperationRecord> lookupLockOperationRecords;
         private final InternalTransaction transaction;
 
-        private RecordingLocks( InternalTransaction transaction,
-                                List<LockOperationListener> listeners,
-                                List<LockOperationRecord> lockOperationRecords,
-                                List<LookupLockOperationRecord> lookupLockOperationRecords
-                                )
-        {
+        private RecordingLocks(
+                InternalTransaction transaction,
+                List<LockOperationListener> listeners,
+                List<LockOperationRecord> lockOperationRecords,
+                List<LookupLockOperationRecord> lookupLockOperationRecords) {
             this.listeners = listeners;
             this.lockOperationRecords = lockOperationRecords;
             this.lookupLockOperationRecords = lookupLockOperationRecords;
@@ -562,161 +532,134 @@ class QueryExecutionLocksIT
             this.delegate = transaction.kernelTransaction().locks();
         }
 
-        List<LockOperationRecord> getLockOperationRecords()
-        {
+        List<LockOperationRecord> getLockOperationRecords() {
             return lockOperationRecords;
         }
 
-        List<LookupLockOperationRecord> getLookupLockOperationRecords()
-        {
+        List<LookupLockOperationRecord> getLookupLockOperationRecords() {
             return lookupLockOperationRecords;
         }
 
-        private void record( boolean exclusive, boolean acquisition, ResourceTypes type, long... ids )
-        {
-            if ( acquisition )
-            {
-                for ( LockOperationListener listener : listeners )
-                {
-                    listener.lockAcquired( transaction, exclusive, type, ids );
+        private void record(boolean exclusive, boolean acquisition, ResourceTypes type, long... ids) {
+            if (acquisition) {
+                for (LockOperationListener listener : listeners) {
+                    listener.lockAcquired(transaction, exclusive, type, ids);
                 }
             }
-            lockOperationRecords.add( new LockOperationRecord( exclusive, acquisition, type, ids ) );
+            lockOperationRecords.add(new LockOperationRecord(exclusive, acquisition, type, ids));
         }
 
-        private void recordLookupIndex( boolean exclusive, boolean acquisition, EntityType type )
-        {
-            if ( acquisition )
-            {
-                for ( LockOperationListener listener : listeners )
-                {
-                    listener.lockAcquired( transaction, exclusive, type );
+        private void recordLookupIndex(boolean exclusive, boolean acquisition, EntityType type) {
+            if (acquisition) {
+                for (LockOperationListener listener : listeners) {
+                    listener.lockAcquired(transaction, exclusive, type);
                 }
             }
-            lookupLockOperationRecords.add( new LookupLockOperationRecord( exclusive, acquisition, type ) );
+            lookupLockOperationRecords.add(new LookupLockOperationRecord(exclusive, acquisition, type));
         }
 
         @Override
-        public void acquireExclusiveNodeLock( long... ids )
-        {
-            record( true, true, ResourceTypes.NODE, ids );
-            delegate.acquireExclusiveNodeLock( ids );
+        public void acquireExclusiveNodeLock(long... ids) {
+            record(true, true, ResourceTypes.NODE, ids);
+            delegate.acquireExclusiveNodeLock(ids);
         }
 
         @Override
-        public void acquireExclusiveRelationshipLock( long... ids )
-        {
-            record( true, true, ResourceTypes.RELATIONSHIP, ids );
-            delegate.acquireExclusiveRelationshipLock( ids );
+        public void acquireExclusiveRelationshipLock(long... ids) {
+            record(true, true, ResourceTypes.RELATIONSHIP, ids);
+            delegate.acquireExclusiveRelationshipLock(ids);
         }
 
         @Override
-        public void releaseExclusiveNodeLock( long... ids )
-        {
-            record( true, false, ResourceTypes.NODE, ids );
-            delegate.releaseExclusiveNodeLock( ids );
+        public void releaseExclusiveNodeLock(long... ids) {
+            record(true, false, ResourceTypes.NODE, ids);
+            delegate.releaseExclusiveNodeLock(ids);
         }
 
         @Override
-        public void releaseExclusiveRelationshipLock( long... ids )
-        {
-            record( true, false, ResourceTypes.RELATIONSHIP, ids );
-            delegate.releaseExclusiveRelationshipLock( ids );
+        public void releaseExclusiveRelationshipLock(long... ids) {
+            record(true, false, ResourceTypes.RELATIONSHIP, ids);
+            delegate.releaseExclusiveRelationshipLock(ids);
         }
 
         @Override
-        public void acquireSharedNodeLock( long... ids )
-        {
-            record( false, true, ResourceTypes.NODE, ids );
-            delegate.acquireSharedNodeLock( ids );
+        public void acquireSharedNodeLock(long... ids) {
+            record(false, true, ResourceTypes.NODE, ids);
+            delegate.acquireSharedNodeLock(ids);
         }
 
         @Override
-        public void acquireSharedRelationshipLock( long... ids )
-        {
-            record( false, true, ResourceTypes.RELATIONSHIP, ids );
-            delegate.acquireSharedRelationshipLock( ids );
+        public void acquireSharedRelationshipLock(long... ids) {
+            record(false, true, ResourceTypes.RELATIONSHIP, ids);
+            delegate.acquireSharedRelationshipLock(ids);
         }
 
         @Override
-        public void acquireSharedLabelLock( long... ids )
-        {
-            record( false, true, ResourceTypes.LABEL, ids );
-            delegate.acquireSharedLabelLock( ids );
+        public void acquireSharedLabelLock(long... ids) {
+            record(false, true, ResourceTypes.LABEL, ids);
+            delegate.acquireSharedLabelLock(ids);
         }
 
         @Override
-        public void acquireSharedRelationshipTypeLock( long... ids )
-        {
-            record( false, true, ResourceTypes.RELATIONSHIP_TYPE, ids );
-            delegate.acquireSharedRelationshipTypeLock( ids );
-        }
-
-            @Override
-        public void releaseSharedNodeLock( long... ids )
-        {
-            record( false, false, ResourceTypes.NODE, ids );
-            delegate.releaseSharedNodeLock( ids );
+        public void acquireSharedRelationshipTypeLock(long... ids) {
+            record(false, true, ResourceTypes.RELATIONSHIP_TYPE, ids);
+            delegate.acquireSharedRelationshipTypeLock(ids);
         }
 
         @Override
-        public void releaseSharedRelationshipLock( long... ids )
-        {
-            record( false, false, ResourceTypes.RELATIONSHIP, ids );
-            delegate.releaseSharedRelationshipLock( ids );
+        public void releaseSharedNodeLock(long... ids) {
+            record(false, false, ResourceTypes.NODE, ids);
+            delegate.releaseSharedNodeLock(ids);
         }
 
         @Override
-        public void releaseSharedLabelLock( long... ids )
-        {
-            record( false, false, ResourceTypes.LABEL, ids );
-            delegate.releaseSharedLabelLock( ids );
+        public void releaseSharedRelationshipLock(long... ids) {
+            record(false, false, ResourceTypes.RELATIONSHIP, ids);
+            delegate.releaseSharedRelationshipLock(ids);
         }
 
         @Override
-        public void releaseSharedRelationshipTypeLock( long... ids )
-        {
-            record( false, false, ResourceTypes.RELATIONSHIP_TYPE, ids );
-            delegate.releaseSharedRelationshipTypeLock( ids );
+        public void releaseSharedLabelLock(long... ids) {
+            record(false, false, ResourceTypes.LABEL, ids);
+            delegate.releaseSharedLabelLock(ids);
         }
 
         @Override
-        public void acquireSharedLookupLock( EntityType entityType )
-        {
-            recordLookupIndex( false, true, entityType );
-            delegate.acquireSharedLookupLock( entityType );
+        public void releaseSharedRelationshipTypeLock(long... ids) {
+            record(false, false, ResourceTypes.RELATIONSHIP_TYPE, ids);
+            delegate.releaseSharedRelationshipTypeLock(ids);
         }
 
         @Override
-        public void releaseSharedLookupLock( EntityType entityType )
-        {
-            recordLookupIndex( false, false, entityType );
-            delegate.releaseSharedLookupLock( entityType );
+        public void acquireSharedLookupLock(EntityType entityType) {
+            recordLookupIndex(false, true, entityType);
+            delegate.acquireSharedLookupLock(entityType);
+        }
+
+        @Override
+        public void releaseSharedLookupLock(EntityType entityType) {
+            recordLookupIndex(false, false, entityType);
+            delegate.releaseSharedLookupLock(entityType);
         }
     }
 
-    private static class LockOperationListener implements EventListener
-    {
-        void lockAcquired( Transaction tx, boolean exclusive, ResourceType resourceType, long... ids )
-        {
+    private static class LockOperationListener implements EventListener {
+        void lockAcquired(Transaction tx, boolean exclusive, ResourceType resourceType, long... ids) {
             // empty operation
         }
 
-        void lockAcquired( Transaction tx, boolean exclusive, EntityType resourceType )
-        {
+        void lockAcquired(Transaction tx, boolean exclusive, EntityType resourceType) {
             // empty operation
         }
     }
 
-    private static class LockOperationRecord
-    {
+    private static class LockOperationRecord {
         private final boolean exclusive;
         private final boolean acquisition;
         private final ResourceType resourceType;
         private final long[] ids;
 
-        LockOperationRecord( boolean exclusive, boolean acquisition, ResourceType resourceType, long[] ids )
-        {
+        LockOperationRecord(boolean exclusive, boolean acquisition, ResourceType resourceType, long[] ids) {
             this.exclusive = exclusive;
             this.acquisition = acquisition;
             this.resourceType = resourceType;
@@ -724,43 +667,36 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public String toString()
-        {
-            return "LockOperationRecord{" + "exclusive=" + exclusive + ", acquisition=" + acquisition +
-                    ", resourceType=" + resourceType + ", ids=" + Arrays.toString( ids ) + '}';
+        public String toString() {
+            return "LockOperationRecord{" + "exclusive=" + exclusive + ", acquisition=" + acquisition
+                    + ", resourceType=" + resourceType + ", ids=" + Arrays.toString(ids) + '}';
         }
     }
 
-    private static class LookupLockOperationRecord
-    {
+    private static class LookupLockOperationRecord {
         private final boolean exclusive;
         private final boolean acquisition;
         private final EntityType entityType;
 
-        LookupLockOperationRecord( boolean exclusive, boolean acquisition, EntityType entityType )
-        {
+        LookupLockOperationRecord(boolean exclusive, boolean acquisition, EntityType entityType) {
             this.exclusive = exclusive;
             this.acquisition = acquisition;
             this.entityType = entityType;
         }
 
         @Override
-        public String toString()
-        {
-            return "LookupLockOperationRecord{exclusive=" + exclusive + ", acquisition=" + acquisition +
-                   ", entityType=" + entityType + "}";
+        public String toString() {
+            return "LookupLockOperationRecord{exclusive=" + exclusive + ", acquisition=" + acquisition + ", entityType="
+                    + entityType + "}";
         }
     }
 
-    private static class OnceSchemaFlushListener extends LockOperationListener
-    {
+    private static class OnceSchemaFlushListener extends LockOperationListener {
         private boolean executed;
 
         @Override
-        void lockAcquired( Transaction tx, boolean exclusive, ResourceType resourceType, long... ids )
-        {
-            if ( !executed )
-            {
+        void lockAcquired(Transaction tx, boolean exclusive, ResourceType resourceType, long... ids) {
+            if (!executed) {
                 KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                 ktx.schemaRead().schemaStateFlush();
             }
@@ -768,10 +704,8 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        void lockAcquired( Transaction tx, boolean exclusive, EntityType type )
-        {
-            if ( !executed )
-            {
+        void lockAcquired(Transaction tx, boolean exclusive, EntityType type) {
+            if (!executed) {
                 KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                 ktx.schemaRead().schemaStateFlush();
             }
@@ -779,374 +713,312 @@ class QueryExecutionLocksIT
         }
     }
 
-    private static class DelegatingTransaction implements KernelTransaction
-    {
+    private static class DelegatingTransaction implements KernelTransaction {
         private final KernelTransaction internal;
         private final Locks locks;
 
-        DelegatingTransaction( KernelTransaction internal, Locks locks )
-        {
+        DelegatingTransaction(KernelTransaction internal, Locks locks) {
             this.internal = internal;
             this.locks = locks;
         }
 
         @Override
-        public long commit( KernelTransactionMonitor kernelTransactionMonitor ) throws TransactionFailureException
-        {
-            return internal.commit( kernelTransactionMonitor );
+        public long commit(KernelTransactionMonitor kernelTransactionMonitor) throws TransactionFailureException {
+            return internal.commit(kernelTransactionMonitor);
         }
 
         @Override
-        public void rollback() throws TransactionFailureException
-        {
+        public void rollback() throws TransactionFailureException {
             internal.rollback();
         }
 
         @Override
-        public Read dataRead()
-        {
+        public Read dataRead() {
             return internal.dataRead();
         }
 
         @Override
-        public Write dataWrite() throws InvalidTransactionTypeKernelException
-        {
+        public Write dataWrite() throws InvalidTransactionTypeKernelException {
             return internal.dataWrite();
         }
 
         @Override
-        public TokenRead tokenRead()
-        {
+        public TokenRead tokenRead() {
             return internal.tokenRead();
         }
 
         @Override
-        public TokenWrite tokenWrite()
-        {
+        public TokenWrite tokenWrite() {
             return internal.tokenWrite();
         }
 
         @Override
-        public org.neo4j.internal.kernel.api.Token token()
-        {
+        public org.neo4j.internal.kernel.api.Token token() {
             return internal.token();
         }
 
         @Override
-        public SchemaRead schemaRead()
-        {
+        public SchemaRead schemaRead() {
             return internal.schemaRead();
         }
 
         @Override
-        public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
-        {
+        public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException {
             return internal.schemaWrite();
         }
 
         @Override
-        public Locks locks()
-        {
+        public Locks locks() {
             return locks;
         }
 
         @Override
-        public void freezeLocks()
-        {
+        public void freezeLocks() {
             internal.freezeLocks();
         }
 
         @Override
-        public void thawLocks() throws LocksNotFrozenException
-        {
+        public void thawLocks() throws LocksNotFrozenException {
             internal.thawLocks();
         }
 
         @Override
-        public CursorFactory cursors()
-        {
+        public CursorFactory cursors() {
             return internal.cursors();
         }
 
         @Override
-        public Procedures procedures()
-        {
+        public Procedures procedures() {
             return internal.procedures();
         }
 
         @Override
-        public ExecutionStatistics executionStatistics()
-        {
+        public ExecutionStatistics executionStatistics() {
             return internal.executionStatistics();
         }
 
         @Override
-        public Statement acquireStatement()
-        {
+        public Statement acquireStatement() {
             return internal.acquireStatement();
         }
 
         @Override
-        public IndexDescriptor indexUniqueCreate( IndexPrototype prototype ) throws KernelException
-        {
-            return internal.indexUniqueCreate( prototype );
+        public IndexDescriptor indexUniqueCreate(IndexPrototype prototype) throws KernelException {
+            return internal.indexUniqueCreate(prototype);
         }
 
         @Override
-        public long closeTransaction() throws TransactionFailureException
-        {
+        public long closeTransaction() throws TransactionFailureException {
             return internal.closeTransaction();
         }
 
         @Override
-        public void close() throws TransactionFailureException
-        {
+        public void close() throws TransactionFailureException {
             internal.close();
         }
 
         @Override
-        public boolean isOpen()
-        {
+        public boolean isOpen() {
             return internal.isOpen();
         }
 
         @Override
-        public boolean isClosing()
-        {
+        public boolean isClosing() {
             return internal.isClosing();
         }
 
         @Override
-        public SecurityContext securityContext()
-        {
+        public SecurityContext securityContext() {
             return internal.securityContext();
         }
 
         @Override
-        public SecurityAuthorizationHandler securityAuthorizationHandler()
-        {
+        public SecurityAuthorizationHandler securityAuthorizationHandler() {
             return internal.securityAuthorizationHandler();
         }
 
         @Override
-        public ClientConnectionInfo clientInfo()
-        {
+        public ClientConnectionInfo clientInfo() {
             return internal.clientInfo();
         }
 
         @Override
-        public AuthSubject subjectOrAnonymous()
-        {
+        public AuthSubject subjectOrAnonymous() {
             return internal.subjectOrAnonymous();
         }
 
         @Override
-        public Optional<Status> getReasonIfTerminated()
-        {
+        public Optional<Status> getReasonIfTerminated() {
             return internal.getReasonIfTerminated();
         }
 
         @Override
-        public boolean isTerminated()
-        {
+        public boolean isTerminated() {
             return internal.isTerminated();
         }
 
         @Override
-        public void markForTermination( Status reason )
-        {
-            internal.markForTermination( reason );
+        public void markForTermination(Status reason) {
+            internal.markForTermination(reason);
         }
 
         @Override
-        public long lastTransactionTimestampWhenStarted()
-        {
+        public long lastTransactionTimestampWhenStarted() {
             return internal.lastTransactionTimestampWhenStarted();
         }
 
         @Override
-        public long lastTransactionIdWhenStarted()
-        {
+        public long lastTransactionIdWhenStarted() {
             return internal.lastTransactionIdWhenStarted();
         }
 
         @Override
-        public void bindToUserTransaction( InternalTransaction internalTransaction )
-        {
-            internal.bindToUserTransaction( internalTransaction );
+        public void bindToUserTransaction(InternalTransaction internalTransaction) {
+            internal.bindToUserTransaction(internalTransaction);
         }
 
         @Override
-        public InternalTransaction internalTransaction()
-        {
+        public InternalTransaction internalTransaction() {
             return internal.internalTransaction();
         }
 
         @Override
-        public long startTime()
-        {
+        public long startTime() {
             return internal.startTime();
         }
 
         @Override
-        public long startTimeNanos()
-        {
+        public long startTimeNanos() {
             return internal.startTimeNanos();
         }
 
         @Override
-        public long timeout()
-        {
+        public long timeout() {
             return internal.timeout();
         }
 
         @Override
-        public Type transactionType()
-        {
+        public Type transactionType() {
             return internal.transactionType();
         }
 
         @Override
-        public long getTransactionId()
-        {
+        public long getTransactionId() {
             return internal.getTransactionId();
         }
 
         @Override
-        public long getUserTransactionId()
-        {
+        public long getUserTransactionId() {
             return internal.getUserTransactionId();
         }
 
         @Override
-        public long getCommitTime()
-        {
+        public long getCommitTime() {
             return internal.getCommitTime();
         }
 
         @Override
-        public Revertable overrideWith( SecurityContext context )
-        {
-            return internal.overrideWith( context );
+        public Revertable overrideWith(SecurityContext context) {
+            return internal.overrideWith(context);
         }
 
         @Override
-        public InjectedNLIUpgradeCallback injectedNLIUpgradeCallback()
-        {
+        public InjectedNLIUpgradeCallback injectedNLIUpgradeCallback() {
             return internal.injectedNLIUpgradeCallback();
         }
 
         @Override
-        public ClockContext clocks()
-        {
+        public ClockContext clocks() {
             return internal.clocks();
         }
 
         @Override
-        public NodeCursor ambientNodeCursor()
-        {
+        public NodeCursor ambientNodeCursor() {
             return internal.ambientNodeCursor();
         }
 
         @Override
-        public RelationshipScanCursor ambientRelationshipCursor()
-        {
+        public RelationshipScanCursor ambientRelationshipCursor() {
             return internal.ambientRelationshipCursor();
         }
 
         @Override
-        public PropertyCursor ambientPropertyCursor()
-        {
+        public PropertyCursor ambientPropertyCursor() {
             return internal.ambientPropertyCursor();
         }
 
         @Override
-        public void setMetaData( Map<String,Object> metaData )
-        {
-            internal.setMetaData( metaData );
+        public void setMetaData(Map<String, Object> metaData) {
+            internal.setMetaData(metaData);
         }
 
         @Override
-        public Map<String,Object> getMetaData()
-        {
+        public Map<String, Object> getMetaData() {
             return internal.getMetaData();
         }
 
         @Override
-        public void setStatusDetails( String statusDetails )
-        {
-            internal.setStatusDetails( statusDetails );
+        public void setStatusDetails(String statusDetails) {
+            internal.setStatusDetails(statusDetails);
         }
 
         @Override
-        public String statusDetails()
-        {
+        public String statusDetails() {
             return internal.statusDetails();
         }
 
         @Override
-        public void assertOpen()
-        {
+        public void assertOpen() {
             internal.assertOpen();
         }
 
         @Override
-        public boolean isSchemaTransaction()
-        {
+        public boolean isSchemaTransaction() {
             return internal.isSchemaTransaction();
         }
 
         @Override
-        public CursorContext cursorContext()
-        {
+        public CursorContext cursorContext() {
             return null;
         }
 
         @Override
-        public ExecutionContext createExecutionContext()
-        {
+        public ExecutionContext createExecutionContext() {
             return internal.createExecutionContext();
         }
 
         @Override
-        public QueryContext queryContext()
-        {
+        public QueryContext queryContext() {
             return internal.queryContext();
         }
 
         @Override
-        public StoreCursors storeCursors()
-        {
+        public StoreCursors storeCursors() {
             return null;
         }
 
         @Override
-        public MemoryTracker memoryTracker()
-        {
+        public MemoryTracker memoryTracker() {
             return EmptyMemoryTracker.INSTANCE;
         }
 
         @Override
-        public UUID getDatabaseId()
-        {
+        public UUID getDatabaseId() {
             return null;
         }
 
         @Override
-        public String getDatabaseName()
-        {
+        public String getDatabaseName() {
             return null;
         }
 
         @Override
-        public boolean canCommit()
-        {
+        public boolean canCommit() {
             return internal.canCommit();
         }
 
         @Override
-        public InnerTransactionHandler getInnerTransactionHandler()
-        {
+        public InnerTransactionHandler getInnerTransactionHandler() {
             return internal.getInnerTransactionHandler();
         }
     }

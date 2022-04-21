@@ -88,16 +88,18 @@ class ClosingExecutionResultTest extends CypherFunSuite {
   }
 
   test("should close on exploding request") {
-    assertCloseOnExplodingMethod(x => {x.request(1); x.await()}, "request")
+    assertCloseOnExplodingMethod(x => { x.request(1); x.await() }, "request")
   }
 
   test("should close on exploding cancel") {
-    assertCloseOnExplodingMethod(x => {x.cancel(); x.await()}, "cancel")
+    assertCloseOnExplodingMethod(x => { x.cancel(); x.await() }, "cancel")
   }
 
-  private def assertCloseOnExplodingMethod(f: ClosingExecutionResult => Unit,
-                                           errorMsg: String,
-                                           iteratorMode: IteratorMode = DIRECT_EXPLODE): Unit = {
+  private def assertCloseOnExplodingMethod(
+    f: ClosingExecutionResult => Unit,
+    errorMsg: String,
+    iteratorMode: IteratorMode = DIRECT_EXPLODE
+  ): Unit = {
     // given
     val inner = new ExplodingInner(iteratorMode = iteratorMode)
     val monitor = AssertableMonitor()
@@ -158,17 +160,18 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def fieldNames(): Array[String] = Array("x", "y")
 
-    override def request(numberOfRecords: Long): Unit = {
-    }
+    override def request(numberOfRecords: Long): Unit = {}
 
     override def cancel(): Unit = {}
 
     override def await(): Boolean = true
   }
 
-  class ExplodingInner(alreadyInInitiate: Boolean = false,
-                       iteratorMode: IteratorMode = DIRECT_EXPLODE,
-                       alsoExplodeOnClose: Boolean = false) extends ClosingInner {
+  class ExplodingInner(
+    alreadyInInitiate: Boolean = false,
+    iteratorMode: IteratorMode = DIRECT_EXPLODE,
+    alsoExplodeOnClose: Boolean = false
+  ) extends ClosingInner {
 
     self =>
 
@@ -176,7 +179,8 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def executionMode: ExecutionMode = throw TestClosingException("executionMode")
 
-    override def executionPlanDescription(): InternalPlanDescription = throw TestClosingException("executionPlanDescription")
+    override def executionPlanDescription(): InternalPlanDescription =
+      throw TestClosingException("executionPlanDescription")
 
     override def queryType: InternalQueryType = throw TestClosingException("queryType")
 
@@ -257,7 +261,11 @@ class ClosingExecutionResultTest extends CypherFunSuite {
       beforeEndReason should equal(Failure)
     }
 
-    def assertError(query: ExecutingQuery, throwable: Throwable, expectedBeforeEndReason: CloseReason = Failure): Unit = {
+    def assertError(
+      query: ExecutingQuery,
+      throwable: Throwable,
+      expectedBeforeEndReason: CloseReason = Failure
+    ): Unit = {
       this.endReason should equal(Error(throwable))
       this.query should equal(query)
       this.nEndCalls should equal(1)

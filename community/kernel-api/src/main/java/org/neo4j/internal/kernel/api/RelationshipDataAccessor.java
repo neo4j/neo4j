@@ -22,11 +22,9 @@ package org.neo4j.internal.kernel.api;
 /**
  * Surface for accessing relationship data.
  */
-public interface RelationshipDataAccessor extends EntityCursor
-{
+public interface RelationshipDataAccessor extends EntityCursor {
     @Override
-    default long reference()
-    {
+    default long reference() {
         return relationshipReference();
     }
 
@@ -35,9 +33,9 @@ public interface RelationshipDataAccessor extends EntityCursor
 
     int type();
 
-    void source( NodeCursor cursor );
+    void source(NodeCursor cursor);
 
-    void target( NodeCursor cursor );
+    void target(NodeCursor cursor);
 
     long sourceNodeReference();
 

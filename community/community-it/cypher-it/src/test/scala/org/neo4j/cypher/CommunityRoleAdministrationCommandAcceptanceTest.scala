@@ -24,11 +24,15 @@ import org.neo4j.graphdb.config.Setting
 
 class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
+  override def databaseConfig(): Map[Setting[_], Object] =
+    super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
 
   test("should fail on showing roles from community") {
     assertFailure("SHOW ROLES", "Unsupported administration command: SHOW ROLES")
-    assertFailure("SHOW POPULATED ROLES WITH USERS", "Unsupported administration command: SHOW POPULATED ROLES WITH USERS")
+    assertFailure(
+      "SHOW POPULATED ROLES WITH USERS",
+      "Unsupported administration command: SHOW POPULATED ROLES WITH USERS"
+    )
   }
 
   test("should fail on creating role from community") {
@@ -39,15 +43,33 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
   }
 
   test("should fail on renaming role from community") {
-    assertFailure("RENAME ROLE reader TO bookworm", "Unsupported administration command: RENAME ROLE reader TO bookworm")
-    assertFailure("RENAME ROLE $reader TO bookworm", "Unsupported administration command: RENAME ROLE $reader TO bookworm")
-    assertFailure("RENAME ROLE reader TO $bookworm", "Unsupported administration command: RENAME ROLE reader TO $bookworm")
-    assertFailure("RENAME ROLE $reader IF EXISTS TO $bookworm", "Unsupported administration command: RENAME ROLE $reader IF EXISTS TO $bookworm")
+    assertFailure(
+      "RENAME ROLE reader TO bookworm",
+      "Unsupported administration command: RENAME ROLE reader TO bookworm"
+    )
+    assertFailure(
+      "RENAME ROLE $reader TO bookworm",
+      "Unsupported administration command: RENAME ROLE $reader TO bookworm"
+    )
+    assertFailure(
+      "RENAME ROLE reader TO $bookworm",
+      "Unsupported administration command: RENAME ROLE reader TO $bookworm"
+    )
+    assertFailure(
+      "RENAME ROLE $reader IF EXISTS TO $bookworm",
+      "Unsupported administration command: RENAME ROLE $reader IF EXISTS TO $bookworm"
+    )
   }
 
   test("should fail on creating role as copy of role from community") {
-    assertFailure("CREATE ROLE foo AS COPY OF bar", "Unsupported administration command: CREATE ROLE foo AS COPY OF bar")
-    assertFailure("CREATE ROLE foo AS COPY OF $bar", "Unsupported administration command: CREATE ROLE foo AS COPY OF $bar")
+    assertFailure(
+      "CREATE ROLE foo AS COPY OF bar",
+      "Unsupported administration command: CREATE ROLE foo AS COPY OF bar"
+    )
+    assertFailure(
+      "CREATE ROLE foo AS COPY OF $bar",
+      "Unsupported administration command: CREATE ROLE foo AS COPY OF $bar"
+    )
   }
 
   test("should fail on dropping role from community") {

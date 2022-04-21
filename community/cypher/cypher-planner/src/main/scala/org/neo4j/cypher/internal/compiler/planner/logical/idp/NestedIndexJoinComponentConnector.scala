@@ -29,47 +29,63 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleComponentPlannerTrait)
-  extends ComponentConnector {
+    extends ComponentConnector {
 
-  override def solverStep(goalBitAllocation: GoalBitAllocation,
-                          queryGraph: QueryGraph,
-                          interestingOrderConfig: InterestingOrderConfig,
-                          kit: QueryPlannerKit,
-                          context: LogicalPlanningContext): ComponentConnectorSolverStep = {
+  override def solverStep(
+    goalBitAllocation: GoalBitAllocation,
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    kit: QueryPlannerKit,
+    context: LogicalPlanningContext
+  ): ComponentConnectorSolverStep = {
     val predicatesWithDependencies: Array[(Expression, Array[String])] =
       queryGraph.selections.flatPredicates
-                .map(pred => (pred, pred.dependencies.map(_.name).toArray))
-                // A predicate can only join two components if it has at least 2 dependencies.
-                .filter { case (_, deps) => deps.length > 1 }
-                .toArray
+        .map(pred => (pred, pred.dependencies.map(_.name).toArray))
+        // A predicate can only join two components if it has at least 2 dependencies.
+        .filter { case (_, deps) => deps.length > 1 }
+        .toArray
 
     if (predicatesWithDependencies.isEmpty) {
       IDPSolverStep.empty[QueryGraph, LogicalPlan, LogicalPlanningContext]
     } else {
-      (registry: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
-        val componentsGoal = goalBitAllocation.componentsGoal(goal) // This will not contain optional match bits or compacted bits.
-        for {
-          // We cannot plan NIJ if the RHS is more than one component or optional matches because that would require us to recurse into
-          // JoinDisconnectedQueryGraphComponents instead of SingleComponentPlannerTrait.
-          rightGoal <- componentsGoal.subGoals(1)
-          rightPlan <- table(rightGoal).iterator
+      (registry: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) =>
+        {
+          val componentsGoal =
+            goalBitAllocation.componentsGoal(goal) // This will not contain optional match bits or compacted bits.
+          for {
+            // We cannot plan NIJ if the RHS is more than one component or optional matches because that would require us to recurse into
+            // JoinDisconnectedQueryGraphComponents instead of SingleComponentPlannerTrait.
+            rightGoal <- componentsGoal.subGoals(1)
+            rightPlan <- table(rightGoal).iterator
 
-          containsOptionals = context.planningAttributes.solveds.get(rightPlan.id).asSinglePlannerQuery.lastQueryGraph.optionalMatches.nonEmpty
-          if !containsOptionals
+            containsOptionals = context.planningAttributes.solveds.get(
+              rightPlan.id
+            ).asSinglePlannerQuery.lastQueryGraph.optionalMatches.nonEmpty
+            if !containsOptionals
 
-          rightQg = registry.explode(rightGoal.bitSet).reduce(_ ++ _)
-          rightCovered = rightQg.allCoveredIds
+            rightQg = registry.explode(rightGoal.bitSet).reduce(_ ++ _)
+            rightCovered = rightQg.allCoveredIds
 
-          leftGoal = goal.diff(rightGoal)
-          leftPlan <- table(leftGoal).iterator
+            leftGoal = goal.diff(rightGoal)
+            leftPlan <- table(leftGoal).iterator
 
-          leftQg = registry.explode(leftGoal.bitSet).reduce(_ ++ _)
-          leftCovered = leftQg.allCoveredIds
+            leftQg = registry.explode(leftGoal.bitSet).reduce(_ ++ _)
+            leftCovered = leftQg.allCoveredIds
 
-          predicate <- predicatesDependendingOnBothSides(predicatesWithDependencies, leftCovered, rightCovered)
-          plan <- planNIJ(leftPlan, rightPlan, leftQg, rightQg, interestingOrderConfig, predicate, context, kit, singleComponentPlanner)
-        } yield plan
-      }
+            predicate <- predicatesDependendingOnBothSides(predicatesWithDependencies, leftCovered, rightCovered)
+            plan <- planNIJ(
+              leftPlan,
+              rightPlan,
+              leftQg,
+              rightQg,
+              interestingOrderConfig,
+              predicate,
+              context,
+              kit,
+              singleComponentPlanner
+            )
+          } yield plan
+        }
     }
   }
 }

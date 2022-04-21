@@ -27,53 +27,42 @@ import org.neo4j.values.AnyValue;
 /**
  * Used by tests when the response for a request is not relevant.
  */
-public class NullResponseHandler implements BoltResponseHandler
-{
+public class NullResponseHandler implements BoltResponseHandler {
     private static final NullResponseHandler INSTANCE = new NullResponseHandler();
 
-    public static NullResponseHandler nullResponseHandler()
-    {
+    public static NullResponseHandler nullResponseHandler() {
         return INSTANCE;
     }
 
-    private NullResponseHandler()
-    {
-    }
+    private NullResponseHandler() {}
 
     @Override
-    public boolean onPullRecords( BoltResult result, long size )
-    {
+    public boolean onPullRecords(BoltResult result, long size) {
         return false;
     }
 
     @Override
-    public boolean onDiscardRecords( BoltResult result, long size )
-    {
+    public boolean onDiscardRecords(BoltResult result, long size) {
         return false;
     }
 
     @Override
-    public void onMetadata( String key, AnyValue value )
-    {
+    public void onMetadata(String key, AnyValue value) {
         // this page intentionally left blank
     }
 
     @Override
-    public void markFailed( Neo4jError error )
-    {
+    public void markFailed(Neo4jError error) {
         // this page intentionally left blank
     }
 
     @Override
-    public void onFinish()
-    {
+    public void onFinish() {
         // this page intentionally left blank
     }
 
     @Override
-    public void markIgnored()
-    {
+    public void markIgnored() {
         // this page intentionally left blank
     }
-
 }

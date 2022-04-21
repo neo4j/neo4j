@@ -19,45 +19,42 @@
  */
 package org.neo4j.tooling.procedure;
 
-import com.google.auto.service.AutoService;
+import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
 
+import com.google.auto.service.AutoService;
 import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.processing.Processor;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-
 import org.neo4j.procedure.UserFunction;
 import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.visitors.FunctionVisitor;
 import org.neo4j.tooling.procedure.visitors.UserFunctionVisitor;
 
-import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
-
-@AutoService( Processor.class )
-public class UserFunctionProcessor extends DuplicationAwareBaseProcessor<UserFunction>
-{
+@AutoService(Processor.class)
+public class UserFunctionProcessor extends DuplicationAwareBaseProcessor<UserFunction> {
 
     private static final Class<UserFunction> SUPPORTED_ANNOTATION_TYPE = UserFunction.class;
 
-    public UserFunctionProcessor()
-    {
-        super( SUPPORTED_ANNOTATION_TYPE, customNameExtractor(), processingEnvironment ->
-        {
+    public UserFunctionProcessor() {
+        super(SUPPORTED_ANNOTATION_TYPE, customNameExtractor(), processingEnvironment -> {
             Elements elementUtils = processingEnvironment.getElementUtils();
             Types typeUtils = processingEnvironment.getTypeUtils();
-            TypeMirrorUtils typeMirrorUtils = new TypeMirrorUtils( typeUtils, elementUtils );
+            TypeMirrorUtils typeMirrorUtils = new TypeMirrorUtils(typeUtils, elementUtils);
 
-            return new UserFunctionVisitor(
-                    new FunctionVisitor<>( SUPPORTED_ANNOTATION_TYPE, typeUtils, elementUtils, typeMirrorUtils,
-                            customNameExtractor(),
-                            processingEnvironment.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) ) );
-        } );
+            return new UserFunctionVisitor(new FunctionVisitor<>(
+                    SUPPORTED_ANNOTATION_TYPE,
+                    typeUtils,
+                    elementUtils,
+                    typeMirrorUtils,
+                    customNameExtractor(),
+                    processingEnvironment.getOptions().containsKey(IGNORE_CONTEXT_WARNINGS_OPTION)));
+        });
     }
 
-    private static Function<UserFunction,Optional<String>> customNameExtractor()
-    {
-        return function -> CustomNameExtractor.getName( function::name, function::value );
+    private static Function<UserFunction, Optional<String>> customNameExtractor() {
+        return function -> CustomNameExtractor.getName(function::name, function::value);
     }
 }

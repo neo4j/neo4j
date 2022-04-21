@@ -19,18 +19,6 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.KernelTransaction;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,43 +27,51 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
-class SchemaImplMockTest
-{
-    private static final Exception cause = new Exception( "Kilroy made it" );
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
+
+class SchemaImplMockTest {
+    private static final Exception cause = new Exception("Kilroy made it");
 
     @Test
-    void includeCauseOfFailure() throws IndexNotFoundKernelException
-    {
+    void includeCauseOfFailure() throws IndexNotFoundKernelException {
         // given
         IndexDefinitionImpl indexDefinition = mockIndexDefinition();
-        when( indexDefinition.toString() ).thenReturn( "IndexDefinition( of-some-sort )" );
+        when(indexDefinition.toString()).thenReturn("IndexDefinition( of-some-sort )");
         KernelTransaction kernelTransaction = mockKernelTransaction();
-        SchemaImpl schema = new SchemaImpl( kernelTransaction );
+        SchemaImpl schema = new SchemaImpl(kernelTransaction);
 
         // when
-        IllegalStateException e = assertThrows( IllegalStateException.class, () -> schema.awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES ) );
+        IllegalStateException e = assertThrows(
+                IllegalStateException.class, () -> schema.awaitIndexOnline(indexDefinition, 1, TimeUnit.MINUTES));
 
         // then
-        assertThat( e.getMessage() ).contains( Exceptions.stringify( cause ) );
+        assertThat(e.getMessage()).contains(Exceptions.stringify(cause));
     }
 
-    private static IndexDefinitionImpl mockIndexDefinition()
-    {
-        IndexDefinitionImpl indexDefinition = mock( IndexDefinitionImpl.class );
-        when( indexDefinition.getIndexReference() ).thenReturn( forSchema( forLabel( 1, 1 ) ).withName( "index" ).materialise( 13 ) );
+    private static IndexDefinitionImpl mockIndexDefinition() {
+        IndexDefinitionImpl indexDefinition = mock(IndexDefinitionImpl.class);
+        when(indexDefinition.getIndexReference())
+                .thenReturn(forSchema(forLabel(1, 1)).withName("index").materialise(13));
         return indexDefinition;
     }
 
-    private static KernelTransaction mockKernelTransaction() throws IndexNotFoundKernelException
-    {
-        SchemaRead schemaRead = mock( SchemaRead.class );
-        when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.FAILED );
-        when( schemaRead.indexGetFailure( any( IndexDescriptor.class ) ) ).thenReturn( Exceptions.stringify( cause ) );
+    private static KernelTransaction mockKernelTransaction() throws IndexNotFoundKernelException {
+        SchemaRead schemaRead = mock(SchemaRead.class);
+        when(schemaRead.indexGetState(any(IndexDescriptor.class))).thenReturn(InternalIndexState.FAILED);
+        when(schemaRead.indexGetFailure(any(IndexDescriptor.class))).thenReturn(Exceptions.stringify(cause));
 
-        KernelTransaction kt = mock( KernelTransaction.class );
-        when( kt.tokenRead() ).thenReturn( mock( TokenRead.class ) );
-        when( kt.schemaRead() ).thenReturn( schemaRead );
-        when( kt.isTerminated() ).thenReturn( false );
+        KernelTransaction kt = mock(KernelTransaction.class);
+        when(kt.tokenRead()).thenReturn(mock(TokenRead.class));
+        when(kt.schemaRead()).thenReturn(schemaRead);
+        when(kt.isTerminated()).thenReturn(false);
         return kt;
     }
 }

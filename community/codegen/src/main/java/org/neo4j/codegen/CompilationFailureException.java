@@ -19,6 +19,8 @@
  */
 package org.neo4j.codegen;
 
+import static java.util.Collections.unmodifiableList;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collections;
@@ -28,104 +30,80 @@ import java.util.Set;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
-import static java.util.Collections.unmodifiableList;
-
-public class CompilationFailureException extends Exception
-{
+public class CompilationFailureException extends Exception {
     private final List<? extends Diagnostic<?>> diagnostics;
 
-    public CompilationFailureException( List<? extends Diagnostic<?>> diagnostics )
-    {
-        super( String.format( "Compilation failed with %d reported issues.%s",
-                diagnostics.size(), source( diagnostics ) ) );
+    public CompilationFailureException(List<? extends Diagnostic<?>> diagnostics) {
+        super(String.format("Compilation failed with %d reported issues.%s", diagnostics.size(), source(diagnostics)));
         this.diagnostics = diagnostics;
     }
 
     @Override
-    public String toString()
-    {
-        StringWriter result = new StringWriter().append( super.toString() );
-        for ( Diagnostic<?> diagnostic : diagnostics )
-        {
-            format( result.append( "\n\t\t" ), diagnostic );
+    public String toString() {
+        StringWriter result = new StringWriter().append(super.toString());
+        for (Diagnostic<?> diagnostic : diagnostics) {
+            format(result.append("\n\t\t"), diagnostic);
         }
         return result.toString();
     }
 
-    private static String source( List<? extends Diagnostic<?>> diagnostics )
-    {
+    private static String source(List<? extends Diagnostic<?>> diagnostics) {
         Set<JavaFileObject> sources = null;
-        for ( Diagnostic<?> diagnostic : diagnostics )
-        {
+        for (Diagnostic<?> diagnostic : diagnostics) {
             Object source = diagnostic.getSource();
-            if ( source instanceof JavaFileObject file )
-            {
-                if ( file.getKind() == JavaFileObject.Kind.SOURCE )
-                {
-                    if ( sources == null )
-                    {
-                        sources = Collections.newSetFromMap( new IdentityHashMap<>() );
+            if (source instanceof JavaFileObject file) {
+                if (file.getKind() == JavaFileObject.Kind.SOURCE) {
+                    if (sources == null) {
+                        sources = Collections.newSetFromMap(new IdentityHashMap<>());
                     }
-                    sources.add( file );
+                    sources.add(file);
                 }
             }
         }
-        if ( sources == null )
-        {
+        if (sources == null) {
             return "";
         }
         StringBuilder result = new StringBuilder();
-        for ( JavaFileObject source : sources )
-        {
+        for (JavaFileObject source : sources) {
             int pos = result.length();
-            result.append( "\nSource file " ).append( source.getName() ).append( ":\n" );
-            try
-            {
-                CharSequence content = source.getCharContent( true );
-                result.append( String.format( "%4d: ", 1 ) );
-                for ( int line = 1, i = 0; i < content.length(); i++ )
-                {
-                    char c = content.charAt( i );
-                    result.append( c );
-                    if ( c == '\n' )
-                    {
-                        result.append( String.format( "%4d: ", ++line ) );
+            result.append("\nSource file ").append(source.getName()).append(":\n");
+            try {
+                CharSequence content = source.getCharContent(true);
+                result.append(String.format("%4d: ", 1));
+                for (int line = 1, i = 0; i < content.length(); i++) {
+                    char c = content.charAt(i);
+                    result.append(c);
+                    if (c == '\n') {
+                        result.append(String.format("%4d: ", ++line));
                     }
                 }
-            }
-            catch ( IOException e )
-            {
-                result.setLength( pos );
+            } catch (IOException e) {
+                result.setLength(pos);
             }
         }
         return result.toString();
     }
 
-    public static void format( Appendable result, Diagnostic<?> diagnostic )
-    {
-        try
-        {
+    public static void format(Appendable result, Diagnostic<?> diagnostic) {
+        try {
             Object source = diagnostic.getSource();
-            if ( source != null )
-            {
-                result.append( diagnostic.getKind().name() )
-                        .append( " on line " ).append( Long.toString( diagnostic.getLineNumber() ) )
-                        .append( " in " ).append( source.toString() )
-                        .append( ": " ).append( diagnostic.getMessage( null ) );
+            if (source != null) {
+                result.append(diagnostic.getKind().name())
+                        .append(" on line ")
+                        .append(Long.toString(diagnostic.getLineNumber()))
+                        .append(" in ")
+                        .append(source.toString())
+                        .append(": ")
+                        .append(diagnostic.getMessage(null));
+            } else {
+                result.append(diagnostic.getMessage(null));
             }
-            else
-            {
-                result.append( diagnostic.getMessage( null ) );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Failed to append.", e );
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to append.", e);
         }
     }
 
-    public List<Diagnostic<?>> getDiagnostics()
-    {
-        return unmodifiableList( diagnostics );
+    public List<Diagnostic<?>> getDiagnostics() {
+        return unmodifiableList(diagnostics);
     }
 }

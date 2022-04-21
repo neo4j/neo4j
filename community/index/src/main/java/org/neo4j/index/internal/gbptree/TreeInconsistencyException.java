@@ -22,10 +22,8 @@ package org.neo4j.index.internal.gbptree;
 /**
  * Thrown to signal inconsistencies in the tree, either between tree nodes or inside a tree node.
  */
-public class TreeInconsistencyException extends RuntimeException
-{
-    TreeInconsistencyException( String format, Object... args )
-    {
-        super( String.format( format, args ) );
+public class TreeInconsistencyException extends RuntimeException {
+    TreeInconsistencyException(String format, Object... args) {
+        super(String.format(format, args));
     }
 }

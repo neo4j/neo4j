@@ -26,36 +26,29 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.logging.InternalLog;
 
-public class MyCoreAPI
-{
+public class MyCoreAPI {
     private final InternalLog log;
 
-    public MyCoreAPI( InternalLog log )
-    {
+    public MyCoreAPI(InternalLog log) {
         this.log = log;
     }
 
-    public long makeNode( Transaction tx, String label ) throws ProcedureException
-    {
-        try
-        {
+    public long makeNode(Transaction tx, String label) throws ProcedureException {
+        try {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             long nodeId = ktx.dataWrite().nodeCreate();
-            int labelId = ktx.tokenWrite().labelGetOrCreateForName( label );
-            ktx.dataWrite().nodeAddLabel( nodeId, labelId );
+            int labelId = ktx.tokenWrite().labelGetOrCreateForName(label);
+            ktx.dataWrite().nodeAddLabel(nodeId, labelId);
             return nodeId;
-        }
-        catch ( Exception e )
-        {
-            log.error( "Failed to create node: " + e.getMessage() );
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "Failed to create node: " + e.getMessage(), e );
+        } catch (Exception e) {
+            log.error("Failed to create node: " + e.getMessage());
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureCallFailed, "Failed to create node: " + e.getMessage(), e);
         }
     }
 
-    public static long countNodes( Transaction tx )
-    {
+    public static long countNodes(Transaction tx) {
         KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
-        return kernelTransaction.dataRead().countsForNode( -1 );
+        return kernelTransaction.dataRead().countsForNode(-1);
     }
 }

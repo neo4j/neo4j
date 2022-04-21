@@ -26,42 +26,34 @@ import java.io.IOException;
  * Cursor that traverse over {@link BlockEntry} = key-value pairs. Instead of handing out {@link BlockEntry} instances, it provides direct access to key and
  * value. Implementing classes are allowed to reuse key and value handed out through {@link #key()} and {@link #value()}.
  */
-public interface BlockEntryCursor<KEY,VALUE> extends Closeable
-{
+public interface BlockEntryCursor<KEY, VALUE> extends Closeable {
     boolean next() throws IOException;
 
     KEY key();
 
     VALUE value();
 
-    BlockEntryCursor EMPTY = new BlockEntryCursor()
-    {
+    BlockEntryCursor EMPTY = new BlockEntryCursor() {
         @Override
-        public boolean next()
-        {
+        public boolean next() {
             return false;
         }
 
         @Override
-        public Object key()
-        {
+        public Object key() {
             throw new IllegalStateException();
         }
 
         @Override
-        public Object value()
-        {
+        public Object value() {
             throw new IllegalStateException();
         }
 
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     };
 
-    static <KEY,VALUE> BlockEntryCursor<KEY,VALUE> empty()
-    {
+    static <KEY, VALUE> BlockEntryCursor<KEY, VALUE> empty() {
         return EMPTY;
     }
 }

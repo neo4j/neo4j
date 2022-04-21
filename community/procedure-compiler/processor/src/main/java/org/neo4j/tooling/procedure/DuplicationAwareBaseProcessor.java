@@ -19,6 +19,8 @@
  */
 package org.neo4j.tooling.procedure;
 
+import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
+
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,7 +36,6 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.TypeElement;
-
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
@@ -44,8 +45,6 @@ import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.MessagePrinter;
 import org.neo4j.tooling.procedure.validators.DuplicatedExtensionValidator;
 
-import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
-
 /**
  * Base processor that processes {@link Element} annotated with {@code T}.
  * It also detects and reports duplicated elements (duplication can obviously be detected within a compilation unit and
@@ -53,15 +52,14 @@ import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNING
  *
  * @param <T> processed annotation type
  */
-public class DuplicationAwareBaseProcessor<T extends Annotation> extends AbstractProcessor
-{
+public class DuplicationAwareBaseProcessor<T extends Annotation> extends AbstractProcessor {
     private final Set<Element> visitedElements = new LinkedHashSet<>();
     private final Class<T> supportedAnnotationType;
-    private final Function<T,Optional<String>> customNameFunction;
-    private final Function<ProcessingEnvironment,ElementVisitor<Stream<CompilationMessage>,Void>> visitorSupplier;
+    private final Function<T, Optional<String>> customNameFunction;
+    private final Function<ProcessingEnvironment, ElementVisitor<Stream<CompilationMessage>, Void>> visitorSupplier;
 
-    private Function<Collection<Element>,Stream<CompilationMessage>> duplicationValidator;
-    private ElementVisitor<Stream<CompilationMessage>,Void> visitor;
+    private Function<Collection<Element>, Stream<CompilationMessage>> duplicationValidator;
+    private ElementVisitor<Stream<CompilationMessage>, Void> visitor;
     private MessagePrinter messagePrinter;
 
     /**
@@ -77,63 +75,56 @@ public class DuplicationAwareBaseProcessor<T extends Annotation> extends Abstrac
      * @param visitorSupplier supplies the main {@link ElementVisitor} class in charge of traversing and validating the
      * annotated elements
      */
-    public DuplicationAwareBaseProcessor( Class<T> supportedAnnotationType, Function<T,Optional<String>> customNameFunction,
-            Function<ProcessingEnvironment,ElementVisitor<Stream<CompilationMessage>,Void>> visitorSupplier )
-    {
+    public DuplicationAwareBaseProcessor(
+            Class<T> supportedAnnotationType,
+            Function<T, Optional<String>> customNameFunction,
+            Function<ProcessingEnvironment, ElementVisitor<Stream<CompilationMessage>, Void>> visitorSupplier) {
         this.supportedAnnotationType = supportedAnnotationType;
         this.customNameFunction = customNameFunction;
         this.visitorSupplier = visitorSupplier;
     }
 
     @Override
-    public synchronized void init( ProcessingEnvironment processingEnv )
-    {
-        super.init( processingEnv );
+    public synchronized void init(ProcessingEnvironment processingEnv) {
+        super.init(processingEnv);
 
-        messagePrinter = new MessagePrinter( processingEnv.getMessager() );
-        duplicationValidator =
-                new DuplicatedExtensionValidator<>( processingEnv.getElementUtils(), supportedAnnotationType, customNameFunction );
-        visitor = visitorSupplier.apply( processingEnv );
+        messagePrinter = new MessagePrinter(processingEnv.getMessager());
+        duplicationValidator = new DuplicatedExtensionValidator<>(
+                processingEnv.getElementUtils(), supportedAnnotationType, customNameFunction);
+        visitor = visitorSupplier.apply(processingEnv);
     }
 
     @Override
-    public Set<String> getSupportedOptions()
-    {
-        return Collections.singleton( IGNORE_CONTEXT_WARNINGS_OPTION );
+    public Set<String> getSupportedOptions() {
+        return Collections.singleton(IGNORE_CONTEXT_WARNINGS_OPTION);
     }
 
     @Override
-    public Set<String> getSupportedAnnotationTypes()
-    {
-        return Collections.singleton( supportedAnnotationType.getName() );
+    public Set<String> getSupportedAnnotationTypes() {
+        return Collections.singleton(supportedAnnotationType.getName());
     }
 
     @Override
-    public SourceVersion getSupportedSourceVersion()
-    {
+    public SourceVersion getSupportedSourceVersion() {
         return SourceVersion.latestSupported();
     }
 
     @Override
-    public boolean process( Set<? extends TypeElement> annotations, RoundEnvironment roundEnv )
-    {
-        processElements( roundEnv );
-        if ( roundEnv.processingOver() )
-        {
-            duplicationValidator.apply( visitedElements ).forEach( messagePrinter::print );
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        processElements(roundEnv);
+        if (roundEnv.processingOver()) {
+            duplicationValidator.apply(visitedElements).forEach(messagePrinter::print);
         }
         return false;
     }
 
-    private void processElements( RoundEnvironment roundEnv )
-    {
-        Set<? extends Element> functions = roundEnv.getElementsAnnotatedWith( supportedAnnotationType );
-        visitedElements.addAll( functions );
-        functions.stream().flatMap( this::validate ).forEachOrdered( messagePrinter::print );
+    private void processElements(RoundEnvironment roundEnv) {
+        Set<? extends Element> functions = roundEnv.getElementsAnnotatedWith(supportedAnnotationType);
+        visitedElements.addAll(functions);
+        functions.stream().flatMap(this::validate).forEachOrdered(messagePrinter::print);
     }
 
-    private Stream<CompilationMessage> validate( Element element )
-    {
-        return visitor.visit( element );
+    private Stream<CompilationMessage> validate(Element element) {
+        return visitor.visit(element);
     }
 }

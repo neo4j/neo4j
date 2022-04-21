@@ -19,13 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.helpers.ArrayUtil.single;
+import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
+import static org.neo4j.logging.LogAssertions.assertThat;
+
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -52,172 +58,141 @@ import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.ArrayUtil.single;
-import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
-@ExtendWith( EphemeralFileSystemExtension.class )
-class IndexStatisticsIT
-{
-    private static final Label ALIEN = label( "Alien" );
+@ExtendWith(EphemeralFileSystemExtension.class)
+class IndexStatisticsIT {
+    private static final Label ALIEN = label("Alien");
     private static final String SPECIMEN = "specimen";
 
     @Inject
     private EphemeralFileSystemAbstraction fs;
-    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
+
+    private final AssertableLogProvider logProvider = new AssertableLogProvider(true);
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void before()
-    {
+    void before() {
         startDb();
     }
 
     @AfterEach
-    void after()
-    {
+    void after() {
         managementService.shutdown();
     }
 
     @Test
-    void shouldRecoverIndexCountsBySamplingThemOnStartup()
-    {
+    void shouldRecoverIndexCountsBySamplingThemOnStartup() {
         // given some aliens in a database
         createAliens();
 
         // that have been indexed
-        awaitIndexOnline( indexAliensBySpecimen() );
+        awaitIndexOnline(indexAliensBySpecimen());
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
-        IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
-        SchemaRuleAccess schemaRuleAccess =
-                SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ),
-                        KernelVersionRepository.LATEST );
-        long indexId = single( loadIndexes( index, schemaRuleAccess ) ).getId();
+        IndexDescriptor index = TestIndexDescriptorFactory.forLabel(labelId(ALIEN), pkId(SPECIMEN));
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(
+                neoStores().getSchemaStore(), resolveDependency(TokenHolders.class), KernelVersionRepository.LATEST);
+        long indexId = single(loadIndexes(index, schemaRuleAccess)).getId();
 
         // for which we don't have index counts
-        resetIndexCounts( indexId );
+        resetIndexCounts(indexId);
 
         // when we shutdown the database and restart it
         restart();
 
         // then we should have re-sampled the index
         IndexStatisticsStore indexStatisticsStore = indexStatistics();
-        var indexSample = indexStatisticsStore.indexSample( indexId );
-        assertEquals( 0, indexSample.updates() );
-        assertEquals( 32, indexSample.indexSize() );
-        assertEquals( 16, indexSample.uniqueValues() );
-        assertEquals( 32, indexSample.sampleSize() );
+        var indexSample = indexStatisticsStore.indexSample(indexId);
+        assertEquals(0, indexSample.updates());
+        assertEquals(32, indexSample.indexSize());
+        assertEquals(16, indexSample.uniqueValues());
+        assertEquals(32, indexSample.sampleSize());
         // and also
-        assertLogExistsForRecoveryOn( "(:Alien {specimen})" );
+        assertLogExistsForRecoveryOn("(:Alien {specimen})");
     }
 
-    private IndexDescriptor[] loadIndexes( IndexDescriptor index, SchemaRuleAccess schemaRuleAccess )
-    {
-        try ( var storeCursors = storageEngine().createStorageCursors( CursorContext.NULL_CONTEXT ) )
-        {
-            return schemaRuleAccess.indexGetForSchema( index, storeCursors );
+    private IndexDescriptor[] loadIndexes(IndexDescriptor index, SchemaRuleAccess schemaRuleAccess) {
+        try (var storeCursors = storageEngine().createStorageCursors(CursorContext.NULL_CONTEXT)) {
+            return schemaRuleAccess.indexGetForSchema(index, storeCursors);
         }
     }
 
-    private void assertLogExistsForRecoveryOn( String labelAndProperty )
-    {
-        assertThat( logProvider ).forClass( IndexSamplingController.class )
-                .forLevel( DEBUG )
-                .containsMessages( "Recovering index sampling for index %s", labelAndProperty );
+    private void assertLogExistsForRecoveryOn(String labelAndProperty) {
+        assertThat(logProvider)
+                .forClass(IndexSamplingController.class)
+                .forLevel(DEBUG)
+                .containsMessages("Recovering index sampling for index %s", labelAndProperty);
     }
 
-    private int labelId( Label alien )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel( alien.name() );
+    private int labelId(Label alien) {
+        try (Transaction tx = db.beginTx()) {
+            return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel(alien.name());
         }
     }
 
-    private int pkId( String propertyName )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            return ((InternalTransaction) tx).kernelTransaction().tokenRead().propertyKey( propertyName );
+    private int pkId(String propertyName) {
+        try (Transaction tx = db.beginTx()) {
+            return ((InternalTransaction) tx).kernelTransaction().tokenRead().propertyKey(propertyName);
         }
     }
 
-    private void createAliens()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < 32; i++ )
-            {
-                Node alien = tx.createNode( ALIEN );
-                alien.setProperty( SPECIMEN, i / 2 );
+    private void createAliens() {
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < 32; i++) {
+                Node alien = tx.createNode(ALIEN);
+                alien.setProperty(SPECIMEN, i / 2);
             }
             tx.commit();
         }
     }
 
-    private void awaitIndexOnline( IndexDefinition definition )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( definition, 10, TimeUnit.MINUTES );
+    private void awaitIndexOnline(IndexDefinition definition) {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexOnline(definition, 10, TimeUnit.MINUTES);
             tx.commit();
         }
     }
 
-    private IndexDefinition indexAliensBySpecimen()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            IndexDefinition definition = tx.schema().indexFor( ALIEN ).on( SPECIMEN ).create();
+    private IndexDefinition indexAliensBySpecimen() {
+        try (Transaction tx = db.beginTx()) {
+            IndexDefinition definition =
+                    tx.schema().indexFor(ALIEN).on(SPECIMEN).create();
             tx.commit();
             return definition;
         }
     }
 
-    private void resetIndexCounts( long indexId )
-    {
-        indexStatistics().replaceStats( indexId, new IndexSample( 0, 0, 0 ) );
+    private void resetIndexCounts(long indexId) {
+        indexStatistics().replaceStats(indexId, new IndexSample(0, 0, 0));
     }
 
-    private <T> T resolveDependency( Class<T> clazz )
-    {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( clazz );
+    private <T> T resolveDependency(Class<T> clazz) {
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(clazz);
     }
 
-    private NeoStores neoStores()
-    {
+    private NeoStores neoStores() {
         return storageEngine().testAccessNeoStores();
     }
 
-    private RecordStorageEngine storageEngine()
-    {
-        return resolveDependency( RecordStorageEngine.class );
+    private RecordStorageEngine storageEngine() {
+        return resolveDependency(RecordStorageEngine.class);
     }
 
-    private IndexStatisticsStore indexStatistics()
-    {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
+    private IndexStatisticsStore indexStatistics() {
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(IndexStatisticsStore.class);
     }
 
-    private void startDb()
-    {
+    private void startDb() {
         managementService = new TestDatabaseManagementServiceBuilder()
-                .setInternalLogProvider( logProvider )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .setInternalLogProvider(logProvider)
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                 .impermanent()
-                .setConfig( index_background_sampling_enabled, false )
+                .setConfig(index_background_sampling_enabled, false)
                 .build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+        db = managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void restart()
-    {
+    private void restart() {
         managementService.shutdown();
         startDb();
     }

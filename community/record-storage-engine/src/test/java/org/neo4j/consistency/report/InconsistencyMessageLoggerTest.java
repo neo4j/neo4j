@@ -19,52 +19,49 @@
  */
 package org.neo4j.consistency.report;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.consistency.RecordType;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.logging.InternalLog;
-
 import static java.lang.String.format;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class InconsistencyMessageLoggerTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.consistency.RecordType;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.logging.InternalLog;
+
+class InconsistencyMessageLoggerTest {
     @Test
-    void shouldUseRecordToStringFunctionForRecords()
-    {
+    void shouldUseRecordToStringFunctionForRecords() {
         // given
-        InternalLog log = mock( InternalLog.class );
-        InconsistencyMessageLogger logger = new InconsistencyMessageLogger( log, record -> record.hashCode() + " abc" );
+        InternalLog log = mock(InternalLog.class);
+        InconsistencyMessageLogger logger = new InconsistencyMessageLogger(log, record -> record.hashCode() + " abc");
 
         // when
-        NodeRecord record = new NodeRecord( 0 );
-        logger.error( RecordType.NODE, record, "test message" );
-        logger.warning( RecordType.NODE, record, "test message" );
+        NodeRecord record = new NodeRecord(0);
+        logger.error(RecordType.NODE, record, "test message");
+        logger.warning(RecordType.NODE, record, "test message");
 
         // then
-        String expectedString = format( "test message%n\t%s abc", record.hashCode() );
-        verify( log ).error( expectedString );
-        verify( log ).warn( expectedString );
+        String expectedString = format("test message%n\t%s abc", record.hashCode());
+        verify(log).error(expectedString);
+        verify(log).warn(expectedString);
     }
 
     @Test
-    void shouldUseRecordToStringFunctionForArgs()
-    {
+    void shouldUseRecordToStringFunctionForArgs() {
         // given
-        InternalLog log = mock( InternalLog.class );
-        InconsistencyMessageLogger logger = new InconsistencyMessageLogger( log, record -> record.hashCode() + " abc" );
+        InternalLog log = mock(InternalLog.class);
+        InconsistencyMessageLogger logger = new InconsistencyMessageLogger(log, record -> record.hashCode() + " abc");
 
         // when
-        NodeRecord record = new NodeRecord( 0 );
-        NodeRecord argRecord = new NodeRecord( 1 );
-        logger.error( RecordType.NODE, record, "test message", argRecord );
-        logger.warning( RecordType.NODE, record, "test message", argRecord );
+        NodeRecord record = new NodeRecord(0);
+        NodeRecord argRecord = new NodeRecord(1);
+        logger.error(RecordType.NODE, record, "test message", argRecord);
+        logger.warning(RecordType.NODE, record, "test message", argRecord);
 
         // then
-        String expectedString = format( "test message%n\t%s abc%n\tInconsistent with: %s abc", record.hashCode(), argRecord.hashCode() );
-        verify( log ).error( expectedString );
-        verify( log ).warn( expectedString );
+        String expectedString =
+                format("test message%n\t%s abc%n\tInconsistent with: %s abc", record.hashCode(), argRecord.hashCode());
+        verify(log).error(expectedString);
+        verify(log).warn(expectedString);
     }
 }

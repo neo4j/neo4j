@@ -21,24 +21,20 @@ package org.neo4j.kernel.recovery;
 
 import org.neo4j.logging.InternalLog;
 
-public class LoggingLogTailScannerMonitor implements LogTailScannerMonitor
-{
+public class LoggingLogTailScannerMonitor implements LogTailScannerMonitor {
     private final InternalLog log;
 
-    public LoggingLogTailScannerMonitor( InternalLog log )
-    {
+    public LoggingLogTailScannerMonitor(InternalLog log) {
         this.log = log;
     }
 
     @Override
-    public void corruptedLogFile( long version, Throwable t )
-    {
-        log.warn( String.format( "Fail to read transaction log version %d.", version ), t );
+    public void corruptedLogFile(long version, Throwable t) {
+        log.warn(String.format("Fail to read transaction log version %d.", version), t);
     }
 
     @Override
-    public void corruptedCheckpointFile( long version, Throwable t )
-    {
-        log.warn( String.format( "Fail to read checkpoint log version %d.", version ), t );
+    public void corruptedCheckpointFile(long version, Throwable t) {
+        log.warn(String.format("Fail to read checkpoint log version %d.", version), t);
     }
 }

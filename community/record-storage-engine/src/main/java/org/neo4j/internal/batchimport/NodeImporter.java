@@ -19,8 +19,12 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.Collections;
+import static java.lang.Long.max;
+import static java.util.Arrays.copyOf;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
+import java.util.Collections;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Group;
@@ -40,16 +44,10 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Values;
 
-import static java.lang.Long.max;
-import static java.util.Arrays.copyOf;
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
-import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
-
 /**
  * Imports nodes using data from {@link InputChunk}.
  */
-public class NodeImporter extends EntityImporter
-{
+public class NodeImporter extends EntityImporter {
     private final BatchingTokenRepository.BatchingLabelTokenRepository labelTokenRepository;
     private final NodeStore nodeStore;
     private final NodeRecord nodeRecord;
@@ -67,127 +65,126 @@ public class NodeImporter extends EntityImporter
     private long highestId = -1;
     private boolean hasLabelField;
 
-    NodeImporter( BatchingNeoStores stores, IdMapper idMapper, Monitor monitor, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
-        super( stores, monitor, contextFactory, memoryTracker );
+    NodeImporter(
+            BatchingNeoStores stores,
+            IdMapper idMapper,
+            Monitor monitor,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        super(stores, monitor, contextFactory, memoryTracker);
         this.labelTokenRepository = stores.getLabelRepository();
         this.idMapper = idMapper;
         this.nodeStore = stores.getNodeStore();
         this.nodeRecord = nodeStore.newRecord();
-        this.nodeIds = new BatchingIdGetter( nodeStore );
+        this.nodeIds = new BatchingIdGetter(nodeStore);
         this.idPropertyStore = stores.getTemporaryPropertyStore();
         this.idPropertyRecord = idPropertyStore.newRecord();
-        this.nodeUpdateCursor = nodeStore.openPageCursorForWriting( 0, cursorContext );
-        this.idPropertyUpdateCursor = idPropertyStore.openPageCursorForWriting( 0, cursorContext );
-        nodeRecord.setInUse( true );
+        this.nodeUpdateCursor = nodeStore.openPageCursorForWriting(0, cursorContext);
+        this.idPropertyUpdateCursor = idPropertyStore.openPageCursorForWriting(0, cursorContext);
+        nodeRecord.setInUse(true);
     }
 
     @Override
-    public boolean id( long id )
-    {
-        nodeRecord.setId( id );
-        highestId = max( highestId, id );
+    public boolean id(long id) {
+        nodeRecord.setId(id);
+        highestId = max(highestId, id);
         return true;
     }
 
     @Override
-    public boolean id( Object id, Group group )
-    {
-        return id( id, group, nodeIds );
+    public boolean id(Object id, Group group) {
+        return id(id, group, nodeIds);
     }
 
     @Override
-    public boolean id( Object id, Group group, IdSequence idSequence )
-    {
-        long nodeId = idSequence.nextId( cursorContext );
-        nodeRecord.setId( nodeId );
-        highestId = max( highestId, nodeId );
-        idMapper.put( id, nodeId, group );
+    public boolean id(Object id, Group group, IdSequence idSequence) {
+        long nodeId = idSequence.nextId(cursorContext);
+        nodeRecord.setId(nodeId);
+        highestId = max(highestId, nodeId);
+        idMapper.put(id, nodeId, group);
 
         // also store this id as property in temp property store
-        if ( id != null )
-        {
-            idPropertyStore.encodeValue( idPropertyBlock, 0, Values.of( id ), cursorContext, memoryTracker );
-            idPropertyRecord.addPropertyBlock( idPropertyBlock );
-            idPropertyRecord.setId( nodeId ); // yes nodeId
-            idPropertyRecord.setInUse( true );
-            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, idPropertyUpdateCursor, cursorContext, tempStoreCursors );
+        if (id != null) {
+            idPropertyStore.encodeValue(idPropertyBlock, 0, Values.of(id), cursorContext, memoryTracker);
+            idPropertyRecord.addPropertyBlock(idPropertyBlock);
+            idPropertyRecord.setId(nodeId); // yes nodeId
+            idPropertyRecord.setInUse(true);
+            idPropertyStore.updateRecord(
+                    idPropertyRecord, IGNORE, idPropertyUpdateCursor, cursorContext, tempStoreCursors);
             idPropertyRecord.clear();
         }
         return true;
     }
 
     @Override
-    public boolean labels( String[] labels )
-    {
+    public boolean labels(String[] labels) {
         assert !hasLabelField;
         int requiredLength = labelsCursor + labels.length;
-        if ( requiredLength > this.labels.length )
-        {
-            this.labels = copyOf( this.labels, Integer.max( requiredLength, this.labels.length * 2 ) );
+        if (requiredLength > this.labels.length) {
+            this.labels = copyOf(this.labels, Integer.max(requiredLength, this.labels.length * 2));
         }
-        System.arraycopy( labels, 0, this.labels, labelsCursor, labels.length );
+        System.arraycopy(labels, 0, this.labels, labelsCursor, labels.length);
         labelsCursor += labels.length;
         return true;
     }
 
     @Override
-    public boolean labelField( long labelField )
-    {
+    public boolean labelField(long labelField) {
         hasLabelField = true;
-        nodeRecord.setLabelField( labelField, Collections.emptyList() );
+        nodeRecord.setLabelField(labelField, Collections.emptyList());
         return true;
     }
 
     @Override
-    public void endOfEntity()
-    {
+    public void endOfEntity() {
         // Make sure we have an ID
-        if ( nodeRecord.getId() == NULL_REFERENCE.longValue() )
-        {
-            nodeRecord.setId( nodeIds.nextId( cursorContext ) );
+        if (nodeRecord.getId() == NULL_REFERENCE.longValue()) {
+            nodeRecord.setId(nodeIds.nextId(cursorContext));
         }
 
         // Compose the labels
-        if ( !hasLabelField )
-        {
-            long[] labelIds = labelTokenRepository.getOrCreateIds( labels, labelsCursor );
-            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore(), cursorContext, storeCursors, memoryTracker );
+        if (!hasLabelField) {
+            long[] labelIds = labelTokenRepository.getOrCreateIds(labels, labelsCursor);
+            InlineNodeLabels.putSorted(
+                    nodeRecord,
+                    labelIds,
+                    null,
+                    nodeStore.getDynamicLabelStore(),
+                    cursorContext,
+                    storeCursors,
+                    memoryTracker);
         }
         labelsCursor = 0;
 
         // Write data to stores
-        nodeRecord.setNextProp( createAndWritePropertyChain( cursorContext ) );
-        nodeRecord.setInUse( true );
-        nodeStore.updateRecord( nodeRecord, IGNORE, nodeUpdateCursor, cursorContext, storeCursors );
+        nodeRecord.setNextProp(createAndWritePropertyChain(cursorContext));
+        nodeRecord.setInUse(true);
+        nodeStore.updateRecord(nodeRecord, IGNORE, nodeUpdateCursor, cursorContext, storeCursors);
         nodeCount++;
         nodeRecord.clear();
-        nodeRecord.setId( NULL_REFERENCE.longValue() );
+        nodeRecord.setId(NULL_REFERENCE.longValue());
         hasLabelField = false;
         super.endOfEntity();
     }
 
     @Override
-    protected PrimitiveRecord primitiveRecord()
-    {
+    protected PrimitiveRecord primitiveRecord() {
         return nodeRecord;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         super.close();
-        monitor.nodesImported( nodeCount );
-        nodeStore.setHighestPossibleIdInUse( highestId ); // for the case of #id(long)
+        monitor.nodesImported(nodeCount);
+        nodeStore.setHighestPossibleIdInUse(highestId); // for the case of #id(long)
         nodeUpdateCursor.close();
         idPropertyUpdateCursor.close();
         cursorContext.close();
     }
 
     @Override
-    void freeUnusedIds()
-    {
+    void freeUnusedIds() {
         super.freeUnusedIds();
-        freeUnusedIds( nodeStore, nodeIds, cursorContext );
+        freeUnusedIds(nodeStore, nodeIds, cursorContext);
     }
 }

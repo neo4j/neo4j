@@ -25,72 +25,44 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-public class BadPrimitiveInputSproc
-{
+public class BadPrimitiveInputSproc {
 
     @Procedure
-    public void doSomething( @Name( "test" ) short unsupportedType )
-    {
-
-    }
+    public void doSomething(@Name("test") short unsupportedType) {}
 
     @Procedure
-    public void works01( @Name( "test" ) String supported )
-    {
-    }
+    public void works01(@Name("test") String supported) {}
 
     @Procedure
-    public void works02( @Name( "test" ) Long supported )
-    {
-    }
+    public void works02(@Name("test") Long supported) {}
 
     @Procedure
-    public void works03( @Name( "test" ) long supported )
-    {
-    }
+    public void works03(@Name("test") long supported) {}
 
     @Procedure
-    public void works04( @Name( "test" ) Double supported )
-    {
-    }
+    public void works04(@Name("test") Double supported) {}
 
     @Procedure
-    public void works05( @Name( "test" ) double supported )
-    {
-    }
+    public void works05(@Name("test") double supported) {}
 
     @Procedure
-    public void works06( @Name( "test" ) Number supported )
-    {
-    }
+    public void works06(@Name("test") Number supported) {}
 
     @Procedure
-    public void works07( @Name( "test" ) Boolean supported )
-    {
-    }
+    public void works07(@Name("test") Boolean supported) {}
 
     @Procedure
-    public void works08( @Name( "test" ) boolean supported )
-    {
-    }
+    public void works08(@Name("test") boolean supported) {}
 
     @Procedure
-    public void works09( @Name( "test" ) Object supported )
-    {
-    }
+    public void works09(@Name("test") Object supported) {}
 
     @Procedure
-    public void works10( @Name( "test" ) Node supported )
-    {
-    }
+    public void works10(@Name("test") Node supported) {}
 
     @Procedure
-    public void works11( @Name( "test" ) Relationship supported )
-    {
-    }
+    public void works11(@Name("test") Relationship supported) {}
 
     @Procedure
-    public void works12( @Name( "test" ) Path supported )
-    {
-    }
+    public void works12(@Name("test") Path supported) {}
 }

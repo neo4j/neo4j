@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -36,41 +35,33 @@ import org.neo4j.util.Preconditions;
  * Allocates {@link ByteBuffer} instances using {@link UnsafeUtil#newDirectByteBuffer(long, int)}/{@link
  * UnsafeUtil#initDirectByteBuffer(ByteBuffer, long, int)} and frees all allocated memory in {@link #close()}.
  */
-public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Allocator
-{
+public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Allocator {
     private final List<ScopedBuffer> allocations = new ArrayList<>();
     private boolean closed;
 
     @Override
-    public synchronized ScopedBuffer allocate( int bufferSize, MemoryTracker memoryTracker )
-    {
+    public synchronized ScopedBuffer allocate(int bufferSize, MemoryTracker memoryTracker) {
         assertOpen();
-        try
-        {
-            var byteBuffer = new NativeScopedBuffer( bufferSize, memoryTracker );
-            allocations.add( byteBuffer );
+        try {
+            var byteBuffer = new NativeScopedBuffer(bufferSize, memoryTracker);
+            allocations.add(byteBuffer);
             return byteBuffer;
-        }
-        catch ( NativeMemoryAllocationRefusedError allocationRefusedError )
-        {
+        } catch (NativeMemoryAllocationRefusedError allocationRefusedError) {
             // What ever went wrong fallback to on-heap buffer.
-            return new HeapScopedBuffer( bufferSize, memoryTracker );
+            return new HeapScopedBuffer(bufferSize, memoryTracker);
         }
     }
 
     @Override
-    public synchronized void close()
-    {
+    public synchronized void close() {
         // Idempotent close due to the way the population lifecycle works sometimes
-        if ( !closed )
-        {
-            allocations.forEach( ScopedBuffer::close );
+        if (!closed) {
+            allocations.forEach(ScopedBuffer::close);
             closed = true;
         }
     }
 
-    private void assertOpen()
-    {
-        Preconditions.checkState( !closed, "Already closed" );
+    private void assertOpen() {
+        Preconditions.checkState(!closed, "Already closed");
     }
 }

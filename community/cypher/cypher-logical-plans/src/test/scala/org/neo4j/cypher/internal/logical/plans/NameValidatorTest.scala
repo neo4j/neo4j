@@ -57,7 +57,8 @@ class NameValidatorTest extends CypherFunSuite {
       case e: InvalidArgumentException =>
         e.getMessage should be(
           """Username 'user:' contains illegal characters.
-            |Use ascii characters that are not ',', ':' or whitespaces.""".stripMargin)
+            |Use ascii characters that are not ',', ':' or whitespaces.""".stripMargin
+        )
     }
   }
 
@@ -94,7 +95,8 @@ class NameValidatorTest extends CypherFunSuite {
       case e: InvalidArgumentException =>
         e.getMessage should be(
           """Role name 'role%' contains illegal characters.
-            |Use simple ascii characters, numbers and underscores.""".stripMargin)
+            |Use simple ascii characters, numbers and underscores.""".stripMargin
+        )
     }
   }
 }

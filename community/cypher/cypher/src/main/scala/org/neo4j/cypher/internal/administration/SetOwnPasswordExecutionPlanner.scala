@@ -47,11 +47,14 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
-case class SetOwnPasswordExecutionPlanner(normalExecutionEngine: ExecutionEngine, securityAuthorizationHandler: SecurityAuthorizationHandler) {
+case class SetOwnPasswordExecutionPlanner(
+  normalExecutionEngine: ExecutionEngine,
+  securityAuthorizationHandler: SecurityAuthorizationHandler
+) {
 
   private val secureHasher = new SecureHasher
 
-  def planSetOwnPassword(newPassword: Expression, currentPassword: Expression): ExecutionPlan  = {
+  def planSetOwnPassword(newPassword: Expression, currentPassword: Expression): ExecutionPlan = {
     val usernameKey = internalKey("username")
     val newPw = getPasswordExpression(None, newPassword, isEncryptedPassword = false, Array(usernameKey))
     val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
@@ -63,40 +66,61 @@ case class SetOwnPasswordExecutionPlanner(normalExecutionEngine: ExecutionEngine
          |SET user.passwordChangeRequired = false
          |RETURN oldCredentials""".stripMargin
 
-    UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine,
+    UpdatingSystemCommandExecutionPlan(
+      "AlterCurrentUserSetPassword",
+      normalExecutionEngine,
       securityAuthorizationHandler,
       query,
-      VirtualValues.map(Array(newPw.key, newPw.bytesKey, currentKeyBytes), Array(newPw.value, newPw.bytesValue, currentValueBytes)),
+      VirtualValues.map(
+        Array(newPw.key, newPw.bytesKey, currentKeyBytes),
+        Array(newPw.value, newPw.bytesValue, currentValueBytes)
+      ),
       QueryHandler
         .handleError {
           case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-            new DatabaseAdministrationOnFollowerException(s"User '${currentUser(p)}' failed to alter their own password: $followerError", error)
+            new DatabaseAdministrationOnFollowerException(
+              s"User '${currentUser(p)}' failed to alter their own password: $followerError",
+              error
+            )
           case (error: Neo4jException, _) => error
-          case (error, p) => new IllegalStateException(s"User '${currentUser(p)}' failed to alter their own password.", error)
+          case (error, p) =>
+            new IllegalStateException(s"User '${currentUser(p)}' failed to alter their own password.", error)
         }
         .handleResult((_, value, p) => {
-          val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
+          val oldCredentials =
+            SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
           val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
           val currentValue = p.get(currentKeyBytes).asInstanceOf[ByteArray].asObject()
           if (!oldCredentials.matchesPassword(currentValue))
-            Some(new InvalidArgumentException(s"User '${currentUser(p)}' failed to alter their own password: Invalid principal or credentials."))
+            Some(new InvalidArgumentException(
+              s"User '${currentUser(p)}' failed to alter their own password: Invalid principal or credentials."
+            ))
           else if (oldCredentials.matchesPassword(newValue))
-            Some(new InvalidArgumentException(s"User '${currentUser(p)}' failed to alter their own password: Old password and new password cannot be the same."))
+            Some(new InvalidArgumentException(
+              s"User '${currentUser(p)}' failed to alter their own password: Old password and new password cannot be the same."
+            ))
           else
             None
         })
-        .handleNoResult( p => {
-          if (currentUser(p).isEmpty) // This is true if the securityContext is AUTH_DISABLED (both for community and enterprise)
-            Some(new IllegalStateException("User failed to alter their own password: Command not available with auth disabled."))
+        .handleNoResult(p => {
+          if (
+            currentUser(p).isEmpty
+          ) // This is true if the securityContext is AUTH_DISABLED (both for community and enterprise)
+            Some(new IllegalStateException(
+              "User failed to alter their own password: Command not available with auth disabled."
+            ))
           else // The 'current user' doesn't exist in the system graph
-            Some(new IllegalStateException(s"User '${currentUser(p)}' failed to alter their own password: User does not exist."))
+            Some(new IllegalStateException(
+              s"User '${currentUser(p)}' failed to alter their own password: User does not exist."
+            ))
         }),
       checkCredentialsExpired = false,
       finallyFunction = p => {
         p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()
         p.get(currentKeyBytes).asInstanceOf[ByteArray].zero()
       },
-      parameterGenerator = (_, securityContext) => VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().executingUser()))),
+      parameterGenerator = (_, securityContext) =>
+        VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().executingUser()))),
       parameterConverter = (tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m))
     )
   }

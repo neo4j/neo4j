@@ -31,8 +31,7 @@ import org.neo4j.memory.MemoryTracker;
  * @see BoltProtocol
  */
 @FunctionalInterface
-public interface BoltProtocolFactory
-{
+public interface BoltProtocolFactory {
     /**
      * Instantiate a handler for Bolt protocol with the specified version. Return {@code null} when handler for the
      * given version can't be instantiated.
@@ -41,5 +40,9 @@ public interface BoltProtocolFactory
      * @param channel the channel representing network connection from the client.
      * @return new protocol handler when given protocol version is known and valid, {@code null} otherwise.
      */
-    BoltProtocol create( BoltProtocolVersion protocolVersion, BoltChannel channel, ChannelProtector channelProtector, MemoryTracker memoryTracker );
+    BoltProtocol create(
+            BoltProtocolVersion protocolVersion,
+            BoltChannel channel,
+            ChannelProtector channelProtector,
+            MemoryTracker memoryTracker);
 }

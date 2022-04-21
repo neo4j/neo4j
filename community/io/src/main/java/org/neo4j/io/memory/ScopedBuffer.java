@@ -21,8 +21,7 @@ package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
 
-public interface ScopedBuffer extends AutoCloseable
-{
+public interface ScopedBuffer extends AutoCloseable {
     ByteBuffer getBuffer();
 
     @Override

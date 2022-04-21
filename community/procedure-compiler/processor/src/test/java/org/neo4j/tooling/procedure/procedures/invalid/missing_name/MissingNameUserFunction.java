@@ -21,13 +21,10 @@ package org.neo4j.tooling.procedure.procedures.invalid.missing_name;
 
 import org.neo4j.procedure.UserFunction;
 
-public class MissingNameUserFunction
-{
+public class MissingNameUserFunction {
 
     @UserFunction
-    public String niceFunction( String parameter, String otherParam )
-    {
+    public String niceFunction(String parameter, String otherParam) {
         return "42";
     }
-
 }

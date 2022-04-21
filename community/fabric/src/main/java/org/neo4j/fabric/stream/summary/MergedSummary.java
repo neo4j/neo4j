@@ -19,43 +19,39 @@
  */
 package org.neo4j.fabric.stream.summary;
 
-import reactor.core.publisher.Mono;
-
 import java.util.Collection;
 import java.util.Set;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
+import reactor.core.publisher.Mono;
 
-public class MergedSummary implements Summary
-{
+public class MergedSummary implements Summary {
     private final MergedQueryStatistics statistics;
     private final Set<Notification> notifications;
     private Mono<ExecutionPlanDescription> executionPlanDescription;
 
-    public MergedSummary( Mono<ExecutionPlanDescription> executionPlanDescription, MergedQueryStatistics statistics, Set<Notification> notifications )
-    {
+    public MergedSummary(
+            Mono<ExecutionPlanDescription> executionPlanDescription,
+            MergedQueryStatistics statistics,
+            Set<Notification> notifications) {
         this.executionPlanDescription = executionPlanDescription;
         this.statistics = statistics;
         this.notifications = notifications;
     }
 
     @Override
-    public ExecutionPlanDescription executionPlanDescription()
-    {
+    public ExecutionPlanDescription executionPlanDescription() {
         return executionPlanDescription.cache().block();
     }
 
     @Override
-    public Collection<Notification> getNotifications()
-    {
+    public Collection<Notification> getNotifications() {
         return notifications;
     }
 
     @Override
-    public QueryStatistics getQueryStatistics()
-    {
+    public QueryStatistics getQueryStatistics() {
         return statistics;
     }
 }

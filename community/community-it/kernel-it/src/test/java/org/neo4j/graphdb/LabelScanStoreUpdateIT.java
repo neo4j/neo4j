@@ -19,16 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Set;
-
-import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.test.extension.ImpermanentDbmsExtension;
-import org.neo4j.test.extension.Inject;
-
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,9 +27,16 @@ import static org.neo4j.internal.helpers.collection.Iterables.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 
+import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
+
 @ImpermanentDbmsExtension
-class LabelScanStoreUpdateIT
-{
+class LabelScanStoreUpdateIT {
     @Inject
     private GraphDatabaseService db;
 
@@ -48,242 +45,191 @@ class LabelScanStoreUpdateIT
     private Label Third;
 
     @BeforeEach
-    void setupLabels()
-    {
-        First = Label.label( "First" );
-        Second = Label.label( "Second" );
-        Third = Label.label( "Third" );
+    void setupLabels() {
+        First = Label.label("First");
+        Second = Label.label("Second");
+        Third = Label.label("Third");
     }
 
     @Test
-    void shouldGetNodesWithCreatedLabel()
-    {
+    void shouldGetNodesWithCreatedLabel() {
         // GIVEN
-        Node node1 = createLabeledNode( First );
-        Node node2 = createLabeledNode( Second );
-        Node node3 = createLabeledNode( Third );
-        Node node4 = createLabeledNode( First, Second, Third );
-        Node node5 = createLabeledNode( First, Third );
+        Node node1 = createLabeledNode(First);
+        Node node2 = createLabeledNode(Second);
+        Node node3 = createLabeledNode(Third);
+        Node node4 = createLabeledNode(First, Second, Third);
+        Node node5 = createLabeledNode(First, Third);
 
         // THEN
-        assertEquals(
-                asSet( node1, node4, node5 ),
-                asSet( getAllNodesWithLabel( First ) ) );
-        assertEquals(
-                asSet( node2, node4 ),
-                asSet( getAllNodesWithLabel( Second ) ) );
-        assertEquals(
-                asSet( node3, node4, node5 ),
-                asSet( getAllNodesWithLabel( Third ) ) );
+        assertEquals(asSet(node1, node4, node5), asSet(getAllNodesWithLabel(First)));
+        assertEquals(asSet(node2, node4), asSet(getAllNodesWithLabel(Second)));
+        assertEquals(asSet(node3, node4, node5), asSet(getAllNodesWithLabel(Third)));
     }
 
     @Test
-    void shouldGetNodesWithAddedLabel()
-    {
+    void shouldGetNodesWithAddedLabel() {
         // GIVEN
-        Node node1 = createLabeledNode( First );
-        Node node2 = createLabeledNode( Second );
-        Node node3 = createLabeledNode( Third );
-        Node node4 = createLabeledNode( First );
-        Node node5 = createLabeledNode( First );
+        Node node1 = createLabeledNode(First);
+        Node node2 = createLabeledNode(Second);
+        Node node3 = createLabeledNode(Third);
+        Node node4 = createLabeledNode(First);
+        Node node5 = createLabeledNode(First);
 
         // WHEN
-        addLabels( node4, Second, Third );
-        addLabels( node5, Third );
+        addLabels(node4, Second, Third);
+        addLabels(node5, Third);
 
         // THEN
-        assertEquals(
-                asSet( node1, node4, node5 ),
-                asSet( getAllNodesWithLabel( First ) ) );
-        assertEquals(
-                asSet( node2, node4 ),
-                asSet( getAllNodesWithLabel( Second ) ) );
-        assertEquals(
-                asSet( node3, node4, node5 ),
-                asSet( getAllNodesWithLabel( Third ) ) );
+        assertEquals(asSet(node1, node4, node5), asSet(getAllNodesWithLabel(First)));
+        assertEquals(asSet(node2, node4), asSet(getAllNodesWithLabel(Second)));
+        assertEquals(asSet(node3, node4, node5), asSet(getAllNodesWithLabel(Third)));
     }
 
     @Test
-    void shouldGetNodesAfterDeletedNodes()
-    {
+    void shouldGetNodesAfterDeletedNodes() {
         // GIVEN
-        Node node1 = createLabeledNode( First, Second );
-        Node node2 = createLabeledNode( First, Third );
+        Node node1 = createLabeledNode(First, Second);
+        Node node2 = createLabeledNode(First, Third);
 
         // WHEN
-        deleteNode( node1 );
+        deleteNode(node1);
 
         // THEN
-        assertEquals(
-                asSet( node2 ),
-                getAllNodesWithLabel( First ) );
-        assertEquals( emptySet(),
-                getAllNodesWithLabel( Second ) );
-        assertEquals(
-                asSet( node2 ),
-                getAllNodesWithLabel( Third ) );
+        assertEquals(asSet(node2), getAllNodesWithLabel(First));
+        assertEquals(emptySet(), getAllNodesWithLabel(Second));
+        assertEquals(asSet(node2), getAllNodesWithLabel(Third));
     }
 
     @Test
-    void shouldGetNodesAfterRemovedLabels()
-    {
+    void shouldGetNodesAfterRemovedLabels() {
         // GIVEN
-        Node node1 = createLabeledNode( First, Second );
-        Node node2 = createLabeledNode( First, Third );
+        Node node1 = createLabeledNode(First, Second);
+        Node node2 = createLabeledNode(First, Third);
 
         // WHEN
-        removeLabels( node1, First );
-        removeLabels( node2, Third );
+        removeLabels(node1, First);
+        removeLabels(node2, Third);
 
         // THEN
-        assertEquals(
-                asSet( node2 ),
-                getAllNodesWithLabel( First ) );
-        assertEquals(
-                asSet( node1 ),
-                getAllNodesWithLabel( Second ) );
-        assertEquals( emptySet(),
-                getAllNodesWithLabel( Third ) );
+        assertEquals(asSet(node2), getAllNodesWithLabel(First));
+        assertEquals(asSet(node1), getAllNodesWithLabel(Second));
+        assertEquals(emptySet(), getAllNodesWithLabel(Third));
     }
 
     @Test
-    void retrieveNodeIdsInAscendingOrder()
-    {
-        for ( int i = 0; i < 50; i++ )
-        {
-            createLabeledNode( Labels.First, Labels.Second );
-            createLabeledNode( Labels.Second );
-            createLabeledNode( Labels.First );
+    void retrieveNodeIdsInAscendingOrder() {
+        for (int i = 0; i < 50; i++) {
+            createLabeledNode(Labels.First, Labels.Second);
+            createLabeledNode(Labels.Second);
+            createLabeledNode(Labels.First);
         }
-        long nodeWithThirdLabel = createLabeledNode( Labels.Third ).getId();
+        long nodeWithThirdLabel = createLabeledNode(Labels.Third).getId();
 
-        verifyFoundNodes( Labels.Third, "Expect to see 1 matched nodeId: " + nodeWithThirdLabel, nodeWithThirdLabel );
+        verifyFoundNodes(Labels.Third, "Expect to see 1 matched nodeId: " + nodeWithThirdLabel, nodeWithThirdLabel);
 
-        Node nodeById = getNodeById( 1 );
-        addLabels( nodeById, Labels.Third );
+        Node nodeById = getNodeById(1);
+        addLabels(nodeById, Labels.Third);
 
-        verifyFoundNodes( Labels.Third, "Expect to see 2 matched nodeIds: 1, " + nodeWithThirdLabel, 1,
-                nodeWithThirdLabel );
+        verifyFoundNodes(
+                Labels.Third, "Expect to see 2 matched nodeIds: 1, " + nodeWithThirdLabel, 1, nodeWithThirdLabel);
     }
 
     @Test
-    void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx()
-    {
+    void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx() {
         // Given
         int labelsToAdd = 80;
         int labelsToRemove = 40;
 
         // When
         Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             node = tx.createNode();
 
             // I create a lot of labels, enough to push the store to use two dynamic records
-            for ( int l = 0; l < labelsToAdd; l++ )
-            {
-                node.addLabel( label( "Label-" + l ) );
+            for (int l = 0; l < labelsToAdd; l++) {
+                node.addLabel(label("Label-" + l));
             }
 
             // and I delete some of them, enough to bring the number of dynamic records needed down to 1
-            for ( int l = 0; l < labelsToRemove; l++ )
-            {
-                node.removeLabel( label( "Label-" + l ) );
+            for (int l = 0; l < labelsToRemove; l++) {
+                node.removeLabel(label("Label-" + l));
             }
 
             tx.commit();
         }
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             // All the labels remaining should be in the label scan store
-            for ( int l = labelsToAdd - 1; l >= labelsToRemove; l-- )
-            {
-                Label label = label( "Label-" + l );
-                assertThat( single( tx.findNodes( label ) ) ).as( "Should have found node when looking for label " + label ).isEqualTo( node );
+            for (int l = labelsToAdd - 1; l >= labelsToRemove; l--) {
+                Label label = label("Label-" + l);
+                assertThat(single(tx.findNodes(label)))
+                        .as("Should have found node when looking for label " + label)
+                        .isEqualTo(node);
             }
         }
     }
 
-    private void verifyFoundNodes( Label label, String sizeMismatchMessage, long... expectedNodeIds )
-    {
-        try ( Transaction tx = db.beginTx();
-              ResourceIterator<Node> nodes = tx.findNodes( label ) )
-        {
-            List<Node> nodeList = Iterators.asList( nodes );
-            assertThat( nodeList ).as( sizeMismatchMessage ).hasSize( expectedNodeIds.length );
+    private void verifyFoundNodes(Label label, String sizeMismatchMessage, long... expectedNodeIds) {
+        try (Transaction tx = db.beginTx();
+                ResourceIterator<Node> nodes = tx.findNodes(label)) {
+            List<Node> nodeList = Iterators.asList(nodes);
+            assertThat(nodeList).as(sizeMismatchMessage).hasSize(expectedNodeIds.length);
             int index = 0;
-            for ( Node node : nodeList )
-            {
-                assertEquals( expectedNodeIds[index++], node.getId() );
+            for (Node node : nodeList) {
+                assertEquals(expectedNodeIds[index++], node.getId());
             }
         }
     }
 
-    private void removeLabels( Node node, Label... labels )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            var nodeById = tx.getNodeById( node.getId() );
-            for ( Label label : labels )
-            {
-                nodeById.removeLabel( label );
+    private void removeLabels(Node node, Label... labels) {
+        try (Transaction tx = db.beginTx()) {
+            var nodeById = tx.getNodeById(node.getId());
+            for (Label label : labels) {
+                nodeById.removeLabel(label);
             }
             tx.commit();
         }
     }
 
-    private void deleteNode( Node node )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.getNodeById( node.getId() ).delete();
+    private void deleteNode(Node node) {
+        try (Transaction tx = db.beginTx()) {
+            tx.getNodeById(node.getId()).delete();
             tx.commit();
         }
     }
 
-    private Set<Node> getAllNodesWithLabel( Label label )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            return asSet( tx.findNodes( label ) );
+    private Set<Node> getAllNodesWithLabel(Label label) {
+        try (Transaction tx = db.beginTx()) {
+            return asSet(tx.findNodes(label));
         }
     }
 
-    private Node createLabeledNode( Label... labels )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode( labels );
+    private Node createLabeledNode(Label... labels) {
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.createNode(labels);
             tx.commit();
             return node;
         }
     }
 
-    private void addLabels( Node node, Label... labels )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = tx.getNodeById( node.getId() );
-            for ( Label label : labels )
-            {
-                node.addLabel( label );
+    private void addLabels(Node node, Label... labels) {
+        try (Transaction tx = db.beginTx()) {
+            node = tx.getNodeById(node.getId());
+            for (Label label : labels) {
+                node.addLabel(label);
             }
             tx.commit();
         }
     }
 
-    private Node getNodeById( long id )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            return tx.getNodeById( id );
+    private Node getNodeById(long id) {
+        try (Transaction tx = db.beginTx()) {
+            return tx.getNodeById(id);
         }
     }
 
-    private enum Labels implements Label
-    {
+    private enum Labels implements Label {
         First,
         Second,
         Third

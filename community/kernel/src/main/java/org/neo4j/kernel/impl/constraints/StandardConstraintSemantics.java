@@ -44,130 +44,145 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 @ServiceProvider
-public class StandardConstraintSemantics extends ConstraintSemantics
-{
+public class StandardConstraintSemantics extends ConstraintSemantics {
     public static final String ERROR_MESSAGE_EXISTS = "Property existence constraint requires Neo4j Enterprise Edition";
     public static final String ERROR_MESSAGE_NODE_KEY = "Node Key constraint requires Neo4j Enterprise Edition";
 
     protected final StandardConstraintRuleAccessor accessor = new StandardConstraintRuleAccessor();
 
-    public StandardConstraintSemantics()
-    {
-        this( 1 );
+    public StandardConstraintSemantics() {
+        this(1);
     }
 
-    protected StandardConstraintSemantics( int priority )
-    {
-        super( priority );
+    protected StandardConstraintSemantics(int priority) {
+        super(priority);
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "standardConstraints";
     }
 
     @Override
-    public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor, PropertyCursor propertyCursor,
-            LabelSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
-    {
-        throw nodeKeyConstraintsNotAllowed( descriptor );
+    public void validateNodeKeyConstraint(
+            NodeLabelIndexCursor allNodes,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw nodeKeyConstraintsNotAllowed(descriptor);
     }
 
     @Override
-    public void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor, PropertyCursor propertyCursor,
-            LabelSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
-    {
-        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    public void validateNodePropertyExistenceConstraint(
+            NodeLabelIndexCursor allNodes,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw propertyExistenceConstraintsNotAllowed(descriptor);
     }
 
     @Override
-    public void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor,
-            RelationTypeSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup )  throws CreateConstraintFailureException
-    {
-        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    public void validateRelationshipPropertyExistenceConstraint(
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor,
+            RelationTypeSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw propertyExistenceConstraintsNotAllowed(descriptor);
     }
 
     @Override
-    public void validateRelationshipPropertyExistenceConstraint( RelationshipTypeIndexCursor allRelationships, RelationshipScanCursor relationshipCursor,
-            PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
-    {
-        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    public void validateRelationshipPropertyExistenceConstraint(
+            RelationshipTypeIndexCursor allRelationships,
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor,
+            RelationTypeSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw propertyExistenceConstraintsNotAllowed(descriptor);
     }
 
     @Override
-    public ConstraintDescriptor readConstraint( ConstraintDescriptor constraint )
-    {
-        switch ( constraint.type() )
-        {
-        case EXISTS:
-            return readNonStandardConstraint( constraint, ERROR_MESSAGE_EXISTS );
-        case UNIQUE_EXISTS:
-            return readNonStandardConstraint( constraint, ERROR_MESSAGE_NODE_KEY );
-        default:
-            return constraint;
+    public ConstraintDescriptor readConstraint(ConstraintDescriptor constraint) {
+        switch (constraint.type()) {
+            case EXISTS:
+                return readNonStandardConstraint(constraint, ERROR_MESSAGE_EXISTS);
+            case UNIQUE_EXISTS:
+                return readNonStandardConstraint(constraint, ERROR_MESSAGE_NODE_KEY);
+            default:
+                return constraint;
         }
     }
 
-    protected ConstraintDescriptor readNonStandardConstraint( ConstraintDescriptor constraint, String errorMessage )
-    {
+    protected ConstraintDescriptor readNonStandardConstraint(ConstraintDescriptor constraint, String errorMessage) {
         // When opening a store in Community Edition that contains a Property Existence Constraint
-        throw new IllegalStateException( errorMessage );
+        throw new IllegalStateException(errorMessage);
     }
 
-    private static CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( SchemaDescriptor descriptor )
-    {
+    private static CreateConstraintFailureException propertyExistenceConstraintsNotAllowed(
+            SchemaDescriptor descriptor) {
         // When creating a Property Existence Constraint in Community Edition
         return new CreateConstraintFailureException(
-                ConstraintDescriptorFactory.existsForSchema( descriptor ), ERROR_MESSAGE_EXISTS );
+                ConstraintDescriptorFactory.existsForSchema(descriptor), ERROR_MESSAGE_EXISTS);
     }
 
-    private static CreateConstraintFailureException nodeKeyConstraintsNotAllowed( SchemaDescriptor descriptor )
-    {
+    private static CreateConstraintFailureException nodeKeyConstraintsNotAllowed(SchemaDescriptor descriptor) {
         // When creating a Node Key Constraint in Community Edition
         return new CreateConstraintFailureException(
-                ConstraintDescriptorFactory.existsForSchema( descriptor ), ERROR_MESSAGE_NODE_KEY );
+                ConstraintDescriptorFactory.existsForSchema(descriptor), ERROR_MESSAGE_NODE_KEY);
     }
 
     @Override
     public ConstraintDescriptor createUniquenessConstraintRule(
-            long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
-    {
-        return accessor.createUniquenessConstraintRule( ruleId, descriptor, indexId );
+            long ruleId, UniquenessConstraintDescriptor descriptor, long indexId) {
+        return accessor.createUniquenessConstraintRule(ruleId, descriptor, indexId);
     }
 
     @Override
     public ConstraintDescriptor createNodeKeyConstraintRule(
-            long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId ) throws CreateConstraintFailureException
-    {
-        throw nodeKeyConstraintsNotAllowed( descriptor.schema() );
+            long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId) throws CreateConstraintFailureException {
+        throw nodeKeyConstraintsNotAllowed(descriptor.schema());
     }
 
     @Override
-    public ConstraintDescriptor createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
-            throws CreateConstraintFailureException
-    {
-        throw propertyExistenceConstraintsNotAllowed( descriptor.schema() );
+    public ConstraintDescriptor createExistenceConstraint(long ruleId, ConstraintDescriptor descriptor)
+            throws CreateConstraintFailureException {
+        throw propertyExistenceConstraintsNotAllowed(descriptor.schema());
     }
 
     @Override
-    public TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, Read read, CursorFactory cursorFactory, ReadableTransactionState state,
-            TxStateVisitor visitor, CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
+    public TxStateVisitor decorateTxStateVisitor(
+            StorageReader storageReader,
+            Read read,
+            CursorFactory cursorFactory,
+            ReadableTransactionState state,
+            TxStateVisitor visitor,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         return visitor;
     }
 
     @Override
-    public void validateNodePropertyExistenceConstraint( NodeCursor nodeCursor, PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor,
-                                                         TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
-    {
-        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    public void validateNodePropertyExistenceConstraint(
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw propertyExistenceConstraintsNotAllowed(descriptor);
     }
 
     @Override
-    public void validateNodeKeyConstraint( NodeCursor nodeCursor, PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor,
-                                           TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
-    {
-        throw nodeKeyConstraintsNotAllowed( descriptor );
+    public void validateNodeKeyConstraint(
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            LabelSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw nodeKeyConstraintsNotAllowed(descriptor);
     }
 }

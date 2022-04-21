@@ -19,11 +19,12 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.io.IOException;
-
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.io.pagecache.PageCursor;
@@ -39,11 +40,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
-
-public abstract class LenientStoreInputChunk implements InputChunk
-{
+public abstract class LenientStoreInputChunk implements InputChunk {
     private static final String COPY_STORE_READER_TAG = "copyStoreReader";
     private final PropertyStore propertyStore;
     private final StoreCursors storeCursors;
@@ -58,38 +55,36 @@ public abstract class LenientStoreInputChunk implements InputChunk
     private final PageCursor propertyCursor;
     private final PropertyRecord propertyRecord;
 
-    LenientStoreInputChunk( ReadBehaviour readBehaviour, PropertyStore propertyStore, TokenHolders tokenHolders,
-            CursorContextFactory contextFactory, StoreCursors storeCursors, PageCursor cursor )
-    {
+    LenientStoreInputChunk(
+            ReadBehaviour readBehaviour,
+            PropertyStore propertyStore,
+            TokenHolders tokenHolders,
+            CursorContextFactory contextFactory,
+            StoreCursors storeCursors,
+            PageCursor cursor) {
         this.readBehaviour = readBehaviour;
         this.propertyStore = propertyStore;
         this.tokenHolders = tokenHolders;
-        this.cursorContext = contextFactory.create( COPY_STORE_READER_TAG );
+        this.cursorContext = contextFactory.create(COPY_STORE_READER_TAG);
         this.storeCursors = storeCursors;
         this.cursor = cursor;
-        this.propertyCursor = storeCursors.readCursor( PROPERTY_CURSOR );
+        this.propertyCursor = storeCursors.readCursor(PROPERTY_CURSOR);
         this.propertyRecord = propertyStore.newRecord();
     }
 
-    void setChunkRange( long startId, long endId )
-    {
+    void setChunkRange(long startId, long endId) {
         this.id = startId;
         this.endId = endId;
     }
 
     @Override
-    public boolean next( InputEntityVisitor visitor )
-    {
-        if ( id < endId )
-        {
-            try
-            {
-                readAndVisit( id, visitor, storeCursors );
-            }
-            catch ( Exception e )
-            {
+    public boolean next(InputEntityVisitor visitor) {
+        if (id < endId) {
+            try {
+                readAndVisit(id, visitor, storeCursors);
+            } catch (Exception e) {
                 readBehaviour.removed();
-                readBehaviour.error( e, "%s(%d): Ignoring broken record.", recordType(), id );
+                readBehaviour.error(e, "%s(%d): Ignoring broken record.", recordType(), id);
             }
             id++;
             return true;
@@ -99,26 +94,26 @@ public abstract class LenientStoreInputChunk implements InputChunk
     }
 
     @Override
-    public void close()
-    {
-        closeAllUnchecked( storeCursors, cursorContext );
+    public void close() {
+        closeAllUnchecked(storeCursors, cursorContext);
     }
 
-    abstract void readAndVisit( long id, InputEntityVisitor visitor, StoreCursors storeCursors ) throws IOException;
+    abstract void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors) throws IOException;
 
     abstract String recordType();
 
-    abstract boolean shouldIncludeProperty( ReadBehaviour readBehaviour, String key, String[] owningEntityTokens );
+    abstract boolean shouldIncludeProperty(ReadBehaviour readBehaviour, String key, String[] owningEntityTokens);
 
     /**
      * Do to the way the visitor work it's important that this method never throws.
      */
-    void visitPropertyChainNoThrow( InputEntityVisitor visitor, PrimitiveRecord record, EntityType owningEntityType, String[] owningEntityTokens )
-    {
-        try
-        {
-            if ( record.getNextProp() == Record.NO_NEXT_PROPERTY.intValue() )
-            {
+    void visitPropertyChainNoThrow(
+            InputEntityVisitor visitor,
+            PrimitiveRecord record,
+            EntityType owningEntityType,
+            String[] owningEntityTokens) {
+        try {
+            if (record.getNextProp() == Record.NO_NEXT_PROPERTY.intValue()) {
                 return;
             }
 
@@ -126,31 +121,29 @@ public abstract class LenientStoreInputChunk implements InputChunk
             seenPropertyRecordIds.clear();
 
             long nextProp = record.getNextProp();
-            while ( !Record.NO_NEXT_PROPERTY.is( nextProp ) )
-            {
-                if ( !seenPropertyRecordIds.add( nextProp ) )
-                {
-                    readBehaviour.error( "%s(%d): Ignoring circular property chain %s.", owningEntityType, record.getId(), propertyRecord );
+            while (!Record.NO_NEXT_PROPERTY.is(nextProp)) {
+                if (!seenPropertyRecordIds.add(nextProp)) {
+                    readBehaviour.error(
+                            "%s(%d): Ignoring circular property chain %s.",
+                            owningEntityType, record.getId(), propertyRecord);
                     return;
                 }
 
-                propertyStore.getRecordByCursor( nextProp, propertyRecord, RecordLoad.NORMAL, propertyCursor );
-                for ( PropertyBlock propBlock : propertyRecord )
-                {
-                    propertyStore.ensureHeavy( propBlock, storeCursors );
-                    String key = LenientStoreInput.getTokenByIdSafe( tokenHolders.propertyKeyTokens(), propBlock.getKeyIndexId() ).name();
-                    if ( shouldIncludeProperty( readBehaviour, key, owningEntityTokens ) )
-                    {
-                        Value propertyValue = propBlock.newPropertyValue( propertyStore, storeCursors );
-                        visitor.property( key, propertyValue.asObject() );
+                propertyStore.getRecordByCursor(nextProp, propertyRecord, RecordLoad.NORMAL, propertyCursor);
+                for (PropertyBlock propBlock : propertyRecord) {
+                    propertyStore.ensureHeavy(propBlock, storeCursors);
+                    String key = LenientStoreInput.getTokenByIdSafe(
+                                    tokenHolders.propertyKeyTokens(), propBlock.getKeyIndexId())
+                            .name();
+                    if (shouldIncludeProperty(readBehaviour, key, owningEntityTokens)) {
+                        Value propertyValue = propBlock.newPropertyValue(propertyStore, storeCursors);
+                        visitor.property(key, propertyValue.asObject());
                     }
                 }
                 nextProp = propertyRecord.getNextProp();
             }
-        }
-        catch ( Exception e )
-        {
-            readBehaviour.error( e, "%s(%d): Ignoring broken property chain.", owningEntityType, record.getId() );
+        } catch (Exception e) {
+            readBehaviour.error(e, "%s(%d): Ignoring broken property chain.", owningEntityType, record.getId());
         }
     }
 }

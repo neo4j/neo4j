@@ -25,8 +25,12 @@ case object ToStringList extends Function {
   override def name = "toStringList"
 
   override val signatures = Vector(
-    TypeSignature(this, CTList(CTAny), CTList(CTString),
+    TypeSignature(
+      this,
+      CTList(CTAny),
+      CTList(CTString),
       "Converts a list of values to a list of string values. If any values are not convertible to string they will be null in the list returned.",
-      Category.LIST)
+      Category.LIST
+    )
   )
 }

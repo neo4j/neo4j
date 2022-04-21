@@ -24,17 +24,15 @@ import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class FailedLoadAggregatedFunction extends CallableUserAggregationFunction.BasicUserAggregationFunction
-{
-    public FailedLoadAggregatedFunction( UserFunctionSignature signature )
-    {
-        super( signature );
+public class FailedLoadAggregatedFunction extends CallableUserAggregationFunction.BasicUserAggregationFunction {
+    public FailedLoadAggregatedFunction(UserFunctionSignature signature) {
+        super(signature);
     }
 
     @Override
-    public UserAggregator create( Context ctx ) throws ProcedureException
-    {
-        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name() ) );
+    public UserAggregator create(Context ctx) throws ProcedureException {
+        throw new ProcedureException(
+                Status.Procedure.ProcedureRegistrationFailed,
+                signature().description().orElse("Failed to load " + signature().name()));
     }
 }

@@ -31,7 +31,8 @@ import org.neo4j.values.storable.Values
 
 class SeekRangeTest extends CypherFunSuite {
 
-  private implicit val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
+  implicit private val BY_VALUE: MinMaxOrdering[Value] =
+    MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
 
   private val numA = Values.longValue(3)
   private val numB = Values.longValue(4)
@@ -40,41 +41,81 @@ class SeekRangeTest extends CypherFunSuite {
   private val strB = Values.stringValue("4")
 
   test("Computes correct limit for numerical less than") {
-    RangeLessThan[Value](NonEmptyList(InclusiveBound(numA), InclusiveBound(numB))).limit should equal(Some(InclusiveBound(numA)))
-    RangeLessThan[Value](NonEmptyList(InclusiveBound(numA), ExclusiveBound(numB))).limit should equal(Some(InclusiveBound(numA)))
-    RangeLessThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numB))).limit should equal(Some(ExclusiveBound(numA)))
-    RangeLessThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numA))).limit should equal(Some(ExclusiveBound(numA)))
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(numA), InclusiveBound(numB))).limit should equal(
+      Some(InclusiveBound(numA))
+    )
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(numA), ExclusiveBound(numB))).limit should equal(
+      Some(InclusiveBound(numA))
+    )
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numB))).limit should equal(
+      Some(ExclusiveBound(numA))
+    )
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numA))).limit should equal(
+      Some(ExclusiveBound(numA))
+    )
     RangeLessThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(null))).limit should equal(None)
     RangeLessThan[Value](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
   test("Computes correct limit for numerical greater than") {
-    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(numA), InclusiveBound(numB))).limit should equal(Some(InclusiveBound(numB)))
-    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(numA), ExclusiveBound(numB))).limit should equal(Some(ExclusiveBound(numB)))
-    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numB))).limit should equal(Some(InclusiveBound(numB)))
-    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numA))).limit should equal(Some(ExclusiveBound(numA)))
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(numA), InclusiveBound(numB))).limit should equal(
+      Some(InclusiveBound(numB))
+    )
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(numA), ExclusiveBound(numB))).limit should equal(
+      Some(ExclusiveBound(numB))
+    )
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numB))).limit should equal(
+      Some(InclusiveBound(numB))
+    )
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numA))).limit should equal(
+      Some(ExclusiveBound(numA))
+    )
     RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(null))).limit should equal(None)
     RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
   test("Computes correct limit for string less than") {
-    RangeLessThan[Value](NonEmptyList(InclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strEmpty)))
-    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(Some(ExclusiveBound(strEmpty)))
-    RangeLessThan[Value](NonEmptyList(InclusiveBound(strA), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strA)))
-    RangeLessThan[Value](NonEmptyList(InclusiveBound(strA), ExclusiveBound(strB))).limit should equal(Some(InclusiveBound(strA)))
-    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strB))).limit should equal(Some(ExclusiveBound(strA)))
-    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strA))).limit should equal(Some(ExclusiveBound(strA)))
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(
+      Some(InclusiveBound(strEmpty))
+    )
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(
+      Some(ExclusiveBound(strEmpty))
+    )
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(strA), InclusiveBound(strB))).limit should equal(
+      Some(InclusiveBound(strA))
+    )
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(strA), ExclusiveBound(strB))).limit should equal(
+      Some(InclusiveBound(strA))
+    )
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strB))).limit should equal(
+      Some(ExclusiveBound(strA))
+    )
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strA))).limit should equal(
+      Some(ExclusiveBound(strA))
+    )
     RangeLessThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(null))).limit should equal(None)
     RangeLessThan[Value](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
   test("Computes correct limit for string greater than") {
-    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strB)))
-    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strB)))
-    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(strA), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strB)))
-    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(strA), ExclusiveBound(strB))).limit should equal(Some(ExclusiveBound(strB)))
-    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strB)))
-    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strA))).limit should equal(Some(ExclusiveBound(strA)))
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(
+      Some(InclusiveBound(strB))
+    )
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(
+      Some(InclusiveBound(strB))
+    )
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(strA), InclusiveBound(strB))).limit should equal(
+      Some(InclusiveBound(strB))
+    )
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(strA), ExclusiveBound(strB))).limit should equal(
+      Some(ExclusiveBound(strB))
+    )
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strB))).limit should equal(
+      Some(InclusiveBound(strB))
+    )
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strA))).limit should equal(
+      Some(ExclusiveBound(strA))
+    )
     RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(null))).limit should equal(None)
     RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }

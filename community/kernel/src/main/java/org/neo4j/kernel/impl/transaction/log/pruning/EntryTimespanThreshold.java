@@ -24,51 +24,43 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-public final class EntryTimespanThreshold implements Threshold
-{
+public final class EntryTimespanThreshold implements Threshold {
     private final long timeToKeepInMillis;
     private final Clock clock;
     private final TimeUnit timeUnit;
     private final InternalLog log;
     private long lowerLimit;
 
-    EntryTimespanThreshold( InternalLogProvider logProvider, Clock clock, TimeUnit timeUnit, long timeToKeep )
-    {
-        this.log = logProvider.getLog( getClass() );
+    EntryTimespanThreshold(InternalLogProvider logProvider, Clock clock, TimeUnit timeUnit, long timeToKeep) {
+        this.log = logProvider.getLog(getClass());
         this.clock = clock;
         this.timeUnit = timeUnit;
-        this.timeToKeepInMillis = timeUnit.toMillis( timeToKeep );
+        this.timeToKeepInMillis = timeUnit.toMillis(timeToKeep);
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         lowerLimit = clock.millis() - timeToKeepInMillis;
     }
 
     @Override
-    public boolean reached( Path file, long version, LogFileInformation source )
-    {
-        try
-        {
-            long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp( version );
+    public boolean reached(Path file, long version, LogFileInformation source) {
+        try {
+            long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp(version);
             return firstStartRecordTimestamp >= 0 && firstStartRecordTimestamp < lowerLimit;
-        }
-        catch ( IOException e )
-        {
-            log.warn( "Fail to get timestamp info from transaction log file " + version, e );
+        } catch (IOException e) {
+            log.warn("Fail to get timestamp info from transaction log file " + version, e);
             return false;
         }
     }
 
     @Override
-    public String toString()
-    {
-        return timeUnit.convert( timeToKeepInMillis, TimeUnit.MILLISECONDS ) + " " + timeUnit.name().toLowerCase( Locale.ROOT );
+    public String toString() {
+        return timeUnit.convert(timeToKeepInMillis, TimeUnit.MILLISECONDS) + " "
+                + timeUnit.name().toLowerCase(Locale.ROOT);
     }
 }

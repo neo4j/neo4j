@@ -56,6 +56,7 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
    */
   protected[this] def closeMore(): Unit
   def next(): T
+
   /**
    * Implements the test of whether this iterator can provide another element.
    */
@@ -67,10 +68,12 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
   def nonEmpty: Boolean = hasNext
   def toSeq: Seq[T] = toIterator.toSeq
   def toList: List[T] = toIterator.toList
+
   def toIterator: Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = self.hasNext
     override def next(): T = self.next()
   }
+
   def toArray[B >: T : ClassTag]: Array[B] = {
     val buffer = ArrayBuffer.empty[B]
     while (hasNext) {
@@ -79,6 +82,7 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
     buffer.toArray
   }
   def toSet[B >: T]: immutable.Set[B] = toIterator.toSet
+
   def foreach[U](f: T => U): Unit = {
     while (hasNext) {
       f(next())
@@ -156,7 +160,7 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
       self.close()
       cur match {
         case closingIterator: ClosingIterator[_] => closingIterator.close()
-        case _ =>
+        case _                                   =>
       }
     }
   }
@@ -168,7 +172,7 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
     private var hd: T = _
     private var hdDefined: Boolean = false
 
-    override protected[this]def innerHasNext: Boolean = hdDefined || {
+    override protected[this] def innerHasNext: Boolean = hdDefined || {
       do {
         if (!self.hasNext) return false
         hd = self.next()
@@ -177,7 +181,9 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
       true
     }
 
-    def next(): T = if (hasNext) { hdDefined = false; hd } else empty.next()
+    def next(): T =
+      if (hasNext) { hdDefined = false; hd }
+      else empty.next()
 
     override protected[this] def closeMore(): Unit = self.close()
   }
@@ -238,12 +244,12 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
       self.close()
       eagerThat match {
         case closingIterator: ClosingIterator[_] => closingIterator.close()
-        case _ =>
+        case _                                   =>
       }
     }
   }
 
-  //NOTE: direct port of Iterator#collect except for closing the inner iterator
+  // NOTE: direct port of Iterator#collect except for closing the inner iterator
   def collect[B](pf: PartialFunction[T, B]): ClosingIterator[B] = new ClosingIterator[B] {
     // Manually buffer to avoid extra layer of wrapping with buffered
     private[this] var hd: T = _
@@ -252,27 +258,27 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
     // Seek = 0; Found = 1; Empty = -1
     // Not in vals because scalac won't make them static (@inline def only works with -optimize)
     // BE REALLY CAREFUL TO KEEP COMMENTS AND NUMBERS IN SYNC!
-    private[this] var status = 0/*Seek*/
+    private[this] var status = 0 /*Seek*/
 
-    protected override def innerHasNext: Boolean = {
-      while (status == 0/*Seek*/) {
+    override protected def innerHasNext: Boolean = {
+      while (status == 0 /*Seek*/ ) {
         if (self.hasNext) {
           hd = self.next()
-          if (pf.isDefinedAt(hd)) status = 1/*Found*/
-        }
-        else status = -1/*Empty*/
+          if (pf.isDefinedAt(hd)) status = 1 /*Found*/
+        } else status = -1 /*Empty*/
       }
-      status == 1/*Found*/
+      status == 1 /*Found*/
     }
-    def next(): B = if (hasNext) { status = 0/*Seek*/; pf(hd) } else ClosingIterator.empty.next()
+
+    def next(): B =
+      if (hasNext) { status = 0 /*Seek*/; pf(hd) }
+      else ClosingIterator.empty.next()
 
     override protected[this] def closeMore(): Unit = {
       self.close()
     }
   }
 }
-
-
 
 object ClosingIterator {
 
@@ -285,11 +291,11 @@ object ClosingIterator {
   }
 
   implicit class ScalaSeqAsClosingIterator[T](val seq: GenTraversableOnce[T]) {
-    def asClosingIterator: ClosingIterator[T] =new DelegatingClosingIterator(seq.toIterator)
+    def asClosingIterator: ClosingIterator[T] = new DelegatingClosingIterator(seq.toIterator)
   }
 
   implicit class OptionAsClosingIterator[T](val option: Option[T]) {
-    def asClosingIterator: ClosingIterator[T] =new DelegatingClosingIterator(option.toIterator)
+    def asClosingIterator: ClosingIterator[T] = new DelegatingClosingIterator(option.toIterator)
   }
 
   /**
@@ -329,8 +335,11 @@ object ClosingIterator {
   def apply[T](iterator: java.util.Iterator[T]): ClosingIterator[T] = new DelegatingClosingJavaIterator(iterator)
   def apply[T](elems: T*): ClosingIterator[T] = new DelegatingClosingIterator(elems.iterator)
 
-  def asClosingIterator[T](seq: GenTraversableOnce[T]): ClosingIterator[T] = new DelegatingClosingIterator(seq.toIterator)
-  def asClosingIterator[T](iterator: java.util.Iterator[T]): ClosingIterator[T] = new DelegatingClosingJavaIterator(iterator)
+  def asClosingIterator[T](seq: GenTraversableOnce[T]): ClosingIterator[T] =
+    new DelegatingClosingIterator(seq.toIterator)
+
+  def asClosingIterator[T](iterator: java.util.Iterator[T]): ClosingIterator[T] =
+    new DelegatingClosingJavaIterator(iterator)
 
   class DelegatingClosingIterator[+T](iterator: Iterator[T]) extends ClosingIterator[T] {
     override protected[this] def closeMore(): Unit = ()
@@ -362,7 +371,7 @@ abstract class ClosingLongIterator extends LongIterator {
   @inline
   protected[this] def innerHasNext: Boolean
 
-  override final def hasNext: Boolean = {
+  final override def hasNext: Boolean = {
     val _hasNext = innerHasNext
     if (!_hasNext) {
       close()
@@ -372,24 +381,28 @@ abstract class ClosingLongIterator extends LongIterator {
 }
 
 object ClosingLongIterator {
-  def emptyClosingRelationshipIterator: ClosingLongIterator with RelationshipIterator = new ClosingLongIterator with RelationshipIterator {
-    override def close(): Unit = ()
 
-    override protected[this] def innerHasNext: Boolean = false
+  def emptyClosingRelationshipIterator: ClosingLongIterator with RelationshipIterator =
+    new ClosingLongIterator with RelationshipIterator {
+      override def close(): Unit = ()
 
-    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
-                                                           visitor: RelationshipVisitor[EXCEPTION]): Boolean = false
+      override protected[this] def innerHasNext: Boolean = false
 
-    override def next(): Long = ClosingIterator.empty.next()
+      override def relationshipVisit[EXCEPTION <: Exception](
+        relationshipId: Long,
+        visitor: RelationshipVisitor[EXCEPTION]
+      ): Boolean = false
 
-    override def startNodeId(): Long = fail()
+      override def next(): Long = ClosingIterator.empty.next()
 
-    override def endNodeId(): Long = fail()
+      override def startNodeId(): Long = fail()
 
-    override def typeId(): Int = fail()
+      override def endNodeId(): Long = fail()
 
-    private def fail() = throw new IllegalStateException("Iterator is empty")
-  }
+      override def typeId(): Int = fail()
+
+      private def fail() = throw new IllegalStateException("Iterator is empty")
+    }
 
   def prepend(valueToPrepend: Long, iterator: ClosingLongIterator): ClosingLongIterator = new ClosingLongIterator {
     private var first = true
@@ -400,11 +413,12 @@ object ClosingLongIterator {
 
     override protected[this] def innerHasNext: Boolean = if (first) true else iterator.hasNext
 
-    override def next(): Long = if (first) {
-      first = false
-      valueToPrepend
-    } else {
-      iterator.next()
-    }
+    override def next(): Long =
+      if (first) {
+        first = false
+        valueToPrepend
+      } else {
+        iterator.next()
+      }
   }
 }

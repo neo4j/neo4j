@@ -26,8 +26,7 @@ package org.neo4j.index.internal.gbptree;
  * @param <KEY> type of keys to merge.
  * @param <VALUE> type of values to merge.
  */
-public interface ValueMerger<KEY,VALUE>
-{
+public interface ValueMerger<KEY, VALUE> {
     /**
      * Merge an existing value with a new value.
      *
@@ -45,13 +44,12 @@ public interface ValueMerger<KEY,VALUE>
      *     The existing key and value will be removed from the tree</li>
      * </ul>
      */
-    MergeResult merge( KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue );
+    MergeResult merge(KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue);
 
     /**
      * Result of a merge, i.e. what the (mutable) values passed into {@link #merge(Object, Object, Object, Object)} mean when the call is completed.
      */
-    enum MergeResult
-    {
+    enum MergeResult {
         /**
          * Existing value will remain unchanged.
          */

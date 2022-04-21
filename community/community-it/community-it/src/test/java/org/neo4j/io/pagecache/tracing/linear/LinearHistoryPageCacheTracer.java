@@ -19,6 +19,11 @@
  */
 package org.neo4j.io.pagecache.tracing.linear;
 
+import static org.neo4j.io.pagecache.tracing.linear.HEvents.EvictionRunHEvent;
+import static org.neo4j.io.pagecache.tracing.linear.HEvents.MajorFlushHEvent;
+import static org.neo4j.io.pagecache.tracing.linear.HEvents.MappedFileHEvent;
+import static org.neo4j.io.pagecache.tracing.linear.HEvents.UnmappedFileHEvent;
+
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
@@ -27,11 +32,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-import static org.neo4j.io.pagecache.tracing.linear.HEvents.EvictionRunHEvent;
-import static org.neo4j.io.pagecache.tracing.linear.HEvents.MajorFlushHEvent;
-import static org.neo4j.io.pagecache.tracing.linear.HEvents.MappedFileHEvent;
-import static org.neo4j.io.pagecache.tracing.linear.HEvents.UnmappedFileHEvent;
-
 /**
  * Tracer for global page cache events that add all of them to event history tracer that can build proper linear
  * history across all tracers.
@@ -39,283 +39,215 @@ import static org.neo4j.io.pagecache.tracing.linear.HEvents.UnmappedFileHEvent;
  * @see HEvents
  * @see LinearHistoryPageCursorTracer
  */
-public final class LinearHistoryPageCacheTracer implements PageCacheTracer
-{
+public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
 
     private final LinearHistoryTracer tracer;
 
-    LinearHistoryPageCacheTracer( LinearHistoryTracer tracer )
-    {
+    LinearHistoryPageCacheTracer(LinearHistoryTracer tracer) {
         this.tracer = tracer;
     }
 
     @Override
-    public PageFileSwapperTracer createFileSwapperTracer()
-    {
+    public PageFileSwapperTracer createFileSwapperTracer() {
         return PageFileSwapperTracer.NULL;
     }
 
     @Override
-    public PageCursorTracer createPageCursorTracer( String tag )
-    {
-        return new LinearHistoryPageCursorTracer( tracer, tag );
+    public PageCursorTracer createPageCursorTracer(String tag) {
+        return new LinearHistoryPageCursorTracer(tracer, tag);
     }
 
     @Override
-    public void mappedFile( int swapperId, PagedFile pagedFile )
-    {
-        tracer.add( new MappedFileHEvent( pagedFile.path() ) );
+    public void mappedFile(int swapperId, PagedFile pagedFile) {
+        tracer.add(new MappedFileHEvent(pagedFile.path()));
     }
 
     @Override
-    public void unmappedFile( int swapperId, PagedFile pagedFile )
-    {
-        tracer.add( new UnmappedFileHEvent( pagedFile.path() ) );
+    public void unmappedFile(int swapperId, PagedFile pagedFile) {
+        tracer.add(new UnmappedFileHEvent(pagedFile.path()));
     }
 
     @Override
-    public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
-    {
-        return tracer.add( new EvictionRunHEvent( tracer, pageCountToEvict ) );
+    public EvictionRunEvent beginPageEvictions(int pageCountToEvict) {
+        return tracer.add(new EvictionRunHEvent(tracer, pageCountToEvict));
     }
 
     @Override
-    public EvictionRunEvent beginEviction()
-    {
-        return tracer.add( new EvictionRunHEvent( tracer, 0 ) );
+    public EvictionRunEvent beginEviction() {
+        return tracer.add(new EvictionRunHEvent(tracer, 0));
     }
 
     @Override
-    public MajorFlushEvent beginFileFlush( PageSwapper swapper )
-    {
-        return tracer.add( new MajorFlushHEvent( tracer, swapper.path() ) );
+    public MajorFlushEvent beginFileFlush(PageSwapper swapper) {
+        return tracer.add(new MajorFlushHEvent(tracer, swapper.path()));
     }
 
     @Override
-    public MajorFlushEvent beginCacheFlush()
-    {
-        return tracer.add( new MajorFlushHEvent( tracer, null ) );
+    public MajorFlushEvent beginCacheFlush() {
+        return tracer.add(new MajorFlushHEvent(tracer, null));
     }
 
     @Override
-    public long faults()
-    {
+    public long faults() {
         return 0;
     }
 
     @Override
-    public long failedFaults()
-    {
+    public long failedFaults() {
         return 0;
     }
 
     @Override
-    public long noFaults()
-    {
+    public long noFaults() {
         return 0;
     }
 
     @Override
-    public long evictions()
-    {
+    public long evictions() {
         return 0;
     }
 
     @Override
-    public long cooperativeEvictions()
-    {
+    public long cooperativeEvictions() {
         return 0;
     }
 
     @Override
-    public long pins()
-    {
+    public long pins() {
         return 0;
     }
 
     @Override
-    public long unpins()
-    {
+    public long unpins() {
         return 0;
     }
 
     @Override
-    public long hits()
-    {
+    public long hits() {
         return 0;
     }
 
     @Override
-    public long flushes()
-    {
+    public long flushes() {
         return 0;
     }
 
     @Override
-    public long merges()
-    {
+    public long merges() {
         return 0;
     }
 
     @Override
-    public long bytesRead()
-    {
+    public long bytesRead() {
         return 0;
     }
 
     @Override
-    public long bytesWritten()
-    {
+    public long bytesWritten() {
         return 0;
     }
 
     @Override
-    public long filesMapped()
-    {
+    public long filesMapped() {
         return 0;
     }
 
     @Override
-    public long filesUnmapped()
-    {
+    public long filesUnmapped() {
         return 0;
     }
 
     @Override
-    public long evictionExceptions()
-    {
+    public long evictionExceptions() {
         return 0;
     }
 
     @Override
-    public double hitRatio()
-    {
+    public double hitRatio() {
         return 0d;
     }
 
     @Override
-    public double usageRatio()
-    {
+    public double usageRatio() {
         return 0d;
     }
 
     @Override
-    public long iopqPerformed()
-    {
+    public long iopqPerformed() {
         return 0;
     }
 
     @Override
-    public long ioLimitedTimes()
-    {
+    public long ioLimitedTimes() {
         return 0;
     }
 
     @Override
-    public long ioLimitedMillis()
-    {
+    public long ioLimitedMillis() {
         return 0;
     }
 
     @Override
-    public long openedCursors()
-    {
+    public long openedCursors() {
         return 0;
     }
 
     @Override
-    public long closedCursors()
-    {
+    public long closedCursors() {
         return 0;
     }
 
     @Override
-    public void pins( long pins )
-    {
-    }
+    public void pins(long pins) {}
 
     @Override
-    public void unpins( long unpins )
-    {
-    }
+    public void unpins(long unpins) {}
 
     @Override
-    public void hits( long hits )
-    {
-    }
+    public void hits(long hits) {}
 
     @Override
-    public void faults( long faults )
-    {
-    }
+    public void faults(long faults) {}
 
     @Override
-    public void noFaults( long noFaults )
-    {
-    }
+    public void noFaults(long noFaults) {}
 
     @Override
-    public void failedFaults( long failedFaults )
-    {
-    }
+    public void failedFaults(long failedFaults) {}
 
     @Override
-    public void bytesRead( long bytesRead )
-    {
-    }
+    public void bytesRead(long bytesRead) {}
 
     @Override
-    public void evictions( long evictions )
-    {
-    }
+    public void evictions(long evictions) {}
 
     @Override
-    public void cooperativeEvictions( long evictions )
-    {
-    }
+    public void cooperativeEvictions(long evictions) {}
 
     @Override
-    public void evictionExceptions( long evictionExceptions )
-    {
-    }
+    public void evictionExceptions(long evictionExceptions) {}
 
     @Override
-    public void bytesWritten( long bytesWritten )
-    {
-    }
+    public void bytesWritten(long bytesWritten) {}
 
     @Override
-    public void flushes( long flushes )
-    {
-    }
+    public void flushes(long flushes) {}
 
     @Override
-    public void merges( long merges )
-    {
-    }
+    public void merges(long merges) {}
 
     @Override
-    public void maxPages( long maxPages, long pageSize )
-    {
-    }
+    public void maxPages(long maxPages, long pageSize) {}
 
     @Override
-    public void iopq( long iopq )
-    {
-    }
+    public void iopq(long iopq) {}
 
     @Override
-    public void limitIO( long millis )
-    {
-    }
+    public void limitIO(long millis) {}
 
     @Override
-    public void closeCursor()
-    {
-    }
+    public void closeCursor() {}
 
     @Override
-    public void openCursor()
-    {
-    }
+    public void openCursor() {}
 }

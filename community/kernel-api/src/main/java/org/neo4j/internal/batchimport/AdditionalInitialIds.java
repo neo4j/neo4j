@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.storageengine.api.TransactionIdStore;
-
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
+
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
  * Migrating a store uses the {@link BatchImporter} to do so, where node/relationship stores
@@ -38,8 +38,7 @@ import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSI
  * stored, and that's why the StoreMigrator needs to communicate that using
  * {@link #lastCommittedTransactionId()} as well.
  */
-public interface AdditionalInitialIds
-{
+public interface AdditionalInitialIds {
     long lastCommittedTransactionId();
 
     int lastCommittedTransactionChecksum();
@@ -53,35 +52,29 @@ public interface AdditionalInitialIds
     /**
      * High ids of zero, useful when creating a completely new store with {@link BatchImporter}.
      */
-    AdditionalInitialIds EMPTY = new AdditionalInitialIds()
-    {
+    AdditionalInitialIds EMPTY = new AdditionalInitialIds() {
         @Override
-        public long lastCommittedTransactionId()
-        {
+        public long lastCommittedTransactionId() {
             return TransactionIdStore.BASE_TX_ID;
         }
 
         @Override
-        public int lastCommittedTransactionChecksum()
-        {
+        public int lastCommittedTransactionChecksum() {
             return TransactionIdStore.BASE_TX_CHECKSUM;
         }
 
         @Override
-        public long lastCommittedTransactionLogVersion()
-        {
+        public long lastCommittedTransactionLogVersion() {
             return BASE_TX_LOG_VERSION;
         }
 
         @Override
-        public long lastCommittedTransactionLogByteOffset()
-        {
+        public long lastCommittedTransactionLogByteOffset() {
             return BASE_TX_LOG_BYTE_OFFSET;
         }
 
         @Override
-        public long checkpointLogVersion()
-        {
+        public long checkpointLogVersion() {
             return INITIAL_LOG_VERSION;
         }
     };

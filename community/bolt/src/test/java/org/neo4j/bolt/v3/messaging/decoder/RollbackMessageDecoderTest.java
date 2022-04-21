@@ -19,37 +19,32 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.bolt.messaging.RequestMessageDecoder;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoderTest.assertOriginalMessageEqualsToDecoded;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
-class RollbackMessageDecoderTest
-{
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final RequestMessageDecoder decoder = new RollbackMessageDecoder( responseHandler );
+import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
+
+class RollbackMessageDecoderTest {
+    private final BoltResponseHandler responseHandler = mock(BoltResponseHandler.class);
+    private final RequestMessageDecoder decoder = new RollbackMessageDecoder(responseHandler);
 
     @Test
-    void shouldReturnCorrectSignature()
-    {
-        assertEquals( RollbackMessage.SIGNATURE, decoder.signature() );
+    void shouldReturnCorrectSignature() {
+        assertEquals(RollbackMessage.SIGNATURE, decoder.signature());
     }
 
     @Test
-    void shouldReturnConnectResponseHandler()
-    {
-        assertEquals( responseHandler, decoder.responseHandler() );
+    void shouldReturnConnectResponseHandler() {
+        assertEquals(responseHandler, decoder.responseHandler());
     }
 
     @Test
-    void shouldDecodeBeginMessage() throws Exception
-    {
-        assertOriginalMessageEqualsToDecoded( ROLLBACK_MESSAGE, decoder );
+    void shouldDecodeBeginMessage() throws Exception {
+        assertOriginalMessageEqualsToDecoded(ROLLBACK_MESSAGE, decoder);
     }
 }

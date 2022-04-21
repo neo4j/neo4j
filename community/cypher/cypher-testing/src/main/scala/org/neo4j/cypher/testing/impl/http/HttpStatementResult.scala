@@ -46,14 +46,17 @@ case class HttpStatementResult(result: Result, notifications: Seq[Notification])
 
   override def getNotifications(): List[graphdb.Notification] =
     notifications
-      .map(n => NotificationImpl.fromRaw(
-        n.code,
-        n.title,
-        n.description,
-        n.severity,
-        Option(n.position)
-          .map(pos => new InputPosition(pos.offset, pos.line, pos.column))
-          .getOrElse(InputPosition.empty)))
+      .map(n =>
+        NotificationImpl.fromRaw(
+          n.code,
+          n.title,
+          n.description,
+          n.severity,
+          Option(n.position)
+            .map(pos => new InputPosition(pos.offset, pos.line, pos.column))
+            .getOrElse(InputPosition.empty)
+        )
+      )
       .toList
 }
 
@@ -64,7 +67,6 @@ object HttpStatementResult {
   case class Position(offset: Int, line: Int, column: Int)
   case class Result(columns: Seq[String], data: Seq[Row])
   case class Row(row: Seq[AnyRef])
-
 
   def fromResponse(response: HTTP.Response): HttpStatementResult = {
     val content = response.rawContent()
@@ -80,12 +82,12 @@ object HttpStatementResult {
 
     val (result, notifications) = Try(HttpJson.read[Response](content)) match {
       case Failure(exception) => failUnableToDecode(exception)
-      case Success(response)  => response match {
-        case Response(Seq(result), Seq(), notifications) => (result, notifications)
-        case Response(_, Seq(error), _)                  => serverError(error)
-        case Response(Seq(), _, _)                       => failNoResults()
-        case Response(_, _, _)                           => failMultipleResults()
-      }
+      case Success(response) => response match {
+          case Response(Seq(result), Seq(), notifications) => (result, notifications)
+          case Response(_, Seq(error), _)                  => serverError(error)
+          case Response(Seq(), _, _)                       => failNoResults()
+          case Response(_, _, _)                           => failMultipleResults()
+        }
     }
 
     HttpStatementResult(result, notifications.getOrElse(Seq.empty))
@@ -94,9 +96,9 @@ object HttpStatementResult {
   private def serverError(e: HttpStatementResult.Error): Nothing = {
     Status.Code.all.asScala.find(status => status.code.serialize == e.code) match {
       case Some(statusVal) => throw new Neo4jException(e.message) {
-        override def status(): Status = statusVal
-      }
-      case None            => throw new RuntimeException(e.message)
+          override def status(): Status = statusVal
+        }
+      case None => throw new RuntimeException(e.message)
     }
   }
 }

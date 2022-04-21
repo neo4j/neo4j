@@ -25,35 +25,30 @@ import org.neo4j.internal.helpers.collection.LfuCache;
 /**
  * Filters on items with a recency within limits of {@link #DEFAULT_RECENT_SIZE}.
  */
-class RecentlyUnique extends AbstractUniquenessFilter
-{
+class RecentlyUnique extends AbstractUniquenessFilter {
     private static final Object PLACE_HOLDER = new Object();
     private static final int DEFAULT_RECENT_SIZE = 10000;
 
     private final LfuCache<Long, Object> recentlyVisited;
 
-    RecentlyUnique( PrimitiveTypeFetcher type, Object parameter )
-    {
-        super( type );
+    RecentlyUnique(PrimitiveTypeFetcher type, Object parameter) {
+        super(type);
         parameter = parameter != null ? parameter : DEFAULT_RECENT_SIZE;
-        recentlyVisited = new LfuCache<>( "Recently visited", ((Number) parameter).intValue() );
+        recentlyVisited = new LfuCache<>("Recently visited", ((Number) parameter).intValue());
     }
 
     @Override
-    public boolean check( TraversalBranch branch )
-    {
-        long id = type.getId( branch );
-        boolean add = recentlyVisited.get( id ) == null;
-        if ( add )
-        {
-            recentlyVisited.put( id, PLACE_HOLDER );
+    public boolean check(TraversalBranch branch) {
+        long id = type.getId(branch);
+        boolean add = recentlyVisited.get(id) == null;
+        if (add) {
+            recentlyVisited.put(id, PLACE_HOLDER);
         }
         return add;
     }
 
     @Override
-    public boolean checkFull( Path path )
-    {
+    public boolean checkFull(Path path) {
         // See GloballyUnique for comments.
         return true;
     }

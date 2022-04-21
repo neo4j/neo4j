@@ -21,43 +21,36 @@ package org.neo4j.kernel.api;
 
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
-public class WorkerContext<T extends AutoCloseable> implements AutoCloseable
-{
+public class WorkerContext<T extends AutoCloseable> implements AutoCloseable {
     private final T cursor;
     private final ExecutionContext context;
     private final KernelTransaction owner;
 
-    public WorkerContext( T cursor, ExecutionContext context, KernelTransaction owner )
-    {
+    public WorkerContext(T cursor, ExecutionContext context, KernelTransaction owner) {
         this.cursor = cursor;
         this.context = context;
         this.owner = owner;
     }
 
     @Override
-    public void close()
-    {
-        closeAllUnchecked( context );
+    public void close() {
+        closeAllUnchecked(context);
     }
 
-    public T getCursor()
-    {
+    public T getCursor() {
         return cursor;
     }
 
-    public ExecutionContext getContext()
-    {
+    public ExecutionContext getContext() {
         return context;
     }
 
-    public KernelTransaction getTransaction()
-    {
+    public KernelTransaction getTransaction() {
         return owner;
     }
 
-    public void complete()
-    {
-        closeAllUnchecked( cursor );
+    public void complete() {
+        closeAllUnchecked(cursor);
         context.complete();
     }
 }

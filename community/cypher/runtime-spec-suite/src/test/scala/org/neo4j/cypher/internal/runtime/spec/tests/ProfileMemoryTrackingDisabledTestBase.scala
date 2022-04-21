@@ -27,12 +27,14 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.result.OperatorProfile
 
-abstract class ProfileMemoryTrackingDisabledTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                                runtime: CypherRuntime[CONTEXT],
-                                                                                sizeHint: Int
-                                                               ) extends RuntimeTestSuite[CONTEXT](
-  edition.copyWith(GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.FALSE),
-  runtime) {
+abstract class ProfileMemoryTrackingDisabledTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith(GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.FALSE),
+      runtime
+    ) {
 
   test("should profile memory even if tracking disabled") {
     given { nodeGraph(sizeHint) }
@@ -48,9 +50,13 @@ abstract class ProfileMemoryTrackingDisabledTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(0).maxAllocatedMemory() should (be(OperatorProfile.NO_DATA) or be(0L)) // produce results
-    queryProfile.operatorProfile(1).maxAllocatedMemory() should be > 0L  // distinct
-    queryProfile.operatorProfile(2).maxAllocatedMemory() should (be(OperatorProfile.NO_DATA) or be > 0L) // all node scan
-    queryProfile.maxAllocatedMemory()should be > 0L
+    queryProfile.operatorProfile(0).maxAllocatedMemory() should (be(OperatorProfile.NO_DATA) or be(
+      0L
+    )) // produce results
+    queryProfile.operatorProfile(1).maxAllocatedMemory() should be > 0L // distinct
+    queryProfile.operatorProfile(2).maxAllocatedMemory() should (be(
+      OperatorProfile.NO_DATA
+    ) or be > 0L) // all node scan
+    queryProfile.maxAllocatedMemory() should be > 0L
   }
 }

@@ -49,7 +49,7 @@ class ToBooleanListFunctionTest extends CypherFunSuite with ScalaCheckDrivenProp
   }
 
   test("should convert a list of strings to a list of booleans") {
-    assert(toBooleanList(Seq[String]( "true", "false")) === Values.booleanArray(Array(true, false)))
+    assert(toBooleanList(Seq[String]("true", "false")) === Values.booleanArray(Array(true, false)))
   }
 
   test("should not convert a list of doubles to a list of booleans") {
@@ -78,21 +78,27 @@ class ToBooleanListFunctionTest extends CypherFunSuite with ScalaCheckDrivenProp
   }
 
   test("should not throw an exception if the list argument contains an object which cannot be converted to booleans") {
-    assert(toBooleanList(Seq("true", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))) === VirtualValues.list(Values.TRUE, NO_VALUE))
+    assert(toBooleanList(
+      Seq("true", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))
+    ) === VirtualValues.list(Values.TRUE, NO_VALUE))
   }
 
   test("should throw an exception if the list argument contains a non-list") {
     val caughtException = the[CypherTypeException] thrownBy toBooleanList("foo")
-    caughtException.getMessage should equal("""Invalid input for function 'toBooleanList()': Expected a List, got: String("foo")""")
+    caughtException.getMessage should equal(
+      """Invalid input for function 'toBooleanList()': Expected a List, got: String("foo")"""
+    )
   }
 
   test("should not throw an exception for any value in the list") {
     val generator: Gen[List[Any]] = Gen.listOf(Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double]))
-    forAll(generator) { s => {
-      import scala.jdk.CollectionConverters.IterableHasAsScala
-      val result = toBooleanList(s)
-      Inspectors.forAll(result.asInstanceOf[ListValue].asScala) {  _ should (be (a [BooleanValue]) or equal(NO_VALUE)) }
-    }}
+    forAll(generator) { s =>
+      {
+        import scala.jdk.CollectionConverters.IterableHasAsScala
+        val result = toBooleanList(s)
+        Inspectors.forAll(result.asInstanceOf[ListValue].asScala) { _ should (be(a[BooleanValue]) or equal(NO_VALUE)) }
+      }
+    }
   }
 
   private def toBooleanList(orig: Any): Any = {

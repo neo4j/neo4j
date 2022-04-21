@@ -41,20 +41,25 @@ case class cleanUpEager(solveds: Solveds, attributes: Attributes[LogicalPlan]) e
     case Eager(inner: LogicalUnaryPlan with EagerLogicalPlan, _) => inner
 
     // E U => U E
-    case eager@Eager(unwind@UnwindCollection(source, _, _), reasons) =>
-      val res = unwind.copy(source = eager.copy(source = source, reasons = reasons)(SameId(eager.id)))(attributes.copy(unwind.id))
+    case eager @ Eager(unwind @ UnwindCollection(source, _, _), reasons) =>
+      val res = unwind.copy(source = eager.copy(source = source, reasons = reasons)(SameId(eager.id)))(
+        attributes.copy(unwind.id)
+      )
       solveds.copy(eager.id, res.id)
       res
 
     // E LCSV => LCSV E
-    case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _,_), reasons) =>
-      val res = loadCSV.copy(source = eager.copy(source = source, reasons = reasons)(SameId(eager.id)))(attributes.copy(loadCSV.id))
+    case eager @ Eager(loadCSV @ LoadCSV(source, _, _, _, _, _, _), reasons) =>
+      val res = loadCSV.copy(source = eager.copy(source = source, reasons = reasons)(SameId(eager.id)))(
+        attributes.copy(loadCSV.id)
+      )
       solveds.copy(eager.id, res.id)
       res
 
     // LIMIT E => E LIMIT
-    case limit@Limit(eager@Eager(source, reasons), _)  =>
-      val res = eager.copy(source = planLimitOnTopOf(source, limit.count)(SameId(limit.id)), reasons)(attributes.copy(eager.id))
+    case limit @ Limit(eager @ Eager(source, reasons), _) =>
+      val res =
+        eager.copy(source = planLimitOnTopOf(source, limit.count)(SameId(limit.id)), reasons)(attributes.copy(eager.id))
       solveds.copy(limit.id, res.id)
       res
   })

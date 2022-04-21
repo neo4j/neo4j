@@ -45,32 +45,40 @@ trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
 object IDPQueryGraphSolver {
   val VERBOSE: Boolean = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 
-  def composeSolverSteps[Solvable](queryGraph: QueryGraph,
-                                   interestingOrderConfig: InterestingOrderConfig,
-                                   kit: QueryPlannerKit,
-                                   context: LogicalPlanningContext,
-                                   generators: Seq[IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]]
-                                  ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
-    val combinedSolverSteps = generators.map(selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, _))
+  def composeSolverSteps[Solvable](
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    kit: QueryPlannerKit,
+    context: LogicalPlanningContext,
+    generators: Seq[IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]]
+  ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
+    val combinedSolverSteps =
+      generators.map(selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, _))
     combinedSolverSteps.foldLeft(IDPSolverStep.empty[Solvable, LogicalPlan, LogicalPlanningContext])(_ ++ _)
   }
 
-  def selectingAndSortingSolverStep[Solvable](queryGraph: QueryGraph,
-                                              interestingOrderConfig: InterestingOrderConfig,
-                                              kit: QueryPlannerKit,
-                                              context: LogicalPlanningContext,
-                                              solverStep: IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]
-                                             ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
+  def selectingAndSortingSolverStep[Solvable](
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    kit: QueryPlannerKit,
+    context: LogicalPlanningContext,
+    solverStep: IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]
+  ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
     val selectingSolverStep = solverStep.map(plan => kit.select(plan, queryGraph))
     if (interestingOrderConfig.orderToSolve.isEmpty) {
       selectingSolverStep
     } else {
-      val sortingSolverStep = selectingSolverStep.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrderConfig, context, updateSolved = true).filterNot(_ == plan))
+      val sortingSolverStep = selectingSolverStep.flatMap(plan =>
+        SortPlanner.maybeSortedPlan(plan, interestingOrderConfig, context, updateSolved = true).filterNot(_ == plan)
+      )
       selectingSolverStep ++ sortingSolverStep
     }
   }
 
-  def extraRequirementForInterestingOrder(context: LogicalPlanningContext, interestingOrderConfig: InterestingOrderConfig): ExtraRequirement[LogicalPlan] = {
+  def extraRequirementForInterestingOrder(
+    context: LogicalPlanningContext,
+    interestingOrderConfig: InterestingOrderConfig
+  ): ExtraRequirement[LogicalPlan] = {
     if (interestingOrderConfig.orderToSolve.isEmpty) {
       ExtraRequirement.empty
     } else {
@@ -79,7 +87,7 @@ object IDPQueryGraphSolver {
           val asSortedAsPossible = SatisfiedForPlan(plan)
           orderSatisfaction(interestingOrderConfig, context, plan) match {
             case asSortedAsPossible() => true
-            case _ => false
+            case _                    => false
           }
         }
       }
@@ -95,12 +103,17 @@ object IDPQueryGraphSolver {
  *
  * written by Donald Kossmann and Konrad Stocker
  */
-case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrait,
-                               componentConnector: JoinDisconnectedQueryGraphComponents)
-                              (monitor: IDPQueryGraphSolverMonitor)
-  extends QueryGraphSolver with PatternExpressionSolving {
+case class IDPQueryGraphSolver(
+  singleComponentSolver: SingleComponentPlannerTrait,
+  componentConnector: JoinDisconnectedQueryGraphComponents
+)(monitor: IDPQueryGraphSolverMonitor)
+    extends QueryGraphSolver with PatternExpressionSolving {
 
-  override def plan(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): BestPlans = {
+  override def plan(
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): BestPlans = {
     val kit = kitWithShortestPathSupport(context.config.toKit(interestingOrderConfig, context), context)
     val components = queryGraph.connectedComponents
     val plannedComponents =
@@ -115,7 +128,12 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
   private def kitWithShortestPathSupport(kit: QueryPlannerKit, context: LogicalPlanningContext) =
     kit.copy(select = (initialPlan: LogicalPlan, qg: QueryGraph) => selectShortestPath(kit, initialPlan, qg, context))
 
-  private def selectShortestPath(kit: QueryPlannerKit, initialPlan: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): LogicalPlan =
+  private def selectShortestPath(
+    kit: QueryPlannerKit,
+    initialPlan: LogicalPlan,
+    qg: QueryGraph,
+    context: LogicalPlanningContext
+  ): LogicalPlan =
     qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
       case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
         val shortestPath = planShortestPaths(plan, qg, sp, context)
@@ -123,30 +141,44 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
       case (plan, _) => plan
     }
 
-  private def planComponents(components: Seq[QueryGraph],
-                             interestingOrderConfig: InterestingOrderConfig,
-                             context: LogicalPlanningContext,
-                             kit: QueryPlannerKit): Seq[PlannedComponent] =
+  private def planComponents(
+    components: Seq[QueryGraph],
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit
+  ): Seq[PlannedComponent] =
     components.map { qg =>
       PlannedComponent(qg, singleComponentSolver.planComponent(qg, context, kit, interestingOrderConfig))
     }
 
-  private def planEmptyComponent(queryGraph: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit): Seq[PlannedComponent] = {
+  private def planEmptyComponent(
+    queryGraph: QueryGraph,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit
+  ): Seq[PlannedComponent] = {
     val plan = context.logicalPlanProducer.planQueryArgument(queryGraph, context)
     val result: LogicalPlan = kit.select(plan, queryGraph)
     monitor.emptyComponentPlanned(queryGraph, result)
     Seq(PlannedComponent(queryGraph, BestResults(result, None)))
   }
 
-  private def connectComponentsAndSolveOptionalMatch(plannedComponents: Seq[PlannedComponent],
-                                                     queryGraph: QueryGraph,
-                                                     interestingOrderConfig: InterestingOrderConfig,
-                                                     context: LogicalPlanningContext,
-                                                     kit: QueryPlannerKit): BestPlans = {
+  private def connectComponentsAndSolveOptionalMatch(
+    plannedComponents: Seq[PlannedComponent],
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit
+  ): BestPlans = {
     monitor.startConnectingComponents(queryGraph)
-    val bestPlans = componentConnector.connectComponentsAndSolveOptionalMatch(plannedComponents.toSet, queryGraph, interestingOrderConfig, context, kit, singleComponentSolver)
+    val bestPlans = componentConnector.connectComponentsAndSolveOptionalMatch(
+      plannedComponents.toSet,
+      queryGraph,
+      interestingOrderConfig,
+      context,
+      kit,
+      singleComponentSolver
+    )
     monitor.endConnectingComponents(queryGraph, bestPlans.result)
     bestPlans
   }
 }
-

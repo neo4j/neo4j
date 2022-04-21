@@ -39,7 +39,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.util.Random
 
-class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
+class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2
+    with AstConstructionTestSupport {
 
   test("INPUT DATA STREAM a, b, c RETURN *") {
     val ast = query(input(varFor("a"), varFor("b"), varFor("c")), returnAll)
@@ -48,7 +49,10 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
 
   test("INPUT DATA STREAM a, b, c RETURN DISTINCT a") {
     val ast = query(input(varFor("a"), varFor("b"), varFor("c")), returnDistinct(returnItem(varFor("a"), "a")))
-    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(Distinct(Input(Seq("a", "b", "c")), Map("a" -> varFor("a"))))
+    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(Distinct(
+      Input(Seq("a", "b", "c")),
+      Map("a" -> varFor("a"))
+    ))
   }
 
   test("INPUT DATA STREAM a, b, c RETURN sum(a)") {
@@ -59,8 +63,8 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("INPUT DATA STREAM a, b, c WITH * WHERE a.pid = 99 RETURN *") {
-    val ast = query(input(varFor("a"), varFor("b"), varFor("c")),
-      withAll(Some(where(propEquality("a", "pid", 99)))), returnAll)
+    val ast =
+      query(input(varFor("a"), varFor("b"), varFor("c")), withAll(Some(where(propEquality("a", "pid", 99)))), returnAll)
 
     new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Selection(ands(propEquality("a", "pid", 99)), Input(Seq("a", "b", "c")))
@@ -68,14 +72,17 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("INPUT DATA STREAM a, b, c WITH * WHERE a:Employee RETURN a.name AS name ORDER BY name") {
-    val ast = query(input(varFor("a"), varFor("b"), varFor("c")),
-      withAll(Some(where(hasLabelsOrTypes("a","Employee")))),
-      return_(orderBy(sortItem(varFor("name"))), returnItem(prop("a", "name"), "name")))
+    val ast = query(
+      input(varFor("a"), varFor("b"), varFor("c")),
+      withAll(Some(where(hasLabelsOrTypes("a", "Employee")))),
+      return_(orderBy(sortItem(varFor("name"))), returnItem(prop("a", "name"), "name"))
+    )
 
     new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Sort(
         Projection(
-          Selection(ands(hasLabelsOrTypes("a", "Employee")), Input(Seq("a", "b", "c"))), Map("name" -> prop("a", "name"))
+          Selection(ands(hasLabelsOrTypes("a", "Employee")), Input(Seq("a", "b", "c"))),
+          Map("name" -> prop("a", "name"))
         ),
         List(Ascending("name"))
       )
@@ -83,14 +90,12 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("INPUT DATA STREAM a, b, c WITH * MATCH (x) RETURN *") {
-    val ast = query(input(varFor("a"), varFor("b"), varFor("c")),
-      withAll(), match_(nodePat(Some("x"))), returnAll)
+    val ast = query(input(varFor("a"), varFor("b"), varFor("c")), withAll(), match_(nodePat(Some("x"))), returnAll)
 
     new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Apply(
         Input(Seq("a", "b", "c")),
-        AllNodesScan("x", Set("a", "b", "c")
-        )
+        AllNodesScan("x", Set("a", "b", "c"))
       )
     )
   }
@@ -98,20 +103,28 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
   test("INPUT DATA STREAM g, uid, cids, cid, p RETURN *") {
     val ast = query(input(varFor("g"), varFor("uid"), varFor("cids"), varFor("cid"), varFor("p")), returnAll)
     new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
-      Input(Seq("g", "uid", "cids", "cid", "p")))
+      Input(Seq("g", "uid", "cids", "cid", "p"))
+    )
   }
 
   test("INPUT DATA STREAM with large number of columns") {
     val randomColumns = Random.shuffle(for (c <- 'a' to 'z'; n <- 1 to 10) yield s"$c$n")
-    val ast = query(input(randomColumns.map(col => varFor(col)):_*), returnAll)
+    val ast = query(input(randomColumns.map(col => varFor(col)): _*), returnAll)
     new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
-      Input(randomColumns))
+      Input(randomColumns)
+    )
   }
 
   private def createInitStateFromAst(ast: Statement): BaseState = {
     // As the test only checks ast -> planning, any valid query could be used.
     val fakeQueryString = "RETURN 1"
-    InputDataStreamTestInitialState(fakeQueryString, None, IDPPlannerName, new AnonymousVariableNameGenerator(), maybeStatement = Some(ast))
+    InputDataStreamTestInitialState(
+      fakeQueryString,
+      None,
+      IDPPlannerName,
+      new AnonymousVariableNameGenerator(),
+      maybeStatement = Some(ast)
+    )
   }
 
 }

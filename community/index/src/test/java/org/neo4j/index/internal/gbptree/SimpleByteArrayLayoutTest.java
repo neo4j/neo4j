@@ -19,113 +19,103 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-class SimpleByteArrayLayoutTest
-{
-    private final SimpleByteArrayLayout layout = new SimpleByteArrayLayout( false );
+import org.junit.jupiter.api.Test;
+
+class SimpleByteArrayLayoutTest {
+    private final SimpleByteArrayLayout layout = new SimpleByteArrayLayout(false);
     private final RawBytes left = layout.newKey();
     private final RawBytes right = layout.newKey();
     private final RawBytes minimalSplitter = layout.newKey();
 
     @Test
-    void minimalSplitterLengthZero()
-    {
+    void minimalSplitterLengthZero() {
         left.bytes = new byte[0];
         right.bytes = new byte[1];
 
-        layout.minimalSplitter( left, right, minimalSplitter );
+        layout.minimalSplitter(left, right, minimalSplitter);
 
-        assertArrayEquals( right.bytes, minimalSplitter.bytes );
+        assertArrayEquals(right.bytes, minimalSplitter.bytes);
     }
 
     @Test
-    void minimalSplitterLengthZeroWithLongRight()
-    {
+    void minimalSplitterLengthZeroWithLongRight() {
 
         left.bytes = new byte[0];
-        right.bytes = new byte[]{1, 1};
-        layout.minimalSplitter( left, right, minimalSplitter );
+        right.bytes = new byte[] {1, 1};
+        layout.minimalSplitter(left, right, minimalSplitter);
 
-        assertArrayEquals( new byte[]{1}, minimalSplitter.bytes );
+        assertArrayEquals(new byte[] {1}, minimalSplitter.bytes);
     }
 
     @Test
-    void minimalSplitterLengthOne()
-    {
-        left.bytes = new byte[]{0};
-        right.bytes = new byte[]{1};
+    void minimalSplitterLengthOne() {
+        left.bytes = new byte[] {0};
+        right.bytes = new byte[] {1};
 
-        layout.minimalSplitter( left, right, minimalSplitter );
+        layout.minimalSplitter(left, right, minimalSplitter);
 
-        assertArrayEquals( right.bytes, minimalSplitter.bytes );
+        assertArrayEquals(right.bytes, minimalSplitter.bytes);
     }
 
     @Test
-    void minimalSplitterDifferOnLength()
-    {
+    void minimalSplitterDifferOnLength() {
         left.bytes = new byte[1];
         right.bytes = new byte[2];
 
-        layout.minimalSplitter( left, right, minimalSplitter );
+        layout.minimalSplitter(left, right, minimalSplitter);
 
-        assertArrayEquals( right.bytes, minimalSplitter.bytes );
+        assertArrayEquals(right.bytes, minimalSplitter.bytes);
     }
 
     @Test
-    void minimalSplitterDifferMoreOnLength()
-    {
+    void minimalSplitterDifferMoreOnLength() {
         left.bytes = new byte[1];
         right.bytes = new byte[3];
 
-        layout.minimalSplitter( left, right, minimalSplitter );
+        layout.minimalSplitter(left, right, minimalSplitter);
 
-        assertArrayEquals( new byte[2], minimalSplitter.bytes );
+        assertArrayEquals(new byte[2], minimalSplitter.bytes);
     }
 
     @Test
-    void minimalSplitterDifferOnLast()
-    {
-        left.bytes = new byte[]{0,0};
-        right.bytes = new byte[]{0,1};
+    void minimalSplitterDifferOnLast() {
+        left.bytes = new byte[] {0, 0};
+        right.bytes = new byte[] {0, 1};
 
-        layout.minimalSplitter( left, right, minimalSplitter );
+        layout.minimalSplitter(left, right, minimalSplitter);
 
-        assertArrayEquals( right.bytes, minimalSplitter.bytes );
+        assertArrayEquals(right.bytes, minimalSplitter.bytes);
     }
 
     @Test
-    void minimalSplitterDifferOnFirst()
-    {
-        left.bytes = new byte[]{0,0};
-        right.bytes = new byte[]{1,0};
+    void minimalSplitterDifferOnFirst() {
+        left.bytes = new byte[] {0, 0};
+        right.bytes = new byte[] {1, 0};
 
-        layout.minimalSplitter( left, right, minimalSplitter );
+        layout.minimalSplitter(left, right, minimalSplitter);
 
-        assertArrayEquals( new byte[]{1}, minimalSplitter.bytes );
+        assertArrayEquals(new byte[] {1}, minimalSplitter.bytes);
     }
 
     @Test
-    void minimalSplitterDifferOnFirstLeftShorter()
-    {
-        left.bytes = new byte[]{0};
-        right.bytes = new byte[]{1,0};
+    void minimalSplitterDifferOnFirstLeftShorter() {
+        left.bytes = new byte[] {0};
+        right.bytes = new byte[] {1, 0};
 
-        layout.minimalSplitter( left, right, minimalSplitter );
+        layout.minimalSplitter(left, right, minimalSplitter);
 
-        assertArrayEquals( new byte[]{1}, minimalSplitter.bytes );
+        assertArrayEquals(new byte[] {1}, minimalSplitter.bytes);
     }
 
     @Test
-    void minimalSplitterDifferOnFirstRightShorter()
-    {
-        left.bytes = new byte[]{0,0};
-        right.bytes = new byte[]{1};
+    void minimalSplitterDifferOnFirstRightShorter() {
+        left.bytes = new byte[] {0, 0};
+        right.bytes = new byte[] {1};
 
-        layout.minimalSplitter( left, right, minimalSplitter );
+        layout.minimalSplitter(left, right, minimalSplitter);
 
-        assertArrayEquals( right.bytes, minimalSplitter.bytes );
+        assertArrayEquals(right.bytes, minimalSplitter.bytes);
     }
 }

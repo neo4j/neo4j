@@ -45,7 +45,11 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
 
     // When
-    val result = join.endoRewrite(predicateRemovalThroughJoins(planningAttributes.solveds, planningAttributes.cardinalities, Attributes(idGen, planningAttributes.providedOrders)))
+    val result = join.endoRewrite(predicateRemovalThroughJoins(
+      planningAttributes.solveds,
+      planningAttributes.cardinalities,
+      Attributes(idGen, planningAttributes.providedOrders)
+    ))
 
     // Then the Selection operator is removed from the RHS
     result should equal(NodeHashJoin(Set("a"), lhsSelection, rhsLeaf))
@@ -61,13 +65,18 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
 
     // When rewritten
-    val result = join.endoRewrite(predicateRemovalThroughJoins(planningAttributes.solveds, planningAttributes.cardinalities, Attributes(idGen, planningAttributes.providedOrders)))
+    val result = join.endoRewrite(predicateRemovalThroughJoins(
+      planningAttributes.solveds,
+      planningAttributes.cardinalities,
+      Attributes(idGen, planningAttributes.providedOrders)
+    ))
 
     // Then the predicate is removed from the RHS selection operator
     val newRhsSelection = Selection(Seq(predEquals), rhsLeaf)
 
     result should equal(
-      NodeHashJoin(Set("a"), lhsSelection, newRhsSelection))
+      NodeHashJoin(Set("a"), lhsSelection, newRhsSelection)
+    )
   }
 
   test("same predicate on both sides, but not depending on the join ids - nothing should be removed") {
@@ -79,7 +88,11 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
 
     // When rewritten
-    val result = join.endoRewrite(predicateRemovalThroughJoins(planningAttributes.solveds, planningAttributes.cardinalities, Attributes(idGen, planningAttributes.providedOrders)))
+    val result = join.endoRewrite(predicateRemovalThroughJoins(
+      planningAttributes.solveds,
+      planningAttributes.cardinalities,
+      Attributes(idGen, planningAttributes.providedOrders)
+    ))
 
     // Then nothing is removed
     result should equal(join)

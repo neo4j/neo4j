@@ -44,7 +44,7 @@ class ExpressionStringifierIT extends CypherFunSuite {
       "'apa'" -> "\"apa\"",
       "'a\"pa'" -> "'a\"pa'",
       "\"a'pa\"" -> "\"a'pa\"",
-      "\"a'\\\"pa\"" ->  "\"a'\\\"pa\"",
+      "\"a'\\\"pa\"" -> "\"a'\\\"pa\"",
       "any(x in ['a','b', 'c'] where x > 28)" -> "any(x IN [\"a\", \"b\", \"c\"] WHERE x > 28)",
       "all(x in ['a','b', 'c'] where x > 28)" -> "all(x IN [\"a\", \"b\", \"c\"] WHERE x > 28)",
       "none(x in ['a','b', 'c'] where x > 28)" -> "none(x IN [\"a\", \"b\", \"c\"] WHERE x > 28)",
@@ -74,7 +74,7 @@ class ExpressionStringifierIT extends CypherFunSuite {
       "EXISTS { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n:Label)-[:HAS_REL]->(m) WHERE n.prop = \"f\" }",
       "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age) + 4 * 5" -> "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age) + 4 * 5",
       "1 < 2 > 3 = 4 >= 5 <= 6" -> "1 < 2 > 3 = 4 >= 5 <= 6",
-      "1 < 2 > 3 = 4 >= 5 <= 6 AND a OR b" -> "(1 < 2 > 3 = 4 >= 5 <= 6) AND a OR b",
+      "1 < 2 > 3 = 4 >= 5 <= 6 AND a OR b" -> "(1 < 2 > 3 = 4 >= 5 <= 6) AND a OR b"
     )
 
   tests foreach {

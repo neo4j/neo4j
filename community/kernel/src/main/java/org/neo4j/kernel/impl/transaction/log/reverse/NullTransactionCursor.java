@@ -20,34 +20,26 @@
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
-
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 
-public class NullTransactionCursor implements TransactionCursor
-{
+public class NullTransactionCursor implements TransactionCursor {
     @Override
-    public boolean next() throws IOException
-    {
+    public boolean next() throws IOException {
         return false;
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {}
 
+    @Override
+    public LogPosition position() {
+        throw new UnsupportedOperationException("unsupported");
     }
 
     @Override
-    public LogPosition position()
-    {
-        throw new UnsupportedOperationException( "unsupported" );
-    }
-
-    @Override
-    public CommittedTransactionRepresentation get()
-    {
-        throw new UnsupportedOperationException( "unsupported" );
+    public CommittedTransactionRepresentation get() {
+        throw new UnsupportedOperationException("unsupported");
     }
 }

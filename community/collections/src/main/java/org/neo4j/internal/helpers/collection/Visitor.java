@@ -26,8 +26,7 @@ package org.neo4j.internal.helpers.collection;
  * @param <FAILURE> the type of exception the visitor might throw
  */
 @FunctionalInterface
-public interface Visitor<E, FAILURE extends Exception>
-{
+public interface Visitor<E, FAILURE extends Exception> {
     /**
      * Invoked for each element in a collection. Return <code>true</code> to
      * terminate the iteration, <code>false</code> to continue.
@@ -37,5 +36,5 @@ public interface Visitor<E, FAILURE extends Exception>
      *         to continue.
      * @throws FAILURE exception thrown by the visitor
      */
-    boolean visit( E element ) throws FAILURE;
+    boolean visit(E element) throws FAILURE;
 }

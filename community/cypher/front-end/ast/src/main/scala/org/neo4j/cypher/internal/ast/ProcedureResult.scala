@@ -22,13 +22,14 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
 object ProcedureResult {
+
   def from(items: ProcedureResultItem*)(position: InputPosition): ProcedureResult =
     ProcedureResult(items.toIndexedSeq, None)(position)
 }
 
-case class ProcedureResult(items: IndexedSeq[ProcedureResultItem], where: Option[Where] = None)
-                          (val position: InputPosition)
-  extends ASTNode {
+case class ProcedureResult(items: IndexedSeq[ProcedureResultItem], where: Option[Where] = None)(
+  val position: InputPosition
+) extends ASTNode {
 
   def semanticCheck: SemanticCheck =
     items.foldSemanticCheck(_.semanticCheck) chain where.map(_.semanticCheck).getOrElse(success)

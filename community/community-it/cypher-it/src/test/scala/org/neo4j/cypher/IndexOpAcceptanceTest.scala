@@ -40,6 +40,7 @@ import org.neo4j.test.utils.TestDirectory
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
@@ -64,7 +65,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     // THEN
     val message = e.getCause.getMessage
     message should startWith("An equivalent index already exists")
-    message should include("name='index_4b2e9408', type='GENERAL RANGE', schema=(:Person {name}), indexProvider='range-1.0'")
+    message should include(
+      "name='index_4b2e9408', type='GENERAL RANGE', schema=(:Person {name}), indexProvider='range-1.0'"
+    )
   }
 
   test("secondIndexCreationShouldFailIfIndexesHasFailed") {
@@ -73,7 +76,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     try {
       // WHEN THEN
       val e = intercept[FailedIndexException](execute("CREATE INDEX FOR (n:Person) ON (n.name)"))
-      e.getMessage should include (org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_MESSAGE)
+      e.getMessage should include(
+        org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_MESSAGE
+      )
     } finally {
       managementService.shutdown()
     }
@@ -87,9 +92,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     execute("DROP INDEX my_index")
 
     // THEN
-    graph.withTx( tx  => {
-      indexPropsForLabel( tx, "Person") shouldBe empty
-    } )
+    graph.withTx(tx => {
+      indexPropsForLabel(tx, "Person") shouldBe empty
+    })
   }
 
   test("drop_index_that_does_not_exist") {
@@ -99,6 +104,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
   }
 
   implicit class FileHelper(file: File) {
+
     def deleteAll(): Unit = {
       def deleteFile(dfile: File): Unit = {
         if (dfile.isDirectory)
@@ -138,8 +144,13 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     try {
       val kernelTransaction = transaction.kernelTransaction()
       val tokenWrite = kernelTransaction.tokenWrite
-      val prototype = IndexPrototype.forSchema(SchemaDescriptors.forLabel(tokenWrite.labelGetOrCreateForName("Person"),
-        tokenWrite.propertyKeyGetOrCreateForName("name")), FailingGenericNativeIndexProviderFactory.DESCRIPTOR).withIndexType(IndexType.RANGE)
+      val prototype = IndexPrototype.forSchema(
+        SchemaDescriptors.forLabel(
+          tokenWrite.labelGetOrCreateForName("Person"),
+          tokenWrite.propertyKeyGetOrCreateForName("name")
+        ),
+        FailingGenericNativeIndexProviderFactory.DESCRIPTOR
+      ).withIndexType(IndexType.RANGE)
       kernelTransaction.schemaWrite.indexCreate(prototype)
       transaction.commit()
     } finally {
@@ -151,7 +162,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
       tx.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)
       tx.commit()
     } catch {
-      case e:IllegalStateException => assert(e.getMessage.contains("FAILED"), "Was expecting FAILED state")
+      case e: IllegalStateException => assert(e.getMessage.contains("FAILED"), "Was expecting FAILED state")
     } finally {
       tx.close()
     }

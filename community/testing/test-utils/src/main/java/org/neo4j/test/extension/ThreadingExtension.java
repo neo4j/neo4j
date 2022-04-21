@@ -25,45 +25,39 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class ThreadingExtension extends StatefulFieldExtension<Threading>
-        implements BeforeEachCallback, AfterEachCallback, AfterAllCallback
-{
+        implements BeforeEachCallback, AfterEachCallback, AfterAllCallback {
     private static final String THREADING = "threading";
-    private static final ExtensionContext.Namespace THREADING_NAMESPACE = ExtensionContext.Namespace.create( THREADING );
+    private static final ExtensionContext.Namespace THREADING_NAMESPACE = ExtensionContext.Namespace.create(THREADING);
+
     @Override
-    public void afterEach( ExtensionContext extensionContext )
-    {
-        Threading threading = getStoredValue( extensionContext );
+    public void afterEach(ExtensionContext extensionContext) {
+        Threading threading = getStoredValue(extensionContext);
         threading.after();
     }
 
     @Override
-    public void beforeEach( ExtensionContext extensionContext )
-    {
-        Threading threading = getStoredValue( extensionContext );
+    public void beforeEach(ExtensionContext extensionContext) {
+        Threading threading = getStoredValue(extensionContext);
         threading.before();
     }
 
     @Override
-    protected String getFieldKey()
-    {
+    protected String getFieldKey() {
         return THREADING;
     }
 
     @Override
-    protected Class<Threading> getFieldType()
-    {
+    protected Class<Threading> getFieldType() {
         return Threading.class;
     }
 
     @Override
-    protected Threading createField( ExtensionContext extensionContext )
-    {
+    protected Threading createField(ExtensionContext extensionContext) {
         return new Threading();
     }
 
     @Override
-    protected ExtensionContext.Namespace getNameSpace()
-    {
+    protected ExtensionContext.Namespace getNameSpace() {
         return THREADING_NAMESPACE;
     }
 }

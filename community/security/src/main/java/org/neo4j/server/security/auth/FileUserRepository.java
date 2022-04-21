@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
@@ -34,8 +33,7 @@ import org.neo4j.logging.InternalLogProvider;
  * Stores user auth data. In memory, but backed by persistent storage so changes to this repository will survive
  * JVM restarts and crashes.
  */
-public class FileUserRepository extends AbstractUserRepository implements FileRepository
-{
+public class FileUserRepository extends AbstractUserRepository implements FileRepository {
     private final Path authFile;
     private final FileSystemAbstraction fileSystem;
 
@@ -45,70 +43,57 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
 
     private final UserSerialization serialization = new UserSerialization();
 
-    public FileUserRepository( FileSystemAbstraction fileSystem, Path path, InternalLogProvider logProvider )
-    {
+    public FileUserRepository(FileSystemAbstraction fileSystem, Path path, InternalLogProvider logProvider) {
         this.fileSystem = fileSystem;
         this.authFile = path;
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
     }
 
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         clear();
 
-        FileRepository.assertNotMigrated( authFile, fileSystem, log );
+        FileRepository.assertNotMigrated(authFile, fileSystem, log);
 
         ListSnapshot<User> onDiskUsers = readPersistedUsers();
-        if ( onDiskUsers != null )
-        {
-            setUsers( onDiskUsers );
+        if (onDiskUsers != null) {
+            setUsers(onDiskUsers);
         }
     }
 
     @Override
-    protected ListSnapshot<User> readPersistedUsers() throws IOException
-    {
-        if ( fileSystem.fileExists( authFile ) )
-        {
+    protected ListSnapshot<User> readPersistedUsers() throws IOException {
+        if (fileSystem.fileExists(authFile)) {
             long readTime;
             List<User> readUsers;
-            try
-            {
-                log.debug( "Reading users from %s", authFile );
-                readTime = fileSystem.lastModifiedTime( authFile );
-                readUsers = serialization.loadRecordsFromFile( fileSystem, authFile );
-            }
-            catch ( FormatException e )
-            {
-                log.error( "Failed to read authentication file \"%s\" (%s)",
-                        authFile.toAbsolutePath(), e.getMessage() );
-                throw new IllegalStateException( "Failed to read authentication file: " + authFile );
+            try {
+                log.debug("Reading users from %s", authFile);
+                readTime = fileSystem.lastModifiedTime(authFile);
+                readUsers = serialization.loadRecordsFromFile(fileSystem, authFile);
+            } catch (FormatException e) {
+                log.error("Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage());
+                throw new IllegalStateException("Failed to read authentication file: " + authFile);
             }
 
-            return new ListSnapshot<>( readTime, readUsers );
+            return new ListSnapshot<>(readTime, readUsers);
         }
-        log.debug( "Did not find any file named %s in %s", authFile.getFileName(), authFile.getParent() );
+        log.debug("Did not find any file named %s in %s", authFile.getFileName(), authFile.getParent());
         return null;
     }
 
     @Override
-    protected void persistUsers() throws IOException
-    {
-        log.debug( "Persisting %s users into %s", users.size(), authFile );
-        serialization.saveRecordsToFile( fileSystem, authFile, users );
+    protected void persistUsers() throws IOException {
+        log.debug("Persisting %s users into %s", users.size(), authFile);
+        serialization.saveRecordsToFile(fileSystem, authFile, users);
     }
 
     @Override
-    public ListSnapshot<User> getSnapshot() throws IOException
-    {
-        if ( lastLoaded.get() < fileSystem.lastModifiedTime( authFile ) )
-        {
+    public ListSnapshot<User> getSnapshot() throws IOException {
+        if (lastLoaded.get() < fileSystem.lastModifiedTime(authFile)) {
             return readPersistedUsers();
         }
-        synchronized ( this )
-        {
-            return new ListSnapshot<>( lastLoaded.get(), new ArrayList<>( users ) );
+        synchronized (this) {
+            return new ListSnapshot<>(lastLoaded.get(), new ArrayList<>(users));
         }
     }
 }

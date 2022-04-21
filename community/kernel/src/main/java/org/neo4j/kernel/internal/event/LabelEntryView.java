@@ -26,39 +26,31 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.HeapEstimator;
 
-class LabelEntryView implements LabelEntry
-{
-    static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( LabelEntryView.class );
+class LabelEntryView implements LabelEntry {
+    static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(LabelEntryView.class);
 
     private final InternalTransaction internalTransaction;
     private final long nodeId;
     private final Label label;
 
-    LabelEntryView( InternalTransaction internalTransaction, long nodeId, String labelName )
-    {
+    LabelEntryView(InternalTransaction internalTransaction, long nodeId, String labelName) {
         this.internalTransaction = internalTransaction;
         this.nodeId = nodeId;
-        this.label = Label.label( labelName );
+        this.label = Label.label(labelName);
     }
 
     @Override
-    public Label label()
-    {
+    public Label label() {
         return label;
     }
 
     @Override
-    public Node node()
-    {
-        return new NodeEntity( internalTransaction, nodeId );
+    public Node node() {
+        return new NodeEntity(internalTransaction, nodeId);
     }
 
     @Override
-    public String toString()
-    {
-        return "LabelEntryView{" +
-                "nodeId=" + nodeId +
-                ", label=" + label +
-                '}';
+    public String toString() {
+        return "LabelEntryView{" + "nodeId=" + nodeId + ", label=" + label + '}';
     }
 }

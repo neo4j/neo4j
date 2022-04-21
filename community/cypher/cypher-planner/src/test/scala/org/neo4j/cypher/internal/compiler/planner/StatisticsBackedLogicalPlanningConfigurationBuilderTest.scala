@@ -27,7 +27,8 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers.contain
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 
-class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite with StatisticsBackedLogicalPlanningSupport {
+class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
+    with StatisticsBackedLogicalPlanningSupport {
 
   /**
    * These index types are currently handled differently from all the other property indexes.
@@ -72,10 +73,12 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite w
             uniqueValueSelectivity = 1,
             propExistsSelectivity = 1.0 / personCount,
             withValues = true,
-            withOrdering = IndexOrderCapability.BOTH)
+            withOrdering = IndexOrderCapability.BOTH
+          )
         }
       }
   }
+
   test("processGraphCount for relationship indexes") {
     IndexType.values()
       .filter(!unsupportedIndexTypes.contains(_))
@@ -117,7 +120,8 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite w
             uniqueValueSelectivity = 1,
             propExistsSelectivity = 1.0 / friendCount,
             withValues = true,
-            withOrdering = IndexOrderCapability.BOTH)
+            withOrdering = IndexOrderCapability.BOTH
+          )
         }
       }
   }

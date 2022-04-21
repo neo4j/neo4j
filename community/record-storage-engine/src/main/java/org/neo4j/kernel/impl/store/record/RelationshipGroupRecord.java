@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.util.Objects;
-
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class RelationshipGroupRecord extends AbstractBaseRecord
-{
-    public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipGroupRecord.class );
+import java.util.Objects;
+
+public class RelationshipGroupRecord extends AbstractBaseRecord {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance(RelationshipGroupRecord.class);
     private int type;
     private long next;
     private long firstOut;
@@ -40,14 +39,12 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     // Not stored, just kept in memory temporarily when loading the group chain
     private long prev;
 
-    public RelationshipGroupRecord( long id )
-    {
-        super( id );
+    public RelationshipGroupRecord(long id) {
+        super(id);
     }
 
-    public RelationshipGroupRecord( RelationshipGroupRecord other )
-    {
-        super( other );
+    public RelationshipGroupRecord(RelationshipGroupRecord other) {
+        super(other);
         this.type = other.type;
         this.next = other.next;
         this.firstOut = other.firstOut;
@@ -60,9 +57,9 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
         this.externalDegreesLoop = other.externalDegreesLoop;
     }
 
-    public RelationshipGroupRecord initialize( boolean inUse, int type, long firstOut, long firstIn, long firstLoop, long owningNode, long next )
-    {
-        super.initialize( inUse );
+    public RelationshipGroupRecord initialize(
+            boolean inUse, int type, long firstOut, long firstIn, long firstLoop, long owningNode, long next) {
+        super.initialize(inUse);
         this.type = type;
         this.firstOut = firstOut;
         this.firstIn = firstIn;
@@ -77,60 +74,55 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     }
 
     @Override
-    public void clear()
-    {
-        initialize( false, NULL_REFERENCE.intValue(), NULL_REFERENCE.intValue(), NULL_REFERENCE.intValue(),
-                NULL_REFERENCE.intValue(), NULL_REFERENCE.intValue(), NULL_REFERENCE.intValue() );
+    public void clear() {
+        initialize(
+                false,
+                NULL_REFERENCE.intValue(),
+                NULL_REFERENCE.intValue(),
+                NULL_REFERENCE.intValue(),
+                NULL_REFERENCE.intValue(),
+                NULL_REFERENCE.intValue(),
+                NULL_REFERENCE.intValue());
         prev = NULL_REFERENCE.intValue();
     }
 
-    public int getType()
-    {
+    public int getType() {
         return type;
     }
 
-    public void setType( int type )
-    {
+    public void setType(int type) {
         this.type = type;
     }
 
-    public long getFirstOut()
-    {
+    public long getFirstOut() {
         return firstOut;
     }
 
-    public void setFirstOut( long firstOut )
-    {
+    public void setFirstOut(long firstOut) {
         this.firstOut = firstOut;
     }
 
-    public long getFirstIn()
-    {
+    public long getFirstIn() {
         return firstIn;
     }
 
-    public void setFirstIn( long firstIn )
-    {
+    public void setFirstIn(long firstIn) {
         this.firstIn = firstIn;
     }
 
-    public long getFirstLoop()
-    {
+    public long getFirstLoop() {
         return firstLoop;
     }
 
-    public void setFirstLoop( long firstLoop )
-    {
+    public void setFirstLoop(long firstLoop) {
         this.firstLoop = firstLoop;
     }
 
-    public long getNext()
-    {
+    public long getNext() {
         return next;
     }
 
-    public void setNext( long next )
-    {
+    public void setNext(long next) {
         this.next = next;
     }
 
@@ -140,8 +132,7 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
      * chain.
      * @param prev the id of the previous group in this chain.
      */
-    public void setPrev( long prev )
-    {
+    public void setPrev(long prev) {
         this.prev = prev;
     }
 
@@ -151,99 +142,100 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
      * chain.
      * @return the id of the previous group in this chain.
      */
-    public long getPrev()
-    {
+    public long getPrev() {
         return prev;
     }
 
-    public long getOwningNode()
-    {
+    public long getOwningNode() {
         return owningNode;
     }
 
-    public void setOwningNode( long owningNode )
-    {
+    public void setOwningNode(long owningNode) {
         this.owningNode = owningNode;
     }
 
-    public boolean hasExternalDegreesOut()
-    {
+    public boolean hasExternalDegreesOut() {
         return externalDegreesOut;
     }
 
-    public void setHasExternalDegreesOut( boolean externalDegrees )
-    {
+    public void setHasExternalDegreesOut(boolean externalDegrees) {
         this.externalDegreesOut = externalDegrees;
     }
 
-    public boolean hasExternalDegreesIn()
-    {
+    public boolean hasExternalDegreesIn() {
         return externalDegreesIn;
     }
 
-    public void setHasExternalDegreesIn( boolean externalDegrees )
-    {
+    public void setHasExternalDegreesIn(boolean externalDegrees) {
         this.externalDegreesIn = externalDegrees;
     }
 
-    public boolean hasExternalDegreesLoop()
-    {
+    public boolean hasExternalDegreesLoop() {
         return externalDegreesLoop;
     }
 
-    public void setHasExternalDegreesLoop( boolean externalDegrees )
-    {
+    public void setHasExternalDegreesLoop(boolean externalDegrees) {
         this.externalDegreesLoop = externalDegrees;
     }
 
     @Override
-    public String toString()
-    {
-        return "RelationshipGroup[" + getId() +
-               ",type=" + type +
-               ",out=" + firstOut +
-               ",in=" + firstIn +
-               ",loop=" + firstLoop +
-               ",prev=" + prev +
-               ",next=" + next +
-               ",used=" + inUse() +
-               ",owner=" + getOwningNode() +
-               ",externalDegrees=[out:" + externalDegreesOut + ",in:" + externalDegreesIn + ",loop:" + externalDegreesLoop + "]" +
-               secondaryUnitToString() + "]";
+    public String toString() {
+        return "RelationshipGroup[" + getId() + ",type="
+                + type + ",out="
+                + firstOut + ",in="
+                + firstIn + ",loop="
+                + firstLoop + ",prev="
+                + prev + ",next="
+                + next + ",used="
+                + inUse() + ",owner="
+                + getOwningNode() + ",externalDegrees=[out:"
+                + externalDegreesOut + ",in:" + externalDegreesIn + ",loop:" + externalDegreesLoop + "]"
+                + secondaryUnitToString()
+                + "]";
     }
 
     @Override
-    public RelationshipGroupRecord copy()
-    {
-        return new RelationshipGroupRecord( this );
+    public RelationshipGroupRecord copy() {
+        return new RelationshipGroupRecord(this);
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        if ( !super.equals( o ) )
-        {
+        if (!super.equals(o)) {
             return false;
         }
         RelationshipGroupRecord that = (RelationshipGroupRecord) o;
-        return type == that.type && next == that.next && firstOut == that.firstOut && firstIn == that.firstIn &&
-                firstLoop == that.firstLoop && owningNode == that.owningNode &&
-                externalDegreesOut == that.externalDegreesOut && externalDegreesIn == that.externalDegreesIn && externalDegreesLoop == that.externalDegreesLoop;
+        return type == that.type
+                && next == that.next
+                && firstOut == that.firstOut
+                && firstIn == that.firstIn
+                && firstLoop == that.firstLoop
+                && owningNode == that.owningNode
+                && externalDegreesOut == that.externalDegreesOut
+                && externalDegreesIn == that.externalDegreesIn
+                && externalDegreesLoop == that.externalDegreesLoop;
         // don't compare prev since it's not persisted
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( super.hashCode(), type, next, firstOut, firstIn, firstLoop, owningNode, prev, externalDegreesOut, externalDegreesIn,
-                externalDegreesLoop );
+    public int hashCode() {
+        return Objects.hash(
+                super.hashCode(),
+                type,
+                next,
+                firstOut,
+                firstIn,
+                firstLoop,
+                owningNode,
+                prev,
+                externalDegreesOut,
+                externalDegreesIn,
+                externalDegreesLoop);
     }
 }

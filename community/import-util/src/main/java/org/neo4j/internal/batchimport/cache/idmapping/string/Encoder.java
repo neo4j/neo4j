@@ -24,7 +24,6 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
  * as possible, i.e. different incoming values being encoded into the same long.
  * The returned encoded value must not be {@code 0} since that is a reserved value for {@link EncodingIdMapper}.
  */
-public interface Encoder
-{
-    long encode( Object value );
+public interface Encoder {
+    long encode(Object value);
 }

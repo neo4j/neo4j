@@ -33,8 +33,7 @@ import java.util.function.Supplier;
  * {@link #next()} has been done, or if it returned false, then such accessor methods throw {@link
  * IllegalStateException}.
  */
-public interface RawCursor<T, EXCEPTION extends Exception> extends Supplier<T>, AutoCloseable
-{
+public interface RawCursor<T, EXCEPTION extends Exception> extends Supplier<T>, AutoCloseable {
     /**
      * Move the cursor to the next row.
      * Return false if there are no more valid positions, generally indicating that the end of the data structure
@@ -48,17 +47,12 @@ public interface RawCursor<T, EXCEPTION extends Exception> extends Supplier<T>, 
     @Override
     void close() throws EXCEPTION;
 
-    default void forAll( Consumer<T> consumer ) throws EXCEPTION
-    {
-        try
-        {
-            while ( next() )
-            {
-                consumer.accept( get() );
+    default void forAll(Consumer<T> consumer) throws EXCEPTION {
+        try {
+            while (next()) {
+                consumer.accept(get());
             }
-        }
-        finally
-        {
+        } finally {
             close();
         }
     }

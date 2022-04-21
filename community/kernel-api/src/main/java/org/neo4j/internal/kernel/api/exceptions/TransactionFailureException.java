@@ -22,31 +22,25 @@ package org.neo4j.internal.kernel.api.exceptions;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class TransactionFailureException extends KernelException
-{
-    public TransactionFailureException( Status statusCode, Throwable cause, String message, Object... parameters )
-    {
-        super( statusCode, cause, message, parameters );
+public class TransactionFailureException extends KernelException {
+    public TransactionFailureException(Status statusCode, Throwable cause, String message, Object... parameters) {
+        super(statusCode, cause, message, parameters);
     }
 
-    public TransactionFailureException( Status statusCode, Throwable cause )
-    {
-        super( statusCode, cause );
+    public TransactionFailureException(Status statusCode, Throwable cause) {
+        super(statusCode, cause);
     }
 
-    public TransactionFailureException( Status statusCode, String message, Object... parameters )
-    {
-        super( statusCode, message, parameters );
+    public TransactionFailureException(Status statusCode, String message, Object... parameters) {
+        super(statusCode, message, parameters);
     }
 
-    public TransactionFailureException( Status statusCode )
-    {
-        this( statusCode, statusCode.code().description() );
+    public TransactionFailureException(Status statusCode) {
+        this(statusCode, statusCode.code().description());
     }
 
     // To satisfy DatabaseHealth
-    public TransactionFailureException( String message, Throwable cause )
-    {
-        super( Status.Transaction.TransactionStartFailed, cause, message );
+    public TransactionFailureException(String message, Throwable cause) {
+        super(Status.Transaction.TransactionStartFailed, cause, message);
     }
 }

@@ -20,130 +20,108 @@
 package org.neo4j.values.storable;
 
 import java.util.Arrays;
-
 import org.neo4j.hashing.HashFunction;
 
-public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends ArrayValue
-{
+public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends ArrayValue {
     protected abstract T[] value();
 
     @Override
-    public final boolean equals( boolean[] x )
-    {
+    public final boolean equals(boolean[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( char[] x )
-    {
+    public final boolean equals(char[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( String[] x )
-    {
+    public final boolean equals(String[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( byte[] x )
-    {
+    public final boolean equals(byte[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( short[] x )
-    {
+    public final boolean equals(short[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( int[] x )
-    {
+    public final boolean equals(int[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( long[] x )
-    {
+    public final boolean equals(long[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( float[] x )
-    {
+    public final boolean equals(float[] x) {
         return false;
     }
 
     @Override
-    public final boolean equals( double[] x )
-    {
+    public final boolean equals(double[] x) {
         return false;
     }
 
     @Override
-    public final NumberType numberType()
-    {
+    public final NumberType numberType() {
         return NumberType.NO_NUMBER;
     }
 
-    final int compareToNonPrimitiveArray( NonPrimitiveArray<T> other )
-    {
+    final int compareToNonPrimitiveArray(NonPrimitiveArray<T> other) {
         int compare = 0;
-        int length = Math.min( this.length(), other.length() );
-        for ( int index = 0; compare == 0 && index < length; index++ )
-        {
-            compare = this.value()[index].compareTo( other.value()[index] );
+        int length = Math.min(this.length(), other.length());
+        for (int index = 0; compare == 0 && index < length; index++) {
+            compare = this.value()[index].compareTo(other.value()[index]);
         }
-        return compare == 0 ? Integer.compare( this.length(), other.length() ) : compare;
+        return compare == 0 ? Integer.compare(this.length(), other.length()) : compare;
     }
 
     @Override
-    protected int computeHashToMemoize()
-    {
-        return Arrays.hashCode( value() );
+    protected int computeHashToMemoize() {
+        return Arrays.hashCode(value());
     }
 
     @Override
-    public long updateHash( HashFunction hashFunction, long hash )
-    {
-        hash = hashFunction.update( hash, length() );
-        for ( T obj : value() )
-        {
-            hash = hashFunction.update( hash, obj.hashCode() );
+    public long updateHash(HashFunction hashFunction, long hash) {
+        hash = hashFunction.update(hash, length());
+        for (T obj : value()) {
+            hash = hashFunction.update(hash, obj.hashCode());
         }
         return hash;
     }
 
     @Override
-    public final int length()
-    {
+    public final int length() {
         return value().length;
     }
 
     @Override
-    public final T[] asObjectCopy()
-    {
+    public final T[] asObjectCopy() {
         T[] value = value();
-        return Arrays.copyOf( value, value.length );
+        return Arrays.copyOf(value, value.length);
     }
 
     @Override
     @Deprecated
-    public final T[] asObject()
-    {
+    public final T[] asObject() {
         return value();
     }
 
     @Override
-    public final String prettyPrint()
-    {
-        return Arrays.toString( value() );
+    public final String prettyPrint() {
+        return Arrays.toString(value());
     }
 
     @Override
-    public final String toString()
-    {
-        return getClass().getSimpleName() + Arrays.toString( value());
+    public final String toString() {
+        return getClass().getSimpleName() + Arrays.toString(value());
     }
 }

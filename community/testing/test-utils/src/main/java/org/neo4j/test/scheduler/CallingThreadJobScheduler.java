@@ -19,26 +19,22 @@
  */
 package org.neo4j.test.scheduler;
 
+import static org.mockito.Mockito.mock;
+
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 
-import static org.mockito.Mockito.mock;
-
-public class CallingThreadJobScheduler extends JobSchedulerAdapter
-{
+public class CallingThreadJobScheduler extends JobSchedulerAdapter {
     @Override
-    public JobHandle<?> schedule( Group group, Runnable job )
-    {
+    public JobHandle<?> schedule(Group group, Runnable job) {
         job.run();
-        return mock( JobHandle.class );
+        return mock(JobHandle.class);
     }
 
     @Override
-    public JobHandle<?> schedule( Group group, JobMonitoringParams jobMonitoringParams, Runnable job )
-    {
+    public JobHandle<?> schedule(Group group, JobMonitoringParams jobMonitoringParams, Runnable job) {
         job.run();
-        return mock( JobHandle.class );
+        return mock(JobHandle.class);
     }
 }
-

@@ -42,7 +42,7 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
   private val passwords = Seq(
     "password",
     "password with \\'quotes\\'",
-    "password with\\nnewline",
+    "password with\\nnewline"
   )
 
   for (password <- passwords) {
@@ -55,14 +55,12 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
         "CREATE OR REPLACE USER test SET PASSWORD ******",
       s"CREATE USER test SET PASSWORD '$password' CHANGE REQUIRED" ->
         "CREATE USER test SET PASSWORD ****** CHANGE REQUIRED",
-
       s"ALTER USER test SET PASSWORD '$password'" ->
         "ALTER USER test SET PASSWORD ******",
       s"ALTER USER test SET PASSWORD '$password' CHANGE REQUIRED" ->
         "ALTER USER test SET PASSWORD ****** CHANGE REQUIRED",
-
       s"ALTER CURRENT USER SET PASSWORD FROM '$password' TO '$password'" ->
-        "ALTER CURRENT USER SET PASSWORD FROM ****** TO ******",
+        "ALTER CURRENT USER SET PASSWORD FROM ****** TO ******"
     )
 
     for ((rawText, obfuscatedText) <- literalTests) {
@@ -73,38 +71,43 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
     }
   }
 
-  private case class ParameterTest(rawText: String, obfuscatedText: String, rawParameters: Map[String, String], obfuscatedParameters: Map[String, String])
+  private case class ParameterTest(
+    rawText: String,
+    obfuscatedText: String,
+    rawParameters: Map[String, String],
+    obfuscatedParameters: Map[String, String]
+  )
 
   private val parameterTests: Seq[ParameterTest] = Seq(
     ParameterTest(
       "CREATE USER test SET PASSWORD 'password'",
       "CREATE USER test SET PASSWORD ******",
       Map.empty,
-      Map.empty,
+      Map.empty
     ),
     ParameterTest(
       "CREATE USER test SET PASSWORD $param",
       "CREATE USER test SET PASSWORD $param",
       Map("param" -> "test"),
-      Map("param" -> "******"),
+      Map("param" -> "******")
     ),
     ParameterTest(
       "ALTER CURRENT USER SET PASSWORD FROM 'test' TO $param",
       "ALTER CURRENT USER SET PASSWORD FROM ****** TO $param",
       Map("param" -> "test"),
-      Map("param" -> "******"),
+      Map("param" -> "******")
     ),
     ParameterTest(
       "ALTER CURRENT USER SET PASSWORD FROM $old TO $new",
       "ALTER CURRENT USER SET PASSWORD FROM $old TO $new",
       Map("old" -> "a", "new" -> "b"),
-      Map("old" -> "******", "new" -> "******"),
+      Map("old" -> "******", "new" -> "******")
     ),
     ParameterTest(
       "ALTER CURRENT USER SET PASSWORD FROM $old TO 'password'",
       "ALTER CURRENT USER SET PASSWORD FROM $old TO ******",
       Map("old" -> "a", "new" -> "b"),
-      Map("old" -> "******", "new" -> "b"),
+      Map("old" -> "******", "new" -> "b")
     )
   )
 

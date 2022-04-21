@@ -23,16 +23,14 @@ package org.neo4j.kernel.impl.api.index;
  * A consumer of a scan over entities generating a tuple of entity id and tokens
  * for each scanned entity.
  */
-public interface TokenScanConsumer
-{
+public interface TokenScanConsumer {
     Batch newBatch();
 
-    interface Batch
-    {
+    interface Batch {
         /**
          * Adds a record to the batch.
          */
-        void addRecord( long entityId, long[] tokens );
+        void addRecord(long entityId, long[] tokens);
 
         /**
          * Processes the batch.

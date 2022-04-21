@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.web;
 
+import static org.neo4j.server.web.HttpHeaderUtils.isValidHttpHeaderName;
+
 import java.io.IOException;
 import java.util.Enumeration;
 import javax.servlet.Filter;
@@ -29,20 +31,16 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.server.web.HttpMethod;
-
-import static org.neo4j.server.web.HttpHeaderUtils.isValidHttpHeaderName;
 
 /**
  * This filter adds the header "Access-Control-Allow-Origin : *" to all
  * responses that goes through it. This allows modern browsers to do cross-site
  * requests to us via javascript.
  */
-public class CorsFilter implements Filter
-{
+public class CorsFilter implements Filter {
     public static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
     public static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
     public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
@@ -54,16 +52,12 @@ public class CorsFilter implements Filter
     private final String accessControlAllowOrigin;
     private final String vary;
 
-    public CorsFilter( InternalLogProvider logProvider, String accessControlAllowOrigin )
-    {
-        this.log = logProvider.getLog( getClass() );
+    public CorsFilter(InternalLogProvider logProvider, String accessControlAllowOrigin) {
+        this.log = logProvider.getLog(getClass());
         this.accessControlAllowOrigin = accessControlAllowOrigin;
-        if ( "*".equals( accessControlAllowOrigin ) )
-        {
+        if ("*".equals(accessControlAllowOrigin)) {
             vary = null;
-        }
-        else
-        {
+        } else {
             // If the server specifies an origin host rather than "*", then it must also include Origin in
             // the Vary response header to indicate to clients that server responses will differ based on
             // the value of the Origin request header.
@@ -75,75 +69,59 @@ public class CorsFilter implements Filter
     }
 
     @Override
-    public void init( FilterConfig filterConfig ) throws ServletException
-    {
-    }
+    public void init(FilterConfig filterConfig) throws ServletException {}
 
     @Override
-    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain )
-            throws IOException, ServletException
-    {
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)
+            throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        response.setHeader( ACCESS_CONTROL_ALLOW_ORIGIN, accessControlAllowOrigin );
-        if ( vary != null )
-        {
-            response.setHeader( VARY, vary );
+        response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, accessControlAllowOrigin);
+        if (vary != null) {
+            response.setHeader(VARY, vary);
         }
 
-        Enumeration<String> requestMethodEnumeration = request.getHeaders( ACCESS_CONTROL_REQUEST_METHOD );
-        if ( requestMethodEnumeration != null )
-        {
-            while ( requestMethodEnumeration.hasMoreElements() )
-            {
+        Enumeration<String> requestMethodEnumeration = request.getHeaders(ACCESS_CONTROL_REQUEST_METHOD);
+        if (requestMethodEnumeration != null) {
+            while (requestMethodEnumeration.hasMoreElements()) {
                 String requestMethod = requestMethodEnumeration.nextElement();
-                addAllowedMethodIfValid( requestMethod, response );
+                addAllowedMethodIfValid(requestMethod, response);
             }
         }
 
-        Enumeration<String> requestHeaderEnumeration = request.getHeaders( ACCESS_CONTROL_REQUEST_HEADERS );
-        if ( requestHeaderEnumeration != null )
-        {
-            while ( requestHeaderEnumeration.hasMoreElements() )
-            {
+        Enumeration<String> requestHeaderEnumeration = request.getHeaders(ACCESS_CONTROL_REQUEST_HEADERS);
+        if (requestHeaderEnumeration != null) {
+            while (requestHeaderEnumeration.hasMoreElements()) {
                 String requestHeader = requestHeaderEnumeration.nextElement();
-                addAllowedHeaderIfValid( requestHeader, response );
+                addAllowedHeaderIfValid(requestHeader, response);
             }
         }
 
-        chain.doFilter( request, response );
+        chain.doFilter(request, response);
     }
 
     @Override
-    public void destroy()
-    {
-    }
+    public void destroy() {}
 
-    private void addAllowedMethodIfValid( String methodName, HttpServletResponse response )
-    {
-        HttpMethod method = HttpMethod.valueOfOrNull( methodName );
-        if ( method != null )
-        {
-            response.addHeader( ACCESS_CONTROL_ALLOW_METHODS, methodName );
-        }
-        else
-        {
-            log.warn( "Unknown HTTP method specified in " + ACCESS_CONTROL_REQUEST_METHOD + " '" + methodName + "'. " +
-                      "It will be ignored and not attached to the " + ACCESS_CONTROL_ALLOW_METHODS + " response header" );
+    private void addAllowedMethodIfValid(String methodName, HttpServletResponse response) {
+        HttpMethod method = HttpMethod.valueOfOrNull(methodName);
+        if (method != null) {
+            response.addHeader(ACCESS_CONTROL_ALLOW_METHODS, methodName);
+        } else {
+            log.warn("Unknown HTTP method specified in " + ACCESS_CONTROL_REQUEST_METHOD + " '" + methodName + "'. "
+                    + "It will be ignored and not attached to the " + ACCESS_CONTROL_ALLOW_METHODS
+                    + " response header");
         }
     }
 
-    private void addAllowedHeaderIfValid( String headerName, HttpServletResponse response )
-    {
-        if ( isValidHttpHeaderName( headerName ) )
-        {
-            response.addHeader( ACCESS_CONTROL_ALLOW_HEADERS, headerName );
-        }
-        else
-        {
-            log.warn( "Invalid HTTP header specified in " + ACCESS_CONTROL_REQUEST_HEADERS + " '" + headerName + "'. " +
-                      "It will be ignored and not attached to the " + ACCESS_CONTROL_ALLOW_HEADERS + " response header" );
+    private void addAllowedHeaderIfValid(String headerName, HttpServletResponse response) {
+        if (isValidHttpHeaderName(headerName)) {
+            response.addHeader(ACCESS_CONTROL_ALLOW_HEADERS, headerName);
+        } else {
+            log.warn("Invalid HTTP header specified in " + ACCESS_CONTROL_REQUEST_HEADERS + " '" + headerName + "'. "
+                    + "It will be ignored and not attached to the " + ACCESS_CONTROL_ALLOW_HEADERS
+                    + " response header");
         }
     }
 }

@@ -27,31 +27,26 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * Signals that some constraint has been violated, for example a name containing invalid characters or length.
  */
-public abstract class SchemaKernelException extends KernelException
-{
-    public enum OperationContext
-    {
+public abstract class SchemaKernelException extends KernelException {
+    public enum OperationContext {
         INDEX_CREATION,
         CONSTRAINT_CREATION
     }
 
-    protected SchemaKernelException( Status statusCode, Throwable cause, String message, Object... parameters )
-    {
-        super( statusCode, cause, message, parameters );
+    protected SchemaKernelException(Status statusCode, Throwable cause, String message, Object... parameters) {
+        super(statusCode, cause, message, parameters);
     }
 
-    public SchemaKernelException( Status statusCode, String message, Throwable cause )
-    {
-        super( statusCode, cause, message );
+    public SchemaKernelException(Status statusCode, String message, Throwable cause) {
+        super(statusCode, cause, message);
     }
 
-    public SchemaKernelException( Status statusCode, String message )
-    {
-        super( statusCode, message );
+    public SchemaKernelException(Status statusCode, String message) {
+        super(statusCode, message);
     }
 
-    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString, SchemaDescriptor descriptor )
-    {
-        return String.format( formatString, descriptor.userDescription( tokenNameLookup ) );
+    protected static String messageWithLabelAndPropertyName(
+            TokenNameLookup tokenNameLookup, String formatString, SchemaDescriptor descriptor) {
+        return String.format(formatString, descriptor.userDescription(tokenNameLookup));
     }
 }

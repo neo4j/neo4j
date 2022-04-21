@@ -19,20 +19,16 @@
  */
 package org.neo4j.exceptions;
 
-public abstract class StoreFailureException extends RuntimeException
-{
-    protected StoreFailureException( String msg )
-    {
-        super( msg );
+public abstract class StoreFailureException extends RuntimeException {
+    protected StoreFailureException(String msg) {
+        super(msg);
     }
 
-    protected StoreFailureException( Throwable cause )
-    {
-        super( cause );
+    protected StoreFailureException(Throwable cause) {
+        super(cause);
     }
 
-    protected StoreFailureException( String msg, Throwable cause )
-    {
-        super( msg, cause );
+    protected StoreFailureException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

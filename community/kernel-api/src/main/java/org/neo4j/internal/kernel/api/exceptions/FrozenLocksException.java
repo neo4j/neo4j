@@ -27,17 +27,16 @@ import org.neo4j.kernel.api.exceptions.Status;
  *
  * @see KernelTransaction#freezeLocks()
  */
-public class FrozenLocksException extends RuntimeException implements Status.HasStatus
-{
-    public FrozenLocksException( long transactionId )
-    {
-        super( String.format( "A interaction with a frozen lock client has occurred in transaction %d, possibly by " +
-                              "concurrent access to the transaction.", transactionId ) );
+public class FrozenLocksException extends RuntimeException implements Status.HasStatus {
+    public FrozenLocksException(long transactionId) {
+        super(String.format(
+                "A interaction with a frozen lock client has occurred in transaction %d, possibly by "
+                        + "concurrent access to the transaction.",
+                transactionId));
     }
 
     @Override
-    public Status status()
-    {
+    public Status status() {
         return Status.Transaction.TransactionAccessedConcurrently;
     }
 }

@@ -98,7 +98,8 @@ import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.Boolean.TRUE
 
-class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp with LogicalPlanningIntegrationTestSupport {
+class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp
+    with LogicalPlanningIntegrationTestSupport {
 
   test("should plan index seek by prefix for simple prefix search based on STARTS WITH with prefix") {
     (new given {
@@ -113,15 +114,15 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     (new given {
       cost = {
         case (_: RightOuterHashJoin, _, _, _) => 6.610321376825E9
-        case (_: LeftOuterHashJoin, _, _, _) => 8.1523761738E9
-        case (_: Apply, _, _, _) => 7.444573003149691E9
-        case (_: OptionalExpand, _, _, _) => 4.76310362E8
-        case (_: Optional, _, _, _) => 7.206417822149691E9
-        case (_: Selection, _, _, _) => 1.02731056E8
-        case (_: Expand, _, _, _) => 7.89155379E7
-        case (_: AllNodesScan, _, _, _) => 3.50735724E7
-        case (_: Argument, _, _, _) => 2.38155181E8
-        case (_: ProjectEndpoints, _, _, _) => 11.0
+        case (_: LeftOuterHashJoin, _, _, _)  => 8.1523761738E9
+        case (_: Apply, _, _, _)              => 7.444573003149691E9
+        case (_: OptionalExpand, _, _, _)     => 4.76310362E8
+        case (_: Optional, _, _, _)           => 7.206417822149691E9
+        case (_: Selection, _, _, _)          => 1.02731056E8
+        case (_: Expand, _, _, _)             => 7.89155379E7
+        case (_: AllNodesScan, _, _, _)       => 3.50735724E7
+        case (_: Argument, _, _, _)           => 2.38155181E8
+        case (_: ProjectEndpoints, _, _, _)   => 11.0
       }
     } getLogicalPlanFor
       """UNWIND $createdRelationships as r
@@ -144,28 +145,36 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan index seek by prefix for prefix search based on multiple STARTS WITHSs combined with AND, and choose the longer prefix") {
+  test(
+    "should plan index seek by prefix for prefix search based on multiple STARTS WITHSs combined with AND, and choose the longer prefix"
+  ) {
     (new given {
       indexOn("Person", "name")
       indexOn("Person", "lastname")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'short' AND a.lastname STARTS WITH 'longer' RETURN a")
       ._1 should equal(
-      Selection(ands(startsWith(prop("a", "name"), literalString("short"))),
+      Selection(
+        ands(startsWith(prop("a", "name"), literalString("short"))),
         nodeIndexSeek("a:Person(lastname STARTS WITH 'longer')", propIds = Some(Map("lastname" -> 1)))
-      ))
+      )
+    )
   }
 
-  test("should plan index seek by prefix for prefix search based on multiple STARTS WITHSs combined with AND, and choose the longer prefix even with predicates reversed") {
+  test(
+    "should plan index seek by prefix for prefix search based on multiple STARTS WITHSs combined with AND, and choose the longer prefix even with predicates reversed"
+  ) {
     (new given {
       indexOn("Person", "name")
       indexOn("Person", "lastname")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.lastname STARTS WITH 'longer' AND a.name STARTS WITH 'short' RETURN a")
       ._1 should equal(
-      Selection(ands(startsWith(prop("a", "name"), literalString("short"))),
+      Selection(
+        ands(startsWith(prop("a", "name"), literalString("short"))),
         nodeIndexSeek("a:Person(lastname STARTS WITH 'longer')", propIds = Some(Map("lastname" -> 1)))
-      ))
+      )
+    )
   }
 
   test("should plan index seek by prefix for prefix search based on multiple STARTS WITHs combined with AND NOT") {
@@ -175,29 +184,40 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'longer' AND NOT a.lastname STARTS WITH 'short' RETURN a")
       ._1 should equal(
-      Selection(ands(not(startsWith(prop("a", "lastname"), literalString("short")))),
+      Selection(
+        ands(not(startsWith(prop("a", "lastname"), literalString("short")))),
         nodeIndexSeek("a:Person(name STARTS WITH 'longer')")
-      ))
+      )
+    )
   }
 
   test("should plan property equality index seek instead of index seek by prefix") {
     (new given {
       indexOn("Person", "name")
-      cardinality = mapCardinality(promoteOnlyPlansSolving(Set("a"), Set(hasLabels("a", "Person"), in(prop("a", "name"), listOfString("prefix1")))))
+      cardinality = mapCardinality(promoteOnlyPlansSolving(
+        Set("a"),
+        Set(hasLabels("a", "Person"), in(prop("a", "name"), listOfString("prefix1")))
+      ))
 
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix' AND a.name = 'prefix1' RETURN a")._1 should equal(
-      Selection(ands(startsWith(cachedNodeProp("a", "name"), literalString("prefix"))),
+      Selection(
+        ands(startsWith(cachedNodeProp("a", "name"), literalString("prefix"))),
         nodeIndexSeek("a:Person(name = 'prefix1')", _ => GetValue)
-      ))
+      )
+    )
   }
 
   test("should plan property equality index seek using IN instead of index seek by prefix") {
     (new given {
       indexOn("Person", "name")
-      cardinality = mapCardinality(promoteOnlyPlansSolving(Set("a"), Set(hasLabels("a", "Person"), in(prop("a", "name"), listOfString("prefix1", "prefix2")))))
+      cardinality = mapCardinality(promoteOnlyPlansSolving(
+        Set("a"),
+        Set(hasLabels("a", "Person"), in(prop("a", "name"), listOfString("prefix1", "prefix2")))
+      ))
 
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix%' AND a.name in ['prefix1', 'prefix2'] RETURN a")._1 should equal(
-      Selection(ands(startsWith(cachedNodeProp("a", "name"), literalString("prefix%"))),
+      Selection(
+        ands(startsWith(cachedNodeProp("a", "name"), literalString("prefix%"))),
         NodeIndexSeek(
           "a",
           LabelToken("Person", LabelId(0)),
@@ -205,8 +225,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           ManyQueryExpression(listOfString("prefix1", "prefix2")),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE)
-      ))
+          IndexType.RANGE
+        )
+      )
+    )
   }
 
   test("should plan index seek by numeric range for numeric inequality predicate") {
@@ -219,7 +241,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan index seek by numeric range for numeric chained operator") {
-    val than =  RangeGreaterThan(NonEmptyList(ExclusiveBound(literalInt(6))))
+    val than = RangeGreaterThan(NonEmptyList(ExclusiveBound(literalInt(6))))
     val than1 = RangeLessThan(NonEmptyList(ExclusiveBound(literalInt(12))))
     (new given {
       indexOn("Person", "age")
@@ -239,22 +261,27 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         ),
         Set.empty,
         IndexOrderNone,
-        IndexType.RANGE)
+        IndexType.RANGE
+      )
     )
   }
 
-  test("should plan index seek for multiple inequality predicates and prefer the index seek with the lower cost per row") {
+  test(
+    "should plan index seek for multiple inequality predicates and prefer the index seek with the lower cost per row"
+  ) {
     (new given {
       indexOn("Person", "name")
       indexOn("Person", "age")
       cost = {
-        case (_: AllNodesScan, _, _, _) => 1000.0
+        case (_: AllNodesScan, _, _, _)    => 1000.0
         case (_: NodeByLabelScan, _, _, _) => 50.0
-        case (_: NodeIndexScan, _, _, _) => 10.0
-        case (plan: NodeIndexSeek, _, _, _) if plan.properties.headOption.map(_.propertyKeyToken.name).contains("name") => 1.0
-        case (plan: NodeIndexSeek, _, _, _) if plan.properties.headOption.map(_.propertyKeyToken.name).contains("age")  => 5.0
+        case (_: NodeIndexScan, _, _, _)   => 10.0
+        case (plan: NodeIndexSeek, _, _, _)
+          if plan.properties.headOption.map(_.propertyKeyToken.name).contains("name") => 1.0
+        case (plan: NodeIndexSeek, _, _, _)
+          if plan.properties.headOption.map(_.propertyKeyToken.name).contains("age") => 5.0
         case (Selection(_, source), x, y, z) => cost((source, x, y, z)) + 30.0
-        case _ => Double.MaxValue
+        case _                               => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.age > 40 AND a.name >= 'Cinderella' RETURN a")._1 should equal(
       Selection(
@@ -274,19 +301,18 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan all nodes scans") {
-    (new given {
-    } getLogicalPlanFor "MATCH (n) RETURN n")._1 should equal(
+    (new given {} getLogicalPlanFor "MATCH (n) RETURN n")._1 should equal(
       AllNodesScan("n", Set.empty)
     )
   }
 
   test("should plan label scans even without having a compile-time label id") {
     (new given {
-      cost =  {
-        case (_: AllNodesScan, _, _, _) => 1000.0
-        case (_: NodeByIdSeek, _, _, _) => 2.0
+      cost = {
+        case (_: AllNodesScan, _, _, _)    => 1000.0
+        case (_: NodeByIdSeek, _, _, _)    => 2.0
         case (_: NodeByLabelScan, _, _, _) => 1.0
-        case _ => Double.MaxValue
+        case _                             => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (n:Awesome) RETURN n")._1 should equal(
       NodeByLabelScan("n", labelName("Awesome"), Set.empty, IndexOrderNone)
@@ -294,25 +320,27 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan label scans when having a compile-time label id") {
-    val plan = new given {
-      cost =  {
-        case (_: AllNodesScan, _, _, _) => 1000.0
-        case (_: NodeByIdSeek, _, _, _) => 2.0
-        case (_: NodeByLabelScan, _, _, _) => 1.0
-        case _ => Double.MaxValue
-      }
-      knownLabels = Set("Awesome")
-    } getLogicalPlanFor "MATCH (n:Awesome) RETURN n"
+    val plan =
+      new given {
+        cost = {
+          case (_: AllNodesScan, _, _, _)    => 1000.0
+          case (_: NodeByIdSeek, _, _, _)    => 2.0
+          case (_: NodeByLabelScan, _, _, _) => 1.0
+          case _                             => Double.MaxValue
+        }
+        knownLabels = Set("Awesome")
+      } getLogicalPlanFor "MATCH (n:Awesome) RETURN n"
 
     plan._1 should equal(
       NodeByLabelScan("n", labelName("Awesome"), Set.empty, IndexOrderNone)
     )
   }
 
-  private val nodeIndexScanCost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
-    case (_: AllNodesScan, _, _, _) => 1000.0
-    case (_: NodeByLabelScan, _, _, _) => 50.0
-    case (_: NodeIndexScan, _, _, _) => 10.0
+  private val nodeIndexScanCost
+    : PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
+    case (_: AllNodesScan, _, _, _)          => 1000.0
+    case (_: NodeByLabelScan, _, _, _)       => 50.0
+    case (_: NodeIndexScan, _, _, _)         => 10.0
     case (_: NodeIndexContainsScan, _, _, _) => 10.0
     case (nodeIndexSeek: NodeIndexSeek, _, cardinalities, providedOrders) =>
       val planCardinality = cardinalities.get(nodeIndexSeek.id).amount
@@ -320,18 +348,22 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       val allNodesCardinality = 1000.0
       rowCost * planCardinality / allNodesCardinality
     case (Selection(_, plan), input, c, p) => nodeIndexScanCost((plan, input, c, p)) + 1.0
-    case _ => Double.MaxValue
+    case _                                 => Double.MaxValue
   }
 
-  private val nodeIndexSeekCost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
-    case (_: AllNodesScan, _, _, _) => 1000000000.0
-    case (_: NodeIndexSeek, _, _, _) => 0.1
+  private val nodeIndexSeekCost
+    : PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
+    case (_: AllNodesScan, _, _, _)                    => 1000000000.0
+    case (_: NodeIndexSeek, _, _, _)                   => 0.1
     case (Expand(plan, _, _, _, _, _, _), input, c, p) => nodeIndexSeekCost((plan, input, c, p))
-    case (Selection(_, plan), input, c, p) => nodeIndexSeekCost((plan, input, c, p))
-    case _ => 1000.0
+    case (Selection(_, plan), input, c, p)             => nodeIndexSeekCost((plan, input, c, p))
+    case _                                             => 1000.0
   }
 
-  private def promoteOnlyPlansSolving(patternNodes: Set[String], expressions: Set[Expression]): PartialFunction[PlannerQueryPart, Double] = {
+  private def promoteOnlyPlansSolving(
+    patternNodes: Set[String],
+    expressions: Set[Expression]
+  ): PartialFunction[PlannerQueryPart, Double] = {
     case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == patternNodes =>
       queryGraph.selections.predicates.map(_.expr) match {
         case es if es == expressions => 10.0
@@ -342,39 +374,42 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan index scan for n.prop IS NOT NULL") {
-    val plan = new given {
-      indexOn("Awesome", "prop")
-      cost = nodeIndexScanCost
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n"
+    val plan =
+      new given {
+        indexOn("Awesome", "prop")
+        cost = nodeIndexScanCost
+      } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n"
 
     plan._1 should equal(nodeIndexSeek("n:Awesome(prop)"))
   }
 
   test("should plan unique index scan for n.prop IS NOT NULL") {
-    val plan = new given {
-      uniqueIndexOn("Awesome", "prop")
-      cost = nodeIndexScanCost
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n"
+    val plan =
+      new given {
+        uniqueIndexOn("Awesome", "prop")
+        cost = nodeIndexScanCost
+      } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n"
 
     plan._1 should equal(nodeIndexSeek("n:Awesome(prop)"))
   }
 
   test("should plan index seek instead of index scan when there are predicates for both") {
-    val plan = new given {
-      indexOn("Awesome", "prop")
-      cost = nodeIndexScanCost
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL AND n.prop = 42 RETURN n"
+    val plan =
+      new given {
+        indexOn("Awesome", "prop")
+        cost = nodeIndexScanCost
+      } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL AND n.prop = 42 RETURN n"
 
     plan._1 should equal(
-      Selection(ands(isNotNull(cachedNodeProp("n", "prop"))),
-        nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue)
-      ))
+      Selection(ands(isNotNull(cachedNodeProp("n", "prop"))), nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue))
+    )
   }
 
   test("should plan index seek when there is an index on the property") {
-    val plan = new given {
-      indexOn("Awesome", "prop")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
+    val plan =
+      new given {
+        indexOn("Awesome", "prop")
+      } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan._1 should equal(
       nodeIndexSeek("n:Awesome(prop = 42)")
@@ -382,21 +417,28 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan unique index seek when there is an unique index on the property") {
-    val plan = new given {
-      uniqueIndexOn("Awesome", "prop")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
+    val plan =
+      new given {
+        uniqueIndexOn("Awesome", "prop")
+      } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan._1 should equal(
-      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
+      NodeUniqueIndexSeek(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
         Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
-        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone, IndexType.RANGE)
+        SingleQueryExpression(literalInt(42)),
+        Set.empty,
+        IndexOrderNone,
+        IndexType.RANGE
+      )
     )
   }
 
   test("should plan node by ID lookup instead of label scan when the node by ID lookup is cheaper") {
     (new given {
       knownLabels = Set("Awesome")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE id(n) = 42 RETURN n")._1 should equal (
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE id(n) = 42 RETURN n")._1 should equal(
       Selection(
         ands(hasLabels("n", "Awesome")),
         NodeByIdSeek("n", ManySeekableArgs(listOfInt(42)), Set.empty)
@@ -407,7 +449,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan node by ID lookup based on an IN predicate with a param as the rhs") {
     (new given {
       knownLabels = Set("Awesome")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE id(n) IN $param RETURN n")._1 should equal (
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE id(n) IN $param RETURN n")._1 should equal(
       Selection(
         ands(hasLabels("n", "Awesome")),
         NodeByIdSeek("n", ManySeekableArgs(parameter("param", CTAny)), Set.empty)
@@ -453,15 +495,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan directed rel by ID lookup based on an IN predicate with a param as the rhs") {
-    (new given {
-    } getLogicalPlanFor "MATCH (a)-[r]->(b) WHERE id(r) IN $param RETURN a, r, b")._1 should equal (
+    (new given {} getLogicalPlanFor "MATCH (a)-[r]->(b) WHERE id(r) IN $param RETURN a, r, b")._1 should equal(
       DirectedRelationshipByIdSeek("r", ManySeekableArgs(parameter("param", CTAny)), "a", "b", Set.empty)
     )
   }
 
   test("should plan undirected rel by ID lookup based on an IN predicate with a param as the rhs") {
-    (new given {
-    } getLogicalPlanFor "MATCH (a)-[r]-(b) WHERE id(r) IN $param RETURN a, r, b")._1 should equal (
+    (new given {} getLogicalPlanFor "MATCH (a)-[r]-(b) WHERE id(r) IN $param RETURN a, r, b")._1 should equal(
       UndirectedRelationshipByIdSeek("r", ManySeekableArgs(parameter("param", CTAny)), "a", "b", Set.empty)
     )
   }
@@ -469,7 +509,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan node by ID lookup based on an IN predicate") {
     (new given {
       knownLabels = Set("Awesome")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE id(n) IN [42, 64] RETURN n")._1 should equal (
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE id(n) IN [42, 64] RETURN n")._1 should equal(
       Selection(
         ands(hasLabels("n", "Awesome")),
         NodeByIdSeek("n", ManySeekableArgs(listOfInt(42, 64)), Set.empty)
@@ -482,23 +522,28 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IN [42] RETURN n")._1 should beLike {
       case NodeIndexSeek(
-              "n",
-              LabelToken("Awesome", _),
-      Seq(IndexedProperty(PropertyKeyToken("prop", _), DoNotGetValue, NODE_TYPE)),
-              SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _, _, _) => ()
+          "n",
+          LabelToken("Awesome", _),
+          Seq(IndexedProperty(PropertyKeyToken("prop", _), DoNotGetValue, NODE_TYPE)),
+          SingleQueryExpression(SignedDecimalIntegerLiteral("42")),
+          _,
+          _,
+          _
+        ) => ()
     }
   }
 
   test("should use indexes for large collections if it is a unique index") {
-    val result = new given {
-      cost =  {
-        case (_: AllNodesScan, _, _, _)    => 10000.0
-        case (_: NodeByLabelScan, _, _, _) =>  1000.0
-        case (_: NodeByIdSeek, _, _, _)    =>     2.0
-        case _                       => Double.MaxValue
-      }
-      uniqueIndexOn("Awesome", "prop")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5] RETURN n"
+    val result =
+      new given {
+        cost = {
+          case (_: AllNodesScan, _, _, _)    => 10000.0
+          case (_: NodeByLabelScan, _, _, _) => 1000.0
+          case (_: NodeByIdSeek, _, _, _)    => 2.0
+          case _                             => Double.MaxValue
+        }
+        uniqueIndexOn("Awesome", "prop")
+      } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5] RETURN n"
 
     result._1 should beLike {
       case _: NodeUniqueIndexSeek => ()
@@ -509,35 +554,42 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   // Composite indexes
   // WHERE n:Label AND (n.prop = $val1 OR (n.prop = $val2 AND n.bar = $val3))
 
-  test("should plan composite index seek when there is an index on two properties and both are in equality predicates") {
-    val plan = new given {
-      indexOn("Awesome", "prop", "prop2")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.prop2 = 'foo' RETURN n"
+  test(
+    "should plan composite index seek when there is an index on two properties and both are in equality predicates"
+  ) {
+    val plan =
+      new given {
+        indexOn("Awesome", "prop", "prop2")
+      } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.prop2 = 'foo' RETURN n"
 
     plan._1 should equal(
       nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')")
     )
   }
 
-  test("should plan composite index seek when there is an index on two properties and both are in equality predicates regardless of predicate order") {
-    val plan = new given {
-      indexOn("Awesome", "prop", "prop2")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.prop = 42 RETURN n"
+  test(
+    "should plan composite index seek when there is an index on two properties and both are in equality predicates regardless of predicate order"
+  ) {
+    val plan =
+      new given {
+        indexOn("Awesome", "prop", "prop2")
+      } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.prop = 42 RETURN n"
 
     plan._1 should equal(
       nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')")
     )
   }
 
-  test("should plan composite index seek and filter when there is an index on two properties and both are in equality predicates together with other predicates") {
-    val plan = new given {
-      indexOn("Awesome", "prop", "prop2")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.name IS NOT NULL AND n.prop = 42 RETURN n"
+  test(
+    "should plan composite index seek and filter when there is an index on two properties and both are in equality predicates together with other predicates"
+  ) {
+    val plan =
+      new given {
+        indexOn("Awesome", "prop", "prop2")
+      } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.name IS NOT NULL AND n.prop = 42 RETURN n"
 
     plan._1 should equal(
-      Selection(ands(isNotNull(prop("n", "name"))),
-        nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')")
-      )
+      Selection(ands(isNotNull(prop("n", "name"))), nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')"))
     )
   }
 
@@ -547,13 +599,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should plan hinted label scans") {
 
-    val plan = new given {
-      cost = {
-        case (_: Selection, _, _, _) => 20.0
-        case (_: NodeHashJoin, _, _, _) => 1000.0
-        case (_: NodeByLabelScan, _, _, _) => 20.0
-      }
-    } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) USING SCAN n:Bar RETURN n"
+    val plan =
+      new given {
+        cost = {
+          case (_: Selection, _, _, _)       => 20.0
+          case (_: NodeHashJoin, _, _, _)    => 1000.0
+          case (_: NodeByLabelScan, _, _, _) => 20.0
+        }
+      } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) USING SCAN n:Bar RETURN n"
 
     plan._1 should equal(
       Selection(
@@ -579,9 +632,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan hinted index seek when returning *") {
-    val plan = new given {
-      indexOn("Awesome", "prop")
-    } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN *"
+    val plan =
+      new given {
+        indexOn("Awesome", "prop")
+      } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN *"
 
     plan._1 should equal(
       nodeIndexSeek("n:Awesome(prop = 42)")
@@ -589,22 +643,30 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan hinted index seek with or") {
-    val plan = new given {
-      indexOn("Awesome", "prop")
-    } getLogicalPlanFor "MATCH (n:Awesome) USING INDEX n:Awesome(prop) WHERE n.prop = 42 OR n.prop = 1337 RETURN n"
+    val plan =
+      new given {
+        indexOn("Awesome", "prop")
+      } getLogicalPlanFor "MATCH (n:Awesome) USING INDEX n:Awesome(prop) WHERE n.prop = 42 OR n.prop = 1337 RETURN n"
 
     plan._1 should equal(
-      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)),
+      NodeIndexSeek(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
         Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
-        ManyQueryExpression(listOfInt(42, 1337)), Set.empty, IndexOrderNone, IndexType.RANGE)
+        ManyQueryExpression(listOfInt(42, 1337)),
+        Set.empty,
+        IndexOrderNone,
+        IndexType.RANGE
+      )
     )
   }
 
   test("should plan hinted index seek when there are multiple indices") {
-    val plan = new given {
-      indexOn("Awesome", "prop1")
-      indexOn("Awesome", "prop2")
-    } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 = 3 RETURN n "
+    val plan =
+      new given {
+        indexOn("Awesome", "prop1")
+        indexOn("Awesome", "prop2")
+      } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 = 3 RETURN n "
 
     plan._1 should equal(
       Selection(
@@ -615,10 +677,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan hinted index seek when there are multiple or indices") {
-    val plan = new given {
-      indexOn("Awesome", "prop1")
-      indexOn("Awesome", "prop2")
-    } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
+    val plan =
+      new given {
+        indexOn("Awesome", "prop1")
+        indexOn("Awesome", "prop2")
+      } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
 
     val seek1 = nodeIndexSeek("n:Awesome(prop1 = 42)", _ => DoNotGetValue)
     val seek2 = nodeIndexSeek("n:Awesome(prop2 = 3)", _ => DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
@@ -629,50 +692,72 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan hinted unique index seek") {
-    val plan = new given {
-      uniqueIndexOn("Awesome", "prop")
-    } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
+    val plan =
+      new given {
+        uniqueIndexOn("Awesome", "prop")
+      } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
 
     plan._1 should equal(
-      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
+      NodeUniqueIndexSeek(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
         Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
-        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone, IndexType.RANGE)
+        SingleQueryExpression(literalInt(42)),
+        Set.empty,
+        IndexOrderNone,
+        IndexType.RANGE
+      )
     )
   }
 
   test("should plan hinted unique index seek when there are multiple unique indices") {
-    val plan = new given {
-      uniqueIndexOn("Awesome", "prop1")
-      uniqueIndexOn("Awesome", "prop2")
-    } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 = 3 RETURN n"
+    val plan =
+      new given {
+        uniqueIndexOn("Awesome", "prop1")
+        uniqueIndexOn("Awesome", "prop2")
+      } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 = 3 RETURN n"
 
     plan._1 should equal(
       Selection(
         ands(equals(prop("n", "prop1"), literalInt(42))),
-        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
+        NodeUniqueIndexSeek(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
           Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
-          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone, IndexType.RANGE)
+          SingleQueryExpression(literalInt(3)),
+          Set.empty,
+          IndexOrderNone,
+          IndexType.RANGE
+        )
       )
     )
   }
 
   test("should plan hinted unique index seek based on an IN predicate  when there are multiple unique indices") {
-    val plan = new given {
-      uniqueIndexOn("Awesome", "prop1")
-      uniqueIndexOn("Awesome", "prop2")
-    } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 IN [3] RETURN n"
+    val plan =
+      new given {
+        uniqueIndexOn("Awesome", "prop1")
+        uniqueIndexOn("Awesome", "prop2")
+      } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 IN [3] RETURN n"
 
     plan._1 should equal(
       Selection(
         ands(equals(prop("n", "prop1"), literalInt(42))),
-        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
+        NodeUniqueIndexSeek(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
           Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
-          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone, IndexType.RANGE)
+          SingleQueryExpression(literalInt(3)),
+          Set.empty,
+          IndexOrderNone,
+          IndexType.RANGE
+        )
       )
     )
   }
 
   private object nodeIndexHints {
+
     val config: StatisticsBackedLogicalPlanningConfigurationBuilder =
       plannerBuilder()
         .setAllNodesCardinality(1000)
@@ -694,12 +779,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   private object nodePointIndexHints {
+
     val pointQueryExpression = Some(SingleQueryExpression(
       FunctionInvocation(
         FunctionName("point")(pos),
         MapExpression(Seq(
           PropertyKeyName("x")(pos) -> DecimalDoubleLiteral("22.0")(pos),
-          PropertyKeyName("y")(pos) -> DecimalDoubleLiteral("44.0")(pos),
+          PropertyKeyName("y")(pos) -> DecimalDoubleLiteral("44.0")(pos)
         ))(pos)
       )(pos)
     ))
@@ -709,8 +795,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
          |WHERE b.prop = point({x:22.0, y:44.0})
          |RETURN a""".stripMargin
 
-
-    def relQuery(hint:String): String =
+    def relQuery(hint: String): String =
       s"""MATCH (a)-[r:R]->(b) $hint
          |WHERE r.prop = point({x:22.0, y:44.0})
          |RETURN a""".stripMargin
@@ -782,7 +867,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           .produceResults("a")
           .filter("a:A")
           .expandAll("(b)<-[r:R]-(a)")
-          .nodeIndexOperator("b:B(prop)", indexType = IndexType.POINT,
+          .nodeIndexOperator(
+            "b:B(prop)",
+            indexType = IndexType.POINT,
             customQueryExpression = nodePointIndexHints.pointQueryExpression
           )
           .build()
@@ -841,6 +928,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   private object relIndexHints {
+
     val config: StatisticsBackedLogicalPlanningConfigurationBuilder =
       plannerBuilder()
         .setAllNodesCardinality(10)
@@ -858,8 +946,20 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should not plan relationship index for this query without hints") {
 
     val planner = relIndexHints.config
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .addRelationshipIndex(
+        "R",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 1.0,
+        indexType = IndexType.RANGE
+      )
+      .addRelationshipIndex(
+        "R",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 1.0,
+        indexType = IndexType.TEXT
+      )
       .build()
 
     planner.plan(relIndexHints.query(""))
@@ -885,7 +985,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     allTypes.foreach { hintType =>
       val otherTypes = allTypes.filterNot(_ == hintType)
       val hasOtherIndexes = otherTypes.foldLeft(baseCfg) { case (cfg, indexType) =>
-        cfg.addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = indexType)
+        cfg.addRelationshipIndex(
+          "R",
+          Seq("prop"),
+          existsSelectivity = 1.0,
+          uniqueSelectivity = 1.0,
+          indexType = indexType
+        )
       }
       val planner = hasOtherIndexes.build()
 
@@ -909,8 +1015,20 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan text relationship index when index hint has text type") {
 
     val planner = relIndexHints.config
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .addRelationshipIndex(
+        "R",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 1.0,
+        indexType = IndexType.RANGE
+      )
+      .addRelationshipIndex(
+        "R",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 1.0,
+        indexType = IndexType.TEXT
+      )
       .build()
 
     planner.plan(relIndexHints.query("USING TEXT INDEX r:R(prop)"))
@@ -926,8 +1044,20 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan range relationship index when index hint has range type") {
 
     val planner = relIndexHints.config
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .addRelationshipIndex(
+        "R",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 1.0,
+        indexType = IndexType.RANGE
+      )
+      .addRelationshipIndex(
+        "R",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 1.0,
+        indexType = IndexType.TEXT
+      )
       .build()
 
     planner.plan(relIndexHints.query("USING RANGE INDEX r:R(prop)"))
@@ -943,38 +1073,54 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan point relationship index when index hint has point type") {
 
     val planner = relIndexHints.config
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.POINT)
+      .addRelationshipIndex(
+        "R",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 1.0,
+        indexType = IndexType.RANGE
+      )
+      .addRelationshipIndex(
+        "R",
+        Seq("prop"),
+        existsSelectivity = 1.0,
+        uniqueSelectivity = 1.0,
+        indexType = IndexType.POINT
+      )
       .build()
 
     planner.plan(nodePointIndexHints.relQuery("USING POINT INDEX r:R(prop)"))
       .shouldEqual(
         planner.planBuilder()
           .produceResults("a")
-          .relationshipIndexOperator("(a)-[r:R(prop)]->(b)", indexType = IndexType.POINT,
-          customQueryExpression = nodePointIndexHints.pointQueryExpression
-        )
+          .relationshipIndexOperator(
+            "(a)-[r:R(prop)]->(b)",
+            indexType = IndexType.POINT,
+            customQueryExpression = nodePointIndexHints.pointQueryExpression
+          )
           .build()
       )
   }
 
   test("should plan node by ID seek based on a predicate with an id collection variable as the rhs") {
-    val plan = new given {
-      cost =  {
-        case (_: AllNodesScan, _, _, _) => 1000.0
-        case (_: NodeByIdSeek, _, _, _) => 2.0
-        case (_: NodeByLabelScan, _, _, _) => 1.0
-        case _ => Double.MaxValue
-      }
-    } getLogicalPlanFor "WITH [0,1,3] AS arr MATCH (n) WHERE id(n) IN arr return count(*)"
+    val plan =
+      new given {
+        cost = {
+          case (_: AllNodesScan, _, _, _)    => 1000.0
+          case (_: NodeByIdSeek, _, _, _)    => 2.0
+          case (_: NodeByLabelScan, _, _, _) => 1.0
+          case _                             => Double.MaxValue
+        }
+      } getLogicalPlanFor "WITH [0,1,3] AS arr MATCH (n) WHERE id(n) IN arr return count(*)"
 
     plan._1 should equal(
       Aggregation(
         Apply(
-          Projection(Argument(),Map("arr" -> listOfInt(0, 1, 3))),
-          NodeByIdSeek("n", ManySeekableArgs(varFor("arr")),Set("arr"))
+          Projection(Argument(), Map("arr" -> listOfInt(0, 1, 3))),
+          NodeByIdSeek("n", ManySeekableArgs(varFor("arr")), Set("arr"))
         ),
-        Map(), Map("count(*)" -> CountStar()_)
+        Map(),
+        Map("count(*)" -> CountStar() _)
       )
     )
   }
@@ -1042,7 +1188,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     }
   }
 
-  //---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // Test expand order with multiple configurations and
   // internal.cypher.plan_with_minimum_cardinality_estimates setting
   //
@@ -1072,9 +1218,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should pick expands in an order that minimizes early cardinality increase") {
     val config = new given {
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")      => 1000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")      => 2000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c")      => 2000.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "c") => 300.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 100.0
@@ -1085,12 +1231,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     testAndAssertExpandOrder(config)
   }
 
-  test("should pick expands in an order that minimizes early cardinality increase (plan_with_minimum_cardinality_estimates enabled)") {
+  test(
+    "should pick expands in an order that minimizes early cardinality increase (plan_with_minimum_cardinality_estimates enabled)"
+  ) {
     val config = new givenPlanWithMinimumCardinalityEnabled {
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")      => 1000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")      => 2000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c")      => 2000.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "c") => 300.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 100.0
@@ -1104,11 +1252,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should pick expands in an order that minimizes early cardinality increase with estimates < 1.0") {
     val config = new given {
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") =>  5.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 10.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 0.4
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "c") => 0.5
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")           => 5.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")           => 10.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c")           => 10.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b")      => 0.4
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "c")      => 0.5
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 0.1
         case _ => throw new IllegalStateException("Unexpected PlannerQuery")
       }
@@ -1117,14 +1265,16 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     testAndAssertExpandOrder(config)
   }
 
-  test("should pick expands in an order that minimizes early cardinality increase with estimates < 1.0 (plan_with_minimum_cardinality_estimates enabled)") {
+  test(
+    "should pick expands in an order that minimizes early cardinality increase with estimates < 1.0 (plan_with_minimum_cardinality_estimates enabled)"
+  ) {
     val config = new givenPlanWithMinimumCardinalityEnabled {
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") =>  5.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 10.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 0.4
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "c") => 0.5
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")           => 5.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")           => 10.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c")           => 10.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b")      => 0.4
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "c")      => 0.5
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 0.1
         case _ => throw new IllegalStateException("Unexpected PlannerQuery")
       }
@@ -1366,7 +1516,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     withClue("Used relationshipTypeScan when not expected:") {
       plan.folder.treeExists {
-        case _: DirectedRelationshipTypeScan => true
+        case _: DirectedRelationshipTypeScan   => true
         case _: UndirectedRelationshipTypeScan => true
       } should be(false)
     }
@@ -1420,7 +1570,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     withClue("Used relationshipTypeScan when not expected:") {
       plan.folder.treeExists {
-        case _: DirectedRelationshipTypeScan => true
+        case _: DirectedRelationshipTypeScan   => true
         case _: UndirectedRelationshipTypeScan => true
       } should be(false)
     }
@@ -1434,16 +1584,26 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .build()
 
     val query =
-        """MATCH (n:Person)
-          |WHERE point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5
-          |RETURN n
-          |""".stripMargin
+      """MATCH (n:Person)
+        |WHERE point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5
+        |RETURN n
+        |""".stripMargin
 
     val plan = pb.plan(query).stripProduceResults
 
     val expectedPlan = pb.subPlanBuilder()
       .filter("point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5")
-      .pointDistanceNodeIndexSeek("n", "Person", "prop", "{x: 1.1, y: 5.4}", 0.5, indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue, indexType = IndexType.POINT)
+      .pointDistanceNodeIndexSeek(
+        "n",
+        "Person",
+        "prop",
+        "{x: 1.1, y: 5.4}",
+        0.5,
+        indexOrder = IndexOrderNone,
+        argumentIds = Set(),
+        getValue = DoNotGetValue,
+        indexType = IndexType.POINT
+      )
       .build()
 
     plan shouldEqual expectedPlan

@@ -19,77 +19,71 @@
  */
 package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.map.mutable.UnifiedMap;
-
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
-
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
 import static org.neo4j.memory.HeapEstimator.OBJECT_REFERENCE_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-@SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements AutoCloseable
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingUnifiedMap.class );
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
+
+@SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K, V> implements AutoCloseable {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingUnifiedMap.class);
     private final MemoryTracker memoryTracker;
     private long trackedHeap;
 
     @VisibleForTesting
-    public static <K, V> HeapTrackingUnifiedMap<K,V> createUnifiedMap( MemoryTracker memoryTracker )
-    {
+    public static <K, V> HeapTrackingUnifiedMap<K, V> createUnifiedMap(MemoryTracker memoryTracker) {
         int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 2;
-        long trackedHeap = arrayHeapSize( initialSizeToAllocate );
-        memoryTracker.allocateHeap( SHALLOW_SIZE + trackedHeap );
-        return new HeapTrackingUnifiedMap<>( memoryTracker, trackedHeap );
+        long trackedHeap = arrayHeapSize(initialSizeToAllocate);
+        memoryTracker.allocateHeap(SHALLOW_SIZE + trackedHeap);
+        return new HeapTrackingUnifiedMap<>(memoryTracker, trackedHeap);
     }
 
-    private HeapTrackingUnifiedMap( MemoryTracker memoryTracker, long trackedHeap )
-    {
-        this.memoryTracker = requireNonNull( memoryTracker );
+    private HeapTrackingUnifiedMap(MemoryTracker memoryTracker, long trackedHeap) {
+        this.memoryTracker = requireNonNull(memoryTracker);
         this.trackedHeap = trackedHeap;
     }
 
     @Override
-    protected void allocateTable( int sizeToAllocate )
-    {
-        if ( memoryTracker != null )
-        {
-            long heapToAllocate = arrayHeapSize( sizeToAllocate );
-            memoryTracker.allocateHeap( heapToAllocate );
-            memoryTracker.releaseHeap( trackedHeap );
+    protected void allocateTable(int sizeToAllocate) {
+        if (memoryTracker != null) {
+            long heapToAllocate = arrayHeapSize(sizeToAllocate);
+            memoryTracker.allocateHeap(heapToAllocate);
+            memoryTracker.releaseHeap(trackedHeap);
             trackedHeap = heapToAllocate;
         }
-        super.allocateTable( sizeToAllocate );
+        super.allocateTable(sizeToAllocate);
     }
 
     @Override
-    protected void rehash( int newCapacity )
-    {
-        super.rehash( newCapacity );
-        // Add an estimated heap usage of the arrays for the chains of colliding buckets, which grow in multiples of 4 (2 key-value pairs).
+    protected void rehash(int newCapacity) {
+        super.rehash(newCapacity);
+        // Add an estimated heap usage of the arrays for the chains of colliding buckets, which grow in multiples of 4
+        // (2 key-value pairs).
         // Add a fixed cost for each chain, which amounts to an average chain length of 8 key-value pairs.
-        // In actuality chains are usually much shorter, but the number of collisions is also at it lowest just after rehash and can then grow
+        // In actuality chains are usually much shorter, but the number of collisions is also at it lowest just after
+        // rehash and can then grow
         // substantially before the next rehash (approximately a factor of 3).
-        // So based on experiments this heuristic seems to produce a fair trade-off between underestimation just before rehash and overestimation
+        // So based on experiments this heuristic seems to produce a fair trade-off between underestimation just before
+        // rehash and overestimation
         // just after rehash, with a bias toward more overestimation after rehash (e.g. ~3% under --> ~8% over)
         int nChains = getCollidingBuckets();
-        long estimatedHeapUsageForChains = nChains * arrayHeapSize( 16 );
-        memoryTracker.allocateHeap( estimatedHeapUsageForChains );
+        long estimatedHeapUsageForChains = nChains * arrayHeapSize(16);
+        memoryTracker.allocateHeap(estimatedHeapUsageForChains);
         trackedHeap += estimatedHeapUsageForChains;
     }
 
     @Override
-    public void close()
-    {
-        memoryTracker.releaseHeap( SHALLOW_SIZE + trackedHeap );
+    public void close() {
+        memoryTracker.releaseHeap(SHALLOW_SIZE + trackedHeap);
     }
 
     @VisibleForTesting
-    public static long arrayHeapSize( int arrayLength )
-    {
-        return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
+    public static long arrayHeapSize(int arrayLength) {
+        return alignObjectSize(ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES);
     }
 }

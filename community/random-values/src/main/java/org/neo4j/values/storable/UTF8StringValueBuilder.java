@@ -27,19 +27,16 @@ import java.util.Arrays;
  * Either add individual bytes via {@link #add(byte)} or add a unicode code point via {@link #addCodePoint(int)}. The
  * builder maintains an internal {@code byte[]} and grows it as necessary.
  */
-class UTF8StringValueBuilder
-{
+class UTF8StringValueBuilder {
     private static final int DEFAULT_SIZE = 8;
     private byte[] bytes;
     private int length;
 
-    UTF8StringValueBuilder()
-    {
-        this( DEFAULT_SIZE );
+    UTF8StringValueBuilder() {
+        this(DEFAULT_SIZE);
     }
 
-    UTF8StringValueBuilder( int initialCapacity )
-    {
+    UTF8StringValueBuilder(int initialCapacity) {
         this.bytes = new byte[initialCapacity];
     }
 
@@ -48,28 +45,23 @@ class UTF8StringValueBuilder
      *
      * @param b the byte to add.
      */
-    void add( byte b )
-    {
-        if ( bytes.length == length )
-        {
+    void add(byte b) {
+        if (bytes.length == length) {
             ensureCapacity();
         }
         bytes[length++] = b;
     }
 
-    private void ensureCapacity()
-    {
+    private void ensureCapacity() {
         int newCapacity = bytes.length << 1;
-        if ( newCapacity < 0 )
-        {
-            throw new IllegalStateException( "Fail to increase capacity." );
+        if (newCapacity < 0) {
+            throw new IllegalStateException("Fail to increase capacity.");
         }
-        this.bytes = Arrays.copyOf( bytes, newCapacity );
+        this.bytes = Arrays.copyOf(bytes, newCapacity);
     }
 
-    TextValue build()
-    {
-        return Values.utf8Value( bytes, 0, length );
+    TextValue build() {
+        return Values.utf8Value(bytes, 0, length);
     }
 
     /**
@@ -86,40 +78,32 @@ class UTF8StringValueBuilder
      *
      * @param codePoint the code point to add
      */
-    void addCodePoint( int codePoint )
-    {
+    void addCodePoint(int codePoint) {
         assert codePoint >= 0;
-        if ( codePoint < 0x80 )
-        {
-            //one byte is all it takes
-            add( (byte) codePoint );
-        }
-        else if ( codePoint < 0x800 )
-        {
-            //Require two bytes - will be laid out like:
-            //b1       b2
-            //110xxxxx 10xxxxxx
-            add( (byte) (0b1100_0000 | (0b0001_1111 & (codePoint >> 6))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & codePoint)) );
-        }
-        else if ( codePoint < 0x10000 )
-        {
-            //Require three bytes - will be laid out like:
-            //b1       b2       b3
-            //1110xxxx 10xxxxxx 10xxxxxx
-            add( (byte) (0b1110_0000 | (0b0000_1111 & (codePoint >> 12))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 6))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & codePoint)) );
-        }
-        else
-        {
-            //Require four bytes - will be laid out like:
-            //b1       b2       b3       b4
-            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-            add( (byte) (0b1111_0000 | (0b0001_1111 & (codePoint >> 18))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 12))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 6))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & codePoint)) );
+        if (codePoint < 0x80) {
+            // one byte is all it takes
+            add((byte) codePoint);
+        } else if (codePoint < 0x800) {
+            // Require two bytes - will be laid out like:
+            // b1       b2
+            // 110xxxxx 10xxxxxx
+            add((byte) (0b1100_0000 | (0b0001_1111 & (codePoint >> 6))));
+            add((byte) (0b1000_0000 | (0b0011_1111 & codePoint)));
+        } else if (codePoint < 0x10000) {
+            // Require three bytes - will be laid out like:
+            // b1       b2       b3
+            // 1110xxxx 10xxxxxx 10xxxxxx
+            add((byte) (0b1110_0000 | (0b0000_1111 & (codePoint >> 12))));
+            add((byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 6))));
+            add((byte) (0b1000_0000 | (0b0011_1111 & codePoint)));
+        } else {
+            // Require four bytes - will be laid out like:
+            // b1       b2       b3       b4
+            // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            add((byte) (0b1111_0000 | (0b0001_1111 & (codePoint >> 18))));
+            add((byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 12))));
+            add((byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 6))));
+            add((byte) (0b1000_0000 | (0b0011_1111 & codePoint)));
         }
     }
 }

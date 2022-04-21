@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 object LazyIterable {
+
   def apply[T](f: => Iterator[T]) = new LazyIterable[T] {
     override def iterator = f
   }

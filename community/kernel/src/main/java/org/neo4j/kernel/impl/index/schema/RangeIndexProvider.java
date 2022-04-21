@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -47,8 +47,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
-
-import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 
 /**
  * Native index able to handle all value types in a single {@link GBPTree}. Single-key as well as composite-key is supported.
@@ -108,177 +106,180 @@ import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
  * We COULD allow this query and do filter during scan instead and take the extra cost into account when planning queries.
  * As of writing this, there is no such filtering implementation.
  */
-public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout>
-{
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "range", "1.0" );
+public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayout> {
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("range", "1.0");
     public static final RangeIndexCapability CAPABILITY = new RangeIndexCapability();
 
     private final boolean archiveFailedIndex;
     private final Config config;
 
-    public RangeIndexProvider( DatabaseIndexContext databaseIndexContext, IndexDirectoryStructure.Factory directoryStructureFactory,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config )
-    {
-        super( databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector );
+    public RangeIndexProvider(
+            DatabaseIndexContext databaseIndexContext,
+            IndexDirectoryStructure.Factory directoryStructureFactory,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            Config config) {
+        super(databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector);
 
-        this.archiveFailedIndex = config.get( GraphDatabaseInternalSettings.archive_failed_index );
+        this.archiveFailedIndex = config.get(GraphDatabaseInternalSettings.archive_failed_index);
         this.config = config;
     }
 
     @Override
-    public IndexDescriptor completeConfiguration( IndexDescriptor index )
-    {
-        return index.getCapability().equals( NO_CAPABILITY ) ? index.withIndexCapability( CAPABILITY ) : index;
+    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+        return index.getCapability().equals(NO_CAPABILITY) ? index.withIndexCapability(CAPABILITY) : index;
     }
 
     @Override
-    RangeLayout layout( IndexDescriptor descriptor, Path storeFile )
-    {
+    RangeLayout layout(IndexDescriptor descriptor, Path storeFile) {
         int numberOfSlots = descriptor.schema().getPropertyIds().length;
-        return new RangeLayout( numberOfSlots );
+        return new RangeLayout(numberOfSlots);
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, RangeLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory,
-                                                MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                                ImmutableSet<OpenOption> openOptions )
-    {
-        return new RangeBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex,
-                                                  bufferFactory, config, memoryTracker, tokenNameLookup, openOptions );
+    protected IndexPopulator newIndexPopulator(
+            IndexFiles indexFiles,
+            RangeLayout layout,
+            IndexDescriptor descriptor,
+            ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        return new RangeBlockBasedIndexPopulator(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                descriptor,
+                archiveFailedIndex,
+                bufferFactory,
+                config,
+                memoryTracker,
+                tokenNameLookup,
+                openOptions);
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, RangeLayout layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup,
-                                              ImmutableSet<OpenOption> openOptions )
-    {
-        return new RangeIndexAccessor( databaseIndexContext, indexFiles, layout, recoveryCleanupWorkCollector, descriptor, tokenNameLookup, openOptions );
+    protected IndexAccessor newIndexAccessor(
+            IndexFiles indexFiles,
+            RangeLayout layout,
+            IndexDescriptor descriptor,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
+        return new RangeIndexAccessor(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                recoveryCleanupWorkCollector,
+                descriptor,
+                tokenNameLookup,
+                openOptions);
     }
 
     @Override
-    public void validatePrototype( IndexPrototype prototype )
-    {
+    public void validatePrototype(IndexPrototype prototype) {
         IndexType indexType = prototype.getIndexType();
-        if ( indexType != IndexType.RANGE )
-        {
+        if (indexType != IndexType.RANGE) {
             String providerName = getProviderDescriptor().name();
-            throw new IllegalArgumentException( "The '" + providerName + "' index provider does not support " + indexType + " indexes: " + prototype );
+            throw new IllegalArgumentException("The '" + providerName + "' index provider does not support " + indexType
+                    + " indexes: " + prototype);
         }
 
-        if (  !( prototype.schema().isLabelSchemaDescriptor() || prototype.schema().isRelationshipTypeSchemaDescriptor() ) )
-        {
-            throw new IllegalArgumentException(
-                    "The " + prototype.schema() + " index schema is not a range index schema, which it is required to be for the '" +
-                    getProviderDescriptor().name() + "' index provider to be able to create an index." );
+        if (!(prototype.schema().isLabelSchemaDescriptor()
+                || prototype.schema().isRelationshipTypeSchemaDescriptor())) {
+            throw new IllegalArgumentException("The " + prototype.schema()
+                    + " index schema is not a range index schema, which it is required to be for the '"
+                    + getProviderDescriptor().name() + "' index provider to be able to create an index.");
         }
     }
 
     @Override
-    public IndexType getIndexType()
-    {
+    public IndexType getIndexType() {
         return IndexType.RANGE;
     }
 
-    private static class RangeIndexCapability implements IndexCapability
-    {
+    private static class RangeIndexCapability implements IndexCapability {
         @Override
-        public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
-        {
+        public IndexOrderCapability orderCapability(ValueCategory... valueCategories) {
             return IndexOrderCapability.BOTH_FULLY_SORTED;
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-        {
+        public IndexValueCapability valueCapability(ValueCategory... valueCategories) {
             return IndexValueCapability.YES;
         }
 
         @Override
-        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
-        {
-            Preconditions.requireNonEmpty( valueCategories );
-            Preconditions.requireNoNullElements( valueCategories );
+        public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
+            Preconditions.requireNonEmpty(valueCategories);
+            Preconditions.requireNoNullElements(valueCategories);
             return true;
         }
 
         @Override
-        public boolean areValuesAccepted( Value... values )
-        {
-            Preconditions.requireNonEmpty( values );
-            Preconditions.requireNoNullElements( values );
+        public boolean areValuesAccepted(Value... values) {
+            Preconditions.requireNonEmpty(values);
+            Preconditions.requireNoNullElements(values);
             return true;
         }
 
         @Override
-        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
-        {
-            if ( !areValueCategoriesAccepted( valueCategory ) )
-            {
+        public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
+            if (!areValueCategoriesAccepted(valueCategory)) {
                 return false;
             }
 
-            return switch ( queryType )
-            {
+            return switch (queryType) {
                 case ALL_ENTRIES, EXISTS, EXACT, RANGE, STRING_PREFIX -> true;
                 default -> false;
             };
         }
 
         @Override
-        public double getCostMultiplier( IndexQueryType... queryTypes )
-        {
+        public double getCostMultiplier(IndexQueryType... queryTypes) {
             return 1.0;
         }
 
         @Override
-        public boolean supportPartitionedScan( IndexQuery... queries )
-        {
-            Preconditions.requireNonEmpty( queries );
-            Preconditions.requireNoNullElements( queries );
+        public boolean supportPartitionedScan(IndexQuery... queries) {
+            Preconditions.requireNonEmpty(queries);
+            Preconditions.requireNoNullElements(queries);
 
-            for ( int i = 0; i < queries.length; i++ )
-            {
+            for (int i = 0; i < queries.length; i++) {
                 final var query = queries[i];
                 final var type = query.type();
 
-                switch ( type )
-                {
-                case ALL_ENTRIES, EXISTS, EXACT, STRING_PREFIX:
-                    break;
-                case RANGE:
-                    switch ( ((PropertyIndexQuery) query).valueGroup() )
-                    {
-                    case GEOMETRY, GEOMETRY_ARRAY:
-                        return false;
-                    default:
+                switch (type) {
+                    case ALL_ENTRIES, EXISTS, EXACT, STRING_PREFIX:
                         break;
-                    }
-                    break;
-                default:
-                    return false;
+                    case RANGE:
+                        switch (((PropertyIndexQuery) query).valueGroup()) {
+                            case GEOMETRY, GEOMETRY_ARRAY:
+                                return false;
+                            default:
+                                break;
+                        }
+                        break;
+                    default:
+                        return false;
                 }
 
-                if ( i > 0 )
-                {
+                if (i > 0) {
                     final var prevType = queries[i - 1].type();
-                    switch ( type )
-                    {
-                    case EXISTS:
-                        switch ( prevType )
-                        {
-                        case EXISTS, EXACT, RANGE, STRING_PREFIX:
+                    switch (type) {
+                        case EXISTS:
+                            switch (prevType) {
+                                case EXISTS, EXACT, RANGE, STRING_PREFIX:
+                                    break;
+                                default:
+                                    return false;
+                            }
+                            break;
+                        case EXACT, RANGE, STRING_PREFIX:
+                            if (prevType != IndexQueryType.EXACT) {
+                                return false;
+                            }
                             break;
                         default:
                             return false;
-                        }
-                        break;
-                    case EXACT, RANGE, STRING_PREFIX:
-                        if ( prevType != IndexQueryType.EXACT )
-                        {
-                            return false;
-                        }
-                        break;
-                    default:
-                        return false;
                     }
                 }
             }

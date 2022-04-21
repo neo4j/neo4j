@@ -19,32 +19,29 @@
  */
 package org.neo4j.server;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
-class CommunityEntryPointTest
-{
+@ExtendWith(SuppressOutputExtension.class)
+@ResourceLock(Resources.SYSTEM_OUT)
+class CommunityEntryPointTest {
     @Inject
     private SuppressOutput suppressOutput;
 
     @Test
-    void mainPrintsVersion()
-    {
+    void mainPrintsVersion() {
         // when
-        CommunityEntryPoint.main( new String[]{ "--version" } );
+        CommunityEntryPoint.main(new String[] {"--version"});
 
         // then
-        assertTrue( suppressOutput.getOutputVoice().containsMessage( "neo4j " + Version.getNeo4jVersion() ) );
+        assertTrue(suppressOutput.getOutputVoice().containsMessage("neo4j " + Version.getNeo4jVersion()));
     }
 }

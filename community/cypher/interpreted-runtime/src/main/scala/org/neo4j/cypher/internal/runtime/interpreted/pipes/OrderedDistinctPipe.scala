@@ -32,16 +32,18 @@ import org.neo4j.values.virtual.VirtualValues
 /**
  * Specialization of [[DistinctPipe]] that leverages the order of some grouping columns.
  */
-case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
-                       (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
   private val (orderedKeyNames, unorderedKeyNames) = {
     val (ordered, unordered) = groupingColumns.partition(_.ordered)
     (ordered.map(_.key), unordered.map(_.key))
   }
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
 
     /*
      * The filtering is done by extracting from the context the values of all return expressions, and keeping them
@@ -91,14 +93,16 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
 /**
  * Specialization of [[OrderedDistinctPipe]] for the case that all groupingColumns are ordered.
  */
-case class AllOrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
-                       (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+case class AllOrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
 
   // First the ordered columns, then the unordered ones
   private val keyNames = groupingColumns.map(_.key)
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     var currentOrderedGroupingValue: AnyValue = null
 
     input.filter { ctx =>

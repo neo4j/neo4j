@@ -21,33 +21,28 @@ package org.neo4j.bolt.runtime;
 
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public interface Bookmark
-{
+public interface Bookmark {
     String BOOKMARK_KEY = "bookmark"; // used in response messages
 
     long txId();
 
     NamedDatabaseId databaseId();
 
-    void attachTo( BoltResponseHandler state );
+    void attachTo(BoltResponseHandler state);
 
-    Bookmark EMPTY_BOOKMARK = new Bookmark()
-    {
+    Bookmark EMPTY_BOOKMARK = new Bookmark() {
         @Override
-        public long txId()
-        {
-            throw new UnsupportedOperationException( "Empty bookmark does not have a transaction ID" );
+        public long txId() {
+            throw new UnsupportedOperationException("Empty bookmark does not have a transaction ID");
         }
 
         @Override
-        public NamedDatabaseId databaseId()
-        {
-            throw new UnsupportedOperationException( "Empty bookmark does not have a database ID" );
+        public NamedDatabaseId databaseId() {
+            throw new UnsupportedOperationException("Empty bookmark does not have a database ID");
         }
 
         @Override
-        public void attachTo( BoltResponseHandler state )
-        {
+        public void attachTo(BoltResponseHandler state) {
             // doing nothing
         }
     };

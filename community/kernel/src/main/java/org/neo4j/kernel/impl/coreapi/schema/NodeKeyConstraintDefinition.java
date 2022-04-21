@@ -19,30 +19,27 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import static java.lang.String.format;
+
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-import static java.lang.String.format;
-
-public class NodeKeyConstraintDefinition extends NodeConstraintDefinition
-{
-    public NodeKeyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition )
-    {
-        super( actions, constraint, indexDefinition );
+public class NodeKeyConstraintDefinition extends NodeConstraintDefinition {
+    public NodeKeyConstraintDefinition(
+            InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition) {
+        super(actions, constraint, indexDefinition);
     }
 
     @Override
-    public ConstraintType getConstraintType()
-    {
+    public ConstraintType getConstraintType() {
         assertInUnterminatedTransaction();
         return ConstraintType.NODE_KEY;
     }
 
     @Override
-    public String toString()
-    {
-        return format( "ON (%1$s:%2$s) ASSERT (%3$s) IS NODE KEY",
-                label.name().toLowerCase(), label.name(), propertyText() );
+    public String toString() {
+        return format(
+                "ON (%1$s:%2$s) ASSERT (%3$s) IS NODE KEY", label.name().toLowerCase(), label.name(), propertyText());
     }
 }

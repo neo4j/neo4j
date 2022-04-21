@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static java.lang.String.format;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
+import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Arrays;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -41,31 +43,24 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.util.Bits;
 
-import static java.lang.String.format;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
-import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
-
 /**
  * Implementation of the node store.
  */
-public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
-{
+public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
     public static final String TYPE_DESCRIPTOR = "NodeStore";
     private final DynamicArrayStore dynamicLabelStore;
 
-    public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
-    {
+    public static Long readOwnerFromDynamicLabelsRecord(DynamicRecord record) {
         byte[] data = record.getData();
-        byte[] header = PropertyType.ARRAY.readDynamicRecordHeader( data );
-        byte[] array = Arrays.copyOfRange( data, header.length, data.length );
+        byte[] header = PropertyType.ARRAY.readDynamicRecordHeader(data);
+        byte[] array = Arrays.copyOfRange(data, header.length, data.length);
 
         int requiredBits = header[2];
-        if ( requiredBits == 0 )
-        {
+        if (requiredBits == 0) {
             return null;
         }
-        Bits bits = Bits.bitsFromBytes( array );
-        return bits.getLong( requiredBits );
+        Bits bits = Bits.bitsFromBytes(array);
+        return bits.getLong(requiredBits);
     }
 
     public NodeStore(
@@ -79,61 +74,75 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            ImmutableSet<OpenOption> openOptions )
-    {
-        super( path, idFile, config, RecordIdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.node(),
-                NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
+            ImmutableSet<OpenOption> openOptions) {
+        super(
+                path,
+                idFile,
+                config,
+                RecordIdType.NODE,
+                idGeneratorFactory,
+                pageCache,
+                logProvider,
+                TYPE_DESCRIPTOR,
+                recordFormats.node(),
+                NO_STORE_HEADER_FORMAT,
+                recordFormats.storeVersion(),
+                readOnlyChecker,
+                databaseName,
+                openOptions);
         this.dynamicLabelStore = dynamicLabelStore;
     }
 
     @Override
-    public void ensureHeavy( NodeRecord node, StoreCursors storeCursors )
-    {
-        if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( node.getLabelField() ) )
-        {
-            ensureHeavy( node, NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() ), storeCursors );
+    public void ensureHeavy(NodeRecord node, StoreCursors storeCursors) {
+        if (NodeLabelsField.fieldPointsToDynamicRecordOfLabels(node.getLabelField())) {
+            ensureHeavy(node, NodeLabelsField.firstDynamicLabelRecordId(node.getLabelField()), storeCursors);
         }
     }
 
-    public void ensureHeavy( NodeRecord node, long firstDynamicLabelRecord, StoreCursors storeCursors )
-    {
-        if ( !node.isLight() )
-        {
+    public void ensureHeavy(NodeRecord node, long firstDynamicLabelRecord, StoreCursors storeCursors) {
+        if (!node.isLight()) {
             return;
         }
 
         // Load any dynamic labels and populate the node record
-        try
-        {
-            node.setLabelField( node.getLabelField(),
-                    dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, storeCursors.readCursor( DYNAMIC_LABEL_STORE_CURSOR ) ) );
-        }
-        catch ( InvalidRecordException e )
-        {
-            throw new InvalidRecordException( format( "Error loading dynamic label records for %s | %s", node, e.getMessage() ), e );
+        try {
+            node.setLabelField(
+                    node.getLabelField(),
+                    dynamicLabelStore.getRecords(
+                            firstDynamicLabelRecord,
+                            RecordLoad.NORMAL,
+                            false,
+                            storeCursors.readCursor(DYNAMIC_LABEL_STORE_CURSOR)));
+        } catch (InvalidRecordException e) {
+            throw new InvalidRecordException(
+                    format("Error loading dynamic label records for %s | %s", node, e.getMessage()), e);
         }
     }
 
     @Override
-    public void updateRecord( NodeRecord record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        super.updateRecord( record, idUpdateListener, cursor, cursorContext, storeCursors );
-        updateDynamicLabelRecords( record.getDynamicLabelRecords(), idUpdateListener, cursorContext, storeCursors );
+    public void updateRecord(
+            NodeRecord record,
+            IdUpdateListener idUpdateListener,
+            PageCursor cursor,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
+        super.updateRecord(record, idUpdateListener, cursor, cursorContext, storeCursors);
+        updateDynamicLabelRecords(record.getDynamicLabelRecords(), idUpdateListener, cursorContext, storeCursors);
     }
 
-    public DynamicArrayStore getDynamicLabelStore()
-    {
+    public DynamicArrayStore getDynamicLabelStore() {
         return dynamicLabelStore;
     }
 
-    public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords, IdUpdateListener idUpdateListener, CursorContext cursorContext,
-            StoreCursors storeCursors )
-    {
-        try ( var cursor = storeCursors.writeCursor( DYNAMIC_LABEL_STORE_CURSOR ) )
-        {
-            for ( DynamicRecord record : dynamicLabelRecords )
-            {
-                dynamicLabelStore.updateRecord( record, idUpdateListener, cursor, cursorContext, storeCursors );
+    public void updateDynamicLabelRecords(
+            Iterable<DynamicRecord> dynamicLabelRecords,
+            IdUpdateListener idUpdateListener,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
+        try (var cursor = storeCursors.writeCursor(DYNAMIC_LABEL_STORE_CURSOR)) {
+            for (DynamicRecord record : dynamicLabelRecords) {
+                dynamicLabelStore.updateRecord(record, idUpdateListener, cursor, cursorContext, storeCursors);
             }
         }
     }

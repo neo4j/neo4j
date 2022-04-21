@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
-
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.NativeScopedBuffer;
@@ -30,70 +29,69 @@ import org.neo4j.memory.MemoryTracker;
 /**
  * Basically a sequence of {@link StoreChannel channels} seamlessly seen as one.
  */
-public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChannel> implements ReadableLogChannel
-{
+public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChannel> implements ReadableLogChannel {
     private final LogVersionBridge bridge;
     private final boolean raw;
 
-    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, MemoryTracker memoryTracker )
-    {
-        this( startingChannel, LogVersionBridge.NO_MORE_CHANNELS, new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ), false );
+    public ReadAheadLogChannel(LogVersionedStoreChannel startingChannel, MemoryTracker memoryTracker) {
+        this(
+                startingChannel,
+                LogVersionBridge.NO_MORE_CHANNELS,
+                new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, memoryTracker),
+                false);
     }
 
-    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, MemoryTracker memoryTracker )
-    {
-        this( startingChannel, bridge, new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ), false );
+    public ReadAheadLogChannel(
+            LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, MemoryTracker memoryTracker) {
+        this(startingChannel, bridge, new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, memoryTracker), false);
     }
 
-    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, MemoryTracker memoryTracker, boolean raw )
-    {
-        this( startingChannel, bridge, new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ), raw );
+    public ReadAheadLogChannel(
+            LogVersionedStoreChannel startingChannel,
+            LogVersionBridge bridge,
+            MemoryTracker memoryTracker,
+            boolean raw) {
+        this(startingChannel, bridge, new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, memoryTracker), raw);
     }
 
     /**
      * This constructor is private to ensure that the given buffer always comes form one of our own constructors.
      */
-    private ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, ScopedBuffer scopedBuffer, boolean raw )
-    {
-        super( startingChannel, scopedBuffer );
+    private ReadAheadLogChannel(
+            LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, ScopedBuffer scopedBuffer, boolean raw) {
+        super(startingChannel, scopedBuffer);
         this.bridge = bridge;
         this.raw = raw;
     }
 
     @Override
-    public long getVersion()
-    {
+    public long getVersion() {
         return channel.getVersion();
     }
 
     @Override
-    public byte getLogFormatVersion()
-    {
+    public byte getLogFormatVersion() {
         return channel.getLogFormatVersion();
     }
 
     @Override
-    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
-    {
-        positionMarker.mark( channel.getVersion(), position() );
+    public LogPositionMarker getCurrentPosition(LogPositionMarker positionMarker) throws IOException {
+        positionMarker.mark(channel.getVersion(), position());
         return positionMarker;
     }
 
     @Override
-    public LogPosition getCurrentPosition() throws IOException
-    {
-        return new LogPosition( channel.getVersion(), position() );
+    public LogPosition getCurrentPosition() throws IOException {
+        return new LogPosition(channel.getVersion(), position());
     }
 
     @Override
-    protected LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
-    {
-        return bridge.next( channel, raw );
+    protected LogVersionedStoreChannel next(LogVersionedStoreChannel channel) throws IOException {
+        return bridge.next(channel, raw);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         super.close();
     }
 }

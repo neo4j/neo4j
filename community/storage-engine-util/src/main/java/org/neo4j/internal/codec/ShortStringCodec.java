@@ -20,11 +20,9 @@
 package org.neo4j.internal.codec;
 
 import java.util.Arrays;
-
 import org.neo4j.util.Bits;
 
-public enum ShortStringCodec
-{
+public enum ShortStringCodec {
     /**
      * Binary coded decimal with punctuation.
      *
@@ -33,42 +31,42 @@ public enum ShortStringCodec
      * 0-  0  1  2  3  4  5  6  7    8  9 SP  .  -  +  ,  '
      * </pre>
      */
-    NUMERICAL( 1, 4, false )
-    {
+    NUMERICAL(1, 4, false) {
         @Override
-        public int encTranslate( byte b )
-        {
-            if ( b >= '0' && b <= '9' )
-            {
+        public int encTranslate(byte b) {
+            if (b >= '0' && b <= '9') {
                 return b - '0';
             }
-            switch ( b )
-            {
-            // interm.    encoded
-            case 0: return 0xA;
-            case 2: return 0xB;
-            case 3: return 0xC;
-            case 6: return 0xD;
-            case 7: return 0xE;
-            case 8: return 0xF;
-            default: throw cannotEncode( b );
+            switch (b) {
+                    // interm.    encoded
+                case 0:
+                    return 0xA;
+                case 2:
+                    return 0xB;
+                case 3:
+                    return 0xC;
+                case 6:
+                    return 0xD;
+                case 7:
+                    return 0xE;
+                case 8:
+                    return 0xF;
+                default:
+                    throw cannotEncode(b);
             }
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
-            throw cannotEncode( b );
+        int encPunctuation(byte b) {
+            throw cannotEncode(b);
         }
 
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            if ( codePoint < 10 )
-            {
+        public byte decTranslate(byte codePoint) {
+            if (codePoint < 10) {
                 return (byte) (codePoint + '0');
             }
-            return decPunctuation( codePoint - 10 + 6 );
+            return decPunctuation(codePoint - 10 + 6);
         }
     },
     /**
@@ -79,48 +77,53 @@ public enum ShortStringCodec
      * 0-  0  1  2  3  4  5  6  7    8  9 SP  -  :  /  +  ,
      * </pre>
      */
-    DATE( 2, 4, false )
-    {
+    DATE(2, 4, false) {
         @Override
-        public int encTranslate( byte b )
-        {
-            if ( b >= '0' && b <= '9' )
-            {
+        public int encTranslate(byte b) {
+            if (b >= '0' && b <= '9') {
                 return b - '0';
             }
-            switch ( b )
-            {
-            case 0: return 0xA;
-            case 3: return 0xB;
-            case 4: return 0xC;
-            case 5: return 0xD;
-            case 6: return 0xE;
-            case 7: return 0xF;
-            default: throw cannotEncode( b );
+            switch (b) {
+                case 0:
+                    return 0xA;
+                case 3:
+                    return 0xB;
+                case 4:
+                    return 0xC;
+                case 5:
+                    return 0xD;
+                case 6:
+                    return 0xE;
+                case 7:
+                    return 0xF;
+                default:
+                    throw cannotEncode(b);
             }
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
-            throw cannotEncode( b );
+        int encPunctuation(byte b) {
+            throw cannotEncode(b);
         }
 
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            if ( codePoint < 0xA )
-            {
+        public byte decTranslate(byte codePoint) {
+            if (codePoint < 0xA) {
                 return (byte) (codePoint + '0');
             }
-            switch ( codePoint )
-            {
-            case 0xA: return ' ';
-            case 0xB: return '-';
-            case 0xC: return ':';
-            case 0xD: return '/';
-            case 0xE: return '+';
-            default: return ',';
+            switch (codePoint) {
+                case 0xA:
+                    return ' ';
+                case 0xB:
+                    return '-';
+                case 0xC:
+                    return ':';
+                case 0xD:
+                    return '/';
+                case 0xE:
+                    return '+';
+                default:
+                    return ',';
             }
         }
     },
@@ -133,32 +136,26 @@ public enum ShortStringCodec
      * 1-  P  Q  R  S  T  U  V  W    X  Y  Z  _  .  -  :  /
      * </pre>
      */
-    UPPER( 3, 5, false )
-    {
+    UPPER(3, 5, false) {
         @Override
-        public int encTranslate( byte b )
-        {
+        public int encTranslate(byte b) {
             return super.encTranslate(b) - 0x40;
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
+        int encPunctuation(byte b) {
             return b == 0 ? 0x40 : b + 0x5a;
         }
 
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0 )
-            {
+        public byte decTranslate(byte codePoint) {
+            if (codePoint == 0) {
                 return ' ';
             }
-            if ( codePoint <= 0x1A )
-            {
+            if (codePoint <= 0x1A) {
                 return (byte) (codePoint + 'A' - 1);
             }
-            return decPunctuation( codePoint - 0x1A );
+            return decPunctuation(codePoint - 0x1A);
         }
     },
     /**
@@ -170,32 +167,26 @@ public enum ShortStringCodec
      * 1-  p  q  r  s  t  u  v  w    x  y  z  _  .  -  :  /
      * </pre>
      */
-    LOWER( 4, 5, false )
-    {
+    LOWER(4, 5, false) {
         @Override
-        public int encTranslate( byte b )
-        {
+        public int encTranslate(byte b) {
             return super.encTranslate(b) - 0x60;
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
+        int encPunctuation(byte b) {
             return b == 0 ? 0x60 : b + 0x7a;
         }
 
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0 )
-            {
+        public byte decTranslate(byte codePoint) {
+            if (codePoint == 0) {
                 return ' ';
             }
-            if ( codePoint <= 0x1A )
-            {
+            if (codePoint <= 0x1A) {
                 return (byte) (codePoint + 'a' - 1);
             }
-            return decPunctuation( codePoint - 0x1A );
+            return decPunctuation(codePoint - 0x1A);
         }
     },
     /**
@@ -207,51 +198,51 @@ public enum ShortStringCodec
      * 1-  p  q  r  s  t  u  v  w    x  y  z  _  .  -  +  @
      * </pre>
      */
-    EMAIL( 5, 5, false )
-    {
+    EMAIL(5, 5, false) {
         @Override
-        public int encTranslate( byte b )
-        {
+        public int encTranslate(byte b) {
             return super.encTranslate(b) - 0x60;
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
+        int encPunctuation(byte b) {
             int encOffset = 0x60;
-            if ( b == 7 )
-            {
+            if (b == 7) {
                 return encOffset;
             }
 
             int offset = encOffset + 0x1B;
-            switch ( b )
-            {
-            case 1: return offset;
-            case 2: return 1 + offset;
-            case 3: return 2 + offset;
-            case 6: return 3 + offset;
-            case 9: return 4 + offset;
-            default: throw cannotEncode( b );
+            switch (b) {
+                case 1:
+                    return offset;
+                case 2:
+                    return 1 + offset;
+                case 3:
+                    return 2 + offset;
+                case 6:
+                    return 3 + offset;
+                case 9:
+                    return 4 + offset;
+                default:
+                    throw cannotEncode(b);
             }
         }
 
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0 )
-            {
+        public byte decTranslate(byte codePoint) {
+            if (codePoint == 0) {
                 return ',';
             }
-            if ( codePoint <= 0x1A )
-            {
+            if (codePoint <= 0x1A) {
                 return (byte) (codePoint + 'a' - 1);
             }
-            switch ( codePoint )
-            {
-            case 0x1E: return '+';
-            case 0x1F: return '@';
-            default: return decPunctuation( codePoint - 0x1A );
+            switch (codePoint) {
+                case 0x1E:
+                    return '+';
+                case 0x1F:
+                    return '@';
+                default:
+                    return decPunctuation(codePoint - 0x1A);
             }
         }
     },
@@ -266,57 +257,45 @@ public enum ShortStringCodec
      * 3-  ,  '  @  |  ;  *  ?  &    %  #  (  )  $  <  >  =
      * </pre>
      */
-    URI( 6, 6, false )
-    {
+    URI(6, 6, false) {
         @Override
-        public int encTranslate( byte b )
-        {
-            if ( b == 0 )
-            {
+        public int encTranslate(byte b) {
+            if (b == 0) {
                 return 0; // space
             }
-            if ( b >= 0x61 && b <= 0x7A )
-            {
+            if (b >= 0x61 && b <= 0x7A) {
                 return b - 0x60; // lower-case letters
             }
-            if ( b >= 0x30 && b <= 0x39 )
-            {
+            if (b >= 0x30 && b <= 0x39) {
                 return b - 0x10; // digits
             }
-            if ( b >= 0x1 && b <= 0x16 )
-            {
+            if (b >= 0x1 && b <= 0x16) {
                 return b + 0x29; // symbols
             }
-            throw cannotEncode( b );
+            throw cannotEncode(b);
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
+        int encPunctuation(byte b) {
             // Handled by encTranslate
-            throw cannotEncode( b );
+            throw cannotEncode(b);
         }
 
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0 )
-            {
+        public byte decTranslate(byte codePoint) {
+            if (codePoint == 0) {
                 return ' ';
             }
-            if ( codePoint <= 0x1A )
-            {
+            if (codePoint <= 0x1A) {
                 return (byte) (codePoint + 'a' - 1);
             }
-            if ( codePoint <= 0x29 )
-            {
+            if (codePoint <= 0x29) {
                 return (byte) (codePoint - 0x20 + '0');
             }
-            if ( codePoint <= 0x2E )
-            {
-                return decPunctuation( codePoint - 0x29 );
+            if (codePoint <= 0x2E) {
+                return decPunctuation(codePoint - 0x29);
             }
-            return decPunctuation( codePoint - 0x2F + 9 );
+            return decPunctuation(codePoint - 0x2F + 9);
         }
     },
     /**
@@ -330,37 +309,31 @@ public enum ShortStringCodec
      * 3-  p  q  r  s  t  u  v  w    x  y  z  5  6  7  8  9
      * </pre>
      */
-    ALPHANUM( 7, 6, false )
-    {
+    ALPHANUM(7, 6, false) {
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            return EUROPEAN.decTranslate( (byte) ( codePoint + 0x40 ) );
+        public byte decTranslate(byte codePoint) {
+            return EUROPEAN.decTranslate((byte) (codePoint + 0x40));
         }
 
         @Override
-        public int encTranslate( byte b )
-        {
+        public int encTranslate(byte b) {
             // Punctuation is in the same places as European
-            if ( b < 0x20 )
-            {
-                return encPunctuation( b ); // Punctuation
+            if (b < 0x20) {
+                return encPunctuation(b); // Punctuation
             }
             // But the rest is transposed by 0x40
-            return EUROPEAN.encTranslate( b ) - 0x40;
+            return EUROPEAN.encTranslate(b) - 0x40;
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
-            switch ( b )
-            {
-            case 0:
-                return 0x00; // SPACE
-            case 1:
-                return 0x20; // UNDERSCORE
-            default:
-                throw cannotEncode( b );
+        int encPunctuation(byte b) {
+            switch (b) {
+                case 0:
+                    return 0x00; // SPACE
+                case 1:
+                    return 0x20; // UNDERSCORE
+                default:
+                    throw cannotEncode(b);
             }
         }
     },
@@ -375,67 +348,69 @@ public enum ShortStringCodec
      * 3-  p  q  r  s  t  u  v  w    x  y  z  +  ,  '  @  |
      * </pre>
      */
-    ALPHASYM( 8, 6, false )
-    {
+    ALPHASYM(8, 6, false) {
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0x0 )
-            {
+        public byte decTranslate(byte codePoint) {
+            if (codePoint == 0x0) {
                 return ' ';
             }
-            if ( codePoint <= 0x1A )
-            {
+            if (codePoint <= 0x1A) {
                 return (byte) ('A' + codePoint - 0x1);
             }
-            if ( codePoint <= 0x1F )
-            {
-                return decPunctuation( codePoint - 0x1B + 1 );
+            if (codePoint <= 0x1F) {
+                return decPunctuation(codePoint - 0x1B + 1);
             }
-            if ( codePoint == 0x20 )
-            {
+            if (codePoint == 0x20) {
                 return ';';
             }
-            if ( codePoint <= 0x3A )
-            {
+            if (codePoint <= 0x3A) {
                 return (byte) ('a' + codePoint - 0x21);
             }
-            return decPunctuation( codePoint - 0x3B + 9 );
+            return decPunctuation(codePoint - 0x3B + 9);
         }
 
         @Override
-        public int encTranslate( byte b )
-        {
+        public int encTranslate(byte b) {
             // Punctuation is in the same places as European
-            if ( b < 0x20 )
-            {
-                return encPunctuation( b ); // Punctuation
+            if (b < 0x20) {
+                return encPunctuation(b); // Punctuation
             }
             // But the rest is transposed by 0x40
-//            return EUROPEAN.encTranslate( b ) - 0x40;
+            //            return EUROPEAN.encTranslate( b ) - 0x40;
             return b - 0x40;
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
-            switch ( b )
-            {
-            case 0x0: return 0x0;
-            case 0x1: return 0x1B;
-            case 0x2: return 0x1C;
-            case 0x3: return 0x1D;
-            case 0x4: return 0x1E;
-            case 0x5: return 0x1F;
+        int encPunctuation(byte b) {
+            switch (b) {
+                case 0x0:
+                    return 0x0;
+                case 0x1:
+                    return 0x1B;
+                case 0x2:
+                    return 0x1C;
+                case 0x3:
+                    return 0x1D;
+                case 0x4:
+                    return 0x1E;
+                case 0x5:
+                    return 0x1F;
 
-            case 0x6: return 0x3B;
-            case 0x7: return 0x3C;
-            case 0x8: return 0x3D;
-            case 0x9: return 0x3E;
-            case 0xA: return 0x3F;
+                case 0x6:
+                    return 0x3B;
+                case 0x7:
+                    return 0x3C;
+                case 0x8:
+                    return 0x3D;
+                case 0x9:
+                    return 0x3E;
+                case 0xA:
+                    return 0x3F;
 
-            case 0xB: return 0x20;
-            default: throw cannotEncode( b );
+                case 0xB:
+                    return 0x20;
+                default:
+                    throw cannotEncode(b);
             }
         }
     },
@@ -454,40 +429,29 @@ public enum ShortStringCodec
      * 7-  p  q  r  s  t  u  v  w    x  y  z  5  6  7  8  9
      * </pre>
      */
-    EUROPEAN( 9, 7, true )
-    {
+    EUROPEAN(9, 7, true) {
         @Override
-        public byte decTranslate( byte codePoint )
-        {
+        public byte decTranslate(byte codePoint) {
             int code = codePoint & 0xFF;
-            if ( code < 0x40 )
-            {
-                if ( code == 0x17 )
-                {
+            if (code < 0x40) {
+                if (code == 0x17) {
                     return '.';
                 }
-                if ( code == 0x37 )
-                {
+                if (code == 0x37) {
                     return '-';
                 }
                 return (byte) (code + 0xC0);
-            }
-            else
-            {
-                if ( code == 0x40 )
-                {
+            } else {
+                if (code == 0x40) {
                     return ' ';
                 }
-                if ( code == 0x60 )
-                {
+                if (code == 0x60) {
                     return '_';
                 }
-                if ( code >= 0x5B && code < 0x60 )
-                {
+                if (code >= 0x5B && code < 0x60) {
                     return (byte) ('0' + code - 0x5B);
                 }
-                if ( code >= 0x7B && code < 0x80 )
-                {
+                if (code >= 0x7B && code < 0x80) {
                     return (byte) ('5' + code - 0x7B);
                 }
                 return (byte) code;
@@ -495,23 +459,21 @@ public enum ShortStringCodec
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
-            switch ( b )
-            {
-            case 0x00:
-                return 0x40; // SPACE
-            case 0x01:
-                return 0x60; // UNDERSCORE
-            case 0x02:
-                return 0x17; // DOT
-            case 0x03:
-                return 0x37; // DASH
-            case 0x07:
-                // TODO
-                return 0;
-            default:
-                throw cannotEncode( b );
+        int encPunctuation(byte b) {
+            switch (b) {
+                case 0x00:
+                    return 0x40; // SPACE
+                case 0x01:
+                    return 0x60; // UNDERSCORE
+                case 0x02:
+                    return 0x17; // DOT
+                case 0x03:
+                    return 0x37; // DASH
+                case 0x07:
+                    // TODO
+                    return 0;
+                default:
+                    throw cannotEncode(b);
             }
         }
     },
@@ -524,36 +486,29 @@ public enum ShortStringCodec
      * 0-  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
      * </pre>
      */
-    LOWERHEX( 11, 4, false )
-    {
+    LOWERHEX(11, 4, false) {
         @Override
-        public int encTranslate( byte b )
-        {
-            if ( b >= '0' && b <= '9' )
-            {
+        public int encTranslate(byte b) {
+            if (b >= '0' && b <= '9') {
                 return b - '0';
             }
-            if ( b >= 'a' && b <= 'f' )
-            {
+            if (b >= 'a' && b <= 'f') {
                 return b - 'a' + 10;
             }
-            throw cannotEncode( b );
+            throw cannotEncode(b);
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
-            throw cannotEncode( b );
+        int encPunctuation(byte b) {
+            throw cannotEncode(b);
         }
 
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            if ( codePoint < 10 )
-            {
+        public byte decTranslate(byte codePoint) {
+            if (codePoint < 10) {
                 return (byte) (codePoint + '0');
             }
-            return (byte) ( codePoint + 'a' - 10 );
+            return (byte) (codePoint + 'a' - 10);
         }
     },
     /**
@@ -564,48 +519,42 @@ public enum ShortStringCodec
      * 0-  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
      * </pre>
      */
-    UPPERHEX( 12, 4, false )
-    {
+    UPPERHEX(12, 4, false) {
         @Override
-        public int encTranslate( byte b )
-        {
-            if ( b >= '0' && b <= '9' )
-            {
+        public int encTranslate(byte b) {
+            if (b >= '0' && b <= '9') {
                 return b - '0';
             }
-            if ( b >= 'A' && b <= 'F' )
-            {
+            if (b >= 'A' && b <= 'F') {
                 return b - 'A' + 10;
             }
-            throw cannotEncode( b );
+            throw cannotEncode(b);
         }
 
         @Override
-        int encPunctuation( byte b )
-        {
-            throw cannotEncode( b );
+        int encPunctuation(byte b) {
+            throw cannotEncode(b);
         }
 
         @Override
-        public byte decTranslate( byte codePoint )
-        {
-            if ( codePoint < 10 )
-            {
+        public byte decTranslate(byte codePoint) {
+            if (codePoint < 10) {
                 return (byte) (codePoint + '0');
             }
-            return (byte) ( codePoint + 'A' - 10 );
+            return (byte) (codePoint + 'A' - 10);
         }
     };
 
     public static final ShortStringCodec[] CODECS = values();
     public static final int CODEC_COUNT = CODECS.length;
-    public static final int ALL_BIT_MASK = bitMask( CODECS );
+    public static final int ALL_BIT_MASK = bitMask(CODECS);
     public static final int ENCODING_UTF8 = 0;
     public static final int ENCODING_LATIN1 = 10;
     /** Lookup table for decoding punctuation */
     private static final byte[] PUNCTUATION = {
-            ' ', '_', '.', '-', ':', '/',
-            ' ', '.', '-', '+', ',', '\'', '@', '|', ';', '*', '?', '&', '%', '#', '(', ')', '$', '<', '>', '=' };
+        ' ', '_', '.', '-', ':', '/', ' ', '.', '-', '+', ',', '\'', '@', '|', ';', '*', '?', '&', '%', '#', '(', ')',
+        '$', '<', '>', '='
+    };
     // translation lookup for each ascii character
     private static final int TRANSLATION_COUNT = 256;
     // transformation for the char to byte according to the default translation table
@@ -616,69 +565,61 @@ public enum ShortStringCodec
     // +2 because of ENCODING_LATIN1 gap and one based index
     private static final ShortStringCodec[] CODEC_BY_ID = new ShortStringCodec[CODEC_COUNT + 2];
 
-    private static void setUp( char pos, int value, ShortStringCodec... removeCodecs )
-    {
+    private static void setUp(char pos, int value, ShortStringCodec... removeCodecs) {
         TRANSLATION[pos] = (byte) value;
-        REMOVE_MASK[pos] = ~bitMask( removeCodecs );
-        for ( ShortStringCodec codec : CODECS )
-        {
+        REMOVE_MASK[pos] = ~bitMask(removeCodecs);
+        for (ShortStringCodec codec : CODECS) {
             CODEC_BY_ID[codec.codecId] = codec;
         }
     }
 
-    static
-    {
-        Arrays.fill( TRANSLATION, (byte) 0xFF );
-        Arrays.fill( REMOVE_MASK, ~bitMask( CODECS ) );
-        setUp( ' ', 0, EMAIL, LOWERHEX, UPPERHEX );
-        setUp( '_', 1, NUMERICAL, DATE, LOWERHEX, UPPERHEX );
-        setUp( '.', 2, DATE, ALPHANUM, LOWERHEX, UPPERHEX );
-        setUp( '-', 3, ALPHANUM, LOWERHEX, UPPERHEX );
-        setUp( ':', 4, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL, LOWERHEX, UPPERHEX );
-        setUp( '/', 5, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL, LOWERHEX, UPPERHEX );
-        setUp( '+', 6, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        setUp( ',', 7, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        setUp( '\'', 8, DATE, UPPER, LOWER, EMAIL, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        setUp( '@', 9, NUMERICAL, DATE, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        setUp( '|', 0xA, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        final ShortStringCodec[] retainUri = {NUMERICAL, DATE, UPPER, LOWER, EMAIL, ALPHANUM, ALPHASYM, EUROPEAN, LOWERHEX, UPPERHEX};
-        setUp( ';', 0xB, retainUri );
-        setUp( '*', 0xC, retainUri );
-        setUp( '?', 0xD, retainUri );
-        setUp( '&', 0xE, retainUri );
-        setUp( '%', 0xF, retainUri );
-        setUp( '#', 0x10, retainUri );
-        setUp( '(', 0x11, retainUri );
-        setUp( ')', 0x12, retainUri );
-        setUp( '$', 0x13, retainUri );
-        setUp( '<', 0x14, retainUri );
-        setUp( '>', 0x15, retainUri );
-        setUp( '=', 0x16, retainUri );
-        for ( char c = 'A'; c <= 'F'; c++ )
-        {
-            setUp( c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI, LOWERHEX );
+    static {
+        Arrays.fill(TRANSLATION, (byte) 0xFF);
+        Arrays.fill(REMOVE_MASK, ~bitMask(CODECS));
+        setUp(' ', 0, EMAIL, LOWERHEX, UPPERHEX);
+        setUp('_', 1, NUMERICAL, DATE, LOWERHEX, UPPERHEX);
+        setUp('.', 2, DATE, ALPHANUM, LOWERHEX, UPPERHEX);
+        setUp('-', 3, ALPHANUM, LOWERHEX, UPPERHEX);
+        setUp(':', 4, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL, LOWERHEX, UPPERHEX);
+        setUp('/', 5, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL, LOWERHEX, UPPERHEX);
+        setUp('+', 6, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX);
+        setUp(',', 7, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX);
+        setUp('\'', 8, DATE, UPPER, LOWER, EMAIL, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX);
+        setUp('@', 9, NUMERICAL, DATE, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX);
+        setUp('|', 0xA, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX);
+        final ShortStringCodec[] retainUri = {
+            NUMERICAL, DATE, UPPER, LOWER, EMAIL, ALPHANUM, ALPHASYM, EUROPEAN, LOWERHEX, UPPERHEX
+        };
+        setUp(';', 0xB, retainUri);
+        setUp('*', 0xC, retainUri);
+        setUp('?', 0xD, retainUri);
+        setUp('&', 0xE, retainUri);
+        setUp('%', 0xF, retainUri);
+        setUp('#', 0x10, retainUri);
+        setUp('(', 0x11, retainUri);
+        setUp(')', 0x12, retainUri);
+        setUp('$', 0x13, retainUri);
+        setUp('<', 0x14, retainUri);
+        setUp('>', 0x15, retainUri);
+        setUp('=', 0x16, retainUri);
+        for (char c = 'A'; c <= 'F'; c++) {
+            setUp(c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI, LOWERHEX);
         }
-        for ( char c = 'G'; c <= 'Z'; c++ )
-        {
-            setUp( c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI, LOWERHEX, UPPERHEX );
+        for (char c = 'G'; c <= 'Z'; c++) {
+            setUp(c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI, LOWERHEX, UPPERHEX);
         }
-        for ( char c = 'a'; c <= 'f'; c++ )
-        {
-            setUp( c, (byte) c, NUMERICAL, DATE, UPPER, UPPERHEX );
+        for (char c = 'a'; c <= 'f'; c++) {
+            setUp(c, (byte) c, NUMERICAL, DATE, UPPER, UPPERHEX);
         }
-        for ( char c = 'g'; c <= 'z'; c++ )
-        {
-            setUp( c, (byte) c, NUMERICAL, DATE, UPPER, UPPERHEX, LOWERHEX );
+        for (char c = 'g'; c <= 'z'; c++) {
+            setUp(c, (byte) c, NUMERICAL, DATE, UPPER, UPPERHEX, LOWERHEX);
         }
-        for ( char c = '0'; c <= '9'; c++ )
-        {
-            setUp( c, (byte) c, UPPER, LOWER, EMAIL, ALPHASYM );
+        for (char c = '0'; c <= '9'; c++) {
+            setUp(c, (byte) c, UPPER, LOWER, EMAIL, ALPHASYM);
         }
-        for ( char c = 'À'; c <= 'ÿ'; c++ )
-        {
-            if ( c != 0xD7 && c != 0xF7 )
-            {
-                setUp( c, (byte) c, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, ALPHASYM, LOWERHEX, UPPERHEX );
+        for (char c = 'À'; c <= 'ÿ'; c++) {
+            if (c != 0xD7 && c != 0xF7) {
+                setUp(c, (byte) c, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, ALPHASYM, LOWERHEX, UPPERHEX);
             }
         }
     }
@@ -688,121 +629,98 @@ public enum ShortStringCodec
     final int step;
     final boolean needsChars;
 
-    ShortStringCodec( int codecId, int step, boolean needsChars )
-    {
+    ShortStringCodec(int codecId, int step, boolean needsChars) {
         this.codecId = codecId;
-        this.mask = Bits.rightOverflowMask( step );
+        this.mask = Bits.rightOverflowMask(step);
         this.step = step;
         this.needsChars = needsChars;
     }
 
-    public static ShortStringCodec lowestCodec( int compatibleCodecs )
-    {
-        return codecById( Integer.numberOfTrailingZeros( compatibleCodecs ) + 1 );
+    public static ShortStringCodec lowestCodec(int compatibleCodecs) {
+        return codecById(Integer.numberOfTrailingZeros(compatibleCodecs) + 1);
     }
 
-    public int bitMask()
-    {
+    public int bitMask() {
         return 1 << ordinal();
     }
 
-    public int bitsPerCharacter()
-    {
+    public int bitsPerCharacter() {
         return step;
     }
 
-    public boolean needsChars()
-    {
+    public boolean needsChars() {
         return needsChars;
     }
 
-    public long mask()
-    {
+    public long mask() {
         return mask;
     }
 
-    public int id()
-    {
+    public int id() {
         return codecId;
     }
 
     // combined bit-mask for the codecs
-    public static int bitMask( ShortStringCodec... codecs )
-    {
+    public static int bitMask(ShortStringCodec... codecs) {
         int result = 0;
-        for ( ShortStringCodec codec : codecs )
-        {
+        for (ShortStringCodec codec : codecs) {
             result |= codec.bitMask();
         }
         return result;
     }
 
-    final IllegalArgumentException cannotEncode( byte b )
-    {
-        return new IllegalArgumentException( "Cannot encode as " + this.name() + ": " + b );
+    final IllegalArgumentException cannotEncode(byte b) {
+        return new IllegalArgumentException("Cannot encode as " + this.name() + ": " + b);
     }
 
-    byte decPunctuation( int code )
-    {
+    byte decPunctuation(int code) {
         return PUNCTUATION[code];
     }
 
-    public int encTranslate( byte b )
-    {
-        if ( b < 0 )
-        {
+    public int encTranslate(byte b) {
+        if (b < 0) {
             return (0xFF & b) - 0xC0; // European chars
         }
-        if ( b < 0x20 )
-        {
-            return encPunctuation( b ); // Punctuation
+        if (b < 0x20) {
+            return encPunctuation(b); // Punctuation
         }
-        if ( b >= '0' && b <= '4' )
-        {
+        if (b >= '0' && b <= '4') {
             return 0x5B + b - '0'; // Numbers
         }
-        if ( b >= '5' && b <= '9' )
-        {
+        if (b >= '5' && b <= '9') {
             return 0x7B + b - '5'; // Numbers
         }
         return b; // Alphabetical
     }
 
-    abstract int encPunctuation( byte b );
+    abstract int encPunctuation(byte b);
 
-    public abstract byte decTranslate( byte codePoint );
+    public abstract byte decTranslate(byte codePoint);
 
-    public static int prepareEncode( String string, byte[] data, int stringLength )
-    {
-        if ( stringLength == 0 )
-        {
+    public static int prepareEncode(String string, byte[] data, int stringLength) {
+        if (stringLength == 0) {
             return 0;
         }
         int encodings = ALL_BIT_MASK;
         // filter out larger encodings in one go
-        for ( int i = 0; i < stringLength; i++ )
-        {
-            char c = string.charAt( i );
+        for (int i = 0; i < stringLength; i++) {
+            char c = string.charAt(i);
             // non ASCII chars not supported
-            if ( c >= TRANSLATION_COUNT )
-            {
+            if (c >= TRANSLATION_COUNT) {
                 return 0;
             }
             data[i] = TRANSLATION[c];
             // remove not matching encoders
             encodings &= REMOVE_MASK[c];
-            if ( encodings == 0 )
-            {
+            if (encodings == 0) {
                 return 0;
             }
         }
         return encodings;
     }
 
-    public static ShortStringCodec codecById( int id )
-    {
-        if ( id < 0 || CODEC_BY_ID.length <= id )
-        {
+    public static ShortStringCodec codecById(int id) {
+        if (id < 0 || CODEC_BY_ID.length <= id) {
             return null;
         }
         return CODEC_BY_ID[id];

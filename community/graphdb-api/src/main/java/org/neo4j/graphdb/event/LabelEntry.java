@@ -27,8 +27,7 @@ import org.neo4j.graphdb.Node;
  * Represents an assigned or removed label for a node.
  */
 @PublicApi
-public interface LabelEntry
-{
+public interface LabelEntry {
     /**
      * This is the label that has been added or removed.
      *
@@ -42,5 +41,4 @@ public interface LabelEntry
      * @return the node that has been modified.
      */
     Node node();
-
 }

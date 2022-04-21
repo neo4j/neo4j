@@ -29,29 +29,34 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.collection.mutable
 import scala.io.AnsiColor
 
 trait CostComparisonListener {
-  def report[X](projector: X => LogicalPlan,
-                input: Iterable[X],
-                inputOrdering: Ordering[X],
-                context: LogicalPlanningContext,
-                resolved: => String,
-                resolvedPerPlan: LogicalPlan => String = _ => "",
-                heuristic: SelectorHeuristic,
-               ): Unit
+
+  def report[X](
+    projector: X => LogicalPlan,
+    input: Iterable[X],
+    inputOrdering: Ordering[X],
+    context: LogicalPlanningContext,
+    resolved: => String,
+    resolvedPerPlan: LogicalPlan => String = _ => "",
+    heuristic: SelectorHeuristic
+  ): Unit
 }
 
 object devNullListener extends CostComparisonListener {
-  override def report[X](projector: X => LogicalPlan,
-                         input: Iterable[X],
-                         inputOrdering: Ordering[X],
-                         context: LogicalPlanningContext,
-                         resolved: => String,
-                         resolvedPerPlan: LogicalPlan => String = _ => "",
-                         heuristic: SelectorHeuristic,
-                        ): Unit = {}
+
+  override def report[X](
+    projector: X => LogicalPlan,
+    input: Iterable[X],
+    inputOrdering: Ordering[X],
+    context: LogicalPlanningContext,
+    resolved: => String,
+    resolvedPerPlan: LogicalPlan => String = _ => "",
+    heuristic: SelectorHeuristic
+  ): Unit = {}
 }
 
 object SystemOutCostLogger extends CostComparisonListener {
@@ -65,27 +70,36 @@ object SystemOutCostLogger extends CostComparisonListener {
   private def cyan_background(str: String) = AnsiColor.CYAN_B + str + AnsiColor.RESET
   private def green(str: String) = AnsiColor.GREEN + str + AnsiColor.RESET
   private def magenta(str: String) = AnsiColor.MAGENTA + str + AnsiColor.RESET
-  private def magenta_bold(str: String) = AnsiColor.MAGENTA + AnsiColor.UNDERLINED + AnsiColor.BOLD + str + AnsiColor.RESET
+
+  private def magenta_bold(str: String) =
+    AnsiColor.MAGENTA + AnsiColor.UNDERLINED + AnsiColor.BOLD + str + AnsiColor.RESET
+
   private def indent(level: Int, str: String) = {
     val ind = prefix * level
     ind + str.replaceAll(System.lineSeparator(), System.lineSeparator() + ind)
   }
 
-  def report[X](projector: X => LogicalPlan,
-                input: Iterable[X],
-                inputOrdering: Ordering[X],
-                context: LogicalPlanningContext,
-                resolved: => String,
-                resolvedPerPlan: LogicalPlan => String = _ => "",
-                heuristic: SelectorHeuristic,
-               ): Unit = {
+  def report[X](
+    projector: X => LogicalPlan,
+    input: Iterable[X],
+    inputOrdering: Ordering[X],
+    context: LogicalPlanningContext,
+    resolved: => String,
+    resolvedPerPlan: LogicalPlan => String = _ => "",
+    heuristic: SelectorHeuristic
+  ): Unit = {
     // Key is a tuple of (root plan ID, plan ID)
     val planCost: mutable.Map[(Id, Id), Cost] = mutable.Map.empty
     val planEffectiveCardinality: mutable.Map[(Id, Id), Cardinality] = mutable.Map.empty
 
     val monitor = new CostModelMonitor {
-      override def reportPlanCost(rootPlan: LogicalPlan, plan: LogicalPlan, cost: Cost): Unit = planCost += ((rootPlan.id, plan.id) -> cost)
-      override def reportPlanEffectiveCardinality(rootPlan: LogicalPlan, plan: LogicalPlan, cardinality: Cardinality): Unit = planEffectiveCardinality += ((rootPlan.id, plan.id) -> cardinality)
+      override def reportPlanCost(rootPlan: LogicalPlan, plan: LogicalPlan, cost: Cost): Unit =
+        planCost += ((rootPlan.id, plan.id) -> cost)
+      override def reportPlanEffectiveCardinality(
+        rootPlan: LogicalPlan,
+        plan: LogicalPlan,
+        cardinality: Cardinality
+      ): Unit = planEffectiveCardinality += ((rootPlan.id, plan.id) -> cardinality)
     }
 
     def costString(rootPlan: LogicalPlan)(plan: LogicalPlan) = {
@@ -94,7 +108,10 @@ object SystemOutCostLogger extends CostComparisonListener {
       val effectiveCardinality = planEffectiveCardinality((rootPlan.id, plan.id)).amount
       val costStr = magenta(" // cost ") + magenta_bold(cost.toString)
       val cardStr = magenta(", cardinality ") + magenta_bold(cardinality.toString)
-      val effCardStr =  if (cardinality > effectiveCardinality) cyan(" (effective cardinality ") + cyan_bold(effectiveCardinality.toString) + cyan(")") else ""
+      val effCardStr =
+        if (cardinality > effectiveCardinality)
+          cyan(" (effective cardinality ") + cyan_bold(effectiveCardinality.toString) + cyan(")")
+        else ""
       costStr + cardStr + effCardStr
     }
 
@@ -107,9 +124,15 @@ object SystemOutCostLogger extends CostComparisonListener {
     val plansInOrder = input.toIndexedSeq.distinct.sorted(inputOrdering).map(projector)
 
     // Update cost and effective cardinality for each subplan
-    plansInOrder.foreach(
-      plan =>
-        context.cost.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, monitor)
+    plansInOrder.foreach(plan =>
+      context.cost.costFor(
+        plan,
+        context.input,
+        context.semanticTable,
+        context.planningAttributes.cardinalities,
+        context.planningAttributes.providedOrders,
+        monitor
+      )
     )
 
     if (plansInOrder.nonEmpty) {
@@ -120,7 +143,8 @@ object SystemOutCostLogger extends CostComparisonListener {
         val winner = if (index == 0) green(" [winner]") else ""
         val resolvedStr = cyan(s" ${resolvedPerPlan(plan)}")
         val header = blue(s"$index: Plan #${plan.debugId}") + winner + resolvedStr
-        val planWithCosts = LogicalPlanToPlanBuilderString(plan, extra = costString(plan), planPrefixDot = planPrefixDotString(plan))
+        val planWithCosts =
+          LogicalPlanToPlanBuilderString(plan, extra = costString(plan), planPrefixDot = planPrefixDotString(plan))
         val hints = context.planningAttributes.solveds.get(plan.id).numHints
         val heuristicValue = heuristic.tieBreaker(plan)
         val extra = s"(hints: $hints, heuristic: $heuristicValue)"

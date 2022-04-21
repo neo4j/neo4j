@@ -19,13 +19,14 @@
  */
 package org.neo4j.procedure.impl;
 
+import static java.lang.String.format;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -46,10 +47,7 @@ import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.values.AnyValue;
 
-import static java.lang.String.format;
-
-public class ProcedureRegistry
-{
+public class ProcedureRegistry {
 
     private final ProcedureHolder<CallableProcedure> procedures = new ProcedureHolder<>();
     private final ProcedureHolder<CallableUserFunction> functions = new ProcedureHolder<>();
@@ -60,38 +58,31 @@ public class ProcedureRegistry
      *
      * @param proc the procedure.
      */
-    public void register( CallableProcedure proc, boolean overrideCurrentImplementation ) throws ProcedureException
-    {
+    public void register(CallableProcedure proc, boolean overrideCurrentImplementation) throws ProcedureException {
         ProcedureSignature signature = proc.signature();
         QualifiedName name = signature.name();
 
         String descriptiveName = signature.toString();
-        validateSignature( descriptiveName, signature.inputSignature(), "input" );
-        validateSignature( descriptiveName, signature.outputSignature(), "output" );
+        validateSignature(descriptiveName, signature.inputSignature(), "input");
+        validateSignature(descriptiveName, signature.outputSignature(), "output");
 
-        if ( !signature.isVoid() && signature.outputSignature().isEmpty() )
-        {
+        if (!signature.isVoid() && signature.outputSignature().isEmpty()) {
             throw new ProcedureException(
-                Status.Procedure.ProcedureRegistrationFailed,
-                "Procedures with zero output fields must be declared as VOID"
-            );
+                    Status.Procedure.ProcedureRegistrationFailed,
+                    "Procedures with zero output fields must be declared as VOID");
         }
 
-        CallableProcedure oldImplementation = procedures.get( name );
-        if ( oldImplementation == null )
-        {
-            procedures.put( name, proc, signature.caseInsensitive() );
-        }
-        else
-        {
-            if ( overrideCurrentImplementation )
-            {
-                procedures.put( name, proc, signature.caseInsensitive() );
-            }
-            else
-            {
-                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                        "Unable to register procedure, because the name `%s` is already in use.", name );
+        CallableProcedure oldImplementation = procedures.get(name);
+        if (oldImplementation == null) {
+            procedures.put(name, proc, signature.caseInsensitive());
+        } else {
+            if (overrideCurrentImplementation) {
+                procedures.put(name, proc, signature.caseInsensitive());
+            } else {
+                throw new ProcedureException(
+                        Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register procedure, because the name `%s` is already in use.",
+                        name);
             }
         }
     }
@@ -101,31 +92,28 @@ public class ProcedureRegistry
      *
      * @param function the function.
      */
-    public void register( CallableUserFunction function, boolean overrideCurrentImplementation, boolean builtIn ) throws ProcedureException
-    {
+    public void register(CallableUserFunction function, boolean overrideCurrentImplementation, boolean builtIn)
+            throws ProcedureException {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
 
-        if ( aggregationFunctions.get( name ) != null )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "Unable to register function, because the name `%s` is already in use as an aggregation function.", name );
+        if (aggregationFunctions.get(name) != null) {
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureRegistrationFailed,
+                    "Unable to register function, because the name `%s` is already in use as an aggregation function.",
+                    name);
         }
-        CallableUserFunction oldImplementation = functions.get( name );
-        if ( oldImplementation == null )
-        {
-            functions.put( name, function, signature.caseInsensitive() );
-        }
-        else
-        {
-            if ( overrideCurrentImplementation )
-            {
-                functions.put( name, function, signature.caseInsensitive() );
-            }
-            else
-            {
-                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                        "Unable to register function, because the name `%s` is already in use.", name );
+        CallableUserFunction oldImplementation = functions.get(name);
+        if (oldImplementation == null) {
+            functions.put(name, function, signature.caseInsensitive());
+        } else {
+            if (overrideCurrentImplementation) {
+                functions.put(name, function, signature.caseInsensitive());
+            } else {
+                throw new ProcedureException(
+                        Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register function, because the name `%s` is already in use.",
+                        name);
             }
         }
     }
@@ -135,191 +123,170 @@ public class ProcedureRegistry
      *
      * @param function the function.
      */
-    public void register( CallableUserAggregationFunction function, boolean overrideCurrentImplementation, boolean builtIn ) throws ProcedureException
-    {
+    public void register(
+            CallableUserAggregationFunction function, boolean overrideCurrentImplementation, boolean builtIn)
+            throws ProcedureException {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
 
-        if ( functions.get( name ) != null )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "Unable to register aggregation function, because the name `%s` is already in use as a function.", name );
+        if (functions.get(name) != null) {
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureRegistrationFailed,
+                    "Unable to register aggregation function, because the name `%s` is already in use as a function.",
+                    name);
         }
-        CallableUserAggregationFunction oldImplementation = aggregationFunctions.get( name );
-        if ( oldImplementation == null )
-        {
-            aggregationFunctions.put( name, function, signature.caseInsensitive() );
-        }
-        else
-        {
-            if ( overrideCurrentImplementation )
-            {
-                aggregationFunctions.put( name, function, signature.caseInsensitive() );
-            }
-            else
-            {
-                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                        "Unable to register aggregation function, because the name `%s` is already in use.", name );
+        CallableUserAggregationFunction oldImplementation = aggregationFunctions.get(name);
+        if (oldImplementation == null) {
+            aggregationFunctions.put(name, function, signature.caseInsensitive());
+        } else {
+            if (overrideCurrentImplementation) {
+                aggregationFunctions.put(name, function, signature.caseInsensitive());
+            } else {
+                throw new ProcedureException(
+                        Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register aggregation function, because the name `%s` is already in use.",
+                        name);
             }
         }
     }
 
-    private void validateSignature( String descriptiveName, List<FieldSignature> fields, String fieldType )
-            throws ProcedureException
-    {
+    private void validateSignature(String descriptiveName, List<FieldSignature> fields, String fieldType)
+            throws ProcedureException {
         Set<String> names = new HashSet<>();
-        for ( FieldSignature field : fields )
-        {
-            if ( !names.add( field.name() ) )
-            {
-                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                        "Procedure `%s` cannot be registered, because it contains a duplicated " + fieldType + " field, '%s'. " +
-                        "You need to rename or remove one of the duplicate fields.", descriptiveName, field.name() );
+        for (FieldSignature field : fields) {
+            if (!names.add(field.name())) {
+                throw new ProcedureException(
+                        Status.Procedure.ProcedureRegistrationFailed,
+                        "Procedure `%s` cannot be registered, because it contains a duplicated " + fieldType
+                                + " field, '%s'. " + "You need to rename or remove one of the duplicate fields.",
+                        descriptiveName,
+                        field.name());
             }
         }
     }
 
-    public ProcedureHandle procedure( QualifiedName name ) throws ProcedureException
-    {
-        CallableProcedure proc = procedures.get( name );
-        if ( proc == null )
-        {
-            throw noSuchProcedure( name );
+    public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
+        CallableProcedure proc = procedures.get(name);
+        if (proc == null) {
+            throw noSuchProcedure(name);
         }
-        return new ProcedureHandle( proc.signature(), procedures.idOf( name ) );
+        return new ProcedureHandle(proc.signature(), procedures.idOf(name));
     }
 
-    public UserFunctionHandle function( QualifiedName name )
-    {
-        CallableUserFunction func = functions.get( name );
-        if ( func == null )
-        {
+    public UserFunctionHandle function(QualifiedName name) {
+        CallableUserFunction func = functions.get(name);
+        if (func == null) {
             return null;
         }
-        return new UserFunctionHandle( func.signature(), functions.idOf( name), func.threadSafe() );
+        return new UserFunctionHandle(func.signature(), functions.idOf(name), func.threadSafe());
     }
 
-    public UserFunctionHandle aggregationFunction( QualifiedName name )
-    {
-        CallableUserAggregationFunction func = aggregationFunctions.get( name );
-        if ( func == null )
-        {
+    public UserFunctionHandle aggregationFunction(QualifiedName name) {
+        CallableUserAggregationFunction func = aggregationFunctions.get(name);
+        if (func == null) {
             return null;
         }
-        return new UserFunctionHandle( func.signature(), aggregationFunctions.idOf( name), false );
+        return new UserFunctionHandle(func.signature(), aggregationFunctions.idOf(name), false);
     }
 
-    public RawIterator<AnyValue[],ProcedureException> callProcedure( Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker )
-            throws ProcedureException
-    {
+    public RawIterator<AnyValue[], ProcedureException> callProcedure(
+            Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
         CallableProcedure proc;
-        try
-        {
-            proc = procedures.get( id );
-            var permission = ctx.securityContext().allowExecuteAdminProcedure( id );
-            if ( proc.signature().admin() && !permission.allowsAccess() )
-            {
-                String errorDescriptor = ( permission == PermissionState.EXPLICIT_DENY ) ? "is not allowed" : "permission has not been granted";
-                String message = format( "Executing admin procedure '%s' %s for %s.",
-                                         proc.signature().name(),
-                                         errorDescriptor,
-                                         ctx.securityContext().description() );
-                ctx.dependencyResolver().resolveDependency( AbstractSecurityLog.class ).error( ctx.securityContext(), message);
-                throw new AuthorizationViolationException( message );
+        try {
+            proc = procedures.get(id);
+            var permission = ctx.securityContext().allowExecuteAdminProcedure(id);
+            if (proc.signature().admin() && !permission.allowsAccess()) {
+                String errorDescriptor = (permission == PermissionState.EXPLICIT_DENY)
+                        ? "is not allowed"
+                        : "permission has not been granted";
+                String message = format(
+                        "Executing admin procedure '%s' %s for %s.",
+                        proc.signature().name(),
+                        errorDescriptor,
+                        ctx.securityContext().description());
+                ctx.dependencyResolver()
+                        .resolveDependency(AbstractSecurityLog.class)
+                        .error(ctx.securityContext(), message);
+                throw new AuthorizationViolationException(message);
             }
+        } catch (IndexOutOfBoundsException e) {
+            throw noSuchProcedure(id);
         }
-        catch ( IndexOutOfBoundsException e )
-        {
-            throw noSuchProcedure( id );
-        }
-        return proc.apply( ctx, input, resourceTracker );
+        return proc.apply(ctx, input, resourceTracker);
     }
 
-    public AnyValue callFunction( Context ctx, int functionId, AnyValue[] input )
-            throws ProcedureException
-    {
+    public AnyValue callFunction(Context ctx, int functionId, AnyValue[] input) throws ProcedureException {
         CallableUserFunction func;
-        try
-        {
-            func = functions.get( functionId );
+        try {
+            func = functions.get(functionId);
+        } catch (IndexOutOfBoundsException e) {
+            throw noSuchFunction(functionId);
         }
-        catch ( IndexOutOfBoundsException e )
-        {
-            throw noSuchFunction( functionId );
-        }
-        return func.apply( ctx, input );
+        return func.apply(ctx, input);
     }
 
-    public UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException
-    {
-        try
-        {
-            CallableUserAggregationFunction func = aggregationFunctions.get( id );
+    public UserAggregator createAggregationFunction(Context ctx, int id) throws ProcedureException {
+        try {
+            CallableUserAggregationFunction func = aggregationFunctions.get(id);
             return func.create(ctx);
-        }
-        catch ( IndexOutOfBoundsException e )
-        {
-            throw noSuchFunction( id );
+        } catch (IndexOutOfBoundsException e) {
+            throw noSuchFunction(id);
         }
     }
 
-    private ProcedureException noSuchProcedure( QualifiedName name )
-    {
-        return new ProcedureException( Status.Procedure.ProcedureNotFound,
-                "There is no procedure with the name `%s` registered for this database instance. " +
-                "Please ensure you've spelled the procedure name correctly and that the " +
-                "procedure is properly deployed.", name );
+    private ProcedureException noSuchProcedure(QualifiedName name) {
+        return new ProcedureException(
+                Status.Procedure.ProcedureNotFound,
+                "There is no procedure with the name `%s` registered for this database instance. "
+                        + "Please ensure you've spelled the procedure name correctly and that the "
+                        + "procedure is properly deployed.",
+                name);
     }
 
-    private ProcedureException noSuchProcedure( int id )
-    {
-        return new ProcedureException( Status.Procedure.ProcedureNotFound,
-                "There is no procedure with the internal id `%d` registered for this database instance.", id );
+    private ProcedureException noSuchProcedure(int id) {
+        return new ProcedureException(
+                Status.Procedure.ProcedureNotFound,
+                "There is no procedure with the internal id `%d` registered for this database instance.",
+                id);
     }
 
-    private ProcedureException noSuchFunction( int id )
-    {
-        return new ProcedureException( Status.Procedure.ProcedureNotFound,
-                "There is no function with the internal id `%d` registered for this database instance.", id );
+    private ProcedureException noSuchFunction(int id) {
+        return new ProcedureException(
+                Status.Procedure.ProcedureNotFound,
+                "There is no function with the internal id `%d` registered for this database instance.",
+                id);
     }
 
-    public Set<ProcedureSignature> getAllProcedures()
-    {
-        return procedures.all().stream().map( CallableProcedure::signature ).collect( Collectors.toSet());
+    public Set<ProcedureSignature> getAllProcedures() {
+        return procedures.all().stream().map(CallableProcedure::signature).collect(Collectors.toSet());
     }
 
-    int[] getIdsOfProceduresMatching( Predicate<CallableProcedure> predicate )
-    {
+    int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
         return procedures.all().stream()
-                         .filter( predicate )
-                         .mapToInt( p -> procedures.idOf( p.signature().name() ) )
-                         .toArray();
+                .filter(predicate)
+                .mapToInt(p -> procedures.idOf(p.signature().name()))
+                .toArray();
     }
 
-    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions()
-    {
-        return functions.all().stream().map( CallableUserFunction::signature );
+    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
+        return functions.all().stream().map(CallableUserFunction::signature);
     }
 
-    int[] getIdsOfFunctionsMatching( Predicate<CallableUserFunction> predicate )
-    {
+    int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
         return functions.all().stream()
-                        .filter( predicate )
-                        .mapToInt( f -> functions.idOf( f.signature().name() ) )
-                        .toArray();
+                .filter(predicate)
+                .mapToInt(f -> functions.idOf(f.signature().name()))
+                .toArray();
     }
 
-    public Stream<UserFunctionSignature> getAllAggregatingFunctions()
-    {
-        return aggregationFunctions.all().stream().map( CallableUserAggregationFunction::signature );
+    public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
+        return aggregationFunctions.all().stream().map(CallableUserAggregationFunction::signature);
     }
 
-    int[] getIdsOfAggregatingFunctionsMatching( Predicate<CallableUserAggregationFunction> predicate )
-    {
+    int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
         return aggregationFunctions.all().stream()
-                                   .filter( predicate )
-                                   .mapToInt( f -> aggregationFunctions.idOf( f.signature().name() ) )
-                                   .toArray();
+                .filter(predicate)
+                .mapToInt(f -> aggregationFunctions.idOf(f.signature().name()))
+                .toArray();
     }
-
 }

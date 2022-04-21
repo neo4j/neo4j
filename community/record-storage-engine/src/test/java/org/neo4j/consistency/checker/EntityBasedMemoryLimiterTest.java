@@ -19,155 +19,144 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.helpers.collection.LongRange;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class EntityBasedMemoryLimiterTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.collection.LongRange;
+
+class EntityBasedMemoryLimiterTest {
     @Test
-    void shouldReturnTheWholeRangeIfItFits()
-    {
+    void shouldReturnTheWholeRangeIfItFits() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 250, 1, 40, 40, 1 );
-        assertEquals( 1, limiter.numberOfRanges() );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 250, 1, 40, 40, 1);
+        assertEquals(1, limiter.numberOfRanges());
 
         // when
         EntityBasedMemoryLimiter.CheckRange range = limiter.next();
 
         // then
-        assertRange( range, 0, 40, 40 );
-        assertFalse( limiter.hasNext() );
+        assertRange(range, 0, 40, 40);
+        assertFalse(limiter.hasNext());
     }
 
     @Test
-    void shouldHandleRangeWithHighNodeLessThanHighRel()
-    {
+    void shouldHandleRangeWithHighNodeLessThanHighRel() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 250, 1, 20, 40, 1 );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 250, 1, 20, 40, 1);
         // The ranges are based on highNodeId - a range will never be larger than the number of nodes in the db.
-        assertEquals( 2, limiter.numberOfRanges() );
+        assertEquals(2, limiter.numberOfRanges());
 
         // when/then
-        assertRange( limiter.next(), 0, 20, 20 );
+        assertRange(limiter.next(), 0, 20, 20);
 
         EntityBasedMemoryLimiter.CheckRange range = limiter.next();
-        assertFalse( range.applicableForNodeBasedChecks() );
-        assertNull( range.getNodeRange() );
-        assertTrue( range.applicableForRelationshipBasedChecks() );
-        assertRange( range.getRelationshipRange(), 20, 40 );
+        assertFalse(range.applicableForNodeBasedChecks());
+        assertNull(range.getNodeRange());
+        assertTrue(range.applicableForRelationshipBasedChecks());
+        assertRange(range.getRelationshipRange(), 20, 40);
 
-        assertFalse( limiter.hasNext() );
+        assertFalse(limiter.hasNext());
     }
 
     @Test
-    void shouldHandleRangeWithHighRelLessThanHighNodeForOneWholeRange()
-    {
+    void shouldHandleRangeWithHighRelLessThanHighNodeForOneWholeRange() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 250, 1, 40, 20, 1 );
-        assertEquals( 1, limiter.numberOfRanges() );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 250, 1, 40, 20, 1);
+        assertEquals(1, limiter.numberOfRanges());
 
         // when
         EntityBasedMemoryLimiter.CheckRange range = limiter.next();
 
         // then
-        assertRange( range, 0, 40, 20 );
-        assertFalse( limiter.hasNext() );
+        assertRange(range, 0, 40, 20);
+        assertFalse(limiter.hasNext());
     }
 
     @Test
-    void shouldReturnMultipleRangesIfWholeRangeDontFit()
-    {
+    void shouldReturnMultipleRangesIfWholeRangeDontFit() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 1000, 10, 200, 200, 1 );
-        assertEquals( 3, limiter.numberOfRanges() );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 1000, 10, 200, 200, 1);
+        assertEquals(3, limiter.numberOfRanges());
 
         // when/then
-        assertRange( limiter.next(), 0, 80, 80 );
-        assertRange( limiter.next(), 80, 160, 160 );
-        assertRange( limiter.next(), 160, 200, 200 );
-        assertFalse( limiter.hasNext() );
+        assertRange(limiter.next(), 0, 80, 80);
+        assertRange(limiter.next(), 80, 160, 160);
+        assertRange(limiter.next(), 160, 200, 200);
+        assertFalse(limiter.hasNext());
     }
 
     @Test
-    void shouldReturnMultipleRangesIfWholeRangeDontFitHighRelLessThanHighNode()
-    {
+    void shouldReturnMultipleRangesIfWholeRangeDontFitHighRelLessThanHighNode() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 1000, 10, 200, 100, 1 );
-        assertEquals( 3, limiter.numberOfRanges() );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 1000, 10, 200, 100, 1);
+        assertEquals(3, limiter.numberOfRanges());
 
         // when/then
-        assertRange( limiter.next(), 0, 80, 80 );
-        assertRange( limiter.next(), 80, 160, 100 );
+        assertRange(limiter.next(), 0, 80, 80);
+        assertRange(limiter.next(), 80, 160, 100);
 
         EntityBasedMemoryLimiter.CheckRange range = limiter.next();
-        assertTrue( range.applicableForNodeBasedChecks() );
-        assertRange( range.getNodeRange(), 160, 200 );
-        assertFalse( range.applicableForRelationshipBasedChecks() );
-        assertNull( range.getRelationshipRange() );
+        assertTrue(range.applicableForNodeBasedChecks());
+        assertRange(range.getNodeRange(), 160, 200);
+        assertFalse(range.applicableForRelationshipBasedChecks());
+        assertNull(range.getRelationshipRange());
 
-        assertFalse( limiter.hasNext() );
+        assertFalse(limiter.hasNext());
     }
 
     @Test
-    void shouldReturnMultipleRangesIfWholeRangeDontFitHighNodeLessThanHighRel()
-    {
+    void shouldReturnMultipleRangesIfWholeRangeDontFitHighNodeLessThanHighRel() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 1000, 10, 100, 200, 1 );
-        assertEquals( 3, limiter.numberOfRanges() );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 1000, 10, 100, 200, 1);
+        assertEquals(3, limiter.numberOfRanges());
 
         // when/then
-        assertRange( limiter.next(), 0, 80, 80 );
-        assertRange( limiter.next(), 80, 100, 160 );
+        assertRange(limiter.next(), 0, 80, 80);
+        assertRange(limiter.next(), 80, 100, 160);
 
         EntityBasedMemoryLimiter.CheckRange range = limiter.next();
-        assertFalse( range.applicableForNodeBasedChecks() );
-        assertNull( range.getNodeRange() );
-        assertTrue( range.applicableForRelationshipBasedChecks() );
-        assertRange( range.getRelationshipRange(), 160, 200 );
+        assertFalse(range.applicableForNodeBasedChecks());
+        assertNull(range.getNodeRange());
+        assertTrue(range.applicableForRelationshipBasedChecks());
+        assertRange(range.getRelationshipRange(), 160, 200);
 
-        assertFalse( limiter.hasNext() );
+        assertFalse(limiter.hasNext());
     }
 
     @Test
-    void shouldReturnMultipleRangesIfWholeRangeDontFitWithLeeway()
-    {
+    void shouldReturnMultipleRangesIfWholeRangeDontFitWithLeeway() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 500, 25, 10, 10, 0.8 );
-        assertEquals( 2, limiter.numberOfRanges() );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 500, 25, 10, 10, 0.8);
+        assertEquals(2, limiter.numberOfRanges());
 
         // when/then
-        assertRange( limiter.next(), 0, 8, 8 );
-        assertRange( limiter.next(), 8, 10, 10 );
-        assertFalse( limiter.hasNext() );
+        assertRange(limiter.next(), 0, 8, 8);
+        assertRange(limiter.next(), 8, 10, 10);
+        assertFalse(limiter.hasNext());
     }
 
     @Test
-    void shouldReturnCorrectNumberOfRangesOnExactMatch()
-    {
+    void shouldReturnCorrectNumberOfRangesOnExactMatch() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 10, 20, 40, 1, 100, 100, 1 );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(10, 20, 40, 1, 100, 100, 1);
 
         // then
-        assertEquals( 10, limiter.numberOfRanges() );
+        assertEquals(10, limiter.numberOfRanges());
     }
 
-    private static void assertRange( LongRange range, long from, long to )
-    {
-        assertEquals( from, range.from() );
-        assertEquals( to, range.to() );
+    private static void assertRange(LongRange range, long from, long to) {
+        assertEquals(from, range.from());
+        assertEquals(to, range.to());
     }
 
-    private static void assertRange( EntityBasedMemoryLimiter.CheckRange range, long from, long toNode, long toRelationship )
-    {
-        assertTrue( range.applicableForNodeBasedChecks() );
-        assertTrue( range.applicableForRelationshipBasedChecks() );
-        assertRange( range.getNodeRange(), from, toNode );
-        assertRange( range.getRelationshipRange(), from, toRelationship );
+    private static void assertRange(
+            EntityBasedMemoryLimiter.CheckRange range, long from, long toNode, long toRelationship) {
+        assertTrue(range.applicableForNodeBasedChecks());
+        assertTrue(range.applicableForRelationshipBasedChecks());
+        assertRange(range.getNodeRange(), from, toNode);
+        assertRange(range.getRelationshipRange(), from, toRelationship);
     }
 }

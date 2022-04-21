@@ -19,61 +19,49 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.values.AnyValue;
-
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.util.Preconditions.requirePositive;
 
-public class MapValueBuilder
-{
+import java.util.HashMap;
+import java.util.Map;
+import org.neo4j.values.AnyValue;
+
+public class MapValueBuilder {
     private final Map<String, AnyValue> map;
     private long payloadSize;
 
-    public MapValueBuilder()
-    {
+    public MapValueBuilder() {
         this.map = new HashMap<>();
     }
 
-    public MapValueBuilder( int expectedSize )
-    {
-        this.map = new HashMap<>( capacity( expectedSize ) );
+    public MapValueBuilder(int expectedSize) {
+        this.map = new HashMap<>(capacity(expectedSize));
     }
 
-    public AnyValue add( String key, AnyValue value )
-    {
-        AnyValue put = map.put( key, value );
-        if ( put == null )
-        {
-            payloadSize += sizeOf( key ) + value.estimatedHeapUsage();
-        }
-        else
-        {
+    public AnyValue add(String key, AnyValue value) {
+        AnyValue put = map.put(key, value);
+        if (put == null) {
+            payloadSize += sizeOf(key) + value.estimatedHeapUsage();
+        } else {
             payloadSize += value.estimatedHeapUsage() - put.estimatedHeapUsage();
         }
         return put;
     }
 
-    public void clear()
-    {
+    public void clear() {
         map.clear();
         payloadSize = 0;
     }
 
-    public MapValue build()
-    {
-        return new MapValue.MapWrappingMapValue( map, payloadSize );
+    public MapValue build() {
+        return new MapValue.MapWrappingMapValue(map, payloadSize);
     }
 
-    private static int capacity( int expectedSize )
-    {
-        if ( expectedSize < 3 )
-        {
-            requirePositive( expectedSize );
+    private static int capacity(int expectedSize) {
+        if (expectedSize < 3) {
+            requirePositive(expectedSize);
             return expectedSize + 1;
         }
-        return (int) ((float) expectedSize / 0.75f + 1.0f );
+        return (int) ((float) expectedSize / 0.75f + 1.0f);
     }
 }

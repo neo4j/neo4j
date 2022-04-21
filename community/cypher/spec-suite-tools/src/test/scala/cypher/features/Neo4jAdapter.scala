@@ -39,6 +39,7 @@ import org.opencypher.tools.tck.api.StringRecords
 import org.opencypher.tools.tck.values.CypherValue
 
 import java.lang.Boolean.TRUE
+
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Failure
@@ -47,48 +48,62 @@ import scala.util.Try
 
 object Neo4jAdapter {
 
-  val defaultTestConfig: String => collection.Map[Setting[_], Object] = featureName => defaultTestConfigValues ++ featureDependentSettings(featureName)
+  val defaultTestConfig: String => collection.Map[Setting[_], Object] =
+    featureName => defaultTestConfigValues ++ featureDependentSettings(featureName)
 
   val defaultTestConfigValues: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
 
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
     case "RelationshipPatternPredicates" => Map[Setting[_], Object](
-      GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> Set(SemanticFeature.RelationshipPatternPredicates.productPrefix).asJava,
-    )
+        GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> Set(
+          SemanticFeature.RelationshipPatternPredicates.productPrefix
+        ).asJava
+      )
     case _ => Map.empty
   }
 
-  def apply(executionPrefix: String, graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
-            dbConfig: collection.Map[Setting[_], Object], useBolt: Boolean): Neo4jAdapter = {
+  def apply(
+    executionPrefix: String,
+    graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
+    dbConfig: collection.Map[Setting[_], Object],
+    useBolt: Boolean
+  ): Neo4jAdapter = {
     val enhancedConfig =
-      (dbConfig ++ _root_.scala.collection.Map(BoltConnector.enabled -> true) ++ _root_.scala.collection.Map(BoltConnector.listen_address -> new SocketAddress("localhost", 0)))
+      (dbConfig ++ _root_.scala.collection.Map(BoltConnector.enabled -> true) ++ _root_.scala.collection.Map(
+        BoltConnector.listen_address -> new SocketAddress("localhost", 0)
+      ))
         .asInstanceOf[Map[Setting[_], Object]]
     val managementService = createManagementService(enhancedConfig, graphDatabaseFactory)
     val config = Config.newBuilder().set(enhancedConfig.asJava).build()
-    val executorFactory = if (useBolt) {
-      DriverCypherExecutorFactory(managementService, config)
-    } else {
-      EmbeddedCypherExecutorFactory(managementService, config)
-    }
+    val executorFactory =
+      if (useBolt) {
+        DriverCypherExecutorFactory(managementService, config)
+      } else {
+        EmbeddedCypherExecutorFactory(managementService, config)
+      }
     val dbms = FeatureDatabaseManagementService(managementService, executorFactory)
     new Neo4jAdapter(dbms, executionPrefix)
   }
 
-  private def createManagementService(config: collection.Map[Setting[_], Object], graphDatabaseFactory: TestDatabaseManagementServiceBuilder) = {
+  private def createManagementService(
+    config: collection.Map[Setting[_], Object],
+    graphDatabaseFactory: TestDatabaseManagementServiceBuilder
+  ) = {
     graphDatabaseFactory.impermanent().setConfig(config.asJava).build()
   }
 }
 
-class Neo4jAdapter(var dbms: FeatureDatabaseManagementService,
-                   executionPrefix: String) extends Graph with Neo4jProcedureAdapter with Neo4jCsvFileCreationAdapter {
+class Neo4jAdapter(var dbms: FeatureDatabaseManagementService, executionPrefix: String) extends Graph
+    with Neo4jProcedureAdapter with Neo4jCsvFileCreationAdapter {
   private val explainPrefix = "EXPLAIN\n"
 
   override def cypher(query: String, params: Map[String, CypherValue], meta: QueryType): Result = {
     val neo4jParams = params.view.mapValues(v => TCKValueToNeo4jValue(v)).toMap
 
-    val queryToExecute = if (meta == ExecQuery) {
-      s"$executionPrefix $query"
-    } else query
+    val queryToExecute =
+      if (meta == ExecQuery) {
+        s"$executionPrefix $query"
+      } else query
     Try(dbms.execute(queryToExecute, neo4jParams, convertResult)) match {
       case Success(converted) =>
         converted
@@ -108,7 +123,8 @@ class Neo4jAdapter(var dbms: FeatureDatabaseManagementService,
 
   def convertResult(result: StatementResult): Result = {
     val header = result.columns().toList
-    val rows = result.records().map(record => record.map { case (key, value) => (key, CypherTestValueToString(value)) }).toList
+    val rows =
+      result.records().map(record => record.map { case (key, value) => (key, CypherTestValueToString(value)) }).toList
     StringRecords(header, rows)
   }
 

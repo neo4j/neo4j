@@ -33,19 +33,35 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator with Sele
 
   override def generator(): SelectionCandidateGenerator = this
 
-  override def apply(input: LogicalPlan,
-                     unsolvedPredicates: Set[Expression],
-                     queryGraph: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Iterator[SelectionCandidate] = {
+  override def apply(
+    input: LogicalPlan,
+    unsolvedPredicates: Set[Expression],
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Iterator[SelectionCandidate] = {
     if (!context.planContext.canLookupNodesByLabel) {
       Iterator.empty
     } else {
       unsolvedPredicates.iterator.filterNot(containsPatternPredicates).collect {
-        case s@HasLabels(variable: Variable, Seq(labelName)) if queryGraph.patternNodes.contains(variable.name) && !queryGraph.argumentIds.contains(variable.name) =>
-          val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable, context.providedOrderFactory)
-          val labelScan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(s), None, queryGraph.argumentIds, providedOrder, context)
-          val plan = context.logicalPlanProducer.planNodeHashJoin(Set(variable.name), input, labelScan, Set.empty, context)
+        case s @ HasLabels(variable: Variable, Seq(labelName))
+          if queryGraph.patternNodes.contains(variable.name) && !queryGraph.argumentIds.contains(variable.name) =>
+          val providedOrder = ResultOrdering.providedOrderForLabelScan(
+            interestingOrderConfig.orderToSolve,
+            variable,
+            context.providedOrderFactory
+          )
+          val labelScan = context.logicalPlanProducer.planNodeByLabelScan(
+            variable,
+            labelName,
+            Seq(s),
+            None,
+            queryGraph.argumentIds,
+            providedOrder,
+            context
+          )
+          val plan =
+            context.logicalPlanProducer.planNodeHashJoin(Set(variable.name), input, labelScan, Set.empty, context)
           SelectionCandidate(plan, Set(s))
       }
     }

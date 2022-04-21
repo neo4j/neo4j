@@ -19,18 +19,16 @@
  */
 package org.neo4j.configuration;
 
+import static java.lang.String.format;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
-import static java.lang.String.format;
-
-public final class SettingImpl<T> implements Setting<T>
-{
+public final class SettingImpl<T> implements Setting<T> {
     private final String name;
     private final SettingImpl<T> dependency;
     private final SettingValueParser<T> parser;
@@ -43,15 +41,15 @@ public final class SettingImpl<T> implements Setting<T>
     private boolean deprecated;
     private String documentedDefaultValue;
 
-    private SettingImpl( String name,
+    private SettingImpl(
+            String name,
             SettingValueParser<T> parser,
             T defaultValue,
             List<SettingConstraint<T>> constraints,
             boolean dynamic,
             boolean immutable,
             boolean internal,
-            SettingImpl<T> dependency )
-    {
+            SettingImpl<T> dependency) {
         this.name = name;
         this.parser = parser;
         this.dependency = dependency;
@@ -62,181 +60,151 @@ public final class SettingImpl<T> implements Setting<T>
         this.immutable = immutable;
     }
 
-    public static <T> SettingBuilder<T> newBuilder( String name, SettingValueParser<T> parser, T defaultValue )
-    {
-        return SettingBuilder.newBuilder( name, parser, defaultValue );
+    public static <T> SettingBuilder<T> newBuilder(String name, SettingValueParser<T> parser, T defaultValue) {
+        return SettingBuilder.newBuilder(name, parser, defaultValue);
     }
 
     @Override
-    public T defaultValue()
-    {
+    public T defaultValue() {
         return defaultValue;
     }
 
-    public T parse( String value )
-    {
-        if ( value == null )
-        {
-           return null;
+    public T parse(String value) {
+        if (value == null) {
+            return null;
         }
 
-        return parser.parse( value );
+        return parser.parse(value);
     }
 
-    public String valueToString( T value )
-    {
-        if ( value != null )
-        {
-            return parser.valueToString( value );
+    public String valueToString(T value) {
+        if (value != null) {
+            return parser.valueToString(value);
         }
         return "No Value";
     }
 
-    T solveDefault( T value, T defaultValue )
-    {
+    T solveDefault(T value, T defaultValue) {
         return parser.solveDefault(value, defaultValue);
     }
 
-    T solveDependency( T value, T dependencyValue )
-    {
-        return parser.solveDependency( value, dependencyValue );
+    T solveDependency(T value, T dependencyValue) {
+        return parser.solveDependency(value, dependencyValue);
     }
 
-    public void validate( T value, Configuration config )
-    {
-        if ( value != null )
-        {
-            if ( !parser.getType().isAssignableFrom( value.getClass() ) ) //Does only check outer class if generic types.
+    public void validate(T value, Configuration config) {
+        if (value != null) {
+            if (!parser.getType().isAssignableFrom(value.getClass())) // Does only check outer class if generic types.
             {
-                throw new IllegalArgumentException( format( "Setting '%s' can not have value '%s'. Should be of type '%s', but is '%s'",
-                                name, value, parser.getType().getSimpleName(), value.getClass().getSimpleName() ) );
+                throw new IllegalArgumentException(format(
+                        "Setting '%s' can not have value '%s'. Should be of type '%s', but is '%s'",
+                        name,
+                        value,
+                        parser.getType().getSimpleName(),
+                        value.getClass().getSimpleName()));
             }
-            try
-            {
-                parser.validate( value );
-                for ( SettingConstraint<T> constraint : constraints )
-                {
-                    constraint.validate( value, config );
+            try {
+                parser.validate(value);
+                for (SettingConstraint<T> constraint : constraints) {
+                    constraint.validate(value, config);
                 }
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                        format("Failed to validate '%s' for '%s': %s", value, name(), e.getMessage()), e);
             }
-            catch ( IllegalArgumentException e )
-            {
-                throw new IllegalArgumentException( format( "Failed to validate '%s' for '%s': %s", value, name(), e.getMessage() ), e );
-            }
-
         }
     }
 
     @Override
-    public String toString()
-    {
-        String desc = format( "%s, %s", name, parser.getDescription() );
+    public String toString() {
+        String desc = format("%s, %s", name, parser.getDescription());
 
-        if ( !constraints.isEmpty() )
-        {
-            String constraintDesc = constraints.stream().map( SettingConstraint::getDescription ).collect( Collectors.joining( " and " ) );
-            desc = format( "%s which %s", desc, constraintDesc );
+        if (!constraints.isEmpty()) {
+            String constraintDesc =
+                    constraints.stream().map(SettingConstraint::getDescription).collect(Collectors.joining(" and "));
+            desc = format("%s which %s", desc, constraintDesc);
         }
 
-        if ( dependency != null )
-        {
-            desc = format( "%s. %s from %s", desc, parser.getSolverDescription(), dependency.name() );
+        if (dependency != null) {
+            desc = format("%s. %s from %s", desc, parser.getSolverDescription(), dependency.name());
         }
 
         return desc;
     }
 
-    SettingImpl<T> dependency()
-    {
+    SettingImpl<T> dependency() {
         return dependency;
     }
 
     @Override
-    public String description()
-    {
+    public String description() {
         return description != null ? description : toString();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         SettingImpl<?> setting = (SettingImpl<?>) o;
-        return name.equals( setting.name );
+        return name.equals(setting.name);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash( name );
+    public int hashCode() {
+        return Objects.hash(name);
     }
 
     @Override
-    public String name()
-    {
+    public String name() {
         return name;
     }
 
     @Override
-    public boolean dynamic()
-    {
+    public boolean dynamic() {
         return dynamic;
     }
 
-    public boolean immutable()
-    {
+    public boolean immutable() {
         return immutable;
     }
 
-    public boolean internal()
-    {
+    public boolean internal() {
         return internal;
     }
 
-    public boolean deprecated()
-    {
+    public boolean deprecated() {
         return deprecated;
     }
 
-    public String documentedDefaultValue()
-    {
+    public String documentedDefaultValue() {
         return documentedDefaultValue;
     }
 
-    void setDescription( String description )
-    {
+    void setDescription(String description) {
         this.description = description;
     }
 
-    void setInternal()
-    {
+    void setInternal() {
         internal = true;
     }
 
-    void setDeprecated()
-    {
+    void setDeprecated() {
         deprecated = true;
     }
 
-    void setDocumentedDefaultValue( String documentedDefaultValue )
-    {
+    void setDocumentedDefaultValue(String documentedDefaultValue) {
         this.documentedDefaultValue = documentedDefaultValue;
     }
 
-    SettingValueParser<T> parser()
-    {
+    SettingValueParser<T> parser() {
         return parser;
     }
 
-    public static class Builder<T> implements SettingBuilder<T>
-    {
+    public static class Builder<T> implements SettingBuilder<T> {
         private final String name;
         private final SettingValueParser<T> parser;
         private final List<SettingConstraint<T>> constraints = new ArrayList<>();
@@ -246,61 +214,52 @@ public final class SettingImpl<T> implements Setting<T>
         private boolean internal;
         private SettingImpl<T> dependency;
 
-        Builder( String name, SettingValueParser<T> parser, T defaultValue )
-        {
+        Builder(String name, SettingValueParser<T> parser, T defaultValue) {
             this.name = name;
             this.parser = parser;
             this.defaultValue = defaultValue;
         }
 
         @Override
-        public Builder<T> dynamic()
-        {
+        public Builder<T> dynamic() {
             this.dynamic = true;
             return this;
         }
 
         @Override
-        public Builder<T> immutable()
-        {
+        public Builder<T> immutable() {
             this.immutable = true;
             return this;
         }
 
-        public Builder<T> internal()
-        {
+        public Builder<T> internal() {
             this.internal = true;
             return this;
         }
 
         @Override
-        public Builder<T> addConstraint( SettingConstraint<T> constraint )
-        {
-            constraint.setParser( parser );
-            constraints.add( constraint );
+        public Builder<T> addConstraint(SettingConstraint<T> constraint) {
+            constraint.setParser(parser);
+            constraints.add(constraint);
             return this;
         }
 
         @Override
-        public Builder<T> setDependency( Setting<T> setting )
-        {
+        public Builder<T> setDependency(Setting<T> setting) {
             dependency = (SettingImpl<T>) setting;
             return this;
         }
 
         @Override
-        public Setting<T> build()
-        {
-            if ( immutable && dynamic )
-            {
-                throw new IllegalArgumentException( "Setting can not be both dynamic and immutable" );
+        public Setting<T> build() {
+            if (immutable && dynamic) {
+                throw new IllegalArgumentException("Setting can not be both dynamic and immutable");
             }
-            if ( dependency != null && !dependency.immutable() )
-            {
-                throw new IllegalArgumentException( "Setting can only have immutable dependency" );
+            if (dependency != null && !dependency.immutable()) {
+                throw new IllegalArgumentException("Setting can only have immutable dependency");
             }
 
-            return new SettingImpl<>( name, parser, defaultValue, constraints, dynamic, immutable, internal, dependency );
+            return new SettingImpl<>(name, parser, defaultValue, constraints, dynamic, immutable, internal, dependency);
         }
     }
 }

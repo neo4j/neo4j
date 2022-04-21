@@ -41,15 +41,17 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new LogicalPlanResolver) extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](resolver, wholePlan) {
+class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new LogicalPlanResolver)
+    extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](resolver, wholePlan) {
 
   val cardinalities: Cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
     override protected def defaultValue: Cardinality = Cardinality.SINGLE
   }
 
-  val effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities with Default[LogicalPlan, EffectiveCardinality] {
-    override protected def defaultValue: EffectiveCardinality = EffectiveCardinality(Cardinality.SINGLE.amount)
-  }
+  val effectiveCardinalities: EffectiveCardinalities =
+    new EffectiveCardinalities with Default[LogicalPlan, EffectiveCardinality] {
+      override protected def defaultValue: EffectiveCardinality = EffectiveCardinality(Cardinality.SINGLE.amount)
+    }
 
   val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
     override protected def defaultValue: ProvidedOrder = ProvidedOrder.empty
@@ -86,7 +88,8 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
 
   def newVar(name: String, inputPosition: InputPosition, typ: CypherType): LogicalPlanBuilder = {
     val variable = Variable(name)(inputPosition)
-    semanticTable = semanticTable.copy(types = semanticTable.types.updated(variable, ExpressionTypeInfo(typ.invariant, None)))
+    semanticTable =
+      semanticTable.copy(types = semanticTable.types.updated(variable, ExpressionTypeInfo(typ.invariant, None)))
     this
   }
 
@@ -96,9 +99,12 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
 }
 
 object LogicalPlanBuilder {
+
   case class FakeLeafPlan(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
     override val availableSymbols: Set[String] = argumentIds
     override def usedVariables: Set[String] = Set.empty
-    override def withoutArgumentIds(argsToExclude: Set[String]): LogicalLeafPlan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+    override def withoutArgumentIds(argsToExclude: Set[String]): LogicalLeafPlan =
+      copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
   }
 }

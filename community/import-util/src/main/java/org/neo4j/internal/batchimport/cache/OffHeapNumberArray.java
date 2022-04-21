@@ -22,45 +22,38 @@ package org.neo4j.internal.batchimport.cache;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryTracker;
 
-public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseNumberArray<N>
-{
+public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseNumberArray<N> {
     protected final long address;
     protected final long length;
     private final long allocatedBytes;
     protected final MemoryTracker memoryTracker;
     private boolean closed;
 
-    protected OffHeapNumberArray( long length, int itemSize, long base, MemoryTracker memoryTracker )
-    {
-        super( itemSize, base );
+    protected OffHeapNumberArray(long length, int itemSize, long base, MemoryTracker memoryTracker) {
+        super(itemSize, base);
         UnsafeUtil.assertHasUnsafe();
         this.memoryTracker = memoryTracker;
         this.length = length;
         this.allocatedBytes = length * itemSize;
-        this.address = UnsafeUtil.allocateMemory( allocatedBytes, memoryTracker );
+        this.address = UnsafeUtil.allocateMemory(allocatedBytes, memoryTracker);
     }
 
     @Override
-    public long length()
-    {
+    public long length() {
         return length;
     }
 
     @Override
-    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-    {
-        visitor.offHeapUsage( allocatedBytes );
+    public void acceptMemoryStatsVisitor(MemoryStatsVisitor visitor) {
+        visitor.offHeapUsage(allocatedBytes);
     }
 
     @Override
-    public void close()
-    {
-        if ( !closed )
-        {
-            if ( length > 0 )
-            {
+    public void close() {
+        if (!closed) {
+            if (length > 0) {
                 // Allocating 0 bytes actually returns address 0
-                UnsafeUtil.free( address, allocatedBytes, memoryTracker );
+                UnsafeUtil.free(address, allocatedBytes, memoryTracker);
             }
             closed = true;
         }

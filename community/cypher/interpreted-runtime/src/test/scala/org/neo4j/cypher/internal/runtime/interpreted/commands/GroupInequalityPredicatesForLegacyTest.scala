@@ -42,10 +42,21 @@ class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
   val m_prop2: Property = Property(Variable("m"), PropertyKey("prop2"))
 
   test("Should handle single predicate") {
-    groupInequalityPredicatesForLegacy(NonEmptyList(lessThan(n_prop1, 1))).toSet should equal(NonEmptyList(anded(n_prop1, lessThan(n_prop1, 1))).toSet)
-    groupInequalityPredicatesForLegacy(NonEmptyList(lessThanOrEqual(n_prop1, 1))).toSet should equal(NonEmptyList(anded(n_prop1, lessThanOrEqual(n_prop1, 1))).toSet)
-    groupInequalityPredicatesForLegacy(NonEmptyList(greaterThan(n_prop1, 1))).toSet should equal(NonEmptyList(anded(n_prop1, greaterThan(n_prop1, 1))).toSet)
-    groupInequalityPredicatesForLegacy(NonEmptyList(greaterThanOrEqual(n_prop1, 1))).toSet should equal(NonEmptyList(anded(n_prop1, greaterThanOrEqual(n_prop1, 1))).toSet)
+    groupInequalityPredicatesForLegacy(NonEmptyList(lessThan(n_prop1, 1))).toSet should equal(NonEmptyList(anded(
+      n_prop1,
+      lessThan(n_prop1, 1)
+    )).toSet)
+    groupInequalityPredicatesForLegacy(NonEmptyList(lessThanOrEqual(n_prop1, 1))).toSet should equal(NonEmptyList(anded(
+      n_prop1,
+      lessThanOrEqual(n_prop1, 1)
+    )).toSet)
+    groupInequalityPredicatesForLegacy(NonEmptyList(greaterThan(n_prop1, 1))).toSet should equal(NonEmptyList(anded(
+      n_prop1,
+      greaterThan(n_prop1, 1)
+    )).toSet)
+    groupInequalityPredicatesForLegacy(NonEmptyList(greaterThanOrEqual(n_prop1, 1))).toSet should equal(
+      NonEmptyList(anded(n_prop1, greaterThanOrEqual(n_prop1, 1))).toSet
+    )
   }
 
   test("Should group by lhs property") {

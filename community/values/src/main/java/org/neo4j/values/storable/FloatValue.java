@@ -19,78 +19,66 @@
  */
 package org.neo4j.values.storable;
 
-import org.neo4j.values.ValueMapper;
-
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public final class FloatValue extends FloatingPointValue
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( FloatValue.class );
+import org.neo4j.values.ValueMapper;
+
+public final class FloatValue extends FloatingPointValue {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(FloatValue.class);
 
     private final float value;
 
-    FloatValue( float value )
-    {
+    FloatValue(float value) {
         this.value = value;
     }
 
-    public float value()
-    {
+    public float value() {
         return value;
     }
 
     @Override
-    public double doubleValue()
-    {
+    public double doubleValue() {
         return value;
     }
 
     @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeFloatingPoint( value );
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeFloatingPoint(value);
     }
 
     @Override
-    public Float asObjectCopy()
-    {
+    public Float asObjectCopy() {
         return value;
     }
 
     @Override
-    public String prettyPrint()
-    {
-        return Float.toString( value );
+    public String prettyPrint() {
+        return Float.toString(value);
     }
 
     @Override
-    public String toString()
-    {
-        return format( "%s(%e)", getTypeName(), value );
+    public String toString() {
+        return format("%s(%e)", getTypeName(), value);
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapFloat( this );
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapFloat(this);
     }
 
     @Override
-    public String getTypeName()
-    {
+    public String getTypeName() {
         return "Float";
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         return SHALLOW_SIZE;
     }
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.FLOAT32;
     }
 }

@@ -19,51 +19,46 @@
  */
 package org.neo4j.kernel.impl.security;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.server.security.auth.LegacyCredential;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.server.security.auth.LegacyCredential.INACCESSIBLE;
 
-class LegacyCredentialTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.security.auth.LegacyCredential;
+
+class LegacyCredentialTest {
     @Test
-    void testMatchesPassword()
-    {
-        LegacyCredential credential = LegacyCredential.forPassword( "foo" );
-        assertTrue( credential.matchesPassword( "foo" ) );
-        assertFalse( credential.matchesPassword( "fooo" ) );
-        assertFalse( credential.matchesPassword( "fo" ) );
-        assertFalse( credential.matchesPassword( "bar" ) );
+    void testMatchesPassword() {
+        LegacyCredential credential = LegacyCredential.forPassword("foo");
+        assertTrue(credential.matchesPassword("foo"));
+        assertFalse(credential.matchesPassword("fooo"));
+        assertFalse(credential.matchesPassword("fo"));
+        assertFalse(credential.matchesPassword("bar"));
     }
 
     @Test
-    void testEquals()
-    {
-        LegacyCredential credential = LegacyCredential.forPassword( "foo" );
-        LegacyCredential sameCredential = new LegacyCredential( credential.salt(), credential.passwordHash() );
-        assertEquals( credential, sameCredential );
+    void testEquals() {
+        LegacyCredential credential = LegacyCredential.forPassword("foo");
+        LegacyCredential sameCredential = new LegacyCredential(credential.salt(), credential.passwordHash());
+        assertEquals(credential, sameCredential);
     }
 
     @Test
-    void testInaccessibleCredentials()
-    {
-        LegacyCredential credential = new LegacyCredential( INACCESSIBLE.salt(), INACCESSIBLE.passwordHash() );
+    void testInaccessibleCredentials() {
+        LegacyCredential credential = new LegacyCredential(INACCESSIBLE.salt(), INACCESSIBLE.passwordHash());
 
-        //equals
-        assertEquals( INACCESSIBLE, credential );
-        assertEquals( INACCESSIBLE, credential );
-        assertEquals( INACCESSIBLE, INACCESSIBLE );
-        assertNotEquals( INACCESSIBLE, LegacyCredential.forPassword( "" ) );
-        assertNotEquals( INACCESSIBLE, LegacyCredential.forPassword( "" ) );
+        // equals
+        assertEquals(INACCESSIBLE, credential);
+        assertEquals(INACCESSIBLE, credential);
+        assertEquals(INACCESSIBLE, INACCESSIBLE);
+        assertNotEquals(INACCESSIBLE, LegacyCredential.forPassword(""));
+        assertNotEquals(INACCESSIBLE, LegacyCredential.forPassword(""));
 
-        //matchesPassword
-        assertFalse( INACCESSIBLE.matchesPassword( new String( new byte[]{} )) );
-        assertFalse( INACCESSIBLE.matchesPassword( "foo" ) );
-        assertFalse( INACCESSIBLE.matchesPassword( "" ) );
+        // matchesPassword
+        assertFalse(INACCESSIBLE.matchesPassword(new String(new byte[] {})));
+        assertFalse(INACCESSIBLE.matchesPassword("foo"));
+        assertFalse(INACCESSIBLE.matchesPassword(""));
     }
 }

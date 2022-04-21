@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.time.Instant;
-
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -37,82 +41,72 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @TestDirectoryExtension
-class DetachedCheckpointLogEntryWriterTest
-{
+class DetachedCheckpointLogEntryWriterTest {
     @Inject
     private FileSystemAbstraction fs;
+
     @Inject
     private TestDirectory directory;
 
     @Test
-    void detachedCheckpointEntryHasSpecificLength() throws IOException
-    {
-        try ( var buffer = new HeapScopedBuffer( (int) kibiBytes( 1 ), INSTANCE ) )
-        {
-            StoreChannel storeChannel = fs.write( directory.createFile( "a" ) );
-            try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, buffer ) )
-            {
-                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriter( writeChannel, KernelVersionRepository.LATEST );
+    void detachedCheckpointEntryHasSpecificLength() throws IOException {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), INSTANCE)) {
+            StoreChannel storeChannel = fs.write(directory.createFile("a"));
+            try (PhysicalFlushableChecksumChannel writeChannel =
+                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+                var checkpointLogEntryWriter =
+                        new DetachedCheckpointLogEntryWriter(writeChannel, KernelVersionRepository.LATEST);
                 long initialPosition = writeChannel.position();
-                writeCheckpoint( checkpointLogEntryWriter, "checkpoint reason" );
+                writeCheckpoint(checkpointLogEntryWriter, "checkpoint reason");
 
-                assertThat( writeChannel.position() - initialPosition ).isEqualTo( RECORD_LENGTH_BYTES );
+                assertThat(writeChannel.position() - initialPosition).isEqualTo(RECORD_LENGTH_BYTES);
             }
         }
     }
 
     @Test
-    void anyCheckpointEntryHaveTheSameSize() throws IOException
-    {
-        try ( var buffer = new HeapScopedBuffer( (int) kibiBytes( 1 ), INSTANCE ) )
-        {
-            StoreChannel storeChannel = fs.write( directory.createFile( "b" ) );
-            try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, buffer ) )
-            {
-                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriter( writeChannel, KernelVersionRepository.LATEST );
+    void anyCheckpointEntryHaveTheSameSize() throws IOException {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), INSTANCE)) {
+            StoreChannel storeChannel = fs.write(directory.createFile("b"));
+            try (PhysicalFlushableChecksumChannel writeChannel =
+                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+                var checkpointLogEntryWriter =
+                        new DetachedCheckpointLogEntryWriter(writeChannel, KernelVersionRepository.LATEST);
 
-                for ( int i = 0; i < 100; i++ )
-                {
+                for (int i = 0; i < 100; i++) {
                     long initialPosition = writeChannel.position();
-                    writeCheckpoint( checkpointLogEntryWriter, randomAlphabetic( 10, 512 ) );
+                    writeCheckpoint(checkpointLogEntryWriter, randomAlphabetic(10, 512));
                     long recordLength = writeChannel.position() - initialPosition;
-                    assertThat( recordLength ).isEqualTo( RECORD_LENGTH_BYTES );
+                    assertThat(recordLength).isEqualTo(RECORD_LENGTH_BYTES);
                 }
             }
         }
     }
 
     @Test
-    void longCheckpointReasonIsTrimmedToFit() throws IOException
-    {
-        try ( var buffer = new HeapScopedBuffer( (int) kibiBytes( 1 ), INSTANCE ) )
-        {
-            StoreChannel storeChannel = fs.write( directory.createFile( "b" ) );
-            try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, buffer ) )
-            {
-                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriter( writeChannel, KernelVersionRepository.LATEST );
+    void longCheckpointReasonIsTrimmedToFit() throws IOException {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), INSTANCE)) {
+            StoreChannel storeChannel = fs.write(directory.createFile("b"));
+            try (PhysicalFlushableChecksumChannel writeChannel =
+                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+                var checkpointLogEntryWriter =
+                        new DetachedCheckpointLogEntryWriter(writeChannel, KernelVersionRepository.LATEST);
 
                 long initialPosition = writeChannel.position();
-                writeCheckpoint( checkpointLogEntryWriter, StringUtils.repeat( "b", 1024 ) );
+                writeCheckpoint(checkpointLogEntryWriter, StringUtils.repeat("b", 1024));
                 long recordLength = writeChannel.position() - initialPosition;
-                assertThat( recordLength ).isEqualTo( RECORD_LENGTH_BYTES );
-
+                assertThat(recordLength).isEqualTo(RECORD_LENGTH_BYTES);
             }
         }
     }
 
-    private static void writeCheckpoint( DetachedCheckpointLogEntryWriter checkpointLogEntryWriter, String reason ) throws IOException
-    {
-        var storeId = new LegacyStoreId( 3, 4, 5 );
-        var transactionId = new TransactionId( 7, 8, 9 );
-        LogPosition logPosition = new LogPosition( 1, 2 );
-        checkpointLogEntryWriter.writeCheckPointEntry( transactionId, logPosition, Instant.ofEpochMilli( 1 ), storeId, reason );
+    private static void writeCheckpoint(DetachedCheckpointLogEntryWriter checkpointLogEntryWriter, String reason)
+            throws IOException {
+        var storeId = new LegacyStoreId(3, 4, 5);
+        var transactionId = new TransactionId(7, 8, 9);
+        LogPosition logPosition = new LogPosition(1, 2);
+        checkpointLogEntryWriter.writeCheckPointEntry(
+                transactionId, logPosition, Instant.ofEpochMilli(1), storeId, reason);
     }
 }

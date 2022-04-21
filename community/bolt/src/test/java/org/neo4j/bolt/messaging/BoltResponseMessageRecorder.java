@@ -22,62 +22,52 @@ package org.neo4j.bolt.messaging;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.bolt.v3.messaging.response.RecordMessage;
 import org.neo4j.values.AnyValue;
 
-public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
-{
+public class BoltResponseMessageRecorder implements BoltResponseMessageWriter {
     private final List<ResponseMessage> messages = new ArrayList<>();
     private AnyValue[] fields;
     private int currentOffset = -1;
 
-    public List<ResponseMessage> asList()
-    {
+    public List<ResponseMessage> asList() {
         return messages;
     }
 
     @Override
-    public void write( ResponseMessage message )
-    {
-        messages.add( message.copy() );
+    public void write(ResponseMessage message) {
+        messages.add(message.copy());
     }
 
     @Override
-    public void flush() throws IOException
-    {
+    public void flush() throws IOException {
         // do nothing
     }
 
     @Override
-    public void beginRecord( int numberOfFields )
-    {
+    public void beginRecord(int numberOfFields) {
         currentOffset = 0;
         fields = new AnyValue[numberOfFields];
     }
 
     @Override
-    public void consumeField( AnyValue value )
-    {
+    public void consumeField(AnyValue value) {
         fields[currentOffset++] = value;
     }
 
     @Override
-    public void endRecord()
-    {
+    public void endRecord() {
         currentOffset = -1;
-        messages.add( new RecordMessage( fields ) );
+        messages.add(new RecordMessage(fields));
     }
 
     @Override
-    public void onError()
-    {
-        //IGNORE
+    public void onError() {
+        // IGNORE
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         // do nothing
     }
 }

@@ -19,12 +19,13 @@
  */
 package org.neo4j.fabric;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -38,12 +39,9 @@ import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@TestInstance( TestInstance.Lifecycle.PER_CLASS )
-@ExtendWith( {DefaultFileSystemExtension.class, TestDirectorySupportExtension.class} )
-class SecurityProcedureQueryTypeTest
-{
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ExtendWith({DefaultFileSystemExtension.class, TestDirectorySupportExtension.class})
+class SecurityProcedureQueryTypeTest {
     @Inject
     static TestDirectory testDirectory;
 
@@ -51,25 +49,24 @@ class SecurityProcedureQueryTypeTest
     private static DatabaseManagementService databaseManagementService;
 
     @BeforeAll
-    static void beforeAll()
-    {
-        databaseManagementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setConfig( GraphDatabaseSettings.auth_enabled, true ).build();
-        DependencyResolver dependencyResolver = ((GraphDatabaseFacade) databaseManagementService.database( "system" )).getDependencyResolver();
-        planner = dependencyResolver.resolveDependency( FabricPlanner.class );
+    static void beforeAll() {
+        databaseManagementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setConfig(GraphDatabaseSettings.auth_enabled, true)
+                .build();
+        DependencyResolver dependencyResolver =
+                ((GraphDatabaseFacade) databaseManagementService.database("system")).getDependencyResolver();
+        planner = dependencyResolver.resolveDependency(FabricPlanner.class);
     }
 
     @AfterAll
-    static void afterAll()
-    {
+    static void afterAll() {
         databaseManagementService.shutdown();
     }
 
     @Test
-    void showCurrentUserShouldBeReadQueryType()
-    {
-        var instance = planner.instance( "CALL dbms.showCurrentUser()", MapValue.EMPTY, "system" );
+    void showCurrentUserShouldBeReadQueryType() {
+        var instance = planner.instance("CALL dbms.showCurrentUser()", MapValue.EMPTY, "system");
         // DBMS mode gives READ
-        assertThat( instance.plan().queryType() ).isEqualTo( QueryType.READ() );
+        assertThat(instance.plan().queryType()).isEqualTo(QueryType.READ());
     }
 }

@@ -22,53 +22,48 @@ package org.neo4j.shell.state;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.summary.ResultSummary;
 
 /**
  * A fully materialized Cypher result.
  */
-public class ListBoltResult implements BoltResult
-{
+public class ListBoltResult implements BoltResult {
 
     private final List<String> keys;
     private final List<Record> records;
     private final ResultSummary summary;
 
-    public ListBoltResult( List<Record> records, ResultSummary summary )
-    {
-        this( records, summary, records.isEmpty() ? Collections.emptyList() : records.get( 0 ).keys() );
+    public ListBoltResult(List<Record> records, ResultSummary summary) {
+        this(
+                records,
+                summary,
+                records.isEmpty() ? Collections.emptyList() : records.get(0).keys());
     }
 
-    public ListBoltResult( List<Record> records, ResultSummary summary, List<String> keys )
-    {
+    public ListBoltResult(List<Record> records, ResultSummary summary, List<String> keys) {
         this.keys = keys;
         this.records = records;
         this.summary = summary;
     }
 
     @Override
-    public List<String> getKeys()
-    {
+    public List<String> getKeys() {
         return keys;
     }
 
     @Override
-    public List<Record> getRecords()
-    {
+    public List<Record> getRecords() {
         return records;
     }
 
     @Override
-    public Iterator<Record> iterate()
-    {
+    public Iterator<Record> iterate() {
         return records.iterator();
     }
 
     @Override
-    public ResultSummary getSummary()
-    {
+    public ResultSummary getSummary() {
         return summary;
     }
 }

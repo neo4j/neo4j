@@ -43,16 +43,25 @@ case object insertWithBetweenOptionalMatchAndMatch extends Rewriter with Step wi
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   private val instance: Rewriter = topDown(Rewriter.lift {
-    case sq@SingleQuery(clauses) if clauses.nonEmpty =>
+    case sq @ SingleQuery(clauses) if clauses.nonEmpty =>
       val newClauses = clauses.sliding(2).collect {
         case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional =>
-          val withStar = With(distinct = false, ReturnItems(includeExisting = true, Seq.empty)(match1.position), None, None, None, None)(match1.position)
+          val withStar = With(
+            distinct = false,
+            ReturnItems(includeExisting = true, Seq.empty)(match1.position),
+            None,
+            None,
+            None,
+            None
+          )(match1.position)
           Seq(match1, withStar)
         case Seq(firstClause, _) => Seq(firstClause)
       }.flatten.toSeq :+ clauses.last
       SingleQuery(newClauses)(sq.position)
   })
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory,
-                           notificationLogger: InternalNotificationLogger): Rewriter = instance
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    notificationLogger: InternalNotificationLogger
+  ): Rewriter = instance
 }

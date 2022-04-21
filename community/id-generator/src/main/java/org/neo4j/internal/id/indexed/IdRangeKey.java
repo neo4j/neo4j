@@ -24,22 +24,18 @@ package org.neo4j.internal.id.indexed;
  * its associated {@link IdRange}. Number of ids per entry also comes into play here. E.g. given idsPerEntry=128 then an iD range index=5
  * specific IDs between 128*5 up to an excluding 128*(5+1).
  */
-class IdRangeKey
-{
+class IdRangeKey {
     private long idRangeIdx;
 
-    IdRangeKey( long idRangeIdx )
-    {
+    IdRangeKey(long idRangeIdx) {
         this.idRangeIdx = idRangeIdx;
     }
 
-    long getIdRangeIdx()
-    {
+    long getIdRangeIdx() {
         return idRangeIdx;
     }
 
-    void setIdRangeIdx( long idRangeIdx )
-    {
+    void setIdRangeIdx(long idRangeIdx) {
         this.idRangeIdx = idRangeIdx;
     }
 }

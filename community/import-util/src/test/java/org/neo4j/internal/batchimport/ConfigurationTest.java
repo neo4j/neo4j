@@ -19,12 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.io.ByteUnit;
-import org.neo4j.io.os.OsBeanUtil;
-
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,51 +26,50 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
-class ConfigurationTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.io.os.OsBeanUtil;
+
+class ConfigurationTest {
     @Test
-    void shouldOverrideBigPageCacheMemorySettingContainingUnit()
-    {
+    void shouldOverrideBigPageCacheMemorySettingContainingUnit() {
         // GIVEN
-        Config dbConfig = Config.defaults( pagecache_memory, ByteUnit.gibiBytes( 2 ) );
-        Configuration config = new Configuration.Overridden( dbConfig );
+        Config dbConfig = Config.defaults(pagecache_memory, ByteUnit.gibiBytes(2));
+        Configuration config = new Configuration.Overridden(dbConfig);
 
         // WHEN
         long memory = config.pageCacheMemory();
 
         // THEN
-        assertEquals( Configuration.MAX_PAGE_CACHE_MEMORY, memory );
+        assertEquals(Configuration.MAX_PAGE_CACHE_MEMORY, memory);
     }
 
     @Test
-    void shouldOverrideSmallPageCacheMemorySettingContainingUnit()
-    {
+    void shouldOverrideSmallPageCacheMemorySettingContainingUnit() {
         // GIVEN
-        long overridden = ByteUnit.mebiBytes( 10 );
-        Config dbConfig = Config.defaults( pagecache_memory, overridden );
-        Configuration config = new Configuration.Overridden( dbConfig );
+        long overridden = ByteUnit.mebiBytes(10);
+        Config dbConfig = Config.defaults(pagecache_memory, overridden);
+        Configuration config = new Configuration.Overridden(dbConfig);
 
         // WHEN
         long memory = config.pageCacheMemory();
 
         // THEN
-        assertEquals( overridden, memory );
+        assertEquals(overridden, memory);
     }
 
     @Test
-    void shouldCalculateCorrectMaxMemorySetting()
-    {
+    void shouldCalculateCorrectMaxMemorySetting() {
         long totalMachineMemory = OsBeanUtil.getTotalPhysicalMemory();
-        assumeTrue( totalMachineMemory != VALUE_UNAVAILABLE );
+        assumeTrue(totalMachineMemory != VALUE_UNAVAILABLE);
 
         // given
         int percent = 70;
-        Configuration config = new Configuration()
-        {
+        Configuration config = new Configuration() {
             @Override
-            public long maxMemoryUsage()
-            {
-                return Configuration.calculateMaxMemoryFromPercent( percent );
+            public long maxMemoryUsage() {
+                return Configuration.calculateMaxMemoryFromPercent(percent);
             }
         };
 
@@ -85,7 +78,7 @@ class ConfigurationTest
 
         // then
         long expected = (long) ((totalMachineMemory - Runtime.getRuntime().maxMemory()) * (percent / 100D));
-        long diff = abs( expected - memory );
-        assertThat( diff ).isLessThan( (long) (expected / 10D) );
+        long diff = abs(expected - memory);
+        assertThat(diff).isLessThan((long) (expected / 10D));
     }
 }

@@ -19,11 +19,13 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 
 import java.util.concurrent.TimeUnit;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -35,110 +37,97 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
-
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-public class SchemaIndexWaitingAcceptanceTest
-{
+@ImpermanentDbmsExtension(configurationCallback = "configure")
+public class SchemaIndexWaitingAcceptanceTest {
     @Inject
     private GraphDatabaseService database;
+
     private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
 
     @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.addExtension( singleInstanceIndexProviderFactory( "test", provider ) )
-               .noOpSystemGraphInitializer();
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.addExtension(singleInstanceIndexProviderFactory("test", provider))
+                .noOpSystemGraphInitializer();
     }
 
     @BeforeEach
-    void createSomeData()
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
+    void createSomeData() {
+        try (Transaction tx = database.beginTx()) {
             tx.createNode();
             tx.commit();
         }
     }
 
     @Test
-    void shouldTimeoutWaitingForIndexToComeOnline() throws InterruptedException, KernelException
-    {
+    void shouldTimeoutWaitingForIndexToComeOnline() throws InterruptedException, KernelException {
         // given
-        Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE );
+        Barrier.Control barrier =
+                provider.installPopulationLatch(ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE);
 
         IndexDefinition index;
-        try ( TransactionImpl tx = (TransactionImpl) database.beginTx() )
-        {
-            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, provider.getProviderDescriptor(), Label.label( "Person" ), "name" );
+        try (TransactionImpl tx = (TransactionImpl) database.beginTx()) {
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider(
+                    tx, provider.getProviderDescriptor(), Label.label("Person"), "name");
 
-            index = Iterables.single( tx.schema().getIndexes( Label.label( "Person" ) ) );
+            index = Iterables.single(tx.schema().getIndexes(Label.label("Person")));
             tx.commit();
         }
 
         barrier.await();
 
-        var e = assertThrows( IllegalStateException.class, () ->
-        {
-            try ( Transaction tx = database.beginTx() )
-            {
-                tx.schema().awaitIndexOnline( index, 1, TimeUnit.MILLISECONDS );
+        var e = assertThrows(IllegalStateException.class, () -> {
+            try (Transaction tx = database.beginTx()) {
+                tx.schema().awaitIndexOnline(index, 1, TimeUnit.MILLISECONDS);
             }
-        } );
-        assertThat( e ).hasMessageContaining( "come online" );
+        });
+        assertThat(e).hasMessageContaining("come online");
         barrier.release();
     }
 
     @Test
-    void shouldTimeoutWaitingForIndexByNameToComeOnline() throws InterruptedException, KernelException
-    {
+    void shouldTimeoutWaitingForIndexByNameToComeOnline() throws InterruptedException, KernelException {
         // given
-        Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE );
+        Barrier.Control barrier =
+                provider.installPopulationLatch(ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE);
 
-        try ( TransactionImpl tx = (TransactionImpl) database.beginTx() )
-        {
-            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, provider.getProviderDescriptor(), Label.label( "Person" ), "name", "my_index" );
+        try (TransactionImpl tx = (TransactionImpl) database.beginTx()) {
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider(
+                    tx, provider.getProviderDescriptor(), Label.label("Person"), "name", "my_index");
             tx.commit();
         }
 
         barrier.await();
 
-        var e = assertThrows( IllegalStateException.class, () ->
-        {
-            try ( Transaction tx = database.beginTx() )
-            {
-                tx.schema().awaitIndexOnline( "my_index", 1, TimeUnit.MILLISECONDS );
+        var e = assertThrows(IllegalStateException.class, () -> {
+            try (Transaction tx = database.beginTx()) {
+                tx.schema().awaitIndexOnline("my_index", 1, TimeUnit.MILLISECONDS);
             }
-        } );
-        assertThat( e ).hasMessageContaining( "come online" );
+        });
+        assertThat(e).hasMessageContaining("come online");
         barrier.release();
     }
 
     @Test
-    void shouldTimeoutWaitingForAllIndexesToComeOnline() throws InterruptedException, KernelException
-    {
+    void shouldTimeoutWaitingForAllIndexesToComeOnline() throws InterruptedException, KernelException {
         // given
-        Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE );
+        Barrier.Control barrier =
+                provider.installPopulationLatch(ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE);
 
-        try ( TransactionImpl tx = (TransactionImpl) database.beginTx() )
-        {
-            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, provider.getProviderDescriptor(), Label.label( "Person" ), "name" );
+        try (TransactionImpl tx = (TransactionImpl) database.beginTx()) {
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider(
+                    tx, provider.getProviderDescriptor(), Label.label("Person"), "name");
             tx.commit();
         }
 
         barrier.await();
 
         // when
-        var e = assertThrows( IllegalStateException.class, () ->
-        {
-            try ( Transaction tx = database.beginTx() )
-            {
-                tx.schema().awaitIndexesOnline( 1, TimeUnit.MILLISECONDS );
+        var e = assertThrows(IllegalStateException.class, () -> {
+            try (Transaction tx = database.beginTx()) {
+                tx.schema().awaitIndexesOnline(1, TimeUnit.MILLISECONDS);
             }
-        } );
-        assertThat( e ).hasMessageContaining( "come online" );
+        });
+        assertThat(e).hasMessageContaining("come online");
         barrier.release();
     }
 }

@@ -19,19 +19,16 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
  * Used to disable test that have problem executing as root, e.g. in a docker containers.
  */
-@Target( ElementType.METHOD )
-@Retention( RetentionPolicy.RUNTIME )
-@DisabledIfSystemProperty( named = "user.name", matches = "root" )
-public @interface DisabledForRoot
-{
-}
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@DisabledIfSystemProperty(named = "user.name", matches = "root")
+public @interface DisabledForRoot {}

@@ -19,65 +19,46 @@
  */
 package org.neo4j.memory;
 
-public final class EmptyMemoryTracker implements LimitedMemoryTracker
-{
+public final class EmptyMemoryTracker implements LimitedMemoryTracker {
     public static final EmptyMemoryTracker INSTANCE = new EmptyMemoryTracker();
 
-    private EmptyMemoryTracker()
-    {
-    }
+    private EmptyMemoryTracker() {}
 
     @Override
-    public void allocateNative( long bytes )
-    {
-    }
+    public void allocateNative(long bytes) {}
 
     @Override
-    public void releaseNative( long bytes )
-    {
-    }
+    public void releaseNative(long bytes) {}
 
     @Override
-    public void allocateHeap( long bytes )
-    {
-    }
+    public void allocateHeap(long bytes) {}
 
     @Override
-    public void releaseHeap( long bytes )
-    {
-    }
+    public void releaseHeap(long bytes) {}
 
     @Override
-    public long heapHighWaterMark()
-    {
+    public long heapHighWaterMark() {
         return 0;
     }
 
     @Override
-    public long usedNativeMemory()
-    {
+    public long usedNativeMemory() {
         return 0;
     }
 
     @Override
-    public long estimatedHeapMemory()
-    {
+    public long estimatedHeapMemory() {
         return 0;
     }
 
     @Override
-    public void reset()
-    {
-    }
+    public void reset() {}
 
     @Override
-    public MemoryTracker getScopedMemoryTracker()
-    {
+    public MemoryTracker getScopedMemoryTracker() {
         return this;
     }
 
     @Override
-    public void setLimit( long localBytesLimit )
-    {
-    }
+    public void setLimit(long localBytesLimit) {}
 }

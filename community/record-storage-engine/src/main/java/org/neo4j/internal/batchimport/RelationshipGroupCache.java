@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.Iterator;
+import static java.lang.Long.max;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
+import java.util.Iterator;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.LongArray;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
@@ -29,9 +31,6 @@ import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.memory.MemoryTracker;
-
-import static java.lang.Long.max;
-import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**
  * Holds information vital for making {@link RelationshipGroupDefragmenter} work the way it does.
@@ -48,9 +47,9 @@ import static org.neo4j.io.ByteUnit.bytesToString;
  *
  * @see RelationshipGroupDefragmenter
  */
-public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>, AutoCloseable, MemoryStatsVisitor.Visitable
-{
-    public static final int GROUP_ENTRY_SIZE = 1/*header*/ + 3/*type*/ + 6/*relationship id*/ * 3/*all directions*/;
+public class RelationshipGroupCache
+        implements Iterable<RelationshipGroupRecord>, AutoCloseable, MemoryStatsVisitor.Visitable {
+    public static final int GROUP_ENTRY_SIZE = 1 /*header*/ + 3 /*type*/ + 6 /*relationship id*/ * 3 /*all directions*/;
 
     private final ByteArray groupCountCache;
     private final ByteArray cache;
@@ -62,22 +61,22 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
     private long highCacheId;
     private final long maxCacheLength;
 
-    public RelationshipGroupCache( NumberArrayFactory arrayFactory, long maxMemory, long highNodeId, MemoryTracker memoryTracker )
-    {
-        this.offsets = arrayFactory.newDynamicLongArray( 100_000, 0, memoryTracker );
-        this.groupCountCache = arrayFactory.newByteArray( highNodeId, new byte[2], memoryTracker );
+    public RelationshipGroupCache(
+            NumberArrayFactory arrayFactory, long maxMemory, long highNodeId, MemoryTracker memoryTracker) {
+        this.offsets = arrayFactory.newDynamicLongArray(100_000, 0, memoryTracker);
+        this.groupCountCache = arrayFactory.newByteArray(highNodeId, new byte[2], memoryTracker);
         this.highNodeId = highNodeId;
 
         long memoryDedicatedToCounting = 2 * highNodeId;
         long memoryLeftForGroupCache = maxMemory - memoryDedicatedToCounting;
-        if ( memoryLeftForGroupCache < 0 )
-        {
+        if (memoryLeftForGroupCache < 0) {
             throw new IllegalArgumentException(
-                    "Too little memory to cache any groups, provided " + bytesToString( maxMemory ) + " where " +
-                            bytesToString( memoryDedicatedToCounting ) + " was dedicated to group counting" );
+                    "Too little memory to cache any groups, provided " + bytesToString(maxMemory) + " where "
+                            + bytesToString(memoryDedicatedToCounting) + " was dedicated to group counting");
         }
         maxCacheLength = memoryLeftForGroupCache / GROUP_ENTRY_SIZE;
-        this.cache = arrayFactory.newDynamicByteArray( max( 1_000, maxCacheLength / 100 ), new byte[GROUP_ENTRY_SIZE], memoryTracker );
+        this.cache = arrayFactory.newDynamicByteArray(
+                max(1_000, maxCacheLength / 100), new byte[GROUP_ENTRY_SIZE], memoryTracker);
     }
 
     /**
@@ -86,29 +85,24 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
      *
      * @param nodeId node to increment group count for.
      */
-    public void incrementGroupCount( long nodeId )
-    {
-        int count = groupCount( nodeId );
+    public void incrementGroupCount(long nodeId) {
+        int count = groupCount(nodeId);
         count++;
-        if ( (count & ~0xFFFF) != 0 )
-        {
-            throw new IllegalStateException(
-                    "Invalid number of relationship groups for node " + nodeId + " " + count );
+        if ((count & ~0xFFFF) != 0) {
+            throw new IllegalStateException("Invalid number of relationship groups for node " + nodeId + " " + count);
         }
-        groupCountCache.setShort( nodeId, 0, (short) count );
+        groupCountCache.setShort(nodeId, 0, (short) count);
     }
 
-    int groupCount( long nodeId )
-    {
-        return groupCountCache.getShort( nodeId, 0 ) & 0xFFFF;
+    int groupCount(long nodeId) {
+        return groupCountCache.getShort(nodeId, 0) & 0xFFFF;
     }
 
     /**
      * Getter here because we can use this already allocated data structure for other things in and
      * around places where this group cache is used.
      */
-    ByteArray getGroupCountCache()
-    {
+    ByteArray getGroupCountCache() {
         return groupCountCache;
     }
 
@@ -122,28 +116,24 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
      * @param fromNodeId inclusive
      * @return toNodeId exclusive
      */
-    public long prepare( long fromNodeId )
-    {
+    public long prepare(long fromNodeId) {
         cache.clear(); // this will have all the "first" bytes set to 0, which means !inUse
         this.fromNodeId = fromNodeId; // keep for use in put later on
 
         highCacheId = 0;
-        for ( long nodeId = fromNodeId; nodeId < highNodeId; nodeId++ )
-        {
-            int count = groupCount( nodeId );
-            if ( highCacheId + count > maxCacheLength )
-            {
+        for (long nodeId = fromNodeId; nodeId < highNodeId; nodeId++) {
+            int count = groupCount(nodeId);
+            if (highCacheId + count > maxCacheLength) {
                 // Cannot include this one, so up until the previous is good
                 return this.toNodeId = nodeId;
             }
-            offsets.set( rebase( nodeId ), highCacheId );
+            offsets.set(rebase(nodeId), highCacheId);
             highCacheId += count;
         }
         return this.toNodeId = highNodeId;
     }
 
-    private long rebase( long toNodeId )
-    {
+    private long rebase(long toNodeId) {
         return toNodeId - fromNodeId;
     }
 
@@ -155,54 +145,46 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
      * @param groupRecord {@link RelationshipGroupRecord} to cache.
      * @return whether or not the group was cached, i.e. whether or not it was within the prepared range.
      */
-    public boolean put( RelationshipGroupRecord groupRecord )
-    {
+    public boolean put(RelationshipGroupRecord groupRecord) {
         long nodeId = groupRecord.getOwningNode();
         assert nodeId < highNodeId;
-        if ( nodeId < fromNodeId || nodeId >= toNodeId )
-        {
+        if (nodeId < fromNodeId || nodeId >= toNodeId) {
             return false;
         }
 
-        long baseIndex = offsets.get( rebase( nodeId ) );
+        long baseIndex = offsets.get(rebase(nodeId));
         // grouCount is extra validation, really
-        int groupCount = groupCount( nodeId );
-        long index = scanForFreeFrom( baseIndex, groupCount, groupRecord.getType(), nodeId );
+        int groupCount = groupCount(nodeId);
+        long index = scanForFreeFrom(baseIndex, groupCount, groupRecord.getType(), nodeId);
 
         // Put the group at this index
-        cache.setByte( index, 0, (byte) 1 );
-        cache.set3ByteInt( index, 1, groupRecord.getType() );
-        cache.set6ByteLong( index, 1 + 3, groupRecord.getFirstOut() );
-        cache.set6ByteLong( index, 1 + 3 + 6, groupRecord.getFirstIn() );
-        cache.set6ByteLong( index, 1 + 3 + 6 + 6, groupRecord.getFirstLoop() );
+        cache.setByte(index, 0, (byte) 1);
+        cache.set3ByteInt(index, 1, groupRecord.getType());
+        cache.set6ByteLong(index, 1 + 3, groupRecord.getFirstOut());
+        cache.set6ByteLong(index, 1 + 3 + 6, groupRecord.getFirstIn());
+        cache.set6ByteLong(index, 1 + 3 + 6 + 6, groupRecord.getFirstLoop());
         return true;
     }
 
-    private long scanForFreeFrom( long startIndex, int groupCount, int type, long owningNodeId )
-    {
+    private long scanForFreeFrom(long startIndex, int groupCount, int type, long owningNodeId) {
         long desiredIndex = -1;
         long freeIndex = -1;
-        for ( int i = 0; i < groupCount; i++ )
-        {
+        for (int i = 0; i < groupCount; i++) {
             long candidateIndex = startIndex + i;
-            boolean free = cache.getByte( candidateIndex, 0 ) == 0;
-            if ( free )
-            {
+            boolean free = cache.getByte(candidateIndex, 0) == 0;
+            if (free) {
                 freeIndex = candidateIndex;
                 break;
             }
 
-            if ( desiredIndex == -1 )
-            {
-                int existingType = cache.get3ByteInt( candidateIndex, 1 );
-                if ( existingType == type )
-                {
+            if (desiredIndex == -1) {
+                int existingType = cache.get3ByteInt(candidateIndex, 1);
+                if (existingType == type) {
                     throw new IllegalStateException(
-                            "Tried to put multiple groups with same type " + type + " for node " + owningNodeId );
+                            "Tried to put multiple groups with same type " + type + " for node " + owningNodeId);
                 }
 
-                if ( type < existingType )
-                {
+                if (type < existingType) {
                     // This means that the groups have arrived here out of order, please put this group
                     // in the correct place, not at the end
                     desiredIndex = candidateIndex;
@@ -210,11 +192,11 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
             }
         }
 
-        if ( freeIndex == -1 )
-        {
-            throw new IllegalStateException( "There's no room for me for startIndex:" + startIndex +
-                    " with a group count of " + groupCount + ". This means that there's an asymmetry between calls " +
-                    "to incrementGroupCount and actual contents sent into put" );
+        if (freeIndex == -1) {
+            throw new IllegalStateException(
+                    "There's no room for me for startIndex:" + startIndex + " with a group count of "
+                            + groupCount + ". This means that there's an asymmetry between calls "
+                            + "to incrementGroupCount and actual contents sent into put");
         }
 
         // For the future: Instead of doing the sorting here right away be doing the relatively expensive move
@@ -225,20 +207,17 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         // will be almost entirely sorted, since we come here straight after import. Although if this thing
         // is to be used as a generic relationship group defragmenter this sorting will have to be fixed
         // to something like what is described above in this comment.
-        if ( desiredIndex != -1 )
-        {
-            moveRight( desiredIndex, freeIndex );
+        if (desiredIndex != -1) {
+            moveRight(desiredIndex, freeIndex);
             return desiredIndex;
         }
         return freeIndex;
     }
 
-    private void moveRight( long fromIndex, long toIndex )
-    {
-        for ( long index = toIndex; index > fromIndex; index-- )
-        {
-            cache.get( index - 1, scratch );
-            cache.set( index, scratch );
+    private void moveRight(long fromIndex, long toIndex) {
+        for (long index = toIndex; index > fromIndex; index--) {
+            cache.get(index - 1, scratch);
+            cache.set(index, scratch);
         }
     }
 
@@ -246,77 +225,67 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
      * @return cached {@link RelationshipGroupRecord} sorted by node id and then type id.
      */
     @Override
-    public Iterator<RelationshipGroupRecord> iterator()
-    {
-        return new PrefetchingIterator<>()
-        {
+    public Iterator<RelationshipGroupRecord> iterator() {
+        return new PrefetchingIterator<>() {
             private long cursor;
             private long nodeId = fromNodeId;
-            private int countLeftForThisNode = groupCount( nodeId );
+            private int countLeftForThisNode = groupCount(nodeId);
 
             {
                 findNextNodeWithGroupsIfNeeded();
             }
 
             @Override
-            protected RelationshipGroupRecord fetchNextOrNull()
-            {
-                while ( cursor < highCacheId )
-                {
+            protected RelationshipGroupRecord fetchNextOrNull() {
+                while (cursor < highCacheId) {
                     RelationshipGroupRecord group = null;
-                    if ( cache.getByte( cursor, 0 ) == 1 )
-                    {
+                    if (cache.getByte(cursor, 0) == 1) {
                         // Here we have an alive group
-                        group = new RelationshipGroupRecord( -1 ).initialize( true,
-                                                                              cache.get3ByteInt( cursor, 1 ),
-                                                                              cache.get6ByteLong( cursor, 1 + 3 ),
-                                                                              cache.get6ByteLong( cursor, 1 + 3 + 6 ),
-                                                                              cache.get6ByteLong( cursor, 1 + 3 + 6 + 6 ),
-                                                                              nodeId,
-                                                                              // Special: we want to convey information about how many groups are coming
-                                                                              // after this one so that chains can be ordered accordingly in the store
-                                                                              // so this isn't at all "next" in the true sense of chain next.
-                                                                              countLeftForThisNode - 1 );
+                        group = new RelationshipGroupRecord(-1)
+                                .initialize(
+                                        true,
+                                        cache.get3ByteInt(cursor, 1),
+                                        cache.get6ByteLong(cursor, 1 + 3),
+                                        cache.get6ByteLong(cursor, 1 + 3 + 6),
+                                        cache.get6ByteLong(cursor, 1 + 3 + 6 + 6),
+                                        nodeId,
+                                        // Special: we want to convey information about how many groups are coming
+                                        // after this one so that chains can be ordered accordingly in the store
+                                        // so this isn't at all "next" in the true sense of chain next.
+                                        countLeftForThisNode - 1);
                     }
 
                     cursor++;
                     countLeftForThisNode--;
                     findNextNodeWithGroupsIfNeeded();
 
-                    if ( group != null )
-                    {
+                    if (group != null) {
                         return group;
                     }
                 }
                 return null;
             }
 
-            private void findNextNodeWithGroupsIfNeeded()
-            {
-                if ( countLeftForThisNode == 0 )
-                {
-                    do
-                    {
+            private void findNextNodeWithGroupsIfNeeded() {
+                if (countLeftForThisNode == 0) {
+                    do {
                         nodeId++;
-                        countLeftForThisNode = nodeId >= groupCountCache.length() ? 0 : groupCount( nodeId );
-                    }
-                    while ( countLeftForThisNode == 0 && nodeId < groupCountCache.length() );
+                        countLeftForThisNode = nodeId >= groupCountCache.length() ? 0 : groupCount(nodeId);
+                    } while (countLeftForThisNode == 0 && nodeId < groupCountCache.length());
                 }
             }
         };
     }
 
     @Override
-    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-    {
-        groupCountCache.acceptMemoryStatsVisitor( visitor );
-        cache.acceptMemoryStatsVisitor( visitor );
-        offsets.acceptMemoryStatsVisitor( visitor );
+    public void acceptMemoryStatsVisitor(MemoryStatsVisitor visitor) {
+        groupCountCache.acceptMemoryStatsVisitor(visitor);
+        cache.acceptMemoryStatsVisitor(visitor);
+        offsets.acceptMemoryStatsVisitor(visitor);
     }
 
     @Override
-    public void close()
-    {
-        IOUtils.closeAllUnchecked( cache, offsets, groupCountCache );
+    public void close() {
+        IOUtils.closeAllUnchecked(cache, offsets, groupCountCache);
     }
 }

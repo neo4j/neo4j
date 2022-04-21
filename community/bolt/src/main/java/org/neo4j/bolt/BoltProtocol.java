@@ -19,8 +19,7 @@
  */
 package org.neo4j.bolt;
 
-public interface BoltProtocol
-{
+public interface BoltProtocol {
     /** Used to install protocol components */
     void install();
     /** Used for version negotiation */

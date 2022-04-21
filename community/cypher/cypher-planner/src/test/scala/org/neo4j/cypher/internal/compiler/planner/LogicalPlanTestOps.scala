@@ -47,8 +47,8 @@ trait LogicalPlanTestOps {
 
     case plan: LogicalPlan =>
       plan.asLogicalPlanBuilderString()
-          .linesIterator.map("  " + _)
-          .mkString("\n", "\n", "\n")
+        .linesIterator.map("  " + _)
+        .mkString("\n", "\n", "\n")
 
     case other =>
       Prettifier.default(other)

@@ -54,7 +54,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
    *                If empty, the iterator returns integer values.
    */
   protected def infiniteInput(rowSize: Long, data: Option[Long => Array[Any]] = None): InputDataStream = {
-      iteratorInput(iterate(data, None, nodeInput = false, rowSize))
+    iteratorInput(iterate(data, None, nodeInput = false, rowSize))
   }
 
   /**
@@ -76,7 +76,11 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
    * @param data    optionally a function to create data. If non-empty, the result of passing the current row number will be returned in every call to `next`..
    *                If empty, the iterator returns integer values.
    */
-  protected def finiteInputWithRowSize(limit: Int, rowSize: Long, data: Option[Long => Array[Any]] = None): InputDataStream = {
+  protected def finiteInputWithRowSize(
+    limit: Int,
+    rowSize: Long,
+    data: Option[Long => Array[Any]] = None
+  ): InputDataStream = {
     iteratorInput(iterate(data, Some(limit), nodeInput = false, rowSize))
   }
 
@@ -115,9 +119,10 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   protected def estimateSize(data: ValueToEstimate): Long = {
     data match {
       case E_INT => ValueUtils.of(0L).estimatedHeapUsage()
-      case E_INT_IN_DISTINCT => ValueUtils.of(java.util.Arrays.asList(0L)).estimatedHeapUsage() // We wrap the columns in a list
+      case E_INT_IN_DISTINCT =>
+        ValueUtils.of(java.util.Arrays.asList(0L)).estimatedHeapUsage() // We wrap the columns in a list
       case E_NODE_PRIMITIVE => VirtualValues.node(0).estimatedHeapUsage()
-      case E_NODE_VALUE => VirtualValues.node(0).estimatedHeapUsage()
+      case E_NODE_VALUE     => VirtualValues.node(0).estimatedHeapUsage()
     }
   }
 
@@ -130,10 +135,12 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
    *                  If false, and data is empty, the iterator returns integer values.
    * @param rowSize   the size of a row in the operator under test. This value determines when to fail the test if the query is not killed soon enough.
    */
-  protected def iterate(data: Option[Long => Array[Any]],
-                        limit: Option[Int],
-                        nodeInput: Boolean,
-                        rowSize: Long): Iterator[Array[Any]] = new Iterator[Array[Any]] {
+  protected def iterate(
+    data: Option[Long => Array[Any]],
+    limit: Option[Int],
+    nodeInput: Boolean,
+    rowSize: Long
+  ): Iterator[Array[Any]] = new Iterator[Array[Any]] {
     private val killThreshold = killAfterNRows(rowSize)
     private var i = 0L
     override def hasNext: Boolean = limit.fold(true)(i < _)
@@ -146,11 +153,12 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
       data match {
         case None =>
           // Make sure that if you ever call this in parallel, you cannot just create nodes here and need to redesign the test.
-          val value = if (nodeInput) {
-            tx.createNode()
-          } else {
-            i
-          }
+          val value =
+            if (nodeInput) {
+              tx.createNode()
+            } else {
+              i
+            }
           Array(value)
         case Some(func) =>
           func(i)
@@ -160,12 +168,16 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
 }
 
 abstract class MemoryManagementDisabledTestBase[CONTEXT <: RuntimeContext](
-                                                                            edition: Edition[CONTEXT],
-                                                                            runtime: CypherRuntime[CONTEXT]
-                                                                          )
-  extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
-    GraphDatabaseSettings.memory_transaction_max_size -> Long.box(0L)), runtime) with InputStreams[CONTEXT] {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith(
+        GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
+        GraphDatabaseSettings.memory_transaction_max_size -> Long.box(0L)
+      ),
+      runtime
+    ) with InputStreams[CONTEXT] {
+
   test("should not kill memory eating query") {
     // given
     val input = finiteInput(10000)
@@ -183,12 +195,15 @@ abstract class MemoryManagementDisabledTestBase[CONTEXT <: RuntimeContext](
 }
 
 abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
-                                                                    edition: Edition[CONTEXT],
-                                                                    runtime: CypherRuntime[CONTEXT]
-                                                                  )
-  extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
-    GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith(
+        GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
+        GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)
+      ),
+      runtime
+    ) with InputStreams[CONTEXT] {
 
   test("should kill sort query before it runs out of memory") {
     // given
@@ -233,10 +248,10 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
+    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
 
     // then
-    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
     consume(result)
   }
 
@@ -405,9 +420,12 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   test("should kill value hash join query before it runs out of memory") {
     // given
     val nodes = given {
-      nodePropertyGraph(1, {
-        case i => Map("prop" -> i)
-      })
+      nodePropertyGraph(
+        1,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
     }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
@@ -434,7 +452,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val estimatedRowSize = estimateRowSize(logicalQuery, nRows = 100) // Need more sample rows to amortize initial overhead of collections
+    val estimatedRowSize =
+      estimateRowSize(logicalQuery, nRows = 100) // Need more sample rows to amortize initial overhead of collections
 
     // when
     val input = infiniteInput(estimatedRowSize)
@@ -603,7 +622,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = for (i <- 0 to 100000) yield Array[Any](i, i)
 
     // then
-    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
     consume(result)
   }
 
@@ -632,16 +651,16 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
+    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
 
     // then
-    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
     consume(result)
   }
 
-  //we decided not to use `infiniteNodeInput` with an estimated size here since it is tricky to
-  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
-  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+  // we decided not to use `infiniteNodeInput` with an estimated size here since it is tricky to
+  // get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+  // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
   test("should kill pruning-var-expand before it runs out of memory") {
     // given
     getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(100)), "Test")
@@ -714,10 +733,10 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
+    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
 
     // then
-    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
     consume(result)
   }
 
@@ -729,16 +748,19 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
+    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
 
     // then
-    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
     consume(result)
   }
 
   test("should kill nested plan collect expression") {
     // given
-    val n = (MemoryManagementTestBase.maxMemory / estimateSize(E_INT)) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
+    val n =
+      (MemoryManagementTestBase.maxMemory / estimateSize(
+        E_INT
+      )) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1")
       .nestedPlanCollectExpressionProjection("x1", "i")
@@ -757,7 +779,10 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not kill nested plan exists expression") {
-    val n = (MemoryManagementTestBase.maxMemory / estimateSize(E_INT)) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
+    val n =
+      (MemoryManagementTestBase.maxMemory / estimateSize(
+        E_INT
+      )) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1")
       .nestedPlanExistsExpressionProjection("x1")
@@ -790,7 +815,6 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       consume(execute(logicalQuery, runtime, input))
     }
   }
-
 
   test("should kill percentileDisc aggregation query before it runs out of memory") {
     // given
@@ -866,7 +890,11 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  protected def assertHeapHighWaterMark(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
+  protected def assertHeapHighWaterMark(
+    logicalQuery: LogicalQuery,
+    valueToEstimate: ValueToEstimate,
+    sampleValue: Option[Any] = None
+  ): Long = {
     // TODO: Improve this to be a bit more reliable
     val expectedRowSize = estimateSize(valueToEstimate)
     val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
@@ -885,15 +913,15 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 /**
  * Tests for runtime with full language support
  */
-trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
+trait FullSupportMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   self: MemoryManagementTestBase[CONTEXT] =>
 
   // expandInto and optionalExpandInto _are_ supported by pipelined.
   // But since the cache is shorter lived there, it does not make sense to have this test for pipelined.
 
-  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
-  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
-  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+  // we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+  // get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+  // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
   test("should kill caching expand-into query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -904,7 +932,6 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .allNodeScan("x")
       .build()
 
-
     // when
     circleGraph(1500)
 
@@ -914,9 +941,9 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     }
   }
 
-  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
-  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
-  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+  // we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+  // get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+  // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
   test("should kill caching optional expand-into query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -940,7 +967,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
 /**
  * Tests for runtimes with support for TransactionForeach
  */
-trait TransactionForeachMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
+trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   self: MemoryManagementTestBase[CONTEXT] =>
 
   test("should kill transactional subquery before it runs out of memory") {
@@ -968,7 +995,7 @@ trait TransactionForeachMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     // Determined empirically
     val rowCount = runtime.name.toUpperCase() match {
       case InterpretedRuntimeName.name => 12000
-      case SlottedRuntimeName.name => 22000
+      case SlottedRuntimeName.name     => 22000
     }
 
     // given

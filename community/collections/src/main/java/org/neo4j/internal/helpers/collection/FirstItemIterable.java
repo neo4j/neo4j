@@ -28,62 +28,47 @@ import java.util.NoSuchElementException;
  *
  * @param <T> the type of elements
  */
-public class FirstItemIterable<T> implements Iterable<T>
-{
+public class FirstItemIterable<T> implements Iterable<T> {
     private final T first;
     private final Iterator<T> iterator;
     private int pos = -1;
 
-    public FirstItemIterable( Iterable<T> data )
-    {
-        this( data.iterator() );
+    public FirstItemIterable(Iterable<T> data) {
+        this(data.iterator());
     }
 
-    public FirstItemIterable( Iterator<T> iterator )
-    {
+    public FirstItemIterable(Iterator<T> iterator) {
         this.iterator = iterator;
-        if ( iterator.hasNext() )
-        {
+        if (iterator.hasNext()) {
             this.first = iterator.next();
             this.pos = 0;
-        }
-        else
-        {
+        } else {
             this.first = null;
         }
     }
 
     @Override
-    public Iterator<T> iterator()
-    {
-        return new Iterator<>()
-        {
+    public Iterator<T> iterator() {
+        return new Iterator<>() {
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return pos == 0 || iterator.hasNext();
             }
 
             @Override
-            public T next()
-            {
-                if ( pos < 0 )
-                {
+            public T next() {
+                if (pos < 0) {
                     throw new NoSuchElementException();
                 }
                 return pos++ == 0 ? first : iterator.next();
             }
 
             @Override
-            public void remove()
-            {
-
-            }
+            public void remove() {}
         };
     }
 
-    public T getFirst()
-    {
+    public T getFirst() {
         return first;
     }
 }

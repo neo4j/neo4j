@@ -23,34 +23,29 @@ import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
-public class StandardDynamicRecordAllocator implements DynamicRecordAllocator
-{
+public class StandardDynamicRecordAllocator implements DynamicRecordAllocator {
     protected final IdSequence idGenerator;
     private final int dataSize;
 
-    public StandardDynamicRecordAllocator( IdSequence idGenerator, int dataSize )
-    {
+    public StandardDynamicRecordAllocator(IdSequence idGenerator, int dataSize) {
         this.idGenerator = idGenerator;
         this.dataSize = dataSize;
     }
 
     @Override
-    public int getRecordDataSize()
-    {
+    public int getRecordDataSize() {
         return dataSize;
     }
 
     @Override
-    public DynamicRecord nextRecord( CursorContext cursorContext )
-    {
-        return allocateRecord( idGenerator.nextId( cursorContext ) );
+    public DynamicRecord nextRecord(CursorContext cursorContext) {
+        return allocateRecord(idGenerator.nextId(cursorContext));
     }
 
-    public static DynamicRecord allocateRecord( long id )
-    {
-        DynamicRecord record = new DynamicRecord( id );
+    public static DynamicRecord allocateRecord(long id) {
+        DynamicRecord record = new DynamicRecord(id);
         record.setCreated();
-        record.setInUse( true );
+        record.setInUse(true);
         return record;
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.kernel;
 
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -33,8 +32,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
  * This is a trimmed down version of GraphDatabaseService and GraphDatabaseAPI, limited to a subset of functions needed
  * by implementations of QueryExecutionEngine.
  */
-public interface GraphDatabaseQueryService
-{
+public interface GraphDatabaseQueryService {
     DependencyResolver getDependencyResolver();
 
     /**
@@ -44,7 +42,7 @@ public interface GraphDatabaseQueryService
      * @param loginContext transaction login context
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext );
+    InternalTransaction beginTransaction(KernelTransaction.Type type, LoginContext loginContext);
 
     /**
      * Begin new internal transaction with with default timeout.
@@ -54,7 +52,8 @@ public interface GraphDatabaseQueryService
      * @param connectionInfo transaction connection info
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo );
+    InternalTransaction beginTransaction(
+            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo);
 
     /**
      * Begin new internal transaction with specified timeout in milliseconds.
@@ -66,8 +65,12 @@ public interface GraphDatabaseQueryService
      * @param unit time unit of timeout argument
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout,
-            TimeUnit unit );
+    InternalTransaction beginTransaction(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo connectionInfo,
+            long timeout,
+            TimeUnit unit);
 
-    URL validateURLAccess( URL url ) throws URLAccessValidationError;
+    URL validateURLAccess(URL url) throws URLAccessValidationError;
 }

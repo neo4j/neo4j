@@ -21,13 +21,12 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-public interface StoreHeaderFormat<HEADER extends StoreHeader>
-{
+public interface StoreHeaderFormat<HEADER extends StoreHeader> {
     int numberOfReservedRecords();
 
-    void writeHeader( PageCursor cursor );
+    void writeHeader(PageCursor cursor);
 
-    HEADER readHeader( PageCursor cursor );
+    HEADER readHeader(PageCursor cursor);
 
     HEADER generateHeader();
 }

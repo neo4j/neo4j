@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
 object containsAggregate extends (Expression => Boolean) {
+
   def apply(expr: Expression): Boolean = {
     expr.folder.treeFold[Boolean](false) {
       case IsAggregate(_) => _ => SkipChildren(true)

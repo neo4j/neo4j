@@ -18,12 +18,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
+
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class CommandPipe(command: Command)(val id: Id = Id.INVALID_ID) extends Pipe {
+
   override protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     command.rows(state).map {
       commandRow =>

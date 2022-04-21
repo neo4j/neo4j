@@ -108,8 +108,12 @@ class ContainerIndexTest extends CypherFunSuite {
 
     when(qtx.propertyKey("v")).thenReturn(42)
     when(qtx.propertyKey("c")).thenReturn(43)
-    when(qtx.relationshipProperty(0, 42, relationshipScanCursor, propertyCursor, throwOnDeleted = true)).thenReturn(longValue(1))
-    when(qtx.relationshipProperty(0, 43, relationshipScanCursor, propertyCursor, throwOnDeleted = true)).thenReturn(Values.NO_VALUE)
+    when(qtx.relationshipProperty(0, 42, relationshipScanCursor, propertyCursor, throwOnDeleted = true)).thenReturn(
+      longValue(1)
+    )
+    when(qtx.relationshipProperty(0, 43, relationshipScanCursor, propertyCursor, throwOnDeleted = true)).thenReturn(
+      Values.NO_VALUE
+    )
     idx("v") should equal(longValue(1))
     idx("c") should equal(expectedNull)
   }

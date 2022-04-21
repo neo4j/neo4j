@@ -19,32 +19,29 @@
  */
 package org.neo4j.kernel.lifecycle;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.function.ThrowingAction;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-class LifecycleAdapterTest
-{
-    @Test
-    void simpleLifeStartsAndStops() throws Exception
-    {
-        ThrowingAction onStart = mock( ThrowingAction.class );
-        ThrowingAction onStop = mock( ThrowingAction.class );
+import org.junit.jupiter.api.Test;
+import org.neo4j.function.ThrowingAction;
 
-        Lifecycle simpleLife = LifecycleAdapter.simpleLife( onStart, onStop );
+class LifecycleAdapterTest {
+    @Test
+    void simpleLifeStartsAndStops() throws Exception {
+        ThrowingAction onStart = mock(ThrowingAction.class);
+        ThrowingAction onStop = mock(ThrowingAction.class);
+
+        Lifecycle simpleLife = LifecycleAdapter.simpleLife(onStart, onStop);
 
         simpleLife.start();
 
-        verify( onStart ).apply();
-        verifyNoMoreInteractions( onStart, onStop );
+        verify(onStart).apply();
+        verifyNoMoreInteractions(onStart, onStop);
 
         simpleLife.stop();
 
-        verify( onStop ).apply();
-        verifyNoMoreInteractions( onStart, onStop );
+        verify(onStop).apply();
+        verifyNoMoreInteractions(onStart, onStop);
     }
 }

@@ -64,65 +64,84 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
 
   private val testedOperators = mutable.Set[String]()
 
-  testPlan("letSelectOrSemiApply",
+  testPlan(
+    "letSelectOrSemiApply",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .letSelectOrSemiApply("idName", "false")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("letSelectOrAntiSemiApply",
+  testPlan(
+    "letSelectOrAntiSemiApply",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .letSelectOrAntiSemiApply("idName", "false")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("produceResults",
+  testPlan(
+    "produceResults",
     new TestPlanBuilder()
       .produceResults("x")
       .argument("x")
-      .build())
+      .build()
+  )
 
-  testPlan("produceResults of property",
+  testPlan(
+    "produceResults of property",
     new TestPlanBuilder()
       .produceResults("`x.prop`")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("argument",
+  testPlan(
+    "argument",
     new TestPlanBuilder()
       .produceResults("x")
       .argument("x", "y")
-      .build())
+      .build()
+  )
 
-  testPlan("input",
+  testPlan(
+    "input",
     new TestPlanBuilder()
       .produceResults("x")
       .input(Seq("n", "m"), Seq("r", "q", "p"), Seq("v1"), nullable = false)
-      .build())
+      .build()
+  )
 
-  testPlan("allNodeScan",
+  testPlan(
+    "allNodeScan",
     new TestPlanBuilder()
       .produceResults("x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("nodeByLabelScan",
+  testPlan(
+    "nodeByLabelScan",
     new TestPlanBuilder()
       .produceResults("x")
       .nodeByLabelScan("x", "X")
-      .build())
+      .build()
+  )
 
-  testPlan("nodeByLabelScan full",
+  testPlan(
+    "nodeByLabelScan full",
     new TestPlanBuilder()
       .produceResults("x")
       .nodeByLabelScan("x", "X", IndexOrderDescending, "foo")
-      .build())
+      .build()
+  )
 
-  testPlan("expandAll",
+  testPlan(
+    "expandAll",
     new TestPlanBuilder()
       .produceResults("x")
       .expandAll("(x)-[r]->(y)")
@@ -132,10 +151,12 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .expandAll("(x)-[r:R]-(y)")
       .expandAll("(x)-[r:R|L]-(y)")
       .argument()
-      .build())
+      .build()
+  )
 
   // Var expand
-  testPlan("expand",
+  testPlan(
+    "expand",
     new TestPlanBuilder()
       .produceResults("x")
       .expand("(x)-[r*0..0]->(y)", expandMode = ExpandAll, projectedDir = OUTGOING)
@@ -146,12 +167,24 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .expand("(x)-[r*1..2]-(y)", expandMode = ExpandInto, projectedDir = OUTGOING)
       .expand("(x)-[r*1..2]->(y)", expandMode = ExpandAll, projectedDir = INCOMING)
       .expand("(x)-[r*1..2]->(y)", expandMode = ExpandAll, projectedDir = BOTH)
-      .expand("(x)-[r*1..2]->(y)", expandMode = ExpandAll, projectedDir = BOTH, nodePredicate = Predicate("n", "id(n) <> 5"))
-      .expand("(x)-[r*1..3]->(y)", expandMode = ExpandAll, projectedDir = BOTH, relationshipPredicate = Predicate("r", "id(r) <> 5"))
+      .expand(
+        "(x)-[r*1..2]->(y)",
+        expandMode = ExpandAll,
+        projectedDir = BOTH,
+        nodePredicate = Predicate("n", "id(n) <> 5")
+      )
+      .expand(
+        "(x)-[r*1..3]->(y)",
+        expandMode = ExpandAll,
+        projectedDir = BOTH,
+        relationshipPredicate = Predicate("r", "id(r) <> 5")
+      )
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("shortestPath",
+  testPlan(
+    "shortestPath",
     new TestPlanBuilder()
       .produceResults("x")
       .shortestPath("(x)<-[r]-(y)")
@@ -161,13 +194,20 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .shortestPath("(x)-[r:REL*1..2]-(y)", predicates = Seq("all(n IN nodes(path) WHERE id(n) <> 5)"))
       .shortestPath("(x)-[r:REL|LER*1..2]-(y)")
       .shortestPath("(x)-[r*1..2]-(y)")
-      .shortestPath("(x)-[r*1..2]->(y)", pathName = Some("path"), all = true, predicates = Seq("all(n IN nodes(path) WHERE id(n) <> 5)", "all(rel IN relationships(path) WHERE id(rel) <> 7)"))
+      .shortestPath(
+        "(x)-[r*1..2]->(y)",
+        pathName = Some("path"),
+        all = true,
+        predicates = Seq("all(n IN nodes(path) WHERE id(n) <> 5)", "all(rel IN relationships(path) WHERE id(rel) <> 7)")
+      )
       .shortestPath("(x)-[r*1..2]->(y)", disallowSameNode = false)
       .shortestPath("(x)-[r*1..3]->(y)", withFallback = true)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("pruningVarExpand",
+  testPlan(
+    "pruningVarExpand",
     new TestPlanBuilder()
       .produceResults("x")
       .pruningVarExpand("(x)-[*0..0]->(y)")
@@ -181,9 +221,11 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .pruningVarExpand("(x)-[*1..2]->(y)", nodePredicate = Predicate("n", "id(n) <> 5"))
       .pruningVarExpand("(x)-[*1..3]->(y)", relationshipPredicate = Predicate("r", "id(r) <> 5"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("bfsPruningVarExpand",
+  testPlan(
+    "bfsPruningVarExpand",
     new TestPlanBuilder()
       .produceResults("x")
       .bfsPruningVarExpand("(x)-[*0..0]->(y)")
@@ -196,9 +238,11 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .bfsPruningVarExpand("(x)-[*1..2]->(y)", nodePredicate = Predicate("n", "id(n) <> 5"))
       .bfsPruningVarExpand("(x)-[*1..3]->(y)", relationshipPredicate = Predicate("r", "id(r) <> 5"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("expandInto",
+  testPlan(
+    "expandInto",
     new TestPlanBuilder()
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
@@ -208,9 +252,11 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .expandInto("(x)-[r:REL]-(y)")
       .expandInto("(x)-[r:REL|LER]-(y)")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("optionalExpandAll",
+  testPlan(
+    "optionalExpandAll",
     new TestPlanBuilder()
       .produceResults("x")
       .optionalExpandAll("(x)-[r]->(y)")
@@ -222,9 +268,11 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .optionalExpandAll("(x)-[r]->(y)", Some("r:R"))
       .optionalExpandAll("(x)-[r]->(y)", Some("a:A"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("optionalExpandInto",
+  testPlan(
+    "optionalExpandInto",
     new TestPlanBuilder()
       .produceResults("x")
       .optionalExpandInto("(x)-[r]->(y)")
@@ -232,133 +280,167 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .optionalExpandInto("(x)-[r:REL|LER]->(y)")
       .optionalExpandInto("(x)-[r]->(y)", Some("y.num > 20"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("limit",
+  testPlan(
+    "limit",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .limit(5)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("exhaustiveLimit",
+  testPlan(
+    "exhaustiveLimit",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .exhaustiveLimit(5)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("skip",
-           new TestPlanBuilder()
-             .produceResults("x", "y")
-             .skip(5)
-             .argument()
-             .build())
+  testPlan(
+    "skip",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .skip(5)
+      .argument()
+      .build()
+  )
 
-  testPlan("aggregation",
+  testPlan(
+    "aggregation",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .aggregation(Seq("x AS x"), Seq("collect(y) AS y"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("orderedAggregation",
+  testPlan(
+    "orderedAggregation",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .orderedAggregation(Seq("x AS x"), Seq("collect(y) AS y"), Seq("x"))
       .orderedAggregation(Seq("x AS x", "1 + n.foo AS y"), Seq("collect(y) AS y"), Seq("x", "1 + n.foo"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("apply",
+  testPlan(
+    "apply",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("apply with non-default argument",
+  testPlan(
+    "apply with non-default argument",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply(fromSubquery = true)
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("semiApply",
+  testPlan(
+    "semiApply",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .semiApply()
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("antiSemiApply",
+  testPlan(
+    "antiSemiApply",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .antiSemiApply()
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("letSemiApply",
+  testPlan(
+    "letSemiApply",
     new TestPlanBuilder()
       .produceResults("x", "idName")
       .letSemiApply("idName")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("letAntiSemiApply",
+  testPlan(
+    "letAntiSemiApply",
     new TestPlanBuilder()
       .produceResults("x", "let")
       .letAntiSemiApply("let")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("conditionalApply",
+  testPlan(
+    "conditionalApply",
     new TestPlanBuilder()
       .produceResults("x")
       .conditionalApply("x")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("antiConditionalApply",
+  testPlan(
+    "antiConditionalApply",
     new TestPlanBuilder()
       .produceResults("x")
       .antiConditionalApply("x")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("selectOrSemiApply",
+  testPlan(
+    "selectOrSemiApply",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .selectOrSemiApply("false")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("selectOrAntiSemiApply",
+  testPlan(
+    "selectOrAntiSemiApply",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .selectOrAntiSemiApply("false")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("rollUpApply",
+  testPlan(
+    "rollUpApply",
     new TestPlanBuilder()
       .produceResults("x", "list")
       .rollUpApply("list", "y")
       .|.allNodeScan("y")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("foreachApply",
+  testPlan(
+    "foreachApply",
     new TestPlanBuilder()
       .produceResults("x", "list")
       .foreachApply("i", "[1, 2, 3]")
@@ -366,114 +448,155 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.create(createNode("n"))
       .|.argument("i")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("foreach",
+  testPlan(
+    "foreach",
     new TestPlanBuilder()
       .produceResults("x", "list")
-      .foreach("i", "[1, 2, 3]",
-        Seq(createPattern(nodes = Seq(createNode("n"))),
+      .foreach(
+        "i",
+        "[1, 2, 3]",
+        Seq(
+          createPattern(nodes = Seq(createNode("n"))),
           removeLabel("x", "L", "M"),
           delete("x", forced = true),
-          setNodeProperty("n", "prop", "i")))
+          setNodeProperty("n", "prop", "i")
+        )
+      )
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("subqueryForeach",
-      new TestPlanBuilder()
-        .produceResults("x")
-        .subqueryForeach()
-        .|.emptyResult()
-        .|.create(createNode("n"))
-        .|.argument("x")
-        .allNodeScan("x")
-        .build())
+  testPlan(
+    "subqueryForeach",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .subqueryForeach()
+      .|.emptyResult()
+      .|.create(createNode("n"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+  )
 
-  testPlan("merge",
+  testPlan(
+    "merge",
     new TestPlanBuilder()
       .produceResults("x")
       .merge(
         Seq(createNode("x"), createNode("y")),
         Seq(createRelationship("r", "x", "R", "y")),
         Seq(setNodeProperty("x", "prop", "42"), setNodePropertiesFromMap("x", "{prop: 42}")),
-        Seq(setLabel("x", "L", "M"), setRelationshipProperty("r", "prop", "42"),
-          setRelationshipPropertiesFromMap("r", "{prop: 42}")))
+        Seq(
+          setLabel("x", "L", "M"),
+          setRelationshipProperty("r", "prop", "42"),
+          setRelationshipPropertiesFromMap("r", "{prop: 42}")
+        )
+      )
       .expand("(x)-[r:R]->(y)")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("merge with lock",
+  testPlan(
+    "merge with lock",
     new TestPlanBuilder()
       .produceResults("x")
       .merge(
         relationships = Seq(createRelationship("r", "x", "R", "y")),
-         lockNodes = Set("x", "y"))
+        lockNodes = Set("x", "y")
+      )
       .expand("(x)-[r:R]->(y)")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("anti",
+  testPlan(
+    "anti",
     new TestPlanBuilder()
       .produceResults("x")
       .anti()
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-
-  testPlan("optional",
+  testPlan(
+    "optional",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
       .|.optional("x")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("cacheProperties",
+  testPlan(
+    "cacheProperties",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .cacheProperties("n.prop")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("cartesianProduct",
+  testPlan(
+    "cartesianProduct",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .cartesianProduct()
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("create",
+  testPlan(
+    "create",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .create(createNode("a", "A"), createNode("b"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("create nodes and relationships",
+  testPlan(
+    "create nodes and relationships",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .create(Seq(createNode("a", "A"), createNodeWithProperties("b", Seq("B"), "{node: true}")), Seq(createRelationship("r", "a", "R", "b", INCOMING, Some("{rel: true}"))))
+      .create(
+        Seq(createNode("a", "A"), createNodeWithProperties("b", Seq("B"), "{node: true}")),
+        Seq(createRelationship("r", "a", "R", "b", INCOMING, Some("{rel: true}")))
+      )
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("create with properties",
+  testPlan(
+    "create with properties",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .create(createNodeWithProperties("a", Seq("A"),"{foo: 42}"), createNodeWithProperties("b", Seq.empty, "{bar: 'hello'}"))
+      .create(
+        createNodeWithProperties("a", Seq("A"), "{foo: 42}"),
+        createNodeWithProperties("b", Seq.empty, "{bar: 'hello'}")
+      )
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("procedureCall",
+  testPlan(
+    "procedureCall",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .procedureCall("test.proc2(5) YIELD foo")
       .procedureCall("test.proc1()")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("projectEndpoints",
+  testPlan(
+    "projectEndpoints",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .projectEndpoints("(a)-[r]-(b)", startInScope = true, endInScope = true)
@@ -482,17 +605,21 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .projectEndpoints("(a)-[r*1..5]-(b)", startInScope = true, endInScope = false)
       .projectEndpoints("(a)-[r:A|B*1..5]-(b)", startInScope = true, endInScope = false)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("valueHashJoin",
+  testPlan(
+    "valueHashJoin",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .valueHashJoin("x.bar = y.foo")
       .|.argument()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("nodeHashJoin",
+  testPlan(
+    "nodeHashJoin",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .nodeHashJoin("x", "y")
@@ -500,9 +627,11 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.|.argument()
       .|.argument()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("rightOuterHashJoin",
+  testPlan(
+    "rightOuterHashJoin",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .rightOuterHashJoin("x", "y")
@@ -510,9 +639,11 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.|.argument()
       .|.argument()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("leftOuterHashJoin",
+  testPlan(
+    "leftOuterHashJoin",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .leftOuterHashJoin("x", "y")
@@ -520,16 +651,20 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.|.argument()
       .|.argument()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("emptyResult",
+  testPlan(
+    "emptyResult",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .emptyResult()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("eager",
+  testPlan(
+    "eager",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .eager()
@@ -538,76 +673,94 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .eager(Seq(
         EagernessReason.DeleteOverlap(Seq("n", "m")),
         EagernessReason.OverlappingSetLabels(Seq("X")),
-        EagernessReason.OverlappingDeletedLabels(Seq("Foo", "Bar")),
+        EagernessReason.OverlappingDeletedLabels(Seq("Foo", "Bar"))
       ))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("errorPlan",
+  testPlan(
+    "errorPlan",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .errorPlan(TestException())
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("sort",
+  testPlan(
+    "sort",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .sort(Seq(Ascending("x"), Ascending("y")))
       .sort(Seq(Descending("x")))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("partialSort",
+  testPlan(
+    "partialSort",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .partialSort(Seq(Ascending("x"), Ascending("y")), Seq(Ascending("xxx"), Descending("y")))
       .partialSort(Seq(Descending("x")), Seq(Ascending("x"), Ascending("y")))
       .partialSort(Seq(Descending("x")), Seq(Ascending("x")), 10)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("top",
+  testPlan(
+    "top",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .top(Seq(Ascending("xxx"), Descending("y")), 100)
       .top(Seq(Ascending("x"), Ascending("y")), 42)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("top1WithTies",
+  testPlan(
+    "top1WithTies",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .top1WithTies(Seq(Ascending("xxx"), Descending("y")))
       .top1WithTies(Seq(Ascending("x"), Ascending("y")))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("partialTop",
+  testPlan(
+    "partialTop",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .partialTop(Seq(Ascending("x"), Ascending("y")), Seq(Ascending("xxx"), Descending("y")), 100)
       .partialTop(Seq(Descending("x")), Seq(Ascending("x"), Ascending("y")), 42)
       .partialTop(Seq(Descending("x")), Seq(Ascending("x"), Ascending("y")), 42, 17)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("distinct",
+  testPlan(
+    "distinct",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .distinct("x AS y", "1 + n.foo AS z")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("orderedDistinct",
+  testPlan(
+    "orderedDistinct",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .orderedDistinct(Seq("x"), "x AS y", "1 + n.foo AS z")
       .orderedDistinct(Seq("1 + n.foo"), "x AS y", "1 + n.foo AS z")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("projection",
+  testPlan(
+    "projection",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .projection("x AS y", "1 + n.foo AS z")
@@ -619,40 +772,50 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .projection("cacheNFromStore[n.prop] AS node")
       .projection("cacheRFromStore[r.prop] AS node")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("unwind",
+  testPlan(
+    "unwind",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .unwind("[x, 42, y.prop] AS y")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("union",
+  testPlan(
+    "union",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .union()
       .|.argument()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("orderedUnion",
+  testPlan(
+    "orderedUnion",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .orderedUnion(Seq(Ascending("x")))
       .|.argument()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("relationshipCountFromCountStore",
+  testPlan(
+    "relationshipCountFromCountStore",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
       .|.relationshipCountFromCountStore("x", None, Seq("RelType"), None, "a", "b")
       .relationshipCountFromCountStore("x", Some("Start"), Seq("RelType", "FooBar"), Some("End"))
-      .build())
+      .build()
+  )
 
-  testPlan("nodeCountFromCountStore",
+  testPlan(
+    "nodeCountFromCountStore",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
@@ -660,452 +823,768 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.nodeCountFromCountStore("x", Seq(Some("Label"), None, Some("Babel")), "a")
       .nodeCountFromCountStore("x", Seq())
-      .build())
+      .build()
+  )
 
-  testPlan("detachDeleteNode",
+  testPlan(
+    "detachDeleteNode",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .detachDeleteNode("x")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("deleteRelationship",
+  testPlan(
+    "deleteRelationship",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .deleteRelationship("x")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("setProperty",
+  testPlan(
+    "setProperty",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setProperty("x", "prop", "42")
       .setProperty("head([x])", "prop", "42")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("setNodeProperty",
+  testPlan(
+    "setNodeProperty",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setNodeProperty("x", "prop", "42")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("setRelationshipProperty",
+  testPlan(
+    "setRelationshipProperty",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setRelationshipProperty("x", "prop", "42")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("setProperties",
+  testPlan(
+    "setProperties",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setProperties("x", ("p1", "42"), ("p1", "42"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("setNodeProperties",
+  testPlan(
+    "setNodeProperties",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setNodeProperties("x", ("p1", "42"), ("p1", "42"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("setRelationshipProperties",
+  testPlan(
+    "setRelationshipProperties",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setRelationshipProperties("x", ("p1", "42"), ("p1", "42"))
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("setPropertiesFromMap",
+  testPlan(
+    "setPropertiesFromMap",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setPropertiesFromMap("x", "{prop: 42, foo: x.bar}", removeOtherProps = true)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("setNodePropertiesFromMap",
+  testPlan(
+    "setNodePropertiesFromMap",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setNodePropertiesFromMap("x", "{prop: 42, foo: x.bar}", removeOtherProps = true)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("setRelationshipPropertiesFromMap",
+  testPlan(
+    "setRelationshipPropertiesFromMap",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setRelationshipPropertiesFromMap("x", "{prop: 42, foo: x.bar}", removeOtherProps = false)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("filter",
+  testPlan(
+    "filter",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .filter("x.foo > 42", "true <> false")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("nonFuseable",
+  testPlan(
+    "nonFuseable",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .nonFuseable()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("injectCompilationError",
+  testPlan(
+    "injectCompilationError",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .injectCompilationError()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("nonPipelined",
+  testPlan(
+    "nonPipelined",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .nonPipelined()
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("prober",
+  testPlan(
+    "prober",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .prober(Prober.NoopProbe)
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("nodeByIdSeek",
+  testPlan(
+    "nodeByIdSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
       .|.nodeByIdSeek("y", Set("x"), 25)
       .nodeByIdSeek("x", Set(), 23, 22.0, -1)
-      .build())
+      .build()
+  )
 
-  testPlan("undirectedRelationshipByIdSeek",
+  testPlan(
+    "undirectedRelationshipByIdSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
       .|.undirectedRelationshipByIdSeek("r2", "x", "y", Set("x"), 25)
       .undirectedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
-      .build())
+      .build()
+  )
 
-  testPlan("pointDistanceNodeIndexSeek",
+  testPlan(
+    "pointDistanceNodeIndexSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
-      .|.pointDistanceNodeIndexSeek("y", "L", "prop", "{x: 1.0, y: 2.0, crs: 'cartesian'}", 10, argumentIds = Set("x"), getValue = GetValue)
-      .pointDistanceNodeIndexSeek("x", "L", "prop","{x: 0.0, y: 1.0, crs: 'cartesian'}", 100, indexOrder = IndexOrderDescending)
-      .build())
+      .|.pointDistanceNodeIndexSeek(
+        "y",
+        "L",
+        "prop",
+        "{x: 1.0, y: 2.0, crs: 'cartesian'}",
+        10,
+        argumentIds = Set("x"),
+        getValue = GetValue
+      )
+      .pointDistanceNodeIndexSeek(
+        "x",
+        "L",
+        "prop",
+        "{x: 0.0, y: 1.0, crs: 'cartesian'}",
+        100,
+        indexOrder = IndexOrderDescending
+      )
+      .build()
+  )
 
-  testPlan("pointBoundingBoxNodeIndexSeek",
+  testPlan(
+    "pointBoundingBoxNodeIndexSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
-      .|.pointBoundingBoxNodeIndexSeek("y", "L", "prop", "{x: 1.0, y: 2.0, crs: 'cartesian'}", "{x: 10.0, y: 20.0, crs: 'cartesian'}", argumentIds = Set("x"), getValue = GetValue)
-      .pointBoundingBoxNodeIndexSeek("x", "L", "prop","{x: 0.0, y: 1.0, crs: 'cartesian'}", "{x: 100.0, y: 100.0, crs: 'cartesian'}", indexOrder = IndexOrderDescending)
-      .build())
+      .|.pointBoundingBoxNodeIndexSeek(
+        "y",
+        "L",
+        "prop",
+        "{x: 1.0, y: 2.0, crs: 'cartesian'}",
+        "{x: 10.0, y: 20.0, crs: 'cartesian'}",
+        argumentIds = Set("x"),
+        getValue = GetValue
+      )
+      .pointBoundingBoxNodeIndexSeek(
+        "x",
+        "L",
+        "prop",
+        "{x: 0.0, y: 1.0, crs: 'cartesian'}",
+        "{x: 100.0, y: 100.0, crs: 'cartesian'}",
+        indexOrder = IndexOrderDescending
+      )
+      .build()
+  )
 
-  testPlan("pointDistanceRelationshipIndexSeek",
+  testPlan(
+    "pointDistanceRelationshipIndexSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
-      .|.pointDistanceRelationshipIndexSeek("r2", "x", "y", "OTHER_REL", "prop2", "{x: 1.0, y: 2.0, crs: 'cartesian'}", 10, argumentIds = Set("r1"), getValue = GetValue, indexType = IndexType.POINT)
-      .pointDistanceRelationshipIndexSeek("r1", "a", "b", "REL", "prop1","{x: 0.0, y: 1.0, crs: 'cartesian'}", 100, indexOrder = IndexOrderDescending, directed = false, inclusive = true)
-      .build())
+      .|.pointDistanceRelationshipIndexSeek(
+        "r2",
+        "x",
+        "y",
+        "OTHER_REL",
+        "prop2",
+        "{x: 1.0, y: 2.0, crs: 'cartesian'}",
+        10,
+        argumentIds = Set("r1"),
+        getValue = GetValue,
+        indexType = IndexType.POINT
+      )
+      .pointDistanceRelationshipIndexSeek(
+        "r1",
+        "a",
+        "b",
+        "REL",
+        "prop1",
+        "{x: 0.0, y: 1.0, crs: 'cartesian'}",
+        100,
+        indexOrder = IndexOrderDescending,
+        directed = false,
+        inclusive = true
+      )
+      .build()
+  )
 
-  testPlan("pointBoundingBoxRelationshipIndexSeek",
+  testPlan(
+    "pointBoundingBoxRelationshipIndexSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
-      .|.pointBoundingBoxRelationshipIndexSeek("y", "y1", "y2", "L", "prop", "{x: 1.0, y: 2.0, crs: 'cartesian'}", "{x: 10.0, y: 20.0, crs: 'cartesian'}", argumentIds = Set("x"), getValue = GetValue)
-      .pointBoundingBoxRelationshipIndexSeek("x", "x1", "y1",  "L", "prop","{x: 0.0, y: 1.0, crs: 'cartesian'}", "{x: 100.0, y: 100.0, crs: 'cartesian'}", directed = false, indexOrder = IndexOrderDescending)
-      .build())
+      .|.pointBoundingBoxRelationshipIndexSeek(
+        "y",
+        "y1",
+        "y2",
+        "L",
+        "prop",
+        "{x: 1.0, y: 2.0, crs: 'cartesian'}",
+        "{x: 10.0, y: 20.0, crs: 'cartesian'}",
+        argumentIds = Set("x"),
+        getValue = GetValue
+      )
+      .pointBoundingBoxRelationshipIndexSeek(
+        "x",
+        "x1",
+        "y1",
+        "L",
+        "prop",
+        "{x: 0.0, y: 1.0, crs: 'cartesian'}",
+        "{x: 100.0, y: 100.0, crs: 'cartesian'}",
+        directed = false,
+        indexOrder = IndexOrderDescending
+      )
+      .build()
+  )
 
-  testPlan("directedRelationshipByIdSeek",
-           new TestPlanBuilder()
-             .produceResults("x", "y")
-             .apply()
-             .|.directedRelationshipByIdSeek("r2", "x", "y", Set("x"), 25)
-             .directedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
-             .build())
+  testPlan(
+    "directedRelationshipByIdSeek",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .apply()
+      .|.directedRelationshipByIdSeek("r2", "x", "y", Set("x"), 25)
+      .directedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+      .build()
+  )
 
-  testPlan("relationshipTypeScan",
+  testPlan(
+    "relationshipTypeScan",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
       .|.relationshipTypeScan("(x)-[r:R]-(y)")
       .relationshipTypeScan("(x)-[r:R]->(y)")
-      .build())
+      .build()
+  )
 
-  testPlan("relationshipTypeScan with providedOrder",
+  testPlan(
+    "relationshipTypeScan with providedOrder",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
       .|.relationshipTypeScan("(x)-[r:R]-(y)", IndexOrderDescending)
       .relationshipTypeScan("(x)-[r:R]->(y)", IndexOrderAscending)
-      .build())
+      .build()
+  )
 
   // Formatting paramExpr and customQueryExpression is currently not supported.
   // These cases will need manual fixup.
-  testPlan("nodeIndexOperator", {
-    val builder = new TestPlanBuilder().produceResults("x", "y")
+  testPlan(
+    "nodeIndexOperator", {
+      val builder = new TestPlanBuilder().produceResults("x", "y")
 
-    // NodeIndexSeek
-    builder
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 20 OR 30)", indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop > 20)", indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(10 < prop < 20)", indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(10 < prop <= 20)", indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(10 <= prop < 20)", indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(10 <= prop <= 20)", indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop >= 20)", indexOrder = IndexOrderNone, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop < 20)", getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop <= 20)", getValue = {case "prop" => GetValue}, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 10, prop2 = '20')", indexOrder = IndexOrderDescending, getValue = Map("prop" -> GetValue, "prop2" -> DoNotGetValue), indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending, indexType = IndexType.TEXT)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop2 = 10, prop)", indexType = IndexType.RANGE)
-      .nodeIndexOperator("x:Honey(prop = variable)", argumentIds = Set("variable"), indexType = IndexType.RANGE)
-      .build()
-  })
+      // NodeIndexSeek
+      builder
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop = 20 OR 30)", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop > 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 < prop < 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 < prop <= 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 <= prop < 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 <= prop <= 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop >= 20)", indexOrder = IndexOrderNone, indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop < 20)", getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop <= 20)", getValue = { case "prop" => GetValue }, indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(prop = 10, prop2 = '20')",
+          indexOrder = IndexOrderDescending,
+          getValue = Map("prop" -> GetValue, "prop2" -> DoNotGetValue),
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Label(text STARTS WITH 'as')",
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.TEXT
+        )
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop2 = 10, prop)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("x:Honey(prop = variable)", argumentIds = Set("variable"), indexType = IndexType.RANGE)
+        .build()
+    }
+  )
 
   // Split into 2 tests to avoid StackOverflow exceptions on too long method call chains.
-  testPlan("nodeIndexOperator 2", {
-    val builder = new TestPlanBuilder().produceResults("r")
+  testPlan(
+    "nodeIndexOperator 2", {
+      val builder = new TestPlanBuilder().produceResults("r")
 
-    // NodeUniqueIndexSeek
-    builder
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 20)", unique = true, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 20 OR 30)", unique = true, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop > 20)", unique = true, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop >= 20)", indexOrder = IndexOrderNone, unique = true, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop < 20)", getValue = _ => DoNotGetValue, unique = true, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop <= 20)", getValue = _ => GetValue, unique = true, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 10, prop2 = '20')", indexOrder = IndexOrderDescending, unique = true, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", argumentIds = Set("a", "b"), unique = true, indexType = IndexType.RANGE)
-      .nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending, unique = true, indexType = IndexType.RANGE)
-      .build()
-  })
+      // NodeUniqueIndexSeek
+      builder
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop = 20)", unique = true, indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop = 20 OR 30)", unique = true, indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(prop > 20)", unique = true, indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(prop >= 20)",
+          indexOrder = IndexOrderNone,
+          unique = true,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(prop < 20)",
+          getValue = _ => DoNotGetValue,
+          unique = true,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(prop <= 20)",
+          getValue = _ => GetValue,
+          unique = true,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(prop = 10, prop2 = '20')",
+          indexOrder = IndexOrderDescending,
+          unique = true,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')",
+          argumentIds = Set("a", "b"),
+          unique = true,
+          indexType = IndexType.RANGE
+        )
+        .nodeIndexOperator(
+          "x:Label(text STARTS WITH 'as')",
+          indexOrder = IndexOrderAscending,
+          unique = true,
+          indexType = IndexType.RANGE
+        )
+        .build()
+    }
+  )
 
-  testPlan("nodeIndexOperator - scans", {
-    val builder = new TestPlanBuilder().produceResults("r")
+  testPlan(
+    "nodeIndexOperator - scans", {
+      val builder = new TestPlanBuilder().produceResults("r")
 
-    // NodeIndexScan
-    builder
-      .apply()
-      .|.nodeIndexOperator("x:Honey(calories)", indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(calories, taste)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(calories, taste)", indexOrder = IndexOrderDescending, indexType = IndexType.RANGE)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(calories, taste)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
+      // NodeIndexScan
+      builder
+        .apply()
+        .|.nodeIndexOperator("x:Honey(calories)", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(calories, taste)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(calories, taste)", indexOrder = IndexOrderDescending, indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(calories, taste)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
 
-    // NodeIndexContainsScan
-    builder
-      .apply()
-      .|.nodeIndexOperator("x:Label(text CONTAINS 'as')", indexType = IndexType.TEXT)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", getValue = _ => GetValue, indexType = IndexType.TEXT)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", indexOrder = IndexOrderDescending, indexType = IndexType.TEXT)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", argumentIds = Set("a", "b"), indexType = IndexType.TEXT)
+      // NodeIndexContainsScan
+      builder
+        .apply()
+        .|.nodeIndexOperator("x:Label(text CONTAINS 'as')", indexType = IndexType.TEXT)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", getValue = _ => GetValue, indexType = IndexType.TEXT)
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(text CONTAINS 'as')",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.TEXT
+        )
+        .apply()
+        .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", argumentIds = Set("a", "b"), indexType = IndexType.TEXT)
 
-    // NodeIndexEndsWithScan
-    builder
-      .apply()
-      .|.nodeIndexOperator("x:Label(text ENDS WITH 'as')", indexType = IndexType.TEXT)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(text ENDS WITH 'as')", getValue = _ => GetValue, indexType = IndexType.TEXT)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(text ENDS WITH 'as')", indexOrder = IndexOrderDescending, indexType = IndexType.TEXT)
-      .nodeIndexOperator("x:Honey(text ENDS WITH 'as')", argumentIds = Set("a", "b"), indexType = IndexType.TEXT)
+      // NodeIndexEndsWithScan
+      builder
+        .apply()
+        .|.nodeIndexOperator("x:Label(text ENDS WITH 'as')", indexType = IndexType.TEXT)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(text ENDS WITH 'as')", getValue = _ => GetValue, indexType = IndexType.TEXT)
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(text ENDS WITH 'as')",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.TEXT
+        )
+        .nodeIndexOperator("x:Honey(text ENDS WITH 'as')", argumentIds = Set("a", "b"), indexType = IndexType.TEXT)
 
-    builder.build()
-  })
+      builder.build()
+    }
+  )
 
   // Formatting paramExpr and customQueryExpression is currently not supported.
   // These cases will need manual fixup.
-  testPlan("relationshipIndexOperator", {
-    val builder = new TestPlanBuilder().produceResults("r")
+  testPlan(
+    "relationshipIndexOperator", {
+      val builder = new TestPlanBuilder().produceResults("r")
 
-    // directed RelationshipIndexSeek
-    builder
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20)]->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20 OR 30)]->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop > 20)]->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop < 20)]->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop <= 20)]->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop < 20)]->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop <= 20)->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop >= 20)]->(y)", indexOrder = IndexOrderNone, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop < 20)->(y)", getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop <= 20)->(y)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10, prop2 = '20')->(y)", indexOrder = IndexOrderDescending, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')->(y)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
-      .relationshipIndexOperator("(x)-[r:Label(text STARTS WITH 'as')->(y)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .build()
-  })
+      // directed RelationshipIndexSeek
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20)]->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20 OR 30)]->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop > 20)]->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop < 20)]->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop <= 20)]->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop < 20)]->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop <= 20)->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop >= 20)]->(y)",
+          indexOrder = IndexOrderNone,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop < 20)->(y)",
+          getValue = _ => DoNotGetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop <= 20)->(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10, prop2 = '20')->(y)",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')->(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
+        .relationshipIndexOperator(
+          "(x)-[r:Label(text STARTS WITH 'as')->(y)",
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
+        .build()
+    }
+  )
 
   // Split into 2 tests to avoid StackOverflow exceptions on too long method call chains.
-  testPlan("relationshipIndexOperator 2", {
-    val builder = new TestPlanBuilder().produceResults("r")
+  testPlan(
+    "relationshipIndexOperator 2", {
+      val builder = new TestPlanBuilder().produceResults("r")
 
-    // undirected RelationshipIndexSeek
-    builder
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20)]-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20 OR 30)]-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop > 20)]-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop < 20)]-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop <= 20)]-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop < 20)]-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop <= 20)-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop >= 20)]-(y)", indexOrder = IndexOrderNone, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop < 20)-(y)", getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop <= 20)-(y)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10, prop2 = '20')-(y)", indexOrder = IndexOrderDescending, getValue = {case "prop" => GetValue; case "prop2" => DoNotGetValue}, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')-(y)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
-      .relationshipIndexOperator("(x)-[r:Label(text STARTS WITH 'as')-(y)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-      .build()
-  })
+      // undirected RelationshipIndexSeek
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20)]-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20 OR 30)]-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop > 20)]-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop < 20)]-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop <= 20)]-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop < 20)]-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop <= 20)-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop >= 20)]-(y)",
+          indexOrder = IndexOrderNone,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop < 20)-(y)",
+          getValue = _ => DoNotGetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop <= 20)-(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10, prop2 = '20')-(y)",
+          indexOrder = IndexOrderDescending,
+          getValue = { case "prop" => GetValue; case "prop2" => DoNotGetValue },
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')-(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
+        .relationshipIndexOperator(
+          "(x)-[r:Label(text STARTS WITH 'as')-(y)",
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
+        .build()
+    }
+  )
 
-  testPlan("relationshipIndexOperator - scan", {
-    val builder = new TestPlanBuilder().produceResults("r")
+  testPlan(
+    "relationshipIndexOperator - scan", {
+      val builder = new TestPlanBuilder().produceResults("r")
 
-    // directed indexScan
-    builder
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories)->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", getValue = {case "calories" => GetValue; case _ => DoNotGetValue}, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", indexOrder = IndexOrderDescending, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
+      // directed indexScan
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(calories)->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(calories, taste)->(y)",
+          getValue = { case "calories" => GetValue; case _ => DoNotGetValue },
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(calories, taste)->(y)",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(calories, taste)->(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
 
-    // undirected indexScan
-    builder
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories)-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", indexOrder = IndexOrderDescending, indexType = IndexType.RANGE)
-      .relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
-      .build()
-  })
+      // undirected indexScan
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(calories)-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(calories, taste)-(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(calories, taste)-(y)",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.RANGE
+        )
+        .relationshipIndexOperator(
+          "(x)-[r:Honey(calories, taste)-(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
+        .build()
+    }
+  )
 
-  testPlan("relationshipIndexOperator - contains", {
-    val builder = new TestPlanBuilder().produceResults("r")
+  testPlan(
+    "relationshipIndexOperator - contains", {
+      val builder = new TestPlanBuilder().produceResults("r")
 
-    // directed contains scan
-    builder
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Label(text CONTAINS 'as')->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')->(y)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')->(y)", indexOrder = IndexOrderDescending, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')->(y)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
+      // directed contains scan
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Label(text CONTAINS 'as')->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text CONTAINS 'as')->(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text CONTAINS 'as')->(y)",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text CONTAINS 'as')->(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
 
-    // undirected contains scan
-    builder
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Label(text CONTAINS 'as')-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", indexOrder = IndexOrderDescending, indexType = IndexType.RANGE)
-      .relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
-      .build()
-  })
+      // undirected contains scan
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Label(text CONTAINS 'as')-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text CONTAINS 'as')-(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text CONTAINS 'as')-(y)",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.RANGE
+        )
+        .relationshipIndexOperator(
+          "(x)-[r:Honey(text CONTAINS 'as')-(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
+        .build()
+    }
+  )
 
-  testPlan("relationshipIndexOperator - ends with", {
-    val builder = new TestPlanBuilder().produceResults("r")
+  testPlan(
+    "relationshipIndexOperator - ends with", {
+      val builder = new TestPlanBuilder().produceResults("r")
 
-    // directed ends with scan
-    builder
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Label(text ENDS WITH 'as')->(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')->(y)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')->(y)", indexOrder = IndexOrderDescending, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')->(y)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
+      // directed ends with scan
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Label(text ENDS WITH 'as')->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text ENDS WITH 'as')->(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text ENDS WITH 'as')->(y)",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text ENDS WITH 'as')->(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
 
-    // undirected ends with scan
-    builder
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Label(text ENDS WITH 'as')-(y)", indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", indexOrder = IndexOrderDescending, indexType = IndexType.RANGE)
-      .relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
+      // undirected ends with scan
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Label(text ENDS WITH 'as')-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text ENDS WITH 'as')-(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(text ENDS WITH 'as')-(y)",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.RANGE
+        )
+        .relationshipIndexOperator(
+          "(x)-[r:Honey(text ENDS WITH 'as')-(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
 
-    builder.build()
-  })
+      builder.build()
+    }
+  )
 
-  testPlan("multiNodeIndexSeekOperator",
+  testPlan(
+    "multiNodeIndexSeekOperator",
     new TestPlanBuilder()
-     .produceResults("n", "m")
-     .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=5)", indexType = IndexType.RANGE),
-                                 _.nodeIndexSeek("m:Label(prop=6)", indexType = IndexType.RANGE))
-     .build())
+      .produceResults("n", "m")
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:Label(prop=5)", indexType = IndexType.RANGE),
+        _.nodeIndexSeek("m:Label(prop=6)", indexType = IndexType.RANGE)
+      )
+      .build()
+  )
 
-  testPlan("triadicSelection",
+  testPlan(
+    "triadicSelection",
     new TestPlanBuilder()
       .produceResults("x", "y", "z")
       .triadicSelection(positivePredicate = false, "x", "y", "z")
@@ -1113,99 +1592,123 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.argument("x", "y")
       .expandAll("(x)-[r1]->(y)")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("triadicBuild",
+  testPlan(
+    "triadicBuild",
     new TestPlanBuilder()
       .produceResults("n")
       .triadicFilter(42, positivePredicate = true, "n", "n")
       .triadicBuild(42, "n", "n")
       .allNodeScan("n")
-      .build())
+      .build()
+  )
 
-  testPlan("triadicFilter",
+  testPlan(
+    "triadicFilter",
     new TestPlanBuilder()
       .produceResults("n")
       .triadicFilter(42, positivePredicate = true, "n", "n")
       .triadicBuild(42, "n", "n")
       .allNodeScan("n")
-      .build())
+      .build()
+  )
 
-
-  testPlan("injectValue",
+  testPlan(
+    "injectValue",
     new TestPlanBuilder()
       .produceResults("x")
       .injectValue("x", "null")
       .argument()
-      .build())
+      .build()
+  )
 
-  testPlan("assertSameNode",
+  testPlan(
+    "assertSameNode",
     new TestPlanBuilder()
       .produceResults("x")
       .assertSameNode("x")
       .|.allNodeScan("x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("deleteNode",
+  testPlan(
+    "deleteNode",
     new TestPlanBuilder()
       .produceResults("n")
       .deleteNode("n")
       .allNodeScan("n")
-      .build())
+      .build()
+  )
 
-  testPlan("deletePath",
+  testPlan(
+    "deletePath",
     new TestPlanBuilder()
       .produceResults("p")
       .deletePath("p")
       .argument("p")
-      .build())
+      .build()
+  )
 
-  testPlan("detachDeletePath",
+  testPlan(
+    "detachDeletePath",
     new TestPlanBuilder()
       .produceResults("p")
       .deletePath("p")
       .argument("p")
-      .build())
+      .build()
+  )
 
-  testPlan("deleteExpression",
+  testPlan(
+    "deleteExpression",
     new TestPlanBuilder()
       .produceResults("e")
       .deletePath("e")
       .argument("e")
-      .build())
+      .build()
+  )
 
-  testPlan("detachDeleteExpression",
+  testPlan(
+    "detachDeleteExpression",
     new TestPlanBuilder()
       .produceResults("e")
       .deletePath("e")
       .argument("e")
-      .build())
+      .build()
+  )
 
-  testPlan("removeLabels",
+  testPlan(
+    "removeLabels",
     new TestPlanBuilder()
       .produceResults("n")
       .removeLabels("n", "Label")
       .argument("n")
-      .build())
+      .build()
+  )
 
-
-  testPlan("setLabels",
+  testPlan(
+    "setLabels",
     new TestPlanBuilder()
       .produceResults("n")
       .setLabels("n", "Label", "OtherLabel")
       .argument("n")
-      .build())
+      .build()
+  )
 
-  testPlan("loadCSV",
+  testPlan(
+    "loadCSV",
     new TestPlanBuilder()
       .produceResults("x", "var")
       .loadCSV("url", "var", NoHeaders, Some("-"))
       .loadCSV("url", "var", HasHeaders, None)
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("transactionForeach",
+  testPlan(
+    "transactionForeach",
     new TestPlanBuilder()
       .produceResults("x")
       .transactionForeach()
@@ -1213,9 +1716,11 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.create(createNode("y"))
       .|.argument("x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("transactionForeach with batchSize",
+  testPlan(
+    "transactionForeach with batchSize",
     new TestPlanBuilder()
       .produceResults("x")
       .transactionForeach(10)
@@ -1223,32 +1728,39 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.create(createNode("y"))
       .|.argument("x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("transactionApply",
+  testPlan(
+    "transactionApply",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .transactionApply()
       .|.create(createNode("y"))
       .|.argument("x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("transactionApply with batchSize",
+  testPlan(
+    "transactionApply with batchSize",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .transactionApply(42)
       .|.create(createNode("y"))
       .|.argument("x")
       .allNodeScan("x")
-      .build())
+      .build()
+  )
 
-  testPlan("argumentTracker",
-           new TestPlanBuilder()
-             .produceResults("x", "y")
-             .argumentTracker()
-             .argument()
-             .build())
+  testPlan(
+    "argumentTracker",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .argumentTracker()
+      .argument()
+      .build()
+  )
 
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =
@@ -1289,7 +1801,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.ir.NoHeaders
             |import org.neo4j.cypher.internal.ir.EagernessReason
             |import org.neo4j.graphdb.schema.IndexType
-            |""".stripMargin)
+            |""".stripMargin
+        )
         interpreter.bind("result", "Array[AnyRef]", res)
       }
       interpreter.interpret(s"result(0) = $completeCode")
@@ -1308,11 +1821,22 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
    * This is done via reflection.
    */
   test("all the tests exist") {
-    val methodsWeCantTest = Set("filterExpression", "appendAtCurrentIndent", "nestedPlanExistsExpressionProjection", "nestedPlanCollectExpressionProjection", "pointDistanceNodeIndexSeekExpr", "pointDistanceRelationshipIndexSeekExpr", "pointBoundingBoxNodeIndexSeekExpr", "pointBoundingBoxRelationshipIndexSeekExpr")
+    val methodsWeCantTest = Set(
+      "filterExpression",
+      "appendAtCurrentIndent",
+      "nestedPlanExistsExpressionProjection",
+      "nestedPlanCollectExpressionProjection",
+      "pointDistanceNodeIndexSeekExpr",
+      "pointDistanceRelationshipIndexSeekExpr",
+      "pointBoundingBoxNodeIndexSeekExpr",
+      "pointBoundingBoxRelationshipIndexSeekExpr"
+    )
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>
         val modifiers = m.getModifiers
-        m.getGenericReturnType.getTypeName == "IMPL" && Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers) && !Modifier.isAbstract(modifiers)
+        m.getGenericReturnType.getTypeName == "IMPL" && Modifier.isPublic(modifiers) && !Modifier.isStatic(
+          modifiers
+        ) && !Modifier.isAbstract(modifiers)
       }
       methods should not be empty
       methods.map { m =>
@@ -1331,7 +1855,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   private def testPlan(name: String, buildPlan: => LogicalPlan): Unit = {
     testedOperators.add(name)
     test(name) {
-      val plan = buildPlan // to avoid running out of stack while compiling the huge LogicalPlanToLogicalPlanBuilderStringTest constructor
+      val plan =
+        buildPlan // to avoid running out of stack while compiling the huge LogicalPlanToLogicalPlanBuilderStringTest constructor
       val code = LogicalPlanToPlanBuilderString(plan)
       val rebuiltPlan = interpretPlanBuilder(code)
       if (rebuiltPlan == null) {

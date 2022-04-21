@@ -48,12 +48,19 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
 object ExpressionConverters {
-  private def normalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = MatchPredicateNormalizerChain(PropertyPredicateNormalizer(anonymousVariableNameGenerator), LabelExpressionsInPatternsNormalizer)
+
+  private def normalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) =
+    MatchPredicateNormalizerChain(
+      PropertyPredicateNormalizer(anonymousVariableNameGenerator),
+      LabelExpressionsInPatternsNormalizer
+    )
 
   private def getQueryGraphArguments(expr: Expression, availableSymbols: Set[String]) = {
     val dependencies = expr.dependencies.map(_.name)
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(dependencies.subsetOf(availableSymbols),
-      s"Trying to plan a PatternExpression where a dependency is not available. Dependencies: $dependencies. Available: ${availableSymbols}")
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      dependencies.subsetOf(availableSymbols),
+      s"Trying to plan a PatternExpression where a dependency is not available. Dependencies: $dependencies. Available: ${availableSymbols}"
+    )
     dependencies
   }
 
@@ -63,19 +70,23 @@ object ExpressionConverters {
    * @param exp the pattern expression
    * @param availableSymbols all symbols available in the outer scope. Only used to assert that all dependencies can be satisfied.
    */
-  def asQueryGraph(exp: PatternExpression,
-                   availableSymbols: Set[String],
-                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator): QueryGraph = {
+  def asQueryGraph(
+    exp: PatternExpression,
+    availableSymbols: Set[String],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): QueryGraph = {
     val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element
     val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq) {
-      case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
-      case _                                                          => identity
+      case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) =>
+        acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
+      case _ => identity
     }
 
-    val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
+    val rewrittenChain =
+      relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
 
     val patternContent = rewrittenChain.destructed
     QueryGraph(
@@ -90,14 +101,18 @@ object ExpressionConverters {
    * @param exp the NodePatternExpression
    * @param availableSymbols all symbols available in the outer scope. Unfortunately used to to intersect with wrongly computed dependencies.
    */
-  def asQueryGraph(exp: NodePatternExpression,
-                   availableSymbols: Set[String],
-                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator): QueryGraph = {
+  def asQueryGraph(
+    exp: NodePatternExpression,
+    availableSymbols: Set[String],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): QueryGraph = {
     val predicates: Seq[Expression] = exp.patterns.collect {
-      case pattern if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => normalizer(anonymousVariableNameGenerator).extract(pattern)
+      case pattern if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) =>
+        normalizer(anonymousVariableNameGenerator).extract(pattern)
     }.flatten
 
-    val rewrittenPattern = exp.patterns.map(_.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace))))
+    val rewrittenPattern =
+      exp.patterns.map(_.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace))))
 
     // TODO it would be nicer to be able to use getQueryGraphArguments, but dependencies of NodePatternExpression are not correct
     val dependencies = exp.dependencies.map(_.name)
@@ -115,19 +130,23 @@ object ExpressionConverters {
    * @param exp the pattern comprehension
    * @param availableSymbols all symbols available in the outer scope. Only used to assert that all dependencies can be satisfied.
    */
-  def asQueryGraph(exp: PatternComprehension,
-                   availableSymbols: Set[String],
-                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator): QueryGraph = {
+  def asQueryGraph(
+    exp: PatternComprehension,
+    availableSymbols: Set[String],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): QueryGraph = {
     val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element
     val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq) {
-      case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
-      case _                                                          => identity
+      case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) =>
+        acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
+      case _ => identity
     } ++ exp.predicate
 
-    val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
+    val rewrittenChain =
+      relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
 
     val patternContent = rewrittenChain.destructed
     QueryGraph(
@@ -138,6 +157,7 @@ object ExpressionConverters {
   }
 
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {
+
     def asPredicates: Set[Predicate] = {
       asPredicates(Set.empty)
     }
@@ -145,16 +165,18 @@ object ExpressionConverters {
     def asPredicates(outerScope: Set[String]): Set[Predicate] = {
       predicate.folder.treeFold(Set.empty[Predicate]) {
         // n:Label
-        case p@HasLabels(Variable(name), labels) =>
-          acc => val newAcc = acc ++ labels.map { label =>
-                Predicate(Set(name), p.copy(labels = Seq(label))(p.position))
+        case p @ HasLabels(Variable(name), labels) =>
+          acc =>
+            val newAcc = acc ++ labels.map { label =>
+              Predicate(Set(name), p.copy(labels = Seq(label))(p.position))
             }
             SkipChildren(newAcc)
         // r:T
-        case p@HasTypes(Variable(name), types) =>
-          acc => val newAcc = acc ++ types.map { typ =>
-            Predicate(Set(name), p.copy(types = Seq(typ))(p.position))
-          }
+        case p @ HasTypes(Variable(name), types) =>
+          acc =>
+            val newAcc = acc ++ types.map { typ =>
+              Predicate(Set(name), p.copy(types = Seq(typ))(p.position))
+            }
             SkipChildren(newAcc)
         // and
         case _: Ands | _: And =>
@@ -170,13 +192,14 @@ object ExpressionConverters {
   }
 
   implicit class RangeConvertor(val length: Option[Option[Range]]) extends AnyVal {
+
     def asPatternLength: PatternLength = length match {
       case Some(Some(Range(Some(left), Some(right)))) => VarPatternLength(left.value.toInt, Some(right.value.toInt))
-      case Some(Some(Range(Some(left), None))) => VarPatternLength(left.value.toInt, None)
-      case Some(Some(Range(None, Some(right)))) => VarPatternLength(1, Some(right.value.toInt))
-      case Some(Some(Range(None, None))) => VarPatternLength.unlimited
-      case Some(None) => VarPatternLength.unlimited
-      case None => SimplePatternLength
+      case Some(Some(Range(Some(left), None)))        => VarPatternLength(left.value.toInt, None)
+      case Some(Some(Range(None, Some(right))))       => VarPatternLength(1, Some(right.value.toInt))
+      case Some(Some(Range(None, None)))              => VarPatternLength.unlimited
+      case Some(None)                                 => VarPatternLength.unlimited
+      case None                                       => SimplePatternLength
     }
   }
 

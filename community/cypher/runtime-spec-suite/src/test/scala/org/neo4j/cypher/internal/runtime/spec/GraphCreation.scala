@@ -30,6 +30,7 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
 
 import java.util.concurrent.TimeUnit
+
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
@@ -106,35 +107,43 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
 
   private val reattachEntitiesToNewTransaction: Rewriter = topDown {
     Rewriter.lift {
-      case n: Node => runtimeTestSupport.tx.getNodeById(n.getId)
+      case n: Node         => runtimeTestSupport.tx.getNodeById(n.getId)
       case r: Relationship => runtimeTestSupport.tx.getRelationshipById(r.getId)
     }
   }
 
   // GRAPHS
 
-  def bipartiteGraph(nNodes: Int,
-                     aLabel: String,
-                     bLabel: String,
-                     relType: String,
-                     aProperties: PartialFunction[Int, Map[String, Any]] = PartialFunction.empty[Int, Map[String, Any]],
-                     bProperties: PartialFunction[Int, Map[String, Any]] = PartialFunction.empty[Int, Map[String, Any]]): (Seq[Node], Seq[Node]) = {
+  def bipartiteGraph(
+    nNodes: Int,
+    aLabel: String,
+    bLabel: String,
+    relType: String,
+    aProperties: PartialFunction[Int, Map[String, Any]] = PartialFunction.empty[Int, Map[String, Any]],
+    bProperties: PartialFunction[Int, Map[String, Any]] = PartialFunction.empty[Int, Map[String, Any]]
+  ): (Seq[Node], Seq[Node]) = {
     val aNodes = nodePropertyGraph(nNodes, aProperties, aLabel)
     val bNodes = nodePropertyGraph(nNodes, bProperties, bLabel)
     val relationshipType = RelationshipType.withName(relType)
-    for {a <- aNodes; b <- bNodes} {
+    for { a <- aNodes; b <- bNodes } {
       a.createRelationshipTo(b, relationshipType)
     }
     (aNodes, bNodes)
   }
 
-  def bidirectionalBipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relTypeAB: String, relTypeBA: String): (Seq[Node], Seq[Node], Seq[Relationship], Seq[Relationship]) = {
+  def bidirectionalBipartiteGraph(
+    nNodes: Int,
+    aLabel: String,
+    bLabel: String,
+    relTypeAB: String,
+    relTypeBA: String
+  ): (Seq[Node], Seq[Node], Seq[Relationship], Seq[Relationship]) = {
     val aNodes = nodeGraph(nNodes, aLabel)
     val bNodes = nodeGraph(nNodes, bLabel)
     val relationshipTypeAB = RelationshipType.withName(relTypeAB)
     val relationshipTypeBA = RelationshipType.withName(relTypeBA)
     val (aRels, bRels) =
-      (for {a <- aNodes; b <- bNodes} yield {
+      (for { a <- aNodes; b <- bNodes } yield {
         val aRel = a.createRelationshipTo(b, relationshipTypeAB)
         val bRel = b.createRelationshipTo(a, relationshipTypeBA)
         (aRel, bRel)
@@ -197,21 +206,23 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    *
    * @return start & end nodes
    */
-  def linkedChainGraph(chainCount: Int, chainDepth: Int): (Node,Node) = {
+  def linkedChainGraph(chainCount: Int, chainDepth: Int): (Node, Node) = {
     val relType = RelationshipType.withName("R")
     val start = runtimeTestSupport.tx.createNode()
 
     def extendChain(prevHeads: Seq[Node]): Seq[Node] = {
       val newHeads = (0 until chainCount).map(_ => runtimeTestSupport.tx.createNode())
-      for {newHead <- newHeads
-           prevHead <- prevHeads} {
+      for {
+        newHead <- newHeads
+        prevHead <- prevHeads
+      } {
         prevHead.createRelationshipTo(newHead, relType)
       }
       newHeads
     }
 
     @scala.annotation.tailrec
-    def makeLinkedChain(prevHeads: Seq[Node], depth: Int): Seq[Node] ={
+    def makeLinkedChain(prevHeads: Seq[Node], depth: Int): Seq[Node] = {
       if (depth >= chainDepth) {
         prevHeads
       } else {
@@ -221,7 +232,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
 
     val chainHeads = makeLinkedChain(Seq(start), 0)
     val end = runtimeTestSupport.tx.createNode()
-    for( n <- chainHeads) {
+    for (n <- chainHeads) {
       n.createRelationshipTo(end, relType)
     }
 
@@ -242,7 +253,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    *
    * @return start & end nodes
    */
-  def linkedChainGraphNoCrossLinking(chainCount: Int, chainDepth: Int): (Node,Node) = {
+  def linkedChainGraphNoCrossLinking(chainCount: Int, chainDepth: Int): (Node, Node) = {
     val relType = RelationshipType.withName("R")
     val start = runtimeTestSupport.tx.createNode()
     val end = runtimeTestSupport.tx.createNode()
@@ -310,8 +321,8 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     val B = RelationshipType.withName("B")
 
     def chain(relType: RelationshipType, nodes: Node*): Unit = {
-      for (i <- 0 until nodes.length-1) {
-        nodes(i).createRelationshipTo(nodes(i+1), relType)
+      for (i <- 0 until nodes.length - 1) {
+        nodes(i).createRelationshipTo(nodes(i + 1), relType)
       }
     }
 
@@ -347,10 +358,12 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     circleGraph(nNodes, relType = "R", outDegree = 1, labels = labels.toSeq)
   }
 
-  def circleGraph(nNodes: Int,
-                  relType: String,
-                  outDegree: Int,
-                  labels: Seq[String] = Seq.empty): (Seq[Node], Seq[Relationship]) = {
+  def circleGraph(
+    nNodes: Int,
+    relType: String,
+    outDegree: Int,
+    labels: Seq[String] = Seq.empty
+  ): (Seq[Node], Seq[Relationship]) = {
     val nodes =
       for (_ <- 0 until nNodes) yield {
         runtimeTestSupport.tx.createNode(labels.map(Label.label): _*)
@@ -388,7 +401,12 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * A star graph where each node in the ring is also the center of another star graph, and so on, recursively, limited by depth.
    * The center of it all can have a special label, all other nodes will have the same label.
    */
-  def nestedStarGraph(depth: Int, ringSize: Int, labelCenter: String, labelRing: String): (Seq[Node], Seq[Relationship], Node) = {
+  def nestedStarGraph(
+    depth: Int,
+    ringSize: Int,
+    labelCenter: String,
+    labelRing: String
+  ): (Seq[Node], Seq[Relationship], Node) = {
     val globalCenter = runtimeTestSupport.tx.createNode(Label.label(labelCenter))
 
     val nodes = new ArrayBuffer[Node]
@@ -518,7 +536,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * Creates a RANGE index and restarts the transaction. This should be called before any data creation operation.
    */
   def nodeIndex(label: String, properties: String*): Unit =
-    nodeIndex(IndexType.RANGE, label, properties:_*)
+    nodeIndex(IndexType.RANGE, label, properties: _*)
 
   /**
    * Creates an index and restarts the transaction. This should be called before any data creation operation.
@@ -539,7 +557,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * Creates a RANGE index and restarts the transaction. This should be called before any data creation operation.
    */
   def relationshipIndex(relType: String, properties: String*): Unit =
-    relationshipIndex(IndexType.RANGE, relType, properties:_*)
+    relationshipIndex(IndexType.RANGE, relType, properties: _*)
 
   /**
    * Creates an index and restarts the transaction. This should be called before any data creation operation.
@@ -559,7 +577,8 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * Creates a  b-tree index and restarts the transaction. This should be called before any data creation operation.
    */
   def relationshipIndexWithProvider(indexProvider: String, relationshipType: String, properties: String*): Unit = {
-    val query = s"CREATE BTREE INDEX FOR ()-[r:$relationshipType]-() ON (${properties.map(p => s"r.`$p`").mkString(",")}) OPTIONS {indexProvider: '$indexProvider'}"
+    val query =
+      s"CREATE BTREE INDEX FOR ()-[r:$relationshipType]-() ON (${properties.map(p => s"r.`$p`").mkString(",")}) OPTIONS {indexProvider: '$indexProvider'}"
     runtimeTestSupport.tx.execute(query)
     runtimeTestSupport.restartTx()
     runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
@@ -570,7 +589,9 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    */
   def uniqueIndex(label: String, properties: String*): Unit = {
     try {
-      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.RANGE)) {
+      val creator = properties.foldLeft(
+        runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.RANGE)
+      ) {
         case (acc, prop) => acc.assertPropertyIsUnique(prop)
       }
       creator.create()
@@ -598,7 +619,9 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    */
   def nodeKey(label: String, properties: String*): Unit = {
     try {
-      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.RANGE)) {
+      val creator = properties.foldLeft(
+        runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.RANGE)
+      ) {
         case (acc, prop) => acc.assertPropertyIsNodeKey(prop)
       }
       creator.create()
@@ -609,20 +632,22 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 }
 
-case class SineGraph(start: Node,
-                     middle: Node,
-                     end: Node,
-                     sa1: Node,
-                     sb1: Node,
-                     sb2: Node,
-                     sc1: Node,
-                     sc2: Node,
-                     sc3: Node,
-                     ea1: Node,
-                     eb1: Node,
-                     eb2: Node,
-                     ec1: Node,
-                     ec2: Node,
-                     ec3: Node,
-                     startMiddle: Relationship,
-                     endMiddle: Relationship)
+case class SineGraph(
+  start: Node,
+  middle: Node,
+  end: Node,
+  sa1: Node,
+  sb1: Node,
+  sb2: Node,
+  sc1: Node,
+  sc2: Node,
+  sc3: Node,
+  ea1: Node,
+  eb1: Node,
+  eb2: Node,
+  ec1: Node,
+  ec2: Node,
+  ec3: Node,
+  startMiddle: Relationship,
+  endMiddle: Relationship
+)

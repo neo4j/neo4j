@@ -31,9 +31,11 @@ case class HttpCypherExecutor(private val dbHttp: HTTP.Builder) extends CypherEx
   override def beginTransaction(): CypherExecutorTransaction =
     HttpTransaction.begin(dbHttp)
 
-  override def execute[T](queryToExecute: String,
-                          neo4jParams: Map[String, Object],
-                          converter: StatementResult => T): T = convertExceptions {
+  override def execute[T](
+    queryToExecute: String,
+    neo4jParams: Map[String, Object],
+    converter: StatementResult => T
+  ): T = convertExceptions {
     converter(HttpTransaction.execute(dbHttp, queryToExecute, neo4jParams))
   }
 

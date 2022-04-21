@@ -29,26 +29,18 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
  * when {@link #publishAsCommitted()}  committed} (which happens when appending to log), but also
  * when {@link #publishAsClosed()} closing}.
  */
-public interface Commitment
-{
-    Commitment NO_COMMITMENT = new Commitment()
-    {
+public interface Commitment {
+    Commitment NO_COMMITMENT = new Commitment() {
         @Override
-        public void publishAsCommitted()
-        {
-        }
+        public void publishAsCommitted() {}
 
         @Override
-        public void publishAsClosed()
-        {
-        }
+        public void publishAsClosed() {}
 
         @Override
-        public boolean markedAsCommitted()
-        {
+        public boolean markedAsCommitted() {
             return false;
         }
-
     };
 
     /**

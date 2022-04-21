@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.expressions.Expression
 
 case class CommandProjection(clause: CommandClause) extends QueryHorizon {
+
   override def exposedSymbols(coveredIds: Set[String]): Set[String] =
     coveredIds ++ clause.unfilteredColumns.columns.map(_.name)
 

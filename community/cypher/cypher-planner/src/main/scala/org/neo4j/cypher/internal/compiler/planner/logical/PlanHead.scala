@@ -29,11 +29,16 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 /**
  * Solves the first query graph and its horizon of a SinglePlannerQuery.
  */
-case class PlanHead(matchPlanner: MatchPlanner = planMatch,
-                    eventHorizonPlanner: EventHorizonPlanner = PlanEventHorizon,
-                    planUpdates: UpdatesPlanner = PlanUpdates) extends HeadPlanner {
+case class PlanHead(
+  matchPlanner: MatchPlanner = planMatch,
+  eventHorizonPlanner: EventHorizonPlanner = PlanEventHorizon,
+  planUpdates: UpdatesPlanner = PlanUpdates
+) extends HeadPlanner {
 
-  override def plan(headQuery: SinglePlannerQuery, context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext) = {
+  override def plan(
+    headQuery: SinglePlannerQuery,
+    context: LogicalPlanningContext
+  ): (BestPlans, LogicalPlanningContext) = {
     val aggregationPropertyAccesses = PropertyAccessHelper.findAggregationPropertyAccesses(headQuery)
     val localPropertyAccesses = PropertyAccessHelper.findLocalPropertyAccesses(headQuery)
     val updatedContext = context
@@ -49,10 +54,17 @@ case class PlanHead(matchPlanner: MatchPlanner = planMatch,
         val plansWithInput: BestResults[LogicalPlan] = matchPlans.map(planUpdatesAndInput(_, headQuery, updatedContext))
 
         val plansWithHorizon = eventHorizonPlanner.planHorizon(headQuery, plansWithInput, None, updatedContext)
-        plansWithHorizon.map(context.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(_, headQuery, updatedContext))
-      }
+        plansWithHorizon.map(context.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(
+          _,
+          headQuery,
+          updatedContext
+        ))
+    }
 
-    val contextForTail = updatedContext.withUpdatedLabelInfo(plans.bestResult) // cardinality should be the same for all plans, let's use the first one
+    val contextForTail =
+      updatedContext.withUpdatedLabelInfo(
+        plans.bestResult
+      ) // cardinality should be the same for all plans, let's use the first one
     (plans, contextForTail)
   }
 
@@ -60,7 +72,11 @@ case class PlanHead(matchPlanner: MatchPlanner = planMatch,
    * Plan updates, query input, and horizon for all of them.
    * Horizon planning will ensure that any ORDER BY clause is solved, so in the end we have up to two plans that are comparable.
    */
-  private def planUpdatesAndInput(matchPlan: LogicalPlan, headQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+  private def planUpdatesAndInput(
+    matchPlan: LogicalPlan,
+    headQuery: SinglePlannerQuery,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     val planWithUpdates = planUpdates.plan(headQuery, matchPlan, firstPlannerQuery = true, context)
 
     headQuery.queryInput match {
@@ -71,7 +87,3 @@ case class PlanHead(matchPlanner: MatchPlanner = planMatch,
     }
   }
 }
-
-
-
-

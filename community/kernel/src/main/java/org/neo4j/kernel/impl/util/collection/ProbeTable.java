@@ -19,89 +19,80 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.eclipse.collections.api.map.MutableMap;
+import static java.util.Collections.emptyIterator;
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Iterator;
 import java.util.Set;
-
+import org.eclipse.collections.api.map.MutableMap;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.util.Collections.emptyIterator;
-import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
-import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-
 /**
  * A specialized table used during hash joins.
  * @param <K> key type
  * @param <V> value type
  */
-public class ProbeTable<K extends Measurable,V extends Measurable> extends DefaultCloseListenable
-{
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ProbeTable.class );
+public class ProbeTable<K extends Measurable, V extends Measurable> extends DefaultCloseListenable {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(ProbeTable.class);
     private final MemoryTracker scopedMemoryTracker;
-    private MutableMap<K,HeapTrackingArrayList<V>> map;
+    private MutableMap<K, HeapTrackingArrayList<V>> map;
 
-    public static <K extends Measurable,V extends Measurable> ProbeTable<K,V> createProbeTable( MemoryTracker memoryTracker )
-    {
+    public static <K extends Measurable, V extends Measurable> ProbeTable<K, V> createProbeTable(
+            MemoryTracker memoryTracker) {
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
-        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
-        return new ProbeTable<>( scopedMemoryTracker );
+        scopedMemoryTracker.allocateHeap(SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
+        return new ProbeTable<>(scopedMemoryTracker);
     }
 
-    private ProbeTable( MemoryTracker scopedMemoryTracker )
-    {
+    private ProbeTable(MemoryTracker scopedMemoryTracker) {
         this.scopedMemoryTracker = scopedMemoryTracker;
-        this.map = newMap( scopedMemoryTracker );
+        this.map = newMap(scopedMemoryTracker);
     }
 
-    public void put( K key, V value )
-    {
-        map.getIfAbsentPutWith( key, p ->
-        {
-            p.allocateHeap( key.estimatedHeapUsage() );
-            return HeapTrackingCollections.newArrayList( p );
-        }, scopedMemoryTracker ).add( value );
-        scopedMemoryTracker.allocateHeap( value.estimatedHeapUsage() );
+    public void put(K key, V value) {
+        map.getIfAbsentPutWith(
+                        key,
+                        p -> {
+                            p.allocateHeap(key.estimatedHeapUsage());
+                            return HeapTrackingCollections.newArrayList(p);
+                        },
+                        scopedMemoryTracker)
+                .add(value);
+        scopedMemoryTracker.allocateHeap(value.estimatedHeapUsage());
     }
 
-    public Iterator<V> get( K key )
-    {
-        var entry = map.get( key );
-        if ( entry == null )
-        {
+    public Iterator<V> get(K key) {
+        var entry = map.get(key);
+        if (entry == null) {
             return emptyIterator();
         }
         return entry.iterator();
     }
 
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return map.isEmpty();
     }
 
-    public Set<K> keySet()
-    {
+    public Set<K> keySet() {
         return map.keySet();
     }
 
     @Override
-    public void closeInternal()
-    {
-        if ( map != null )
-        {
+    public void closeInternal() {
+        if (map != null) {
             map = null;
             scopedMemoryTracker.close();
         }
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return map == null;
     }
 }

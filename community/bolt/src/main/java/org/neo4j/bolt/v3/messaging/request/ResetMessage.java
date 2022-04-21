@@ -21,25 +21,20 @@ package org.neo4j.bolt.v3.messaging.request;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 
-public class ResetMessage implements RequestMessage
-{
+public class ResetMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x0F;
 
     public static final ResetMessage INSTANCE = new ResetMessage();
 
-    private ResetMessage()
-    {
-    }
+    private ResetMessage() {}
 
     @Override
-    public boolean safeToProcessInAnyState()
-    {
+    public boolean safeToProcessInAnyState() {
         return true;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "RESET";
     }
 }

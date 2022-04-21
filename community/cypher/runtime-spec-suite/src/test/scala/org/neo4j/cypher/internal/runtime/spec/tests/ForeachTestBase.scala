@@ -44,10 +44,10 @@ import org.neo4j.internal.helpers.collection.Iterables
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("foreach on empty input") {
     // given
@@ -56,8 +56,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
-        Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i}")))))
+      .foreach("i", "[1, 2, 3]", Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i}")))))
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
@@ -75,8 +74,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
-        Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i}")))))
+      .foreach("i", "[1, 2, 3]", Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i}")))))
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
@@ -102,8 +100,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[]",
-        Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i}")))))
+      .foreach("i", "[]", Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i}")))))
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
@@ -123,7 +120,11 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]", Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i + x}")))))
+      .foreach(
+        "i",
+        "[1, 2, 3]",
+        Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i + x}"))))
+      )
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
@@ -136,7 +137,8 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = 9, labelsAdded = 9, propertiesSet = 9)
     val allNodes = tx.getAllNodes
     try {
-      allNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 21, 22, 23, 31, 32, 33)
+      allNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 21, 22, 23, 31, 32,
+        33)
     } finally {
       allNodes.close()
     }
@@ -150,8 +152,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
-        Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i}")))))
+      .foreach("i", "[1, 2, 3]", Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: i}")))))
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
@@ -195,7 +196,11 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.foreach("i", "[0, 1, 2]", Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: x + i}")))))
+      .|.foreach(
+        "i",
+        "[0, 1, 2]",
+        Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: x + i}"))))
+      )
       .|.argument("x")
       .input(variables = Seq("x"))
       .build(readOnly = false)
@@ -216,7 +221,8 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
       Array(null),
       Array(java.util.List.of(1, 2)),
       Array(null),
-      Array(java.util.List.of(1, 2, 3)))
+      Array(java.util.List.of(1, 2, 3))
+    )
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -242,8 +248,14 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
-        Seq(createPattern(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")))))
+      .foreach(
+        "i",
+        "[1, 2, 3]",
+        Seq(createPattern(
+          nodes = Seq(createNode("n"), createNode("m")),
+          relationships = Seq(createRelationship("r", "n", "R", "m"))
+        ))
+      )
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
@@ -256,13 +268,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = 2 * 3 * size, relationshipsCreated = 3 * size)
   }
 
-  test("foreach should set label" ) {
+  test("foreach should set label") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("i", "[1, 2, 3]",
-        Seq(setLabel("n", "A", "B", "C")))
+      .foreach("i", "[1, 2, 3]", Seq(setLabel("n", "A", "B", "C")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -285,13 +296,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach should + set label should handle null" ) {
+  test("foreach should + set label should handle null") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[n, null]",
-        Seq(setLabel("node", "A", "B", "C")))
+      .foreach("node", "[n, null]", Seq(setLabel("node", "A", "B", "C")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -314,13 +324,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach should set node property" ) {
+  test("foreach should set node property") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("i", "[1, 2, 3]",
-        Seq(setNodeProperty("n", "prop", "i")))
+      .foreach("i", "[1, 2, 3]", Seq(setNodeProperty("n", "prop", "i")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -341,13 +350,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach + set node property should handle null" ) {
+  test("foreach + set node property should handle null") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[null, n]",
-        Seq(setNodeProperty("node", "prop", "42")))
+      .foreach("node", "[null, n]", Seq(setNodeProperty("node", "prop", "42")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -368,13 +376,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach should set node properties from map" ) {
+  test("foreach should set node properties from map") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("i", "[1, 2, 3]",
-        Seq(setNodePropertiesFromMap("n", "{prop : i}")))
+      .foreach("i", "[1, 2, 3]", Seq(setNodePropertiesFromMap("n", "{prop : i}")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -395,13 +402,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach + set node properties from map should handle null" ) {
+  test("foreach + set node properties from map should handle null") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[n, null]",
-        Seq(setNodePropertiesFromMap("node", "{prop : 42}")))
+      .foreach("node", "[n, null]", Seq(setNodePropertiesFromMap("node", "{prop : 42}")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -422,13 +428,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach should set relationship property" ) {
+  test("foreach should set relationship property") {
     val (_, rels) = given(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .foreach("i", "[1, 2, 3]",
-        Seq(setRelationshipProperty("r", "prop", "i")))
+      .foreach("i", "[1, 2, 3]", Seq(setRelationshipProperty("r", "prop", "i")))
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -450,13 +455,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach + set relationship property should handle null" ) {
+  test("foreach + set relationship property should handle null") {
     val (_, rels) = given(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .foreach("rel", "[null, r]",
-        Seq(setRelationshipProperty("rel", "prop", "42")))
+      .foreach("rel", "[null, r]", Seq(setRelationshipProperty("rel", "prop", "42")))
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -478,13 +482,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach should set relationship properties from map" ) {
+  test("foreach should set relationship properties from map") {
     val (_, rels) = given(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .foreach("i", "[r]",
-        Seq(setRelationshipPropertiesFromMap("i", "{prop : 42}")))
+      .foreach("i", "[r]", Seq(setRelationshipPropertiesFromMap("i", "{prop : 42}")))
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -506,13 +509,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach + set relationship properties from map should handle null" ) {
+  test("foreach + set relationship properties from map should handle null") {
     val (_, rels) = given(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .foreach("i", "[r, null]",
-        Seq(setRelationshipPropertiesFromMap("i", "{prop : 42}")))
+      .foreach("i", "[r, null]", Seq(setRelationshipPropertiesFromMap("i", "{prop : 42}")))
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -534,14 +536,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-
-  test("foreach should set property" ) {
+  test("foreach should set property") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("i", "[1, 2, 3]",
-        Seq(setProperty("n", "prop", "i")))
+      .foreach("i", "[1, 2, 3]", Seq(setProperty("n", "prop", "i")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -562,13 +562,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach + set property should handle null" ) {
+  test("foreach + set property should handle null") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[n, null]",
-        Seq(setProperty("node", "prop", "42")))
+      .foreach("node", "[n, null]", Seq(setProperty("node", "prop", "42")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -589,13 +588,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach should set property from map" ) {
+  test("foreach should set property from map") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("m", "[{prop1: 1}, {prop2: 2}, {prop3: 3}]",
-        Seq(setPropertyFromMap("n", "m", removeOtherProps = false)))
+      .foreach("m", "[{prop1: 1}, {prop2: 2}, {prop3: 3}]", Seq(setPropertyFromMap("n", "m", removeOtherProps = false)))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -618,13 +616,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach + set property from map should handle null" ) {
+  test("foreach + set property from map should handle null") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[n, null]",
-        Seq(setPropertyFromMap("node", "{prop: 42}", removeOtherProps = false)))
+      .foreach("node", "[n, null]", Seq(setPropertyFromMap("node", "{prop: 42}", removeOtherProps = false)))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -645,13 +642,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach + remove label" ) {
+  test("foreach + remove label") {
     val nodes = given(nodeGraph(sizeHint, "A", "B", "C"))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[n, null]",
-        Seq(removeLabel("node", "A", "B")))
+      .foreach("node", "[n, null]", Seq(removeLabel("node", "A", "B")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -674,13 +670,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("foreach + delete" ) {
+  test("foreach + delete") {
     val nodes = given(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[n, null]",
-        Seq(delete("node")))
+      .foreach("node", "[n, null]", Seq(delete("node")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -694,13 +689,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     Iterables.count(tx.getAllNodes) shouldBe 0
   }
 
-  test("foreach + detach delete" ) {
+  test("foreach + detach delete") {
     val (nodes, _) = given(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[n, null]",
-        Seq(delete("node", forced = true)))
+      .foreach("node", "[n, null]", Seq(delete("node", forced = true)))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -722,8 +716,11 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
-        Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{p1: 42, p2: null}")))))
+      .foreach(
+        "i",
+        "[1, 2, 3]",
+        Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{p1: 42, p2: null}"))))
+      )
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
@@ -744,8 +741,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .foreach("i", "[1, 2, 3]",
-        Seq(createPattern(relationships = Seq(createRelationship("r", "x", "R", "x", properties = Some("{p1: 42, p2: null}"))))))
+      .foreach(
+        "i",
+        "[1, 2, 3]",
+        Seq(createPattern(relationships =
+          Seq(createRelationship("r", "x", "R", "x", properties = Some("{p1: 42, p2: null}")))))
+      )
       .allNodeScan("x")
       .build(readOnly = false)
 

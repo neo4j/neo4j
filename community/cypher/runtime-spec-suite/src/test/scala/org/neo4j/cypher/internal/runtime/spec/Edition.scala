@@ -34,18 +34,24 @@ import org.neo4j.logging.InternalLogProvider
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import java.lang.Boolean.TRUE
+
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 trait RuntimeContextManagerFactory[CONTEXT <: RuntimeContext] {
-  def newRuntimeContextManager(cypherRuntimeConfiguration: CypherRuntimeConfiguration,
-                               dependencyResolver: DependencyResolver,
-                               lifeSupport: LifeSupport,
-                               logProvider: InternalLogProvider): RuntimeContextManager[CONTEXT]
+
+  def newRuntimeContextManager(
+    cypherRuntimeConfiguration: CypherRuntimeConfiguration,
+    dependencyResolver: DependencyResolver,
+    lifeSupport: LifeSupport,
+    logProvider: InternalLogProvider
+  ): RuntimeContextManager[CONTEXT]
 }
 
-class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
-                                         runtimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT],
-                                         configs: (Setting[_], Object)*) {
+class Edition[CONTEXT <: RuntimeContext](
+  graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
+  runtimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT],
+  configs: (Setting[_], Object)*
+) {
 
   def newGraphManagementService(additionalConfigs: (Setting[_], Object)*): DatabaseManagementService = {
     val graphBuilder = graphBuilderFactory().impermanent
@@ -63,7 +69,10 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
     new Edition(graphBuilderFactory, runtimeContextManagerFactory, newConfigs.toSeq: _*)
   }
 
-  def copyWith(newRuntimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT], additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
+  def copyWith(
+    newRuntimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT],
+    additionalConfigs: (Setting[_], Object)*
+  ): Edition[CONTEXT] = {
     val newConfigs = configs ++ additionalConfigs
     new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, newConfigs.toSeq: _*)
   }
@@ -72,7 +81,11 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
     configs.collectFirst { case (key, value) if key == setting => value.asInstanceOf[T] }
   }
 
-  def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport, logProvider: InternalLogProvider): RuntimeContextManager[CONTEXT] =
+  def newRuntimeContextManager(
+    resolver: DependencyResolver,
+    lifeSupport: LifeSupport,
+    logProvider: InternalLogProvider
+  ): RuntimeContextManager[CONTEXT] =
     runtimeContextManagerFactory.newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport, logProvider)
 
   def runtimeConfig(): CypherRuntimeConfiguration = {
@@ -86,8 +99,10 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
 }
 
 object COMMUNITY {
+
   val EDITION = new Edition(
     () => new TestDatabaseManagementServiceBuilder,
     (runtimeConfig, _, _, logProvider) => CommunityRuntimeContextManager(logProvider.getLog("test"), runtimeConfig),
-    GraphDatabaseSettings.cypher_hints_error -> TRUE)
+    GraphDatabaseSettings.cypher_hints_error -> TRUE
+  )
 }

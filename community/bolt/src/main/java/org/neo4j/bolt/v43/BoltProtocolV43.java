@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v43;
 
 import java.time.Duration;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
@@ -43,41 +42,59 @@ import org.neo4j.time.SystemNanoClock;
 /**
  * Bolt protocol V4.3 It hosts all the components that are specific to BoltV4.3
  */
-public class BoltProtocolV43 extends AbstractBoltProtocol
-{
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 3 );
+public class BoltProtocolV43 extends AbstractBoltProtocol {
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion(4, 3);
     private final SystemNanoClock clock;
     private final Duration keepAliveInterval;
 
-    public BoltProtocolV43( BoltChannel channel, BoltConnectionFactory connectionFactory,
-                            BoltStateMachineFactory stateMachineFactory, Config config, BookmarksParser bookmarksParser, LogService logging,
-                            TransportThrottleGroup throttleGroup, SystemNanoClock clock, Duration keepAliveInterval, ChannelProtector channelProtector,
-                            MemoryTracker memoryTracker )
-    {
-        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup, channelProtector, memoryTracker );
+    public BoltProtocolV43(
+            BoltChannel channel,
+            BoltConnectionFactory connectionFactory,
+            BoltStateMachineFactory stateMachineFactory,
+            Config config,
+            BookmarksParser bookmarksParser,
+            LogService logging,
+            TransportThrottleGroup throttleGroup,
+            SystemNanoClock clock,
+            Duration keepAliveInterval,
+            ChannelProtector channelProtector,
+            MemoryTracker memoryTracker) {
+        super(
+                channel,
+                connectionFactory,
+                stateMachineFactory,
+                config,
+                bookmarksParser,
+                logging,
+                throttleGroup,
+                channelProtector,
+                memoryTracker);
         this.clock = clock;
         this.keepAliveInterval = keepAliveInterval;
     }
 
     @Override
-    protected BoltRequestMessageReader createMessageReader( BoltConnection connection, BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser,
-                                                            LogService logging, ChannelProtector channelProtector,
-                                                            MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap( BoltRequestMessageReaderV43.SHALLOW_SIZE );
-        return new BoltRequestMessageReaderV43( connection, messageWriter, bookmarksParser, channelProtector, logging );
+    protected BoltRequestMessageReader createMessageReader(
+            BoltConnection connection,
+            BoltResponseMessageWriter messageWriter,
+            BookmarksParser bookmarksParser,
+            LogService logging,
+            ChannelProtector channelProtector,
+            MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(BoltRequestMessageReaderV43.SHALLOW_SIZE);
+        return new BoltRequestMessageReaderV43(connection, messageWriter, bookmarksParser, channelProtector, logging);
     }
 
     @Override
-    protected BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack, LogService logging, MemoryTracker memoryTracker )
-    {
-        memoryTracker.allocateHeap( BoltResponseMessageWriterV41.SHALLOW_SIZE );
-        return new BoltResponseMessageWriterV41( neo4jPack, createPackOutput( memoryTracker ), logging, clock, keepAliveInterval );
+    protected BoltResponseMessageWriter createMessageWriter(
+            Neo4jPack neo4jPack, LogService logging, MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(BoltResponseMessageWriterV41.SHALLOW_SIZE);
+        return new BoltResponseMessageWriterV41(
+                neo4jPack, createPackOutput(memoryTracker), logging, clock, keepAliveInterval);
     }
 
     @Override
-    public BoltProtocolVersion version()
-    {
+    public BoltProtocolVersion version() {
         return VERSION;
     }
 }

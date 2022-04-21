@@ -27,8 +27,6 @@ import java.lang.annotation.Target;
 /**
  * Use this annotation to signal that a method that would otherwise appear unused is actually called from generated code.
  */
-@Target( {ElementType.METHOD, ElementType.FIELD} )
-@Retention( RetentionPolicy.SOURCE )
-public @interface CalledFromGeneratedCode
-{
-}
+@Target({ElementType.METHOD, ElementType.FIELD})
+@Retention(RetentionPolicy.SOURCE)
+public @interface CalledFromGeneratedCode {}

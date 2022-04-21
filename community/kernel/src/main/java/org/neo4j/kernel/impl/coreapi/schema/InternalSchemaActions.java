@@ -34,29 +34,36 @@ import org.neo4j.internal.schema.IndexDescriptor;
  * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseNodeConstraintCreator} for re-use
  * by both the graph database and the batch inserter.
  */
-public interface InternalSchemaActions
-{
-    IndexDefinition createIndexDefinition( Label[] label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKey );
+public interface InternalSchemaActions {
+    IndexDefinition createIndexDefinition(
+            Label[] label, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKey);
 
-    IndexDefinition createIndexDefinition( RelationshipType[] types, String indexName, IndexType indexType, IndexConfig indexConfig, String... propertyKey );
+    IndexDefinition createIndexDefinition(
+            RelationshipType[] types,
+            String indexName,
+            IndexType indexType,
+            IndexConfig indexConfig,
+            String... propertyKey);
 
-    IndexDefinition createIndexDefinition( AnyTokens tokens, String indexName, IndexConfig indexConfig );
+    IndexDefinition createIndexDefinition(AnyTokens tokens, String indexName, IndexConfig indexConfig);
 
-    void dropIndexDefinitions( IndexDefinition indexDefinition );
+    void dropIndexDefinitions(IndexDefinition indexDefinition);
 
-    ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig );
+    ConstraintDefinition createPropertyUniquenessConstraint(
+            IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig);
 
-    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig );
+    ConstraintDefinition createNodeKeyConstraint(
+            IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig);
 
-    ConstraintDefinition createPropertyExistenceConstraint( String name, Label label, String... propertyKey );
+    ConstraintDefinition createPropertyExistenceConstraint(String name, Label label, String... propertyKey);
 
-    ConstraintDefinition createPropertyExistenceConstraint( String name, RelationshipType type, String propertyKey );
+    ConstraintDefinition createPropertyExistenceConstraint(String name, RelationshipType type, String propertyKey);
 
-    void dropConstraint( ConstraintDescriptor constraint );
+    void dropConstraint(ConstraintDescriptor constraint);
 
-    String getUserMessage( KernelException e );
+    String getUserMessage(KernelException e);
 
-    String getUserDescription( IndexDescriptor index );
+    String getUserDescription(IndexDescriptor index);
 
     void assertInOpenTransaction();
 }

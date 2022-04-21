@@ -19,12 +19,10 @@
  */
 package org.neo4j.dbms;
 
-
 /**
  * Instances of this type represent the possible states a neo4j operator may "desire" databases to be in.
  */
-public interface OperatorState
-{
+public interface OperatorState {
     /**
      * @return human readable name for the desired state.
      */

@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -48,29 +50,25 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
-
-public class DynamicIndexStoreView implements IndexStoreView
-{
+public class DynamicIndexStoreView implements IndexStoreView {
     private final FullScanStoreView fullScanStoreView;
     private final Locks locks;
     protected final LockService lockService;
     private final Config config;
     private final IndexProxyProvider indexProxies;
     protected final Supplier<StorageReader> storageReader;
-    private final Function<CursorContext,StoreCursors> cursorFactory;
+    private final Function<CursorContext, StoreCursors> cursorFactory;
     private final InternalLog log;
 
-    public DynamicIndexStoreView( FullScanStoreView fullScanStoreView,
-                                  Locks locks,
-                                  LockService lockService,
-                                  Config config,
-                                  IndexProxyProvider indexProxies,
-                                  Supplier<StorageReader> storageReader,
-                                  Function<CursorContext,StoreCursors> cursorFactory,
-                                  InternalLogProvider logProvider )
-    {
+    public DynamicIndexStoreView(
+            FullScanStoreView fullScanStoreView,
+            Locks locks,
+            LockService lockService,
+            Config config,
+            IndexProxyProvider indexProxies,
+            Supplier<StorageReader> storageReader,
+            Function<CursorContext, StoreCursors> cursorFactory,
+            InternalLogProvider logProvider) {
         this.fullScanStoreView = fullScanStoreView;
         this.locks = locks;
         this.lockService = lockService;
@@ -78,77 +76,112 @@ public class DynamicIndexStoreView implements IndexStoreView
         this.indexProxies = indexProxies;
         this.storageReader = storageReader;
         this.cursorFactory = cursorFactory;
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
     }
 
     @Override
-    public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                                 PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
-                                 boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
-        var tokenIndex = findTokenIndex( storageReader, NODE );
-        if ( tokenIndex.isPresent() )
-        {
+    public StoreScan visitNodes(
+            int[] labelIds,
+            IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer labelScanConsumer,
+            boolean forceStoreScan,
+            boolean parallelWrite,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        var tokenIndex = findTokenIndex(storageReader, NODE);
+        if (tokenIndex.isPresent()) {
             var nodeStoreScan = new LabelIndexedNodeStoreScan(
-                    config, storageReader.get(), cursorFactory, lockService, tokenIndex.get().reader, labelScanConsumer, propertyScanConsumer, labelIds,
-                    propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, contextFactory, memoryTracker );
-            return new IndexedStoreScan( locks, tokenIndex.get().descriptor, config, nodeStoreScan );
+                    config,
+                    storageReader.get(),
+                    cursorFactory,
+                    lockService,
+                    tokenIndex.get().reader,
+                    labelScanConsumer,
+                    propertyScanConsumer,
+                    labelIds,
+                    propertyKeyIdFilter,
+                    parallelWrite,
+                    fullScanStoreView.scheduler,
+                    contextFactory,
+                    memoryTracker);
+            return new IndexedStoreScan(locks, tokenIndex.get().descriptor, config, nodeStoreScan);
         }
 
         return fullScanStoreView.visitNodes(
-                labelIds, propertyKeyIdFilter, propertyScanConsumer, labelScanConsumer, forceStoreScan, parallelWrite, contextFactory, memoryTracker );
+                labelIds,
+                propertyKeyIdFilter,
+                propertyScanConsumer,
+                labelScanConsumer,
+                forceStoreScan,
+                parallelWrite,
+                contextFactory,
+                memoryTracker);
     }
 
     @Override
-    public StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
-                                         TokenScanConsumer relationshipTypeScanConsumer, boolean forceStoreScan, boolean parallelWrite,
-                                         CursorContextFactory contextFactory, MemoryTracker memoryTracker )
-    {
+    public StoreScan visitRelationships(
+            int[] relationshipTypeIds,
+            IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer relationshipTypeScanConsumer,
+            boolean forceStoreScan,
+            boolean parallelWrite,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
 
-        var tokenIndex = findTokenIndex( storageReader, RELATIONSHIP );
-        if ( tokenIndex.isPresent() )
-        {
+        var tokenIndex = findTokenIndex(storageReader, RELATIONSHIP);
+        if (tokenIndex.isPresent()) {
             var relationshipStoreScan = new RelationshipIndexedRelationshipStoreScan(
-                    config, storageReader.get(), cursorFactory, lockService, tokenIndex.get().reader, relationshipTypeScanConsumer, propertyScanConsumer,
+                    config,
+                    storageReader.get(),
+                    cursorFactory,
+                    lockService,
+                    tokenIndex.get().reader,
+                    relationshipTypeScanConsumer,
+                    propertyScanConsumer,
                     relationshipTypeIds,
-                    propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, contextFactory, memoryTracker );
-            return new IndexedStoreScan( locks, tokenIndex.get().descriptor, config, relationshipStoreScan );
+                    propertyKeyIdFilter,
+                    parallelWrite,
+                    fullScanStoreView.scheduler,
+                    contextFactory,
+                    memoryTracker);
+            return new IndexedStoreScan(locks, tokenIndex.get().descriptor, config, relationshipStoreScan);
         }
 
         return fullScanStoreView.visitRelationships(
-                relationshipTypeIds, propertyKeyIdFilter, propertyScanConsumer,
-                relationshipTypeScanConsumer, forceStoreScan, parallelWrite, contextFactory, memoryTracker );
+                relationshipTypeIds,
+                propertyKeyIdFilter,
+                propertyScanConsumer,
+                relationshipTypeScanConsumer,
+                forceStoreScan,
+                parallelWrite,
+                contextFactory,
+                memoryTracker);
     }
 
     @Override
-    public boolean isEmpty( CursorContext cursorContext )
-    {
-        return fullScanStoreView.isEmpty( cursorContext );
+    public boolean isEmpty(CursorContext cursorContext) {
+        return fullScanStoreView.isEmpty(cursorContext);
     }
 
-    private Optional<TokenIndexData> findTokenIndex( Supplier<StorageReader> storageReader, EntityType entityType )
-    {
-        var descriptor = storageReader.get().indexGetForSchemaAndType( SchemaDescriptors.forAnyEntityTokens( entityType ), IndexType.LOOKUP );
-        if ( descriptor == null )
-        {
+    private Optional<TokenIndexData> findTokenIndex(Supplier<StorageReader> storageReader, EntityType entityType) {
+        var descriptor = storageReader
+                .get()
+                .indexGetForSchemaAndType(SchemaDescriptors.forAnyEntityTokens(entityType), IndexType.LOOKUP);
+        if (descriptor == null) {
             return Optional.empty();
         }
-        try
-        {
-            IndexProxy indexProxy = indexProxies.getIndexProxy( descriptor );
-            if ( indexProxy.getState() == InternalIndexState.ONLINE )
-            {
-                return Optional.of( new TokenIndexData( indexProxy.newTokenReader(), indexProxy.getDescriptor() ) );
+        try {
+            IndexProxy indexProxy = indexProxies.getIndexProxy(descriptor);
+            if (indexProxy.getState() == InternalIndexState.ONLINE) {
+                return Optional.of(new TokenIndexData(indexProxy.newTokenReader(), indexProxy.getDescriptor()));
             }
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            log.warn( "Token index missing for entity: %s, switching to full scan", entityType, e );
+        } catch (IndexNotFoundKernelException e) {
+            log.warn("Token index missing for entity: %s, switching to full scan", entityType, e);
         }
         return Optional.empty();
     }
 
-    private record TokenIndexData( TokenIndexReader reader, IndexDescriptor descriptor )
-    {
-    }
+    private record TokenIndexData(TokenIndexReader reader, IndexDescriptor descriptor) {}
 }

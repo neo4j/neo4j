@@ -19,66 +19,55 @@
  */
 package org.neo4j.kernel.impl.newapi.index;
 
-class Range10IndexParams implements IndexParams
-{
+class Range10IndexParams implements IndexParams {
 
     @Override
-    public String providerKey()
-    {
+    public String providerKey() {
         return "range";
     }
 
     @Override
-    public String providerVersion()
-    {
+    public String providerVersion() {
         return "1.0";
     }
 
     @Override
-    public boolean indexProvidesStringValues()
-    {
+    public boolean indexProvidesStringValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesNumericValues()
-    {
+    public boolean indexProvidesNumericValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesAllValues()
-    {
+    public boolean indexProvidesAllValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesArrayValues()
-    {
+    public boolean indexProvidesArrayValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesBooleanValues()
-    {
+    public boolean indexProvidesBooleanValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesSpatialValues()
-    {
+    public boolean indexProvidesSpatialValues() {
         return true;
     }
 
     @Override
-    public boolean indexProvidesTemporalValues()
-    {
+    public boolean indexProvidesTemporalValues() {
         return true;
     }
 
     @Override
-    public boolean indexSupportsStringSuffixAndContains()
-    {
+    public boolean indexSupportsStringSuffixAndContains() {
         return false;
     }
 }

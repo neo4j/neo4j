@@ -31,10 +31,10 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("foreachApply on empty lhs") {
     // given
@@ -118,7 +118,7 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("foreachApply on empty list") {
     // given
-    val lhsRows = inputValues((1 to sizeHint).map(Array[Any](_)):_*)
+    val lhsRows = inputValues((1 to sizeHint).map(Array[Any](_)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -160,7 +160,8 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = 9, labelsAdded = 9, propertiesSet = 9)
     val allNodes = tx.getAllNodes
     try {
-      allNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 21, 22, 23, 31, 32, 33)
+      allNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 21, 22, 23, 31, 32,
+        33)
     } finally {
       allNodes.close()
     }
@@ -169,7 +170,7 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
   test("foreachApply should handle many rows") {
     // given
     val size = sizeHint / 10
-    val lhsRows: InputValues = inputValues((1 to size).map(Array[Any](_)):_*)
+    val lhsRows: InputValues = inputValues((1 to size).map(Array[Any](_)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -189,7 +190,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = 3 * size, labelsAdded = 3 * size, propertiesSet = 3 * size)
   }
 
-
   test("should work with eager") {
     // given
     val sizeHint = 5
@@ -199,7 +199,10 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("res")
       .projection("x.prop AS res")
-      .aggregation(Seq("x AS x"), Seq("count(x) AS xs"))//TODO this should be eager once it has support in pipelined runtime
+      .aggregation(
+        Seq("x AS x"),
+        Seq("count(x) AS xs")
+      ) // TODO this should be eager once it has support in pipelined runtime
       .foreachApply("n", "[x]")
       .|.setProperty("n", "prop", "42")
       .|.argument("x")
@@ -239,7 +242,8 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = 9, labelsAdded = 9, propertiesSet = 9)
     val allNodes = tx.getAllNodes
     try {
-      allNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 101, 102, 103, 1001, 1002, 1003)
+      allNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 101, 102, 103, 1001,
+        1002, 1003)
     } finally {
       allNodes.close()
     }
@@ -278,7 +282,7 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
   test("foreach on the rhs of an apply") {
     // given
     val size = sizeHint / 10
-    val lhsRows: InputValues = inputValues((1 to size).map(Array[Any](_)):_*)
+    val lhsRows: InputValues = inputValues((1 to size).map(Array[Any](_)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -303,11 +307,12 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
   test("foreachApply where some lists are null") {
     // given
     val lhsRows = inputValues(
-      Array(java.util.List.of(1,2,3)),
+      Array(java.util.List.of(1, 2, 3)),
       Array(null),
-      Array(java.util.List.of(1,2)),
+      Array(java.util.List.of(1, 2)),
       Array(null),
-      Array(java.util.List.of(1,2,3)))
+      Array(java.util.List.of(1, 2, 3))
+    )
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

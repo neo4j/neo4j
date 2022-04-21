@@ -29,7 +29,4 @@ import org.neo4j.graphdb.config.Setting;
  */
 @Service
 @PublicApi
-public interface SettingsDeclaration
-{
-
-}
+public interface SettingsDeclaration {}

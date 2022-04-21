@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.transaction.monitor;
 
-public interface TransactionSizeMonitor
-{
-    void addHeapTransactionSize( long transactionSizeHeap );
+public interface TransactionSizeMonitor {
+    void addHeapTransactionSize(long transactionSizeHeap);
 
-    void addNativeTransactionSize( long transactionSizeNative );
+    void addNativeTransactionSize(long transactionSizeNative);
 }

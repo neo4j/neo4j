@@ -19,19 +19,18 @@
  */
 package org.neo4j.test.extension;
 
+import static org.assertj.core.api.Assertions.fail;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.assertj.core.api.Assertions.fail;
-
-@ExtendWith( SuppressOutputExtension.class )
-class SuppressOutputExtensionIncorrectUsage
-{
+@ExtendWith(SuppressOutputExtension.class)
+class SuppressOutputExtensionIncorrectUsage {
     @Inject
     private SuppressOutput output;
+
     @Test
-    void shouldFailWithMissingLock()
-    {
-        fail( "Should not see this message, expected exception" );
+    void shouldFailWithMissingLock() {
+        fail("Should not see this message, expected exception");
     }
 }

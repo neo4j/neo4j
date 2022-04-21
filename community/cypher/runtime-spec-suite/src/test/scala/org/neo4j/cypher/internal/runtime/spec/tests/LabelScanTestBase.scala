@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
-                                                             edition: Edition[CONTEXT],
-                                                             runtime: CypherRuntime[CONTEXT],
-                                                             sizeHint: Int
-                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should scan all nodes of a label") {
     // given
@@ -124,7 +124,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {x <- nodes; y <- nodes; z <- nodes} yield Array(y, z, x)
+    val expected = for { x <- nodes; y <- nodes; z <- nodes } yield Array(y, z, x)
     runtimeResult should beColumns("y", "z", "x").withRows(expected)
   }
 }

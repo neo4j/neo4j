@@ -19,40 +19,34 @@
  */
 package org.neo4j.collection;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
-import java.util.NoSuchElementException;
-
 import static org.neo4j.util.Preconditions.requireBetween;
 
-public class RangeLongIterator implements LongIterator
-{
+import java.util.NoSuchElementException;
+import org.eclipse.collections.api.iterator.LongIterator;
+
+public class RangeLongIterator implements LongIterator {
     private final long[] array;
     private final int stopIndex;
     private int currentIndex;
 
-    public RangeLongIterator( long[] array, int start, int size )
-    {
-        requireBetween( start, 0, array.length );
-        requireBetween( start + size, 0, array.length + 1);
+    public RangeLongIterator(long[] array, int start, int size) {
+        requireBetween(start, 0, array.length);
+        requireBetween(start + size, 0, array.length + 1);
         this.array = array;
         this.currentIndex = start;
         this.stopIndex = start + size;
     }
 
     @Override
-    public long next()
-    {
-        if ( !hasNext() )
-        {
+    public long next() {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
         return array[currentIndex++];
     }
 
     @Override
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         return currentIndex < stopIndex;
     }
 }

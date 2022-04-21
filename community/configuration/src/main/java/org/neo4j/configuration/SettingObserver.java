@@ -26,7 +26,6 @@ import org.neo4j.graphdb.config.Setting;
  *
  * @param <T> The type of the object this object is observing
  */
-public interface SettingObserver<T>
-{
+public interface SettingObserver<T> {
     T getValue();
 }

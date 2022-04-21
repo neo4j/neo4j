@@ -23,25 +23,21 @@ package org.neo4j.test.ports;
  * Port provider that relies on state on disk, so that it can coordinate with other {@link CoordinatingPortProvider}s in
  * other JVMs. Suitable for parallel test execution.
  */
-public class CoordinatingPortProvider implements PortProvider
-{
+public class CoordinatingPortProvider implements PortProvider {
     private final PortRepository portRepository;
     private final PortProbe portProbe;
 
-    CoordinatingPortProvider( PortRepository portRepository, PortProbe portProbe )
-    {
+    CoordinatingPortProvider(PortRepository portRepository, PortProbe portProbe) {
         this.portRepository = portRepository;
         this.portProbe = portProbe;
     }
 
     @Override
-    public int getNextFreePort( String trace )
-    {
-        int port = portRepository.reserveNextPort( trace );
+    public int getNextFreePort(String trace) {
+        int port = portRepository.reserveNextPort(trace);
 
-        while ( portProbe.isOccupied( port ) )
-        {
-            port = portRepository.reserveNextPort( trace );
+        while (portProbe.isOccupied(port)) {
+            port = portRepository.reserveNextPort(trace);
         }
 
         return port;

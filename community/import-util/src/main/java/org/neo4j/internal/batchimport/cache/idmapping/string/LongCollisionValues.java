@@ -27,39 +27,33 @@ import org.neo4j.memory.MemoryTracker;
 /**
  * Stores longs in a {@link LongArray} provided by {@link NumberArrayFactory}.
  */
-public class LongCollisionValues implements CollisionValues
-{
+public class LongCollisionValues implements CollisionValues {
     private final LongArray cache;
     private long nextOffset;
 
-    public LongCollisionValues( NumberArrayFactory factory, long length, MemoryTracker memoryTracker )
-    {
-        cache = factory.newLongArray( length, 0, memoryTracker );
+    public LongCollisionValues(NumberArrayFactory factory, long length, MemoryTracker memoryTracker) {
+        cache = factory.newLongArray(length, 0, memoryTracker);
     }
 
     @Override
-    public long add( Object id )
-    {
+    public long add(Object id) {
         long collisionIndex = nextOffset++;
-        cache.set( collisionIndex, ((Number)id).longValue() );
+        cache.set(collisionIndex, ((Number) id).longValue());
         return collisionIndex;
     }
 
     @Override
-    public Object get( long offset )
-    {
-        return cache.get( offset );
+    public Object get(long offset) {
+        return cache.get(offset);
     }
 
     @Override
-    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-    {
-        cache.acceptMemoryStatsVisitor( visitor );
+    public void acceptMemoryStatsVisitor(MemoryStatsVisitor visitor) {
+        cache.acceptMemoryStatsVisitor(visitor);
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         cache.close();
     }
 }

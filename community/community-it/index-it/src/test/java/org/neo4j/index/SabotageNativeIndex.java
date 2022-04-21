@@ -19,65 +19,56 @@
  */
 package org.neo4j.index;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Random;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.ByteUnit.mebiBytes;
-
-public class SabotageNativeIndex extends NativeIndexRestartAction
-{
+public class SabotageNativeIndex extends NativeIndexRestartAction {
     private final Random random;
 
-    SabotageNativeIndex( Random random, IndexProviderDescriptor descriptor )
-    {
-        super( descriptor );
+    SabotageNativeIndex(Random random, IndexProviderDescriptor descriptor) {
+        super(descriptor);
         this.random = random;
     }
 
     @Override
-    protected void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure,
-                                            ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        int files = scrambleIndexFiles( fs, indexDirectoryStructure.rootDirectory() );
-        assertThat( files ).as( "there is no index to sabotage" ).isGreaterThanOrEqualTo( 1 );
+    protected void runOnDirectoryStructure(
+            FileSystemAbstraction fs,
+            IndexDirectoryStructure indexDirectoryStructure,
+            ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        int files = scrambleIndexFiles(fs, indexDirectoryStructure.rootDirectory());
+        assertThat(files).as("there is no index to sabotage").isGreaterThanOrEqualTo(1);
     }
 
-    private int scrambleIndexFiles( FileSystemAbstraction fs, Path fileOrDir ) throws IOException
-    {
-        if ( fs.isDirectory( fileOrDir ) )
-        {
+    private int scrambleIndexFiles(FileSystemAbstraction fs, Path fileOrDir) throws IOException {
+        if (fs.isDirectory(fileOrDir)) {
             int count = 0;
-            Path[] children = fs.listFiles( fileOrDir );
-            for ( Path child : children )
-            {
-                count += scrambleIndexFiles( fs, child );
+            Path[] children = fs.listFiles(fileOrDir);
+            for (Path child : children) {
+                count += scrambleIndexFiles(fs, child);
             }
 
             return count;
-        }
-        else
-        {
+        } else {
             // Completely scramble file, assuming small files
-            try ( StoreChannel channel = fs.write( fileOrDir ) )
-            {
-                if ( channel.size() > mebiBytes( 10 ) )
-                {
-                    throw new IllegalArgumentException( "Was expecting small files here" );
+            try (StoreChannel channel = fs.write(fileOrDir)) {
+                if (channel.size() > mebiBytes(10)) {
+                    throw new IllegalArgumentException("Was expecting small files here");
                 }
                 byte[] bytes = new byte[(int) channel.size()];
-                random.nextBytes( bytes );
-                channel.writeAll( ByteBuffer.wrap( bytes ) );
+                random.nextBytes(bytes);
+                channel.writeAll(ByteBuffer.wrap(bytes));
             }
             return 1;
         }

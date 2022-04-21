@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 object ExpressionVariable {
+
   def of(e: LogicalVariable): ExpressionVariable = {
     val ev = ast.ExpressionVariable.cast(e)
     ExpressionVariable(ev.offset, ev.name)

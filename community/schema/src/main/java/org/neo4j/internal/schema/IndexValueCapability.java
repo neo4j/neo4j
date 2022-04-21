@@ -22,9 +22,8 @@ package org.neo4j.internal.schema;
 /**
  * Describe the capability of an index to also return the exact property value for a given query.
  */
-public enum IndexValueCapability
-{
-    YES,     // Can provide values for the query.
+public enum IndexValueCapability {
+    YES, // Can provide values for the query.
     PARTIAL, // Can provide values for part of the query result set, often depending on what type the value has.
-    NO      // Cannot provide values for the query.
+    NO // Cannot provide values for the query.
 }

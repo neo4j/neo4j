@@ -46,8 +46,7 @@ import org.neo4j.lock.ResourceType;
  *
  * These archetypes are described by {@link SchemaArchetype}
  */
-public interface SchemaDescriptor
-{
+public interface SchemaDescriptor {
     /**
      * Test if this schema descriptor is a {@link LabelSchemaDescriptor}.
      * @return {@code true} if calling {@link #asLabelSchemaDescriptor()} will not throw an exception.
@@ -101,7 +100,7 @@ public interface SchemaDescriptor
      * @param entityTokenIds entity token ids to check against.
      * @return true if the supplied ids are relevant to this schema unit.
      */
-    boolean isAffected( long[] entityTokenIds );
+    boolean isAffected(long[] entityTokenIds);
 
     /**
      * Performs some side-effect type logic by processing this object using the given SchemaProcessor.
@@ -110,7 +109,7 @@ public interface SchemaDescriptor
      *
      * @param processor The SchemaProcessor that hold the logic for the computation
      */
-    void processWith( SchemaProcessor processor );
+    void processWith(SchemaProcessor processor);
 
     /**
      * This method return the property ids that are relevant to this Schema Descriptor.
@@ -128,13 +127,11 @@ public interface SchemaDescriptor
      * @return The presumed single property id of this schema.
      * @throws IllegalStateException if this schema does not have exactly one property.
      */
-    default int getPropertyId()
-    {
+    default int getPropertyId() {
         int[] propertyIds = getPropertyIds();
-        if ( propertyIds.length != 1 )
-        {
+        if (propertyIds.length != 1) {
             throw new IllegalStateException(
-                    "Single property schema requires one property but had " + propertyIds.length );
+                    "Single property schema requires one property but had " + propertyIds.length);
         }
         return propertyIds[0];
     }
@@ -149,16 +146,14 @@ public interface SchemaDescriptor
      * Assuming this schema descriptor represents a schema on nodes, with a single label id, then get that label id.
      * Otherwise an exception is thrown.
      */
-    default int getLabelId()
-    {
-        if ( entityType() != EntityType.NODE )
-        {
-            throw new IllegalStateException( "Cannot get label id from a schema on " + entityType() + " entities." );
+    default int getLabelId() {
+        if (entityType() != EntityType.NODE) {
+            throw new IllegalStateException("Cannot get label id from a schema on " + entityType() + " entities.");
         }
         int[] entityTokenIds = getEntityTokenIds();
-        if ( entityTokenIds.length != 1 )
-        {
-            throw new IllegalStateException( "Cannot get a single label id from a multi-token schema descriptor: " + this );
+        if (entityTokenIds.length != 1) {
+            throw new IllegalStateException(
+                    "Cannot get a single label id from a multi-token schema descriptor: " + this);
         }
         return entityTokenIds[0];
     }
@@ -167,16 +162,15 @@ public interface SchemaDescriptor
      * Assuming this schema descriptor represents a schema on relationships, with a single relationship type id, then get that relationship type id.
      * Otherwise an exception is thrown.
      */
-    default int getRelTypeId()
-    {
-        if ( entityType() != EntityType.RELATIONSHIP )
-        {
-            throw new IllegalStateException( "Cannot get relationship type id from a schema on " + entityType() + " entities." );
+    default int getRelTypeId() {
+        if (entityType() != EntityType.RELATIONSHIP) {
+            throw new IllegalStateException(
+                    "Cannot get relationship type id from a schema on " + entityType() + " entities.");
         }
         int[] entityTokenIds = getEntityTokenIds();
-        if ( entityTokenIds.length != 1 )
-        {
-            throw new IllegalStateException( "Cannot get a single relationship type id from a multi-token schema descriptor: " + this );
+        if (entityTokenIds.length != 1) {
+            throw new IllegalStateException(
+                    "Cannot get a single relationship type id from a multi-token schema descriptor: " + this);
         }
         return entityTokenIds[0];
     }
@@ -211,5 +205,5 @@ public interface SchemaDescriptor
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of this schema entity.
      */
-    String userDescription( TokenNameLookup tokenNameLookup );
+    String userDescription(TokenNameLookup tokenNameLookup);
 }

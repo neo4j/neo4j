@@ -19,13 +19,12 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCursor;
-
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Layout that can create keys and values with varying size.
@@ -43,8 +42,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
  *                               Only useful if you need to control entry size exactly from outside.</li>
  * </ul>
  */
-public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
-{
+public class SimpleByteArrayLayout extends TestLayout<RawBytes, RawBytes> {
     private static final int DEFAULT_LARGE_ENTRY_SIZE = Long.BYTES;
     private static final long NO_LARGE_ENTRIES_MODULO = 0;
     private final boolean useFirstLongAsSeed;
@@ -55,9 +53,8 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
      * This should be default constructor unless you want to exactly control entry size from outside
      * or you want entries to vary vastly in size.
      */
-    public SimpleByteArrayLayout()
-    {
-        this( true, DEFAULT_LARGE_ENTRY_SIZE, NO_LARGE_ENTRIES_MODULO );
+    public SimpleByteArrayLayout() {
+        this(true, DEFAULT_LARGE_ENTRY_SIZE, NO_LARGE_ENTRIES_MODULO);
     }
 
     /**
@@ -67,9 +64,8 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
      *
      * @param useFirstLongAsSeed False if keys and values should be compared byte by byte.
      */
-    public SimpleByteArrayLayout( boolean useFirstLongAsSeed )
-    {
-        this( useFirstLongAsSeed, DEFAULT_LARGE_ENTRY_SIZE, NO_LARGE_ENTRIES_MODULO );
+    public SimpleByteArrayLayout(boolean useFirstLongAsSeed) {
+        this(useFirstLongAsSeed, DEFAULT_LARGE_ENTRY_SIZE, NO_LARGE_ENTRIES_MODULO);
     }
 
     /**
@@ -86,235 +82,194 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
      * @param largeEntryModulo Control to what degree large values should be used,
      * (seed % largeEntryModulo == 0) will generate a large value. 0=never use large values.
      */
-    public SimpleByteArrayLayout( int largeEntriesSize, long largeEntryModulo )
-    {
-        this( true, largeEntriesSize, largeEntryModulo );
+    public SimpleByteArrayLayout(int largeEntriesSize, long largeEntryModulo) {
+        this(true, largeEntriesSize, largeEntryModulo);
     }
 
-    private SimpleByteArrayLayout( boolean useFirstLongAsSeed, int largeEntriesSize, long largeEntryModulo )
-    {
-        super( false, 666, 0, 0 );
+    private SimpleByteArrayLayout(boolean useFirstLongAsSeed, int largeEntriesSize, long largeEntryModulo) {
+        super(false, 666, 0, 0);
         this.useFirstLongAsSeed = useFirstLongAsSeed;
         this.largeEntriesSize = largeEntriesSize;
         this.largeEntryModulo = largeEntryModulo;
     }
 
     @Override
-    public RawBytes newKey()
-    {
+    public RawBytes newKey() {
         return new RawBytes();
     }
 
     @Override
-    public RawBytes copyKey( RawBytes rawBytes, RawBytes into )
-    {
-        return copyKey( rawBytes, into, rawBytes.bytes.length );
+    public RawBytes copyKey(RawBytes rawBytes, RawBytes into) {
+        return copyKey(rawBytes, into, rawBytes.bytes.length);
     }
 
-    private static RawBytes copyKey( RawBytes rawBytes, RawBytes into, int length )
-    {
-        into.bytes = Arrays.copyOf( rawBytes.bytes, length );
+    private static RawBytes copyKey(RawBytes rawBytes, RawBytes into, int length) {
+        into.bytes = Arrays.copyOf(rawBytes.bytes, length);
         return into;
     }
 
     @Override
-    public RawBytes newValue()
-    {
+    public RawBytes newValue() {
         return new RawBytes();
     }
 
     @Override
-    public int keySize( RawBytes rawBytes )
-    {
-        if ( rawBytes == null )
-        {
+    public int keySize(RawBytes rawBytes) {
+        if (rawBytes == null) {
             return -1;
         }
         return rawBytes.bytes.length;
     }
 
     @Override
-    public int valueSize( RawBytes rawBytes )
-    {
-        if ( rawBytes == null )
-        {
+    public int valueSize(RawBytes rawBytes) {
+        if (rawBytes == null) {
             return -1;
         }
         return rawBytes.bytes.length;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, RawBytes rawBytes )
-    {
-        cursor.putBytes( rawBytes.bytes );
+    public void writeKey(PageCursor cursor, RawBytes rawBytes) {
+        cursor.putBytes(rawBytes.bytes);
     }
 
     @Override
-    public void writeValue( PageCursor cursor, RawBytes rawBytes )
-    {
-        cursor.putBytes( rawBytes.bytes );
+    public void writeValue(PageCursor cursor, RawBytes rawBytes) {
+        cursor.putBytes(rawBytes.bytes);
     }
 
     @Override
-    public void readKey( PageCursor cursor, RawBytes into, int keySize )
-    {
+    public void readKey(PageCursor cursor, RawBytes into, int keySize) {
         into.bytes = new byte[keySize];
-        cursor.getBytes( into.bytes );
+        cursor.getBytes(into.bytes);
     }
 
     @Override
-    public void readValue( PageCursor cursor, RawBytes into, int valueSize )
-    {
+    public void readValue(PageCursor cursor, RawBytes into, int valueSize) {
         into.bytes = new byte[valueSize];
-        cursor.getBytes( into.bytes );
+        cursor.getBytes(into.bytes);
     }
 
     @Override
-    public void minimalSplitter( RawBytes left, RawBytes right, RawBytes into )
-    {
-        long leftSeed = keySeed( left );
-        long rightSeed = keySeed( right );
-        if ( useFirstLongAsSeed && leftSeed != rightSeed )
-        {
+    public void minimalSplitter(RawBytes left, RawBytes right, RawBytes into) {
+        long leftSeed = keySeed(left);
+        long rightSeed = keySeed(right);
+        if (useFirstLongAsSeed && leftSeed != rightSeed) {
             // Minimal splitter is first 8B (seed)
-            copyKey( right, into, Long.BYTES );
-        }
-        else
-        {
+            copyKey(right, into, Long.BYTES);
+        } else {
             // They had the same seed. Need to look at entire array
-            int maxLength = Math.min( left.bytes.length, right.bytes.length );
+            int maxLength = Math.min(left.bytes.length, right.bytes.length);
             int firstIndexToDiffer = 0;
-            for ( ; firstIndexToDiffer < maxLength; firstIndexToDiffer++ )
-            {
-                if ( left.bytes[firstIndexToDiffer] != right.bytes[firstIndexToDiffer] )
-                {
+            for (; firstIndexToDiffer < maxLength; firstIndexToDiffer++) {
+                if (left.bytes[firstIndexToDiffer] != right.bytes[firstIndexToDiffer]) {
                     break;
                 }
             }
             // Convert from index to length
             int targetLength = firstIndexToDiffer + 1;
-            copyKey( right, into, targetLength );
+            copyKey(right, into, targetLength);
         }
     }
 
     @Override
-    public int compare( RawBytes o1, RawBytes o2 )
-    {
-        if ( o1.bytes == null )
-        {
+    public int compare(RawBytes o1, RawBytes o2) {
+        if (o1.bytes == null) {
             return -1;
         }
-        if ( o2.bytes == null )
-        {
+        if (o2.bytes == null) {
             return 1;
         }
-        if ( useFirstLongAsSeed )
-        {
-            int compare = Long.compare( keySeed( o1 ), keySeed( o2 ) );
-            return compare != 0 ? compare : byteArrayCompare( o1.bytes, o2.bytes, Long.BYTES );
-        }
-        else
-        {
-            return byteArrayCompare( o1.bytes, o2.bytes, 0 );
+        if (useFirstLongAsSeed) {
+            int compare = Long.compare(keySeed(o1), keySeed(o2));
+            return compare != 0 ? compare : byteArrayCompare(o1.bytes, o2.bytes, Long.BYTES);
+        } else {
+            return byteArrayCompare(o1.bytes, o2.bytes, 0);
         }
     }
 
     @Override
-    int compareValue( RawBytes v1, RawBytes v2 )
-    {
-        return compare( v1, v2 );
+    int compareValue(RawBytes v1, RawBytes v2) {
+        return compare(v1, v2);
     }
 
-    private static int byteArrayCompare( byte[] a, byte[] b, int fromPos )
-    {
+    private static int byteArrayCompare(byte[] a, byte[] b, int fromPos) {
         assert a != null && b != null : "Null arrays not supported.";
 
-        if ( a == b )
-        {
+        if (a == b) {
             return 0;
         }
 
-        int length = Math.min( a.length, b.length );
-        for ( int i = fromPos; i < length; i++ )
-        {
-            int compare = Byte.compare( a[i], b[i] );
-            if ( compare != 0 )
-            {
+        int length = Math.min(a.length, b.length);
+        for (int i = fromPos; i < length; i++) {
+            int compare = Byte.compare(a[i], b[i]);
+            if (compare != 0) {
                 return compare;
             }
         }
 
-        return Integer.compare( a.length, b.length );
+        return Integer.compare(a.length, b.length);
     }
 
     @Override
-    public RawBytes key( long seed )
-    {
+    public RawBytes key(long seed) {
         RawBytes key = newKey();
-        key.bytes = fromSeed( seed );
+        key.bytes = fromSeed(seed);
         return key;
     }
 
     @Override
-    public RawBytes value( long seed )
-    {
+    public RawBytes value(long seed) {
         RawBytes value = newValue();
-        value.bytes = fromSeed( seed );
+        value.bytes = fromSeed(seed);
         return value;
     }
 
     @Override
-    public long keySeed( RawBytes rawBytes )
-    {
-        return toSeed( rawBytes );
+    public long keySeed(RawBytes rawBytes) {
+        return toSeed(rawBytes);
     }
 
     @Override
-    public long valueSeed( RawBytes rawBytes )
-    {
-        return toSeed( rawBytes );
+    public long valueSeed(RawBytes rawBytes) {
+        return toSeed(rawBytes);
     }
 
     @Override
-    public void initializeAsLowest( RawBytes rawBytes )
-    {
+    public void initializeAsLowest(RawBytes rawBytes) {
         rawBytes.bytes = new byte[8];
-        Arrays.fill( rawBytes.bytes, Byte.MIN_VALUE );
+        Arrays.fill(rawBytes.bytes, Byte.MIN_VALUE);
     }
 
     @Override
-    public void initializeAsHighest( RawBytes rawBytes )
-    {
+    public void initializeAsHighest(RawBytes rawBytes) {
         rawBytes.bytes = new byte[8];
-        Arrays.fill( rawBytes.bytes, Byte.MAX_VALUE );
+        Arrays.fill(rawBytes.bytes, Byte.MAX_VALUE);
     }
 
-    private static long toSeed( RawBytes rawBytes )
-    {
-        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES, INSTANCE );
+    private static long toSeed(RawBytes rawBytes) {
+        ByteBuffer buffer = ByteBuffers.allocate(Long.BYTES, INSTANCE);
         // Because keySearch is done inside the same shouldRetry block as keyCount()
         // We risk reading crap data. This is not a problem because we will retry
         // but buffer will throw here if we don't take that into consideration.
         byte[] bytes = rawBytes.bytes;
-        if ( bytes.length >= Long.BYTES )
-        {
-            buffer.put( bytes, 0, Long.BYTES );
+        if (bytes.length >= Long.BYTES) {
+            buffer.put(bytes, 0, Long.BYTES);
             buffer.flip();
             return buffer.getLong();
         }
         return 0;
     }
 
-    private byte[] fromSeed( long seed )
-    {
-        int tail = (int) Math.abs( seed % Long.BYTES );
-        if ( largeEntryModulo != NO_LARGE_ENTRIES_MODULO && (seed % largeEntryModulo) == 0 )
-        {
+    private byte[] fromSeed(long seed) {
+        int tail = (int) Math.abs(seed % Long.BYTES);
+        if (largeEntryModulo != NO_LARGE_ENTRIES_MODULO && (seed % largeEntryModulo) == 0) {
             tail = largeEntriesSize - Long.BYTES;
         }
-        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES + tail, INSTANCE );
-        buffer.putLong( seed );
-        buffer.put( new byte[tail] );
+        ByteBuffer buffer = ByteBuffers.allocate(Long.BYTES + tail, INSTANCE);
+        buffer.putLong(seed);
+        buffer.put(new byte[tail]);
         return buffer.array();
     }
 }

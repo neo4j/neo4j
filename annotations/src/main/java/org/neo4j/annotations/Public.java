@@ -27,8 +27,6 @@ import java.lang.annotation.Target;
 /**
  * Used to mark a field as public.
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.FIELD )
-public @interface Public
-{
-}
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface Public {}

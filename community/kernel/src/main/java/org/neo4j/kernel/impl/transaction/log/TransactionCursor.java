@@ -25,8 +25,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 /**
  * {@link IOCursor} over {@link CommittedTransactionRepresentation} i.e. already committed transactions.
  */
-public interface TransactionCursor extends IOCursor<CommittedTransactionRepresentation>
-{
+public interface TransactionCursor extends IOCursor<CommittedTransactionRepresentation> {
 
     /**
      * @return {@link LogPosition} representing position after most recent transaction, i.e. after

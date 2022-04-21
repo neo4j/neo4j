@@ -31,12 +31,14 @@ import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.values.storable.TextValue
 
-abstract class AbstractRelationshipIndexStringScanPipe(ident: String,
-                                                       startNode: String,
-                                                       endNode: String,
-                                                       property: IndexedProperty,
-                                                       queryIndexId: Int,
-                                                       valueExpr: Expression) extends Pipe with IndexPipeWithValues {
+abstract class AbstractRelationshipIndexStringScanPipe(
+  ident: String,
+  startNode: String,
+  endNode: String,
+  property: IndexedProperty,
+  queryIndexId: Int,
+  valueExpr: Expression
+) extends Pipe with IndexPipeWithValues {
 
   override val indexPropertyIndices: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
   override val indexCachedProperties: Array[CachedProperty] = Array(property.asCachedProperty(ident))
@@ -48,109 +50,140 @@ abstract class AbstractRelationshipIndexStringScanPipe(ident: String,
 
     val resultNodes = value match {
       case value: TextValue =>
-        iterator(state, startNode, endNode,  baseContext, queryContextCall(state, state.queryIndexes(queryIndexId), value))
+        iterator(
+          state,
+          startNode,
+          endNode,
+          baseContext,
+          queryContextCall(state, state.queryIndexes(queryIndexId), value)
+        )
       case _ => ClosingIterator.empty
     }
 
     resultNodes
   }
 
-  protected def queryContextCall(state: QueryState,
-                                 index: IndexReadSession,
-                                 value: TextValue): RelationshipValueIndexCursor
+  protected def queryContextCall(
+    state: QueryState,
+    index: IndexReadSession,
+    value: TextValue
+  ): RelationshipValueIndexCursor
 
-  protected def iterator(state: QueryState,
-                         startNode: String,
-                         endNode: String,
-                         baseContext: CypherRow,
-                         cursor: RelationshipValueIndexCursor): IndexIteratorBase[CypherRow]
+  protected def iterator(
+    state: QueryState,
+    startNode: String,
+    endNode: String,
+    baseContext: CypherRow,
+    cursor: RelationshipValueIndexCursor
+  ): IndexIteratorBase[CypherRow]
 }
 
 trait Directed {
   self: AbstractRelationshipIndexStringScanPipe =>
-  override protected def iterator(state: QueryState,
-                                  startNode: String,
-                                  endNode: String,
-                                  baseContext: CypherRow,
-                                  cursor: RelationshipValueIndexCursor): IndexIteratorBase[CypherRow] =
+
+  override protected def iterator(
+    state: QueryState,
+    startNode: String,
+    endNode: String,
+    baseContext: CypherRow,
+    cursor: RelationshipValueIndexCursor
+  ): IndexIteratorBase[CypherRow] =
     new RelIndexIterator(state, startNode, endNode, baseContext, cursor)
 }
 
 trait Undirected {
   self: AbstractRelationshipIndexStringScanPipe =>
-  override protected def iterator(state: QueryState,
-                                  startNode: String,
-                                  endNode: String,
-                                  baseContext: CypherRow,
-                                  cursor: RelationshipValueIndexCursor): IndexIteratorBase[CypherRow] =
+
+  override protected def iterator(
+    state: QueryState,
+    startNode: String,
+    endNode: String,
+    baseContext: CypherRow,
+    cursor: RelationshipValueIndexCursor
+  ): IndexIteratorBase[CypherRow] =
     new UndirectedRelIndexIterator(startNode, endNode, state, baseContext, cursor)
 }
 
-case class DirectedRelationshipIndexContainsScanPipe(ident: String,
-                                                     startNode: String,
-                                                     endNode: String,
-                                                     typeToken: RelationshipTypeToken,
-                                                     property: IndexedProperty,
-                                                     queryIndexId: Int,
-                                                     valueExpr: Expression,
-                                                     indexOrder: IndexOrder)
-                                                    (val id: Id = Id.INVALID_ID)
-  extends AbstractRelationshipIndexStringScanPipe(ident, startNode, endNode, property, queryIndexId, valueExpr) with Directed {
+case class DirectedRelationshipIndexContainsScanPipe(
+  ident: String,
+  startNode: String,
+  endNode: String,
+  typeToken: RelationshipTypeToken,
+  property: IndexedProperty,
+  queryIndexId: Int,
+  valueExpr: Expression,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID)
+    extends AbstractRelationshipIndexStringScanPipe(ident, startNode, endNode, property, queryIndexId, valueExpr)
+    with Directed {
 
-  override protected def queryContextCall(state: QueryState,
-                                          index: IndexReadSession,
-                                          value: TextValue): RelationshipValueIndexCursor =
+  override protected def queryContextCall(
+    state: QueryState,
+    index: IndexReadSession,
+    value: TextValue
+  ): RelationshipValueIndexCursor =
     state.query.relationshipIndexSeekByContains(index, needsValues, indexOrder, value)
 }
 
-case class UndirectedRelationshipIndexContainsScanPipe(ident: String,
-                                                     startNode: String,
-                                                     endNode: String,
-                                                     typeToken: RelationshipTypeToken,
-                                                     property: IndexedProperty,
-                                                     queryIndexId: Int,
-                                                     valueExpr: Expression,
-                                                     indexOrder: IndexOrder)
-                                                    (val id: Id = Id.INVALID_ID)
-  extends AbstractRelationshipIndexStringScanPipe(ident, startNode, endNode, property, queryIndexId, valueExpr) with Undirected {
+case class UndirectedRelationshipIndexContainsScanPipe(
+  ident: String,
+  startNode: String,
+  endNode: String,
+  typeToken: RelationshipTypeToken,
+  property: IndexedProperty,
+  queryIndexId: Int,
+  valueExpr: Expression,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID)
+    extends AbstractRelationshipIndexStringScanPipe(ident, startNode, endNode, property, queryIndexId, valueExpr)
+    with Undirected {
 
-  override protected def queryContextCall(state: QueryState,
-                                          index: IndexReadSession,
-                                          value: TextValue): RelationshipValueIndexCursor =
+  override protected def queryContextCall(
+    state: QueryState,
+    index: IndexReadSession,
+    value: TextValue
+  ): RelationshipValueIndexCursor =
     state.query.relationshipIndexSeekByContains(index, needsValues, indexOrder, value)
 }
 
-case class DirectedRelationshipIndexEndsWithScanPipe(ident: String,
-                                                     startNode: String,
-                                                     endNode: String,
-                                                     typeToken: RelationshipTypeToken,
-                                                     property: IndexedProperty,
-                                                     queryIndexId: Int,
-                                                     valueExpr: Expression,
-                                                     indexOrder: IndexOrder)
-                                                    (val id: Id = Id.INVALID_ID)
-  extends AbstractRelationshipIndexStringScanPipe(ident, startNode, endNode, property, queryIndexId, valueExpr) with Directed {
+case class DirectedRelationshipIndexEndsWithScanPipe(
+  ident: String,
+  startNode: String,
+  endNode: String,
+  typeToken: RelationshipTypeToken,
+  property: IndexedProperty,
+  queryIndexId: Int,
+  valueExpr: Expression,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID)
+    extends AbstractRelationshipIndexStringScanPipe(ident, startNode, endNode, property, queryIndexId, valueExpr)
+    with Directed {
 
-  override protected def queryContextCall(state: QueryState,
-                                          index: IndexReadSession,
-                                          value: TextValue): RelationshipValueIndexCursor =
+  override protected def queryContextCall(
+    state: QueryState,
+    index: IndexReadSession,
+    value: TextValue
+  ): RelationshipValueIndexCursor =
     state.query.relationshipIndexSeekByEndsWith(index, needsValues, indexOrder, value)
 }
 
-case class UndirectedRelationshipIndexEndsWithScanPipe(ident: String,
-                                                     startNode: String,
-                                                     endNode: String,
-                                                     typeToken: RelationshipTypeToken,
-                                                     property: IndexedProperty,
-                                                     queryIndexId: Int,
-                                                     valueExpr: Expression,
-                                                     indexOrder: IndexOrder)
-                                                    (val id: Id = Id.INVALID_ID)
-  extends AbstractRelationshipIndexStringScanPipe(ident, startNode, endNode, property, queryIndexId, valueExpr) with Undirected {
+case class UndirectedRelationshipIndexEndsWithScanPipe(
+  ident: String,
+  startNode: String,
+  endNode: String,
+  typeToken: RelationshipTypeToken,
+  property: IndexedProperty,
+  queryIndexId: Int,
+  valueExpr: Expression,
+  indexOrder: IndexOrder
+)(val id: Id = Id.INVALID_ID)
+    extends AbstractRelationshipIndexStringScanPipe(ident, startNode, endNode, property, queryIndexId, valueExpr)
+    with Undirected {
 
-  override protected def queryContextCall(state: QueryState,
-                                          index: IndexReadSession,
-                                          value: TextValue): RelationshipValueIndexCursor =
+  override protected def queryContextCall(
+    state: QueryState,
+    index: IndexReadSession,
+    value: TextValue
+  ): RelationshipValueIndexCursor =
     state.query.relationshipIndexSeekByEndsWith(index, needsValues, indexOrder, value)
 }
-

@@ -19,36 +19,31 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.Collections;
-import java.util.Set;
-
-import org.neo4j.exceptions.UnderlyingStorageException;
-
 import static java.lang.String.format;
 
-public class MultipleUnderlyingStorageExceptions extends UnderlyingStorageException
-{
+import java.util.Collections;
+import java.util.Set;
+import org.neo4j.exceptions.UnderlyingStorageException;
+
+public class MultipleUnderlyingStorageExceptions extends UnderlyingStorageException {
     public final Set<IndexFailureRecord> exceptions;
 
-    public MultipleUnderlyingStorageExceptions( Set<IndexFailureRecord> exceptions )
-    {
-        super( buildMessage( exceptions ) );
-        this.exceptions = Collections.unmodifiableSet( exceptions );
+    public MultipleUnderlyingStorageExceptions(Set<IndexFailureRecord> exceptions) {
+        super(buildMessage(exceptions));
+        this.exceptions = Collections.unmodifiableSet(exceptions);
 
-        for ( IndexFailureRecord failureRecord : exceptions )
-        {
-            this.addSuppressed( failureRecord.exception() );
+        for (IndexFailureRecord failureRecord : exceptions) {
+            this.addSuppressed(failureRecord.exception());
         }
     }
 
-    private static String buildMessage( Set<IndexFailureRecord> exceptions )
-    {
-        StringBuilder builder = new StringBuilder( );
+    private static String buildMessage(Set<IndexFailureRecord> exceptions) {
+        StringBuilder builder = new StringBuilder();
         builder.append("Errors when closing (flushing) index updaters:");
 
-        for ( IndexFailureRecord pair : exceptions )
-        {
-            builder.append( format( " (%s) %s", pair.descriptor(), pair.exception().getMessage() ) );
+        for (IndexFailureRecord pair : exceptions) {
+            builder.append(
+                    format(" (%s) %s", pair.descriptor(), pair.exception().getMessage()));
         }
 
         return builder.toString();

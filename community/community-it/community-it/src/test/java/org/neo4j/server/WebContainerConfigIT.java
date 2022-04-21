@@ -19,23 +19,6 @@
  */
 package org.neo4j.server;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.helpers.CommunityWebContainerBuilder;
-import org.neo4j.server.helpers.TestWebContainer;
-import org.neo4j.test.PortUtils;
-import org.neo4j.test.server.ExclusiveWebContainerTestBase;
-
 import static java.net.http.HttpClient.newBuilder;
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
@@ -51,172 +34,204 @@ import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
-class WebContainerConfigIT extends ExclusiveWebContainerTestBase
-{
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.helpers.CommunityWebContainerBuilder;
+import org.neo4j.server.helpers.TestWebContainer;
+import org.neo4j.test.PortUtils;
+import org.neo4j.test.server.ExclusiveWebContainerTestBase;
+
+class WebContainerConfigIT extends ExclusiveWebContainerTestBase {
     private TestWebContainer testWebContainer;
 
     @AfterEach
-    void stopTheServer()
-    {
+    void stopTheServer() {
         testWebContainer.shutdown();
     }
 
     @Test
-    void shouldRequireAuth() throws Exception
-    {
+    void shouldRequireAuth() throws Exception {
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
-                .withProperty( ServerSettings.http_auth_allowlist.name(), "" )
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE )
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
+                .withProperty(ServerSettings.http_auth_allowlist.name(), "")
+                .withProperty(GraphDatabaseSettings.auth_enabled.name(), TRUE)
                 .build();
 
-        var request = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
-        var response = newHttpClient().send( request, discarding() );
+        var request =
+                HttpRequest.newBuilder(testWebContainer.getBaseUri()).GET().build();
+        var response = newHttpClient().send(request, discarding());
 
-        assertThat( response.statusCode() ).isEqualTo( 401 );
+        assertThat(response.statusCode()).isEqualTo(401);
     }
 
     @Test
-    void shouldWhitelist() throws Exception
-    {
+    void shouldWhitelist() throws Exception {
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
-                .withProperty( ServerSettings.http_auth_allowlist.name(), "/" )
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE )
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
+                .withProperty(ServerSettings.http_auth_allowlist.name(), "/")
+                .withProperty(GraphDatabaseSettings.auth_enabled.name(), TRUE)
                 .build();
 
-        var request = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
-        var response = newHttpClient().send( request, discarding() );
+        var request =
+                HttpRequest.newBuilder(testWebContainer.getBaseUri()).GET().build();
+        var response = newHttpClient().send(request, discarding());
 
-        assertThat( response.statusCode() ).isEqualTo( 200 );
+        assertThat(response.statusCode()).isEqualTo(200);
     }
 
     @Test
-    void shouldBlacklistPaths() throws Exception
-    {
+    void shouldBlacklistPaths() throws Exception {
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
-                .withProperty( ServerSettings.http_paths_blacklist.name(), "/*" )
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
+                .withProperty(ServerSettings.http_paths_blacklist.name(), "/*")
                 .build();
 
-        var request = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
-        var response = newHttpClient().send( request, discarding() );
+        var request =
+                HttpRequest.newBuilder(testWebContainer.getBaseUri()).GET().build();
+        var response = newHttpClient().send(request, discarding());
 
-        assertThat( response.statusCode() ).isEqualTo( 403 );
+        assertThat(response.statusCode()).isEqualTo(403);
     }
 
     @Test
-    void shouldPickUpAddressFromConfig() throws Exception
-    {
-        var nonDefaultAddress = new SocketAddress( "0.0.0.0", 0 );
-        testWebContainer = CommunityWebContainerBuilder.builder().onAddress( nonDefaultAddress )
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
+    void shouldPickUpAddressFromConfig() throws Exception {
+        var nonDefaultAddress = new SocketAddress("0.0.0.0", 0);
+        testWebContainer = CommunityWebContainerBuilder.builder()
+                .onAddress(nonDefaultAddress)
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
                 .build();
 
         GraphDatabaseAPI database = testWebContainer.getDefaultDatabase();
-        var localHttpAddress = PortUtils.getConnectorAddress( database, "http" );
-        assertNotEquals( HttpConnector.DEFAULT_PORT, localHttpAddress.getPort() );
-        assertEquals( nonDefaultAddress.getHostname(), localHttpAddress.getHost() );
+        var localHttpAddress = PortUtils.getConnectorAddress(database, "http");
+        assertNotEquals(HttpConnector.DEFAULT_PORT, localHttpAddress.getPort());
+        assertEquals(nonDefaultAddress.getHostname(), localHttpAddress.getHost());
 
-        var request = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
-        var response = newHttpClient().send( request, discarding() );
+        var request =
+                HttpRequest.newBuilder(testWebContainer.getBaseUri()).GET().build();
+        var response = newHttpClient().send(request, discarding());
 
-        assertThat( response.statusCode() ).isEqualTo( 200 );
+        assertThat(response.statusCode()).isEqualTo(200);
     }
 
     @Test
-    void shouldPickupRelativeUrisForDatabaseApi() throws Exception
-    {
+    void shouldPickupRelativeUrisForDatabaseApi() throws Exception {
         var dbUri = "a/different/db/uri";
 
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
-                .withRelativeDatabaseApiPath( "/" + dbUri )
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
+                .withRelativeDatabaseApiPath("/" + dbUri)
                 .build();
 
         var uri = testWebContainer.getBaseUri() + dbUri + "/neo4j/tx/commit";
-        var txRequest = HttpRequest.newBuilder( URI.create( uri ) )
-                .header( ACCEPT, APPLICATION_JSON )
-                .header( CONTENT_TYPE, APPLICATION_JSON )
-                .POST( HttpRequest.BodyPublishers.ofString( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) )
+        var txRequest = HttpRequest.newBuilder(URI.create(uri))
+                .header(ACCEPT, APPLICATION_JSON)
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .POST(HttpRequest.BodyPublishers.ofString("{ 'statements': [ { 'statement': 'CREATE ()' } ] }"))
                 .build();
-        var txResponse = newHttpClient().send( txRequest, discarding() );
-        assertEquals( 200, txResponse.statusCode() );
+        var txResponse = newHttpClient().send(txRequest, discarding());
+        assertEquals(200, txResponse.statusCode());
 
-        var discoveryRequest = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
-        var discoveryResponse = newHttpClient().send( discoveryRequest, ofString() );
-        assertEquals( 200, txResponse.statusCode() );
-        assertThat( discoveryResponse.body() ).contains( dbUri );
+        var discoveryRequest =
+                HttpRequest.newBuilder(testWebContainer.getBaseUri()).GET().build();
+        var discoveryResponse = newHttpClient().send(discoveryRequest, ofString());
+        assertEquals(200, txResponse.statusCode());
+        assertThat(discoveryResponse.body()).contains(dbUri);
     }
 
     @Test
-    void shouldPickupRelativeUrisForRestApi() throws Exception
-    {
+    void shouldPickupRelativeUrisForRestApi() throws Exception {
         var dbUri = "a/different/rest/api/path";
 
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
-                .withRelativeRestApiPath( "/" + dbUri )
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
+                .withRelativeRestApiPath("/" + dbUri)
                 .build();
 
         var uri = testWebContainer.getBaseUri() + dbUri + "/transaction/commit";
-        var txRequest = HttpRequest.newBuilder( URI.create( uri ) )
-                .header( ACCEPT, APPLICATION_JSON )
-                .header( CONTENT_TYPE, APPLICATION_JSON )
-                .POST( HttpRequest.BodyPublishers.ofString( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) )
+        var txRequest = HttpRequest.newBuilder(URI.create(uri))
+                .header(ACCEPT, APPLICATION_JSON)
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .POST(HttpRequest.BodyPublishers.ofString("{ 'statements': [ { 'statement': 'CREATE ()' } ] }"))
                 .build();
-        var txResponse = newBuilder().followRedirects( HttpClient.Redirect.NORMAL ).build().send( txRequest, discarding() );
-        System.out.println( txResponse );
-        assertEquals( 200, txResponse.statusCode() );
+        var txResponse =
+                newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build().send(txRequest, discarding());
+        System.out.println(txResponse);
+        assertEquals(200, txResponse.statusCode());
 
         // however this legacy url should not be inside the discovery service.
-        var discoveryRequest = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
-        var discoveryResponse = newHttpClient().send( discoveryRequest, ofString() );
-        assertEquals( 200, txResponse.statusCode() );
-        assertThat( discoveryResponse.body() ).doesNotContain( dbUri );
+        var discoveryRequest =
+                HttpRequest.newBuilder(testWebContainer.getBaseUri()).GET().build();
+        var discoveryResponse = newHttpClient().send(discoveryRequest, ofString());
+        assertEquals(200, txResponse.statusCode());
+        assertThat(discoveryResponse.body()).doesNotContain(dbUri);
     }
 
     @Test
-    void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws Exception
-    {
-        testWebContainer = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), TRUE )
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
-                .build();
-
-        var wadlUri = URI.create( testWebContainer.getBaseUri() + "application.wadl" );
-        var request = HttpRequest.newBuilder( wadlUri ).GET().header( CONTENT_TYPE, WILDCARD ).build();
-        var response = newHttpClient().send( request, ofString() );
-
-        assertEquals( 200, response.statusCode() );
-        assertEquals( "application/vnd.sun.wadl+xml", response.headers().allValues( "Content-Type" ).iterator().next() );
-        assertThat( response.body() ).contains( "<application xmlns=\"http://wadl.dev.java.net/2009/02\">" );
-    }
-
-    @Test
-    void shouldNotGenerateWADLWhenNotExplicitlyEnabledInConfig() throws Exception
-    {
+    void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws Exception {
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
+                .withProperty(ServerSettings.wadl_enabled.name(), TRUE)
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
                 .build();
 
-        var uri = URI.create( testWebContainer.getBaseUri() + "application.wadl" );
-        var request = HttpRequest.newBuilder( uri ).GET().header( CONTENT_TYPE, WILDCARD ).build();
-        var response = newHttpClient().send( request, ofString() );
+        var wadlUri = URI.create(testWebContainer.getBaseUri() + "application.wadl");
+        var request = HttpRequest.newBuilder(wadlUri)
+                .GET()
+                .header(CONTENT_TYPE, WILDCARD)
+                .build();
+        var response = newHttpClient().send(request, ofString());
 
-        assertEquals( 404, response.statusCode() );
+        assertEquals(200, response.statusCode());
+        assertEquals(
+                "application/vnd.sun.wadl+xml",
+                response.headers().allValues("Content-Type").iterator().next());
+        assertThat(response.body()).contains("<application xmlns=\"http://wadl.dev.java.net/2009/02\">");
     }
 
     @Test
-    void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws Exception
-    {
-        testWebContainer = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), FALSE )
-                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
+    void shouldNotGenerateWADLWhenNotExplicitlyEnabledInConfig() throws Exception {
+        testWebContainer = serverOnRandomPorts()
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
                 .build();
 
-        var warlUri = URI.create( testWebContainer.getBaseUri() + "application.wadl" );
-        var request = HttpRequest.newBuilder( warlUri ).GET().header( CONTENT_TYPE, WILDCARD ).build();
-        var response = newHttpClient().send( request, ofString() );
+        var uri = URI.create(testWebContainer.getBaseUri() + "application.wadl");
+        var request =
+                HttpRequest.newBuilder(uri).GET().header(CONTENT_TYPE, WILDCARD).build();
+        var response = newHttpClient().send(request, ofString());
 
-        assertEquals( 404, response.statusCode() );
+        assertEquals(404, response.statusCode());
+    }
+
+    @Test
+    void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws Exception {
+        testWebContainer = serverOnRandomPorts()
+                .withProperty(ServerSettings.wadl_enabled.name(), FALSE)
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
+                .build();
+
+        var warlUri = URI.create(testWebContainer.getBaseUri() + "application.wadl");
+        var request = HttpRequest.newBuilder(warlUri)
+                .GET()
+                .header(CONTENT_TYPE, WILDCARD)
+                .build();
+        var response = newHttpClient().send(request, ofString());
+
+        assertEquals(404, response.statusCode());
     }
 }

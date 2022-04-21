@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.procedure.builtin.TransactionId;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.Inject;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -34,39 +27,44 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 import static org.neo4j.time.Clocks.nanoClock;
 
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.procedure.builtin.TransactionId;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
+
 @DbmsExtension
-public class TransactionStatusIT
-{
+public class TransactionStatusIT {
     @Inject
     private GraphDatabaseAPI database;
 
     @Test
-    void emptyInitializationTraceOfClosedTransaction()
-    {
-        var transaction = database.beginTransaction( EXPLICIT, AUTH_DISABLED );
+    void emptyInitializationTraceOfClosedTransaction() {
+        var transaction = database.beginTransaction(EXPLICIT, AUTH_DISABLED);
         var kernelTransaction = transaction.kernelTransaction();
         transaction.close();
-        var handle = new KernelTransactionImplementationHandle( (KernelTransactionImplementation) kernelTransaction, nanoClock() );
-        assertSame( NONE, handle.transactionInitialisationTrace() );
+        var handle = new KernelTransactionImplementationHandle(
+                (KernelTransactionImplementation) kernelTransaction, nanoClock());
+        assertSame(NONE, handle.transactionInitialisationTrace());
     }
 
     @Test
-    void closedTransactionEmptyConnectionsDetails()
-    {
-        var transaction = database.beginTransaction( EXPLICIT, AUTH_DISABLED );
+    void closedTransactionEmptyConnectionsDetails() {
+        var transaction = database.beginTransaction(EXPLICIT, AUTH_DISABLED);
         var kernelTransaction = transaction.kernelTransaction();
         transaction.close();
-        var handle = new KernelTransactionImplementationHandle( (KernelTransactionImplementation) kernelTransaction, nanoClock() );
-        assertFalse( handle.clientInfo().isPresent() );
+        var handle = new KernelTransactionImplementationHandle(
+                (KernelTransactionImplementation) kernelTransaction, nanoClock());
+        assertFalse(handle.clientInfo().isPresent());
     }
 
     @Test
-    void closedTransactionEmptyQueryDetails()
-    {
-        var transaction = database.beginTransaction( EXPLICIT, AUTH_DISABLED );
+    void closedTransactionEmptyQueryDetails() {
+        var transaction = database.beginTransaction(EXPLICIT, AUTH_DISABLED);
         var kernelTransaction = transaction.kernelTransaction();
         transaction.close();
-        var handle = new KernelTransactionImplementationHandle( (KernelTransactionImplementation) kernelTransaction, nanoClock() );
-        assertDoesNotThrow( () -> new TransactionId( "test", handle.getUserTransactionId() ) );
+        var handle = new KernelTransactionImplementationHandle(
+                (KernelTransactionImplementation) kernelTransaction, nanoClock());
+        assertDoesNotThrow(() -> new TransactionId("test", handle.getUserTransactionId()));
     }
 }

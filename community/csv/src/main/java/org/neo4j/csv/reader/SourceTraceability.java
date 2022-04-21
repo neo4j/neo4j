@@ -29,8 +29,7 @@ package org.neo4j.csv.reader;
  * say the name of the database and table and {@link #position()} some sort of absolute position saying
  * the byte offset to the field.
  */
-public interface SourceTraceability
-{
+public interface SourceTraceability {
     /**
      * @return description of the source being read from.
      */
@@ -51,25 +50,20 @@ public interface SourceTraceability
      * actualSourceLength = position() / compressionRatio()
      * </pre>
      */
-    default float compressionRatio()
-    {
+    default float compressionRatio() {
         return 1f;
     }
 
-    abstract class Adapter implements SourceTraceability
-    {
+    abstract class Adapter implements SourceTraceability {
         @Override
-        public long position()
-        {
+        public long position() {
             return 0;
         }
     }
 
-    class Empty extends Adapter
-    {
+    class Empty extends Adapter {
         @Override
-        public String sourceDescription()
-        {
+        public String sourceDescription() {
             return "EMPTY";
         }
     }

@@ -37,15 +37,13 @@ import java.util.List;
  * @param <KeyType>
  *            The datatype to be stored in this heap.
  */
-public class FibonacciHeap<KeyType>
-{
+public class FibonacciHeap<KeyType> {
     /**
      * One entry in the fibonacci heap is stored as an instance of this class.
      * References to such entries are required for some operations, like
      * decreaseKey().
      */
-    public class FibonacciHeapNode
-    {
+    public class FibonacciHeapNode {
         FibonacciHeapNode left;
         FibonacciHeapNode right;
         FibonacciHeapNode parent;
@@ -54,8 +52,7 @@ public class FibonacciHeap<KeyType>
         KeyType key;
         int degree;
 
-        public FibonacciHeapNode( KeyType key )
-        {
+        public FibonacciHeapNode(KeyType key) {
             super();
             this.key = key;
             left = this;
@@ -65,8 +62,7 @@ public class FibonacciHeap<KeyType>
         /**
          * @return the key
          */
-        public KeyType getKey()
-        {
+        public KeyType getKey() {
             return key;
         }
     }
@@ -75,8 +71,7 @@ public class FibonacciHeap<KeyType>
     FibonacciHeapNode minimum;
     int nrNodes;
 
-    public FibonacciHeap( Comparator<KeyType> keyComparator )
-    {
+    public FibonacciHeap(Comparator<KeyType> keyComparator) {
         super();
         this.keyComparator = keyComparator;
     }
@@ -84,49 +79,41 @@ public class FibonacciHeap<KeyType>
     /**
      * @return True if the heap is empty.
      */
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return minimum == null;
     }
 
     /**
      * @return The number of entries in this heap.
      */
-    public int size()
-    {
+    public int size() {
         return nrNodes;
     }
 
     /**
      * @return The entry with the highest priority or null if the heap is empty.
      */
-    public FibonacciHeapNode getMinimum()
-    {
+    public FibonacciHeapNode getMinimum() {
         return minimum;
     }
 
     /**
      * Internal helper function for moving nodes into the root list
      */
-    protected void insertInRootList( FibonacciHeapNode fNode )
-    {
+    protected void insertInRootList(FibonacciHeapNode fNode) {
         fNode.parent = null;
         fNode.marked = false;
-        if ( minimum == null )
-        {
+        if (minimum == null) {
             minimum = fNode;
             minimum.right = minimum;
             minimum.left = minimum;
-        }
-        else
-        {
+        } else {
             // insert in root list
             fNode.left = minimum.left;
             fNode.right = minimum;
             fNode.left.right = fNode;
             fNode.right.left = fNode;
-            if ( keyComparator.compare( fNode.key, minimum.key ) < 0 )
-            {
+            if (keyComparator.compare(fNode.key, minimum.key) < 0) {
                 minimum = fNode;
             }
         }
@@ -138,10 +125,9 @@ public class FibonacciHeap<KeyType>
      *            the value to be inserted.
      * @return The entry made into the heap.
      */
-    public FibonacciHeapNode insert( KeyType key )
-    {
-        FibonacciHeapNode node = new FibonacciHeapNode( key );
-        insertInRootList( node );
+    public FibonacciHeapNode insert(KeyType key) {
+        FibonacciHeapNode node = new FibonacciHeapNode(key);
+        insertInRootList(node);
         ++nrNodes;
         return node;
     }
@@ -150,15 +136,12 @@ public class FibonacciHeap<KeyType>
      * Creates the union of two heaps by absorbing the other into this one.
      * Note: Destroys other
      */
-    public void union( FibonacciHeap<KeyType> other )
-    {
+    public void union(FibonacciHeap<KeyType> other) {
         nrNodes += other.nrNodes;
-        if ( other.minimum == null )
-        {
+        if (other.minimum == null) {
             return;
         }
-        if ( minimum == null )
-        {
+        if (minimum == null) {
             minimum = other.minimum;
             return;
         }
@@ -170,8 +153,7 @@ public class FibonacciHeap<KeyType>
         minimum.left.right = minimum;
         other.minimum.left.right = other.minimum;
         // get min
-        if ( keyComparator.compare( other.minimum.key, minimum.key ) < 0 )
-        {
+        if (keyComparator.compare(other.minimum.key, minimum.key) < 0) {
             minimum = other.minimum;
         }
     }
@@ -180,21 +162,17 @@ public class FibonacciHeap<KeyType>
      * This removes and returns the entry with the highest priority.
      * @return The value with the highest priority.
      */
-    public KeyType extractMin()
-    {
-        if ( minimum == null )
-        {
+    public KeyType extractMin() {
+        if (minimum == null) {
             return null;
         }
         FibonacciHeapNode minNode = minimum;
         // move all children to root list
-        if ( minNode.child != null )
-        {
+        if (minNode.child != null) {
             FibonacciHeapNode child = minNode.child;
-            while ( minNode.equals( child.parent ) )
-            {
+            while (minNode.equals(child.parent)) {
                 FibonacciHeapNode nextChild = child.right;
-                insertInRootList( child );
+                insertInRootList(child);
                 child = nextChild;
             }
         }
@@ -202,12 +180,9 @@ public class FibonacciHeap<KeyType>
         minNode.left.right = minNode.right;
         minNode.right.left = minNode.left;
         // update minimum
-        if ( minNode.right.equals( minNode ) )
-        {
+        if (minNode.right.equals(minNode)) {
             minimum = null;
-        }
-        else
-        {
+        } else {
             minimum = minimum.right;
             consolidate();
         }
@@ -218,8 +193,7 @@ public class FibonacciHeap<KeyType>
     /**
      * Internal helper function.
      */
-    protected void consolidate()
-    {
+    protected void consolidate() {
         // TODO: lower the size of this (log(n))
         int arraySize = nrNodes + 1;
         // arraySize = 2;
@@ -230,49 +204,41 @@ public class FibonacciHeap<KeyType>
         // arraySize = (int) Math.log( (double) nrNodes )+1;
         // FibonacciHeapNode[] A = (FibonacciHeapNode[]) new Object[arraySize];
         // FibonacciHeapNode[] A = new FibonacciHeapNode[arraySize];
-        List<FibonacciHeapNode> nodes = new ArrayList<>( arraySize );
-        for ( int i = 0; i < arraySize; ++i )
-        {
-            nodes.add( null );
+        List<FibonacciHeapNode> nodes = new ArrayList<>(arraySize);
+        for (int i = 0; i < arraySize; ++i) {
+            nodes.add(null);
         }
         List<FibonacciHeapNode> rootNodes = new LinkedList<>();
-        rootNodes.add( minimum );
-        for ( FibonacciHeapNode n = minimum.right; !n.equals( minimum ); n = n.right )
-        {
-            rootNodes.add( n );
+        rootNodes.add(minimum);
+        for (FibonacciHeapNode n = minimum.right; !n.equals(minimum); n = n.right) {
+            rootNodes.add(n);
         }
-        for ( FibonacciHeapNode node : rootNodes )
-        {
+        for (FibonacciHeapNode node : rootNodes) {
             // no longer a root node?
-            if ( node.parent != null )
-            {
+            if (node.parent != null) {
                 continue;
             }
             int d = node.degree;
-            while ( nodes.get( d ) != null )
-            {
-                FibonacciHeapNode y = nodes.get( d );
+            while (nodes.get(d) != null) {
+                FibonacciHeapNode y = nodes.get(d);
                 // swap?
-                if ( keyComparator.compare( node.key, y.key ) > 0 )
-                {
+                if (keyComparator.compare(node.key, y.key) > 0) {
                     FibonacciHeapNode tmp = node;
                     node = y;
                     y = tmp;
                 }
-                link( y, node );
-                nodes.set( d, null );
+                link(y, node);
+                nodes.set(d, null);
                 ++d;
             }
-            nodes.set( d, node );
+            nodes.set(d, node);
         }
         // throw away the root list
         minimum = null;
         // and rebuild it from A
-        for ( FibonacciHeapNode node : nodes )
-        {
-            if ( node != null )
-            {
-                insertInRootList( node );
+        for (FibonacciHeapNode node : nodes) {
+            if (node != null) {
+                insertInRootList(node);
             }
         }
     }
@@ -280,19 +246,16 @@ public class FibonacciHeap<KeyType>
     /**
      * Internal helper function. Makes root node y a child of root node x.
      */
-    protected void link( FibonacciHeapNode y, FibonacciHeapNode x )
-    {
+    protected void link(FibonacciHeapNode y, FibonacciHeapNode x) {
         // remove y from root list
         y.left.right = y.right;
         y.right.left = y.left;
         // make y a child of x
-        if ( x.child == null ) // no previous children?
+        if (x.child == null) // no previous children?
         {
             y.right = y;
             y.left = y;
-        }
-        else
-        {
+        } else {
             y.left = x.child.left;
             y.right = x.child;
             y.right.left = y;
@@ -312,22 +275,17 @@ public class FibonacciHeap<KeyType>
      * @param newKey
      *            The new value.
      */
-    public void decreaseKey( FibonacciHeapNode node, KeyType newKey )
-    {
-        if ( keyComparator.compare( newKey, node.key ) > 0 )
-        {
-            throw new RuntimeException( "Trying to decrease to a greater key" );
+    public void decreaseKey(FibonacciHeapNode node, KeyType newKey) {
+        if (keyComparator.compare(newKey, node.key) > 0) {
+            throw new RuntimeException("Trying to decrease to a greater key");
         }
         node.key = newKey;
         FibonacciHeapNode parent = node.parent;
-        if ( parent != null
-            && keyComparator.compare( node.key, parent.key ) < 0 )
-        {
-            cut( node, parent );
-            cascadingCut( parent );
+        if (parent != null && keyComparator.compare(node.key, parent.key) < 0) {
+            cut(node, parent);
+            cascadingCut(parent);
         }
-        if ( keyComparator.compare( node.key, minimum.key ) < 0 )
-        {
+        if (keyComparator.compare(node.key, minimum.key) < 0) {
             minimum = node;
         }
     }
@@ -336,40 +294,31 @@ public class FibonacciHeap<KeyType>
      * Internal helper function. This removes y's child x and moves x to the
      * root list.
      */
-    protected void cut( FibonacciHeapNode x, FibonacciHeapNode y )
-    {
+    protected void cut(FibonacciHeapNode x, FibonacciHeapNode y) {
         // remove x from child list of y
         x.left.right = x.right;
         x.right.left = x.left;
-        if ( x.right.equals( x ) )
-        {
+        if (x.right.equals(x)) {
             y.child = null;
-        }
-        else
-        {
+        } else {
             y.child = x.right;
         }
         y.degree--;
         // add x to root list
-        insertInRootList( x );
+        insertInRootList(x);
     }
 
     /**
      * Internal helper function.
      */
-    protected void cascadingCut( FibonacciHeapNode y )
-    {
+    protected void cascadingCut(FibonacciHeapNode y) {
         FibonacciHeapNode parent = y.parent;
-        if ( parent != null )
-        {
-            if ( !parent.marked )
-            {
+        if (parent != null) {
+            if (!parent.marked) {
                 parent.marked = true;
-            }
-            else
-            {
-                cut( y, parent );
-                cascadingCut( parent );
+            } else {
+                cut(y, parent);
+                cascadingCut(parent);
             }
         }
     }

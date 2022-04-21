@@ -26,10 +26,8 @@ package org.neo4j.kernel.api.impl.index.backup;
  * @see WritableIndexSnapshotFileIterator
  * @see org.apache.lucene.index.SnapshotDeletionPolicy
  */
-class UnsupportedIndexDeletionPolicy extends RuntimeException
-{
-    UnsupportedIndexDeletionPolicy( String message )
-    {
-        super( message );
+class UnsupportedIndexDeletionPolicy extends RuntimeException {
+    UnsupportedIndexDeletionPolicy(String message) {
+        super(message);
     }
 }

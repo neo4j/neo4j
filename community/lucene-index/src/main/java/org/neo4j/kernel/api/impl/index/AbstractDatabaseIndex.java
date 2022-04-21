@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -29,12 +28,11 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 /**
  * This class collects the common features of {@link ReadOnlyAbstractDatabaseIndex} and {@link WritableAbstractDatabaseIndex}.
  */
-abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends ValueIndexReader> implements DatabaseIndex<READER>
-{
-    protected  final INDEX luceneIndex;
+abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends ValueIndexReader>
+        implements DatabaseIndex<READER> {
+    protected final INDEX luceneIndex;
 
-    AbstractDatabaseIndex( INDEX luceneIndex )
-    {
+    AbstractDatabaseIndex(INDEX luceneIndex) {
         this.luceneIndex = luceneIndex;
     }
 
@@ -42,8 +40,7 @@ abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, 
      * {@inheritDoc}
      */
     @Override
-    public void open() throws IOException
-    {
+    public void open() throws IOException {
         luceneIndex.open();
     }
 
@@ -51,8 +48,7 @@ abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, 
      * {@inheritDoc}
      */
     @Override
-    public boolean isOpen()
-    {
+    public boolean isOpen() {
         return luceneIndex.isOpen();
     }
 
@@ -60,8 +56,7 @@ abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, 
      * {@inheritDoc}
      */
     @Override
-    public boolean exists() throws IOException
-    {
+    public boolean exists() throws IOException {
         return luceneIndex.exists();
     }
 
@@ -69,8 +64,7 @@ abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, 
      * {@inheritDoc}
      */
     @Override
-    public boolean isValid()
-    {
+    public boolean isValid() {
         return luceneIndex.isValid();
     }
 
@@ -78,8 +72,7 @@ abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, 
      * {@inheritDoc}
      */
     @Override
-    public LuceneAllDocumentsReader allDocumentsReader()
-    {
+    public LuceneAllDocumentsReader allDocumentsReader() {
         return luceneIndex.allDocumentsReader();
     }
 
@@ -87,20 +80,17 @@ abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, 
      * {@inheritDoc}
      */
     @Override
-    public List<AbstractIndexPartition> getPartitions()
-    {
+    public List<AbstractIndexPartition> getPartitions() {
         return luceneIndex.getPartitions();
     }
 
     @Override
-    public READER getIndexReader() throws IOException
-    {
+    public READER getIndexReader() throws IOException {
         return luceneIndex.getIndexReader();
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
-    {
+    public IndexDescriptor getDescriptor() {
         return luceneIndex.getDescriptor();
     }
 
@@ -108,8 +98,7 @@ abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, 
      * {@inheritDoc}
      */
     @Override
-    public boolean isOnline() throws IOException
-    {
+    public boolean isOnline() throws IOException {
         return luceneIndex.isOnline();
     }
 
@@ -117,8 +106,7 @@ abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, 
      * {@inheritDoc}
      */
     @Override
-    public void markAsFailed( String failure ) throws IOException
-    {
-        luceneIndex.markAsFailed( failure );
+    public void markAsFailed(String failure) throws IOException {
+        luceneIndex.markAsFailed(failure);
     }
 }

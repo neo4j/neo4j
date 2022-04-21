@@ -22,7 +22,6 @@ package org.neo4j.bolt.runtime.statemachine;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
@@ -31,16 +30,23 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
 
-public interface StatementProcessor
-{
-    void beginTransaction( List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException;
+public interface StatementProcessor {
+    void beginTransaction(
+            List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String, Object> txMetadata)
+            throws KernelException;
 
-    StatementMetadata run( String statement, MapValue params ) throws KernelException;
+    StatementMetadata run(String statement, MapValue params) throws KernelException;
 
-    StatementMetadata run( String statement, MapValue params, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
-            Map<String,Object> txMetaData ) throws KernelException;
+    StatementMetadata run(
+            String statement,
+            MapValue params,
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetaData)
+            throws KernelException;
 
-    Bookmark streamResult( int statementId, ResultConsumer resultConsumer ) throws Throwable;
+    Bookmark streamResult(int statementId, ResultConsumer resultConsumer) throws Throwable;
 
     Bookmark commitTransaction() throws KernelException;
 
@@ -58,82 +64,72 @@ public interface StatementProcessor
 
     String databaseName();
 
-    StatementProcessor EMPTY = new StatementProcessor()
-    {
+    StatementProcessor EMPTY = new StatementProcessor() {
         @Override
-        public void beginTransaction( List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
-        {
-            throw new UnsupportedOperationException( "Unable to begin a transaction" );
+        public void beginTransaction(
+                List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String, Object> txMetadata) {
+            throw new UnsupportedOperationException("Unable to begin a transaction");
         }
 
         @Override
-        public StatementMetadata run( String statement, MapValue params )
-        {
-            throw new UnsupportedOperationException( "Unable to run statements" );
+        public StatementMetadata run(String statement, MapValue params) {
+            throw new UnsupportedOperationException("Unable to run statements");
         }
 
         @Override
-        public StatementMetadata run( String statement, MapValue params, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
-                Map<String,Object> txMetaData )
-        {
-            throw new UnsupportedOperationException( "Unable to run statements" );
+        public StatementMetadata run(
+                String statement,
+                MapValue params,
+                List<Bookmark> bookmarks,
+                Duration txTimeout,
+                AccessMode accessMode,
+                Map<String, Object> txMetaData) {
+            throw new UnsupportedOperationException("Unable to run statements");
         }
 
         @Override
-        public Bookmark streamResult( int statementId, ResultConsumer resultConsumer )
-        {
-            throw new UnsupportedOperationException( "Unable to stream results" );
+        public Bookmark streamResult(int statementId, ResultConsumer resultConsumer) {
+            throw new UnsupportedOperationException("Unable to stream results");
         }
 
         @Override
-        public Bookmark commitTransaction()
-        {
-            throw new UnsupportedOperationException( "Unable to commit a transaction" );
+        public Bookmark commitTransaction() {
+            throw new UnsupportedOperationException("Unable to commit a transaction");
         }
 
         @Override
-        public void rollbackTransaction()
-        {
-            throw new UnsupportedOperationException( "Unable to rollback a transaction" );
+        public void rollbackTransaction() {
+            throw new UnsupportedOperationException("Unable to rollback a transaction");
         }
 
         @Override
-        public void reset()
-        {
-        }
+        public void reset() {}
 
         @Override
-        public void markCurrentTransactionForTermination()
-        {
-        }
+        public void markCurrentTransactionForTermination() {}
 
         @Override
-        public boolean hasTransaction()
-        {
+        public boolean hasTransaction() {
             return false;
         }
 
         @Override
-        public boolean hasOpenStatement()
-        {
+        public boolean hasOpenStatement() {
             return false;
         }
 
         @Override
-        public Status validateTransaction()
-        {
+        public Status validateTransaction() {
             return null;
         }
 
         @Override
-        public String databaseName()
-        {
-            throw new UnsupportedOperationException( "Unable to read the database ID" );
+        public String databaseName() {
+            throw new UnsupportedOperationException("Unable to read the database ID");
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "Empty Statement Processor";
         }
     };

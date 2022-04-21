@@ -23,27 +23,48 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait ProjectingSelector[P] {
-  def apply(plans: Iterable[P], resolved: => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, _ => "", SelectorHeuristic.constant)
-  def apply(plans: Iterable[P], heuristic: SelectorHeuristic, resolved: => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, _ => "", heuristic)
-  def applyWithResolvedPerPlan(plans: Iterable[P], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, resolvedPerPlan, SelectorHeuristic.constant)
-  def apply[X](projector: X => P, input: Iterable[X], resolved: => String): Option[X] = applyWithResolvedPerPlan[X](projector, input, resolved, _ => "", SelectorHeuristic.constant)
 
-  def applyWithResolvedPerPlan[X](projector: X => P, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X]
+  def apply(plans: Iterable[P], resolved: => String): Option[P] =
+    applyWithResolvedPerPlan[P](identity, plans, resolved, _ => "", SelectorHeuristic.constant)
 
-  def ofBestResults(plans: Iterable[BestResults[P]], resolved: => String, resolvedPerPan: LogicalPlan => String): Option[BestResults[P]] = {
+  def apply(plans: Iterable[P], heuristic: SelectorHeuristic, resolved: => String): Option[P] =
+    applyWithResolvedPerPlan[P](identity, plans, resolved, _ => "", heuristic)
+
+  def applyWithResolvedPerPlan(
+    plans: Iterable[P],
+    resolved: => String,
+    resolvedPerPlan: LogicalPlan => String
+  ): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, resolvedPerPlan, SelectorHeuristic.constant)
+
+  def apply[X](projector: X => P, input: Iterable[X], resolved: => String): Option[X] =
+    applyWithResolvedPerPlan[X](projector, input, resolved, _ => "", SelectorHeuristic.constant)
+
+  def applyWithResolvedPerPlan[X](
+    projector: X => P,
+    input: Iterable[X],
+    resolved: => String,
+    resolvedPerPlan: LogicalPlan => String,
+    heuristic: SelectorHeuristic
+  ): Option[X]
+
+  def ofBestResults(
+    plans: Iterable[BestResults[P]],
+    resolved: => String,
+    resolvedPerPan: LogicalPlan => String
+  ): Option[BestResults[P]] = {
     val best = applyWithResolvedPerPlan(plans.map(_.bestResult), s"overall $resolved", resolvedPerPan)
-    val bestFulfillingReq = applyWithResolvedPerPlan(plans.flatMap(_.bestResultFulfillingReq), s"sorted $resolved", resolvedPerPan)
+    val bestFulfillingReq =
+      applyWithResolvedPerPlan(plans.flatMap(_.bestResultFulfillingReq), s"sorted $resolved", resolvedPerPan)
     best.map(BestResults(_, bestFulfillingReq))
   }
 }
-
 
 object SelectorHeuristic {
   val constant: SelectorHeuristic = (_: LogicalPlan) => 0
 }
 
 trait SelectorHeuristic {
+
   /** Heuristic used to break ties between plans with the same cost */
   def tieBreaker(plan: LogicalPlan): Int
 }
-

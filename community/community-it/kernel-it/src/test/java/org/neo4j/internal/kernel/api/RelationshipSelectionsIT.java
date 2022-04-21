@@ -19,18 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.Inject;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,362 +32,343 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgo
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
+
 @DbmsExtension
-public class RelationshipSelectionsIT
-{
-    private static final RelationshipType relationshipType = withName( "relType" );
+public class RelationshipSelectionsIT {
+    private static final RelationshipType relationshipType = withName("relType");
 
     @Inject
     private GraphDatabaseAPI database;
 
     @Test
-    void tracePageCacheAccessOnOutgoingCursor()
-    {
+    void tracePageCacheAccessOnOutgoingCursor() {
         long nodeId = getSparseNodeId();
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var cursor = outgoingCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
-                {
-                    consumeCursor( cursor );
+                try (var cursor = outgoingCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
+                    consumeCursor(cursor);
                 }
 
-                assertOneCursor( cursorContext );
+                assertOneCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnIncomingCursor()
-    {
+    void tracePageCacheAccessOnIncomingCursor() {
         long nodeId = getSparseNodeId();
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var cursor = incomingCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
-                {
-                    consumeCursor( cursor );
+                try (var cursor = incomingCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
+                    consumeCursor(cursor);
                 }
 
-                assertOneCursor( cursorContext );
+                assertOneCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnAllCursor()
-    {
+    void tracePageCacheAccessOnAllCursor() {
         var nodeId = getSparseNodeId();
 
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var cursor = allCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
-                {
-                    consumeCursor( cursor );
+                try (var cursor = allCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
+                    consumeCursor(cursor);
                 }
 
-                assertOneCursor( cursorContext );
+                assertOneCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnOutgoingIterator()
-    {
+    void tracePageCacheAccessOnOutgoingIterator() {
         var nodeId = getSparseNodeId();
 
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var iterator = outgoingIterator( cursors, nodeCursor, new int[]{typeId},
-                        ( id, startNodeId, typeId1, endNodeId, cursor ) -> id, cursorContext ) )
-                {
-                    assertEquals( 2, count( iterator ) );
+                try (var iterator = outgoingIterator(
+                        cursors,
+                        nodeCursor,
+                        new int[] {typeId},
+                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        cursorContext)) {
+                    assertEquals(2, count(iterator));
                 }
 
-                assertOneCursor( cursorContext );
+                assertOneCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnIncomingIterator()
-    {
+    void tracePageCacheAccessOnIncomingIterator() {
         var nodeId = getSparseNodeId();
 
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var iterator = incomingIterator( cursors, nodeCursor, new int[]{typeId},
-                        ( id, startNodeId, typeId1, endNodeId, cursor ) -> id, cursorContext ) )
-                {
-                    assertEquals( 2, count( iterator ) );
+                try (var iterator = incomingIterator(
+                        cursors,
+                        nodeCursor,
+                        new int[] {typeId},
+                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        cursorContext)) {
+                    assertEquals(2, count(iterator));
                 }
 
-                assertOneCursor( cursorContext );
+                assertOneCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnAllIterator()
-    {
+    void tracePageCacheAccessOnAllIterator() {
         var nodeId = getSparseNodeId();
 
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var iterator = allIterator( cursors, nodeCursor, new int[]{typeId},
-                        ( id, startNodeId, typeId1, endNodeId, cursor ) -> id, cursorContext ) )
-                {
-                    assertEquals( 4, count( iterator ) );
+                try (var iterator = allIterator(
+                        cursors,
+                        nodeCursor,
+                        new int[] {typeId},
+                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        cursorContext)) {
+                    assertEquals(4, count(iterator));
                 }
 
-                assertOneCursor( cursorContext );
+                assertOneCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnOutgoingDenseCursor()
-    {
+    void tracePageCacheAccessOnOutgoingDenseCursor() {
         long nodeId = getDenseNodeId();
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var cursor = outgoingCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
-                {
-                    consumeCursor( cursor );
+                try (var cursor = outgoingCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
+                    consumeCursor(cursor);
                 }
 
-                assertTwoCursor( cursorContext );
+                assertTwoCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnIncomingDenseCursor()
-    {
+    void tracePageCacheAccessOnIncomingDenseCursor() {
         long nodeId = getDenseNodeId();
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var cursor = incomingCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
-                {
-                    consumeCursor( cursor );
+                try (var cursor = incomingCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
+                    consumeCursor(cursor);
                 }
 
-                assertTwoCursor( cursorContext );
+                assertTwoCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnAllDenseCursor()
-    {
+    void tracePageCacheAccessOnAllDenseCursor() {
         var nodeId = getDenseNodeId();
 
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var cursor = allCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
-                {
-                    consumeCursor( cursor );
+                try (var cursor = allCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
+                    consumeCursor(cursor);
                 }
 
-                assertTwoCursor( cursorContext );
+                assertTwoCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnOutgoingDenseIterator()
-    {
+    void tracePageCacheAccessOnOutgoingDenseIterator() {
         var nodeId = getDenseNodeId();
 
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var iterator = outgoingIterator( cursors, nodeCursor, new int[]{typeId},
-                        ( id, startNodeId, typeId1, endNodeId, cursor ) -> id, cursorContext ) )
-                {
-                    assertEquals( 2, count( iterator ) );
+                try (var iterator = outgoingIterator(
+                        cursors,
+                        nodeCursor,
+                        new int[] {typeId},
+                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        cursorContext)) {
+                    assertEquals(2, count(iterator));
                 }
 
-                assertTwoCursor( cursorContext );
+                assertTwoCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnIncomingDenseIterator()
-    {
+    void tracePageCacheAccessOnIncomingDenseIterator() {
         var nodeId = getDenseNodeId();
 
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var iterator = incomingIterator( cursors, nodeCursor, new int[]{typeId},
-                        ( id, startNodeId, typeId1, endNodeId, cursor ) -> id, cursorContext ) )
-                {
-                    assertEquals( 2, count( iterator ) );
+                try (var iterator = incomingIterator(
+                        cursors,
+                        nodeCursor,
+                        new int[] {typeId},
+                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        cursorContext)) {
+                    assertEquals(2, count(iterator));
                 }
 
-                assertTwoCursor( cursorContext );
+                assertTwoCursor(cursorContext);
             }
         }
     }
 
     @Test
-    void tracePageCacheAccessOnAllDenseIterator()
-    {
+    void tracePageCacheAccessOnAllDenseIterator() {
         var nodeId = getDenseNodeId();
 
-        try ( var transaction = database.beginTx() )
-        {
+        try (var transaction = database.beginTx()) {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
-            var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-            {
-                setNodeCursor( nodeId, kernelTransaction, nodeCursor );
+            var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
+            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                setNodeCursor(nodeId, kernelTransaction, nodeCursor);
                 var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor( cursorContext );
+                assertZeroCursor(cursorContext);
 
-                try ( var iterator = allIterator( cursors, nodeCursor, new int[]{typeId},
-                        ( id, startNodeId, typeId1, endNodeId, cursor ) -> id, cursorContext ) )
-                {
-                    assertEquals( 4, count( iterator ) );
+                try (var iterator = allIterator(
+                        cursors,
+                        nodeCursor,
+                        new int[] {typeId},
+                        (id, startNodeId, typeId1, endNodeId, cursor) -> id,
+                        cursorContext)) {
+                    assertEquals(4, count(iterator));
                 }
 
-                assertTwoCursor( cursorContext );
+                assertTwoCursor(cursorContext);
             }
         }
     }
 
-    private long getSparseNodeId()
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
+    private long getSparseNodeId() {
+        try (Transaction tx = database.beginTx()) {
             var source = tx.createNode();
             var endNode1 = tx.createNode();
             var endNode2 = tx.createNode();
-            source.createRelationshipTo( endNode1, relationshipType );
-            source.createRelationshipTo( endNode2, relationshipType );
-            endNode1.createRelationshipTo( source, relationshipType );
-            endNode2.createRelationshipTo( source, relationshipType );
+            source.createRelationshipTo(endNode1, relationshipType);
+            source.createRelationshipTo(endNode2, relationshipType);
+            endNode1.createRelationshipTo(source, relationshipType);
+            endNode2.createRelationshipTo(source, relationshipType);
             long nodeId = source.getId();
             tx.commit();
             return nodeId;
         }
     }
 
-    private long getDenseNodeId()
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
+    private long getDenseNodeId() {
+        try (Transaction tx = database.beginTx()) {
             var source = tx.createNode();
             var endNode1 = tx.createNode();
             var endNode2 = tx.createNode();
-            source.createRelationshipTo( endNode1, relationshipType );
-            source.createRelationshipTo( endNode2, relationshipType );
-            endNode1.createRelationshipTo( source, relationshipType );
-            endNode2.createRelationshipTo( source, relationshipType );
+            source.createRelationshipTo(endNode1, relationshipType);
+            source.createRelationshipTo(endNode2, relationshipType);
+            endNode1.createRelationshipTo(source, relationshipType);
+            endNode2.createRelationshipTo(source, relationshipType);
 
-            var other = withName( "other" );
-            for ( int i = 0; i < 100; i++ )
-            {
+            var other = withName("other");
+            for (int i = 0; i < 100; i++) {
                 var node = tx.createNode();
-                source.createRelationshipTo( node, other );
+                source.createRelationshipTo(node, other);
             }
             long nodeId = source.getId();
             tx.commit();
@@ -407,44 +376,40 @@ public class RelationshipSelectionsIT
         }
     }
 
-    private static void setNodeCursor( long nodeId, KernelTransaction kernelTransaction, NodeCursor nodeCursor )
-    {
-        kernelTransaction.dataRead().singleNode( nodeId, nodeCursor );
-        assertTrue( nodeCursor.next() );
+    private static void setNodeCursor(long nodeId, KernelTransaction kernelTransaction, NodeCursor nodeCursor) {
+        kernelTransaction.dataRead().singleNode(nodeId, nodeCursor);
+        assertTrue(nodeCursor.next());
     }
 
-    private static void consumeCursor( RelationshipTraversalCursor cursor )
-    {
-        while ( cursor.next() )
-        {
+    private static void consumeCursor(RelationshipTraversalCursor cursor) {
+        while (cursor.next()) {
             // consume cursor
         }
     }
 
-    private static void assertTwoCursor( CursorContext cursorContext )
-    {
+    private static void assertTwoCursor(CursorContext cursorContext) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.hits() ).isEqualTo( 2 );
-        assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-        // Since the storage cursor is merely reset(), not closed the state of things is that not all unpins gets registered due to
+        assertThat(cursorTracer.hits()).isEqualTo(2);
+        assertThat(cursorTracer.pins()).isEqualTo(2);
+        // Since the storage cursor is merely reset(), not closed the state of things is that not all unpins gets
+        // registered due to
         // cursor context being closed before the storage cursor on KTI#commit()
     }
 
-    private static void assertOneCursor( CursorContext cursorContext )
-    {
+    private static void assertOneCursor(CursorContext cursorContext) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.hits() ).isOne();
-        assertThat( cursorTracer.pins() ).isOne();
-        // Since the storage cursor is merely reset(), not closed the state of things is that not all unpins gets registered due to
+        assertThat(cursorTracer.hits()).isOne();
+        assertThat(cursorTracer.pins()).isOne();
+        // Since the storage cursor is merely reset(), not closed the state of things is that not all unpins gets
+        // registered due to
         // cursor context being closed before the storage cursor on KTI#commit()
     }
 
-    private static void assertZeroCursor( CursorContext cursorContext )
-    {
+    private static void assertZeroCursor(CursorContext cursorContext) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.hits() ).isZero();
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
-        assertThat( cursorTracer.faults() ).isZero();
+        assertThat(cursorTracer.hits()).isZero();
+        assertThat(cursorTracer.pins()).isZero();
+        assertThat(cursorTracer.unpins()).isZero();
+        assertThat(cursorTracer.faults()).isZero();
     }
 }

@@ -19,23 +19,26 @@
  */
 package org.neo4j.capabilities;
 
+import static org.neo4j.capabilities.Type.STRING;
+
 import org.neo4j.annotations.Description;
 import org.neo4j.annotations.service.ServiceProvider;
 
-import static org.neo4j.capabilities.Type.STRING;
-
 @ServiceProvider
-public class DBMSCapabilities implements CapabilityDeclaration
-{
-    @Description( "Neo4j version this instance is running" )
-    public static final Capability<String> dbms_instance_version = new Capability<>( Name.of( "dbms.instance.version" ), STRING );
+public class DBMSCapabilities implements CapabilityDeclaration {
+    @Description("Neo4j version this instance is running")
+    public static final Capability<String> dbms_instance_version =
+            new Capability<>(Name.of("dbms.instance.version"), STRING);
 
-    @Description( "Kernel version this instance is running" )
-    public static final Capability<String> dbms_instance_kernel_version = new Capability<>( Name.of( "dbms.instance.kernel.version" ), STRING );
+    @Description("Kernel version this instance is running")
+    public static final Capability<String> dbms_instance_kernel_version =
+            new Capability<>(Name.of("dbms.instance.kernel.version"), STRING);
 
-    @Description( "DBMS Edition this instance is running" )
-    public static final Capability<String> dbms_instance_edition = new Capability<>( Name.of( "dbms.instance.edition" ), STRING );
+    @Description("DBMS Edition this instance is running")
+    public static final Capability<String> dbms_instance_edition =
+            new Capability<>(Name.of("dbms.instance.edition"), STRING);
 
-    @Description( "DBMS Operational Mode this instance is running" )
-    public static final Capability<String> dbms_instance_operational_mode = new Capability<>( Name.of( "dbms.instance.operational_mode" ), STRING );
+    @Description("DBMS Operational Mode this instance is running")
+    public static final Capability<String> dbms_instance_operational_mode =
+            new Capability<>(Name.of("dbms.instance.operational_mode"), STRING);
 }

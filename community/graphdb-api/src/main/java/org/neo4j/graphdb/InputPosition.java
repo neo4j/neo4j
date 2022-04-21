@@ -25,8 +25,7 @@ import org.neo4j.annotations.api.PublicApi;
  * An input position refers to a specific point in a query string.
  */
 @PublicApi
-public final class InputPosition
-{
+public final class InputPosition {
     private final int offset;
     private final int line;
     private final int column;
@@ -34,7 +33,7 @@ public final class InputPosition
     /**
      * The empty position
      */
-    public static final InputPosition empty = new InputPosition( -1, -1, -1 );
+    public static final InputPosition empty = new InputPosition(-1, -1, -1);
 
     /**
      * Creating a position from and offset, line number and a column number.
@@ -42,8 +41,7 @@ public final class InputPosition
      * @param line the line number, starting from 1.
      * @param column the column number, starting from 1.
      */
-    public InputPosition( int offset, int line, int column )
-    {
+    public InputPosition(int offset, int line, int column) {
         this.offset = offset;
         this.line = line;
         this.column = column;
@@ -53,8 +51,7 @@ public final class InputPosition
      * The character offset referred to by this position; offset numbers start at 0.
      * @return the offset of this position.
      */
-    public int getOffset()
-    {
+    public int getOffset() {
         return offset;
     }
 
@@ -62,8 +59,7 @@ public final class InputPosition
      * The line number referred to by the position; line numbers start at 1.
      * @return the line number of this position.
      */
-    public int getLine()
-    {
+    public int getLine() {
         return line;
     }
 
@@ -71,40 +67,32 @@ public final class InputPosition
      * The column number referred to by the position; column numbers start at 1.
      * @return the column number of this position.
      */
-    public int getColumn()
-    {
+    public int getColumn() {
         return column;
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         InputPosition that = (InputPosition) o;
 
-        if ( offset != that.offset )
-        {
+        if (offset != that.offset) {
             return false;
         }
-        if ( line != that.line )
-        {
+        if (line != that.line) {
             return false;
         }
         return column == that.column;
-
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = offset;
         result = 31 * result + line;
         result = 31 * result + column;
@@ -112,8 +100,7 @@ public final class InputPosition
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "InputPosition{" + "offset=" + offset + ", line=" + line + ", column=" + column + '}';
     }
 }

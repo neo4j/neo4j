@@ -37,41 +37,56 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util
+
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 // SHOW PROCEDURE[S] [EXECUTABLE [BY {CURRENT USER | username}]] [WHERE clause | YIELD clause]
-case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
+case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn])
+    extends Command(columns) {
+
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val isCommunity = state.rowFactory.isInstanceOf[CommunityCypherRowFactory]
     lazy val systemGraph = state.query.systemGraph
 
-    val privileges = 
-      if (!isCommunity && (verbose || executableBy.isDefined)) ShowProcFuncCommandHelper.getPrivileges(systemGraph, "PROCEDURE")
+    val privileges =
+      if (!isCommunity && (verbose || executableBy.isDefined))
+        ShowProcFuncCommandHelper.getPrivileges(systemGraph, "PROCEDURE")
       else ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty)
 
     val txContext = state.query.transactionalContext
     val securityContext = txContext.securityContext
     val (userRoles, alwaysExecutable) =
       if (!isCommunity) {
-        ShowProcFuncCommandHelper.getRolesForExecutableByUser(securityContext, txContext.securityAuthorizationHandler, systemGraph, executableBy, "SHOW PROCEDURES")
+        ShowProcFuncCommandHelper.getRolesForExecutableByUser(
+          securityContext,
+          txContext.securityAuthorizationHandler,
+          systemGraph,
+          executableBy,
+          "SHOW PROCEDURES"
+        )
       } else {
         (Set.empty[String], true)
       }
-    val allowShowRoles: Boolean = if (!isCommunity && verbose)
-      securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)).allowsAccess()
-    else
-      false
+    val allowShowRoles: Boolean =
+      if (!isCommunity && verbose)
+        securityContext.allowsAdminAction(
+          new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)
+        ).allowsAccess()
+      else
+        false
 
     val allProcedures = txContext.procedures.proceduresGetAll().asScala.filter(proc => !proc.internal).toList
     val sortedProcedures = allProcedures.sortBy(a => a.name.toString)
 
     val rows = sortedProcedures.map { proc =>
       val (executeRoles, boostedExecuteRoles, allowedExecute) =
-        if (!isCommunity && (verbose || executableBy.isDefined)) ShowProcFuncCommandHelper.roles(proc.name.toString, proc.admin(), privileges, userRoles)
+        if (!isCommunity && (verbose || executableBy.isDefined))
+          ShowProcFuncCommandHelper.roles(proc.name.toString, proc.admin(), privileges, userRoles)
         else (Set.empty[String], Set.empty[String], isCommunity)
 
       executableBy match {
-        case Some(_) => getResultMap(proc, alwaysExecutable || allowedExecute, executeRoles, boostedExecuteRoles, allowShowRoles)
+        case Some(_) =>
+          getResultMap(proc, alwaysExecutable || allowedExecute, executeRoles, boostedExecuteRoles, allowShowRoles)
         case None => getResultMap(proc, executeRoles, boostedExecuteRoles, allowShowRoles)
       }
     }.filter(m => m.nonEmpty)
@@ -79,18 +94,22 @@ case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Bo
     ClosingIterator.apply(rows.iterator)
   }
 
-  private def getResultMap(proc: ProcedureSignature,
-                           allowedExecute: Boolean,
-                           executeRoles: Set[String],
-                           boostedExecuteRoles: Set[String],
-                           allowShowRoles: Boolean): Map[String, AnyValue] =
+  private def getResultMap(
+    proc: ProcedureSignature,
+    allowedExecute: Boolean,
+    executeRoles: Set[String],
+    boostedExecuteRoles: Set[String],
+    allowShowRoles: Boolean
+  ): Map[String, AnyValue] =
     if (allowedExecute) getResultMap(proc, executeRoles, boostedExecuteRoles, allowShowRoles)
     else Map.empty[String, AnyValue]
 
-  private def getResultMap(proc: ProcedureSignature,
-                           executeRoles: Set[String],
-                           boostedExecuteRoles: Set[String],
-                           allowShowRoles: Boolean): Map[String, AnyValue] = {
+  private def getResultMap(
+    proc: ProcedureSignature,
+    executeRoles: Set[String],
+    boostedExecuteRoles: Set[String],
+    allowShowRoles: Boolean
+  ): Map[String, AnyValue] = {
     val name = proc.name().toString
     val mode = proc.mode().toString
     val system = proc.systemProcedure()
@@ -105,11 +124,12 @@ case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Bo
       // Procedure mode: READ, WRITE, SCHEMA, DBMS, DEFAULT
       "mode" -> Values.stringValue(mode),
       // Tells if the procedure can be run on system database
-      "worksOnSystem" -> Values.booleanValue(system),
+      "worksOnSystem" -> Values.booleanValue(system)
     )
     if (verbose) {
       val (rolesList, boostedRolesList) =
-        if (allowShowRoles) ShowProcFuncCommandHelper.roleValues(executeRoles, boostedExecuteRoles) else (Values.NO_VALUE, Values.NO_VALUE)
+        if (allowShowRoles) ShowProcFuncCommandHelper.roleValues(executeRoles, boostedExecuteRoles)
+        else (Values.NO_VALUE, Values.NO_VALUE)
 
       briefResult ++ Map(
         // Procedure signature
@@ -132,7 +152,7 @@ case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Bo
     }
   }
 
- private def fieldDescriptions(fields: util.List[FieldSignature]): ListValue =
+  private def fieldDescriptions(fields: util.List[FieldSignature]): ListValue =
     ShowProcFuncCommandHelper.fieldDescriptions(ShowProcFuncCommandHelper.getSignatureValues(fields))
 
   private def getOptionValue(proc: ProcedureSignature): MapValue = {

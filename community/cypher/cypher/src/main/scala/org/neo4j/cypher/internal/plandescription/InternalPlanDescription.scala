@@ -43,6 +43,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 
 import java.util
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -94,12 +95,16 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def totalDbHits: TotalHits = {
     val allMaybeDbHits: Seq[TotalHits] = flatten.map {
-      plan: InternalPlanDescription => plan.arguments.collectFirst{ case DbHits(x) => TotalHits(x, uncertain = false) }.getOrElse(TotalHits(0, uncertain = true))
+      plan: InternalPlanDescription =>
+        plan.arguments.collectFirst { case DbHits(x) => TotalHits(x, uncertain = false) }.getOrElse(TotalHits(
+          0,
+          uncertain = true
+        ))
     }
     allMaybeDbHits.reduce(_ + _)
   }
 
-  //Implement public Java API here=
+  // Implement public Java API here=
   override def getName: String = name
 
   override def getChildren: util.List[ExecutionPlanDescription] = {
@@ -119,19 +124,27 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
     override def hasDbHits: Boolean = arguments.exists(_.isInstanceOf[DbHits])
 
-    override def hasPageCacheStats: Boolean = arguments.exists(_.isInstanceOf[PageCacheHits]) && arguments.exists(_.isInstanceOf[PageCacheMisses])
+    override def hasPageCacheStats: Boolean =
+      arguments.exists(_.isInstanceOf[PageCacheHits]) && arguments.exists(_.isInstanceOf[PageCacheMisses])
 
     override def hasTime: Boolean = arguments.exists(_.isInstanceOf[Time])
 
-    override def getDbHits: Long = extract { case DbHits(count) => count }.getOrElse(throw new InternalException("Db hits were not recorded."))
+    override def getDbHits: Long =
+      extract { case DbHits(count) => count }.getOrElse(throw new InternalException("Db hits were not recorded."))
 
-    override def getRows: Long = extract { case Rows(count) => count }.getOrElse(throw new InternalException("Rows were not recorded."))
+    override def getRows: Long =
+      extract { case Rows(count) => count }.getOrElse(throw new InternalException("Rows were not recorded."))
 
-    override def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }.getOrElse(throw new InternalException("Page cache stats were not recorded."))
+    override def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }.getOrElse(
+      throw new InternalException("Page cache stats were not recorded.")
+    )
 
-    override def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }.getOrElse(throw new InternalException("Page cache stats were not recorded."))
+    override def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }.getOrElse(
+      throw new InternalException("Page cache stats were not recorded.")
+    )
 
-    override def getTime: Long = extract { case Time(value) => value }.getOrElse(throw new InternalException("Time was not recorded."))
+    override def getTime: Long =
+      extract { case Time(value) => value }.getOrElse(throw new InternalException("Time was not recorded."))
 
     private def extract(f: PartialFunction[Argument, Long]): Option[Long] = arguments.collectFirst(f)
   }
@@ -139,6 +152,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 }
 
 object InternalPlanDescription {
+
   case class TotalHits(hits: Long, uncertain: Boolean) {
     def +(other: TotalHits) = TotalHits(this.hits + other.hits, this.uncertain || other.uncertain)
   }
@@ -187,26 +201,29 @@ final case class TwoChildren(lhs: InternalPlanDescription, rhs: InternalPlanDesc
   def map(f: InternalPlanDescription => InternalPlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
 }
 
-final case class PlanDescriptionImpl(id: Id,
-                                     name: String,
-                                     children: Children,
-                                     arguments: Seq[Argument],
-                                     variables: Set[PrettyString],
-                                     withRawCardinalities: Boolean = false) extends InternalPlanDescription {
+final case class PlanDescriptionImpl(
+  id: Id,
+  name: String,
+  children: Children,
+  arguments: Seq[Argument],
+  variables: Set[PrettyString],
+  withRawCardinalities: Boolean = false
+) extends InternalPlanDescription {
 
   checkOnlyWhenAssertionsAreEnabled(arguments.count(_.isInstanceOf[Details]) < 2)
 
   def find(name: String): Seq[InternalPlanDescription] =
     children.find(name) ++ (if (this.name == name)
-      Some(this)
-    else {
-      None
-    })
+                              Some(this)
+                            else {
+                              None
+                            })
 
   def addArgument(argument: Argument): InternalPlanDescription = copy(arguments = arguments :+ argument)
 
   def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(
-    copy(children = children.map(f)))
+    copy(children = children.map(f))
+  )
 
   def toIndexedSeq: Seq[InternalPlanDescription] = this +: children.toIndexedSeq
 
@@ -239,8 +256,8 @@ final case class PlanDescriptionImpl(id: Id,
   private def renderSources = {
     arguments.flatMap {
       case SourceCode(className, sourceCode) => Some(s"=== Java Source: $className ===$NL$sourceCode")
-      case ByteCode(className, byteCode) => Some(s"=== Bytecode: $className ===$NL$byteCode")
-      case _ => None
+      case ByteCode(className, byteCode)     => Some(s"=== Bytecode: $className ===$NL$byteCode")
+      case _                                 => None
     }.mkString(NL, NL, "")
   }
 
@@ -287,12 +304,12 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
     similar.foldLeft(Set.empty[Argument]) {
       (acc, plan) =>
         val args = plan.arguments.filter {
-          case DbHits(v) => dbHits = Some(dbHits.map(_ + v).getOrElse(v)); false
-          case PageCacheHits(v) => pageCacheHits = Some(pageCacheHits.map(_ + v).getOrElse(v)); false
+          case DbHits(v)          => dbHits = Some(dbHits.map(_ + v).getOrElse(v)); false
+          case PageCacheHits(v)   => pageCacheHits = Some(pageCacheHits.map(_ + v).getOrElse(v)); false
           case PageCacheMisses(v) => pageCacheMisses = Some(pageCacheMisses.map(_ + v).getOrElse(v)); false
-          case Time(v) => time = Some(time.map(_ + v).getOrElse(v)); false
-          case Rows(v) => rows = Some(rows.map(o => Math.max(o, v)).getOrElse(v)); false
-          case _ => true
+          case Time(v)            => time = Some(time.map(_ + v).getOrElse(v)); false
+          case Rows(v)            => rows = Some(rows.map(o => Math.max(o, v)).getOrElse(v)); false
+          case _                  => true
         }
         acc ++ args
     }.toIndexedSeq ++ dbHits.map(DbHits.apply) ++
@@ -307,9 +324,9 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 
   override def addArgument(argument: Argument): InternalPlanDescription = ???
 
-  override def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(copy
-  (similar = similar
-    .map(f)))
+  override def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription =
+    f(copy(similar = similar
+      .map(f)))
 
   override def dup(children: Seq[AnyRef]): CompactedPlanDescription.this.type = {
     if (children.iterator eqElements this.treeChildren) {
@@ -320,10 +337,8 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
   }
 }
 
-final case class ArgumentPlanDescription(id: Id,
-                                         arguments: Seq[Argument] = Seq.empty,
-                                         variables: Set[PrettyString])
-  extends InternalPlanDescription {
+final case class ArgumentPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, variables: Set[PrettyString])
+    extends InternalPlanDescription {
 
   def children = NoChildren
 

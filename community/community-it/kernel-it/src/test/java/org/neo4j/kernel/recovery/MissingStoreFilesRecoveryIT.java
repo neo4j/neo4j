@@ -19,12 +19,17 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static java.lang.String.valueOf;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.RelationshipType.withName;
+
+import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -44,125 +49,108 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.lang.String.valueOf;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.RelationshipType.withName;
-
 @TestDirectoryExtension
-class MissingStoreFilesRecoveryIT
-{
+class MissingStoreFilesRecoveryIT {
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private FileSystemAbstraction fileSystem;
+
     private DatabaseManagementService managementService;
     private RecordDatabaseLayout databaseLayout;
     private TestDatabaseManagementServiceBuilder serviceBuilder;
     private NamedDatabaseId defaultNamedDatabaseId;
-    private static final Label testNodes = Label.label( "testNodes" );
+    private static final Label testNodes = Label.label("testNodes");
 
     @BeforeEach
-    void setUp() throws IOException
-    {
-        serviceBuilder = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() );
+    void setUp() throws IOException {
+        serviceBuilder = new TestDatabaseManagementServiceBuilder(testDirectory.homePath());
         managementService = serviceBuilder.build();
-        var databaseApi = defaultDatabase( managementService );
-        createSomeData( databaseApi );
-        databaseLayout = RecordDatabaseLayout.cast( databaseApi.databaseLayout() );
+        var databaseApi = defaultDatabase(managementService);
+        createSomeData(databaseApi);
+        databaseLayout = RecordDatabaseLayout.cast(databaseApi.databaseLayout());
 
-        defaultNamedDatabaseId = getDatabaseManager().databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).orElseThrow();
+        defaultNamedDatabaseId = getDatabaseManager()
+                .databaseIdRepository()
+                .getByName(DEFAULT_DATABASE_NAME)
+                .orElseThrow();
 
         managementService.shutdown();
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
+    void tearDown() {
+        if (managementService != null) {
             managementService.shutdown();
         }
     }
 
     @Test
-    void databaseStartFailingOnMissingFilesAndMissedTxLogs() throws IOException
-    {
-        fileSystem.deleteFile( databaseLayout.nodeStore() );
-        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
+    void databaseStartFailingOnMissingFilesAndMissedTxLogs() throws IOException {
+        fileSystem.deleteFile(databaseLayout.nodeStore());
+        fileSystem.deleteRecursively(databaseLayout.getTransactionLogsDirectory());
 
         managementService = serviceBuilder.build();
         var dbStateService = getDatabaseStateService();
-        assertTrue( dbStateService.causeOfFailure( defaultNamedDatabaseId ).isPresent() );
+        assertTrue(dbStateService.causeOfFailure(defaultNamedDatabaseId).isPresent());
     }
 
     @Test
-    void failToStartOnMissingFilesAndPartialTransactionLogs() throws IOException
-    {
+    void failToStartOnMissingFilesAndPartialTransactionLogs() throws IOException {
         LogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
 
-        fileSystem.deleteFile( logFiles.getLogFile().getLogFileForVersion( 0 ) );
-        fileSystem.deleteFile( databaseLayout.nodeStore() );
+        fileSystem.deleteFile(logFiles.getLogFile().getLogFileForVersion(0));
+        fileSystem.deleteFile(databaseLayout.nodeStore());
 
         var dbStateService = getDatabaseStateService();
-        var failure = dbStateService.causeOfFailure( defaultNamedDatabaseId );
-        assertFalse( failure.isPresent() );
-        assertFalse( fileSystem.fileExists( databaseLayout.nodeStore() ) );
+        var failure = dbStateService.causeOfFailure(defaultNamedDatabaseId);
+        assertFalse(failure.isPresent());
+        assertFalse(fileSystem.fileExists(databaseLayout.nodeStore()));
     }
 
-    private LogFiles prepareDatabaseWithTwoTxLogFiles() throws IOException
-    {
+    private LogFiles prepareDatabaseWithTwoTxLogFiles() throws IOException {
         managementService = serviceBuilder.build();
-        var databaseApi = defaultDatabase( managementService );
-        LogFiles logFiles = rotateTransactionLogs( databaseApi );
-        assertNotNull( logFiles.getLogFile().getLogFileForVersion( 1 ) );
-        createSomeData( databaseApi );
+        var databaseApi = defaultDatabase(managementService);
+        LogFiles logFiles = rotateTransactionLogs(databaseApi);
+        assertNotNull(logFiles.getLogFile().getLogFileForVersion(1));
+        createSomeData(databaseApi);
         managementService.shutdown();
         return logFiles;
     }
 
-    private DatabaseManager getDatabaseManager()
-    {
-        return defaultDatabase( managementService ).getDependencyResolver().resolveDependency( DatabaseManager.class );
+    private DatabaseManager getDatabaseManager() {
+        return defaultDatabase(managementService).getDependencyResolver().resolveDependency(DatabaseManager.class);
     }
 
-    private DatabaseStateService getDatabaseStateService()
-    {
-        return defaultDatabase( managementService ).getDependencyResolver().resolveDependency( DatabaseStateService.class );
+    private DatabaseStateService getDatabaseStateService() {
+        return defaultDatabase(managementService).getDependencyResolver().resolveDependency(DatabaseStateService.class);
     }
 
-    private static GraphDatabaseAPI defaultDatabase( DatabaseManagementService managementService )
-    {
-        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    private static GraphDatabaseAPI defaultDatabase(DatabaseManagementService managementService) {
+        return (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private static LogFiles rotateTransactionLogs( GraphDatabaseAPI databaseApi ) throws IOException
-    {
-        LogFiles logFiles = databaseApi.getDependencyResolver().resolveDependency( LogFiles.class );
+    private static LogFiles rotateTransactionLogs(GraphDatabaseAPI databaseApi) throws IOException {
+        LogFiles logFiles = databaseApi.getDependencyResolver().resolveDependency(LogFiles.class);
         LogFile logFile = logFiles.getLogFile();
         logFile.rotate();
         return logFiles;
     }
 
-    private static void createSomeData( GraphDatabaseAPI databaseApi ) throws IOException
-    {
-        insertData( databaseApi );
-        CheckPointer checkPointer = databaseApi.getDependencyResolver().resolveDependency( CheckPointer.class );
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpointInTheMiddle" ) );
-        insertData( databaseApi );
+    private static void createSomeData(GraphDatabaseAPI databaseApi) throws IOException {
+        insertData(databaseApi);
+        CheckPointer checkPointer = databaseApi.getDependencyResolver().resolveDependency(CheckPointer.class);
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("forcedCheckpointInTheMiddle"));
+        insertData(databaseApi);
     }
 
-    private static void insertData( GraphDatabaseAPI databaseApi )
-    {
-        for ( int i = 0; i < 100; i++ )
-        {
-            try ( Transaction transaction = databaseApi.beginTx() )
-            {
-                Node nodeA = transaction.createNode( testNodes );
-                Node nodeB = transaction.createNode( testNodes );
-                nodeA.createRelationshipTo( nodeB, withName( valueOf( i ) ) );
+    private static void insertData(GraphDatabaseAPI databaseApi) {
+        for (int i = 0; i < 100; i++) {
+            try (Transaction transaction = databaseApi.beginTx()) {
+                Node nodeA = transaction.createNode(testNodes);
+                Node nodeB = transaction.createNode(testNodes);
+                nodeA.createRelationshipTo(nodeB, withName(valueOf(i)));
                 transaction.commit();
             }
         }

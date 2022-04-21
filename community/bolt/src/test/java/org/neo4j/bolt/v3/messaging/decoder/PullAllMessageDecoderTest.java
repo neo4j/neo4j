@@ -19,36 +19,31 @@
  */
 package org.neo4j.bolt.v3.messaging.decoder;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.packstream.Neo4jPack.Unpacker;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v3.messaging.request.PullAllMessage;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-
-class PullAllMessageDecoderTest
-{
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final RequestMessageDecoder decoder = new PullAllMessageDecoder( responseHandler );
+class PullAllMessageDecoderTest {
+    private final BoltResponseHandler responseHandler = mock(BoltResponseHandler.class);
+    private final RequestMessageDecoder decoder = new PullAllMessageDecoder(responseHandler);
 
     @Test
-    void shouldReturnCorrectSignature()
-    {
-        assertEquals( PullAllMessage.SIGNATURE, decoder.signature() );
+    void shouldReturnCorrectSignature() {
+        assertEquals(PullAllMessage.SIGNATURE, decoder.signature());
     }
 
     @Test
-    void shouldReturnConnectResponseHandler()
-    {
-        assertEquals( responseHandler, decoder.responseHandler() );
+    void shouldReturnConnectResponseHandler() {
+        assertEquals(responseHandler, decoder.responseHandler());
     }
 
     @Test
-    void shouldDecodeAckFailure() throws Exception
-    {
-        assertEquals( PullAllMessage.INSTANCE, decoder.decode( mock( Unpacker.class ) ) );
+    void shouldDecodeAckFailure() throws Exception {
+        assertEquals(PullAllMessage.INSTANCE, decoder.decode(mock(Unpacker.class)));
     }
 }

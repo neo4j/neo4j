@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.TraversalContext;
-import org.neo4j.internal.helpers.collection.Iterables;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -38,33 +28,39 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
 
-class TraversalBranchImplTest
-{
-    @SuppressWarnings( "unchecked" )
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.TraversalContext;
+import org.neo4j.internal.helpers.collection.Iterables;
+
+class TraversalBranchImplTest {
+    @SuppressWarnings("unchecked")
     @Test
-    void shouldExpandOnFirstAccess()
-    {
+    void shouldExpandOnFirstAccess() {
         // GIVEN
-        TraversalBranch parent = mock( TraversalBranch.class );
-        Node source = mock( Node.class );
-        TraversalBranchImpl branch = new TraversalBranchImpl( parent, source );
-        @SuppressWarnings( "rawtypes" )
-        PathExpander expander = mock( PathExpander.class );
-        when( expander.expand( eq( branch ), any( BranchState.class ) ) )
-                .thenReturn( Iterables.emptyResourceIterable() );
-        TraversalContext context = mock( TraversalContext.class );
-        when( context.evaluate( eq( branch ), isNull() ) ).thenReturn( INCLUDE_AND_CONTINUE );
+        TraversalBranch parent = mock(TraversalBranch.class);
+        Node source = mock(Node.class);
+        TraversalBranchImpl branch = new TraversalBranchImpl(parent, source);
+        @SuppressWarnings("rawtypes")
+        PathExpander expander = mock(PathExpander.class);
+        when(expander.expand(eq(branch), any(BranchState.class))).thenReturn(Iterables.emptyResourceIterable());
+        TraversalContext context = mock(TraversalContext.class);
+        when(context.evaluate(eq(branch), isNull())).thenReturn(INCLUDE_AND_CONTINUE);
 
         // WHEN initializing
-        branch.initialize( expander, context );
+        branch.initialize(expander, context);
 
         // THEN the branch should not be expanded
-        verifyNoInteractions( source );
+        verifyNoInteractions(source);
 
         // and WHEN actually traversing from it
-        branch.next( expander, context );
+        branch.next(expander, context);
 
         // THEN we should expand it
-        verify( expander ).expand( any( Path.class ), any( BranchState.class ) );
+        verify(expander).expand(any(Path.class), any(BranchState.class));
     }
 }

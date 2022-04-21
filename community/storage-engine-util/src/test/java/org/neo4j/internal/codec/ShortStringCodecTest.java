@@ -19,21 +19,19 @@
  */
 package org.neo4j.internal.codec;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.codec.ShortStringCodec.DATE;
 import static org.neo4j.internal.codec.ShortStringCodec.NUMERICAL;
 import static org.neo4j.internal.codec.ShortStringCodec.bitMask;
 
-class ShortStringCodecTest
-{
+import org.junit.jupiter.api.Test;
+
+class ShortStringCodecTest {
     @Test
-    void testMasks()
-    {
-        assertEquals( 0, 1 & ~bitMask( NUMERICAL ) );
-        assertEquals( 0, 2 & ~bitMask( DATE ) );
-        assertEquals( NUMERICAL.bitMask(), 3 & ~bitMask( DATE ) );
-        assertEquals( 0, NUMERICAL.bitMask() & ~bitMask( NUMERICAL, DATE ) );
+    void testMasks() {
+        assertEquals(0, 1 & ~bitMask(NUMERICAL));
+        assertEquals(0, 2 & ~bitMask(DATE));
+        assertEquals(NUMERICAL.bitMask(), 3 & ~bitMask(DATE));
+        assertEquals(0, NUMERICAL.bitMask() & ~bitMask(NUMERICAL, DATE));
     }
 }

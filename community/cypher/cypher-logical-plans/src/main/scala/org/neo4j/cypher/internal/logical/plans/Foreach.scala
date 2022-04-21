@@ -26,14 +26,16 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Foreach is an operator that performs the provided side-effects for each item in the provided list.
  */
-case class Foreach(source: LogicalPlan,
-                   variable: String,
-                   expression: Expression,
-                   mutations: collection.Seq[SimpleMutatingPattern]
-                  )(implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen) with UpdatingPlan {
-  override def withLhs(newLHS: LogicalPlan)
-                      (idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
+case class Foreach(
+  source: LogicalPlan,
+  variable: String,
+  expression: Expression,
+  mutations: collection.Seq[SimpleMutatingPattern]
+)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
+    copy(source = newLHS)(idGen)
 
   override def availableSymbols: Set[String] = source.availableSymbols // NOTE: variable is not available outside
 }

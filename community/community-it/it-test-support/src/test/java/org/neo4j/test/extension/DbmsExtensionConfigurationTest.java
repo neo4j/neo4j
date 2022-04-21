@@ -19,49 +19,42 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.Test;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-
-@DbmsExtension( configurationCallback = "configureGlobal" )
-class DbmsExtensionConfigurationTest
-{
+@DbmsExtension(configurationCallback = "configureGlobal")
+class DbmsExtensionConfigurationTest {
     @Inject
     private DatabaseManagementService dbms;
 
     @ExtensionCallback
-    static void configureGlobal( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( default_database, "global" );
+    static void configureGlobal(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(default_database, "global");
     }
 
     @ExtensionCallback
-    static void configureLocal( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( default_database, "local" );
+    static void configureLocal(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(default_database, "local");
     }
 
     @Test
-    void globalConfig()
-    {
-        dbms.database( "global" );
+    void globalConfig() {
+        dbms.database("global");
     }
 
     @Test
-    @DbmsExtension( configurationCallback = "configureLocal" )
-    void localConfig()
-    {
-        dbms.database( "local" );
+    @DbmsExtension(configurationCallback = "configureLocal")
+    void localConfig() {
+        dbms.database("local");
     }
 
     @Test
     @DbmsExtension // Should override "global" with default
-    void defaultConfig()
-    {
-        dbms.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    void defaultConfig() {
+        dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
     }
 }

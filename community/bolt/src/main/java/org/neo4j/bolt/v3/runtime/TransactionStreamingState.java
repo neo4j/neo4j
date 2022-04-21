@@ -19,27 +19,26 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
-import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.memory.HeapEstimator;
 
-public class TransactionStreamingState extends AbstractStreamingState
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionStreamingState.class );
+public class TransactionStreamingState extends AbstractStreamingState {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionStreamingState.class);
 
     @Override
-    public String name()
-    {
+    public String name() {
         return "TX_STREAMING";
     }
 
     @Override
-    protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
-    {
+    protected BoltStateMachineState processStreamResultMessage(
+            ResultConsumer resultConsumer, StateMachineContext context) throws Throwable {
         int statementId = StatementMetadata.ABSENT_QUERY_ID;
-        context.getTransactionManager().pullData( context.connectionState().getCurrentTransactionId(), statementId, -1, resultConsumer );
+        context.getTransactionManager()
+                .pullData(context.connectionState().getCurrentTransactionId(), statementId, -1, resultConsumer);
         return readyState;
     }
 }

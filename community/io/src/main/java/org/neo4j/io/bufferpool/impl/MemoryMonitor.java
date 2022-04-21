@@ -19,139 +19,116 @@
  */
 package org.neo4j.io.bufferpool.impl;
 
-import java.util.concurrent.atomic.LongAdder;
+import static org.neo4j.memory.MemoryGroup.CENTRAL_BYTE_BUFFER_MANAGER;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.memory.MemoryGroup.CENTRAL_BYTE_BUFFER_MANAGER;
-
-class MemoryMonitor extends GlobalMemoryGroupTracker
-{
+class MemoryMonitor extends GlobalMemoryGroupTracker {
     private final LongAdder usedNativeMemory = new LongAdder();
     private final LongAdder usedHeapMemory = new LongAdder();
     private final MemoryTracker memoryTracker = new MemoryTrackerImpl();
 
-    MemoryMonitor( MemoryPools memoryPools )
-    {
-        super( memoryPools, CENTRAL_BYTE_BUFFER_MANAGER, 0, false, true, null );
-        memoryPools.registerPool( this );
+    MemoryMonitor(MemoryPools memoryPools) {
+        super(memoryPools, CENTRAL_BYTE_BUFFER_MANAGER, 0, false, true, null);
+        memoryPools.registerPool(this);
     }
 
-    MemoryTracker getMemoryTracker()
-    {
+    MemoryTracker getMemoryTracker() {
         return memoryTracker;
     }
 
     @Override
-    public void reserveHeap( long bytes )
-    {
+    public void reserveHeap(long bytes) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void reserveNative( long bytes )
-    {
+    public void reserveNative(long bytes) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void releaseHeap( long bytes )
-    {
+    public void releaseHeap(long bytes) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void releaseNative( long bytes )
-    {
+    public void releaseNative(long bytes) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long totalSize()
-    {
+    public long totalSize() {
         return usedHeap() + usedNative();
     }
 
     @Override
-    public long usedHeap()
-    {
+    public long usedHeap() {
         return usedHeapMemory.longValue();
     }
 
     @Override
-    public long usedNative()
-    {
+    public long usedNative() {
         return usedNativeMemory.longValue();
     }
 
     @Override
-    public long free()
-    {
+    public long free() {
         return Long.MAX_VALUE;
     }
 
     @Override
-    public void setSize( long size )
-    {
+    public void setSize(long size) {
         throw new UnsupportedOperationException();
     }
 
-    private class MemoryTrackerImpl implements MemoryTracker
-    {
+    private class MemoryTrackerImpl implements MemoryTracker {
 
         @Override
-        public long usedNativeMemory()
-        {
-            return  usedNativeMemory.longValue();
+        public long usedNativeMemory() {
+            return usedNativeMemory.longValue();
         }
 
         @Override
-        public long estimatedHeapMemory()
-        {
+        public long estimatedHeapMemory() {
             return usedHeapMemory.longValue();
         }
 
         @Override
-        public void allocateNative( long bytes )
-        {
-            usedNativeMemory.add( bytes );
+        public void allocateNative(long bytes) {
+            usedNativeMemory.add(bytes);
         }
 
         @Override
-        public void releaseNative( long bytes )
-        {
-            usedNativeMemory.add( -bytes );
+        public void releaseNative(long bytes) {
+            usedNativeMemory.add(-bytes);
         }
 
         @Override
-        public void allocateHeap( long bytes )
-        {
-            usedHeapMemory.add( bytes );
+        public void allocateHeap(long bytes) {
+            usedHeapMemory.add(bytes);
         }
 
         @Override
-        public void releaseHeap( long bytes )
-        {
-            usedHeapMemory.add( -bytes );
+        public void releaseHeap(long bytes) {
+            usedHeapMemory.add(-bytes);
         }
 
         @Override
-        public long heapHighWaterMark()
-        {
+        public long heapHighWaterMark() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void reset()
-        {
+        public void reset() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public MemoryTracker getScopedMemoryTracker()
-        {
+        public MemoryTracker getScopedMemoryTracker() {
             throw new UnsupportedOperationException();
         }
     }

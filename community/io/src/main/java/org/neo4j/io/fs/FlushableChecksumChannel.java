@@ -24,32 +24,30 @@ import java.io.IOException;
 /**
  * Extends a {@link WritableChannel} and {@link FlushableChannel} with a way of calculating checksum.
  */
-public interface FlushableChecksumChannel extends FlushableChannel, WritableChecksumChannel
-{
+public interface FlushableChecksumChannel extends FlushableChannel, WritableChecksumChannel {
     @Override
-    FlushableChecksumChannel put( byte value ) throws IOException;
+    FlushableChecksumChannel put(byte value) throws IOException;
 
     @Override
-    FlushableChecksumChannel putShort( short value ) throws IOException;
+    FlushableChecksumChannel putShort(short value) throws IOException;
 
     @Override
-    FlushableChecksumChannel putInt( int value ) throws IOException;
+    FlushableChecksumChannel putInt(int value) throws IOException;
 
     @Override
-    FlushableChecksumChannel putLong( long value ) throws IOException;
+    FlushableChecksumChannel putLong(long value) throws IOException;
 
     @Override
-    FlushableChecksumChannel putFloat( float value ) throws IOException;
+    FlushableChecksumChannel putFloat(float value) throws IOException;
 
     @Override
-    FlushableChecksumChannel putDouble( double value ) throws IOException;
+    FlushableChecksumChannel putDouble(double value) throws IOException;
 
     @Override
-    default FlushableChecksumChannel put( byte[] value, int length ) throws IOException
-    {
-        return put( value, 0, length );
+    default FlushableChecksumChannel put(byte[] value, int length) throws IOException {
+        return put(value, 0, length);
     }
 
     @Override
-    FlushableChecksumChannel put( byte[] value, int offset, int length ) throws IOException;
+    FlushableChecksumChannel put(byte[] value, int offset, int length) throws IOException;
 }

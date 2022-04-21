@@ -64,13 +64,17 @@ trait QueryGraphProducer {
    *
    * my.proc.foo(a: INT): (x: INT, y: NODE)
    */
-  def producePlannerQueryForPattern(query: String, appendReturn: Boolean = true): (SinglePlannerQuery, SemanticTable) = {
+  def producePlannerQueryForPattern(
+    query: String,
+    appendReturn: Boolean = true
+  ): (SinglePlannerQuery, SemanticTable) = {
     val appendix = if (appendReturn) " RETURN 1 AS Result" else ""
     val q = query + appendix
     val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
     val nameGenerator = new AnonymousVariableNameGenerator
     val ast = parser.parse(q, exceptionFactory, nameGenerator)
-    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
+    val cleanedStatement: Statement =
+      ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val SemanticCheckResult(semanticState, errors) = SemanticChecker.check(cleanedStatement)
     onError(errors)
@@ -81,15 +85,28 @@ trait QueryGraphProducer {
     val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
 
-    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
+    val signature =
+      ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
     val procLookup: QualifiedName => ProcedureSignature = _ => signature
     val fcnLookup: QualifiedName => Option[UserFunctionSignature] = _ => None
 
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
     // if you ever want to have parameters in here, fix the map
-    val firstRewriteStep = ASTRewriter.rewrite(cleanedStatement, semanticState, Map.empty, exceptionFactory, anonymousVariableNameGenerator)
-    val state = LogicalPlanState(query, None, IDPPlannerName, newStubbedPlanningAttributes, anonymousVariableNameGenerator, Some(firstRewriteStep), Some(semanticState))
-    val context = ContextHelper.create(logicalPlanIdGen = idGen, planContext = new TestSignatureResolvingPlanContext(procLookup, fcnLookup))
+    val firstRewriteStep =
+      ASTRewriter.rewrite(cleanedStatement, semanticState, Map.empty, exceptionFactory, anonymousVariableNameGenerator)
+    val state = LogicalPlanState(
+      query,
+      None,
+      IDPPlannerName,
+      newStubbedPlanningAttributes,
+      anonymousVariableNameGenerator,
+      Some(firstRewriteStep),
+      Some(semanticState)
+    )
+    val context = ContextHelper.create(
+      logicalPlanIdGen = idGen,
+      planContext = new TestSignatureResolvingPlanContext(procLookup, fcnLookup)
+    )
     val output = (
       RewriteProcedureCalls andThen
         SemanticAnalysis(warn = false) andThen
@@ -97,10 +114,11 @@ trait QueryGraphProducer {
         rewriteEqualityToInPredicate andThen
         CNFNormalizerTest.getTransformer andThen
         collapseMultipleInPredicates
-      ).transform(state, context)
+    ).transform(state, context)
 
     val semanticTable = output.semanticTable()
-    val plannerQuery = toPlannerQuery(output.statement().asInstanceOf[Query], semanticTable, anonymousVariableNameGenerator)
+    val plannerQuery =
+      toPlannerQuery(output.statement().asInstanceOf[Query], semanticTable, anonymousVariableNameGenerator)
     (plannerQuery.query.asInstanceOf[SinglePlannerQuery], semanticTable)
   }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.collector.extension;
 
+import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
+
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.collector.DataCollector;
@@ -30,13 +32,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
-
 @ServiceProvider
-public class DataCollectorExtensionFactory extends ExtensionFactory<DataCollectorExtensionFactory.Dependencies>
-{
-    public interface Dependencies
-    {
+public class DataCollectorExtensionFactory extends ExtensionFactory<DataCollectorExtensionFactory.Dependencies> {
+    public interface Dependencies {
         Monitors monitors();
 
         JobScheduler jobScheduler();
@@ -48,18 +46,17 @@ public class DataCollectorExtensionFactory extends ExtensionFactory<DataCollecto
         RecentQueryBuffer recentQueryBuffer();
     }
 
-    public DataCollectorExtensionFactory()
-    {
-        super( DATABASE, "dataCollector" );
+    public DataCollectorExtensionFactory() {
+        super(DATABASE, "dataCollector");
     }
 
     @Override
-    public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-    {
-        return new DataCollector( dependencies.database(),
-                                  dependencies.jobScheduler(),
-                                  dependencies.monitors(),
-                                  dependencies.config(),
-                                  dependencies.recentQueryBuffer() );
+    public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+        return new DataCollector(
+                dependencies.database(),
+                dependencies.jobScheduler(),
+                dependencies.monitors(),
+                dependencies.config(),
+                dependencies.recentQueryBuffer());
     }
 }

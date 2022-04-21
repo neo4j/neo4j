@@ -44,10 +44,10 @@ import org.neo4j.cypher.internal.util.InputPosition
  *                              If this field is set, the given order will be used instead of the alphabetical order.
  */
 final case class ReturnItems(
-                              includeExisting: Boolean,
-                              items: Seq[ReturnItem],
-                              defaultOrderOnColumns: Option[List[String]] = None
-                            )(val position: InputPosition) extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
+  includeExisting: Boolean,
+  items: Seq[ReturnItem],
+  defaultOrderOnColumns: Option[List[String]] = None
+)(val position: InputPosition) extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
 
   def withExisting(includeExisting: Boolean): ReturnItems =
     copy(includeExisting = includeExisting)(position)
@@ -67,23 +67,28 @@ final case class ReturnItems(
     copy(items = f(items))(position)
 
   def declareVariables(previousScope: Scope): SemanticCheck =
-    when (includeExisting) {
+    when(includeExisting) {
       s => success(s.importValuesFromScope(previousScope))
-    } chain items.foldSemanticCheck(item => item.alias match {
-      case Some(variable) if item.expression == variable =>
-        val maybePreviousSymbol = previousScope.symbol(variable.name)
-        declareVariable(variable, types(item.expression), maybePreviousSymbol, overriding = true)
-      case Some(variable) =>
-        declareVariable(variable, types(item.expression), overriding = true)
-      case None           => state => SemanticCheckResult(state, Seq.empty)
-    })
+    } chain items.foldSemanticCheck(item =>
+      item.alias match {
+        case Some(variable) if item.expression == variable =>
+          val maybePreviousSymbol = previousScope.symbol(variable.name)
+          declareVariable(variable, types(item.expression), maybePreviousSymbol, overriding = true)
+        case Some(variable) =>
+          declareVariable(variable, types(item.expression), overriding = true)
+        case None => state => SemanticCheckResult(state, Seq.empty)
+      }
+    )
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
     items.groupBy(_.name).foldLeft(success) {
-       case (acc, (_, groupedItems)) if groupedItems.size > 1 =>
-        acc chain SemanticError("Multiple result columns with the same name are not supported", groupedItems.head.position)
-       case (acc, _) =>
-         acc
+      case (acc, (_, groupedItems)) if groupedItems.size > 1 =>
+        acc chain SemanticError(
+          "Multiple result columns with the same name are not supported",
+          groupedItems.head.position
+        )
+      case (acc, _) =>
+        acc
     }
   }
 
@@ -98,7 +103,8 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def name: String
   def isPassThrough: Boolean = alias.contains(expression)
 
-  def semanticCheck: SemanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression) chain checkForExists
+  def semanticCheck: SemanticCheck =
+    SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression) chain checkForExists
 
   private def checkForExists: SemanticCheck = {
     val invalid: Option[Expression] = expression.folder.treeFind[Expression] { case _: ExistsSubClause => true }
@@ -108,11 +114,13 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def stringify(expressionStringifier: ExpressionStringifier): String
 }
 
-case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {
+case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition)
+    extends ReturnItem {
+
   val alias: Option[LogicalVariable] = expression match {
     case i: LogicalVariable => Some(i.copyId)
-    case x: MapProjection => Some(x.name.copyId)
-    case _ => None
+    case x: MapProjection   => Some(x.name.copyId)
+    case _                  => None
   }
   val name: String = alias.map(_.name) getOrElse { inputText.trim }
 
@@ -122,42 +130,53 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
 }
 
 object AliasedReturnItem {
-  def apply(v:LogicalVariable):AliasedReturnItem = AliasedReturnItem(v.copyId, v.copyId)(v.position, isAutoAliased = true)
+
+  def apply(v: LogicalVariable): AliasedReturnItem =
+    AliasedReturnItem(v.copyId, v.copyId)(v.position, isAutoAliased = true)
 }
 
 //TODO variable should not be a Variable. A Variable is an expression, and the return item alias isn't
-case class AliasedReturnItem(expression: Expression, variable: LogicalVariable)(val position: InputPosition, val isAutoAliased: Boolean) extends ReturnItem {
+case class AliasedReturnItem(expression: Expression, variable: LogicalVariable)(
+  val position: InputPosition,
+  val isAutoAliased: Boolean
+) extends ReturnItem {
   val alias: Option[LogicalVariable] = Some(variable)
   val name: String = variable.name
 
   override def dup(children: Seq[AnyRef]): AliasedReturnItem.this.type =
-      this.copy(children.head.asInstanceOf[Expression], children(1).asInstanceOf[LogicalVariable])(position, isAutoAliased).asInstanceOf[this.type]
+    this.copy(children.head.asInstanceOf[Expression], children(1).asInstanceOf[LogicalVariable])(
+      position,
+      isAutoAliased
+    ).asInstanceOf[this.type]
 
   override def asCanonicalStringVal: String = s"${expression.asCanonicalStringVal} AS ${variable.asCanonicalStringVal}"
 
-  def stringify(expressionStringifier: ExpressionStringifier): String = s"${expressionStringifier(expression)} AS ${expressionStringifier(variable)}"
+  def stringify(expressionStringifier: ExpressionStringifier): String =
+    s"${expressionStringifier(expression)} AS ${expressionStringifier(variable)}"
 
 }
 
 object ReturnItems {
   private val ExprStringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
 
-  def checkAmbiguousGrouping(returnItems: ReturnItems, nameOfClause: String): SemanticCheck = (state: SemanticState) => {
-    val stateWithNotifications = {
-      val aggregationExpressions = returnItems.items.map(_.expression).collect { case expr if expr.containsAggregate => expr }
+  def checkAmbiguousGrouping(returnItems: ReturnItems, nameOfClause: String): SemanticCheck =
+    (state: SemanticState) => {
+      val stateWithNotifications = {
+        val aggregationExpressions =
+          returnItems.items.map(_.expression).collect { case expr if expr.containsAggregate => expr }
 
-      if (AmbiguousAggregation.containsDeprecatedAggrExpr(aggregationExpressions, returnItems.items)) {
-        state.addNotification(DeprecatedAmbiguousGroupingNotification(
-          returnItems.position,
-          getAmbiguousNotificationDetails(returnItems.items, nameOfClause)
-        ))
-      } else {
-        state
+        if (AmbiguousAggregation.containsDeprecatedAggrExpr(aggregationExpressions, returnItems.items)) {
+          state.addNotification(DeprecatedAmbiguousGroupingNotification(
+            returnItems.position,
+            getAmbiguousNotificationDetails(returnItems.items, nameOfClause)
+          ))
+        } else {
+          state
+        }
       }
-    }
 
-    SemanticCheckResult.success(stateWithNotifications)
-  }
+      SemanticCheckResult.success(stateWithNotifications)
+    }
 
   /**
    * If possible, creates a notification detail which describes how this query can be rewritten to use an extra `WITH` clause.
@@ -171,11 +190,11 @@ object ReturnItems {
    * @param nameOfClause   "RETURN" OR "WHERE"
    * @return
    */
-  private def getAmbiguousNotificationDetails(allReturnItems: Seq[ReturnItem],
-                                              nameOfClause: String): Option[String] = {
+  private def getAmbiguousNotificationDetails(allReturnItems: Seq[ReturnItem], nameOfClause: String): Option[String] = {
 
     val (aggregationItems, allGroupingItems) = allReturnItems.partition(_.expression.containsAggregate)
-    val deprecatedGroupingKeys = AmbiguousAggregation.deprecatedGroupingKeysUsedInAggrExpr(aggregationItems.map(_.expression), allGroupingItems)
+    val deprecatedGroupingKeys =
+      AmbiguousAggregation.deprecatedGroupingKeysUsedInAggrExpr(aggregationItems.map(_.expression), allGroupingItems)
     if (deprecatedGroupingKeys.nonEmpty) {
       val (withItems, returnItems) = AmbiguousAggregation.getAliasedWithAndReturnItems(allReturnItems)
       val aggregationExpressions = returnItems.map(_.expression).collect { case expr if expr.containsAggregate => expr }

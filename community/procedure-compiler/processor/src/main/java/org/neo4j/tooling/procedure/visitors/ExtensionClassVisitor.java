@@ -19,6 +19,8 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
+import static javax.lang.model.util.ElementFilter.constructorsIn;
+
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -30,29 +32,22 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
-
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.ExtensionMissingPublicNoArgConstructor;
 
-import static javax.lang.model.util.ElementFilter.constructorsIn;
-
-public class ExtensionClassVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
-{
+public class ExtensionClassVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>, Void> {
 
     private final Set<TypeElement> visitedElements = new HashSet<>();
     private final FieldVisitor fieldVisitor;
 
-    public ExtensionClassVisitor( Types types, Elements elements, boolean ignoresWarnings )
-    {
-        fieldVisitor = new FieldVisitor( types, elements, ignoresWarnings );
+    public ExtensionClassVisitor(Types types, Elements elements, boolean ignoresWarnings) {
+        fieldVisitor = new FieldVisitor(types, elements, ignoresWarnings);
     }
 
     @Override
-    public Stream<CompilationMessage> visitType( TypeElement extensionClass, Void ignored )
-    {
-        if ( isFirstVisit( extensionClass ) )
-        {
-            return Stream.concat( validateFields( extensionClass ), validateConstructor( extensionClass ) );
+    public Stream<CompilationMessage> visitType(TypeElement extensionClass, Void ignored) {
+        if (isFirstVisit(extensionClass)) {
+            return Stream.concat(validateFields(extensionClass), validateConstructor(extensionClass));
         }
         return Stream.empty();
     }
@@ -64,27 +59,26 @@ public class ExtensionClassVisitor extends SimpleElementVisitor8<Stream<Compilat
      * @param e The visited {@link TypeElement}
      * @return true for the first visit of the {@link TypeElement}, false afterwards
      */
-    private boolean isFirstVisit( TypeElement e )
-    {
-        return visitedElements.add( e );
+    private boolean isFirstVisit(TypeElement e) {
+        return visitedElements.add(e);
     }
 
-    private Stream<CompilationMessage> validateFields( TypeElement e )
-    {
-        return e.getEnclosedElements().stream().flatMap( fieldVisitor::visit );
+    private Stream<CompilationMessage> validateFields(TypeElement e) {
+        return e.getEnclosedElements().stream().flatMap(fieldVisitor::visit);
     }
 
-    private Stream<CompilationMessage> validateConstructor( Element extensionClass )
-    {
+    private Stream<CompilationMessage> validateConstructor(Element extensionClass) {
         Optional<ExecutableElement> publicNoArgConstructor =
-                constructorsIn( extensionClass.getEnclosedElements() ).stream()
-                        .filter( c -> c.getModifiers().contains( Modifier.PUBLIC ) )
-                        .filter( c -> c.getParameters().isEmpty() ).findFirst();
+                constructorsIn(extensionClass.getEnclosedElements()).stream()
+                        .filter(c -> c.getModifiers().contains(Modifier.PUBLIC))
+                        .filter(c -> c.getParameters().isEmpty())
+                        .findFirst();
 
-        if ( !publicNoArgConstructor.isPresent() )
-        {
-            return Stream.of( new ExtensionMissingPublicNoArgConstructor( extensionClass,
-                    "Extension class %s should contain a public no-arg constructor, none found.", extensionClass ) );
+        if (!publicNoArgConstructor.isPresent()) {
+            return Stream.of(new ExtensionMissingPublicNoArgConstructor(
+                    extensionClass,
+                    "Extension class %s should contain a public no-arg constructor, none found.",
+                    extensionClass));
         }
         return Stream.empty();
     }

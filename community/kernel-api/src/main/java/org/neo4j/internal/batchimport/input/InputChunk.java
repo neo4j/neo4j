@@ -26,7 +26,6 @@ import java.io.IOException;
  * A chunk of data which an {@link InputEntityVisitor} can visit to extract data from. There may be zero or
  * more entities in a chunk.
  */
-public interface InputChunk extends Closeable
-{
-    boolean next( InputEntityVisitor visitor ) throws IOException;
+public interface InputChunk extends Closeable {
+    boolean next(InputEntityVisitor visitor) throws IOException;
 }

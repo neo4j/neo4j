@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.impl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -31,8 +30,7 @@ import org.neo4j.io.pagecache.PagedFile;
  * A CompositePageCursor is a seamless view over parts of two other PageCursors.
  * @see #compose(PageCursor, int, PageCursor, int)
  */
-public final class CompositePageCursor extends PageCursor
-{
+public final class CompositePageCursor extends PageCursor {
     private final PageCursor first;
     private final int firstBaseOffset;
     private final int firstLength;
@@ -45,418 +43,359 @@ public final class CompositePageCursor extends PageCursor
 
     // Constructed with static factory methods.
     private CompositePageCursor(
-            PageCursor first, int firstBaseOffset, int firstLength,
-            PageCursor second, int secondBaseOffset, int secondLength )
-    {
+            PageCursor first,
+            int firstBaseOffset,
+            int firstLength,
+            PageCursor second,
+            int secondBaseOffset,
+            int secondLength) {
         this.first = first;
         this.firstBaseOffset = firstBaseOffset;
         this.firstLength = firstLength;
         this.second = second;
         this.secondBaseOffset = secondBaseOffset;
         this.secondLength = secondLength;
-        byteAccessCursor = new DelegatingPageCursor( this )
-        {
+        byteAccessCursor = new DelegatingPageCursor(this) {
             private int offset;
+
             @Override
-            public int getInt()
-            {
-                int a = getByte( offset ) & 0xFF;
-                int b = getByte( offset + 1 ) & 0xFF;
-                int c = getByte( offset + 2 ) & 0xFF;
-                int d = getByte( offset + 3 ) & 0xFF;
+            public int getInt() {
+                int a = getByte(offset) & 0xFF;
+                int b = getByte(offset + 1) & 0xFF;
+                int c = getByte(offset + 2) & 0xFF;
+                int d = getByte(offset + 3) & 0xFF;
                 int v = (a << 24) | (b << 16) | (c << 8) | d;
                 return v;
             }
 
             @Override
-            public int getInt( int offset )
-            {
+            public int getInt(int offset) {
                 this.offset = offset;
                 return getInt();
             }
 
             @Override
-            public short getShort()
-            {
-                int a = getByte( offset ) & 0xFF;
-                int b = getByte( offset + 1 ) & 0xFF;
+            public short getShort() {
+                int a = getByte(offset) & 0xFF;
+                int b = getByte(offset + 1) & 0xFF;
                 int v = (a << 8) | b;
                 return (short) v;
             }
 
             @Override
-            public short getShort( int offset )
-            {
+            public short getShort(int offset) {
                 this.offset = offset;
                 return getShort();
             }
 
             @Override
-            public long getLong()
-            {
-                long a = getByte( offset ) & 0xFF;
-                long b = getByte( offset + 1 ) & 0xFF;
-                long c = getByte( offset + 2 ) & 0xFF;
-                long d = getByte( offset + 3 ) & 0xFF;
-                long e = getByte( offset + 4 ) & 0xFF;
-                long f = getByte( offset + 5 ) & 0xFF;
-                long g = getByte( offset + 6 ) & 0xFF;
-                long h = getByte( offset + 7 ) & 0xFF;
+            public long getLong() {
+                long a = getByte(offset) & 0xFF;
+                long b = getByte(offset + 1) & 0xFF;
+                long c = getByte(offset + 2) & 0xFF;
+                long d = getByte(offset + 3) & 0xFF;
+                long e = getByte(offset + 4) & 0xFF;
+                long f = getByte(offset + 5) & 0xFF;
+                long g = getByte(offset + 6) & 0xFF;
+                long h = getByte(offset + 7) & 0xFF;
                 long v = (a << 56) | (b << 48) | (c << 40) | (d << 32) | (e << 24) | (f << 16) | (g << 8) | h;
                 return v;
             }
 
             @Override
-            public long getLong( int offset )
-            {
+            public long getLong(int offset) {
                 this.offset = offset;
                 return getLong();
             }
 
             @Override
-            public void getBytes( byte[] data )
-            {
-                for ( int i = 0; i < data.length; i++ )
-                {
-                    data[i] = getByte( offset + i );
+            public void getBytes(byte[] data) {
+                for (int i = 0; i < data.length; i++) {
+                    data[i] = getByte(offset + i);
                 }
             }
 
             @Override
-            public void putInt( int value )
-            {
-                putByte( offset    , (byte)  (value >> 24) );
-                putByte( offset + 1, (byte) ((value >> 16) & 0xFF) );
-                putByte( offset + 2, (byte) ((value >>  8) & 0xFF) );
-                putByte( offset + 3, (byte) (value & 0xFF) );
+            public void putInt(int value) {
+                putByte(offset, (byte) (value >> 24));
+                putByte(offset + 1, (byte) ((value >> 16) & 0xFF));
+                putByte(offset + 2, (byte) ((value >> 8) & 0xFF));
+                putByte(offset + 3, (byte) (value & 0xFF));
             }
 
             @Override
-            public void putInt( int offset, int value )
-            {
+            public void putInt(int offset, int value) {
                 this.offset = offset;
-                putInt( value );
+                putInt(value);
             }
 
             @Override
-            public void putShort( short value )
-            {
-                putByte( offset    , (byte)  (value >>  8) );
-                putByte( offset + 1, (byte) (value & 0xFF) );
+            public void putShort(short value) {
+                putByte(offset, (byte) (value >> 8));
+                putByte(offset + 1, (byte) (value & 0xFF));
             }
 
             @Override
-            public void putShort( int offset, short value )
-            {
+            public void putShort(int offset, short value) {
                 this.offset = offset;
-                putShort( value );
+                putShort(value);
             }
 
             @Override
-            public void putLong( long value )
-            {
-                putByte( offset    , (byte)  (value >> 56) );
-                putByte( offset + 1, (byte) ((value >> 48) & 0xFF) );
-                putByte( offset + 2, (byte) ((value >> 40) & 0xFF) );
-                putByte( offset + 3, (byte) ((value >> 32) & 0xFF) );
-                putByte( offset + 4, (byte) ((value >> 24) & 0xFF) );
-                putByte( offset + 5, (byte) ((value >> 16) & 0xFF) );
-                putByte( offset + 6, (byte) ((value >>  8) & 0xFF) );
-                putByte( offset + 7, (byte) (value & 0xFF) );
+            public void putLong(long value) {
+                putByte(offset, (byte) (value >> 56));
+                putByte(offset + 1, (byte) ((value >> 48) & 0xFF));
+                putByte(offset + 2, (byte) ((value >> 40) & 0xFF));
+                putByte(offset + 3, (byte) ((value >> 32) & 0xFF));
+                putByte(offset + 4, (byte) ((value >> 24) & 0xFF));
+                putByte(offset + 5, (byte) ((value >> 16) & 0xFF));
+                putByte(offset + 6, (byte) ((value >> 8) & 0xFF));
+                putByte(offset + 7, (byte) (value & 0xFF));
             }
 
             @Override
-            public void putLong( int offset, long value )
-            {
+            public void putLong(int offset, long value) {
                 this.offset = offset;
-                putLong( value );
+                putLong(value);
             }
 
             @Override
-            public void putBytes( byte[] data )
-            {
-                for ( int i = 0; i < data.length; i++ )
-                {
-                    putByte( offset + i, data[i] );
+            public void putBytes(byte[] data) {
+                for (int i = 0; i < data.length; i++) {
+                    putByte(offset + i, data[i]);
                 }
             }
 
             @Override
-            public void setOffset( int offset )
-            {
+            public void setOffset(int offset) {
                 this.offset = offset;
             }
         };
     }
 
-    private PageCursor cursor( int width )
-    {
-        return cursor( offset, width );
+    private PageCursor cursor(int width) {
+        return cursor(offset, width);
     }
 
-    private PageCursor cursor( int offset, int width )
-    {
+    private PageCursor cursor(int offset, int width) {
         outOfBounds |= offset + width > firstLength + secondLength;
-        if ( offset < firstLength )
-        {
-            return offset + width <= firstLength ? first : byteCursor( offset );
+        if (offset < firstLength) {
+            return offset + width <= firstLength ? first : byteCursor(offset);
         }
         return second;
-
     }
 
-    private PageCursor byteCursor( int offset )
-    {
-        byteAccessCursor.setOffset( offset );
+    private PageCursor byteCursor(int offset) {
+        byteAccessCursor.setOffset(offset);
         return byteAccessCursor;
     }
 
-    private int relative( int offset )
-    {
+    private int relative(int offset) {
         return offset < firstLength ? firstBaseOffset + offset : secondBaseOffset + (offset - firstLength);
     }
 
     @Override
-    public byte getByte()
-    {
-        PageCursor cursor = cursor( Byte.BYTES );
+    public byte getByte() {
+        PageCursor cursor = cursor(Byte.BYTES);
         byte b = cursor.getByte();
         offset++;
         return b;
     }
 
     @Override
-    public byte getByte( int offset )
-    {
-        return cursor( offset, Byte.BYTES ).getByte( relative( offset ) );
+    public byte getByte(int offset) {
+        return cursor(offset, Byte.BYTES).getByte(relative(offset));
     }
 
     @Override
-    public void putByte( byte value )
-    {
-        PageCursor cursor = cursor( Byte.BYTES );
-        cursor.putByte( value );
+    public void putByte(byte value) {
+        PageCursor cursor = cursor(Byte.BYTES);
+        cursor.putByte(value);
         offset++;
     }
 
     @Override
-    public void putByte( int offset, byte value )
-    {
-        cursor( offset, Byte.BYTES ).putByte( relative( offset ), value );
+    public void putByte(int offset, byte value) {
+        cursor(offset, Byte.BYTES).putByte(relative(offset), value);
     }
 
     @Override
-    public long getLong()
-    {
-        long l = cursor( Long.BYTES ).getLong();
+    public long getLong() {
+        long l = cursor(Long.BYTES).getLong();
         offset += Long.BYTES;
         return l;
     }
 
     @Override
-    public long getLong( int offset )
-    {
-        return cursor( offset, Long.BYTES ).getLong( relative( offset ) );
+    public long getLong(int offset) {
+        return cursor(offset, Long.BYTES).getLong(relative(offset));
     }
 
     @Override
-    public void putLong( long value )
-    {
-        cursor( Long.BYTES ).putLong( value );
+    public void putLong(long value) {
+        cursor(Long.BYTES).putLong(value);
         offset += Long.BYTES;
     }
 
     @Override
-    public void putLong( int offset, long value )
-    {
-        cursor( offset, Long.BYTES ).putLong( relative( offset ), value );
+    public void putLong(int offset, long value) {
+        cursor(offset, Long.BYTES).putLong(relative(offset), value);
     }
 
     @Override
-    public int getInt()
-    {
-        int i = cursor( Integer.BYTES ).getInt();
+    public int getInt() {
+        int i = cursor(Integer.BYTES).getInt();
         offset += Integer.BYTES;
         return i;
     }
 
     @Override
-    public int getInt( int offset )
-    {
-        return cursor( offset, Integer.BYTES ).getInt( relative( offset ) );
+    public int getInt(int offset) {
+        return cursor(offset, Integer.BYTES).getInt(relative(offset));
     }
 
     @Override
-    public void putInt( int value )
-    {
-        PageCursor cursor = cursor( Integer.BYTES );
-        cursor.putInt( value );
+    public void putInt(int value) {
+        PageCursor cursor = cursor(Integer.BYTES);
+        cursor.putInt(value);
         offset += Integer.BYTES;
     }
 
     @Override
-    public void putInt( int offset, int value )
-    {
-        cursor( offset, Integer.BYTES ).putInt( relative( offset ), value );
+    public void putInt(int offset, int value) {
+        cursor(offset, Integer.BYTES).putInt(relative(offset), value);
     }
 
     @Override
-    public void getBytes( byte[] data )
-    {
-        cursor( data.length ).getBytes( data );
+    public void getBytes(byte[] data) {
+        cursor(data.length).getBytes(data);
         offset += data.length;
     }
 
     @Override
-    public void getBytes( byte[] data, int arrayOffset, int length )
-    {
-        throw new UnsupportedOperationException( "Composite page cursor does not yet support this operation" );
+    public void getBytes(byte[] data, int arrayOffset, int length) {
+        throw new UnsupportedOperationException("Composite page cursor does not yet support this operation");
     }
 
     @Override
-    public void putBytes( byte[] data )
-    {
-        cursor( data.length ).putBytes( data );
+    public void putBytes(byte[] data) {
+        cursor(data.length).putBytes(data);
         offset += data.length;
     }
 
     @Override
-    public void putBytes( byte[] data, int arrayOffset, int length )
-    {
-        throw new UnsupportedOperationException( "Composite page cursor does not yet support this operation" );
+    public void putBytes(byte[] data, int arrayOffset, int length) {
+        throw new UnsupportedOperationException("Composite page cursor does not yet support this operation");
     }
 
     @Override
-    public void putBytes( int bytes, byte value )
-    {
-        throw new UnsupportedOperationException( "Composite page cursor does not yet support this operation" );
+    public void putBytes(int bytes, byte value) {
+        throw new UnsupportedOperationException("Composite page cursor does not yet support this operation");
     }
 
     @Override
-    public short getShort()
-    {
-        short s = cursor( Short.BYTES ).getShort();
+    public short getShort() {
+        short s = cursor(Short.BYTES).getShort();
         offset += Short.BYTES;
         return s;
     }
 
     @Override
-    public short getShort( int offset )
-    {
-        return cursor( offset, Short.BYTES ).getShort( relative( offset ) );
+    public short getShort(int offset) {
+        return cursor(offset, Short.BYTES).getShort(relative(offset));
     }
 
     @Override
-    public void putShort( short value )
-    {
-        cursor( Short.BYTES ).putShort( value );
+    public void putShort(short value) {
+        cursor(Short.BYTES).putShort(value);
         offset += Short.BYTES;
     }
 
     @Override
-    public void putShort( int offset, short value )
-    {
-        cursor( offset, Short.BYTES ).putShort( relative( offset ), value );
+    public void putShort(int offset, short value) {
+        cursor(offset, Short.BYTES).putShort(relative(offset), value);
     }
 
     @Override
-    public void setOffset( int offset )
-    {
-        if ( offset < firstLength )
-        {
-            first.setOffset( firstBaseOffset + offset );
-            second.setOffset( secondBaseOffset );
-        }
-        else
-        {
-            first.setOffset( firstBaseOffset + firstLength );
-            second.setOffset( secondBaseOffset + (offset - firstLength) );
+    public void setOffset(int offset) {
+        if (offset < firstLength) {
+            first.setOffset(firstBaseOffset + offset);
+            second.setOffset(secondBaseOffset);
+        } else {
+            first.setOffset(firstBaseOffset + firstLength);
+            second.setOffset(secondBaseOffset + (offset - firstLength));
         }
         this.offset = offset;
     }
 
     @Override
-    public int getOffset()
-    {
+    public int getOffset() {
         return offset;
     }
 
     @Override
-    public void mark()
-    {
+    public void mark() {
         first.mark();
         second.mark();
     }
 
     @Override
-    public void setOffsetToMark()
-    {
+    public void setOffsetToMark() {
         first.setOffsetToMark();
         second.setOffsetToMark();
     }
 
     @Override
-    public long getCurrentPageId()
-    {
-        return cursor( 0 ).getCurrentPageId();
+    public long getCurrentPageId() {
+        return cursor(0).getCurrentPageId();
     }
 
     @Override
-    public Path getCurrentFile()
-    {
+    public Path getCurrentFile() {
         return null;
     }
 
     @Override
-    public PagedFile getPagedFile()
-    {
+    public PagedFile getPagedFile() {
         return this.first != null ? this.first.getPagedFile() : null;
     }
 
     @Override
-    public Path getRawCurrentFile()
-    {
+    public Path getRawCurrentFile() {
         return null;
     }
 
     @Override
-    public void rewind()
-    {
-        first.setOffset( firstBaseOffset );
-        second.setOffset( secondBaseOffset );
+    public void rewind() {
+        first.setOffset(firstBaseOffset);
+        second.setOffset(secondBaseOffset);
         offset = 0;
     }
 
     @Override
-    public boolean next()
-    {
+    public boolean next() {
         throw unsupportedNext();
     }
 
-    private static UnsupportedOperationException unsupportedNext()
-    {
+    private static UnsupportedOperationException unsupportedNext() {
         return new UnsupportedOperationException(
-                "Composite cursor does not support next operation. Please operate directly on underlying cursors." );
+                "Composite cursor does not support next operation. Please operate directly on underlying cursors.");
     }
 
     @Override
-    public boolean next( long pageId )
-    {
+    public boolean next(long pageId) {
         throw unsupportedNext();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         first.close();
         second.close();
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
-    {
-        if ( first.shouldRetry() || second.shouldRetry() )
-        {
+    public boolean shouldRetry() throws IOException {
+        if (first.shouldRetry() || second.shouldRetry()) {
             rewind();
             checkAndClearBoundsFlag();
             return true;
@@ -465,26 +404,22 @@ public final class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
-    {
-        throw new UnsupportedOperationException( "Composite cursor does not support copyTo functionality." );
+    public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
+        throw new UnsupportedOperationException("Composite cursor does not support copyTo functionality.");
     }
 
     @Override
-    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
-    {
-        throw new UnsupportedOperationException( "Composite cursor does not support copyTo functionality." );
+    public int copyTo(int sourceOffset, ByteBuffer targetBuffer) {
+        throw new UnsupportedOperationException("Composite cursor does not support copyTo functionality.");
     }
 
     @Override
-    public void shiftBytes( int sourceOffset, int length, int shift )
-    {
-        throw new UnsupportedOperationException( "Composite cursor does not support shiftBytes functionality... yet." );
+    public void shiftBytes(int sourceOffset, int length, int shift) {
+        throw new UnsupportedOperationException("Composite cursor does not support shiftBytes functionality... yet.");
     }
 
     @Override
-    public boolean checkAndClearBoundsFlag()
-    {
+    public boolean checkAndClearBoundsFlag() {
         boolean firstOOB = first.checkAndClearBoundsFlag();
         boolean secondOOB = second.checkAndClearBoundsFlag();
         boolean bounds = outOfBounds || firstOOB || secondOOB;
@@ -493,47 +428,40 @@ public final class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public void checkAndClearCursorException() throws CursorException
-    {
+    public void checkAndClearCursorException() throws CursorException {
         first.checkAndClearCursorException();
         second.checkAndClearCursorException();
     }
 
     @Override
-    public void raiseOutOfBounds()
-    {
+    public void raiseOutOfBounds() {
         outOfBounds = true;
     }
 
     @Override
-    public void setCursorException( String message )
-    {
-        cursor( 0 ).setCursorException( message );
+    public void setCursorException(String message) {
+        cursor(0).setCursorException(message);
     }
 
     @Override
-    public void clearCursorException()
-    {
+    public void clearCursorException() {
         first.clearCursorException();
         second.clearCursorException();
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
-    {
-        throw new UnsupportedOperationException( "Linked cursors are not supported for composite cursors" );
+    public PageCursor openLinkedCursor(long pageId) {
+        throw new UnsupportedOperationException("Linked cursors are not supported for composite cursors");
     }
 
     @Override
-    public void zapPage()
-    {
+    public void zapPage() {
         first.zapPage();
         second.zapPage();
     }
 
     @Override
-    public boolean isWriteLocked()
-    {
+    public boolean isWriteLocked() {
         return first.isWriteLocked() && second.isWriteLocked();
     }
 
@@ -570,8 +498,7 @@ public final class CompositePageCursor extends PageCursor
      * @param secondLength The number of bytes from the second cursor that will participate in the composite view.
      * @return A cursor that is a composed view of the given parts of the two given cursors.
      */
-    public static PageCursor compose( PageCursor first, int firstLength, PageCursor second, int secondLength )
-    {
-        return new CompositePageCursor( first, first.getOffset(), firstLength, second, second.getOffset(), secondLength );
+    public static PageCursor compose(PageCursor first, int firstLength, PageCursor second, int secondLength) {
+        return new CompositePageCursor(first, first.getOffset(), firstLength, second, second.getOffset(), secondLength);
     }
 }

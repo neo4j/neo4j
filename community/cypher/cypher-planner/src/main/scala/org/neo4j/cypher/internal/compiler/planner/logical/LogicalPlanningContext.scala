@@ -46,46 +46,50 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
-case class LogicalPlanningContext(planContext: PlanContext,
-                                  logicalPlanProducer: LogicalPlanProducer,
-                                  metrics: Metrics,
-                                  semanticTable: SemanticTable,
-                                  strategy: QueryGraphSolver,
-                                  input: QueryGraphSolverInput = QueryGraphSolverInput.empty,
-                                  // When planning tails, this gives contextual information about the plan of the so-far solved
-                                  // query graphs, which will be connected with an Apply with the tail-query graph plan.
-                                  outerPlan: Option[LogicalPlan] = None,
-                                  isInSubquery: Boolean = false,
-                                  notificationLogger: InternalNotificationLogger,
-                                  useErrorsOverWarnings: Boolean = false,
-                                  errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
-                                  errorIfShortestPathHasCommonNodesAtRuntime: Boolean = true,
-                                  legacyCsvQuoteEscaping: Boolean = DEFAULT_LEGACY_STYLE_QUOTING,
-                                  csvBufferSize: Int = 2 * 1024 * 1024,
-                                  config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-                                  costComparisonListener: CostComparisonListener,
-                                  planningAttributes: PlanningAttributes,
-                                  indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext = IndexCompatiblePredicatesProviderContext.default,
-                                  /*
-                                   * All properties that are referenced (in the head planner query)
-                                   * Used to break potential ties between index leaf plans
-                                   */
-                                  accessedProperties: Set[PropertyAccess] = Set.empty,
-                                  idGen: IdGen,
-                                  executionModel: ExecutionModel,
-                                  debugOptions: CypherDebugOptions,
-                                  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-                                  cancellationChecker: CancellationChecker,
-                                  planningTextIndexesEnabled: Boolean = true,
-                                  planningRangeIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
-                                  planningPointIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue(),
-                                 ) {
+case class LogicalPlanningContext(
+  planContext: PlanContext,
+  logicalPlanProducer: LogicalPlanProducer,
+  metrics: Metrics,
+  semanticTable: SemanticTable,
+  strategy: QueryGraphSolver,
+  input: QueryGraphSolverInput = QueryGraphSolverInput.empty,
+  // When planning tails, this gives contextual information about the plan of the so-far solved
+  // query graphs, which will be connected with an Apply with the tail-query graph plan.
+  outerPlan: Option[LogicalPlan] = None,
+  isInSubquery: Boolean = false,
+  notificationLogger: InternalNotificationLogger,
+  useErrorsOverWarnings: Boolean = false,
+  errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
+  errorIfShortestPathHasCommonNodesAtRuntime: Boolean = true,
+  legacyCsvQuoteEscaping: Boolean = DEFAULT_LEGACY_STYLE_QUOTING,
+  csvBufferSize: Int = 2 * 1024 * 1024,
+  config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
+  costComparisonListener: CostComparisonListener,
+  planningAttributes: PlanningAttributes,
+  indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext =
+    IndexCompatiblePredicatesProviderContext.default,
+  /*
+   * All properties that are referenced (in the head planner query)
+   * Used to break potential ties between index leaf plans
+   */
+  accessedProperties: Set[PropertyAccess] = Set.empty,
+  idGen: IdGen,
+  executionModel: ExecutionModel,
+  debugOptions: CypherDebugOptions,
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  cancellationChecker: CancellationChecker,
+  planningTextIndexesEnabled: Boolean = true,
+  planningRangeIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
+  planningPointIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue()
+) {
 
   def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =
     copy(input = input.withLimitSelectivityConfig(cfg))
 
   def withAggregationProperties(properties: Set[PropertyAccess]): LogicalPlanningContext =
-    copy(indexCompatiblePredicatesProviderContext = indexCompatiblePredicatesProviderContext.copy(aggregatingProperties = properties))
+    copy(indexCompatiblePredicatesProviderContext =
+      indexCompatiblePredicatesProviderContext.copy(aggregatingProperties = properties)
+    )
 
   def withAccessedProperties(properties: Set[PropertyAccess]): LogicalPlanningContext =
     copy(accessedProperties = properties)
@@ -131,6 +135,8 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
   def withLastSolvedQueryPart(queryPart: SinglePlannerQuery): LogicalPlanningContext = {
     val hasUpdates = indexCompatiblePredicatesProviderContext.outerPlanHasUpdates || !queryPart.readOnlySelf
-    copy(indexCompatiblePredicatesProviderContext = indexCompatiblePredicatesProviderContext.copy(outerPlanHasUpdates = hasUpdates))
+    copy(indexCompatiblePredicatesProviderContext =
+      indexCompatiblePredicatesProviderContext.copy(outerPlanHasUpdates = hasUpdates)
+    )
   }
 }

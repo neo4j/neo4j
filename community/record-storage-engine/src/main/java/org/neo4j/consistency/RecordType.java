@@ -19,8 +19,7 @@
  */
 package org.neo4j.consistency;
 
-public enum RecordType
-{
+public enum RecordType {
     NEO_STORE,
     SCHEMA,
     NODE,

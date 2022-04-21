@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.schema;
 
 import java.util.Map;
-
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -37,8 +36,7 @@ import org.neo4j.graphdb.Node;
  * @see Schema
  */
 @PublicApi
-public interface IndexCreator
-{
+public interface IndexCreator {
     /**
      * Includes the given {@code propertyKey} in this index, such that {@link Node nodes} with
      * the assigned {@link Label label} and this property key will have its values indexed.
@@ -48,7 +46,7 @@ public interface IndexCreator
      * @param propertyKey the property key to include in this index to be created.
      * @return an {@link IndexCreator} instance to be used for further interaction.
      */
-    IndexCreator on( String propertyKey );
+    IndexCreator on(String propertyKey);
 
     /**
      * Assign a name to the index, which will then be returned from {@link IndexDefinition#getName()}, and can be used for finding the index with
@@ -57,7 +55,7 @@ public interface IndexCreator
      * @param indexName the name to give the index.
      * @return an {@link IndexCreator} instance to be used for further interaction.
      */
-    IndexCreator withName( String indexName );
+    IndexCreator withName(String indexName);
 
     /**
      * Specify the type of index to be created.
@@ -68,7 +66,7 @@ public interface IndexCreator
      * @param type the desired index type.
      * @return an {@link IndexCreator} instance to be used for further interaction.
      */
-    IndexCreator withIndexType( IndexType type );
+    IndexCreator withIndexType(IndexType type);
 
     /**
      * Set index-specific index configurations.
@@ -78,7 +76,7 @@ public interface IndexCreator
      * @param indexConfiguration The index settings in the index configuration that differ from their defaults.
      * @return an {@link IndexCreator} instance to be used for further interaction.
      */
-    IndexCreator withIndexConfiguration( Map<IndexSetting,Object> indexConfiguration );
+    IndexCreator withIndexConfiguration(Map<IndexSetting, Object> indexConfiguration);
 
     /**
      * Creates an index with the details specified by the other methods in this interface.

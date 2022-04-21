@@ -19,46 +19,46 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.test.InMemoryTokens;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class IndexPopulationFailedKernelExceptionTest
-{
+class IndexPopulationFailedKernelExceptionTest {
     private static final TokenNameLookup TOKEN_NAME_LOOKUP = new InMemoryTokens()
-            .label( 0, "label0" ).propertyKey( 42, "p42" ).propertyKey( 43, "p43" ).propertyKey( 44, "p44" );
+            .label(0, "label0")
+            .propertyKey(42, "p42")
+            .propertyKey(43, "p43")
+            .propertyKey(44, "p44");
 
     @Test
-    void shouldHandleMultiplePropertiesInConstructor1()
-    {
+    void shouldHandleMultiplePropertiesInConstructor1() {
         // Given
-        LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel( 0, 42, 43, 44 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel(0, 42, 43, 44);
 
         // When
         IndexPopulationFailedKernelException index = new IndexPopulationFailedKernelException(
-                descriptor.userDescription( TOKEN_NAME_LOOKUP ), new RuntimeException() );
+                descriptor.userDescription(TOKEN_NAME_LOOKUP), new RuntimeException());
 
         // Then
-        assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo( "Failed to populate index (:label0 {p42, p43, p44})" );
+        assertThat(index.getUserMessage(TOKEN_NAME_LOOKUP))
+                .isEqualTo("Failed to populate index (:label0 {p42, p43, p44})");
     }
 
     @Test
-    void shouldHandleMultiplePropertiesInConstructor2()
-    {
+    void shouldHandleMultiplePropertiesInConstructor2() {
         // Given
-        LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel( 0, 42, 43, 44 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel(0, 42, 43, 44);
 
         // When
         IndexPopulationFailedKernelException index = new IndexPopulationFailedKernelException(
-                descriptor.userDescription( TOKEN_NAME_LOOKUP ), "an act of pure evil occurred" );
+                descriptor.userDescription(TOKEN_NAME_LOOKUP), "an act of pure evil occurred");
 
         // Then
-        assertThat( index.getUserMessage( TOKEN_NAME_LOOKUP ) ).isEqualTo(
-                "Failed to populate index (:label0 {p42, p43, p44}), due to an act of pure evil occurred" );
+        assertThat(index.getUserMessage(TOKEN_NAME_LOOKUP))
+                .isEqualTo("Failed to populate index (:label0 {p42, p43, p44}), due to an act of pure evil occurred");
     }
 }

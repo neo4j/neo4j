@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
@@ -36,15 +35,13 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
  * @param <INDEX> - particular index implementation
  */
 public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends ValueIndexReader>
-        extends AbstractDatabaseIndex<INDEX,READER>
-{
+        extends AbstractDatabaseIndex<INDEX, READER> {
     // lock used to guard commits and close of lucene indexes from separate threads
     protected final ReentrantLock commitCloseLock = new ReentrantLock();
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
-    public WritableAbstractDatabaseIndex( INDEX luceneIndex, DatabaseReadOnlyChecker readOnlyChecker )
-    {
-        super( luceneIndex );
+    public WritableAbstractDatabaseIndex(INDEX luceneIndex, DatabaseReadOnlyChecker readOnlyChecker) {
+        super(luceneIndex);
         this.readOnlyChecker = readOnlyChecker;
     }
 
@@ -52,8 +49,7 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public void create() throws IOException
-    {
+    public void create() throws IOException {
         luceneIndex.create();
     }
 
@@ -61,8 +57,7 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public boolean isReadOnly()
-    {
+    public boolean isReadOnly() {
         return readOnlyChecker.isReadOnly();
     }
 
@@ -70,15 +65,11 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public void drop()
-    {
+    public void drop() {
         commitCloseLock.lock();
-        try
-        {
+        try {
             luceneIndex.drop();
-        }
-        finally
-        {
+        } finally {
             commitCloseLock.unlock();
         }
     }
@@ -87,43 +78,33 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public void flush() throws IOException
-    {
+    public void flush() throws IOException {
         commitCloseLock.lock();
-        try
-        {
+        try {
             commitLockedFlush();
-        }
-        finally
-        {
+        } finally {
             commitCloseLock.unlock();
         }
     }
 
-    protected void commitLockedFlush() throws IOException
-    {
-        luceneIndex.flush( false );
+    protected void commitLockedFlush() throws IOException {
+        luceneIndex.flush(false);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         commitCloseLock.lock();
-        try
-        {
+        try {
             commitLockedClose();
-        }
-        finally
-        {
+        } finally {
             commitCloseLock.unlock();
         }
     }
 
-    protected void commitLockedClose() throws IOException
-    {
+    protected void commitLockedClose() throws IOException {
         luceneIndex.close();
     }
 
@@ -131,15 +112,11 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public ResourceIterator<Path> snapshot() throws IOException
-    {
+    public ResourceIterator<Path> snapshot() throws IOException {
         commitCloseLock.lock();
-        try
-        {
+        try {
             return luceneIndex.snapshot();
-        }
-        finally
-        {
+        } finally {
             commitCloseLock.unlock();
         }
     }
@@ -148,8 +125,7 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public void maybeRefreshBlocking() throws IOException
-    {
+    public void maybeRefreshBlocking() throws IOException {
         luceneIndex.maybeRefreshBlocking();
     }
 
@@ -159,8 +135,7 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * @return newly created partition
      * @throws IOException
      */
-    public AbstractIndexPartition addNewPartition() throws IOException
-    {
+    public AbstractIndexPartition addNewPartition() throws IOException {
         return luceneIndex.addNewPartition();
     }
 
@@ -168,32 +143,25 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public void markAsOnline() throws IOException
-    {
+    public void markAsOnline() throws IOException {
         commitCloseLock.lock();
-        try
-        {
+        try {
             luceneIndex.markAsOnline();
-        }
-        finally
-        {
+        } finally {
             commitCloseLock.unlock();
         }
     }
 
     @Override
-    public LuceneIndexWriter getIndexWriter()
-    {
-        return luceneIndex.getIndexWriter( this );
+    public LuceneIndexWriter getIndexWriter() {
+        return luceneIndex.getIndexWriter(this);
     }
 
-    public static boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
-    {
-        return AbstractLuceneIndex.hasSinglePartition( partitions );
+    public static boolean hasSinglePartition(List<AbstractIndexPartition> partitions) {
+        return AbstractLuceneIndex.hasSinglePartition(partitions);
     }
 
-    public static AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
-    {
-        return AbstractLuceneIndex.getFirstPartition( partitions );
+    public static AbstractIndexPartition getFirstPartition(List<AbstractIndexPartition> partitions) {
+        return AbstractLuceneIndex.getFirstPartition(partitions);
     }
 }

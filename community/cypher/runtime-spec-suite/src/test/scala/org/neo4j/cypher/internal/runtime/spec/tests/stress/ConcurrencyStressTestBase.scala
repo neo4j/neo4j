@@ -38,9 +38,9 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
 abstract class ConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
-                                                                     edition: Edition[CONTEXT],
-                                                                     runtime: CypherRuntime[CONTEXT],
-                                                                   ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   protected val TEST_TIMEOUT: FiniteDuration = Duration(5, TimeUnit.MINUTES)
 
@@ -53,7 +53,8 @@ abstract class ConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
     val latch = new CountDownLatch(deletingThreads)
 
     val notNullPredicate: AnyValue => Boolean = v => Values.longValue(-1) != v
-    val notNullColumnPredicates: Array[(String, AnyValue => Boolean)] = logicalQuery.resultColumns.map(column => (column, notNullPredicate))
+    val notNullColumnPredicates: Array[(String, AnyValue => Boolean)] =
+      logicalQuery.resultColumns.map(column => (column, notNullPredicate))
 
     val plan = buildPlan(logicalQuery, runtime)
     concurrentDelete(rels, deletingThreads, latch)
@@ -69,23 +70,29 @@ abstract class ConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  private def concurrentDelete(ids: Seq[Long], threadCount: Int, latch: CountDownLatch): Future[immutable.IndexedSeq[Unit]] = {
+  private def concurrentDelete(
+    ids: Seq[Long],
+    threadCount: Int,
+    latch: CountDownLatch
+  ): Future[immutable.IndexedSeq[Unit]] = {
     val threadIds = ids.grouped(ids.size / threadCount).toSeq
-    Future.sequence((0 until threadCount).map(idsOffset => Future {
-      try {
-        val tx = newTx()
-        val idsToDelete = threadIds(idsOffset)
-        val idCount = idsToDelete.size
-        var i = 0
-        while (i < idCount) {
-          tx.kernelTransaction().dataWrite().relationshipDelete(idsToDelete(i))
-          i += 1
+    Future.sequence((0 until threadCount).map(idsOffset =>
+      Future {
+        try {
+          val tx = newTx()
+          val idsToDelete = threadIds(idsOffset)
+          val idCount = idsToDelete.size
+          var i = 0
+          while (i < idCount) {
+            tx.kernelTransaction().dataWrite().relationshipDelete(idsToDelete(i))
+            i += 1
+          }
+          tx.commit()
+        } finally {
+          latch.countDown()
         }
-        tx.commit()
-      } finally {
-        latch.countDown()
       }
-    }))
+    ))
   }
 }
 

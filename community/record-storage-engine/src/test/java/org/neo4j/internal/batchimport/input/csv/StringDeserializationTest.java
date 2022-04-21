@@ -19,50 +19,46 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class StringDeserializationTest
-{
+class StringDeserializationTest {
     private final Configuration configuration = Configuration.COMMAS;
-    private final Extractors extractors = new Extractors( configuration.arrayDelimiter() );
-    private final Header.Entry entry1 = new Header.Entry( null, Type.START_ID, null, extractors.int_() );
-    private final Header.Entry entry2 = new Header.Entry( null, Type.TYPE, null, extractors.string() );
-    private final Header.Entry entry3 = new Header.Entry( null, Type.END_ID, null, extractors.int_() );
+    private final Extractors extractors = new Extractors(configuration.arrayDelimiter());
+    private final Header.Entry entry1 = new Header.Entry(null, Type.START_ID, null, extractors.int_());
+    private final Header.Entry entry2 = new Header.Entry(null, Type.TYPE, null, extractors.string());
+    private final Header.Entry entry3 = new Header.Entry(null, Type.END_ID, null, extractors.int_());
 
     @Test
-    void shouldProvideDelimiterAfterFirstEmptyField()
-    {
+    void shouldProvideDelimiterAfterFirstEmptyField() {
         // given
-        StringDeserialization deserialization = new StringDeserialization( configuration );
+        StringDeserialization deserialization = new StringDeserialization(configuration);
 
         // when
-        deserialization.handle( entry1, null );
-        deserialization.handle( entry2, "MyType" );
-        deserialization.handle( entry3, 123 );
+        deserialization.handle(entry1, null);
+        deserialization.handle(entry2, "MyType");
+        deserialization.handle(entry3, 123);
         String line = deserialization.materialize();
 
         // then
-        assertEquals( line, ",MyType,123" );
+        assertEquals(line, ",MyType,123");
     }
 
     @Test
-    void shouldProvideDelimiterBeforeLastEmptyField()
-    {
+    void shouldProvideDelimiterBeforeLastEmptyField() {
         // given
-        StringDeserialization deserialization = new StringDeserialization( configuration );
+        StringDeserialization deserialization = new StringDeserialization(configuration);
 
         // when
-        deserialization.handle( entry1, 123 );
-        deserialization.handle( entry2, "MyType" );
-        deserialization.handle( entry3, null );
+        deserialization.handle(entry1, 123);
+        deserialization.handle(entry2, "MyType");
+        deserialization.handle(entry3, null);
         String line = deserialization.materialize();
 
         // then
-        assertEquals( line, "123,MyType," );
+        assertEquals(line, "123,MyType,");
     }
 }

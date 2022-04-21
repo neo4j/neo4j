@@ -19,14 +19,21 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static java.lang.Math.toIntExact;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+
+import java.io.IOException;
+import java.util.BitSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.IOException;
-import java.util.BitSet;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -44,126 +51,105 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.lang.Math.toIntExact;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-
-@ExtendWith( RandomExtension.class )
+@ExtendWith(RandomExtension.class)
 @PageCacheExtension
-class TokenIndexReaderTest
-{
+class TokenIndexReaderTest {
     @Inject
     private RandomSupport random;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private TestDirectory directory;
 
-    private GBPTree<TokenScanKey,TokenScanValue> tree;
+    private GBPTree<TokenScanKey, TokenScanValue> tree;
 
     @BeforeEach
-    void openTree()
-    {
-        tree = new GBPTreeBuilder<>( pageCache, directory.file( "file" ), new TokenScanLayout() ).build();
+    void openTree() {
+        tree = new GBPTreeBuilder<>(pageCache, directory.file("file"), new TokenScanLayout()).build();
     }
 
     @AfterEach
-    void closeTree() throws IOException
-    {
+    void closeTree() throws IOException {
         tree.close();
     }
 
     @Test
-    void shouldTracePageCacheAccess() throws Exception
-    {
+    void shouldTracePageCacheAccess() throws Exception {
         // GIVEN an index with entries
         int expectedNodes = 5;
         int labelId = 1;
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( expectedNodes ) )
-        {
-            writer.initialize( tree.writer( NULL_CONTEXT ) );
-            for ( int i = 0; i < expectedNodes; i++ )
-            {
-                writer.process( TokenIndexEntryUpdate.change( i, null, EMPTY_LONG_ARRAY, new long[]{labelId} ) );
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(expectedNodes)) {
+            writer.initialize(tree.writer(NULL_CONTEXT));
+            for (int i = 0; i < expectedNodes; i++) {
+                writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {labelId}));
             }
         }
 
         // WHEN the index is queried
         var cacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
-        var cursorContext = contextFactory.create( "tracePageCache" );
-        var reader = new DefaultTokenIndexReader( tree );
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var cursorContext = contextFactory.create("tracePageCache");
+        var reader = new DefaultTokenIndexReader(tree);
         var tokenClient = new SimpleEntityTokenClient();
-        reader.query( tokenClient, unconstrained(), new TokenPredicate( labelId ), cursorContext );
+        reader.query(tokenClient, unconstrained(), new TokenPredicate(labelId), cursorContext);
         int actualNodes = 0;
-        while ( tokenClient.next() )
-        {
+        while (tokenClient.next()) {
             actualNodes++;
         }
 
         // THEN the page cache access is traced
-        assertThat( actualNodes ).isEqualTo( expectedNodes );
+        assertThat(actualNodes).isEqualTo(expectedNodes);
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
-        assertThat( cursorTracer.faults() ).isEqualTo( 0 );
+        assertThat(cursorTracer.pins()).isEqualTo(1);
+        assertThat(cursorTracer.unpins()).isEqualTo(1);
+        assertThat(cursorTracer.hits()).isEqualTo(1);
+        assertThat(cursorTracer.faults()).isEqualTo(0);
     }
 
     @Test
-    void shouldStartFromGivenIdDense() throws IOException, IndexEntryConflictException
-    {
-        shouldStartFromGivenId( 10 );
+    void shouldStartFromGivenIdDense() throws IOException, IndexEntryConflictException {
+        shouldStartFromGivenId(10);
     }
 
     @Test
-    void shouldStartFromGivenIdSparse() throws IOException, IndexEntryConflictException
-    {
-        shouldStartFromGivenId( 100 );
+    void shouldStartFromGivenIdSparse() throws IOException, IndexEntryConflictException {
+        shouldStartFromGivenId(100);
     }
 
     @Test
-    void shouldStartFromGivenIdSuperSparse() throws IOException, IndexEntryConflictException
-    {
-        shouldStartFromGivenId( 1000 );
+    void shouldStartFromGivenIdSuperSparse() throws IOException, IndexEntryConflictException {
+        shouldStartFromGivenId(1000);
     }
 
-    private void shouldStartFromGivenId( int sparsity ) throws IOException, IndexEntryConflictException
-    {
+    private void shouldStartFromGivenId(int sparsity) throws IOException, IndexEntryConflictException {
         // given
         int labelId = 1;
         int highNodeId = 100_000;
-        BitSet expected = new BitSet( highNodeId );
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( highNodeId ) )
-        {
-            writer.initialize( tree.writer( NULL_CONTEXT ) );
+        BitSet expected = new BitSet(highNodeId);
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(highNodeId)) {
+            writer.initialize(tree.writer(NULL_CONTEXT));
             int updates = highNodeId / sparsity;
-            for ( int i = 0; i < updates; i++ )
-            {
-                int nodeId = random.nextInt( highNodeId );
-                writer.process( TokenIndexEntryUpdate.change( nodeId, null, EMPTY_LONG_ARRAY, new long[]{labelId} ) );
-                expected.set( nodeId );
+            for (int i = 0; i < updates; i++) {
+                int nodeId = random.nextInt(highNodeId);
+                writer.process(TokenIndexEntryUpdate.change(nodeId, null, EMPTY_LONG_ARRAY, new long[] {labelId}));
+                expected.set(nodeId);
             }
         }
 
         // when
-        long fromId = random.nextInt( highNodeId );
-        int nextExpectedId = expected.nextSetBit( toIntExact( fromId ) );
+        long fromId = random.nextInt(highNodeId);
+        int nextExpectedId = expected.nextSetBit(toIntExact(fromId));
 
-        var reader = new DefaultTokenIndexReader( tree );
+        var reader = new DefaultTokenIndexReader(tree);
         var tokenClient = new SimpleEntityTokenClient();
-        reader.query( tokenClient, unconstrained(), new TokenPredicate( labelId ), EntityRange.from( fromId ), NULL_CONTEXT );
-        while ( nextExpectedId != -1 )
-        {
-            assertTrue( tokenClient.next() );
-            assertThat( toIntExact( tokenClient.reference ) ).isEqualTo( nextExpectedId );
-            nextExpectedId = expected.nextSetBit( nextExpectedId + 1 );
+        reader.query(tokenClient, unconstrained(), new TokenPredicate(labelId), EntityRange.from(fromId), NULL_CONTEXT);
+        while (nextExpectedId != -1) {
+            assertTrue(tokenClient.next());
+            assertThat(toIntExact(tokenClient.reference)).isEqualTo(nextExpectedId);
+            nextExpectedId = expected.nextSetBit(nextExpectedId + 1);
         }
-        assertFalse( tokenClient.next() );
+        assertFalse(tokenClient.next());
     }
 }

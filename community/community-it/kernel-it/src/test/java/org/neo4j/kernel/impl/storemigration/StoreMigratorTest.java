@@ -19,15 +19,31 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat.standard;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.function.Consumer;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.function.Suppliers;
@@ -56,223 +72,210 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat.standard;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @PageCacheExtension
 @Neo4jLayoutExtension
-class StoreMigratorTest
-{
+class StoreMigratorTest {
     @Inject
     private Neo4jLayout neo4jLayout;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private FileSystemAbstraction fs;
 
-    private final IndexProviderMap indexProviderMap = mock( IndexProviderMap.class );
+    private final IndexProviderMap indexProviderMap = mock(IndexProviderMap.class);
     private final JobScheduler jobScheduler = new ThreadPoolJobScheduler();
 
     private RecordDatabaseLayout databaseLayout;
 
     @BeforeEach
-    void setUp()
-    {
-        databaseLayout = RecordDatabaseLayout.of( neo4jLayout, DEFAULT_DATABASE_NAME );
-        var dbms = new TestDatabaseManagementServiceBuilder( neo4jLayout.homeDirectory() )
-                .setConfig( GraphDatabaseSettings.record_format_created_db, standard )
+    void setUp() {
+        databaseLayout = RecordDatabaseLayout.of(neo4jLayout, DEFAULT_DATABASE_NAME);
+        var dbms = new TestDatabaseManagementServiceBuilder(neo4jLayout.homeDirectory())
+                .setConfig(GraphDatabaseSettings.record_format_created_db, standard)
                 .build();
         dbms.shutdown();
     }
 
     @AfterEach
-    void tearDown() throws Exception
-    {
+    void tearDown() throws Exception {
         jobScheduler.close();
     }
 
     @Test
-    void shouldForbidRegistrationOfParticipantsWithSameName() throws IOException
-    {
-        var participant = mock( StoreMigrationParticipant.class );
-        when( participant.getName() ).thenReturn( RecordStorageMigrator.NAME );
+    void shouldForbidRegistrationOfParticipantsWithSameName() throws IOException {
+        var participant = mock(StoreMigrationParticipant.class);
+        when(participant.getName()).thenReturn(RecordStorageMigrator.NAME);
 
-        mockParticipantAddition( participant );
+        mockParticipantAddition(participant);
         var storeMigrator = createMigrator();
 
-        var exception = assertThrows( IllegalStateException.class,
-                () -> storeMigrator.migrateIfNeeded( PageAligned.LATEST_NAME ) );
-        assertThat( exception ).hasMessage( "Migration participants should have unique names. Participant with name: 'Store files' is already registered." );
+        var exception =
+                assertThrows(IllegalStateException.class, () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME));
+        assertThat(exception)
+                .hasMessage(
+                        "Migration participants should have unique names. Participant with name: 'Store files' is already registered.");
     }
 
     @Test
-    void shouldContinueMovingFilesIfInterruptedDuringMovingPhase() throws Exception
-    {
+    void shouldContinueMovingFilesIfInterruptedDuringMovingPhase() throws Exception {
         var storeMigrator = createMigrator();
         // a participant that will fail during the moving phase
-        var failingParticipant = mock( StoreMigrationParticipant.class );
-        when( failingParticipant.getName() ).thenReturn( "Failing" );
-        doThrow( new IOException( "Just failing" ) ).when( failingParticipant ).moveMigratedFiles( any(), any(), any(), any() );
-        mockParticipantAddition( failingParticipant );
+        var failingParticipant = mock(StoreMigrationParticipant.class);
+        when(failingParticipant.getName()).thenReturn("Failing");
+        doThrow(new IOException("Just failing")).when(failingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        mockParticipantAddition(failingParticipant);
 
-        var exception = assertThrows( UnableToMigrateException.class,
-                () -> storeMigrator.migrateIfNeeded( PageAligned.LATEST_NAME ) );
-        assertThat( exception ).hasMessage( "A critical failure during migration has occurred. Failed to move migrated files into place" )
-                               .hasRootCauseExactlyInstanceOf( IOException.class )
-                               .hasRootCauseMessage( "Just failing" );
+        var exception = assertThrows(
+                UnableToMigrateException.class, () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME));
+        assertThat(exception)
+                .hasMessage(
+                        "A critical failure during migration has occurred. Failed to move migrated files into place")
+                .hasRootCauseExactlyInstanceOf(IOException.class)
+                .hasRootCauseMessage("Just failing");
 
-        assertTrue( migrationDirPresent() );
+        assertTrue(migrationDirPresent());
 
-        StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
-        mockParticipantAddition( observingParticipant );
+        StoreMigrationParticipant observingParticipant = Mockito.mock(StoreMigrationParticipant.class);
+        mockParticipantAddition(observingParticipant);
 
-        storeMigrator.migrateIfNeeded( PageAligned.LATEST_NAME );
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME);
 
         // migrate not called ...
-        verify( observingParticipant, never() ).migrate( any(), any(), any(), any(), any(), any(), any() );
+        verify(observingParticipant, never()).migrate(any(), any(), any(), any(), any(), any(), any());
         // ... but move and clean up yes
-        verify( observingParticipant ).moveMigratedFiles( any(), any(), any(), any() );
-        verify( observingParticipant ).cleanup( any( DatabaseLayout.class ) );
+        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat( PageAligned.LATEST_RECORD_FORMATS.storeVersion() );
+        verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS.storeVersion());
 
-        assertFalse( migrationDirPresent() );
+        assertFalse(migrationDirPresent());
     }
 
     @Test
-    void shouldRedoTheEntireMigrationIfInterruptedDuringMigrationPhase() throws Exception
-    {
+    void shouldRedoTheEntireMigrationIfInterruptedDuringMigrationPhase() throws Exception {
         var storeMigrator = createMigrator();
         // a participant that will fail during the migration phase
-        var failingParticipant = mock( StoreMigrationParticipant.class );
-        when( failingParticipant.getName() ).thenReturn( "Failing" );
-        doThrow( new IOException( "Just failing" ) ).when( failingParticipant ).migrate( any(), any(), any(), any(), any(), any(), any() );
-        mockParticipantAddition( failingParticipant );
+        var failingParticipant = mock(StoreMigrationParticipant.class);
+        when(failingParticipant.getName()).thenReturn("Failing");
+        doThrow(new IOException("Just failing"))
+                .when(failingParticipant)
+                .migrate(any(), any(), any(), any(), any(), any(), any());
+        mockParticipantAddition(failingParticipant);
 
-        var exception = assertThrows( UnableToMigrateException.class,
-                () -> storeMigrator.migrateIfNeeded( PageAligned.LATEST_NAME ) );
-        assertThat( exception ).hasMessage( "A critical failure during migration has occurred" )
-                               .hasRootCauseExactlyInstanceOf( IOException.class )
-                               .hasRootCauseMessage( "Just failing" );
+        var exception = assertThrows(
+                UnableToMigrateException.class, () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME));
+        assertThat(exception)
+                .hasMessage("A critical failure during migration has occurred")
+                .hasRootCauseExactlyInstanceOf(IOException.class)
+                .hasRootCauseMessage("Just failing");
 
-        StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
-        mockParticipantAddition( observingParticipant );
+        StoreMigrationParticipant observingParticipant = Mockito.mock(StoreMigrationParticipant.class);
+        mockParticipantAddition(observingParticipant);
 
-        storeMigrator.migrateIfNeeded( PageAligned.LATEST_NAME );
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME);
 
-        verify( observingParticipant ).migrate( any(), any(), any(), any(), any(), any(), any() );
-        verify( observingParticipant ).moveMigratedFiles( any(), any(), any(), any() );
-        verify( observingParticipant ).cleanup( any( DatabaseLayout.class ) );
+        verify(observingParticipant).migrate(any(), any(), any(), any(), any(), any(), any());
+        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat( PageAligned.LATEST_RECORD_FORMATS.storeVersion() );
+        verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS.storeVersion());
 
-        assertFalse( migrationDirPresent() );
+        assertFalse(migrationDirPresent());
     }
 
     @Test
-    void shouldGiveProgressMonitorProgressMessages() throws Exception
-    {
+    void shouldGiveProgressMonitorProgressMessages() throws Exception {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        LogService logService = mock( LogService.class );
-        when( logService.getInternalLogProvider() ).thenReturn( logProvider );
-        when( logService.getInternalLog( any() ) ).thenReturn( logProvider.getLog( "something" ) );
+        LogService logService = mock(LogService.class);
+        when(logService.getInternalLogProvider()).thenReturn(logProvider);
+        when(logService.getInternalLog(any())).thenReturn(logProvider.getLog("something"));
 
-        var storeMigrator = createMigrator( logService );
-        storeMigrator.migrateIfNeeded( PageAligned.LATEST_NAME );
+        var storeMigrator = createMigrator(logService);
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME);
 
-        assertThat( logProvider ).containsMessages(
-                // a couple of randomly selected expected log entries:
-                "Migrating Store files",
-                "10% completed",
-                "40% completed",
-                "70% completed",
-                "Successfully finished migration of database"
-        );
+        assertThat(logProvider)
+                .containsMessages(
+                        // a couple of randomly selected expected log entries:
+                        "Migrating Store files",
+                        "10% completed",
+                        "40% completed",
+                        "70% completed",
+                        "Successfully finished migration of database");
     }
 
-    private boolean migrationDirPresent()
-    {
-        var path = databaseLayout.file( StoreMigrator.MIGRATION_DIRECTORY );
-        return Files.exists( path );
+    private boolean migrationDirPresent() {
+        var path = databaseLayout.file(StoreMigrator.MIGRATION_DIRECTORY);
+        return Files.exists(path);
     }
 
-    private void verifyDbStartAndFormat( String expectedStoreVersion )
-    {
-        var dbms = new TestDatabaseManagementServiceBuilder( neo4jLayout.homeDirectory() )
-                .build();
-        try
-        {
-            var db = dbms.database( DEFAULT_DATABASE_NAME );
+    private void verifyDbStartAndFormat(String expectedStoreVersion) {
+        var dbms = new TestDatabaseManagementServiceBuilder(neo4jLayout.homeDirectory()).build();
+        try {
+            var db = dbms.database(DEFAULT_DATABASE_NAME);
             // let's check the DB is operational
             db.beginTx().close();
 
             var dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
-            var storageEngineFactory = dependencyResolver.resolveDependency( StorageEngineFactory.class );
-            var cursorContextFactory = dependencyResolver.resolveDependency( CursorContextFactory.class );
+            var storageEngineFactory = dependencyResolver.resolveDependency(StorageEngineFactory.class);
+            var cursorContextFactory = dependencyResolver.resolveDependency(CursorContextFactory.class);
             var storeVersionCheck = storageEngineFactory.versionCheck(
-                    dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
-                    dependencyResolver.resolveDependency( DatabaseLayout.class ),
-                    dependencyResolver.resolveDependency( Config.class ),
-                    dependencyResolver.resolveDependency( PageCache.class ),
-                    dependencyResolver.resolveDependency( LogService.class ),
-                    cursorContextFactory
-            );
-            try ( var cursorContext = cursorContextFactory.create( "Test" ) )
-            {
-                var storeVersion = storeVersionCheck.storeVersion( cursorContext ).orElseThrow();
-                assertEquals( expectedStoreVersion, storeVersion );
+                    dependencyResolver.resolveDependency(FileSystemAbstraction.class),
+                    dependencyResolver.resolveDependency(DatabaseLayout.class),
+                    dependencyResolver.resolveDependency(Config.class),
+                    dependencyResolver.resolveDependency(PageCache.class),
+                    dependencyResolver.resolveDependency(LogService.class),
+                    cursorContextFactory);
+            try (var cursorContext = cursorContextFactory.create("Test")) {
+                var storeVersion = storeVersionCheck.storeVersion(cursorContext).orElseThrow();
+                assertEquals(expectedStoreVersion, storeVersion);
             }
-        }
-        finally
-        {
+        } finally {
             dbms.shutdown();
         }
     }
 
-    private void mockParticipantAddition( StoreMigrationParticipant participant )
-    {
-        reset( indexProviderMap );
-        IndexProvider indexProvider = mock( IndexProvider.class );
-        doAnswer( invocation ->
-        {
-            Object[] args = invocation.getArguments();
-            Consumer<IndexProvider> consumer = (Consumer<IndexProvider>) args[0];
-            consumer.accept( indexProvider );
-            return null;
-        } ).when( indexProviderMap ).accept( any() );
-        when( indexProvider.storeMigrationParticipant( any(), any(), any(), any() ) ).thenReturn( participant );
+    private void mockParticipantAddition(StoreMigrationParticipant participant) {
+        reset(indexProviderMap);
+        IndexProvider indexProvider = mock(IndexProvider.class);
+        doAnswer(invocation -> {
+                    Object[] args = invocation.getArguments();
+                    Consumer<IndexProvider> consumer = (Consumer<IndexProvider>) args[0];
+                    consumer.accept(indexProvider);
+                    return null;
+                })
+                .when(indexProviderMap)
+                .accept(any());
+        when(indexProvider.storeMigrationParticipant(any(), any(), any(), any()))
+                .thenReturn(participant);
     }
 
-    private StoreMigrator createMigrator() throws IOException
-    {
-        return createMigrator( NullLogService.getInstance() );
+    private StoreMigrator createMigrator() throws IOException {
+        return createMigrator(NullLogService.getInstance());
     }
 
-    private StoreMigrator createMigrator( LogService logService ) throws IOException
-    {
+    private StoreMigrator createMigrator(LogService logService) throws IOException {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+        var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
         var config = Config.defaults();
 
-        var logTail = new LogTailExtractor( fs, pageCache, config, storageEngineFactory, DatabaseTracers.EMPTY ).getTailMetadata( databaseLayout, INSTANCE );
-        var supplier = Suppliers.lazySingleton( () -> logTail );
+        var logTail = new LogTailExtractor(fs, pageCache, config, storageEngineFactory, DatabaseTracers.EMPTY)
+                .getTailMetadata(databaseLayout, INSTANCE);
+        var supplier = Suppliers.lazySingleton(() -> logTail);
 
-        return new StoreMigrator( fs, config, logService, pageCache, PageCacheTracer.NULL, jobScheduler, databaseLayout,
-                storageEngineFactory, indexProviderMap, contextFactory, INSTANCE, supplier );
+        return new StoreMigrator(
+                fs,
+                config,
+                logService,
+                pageCache,
+                PageCacheTracer.NULL,
+                jobScheduler,
+                databaseLayout,
+                storageEngineFactory,
+                indexProviderMap,
+                contextFactory,
+                INSTANCE,
+                supplier);
     }
 }

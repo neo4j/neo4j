@@ -19,6 +19,10 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
+import static javax.lang.model.element.Modifier.PUBLIC;
+import static javax.lang.model.element.Modifier.STATIC;
+import static javax.lang.model.util.ElementFilter.fieldsIn;
+
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.lang.model.element.Element;
@@ -28,57 +32,51 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.util.SimpleTypeVisitor8;
 import javax.lang.model.util.Types;
-
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.RecordTypeError;
 
-import static javax.lang.model.element.Modifier.PUBLIC;
-import static javax.lang.model.element.Modifier.STATIC;
-import static javax.lang.model.util.ElementFilter.fieldsIn;
-
-class RecordTypeVisitor extends SimpleTypeVisitor8<Stream<CompilationMessage>,Void>
-{
+class RecordTypeVisitor extends SimpleTypeVisitor8<Stream<CompilationMessage>, Void> {
 
     private final Types typeUtils;
-    private final TypeVisitor<Boolean,Void> fieldTypeVisitor;
+    private final TypeVisitor<Boolean, Void> fieldTypeVisitor;
 
-    RecordTypeVisitor( Types typeUtils, TypeMirrorUtils typeMirrors )
-    {
+    RecordTypeVisitor(Types typeUtils, TypeMirrorUtils typeMirrors) {
         this.typeUtils = typeUtils;
-        fieldTypeVisitor = new RecordFieldTypeVisitor( typeUtils, typeMirrors );
+        fieldTypeVisitor = new RecordFieldTypeVisitor(typeUtils, typeMirrors);
     }
 
     @Override
-    public Stream<CompilationMessage> visitDeclared( DeclaredType returnType, Void ignored )
-    {
-        return returnType.getTypeArguments().stream().flatMap( this::validateRecord );
+    public Stream<CompilationMessage> visitDeclared(DeclaredType returnType, Void ignored) {
+        return returnType.getTypeArguments().stream().flatMap(this::validateRecord);
     }
 
-    private Stream<CompilationMessage> validateRecord( TypeMirror recordType )
-    {
-        Element recordElement = typeUtils.asElement( recordType );
-        return Stream.concat( validateFieldModifiers( recordElement ), validateFieldType( recordElement ) );
+    private Stream<CompilationMessage> validateRecord(TypeMirror recordType) {
+        Element recordElement = typeUtils.asElement(recordType);
+        return Stream.concat(validateFieldModifiers(recordElement), validateFieldType(recordElement));
     }
 
-    private Stream<CompilationMessage> validateFieldModifiers( Element recordElement )
-    {
-        return fieldsIn( recordElement.getEnclosedElements() ).stream().filter( element ->
-        {
-            Set<Modifier> modifiers = element.getModifiers();
-            return !modifiers.contains( PUBLIC ) && !modifiers.contains( STATIC );
-        } ).map( element -> new RecordTypeError( element, "Record definition error: field %s#%s must be public",
-                recordElement.getSimpleName(), element.getSimpleName() ) );
+    private Stream<CompilationMessage> validateFieldModifiers(Element recordElement) {
+        return fieldsIn(recordElement.getEnclosedElements()).stream()
+                .filter(element -> {
+                    Set<Modifier> modifiers = element.getModifiers();
+                    return !modifiers.contains(PUBLIC) && !modifiers.contains(STATIC);
+                })
+                .map(element -> new RecordTypeError(
+                        element,
+                        "Record definition error: field %s#%s must be public",
+                        recordElement.getSimpleName(),
+                        element.getSimpleName()));
     }
 
-    private Stream<CompilationMessage> validateFieldType( Element recordElement )
-    {
-        return fieldsIn( recordElement.getEnclosedElements() ).stream()
-                .filter( element -> !element.getModifiers().contains( STATIC ) )
-                .filter( element -> !fieldTypeVisitor.visit( element.asType() ) )
-                .map( element -> new RecordTypeError( element,
-                        "Record definition error: type of field %s#%s is not supported", recordElement.getSimpleName(),
-                        element.getSimpleName() ) );
+    private Stream<CompilationMessage> validateFieldType(Element recordElement) {
+        return fieldsIn(recordElement.getEnclosedElements()).stream()
+                .filter(element -> !element.getModifiers().contains(STATIC))
+                .filter(element -> !fieldTypeVisitor.visit(element.asType()))
+                .map(element -> new RecordTypeError(
+                        element,
+                        "Record definition error: type of field %s#%s is not supported",
+                        recordElement.getSimpleName(),
+                        element.getSimpleName()));
     }
-
 }

@@ -62,7 +62,8 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("should return input context if query has mutating patterns before renaming") {
-    val plannerQuery = buildSinglePlannerQuery("MATCH (n:Label) CREATE (:NewLabel) WITH n.prop AS prop RETURN min(prop)")
+    val plannerQuery =
+      buildSinglePlannerQuery("MATCH (n:Label) CREATE (:NewLabel) WITH n.prop AS prop RETURN min(prop)")
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
     assertContextNotUpdated(result)
@@ -120,7 +121,9 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("should return updated context for LOAD CSV before aggregation") {
-    val plannerQuery = buildSinglePlannerQuery("LOAD CSV WITH HEADERS FROM '$url' AS row MATCH (n) WHERE toInteger(row.Value) > 20 RETURN count(n.prop)")
+    val plannerQuery = buildSinglePlannerQuery(
+      "LOAD CSV WITH HEADERS FROM '$url' AS row MATCH (n) WHERE toInteger(row.Value) > 20 RETURN count(n.prop)"
+    )
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
     assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
@@ -134,9 +137,10 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
       outputSignature = Some(IndexedSeq(FieldSignature("label", CTString))),
       deprecationInfo = None,
       accessMode = ProcedureReadOnlyAccess,
-      id = 8,
-   )))
-    val plannerQuery = buildSinglePlannerQuery("MATCH (n) CALL db.labels() YIELD label RETURN count(n.prop)", procedureLookup = lookup)
+      id = 8
+    )))
+    val plannerQuery =
+      buildSinglePlannerQuery("MATCH (n) CALL db.labels() YIELD label RETURN count(n.prop)", procedureLookup = lookup)
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
     assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
@@ -179,7 +183,11 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = context
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("m", "foo"), PropertyAccess("m", "bar")))
+    assertContextUpdated(
+      result,
+      Set(),
+      Set(PropertyAccess("n", "prop"), PropertyAccess("m", "foo"), PropertyAccess("m", "bar"))
+    )
   }
 
   test("should find property accesses from same pattern") {
@@ -187,7 +195,11 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = context
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("r", "foo"), PropertyAccess("r", "bar")))
+    assertContextUpdated(
+      result,
+      Set(),
+      Set(PropertyAccess("n", "prop"), PropertyAccess("r", "foo"), PropertyAccess("r", "bar"))
+    )
   }
 
   test("does not find property accesses from beyond horizon") {
@@ -203,10 +215,14 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     newContext should equal(context)
   }
 
-  private def assertContextUpdated(newContext: LogicalPlanningContext,
-                                   expectedAggregatingProperties: Set[PropertyAccess],
-                                   expectedAccessedProperties: Set[PropertyAccess] = Set()): Unit = {
-    newContext.indexCompatiblePredicatesProviderContext.aggregatingProperties should equal(expectedAggregatingProperties)
+  private def assertContextUpdated(
+    newContext: LogicalPlanningContext,
+    expectedAggregatingProperties: Set[PropertyAccess],
+    expectedAccessedProperties: Set[PropertyAccess] = Set()
+  ): Unit = {
+    newContext.indexCompatiblePredicatesProviderContext.aggregatingProperties should equal(
+      expectedAggregatingProperties
+    )
     newContext.accessedProperties should equal(expectedAccessedProperties)
     newContext should not equal context
   }

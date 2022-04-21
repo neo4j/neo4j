@@ -19,17 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.io.IOException
-import java.io.InputStream
-import java.net.CookieHandler
-import java.net.CookieManager
-import java.net.CookiePolicy
-import java.net.URL
-import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
-import java.util.zip.GZIPInputStream
-import java.util.zip.InflaterInputStream
-
 import org.neo4j.csv.reader.BufferOverflowException
 import org.neo4j.csv.reader.CharReadable
 import org.neo4j.csv.reader.CharSeekers
@@ -46,6 +35,17 @@ import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
+
+import java.io.IOException
+import java.io.InputStream
+import java.net.CookieHandler
+import java.net.CookieManager
+import java.net.CookiePolicy
+import java.net.URL
+import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
+import java.util.zip.GZIPInputStream
+import java.util.zip.InflaterInputStream
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -76,11 +76,13 @@ case class CSVResource(url: URL, resource: AutoCloseable) extends DefaultCloseLi
 
 class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource {
 
-  def getCsvIterator(url: URL,
-                     fieldTerminator: Option[String],
-                     legacyCsvQuoteEscaping: Boolean,
-                     bufferSize: Int,
-                     headers: Boolean = false): LoadCsvIterator = {
+  def getCsvIterator(
+    url: URL,
+    fieldTerminator: Option[String],
+    legacyCsvQuoteEscaping: Boolean,
+    bufferSize: Int,
+    headers: Boolean = false
+  ): LoadCsvIterator = {
 
     val reader: CharReadable = getReader(url)
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
@@ -108,7 +110,7 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
             if (mark.isEndOfLine) return if (buffer.isEmpty) null else buffer.toArray
           }
         } catch {
-          //TODO change to error message mentioning `dbms.import.csv.buffer_size` in 4.0
+          // TODO change to error message mentioning `dbms.import.csv.buffer_size` in 4.0
           case e: BufferOverflowException => throw new CypherExecutionException(e.getMessage, e)
         }
 
@@ -134,18 +136,25 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     }
   }
 
-  private def getReader(url: URL) = try {
-    val reader = if (url.getProtocol == "file") {
-      Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI))
-    } else {
-      val inputStream = openStream(url)
-      Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8, 0 /*length doesn't matter in this context*/)
+  private def getReader(url: URL) =
+    try {
+      val reader =
+        if (url.getProtocol == "file") {
+          Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI))
+        } else {
+          val inputStream = openStream(url)
+          Readables.wrap(
+            inputStream,
+            url.toString,
+            StandardCharsets.UTF_8,
+            0 /*length doesn't matter in this context*/
+          )
+        }
+      reader
+    } catch {
+      case e: IOException =>
+        throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
     }
-    reader
-  } catch {
-    case e: IOException =>
-      throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
-  }
 
   private def openStream(url: URL, connectionTimeout: Int = 2000, readTimeout: Int = 10 * 60 * 1000): InputStream = {
     if (url.getProtocol.startsWith("http"))
@@ -156,9 +165,9 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     con.setReadTimeout(readTimeout)
     val stream = con.getInputStream
     con.getContentEncoding match {
-      case "gzip" => new GZIPInputStream(stream)
+      case "gzip"    => new GZIPInputStream(stream)
       case "deflate" => new InflaterInputStream(stream)
-      case _ => stream
+      case _         => stream
     }
   }
 
@@ -185,4 +194,3 @@ object TheCookieManager {
     cookieManager
   }
 }
-

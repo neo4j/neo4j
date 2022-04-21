@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static java.util.Arrays.copyOfRange;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.EnumSet;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -44,8 +44,6 @@ import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
-import static java.util.Arrays.copyOfRange;
-
 /**
  * Testing utility which takes a fully functional {@link GenericNativeIndexProviderFactory} and turns it into a provider which
  * is guaranteed to fail for various reasons, e.g. failing index population with the goal of creating an index which is in a
@@ -60,15 +58,13 @@ import static java.util.Arrays.copyOfRange;
  *     .newEmbeddedDatabase( dir );
  * </pre>
  */
-public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingIndexProviderFactory
-{
+public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingIndexProviderFactory {
     public static final String INITIAL_STATE_FAILURE_MESSAGE = "Override initial state as failed";
     public static final String POPULATION_FAILURE_MESSAGE = "Fail on update during population";
 
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "failing-provider", "0.1" );
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("failing-provider", "0.1");
 
-    public enum FailureType
-    {
+    public enum FailureType {
         POPULATION,
         INITIAL_STATE,
         SKIP_ONLINE_UPDATES
@@ -76,42 +72,40 @@ public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingI
 
     private final EnumSet<FailureType> failureTypes;
 
-    public FailingGenericNativeIndexProviderFactory( FailureType... failureTypes )
-    {
-        this( new GenericNativeIndexProviderFactory(), failureTypes );
+    public FailingGenericNativeIndexProviderFactory(FailureType... failureTypes) {
+        this(new GenericNativeIndexProviderFactory(), failureTypes);
     }
 
-    public FailingGenericNativeIndexProviderFactory( AbstractIndexProviderFactory<?> indexProviderFactory, FailureType... failureTypes )
-    {
-        super( indexProviderFactory, DESCRIPTOR );
-        if ( failureTypes.length == 0 )
-        {
-            throw new IllegalArgumentException( "At least one failure type, otherwise there's no point in this provider" );
+    public FailingGenericNativeIndexProviderFactory(
+            AbstractIndexProviderFactory<?> indexProviderFactory, FailureType... failureTypes) {
+        super(indexProviderFactory, DESCRIPTOR);
+        if (failureTypes.length == 0) {
+            throw new IllegalArgumentException(
+                    "At least one failure type, otherwise there's no point in this provider");
         }
-        this.failureTypes = EnumSet.of( failureTypes[0], copyOfRange( failureTypes, 1, failureTypes.length ) );
+        this.failureTypes = EnumSet.of(failureTypes[0], copyOfRange(failureTypes, 1, failureTypes.length));
     }
 
     @Override
-    public IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
-    {
-        var actualProvider = super.newInstance( context, dependencies );
-        return new IndexProvider.Delegating( actualProvider )
-        {
+    public IndexProvider newInstance(ExtensionContext context, Dependencies dependencies) {
+        var actualProvider = super.newInstance(context, dependencies);
+        return new IndexProvider.Delegating(actualProvider) {
             @Override
-            public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                                                MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                                ImmutableSet<OpenOption> openOptions )
-            {
-                IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup,
-                                                                              openOptions );
-                if ( failureTypes.contains( FailureType.POPULATION ) )
-                {
-                    return new IndexPopulator.Delegating( actualPopulator )
-                    {
+            public IndexPopulator getPopulator(
+                    IndexDescriptor descriptor,
+                    IndexSamplingConfig samplingConfig,
+                    ByteBufferFactory bufferFactory,
+                    MemoryTracker memoryTracker,
+                    TokenNameLookup tokenNameLookup,
+                    ImmutableSet<OpenOption> openOptions) {
+                IndexPopulator actualPopulator = actualProvider.getPopulator(
+                        descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup, openOptions);
+                if (failureTypes.contains(FailureType.POPULATION)) {
+                    return new IndexPopulator.Delegating(actualPopulator) {
                         @Override
-                        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
-                        {
-                            throw new RuntimeException( POPULATION_FAILURE_MESSAGE );
+                        public void add(
+                                Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {
+                            throw new RuntimeException(POPULATION_FAILURE_MESSAGE);
                         }
                     };
                 }
@@ -119,25 +113,24 @@ public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingI
             }
 
             @Override
-            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                                    ImmutableSet<OpenOption> openOptions )
-                    throws IOException
-            {
-                IndexAccessor actualAccessor = actualProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, openOptions );
-                return new IndexAccessor.Delegating( actualAccessor )
-                {
+            public IndexAccessor getOnlineAccessor(
+                    IndexDescriptor descriptor,
+                    IndexSamplingConfig samplingConfig,
+                    TokenNameLookup tokenNameLookup,
+                    ImmutableSet<OpenOption> openOptions)
+                    throws IOException {
+                IndexAccessor actualAccessor =
+                        actualProvider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions);
+                return new IndexAccessor.Delegating(actualAccessor) {
                     @Override
-                    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-                    {
-                        IndexUpdater actualUpdater = actualAccessor.newUpdater( mode, cursorContext, parallel );
-                        return new DelegatingIndexUpdater( actualUpdater )
-                        {
+                    public IndexUpdater newUpdater(
+                            IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+                        IndexUpdater actualUpdater = actualAccessor.newUpdater(mode, cursorContext, parallel);
+                        return new DelegatingIndexUpdater(actualUpdater) {
                             @Override
-                            public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
-                            {
-                                if ( !failureTypes.contains( FailureType.SKIP_ONLINE_UPDATES ) )
-                                {
-                                    super.process( update );
+                            public void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException {
+                                if (!failureTypes.contains(FailureType.SKIP_ONLINE_UPDATES)) {
+                                    super.process(update);
                                 }
                             }
                         };
@@ -146,19 +139,19 @@ public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingI
             }
 
             @Override
-            public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
-                                                ImmutableSet<OpenOption> openOptions )
-            {
-                return failureTypes.contains( FailureType.INITIAL_STATE ) ? INITIAL_STATE_FAILURE_MESSAGE
-                                                                          : actualProvider.getPopulationFailure( descriptor, cursorContext, openOptions );
+            public String getPopulationFailure(
+                    IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+                return failureTypes.contains(FailureType.INITIAL_STATE)
+                        ? INITIAL_STATE_FAILURE_MESSAGE
+                        : actualProvider.getPopulationFailure(descriptor, cursorContext, openOptions);
             }
 
             @Override
-            public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
-                                                       ImmutableSet<OpenOption> openOptions )
-            {
-                return failureTypes.contains( FailureType.INITIAL_STATE ) ? InternalIndexState.FAILED
-                                                                          : actualProvider.getInitialState( descriptor, cursorContext, openOptions );
+            public InternalIndexState getInitialState(
+                    IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
+                return failureTypes.contains(FailureType.INITIAL_STATE)
+                        ? InternalIndexState.FAILED
+                        : actualProvider.getInitialState(descriptor, cursorContext, openOptions);
             }
         };
     }

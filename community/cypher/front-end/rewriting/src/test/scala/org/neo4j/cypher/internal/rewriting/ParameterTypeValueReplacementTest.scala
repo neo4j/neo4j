@@ -47,7 +47,10 @@ class ParameterTypeValueReplacementTest extends CypherFunSuite {
 
   test("multiple string parameters should be rewritten") {
     val params = Map("param1" -> CTString, "param2" -> CTString, "param3" -> CTString)
-    assertRewrite("MATCH (n) WHERE n.foo STARTS WITH $param1 AND n.bar ENDS WITH $param2 AND n.baz = $param3 RETURN n", params)
+    assertRewrite(
+      "MATCH (n) WHERE n.foo STARTS WITH $param1 AND n.bar ENDS WITH $param2 AND n.baz = $param3 RETURN n",
+      params
+    )
   }
 
   test("mixed parameters should be rewritten") {
@@ -60,13 +63,16 @@ class ParameterTypeValueReplacementTest extends CypherFunSuite {
     val nameGenerator = new AnonymousVariableNameGenerator
     val original: Statement = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)
 
-    original.folder.findAllByClass[Parameter].size should equal(parameterTypes.size) // make sure we use all given parameters in the query
+    original.folder.findAllByClass[Parameter].size should equal(
+      parameterTypes.size
+    ) // make sure we use all given parameters in the query
 
     val rewriter = parameterValueTypeReplacement(parameterTypes)
     val result = original.endoRewrite(rewriter)
 
     val rewrittenParameters: Seq[Parameter] = result.folder.findAllByClass[Parameter]
-    val rewrittenParameterTypes = rewrittenParameters.map(p => p.name -> parameterTypes.getOrElse(p.name, fail("something went wrong"))).toMap
+    val rewrittenParameterTypes =
+      rewrittenParameters.map(p => p.name -> parameterTypes.getOrElse(p.name, fail("something went wrong"))).toMap
     rewrittenParameterTypes should equal(parameterTypes)
   }
 }

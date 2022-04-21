@@ -46,15 +46,19 @@ class rewriteOrderByIdTest extends CypherFunSuite {
   }
 
   private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
-    val original = JavaCCParser.parse(originalQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
-    val expected = JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+    val original =
+      JavaCCParser.parse(originalQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+    val expected =
+      JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
 
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = rewriteOrderById(checkResult.state)
 
     val result = original.rewrite(rewriter)
-    assert(result === expected,
-      s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
+    assert(
+      result === expected,
+      s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
+    )
   }
 
   private def assertIsNotRewritten(query: String): Unit = {
@@ -64,6 +68,9 @@ class rewriteOrderByIdTest extends CypherFunSuite {
     val rewriter = rewriteOrderById(checkResult.state)
 
     val result = original.rewrite(rewriter)
-    assert(result === original, s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
+    assert(
+      result === original,
+      s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
+    )
   }
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -26,11 +29,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
@@ -44,70 +42,58 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
  * Sampler for non-unique Lucene schema index.
  * Internally uses terms and their document frequencies for sampling.
  */
-public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
-{
+public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler {
     private final IndexSearcher indexSearcher;
     private final IndexSamplingConfig indexSamplingConfig;
 
-    public NonUniqueLuceneIndexSampler( IndexSearcher indexSearcher, TaskCoordinator taskCoordinator,
-            IndexSamplingConfig indexSamplingConfig )
-    {
-        super( taskCoordinator );
+    public NonUniqueLuceneIndexSampler(
+            IndexSearcher indexSearcher, TaskCoordinator taskCoordinator, IndexSamplingConfig indexSamplingConfig) {
+        super(taskCoordinator);
         this.indexSearcher = indexSearcher;
         this.indexSamplingConfig = indexSamplingConfig;
     }
 
     @Override
-    public IndexSample sampleIndex( CursorContext cursorContext ) throws IndexNotFoundKernelException
-    {
-        try ( TaskCoordinator.Task task = newTask() )
-        {
-            NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( indexSamplingConfig.sampleSizeLimit() );
+    public IndexSample sampleIndex(CursorContext cursorContext) throws IndexNotFoundKernelException {
+        try (TaskCoordinator.Task task = newTask()) {
+            NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(indexSamplingConfig.sampleSizeLimit());
             IndexReader indexReader = indexSearcher.getIndexReader();
-            for ( LeafReaderContext readerContext : indexReader.leaves() )
-            {
-                try
-                {
-                    Set<String> fieldNames = getFieldNamesToSample( readerContext );
-                    for ( String fieldName : fieldNames )
-                    {
-                        Terms terms = readerContext.reader().terms( fieldName );
-                        if ( terms != null )
-                        {
+            for (LeafReaderContext readerContext : indexReader.leaves()) {
+                try {
+                    Set<String> fieldNames = getFieldNamesToSample(readerContext);
+                    for (String fieldName : fieldNames) {
+                        Terms terms = readerContext.reader().terms(fieldName);
+                        if (terms != null) {
                             TermsEnum termsEnum = terms.iterator();
                             BytesRef termsRef;
-                            while ( (termsRef = termsEnum.next()) != null )
-                            {
-                               // Note from Lucene docs:
-                               // "Once a document is deleted it will not appear in search results.
-                               // The presence of this document may still be reflected in the docFreq statistics, and thus alter search scores,
-                               // though this will be corrected eventually as segments containing deletions are merged."
-                                sampler.include( termsRef.utf8ToString(), termsEnum.docFreq() );
-                                checkCancellation( task );
+                            while ((termsRef = termsEnum.next()) != null) {
+                                // Note from Lucene docs:
+                                // "Once a document is deleted it will not appear in search results.
+                                // The presence of this document may still be reflected in the docFreq statistics, and
+                                // thus alter search scores,
+                                // though this will be corrected eventually as segments containing deletions are
+                                // merged."
+                                sampler.include(termsRef.utf8ToString(), termsEnum.docFreq());
+                                checkCancellation(task);
                             }
                         }
                     }
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             }
 
-            return sampler.sample( indexReader.numDocs(), cursorContext );
+            return sampler.sample(indexReader.numDocs(), cursorContext);
         }
     }
 
-    private static Set<String> getFieldNamesToSample( LeafReaderContext readerContext )
-    {
+    private static Set<String> getFieldNamesToSample(LeafReaderContext readerContext) {
         Set<String> fieldNames = new HashSet<>();
         LeafReader reader = readerContext.reader();
-        reader.getFieldInfos().forEach( info ->
-        {
+        reader.getFieldInfos().forEach(info -> {
             String name = info.name;
-            if ( !LuceneDocumentStructure.NODE_ID_KEY.equals( name ) )
-            {
-                fieldNames.add( name );
+            if (!LuceneDocumentStructure.NODE_ID_KEY.equals(name)) {
+                fieldNames.add(name);
             }
         });
         return fieldNames;

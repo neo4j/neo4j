@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class ArgumentTestBase[CONTEXT <: RuntimeContext](
-                                                            edition: Edition[CONTEXT],
-                                                            runtime: CypherRuntime[CONTEXT],
-                                                            sizeHint: Int
-                                                          ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should make argument available on the RHS of an Apply") {
     // given
-    val  input = inputValues((0 until sizeHint).map(Array[Any](_)):_*)
+    val input = inputValues((0 until sizeHint).map(Array[Any](_)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -52,7 +52,7 @@ abstract class ArgumentTestBase[CONTEXT <: RuntimeContext](
 
   test("should make argument available on the RHS of an Apply with limit") {
     // given
-    val  input = inputValues((0 until sizeHint).map(Array[Any](_)):_*)
+    val input = inputValues((0 until sizeHint).map(Array[Any](_)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

@@ -20,15 +20,11 @@
 package org.neo4j.procedure.builtin.routing;
 
 import java.util.Set;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.configuration.helpers.SocketAddress;
 
-public interface ClientRoutingDomainChecker extends SettingChangeListener<Set<String>>
-{
-    boolean shouldGetClientRouting( SocketAddress address );
+public interface ClientRoutingDomainChecker extends SettingChangeListener<Set<String>> {
+    boolean shouldGetClientRouting(SocketAddress address);
 
     boolean isEmpty();
 }

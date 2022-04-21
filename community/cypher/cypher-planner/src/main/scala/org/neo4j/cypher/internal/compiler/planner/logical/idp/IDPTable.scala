@@ -31,7 +31,8 @@ import scala.collection.mutable
 
 // Table used by IDPSolver to record optimal plans found so far
 //
-class IDPTable[Result]private(private val map: mutable.Map[SortedGoal, Result] = mutable.Map.empty[SortedGoal, Result]) extends IDPCache[Result] {
+class IDPTable[Result] private (private val map: mutable.Map[SortedGoal, Result] =
+  mutable.Map.empty[SortedGoal, Result]) extends IDPCache[Result] {
 
   def size: Int = map.size
 
@@ -61,7 +62,8 @@ class IDPTable[Result]private(private val map: mutable.Map[SortedGoal, Result] =
     toDrop.foreach(map.remove)
   }
 
-  override def toString: String = s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(sortedGoal => asGoal(sortedGoal).size).max})"
+  override def toString: String =
+    s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(sortedGoal => asGoal(sortedGoal).size).max})"
 }
 
 object IDPTable {
@@ -73,7 +75,7 @@ object IDPTable {
     override def equals(obj: Any): Boolean = {
       obj match {
         case that: SortedGoal => BitSetEquality.equalBitSets(this.bitSet, that.bitSet)
-        case _ => false
+        case _                => false
       }
     }
     override def hashCode(): Int = BitSetEquality.hashCode(this.bitSet)
@@ -83,7 +85,9 @@ object IDPTable {
     val builder = mutable.Map.newBuilder[SortedGoal, Result]
     if (seed.hasDefiniteSize)
       builder.sizeHint(seed.size)
-    seed.foreach { case ((goal, sorted), product) => builder += incorporateSort(Goal(registry.registerAll(goal)), sorted) -> product }
+    seed.foreach { case ((goal, sorted), product) =>
+      builder += incorporateSort(Goal(registry.registerAll(goal)), sorted) -> product
+    }
     new IDPTable[Result](builder.result())
   }
 
@@ -122,7 +126,7 @@ case class Goal(bitSet: BitSet) {
   override def equals(obj: Any): Boolean = {
     obj match {
       case that: Goal => BitSetEquality.equalBitSets(this.bitSet, that.bitSet)
-      case _ => false
+      case _          => false
     }
   }
   override def hashCode(): Int = BitSetEquality.hashCode(this.bitSet)

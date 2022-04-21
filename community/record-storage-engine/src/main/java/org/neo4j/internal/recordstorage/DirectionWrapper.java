@@ -25,122 +25,100 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
-public enum DirectionWrapper
-{
-    OUTGOING( RelationshipDirection.OUTGOING )
-    {
+public enum DirectionWrapper {
+    OUTGOING(RelationshipDirection.OUTGOING) {
         @Override
-        public long getNextRel( RelationshipGroupRecord group )
-        {
+        public long getNextRel(RelationshipGroupRecord group) {
             return group.getFirstOut();
         }
 
         @Override
-        public void setNextRel( RelationshipGroupRecord group, long firstNextRel )
-        {
-            group.setFirstOut( firstNextRel );
+        public void setNextRel(RelationshipGroupRecord group, long firstNextRel) {
+            group.setFirstOut(firstNextRel);
         }
 
         @Override
-        public boolean hasExternalDegrees( RelationshipGroupRecord group )
-        {
+        public boolean hasExternalDegrees(RelationshipGroupRecord group) {
             return group.hasExternalDegreesOut();
         }
 
         @Override
-        public void setHasExternalDegrees( RelationshipGroupRecord group )
-        {
-            group.setHasExternalDegreesOut( true );
+        public void setHasExternalDegrees(RelationshipGroupRecord group) {
+            group.setHasExternalDegreesOut(true);
         }
     },
-    INCOMING( RelationshipDirection.INCOMING )
-    {
+    INCOMING(RelationshipDirection.INCOMING) {
         @Override
-        public long getNextRel( RelationshipGroupRecord group )
-        {
+        public long getNextRel(RelationshipGroupRecord group) {
             return group.getFirstIn();
         }
 
         @Override
-        public void setNextRel( RelationshipGroupRecord group, long firstNextRel )
-        {
-            group.setFirstIn( firstNextRel );
+        public void setNextRel(RelationshipGroupRecord group, long firstNextRel) {
+            group.setFirstIn(firstNextRel);
         }
 
         @Override
-        public boolean hasExternalDegrees( RelationshipGroupRecord group )
-        {
+        public boolean hasExternalDegrees(RelationshipGroupRecord group) {
             return group.hasExternalDegreesIn();
         }
 
         @Override
-        public void setHasExternalDegrees( RelationshipGroupRecord group )
-        {
-            group.setHasExternalDegreesIn( true );
+        public void setHasExternalDegrees(RelationshipGroupRecord group) {
+            group.setHasExternalDegreesIn(true);
         }
     },
-    LOOP( RelationshipDirection.LOOP )
-    {
+    LOOP(RelationshipDirection.LOOP) {
         @Override
-        public long getNextRel( RelationshipGroupRecord group )
-        {
+        public long getNextRel(RelationshipGroupRecord group) {
             return group.getFirstLoop();
         }
 
         @Override
-        public void setNextRel( RelationshipGroupRecord group, long firstNextRel )
-        {
-            group.setFirstLoop( firstNextRel );
+        public void setNextRel(RelationshipGroupRecord group, long firstNextRel) {
+            group.setFirstLoop(firstNextRel);
         }
 
         @Override
-        public boolean hasExternalDegrees( RelationshipGroupRecord group )
-        {
+        public boolean hasExternalDegrees(RelationshipGroupRecord group) {
             return group.hasExternalDegreesLoop();
         }
 
         @Override
-        public void setHasExternalDegrees( RelationshipGroupRecord group )
-        {
-            group.setHasExternalDegreesLoop( true );
+        public void setHasExternalDegrees(RelationshipGroupRecord group) {
+            group.setHasExternalDegreesLoop(true);
         }
     };
 
-    DirectionWrapper( RelationshipDirection direction )
-    {
+    DirectionWrapper(RelationshipDirection direction) {
         this.direction = direction;
     }
 
     private final RelationshipDirection direction;
 
-    public abstract long getNextRel( RelationshipGroupRecord group );
+    public abstract long getNextRel(RelationshipGroupRecord group);
 
-    public abstract void setNextRel( RelationshipGroupRecord group, long firstNextRel );
+    public abstract void setNextRel(RelationshipGroupRecord group, long firstNextRel);
 
-    public abstract boolean hasExternalDegrees( RelationshipGroupRecord group );
+    public abstract boolean hasExternalDegrees(RelationshipGroupRecord group);
 
-    public abstract void setHasExternalDegrees( RelationshipGroupRecord group );
+    public abstract void setHasExternalDegrees(RelationshipGroupRecord group);
 
-    public RelationshipDirection direction()
-    {
+    public RelationshipDirection direction() {
         return direction;
     }
 
-    public static DirectionWrapper wrapDirection( RelationshipRecord rel, NodeRecord startNode )
-    {
+    public static DirectionWrapper wrapDirection(RelationshipRecord rel, NodeRecord startNode) {
         boolean isOut = rel.getFirstNode() == startNode.getId();
         boolean isIn = rel.getSecondNode() == startNode.getId();
         assert isOut || isIn;
-        if ( isOut && isIn )
-        {
+        if (isOut && isIn) {
             return LOOP;
         }
         return isOut ? OUTGOING : INCOMING;
     }
 
-    public static DirectionWrapper from( Direction direction )
-    {
+    public static DirectionWrapper from(Direction direction) {
         return direction == Direction.INCOMING ? INCOMING : direction == Direction.OUTGOING ? OUTGOING : LOOP;
     }
-
 }

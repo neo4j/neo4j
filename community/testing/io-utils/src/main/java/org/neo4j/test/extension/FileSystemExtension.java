@@ -21,34 +21,28 @@ package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-public abstract class FileSystemExtension<T extends FileSystemAbstraction> extends StatefulFieldExtension<T>
-{
+public abstract class FileSystemExtension<T extends FileSystemAbstraction> extends StatefulFieldExtension<T> {
     public static final String FILE_SYSTEM = "fileSystem";
-    public static final Namespace FILE_SYSTEM_NAMESPACE = Namespace.create( FILE_SYSTEM );
+    public static final Namespace FILE_SYSTEM_NAMESPACE = Namespace.create(FILE_SYSTEM);
 
     @Override
-    public void afterAll( ExtensionContext context ) throws Exception
-    {
-        T storedValue = getStoredValue( context );
-        if ( storedValue != null )
-        {
+    public void afterAll(ExtensionContext context) throws Exception {
+        T storedValue = getStoredValue(context);
+        if (storedValue != null) {
             storedValue.close();
         }
-        super.afterAll( context );
+        super.afterAll(context);
     }
 
     @Override
-    protected String getFieldKey()
-    {
+    protected String getFieldKey() {
         return FILE_SYSTEM;
     }
 
     @Override
-    protected Namespace getNameSpace()
-    {
+    protected Namespace getNameSpace() {
         return FILE_SYSTEM_NAMESPACE;
     }
 }

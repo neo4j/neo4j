@@ -21,7 +21,6 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.Iterator;
 import java.util.function.Function;
-
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -32,15 +31,14 @@ import org.neo4j.kernel.api.index.IndexSample;
 /**
  * Surface for getting schema information, such as fetching specific indexes or constraints.
  */
-public interface SchemaRead extends SchemaReadCore
-{
+public interface SchemaRead extends SchemaReadCore {
     /**
      * Acquire a reference to the index mapping the given {@code schema}, but without requiring a transaction to be open, and without taking any schema locks.
      *
      * @param schema The schema for which to look up an index.
      * @return An index matching the schema, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong.
      */
-    Iterator<IndexDescriptor> indexForSchemaNonTransactional( SchemaDescriptor schema );
+    Iterator<IndexDescriptor> indexForSchemaNonTransactional(SchemaDescriptor schema);
 
     /**
      * Acquire a reference to the index mapping the given {@code schema} and {@code indexType} without requiring a transaction to be open,
@@ -50,7 +48,7 @@ public interface SchemaRead extends SchemaReadCore
      * @param indexType Type of an index to look up.
      * @return An index matching the schema and type, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong.
      */
-    IndexDescriptor indexForSchemaAndIndexTypeNonTransactional( SchemaDescriptor schema, IndexType indexType );
+    IndexDescriptor indexForSchemaAndIndexTypeNonTransactional(SchemaDescriptor schema, IndexType indexType);
 
     /**
      * Acquire a reference to the index mapping the given {@code schema}, without taking any schema locks.
@@ -58,7 +56,7 @@ public interface SchemaRead extends SchemaReadCore
      * @param schema The schema for which to look up an index.
      * @return An index matching the schema, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong.
      */
-    Iterator<IndexDescriptor> indexForSchemaNonLocking( SchemaDescriptor schema );
+    Iterator<IndexDescriptor> indexForSchemaNonLocking(SchemaDescriptor schema);
 
     /**
      * Acquire a reference to the index matching the given {@code labelId}, without taking any schema locks.
@@ -66,7 +64,7 @@ public interface SchemaRead extends SchemaReadCore
      * @param labelId label to list indexes for.
      * @return An index matching the {@code labelId}, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong
      */
-    Iterator<IndexDescriptor> getLabelIndexesNonLocking( int labelId );
+    Iterator<IndexDescriptor> getLabelIndexesNonLocking(int labelId);
 
     /**
      * Acquire a reference to the index matching the given {@code relTypeId}, without taking any schema locks.
@@ -75,7 +73,7 @@ public interface SchemaRead extends SchemaReadCore
      *                  TODO: is this really just one index?
      * @return An index matching the {@code relTypeId}, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong
      */
-    Iterator<IndexDescriptor> getRelTypeIndexesNonLocking( int relTypeId );
+    Iterator<IndexDescriptor> getRelTypeIndexesNonLocking(int relTypeId);
 
     /**
      * Acquire a reference to all indexes, without taking any schema locks.
@@ -89,7 +87,7 @@ public interface SchemaRead extends SchemaReadCore
      * @return The selectivity of the given index
      * @throws IndexNotFoundKernelException if the index is not there
      */
-    double indexUniqueValuesSelectivity( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    double indexUniqueValuesSelectivity(IndexDescriptor index) throws IndexNotFoundKernelException;
 
     /**
      * Returns the size of the index.
@@ -98,7 +96,7 @@ public interface SchemaRead extends SchemaReadCore
      * @return The size of the current index
      * @throws IndexNotFoundKernelException if the index is not there
      */
-    long indexSize( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    long indexSize(IndexDescriptor index) throws IndexNotFoundKernelException;
 
     /**
      * Returns the index sample info.
@@ -107,7 +105,7 @@ public interface SchemaRead extends SchemaReadCore
      * @return index sample info
      * @throws IndexNotFoundKernelException if the index does not exist.
      */
-    IndexSample indexSample( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexSample indexSample(IndexDescriptor index) throws IndexNotFoundKernelException;
 
     /**
      * Finds all constraints for the given schema
@@ -115,7 +113,7 @@ public interface SchemaRead extends SchemaReadCore
      * @param descriptor The descriptor of the schema
      * @return All constraints for the given schema
      */
-    Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor );
+    Iterator<ConstraintDescriptor> constraintsGetForSchema(SchemaDescriptor descriptor);
 
     /**
      * Finds all constraints for the given schema, without taking any schema locks.
@@ -123,7 +121,7 @@ public interface SchemaRead extends SchemaReadCore
      * @param descriptor The descriptor of the schema
      * @return All constraints for the given schema
      */
-    Iterator<ConstraintDescriptor> constraintsGetForSchemaNonLocking( SchemaDescriptor descriptor );
+    Iterator<ConstraintDescriptor> constraintsGetForSchemaNonLocking(SchemaDescriptor descriptor);
 
     /**
      * Checks if a constraint exists
@@ -131,7 +129,7 @@ public interface SchemaRead extends SchemaReadCore
      * @param descriptor The descriptor of the constraint to check.
      * @return {@code true} if the constraint exists, otherwise {@code false}
      */
-    boolean constraintExists( ConstraintDescriptor descriptor );
+    boolean constraintExists(ConstraintDescriptor descriptor);
 
     /**
      * Produce a snapshot of the current schema, which can be accessed without acquiring any schema locks.
@@ -148,7 +146,7 @@ public interface SchemaRead extends SchemaReadCore
      * Get the owning constraint for a constraint index or <tt>null</tt> if the index does not have an owning
      * constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
+    Long indexGetOwningUniquenessConstraintId(IndexDescriptor index);
 
     /**
      * Returns schema state for the given key or create a new state if not there
@@ -158,7 +156,7 @@ public interface SchemaRead extends SchemaReadCore
      * @param <V> type of the schema state value
      * @return the state associated with the key or a new value if non-existing
      */
-    <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
+    <K, V> V schemaStateGetOrCreate(K key, Function<K, V> creator);
 
     /**
      * Flush the schema state

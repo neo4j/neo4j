@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -29,8 +29,7 @@ import org.neo4j.values.storable.Value;
 /**
  * Simple NodeValueClient test utility.
  */
-public class GatheringNodeValueClient implements IndexProgressor.EntityValueClient
-{
+public class GatheringNodeValueClient implements IndexProgressor.EntityValueClient {
     public long reference;
     public Value[] values;
     public IndexDescriptor descriptor;
@@ -39,9 +38,13 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
     public IndexQueryConstraints constraints;
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode, boolean indexIncludesTransactionState,
-                            IndexQueryConstraints constraints, PropertyIndexQuery... query )
-    {
+    public void initialize(
+            IndexDescriptor descriptor,
+            IndexProgressor progressor,
+            AccessMode accessMode,
+            boolean indexIncludesTransactionState,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... query) {
         this.descriptor = descriptor;
         this.progressor = progressor;
         this.query = query;
@@ -49,16 +52,14 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value... values )
-    {
+    public boolean acceptEntity(long reference, float score, Value... values) {
         this.reference = reference;
         this.values = values;
         return true;
     }
 
     @Override
-    public boolean needsValues()
-    {
+    public boolean needsValues() {
         return constraints.needsValues();
     }
 }

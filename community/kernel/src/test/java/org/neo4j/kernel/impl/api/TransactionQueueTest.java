@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.impl.api.TransactionQueue.Applier;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -33,59 +27,59 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
-class TransactionQueueTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.api.TransactionQueue.Applier;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+
+class TransactionQueueTest {
     @Test
-    void shouldEmptyIfTooMany() throws Exception
-    {
+    void shouldEmptyIfTooMany() throws Exception {
         // GIVEN
-        Applier applier = mock( Applier.class );
+        Applier applier = mock(Applier.class);
         int batchSize = 10;
-        TransactionQueue queue = new TransactionQueue( batchSize, applier );
+        TransactionQueue queue = new TransactionQueue(batchSize, applier);
 
         // WHEN
-        for ( int i = 0; i < 9; i++ )
-        {
-            queue.queue( mock( TransactionToApply.class ) );
-            verifyNoMoreInteractions( applier );
+        for (int i = 0; i < 9; i++) {
+            queue.queue(mock(TransactionToApply.class));
+            verifyNoMoreInteractions(applier);
         }
-        queue.queue( mock( TransactionToApply.class ) );
-        verify( applier ).apply( any(), any() );
-        reset( applier );
+        queue.queue(mock(TransactionToApply.class));
+        verify(applier).apply(any(), any());
+        reset(applier);
 
         // THEN
-        queue.queue( mock( TransactionToApply.class ) );
+        queue.queue(mock(TransactionToApply.class));
 
         // and WHEN emptying in the end
-        for ( int i = 0; i < 2; i++ )
-        {
-            queue.queue( mock( TransactionToApply.class ) );
-            verifyNoMoreInteractions( applier );
+        for (int i = 0; i < 2; i++) {
+            queue.queue(mock(TransactionToApply.class));
+            verifyNoMoreInteractions(applier);
         }
         queue.empty();
-        verify( applier ).apply( any(), any() );
+        verify(applier).apply(any(), any());
     }
 
     @Test
-    void shouldLinkTogetherTransactions() throws Exception
-    {
+    void shouldLinkTogetherTransactions() throws Exception {
         // GIVEN
-        Applier applier = mock( Applier.class );
+        Applier applier = mock(Applier.class);
         int batchSize = 10;
-        TransactionQueue queue = new TransactionQueue( batchSize, applier );
+        TransactionQueue queue = new TransactionQueue(batchSize, applier);
 
         // WHEN
         TransactionToApply[] txs = new TransactionToApply[batchSize];
-        for ( int i = 0; i < batchSize; i++ )
-        {
-            queue.queue( txs[i] = new TransactionToApply( mock( TransactionRepresentation.class ), NULL_CONTEXT, StoreCursors.NULL ) );
+        for (int i = 0; i < batchSize; i++) {
+            queue.queue(
+                    txs[i] = new TransactionToApply(
+                            mock(TransactionRepresentation.class), NULL_CONTEXT, StoreCursors.NULL));
         }
 
         // THEN
-        verify( applier ).apply( any(), any() );
-        for ( int i = 0; i < txs.length - 1; i++ )
-        {
-            assertEquals( txs[i + 1], txs[i].next() );
+        verify(applier).apply(any(), any());
+        for (int i = 0; i < txs.length - 1; i++) {
+            assertEquals(txs[i + 1], txs[i].next());
         }
     }
 }

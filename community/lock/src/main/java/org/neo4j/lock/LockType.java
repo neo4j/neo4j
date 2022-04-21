@@ -19,20 +19,17 @@
  */
 package org.neo4j.lock;
 
-public enum LockType
-{
-    SHARED( "SHARED" ),
-    EXCLUSIVE( "EXCLUSIVE" );
+public enum LockType {
+    SHARED("SHARED"),
+    EXCLUSIVE("EXCLUSIVE");
 
     private final String description;
 
-    LockType( String description )
-    {
+    LockType(String description) {
         this.description = description;
     }
 
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 }

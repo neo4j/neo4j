@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -42,101 +45,88 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.Barrier;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.test.DoubleLatch.awaitLatch;
-
-public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
-{
+public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor {
     private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
-    private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
-    private final CountDownLatch writerLatch = new CountDownLatch( 1 );
+    private final IndexAccessor mockedWriter = mock(IndexAccessor.class);
+    private final CountDownLatch writerLatch = new CountDownLatch(1);
     private InternalIndexState initialIndexState = POPULATING;
     final AtomicInteger populatorCallCount = new AtomicInteger();
     final AtomicInteger writerCallCount = new AtomicInteger();
 
-    public static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor(
-            "controlled-population", "1.0" );
+    public static final IndexProviderDescriptor PROVIDER_DESCRIPTOR =
+            new IndexProviderDescriptor("controlled-population", "1.0");
 
-    public ControlledPopulationIndexProvider()
-    {
-        super( PROVIDER_DESCRIPTOR, IndexDirectoryStructure.NONE );
-        setInitialIndexState( initialIndexState );
-        when( mockedWriter.newValueReader() ).thenReturn( ValueIndexReader.EMPTY );
+    public ControlledPopulationIndexProvider() {
+        super(PROVIDER_DESCRIPTOR, IndexDirectoryStructure.NONE);
+        setInitialIndexState(initialIndexState);
+        when(mockedWriter.newValueReader()).thenReturn(ValueIndexReader.EMPTY);
     }
 
-    public Barrier.Control installPopulationLatch( PopulationLatchMethod method )
-    {
+    public Barrier.Control installPopulationLatch(PopulationLatchMethod method) {
         Barrier.Control barrier = new Barrier.Control();
-        mockedPopulator = new IndexPopulator.Adapter()
-        {
+        mockedPopulator = new IndexPopulator.Adapter() {
             @Override
-            public void create()
-            {
-                if ( method == PopulationLatchMethod.CREATE )
-                {
+            public void create() {
+                if (method == PopulationLatchMethod.CREATE) {
                     barrier.reached();
                 }
                 super.create();
             }
 
             @Override
-            public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
-            {
-                if ( method == PopulationLatchMethod.ADD_BATCH )
-                {
+            public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {
+                if (method == PopulationLatchMethod.ADD_BATCH) {
                     barrier.reached();
                 }
-                super.add( updates, cursorContext );
+                super.add(updates, cursorContext);
             }
 
             @Override
-            public IndexSample sample( CursorContext cursorContext )
-            {
+            public IndexSample sample(CursorContext cursorContext) {
                 return new IndexSample();
             }
         };
         return barrier;
     }
 
-    public void awaitFullyPopulated()
-    {
-        awaitLatch( writerLatch );
+    public void awaitFullyPopulated() {
+        awaitLatch(writerLatch);
     }
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-                                        ImmutableSet<OpenOption> openOptions )
-    {
+    public IndexPopulator getPopulator(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor indexConfig, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
-                                            ImmutableSet<OpenOption> openOptions )
-    {
+    public IndexAccessor getOnlineAccessor(
+            IndexDescriptor indexConfig,
+            IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions) {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();
         return mockedWriter;
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
-                                               ImmutableSet<OpenOption> openOptions )
-    {
+    public InternalIndexState getInitialState(
+            IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
         return initialIndexState;
     }
 
-    public void setInitialIndexState( InternalIndexState initialIndexState )
-    {
+    public void setInitialIndexState(InternalIndexState initialIndexState) {
         this.initialIndexState = initialIndexState;
     }
 
-    public enum PopulationLatchMethod
-    {
+    public enum PopulationLatchMethod {
         ADD_BATCH,
         CREATE;
     }

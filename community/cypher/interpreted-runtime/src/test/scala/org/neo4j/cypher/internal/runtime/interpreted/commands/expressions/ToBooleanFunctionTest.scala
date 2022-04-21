@@ -38,7 +38,6 @@ class ToBooleanFunctionTest extends CypherFunSuite with ScalaCheckDrivenProperty
     Seq((toBoolean, "toBoolean"), (toBooleanOrNull, "toBooleanOrNull"))
 
   tests.foreach { case (toBooleanFn, name) =>
-
     test(s"$name: null in null out") {
       assert(toBooleanFn(null) === NO_VALUE)
     }
@@ -80,9 +79,9 @@ class ToBooleanFunctionTest extends CypherFunSuite with ScalaCheckDrivenProperty
   // toBoolean
 
   test("toBoolean throws for wrong types") {
-    a [CypherTypeException] shouldBe thrownBy(toBoolean(1.1))
+    a[CypherTypeException] shouldBe thrownBy(toBoolean(1.1))
     val toBooleanOfList = ToBooleanFunction(ListLiteral.empty)
-    a [CypherTypeException] shouldBe thrownBy(toBooleanOfList(CypherRow.empty, QueryStateHelper.empty))
+    a[CypherTypeException] shouldBe thrownBy(toBooleanOfList(CypherRow.empty, QueryStateHelper.empty))
   }
 
   // toBooleanOrNull
@@ -124,9 +123,11 @@ class ToBooleanFunctionTest extends CypherFunSuite with ScalaCheckDrivenProperty
       v <- Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double])
     } yield v
 
-    forAll(generator) { s => {
-      toBooleanOrNull(s) should (be(a[BooleanValue]) or equal(NO_VALUE))
-    }}
+    forAll(generator) { s =>
+      {
+        toBooleanOrNull(s) should (be(a[BooleanValue]) or equal(NO_VALUE))
+      }
+    }
   }
 
   private def toBoolean(orig: Any) = {

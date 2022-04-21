@@ -19,26 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.list.primitive.LongList;
-import org.eclipse.collections.api.list.primitive.MutableLongList;
-import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.function.ToLongFunction;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.kernel.api.WorkerContext;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,21 +32,35 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
 import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
 
-public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
-{
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.ToLongFunction;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.kernel.api.WorkerContext;
+
+public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G> {
     private static LongList NODE_IDS;
     private static final int NUMBER_OF_NODES = 128;
     private static final ToLongFunction<NodeCursor> NODE_GET = NodeCursor::nodeReference;
 
     @Override
-    public void createTestGraph( GraphDatabaseService graphDb )
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            MutableLongList list = new LongArrayList( NUMBER_OF_NODES );
-            for ( int i = 0; i < NUMBER_OF_NODES; i++ )
-            {
-                list.add( tx.createNode().getId() );
+    public void createTestGraph(GraphDatabaseService graphDb) {
+        try (Transaction tx = graphDb.beginTx()) {
+            MutableLongList list = new LongArrayList(NUMBER_OF_NODES);
+            for (int i = 0; i < NUMBER_OF_NODES; i++) {
+                list.add(tx.createNode().getId());
             }
             NODE_IDS = list;
             tx.commit();
@@ -74,159 +68,150 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     }
 
     @Test
-    void shouldScanASubsetOfNodes()
-    {
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-        {
+    void shouldScanASubsetOfNodes() {
+        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
-            assertTrue( scan.reserveBatch( nodes, 3, NULL_CONTEXT, tx.securityContext().mode() ) );
+            assertTrue(scan.reserveBatch(
+                    nodes, 3, NULL_CONTEXT, tx.securityContext().mode()));
 
-            assertTrue( nodes.next() );
-            assertEquals( NODE_IDS.get( 0 ), nodes.nodeReference() );
-            assertTrue( nodes.next() );
-            assertEquals( NODE_IDS.get( 1 ), nodes.nodeReference() );
-            assertTrue( nodes.next() );
-            assertEquals( NODE_IDS.get( 2 ), nodes.nodeReference() );
-            assertFalse( nodes.next() );
+            assertTrue(nodes.next());
+            assertEquals(NODE_IDS.get(0), nodes.nodeReference());
+            assertTrue(nodes.next());
+            assertEquals(NODE_IDS.get(1), nodes.nodeReference());
+            assertTrue(nodes.next());
+            assertEquals(NODE_IDS.get(2), nodes.nodeReference());
+            assertFalse(nodes.next());
         }
     }
 
     @Test
-    void shouldHandleSizeHintOverflow()
-    {
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-        {
+    void shouldHandleSizeHintOverflow() {
+        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
-            assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2, NULL_CONTEXT, tx.securityContext().mode() ) );
+            assertTrue(scan.reserveBatch(
+                    nodes,
+                    NUMBER_OF_NODES * 2,
+                    NULL_CONTEXT,
+                    tx.securityContext().mode()));
 
             LongArrayList ids = new LongArrayList();
-            while ( nodes.next() )
-            {
-                ids.add( nodes.nodeReference() );
+            while (nodes.next()) {
+                ids.add(nodes.nodeReference());
             }
 
-            assertEquals( NODE_IDS, ids );
+            assertEquals(NODE_IDS, ids);
         }
     }
 
     @Test
-    void shouldFailForSizeHintZero()
-    {
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-        {
+    void shouldFailForSizeHintZero() {
+        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
             // given
             Scan<NodeCursor> scan = read.allNodesScan();
 
             // when
-            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( nodes, 0, NULL_CONTEXT, tx.securityContext().mode() ) );
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> scan.reserveBatch(
+                            nodes, 0, NULL_CONTEXT, tx.securityContext().mode()));
         }
     }
 
     @Test
-    void shouldScanAllNodesInBatches()
-    {
+    void shouldScanAllNodesInBatches() {
         // given
         LongArrayList ids = new LongArrayList();
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
-        {
+        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
-            while ( scan.reserveBatch( nodes, 3, NULL_CONTEXT, tx.securityContext().mode() ) )
-            {
-                while ( nodes.next() )
-                {
-                    ids.add( nodes.nodeReference() );
+            while (scan.reserveBatch(
+                    nodes, 3, NULL_CONTEXT, tx.securityContext().mode())) {
+                while (nodes.next()) {
+                    ids.add(nodes.nodeReference());
                 }
             }
         }
 
         // then
-        assertEquals( NODE_IDS, ids );
+        assertEquals(NODE_IDS, ids);
     }
 
     @Test
-    void shouldScanAllNodesFromMultipleThreads() throws InterruptedException, ExecutionException
-    {
+    void shouldScanAllNodesFromMultipleThreads() throws InterruptedException, ExecutionException {
         // given
         int numberOfWorkers = 4;
-        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
+        ExecutorService service = Executors.newFixedThreadPool(numberOfWorkers);
         Scan<NodeCursor> scan = read.allNodesScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
-        try
-        {
-            var workerContexts = createContexts( tx, cursors::allocateNodeCursor, numberOfWorkers );
-            var futures = service.invokeAll( createWorkers( 32, scan, numberOfWorkers, workerContexts, NodeCursor::nodeReference ) );
+        try {
+            var workerContexts = createContexts(tx, cursors::allocateNodeCursor, numberOfWorkers);
+            var futures = service.invokeAll(
+                    createWorkers(32, scan, numberOfWorkers, workerContexts, NodeCursor::nodeReference));
 
-            List<LongList> ids = getAllResults( futures );
-            closeWorkContexts( workerContexts );
+            List<LongList> ids = getAllResults(futures);
+            closeWorkContexts(workerContexts);
 
-            TestUtils.assertDistinct( ids );
-            assertEquals( NODE_IDS, TestUtils.concat( ids ).toSortedList() );
-        }
-        finally
-        {
+            TestUtils.assertDistinct(ids);
+            assertEquals(NODE_IDS, TestUtils.concat(ids).toSortedList());
+        } finally {
             service.shutdown();
-            service.awaitTermination( 1, TimeUnit.MINUTES );
+            service.awaitTermination(1, TimeUnit.MINUTES);
         }
     }
 
     @Test
-    void shouldScanAllNodesFromMultipleThreadWithBigSizeHints() throws InterruptedException, ExecutionException
-    {
+    void shouldScanAllNodesFromMultipleThreadWithBigSizeHints() throws InterruptedException, ExecutionException {
         int numberOfWorkers = 4;
-        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
+        ExecutorService service = Executors.newFixedThreadPool(numberOfWorkers);
         Scan<NodeCursor> scan = read.allNodesScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
-        try
-        {
-            List<WorkerContext<NodeCursor>> workerContexts = createContexts( tx, cursors::allocateNodeCursor, numberOfWorkers );
-            List<Future<LongList>> futures = service.invokeAll( createWorkers( 100, scan, numberOfWorkers, workerContexts, NODE_GET ) );
+        try {
+            List<WorkerContext<NodeCursor>> workerContexts =
+                    createContexts(tx, cursors::allocateNodeCursor, numberOfWorkers);
+            List<Future<LongList>> futures =
+                    service.invokeAll(createWorkers(100, scan, numberOfWorkers, workerContexts, NODE_GET));
 
-            List<LongList> ids = getAllResults( futures );
-            closeWorkContexts( workerContexts );
+            List<LongList> ids = getAllResults(futures);
+            closeWorkContexts(workerContexts);
 
-            TestUtils.assertDistinct( ids );
-            assertEquals( NODE_IDS, concat( ids ).toSortedList() );
-        }
-        finally
-        {
+            TestUtils.assertDistinct(ids);
+            assertEquals(NODE_IDS, concat(ids).toSortedList());
+        } finally {
             service.shutdown();
-            service.awaitTermination( 1, TimeUnit.MINUTES );
+            service.awaitTermination(1, TimeUnit.MINUTES);
         }
     }
 
     @Test
-    void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException, ExecutionException
-    {
+    void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException, ExecutionException {
         // given
         int numberOfWorkers = 10;
-        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
+        ExecutorService service = Executors.newFixedThreadPool(numberOfWorkers);
         Scan<NodeCursor> scan = read.allNodesScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
-        try
-        {
-            List<WorkerContext<NodeCursor>> workerContexts = createContexts( tx, cursors::allocateNodeCursor, numberOfWorkers );
-            List<Future<LongList>> futures = service.invokeAll( createRandomWorkers( scan, numberOfWorkers, workerContexts, NODE_GET ) );
+        try {
+            List<WorkerContext<NodeCursor>> workerContexts =
+                    createContexts(tx, cursors::allocateNodeCursor, numberOfWorkers);
+            List<Future<LongList>> futures =
+                    service.invokeAll(createRandomWorkers(scan, numberOfWorkers, workerContexts, NODE_GET));
 
             service.shutdown();
-            service.awaitTermination( 1, TimeUnit.MINUTES );
+            service.awaitTermination(1, TimeUnit.MINUTES);
 
             // then
-            List<LongList> lists = getAllResults( futures );
-            closeWorkContexts( workerContexts );
+            List<LongList> lists = getAllResults(futures);
+            closeWorkContexts(workerContexts);
 
-            assertDistinct( lists );
-            LongList concat = concat( lists ).toSortedList();
-            assertEquals( NODE_IDS, concat );
-        }
-        finally
-        {
+            assertDistinct(lists);
+            LongList concat = concat(lists).toSortedList();
+            assertEquals(NODE_IDS, concat);
+        } finally {
             service.shutdown();
-            service.awaitTermination( 1, TimeUnit.MINUTES );
+            service.awaitTermination(1, TimeUnit.MINUTES);
         }
     }
 }

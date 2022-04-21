@@ -59,6 +59,7 @@ class CoalesceTest extends CypherFunSuite {
 }
 
 case class BreakingExpression() extends Expression {
+
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     fail("Coalesce is not lazy")
   }

@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
   test("should build plans for simple WITH that adds a constant to the rows") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`")._1
     val expected =
@@ -74,7 +75,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           literalInt(1)
         ),
-        "a", OUTGOING, List(), "b", "r1", ExpandAll
+        "a",
+        OUTGOING,
+        List(),
+        "b",
+        "r1",
+        ExpandAll
       ),
       literalInt(1)
     )
@@ -91,7 +97,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           literalInt(1)
         ),
-        "a", OUTGOING, List(), "b", "r1", ExpandAll
+        "a",
+        OUTGOING,
+        List(),
+        "b",
+        "r1",
+        ExpandAll
       )
     )
 
@@ -105,7 +116,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         AllNodesScan("a", Set()),
         literalInt(1)
       ),
-      "a", OUTGOING, List(), "b", "r", ExpandAll
+      "a",
+      OUTGOING,
+      List(),
+      "b",
+      "r",
+      ExpandAll
     )
 
     result should equal(expected)
@@ -117,13 +133,25 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Limit(
         Expand(
           AllNodesScan("a", Set()),
-          "a", OUTGOING, List(), "b", "r", ExpandAll
+          "a",
+          OUTGOING,
+          List(),
+          "b",
+          "r",
+          ExpandAll
         ),
         literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("r")),
-        "r", "u", startInScope = false, "v", endInScope = false, None, directed = true, SimplePatternLength
+        "r",
+        "u",
+        startInScope = false,
+        "v",
+        endInScope = false,
+        None,
+        directed = true,
+        SimplePatternLength
       )
     )
 
@@ -136,13 +164,25 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Limit(
         Expand(
           AllNodesScan("a", Set()),
-          "a", OUTGOING, List(), "b", "r", ExpandAll
+          "a",
+          OUTGOING,
+          List(),
+          "b",
+          "r",
+          ExpandAll
         ),
         literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
-        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, SimplePatternLength
+        "r",
+        "a",
+        startInScope = true,
+        "b2",
+        endInScope = false,
+        None,
+        directed = true,
+        SimplePatternLength
       )
     )
 
@@ -155,13 +195,25 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Limit(
         Expand(
           AllNodesScan("a", Set()),
-          "a", OUTGOING, List(), "b", "r", ExpandAll
+          "a",
+          OUTGOING,
+          List(),
+          "b",
+          "r",
+          ExpandAll
         ),
         literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "b", "r")),
-        "r", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength
+        "r",
+        "a",
+        startInScope = true,
+        "b",
+        endInScope = true,
+        None,
+        directed = true,
+        SimplePatternLength
       )
     )
 
@@ -174,13 +226,25 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Limit(
         Expand(
           AllNodesScan("a", Set()),
-          "a", OUTGOING, List(), "b", "r", ExpandAll
+          "a",
+          OUTGOING,
+          List(),
+          "b",
+          "r",
+          ExpandAll
         ),
         literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
-        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, SimplePatternLength
+        "r",
+        "a",
+        startInScope = true,
+        "b2",
+        endInScope = false,
+        None,
+        directed = true,
+        SimplePatternLength
       )
     )
 
@@ -193,140 +257,172 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Limit(
         Expand(
           AllNodesScan("a", Set()),
-          "a", OUTGOING, List(), "b", "r", ExpandAll
+          "a",
+          OUTGOING,
+          List(),
+          "b",
+          "r",
+          ExpandAll
         ),
         literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
-        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = false, SimplePatternLength
+        "r",
+        "a",
+        startInScope = true,
+        "b2",
+        endInScope = false,
+        None,
+        directed = false,
+        SimplePatternLength
       )
     )
 
     result should equal(expected)
   }
 
-  test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
+  test(
+    "should build plans that project and verify endpoints of re-matched directed var length relationship arguments"
+  ) {
     val result = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r")._1
     val expected = Apply(
       Limit(
         VarExpand(
           AllNodesScan("a", Set()),
-          "a", OUTGOING, OUTGOING, List(), "b", "r", VarPatternLength(1, None), ExpandAll
+          "a",
+          OUTGOING,
+          OUTGOING,
+          List(),
+          "b",
+          "r",
+          VarPatternLength(1, None),
+          ExpandAll
         ),
         literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
-        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, VarPatternLength(1, None)
+        "r",
+        "a",
+        startInScope = true,
+        "b2",
+        endInScope = false,
+        None,
+        directed = true,
+        VarPatternLength(1, None)
       )
     )
 
     result should equal(expected)
   }
 
-  test("WHERE clause on WITH uses argument from previous WITH"){
-    val result = planFor( """
+  test("WHERE clause on WITH uses argument from previous WITH") {
+    val result = planFor("""
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH n1 LIMIT 10 WHERE rand() < p
                       RETURN n1""")._1
 
     result should beLike {
-      case
-        SelectionMatcher(Seq(LessThan(FunctionInvocation(Namespace(List()),FunctionName("rand"),false,Vector()),Variable("p"))),
-        Limit(
-        Projection(
-        AllNodesScan("n1", _), _),
-         _)
+      case SelectionMatcher(
+          Seq(LessThan(FunctionInvocation(Namespace(List()), FunctionName("rand"), false, Vector()), Variable("p"))),
+          Limit(
+            Projection(
+              AllNodesScan("n1", _),
+              _
+            ),
+            _
+          )
         ) => ()
     }
   }
 
-  test("WHERE clause on WITH DISTINCT uses argument from previous WITH"){
-    val plan = planFor( normalizeNewLines("""
+  test("WHERE clause on WITH DISTINCT uses argument from previous WITH") {
+    val plan = planFor(normalizeNewLines("""
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH DISTINCT n1, p LIMIT 10 WHERE rand() < p
                       RETURN n1"""))._1
     plan should beLike {
-      case
-        SelectionMatcher(Seq(
-        LessThan(FunctionInvocation(Namespace(List()), FunctionName("rand"), false, Vector()),
-        Variable("p"))),
-        Limit(
-        Distinct(
-        Projection(
-        AllNodesScan("n1", _), _),
-         _), _)
+      case SelectionMatcher(
+          Seq(
+            LessThan(FunctionInvocation(Namespace(List()), FunctionName("rand"), false, Vector()), Variable("p"))
+          ),
+          Limit(
+            Distinct(
+              Projection(
+                AllNodesScan("n1", _),
+                _
+              ),
+              _
+            ),
+            _
+          )
         ) => ()
     }
   }
 
-  test("WHERE clause on WITH AGGREGATION uses argument from previous WITH"){
-    val plan = planFor( normalizeNewLines("""
+  test("WHERE clause on WITH AGGREGATION uses argument from previous WITH") {
+    val plan = planFor(normalizeNewLines("""
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH count(n1) AS n, p WHERE rand() < p
                       RETURN n"""))._1
     plan should beLike {
-      case
-        SelectionMatcher(Seq(LessThan(FunctionInvocation(Namespace(List()),FunctionName("rand"),false,Vector()),Variable("p"))),
-        Aggregation(
-        Projection(
-        AllNodesScan("n1", _), _),
-        _, _)
+      case SelectionMatcher(
+          Seq(LessThan(FunctionInvocation(Namespace(List()), FunctionName("rand"), false, Vector()), Variable("p"))),
+          Aggregation(
+            Projection(
+              AllNodesScan("n1", _),
+              _
+            ),
+            _,
+            _
+          )
         ) => ()
     }
   }
 
-  test("WHERE clause on WITH with PatternExpression"){
-    val result = planFor( """
+  test("WHERE clause on WITH with PatternExpression") {
+    val result = planFor("""
                       MATCH (n1)-->(n2)
                       WITH n1 LIMIT 10 WHERE NOT (n1)<--(n2)
                       RETURN n1""")._1
 
     result should beLike {
-      case
-        Selection(ands,
-        Limit(_,_)
-        ) if hasNestedPlanExpression(ands) => ()
+      case Selection(ands, Limit(_, _)) if hasNestedPlanExpression(ands) => ()
     }
   }
 
-  test("WHERE clause on WITH DISTINCT with PatternExpression"){
-    val result = planFor( """
+  test("WHERE clause on WITH DISTINCT with PatternExpression") {
+    val result = planFor("""
                       MATCH (n1)-->(n2)
                       WITH DISTINCT n1, n2 LIMIT 10 WHERE NOT (n1)<--(n2)
                       RETURN n1""")._1
 
     result should beLike {
-      case
-        Selection(ands,
-        Limit(_,_)
-        ) if hasNestedPlanExpression(ands)=> ()
+      case Selection(ands, Limit(_, _)) if hasNestedPlanExpression(ands) => ()
     }
   }
 
-  test("WHERE clause on WITH AGGREGATION with PatternExpression"){
-    val result = planFor( """
+  test("WHERE clause on WITH AGGREGATION with PatternExpression") {
+    val result = planFor("""
                       MATCH (n1)-->(n2)
                       WITH count(n1) AS n, n2 LIMIT 10 WHERE NOT ()<--(n2)
                       RETURN n""")._1
 
     result should beLike {
-      case
-        Selection(ands,
-        Limit(_,_)
-        ) if containsHasDegreeGreaterThan(ands) => ()
+      case Selection(ands, Limit(_, _)) if containsHasDegreeGreaterThan(ands) => ()
     }
   }
 
-  test("Complex star pattern with WITH in front should not trip up joinSolver"){
+  test("Complex star pattern with WITH in front should not trip up joinSolver") {
     // created after https://github.com/neo4j/neo4j/issues/12212
 
     val maxIterationTime = 1 // the goal here is to force compaction as fast as possible
-    val queryGraphSolver = QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(new ConfigurableIDPSolverConfig(1, maxIterationTime))
+    val queryGraphSolver =
+      QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(new ConfigurableIDPSolverConfig(1, maxIterationTime))
 
     planFor(
       """WITH 20000 AS param1, 5000 AS param2
@@ -345,7 +441,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |WITH areaLocation, bound, LabelC
         |CREATE (areaLocation)-[boundRel:relTypeZ]->(LabelC)
         |SET boundRel.thing = bound.thing, boundRel.propertyD = 2
-      """.stripMargin, configurationThatForcesCompacting, queryGraphSolver)
+      """.stripMargin,
+      configurationThatForcesCompacting,
+      queryGraphSolver
+    )
     // if we fail planning for this query the test fails
   }
 

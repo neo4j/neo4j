@@ -23,20 +23,17 @@ import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.storageengine.api.CommandsToApply;
 
-class CountsStoreTransactionApplierFactory implements TransactionApplierFactory
-{
+class CountsStoreTransactionApplierFactory implements TransactionApplierFactory {
     private final CountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
 
-    CountsStoreTransactionApplierFactory( CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore )
-    {
+    CountsStoreTransactionApplierFactory(CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore) {
         this.countsStore = countsStore;
         this.groupDegreesStore = groupDegreesStore;
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext )
-    {
-        return new CountsStoreTransactionApplier( countsStore, groupDegreesStore, transaction );
+    public TransactionApplier startTx(CommandsToApply transaction, BatchContext batchContext) {
+        return new CountsStoreTransactionApplier(countsStore, groupDegreesStore, transaction);
     }
 }

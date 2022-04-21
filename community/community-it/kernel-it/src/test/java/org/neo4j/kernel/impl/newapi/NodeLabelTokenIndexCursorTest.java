@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodeCount;
+import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodes;
+
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -38,14 +40,9 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 
-import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodeCount;
-import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodes;
-
-public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteTestSupport>
-{
+public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteTestSupport> {
     @Override
-    public WriteTestSupport newTestSupport()
-    {
+    public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();
     }
 
@@ -60,133 +57,144 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
     private int labelFirst;
 
     @BeforeAll
-    void setupClass() throws Exception
-    {
-        try ( KernelTransaction tx = beginTransaction() )
-        {
+    void setupClass() throws Exception {
+        try (KernelTransaction tx = beginTransaction()) {
             TokenWrite tokenWrite = tx.tokenWrite();
-            labelOne = tokenWrite.labelGetOrCreateForName( labelOneName );
-            labelTwo = tokenWrite.labelGetOrCreateForName( labelTwoName );
-            labelThree = tokenWrite.labelGetOrCreateForName( labelThreeName );
-            labelFirst = tokenWrite.labelGetOrCreateForName( labelFirstName );
+            labelOne = tokenWrite.labelGetOrCreateForName(labelOneName);
+            labelTwo = tokenWrite.labelGetOrCreateForName(labelTwoName);
+            labelThree = tokenWrite.labelGetOrCreateForName(labelThreeName);
+            labelFirst = tokenWrite.labelGetOrCreateForName(labelFirstName);
         }
     }
 
     @Test
-    void shouldFindNodesByLabel() throws Exception
-    {
+    void shouldFindNodesByLabel() throws Exception {
         long toDelete;
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            createNode( tx.dataWrite(), labelOne, labelFirst );
-            createNode( tx.dataWrite(), labelTwo, labelFirst );
-            createNode( tx.dataWrite(), labelThree, labelFirst );
-            toDelete = createNode( tx.dataWrite(), labelOne );
-            createNode( tx.dataWrite(), labelTwo );
-            createNode( tx.dataWrite(), labelThree );
-            createNode( tx.dataWrite(), labelThree );
+        try (KernelTransaction tx = beginTransaction()) {
+            createNode(tx.dataWrite(), labelOne, labelFirst);
+            createNode(tx.dataWrite(), labelTwo, labelFirst);
+            createNode(tx.dataWrite(), labelThree, labelFirst);
+            toDelete = createNode(tx.dataWrite(), labelOne);
+            createNode(tx.dataWrite(), labelTwo);
+            createNode(tx.dataWrite(), labelThree);
+            createNode(tx.dataWrite(), labelThree);
             tx.commit();
         }
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            tx.dataWrite().nodeDelete( toDelete );
+        try (KernelTransaction tx = beginTransaction()) {
+            tx.dataWrite().nodeDelete(toDelete);
             tx.commit();
         }
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
+        try (KernelTransaction tx = beginTransaction()) {
             org.neo4j.internal.kernel.api.Read read = tx.dataRead();
 
-            var session = getTokenReadSession( tx );
+            var session = getTokenReadSession(tx);
 
             CursorContext cursorContext = tx.cursorContext();
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
-            {
+            try (NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor(cursorContext)) {
                 MutableLongSet uniqueIds = new LongHashSet();
 
                 // WHEN
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelOne ), cursorContext );
+                read.nodeLabelScan(
+                        session,
+                        cursor,
+                        IndexQueryConstraints.unconstrained(),
+                        new TokenPredicate(labelOne),
+                        cursorContext);
 
                 // THEN
-                assertNodeCount( cursor, 1, uniqueIds );
+                assertNodeCount(cursor, 1, uniqueIds);
 
                 // WHEN
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelTwo ), cursorContext );
+                read.nodeLabelScan(
+                        session,
+                        cursor,
+                        IndexQueryConstraints.unconstrained(),
+                        new TokenPredicate(labelTwo),
+                        cursorContext);
 
                 // THEN
-                assertNodeCount( cursor, 2, uniqueIds );
+                assertNodeCount(cursor, 2, uniqueIds);
 
                 // WHEN
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelThree ), cursorContext );
+                read.nodeLabelScan(
+                        session,
+                        cursor,
+                        IndexQueryConstraints.unconstrained(),
+                        new TokenPredicate(labelThree),
+                        cursorContext);
 
                 // THEN
-                assertNodeCount( cursor, 3, uniqueIds );
+                assertNodeCount(cursor, 3, uniqueIds);
 
                 // WHEN
                 uniqueIds.clear();
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelFirst ), cursorContext );
+                read.nodeLabelScan(
+                        session,
+                        cursor,
+                        IndexQueryConstraints.unconstrained(),
+                        new TokenPredicate(labelFirst),
+                        cursorContext);
 
                 // THEN
-                assertNodeCount( cursor, 3, uniqueIds );
+                assertNodeCount(cursor, 3, uniqueIds);
             }
         }
     }
 
-    private static TokenReadSession getTokenReadSession( KernelTransaction tx ) throws IndexNotFoundKernelException
-    {
-        var descriptor = SchemaDescriptors.forAnyEntityTokens( EntityType.NODE );
-        var indexes = tx.schemaRead().index( descriptor );
-        var session = tx.dataRead().tokenReadSession( indexes.next() );
+    private static TokenReadSession getTokenReadSession(KernelTransaction tx) throws IndexNotFoundKernelException {
+        var descriptor = SchemaDescriptors.forAnyEntityTokens(EntityType.NODE);
+        var indexes = tx.schemaRead().index(descriptor);
+        var session = tx.dataRead().tokenReadSession(indexes.next());
         return session;
     }
 
     @Test
-    void shouldFindNodesByLabelInTx() throws Exception
-    {
+    void shouldFindNodesByLabelInTx() throws Exception {
         long inStore;
         long deletedInTx;
         long createdInTx;
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            inStore = createNode( tx.dataWrite(), labelOne );
-            createNode( tx.dataWrite(), labelTwo );
-            deletedInTx = createNode( tx.dataWrite(), labelOne );
+        try (KernelTransaction tx = beginTransaction()) {
+            inStore = createNode(tx.dataWrite(), labelOne);
+            createNode(tx.dataWrite(), labelTwo);
+            deletedInTx = createNode(tx.dataWrite(), labelOne);
             tx.commit();
         }
 
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            tx.dataWrite().nodeDelete( deletedInTx );
-            createdInTx = createNode( tx.dataWrite(), labelOne );
+        try (KernelTransaction tx = beginTransaction()) {
+            tx.dataWrite().nodeDelete(deletedInTx);
+            createdInTx = createNode(tx.dataWrite(), labelOne);
 
-            createNode( tx.dataWrite(), labelTwo );
+            createNode(tx.dataWrite(), labelTwo);
 
             Read read = tx.dataRead();
 
-            var session = getTokenReadSession( tx );
+            var session = getTokenReadSession(tx);
 
             CursorContext cursorContext = tx.cursorContext();
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
-            {
+            try (NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor(cursorContext)) {
                 MutableLongSet uniqueIds = new LongHashSet();
 
                 // when
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelOne ), cursorContext );
+                read.nodeLabelScan(
+                        session,
+                        cursor,
+                        IndexQueryConstraints.unconstrained(),
+                        new TokenPredicate(labelOne),
+                        cursorContext);
 
                 // then
-                assertNodes( cursor, uniqueIds, inStore, createdInTx );
+                assertNodes(cursor, uniqueIds, inStore, createdInTx);
             }
         }
     }
 
-    private static long createNode( Write write, int... labels ) throws KernelException
-    {
+    private static long createNode(Write write, int... labels) throws KernelException {
         long nodeId = write.nodeCreate();
-        for ( int label : labels )
-        {
-            write.nodeAddLabel( nodeId, label );
+        for (int label : labels) {
+            write.nodeAddLabel(nodeId, label);
         }
         return nodeId;
     }

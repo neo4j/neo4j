@@ -19,26 +19,23 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-public enum CreateIndexTypes
-{
-    BTREE( "BTREE" ),
-    RANGE( "RANGE" ),
-    FULLTEXT( "FULLTEXT" ),
-    LOOKUP( "LOOKUP" ),
-    TEXT( "TEXT" ),
-    POINT( "POINT" ),
-    DEFAULT( "DEFAULT" ),
-    INVALID( "INVALID" );
+public enum CreateIndexTypes {
+    BTREE("BTREE"),
+    RANGE("RANGE"),
+    FULLTEXT("FULLTEXT"),
+    LOOKUP("LOOKUP"),
+    TEXT("TEXT"),
+    POINT("POINT"),
+    DEFAULT("DEFAULT"),
+    INVALID("INVALID");
 
     private final String description;
 
-    CreateIndexTypes( String description )
-    {
+    CreateIndexTypes(String description) {
         this.description = description;
     }
 
-    public String description()
-    {
+    public String description() {
         return description;
     }
 }

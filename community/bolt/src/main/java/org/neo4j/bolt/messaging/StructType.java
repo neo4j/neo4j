@@ -19,69 +19,60 @@
  */
 package org.neo4j.bolt.messaging;
 
+import static java.util.Collections.unmodifiableMap;
+
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.bolt.packstream.Neo4jPackV1;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
 
-import static java.util.Collections.unmodifiableMap;
-
-public enum StructType
-{
-    NODE( Neo4jPackV1.NODE, "Node" ),
-    RELATIONSHIP( Neo4jPackV1.RELATIONSHIP, "Relationship" ),
-    UNBOUND_RELATIONSHIP( Neo4jPackV1.UNBOUND_RELATIONSHIP, "Relationship" ),
-    PATH( Neo4jPackV1.PATH, "Path" ),
-    POINT_2D( Neo4jPackV2.POINT_2D, "Point" ),
-    POINT_3D( Neo4jPackV2.POINT_3D, "Point" ),
-    DATE( Neo4jPackV2.DATE, "LocalDate" ),
-    TIME( Neo4jPackV2.TIME, "OffsetTime" ),
-    LOCAL_TIME( Neo4jPackV2.LOCAL_TIME, "LocalTime" ),
-    LOCAL_DATE_TIME( Neo4jPackV2.LOCAL_DATE_TIME, "LocalDateTime" ),
-    DATE_TIME_WITH_ZONE_OFFSET( Neo4jPackV2.DATE_TIME_WITH_ZONE_OFFSET, "OffsetDateTime" ),
-    DATE_TIME_WITH_ZONE_NAME( Neo4jPackV2.DATE_TIME_WITH_ZONE_NAME, "ZonedDateTime" ),
-    DURATION( Neo4jPackV2.DURATION, "Duration" );
+public enum StructType {
+    NODE(Neo4jPackV1.NODE, "Node"),
+    RELATIONSHIP(Neo4jPackV1.RELATIONSHIP, "Relationship"),
+    UNBOUND_RELATIONSHIP(Neo4jPackV1.UNBOUND_RELATIONSHIP, "Relationship"),
+    PATH(Neo4jPackV1.PATH, "Path"),
+    POINT_2D(Neo4jPackV2.POINT_2D, "Point"),
+    POINT_3D(Neo4jPackV2.POINT_3D, "Point"),
+    DATE(Neo4jPackV2.DATE, "LocalDate"),
+    TIME(Neo4jPackV2.TIME, "OffsetTime"),
+    LOCAL_TIME(Neo4jPackV2.LOCAL_TIME, "LocalTime"),
+    LOCAL_DATE_TIME(Neo4jPackV2.LOCAL_DATE_TIME, "LocalDateTime"),
+    DATE_TIME_WITH_ZONE_OFFSET(Neo4jPackV2.DATE_TIME_WITH_ZONE_OFFSET, "OffsetDateTime"),
+    DATE_TIME_WITH_ZONE_NAME(Neo4jPackV2.DATE_TIME_WITH_ZONE_NAME, "ZonedDateTime"),
+    DURATION(Neo4jPackV2.DURATION, "Duration");
 
     private final byte signature;
     private final String description;
 
-    StructType( byte signature, String description )
-    {
+    StructType(byte signature, String description) {
         this.signature = signature;
         this.description = description;
     }
 
-    public byte signature()
-    {
+    public byte signature() {
         return signature;
     }
 
-    public String description()
-    {
+    public String description() {
         return description;
     }
 
-    private static final Map<Byte,StructType> KNOWN_TYPES_BY_SIGNATURE = knownTypesBySignature();
+    private static final Map<Byte, StructType> KNOWN_TYPES_BY_SIGNATURE = knownTypesBySignature();
 
-    public static StructType valueOf( byte signature )
-    {
-        return KNOWN_TYPES_BY_SIGNATURE.get( signature );
+    public static StructType valueOf(byte signature) {
+        return KNOWN_TYPES_BY_SIGNATURE.get(signature);
     }
 
-    public static StructType valueOf( char signature )
-    {
-        return KNOWN_TYPES_BY_SIGNATURE.get( (byte)signature );
+    public static StructType valueOf(char signature) {
+        return KNOWN_TYPES_BY_SIGNATURE.get((byte) signature);
     }
 
-    private static Map<Byte,StructType> knownTypesBySignature()
-    {
+    private static Map<Byte, StructType> knownTypesBySignature() {
         StructType[] types = StructType.values();
-        Map<Byte,StructType> result = new HashMap<>( types.length * 2 );
-        for ( StructType type : types )
-        {
-            result.put( type.signature, type );
+        Map<Byte, StructType> result = new HashMap<>(types.length * 2);
+        for (StructType type : types) {
+            result.put(type.signature, type);
         }
-        return unmodifiableMap( result );
+        return unmodifiableMap(result);
     }
 }

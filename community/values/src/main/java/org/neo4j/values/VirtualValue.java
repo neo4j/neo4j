@@ -19,70 +19,59 @@
  */
 package org.neo4j.values;
 
-import java.util.Comparator;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
+import java.util.Comparator;
 import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.virtual.VirtualValueGroup;
-
-import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Value that can exist transiently during computations, but that cannot be stored as a property value. A Virtual
  * Value could be a NodeReference for example.
  */
-public abstract class VirtualValue extends HashMemoizingAnyValue
-{
+public abstract class VirtualValue extends HashMemoizingAnyValue {
     @Override
-    public final boolean equalTo( Object other )
-    {
-        if ( other == null )
-        {
+    public final boolean equalTo(Object other) {
+        if (other == null) {
             return false;
         }
 
-        if ( other instanceof SequenceValue && this.isSequenceValue() )
-        {
-            return ((SequenceValue) this).equals( (SequenceValue) other );
+        if (other instanceof SequenceValue && this.isSequenceValue()) {
+            return ((SequenceValue) this).equals((SequenceValue) other);
         }
-        return other instanceof VirtualValue && equals( (VirtualValue) other );
+        return other instanceof VirtualValue && equals((VirtualValue) other);
     }
 
-    public abstract boolean equals( VirtualValue other );
+    public abstract boolean equals(VirtualValue other);
 
     @Override
-    public Equality ternaryEquals( AnyValue other )
-    {
+    public Equality ternaryEquals(AnyValue other) {
         assert other != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
-        if ( other == NO_VALUE )
-        {
+        if (other == NO_VALUE) {
             return Equality.UNDEFINED;
         }
-        if ( other instanceof SequenceValue && this.isSequenceValue() )
-        {
-            return ((SequenceValue) this).ternaryEquality( (SequenceValue) other );
+        if (other instanceof SequenceValue && this.isSequenceValue()) {
+            return ((SequenceValue) this).ternaryEquality((SequenceValue) other);
         }
-        if ( other instanceof VirtualValue && ((VirtualValue) other).valueGroup() == valueGroup() )
-        {
-            return equals( (VirtualValue) other ) ? Equality.TRUE : Equality.FALSE;
+        if (other instanceof VirtualValue && ((VirtualValue) other).valueGroup() == valueGroup()) {
+            return equals((VirtualValue) other) ? Equality.TRUE : Equality.FALSE;
         }
         return Equality.FALSE;
     }
 
     public abstract VirtualValueGroup valueGroup();
 
-    public abstract int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator );
+    public abstract int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator);
 
-    public abstract Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator );
+    public abstract Comparison unsafeTernaryCompareTo(VirtualValue other, TernaryComparator<AnyValue> comparator);
 
     @Override
-    public ValueRepresentation valueRepresentation()
-    {
+    public ValueRepresentation valueRepresentation() {
         return ValueRepresentation.UNKNOWN;
     }
 
-    public boolean isDeleted()
-    {
+    public boolean isDeleted() {
         return false;
     }
 }

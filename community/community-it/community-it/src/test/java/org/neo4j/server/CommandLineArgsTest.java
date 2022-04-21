@@ -19,12 +19,6 @@
  */
 package org.neo4j.server;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-
-import org.neo4j.configuration.Config;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -32,121 +26,116 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
-public class CommandLineArgsTest
-{
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+
+public class CommandLineArgsTest {
     @Test
-    void shouldPickUpSpecifiedConfigFile()
-    {
-        Path dir = Path.of( "/some-dir" ).toAbsolutePath();
-        Path expectedFile = dir.resolve( Config.DEFAULT_CONFIG_FILE_NAME );
-        assertEquals( expectedFile, parse( "--config-dir", dir.toString() ).configFile() );
-        assertEquals( expectedFile, parse( "--config-dir=" + dir ).configFile() );
+    void shouldPickUpSpecifiedConfigFile() {
+        Path dir = Path.of("/some-dir").toAbsolutePath();
+        Path expectedFile = dir.resolve(Config.DEFAULT_CONFIG_FILE_NAME);
+        assertEquals(expectedFile, parse("--config-dir", dir.toString()).configFile());
+        assertEquals(expectedFile, parse("--config-dir=" + dir).configFile());
     }
 
     @Test
-    void shouldResolveConfigFileRelativeToWorkingDirectory()
-    {
-        Path expectedFile = Path.of( "some-dir", Config.DEFAULT_CONFIG_FILE_NAME );
-        assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
-        assertEquals( expectedFile, parse( "--config-dir=some-dir" ).configFile() );
+    void shouldResolveConfigFileRelativeToWorkingDirectory() {
+        Path expectedFile = Path.of("some-dir", Config.DEFAULT_CONFIG_FILE_NAME);
+        assertEquals(expectedFile, parse("--config-dir", "some-dir").configFile());
+        assertEquals(expectedFile, parse("--config-dir=some-dir").configFile());
     }
 
     @Test
-    void shouldReturnNullIfConfigDirIsNotSpecified()
-    {
-        assertNull( parse().configFile() );
+    void shouldReturnNullIfConfigDirIsNotSpecified() {
+        assertNull(parse().configFile());
     }
 
     @Test
-    void shouldPickUpSpecifiedHomeDir()
-    {
-        Path homeDir = Path.of( "/some/absolute/homedir" ).toAbsolutePath();
+    void shouldPickUpSpecifiedHomeDir() {
+        Path homeDir = Path.of("/some/absolute/homedir").toAbsolutePath();
 
-        assertEquals( homeDir, parse( "--home-dir", homeDir.toString() ).homeDir() );
-        assertEquals( homeDir, parse( "--home-dir=" + homeDir ).homeDir() );
+        assertEquals(homeDir, parse("--home-dir", homeDir.toString()).homeDir());
+        assertEquals(homeDir, parse("--home-dir=" + homeDir).homeDir());
     }
 
     @Test
-    void shouldReturnNullIfHomeDirIsNotSpecified()
-    {
-        assertNull( parse().homeDir() );
+    void shouldReturnNullIfHomeDirIsNotSpecified() {
+        assertNull(parse().homeDir());
     }
 
     @Test
-    void shouldPickUpOverriddenConfigurationParameters()
-    {
+    void shouldPickUpOverriddenConfigurationParameters() {
         // GIVEN
-        String[] args = array( "-c", "myoption=myvalue" );
+        String[] args = array("-c", "myoption=myvalue");
 
         // WHEN
-        CommandLineArgs parsed = CommandLineArgs.parse( args );
+        CommandLineArgs parsed = CommandLineArgs.parse(args);
 
         // THEN
-        assertEquals( stringMap( "myoption", "myvalue" ),
-                parsed.configOverrides() );
+        assertEquals(stringMap("myoption", "myvalue"), parsed.configOverrides());
     }
 
     @Test
-    void shouldPickUpOverriddenBooleanConfigurationParameters()
-    {
+    void shouldPickUpOverriddenBooleanConfigurationParameters() {
         // GIVEN
-        String[] args = array( "-c", "myoptionenabled" );
+        String[] args = array("-c", "myoptionenabled");
 
         // WHEN
-        CommandLineArgs parsed = CommandLineArgs.parse( args );
+        CommandLineArgs parsed = CommandLineArgs.parse(args);
 
         // THEN
-        assertEquals( stringMap( "myoptionenabled", Boolean.TRUE.toString() ),
-                parsed.configOverrides()  );
+        assertEquals(stringMap("myoptionenabled", Boolean.TRUE.toString()), parsed.configOverrides());
     }
 
     @Test
-    void shouldPickUpMultipleOverriddenConfigurationParameters()
-    {
+    void shouldPickUpMultipleOverriddenConfigurationParameters() {
         // GIVEN
         String[] args = array(
                 "-c", "my_first_option=first",
                 "-c", "myoptionenabled",
-                "-c", "my_second_option=second" );
+                "-c", "my_second_option=second");
 
         // WHEN
-        CommandLineArgs parsed = CommandLineArgs.parse( args );
+        CommandLineArgs parsed = CommandLineArgs.parse(args);
 
         // THEN
-        assertEquals( stringMap( "my_first_option", "first" ,
-                        "myoptionenabled", Boolean.TRUE.toString(),
-                       "my_second_option", "second" ),
-                parsed.configOverrides() );
+        assertEquals(
+                stringMap(
+                        "my_first_option",
+                        "first",
+                        "myoptionenabled",
+                        Boolean.TRUE.toString(),
+                        "my_second_option",
+                        "second"),
+                parsed.configOverrides());
     }
 
     @Test
-    void shouldPickUpExpandCommandsArgument()
-    {
+    void shouldPickUpExpandCommandsArgument() {
         // GIVEN
-        String[] args = array( "--expand-commands");
+        String[] args = array("--expand-commands");
 
         // WHEN
-        CommandLineArgs parsed = CommandLineArgs.parse( args );
+        CommandLineArgs parsed = CommandLineArgs.parse(args);
 
         // THEN
-        assertTrue( parsed.expandCommands() );
+        assertTrue(parsed.expandCommands());
     }
 
     @Test
-    void expandCommandsShouldBeDisabledByDefault()
-    {
+    void expandCommandsShouldBeDisabledByDefault() {
         // GIVEN
-        String[] args = array( "foo" );
+        String[] args = array("foo");
 
         // WHEN
-        CommandLineArgs parsed = CommandLineArgs.parse( args );
+        CommandLineArgs parsed = CommandLineArgs.parse(args);
 
         // THEN
-        assertFalse( parsed.expandCommands() );
+        assertFalse(parsed.expandCommands());
     }
 
-    private static CommandLineArgs parse( String... args )
-    {
-        return CommandLineArgs.parse( args );
+    private static CommandLineArgs parse(String... args) {
+        return CommandLineArgs.parse(args);
     }
 }

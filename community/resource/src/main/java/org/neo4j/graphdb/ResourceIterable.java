@@ -20,7 +20,6 @@
 package org.neo4j.graphdb;
 
 import java.util.stream.Stream;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -77,8 +76,7 @@ import org.neo4j.annotations.api.PublicApi;
  * @see ResourceIterator
  */
 @PublicApi
-public interface ResourceIterable<T> extends Iterable<T>, Resource
-{
+public interface ResourceIterable<T> extends Iterable<T>, Resource {
     /**
      * Returns an {@link ResourceIterator iterator} with associated resources that may be managed.
      */
@@ -91,8 +89,7 @@ public interface ResourceIterable<T> extends Iterable<T>, Resource
      *
      * @return this iterable as a {@link Stream}
      */
-    default Stream<T> stream()
-    {
-        return iterator().stream().onClose( this::close );
+    default Stream<T> stream() {
+        return iterator().stream().onClose(this::close);
     }
 }

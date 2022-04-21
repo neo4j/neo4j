@@ -19,28 +19,26 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.collections.api.list.primitive.ImmutableLongList;
-import org.eclipse.collections.api.list.primitive.LongList;
-import org.eclipse.collections.api.list.primitive.MutableLongList;
-import org.eclipse.collections.impl.factory.primitive.LongLists;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.list.primitive.ImmutableLongList;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 
-import static java.util.Collections.unmodifiableList;
-import static java.util.Collections.unmodifiableMap;
-
-public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VALUE>
-{
+public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY, VALUE> {
     private final MutableLongList internalNodes = LongLists.mutable.empty();
     private final MutableLongList leafNodes = LongLists.mutable.empty();
     private final MutableLongList allNodes = LongLists.mutable.empty();
     private final MutableLongList offloadNodes = LongLists.mutable.empty();
-    private final Map<Long,Integer> allKeyCounts = new HashMap<>();
+    private final Map<Long, Integer> allKeyCounts = new HashMap<>();
     private final List<LongList> nodesPerLevel = new ArrayList<>();
     private final List<FreelistEntry> allFreelistEntries = new ArrayList<>();
     private final MutableLongList unreleasedFreelistEntries = LongLists.mutable.empty();
@@ -50,92 +48,76 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VA
     private MutableLongList currentLevelNodes;
     private long currentFreelistPage;
 
-    public InspectingVisitor()
-    {
+    public InspectingVisitor() {
         clear();
     }
 
-    public GBPTreeInspection get()
-    {
-        final List<ImmutableLongList> immutableNodesPerLevel = nodesPerLevel.stream()
-                .map( LongLists.immutable::ofAll )
-                .collect( Collectors.toList() );
+    public GBPTreeInspection get() {
+        final List<ImmutableLongList> immutableNodesPerLevel =
+                nodesPerLevel.stream().map(LongLists.immutable::ofAll).collect(Collectors.toList());
         return new GBPTreeInspection(
                 internalNodes.toImmutable(),
                 leafNodes.toImmutable(),
                 allNodes.toImmutable(),
                 offloadNodes.toImmutable(),
-                unmodifiableMap( allKeyCounts ),
+                unmodifiableMap(allKeyCounts),
                 immutableNodesPerLevel,
-                unmodifiableList( allFreelistEntries ),
+                unmodifiableList(allFreelistEntries),
                 unreleasedFreelistEntries.toImmutable(),
                 rootNode,
                 lastLevel,
-                treeState );
+                treeState);
     }
 
     @Override
-    public void treeState( Pair<TreeState,TreeState> statePair )
-    {
-        this.treeState = TreeStatePair.selectNewestValidState( statePair );
+    public void treeState(Pair<TreeState, TreeState> statePair) {
+        this.treeState = TreeStatePair.selectNewestValidState(statePair);
     }
 
     @Override
-    public void beginLevel( int level )
-    {
+    public void beginLevel(int level) {
         lastLevel = level;
         currentLevelNodes = LongLists.mutable.empty();
-        nodesPerLevel.add( currentLevelNodes );
+        nodesPerLevel.add(currentLevelNodes);
     }
 
     @Override
-    public void beginNode( long pageId, boolean isLeaf, long generation, int keyCount )
-    {
-        if ( lastLevel == 0 )
-        {
-            if ( rootNode != -1 )
-            {
-                throw new IllegalStateException( "Expected to only have a single node on level 0" );
+    public void beginNode(long pageId, boolean isLeaf, long generation, int keyCount) {
+        if (lastLevel == 0) {
+            if (rootNode != -1) {
+                throw new IllegalStateException("Expected to only have a single node on level 0");
             }
             rootNode = pageId;
         }
 
-        currentLevelNodes.add( pageId );
-        allNodes.add( pageId );
-        allKeyCounts.put( pageId, keyCount );
-        if ( isLeaf )
-        {
-            leafNodes.add( pageId );
-        }
-        else
-        {
-            internalNodes.add( pageId );
+        currentLevelNodes.add(pageId);
+        allNodes.add(pageId);
+        allKeyCounts.put(pageId, keyCount);
+        if (isLeaf) {
+            leafNodes.add(pageId);
+        } else {
+            internalNodes.add(pageId);
         }
     }
 
     @Override
-    public void beginFreelistPage( long pageId )
-    {
+    public void beginFreelistPage(long pageId) {
         currentFreelistPage = pageId;
     }
 
     @Override
-    public void freelistEntry( long pageId, long generation, int pos )
-    {
-        allFreelistEntries.add( new FreelistEntry( currentFreelistPage, pos, pageId, generation ) );
+    public void freelistEntry(long pageId, long generation, int pos) {
+        allFreelistEntries.add(new FreelistEntry(currentFreelistPage, pos, pageId, generation));
     }
 
     @Override
-    public void key( KEY key, boolean isLeaf, long offloadId )
-    {
-        if ( offloadId != TreeNode.NO_OFFLOAD_ID )
-        {
-            offloadNodes.add( offloadId );
+    public void key(KEY key, boolean isLeaf, long offloadId) {
+        if (offloadId != TreeNode.NO_OFFLOAD_ID) {
+            offloadNodes.add(offloadId);
         }
     }
 
-    private void clear()
-    {
+    private void clear() {
         rootNode = -1;
         lastLevel = -1;
     }

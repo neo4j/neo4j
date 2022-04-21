@@ -21,156 +21,130 @@ package org.neo4j.server.rest.repr;
 
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
-public final class PropertiesRepresentation extends MappingRepresentation
-{
+public final class PropertiesRepresentation extends MappingRepresentation {
     private final Entity entity;
 
-    PropertiesRepresentation( Entity entity )
-    {
-        super( RepresentationType.PROPERTIES );
+    PropertiesRepresentation(Entity entity) {
+        super(RepresentationType.PROPERTIES);
         this.entity = entity;
     }
 
     @Override
-    public boolean isEmpty()
-    {
-        return !entity.getPropertyKeys()
-                .iterator()
-                .hasNext();
+    public boolean isEmpty() {
+        return !entity.getPropertyKeys().iterator().hasNext();
     }
 
     @Override
-    protected void serialize( MappingSerializer serializer )
-    {
-        serialize( serializer.writer );
+    protected void serialize(MappingSerializer serializer) {
+        serialize(serializer.writer);
     }
 
-    public void serialize( MappingWriter writer )
-    {
-        PropertyTypeDispatcher.consumeProperties( new Consumer( writer ), entity );
+    public void serialize(MappingWriter writer) {
+        PropertyTypeDispatcher.consumeProperties(new Consumer(writer), entity);
     }
 
-    private static class Consumer extends PropertyTypeDispatcher<String, Void>
-    {
+    private static class Consumer extends PropertyTypeDispatcher<String, Void> {
         private final MappingWriter writer;
 
-        Consumer( MappingWriter serializer )
-        {
+        Consumer(MappingWriter serializer) {
             this.writer = serializer;
         }
 
         @Override
-        protected Void dispatchBooleanProperty( boolean property, String param )
-        {
-            writer.writeBoolean( param, property );
+        protected Void dispatchBooleanProperty(boolean property, String param) {
+            writer.writeBoolean(param, property);
             return null;
         }
 
         @Override
-        protected Void dispatchPointProperty( Point property, String param )
-        {
-            MappingWriter pointWriter = writer.newMapping( RepresentationType.POINT, param );
-            writePoint( pointWriter, property );
+        protected Void dispatchPointProperty(Point property, String param) {
+            MappingWriter pointWriter = writer.newMapping(RepresentationType.POINT, param);
+            writePoint(pointWriter, property);
             pointWriter.done();
             return null;
         }
 
         @Override
-        protected Void dispatchTemporalProperty( Temporal property, String param )
-        {
-            writer.writeString( param, property.toString() );
+        protected Void dispatchTemporalProperty(Temporal property, String param) {
+            writer.writeString(param, property.toString());
             return null;
         }
 
         @Override
-        protected Void dispatchTemporalAmountProperty( TemporalAmount property, String param )
-        {
-            writer.writeString( param, property.toString() );
+        protected Void dispatchTemporalAmountProperty(TemporalAmount property, String param) {
+            writer.writeString(param, property.toString());
             return null;
         }
 
         @Override
-        protected Void dispatchByteProperty( byte property, String param )
-        {
-            writer.writeInteger( RepresentationType.BYTE, param, property );
+        protected Void dispatchByteProperty(byte property, String param) {
+            writer.writeInteger(RepresentationType.BYTE, param, property);
             return null;
         }
 
         @Override
-        protected Void dispatchCharacterProperty( char property, String param )
-        {
-            writer.writeInteger( RepresentationType.CHAR, param, property );
+        protected Void dispatchCharacterProperty(char property, String param) {
+            writer.writeInteger(RepresentationType.CHAR, param, property);
             return null;
         }
 
         @Override
-        protected Void dispatchDoubleProperty( double property, String param )
-        {
-            writer.writeFloatingPointNumber( RepresentationType.DOUBLE, param, property );
+        protected Void dispatchDoubleProperty(double property, String param) {
+            writer.writeFloatingPointNumber(RepresentationType.DOUBLE, param, property);
             return null;
         }
 
         @Override
-        protected Void dispatchFloatProperty( float property, String param )
-        {
-            writer.writeFloatingPointNumber( RepresentationType.FLOAT, param, property );
+        protected Void dispatchFloatProperty(float property, String param) {
+            writer.writeFloatingPointNumber(RepresentationType.FLOAT, param, property);
             return null;
         }
 
         @Override
-        protected Void dispatchIntegerProperty( int property, String param )
-        {
-            writer.writeInteger( RepresentationType.INTEGER, param, property );
+        protected Void dispatchIntegerProperty(int property, String param) {
+            writer.writeInteger(RepresentationType.INTEGER, param, property);
             return null;
         }
 
         @Override
-        protected Void dispatchLongProperty( long property, String param )
-        {
-            writer.writeInteger( RepresentationType.LONG, param, property );
+        protected Void dispatchLongProperty(long property, String param) {
+            writer.writeInteger(RepresentationType.LONG, param, property);
             return null;
         }
 
         @Override
-        protected Void dispatchShortProperty( short property, String param )
-        {
-            writer.writeInteger( RepresentationType.SHORT, param, property );
+        protected Void dispatchShortProperty(short property, String param) {
+            writer.writeInteger(RepresentationType.SHORT, param, property);
             return null;
         }
 
         @Override
-        protected Void dispatchStringProperty( String property, String param )
-        {
-            writer.writeString( param, property );
+        protected Void dispatchStringProperty(String property, String param) {
+            writer.writeString(param, property);
             return null;
         }
 
         @Override
-        protected Void dispatchStringArrayProperty( String[] property, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.STRING, param );
-            for ( String s : property )
-            {
-                list.writeString( s );
+        protected Void dispatchStringArrayProperty(String[] property, String param) {
+            ListWriter list = writer.newList(RepresentationType.STRING, param);
+            for (String s : property) {
+                list.writeString(s);
             }
             list.done();
             return null;
         }
 
         @Override
-        protected Void dispatchPointArrayProperty( Point[] property, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.POINT, param );
-            for ( Point p : property )
-            {
-                MappingWriter pointWriter = list.newMapping( RepresentationType.POINT );
-                writePoint( pointWriter, p);
+        protected Void dispatchPointArrayProperty(Point[] property, String param) {
+            ListWriter list = writer.newList(RepresentationType.POINT, param);
+            for (Point p : property) {
+                MappingWriter pointWriter = list.newMapping(RepresentationType.POINT);
+                writePoint(pointWriter, p);
                 pointWriter.done();
             }
             list.done();
@@ -178,160 +152,137 @@ public final class PropertiesRepresentation extends MappingRepresentation
         }
 
         @Override
-        protected Void dispatchTemporalArrayProperty( Temporal[] property, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.TEMPORAL, param );
-            for ( Temporal p : property )
-            {
-                list.writeString( p.toString() );
+        protected Void dispatchTemporalArrayProperty(Temporal[] property, String param) {
+            ListWriter list = writer.newList(RepresentationType.TEMPORAL, param);
+            for (Temporal p : property) {
+                list.writeString(p.toString());
             }
             list.done();
             return null;
         }
 
         @Override
-        protected Void dispatchTemporalAmountArrayProperty( TemporalAmount[] property, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.TEMPORAL_AMOUNT, param );
-            for ( TemporalAmount p : property )
-            {
-                list.writeString( p.toString() );
+        protected Void dispatchTemporalAmountArrayProperty(TemporalAmount[] property, String param) {
+            ListWriter list = writer.newList(RepresentationType.TEMPORAL_AMOUNT, param);
+            for (TemporalAmount p : property) {
+                list.writeString(p.toString());
             }
             list.done();
             return null;
         }
 
         @Override
-        @SuppressWarnings( "boxing" )
-        protected Void dispatchByteArrayProperty( PropertyArray<Byte> array, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.BYTE, param );
-            for ( Byte b : array )
-            {
-                list.writeInteger( RepresentationType.BYTE, b );
+        @SuppressWarnings("boxing")
+        protected Void dispatchByteArrayProperty(PropertyArray<Byte> array, String param) {
+            ListWriter list = writer.newList(RepresentationType.BYTE, param);
+            for (Byte b : array) {
+                list.writeInteger(RepresentationType.BYTE, b);
             }
             list.done();
             return null;
         }
 
         @Override
-        @SuppressWarnings( "boxing" )
-        protected Void dispatchShortArrayProperty( PropertyArray<Short> array, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.SHORT, param );
-            for ( Short s : array )
-            {
-                list.writeInteger( RepresentationType.SHORT, s );
+        @SuppressWarnings("boxing")
+        protected Void dispatchShortArrayProperty(PropertyArray<Short> array, String param) {
+            ListWriter list = writer.newList(RepresentationType.SHORT, param);
+            for (Short s : array) {
+                list.writeInteger(RepresentationType.SHORT, s);
             }
             list.done();
             return null;
         }
 
         @Override
-        @SuppressWarnings( "boxing" )
-        protected Void dispatchCharacterArrayProperty( PropertyArray<Character> array, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.CHAR, param );
-            for ( Character c : array )
-            {
-                list.writeInteger( RepresentationType.CHAR, c );
+        @SuppressWarnings("boxing")
+        protected Void dispatchCharacterArrayProperty(PropertyArray<Character> array, String param) {
+            ListWriter list = writer.newList(RepresentationType.CHAR, param);
+            for (Character c : array) {
+                list.writeInteger(RepresentationType.CHAR, c);
             }
             list.done();
             return null;
         }
 
         @Override
-        @SuppressWarnings( "boxing" )
-        protected Void dispatchIntegerArrayProperty( PropertyArray<Integer> array, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.INTEGER, param );
-            for ( Integer i : array )
-            {
-                list.writeInteger( RepresentationType.INTEGER, i );
+        @SuppressWarnings("boxing")
+        protected Void dispatchIntegerArrayProperty(PropertyArray<Integer> array, String param) {
+            ListWriter list = writer.newList(RepresentationType.INTEGER, param);
+            for (Integer i : array) {
+                list.writeInteger(RepresentationType.INTEGER, i);
             }
             list.done();
             return null;
         }
 
         @Override
-        @SuppressWarnings( "boxing" )
-        protected Void dispatchLongArrayProperty( PropertyArray<Long> array, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.LONG, param );
-            for ( Long j : array )
-            {
-                list.writeInteger( RepresentationType.LONG, j );
+        @SuppressWarnings("boxing")
+        protected Void dispatchLongArrayProperty(PropertyArray<Long> array, String param) {
+            ListWriter list = writer.newList(RepresentationType.LONG, param);
+            for (Long j : array) {
+                list.writeInteger(RepresentationType.LONG, j);
             }
             list.done();
             return null;
         }
 
         @Override
-        @SuppressWarnings( "boxing" )
-        protected Void dispatchFloatArrayProperty( PropertyArray<Float> array, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.FLOAT, param );
-            for ( Float f : array )
-            {
-                list.writeFloatingPointNumber( RepresentationType.FLOAT, f );
+        @SuppressWarnings("boxing")
+        protected Void dispatchFloatArrayProperty(PropertyArray<Float> array, String param) {
+            ListWriter list = writer.newList(RepresentationType.FLOAT, param);
+            for (Float f : array) {
+                list.writeFloatingPointNumber(RepresentationType.FLOAT, f);
             }
             list.done();
             return null;
         }
 
         @Override
-        @SuppressWarnings( "boxing" )
-        protected Void dispatchDoubleArrayProperty( PropertyArray<Double> array, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.DOUBLE, param );
-            for ( Double d : array )
-            {
-                list.writeFloatingPointNumber( RepresentationType.DOUBLE, d );
+        @SuppressWarnings("boxing")
+        protected Void dispatchDoubleArrayProperty(PropertyArray<Double> array, String param) {
+            ListWriter list = writer.newList(RepresentationType.DOUBLE, param);
+            for (Double d : array) {
+                list.writeFloatingPointNumber(RepresentationType.DOUBLE, d);
             }
             list.done();
             return null;
         }
 
         @Override
-        @SuppressWarnings( "boxing" )
-        protected Void dispatchBooleanArrayProperty( PropertyArray<Boolean> array, String param )
-        {
-            ListWriter list = writer.newList( RepresentationType.BOOLEAN, param );
-            for ( Boolean z : array )
-            {
-                list.writeBoolean( z );
+        @SuppressWarnings("boxing")
+        protected Void dispatchBooleanArrayProperty(PropertyArray<Boolean> array, String param) {
+            ListWriter list = writer.newList(RepresentationType.BOOLEAN, param);
+            for (Boolean z : array) {
+                list.writeBoolean(z);
             }
             list.done();
             return null;
         }
 
-        private static void writePoint( MappingWriter pointWriter, Point property )
-        {
-            pointWriter.writeString( "type", property.getGeometryType() );
-            //write coordinates
-            ListWriter coordinatesWriter = pointWriter.newList( RepresentationType.DOUBLE, "coordinates" );
-            for ( Double coordinate : property.getCoordinate().getCoordinate() )
-            {
-                coordinatesWriter.writeFloatingPointNumber( RepresentationType.DOUBLE, coordinate );
+        private static void writePoint(MappingWriter pointWriter, Point property) {
+            pointWriter.writeString("type", property.getGeometryType());
+            // write coordinates
+            ListWriter coordinatesWriter = pointWriter.newList(RepresentationType.DOUBLE, "coordinates");
+            for (Double coordinate : property.getCoordinate().getCoordinate()) {
+                coordinatesWriter.writeFloatingPointNumber(RepresentationType.DOUBLE, coordinate);
             }
             coordinatesWriter.done();
 
-            //Write coordinate reference system
+            // Write coordinate reference system
             CRS crs = property.getCRS();
-            MappingWriter crsWriter = pointWriter.newMapping( RepresentationType.MAP, "crs" );
-            crsWriter.writeInteger( RepresentationType.INTEGER, "srid", crs.getCode() );
-            crsWriter.writeString( "name", crs.getType() );
-            crsWriter.writeString( "type", "link" );
-            MappingWriter propertiesWriter = crsWriter.newMapping( Representation.MAP, "properties" );
-            propertiesWriter.writeString( "href", crs.getHref() + "ogcwkt/" );
-            propertiesWriter.writeString( "type","ogcwkt" );
+            MappingWriter crsWriter = pointWriter.newMapping(RepresentationType.MAP, "crs");
+            crsWriter.writeInteger(RepresentationType.INTEGER, "srid", crs.getCode());
+            crsWriter.writeString("name", crs.getType());
+            crsWriter.writeString("type", "link");
+            MappingWriter propertiesWriter = crsWriter.newMapping(Representation.MAP, "properties");
+            propertiesWriter.writeString("href", crs.getHref() + "ogcwkt/");
+            propertiesWriter.writeString("type", "ogcwkt");
             propertiesWriter.done();
             crsWriter.done();
         }
     }
 
-    public static Representation value( Object property )
-    {
-        return ValueRepresentation.property( property );
+    public static Representation value(Object property) {
+        return ValueRepresentation.property(property);
     }
 }

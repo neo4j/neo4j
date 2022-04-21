@@ -19,42 +19,39 @@
  */
 package org.neo4j.dbms.database;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+
 import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-
-public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
-{
+public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext> {
     private DatabaseContextFactory<StandaloneDatabaseContext> databaseContextFactory;
 
-    public DefaultDatabaseManager( GlobalModule globalModule, DatabaseContextFactory<StandaloneDatabaseContext> databaseContextFactory )
-    {
-        super( globalModule, true );
+    public DefaultDatabaseManager(
+            GlobalModule globalModule, DatabaseContextFactory<StandaloneDatabaseContext> databaseContextFactory) {
+        super(globalModule, true);
         this.databaseContextFactory = databaseContextFactory;
     }
 
     @Override
-    public void initialiseSystemDatabase()
-    {
-        createDatabase( NAMED_SYSTEM_DATABASE_ID );
+    public void initialiseSystemDatabase() {
+        createDatabase(NAMED_SYSTEM_DATABASE_ID);
     }
 
     @Override
-    public void initialiseDefaultDatabase()
-    {
-        String databaseName = config.get( default_database );
-        NamedDatabaseId namedDatabaseId = databaseIdRepository().getByName( databaseName )
-                .orElseThrow( () -> new DatabaseNotFoundException( "Default database not found: " + databaseName ) );
-        StandaloneDatabaseContext context = createDatabase( namedDatabaseId );
-        if ( manageDatabasesOnStartAndStop )
-        {
-            this.startDatabase( namedDatabaseId, context );
+    public void initialiseDefaultDatabase() {
+        String databaseName = config.get(default_database);
+        NamedDatabaseId namedDatabaseId = databaseIdRepository()
+                .getByName(databaseName)
+                .orElseThrow(() -> new DatabaseNotFoundException("Default database not found: " + databaseName));
+        StandaloneDatabaseContext context = createDatabase(namedDatabaseId);
+        if (manageDatabasesOnStartAndStop) {
+            this.startDatabase(namedDatabaseId, context);
         }
     }
 
@@ -67,67 +64,55 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
      * @return database context for newly created database
      */
     @Override
-    public synchronized StandaloneDatabaseContext createDatabase( NamedDatabaseId namedDatabaseId )
-    {
-        requireNonNull( namedDatabaseId );
-        log.info( "Creating '%s'.", namedDatabaseId );
-        checkDatabaseLimit( namedDatabaseId );
-        StandaloneDatabaseContext databaseContext = databaseContextFactory.create( namedDatabaseId, DatabaseOptions.SINGLE );
-        databaseMap.put( namedDatabaseId, databaseContext );
+    public synchronized StandaloneDatabaseContext createDatabase(NamedDatabaseId namedDatabaseId) {
+        requireNonNull(namedDatabaseId);
+        log.info("Creating '%s'.", namedDatabaseId);
+        checkDatabaseLimit(namedDatabaseId);
+        StandaloneDatabaseContext databaseContext =
+                databaseContextFactory.create(namedDatabaseId, DatabaseOptions.SINGLE);
+        databaseMap.put(namedDatabaseId, databaseContext);
         return databaseContext;
     }
 
     @Override
-    public void dropDatabase( NamedDatabaseId ignore )
-    {
-        throw new DatabaseManagementException( "Default database manager does not support database drop." );
+    public void dropDatabase(NamedDatabaseId ignore) {
+        throw new DatabaseManagementException("Default database manager does not support database drop.");
     }
 
     @Override
-    public void stopDatabase( NamedDatabaseId ignore )
-    {
-        throw new DatabaseManagementException( "Default database manager does not support database stop." );
+    public void stopDatabase(NamedDatabaseId ignore) {
+        throw new DatabaseManagementException("Default database manager does not support database stop.");
     }
 
     @Override
-    public void startDatabase( NamedDatabaseId namedDatabaseId )
-    {
-        throw new DatabaseManagementException( "Default database manager does not support starting databases." );
+    public void startDatabase(NamedDatabaseId namedDatabaseId) {
+        throw new DatabaseManagementException("Default database manager does not support starting databases.");
     }
 
     @Override
-    protected void stopDatabase( NamedDatabaseId namedDatabaseId, StandaloneDatabaseContext context )
-    {
-        try
-        {
-            super.stopDatabase( namedDatabaseId, context );
-        }
-        catch ( Throwable t )
-        {
-            log.error( "Failed to stop " + namedDatabaseId, t );
-            context.fail( t );
+    protected void stopDatabase(NamedDatabaseId namedDatabaseId, StandaloneDatabaseContext context) {
+        try {
+            super.stopDatabase(namedDatabaseId, context);
+        } catch (Throwable t) {
+            log.error("Failed to stop " + namedDatabaseId, t);
+            context.fail(t);
         }
     }
 
     @Override
-    protected void startDatabase( NamedDatabaseId namedDatabaseId, StandaloneDatabaseContext context )
-    {
-        try
-        {
-            super.startDatabase( namedDatabaseId, context );
-        }
-        catch ( Throwable t )
-        {
-            log.error( "Failed to start " + namedDatabaseId, t );
-            context.fail( t );
+    protected void startDatabase(NamedDatabaseId namedDatabaseId, StandaloneDatabaseContext context) {
+        try {
+            super.startDatabase(namedDatabaseId, context);
+        } catch (Throwable t) {
+            log.error("Failed to start " + namedDatabaseId, t);
+            context.fail(t);
         }
     }
 
-    private void checkDatabaseLimit( NamedDatabaseId namedDatabaseId )
-    {
-        if ( databaseMap.size() >= 2 )
-        {
-            throw new DatabaseManagementException( "Default database already exists. Fail to create another: " + namedDatabaseId );
+    private void checkDatabaseLimit(NamedDatabaseId namedDatabaseId) {
+        if (databaseMap.size() >= 2) {
+            throw new DatabaseManagementException(
+                    "Default database already exists. Fail to create another: " + namedDatabaseId);
         }
     }
 }

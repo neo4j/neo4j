@@ -21,16 +21,13 @@ package org.neo4j.server.http.cypher;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-class InvalidTransactionId extends TransactionLifecycleException
-{
-    InvalidTransactionId()
-    {
-        super( "Unrecognized transaction id. Transaction may have timed out and been rolled back." );
+class InvalidTransactionId extends TransactionLifecycleException {
+    InvalidTransactionId() {
+        super("Unrecognized transaction id. Transaction may have timed out and been rolled back.");
     }
 
     @Override
-    protected Status getStatusCode()
-    {
+    protected Status getStatusCode() {
         return Status.Transaction.TransactionNotFound;
     }
 }

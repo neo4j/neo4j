@@ -84,7 +84,7 @@ class Top1PipeTest extends CypherFunSuite {
   }
 
   test("duplicates should be sorted correctly for small lists with top 1") {
-    val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
+    val in = List(Map("a" -> 0), Map("a" -> 1), Map("a" -> 1))
     val input = new FakePipe(in)
 
     val pipe = Top1Pipe(input, InterpretedExecutionContextOrdering.asComparator(List(Descending("a"))))()
@@ -103,12 +103,12 @@ class Top1PipeTest extends CypherFunSuite {
   }
 
   test("top 1 should handle null input") {
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
 
     val pipe = TopNPipe(input, literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
-    result should equal(list(10,null))
+    result should equal(list(10, null))
   }
 
   private def list(a: Any*) = a.map(ValueUtils.of).toList
@@ -117,7 +117,7 @@ class Top1PipeTest extends CypherFunSuite {
 
     val r = new Random(1337)
 
-    val in = (0 until count).map(i => Map("a" -> i)).sortBy( _ => 50 - r.nextInt(100))
+    val in = (0 until count).map(i => Map("a" -> i)).sortBy(_ => 50 - r.nextInt(100))
     new FakePipe(in)
   }
 }

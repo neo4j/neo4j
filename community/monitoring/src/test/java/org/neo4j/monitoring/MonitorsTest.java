@@ -19,118 +19,111 @@
  */
 package org.neo4j.monitoring;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import org.neo4j.logging.NullLogProvider;
-
 import static org.mockito.Mockito.mock;
 
-class MonitorsTest
-{
-    interface MyMonitor
-    {
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.neo4j.logging.NullLogProvider;
+
+class MonitorsTest {
+    interface MyMonitor {
         void aVoid();
-        void takesArgs( String arg1, long arg2, Object ... moreArgs );
+
+        void takesArgs(String arg1, long arg2, Object... moreArgs);
     }
 
     @Test
-    void shouldProvideNoOpDelegate()
-    {
+    void shouldProvideNoOpDelegate() {
         // Given
         Monitors monitors = new Monitors();
 
         // When
-        MyMonitor monitor = monitors.newMonitor( MyMonitor.class );
+        MyMonitor monitor = monitors.newMonitor(MyMonitor.class);
 
         // Then those should be no-ops
         monitor.aVoid();
-        monitor.takesArgs( "ha", 12, new Object() );
+        monitor.takesArgs("ha", 12, new Object());
     }
 
     @Test
-    void shouldRegister()
-    {
+    void shouldRegister() {
         // Given
         Monitors monitors = new Monitors();
 
-        MyMonitor listener = mock( MyMonitor.class );
-        MyMonitor monitor = monitors.newMonitor( MyMonitor.class );
+        MyMonitor listener = mock(MyMonitor.class);
+        MyMonitor monitor = monitors.newMonitor(MyMonitor.class);
         Object obj = new Object();
 
         // When
-        monitors.addMonitorListener( listener );
+        monitors.addMonitorListener(listener);
         monitor.aVoid();
-        monitor.takesArgs( "ha", 12, obj );
+        monitor.takesArgs("ha", 12, obj);
 
         // Then
         Mockito.verify(listener).aVoid();
-        Mockito.verify(listener).takesArgs( "ha", 12, obj );
+        Mockito.verify(listener).takesArgs("ha", 12, obj);
     }
 
     @Test
-    void shouldUnregister()
-    {
+    void shouldUnregister() {
         // Given
         Monitors monitors = new Monitors();
 
-        MyMonitor listener = mock( MyMonitor.class );
-        MyMonitor monitor = monitors.newMonitor( MyMonitor.class );
+        MyMonitor listener = mock(MyMonitor.class);
+        MyMonitor monitor = monitors.newMonitor(MyMonitor.class);
         Object obj = new Object();
 
-        monitors.addMonitorListener( listener );
+        monitors.addMonitorListener(listener);
 
         // When
-        monitors.removeMonitorListener( listener );
+        monitors.removeMonitorListener(listener);
         monitor.aVoid();
-        monitor.takesArgs( "ha", 12, obj );
+        monitor.takesArgs("ha", 12, obj);
 
         // Then
-        Mockito.verifyNoMoreInteractions( listener );
+        Mockito.verifyNoMoreInteractions(listener);
     }
 
     @Test
-    void shouldRespectTags()
-    {
+    void shouldRespectTags() {
         // Given
         Monitors monitors = new Monitors();
 
-        MyMonitor listener = mock( MyMonitor.class );
-        MyMonitor monitorTag1 = monitors.newMonitor( MyMonitor.class, "tag1" );
-        MyMonitor monitorTag2 = monitors.newMonitor( MyMonitor.class, "tag2" );
+        MyMonitor listener = mock(MyMonitor.class);
+        MyMonitor monitorTag1 = monitors.newMonitor(MyMonitor.class, "tag1");
+        MyMonitor monitorTag2 = monitors.newMonitor(MyMonitor.class, "tag2");
 
         // When
-        monitors.addMonitorListener( listener, "tag2" );
+        monitors.addMonitorListener(listener, "tag2");
 
         // Then
         monitorTag1.aVoid();
-        Mockito.verifyNoInteractions( listener );
+        Mockito.verifyNoInteractions(listener);
         monitorTag2.aVoid();
-        Mockito.verify( listener ).aVoid();
-        Mockito.verifyNoMoreInteractions( listener );
+        Mockito.verify(listener).aVoid();
+        Mockito.verifyNoMoreInteractions(listener);
     }
 
     @Test
-    void eventShouldBubbleUp()
-    {
+    void eventShouldBubbleUp() {
         Monitors parent = new Monitors();
-        MyMonitor parentListener = mock( MyMonitor.class );
-        parent.addMonitorListener( parentListener );
+        MyMonitor parentListener = mock(MyMonitor.class);
+        parent.addMonitorListener(parentListener);
 
-        Monitors child = new Monitors( parent, NullLogProvider.getInstance() );
-        MyMonitor childListener = mock( MyMonitor.class );
-        child.addMonitorListener( childListener );
+        Monitors child = new Monitors(parent, NullLogProvider.getInstance());
+        MyMonitor childListener = mock(MyMonitor.class);
+        child.addMonitorListener(childListener);
 
         // Calls on monitors from parent should not reach child listeners
-        MyMonitor parentMonitor = parent.newMonitor( MyMonitor.class );
+        MyMonitor parentMonitor = parent.newMonitor(MyMonitor.class);
         parentMonitor.aVoid();
-        Mockito.verify( parentListener ).aVoid();
-        Mockito.verifyNoInteractions( childListener );
+        Mockito.verify(parentListener).aVoid();
+        Mockito.verifyNoInteractions(childListener);
 
         // Calls on monitors from child should reach both listeners
-        MyMonitor childMonitor = child.newMonitor( MyMonitor.class );
+        MyMonitor childMonitor = child.newMonitor(MyMonitor.class);
         childMonitor.aVoid();
-        Mockito.verify( parentListener, Mockito.times( 2 ) ).aVoid();
-        Mockito.verify( childListener ).aVoid();
+        Mockito.verify(parentListener, Mockito.times(2)).aVoid();
+        Mockito.verify(childListener).aVoid();
     }
 }

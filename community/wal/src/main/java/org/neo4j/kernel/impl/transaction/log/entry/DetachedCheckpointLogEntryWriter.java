@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static java.lang.Math.min;
+import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0;
+import static org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryParserV5_0.MAX_DESCRIPTION_LENGTH;
+
 import java.io.IOException;
 import java.time.Instant;
-
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
@@ -30,48 +34,46 @@ import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
-import static java.lang.Math.min;
-import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0;
-import static org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryParserV5_0.MAX_DESCRIPTION_LENGTH;
-
-public class DetachedCheckpointLogEntryWriter
-{
+public class DetachedCheckpointLogEntryWriter {
     static final int RECORD_LENGTH_BYTES = 192;
     private final KernelVersionRepository kernelVersionProvider;
     protected final WritableChecksumChannel channel;
 
-    public DetachedCheckpointLogEntryWriter( WritableChecksumChannel channel, KernelVersionRepository kernelVersionProvider )
-    {
+    public DetachedCheckpointLogEntryWriter(
+            WritableChecksumChannel channel, KernelVersionRepository kernelVersionProvider) {
         this.channel = channel;
         this.kernelVersionProvider = kernelVersionProvider;
     }
 
-    public void writeCheckPointEntry( TransactionId transactionId, LogPosition logPosition, Instant checkpointTime, LegacyStoreId storeId, String reason )
-            throws IOException
-    {
+    public void writeCheckPointEntry(
+            TransactionId transactionId,
+            LogPosition logPosition,
+            Instant checkpointTime,
+            LegacyStoreId storeId,
+            String reason)
+            throws IOException {
         channel.beginChecksum();
-        writeLogEntryHeader( kernelVersionProvider.kernelVersion(), DETACHED_CHECK_POINT_V5_0, channel );
+        writeLogEntryHeader(kernelVersionProvider.kernelVersion(), DETACHED_CHECK_POINT_V5_0, channel);
         byte[] reasonBytes = reason.getBytes();
-        short length = safeCastIntToShort( min( reasonBytes.length, MAX_DESCRIPTION_LENGTH ) );
+        short length = safeCastIntToShort(min(reasonBytes.length, MAX_DESCRIPTION_LENGTH));
         byte[] descriptionBytes = new byte[MAX_DESCRIPTION_LENGTH];
-        System.arraycopy( reasonBytes, 0, descriptionBytes, 0, length );
-        channel.putLong( logPosition.getLogVersion() )
-               .putLong( logPosition.getByteOffset() )
-               .putLong( checkpointTime.toEpochMilli() )
-               .putLong( storeId.getCreationTime() )
-               .putLong( storeId.getRandomId() )
-               .putLong( storeId.getStoreVersion() )
-               .putLong( transactionId.transactionId() )
-               .putInt( transactionId.checksum() )
-               .putLong( transactionId.commitTimestamp() )
-               .putShort( length )
-               .put( descriptionBytes, descriptionBytes.length );
+        System.arraycopy(reasonBytes, 0, descriptionBytes, 0, length);
+        channel.putLong(logPosition.getLogVersion())
+                .putLong(logPosition.getByteOffset())
+                .putLong(checkpointTime.toEpochMilli())
+                .putLong(storeId.getCreationTime())
+                .putLong(storeId.getRandomId())
+                .putLong(storeId.getStoreVersion())
+                .putLong(transactionId.transactionId())
+                .putInt(transactionId.checksum())
+                .putLong(transactionId.commitTimestamp())
+                .putShort(length)
+                .put(descriptionBytes, descriptionBytes.length);
         channel.putChecksum();
     }
 
-    protected static void writeLogEntryHeader( KernelVersion kernelVersion, byte type, WritableChannel channel ) throws IOException
-    {
-        channel.put( kernelVersion.version() ).put( type );
+    protected static void writeLogEntryHeader(KernelVersion kernelVersion, byte type, WritableChannel channel)
+            throws IOException {
+        channel.put(kernelVersion.version()).put(type);
     }
 }

@@ -19,39 +19,36 @@
  */
 package org.neo4j.metatest;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.progress.ProgressListener;
-import org.neo4j.test.BatchTransaction;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
-class BatchTransactionTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.test.BatchTransaction;
+
+class BatchTransactionTest {
     @Test
-    void shouldUseProgressListener()
-    {
+    void shouldUseProgressListener() {
         // GIVEN
-        Transaction transaction = mock( Transaction.class );
-        GraphDatabaseService db = mock( GraphDatabaseService.class );
-        when( db.beginTx() ).thenReturn( transaction );
-        ProgressListener progress = mock( ProgressListener.class );
-        BatchTransaction tx = beginBatchTx( db ).withIntermediarySize( 10 ).withProgress( progress );
+        Transaction transaction = mock(Transaction.class);
+        GraphDatabaseService db = mock(GraphDatabaseService.class);
+        when(db.beginTx()).thenReturn(transaction);
+        ProgressListener progress = mock(ProgressListener.class);
+        BatchTransaction tx = beginBatchTx(db).withIntermediarySize(10).withProgress(progress);
 
         // WHEN
         tx.increment();
-        tx.increment( 9 );
+        tx.increment(9);
 
         // THEN
-        verify( db, times( 2 ) ).beginTx();
-        verify( transaction ).commit();
-        verify( progress ).add( 1 );
-        verify( progress ).add( 9 );
+        verify(db, times(2)).beginTx();
+        verify(transaction).commit();
+        verify(progress).add(1);
+        verify(progress).add(9);
     }
 }

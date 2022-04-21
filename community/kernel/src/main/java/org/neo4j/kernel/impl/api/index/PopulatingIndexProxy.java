@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -35,166 +36,137 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
-
-public class PopulatingIndexProxy implements IndexProxy
-{
+public class PopulatingIndexProxy implements IndexProxy {
     private final IndexProxyStrategy indexProxyStrategy;
     private final IndexPopulationJob job;
     private final MultipleIndexPopulator.IndexPopulation indexPopulation;
 
-    PopulatingIndexProxy( IndexProxyStrategy indexProxyStrategy, IndexPopulationJob job, MultipleIndexPopulator.IndexPopulation indexPopulation )
-    {
+    PopulatingIndexProxy(
+            IndexProxyStrategy indexProxyStrategy,
+            IndexPopulationJob job,
+            MultipleIndexPopulator.IndexPopulation indexPopulation) {
         this.indexProxyStrategy = indexProxyStrategy;
         this.job = job;
         this.indexPopulation = indexPopulation;
     }
 
     @Override
-    public void start()
-    {
+    public void start() {}
+
+    @Override
+    public void changeIdentity(IndexDescriptor descriptor) {
+        indexProxyStrategy.changeIndexDescriptor(descriptor);
     }
 
     @Override
-    public void changeIdentity( IndexDescriptor descriptor )
-    {
-        indexProxyStrategy.changeIndexDescriptor( descriptor );
-    }
-
-    @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
-        switch ( mode )
-        {
+    public IndexUpdater newUpdater(final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
+        switch (mode) {
             case ONLINE:
             case RECOVERY:
-                return new PopulatingIndexUpdater()
-                {
+                return new PopulatingIndexUpdater() {
                     @Override
-                    public void process( IndexEntryUpdate<?> update )
-                    {
-                        job.update( update );
+                    public void process(IndexEntryUpdate<?> update) {
+                        job.update(update);
                     }
                 };
             default:
-                return new PopulatingIndexUpdater()
-                {
+                return new PopulatingIndexUpdater() {
                     @Override
-                    public void process( IndexEntryUpdate<?> update )
-                    {
-                        throw new IllegalArgumentException( "Unsupported update mode: " + mode );
+                    public void process(IndexEntryUpdate<?> update) {
+                        throw new IllegalArgumentException("Unsupported update mode: " + mode);
                     }
                 };
         }
     }
 
     @Override
-    public void drop()
-    {
-        job.dropPopulation( indexPopulation );
+    public void drop() {
+        job.dropPopulation(indexPopulation);
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
-    {
+    public IndexDescriptor getDescriptor() {
         return indexProxyStrategy.getIndexDescriptor();
     }
 
     @Override
-    public InternalIndexState getState()
-    {
+    public InternalIndexState getState() {
         return InternalIndexState.POPULATING;
     }
 
     @Override
-    public void force( CursorContext cursorContext )
-    {
+    public void force(CursorContext cursorContext) {
         // Ignored... this isn't called from the outside while we're populating the index.
     }
 
     @Override
-    public void refresh()
-    {
+    public void refresh() {
         // Ignored... this isn't called from the outside while we're populating the index.
     }
 
     @Override
-    public void close( CursorContext cursorContext )
-    {
-        job.stop( indexPopulation, cursorContext );
+    public void close(CursorContext cursorContext) {
+        job.stop(indexPopulation, cursorContext);
     }
 
     @Override
-    public ValueIndexReader newValueReader() throws IndexNotFoundKernelException
-    {
-        throw new IndexNotFoundKernelException( "Index is still populating: " + job );
+    public ValueIndexReader newValueReader() throws IndexNotFoundKernelException {
+        throw new IndexNotFoundKernelException("Index is still populating: " + job);
     }
 
     @Override
-    public TokenIndexReader newTokenReader() throws IndexNotFoundKernelException
-    {
-        throw new IndexNotFoundKernelException( "Index is still populating: " + job );
+    public TokenIndexReader newTokenReader() throws IndexNotFoundKernelException {
+        throw new IndexNotFoundKernelException("Index is still populating: " + job);
     }
 
     @Override
-    public boolean awaitStoreScanCompleted( long time, TimeUnit unit ) throws InterruptedException
-    {
-        return job.awaitCompletion( time, unit );
+    public boolean awaitStoreScanCompleted(long time, TimeUnit unit) throws InterruptedException {
+        return job.awaitCompletion(time, unit);
     }
 
     @Override
-    public void activate()
-    {
-        throw new IllegalStateException( "Cannot activate index while it is still populating: " + job );
+    public void activate() {
+        throw new IllegalStateException("Cannot activate index while it is still populating: " + job);
     }
 
     @Override
-    public void validate()
-    {
-        throw new IllegalStateException( "Cannot validate index while it is still populating: " + job );
+    public void validate() {
+        throw new IllegalStateException("Cannot validate index while it is still populating: " + job);
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple, long entityId )
-    {
-        // It's OK to put whatever values in while populating because it will take the natural path of failing the population.
+    public void validateBeforeCommit(Value[] tuple, long entityId) {
+        // It's OK to put whatever values in while populating because it will take the natural path of failing the
+        // population.
     }
 
     @Override
-    public ResourceIterator<Path> snapshotFiles()
-    {
+    public ResourceIterator<Path> snapshotFiles() {
         return emptyResourceIterator();
     }
 
     @Override
-    public Map<String,Value> indexConfig()
-    {
+    public Map<String, Value> indexConfig() {
         return indexPopulation.populator.indexConfig();
     }
 
     @Override
-    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
-    {
-        throw new IllegalStateException( this + " is POPULATING" );
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException {
+        throw new IllegalStateException(this + " is POPULATING");
     }
 
     @Override
-    public PopulationProgress getIndexPopulationProgress()
-    {
-        return job.getPopulationProgress( indexPopulation );
+    public PopulationProgress getIndexPopulationProgress() {
+        return job.getPopulationProgress(indexPopulation);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + "[job:" + job + "]";
     }
 
-    private abstract static class PopulatingIndexUpdater implements IndexUpdater
-    {
+    private abstract static class PopulatingIndexUpdater implements IndexUpdater {
         @Override
-        public void close()
-        {
-        }
+        public void close() {}
     }
 }

@@ -19,123 +19,109 @@
  */
 package org.neo4j.buffer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import io.netty.buffer.ByteBuf;
-import org.junit.jupiter.api.Test;
-
 import java.nio.ByteBuffer;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.bufferpool.ByteBufferManger;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-class HeapBufferTest
-{
-    private final NettyMemoryManagerWrapper nettyBufferAllocator = new NettyMemoryManagerWrapper( new ThrowingBufferPool() );
+class HeapBufferTest {
+    private final NettyMemoryManagerWrapper nettyBufferAllocator =
+            new NettyMemoryManagerWrapper(new ThrowingBufferPool());
 
     @Test
-    void testBasicAllocation()
-    {
-        ByteBuf buf = nettyBufferAllocator.heapBuffer( 1500, 10_000 );
+    void testBasicAllocation() {
+        ByteBuf buf = nettyBufferAllocator.heapBuffer(1500, 10_000);
 
-        assertEquals( 1500, buf.capacity() );
-        assertEquals( 10_000, buf.maxCapacity() );
-        assertFalse( buf.isDirect() );
+        assertEquals(1500, buf.capacity());
+        assertEquals(10_000, buf.maxCapacity());
+        assertFalse(buf.isDirect());
 
-        write( buf, 1000 );
+        write(buf, 1000);
         buf.release();
     }
 
     @Test
-    void testBufferGrow()
-    {
-        ByteBuf buf = nettyBufferAllocator.heapBuffer( 1500, 20_000 );
-        write( buf, 1000 );
-        assertEquals( 1500, buf.capacity() );
-        write( buf, 1000 );
-        assertEquals( 2048, buf.capacity() );
-        write( buf, 1000 );
-        assertEquals( 4096, buf.capacity() );
-        write( buf, 10_000 );
-        assertEquals( 16_384, buf.capacity() );
+    void testBufferGrow() {
+        ByteBuf buf = nettyBufferAllocator.heapBuffer(1500, 20_000);
+        write(buf, 1000);
+        assertEquals(1500, buf.capacity());
+        write(buf, 1000);
+        assertEquals(2048, buf.capacity());
+        write(buf, 1000);
+        assertEquals(4096, buf.capacity());
+        write(buf, 10_000);
+        assertEquals(16_384, buf.capacity());
         buf.release();
     }
 
     @Test
-    void testDefaultCapacities()
-    {
+    void testDefaultCapacities() {
         ByteBuf buf = nettyBufferAllocator.heapBuffer();
 
-        assertEquals( 256, buf.capacity() );
-        assertEquals( Integer.MAX_VALUE, buf.maxCapacity() );
+        assertEquals(256, buf.capacity());
+        assertEquals(Integer.MAX_VALUE, buf.maxCapacity());
         buf.release();
     }
 
     @Test
-    void testBasicCompositeBufferAllocation()
-    {
-        ByteBuf buf = nettyBufferAllocator.compositeHeapBuffer( 10 );
+    void testBasicCompositeBufferAllocation() {
+        ByteBuf buf = nettyBufferAllocator.compositeHeapBuffer(10);
 
-        assertEquals( 0, buf.capacity() );
-        assertEquals( Integer.MAX_VALUE, buf.maxCapacity() );
-        assertFalse( buf.isDirect() );
+        assertEquals(0, buf.capacity());
+        assertEquals(Integer.MAX_VALUE, buf.maxCapacity());
+        assertFalse(buf.isDirect());
 
-        write( buf, 1000 );
+        write(buf, 1000);
 
-        assertEquals( 1024, buf.capacity() );
+        assertEquals(1024, buf.capacity());
 
         buf.release();
     }
 
     @Test
-    void testCompositeBufferGrow()
-    {
-        ByteBuf buf = nettyBufferAllocator.compositeHeapBuffer( 10 );
-        write( buf, 1000 );
-        assertEquals( 1024, buf.capacity() );
-        write( buf, 1000 );
-        assertEquals( 2048, buf.capacity() );
-        write( buf, 1000 );
-        assertEquals( 4096, buf.capacity() );
-        write( buf, 10_000 );
-        assertEquals( 16384, buf.capacity() );
+    void testCompositeBufferGrow() {
+        ByteBuf buf = nettyBufferAllocator.compositeHeapBuffer(10);
+        write(buf, 1000);
+        assertEquals(1024, buf.capacity());
+        write(buf, 1000);
+        assertEquals(2048, buf.capacity());
+        write(buf, 1000);
+        assertEquals(4096, buf.capacity());
+        write(buf, 10_000);
+        assertEquals(16384, buf.capacity());
         buf.release();
     }
 
-    private static void write( ByteBuf buf, int size )
-    {
-        for ( var i = 0; i < size; i++ )
-        {
-            buf.writeByte( 1 );
+    private static void write(ByteBuf buf, int size) {
+        for (var i = 0; i < size; i++) {
+            buf.writeByte(1);
         }
     }
 
-    private static class ThrowingBufferPool implements ByteBufferManger
-    {
+    private static class ThrowingBufferPool implements ByteBufferManger {
 
         @Override
-        public ByteBuffer acquire( int size )
-        {
-            throw new IllegalStateException( "Trying to acquire ByteBuffer" );
+        public ByteBuffer acquire(int size) {
+            throw new IllegalStateException("Trying to acquire ByteBuffer");
         }
 
         @Override
-        public void release( ByteBuffer buffer )
-        {
-            throw new IllegalStateException( "Trying to release ByteBuffer" );
+        public void release(ByteBuffer buffer) {
+            throw new IllegalStateException("Trying to release ByteBuffer");
         }
 
         @Override
-        public int recommendNewCapacity( int minNewCapacity, int maxCapacity )
-        {
-            throw new IllegalStateException( "Trying to recommend new capacity" );
+        public int recommendNewCapacity(int minNewCapacity, int maxCapacity) {
+            throw new IllegalStateException("Trying to recommend new capacity");
         }
 
         @Override
-        public MemoryTracker getHeapBufferMemoryTracker()
-        {
+        public MemoryTracker getHeapBufferMemoryTracker() {
             return EmptyMemoryTracker.INSTANCE;
         }
     }

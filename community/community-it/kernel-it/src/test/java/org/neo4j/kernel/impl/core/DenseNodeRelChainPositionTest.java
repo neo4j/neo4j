@@ -19,25 +19,21 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @ImpermanentDbmsExtension
-class DenseNodeRelChainPositionTest
-{
+class DenseNodeRelChainPositionTest {
     @Inject
     private GraphDatabaseService db;
 
@@ -47,32 +43,27 @@ class DenseNodeRelChainPositionTest
      * would be returned, ever.
      */
     @Test
-    void givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned()
-    {
+    void givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned() {
         // Given
-        final int denseNodeThreshold =
-                GraphDatabaseSettings.dense_node_threshold.defaultValue()
+        final int denseNodeThreshold = GraphDatabaseSettings.dense_node_threshold.defaultValue()
                 + 1; // We must be over the dense node threshold for the bug to manifest
 
         Node node1;
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             node1 = tx.createNode();
             Node node2 = tx.createNode();
 
-            for ( int i = 0; i < denseNodeThreshold; i++ )
-            {
-                node1.createRelationshipTo( node2, RelationshipType.withName( "FOO" ) );
+            for (int i = 0; i < denseNodeThreshold; i++) {
+                node1.createRelationshipTo(node2, RelationshipType.withName("FOO"));
             }
             tx.commit();
         }
 
         // When/Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node1b = tx.getNodeById( node1.getId() );
-            assertEquals( 0, Iterables.count( node1b.getRelationships( Direction.INCOMING ) ) );
-            assertEquals( denseNodeThreshold, Iterables.count( node1b.getRelationships( Direction.OUTGOING ) ) );
+        try (Transaction tx = db.beginTx()) {
+            Node node1b = tx.getNodeById(node1.getId());
+            assertEquals(0, Iterables.count(node1b.getRelationships(Direction.INCOMING)));
+            assertEquals(denseNodeThreshold, Iterables.count(node1b.getRelationships(Direction.OUTGOING)));
         }
     }
 }

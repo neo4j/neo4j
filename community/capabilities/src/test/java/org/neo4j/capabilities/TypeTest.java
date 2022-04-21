@@ -19,10 +19,6 @@
  */
 package org.neo4j.capabilities;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Collection;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.capabilities.Type.BOOLEAN;
@@ -33,67 +29,62 @@ import static org.neo4j.capabilities.Type.LONG;
 import static org.neo4j.capabilities.Type.STRING;
 import static org.neo4j.capabilities.Type.listOf;
 
-class TypeTest
-{
+import java.util.Collection;
+import org.junit.jupiter.api.Test;
+
+class TypeTest {
 
     @Test
-    void testString()
-    {
-        assertThat( STRING.name() ).isEqualTo( "string" );
-        assertThat( STRING.description() ).isEqualTo( "a string value" );
-        assertThat( STRING.type() ).isEqualTo( String.class );
+    void testString() {
+        assertThat(STRING.name()).isEqualTo("string");
+        assertThat(STRING.description()).isEqualTo("a string value");
+        assertThat(STRING.type()).isEqualTo(String.class);
     }
 
     @Test
-    void testBoolean()
-    {
-        assertThat( BOOLEAN.name() ).isEqualTo( "boolean" );
-        assertThat( BOOLEAN.description() ).isEqualTo( "a boolean value" );
-        assertThat( BOOLEAN.type() ).isEqualTo( Boolean.class );
+    void testBoolean() {
+        assertThat(BOOLEAN.name()).isEqualTo("boolean");
+        assertThat(BOOLEAN.description()).isEqualTo("a boolean value");
+        assertThat(BOOLEAN.type()).isEqualTo(Boolean.class);
     }
 
     @Test
-    void testInteger()
-    {
-        assertThat( INTEGER.name() ).isEqualTo( "integer" );
-        assertThat( INTEGER.description() ).isEqualTo( "an integer value" );
-        assertThat( INTEGER.type() ).isEqualTo( Integer.class );
+    void testInteger() {
+        assertThat(INTEGER.name()).isEqualTo("integer");
+        assertThat(INTEGER.description()).isEqualTo("an integer value");
+        assertThat(INTEGER.type()).isEqualTo(Integer.class);
     }
 
     @Test
-    void testLong()
-    {
-        assertThat( LONG.name() ).isEqualTo( "long" );
-        assertThat( LONG.description() ).isEqualTo( "a long value" );
-        assertThat( LONG.type() ).isEqualTo( Long.class );
+    void testLong() {
+        assertThat(LONG.name()).isEqualTo("long");
+        assertThat(LONG.description()).isEqualTo("a long value");
+        assertThat(LONG.type()).isEqualTo(Long.class);
     }
 
     @Test
-    void testFloat()
-    {
-        assertThat( FLOAT.name() ).isEqualTo( "float" );
-        assertThat( FLOAT.description() ).isEqualTo( "a float value" );
-        assertThat( FLOAT.type() ).isEqualTo( Float.class );
+    void testFloat() {
+        assertThat(FLOAT.name()).isEqualTo("float");
+        assertThat(FLOAT.description()).isEqualTo("a float value");
+        assertThat(FLOAT.type()).isEqualTo(Float.class);
     }
 
     @Test
-    void testDouble()
-    {
-        assertThat( DOUBLE.name() ).isEqualTo( "double" );
-        assertThat( DOUBLE.description() ).isEqualTo( "a double value" );
-        assertThat( DOUBLE.type() ).isEqualTo( Double.class );
+    void testDouble() {
+        assertThat(DOUBLE.name()).isEqualTo("double");
+        assertThat(DOUBLE.description()).isEqualTo("a double value");
+        assertThat(DOUBLE.type()).isEqualTo(Double.class);
     }
 
     @Test
-    void testListOf()
-    {
-        var list = listOf( STRING );
-        assertThat( list.name() ).isEqualTo( "list of string" );
-        assertThat( list.description() ).isEqualTo( "a list of string values" );
-        assertThat( list.type() ).isEqualTo( Collection.class );
+    void testListOf() {
+        var list = listOf(STRING);
+        assertThat(list.name()).isEqualTo("list of string");
+        assertThat(list.description()).isEqualTo("a list of string values");
+        assertThat(list.type()).isEqualTo(Collection.class);
 
-        assertThatThrownBy( () -> listOf( listOf( STRING ) ) )
-                .isInstanceOf( IllegalArgumentException.class )
-                .hasMessage( "nested list types is not supported." );
+        assertThatThrownBy(() -> listOf(listOf(STRING)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("nested list types is not supported.");
     }
 }

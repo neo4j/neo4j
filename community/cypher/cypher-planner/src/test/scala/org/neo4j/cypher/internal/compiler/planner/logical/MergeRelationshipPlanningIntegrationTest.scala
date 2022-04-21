@@ -50,7 +50,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       .emptyResult()
       .merge(
         nodes = Seq(createNode("a", "A"), createNode("b")),
-        relationships = Seq(createRelationship("r", "a", "R", "b", OUTGOING)))
+        relationships = Seq(createRelationship("r", "a", "R", "b", OUTGOING))
+      )
       .expandAll("(a)-[r:R]->(b)")
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
@@ -177,7 +178,9 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
   }
 
-  test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
+  test(
+    "should plan only one create node when the other node is already in scope and aliased when creating a relationship"
+  ) {
     val cfg = plannerConfigForMergeOnExistingVariableTests()
 
     val plan = cfg.plan("MATCH (n) WITH n AS a MERGE (a)-[r:T]->(b)").stripProduceResults

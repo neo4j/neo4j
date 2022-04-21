@@ -22,7 +22,6 @@ package org.neo4j.kernel.monitoring;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.InternalLog;
@@ -30,84 +29,66 @@ import org.neo4j.logging.InternalLog;
 /**
  * Handle the collection of database event listeners, and fire events as needed.
  */
-public class DatabaseEventListeners
-{
+public class DatabaseEventListeners {
     private final List<DatabaseEventListener> databaseEventListeners = new CopyOnWriteArrayList<>();
     private final InternalLog log;
 
-    public DatabaseEventListeners( InternalLog log )
-    {
+    public DatabaseEventListeners(InternalLog log) {
         this.log = log;
     }
 
-    public void registerDatabaseEventListener( DatabaseEventListener listener )
-    {
-        addListener( listener, databaseEventListeners );
+    public void registerDatabaseEventListener(DatabaseEventListener listener) {
+        addListener(listener, databaseEventListeners);
     }
 
-    public void unregisterDatabaseEventListener( DatabaseEventListener listener )
-    {
-        removeListener( listener, databaseEventListeners );
+    public void unregisterDatabaseEventListener(DatabaseEventListener listener) {
+        removeListener(listener, databaseEventListeners);
     }
 
-    private static <T> void addListener( T listener, List<T> listeners )
-    {
-        if ( listeners.contains( listener ) )
-        {
+    private static <T> void addListener(T listener, List<T> listeners) {
+        if (listeners.contains(listener)) {
             return;
         }
-        listeners.add( listener );
+        listeners.add(listener);
     }
 
-    private static <T> void removeListener( T listener, List<T> listeners )
-    {
-        if ( !listeners.remove( listener ) )
-        {
-            throw new IllegalStateException( "Database listener `" + listener + "` is not registered." );
+    private static <T> void removeListener(T listener, List<T> listeners) {
+        if (!listeners.remove(listener)) {
+            throw new IllegalStateException("Database listener `" + listener + "` is not registered.");
         }
     }
 
-    public void databaseStart( NamedDatabaseId databaseId )
-    {
-        var event = new DefaultDatabaseEvent( databaseId );
-        notifyEventListeners( handler -> handler.databaseStart( event ), databaseEventListeners );
+    public void databaseStart(NamedDatabaseId databaseId) {
+        var event = new DefaultDatabaseEvent(databaseId);
+        notifyEventListeners(handler -> handler.databaseStart(event), databaseEventListeners);
     }
 
-    public void databaseShutdown( NamedDatabaseId databaseId )
-    {
-        var event = new DefaultDatabaseEvent( databaseId );
-        notifyEventListeners( handler -> handler.databaseShutdown( event ), databaseEventListeners );
+    public void databaseShutdown(NamedDatabaseId databaseId) {
+        var event = new DefaultDatabaseEvent(databaseId);
+        notifyEventListeners(handler -> handler.databaseShutdown(event), databaseEventListeners);
     }
 
-    public void databaseCreate( NamedDatabaseId databaseId )
-    {
-        var event = new DefaultDatabaseEvent( databaseId );
-        notifyEventListeners( handler -> handler.databaseCreate( event ), databaseEventListeners );
+    public void databaseCreate(NamedDatabaseId databaseId) {
+        var event = new DefaultDatabaseEvent(databaseId);
+        notifyEventListeners(handler -> handler.databaseCreate(event), databaseEventListeners);
     }
 
-    public void databaseDrop( NamedDatabaseId databaseId )
-    {
-        var event = new DefaultDatabaseEvent( databaseId );
-        notifyEventListeners( handler -> handler.databaseDrop( event ), databaseEventListeners );
+    public void databaseDrop(NamedDatabaseId databaseId) {
+        var event = new DefaultDatabaseEvent(databaseId);
+        notifyEventListeners(handler -> handler.databaseDrop(event), databaseEventListeners);
     }
 
-    void databasePanic( NamedDatabaseId databaseId, Throwable causeOfPanic )
-    {
-        var event = new PanicDatabaseEvent( databaseId, causeOfPanic );
-        notifyEventListeners( handler -> handler.databasePanic( event ), databaseEventListeners );
+    void databasePanic(NamedDatabaseId databaseId, Throwable causeOfPanic) {
+        var event = new PanicDatabaseEvent(databaseId, causeOfPanic);
+        notifyEventListeners(handler -> handler.databasePanic(event), databaseEventListeners);
     }
 
-    private <T> void notifyEventListeners( Consumer<T> consumer, List<T> listeners )
-    {
-        for ( var listener : listeners )
-        {
-            try
-            {
-                consumer.accept( listener );
-            }
-            catch ( Throwable e )
-            {
-                log.error( "Error while handling database event by listener: " + listener, e );
+    private <T> void notifyEventListeners(Consumer<T> consumer, List<T> listeners) {
+        for (var listener : listeners) {
+            try {
+                consumer.accept(listener);
+            } catch (Throwable e) {
+                log.error("Error while handling database event by listener: " + listener, e);
             }
         }
     }

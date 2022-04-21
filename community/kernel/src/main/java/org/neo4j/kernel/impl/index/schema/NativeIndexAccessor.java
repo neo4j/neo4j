@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,7 +30,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
@@ -41,50 +43,41 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
-
 public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> extends NativeIndex<KEY>
-        implements IndexAccessor
-{
+        implements IndexAccessor {
     private final NativeIndexUpdater<KEY> singleUpdater;
     final NativeIndexHeaderWriter headerWriter;
 
-    NativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
-                         IndexDescriptor descriptor, ImmutableSet<OpenOption> openOptions )
-    {
-        super( databaseIndexContext, layout, indexFiles, descriptor, openOptions );
-        singleUpdater = new NativeIndexUpdater<>( layout.newKey(), indexUpdateIgnoreStrategy() );
-        headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE );
+    NativeIndexAccessor(
+            DatabaseIndexContext databaseIndexContext,
+            IndexFiles indexFiles,
+            IndexLayout<KEY> layout,
+            IndexDescriptor descriptor,
+            ImmutableSet<OpenOption> openOptions) {
+        super(databaseIndexContext, layout, indexFiles, descriptor, openOptions);
+        singleUpdater = new NativeIndexUpdater<>(layout.newKey(), indexUpdateIgnoreStrategy());
+        headerWriter = new NativeIndexHeaderWriter(BYTE_ONLINE);
     }
 
     @Override
-    public void drop()
-    {
-        tree.setDeleteOnClose( true );
+    public void drop() {
+        tree.setDeleteOnClose(true);
         closeTree();
         indexFiles.clear();
     }
 
     @Override
-    public NativeIndexUpdater<KEY> newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
-    {
+    public NativeIndexUpdater<KEY> newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
         assertOpen();
-        try
-        {
-            if ( parallel )
-            {
-                return new NativeIndexUpdater<>( layout.newKey(), indexUpdateIgnoreStrategy() ).initialize( tree.parallelWriter( cursorContext ) );
+        try {
+            if (parallel) {
+                return new NativeIndexUpdater<>(layout.newKey(), indexUpdateIgnoreStrategy())
+                        .initialize(tree.parallelWriter(cursorContext));
+            } else {
+                return singleUpdater.initialize(tree.writer(cursorContext));
             }
-            else
-            {
-                return singleUpdater.initialize( tree.writer( cursorContext ) );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -94,26 +87,22 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
      * other than {@link IndexUpdateIgnoreStrategy#NO_IGNORE}.
      * @return {@link IndexUpdateIgnoreStrategy} to be used by index updater.
      */
-    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy()
-    {
+    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy() {
         return IndexUpdateIgnoreStrategy.NO_IGNORE;
     }
 
     @Override
-    public void force( CursorContext cursorContext )
-    {
-        tree.checkpoint( cursorContext );
+    public void force(CursorContext cursorContext) {
+        tree.checkpoint(cursorContext);
     }
 
     @Override
-    public void refresh()
-    {
+    public void refresh() {
         // not required in this implementation
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         closeTree();
     }
 
@@ -121,96 +110,74 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     public abstract ValueIndexReader newValueReader();
 
     @Override
-    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
-    {
-        return new NativeAllEntriesReader<>( tree, layout, fromIdInclusive, toIdExclusive, cursorContext );
+    public BoundedIterable<Long> newAllEntriesValueReader(
+            long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
+        return new NativeAllEntriesReader<>(tree, layout, fromIdInclusive, toIdExclusive, cursorContext);
     }
 
     @Override
-    public ResourceIterator<Path> snapshotFiles()
-    {
-        return asResourceIterator( iterator( indexFiles.getStoreFile() ) );
+    public ResourceIterator<Path> snapshotFiles() {
+        return asResourceIterator(iterator(indexFiles.getStoreFile()));
     }
 
     @Override
-    public long estimateNumberOfEntries( CursorContext cursorContext )
-    {
-        try
-        {
-            return tree.estimateNumberOfEntriesInTree( cursorContext );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-        catch ( TreeInconsistencyException e )
-        {
+    public long estimateNumberOfEntries(CursorContext cursorContext) {
+        try {
+            return tree.estimateNumberOfEntriesInTree(cursorContext);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (TreeInconsistencyException e) {
             return UNKNOWN_NUMBER_OF_ENTRIES;
         }
     }
 
     @Override
-    public IndexEntriesReader[] newAllEntriesValueReader( int partitions, CursorContext cursorContext )
-    {
+    public IndexEntriesReader[] newAllEntriesValueReader(int partitions, CursorContext cursorContext) {
         KEY lowest = layout.newKey();
-        lowest.initialize( Long.MIN_VALUE );
+        lowest.initialize(Long.MIN_VALUE);
         lowest.initValuesAsLowest();
         KEY highest = layout.newKey();
-        highest.initialize( Long.MAX_VALUE );
+        highest.initialize(Long.MAX_VALUE);
         highest.initValuesAsHighest();
-        try
-        {
-            List<KEY> partitionEdges = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
+        try {
+            List<KEY> partitionEdges = tree.partitionedSeek(lowest, highest, partitions, cursorContext);
             Collection<IndexEntriesReader> readers = new ArrayList<>();
-            for ( int i = 0; i < partitionEdges.size() - 1; i++ )
-            {
-                Seeker<KEY,NullValue> seeker = tree.seek( partitionEdges.get( i ), partitionEdges.get( i + 1 ), cursorContext );
-                readers.add( new IndexEntriesReader()
-                {
+            for (int i = 0; i < partitionEdges.size() - 1; i++) {
+                Seeker<KEY, NullValue> seeker =
+                        tree.seek(partitionEdges.get(i), partitionEdges.get(i + 1), cursorContext);
+                readers.add(new IndexEntriesReader() {
                     @Override
-                    public long next()
-                    {
+                    public long next() {
                         return seeker.key().getEntityId();
                     }
 
                     @Override
-                    public boolean hasNext()
-                    {
-                        try
-                        {
+                    public boolean hasNext() {
+                        try {
                             return seeker.next();
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new UncheckedIOException( e );
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
                         }
                     }
 
                     @Override
-                    public Value[] values()
-                    {
+                    public Value[] values() {
                         return seeker.key().asValues();
                     }
 
                     @Override
-                    public void close()
-                    {
-                        try
-                        {
+                    public void close() {
+                        try {
                             seeker.close();
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new UncheckedIOException( e );
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
                         }
                     }
-                } );
+                });
             }
-            return readers.toArray( IndexEntriesReader[]::new );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+            return readers.toArray(IndexEntriesReader[]::new);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

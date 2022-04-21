@@ -21,17 +21,14 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.Path;
 
-public class FullPath
-{
+public class FullPath {
     private final Path path;
 
-    public FullPath( Path path )
-    {
+    public FullPath(Path path) {
         this.path = path;
     }
 
-    public Path getPath()
-    {
+    public Path getPath() {
         return path;
     }
 }

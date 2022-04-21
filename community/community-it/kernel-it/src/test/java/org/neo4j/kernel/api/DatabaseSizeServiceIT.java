@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.api;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 import java.io.IOException;
-
+import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
@@ -34,72 +39,56 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-
 @TestDirectoryExtension
-class DatabaseSizeServiceIT
-{
+class DatabaseSizeServiceIT {
     @Inject
     TestDirectory testDirectory;
 
     @Test
-    void sizeOfDatabaseWithDifferentDataAndLogFolder() throws IOException
-    {
-        var managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
-        try
-        {
-            var database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    void sizeOfDatabaseWithDifferentDataAndLogFolder() throws IOException {
+        var managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build();
+        try {
+            var database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
             var databaseLayout = database.databaseLayout();
-            assertNotEquals( databaseLayout.getTransactionLogsDirectory(), databaseLayout.databaseDirectory() );
+            assertNotEquals(databaseLayout.getTransactionLogsDirectory(), databaseLayout.databaseDirectory());
 
-            verifyDatabaseSize( database );
-        }
-        finally
-        {
+            verifyDatabaseSize(database);
+        } finally {
             managementService.shutdown();
         }
     }
 
     @Test
-    void sizeOfDatabaseWithSameDataAndLogFolder() throws IOException
-    {
-        var managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setConfig( transaction_logs_root_path, testDirectory.homePath() )
-                .setConfig( databases_root_path, testDirectory.homePath() )
+    void sizeOfDatabaseWithSameDataAndLogFolder() throws IOException {
+        var managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+                .setConfig(transaction_logs_root_path, testDirectory.homePath())
+                .setConfig(databases_root_path, testDirectory.homePath())
                 .build();
-        try
-        {
-            var database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        try {
+            var database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
             var databaseLayout = database.databaseLayout();
-            assertEquals( databaseLayout.getTransactionLogsDirectory(), databaseLayout.databaseDirectory() );
+            assertEquals(databaseLayout.getTransactionLogsDirectory(), databaseLayout.databaseDirectory());
 
-            verifyDatabaseSize( database );
-        }
-        finally
-        {
+            verifyDatabaseSize(database);
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private static void verifyDatabaseSize( GraphDatabaseAPI database ) throws IOException
-    {
-        long propertySize = ByteUnit.mebiBytes( 1 );
+    private static void verifyDatabaseSize(GraphDatabaseAPI database) throws IOException {
+        long propertySize = ByteUnit.mebiBytes(1);
 
-        try ( Transaction transaction = database.beginTx() )
-        {
+        try (Transaction transaction = database.beginTx()) {
             Node node = transaction.createNode();
-            node.setProperty( "property", RandomStringUtils.randomAscii( (int) propertySize ) );
+            node.setProperty("property", RandomStringUtils.randomAscii((int) propertySize));
             transaction.commit();
         }
 
-        var databaseSizeService = database.getDependencyResolver().resolveDependency( DatabaseSizeService.class );
+        var databaseSizeService = database.getDependencyResolver().resolveDependency(DatabaseSizeService.class);
 
-        assertThat( databaseSizeService.getDatabaseDataSize( database.databaseId() ) ).isGreaterThan( 0 );
-        assertThat( databaseSizeService.getDatabaseTotalSize( database.databaseId() ) ).isGreaterThan( propertySize );
+        assertThat(databaseSizeService.getDatabaseDataSize(database.databaseId()))
+                .isGreaterThan(0);
+        assertThat(databaseSizeService.getDatabaseTotalSize(database.databaseId()))
+                .isGreaterThan(propertySize);
     }
 }

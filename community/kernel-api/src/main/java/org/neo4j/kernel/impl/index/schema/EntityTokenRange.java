@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public interface EntityTokenRange
-{
+public interface EntityTokenRange {
     /**
      * @return the range id of this range. This is the base entity id divided by range size.
      * Example: A store with entities 1,3,20,22 and a range size of 16 would return ranges:
@@ -29,9 +28,9 @@ public interface EntityTokenRange
      */
     long id();
 
-    boolean covers( long entityId );
+    boolean covers(long entityId);
 
-    boolean isBelow( long entityId );
+    boolean isBelow(long entityId);
 
     /**
      * @return entity ids in this range, the entities in this array may or may not have {@link #tokens(long) tokens}
@@ -46,5 +45,5 @@ public interface EntityTokenRange
      * @param entityId the entity id to return tokens for.
      * @return token ids for the given {@code entityId}.
      */
-    long[] tokens( long entityId );
+    long[] tokens(long entityId);
 }

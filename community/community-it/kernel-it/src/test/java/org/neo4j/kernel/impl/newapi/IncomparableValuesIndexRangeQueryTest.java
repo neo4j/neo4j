@@ -19,15 +19,20 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
+import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT;
+import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT_ARRAY;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -45,17 +50,9 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
-import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT;
-import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT_ARRAY;
-
-@ExtendWith( RandomExtension.class )
+@ExtendWith(RandomExtension.class)
 @ImpermanentDbmsExtension
-class IncomparableValuesIndexRangeQueryTest
-{
+class IncomparableValuesIndexRangeQueryTest {
     private static String INDEX_NAME = "TestIndex";
     private static String LABEL = "TestLabel";
     private static String PROPERTY = "testProp";
@@ -67,121 +64,116 @@ class IncomparableValuesIndexRangeQueryTest
     RandomSupport random;
 
     @BeforeEach
-    void setupRandomConfig()
-    {
+    void setupRandomConfig() {
         random.reset();
         createIndex();
     }
 
-    @MethodSource( "incomparableValueTypes" )
+    @MethodSource("incomparableValueTypes")
     @ParameterizedTest
-    void testSeek( ValueType valueType ) throws KernelException
-    {
-        Range range = prepareData( valueType );
+    void testSeek(ValueType valueType) throws KernelException {
+        Range range = prepareData(valueType);
 
-        try ( var tx = db.beginTx() )
-        {
+        try (var tx = db.beginTx()) {
             var kernelTx = ((TransactionImpl) tx).kernelTransaction();
 
-            IndexDescriptor index = kernelTx.schemaRead().indexGetForName( INDEX_NAME );
-            IndexReadSession indexSession = kernelTx.dataRead().indexReadSession( index );
-            int prop = kernelTx.tokenRead().propertyKey( PROPERTY );
+            IndexDescriptor index = kernelTx.schemaRead().indexGetForName(INDEX_NAME);
+            IndexReadSession indexSession = kernelTx.dataRead().indexReadSession(index);
+            int prop = kernelTx.tokenRead().propertyKey(PROPERTY);
 
             // This is what we test ...
-            try ( NodeValueIndexCursor cursor = kernelTx.cursors().allocateNodeValueIndexCursor( kernelTx.cursorContext(), kernelTx.memoryTracker() ) )
-            {
-                var query = PropertyIndexQuery.range( prop, range.from, true, range.to, true );
+            try (NodeValueIndexCursor cursor = kernelTx.cursors()
+                    .allocateNodeValueIndexCursor(kernelTx.cursorContext(), kernelTx.memoryTracker())) {
+                var query = PropertyIndexQuery.range(prop, range.from, true, range.to, true);
 
-                kernelTx.dataRead().nodeIndexSeek( kernelTx.queryContext(), indexSession, cursor, unordered( true ), query );
-                assertFalse( cursor.next() );
+                kernelTx.dataRead()
+                        .nodeIndexSeek(kernelTx.queryContext(), indexSession, cursor, unordered(true), query);
+                assertFalse(cursor.next());
             }
 
             // and this is a sanity check that we got the setup right and the index actually contains the data
-            try ( NodeValueIndexCursor cursor = kernelTx.cursors().allocateNodeValueIndexCursor( kernelTx.cursorContext(), kernelTx.memoryTracker() ) )
-            {
-                kernelTx.dataRead().nodeIndexSeek( kernelTx.queryContext(), indexSession, cursor, unordered( true ), PropertyIndexQuery.exists( prop ) );
-                assertTrue( cursor.next() );
+            try (NodeValueIndexCursor cursor = kernelTx.cursors()
+                    .allocateNodeValueIndexCursor(kernelTx.cursorContext(), kernelTx.memoryTracker())) {
+                kernelTx.dataRead()
+                        .nodeIndexSeek(
+                                kernelTx.queryContext(),
+                                indexSession,
+                                cursor,
+                                unordered(true),
+                                PropertyIndexQuery.exists(prop));
+                assertTrue(cursor.next());
             }
         }
     }
 
-    @MethodSource( "incomparableValueTypes" )
+    @MethodSource("incomparableValueTypes")
     @ParameterizedTest
-    void testPartitionedScan( ValueType valueType ) throws KernelException
-    {
-        //We don't support partitioned scans for geographic values
-        assumeTrue( valueType != GEOGRAPHIC_POINT && valueType != GEOGRAPHIC_POINT_ARRAY );
-        Range range = prepareData( valueType );
+    void testPartitionedScan(ValueType valueType) throws KernelException {
+        // We don't support partitioned scans for geographic values
+        assumeTrue(valueType != GEOGRAPHIC_POINT && valueType != GEOGRAPHIC_POINT_ARRAY);
+        Range range = prepareData(valueType);
 
-        try ( var tx = db.beginTx() )
-        {
+        try (var tx = db.beginTx()) {
             var kernelTx = ((TransactionImpl) tx).kernelTransaction();
 
-            IndexDescriptor index = kernelTx.schemaRead().indexGetForName( INDEX_NAME );
-            IndexReadSession indexSession = kernelTx.dataRead().indexReadSession( index );
-            int prop = kernelTx.tokenRead().propertyKey( PROPERTY );
+            IndexDescriptor index = kernelTx.schemaRead().indexGetForName(INDEX_NAME);
+            IndexReadSession indexSession = kernelTx.dataRead().indexReadSession(index);
+            int prop = kernelTx.tokenRead().propertyKey(PROPERTY);
 
-            var query = PropertyIndexQuery.range( prop, range.from, true, range.to, true );
-            var partitionedScan = kernelTx.dataRead().nodeIndexSeek( indexSession, 2, kernelTx.queryContext(), query );
-            for ( int i = 0; i < 2; i++ )
-            {
-                try ( NodeValueIndexCursor cursor = kernelTx.cursors().allocateNodeValueIndexCursor( kernelTx.cursorContext(), kernelTx.memoryTracker() ) )
-                {
-                    partitionedScan.reservePartition( cursor, kernelTx.cursorContext(), kernelTx.securityContext().mode() );
-                    assertFalse( cursor.next() );
+            var query = PropertyIndexQuery.range(prop, range.from, true, range.to, true);
+            var partitionedScan = kernelTx.dataRead().nodeIndexSeek(indexSession, 2, kernelTx.queryContext(), query);
+            for (int i = 0; i < 2; i++) {
+                try (NodeValueIndexCursor cursor = kernelTx.cursors()
+                        .allocateNodeValueIndexCursor(kernelTx.cursorContext(), kernelTx.memoryTracker())) {
+                    partitionedScan.reservePartition(
+                            cursor,
+                            kernelTx.cursorContext(),
+                            kernelTx.securityContext().mode());
+                    assertFalse(cursor.next());
                 }
             }
         }
     }
 
-    private Range prepareData( ValueType valueType ) throws KernelException
-    {
-        Value[] values = random.randomValues().nextValuesOfTypes( 10, valueType );
-        Arrays.sort( values, Values.COMPARATOR );
-        try ( var tx = db.beginTx() )
-        {
-            for ( Value value : values )
-            {
+    private Range prepareData(ValueType valueType) throws KernelException {
+        Value[] values = random.randomValues().nextValuesOfTypes(10, valueType);
+        Arrays.sort(values, Values.COMPARATOR);
+        try (var tx = db.beginTx()) {
+            for (Value value : values) {
                 var kernelTx = ((TransactionImpl) tx).kernelTransaction();
                 var node = kernelTx.dataWrite().nodeCreate();
-                int label = kernelTx.tokenRead().nodeLabel( LABEL );
-                kernelTx.dataWrite().nodeAddLabel( node, label );
-                int prop = kernelTx.tokenRead().propertyKey( PROPERTY );
-                kernelTx.dataWrite().nodeSetProperty( node, prop, value );
+                int label = kernelTx.tokenRead().nodeLabel(LABEL);
+                kernelTx.dataWrite().nodeAddLabel(node, label);
+                int prop = kernelTx.tokenRead().propertyKey(PROPERTY);
+                kernelTx.dataWrite().nodeSetProperty(node, prop, value);
             }
 
             tx.commit();
         }
 
-        return new Range( values[0], values[values.length - 1] );
+        return new Range(values[0], values[values.length - 1]);
     }
 
-    private void createIndex()
-    {
-        try ( var tx = db.beginTx() )
-        {
+    private void createIndex() {
+        try (var tx = db.beginTx()) {
             tx.schema()
-              .indexFor( Label.label( LABEL ) )
-              .on( PROPERTY )
-              .withIndexType( IndexType.RANGE )
-              .withName( INDEX_NAME )
-              .create();
+                    .indexFor(Label.label(LABEL))
+                    .on(PROPERTY)
+                    .withIndexType(IndexType.RANGE)
+                    .withName(INDEX_NAME)
+                    .create();
 
             tx.commit();
         }
 
-        try ( var tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
+        try (var tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(5, TimeUnit.MINUTES);
         }
     }
 
-    private static Stream<ValueType> incomparableValueTypes()
-    {
-        return Stream.of( ValueType.DURATION, ValueType.DURATION_ARRAY, GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_ARRAY );
+    private static Stream<ValueType> incomparableValueTypes() {
+        return Stream.of(ValueType.DURATION, ValueType.DURATION_ARRAY, GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_ARRAY);
     }
 
-    record Range(Value from, Value to)
-    {
-    }
+    record Range(Value from, Value to) {}
 }

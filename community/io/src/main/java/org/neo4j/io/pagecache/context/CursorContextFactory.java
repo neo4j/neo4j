@@ -20,39 +20,34 @@
 package org.neo4j.io.pagecache.context;
 
 import java.util.function.LongSupplier;
-
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-public class CursorContextFactory
-{
-    public static final CursorContextFactory NULL_CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+public class CursorContextFactory {
+    public static final CursorContextFactory NULL_CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY);
     private final PageCacheTracer cacheTracer;
     private final VersionContextSupplier versionContextSupplier;
 
-    public CursorContextFactory( PageCacheTracer cacheTracer, VersionContextSupplier versionContextSupplier )
-    {
+    public CursorContextFactory(PageCacheTracer cacheTracer, VersionContextSupplier versionContextSupplier) {
         this.cacheTracer = cacheTracer;
         this.versionContextSupplier = versionContextSupplier;
     }
 
-    public CursorContext create( String tag )
-    {
-        return new CursorContext( this, cacheTracer.createPageCursorTracer( tag ), versionContextSupplier.createVersionContext() );
+    public CursorContext create(String tag) {
+        return new CursorContext(
+                this, cacheTracer.createPageCursorTracer(tag), versionContextSupplier.createVersionContext());
     }
 
-    public CursorContext create( String tag, VersionContext versionContext )
-    {
-        return new CursorContext( this, cacheTracer.createPageCursorTracer( tag ), versionContext );
+    public CursorContext create(String tag, VersionContext versionContext) {
+        return new CursorContext(this, cacheTracer.createPageCursorTracer(tag), versionContext);
     }
 
-    public CursorContext create( PageCursorTracer cursorTracer )
-    {
-        return new CursorContext( this, cursorTracer, versionContextSupplier.createVersionContext() );
+    public CursorContext create(PageCursorTracer cursorTracer) {
+        return new CursorContext(this, cursorTracer, versionContextSupplier.createVersionContext());
     }
 
-    public void init( LongSupplier lastClosedTransactionIdSupplier )
-    {
-        versionContextSupplier.init( lastClosedTransactionIdSupplier );
+    public void init(LongSupplier lastClosedTransactionIdSupplier) {
+        versionContextSupplier.init(lastClosedTransactionIdSupplier);
     }
 }

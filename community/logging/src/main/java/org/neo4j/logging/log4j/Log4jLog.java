@@ -21,7 +21,6 @@ package org.neo4j.logging.log4j;
 
 import org.apache.logging.log4j.spi.ExtendedLogger;
 import org.apache.logging.log4j.spi.ExtendedLoggerWrapper;
-
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Neo4jLogMessage;
 import org.neo4j.logging.Neo4jMessageSupplier;
@@ -29,74 +28,62 @@ import org.neo4j.logging.Neo4jMessageSupplier;
 /**
  * A {@link InternalLog} implementation that uses the Log4j configuration the logger is connected to.
  */
-public class Log4jLog extends ExtendedLoggerWrapper implements InternalLog
-{
+public class Log4jLog extends ExtendedLoggerWrapper implements InternalLog {
     /**
      * Package-private specifically to not leak Logger outside logging module. Should not be used outside of the logging module - {@link
      * Log4jLogProvider#getLog} should be used instead.
      */
-    Log4jLog( ExtendedLogger logger )
-    {
-        super( logger, logger.getName(), logger.getMessageFactory() );
+    Log4jLog(ExtendedLogger logger) {
+        super(logger, logger.getName(), logger.getMessageFactory());
     }
 
     @Override
-    public boolean isDebugEnabled()
-    {
+    public boolean isDebugEnabled() {
         return logger.isDebugEnabled();
     }
 
     @Override
-    public void debug( Neo4jLogMessage message )
-    {
-        logger.debug( message );
+    public void debug(Neo4jLogMessage message) {
+        logger.debug(message);
     }
 
     @Override
-    public void debug( Neo4jMessageSupplier supplier )
-    {
-        logger.debug( supplier );
+    public void debug(Neo4jMessageSupplier supplier) {
+        logger.debug(supplier);
     }
 
     @Override
-    public void info( Neo4jLogMessage message )
-    {
-        logger.info( message );
+    public void info(Neo4jLogMessage message) {
+        logger.info(message);
     }
 
     @Override
-    public void info( Neo4jMessageSupplier supplier )
-    {
-        logger.info( supplier );
+    public void info(Neo4jMessageSupplier supplier) {
+        logger.info(supplier);
     }
 
     @Override
-    public void warn( Neo4jLogMessage message )
-    {
-        logger.warn( message );
+    public void warn(Neo4jLogMessage message) {
+        logger.warn(message);
     }
 
     @Override
-    public void warn( Neo4jMessageSupplier supplier )
-    {
-        logger.warn( supplier );
+    public void warn(Neo4jMessageSupplier supplier) {
+        logger.warn(supplier);
     }
 
     @Override
-    public void error( Neo4jLogMessage message )
-    {
-        logger.error( message );
+    public void error(Neo4jLogMessage message) {
+        logger.error(message);
     }
 
     @Override
-    public void error( Neo4jMessageSupplier supplier )
-    {
-        logger.error( supplier );
+    public void error(Neo4jMessageSupplier supplier) {
+        logger.error(supplier);
     }
 
     @Override
-    public void error( Neo4jLogMessage message, Throwable throwable )
-    {
-        logger.error( message, throwable );
+    public void error(Neo4jLogMessage message, Throwable throwable) {
+        logger.error(message, throwable);
     }
 }

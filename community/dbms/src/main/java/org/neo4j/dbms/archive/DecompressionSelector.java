@@ -21,12 +21,9 @@ package org.neo4j.dbms.archive;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.neo4j.function.ThrowingSupplier;
 
 @FunctionalInterface
-public interface DecompressionSelector
-{
-    InputStream decompress( ThrowingSupplier<InputStream, IOException> streamSupplier ) throws IOException;
-
+public interface DecompressionSelector {
+    InputStream decompress(ThrowingSupplier<InputStream, IOException> streamSupplier) throws IOException;
 }

@@ -19,25 +19,22 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.commandline.Util.isSameOrChildFile;
 
-class UtilTest
-{
-    @Test
-    void correctlyIdentifySameOrChildFile()
-    {
-        Path home = Path.of( "." ).toAbsolutePath();
-        assertTrue( isSameOrChildFile( home, home ) );
-        assertTrue( isSameOrChildFile( home, home.resolve( "a" ) ) );
-        assertTrue( isSameOrChildFile( home.resolve( "a/./b" ), home.resolve( "a/b" ) ) );
-        assertTrue( isSameOrChildFile( home.resolve( "a/b" ), home.resolve( "a/./b" ) ) );
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
 
-        assertFalse( isSameOrChildFile( home.resolve( "a" ), home.resolve( "b" ) ) );
+class UtilTest {
+    @Test
+    void correctlyIdentifySameOrChildFile() {
+        Path home = Path.of(".").toAbsolutePath();
+        assertTrue(isSameOrChildFile(home, home));
+        assertTrue(isSameOrChildFile(home, home.resolve("a")));
+        assertTrue(isSameOrChildFile(home.resolve("a/./b"), home.resolve("a/b")));
+        assertTrue(isSameOrChildFile(home.resolve("a/b"), home.resolve("a/./b")));
+
+        assertFalse(isSameOrChildFile(home.resolve("a"), home.resolve("b")));
     }
 }

@@ -39,7 +39,7 @@ trait StdevTest {
     })
     func.result(state) match {
       case x: DoubleValue => x.doubleValue()
-      case _ => -99.0
+      case _              => -99.0
     }
   }
 }
@@ -92,17 +92,17 @@ class StdevPopulationTest extends CypherFunSuite with StdevTest {
   }
 
   test("manyOnes") {
-    val values = List(1,1)
+    val values = List(1, 1)
     getStdev(values) should equal(0.0 +- 0.000001)
   }
 
   test("oneTwoThree") {
-    val values = List(1,2,3)
+    val values = List(1, 2, 3)
     getStdev(values) should equal(0.816496580928 +- 0.000001)
   }
 
   test("oneTwoThreeFour") {
-    val values = List(1,2,3,4)
+    val values = List(1, 2, 3, 4)
     getStdev(values) should equal(1.11803398875 +- 0.000001)
   }
 

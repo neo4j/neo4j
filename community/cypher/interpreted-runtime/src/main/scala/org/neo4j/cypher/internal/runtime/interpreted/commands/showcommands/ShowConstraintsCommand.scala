@@ -33,12 +33,12 @@ import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand.createConstraintStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand.getConstraintType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.pointConfigValueAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.colonStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.configAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.escapeBackticks
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.extractOptionsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.optionsAsString
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.pointConfigValueAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.propStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.relPropStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -54,26 +54,31 @@ import scala.collection.immutable.ListMap
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 // SHOW [ALL|UNIQUE|NODE EXIST|RELATIONSHIP EXIST|EXIST|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
-case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
+case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: Boolean, columns: List[ShowColumn])
+    extends Command(columns) {
+
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val ctx = state.query
     ctx.assertShowConstraintAllowed()
     val constraints = ctx.getAllConstraints()
 
     val predicate: ConstraintDescriptor => Boolean = constraintType match {
-      case UniqueConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE)
-      case NodeKeyConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS)
+      case UniqueConstraints    => c => c.`type`().equals(schema.ConstraintType.UNIQUE)
+      case NodeKeyConstraints   => c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS)
       case _: ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
-      case _: NodeExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
-      case _: RelExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
+      case _: NodeExistsConstraints =>
+        c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
+      case _: RelExistsConstraints =>
+        c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
       case AllConstraints => _ => true // Should keep all and not filter away any constraints
-      case c => throw new IllegalStateException(s"Unknown constraint type: $c")
+      case c              => throw new IllegalStateException(s"Unknown constraint type: $c")
     }
 
     val relevantConstraints = constraints.filter {
       case (constraintDescriptor, _) => predicate(constraintDescriptor)
     }
-    val sortedRelevantConstraints: ListMap[ConstraintDescriptor, ConstraintInfo] = ListMap(relevantConstraints.toSeq.sortBy(_._1.getName):_*)
+    val sortedRelevantConstraints: ListMap[ConstraintDescriptor, ConstraintInfo] =
+      ListMap(relevantConstraints.toSeq.sortBy(_._1.getName): _*)
 
     val rows = sortedRelevantConstraints.map {
       case (constraintDescriptor: ConstraintDescriptor, constraintInfo: ConstraintInfo) =>
@@ -98,22 +103,33 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
           // The properties of this constraint, for example ["propKey", "propKey2"]
           "properties" -> VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
           // The id of the index associated to the constraint
-          "ownedIndexId" -> {if (isIndexBacked) Values.longValue(constraintDescriptor.asIndexBackedConstraint().ownedIndexId()) else Values.NO_VALUE}
+          "ownedIndexId" -> {
+            if (isIndexBacked) Values.longValue(constraintDescriptor.asIndexBackedConstraint().ownedIndexId())
+            else Values.NO_VALUE
+          }
         )
         if (verbose) {
-          val (options, createString) = if (isIndexBacked) {
-            val index = constraintInfo.maybeIndex.getOrElse(
-              throw new IllegalStateException(s"Expected to find an index for index backed constraint $name")
-            )
-            val providerName = index.getIndexProvider.name
-            val indexConfig = index.getIndexConfig
-            val options: MapValue = extractOptionsMap(providerName, indexConfig)
-            val createWithOptions = createConstraintStatement(name, constraintType, labels, properties, Some(providerName), Some(indexConfig))
-            (options, createWithOptions)
-          } else {
-            val createWithoutOptions = createConstraintStatement(name, constraintType, labels, properties)
-            (Values.NO_VALUE, createWithoutOptions)
-          }
+          val (options, createString) =
+            if (isIndexBacked) {
+              val index = constraintInfo.maybeIndex.getOrElse(
+                throw new IllegalStateException(s"Expected to find an index for index backed constraint $name")
+              )
+              val providerName = index.getIndexProvider.name
+              val indexConfig = index.getIndexConfig
+              val options: MapValue = extractOptionsMap(providerName, indexConfig)
+              val createWithOptions = createConstraintStatement(
+                name,
+                constraintType,
+                labels,
+                properties,
+                Some(providerName),
+                Some(indexConfig)
+              )
+              (options, createWithOptions)
+            } else {
+              val createWithoutOptions = createConstraintStatement(name, constraintType, labels, properties)
+              (Values.NO_VALUE, createWithoutOptions)
+            }
 
           briefResult ++ Map(
             "options" -> options,
@@ -128,12 +144,15 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
 }
 
 object ShowConstraintsCommand {
-  private def createConstraintStatement(name: String,
-                                        constraintType: ShowConstraintType,
-                                        labelsOrTypes: List[String],
-                                        properties: List[String],
-                                        providerName: Option[String] = None,
-                                        indexConfig: Option[IndexConfig] = None): String = {
+
+  private def createConstraintStatement(
+    name: String,
+    constraintType: ShowConstraintType,
+    labelsOrTypes: List[String],
+    properties: List[String],
+    providerName: Option[String] = None,
+    indexConfig: Option[IndexConfig] = None
+  ): String = {
     val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
     val escapedName = escapeBackticks(name)
     constraintType match {
@@ -151,24 +170,39 @@ object ShowConstraintsCommand {
       case _: RelExistsConstraints =>
         val escapedProperties = asEscapedString(properties, relPropStringJoiner)
         s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS NOT NULL"
-      case _ => throw new IllegalArgumentException(s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command.")
+      case _ => throw new IllegalArgumentException(
+          s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command."
+        )
     }
   }
 
-  private def extractOptionsString(maybeProviderName: Option[String], maybeIndexConfig: Option[IndexConfig], constraintType: String): String = {
-    val providerName = maybeProviderName.getOrElse(throw new IllegalArgumentException(s"Expected a provider name for $constraintType constraint."))
-    val indexConfig = maybeIndexConfig.getOrElse(throw new IllegalArgumentException(s"Expected an index configuration for $constraintType constraint."))
+  private def extractOptionsString(
+    maybeProviderName: Option[String],
+    maybeIndexConfig: Option[IndexConfig],
+    constraintType: String
+  ): String = {
+    val providerName = maybeProviderName.getOrElse(
+      throw new IllegalArgumentException(s"Expected a provider name for $constraintType constraint.")
+    )
+    val indexConfig = maybeIndexConfig.getOrElse(
+      throw new IllegalArgumentException(s"Expected an index configuration for $constraintType constraint.")
+    )
     val btreeOrEmptyConfig = configAsString(indexConfig, value => pointConfigValueAsString(value))
     optionsAsString(providerName, btreeOrEmptyConfig)
   }
 
-  private def getConstraintType(internalConstraintType: schema.ConstraintType, entityType: EntityType): ShowConstraintType = {
+  private def getConstraintType(
+    internalConstraintType: schema.ConstraintType,
+    entityType: EntityType
+  ): ShowConstraintType = {
     (internalConstraintType, entityType) match {
-      case (schema.ConstraintType.UNIQUE, EntityType.NODE) => UniqueConstraints
-      case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.NODE) => NodeKeyConstraints
-      case (schema.ConstraintType.EXISTS, EntityType.NODE) => NodeExistsConstraints()
+      case (schema.ConstraintType.UNIQUE, EntityType.NODE)         => UniqueConstraints
+      case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.NODE)  => NodeKeyConstraints
+      case (schema.ConstraintType.EXISTS, EntityType.NODE)         => NodeExistsConstraints()
       case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP) => RelExistsConstraints()
-      case _ => throw new IllegalStateException(s"Invalid constraint combination: ConstraintType $internalConstraintType and EntityType $entityType.")
+      case _ => throw new IllegalStateException(
+          s"Invalid constraint combination: ConstraintType $internalConstraintType and EntityType $entityType."
+        )
     }
   }
 }

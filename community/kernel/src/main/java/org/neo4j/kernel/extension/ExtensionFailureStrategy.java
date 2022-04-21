@@ -21,9 +21,8 @@ package org.neo4j.kernel.extension;
 
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
-public interface ExtensionFailureStrategy
-{
-    void handle( ExtensionFactory extensionFactory, UnsatisfiedDependencyException e );
+public interface ExtensionFailureStrategy {
+    void handle(ExtensionFactory extensionFactory, UnsatisfiedDependencyException e);
 
-    void handle( ExtensionFactory extensionFactory, Throwable e );
+    void handle(ExtensionFactory extensionFactory, Throwable e);
 }

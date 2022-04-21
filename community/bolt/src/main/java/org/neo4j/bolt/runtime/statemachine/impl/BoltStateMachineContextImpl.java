@@ -20,7 +20,6 @@
 package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.time.Clock;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
@@ -37,9 +36,8 @@ import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
-public class BoltStateMachineContextImpl implements StateMachineContext, StatementProcessorReleaseManager
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineContextImpl.class );
+public class BoltStateMachineContextImpl implements StateMachineContext, StatementProcessorReleaseManager {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BoltStateMachineContextImpl.class);
 
     private final BoltStateMachine machine;
     private final BoltChannel boltChannel;
@@ -56,10 +54,15 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     private String impersonatedUser;
     private LoginContext impersonationLoginContext;
 
-    public BoltStateMachineContextImpl( BoltStateMachine machine, BoltChannel boltChannel, BoltStateMachineSPI spi, MutableConnectionState connectionState,
-                                        Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
-                                        MemoryTracker memoryTracker, TransactionManager transactionManager )
-    {
+    public BoltStateMachineContextImpl(
+            BoltStateMachine machine,
+            BoltChannel boltChannel,
+            BoltStateMachineSPI spi,
+            MutableConnectionState connectionState,
+            Clock clock,
+            DefaultDatabaseResolver defaultDatabaseResolver,
+            MemoryTracker memoryTracker,
+            TransactionManager transactionManager) {
         this.machine = machine;
         this.boltChannel = boltChannel;
         this.spi = spi;
@@ -71,102 +74,89 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     }
 
     @Override
-    public void authenticatedAsUser( LoginContext loginContext, String userAgent )
-    {
+    public void authenticatedAsUser(LoginContext loginContext, String userAgent) {
         this.primaryLoginContext = loginContext;
 
-        boltChannel.updateUser( loginContext.subject().authenticatedUser(), userAgent );
+        boltChannel.updateUser(loginContext.subject().authenticatedUser(), userAgent);
         this.resolveDefaultDatabase();
     }
 
     @Override
-    public void impersonateUser( LoginContext loginContext )
-    {
+    public void impersonateUser(LoginContext loginContext) {
         this.impersonationLoginContext = loginContext;
         this.resolveDefaultDatabase();
     }
 
     @Override
-    public LoginContext getLoginContext()
-    {
-        if ( this.impersonationLoginContext != null )
-        {
+    public LoginContext getLoginContext() {
+        if (this.impersonationLoginContext != null) {
             return this.impersonationLoginContext;
         }
 
         return this.primaryLoginContext;
     }
 
-    private void resolveDefaultDatabase()
-    {
-        var defaultDatabase = defaultDatabaseResolver.defaultDatabase( this.getLoginContext().subject().executingUser() );
+    private void resolveDefaultDatabase() {
+        var defaultDatabase = defaultDatabaseResolver.defaultDatabase(
+                this.getLoginContext().subject().executingUser());
 
         this.defaultDatabase = defaultDatabase;
-        this.boltChannel.updateDefaultDatabase( defaultDatabase );
+        this.boltChannel.updateDefaultDatabase(defaultDatabase);
     }
 
     @Override
-    public void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality
-    {
-        machine.handleFailure( cause, fatal );
+    public void handleFailure(Throwable cause, boolean fatal) throws BoltConnectionFatality {
+        machine.handleFailure(cause, fatal);
     }
 
     @Override
-    public boolean resetMachine() throws BoltConnectionFatality
-    {
+    public boolean resetMachine() throws BoltConnectionFatality {
         return machine.reset();
     }
 
     @Override
-    public BoltStateMachineSPI boltSpi()
-    {
+    public BoltStateMachineSPI boltSpi() {
         return spi;
     }
 
     @Override
-    public MutableConnectionState connectionState()
-    {
+    public MutableConnectionState connectionState() {
         return connectionState;
     }
 
     @Override
-    public Clock clock()
-    {
+    public Clock clock() {
         return clock;
     }
 
     @Override
-    public String connectionId()
-    {
+    public String connectionId() {
         return machine.id();
     }
 
     @Override
-    public void initStatementProcessorProvider( RoutingContext routingContext )
-    {
+    public void initStatementProcessorProvider(RoutingContext routingContext) {
         var transactionSpiProvider = spi.transactionStateMachineSPIProvider();
-        var statementProcessorProvider = new StatementProcessorProvider( transactionSpiProvider, clock, this, routingContext, memoryTracker );
-        var initializeContext = new InitializeContext( connectionId(), statementProcessorProvider );
+        var statementProcessorProvider =
+                new StatementProcessorProvider(transactionSpiProvider, clock, this, routingContext, memoryTracker);
+        var initializeContext = new InitializeContext(connectionId(), statementProcessorProvider);
 
-        transactionManager.initialize( initializeContext );
+        transactionManager.initialize(initializeContext);
     }
 
     @Override
-    public TransactionManager getTransactionManager()
-    {
+    public TransactionManager getTransactionManager() {
         return transactionManager;
     }
 
     @Override
-    public String getDefaultDatabase()
-    {
+    public String getDefaultDatabase() {
         return this.defaultDatabase;
     }
 
     @Override
-    public void releaseStatementProcessor( String transactionId )
-    {
-        transactionManager.cleanUp( new CleanUpTransactionContext( transactionId ) );
+    public void releaseStatementProcessor(String transactionId) {
+        transactionManager.cleanUp(new CleanUpTransactionContext(transactionId));
         connectionState.clearCurrentTransactionId();
     }
 }

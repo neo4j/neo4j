@@ -19,83 +19,57 @@
  */
 package org.neo4j.kernel.api.labelscan;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
-import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
-class EntityTokenRangeTest
-{
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
+
+class EntityTokenRangeTest {
     @Test
-    void shouldTransposeNodeIdsAndLabelIds()
-    {
+    void shouldTransposeNodeIdsAndLabelIds() {
         // given
-        long[][] labelsPerNode = new long[][] {
-            {1},
-            {1, 3},
-            {3, 5, 7},
-            {},
-            {1, 5, 7},
-            {},
-            {},
-            {1, 2, 3, 4}
-            };
+        long[][] labelsPerNode = new long[][] {{1}, {1, 3}, {3, 5, 7}, {}, {1, 5, 7}, {}, {}, {1, 2, 3, 4}};
 
         // when
-        EntityTokenRange range = new EntityTokenRangeImpl( 0, labelsPerNode, NODE );
+        EntityTokenRange range = new EntityTokenRangeImpl(0, labelsPerNode, NODE);
 
         // then
-        assertArrayEquals( new long[] {0, 1, 2, 3, 4, 5, 6, 7}, range.entities() );
-        for ( int i = 0; i < labelsPerNode.length; i++ )
-        {
-            assertArrayEquals( labelsPerNode[i], range.tokens( i ) );
+        assertArrayEquals(new long[] {0, 1, 2, 3, 4, 5, 6, 7}, range.entities());
+        for (int i = 0; i < labelsPerNode.length; i++) {
+            assertArrayEquals(labelsPerNode[i], range.tokens(i));
         }
     }
 
     @Test
-    void shouldRebaseOnRangeId()
-    {
+    void shouldRebaseOnRangeId() {
         // given
-        long[][] labelsPerNode = new long[][] {
-            {1},
-            {1, 3},
-            {3, 5, 7},
-            {},
-            {1, 5, 7},
-            {},
-            {},
-            {1, 2, 3, 4}
-        };
+        long[][] labelsPerNode = new long[][] {{1}, {1, 3}, {3, 5, 7}, {}, {1, 5, 7}, {}, {}, {1, 2, 3, 4}};
 
         // when
-        EntityTokenRange range = new EntityTokenRangeImpl( 10, labelsPerNode, NODE );
+        EntityTokenRange range = new EntityTokenRangeImpl(10, labelsPerNode, NODE);
 
         // then
         long baseNodeId = range.id() * labelsPerNode.length;
         long[] expectedNodeIds = new long[labelsPerNode.length];
-        for ( int i = 0; i < expectedNodeIds.length; i++ )
-        {
+        for (int i = 0; i < expectedNodeIds.length; i++) {
             expectedNodeIds[i] = baseNodeId + i;
         }
-        assertArrayEquals( expectedNodeIds, range.entities() );
+        assertArrayEquals(expectedNodeIds, range.entities());
     }
 
     @Test
-    void shouldAdaptToStringToEntityTypeNode()
-    {
-        EntityTokenRange nodeLabelRange = new EntityTokenRangeImpl( 0, new long[0][], NODE );
-        assertThat( nodeLabelRange.toString() ).contains( "NodeLabelRange" );
+    void shouldAdaptToStringToEntityTypeNode() {
+        EntityTokenRange nodeLabelRange = new EntityTokenRangeImpl(0, new long[0][], NODE);
+        assertThat(nodeLabelRange.toString()).contains("NodeLabelRange");
     }
 
     @Test
-    void shouldAdaptToStringToEntityTypeRelationship()
-    {
-        EntityTokenRange relationshipTypeRange = new EntityTokenRangeImpl( 0, new long[0][], RELATIONSHIP );
-        assertThat( relationshipTypeRange.toString() ).contains( "RelationshipTypeRange" );
+    void shouldAdaptToStringToEntityTypeRelationship() {
+        EntityTokenRange relationshipTypeRange = new EntityTokenRangeImpl(0, new long[0][], RELATIONSHIP);
+        assertThat(relationshipTypeRange.toString()).contains("RelationshipTypeRange");
     }
 }

@@ -61,7 +61,8 @@ class ProduceResultsPipeTest extends CypherFunSuite {
       ClosingIterator(Iterator(
         CypherRow.from("a" -> stringValue("foo"), "b" -> intValue(10), "c" -> TRUE, "d" -> stringValue("d")),
         CypherRow.from("a" -> stringValue("bar"), "b" -> intValue(20), "c" -> FALSE, "d" -> stringValue("d"))
-      )))
+      ))
+    )
 
     val pipe = ProduceResultsPipe(sourcePipe, columns)()
 
@@ -71,7 +72,8 @@ class ProduceResultsPipeTest extends CypherFunSuite {
       List(
         Map("a" -> stringValue("foo"), "b" -> intValue(10), "c" -> TRUE),
         Map("a" -> stringValue("bar"), "b" -> intValue(20), "c" -> FALSE)
-      ))
+      )
+    )
   }
 
   test("should produce no results if child pipe produces no results") {

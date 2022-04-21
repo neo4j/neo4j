@@ -37,12 +37,12 @@ import org.neo4j.internal.batchimport.stats.StepStats;
  *
  * @param <T> the type of batch objects received from upstream.
  */
-public interface Step<T> extends Parallelizable, AutoCloseable, Panicable
-{
+public interface Step<T> extends Parallelizable, AutoCloseable, Panicable {
     /**
      * Whether or not tickets arrive in {@link #receive(long, Object)} ordered by ticket number.
      */
     int ORDER_SEND_DOWNSTREAM = 0x1;
+
     int RECYCLE_BATCHES = 0x2;
 
     /**
@@ -50,7 +50,7 @@ public interface Step<T> extends Parallelizable, AutoCloseable, Panicable
      *
      * @param orderingGuarantees which ordering guarantees that will be upheld.
      */
-    void start( int orderingGuarantees );
+    void start(int orderingGuarantees);
 
     /**
      * @return name of this step.
@@ -65,15 +65,14 @@ public interface Step<T> extends Parallelizable, AutoCloseable, Panicable
      * @param batch the batch object to queue for processing.
      * @return how long it time (millis) was spent waiting for a spot in the queue.
      */
-    long receive( long ticket, T batch );
+    long receive(long ticket, T batch);
 
     /**
      * @return statistics about this step at this point in time.
      */
     StepStats stats();
 
-    default boolean isIdle()
-    {
+    default boolean isIdle() {
         return false;
     }
 
@@ -83,16 +82,14 @@ public interface Step<T> extends Parallelizable, AutoCloseable, Panicable
      * @param key key to get stat for.
      * @return long stat for the given {@code key}.
      */
-    default long longStat( Key key )
-    {
-        return stats().stat( key ).asLong();
+    default long longStat(Key key) {
+        return stats().stat(key).asLong();
     }
 
     /**
      * @return max number of processors assignable to this step.
      */
-    default int maxProcessors()
-    {
+    default int maxProcessors() {
         return 1;
     }
 
@@ -118,7 +115,7 @@ public interface Step<T> extends Parallelizable, AutoCloseable, Panicable
      * making up the stage.
      * @param downstreamStep {@link Step} to send batches to downstream.
      */
-    void setDownstream( Step<?> downstreamStep );
+    void setDownstream(Step<?> downstreamStep);
 
     /**
      * Closes any resources kept open by this step. Called after a {@link Stage} is executed, whether successful or not.

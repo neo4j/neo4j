@@ -22,26 +22,23 @@ package org.neo4j.io.pagecache.randomharness;
 /**
  * An enum of the commands that the RandomPageCacheTestHarness can perform, and their default probability factors.
  */
-public enum Command
-{
-    ReadRecord( 0.3 ),
-    WriteRecord( 0.6 ),
-    ReadMulti( 0.18 ),
-    WriteMulti( 0.09 ),
-    FlushFile( 0.06 ),
-    FlushCache( 0.02 ),
-    MapFile( 0.01 ),
-    UnmapFile( 0.01 );
+public enum Command {
+    ReadRecord(0.3),
+    WriteRecord(0.6),
+    ReadMulti(0.18),
+    WriteMulti(0.09),
+    FlushFile(0.06),
+    FlushCache(0.02),
+    MapFile(0.01),
+    UnmapFile(0.01);
 
     private final double defaultProbability;
 
-    Command( double defaultProbability )
-    {
+    Command(double defaultProbability) {
         this.defaultProbability = defaultProbability;
     }
 
-    public double getDefaultProbabilityFactor()
-    {
+    public double getDefaultProbabilityFactor() {
         return defaultProbability;
     }
 }

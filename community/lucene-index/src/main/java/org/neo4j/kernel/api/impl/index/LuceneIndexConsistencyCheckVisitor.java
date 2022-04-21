@@ -22,8 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import org.neo4j.annotations.documented.Documented;
 import org.neo4j.internal.schema.IndexDescriptor;
 
-public interface LuceneIndexConsistencyCheckVisitor
-{
-    @Documented( "Lucene index is inconsistent, index: %s" )
-    void isInconsistent( IndexDescriptor indexDescriptor );
+public interface LuceneIndexConsistencyCheckVisitor {
+    @Documented("Lucene index is inconsistent, index: %s")
+    void isInconsistent(IndexDescriptor indexDescriptor);
 }

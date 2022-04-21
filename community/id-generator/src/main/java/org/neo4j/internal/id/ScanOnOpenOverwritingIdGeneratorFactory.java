@@ -19,20 +19,18 @@
  */
 package org.neo4j.internal.id;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.LongSupplier;
-
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 /**
  * A {@link DefaultIdGeneratorFactory} that ignores any existing id file on open and instead replaces it with an id file
@@ -42,18 +40,36 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
  * This is very useful in various id-file migration scenarios, both when migrating from an old format, but also when migrating
  * from a store that has no id files (once upon a time this was accepted).
  */
-public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorFactory
-{
-    public ScanOnOpenOverwritingIdGeneratorFactory( FileSystemAbstraction fs, String databaseName )
-    {
-        super( fs, immediate(), databaseName );
+public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorFactory {
+    public ScanOnOpenOverwritingIdGeneratorFactory(FileSystemAbstraction fs, String databaseName) {
+        super(fs, immediate(), databaseName);
     }
 
     @Override
-    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
-    {
+    public IdGenerator open(
+            PageCache pageCache,
+            Path filename,
+            IdType idType,
+            LongSupplier highIdScanner,
+            long maxId,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Config config,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution)
+            throws IOException {
         long highId = highIdScanner.getAsLong();
-        return create( pageCache, filename, idType, highId, true, maxId, readOnlyChecker, config, contextFactory, openOptions, slotDistribution );
+        return create(
+                pageCache,
+                filename,
+                idType,
+                highId,
+                true,
+                maxId,
+                readOnlyChecker,
+                config,
+                contextFactory,
+                openOptions,
+                slotDistribution);
     }
 }

@@ -44,43 +44,50 @@ import org.neo4j.values.virtual.MapValue
 /**
  * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
  */
-case class UpdatingSystemCommandExecutionPlan(name: String,
-                                              normalExecutionEngine: ExecutionEngine,
-                                              securityAuthorizationHandler: SecurityAuthorizationHandler,
-                                              query: String,
-                                              systemParams: MapValue,
-                                              queryHandler: QueryHandler,
-                                              source: Option[ExecutionPlan] = None,
-                                              checkCredentialsExpired: Boolean = true,
-                                              initFunction: MapValue => Boolean =  _ => true,
-                                              finallyFunction: MapValue => Unit = _ => {},
-                                              parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
-                                              parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
-                                              assertPrivilegeAction: Transaction => Unit = _ => {},
-                                              contextUpdates: MapValue => MapValue = _ => MapValue.EMPTY)
-  extends AdministrationChainedExecutionPlan(source) {
+case class UpdatingSystemCommandExecutionPlan(
+  name: String,
+  normalExecutionEngine: ExecutionEngine,
+  securityAuthorizationHandler: SecurityAuthorizationHandler,
+  query: String,
+  systemParams: MapValue,
+  queryHandler: QueryHandler,
+  source: Option[ExecutionPlan] = None,
+  checkCredentialsExpired: Boolean = true,
+  initFunction: MapValue => Boolean = _ => true,
+  finallyFunction: MapValue => Unit = _ => {},
+  parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
+  parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
+  assertPrivilegeAction: Transaction => Unit = _ => {},
+  contextUpdates: MapValue => MapValue = _ => MapValue.EMPTY
+) extends AdministrationChainedExecutionPlan(source) {
 
-  override def runSpecific(ctx: SystemUpdateCountingQueryContext,
-                           executionMode: ExecutionMode,
-                           params: MapValue,
-                           prePopulateResults: Boolean,
-                           ignore: InputDataStream,
-                           subscriber: QuerySubscriber): RuntimeResult = {
+  override def runSpecific(
+    ctx: SystemUpdateCountingQueryContext,
+    executionMode: ExecutionMode,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    ignore: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult = {
 
     val tc = ctx.kernelTransactionalContext
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
       val securityContext = tc.securityContext()
-      if (securityContext.impersonating()) throw new AuthorizationViolationException("Not allowed to run updating system commands when impersonating a user.")
+      if (securityContext.impersonating()) throw new AuthorizationViolationException(
+        "Not allowed to run updating system commands when impersonating a user."
+      )
       if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired(securityAuthorizationHandler)
       val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
       val tx = tc.transaction()
       assertPrivilegeAction(tx)
 
-      val updatedParams = parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
-      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
+      val updatedParams =
+        parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
+      val systemSubscriber =
+        new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
       val newContext = ctx.withContextVars(contextUpdates(updatedParams))
       try {
         tc.kernelTransaction().dataWrite() // assert that we are allowed to write
@@ -91,7 +98,15 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       systemSubscriber.assertNotFailed()
       try {
         if (initFunction(updatedParams)) {
-          val execution = normalExecutionEngine.executeSubquery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+          val execution = normalExecutionEngine.executeSubquery(
+            query,
+            updatedParams,
+            tc,
+            isOutermostQuery = false,
+            executionMode == ProfileMode,
+            prePopulateResults,
+            systemSubscriber
+          ).asInstanceOf[InternalExecutionResult]
           try {
             execution.consumeAll()
           } catch {
@@ -141,14 +156,16 @@ class QueryHandler {
 class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
   override def onError(t: Throwable, p: MapValue): Throwable = parent.onError(t, p)
 
-  override def onResult(offset: Int, value: AnyValue, params: MapValue): Option[Either[Throwable, IgnoreResults]] = parent.onResult(offset, value, params)
+  override def onResult(offset: Int, value: AnyValue, params: MapValue): Option[Either[Throwable, IgnoreResults]] =
+    parent.onResult(offset, value, params)
 
   override def onNoResults(params: MapValue): Option[Either[Throwable, IgnoreResults]] = parent.onNoResults(params)
 
   def handleError(f: (Throwable, MapValue) => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+
     override def onError(t: Throwable, p: MapValue): Throwable = t match {
       case t: TransientFailureException => t
-      case _ => f(t, p)
+      case _                            => f(t, p)
     }
   }
 
@@ -160,23 +177,32 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
     override def onNoResults(params: MapValue): Option[Either[Throwable, IgnoreResults]] = Some(Right(IgnoreResults()))
   }
 
-  def handleResult(handler: (Int, AnyValue, MapValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] = handler(offset, value, p).map(t => Left(t))
-  }
+  def handleResult(handler: (Int, AnyValue, MapValue) => Option[Throwable]): QueryHandlerBuilder =
+    new QueryHandlerBuilder(this) {
+
+      override def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] =
+        handler(offset, value, p).map(t => Left(t))
+    }
 
   def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] = Some(Right(IgnoreResults()))
+
+    override def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] =
+      Some(Right(IgnoreResults()))
   }
 }
 
 object QueryHandler {
-  def handleError(f: (Throwable, MapValue) => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleError(f)
 
-  def handleNoResult(f: MapValue => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
+  def handleError(f: (Throwable, MapValue) => Throwable): QueryHandlerBuilder =
+    new QueryHandlerBuilder(new QueryHandler).handleError(f)
+
+  def handleNoResult(f: MapValue => Option[Throwable]): QueryHandlerBuilder =
+    new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreNoResult()
 
-  def handleResult(handler: (Int, AnyValue, MapValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
+  def handleResult(handler: (Int, AnyValue, MapValue) => Option[Throwable]): QueryHandlerBuilder =
+    new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
 
   def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreOnResult()
 }

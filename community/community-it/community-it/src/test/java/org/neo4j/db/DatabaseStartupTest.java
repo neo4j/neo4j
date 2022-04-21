@@ -19,12 +19,18 @@
  */
 package org.neo4j.db;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
-
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.DatabaseStateService;
@@ -52,224 +58,210 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
 @Neo4jLayoutExtension
-class DatabaseStartupTest
-{
+class DatabaseStartupTest {
     @Inject
     FileSystemAbstraction fs;
+
     @Inject
     private DatabaseLayout databaseLayout;
 
     @Test
-    void startDatabaseWithWrongVersionShouldFail() throws Throwable
-    {
+    void startDatabaseWithWrongVersionShouldFail() throws Throwable {
         // given
         // create a store
 
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
-        {
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
         managementService.shutdown();
 
         // mess up the version in the metadatastore
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-              PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
-        {
-            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
-                    MetaDataStore.Position.STORE_VERSION, StoreVersion.versionStringToLong( "bad" ), databaseLayout.getDatabaseName(), NULL_CONTEXT );
+        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+                ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
+                PageCache pageCache = createPageCache(fileSystem, scheduler, PageCacheTracer.NULL)) {
+            MetaDataStore.setRecord(
+                    pageCache,
+                    databaseLayout.metadataStore(),
+                    MetaDataStore.Position.STORE_VERSION,
+                    StoreVersion.versionStringToLong("bad"),
+                    databaseLayout.getDatabaseName(),
+                    NULL_CONTEXT);
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
+        managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        try {
 
-            assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
-            DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-            assertTrue( dbStateService.causeOfFailure( databaseService.databaseId() ).isPresent() );
-            assertThat( dbStateService.causeOfFailure( databaseService.databaseId() ).get() )
-                    .hasRootCauseExactlyInstanceOf( IllegalArgumentException.class )
-                    .hasRootCauseMessage( "Unknown store version 'bad'" );
-        }
-        finally
-        {
+            assertThrows(DatabaseShutdownException.class, databaseService::beginTx);
+            DatabaseStateService dbStateService =
+                    databaseService.getDependencyResolver().resolveDependency(DatabaseStateService.class);
+            assertTrue(
+                    dbStateService.causeOfFailure(databaseService.databaseId()).isPresent());
+            assertThat(dbStateService
+                            .causeOfFailure(databaseService.databaseId())
+                            .get())
+                    .hasRootCauseExactlyInstanceOf(IllegalArgumentException.class)
+                    .hasRootCauseMessage("Unknown store version 'bad'");
+        } finally {
             managementService.shutdown();
         }
     }
 
     @Test
-    void startDatabaseWithWrongTransactionFilesShouldFail() throws IOException
-    {
+    void startDatabaseWithWrongTransactionFilesShouldFail() throws IOException {
         // Create a store
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         DatabaseLayout databaseLayout = db.databaseLayout();
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
         managementService.shutdown();
 
         // Change store id component
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-                PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
-        {
+                PageCache pageCache = createPageCache(fileSystem, scheduler, PageCacheTracer.NULL)) {
             long newTime = System.currentTimeMillis() + 1;
-            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime, databaseLayout.getDatabaseName(),
-                    NULL_CONTEXT );
+            MetaDataStore.setRecord(
+                    pageCache,
+                    databaseLayout.metadataStore(),
+                    MetaDataStore.Position.TIME,
+                    newTime,
+                    databaseLayout.getDatabaseName(),
+                    NULL_CONTEXT);
         }
 
         // Try to start
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        try
-        {
-            db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-            assertFalse( db.isAvailable( 10 ) );
+        managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        try {
+            db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+            assertFalse(db.isAvailable(10));
 
-            DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-            Optional<Throwable> cause = dbStateService.causeOfFailure( db.databaseId() );
-            assertTrue( cause.isPresent() );
-            assertTrue( cause.get().getCause().getMessage().contains( "Mismatching store id" ) );
-        }
-        finally
-        {
+            DatabaseStateService dbStateService =
+                    db.getDependencyResolver().resolveDependency(DatabaseStateService.class);
+            Optional<Throwable> cause = dbStateService.causeOfFailure(db.databaseId());
+            assertTrue(cause.isPresent());
+            assertTrue(cause.get().getCause().getMessage().contains("Mismatching store id"));
+        } finally {
             managementService.shutdown();
         }
     }
 
     @Test
-    void startDatabaseWithoutStoreFilesAndWithTransactionLogFilesFailure() throws IOException
-    {
+    void startDatabaseWithoutStoreFilesAndWithTransactionLogFilesFailure() throws IOException {
         // Create a store
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         DatabaseLayout databaseLayout = db.databaseLayout();
-        try ( Transaction tx = db.beginTx() )
-        {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
         managementService.shutdown();
 
-        fs.deleteRecursively( databaseLayout.databaseDirectory() );
+        fs.deleteRecursively(databaseLayout.databaseDirectory());
 
         // Try to start
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        try
-        {
-            db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-            assertFalse( db.isAvailable( 10 ) );
+        managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        try {
+            db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+            assertFalse(db.isAvailable(10));
 
-            DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-            Optional<Throwable> cause = dbStateService.causeOfFailure( db.databaseId() );
-            assertTrue( cause.isPresent() );
-            assertThat( cause.get() ).hasStackTraceContaining(
-                    "Fail to start '" + db.databaseId() + "' since transaction logs were found, while database " );
-        }
-        finally
-        {
+            DatabaseStateService dbStateService =
+                    db.getDependencyResolver().resolveDependency(DatabaseStateService.class);
+            Optional<Throwable> cause = dbStateService.causeOfFailure(db.databaseId());
+            assertTrue(cause.isPresent());
+            assertThat(cause.get())
+                    .hasStackTraceContaining("Fail to start '" + db.databaseId()
+                            + "' since transaction logs were found, while database ");
+        } finally {
             managementService.shutdown();
         }
     }
 
     @Test
-    void startTestDatabaseOnProvidedNonAbsoluteFile()
-    {
-        Path directory = Path.of( "target/notAbsoluteDirectory" );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( directory ).impermanent().build();
-        managementService.shutdown();
-    }
-
-    @Test
-    void startCommunityDatabaseOnProvidedNonAbsoluteFile()
-    {
-        Path directory = Path.of( "target/notAbsoluteDirectory" );
-        EphemeralCommunityManagementServiceFactory factory = new EphemeralCommunityManagementServiceFactory();
-        EphemeralDatabaseManagementServiceBuilder databaseFactory = new EphemeralDatabaseManagementServiceBuilder( directory, factory );
-        DatabaseManagementService managementService = databaseFactory.build();
-        managementService.database( DEFAULT_DATABASE_NAME );
-        managementService.shutdown();
-    }
-
-    @Test
-    void dumpSystemDiagnosticLoggingOnStartup()
-    {
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setInternalLogProvider( logProvider )
-                .setConfig( GraphDatabaseInternalSettings.dump_diagnostics, true )
+    void startTestDatabaseOnProvidedNonAbsoluteFile() {
+        Path directory = Path.of("target/notAbsoluteDirectory");
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(directory)
+                .impermanent()
                 .build();
-        managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            assertThat( logProvider ).containsMessages( "System diagnostics",
-                                                        "System memory information",
-                                                        "JVM memory information",
-                                                        "Operating system information",
-                                                        "JVM information",
-                                                        "Java classpath",
-                                                        "Library path",
-                                                        "System properties",
-                                                        "(IANA) TimeZone database version",
-                                                        "Network information",
-                                                        "DBMS config" );
-        }
-        finally
-        {
+        managementService.shutdown();
+    }
+
+    @Test
+    void startCommunityDatabaseOnProvidedNonAbsoluteFile() {
+        Path directory = Path.of("target/notAbsoluteDirectory");
+        EphemeralCommunityManagementServiceFactory factory = new EphemeralCommunityManagementServiceFactory();
+        EphemeralDatabaseManagementServiceBuilder databaseFactory =
+                new EphemeralDatabaseManagementServiceBuilder(directory, factory);
+        DatabaseManagementService managementService = databaseFactory.build();
+        managementService.database(DEFAULT_DATABASE_NAME);
+        managementService.shutdown();
+    }
+
+    @Test
+    void dumpSystemDiagnosticLoggingOnStartup() {
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout)
+                .setInternalLogProvider(logProvider)
+                .setConfig(GraphDatabaseInternalSettings.dump_diagnostics, true)
+                .build();
+        managementService.database(DEFAULT_DATABASE_NAME);
+        try {
+            assertThat(logProvider)
+                    .containsMessages(
+                            "System diagnostics",
+                            "System memory information",
+                            "JVM memory information",
+                            "Operating system information",
+                            "JVM information",
+                            "Java classpath",
+                            "Library path",
+                            "System properties",
+                            "(IANA) TimeZone database version",
+                            "Network information",
+                            "DBMS config");
+        } finally {
             managementService.shutdown();
         }
     }
 
-    private static class EphemeralCommunityManagementServiceFactory extends DatabaseManagementServiceFactory
-    {
-        EphemeralCommunityManagementServiceFactory()
-        {
-            super( DbmsInfo.COMMUNITY, CommunityEditionModule::new );
+    private static class EphemeralCommunityManagementServiceFactory extends DatabaseManagementServiceFactory {
+        EphemeralCommunityManagementServiceFactory() {
+            super(DbmsInfo.COMMUNITY, CommunityEditionModule::new);
         }
 
         @Override
-        protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
-        {
-            return new GlobalModule( config, dbmsInfo, dependencies )
-            {
+        protected GlobalModule createGlobalModule(Config config, ExternalDependencies dependencies) {
+            return new GlobalModule(config, dbmsInfo, dependencies) {
                 @Override
-                protected FileSystemAbstraction createFileSystemAbstraction()
-                {
+                protected FileSystemAbstraction createFileSystemAbstraction() {
                     return new EphemeralFileSystemAbstraction();
                 }
             };
         }
     }
 
-    private static class EphemeralDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilderImplementation
-    {
+    private static class EphemeralDatabaseManagementServiceBuilder
+            extends DatabaseManagementServiceBuilderImplementation {
         private final EphemeralCommunityManagementServiceFactory factory;
 
-        EphemeralDatabaseManagementServiceBuilder( Path homeDirectory, EphemeralCommunityManagementServiceFactory factory )
-        {
-            super( homeDirectory );
+        EphemeralDatabaseManagementServiceBuilder(
+                Path homeDirectory, EphemeralCommunityManagementServiceFactory factory) {
+            super(homeDirectory);
             this.factory = factory;
         }
 
         @Override
-        protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
-        {
-            return factory.build( augmentConfig( config ), dependencies );
+        protected DatabaseManagementService newDatabaseManagementService(
+                Config config, ExternalDependencies dependencies) {
+            return factory.build(augmentConfig(config), dependencies);
         }
     }
 }

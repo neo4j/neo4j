@@ -27,30 +27,23 @@ import java.util.Iterator;
  *
  * @param <T> the type of items in the iteration.
  */
-public class CombiningIterator<T> extends PrefetchingIterator<T>
-{
+public class CombiningIterator<T> extends PrefetchingIterator<T> {
     private final Iterator<? extends Iterator<T>> iterators;
     private Iterator<T> currentIterator;
 
-    public CombiningIterator( Iterable<? extends Iterator<T>> iterators )
-    {
-        this( iterators.iterator() );
+    public CombiningIterator(Iterable<? extends Iterator<T>> iterators) {
+        this(iterators.iterator());
     }
 
-    public CombiningIterator( Iterator<? extends Iterator<T>> iterators )
-    {
+    public CombiningIterator(Iterator<? extends Iterator<T>> iterators) {
         this.iterators = iterators;
     }
 
     @Override
-    protected T fetchNextOrNull()
-    {
-        if ( currentIterator == null || !currentIterator.hasNext() )
-        {
-            while ( (currentIterator = nextIteratorOrNull()) != null )
-            {
-                if ( currentIterator.hasNext() )
-                {
+    protected T fetchNextOrNull() {
+        if (currentIterator == null || !currentIterator.hasNext()) {
+            while ((currentIterator = nextIteratorOrNull()) != null) {
+                if (currentIterator.hasNext()) {
                     break;
                 }
             }
@@ -58,10 +51,8 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
         return currentIterator != null ? currentIterator.next() : null;
     }
 
-    protected Iterator<T> nextIteratorOrNull()
-    {
-        if ( iterators.hasNext() )
-        {
+    protected Iterator<T> nextIteratorOrNull() {
+        if (iterators.hasNext()) {
             return iterators.next();
         }
         return null;

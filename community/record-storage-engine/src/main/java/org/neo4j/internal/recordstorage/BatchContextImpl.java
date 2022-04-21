@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
-
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -41,8 +40,7 @@ import org.neo4j.util.VisibleForTesting;
  * It assumes use of token indexes.
  * This will be the only implementation when migration to token indexes is done!
  */
-public class BatchContextImpl implements BatchContext
-{
+public class BatchContextImpl implements BatchContext {
     private final IndexUpdatesWorkSync indexUpdatesSync;
     private final CursorContext cursorContext;
     private final IdUpdateListener idUpdateListener;
@@ -51,77 +49,76 @@ public class BatchContextImpl implements BatchContext
     private final LockGroup lockGroup;
     private final IndexUpdates indexUpdates;
 
-    public BatchContextImpl( IndexUpdateListener indexUpdateListener,
-                             IndexUpdatesWorkSync indexUpdatesSync, NodeStore nodeStore, PropertyStore propertyStore,
-                             StorageEngine recordStorageEngine, SchemaCache schemaCache, CursorContext cursorContext, MemoryTracker memoryTracker,
-                             IdUpdateListener idUpdateListener, StoreCursors storeCursors )
-    {
-        this.indexActivator = new IndexActivator( indexUpdateListener );
+    public BatchContextImpl(
+            IndexUpdateListener indexUpdateListener,
+            IndexUpdatesWorkSync indexUpdatesSync,
+            NodeStore nodeStore,
+            PropertyStore propertyStore,
+            StorageEngine recordStorageEngine,
+            SchemaCache schemaCache,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker,
+            IdUpdateListener idUpdateListener,
+            StoreCursors storeCursors) {
+        this.indexActivator = new IndexActivator(indexUpdateListener);
         this.indexUpdatesSync = indexUpdatesSync;
         this.cursorContext = cursorContext;
         this.idUpdateListener = idUpdateListener;
         this.lockGroup = new LockGroup();
-        this.indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore, storeCursors ),
-                                                    recordStorageEngine.newReader(), cursorContext, memoryTracker, storeCursors );
+        this.indexUpdates = new OnlineIndexUpdates(
+                nodeStore,
+                schemaCache,
+                new PropertyPhysicalToLogicalConverter(propertyStore, storeCursors),
+                recordStorageEngine.newReader(),
+                cursorContext,
+                memoryTracker,
+                storeCursors);
     }
 
     @Override
-    public LockGroup getLockGroup()
-    {
+    public LockGroup getLockGroup() {
         return lockGroup;
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         applyPendingIndexUpdates();
 
-        IOUtils.closeAll( indexUpdates, idUpdateListener, lockGroup, indexActivator );
+        IOUtils.closeAll(indexUpdates, idUpdateListener, lockGroup, indexActivator);
     }
 
     @Override
-    public IndexActivator getIndexActivator()
-    {
+    public IndexActivator getIndexActivator() {
         return indexActivator;
     }
 
     @Override
-    public void applyPendingIndexUpdates() throws IOException
-    {
-        if ( hasUpdates() )
-        {
+    public void applyPendingIndexUpdates() throws IOException {
+        if (hasUpdates()) {
             IndexUpdatesWorkSync.Batch indexUpdatesBatch = indexUpdatesSync.newBatch();
-            indexUpdatesBatch.add( indexUpdates );
-            try
-            {
-                indexUpdatesBatch.apply( cursorContext );
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "Failed to flush index updates", e );
-            }
-            finally
-            {
+            indexUpdatesBatch.add(indexUpdates);
+            try {
+                indexUpdatesBatch.apply(cursorContext);
+            } catch (ExecutionException e) {
+                throw new IOException("Failed to flush index updates", e);
+            } finally {
                 indexUpdates.reset();
             }
         }
     }
 
     @VisibleForTesting
-    boolean hasUpdates()
-    {
+    boolean hasUpdates() {
         return indexUpdates.hasUpdates();
     }
 
     @Override
-    public IndexUpdates indexUpdates()
-    {
+    public IndexUpdates indexUpdates() {
         return indexUpdates;
     }
 
     @Override
-    public IdUpdateListener getIdUpdateListener()
-    {
+    public IdUpdateListener getIdUpdateListener() {
         return idUpdateListener;
     }
 }

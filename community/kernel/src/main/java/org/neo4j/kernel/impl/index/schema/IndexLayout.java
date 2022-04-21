@@ -22,60 +22,49 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-abstract class IndexLayout<KEY extends NativeIndexKey<KEY>> extends Layout.Adapter<KEY,NullValue>
-{
+abstract class IndexLayout<KEY extends NativeIndexKey<KEY>> extends Layout.Adapter<KEY, NullValue> {
     // allows more control of the identifier, needed for legacy reasons for the two number layouts
-    IndexLayout( boolean fixedSize, long identifier, int majorVersion, int minorVersion )
-    {
-        super( fixedSize, identifier, majorVersion, minorVersion );
+    IndexLayout(boolean fixedSize, long identifier, int majorVersion, int minorVersion) {
+        super(fixedSize, identifier, majorVersion, minorVersion);
     }
 
-    IndexLayout( boolean fixedSize, String layoutName, int majorVersion, int minorVersion )
-    {
-        this( fixedSize, Layout.namedIdentifier( layoutName, NullValue.SIZE ), majorVersion, minorVersion );
+    IndexLayout(boolean fixedSize, String layoutName, int majorVersion, int minorVersion) {
+        this(fixedSize, Layout.namedIdentifier(layoutName, NullValue.SIZE), majorVersion, minorVersion);
     }
 
     @Override
-    public NullValue newValue()
-    {
+    public NullValue newValue() {
         return NullValue.INSTANCE;
     }
 
     @Override
-    public int valueSize( NullValue nullValue )
-    {
+    public int valueSize(NullValue nullValue) {
         return NullValue.SIZE;
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NullValue nullValue )
-    {
+    public void writeValue(PageCursor cursor, NullValue nullValue) {
         // nothing to write
     }
 
     @Override
-    public void readValue( PageCursor cursor, NullValue into, int valueSize )
-    {
+    public void readValue(PageCursor cursor, NullValue into, int valueSize) {
         // nothing to read
     }
 
     @Override
-    public final int compare( KEY o1, KEY o2 )
-    {
-        int valueComparison = compareValue( o1, o2 );
-        if ( valueComparison == 0 )
-        {
+    public final int compare(KEY o1, KEY o2) {
+        int valueComparison = compareValue(o1, o2);
+        if (valueComparison == 0) {
             // This is a special case where we need also compare entityId to support inclusive/exclusive
-            if ( o1.getCompareId() && o2.getCompareId() )
-            {
-                return Long.compare( o1.getEntityId(), o2.getEntityId() );
+            if (o1.getCompareId() && o2.getCompareId()) {
+                return Long.compare(o1.getEntityId(), o2.getEntityId());
             }
         }
         return valueComparison;
     }
 
-    int compareValue( KEY o1, KEY o2 )
-    {
-        return o1.compareValueTo( o2 );
+    int compareValue(KEY o1, KEY o2) {
+        return o1.compareValueTo(o2);
     }
 }

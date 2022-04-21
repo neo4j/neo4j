@@ -20,9 +20,8 @@
 package org.neo4j.monitoring;
 
 @FunctionalInterface
-public interface PanicEventGenerator
-{
+public interface PanicEventGenerator {
     PanicEventGenerator NO_OP = ignoredCause -> {};
 
-    void panic( Throwable causeOfPanic );
+    void panic(Throwable causeOfPanic);
 }

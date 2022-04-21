@@ -24,15 +24,15 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 
-public interface TransactionalEntityFactory
-{
-    Relationship newRelationshipEntity( long id );
+public interface TransactionalEntityFactory {
+    Relationship newRelationshipEntity(long id);
 
-    Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId );
+    Relationship newRelationshipEntity(long id, long startNodeId, int typeId, long endNodeId);
 
-    Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor );
+    Relationship newRelationshipEntity(
+            long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor);
 
-    Node newNodeEntity( long nodeId );
+    Node newNodeEntity(long nodeId);
 
-    RelationshipType getRelationshipTypeById( int type );
+    RelationshipType getRelationshipTypeById(int type);
 }

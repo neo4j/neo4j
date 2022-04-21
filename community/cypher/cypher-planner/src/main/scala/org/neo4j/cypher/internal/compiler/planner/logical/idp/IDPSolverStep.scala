@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import scala.collection.GenTraversableOnce
 
 object IDPSolverStep {
+
   def empty[S, P, C] = new IDPSolverStep[S, P, C] {
+
     override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C): Iterator[P] =
       Iterator.empty
   }
@@ -39,10 +41,12 @@ trait IDPSolverStep[S, P, C] extends SolverStep[S, P, C] {
     (registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C) => self(registry, goal, cache, context).map(f)
 
   def flatMap(f: P => GenTraversableOnce[P]): IDPSolverStep[S, P, C] =
-    (registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C) => self(registry, goal, cache, context).flatMap(f)
+    (registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C) =>
+      self(registry, goal, cache, context).flatMap(f)
 
   def ++(next: IDPSolverStep[S, P, C]): IDPSolverStep[S, P, C] =
-    (registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C) => self(registry, goal, cache, context) ++ next(registry, goal, cache, context)
+    (registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C) =>
+      self(registry, goal, cache, context) ++ next(registry, goal, cache, context)
 
   /**
    * Combines two solver steps. If the first yields results, only produce those.

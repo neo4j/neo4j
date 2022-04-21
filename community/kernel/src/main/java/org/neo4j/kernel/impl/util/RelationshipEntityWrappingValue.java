@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -33,13 +37,9 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
-
-public class RelationshipEntityWrappingValue extends RelationshipValue implements WrappingEntity<Relationship>
-{
-    static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipEntityWrappingValue.class ) + RelationshipEntity.SHALLOW_SIZE;
+public class RelationshipEntityWrappingValue extends RelationshipValue implements WrappingEntity<Relationship> {
+    static final long SHALLOW_SIZE =
+            shallowSizeOfInstance(RelationshipEntityWrappingValue.class) + RelationshipEntity.SHALLOW_SIZE;
 
     private final Relationship relationship;
     private volatile TextValue type;
@@ -50,125 +50,100 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     /**
      * Wraps a {@link Relationship}, reading out its meta data lazily, i.e. on first access of e.g. {@link #startNodeId()}.
      */
-    static RelationshipEntityWrappingValue wrapLazy( Relationship relationship )
-    {
-        return new RelationshipEntityWrappingValue( relationship );
+    static RelationshipEntityWrappingValue wrapLazy(Relationship relationship) {
+        return new RelationshipEntityWrappingValue(relationship);
     }
 
-    private RelationshipEntityWrappingValue( Relationship relationship )
-    {
-        super( relationship.getId(), null, NO_ID, null, NO_ID, null );
+    private RelationshipEntityWrappingValue(Relationship relationship) {
+        super(relationship.getId(), null, NO_ID, null, NO_ID, null);
         this.relationship = relationship;
     }
 
-    public Relationship relationshipEntity()
-    {
+    public Relationship relationshipEntity() {
         return relationship;
     }
 
     @Override
-    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-    {
-        if ( writer.entityMode() == REFERENCE )
-        {
-            writer.writeRelationshipReference( id() );
-        }
-        else
-        {
+    public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {
+        if (writer.entityMode() == REFERENCE) {
+            writer.writeRelationshipReference(id());
+        } else {
             boolean isDeleted = false;
 
-            if ( relationship instanceof RelationshipEntity proxy )
-            {
-                if ( !proxy.initializeData() )
-                {
+            if (relationship instanceof RelationshipEntity proxy) {
+                if (!proxy.initializeData()) {
                     // If the relationship has been deleted since it was found by the query,
                     // then we'll have to tell the client that their transaction conflicted,
                     // and that they need to retry it.
-                    throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ) );
+                    throw new ReadAndDeleteTransactionConflictException(
+                            RelationshipEntity.isDeletedInCurrentTransaction(relationship));
                 }
             }
 
             MapValue p;
-            try
-            {
+            try {
                 p = properties();
-            }
-            catch ( ReadAndDeleteTransactionConflictException e )
-            {
-                if ( !e.wasDeletedInThisTransaction() )
-                {
+            } catch (ReadAndDeleteTransactionConflictException e) {
+                if (!e.wasDeletedInThisTransaction()) {
                     throw e;
                 }
-                // If it isn't a transient error then the relationship was deleted in the current transaction and we should write an 'empty' relationship.
+                // If it isn't a transient error then the relationship was deleted in the current transaction and we
+                // should write an 'empty' relationship.
                 p = VirtualValues.EMPTY_MAP;
                 isDeleted = true;
             }
 
-            if ( id() < 0 )
-            {
-                writer.writeVirtualRelationshipHack( relationship );
+            if (id() < 0) {
+                writer.writeVirtualRelationshipHack(relationship);
             }
-            writer.writeRelationship( id(), startNode().id(), endNode().id(), type(), p, isDeleted );
+            writer.writeRelationship(id(), startNode().id(), endNode().id(), type(), p, isDeleted);
         }
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
+    public long estimatedHeapUsage() {
         long size = SHALLOW_SIZE;
-        if ( type != null )
-        {
+        if (type != null) {
             size += type.estimatedHeapUsage();
         }
-        if ( properties != null )
-        {
+        if (properties != null) {
             size += properties.estimatedHeapUsage();
         }
-        if ( startNode != null )
-        {
+        if (startNode != null) {
             size += startNode.estimatedHeapUsage();
         }
-        if ( endNode != null )
-        {
+        if (endNode != null) {
             size += endNode.estimatedHeapUsage();
         }
-       return size;
+        return size;
     }
 
-    public void populate( RelationshipScanCursor relCursor, PropertyCursor propertyCursor )
-    {
-        try
-        {
-            if ( relationship instanceof RelationshipEntity proxy )
-            {
-                if ( !proxy.initializeData( relCursor ) )
-                {
-                    // When this happens to relationship proxies, we have most likely observed our relationship being deleted by an overlapping committed
+    public void populate(RelationshipScanCursor relCursor, PropertyCursor propertyCursor) {
+        try {
+            if (relationship instanceof RelationshipEntity proxy) {
+                if (!proxy.initializeData(relCursor)) {
+                    // When this happens to relationship proxies, we have most likely observed our relationship being
+                    // deleted by an overlapping committed
                     // transaction.
                     return;
                 }
             }
             // type, startNode and endNode will have counted their DB hits as part of initializeData.
             type();
-            properties( propertyCursor );
+            properties(propertyCursor);
             startNode();
             endNode();
-        }
-        catch ( NotFoundException | ReadAndDeleteTransactionConflictException e )
-        {
+        } catch (NotFoundException | ReadAndDeleteTransactionConflictException e) {
             // best effort, cannot do more
         }
     }
 
-    public void populate()
-    {
-        try
-        {
-            if ( relationship instanceof RelationshipEntity proxy )
-            {
-                if ( !proxy.initializeData() )
-                {
-                    // When this happens to relationship proxies, we have most likely observed our relationship being deleted by an overlapping committed
+    public void populate() {
+        try {
+            if (relationship instanceof RelationshipEntity proxy) {
+                if (!proxy.initializeData()) {
+                    // When this happens to relationship proxies, we have most likely observed our relationship being
+                    // deleted by an overlapping committed
                     // transaction.
                     return;
                 }
@@ -177,66 +152,56 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
             properties();
             startNode();
             endNode();
-        }
-        catch ( NotFoundException | ReadAndDeleteTransactionConflictException e )
-        {
+        } catch (NotFoundException | ReadAndDeleteTransactionConflictException e) {
             // best effort, cannot do more
         }
     }
 
-    public boolean isPopulated()
-    {
+    public boolean isPopulated() {
         return type != null && properties != null && startNode != null && endNode != null;
     }
 
     @Override
-    public String elementId()
-    {
+    public String elementId() {
         return relationship.getElementId();
     }
 
     @Override
-    public long startNodeId()
-    {
-        // Often a RelationshipEntityWrappingValue is initialized with the start/end node ids given, but if that's not the case
+    public long startNodeId() {
+        // Often a RelationshipEntityWrappingValue is initialized with the start/end node ids given, but if that's not
+        // the case
         // Then use the other route of looking up the start node the slow way and getting its ID.
         long startNodeId = super.startNodeId();
         return startNodeId != NO_ID ? startNodeId : startNode().id();
     }
 
     @Override
-    public String startNodeElementId()
-    {
+    public String startNodeElementId() {
         return startNode().elementId();
     }
 
     @Override
-    public long endNodeId()
-    {
-        // Often a RelationshipEntityWrappingValue is initialized with the start/end node ids given, but if that's not the case
+    public long endNodeId() {
+        // Often a RelationshipEntityWrappingValue is initialized with the start/end node ids given, but if that's not
+        // the case
         // Then use the other route of looking up the end node the slow way and getting its ID.
         long endNodeId = super.endNodeId();
         return endNodeId != NO_ID ? endNodeId : endNode().id();
     }
 
     @Override
-    public String endNodeElementId()
-    {
+    public String endNodeElementId() {
         return endNode().elementId();
     }
 
     @Override
-    public VirtualNodeValue startNode()
-    {
+    public VirtualNodeValue startNode() {
         VirtualNodeValue start = startNode;
-        if ( start == null )
-        {
-            synchronized ( this )
-            {
+        if (start == null) {
+            synchronized (this) {
                 start = startNode;
-                if ( start == null )
-                {
-                    start = startNode = ValueUtils.fromNodeEntity( relationship.getStartNode() );
+                if (start == null) {
+                    start = startNode = ValueUtils.fromNodeEntity(relationship.getStartNode());
                 }
             }
         }
@@ -244,17 +209,13 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
-    public VirtualNodeValue endNode()
-    {
+    public VirtualNodeValue endNode() {
         VirtualNodeValue end = endNode;
-        if ( end == null )
-        {
-            synchronized ( this )
-            {
+        if (end == null) {
+            synchronized (this) {
                 end = endNode;
-                if ( end == null )
-                {
-                    end = endNode = ValueUtils.fromNodeEntity( relationship.getEndNode() );
+                if (end == null) {
+                    end = endNode = ValueUtils.fromNodeEntity(relationship.getEndNode());
                 }
             }
         }
@@ -262,105 +223,81 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
-    public VirtualNodeValue otherNode( VirtualNodeValue node )
-    {
-        if ( node instanceof NodeEntityWrappingNodeValue )
-        {
+    public VirtualNodeValue otherNode(VirtualNodeValue node) {
+        if (node instanceof NodeEntityWrappingNodeValue) {
             Node proxy = ((NodeEntityWrappingNodeValue) node).getEntity();
-            return ValueUtils.fromNodeEntity( relationship.getOtherNode( proxy ) );
-        }
-        else
-        {
-           return super.otherNode( node );
+            return ValueUtils.fromNodeEntity(relationship.getOtherNode(proxy));
+        } else {
+            return super.otherNode(node);
         }
     }
 
     @Override
-    public long otherNodeId( long node )
-    {
-        return relationship.getOtherNodeId( node );
+    public long otherNodeId(long node) {
+        return relationship.getOtherNodeId(node);
     }
 
     @Override
-    public TextValue type()
-    {
+    public TextValue type() {
         TextValue t = type;
-        if ( t == null )
-        {
-            try
-            {
-                synchronized ( this )
-                {
+        if (t == null) {
+            try {
+                synchronized (this) {
                     t = type;
-                    if ( t == null )
-                    {
-                        t = type = Values.utf8Value( relationship.getType().name() );
+                    if (t == null) {
+                        t = type = Values.utf8Value(relationship.getType().name());
                     }
                 }
-            }
-            catch ( IllegalStateException e )
-            {
-                throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
+            } catch (IllegalStateException e) {
+                throw new ReadAndDeleteTransactionConflictException(
+                        RelationshipEntity.isDeletedInCurrentTransaction(relationship), e);
             }
         }
         return t;
     }
 
     @Override
-    public MapValue properties()
-    {
+    public MapValue properties() {
         MapValue m = properties;
-        if ( m == null )
-        {
-            try
-            {
-                synchronized ( this )
-                {
+        if (m == null) {
+            try {
+                synchronized (this) {
                     m = properties;
-                    if ( m == null )
-                    {
-                        m = properties = ValueUtils.asMapValue( relationship.getAllProperties() );
+                    if (m == null) {
+                        m = properties = ValueUtils.asMapValue(relationship.getAllProperties());
                     }
                 }
-            }
-            catch ( NotFoundException | IllegalStateException e )
-            {
-                throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
+            } catch (NotFoundException | IllegalStateException e) {
+                throw new ReadAndDeleteTransactionConflictException(
+                        RelationshipEntity.isDeletedInCurrentTransaction(relationship), e);
             }
         }
         return m;
     }
 
     @Override
-    public Relationship getEntity()
-    {
+    public Relationship getEntity() {
         return relationship;
     }
 
-    public MapValue properties( PropertyCursor propertyCursor )
-    {
+    public MapValue properties(PropertyCursor propertyCursor) {
         MapValue m = properties;
-        if ( m == null )
-        {
-            try
-            {
-                synchronized ( this )
-                {
+        if (m == null) {
+            try {
+                synchronized (this) {
                     m = properties;
-                    if ( m == null )
-                    {
-                        var relProperties = relationship instanceof RelationshipEntity ?
-                                            ((RelationshipEntity) relationship).getAllProperties( propertyCursor ) : relationship.getAllProperties();
-                        m = properties = ValueUtils.asMapValue( relProperties );
+                    if (m == null) {
+                        var relProperties = relationship instanceof RelationshipEntity
+                                ? ((RelationshipEntity) relationship).getAllProperties(propertyCursor)
+                                : relationship.getAllProperties();
+                        m = properties = ValueUtils.asMapValue(relProperties);
                     }
                 }
-            }
-            catch ( NotFoundException | IllegalStateException e )
-            {
-                throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
+            } catch (NotFoundException | IllegalStateException e) {
+                throw new ReadAndDeleteTransactionConflictException(
+                        RelationshipEntity.isDeletedInCurrentTransaction(relationship), e);
             }
         }
         return m;
     }
 }
-

@@ -19,12 +19,14 @@
  */
 package org.neo4j.procedure.impl.temporal;
 
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.neo4j.cypher.internal.expressions.functions.Category;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
@@ -42,137 +44,124 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
-@Description( "Construct a Duration value." )
-class DurationFunction implements CallableUserFunction
-{
+@Description("Construct a Duration value.")
+class DurationFunction implements CallableUserFunction {
     private static final String CATEGORY = Category.TEMPORAL();
 
-    private static final UserFunctionSignature DURATION =
-            new UserFunctionSignature(
-                    new QualifiedName( new String[0], "duration" ),
-                    Collections.singletonList( inputField( "input", Neo4jTypes.NTAny ) ),
-                    Neo4jTypes.NTDuration, null,
-                    DurationFunction.class.getAnnotation( Description.class ).value(),
-                    CATEGORY, true, true );
+    private static final UserFunctionSignature DURATION = new UserFunctionSignature(
+            new QualifiedName(new String[0], "duration"),
+            Collections.singletonList(inputField("input", Neo4jTypes.NTAny)),
+            Neo4jTypes.NTDuration,
+            null,
+            DurationFunction.class.getAnnotation(Description.class).value(),
+            CATEGORY,
+            true,
+            true);
 
-    static void register( GlobalProcedures globalProcedures ) throws ProcedureException
-    {
-        globalProcedures.registerBuiltIn( new DurationFunction() );
-        globalProcedures.registerBuiltIn( new Between( "between" ) );
-        globalProcedures.registerBuiltIn( new Between( "inMonths" ) );
-        globalProcedures.registerBuiltIn( new Between( "inDays" ) );
-        globalProcedures.registerBuiltIn( new Between( "inSeconds" ) );
+    static void register(GlobalProcedures globalProcedures) throws ProcedureException {
+        globalProcedures.registerBuiltIn(new DurationFunction());
+        globalProcedures.registerBuiltIn(new Between("between"));
+        globalProcedures.registerBuiltIn(new Between("inMonths"));
+        globalProcedures.registerBuiltIn(new Between("inDays"));
+        globalProcedures.registerBuiltIn(new Between("inSeconds"));
     }
 
     @Override
-    public UserFunctionSignature signature()
-    {
+    public UserFunctionSignature signature() {
         return DURATION;
     }
 
     @Override
-    public boolean threadSafe()
-    {
+    public boolean threadSafe() {
         return true;
     }
 
     @Override
-    public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
-    {
-        if ( input == null )
-        {
+    public AnyValue apply(Context ctx, AnyValue[] input) throws ProcedureException {
+        if (input == null) {
             return NO_VALUE;
-        }
-        else if ( input.length == 1 )
-        {
-            if ( input[0] == NO_VALUE || input[0] == null )
-            {
+        } else if (input.length == 1) {
+            if (input[0] == NO_VALUE || input[0] == null) {
                 return NO_VALUE;
-            }
-            else if ( input[0] instanceof TextValue )
-            {
-                return DurationValue.parse( (TextValue) input[0] );
-            }
-            else if ( input[0] instanceof MapValue map )
-            {
-                return DurationValue.build( map );
+            } else if (input[0] instanceof TextValue) {
+                return DurationValue.parse((TextValue) input[0]);
+            } else if (input[0] instanceof MapValue map) {
+                return DurationValue.build(map);
             }
         }
-        throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
-                ": Provided input was " + Arrays.toString( input ) );
+        throw new ProcedureException(
+                Status.Procedure.ProcedureCallFailed,
+                "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
+                        + Arrays.toString(input));
     }
 
-    private static class Between implements CallableUserFunction
-    {
+    private static class Between implements CallableUserFunction {
         private static final String DESCRIPTION =
                 "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in %s.";
-        private static final List<FieldSignature> SIGNATURE = Arrays.asList(
-                inputField( "from", Neo4jTypes.NTAny ),
-                inputField( "to", Neo4jTypes.NTAny ) );
+        private static final List<FieldSignature> SIGNATURE =
+                Arrays.asList(inputField("from", Neo4jTypes.NTAny), inputField("to", Neo4jTypes.NTAny));
         private final UserFunctionSignature signature;
         private final TemporalUnit unit;
 
-        private Between( String unit )
-        {
+        private Between(String unit) {
             String unitString;
-            switch ( unit )
-            {
-            case "between":
-                this.unit = null;
-                unitString = "logical units";
-                break;
-            case "inMonths":
-                this.unit = ChronoUnit.MONTHS;
-                unitString = "months";
-                break;
-            case "inDays":
-                this.unit = ChronoUnit.DAYS;
-                unitString = "days";
-                break;
-            case "inSeconds":
-                this.unit = ChronoUnit.SECONDS;
-                unitString = "seconds";
-                break;
-            default:
-                throw new IllegalStateException( "Unsupported unit: " + unit );
+            switch (unit) {
+                case "between":
+                    this.unit = null;
+                    unitString = "logical units";
+                    break;
+                case "inMonths":
+                    this.unit = ChronoUnit.MONTHS;
+                    unitString = "months";
+                    break;
+                case "inDays":
+                    this.unit = ChronoUnit.DAYS;
+                    unitString = "days";
+                    break;
+                case "inSeconds":
+                    this.unit = ChronoUnit.SECONDS;
+                    unitString = "seconds";
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported unit: " + unit);
             }
             this.signature = new UserFunctionSignature(
-                    new QualifiedName( new String[] {"duration"}, unit ),
-                    SIGNATURE, Neo4jTypes.NTDuration, null,
-                    String.format( DESCRIPTION, unitString ), CATEGORY, true, true );
+                    new QualifiedName(new String[] {"duration"}, unit),
+                    SIGNATURE,
+                    Neo4jTypes.NTDuration,
+                    null,
+                    String.format(DESCRIPTION, unitString),
+                    CATEGORY,
+                    true,
+                    true);
         }
 
         @Override
-        public UserFunctionSignature signature()
-        {
+        public UserFunctionSignature signature() {
             return signature;
         }
 
         @Override
-        public boolean threadSafe()
-        {
+        public boolean threadSafe() {
             return true;
         }
 
         @Override
-        public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
-        {
-            if ( input == null || (input.length == 2 && (input[0] == NO_VALUE || input[0] == null) || input[1] == NO_VALUE || input[1] == null) )
-            {
+        public AnyValue apply(Context ctx, AnyValue[] input) throws ProcedureException {
+            if (input == null
+                    || (input.length == 2 && (input[0] == NO_VALUE || input[0] == null)
+                            || input[1] == NO_VALUE
+                            || input[1] == null)) {
                 return NO_VALUE;
-            }
-            else if ( input.length == 2 )
-            {
-                if ( input[0] instanceof TemporalValue from && input[1] instanceof TemporalValue to )
-                {
-                    return DurationValue.between( unit, from, to );
+            } else if (input.length == 2) {
+                if (input[0] instanceof TemporalValue from && input[1] instanceof TemporalValue to) {
+                    return DurationValue.between(unit, from, to);
                 }
             }
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
-                ": Provided input was " + Arrays.toString( input ) );
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureCallFailed,
+                    "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
+                            + Arrays.toString(input));
         }
     }
 }

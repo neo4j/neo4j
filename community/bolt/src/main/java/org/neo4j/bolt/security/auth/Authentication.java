@@ -20,7 +20,6 @@
 package org.neo4j.bolt.security.auth;
 
 import java.util.Map;
-
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -38,8 +37,7 @@ import org.neo4j.kernel.api.exceptions.Status;
  * </ul>
  * <p>
  */
-public interface Authentication
-{
+public interface Authentication {
     /**
      * Authenticate the provided token.
      *
@@ -47,10 +45,10 @@ public interface Authentication
      * @param connectionInfo Information about the client connection.
      * @throws AuthenticationException If authentication failed.
      */
-    AuthenticationResult authenticate( Map<String,Object> authToken, ClientConnectionInfo connectionInfo ) throws AuthenticationException;
+    AuthenticationResult authenticate(Map<String, Object> authToken, ClientConnectionInfo connectionInfo)
+            throws AuthenticationException;
 
-    default LoginContext impersonate( LoginContext context, String userToImpersonate ) throws AuthenticationException
-    {
-        throw new AuthenticationException( Status.Security.AuthProviderFailed, "Unsupported operation" );
+    default LoginContext impersonate(LoginContext context, String userToImpersonate) throws AuthenticationException {
+        throw new AuthenticationException(Status.Security.AuthProviderFailed, "Unsupported operation");
     }
 }

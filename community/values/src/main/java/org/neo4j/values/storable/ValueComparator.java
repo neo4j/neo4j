@@ -20,66 +20,56 @@
 package org.neo4j.values.storable;
 
 import java.util.Comparator;
-
 import org.neo4j.values.Comparison;
 import org.neo4j.values.TernaryComparator;
 
 /**
  * Comparator for values. Usable for sorting values, for example during index range scans.
  */
-public final class ValueComparator implements TernaryComparator<Value>
-{
+public final class ValueComparator implements TernaryComparator<Value> {
     private final Comparator<ValueGroup> valueGroupComparator;
 
-    ValueComparator(
-            Comparator<ValueGroup> valueGroupComparator )
-    {
+    ValueComparator(Comparator<ValueGroup> valueGroupComparator) {
         this.valueGroupComparator = valueGroupComparator;
     }
 
     @Override
-    public int compare( Value v1, Value v2 )
-    {
+    public int compare(Value v1, Value v2) {
         assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
         ValueGroup id1 = v1.valueGroup();
         ValueGroup id2 = v2.valueGroup();
 
-        int x = valueGroupComparator.compare( id1, id2 );
+        int x = valueGroupComparator.compare(id1, id2);
 
-        if ( x == 0 )
-        {
-            return v1.unsafeCompareTo( v2 );
+        if (x == 0) {
+            return v1.unsafeCompareTo(v2);
         }
         return x;
     }
 
     @Override
-    public Comparison ternaryCompare( Value v1, Value v2 )
-    {
+    public Comparison ternaryCompare(Value v1, Value v2) {
         assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
         ValueGroup id1 = v1.valueGroup();
         ValueGroup id2 = v2.valueGroup();
 
-        int x = valueGroupComparator.compare( id1, id2 );
+        int x = valueGroupComparator.compare(id1, id2);
 
-        if ( x == 0 )
-        {
-            return v1.unsafeTernaryCompareTo( v2 );
+        if (x == 0) {
+            return v1.unsafeTernaryCompareTo(v2);
         }
         return Comparison.UNDEFINED;
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
+    public boolean equals(Object obj) {
         return obj instanceof ValueComparator;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return 1;
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.txtracking;
 
-public interface TransactionIdTrackerMonitor
-{
+public interface TransactionIdTrackerMonitor {
     void onWaitWhenNotUpToDate();
 }

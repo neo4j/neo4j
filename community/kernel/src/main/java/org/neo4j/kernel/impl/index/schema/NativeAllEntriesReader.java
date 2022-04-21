@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -30,17 +29,20 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>> implements BoundedIterable<Long>
-{
-    private final GBPTree<KEY,NullValue> tree;
-    private final Layout<KEY,NullValue> layout;
+public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>> implements BoundedIterable<Long> {
+    private final GBPTree<KEY, NullValue> tree;
+    private final Layout<KEY, NullValue> layout;
     private final long fromIdInclusive;
     private final long toIdExclusive;
     private final CursorContext cursorContext;
-    private Seeker<KEY,NullValue> seeker;
+    private Seeker<KEY, NullValue> seeker;
 
-    NativeAllEntriesReader( GBPTree<KEY,NullValue> tree, Layout<KEY,NullValue> layout, long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
-    {
+    NativeAllEntriesReader(
+            GBPTree<KEY, NullValue> tree,
+            Layout<KEY, NullValue> layout,
+            long fromIdInclusive,
+            long toIdExclusive,
+            CursorContext cursorContext) {
         this.tree = tree;
         this.layout = layout;
         this.fromIdInclusive = fromIdInclusive;
@@ -49,70 +51,53 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>> implements 
     }
 
     @Override
-    public Iterator<Long> iterator()
-    {
+    public Iterator<Long> iterator() {
         KEY from = layout.newKey();
-        from.initialize( Long.MIN_VALUE );
+        from.initialize(Long.MIN_VALUE);
         from.initValuesAsLowest();
         KEY to = layout.newKey();
-        to.initialize( Long.MAX_VALUE );
+        to.initialize(Long.MAX_VALUE);
         to.initValuesAsHighest();
-        try
-        {
+        try {
             closeSeeker();
-            seeker = tree.seek( from, to, cursorContext );
-            return new PrefetchingIterator<>()
-            {
+            seeker = tree.seek(from, to, cursorContext);
+            return new PrefetchingIterator<>() {
                 @Override
-                protected Long fetchNextOrNull()
-                {
-                    do
-                    {
-                        try
-                        {
-                            if ( !seeker.next() )
-                            {
+                protected Long fetchNextOrNull() {
+                    do {
+                        try {
+                            if (!seeker.next()) {
                                 return null;
                             }
                             long id = seeker.key().getEntityId();
-                            if ( id >= fromIdInclusive && id < toIdExclusive )
-                            {
+                            if (id >= fromIdInclusive && id < toIdExclusive) {
                                 return id;
                             }
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
                         }
-                        catch ( IOException e )
-                        {
-                            throw new UncheckedIOException( e );
-                        }
-                    }
-                    while ( true );
+                    } while (true);
                 }
             };
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    private void closeSeeker() throws IOException
-    {
-        if ( seeker != null )
-        {
+    private void closeSeeker() throws IOException {
+        if (seeker != null) {
             seeker.close();
             seeker = null;
         }
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
         closeSeeker();
     }
 
     @Override
-    public long maxCount()
-    {
+    public long maxCount() {
         return UNKNOWN_MAX_COUNT;
     }
 }

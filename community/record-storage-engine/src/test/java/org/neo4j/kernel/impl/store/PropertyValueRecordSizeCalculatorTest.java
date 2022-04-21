@@ -19,23 +19,21 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@ExtendWith( RandomExtension.class )
-class PropertyValueRecordSizeCalculatorTest
-{
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
+
+@ExtendWith(RandomExtension.class)
+class PropertyValueRecordSizeCalculatorTest {
     private static final int PROPERTY_RECORD_SIZE = PropertyRecordFormat.RECORD_SIZE;
     private static final int DYNAMIC_RECORD_SIZE = 120;
 
@@ -43,62 +41,64 @@ class PropertyValueRecordSizeCalculatorTest
     private RandomSupport random;
 
     @Test
-    void shouldIncludePropertyRecordSize()
-    {
+    void shouldIncludePropertyRecordSize() {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
 
         // when
-        int size = calculator.calculateSize( new Value[] {Values.of( 10 )}, NULL_CONTEXT, INSTANCE );
+        int size = calculator.calculateSize(new Value[] {Values.of(10)}, NULL_CONTEXT, INSTANCE);
 
         // then
-        assertEquals( PropertyRecordFormat.RECORD_SIZE, size );
+        assertEquals(PropertyRecordFormat.RECORD_SIZE, size);
     }
 
     @Test
-    void shouldIncludeDynamicRecordSizes()
-    {
+    void shouldIncludeDynamicRecordSizes() {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
 
         // when
-        int size = calculator.calculateSize( new Value[] {Values.of( string( 80 ) ), Values.of( new String[] {string( 150 )} )}, NULL_CONTEXT, INSTANCE );
+        int size = calculator.calculateSize(
+                new Value[] {Values.of(string(80)), Values.of(new String[] {string(150)})}, NULL_CONTEXT, INSTANCE);
 
         // then
-        assertEquals( PROPERTY_RECORD_SIZE + DYNAMIC_RECORD_SIZE + DYNAMIC_RECORD_SIZE * 2, size );
+        assertEquals(PROPERTY_RECORD_SIZE + DYNAMIC_RECORD_SIZE + DYNAMIC_RECORD_SIZE * 2, size);
     }
 
     @Test
-    void shouldSpanMultiplePropertyRecords()
-    {
+    void shouldSpanMultiplePropertyRecords() {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
 
         // when
-        int size = calculator.calculateSize( new Value[] {
-                Values.of( 10 ),                          // 1 block  go to record 1
-                Values.of( "test" ),                      // 1 block
-                Values.of( (byte) 5 ),                    // 1 block
-                Values.of( string( 80 ) ),                // 1 block
-                Values.of( "a bit longer short string" ), // 3 blocks go to record 2
-                Values.of( 1234567890123456789L ),        // 2 blocks go to record 3
-                Values.of( 5 ),                           // 1 block
-                Values.of( "value" )                      // 1 block
-        }, NULL_CONTEXT, INSTANCE );
+        int size = calculator.calculateSize(
+                new Value[] {
+                    Values.of(10), // 1 block  go to record 1
+                    Values.of("test"), // 1 block
+                    Values.of((byte) 5), // 1 block
+                    Values.of(string(80)), // 1 block
+                    Values.of("a bit longer short string"), // 3 blocks go to record 2
+                    Values.of(1234567890123456789L), // 2 blocks go to record 3
+                    Values.of(5), // 1 block
+                    Values.of("value") // 1 block
+                },
+                NULL_CONTEXT,
+                INSTANCE);
 
         // then
-        assertEquals( PROPERTY_RECORD_SIZE * 3 + DYNAMIC_RECORD_SIZE, size );
+        assertEquals(PROPERTY_RECORD_SIZE * 3 + DYNAMIC_RECORD_SIZE, size);
     }
 
-    private String string( int length )
-    {
-        return random.nextAlphaNumericString( length, length );
+    private String string(int length) {
+        return random.nextAlphaNumericString(length, length);
     }
 
-    private static PropertyValueRecordSizeCalculator newCalculator()
-    {
-        return new PropertyValueRecordSizeCalculator( PROPERTY_RECORD_SIZE,
-                DYNAMIC_RECORD_SIZE, DYNAMIC_RECORD_SIZE - 10,
-                DYNAMIC_RECORD_SIZE, DYNAMIC_RECORD_SIZE - 10 );
+    private static PropertyValueRecordSizeCalculator newCalculator() {
+        return new PropertyValueRecordSizeCalculator(
+                PROPERTY_RECORD_SIZE,
+                DYNAMIC_RECORD_SIZE,
+                DYNAMIC_RECORD_SIZE - 10,
+                DYNAMIC_RECORD_SIZE,
+                DYNAMIC_RECORD_SIZE - 10);
     }
 }

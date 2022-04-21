@@ -93,14 +93,21 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       "MATCH (a:Party) RETURN a AS a UNION MATCH (a:Animal) RETURN a AS a",
       Query(ProjectingUnionDistinct(
         singleQuery(
-          match_(NodePattern(Some(varFor("  a@0")), None, None, None)(pos), Some(Where(HasLabels(varFor("  a@0"), Seq(LabelName("Party")(pos)))(pos))(pos))),
+          match_(
+            NodePattern(Some(varFor("  a@0")), None, None, None)(pos),
+            Some(Where(HasLabels(varFor("  a@0"), Seq(LabelName("Party")(pos)))(pos))(pos))
+          ),
           return_(varFor("  a@0").as("  a@0"))
         ),
         singleQuery(
-          match_(NodePattern(Some(varFor("  a@1")), None, None, None)(pos), Some(Where(HasLabels(varFor("  a@1"), Seq(LabelName("Animal")(pos)))(pos))(pos))),
+          match_(
+            NodePattern(Some(varFor("  a@1")), None, None, None)(pos),
+            Some(Where(HasLabels(varFor("  a@1"), Seq(LabelName("Animal")(pos)))(pos))(pos))
+          ),
           return_(varFor("  a@1").as("  a@1"))
         ),
-        List(UnionMapping(varFor("  a@2"), varFor("  a@0"), varFor("  a@1"))))(pos))(pos),
+        List(UnionMapping(varFor("  a@2"), varFor("  a@0"), varFor("  a@1")))
+      )(pos))(pos),
       List(varFor("  a@0"), varFor("  a@1"))
     ),
     TestCase(
@@ -191,18 +198,19 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     outerScope.map(_.name) should be(Set("  n@0"))
   }
 
-  //noinspection ZeroIndexToHead
+  // noinspection ZeroIndexToHead
   test("should disambiguate anonymous names with new anonymous names") {
     val namer = new AnonymousVariableNameGenerator()
     val names = Seq(namer.nextName, namer.nextName, namer.nextName).map(s => s"`$s`")
 
-    val query = s"UNWIND [1,2,3] AS ${names(0)} WITH ${names(0)} + 1 AS x MATCH (${names(0)})-[${names(1)}]-(${names(2)}) RETURN 1 AS foo"
+    val query =
+      s"UNWIND [1,2,3] AS ${names(0)} WITH ${names(0)} + 1 AS x MATCH (${names(0)})-[${names(1)}]-(${names(2)}) RETURN 1 AS foo"
     val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
     statement.folder.findAllByClass[Variable].map(_.name).foreach {
-      case "x" | "foo" => // OK
+      case "x" | "foo"                                     => // OK
       case v if AnonymousVariableNameGenerator.notNamed(v) => // OK
-      case v => fail(s"$v was not an anonymous variable")
+      case v                                               => fail(s"$v was not an anonymous variable")
     }
   }
 
@@ -211,7 +219,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
   sealed trait Test
 
   case class TestCase(query: String, rewrittenQuery: String, semanticTableExpressions: List[Expression]) extends Test
-  case class TestCaseWithStatement(query: String, rewrittenQuery: Statement, semanticTableExpressions: List[Expression]) extends Test
+
+  case class TestCaseWithStatement(query: String, rewrittenQuery: Statement, semanticTableExpressions: List[Expression])
+      extends Test
 
   tests.foreach {
     case TestCase(q, rewritten, semanticTableExpressions) =>

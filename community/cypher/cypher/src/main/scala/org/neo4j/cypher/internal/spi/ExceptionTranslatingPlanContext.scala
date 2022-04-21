@@ -52,22 +52,40 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def propertyIndexesGetAll(): Iterator[IndexDescriptor] =
     translateException(tokenNameLookup, inner.propertyIndexesGetAll())
 
-  override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+  override def textIndexGetForLabelAndProperties(
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.textIndexGetForLabelAndProperties(labelName, propertyKeys))
 
-  override def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+  override def rangeIndexGetForLabelAndProperties(
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.rangeIndexGetForLabelAndProperties(labelName, propertyKeys))
 
-  override def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+  override def pointIndexGetForLabelAndProperties(
+    labelName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.pointIndexGetForLabelAndProperties(labelName, propertyKeys))
 
-  override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+  override def textIndexGetForRelTypeAndProperties(
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.textIndexGetForRelTypeAndProperties(relTypeName, propertyKeys))
 
-  override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+  override def rangeIndexGetForRelTypeAndProperties(
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.rangeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys))
 
-  override def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+  override def pointIndexGetForRelTypeAndProperties(
+    relTypeName: String,
+    propertyKeys: Seq[String]
+  ): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.pointIndexGetForRelTypeAndProperties(relTypeName, propertyKeys))
 
   override def textIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =

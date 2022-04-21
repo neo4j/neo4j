@@ -19,8 +19,14 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.jupiter.api.Test;
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.ArithmeticException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
@@ -30,104 +36,103 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-
 @ImpermanentDbmsExtension
-class ExecutionResultTest
-{
+class ExecutionResultTest {
     @Inject
     private GraphDatabaseAPI db;
 
     @Test
-    void shouldThrowAppropriateException()
-    {
-        try
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
-                transaction.execute( "RETURN rand()/0" ).next();
+    void shouldThrowAppropriateException() {
+        try {
+            try (Transaction transaction = db.beginTx()) {
+                transaction.execute("RETURN rand()/0").next();
             }
-        }
-        catch ( QueryExecutionException ex )
-        {
-            assertThat( ex.getCause(), instanceOf( QueryExecutionKernelException.class ) );
-            assertThat( ex.getCause().getCause(), instanceOf( ArithmeticException.class ) );
+        } catch (QueryExecutionException ex) {
+            assertThat(ex.getCause(), instanceOf(QueryExecutionKernelException.class));
+            assertThat(ex.getCause().getCause(), instanceOf(ArithmeticException.class));
         }
     }
 
     @Test
-    void shouldThrowAppropriateExceptionAlsoWhenVisiting()
-    {
-        try
-        {
-            try ( Transaction transaction = db.beginTx() )
-            {
-                transaction.execute( "RETURN rand()/0" ).accept( row -> true );
+    void shouldThrowAppropriateExceptionAlsoWhenVisiting() {
+        try {
+            try (Transaction transaction = db.beginTx()) {
+                transaction.execute("RETURN rand()/0").accept(row -> true);
             }
-        }
-        catch ( QueryExecutionException ex )
-        {
-            assertThat( ex.getCause(), instanceOf( QueryExecutionKernelException.class ) );
-            assertThat( ex.getCause().getCause(), instanceOf( ArithmeticException.class ) );
+        } catch (QueryExecutionException ex) {
+            assertThat(ex.getCause(), instanceOf(QueryExecutionKernelException.class));
+            assertThat(ex.getCause().getCause(), instanceOf(ArithmeticException.class));
         }
     }
 
-    private void createNode()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
+    private void createNode() {
+        try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
     }
 
     @Test
-    void shouldHandleListsOfPointsAsInput()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
+    void shouldHandleListsOfPointsAsInput() {
+        try (Transaction transaction = db.beginTx()) {
             // Given
-            Point point1 = (Point) transaction.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );
-            Point point2 = (Point) transaction.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
+            Point point1 = (Point) transaction
+                    .execute("RETURN point({latitude: 12.78, longitude: 56.7}) as point")
+                    .next()
+                    .get("point");
+            Point point2 = (Point) transaction
+                    .execute("RETURN point({latitude: 12.18, longitude: 56.2}) as point")
+                    .next()
+                    .get("point");
 
             // When
-            double distance = (double) transaction.execute( "RETURN point.distance($points[0], $points[1]) as dist",
-                    map( "points", asList( point1, point2 ) ) ).next().get( "dist" );
+            double distance = (double) transaction
+                    .execute(
+                            "RETURN point.distance($points[0], $points[1]) as dist",
+                            map("points", asList(point1, point2)))
+                    .next()
+                    .get("dist");
             // Then
-            assertThat( Math.round( distance ), equalTo( 86107L ) );
+            assertThat(Math.round(distance), equalTo(86107L));
             transaction.commit();
         }
     }
 
     @Test
-    void shouldHandleMapWithPointsAsInput()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
+    void shouldHandleMapWithPointsAsInput() {
+        try (Transaction transaction = db.beginTx()) {
             // Given
-            Point point1 = (Point) transaction.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );
-            Point point2 = (Point) transaction.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
+            Point point1 = (Point) transaction
+                    .execute("RETURN point({latitude: 12.78, longitude: 56.7}) as point")
+                    .next()
+                    .get("point");
+            Point point2 = (Point) transaction
+                    .execute("RETURN point({latitude: 12.18, longitude: 56.2}) as point")
+                    .next()
+                    .get("point");
 
             // When
-            double distance = (double) transaction.execute( "RETURN point.distance($points['p1'], $points['p2']) as dist",
-                    map( "points", map( "p1", point1, "p2", point2 ) ) ).next().get( "dist" );
+            double distance = (double) transaction
+                    .execute(
+                            "RETURN point.distance($points['p1'], $points['p2']) as dist",
+                            map("points", map("p1", point1, "p2", point2)))
+                    .next()
+                    .get("dist");
             // Then
-            assertThat( Math.round( distance ), equalTo( 86107L ) );
+            assertThat(Math.round(distance), equalTo(86107L));
             transaction.commit();
         }
     }
 
     @Test
-    void shouldHandleColumnAsWithNull()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            assertThat( transaction.execute( "RETURN toLower(null) AS lower" ).<String>columnAs( "lower" ).next(), nullValue() );
+    void shouldHandleColumnAsWithNull() {
+        try (Transaction transaction = db.beginTx()) {
+            assertThat(
+                    transaction
+                            .execute("RETURN toLower(null) AS lower")
+                            .<String>columnAs("lower")
+                            .next(),
+                    nullValue());
         }
     }
 }

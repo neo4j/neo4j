@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.ConfigPatternBuilder;
@@ -31,58 +30,52 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-public class SimpleClientRoutingDomainChecker implements ClientRoutingDomainChecker
-{
+public class SimpleClientRoutingDomainChecker implements ClientRoutingDomainChecker {
     protected final InternalLog log;
 
     private volatile Pattern[] domainPatterns;
 
-    private SimpleClientRoutingDomainChecker( InternalLogProvider logProvider )
-    {
-        this.log = logProvider.getLog( this.getClass() );
+    private SimpleClientRoutingDomainChecker(InternalLogProvider logProvider) {
+        this.log = logProvider.getLog(this.getClass());
     }
 
-    public static ClientRoutingDomainChecker fromConfig( Config config, InternalLogProvider logProvider )
-    {
-        var simpleChecker = new SimpleClientRoutingDomainChecker( logProvider );
+    public static ClientRoutingDomainChecker fromConfig(Config config, InternalLogProvider logProvider) {
+        var simpleChecker = new SimpleClientRoutingDomainChecker(logProvider);
 
         // initialize with the current config
-        simpleChecker.setClientRoutingDomain( config.get( GraphDatabaseSettings.client_side_router_enforce_for_domains ) );
+        simpleChecker.setClientRoutingDomain(config.get(GraphDatabaseSettings.client_side_router_enforce_for_domains));
 
         // listen for changes to the config value in future
-        config.addListener( GraphDatabaseSettings.client_side_router_enforce_for_domains, simpleChecker );
+        config.addListener(GraphDatabaseSettings.client_side_router_enforce_for_domains, simpleChecker);
 
         return simpleChecker;
     }
 
     @Override
-    public boolean shouldGetClientRouting( SocketAddress address )
-    {
+    public boolean shouldGetClientRouting(SocketAddress address) {
         // grab a reference to the current array, then all the logic in this method will use the same array.
         Pattern[] patternsToUse = this.domainPatterns;
-        return shouldGetClientRouting( address, patternsToUse );
+        return shouldGetClientRouting(address, patternsToUse);
     }
 
     @Override
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return domainPatterns == null || domainPatterns.length == 0;
     }
 
-    boolean shouldGetClientRouting( SocketAddress address, Pattern[] patternsToUse )
-    {
-        if ( patternsToUse.length == 0 )
-        {
+    boolean shouldGetClientRouting(SocketAddress address, Pattern[] patternsToUse) {
+        if (patternsToUse.length == 0) {
             return false;
         }
 
-        return isMatch( patternsToUse, address );
+        return isMatch(patternsToUse, address);
     }
 
-    private static boolean isMatch( Pattern[] patterns, SocketAddress address )
-    {
-        return Arrays.stream( patterns ).anyMatch( p -> p.matcher( address.getHostname() ).matches() ) ||
-               Arrays.stream( patterns ).anyMatch( p -> p.matcher( address.toString() ).matches() );
+    private static boolean isMatch(Pattern[] patterns, SocketAddress address) {
+        return Arrays.stream(patterns)
+                        .anyMatch(p -> p.matcher(address.getHostname()).matches())
+                || Arrays.stream(patterns)
+                        .anyMatch(p -> p.matcher(address.toString()).matches());
     }
 
     /*
@@ -90,31 +83,26 @@ public class SimpleClientRoutingDomainChecker implements ClientRoutingDomainChec
      * n.b. this method is synchronized to avoid weird races if setting is updated concurrently.
      */
     @Override
-    public synchronized void accept( Set<String> before, Set<String> after )
-    {
-        if ( Objects.equals( before, after ) )
-        {
+    public synchronized void accept(Set<String> before, Set<String> after) {
+        if (Objects.equals(before, after)) {
             return;
         }
 
-        setClientRoutingDomain( after );
+        setClientRoutingDomain(after);
     }
 
-    private void setClientRoutingDomain( Set<String> after )
-    {
-        Pattern[] newDomains = processPatterns( after );
-        update( newDomains );
+    private void setClientRoutingDomain(Set<String> after) {
+        Pattern[] newDomains = processPatterns(after);
+        update(newDomains);
     }
 
-    protected void update( Pattern[] newDomains )
-    {
+    protected void update(Pattern[] newDomains) {
         this.domainPatterns = newDomains;
     }
 
-    protected Pattern[] processPatterns( Set<String> userProvidedPatterns )
-    {
+    protected Pattern[] processPatterns(Set<String> userProvidedPatterns) {
         return userProvidedPatterns.stream()
-                                   .map( p -> ConfigPatternBuilder.patternFromConfigString( p, Pattern.CASE_INSENSITIVE ) )
-                                   .toArray( Pattern[]::new );
+                .map(p -> ConfigPatternBuilder.patternFromConfigString(p, Pattern.CASE_INSENSITIVE))
+                .toArray(Pattern[]::new);
     }
 }

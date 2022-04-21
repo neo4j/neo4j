@@ -26,7 +26,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
@@ -34,127 +33,91 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.server.rest.web.PropertyValueException;
 
-public final class JsonHelper
-{
+public final class JsonHelper {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final JsonFactory JSON_FACTORY = new MappingJsonFactory( OBJECT_MAPPER );
+    private static final JsonFactory JSON_FACTORY = new MappingJsonFactory(OBJECT_MAPPER);
 
-    private JsonHelper()
-    {
-    }
+    private JsonHelper() {}
 
-    public static JsonNode jsonNode( String json ) throws JsonParseException
-    {
-        try
-        {
-            return OBJECT_MAPPER.readTree( json );
-        }
-        catch ( IOException e )
-        {
-            throw new JsonParseException( e );
+    public static JsonNode jsonNode(String json) throws JsonParseException {
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (IOException e) {
+            throw new JsonParseException(e);
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static List<Map<String, Object>> jsonToList( String json ) throws JsonParseException
-    {
-        return (List<Map<String, Object>>) readJson( json );
+    @SuppressWarnings("unchecked")
+    public static List<Map<String, Object>> jsonToList(String json) throws JsonParseException {
+        return (List<Map<String, Object>>) readJson(json);
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static Map<String, Object> jsonToMap( String json ) throws JsonParseException
-    {
-        return (Map<String, Object>) readJson( json );
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> jsonToMap(String json) throws JsonParseException {
+        return (Map<String, Object>) readJson(json);
     }
 
-    public static Object readJson( String json ) throws JsonParseException
-    {
-        try
-        {
-            return OBJECT_MAPPER.readValue( json, Object.class );
-        }
-        catch ( com.fasterxml.jackson.core.JsonParseException e )
-        {
-            String message = e.getMessage().split( "\\r?\\n" )[0];
+    public static Object readJson(String json) throws JsonParseException {
+        try {
+            return OBJECT_MAPPER.readValue(json, Object.class);
+        } catch (com.fasterxml.jackson.core.JsonParseException e) {
+            String message = e.getMessage().split("\\r?\\n")[0];
             JsonLocation location = e.getLocation();
-            throw new JsonParseException( String.format( "%s [line: %d, column: %d]", message, location.getLineNr(),
-                    location.getColumnNr() ), e );
-        }
-        catch ( IOException e )
-        {
-            throw new JsonParseException( e );
+            throw new JsonParseException(
+                    String.format("%s [line: %d, column: %d]", message, location.getLineNr(), location.getColumnNr()),
+                    e);
+        } catch (IOException e) {
+            throw new JsonParseException(e);
         }
     }
 
-    public static Object assertSupportedPropertyValue( Object jsonObject ) throws PropertyValueException
-    {
-        if ( jsonObject instanceof Collection<?> )
-        {
+    public static Object assertSupportedPropertyValue(Object jsonObject) throws PropertyValueException {
+        if (jsonObject instanceof Collection<?>) {
             return jsonObject;
         }
-        if ( jsonObject == null )
-        {
-            throw new PropertyValueException( "null value not supported" );
+        if (jsonObject == null) {
+            throw new PropertyValueException("null value not supported");
         }
-        if ( !(jsonObject instanceof String ||
-               jsonObject instanceof Number ||
-               jsonObject instanceof Boolean) )
-        {
-            throw new PropertyValueException(
-                    "Unsupported value type " + jsonObject.getClass() + "."
+        if (!(jsonObject instanceof String || jsonObject instanceof Number || jsonObject instanceof Boolean)) {
+            throw new PropertyValueException("Unsupported value type " + jsonObject.getClass() + "."
                     + " Supported value types are all java primitives (byte, char, short, int, "
-                    + "long, float, double) and String, as well as arrays of all those types" );
+                    + "long, float, double) and String, as well as arrays of all those types");
         }
         return jsonObject;
     }
 
-    public static String createJsonFrom( Object data ) throws JsonBuildRuntimeException
-    {
-        try
-        {
+    public static String createJsonFrom(Object data) throws JsonBuildRuntimeException {
+        try {
             StringWriter writer = new StringWriter();
-            JsonGenerator generator = OBJECT_MAPPER.getFactory()
-                .createGenerator( writer )
-                .useDefaultPrettyPrinter();
-            writeValue( generator, data );
+            JsonGenerator generator =
+                    OBJECT_MAPPER.getFactory().createGenerator(writer).useDefaultPrettyPrinter();
+            writeValue(generator, data);
 
             return writer.getBuffer().toString();
-        }
-        catch ( IOException e )
-        {
-            throw new JsonBuildRuntimeException( e );
+        } catch (IOException e) {
+            throw new JsonBuildRuntimeException(e);
         }
     }
 
-    public static void writeValue( JsonGenerator jgen, Object value ) throws IOException
-    {
-        OBJECT_MAPPER.writeValue( jgen, value );
+    public static void writeValue(JsonGenerator jgen, Object value) throws IOException {
+        OBJECT_MAPPER.writeValue(jgen, value);
     }
 
-    public static String writeValueAsString( Object item )
-    {
-        try
-        {
-            return OBJECT_MAPPER.writeValueAsString( item );
-        }
-        catch ( JsonProcessingException e )
-        {
-            throw new UncheckedIOException( e );
+    public static String writeValueAsString(Object item) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(item);
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    public static JsonGenerator newJsonGenerator( OutputStream out )
-    {
-        try
-        {
-            return JSON_FACTORY.createGenerator( out );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+    public static JsonGenerator newJsonGenerator(OutputStream out) {
+        try {
+            return JSON_FACTORY.createGenerator(out);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

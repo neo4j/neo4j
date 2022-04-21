@@ -19,66 +19,53 @@
  */
 package org.neo4j.memory;
 
-class MemoryPoolTracker implements MemoryTracker
-{
+class MemoryPoolTracker implements MemoryTracker {
     private final ScopedMemoryPool pool;
 
-    MemoryPoolTracker( ScopedMemoryPool pool )
-    {
+    MemoryPoolTracker(ScopedMemoryPool pool) {
         this.pool = pool;
     }
 
     @Override
-    public long usedNativeMemory()
-    {
+    public long usedNativeMemory() {
         return pool.usedNative();
     }
 
     @Override
-    public long estimatedHeapMemory()
-    {
+    public long estimatedHeapMemory() {
         return pool.usedHeap();
     }
 
     @Override
-    public void allocateNative( long bytes )
-    {
-        pool.reserveNative( bytes );
+    public void allocateNative(long bytes) {
+        pool.reserveNative(bytes);
     }
 
     @Override
-    public void releaseNative( long bytes )
-    {
-        pool.releaseNative( bytes );
+    public void releaseNative(long bytes) {
+        pool.releaseNative(bytes);
     }
 
     @Override
-    public void allocateHeap( long bytes )
-    {
-        pool.reserveHeap( bytes );
+    public void allocateHeap(long bytes) {
+        pool.reserveHeap(bytes);
     }
 
     @Override
-    public void releaseHeap( long bytes )
-    {
-        pool.releaseHeap( bytes );
+    public void releaseHeap(long bytes) {
+        pool.releaseHeap(bytes);
     }
 
     @Override
-    public long heapHighWaterMark()
-    {
+    public long heapHighWaterMark() {
         return -1;
     }
 
     @Override
-    public void reset()
-    {
-
-    }
+    public void reset() {}
 
     @Override
-    public MemoryTracker getScopedMemoryTracker()
-    {
-        return new ScopedMemoryTracker( this );
+    public MemoryTracker getScopedMemoryTracker() {
+        return new ScopedMemoryTracker(this);
     }
 }

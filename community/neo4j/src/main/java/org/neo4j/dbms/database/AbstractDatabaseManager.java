@@ -19,6 +19,9 @@
  */
 package org.neo4j.dbms.database;
 
+import static java.lang.String.format;
+import static java.util.Collections.unmodifiableNavigableMap;
+
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
@@ -27,7 +30,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementException;
@@ -44,12 +46,9 @@ import org.neo4j.kernel.database.SystemGraphDatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 
-import static java.lang.String.format;
-import static java.util.Collections.unmodifiableNavigableMap;
-
-public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<DB>
-{
-    protected final Map<NamedDatabaseId,DB> databaseMap;
+public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extends LifecycleAdapter
+        implements DatabaseManager<DB> {
+    protected final Map<NamedDatabaseId, DB> databaseMap;
     protected final DependencyResolver externalDependencyResolver;
     protected final InternalLog log;
     protected final boolean manageDatabasesOnStartAndStop;
@@ -57,172 +56,145 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 
     private final DatabaseIdRepository.Caching databaseIdRepository;
 
-    protected AbstractDatabaseManager( GlobalModule globalModule, boolean manageDatabasesOnStartAndStop )
-    {
-        this.log = globalModule.getLogService().getInternalLogProvider().getLog( getClass() );
+    protected AbstractDatabaseManager(GlobalModule globalModule, boolean manageDatabasesOnStartAndStop) {
+        this.log = globalModule.getLogService().getInternalLogProvider().getLog(getClass());
         this.externalDependencyResolver = globalModule.getExternalDependencyResolver();
         this.config = globalModule.getGlobalConfig();
         this.manageDatabasesOnStartAndStop = manageDatabasesOnStartAndStop;
         this.databaseMap = new ConcurrentHashMap<>();
-        this.databaseIdRepository = createDatabaseIdRepository( globalModule );
+        this.databaseIdRepository = createDatabaseIdRepository(globalModule);
     }
 
-    private DatabaseIdRepository.Caching createDatabaseIdRepository( GlobalModule globalModule )
-    {
+    private DatabaseIdRepository.Caching createDatabaseIdRepository(GlobalModule globalModule) {
         return CommunityEditionModule.tryResolveOrCreate(
                 DatabaseIdRepository.Caching.class,
                 globalModule.getExternalDependencyResolver(),
                 () -> new MapCachingDatabaseIdRepository(
-                        new SystemGraphDatabaseIdRepository( this::getSystemDatabaseContext ) ) );
+                        new SystemGraphDatabaseIdRepository(this::getSystemDatabaseContext)));
     }
 
-    private DB getSystemDatabaseContext()
-    {
-        return getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID )
-                .orElseThrow( () -> new DatabaseShutdownException( new DatabaseManagementException( "Unable to retrieve the system database!" ) ) );
+    private DB getSystemDatabaseContext() {
+        return getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID)
+                .orElseThrow(() -> new DatabaseShutdownException(
+                        new DatabaseManagementException("Unable to retrieve the system database!")));
     }
 
     @Override
-    public DatabaseIdRepository.Caching databaseIdRepository()
-    {
+    public DatabaseIdRepository.Caching databaseIdRepository() {
         return databaseIdRepository;
     }
 
     @Override
-    public final void init()
-    { //no-op
+    public final void init() { // no-op
     }
 
     @Override
-    public void start() throws Exception
-    {
-        if ( manageDatabasesOnStartAndStop )
-        {
+    public void start() throws Exception {
+        if (manageDatabasesOnStartAndStop) {
             startAllDatabases();
         }
     }
 
-    private void startAllDatabases()
-    {
-        forEachDatabase( this::startDatabase, false, "start" );
+    private void startAllDatabases() {
+        forEachDatabase(this::startDatabase, false, "start");
     }
 
     @Override
-    public void stop() throws Exception
-    {
-        if ( manageDatabasesOnStartAndStop )
-        {
+    public void stop() throws Exception {
+        if (manageDatabasesOnStartAndStop) {
             stopAllDatabases();
         }
     }
 
-    private void stopAllDatabases()
-    {
-        forEachDatabase( this::stopDatabase, true, "stop" );
+    private void stopAllDatabases() {
+        forEachDatabase(this::stopDatabase, true, "stop");
     }
 
     @Override
-    public Optional<DB> getDatabaseContext( NamedDatabaseId namedDatabaseId )
-    {
-        return Optional.ofNullable( databaseMap.get( namedDatabaseId ) );
+    public Optional<DB> getDatabaseContext(NamedDatabaseId namedDatabaseId) {
+        return Optional.ofNullable(databaseMap.get(namedDatabaseId));
     }
 
     @Override
-    public Optional<DB> getDatabaseContext( String databaseName )
-    {
-        try
-        {
-            return databaseIdRepository().getByName( databaseName ).flatMap( this::getDatabaseContext );
-        }
-        catch ( DatabaseShutdownException e )
-        {
-            return searchContext( id -> id.name().equals( databaseName ) );
+    public Optional<DB> getDatabaseContext(String databaseName) {
+        try {
+            return databaseIdRepository().getByName(databaseName).flatMap(this::getDatabaseContext);
+        } catch (DatabaseShutdownException e) {
+            return searchContext(id -> id.name().equals(databaseName));
         }
     }
 
     @Override
-    public Optional<DB> getDatabaseContext( DatabaseId databaseId )
-    {
-        try
-        {
-            return databaseIdRepository().getById( databaseId ).flatMap( this::getDatabaseContext );
-        }
-        catch ( DatabaseShutdownException e )
-        {
-            return searchContext( id -> id.databaseId().equals( databaseId ) );
+    public Optional<DB> getDatabaseContext(DatabaseId databaseId) {
+        try {
+            return databaseIdRepository().getById(databaseId).flatMap(this::getDatabaseContext);
+        } catch (DatabaseShutdownException e) {
+            return searchContext(id -> id.databaseId().equals(databaseId));
         }
     }
 
     @Override
-    public final SortedMap<NamedDatabaseId,DB> registeredDatabases()
-    {
+    public final SortedMap<NamedDatabaseId, DB> registeredDatabases() {
         return databasesSnapshot();
     }
 
-    private NavigableMap<NamedDatabaseId,DB> databasesSnapshot()
-    {
-        return unmodifiableNavigableMap( new TreeMap<>( databaseMap ) );
+    private NavigableMap<NamedDatabaseId, DB> databasesSnapshot() {
+        return unmodifiableNavigableMap(new TreeMap<>(databaseMap));
     }
 
-    private Optional<DB> searchContext( Predicate<NamedDatabaseId> predicate )
-    {
-        return databaseMap.entrySet().stream().filter( entry -> predicate.test( entry.getKey() ) ).map( Map.Entry::getValue ).findFirst();
+    private Optional<DB> searchContext(Predicate<NamedDatabaseId> predicate) {
+        return databaseMap.entrySet().stream()
+                .filter(entry -> predicate.test(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .findFirst();
     }
 
-    private void forEachDatabase( BiConsumer<NamedDatabaseId,DB> consumer, boolean systemDatabaseLast, String operationName )
-    {
-        var snapshot = systemDatabaseLast ? databasesSnapshot().descendingMap().entrySet() : databasesSnapshot().entrySet();
+    private void forEachDatabase(
+            BiConsumer<NamedDatabaseId, DB> consumer, boolean systemDatabaseLast, String operationName) {
+        var snapshot = systemDatabaseLast
+                ? databasesSnapshot().descendingMap().entrySet()
+                : databasesSnapshot().entrySet();
         DatabaseManagementException dbmsExceptions = null;
 
-        for ( var entry : snapshot )
-        {
+        for (var entry : snapshot) {
             NamedDatabaseId namedDatabaseId = entry.getKey();
             DB context = entry.getValue();
-            try
-            {
-                consumer.accept( namedDatabaseId, context );
-            }
-            catch ( Throwable t )
-            {
-                var dbmsException = new DatabaseManagementException( format( "An error occurred! Unable to %s the database `%s`.",
-                        operationName, namedDatabaseId ), t );
-                dbmsExceptions = Exceptions.chain( dbmsExceptions, dbmsException );
+            try {
+                consumer.accept(namedDatabaseId, context);
+            } catch (Throwable t) {
+                var dbmsException = new DatabaseManagementException(
+                        format("An error occurred! Unable to %s the database `%s`.", operationName, namedDatabaseId),
+                        t);
+                dbmsExceptions = Exceptions.chain(dbmsExceptions, dbmsException);
             }
         }
 
-        if ( dbmsExceptions != null )
-        {
+        if (dbmsExceptions != null) {
             throw dbmsExceptions;
         }
     }
 
-    protected void startDatabase( NamedDatabaseId namedDatabaseId, DB context )
-    {
-        try
-        {
-            log.info( "Starting '%s'.", namedDatabaseId );
+    protected void startDatabase(NamedDatabaseId namedDatabaseId, DB context) {
+        try {
+            log.info("Starting '%s'.", namedDatabaseId);
             Database database = context.database();
             database.start();
-        }
-        catch ( Throwable t )
-        {
-            throw new DatabaseManagementException( format( "An error occurred! Unable to start `%s`.", namedDatabaseId ), t );
+        } catch (Throwable t) {
+            throw new DatabaseManagementException(
+                    format("An error occurred! Unable to start `%s`.", namedDatabaseId), t);
         }
     }
 
-    protected void stopDatabase( NamedDatabaseId namedDatabaseId, DB context )
-    {
-        try
-        {
-            log.info( "Stopping '%s'.", namedDatabaseId );
+    protected void stopDatabase(NamedDatabaseId namedDatabaseId, DB context) {
+        try {
+            log.info("Stopping '%s'.", namedDatabaseId);
             Database database = context.database();
             database.stop();
-            log.info( "Stopped '%s' successfully.", namedDatabaseId );
-        }
-        catch ( Throwable t )
-        {
-            log.error( "Error stopping '%s'.", namedDatabaseId );
-            throw new DatabaseManagementException( format( "An error occurred! Unable to stop `%s`.", namedDatabaseId ), t );
+            log.info("Stopped '%s' successfully.", namedDatabaseId);
+        } catch (Throwable t) {
+            log.error("Error stopping '%s'.", namedDatabaseId);
+            throw new DatabaseManagementException(
+                    format("An error occurred! Unable to stop `%s`.", namedDatabaseId), t);
         }
     }
 }

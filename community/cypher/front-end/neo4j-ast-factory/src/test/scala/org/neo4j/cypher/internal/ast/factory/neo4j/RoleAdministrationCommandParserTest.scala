@@ -65,54 +65,119 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLES YIELD role") {
-    yields(_ => ast.ShowRoles(withUsers = false, showAll = true, Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None))))(pos))
+    yields(_ =>
+      ast.ShowRoles(
+        withUsers = false,
+        showAll = true,
+        Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None)))
+      )(pos)
+    )
   }
 
   test("SHOW ALL ROLES WHERE role='PUBLIC'") {
-    yields(_ => ast.ShowRoles(withUsers = false, showAll = true, Some(Right(where(equals(varFor(roleString), literalString("PUBLIC"))))))(pos))
+    yields(_ =>
+      ast.ShowRoles(
+        withUsers = false,
+        showAll = true,
+        Some(Right(where(equals(varFor(roleString), literalString("PUBLIC")))))
+      )(pos)
+    )
   }
 
   test("SHOW ALL ROLES YIELD role RETURN role") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true,
-      Some(Left((yieldClause(returnItems(variableReturnItem(roleString))),
-      Some(returnClause(returnItems(variableReturnItem(roleString))))
-    )))))
+    yields(ast.ShowRoles(
+      withUsers = false,
+      showAll = true,
+      Some(Left((
+        yieldClause(returnItems(variableReturnItem(roleString))),
+        Some(returnClause(returnItems(variableReturnItem(roleString))))
+      )))
+    ))
   }
 
   test("SHOW ALL ROLES YIELD return, return RETURN return") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true,
-      Some(Left((yieldClause(returnItems(variableReturnItem("return"), variableReturnItem("return"))),
-      Some(returnClause(returnItems(variableReturnItem("return"))))
-    )))))
+    yields(ast.ShowRoles(
+      withUsers = false,
+      showAll = true,
+      Some(Left((
+        yieldClause(returnItems(variableReturnItem("return"), variableReturnItem("return"))),
+        Some(returnClause(returnItems(variableReturnItem("return"))))
+      )))
+    ))
   }
 
   test("SHOW POPULATED ROLES YIELD role WHERE role='PUBLIC' RETURN role") {
-    yields(ast.ShowRoles(withUsers = false, showAll = false,
-      Some(Left((yieldClause(returnItems(variableReturnItem(roleString)), where = Some(where(equals(varFor(roleString), literalString("PUBLIC"))))),
+    yields(ast.ShowRoles(
+      withUsers = false,
+      showAll = false,
+      Some(Left((
+        yieldClause(
+          returnItems(variableReturnItem(roleString)),
+          where = Some(where(equals(varFor(roleString), literalString("PUBLIC"))))
+        ),
         Some(returnClause(returnItems(variableReturnItem(roleString))))
-    )))))
+      )))
+    ))
   }
 
   test("SHOW POPULATED ROLES YIELD * RETURN *") {
-    yields(ast.ShowRoles(withUsers = false, showAll = false, Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))))
+    yields(ast.ShowRoles(
+      withUsers = false,
+      showAll = false,
+      Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
+    ))
   }
 
   test("SHOW ROLES WITH USERS YIELD * LIMIT 10 WHERE foo='bar' RETURN some,columns LIMIT 10") {
-    yields(ast.ShowRoles(withUsers = true, showAll = true,
-      Some(Left((yieldClause(returnAllItems, limit = Some(limit(10)), where = Some(where(equals(varFor("foo"), literalString("bar"))))),Some(returnClause(returnItems(variableReturnItem("some"), variableReturnItem("columns")), limit = Some(limit(10))))
-    )))))
+    yields(ast.ShowRoles(
+      withUsers = true,
+      showAll = true,
+      Some(Left((
+        yieldClause(
+          returnAllItems,
+          limit = Some(limit(10)),
+          where = Some(where(equals(varFor("foo"), literalString("bar"))))
+        ),
+        Some(returnClause(
+          returnItems(variableReturnItem("some"), variableReturnItem("columns")),
+          limit = Some(limit(10))
+        ))
+      )))
+    ))
   }
 
   test("SHOW POPULATED ROLES YIELD role ORDER BY role SKIP -1") {
-    yields(_ => ast.ShowRoles(withUsers = false, showAll = false,
-      Some(Left((yieldClause(returnItems(variableReturnItem(roleString)),
-        Some(orderBy(sortItem(varFor(roleString)))),Some(skip(-1))), None))))(pos))
+    yields(_ =>
+      ast.ShowRoles(
+        withUsers = false,
+        showAll = false,
+        Some(Left((
+          yieldClause(
+            returnItems(variableReturnItem(roleString)),
+            Some(orderBy(sortItem(varFor(roleString)))),
+            Some(skip(-1))
+          ),
+          None
+        )))
+      )(pos)
+    )
   }
 
   test("SHOW POPULATED ROLES YIELD role ORDER BY role LIMIT -1") {
-    yields(_ => ast.ShowRoles(withUsers = false, showAll = false,
-      Some(Left((yieldClause(returnItems(variableReturnItem(roleString)),
-        Some(orderBy(sortItem(varFor(roleString)))),limit = Some(limit(-1))), None))))(pos))
+    yields(_ =>
+      ast.ShowRoles(
+        withUsers = false,
+        showAll = false,
+        Some(Left((
+          yieldClause(
+            returnItems(variableReturnItem(roleString)),
+            Some(orderBy(sortItem(varFor(roleString)))),
+            limit = Some(limit(-1))
+          ),
+          None
+        )))
+      )(pos)
+    )
   }
 
   test("SHOW POPULATED ROLES YIELD role ORDER BY role SKIP -1*4 + 2") {
@@ -120,11 +185,15 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ROLE") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))"
+    )
   }
 
   test("SHOW ALL ROLE") {
-    assertFailsWithMessage(testName,
+    assertFailsWithMessage(
+      testName,
       """Invalid input 'ROLE': expected
         |  "CONSTRAINT"
         |  "CONSTRAINTS"
@@ -134,7 +203,8 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         |  "INDEXES"
         |  "PRIVILEGE"
         |  "PRIVILEGES"
-        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
+    )
   }
 
   test("SHOW POPULATED ROLE") {
@@ -142,11 +212,17 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ROLE role") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 15 (offset: 14))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 15 (offset: 14))"
+    )
   }
 
   test("SHOW ROLE WITH USERS") {
-    assertFailsWithMessage(testName, "Invalid input 'USERS': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'USERS': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))"
+    )
   }
 
   test("SHOW ROLES WITH USER") {
@@ -154,7 +230,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ROLE WITH USER") {
-    assertFailsWithMessage(testName, "Invalid input 'USER': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'USER': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))"
+    )
   }
 
   test("SHOW ROLES YIELD (123 + xyz)") {
@@ -166,7 +245,8 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLE WITH USERS") {
-    assertFailsWithMessage(testName,
+    assertFailsWithMessage(
+      testName,
       """Invalid input 'ROLE': expected
         |  "CONSTRAINT"
         |  "CONSTRAINTS"
@@ -176,7 +256,8 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         |  "INDEXES"
         |  "PRIVILEGE"
         |  "PRIVILEGES"
-        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
+    )
   }
 
   test("SHOW ALL ROLES WITH USER") {
@@ -184,7 +265,8 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLE WITH USER") {
-    assertFailsWithMessage(testName,
+    assertFailsWithMessage(
+      testName,
       """Invalid input 'ROLE': expected
         |  "CONSTRAINT"
         |  "CONSTRAINTS"
@@ -194,11 +276,15 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         |  "INDEXES"
         |  "PRIVILEGE"
         |  "PRIVILEGES"
-        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
+    )
   }
 
   test("SHOW ALL ROLES YIELD role RETURN") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \"*\", \"DISTINCT\" or an expression (line 1, column 33 (offset: 32))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected \"*\", \"DISTINCT\" or an expression (line 1, column 33 (offset: 32))"
+    )
   }
 
   test("SHOW POPULATED ROLE WITH USERS") {
@@ -304,23 +390,38 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE OR REPLACE ROLE ") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 23 (offset: 22))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 23 (offset: 22))"
+    )
   }
 
   test("CREATE ROLE foo AS COPY OF") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))"
+    )
   }
 
   test("CREATE ROLE foo IF NOT EXISTS AS COPY OF") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 41 (offset: 40))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 41 (offset: 40))"
+    )
   }
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 38 (offset: 37))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 38 (offset: 37))"
+    )
   }
 
   test("CREATE ROLE foo UNION CREATE ROLE foo2") {
-    assertFailsWithMessage(testName, "Invalid input 'UNION': expected \"AS\", \"IF\" or <EOF> (line 1, column 17 (offset: 16))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'UNION': expected \"AS\", \"IF\" or <EOF> (line 1, column 17 (offset: 16))"
+    )
   }
 
   // Renaming role
@@ -366,7 +467,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("RENAME ROLE foo TO") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))"
+    )
   }
 
   test("RENAME ROLE TO bar") {
@@ -386,7 +490,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER ROLE foo SET NAME bar") {
-    assertFailsWithMessage(testName, """Invalid input 'ROLE': expected "ALIAS", "CURRENT", "DATABASE" or "USER" (line 1, column 7 (offset: 6))""")
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'ROLE': expected "ALIAS", "CURRENT", "DATABASE" or "USER" (line 1, column 7 (offset: 6))"""
+    )
   }
 
   test("RENAME ROLE foo IF EXIST TO bar") {
@@ -432,7 +539,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("DROP ROLE ") {
-    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))"
+    )
   }
 
   test("DROP ROLE  IF EXISTS") {
@@ -447,19 +557,19 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   private type grantOrRevokeRoleFunc = (Seq[String], Seq[String]) => InputPosition => ast.AdministrationCommand
 
-  private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand = ast.GrantRolesToUsers(r.map(Left(_)), u.map(Left(_)))
+  private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand =
+    ast.GrantRolesToUsers(r.map(Left(_)), u.map(Left(_)))
 
-  private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand = ast.RevokeRolesFromUsers(r.map(Left(_)), u.map(Left(_)))
+  private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand =
+    ast.RevokeRolesFromUsers(r.map(Left(_)), u.map(Left(_)))
 
   Seq("ROLE", "ROLES").foreach {
     roleKeyword =>
-
       Seq(
         ("GRANT", "TO", grantRole: grantOrRevokeRoleFunc),
         ("REVOKE", "FROM", revokeRole: grantOrRevokeRoleFunc)
       ).foreach {
         case (verb: String, preposition: String, func: grantOrRevokeRoleFunc) =>
-
           test(s"$verb $roleKeyword foo $preposition abc") {
             yields(func(Seq("foo"), Seq("abc")))
           }
@@ -541,11 +651,17 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"GRANT ROLES a, $$b, $$c TO $$x, y, z") {
-    yields(ast.GrantRolesToUsers(Seq(literal("a"), param("b"), param("c")), Seq(param("x"), literal("y"), literal("z"))))
+    yields(ast.GrantRolesToUsers(
+      Seq(literal("a"), param("b"), param("c")),
+      Seq(param("x"), literal("y"), literal("z"))
+    ))
   }
 
   test(s"REVOKE ROLES a, $$b, $$c FROM $$x, y, z") {
-    yields(ast.RevokeRolesFromUsers(Seq(literal("a"), param("b"), param("c")), Seq(param("x"), literal("y"), literal("z"))))
+    yields(ast.RevokeRolesFromUsers(
+      Seq(literal("a"), param("b"), param("c")),
+      Seq(param("x"), literal("y"), literal("z"))
+    ))
   }
 
   // ROLE[S] TO USER only have GRANT and REVOKE and not DENY
@@ -554,9 +670,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     assertFailsWithMessageStart(testName, """Invalid input 'foo': expected "MANAGEMENT"""")
   }
 
-
   test("DENY ROLES foo TO abc") {
-    assertFailsWithMessageStart(testName,
+    assertFailsWithMessageStart(
+      testName,
       """Invalid input 'ROLES': expected
         |  "ACCESS"
         |  "ALL"
@@ -564,6 +680,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         |  "ASSIGN"
         |  "CONSTRAINT"
         |  "CONSTRAINTS"
-        |  "CREATE"""".stripMargin)
+        |  "CREATE"""".stripMargin
+    )
   }
 }

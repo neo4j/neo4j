@@ -19,34 +19,28 @@
  */
 package org.neo4j.fabric.executor;
 
-public class ExecutionOptions
-{
+public class ExecutionOptions {
     private final boolean addSourceTag;
     private final long sourceId;
 
-    private ExecutionOptions( boolean addSourceTag, long sourceId )
-    {
+    private ExecutionOptions(boolean addSourceTag, long sourceId) {
         this.addSourceTag = addSourceTag;
         this.sourceId = sourceId;
     }
 
-    public ExecutionOptions()
-    {
-        this( false, 0L );
+    public ExecutionOptions() {
+        this(false, 0L);
     }
 
-    public ExecutionOptions( long sourceId )
-    {
-        this( true, sourceId );
+    public ExecutionOptions(long sourceId) {
+        this(true, sourceId);
     }
 
-    public boolean addSourceTag()
-    {
+    public boolean addSourceTag() {
         return addSourceTag;
     }
 
-    public long sourceId()
-    {
+    public long sourceId() {
         return sourceId;
     }
 }

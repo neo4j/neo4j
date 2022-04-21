@@ -20,7 +20,6 @@
 package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.util.Map;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
@@ -33,9 +32,8 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 
-public class BoltStateMachineSPIImpl implements BoltStateMachineSPI
-{
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineSPIImpl.class );
+public class BoltStateMachineSPIImpl implements BoltStateMachineSPI {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(BoltStateMachineSPIImpl.class);
     public static final String BOLT_SERVER_VERSION_PREFIX = "Neo4j/";
 
     private final ErrorReporter errorReporter;
@@ -44,10 +42,12 @@ public class BoltStateMachineSPIImpl implements BoltStateMachineSPI
     private final TransactionStateMachineSPIProvider transactionSpiProvider;
     private final BoltChannel boltChannel;
 
-    public BoltStateMachineSPIImpl( LogService logging, Authentication authentication,
-                                    TransactionStateMachineSPIProvider transactionSpiProvider, BoltChannel boltChannel )
-    {
-        this.errorReporter = new ErrorReporter( logging );
+    public BoltStateMachineSPIImpl(
+            LogService logging,
+            Authentication authentication,
+            TransactionStateMachineSPIProvider transactionSpiProvider,
+            BoltChannel boltChannel) {
+        this.errorReporter = new ErrorReporter(logging);
         this.authentication = authentication;
         this.transactionSpiProvider = transactionSpiProvider;
         this.boltChannel = boltChannel;
@@ -55,32 +55,27 @@ public class BoltStateMachineSPIImpl implements BoltStateMachineSPI
     }
 
     @Override
-    public TransactionStateMachineSPIProvider transactionStateMachineSPIProvider()
-    {
+    public TransactionStateMachineSPIProvider transactionStateMachineSPIProvider() {
         return transactionSpiProvider;
     }
 
     @Override
-    public void reportError( Neo4jError err )
-    {
-        errorReporter.report( err );
+    public void reportError(Neo4jError err) {
+        errorReporter.report(err);
     }
 
     @Override
-    public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
-    {
-        return authentication.authenticate( authToken, boltChannel.info() );
+    public AuthenticationResult authenticate(Map<String, Object> authToken) throws AuthenticationException {
+        return authentication.authenticate(authToken, boltChannel.info());
     }
 
     @Override
-    public LoginContext impersonate( LoginContext context, String userToImpersonate ) throws AuthenticationException
-    {
-        return this.authentication.impersonate( context, userToImpersonate );
+    public LoginContext impersonate(LoginContext context, String userToImpersonate) throws AuthenticationException {
+        return this.authentication.impersonate(context, userToImpersonate);
     }
 
     @Override
-    public String version()
-    {
+    public String version() {
         return version;
     }
 }

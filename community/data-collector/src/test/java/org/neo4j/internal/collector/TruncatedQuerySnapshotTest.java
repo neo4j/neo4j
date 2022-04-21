@@ -19,8 +19,12 @@
  */
 package org.neo4j.internal.collector;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -30,65 +34,39 @@ import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.values.virtual.VirtualValues.nodeValue;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
+class TruncatedQuerySnapshotTest {
+    static final NodeValue NODE =
+            nodeValue(42, "n", null, Values.stringArray("Phone"), map("number", Values.stringValue("07303725xx")));
 
-class TruncatedQuerySnapshotTest
-{
-    static final NodeValue NODE = nodeValue( 42, "n", null,
-                                                     Values.stringArray( "Phone" ),
-                                                     map( "number", Values.stringValue( "07303725xx" ) ) );
-
-    static final RelationshipValue RELATIONSHIP = relationshipValue( 100, "r", null,
-                                                                             NODE,
-                                                                             NODE,
-                                                                             Values.stringValue( "CALL" ),
-                                                                             map( "duration", Values.stringValue( "3 hours" ) ) );
+    static final RelationshipValue RELATIONSHIP = relationshipValue(
+            100, "r", null, NODE, NODE, Values.stringValue("CALL"), map("duration", Values.stringValue("3 hours")));
 
     @Test
-    void shouldTruncateNode()
-    {
+    void shouldTruncateNode() {
         // when
-        TruncatedQuerySnapshot x = new TruncatedQuerySnapshot( null,
-                                                               "",
-                                                               null,
-                                                               map( "n", NODE ),
-                                                               -1L,
-                                                               -1L,
-                                                               -1L,
-                                                               100 );
+        TruncatedQuerySnapshot x = new TruncatedQuerySnapshot(null, "", null, map("n", NODE), -1L, -1L, -1L, 100);
 
         // then
-        AnyValue truncatedNode = x.queryParameters.get( "n" );
-        assertTrue( truncatedNode instanceof NodeReference );
-        assertEquals( NODE.id(), ((NodeReference)truncatedNode).id() );
+        AnyValue truncatedNode = x.queryParameters.get("n");
+        assertTrue(truncatedNode instanceof NodeReference);
+        assertEquals(NODE.id(), ((NodeReference) truncatedNode).id());
     }
 
     @Test
-    void shouldTruncateRelationship()
-    {
+    void shouldTruncateRelationship() {
         // when
-        TruncatedQuerySnapshot x = new TruncatedQuerySnapshot( null,
-                                                               "",
-                                                               null,
-                                                               map( "r", RELATIONSHIP ),
-                                                               -1L,
-                                                               -1L,
-                                                               -1L,
-                                                               100 );
+        TruncatedQuerySnapshot x =
+                new TruncatedQuerySnapshot(null, "", null, map("r", RELATIONSHIP), -1L, -1L, -1L, 100);
 
         // then
-        AnyValue truncatedRelationship = x.queryParameters.get( "r" );
-        assertTrue( truncatedRelationship instanceof RelationshipReference );
-        assertEquals( RELATIONSHIP.id(), ((RelationshipReference)truncatedRelationship).id() );
+        AnyValue truncatedRelationship = x.queryParameters.get("r");
+        assertTrue(truncatedRelationship instanceof RelationshipReference);
+        assertEquals(RELATIONSHIP.id(), ((RelationshipReference) truncatedRelationship).id());
     }
 
-    private static MapValue map( String key, AnyValue value )
-    {
+    private static MapValue map(String key, AnyValue value) {
         String[] keys = {key};
         AnyValue[] values = {value};
-        return VirtualValues.map( keys, values );
+        return VirtualValues.map(keys, values);
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.proc;
 
-import org.apache.commons.lang3.StringUtils;
+import static java.util.Collections.emptyList;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,17 +34,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import static java.util.Collections.emptyList;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Utility methods for accessing information about the current Java process.
  */
-public final class ProcessUtil
-{
-    private ProcessUtil()
-    {
-    }
+public final class ProcessUtil {
+    private ProcessUtil() {}
 
     /**
      * Get the path to the {@code java} executable that is running this Java program.
@@ -55,19 +51,17 @@ public final class ProcessUtil
      *
      * @return The path to the {@code java} executable that launched this Java process.
      */
-    public static Path getJavaExecutable()
-    {
-        String javaHome = System.getProperty( "java.home" );
-        return Paths.get( javaHome, "bin", "java" );
+    public static Path getJavaExecutable() {
+        String javaHome = System.getProperty("java.home");
+        return Paths.get(javaHome, "bin", "java");
     }
 
     /**
      * Get the current classpath as a list of file names.
      * @return The list of file names that makes the classpath.
      */
-    public static List<String> getClassPathList()
-    {
-        return Arrays.asList( getClassPath().split( File.pathSeparator ) );
+    public static List<String> getClassPathList() {
+        return Arrays.asList(getClassPath().split(File.pathSeparator));
     }
 
     /**
@@ -77,9 +71,8 @@ public final class ProcessUtil
      * @see File#pathSeparator
      * @return The current classpath.
      */
-    public static String getClassPath()
-    {
-        return System.getProperty( "java.class.path" );
+    public static String getClassPath() {
+        return System.getProperty("java.class.path");
     }
 
     /**
@@ -88,14 +81,15 @@ public final class ProcessUtil
      *
      * @return array of options that can be passed to the java launcher.
      */
-    public static List<String> getModuleOptions()
-    {
-        var moduleOptions = System.getProperty( "jdk.custom.options" );
-        if ( StringUtils.isEmpty( moduleOptions ) )
-        {
+    public static List<String> getModuleOptions() {
+        var moduleOptions = System.getProperty("jdk.custom.options");
+        if (StringUtils.isEmpty(moduleOptions)) {
             return emptyList();
         }
-        return Arrays.stream( moduleOptions.split( " " ) ).filter( StringUtils::isNotBlank ).map( String::trim ).collect( Collectors.toList() );
+        return Arrays.stream(moduleOptions.split(" "))
+                .filter(StringUtils::isNotBlank)
+                .map(String::trim)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -105,9 +99,8 @@ public final class ProcessUtil
      * @param arguments additional arguments that should be passed to new process
      * @return newly started java process
      */
-    public static Process start( String... arguments ) throws IOException
-    {
-        return start( ProcessBuilder::inheritIO, arguments );
+    public static Process start(String... arguments) throws IOException {
+        return start(ProcessBuilder::inheritIO, arguments);
     }
 
     /**
@@ -117,56 +110,52 @@ public final class ProcessUtil
      * @param arguments additional arguments that should be passed to new process
      * @return newly started java process
      */
-    public static Process start( Consumer<ProcessBuilder> configurator, String... arguments ) throws IOException
-    {
+    public static Process start(Consumer<ProcessBuilder> configurator, String... arguments) throws IOException {
         var args = new ArrayList<String>();
-        args.add( getJavaExecutable().toString() );
+        args.add(getJavaExecutable().toString());
         var moduleOptions = getModuleOptions();
-        if ( !moduleOptions.isEmpty() )
-        {
-            args.addAll( moduleOptions );
+        if (!moduleOptions.isEmpty()) {
+            args.addAll(moduleOptions);
         }
 
         // Classpath can get very long and that can upset Windows, so write it to a file
-        Path p = Files.createTempFile( "jvm", ".args" );
+        Path p = Files.createTempFile("jvm", ".args");
         p.toFile().deleteOnExit();
-        Files.writeString( p, systemProperties() + "-cp " + wrapSpaces( getClassPath() ), StandardCharsets.UTF_8 );
+        Files.writeString(p, systemProperties() + "-cp " + wrapSpaces(getClassPath()), StandardCharsets.UTF_8);
 
-        args.add( "@" + p.normalize() );
-        args.addAll( Arrays.asList( arguments ) );
-        ProcessBuilder processBuilder = new ProcessBuilder( args );
-        configurator.accept( processBuilder );
+        args.add("@" + p.normalize());
+        args.addAll(Arrays.asList(arguments));
+        ProcessBuilder processBuilder = new ProcessBuilder(args);
+        configurator.accept(processBuilder);
         return processBuilder.start();
     }
 
-    private static String systemProperties()
-    {
+    private static String systemProperties() {
         StringBuilder builder = new StringBuilder();
         Properties properties = System.getProperties();
-        for ( Map.Entry<Object,Object> entry : properties.entrySet() )
-        {
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String name = entry.getKey().toString();
-            if ( !isJdkProperty( name ) )
-            {
-                builder.append( systemProperty( name, entry.getValue().toString() ) );
-                builder.append( " " );
+            if (!isJdkProperty(name)) {
+                builder.append(systemProperty(name, entry.getValue().toString()));
+                builder.append(" ");
             }
         }
         return builder.toString();
     }
 
-    private static boolean isJdkProperty( String name )
-    {
-        return name.startsWith( "java" ) || name.startsWith( "os" ) || name.startsWith( "sun" ) || name.startsWith( "user" ) || name.startsWith( "line" );
+    private static boolean isJdkProperty(String name) {
+        return name.startsWith("java")
+                || name.startsWith("os")
+                || name.startsWith("sun")
+                || name.startsWith("user")
+                || name.startsWith("line");
     }
 
-    private static String systemProperty( String key, String value )
-    {
+    private static String systemProperty(String key, String value) {
         return "-D" + key + "=" + value;
     }
 
-    private static String wrapSpaces( String value )
-    {
-        return value.replace( " ", "\" \"" );
+    private static String wrapSpaces(String value) {
+        return value.replace(" ", "\" \"");
     }
 }

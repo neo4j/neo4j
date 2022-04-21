@@ -25,15 +25,12 @@ import java.io.IOException;
  * Merely a super class for any kind of exception about logical log
  * or transaction missing or not found.
  */
-class MissingLogDataException extends IOException
-{
-    MissingLogDataException( String message )
-    {
-        super( message );
+class MissingLogDataException extends IOException {
+    MissingLogDataException(String message) {
+        super(message);
     }
 
-    MissingLogDataException( String message, Throwable cause )
-    {
-        super( message, cause );
+    MissingLogDataException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

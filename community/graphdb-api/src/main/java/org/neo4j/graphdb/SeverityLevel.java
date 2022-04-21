@@ -25,7 +25,7 @@ import org.neo4j.annotations.api.PublicApi;
  * SeverityLevel indicates to a client the severity of a notification.
  */
 @PublicApi
-public enum SeverityLevel
-{
-    WARNING, INFORMATION
+public enum SeverityLevel {
+    WARNING,
+    INFORMATION
 }

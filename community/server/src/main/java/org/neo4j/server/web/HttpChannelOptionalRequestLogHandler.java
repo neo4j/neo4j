@@ -19,17 +19,16 @@
  */
 package org.neo4j.server.web;
 
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
-
 import java.io.IOException;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 /**
  * This is the log handler used for http logging.
@@ -37,31 +36,24 @@ import javax.servlet.http.HttpServletResponse;
  * and rewrite the {@link RequestLogHandler#handle(String, Request, HttpServletRequest, HttpServletResponse)}
  * to be able to accept {@link Request} who does not have a http channel attached with it.
  */
-public class HttpChannelOptionalRequestLogHandler extends RequestLogHandler
-{
+public class HttpChannelOptionalRequestLogHandler extends RequestLogHandler {
     @Override
-    public void handle( String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
-    {
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
         HttpChannel httpChannel = baseRequest.getHttpChannel();
-        if ( httpChannel != null ) // if the channel is not null, all good, you handle yourself.
+        if (httpChannel != null) // if the channel is not null, all good, you handle yourself.
         {
-            super.handle( target, baseRequest, request, response );
-        }
-        else // if we do not have a real channel, then we just log ourselves
+            super.handle(target, baseRequest, request, response);
+        } else // if we do not have a real channel, then we just log ourselves
         {
-            try
-            {
-                if ( _handler != null )
-                {
-                    _handler.handle( target, baseRequest, request, response );
+            try {
+                if (_handler != null) {
+                    _handler.handle(target, baseRequest, request, response);
                 }
-            }
-            finally
-            {
+            } finally {
                 RequestLog requestLog = getRequestLog();
-                if ( requestLog != null && baseRequest.getDispatcherType() == DispatcherType.REQUEST )
-                {
-                    requestLog.log( baseRequest, (Response) response );
+                if (requestLog != null && baseRequest.getDispatcherType() == DispatcherType.REQUEST) {
+                    requestLog.log(baseRequest, (Response) response);
                 }
             }
         }

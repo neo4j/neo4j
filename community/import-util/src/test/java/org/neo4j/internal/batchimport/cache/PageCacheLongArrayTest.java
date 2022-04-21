@@ -19,11 +19,19 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -35,72 +43,61 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 @PageCacheExtension
-@ExtendWith( RandomExtension.class )
-class PageCacheLongArrayTest
-{
+@ExtendWith(RandomExtension.class)
+class PageCacheLongArrayTest {
     private static final int COUNT = 1_000_000;
+
     @Inject
     private TestDirectory testDirectory;
+
     @Inject
     private PageCache pageCache;
+
     @Inject
     private RandomSupport random;
 
     @Test
-    void verifyPageCacheLongArray() throws Exception
-    {
-        PagedFile file = pageCache.map( testDirectory.file( "file" ), pageCache.pageSize(), DEFAULT_DATABASE_NAME, immutable.of( CREATE, DELETE_ON_CLOSE ) );
+    void verifyPageCacheLongArray() throws Exception {
+        PagedFile file = pageCache.map(
+                testDirectory.file("file"),
+                pageCache.pageSize(),
+                DEFAULT_DATABASE_NAME,
+                immutable.of(CREATE, DELETE_ON_CLOSE));
 
-        try ( LongArray array = new PageCacheLongArray( file, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), COUNT, 0, 0 ) )
-        {
-            verifyBehaviour( array );
+        try (LongArray array =
+                new PageCacheLongArray(file, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), COUNT, 0, 0)) {
+            verifyBehaviour(array);
         }
     }
 
     @Test
-    void verifyChunkingArrayWithPageCacheLongArray()
-    {
+    void verifyChunkingArrayWithPageCacheLongArray() {
         Path directory = testDirectory.homePath();
-        var contextFactory = new CursorContextFactory( NULL, EMPTY );
-        NumberArrayFactory numberArrayFactory =
-                NumberArrayFactories.auto( pageCache, contextFactory, directory, false, NO_MONITOR, NullLog.getInstance(), DEFAULT_DATABASE_NAME );
-        try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0, INSTANCE ) )
-        {
-            verifyBehaviour( array );
+        var contextFactory = new CursorContextFactory(NULL, EMPTY);
+        NumberArrayFactory numberArrayFactory = NumberArrayFactories.auto(
+                pageCache, contextFactory, directory, false, NO_MONITOR, NullLog.getInstance(), DEFAULT_DATABASE_NAME);
+        try (LongArray array = numberArrayFactory.newDynamicLongArray(COUNT / 1_000, 0, INSTANCE)) {
+            verifyBehaviour(array);
         }
     }
 
-    private void verifyBehaviour( LongArray array )
-    {
+    private void verifyBehaviour(LongArray array) {
         // insert
-        for ( int i = 0; i < COUNT; i++ )
-        {
-            array.set( i, i );
+        for (int i = 0; i < COUNT; i++) {
+            array.set(i, i);
         }
 
         // verify inserted data
-        for ( int i = 0; i < COUNT; i++ )
-        {
-            assertEquals( i, array.get( i ) );
+        for (int i = 0; i < COUNT; i++) {
+            assertEquals(i, array.get(i));
         }
 
         // verify inserted data with random access patterns
         int stride = 12_345_678;
-        int next = random.nextInt( COUNT );
-        for ( int i = 0; i < COUNT; i++ )
-        {
-            assertEquals( next, array.get( next ) );
+        int next = random.nextInt(COUNT);
+        for (int i = 0; i < COUNT; i++) {
+            assertEquals(next, array.get(next));
             next = (next + stride) % COUNT;
         }
     }

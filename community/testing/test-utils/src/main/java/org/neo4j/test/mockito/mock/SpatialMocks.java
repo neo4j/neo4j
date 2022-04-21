@@ -21,131 +21,107 @@ package org.neo4j.test.mockito.mock;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 
-public class SpatialMocks
-{
-    public static MockPoint mockPoint( double x, double y, CRS crs )
-    {
-        return new MockPoint( x, y, crs );
+public class SpatialMocks {
+    public static MockPoint mockPoint(double x, double y, CRS crs) {
+        return new MockPoint(x, y, crs);
     }
 
-    public static MockPoint3D mockPoint( double x, double y, double z, CRS crs )
-    {
-        return new MockPoint3D( x, y, z, crs );
+    public static MockPoint3D mockPoint(double x, double y, double z, CRS crs) {
+        return new MockPoint3D(x, y, z, crs);
     }
 
-    public static MockGeometry mockGeometry( String geometryType, List<Coordinate> coordinates, CRS crs )
-    {
-        return new MockGeometry( geometryType, coordinates, crs );
+    public static MockGeometry mockGeometry(String geometryType, List<Coordinate> coordinates, CRS crs) {
+        return new MockGeometry(geometryType, coordinates, crs);
     }
 
-    public static CRS mockWGS84()
-    {
-        return mockCRS( 4326, "WGS-84", "http://spatialreference.org/ref/epsg/4326/" );
+    public static CRS mockWGS84() {
+        return mockCRS(4326, "WGS-84", "http://spatialreference.org/ref/epsg/4326/");
     }
 
-    public static CRS mockCartesian()
-    {
-        return mockCRS( 7203, "cartesian", "http://spatialreference.org/ref/sr-org/7203/" );
+    public static CRS mockCartesian() {
+        return mockCRS(7203, "cartesian", "http://spatialreference.org/ref/sr-org/7203/");
     }
 
-    public static CRS mockWGS84_3D()
-    {
-        return mockCRS( 4979, "WGS-84-3D", "http://spatialreference.org/ref/epsg/4979/" );
+    public static CRS mockWGS84_3D() {
+        return mockCRS(4979, "WGS-84-3D", "http://spatialreference.org/ref/epsg/4979/");
     }
 
-    public static CRS mockCartesian_3D()
-    {
-        return mockCRS( 9157, "cartesian-3D", "http://spatialreference.org/ref/sr-org/9157/" );
+    public static CRS mockCartesian_3D() {
+        return mockCRS(9157, "cartesian-3D", "http://spatialreference.org/ref/sr-org/9157/");
     }
 
-    private static CRS mockCRS( final int code, final String type, final String href )
-    {
-        return new CRS()
-        {
+    private static CRS mockCRS(final int code, final String type, final String href) {
+        return new CRS() {
             @Override
-            public int getCode()
-            {
+            public int getCode() {
                 return code;
             }
 
             @Override
-            public String getType()
-            {
+            public String getType() {
                 return type;
             }
 
             @Override
-            public String getHref()
-            {
+            public String getHref() {
                 return href;
             }
         };
     }
 
-    private static class MockPoint extends MockGeometry implements Point
-    {
+    private static class MockPoint extends MockGeometry implements Point {
         private final Coordinate coordinate;
 
-        private MockPoint( final double x, final double y, final CRS crs )
-        {
-            super( "Point", new ArrayList<>(), crs );
-            this.coordinate = new Coordinate( x, y );
-            this.coordinates.add( this.coordinate );
+        private MockPoint(final double x, final double y, final CRS crs) {
+            super("Point", new ArrayList<>(), crs);
+            this.coordinate = new Coordinate(x, y);
+            this.coordinates.add(this.coordinate);
         }
     }
 
-    private static class MockPoint3D extends MockGeometry implements Point
-    {
+    private static class MockPoint3D extends MockGeometry implements Point {
         private final Coordinate coordinate;
 
-        private MockPoint3D( final double x, final double y, double z, final CRS crs )
-        {
-            super( "Point", new ArrayList<>(), crs );
-            this.coordinate = new Coordinate( x, y, z );
-            this.coordinates.add( this.coordinate );
+        private MockPoint3D(final double x, final double y, double z, final CRS crs) {
+            super("Point", new ArrayList<>(), crs);
+            this.coordinate = new Coordinate(x, y, z);
+            this.coordinates.add(this.coordinate);
         }
     }
 
-    private static class MockGeometry implements Geometry
-    {
+    private static class MockGeometry implements Geometry {
         final String geometryType;
         final List<Coordinate> coordinates;
         protected final CRS crs;
 
-        private MockGeometry( String geometryType, final List<Coordinate> coordinates, final CRS crs )
-        {
+        private MockGeometry(String geometryType, final List<Coordinate> coordinates, final CRS crs) {
             this.geometryType = geometryType;
             this.coordinates = coordinates;
             this.crs = crs;
         }
 
         @Override
-        public String getGeometryType()
-        {
+        public String getGeometryType() {
             return geometryType;
         }
 
         @Override
-        public List<Coordinate> getCoordinates()
-        {
+        public List<Coordinate> getCoordinates() {
             return coordinates;
         }
 
         @Override
-        public CRS getCRS()
-        {
+        public CRS getCRS() {
             return crs;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return geometryType;
         }
     }

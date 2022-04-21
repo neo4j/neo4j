@@ -23,7 +23,6 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
-
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -36,8 +35,7 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 
-public class StubCursorFactory implements CursorFactory
-{
+public class StubCursorFactory implements CursorFactory {
     private final boolean continueWithLastItem;
     private final Queue<NodeCursor> nodeCursors = new ArrayDeque<>();
     private final Queue<NodeCursor> fullNodeCursors = new ArrayDeque<>();
@@ -55,118 +53,100 @@ public class StubCursorFactory implements CursorFactory
     private final Queue<RelationshipTypeIndexCursor> relationshipTypeIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipTypeIndexCursor> fullRelationshipTypeIndexCursors = new ArrayDeque<>();
 
-    public StubCursorFactory()
-    {
-        this( false );
+    public StubCursorFactory() {
+        this(false);
     }
 
-    public StubCursorFactory( boolean continueWithLastItem )
-    {
+    public StubCursorFactory(boolean continueWithLastItem) {
         this.continueWithLastItem = continueWithLastItem;
     }
 
     @Override
-    public NodeCursor allocateNodeCursor( CursorContext cursorContext )
-    {
-        return poll( nodeCursors );
+    public NodeCursor allocateNodeCursor(CursorContext cursorContext) {
+        return poll(nodeCursors);
     }
 
     @Override
-    public NodeCursor allocateFullAccessNodeCursor( CursorContext cursorContext )
-    {
-        return poll( fullNodeCursors );
+    public NodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext) {
+        return poll(fullNodeCursors);
     }
 
     @Override
-    public RelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext )
-    {
-        return poll( relationshipScanCursors );
+    public RelationshipScanCursor allocateRelationshipScanCursor(CursorContext cursorContext) {
+        return poll(relationshipScanCursors);
     }
 
     @Override
-    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor( CursorContext cursorContext )
-    {
-        return poll( fullRelationshipScanCursors );
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext) {
+        return poll(fullRelationshipScanCursors);
     }
 
     @Override
-    public RelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext )
-    {
-        return poll( relationshipTraversalCursors );
+    public RelationshipTraversalCursor allocateRelationshipTraversalCursor(CursorContext cursorContext) {
+        return poll(relationshipTraversalCursors);
     }
 
     @Override
-    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( CursorContext cursorContext )
-    {
-        return poll( fullRelationshipTraversalCursors );
+    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(CursorContext cursorContext) {
+        return poll(fullRelationshipTraversalCursors);
     }
 
     @Override
-    public PropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        return poll( propertyCursors );
+    public PropertyCursor allocatePropertyCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
+        return poll(propertyCursors);
     }
 
     @Override
-    public PropertyCursor allocateFullAccessPropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        return poll( fullPropertyCursors );
+    public PropertyCursor allocateFullAccessPropertyCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
+        return poll(fullPropertyCursors);
     }
 
     @Override
-    public NodeValueIndexCursor allocateNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        return poll( nodeValueIndexCursors );
+    public NodeValueIndexCursor allocateNodeValueIndexCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
+        return poll(nodeValueIndexCursors);
     }
 
     @Override
-    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        return poll( fullNodeValueIndexCursors );
+    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
+        return poll(fullNodeValueIndexCursors);
     }
 
     @Override
-    public NodeLabelIndexCursor allocateNodeLabelIndexCursor( CursorContext cursorContext )
-    {
-        return poll( nodeLabelIndexCursors );
+    public NodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext) {
+        return poll(nodeLabelIndexCursors);
     }
 
     @Override
-    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( CursorContext cursorContext )
-    {
-        return poll( fullNodeLabelIndexCursors );
+    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor(CursorContext cursorContext) {
+        return poll(fullNodeLabelIndexCursors);
     }
 
     @Override
-    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        return poll( relationshipValueIndexCursors );
+    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
+        return poll(relationshipValueIndexCursors);
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( CursorContext cursorContext )
-    {
-        return poll( relationshipTypeIndexCursors );
+    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext) {
+        return poll(relationshipTypeIndexCursors);
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor()
-    {
-        return poll( fullRelationshipTypeIndexCursors );
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor() {
+        return poll(fullRelationshipTypeIndexCursors);
     }
 
-    public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor... cursors )
-    {
-        relationshipTraversalCursors.addAll( Arrays.asList( cursors ) );
+    public StubCursorFactory withRelationshipTraversalCursors(RelationshipTraversalCursor... cursors) {
+        relationshipTraversalCursors.addAll(Arrays.asList(cursors));
         return this;
     }
 
-    private <T> T poll( Queue<T> queue )
-    {
+    private <T> T poll(Queue<T> queue) {
         T poll = queue.poll();
-        if ( continueWithLastItem && queue.isEmpty() )
-        {
-            queue.offer( poll );
+        if (continueWithLastItem && queue.isEmpty()) {
+            queue.offer(poll);
         }
         return poll;
     }

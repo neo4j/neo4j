@@ -24,6 +24,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode
 import org.opencypher.tools.tck.api.Scenario
 
 import java.util
+
 import scala.collection.JavaConverters.asJavaCollectionConverter
 
 /**

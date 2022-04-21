@@ -19,10 +19,17 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.apache.commons.lang3.ArrayUtils.contains;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -35,16 +42,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.ValueTuple;
 
-import static org.apache.commons.lang3.ArrayUtils.contains;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-public class IndexTxStateUpdaterTestBase
-{
+public class IndexTxStateUpdaterTestBase {
     static final int PROP_ID_1 = 20;
     static final int PROP_ID_2 = 21;
     static final int PROP_ID_3 = 22;
@@ -56,71 +54,60 @@ public class IndexTxStateUpdaterTestBase
     IndexTxStateUpdater indexTxUpdater;
 
     StubPropertyCursor propertyCursor = new StubPropertyCursor();
-    StorageReader storageReader = mock( StorageReader.class );
+    StorageReader storageReader = mock(StorageReader.class);
 
-    void setUp( List<IndexDescriptor> indexes ) throws IndexNotFoundKernelException
-    {
-        txState = mock( TransactionState.class );
-        when( txState.memoryTracker() ).thenReturn( EmptyMemoryTracker.INSTANCE );
+    void setUp(List<IndexDescriptor> indexes) throws IndexNotFoundKernelException {
+        txState = mock(TransactionState.class);
+        when(txState.memoryTracker()).thenReturn(EmptyMemoryTracker.INSTANCE);
 
-        when( storageReader.valueIndexesGetRelated( any(), anyInt(), any() ) ).thenAnswer( invocationOnMock ->
-        {
-            long[] tokens = invocationOnMock.getArgument( 0 );
-            int propertyKeyId = invocationOnMock.getArgument( 1 );
+        when(storageReader.valueIndexesGetRelated(any(), anyInt(), any())).thenAnswer(invocationOnMock -> {
+            long[] tokens = invocationOnMock.getArgument(0);
+            int propertyKeyId = invocationOnMock.getArgument(1);
             Set<IndexDescriptor> descriptors = new HashSet<>();
-            for ( IndexDescriptor index : indexes )
-            {
+            for (IndexDescriptor index : indexes) {
                 SchemaDescriptor schema = index.schema();
-                if ( schema.isAffected( tokens ) && contains( schema.getPropertyIds(), propertyKeyId ) )
-                {
-                    if ( schema.propertySchemaType() == PropertySchemaType.COMPLETE_ALL_TOKENS )
-                    {
-                        descriptors.add( index );
+                if (schema.isAffected(tokens) && contains(schema.getPropertyIds(), propertyKeyId)) {
+                    if (schema.propertySchemaType() == PropertySchemaType.COMPLETE_ALL_TOKENS) {
+                        descriptors.add(index);
                     }
                 }
             }
             return descriptors;
-        } );
-        when( storageReader.valueIndexesGetRelated( any(), any( int[].class ), any() ) ).thenAnswer( invocationOnMock ->
-        {
-            long[] tokens = invocationOnMock.getArgument( 0 );
-            int[] propertyKeyIds = invocationOnMock.getArgument( 1 );
-            Set<IndexDescriptor> descriptors = new HashSet<>();
-            for ( IndexDescriptor index : indexes )
-            {
-                if ( index.schema().isAffected( tokens ) )
-                {
-                    boolean containsAll = true;
-                    for ( int propertyId : index.schema().getPropertyIds() )
-                    {
-                        containsAll &= contains( propertyKeyIds, propertyId );
+        });
+        when(storageReader.valueIndexesGetRelated(any(), any(int[].class), any()))
+                .thenAnswer(invocationOnMock -> {
+                    long[] tokens = invocationOnMock.getArgument(0);
+                    int[] propertyKeyIds = invocationOnMock.getArgument(1);
+                    Set<IndexDescriptor> descriptors = new HashSet<>();
+                    for (IndexDescriptor index : indexes) {
+                        if (index.schema().isAffected(tokens)) {
+                            boolean containsAll = true;
+                            for (int propertyId : index.schema().getPropertyIds()) {
+                                containsAll &= contains(propertyKeyIds, propertyId);
+                            }
+                            if (containsAll) {
+                                descriptors.add(index);
+                            }
+                        }
                     }
-                    if ( containsAll )
-                    {
-                        descriptors.add( index );
-                    }
-                }
-            }
-            return descriptors;
-        } );
+                    return descriptors;
+                });
 
-        Read readOps = mock( Read.class );
-        when( readOps.txState() ).thenReturn( txState );
+        Read readOps = mock(Read.class);
+        when(readOps.txState()).thenReturn(txState);
 
-        IndexingService indexingService = mock( IndexingService.class );
-        IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( any( IndexDescriptor.class ) ) ).thenReturn( indexProxy );
+        IndexingService indexingService = mock(IndexingService.class);
+        IndexProxy indexProxy = mock(IndexProxy.class);
+        when(indexingService.getIndexProxy(any(IndexDescriptor.class))).thenReturn(indexProxy);
 
-        indexTxUpdater = new IndexTxStateUpdater( storageReader, readOps, indexingService );
+        indexTxUpdater = new IndexTxStateUpdater(storageReader, readOps, indexingService);
     }
 
-    static ValueTuple values( Object... values )
-    {
-        return ValueTuple.of( values );
+    static ValueTuple values(Object... values) {
+        return ValueTuple.of(values);
     }
 
-    void verifyIndexUpdate( SchemaDescriptor schema, long entityId, ValueTuple before, ValueTuple after )
-    {
-        verify( txState ).indexDoUpdateEntry( eq( schema ), eq( entityId ), eq( before ), eq( after ) );
+    void verifyIndexUpdate(SchemaDescriptor schema, long entityId, ValueTuple before, ValueTuple after) {
+        verify(txState).indexDoUpdateEntry(eq(schema), eq(entityId), eq(before), eq(after));
     }
 }

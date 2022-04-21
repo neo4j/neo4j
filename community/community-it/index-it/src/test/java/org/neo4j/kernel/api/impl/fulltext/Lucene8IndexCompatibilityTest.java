@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
+
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
-
-import java.util.List;
-
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.dbms.MigrateStoreCommand;
 import org.neo4j.configuration.Config;
@@ -45,13 +49,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.TestDirectory;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
+import picocli.CommandLine;
 
 /**
  * Tests that indexes created by Neo 4.x (4.4 concretely) which used Lucene 8.x
@@ -73,8 +71,7 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
  */
 @TestDirectoryExtension
 @MultiVersionedTag
-class Lucene8IndexCompatibilityTest
-{
+class Lucene8IndexCompatibilityTest {
     private static final String ARCHIVE_NAME = "4-4-lucene-idx-db.zip";
     private static final String TEXT_IDX_NAME = "TextIndex";
     private static final String FULLTEXT_IDX_NAME = "FulltextIndex";
@@ -88,153 +85,142 @@ class Lucene8IndexCompatibilityTest
     private GraphDatabaseService db;
 
     @BeforeEach
-    void beforeEach() throws Exception
-    {
-        Unzip.unzip( getClass(), ARCHIVE_NAME, testDirectory.homePath() );
+    void beforeEach() throws Exception {
+        Unzip.unzip(getClass(), ARCHIVE_NAME, testDirectory.homePath());
 
         runStoreMigrationCommandFromSameJvm();
-        dbms = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .build();
-        db = dbms.database( "neo4j" );
+        dbms = new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build();
+        db = dbms.database("neo4j");
     }
 
     @AfterEach
-    void tearDown()
-    {
-        if ( dbms != null )
-        {
+    void tearDown() {
+        if (dbms != null) {
             dbms.shutdown();
         }
     }
 
     @Test
-    void testExistingIndexesWork() throws KernelException
-    {
+    void testExistingIndexesWork() throws KernelException {
         assertTextIndexContainsExactlyValues(
                 "Text 0 written by 4.4",
                 "Text 1 written by 4.4",
                 "Text 2 written by 4.4",
                 "Text 3 written by 4.4",
-                "Text 4 written by 4.4"
-        );
+                "Text 4 written by 4.4");
 
         assertFulltextIndexContainsExactlyValues(
                 "Text 0 written by 4.4",
                 "Text 1 written by 4.4",
                 "Text 2 written by 4.4",
                 "Text 3 written by 4.4",
-                "Text 4 written by 4.4" );
+                "Text 4 written by 4.4");
 
-        try ( var tx = db.beginTx() )
-        {
+        try (var tx = db.beginTx()) {
             // modify existing:
-            var node1 = tx.findNode( Label.label( LABEL ), PROPERTY, "Text 1 written by 4.4" );
-            node1.setProperty( PROPERTY, "New text 1" );
+            var node1 = tx.findNode(Label.label(LABEL), PROPERTY, "Text 1 written by 4.4");
+            node1.setProperty(PROPERTY, "New text 1");
 
             // delete existing:
-            var node2 = tx.findNode( Label.label( LABEL ), PROPERTY, "Text 3 written by 4.4" );
+            var node2 = tx.findNode(Label.label(LABEL), PROPERTY, "Text 3 written by 4.4");
             node2.delete();
 
             // create new:
-            var node3 = tx.createNode( Label.label( LABEL ) );
-            node3.setProperty( PROPERTY, "New text 2" );
+            var node3 = tx.createNode(Label.label(LABEL));
+            node3.setProperty(PROPERTY, "New text 2");
 
             tx.commit();
         }
 
         assertTextIndexContainsExactlyValues(
-                "Text 0 written by 4.4",
-                "Text 2 written by 4.4",
-                "Text 4 written by 4.4",
-                "New text 1",
-                "New text 2"
-        );
+                "Text 0 written by 4.4", "Text 2 written by 4.4", "Text 4 written by 4.4", "New text 1", "New text 2");
 
         assertFulltextIndexContainsExactlyValues(
-                "Text 0 written by 4.4",
-                "Text 2 written by 4.4",
-                "Text 4 written by 4.4",
-                "New text 1",
-                "New text 2" );
+                "Text 0 written by 4.4", "Text 2 written by 4.4", "Text 4 written by 4.4", "New text 1", "New text 2");
     }
 
-    private void assertTextIndexContainsExactlyValues( String... values ) throws KernelException
-    {
-        try ( var tx = db.beginTx() )
-        {
+    private void assertTextIndexContainsExactlyValues(String... values) throws KernelException {
+        try (var tx = db.beginTx()) {
             var kernelTx = ((TransactionImpl) tx).kernelTransaction();
 
-            IndexDescriptor index = kernelTx.schemaRead().indexGetForName( TEXT_IDX_NAME );
-            IndexReadSession indexSession = kernelTx.dataRead().indexReadSession( index );
+            IndexDescriptor index = kernelTx.schemaRead().indexGetForName(TEXT_IDX_NAME);
+            IndexReadSession indexSession = kernelTx.dataRead().indexReadSession(index);
 
-            try ( NodeValueIndexCursor cursor = kernelTx.cursors().allocateNodeValueIndexCursor( kernelTx.cursorContext(), kernelTx.memoryTracker() ) )
-            {
-                kernelTx.dataRead().nodeIndexSeek( kernelTx.queryContext(), indexSession, cursor, unordered( false ), PropertyIndexQuery.allEntries() );
+            try (NodeValueIndexCursor cursor = kernelTx.cursors()
+                    .allocateNodeValueIndexCursor(kernelTx.cursorContext(), kernelTx.memoryTracker())) {
+                kernelTx.dataRead()
+                        .nodeIndexSeek(
+                                kernelTx.queryContext(),
+                                indexSession,
+                                cursor,
+                                unordered(false),
+                                PropertyIndexQuery.allEntries());
                 int entryCounter = 0;
-                while ( cursor.next() )
-                {
+                while (cursor.next()) {
                     entryCounter++;
                 }
 
-                assertEquals( values.length, entryCounter );
+                assertEquals(values.length, entryCounter);
             }
-            int prop = kernelTx.tokenRead().propertyKey( PROPERTY );
+            int prop = kernelTx.tokenRead().propertyKey(PROPERTY);
 
-            for ( String value : values )
-            {
+            for (String value : values) {
 
-                try ( NodeValueIndexCursor cursor = kernelTx.cursors().allocateNodeValueIndexCursor( kernelTx.cursorContext(), kernelTx.memoryTracker() ) )
-                {
-                    var predicate = PropertyIndexQuery.exact( prop, value );
-                    kernelTx.dataRead().nodeIndexSeek( kernelTx.queryContext(), indexSession, cursor, unordered( false ), predicate );
-                    assertTrue( cursor.next() );
+                try (NodeValueIndexCursor cursor = kernelTx.cursors()
+                        .allocateNodeValueIndexCursor(kernelTx.cursorContext(), kernelTx.memoryTracker())) {
+                    var predicate = PropertyIndexQuery.exact(prop, value);
+                    kernelTx.dataRead()
+                            .nodeIndexSeek(kernelTx.queryContext(), indexSession, cursor, unordered(false), predicate);
+                    assertTrue(cursor.next());
                 }
             }
         }
     }
 
-    private void assertFulltextIndexContainsExactlyValues( String... values ) throws KernelException
-    {
-        try ( var tx = db.beginTx() )
-        {
+    private void assertFulltextIndexContainsExactlyValues(String... values) throws KernelException {
+        try (var tx = db.beginTx()) {
             var kernelTx = ((TransactionImpl) tx).kernelTransaction();
 
-            IndexDescriptor index = kernelTx.schemaRead().indexGetForName( FULLTEXT_IDX_NAME );
-            IndexReadSession indexSession = kernelTx.dataRead().indexReadSession( index );
+            IndexDescriptor index = kernelTx.schemaRead().indexGetForName(FULLTEXT_IDX_NAME);
+            IndexReadSession indexSession = kernelTx.dataRead().indexReadSession(index);
 
-            try ( NodeValueIndexCursor cursor = kernelTx.cursors().allocateNodeValueIndexCursor( kernelTx.cursorContext(), kernelTx.memoryTracker() ) )
-            {
-                kernelTx.dataRead().nodeIndexSeek( kernelTx.queryContext(), indexSession, cursor, unordered( false ), fulltextSearch( "*" ) );
+            try (NodeValueIndexCursor cursor = kernelTx.cursors()
+                    .allocateNodeValueIndexCursor(kernelTx.cursorContext(), kernelTx.memoryTracker())) {
+                kernelTx.dataRead()
+                        .nodeIndexSeek(
+                                kernelTx.queryContext(), indexSession, cursor, unordered(false), fulltextSearch("*"));
                 int entryCounter = 0;
-                while ( cursor.next() )
-                {
+                while (cursor.next()) {
                     entryCounter++;
                 }
 
-                assertEquals( values.length, entryCounter );
+                assertEquals(values.length, entryCounter);
             }
 
-            for ( String value : values )
-            {
+            for (String value : values) {
 
-                try ( NodeValueIndexCursor cursor = kernelTx.cursors().allocateNodeValueIndexCursor( kernelTx.cursorContext(), kernelTx.memoryTracker() ) )
-                {
-                    kernelTx.dataRead().nodeIndexSeek( kernelTx.queryContext(), indexSession, cursor, unordered( false ), fulltextSearch( value ) );
-                    assertTrue( cursor.next() );
+                try (NodeValueIndexCursor cursor = kernelTx.cursors()
+                        .allocateNodeValueIndexCursor(kernelTx.cursorContext(), kernelTx.memoryTracker())) {
+                    kernelTx.dataRead()
+                            .nodeIndexSeek(
+                                    kernelTx.queryContext(),
+                                    indexSession,
+                                    cursor,
+                                    unordered(false),
+                                    fulltextSearch(value));
+                    assertTrue(cursor.next());
                 }
             }
         }
     }
 
-    private void runStoreMigrationCommandFromSameJvm() throws Exception
-    {
+    private void runStoreMigrationCommandFromSameJvm() throws Exception {
         var homeDir = testDirectory.homePath().toAbsolutePath();
-        var configDir = homeDir.resolve( Config.DEFAULT_CONFIG_DIR_NAME );
+        var configDir = homeDir.resolve(Config.DEFAULT_CONFIG_DIR_NAME);
 
-        var ctx = new ExecutionContext( homeDir, configDir, System.out, System.err, new DefaultFileSystemAbstraction() );
-        for ( var database : List.of( DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME ) )
-        {
-            var command = CommandLine.populateCommand( new MigrateStoreCommand( ctx ), "--database", database );
+        var ctx = new ExecutionContext(homeDir, configDir, System.out, System.err, new DefaultFileSystemAbstraction());
+        for (var database : List.of(DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME)) {
+            var command = CommandLine.populateCommand(new MigrateStoreCommand(ctx), "--database", database);
             command.call();
         }
     }

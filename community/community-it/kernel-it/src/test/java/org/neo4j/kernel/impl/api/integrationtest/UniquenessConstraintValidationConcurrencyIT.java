@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphdb.Label.label;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -34,110 +36,88 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.graphdb.Label.label;
-
 @ImpermanentDbmsExtension
-@ExtendWith( OtherThreadExtension.class )
-public class UniquenessConstraintValidationConcurrencyIT
-{
+@ExtendWith(OtherThreadExtension.class)
+public class UniquenessConstraintValidationConcurrencyIT {
     @Inject
     private GraphDatabaseService database;
+
     @Inject
     private OtherThread otherThread;
 
     @Test
-    void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception
-    {
+    void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception {
         createTestConstraint();
 
-        try ( var tx = database.beginTx() )
-        {
-            tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-            assertTrue( otherThread.execute( createNode( "Label1", "key1", "value2" ) ).get() );
+        try (var tx = database.beginTx()) {
+            tx.createNode(label("Label1")).setProperty("key1", "value1");
+            assertTrue(
+                    otherThread.execute(createNode("Label1", "key1", "value2")).get());
         }
     }
 
     @Test
-    void shouldPreventConcurrentCreationOfConflictingData() throws Exception
-    {
+    void shouldPreventConcurrentCreationOfConflictingData() throws Exception {
         createTestConstraint();
 
         Future<Boolean> result;
-        try ( var tx = database.beginTx() )
-        {
-            tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-            try
-            {
-                result = otherThread.execute( createNode( "Label1", "key1", "value1" ) );
-            }
-            finally
-            {
+        try (var tx = database.beginTx()) {
+            tx.createNode(label("Label1")).setProperty("key1", "value1");
+            try {
+                result = otherThread.execute(createNode("Label1", "key1", "value1"));
+            } finally {
                 waitUntilWaiting();
             }
             tx.commit();
         }
-        assertFalse( result.get(), "node creation should fail" );
+        assertFalse(result.get(), "node creation should fail");
     }
 
     @Test
-    void shouldAllowOtherTransactionToCompleteIfFirstTransactionRollsBack() throws Exception
-    {
+    void shouldAllowOtherTransactionToCompleteIfFirstTransactionRollsBack() throws Exception {
         createTestConstraint();
 
         // when
         Future<Boolean> result;
-        try ( var tx = database.beginTx() )
-        {
-            tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-            try
-            {
-                result = otherThread.execute( createNode( "Label1", "key1", "value1" ) );
-            }
-            finally
-            {
+        try (var tx = database.beginTx()) {
+            tx.createNode(label("Label1")).setProperty("key1", "value1");
+            try {
+                result = otherThread.execute(createNode("Label1", "key1", "value1"));
+            } finally {
                 waitUntilWaiting();
             }
             tx.rollback();
         }
-        assertTrue( result.get(), "node creation should fail" );
+        assertTrue(result.get(), "node creation should fail");
     }
 
-    private void createTestConstraint()
-    {
-        try ( var transaction = database.beginTx() )
-        {
-            transaction.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
+    private void createTestConstraint() {
+        try (var transaction = database.beginTx()) {
+            transaction
+                    .schema()
+                    .constraintFor(label("Label1"))
+                    .assertPropertyIsUnique("key1")
+                    .create();
             transaction.commit();
         }
     }
 
-    private void waitUntilWaiting()
-    {
-        try
-        {
+    private void waitUntilWaiting() {
+        try {
             otherThread.get().waitUntilWaiting();
-        }
-        catch ( TimeoutException e )
-        {
-            throw new RuntimeException( e );
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public Callable<Boolean> createNode( final String label, final String propertyKey, final Object propertyValue )
-    {
-        return () ->
-        {
-            try ( Transaction tx = database.beginTx() )
-            {
-                tx.createNode( label( label ) ).setProperty( propertyKey, propertyValue );
+    public Callable<Boolean> createNode(final String label, final String propertyKey, final Object propertyValue) {
+        return () -> {
+            try (Transaction tx = database.beginTx()) {
+                tx.createNode(label(label)).setProperty(propertyKey, propertyValue);
 
                 tx.commit();
                 return true;
-            }
-            catch ( ConstraintViolationException e )
-            {
+            } catch (ConstraintViolationException e) {
                 return false;
             }
         };

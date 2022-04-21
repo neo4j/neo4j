@@ -19,35 +19,31 @@
  */
 package org.neo4j.server;
 
-import org.junit.jupiter.api.Test;
-
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-
 import static java.net.http.HttpClient.Redirect.NORMAL;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class NeoWebServerDefaultPortAndHostnameIT extends AbstractRestFunctionalTestBase
-{
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import org.junit.jupiter.api.Test;
+import org.neo4j.server.helpers.FunctionalTestHelper;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+
+public class NeoWebServerDefaultPortAndHostnameIT extends AbstractRestFunctionalTestBase {
     @Test
-    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception
-    {
-        var functionalTestHelper = new FunctionalTestHelper( container() );
+    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
+        var functionalTestHelper = new FunctionalTestHelper(container());
 
-        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() ).GET().build();
-        var httpClient = HttpClient.newBuilder().followRedirects( NORMAL ).build();
-        var response = httpClient.send( request, discarding() );
+        var request =
+                HttpRequest.newBuilder(functionalTestHelper.baseUri()).GET().build();
+        var httpClient = HttpClient.newBuilder().followRedirects(NORMAL).build();
+        var response = httpClient.send(request, discarding());
 
-        assertThat( response.statusCode() ).isEqualTo( 200 );
+        assertThat(response.statusCode()).isEqualTo(200);
     }
 
     @Test
-    public void shouldDefaultToLocalhostOfNoneSpecifiedInConfig()
-    {
-        assertThat( container().getBaseUri().getHost() ).isEqualTo( "localhost" );
+    public void shouldDefaultToLocalhostOfNoneSpecifiedInConfig() {
+        assertThat(container().getBaseUri().getHost()).isEqualTo("localhost");
     }
 }

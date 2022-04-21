@@ -19,40 +19,34 @@
  */
 package org.neo4j.memory;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.memory.HeapEstimator.OBJECT_ALIGNMENT_BYTES;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstanceWithObjectReferences;
 
-class HeapEstimatorTest
-{
+import org.junit.jupiter.api.Test;
+
+class HeapEstimatorTest {
     @Test
-    void alignObjectSize()
-    {
-        for ( int i = 0; i <= 1024; i++ )
-        {
-            long aligned = HeapEstimator.alignObjectSize( i );
-            assertEquals( 0, aligned % OBJECT_ALIGNMENT_BYTES );
+    void alignObjectSize() {
+        for (int i = 0; i <= 1024; i++) {
+            long aligned = HeapEstimator.alignObjectSize(i);
+            assertEquals(0, aligned % OBJECT_ALIGNMENT_BYTES);
         }
     }
 
     @Test
-    void shouldNotOverflowOnInsanelyBigClass()
-    {
-        assertThat( shallowSizeOfInstanceWithObjectReferences( 536870912 ) ).isGreaterThan( 0L );
+    void shouldNotOverflowOnInsanelyBigClass() {
+        assertThat(shallowSizeOfInstanceWithObjectReferences(536870912)).isGreaterThan(0L);
     }
 
     @Test
-    void shouldEstimateShallowSizeOfInstanceTheSame()
-    {
-        assertThat( shallowSizeOfInstanceWithObjectReferences( 3 ) ).isEqualTo( shallowSizeOfInstance( DummyClass.class ) );
+    void shouldEstimateShallowSizeOfInstanceTheSame() {
+        assertThat(shallowSizeOfInstanceWithObjectReferences(3)).isEqualTo(shallowSizeOfInstance(DummyClass.class));
     }
 
-    private static class DummyClass
-    {
+    private static class DummyClass {
         Object ref1;
         Object ref2;
         Object ref3;

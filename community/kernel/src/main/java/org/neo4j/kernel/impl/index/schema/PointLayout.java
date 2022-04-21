@@ -19,83 +19,71 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.NO_ENTITY_ID;
+
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.NO_ENTITY_ID;
-
-class PointLayout extends IndexLayout<PointKey>
-{
+class PointLayout extends IndexLayout<PointKey> {
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
 
-    PointLayout( IndexSpecificSpaceFillingCurveSettings spatialSettings )
-    {
-        super( false, Layout.namedIdentifier( "PL", 1 ), 0, 1 );
+    PointLayout(IndexSpecificSpaceFillingCurveSettings spatialSettings) {
+        super(false, Layout.namedIdentifier("PL", 1), 0, 1);
         this.spatialSettings = spatialSettings;
     }
 
     @Override
-    public PointKey newKey()
-    {
-        return new PointKey( spatialSettings );
+    public PointKey newKey() {
+        return new PointKey(spatialSettings);
     }
 
     @Override
-    public PointKey copyKey( PointKey key, PointKey into )
-    {
-        into.copyFrom( key );
+    public PointKey copyKey(PointKey key, PointKey into) {
+        into.copyFrom(key);
         return into;
     }
 
     @Override
-    public int keySize( PointKey key )
-    {
+    public int keySize(PointKey key) {
         return key.size();
     }
 
     @Override
-    public void writeKey( PageCursor cursor, PointKey key )
-    {
-        key.writeToCursor( cursor );
+    public void writeKey(PageCursor cursor, PointKey key) {
+        key.writeToCursor(cursor);
     }
 
     @Override
-    public void readKey( PageCursor cursor, PointKey into, int keySize )
-    {
-        into.readFromCursor( cursor, keySize );
+    public void readKey(PageCursor cursor, PointKey into, int keySize) {
+        into.readFromCursor(cursor, keySize);
     }
 
     @Override
-    public void initializeAsLowest( PointKey key )
-    {
+    public void initializeAsLowest(PointKey key) {
         // none of the parameters matter as this layout does not support composite keys
         // and it supports just one type
-        key.initValueAsLowest( -1, null );
+        key.initValueAsLowest(-1, null);
     }
 
     @Override
-    public void initializeAsHighest( PointKey key )
-    {
+    public void initializeAsHighest(PointKey key) {
         // none of the parameters matter as this layout does not support composite keys
         // and it supports just one type
-        key.initValueAsHighest( -1, null );
+        key.initValueAsHighest(-1, null);
     }
 
     @Override
-    public void minimalSplitter( PointKey left, PointKey right, PointKey into )
-    {
-        into.copyFrom( right );
-        if ( left.compareValueTo( right ) != 0 )
-        {
+    public void minimalSplitter(PointKey left, PointKey right, PointKey into) {
+        into.copyFrom(right);
+        if (left.compareValueTo(right) != 0) {
             // Since the point value is enough to serve as minimal splitter, we remove the entity id
             // which will serve as divider if the point values are equal.
-            into.setEntityId( NO_ENTITY_ID );
+            into.setEntityId(NO_ENTITY_ID);
         }
     }
 
-    IndexSpecificSpaceFillingCurveSettings getSpaceFillingCurveSettings()
-    {
+    IndexSpecificSpaceFillingCurveSettings getSpaceFillingCurveSettings() {
         return spatialSettings;
     }
 }

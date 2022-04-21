@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.javacompat;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.cypher.result.EagerQuerySubscription;
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -34,8 +33,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.values.AnyValue;
 
-class MaterialisedResult implements QuerySubscriber
-{
+class MaterialisedResult implements QuerySubscriber {
     private final List<AnyValue[]> materialisedRecords = new ArrayList<>();
 
     private int numberOfFields;
@@ -44,140 +42,112 @@ class MaterialisedResult implements QuerySubscriber
     private QueryStatistics statistics;
     private QueryExecution queryExecution;
 
-    void consumeAll( QueryExecution queryExecution ) throws QueryExecutionKernelException
-    {
+    void consumeAll(QueryExecution queryExecution) throws QueryExecutionKernelException {
         this.queryExecution = queryExecution;
-        try
-        {
+        try {
             queryExecution.consumeAll();
-        }
-        catch ( Exception e )
-        {
-            if ( e instanceof Status.HasStatus )
-            {
-                throw new QueryExecutionKernelException( (Exception & Status.HasStatus) e );
+        } catch (Exception e) {
+            if (e instanceof Status.HasStatus) {
+                throw new QueryExecutionKernelException((Exception & Status.HasStatus) e);
             }
-            throw new QueryExecutionKernelException( new CypherExecutionException( "Query execution failed", e ) );
+            throw new QueryExecutionKernelException(new CypherExecutionException("Query execution failed", e));
         }
     }
 
-    QueryStatistics getQueryStatistics()
-    {
+    QueryStatistics getQueryStatistics() {
         return statistics;
     }
 
     @Override
-    public void onResult( int numberOfFields )
-    {
+    public void onResult(int numberOfFields) {
         this.numberOfFields = numberOfFields;
     }
 
     @Override
-    public void onRecord()
-    {
+    public void onRecord() {
         currentRecord = new AnyValue[numberOfFields];
     }
 
     @Override
-    public void onField( int offset, AnyValue value )
-    {
+    public void onField(int offset, AnyValue value) {
         currentRecord[offset] = value;
     }
 
     @Override
-    public void onRecordCompleted()
-    {
-        materialisedRecords.add( currentRecord );
+    public void onRecordCompleted() {
+        materialisedRecords.add(currentRecord);
         currentRecord = null;
     }
 
     @Override
-    public void onError( Throwable throwable )
-    {
+    public void onError(Throwable throwable) {
         error = throwable;
     }
 
     @Override
-    public void onResultCompleted( QueryStatistics statistics )
-    {
+    public void onResultCompleted(QueryStatistics statistics) {
         this.statistics = statistics;
     }
 
-    QueryExecution stream( QuerySubscriber subscriber )
-    {
-        return new StreamingExecution( subscriber );
+    QueryExecution stream(QuerySubscriber subscriber) {
+        return new StreamingExecution(subscriber);
     }
 
-    private class StreamingExecution extends EagerQuerySubscription implements QueryExecution
-    {
+    private class StreamingExecution extends EagerQuerySubscription implements QueryExecution {
 
-        StreamingExecution( QuerySubscriber subscriber )
-        {
-            super( subscriber );
+        StreamingExecution(QuerySubscriber subscriber) {
+            super(subscriber);
             error = MaterialisedResult.this.error;
 
-            try
-            {
-                subscriber.onResult( queryExecution.fieldNames().length );
-            }
-            catch ( Exception e )
-            {
-                if ( error == null )
-                {
+            try {
+                subscriber.onResult(queryExecution.fieldNames().length);
+            } catch (Exception e) {
+                if (error == null) {
                     error = e;
                 }
             }
         }
 
         @Override
-        public QueryExecutionType executionType()
-        {
+        public QueryExecutionType executionType() {
             return queryExecution.executionType();
         }
 
         @Override
-        public ExecutionPlanDescription executionPlanDescription()
-        {
+        public ExecutionPlanDescription executionPlanDescription() {
             return queryExecution.executionPlanDescription();
         }
 
         @Override
-        public Iterable<Notification> getNotifications()
-        {
+        public Iterable<Notification> getNotifications() {
             return queryExecution.getNotifications();
         }
 
         @Override
-        public String[] fieldNames()
-        {
+        public String[] fieldNames() {
             return queryExecution.fieldNames();
         }
 
         @Override
-        protected QueryStatistics queryStatistics()
-        {
+        protected QueryStatistics queryStatistics() {
             return statistics;
         }
 
         @Override
-        protected int resultSize()
-        {
+        protected int resultSize() {
             return materialisedRecords.size();
         }
 
         @Override
-        protected void materializeIfNecessary()
-        {
+        protected void materializeIfNecessary() {
             // Result is already materialized
         }
 
         @Override
-        protected void streamRecordToSubscriber( int servedRecords ) throws Exception
-        {
-            AnyValue[] recordValues = materialisedRecords.get( servedRecords );
-            for ( int i = 0; i < recordValues.length; i++ )
-            {
-                subscriber.onField( i, recordValues[i] );
+        protected void streamRecordToSubscriber(int servedRecords) throws Exception {
+            AnyValue[] recordValues = materialisedRecords.get(servedRecords);
+            for (int i = 0; i < recordValues.length; i++) {
+                subscriber.onField(i, recordValues[i]);
             }
         }
     }

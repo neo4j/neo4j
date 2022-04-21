@@ -19,35 +19,28 @@
  */
 package org.neo4j.io.pagecache.buffer;
 
-public class DisabledIOBuffer implements NativeIOBuffer
-{
+public class DisabledIOBuffer implements NativeIOBuffer {
     static final NativeIOBuffer DISABLED_IO_BUFFER = new DisabledIOBuffer();
 
-    private DisabledIOBuffer()
-    {
-    }
+    private DisabledIOBuffer() {}
 
     @Override
-    public boolean isEnabled()
-    {
+    public boolean isEnabled() {
         return false;
     }
 
     @Override
-    public boolean hasMoreCapacity( int bufferLength, int requestSize )
-    {
+    public boolean hasMoreCapacity(int bufferLength, int requestSize) {
         return false;
     }
 
     @Override
-    public long getAddress()
-    {
+    public long getAddress() {
         return -1;
     }
 
     @Override
-    public void close()
-    {
-        //nothing to close
+    public void close() {
+        // nothing to close
     }
 }

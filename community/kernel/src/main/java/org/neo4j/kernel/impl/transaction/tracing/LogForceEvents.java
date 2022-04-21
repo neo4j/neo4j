@@ -22,8 +22,7 @@ package org.neo4j.kernel.impl.transaction.tracing;
 /**
  * Common interface for starting events around log force.
  */
-public interface LogForceEvents
-{
+public interface LogForceEvents {
     /**
      * Begin the process of forcing the transaction log file.
      */

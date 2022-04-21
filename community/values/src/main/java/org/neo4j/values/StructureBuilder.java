@@ -20,32 +20,26 @@
 package org.neo4j.values;
 
 import java.util.Map;
-
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.values.virtual.MapValue;
 
-public interface StructureBuilder<Input, Result>
-{
-    StructureBuilder<Input,Result> add( String field, Input value );
+public interface StructureBuilder<Input, Result> {
+    StructureBuilder<Input, Result> add(String field, Input value);
 
     Result build();
 
-    static <T> T build( final StructureBuilder<AnyValue,T> builder, MapValue map )
-    {
-        if ( map.size() == 0 )
-        {
-            throw new InvalidArgumentException( "At least one temporal unit must be specified." );
+    static <T> T build(final StructureBuilder<AnyValue, T> builder, MapValue map) {
+        if (map.size() == 0) {
+            throw new InvalidArgumentException("At least one temporal unit must be specified.");
         }
-        map.foreach( builder::add );
+        map.foreach(builder::add);
 
         return builder.build();
     }
 
-    static <T> T build( StructureBuilder<AnyValue,T> builder, Iterable<Map.Entry<String,AnyValue>> entries )
-    {
-        for ( Map.Entry<String,AnyValue> entry : entries )
-        {
-            builder.add( entry.getKey(), entry.getValue() );
+    static <T> T build(StructureBuilder<AnyValue, T> builder, Iterable<Map.Entry<String, AnyValue>> entries) {
+        for (Map.Entry<String, AnyValue> entry : entries) {
+            builder.add(entry.getKey(), entry.getValue());
         }
         return builder.build();
     }

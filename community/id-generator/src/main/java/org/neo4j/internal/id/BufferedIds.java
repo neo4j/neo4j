@@ -23,22 +23,21 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
-public interface BufferedIds extends Closeable
-{
-    void write( IdController.TransactionSnapshot snapshot, List<BufferingIdGeneratorFactory.IdBuffer> idBuffers ) throws IOException;
+public interface BufferedIds extends Closeable {
+    void write(IdController.TransactionSnapshot snapshot, List<BufferingIdGeneratorFactory.IdBuffer> idBuffers)
+            throws IOException;
 
-    void read( BufferedIdVisitor visitor ) throws IOException;
+    void read(BufferedIdVisitor visitor) throws IOException;
 
     @Override
     void close() throws IOException;
 
-    interface BufferedIdVisitor
-    {
-        boolean startChunk( IdController.TransactionSnapshot snapshot );
+    interface BufferedIdVisitor {
+        boolean startChunk(IdController.TransactionSnapshot snapshot);
 
-        void startType( int idTypeOrdinal );
+        void startType(int idTypeOrdinal);
 
-        void id( long id );
+        void id(long id);
 
         void endType();
 

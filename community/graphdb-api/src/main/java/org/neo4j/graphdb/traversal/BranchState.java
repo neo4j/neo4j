@@ -34,8 +34,7 @@ import org.neo4j.annotations.api.PublicApi;
  * @param <STATE> the type of object the state is.
  */
 @PublicApi
-public interface BranchState<STATE>
-{
+public interface BranchState<STATE> {
     /**
      * @return the associated state for a {@link TraversalBranch}.
      */
@@ -47,24 +46,21 @@ public interface BranchState<STATE>
      * @param state the {@link TraversalBranch} state to set for upcoming
      * children.
      */
-    void setState( STATE state );
+    void setState(STATE state);
 
     /**
      * Instance representing no state, usage resulting in
      * {@link IllegalStateException} being thrown.
      */
-    BranchState NO_STATE = new BranchState()
-    {
+    BranchState NO_STATE = new BranchState() {
         @Override
-        public Object getState()
-        {
-            throw new IllegalStateException( "Branch state disabled, pass in an initial state to enable it" );
+        public Object getState() {
+            throw new IllegalStateException("Branch state disabled, pass in an initial state to enable it");
         }
 
         @Override
-        public void setState( Object state )
-        {
-            throw new IllegalStateException( "Branch state disabled, pass in an initial state to enable it" );
+        public void setState(Object state) {
+            throw new IllegalStateException("Branch state disabled, pass in an initial state to enable it");
         }
     };
 }

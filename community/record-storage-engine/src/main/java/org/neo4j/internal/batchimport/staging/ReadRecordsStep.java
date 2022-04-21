@@ -19,16 +19,15 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.eclipse.collections.api.iterator.LongIterator;
+import static java.lang.Integer.min;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-
-import static java.lang.Integer.min;
 
 /**
  * Reads records from a {@link RecordStore} and sends batches of those records downstream.
@@ -37,73 +36,82 @@ import static java.lang.Integer.min;
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends ProcessorStep<LongIterator>
-{
+public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends ProcessorStep<LongIterator> {
     private final RecordStore<RECORD> store;
     private final int batchSize;
     private final RecordDataAssembler<RECORD> assembler;
 
-    public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage, RecordStore<RECORD> store,
-            CursorContextFactory contextFactory )
-    {
-        this( control, config, inRecordWritingStage, store, new RecordDataAssembler<>( store::newRecord, true ), contextFactory );
+    public ReadRecordsStep(
+            StageControl control,
+            Configuration config,
+            boolean inRecordWritingStage,
+            RecordStore<RECORD> store,
+            CursorContextFactory contextFactory) {
+        this(
+                control,
+                config,
+                inRecordWritingStage,
+                store,
+                new RecordDataAssembler<>(store::newRecord, true),
+                contextFactory);
     }
 
-    public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
-            RecordStore<RECORD> store, RecordDataAssembler<RECORD> converter, CursorContextFactory contextFactory )
-    {
-        super( control, ">", config, parallelReading( config, inRecordWritingStage )
-                                     // Limit reader (I/O) threads to 12, it's a high degree of concurrency and assigning more
-                                     // will likely not make things faster, rather the other way around and it's difficult for
-                                     // the processor assigner to proficiently understand that dynamic
-                                     ? min( 12, config.maxNumberOfProcessors() )
-                                     : 1, contextFactory );
+    public ReadRecordsStep(
+            StageControl control,
+            Configuration config,
+            boolean inRecordWritingStage,
+            RecordStore<RECORD> store,
+            RecordDataAssembler<RECORD> converter,
+            CursorContextFactory contextFactory) {
+        super(
+                control,
+                ">",
+                config,
+                parallelReading(config, inRecordWritingStage)
+                        // Limit reader (I/O) threads to 12, it's a high degree of concurrency and assigning more
+                        // will likely not make things faster, rather the other way around and it's difficult for
+                        // the processor assigner to proficiently understand that dynamic
+                        ? min(12, config.maxNumberOfProcessors())
+                        : 1,
+                contextFactory);
         this.store = store;
         this.assembler = converter;
         this.batchSize = config.batchSize();
     }
 
-    private static boolean parallelReading( Configuration config, boolean inRecordWritingStage )
-    {
-        return (inRecordWritingStage && config.highIO())
-                || (!inRecordWritingStage && config.parallelRecordReads());
+    private static boolean parallelReading(Configuration config, boolean inRecordWritingStage) {
+        return (inRecordWritingStage && config.highIO()) || (!inRecordWritingStage && config.parallelRecordReads());
     }
 
     @Override
-    public void start( int orderingGuarantees )
-    {
-        super.start( orderingGuarantees | ORDER_SEND_DOWNSTREAM );
+    public void start(int orderingGuarantees) {
+        super.start(orderingGuarantees | ORDER_SEND_DOWNSTREAM);
     }
 
     @Override
-    protected void process( LongIterator idRange, BatchSender sender, CursorContext cursorContext )
-    {
-        if ( !idRange.hasNext() )
-        {
+    protected void process(LongIterator idRange, BatchSender sender, CursorContext cursorContext) {
+        if (!idRange.hasNext()) {
             return;
         }
 
         long id = idRange.next();
-        RECORD[] batch = control.reuse( () -> assembler.newBatchObject( batchSize ) );
+        RECORD[] batch = control.reuse(() -> assembler.newBatchObject(batchSize));
         int i = 0;
         // Just use the first record in the batch here to satisfy the record cursor.
-        // The truth is that we'll be using the read method which accepts an external record anyway so it doesn't matter.
-        try ( PageCursor cursor = store.openPageCursorForReading( id, cursorContext ) )
-        {
+        // The truth is that we'll be using the read method which accepts an external record anyway so it doesn't
+        // matter.
+        try (PageCursor cursor = store.openPageCursorForReading(id, cursorContext)) {
             boolean hasNext = true;
-            while ( hasNext )
-            {
-                if ( assembler.append( store, cursor, batch, id, i ) )
-                {
+            while (hasNext) {
+                if (assembler.append(store, cursor, batch, id, i)) {
                     i++;
                 }
-                if ( hasNext = idRange.hasNext() )
-                {
+                if (hasNext = idRange.hasNext()) {
                     id = idRange.next();
                 }
             }
         }
 
-        sender.send( assembler.cutOffAt( batch, i ) );
+        sender.send(assembler.cutOffAt(batch, i));
     }
 }

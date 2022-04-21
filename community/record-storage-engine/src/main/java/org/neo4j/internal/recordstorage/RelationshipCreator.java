@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.Record.isNull;
+
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -29,58 +32,53 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications.RelationshipBatch;
 
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.kernel.impl.store.record.Record.isNull;
-
 /**
  * A utility class to handle all record changes necessary for creating relationships
  * It is assumed that all required locks are taken before the use of this class
  */
-public class RelationshipCreator
-{
+public class RelationshipCreator {
     private final int denseNodeThreshold;
     private final long externalDegreesThreshold;
     private final CursorContext cursorContext;
 
-    public RelationshipCreator( int denseNodeThreshold, long externalDegreesThreshold, CursorContext cursorContext )
-    {
+    public RelationshipCreator(int denseNodeThreshold, long externalDegreesThreshold, CursorContext cursorContext) {
         this.denseNodeThreshold = denseNodeThreshold;
         this.externalDegreesThreshold = externalDegreesThreshold;
         this.cursorContext = cursorContext;
     }
 
-    public interface NodeDataLookup extends RelationshipGroupGetter.GroupLookup
-    {
+    public interface NodeDataLookup extends RelationshipGroupGetter.GroupLookup {
         int DIR_OUT = 0;
         int DIR_IN = 1;
         int DIR_LOOP = 2;
 
-        RecordProxy<RelationshipRecord,Void> insertionPoint( long nodeId, int type, int direction );
+        RecordProxy<RelationshipRecord, Void> insertionPoint(long nodeId, int type, int direction);
 
-        RecordProxy<RelationshipGroupRecord,Integer> group( long nodeId, int type, boolean create );
+        RecordProxy<RelationshipGroupRecord, Integer> group(long nodeId, int type, boolean create);
     }
 
-    public static class InsertFirst extends RelationshipGroupGetter.DirectGroupLookup implements NodeDataLookup
-    {
+    public static class InsertFirst extends RelationshipGroupGetter.DirectGroupLookup implements NodeDataLookup {
         private final RelationshipGroupGetter relationshipGroupGetter;
 
-        public InsertFirst( RelationshipGroupGetter relationshipGroupGetter, RecordAccessSet recordChanges, CursorContext cursorContext )
-        {
-            super( recordChanges, cursorContext );
+        public InsertFirst(
+                RelationshipGroupGetter relationshipGroupGetter,
+                RecordAccessSet recordChanges,
+                CursorContext cursorContext) {
+            super(recordChanges, cursorContext);
             this.relationshipGroupGetter = relationshipGroupGetter;
         }
 
         @Override
-        public RecordProxy<RelationshipRecord,Void> insertionPoint( long nodeId, int type, int direction )
-        {
+        public RecordProxy<RelationshipRecord, Void> insertionPoint(long nodeId, int type, int direction) {
             return null;
         }
 
         @Override
-        public RecordProxy<RelationshipGroupRecord,Integer> group( long nodeId, int type, boolean create )
-        {
-            RecordProxy<NodeRecord,Void> nodeChange = recordChanges.getNodeRecords().getOrLoad( nodeId, null );
-            return relationshipGroupGetter.getOrCreateRelationshipGroup( nodeChange, type, recordChanges.getRelGroupRecords() );
+        public RecordProxy<RelationshipGroupRecord, Integer> group(long nodeId, int type, boolean create) {
+            RecordProxy<NodeRecord, Void> nodeChange =
+                    recordChanges.getNodeRecords().getOrLoad(nodeId, null);
+            return relationshipGroupGetter.getOrCreateRelationshipGroup(
+                    nodeChange, type, recordChanges.getRelGroupRecords());
         }
     }
 
@@ -91,11 +89,13 @@ public class RelationshipCreator
      * @param groupDegreesUpdater updater of external group degrees for dense nodes.
      * @param nodeDataLookup for looking up where to insert relationships.
      */
-    public void relationshipCreate( RelationshipBatch creations, RecordAccessSet recordChanges, RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
-            NodeDataLookup nodeDataLookup )
-    {
-        creations.forEach( ( id, type, firstNodeId, secondNodeId, addedProperties ) ->
-                relationshipCreate( id, type, firstNodeId, secondNodeId, recordChanges, groupDegreesUpdater, nodeDataLookup ) );
+    public void relationshipCreate(
+            RelationshipBatch creations,
+            RecordAccessSet recordChanges,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            NodeDataLookup nodeDataLookup) {
+        creations.forEach((id, type, firstNodeId, secondNodeId, addedProperties) -> relationshipCreate(
+                id, type, firstNodeId, secondNodeId, recordChanges, groupDegreesUpdater, nodeDataLookup));
     }
 
     /**
@@ -107,50 +107,59 @@ public class RelationshipCreator
      * @param firstNodeId The id of the start node.
      * @param secondNodeId The id of the end node.
      */
-    public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId, RecordAccessSet recordChanges,
-            RelationshipGroupDegreesStore.Updater groupDegreesUpdater, NodeDataLookup nodeDataLookup )
-    {
-        RecordProxy<NodeRecord,Void> firstNode = recordChanges.getNodeRecords().getOrLoad( firstNodeId, null );
-        RecordProxy<NodeRecord,Void> secondNode =
-                firstNodeId == secondNodeId ? firstNode : recordChanges.getNodeRecords().getOrLoad( secondNodeId, null );
-        RecordAccess<RelationshipRecord,Void> relRecords = recordChanges.getRelRecords();
-        convertNodeToDenseIfNecessary( firstNode, relRecords, groupDegreesUpdater, nodeDataLookup );
-        convertNodeToDenseIfNecessary( secondNode, relRecords, groupDegreesUpdater, nodeDataLookup );
-        RelationshipRecord record = relRecords.create( id, null, cursorContext ).forChangingLinkage();
-        record.setLinks( firstNodeId, secondNodeId, type );
-        record.setInUse( true );
+    public void relationshipCreate(
+            long id,
+            int type,
+            long firstNodeId,
+            long secondNodeId,
+            RecordAccessSet recordChanges,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            NodeDataLookup nodeDataLookup) {
+        RecordProxy<NodeRecord, Void> firstNode = recordChanges.getNodeRecords().getOrLoad(firstNodeId, null);
+        RecordProxy<NodeRecord, Void> secondNode = firstNodeId == secondNodeId
+                ? firstNode
+                : recordChanges.getNodeRecords().getOrLoad(secondNodeId, null);
+        RecordAccess<RelationshipRecord, Void> relRecords = recordChanges.getRelRecords();
+        convertNodeToDenseIfNecessary(firstNode, relRecords, groupDegreesUpdater, nodeDataLookup);
+        convertNodeToDenseIfNecessary(secondNode, relRecords, groupDegreesUpdater, nodeDataLookup);
+        RelationshipRecord record = relRecords.create(id, null, cursorContext).forChangingLinkage();
+        record.setLinks(firstNodeId, secondNodeId, type);
+        record.setInUse(true);
         record.setCreated();
-        connectRelationship( firstNode, secondNode, record, relRecords, groupDegreesUpdater, nodeDataLookup );
+        connectRelationship(firstNode, secondNode, record, relRecords, groupDegreesUpdater, nodeDataLookup);
     }
 
-    static int relCount( long nodeId, RelationshipRecord rel )
-    {
-        //Degrees are stored in the backward pointer of the first in chain!
-        return (int) rel.getPrevRel( nodeId );
+    static int relCount(long nodeId, RelationshipRecord rel) {
+        // Degrees are stored in the backward pointer of the first in chain!
+        return (int) rel.getPrevRel(nodeId);
     }
 
-    private void convertNodeToDenseIfNecessary( RecordProxy<NodeRecord,Void> nodeChange, RecordAccess<RelationshipRecord,Void> relRecords,
-            RelationshipGroupDegreesStore.Updater groupDegreesUpdater, NodeDataLookup nodeDataLookup )
-    {
+    private void convertNodeToDenseIfNecessary(
+            RecordProxy<NodeRecord, Void> nodeChange,
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            NodeDataLookup nodeDataLookup) {
         NodeRecord node = nodeChange.forReadingLinkage();
-        if ( node.isDense() )
-        {
+        if (node.isDense()) {
             return;
         }
         long relId = node.getNextRel();
-        if ( !isNull( relId ) )
-        {
-            RecordProxy<RelationshipRecord, Void> relProxy = relRecords.getOrLoad( relId, null );
-            if ( relCount( node.getId(), relProxy.forReadingData() ) >= denseNodeThreshold )
-            {
-                convertNodeToDenseNode( nodeChange, relProxy.forChangingLinkage(), relRecords, groupDegreesUpdater, nodeDataLookup );
+        if (!isNull(relId)) {
+            RecordProxy<RelationshipRecord, Void> relProxy = relRecords.getOrLoad(relId, null);
+            if (relCount(node.getId(), relProxy.forReadingData()) >= denseNodeThreshold) {
+                convertNodeToDenseNode(
+                        nodeChange, relProxy.forChangingLinkage(), relRecords, groupDegreesUpdater, nodeDataLookup);
             }
         }
     }
 
-    private void connectRelationship( RecordProxy<NodeRecord,Void> firstNodeChange, RecordProxy<NodeRecord,Void> secondNodeChange, RelationshipRecord rel,
-            RecordAccess<RelationshipRecord,Void> relRecords, RelationshipGroupDegreesStore.Updater groupDegreesUpdater, NodeDataLookup nodeDataLookup )
-    {
+    private void connectRelationship(
+            RecordProxy<NodeRecord, Void> firstNodeChange,
+            RecordProxy<NodeRecord, Void> secondNodeChange,
+            RelationshipRecord rel,
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            NodeDataLookup nodeDataLookup) {
         // Assertion interpreted: if node is a normal node and we're trying to create a
         // relationship that we already have as first rel for that node --> error
         NodeRecord firstNode = firstNodeChange.forReadingLinkage();
@@ -158,85 +167,93 @@ public class RelationshipCreator
         assert firstNode.getNextRel() != rel.getId() || firstNode.isDense();
         assert secondNode.getNextRel() != rel.getId() || secondNode.isDense();
 
-        if ( !firstNode.isDense() )
-        {
-            rel.setFirstNextRel( firstNode.getNextRel() );
+        if (!firstNode.isDense()) {
+            rel.setFirstNextRel(firstNode.getNextRel());
         }
-        if ( !secondNode.isDense() )
-        {
-            rel.setSecondNextRel( secondNode.getNextRel() );
+        if (!secondNode.isDense()) {
+            rel.setSecondNextRel(secondNode.getNextRel());
         }
 
         boolean loop = firstNode.getId() == secondNode.getId();
-        if ( !firstNode.isDense() )
-        {
-            connectSparse( firstNode.getId(), firstNode.getNextRel(), rel, relRecords );
-        }
-        else
-        {
+        if (!firstNode.isDense()) {
+            connectSparse(firstNode.getId(), firstNode.getNextRel(), rel, relRecords);
+        } else {
             int index = loop ? NodeDataLookup.DIR_LOOP : NodeDataLookup.DIR_OUT;
-            connectRelationshipToDenseNode( firstNodeChange, rel, relRecords, groupDegreesUpdater,
-                    nodeDataLookup.insertionPoint( firstNode.getId(), rel.getType(), index ), nodeDataLookup );
+            connectRelationshipToDenseNode(
+                    firstNodeChange,
+                    rel,
+                    relRecords,
+                    groupDegreesUpdater,
+                    nodeDataLookup.insertionPoint(firstNode.getId(), rel.getType(), index),
+                    nodeDataLookup);
         }
 
-        if ( !secondNode.isDense() )
-        {
-            if ( !loop )
-            {
-                connectSparse( secondNode.getId(), secondNode.getNextRel(), rel, relRecords );
+        if (!secondNode.isDense()) {
+            if (!loop) {
+                connectSparse(secondNode.getId(), secondNode.getNextRel(), rel, relRecords);
+            } else {
+                rel.setFirstInFirstChain(true);
+                rel.setSecondPrevRel(rel.getFirstPrevRel());
             }
-            else
-            {
-                rel.setFirstInFirstChain( true );
-                rel.setSecondPrevRel( rel.getFirstPrevRel() );
-            }
-        }
-        else if ( !loop )
-        {
-            connectRelationshipToDenseNode( secondNodeChange, rel, relRecords, groupDegreesUpdater,
-                    nodeDataLookup.insertionPoint( secondNode.getId(), rel.getType(), NodeDataLookup.DIR_IN ), nodeDataLookup );
+        } else if (!loop) {
+            connectRelationshipToDenseNode(
+                    secondNodeChange,
+                    rel,
+                    relRecords,
+                    groupDegreesUpdater,
+                    nodeDataLookup.insertionPoint(secondNode.getId(), rel.getType(), NodeDataLookup.DIR_IN),
+                    nodeDataLookup);
         }
 
-        if ( !firstNode.isDense() )
-        {
+        if (!firstNode.isDense()) {
             firstNodeChange.forChangingLinkage();
-            firstNode.setNextRel( rel.getId() );
+            firstNode.setNextRel(rel.getId());
         }
-        if ( !secondNode.isDense() )
-        {
+        if (!secondNode.isDense()) {
             secondNodeChange.forChangingLinkage();
-            secondNode.setNextRel( rel.getId() );
+            secondNode.setNextRel(rel.getId());
         }
     }
 
-    private void connectRelationshipToDenseNode( RecordProxy<NodeRecord,Void> nodeChange, RelationshipRecord createdRelationship,
-            RecordAccess<RelationshipRecord,Void> relRecords, RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
-            RecordProxy<RelationshipRecord,Void> insertionPoint, NodeDataLookup nodeDataLookup )
-    {
+    private void connectRelationshipToDenseNode(
+            RecordProxy<NodeRecord, Void> nodeChange,
+            RelationshipRecord createdRelationship,
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            RecordProxy<RelationshipRecord, Void> insertionPoint,
+            NodeDataLookup nodeDataLookup) {
         NodeRecord node = nodeChange.forReadingLinkage();
-        DirectionWrapper dir = DirectionWrapper.wrapDirection( createdRelationship, node );
-        connectDense( node, nodeDataLookup.group( nodeChange.getKey(), createdRelationship.getType(), true ), dir, createdRelationship, relRecords,
-                groupDegreesUpdater, insertionPoint );
+        DirectionWrapper dir = DirectionWrapper.wrapDirection(createdRelationship, node);
+        connectDense(
+                node,
+                nodeDataLookup.group(nodeChange.getKey(), createdRelationship.getType(), true),
+                dir,
+                createdRelationship,
+                relRecords,
+                groupDegreesUpdater,
+                insertionPoint);
     }
 
-    private void convertNodeToDenseNode( RecordProxy<NodeRecord,Void> nodeChange, RelationshipRecord firstRel, RecordAccess<RelationshipRecord,Void> relRecords,
-            RelationshipGroupDegreesStore.Updater groupDegreesUpdater, NodeDataLookup nodeDataLookup )
-    {
+    private void convertNodeToDenseNode(
+            RecordProxy<NodeRecord, Void> nodeChange,
+            RelationshipRecord firstRel,
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            NodeDataLookup nodeDataLookup) {
         NodeRecord node = nodeChange.forChangingLinkage();
-        node.setDense( true );
-        node.setNextRel( NO_NEXT_RELATIONSHIP.intValue() );
+        node.setDense(true);
+        node.setNextRel(NO_NEXT_RELATIONSHIP.intValue());
         long relId = firstRel.getId();
         RelationshipRecord relRecord = firstRel;
-        while ( !isNull( relId ) )
-        {
+        while (!isNull(relId)) {
             // Get the next relationship id before connecting it (where linkage is overwritten)
-            relId = relRecord.getNextRel( node.getId() );
-            relRecord.setPrevRel( NO_NEXT_RELATIONSHIP.longValue(), node.getId() );
-            relRecord.setNextRel( NO_NEXT_RELATIONSHIP.longValue(), node.getId() );
-            connectRelationshipToDenseNode( nodeChange, relRecord, relRecords, groupDegreesUpdater, null, nodeDataLookup );
-            if ( !isNull( relId ) )
-            {   // Lock and load the next relationship in the chain
-                relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
+            relId = relRecord.getNextRel(node.getId());
+            relRecord.setPrevRel(NO_NEXT_RELATIONSHIP.longValue(), node.getId());
+            relRecord.setNextRel(NO_NEXT_RELATIONSHIP.longValue(), node.getId());
+            connectRelationshipToDenseNode(
+                    nodeChange, relRecord, relRecords, groupDegreesUpdater, null, nodeDataLookup);
+            if (!isNull(relId)) { // Lock and load the next relationship in the chain
+                relRecord = relRecords.getOrLoad(relId, null).forChangingLinkage();
             }
         }
     }
@@ -254,144 +271,132 @@ public class RelationshipCreator
      *
      * Degree of the modified chain is also incremented.
      */
-    private void connectDense( NodeRecord node, RecordProxy<RelationshipGroupRecord,Integer> groupProxy, DirectionWrapper direction,
-            RelationshipRecord createdRelationship, RecordAccess<RelationshipRecord,Void> relRecords, RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
-            RecordProxy<RelationshipRecord,Void> insertionPoint )
-    {
+    private void connectDense(
+            NodeRecord node,
+            RecordProxy<RelationshipGroupRecord, Integer> groupProxy,
+            DirectionWrapper direction,
+            RelationshipRecord createdRelationship,
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            RecordProxy<RelationshipRecord, Void> insertionPoint) {
         long nodeId = node.getId();
         RelationshipGroupRecord group = groupProxy.forReadingLinkage();
-        long firstRelId = direction.getNextRel( group );
-        RecordProxy<RelationshipRecord,Void> relationshipBefore = null;
-        RecordProxy<RelationshipRecord,Void> relationshipAfter = null;
+        long firstRelId = direction.getNextRel(group);
+        RecordProxy<RelationshipRecord, Void> relationshipBefore = null;
+        RecordProxy<RelationshipRecord, Void> relationshipAfter = null;
         // We need a place to insert the relationship. We have three cases
         // - First in chain (between group and potentially the previously first relationship)
         // - Between two relationships somewhere in the chain
         // - After the last in the chain
 
-        if ( insertionPoint != null )
-        {
-            //If we provided an insertion point we use that, otherwise we insert first
+        if (insertionPoint != null) {
+            // If we provided an insertion point we use that, otherwise we insert first
             relationshipBefore = insertionPoint;
-            long next = insertionPoint.forReadingLinkage().getNextRel( nodeId );
-            if ( !isNull( next ) )
-            {
-                relationshipAfter = relRecords.getOrLoad( next, null );
+            long next = insertionPoint.forReadingLinkage().getNextRel(nodeId);
+            if (!isNull(next)) {
+                relationshipAfter = relRecords.getOrLoad(next, null);
             }
         }
 
         // Here everything is known and locked, do the insertion
-        if ( relationshipBefore == null )
-        {
-            // first, i.e. there's no relationship at all for this type and direction or we failed to get a lock in the chain
-            if ( !isNull( firstRelId ) )
-            {
-                RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
-                if ( !firstRel.isFirstInChain( nodeId ) )
-                {
-                    throw new IllegalStateException( "Expected " + firstRel + " to be first in chain for " + nodeId );
+        if (relationshipBefore == null) {
+            // first, i.e. there's no relationship at all for this type and direction or we failed to get a lock in the
+            // chain
+            if (!isNull(firstRelId)) {
+                RelationshipRecord firstRel =
+                        relRecords.getOrLoad(firstRelId, null).forChangingLinkage();
+                if (!firstRel.isFirstInChain(nodeId)) {
+                    throw new IllegalStateException("Expected " + firstRel + " to be first in chain for " + nodeId);
                 }
-                firstRel.setFirstInChain( false, nodeId );
-                createdRelationship.setNextRel( firstRelId, nodeId );
-                createdRelationship.setPrevRel( firstRel.getPrevRel( nodeId ), nodeId );
-                firstRel.setPrevRel( createdRelationship.getId(), nodeId );
-            }
-            else
-            {
-                // This is the first and only relationship in this chain. Set degree to 0 since the degree is incremented below.
-                createdRelationship.setPrevRel( 0, nodeId );
+                firstRel.setFirstInChain(false, nodeId);
+                createdRelationship.setNextRel(firstRelId, nodeId);
+                createdRelationship.setPrevRel(firstRel.getPrevRel(nodeId), nodeId);
+                firstRel.setPrevRel(createdRelationship.getId(), nodeId);
+            } else {
+                // This is the first and only relationship in this chain. Set degree to 0 since the degree is
+                // incremented below.
+                createdRelationship.setPrevRel(0, nodeId);
             }
 
             group = groupProxy.forChangingData();
-            direction.setNextRel( group, createdRelationship.getId() );
-            createdRelationship.setFirstInChain( true, nodeId );
+            direction.setNextRel(group, createdRelationship.getId());
+            createdRelationship.setFirstInChain(true, nodeId);
             firstRelId = createdRelationship.getId();
-        }
-        else if ( relationshipAfter != null )
-        {
+        } else if (relationshipAfter != null) {
             // between two relationships somewhere in the chain
-            createdRelationship.setFirstInChain( false, nodeId );
+            createdRelationship.setFirstInChain(false, nodeId);
             // Link before <-> created
             RelationshipRecord before = relationshipBefore.forChangingLinkage();
-            before.setNextRel( createdRelationship.getId(), nodeId );
-            createdRelationship.setPrevRel( before.getId(), nodeId );
+            before.setNextRel(createdRelationship.getId(), nodeId);
+            createdRelationship.setPrevRel(before.getId(), nodeId);
 
             // Link created <-> after
             RelationshipRecord after = relationshipAfter.forChangingLinkage();
-            createdRelationship.setNextRel( after.getId(), nodeId );
-            after.setPrevRel( createdRelationship.getId(), nodeId );
-        }
-        else
-        {
+            createdRelationship.setNextRel(after.getId(), nodeId);
+            after.setPrevRel(createdRelationship.getId(), nodeId);
+        } else {
             // last in the chain
-            createdRelationship.setFirstInChain( false, nodeId );
+            createdRelationship.setFirstInChain(false, nodeId);
             RelationshipRecord lastRelationship = relationshipBefore.forChangingLinkage();
-            lastRelationship.setNextRel( createdRelationship.getId(), nodeId );
-            createdRelationship.setPrevRel( lastRelationship.getId(), nodeId );
+            lastRelationship.setNextRel(createdRelationship.getId(), nodeId);
+            createdRelationship.setPrevRel(lastRelationship.getId(), nodeId);
         }
 
-        //With the chain connected we need to update the degrees
-        if ( direction.hasExternalDegrees( group ) ) //Optimistic reading is fine, as this is a one-way switch
+        // With the chain connected we need to update the degrees
+        if (direction.hasExternalDegrees(group)) // Optimistic reading is fine, as this is a one-way switch
         {
-            //we don't need any locks to update the external degrees as that is safe
-            groupDegreesUpdater.increment( group.getId(), direction.direction(), 1 );
-        }
-        else
-        {
-            RecordProxy<RelationshipRecord,Void> firstRelProxy = relRecords.getOrLoad( firstRelId, null );
-            long prevCount = firstRelProxy.forReadingLinkage().getPrevRel( nodeId );
+            // we don't need any locks to update the external degrees as that is safe
+            groupDegreesUpdater.increment(group.getId(), direction.direction(), 1);
+        } else {
+            RecordProxy<RelationshipRecord, Void> firstRelProxy = relRecords.getOrLoad(firstRelId, null);
+            long prevCount = firstRelProxy.forReadingLinkage().getPrevRel(nodeId);
             long count = prevCount + 1;
-            //If we can we switch to external degrees for better concurrency in future updates
-            if ( count > externalDegreesThreshold )
-            {
+            // If we can we switch to external degrees for better concurrency in future updates
+            if (count > externalDegreesThreshold) {
                 group = groupProxy.forChangingData();
-                direction.setHasExternalDegrees( group );
-                groupDegreesUpdater.increment( group.getId(), direction.direction(), count );
-            }
-            else
-            {
-                //Or update the degrees stored in the back-pointer of the first-in-chain
-                firstRelProxy.forChangingLinkage().setPrevRel( count, nodeId );
+                direction.setHasExternalDegrees(group);
+                groupDegreesUpdater.increment(group.getId(), direction.direction(), count);
+            } else {
+                // Or update the degrees stored in the back-pointer of the first-in-chain
+                firstRelProxy.forChangingLinkage().setPrevRel(count, nodeId);
             }
         }
     }
 
-    private void connectSparse( long nodeId, long firstRelId, RelationshipRecord createdRelationship, RecordAccess<RelationshipRecord,Void> relRecords )
-    {
+    private void connectSparse(
+            long nodeId,
+            long firstRelId,
+            RelationshipRecord createdRelationship,
+            RecordAccess<RelationshipRecord, Void> relRecords) {
         long newCount = 1;
-        if ( !isNull( firstRelId ) )
-        {
-            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
+        if (!isNull(firstRelId)) {
+            RelationshipRecord firstRel = relRecords.getOrLoad(firstRelId, null).forChangingLinkage();
             boolean changed = false;
-            if ( firstRel.getFirstNode() == nodeId )
-            {
+            if (firstRel.getFirstNode() == nodeId) {
                 newCount = firstRel.getFirstPrevRel() + 1;
-                firstRel.setFirstPrevRel( createdRelationship.getId() );
-                firstRel.setFirstInFirstChain( false );
+                firstRel.setFirstPrevRel(createdRelationship.getId());
+                firstRel.setFirstInFirstChain(false);
                 changed = true;
             }
-            if ( firstRel.getSecondNode() == nodeId )
-            {
+            if (firstRel.getSecondNode() == nodeId) {
                 newCount = firstRel.getSecondPrevRel() + 1;
-                firstRel.setSecondPrevRel( createdRelationship.getId() );
-                firstRel.setFirstInSecondChain( false );
+                firstRel.setSecondPrevRel(createdRelationship.getId());
+                firstRel.setFirstInSecondChain(false);
                 changed = true;
             }
-            if ( !changed )
-            {
-                throw new InvalidRecordException( nodeId + " doesn't match " + firstRel );
+            if (!changed) {
+                throw new InvalidRecordException(nodeId + " doesn't match " + firstRel);
             }
         }
 
         // Set the relationship count
-        if ( createdRelationship.getFirstNode() == nodeId )
-        {
-            createdRelationship.setFirstPrevRel( newCount );
-            createdRelationship.setFirstInFirstChain( true );
+        if (createdRelationship.getFirstNode() == nodeId) {
+            createdRelationship.setFirstPrevRel(newCount);
+            createdRelationship.setFirstInFirstChain(true);
         }
-        if ( createdRelationship.getSecondNode() == nodeId )
-        {
-            createdRelationship.setSecondPrevRel( newCount );
-            createdRelationship.setFirstInSecondChain( true );
+        if (createdRelationship.getSecondNode() == nodeId) {
+            createdRelationship.setSecondPrevRel(newCount);
+            createdRelationship.setFirstInSecondChain(true);
         }
     }
 }

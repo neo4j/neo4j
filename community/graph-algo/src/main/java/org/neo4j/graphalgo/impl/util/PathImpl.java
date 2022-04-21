@@ -19,10 +19,11 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -34,23 +35,17 @@ import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.Measurable;
 
-import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
+public final class PathImpl implements Path, Measurable {
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(PathImpl.class);
 
-public final class PathImpl implements Path, Measurable
-{
-    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( PathImpl.class );
-
-    public static final class Builder
-    {
+    public static final class Builder {
         private final Builder previous;
         private final Node start;
         private final Relationship relationship;
         private final int size;
 
-        public Builder( Node start )
-        {
-            if ( start == null )
-            {
+        public Builder(Node start) {
+            if (start == null) {
                 throw new NullPointerException();
             }
             this.start = start;
@@ -59,70 +54,55 @@ public final class PathImpl implements Path, Measurable
             this.size = 0;
         }
 
-        private Builder( Builder prev, Relationship rel )
-        {
+        private Builder(Builder prev, Relationship rel) {
             this.start = prev.start;
             this.previous = prev;
             this.relationship = rel;
             this.size = prev.size + 1;
         }
 
-        public Node getStartNode()
-        {
+        public Node getStartNode() {
             return start;
         }
 
-        public Path build()
-        {
-            return new PathImpl( this, null );
+        public Path build() {
+            return new PathImpl(this, null);
         }
 
-        public Builder push( Relationship relationship )
-        {
-            if ( relationship == null )
-            {
+        public Builder push(Relationship relationship) {
+            if (relationship == null) {
                 throw new NullPointerException();
             }
-            return new Builder( this, relationship );
+            return new Builder(this, relationship);
         }
 
-        public PathImpl build( Builder other )
-        {
-            return new PathImpl( this, other );
+        public PathImpl build(Builder other) {
+            return new PathImpl(this, other);
         }
 
         @Override
-        public String toString()
-        {
-            if ( previous == null )
-            {
+        public String toString() {
+            if (previous == null) {
                 return start.toString();
-            }
-            else
-            {
-                return relToString( relationship ) + ":" + previous;
+            } else {
+                return relToString(relationship) + ":" + previous;
             }
         }
     }
 
-    private static String relToString( Relationship rel )
-    {
-        return rel.getStartNode() + "--" + rel.getType() + "-->"
-               + rel.getEndNode();
+    private static String relToString(Relationship rel) {
+        return rel.getStartNode() + "--" + rel.getType() + "-->" + rel.getEndNode();
     }
 
     private final Node start;
     private final Relationship[] path;
     private final Node end;
 
-    private PathImpl( Builder left, Builder right )
-    {
+    private PathImpl(Builder left, Builder right) {
         Node endNode = null;
-        path = new Relationship[left.size + ( right == null ? 0 : right.size )];
-        if ( right != null )
-        {
-            for ( int i = left.size, total = i + right.size; i < total; i++ )
-            {
+        path = new Relationship[left.size + (right == null ? 0 : right.size)];
+        if (right != null) {
+            for (int i = left.size, total = i + right.size; i < total; i++) {
                 path[i] = right.relationship;
                 right = right.previous;
             }
@@ -130,8 +110,7 @@ public final class PathImpl implements Path, Measurable
             endNode = right.start;
         }
 
-        for ( int i = left.size - 1; i >= 0; i-- )
-        {
+        for (int i = left.size - 1; i >= 0; i--) {
             path[i] = left.relationship;
             left = left.previous;
         }
@@ -140,137 +119,110 @@ public final class PathImpl implements Path, Measurable
         end = endNode;
     }
 
-    public static Path singular( Node start )
-    {
-        return new Builder( start ).build();
+    public static Path singular(Node start) {
+        return new Builder(start).build();
     }
 
     @Override
-    public Node startNode()
-    {
+    public Node startNode() {
         return start;
     }
 
     @Override
-    public Node endNode()
-    {
-        if ( end != null )
-        {
+    public Node endNode() {
+        if (end != null) {
             return end;
         }
 
         // TODO We could really figure this out in the constructor
         Node stepNode = null;
-        for ( Node node : nodes() )
-        {
+        for (Node node : nodes()) {
             stepNode = node;
         }
         return stepNode;
     }
 
     @Override
-    public Relationship lastRelationship()
-    {
+    public Relationship lastRelationship() {
         return path != null && path.length > 0 ? path[path.length - 1] : null;
     }
 
     @Override
-    public Iterable<Node> nodes()
-    {
-        return nodeIterator( start, relationships() );
+    public Iterable<Node> nodes() {
+        return nodeIterator(start, relationships());
     }
 
     @Override
-    public Iterable<Node> reverseNodes()
-    {
-        return nodeIterator( endNode(), reverseRelationships() );
+    public Iterable<Node> reverseNodes() {
+        return nodeIterator(endNode(), reverseRelationships());
     }
 
-    private Iterable<Node> nodeIterator( final Node start, final Iterable<Relationship> relationships )
-    {
-        return () -> new Iterator<>()
-        {
+    private Iterable<Node> nodeIterator(final Node start, final Iterable<Relationship> relationships) {
+        return () -> new Iterator<>() {
             Node current = start;
             int index;
             Iterator<Relationship> relationshipIterator = relationships.iterator();
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return index <= path.length;
             }
 
             @Override
-            public Node next()
-            {
-                if ( current == null )
-                {
+            public Node next() {
+                if (current == null) {
                     throw new NoSuchElementException();
                 }
                 Node next = null;
-                if ( index < path.length )
-                {
-                    if ( !relationshipIterator.hasNext() )
-                    {
-                        throw new IllegalStateException(
-                                String.format( "Number of relationships: %d does not" + " match with path length: %d.", index, path.length ) );
+                if (index < path.length) {
+                    if (!relationshipIterator.hasNext()) {
+                        throw new IllegalStateException(String.format(
+                                "Number of relationships: %d does not" + " match with path length: %d.",
+                                index, path.length));
                     }
-                    next = relationshipIterator.next().getOtherNode( current );
+                    next = relationshipIterator.next().getOtherNode(current);
                 }
                 index += 1;
-                try
-                {
+                try {
                     return current;
-                }
-                finally
-                {
+                } finally {
                     current = next;
                 }
             }
 
             @Override
-            public void remove()
-            {
+            public void remove() {
                 throw new UnsupportedOperationException();
             }
         };
     }
 
     @Override
-    public Iterable<Relationship> relationships()
-    {
-        return () -> new ArrayIterator<>( path );
+    public Iterable<Relationship> relationships() {
+        return () -> new ArrayIterator<>(path);
     }
 
     @Override
-    public Iterable<Relationship> reverseRelationships()
-    {
-        return () -> new ReverseArrayIterator<>( path );
+    public Iterable<Relationship> reverseRelationships() {
+        return () -> new ReverseArrayIterator<>(path);
     }
 
     @Override
-    public Iterator<Entity> iterator()
-    {
-        return new Iterator<>()
-        {
+    public Iterator<Entity> iterator() {
+        return new Iterator<>() {
             Iterator<? extends Entity> current = nodes().iterator();
             Iterator<? extends Entity> next = relationships().iterator();
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return current.hasNext();
             }
 
             @Override
-            public Entity next()
-            {
-                try
-                {
+            public Entity next() {
+                try {
                     return current.next();
-                }
-                finally
-                {
+                } finally {
                     Iterator<? extends Entity> temp = current;
                     current = next;
                     next = temp;
@@ -278,54 +230,43 @@ public final class PathImpl implements Path, Measurable
             }
 
             @Override
-            public void remove()
-            {
+            public void remove() {
                 next.remove();
             }
         };
     }
 
     @Override
-    public int length()
-    {
+    public int length() {
         return path.length;
     }
 
     @Override
-    public int hashCode()
-    {
-        if ( path.length == 0 )
-        {
+    public int hashCode() {
+        if (path.length == 0) {
             return start.hashCode();
-        }
-        else
-        {
-            return Arrays.hashCode( path );
+        } else {
+            return Arrays.hashCode(path);
         }
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
-        }
-        else if ( obj instanceof Path other )
-        {
-            return start.equals( other.startNode() ) &&
-                    iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
-        }
-        else
-        {
+        } else if (obj instanceof Path other) {
+            return start.equals(other.startNode())
+                    && iteratorsEqual(
+                            this.relationships().iterator(),
+                            other.relationships().iterator());
+        } else {
             return false;
         }
     }
 
     @Override
-    public long estimatedHeapUsage()
-    {
-        long estimate =  SHALLOW_SIZE + HeapEstimator.shallowSizeOfObjectArray( path.length );
+    public long estimatedHeapUsage() {
+        long estimate = SHALLOW_SIZE + HeapEstimator.shallowSizeOfObjectArray(path.length);
         int pathLength = path.length;
         estimate += pathLength * RelationshipEntity.SHALLOW_SIZE;
 
@@ -333,8 +274,7 @@ public final class PathImpl implements Path, Measurable
     }
 
     @Override
-    public String toString()
-    {
-        return Paths.defaultPathToString( this );
+    public String toString() {
+        return Paths.defaultPathToString(this);
     }
 }

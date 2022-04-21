@@ -25,39 +25,33 @@ import java.io.Reader;
 /**
  * Wraps a {@link Reader} into a {@link CharReadable}.
  */
-class WrappedCharReadable extends CharReadable.Adapter
-{
+class WrappedCharReadable extends CharReadable.Adapter {
     private final long length;
     private final Reader reader;
     private long position;
     private final String sourceDescription;
 
-    WrappedCharReadable( long length, Reader reader, String sourceDescription )
-    {
+    WrappedCharReadable(long length, Reader reader, String sourceDescription) {
         this.length = length;
         this.reader = reader;
         this.sourceDescription = sourceDescription;
     }
 
     @Override
-    public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
-    {
-        buffer.compact( buffer, from );
-        buffer.readFrom( reader );
+    public SectionedCharBuffer read(SectionedCharBuffer buffer, int from) throws IOException {
+        buffer.compact(buffer, from);
+        buffer.readFrom(reader);
         position += buffer.available();
         return buffer;
     }
 
     @Override
-    public int read( char[] into, int offset, int length ) throws IOException
-    {
+    public int read(char[] into, int offset, int length) throws IOException {
         int totalRead = 0;
         boolean eof = false;
-        while ( totalRead < length )
-        {
-            int read = reader.read( into, offset + totalRead, length - totalRead );
-            if ( read == -1 )
-            {
+        while (totalRead < length) {
+            int read = reader.read(into, offset + totalRead, length - totalRead);
+            if (read == -1) {
                 eof = true;
                 break;
             }
@@ -68,32 +62,27 @@ class WrappedCharReadable extends CharReadable.Adapter
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         reader.close();
     }
 
     @Override
-    public long position()
-    {
+    public long position() {
         return position;
     }
 
     @Override
-    public String sourceDescription()
-    {
+    public String sourceDescription() {
         return sourceDescription;
     }
 
     @Override
-    public long length()
-    {
+    public long length() {
         return length;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return sourceDescription;
     }
 }

@@ -19,34 +19,37 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.factory.Sets;
-
-import java.io.IOException;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
-
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class RangeBlockBasedIndexPopulatorUpdatesTest extends GenericBlockBasedIndexPopulatorUpdatesTest<RangeKey>
-{
+import java.io.IOException;
+import org.eclipse.collections.api.factory.Sets;
+import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
+
+class RangeBlockBasedIndexPopulatorUpdatesTest extends GenericBlockBasedIndexPopulatorUpdatesTest<RangeKey> {
     @Override
-    IndexType indexType()
-    {
+    IndexType indexType() {
         return IndexType.RANGE;
     }
 
     @Override
-    RangeBlockBasedIndexPopulator instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException
-    {
+    RangeBlockBasedIndexPopulator instantiatePopulator(IndexDescriptor indexDescriptor) throws IOException {
         Config config = Config.defaults();
-        RangeLayout layout = new RangeLayout( 1 );
-        RangeBlockBasedIndexPopulator populator =
-                new RangeBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, indexDescriptor, false,
-                                                   heapBufferFactory( (int) kibiBytes( 40 ) ), config, INSTANCE, tokenNameLookup, Sets.immutable.empty() );
+        RangeLayout layout = new RangeLayout(1);
+        RangeBlockBasedIndexPopulator populator = new RangeBlockBasedIndexPopulator(
+                databaseIndexContext,
+                indexFiles,
+                layout,
+                indexDescriptor,
+                false,
+                heapBufferFactory((int) kibiBytes(40)),
+                config,
+                INSTANCE,
+                tokenNameLookup,
+                Sets.immutable.empty());
         populator.create();
         return populator;
     }

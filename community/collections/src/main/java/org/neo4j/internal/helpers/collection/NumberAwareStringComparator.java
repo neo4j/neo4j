@@ -36,37 +36,29 @@ import java.util.Iterator;
  * undesirable in scenarios where the number matters. This comparator will sort the strings from the
  * example above as {@code string-1}, {@code string-2}, {@code string-12}.
  */
-public final class NumberAwareStringComparator implements Comparator<String>
-{
+public final class NumberAwareStringComparator implements Comparator<String> {
     public static final Comparator<String> INSTANCE = new NumberAwareStringComparator();
 
-    private NumberAwareStringComparator()
-    {
-    }
+    private NumberAwareStringComparator() {}
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Override
-    public int compare( String o1, String o2 )
-    {
-        Iterator<Comparable> c1 = comparables( o1 );
-        Iterator<Comparable> c2 = comparables( o2 );
+    public int compare(String o1, String o2) {
+        Iterator<Comparable> c1 = comparables(o1);
+        Iterator<Comparable> c2 = comparables(o2);
 
         boolean c1Has = c1.hasNext();
         boolean c2Has = c2.hasNext();
-        while ( c1Has || c2Has )
-        {
-            if ( !c1Has )
-            {
+        while (c1Has || c2Has) {
+            if (!c1Has) {
                 return -1;
             }
-            if ( !c2Has )
-            {
+            if (!c2Has) {
                 return 1;
             }
 
-            int diff = c1.next().compareTo( c2.next() );
-            if ( diff != 0 )
-            {
+            int diff = c1.next().compareTo(c2.next());
+            if (diff != 0) {
                 return diff;
             }
             c1Has = c1.hasNext();
@@ -77,29 +69,24 @@ public final class NumberAwareStringComparator implements Comparator<String>
         return 0;
     }
 
-    private static Iterator<Comparable> comparables( final String string )
-    {
-        return new PrefetchingIterator<>()
-        {
+    private static Iterator<Comparable> comparables(final String string) {
+        return new PrefetchingIterator<>() {
             private int index;
 
             @Override
-            protected Comparable fetchNextOrNull()
-            {
-                if ( index >= string.length() )
-                {   // End reached
+            protected Comparable fetchNextOrNull() {
+                if (index >= string.length()) { // End reached
                     return null;
                 }
 
                 int startIndex = index;
-                char ch = string.charAt( index );
-                boolean isNumber = Character.isDigit( ch );
-                while ( Character.isDigit( ch ) == isNumber && ++index < string.length() )
-                {
-                    ch = string.charAt( index );
+                char ch = string.charAt(index);
+                boolean isNumber = Character.isDigit(ch);
+                while (Character.isDigit(ch) == isNumber && ++index < string.length()) {
+                    ch = string.charAt(index);
                 }
-                String substring = string.substring( startIndex, index );
-                return isNumber ? new BigInteger( substring ) : substring;
+                String substring = string.substring(startIndex, index);
+                return isNumber ? new BigInteger(substring) : substring;
             }
         };
     }

@@ -27,70 +27,58 @@ import java.io.IOException;
  * chunk seamlessly transitions into the next, this class comes in handy. It uses a {@link CharReadable}
  * and {@link SectionedCharBuffer} to do this.
  */
-public class AutoReadingSource implements Source
-{
+public class AutoReadingSource implements Source {
     private final CharReadable reader;
     private SectionedCharBuffer charBuffer;
 
-    public AutoReadingSource( CharReadable reader, int bufferSize )
-    {
-        this( reader, new SectionedCharBuffer( bufferSize ) );
+    public AutoReadingSource(CharReadable reader, int bufferSize) {
+        this(reader, new SectionedCharBuffer(bufferSize));
     }
 
-    public AutoReadingSource( CharReadable reader, SectionedCharBuffer charBuffer )
-    {
+    public AutoReadingSource(CharReadable reader, SectionedCharBuffer charBuffer) {
         this.reader = reader;
         this.charBuffer = charBuffer;
     }
 
     @Override
-    public Chunk nextChunk( int seekStartPos ) throws IOException
-    {
-        charBuffer = reader.read( charBuffer, seekStartPos == -1 ? charBuffer.pivot() : seekStartPos );
+    public Chunk nextChunk(int seekStartPos) throws IOException {
+        charBuffer = reader.read(charBuffer, seekStartPos == -1 ? charBuffer.pivot() : seekStartPos);
 
-        return new Chunk()
-        {
+        return new Chunk() {
             @Override
-            public int startPosition()
-            {
+            public int startPosition() {
                 return charBuffer.pivot();
             }
 
             @Override
-            public String sourceDescription()
-            {
+            public String sourceDescription() {
                 return reader.sourceDescription();
             }
 
             @Override
-            public int backPosition()
-            {
+            public int backPosition() {
                 return charBuffer.back();
             }
 
             @Override
-            public int length()
-            {
+            public int length() {
                 return charBuffer.available();
             }
 
             @Override
-            public int maxFieldSize()
-            {
+            public int maxFieldSize() {
                 return charBuffer.pivot();
             }
 
             @Override
-            public char[] data()
-            {
+            public char[] data() {
                 return charBuffer.array();
             }
         };
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         reader.close();
     }
 }

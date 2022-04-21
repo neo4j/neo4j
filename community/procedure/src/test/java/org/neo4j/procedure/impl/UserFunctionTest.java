@@ -19,14 +19,28 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
+import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -50,476 +64,426 @@ import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
-import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
-
-@SuppressWarnings( {"WeakerAccess", "unused"} )
-public class UserFunctionTest
-{
+@SuppressWarnings({"WeakerAccess", "unused"})
+public class UserFunctionTest {
     private ProcedureCompiler procedureCompiler;
     private ComponentRegistry components;
     private final DependencyResolver dependencyResolver = new Dependencies();
-    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( InternalTransaction.class ) );
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
 
     @BeforeEach
-    void setUp()
-    {
+    void setUp() {
         components = new ComponentRegistry();
-        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, components,
-                NullLog.getInstance(), ProcedureConfig.DEFAULT );
+        procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(), components, components, NullLog.getInstance(), ProcedureConfig.DEFAULT);
     }
 
     @Test
-    void shouldInjectLogging() throws KernelException
-    {
+    void shouldInjectLogging() throws KernelException {
         // Given
-        InternalLog log = spy( InternalLog.class );
-        components.register( InternalLog.class, ctx -> log );
-        CallableUserFunction function = procedureCompiler.compileFunction( LoggingFunction.class, false ).get( 0 );
+        InternalLog log = spy(InternalLog.class);
+        components.register(InternalLog.class, ctx -> log);
+        CallableUserFunction function =
+                procedureCompiler.compileFunction(LoggingFunction.class, false).get(0);
 
         // When
-        function.apply( prepareContext(), new AnyValue[0] );
+        function.apply(prepareContext(), new AnyValue[0]);
 
         // Then
-        verify( log ).debug( "1" );
-        verify( log ).info( "2" );
-        verify( log ).warn( "3" );
-        verify( log ).error( "4" );
+        verify(log).debug("1");
+        verify(log).info("2");
+        verify(log).warn("3");
+        verify(log).error("4");
     }
 
     @Test
-    void shouldCompileFunction() throws Throwable
-    {
+    void shouldCompileFunction() throws Throwable {
         // When
-        List<CallableUserFunction> function = compile( SingleReadOnlyFunction.class );
+        List<CallableUserFunction> function = compile(SingleReadOnlyFunction.class);
 
         // Then
-        assertEquals( 1, function.size() );
-        assertThat( function.get( 0 ).signature() ).isEqualTo(
-                functionSignature( "org", "neo4j", "procedure", "impl", "listCoolPeople" ).out( Neo4jTypes.NTList( Neo4jTypes.NTAny ) ).build() );
+        assertEquals(1, function.size());
+        assertThat(function.get(0).signature())
+                .isEqualTo(functionSignature("org", "neo4j", "procedure", "impl", "listCoolPeople")
+                        .out(Neo4jTypes.NTList(Neo4jTypes.NTAny))
+                        .build());
     }
 
     @Test
-    void shouldRunSimpleReadOnlyFunction() throws Throwable
-    {
+    void shouldRunSimpleReadOnlyFunction() throws Throwable {
         // Given
-        CallableUserFunction func = compile( SingleReadOnlyFunction.class ).get( 0 );
+        CallableUserFunction func = compile(SingleReadOnlyFunction.class).get(0);
 
         // When
-        Object out = func.apply( prepareContext(), new AnyValue[0] );
+        Object out = func.apply(prepareContext(), new AnyValue[0]);
 
         // Then
-        assertThat( out ).isEqualTo( ValueUtils.of( Arrays.asList( "Bonnie", "Clyde" ) ) );
+        assertThat(out).isEqualTo(ValueUtils.of(Arrays.asList("Bonnie", "Clyde")));
     }
 
     @Test
-    void shouldIgnoreClassesWithNoFunctions() throws Throwable
-    {
+    void shouldIgnoreClassesWithNoFunctions() throws Throwable {
         // When
-        List<CallableUserFunction> functions = compile( PrivateConstructorButNoFunctions.class );
+        List<CallableUserFunction> functions = compile(PrivateConstructorButNoFunctions.class);
 
         // Then
-        assertEquals( 0, functions.size() );
+        assertEquals(0, functions.size());
     }
 
     @Test
-    void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
-    {
+    void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable {
         // Given
-        List<CallableUserFunction> compiled = compile( UserFunctionTest.MultiFunction.class );
-        CallableUserFunction bananaPeople = compiled.get( 0 );
-        CallableUserFunction coolPeople = compiled.get( 1 );
+        List<CallableUserFunction> compiled = compile(UserFunctionTest.MultiFunction.class);
+        CallableUserFunction bananaPeople = compiled.get(0);
+        CallableUserFunction coolPeople = compiled.get(1);
 
         // When
-        Object coolOut = coolPeople.apply( prepareContext(), new AnyValue[0] );
-        Object bananaOut = bananaPeople.apply( prepareContext(), new AnyValue[0] );
+        Object coolOut = coolPeople.apply(prepareContext(), new AnyValue[0]);
+        Object bananaOut = bananaPeople.apply(prepareContext(), new AnyValue[0]);
 
         // Then
-        assertThat( coolOut ).isEqualTo( ValueUtils.of( Arrays.asList( "Bonnie", "Clyde" ) ) );
+        assertThat(coolOut).isEqualTo(ValueUtils.of(Arrays.asList("Bonnie", "Clyde")));
 
-        assertThat( ((MapValue) bananaOut).get( "foo" ) ).isEqualTo( ValueUtils.of( Arrays.asList( "bar", "baz" ) ) );
+        assertThat(((MapValue) bananaOut).get("foo")).isEqualTo(ValueUtils.of(Arrays.asList("bar", "baz")));
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WeirdConstructorFunction.class ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "Unable to find a usable public no-argument constructor in the class `WeirdConstructorFunction`. Please add a " +
-                        "valid, public constructor, recompile the class and try again." );
+    void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(WeirdConstructorFunction.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Unable to find a usable public no-argument constructor in the class `WeirdConstructorFunction`. Please add a "
+                                + "valid, public constructor, recompile the class and try again.");
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnNoPublicConstructor()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( PrivateConstructorFunction.class ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "Unable to find a usable public no-argument constructor in the class `PrivateConstructorFunction`. Please add " +
-                        "a valid, public constructor, recompile the class and try again." );
+    void shouldGiveHelpfulErrorOnNoPublicConstructor() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(PrivateConstructorFunction.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Unable to find a usable public no-argument constructor in the class `PrivateConstructorFunction`. Please add "
+                                + "a valid, public constructor, recompile the class and try again.");
     }
 
     @Test
-    void shouldNotAllowVoidOutput()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithVoidOutput.class ) );
-        assertThat( exception.getMessage() ).startsWith( "Don't know how to map `void` to the Neo4j Type System." );
+    void shouldNotAllowVoidOutput() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithVoidOutput.class));
+        assertThat(exception.getMessage()).startsWith("Don't know how to map `void` to the Neo4j Type System.");
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnFunctionReturningInvalidType()
-    {
+    void shouldGiveHelpfulErrorOnFunctionReturningInvalidType() {
 
         // When
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( String.format(
-                "Don't know how to map `char[]` to the Neo4j Type System.%n" +
-                        "Please refer to to the documentation for full details.%n" +
-                        "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
-                        "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
-                        "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
-                        "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
-                        "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ) );
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithInvalidOutput.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(String.format("Don't know how to map `char[]` to the Neo4j Type System.%n"
+                        + "Please refer to to the documentation for full details.%n"
+                        + "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, "
+                        + "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, "
+                        + "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, "
+                        + "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, "
+                        + "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]"));
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnContextAnnotatedStaticField()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( String.format(
-                "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is annotated as a @Context field,%n" +
-                        "but it is static. @Context fields must be public, non-final and non-static,%n" +
-                        "because they are reset each time a procedure is invoked." ) );
+    void shouldGiveHelpfulErrorOnContextAnnotatedStaticField() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithStaticContextAnnotatedField.class));
+        assertThat(exception.getMessage())
+                .isEqualTo(String.format(
+                        "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is annotated as a @Context field,%n"
+                                + "but it is static. @Context fields must be public, non-final and non-static,%n"
+                                + "because they are reset each time a procedure is invoked."));
     }
 
     @Test
-    void shouldAllowOverridingProcedureName() throws Throwable
-    {
+    void shouldAllowOverridingProcedureName() throws Throwable {
         // When
-        CallableUserFunction proc = compile( FunctionWithOverriddenName.class ).get( 0 );
+        CallableUserFunction proc = compile(FunctionWithOverriddenName.class).get(0);
 
         // Then
-        assertEquals("org.mystuff.thisisActuallyTheName", proc.signature().name().toString() );
+        assertEquals(
+                "org.mystuff.thisisActuallyTheName", proc.signature().name().toString());
     }
 
     @Test
-    void shouldNotAllowOverridingFunctionNameWithoutNamespace()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithSingleName.class ) );
-        assertThat( exception.getMessage() ).isEqualTo( "It is not allowed to define functions in the root namespace please use a " +
-                "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" );
+    void shouldNotAllowOverridingFunctionNameWithoutNamespace() {
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> compile(FunctionWithSingleName.class));
+        assertThat(exception.getMessage())
+                .isEqualTo("It is not allowed to define functions in the root namespace please use a "
+                        + "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")");
     }
 
     @Test
-    void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
-    {
+    void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable {
         // Given
-        CallableUserFunction proc = compile( FunctionThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
+        CallableUserFunction proc =
+                compile(FunctionThatThrowsNullMsgExceptionAtInvocation.class).get(0);
 
         // When
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> proc.apply( prepareContext(), new AnyValue[0] ) );
-        assertThat( exception.getMessage() ).isEqualTo(
-                "Failed to invoke function `org.neo4j.procedure.impl.throwsAtInvocation`: Caused by: java.lang.IndexOutOfBoundsException" );
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> proc.apply(prepareContext(), new AnyValue[0]));
+        assertThat(exception.getMessage())
+                .isEqualTo(
+                        "Failed to invoke function `org.neo4j.procedure.impl.throwsAtInvocation`: Caused by: java.lang.IndexOutOfBoundsException");
     }
 
     @Test
-    void shouldLoadWhiteListedFunction() throws Throwable
-    {
+    void shouldLoadWhiteListedFunction() throws Throwable {
         // Given
-        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of(
-                "org.neo4j.procedure.impl.listCoolPeople" ) ) ) );
+        procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(),
+                components,
+                new ComponentRegistry(),
+                NullLog.getInstance(),
+                new ProcedureConfig(Config.defaults(
+                        GraphDatabaseSettings.procedure_allowlist,
+                        List.of("org.neo4j.procedure.impl.listCoolPeople"))));
 
-        CallableUserFunction method = compile( SingleReadOnlyFunction.class ).get( 0 );
+        CallableUserFunction method = compile(SingleReadOnlyFunction.class).get(0);
 
         // Expect
-        Object out = method.apply( prepareContext(), new AnyValue[0] );
-        assertThat( out ).isEqualTo( ValueUtils.of( Arrays.asList( "Bonnie", "Clyde" ) ) );
+        Object out = method.apply(prepareContext(), new AnyValue[0]);
+        assertThat(out).isEqualTo(ValueUtils.of(Arrays.asList("Bonnie", "Clyde")));
     }
 
     @Test
-    void shouldNotLoadNoneWhiteListedFunction() throws Throwable
-    {
+    void shouldNotLoadNoneWhiteListedFunction() throws Throwable {
         // Given
-        InternalLog log = spy( InternalLog.class);
-        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "WrongName" ) ) ) );
+        InternalLog log = spy(InternalLog.class);
+        procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(),
+                components,
+                new ComponentRegistry(),
+                log,
+                new ProcedureConfig(Config.defaults(GraphDatabaseSettings.procedure_allowlist, List.of("WrongName"))));
 
-        List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
-        verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the allowlist and won't be loaded." );
-        assertThat( method.size() ).isEqualTo( 0 );
+        List<CallableUserFunction> method = compile(SingleReadOnlyFunction.class);
+        verify(log)
+                .warn(
+                        "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the allowlist and won't be loaded.");
+        assertThat(method.size()).isEqualTo(0);
     }
 
     @Test
-    void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
-    {
+    void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable {
         // Given
-        InternalLog log = spy( InternalLog.class);
-        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "" ) ) ) );
+        InternalLog log = spy(InternalLog.class);
+        procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(),
+                components,
+                new ComponentRegistry(),
+                log,
+                new ProcedureConfig(Config.defaults(GraphDatabaseSettings.procedure_allowlist, List.of(""))));
 
-        List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
-        verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the allowlist and won't be loaded." );
-        assertThat( method.size() ).isEqualTo( 0 );
+        List<CallableUserFunction> method = compile(SingleReadOnlyFunction.class);
+        verify(log)
+                .warn(
+                        "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the allowlist and won't be loaded.");
+        assertThat(method.size()).isEqualTo(0);
     }
 
     @Test
-    void shouldSupportFunctionDeprecation() throws Throwable
-    {
+    void shouldSupportFunctionDeprecation() throws Throwable {
         // Given
-        InternalLog log = mock( InternalLog.class);
-        ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
-                new ComponentRegistry(), log, ProcedureConfig.DEFAULT );
+        InternalLog log = mock(InternalLog.class);
+        ProcedureCompiler procedureCompiler = new ProcedureCompiler(
+                new TypeCheckers(), components, new ComponentRegistry(), log, ProcedureConfig.DEFAULT);
 
         // When
-        List<CallableUserFunction> funcs = procedureCompiler.compileFunction( FunctionWithDeprecation.class, false );
+        List<CallableUserFunction> funcs = procedureCompiler.compileFunction(FunctionWithDeprecation.class, false);
 
         // Then
-        verify( log ).warn( "Use of @UserFunction(deprecatedBy) without @Deprecated in org.neo4j.procedure.impl.badFunc" );
-        verifyNoMoreInteractions( log );
-        for ( CallableUserFunction func : funcs )
-        {
+        verify(log).warn("Use of @UserFunction(deprecatedBy) without @Deprecated in org.neo4j.procedure.impl.badFunc");
+        verifyNoMoreInteractions(log);
+        for (CallableUserFunction func : funcs) {
             String name = func.signature().name().name();
-            func.apply( prepareContext(), new AnyValue[0] );
-            switch ( name )
-            {
-            case "newFunc":
-                assertFalse( func.signature().deprecated().isPresent(), "Should not be deprecated" );
-                break;
-            case "oldFunc":
-            case "badFunc":
-                assertTrue( func.signature().deprecated().isPresent(), "Should be deprecated" );
-                assertThat( func.signature().deprecated().get() ).isEqualTo( "newFunc" );
-                break;
-            default:
-                fail( "Unexpected function: " + name );
+            func.apply(prepareContext(), new AnyValue[0]);
+            switch (name) {
+                case "newFunc":
+                    assertFalse(func.signature().deprecated().isPresent(), "Should not be deprecated");
+                    break;
+                case "oldFunc":
+                case "badFunc":
+                    assertTrue(func.signature().deprecated().isPresent(), "Should be deprecated");
+                    assertThat(func.signature().deprecated().get()).isEqualTo("newFunc");
+                    break;
+                default:
+                    fail("Unexpected function: " + name);
             }
         }
     }
 
     @Test
-    void shouldSupportInternalTypes() throws Throwable
-    {
+    void shouldSupportInternalTypes() throws Throwable {
         // Given
-        CallableUserFunction func = compile( FunctionsWithInternalTypes.class ).get( 0 );
+        CallableUserFunction func = compile(FunctionsWithInternalTypes.class).get(0);
 
         // When
-        Object out = func.apply( prepareContext(), new AnyValue[]{stringValue("hello")} );
+        Object out = func.apply(prepareContext(), new AnyValue[] {stringValue("hello")});
 
         // Then
-        assertThat( out ).isEqualTo( longValue( 5 ) );
+        assertThat(out).isEqualTo(longValue(5));
     }
 
     @Test
-    void shouldSupportInternalTypesWithNull() throws Throwable
-    {
+    void shouldSupportInternalTypesWithNull() throws Throwable {
         // Given
-        CallableUserFunction func = compile( FunctionsWithInternalTypes.class ).get( 1 );
+        CallableUserFunction func = compile(FunctionsWithInternalTypes.class).get(1);
 
         // When
-        Object out = func.apply( prepareContext(), new AnyValue[]{stringValue("hello")} );
+        Object out = func.apply(prepareContext(), new AnyValue[] {stringValue("hello")});
 
         // Then
-        assertThat( out ).isEqualTo( NO_VALUE );
+        assertThat(out).isEqualTo(NO_VALUE);
     }
 
-    private org.neo4j.kernel.api.procedure.Context prepareContext()
-    {
-        return buildContext( dependencyResolver, valueMapper ).context();
+    private org.neo4j.kernel.api.procedure.Context prepareContext() {
+        return buildContext(dependencyResolver, valueMapper).context();
     }
 
-    public static class LoggingFunction
-    {
+    public static class LoggingFunction {
         @Context
         public InternalLog log;
 
         @UserFunction
-        public long logAround()
-        {
-            log.debug( "1" );
-            log.info( "2" );
-            log.warn( "3" );
-            log.error( "4" );
+        public long logAround() {
+            log.debug("1");
+            log.info("2");
+            log.warn("3");
+            log.error("4");
             return -1L;
         }
     }
 
-    public static class SingleReadOnlyFunction
-    {
+    public static class SingleReadOnlyFunction {
         @UserFunction
-        public List<String> listCoolPeople()
-        {
+        public List<String> listCoolPeople() {
             return Arrays.asList("Bonnie", "Clyde");
         }
     }
 
-    public static class FunctionWithVoidOutput
-    {
+    public static class FunctionWithVoidOutput {
         @UserFunction
-        public void voidOutput()
-        {
-        }
+        public void voidOutput() {}
     }
 
-    public static class MultiFunction
-    {
+    public static class MultiFunction {
         @UserFunction
-        public List<String> listCoolPeople()
-        {
+        public List<String> listCoolPeople() {
             return Arrays.asList("Bonnie", "Clyde");
         }
 
         @UserFunction
-        public Map<String, Object> listBananaOwningPeople()
-        {
-            Map<String,Object> map = new HashMap<>();
+        public Map<String, Object> listBananaOwningPeople() {
+            Map<String, Object> map = new HashMap<>();
             map.put("foo", Arrays.asList("bar", "baz"));
             return map;
         }
     }
 
-    public static class WeirdConstructorFunction
-    {
-        public WeirdConstructorFunction( WeirdConstructorFunction wat )
-        {
-
-        }
+    public static class WeirdConstructorFunction {
+        public WeirdConstructorFunction(WeirdConstructorFunction wat) {}
 
         @UserFunction
-        public List<String> listCoolPeople()
-        {
+        public List<String> listCoolPeople() {
             return Arrays.asList("Bonnie", "Clyde");
         }
     }
 
-    public static class FunctionWithInvalidOutput
-    {
+    public static class FunctionWithInvalidOutput {
         @UserFunction
-        public char[] test( )
-        {
+        public char[] test() {
             return "Testing".toCharArray();
         }
     }
 
-    public static class FunctionWithStaticContextAnnotatedField
-    {
+    public static class FunctionWithStaticContextAnnotatedField {
         @Context
         public static GraphDatabaseService gdb;
 
         @UserFunction
-        public Object test( )
-        {
+        public Object test() {
             return null;
         }
     }
 
-    public static class FunctionThatThrowsNullMsgExceptionAtInvocation
-    {
+    public static class FunctionThatThrowsNullMsgExceptionAtInvocation {
         @UserFunction
-        public String throwsAtInvocation( )
-        {
+        public String throwsAtInvocation() {
             throw new IndexOutOfBoundsException();
         }
     }
 
-    public static class PrivateConstructorFunction
-    {
-        private PrivateConstructorFunction()
-        {
-
-        }
+    public static class PrivateConstructorFunction {
+        private PrivateConstructorFunction() {}
 
         @UserFunction
-        public List<String> listCoolPeople()
-        {
+        public List<String> listCoolPeople() {
             return Arrays.asList("Bonnie", "Clyde");
         }
     }
 
-    public static class PrivateConstructorButNoFunctions
-    {
-        private PrivateConstructorButNoFunctions()
-        {
+    public static class PrivateConstructorButNoFunctions {
+        private PrivateConstructorButNoFunctions() {}
 
-        }
-
-        public String thisIsNotAFunction()
-        {
+        public String thisIsNotAFunction() {
             return null;
         }
     }
 
-    public static class FunctionWithOverriddenName
-    {
-        @UserFunction( "org.mystuff.thisisActuallyTheName" )
-        public Object somethingThatShouldntMatter()
-        {
-            return null;
-        }
-
-    }
-
-    public static class FunctionWithSingleName
-    {
-        @UserFunction( "singleName" )
-        public String blahDoesntMatterEither()
-        {
+    public static class FunctionWithOverriddenName {
+        @UserFunction("org.mystuff.thisisActuallyTheName")
+        public Object somethingThatShouldntMatter() {
             return null;
         }
     }
 
-    public static class FunctionWithDeprecation
-    {
+    public static class FunctionWithSingleName {
+        @UserFunction("singleName")
+        public String blahDoesntMatterEither() {
+            return null;
+        }
+    }
+
+    public static class FunctionWithDeprecation {
         @UserFunction
-        public Object newFunc()
-        {
+        public Object newFunc() {
             return null;
         }
 
         @Deprecated
-        @UserFunction( deprecatedBy = "newFunc" )
-        public String oldFunc()
-        {
+        @UserFunction(deprecatedBy = "newFunc")
+        public String oldFunc() {
             return null;
         }
 
-        @UserFunction( deprecatedBy = "newFunc" )
-        public Object badFunc()
-        {
-            return null;
-        }
-    }
-
-    public static class FunctionsWithInternalTypes
-    {
-
-        @UserFunction
-        public LongValue countLetters( @Name( value = "text" ) StringValue text )
-        {
-            return longValue( text.length() );
-        }
-
-        @UserFunction
-        public LongValue nullMethod( @Name( value = "text" ) StringValue text )
-        {
+        @UserFunction(deprecatedBy = "newFunc")
+        public Object badFunc() {
             return null;
         }
     }
 
-    private List<CallableUserFunction> compile( Class<?> clazz ) throws KernelException
-    {
-        return procedureCompiler.compileFunction( clazz, false );
+    public static class FunctionsWithInternalTypes {
+
+        @UserFunction
+        public LongValue countLetters(@Name(value = "text") StringValue text) {
+            return longValue(text.length());
+        }
+
+        @UserFunction
+        public LongValue nullMethod(@Name(value = "text") StringValue text) {
+            return null;
+        }
+    }
+
+    private List<CallableUserFunction> compile(Class<?> clazz) throws KernelException {
+        return procedureCompiler.compileFunction(clazz, false);
     }
 }

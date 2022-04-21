@@ -118,7 +118,8 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
     val given = scope()(
       scope(
         nodeSymbol("root", roots.defVar),
-        nodeSymbol("book", books1.defVar, books1.useVars(0)))(
+        nodeSymbol("book", books1.defVar, books1.useVars(0))
+      )(
         scope(
           stringSymbol("name", names),
           nodeSymbol("root", roots),

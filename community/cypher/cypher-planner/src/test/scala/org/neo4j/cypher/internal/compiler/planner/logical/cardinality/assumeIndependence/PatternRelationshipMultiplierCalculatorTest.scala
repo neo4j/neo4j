@@ -78,7 +78,8 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality.SINGLE)
 
     val calculator = PatternRelationshipMultiplierCalculator(stats, IndependenceCombiner)
-    val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
+    val relationship =
+      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
     val result = calculator.relationshipMultiplier(relationship, Map("a" -> Set(labelName("L"))))
@@ -114,10 +115,23 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
 
     val minimizedStats = new MinimumGraphStatistics(stats)
     val calculator = PatternRelationshipMultiplierCalculator(minimizedStats, IndependenceCombiner)
-    val unknownTypeRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(RelTypeName("UNKNOWN")(pos)), SimplePatternLength)
-    val knownTypeRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(RelTypeName("KNOWN")(pos)), SimplePatternLength)
+    val unknownTypeRel = PatternRelationship(
+      "r",
+      ("a", "b"),
+      SemanticDirection.OUTGOING,
+      Seq(RelTypeName("UNKNOWN")(pos)),
+      SimplePatternLength
+    )
+    val knownTypeRel = PatternRelationship(
+      "r",
+      ("a", "b"),
+      SemanticDirection.OUTGOING,
+      Seq(RelTypeName("KNOWN")(pos)),
+      SimplePatternLength
+    )
 
-    implicit val semanticTable: SemanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("KNOWN" -> RelTypeId(0)))
+    implicit val semanticTable: SemanticTable =
+      new SemanticTable(resolvedRelTypeNames = mutable.Map("KNOWN" -> RelTypeId(0)))
     val unknownRelCardinality = calculator.relationshipMultiplier(unknownTypeRel, Map.empty)
     val knownRelCardinality = calculator.relationshipMultiplier(knownTypeRel, Map.empty)
 

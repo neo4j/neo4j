@@ -31,7 +31,8 @@ case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   override def rewrite(f: Expression => Expression): Expression = f(ToIntegerFunction(a.rewrite(f)))
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.toInteger(value)
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toInteger(value)
 
   override def children: Seq[AstNode[_]] = Seq(a)
 }

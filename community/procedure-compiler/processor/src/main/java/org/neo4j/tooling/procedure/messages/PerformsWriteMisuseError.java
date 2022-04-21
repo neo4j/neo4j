@@ -21,27 +21,23 @@ package org.neo4j.tooling.procedure.messages;
 
 import javax.lang.model.element.Element;
 
-public class PerformsWriteMisuseError implements CompilationMessage
-{
+public class PerformsWriteMisuseError implements CompilationMessage {
     private final Element method;
     private final String errorMessage;
 
-    public PerformsWriteMisuseError( Element method, String message, Object... args )
-    {
+    public PerformsWriteMisuseError(Element method, String message, Object... args) {
 
         this.method = method;
-        this.errorMessage = String.format( message, args );
+        this.errorMessage = String.format(message, args);
     }
 
     @Override
-    public Element getElement()
-    {
+    public Element getElement() {
         return method;
     }
 
     @Override
-    public String getContents()
-    {
+    public String getContents() {
         return errorMessage;
     }
 }

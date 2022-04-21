@@ -20,21 +20,17 @@
 package org.neo4j.server;
 
 import java.nio.file.Path;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class CommunityBootstrapperIT extends BaseBootstrapperIT
-{
+public class CommunityBootstrapperIT extends BaseBootstrapperIT {
     @Override
-    protected NeoBootstrapper newBootstrapper()
-    {
+    protected NeoBootstrapper newBootstrapper() {
         return new CommunityBootstrapper();
     }
 
     @Override
-    protected DatabaseManagementService newEmbeddedDbms( Path homeDir )
-    {
-        return new TestDatabaseManagementServiceBuilder( homeDir ).build();
+    protected DatabaseManagementService newEmbeddedDbms(Path homeDir) {
+        return new TestDatabaseManagementServiceBuilder(homeDir).build();
     }
 }

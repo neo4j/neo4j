@@ -25,7 +25,8 @@ class PeriodicCommitParserTest extends JavaccParserAstTestBase[Statement] {
 
   implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
 
-  val message = "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead. (line 1, column 7 (offset: 6))"
+  val message =
+    "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead. (line 1, column 7 (offset: 6))"
 
   test("USING PERIODIC COMMIT LOAD CSV FROM 'foo' AS l RETURN l") {
     assertFailsWithMessage(testName, message)

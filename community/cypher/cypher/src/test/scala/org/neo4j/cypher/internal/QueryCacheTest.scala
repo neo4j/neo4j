@@ -74,7 +74,8 @@ class QueryCacheTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    val valueFromCache =
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
     // Then
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
@@ -92,9 +93,9 @@ class QueryCacheTest extends CypherFunSuite {
     val key1 = newKey("key1")
     val key2 = newKey("key2")
 
-
     // When
-    val value1FromCache = cache.computeIfAbsentOrStale(key1, TC, compilerWithExpressionCodeGenOption(key1), CypherReplanOption.default)
+    val value1FromCache =
+      cache.computeIfAbsentOrStale(key1, TC, compilerWithExpressionCodeGenOption(key1), CypherReplanOption.default)
     // Then
     value1FromCache should equal(compiled(key1))
     value1FromCache.compiledWithExpressionCodeGen should equal(false)
@@ -104,7 +105,8 @@ class QueryCacheTest extends CypherFunSuite {
     verifyNoMoreInteractions(tracer)
 
     // When
-    val value2FromCache = cache.computeIfAbsentOrStale(key2, TC, compilerWithExpressionCodeGenOption(key2), CypherReplanOption.default)
+    val value2FromCache =
+      cache.computeIfAbsentOrStale(key2, TC, compilerWithExpressionCodeGenOption(key2), CypherReplanOption.default)
     // Then
     value2FromCache should equal(compiled(key2))
     value2FromCache.compiledWithExpressionCodeGen should equal(false)
@@ -128,7 +130,8 @@ class QueryCacheTest extends CypherFunSuite {
     verifyNoMoreInteractions(tracer)
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    val valueFromCache =
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
     // Then
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
@@ -136,14 +139,17 @@ class QueryCacheTest extends CypherFunSuite {
     verifyNoMoreInteractions(tracer)
   }
 
-  test("accessing the cache with replan=force should be a cache miss even if item exists and is not stale. It should also immediately compile with expression code generation.") {
+  test(
+    "accessing the cache with replan=force should be a cache miss even if item exists and is not stale. It should also immediately compile with expression code generation."
+  ) {
     // Given
     val tracer = newTracer()
     val cache = newCache(tracer)
     val key = newKey("foo")
 
     // When
-    val valueFromCache1 = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.force)
+    val valueFromCache1 =
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.force)
     // Then
     valueFromCache1 should equal(compiled(key))
     valueFromCache1.compiledWithExpressionCodeGen should equal(true)
@@ -153,7 +159,8 @@ class QueryCacheTest extends CypherFunSuite {
     verifyNoMoreInteractions(tracer)
 
     // When
-    val valueFromCache2 = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.force)
+    val valueFromCache2 =
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.force)
     // Then
     valueFromCache2 should equal(compiled(key))
     valueFromCache2.compiledWithExpressionCodeGen should equal(true)
@@ -178,7 +185,8 @@ class QueryCacheTest extends CypherFunSuite {
     verifyNoMoreInteractions(tracer)
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    val valueFromCache =
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
     // Then
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
@@ -205,7 +213,8 @@ class QueryCacheTest extends CypherFunSuite {
     verifyNoMoreInteractions(tracer)
 
     // When
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
+    val valueFromCache =
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
     // Then
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
@@ -224,7 +233,8 @@ class QueryCacheTest extends CypherFunSuite {
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    val valueFromCache =
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
 
     // Then
     valueFromCache should equal(compiled(key))
@@ -238,7 +248,9 @@ class QueryCacheTest extends CypherFunSuite {
     verifyNoMoreInteractions(tracer)
   }
 
-  test("if item is stale but was compiled with expression code generation we should miss the cached and directly compile with expression code generation") {
+  test(
+    "if item is stale but was compiled with expression code generation we should miss the cached and directly compile with expression code generation"
+  ) {
     // Given
     val tracer = newTracer()
     val secondsSinceReplan = 17
@@ -246,7 +258,13 @@ class QueryCacheTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    val v1 = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default) // miss, compile
+    val v1 =
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.default
+      ) // miss, compile
     // Then
     v1 should equal(compiled(key))
     v1.compiledWithExpressionCodeGen should equal(false)
@@ -258,7 +276,13 @@ class QueryCacheTest extends CypherFunSuite {
     // When
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default) // hit
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default) // hit
-    val v2 = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default) // hit, compile-exp-code-gen
+    val v2 =
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.default
+      ) // hit, compile-exp-code-gen
     // Then
     v2 should equal(compiled(key))
     v2.compiledWithExpressionCodeGen should equal(true)
@@ -267,7 +291,13 @@ class QueryCacheTest extends CypherFunSuite {
     verifyNoMoreInteractions(tracer)
 
     // When
-    val v3 = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default) // stale, miss, compile-exp-code-gen
+    val v3 =
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.default
+      ) // stale, miss, compile-exp-code-gen
     // Then
     v3 should equal(compiled(key))
     v3.compiledWithExpressionCodeGen should equal(true)
@@ -287,7 +317,8 @@ class QueryCacheTest extends CypherFunSuite {
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
-    val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
+    val valueFromCache =
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
 
     // Then
     valueFromCache should equal(compiled(key))
@@ -307,7 +338,9 @@ class QueryCacheTest extends CypherFunSuite {
     val key = newKey("foo")
 
     // When
-    (1 to 100).foreach(_ => cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default))
+    (1 to 100).foreach(_ =>
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    )
 
     // Then
     val o = Mockito.inOrder(tracer)
@@ -320,8 +353,14 @@ class QueryCacheTest extends CypherFunSuite {
   }
 
   test("parameterTypeMap should equal if same parameters") {
-    val params1 = VirtualValues.map(Array("a", "b", "c"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true))))
-    val params2 = VirtualValues.map(Array("a", "b", "c"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true))))
+    val params1 = VirtualValues.map(
+      Array("a", "b", "c"),
+      Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))
+    )
+    val params2 = VirtualValues.map(
+      Array("a", "b", "c"),
+      Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))
+    )
     val typeMap1 = QueryCache.extractParameterTypeMap(params1)
     val typeMap2 = QueryCache.extractParameterTypeMap(params2)
     typeMap1.hashCode() shouldBe typeMap2.hashCode()
@@ -341,11 +380,23 @@ class QueryCacheTest extends CypherFunSuite {
 
   test("parameterTypeMap should not equal") {
     val params = Seq(
-      VirtualValues.map(Array("a", "b", "c"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))),
-      VirtualValues.map(Array("a", "b", "d"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))),
-      VirtualValues.map(Array("a", "b", "d"), Array(Values.of("ho"), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))),
-      VirtualValues.map(Array("a", "b", "d"), Array(Values.of("ho"), Values.of("hi"), VirtualValues.map(Array("key"), Array(Values.of(true))))),
-      VirtualValues.map(Array("a", "b"),      Array(Values.of("ho"), Values.of("hi")))
+      VirtualValues.map(
+        Array("a", "b", "c"),
+        Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))
+      ),
+      VirtualValues.map(
+        Array("a", "b", "d"),
+        Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))
+      ),
+      VirtualValues.map(
+        Array("a", "b", "d"),
+        Array(Values.of("ho"), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))
+      ),
+      VirtualValues.map(
+        Array("a", "b", "d"),
+        Array(Values.of("ho"), Values.of("hi"), VirtualValues.map(Array("key"), Array(Values.of(true))))
+      ),
+      VirtualValues.map(Array("a", "b"), Array(Values.of("ho"), Values.of("hi")))
     )
 
     for {
@@ -365,6 +416,7 @@ class QueryCacheTest extends CypherFunSuite {
 }
 
 object QueryCacheTest extends MockitoSugar {
+
   case class MyValue(key: String)(val compiledWithExpressionCodeGen: Boolean) extends CacheabilityInfo {
     override def shouldBeCached: Boolean = true
 
@@ -378,19 +430,24 @@ object QueryCacheTest extends MockitoSugar {
   type Key = CacheKey[String]
   type Tracer = CacheTracer[Key]
 
-  def compilerWithExpressionCodeGenOption(key: Key): CompilerWithExpressionCodeGenOption[MyValue] = new CompilerWithExpressionCodeGenOption[MyValue] {
-    override def compile(): MyValue = compiled(key)
+  def compilerWithExpressionCodeGenOption(key: Key): CompilerWithExpressionCodeGenOption[MyValue] =
+    new CompilerWithExpressionCodeGenOption[MyValue] {
+      override def compile(): MyValue = compiled(key)
 
-    override def compileWithExpressionCodeGen(): MyValue = compiledWithExpressionCodeGen(key)
+      override def compileWithExpressionCodeGen(): MyValue = compiledWithExpressionCodeGen(key)
 
-    override def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[MyValue] =
-      if (hitCount > RECOMPILE_LIMIT) Some(compiledWithExpressionCodeGen(key))
-      else None
-  }
+      override def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[MyValue] =
+        if (hitCount > RECOMPILE_LIMIT) Some(compiledWithExpressionCodeGen(key))
+        else None
+    }
 
   def newKey(string: String): Key = CacheKey(string, ParameterTypeMap.empty, txStateHasChanges = false)
 
-  def newCache(tracer: Tracer = newTracer(), stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(), size: Int = 10): QueryCache[CacheKey[String], MyValue] = {
+  def newCache(
+    tracer: Tracer = newTracer(),
+    stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(),
+    size: Int = 10
+  ): QueryCache[CacheKey[String], MyValue] = {
     new QueryCache[CacheKey[String], MyValue](cacheFactory, size, stalenessCaller, tracer)
   }
 
@@ -402,8 +459,8 @@ object QueryCacheTest extends MockitoSugar {
 
   private def staleAfterNTimes(seconds: Int, n: Int): PlanStalenessCaller[MyValue] = new PlanStalenessCaller[MyValue] {
     private var invocations = 0
-    override def staleness(transactionalContext: TransactionalContext,
-                           cachedExecutableQuery: MyValue): Staleness = {
+
+    override def staleness(transactionalContext: TransactionalContext, cachedExecutableQuery: MyValue): Staleness = {
       invocations += 1
       if (invocations > n) Stale(seconds, None)
       else NotStale
@@ -411,5 +468,7 @@ object QueryCacheTest extends MockitoSugar {
   }
 
   private def compiled(key: Key): MyValue = MyValue(key.queryRep)(compiledWithExpressionCodeGen = false)
-  private def compiledWithExpressionCodeGen(key: Key): MyValue = MyValue(key.queryRep)(compiledWithExpressionCodeGen = true)
+
+  private def compiledWithExpressionCodeGen(key: Key): MyValue =
+    MyValue(key.queryRep)(compiledWithExpressionCodeGen = true)
 }

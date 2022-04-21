@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.Status
 class TranslateExceptionMacrosTest extends CypherFunSuite {
 
   class MyKernelException(message: String) extends KernelException(null: Status, message) {
+
     override def getUserMessage(tokenNameLookup: TokenNameLookup): String =
       s"$message with ${tokenNameLookup.propertyKeyGetName(1)}"
   }
@@ -54,35 +55,40 @@ class TranslateExceptionMacrosTest extends CypherFunSuite {
 
   test("should rethrow KernelException as CypherExecutionException") {
     val exception = new EntityNotFoundException(EntityType.NODE, 1)
-    the[CypherExecutionException] thrownBy translateException(tokenNameLookup,
+    the[CypherExecutionException] thrownBy translateException(
+      tokenNameLookup,
       throw exception
     ) should have message exception.getMessage
   }
 
   test("should rethrow KernelException as CypherExecutionException and use getUserMessage") {
     val exception = new MyKernelException("kaboom")
-    the[CypherExecutionException] thrownBy translateException(tokenNameLookup,
+    the[CypherExecutionException] thrownBy translateException(
+      tokenNameLookup,
       throw exception
     ) should have message "kaboom with prop1"
   }
 
   test("should rethrow ConstraintViolationException") {
     val exception = new org.neo4j.graphdb.ConstraintViolationException("foo")
-    the[org.neo4j.exceptions.ConstraintViolationException] thrownBy translateException(tokenNameLookup,
+    the[org.neo4j.exceptions.ConstraintViolationException] thrownBy translateException(
+      tokenNameLookup,
       throw exception
     ) should have message exception.getMessage
   }
 
   test("should rethrow ResourceCloseFailureException") {
     val exception = new org.neo4j.kernel.api.exceptions.ResourceCloseFailureException("foo", null)
-    the[CypherExecutionException] thrownBy translateException(tokenNameLookup,
+    the[CypherExecutionException] thrownBy translateException(
+      tokenNameLookup,
       throw exception
     ) should have message exception.getMessage
   }
 
   test("should rethrow ArithmeticException") {
     val exception = new java.lang.ArithmeticException("foo")
-    the[org.neo4j.exceptions.ArithmeticException] thrownBy translateException(tokenNameLookup,
+    the[org.neo4j.exceptions.ArithmeticException] thrownBy translateException(
+      tokenNameLookup,
       throw exception
     ) should have message exception.getMessage
   }
@@ -90,7 +96,10 @@ class TranslateExceptionMacrosTest extends CypherFunSuite {
   test("should rethrow exception in iterator creation") {
     val exception = new java.lang.ArithmeticException("foo")
     def theIt: Iterator[String] = throw exception
-    the[org.neo4j.exceptions.ArithmeticException] thrownBy translateIterator(tokenNameLookup, theIt) should have message exception.getMessage
+    the[org.neo4j.exceptions.ArithmeticException] thrownBy translateIterator(
+      tokenNameLookup,
+      theIt
+    ) should have message exception.getMessage
   }
 
   test("should rethrow exception in iterator next") {
@@ -116,10 +125,11 @@ class TranslateExceptionMacrosTest extends CypherFunSuite {
   }
 
   test("should work with deeply generic type") {
-    def theIt: Iterator[Array[(String, List[Int], ReadTokenContext) => String]] = new Iterator[Array[(String, List[Int], ReadTokenContext) => String]] {
-      override def hasNext: Boolean = true
-      override def next(): Array[(String, List[Int], ReadTokenContext) => String] = Array((s, _, _) => s)
-    }
+    def theIt: Iterator[Array[(String, List[Int], ReadTokenContext) => String]] =
+      new Iterator[Array[(String, List[Int], ReadTokenContext) => String]] {
+        override def hasNext: Boolean = true
+        override def next(): Array[(String, List[Int], ReadTokenContext) => String] = Array((s, _, _) => s)
+      }
     translateIterator(tokenNameLookup, theIt).next().head("foo", List(1), null) should be("foo")
   }
 }

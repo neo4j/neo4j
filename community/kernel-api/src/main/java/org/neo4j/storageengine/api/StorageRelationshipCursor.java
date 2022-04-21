@@ -22,8 +22,7 @@ package org.neo4j.storageengine.api;
 /**
  * Shared interface between the two {@link StorageRelationshipScanCursor} and {@link StorageRelationshipTraversalCursor}.
  */
-public interface StorageRelationshipCursor extends StorageEntityCursor
-{
+public interface StorageRelationshipCursor extends StorageEntityCursor {
     /**
      * @return relationship type of the relationship this cursor is placed at.
      */
@@ -42,8 +41,7 @@ public interface StorageRelationshipCursor extends StorageEntityCursor
     /**
      * @return a relationship ID similar to {@link #entityReference()}, but can contain more information about how to identify and find a relationship.
      */
-    default Reference relationshipReference()
-    {
-        return new LongReference( entityReference() );
+    default Reference relationshipReference() {
+        return new LongReference(entityReference());
     }
 }

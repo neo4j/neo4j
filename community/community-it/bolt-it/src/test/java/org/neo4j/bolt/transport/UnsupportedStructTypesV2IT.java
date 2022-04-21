@@ -19,16 +19,20 @@
  */
 package org.neo4j.bolt.transport;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
+import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
+import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
+
+import java.io.IOException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.io.IOException;
-import java.util.stream.Stream;
-
 import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
@@ -48,16 +52,9 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
-import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
-
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-public class UnsupportedStructTypesV2IT
-{
+public class UnsupportedStructTypesV2IT {
     @Inject
     private Neo4jWithSocket server;
 
@@ -66,147 +63,150 @@ public class UnsupportedStructTypesV2IT
     private TransportTestUtil util;
 
     @BeforeEach
-    public void setup( TestInfo testInfo ) throws IOException
-    {
-        server.setConfigure( withOptionalBoltEncryption() );
-        server.init( testInfo );
+    public void setup(TestInfo testInfo) throws IOException {
+        server.setConfigure(withOptionalBoltEncryption());
+        server.init(testInfo);
         address = server.lookupDefaultConnector();
-        util = new TransportTestUtil( new Neo4jPackV2() );
+        util = new TransportTestUtil(new Neo4jPackV2());
     }
 
     @AfterEach
-    public void cleanup() throws Exception
-    {
-        if ( connection != null )
-        {
+    public void cleanup() throws Exception {
+        if (connection != null) {
             connection.disconnect();
         }
     }
 
-    public static Stream<Arguments> classProvider()
-    {
-        return Stream.of( Arguments.of( SocketConnection.class ), Arguments.of( WebSocketConnection.class ),
-                Arguments.of( SecureSocketConnection.class ), Arguments.of( SecureWebSocketConnection.class ) );
+    public static Stream<Arguments> classProvider() {
+        return Stream.of(
+                Arguments.of(SocketConnection.class),
+                Arguments.of(WebSocketConnection.class),
+                Arguments.of(SecureSocketConnection.class),
+                Arguments.of(SecureWebSocketConnection.class));
     }
 
-    private void initConnection( Class<? extends TransportConnection> connectionClass ) throws Exception
-    {
+    private void initConnection(Class<? extends TransportConnection> connectionClass) throws Exception {
         connection = connectionClass.getDeclaredConstructor().newInstance();
     }
 
-    @ParameterizedTest( name = "{displayName} {0}" )
-    @MethodSource( "classProvider" )
-    public void shouldFailWhenPoint2DIsSentWithInvalidCrsId( Class<? extends TransportConnection> connectionClass ) throws Exception
-    {
-        initConnection( connectionClass );
+    @ParameterizedTest(name = "{displayName} {0}")
+    @MethodSource("classProvider")
+    public void shouldFailWhenPoint2DIsSentWithInvalidCrsId(Class<? extends TransportConnection> connectionClass)
+            throws Exception {
+        initConnection(connectionClass);
 
-        testFailureWithUnpackableValue( packer ->
-        {
-            packer.packStructHeader( 3, StructType.POINT_2D.signature() );
-            packer.pack( Values.of( 5 ) );
-            packer.pack( Values.of( 3.15 ) );
-            packer.pack( Values.of( 4.012 ) );
-        }, "Unable to construct Point value: `Unknown coordinate reference system code: 5`" );
+        testFailureWithUnpackableValue(
+                packer -> {
+                    packer.packStructHeader(3, StructType.POINT_2D.signature());
+                    packer.pack(Values.of(5));
+                    packer.pack(Values.of(3.15));
+                    packer.pack(Values.of(4.012));
+                },
+                "Unable to construct Point value: `Unknown coordinate reference system code: 5`");
     }
 
-    @ParameterizedTest( name = "{displayName} {0}" )
-    @MethodSource( "classProvider" )
-    public void shouldFailWhenPoint3DIsSentWithInvalidCrsId( Class<? extends TransportConnection> connectionClass ) throws Exception
-    {
-        initConnection( connectionClass );
+    @ParameterizedTest(name = "{displayName} {0}")
+    @MethodSource("classProvider")
+    public void shouldFailWhenPoint3DIsSentWithInvalidCrsId(Class<? extends TransportConnection> connectionClass)
+            throws Exception {
+        initConnection(connectionClass);
 
-        testFailureWithUnpackableValue( packer ->
-        {
-            packer.packStructHeader( 4, StructType.POINT_3D.signature() );
-            packer.pack( Values.of( 1200 ) );
-            packer.pack( Values.of( 3.15 ) );
-            packer.pack( Values.of( 4.012 ) );
-            packer.pack( Values.of( 5.905 ) );
-        }, "Unable to construct Point value: `Unknown coordinate reference system code: 1200`" );
+        testFailureWithUnpackableValue(
+                packer -> {
+                    packer.packStructHeader(4, StructType.POINT_3D.signature());
+                    packer.pack(Values.of(1200));
+                    packer.pack(Values.of(3.15));
+                    packer.pack(Values.of(4.012));
+                    packer.pack(Values.of(5.905));
+                },
+                "Unable to construct Point value: `Unknown coordinate reference system code: 1200`");
     }
 
-    @ParameterizedTest( name = "{displayName} {0}" )
-    @MethodSource( "classProvider" )
-    public void shouldFailWhenPoint2DDimensionsDoNotMatch( Class<? extends TransportConnection> connectionClass ) throws Exception
-    {
-        initConnection( connectionClass );
+    @ParameterizedTest(name = "{displayName} {0}")
+    @MethodSource("classProvider")
+    public void shouldFailWhenPoint2DDimensionsDoNotMatch(Class<? extends TransportConnection> connectionClass)
+            throws Exception {
+        initConnection(connectionClass);
 
-        testDisconnectWithUnpackableValue( packer ->
-        {
-            packer.packStructHeader( 3, StructType.POINT_3D.signature() );
-            packer.pack( Values.of( CoordinateReferenceSystem.CARTESIAN_3D.getCode() ) );
-            packer.pack( Values.of( 3.15 ) );
-            packer.pack( Values.of( 4.012 ) );
-        }, "Unable to construct Point value: `Cannot create point, CRS cartesian-3d expects 3 dimensions, but got coordinates [3.15, 4.012]`" );
+        testDisconnectWithUnpackableValue(
+                packer -> {
+                    packer.packStructHeader(3, StructType.POINT_3D.signature());
+                    packer.pack(Values.of(CoordinateReferenceSystem.CARTESIAN_3D.getCode()));
+                    packer.pack(Values.of(3.15));
+                    packer.pack(Values.of(4.012));
+                },
+                "Unable to construct Point value: `Cannot create point, CRS cartesian-3d expects 3 dimensions, but got coordinates [3.15, 4.012]`");
     }
 
-    @ParameterizedTest( name = "{displayName} {0}" )
-    @MethodSource( "classProvider" )
-    public void shouldFailWhenPoint3DDimensionsDoNotMatch( Class<? extends TransportConnection> connectionClass ) throws Exception
-    {
-        initConnection( connectionClass );
+    @ParameterizedTest(name = "{displayName} {0}")
+    @MethodSource("classProvider")
+    public void shouldFailWhenPoint3DDimensionsDoNotMatch(Class<? extends TransportConnection> connectionClass)
+            throws Exception {
+        initConnection(connectionClass);
 
-        testFailureWithUnpackableValue( packer ->
-        {
-            packer.packStructHeader( 4, StructType.POINT_3D.signature() );
-            packer.pack( Values.of( CoordinateReferenceSystem.CARTESIAN.getCode() ) );
-            packer.pack( Values.of( 3.15 ) );
-            packer.pack( Values.of( 4.012 ) );
-            packer.pack( Values.of( 5.905 ) );
-        }, "Unable to construct Point value: `Cannot create point, CRS cartesian expects 2 dimensions, but got coordinates [3.15, 4.012, 5.905]`" );
+        testFailureWithUnpackableValue(
+                packer -> {
+                    packer.packStructHeader(4, StructType.POINT_3D.signature());
+                    packer.pack(Values.of(CoordinateReferenceSystem.CARTESIAN.getCode()));
+                    packer.pack(Values.of(3.15));
+                    packer.pack(Values.of(4.012));
+                    packer.pack(Values.of(5.905));
+                },
+                "Unable to construct Point value: `Cannot create point, CRS cartesian expects 2 dimensions, but got coordinates [3.15, 4.012, 5.905]`");
     }
 
-    @ParameterizedTest( name = "{displayName} {0}" )
-    @MethodSource( "classProvider" )
-    public void shouldFailWhenZonedDateTimeZoneIdIsNotKnown( Class<? extends TransportConnection> connectionClass ) throws Exception
-    {
-        initConnection( connectionClass );
+    @ParameterizedTest(name = "{displayName} {0}")
+    @MethodSource("classProvider")
+    public void shouldFailWhenZonedDateTimeZoneIdIsNotKnown(Class<? extends TransportConnection> connectionClass)
+            throws Exception {
+        initConnection(connectionClass);
 
-        testFailureWithUnpackableValue( packer ->
-        {
-            packer.packStructHeader( 3, StructType.DATE_TIME_WITH_ZONE_NAME.signature() );
-            packer.pack( Values.of( 0 ) );
-            packer.pack( Values.of( 0 ) );
-            packer.pack( Values.of( "Europe/Marmaris" ) );
-        }, "Unable to construct ZonedDateTime value: `Unknown time-zone ID: Europe/Marmaris`" );
+        testFailureWithUnpackableValue(
+                packer -> {
+                    packer.packStructHeader(3, StructType.DATE_TIME_WITH_ZONE_NAME.signature());
+                    packer.pack(Values.of(0));
+                    packer.pack(Values.of(0));
+                    packer.pack(Values.of("Europe/Marmaris"));
+                },
+                "Unable to construct ZonedDateTime value: `Unknown time-zone ID: Europe/Marmaris`");
     }
 
-    private void testFailureWithUnpackableValue( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage ) throws Exception
-    {
-        connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.defaultAuth() );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+    private void testFailureWithUnpackableValue(
+            ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage) throws Exception {
+        connection.connect(address).send(util.defaultAcceptedVersions());
+        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        connection.send(util.defaultAuth());
+        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
 
-        connection.send( TransportTestUtil.chunk( 64, createRunWith( valuePacker ) ) );
+        connection.send(TransportTestUtil.chunk(64, createRunWith(valuePacker)));
 
-        assertThat( connection ).satisfies(
-                util.eventuallyReceives( msgFailure( Status.Statement.TypeError, expectedMessage ) ) );
-        assertThat( connection ).satisfies( eventuallyDisconnects() );
+        assertThat(connection)
+                .satisfies(util.eventuallyReceives(msgFailure(Status.Statement.TypeError, expectedMessage)));
+        assertThat(connection).satisfies(eventuallyDisconnects());
     }
 
-    private void testDisconnectWithUnpackableValue( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage ) throws Exception
-    {
-        connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.defaultAuth() );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+    private void testDisconnectWithUnpackableValue(
+            ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage) throws Exception {
+        connection.connect(address).send(util.defaultAcceptedVersions());
+        assertThat(connection).satisfies(TransportTestUtil.eventuallyReceivesSelectedProtocolVersion());
+        connection.send(util.defaultAuth());
+        assertThat(connection).satisfies(util.eventuallyReceives(msgSuccess()));
 
-        connection.send( TransportTestUtil.chunk( 64, createRunWith( valuePacker ) ) );
+        connection.send(TransportTestUtil.chunk(64, createRunWith(valuePacker)));
 
-        assertThat( connection ).satisfies( eventuallyDisconnects() );
+        assertThat(connection).satisfies(eventuallyDisconnects());
     }
 
-    private static byte[] createRunWith( ThrowingConsumer<Neo4jPack.Packer,IOException> valuePacker ) throws IOException
-    {
+    private static byte[] createRunWith(ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker)
+            throws IOException {
         PackedOutputArray out = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPackV2().newPacker( out );
+        Neo4jPack.Packer packer = new Neo4jPackV2().newPacker(out);
 
-        packer.packStructHeader( 2, RunMessage.SIGNATURE );
-        packer.pack( "RETURN $x" );
-        packer.packMapHeader( 1 );
-        packer.pack( "x" );
-        valuePacker.accept( packer );
+        packer.packStructHeader(2, RunMessage.SIGNATURE);
+        packer.pack("RETURN $x");
+        packer.packMapHeader(1);
+        packer.pack("x");
+        valuePacker.accept(packer);
 
         return out.bytes();
     }

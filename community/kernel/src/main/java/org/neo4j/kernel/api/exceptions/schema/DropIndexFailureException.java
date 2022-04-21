@@ -22,15 +22,12 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class DropIndexFailureException extends SchemaKernelException
-{
-    public DropIndexFailureException( String message )
-    {
-        super( Status.Schema.IndexDropFailed, message );
+public class DropIndexFailureException extends SchemaKernelException {
+    public DropIndexFailureException(String message) {
+        super(Status.Schema.IndexDropFailed, message);
     }
 
-    public DropIndexFailureException( String message, Throwable cause )
-    {
-        super( Status.Schema.IndexDropFailed, message, cause );
+    public DropIndexFailureException(String message, Throwable cause) {
+        super(Status.Schema.IndexDropFailed, message, cause);
     }
 }

@@ -53,28 +53,32 @@ object QueryPlannerConfiguration {
   private def leafPlannersUsedInOrLeafPlanner(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner] = IndexedSeq(
     // MATCH (n) WHERE id(n) IN ... RETURN n
     idSeekLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
-
-    NodeIndexLeafPlanner(Seq(
-      // MATCH (n) WHERE n.prop IN ... RETURN n
-      nodeIndexSeekPlanProvider,
-      // MATCH (n:Person) WHERE n.prop CONTAINS ...
-      // MATCH (n:Person) WHERE n.prop ENDS WITH ...
-      nodeIndexStringSearchScanPlanProvider,
-      // MATCH (n) WHERE has(n.prop) RETURN n
-      nodeIndexScanPlanProvider,
-    ), restrictions),
-
-    RelationshipIndexLeafPlanner(Seq(
-      RelationshipIndexScanPlanProvider,
-      RelationshipIndexSeekPlanProvider,
-      RelationshipIndexStringSearchScanPlanProvider,
-    ), restrictions),
+    NodeIndexLeafPlanner(
+      Seq(
+        // MATCH (n) WHERE n.prop IN ... RETURN n
+        nodeIndexSeekPlanProvider,
+        // MATCH (n:Person) WHERE n.prop CONTAINS ...
+        // MATCH (n:Person) WHERE n.prop ENDS WITH ...
+        nodeIndexStringSearchScanPlanProvider,
+        // MATCH (n) WHERE has(n.prop) RETURN n
+        nodeIndexScanPlanProvider
+      ),
+      restrictions
+    ),
+    RelationshipIndexLeafPlanner(
+      Seq(
+        RelationshipIndexScanPlanProvider,
+        RelationshipIndexSeekPlanProvider,
+        RelationshipIndexStringSearchScanPlanProvider
+      ),
+      restrictions
+    ),
 
     // MATCH (n:Person) RETURN n
     labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
-    //MATCH ()-[r:R]->()
-    relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
+    // MATCH ()-[r:R]->()
+    relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners)
   )
 
   private def allLeafPlanners(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner] = {
@@ -99,7 +103,8 @@ object QueryPlannerConfiguration {
   }
 
   val default: QueryPlannerConfiguration = {
-    val predicateSelector = steps.Selector(pickBestPlanUsingHintsAndCost,
+    val predicateSelector = steps.Selector(
+      pickBestPlanUsingHintsAndCost,
       SelectPatternPredicatesWithCaching,
       triadicSelectionFinder,
       selectCovered,
@@ -111,7 +116,7 @@ object QueryPlannerConfiguration {
       applySelections = predicateSelector,
       optionalSolvers = Seq(
         applyOptional,
-        outerHashJoin,
+        outerHashJoin
       ),
       leafPlanners = LeafPlannerList(allLeafPlanners(LeafPlanRestrictions.NoRestrictions)),
       updateStrategy = defaultUpdateStrategy
@@ -120,11 +125,13 @@ object QueryPlannerConfiguration {
   }
 }
 
-case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
-                                     applySelections: PlanSelector,
-                                     optionalSolvers: Seq[OptionalSolver],
-                                     pickBestCandidate: CandidateSelectorFactory,
-                                     updateStrategy: UpdateStrategy) {
+case class QueryPlannerConfiguration(
+  leafPlanners: LeafPlannerIterable,
+  applySelections: PlanSelector,
+  optionalSolvers: Seq[OptionalSolver],
+  pickBestCandidate: CandidateSelectorFactory,
+  updateStrategy: UpdateStrategy
+) {
 
   def toKit(interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): QueryPlannerKit =
     QueryPlannerKit(
@@ -134,11 +141,12 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
 
   def withLeafPlanners(leafPlanners: LeafPlannerIterable): QueryPlannerConfiguration = copy(leafPlanners = leafPlanners)
 
-  def withUpdateStrategy(updateStrategy: UpdateStrategy): QueryPlannerConfiguration = copy(updateStrategy = updateStrategy)
+  def withUpdateStrategy(updateStrategy: UpdateStrategy): QueryPlannerConfiguration =
+    copy(updateStrategy = updateStrategy)
 }
 
-case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,
-                           pickBest: CandidateSelector) {
+case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan, pickBest: CandidateSelector) {
+
   def select(plans: Iterable[LogicalPlan], qg: QueryGraph): Iterable[LogicalPlan] =
     plans.map(plan => select(plan, qg))
 }

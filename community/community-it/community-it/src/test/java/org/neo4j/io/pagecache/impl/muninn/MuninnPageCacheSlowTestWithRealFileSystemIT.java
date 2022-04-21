@@ -25,23 +25,20 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
-class MuninnPageCacheSlowTestWithRealFileSystemIT extends MuninnPageCacheSlowIT
-{
+class MuninnPageCacheSlowTestWithRealFileSystemIT extends MuninnPageCacheSlowIT {
     @Inject
     TestDirectory directory;
 
-    MuninnPageCacheSlowTestWithRealFileSystemIT()
-    {
+    MuninnPageCacheSlowTestWithRealFileSystemIT() {
         SHORT_TIMEOUT_MILLIS = 120_000;
         SEMI_LONG_TIMEOUT_MILLIS = 360_000;
         LONG_TIMEOUT_MILLIS = 1_200_000;
     }
 
     @Override
-    protected Fixture<MuninnPageCache> createFixture()
-    {
+    protected Fixture<MuninnPageCache> createFixture() {
         return super.createFixture()
-                    .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
-                    .withFileConstructor( directory::file );
+                .withFileSystemAbstraction(DefaultFileSystemAbstraction::new)
+                .withFileConstructor(directory::file);
     }
 }

@@ -32,11 +32,13 @@ import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.annotation.nowarn
 
-case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
-                           (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(left) {
+case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(left) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
     if (input.isEmpty)
       return ClosingIterator.empty
 
@@ -67,11 +69,18 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     result.closing(table)
   }
 
-  private def buildProbeTable(input: ClosingIterator[CypherRow], queryState: QueryState): collection.ProbeTable[LongArray, CypherRow] = {
-    val table = collection.ProbeTable.createProbeTable[LongArray, CypherRow](queryState.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+  private def buildProbeTable(
+    input: ClosingIterator[CypherRow],
+    queryState: QueryState
+  ): collection.ProbeTable[LongArray, CypherRow] = {
+    val table = collection.ProbeTable.createProbeTable[LongArray, CypherRow](
+      queryState.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
+    )
 
-    for {context <- input
-         joinKey <- computeKey(context)} {
+    for {
+      context <- input
+      joinKey <- computeKey(context)
+    } {
       table.put(joinKey, context)
     }
 
@@ -87,7 +96,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     for (idx <- cachedVariables.indices) {
       key(idx) = context.getByName(cachedVariables(idx)) match {
         case n: VirtualNodeValue => n.id()
-        case IsNoValue() => return ClosingIterator.empty
+        case IsNoValue()         => return ClosingIterator.empty
         case _ => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")
       }
     }

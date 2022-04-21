@@ -21,36 +21,28 @@ package org.neo4j.cypher.internal.tracing;
 
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer;
 
-public interface CompilationTracer
-{
-    QueryCompilationEvent compileQuery( String query );
+public interface CompilationTracer {
+    QueryCompilationEvent compileQuery(String query);
 
-    interface QueryCompilationEvent extends AutoCloseable, CompilationPhaseTracer
-    {
+    interface QueryCompilationEvent extends AutoCloseable, CompilationPhaseTracer {
         @Override
         void close();
     }
 
-    CompilationTracer NO_COMPILATION_TRACING = new CompilationTracer()
-    {
+    CompilationTracer NO_COMPILATION_TRACING = new CompilationTracer() {
         @Override
-        public QueryCompilationEvent compileQuery( String query )
-        {
+        public QueryCompilationEvent compileQuery(String query) {
             return NONE_EVENT;
         }
 
-        private final QueryCompilationEvent NONE_EVENT = new QueryCompilationEvent()
-        {
+        private final QueryCompilationEvent NONE_EVENT = new QueryCompilationEvent() {
             @Override
-            public CompilationPhaseEvent beginPhase( CompilationPhase phase )
-            {
+            public CompilationPhaseEvent beginPhase(CompilationPhase phase) {
                 return NONE_PHASE;
             }
 
             @Override
-            public void close()
-            {
-            }
+            public void close() {}
         };
     };
 }

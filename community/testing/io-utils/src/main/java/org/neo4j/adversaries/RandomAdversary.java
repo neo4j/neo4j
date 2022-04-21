@@ -22,26 +22,21 @@ package org.neo4j.adversaries;
 /**
  * An adversary that injects failures randomly, based on a configured probability.
  */
-@SuppressWarnings( "unchecked" )
-public class RandomAdversary extends AbstractAdversary
-{
+@SuppressWarnings("unchecked")
+public class RandomAdversary extends AbstractAdversary {
     private static final double STANDARD_PROBABILITY_FACTOR = 1.0;
     private final double mischiefRate;
     private final double failureRate;
     private final double errorRate;
     private volatile double probabilityFactor;
 
-    public RandomAdversary( double mischiefRate, double failureRate, double errorRate )
-    {
-        assert 0 <= mischiefRate && mischiefRate < 1.0 :
-                "Expected mischief rate in [0.0; 1.0[ but was " + mischiefRate;
-        assert 0 <= failureRate && failureRate < 1.0 :
-                "Expected failure rate in [0.0; 1.0[ but was " + failureRate;
-        assert 0 <= errorRate && errorRate < 1.0 :
-                "Expected error rate in [0.0; 1.0[ but was " + errorRate;
-        assert mischiefRate + errorRate + failureRate < 1.0 :
-                "Expected mischief rate + error rate + failure rate in [0.0; 1.0[ but was " +
-                        (mischiefRate + errorRate + failureRate);
+    public RandomAdversary(double mischiefRate, double failureRate, double errorRate) {
+        assert 0 <= mischiefRate && mischiefRate < 1.0 : "Expected mischief rate in [0.0; 1.0[ but was " + mischiefRate;
+        assert 0 <= failureRate && failureRate < 1.0 : "Expected failure rate in [0.0; 1.0[ but was " + failureRate;
+        assert 0 <= errorRate && errorRate < 1.0 : "Expected error rate in [0.0; 1.0[ but was " + errorRate;
+        assert mischiefRate + errorRate + failureRate < 1.0
+                : "Expected mischief rate + error rate + failure rate in [0.0; 1.0[ but was "
+                        + (mischiefRate + errorRate + failureRate);
 
         this.mischiefRate = mischiefRate;
         this.failureRate = failureRate;
@@ -50,49 +45,40 @@ public class RandomAdversary extends AbstractAdversary
     }
 
     @Override
-    public void injectFailure( Class<? extends Throwable>... failureTypes )
-    {
-        maybeDoBadStuff( failureTypes, false );
+    public void injectFailure(Class<? extends Throwable>... failureTypes) {
+        maybeDoBadStuff(failureTypes, false);
     }
 
     @Override
-    public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
-    {
-        return maybeDoBadStuff( failureTypes, true );
+    public boolean injectFailureOrMischief(Class<? extends Throwable>... failureTypes) {
+        return maybeDoBadStuff(failureTypes, true);
     }
 
-    private boolean maybeDoBadStuff( Class<? extends Throwable>[] failureTypes, boolean includingMischeif )
-    {
+    private boolean maybeDoBadStuff(Class<? extends Throwable>[] failureTypes, boolean includingMischeif) {
         double luckyDraw = rng.nextDouble();
         double factor = probabilityFactor;
         boolean resetUponFailure = false;
-        if ( factor < 0 )
-        {
+        if (factor < 0) {
             resetUponFailure = true;
             factor = -factor;
         }
 
-        if ( luckyDraw <= errorRate * factor )
-        {
-            if ( resetUponFailure )
-            {
+        if (luckyDraw <= errorRate * factor) {
+            if (resetUponFailure) {
                 probabilityFactor = STANDARD_PROBABILITY_FACTOR;
             }
-            throwOneOf( OutOfMemoryError.class, NullPointerException.class );
+            throwOneOf(OutOfMemoryError.class, NullPointerException.class);
         }
-        if ( failureTypes.length > 0 && luckyDraw <= (failureRate + errorRate) * factor )
-        {
-            if ( resetUponFailure )
-            {
+        if (failureTypes.length > 0 && luckyDraw <= (failureRate + errorRate) * factor) {
+            if (resetUponFailure) {
                 probabilityFactor = STANDARD_PROBABILITY_FACTOR;
             }
-            throwOneOf( failureTypes );
+            throwOneOf(failureTypes);
         }
         return includingMischeif && luckyDraw <= (mischiefRate + failureRate + errorRate) * factor;
     }
 
-    public void setProbabilityFactor( double factor )
-    {
+    public void setProbabilityFactor(double factor) {
         probabilityFactor = factor;
     }
 }

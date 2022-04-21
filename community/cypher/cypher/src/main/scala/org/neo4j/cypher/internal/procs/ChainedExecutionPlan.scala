@@ -47,32 +47,39 @@ import org.neo4j.values.virtual.MapValue
  * that either do nothing or simply track the existence of database changes in order to keep a count of inner
  * commands.
  */
-abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext](source: Option[ExecutionPlan]) extends ExecutionPlan {
-  def runSpecific(ctx: T,
-                   executionMode: ExecutionMode,
-                   params: MapValue,
-                   prePopulateResults: Boolean,
-                   ignore: InputDataStream,
-                   subscriber: QuerySubscriber): RuntimeResult
+abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext](source: Option[ExecutionPlan])
+    extends ExecutionPlan {
+
+  def runSpecific(
+    ctx: T,
+    executionMode: ExecutionMode,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    ignore: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult
 
   def createContext(originalCtx: QueryContext): T
   def querySubscriber(context: T, subscriber: QuerySubscriber): QuerySubscriber
 
-  override def run(originalCtx: QueryContext,
-                   executionMode: ExecutionMode,
-                   params: MapValue,
-                   prePopulateResults: Boolean,
-                   ignore: InputDataStream,
-                   subscriber: QuerySubscriber): RuntimeResult = {
+  override def run(
+    originalCtx: QueryContext,
+    executionMode: ExecutionMode,
+    params: MapValue,
+    prePopulateResults: Boolean,
+    ignore: InputDataStream,
+    subscriber: QuerySubscriber
+  ): RuntimeResult = {
     val ctx = createContext(originalCtx)
     // Only the outermost query should be tied into the reactive results stream. The source queries use a simplified counting subscriber
-    val sourceResult = source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, querySubscriber(ctx, subscriber)))
+    val sourceResult =
+      source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, querySubscriber(ctx, subscriber)))
     sourceResult match {
       case Some(IgnoredRuntimeResult) =>
         onSkip(ctx, subscriber)
       case Some(UpdatingSystemCommandRuntimeResult(newCtx)) =>
         runSpecific(newCtx.asInstanceOf[T], executionMode, params, prePopulateResults, ignore, subscriber)
-      case _  =>
+      case _ =>
         runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
     }
   }
@@ -89,18 +96,25 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
   override def notifications: Set[InternalNotification] = Set.empty
 }
 
-abstract class AdministrationChainedExecutionPlan(source: Option[ExecutionPlan]) extends ChainedExecutionPlan[SystemUpdateCountingQueryContext](source) {
+abstract class AdministrationChainedExecutionPlan(source: Option[ExecutionPlan])
+    extends ChainedExecutionPlan[SystemUpdateCountingQueryContext](source) {
 
-  override def createContext(originalCtx: QueryContext): SystemUpdateCountingQueryContext = SystemUpdateCountingQueryContext.from(originalCtx)
-  override def querySubscriber(context: SystemUpdateCountingQueryContext, qs : QuerySubscriber): QuerySubscriber = new QuerySubscriberAdapter() {
-    override def onResultCompleted(statistics: QueryStatistics): Unit = if (statistics.containsUpdates()) context.systemUpdates.increase()
-  }
+  override def createContext(originalCtx: QueryContext): SystemUpdateCountingQueryContext =
+    SystemUpdateCountingQueryContext.from(originalCtx)
+
+  override def querySubscriber(context: SystemUpdateCountingQueryContext, qs: QuerySubscriber): QuerySubscriber =
+    new QuerySubscriberAdapter() {
+
+      override def onResultCompleted(statistics: QueryStatistics): Unit =
+        if (statistics.containsUpdates()) context.systemUpdates.increase()
+    }
 
   protected def safeMergeParameters(systemParams: MapValue, userParams: MapValue, initialParams: MapValue): MapValue = {
     val updatedSystemParams: MapValue = systemParams.updatedWith(initialParams)
     updatedSystemParams.foreach {
       case (_, Values.NO_VALUE) => // placeholders should be replaced
-      case (key, _) => if (userParams.containsKey(key)) throw new InvalidArgumentException(s"The query contains a parameter with an illegal name: '$key'")
+      case (key, _) => if (userParams.containsKey(key))
+          throw new InvalidArgumentException(s"The query contains a parameter with an illegal name: '$key'")
     }
     updatedSystemParams.updatedWith(userParams)
   }

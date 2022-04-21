@@ -90,8 +90,8 @@ class StringFunctionsTest extends CypherFunSuite {
     substringFrom("0123456789", 5) should equal(stringValue("56789"))
     substringFrom("0123456789", 15) should equal(EMPTY_STRING)
     substring(null, 8, 5) should equal(expectedNull)
-    substring( "\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21", 1, 1) should equal(stringValue("\uD83D\uDE21"))
-    substring( "\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21", 1, 2) should equal(stringValue("\uD83D\uDE21\uD83D\uDE21"))
+    substring("\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21", 1, 1) should equal(stringValue("\uD83D\uDE21"))
+    substring("\uD83D\uDE21\uD83D\uDE21\uD83D\uDE21", 1, 2) should equal(stringValue("\uD83D\uDE21\uD83D\uDE21"))
     intercept[CypherTypeException](substring(1024, 1, 2) should equal(expectedNull))
     intercept[IndexOutOfBoundsException](substring("hello", -4, 2) should equal(expectedNull))
   }
@@ -124,7 +124,7 @@ class StringFunctionsTest extends CypherFunSuite {
     ltrim("  hello") should equal(stringValue("hello"))
     ltrim("  hello  ") should equal(stringValue("hello  "))
     ltrim(null) should equal(expectedNull)
-    ltrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠\u2009"))//Contains `thin space`
+    ltrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠\u2009")) // Contains `thin space`
     intercept[CypherTypeException](ltrim(1024))
   }
 
@@ -135,7 +135,7 @@ class StringFunctionsTest extends CypherFunSuite {
     rtrim("Hello   ") should equal(stringValue("Hello"))
     rtrim("  hello   ") should equal(stringValue("  hello"))
     rtrim(null) should equal(expectedNull)
-    rtrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("\u2009㺂࿝鋦毠"))//Contains `thin space`
+    rtrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("\u2009㺂࿝鋦毠")) // Contains `thin space`
     intercept[CypherTypeException](rtrim(1024))
   }
 
@@ -147,7 +147,7 @@ class StringFunctionsTest extends CypherFunSuite {
     trim("hello  ") should equal(stringValue("hello"))
     trim("  hello  ") should equal(stringValue("hello"))
     trim("  hello") should equal(stringValue("hello"))
-    trim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠"))//Contains `thin space`
+    trim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠")) // Contains `thin space`
     trim(null) should equal(expectedNull)
     intercept[CypherTypeException](trim(1042))
   }
@@ -167,7 +167,16 @@ class StringFunctionsTest extends CypherFunSuite {
     def split(x: Any, y: Any) = SplitFunction(literal(x), literal(y))(CypherRow.empty, QueryStateHelper.empty)
 
     split("HELLO", "LL") should equal(stringArray("HE", "O"))
-    split("Separating,by,comma,is,a,common,use,case", ",") should equal(stringArray("Separating", "by", "comma", "is", "a", "common", "use", "case"))
+    split("Separating,by,comma,is,a,common,use,case", ",") should equal(stringArray(
+      "Separating",
+      "by",
+      "comma",
+      "is",
+      "a",
+      "common",
+      "use",
+      "case"
+    ))
     split("hello", "X") should equal(stringArray("hello"))
     split("hello", null) should equal(expectedNull)
     split(null, "hello") should equal(expectedNull)
